@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LOL Career Simulator</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #111;
+        color: #f4f4f4;
+        margin: 0;
+        padding: 24px;
+      }
+      .panel {
+        max-width: 860px;
+        margin: 0 auto;
+        background: #1b1b1b;
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 24px;
+      }
+      button {
+        margin-top: 12px;
+        padding: 10px 16px;
+        border: none;
+        border-radius: 8px;
+        background: #2f6fed;
+        color: white;
+        cursor: pointer;
+      }
+      pre {
+        white-space: pre-wrap;
+        background: #0f0f0f;
+        padding: 12px;
+        border-radius: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="panel">
+      <h1>LOL Career Simulator</h1>
+      <p>Una base mínima del simulador de carrera profesional.</p>
+      <button id="run">Simular 3 splits</button>
+      <pre id="output">Esperando...</pre>
+    </div>
+
+    <script type="module">
+      const output = document.getElementById('output');
+      const button = document.getElementById('run');
+
+      async function runSimulation() {
+        output.textContent = 'Simulando...';
+        button.disabled = true;
+
+        try {
+          const [{ mulberry32 }, { createInitialState }, { avanzarSplit }] = await Promise.all([
+            import('./src/core/rng.js'),
+            import('./src/core/state.js'),
+            import('./src/core/pipeline.js')
+          ]);
+
+          const seed = Date.now();
+          const rng = mulberry32(seed);
+          let state = createInitialState(seed);
+
+          for (let i = 0; i < 3; i += 1) {
+            state = avanzarSplit(state, rng).state;
+          }
+
+          output.textContent = JSON.stringify({
+            seed,
+            mecanica: state.player.stats.mecanica,
+            mentalidad: state.player.stats.mentalidad,
+            studies: state.player.studies,
+            familyTrust: state.player.familyTrust,
+            meta: state.meta.weights,
+            logs: state.logs.slice(-6)
+          }, null, 2);
+        } catch (error) {
+          output.textContent = `No se pudo cargar el juego.\n\nAbre la página desde un servidor local como:\n- python -m http.server 8000\n- o npm start\n\nError: ${error.message}`;
+          console.error(error);
+        } finally {
+          button.disabled = false;
+        }
+      }
+
+      button.addEventListener('click', runSimulation);
+    </script>
+  </body>
+</html>

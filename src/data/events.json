@@ -1,0 +1,98 @@
+[
+  {
+    "id": "scout_call",
+    "title": "Llamado de un scout",
+    "description": "Un scout te sigue de cerca después de una semana sólida.",
+    "weight": 10
+  },
+  {
+    "id": "family_pressure",
+    "title": "Presión familiar",
+    "description": "Tus viejos quieren que priorices los estudios y no solo el ranked.",
+    "weight": 8
+  },
+  {
+    "id": "ranked_streak",
+    "title": "Racha de ranked",
+    "description": "El sistema te da una noche de LP y un poco de ego.",
+    "weight": 10
+  },
+  {
+    "id": "academy_offer",
+    "title": "Oferta de academy",
+    "description": "Una org te ofrece entrar a su proyecto juvenil con un contrato pequeño.",
+    "weight": 8
+  },
+  {
+    "id": "team_drama",
+    "title": "Drama de vestuario",
+    "description": "Un compañero se pelea con el staff y el ambiente se vuelve tóxico.",
+    "weight": 8
+  },
+  {
+    "id": "media_meme",
+    "title": "Meme de la prensa",
+    "description": "Un gesto de la partida se vuelve viral y te pone en la mira de todos.",
+    "weight": 7
+  },
+  {
+    "id": "visa_delay",
+    "title": "Visa en demora",
+    "description": "Tu salida a otra región se retrasa y el calendario te juega en contra.",
+    "weight": 6
+  },
+  {
+    "id": "tendinitis",
+    "title": "Tendinitis de muñeca",
+    "description": "El cuerpo empieza a pedirte un descanso que no te das.",
+    "weight": 6
+  },
+  {
+    "id": "sponsor_offer",
+    "title": "Oferta de sponsor",
+    "description": "Una marca te ofrece un contrato grande, pero con condiciones de imagen.",
+    "weight": 7
+  },
+  {
+    "id": "burnout",
+    "title": "Burnout de calendario",
+    "description": "Las semanas se vuelven largas y el juego empieza a pesarte.",
+    "weight": 6
+  },
+  {
+    "id": "title_run",
+    "title": "Carrera de títulos",
+    "description": "Una racha de victorias te devuelve el aire de campeón.",
+    "weight": 5
+  },
+  {
+    "id": "international_trip",
+    "title": "Viaje internacional",
+    "description": "Te suben a un torneo grande y el contexto cambia por completo.",
+    "weight": 6
+  },
+  {
+    "id": "old_rival",
+    "title": "Reencuentro con un rival",
+    "description": "Tu rival de generación aparece otra vez y el matchup vuelve a ser noticia.",
+    "weight": 6
+  },
+  {
+    "id": "transfer_rumor",
+    "title": "Rumor de transferencia",
+    "description": "La prensa te pega como pieza de cambio y el mercado empieza a hablar.",
+    "weight": 6
+  },
+  {
+    "id": "psychologist",
+    "title": "Psicólogo deportivo",
+    "description": "El staff te manda a trabajar la cabeza y te ayuda a bajar la presión.",
+    "weight": 5
+  },
+  {
+    "id": "worlds_dream",
+    "title": "Sueño de Worlds",
+    "description": "Llegás a un escenario grande y el objetivo de toda la carrera parece posible.",
+    "weight": 4
+  }
+]
