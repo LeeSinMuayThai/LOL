@@ -6,7 +6,10 @@
     "description": "Tu salida a otra región se retrasa y el calendario te juega en contra.",
     "weight": 6,
     "cooldown": 4,
-    "conditions": [{ "field": "player.splitCount", "op": "gt", "value": 4 }],
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 4 },
+      { "field": "phase", "op": "eq", "value": "profesional" }
+    ],
     "options": [
       {
         "id": "presionar_a_la_organizacion",

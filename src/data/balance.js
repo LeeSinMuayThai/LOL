@@ -1,9 +1,17 @@
 export const BALANCE = {
   amateur: {
-    studiesGain: 4,
+    eloGainMin: 20,
+    eloGainMax: 55,
+    sleepLossMin: 3,
+    sleepLossMax: 7,
+    studiesGain: 3,
     studiesSpread: 2,
-    trustGain: 2,
-    trustSpread: 1.5
+    trustDriftMin: 1,
+    trustDriftMax: 4,
+    soloqEloUmbralExito: 1600,
+    hypeUmbralExito: 55,
+    familyTrustUmbralFracaso: 15,
+    sleepUmbralFracaso: 10
   },
   split: {
     baseGain: 4,

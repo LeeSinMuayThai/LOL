@@ -1,12 +1,17 @@
 import { gauss, roll } from './rng.js';
 import { crearLog } from './log.js';
 import { BALANCE } from '../data/balance.js';
+import { aplicar as aplicarEtapaAmateur } from '../systems/amateur.js';
 import { aplicar as aplicarMeta } from '../systems/meta.js';
 import { aplicar as aplicarEventos } from '../systems/events.js';
 
 export const ETAPAS_SPLIT = ['aplicarEtapaAmateur', 'aplicarMeta', 'aplicarEventos', 'aplicarSplitBase'];
 
 export function avanzarSplit(state, rng) {
+  if (state.terminado) {
+    return { state, logs: [] };
+  }
+
   let nextState = state;
   const logs = [];
 
@@ -25,28 +30,14 @@ export function avanzarSplit(state, rng) {
 
     nextState = stageResult.state;
     logs.push(...stageResult.logs);
+
+    if (nextState.terminado) {
+      break;
+    }
   }
 
   const mergedLogs = [...state.logs, ...logs];
   return { state: { ...nextState, logs: mergedLogs }, logs };
-}
-
-function aplicarEtapaAmateur(state, rng) {
-  const studiesDelta = Math.max(0, Math.round(gauss(BALANCE.amateur.studiesGain, BALANCE.amateur.studiesSpread, rng)));
-  const trustDelta = Math.max(0, Math.round(gauss(BALANCE.amateur.trustGain, BALANCE.amateur.trustSpread, rng)));
-
-  return {
-    state: {
-      ...state,
-      player: {
-        ...state.player,
-        studies: Math.min(100, state.player.studies + studiesDelta),
-        familyTrust: Math.min(100, state.player.familyTrust + trustDelta)
-      },
-      logs: [...state.logs]
-    },
-    logs: [crearLog('amateur', `Etapa amateur: estudios +${studiesDelta}, confianza familiar +${trustDelta}`)]
-  };
 }
 
 function aplicarSplitBase(state, rng) {

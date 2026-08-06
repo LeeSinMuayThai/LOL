@@ -6,7 +6,10 @@
     "description": "Un compañero se pelea con el staff y el ambiente se vuelve tóxico.",
     "weight": 8,
     "cooldown": 3,
-    "conditions": [{ "field": "player.splitCount", "op": "gt", "value": 2 }],
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 2 },
+      { "field": "phase", "op": "eq", "value": "profesional" }
+    ],
     "options": [
       {
         "id": "meterse_en_el_conflicto",
@@ -126,7 +129,10 @@
     "description": "La prensa te pega como pieza de cambio y el mercado empieza a hablar.",
     "weight": 6,
     "cooldown": 4,
-    "conditions": [{ "field": "player.splitCount", "op": "gt", "value": 4 }],
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 4 },
+      { "field": "phase", "op": "eq", "value": "profesional" }
+    ],
     "options": [
       {
         "id": "alimentar_el_rumor",

@@ -5,53 +5,134 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LOL Career Simulator</title>
     <style>
+      :root {
+        color-scheme: dark;
+      }
       body {
-        font-family: Arial, sans-serif;
-        background: #111;
-        color: #f4f4f4;
+        font-family: Inter, Arial, sans-serif;
+        background: linear-gradient(135deg, #0b1020, #141f36 60%, #1d2d4b);
+        color: #f3f6ff;
         margin: 0;
         padding: 24px;
       }
       .panel {
-        max-width: 860px;
+        max-width: 960px;
         margin: 0 auto;
-        background: #1b1b1b;
-        border: 1px solid #333;
-        border-radius: 12px;
-        padding: 24px;
+        background: rgba(8, 14, 24, 0.92);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 18px;
+        padding: 26px;
+        box-shadow: 0 18px 70px rgba(0,0,0,0.35);
+      }
+      h1 {
+        margin-top: 0;
+        margin-bottom: 8px;
+        font-size: 30px;
+      }
+      .subtitle {
+        color: #9fb0d2;
+        margin-bottom: 18px;
       }
       button {
-        margin-top: 12px;
+        margin-top: 8px;
         padding: 10px 16px;
         border: none;
-        border-radius: 8px;
-        background: #2f6fed;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #2f6fed, #5b8cff);
         color: white;
         cursor: pointer;
+        font-weight: 700;
+        box-shadow: 0 10px 24px rgba(47, 111, 237, 0.25);
       }
-      pre {
-        white-space: pre-wrap;
-        background: #0f0f0f;
+      button:disabled {
+        opacity: 0.6;
+        cursor: wait;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 12px;
+        margin: 18px 0;
+      }
+      .stat-card {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 12px;
         padding: 12px;
-        border-radius: 8px;
+      }
+      .stat-label {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #8ea3c7;
+      }
+      .stat-value {
+        font-size: 24px;
+        margin-top: 6px;
+        font-weight: 700;
+      }
+      .summary {
+        margin-top: 16px;
+        padding: 14px 16px;
+        background: rgba(255,255,255,0.04);
+        border-left: 3px solid #5b8cff;
+        border-radius: 10px;
+        color: #dfe9ff;
+      }
+      .log-list {
+        margin-top: 16px;
+      }
+      .log-item {
+        padding: 10px 12px;
+        background: rgba(255,255,255,0.04);
+        border-radius: 10px;
+        margin-bottom: 8px;
+        border-left: 3px solid #44d48d;
+      }
+      .meta-pill {
+        display: inline-block;
+        margin-top: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(68, 212, 141, 0.16);
+        color: #8bf0bc;
+        font-size: 12px;
       }
     </style>
   </head>
   <body>
     <div class="panel">
       <h1>LOL Career Simulator</h1>
-      <p>Una base mínima del simulador de carrera profesional.</p>
-      <button id="run">Simular 3 splits</button>
-      <pre id="output">Esperando...</pre>
+      <p class="subtitle">Una carrera de LoL en formato narrativo, con progreso, meta y eventos.</p>
+      <button id="run">Simular carrera</button>
+
+      <div class="stats">
+        <div class="stat-card"><div class="stat-label">Mecánica</div><div id="mec" class="stat-value">—</div></div>
+        <div class="stat-card"><div class="stat-label">Mentalidad</div><div id="ment" class="stat-value">—</div></div>
+        <div class="stat-card"><div class="stat-label">Estudios</div><div id="stud" class="stat-value">—</div></div>
+        <div class="stat-card"><div class="stat-label">Confianza</div><div id="trust" class="stat-value">—</div></div>
+      </div>
+
+      <div id="summary" class="summary">Aún no hay carrera simulada.</div>
+      <div id="metaPill" class="meta-pill"></div>
+      <div id="logList" class="log-list"></div>
     </div>
 
     <script type="module">
-      const output = document.getElementById('output');
       const button = document.getElementById('run');
+      const mec = document.getElementById('mec');
+      const ment = document.getElementById('ment');
+      const stud = document.getElementById('stud');
+      const trust = document.getElementById('trust');
+      const summary = document.getElementById('summary');
+      const metaPill = document.getElementById('metaPill');
+      const logList = document.getElementById('logList');
 
       async function runSimulation() {
-        output.textContent = 'Simulando...';
         button.disabled = true;
+        summary.textContent = 'Simulando la carrera...';
+        metaPill.textContent = '';
+        logList.innerHTML = '';
 
         try {
           const [{ mulberry32 }, { createInitialState }, { avanzarSplit }] = await Promise.all([
@@ -64,21 +145,40 @@
           const rng = mulberry32(seed);
           let state = createInitialState(seed);
 
-          for (let i = 0; i < 3; i += 1) {
+          const MAX_SPLITS = 20;
+          for (let i = 0; i < MAX_SPLITS && !state.terminado; i += 1) {
             state = avanzarSplit(state, rng).state;
           }
 
-          output.textContent = JSON.stringify({
-            seed,
-            mecanica: state.player.stats.mecanica,
-            mentalidad: state.player.stats.mentalidad,
-            studies: state.player.studies,
-            familyTrust: state.player.familyTrust,
-            meta: state.meta.weights,
-            logs: state.logs.slice(-6)
-          }, null, 2);
+          const strongestMeta = Object.entries(state.meta.weights).sort((a, b) => b[1] - a[1])[0][0];
+          const latestLogs = state.logs.slice(-6).reverse();
+
+          mec.textContent = state.player.stats.mecanica;
+          ment.textContent = state.player.stats.mentalidad;
+          stud.textContent = state.player.studies;
+          trust.textContent = state.player.familyTrust;
+
+          if (state.phase === 'profesional') {
+            summary.textContent = `Te ficharon en el split ${state.splitFichaje}: arrancó tu carrera profesional. El meta dominante apunta a ${strongestMeta}.`;
+          } else if (state.finAnticipado === 'fracaso_familia') {
+            summary.textContent = 'Tu familia te bajó del ranked antes de que llegara la oportunidad: la carrera terminó en la etapa amateur.';
+          } else if (state.finAnticipado === 'fracaso_sueno') {
+            summary.textContent = 'El burnout te sacó de carrera antes de debutar: la etapa amateur terminó en fracaso.';
+          } else {
+            summary.textContent = `Todavía en etapa amateur tras ${MAX_SPLITS} splits, grindeando soloQ para llamar la atención de un equipo.`;
+          }
+          metaPill.textContent = `Meta dominante: ${strongestMeta}`;
+
+          logList.innerHTML = latestLogs.map((entry) => `<div class="log-item">${entry.message}</div>`).join('');
         } catch (error) {
-          output.textContent = `No se pudo cargar el juego.\n\nAbre la página desde un servidor local como:\n- python -m http.server 8000\n- o npm start\n\nError: ${error.message}`;
+          const esArchivoLocal = location.protocol === 'file:';
+          summary.textContent = esArchivoLocal
+            ? 'Este juego usa módulos ES y no puede correr abriendo el HTML directo con doble clic.'
+            : 'No se pudo cargar el juego.';
+          metaPill.textContent = esArchivoLocal
+            ? 'Corré "npm start" en la terminal y abrí la URL que te muestra (http://localhost:8000).'
+            : 'Revisa la consola del navegador.';
+          logList.innerHTML = `<div class="log-item">${error.message}</div>`;
           console.error(error);
         } finally {
           button.disabled = false;

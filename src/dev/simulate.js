@@ -6,7 +6,7 @@ function correrCarrera(seed, splits) {
   const rng = mulberry32(seed);
   let state = createInitialState(seed);
 
-  for (let i = 0; i < splits; i += 1) {
+  for (let i = 0; i < splits && !state.terminado; i += 1) {
     state = avanzarSplit(state, rng).state;
   }
 
@@ -17,17 +17,26 @@ function reporteDetallado(state, seed) {
   return {
     seed,
     age: state.age,
+    phase: state.phase,
+    terminado: state.terminado,
+    finAnticipado: state.finAnticipado,
+    splitFichaje: state.splitFichaje,
     splitCount: state.player.splitCount,
     mecanica: state.player.stats.mecanica,
     mentalidad: state.player.stats.mentalidad,
     studies: state.player.studies,
     familyTrust: state.player.familyTrust,
+    sleep: state.player.sleep,
+    soloqElo: state.player.soloqElo,
     meta: state.meta.weights,
     latestLog: state.logs.at(-1)
   };
 }
 
 function estadisticas(valores) {
+  if (valores.length === 0) {
+    return { min: null, max: null, promedio: null };
+  }
   const suma = valores.reduce((acc, v) => acc + v, 0);
   return {
     min: Math.min(...valores),
@@ -49,11 +58,23 @@ function correrLote(corridas, splits) {
     }
   }
 
+  const fracasos = resultados.filter((r) => r.terminado);
+  const llegaronAPro = resultados.filter((r) => r.phase === 'profesional');
+  const siguenAmateur = resultados.filter((r) => r.phase === 'amateur' && !r.terminado);
+
   return {
     corridas,
     splits,
     crashes,
     exitosas: resultados.length,
+    desenlace: {
+      llegaronAPro: llegaronAPro.length,
+      splitFichaje: estadisticas(llegaronAPro.map((r) => r.splitFichaje)),
+      fracasos: fracasos.length,
+      fracasoFamilia: fracasos.filter((r) => r.finAnticipado === 'fracaso_familia').length,
+      fracasoSueno: fracasos.filter((r) => r.finAnticipado === 'fracaso_sueno').length,
+      siguenAmateur: siguenAmateur.length
+    },
     mecanica: estadisticas(resultados.map((r) => r.player.stats.mecanica)),
     mentalidad: estadisticas(resultados.map((r) => r.player.stats.mentalidad)),
     hype: estadisticas(resultados.map((r) => r.player.stats.hype)),
@@ -62,7 +83,7 @@ function correrLote(corridas, splits) {
 }
 
 const corridas = Number(process.argv[2] || 1);
-const splits = Number(process.argv[3] || 8);
+const splits = Number(process.argv[3] || 15);
 
 if (corridas <= 1) {
   const seed = 42;

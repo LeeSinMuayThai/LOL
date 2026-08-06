@@ -3,6 +3,9 @@ export function createInitialState(seed = 1) {
     seed,
     age: 15,
     phase: 'amateur',
+    terminado: false,
+    finAnticipado: null,
+    splitFichaje: null,
     player: {
       name: 'Jugador',
       role: 'mid',
@@ -18,6 +21,7 @@ export function createInitialState(seed = 1) {
       },
       studies: 70,
       familyTrust: 60,
+      sleep: 75,
       soloqElo: 1200,
       splitCount: 0,
       titles: 0,

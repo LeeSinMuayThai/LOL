@@ -6,7 +6,10 @@
     "description": "Una org te ofrece entrar a su proyecto juvenil con un contrato pequeño.",
     "weight": 8,
     "cooldown": 5,
-    "conditions": [{ "field": "player.splitCount", "op": "gt", "value": 2 }],
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 2 },
+      { "field": "phase", "op": "eq", "value": "amateur" }
+    ],
     "options": [
       {
         "id": "aceptar_el_contrato",
@@ -47,7 +50,10 @@
     "description": "En la siguiente serie decisiva, el equipo te da una oportunidad de devolver la cara.",
     "weight": 8,
     "cooldown": 3,
-    "conditions": [{ "field": "player.splitCount", "op": "gt", "value": 1 }],
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 1 },
+      { "field": "phase", "op": "eq", "value": "profesional" }
+    ],
     "options": [
       {
         "id": "ir_con_todo",
@@ -87,7 +93,10 @@
     "description": "Tu entrenador cree que tu futuro está en otra línea y te obliga a adaptarte.",
     "weight": 7,
     "cooldown": 5,
-    "conditions": [{ "field": "player.splitCount", "op": "gt", "value": 3 }],
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 3 },
+      { "field": "phase", "op": "eq", "value": "profesional" }
+    ],
     "options": [
       {
         "id": "aceptar_el_cambio",
