@@ -38,18 +38,16 @@ function actualizarCooldowns(state, eventoElegido) {
   return { ...state, flags: { ...state.flags, cooldowns } };
 }
 
-export function aplicar(state, rng) {
+export function elegirEvento(state, rng) {
   const disponibles = candidatos(state);
-
   if (disponibles.length === 0) {
-    return {
-      state: actualizarCooldowns(state, null),
-      logs: [crearLog('event', 'Un split tranquilo, sin eventos destacados.')]
-    };
+    return null;
   }
+  return weightedPick(disponibles, (event) => event.weight, rng);
+}
 
-  const evento = weightedPick(disponibles, (event) => event.weight, rng);
-  const opcion = weightedPick(evento.options, (option) => option.weight, rng);
+export function resolverOpcion(state, evento, opcionId, rng) {
+  const opcion = evento.options.find((option) => option.id === opcionId) ?? evento.options[0];
   const outcome = weightedPick(opcion.outcomes, (out) => out.weight, rng);
 
   const nextState = outcome.effects.reduce((acc, effect) => aplicarEfecto(acc, effect, rng), state);
@@ -58,4 +56,18 @@ export function aplicar(state, rng) {
     state: actualizarCooldowns(nextState, evento),
     logs: [crearLog('event', `${evento.title}: ${evento.description} (elegiste "${opcion.label}")`)]
   };
+}
+
+export function aplicar(state, rng) {
+  const evento = elegirEvento(state, rng);
+
+  if (!evento) {
+    return {
+      state: actualizarCooldowns(state, null),
+      logs: [crearLog('event', 'Un split tranquilo, sin eventos destacados.')]
+    };
+  }
+
+  const opcion = weightedPick(evento.options, (option) => option.weight, rng);
+  return resolverOpcion(state, evento, opcion.id, rng);
 }

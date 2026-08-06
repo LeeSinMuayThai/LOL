@@ -11,7 +11,7 @@ Documento vivo. Se actualiza al cierre de cada tarea, según la Definición de t
 | 3 | Atributos, rendimiento y progresión básica | 🔶 Parcial — `attributes.js` existe pero no está enganchado en `ETAPAS_SPLIT`; falta `performance.js` |
 | 4 | Champion pool, meta y ajuste al meta | 🔶 Parcial — `meta.js` mueve pesos por patch; no existe `champions.js` |
 | 5 | Práctica dirigida entre splits | ⬜ Pendiente |
-| 6 | Motor de eventos y validación | ✅ Completa (adelantada — ver changelog 2026-08-06) |
+| 6 | Motor de eventos y validación | ✅ Completa (adelantada — ver changelog 2026-08-06). Las opciones ya son decisiones jugables reales en `index.html`, no auto-resueltas. |
 | 7 | Roster, sinergia y jerarquía | ⬜ Pendiente |
 | 8 | Contratos, regiones y movilidad | ⬜ Pendiente |
 | 9 | Rivales de generación y scoring final | ⬜ Pendiente |
@@ -19,6 +19,15 @@ Documento vivo. Se actualiza al cierre de cada tarea, según la Definición de t
 | 11 | Refinamiento visual | ⬜ Pendiente — no existe `src/ui/` |
 
 ## Changelog
+
+### 2026-08-06 — Decisiones jugables reales en el demo
+
+- **Bug de diseño corregido**: el demo de `index.html` apretaba un botón y todo se resolvía solo, sin que el jugador eligiera nada — violaba la regla invariable #8 de CLAUDE.md y el eje central del proyecto ("decisiones estratégicas"). La causa era que `systems/events.js` ya tenía el modelo de opciones+outcomes ponderados (Fase 0) pero lo resolvía en modo automático por no existir todavía ninguna interfaz.
+- `src/systems/events.js`: se separó `aplicar` (modo automático, sin cambios de comportamiento — lo siguen usando `simulate.js`/`validate.js`) en dos piezas reusables: `elegirEvento(state, rng)` (elige el evento candidato sin resolverlo) y `resolverOpcion(state, evento, opcionId, rng)` (aplica la opción que se le pasa).
+- `src/core/pipeline.js`: dos funciones nuevas para avance interactivo, sin tocar `avanzarSplit`/`ETAPAS_SPLIT` (siguen siendo el camino headless): `avanzarSplitHastaDecision(state, rng)` corre etapa amateur + meta y, si hay un evento candidato, corta el split ahí y devuelve `pendingDecision` en vez de resolverlo; `resolverDecisionYContinuar(state, logsPendientes, evento, opcionId, rng)` aplica la opción elegida y termina el split.
+- `index.html`: reescrito para jugarse split a split. Aparecen 3 stat-cards nuevas (Sueño, SoloQ LP, Fase) y un panel de decisión con el texto del evento y un botón por opción; el jugador elige y la carrera sigue hasta la próxima decisión o el desenlace final (fichaje/fracaso/sigue en amateur).
+- **Probado en navegador real** (no sólo con Node): se levantó `server.js`, se lanzó Chrome headless en un perfil aislado (sin tocar la sesión de navegador del usuario) manejado por CDP crudo (no había `chromium-cli`/Playwright instalados), se clickeó "Comenzar carrera" y 4 decisiones seguidas. Confirmado: el panel muestra título/descripción/opciones reales de los datos, las stat-cards se actualizan entre decisiones, el botón principal se deshabilita mientras hay una decisión pendiente, y no hubo errores de consola. Screenshot confirma el render.
+- `npm run validate` y `node src/dev/simulate.js 1000` dan exactamente los mismos resultados que antes de este cambio (el camino headless no se tocó).
 
 ### 2026-08-06 — Paso 2: éxito/fracaso de la etapa amateur + fix de carga
 

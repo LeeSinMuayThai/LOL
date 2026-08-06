@@ -3,7 +3,7 @@ import { crearLog } from './log.js';
 import { BALANCE } from '../data/balance.js';
 import { aplicar as aplicarEtapaAmateur } from '../systems/amateur.js';
 import { aplicar as aplicarMeta } from '../systems/meta.js';
-import { aplicar as aplicarEventos } from '../systems/events.js';
+import { aplicar as aplicarEventos, elegirEvento, resolverOpcion as resolverOpcionEvento } from '../systems/events.js';
 
 export const ETAPAS_SPLIT = ['aplicarEtapaAmateur', 'aplicarMeta', 'aplicarEventos', 'aplicarSplitBase'];
 
@@ -38,6 +38,64 @@ export function avanzarSplit(state, rng) {
 
   const mergedLogs = [...state.logs, ...logs];
   return { state: { ...nextState, logs: mergedLogs }, logs };
+}
+
+function finalizarSplit(estadoConLogsViejos, nextState, logsNuevos) {
+  const mergedLogs = [...estadoConLogsViejos.logs, ...logsNuevos];
+  return { state: { ...nextState, logs: mergedLogs }, logs: logsNuevos, pendingDecision: null };
+}
+
+export function avanzarSplitHastaDecision(state, rng) {
+  if (state.terminado) {
+    return { state, logs: [], pendingDecision: null };
+  }
+
+  let nextState = state;
+  const logs = [];
+
+  const rAmateur = aplicarEtapaAmateur(nextState, rng);
+  nextState = rAmateur.state;
+  logs.push(...rAmateur.logs);
+
+  if (nextState.terminado) {
+    return finalizarSplit(state, nextState, logs);
+  }
+
+  const rMeta = aplicarMeta(nextState, rng);
+  nextState = rMeta.state;
+  logs.push(...rMeta.logs);
+
+  const evento = elegirEvento(nextState, rng);
+
+  if (evento) {
+    return { state: nextState, logs, pendingDecision: { evento } };
+  }
+
+  const rEventos = aplicarEventos(nextState, rng);
+  nextState = rEventos.state;
+  logs.push(...rEventos.logs);
+
+  const rSplit = aplicarSplitBase(nextState, rng);
+  nextState = rSplit.state;
+  logs.push(...rSplit.logs);
+
+  return finalizarSplit(state, nextState, logs);
+}
+
+export function resolverDecisionYContinuar(state, logsPendientes, evento, opcionId, rng) {
+  const rEventos = resolverOpcionEvento(state, evento, opcionId, rng);
+  let nextState = rEventos.state;
+  const logs = [...logsPendientes, ...rEventos.logs];
+
+  if (nextState.terminado) {
+    return finalizarSplit(state, nextState, logs);
+  }
+
+  const rSplit = aplicarSplitBase(nextState, rng);
+  nextState = rSplit.state;
+  logs.push(...rSplit.logs);
+
+  return finalizarSplit(state, nextState, logs);
 }
 
 function aplicarSplitBase(state, rng) {

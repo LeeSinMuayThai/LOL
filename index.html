@@ -98,23 +98,70 @@
         color: #8bf0bc;
         font-size: 12px;
       }
+      .decision {
+        margin-top: 16px;
+        padding: 16px;
+        background: rgba(91, 140, 255, 0.08);
+        border: 1px solid rgba(91, 140, 255, 0.35);
+        border-radius: 14px;
+      }
+      .decision-title {
+        font-weight: 700;
+        font-size: 17px;
+        margin-bottom: 4px;
+      }
+      .decision-desc {
+        color: #c3cfe8;
+        margin-bottom: 12px;
+      }
+      .decision-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .option-btn {
+        flex: 1 1 220px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.16);
+        color: #f3f6ff;
+        border-radius: 12px;
+        padding: 12px 14px;
+        cursor: pointer;
+        text-align: left;
+        font-weight: 600;
+        margin-top: 0;
+      }
+      .option-btn:hover {
+        background: rgba(91, 140, 255, 0.2);
+        border-color: rgba(91, 140, 255, 0.5);
+      }
     </style>
   </head>
   <body>
     <div class="panel">
       <h1>LOL Career Simulator</h1>
       <p class="subtitle">Una carrera de LoL en formato narrativo, con progreso, meta y eventos.</p>
-      <button id="run">Simular carrera</button>
+      <button id="run">Comenzar carrera</button>
 
       <div class="stats">
         <div class="stat-card"><div class="stat-label">Mecánica</div><div id="mec" class="stat-value">—</div></div>
         <div class="stat-card"><div class="stat-label">Mentalidad</div><div id="ment" class="stat-value">—</div></div>
         <div class="stat-card"><div class="stat-label">Estudios</div><div id="stud" class="stat-value">—</div></div>
         <div class="stat-card"><div class="stat-label">Confianza</div><div id="trust" class="stat-value">—</div></div>
+        <div class="stat-card"><div class="stat-label">Sueño</div><div id="sleep" class="stat-value">—</div></div>
+        <div class="stat-card"><div class="stat-label">SoloQ LP</div><div id="elo" class="stat-value">—</div></div>
+        <div class="stat-card"><div class="stat-label">Fase</div><div id="fase" class="stat-value">—</div></div>
       </div>
 
-      <div id="summary" class="summary">Aún no hay carrera simulada.</div>
+      <div id="summary" class="summary">Aún no empezaste tu carrera.</div>
       <div id="metaPill" class="meta-pill"></div>
+
+      <div id="decision" class="decision" hidden>
+        <div id="decisionTitle" class="decision-title"></div>
+        <div id="decisionDesc" class="decision-desc"></div>
+        <div id="decisionOptions" class="decision-options"></div>
+      </div>
+
       <div id="logList" class="log-list"></div>
     </div>
 
@@ -124,52 +171,140 @@
       const ment = document.getElementById('ment');
       const stud = document.getElementById('stud');
       const trust = document.getElementById('trust');
+      const sleep = document.getElementById('sleep');
+      const elo = document.getElementById('elo');
+      const fase = document.getElementById('fase');
       const summary = document.getElementById('summary');
       const metaPill = document.getElementById('metaPill');
       const logList = document.getElementById('logList');
+      const decisionPanel = document.getElementById('decision');
+      const decisionTitle = document.getElementById('decisionTitle');
+      const decisionDesc = document.getElementById('decisionDesc');
+      const decisionOptions = document.getElementById('decisionOptions');
 
-      async function runSimulation() {
-        button.disabled = true;
-        summary.textContent = 'Simulando la carrera...';
-        metaPill.textContent = '';
-        logList.innerHTML = '';
+      const MAX_PASOS_DE_SEGURIDAD = 60;
+      const FASE_LABEL = { amateur: 'Amateur', profesional: 'Profesional', retirado: 'Retirado' };
 
-        try {
-          const [{ mulberry32 }, { createInitialState }, { avanzarSplit }] = await Promise.all([
+      let modulos = null;
+      let estado = null;
+      let rng = null;
+      let logsAcumulados = [];
+
+      async function cargarModulos() {
+        if (!modulos) {
+          const [{ mulberry32 }, { createInitialState }, pipeline] = await Promise.all([
             import('./src/core/rng.js'),
             import('./src/core/state.js'),
             import('./src/core/pipeline.js')
           ]);
+          modulos = { mulberry32, createInitialState, pipeline };
+        }
+        return modulos;
+      }
+
+      function renderStats(state) {
+        mec.textContent = state.player.stats.mecanica;
+        ment.textContent = state.player.stats.mentalidad;
+        stud.textContent = state.player.studies;
+        trust.textContent = state.player.familyTrust;
+        sleep.textContent = state.player.sleep;
+        elo.textContent = state.player.soloqElo;
+        fase.textContent = FASE_LABEL[state.phase] ?? state.phase;
+      }
+
+      function renderLogs(state) {
+        const recientes = state.logs.slice(-8).reverse();
+        logList.innerHTML = recientes.map((entry) => `<div class="log-item">${entry.message}</div>`).join('');
+      }
+
+      function renderResumenFinal(state) {
+        const strongestMeta = Object.entries(state.meta.weights).sort((a, b) => b[1] - a[1])[0][0];
+
+        if (state.phase === 'profesional') {
+          summary.textContent = `Te ficharon en el split ${state.splitFichaje}: arrancó tu carrera profesional. El meta dominante apunta a ${strongestMeta}.`;
+        } else if (state.finAnticipado === 'fracaso_familia') {
+          summary.textContent = 'Tu familia te bajó del ranked antes de que llegara la oportunidad: la carrera terminó en la etapa amateur.';
+        } else if (state.finAnticipado === 'fracaso_sueno') {
+          summary.textContent = 'El burnout te sacó de carrera antes de debutar: la etapa amateur terminó en fracaso.';
+        } else {
+          summary.textContent = 'Seguís en etapa amateur, grindeando soloQ para llamar la atención de un equipo.';
+        }
+        metaPill.textContent = `Meta dominante: ${strongestMeta}`;
+      }
+
+      function mostrarDecision(evento) {
+        decisionTitle.textContent = evento.title;
+        decisionDesc.textContent = evento.description;
+        decisionOptions.innerHTML = '';
+
+        for (const opcion of evento.options) {
+          const opcionBtn = document.createElement('button');
+          opcionBtn.type = 'button';
+          opcionBtn.className = 'option-btn';
+          opcionBtn.textContent = opcion.label;
+          opcionBtn.addEventListener('click', () => elegirOpcion(evento, opcion.id));
+          decisionOptions.appendChild(opcionBtn);
+        }
+
+        decisionPanel.hidden = false;
+        summary.textContent = 'Tenés una decisión pendiente.';
+        button.disabled = true;
+      }
+
+      function avanzar() {
+        const { pipeline } = modulos;
+
+        for (let pasos = 0; pasos < MAX_PASOS_DE_SEGURIDAD; pasos += 1) {
+          const resultado = pipeline.avanzarSplitHastaDecision(estado, rng);
+          estado = resultado.state;
+          logsAcumulados = resultado.logs;
+
+          if (resultado.pendingDecision) {
+            renderStats(estado);
+            renderLogs(estado);
+            mostrarDecision(resultado.pendingDecision.evento);
+            return;
+          }
+
+          if (estado.terminado) {
+            break;
+          }
+        }
+
+        renderStats(estado);
+        renderLogs(estado);
+        renderResumenFinal(estado);
+        button.textContent = 'Nueva carrera';
+        button.disabled = false;
+      }
+
+      function elegirOpcion(evento, opcionId) {
+        const { pipeline } = modulos;
+        decisionPanel.hidden = true;
+
+        const resultado = pipeline.resolverDecisionYContinuar(estado, logsAcumulados, evento, opcionId, rng);
+        estado = resultado.state;
+        logsAcumulados = resultado.logs;
+
+        avanzar();
+      }
+
+      async function comenzarCarrera() {
+        button.disabled = true;
+        decisionPanel.hidden = true;
+        summary.textContent = 'Arrancando la carrera...';
+        metaPill.textContent = '';
+        logList.innerHTML = '';
+
+        try {
+          const { mulberry32, createInitialState } = await cargarModulos();
 
           const seed = Date.now();
-          const rng = mulberry32(seed);
-          let state = createInitialState(seed);
+          rng = mulberry32(seed);
+          estado = createInitialState(seed);
+          logsAcumulados = [];
 
-          const MAX_SPLITS = 20;
-          for (let i = 0; i < MAX_SPLITS && !state.terminado; i += 1) {
-            state = avanzarSplit(state, rng).state;
-          }
-
-          const strongestMeta = Object.entries(state.meta.weights).sort((a, b) => b[1] - a[1])[0][0];
-          const latestLogs = state.logs.slice(-6).reverse();
-
-          mec.textContent = state.player.stats.mecanica;
-          ment.textContent = state.player.stats.mentalidad;
-          stud.textContent = state.player.studies;
-          trust.textContent = state.player.familyTrust;
-
-          if (state.phase === 'profesional') {
-            summary.textContent = `Te ficharon en el split ${state.splitFichaje}: arrancó tu carrera profesional. El meta dominante apunta a ${strongestMeta}.`;
-          } else if (state.finAnticipado === 'fracaso_familia') {
-            summary.textContent = 'Tu familia te bajó del ranked antes de que llegara la oportunidad: la carrera terminó en la etapa amateur.';
-          } else if (state.finAnticipado === 'fracaso_sueno') {
-            summary.textContent = 'El burnout te sacó de carrera antes de debutar: la etapa amateur terminó en fracaso.';
-          } else {
-            summary.textContent = `Todavía en etapa amateur tras ${MAX_SPLITS} splits, grindeando soloQ para llamar la atención de un equipo.`;
-          }
-          metaPill.textContent = `Meta dominante: ${strongestMeta}`;
-
-          logList.innerHTML = latestLogs.map((entry) => `<div class="log-item">${entry.message}</div>`).join('');
+          avanzar();
         } catch (error) {
           const esArchivoLocal = location.protocol === 'file:';
           summary.textContent = esArchivoLocal
@@ -180,12 +315,11 @@
             : 'Revisa la consola del navegador.';
           logList.innerHTML = `<div class="log-item">${error.message}</div>`;
           console.error(error);
-        } finally {
           button.disabled = false;
         }
       }
 
-      button.addEventListener('click', runSimulation);
+      button.addEventListener('click', comenzarCarrera);
     </script>
   </body>
 </html>
