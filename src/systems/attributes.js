@@ -1,4 +1,5 @@
 import { roll } from '../core/rng.js';
+import { crearLog } from '../core/log.js';
 
 export function aplicar(state, rng) {
   const gain = roll(2, 5, rng);
@@ -14,6 +15,6 @@ export function aplicar(state, rng) {
         }
       }
     },
-    logs: [{ type: 'attributes', message: `Progresión de atributos: +${gain} mecánica, +1 macro.` }]
+    logs: [crearLog('attributes', `Progresión de atributos: +${gain} mecánica, +1 macro.`)]
   };
 }

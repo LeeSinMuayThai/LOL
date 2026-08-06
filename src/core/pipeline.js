@@ -1,4 +1,5 @@
 import { gauss, roll } from './rng.js';
+import { crearLog } from './log.js';
 import { BALANCE } from '../data/balance.js';
 import { aplicar as aplicarMeta } from '../systems/meta.js';
 import { aplicar as aplicarEventos } from '../systems/events.js';
@@ -44,12 +45,13 @@ function aplicarEtapaAmateur(state, rng) {
       },
       logs: [...state.logs]
     },
-    logs: [{ type: 'amateur', message: `Etapa amateur: estudios +${studiesDelta}, confianza familiar +${trustDelta}` }]
+    logs: [crearLog('amateur', `Etapa amateur: estudios +${studiesDelta}, confianza familiar +${trustDelta}`)]
   };
 }
 
 function aplicarSplitBase(state, rng) {
-  const metaMultiplier = 0.8 + ((state.meta?.weights?.early_game ?? 1) / 2) * 0.2;
+  const { metaInfluenceBase, metaInfluenceRange } = BALANCE.split;
+  const metaMultiplier = metaInfluenceBase + ((state.meta?.weights?.early_game ?? 1) / 2) * metaInfluenceRange;
   const gain = Math.max(1, Math.round(roll(BALANCE.split.baseGain, BALANCE.split.maxGain, rng) * metaMultiplier));
   const mentalidadGain = Math.max(0, Math.round(gauss(BALANCE.split.mentalidadGain, BALANCE.split.mentalidadSpread, rng)));
 
@@ -71,6 +73,6 @@ function aplicarSplitBase(state, rng) {
       },
       logs: [...state.logs]
     },
-    logs: [{ type: 'split', message: `Split ${state.career.currentSplit}: progresaste ${gain} de mecánica y ${mentalidadGain} de mentalidad.` }]
+    logs: [crearLog('split', `Split ${state.career.currentSplit}: progresaste ${gain} de mecánica y ${mentalidadGain} de mentalidad.`)]
   };
 }

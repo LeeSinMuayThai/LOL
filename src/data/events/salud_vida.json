@@ -1,0 +1,156 @@
+[
+  {
+    "id": "visa_delay",
+    "category": "salud_vida",
+    "title": "Visa en demora",
+    "description": "Tu salida a otra región se retrasa y el calendario te juega en contra.",
+    "weight": 6,
+    "cooldown": 4,
+    "conditions": [{ "field": "player.splitCount", "op": "gt", "value": 4 }],
+    "options": [
+      {
+        "id": "presionar_a_la_organizacion",
+        "label": "Presionar a la organización",
+        "weight": 5,
+        "outcomes": [
+          { "weight": 6, "effects": [
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+          ]},
+          { "weight": 4, "effects": [
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -3, "clamp": [0, 100] }
+          ]}
+        ]
+      },
+      {
+        "id": "aceptar_la_demora",
+        "label": "Aceptar la demora con calma",
+        "weight": 5,
+        "outcomes": [
+          { "weight": 7, "effects": [
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+          ]},
+          { "weight": 3, "effects": [
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -7, "max": -4, "clamp": [0, 100] }
+          ]}
+        ]
+      }
+    ]
+  },
+  {
+    "id": "tendinitis",
+    "category": "salud_vida",
+    "title": "Tendinitis de muñeca",
+    "description": "El cuerpo empieza a pedirte un descanso que no te das.",
+    "weight": 6,
+    "cooldown": 4,
+    "conditions": [{ "field": "player.splitCount", "op": "gt", "value": 3 }],
+    "options": [
+      {
+        "id": "jugar_apretando_los_dientes",
+        "label": "Jugar igual, apretando los dientes",
+        "weight": 5,
+        "outcomes": [
+          { "weight": 6, "effects": [
+            { "type": "stat", "path": "player.stats.mecanica", "min": -4, "max": -2, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+          ]},
+          { "weight": 4, "effects": [
+            { "type": "stat", "path": "player.stats.mecanica", "min": -6, "max": -4, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+          ]}
+        ]
+      },
+      {
+        "id": "frenar_y_tratarte",
+        "label": "Frenar y tratarte la muñeca",
+        "weight": 5,
+        "outcomes": [
+          { "weight": 7, "effects": [
+            { "type": "stat", "path": "player.stats.mecanica", "min": -2, "max": -1, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
+          ]},
+          { "weight": 3, "effects": [
+            { "type": "stat", "path": "player.stats.mecanica", "min": -3, "max": -1, "clamp": [0, 100] }
+          ]}
+        ]
+      }
+    ]
+  },
+  {
+    "id": "burnout",
+    "category": "salud_vida",
+    "title": "Burnout de calendario",
+    "description": "Las semanas se vuelven largas y el juego empieza a pesarte.",
+    "weight": 6,
+    "cooldown": 5,
+    "conditions": [{ "field": "player.splitCount", "op": "gt", "value": 4 }],
+    "options": [
+      {
+        "id": "aguantar_el_calendario",
+        "label": "Aguantar el calendario",
+        "weight": 5,
+        "outcomes": [
+          { "weight": 6, "effects": [
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -8, "max": -5, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.macro", "min": -2, "max": -1, "clamp": [0, 100] }
+          ]},
+          { "weight": 4, "effects": [
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -10, "max": -7, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.macro", "min": -3, "max": -2, "clamp": [0, 100] }
+          ]}
+        ]
+      },
+      {
+        "id": "pedir_un_quiebre",
+        "label": "Pedir un quiebre al staff",
+        "weight": 5,
+        "outcomes": [
+          { "weight": 7, "effects": [
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+          ]},
+          { "weight": 3, "effects": [
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.macro", "min": -1, "max": 0, "clamp": [0, 100] }
+          ]}
+        ]
+      }
+    ]
+  },
+  {
+    "id": "psychologist",
+    "category": "salud_vida",
+    "title": "Psicólogo deportivo",
+    "description": "El staff te manda a trabajar la cabeza y te ayuda a bajar la presión.",
+    "weight": 5,
+    "cooldown": 3,
+    "conditions": [{ "field": "player.stats.mentalidad", "op": "lt", "value": 60 }],
+    "options": [
+      {
+        "id": "comprometerse_con_el_proceso",
+        "label": "Comprometerse con el proceso",
+        "weight": 6,
+        "outcomes": [
+          { "weight": 7, "effects": [
+            { "type": "stat", "path": "player.stats.mentalidad", "min": 4, "max": 7, "clamp": [0, 100] }
+          ]},
+          { "weight": 3, "effects": [
+            { "type": "stat", "path": "player.stats.mentalidad", "min": 7, "max": 10, "clamp": [0, 100] }
+          ]}
+        ]
+      },
+      {
+        "id": "ir_por_compromiso",
+        "label": "Ir por compromiso, sin abrirse del todo",
+        "weight": 4,
+        "outcomes": [
+          { "weight": 8, "effects": [
+            { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+          ]},
+          { "weight": 2, "effects": [
+            { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 4, "clamp": [0, 100] }
+          ]}
+        ]
+      }
+    ]
+  }
+]

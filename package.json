@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "simulate": "node src/dev/simulate.js",
+    "validate": "node src/dev/validate.js",
     "start": "node server.js"
   }
 }

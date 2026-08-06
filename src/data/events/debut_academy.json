@@ -1,0 +1,123 @@
+[
+  {
+    "id": "academy_offer",
+    "category": "debut_academy",
+    "title": "Oferta de academy",
+    "description": "Una org te ofrece entrar a su proyecto juvenil con un contrato pequeño.",
+    "weight": 8,
+    "cooldown": 5,
+    "conditions": [{ "field": "player.splitCount", "op": "gt", "value": 2 }],
+    "options": [
+      {
+        "id": "aceptar_el_contrato",
+        "label": "Aceptar el contrato de academy",
+        "weight": 6,
+        "outcomes": [
+          { "weight": 8, "effects": [
+            { "type": "push", "path": "career.orgs", "value": "Academy prospecto" },
+            { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 6, "clamp": [0, 100] }
+          ]},
+          { "weight": 2, "effects": [
+            { "type": "push", "path": "career.orgs", "value": "Academy prospecto" },
+            { "type": "stat", "path": "player.stats.hype", "min": 6, "max": 10, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+          ]}
+        ]
+      },
+      {
+        "id": "rechazar_y_seguir_libre",
+        "label": "Rechazar y seguir libre en soloQ",
+        "weight": 4,
+        "outcomes": [
+          { "weight": 7, "effects": [
+            { "type": "stat", "path": "player.soloqElo", "min": 15, "max": 30 }
+          ]},
+          { "weight": 3, "effects": [
+            { "type": "stat", "path": "player.soloqElo", "min": 30, "max": 50 },
+            { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
+          ]}
+        ]
+      }
+    ]
+  },
+  {
+    "id": "redemption_game",
+    "category": "debut_academy",
+    "title": "Partida de redención",
+    "description": "En la siguiente serie decisiva, el equipo te da una oportunidad de devolver la cara.",
+    "weight": 8,
+    "cooldown": 3,
+    "conditions": [{ "field": "player.splitCount", "op": "gt", "value": 1 }],
+    "options": [
+      {
+        "id": "ir_con_todo",
+        "label": "Ir con todo por la revancha",
+        "weight": 6,
+        "outcomes": [
+          { "weight": 7, "effects": [
+            { "type": "stat", "path": "player.stats.mecanica", "min": 4, "max": 8, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
+          ]},
+          { "weight": 3, "effects": [
+            { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+          ]}
+        ]
+      },
+      {
+        "id": "jugar_seguro",
+        "label": "Jugar seguro, sin arriesgar de más",
+        "weight": 4,
+        "outcomes": [
+          { "weight": 8, "effects": [
+            { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 4, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+          ]},
+          { "weight": 2, "effects": [
+            { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 2, "clamp": [0, 100] }
+          ]}
+        ]
+      }
+    ]
+  },
+  {
+    "id": "coach_demands_role",
+    "category": "debut_academy",
+    "title": "El coach te cambia de rol",
+    "description": "Tu entrenador cree que tu futuro está en otra línea y te obliga a adaptarte.",
+    "weight": 7,
+    "cooldown": 5,
+    "conditions": [{ "field": "player.splitCount", "op": "gt", "value": 3 }],
+    "options": [
+      {
+        "id": "aceptar_el_cambio",
+        "label": "Aceptar el cambio de rol",
+        "weight": 6,
+        "outcomes": [
+          { "weight": 7, "effects": [
+            { "type": "stat", "path": "player.stats.adaptabilidad", "min": 2, "max": 4, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.mecanica", "min": -4, "max": -2, "clamp": [0, 100] }
+          ]},
+          { "weight": 3, "effects": [
+            { "type": "stat", "path": "player.stats.adaptabilidad", "min": 4, "max": 7, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.mecanica", "min": -6, "max": -3, "clamp": [0, 100] }
+          ]}
+        ]
+      },
+      {
+        "id": "resistirse_y_plantarse",
+        "label": "Resistirse y plantarse",
+        "weight": 4,
+        "outcomes": [
+          { "weight": 5, "effects": [
+            { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+          ]},
+          { "weight": 5, "effects": [
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.adaptabilidad", "min": -2, "max": 0, "clamp": [0, 100] }
+          ]}
+        ]
+      }
+    ]
+  }
+]

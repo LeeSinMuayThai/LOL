@@ -23,3 +23,17 @@ export function gauss(mean, stdDev, rng) {
 export function chance(probability, rng) {
   return rng() < probability;
 }
+
+export function weightedPick(items, getWeight, rng) {
+  const totalWeight = items.reduce((sum, item) => sum + getWeight(item), 0);
+  let cursor = rng() * totalWeight;
+
+  for (const item of items) {
+    cursor -= getWeight(item);
+    if (cursor <= 0) {
+      return item;
+    }
+  }
+
+  return items[items.length - 1];
+}

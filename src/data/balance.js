@@ -9,7 +9,9 @@ export const BALANCE = {
     baseGain: 4,
     maxGain: 8,
     mentalidadGain: 1,
-    mentalidadSpread: 1.2
+    mentalidadSpread: 1.2,
+    metaInfluenceBase: 0.8,
+    metaInfluenceRange: 0.2
   },
   meta: {
     baseWeight: 1,

@@ -1,0 +1,162 @@
+[
+  {
+    "id": "team_drama",
+    "category": "drama_prensa",
+    "title": "Drama de vestuario",
+    "description": "Un compañero se pelea con el staff y el ambiente se vuelve tóxico.",
+    "weight": 8,
+    "cooldown": 3,
+    "conditions": [{ "field": "player.splitCount", "op": "gt", "value": 2 }],
+    "options": [
+      {
+        "id": "meterse_en_el_conflicto",
+        "label": "Meterse en el conflicto",
+        "weight": 5,
+        "outcomes": [
+          { "weight": 6, "effects": [
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -8, "max": -5, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.hype", "min": -4, "max": -2, "clamp": [0, 100] }
+          ]},
+          { "weight": 4, "effects": [
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
+          ]}
+        ]
+      },
+      {
+        "id": "mantenerse_al_margen",
+        "label": "Mantenerse al margen",
+        "weight": 5,
+        "outcomes": [
+          { "weight": 7, "effects": [
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+          ]},
+          { "weight": 3, "effects": [
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -3, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.hype", "min": -2, "max": -1, "clamp": [0, 100] }
+          ]}
+        ]
+      }
+    ]
+  },
+  {
+    "id": "media_meme",
+    "category": "drama_prensa",
+    "title": "Meme de la prensa",
+    "description": "Un gesto de la partida se vuelve viral y te pone en la mira de todos.",
+    "weight": 7,
+    "cooldown": 2,
+    "conditions": [],
+    "options": [
+      {
+        "id": "subirse_a_la_ola",
+        "label": "Subirse a la ola",
+        "weight": 6,
+        "outcomes": [
+          { "weight": 7, "effects": [
+            { "type": "stat", "path": "player.stats.hype", "min": 6, "max": 10, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+          ]},
+          { "weight": 3, "effects": [
+            { "type": "stat", "path": "player.stats.hype", "min": 10, "max": 16, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -3, "clamp": [0, 100] }
+          ]}
+        ]
+      },
+      {
+        "id": "ignorar_el_ruido",
+        "label": "Ignorar el ruido",
+        "weight": 4,
+        "outcomes": [
+          { "weight": 8, "effects": [
+            { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
+          ]},
+          { "weight": 2, "effects": [
+            { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 5, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
+          ]}
+        ]
+      }
+    ]
+  },
+  {
+    "id": "old_rival",
+    "category": "drama_prensa",
+    "title": "Reencuentro con un rival",
+    "description": "Tu rival de generación aparece otra vez y el matchup vuelve a ser noticia.",
+    "weight": 6,
+    "cooldown": 4,
+    "conditions": [{ "field": "player.splitCount", "op": "gt", "value": 3 }],
+    "options": [
+      {
+        "id": "picarse_publicamente",
+        "label": "Picarse públicamente",
+        "weight": 5,
+        "outcomes": [
+          { "weight": 6, "effects": [
+            { "type": "stat", "path": "player.stats.hype", "min": 4, "max": 8, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+          ]},
+          { "weight": 4, "effects": [
+            { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 2, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+          ]}
+        ]
+      },
+      {
+        "id": "responder_con_el_nivel",
+        "label": "Responder solo con el nivel de juego",
+        "weight": 5,
+        "outcomes": [
+          { "weight": 7, "effects": [
+            { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] }
+          ]},
+          { "weight": 3, "effects": [
+            { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 2, "clamp": [0, 100] }
+          ]}
+        ]
+      }
+    ]
+  },
+  {
+    "id": "transfer_rumor",
+    "category": "drama_prensa",
+    "title": "Rumor de transferencia",
+    "description": "La prensa te pega como pieza de cambio y el mercado empieza a hablar.",
+    "weight": 6,
+    "cooldown": 4,
+    "conditions": [{ "field": "player.splitCount", "op": "gt", "value": 4 }],
+    "options": [
+      {
+        "id": "alimentar_el_rumor",
+        "label": "Alimentar el rumor",
+        "weight": 5,
+        "outcomes": [
+          { "weight": 6, "effects": [
+            { "type": "stat", "path": "player.stats.hype", "min": 4, "max": 7, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+          ]},
+          { "weight": 4, "effects": [
+            { "type": "stat", "path": "player.stats.hype", "min": 7, "max": 10, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -4, "clamp": [0, 100] }
+          ]}
+        ]
+      },
+      {
+        "id": "desmentirlo_rapido",
+        "label": "Desmentirlo rápido",
+        "weight": 5,
+        "outcomes": [
+          { "weight": 7, "effects": [
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
+          ]},
+          { "weight": 3, "effects": [
+            { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 2, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+          ]}
+        ]
+      }
+    ]
+  }
+]
