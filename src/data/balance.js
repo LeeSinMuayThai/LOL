@@ -31,19 +31,132 @@ export const BALANCE = {
     soloqElo: 1200
   },
 
+  // Escalera de soloQ. El ascenso es por LP: no hay series de promocion.
+  rangos: [
+    { nombre: 'Oro', lp: 0 },
+    { nombre: 'Platino', lp: 1150 },
+    { nombre: 'Esmeralda', lp: 1450 },
+    { nombre: 'Diamante', lp: 1750 },
+    { nombre: 'Máster', lp: 2200 },
+    { nombre: 'Gran Máster', lp: 2600 },
+    { nombre: 'Challenger', lp: 2950 }
+  ],
+
   amateur: {
-    eloGainMin: 20,
-    eloGainMax: 55,
-    sleepLossMin: 3,
-    sleepLossMax: 7,
-    studiesGain: 3,
-    studiesSpread: 2,
-    trustDriftMin: 1,
-    trustDriftMax: 4,
-    soloqEloUmbralExito: 1600,
-    hypeUmbralExito: 55,
-    familyTrustUmbralFracaso: 15,
-    sleepUmbralFracaso: 10
+    // --- El bucle central: 10 bloques de atencion por periodo ---
+    bloquesBase: 10,
+    bloquesExtraMax: 3,
+
+    // Rendimiento por bloque de ranked. El factor de mecanica y el de mentalidad
+    // van de "tiltrado" a "en llamas"; la deuda de sueño te frena aunque juegues.
+    lpPorBloque: 19,
+    lpPorBloqueSpread: 7,
+    lpFactorMecanicaBase: 0.7,
+    lpFactorMecanicaRango: 0.6,
+    lpFactorMentalidadBase: 0.55,
+    lpFactorMentalidadRango: 0.6,
+    lpPenalPorDeuda: 0.15,
+    lpPenalPorDeudaMax: 0.5,
+
+    estudioPorBloque: 3.4,
+    suenoPorBloque: 4.5,
+    familiaPorBloque: 2.8,
+
+    // --- Deriva pasiva del periodo (pase lo que pase) ---
+    // Los estudios decaen solos: es LA barra que genera la tension de la etapa.
+    estudioDecae: 8.5,
+    estudioDecaeSpread: 2,
+    exigenciaColegioReferencia: 50,
+    suenoDecae: 4,
+    suenoDecaeSpread: 1.2,
+    // La confianza familiar esta acoplada a los estudios: cae sola, y cae mas
+    // rapido cuanto peor te va en el colegio.
+    confianzaDecae: 1.6,
+    confianzaDecaeSpread: 0.8,
+    confianzaEstudioUmbral: 55,
+    confianzaEstudioPenal: 0.06,
+
+    // --- Robarle horas al sueño: la trampa ---
+    suenoPorBloqueRobado: 6,
+    mentalidadPorBloqueRobado: 2.4,
+    // Cada periodo consecutivo robando pesa mas que el anterior.
+    penalRoboConsecutivo: 0.75,
+    robosParaDeuda: 3,
+    deudaMaxima: 4,
+
+    // --- Bandas de riesgo (no hay un numero exacto donde pincha) ---
+    // Probabilidad = (umbral - estudios) / pendiente, con techo, multiplicada
+    // por lo estrictos que salieron los viejos y por la confianza que queda.
+    avisoUmbral: 72,
+    avisoPendiente: 90,
+    avisoTecho: 0.55,
+    confiscacionUmbral: 55,
+    confiscacionPendiente: 70,
+    confiscacionTecho: 0.32,
+    corteUmbral: 38,
+    cortePendiente: 60,
+    corteTecho: 0.22,
+    riesgoTotalTecho: 0.45,
+    toleranciaReferencia: 50,
+    trustReferencia: 50,
+    trustPesoEnRiesgo: 0.01,
+    trustModMin: 0.5,
+    trustModMax: 1.6,
+    avisoCostoTrustMin: 2,
+    avisoCostoTrustMax: 6,
+    confiscacionCostoTrustMin: 4,
+    confiscacionCostoTrustMax: 9,
+    // El periodo con la PC confiscada: no jugas, pero recuperas otras cosas.
+    periodosSinPC: 1,
+    sinPCEstudioMin: 6,
+    sinPCEstudioMax: 12,
+    sinPCTrustMin: 3,
+    sinPCTrustMax: 8,
+    sinPCSuenoMin: 5,
+    sinPCSuenoMax: 11,
+    sinPCMentalidadMin: -7,
+    sinPCMentalidadMax: -2,
+
+    // --- Salida 1: te ficha un equipo ---
+    eloMinimoScouting: 2050,
+    eloScoutingRango: 700,
+    scoutingProbMax: 0.38,
+    scoutingPesoElo: 0.6,
+    scoutingPesoHype: 0.4,
+    hypeReferenciaScouting: 60,
+    splitMinimoScouting: 3,
+
+    // --- Salida 2: la negociacion con los viejos al llegar a Master ---
+    negociacionTrustMinimo: 38,
+
+    // --- Salida 3: pasarte a nocturno ---
+    nocturnoEstudiosUmbral: 52,
+    nocturnoCostoTrustMin: 8,
+    nocturnoCostoTrustMax: 16,
+    nocturnoBloquesExtra: 2,
+    nocturnoFactorDecaeEstudio: 0.35,
+
+    // --- Fin de la etapa: a los 18 se termina el margen ---
+    edadLimite: 18,
+
+    // --- Como reparte el jugador automatico (simulacion masiva) ---
+    // No reparte al azar: reacciona a las barras que tiene en rojo, como haria
+    // alguien con criterio. Es la unica forma de que simulate.js mida el juego
+    // y no el ruido.
+    autoPesoRanked: 4.6,
+    autoPesoEstudiar: 0.9,
+    autoPesoDormir: 0.7,
+    autoPesoFamilia: 0.6,
+    autoReaccionColegio: 3.2,
+    autoReaccionFamilia: 2.6,
+    autoReaccionSueno: 1.8,
+    autoSuenoObjetivo: 55,
+    autoRuido: 0.3,
+    autoPesoMinimo: 0.15,
+    autoProbRobar: 0.4,
+
+    // Umbral de estudios con el que se congela el flag del secundario.
+    secundarioAprobadoUmbral: 45
   },
 
   split: {
@@ -76,6 +189,7 @@ export const BALANCE = {
   // hace que dos seeds no arranquen la misma partida (CONCEPTO §8).
   mundo: {
     dispersionStats: 7,
+    dispersionBarras: 9,
     exigenciaColegioMin: 20,
     exigenciaColegioMax: 95,
     toleranciaViejosMin: 15,

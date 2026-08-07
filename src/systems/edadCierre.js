@@ -2,7 +2,7 @@ import { getPath, etiquetaCampo } from '../core/selectors.js';
 import { crearLog } from '../core/log.js';
 import { BALANCE } from '../data/balance.js';
 import { CAMPOS_EDAD } from './edadInicio.js';
-import { elegirEventoCierre, resolverOpcion, elegirOpcionAutomatica } from './events.js';
+import { elegirEventoCierre, resolverOpcion, elegirOpcionAutomatica, decisionDesdeEvento } from './events.js';
 
 export const id = 'edadCierre';
 
@@ -45,13 +45,13 @@ export function aplicar(state, rng) {
   return {
     state: nextState,
     logs,
-    decision: { tipo: 'evento', contexto: 'cierre', slot: 1, evento }
+    decision: decisionDesdeEvento(evento, { contexto: 'cierre', slot: 1 })
   };
 }
 
 // La decision de cierre es LA decision de la edad: nunca encadena una segunda.
 export function resolver(state, decision, respuesta, rng) {
-  return resolverOpcion(state, decision.evento, respuesta.opcionId, rng);
+  return resolverOpcion(state, decision.datos.evento, respuesta.opcionId, rng);
 }
 
 export function resolverAuto(state, decision, rng) {

@@ -91,11 +91,25 @@ export function resolverOpcion(state, evento, opcionId, rng) {
   };
 }
 
+// Toda decision, venga de un evento o de un sistema, se presenta igual: titulo,
+// descripcion y una lista de opciones. La UI tiene un solo camino de render.
+export function decisionDesdeEvento(evento, { contexto, slot }) {
+  return {
+    tipo: 'opciones',
+    titulo: contexto === 'cierre' ? `${evento.title} (fin de temporada)` : evento.title,
+    descripcion: evento.description,
+    opciones: evento.options.map((option) => ({ id: option.id, label: option.label })),
+    contexto,
+    slot,
+    datos: { evento }
+  };
+}
+
 // Elige una opcion sola cuando no hay nadie mirando (simulacion masiva).
 // Respeta los pesos declarados, asi el camino headless mide lo mismo que juega
 // una persona con criterio promedio.
 export function elegirOpcionAutomatica(decision, rng) {
-  const opcion = weightedPick(decision.evento.options, (option) => option.weight, rng);
+  const opcion = weightedPick(decision.datos.evento.options, (option) => option.weight, rng);
   return { opcionId: opcion.id };
 }
 
@@ -112,12 +126,12 @@ export function aplicar(state, rng) {
   return {
     state,
     logs: [],
-    decision: { tipo: 'evento', contexto: 'normal', slot: 1, evento }
+    decision: decisionDesdeEvento(evento, { contexto: 'normal', slot: 1 })
   };
 }
 
 export function resolver(state, decision, respuesta, rng) {
-  const { evento, slot } = decision;
+  const { evento } = decision.datos;
   const { state: nextState, logs } = resolverOpcion(state, evento, respuesta.opcionId, rng);
 
   if (nextState.terminado) {
@@ -125,13 +139,13 @@ export function resolver(state, decision, respuesta, rng) {
   }
 
   // A veces la vida se amontona: un segundo evento antes de que cierre el split.
-  if (slot === 1 && chance(BALANCE.edad.probSegundaDecision, rng)) {
+  if (decision.slot === 1 && chance(BALANCE.edad.probSegundaDecision, rng)) {
     const segundoEvento = elegirEvento(nextState, rng, { excluirId: evento.id });
     if (segundoEvento) {
       return {
         state: nextState,
         logs,
-        decision: { tipo: 'evento', contexto: 'normal', slot: 2, evento: segundoEvento }
+        decision: decisionDesdeEvento(segundoEvento, { contexto: 'normal', slot: 2 })
       };
     }
   }

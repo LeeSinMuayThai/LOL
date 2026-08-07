@@ -105,6 +105,19 @@ function generarStatsIniciales(rng) {
   );
 }
 
+// Las tres barras de la etapa amateur tambien salen de la cuna: no todos
+// arrancan con el mismo colchon de notas, de paciencia en casa ni de sueño.
+function generarBarrasIniciales(rng) {
+  const { dispersionBarras } = BALANCE.mundo;
+  const { studies, familyTrust, sleep } = BALANCE.inicial;
+
+  return {
+    studies: Math.round(clampStat(gauss(studies, dispersionBarras, rng))),
+    familyTrust: Math.round(clampStat(gauss(familyTrust, dispersionBarras, rng))),
+    sleep: Math.round(clampStat(gauss(sleep, dispersionBarras, rng)))
+  };
+}
+
 function generarPoolInicial(rol, rng) {
   const { campeonesIniciales, maestriaInicialMin, maestriaInicialMax } = BALANCE.mundo;
   const delRol = CAMPEONES.filter((campeon) => campeon.role === rol);
@@ -151,6 +164,7 @@ export function generarMundo(rng) {
       handle: generarHandle(rng, usados),
       role: rol,
       stats: generarStatsIniciales(rng),
+      barras: generarBarrasIniciales(rng),
       championPool: generarPoolInicial(rol, rng),
       oculto: generarOculto(rng)
     },

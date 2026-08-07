@@ -27,10 +27,12 @@ export function createInitialState(seed, rng) {
       role: jugador.role,
       stats: jugador.stats,
       oculto: jugador.oculto,
-      studies: inicial.studies,
-      familyTrust: inicial.familyTrust,
-      sleep: inicial.sleep,
+      studies: jugador.barras.studies,
+      familyTrust: jugador.barras.familyTrust,
+      sleep: jugador.barras.sleep,
       soloqElo: inicial.soloqElo,
+      // Periodos consecutivos robandole al sueño, ya convertidos en deuda.
+      deudaSueno: 0,
       splitCount: 0,
       titles: 0,
       worlds: 0,
@@ -48,7 +50,17 @@ export function createInitialState(seed, rng) {
       patch: 1,
       weights: mundo.metaInicial
     },
-    flags: {},
+    flags: {
+      cooldowns: {},
+      robosConsecutivos: 0,
+      pcConfiscada: 0,
+      avisos: 0,
+      nocturno: false,
+      negociacionGanada: false,
+      // Se congela a los 18 (o al dejar la etapa amateur) y acompaña el resto
+      // de la carrera: 'terminado' o 'lo_dejo'.
+      secundario: null
+    },
     logs: []
   };
 }

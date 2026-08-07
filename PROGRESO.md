@@ -20,6 +20,67 @@ Documento vivo. Se actualiza al cierre de cada tarea, según la Definición de t
 
 ## Changelog
 
+### 2026-08-07 — Paso 3: la etapa amateur de verdad (bucle de atención, bandas de riesgo, tres salidas)
+
+`AUDITORIA.md` marcaba que `amateur.js` decidía éxito y fracaso pero **no implementaba el bucle
+central del juego**: el jugador no repartía nada, los estudios iban al revés (subían), la
+confianza familiar estaba desacoplada, y de las tres salidas de `CONCEPTO` §4 existía una sola,
+como umbral duro. Este paso construye la etapa entera.
+
+- **El bucle de atención** (`CONCEPTO` §3): **10 bloques de tiempo por periodo** repartidos entre
+  rankeds, estudiar, dormir y familia, más **hasta 3 bloques robados al sueño**. Es la primera
+  decisión que no es un evento: se agregó el tipo de decisión `reparto` y la UI ganó un panel con
+  steppers por destino que no deja cerrar la semana con bloques sin asignar.
+- **Robarle al sueño es la trampa**: el costo en mentalidad es **acumulativo** — dos periodos
+  seguidos y el segundo pesa más (`penalRoboConsecutivo`); a los 3 entrás en **deuda de sueño**,
+  que te baja el LP por bloque hasta un 50%.
+- **Los estudios ahora decaen solos** cada periodo, escalados por la `exigenciaColegio` que te
+  tocó de cuna, y **la confianza familiar quedó acoplada a los estudios** (cae más rápido cuanto
+  más lejos estés del umbral). Las dos contradicciones 1 y 2 del apéndice de `AUDITORIA.md`.
+- **Bandas de riesgo en vez de escalones** (contradicción 3): tres curvas de probabilidad
+  —aviso, confiscación de la PC, corte definitivo— que crecen a medida que los estudios bajan,
+  multiplicadas por lo estrictos que salieron los viejos y por la confianza que queda. **No hay
+  un número exacto donde pincha**: se puede zafar con la barra por el piso y se puede pinchar con
+  la barra a medias. La confiscación te hace **perder el periodo entero**.
+- **Las tres salidas** (contradicción 4): fichaje por scouting (probabilidad creciente por LP y
+  hype, con la org sorteada de tu liga y sesgada a que las más fuertes no se fijen en soloQ),
+  **negociación con los viejos al llegar a Máster** (los stats corren los pesos, no los eliminan:
+  puede salir mal), y **pasarte a nocturno** (2 bloques más por periodo y el colegio deja de
+  pesar, a cambio de confianza familiar).
+- **`src/systems/secundario.js`** (nuevo, contradicción 5): a los 18 —o al firmar, lo que pase
+  primero— la barra de estudios **se congela en un flag permanente** (`terminado` / `lo_dejo`)
+  que acompaña el resto de la carrera. Va **antes** de `amateur` en el registro a propósito: si
+  la carrera se corta en ese mismo split, el flag ya quedó congelado y entra en la tarjeta final.
+- **Escalera de soloQ por LP** (`BALANCE.rangos` + `rangoDeElo`), sin series de promoción.
+- **Decisiones normalizadas**: toda decisión —evento o sistema— se presenta igual (`titulo`,
+  `descripcion`, `opciones` o `reparto`), así la UI tiene un solo camino de render.
+- **`src/dev/estrategias.js`** (nuevo) + `avanzarSplitAuto(state, rng, responder)`: la simulación
+  masiva ahora corre **tres formas de jugar** sobre el mismo pipeline del navegador —
+  `equilibrado` (reacciona a las barras en rojo), `ranked` (todo al LP) y `prudente` (cuida el
+  colegio). Medir una sola forma de jugar no dice nada del balance.
+
+**Balance medido** (1500 carreras × 11 splits por estrategia). La tensión que pide `CONCEPTO` §7
+existe y se puede ver:
+
+| | llega a pro | prohibición familiar | no llegó | dejó el secundario |
+|---|---|---|---|---|
+| equilibrado | 48.5% | 1.9% | 49.7% | 6.9% |
+| ranked | 56.3% | **17.5%** | 26.1% | **47.7%** |
+| prudente | 54.9% | 0% | 45.1% | 0% |
+
+El que se juega todo al ranked llega antes (split 3.5 vs 4.6 de promedio) y con más LP, pero uno
+de cada seis pierde la PC y la mitad deja el colegio. El prudente nunca pierde la PC y siempre se
+recibe, pero casi la mitad se queda sin que lo llamen.
+
+- Verificado: `validate.js` pasa los 10 checks; determinismo confirmado; traza del camino
+  interactivo (seed 3) de punta a punta con reparto, robo al sueño, aviso del colegio y final
+  `no_llego` con el secundario congelado en `terminado`.
+- **Pendiente conocido**: la mentalidad todavía llega a 0 sin consecuencia (`CONCEPTO` §3 dice que
+  es el fin de la carrera) y `progresion.js` la repone gratis todos los splits. Se arregla en el
+  paso 4, junto con las formas de carrera. La tasa global de fracaso amateur (~45-50%) se
+  recalibra en el paso 10, cuando exista el arco completo: tunearla ahora, sin etapa profesional
+  ni tarjeta de legado, sería prematuro.
+
 ### 2026-08-07 — Paso 2: el mundo se genera desde la seed
 
 Cierra el hueco más grande que marcaba `AUDITORIA.md`: `createInitialState` era una constante

@@ -1,3 +1,5 @@
+import { BALANCE } from '../data/balance.js';
+
 const OPERADORES = {
   lt: (a, b) => a < b,
   lte: (a, b) => a <= b,
@@ -33,6 +35,11 @@ export function cumpleCondiciones(state, conditions = []) {
     }
     return operador(getPath(state, field), value);
   });
+}
+
+export function rangoDeElo(lp) {
+  const alcanzados = BALANCE.rangos.filter((rango) => lp >= rango.lp);
+  return alcanzados.length > 0 ? alcanzados[alcanzados.length - 1].nombre : BALANCE.rangos[0].nombre;
 }
 
 export function metaDominante(state) {

@@ -74,9 +74,15 @@ export function resolverDecision(state, respuesta, rng) {
   return { state: continuacion.state, logs: [...logs, ...continuacion.logs] };
 }
 
-// Camino headless: identico al interactivo, pero cada decision la contesta el
-// propio sistema. simulate.js y validate.js miden exactamente lo que se juega.
-export function avanzarSplitAuto(state, rng) {
+// El criterio por defecto: cada sistema contesta sus propias decisiones.
+function respuestaPorDefecto(sistema, state, decision, rng) {
+  return sistema.resolverAuto(state, decision, rng);
+}
+
+// Camino headless: exactamente el mismo pipeline que corre el navegador, con un
+// `responder` que contesta en lugar de una persona. simulate.js le inyecta
+// estrategias distintas para medir el espacio de decisiones, no un solo punto.
+export function avanzarSplitAuto(state, rng, responder = respuestaPorDefecto) {
   let resultado = avanzarSplit(state, rng);
   const logs = [...resultado.logs];
 
@@ -87,7 +93,8 @@ export function avanzarSplitAuto(state, rng) {
     }
 
     const { sistemaId, decision } = resultado.state.pendiente;
-    const respuesta = sistemaPorId(sistemaId).resolverAuto(resultado.state, decision, rng);
+    const sistema = sistemaPorId(sistemaId);
+    const respuesta = responder(sistema, resultado.state, decision, rng);
 
     resultado = resolverDecision(resultado.state, respuesta, rng);
     logs.push(...resultado.logs);
