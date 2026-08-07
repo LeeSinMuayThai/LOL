@@ -300,6 +300,31 @@ check('Hay al menos un evento de cierre de edad por fase amateur', () => {
   }
 });
 
+check('El Ajuste al Meta se mueve de verdad', () => {
+  // Este check existe por un bug real: el pool tenía tags que el meta no
+  // conocía, así que el ajuste habría sido siempre neutro sin que nadie lo
+  // notara. Si el cruce se desconecta otra vez, esto falla.
+  const ajustes = [];
+
+  for (let seed = 1; seed <= 60; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 12 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      ajustes.push(state.meta.ajuste);
+    }
+  }
+
+  const neutro = BALANCE.campeones.ajusteNeutro;
+  const distintos = new Set(ajustes).size;
+  if (distintos < 15) {
+    throw new Error(`el ajuste al meta tomó solo ${distintos} valores distintos: el cruce pool/meta está roto`);
+  }
+  if (!ajustes.some((a) => a > neutro + 10) || !ajustes.some((a) => a < neutro - 10)) {
+    throw new Error('el ajuste al meta nunca se aleja del neutro: los tags del pool no cruzan con los pesos del meta');
+  }
+});
+
 check('El split cierra siempre: no queda ninguna decisión colgada', () => {
   for (let seed = 1; seed <= 50; seed += 1) {
     const rng = mulberry32(seed);

@@ -220,11 +220,33 @@ export const BALANCE = {
   meta: {
     pesoInicial: 1,
     pesoMinimo: 0.5,
-    // Peso al que un arquetipo se considera plenamente dominante: normaliza
-    // el multiplicador de meta a [0, 1].
-    pesoDominante: 2,
+    pesoMaximo: 2.6,
     derivaMedia: 0,
-    maxDelta: 0.15
+    maxDelta: 0.15,
+    // Casi siempre el parche es calmo. Cada tanto el meta se sacude entero y
+    // deja obsoleto medio pool: es lo que puede costarte un año de carrera.
+    probSacudon: 0.07,
+    sacudonDelta: 0.55
+  },
+
+  campeones: {
+    // Jugar un campeon lo afila con rendimientos decrecientes; no jugarlo lo
+    // oxida. Por eso no se pueden mantener diez a punto.
+    maestriaGanancia: 8,
+    maestriaGananciaSpread: 2.2,
+    maestriaDecaimiento: 1.5,
+    maestriaDecaimientoSpread: 1,
+    maestriaMinima: 5,
+    // Cuanto sesga la maestria la eleccion del campeon: con sesgo alto te
+    // especializas y aparece la signature; con sesgo bajo rotas y no domina ninguno.
+    sesgoMaestriaEnPick: 2,
+    // Signature: mucha maestria Y muchas partidas encima. Va a la tarjeta final.
+    signatureMaestria: 85,
+    signaturePartidas: 12,
+    // 50 = tu pool es exactamente promedio para este meta.
+    ajusteNeutro: 50,
+    multiplicadorMin: 0.75,
+    multiplicadorMax: 1.25
   },
 
   edad: {

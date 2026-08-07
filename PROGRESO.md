@@ -20,6 +20,36 @@ Documento vivo. Se actualiza al cierre de cada tarea, según la Definición de t
 
 ## Changelog
 
+### 2026-08-07 — Paso 5: champion pool vivo y Ajuste al Meta real
+
+`AUDITORIA.md`: *"el Ajuste al Meta de `CONCEPTO` §6 no existe. En su lugar, `pipeline.js:148`
+usa el peso de un solo tag arbitrario (`early_game`) como proxy del meta entero. Los `tags` del
+campeón nunca se cruzan con los pesos del meta. **Ni siquiera comparten vocabulario**."
+
+- **`src/core/ajusteMeta.js`** (nuevo): el Ajuste al Meta de verdad. Cruza los tags de cada
+  campeón del pool contra el vector de pesos, **ponderando por maestría** (un campeón que el meta
+  pide pero que no dominás no te salva el split), y devuelve un número de 0 a 100 **con desglose
+  por campeón**. `multiplicadorDeMeta` lo convierte en el 0.75x–1.25x que pide `CONCEPTO` §6.
+- **`src/systems/campeones.js`** (nuevo): el pool está vivo. El campeón que terminás jugando se
+  elige por maestría (sesgada, para que la especialización sea posible) cruzada con la afinidad
+  al meta; **jugar afila con rendimientos decrecientes y no jugar oxida**. Sin ese oxidado se
+  podrían mantener diez campeones a punto y el pool dejaría de ser una elección. La **signature**
+  emerge sola cuando un campeón junta maestría ≥85 y ≥12 partidas.
+- **`src/systems/meta.js`**: además de la deriva calma de cada parche, ahora existe el
+  **sacudón** (7% por split): el meta se da vuelta entero y deja obsoleto medio pool. Es el
+  mecanismo que `CONCEPTO` §7 describe como capaz de costarte un año de carrera.
+- **El orden del split ahora es el de `CONCEPTO` §5**: llega el parche → se recalcula el ajuste →
+  se juega → caen los eventos → se mueven los atributos → cierra la temporada.
+- **El ajuste está conectado al rendimiento**: en la etapa amateur multiplica el LP por bloque, y
+  queda listo para `performance.js`. Jugar lo que el meta pide rinde hasta 1.7x más que jugar
+  contra el meta.
+- **`validate.js`**: check nuevo que corre 720 splits y exige que el ajuste tome valores variados
+  y que se aleje del neutro en las dos direcciones. **Existe por el bug real que encontró la
+  auditoría**: si el pool y el meta vuelven a hablar idiomas distintos, el ajuste sería siempre
+  50 y nadie se enteraría.
+- Medido sobre 600 carreras × 30 splits: **ajuste al meta 26-88** (neutro 50, promedio 51.6),
+  maestría máxima 44-96, **signature en 20.5% de las carreras** — rara y ganada.
+
 ### 2026-08-07 — Paso 4: atributos con forma de carrera, declive, rachas y economía de la mentalidad
 
 `AUDITORIA.md` medía `mecanica` en **99.9/100 de promedio** a los 30 splits: sólo subía, con un

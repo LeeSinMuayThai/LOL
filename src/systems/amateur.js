@@ -3,6 +3,7 @@ import { BALANCE } from '../data/balance.js';
 import { crearLog } from '../core/log.js';
 import { clamp, clampStat } from '../core/numeros.js';
 import { rangoDeElo } from '../core/selectors.js';
+import { multiplicadorDeMeta } from '../core/ajusteMeta.js';
 
 export const id = 'amateur';
 
@@ -22,8 +23,10 @@ function lpDeUnBloque(state, rng) {
   const factorMecanica = a.lpFactorMecanicaBase + (mecanica / BALANCE.stats.max) * a.lpFactorMecanicaRango;
   const factorMentalidad = a.lpFactorMentalidadBase + (mentalidad / BALANCE.stats.max) * a.lpFactorMentalidadRango;
   const penalDeuda = 1 - Math.min(a.lpPenalPorDeudaMax, state.player.deudaSueno * a.lpPenalPorDeuda);
+  // Si el meta pide lo que dominás, el mismo grindeo rinde el doble de LP.
+  const factorMeta = multiplicadorDeMeta(state.meta.ajuste);
 
-  return gauss(a.lpPorBloque, a.lpPorBloqueSpread, rng) * factorMecanica * factorMentalidad * penalDeuda;
+  return gauss(a.lpPorBloque, a.lpPorBloqueSpread, rng) * factorMecanica * factorMentalidad * penalDeuda * factorMeta;
 }
 
 // La probabilidad de cada banda crece a medida que los estudios bajan, y se

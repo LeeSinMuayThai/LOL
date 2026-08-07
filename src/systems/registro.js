@@ -14,13 +14,17 @@
 // `resolver` y `resolverAuto` solo son obligatorios si el sistema puede devolver
 // una `decision` desde `aplicar`.
 
+// El orden sigue el ciclo del split de CONCEPTO §5: llega el parche, se
+// recalcula el Ajuste al Meta, se juega, caen los eventos, y recien despues se
+// mueven los atributos y cierra la temporada.
 export const ETAPAS_SPLIT = [
   await import('./edadInicio.js'),
+  await import('./meta.js'),
+  await import('./campeones.js'),
   // Antes de amateur a proposito: si la carrera se corta en este split, el flag
   // del secundario ya quedo congelado y entra en la tarjeta final.
   await import('./secundario.js'),
   await import('./amateur.js'),
-  await import('./meta.js'),
   await import('./events.js'),
   await import('./atributos.js'),
   await import('./edadCierre.js')

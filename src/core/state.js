@@ -39,6 +39,7 @@ export function createInitialState(seed, rng) {
       titles: 0,
       worlds: 0,
       signatureChampion: null,
+      campeonDelSplit: null,
       championPool: jugador.championPool
     },
     career: {
@@ -50,7 +51,9 @@ export function createInitialState(seed, rng) {
     },
     meta: {
       patch: 1,
-      weights: mundo.metaInicial
+      weights: mundo.metaInicial,
+      // Se recalcula cada split cruzando el pool contra los pesos del meta.
+      ajuste: BALANCE.campeones.ajusteNeutro
     },
     flags: {
       cooldowns: {},
