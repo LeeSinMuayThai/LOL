@@ -1,8 +1,10 @@
 import { roll, weightedPick, chance } from '../core/rng.js';
-import { getPath, setPath, cumpleCondiciones } from '../core/selectors.js';
+import { getPath, setPath, cumpleCondiciones, etiquetaCampo } from '../core/selectors.js';
 import { crearLog } from '../core/log.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
+
+export const id = 'eventos';
 
 function cooldownActivo(state, eventId) {
   return (state.flags.cooldowns?.[eventId] ?? 0) > 0;
@@ -17,21 +19,32 @@ function candidatos(state) {
 function aplicarEfecto(state, effect, rng) {
   if (effect.type === 'push') {
     const lista = getPath(state, effect.path) ?? [];
-    return setPath(state, effect.path, [...lista, effect.value]);
+    const valor = weightedPick(effect.values, () => 1, rng);
+    return {
+      state: setPath(state, effect.path, [...lista, valor]),
+      descripcion: `${etiquetaCampo(effect.path)}: se suma "${valor}"`
+    };
   }
 
-  let value = (getPath(state, effect.path) ?? 0) + roll(effect.min, effect.max, rng);
+  const antes = getPath(state, effect.path) ?? 0;
+  let despues = antes + roll(effect.min, effect.max, rng);
   if (effect.clamp) {
     const [min, max] = effect.clamp;
-    value = Math.min(max, Math.max(min, value));
+    despues = Math.min(max, Math.max(min, despues));
   }
-  return setPath(state, effect.path, value);
+  const deltaEfectivo = despues - antes;
+  const signo = deltaEfectivo >= 0 ? '+' : '';
+
+  return {
+    state: setPath(state, effect.path, despues),
+    descripcion: `${etiquetaCampo(effect.path)} ${signo}${deltaEfectivo}`
+  };
 }
 
 function actualizarCooldowns(state, eventoElegido) {
   const cooldownsPrevios = state.flags.cooldowns ?? {};
   const cooldowns = Object.fromEntries(
-    Object.entries(cooldownsPrevios).map(([id, restante]) => [id, Math.max(0, restante - 1)])
+    Object.entries(cooldownsPrevios).map(([eventId, restante]) => [eventId, Math.max(0, restante - 1)])
   );
 
   if (eventoElegido?.cooldown) {
@@ -63,41 +76,69 @@ export function resolverOpcion(state, evento, opcionId, rng) {
   const opcion = evento.options.find((option) => option.id === opcionId) ?? evento.options[0];
   const outcome = weightedPick(opcion.outcomes, (out) => out.weight, rng);
 
-  const nextState = outcome.effects.reduce((acc, effect) => aplicarEfecto(acc, effect, rng), state);
+  const descripciones = [];
+  const nextState = outcome.effects.reduce((acc, effect) => {
+    const { state: siguiente, descripcion } = aplicarEfecto(acc, effect, rng);
+    descripciones.push(descripcion);
+    return siguiente;
+  }, state);
+
+  const resumenEfectos = descripciones.length > 0 ? descripciones.join(', ') : 'sin cambios';
 
   return {
     state: actualizarCooldowns(nextState, evento),
-    logs: [crearLog('event', `${evento.title}: ${evento.description} (elegiste "${opcion.label}")`)]
+    logs: [crearLog('event', `${evento.title} — ${opcion.label}: ${resumenEfectos}.`)]
   };
 }
 
-export function resolverEventoAutomatico(state, evento, rng) {
-  const opcion = weightedPick(evento.options, (option) => option.weight, rng);
-  return resolverOpcion(state, evento, opcion.id, rng);
+// Elige una opcion sola cuando no hay nadie mirando (simulacion masiva).
+// Respeta los pesos declarados, asi el camino headless mide lo mismo que juega
+// una persona con criterio promedio.
+export function elegirOpcionAutomatica(decision, rng) {
+  const opcion = weightedPick(decision.evento.options, (option) => option.weight, rng);
+  return { opcionId: opcion.id };
 }
 
 export function aplicar(state, rng) {
-  const primerEvento = elegirEvento(state, rng);
+  const evento = elegirEvento(state, rng);
 
-  if (!primerEvento) {
+  if (!evento) {
     return {
       state: actualizarCooldowns(state, null),
       logs: [crearLog('event', 'Un split tranquilo, sin eventos destacados.')]
     };
   }
 
-  const r1 = resolverEventoAutomatico(state, primerEvento, rng);
-  let nextState = r1.state;
-  const logs = [...r1.logs];
+  return {
+    state,
+    logs: [],
+    decision: { tipo: 'evento', contexto: 'normal', slot: 1, evento }
+  };
+}
 
-  if (chance(BALANCE.edad.probSegundaDecision, rng)) {
-    const segundoEvento = elegirEvento(nextState, rng, { excluirId: primerEvento.id });
+export function resolver(state, decision, respuesta, rng) {
+  const { evento, slot } = decision;
+  const { state: nextState, logs } = resolverOpcion(state, evento, respuesta.opcionId, rng);
+
+  if (nextState.terminado) {
+    return { state: nextState, logs };
+  }
+
+  // A veces la vida se amontona: un segundo evento antes de que cierre el split.
+  if (slot === 1 && chance(BALANCE.edad.probSegundaDecision, rng)) {
+    const segundoEvento = elegirEvento(nextState, rng, { excluirId: evento.id });
     if (segundoEvento) {
-      const r2 = resolverEventoAutomatico(nextState, segundoEvento, rng);
-      nextState = r2.state;
-      logs.push(...r2.logs);
+      return {
+        state: nextState,
+        logs,
+        decision: { tipo: 'evento', contexto: 'normal', slot: 2, evento: segundoEvento }
+      };
     }
   }
 
   return { state: nextState, logs };
+}
+
+export function resolverAuto(state, decision, rng) {
+  return elegirOpcionAutomatica(decision, rng);
 }

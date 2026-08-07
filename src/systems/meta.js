@@ -3,9 +3,15 @@ import { gauss } from '../core/rng.js';
 import { metaDominante } from '../core/selectors.js';
 import { crearLog } from '../core/log.js';
 
+export const id = 'meta';
+
 export function aplicar(state, rng) {
+  const { pesoMinimo, derivaMedia, maxDelta } = BALANCE.meta;
   const weights = Object.fromEntries(
-    Object.entries(state.meta.weights).map(([key, value]) => [key, Math.max(0.5, value + gauss(0, BALANCE.meta.maxDelta, rng))])
+    Object.entries(state.meta.weights).map(([tag, peso]) => [
+      tag,
+      Math.max(pesoMinimo, peso + gauss(derivaMedia, maxDelta, rng))
+    ])
   );
 
   const nextState = {

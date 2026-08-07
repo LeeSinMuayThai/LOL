@@ -20,6 +20,63 @@ Documento vivo. Se actualiza al cierre de cada tarea, según la Definición de t
 
 ## Changelog
 
+### 2026-08-07 — Paso 1: cimientos (pipeline unificado, estado único, registro de sistemas)
+
+Punto de partida: `AUDITORIA.md` del 2026-08-07, que encontró violaciones a las reglas
+invariables 3, 5, 6, 7 y 9. Este paso las cierra todas y desbloquea el resto del roadmap:
+sin una sola fuente de verdad para el avance del split, cada sistema nuevo duplicaba la deuda.
+
+- **`src/systems/registro.js`** (nuevo): `ETAPAS_SPLIT` pasa de ser una lista de strings
+  despachada por una cadena de `if/else` a un registro declarativo de módulos. Agregar un
+  sistema es ahora, literalmente, un archivo nuevo y **una línea** (regla 6). El pipeline no
+  conoce ningún sistema por nombre.
+- **`src/core/pipeline.js`** reescrito. **Los dos caminos divergentes (headless e interactivo)
+  desaparecen: ahora hay uno solo.** Un sistema puede devolver `decision` desde `aplicar` y el
+  pipeline congela el split ahí, guardando el cursor en `state.pendiente`. `resolverDecision`
+  lo reanuda desde la etapa siguiente. `avanzarSplitAuto` es el mismo camino con las decisiones
+  contestadas por el propio sistema (`resolverAuto`), así que **`simulate.js` y `validate.js`
+  miden exactamente lo que se juega en el navegador** (regla 5).
+- **Regla 9 cerrada**: `logsAcumulados` y `pendingDecision` ya no viven en variables de módulo
+  de `index.html`. Todo está en `state.pendiente` y `state.logs`, así que una partida a medio
+  split es serializable y reanudable. Efecto secundario: se arregló el panel de logs, que iba
+  un split atrasado.
+- **`src/systems/progresion.js`** (nuevo): `aplicarSplitBase` deja de ser una función privada
+  escondida adentro de `core` y pasa a ser un sistema de verdad. Se borró
+  `src/systems/attributes.js`, que era huérfano (nunca corría) y hacía lo mismo peor; el
+  sistema de atributos real (formas de carrera, potencial, declive) se construye en el paso 4.
+- **Regla 3**: `src/core/numeros.js` (nuevo) centraliza `clamp`/`clampStat`; el techo `100`
+  dejó de estar hardcodeado en 4 archivos. Los valores iniciales del jugador, los pesos
+  iniciales del meta, los pisos de las gaussianas y el tope de carrera de la UI se movieron a
+  `BALANCE`. `meta.baseWeight` (clave muerta) ahora se usa como `meta.pesoInicial`.
+- **Regla 7**: los efectos `push` pasan de `value` fijo a `values: [...]` con sorteo por RNG
+  (nombres de org y de hito variados). Se quitaron los rangos degenerados `min:1,max:1` de
+  `player.titles`: los títulos son resultado de competir, no de un evento, y los va a otorgar
+  `competicion.js` en el paso 6.
+- **`src/dev/validate.js`**: de 5 checks a 8. Nuevos: contrato de los sistemas del registro,
+  que ningún split deje una decisión colgada (50 seeds × 12 splits), y que dos seeds distintas
+  produzcan carreras distintas. El check de esquema ahora **verifica que cada `path` de efecto
+  y de condición exista de verdad en el estado** (antes un typo creaba una propiedad nueva en
+  silencio), rechaza rangos degenerados y exige ≥2 outcomes por opción.
+- **`index.html`**: adaptado al contrato nuevo y **la seed pasó a ser visible y elegible**
+  (`CONCEPTO` §9 apoya toda la difusión del juego en compartir seeds; antes se generaba con
+  `Date.now()` y no se mostraba).
+- Verificado: `node src/dev/validate.js` pasa los 8 checks; `node src/dev/simulate.js 1000 30`
+  da 0 crashes; determinismo confirmado; traza del camino interactivo (seed 7, clickeando
+  siempre la primera opción) confirma el compás — 1-2 decisiones por split y cierre de edad
+  cada 3 splits.
+- **Deuda conocida, no tocada en este paso** (es el objetivo de los pasos 2-10): el balance
+  sigue roto según el criterio de `CONCEPTO` §11 — `mecanica` promedia 99.9/100 y 98.6% de las
+  carreras terminan igual. Se arregla cuando existan las formas de carrera (paso 4) y el ciclo
+  profesional (paso 6).
+
+### 2026-08-06 — Fix: los logs de evento no tenían relación con lo que pasó
+
+- **Bug reportado por el usuario**: el log de cada evento mostraba siempre `título: descripción (elegiste "opción")` — el mismo texto fijo sin importar qué outcome se hubiera sorteado. Dos resultados completamente distintos de la misma opción (el bueno con weight alto, el malo con weight bajo) generaban exactamente la misma frase, porque el log nunca miraba los `effects` realmente aplicados.
+- **`src/core/selectors.js`**: nuevo diccionario `etiquetaCampo(path)` (ej. `player.stats.hype` → "Hype") para poder describir cualquier path de efecto en texto legible, reusado por eventos y por el resumen de edad.
+- **`src/systems/events.js`**: `aplicarEfecto` ahora devuelve también una `descripcion` del cambio efectivo (post-clamp, no el rango declarado). `resolverOpcion` arma el log a partir de esas descripciones reales (`"Meme de la prensa — Subirse a la ola: Hype +6, Mentalidad -3."`) en vez de repetir la descripción estática del evento.
+- **`src/systems/edadCierre.js`**: el resumen de temporada ahora filtra los campos que no cambiaron (antes listaba los 7 siempre, en el mismo orden, aunque algunos quedaran en +0).
+- Verificado: `npm run validate` sigue pasando los 6 checks; `simulate.js 1000` da exactamente los mismos agregados numéricos que antes (el fix es solo de texto, no toca balance); log detallado de una carrera confirma que dos disparos del mismo evento ("Meme de la prensa") ahora muestran texto distinto según el outcome real.
+
 ### 2026-08-06 — Compás de edad: 3 splits, 1-2 decisiones, cierre de temporada
 
 - **CONCEPTO.md**: se documentó formalmente el compás que rige toda partida (sección nueva "El compás: edad, split y decisión" en §2, más un párrafo en §4): cada edad (año) dura 3 splits, cada split trae 1 o 2 decisiones y es en sí mismo un parche que mueve el meta suavemente, y el tercer split de cada edad cierra con el resumen de la temporada más una decisión más grande. Implementado primero en la etapa amateur; el resto de las etapas lo hereda cuando se construyan.

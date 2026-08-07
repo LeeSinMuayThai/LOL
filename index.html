@@ -135,13 +135,39 @@
         background: rgba(91, 140, 255, 0.2);
         border-color: rgba(91, 140, 255, 0.5);
       }
+      .seed-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .seed-label {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #8ea3c7;
+      }
+      .seed-input {
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.16);
+        color: #f3f6ff;
+        border-radius: 999px;
+        padding: 9px 14px;
+        width: 170px;
+        font-family: inherit;
+        font-size: 14px;
+      }
     </style>
   </head>
   <body>
     <div class="panel">
       <h1>LOL Career Simulator</h1>
       <p class="subtitle">Una carrera de LoL en formato narrativo, con progreso, meta y eventos.</p>
-      <button id="run">Comenzar carrera</button>
+      <div class="seed-row">
+        <label class="seed-label" for="seedInput">Seed</label>
+        <input id="seedInput" class="seed-input" type="text" inputmode="numeric" placeholder="vacío = al azar" />
+        <button id="run">Comenzar carrera</button>
+      </div>
 
       <div class="stats">
         <div class="stat-card"><div class="stat-label">Edad</div><div id="edad" class="stat-value">—</div></div>
@@ -184,22 +210,22 @@
       const decisionDesc = document.getElementById('decisionDesc');
       const decisionOptions = document.getElementById('decisionOptions');
 
-      const MAX_PASOS_DE_SEGURIDAD = 60;
+      const seedInput = document.getElementById('seedInput');
       const FASE_LABEL = { amateur: 'Amateur', profesional: 'Profesional', retirado: 'Retirado' };
 
       let modulos = null;
       let estado = null;
       let rng = null;
-      let logsAcumulados = [];
 
       async function cargarModulos() {
         if (!modulos) {
-          const [{ mulberry32 }, { createInitialState }, pipeline] = await Promise.all([
+          const [{ mulberry32 }, { createInitialState }, pipeline, { BALANCE }] = await Promise.all([
             import('./src/core/rng.js'),
             import('./src/core/state.js'),
-            import('./src/core/pipeline.js')
+            import('./src/core/pipeline.js'),
+            import('./src/data/balance.js')
           ]);
-          modulos = { mulberry32, createInitialState, pipeline };
+          modulos = { mulberry32, createInitialState, pipeline, BALANCE };
         }
         return modulos;
       }
@@ -232,12 +258,12 @@
         } else {
           summary.textContent = 'Seguís en etapa amateur, grindeando soloQ para llamar la atención de un equipo.';
         }
-        metaPill.textContent = `Meta dominante: ${strongestMeta}`;
+        metaPill.textContent = `Meta dominante: ${strongestMeta} · seed ${state.seed}`;
       }
 
-      function mostrarDecision(pendingDecision) {
-        const evento = pendingDecision.evento;
-        decisionTitle.textContent = pendingDecision.tipo === 'cierre' ? `${evento.title} (fin de temporada)` : evento.title;
+      function mostrarDecision(decision) {
+        const evento = decision.evento;
+        decisionTitle.textContent = decision.contexto === 'cierre' ? `${evento.title} (fin de temporada)` : evento.title;
         decisionDesc.textContent = evento.description;
         decisionOptions.innerHTML = '';
 
@@ -246,7 +272,7 @@
           opcionBtn.type = 'button';
           opcionBtn.className = 'option-btn';
           opcionBtn.textContent = opcion.label;
-          opcionBtn.addEventListener('click', () => elegirOpcion(pendingDecision, opcion.id));
+          opcionBtn.addEventListener('click', () => elegirOpcion(opcion.id));
           decisionOptions.appendChild(opcionBtn);
         }
 
@@ -255,21 +281,26 @@
         button.disabled = true;
       }
 
+      function pintar() {
+        renderStats(estado);
+        renderLogs(estado);
+
+        if (estado.pendiente) {
+          mostrarDecision(estado.pendiente.decision);
+          return true;
+        }
+        return false;
+      }
+
       function avanzar() {
-        const { pipeline } = modulos;
+        const { pipeline, BALANCE } = modulos;
 
-        for (let pasos = 0; pasos < MAX_PASOS_DE_SEGURIDAD; pasos += 1) {
-          const resultado = pipeline.avanzarSplitHastaDecision(estado, rng);
-          estado = resultado.state;
-          logsAcumulados = resultado.logs;
+        for (let pasos = 0; pasos < BALANCE.partida.maxSplitsDeSeguridad; pasos += 1) {
+          estado = pipeline.avanzarSplit(estado, rng).state;
 
-          if (resultado.pendingDecision) {
-            renderStats(estado);
-            renderLogs(estado);
-            mostrarDecision(resultado.pendingDecision);
+          if (pintar()) {
             return;
           }
-
           if (estado.terminado) {
             break;
           }
@@ -282,22 +313,32 @@
         button.disabled = false;
       }
 
-      function elegirOpcion(pendingDecision, opcionId) {
+      function elegirOpcion(opcionId) {
         const { pipeline } = modulos;
         decisionPanel.hidden = true;
 
-        const resultado = pipeline.resolverDecisionYContinuar(estado, logsAcumulados, pendingDecision, opcionId, rng);
-        estado = resultado.state;
-        logsAcumulados = resultado.logs;
+        estado = pipeline.resolverDecision(estado, { opcionId }, rng).state;
 
-        if (resultado.pendingDecision) {
-          renderStats(estado);
-          renderLogs(estado);
-          mostrarDecision(resultado.pendingDecision);
+        if (pintar()) {
+          return;
+        }
+        if (estado.terminado) {
+          renderResumenFinal(estado);
+          button.textContent = 'Nueva carrera';
+          button.disabled = false;
           return;
         }
 
         avanzar();
+      }
+
+      function leerSeed() {
+        const crudo = seedInput.value.trim();
+        const elegida = Number(crudo);
+        if (crudo !== '' && Number.isFinite(elegida)) {
+          return Math.abs(Math.trunc(elegida));
+        }
+        return Date.now() >>> 0;
       }
 
       async function comenzarCarrera() {
@@ -310,10 +351,10 @@
         try {
           const { mulberry32, createInitialState } = await cargarModulos();
 
-          const seed = Date.now();
+          const seed = leerSeed();
+          seedInput.value = String(seed);
           rng = mulberry32(seed);
           estado = createInitialState(seed);
-          logsAcumulados = [];
 
           avanzar();
         } catch (error) {

@@ -1,8 +1,9 @@
 import { gauss, roll } from '../core/rng.js';
 import { BALANCE } from '../data/balance.js';
 import { crearLog } from '../core/log.js';
+import { clampStat } from '../core/numeros.js';
 
-const clamp100 = (value) => Math.min(100, Math.max(0, value));
+export const id = 'amateur';
 
 export function aplicar(state, rng) {
   if (state.phase !== 'amateur') {
@@ -21,9 +22,9 @@ export function aplicar(state, rng) {
     player: {
       ...state.player,
       soloqElo: state.player.soloqElo + eloGain,
-      sleep: clamp100(state.player.sleep - sleepLoss),
-      studies: clamp100(state.player.studies + studiesGain),
-      familyTrust: clamp100(state.player.familyTrust - trustDrift)
+      sleep: clampStat(state.player.sleep - sleepLoss),
+      studies: clampStat(state.player.studies + studiesGain),
+      familyTrust: clampStat(state.player.familyTrust - trustDrift)
     }
   };
 

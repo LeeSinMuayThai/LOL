@@ -1,30 +1,32 @@
-import { getPath } from '../core/selectors.js';
+import { getPath, etiquetaCampo } from '../core/selectors.js';
 import { crearLog } from '../core/log.js';
 import { BALANCE } from '../data/balance.js';
 import { CAMPOS_EDAD } from './edadInicio.js';
-import { elegirEventoCierre, resolverEventoAutomatico } from './events.js';
+import { elegirEventoCierre, resolverOpcion, elegirOpcionAutomatica } from './events.js';
+
+export const id = 'edadCierre';
 
 function generarTextoResumen(state) {
   const snapshot = state.flags.edadSnapshot ?? {};
-  const cambios = CAMPOS_EDAD.map(({ path, label }) => {
+  const cambios = CAMPOS_EDAD.map((path) => {
     const antes = snapshot[path] ?? getPath(state, path);
     const despues = getPath(state, path);
-    const delta = despues - antes;
-    const signo = delta >= 0 ? '+' : '';
-    return `${label} ${signo}${delta}`;
-  }).join(', ');
+    return { path, delta: despues - antes };
+  }).filter(({ delta }) => delta !== 0);
 
-  return `Fin de temporada a los ${state.age} años: ${cambios}.`;
+  if (cambios.length === 0) {
+    return `Fin de temporada a los ${state.age} años: un año tranquilo, sin cambios grandes.`;
+  }
+
+  const texto = cambios
+    .map(({ path, delta }) => `${etiquetaCampo(path)} ${delta >= 0 ? '+' : ''}${delta}`)
+    .join(', ');
+
+  return `Fin de temporada a los ${state.age} años: ${texto}.`;
 }
 
 export function esCierreDeEdad(state) {
   return state.player.splitCount % BALANCE.edad.splitsPorEdad === 0;
-}
-
-export function prepararCierre(state) {
-  const texto = generarTextoResumen(state);
-  const nextState = { ...state, age: state.age + 1 };
-  return { state: nextState, logs: [crearLog('edad', texto)] };
 }
 
 export function aplicar(state, rng) {
@@ -32,15 +34,26 @@ export function aplicar(state, rng) {
     return { state, logs: [] };
   }
 
-  const { state: nextStateBase, logs } = prepararCierre(state);
-  let nextState = nextStateBase;
+  const logs = [crearLog('edad', generarTextoResumen(state))];
+  const nextState = { ...state, age: state.age + 1 };
 
-  const eventoCierre = elegirEventoCierre(nextState, rng);
-  if (eventoCierre) {
-    const rCierre = resolverEventoAutomatico(nextState, eventoCierre, rng);
-    nextState = rCierre.state;
-    logs.push(...rCierre.logs);
+  const evento = elegirEventoCierre(nextState, rng);
+  if (!evento) {
+    return { state: nextState, logs };
   }
 
-  return { state: nextState, logs };
+  return {
+    state: nextState,
+    logs,
+    decision: { tipo: 'evento', contexto: 'cierre', slot: 1, evento }
+  };
+}
+
+// La decision de cierre es LA decision de la edad: nunca encadena una segunda.
+export function resolver(state, decision, respuesta, rng) {
+  return resolverOpcion(state, decision.evento, respuesta.opcionId, rng);
+}
+
+export function resolverAuto(state, decision, rng) {
+  return elegirOpcionAutomatica(decision, rng);
 }

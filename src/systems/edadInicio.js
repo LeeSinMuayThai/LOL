@@ -1,18 +1,20 @@
 import { getPath } from '../core/selectors.js';
 import { BALANCE } from '../data/balance.js';
 
+export const id = 'edadInicio';
+
 export const CAMPOS_EDAD = [
-  { path: 'player.soloqElo', label: 'SoloQ LP' },
-  { path: 'player.sleep', label: 'Sueño' },
-  { path: 'player.studies', label: 'Estudios' },
-  { path: 'player.familyTrust', label: 'Confianza familiar' },
-  { path: 'player.stats.mecanica', label: 'Mecánica' },
-  { path: 'player.stats.mentalidad', label: 'Mentalidad' },
-  { path: 'player.stats.hype', label: 'Hype' }
+  'player.soloqElo',
+  'player.sleep',
+  'player.studies',
+  'player.familyTrust',
+  'player.stats.mecanica',
+  'player.stats.mentalidad',
+  'player.stats.hype'
 ];
 
 export function tomarSnapshotEdad(state) {
-  return Object.fromEntries(CAMPOS_EDAD.map(({ path }) => [path, getPath(state, path)]));
+  return Object.fromEntries(CAMPOS_EDAD.map((path) => [path, getPath(state, path)]));
 }
 
 export function aplicar(state, rng) {

@@ -1,13 +1,13 @@
 import { mulberry32 } from '../core/rng.js';
 import { createInitialState } from '../core/state.js';
-import { avanzarSplit } from '../core/pipeline.js';
+import { avanzarSplitAuto } from '../core/pipeline.js';
 
 function correrCarrera(seed, splits) {
   const rng = mulberry32(seed);
   let state = createInitialState(seed);
 
   for (let i = 0; i < splits && !state.terminado; i += 1) {
-    state = avanzarSplit(state, rng).state;
+    state = avanzarSplitAuto(state, rng).state;
   }
 
   return state;

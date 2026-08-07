@@ -17,11 +17,11 @@
         "weight": 6,
         "outcomes": [
           { "weight": 8, "effects": [
-            { "type": "push", "path": "career.orgs", "value": "Academy prospecto" },
+            { "type": "push", "path": "career.orgs", "values": ["Academy regional", "Proyecto juvenil de una org chica", "Roster secundario de una org media"] },
             { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 6, "clamp": [0, 100] }
           ]},
           { "weight": 2, "effects": [
-            { "type": "push", "path": "career.orgs", "value": "Academy prospecto" },
+            { "type": "push", "path": "career.orgs", "values": ["Academy de una org top", "Proyecto juvenil con presupuesto", "Academy con línea directa al primer equipo"] },
             { "type": "stat", "path": "player.stats.hype", "min": 6, "max": 10, "clamp": [0, 100] },
             { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
           ]}

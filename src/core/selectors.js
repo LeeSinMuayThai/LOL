@@ -38,3 +38,26 @@ export function cumpleCondiciones(state, conditions = []) {
 export function metaDominante(state) {
   return Object.entries(state.meta.weights).sort((a, b) => b[1] - a[1])[0][0];
 }
+
+const ETIQUETAS_CAMPO = {
+  'player.soloqElo': 'SoloQ LP',
+  'player.sleep': 'Sueño',
+  'player.studies': 'Estudios',
+  'player.familyTrust': 'Confianza familiar',
+  'player.stats.mecanica': 'Mecánica',
+  'player.stats.macro': 'Macro',
+  'player.stats.teamfight': 'Teamfight',
+  'player.stats.laneo': 'Laneo',
+  'player.stats.shotcalling': 'Shotcalling',
+  'player.stats.adaptabilidad': 'Adaptabilidad',
+  'player.stats.mentalidad': 'Mentalidad',
+  'player.stats.hype': 'Hype',
+  'player.titles': 'Títulos',
+  'player.worlds': 'Apariciones en Worlds',
+  'career.orgs': 'Organizaciones',
+  'career.hitos': 'Hitos'
+};
+
+export function etiquetaCampo(path) {
+  return ETIQUETAS_CAMPO[path] ?? path;
+}

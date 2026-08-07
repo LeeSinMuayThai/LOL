@@ -17,9 +17,9 @@
         "weight": 6,
         "outcomes": [
           { "weight": 7, "effects": [
-            { "type": "stat", "path": "player.titles", "min": 1, "max": 1 },
+            { "type": "push", "path": "career.hitos", "values": ["Racha de 9-1 en la regular", "MVP de la jornada dos semanas seguidas", "Remontada de 0-2 en una serie"] },
             { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] },
-            { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
+            { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 8, "clamp": [0, 100] }
           ]},
           { "weight": 3, "effects": [
             { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 1, "clamp": [0, 100] }
@@ -35,7 +35,7 @@
             { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] }
           ]},
           { "weight": 5, "effects": [
-            { "type": "stat", "path": "player.titles", "min": 1, "max": 1 },
+            { "type": "push", "path": "career.hitos", "values": ["Clasificación cómoda a playoffs", "Cierre de regular en zona alta", "Serie ganada sin sobresaltos"] },
             { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
           ]}
         ]
