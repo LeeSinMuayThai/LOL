@@ -20,6 +20,40 @@ Documento vivo. Se actualiza al cierre de cada tarea, según la Definición de t
 
 ## Changelog
 
+### 2026-08-07 — Paso 2: el mundo se genera desde la seed
+
+Cierra el hueco más grande que marcaba `AUDITORIA.md`: `createInitialState` era una constante
+salvo por la seed, así que **dos seeds distintas arrancaban el mismo mundo idéntico**. Esa es
+la capa sobre la que `CONCEPTO` §8 apoya toda la rejugabilidad.
+
+- **`src/core/mundo.js`** (nuevo): `generarMundo(rng)` sortea de la seed el **rol** (antes fijo
+  en `'mid'` y decorativo), la **liga y región de origen**, el **handle** del jugador (inventado
+  por sílabas), la **dispersión de los stats iniciales**, el **pool inicial de 3 campeones** del
+  rol que te tocó, el **sorteo de cuna** (`exigenciaColegio`, `toleranciaViejos`,
+  `apoyoEconomico`), lo **oculto** (`potencial`, `formaCarrera`, `edadPico` propia, `forma` para
+  rachas), el **vector de meta inicial**, la **fuerza de cada org** orbitando el prestigio de su
+  liga, la **región dominante** de la generación y los **5 rivales de generación**.
+- **`createInitialState(seed, rng)`**: el `rng` ahora se inyecta también acá, a propósito. La
+  generación del mundo consume del **mismo stream** que después consume el pipeline, así una
+  seed reproduce la partida entera y no solo la mitad.
+- **Datos nuevos** (los tres que `DISENO` §4.1 pedía y no existían): `src/data/champions.json`
+  (50 campeones, 10 por rol, con tags de arquetipo), `src/data/leagues.json` (8 ligas reales con
+  prestigio, cupo de imports, dificultad de adaptación y orgs) y `src/data/meta-tags.js` (los
+  arquetipos, que estaban hardcodeados como objeto literal en `state.js`). Se sumó `enchanter`
+  a los arquetipos, que `CONCEPTO` §6 nombra y faltaba, y `src/data/roles.js` con los pesos de
+  atributos y la visibilidad de cada rol (`DISENO` §3.2).
+- `src/core/rng.js`: `pick` y `sample` (sorteo sin reposición), reusados por la generación.
+- **`src/dev/validate.js`**: 2 checks nuevos. Uno verifica que **cada tag de campeón exista en
+  `ARQUETIPOS`** — si el pool y el meta no hablan el mismo vocabulario, el Ajuste al Meta sería
+  siempre 0 y nadie se enteraría (era exactamente el bug que tenía el repo) — que los pesos de
+  cada rol sumen 1 y que cada liga sea coherente. El otro corre 60 seeds y exige que produzcan
+  mundos distintos y que aparezcan los 5 roles.
+- Medido sobre 2000 seeds: roles 386-425 cada uno (uniforme), ligas 227-282, formas de carrera
+  en la proporción de sus pesos (`estandar` 38%, `erratica` 9%), potencial promedio 62.2 con
+  rango completo 30-100.
+- Verificado: `validate.js` pasa los 10 checks; `simulate.js 1000 30` da 0 crashes;
+  determinismo confirmado.
+
 ### 2026-08-07 — Paso 1: cimientos (pipeline unificado, estado único, registro de sistemas)
 
 Punto de partida: `AUDITORIA.md` del 2026-08-07, que encontró violaciones a las reglas

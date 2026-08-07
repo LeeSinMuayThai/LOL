@@ -1,12 +1,14 @@
 import { BALANCE } from '../data/balance.js';
+import { generarMundo } from './mundo.js';
 
-function pesosInicialesDelMeta() {
-  const arquetipos = ['tanque', 'bruiser', 'asesino', 'mago_control', 'escalado', 'early_game', 'engage', 'splitpush'];
-  return Object.fromEntries(arquetipos.map((tag) => [tag, BALANCE.meta.pesoInicial]));
-}
-
-export function createInitialState(seed = 1) {
+// El mundo entero sale de la seed (CONCEPTO §8): rol, region, colegio, viejos,
+// potencial oculto, forma de carrera, pool inicial, meta y rivales. Por eso el
+// rng se inyecta aca y no se crea adentro: la generacion del mundo consume del
+// mismo stream que despues consume el pipeline, asi una seed reproduce la
+// partida entera y no solo la mitad.
+export function createInitialState(seed, rng) {
   const { inicial } = BALANCE;
+  const { jugador, origen, mundo } = generarMundo(rng);
 
   return {
     seed,
@@ -18,10 +20,13 @@ export function createInitialState(seed = 1) {
     // Decision a medio resolver. Vive adentro de state para que una partida en
     // curso sea serializable y reanudable (regla invariable 9).
     pendiente: null,
+    origen,
+    mundo,
     player: {
-      name: 'Jugador',
-      role: 'mid',
-      stats: { ...inicial.stats },
+      name: jugador.handle,
+      role: jugador.role,
+      stats: jugador.stats,
+      oculto: jugador.oculto,
       studies: inicial.studies,
       familyTrust: inicial.familyTrust,
       sleep: inicial.sleep,
@@ -30,7 +35,7 @@ export function createInitialState(seed = 1) {
       titles: 0,
       worlds: 0,
       signatureChampion: null,
-      championPool: []
+      championPool: jugador.championPool
     },
     career: {
       orgs: [],
@@ -41,7 +46,7 @@ export function createInitialState(seed = 1) {
     },
     meta: {
       patch: 1,
-      weights: pesosInicialesDelMeta()
+      weights: mundo.metaInicial
     },
     flags: {},
     logs: []

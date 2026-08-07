@@ -4,7 +4,7 @@ import { avanzarSplitAuto } from '../core/pipeline.js';
 
 function correrCarrera(seed, splits) {
   const rng = mulberry32(seed);
-  let state = createInitialState(seed);
+  let state = createInitialState(seed, rng);
 
   for (let i = 0; i < splits && !state.terminado; i += 1) {
     state = avanzarSplitAuto(state, rng).state;

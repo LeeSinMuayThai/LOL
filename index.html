@@ -162,7 +162,7 @@
   <body>
     <div class="panel">
       <h1>LOL Career Simulator</h1>
-      <p class="subtitle">Una carrera de LoL en formato narrativo, con progreso, meta y eventos.</p>
+      <p class="subtitle" id="identidad">Una carrera de LoL en formato narrativo, con progreso, meta y eventos.</p>
       <div class="seed-row">
         <label class="seed-label" for="seedInput">Seed</label>
         <input id="seedInput" class="seed-input" type="text" inputmode="numeric" placeholder="vacío = al azar" />
@@ -211,6 +211,7 @@
       const decisionOptions = document.getElementById('decisionOptions');
 
       const seedInput = document.getElementById('seedInput');
+      const identidad = document.getElementById('identidad');
       const FASE_LABEL = { amateur: 'Amateur', profesional: 'Profesional', retirado: 'Retirado' };
 
       let modulos = null;
@@ -219,18 +220,22 @@
 
       async function cargarModulos() {
         if (!modulos) {
-          const [{ mulberry32 }, { createInitialState }, pipeline, { BALANCE }] = await Promise.all([
+          const [{ mulberry32 }, { createInitialState }, pipeline, { BALANCE }, { etiquetaRol }] = await Promise.all([
             import('./src/core/rng.js'),
             import('./src/core/state.js'),
             import('./src/core/pipeline.js'),
-            import('./src/data/balance.js')
+            import('./src/data/balance.js'),
+            import('./src/data/roles.js')
           ]);
-          modulos = { mulberry32, createInitialState, pipeline, BALANCE };
+          modulos = { mulberry32, createInitialState, pipeline, BALANCE, etiquetaRol };
         }
         return modulos;
       }
 
       function renderStats(state) {
+        const pool = state.player.championPool.map((campeon) => campeon.name).join(', ');
+        identidad.textContent =
+          `${state.player.name} · ${modulos.etiquetaRol(state.player.role)} · ${state.mundo.ligaOrigen} (${state.mundo.regionOrigen}) · pool: ${pool}`;
         edad.textContent = state.age;
         mec.textContent = state.player.stats.mecanica;
         ment.textContent = state.player.stats.mentalidad;
@@ -354,7 +359,7 @@
           const seed = leerSeed();
           seedInput.value = String(seed);
           rng = mulberry32(seed);
-          estado = createInitialState(seed);
+          estado = createInitialState(seed, rng);
 
           avanzar();
         } catch (error) {

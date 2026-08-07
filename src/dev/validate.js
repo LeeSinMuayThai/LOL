@@ -7,6 +7,10 @@ import { mulberry32 } from '../core/rng.js';
 import { createInitialState } from '../core/state.js';
 import { avanzarSplitAuto, ETAPAS_SPLIT } from '../core/pipeline.js';
 import { getPath } from '../core/selectors.js';
+import { ARQUETIPOS } from '../data/meta-tags.js';
+import { ROLES, IDS_ROL } from '../data/roles.js';
+import LIGAS from '../data/leagues.json' with { type: 'json' };
+import CAMPEONES from '../data/champions.json' with { type: 'json' };
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,7 +30,7 @@ function check(nombre, fn) {
 
 function correrCarrera(seed, splits) {
   const rng = mulberry32(seed);
-  let state = createInitialState(seed);
+  let state = createInitialState(seed, rng);
   for (let i = 0; i < splits && !state.terminado; i += 1) {
     state = avanzarSplitAuto(state, rng).state;
   }
@@ -69,7 +73,7 @@ check('Contrato de sistemas del registro', () => {
 });
 
 check('Esquema de eventos válido', () => {
-  const estadoBase = createInitialState(1);
+  const estadoBase = createInitialState(1, mulberry32(1));
   const ids = new Set();
 
   for (const evento of TODOS_LOS_EVENTOS) {
@@ -144,6 +148,104 @@ check('Esquema de eventos válido', () => {
   }
 });
 
+check('Campeones, roles y ligas coherentes', () => {
+  const arquetipos = new Set(ARQUETIPOS);
+  const nombres = new Set();
+
+  for (const campeon of CAMPEONES) {
+    if (nombres.has(campeon.name)) {
+      throw new Error(`campeón duplicado: ${campeon.name}`);
+    }
+    nombres.add(campeon.name);
+
+    if (!ROLES[campeon.role]) {
+      throw new Error(`${campeon.name}: rol inválido (${campeon.role})`);
+    }
+    if (!Array.isArray(campeon.tags) || campeon.tags.length === 0) {
+      throw new Error(`${campeon.name}: sin tags de arquetipo`);
+    }
+    for (const tag of campeon.tags) {
+      // Si el pool y el meta no hablan el mismo vocabulario, el Ajuste al Meta
+      // es siempre 0 y nadie se entera.
+      if (!arquetipos.has(tag)) {
+        throw new Error(`${campeon.name}: tag "${tag}" no existe en ARQUETIPOS`);
+      }
+    }
+  }
+
+  for (const rol of IDS_ROL) {
+    const disponibles = CAMPEONES.filter((campeon) => campeon.role === rol).length;
+    if (disponibles < BALANCE.mundo.campeonesIniciales) {
+      throw new Error(`el rol ${rol} tiene ${disponibles} campeones y el pool inicial pide ${BALANCE.mundo.campeonesIniciales}`);
+    }
+
+    const suma = Object.values(ROLES[rol].pesos).reduce((acc, peso) => acc + peso, 0);
+    if (Math.abs(suma - 1) > 0.001) {
+      throw new Error(`los pesos de atributos del rol ${rol} suman ${suma.toFixed(3)} y deben sumar 1`);
+    }
+  }
+
+  const idsLiga = new Set();
+  for (const liga of LIGAS) {
+    if (idsLiga.has(liga.id)) {
+      throw new Error(`liga duplicada: ${liga.id}`);
+    }
+    idsLiga.add(liga.id);
+
+    if (!Array.isArray(liga.orgs) || liga.orgs.length === 0) {
+      throw new Error(`${liga.id}: sin orgs`);
+    }
+    if (liga.cupoImports < 0 || liga.cupoImports >= 5) {
+      throw new Error(`${liga.id}: cupoImports fuera de rango (un roster tiene 5 titulares)`);
+    }
+  }
+});
+
+check('El mundo se genera desde la seed y varía entre seeds', () => {
+  const mundos = [];
+
+  for (let seed = 1; seed <= 60; seed += 1) {
+    const state = createInitialState(seed, mulberry32(seed));
+
+    if (!ROLES[state.player.role]) {
+      throw new Error(`seed ${seed}: rol generado inválido (${state.player.role})`);
+    }
+    if (state.player.championPool.length !== BALANCE.mundo.campeonesIniciales) {
+      throw new Error(`seed ${seed}: el pool inicial no tiene ${BALANCE.mundo.campeonesIniciales} campeones`);
+    }
+    if (state.mundo.rivales.length !== BALANCE.mundo.cantidadRivales) {
+      throw new Error(`seed ${seed}: no se generaron ${BALANCE.mundo.cantidadRivales} rivales de generación`);
+    }
+    if (new Set(state.mundo.rivales.map((rival) => rival.handle)).size !== state.mundo.rivales.length) {
+      throw new Error(`seed ${seed}: hay handles de rival repetidos`);
+    }
+    if (!BALANCE.formasCarrera[state.player.oculto.formaCarrera]) {
+      throw new Error(`seed ${seed}: forma de carrera desconocida`);
+    }
+
+    mundos.push(JSON.stringify({
+      rol: state.player.role,
+      liga: state.mundo.ligaOrigen,
+      origen: state.origen,
+      oculto: state.player.oculto,
+      pool: state.player.championPool.map((campeon) => campeon.name)
+    }));
+  }
+
+  const distintos = new Set(mundos).size;
+  if (distintos < mundos.length * 0.9) {
+    throw new Error(`60 seeds produjeron solo ${distintos} mundos distintos: la generación está poco dispersa`);
+  }
+
+  // Los roles no pueden salir todos iguales: seria un mundo de un solo carril.
+  const roles = new Set(
+    Array.from({ length: 60 }, (unused, i) => createInitialState(i + 1, mulberry32(i + 1)).player.role)
+  );
+  if (roles.size < IDS_ROL.length) {
+    throw new Error(`en 60 seeds solo aparecieron ${roles.size} de los ${IDS_ROL.length} roles`);
+  }
+});
+
 check('Balance coherente', () => {
   if (BALANCE.split.baseGain > BALANCE.split.maxGain) {
     throw new Error('split.baseGain > split.maxGain');
@@ -183,7 +285,7 @@ check('Hay al menos un evento de cierre de edad por fase amateur', () => {
 check('El split cierra siempre: no queda ninguna decisión colgada', () => {
   for (let seed = 1; seed <= 50; seed += 1) {
     const rng = mulberry32(seed);
-    let state = createInitialState(seed);
+    let state = createInitialState(seed, rng);
 
     for (let i = 0; i < 12 && !state.terminado; i += 1) {
       state = avanzarSplitAuto(state, rng).state;

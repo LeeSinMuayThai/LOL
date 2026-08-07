@@ -24,6 +24,22 @@ export function chance(probability, rng) {
   return rng() < probability;
 }
 
+export function pick(items, rng) {
+  return items[Math.floor(rng() * items.length)];
+}
+
+// Sortea `cantidad` elementos distintos sin reponer, sin mutar la lista original.
+export function sample(items, cantidad, rng) {
+  const restantes = [...items];
+  const elegidos = [];
+
+  while (elegidos.length < cantidad && restantes.length > 0) {
+    elegidos.push(restantes.splice(Math.floor(rng() * restantes.length), 1)[0]);
+  }
+
+  return elegidos;
+}
+
 export function weightedPick(items, getWeight, rng) {
   const totalWeight = items.reduce((sum, item) => sum + getWeight(item), 0);
   let cursor = rng() * totalWeight;
