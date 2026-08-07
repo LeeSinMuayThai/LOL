@@ -1,6 +1,7 @@
 import { roll, gauss, chance, pick, sample, weightedPick } from './rng.js';
 import { clamp, clampStat } from './numeros.js';
 import { BALANCE } from '../data/balance.js';
+import { nivelDeCurva } from './curvas.js';
 import { ARQUETIPOS } from '../data/meta-tags.js';
 import { IDS_ROL } from '../data/roles.js';
 import LIGAS from '../data/leagues.json' with { type: 'json' };
@@ -94,15 +95,31 @@ function generarOculto(rng) {
   };
 }
 
-function generarStatsIniciales(rng) {
+// Los stats de manos no salen de una constante: salen de la curva de carrera
+// que te toco, evaluada a los 15. Un precoz ya arranca fuerte; a un tardio le
+// falta todo. Es la unica forma de que la generacion del mundo y el sistema de
+// atributos no se contradigan en el primer split.
+function generarStatsIniciales(oculto, edadInicial, rng) {
   const { dispersionStats } = BALANCE.mundo;
+  const conRuido = (valor) => Math.round(clampStat(gauss(valor, dispersionStats, rng)));
 
-  return Object.fromEntries(
-    Object.entries(BALANCE.inicial.stats).map(([stat, base]) => [
+  const deCurva = Object.fromEntries(
+    Object.entries(BALANCE.atributos.curvas).map(([stat, config]) => [
       stat,
-      Math.round(clampStat(gauss(base, dispersionStats, rng)))
+      conRuido(nivelDeCurva(edadInicial, oculto, { declive: config.declive }))
     ])
   );
+
+  const acumulativos = Object.fromEntries(
+    Object.keys(BALANCE.atributos.acumulativos).map((stat) => [stat, conRuido(BALANCE.inicial.stats[stat])])
+  );
+
+  return {
+    ...deCurva,
+    ...acumulativos,
+    mentalidad: conRuido(BALANCE.inicial.stats.mentalidad),
+    hype: conRuido(BALANCE.inicial.stats.hype)
+  };
 }
 
 // Las tres barras de la etapa amateur tambien salen de la cuna: no todos
@@ -153,20 +170,21 @@ function generarRivales(rng, usados) {
 
 // Sortea el mundo entero de una seed. Todo lo que devuelve es dato de estado:
 // ningun sistema puede volver a sortearlo despues.
-export function generarMundo(rng) {
+export function generarMundo(rng, edadInicial) {
   const usados = new Set();
   const ligas = generarLigas(rng);
   const ligaOrigen = pick(ligas, rng);
   const rol = pick(IDS_ROL, rng);
+  const oculto = generarOculto(rng);
 
   return {
     jugador: {
       handle: generarHandle(rng, usados),
       role: rol,
-      stats: generarStatsIniciales(rng),
+      oculto,
+      stats: generarStatsIniciales(oculto, edadInicial, rng),
       barras: generarBarrasIniciales(rng),
-      championPool: generarPoolInicial(rol, rng),
-      oculto: generarOculto(rng)
+      championPool: generarPoolInicial(rol, rng)
     },
     origen: generarOrigen(rng),
     mundo: {

@@ -78,9 +78,9 @@ export const BALANCE = {
 
     // --- Robarle horas al sueño: la trampa ---
     suenoPorBloqueRobado: 6,
-    mentalidadPorBloqueRobado: 2.4,
+    mentalidadPorBloqueRobado: 1.4,
     // Cada periodo consecutivo robando pesa mas que el anterior.
-    penalRoboConsecutivo: 0.75,
+    penalRoboConsecutivo: 0.55,
     robosParaDeuda: 3,
     deudaMaxima: 4,
 
@@ -118,9 +118,9 @@ export const BALANCE = {
     sinPCMentalidadMax: -2,
 
     // --- Salida 1: te ficha un equipo ---
-    eloMinimoScouting: 2050,
+    eloMinimoScouting: 1880,
     eloScoutingRango: 700,
-    scoutingProbMax: 0.38,
+    scoutingProbMax: 0.46,
     scoutingPesoElo: 0.6,
     scoutingPesoHype: 0.4,
     hypeReferenciaScouting: 60,
@@ -150,7 +150,7 @@ export const BALANCE = {
     autoReaccionColegio: 3.2,
     autoReaccionFamilia: 2.6,
     autoReaccionSueno: 1.8,
-    autoSuenoObjetivo: 55,
+    autoSuenoObjetivo: 70,
     autoRuido: 0.3,
     autoPesoMinimo: 0.15,
     autoProbRobar: 0.4,
@@ -159,15 +159,62 @@ export const BALANCE = {
     secundarioAprobadoUmbral: 45
   },
 
-  split: {
-    baseGain: 4,
-    maxGain: 8,
-    gananciaMinima: 1,
-    mentalidadGain: 1,
-    mentalidadSpread: 1.2,
-    mentalidadMinima: 0,
-    metaInfluenceBase: 0.8,
-    metaInfluenceRange: 0.2
+  atributos: {
+    // --- Curva de carrera ---
+    // El nivel objetivo de un stat "de manos" es techo * (piso + (1-piso)*f),
+    // donde f sube hacia la edad de pico propia y despues cae. No hay edad de
+    // pico fija ni declive anunciado: cada jugador tiene la suya.
+    pisoJuvenil: 0.55,
+    anchoSubida: 8,
+    anchoBajada: 8,
+    factorMinimo: -0.4,
+
+    // El techo real sube un poco con los splits jugados: la experiencia corre
+    // el potencial, no lo reemplaza.
+    bonusPorSplit: 0.3,
+    bonusMaximo: 15,
+
+    // --- Rachas y slumps ---
+    // La forma deriva sola y no se le explica nunca al jugador: la siente en
+    // los resultados. Persistencia alta = las rachas duran varios splits.
+    formaPersistencia: 0.72,
+    formaShock: 0.26,
+    formaAmplitud: 0.13,
+    formaMax: 0.9,
+
+    // --- Stats que siguen la curva (suben y bajan) ---
+    // `declive` modula cuanto les pega la caida: el laneo y el teamfight son
+    // en parte conocimiento, asi que se caen menos que las manos.
+    curvas: {
+      mecanica: { declive: 1, velocidad: 0.3, ruido: 1.7 },
+      laneo: { declive: 0.6, velocidad: 0.22, ruido: 1.5 },
+      teamfight: { declive: 0.45, velocidad: 0.2, ruido: 1.5 }
+    },
+
+    // --- Stats que se acumulan (el macro no declina: sostiene a los veteranos) ---
+    acumulativos: {
+      macro: { ganancia: 1.15, spread: 0.6, permiteBajar: false },
+      shotcalling: { ganancia: 0.95, spread: 0.8, permiteBajar: true },
+      adaptabilidad: { ganancia: 0.55, spread: 0.9, permiteBajar: true }
+    },
+    techoAcumulativoBonus: 12,
+
+    // --- La mentalidad es la moneda: siempre cuesta, nunca se repone sola ---
+    desgasteBase: 1.2,
+    desgasteSpread: 0.9,
+    suenoConfortable: 65,
+    // Fuera de la etapa amateur el sueño deja de administrarse a mano y vuelve
+    // solo hacia un descanso normal: hay horarios y gaming house.
+    suenoRegresionPro: 0.35,
+    suenoRuidoPro: 3,
+    suenoPesoEnDesgaste: 0.07,
+    recuperacionPorSuenoAlto: 0.13,
+    deudaPesoEnDesgaste: 1,
+
+    // --- Burnout: no es un acantilado, es una probabilidad que crece ---
+    burnoutUmbral: 20,
+    burnoutPendiente: 60,
+    burnoutTecho: 0.4
   },
 
   meta: {
@@ -196,9 +243,9 @@ export const BALANCE = {
     toleranciaViejosMax: 90,
     apoyoEconomicoMin: 10,
     apoyoEconomicoMax: 90,
-    potencialMedia: 62,
-    potencialSpread: 14,
-    potencialMin: 30,
+    potencialMedia: 74,
+    potencialSpread: 13,
+    potencialMin: 42,
     potencialMax: 100,
     pesoMetaInicialMin: 0.6,
     pesoMetaInicialMax: 1.6,

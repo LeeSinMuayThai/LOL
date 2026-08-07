@@ -20,6 +20,60 @@ Documento vivo. Se actualiza al cierre de cada tarea, según la Definición de t
 
 ## Changelog
 
+### 2026-08-07 — Paso 4: atributos con forma de carrera, declive, rachas y economía de la mentalidad
+
+`AUDITORIA.md` medía `mecanica` en **99.9/100 de promedio** a los 30 splits: sólo subía, con un
+`Math.max(1, ...)` que garantizaba +1 por split para siempre. No había pico, ni meseta, ni
+declive, ni rachas. Y la mentalidad, que `CONCEPTO` §3 define como "la moneda con la que pagás",
+**se reponía gratis todos los splits** y en cero no pasaba nada.
+
+- **`src/core/curvas.js`** (nuevo): la forma de carrera, en una función. La comparten la
+  generación del mundo y el sistema de atributos, así no se contradicen. El nivel objetivo sube
+  hacia **la edad de pico propia de cada jugador** (sorteada, no fija) y después cae con la
+  intensidad de su forma (`precoz`, `estandar`, `meseta_larga`, `tardia`, `erratica`).
+- **`src/systems/atributos.js`** (nuevo, reemplaza a `progresion.js`):
+  - `mecanica`, `laneo` y `teamfight` **convergen** hacia su curva en vez de saltar: el declive
+    nunca se anuncia, se nota recién cuando ya lleva un par de splits pasando.
+  - `macro` **no declina nunca** (es lo que sostiene a los veteranos); `shotcalling` y
+    `adaptabilidad` acumulan con rendimientos decrecientes contra el techo.
+  - **`teamfight`, `laneo` y `shotcalling` dejaron de ser stats muertos**: los tres se movían
+    cero en todo el repo.
+  - **Rachas y slumps**: la `forma` oculta deriva con memoria (`formaPersistencia`), así una
+    racha dura varios splits en vez de titilar. No se le explica nunca al jugador.
+  - **La mentalidad ya cuesta**: se desgasta todos los splits, más si dormís poco o arrastrás
+    deuda de sueño. El único descuento es dormir de verdad: por encima del descanso normal el
+    balance se da vuelta. Esa es la razón mecánica para gastar bloques en dormir en vez de en LP.
+  - **Burnout**: por debajo del umbral la probabilidad crece hasta volverse segura. Es una curva,
+    no un acantilado.
+- **Los stats iniciales salen de la curva**, no de una constante: un `precoz` arranca fuerte a
+  los 15 y un `tardio` arranca flojo. Antes todos empezaban en 55 de mecánica sin importar el
+  potencial que les tocara.
+- **Fix de raíz encontrado midiendo**: en fase profesional `sleep` quedaba **congelado para
+  siempre** en el valor con el que saliste de amateur, así que un fichaje con el sueño bajo
+  condenaba la carrera entera. Ahora, fuera de la etapa amateur, el descanso vuelve solo hacia lo
+  normal (hay horarios y gaming house) y la moneda pasa a ser sólo la mentalidad.
+- `validate.js`: el check de balance ahora verifica invariantes de diseño, no rangos sueltos —
+  entre otras, que **`macro.permiteBajar` sea `false`** (`CONCEPTO` §6) y que
+  `formaPersistencia < 1` (con 1 una racha sería eterna).
+
+**Balance medido** (1500 carreras por estrategia). La etapa amateur quedó calibrada y la trampa
+del sueño ahora tiene precio:
+
+| etapa amateur (11 splits) | llega a pro | no llegó | prohibición | burnout |
+|---|---|---|---|---|
+| equilibrado | 57.8% | 40.5% | 1.5% | 0.3% |
+| ranked | 3.5% | 0% | 10.4% | **86.1%** |
+| prudente | 58.6% | 41.3% | 0% | 0.1% |
+
+Robarle 3 horas al sueño todas las semanas durante tres años funde al 86%: es exactamente lo que
+`CONCEPTO` §4 llama "la trampa". `mecanica` pasó de 99.9/100 de promedio a **65.5**, con rango
+real 22-100 según el potencial y la forma que te tocaron.
+
+- **Pendiente conocido**: en carrera completa (45 splits) el burnout se lleva ~55% de las
+  carreras, porque **la etapa profesional todavía no tiene ninguna forma de recuperar
+  mentalidad**. Eso llega en el paso 6 con los puntos de preparación y la opción de descansar
+  entre splits. No se tunea antes: bajar el desgaste ahora sería tapar el agujero equivocado.
+
 ### 2026-08-07 — Paso 3: la etapa amateur de verdad (bucle de atención, bandas de riesgo, tres salidas)
 
 `AUDITORIA.md` marcaba que `amateur.js` decidía éxito y fracaso pero **no implementaba el bucle

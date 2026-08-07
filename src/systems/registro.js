@@ -22,7 +22,7 @@ export const ETAPAS_SPLIT = [
   await import('./amateur.js'),
   await import('./meta.js'),
   await import('./events.js'),
-  await import('./progresion.js'),
+  await import('./atributos.js'),
   await import('./edadCierre.js')
 ];
 

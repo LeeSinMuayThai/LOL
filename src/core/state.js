@@ -6,13 +6,15 @@ import { generarMundo } from './mundo.js';
 // rng se inyecta aca y no se crea adentro: la generacion del mundo consume del
 // mismo stream que despues consume el pipeline, asi una seed reproduce la
 // partida entera y no solo la mitad.
+const EDAD_INICIAL = 15;
+
 export function createInitialState(seed, rng) {
   const { inicial } = BALANCE;
-  const { jugador, origen, mundo } = generarMundo(rng);
+  const { jugador, origen, mundo } = generarMundo(rng, EDAD_INICIAL);
 
   return {
     seed,
-    age: 15,
+    age: EDAD_INICIAL,
     phase: 'amateur',
     terminado: false,
     finAnticipado: null,

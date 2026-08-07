@@ -247,12 +247,30 @@ check('El mundo se genera desde la seed y varía entre seeds', () => {
 });
 
 check('Balance coherente', () => {
-  if (BALANCE.split.baseGain > BALANCE.split.maxGain) {
-    throw new Error('split.baseGain > split.maxGain');
+  const a = BALANCE.atributos;
+
+  if (a.pisoJuvenil <= 0 || a.pisoJuvenil >= 1) {
+    throw new Error('atributos.pisoJuvenil debe estar entre 0 y 1');
   }
-  if (BALANCE.split.metaInfluenceBase <= 0) {
-    throw new Error('split.metaInfluenceBase debe ser positivo');
+  if (a.formaPersistencia < 0 || a.formaPersistencia >= 1) {
+    // Con persistencia >= 1 la forma no vuelve nunca: una racha seria eterna.
+    throw new Error('atributos.formaPersistencia debe estar entre 0 y 1');
   }
+  if (a.burnoutUmbral <= BALANCE.stats.min) {
+    throw new Error('atributos.burnoutUmbral debe estar por encima del piso de stats');
+  }
+  if (!a.acumulativos.macro || a.acumulativos.macro.permiteBajar) {
+    throw new Error('el macro no declina (CONCEPTO §6): acumulativos.macro.permiteBajar debe ser false');
+  }
+  for (const [stat, config] of Object.entries({ ...a.curvas, ...a.acumulativos })) {
+    if (!(stat in BALANCE.inicial.stats)) {
+      throw new Error(`atributos: ${stat} no existe en los stats iniciales`);
+    }
+    if ((config.velocidad ?? config.ganancia) <= 0) {
+      throw new Error(`atributos: ${stat} no evoluciona`);
+    }
+  }
+
   if (BALANCE.meta.maxDelta <= 0) {
     throw new Error('meta.maxDelta debe ser positivo');
   }
