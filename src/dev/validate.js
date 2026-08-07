@@ -110,6 +110,24 @@ check('Balance coherente', () => {
   if (BALANCE.meta.maxDelta <= 0) {
     throw new Error('meta.maxDelta debe ser positivo');
   }
+  if (!Number.isInteger(BALANCE.edad.splitsPorEdad) || BALANCE.edad.splitsPorEdad <= 0) {
+    throw new Error('edad.splitsPorEdad debe ser un entero positivo');
+  }
+  if (BALANCE.edad.probSegundaDecision < 0 || BALANCE.edad.probSegundaDecision > 1) {
+    throw new Error('edad.probSegundaDecision debe estar entre 0 y 1');
+  }
+});
+
+check('Hay al menos un evento de cierre de edad por fase amateur', () => {
+  const cierres = TODOS_LOS_EVENTOS.filter((evento) => evento.cierreDeEdad);
+  if (cierres.length === 0) {
+    throw new Error('no hay eventos con cierreDeEdad: true');
+  }
+  for (const evento of cierres) {
+    if (!Array.isArray(evento.conditions)) {
+      throw new Error(`${evento.id}: evento de cierre sin conditions`);
+    }
+  }
 });
 
 check('Pipeline corre y es determinista (misma seed, dos corridas)', () => {

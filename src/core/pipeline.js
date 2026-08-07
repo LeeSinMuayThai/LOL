@@ -1,11 +1,20 @@
-import { gauss, roll } from './rng.js';
+import { gauss, roll, chance } from './rng.js';
 import { crearLog } from './log.js';
 import { BALANCE } from '../data/balance.js';
 import { aplicar as aplicarEtapaAmateur } from '../systems/amateur.js';
 import { aplicar as aplicarMeta } from '../systems/meta.js';
-import { aplicar as aplicarEventos, elegirEvento, resolverOpcion as resolverOpcionEvento } from '../systems/events.js';
+import { aplicar as aplicarEventos, elegirEvento, resolverOpcion as resolverOpcionEvento, elegirEventoCierre } from '../systems/events.js';
+import { aplicar as aplicarInicioEdad } from '../systems/edadInicio.js';
+import { aplicar as aplicarCierreEdad, esCierreDeEdad, prepararCierre } from '../systems/edadCierre.js';
 
-export const ETAPAS_SPLIT = ['aplicarEtapaAmateur', 'aplicarMeta', 'aplicarEventos', 'aplicarSplitBase'];
+export const ETAPAS_SPLIT = [
+  'aplicarInicioEdad',
+  'aplicarEtapaAmateur',
+  'aplicarMeta',
+  'aplicarEventos',
+  'aplicarSplitBase',
+  'aplicarCierreEdad'
+];
 
 export function avanzarSplit(state, rng) {
   if (state.terminado) {
@@ -18,7 +27,9 @@ export function avanzarSplit(state, rng) {
   for (const etapa of ETAPAS_SPLIT) {
     let stageResult;
 
-    if (etapa === 'aplicarEtapaAmateur') {
+    if (etapa === 'aplicarInicioEdad') {
+      stageResult = aplicarInicioEdad(nextState, rng);
+    } else if (etapa === 'aplicarEtapaAmateur') {
       stageResult = aplicarEtapaAmateur(nextState, rng);
     } else if (etapa === 'aplicarMeta') {
       stageResult = aplicarMeta(nextState, rng);
@@ -26,6 +37,8 @@ export function avanzarSplit(state, rng) {
       stageResult = aplicarEventos(nextState, rng);
     } else if (etapa === 'aplicarSplitBase') {
       stageResult = aplicarSplitBase(nextState, rng);
+    } else if (etapa === 'aplicarCierreEdad') {
+      stageResult = aplicarCierreEdad(nextState, rng);
     }
 
     nextState = stageResult.state;
@@ -53,6 +66,10 @@ export function avanzarSplitHastaDecision(state, rng) {
   let nextState = state;
   const logs = [];
 
+  const rInicioEdad = aplicarInicioEdad(nextState, rng);
+  nextState = rInicioEdad.state;
+  logs.push(...rInicioEdad.logs);
+
   const rAmateur = aplicarEtapaAmateur(nextState, rng);
   nextState = rAmateur.state;
   logs.push(...rAmateur.logs);
@@ -65,24 +82,48 @@ export function avanzarSplitHastaDecision(state, rng) {
   nextState = rMeta.state;
   logs.push(...rMeta.logs);
 
-  const evento = elegirEvento(nextState, rng);
+  const primerEvento = elegirEvento(nextState, rng);
 
-  if (evento) {
-    return { state: nextState, logs, pendingDecision: { evento } };
+  if (primerEvento) {
+    return { state: nextState, logs, pendingDecision: { tipo: 'normal', slot: 1, evento: primerEvento } };
   }
 
-  const rEventos = aplicarEventos(nextState, rng);
-  nextState = rEventos.state;
-  logs.push(...rEventos.logs);
+  const logsSinDecision = [...logs, crearLog('event', 'Un split tranquilo, sin eventos destacados.')];
+  return cerrarSplit(state, nextState, logsSinDecision, rng);
+}
 
+function intentarSegundaDecision(estadoOriginal, nextState, logs, excluirId, rng) {
+  if (chance(BALANCE.edad.probSegundaDecision, rng)) {
+    const segundoEvento = elegirEvento(nextState, rng, { excluirId });
+    if (segundoEvento) {
+      return { state: nextState, logs, pendingDecision: { tipo: 'normal', slot: 2, evento: segundoEvento } };
+    }
+  }
+
+  return cerrarSplit(estadoOriginal, nextState, logs, rng);
+}
+
+function cerrarSplit(estadoOriginal, nextState, logs, rng) {
   const rSplit = aplicarSplitBase(nextState, rng);
   nextState = rSplit.state;
   logs.push(...rSplit.logs);
 
-  return finalizarSplit(state, nextState, logs);
+  if (esCierreDeEdad(nextState)) {
+    const rCierre = prepararCierre(nextState);
+    nextState = rCierre.state;
+    logs.push(...rCierre.logs);
+
+    const eventoCierre = elegirEventoCierre(nextState, rng);
+    if (eventoCierre) {
+      return { state: nextState, logs, pendingDecision: { tipo: 'cierre', evento: eventoCierre } };
+    }
+  }
+
+  return finalizarSplit(estadoOriginal, nextState, logs);
 }
 
-export function resolverDecisionYContinuar(state, logsPendientes, evento, opcionId, rng) {
+export function resolverDecisionYContinuar(state, logsPendientes, pendingDecision, opcionId, rng) {
+  const { evento, tipo, slot } = pendingDecision;
   const rEventos = resolverOpcionEvento(state, evento, opcionId, rng);
   let nextState = rEventos.state;
   const logs = [...logsPendientes, ...rEventos.logs];
@@ -91,9 +132,13 @@ export function resolverDecisionYContinuar(state, logsPendientes, evento, opcion
     return finalizarSplit(state, nextState, logs);
   }
 
-  const rSplit = aplicarSplitBase(nextState, rng);
-  nextState = rSplit.state;
-  logs.push(...rSplit.logs);
+  if (tipo === 'normal' && slot === 1) {
+    return intentarSegundaDecision(state, nextState, logs, evento.id, rng);
+  }
+
+  if (tipo === 'normal' && slot === 2) {
+    return cerrarSplit(state, nextState, logs, rng);
+  }
 
   return finalizarSplit(state, nextState, logs);
 }

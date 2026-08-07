@@ -144,6 +144,7 @@
       <button id="run">Comenzar carrera</button>
 
       <div class="stats">
+        <div class="stat-card"><div class="stat-label">Edad</div><div id="edad" class="stat-value">—</div></div>
         <div class="stat-card"><div class="stat-label">Mecánica</div><div id="mec" class="stat-value">—</div></div>
         <div class="stat-card"><div class="stat-label">Mentalidad</div><div id="ment" class="stat-value">—</div></div>
         <div class="stat-card"><div class="stat-label">Estudios</div><div id="stud" class="stat-value">—</div></div>
@@ -167,6 +168,7 @@
 
     <script type="module">
       const button = document.getElementById('run');
+      const edad = document.getElementById('edad');
       const mec = document.getElementById('mec');
       const ment = document.getElementById('ment');
       const stud = document.getElementById('stud');
@@ -203,6 +205,7 @@
       }
 
       function renderStats(state) {
+        edad.textContent = state.age;
         mec.textContent = state.player.stats.mecanica;
         ment.textContent = state.player.stats.mentalidad;
         stud.textContent = state.player.studies;
@@ -232,8 +235,9 @@
         metaPill.textContent = `Meta dominante: ${strongestMeta}`;
       }
 
-      function mostrarDecision(evento) {
-        decisionTitle.textContent = evento.title;
+      function mostrarDecision(pendingDecision) {
+        const evento = pendingDecision.evento;
+        decisionTitle.textContent = pendingDecision.tipo === 'cierre' ? `${evento.title} (fin de temporada)` : evento.title;
         decisionDesc.textContent = evento.description;
         decisionOptions.innerHTML = '';
 
@@ -242,7 +246,7 @@
           opcionBtn.type = 'button';
           opcionBtn.className = 'option-btn';
           opcionBtn.textContent = opcion.label;
-          opcionBtn.addEventListener('click', () => elegirOpcion(evento, opcion.id));
+          opcionBtn.addEventListener('click', () => elegirOpcion(pendingDecision, opcion.id));
           decisionOptions.appendChild(opcionBtn);
         }
 
@@ -262,7 +266,7 @@
           if (resultado.pendingDecision) {
             renderStats(estado);
             renderLogs(estado);
-            mostrarDecision(resultado.pendingDecision.evento);
+            mostrarDecision(resultado.pendingDecision);
             return;
           }
 
@@ -278,13 +282,20 @@
         button.disabled = false;
       }
 
-      function elegirOpcion(evento, opcionId) {
+      function elegirOpcion(pendingDecision, opcionId) {
         const { pipeline } = modulos;
         decisionPanel.hidden = true;
 
-        const resultado = pipeline.resolverDecisionYContinuar(estado, logsAcumulados, evento, opcionId, rng);
+        const resultado = pipeline.resolverDecisionYContinuar(estado, logsAcumulados, pendingDecision, opcionId, rng);
         estado = resultado.state;
         logsAcumulados = resultado.logs;
+
+        if (resultado.pendingDecision) {
+          renderStats(estado);
+          renderLogs(estado);
+          mostrarDecision(resultado.pendingDecision);
+          return;
+        }
 
         avanzar();
       }

@@ -23,6 +23,10 @@ export const BALANCE = {
   },
   meta: {
     baseWeight: 1,
-    maxDelta: 0.25
+    maxDelta: 0.15
+  },
+  edad: {
+    splitsPorEdad: 3,
+    probSegundaDecision: 0.4
   }
 };

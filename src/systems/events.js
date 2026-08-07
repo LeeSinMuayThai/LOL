@@ -1,6 +1,7 @@
-import { roll, weightedPick } from '../core/rng.js';
+import { roll, weightedPick, chance } from '../core/rng.js';
 import { getPath, setPath, cumpleCondiciones } from '../core/selectors.js';
 import { crearLog } from '../core/log.js';
+import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 
 function cooldownActivo(state, eventId) {
@@ -8,7 +9,9 @@ function cooldownActivo(state, eventId) {
 }
 
 function candidatos(state) {
-  return TODOS_LOS_EVENTOS.filter((event) => !cooldownActivo(state, event.id) && cumpleCondiciones(state, event.conditions));
+  return TODOS_LOS_EVENTOS.filter(
+    (event) => !event.cierreDeEdad && !cooldownActivo(state, event.id) && cumpleCondiciones(state, event.conditions)
+  );
 }
 
 function aplicarEfecto(state, effect, rng) {
@@ -38,8 +41,18 @@ function actualizarCooldowns(state, eventoElegido) {
   return { ...state, flags: { ...state.flags, cooldowns } };
 }
 
-export function elegirEvento(state, rng) {
-  const disponibles = candidatos(state);
+export function elegirEvento(state, rng, { excluirId } = {}) {
+  const disponibles = candidatos(state).filter((event) => event.id !== excluirId);
+  if (disponibles.length === 0) {
+    return null;
+  }
+  return weightedPick(disponibles, (event) => event.weight, rng);
+}
+
+export function elegirEventoCierre(state, rng) {
+  const disponibles = TODOS_LOS_EVENTOS.filter(
+    (event) => event.cierreDeEdad && !cooldownActivo(state, event.id) && cumpleCondiciones(state, event.conditions)
+  );
   if (disponibles.length === 0) {
     return null;
   }
@@ -58,16 +71,33 @@ export function resolverOpcion(state, evento, opcionId, rng) {
   };
 }
 
-export function aplicar(state, rng) {
-  const evento = elegirEvento(state, rng);
+export function resolverEventoAutomatico(state, evento, rng) {
+  const opcion = weightedPick(evento.options, (option) => option.weight, rng);
+  return resolverOpcion(state, evento, opcion.id, rng);
+}
 
-  if (!evento) {
+export function aplicar(state, rng) {
+  const primerEvento = elegirEvento(state, rng);
+
+  if (!primerEvento) {
     return {
       state: actualizarCooldowns(state, null),
       logs: [crearLog('event', 'Un split tranquilo, sin eventos destacados.')]
     };
   }
 
-  const opcion = weightedPick(evento.options, (option) => option.weight, rng);
-  return resolverOpcion(state, evento, opcion.id, rng);
+  const r1 = resolverEventoAutomatico(state, primerEvento, rng);
+  let nextState = r1.state;
+  const logs = [...r1.logs];
+
+  if (chance(BALANCE.edad.probSegundaDecision, rng)) {
+    const segundoEvento = elegirEvento(nextState, rng, { excluirId: primerEvento.id });
+    if (segundoEvento) {
+      const r2 = resolverEventoAutomatico(nextState, segundoEvento, rng);
+      nextState = r2.state;
+      logs.push(...r2.logs);
+    }
+  }
+
+  return { state: nextState, logs };
 }

@@ -1,0 +1,85 @@
+[
+  {
+    "id": "balance_fin_de_ano",
+    "category": "cierre_edad",
+    "cierreDeEdad": true,
+    "title": "Fin de temporada: balance",
+    "description": "Termina la edad. Tenés el receso por delante y una decisión sobre cómo lo usás.",
+    "weight": 5,
+    "cooldown": 5,
+    "conditions": [{ "field": "phase", "op": "eq", "value": "amateur" }],
+    "options": [
+      {
+        "id": "aprovechar_el_receso",
+        "label": "Aprovechar el receso para descansar de verdad",
+        "weight": 5,
+        "outcomes": [
+          { "weight": 7, "effects": [
+            { "type": "stat", "path": "player.stats.mentalidad", "min": 6, "max": 10, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.sleep", "min": 8, "max": 14, "clamp": [0, 100] }
+          ]},
+          { "weight": 3, "effects": [
+            { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.soloqElo", "min": -20, "max": -5 }
+          ]}
+        ]
+      },
+      {
+        "id": "meter_el_acelerador",
+        "label": "Meter el acelerador en el receso",
+        "weight": 5,
+        "outcomes": [
+          { "weight": 6, "effects": [
+            { "type": "stat", "path": "player.soloqElo", "min": 25, "max": 45 },
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -3, "clamp": [0, 100] }
+          ]},
+          { "weight": 4, "effects": [
+            { "type": "stat", "path": "player.soloqElo", "min": 15, "max": 30 },
+            { "type": "stat", "path": "player.sleep", "min": -10, "max": -5, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -9, "max": -5, "clamp": [0, 100] }
+          ]}
+        ]
+      }
+    ]
+  },
+  {
+    "id": "revision_familiar",
+    "category": "cierre_edad",
+    "cierreDeEdad": true,
+    "title": "Revisión familiar de fin de año",
+    "description": "Tu familia se sienta a mirar el año que pasó y quiere saber qué sigue.",
+    "weight": 5,
+    "cooldown": 5,
+    "conditions": [{ "field": "phase", "op": "eq", "value": "amateur" }],
+    "options": [
+      {
+        "id": "prometer_resultados",
+        "label": "Prometer resultados concretos para el año que viene",
+        "weight": 5,
+        "outcomes": [
+          { "weight": 6, "effects": [
+            { "type": "stat", "path": "player.familyTrust", "min": 8, "max": 14, "clamp": [0, 100] }
+          ]},
+          { "weight": 4, "effects": [
+            { "type": "stat", "path": "player.familyTrust", "min": 3, "max": 6, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+          ]}
+        ]
+      },
+      {
+        "id": "pedir_mas_margen",
+        "label": "Pedir más margen y tiempo",
+        "weight": 5,
+        "outcomes": [
+          { "weight": 7, "effects": [
+            { "type": "stat", "path": "player.studies", "min": 6, "max": 10, "clamp": [0, 100] },
+            { "type": "stat", "path": "player.familyTrust", "min": -2, "max": 0, "clamp": [0, 100] }
+          ]},
+          { "weight": 3, "effects": [
+            { "type": "stat", "path": "player.familyTrust", "min": -6, "max": -3, "clamp": [0, 100] }
+          ]}
+        ]
+      }
+    ]
+  }
+]
