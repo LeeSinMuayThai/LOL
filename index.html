@@ -299,12 +299,17 @@
       function renderResumenFinal(state) {
         const strongestMeta = Object.entries(state.meta.weights).sort((a, b) => b[1] - a[1])[0][0];
 
-        if (state.finAnticipado === 'prohibicion_familiar') {
+        if (state.finAnticipado === 'burnout') {
+          summary.textContent = `Te bajaste a los ${state.age}: no daba más la cabeza. `
+            + `${state.career.titulos} título(s) con ${state.career.currentOrg ?? 'nadie'}.`;
+        } else if (state.finAnticipado === 'prohibicion_familiar') {
           summary.textContent = `En tu casa te bajaron del ranked a los ${state.age}. Máximo alcanzado: ${state.player.soloqElo} LP.`;
         } else if (state.finAnticipado === 'no_llego') {
           summary.textContent = `Se cerró la ventana de los prospectos con ${state.player.soloqElo} LP. Nadie llamó.`;
         } else if (state.phase === 'profesional') {
-          summary.textContent = `Firmaste con ${state.career.currentOrg ?? 'un equipo'} en el split ${state.splitFichaje}: arrancó tu carrera profesional. El meta dominante apunta a ${strongestMeta}.`;
+          summary.textContent = `${state.career.currentOrg} · jerarquía ${state.career.jerarquia} · sinergia ${state.career.sinergia}`
+            + ` · ${state.career.titulos} título(s) · ${state.career.internacionales} internacional(es)`
+            + `${state.player.signatureChampion ? ` · signature: ${state.player.signatureChampion}` : ''}. Meta: ${strongestMeta}.`;
         } else {
           summary.textContent = 'Seguís en etapa amateur, grindeando soloQ para llamar la atención de un equipo.';
         }

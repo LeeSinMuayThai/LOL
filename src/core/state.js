@@ -47,7 +47,18 @@ export function createInitialState(seed, rng) {
       contracts: [],
       hitos: [],
       currentOrg: null,
-      currentSplit: 1
+      currentSplit: 1,
+      // Roster, jerarquía y sinergia: se llenan al firmar.
+      liga: null,
+      rosterDeOrg: null,
+      companeros: [],
+      jerarquia: 0,
+      sinergia: 0,
+      // Resultado del último split competitivo.
+      posicion: null,
+      titulos: 0,
+      podios: 0,
+      internacionales: 0
     },
     meta: {
       patch: 1,

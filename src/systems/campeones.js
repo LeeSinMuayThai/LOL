@@ -1,4 +1,4 @@
-import { gauss, weightedPick } from '../core/rng.js';
+import { gauss, chance, weightedPick } from '../core/rng.js';
 import { crearLog } from '../core/log.js';
 import { clamp } from '../core/numeros.js';
 import { afinidadDeCampeon, ajusteAlMeta } from '../core/ajusteMeta.js';
@@ -6,18 +6,38 @@ import { BALANCE } from '../data/balance.js';
 
 export const id = 'campeones';
 
-// Que campeon terminas jugando este split. En soloQ elegis vos, asi que pesa lo
-// que dominas y lo que el meta pide. Cuando exista el draft (etapa profesional)
-// esta eleccion va a depender ademas de tu jerarquia en el equipo.
+function deseoPorCampeon(campeon, weights) {
+  return Math.max(BALANCE.campeones.maestriaMinima, campeon.mastery) ** BALANCE.campeones.sesgoMaestriaEnPick
+    * afinidadDeCampeon(campeon, weights);
+}
+
+// Que campeon terminas jugando este split.
+//
+// En soloQ elegis vos: pesa lo que dominas y lo que el meta pide. En un equipo
+// hay draft, y ahi se cruza todo: la probabilidad de que te den el campeon que
+// queres depende de tu jerarquia. Si te dan otro, jugas con menos maestria,
+// rendis peor, y la jerarquia baja mas. Es la espiral central de CONCEPTO §7.
 function campeonDelSplit(state, rng) {
   const { weights } = state.meta;
+  const pool = state.player.championPool;
+  const preferido = pool.reduce((mejor, campeon) => (
+    deseoPorCampeon(campeon, weights) > deseoPorCampeon(mejor, weights) ? campeon : mejor
+  ));
 
-  return weightedPick(
-    state.player.championPool,
-    (campeon) => Math.max(BALANCE.campeones.maestriaMinima, campeon.mastery) ** BALANCE.campeones.sesgoMaestriaEnPick
-      * afinidadDeCampeon(campeon, weights),
-    rng
-  );
+  if (state.phase !== 'profesional' || pool.length === 1) {
+    return { campeon: weightedPick(pool, (c) => deseoPorCampeon(c, weights), rng), tuvoSuPick: true };
+  }
+
+  const r = BALANCE.rendimiento;
+  const probPick = r.draftBase + (state.career.jerarquia / BALANCE.stats.max) * r.draftPorJerarquia;
+
+  if (chance(probPick, rng)) {
+    return { campeon: preferido, tuvoSuPick: true };
+  }
+
+  // No te lo dieron: te toca lo que sobra del pool.
+  const resto = pool.filter((campeon) => campeon.name !== preferido.name);
+  return { campeon: weightedPick(resto, (c) => deseoPorCampeon(c, weights), rng), tuvoSuPick: false };
 }
 
 function moverMaestrias(state, jugado, rng) {
@@ -58,7 +78,7 @@ export function aplicar(state, rng) {
     return { state, logs: [] };
   }
 
-  const jugado = campeonDelSplit(state, rng);
+  const { campeon: jugado, tuvoSuPick } = campeonDelSplit(state, rng);
   const championPool = moverMaestrias(state, jugado, rng);
   const signatureChampion = buscarSignature(championPool, state.player.signatureChampion);
 
@@ -69,10 +89,12 @@ export function aplicar(state, rng) {
     logs.push(crearLog('campeones', `${signatureChampion} ya es tu campeón: se te reconoce por él.`));
   }
 
+  const maestriaJugada = Math.round(championPool.find((c) => c.name === jugado.name).mastery);
   logs.push(crearLog(
     'campeones',
-    `Este split lo jugaste con ${jugado.name} (maestría ${Math.round(championPool.find((c) => c.name === jugado.name).mastery)}). `
-    + `Ajuste al meta: ${ajuste}/100.`
+    tuvoSuPick
+      ? `Jugaste con ${jugado.name} (maestría ${maestriaJugada}). Ajuste al meta: ${ajuste}/100.`
+      : `En el draft no te dieron tu pick: te tocó ${jugado.name} (maestría ${maestriaJugada}). Ajuste al meta: ${ajuste}/100.`
   ));
 
   return {

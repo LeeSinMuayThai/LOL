@@ -254,6 +254,90 @@ export const BALANCE = {
     probSegundaDecision: 0.4
   },
 
+  roster: {
+    // Al entrar a un equipo sos el rookie: la jerarquia arranca abajo y hay que
+    // ganarsela split a split. Cambiar de equipo la resetea parcialmente.
+    jerarquiaInicial: 22,
+    jerarquiaInicialSpread: 7,
+    jerarquiaRetenidaAlCambiar: 0.35,
+    jerarquiaVelocidad: 0.4,
+    // Lo que se espera de vos crece con tu propia jerarquia: a la franquicia no
+    // le alcanza con rendir como uno mas.
+    exigenciaBase: 0.86,
+    exigenciaPorJerarquia: 0.3,
+    jerarquiaRuido: 2.5,
+    // Cuanto rendimiento por encima de lo esperado hace falta para subir.
+    jerarquiaReferenciaRendimiento: 12,
+
+    // Sinergia: quimica colectiva, distinta del estatus personal. Sube sola con
+    // los splits juntos y se resetea parcialmente cuando cambia el roster.
+    sinergiaInicial: 40,
+    sinergiaInicialSpread: 10,
+    sinergiaObjetivo: 82,
+    sinergiaVelocidad: 0.18,
+    sinergiaRuido: 3.5,
+    sinergiaRetenidaAlCambiar: 0.55,
+
+    // Nivel de los companeros: orbita la fuerza de la org.
+    nivelCompaneroSpread: 8,
+    // Cada tanto se va alguien y el roster se sacude.
+    probCambioDeRoster: 0.1
+  },
+
+  rendimiento: {
+    // El draft: la probabilidad de que te den el campeon que queres depende de
+    // tu jerarquia. Es el primer eslabon de la espiral central de CONCEPTO §7.
+    draftBase: 0.35,
+    draftPorJerarquia: 0.55,
+
+    // Rendimiento = atributos ponderados por rol, corridos por meta, maestria,
+    // sinergia, jerarquia y ruido gaussiano.
+    maestriaPesoEnRendimiento: 0.3,
+    sinergiaPesoEnRendimiento: 0.2,
+    jerarquiaPesoEnRendimiento: 0.12,
+    ruidoRendimiento: 7,
+
+    // Como se traduce a resultado del equipo.
+    pesoJugadorEnEquipo: 0.35,
+    ruidoRival: 13,
+
+    // Consecuencias
+    hypePorTitulo: 9,
+    hypePorPodio: 4,
+    hypePorRendimiento: 0.08,
+    hypeDecaimiento: 1.2,
+    mentalidadPorTitulo: 7,
+    mentalidadPorPodio: 3,
+    mentalidadPorFracaso: -4,
+    posicionFracaso: 0.6,
+
+    // Internacionales: al cierre de temporada, el campeon de la liga viaja.
+    posicionParaInternacional: 1,
+    prestigioReferencia: 70
+  },
+
+  practica: {
+    // La version profesional del recurso escaso: entre splits repartis puntos
+    // de preparacion. Es tambien la unica forma de recuperar mentalidad.
+    puntos: 6,
+    gananciaPulir: 7,
+    gananciaMecanica: 2.2,
+    gananciaMacro: 1.8,
+    gananciaDescanso: 4.5,
+    maestriaCampeonNuevo: 30,
+    maestriaCampeonNuevoSpread: 6,
+    poolMaximo: 6,
+    ruidoPractica: 0.8,
+    // Como reparte el jugador automatico en la simulacion masiva.
+    autoPesoPulir: 2.4,
+    autoPesoNuevo: 1.1,
+    autoPesoMecanica: 1.6,
+    autoPesoMacro: 1.3,
+    autoPesoDescanso: 1.5,
+    autoReaccionMentalidad: 5,
+    autoMentalidadObjetivo: 55
+  },
+
   // Generacion del mundo: todo lo que se sortea una sola vez, al empezar, y que
   // hace que dos seeds no arranquen la misma partida (CONCEPTO §8).
   mundo: {

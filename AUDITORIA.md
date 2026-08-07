@@ -1,5 +1,15 @@
 # Auditoría: diseño vs implementación
 
+> **ESTADO: en gran parte resuelta.** Este documento es el diagnóstico del `464ccf7` y se
+> conserva como registro de dónde estaba el proyecto. Los pasos 1 a 6 del changelog de
+> `PROGRESO.md` (2026-08-07) atacaron sus hallazgos directamente: **las 5 violaciones a las reglas
+> invariables están cerradas** (3, 5, 6, 7 y 9), y también el mundo generado, la etapa amateur
+> real, las formas de carrera, la economía de la mentalidad, el Ajuste al Meta y el ciclo del
+> split profesional. **Sigue vigente** lo que este documento marca sobre: contratos, regiones e
+> imports; los rivales de generación corriendo en paralelo; las etapas DEBUT y DECLIVE; el cierre
+> de carrera y la tarjeta de legado; la carpeta `/src/ui` vacía; y el contenido de eventos (20 de
+> ~200). Ver la tabla de estado por fase al principio de `PROGRESO.md`.
+
 **Fecha: 2026-08-07.** Estado del repo: rama `master`, último commit `464ccf7` (compás de edad), más cambios sin commitear en `selectors.js`, `edadInicio.js`, `edadCierre.js`, `events.js` y `PROGRESO.md`.
 
 Documento de diagnóstico puro. Compara `CLAUDE.md` (reglas invariables), `DISENO.md` (arquitectura) y `CONCEPTO.md` (qué es el juego y por qué) contra el estado real del código. No propone soluciones: solo constata qué existe, qué no, y dónde se rompen las reglas.

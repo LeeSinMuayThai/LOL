@@ -21,7 +21,7 @@ const SUFIJOS_HANDLE = [
   'que', 'rix', 'thy', 'ova', 'gal', 'hen', 'zor', 'nyx', 'ade', 'ith'
 ];
 
-function generarHandle(rng, usados) {
+export function generarHandle(rng, usados) {
   const { probHandleConNumero, numeroHandleMin, numeroHandleMax } = BALANCE.mundo;
 
   for (let intento = 0; intento < PREFIJOS_HANDLE.length; intento += 1) {

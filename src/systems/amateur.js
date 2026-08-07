@@ -341,7 +341,12 @@ function firmarConEquipo(state, rng) {
       ...state,
       phase: 'profesional',
       splitFichaje: state.player.splitCount,
-      career: { ...state.career, currentOrg: org.nombre, orgs: [...state.career.orgs, org.nombre] }
+      career: {
+        ...state.career,
+        currentOrg: org.nombre,
+        liga: org.liga,
+        orgs: [...state.career.orgs, org.nombre]
+      }
     },
     logs: [crearLog('amateur', `Firmaste con ${org.nombre}. Se terminó el soloQ de pieza: a partir de acá te pagan por jugar.`)]
   };

@@ -6,19 +6,76 @@ Documento vivo. Se actualiza al cierre de cada tarea, según la Definición de t
 
 | # | Fase | Estado |
 |---|---|---|
-| 1 | Andamiaje (state, rng, pipeline, guards, validate) | ✅ Completa |
-| 2 | Jugador inicial, etapa amateur y loop de splits | ✅ Completa (ver changelog 2026-08-06 — Paso 2) |
-| 3 | Atributos, rendimiento y progresión básica | 🔶 Parcial — `attributes.js` existe pero no está enganchado en `ETAPAS_SPLIT`; falta `performance.js` |
-| 4 | Champion pool, meta y ajuste al meta | 🔶 Parcial — `meta.js` mueve pesos por patch; no existe `champions.js` |
-| 5 | Práctica dirigida entre splits | ⬜ Pendiente |
-| 6 | Motor de eventos y validación | ✅ Completa (adelantada — ver changelog 2026-08-06). Las opciones ya son decisiones jugables reales en `index.html`, no auto-resueltas. |
-| 7 | Roster, sinergia y jerarquía | ⬜ Pendiente |
-| 8 | Contratos, regiones y movilidad | ⬜ Pendiente |
-| 9 | Rivales de generación y scoring final | ⬜ Pendiente |
-| 10 | Simulación masiva y balance fino | 🔶 Base lista (`simulate.js` con N corridas); falta usarla para tunear balance |
-| 11 | Refinamiento visual | ⬜ Pendiente — no existe `src/ui/` |
+| 1 | Andamiaje (state, rng, pipeline, guards, validate) | ✅ Completa — reconstruida en el paso 1 del 2026-08-07 |
+| 2 | Jugador inicial, etapa amateur y loop de splits | ✅ Completa — bucle de atención, bandas de riesgo y tres salidas (paso 3) |
+| 3 | Atributos, rendimiento y progresión básica | ✅ Completa — `atributos.js` con formas de carrera y `rendimiento.js` (pasos 4 y 6) |
+| 4 | Champion pool, meta y ajuste al meta | ✅ Completa — `campeones.js` + `ajusteMeta.js` (paso 5) |
+| 5 | Práctica dirigida entre splits | ✅ Completa — `practica.js` con puntos de preparación (paso 6) |
+| 6 | Motor de eventos y validación | ✅ Completa |
+| 7 | Roster, sinergia y jerarquía | ✅ Completa — `roster.js` + draft condicionado por jerarquía (paso 6) |
+| 8 | Contratos, regiones y movilidad | ⬜ Pendiente — no existen `contracts.js` ni `regions.js` |
+| 9 | Rivales de generación y scoring final | 🔶 Parcial — los 5 rivales se generan de la seed, pero no corren su carrera ni existe `scoring.js`; **falta el retiro y la tarjeta de legado** |
+| 10 | Simulación masiva y balance fino | 🔶 En curso — `simulate.js` corre 3 estrategias sobre el pipeline real y se usó para calibrar cada paso; falta la pasada final con el arco completo |
+| 11 | Refinamiento visual | ⬜ Pendiente — `src/ui/` sigue vacía y la UI vive en `index.html` |
+
+**Lo que falta para cerrar el arco de `CONCEPTO`**: retiro y tarjeta de legado (§9), contratos y
+movilidad entre regiones (§6), rivales de generación corriendo en paralelo (§6), las etapas DEBUT
+y DECLIVE (§2), y contenido de eventos (20 de los ~200 que pide §8).
 
 ## Changelog
+
+### 2026-08-07 — Paso 6: el ciclo del split profesional
+
+`AUDITORIA.md`: *"una vez que `phase` pasa a `profesional`, `soloqElo`, `studies`, `familyTrust`
+y `sleep` se congelan para siempre... No hay ajuste al meta, ni draft, ni temporada regular, ni
+playoffs, ni offseason."* La carrera se detenía a los 18 y el resto era decorado.
+
+- **`src/systems/roster.js`** (nuevo): al firmar se genera el vestuario —4 compañeros inventados,
+  uno por cada otro rol, con nivel orbitando la fuerza de la org—, la **sinergia** (química
+  colectiva, que sube sola con los splits juntos) y la **jerarquía** (tu lugar personal, que
+  arranca abajo: entrás como el rookie). Cada tanto se va alguien y hay que reconstruir la
+  química. Cambiar de equipo resetea las dos **parcialmente**, no del todo.
+- **Draft condicionado por jerarquía** (`campeones.js`): la probabilidad de que te den el campeón
+  que querés es `draftBase + jerarquía`. Si no te lo dan, jugás con menos maestría, rendís peor,
+  y la jerarquía baja más. **Es la espiral central de `CONCEPTO` §7, funcionando.**
+- **`src/systems/rendimiento.js`** (nuevo): el rendimiento del split sale de la hoja de atributos
+  **ponderada por rol** (`roles.js` dejó de ser decorativo), corrida por el ajuste al meta, la
+  maestría del campeón que terminaste jugando, la sinergia, la jerarquía y ruido gaussiano. Se
+  cruza con el nivel de tus compañeros para dar la fuerza del equipo, y esa fuerza compite contra
+  las otras orgs de tu liga —cada una tirando su propio split— para dar una posición.
+  Consecuencias: títulos (sólo al cierre de temporada), viaje internacional para el campeón de la
+  liga, hype **ponderado por la visibilidad del rol** (un support rinde igual y se habla menos de
+  él), y mentalidad que sube ganando y baja perdiendo.
+  - La jerarquía se mueve por la brecha entre lo que rendiste y **lo que se esperaba de vos**, y
+    lo que se espera **crece con tu propia jerarquía**: a la franquicia no le alcanza con rendir
+    como uno más. Sin eso se clavaba en 100 y la espiral dejaba de empujar para abajo.
+- **`src/systems/practica.js`** (nuevo): la versión profesional del recurso escaso de
+  `CONCEPTO` §3. En el offseason repartís 6 puntos de preparación entre pulir tu campeón,
+  aprender uno nuevo (**el que el meta pide**, que es la salida real del sacudón), entrenar
+  mecánica, estudiar macro o **descansar**. Reusa el mismo tipo de decisión `reparto` que la
+  etapa amateur, así la UI no necesitó nada nuevo.
+- **`validate.js`**: check nuevo del ciclo profesional — que el roster tenga un compañero por rol
+  sin pisar el tuyo, que **la jerarquía varíe de verdad entre carreras** (si se clava, la espiral
+  central no existe) y que no todas las carreras terminen con los mismos títulos.
+
+**Balance medido** (800 carreras × 36 splits, de las 465 que llegaron a profesional): jerarquía
+0-100 (promedio 64), **títulos 0-10 con promedio 1.6 y un reparto casi exacto 50/50 entre
+carreras con título y sin ninguno**, internacionales 0-10, signature en el 67%.
+
+Y el agujero que el paso 4 había dejado abierto **quedó cerrado**: con la opción de descansar en
+el offseason, el burnout pasó de llevarse el 55% de las carreras al **18.5%** (estrategia
+equilibrada) y al 0.1% jugando prudente. La mentalidad ahora tiene las dos mitades: cuesta
+siempre, y hay una forma concreta de recuperarla.
+
+| carrera completa (40 splits) | llega a pro | no llegó | prohibición | burnout | sigue en carrera |
+|---|---|---|---|---|---|
+| equilibrado | 56.8% | 41.8% | 1.4% | 18.5% | 38.3% |
+| ranked | 89.6% | 0% | 10.4% | **79.7%** | 9.9% |
+| prudente | 58.9% | 41.1% | 0% | 0.1% | 58.8% |
+
+- **Pendiente conocido**: el "sigue en carrera" es la carrera que llega al tope de splits sin
+  terminar. **Todavía no existe el retiro** (por edad, por elección o por lesión) ni la tarjeta
+  de legado: es el paso 8.
 
 ### 2026-08-07 — Paso 5: champion pool vivo y Ajuste al Meta real
 

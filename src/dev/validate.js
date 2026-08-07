@@ -325,6 +325,47 @@ check('El Ajuste al Meta se mueve de verdad', () => {
   }
 });
 
+check('El ciclo profesional produce carreras distintas', () => {
+  const carreras = [];
+
+  for (let seed = 1; seed <= 120; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 30 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+    }
+    if (state.career.currentOrg) {
+      carreras.push(state);
+    }
+  }
+
+  if (carreras.length === 0) {
+    throw new Error('en 120 seeds nadie llegó a la etapa profesional');
+  }
+
+  for (const carrera of carreras) {
+    if (carrera.career.companeros.length !== IDS_ROL.length - 1) {
+      throw new Error(`un roster quedó con ${carrera.career.companeros.length} compañeros`);
+    }
+    if (carrera.career.companeros.some((companero) => companero.role === carrera.player.role)) {
+      throw new Error('hay un compañero jugando el mismo rol que el jugador');
+    }
+  }
+
+  // La jerarquia tiene que moverse en las dos direcciones: si se clava arriba,
+  // la espiral central de CONCEPTO §7 deja de existir.
+  const jerarquias = carreras.map((carrera) => carrera.career.jerarquia);
+  if (Math.max(...jerarquias) - Math.min(...jerarquias) < 30) {
+    throw new Error('la jerarquía casi no varía entre carreras: la espiral central no está funcionando');
+  }
+
+  // Y no todos pueden ganar lo mismo.
+  const titulos = new Set(carreras.map((carrera) => carrera.career.titulos));
+  if (titulos.size < 3) {
+    throw new Error(`todas las carreras terminaron con ${[...titulos].join('/')} títulos: la liga no compite`);
+  }
+});
+
 check('El split cierra siempre: no queda ninguna decisión colgada', () => {
   for (let seed = 1; seed <= 50; seed += 1) {
     const rng = mulberry32(seed);

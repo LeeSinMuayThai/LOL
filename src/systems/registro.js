@@ -20,13 +20,16 @@
 export const ETAPAS_SPLIT = [
   await import('./edadInicio.js'),
   await import('./meta.js'),
+  await import('./roster.js'),
   await import('./campeones.js'),
   // Antes de amateur a proposito: si la carrera se corta en este split, el flag
   // del secundario ya quedo congelado y entra en la tarjeta final.
   await import('./secundario.js'),
   await import('./amateur.js'),
+  await import('./rendimiento.js'),
   await import('./events.js'),
   await import('./atributos.js'),
+  await import('./practica.js'),
   await import('./edadCierre.js')
 ];
 
