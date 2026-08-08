@@ -46,9 +46,24 @@ Un cambio no está completo hasta que:
 - Se hizo commit del cambio.
 - Se actualizó PROGRESO.md.
 
+## Documentos del proyecto
+
+Orden de lectura al abrir el proyecto:
+
+| Documento | Qué es |
+|---|---|
+| `CLAUDE.md` | este archivo: las reglas duras |
+| `CONCEPTO.md` | qué es el juego y por qué los sistemas están conectados así |
+| **`PLAN.md`** | **el plan vigente, fase por fase, hasta el juego terminado** |
+| `PROGRESO.md` | changelog: qué se hizo, por qué, y con qué números medidos |
+| `TRASPASO.md` | archivo de investigación (ligas 2026, salarios, carreras) y trampas conocidas |
+| `DISENO.md` | arquitectura de archivos |
+
 ## Workflow recomendado
 
-- Trabajar un paso a la vez.
+- Trabajar una fase a la vez, en el orden de `PLAN.md`.
+- **Nada se planea en el momento**: si algo no está escrito en `PLAN.md`, se escribe ahí antes de
+  implementarlo. Lo que se descubre midiendo va a la tabla de deuda técnica del mismo documento.
 - Si un concepto no está claro, pedir aclaración antes de implementar.
 - No agregar funcionalidad fuera del alcance.
 - Construir primero el motor y los sistemas de datos; el visual vendrá después.

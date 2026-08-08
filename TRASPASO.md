@@ -1,3 +1,14 @@
+> **NOTA DE ESTADO (2026-08-08).** La **PARTE 6 de este documento (los pasos 10 a 13) quedó
+> superada por `PLAN.md`**, que es el plan vigente y cubre las fases 0 a 8. El usuario cambió tres
+> decisiones después de escribir esto: la partida pasa a ser de 25-40 min, el Bo5 mapa a mapa entra
+> como sistema central, y la duración de la carrera pasa a ser emergente del mercado en vez de
+> tener topes de edad.
+>
+> **Lo que sigue vigente y NO está en ningún otro lado es la PARTE 4 (datos de la investigación):**
+> ligas y rosters 2026, salarios, duración de carreras, Fearless Draft, servicio militar, lesiones.
+> Esos datos no hay que volver a investigarlos. Las PARTES 7 (trampas) y 8 (proceso) también siguen
+> vigentes y están resumidas en `PLAN.md`.
+
 # Traspaso — Simulador de carrera de LoL: pasos 10 a 13
 
 > **Este documento es un handoff completo.** Está escrito para que una IA que abre el proyecto
