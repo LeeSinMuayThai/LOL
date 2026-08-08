@@ -24,6 +24,62 @@ y DECLIVE (§2), y contenido de eventos (20 de los ~200 que pide §8).
 
 ## Changelog
 
+### 2026-08-08 — Paso 8: la escalera de ranked real
+
+Pedido del usuario: *"nadie arranca en platino con 1200lp y no es normal que en platino te hable
+un ojeador tampoco"*. La investigación con datos reales confirmó las dos cosas y agravó la
+segunda: `1200 LP` no es un número que exista en LoL, y el prospecto que ficha un equipo está en
+el **top 1-50 de Challenger de su servidor a los 15-17** (caso Calix, rank 1 de Corea a los 16).
+Challenger es el 0,025% de la ladder.
+
+- **`src/data/ranked.js` + `src/data/servidores.js`** (nuevos): los 10 tiers reales
+  —Hierro→Bronce→Plata→Oro→Platino→**Esmeralda**→Diamante, 4 divisiones de 0-100 LP cada uno, más
+  Máster/Gran Máster/Challenger sin divisiones y con LP acumulativo— y los 8 servidores con sus
+  **cupos y cutoffs medidos** (Challenger: 300 plazas en KR/EUW/NA, 200 en LAS/LAN/BR/CN/TW;
+  cutoffs reales EUW 2398, KR 1831, NA 1528, LAN 1465, LAS 1287 LP).
+- **`src/core/ranked.js`** (nuevo): la escalera en puntos absolutos (Hierro IV = 0, cada división
+  100 LP, el ápice arranca en 2800). Promoción con **rollover del excedente**, descenso que cae
+  en **25/50/75 LP** y no en 0, escudo anti-descenso al subir de tier, **sin series de promoción**
+  (eliminadas en 2023) y **sin decay en ninguna forma** — un pro juega soloQ todos los días.
+- **`player.soloqElo` sobrevive como espejo derivado de solo lectura**. Todo lo que lo *leía*
+  (el resumen de edad, `simulate.js`, la UI) siguió funcionando sin tocar una línea; lo que lo
+  *escribía* migró a un tipo de efecto nuevo, `{"type": "ladder", "path": "player.ranked"}`, que
+  produce un log mucho mejor: `"SoloQ: Diamante III → Diamante II"` en vez de `"SoloQ LP +23"`.
+  Un check impide que nadie vuelva a escribir el espejo y lo desincronice.
+- **El punto de partida se sortea alrededor de Oro**, modulado por el potencial oculto. Un
+  prodigio arranca más arriba sin que se le diga.
+- **El scouting dejó de ser un umbral de LP** y pasó a ser la **posición en la ladder**:
+  Máster/Gran Máster te abre la puerta de un equipo chico, Challenger la de uno serio, y el top
+  50 siendo menor de 18 la de una org de primera.
+- **Hallazgo al medir: el LP subía sin techo.** Con la ventana de prospecto extendida, el 20.8%
+  terminaba en Challenger. En la realidad el ascenso se frena cuando llegás a tu nivel, porque
+  arriba te toca gente mejor. Se agregó un **freno por altura**: la ganancia depende de la
+  distancia entre tu mecánica y el nivel que exige el rango donde estás. Efecto secundario
+  valioso: **el potencial oculto ahora decide tu techo de ladder sin que se te diga nunca** — lo
+  intuís cuando el LP deja de moverse.
+- **La ventana de los prospectos se cierra por mercado, no por un límite duro.** En vez de
+  cortar la carrera a los 18, la probabilidad de que te fichen cae con la edad
+  (15-16 → 100%, 17 → 85%, 18 → 55%, 19 → 28%). Es el mismo sesgo etario que va a gobernar el
+  retiro en el paso 11: el mercado prefiere jóvenes.
+
+**Distribución al cerrar la etapa amateur** (1000 carreras): Platino 1.3% · Esmeralda 8.0% ·
+Diamante 20.5% · **Máster 57.7%** · Gran Máster 9.2% · **Challenger 3.3%**. Mediana en Máster y
+llegar a Challenger sigue siendo raro y ganado.
+
+| etapa amateur (1500 × 16 splits) | llega a pro | no llegó | prohibición | burnout |
+|---|---|---|---|---|
+| equilibrado | 54.9% | 40.3% | 2.2% | 5.4% |
+| ranked | 17.3% | 0% | 12.1% | **83.5%** |
+| prudente | 55.4% | 43.9% | 0% | 0.9% |
+
+- **4 checks nuevos** (20 en total): la mecánica de la escalera verificada pieza por pieza
+  (rollover, 25/50/75, escudo, ápice sin división, ida y vuelta de puntos absolutos) · que **la
+  escalera no se mueva sola** (el check anterior confundía decay con un evento de efecto
+  negativo) · que nadie escriba el espejo · y que la distribución final de rangos se mantenga en
+  banda.
+- Traza real (seed 42): *Oro II · 57 LP → Platino I · 23 LP → Esmeralda III · 51 LP → Diamante IV
+  · 9 LP → Máster · 87 LP*.
+
 ### 2026-08-08 — Paso 7: modelo de contexto de carrera
 
 Pedido del usuario, textual: *"tienen que estar fijadas por el momento de la carrera... que se

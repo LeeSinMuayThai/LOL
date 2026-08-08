@@ -106,7 +106,9 @@ function calcularMarcas(state) {
   if (state.phase === 'amateur' && state.player.studies < a.confiscacionUmbral && !state.flags.negociacionGanada) {
     marcas.push('riesgo_familiar');
   }
-  if (state.phase === 'amateur' && state.player.soloqElo >= a.eloMinimoScouting) {
+  // Estás en el radar de los scouts cuando entrás al ápice de la ladder, no
+  // cuando llegás a un elo cualquiera.
+  if (state.phase === 'amateur' && state.player.soloqElo >= a.puntosParaRadar) {
     marcas.push('en_el_radar');
   }
   if (state.flags.nocturno) {

@@ -37,17 +37,13 @@ export function cumpleCondiciones(state, conditions = []) {
   });
 }
 
-export function rangoDeElo(lp) {
-  const alcanzados = BALANCE.rangos.filter((rango) => lp >= rango.lp);
-  return alcanzados.length > 0 ? alcanzados[alcanzados.length - 1].nombre : BALANCE.rangos[0].nombre;
-}
-
 export function metaDominante(state) {
   return Object.entries(state.meta.weights).sort((a, b) => b[1] - a[1])[0][0];
 }
 
 const ETIQUETAS_CAMPO = {
-  'player.soloqElo': 'SoloQ LP',
+  'player.soloqElo': 'SoloQ',
+  'player.ranked': 'SoloQ',
   'player.sleep': 'Sueño',
   'player.studies': 'Estudios',
   'player.familyTrust': 'Confianza familiar',

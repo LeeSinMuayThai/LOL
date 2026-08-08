@@ -14,7 +14,8 @@
       "KT Rolster",
       "Dplus KIA",
       "DRX"
-    ]
+    ],
+    "servidor": "KR"
   },
   {
     "id": "LPL",
@@ -31,7 +32,8 @@
       "Weibo Gaming",
       "LNG Esports",
       "EDward Gaming"
-    ]
+    ],
+    "servidor": "CN"
   },
   {
     "id": "LEC",
@@ -48,7 +50,8 @@
       "Team Vitality",
       "Team Heretics",
       "Rogue"
-    ]
+    ],
+    "servidor": "EUW"
   },
   {
     "id": "LCS",
@@ -65,7 +68,8 @@
       "FlyQuest",
       "Dignitas",
       "NRG"
-    ]
+    ],
+    "servidor": "NA"
   },
   {
     "id": "LLA",
@@ -82,7 +86,8 @@
       "All Knights",
       "Leviatán",
       "Furious Gaming"
-    ]
+    ],
+    "servidor": "LAS"
   },
   {
     "id": "CBLOL",
@@ -99,7 +104,8 @@
       "FURIA",
       "Vivo Keyd Stars",
       "INTZ"
-    ]
+    ],
+    "servidor": "BR"
   },
   {
     "id": "PCS",
@@ -114,7 +120,8 @@
       "CTBC Flying Oyster",
       "Frank Esports",
       "Deep Cross Gaming"
-    ]
+    ],
+    "servidor": "TW"
   },
   {
     "id": "VCS",
@@ -129,6 +136,7 @@
       "Team Whales",
       "Vikings Esports",
       "CERBERUS Esports"
-    ]
+    ],
+    "servidor": "TW"
   }
 ]

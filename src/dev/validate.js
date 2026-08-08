@@ -8,6 +8,10 @@ import { createInitialState } from '../core/state.js';
 import { avanzarSplitAuto, ETAPAS_SPLIT } from '../core/pipeline.js';
 import { getPath, etiquetaCampo } from '../core/selectors.js';
 import { calcularContexto } from '../core/contexto.js';
+import {
+  aplicarLP, desdePuntos, puntosAbsolutos, esApice, rangoAproximado,
+  servidorConCutoffs, servidorDeLaPartida
+} from '../core/ranked.js';
 import { TOKENS, tokensUsados } from '../core/plantillas.js';
 import { EJES, MARCAS, MOMENTOS_ACTIVOS, momentoPorId } from '../data/contextos.js';
 import { ARQUETIPOS } from '../data/meta-tags.js';
@@ -386,6 +390,119 @@ check('Todo efecto tiene etiqueta legible para el log', () => {
         }
       }
     }
+  }
+});
+
+check('La escalera de ranked se comporta como la del juego', () => {
+  const servidor = servidorConCutoffs('LAS');
+  const rng = mulberry32(7);
+  const base = { servidor: 'LAS', escudo: 0, partidas: 0 };
+
+  // Promoción con rollover del excedente.
+  const casiPromociona = { ...base, tier: 'gold', division: 2, lp: 96 };
+  const promocionado = aplicarLP(casiPromociona, 9, servidor, rng);
+  if (promocionado.division !== 1 || promocionado.lp !== 5) {
+    throw new Error(`la promoción no hizo rollover: quedó en ${promocionado.tier} ${promocionado.division} con ${promocionado.lp} LP`);
+  }
+
+  // Descenso: no se cae en 0 LP, se cae en 25/50/75.
+  const alBorde = { ...base, tier: 'gold', division: 2, lp: 4 };
+  const descendido = aplicarLP(alBorde, -20, servidor, rng);
+  if (descendido.division !== 3 || !BALANCE.ranked.lpDescenso.includes(descendido.lp)) {
+    throw new Error(`el descenso dejó ${descendido.tier} ${descendido.division} con ${descendido.lp} LP`);
+  }
+
+  // El escudo impide bajar de tier recién promocionado.
+  const conEscudo = { ...base, tier: 'platinum', division: 4, lp: 3, escudo: 1 };
+  const protegido = aplicarLP(conEscudo, -50, servidor, rng);
+  if (protegido.tier !== 'platinum') {
+    throw new Error(`el escudo no protegió el tier: cayó a ${protegido.tier}`);
+  }
+
+  // El ápice no tiene divisiones y su LP no tiene techo.
+  const apice = aplicarLP({ ...base, tier: 'diamond', division: 1, lp: 95 }, 900, servidor, rng);
+  if (apice.division !== null || !esApice(apice)) {
+    throw new Error('entrar al ápice dejó una división colgada');
+  }
+
+  // Ida y vuelta: los puntos absolutos son una representación fiel.
+  for (let puntos = 0; puntos < 4000; puntos += 37) {
+    const ranked = desdePuntos(puntos, servidor);
+    if (puntosAbsolutos({ ...base, ...ranked }) !== puntos) {
+      throw new Error(`ida y vuelta rota en ${puntos} puntos`);
+    }
+  }
+});
+
+check('No hay decay: la escalera no se mueve sola', () => {
+  // Un profesional juega soloQ todos los días, así que la inactividad no es
+  // parte de esta historia. Lo que se verifica es que la escalera no baje POR
+  // SÍ SOLA — un evento con efecto negativo sí puede hacerte perder LP, y eso
+  // es una consecuencia, no decay.
+  const servidor = servidorConCutoffs('LAS');
+  const rng = mulberry32(11);
+
+  for (let puntos = 0; puntos < 4200; puntos += 53) {
+    const ranked = { servidor: 'LAS', escudo: 0, partidas: 0, ...desdePuntos(puntos, servidor) };
+    for (let split = 0; split < 20; split += 1) {
+      const despues = aplicarLP(ranked, 0, servidor, rng);
+      if (puntosAbsolutos(despues) !== puntos) {
+        throw new Error(`la escalera se movió sola: ${puntos} → ${puntosAbsolutos(despues)}`);
+      }
+    }
+  }
+});
+
+check('Nadie escribe el espejo de la escalera', () => {
+  // `player.soloqElo` es derivado. Si un efecto lo escribiera, quedaría
+  // desincronizado de `player.ranked` sin que nada lo detecte.
+  for (const evento of TODOS_LOS_EVENTOS) {
+    for (const opcion of evento.options) {
+      for (const outcome of opcion.outcomes) {
+        for (const effect of outcome.effects) {
+          if (effect.path === 'player.soloqElo') {
+            throw new Error(`${evento.id}: escribe el espejo player.soloqElo; usá { "type": "ladder", "path": "player.ranked" }`);
+          }
+          if (effect.path === 'player.ranked' && effect.type !== 'ladder') {
+            throw new Error(`${evento.id}: player.ranked solo se toca con efectos de tipo "ladder"`);
+          }
+        }
+      }
+    }
+  }
+});
+
+check('La escalera produce una distribución realista al cerrar la etapa amateur', () => {
+  let challenger = 0;
+  let top50 = 0;
+  const total = 400;
+
+  for (let seed = 1; seed <= total; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    while (!state.terminado && state.phase === 'amateur' && state.player.splitCount < 20) {
+      state = avanzarSplitAuto(state, rng).state;
+    }
+
+    if (esApice(state.player.ranked)) {
+      const puesto = rangoAproximado(state.player.ranked, servidorDeLaPartida(state));
+      if (puesto !== null) {
+        challenger += 1;
+        if (puesto <= BALANCE.amateur.puestoParaOrgGrande) {
+          top50 += 1;
+        }
+      }
+    }
+  }
+
+  // Challenger es el 0,025% de la ladder real. Acá el jugador es un prospecto,
+  // no un jugador cualquiera, pero llegar arriba tiene que seguir siendo raro.
+  const porcentajeChall = (challenger / total) * 100;
+  if (porcentajeChall < 1 || porcentajeChall > 20) {
+    throw new Error(`${porcentajeChall.toFixed(1)}% llegó a Challenger: fuera de la banda 1-20%`);
+  }
+  if ((top50 / total) * 100 > 6) {
+    throw new Error(`${((top50 / total) * 100).toFixed(1)}% llegó al top 50 de su servidor: demasiado común`);
   }
 });
 

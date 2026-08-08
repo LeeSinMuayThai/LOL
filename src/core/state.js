@@ -1,5 +1,6 @@
 import { BALANCE } from '../data/balance.js';
 import { generarMundo } from './mundo.js';
+import { puntosAbsolutos } from './ranked.js';
 
 // El mundo entero sale de la seed (CONCEPTO §8): rol, region, colegio, viejos,
 // potencial oculto, forma de carrera, pool inicial, meta y rivales. Por eso el
@@ -35,7 +36,12 @@ export function createInitialState(seed, rng) {
       studies: jugador.barras.studies,
       familyTrust: jugador.barras.familyTrust,
       sleep: jugador.barras.sleep,
-      soloqElo: inicial.soloqElo,
+      // La escalera real: tier, división y LP. Es la fuente de verdad.
+      ranked: jugador.ranked,
+      // Espejo derivado de solo lectura (puntos absolutos de la escalera).
+      // Existe para que todo lo que ya leía este campo siga funcionando; nadie
+      // lo escribe salvo `conRanked`.
+      soloqElo: puntosAbsolutos(jugador.ranked),
       // Periodos consecutivos robandole al sueño, ya convertidos en deuda.
       deudaSueno: 0,
       splitCount: 0,

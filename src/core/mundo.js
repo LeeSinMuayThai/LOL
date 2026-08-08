@@ -2,6 +2,8 @@ import { roll, gauss, chance, pick, sample, weightedPick } from './rng.js';
 import { clamp, clampStat } from './numeros.js';
 import { BALANCE } from '../data/balance.js';
 import { nivelDeCurva } from './curvas.js';
+import { rankedInicial } from './ranked.js';
+import { SERVIDORES } from '../data/servidores.js';
 import { ARQUETIPOS } from '../data/meta-tags.js';
 import { IDS_ROL } from '../data/roles.js';
 import LIGAS from '../data/leagues.json' with { type: 'json' };
@@ -55,6 +57,30 @@ function generarLigas(rng) {
       fuerza: Math.round(clamp(gauss(liga.prestigio, fuerzaOrgSpread, rng), fuerzaOrgMin, fuerzaOrgMax))
     }))
   }));
+}
+
+// Los cutoffs de cada servidor se sortean una vez por partida alrededor de sus
+// valores reales: entrar a Challenger no cuesta lo mismo en dos carreras.
+function generarServidores(rng) {
+  const { cutoffSpread, proporcionCutoffGM } = BALANCE.ranked;
+
+  return Object.fromEntries(SERVIDORES.map((servidor) => {
+    const cutoffChallenger = Math.round(servidor.cutoffChallengerBase * (1 + gauss(0, cutoffSpread, rng)));
+    return [servidor.id, {
+      cutoffChallenger,
+      cutoffGM: Math.round(cutoffChallenger * proporcionCutoffGM)
+    }];
+  }));
+}
+
+// Donde arranca en soloQ un pibe de 15. La mediana de la ladder real esta en
+// Plata/Oro: nadie empieza en Platino. El potencial oculto corre el punto de
+// partida, asi que un prodigio ya arranca mas arriba sin que se le diga.
+function generarRankedInicial(servidorId, potencial, rng) {
+  const r = BALANCE.ranked;
+  const base = r.puntosInicialesBase + potencial * r.puntosInicialesPorPotencial;
+  const puntos = Math.max(r.puntosInicialesMin, gauss(base, r.puntosInicialesSpread, rng));
+  return rankedInicial(servidorId, puntos);
 }
 
 function generarMetaInicial(rng) {
@@ -184,7 +210,8 @@ export function generarMundo(rng, edadInicial) {
       oculto,
       stats: generarStatsIniciales(oculto, edadInicial, rng),
       barras: generarBarrasIniciales(rng),
-      championPool: generarPoolInicial(rol, rng)
+      championPool: generarPoolInicial(rol, rng),
+      ranked: generarRankedInicial(ligaOrigen.servidor, oculto.potencial, rng)
     },
     origen: generarOrigen(rng),
     mundo: {
@@ -192,6 +219,8 @@ export function generarMundo(rng, edadInicial) {
       ligaOrigen: ligaOrigen.id,
       regionOrigen: ligaOrigen.region,
       regionIdOrigen: ligaOrigen.regionId,
+      servidorOrigen: ligaOrigen.servidor,
+      servidores: generarServidores(rng),
       // Que region manda en esta generacion: sesga los internacionales.
       regionDominante: weightedPick(ligas, (liga) => liga.prestigio, rng).region,
       metaInicial: generarMetaInicial(rng),

@@ -2,7 +2,7 @@ import { gauss, roll, chance, weightedPick } from '../core/rng.js';
 import { BALANCE } from '../data/balance.js';
 import { crearLog } from '../core/log.js';
 import { clamp, clampStat } from '../core/numeros.js';
-import { rangoDeElo } from '../core/selectors.js';
+import { aplicarLPAlEstado, etiquetaDeRanked, servidorDeLaPartida, rangoAproximado, esApice } from '../core/ranked.js';
 import { multiplicadorDeMeta } from '../core/ajusteMeta.js';
 import { registrarEnHistorial } from '../core/contexto.js';
 
@@ -17,6 +17,19 @@ const DESTINOS = [
 
 const IDS_DESTINO = DESTINOS.map((destino) => destino.id);
 
+// Cuanto más arriba estás, más te cuesta subir: arriba te toca gente mejor.
+// El freno no es un tope arbitrario — es la distancia entre tu nivel real y el
+// que exige el rango donde estás parado. Por eso el potencial oculto termina
+// decidiendo tu techo de ladder sin que se le diga nunca al jugador: lo intuye
+// cuando el LP deja de moverse.
+function factorDeAltura(state) {
+  const a = BALANCE.amateur;
+  const exigido = (state.player.soloqElo / a.puntosEscaleraCompleta) * BALANCE.stats.max;
+  const holgura = (state.player.stats.mecanica - exigido) / a.escalaNivelLadder;
+
+  return clamp(a.alturaFactorBase + holgura, a.alturaFactorMin, a.alturaFactorMax);
+}
+
 function lpDeUnBloque(state, rng) {
   const a = BALANCE.amateur;
   const { mecanica, mentalidad } = state.player.stats;
@@ -27,7 +40,8 @@ function lpDeUnBloque(state, rng) {
   // Si el meta pide lo que dominás, el mismo grindeo rinde el doble de LP.
   const factorMeta = multiplicadorDeMeta(state.meta.ajuste);
 
-  return gauss(a.lpPorBloque, a.lpPorBloqueSpread, rng) * factorMecanica * factorMentalidad * penalDeuda * factorMeta;
+  return gauss(a.lpPorBloque, a.lpPorBloqueSpread, rng)
+    * factorMecanica * factorMentalidad * penalDeuda * factorMeta * factorDeAltura(state);
 }
 
 // La probabilidad de cada banda crece a medida que los estudios bajan, y se
@@ -84,7 +98,7 @@ function decisionDeReparto(state) {
 
   return {
     tipo: 'reparto',
-    titulo: `Cómo repartís la semana (${rangoDeElo(state.player.soloqElo)}, ${state.player.soloqElo} LP)`,
+    titulo: `Cómo repartís la semana — ${etiquetaDeRanked(state.player.ranked, servidorDeLaPartida(state))}`,
     descripcion: `${textoDeSituacion(state)} Tenés ${bloques} bloques de tiempo y podés robarle hasta ${BALANCE.amateur.bloquesExtraMax} al sueño.`,
     bloques,
     extraMax: BALANCE.amateur.bloquesExtraMax,
@@ -186,7 +200,6 @@ function aplicarReparto(state, reparto, extra, rng) {
 
   const player = {
     ...state.player,
-    soloqElo: Math.max(0, state.player.soloqElo + lpGanado),
     studies: clampStat(estudiosDespues),
     sleep: clampStat(state.player.sleep + reparto.dormir * a.suenoPorBloque - caidaSueno - extra * a.suenoPorBloqueRobado),
     familyTrust: clampStat(state.player.familyTrust + reparto.familia * a.familiaPorBloque - caidaTrust),
@@ -197,10 +210,20 @@ function aplicarReparto(state, reparto, extra, rng) {
     }
   };
 
+  // El LP se aplica sobre la escalera real: promociona, desciende y renombra el
+  // rango solo. El log dice el rango, no un número abstracto.
+  const conEscalera = aplicarLPAlEstado(
+    { ...state, player, flags: { ...state.flags, robosConsecutivos } },
+    lpGanado,
+    rng
+  );
+  const servidor = servidorDeLaPartida(conEscalera);
+
   logs.push(crearLog(
     'amateur',
     `Semana repartida (${reparto.ranked} ranked / ${reparto.estudiar} colegio / ${reparto.dormir} dormir / ${reparto.familia} familia${extra > 0 ? ` + ${extra} robados al sueño` : ''}): `
-    + `${lpGanado >= 0 ? '+' : ''}${lpGanado} LP, ${Math.round(player.studies - state.player.studies)} estudios, `
+    + `${lpGanado >= 0 ? '+' : ''}${lpGanado} LP → ${etiquetaDeRanked(conEscalera.player.ranked, servidor)}, `
+    + `${Math.round(player.studies - state.player.studies)} estudios, `
     + `${Math.round(player.sleep - state.player.sleep)} sueño, ${Math.round(player.familyTrust - state.player.familyTrust)} confianza.`
   ));
 
@@ -211,7 +234,7 @@ function aplicarReparto(state, reparto, extra, rng) {
   // En la etapa amateur "cómo te fue" es cuánto LP hiciste contra lo que se
   // espera de un split normal. Alimenta el momentum del contexto.
   const conHistorial = registrarEnHistorial(
-    { ...state, player, flags: { ...state.flags, robosConsecutivos } },
+    conEscalera,
     (lpGanado / a.lpReferenciaHistorial) * (BALANCE.stats.max / 2)
   );
 
@@ -276,17 +299,49 @@ function evaluarRiesgoFamiliar(state, rng) {
 
 // --- Las tres salidas ---
 
+// A un prospecto no lo fichan por estar "alto de elo": lo fichan por estar
+// arriba de la ladder de su servidor, y muy joven. El caso canónico es Calix,
+// rank 1 de Corea a los 16. Estar en Challenger #250 a los 22 no te ficha nadie.
+//
+// Por eso el gate no es un umbral de LP sino la posición: Máster/Gran Máster te
+// abre la puerta de un equipo chico, Challenger la de uno serio, y el top de la
+// ladder la de una org de primera.
+export function nivelDeInteres(state) {
+  const a = BALANCE.amateur;
+  const servidor = servidorDeLaPartida(state);
+  const { ranked } = state.player;
+
+  if (!esApice(ranked)) {
+    return null;
+  }
+
+  const puesto = rangoAproximado(ranked, servidor);
+  if (puesto !== null && puesto <= a.puestoParaOrgGrande && state.age <= a.edadParaOrgGrande) {
+    return 'elite';
+  }
+  if (puesto !== null) {
+    return 'challenger';
+  }
+  return 'apice';
+}
+
 function probabilidadDeScouting(state) {
   const a = BALANCE.amateur;
 
-  if (state.player.splitCount < a.splitMinimoScouting || state.player.soloqElo < a.eloMinimoScouting) {
+  if (state.player.splitCount < a.splitMinimoScouting) {
     return 0;
   }
 
-  const avanceElo = clamp((state.player.soloqElo - a.eloMinimoScouting) / a.eloScoutingRango, 0, 1);
-  const avanceHype = clamp(state.player.stats.hype / a.hypeReferenciaScouting, 0, 1);
+  const base = a.scoutingProbPorNivel[nivelDeInteres(state)];
+  if (!base) {
+    return 0;
+  }
 
-  return a.scoutingProbMax * (avanceElo * a.scoutingPesoElo + avanceHype * a.scoutingPesoHype);
+  // El hype corre la probabilidad pero no la crea: sin ladder no hay fichaje.
+  const avanceHype = clamp(state.player.stats.hype / a.hypeReferenciaScouting, 0, 1);
+  const sesgoEtario = a.scoutingSesgoEtario[state.age] ?? a.scoutingSesgoEtarioMinimo;
+
+  return base * (a.scoutingPesoBase + avanceHype * a.scoutingPesoHype) * sesgoEtario;
 }
 
 function orgQueTeMira(state, rng) {
@@ -297,13 +352,12 @@ function orgQueTeMira(state, rng) {
 
 function buscarSalida(state, rng) {
   const a = BALANCE.amateur;
-  const lpMaster = BALANCE.rangos.find((rango) => rango.nombre === 'Máster').lp;
 
   if (chance(probabilidadDeScouting(state), rng)) {
     const org = orgQueTeMira(state, rng);
     return decisionDeOpciones(
       `${org.nombre} te quiere en su academy`,
-      `Te vieron en soloQ con ${state.player.soloqElo} LP. Ofrecen contrato chico, mudanza a la gaming house y dejar el colegio a mitad de camino.`,
+      `Te vieron en la ladder: ${etiquetaDeRanked(state.player.ranked, servidorDeLaPartida(state))}. Ofrecen contrato chico, mudanza a la gaming house y dejar el colegio a mitad de camino.`,
       [
         { id: 'firmar', label: `Firmar con ${org.nombre}`, pesoAuto: 7 },
         { id: 'esperar_mejor_oferta', label: 'Agradecer y seguir grindeando por algo más grande', pesoAuto: 3 }
@@ -314,7 +368,9 @@ function buscarSalida(state, rng) {
 
   // Llegar a Master con la confianza familiar todavia en pie abre la
   // negociacion: es la unica salida que no depende de que alguien te elija.
-  if (!state.flags.negociacionGanada && state.player.soloqElo >= lpMaster && state.player.familyTrust >= a.negociacionTrustMinimo) {
+  // Llegar a Máster con la confianza familiar en pie abre la negociación: es la
+  // única salida que no depende de que alguien te elija.
+  if (!state.flags.negociacionGanada && esApice(state.player.ranked) && state.player.familyTrust >= a.negociacionTrustMinimo) {
     return decisionDeOpciones(
       'Máster: la charla que venías pateando',
       'Llegaste a Máster y en tu casa lo saben. Es el momento de sentarte a negociar en serio, o de dejarlo pasar una vez más.',

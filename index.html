@@ -264,16 +264,16 @@
 
       async function cargarModulos() {
         if (!modulos) {
-          const [{ mulberry32 }, { createInitialState }, pipeline, { BALANCE }, { etiquetaRol }, { rangoDeElo }, { describirContexto }] = await Promise.all([
+          const [{ mulberry32 }, { createInitialState }, pipeline, { BALANCE }, { etiquetaRol }, ranked, { describirContexto }] = await Promise.all([
             import('./src/core/rng.js'),
             import('./src/core/state.js'),
             import('./src/core/pipeline.js'),
             import('./src/data/balance.js'),
             import('./src/data/roles.js'),
-            import('./src/core/selectors.js'),
+            import('./src/core/ranked.js'),
             import('./src/core/contexto.js')
           ]);
-          modulos = { mulberry32, createInitialState, pipeline, BALANCE, etiquetaRol, rangoDeElo, describirContexto };
+          modulos = { mulberry32, createInitialState, pipeline, BALANCE, etiquetaRol, ranked, describirContexto };
         }
         return modulos;
       }
@@ -288,7 +288,8 @@
         stud.textContent = state.player.studies;
         trust.textContent = state.player.familyTrust;
         sleep.textContent = state.player.sleep;
-        elo.textContent = `${modulos.rangoDeElo(state.player.soloqElo)} · ${state.player.soloqElo}`;
+        elo.style.fontSize = '15px';
+        elo.textContent = modulos.ranked.etiquetaDeRanked(state.player.ranked, modulos.ranked.servidorDeLaPartida(state));
         fase.style.fontSize = '15px';
         fase.textContent = state.contexto
           ? modulos.describirContexto(state.contexto)
@@ -307,9 +308,9 @@
           summary.textContent = `Te bajaste a los ${state.age}: no daba más la cabeza. `
             + `${state.career.titulos} título(s) con ${state.career.currentOrg ?? 'nadie'}.`;
         } else if (state.finAnticipado === 'prohibicion_familiar') {
-          summary.textContent = `En tu casa te bajaron del ranked a los ${state.age}. Máximo alcanzado: ${state.player.soloqElo} LP.`;
+          summary.textContent = `En tu casa te bajaron del ranked a los ${state.age}. Máximo alcanzado: ${modulos.ranked.etiquetaDeRanked(state.player.ranked, modulos.ranked.servidorDeLaPartida(state))}.`;
         } else if (state.finAnticipado === 'no_llego') {
-          summary.textContent = `Se cerró la ventana de los prospectos con ${state.player.soloqElo} LP. Nadie llamó.`;
+          summary.textContent = `Se cerró la ventana de los prospectos en ${modulos.ranked.etiquetaDeRanked(state.player.ranked, modulos.ranked.servidorDeLaPartida(state))}. Nadie llamó.`;
         } else if (state.phase === 'profesional') {
           summary.textContent = `${state.career.currentOrg} · jerarquía ${state.career.jerarquia} · sinergia ${state.career.sinergia}`
             + ` · ${state.career.titulos} título(s) · ${state.career.internacionales} internacional(es)`

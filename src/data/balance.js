@@ -31,16 +31,33 @@ export const BALANCE = {
     soloqElo: 1200
   },
 
-  // Escalera de soloQ. El ascenso es por LP: no hay series de promocion.
-  rangos: [
-    { nombre: 'Oro', lp: 0 },
-    { nombre: 'Platino', lp: 1150 },
-    { nombre: 'Esmeralda', lp: 1450 },
-    { nombre: 'Diamante', lp: 1750 },
-    { nombre: 'Máster', lp: 2200 },
-    { nombre: 'Gran Máster', lp: 2600 },
-    { nombre: 'Challenger', lp: 2950 }
-  ],
+  // La escalera de soloQ real. El ascenso es por LP: no hay series de promocion
+  // desde 2023. Sin decay: un pro juega soloQ todos los dias.
+  ranked: {
+    lpPorDivision: 100,
+    divisionesPorTier: 4,
+    // Al descender de division no caes en 0 LP.
+    lpDescenso: [25, 50, 75],
+    // En el juego son 10 partidas de proteccion; a escala de split, un split.
+    escudoSplits: 1,
+    // El cutoff de Gran Master orbita el de Challenger.
+    proporcionCutoffGM: 0.62,
+    cutoffSpread: 0.08,
+
+    // Donde arranca un pibe de 15. No es Platino: la mediana de la ladder esta
+    // en Plata/Oro, y el potencial oculto corre el punto de partida.
+    puntosInicialesBase: 300,
+    puntosInicialesPorPotencial: 12,
+    puntosInicialesSpread: 180,
+    puntosInicialesMin: 200,
+
+    // Percentil de la playerbase por debajo de cada tier (distribucion real).
+    percentilPorTier: {
+      iron: 3, bronze: 19, silver: 41, gold: 65,
+      platinum: 83, emerald: 95, diamond: 99,
+      master: 99.9, grandmaster: 99.97, challenger: 99.98
+    }
+  },
 
   amateur: {
     // --- El bucle central: 10 bloques de atencion por periodo ---
@@ -49,14 +66,22 @@ export const BALANCE = {
 
     // Rendimiento por bloque de ranked. El factor de mecanica y el de mentalidad
     // van de "tiltrado" a "en llamas"; la deuda de sueño te frena aunque juegues.
-    lpPorBloque: 19,
-    lpPorBloqueSpread: 7,
+    lpPorBloque: 34,
+    lpPorBloqueSpread: 12,
     lpFactorMecanicaBase: 0.7,
     lpFactorMecanicaRango: 0.6,
     lpFactorMentalidadBase: 0.55,
     lpFactorMentalidadRango: 0.6,
     lpPenalPorDeuda: 0.15,
     lpPenalPorDeudaMax: 0.5,
+    // El freno del ascenso: cuanto mas arriba estas, mejor es la gente que te
+    // toca.  es el punto de la escalera que se
+    // considera nivel 100 (Challenger de un servidor grande).
+    puntosEscaleraCompleta: 4300,
+    escalaNivelLadder: 26,
+    alturaFactorBase: 0.72,
+    alturaFactorMin: 0.05,
+    alturaFactorMax: 1.7,
 
     estudioPorBloque: 3.4,
     suenoPorBloque: 4.5,
@@ -118,13 +143,24 @@ export const BALANCE = {
     sinPCMentalidadMax: -2,
 
     // --- Salida 1: te ficha un equipo ---
-    eloMinimoScouting: 1880,
-    eloScoutingRango: 700,
-    scoutingProbMax: 0.46,
-    scoutingPesoElo: 0.6,
-    scoutingPesoHype: 0.4,
+    // El gate no es un umbral de LP: es la posicion en la ladder del servidor.
+    // 'apice' = Master/Gran Master, 'challenger' = adentro de los cupos,
+    // 'elite' = arriba de todo y todavia joven (el caso Calix).
+    scoutingProbPorNivel: { apice: 0.26, challenger: 0.5, elite: 0.82 },
+    puestoParaOrgGrande: 50,
+    edadParaOrgGrande: 17,
+    scoutingPesoBase: 0.65,
+    // El mercado prefiere jovenes, y esto es lo que cierra la ventana de los
+    // prospectos: no es un limite de edad duro, es que a los 19 ya casi nadie
+    // te mira aunque tengas el mismo rango que a los 16. Es el mismo sesgo
+    // etario que despues gobierna el retiro.
+    scoutingSesgoEtario: { 15: 1, 16: 1, 17: 0.85, 18: 0.55, 19: 0.28 },
+    scoutingSesgoEtarioMinimo: 0.12,
+    scoutingPesoHype: 0.35,
     hypeReferenciaScouting: 60,
     splitMinimoScouting: 3,
+    // Master arranca el radar de los scouts.
+    puntosParaRadar: 2800,
 
     // --- Salida 2: la negociacion con los viejos al llegar a Master ---
     negociacionTrustMinimo: 38,
@@ -137,7 +173,7 @@ export const BALANCE = {
     nocturnoFactorDecaeEstudio: 0.35,
 
     // --- Fin de la etapa: a los 18 se termina el margen ---
-    edadLimite: 18,
+    edadLimite: 20,
 
     // --- Como reparte el jugador automatico (simulacion masiva) ---
     // No reparte al azar: reacciona a las barras que tiene en rojo, como haria
@@ -160,7 +196,7 @@ export const BALANCE = {
 
     // LP de un split "normal": es la vara contra la que se mide si venís en
     // racha o en slump durante la etapa amateur.
-    lpReferenciaHistorial: 95
+    lpReferenciaHistorial: 190
   },
 
   atributos: {

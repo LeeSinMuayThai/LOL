@@ -2,6 +2,7 @@ import { roll, weightedPick, chance } from '../core/rng.js';
 import { getPath, setPath, cumpleCondiciones, etiquetaCampo } from '../core/selectors.js';
 import { calcularContexto, coincideContexto } from '../core/contexto.js';
 import { resolverTexto } from '../core/plantillas.js';
+import { aplicarLPAlEstado, etiquetaDeRanked, servidorDeLaPartida } from '../core/ranked.js';
 import { crearLog } from '../core/log.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
@@ -42,6 +43,18 @@ function candidatos(state) {
 }
 
 function aplicarEfecto(state, effect, rng) {
+  // La escalera de soloQ no se escribe sumando a un entero: se aplica LP y ella
+  // resuelve promoción, descenso y el rango que se muestra.
+  if (effect.type === 'ladder') {
+    const antes = etiquetaDeRanked(state.player.ranked, servidorDeLaPartida(state));
+    const nextState = aplicarLPAlEstado(state, roll(effect.min, effect.max, rng), rng);
+    const despues = etiquetaDeRanked(nextState.player.ranked, servidorDeLaPartida(nextState));
+    return {
+      state: nextState,
+      descripcion: antes === despues ? `SoloQ ${despues}` : `SoloQ: ${antes} → ${despues}`
+    };
+  }
+
   if (effect.type === 'push') {
     const lista = getPath(state, effect.path) ?? [];
     const valor = weightedPick(effect.values, () => 1, rng);

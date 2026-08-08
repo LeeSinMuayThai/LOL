@@ -93,8 +93,8 @@
             "weight": 7,
             "effects": [
               {
-                "type": "stat",
-                "path": "player.soloqElo",
+                "type": "ladder",
+                "path": "player.ranked",
                 "min": 15,
                 "max": 30
               }
@@ -104,8 +104,8 @@
             "weight": 3,
             "effects": [
               {
-                "type": "stat",
-                "path": "player.soloqElo",
+                "type": "ladder",
+                "path": "player.ranked",
                 "min": 30,
                 "max": 50
               },
