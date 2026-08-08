@@ -144,6 +144,9 @@
         "outcomes": [
           {
             "weight": 7,
+            "modificadores": [
+              { "field": "player.stats.mentalidad", "referencia": 65, "factor": 0.015 }
+            ],
             "texto": "Cortás a las cuatro y media con el pecho ardiendo. Valió cada partida, y mañana lo vas a pagar.",
             "effects": [
               { "type": "ladder", "path": "player.ranked", "min": 30, "max": 60 },

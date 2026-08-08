@@ -19,6 +19,10 @@
         "outcomes": [
           {
             "weight": 6,
+            "modificadores": [
+              { "field": "player.stats.teamfight", "referencia": 50, "factor": 0.02 },
+              { "field": "player.stats.mecanica", "referencia": 55, "factor": 0.015 }
+            ],
             "texto": "Te arriesgás, conectás todo el daño, y la pelea se define en tres segundos gracias a vos.",
             "effects": [
               { "type": "stat", "path": "player.stats.teamfight", "min": 3, "max": 6, "clamp": [0, 100] },

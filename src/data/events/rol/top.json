@@ -41,6 +41,9 @@
         "outcomes": [
           {
             "weight": 6,
+            "modificadores": [
+              { "field": "player.stats.mecanica", "referencia": 55, "factor": 0.02 }
+            ],
             "texto": "Te sale la jugada arriesgada y la línea vuelve a estar pareja. El corazón todavía no te vuelve al pecho.",
             "effects": [
               { "type": "stat", "path": "player.stats.laneo", "min": 2, "max": 4, "clamp": [0, 100] },

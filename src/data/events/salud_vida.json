@@ -146,6 +146,9 @@
         "outcomes": [
           {
             "weight": 6,
+            "modificadores": [
+              { "field": "player.stats.mentalidad", "referencia": 50, "factor": 0.02 }
+            ],
             "texto": "Llegás al final del split en piloto automático. Los errores no son de manos: son de no estar mirando.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -8, "max": -5, "clamp": [0, 100] },

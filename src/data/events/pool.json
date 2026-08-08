@@ -246,6 +246,7 @@
     "description": "El campeón con el que más jugaste este año se cayó del meta actual. Seguís teniendo la maestría; el juego ya no te la valora igual.",
     "weight": 6,
     "cooldown": 6,
+    "bisagra": true,
     "contexto": {
       "marcas": ["main_muerto"]
     },
@@ -308,6 +309,7 @@
     "description": "El parche trajo un campeón nuevo para tu línea. Todavía nadie lo domina: aprenderlo ahora te pone adelante de todos, o te deja desprevenido si no te sale a tiempo para el próximo partido.",
     "weight": 7,
     "cooldown": 6,
+    "bisagra": true,
     "contexto": {
       "marcas": ["campeon_nuevo"]
     },

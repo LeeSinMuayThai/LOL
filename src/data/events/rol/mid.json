@@ -19,6 +19,9 @@
         "outcomes": [
           {
             "weight": 6,
+            "modificadores": [
+              { "field": "player.stats.mecanica", "referencia": 55, "factor": 0.025 }
+            ],
             "texto": "Le ganás el 1v1 en pleno mapa y el clip se corta solo. Ese momento va a valer más que cualquier estadística del partido.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 5, "clamp": [0, 100] },

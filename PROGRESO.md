@@ -24,6 +24,98 @@ y DECLIVE (§2), y contenido de eventos (20 de los ~200 que pide §8).
 
 ## Changelog
 
+### 2026-08-08 — Fase 2: que las decisiones pesen
+
+Tercera fase de `PLAN.md`. Dos problemas que arrastraba el juego desde el principio:
+`CONCEPTO.md` §8 promete *"la opción obviamente correcta sale mal a veces; tus stats
+corren esos pesos, no los eliminan"* y nunca se implementó (los outcomes tenían pesos
+fijos en el JSON), y todos los splits pedían la misma cantidad de decisiones sin importar
+si algo había cambiado o no.
+
+**Pesos dinámicos — `outcome.modificadores`.** Nuevo campo opcional en el esquema de
+eventos:
+
+```json
+{ "weight": 6, "modificadores": [{ "field": "player.stats.mecanica", "referencia": 55, "factor": 0.02 }] }
+```
+
+`pesoEfectivo = weight × (1 + Σ (valor − referencia) × factor)`, con un piso
+(`BALANCE.eventos.pisoPesoEfectivo: 0.15`) para que ningún outcome llegue a probabilidad
+cero — corre los pesos, no los borra. `resolverOpcion` pasó a usar `elegirOutcome`, que
+queda exportado y testeable por separado. Se retrofitearon **6 outcomes reales** del
+catálogo (no todo el catálogo: es una pieza que se sigue extendiendo en fases futuras) —
+el duelo de línea de mid, la invasión de jungla, la pelea de adc, la racha de ranked y el
+burnout ahora corren con la mecánica o la mentalidad del jugador. **Es prerrequisito duro
+de la fase 4**: sin esto, el draft del mapa 5 sería una moneda en vez de una apuesta
+informada.
+
+**Densidad emergente — `src/core/presupuesto.js`.** La regla: *novedad = densidad*.
+`tipoDeSplit(state)` compara el contexto con el que arrancó el split
+(`state.contexto`, el snapshot que toma `systems/contexto.js`) contra el contexto en vivo
+en el momento en que se llama, y clasifica el split en `denso` (cambió de etapa o de
+nivel, se murió el main, o es la ventana de playoffs) / `normal` / `comprimido` (nada de
+eso). `events.js` usa esa clasificación para decidir la probabilidad de encadenar un
+segundo evento en el mismo split (`BALANCE.edad.probSegundaDecisionPorTipo`: denso 0.85,
+normal 0.4, comprimido 0.12 — antes era 0.4 fijo siempre). `maxDecisionesPorSplit` subió
+de 8 a 16 (trampa T9: con series + mercado + retiro de fases futuras, 8 se va a quedar
+corto), conservado como red anti-loop, no como regla de juego.
+
+**`bisagra: true`** — un evento marcado así se prioriza sobre el resto del pool ambiente
+cuando es candidato: *"salió tu campeón nuevo"* no puede perder un sorteo de peso contra
+*"racha de ranked"*. Marcados: `pool_campeon_nuevo` y `pool_main_muerto`.
+
+**6 checks nuevos (36 en total).** Dos de ellos existen porque el primer intento de
+verificación **no alcanzaba** — se corrigió en el momento, no después:
+
+```
+Los stats corren los pesos de un outcome, no los deciden (CONCEPTO §8)
+tipoDeSplit clasifica denso/comprimido correctamente          — test directo, sin simular
+El chaining de un segundo evento de verdad usa tipoDeSplit    — no una probabilidad fija
+La densidad de decisiones es emergente, no pareja ni descontrolada
+Ningún split cierra sin dejar una línea en el feed
+```
+
+Al verificar que los checks fallan cuando deben (trampa T5) forzando `tipoDeSplit` a
+devolver siempre `'denso'`, el check de densidad poblacional **no lo detectó** — mide
+proporciones agregadas (ratio percentil-90/mediana), y una inflación pareja de todos los
+splits no cambia esa proporción. Se agregó un test directo sobre la función pura
+(`tipoDeSplit distingue denso de comprimido`) que sí lo agarra. Después, forzando que
+`resolver()` encadene siempre sin mirar la probabilidad, **tampoco lo agarró** ningún
+check existente — la arquitectura solo encadena un nivel, así que el peor caso seguía
+estando dentro de los rangos aceptados. Se agregó un tercer check
+(`El chaining de un segundo evento de verdad usa tipoDeSplit`) que llama a `resolver()`
+de verdad sobre un estado profesional real, forzando el contexto "antes" a comprimido o a
+denso, y compara las tasas de chaining medidas. Los tres juntos sí cierran el hueco.
+
+**Medido, antes → después** (400 carreras headless, seeds 1-400):
+
+| | fin de fase 1 | fin de fase 2 |
+|---|---|---|
+| mediana decisiones/carrera | 80.6 (media, no mediana — fase 0) | **46** (mediana) |
+| máximo de decisiones en un solo split | sin tope explícito | **6**, verificado en 400 carreras |
+| ratio decisiones/split, p90 duración vs. mediana | no existía el concepto | **0.74×** (tope exigido: 1.8×) |
+| splits sin ninguna línea de log | no medido | **0** en 100 carreras × 30 splits |
+
+**Corrección de rumbo respecto del `PLAN.md` original**: la fase 2 proponía gatear una
+mediana de 70-130 decisiones por carrera. Medido dio 46, y **no es una regresión**: es la
+consecuencia correcta de que los splits `comprimido` ahora casi nunca encadenan (12%
+contra el 40% parejo de antes). El 70-130 es un objetivo del **juego terminado** — asume
+mercado, series y retiro (fases 3 a 6), que hoy no aportan ninguna decisión. Gatearlo
+ahora hubiera sido medirse contra trabajo que todavía no existe (trampa T6). El `PLAN.md`
+se corrigió en el momento para reflejar esto: la fase 2 gatea la **forma** de la densidad
+(tope por split, ratio largo/mediano), el volumen total se vuelve a medir en la fase 8.
+
+`simulate.js 1500 40 todas`: 0 crashes en las 3 estrategias, llega a pro sin cambios
+significativos (43.6%, era 43.5%). `cobertura.js` sigue sin huecos.
+
+**Sin arreglar a propósito, van en fases posteriores**: solo 6 de los ~90 outcomes usan
+`modificadores` — el resto del catálogo se retrofitea a medida que la fase 7 amplía
+contenido. `nivel` sigue sin poder valer otra cosa que `tier1` una vez profesional (no hay
+tier3/tier2 todavía — fase 3). El presupuesto de densidad hoy solo gobierna el
+**segundo evento** de `events.js`; el mercado, las series y el retiro (fases 4-6) van a
+sumar sus propias fuentes de decisión, y en ese momento `tipoDeSplit` se extiende con sus
+propios disparadores (vence el contrato, cambio de tier, lesión, cambio de región).
+
 ### 2026-08-08 — Fase 1: identidad. Elegís rol y mains, y eso importa
 
 Segunda fase de `PLAN.md`. Antes de esto, `mundo.js` sorteaba tu rol y tu pool

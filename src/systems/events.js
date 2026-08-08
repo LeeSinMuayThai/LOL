@@ -6,6 +6,7 @@ import { aplicarLPAlEstado, etiquetaDeRanked, servidorDeLaPartida } from '../cor
 import { aprenderCampeones, subirMaestria, olvidarPeor, principalDelPool } from '../core/pool.js';
 import { crearLog } from '../core/log.js';
 import { deltaCorto, lista } from '../core/formato.js';
+import { tipoDeSplit } from '../core/presupuesto.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 
@@ -128,8 +129,17 @@ function actualizarCooldowns(state, eventoElegido) {
   return { ...state, flags: { ...state.flags, cooldowns } };
 }
 
+// Una bisagra siempre pasa; una normal compite por el turno (fase 2, densidad
+// emergente). Si hay al menos un candidato bisagra este split, el resto del
+// pool ambiente ni siquiera entra al sorteo: "salió tu campeón nuevo" no puede
+// perder contra "racha de ranked" por una tirada de peso.
+function conPrioridadDeBisagra(eventos) {
+  const bisagras = eventos.filter((event) => event.bisagra);
+  return bisagras.length > 0 ? bisagras : eventos;
+}
+
 export function elegirEvento(state, rng, { excluirId } = {}) {
-  const disponibles = candidatos(state).filter((event) => event.id !== excluirId);
+  const disponibles = conPrioridadDeBisagra(candidatos(state).filter((event) => event.id !== excluirId));
   if (disponibles.length === 0) {
     return null;
   }
@@ -150,6 +160,31 @@ export function elegirEventoCierre(state, rng) {
   return weightedPick(disponibles, (event) => event.weight, rng);
 }
 
+// La promesa de CONCEPTO §8: "la opción obviamente correcta sale mal a veces.
+// Tus stats corren esos pesos, no los eliminan." Un outcome sin `modificadores`
+// mantiene su peso de siempre; uno con `modificadores` lo corre según qué tan
+// lejos estás del valor de referencia declarado. El piso evita que un stat muy
+// malo lleve un outcome a probabilidad cero — CORRE los pesos, no los borra.
+function pesoEfectivo(state, outcome) {
+  if (!outcome.modificadores) {
+    return outcome.weight;
+  }
+
+  const ajuste = outcome.modificadores.reduce((suma, mod) => {
+    const valor = getPath(state, mod.field) ?? mod.referencia;
+    return suma + (valor - mod.referencia) * mod.factor;
+  }, 0);
+
+  return Math.max(outcome.weight * BALANCE.eventos.pisoPesoEfectivo, outcome.weight * (1 + ajuste));
+}
+
+// Separado de `resolverOpcion` para que sea testeable sin aplicar efectos: el
+// check de balance necesita saber QUÉ outcome salió con un stat en el
+// percentil 10 contra el percentil 90, sin tocar el resto del estado.
+export function elegirOutcome(state, opcion, rng) {
+  return weightedPick(opcion.outcomes, (outcome) => pesoEfectivo(state, outcome), rng);
+}
+
 // Elegir tiene que devolver una historia, no un diff.
 //
 // Antes esto loguaba `"Meme de la prensa — Subirse a la ola: Hype +8, Mentalidad -1."`
@@ -163,7 +198,7 @@ export function elegirEventoCierre(state, rng) {
 export function resolverOpcion(state, evento, opcionId, rng) {
   const vivas = opcionesVivas(state, evento);
   const opcion = vivas.find((option) => option.id === opcionId) ?? vivas[0] ?? evento.options[0];
-  const outcome = weightedPick(opcion.outcomes, (out) => out.weight, rng);
+  const outcome = elegirOutcome(state, opcion, rng);
 
   const titulo = `${resolverTexto(evento.title, state)} · ${resolverTexto(opcion.label, state)}`;
 
@@ -241,8 +276,11 @@ export function resolver(state, decision, respuesta, rng) {
     return { state: nextState, logs };
   }
 
-  // A veces la vida se amontona: un segundo evento antes de que cierre el split.
-  if (decision.slot === 1 && chance(BALANCE.edad.probSegundaDecision, rng)) {
+  // A veces la vida se amontona: un segundo evento antes de que cierre el
+  // split. Cuánto de seguido depende de cuánto cambió ya este split (fase 2):
+  // un split denso casi siempre amontona, uno comprimido casi nunca.
+  const probabilidad = BALANCE.edad.probSegundaDecisionPorTipo[tipoDeSplit(nextState)];
+  if (decision.slot === 1 && chance(probabilidad, rng)) {
     const segundoEvento = elegirEvento(nextState, rng, { excluirId: evento.id });
     if (segundoEvento) {
       return {

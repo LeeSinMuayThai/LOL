@@ -19,6 +19,9 @@
         "outcomes": [
           {
             "weight": 6,
+            "modificadores": [
+              { "field": "player.stats.mecanica", "referencia": 55, "factor": 0.02 }
+            ],
             "texto": "Lo agarrás limpiando su propio buff y le arruinás el arranque del partido. El resto del equipo lo nota enseguida.",
             "effects": [
               { "type": "stat", "path": "player.stats.shotcalling", "min": 2, "max": 5, "clamp": [0, 100] },

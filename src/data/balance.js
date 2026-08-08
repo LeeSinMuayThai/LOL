@@ -9,7 +9,19 @@ export const BALANCE = {
   // si un sistema queda mal configurado.
   partida: {
     maxSplitsDeSeguridad: 90,
-    maxDecisionesPorSplit: 8
+    // Con densidad emergente un split denso puede encadenar varias decisiones
+    // (evento + evento + mercado + cierre, fases 2 y 5). El tope sigue siendo
+    // una red anti-loop, no una regla de juego: si algo lo alcanza, es un bug.
+    maxDecisionesPorSplit: 16
+  },
+
+  // Cuánto corren los stats la probabilidad de un outcome (CONCEPTO §8: "la
+  // opción obviamente correcta sale mal a veces; tus stats corren esos pesos,
+  // no los eliminan"). Ver `modificadores` en el esquema de eventos.
+  eventos: {
+    // Piso como fracción del peso base: ningún outcome cae por debajo de esto
+    // sin importar cuánto empeore el stat. Corre los pesos, no los borra.
+    pisoPesoEfectivo: 0.15
   },
 
   // Valores de arranque del jugador. Son las bases sobre las que el mundo
@@ -320,7 +332,11 @@ export const BALANCE = {
 
   edad: {
     splitsPorEdad: 3,
-    probSegundaDecision: 0.4
+    // Probabilidad de que se amontone una segunda decision en el mismo split,
+    // segun cuanto cambio el contexto en lo que va del split (fase 2, regla:
+    // novedad = densidad; ver core/presupuesto.js). Un split denso casi
+    // siempre pide una segunda decision; uno comprimido casi nunca.
+    probSegundaDecisionPorTipo: { denso: 0.85, normal: 0.4, comprimido: 0.12 }
   },
 
   // Umbrales que convierten el estado en contexto de carrera. Son las fronteras

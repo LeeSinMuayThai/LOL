@@ -17,6 +17,8 @@ import { TOKENS, tokensUsados } from '../core/plantillas.js';
 import { RUTINAS } from '../core/rutinas.js';
 import { campeonesEnMeta } from '../core/ajusteMeta.js';
 import { campeonesDisponibles } from '../core/pool.js';
+import { elegirOutcome, elegirEvento, decisionDesdeEvento, resolver as resolverEventos } from '../systems/events.js';
+import { tipoDeSplit } from '../core/presupuesto.js';
 import { EJES, MARCAS, MOMENTOS_ACTIVOS, momentoPorId } from '../data/contextos.js';
 import { ARQUETIPOS } from '../data/meta-tags.js';
 import { ROLES, IDS_ROL } from '../data/roles.js';
@@ -101,6 +103,9 @@ check('Esquema de eventos válido', () => {
     if (typeof evento.weight !== 'number' || evento.weight <= 0) {
       throw new Error(`${evento.id}: weight inválido`);
     }
+    if ('bisagra' in evento && evento.bisagra !== true) {
+      throw new Error(`${evento.id}: bisagra solo puede ser true (u omitirse)`);
+    }
     if (!Array.isArray(evento.conditions)) {
       throw new Error(`${evento.id}: conditions debe ser un array`);
     }
@@ -131,6 +136,23 @@ check('Esquema de eventos válido', () => {
         }
         if (!Array.isArray(outcome.effects) || outcome.effects.length === 0) {
           throw new Error(`${evento.id}/${opcion.id}: outcome sin efectos`);
+        }
+
+        // CONCEPTO §8: "tus stats corren esos pesos, no los eliminan". Un
+        // `modificador` sin `field` real seria un piso ciego: pesoEfectivo
+        // leeria undefined y el ajuste seria siempre el mismo numero fijo.
+        if (outcome.modificadores !== undefined) {
+          if (!Array.isArray(outcome.modificadores) || outcome.modificadores.length === 0) {
+            throw new Error(`${evento.id}/${opcion.id}: modificadores debe ser un array no vacío`);
+          }
+          for (const mod of outcome.modificadores) {
+            if (getPath(estadoBase, mod.field) === undefined) {
+              throw new Error(`${evento.id}/${opcion.id}: modificador sobre un campo inexistente (${mod.field})`);
+            }
+            if (typeof mod.referencia !== 'number' || typeof mod.factor !== 'number') {
+              throw new Error(`${evento.id}/${opcion.id}: modificador de ${mod.field} necesita referencia y factor numéricos`);
+            }
+          }
         }
 
         for (const effect of outcome.effects) {
@@ -330,8 +352,16 @@ check('Balance coherente', () => {
   if (!Number.isInteger(BALANCE.edad.splitsPorEdad) || BALANCE.edad.splitsPorEdad <= 0) {
     throw new Error('edad.splitsPorEdad debe ser un entero positivo');
   }
-  if (BALANCE.edad.probSegundaDecision < 0 || BALANCE.edad.probSegundaDecision > 1) {
-    throw new Error('edad.probSegundaDecision debe estar entre 0 y 1');
+  for (const [tipo, prob] of Object.entries(BALANCE.edad.probSegundaDecisionPorTipo)) {
+    if (prob < 0 || prob > 1) {
+      throw new Error(`edad.probSegundaDecisionPorTipo.${tipo} debe estar entre 0 y 1`);
+    }
+  }
+  if (BALANCE.edad.probSegundaDecisionPorTipo.denso <= BALANCE.edad.probSegundaDecisionPorTipo.comprimido) {
+    throw new Error('un split denso tiene que amontonar decisiones más seguido que uno comprimido');
+  }
+  if (BALANCE.eventos.pisoPesoEfectivo <= 0 || BALANCE.eventos.pisoPesoEfectivo >= 1) {
+    throw new Error('eventos.pisoPesoEfectivo debe estar entre 0 y 1 (corre los pesos, no los borra)');
   }
 });
 
@@ -934,6 +964,201 @@ check('main_muerto se observa cuando el meta te da vuelta el main', () => {
   const proporcion = vioMainMuerto / conSuficientesSplits.length;
   if (proporcion < 0.4) {
     throw new Error(`main_muerto apareció en ${(proporcion * 100).toFixed(1)}% de las carreras largas; el mínimo es 40%`);
+  }
+});
+
+// --- Fase 2: que las decisiones pesen ---
+
+function mediana(numeros) {
+  const ordenados = [...numeros].sort((a, b) => a - b);
+  return ordenados[Math.floor(ordenados.length / 2)];
+}
+
+check('Los stats corren los pesos de un outcome, no los deciden (CONCEPTO §8)', () => {
+  // Se prueba sobre contenido REAL, no un mock: `top_la_isla/buscar_la_revancha`
+  // es el primer outcome del catálogo con `modificadores`. Si esto se rompe,
+  // la promesa central de CONCEPTO §8 ("la opción obviamente correcta sale mal
+  // a veces; tus stats corren esos pesos") vuelve a ser mentira.
+  const evento = TODOS_LOS_EVENTOS.find((e) => e.id === 'top_la_isla');
+  const opcion = evento?.options.find((o) => o.id === 'buscar_la_revancha');
+  if (!opcion) {
+    throw new Error('no se encontró top_la_isla/buscar_la_revancha: el check apunta a contenido que ya no existe');
+  }
+
+  const base = createInitialState(1, mulberry32(1));
+  const conMecanica = (valor) => ({ ...base, player: { ...base.player, stats: { ...base.player.stats, mecanica: valor } } });
+
+  const proporcionDelBueno = (state) => {
+    const rng = mulberry32(777);
+    let buenos = 0;
+    for (let i = 0; i < 2000; i += 1) {
+      if (elegirOutcome(state, opcion, rng) === opcion.outcomes[0]) {
+        buenos += 1;
+      }
+    }
+    return buenos / 2000;
+  };
+
+  const bajo = proporcionDelBueno(conMecanica(20));
+  const alto = proporcionDelBueno(conMecanica(90));
+  const diferenciaPuntos = Math.abs(alto - bajo) * 100;
+
+  if (diferenciaPuntos < 15) {
+    throw new Error(`la distribución solo se movió ${diferenciaPuntos.toFixed(1)} puntos entre percentil 10 y 90 de mecánica; el mínimo es 15`);
+  }
+  if (bajo < 0.05 || alto < 0.05 || bajo > 0.95 || alto > 0.95) {
+    throw new Error(`un outcome quedó fuera de [5%, 95%] (bajo=${(bajo * 100).toFixed(1)}%, alto=${(alto * 100).toFixed(1)}%): el piso de pesoEfectivo no está corriendo los pesos, los está borrando`);
+  }
+});
+
+check('tipoDeSplit distingue denso de comprimido', () => {
+  // Test directo sobre la función pura, no sobre el agregado de 400 carreras:
+  // el check de más abajo mide el EFECTO poblacional, pero si `tipoDeSplit`
+  // devolviera siempre "denso" (o siempre "comprimido"), el agregado podría
+  // no notarlo porque compara proporciones, no clasificaciones absolutas.
+  const base = createInitialState(1, mulberry32(1));
+  const ahora = calcularContexto(base);
+
+  const comprimido = tipoDeSplit({ ...base, contexto: ahora });
+  if (comprimido !== 'comprimido') {
+    throw new Error(`un split sin ningún cambio de contexto dio "${comprimido}", esperaba "comprimido"`);
+  }
+
+  // "antes" con una etapa distinta a la que tiene el estado ahora: el mismo
+  // mecanismo que dispara cuando debutás a mitad de split.
+  const etapaDistinta = ahora.etapa === 'amateur' ? 'profesional' : 'amateur';
+  const denso = tipoDeSplit({ ...base, contexto: { ...ahora, etapa: etapaDistinta } });
+  if (denso !== 'denso') {
+    throw new Error(`un cambio de etapa dio "${denso}", esperaba "denso"`);
+  }
+
+  const primerSplit = tipoDeSplit({ ...base, contexto: null });
+  if (primerSplit !== 'denso') {
+    throw new Error('el primer split de la carrera (sin contexto previo) no dio "denso"');
+  }
+});
+
+check('El chaining de un segundo evento de verdad usa tipoDeSplit', () => {
+  // El check anterior prueba que `tipoDeSplit` clasifica bien; este prueba que
+  // `events.js` USA esa clasificación para decidir si amontona una segunda
+  // decisión, y no que alguien sacó el `chance(...)` de en medio y lo dejó
+  // fijo. Se llama a `resolver` de verdad, sobre un estado profesional real,
+  // forzando el contexto "antes" a comprimido o a denso.
+  let estadoPro = null;
+  busqueda: for (let seed = 1; seed <= 500; seed += 1) {
+    const rng = mulberry32(seed);
+    let candidato = createInitialState(seed, rng);
+    for (let i = 0; i < 20 && !candidato.terminado; i += 1) {
+      candidato = avanzarSplitAuto(candidato, rng).state;
+      if (candidato.phase === 'profesional' && candidato.career.companeros.length > 0 && !candidato.pendiente) {
+        estadoPro = candidato;
+        break busqueda;
+      }
+    }
+  }
+  if (!estadoPro) {
+    throw new Error('no se pudo armar un estado profesional real para probar el chaining');
+  }
+
+  const eventoRng = mulberry32(1);
+  const primerEvento = elegirEvento(estadoPro, eventoRng);
+  if (!primerEvento) {
+    throw new Error('el estado de prueba no tiene ningún evento candidato');
+  }
+  const decision = decisionDesdeEvento(estadoPro, primerEvento, { franja: 'normal', slot: 1 });
+  const respuesta = { opcionId: decision.opciones[0].id };
+  const ahora = calcularContexto(estadoPro);
+
+  const tasaDeChaining = (contextoAntes, repeticiones) => {
+    let veces = 0;
+    for (let i = 0; i < repeticiones; i += 1) {
+      const rng = mulberry32(50000 + i);
+      const estadoForzado = { ...estadoPro, contexto: contextoAntes };
+      const resultado = resolverEventos(estadoForzado, decision, respuesta, rng);
+      if (resultado.decision) {
+        veces += 1;
+      }
+    }
+    return veces / repeticiones;
+  };
+
+  const tasaComprimido = tasaDeChaining(ahora, 600);
+  const tasaDenso = tasaDeChaining({ ...ahora, etapa: ahora.etapa === 'amateur' ? 'profesional' : 'amateur' }, 600);
+
+  if (tasaDenso - tasaComprimido < 0.3) {
+    throw new Error(
+      `denso encadenó ${(tasaDenso * 100).toFixed(0)}% de las veces y comprimido ${(tasaComprimido * 100).toFixed(0)}%: `
+      + 'la diferencia es demasiado chica, resolver() puede no estar usando tipoDeSplit'
+    );
+  }
+});
+
+check('La densidad de decisiones es emergente, no pareja ni descontrolada', () => {
+  // Mide la regla de la fase 2 ("novedad = densidad") sobre el camino headless
+  // real, contando cuántas decisiones pide CADA split, no un promedio ciego.
+  const N = 400;
+  const porCarrera = [];
+
+  for (let seed = 1; seed <= N; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    let decisionesTotales = 0;
+    let splits = 0;
+
+    while (!state.terminado && splits < BALANCE.partida.maxSplitsDeSeguridad) {
+      let decisionesEsteSplit = 0;
+      const contar = (sistema, st, decision, r) => {
+        decisionesEsteSplit += 1;
+        return sistema.resolverAuto(st, decision, r);
+      };
+      state = avanzarSplitAuto(state, rng, contar).state;
+      splits += 1;
+      decisionesTotales += decisionesEsteSplit;
+
+      if (decisionesEsteSplit > 6) {
+        throw new Error(`seed ${seed}, split ${splits}: ${decisionesEsteSplit} decisiones en un solo split (máximo esperado: 6, "denso")`);
+      }
+    }
+
+    porCarrera.push({ decisiones: decisionesTotales, splits, porSplit: splits > 0 ? decisionesTotales / splits : 0 });
+  }
+
+  // El ratio p90/mediana es la traducción falsable de "las carreras largas son
+  // largas por durar más, no por ser más pesadas". No se gatea la mediana
+  // ABSOLUTA de decisiones por carrera: depende del volumen de contenido de
+  // mercado, series y retiro que todavía no existe (fases 3 a 6). Gatear ese
+  // número ahora sería compararse contra un baseline que asume trabajo que
+  // todavía no se hizo (trampa T6).
+  const porDuracion = [...porCarrera].sort((a, b) => a.splits - b.splits);
+  const p90 = porDuracion[Math.floor(porDuracion.length * 0.9)];
+  const medianaSplits = mediana(porCarrera.map((c) => c.splits));
+  const carreraMediana = porDuracion.reduce((mejor, c) => (
+    Math.abs(c.splits - medianaSplits) < Math.abs(mejor.splits - medianaSplits) ? c : mejor
+  ));
+
+  if (carreraMediana.porSplit > 0 && p90.porSplit > carreraMediana.porSplit * 1.8) {
+    throw new Error(
+      `las carreras del percentil 90 de duración piden ${p90.porSplit.toFixed(2)} decisiones/split `
+      + `contra ${carreraMediana.porSplit.toFixed(2)} de la carrera mediana (tope: 1.8×)`
+    );
+  }
+});
+
+check('Ningún split cierra sin dejar una línea en el feed', () => {
+  // Un split sin ninguna decisión no puede ser un split mudo: el parche, el
+  // rendimiento y la progresión de atributos loguean siempre. Si esto fallara,
+  // un split "comprimido" (fase 2) se leería como que no pasó nada.
+  for (let seed = 1; seed <= 100; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+
+    for (let i = 0; i < 30 && !state.terminado; i += 1) {
+      const logsAntes = state.logs.length;
+      state = avanzarSplitAuto(state, rng).state;
+      if (state.logs.length === logsAntes) {
+        throw new Error(`seed ${seed}: un split cerró sin agregar ninguna línea al feed`);
+      }
+    }
   }
 });
 

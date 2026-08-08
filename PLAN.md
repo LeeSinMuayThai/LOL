@@ -17,6 +17,7 @@ el juego) → este documento → `PROGRESO.md` (changelog) → `TRASPASO.md` (da
 |---|---|---|
 | **0** | Higiene: números, gating, texto narrativo | ✅ commit `cac4af2` |
 | **1** | Identidad: elegís rol y mains, y eso importa | ✅ ver `PROGRESO.md` |
+| **2** | Que las decisiones pesen: pesos dinámicos, densidad | ✅ ver `PROGRESO.md` |
 | **2** | Que las decisiones pesen: pesos dinámicos, densidad | ⬜ |
 | **3** | Escalera competitiva: tier3 → tier2 → tier1, ligas 2026 | ⬜ |
 | **4** | Competición jugable: series Bo5, Fearless, draft, minijuegos | ⬜ |
@@ -255,11 +256,23 @@ split según cuánto cambió respecto del anterior.
 ```
 Con el stat en el percentil 10 vs. el 90 (2000 resoluciones cada uno), la distribución
    de outcomes cambia ≥15 puntos porcentuales y NINGÚN outcome baja de 5%
-Decisiones por split ∈ [0, 6]; mediana por carrera ∈ [70, 130]
+tipoDeSplit clasifica denso/comprimido correctamente (test directo, sin simular)
+El chaining de un segundo evento usa tipoDeSplit de verdad, no una probabilidad fija
+   (denso encadena ≥30 puntos porcentuales más seguido que comprimido)
+Decisiones por split ∈ [0, 6]
 Las carreras del percentil 90 de duración no superan 1.8× la mediana en decisiones POR SPLIT
    (las carreras largas son largas por durar más, no por ser más pesadas)
 Ningún split queda sin ninguna línea de log
 ```
+
+> **Corrección post-medición**: la mediana original apuntaba a `[70, 130]` decisiones por
+> carrera. Medido en la fase 2 dio **46** — no es una regresión, es la consecuencia
+> correcta de que los splits `comprimido` ahora encadenan casi nunca (12% contra el 40%
+> parejo de antes). El `[70, 130]` es un objetivo del juego **terminado** (fases 3 a 7
+> agregan mercado, series y retiro, que son fuentes de decisiones que hoy no existen):
+> gatearlo en la fase 2 sería medirse contra trabajo que todavía no se hizo (trampa T6).
+> El check de la fase 2 gatea la FORMA de la densidad (tope por split, ratio largo/mediano),
+> no el volumen total, que se vuelve a medir en la fase 8.
 
 ---
 
