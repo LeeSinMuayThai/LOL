@@ -1,0 +1,185 @@
+[
+  {
+    "id": "jungla_invadir_o_no",
+    "category": "rol_jungla",
+    "title": "La jungla enemiga está sola",
+    "description": "Ves al jungla rival lejos de su lado del mapa. Invadir puede darte la ventaja del partido, o dejarte sin recursos para el resto de la jungla.",
+    "weight": 7,
+    "cooldown": 4,
+    "contexto": {
+      "rol": ["jungla"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "invadir",
+        "label": "Invadirle la jungla",
+        "descripcion": "Vas a buscar el golpe grande. Si sale bien, quedás muy arriba; si sale mal, empezás el partido en deuda con las cuatro líneas.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Lo agarrás limpiando su propio buff y le arruinás el arranque del partido. El resto del equipo lo nota enseguida.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.shotcalling", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te estaba esperando. Perdés recursos y llegás al primer objetivo grande sin nivel para pelearlo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.shotcalling", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugar_tu_jungla",
+        "label": "Farmear tu propio lado",
+        "descripcion": "Dejás pasar la ventana. Llegás a nivel y con recursos, sin haber arriesgado nada.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Terminás la ruta a full recursos, listo para el primer objetivo. Nadie te va a aplaudir por no haber invadido.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Jugás tan seguro que el jungla rival te saca ventaja de mapa sin que nadie lo note hasta el minuto quince.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 2, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "jungla_donde_se_juega",
+    "category": "rol_jungla",
+    "title": "Vos decidís dónde se juega el partido",
+    "description": "Con el mapa como está, podés forzar la acción arriba, donde tu top está perdiendo, o abajo, donde tu adc está rompiendo. Solo alcanza para uno de los dos.",
+    "weight": 6,
+    "cooldown": 4,
+    "contexto": {
+      "rol": ["jungla"],
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "salvar_al_top",
+        "label": "Ir a salvar a {top}",
+        "descripcion": "Frenás la sangría arriba. Si funciona, evitaste un desastre; si no, perdiste el tiempo en la línea que menos rendía.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Llegás justo a tiempo. {top} se salva y te lo va a acordar el resto del split.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.shotcalling", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Llegás y de todas formas pierden la línea. Perdiste tiempo de jungla por nada, y abajo tu adc se quedó sin apoyo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "potenciar_al_adc",
+        "label": "Meterle más a {adc}",
+        "descripcion": "Dejás que top se las arregle solo y le das más recursos a la línea que ya está ganando.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "{adc} se dispara del resto del servidor y el partido se define por ahí. Nadie habla del top que se perdió.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El top rival crece tanto que termina rompiendo el partido desde arriba, y la ventaja de abajo no alcanza para tapar el agujero.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "jungla_la_culpa_es_tuya",
+    "category": "rol_jungla",
+    "title": "Cuando sale mal, fuiste vos",
+    "description": "Pierden la jornada y el análisis del staff empieza y termina en tus rutas de la jungla. Nadie menciona la línea que se rindió sola a los diez minutos.",
+    "weight": 6,
+    "cooldown": 5,
+    "contexto": {
+      "rol": ["jungla"],
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "aceptar_la_critica",
+        "label": "Aceptar la crítica sin discutir",
+        "descripcion": "Te la bancás en silencio, aunque sepas que no fue solo tuyo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Te quedás callado y el staff lo lee como profesionalismo. Adentro tuyo queda pesando, pero afuera no se nota.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Te lo tragás una vez de más. Empieza a acumularse un resentimiento que en algún momento va a salir.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "repartir_la_responsabilidad",
+        "label": "Poner el VOD y mostrar lo que pasó en línea",
+        "descripcion": "Defendés tu lectura del partido con datos. Puede sonar a excusa, o puede sonar a que tenías razón.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El VOD habla solo: la línea se rindió antes de que vos tomaras ninguna decisión. El análisis se corrige en el review siguiente.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.shotcalling", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Lo tomás como que estás buscando de quién es la culpa en vez de mejorar. El clima del review queda peor que antes.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,181 @@
+[
+  {
+    "id": "support_nadie_te_vio",
+    "category": "rol_support",
+    "title": "Ganaron por vos y nadie lo sabe",
+    "description": "El ward que pusiste evitó una emboscada que nadie más vio venir. El equipo ganó el partido gracias a esa jugada, y en las estadísticas ni figura.",
+    "weight": 6,
+    "cooldown": 5,
+    "contexto": {
+      "rol": ["support"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "señalarlo_vos_mismo",
+        "label": "Marcarlo vos en el review",
+        "descripcion": "Ponés el clip y explicás por qué esa visión cambió el partido. Nadie más lo iba a hacer por vos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El staff lo ve y lo valora: la jugada queda registrada como lo que fue. Pequeña victoria, pero es tuya.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo marcás y nadie reacciona demasiado. El resto ya está mirando otra cosa del VOD.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejarlo_pasar",
+        "label": "No decir nada",
+        "descripcion": "Sabés lo que hiciste. No necesitás que nadie más lo confirme.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Te lo guardás para vos. Es una forma silenciosa de estar tranquilo con tu propio partido.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Guardártelo una vez más empieza a pesar. En algún momento el trabajo invisible cansa aunque no lo digas.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "support_el_ward_que_te_costo",
+    "category": "rol_support",
+    "title": "La visión no es gratis",
+    "description": "Comprar el control ward en el momento justo te deja sin oro para lo tuyo, otra vez. El mapa lo agradece; tu build, no.",
+    "weight": 6,
+    "cooldown": 4,
+    "contexto": {
+      "rol": ["support"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "comprar_la_vision",
+        "label": "Comprar el control ward igual",
+        "descripcion": "El mapa vale más que tu propio ítem. Es la decisión correcta y la que nadie te agradece.",
+        "weight": 6,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "La visión evita una jugada del rival en el momento exacto. Nadie te lo va a mencionar, pero funcionó.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.shotcalling", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "El ward no evita nada esta vez, y te quedaste atrás de ítems para el resto del partido por una jugada que no pasó.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "priorizar_tu_build",
+        "label": "Priorizar tu propio ítem",
+        "descripcion": "Por una vez jugás para vos. El mapa queda más ciego de lo que debería.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Con el ítem de más, respondés mejor en la pelea que se arma después. Nadie conecta las dos cosas.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La falta de visión les cuesta una jugada evitable, y en el review alguien pregunta dónde estaba el ward.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "support_no_te_siguen_la_llamada",
+    "category": "rol_support",
+    "title": "Ves la jugada y nadie te sigue",
+    "description": "Desde tu posición ves clarísimo que el equipo puede robar un objetivo grande. Lo pedís por el comm, y {adc} sigue farmeando como si no te hubiera escuchado.",
+    "weight": 5,
+    "cooldown": 5,
+    "contexto": {
+      "rol": ["support"],
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "insistir_por_el_comm",
+        "label": "Insistir hasta que te den bola",
+        "descripcion": "Repetís la llamada más fuerte. Puede que reaccionen a tiempo, o puede que sigan sin registrarte.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "A la segunda insistencia, {adc} reacciona y llegan a tiempo. La jugada sale, y la próxima vez te van a escuchar más rápido.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.shotcalling", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Nadie reacciona a tiempo y la ventana se cierra. Vos viste la jugada perfecta y el equipo ni se enteró de que existió.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ir_solo",
+        "label": "Ir vos solo a buscarla",
+        "descripcion": "Si no te siguen, la jugás igual. Sin respaldo, el riesgo es todo tuyo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "Contra todo pronóstico, la sacás solo. El equipo llega después a felicitarte por algo que no ayudó a conseguir.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "Sin respaldo, morís antes de terminar la jugada. En el review, la lectura queda como \"se fue solo\" y no como \"nadie lo siguió\".",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

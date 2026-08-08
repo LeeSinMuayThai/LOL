@@ -1,0 +1,183 @@
+[
+  {
+    "id": "adc_la_pelea_que_define",
+    "category": "rol_adc",
+    "title": "Todo el daño pasa por vos",
+    "description": "Llegás a la pelea de mitad de partido siendo la única fuente de daño real del equipo. Si te posicionás mal, no hay plan B.",
+    "weight": 7,
+    "cooldown": 4,
+    "contexto": {
+      "rol": ["adc"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "jugar_al_frente",
+        "label": "Meterte adelante a buscar el daño",
+        "descripcion": "Te exponés más de lo cómodo para asegurar que tu daño llegue a tiempo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te arriesgás, conectás todo el daño, y la pelea se define en tres segundos gracias a vos.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.teamfight", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te agarran de entrada y la pelea se pierde antes de que hicieras nada. Sin tu daño, no había pelea que ganar.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugar_seguro_atras",
+        "label": "Quedarte atrás y esperar la abertura",
+        "descripcion": "Priorizás sobrevivir la pelea por sobre entrar rápido. Menos daño total, menos riesgo de morir primero.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Sobrevivís toda la pelea y terminás limpiando lo que queda. No fue vistoso, pero funcionó.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Jugás tan atrás que tu daño llega cuando la pelea ya estaba decidida. Vivo, pero inútil.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "adc_sin_peel",
+    "category": "rol_adc",
+    "title": "Nadie te cubrió la espalda",
+    "description": "En la pelea clave, {support} se va al frente a buscar la jugada y te deja completamente solo contra el engage rival.",
+    "weight": 6,
+    "cooldown": 5,
+    "contexto": {
+      "rol": ["adc"],
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "reclamarselo",
+        "label": "Planteárselo después del partido",
+        "descripcion": "Se lo decís de frente. Puede mejorar la coordinación, o puede tensar el vestuario.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "{support} lo toma bien y ajustan la forma de jugar juntos. La próxima pelea grande sale mucho más ordenada.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Se lo toma como una crítica personal y el clima en las scrims queda incómodo un par de semanas.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "adaptarte_vos",
+        "label": "Adaptar tu propio posicionamiento",
+        "descripcion": "No decís nada: jugás más atrás para cubrir el hueco que deja el resto del equipo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Jugás más conservador y dejás de estar tan expuesto. No arreglaste el problema de fondo, pero sobrevivís más peleas.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.teamfight", "min": -1, "max": 1, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Jugar tan atrás te saca del partido: llegás vivo a todas las peleas, pero sin pelear ninguna.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "adc_si_perdemos_es_por_vos",
+    "category": "rol_adc",
+    "title": "La lupa está sobre vos",
+    "description": "En el chat y en la prensa de la escena se instaló que, si el equipo pierde, es porque el adc no está a la altura. Cada partida se juega con eso encima.",
+    "weight": 5,
+    "cooldown": 5,
+    "contexto": {
+      "rol": ["adc"]
+    },
+    "conditions": [
+      { "field": "player.stats.mentalidad", "op": "lt", "value": 65 }
+    ],
+    "options": [
+      {
+        "id": "ignorar_el_ruido",
+        "label": "Ignorarlo y jugar tu juego",
+        "descripcion": "No leés nada de lo que se dice. Cuesta al principio, pero saca peso de encima.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Dejás de mirar menciones y jugás más liviano. El ruido sigue estando, simplemente ya no te llega.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Lo intentás, pero un compañero te reenvía un comentario \"para que lo veas\" y ahí se rompe el plan.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "responder_jugando",
+        "label": "Buscar la partida que calle todo",
+        "descripcion": "Te la jugás a demostrarlo en la cancha. Si sale, cambia la narrativa entera; si no, la confirma.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Te sale la partida de tu vida en el momento justo. El mismo que te bardeaba ahora escribe otra cosa.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Jugás presionado y se nota: forzás jugadas que no estaban ahí. Le diste la razón al que menos se la merecía.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

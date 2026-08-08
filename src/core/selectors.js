@@ -55,6 +55,7 @@ const ETIQUETAS_CAMPO = {
   'player.stats.adaptabilidad': 'Adaptabilidad',
   'player.stats.mentalidad': 'Mentalidad',
   'player.stats.hype': 'Hype',
+  'player.championPool': 'Pool',
   'player.titles': 'Títulos',
   'player.worlds': 'Apariciones en Worlds',
   'career.orgs': 'Organizaciones',

@@ -47,6 +47,14 @@ export const MARCAS = [
   // 'debut' pero el vestuario todavia esta vacio. Sin esta marca, un evento que
   // dice "{jungla} se peleó con el staff" imprime "{jungla}" en pantalla.
   'con_vestuario',
+  // El pool que elegiste, leido como contexto. Es lo que hace que los campeones
+  // que elegiste al empezar sigan importando veinte splits despues.
+  'pool_angosto',
+  'pool_ancho',
+  'pool_en_meta',
+  'pool_fuera_meta',
+  'main_muerto',
+  'campeon_nuevo',
   // Pendientes: los activan los pasos 10 a 12.
   'espera_edad_minima',
   'lesion_cronica',

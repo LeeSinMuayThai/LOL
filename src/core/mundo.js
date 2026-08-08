@@ -6,8 +6,8 @@ import { rankedInicial } from './ranked.js';
 import { SERVIDORES } from '../data/servidores.js';
 import { ARQUETIPOS } from '../data/meta-tags.js';
 import { IDS_ROL } from '../data/roles.js';
+import { campeonesElegiblesAlInicio, entradaDePool } from './pool.js';
 import LIGAS from '../data/leagues.json' with { type: 'json' };
-import CAMPEONES from '../data/champions.json' with { type: 'json' };
 
 // Los handles se arman por silabas para que cada seed invente los suyos. Los
 // companeros y rivales tienen que ser inventados (CLAUDE.md, precision de dominio).
@@ -161,16 +161,30 @@ function generarBarrasIniciales(rng) {
   };
 }
 
-function generarPoolInicial(rol, rng) {
+// El pool inicial. Si el jugador eligió sus mains, se respetan; si no (camino
+// headless de simulate y validate), se sortean.
+//
+// Los `debut` quedan afuera en los dos casos: todavía no existen en este mundo.
+// Y las tiradas de maestría se consumen igual se haya elegido o no, para que el
+// stream del RNG no dependa de si hubo pantalla de inicio.
+function generarPoolInicial(rol, rng, elegidos) {
   const { campeonesIniciales, maestriaInicialMin, maestriaInicialMax } = BALANCE.mundo;
-  const delRol = CAMPEONES.filter((campeon) => campeon.role === rol);
+  const delRol = campeonesElegiblesAlInicio(rol);
 
-  return sample(delRol, campeonesIniciales, rng).map((campeon) => ({
-    name: campeon.name,
-    tags: [...campeon.tags],
-    mastery: roll(maestriaInicialMin, maestriaInicialMax, rng),
-    partidas: 0
-  }));
+  // Las dos tiradas se consumen SIEMPRE y en el mismo orden, se haya elegido o
+  // no: así el stream del RNG no depende de si hubo pantalla de inicio, y una
+  // seed genera el mismo mundo para el que eligió y para el que no.
+  const sorteados = sample(delRol, campeonesIniciales, rng);
+  const maestrias = Array.from({ length: campeonesIniciales }, () => roll(maestriaInicialMin, maestriaInicialMax, rng));
+
+  const pedidos = (elegidos ?? [])
+    .map((nombre) => delRol.find((campeon) => campeon.name === nombre))
+    .filter(Boolean)
+    .slice(0, campeonesIniciales);
+
+  const base = pedidos.length >= BALANCE.campeones.poolMinimo ? pedidos : sorteados;
+
+  return base.map((campeon, i) => entradaDePool(campeon, maestrias[i]));
 }
 
 function generarRivales(rng, usados) {
@@ -196,21 +210,33 @@ function generarRivales(rng, usados) {
 
 // Sortea el mundo entero de una seed. Todo lo que devuelve es dato de estado:
 // ningun sistema puede volver a sortearlo despues.
-export function generarMundo(rng, edadInicial) {
+//
+// `eleccion` es lo que el jugador decidio en la pantalla de inicio:
+// `{ handle?, rol?, campeones? }`. Si no viene, se sortea todo como antes — ese
+// es el camino que corren simulate.js y validate.js, que no cambian una linea.
+//
+// El MUNDO sigue saliendo entero de la seed; lo que se elige es la identidad.
+// Cada tirada se consume igual haya eleccion o no, asi la misma seed genera el
+// mismo mundo para el que eligio y para el que no.
+export function generarMundo(rng, edadInicial, eleccion = null) {
   const usados = new Set();
   const ligas = generarLigas(rng);
   const ligaOrigen = pick(ligas, rng);
-  const rol = pick(IDS_ROL, rng);
+  const rolSorteado = pick(IDS_ROL, rng);
+  const rol = IDS_ROL.includes(eleccion?.rol) ? eleccion.rol : rolSorteado;
   const oculto = generarOculto(rng);
+
+  const handleSorteado = generarHandle(rng, usados);
+  const handle = eleccion?.handle?.trim() ? eleccion.handle.trim() : handleSorteado;
 
   return {
     jugador: {
-      handle: generarHandle(rng, usados),
+      handle,
       role: rol,
       oculto,
       stats: generarStatsIniciales(oculto, edadInicial, rng),
       barras: generarBarrasIniciales(rng),
-      championPool: generarPoolInicial(rol, rng),
+      championPool: generarPoolInicial(rol, rng, eleccion?.campeones),
       ranked: generarRankedInicial(ligaOrigen.servidor, oculto.potencial, rng)
     },
     origen: generarOrigen(rng),

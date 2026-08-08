@@ -16,7 +16,7 @@ el juego) → este documento → `PROGRESO.md` (changelog) → `TRASPASO.md` (da
 | Fase | Qué resuelve | Estado |
 |---|---|---|
 | **0** | Higiene: números, gating, texto narrativo | ✅ commit `cac4af2` |
-| **1** | Identidad: elegís rol y mains, y eso importa | 🔶 en curso |
+| **1** | Identidad: elegís rol y mains, y eso importa | ✅ ver `PROGRESO.md` |
 | **2** | Que las decisiones pesen: pesos dinámicos, densidad | ⬜ |
 | **3** | Escalera competitiva: tier3 → tier2 → tier1, ligas 2026 | ⬜ |
 | **4** | Competición jugable: series Bo5, Fearless, draft, minijuegos | ⬜ |

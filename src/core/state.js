@@ -9,9 +9,12 @@ import { puntosAbsolutos } from './ranked.js';
 // partida entera y no solo la mitad.
 const EDAD_INICIAL = 15;
 
-export function createInitialState(seed, rng) {
+// `eleccion` es lo que el jugador decidio en la pantalla de inicio:
+// `{ handle?, rol?, campeones? }`. Si no viene, todo se sortea de la seed — ese
+// es el camino que corren simulate.js y validate.js.
+export function createInitialState(seed, rng, eleccion = null) {
   const { inicial } = BALANCE;
-  const { jugador, origen, mundo } = generarMundo(rng, EDAD_INICIAL);
+  const { jugador, origen, mundo } = generarMundo(rng, EDAD_INICIAL, eleccion);
 
   return {
     seed,
@@ -27,7 +30,10 @@ export function createInitialState(seed, rng) {
     // esto existe para la UI, los logs y para no recalcularlo en cada filtro.
     contexto: null,
     origen,
-    mundo,
+    // Los campeones que salieron con un parche a mitad de esta carrera. Arranca
+    // vacío: los marcados `debut` en champions.json todavía no existen en este
+    // mundo (trampa T4 — tiene que existir en el estado inicial, nunca null).
+    mundo: { ...mundo, campeonesDebutados: [] },
     player: {
       name: jugador.handle,
       role: jugador.role,

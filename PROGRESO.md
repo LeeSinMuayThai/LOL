@@ -24,6 +24,97 @@ y DECLIVE (§2), y contenido de eventos (20 de los ~200 que pide §8).
 
 ## Changelog
 
+### 2026-08-08 — Fase 1: identidad. Elegís rol y mains, y eso importa
+
+Segunda fase de `PLAN.md`. Antes de esto, `mundo.js` sorteaba tu rol y tu pool
+sin preguntarte nada — el jugador no elegía nada de lo que después el juego
+usaba para gatear contenido. Ahora hay una pantalla de inicio real (handle,
+rol, 3 mains) y esa elección corre toda la carrera.
+
+**`createInitialState(seed, rng, eleccion?)`** — `eleccion = { handle?, rol?,
+campeones? }`. Si no viene, todo se sortea de la seed exactamente como antes:
+`simulate.js` y `validate.js` no cambiaron una línea. `generarMundo` consume
+las mismas tiradas de RNG haya elección o no (mismo stream, mismo mundo),
+así que una seed compartida sigue generando el mismo mundo para el que elige
+y para el que no.
+
+**`champions.json`: de 10 a 16-18 por rol**, con el campo `debut`. Los
+marcados `debut: true` no existen al arrancar — entran con un parche a mitad
+de carrera. Es el mecanismo detrás del pedido textual del usuario: *"salió un
+champ nuevo y jugás en dos semanas: ¿lo practicás a full o pulís los de
+ahora?"*. `meta.js` los hace debutar con `probCampeonNuevo: 0.08` por split
+(2-3 por carrera de 30 splits) y `contexto.js` los convierte en la marca
+`campeon_nuevo`, con vencimiento a los 3 splits — sin eso la marca quedaba
+prendida el resto de la carrera.
+
+**`src/core/pool.js`** (nuevo) — toda la mecánica de champion pool en un solo
+lugar. Antes estaba repartida entre `mundo.js` (pool inicial), `practica.js`
+(`pulirCampeon`/`aprenderCampeones`) y `campeones.js` (maestrías). Ahora
+`practica.js`, `events.js` y la pantalla de inicio comparten las mismas
+funciones. Nuevo tipo de efecto `pool` en el esquema de eventos
+(`aprender` / `maestria` / `olvidar`), validado igual que `ladder` y `push`.
+
+**El meta se nombra por campeón, no por arquetipo** — `campeonesEnMeta` y
+`campeonesMuertos` en `ajusteMeta.js`. El log de `meta.js` pasó de *"el meta
+se mueve hacia los magos de control"* a *"Parche 5: se mueve despacio hacia
+Galio y Azir. Tu Yasuo quedó a contramano de un día para el otro."* Es
+prerrequisito duro para la fase 4 (el rival de una serie tiene que saber qué
+campeones quemar primero).
+
+**Seis marcas nuevas de contexto** derivadas del pool (`pool_angosto`,
+`pool_ancho`, `pool_en_meta`, `pool_fuera_meta`, `main_muerto`,
+`campeon_nuevo`). Es lo que hace que los 3 campeones que elegiste al empezar
+sigan importando veinte splits después, en vez de ser una elección cosmética
+del minuto uno.
+
+**24 eventos nuevos** (44 en total, 90 opciones, 180 outcomes):
+
+- `src/data/events/rol/{top,jungla,mid,adc,support}.json` — 3 por rol (15).
+  Cada uno gateado por el eje `rol`, así que elegir jungla te expone a eventos
+  que un support nunca ve, y viceversa.
+- `src/data/events/pool.json` — 7 eventos: uno por cada una de las 6 marcas
+  de pool, más `pool_cuota_coreana` (dato real de `TRASPASO` §4.5: Diamante
+  80 partidas/5 campeones · Máster 65/8 · GM 50/15 — el requisito de amplitud
+  sube con el rango, en tensión directa con `sesgoMaestriaEnPick`, que premia
+  especializarse). `pool_campeon_nuevo` es la traducción directa del pedido
+  textual del usuario sobre el campeón que sale y hay que decidir si
+  practicarlo a fondo o pulir lo de ahora.
+
+**4 checks nuevos (30 en total)**, verificados contra una copia mutada del
+código que falla cuando debe (trampa T5):
+
+```
+Cada rol tiene eventos propios que ningún otro rol ve      (min 3 por rol)
+El pool nunca queda vacío ni por debajo del mínimo          (poolMinimo: 2)
+El meta se puede nombrar por campeón, y cambia con el parche
+main_muerto se observa cuando el meta te da vuelta el main  (≥40% en carreras >20 splits)
+```
+
+**Medido, antes → después** (400+ carreras, `simulate.js 1500 40 todas`):
+
+| | fin de fase 0 | fin de fase 1 |
+|---|---|---|
+| eventos / opciones / outcomes | 22 / 46 / 92 | **44 / 90 / 180** |
+| llega a pro (equilibrado) | 43.5% | 43.5% (sin cambios: el contenido nuevo no tunea nada) |
+| crashes en 4500 carreras (3 estrategias) | 0 | 0 |
+| eventos exclusivos por rol | 0 | 3 por cada uno de los 5 roles, verificado por simulación forzando cada rol |
+| `main_muerto` en carreras >20 splits | n/a (marca no existía) | por encima del 40% exigido |
+
+Probado en navegador real con Playwright (Chromium headless): pantalla de
+inicio completa (handle → rol → 3 mains → "Empezar carrera"), una carrera con
+pool angosto (2 campeones) que dispara `pool_estrechez` y después
+`pool_main_muerto` cuando el parche mata al main, y una carrera de support
+completa hasta el fichaje con un evento de rol (`support_*`) y uno de mercado
+amateur (`academy_offer`, reescrito en la fase 0). Cero errores de consola
+(el único 404 es el favicon que pide el navegador por default).
+
+**Sin arreglar a propósito, van en fases posteriores**: los pesos de outcome
+siguen estáticos (fase 2), no hay tier3/tier2 todavía así que `nivel` nunca
+vale otra cosa que `tier1` una vez profesional (fase 3), y no hay series ni
+draft del mapa 5 — el pool que elegiste ya importa narrativamente, pero
+todavía no tiene el peso mecánico central que va a tener en el Fearless de
+la fase 4.
+
 ### 2026-08-08 — Fase 0: higiene. El juego deja de verse roto
 
 Primera fase del plan maestro nuevo. El usuario reportó cuatro cosas y las cuatro resultaron ser

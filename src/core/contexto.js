@@ -1,6 +1,8 @@
 import { BALANCE } from '../data/balance.js';
 import { clamp } from './numeros.js';
 import { bandaDeLadder, servidorDeLaPartida } from './ranked.js';
+import { campeonesMuertos } from './ajusteMeta.js';
+import { campeonesDisponibles, campeonNuevoPendiente } from './pool.js';
 import { MOMENTOS } from '../data/contextos.js';
 
 // "Donde estas parado en la carrera", derivado del estado.
@@ -133,6 +135,48 @@ function calcularMarcas(state) {
   }
   if (state.player.stats.mentalidad < BALANCE.atributos.burnoutUmbral + BALANCE.contexto.margenMentalidadAlLimite) {
     marcas.push('mentalidad_al_limite');
+  }
+
+  return [...marcas, ...marcasDePool(state)];
+}
+
+// El pool que elegiste, leído como contexto.
+//
+// Sin esto, elegir tus tres mains al empezar no cambia nada del contenido que
+// ves: el pool solo movía un multiplicador abstracto. Estas seis marcas son lo
+// que hace que los campeones que elegiste sigan importando veinte splits después.
+function marcasDePool(state) {
+  const c = BALANCE.campeones;
+  const marcas = [];
+  const pool = state.player.championPool ?? [];
+
+  if (pool.length <= c.poolAngosto) {
+    marcas.push('pool_angosto');
+  }
+  if (pool.length >= c.poolAncho) {
+    marcas.push('pool_ancho');
+  }
+  if (state.meta.ajuste >= c.ajusteAFavor) {
+    marcas.push('pool_en_meta');
+  }
+  if (state.meta.ajuste <= c.ajusteEnContra) {
+    marcas.push('pool_fuera_meta');
+  }
+
+  // No alcanza con que un campeón cualquiera del pool se caiga: la marca es
+  // sobre TU main, que es lo único que se siente como una pérdida.
+  if (pool.length > 0) {
+    const principal = pool.reduce((mejor, campeon) => (campeon.mastery > mejor.mastery ? campeon : mejor));
+    if (campeonesMuertos([principal], state.meta.weights, campeonesDisponibles(state)).length > 0) {
+      marcas.push('main_muerto');
+    }
+  }
+
+  // Salió un campeón de tu rol y todavía no lo tenés: la decisión de si lo
+  // aprendés ahora o después del partido que viene. Caduca — "salió un campeón
+  // nuevo" es una noticia con fecha de vencimiento.
+  if (campeonNuevoPendiente(state)) {
+    marcas.push('campeon_nuevo');
   }
 
   return marcas;

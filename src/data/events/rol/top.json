@@ -1,0 +1,186 @@
+[
+  {
+    "id": "top_la_isla",
+    "category": "rol_top",
+    "title": "Solo en tu línea",
+    "description": "Te comen la línea y del otro lado del mapa nadie se entera hasta que ya es tarde. En top el error es tuyo y la ayuda casi nunca llega a horario.",
+    "weight": 7,
+    "cooldown": 4,
+    "contexto": {
+      "rol": ["top"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "jugar_pasivo",
+        "label": "Achicarte y farmear atrás",
+        "descripcion": "No arriesgás nada más. Esperás que el resto del mapa te compre tiempo mientras vos aguantás.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Sobrevivís la línea con lo justo. No sumaste nada, pero al menos no perdiste más de lo que ya habías perdido.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Te quedás tan atrás que ni de bloqueador servís. La torre cae igual, solo que más despacio.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.laneo", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "buscar_la_revancha",
+        "label": "Ir a buscarla de vuelta",
+        "descripcion": "Arriesgás lo que te queda para recuperar la línea antes de que sea tarde.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te sale la jugada arriesgada y la línea vuelve a estar pareja. El corazón todavía no te vuelve al pecho.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.laneo", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Sale mal. Perdés la torre y la paciencia, en ese orden.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.laneo", "min": -4, "max": -2, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "top_splitpush_plan",
+    "category": "rol_top",
+    "title": "El plan sos vos, solo",
+    "description": "El coach de {org} arma la jornada alrededor tuyo: split push todo el partido mientras el resto sostiene un 4v5 en el resto del mapa.",
+    "weight": 6,
+    "cooldown": 5,
+    "contexto": {
+      "rol": ["top"],
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "confiar_en_el_plan",
+        "label": "Confiar en el plan y meterle",
+        "descripcion": "Te vas solo a un lado del mapa sabiendo que si el resto pierde su pelea, el que se come la culpa sos vos.",
+        "weight": 6,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El plan funciona: abrís la base mientras el resto aguanta. {org} se lleva la jornada por una idea que te tocó ejecutar a vos.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.laneo", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El resto pierde su pelea antes de que termines de abrir nada. En el review, el plan \"fue una boludez\", y te toca escucharlo un rato largo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pedir_jugar_junto",
+        "label": "Pedir jugar más pegado al grupo",
+        "descripcion": "Le decís al coach que no te cierra estar tan solo. Puede sonar prudente, o puede sonar a que no confiás en tu propio juego.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "El coach ajusta el plan y jugás más cerca del grupo. Nadie te lo reprocha; tampoco es la jornada que se va a recordar.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Se ajusta el plan, pero queda flotando en el vestuario la sensación de que te achicaste.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "top_recorte_sin_contexto",
+    "category": "rol_top",
+    "title": "El streamer te sacó de contexto",
+    "description": "Un streamer grande recorta tu peor teamfight del split y lo sube sin la jugada anterior que la explica. El clip se ve más que cualquier cosa buena que hiciste en el año.",
+    "weight": 5,
+    "cooldown": 5,
+    "contexto": {
+      "rol": ["top"]
+    },
+    "conditions": [
+      { "field": "player.stats.hype", "op": "gte", "value": 35 }
+    ],
+    "options": [
+      {
+        "id": "contestarle_con_contexto",
+        "label": "Subir el video completo",
+        "descripcion": "Le ganás el argumento mostrando la jugada entera. También le das más aire al tema.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu video completo circula casi tanto como el recorte. Queda claro qué pasó, y de paso te conocen más.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Nadie mira un video de ocho minutos. El recorte de dos segundos ya ganó la pelea antes de que empezaras a jugarla.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "no_darle_bola",
+        "label": "Dejarlo pasar",
+        "descripcion": "El tema muere solo si nadie lo alimenta.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "No decís nada y en 48 horas nadie se acuerda. Vos tampoco, casi.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Se comenta un par de días más de lo que esperabas, pero al final se apaga solo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": -1, "max": 1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

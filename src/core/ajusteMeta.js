@@ -50,6 +50,34 @@ export function ajusteAlMeta(state) {
   return { valor, desglose };
 }
 
+// El meta con nombre y apellido.
+//
+// `meta.weights` es un vector sobre nueve arquetipos, y por eso el log decía
+// "el meta se mueve hacia los magos de control": correcto y abstracto. Un
+// jugador no piensa así — piensa "este parche manda Sejuani". Cruzar el vector
+// contra el roster del rol devuelve esos nombres, y eso habilita tres cosas:
+// que el log se lea, que el contenido pueda decir "tu {mainMuerto} quedó a
+// contramano", y que el rival de una serie sepa qué quemar primero (fase 4).
+//
+// Puro y sin RNG: se puede llamar en cualquier lado, incluso al pintar la UI.
+export function campeonesEnMeta(weights, campeonesDelRol, cantidad = BALANCE.campeones.campeonesEnMeta) {
+  return [...campeonesDelRol]
+    .sort((a, b) => afinidadDeCampeon(b, weights) - afinidadDeCampeon(a, weights))
+    .slice(0, cantidad);
+}
+
+// Los campeones de TU pool que el parche dejó a contramano: su afinidad quedó
+// muy por debajo de la del mejor campeón del rol. Es la señal que dispara la
+// marca `main_muerto` y los eventos de reconstrucción de pool.
+export function campeonesMuertos(pool, weights, campeonesDelRol) {
+  if (pool.length === 0 || campeonesDelRol.length === 0) {
+    return [];
+  }
+  const techo = Math.max(...campeonesDelRol.map((campeon) => afinidadDeCampeon(campeon, weights)));
+  const corte = techo * BALANCE.campeones.umbralMainMuerto;
+  return pool.filter((campeon) => afinidadDeCampeon(campeon, weights) < corte);
+}
+
 // Multiplica el rendimiento entre 0.75x y 1.25x (CONCEPTO §6).
 export function multiplicadorDeMeta(ajuste) {
   const { ajusteNeutro, multiplicadorMin, multiplicadorMax } = BALANCE.campeones;

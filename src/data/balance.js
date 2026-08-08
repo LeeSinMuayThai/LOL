@@ -273,7 +273,13 @@ export const BALANCE = {
     // Casi siempre el parche es calmo. Cada tanto el meta se sacude entero y
     // deja obsoleto medio pool: es lo que puede costarte un año de carrera.
     probSacudon: 0.07,
-    sacudonDelta: 0.55
+    sacudonDelta: 0.55,
+    // Cada tanto sale un campeon nuevo de tu rol. Con ~0.08 por split, una
+    // carrera de 30 splits ve dos o tres, que es el ritmo real.
+    probCampeonNuevo: 0.08,
+    // Cuantos splits "salió un campeón nuevo" sigue siendo noticia. Sin fecha de
+    // vencimiento la marca queda prendida el resto de la carrera.
+    splitsCampeonNuevo: 3
   },
 
   campeones: {
@@ -293,7 +299,23 @@ export const BALANCE = {
     // 50 = tu pool es exactamente promedio para este meta.
     ajusteNeutro: 50,
     multiplicadorMin: 0.75,
-    multiplicadorMax: 1.25
+    multiplicadorMax: 1.25,
+
+    // Nadie compite con menos de dos campeones, y un pool vacio rompe el draft.
+    poolMinimo: 2,
+    // Bandas del pool para gatear contenido (marcas `pool_angosto` / `pool_ancho`).
+    poolAngosto: 3,
+    poolAncho: 6,
+    // Bandas del Ajuste al Meta para las marcas `pool_en_meta` / `pool_fuera_meta`.
+    ajusteAFavor: 62,
+    ajusteEnContra: 38,
+    // Cuantos campeones del rol se consideran "el meta" del parche. Es lo que
+    // hace que el meta se pueda NOMBRAR ("manda Sejuani") en vez de describirse
+    // por arquetipo, y lo que el rival quema primero en una serie (fase 4).
+    campeonesEnMeta: 3,
+    // Tu main esta muerto si su afinidad quedo por debajo de esta fraccion de la
+    // afinidad del mejor campeon del parche.
+    umbralMainMuerto: 0.82
   },
 
   edad: {
@@ -435,6 +457,13 @@ export const BALANCE = {
     fuerzaOrgMin: 20,
     fuerzaOrgMax: 99,
     campeonesIniciales: 3,
+    // Cuantos campeones tiene que ofrecer cada rol en la pantalla de inicio para
+    // que elegir 3 sea una decision y no un tramite.
+    campeonesElegibles: 12,
+    // Campeones marcados `debut` por rol: no estan al arrancar, salen con un
+    // parche a mitad de carrera. Con menos de dos, el evento del campeon nuevo se
+    // agota en una sola carrera.
+    debutsMinimosPorRol: 2,
     maestriaInicialMin: 25,
     maestriaInicialMax: 55,
     cantidadRivales: 5,

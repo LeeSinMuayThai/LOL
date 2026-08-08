@@ -1,9 +1,8 @@
-import { gauss, sample } from '../core/rng.js';
+import { gauss } from '../core/rng.js';
 import { crearLog } from '../core/log.js';
 import { clamp, clampStat } from '../core/numeros.js';
-import { afinidadDeCampeon } from '../core/ajusteMeta.js';
+import { campeonesAprendibles, pulirCampeon, aprenderCampeones } from '../core/pool.js';
 import { BALANCE } from '../data/balance.js';
-import CAMPEONES from '../data/champions.json' with { type: 'json' };
 import { ofrecerRutinas, rutinaPorId, elegirRutinaAutomatica } from '../core/rutinas.js';
 
 export const id = 'practica';
@@ -27,11 +26,6 @@ function esOffseason(state) {
   return state.phase === 'profesional' && state.player.splitCount % BALANCE.edad.splitsPorEdad === 0;
 }
 
-function campeonesAprendibles(state) {
-  const enPool = new Set(state.player.championPool.map((campeon) => campeon.name));
-  return CAMPEONES.filter((campeon) => campeon.role === state.player.role && !enPool.has(campeon.name));
-}
-
 function normalizar(respuesta, puntos) {
   const pedido = respuesta?.reparto ?? {};
   const crudo = Object.fromEntries(IDS_DESTINO.map((destino) => [destino, Math.max(0, Math.round(pedido[destino] ?? 0))]));
@@ -51,54 +45,6 @@ function normalizar(respuesta, puntos) {
   }
 
   return ajustado;
-}
-
-function pulirCampeon(pool, puntos, weights, rng) {
-  if (puntos === 0) {
-    return { pool, texto: null };
-  }
-
-  const p = BALANCE.practica;
-  const principal = pool.reduce((mejor, campeon) => (campeon.mastery > mejor.mastery ? campeon : mejor));
-  const margen = (BALANCE.stats.max - principal.mastery) / BALANCE.stats.max;
-  const ganancia = Math.max(0, gauss(p.gananciaPulir * puntos, p.ruidoPractica * puntos, rng)) * margen;
-
-  return {
-    pool: pool.map((campeon) => (
-      campeon.name === principal.name
-        ? { ...campeon, mastery: clamp(campeon.mastery + ganancia, 0, BALANCE.stats.max) }
-        : campeon
-    )),
-    texto: `${principal.name} +${Math.round(ganancia)} maestría`
-  };
-}
-
-function aprenderCampeones(state, pool, puntos, rng) {
-  const p = BALANCE.practica;
-  const disponibles = campeonesAprendibles({ ...state, player: { ...state.player, championPool: pool } });
-  const cupo = Math.min(puntos, p.poolMaximo - pool.length, disponibles.length);
-
-  if (cupo <= 0) {
-    return { pool, texto: null };
-  }
-
-  // No se aprende cualquier campeon: se aprende lo que el meta pide. Eso es lo
-  // que hace que invertir en el pool sea una salida del sacudon de meta y no
-  // una loteria.
-  const candidatos = [...disponibles]
-    .sort((a, b) => afinidadDeCampeon(b, state.meta.weights) - afinidadDeCampeon(a, state.meta.weights))
-    .slice(0, Math.max(cupo, Math.ceil(disponibles.length / 2)));
-
-  // Aprender uno nuevo entra con maestria baja: por eso un cambio de meta
-  // todavia se paga el split siguiente.
-  const nuevos = sample(candidatos, cupo, rng).map((campeon) => ({
-    name: campeon.name,
-    tags: [...campeon.tags],
-    mastery: Math.round(clamp(gauss(p.maestriaCampeonNuevo, p.maestriaCampeonNuevoSpread, rng), BALANCE.campeones.maestriaMinima, BALANCE.stats.max)),
-    partidas: 0
-  }));
-
-  return { pool: [...pool, ...nuevos], texto: `entra ${nuevos.map((c) => c.name).join(' y ')} al pool` };
 }
 
 function decisionDePractica(state, rng) {
@@ -129,7 +75,7 @@ export function resolver(state, decision, respuesta, rng) {
   const reparto = normalizar({ reparto: rutina.reparto }, BALANCE.practica.puntos);
   const partes = [];
 
-  const pulido = pulirCampeon(state.player.championPool, reparto.pulir, state.meta.weights, rng);
+  const pulido = pulirCampeon(state.player.championPool, reparto.pulir, rng);
   if (pulido.texto) {
     partes.push(pulido.texto);
   }

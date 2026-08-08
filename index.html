@@ -180,18 +180,161 @@
         font-family: inherit;
         font-size: 14px;
       }
+      .handle-input {
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.16);
+        color: #f3f6ff;
+        border-radius: 10px;
+        padding: 10px 14px;
+        width: 100%;
+        max-width: 320px;
+        font-family: inherit;
+        font-size: 15px;
+        box-sizing: border-box;
+      }
+      .paso {
+        margin-top: 22px;
+      }
+      .paso-label {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #8ea3c7;
+        margin-bottom: 10px;
+      }
+      .rol-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 10px;
+      }
+      .rol-card {
+        text-align: left;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.14);
+        border-radius: 14px;
+        padding: 14px;
+        cursor: pointer;
+        color: #f3f6ff;
+        font-family: inherit;
+      }
+      .rol-card:hover {
+        border-color: rgba(91, 140, 255, 0.5);
+      }
+      .rol-card.elegido {
+        border-color: #5b8cff;
+        background: rgba(91, 140, 255, 0.14);
+        box-shadow: 0 0 0 1px rgba(91, 140, 255, 0.5) inset;
+      }
+      .rol-nombre {
+        font-weight: 700;
+        font-size: 16px;
+        margin-bottom: 6px;
+      }
+      .rol-tono {
+        font-size: 13px;
+        color: #c3cfe8;
+        line-height: 1.4;
+        margin-bottom: 6px;
+      }
+      .rol-costo {
+        font-size: 12px;
+        color: #e5a35a;
+        line-height: 1.4;
+      }
+      .campeon-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 8px;
+      }
+      .campeon-card {
+        text-align: left;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.14);
+        border-radius: 10px;
+        padding: 10px 12px;
+        cursor: pointer;
+        color: #f3f6ff;
+        font-family: inherit;
+        font-size: 13px;
+      }
+      .campeon-card:hover {
+        border-color: rgba(91, 140, 255, 0.5);
+      }
+      .campeon-card.elegido {
+        border-color: #44d48d;
+        background: rgba(68, 212, 141, 0.14);
+      }
+      .campeon-card:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+      }
+      .campeon-nombre {
+        font-weight: 700;
+      }
+      .campeon-tags {
+        color: #8ea3c7;
+        margin-top: 2px;
+      }
+      .pool-contador {
+        font-size: 13px;
+        color: #9fb0d2;
+        margin-top: 8px;
+      }
+      .setup-footer {
+        margin-top: 22px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+      details.avanzado {
+        margin-top: 18px;
+        color: #8ea3c7;
+        font-size: 13px;
+      }
+      details.avanzado summary {
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
     <div class="panel">
       <h1>LOL Career Simulator</h1>
-      <p class="subtitle" id="identidad">Una carrera de LoL en formato narrativo, con progreso, meta y eventos.</p>
-      <div class="seed-row">
-        <label class="seed-label" for="seedInput">Seed</label>
-        <input id="seedInput" class="seed-input" type="text" inputmode="numeric" placeholder="vacío = al azar" />
-        <button id="run">Comenzar carrera</button>
+      <p class="subtitle">Elegís tu línea y tus mains. El resto de la carrera sale de ahí.</p>
+
+      <div id="setup">
+        <div class="paso">
+          <div class="paso-label">Tu handle (opcional)</div>
+          <input id="handleInput" class="handle-input" type="text" maxlength="16" placeholder="vacío = uno al azar" />
+        </div>
+
+        <div class="paso">
+          <div class="paso-label">Paso 1 — Tu línea</div>
+          <div id="rolGrid" class="rol-grid"></div>
+        </div>
+
+        <div class="paso">
+          <div class="paso-label">Paso 2 — Tus 3 mains</div>
+          <div id="campeonGrid" class="campeon-grid"></div>
+          <div id="poolContador" class="pool-contador">Elegí una línea primero.</div>
+        </div>
+
+        <div class="setup-footer">
+          <button id="run" disabled>Empezar carrera</button>
+        </div>
+
+        <details class="avanzado">
+          <summary>Avanzado: fijar una seed</summary>
+          <div class="seed-row" style="margin-top: 10px;">
+            <label class="seed-label" for="seedInput">Seed</label>
+            <input id="seedInput" class="seed-input" type="text" inputmode="numeric" placeholder="vacío = al azar" />
+          </div>
+        </details>
       </div>
 
+      <p class="subtitle" id="identidad" hidden></p>
+
+      <div id="carrera" hidden>
       <div class="stats">
         <div class="stat-card"><div class="stat-label">Edad</div><div id="edad" class="stat-value">—</div></div>
         <div class="stat-card"><div class="stat-label">Mecánica</div><div id="mec" class="stat-value">—</div></div>
@@ -213,10 +356,20 @@
       </div>
 
       <div id="logList" class="log-list"></div>
+      <button id="nuevaCarrera" type="button" hidden>Nueva carrera</button>
+      </div>
     </div>
 
     <script type="module">
+      const setupPanel = document.getElementById('setup');
+      const carreraPanel = document.getElementById('carrera');
+      const handleInput = document.getElementById('handleInput');
+      const rolGrid = document.getElementById('rolGrid');
+      const campeonGrid = document.getElementById('campeonGrid');
+      const poolContador = document.getElementById('poolContador');
+
       const button = document.getElementById('run');
+      const nuevaCarreraBtn = document.getElementById('nuevaCarrera');
       const edad = document.getElementById('edad');
       const mec = document.getElementById('mec');
       const ment = document.getElementById('ment');
@@ -243,7 +396,10 @@
 
       async function cargarModulos() {
         if (!modulos) {
-          const [{ mulberry32 }, { createInitialState }, pipeline, { BALANCE }, { etiquetaRol }, ranked, { describirContexto }, formato] = await Promise.all([
+          const [
+            { mulberry32 }, { createInitialState }, pipeline, { BALANCE },
+            rolesModulo, ranked, { describirContexto }, formato, campeonesModulo
+          ] = await Promise.all([
             import('./src/core/rng.js'),
             import('./src/core/state.js'),
             import('./src/core/pipeline.js'),
@@ -251,11 +407,121 @@
             import('./src/data/roles.js'),
             import('./src/core/ranked.js'),
             import('./src/core/contexto.js'),
-            import('./src/core/formato.js')
+            import('./src/core/formato.js'),
+            import('./src/data/champions.json', { with: { type: 'json' } })
           ]);
-          modulos = { mulberry32, createInitialState, pipeline, BALANCE, etiquetaRol, ranked, describirContexto, formato };
+          modulos = {
+            mulberry32, createInitialState, pipeline, BALANCE, formato,
+            etiquetaRol: rolesModulo.etiquetaRol, ROLES: rolesModulo.ROLES,
+            atributosClave: rolesModulo.atributosClave, IDS_ROL: rolesModulo.IDS_ROL,
+            ranked, describirContexto,
+            CAMPEONES: campeonesModulo.default
+          };
         }
         return modulos;
+      }
+
+      // --- Pantalla de inicio: elegís tu línea y tus tres mains ---
+
+      const ETIQUETA_STAT = {
+        mecanica: 'Mecánica', macro: 'Macro', teamfight: 'Teamfight', laneo: 'Laneo',
+        shotcalling: 'Shotcalling', adaptabilidad: 'Adaptabilidad'
+      };
+
+      let rolElegido = null;
+      let camposElegidos = [];
+
+      function actualizarBotonEmpezar() {
+        button.disabled = !(rolElegido && camposElegidos.length === modulos.BALANCE.mundo.campeonesIniciales);
+      }
+
+      function renderRoles() {
+        const { IDS_ROL, ROLES, atributosClave } = modulos;
+        rolGrid.replaceChildren(...IDS_ROL.map((rol) => {
+          const card = document.createElement('button');
+          card.type = 'button';
+          card.className = 'rol-card' + (rol === rolElegido ? ' elegido' : '');
+
+          const nombre = document.createElement('div');
+          nombre.className = 'rol-nombre';
+          nombre.textContent = ROLES[rol].label;
+          card.appendChild(nombre);
+
+          const tono = document.createElement('div');
+          tono.className = 'rol-tono';
+          tono.textContent = ROLES[rol].tono;
+          card.appendChild(tono);
+
+          const clave = document.createElement('div');
+          clave.className = 'rol-tono';
+          clave.textContent = 'Vive de: ' + atributosClave(rol).map((stat) => ETIQUETA_STAT[stat]).join(' y ') + '.';
+          card.appendChild(clave);
+
+          const costo = document.createElement('div');
+          costo.className = 'rol-costo';
+          costo.textContent = ROLES[rol].costo;
+          card.appendChild(costo);
+
+          card.addEventListener('click', () => {
+            if (rolElegido === rol) {
+              return;
+            }
+            rolElegido = rol;
+            camposElegidos = [];
+            renderRoles();
+            renderCampeones();
+            actualizarBotonEmpezar();
+          });
+
+          return card;
+        }));
+      }
+
+      function renderCampeones() {
+        if (!rolElegido) {
+          campeonGrid.replaceChildren();
+          poolContador.textContent = 'Elegí una línea primero.';
+          return;
+        }
+
+        const { CAMPEONES, BALANCE } = modulos;
+        const objetivo = BALANCE.mundo.campeonesIniciales;
+        // Los `debut` no existen todavía en el mundo: son los que salen con un
+        // parche a mitad de carrera, no se pueden elegir al empezar.
+        const elegibles = CAMPEONES.filter((campeon) => campeon.role === rolElegido && !campeon.debut);
+
+        campeonGrid.replaceChildren(...elegibles.map((campeon) => {
+          const elegido = camposElegidos.includes(campeon.name);
+          const card = document.createElement('button');
+          card.type = 'button';
+          card.className = 'campeon-card' + (elegido ? ' elegido' : '');
+          card.disabled = !elegido && camposElegidos.length >= objetivo;
+
+          const nombre = document.createElement('div');
+          nombre.className = 'campeon-nombre';
+          nombre.textContent = campeon.name;
+          card.appendChild(nombre);
+
+          const tags = document.createElement('div');
+          tags.className = 'campeon-tags';
+          tags.textContent = campeon.tags.join(' · ');
+          card.appendChild(tags);
+
+          card.addEventListener('click', () => {
+            camposElegidos = elegido
+              ? camposElegidos.filter((nombre) => nombre !== campeon.name)
+              : [...camposElegidos, campeon.name].slice(0, objetivo);
+            renderCampeones();
+            actualizarBotonEmpezar();
+          });
+
+          return card;
+        }));
+
+        poolContador.textContent = `${camposElegidos.length} / ${objetivo} elegidos.`
+          + (camposElegidos.length === objetivo
+            ? ' Un pool ancho aguanta mejor un cambio de meta; uno angosto rinde más mientras el meta te acompañe.'
+            : '');
       }
 
       function renderStats(state) {
@@ -363,7 +629,6 @@
 
         decisionPanel.hidden = false;
         summary.textContent = 'Tenés una decisión pendiente.';
-        button.disabled = true;
       }
 
       function pintar() {
@@ -394,8 +659,7 @@
         renderStats(estado);
         renderLogs(estado);
         renderResumenFinal(estado);
-        button.textContent = 'Nueva carrera';
-        button.disabled = false;
+        nuevaCarreraBtn.hidden = false;
       }
 
       function responder(respuesta) {
@@ -409,8 +673,7 @@
         }
         if (estado.terminado) {
           renderResumenFinal(estado);
-          button.textContent = 'Nueva carrera';
-          button.disabled = false;
+          nuevaCarreraBtn.hidden = false;
           return;
         }
 
@@ -429,6 +692,7 @@
       async function comenzarCarrera() {
         button.disabled = true;
         decisionPanel.hidden = true;
+        nuevaCarreraBtn.hidden = true;
         summary.textContent = 'Arrancando la carrera...';
         metaPill.textContent = '';
         logList.innerHTML = '';
@@ -439,7 +703,15 @@
           const seed = leerSeed();
           seedInput.value = String(seed);
           rng = mulberry32(seed);
-          estado = createInitialState(seed, rng);
+          // La elección de la pantalla de inicio entra como tercer argumento.
+          // Si el jugador no eligió nada (camino headless), `createInitialState`
+          // sortea todo de la seed exactamente como antes.
+          const eleccion = { handle: handleInput.value, rol: rolElegido, campeones: camposElegidos };
+          estado = createInitialState(seed, rng, eleccion);
+
+          setupPanel.hidden = true;
+          identidad.hidden = false;
+          carreraPanel.hidden = false;
 
           avanzar();
         } catch (error) {
@@ -452,11 +724,42 @@
             : 'Revisa la consola del navegador.';
           logList.innerHTML = `<div class="log-item">${error.message}</div>`;
           console.error(error);
+          setupPanel.hidden = false;
+          carreraPanel.hidden = true;
           button.disabled = false;
         }
       }
 
+      function volverAlInicio() {
+        carreraPanel.hidden = true;
+        identidad.hidden = true;
+        setupPanel.hidden = false;
+        nuevaCarreraBtn.hidden = true;
+        rolElegido = null;
+        camposElegidos = [];
+        renderRoles();
+        renderCampeones();
+        actualizarBotonEmpezar();
+      }
+
+      async function iniciarSetup() {
+        try {
+          await cargarModulos();
+          renderRoles();
+          renderCampeones();
+          actualizarBotonEmpezar();
+        } catch (error) {
+          const esArchivoLocal = location.protocol === 'file:';
+          rolGrid.textContent = esArchivoLocal
+            ? 'Este juego usa módulos ES y no puede correr abriendo el HTML directo con doble clic. Corré "npm start" y abrí http://localhost:8000.'
+            : `No se pudo cargar el juego: ${error.message}`;
+          console.error(error);
+        }
+      }
+
       button.addEventListener('click', comenzarCarrera);
+      nuevaCarreraBtn.addEventListener('click', volverAlInicio);
+      iniciarSetup();
     </script>
   </body>
 </html>

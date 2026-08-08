@@ -1,0 +1,183 @@
+[
+  {
+    "id": "mid_el_duelo",
+    "category": "rol_mid",
+    "title": "El duelo de línea",
+    "description": "{rival} te pushea la línea y te invita a una pelea 1v1 en pleno medio del mapa. Todo el chat lo está mirando en vivo.",
+    "weight": 7,
+    "cooldown": 4,
+    "contexto": {
+      "rol": ["mid"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "aceptar_el_duelo",
+        "label": "Aceptar la pelea",
+        "descripcion": "Le entrás de frente. Si ganás, quedás como el mejor mid de la jornada; si perdés, lo va a repetir todo el mundo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Le ganás el 1v1 en pleno mapa y el clip se corta solo. Ese momento va a valer más que cualquier estadística del partido.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 4, "max": 8, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Perdés el duelo delante de todos. El highlight es tuyo, pero por el motivo equivocado.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "no_caer_en_la_provocacion",
+        "label": "No caer en la provocación",
+        "descripcion": "Seguís farmeando y le negás el show. Es la jugada aburrida y también la más sólida.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Te negás a jugarle el juego y {rival} se queda hablando solo en el chat. Ganaste la línea de la forma menos vistosa posible.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.laneo", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Negarte también se lee como que le tuviste miedo a la pelea, y en la escena chica eso también se comenta.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "mid_la_cara_del_equipo",
+    "category": "rol_mid",
+    "title": "Te toca hablar por todos",
+    "description": "El equipo de prensa de {org} te elige a vos para la conferencia post-partido. Ganaron, pero un compañero jugó horrible y todos lo saben.",
+    "weight": 5,
+    "cooldown": 5,
+    "contexto": {
+      "rol": ["mid"],
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "hablar_del_equipo",
+        "label": "Hablar solo del equipo",
+        "descripcion": "No nombrás a nadie en particular. Es diplomático, y también un poco vacío.",
+        "weight": 6,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Salís del paso sin generar ningún problema. La nota es aburrida, que es exactamente lo que necesitaba ser.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Sos tan genérico en la respuesta que el periodista repregunta hasta sacarte algo más filoso de lo que querías decir.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "bancar_al_companero",
+        "label": "Salir a bancar al que jugó mal",
+        "descripcion": "Public y explícitamente. Te la jugás por alguien del vestuario aunque te quede pegado si vuelve a pasar.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El gesto se nota puertas adentro: banca su lugar en el equipo aunque nadie te lo haya pedido. Con vos se puede confiar.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Tu compañero vuelve a jugar mal la semana siguiente y ahora tu nombre está pegado a la defensa que hiciste de él.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "mid_roamear_o_no",
+    "category": "rol_mid",
+    "title": "Tu línea está ganada",
+    "description": "Le sacaste ventaja a tu rival de línea y tenés el mapa abierto para ir a ayudar a otro lado. Cada minuto que te vas, tu propia línea deja de crecer.",
+    "weight": 6,
+    "cooldown": 4,
+    "contexto": {
+      "rol": ["mid"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "roamear",
+        "label": "Ir a ayudar a otra línea",
+        "descripcion": "Sacrificás tu propio crecimiento para empujar el resto del mapa.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Ganás una línea ajena y el mapa entero se te acomoda. El costo de tu propio crecimiento valió la pena.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Llegás tarde, no cambia nada, y encima tu rival de línea aprovecha para recuperar todo lo que habías ganado.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.laneo", "min": -2, "max": 0, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "seguir_farmeando",
+        "label": "Seguir estirando tu propia ventaja",
+        "descripcion": "Te quedás en tu línea. Egoísta, pero también la forma más segura de convertir tu ventaja en algo concreto.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Terminás la línea con tanta ventaja que ya no importa lo que pase en el resto del mapa.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "El resto del equipo se hunde solo mientras vos estirás una ventaja que ya no te alcanza para ganar el partido general.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

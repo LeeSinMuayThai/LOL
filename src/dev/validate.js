@@ -15,6 +15,8 @@ import {
 } from '../core/ranked.js';
 import { TOKENS, tokensUsados } from '../core/plantillas.js';
 import { RUTINAS } from '../core/rutinas.js';
+import { campeonesEnMeta } from '../core/ajusteMeta.js';
+import { campeonesDisponibles } from '../core/pool.js';
 import { EJES, MARCAS, MOMENTOS_ACTIVOS, momentoPorId } from '../data/contextos.js';
 import { ARQUETIPOS } from '../data/meta-tags.js';
 import { ROLES, IDS_ROL } from '../data/roles.js';
@@ -26,6 +28,8 @@ const __dirname = path.dirname(__filename);
 const srcDir = path.join(__dirname, '..');
 
 const errores = [];
+
+const ACCIONES_DE_POOL = ['aprender', 'maestria', 'olvidar'];
 
 function check(nombre, fn) {
   try {
@@ -145,6 +149,18 @@ check('Esquema de eventos válido', () => {
             continue;
           }
 
+          if (effect.type === 'pool') {
+            if (!ACCIONES_DE_POOL.includes(effect.accion)) {
+              throw new Error(`${evento.id}/${opcion.id}: acción de pool desconocida "${effect.accion}" (válidas: ${ACCIONES_DE_POOL.join(', ')})`);
+            }
+            // 'olvidar' no toma cantidad; las otras dos sí, y como todo efecto
+            // tienen que ser un rango, nunca un valor fijo (regla 7).
+            if (effect.accion !== 'olvidar' && effect.min >= effect.max) {
+              throw new Error(`${evento.id}/${opcion.id}: rango degenerado en el efecto de pool (regla 7)`);
+            }
+            continue;
+          }
+
           if (typeof effect.min !== 'number' || typeof effect.max !== 'number') {
             throw new Error(`${evento.id}/${opcion.id}: rango min/max faltante en ${effect.path}`);
           }
@@ -162,16 +178,23 @@ check('Campeones, roles y ligas coherentes', () => {
   const nombres = new Set();
 
   for (const campeon of CAMPEONES) {
-    if (nombres.has(campeon.name)) {
-      throw new Error(`campeón duplicado: ${campeon.name}`);
+    // La clave es rol+nombre, no el nombre: los flex picks son reales y el mismo
+    // campeon puede estar en el pool de dos lineas. Un jugador tiene un solo rol,
+    // asi que adentro de SU pool el nombre sigue siendo unico.
+    const clave = `${campeon.role}/${campeon.name}`;
+    if (nombres.has(clave)) {
+      throw new Error(`campeón duplicado en el mismo rol: ${clave}`);
     }
-    nombres.add(campeon.name);
+    nombres.add(clave);
 
     if (!ROLES[campeon.role]) {
       throw new Error(`${campeon.name}: rol inválido (${campeon.role})`);
     }
     if (!Array.isArray(campeon.tags) || campeon.tags.length === 0) {
       throw new Error(`${campeon.name}: sin tags de arquetipo`);
+    }
+    if (typeof campeon.debut !== 'boolean') {
+      throw new Error(`${clave}: falta el flag debut (los campeones nuevos entran con un parche, no en la elección inicial)`);
     }
     for (const tag of campeon.tags) {
       // Si el pool y el meta no hablan el mismo vocabulario, el Ajuste al Meta
@@ -183,9 +206,18 @@ check('Campeones, roles y ligas coherentes', () => {
   }
 
   for (const rol of IDS_ROL) {
-    const disponibles = CAMPEONES.filter((campeon) => campeon.role === rol).length;
-    if (disponibles < BALANCE.mundo.campeonesIniciales) {
-      throw new Error(`el rol ${rol} tiene ${disponibles} campeones y el pool inicial pide ${BALANCE.mundo.campeonesIniciales}`);
+    const delRol = CAMPEONES.filter((campeon) => campeon.role === rol);
+    // Elegibles al arrancar: los `debut` no existen todavia en el mundo, entran
+    // con un parche a mitad de carrera.
+    const elegibles = delRol.filter((campeon) => !campeon.debut).length;
+    if (elegibles < BALANCE.mundo.campeonesElegibles) {
+      throw new Error(`el rol ${rol} ofrece ${elegibles} campeones para elegir y el mínimo es ${BALANCE.mundo.campeonesElegibles}`);
+    }
+    // Sin al menos dos campeones nuevos por rol, el evento del campeón que sale a
+    // mitad de carrera se agota en una sola carrera.
+    const porDebutar = delRol.length - elegibles;
+    if (porDebutar < BALANCE.mundo.debutsMinimosPorRol) {
+      throw new Error(`el rol ${rol} tiene ${porDebutar} campeones por debutar y el mínimo es ${BALANCE.mundo.debutsMinimosPorRol}`);
     }
 
     const suma = Object.values(ROLES[rol].pesos).reduce((acc, peso) => acc + peso, 0);
@@ -472,6 +504,12 @@ check('Ningún token puede quedar sin resolver donde el contenido aparece', () =
       }
       if (token === 'signature' && !exigeMarca(pieza.contexto, 'signature')) {
         throw new Error(`${pieza.id}: usa {signature} pero no exige la marca signature`);
+      }
+      if (token === 'mainMuerto' && !exigeMarca(pieza.contexto, 'main_muerto')) {
+        throw new Error(`${pieza.id}: usa {mainMuerto} pero no exige la marca main_muerto`);
+      }
+      if (token === 'campeonNuevo' && !exigeMarca(pieza.contexto, 'campeon_nuevo')) {
+        throw new Error(`${pieza.id}: usa {campeonNuevo} pero no exige la marca campeon_nuevo`);
       }
     }
   }
@@ -795,6 +833,107 @@ check('Seeds distintas producen carreras distintas', () => {
 
   if (a === b) {
     throw new Error('dos seeds distintas produjeron exactamente la misma carrera');
+  }
+});
+
+// --- Fase 1: la identidad que elegís (rol + mains) tiene que importar ---
+
+check('Cada rol tiene eventos propios que ningún otro rol ve', () => {
+  // Gateo estructural, no simulado: un evento es "de un rol" cuando su
+  // `contexto.rol` lo restringe a exactamente uno. Si un rol no tiene al menos
+  // los mínimos, elegirlo en la pantalla de inicio no cambia nada del contenido.
+  const porRol = Object.fromEntries(IDS_ROL.map((rol) => [rol, []]));
+
+  for (const evento of TODOS_LOS_EVENTOS) {
+    const roles = evento.contexto?.rol;
+    if (Array.isArray(roles) && roles.length === 1 && porRol[roles[0]]) {
+      porRol[roles[0]].push(evento.id);
+    }
+  }
+
+  for (const rol of IDS_ROL) {
+    if (porRol[rol].length < 3) {
+      throw new Error(`el rol ${rol} tiene ${porRol[rol].length} evento(s) exclusivo(s) y el mínimo es 3`);
+    }
+  }
+});
+
+check('El pool nunca queda vacío ni por debajo del mínimo', () => {
+  // `olvidarPeor` y el efecto `pool` corren en cada carrera masiva; si alguno
+  // rompiera el piso, `campeonDelSplit` (campeones.js) explotaría eligiendo
+  // sobre un array vacío. Se corre la simulación completa, no solo la función,
+  // para agarrar interacciones entre efectos de distintos eventos.
+  for (let seed = 1; seed <= 150; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+
+    for (let i = 0; i < 40 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      if (state.player.championPool.length < BALANCE.campeones.poolMinimo) {
+        throw new Error(`seed ${seed}: el pool quedó en ${state.player.championPool.length}, debajo del mínimo (${BALANCE.campeones.poolMinimo})`);
+      }
+    }
+  }
+});
+
+check('El meta se puede nombrar por campeón, y el nombre cambia con el parche', () => {
+  // Es la pieza central de la fase 1: el usuario describe el meta por nombres
+  // ("el meta era Sejuani, Nidalee y Jarvan"), no por arquetipo. Si esto
+  // devolviera siempre los mismos nombres, el parche sería cosmético.
+  const delRol = campeonesDisponibles({ player: { role: 'jungla' }, mundo: { campeonesDebutados: [] } }, 'jungla');
+  if (delRol.length === 0) {
+    throw new Error('no hay campeones de jungla disponibles para evaluar campeonesEnMeta');
+  }
+
+  const pesosA = Object.fromEntries(ARQUETIPOS.map((tag) => [tag, 1]));
+  const pesosB = { ...pesosA, engage: 2.5, tanque: 2.5 };
+
+  const arribaA = campeonesEnMeta(pesosA, delRol).map((campeon) => campeon.name);
+  const arribaB = campeonesEnMeta(pesosB, delRol).map((campeon) => campeon.name);
+
+  if (arribaA.length === 0) {
+    throw new Error('campeonesEnMeta no devolvió ningún nombre');
+  }
+  if (JSON.stringify(arribaA) === JSON.stringify(arribaB)) {
+    throw new Error('campeonesEnMeta devolvió los mismos nombres con vectores de meta distintos');
+  }
+});
+
+check('main_muerto se observa cuando el meta te da vuelta el main', () => {
+  // Si el meta nunca mata un main en la práctica, las seis marcas de pool son
+  // decorativas: el jugador elige sus mains al empezar y nunca vuelve a
+  // importar. Se mide sobre carreras que llegan a jugar de verdad (>20 splits),
+  // no sobre las que se cortan en la etapa amateur.
+  const conSuficientesSplits = [];
+  let vioMainMuerto = 0;
+
+  for (let seed = 1; seed <= 300; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    let observado = false;
+
+    for (let i = 0; i < 40 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      if (calcularContexto(state).marcas.includes('main_muerto')) {
+        observado = true;
+      }
+    }
+
+    if (state.player.splitCount > 20) {
+      conSuficientesSplits.push(seed);
+      if (observado) {
+        vioMainMuerto += 1;
+      }
+    }
+  }
+
+  if (conSuficientesSplits.length < 30) {
+    throw new Error(`solo ${conSuficientesSplits.length} de 300 carreras pasaron de 20 splits: muestra insuficiente`);
+  }
+
+  const proporcion = vioMainMuerto / conSuficientesSplits.length;
+  if (proporcion < 0.4) {
+    throw new Error(`main_muerto apareció en ${(proporcion * 100).toFixed(1)}% de las carreras largas; el mínimo es 40%`);
   }
 });
 

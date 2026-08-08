@@ -3,6 +3,7 @@ import { getPath, setPath, cumpleCondiciones, etiquetaCampo } from '../core/sele
 import { calcularContexto, coincideContexto } from '../core/contexto.js';
 import { resolverTexto } from '../core/plantillas.js';
 import { aplicarLPAlEstado, etiquetaDeRanked, servidorDeLaPartida } from '../core/ranked.js';
+import { aprenderCampeones, subirMaestria, olvidarPeor, principalDelPool } from '../core/pool.js';
 import { crearLog } from '../core/log.js';
 import { deltaCorto, lista } from '../core/formato.js';
 import { BALANCE } from '../data/balance.js';
@@ -43,6 +44,29 @@ function candidatos(state) {
   );
 }
 
+// Las tres cosas que un evento puede hacerle al pool. Toda la mecánica vive en
+// core/pool.js; acá solo se traduce el JSON.
+function aplicarAlPool(state, effect, rng) {
+  const pool = state.player.championPool;
+
+  if (effect.accion === 'aprender') {
+    return aprenderCampeones(state, pool, roll(effect.min, effect.max, rng), rng, { criterio: effect.criterio });
+  }
+
+  if (effect.accion === 'maestria') {
+    const objetivo = effect.objetivo === 'jugado'
+      ? pool.find((campeon) => campeon.name === state.player.campeonDelSplit) ?? principalDelPool(pool)
+      : principalDelPool(pool);
+    const cantidad = roll(effect.min, effect.max, rng);
+    return {
+      pool: subirMaestria(pool, objetivo.name, cantidad),
+      texto: `${objetivo.name} ${deltaCorto(cantidad)} maestría`
+    };
+  }
+
+  return olvidarPeor(pool);
+}
+
 function aplicarEfecto(state, effect, rng) {
   // La escalera de soloQ no se escribe sumando a un entero: se aplica LP y ella
   // resuelve promoción, descenso y el rango que se muestra.
@@ -53,6 +77,17 @@ function aplicarEfecto(state, effect, rng) {
     return {
       state: nextState,
       descripcion: antes === despues ? `SoloQ ${despues}` : `SoloQ: ${antes} → ${despues}`
+    };
+  }
+
+  // El pool no se escribe con un path: aprender, pulir y olvidar tienen reglas
+  // propias (cupo, maestría mínima, rendimientos decrecientes) que viven en
+  // core/pool.js y las comparten el offseason, los eventos y el draft.
+  if (effect.type === 'pool') {
+    const resultado = aplicarAlPool(state, effect, rng);
+    return {
+      state: { ...state, player: { ...state.player, championPool: resultado.pool } },
+      descripcion: resultado.texto ?? 'el pool queda igual'
     };
   }
 
