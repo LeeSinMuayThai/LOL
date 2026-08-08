@@ -24,6 +24,55 @@ y DECLIVE (§2), y contenido de eventos (20 de los ~200 que pide §8).
 
 ## Changelog
 
+### 2026-08-08 — Paso 9: rutinas narrativas en vez de la planilla de bloques
+
+Pedido del usuario: *"siento que eso de administrar los bloques hace todo muy robótico"*. Tenía
+razón, y el propio `CONCEPTO.md` §1 lo respaldaba: declara que la referencia es El Ídolo y
+Copero —"decidís en los momentos que importan"— y un panel de steppers para repartir 10 bloques
+es exactamente lo contrario.
+
+- **`src/data/rutinas/*.json`** (nuevos): 15 rutinas amateur y 7 de offseason. Una rutina es
+  **un reparto de recursos con texto narrativo encima**: el jugador ve *"Clase, siesta corta, y
+  de las 8 a las 2"*, el motor ve `{ranked: 6, estudiar: 1, dormir: 2, familia: 1}` y un bloque
+  robado al sueño. Cada una declara su `contexto`, así que *"Salvar el trimestre"* solo aparece
+  con el boletín en rojo y *"Bootcamp en tu propia pieza"* solo cuando ya te están mirando.
+- **`aplicarReparto` no se tocó ni una línea.** Toda la economía sigue igual; cambió solo quién
+  produce el reparto. `normalizarReparto` se conservó como red: adapta un reparto de 10 a los 12
+  bloques del nocturno y garantiza que una rutina mal declarada no invente ni pierda tiempo.
+- **La forma de la decisión está garantizada**: siempre hay al menos una salida `segura` (nunca
+  se acorrala al jugador) y al menos una `agresiva` (la trampa de `CONCEPTO` §4 siempre a mano).
+  Hay un check que lo verifica sobre 120 carreras.
+- **El panel de steppers se borró de `index.html`** (~75 líneas) y la UI quedó con **un solo
+  camino de render**. Las opciones ahora muestran título y texto narrativo.
+- **`practica.js`** también: los 6 puntos de preparación pasaron a rutinas (*"Bootcamp: dos meses
+  afuera"*, *"Dos semanas sin tocar el juego"*, *"Encerrarte con los VODs"*).
+- **`CONCEPTO.md` §3 actualizado**: decía literalmente "tenés 10 bloques de tiempo por periodo".
+
+**Dos correcciones encontradas midiendo, no leyendo:**
+
+1. El jugador automático elegía la rutina **maximizando la suma ponderada** contra los pesos que
+   usaba el reparto libre. Eso siempre elige la rutina más extrema en el destino de mayor peso
+   → 70% de burnout. La función objetivo correcta no es maximizar sino **minimizar la distancia
+   contra las proporciones deseadas**: "cuál de estas rutinas se parece más a cómo lo habría
+   repartido yo". Eso reproduce fielmente lo que producía el reparto libre.
+2. Al set de rutinas le faltaban formas que las estrategias usaban. Se agregaron cuatro
+   (*"Lo justo en todo, el resto al ranked"*, *"Tapar el agujero más urgente"*, *"Una sola noche
+   larga"*, *"Todo el día jugando, pero durmiendo"*), siguiendo la regla del plan: si el balance
+   no vuelve, faltan rutinas, no sobran constantes.
+
+**Sobre el balance, con honestidad**: aun con las rutinas agregadas, llegar a pro bajó del 54.9%
+al 40.2% jugando con criterio. **No es un bug: con rutinas narrativas tenés genuinamente menos
+control que con una planilla**, así que el mismo rendimiento por bloque rinde menos. Se
+recalibró `lpPorBloque` (34 → 52) para compensar en parte, y ahí se frenó a propósito: subir más
+pelea contra el freno de altura del paso 8, que existe para que el potencial oculto siga
+decidiendo tu techo de ladder.
+
+| etapa amateur (1500 × 16 splits) | llega a pro | no llegó | prohibición | burnout |
+|---|---|---|---|---|
+| equilibrado | 40.2% | 50.7% | 3.7% | 8.3% |
+| ranked | 19.9% | 0.7% | 11.2% | **78.9%** |
+| prudente | 33.5% | 66.5% | 0% | 0% |
+
 ### 2026-08-08 — Paso 8: la escalera de ranked real
 
 Pedido del usuario: *"nadie arranca en platino con 1200lp y no es normal que en platino te hable

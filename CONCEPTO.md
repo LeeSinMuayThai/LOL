@@ -101,12 +101,24 @@ va a heredar a medida que se implementen.
 Hay UN solo recurso escaso en todo el juego, y cambia de disfraz según la
 etapa: **tu atención**. Nunca alcanza para todo.
 
-En la etapa amateur es literal: tenés 10 bloques de tiempo por periodo y
-cuatro cosas que necesitan tiempo (rankeds, estudiar, dormir, familia).
+**Nunca se reparte el tiempo con una planilla.** El recurso existe adentro del
+motor —en la etapa amateur son bloques de tiempo entre rankeds, estudiar,
+dormir y familia; en la profesional son puntos de preparación entre pulir
+campeones, aprender campeones nuevos, entrenar mecánica, estudiar macro o
+descansar— pero el jugador nunca lo ve así. Lo que ve son **rutinas**: tres o
+cuatro formas concretas de vivir ese periodo, con nombre y con voz.
 
-En la etapa profesional se vuelve abstracto: puntos de preparación entre
-splits que repartís entre pulir campeones, aprender campeones nuevos,
-entrenar mecánica, estudiar macro, o descansar.
+*"Clase, siesta corta, y de las 8 a las 2"* es un reparto de bloques con la
+cara puesta. *"Dos semanas sin tocar el juego"* también. Elegir una rutina es
+elegir un reparto, pero se lee como una decisión de vida y no como un
+formulario — que es la única forma de que el juego se parezca a su referencia
+(sección 1) en vez de a un manager.
+
+Esa es también la razón de que el reparto no sea libre: **no siempre está
+disponible la rutina que querrías**. Lo que sí está garantizado en cada
+decisión es que haya al menos una salida segura —nunca se te acorrala en una
+mala elección— y al menos una agresiva, porque la trampa tiene que estar
+siempre a mano aunque convenga no tomarla.
 
 **La mentalidad es la moneda con la que pagás.** Casi todo lo que te hace
 mejor jugador te cuesta mentalidad, y la mentalidad en cero es el fin de la

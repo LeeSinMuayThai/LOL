@@ -5,7 +5,8 @@ import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 import { mulberry32 } from '../core/rng.js';
 import { createInitialState } from '../core/state.js';
-import { avanzarSplitAuto, ETAPAS_SPLIT } from '../core/pipeline.js';
+import { avanzarSplit, avanzarSplitAuto, resolverDecision, ETAPAS_SPLIT } from '../core/pipeline.js';
+import { sistemaPorId } from '../systems/registro.js';
 import { getPath, etiquetaCampo } from '../core/selectors.js';
 import { calcularContexto } from '../core/contexto.js';
 import {
@@ -506,6 +507,42 @@ check('La escalera produce una distribución realista al cerrar la etapa amateur
   }
 });
 
+check('Toda decisión de rutina ofrece una salida segura y la trampa', () => {
+  // La forma de la decisión importa tanto como su contenido: nunca se acorrala
+  // al jugador en una mala elección, y la trampa de CONCEPTO §4 siempre está
+  // disponible aunque convenga no tomarla.
+  for (let seed = 1; seed <= 120; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+
+    for (let i = 0; i < 20 && !state.terminado; i += 1) {
+      const resultado = avanzarSplit(state, rng);
+      state = resultado.state;
+
+      while (state.pendiente) {
+        const { decision } = state.pendiente;
+        const rutinas = decision.datos?.rutinas;
+
+        if (rutinas) {
+          if (rutinas.length < 2) {
+            throw new Error(`seed ${seed}: una decisión de rutina ofreció ${rutinas.length} opción(es)`);
+          }
+          const etiquetas = new Set(rutinas.flatMap((rutina) => rutina.etiquetas));
+          if (!etiquetas.has('segura')) {
+            throw new Error(`seed ${seed}: se ofrecieron rutinas sin ninguna salida segura`);
+          }
+          if (decision.datos.motivo === 'reparto' && !etiquetas.has('agresiva')) {
+            throw new Error(`seed ${seed}: se ofrecieron rutinas amateur sin ninguna agresiva`);
+          }
+        }
+
+        const sistema = sistemaPorId(state.pendiente.sistemaId);
+        state = resolverDecision(state, sistema.resolverAuto(state, decision, rng), rng).state;
+      }
+    }
+  }
+});
+
 check('El contexto de carrera nombra siempre dónde estás parado', () => {
   const vistos = new Set();
 
@@ -577,7 +614,9 @@ check('El ciclo profesional produce carreras distintas', () => {
     for (let i = 0; i < 30 && !state.terminado; i += 1) {
       state = avanzarSplitAuto(state, rng).state;
     }
-    if (state.career.currentOrg) {
+    // Solo cuentan las carreras con el roster ya armado: si el fichaje cayó en
+    // el último split del muestreo, `roster.js` todavía no corrió.
+    if (state.career.currentOrg && state.career.rosterDeOrg === state.career.currentOrg) {
       carreras.push(state);
     }
   }

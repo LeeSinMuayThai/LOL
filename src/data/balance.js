@@ -66,7 +66,7 @@ export const BALANCE = {
 
     // Rendimiento por bloque de ranked. El factor de mecanica y el de mentalidad
     // van de "tiltrado" a "en llamas"; la deuda de sueño te frena aunque juegues.
-    lpPorBloque: 34,
+    lpPorBloque: 52,
     lpPorBloqueSpread: 12,
     lpFactorMecanicaBase: 0.7,
     lpFactorMecanicaRango: 0.6,
@@ -75,8 +75,9 @@ export const BALANCE = {
     lpPenalPorDeuda: 0.15,
     lpPenalPorDeudaMax: 0.5,
     // El freno del ascenso: cuanto mas arriba estas, mejor es la gente que te
-    // toca.  es el punto de la escalera que se
-    // considera nivel 100 (Challenger de un servidor grande).
+    // toca. `puntosEscaleraCompleta` es el punto de la escalera que se considera
+    // nivel 100 (Challenger de un servidor grande), y la ganancia depende de la
+    // distancia entre tu mecanica y el nivel que exige el rango donde estas.
     puntosEscaleraCompleta: 4300,
     escalaNivelLadder: 26,
     alturaFactorBase: 0.72,
@@ -172,7 +173,8 @@ export const BALANCE = {
     nocturnoBloquesExtra: 2,
     nocturnoFactorDecaeEstudio: 0.35,
 
-    // --- Fin de la etapa: a los 18 se termina el margen ---
+    // Tope duro de la etapa. La ventana real se cierra antes, por el sesgo
+    // etario del scouting: esto es solo la red que impide una etapa infinita.
     edadLimite: 20,
 
     // --- Como reparte el jugador automatico (simulacion masiva) ---
@@ -313,6 +315,14 @@ export const BALANCE = {
   contenido: {
     minimoEventosPorCelda: 3,
     objetivoOpciones: 150
+  },
+
+  rutinas: {
+    // Cuantas formas de vivir el periodo se ofrecen por decision. Tres es el
+    // maximo que se puede leer de un vistazo sin que se sienta un formulario.
+    ofrecidas: 4,
+    // Cuanto castiga el jugador automatico robarle horas al sueño al comparar rutinas.
+    penalRoboEnAuto: 0.06
   },
 
   roster: {

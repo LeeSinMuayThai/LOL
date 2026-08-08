@@ -1,0 +1,348 @@
+[
+  {
+    "id": "todo_al_ranked",
+    "titulo": "No levantarte de la silla",
+    "texto": "El colegio es un trámite y la cama una sugerencia. Si hay que hacer LP, se hace LP.",
+    "etiquetas": [
+      "agresiva"
+    ],
+    "contexto": {
+      "etapa": [
+        "amateur"
+      ]
+    },
+    "reparto": {
+      "ranked": 8,
+      "estudiar": 0,
+      "dormir": 1,
+      "familia": 1
+    },
+    "extra": 2,
+    "peso": 8,
+    "pesoAuto": 5
+  },
+  {
+    "id": "clase_y_soloq_hasta_las_dos",
+    "titulo": "Clase, siesta corta, y de las 8 a las 2",
+    "texto": "Volvés del colegio, dormís una hora, y no te levantás hasta que se te cierran los ojos solos.",
+    "etiquetas": [
+      "agresiva"
+    ],
+    "contexto": {
+      "etapa": [
+        "amateur"
+      ]
+    },
+    "reparto": {
+      "ranked": 6,
+      "estudiar": 1,
+      "dormir": 2,
+      "familia": 1
+    },
+    "extra": 1,
+    "peso": 10,
+    "pesoAuto": 7
+  },
+  {
+    "id": "equilibrio_dificil",
+    "titulo": "Intentar que entre todo",
+    "texto": "Un poco de cada cosa y la sensación permanente de que nada alcanza.",
+    "etiquetas": [
+      "equilibrada"
+    ],
+    "contexto": {
+      "etapa": [
+        "amateur"
+      ]
+    },
+    "reparto": {
+      "ranked": 5,
+      "estudiar": 2,
+      "dormir": 2,
+      "familia": 1
+    },
+    "extra": 0,
+    "peso": 10,
+    "pesoAuto": 8
+  },
+  {
+    "id": "bancar_el_colegio",
+    "titulo": "Bancar el colegio esta semana",
+    "texto": "Cerrás el cliente y agarrás la carpeta. El ranked va a seguir estando la semana que viene.",
+    "etiquetas": [
+      "segura"
+    ],
+    "contexto": {
+      "etapa": [
+        "amateur"
+      ]
+    },
+    "reparto": {
+      "ranked": 2,
+      "estudiar": 5,
+      "dormir": 2,
+      "familia": 1
+    },
+    "extra": 0,
+    "peso": 9,
+    "pesoAuto": 6
+  },
+  {
+    "id": "dormir_como_persona",
+    "titulo": "Dormir como una persona",
+    "texto": "Menos horas de juego, pero las que jugás las jugás despierto.",
+    "etiquetas": [
+      "segura"
+    ],
+    "contexto": {
+      "etapa": [
+        "amateur"
+      ]
+    },
+    "reparto": {
+      "ranked": 4,
+      "estudiar": 2,
+      "dormir": 4,
+      "familia": 0
+    },
+    "extra": 0,
+    "peso": 9,
+    "pesoAuto": 7
+  },
+  {
+    "id": "aparecer_en_casa",
+    "titulo": "Aparecer en casa",
+    "texto": "Cenar con todos, bancar la sobremesa, dejar que te vean la cara. En algún momento te va a hacer falta que te crean.",
+    "etiquetas": [
+      "social",
+      "segura"
+    ],
+    "contexto": {
+      "etapa": [
+        "amateur"
+      ]
+    },
+    "reparto": {
+      "ranked": 3,
+      "estudiar": 2,
+      "dormir": 2,
+      "familia": 3
+    },
+    "extra": 0,
+    "peso": 8,
+    "pesoAuto": 5
+  },
+  {
+    "id": "semana_de_examenes",
+    "titulo": "Salvar el trimestre",
+    "texto": "Es esta semana o repetís. No hay discusión posible en tu casa.",
+    "etiquetas": [
+      "segura"
+    ],
+    "contexto": {
+      "etapa": [
+        "amateur"
+      ],
+      "marcas": [
+        "riesgo_familiar"
+      ]
+    },
+    "reparto": {
+      "ranked": 1,
+      "estudiar": 7,
+      "dormir": 1,
+      "familia": 1
+    },
+    "extra": 0,
+    "peso": 14,
+    "pesoAuto": 9
+  },
+  {
+    "id": "recuperar_el_cuerpo",
+    "titulo": "Parar antes de romperte",
+    "texto": "Hace semanas que dormís de a pedazos y se nota en cada teamfight. Una semana de acostarte temprano.",
+    "etiquetas": [
+      "segura"
+    ],
+    "contexto": {
+      "etapa": [
+        "amateur"
+      ],
+      "marcas": [
+        "deuda_sueno"
+      ]
+    },
+    "reparto": {
+      "ranked": 2,
+      "estudiar": 1,
+      "dormir": 6,
+      "familia": 1
+    },
+    "extra": 0,
+    "peso": 13,
+    "pesoAuto": 9
+  },
+  {
+    "id": "bootcamp_casero",
+    "titulo": "Bootcamp en tu propia pieza",
+    "texto": "Te están mirando. Es ahora: cortinas cerradas, delivery, y la ladder hasta que salga el sol.",
+    "etiquetas": [
+      "agresiva"
+    ],
+    "contexto": {
+      "etapa": [
+        "amateur"
+      ],
+      "marcas": [
+        "en_el_radar"
+      ]
+    },
+    "reparto": {
+      "ranked": 9,
+      "estudiar": 0,
+      "dormir": 1,
+      "familia": 0
+    },
+    "extra": 3,
+    "peso": 12,
+    "pesoAuto": 6
+  },
+  {
+    "id": "jugar_con_la_camara_prendida",
+    "titulo": "Jugar con la cámara prendida",
+    "texto": "Streameás las partidas aunque te miren cuatro personas. Alguien te tiene que ver antes de que alguien te llame.",
+    "etiquetas": [
+      "social",
+      "agresiva"
+    ],
+    "contexto": {
+      "etapa": [
+        "amateur"
+      ],
+      "edadMin": 16
+    },
+    "reparto": {
+      "ranked": 6,
+      "estudiar": 1,
+      "dormir": 2,
+      "familia": 1
+    },
+    "extra": 1,
+    "peso": 7,
+    "pesoAuto": 4
+  },
+  {
+    "id": "turno_noche_completo",
+    "titulo": "Aprovechar el nocturno a fondo",
+    "texto": "Con las tardes libres podés jugar en horario de gente normal, y encima dormir.",
+    "etiquetas": [
+      "equilibrada"
+    ],
+    "contexto": {
+      "etapa": [
+        "amateur"
+      ],
+      "marcas": [
+        "nocturno"
+      ]
+    },
+    "reparto": {
+      "ranked": 6,
+      "estudiar": 1,
+      "dormir": 3,
+      "familia": 0
+    },
+    "extra": 0,
+    "peso": 11,
+    "pesoAuto": 8
+  },
+  {
+    "id": "lo_justo_y_al_ranked",
+    "titulo": "Lo justo en todo, el resto al ranked",
+    "texto": "Entregás lo mínimo para que nadie se queje y el resto de la semana es tuyo.",
+    "etiquetas": [
+      "equilibrada"
+    ],
+    "contexto": {
+      "etapa": [
+        "amateur"
+      ]
+    },
+    "reparto": {
+      "ranked": 6,
+      "estudiar": 2,
+      "dormir": 2,
+      "familia": 0
+    },
+    "extra": 0,
+    "peso": 12,
+    "pesoAuto": 9
+  },
+  {
+    "id": "tapar_agujeros",
+    "titulo": "Tapar el agujero más urgente",
+    "texto": "Mirás qué se está por romper esta semana, lo arreglás, y con lo que queda jugás.",
+    "etiquetas": [
+      "equilibrada",
+      "segura"
+    ],
+    "contexto": {
+      "etapa": [
+        "amateur"
+      ]
+    },
+    "reparto": {
+      "ranked": 4,
+      "estudiar": 3,
+      "dormir": 2,
+      "familia": 1
+    },
+    "extra": 0,
+    "peso": 11,
+    "pesoAuto": 9
+  },
+  {
+    "id": "una_noche_larga",
+    "titulo": "Una sola noche larga",
+    "texto": "Una madrugada entera, y el resto de la semana como una persona normal.",
+    "etiquetas": [
+      "equilibrada"
+    ],
+    "contexto": {
+      "etapa": [
+        "amateur"
+      ]
+    },
+    "reparto": {
+      "ranked": 5,
+      "estudiar": 2,
+      "dormir": 3,
+      "familia": 0
+    },
+    "extra": 1,
+    "peso": 10,
+    "pesoAuto": 8
+  },
+  {
+    "id": "todo_el_dia_jugando",
+    "titulo": "Todo el día jugando, pero durmiendo",
+    "texto": "Sin robarle horas a la noche: simplemente no hacés otra cosa en todo el día.",
+    "etiquetas": [
+      "equilibrada"
+    ],
+    "contexto": {
+      "etapa": [
+        "amateur"
+      ]
+    },
+    "reparto": {
+      "ranked": 7,
+      "estudiar": 1,
+      "dormir": 2,
+      "familia": 0
+    },
+    "extra": 0,
+    "peso": 12,
+    "pesoAuto": 9
+  }
+]

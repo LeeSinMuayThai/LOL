@@ -1,9 +1,10 @@
-import { gauss, roll, weightedPick, sample } from '../core/rng.js';
+import { gauss, sample } from '../core/rng.js';
 import { crearLog } from '../core/log.js';
 import { clamp, clampStat } from '../core/numeros.js';
 import { afinidadDeCampeon } from '../core/ajusteMeta.js';
 import { BALANCE } from '../data/balance.js';
 import CAMPEONES from '../data/champions.json' with { type: 'json' };
+import { ofrecerRutinas, rutinaPorId, elegirRutinaAutomatica } from '../core/rutinas.js';
 
 export const id = 'practica';
 
@@ -100,19 +101,18 @@ function aprenderCampeones(state, pool, puntos, rng) {
   return { pool: [...pool, ...nuevos], texto: `entra ${nuevos.map((c) => c.name).join(' y ')} al pool` };
 }
 
-function decisionDePractica(state) {
+function decisionDePractica(state, rng) {
   const aprendibles = campeonesAprendibles(state).length;
   const hayCupo = state.player.championPool.length < BALANCE.practica.poolMaximo && aprendibles > 0;
+  const rutinas = ofrecerRutinas(state, rng, { pool: 'offseason' });
 
   return {
-    tipo: 'reparto',
-    titulo: `Offseason: ${BALANCE.practica.puntos} puntos de preparación`,
-    descripcion: 'Se terminó la temporada. Lo que hagas ahora es lo que llevás al año que viene.'
-      + (hayCupo ? '' : ' (El pool está lleno: aprender un campeón nuevo no va a entrar.)'),
-    bloques: BALANCE.practica.puntos,
-    extraMax: 0,
-    destinos: DESTINOS,
-    datos: { motivo: 'practica' }
+    tipo: 'opciones',
+    titulo: 'Se terminó la temporada',
+    descripcion: 'Lo que hagas en el receso es lo que llevás al año que viene.'
+      + (hayCupo ? '' : ' Tu pool ya está lleno: no entra ningún campeón nuevo.'),
+    opciones: rutinas.map((rutina) => ({ id: rutina.id, label: rutina.titulo, descripcion: rutina.texto })),
+    datos: { motivo: 'practica', rutinas }
   };
 }
 
@@ -120,12 +120,13 @@ export function aplicar(state, rng) {
   if (!esOffseason(state)) {
     return { state, logs: [] };
   }
-  return { state, logs: [], decision: decisionDePractica(state) };
+  return { state, logs: [], decision: decisionDePractica(state, rng) };
 }
 
 export function resolver(state, decision, respuesta, rng) {
   const p = BALANCE.practica;
-  const reparto = normalizar(respuesta, BALANCE.practica.puntos);
+  const rutina = rutinaPorId(decision.datos.rutinas, respuesta.opcionId);
+  const reparto = normalizar({ reparto: rutina.reparto }, BALANCE.practica.puntos);
   const partes = [];
 
   const pulido = pulirCampeon(state.player.championPool, reparto.pulir, state.meta.weights, rng);
@@ -178,10 +179,5 @@ export function resolverAuto(state, decision, rng) {
     descansar: p.autoPesoDescanso + urgenciaMental * p.autoReaccionMentalidad
   };
 
-  const reparto = Object.fromEntries(IDS_DESTINO.map((destino) => [destino, 0]));
-  for (let punto = 0; punto < decision.bloques; punto += 1) {
-    reparto[weightedPick(IDS_DESTINO, (destino) => pesos[destino], rng)] += 1;
-  }
-
-  return { reparto, extra: 0 };
+  return { opcionId: elegirRutinaAutomatica(decision.datos.rutinas, pesos, rng).id };
 }

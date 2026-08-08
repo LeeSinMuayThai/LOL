@@ -5,6 +5,7 @@ import { clamp, clampStat } from '../core/numeros.js';
 import { aplicarLPAlEstado, etiquetaDeRanked, servidorDeLaPartida, rangoAproximado, esApice } from '../core/ranked.js';
 import { multiplicadorDeMeta } from '../core/ajusteMeta.js';
 import { registrarEnHistorial } from '../core/contexto.js';
+import { ofrecerRutinas, rutinaPorId, elegirRutinaAutomatica } from '../core/rutinas.js';
 
 export const id = 'amateur';
 
@@ -93,17 +94,15 @@ function bloquesDisponibles(state) {
   return BALANCE.amateur.bloquesBase + (state.flags.nocturno ? BALANCE.amateur.nocturnoBloquesExtra : 0);
 }
 
-function decisionDeReparto(state) {
-  const bloques = bloquesDisponibles(state);
+function decisionDeRutina(state, rng) {
+  const rutinas = ofrecerRutinas(state, rng, { pool: 'amateur' });
 
   return {
-    tipo: 'reparto',
-    titulo: `Cómo repartís la semana — ${etiquetaDeRanked(state.player.ranked, servidorDeLaPartida(state))}`,
-    descripcion: `${textoDeSituacion(state)} Tenés ${bloques} bloques de tiempo y podés robarle hasta ${BALANCE.amateur.bloquesExtraMax} al sueño.`,
-    bloques,
-    extraMax: BALANCE.amateur.bloquesExtraMax,
-    destinos: DESTINOS,
-    datos: { motivo: 'reparto' }
+    tipo: 'opciones',
+    titulo: `Cómo vivís la semana — ${etiquetaDeRanked(state.player.ranked, servidorDeLaPartida(state))}`,
+    descripcion: textoDeSituacion(state),
+    opciones: rutinas.map((rutina) => ({ id: rutina.id, label: rutina.titulo, descripcion: rutina.texto })),
+    datos: { motivo: 'reparto', rutinas }
   };
 }
 
@@ -498,12 +497,16 @@ export function aplicar(state, rng) {
     return periodoSinPC(state, rng);
   }
 
-  return { state, logs: [], decision: decisionDeReparto(state) };
+  return { state, logs: [], decision: decisionDeRutina(state, rng) };
 }
 
 export function resolver(state, decision, respuesta, rng) {
   if (decision.datos.motivo === 'reparto') {
-    const { reparto, extra } = normalizarReparto(state, respuesta);
+    const rutina = rutinaPorId(decision.datos.rutinas, respuesta.opcionId);
+    // `normalizarReparto` sigue corriendo: es la red que garantiza que una
+    // rutina mal declarada no invente ni pierda bloques, y la que adapta un
+    // reparto de 10 a los 12 bloques del nocturno.
+    const { reparto, extra } = normalizarReparto(state, { reparto: rutina.reparto, extra: rutina.extra });
     const rReparto = aplicarReparto(state, reparto, extra, rng);
     const rRiesgo = evaluarRiesgoFamiliar(rReparto.state, rng);
     const logs = [...rReparto.logs, ...rRiesgo.logs];
@@ -548,22 +551,10 @@ function pesosAutomaticos(state, rng) {
 }
 
 export function resolverAuto(state, decision, rng) {
-  if (decision.tipo === 'opciones') {
-    return { opcionId: weightedPick(decision.opciones, (opcion) => opcion.pesoAuto, rng).id };
+  if (decision.datos.motivo !== 'reparto') {
+    return { opcionId: weightedPick(decision.opciones, (opcion) => opcion.pesoAuto ?? 1, rng).id };
   }
 
-  const a = BALANCE.amateur;
-  const pesos = pesosAutomaticos(state, rng);
-
-  const reparto = Object.fromEntries(IDS_DESTINO.map((destino) => [destino, 0]));
-  for (let bloque = 0; bloque < decision.bloques; bloque += 1) {
-    reparto[weightedPick(IDS_DESTINO, (destino) => pesos[destino], rng)] += 1;
-  }
-
-  // Robarle al sueño solo tiene sentido si todavia hay sueño que robar.
-  const extra = state.player.sleep > a.autoSuenoObjetivo && chance(a.autoProbRobar, rng)
-    ? roll(1, decision.extraMax, rng)
-    : 0;
-
-  return { reparto, extra };
+  // Elige la rutina que mejor se alinea con las barras que tiene en rojo.
+  return { opcionId: elegirRutinaAutomatica(decision.datos.rutinas, pesosAutomaticos(state, rng), rng).id };
 }
