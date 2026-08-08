@@ -6,16 +6,24 @@
     "tier": 1,
     "prestigio": 95,
     "cupoImports": 2,
+    "minimoResidentes": 3,
     "dificultadAdaptacion": 85,
+    "edadMinima": 17,
+    "cuposInternacionales": 3,
+    "desciendeA": "LCK_CL",
+    "servidor": "KR",
     "orgs": [
       "T1",
       "Gen.G",
       "Hanwha Life Esports",
       "KT Rolster",
       "Dplus KIA",
-      "DRX"
-    ],
-    "servidor": "KR"
+      "BNK FearX",
+      "KIWOOM DRX",
+      "Nongshim RedForce",
+      "Hanjin Brion",
+      "DN SOOPers"
+    ]
   },
   {
     "id": "LPL",
@@ -24,16 +32,28 @@
     "tier": 1,
     "prestigio": 93,
     "cupoImports": 2,
+    "minimoResidentes": 3,
     "dificultadAdaptacion": 90,
+    "edadMinima": 18,
+    "cuposInternacionales": 3,
+    "desciendeA": "LDL",
+    "servidor": "CN",
     "orgs": [
-      "JD Gaming",
+      "Anyone's Legend",
       "Bilibili Gaming",
-      "Top Esports",
-      "Weibo Gaming",
+      "Edward Gaming",
+      "Invictus Gaming",
+      "JD Gaming",
+      "LGD Gaming",
       "LNG Esports",
-      "EDward Gaming"
-    ],
-    "servidor": "CN"
+      "Ninjas in Pyjamas",
+      "Oh My God",
+      "Team WE",
+      "Top Esports",
+      "ThunderTalk Gaming",
+      "Ultra Prime",
+      "Weibo Gaming"
+    ]
   },
   {
     "id": "LEC",
@@ -42,16 +62,24 @@
     "tier": 1,
     "prestigio": 80,
     "cupoImports": 2,
+    "minimoResidentes": 3,
     "dificultadAdaptacion": 45,
+    "edadMinima": 18,
+    "cuposInternacionales": 3,
+    "desciendeA": "EMEA_MASTERS",
+    "servidor": "EUW",
     "orgs": [
-      "G2 Esports",
       "Fnatic",
-      "MAD Lions",
-      "Team Vitality",
+      "G2 Esports",
+      "GIANTX",
+      "Karmine Corp",
+      "Movistar KOI",
+      "Natus Vincere",
+      "Shifters",
+      "SK Gaming",
       "Team Heretics",
-      "Rogue"
-    ],
-    "servidor": "EUW"
+      "Team Vitality"
+    ]
   },
   {
     "id": "LCS",
@@ -60,34 +88,22 @@
     "tier": 1,
     "prestigio": 70,
     "cupoImports": 2,
+    "minimoResidentes": 3,
     "dificultadAdaptacion": 40,
+    "edadMinima": 17,
+    "cuposInternacionales": 3,
+    "desciendeA": "NACL",
+    "servidor": "NA",
     "orgs": [
-      "Cloud9",
-      "Team Liquid",
-      "100 Thieves",
-      "FlyQuest",
+      "Cloud9 KIA",
       "Dignitas",
-      "NRG"
-    ],
-    "servidor": "NA"
-  },
-  {
-    "id": "LLA",
-    "region": "Latinoamérica",
-    "regionId": "LATAM",
-    "tier": 1,
-    "prestigio": 50,
-    "cupoImports": 2,
-    "dificultadAdaptacion": 20,
-    "orgs": [
-      "Isurus",
-      "Estral Esports",
-      "Movistar R7",
-      "All Knights",
-      "Leviatán",
-      "Furious Gaming"
-    ],
-    "servidor": "LAS"
+      "Disguised",
+      "FlyQuest",
+      "LYON",
+      "Sentinels",
+      "Shopify Rebellion",
+      "Team Liquid"
+    ]
   },
   {
     "id": "CBLOL",
@@ -96,47 +112,129 @@
     "tier": 1,
     "prestigio": 55,
     "cupoImports": 2,
+    "minimoResidentes": 3,
     "dificultadAdaptacion": 30,
+    "edadMinima": 17,
+    "cuposInternacionales": 2,
+    "desciendeA": "CD",
+    "servidor": "BR",
     "orgs": [
+      "Fluxo w7m",
+      "FURIA",
+      "Leviatán",
+      "Los Grandes",
       "LOUD",
       "paiN Gaming",
-      "RED Canids",
-      "FURIA",
-      "Vivo Keyd Stars",
-      "INTZ"
-    ],
-    "servidor": "BR"
+      "RED Canids Kalunga",
+      "Vivo Keyd Stars"
+    ]
   },
   {
-    "id": "PCS",
+    "id": "LCP",
     "region": "Asia-Pacífico",
     "regionId": "APAC",
     "tier": 1,
-    "prestigio": 48,
+    "prestigio": 60,
     "cupoImports": 2,
-    "dificultadAdaptacion": 60,
+    "minimoResidentes": 3,
+    "dificultadAdaptacion": 58,
+    "edadMinima": 17,
+    "cuposInternacionales": 2,
+    "desciendeA": "LCP_CHALLENGERS",
+    "servidor": "TW",
     "orgs": [
-      "PSG Talon",
       "CTBC Flying Oyster",
-      "Frank Esports",
-      "Deep Cross Gaming"
-    ],
-    "servidor": "TW"
+      "GAM Esports",
+      "Fukuoka SoftBank HAWKS gaming",
+      "Team Secret Whales",
+      "DetonatioN FocusMe",
+      "MVK Esports",
+      "Deep Cross Gaming",
+      "Ground Zero Gaming"
+    ]
   },
   {
-    "id": "VCS",
-    "region": "Vietnam",
+    "id": "LCK_CL",
+    "region": "Corea",
+    "regionId": "KR",
+    "tier": 2,
+    "prestigio": 48,
+    "cupoImports": 0,
+    "minimoResidentes": 5,
+    "dificultadAdaptacion": 85,
+    "edadMinima": 16,
+    "servidor": "KR",
+    "orgsGeneradas": true,
+    "cantidadOrgs": 10
+  },
+  {
+    "id": "LDL",
+    "region": "China",
+    "regionId": "CN",
+    "tier": 2,
+    "prestigio": 45,
+    "cupoImports": 0,
+    "minimoResidentes": 5,
+    "dificultadAdaptacion": 90,
+    "edadMinima": 15,
+    "servidor": "CN",
+    "orgsGeneradas": true,
+    "cantidadOrgs": 12
+  },
+  {
+    "id": "EMEA_MASTERS",
+    "region": "Europa",
+    "regionId": "EMEA",
+    "tier": 2,
+    "prestigio": 42,
+    "cupoImports": 0,
+    "minimoResidentes": 5,
+    "dificultadAdaptacion": 45,
+    "edadMinima": 15,
+    "servidor": "EUW",
+    "orgsGeneradas": true,
+    "cantidadOrgs": 12
+  },
+  {
+    "id": "NACL",
+    "region": "Norteamérica",
+    "regionId": "NA",
+    "tier": 2,
+    "prestigio": 40,
+    "cupoImports": 0,
+    "minimoResidentes": 5,
+    "dificultadAdaptacion": 40,
+    "edadMinima": 15,
+    "servidor": "NA",
+    "orgsGeneradas": true,
+    "cantidadOrgs": 10
+  },
+  {
+    "id": "CD",
+    "region": "Brasil",
+    "regionId": "BR",
+    "tier": 2,
+    "prestigio": 35,
+    "cupoImports": 0,
+    "minimoResidentes": 5,
+    "dificultadAdaptacion": 30,
+    "edadMinima": 15,
+    "servidor": "BR",
+    "orgsGeneradas": true,
+    "cantidadOrgs": 10
+  },
+  {
+    "id": "LCP_CHALLENGERS",
+    "region": "Asia-Pacífico",
     "regionId": "APAC",
-    "tier": 1,
-    "prestigio": 58,
-    "cupoImports": 1,
-    "dificultadAdaptacion": 70,
-    "orgs": [
-      "GAM Esports",
-      "Team Whales",
-      "Vikings Esports",
-      "CERBERUS Esports"
-    ],
-    "servidor": "TW"
+    "tier": 2,
+    "prestigio": 38,
+    "cupoImports": 0,
+    "minimoResidentes": 5,
+    "dificultadAdaptacion": 58,
+    "edadMinima": 15,
+    "servidor": "TW",
+    "orgsGeneradas": true,
+    "cantidadOrgs": 10
   }
 ]

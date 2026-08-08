@@ -18,6 +18,7 @@ el juego) → este documento → `PROGRESO.md` (changelog) → `TRASPASO.md` (da
 | **0** | Higiene: números, gating, texto narrativo | ✅ commit `cac4af2` |
 | **1** | Identidad: elegís rol y mains, y eso importa | ✅ ver `PROGRESO.md` |
 | **2** | Que las decisiones pesen: pesos dinámicos, densidad | ✅ ver `PROGRESO.md` |
+| **3** | Escalera competitiva: tier3 → tier2 → tier1, ligas 2026 | ✅ ver `PROGRESO.md` |
 | **2** | Que las decisiones pesen: pesos dinámicos, densidad | ⬜ |
 | **3** | Escalera competitiva: tier3 → tier2 → tier1, ligas 2026 | ⬜ |
 | **4** | Competición jugable: series Bo5, Fearless, draft, minijuegos | ⬜ |
@@ -689,20 +690,24 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 
 | # | Hallazgo | Fase |
 |---|---|---|
-| D1 | Los pesos de outcome son estáticos y contradicen `CONCEPTO` §8 (*"tus stats corren esos pesos"*) | 2 |
+| D1 | ~~Los pesos de outcome son estáticos~~ — resuelto: `outcome.modificadores` | ✅ 2 |
 | D2 | El 23% de las carreras agota el tope de 90 splits: no hay retiro | 6 |
-| D3 | `maxDecisionesPorSplit: 8` queda corto con serie + mercado + rutina + evento + cierre | 2 |
-| D4 | `posicionParaInternacional: 1` está mal para 2026 (Worlds toma 3 por liga mayor, 2 de CBLOL) | 3 |
-| D5 | `regionOrigen` se sortea uniforme entre 8 ligas: 1 de cada 8 carreras nace en Corea | 3 |
-| D6 | El meta se describe por arquetipo, no por campeón | 1 |
+| D3 | ~~`maxDecisionesPorSplit: 8` queda corto~~ — resuelto: subió a 16 | ✅ 2 |
+| D4 | ~~`posicionParaInternacional: 1` estaba mal para 2026~~ — resuelto: `liga.cuposInternacionales` | ✅ 3 |
+| D5 | ~~`regionOrigen` se sorteaba uniforme entre 8 ligas~~ — resuelto: pesado por prestigio, solo tier 1 | ✅ 3 |
+| D6 | ~~El meta se describía por arquetipo, no por campeón~~ — resuelto: `campeonesEnMeta` | ✅ 1 |
 | D7 | `src/ui/` está vacía; los 416 renglones de UI viven en `index.html` | 8 |
 | D8 | Los 5 rivales de generación se generan y no corren su carrera | 8 |
 | D9 | `player.deudaSueno` no se resetea al pasar a profesional y `atributos.js` la sigue cobrando toda la carrera. **Es útil**: es media cadena causal del sistema de lesiones, ya construida | 6 |
 | D10 | `secundario.js` usa `amateur.edadLimite` para congelar el flag. Al borrar ese tope hay que darle su propio umbral | 6 |
-| D11 | Las 6 rutinas de offseason están gateadas solo por etapa. Diferenciar por tier cuando los tiers existan, cuidando el check de segura/agresiva | 3 |
-| D12 | El eje `region` de `contextos.js` todavía tiene `LATAM`, que desaparece con las ligas 2026 | 3 |
-| D13 | `academy_offer` empujaba a `career.orgs` sin fichar. Se sacó en la fase 0; cuando exista el tier 3 real, el fichaje lo hace `competitivo.js` | 3 |
+| D11 | Las rutinas de offseason siguen gateadas solo por etapa, no por tier (un bootcamp en Corea no lo paga un tier 3). Deferido de la fase 3 por alcance: cuidar el check de segura/agresiva al diferenciar | 7 |
+| D12 | ~~El eje `region` tenía `LATAM`~~ — resuelto: sacado, ya no hay tier-1 ahí | ✅ 3 |
+| D13 | ~~`academy_offer` empujaba a `career.orgs` sin fichar~~ — resuelto: el fichaje real lo hace `amateur.js`/`competitivo.js`, `academy_offer` quedó como la prueba narrativa que siempre fue | ✅ 3 |
 | D14 | Solo 2 eventos del catálogo usan 3 opciones; ninguno usa 4 | 7 |
+| D15 | LCP no tiene un circuito de desarrollo real investigado (TRASPASO no lo cubre). Se modeló como `LCP_CHALLENGERS`, generado igual que el resto de tier 2 — nombre plausible, no verificado como real. Si aparece la investigación real, reemplazar el id | 3 (abierto) |
+| D16 | Tier 1 es un piso: no hay descenso de tier1 a tier2 todavía. Una relegación real existe en las ligas de 2026 pero modelarla es más natural junto con contratos (fase 5) | 5 |
+| D17 | LRN/LRS (los circuitos tier 2 de LATAM que alimentan LCS/CBLOL) y la doble residencia LATAM 2026-2027 no están modelados: un jugador de la región nace directamente en NA o BR. Es la simplificación explícita que ya preveía `TRASPASO` §5 ("la doble residencia... vale un evento dedicado") | 5 |
+| D18 | La ventana `internacional` sigue siendo un único evento agregado al cierre de temporada (el que ya existía). Distinguir First Stand/MSI/Worlds por separado necesita el sistema de series de la fase 4 para tener sentido — hacerlo antes sería cosmético | 4 |
 
 ---
 

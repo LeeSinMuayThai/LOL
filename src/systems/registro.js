@@ -24,6 +24,10 @@ export const ETAPAS_SPLIT = [
   await import('./edadInicio.js'),
   await import('./meta.js'),
   await import('./roster.js'),
+  // El transito entre tiers (fase 3): en el split del fichaje, `amateur`
+  // todavia no corrio (viene mas adelante en la lista), asi que esto ve
+  // `phase: 'amateur'` y no hace nada — recien actua desde el split siguiente.
+  await import('./competitivo.js'),
   await import('./campeones.js'),
   // Antes de amateur a proposito: si la carrera se corta en este split, el flag
   // del secundario ya quedo congelado y entra en la tarjeta final.

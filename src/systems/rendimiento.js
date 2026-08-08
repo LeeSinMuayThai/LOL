@@ -3,6 +3,7 @@ import { crearLog } from '../core/log.js';
 import { clamp, clampStat } from '../core/numeros.js';
 import { multiplicadorDeMeta } from '../core/ajusteMeta.js';
 import { registrarEnHistorial } from '../core/contexto.js';
+import { ligaOZonaDeCarrera } from '../core/competicion.js';
 import { BALANCE } from '../data/balance.js';
 import { ROLES } from '../data/roles.js';
 
@@ -44,7 +45,7 @@ function fuerzaDelEquipo(state, rendimiento) {
 }
 
 function posicionEnLaLiga(state, fuerza, rng) {
-  const liga = state.mundo.ligas.find((candidata) => candidata.id === state.career.liga);
+  const liga = ligaOZonaDeCarrera(state);
   const rivales = liga.orgs.filter((org) => org.nombre !== state.career.currentOrg);
 
   // Cada rival tira su propio split: los favoritos ganan mas seguido, no siempre.
@@ -90,20 +91,25 @@ function consecuencias(state, rendimiento, resultado, esCierreDeTemporada, rng) 
   let worlds = state.player.worlds;
   const hitos = [...state.career.hitos];
 
+  // `nombreLiga` cubre el tier 3: ahí no hay una liga real que nombrar (fase 3).
+  const nombreLiga = liga.nombreLiga ?? liga.id;
+
   logs.push(crearLog(
     'rendimiento',
-    `${state.career.currentOrg} terminó ${posicion}º de ${equipos} en ${liga.id}. `
+    `${state.career.currentOrg} terminó ${posicion}º de ${equipos} en ${nombreLiga}. `
     + `Tu rendimiento: ${Math.round(rendimiento)}/100 con ${state.player.campeonDelSplit}. Jerarquía ${Math.round(jerarquia)}.`
   ));
 
   if (campeon) {
     titulos += 1;
-    hitos.push(`Campeón de ${liga.id} a los ${state.age}`);
-    logs.push(crearLog('rendimiento', `Campeones de ${liga.id}. El título es tuyo también.`));
+    hitos.push(`Campeón de ${nombreLiga} a los ${state.age}`);
+    logs.push(crearLog('rendimiento', `Campeones de ${nombreLiga}. El título es tuyo también.`));
   }
 
-  // Al cierre de temporada, el campeon de la liga viaja al internacional.
-  if (esCierreDeTemporada && posicion <= r.posicionParaInternacional) {
+  // Al cierre de temporada, el campeon de la liga viaja al internacional. Solo
+  // las ligas tier 1 declaran cupos: tier 2 y tier 3 nunca clasifican (fase 3).
+  const cuposInternacionales = liga.cuposInternacionales ?? 0;
+  if (esCierreDeTemporada && posicion <= cuposInternacionales) {
     internacionales += 1;
     worlds += 1;
     const rendiBien = chance(clamp(liga.prestigio / (r.prestigioReferencia * 2) + rendimiento / (BALANCE.stats.max * 3), 0, 0.9), rng);

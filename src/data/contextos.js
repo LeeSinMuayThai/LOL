@@ -15,9 +15,10 @@ export const EJES = {
   estatus: ['ninguno', 'rookie', 'titular', 'referente', 'franquicia'],
   momentum: ['crisis', 'slump', 'estable', 'racha'],
   mercado: ['sin_contrato', 'contrato_firme', 'ultimo_ano', 'sin_renovacion'],
-  // LATAM desaparece en el paso 10, cuando las ligas pasen a ser las de 2026:
-  // LATAM Norte quedo absorbida por LCS y LATAM Sur por CBLOL.
-  region: ['KR', 'CN', 'EMEA', 'NA', 'BR', 'LATAM', 'APAC'],
+  // LATAM ya no es una region de origen (fase 3, ligas 2026): LATAM Norte
+  // quedo absorbida por LCS y LATAM Sur por CBLOL. Los jugadores de esas
+  // zonas nacen hoy en la escena de NA o de BR.
+  region: ['KR', 'CN', 'EMEA', 'NA', 'BR', 'APAC'],
   residencia: ['local', 'import', 'residente'],
   ventana: ['pretemporada', 'regular', 'playoffs', 'internacional', 'offseason'],
   // Altura en la escalera de soloQ. Sin este eje no se podia expresar "esto
@@ -88,7 +89,7 @@ export const MOMENTOS = [
     label: 'Arrastrando una lesión que no se va',
     patron: { marcas: ['lesion_cronica'] } },
 
-  { id: 'espera_edad_minima', prioridad: 88, pendiente: 'paso10',
+  { id: 'espera_edad_minima', prioridad: 88,
     label: 'Firmado, pero sin edad para debutar',
     patron: { marcas: ['espera_edad_minima'] } },
 
@@ -122,20 +123,20 @@ export const MOMENTOS = [
     patron: { etapa: ['amateur'] } },
 
   // --- Tier 3 (equipos inventados, efimeros) ---
-  { id: 'tier3_recien_llegado', prioridad: 55, pendiente: 'paso10',
+  { id: 'tier3_recien_llegado', prioridad: 55,
     label: 'Recién llegado a un equipo de tier 3',
     patron: { nivel: ['tier3'], estatus: ['rookie'] } },
 
-  { id: 'tier3_probandose', prioridad: 50, pendiente: 'paso10',
+  { id: 'tier3_probandose', prioridad: 50,
     label: 'Probándote en tier 3',
     patron: { nivel: ['tier3'] } },
 
   // --- Tier 2 (ligas de desarrollo reales) ---
-  { id: 'tier2_rookie', prioridad: 48, pendiente: 'paso10',
+  { id: 'tier2_rookie', prioridad: 48,
     label: 'Rookie en la liga de desarrollo',
     patron: { nivel: ['tier2'], estatus: ['rookie'] } },
 
-  { id: 'tier2_titular', prioridad: 45, pendiente: 'paso10',
+  { id: 'tier2_titular', prioridad: 45,
     label: 'Titular en la liga de desarrollo',
     patron: { nivel: ['tier2'] } },
 

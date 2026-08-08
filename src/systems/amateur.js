@@ -7,6 +7,7 @@ import { aplicarLPAlEstado, etiquetaDeRanked, servidorDeLaPartida, rangoAproxima
 import { multiplicadorDeMeta } from '../core/ajusteMeta.js';
 import { registrarEnHistorial } from '../core/contexto.js';
 import { ofrecerRutinas, rutinaPorId, elegirRutinaAutomatica } from '../core/rutinas.js';
+import { elegirOrgTier3, asignarOrgTier3 } from '../core/tier3.js';
 
 export const id = 'amateur';
 
@@ -109,8 +110,14 @@ function decisionDeRutina(state, rng) {
 
 // `pesoAuto` es lo que elegiria alguien con criterio: lo usa la simulacion
 // masiva para medir el juego en vez del ruido. No se muestra al jugador.
-function decisionDeOpciones(titulo, descripcion, opciones, motivo) {
-  return { tipo: 'opciones', titulo, descripcion, opciones, datos: { motivo } };
+//
+// `datosExtra` viaja junto al motivo hasta `resolver`: sin esto, una decision
+// que nombra una org en el titulo ("Fulano Gaming te quiere") y la vuelve a
+// sortear al resolverse puede terminar firmando con una org DISTINTA de la
+// que le mostró al jugador — dos tiradas de rng para lo que tendría que ser
+// una sola elección.
+function decisionDeOpciones(titulo, descripcion, opciones, motivo, datosExtra = {}) {
+  return { tipo: 'opciones', titulo, descripcion, opciones, datos: { motivo, ...datosExtra } };
 }
 
 // --- El periodo con la PC confiscada: perdes el periodo entero ---
@@ -361,25 +368,47 @@ function probabilidadDeScouting(state) {
   return base * (a.scoutingPesoBase + avanceHype * a.scoutingPesoHype) * sesgoEtario;
 }
 
-function orgQueTeMira(state, rng) {
-  const liga = state.mundo.ligas.find((candidata) => candidata.id === state.mundo.ligaOrigen);
-  // Cuanto mas fuerte la org, menos probable que se fije en un pibe de soloQ.
-  return weightedPick(liga.orgs, (org) => BALANCE.stats.max - org.fuerza, rng);
+// A quién te fichan la primera vez (fase 3). Nadie debuta directo en una liga
+// real: CONCEPTO §2 dice "sos el rookie, no decidís casi nada", y eso empieza
+// acá. La única excepción es el caso Calix (TRASPASO §4.2): estar en el
+// top absoluto de Challenger y todavía joven te salta el tramo de probarte en
+// un equipo de tier 3 y te lleva directo a una liga de desarrollo real.
+function ligaTier2DeLaRegion(state) {
+  return state.mundo.ligas.find((liga) => liga.tier === 2 && liga.regionId === state.mundo.regionIdOrigen) ?? null;
+}
+
+function orgQueTeFicha(state, rng) {
+  if (nivelDeInteres(state) === 'elite') {
+    const ligaTier2 = ligaTier2DeLaRegion(state);
+    if (ligaTier2) {
+      // Cuanto mas fuerte la org, menos probable que arriesgue el lugar en un
+      // pibe sin partidas oficiales todavia.
+      const org = weightedPick(ligaTier2.orgs, (candidata) => BALANCE.stats.max - candidata.fuerza, rng);
+      return { org, tier: 2, liga: ligaTier2 };
+    }
+  }
+
+  return { org: elegirOrgTier3(state, rng), tier: 3, liga: null };
 }
 
 function buscarSalida(state, rng) {
   const a = BALANCE.amateur;
 
   if (chance(probabilidadDeScouting(state), rng)) {
-    const org = orgQueTeMira(state, rng);
+    const { org, tier, liga } = orgQueTeFicha(state, rng);
+    const descripcion = tier === 2
+      ? `Te vieron en la ladder: ${etiquetaDeRanked(state.player.ranked, servidorDeLaPartida(state))}. Estás tan arriba que ${liga.id} te ofrece saltearte el tramo de probarte en un equipo chico.`
+      : `Te vieron en la ladder: ${etiquetaDeRanked(state.player.ranked, servidorDeLaPartida(state))}. Es un equipo de tier 3, chico y de paso: contrato mínimo, mudanza a la gaming house y dejar el colegio a mitad de camino.`;
+
     return decisionDeOpciones(
-      `${org.nombre} te quiere en su academy`,
-      `Te vieron en la ladder: ${etiquetaDeRanked(state.player.ranked, servidorDeLaPartida(state))}. Ofrecen contrato chico, mudanza a la gaming house y dejar el colegio a mitad de camino.`,
+      `${org.nombre} te quiere`,
+      descripcion,
       [
         { id: 'firmar', label: `Firmar con ${org.nombre}`, pesoAuto: 7 },
         { id: 'esperar_mejor_oferta', label: 'Agradecer y seguir grindeando por algo más grande', pesoAuto: 3 }
       ],
-      'oferta'
+      'oferta',
+      { org, tier, liga: liga?.id ?? null }
     );
   }
 
@@ -414,28 +443,30 @@ function buscarSalida(state, rng) {
   return null;
 }
 
-function firmarConEquipo(state, rng) {
-  const org = orgQueTeMira(state, rng);
+// El org y el tier ya se decidieron cuando se armó la decisión
+// (`orgQueTeFicha`, en `buscarSalida`): acá no se vuelve a sortear nada, se
+// firma con la misma org que le mostró el título al jugador.
+function firmarConEquipo(state, decision) {
+  const { org, tier, liga } = decision.datos;
+  const base = { ...state, phase: 'profesional', splitFichaje: state.player.splitCount };
 
-  return {
-    state: {
-      ...state,
-      phase: 'profesional',
-      splitFichaje: state.player.splitCount,
-      career: {
-        ...state.career,
-        currentOrg: org.nombre,
-        liga: org.liga,
-        orgs: [...state.career.orgs, org.nombre]
+  const conCareer = tier === 2
+    ? {
+        ...base,
+        career: { ...base.career, tier: 2, liga, currentOrg: org.nombre, orgs: [...base.career.orgs, org.nombre] }
       }
-    },
-    logs: [crearLog('amateur', `Firmaste con ${org.nombre}. Se terminó el soloQ de pieza: a partir de acá te pagan por jugar.`)]
-  };
+    : asignarOrgTier3(base, org);
+
+  const texto = tier === 2
+    ? `Firmaste con ${org.nombre}, directo en ${liga}. Te salteaste el tramo de probarte en un equipo chico: se terminó el soloQ de pieza.`
+    : `Firmaste con ${org.nombre}. Se terminó el soloQ de pieza: a partir de acá te pagan por jugar.`;
+
+  return { state: conCareer, logs: [crearLog('amateur', texto)] };
 }
 
-function resolverOferta(state, opcionId, rng) {
+function resolverOferta(state, decision, opcionId, rng) {
   if (opcionId === 'firmar') {
-    return firmarConEquipo(state, rng);
+    return firmarConEquipo(state, decision);
   }
 
   const hypeGanado = roll(2, 6, rng);
@@ -541,7 +572,7 @@ export function resolver(state, decision, respuesta, rng) {
   const { opcionId } = respuesta;
 
   if (motivo === 'oferta') {
-    return resolverOferta(state, opcionId, rng);
+    return resolverOferta(state, decision, opcionId, rng);
   }
   if (motivo === 'negociacion') {
     return resolverNegociacion(state, opcionId, rng);

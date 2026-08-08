@@ -63,6 +63,15 @@ export function createInitialState(seed, rng, eleccion = null) {
       hitos: [],
       currentOrg: null,
       currentSplit: 1,
+      // 1, 2 o 3 (fase 3). Es la fuente de verdad de en qué nivel competís:
+      // `liga` puede ser null (tier 3 no es una liga real) y `tier` no.
+      tier: null,
+      // En qué split entraste a una liga real por primera vez. Distinto de
+      // `splitFichaje` (cuándo dejaste el amateurismo, que puede haber sido en
+      // tier 3): el debut de CONCEPTO §2 es pisar tier 1, no cualquier
+      // contrato. `splitFichaje` sigue siendo el KPI de "cuánto tardaste en
+      // hacerte notar" que reporta simulate.js — no se pisa.
+      splitAscensoTier1: null,
       // Roster, jerarquía y sinergia: se llenan al firmar.
       liga: null,
       rosterDeOrg: null,
@@ -93,7 +102,11 @@ export function createInitialState(seed, rng, eleccion = null) {
       negociacionGanada: false,
       // Se congela a los 18 (o al dejar la etapa amateur) y acompaña el resto
       // de la carrera: 'terminado' o 'lo_dejo'.
-      secundario: null
+      secundario: null,
+      // El año muerto (fase 3): ganaste el ascenso a tier 1 pero la liga exige
+      // más edad de la que tenés. Se resuelve solo apenas cumplís, sin volver
+      // a sortear nada.
+      tier1Esperando: null
     },
     logs: []
   };

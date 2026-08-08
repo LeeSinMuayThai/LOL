@@ -425,8 +425,11 @@ export const BALANCE = {
     mentalidadPorFracaso: -4,
     posicionFracaso: 0.6,
 
-    // Internacionales: al cierre de temporada, el campeon de la liga viaja.
-    posicionParaInternacional: 1,
+    // Internacionales: al cierre de temporada, viajan los que entren en el
+    // cupo de SU liga (fase 3, `liga.cuposInternacionales` en leagues.json —
+    // 3 para la mayoría de las tier 1, 2 para CBLOL y LCP). Antes esto estaba
+    // hardcodeado a "solo el 1º", que no reflejaba los 19 cupos reales de
+    // Worlds 2026.
     prestigioReferencia: 70
   },
 
@@ -500,5 +503,47 @@ export const BALANCE = {
     meseta_larga: { peso: 2, picoEdad: 24, picoSpread: 1.5, amplitud: 0.92, caida: 0.45 },
     tardia: { peso: 2, picoEdad: 26, picoSpread: 1.8, amplitud: 1.05, caida: 0.9 },
     erratica: { peso: 1, picoEdad: 23, picoSpread: 3.0, amplitud: 1.1, caida: 1.2 }
+  },
+
+  // Los equipos chicos e inventados donde ficha todo el mundo la primera vez
+  // (fase 3). El rango de fuerza es deliberadamente bajo: perder contra un
+  // equipo de tier 3 no dice nada de tu techo, perder contra uno de tier 1 sí.
+  tier3: {
+    cantidadPorRegion: 6,
+    fuerzaMedia: 18,
+    fuerzaSpread: 6,
+    fuerzaMin: 5,
+    fuerzaMax: 35
+  },
+
+  // El tránsito entre tiers (fase 3). `CLAUDE.md`/el usuario piden que el tier
+  // 3 dure poco: `probSalida` alto y sin escalón intermedio, para que la
+  // mediana de permanencia quede en 1-2 splits, nunca en una carrera entera.
+  competitivo: {
+    // Fuerza de los equipos de tier 2: mas que tier 3, bien por debajo de
+    // tier 1. Ancla el `prestigio` que ya trae cada liga tier 2 en leagues.json.
+    fuerzaOrgTier2Spread: 8,
+    fuerzaOrgTier2Min: 15,
+    fuerzaOrgTier2Max: 65,
+
+    // Tier 3: cada split hay chance de que se resuelva tu paso por acá. Las
+    // dos salidas son subir a tier 2 o que el equipo se disuelva.
+    probSalidaTier3: 0.45,
+    // De las salidas, cuánto pesa el ascenso contra la disolución. Corrido por
+    // jerarquia: un titular tiene mas para mostrar que un suplente.
+    probAscensoBaseDesdeTier3: 0.4,
+    probAscensoPorJerarquiaDesdeTier3: 0.35,
+    // Si el equipo se disuelve, cuántos splits como libre antes de que otro
+    // equipo de tier 3 te levante (siempre alguno te levanta: es tier 3).
+    splitsLibrePromedioTier3: 1,
+
+    // Tier 2: el ascenso a primera es mas lento y se gana, no se sortea parejo.
+    probAscensoBaseDesdeTier2: 0.12,
+    probAscensoPorJerarquiaDesdeTier2: 0.45,
+
+    // El año muerto (CONCEPTO, dato real): un europeo de 17 puede firmar pero
+    // la LEC exige 18 para debutar. Si la edad no alcanza, el ascenso a tier 1
+    // se frena un split más, cueste lo que cueste tu jerarquia.
+    margenEdadMinima: 0
   }
 };

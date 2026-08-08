@@ -7,6 +7,7 @@ import { SERVIDORES } from '../data/servidores.js';
 import { ARQUETIPOS } from '../data/meta-tags.js';
 import { IDS_ROL } from '../data/roles.js';
 import { campeonesElegiblesAlInicio, entradaDePool } from './pool.js';
+import { generarNombreOrg, generarOrgsTier3 } from './tier3.js';
 import LIGAS from '../data/leagues.json' with { type: 'json' };
 
 // Los handles se arman por silabas para que cada seed invente los suyos. Los
@@ -44,19 +45,38 @@ export function generarHandle(rng, usados) {
   return handle;
 }
 
-function generarLigas(rng) {
+// Las ligas tier 1 traen su roster real y fijo (`orgs: [nombres]`); las tier 2
+// declaran `orgsGeneradas: true` y una `cantidadOrgs` — sus rosters reales
+// rotan temporada a temporada y no están investigados con la firmeza que pide
+// CLAUDE.md para nombrar un equipo real, así que se generan igual que el
+// tier 3 (fase 3), con un rango de fuerza más alto.
+function generarLigas(rng, usadosOrgs) {
   const { fuerzaOrgSpread, fuerzaOrgMin, fuerzaOrgMax } = BALANCE.mundo;
+  const c = BALANCE.competitivo;
 
-  return LIGAS.map((liga) => ({
-    ...liga,
-    orgs: liga.orgs.map((nombre) => ({
-      nombre,
-      liga: liga.id,
-      // La fuerza orbita el prestigio de su liga: una org media de LCK sigue
-      // siendo mas fuerte que la mejor de una liga chica.
-      fuerza: Math.round(clamp(gauss(liga.prestigio, fuerzaOrgSpread, rng), fuerzaOrgMin, fuerzaOrgMax))
-    }))
-  }));
+  return LIGAS.map((liga) => {
+    if (liga.orgsGeneradas) {
+      return {
+        ...liga,
+        orgs: Array.from({ length: liga.cantidadOrgs }, () => ({
+          nombre: generarNombreOrg(rng, usadosOrgs),
+          liga: liga.id,
+          fuerza: Math.round(clamp(gauss(liga.prestigio, c.fuerzaOrgTier2Spread, rng), c.fuerzaOrgTier2Min, c.fuerzaOrgTier2Max))
+        }))
+      };
+    }
+
+    return {
+      ...liga,
+      orgs: liga.orgs.map((nombre) => ({
+        nombre,
+        liga: liga.id,
+        // La fuerza orbita el prestigio de su liga: una org media de LCK sigue
+        // siendo mas fuerte que la mejor de una liga chica.
+        fuerza: Math.round(clamp(gauss(liga.prestigio, fuerzaOrgSpread, rng), fuerzaOrgMin, fuerzaOrgMax))
+      }))
+    };
+  });
 }
 
 // Los cutoffs de cada servidor se sortean una vez por partida alrededor de sus
@@ -187,12 +207,17 @@ function generarPoolInicial(rol, rng, elegidos) {
   return base.map((campeon, i) => entradaDePool(campeon, maestrias[i]));
 }
 
+// Los rivales de generación debutan y corren una carrera de primera en
+// paralelo a la tuya (CONCEPTO §6): su liga de origen tiene que ser tier 1,
+// nunca una de desarrollo.
+const LIGAS_TIER1 = LIGAS.filter((liga) => liga.tier === 1);
+
 function generarRivales(rng, usados) {
   const m = BALANCE.mundo;
 
   return Array.from({ length: m.cantidadRivales }, () => {
     const [formaCarrera] = weightedPick(Object.entries(BALANCE.formasCarrera), ([, datos]) => datos.peso, rng);
-    const liga = pick(LIGAS, rng);
+    const liga = pick(LIGAS_TIER1, rng);
 
     return {
       handle: generarHandle(rng, usados),
@@ -220,8 +245,14 @@ function generarRivales(rng, usados) {
 // mismo mundo para el que eligio y para el que no.
 export function generarMundo(rng, edadInicial, eleccion = null) {
   const usados = new Set();
-  const ligas = generarLigas(rng);
-  const ligaOrigen = pick(ligas, rng);
+  const usadosOrgs = new Set();
+  const ligas = generarLigas(rng, usadosOrgs);
+  const ligasTier1 = ligas.filter((liga) => liga.tier === 1);
+
+  // De dónde sos. Pesado por prestigio (tamaño de escena): nacer en Corea no
+  // es 1 en 6 como nacer en Brasil (fase 3) — antes era un sorteo parejo entre
+  // todas las ligas, tier 2 incluido.
+  const ligaOrigen = weightedPick(ligasTier1, (liga) => liga.prestigio, rng);
   const rolSorteado = pick(IDS_ROL, rng);
   const rol = IDS_ROL.includes(eleccion?.rol) ? eleccion.rol : rolSorteado;
   const oculto = generarOculto(rng);
@@ -247,10 +278,15 @@ export function generarMundo(rng, edadInicial, eleccion = null) {
       regionIdOrigen: ligaOrigen.regionId,
       servidorOrigen: ligaOrigen.servidor,
       servidores: generarServidores(rng),
-      // Que region manda en esta generacion: sesga los internacionales.
-      regionDominante: weightedPick(ligas, (liga) => liga.prestigio, rng).region,
+      // Que region manda en esta generacion: sesga los internacionales. Solo
+      // entre las tier 1: una de desarrollo nunca es la region dominante.
+      regionDominante: weightedPick(ligasTier1, (liga) => liga.prestigio, rng).region,
       metaInicial: generarMetaInicial(rng),
-      rivales: generarRivales(rng, usados)
+      rivales: generarRivales(rng, usados),
+      // Los equipos chicos por region donde ficha todo el mundo la primera
+      // vez (fase 3): comparten el pool de nombres con las orgs de tier 2
+      // para que dos niveles distintos nunca terminen con el mismo nombre.
+      tier3PorRegion: generarOrgsTier3(rng, usadosOrgs)
     }
   };
 }

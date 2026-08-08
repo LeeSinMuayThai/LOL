@@ -2,15 +2,14 @@ import { gauss, chance, pick } from '../core/rng.js';
 import { crearLog } from '../core/log.js';
 import { clampStat } from '../core/numeros.js';
 import { generarHandle } from '../core/mundo.js';
+import { orgDeCarrera } from '../core/competicion.js';
 import { BALANCE } from '../data/balance.js';
 import { IDS_ROL, etiquetaRol } from '../data/roles.js';
 
 export const id = 'roster';
 
-function orgActual(state) {
-  const liga = state.mundo.ligas.find((candidata) => candidata.id === state.career.liga);
-  return liga?.orgs.find((org) => org.nombre === state.career.currentOrg) ?? null;
-}
+// Sea tier 1, 2 o 3: `orgDeCarrera` sabe dónde buscar en cada caso (fase 3).
+const orgActual = orgDeCarrera;
 
 function generarCompaneros(state, org, rng) {
   const usados = new Set(state.career.companeros.map((companero) => companero.handle));

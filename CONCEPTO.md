@@ -43,8 +43,15 @@ comparten.
                   SoloQ, colegio, familia. Podés perder acá.
                   6 periodos. Duración: ~90 segundos.
 
-    17-19 años    DEBUT
-                  Academy o equipo chico. Sos el rookie, no decidís casi nada.
+    17-19 años    DEBUT — TIER 3 → TIER 2 → TIER 1
+                  Nadie pisa una liga real de entrada. Fichás con un equipo
+                  chico e inventado (tier 3) donde no dura casi nadie —
+                  sube a una liga de desarrollo real (NACL, LDL, LCK CL...)
+                  o el equipo se disuelve y aparece otro. Desde ahí, si
+                  rendís, asciende a una de las seis ligas tier 1 de 2026.
+                  La única salida directa es el caso Calix: estar en el
+                  top absoluto de Challenger y todavía joven te salta el
+                  tramo de tier 3. Sos el rookie, no decidís casi nada.
                   Duración: ~60 segundos.
 
     19-25 años    CARRERA PROFESIONAL
@@ -391,7 +398,7 @@ es todo el motor de difusión del juego.
 
 Para que se vea cómo encaja todo.
 
-*Mid, LAS, 15 años. Colegio exigente, viejos estrictos: mal sorteo.*
+*Mid, Brasil, 15 años. Colegio exigente, viejos estrictos: mal sorteo.*
 
 Roba dos bloques al sueño tres periodos seguidos para llegar a Máster.
 Funciona: sube el elo, pero entra en deuda de sueño y los estudios caen a 34.
@@ -399,21 +406,27 @@ Cae un aviso de boletín. Está a un periodo de que le confisquen la PC.
 
 A los 16 y medio lo contacta un scout. Como la confianza familiar todavía está
 en 44, se dispara la negociación: el coach habla con la madre. Sale bien.
-La barra de estudios queda congelada en 34 — flag "lo dejó" — y firma Academy.
+La barra de estudios queda congelada en 34 — flag "lo dejó" — y firma con un
+equipo de tier 3: chico, inventado, de paso.
 
-Debuta a los 18 en un equipo mediano de LAS. Jerarquía 22: es el rookie, le
-dan los picks que sobran. Rinde tibio dos splits.
+Dura tres splits ahí. Al cuarto, el equipo se disuelve — es lo normal a este
+nivel — pero antes de que termine el periodo otro armado chico lo levanta.
+Rinde mejor esta vez: a los seis splits de fichado, asciende al Circuito
+Desafiante. Debuta a los 18 con jerarquía 22: es el rookie, le dan los picks
+que sobran. Rinde tibio dos splits.
 
-Tercer split: el meta rota hacia magos de control y su pool de asesinos queda
-muerto. Ajuste al meta 31. Rinde mal, la jerarquía cae a 15. Gasta todos los
-puntos de preparación en aprender dos magos, que entran con maestría 38.
+Tercer split en el Circuito: el meta rota hacia magos de control y su pool de
+asesinos queda muerto. Ajuste al meta 31. Rinde mal, la jerarquía cae a 15.
+Gasta todos los puntos de preparación en aprender dos magos, que entran con
+maestría 38.
 
 Cuarto split: los magos siguen fuertes y la maestría sube a 61. Rinde bien.
-La estrella del equipo se va a Brasil. Jerarquía sube a 47.
+Asciende a CBLOL. Firma con un equipo mediano. Jerarquía se resetea
+parcialmente: entra de nuevo como uno más, pero con algo de crédito.
 
-Quinto split: gana la LLA. Va al internacional y queda 1-5. Hype 68.
+Un año después gana CBLOL. Va al internacional y queda 1-5. Hype 68.
 Ofertas: la LEC lo quiere como import, pero tendría que ser claramente mejor
-que un europeo. Un equipo top de LAS le ofrece ser la franquicia.
+que un europeo. Un equipo top de CBLOL le ofrece ser la franquicia.
 Elige quedarse. Jerarquía 71.
 
 Tres años como el mejor mid de su región. Dos títulos más. Nunca pasa de

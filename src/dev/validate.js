@@ -255,11 +255,29 @@ check('Campeones, roles y ligas coherentes', () => {
     }
     idsLiga.add(liga.id);
 
-    if (!Array.isArray(liga.orgs) || liga.orgs.length === 0) {
+    // Tier 1 trae su roster real y fijo. Tier 2 (fase 3) declara
+    // `orgsGeneradas: true` + `cantidadOrgs`: sus rosters reales rotan
+    // temporada a temporada y no están investigados con la firmeza que pide
+    // CLAUDE.md para nombrar un equipo real, así que se generan en
+    // `core/mundo.js`, igual que el tier 3.
+    if (liga.orgsGeneradas) {
+      if (!Number.isInteger(liga.cantidadOrgs) || liga.cantidadOrgs <= 0) {
+        throw new Error(`${liga.id}: orgsGeneradas necesita cantidadOrgs > 0`);
+      }
+    } else if (!Array.isArray(liga.orgs) || liga.orgs.length === 0) {
       throw new Error(`${liga.id}: sin orgs`);
     }
     if (liga.cupoImports < 0 || liga.cupoImports >= 5) {
       throw new Error(`${liga.id}: cupoImports fuera de rango (un roster tiene 5 titulares)`);
+    }
+    if (liga.tier === 1 && !Number.isInteger(liga.edadMinima)) {
+      throw new Error(`${liga.id}: liga tier 1 sin edadMinima`);
+    }
+    // El año muerto (fase 3) depende de que exista el camino de vuelta:
+    // toda tier 1 con `desciendeA` tiene que apuntar a una liga real del
+    // archivo, o el ascenso tier2->tier1 no tiene a dónde promover.
+    if (liga.tier === 1 && liga.desciendeA && !LIGAS.some((candidata) => candidata.id === liga.desciendeA)) {
+      throw new Error(`${liga.id}: desciendeA apunta a "${liga.desciendeA}", que no existe en leagues.json`);
     }
   }
 });
@@ -1044,20 +1062,26 @@ check('El chaining de un segundo evento de verdad usa tipoDeSplit', () => {
   // decisión, y no que alguien sacó el `chance(...)` de en medio y lo dejó
   // fijo. Se llama a `resolver` de verdad, sobre un estado profesional real,
   // forzando el contexto "antes" a comprimido o a denso.
+  // La ventana de playoffs por sí sola ya clasifica "denso" (fase 2): para que
+  // este test aísle el efecto del cambio de ETAPA, hace falta un split que no
+  // esté en esa ventana, o los dos casos saldrían densos por esa otra razón.
   let estadoPro = null;
   busqueda: for (let seed = 1; seed <= 500; seed += 1) {
     const rng = mulberry32(seed);
     let candidato = createInitialState(seed, rng);
     for (let i = 0; i < 20 && !candidato.terminado; i += 1) {
       candidato = avanzarSplitAuto(candidato, rng).state;
-      if (candidato.phase === 'profesional' && candidato.career.companeros.length > 0 && !candidato.pendiente) {
+      if (
+        candidato.phase === 'profesional' && candidato.career.companeros.length > 0 && !candidato.pendiente
+        && calcularContexto(candidato).ventana !== 'playoffs'
+      ) {
         estadoPro = candidato;
         break busqueda;
       }
     }
   }
   if (!estadoPro) {
-    throw new Error('no se pudo armar un estado profesional real para probar el chaining');
+    throw new Error('no se pudo armar un estado profesional real (fuera de playoffs) para probar el chaining');
   }
 
   const eventoRng = mulberry32(1);
@@ -1141,6 +1165,112 @@ check('La densidad de decisiones es emergente, no pareja ni descontrolada', () =
       `las carreras del percentil 90 de duración piden ${p90.porSplit.toFixed(2)} decisiones/split `
       + `contra ${carreraMediana.porSplit.toFixed(2)} de la carrera mediana (tope: 1.8×)`
     );
+  }
+});
+
+// --- Fase 3: la escalera competitiva (tier 3 -> tier 2 -> tier 1) ---
+
+check('El tier 3 es breve: mediana de permanencia ≤ 2 splits, p90 ≤ 4', () => {
+  // Pedido explícito: nadie debuta en primera y nadie se queda mucho en un
+  // equipo inventado. Se mide en splits CONSECUTIVOS en tier 3 por stint (una
+  // carrera puede pasar por tier 3 más de una vez si el equipo se disuelve).
+  const permanencias = [];
+
+  for (let seed = 1; seed <= 1500; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    let splitsEnTier3 = 0;
+
+    for (let i = 0; i < 90 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      if (state.career.tier === 3) {
+        splitsEnTier3 += 1;
+      } else if (splitsEnTier3 > 0) {
+        permanencias.push(splitsEnTier3);
+        splitsEnTier3 = 0;
+      }
+    }
+    if (splitsEnTier3 > 0) {
+      permanencias.push(splitsEnTier3);
+    }
+  }
+
+  if (permanencias.length < 100) {
+    throw new Error(`solo ${permanencias.length} pasos por tier 3 observados en 1500 carreras: muestra insuficiente`);
+  }
+
+  const ordenados = [...permanencias].sort((a, b) => a - b);
+  const medianaPermanencia = ordenados[Math.floor(ordenados.length / 2)];
+  const p90 = ordenados[Math.floor(ordenados.length * 0.9)];
+
+  if (medianaPermanencia > 2) {
+    throw new Error(`mediana de permanencia en tier 3: ${medianaPermanencia} splits (máximo 2)`);
+  }
+  if (p90 > 4) {
+    throw new Error(`p90 de permanencia en tier 3: ${p90} splits (máximo 4)`);
+  }
+});
+
+check('El año muerto: firmado pero sin edad para debutar se observa y se resuelve solo', () => {
+  // LEC y LPL exigen más edad que LCS/LCK/CBLOL/LCP (dato real, TRASPASO): un
+  // ascenso ganado a los 17 se congela ahí hasta que la edad alcanza, sin
+  // volver a sortear nada.
+  let vioEspera = false;
+  let vioResolucionSinResortear = false;
+
+  for (let seed = 1; seed <= 800 && !(vioEspera && vioResolucionSinResortear); seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    let esperandoAntes = null;
+
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+
+      if (state.flags.tier1Esperando) {
+        vioEspera = true;
+        esperandoAntes = state.flags.tier1Esperando;
+      } else if (esperandoAntes) {
+        // Se resolvió (para bien o para mal): tiene que haber sido CON la
+        // liga Y la org que ya estaban reservadas, no una tirada nueva.
+        if (state.career.tier === 1 && state.career.liga === esperandoAntes.ligaId) {
+          if (state.career.currentOrg !== esperandoAntes.orgNombre) {
+            throw new Error(
+              `seed ${seed}: el año muerto se resolvió con "${state.career.currentOrg}" en vez de la org ya `
+              + `reservada ("${esperandoAntes.orgNombre}")`
+            );
+          }
+          vioResolucionSinResortear = true;
+        }
+        esperandoAntes = null;
+      }
+    }
+  }
+
+  if (!vioEspera) {
+    throw new Error('la marca espera_edad_minima nunca se observó en 800 carreras');
+  }
+  if (!vioResolucionSinResortear) {
+    throw new Error('nunca se vio un año muerto resolverse en la MISMA liga/org que ya tenía reservada');
+  }
+});
+
+check('Nadie clasifica a un internacional por encima del cupo real de su liga', () => {
+  // `posicionParaInternacional` hardcodeado a 1 quedó atrás (fase 3): ahora es
+  // `liga.cuposInternacionales`, que no existe para tier 2 ni tier 3. Si algo
+  // volviera a hardcodear un cupo, tier 2/3 empezarían a viajar a Worlds.
+  for (let seed = 1; seed <= 500; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    let internacionalesPrevios = 0;
+
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+
+      if (state.career.internacionales > internacionalesPrevios && state.career.tier !== 1) {
+        throw new Error(`seed ${seed}: sumó un internacional estando en tier ${state.career.tier}`);
+      }
+      internacionalesPrevios = state.career.internacionales;
+    }
   }
 });
 

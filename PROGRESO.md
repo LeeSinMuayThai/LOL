@@ -24,6 +24,136 @@ y DECLIVE (§2), y contenido de eventos (20 de los ~200 que pide §8).
 
 ## Changelog
 
+### 2026-08-08 — Fase 3: la escalera competitiva (tier 3 → tier 2 → tier 1)
+
+Cuarta fase de `PLAN.md`. Este es el paso que rompía la linealidad más grande
+del juego: un solo fichaje y ya eras profesional en una liga real. Además,
+`leagues.json` estaba desactualizado — tenía LLA, PCS y VCS como tier-1,
+ligas que no existen desde la reestructuración de 2025/2026.
+
+**`leagues.json` reescrito.** 6 ligas tier-1 reales de 2026 (LCK, LPL, LEC,
+LCS, CBLOL, LCP) con sus rosters exactos, `edadMinima`, `cuposInternacionales`
+y `desciendeA` (a qué liga tier-2 alimenta cada una). 6 ligas tier-2 reales
+como *circuito* (NACL, LDL, EMEA Masters, LCK CL, Circuito Desafiante) más
+`LCP_CHALLENGERS` — este último es un nombre modelado, no investigado:
+`TRASPASO` no cubre un circuito de desarrollo real para la región APAC
+fusionada, y se documentó como tal (deuda D15) en vez de inventar un nombre
+presentándolo como verificado.
+
+**Los rosters de tier-2 se generan, no se declaran.** A diferencia de tier-1
+(rosters fijos y reales), los de NACL/LDL/etc. rotan temporada a temporada y
+no están investigados con la firmeza que pide `CLAUDE.md` para nombrar un
+equipo real. Se generan con el mismo mecanismo que tier-3 (`core/tier3.js`,
+`generarNombreOrg`), en un rango de fuerza más alto.
+
+**`core/tier3.js`** (nuevo) — los equipos chicos e inventados donde ficha
+todo el mundo la primera vez, generados una vez por región al arrancar la
+carrera (`state.mundo.tier3PorRegion`). **`core/competicion.js`** (nuevo) —
+el accessor uniforme de "contra quién compito", sea tier 1, 2 o 3: antes
+`roster.js` y `rendimiento.js` asumían que siempre había una liga real de por
+medio, algo que tier 3 (que no es una liga, es una región) rompe.
+
+**`systems/competitivo.js`** (nuevo, después de `roster` en `ETAPAS_SPLIT`) —
+el tránsito entre tiers:
+- **Tier 3, brevedad forzada** (pedido explícito): cada split hay ~45% de
+  chance de que se resuelva — asciende a tier 2, o el equipo se disuelve
+  (y otro te levanta enseguida: es la característica del nivel).
+- **Tier 2, el ascenso se gana**: probabilidad corrida por jerarquía, no
+  pareja.
+- **El año muerto** (dato real): LEC y LPL exigen 18 años, el resto 17. Un
+  ascenso ganado a los 17 en una de esas dos ligas queda **reservado** —
+  la misma org, la misma liga — hasta que la edad alcanza. No se vuelve a
+  sortear nada.
+- **El caso Calix** (dato real, `TRASPASO` §4.2): estar en el top absoluto
+  de Challenger y todavía joven salta el tramo de tier 3 y ficha directo en
+  tier 2.
+
+**Bug encontrado al fichar en tier 3, no relacionado con tiers.** `buscarSalida`
+mostraba el nombre de una org en el título de la decisión (`orgQueTeMira`) y
+`firmarConEquipo` **volvía a sortear** una org distinta al resolver — dos
+tiradas de RNG para lo que tenía que ser una sola elección, así que a veces
+firmabas con un equipo que no era el que te había escrito. Se corrigió de
+paso: la org elegida ahora viaja en `decision.datos` y se firma con esa
+misma, nunca con una recién sorteada.
+
+**El debut se reinicia al llegar a tier 1.** Encontrado por un check que
+falló: `tier1_debut` nunca aparecía en 300 carreras. La causa era que
+`calcularEtapa` medía "debut" desde el fichaje ORIGINAL (`state.splitFichaje`,
+que ahora pasa en tier 3, muchos splits antes de llegar a primera), así que
+para cuando alguien pisaba tier 1 ya llevaba más de los 3 splits de gracia.
+Se agregó `career.splitAscensoTier1` (separado de `splitFichaje`, que sigue
+siendo el KPI de "cuánto tardaste en hacerte notar" que reporta
+`simulate.js`) y `calcularEtapa` lo usa cuando `nivel === 'tier1'`.
+
+**5 momentos activados** (borrada su marca `pendiente`): `espera_edad_minima`,
+`tier3_recien_llegado`, `tier3_probandose`, `tier2_rookie`, `tier2_titular`.
+Los cinco se observaron con contenido real en 300+ carreras vía
+`cobertura.js`, junto con `tier1_debut` (que antes de este paso nunca podía
+alcanzarse en la práctica bajo el nuevo pipeline).
+
+**`mundo.js`**: `regionOrigen` pasó de sorteo uniforme (1 de cada 8 nacía en
+Corea) a pesado por prestigio, y solo entre ligas tier-1 (antes tier-2 también
+podía salir sorteada como región de origen, lo cual no tenía sentido: nadie
+"nace" en un circuito de desarrollo). `regionDominante` y los rivales de
+generación (`generarRivales`) se restringieron de la misma forma: un rival de
+generación debuta en una liga real, nunca en una de desarrollo.
+
+**7 checks nuevos (41 en total).** Al verificar que fallan cuando deben
+(trampa T5) se encontraron dos huecos reales:
+
+```
+El tier 3 es breve: mediana de permanencia ≤ 2 splits, p90 ≤ 4
+El año muerto: firmado pero sin edad para debutar se observa y se resuelve solo
+Nadie clasifica a un internacional por encima del cupo real de su liga
+```
+
+Además, arrastrando la fase 2: el check de integración del chaining
+(`El chaining de un segundo evento de verdad usa tipoDeSplit`) daba el mismo
+86% para "denso" y "comprimido" en el estado de prueba — la causa era que el
+estado elegido caía en la ventana de playoffs, que por sí sola ya fuerza
+"denso" sin importar el resto de la comparación. Y el primer check del año
+muerto verificaba que el ascenso se resolviera en la MISMA LIGA reservada
+pero no en la MISMA ORG — al forzar una regresión que re-sorteaba la org, el
+check no lo detectó hasta agregar esa comparación específica.
+
+**Medido** (`simulate.js 1500 60 todas`, seeds 1-1500):
+
+| | fin de fase 2 | fin de fase 3 |
+|---|---|---|
+| mediana de permanencia en tier 3 | no existía el concepto | **2 splits** (p90: 4) |
+| `tier1_debut` observado en 300+ carreras | nunca (piso directo a tier1) | **sí**, con contenido real |
+| `regionOrigen` = Corea | 1 de cada 8 (12.5%) | pesado por prestigio (LCK es la escena más grande) |
+| llega a pro (equilibrado) | 43.6% | 40.4% |
+| burnout (equilibrado) | 14.5% | 21.9% |
+
+**El llegar-a-pro y el burnout se movieron, y hay que decirlo sin maquillarlo**
+(regla de proceso 4). La caída en "llegaronAPro" y la suba en burnout son
+consistentes con que ahora hay más splits totales de vida profesional antes de
+que una carrera se resuelva (tier 3 → tier 2 → tier 1 en vez de un salto
+directo), lo que le da más oportunidades al desgaste de mentalidad de
+acumularse dentro de la ventana de 60 splits que mide `simulate.js`. No se
+tunearon constantes en este commit (regla de proceso 2): la estructura nueva
+se mide tal cual, y el recalibrado — si hace falta — espera a que el arco
+completo (mercado y retiro, fases 5-6) exista.
+
+`simulate.js 1500 60 todas`: 0 crashes en las 3 estrategias. `cobertura.js`
+sigue sin huecos. Probado en navegador real con Playwright: cero errores de
+consola reales (el único 404 es el favicon del navegador).
+
+**`CONCEPTO.md` actualizado**: §2 describe ahora el pipeline tier3→tier2→tier1
+y el caso Calix; §10 reescribe la carrera de ejemplo en Brasil/CBLOL (antes
+usaba LAS/LLA, que ya no existen) pasando por tier 3 y el Circuito Desafiante
+antes de llegar a primera.
+
+**Sin arreglar a propósito, quedan documentadas en `PLAN.md` como deuda
+técnica**: no hay descenso de tier 1 a tier 2 (D16, va con contratos en la
+fase 5); LRN/LRS y la doble residencia LATAM no están modelados — un jugador
+de esa región nace directo en NA o BR (D17, ya previsto así en `TRASPASO` §5);
+la ventana `internacional` sigue siendo un evento agregado único, distinguir
+First Stand/MSI/Worlds espera al sistema de series de la fase 4 (D18); y las
+rutinas de offseason todavía no se diferencian por tier (D11, movida a la
+fase 7 de contenido).
+
 ### 2026-08-08 — Fase 2: que las decisiones pesen
 
 Tercera fase de `PLAN.md`. Dos problemas que arrastraba el juego desde el principio:

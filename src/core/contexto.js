@@ -28,7 +28,7 @@ function ligaDe(state) {
   return state.mundo.ligas.find((liga) => liga.id === state.career.liga) ?? null;
 }
 
-function calcularEtapa(state) {
+function calcularEtapa(state, nivel) {
   if (state.phase === 'amateur') {
     return 'amateur';
   }
@@ -39,7 +39,15 @@ function calcularEtapa(state) {
   // El debut son los primeros splits desde el fichaje: sos el rookie y casi no
   // decidis nada. Mecanicamente ya existe (jerarquia baja -> no te dan tus
   // picks); lo que faltaba era poder nombrarlo para gatear contenido.
-  const splitsComoPro = state.player.splitCount - (state.splitFichaje ?? 0);
+  //
+  // Llegar a tier 1 reinicia el reloj (fase 3): un pibe puede llevar diez
+  // splits siendo "pro" en tier 3 y tier 2, pero el debut que importa —el que
+  // describe CONCEPTO §2— es pisar una liga real por primera vez, no
+  // cualquier contrato chico.
+  const splitDeReferencia = nivel === 'tier1' && state.career.splitAscensoTier1 !== null
+    ? state.career.splitAscensoTier1
+    : (state.splitFichaje ?? 0);
+  const splitsComoPro = state.player.splitCount - splitDeReferencia;
   if (splitsComoPro < BALANCE.contexto.splitsDeDebut) {
     return 'debut';
   }
@@ -58,7 +66,9 @@ function calcularNivel(state) {
   if (!state.career.currentOrg) {
     return 'libre';
   }
-  return `tier${ligaDe(state)?.tier ?? 1}`;
+  // `career.tier` es la fuente de verdad (fase 3): tier 3 no es una liga real,
+  // así que no se puede derivar de `ligaDe(state)`, que da null ahí.
+  return `tier${state.career.tier ?? 1}`;
 }
 
 function calcularEstatus(state) {
@@ -136,6 +146,11 @@ function calcularMarcas(state) {
   if (state.player.stats.mentalidad < BALANCE.atributos.burnoutUmbral + BALANCE.contexto.margenMentalidadAlLimite) {
     marcas.push('mentalidad_al_limite');
   }
+  // El año muerto (fase 3): ya ganaste el ascenso a tier 1, la liga te espera,
+  // pero todavía no tenés la edad que exige.
+  if (state.flags.tier1Esperando) {
+    marcas.push('espera_edad_minima');
+  }
 
   return [...marcas, ...marcasDePool(state)];
 }
@@ -187,11 +202,12 @@ function marcasDePool(state) {
 // produce pide el contexto con su ventana en vez de que el motor adivine.
 export function calcularContexto(state, overrides = {}) {
   const liga = ligaDe(state);
+  const nivel = calcularNivel(state);
 
   const base = {
-    etapa: calcularEtapa(state),
+    etapa: calcularEtapa(state, nivel),
     edadBanda: bandaPorTecho(state.age, BALANCE.contexto.edadBandas, 'veterana'),
-    nivel: calcularNivel(state),
+    nivel,
     estatus: calcularEstatus(state),
     momentum: calcularMomentum(state),
     mercado: calcularMercado(state),
