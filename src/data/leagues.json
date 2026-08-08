@@ -2,65 +2,133 @@
   {
     "id": "LCK",
     "region": "Corea",
+    "regionId": "KR",
+    "tier": 1,
     "prestigio": 95,
     "cupoImports": 2,
     "dificultadAdaptacion": 85,
-    "orgs": ["T1", "Gen.G", "Hanwha Life Esports", "KT Rolster", "Dplus KIA", "DRX"]
+    "orgs": [
+      "T1",
+      "Gen.G",
+      "Hanwha Life Esports",
+      "KT Rolster",
+      "Dplus KIA",
+      "DRX"
+    ]
   },
   {
     "id": "LPL",
     "region": "China",
+    "regionId": "CN",
+    "tier": 1,
     "prestigio": 93,
     "cupoImports": 2,
     "dificultadAdaptacion": 90,
-    "orgs": ["JD Gaming", "Bilibili Gaming", "Top Esports", "Weibo Gaming", "LNG Esports", "EDward Gaming"]
+    "orgs": [
+      "JD Gaming",
+      "Bilibili Gaming",
+      "Top Esports",
+      "Weibo Gaming",
+      "LNG Esports",
+      "EDward Gaming"
+    ]
   },
   {
     "id": "LEC",
     "region": "Europa",
+    "regionId": "EMEA",
+    "tier": 1,
     "prestigio": 80,
     "cupoImports": 2,
     "dificultadAdaptacion": 45,
-    "orgs": ["G2 Esports", "Fnatic", "MAD Lions", "Team Vitality", "Team Heretics", "Rogue"]
+    "orgs": [
+      "G2 Esports",
+      "Fnatic",
+      "MAD Lions",
+      "Team Vitality",
+      "Team Heretics",
+      "Rogue"
+    ]
   },
   {
     "id": "LCS",
     "region": "Norteamérica",
+    "regionId": "NA",
+    "tier": 1,
     "prestigio": 70,
     "cupoImports": 2,
     "dificultadAdaptacion": 40,
-    "orgs": ["Cloud9", "Team Liquid", "100 Thieves", "FlyQuest", "Dignitas", "NRG"]
+    "orgs": [
+      "Cloud9",
+      "Team Liquid",
+      "100 Thieves",
+      "FlyQuest",
+      "Dignitas",
+      "NRG"
+    ]
   },
   {
     "id": "LLA",
     "region": "Latinoamérica",
+    "regionId": "LATAM",
+    "tier": 1,
     "prestigio": 50,
     "cupoImports": 2,
     "dificultadAdaptacion": 20,
-    "orgs": ["Isurus", "Estral Esports", "Movistar R7", "All Knights", "Leviatán", "Furious Gaming"]
+    "orgs": [
+      "Isurus",
+      "Estral Esports",
+      "Movistar R7",
+      "All Knights",
+      "Leviatán",
+      "Furious Gaming"
+    ]
   },
   {
     "id": "CBLOL",
     "region": "Brasil",
+    "regionId": "BR",
+    "tier": 1,
     "prestigio": 55,
     "cupoImports": 2,
     "dificultadAdaptacion": 30,
-    "orgs": ["LOUD", "paiN Gaming", "RED Canids", "FURIA", "Vivo Keyd Stars", "INTZ"]
+    "orgs": [
+      "LOUD",
+      "paiN Gaming",
+      "RED Canids",
+      "FURIA",
+      "Vivo Keyd Stars",
+      "INTZ"
+    ]
   },
   {
     "id": "PCS",
     "region": "Asia-Pacífico",
+    "regionId": "APAC",
+    "tier": 1,
     "prestigio": 48,
     "cupoImports": 2,
     "dificultadAdaptacion": 60,
-    "orgs": ["PSG Talon", "CTBC Flying Oyster", "Frank Esports", "Deep Cross Gaming"]
+    "orgs": [
+      "PSG Talon",
+      "CTBC Flying Oyster",
+      "Frank Esports",
+      "Deep Cross Gaming"
+    ]
   },
   {
     "id": "VCS",
     "region": "Vietnam",
+    "regionId": "APAC",
+    "tier": 1,
     "prestigio": 58,
     "cupoImports": 1,
     "dificultadAdaptacion": 70,
-    "orgs": ["GAM Esports", "Team Whales", "Vikings Esports", "CERBERUS Esports"]
+    "orgs": [
+      "GAM Esports",
+      "Team Whales",
+      "Vikings Esports",
+      "CERBERUS Esports"
+    ]
   }
 ]

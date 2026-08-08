@@ -156,7 +156,11 @@ export const BALANCE = {
     autoProbRobar: 0.4,
 
     // Umbral de estudios con el que se congela el flag del secundario.
-    secundarioAprobadoUmbral: 45
+    secundarioAprobadoUmbral: 45,
+
+    // LP de un split "normal": es la vara contra la que se mide si venís en
+    // racha o en slump durante la etapa amateur.
+    lpReferenciaHistorial: 95
   },
 
   atributos: {
@@ -252,6 +256,27 @@ export const BALANCE = {
   edad: {
     splitsPorEdad: 3,
     probSegundaDecision: 0.4
+  },
+
+  // Umbrales que convierten el estado en contexto de carrera. Son las fronteras
+  // de las bandas: todo el contenido se declara contra ellas, asi que moverlas
+  // mueve que contenido aparece cuando.
+  contexto: {
+    // Techo de cada banda de edad; por encima de la ultima, 'veterana'.
+    edadBandas: { temprana: 16, joven: 19, pico: 23, tardia: 26 },
+    // Techo de cada banda de jerarquia; por encima de la ultima, 'franquicia'.
+    estatusBandas: { rookie: 35, titular: 60, referente: 82 },
+    splitsDeDebut: 3,
+    // Ventana movil con la que se calcula el momentum.
+    historialMaximo: 3,
+    // Percentil de posicion en la liga; por encima del ultimo, 'crisis'.
+    momentumBandas: { racha: 0.22, estable: 0.55, slump: 0.8 },
+    margenMentalidadAlLimite: 12
+  },
+
+  contenido: {
+    minimoEventosPorCelda: 3,
+    objetivoOpciones: 150
   },
 
   roster: {

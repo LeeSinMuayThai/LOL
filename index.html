@@ -221,7 +221,7 @@
         <div class="stat-card"><div class="stat-label">Confianza</div><div id="trust" class="stat-value">—</div></div>
         <div class="stat-card"><div class="stat-label">Sueño</div><div id="sleep" class="stat-value">—</div></div>
         <div class="stat-card"><div class="stat-label">SoloQ LP</div><div id="elo" class="stat-value">—</div></div>
-        <div class="stat-card"><div class="stat-label">Fase</div><div id="fase" class="stat-value">—</div></div>
+        <div class="stat-card"><div class="stat-label">Dónde estás</div><div id="fase" class="stat-value">—</div></div>
       </div>
 
       <div id="summary" class="summary">Aún no empezaste tu carrera.</div>
@@ -264,15 +264,16 @@
 
       async function cargarModulos() {
         if (!modulos) {
-          const [{ mulberry32 }, { createInitialState }, pipeline, { BALANCE }, { etiquetaRol }, { rangoDeElo }] = await Promise.all([
+          const [{ mulberry32 }, { createInitialState }, pipeline, { BALANCE }, { etiquetaRol }, { rangoDeElo }, { describirContexto }] = await Promise.all([
             import('./src/core/rng.js'),
             import('./src/core/state.js'),
             import('./src/core/pipeline.js'),
             import('./src/data/balance.js'),
             import('./src/data/roles.js'),
-            import('./src/core/selectors.js')
+            import('./src/core/selectors.js'),
+            import('./src/core/contexto.js')
           ]);
-          modulos = { mulberry32, createInitialState, pipeline, BALANCE, etiquetaRol, rangoDeElo };
+          modulos = { mulberry32, createInitialState, pipeline, BALANCE, etiquetaRol, rangoDeElo, describirContexto };
         }
         return modulos;
       }
@@ -288,7 +289,10 @@
         trust.textContent = state.player.familyTrust;
         sleep.textContent = state.player.sleep;
         elo.textContent = `${modulos.rangoDeElo(state.player.soloqElo)} · ${state.player.soloqElo}`;
-        fase.textContent = FASE_LABEL[state.phase] ?? state.phase;
+        fase.style.fontSize = '15px';
+        fase.textContent = state.contexto
+          ? modulos.describirContexto(state.contexto)
+          : (FASE_LABEL[state.phase] ?? state.phase);
       }
 
       function renderLogs(state) {

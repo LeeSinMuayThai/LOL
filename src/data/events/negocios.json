@@ -6,20 +6,59 @@
     "description": "Una marca te ofrece un contrato grande, pero con condiciones de imagen.",
     "weight": 7,
     "cooldown": 4,
-    "conditions": [{ "field": "player.stats.hype", "op": "gt", "value": 55 }],
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 55
+      }
+    ],
     "options": [
       {
         "id": "firmar_el_contrato",
         "label": "Firmar el contrato de imagen",
         "weight": 6,
         "outcomes": [
-          { "weight": 7, "effects": [
-            { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] }
-          ]},
-          { "weight": 3, "effects": [
-            { "type": "stat", "path": "player.stats.hype", "min": 6, "max": 9, "clamp": [0, 100] },
-            { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
-          ]}
+          {
+            "weight": 7,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 6,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
         ]
       },
       {
@@ -27,12 +66,36 @@
         "label": "Rechazar por las condiciones",
         "weight": 4,
         "outcomes": [
-          { "weight": 7, "effects": [
-            { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
-          ]},
-          { "weight": 3, "effects": [
-            { "type": "stat", "path": "player.stats.hype", "min": -2, "max": -1, "clamp": [0, 100] }
-          ]}
+          {
+            "weight": 7,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
         ]
       }
     ]

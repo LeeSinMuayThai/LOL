@@ -18,6 +18,9 @@
 // recalcula el Ajuste al Meta, se juega, caen los eventos, y recien despues se
 // mueven los atributos y cierra la temporada.
 export const ETAPAS_SPLIT = [
+  // Primero de todo: recalcula donde estas parado en la carrera. Todo el
+  // contenido de los sistemas que siguen se filtra contra eso.
+  await import('./contexto.js'),
   await import('./edadInicio.js'),
   await import('./meta.js'),
   await import('./roster.js'),

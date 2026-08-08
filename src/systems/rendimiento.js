@@ -2,6 +2,7 @@ import { gauss, chance } from '../core/rng.js';
 import { crearLog } from '../core/log.js';
 import { clamp, clampStat } from '../core/numeros.js';
 import { multiplicadorDeMeta } from '../core/ajusteMeta.js';
+import { registrarEnHistorial } from '../core/contexto.js';
 import { BALANCE } from '../data/balance.js';
 import { ROLES } from '../data/roles.js';
 
@@ -118,8 +119,10 @@ function consecuencias(state, rendimiento, resultado, esCierreDeTemporada, rng) 
     ));
   }
 
-  return {
-    state: {
+  // "Cómo te fue" para el momentum: 100 si salieron primeros, 0 si últimos.
+  const puntajeDelSplit = (1 - (posicion - 1) / Math.max(1, equipos - 1)) * BALANCE.stats.max;
+
+  const nextState = registrarEnHistorial({
       ...state,
       player: {
         ...state.player,
@@ -136,9 +139,9 @@ function consecuencias(state, rendimiento, resultado, esCierreDeTemporada, rng) 
         internacionales,
         hitos
       }
-    },
-    logs
-  };
+  }, puntajeDelSplit);
+
+  return { state: nextState, logs };
 }
 
 export function aplicar(state, rng) {

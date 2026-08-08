@@ -13,14 +13,56 @@
         "label": "Responderle y venderte bien",
         "weight": 6,
         "outcomes": [
-          { "weight": 7, "effects": [
-            { "type": "stat", "path": "player.stats.hype", "min": 4, "max": 9, "clamp": [0, 100] },
-            { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
-          ]},
-          { "weight": 3, "effects": [
-            { "type": "stat", "path": "player.stats.hype", "min": 9, "max": 14, "clamp": [0, 100] },
-            { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -3, "clamp": [0, 100] }
-          ]}
+          {
+            "weight": 7,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 9,
+                "max": 14,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
         ]
       },
       {
@@ -28,13 +70,38 @@
         "label": "Ignorarlo y seguir grindeando soloQ",
         "weight": 4,
         "outcomes": [
-          { "weight": 8, "effects": [
-            { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] },
-            { "type": "stat", "path": "player.soloqElo", "min": 10, "max": 25 }
-          ]},
-          { "weight": 2, "effects": [
-            { "type": "stat", "path": "player.soloqElo", "min": 25, "max": 45 }
-          ]}
+          {
+            "weight": 8,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.soloqElo",
+                "min": 10,
+                "max": 25
+              }
+            ]
+          },
+          {
+            "weight": 2,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.soloqElo",
+                "min": 25,
+                "max": 45
+              }
+            ]
+          }
         ]
       }
     ]
@@ -46,20 +113,56 @@
     "description": "Tus viejos quieren que priorices los estudios y no solo el ranked.",
     "weight": 8,
     "cooldown": 3,
-    "conditions": [{ "field": "age", "op": "lt", "value": 18 }],
+    "contexto": {
+      "edadMax": 17
+    },
+    "conditions": [],
     "options": [
       {
         "id": "priorizar_el_ranked",
         "label": "Priorizar el ranked igual",
         "weight": 5,
         "outcomes": [
-          { "weight": 7, "effects": [
-            { "type": "stat", "path": "player.familyTrust", "min": -9, "max": -6, "clamp": [0, 100] },
-            { "type": "stat", "path": "player.studies", "min": 1, "max": 3, "clamp": [0, 100] }
-          ]},
-          { "weight": 3, "effects": [
-            { "type": "stat", "path": "player.familyTrust", "min": -13, "max": -9, "clamp": [0, 100] }
-          ]}
+          {
+            "weight": 7,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -9,
+                "max": -6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.studies",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -13,
+                "max": -9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
         ]
       },
       {
@@ -67,13 +170,46 @@
         "label": "Bajarle un cambio y estudiar más",
         "weight": 5,
         "outcomes": [
-          { "weight": 8, "effects": [
-            { "type": "stat", "path": "player.familyTrust", "min": -3, "max": -1, "clamp": [0, 100] },
-            { "type": "stat", "path": "player.studies", "min": 3, "max": 6, "clamp": [0, 100] }
-          ]},
-          { "weight": 2, "effects": [
-            { "type": "stat", "path": "player.studies", "min": 5, "max": 8, "clamp": [0, 100] }
-          ]}
+          {
+            "weight": 8,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.studies",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 2,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.studies",
+                "min": 5,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
         ]
       }
     ]
@@ -92,15 +228,58 @@
         "label": "Motear sin parar hasta la madrugada",
         "weight": 6,
         "outcomes": [
-          { "weight": 7, "effects": [
-            { "type": "stat", "path": "player.soloqElo", "min": 30, "max": 60 },
-            { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] },
-            { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
-          ]},
-          { "weight": 3, "effects": [
-            { "type": "stat", "path": "player.soloqElo", "min": 45, "max": 75 },
-            { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -3, "clamp": [0, 100] }
-          ]}
+          {
+            "weight": 7,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.soloqElo",
+                "min": 30,
+                "max": 60
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.soloqElo",
+                "min": 45,
+                "max": 75
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
         ]
       },
       {
@@ -108,14 +287,48 @@
         "label": "Cortar la sesión a horario",
         "weight": 4,
         "outcomes": [
-          { "weight": 6, "effects": [
-            { "type": "stat", "path": "player.soloqElo", "min": 15, "max": 30 },
-            { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
-          ]},
-          { "weight": 4, "effects": [
-            { "type": "stat", "path": "player.soloqElo", "min": 25, "max": 40 },
-            { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 2, "clamp": [0, 100] }
-          ]}
+          {
+            "weight": 6,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.soloqElo",
+                "min": 15,
+                "max": 30
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.soloqElo",
+                "min": 25,
+                "max": 40
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
         ]
       }
     ]

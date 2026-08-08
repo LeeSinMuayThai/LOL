@@ -10,8 +10,19 @@ function acumularLogs(state, logsNuevos) {
   return { ...state, logs: [...state.logs, ...logsNuevos] };
 }
 
-function pausar(state, sistema, etapa, decision) {
-  return { ...state, pendiente: { sistemaId: sistema.id, etapa, decision } };
+function pausar(state, sistema, decision) {
+  return { ...state, pendiente: { sistemaId: sistema.id, decision } };
+}
+
+// El cursor de reanudacion se resuelve por id, no por indice: agregar un sistema
+// al registro corre todos los indices y corromperia cualquier partida guardada
+// a mitad de split.
+function etapaDe(sistemaId) {
+  const etapa = ETAPAS_SPLIT.findIndex((sistema) => sistema.id === sistemaId);
+  if (etapa < 0) {
+    throw new Error(`Sistema desconocido en el registro: ${sistemaId}`);
+  }
+  return etapa;
 }
 
 // Corre las etapas del split desde `desdeEtapa`. Si un sistema devuelve una
@@ -29,7 +40,7 @@ function correrEtapas(state, desdeEtapa, rng) {
     logs.push(...resultado.logs);
 
     if (resultado.decision) {
-      return { state: pausar(nextState, sistema, etapa, resultado.decision), logs };
+      return { state: pausar(nextState, sistema, resultado.decision), logs };
     }
 
     if (nextState.terminado) {
@@ -52,7 +63,7 @@ export function resolverDecision(state, respuesta, rng) {
     return { state, logs: [] };
   }
 
-  const { sistemaId, etapa, decision } = state.pendiente;
+  const { sistemaId, decision } = state.pendiente;
   const sistema = sistemaPorId(sistemaId);
   const resultado = sistema.resolver(state, decision, respuesta, rng);
 
@@ -61,7 +72,7 @@ export function resolverDecision(state, respuesta, rng) {
 
   // El sistema encadena otra decision sin salir de su etapa.
   if (resultado.decision) {
-    return { state: pausar(nextState, sistema, etapa, resultado.decision), logs };
+    return { state: pausar(nextState, sistema, resultado.decision), logs };
   }
 
   nextState = { ...nextState, pendiente: null };
@@ -70,7 +81,7 @@ export function resolverDecision(state, respuesta, rng) {
     return { state: nextState, logs };
   }
 
-  const continuacion = correrEtapas(nextState, etapa + 1, rng);
+  const continuacion = correrEtapas(nextState, etapaDe(sistemaId) + 1, rng);
   return { state: continuacion.state, logs: [...logs, ...continuacion.logs] };
 }
 

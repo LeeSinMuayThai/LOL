@@ -6,9 +6,17 @@
     "description": "Una org te ofrece entrar a su proyecto juvenil con un contrato pequeño.",
     "weight": 8,
     "cooldown": 5,
+    "contexto": {
+      "etapa": [
+        "amateur"
+      ]
+    },
     "conditions": [
-      { "field": "player.splitCount", "op": "gt", "value": 2 },
-      { "field": "phase", "op": "eq", "value": "amateur" }
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 2
+      }
     ],
     "options": [
       {
@@ -16,15 +24,64 @@
         "label": "Aceptar el contrato de academy",
         "weight": 6,
         "outcomes": [
-          { "weight": 8, "effects": [
-            { "type": "push", "path": "career.orgs", "values": ["Academy regional", "Proyecto juvenil de una org chica", "Roster secundario de una org media"] },
-            { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 6, "clamp": [0, 100] }
-          ]},
-          { "weight": 2, "effects": [
-            { "type": "push", "path": "career.orgs", "values": ["Academy de una org top", "Proyecto juvenil con presupuesto", "Academy con línea directa al primer equipo"] },
-            { "type": "stat", "path": "player.stats.hype", "min": 6, "max": 10, "clamp": [0, 100] },
-            { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
-          ]}
+          {
+            "weight": 8,
+            "effects": [
+              {
+                "type": "push",
+                "path": "career.orgs",
+                "values": [
+                  "Academy regional",
+                  "Proyecto juvenil de una org chica",
+                  "Roster secundario de una org media"
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 2,
+            "effects": [
+              {
+                "type": "push",
+                "path": "career.orgs",
+                "values": [
+                  "Academy de una org top",
+                  "Proyecto juvenil con presupuesto",
+                  "Academy con línea directa al primer equipo"
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 6,
+                "max": 10,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
         ]
       },
       {
@@ -32,13 +89,38 @@
         "label": "Rechazar y seguir libre en soloQ",
         "weight": 4,
         "outcomes": [
-          { "weight": 7, "effects": [
-            { "type": "stat", "path": "player.soloqElo", "min": 15, "max": 30 }
-          ]},
-          { "weight": 3, "effects": [
-            { "type": "stat", "path": "player.soloqElo", "min": 30, "max": 50 },
-            { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
-          ]}
+          {
+            "weight": 7,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.soloqElo",
+                "min": 15,
+                "max": 30
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.soloqElo",
+                "min": 30,
+                "max": 50
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
         ]
       }
     ]
@@ -50,9 +132,18 @@
     "description": "En la siguiente serie decisiva, el equipo te da una oportunidad de devolver la cara.",
     "weight": 8,
     "cooldown": 3,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ]
+    },
     "conditions": [
-      { "field": "player.splitCount", "op": "gt", "value": 1 },
-      { "field": "phase", "op": "eq", "value": "profesional" }
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 1
+      }
     ],
     "options": [
       {
@@ -60,14 +151,56 @@
         "label": "Ir con todo por la revancha",
         "weight": 6,
         "outcomes": [
-          { "weight": 7, "effects": [
-            { "type": "stat", "path": "player.stats.mecanica", "min": 4, "max": 8, "clamp": [0, 100] },
-            { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
-          ]},
-          { "weight": 3, "effects": [
-            { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] },
-            { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
-          ]}
+          {
+            "weight": 7,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
         ]
       },
       {
@@ -75,13 +208,46 @@
         "label": "Jugar seguro, sin arriesgar de más",
         "weight": 4,
         "outcomes": [
-          { "weight": 8, "effects": [
-            { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 4, "clamp": [0, 100] },
-            { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
-          ]},
-          { "weight": 2, "effects": [
-            { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 2, "clamp": [0, 100] }
-          ]}
+          {
+            "weight": 8,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 2,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
         ]
       }
     ]
@@ -93,9 +259,18 @@
     "description": "Tu entrenador cree que tu futuro está en otra línea y te obliga a adaptarte.",
     "weight": 7,
     "cooldown": 5,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ]
+    },
     "conditions": [
-      { "field": "player.splitCount", "op": "gt", "value": 3 },
-      { "field": "phase", "op": "eq", "value": "profesional" }
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 3
+      }
     ],
     "options": [
       {
@@ -103,14 +278,56 @@
         "label": "Aceptar el cambio de rol",
         "weight": 6,
         "outcomes": [
-          { "weight": 7, "effects": [
-            { "type": "stat", "path": "player.stats.adaptabilidad", "min": 2, "max": 4, "clamp": [0, 100] },
-            { "type": "stat", "path": "player.stats.mecanica", "min": -4, "max": -2, "clamp": [0, 100] }
-          ]},
-          { "weight": 3, "effects": [
-            { "type": "stat", "path": "player.stats.adaptabilidad", "min": 4, "max": 7, "clamp": [0, 100] },
-            { "type": "stat", "path": "player.stats.mecanica", "min": -6, "max": -3, "clamp": [0, 100] }
-          ]}
+          {
+            "weight": 7,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 4,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
         ]
       },
       {
@@ -118,13 +335,46 @@
         "label": "Resistirse y plantarse",
         "weight": 4,
         "outcomes": [
-          { "weight": 5, "effects": [
-            { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
-          ]},
-          { "weight": 5, "effects": [
-            { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] },
-            { "type": "stat", "path": "player.stats.adaptabilidad", "min": -2, "max": 0, "clamp": [0, 100] }
-          ]}
+          {
+            "weight": 5,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
         ]
       }
     ]

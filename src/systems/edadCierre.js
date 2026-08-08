@@ -45,7 +45,7 @@ export function aplicar(state, rng) {
   return {
     state: nextState,
     logs,
-    decision: decisionDesdeEvento(evento, { contexto: 'cierre', slot: 1 })
+    decision: decisionDesdeEvento(nextState, evento, { franja: 'cierre', slot: 1 })
   };
 }
 
@@ -55,5 +55,5 @@ export function resolver(state, decision, respuesta, rng) {
 }
 
 export function resolverAuto(state, decision, rng) {
-  return elegirOpcionAutomatica(decision, rng);
+  return elegirOpcionAutomatica(state, decision, rng);
 }

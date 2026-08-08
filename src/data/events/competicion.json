@@ -6,9 +6,18 @@
     "description": "Una racha de victorias te devuelve el aire de campeón.",
     "weight": 5,
     "cooldown": 4,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ]
+    },
     "conditions": [
-      { "field": "player.splitCount", "op": "gt", "value": 5 },
-      { "field": "phase", "op": "eq", "value": "profesional" }
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 5
+      }
     ],
     "options": [
       {
@@ -16,14 +25,55 @@
         "label": "Jugar a matar, sin guardarte nada",
         "weight": 6,
         "outcomes": [
-          { "weight": 7, "effects": [
-            { "type": "push", "path": "career.hitos", "values": ["Racha de 9-1 en la regular", "MVP de la jornada dos semanas seguidas", "Remontada de 0-2 en una serie"] },
-            { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] },
-            { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 8, "clamp": [0, 100] }
-          ]},
-          { "weight": 3, "effects": [
-            { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 1, "clamp": [0, 100] }
-          ]}
+          {
+            "weight": 7,
+            "effects": [
+              {
+                "type": "push",
+                "path": "career.hitos",
+                "values": [
+                  "Racha de 9-1 en la regular",
+                  "MVP de la jornada dos semanas seguidas",
+                  "Remontada de 0-2 en una serie"
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
         ]
       },
       {
@@ -31,13 +81,45 @@
         "label": "Jugar conservador para no arriesgar la racha",
         "weight": 4,
         "outcomes": [
-          { "weight": 5, "effects": [
-            { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] }
-          ]},
-          { "weight": 5, "effects": [
-            { "type": "push", "path": "career.hitos", "values": ["Clasificación cómoda a playoffs", "Cierre de regular en zona alta", "Serie ganada sin sobresaltos"] },
-            { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
-          ]}
+          {
+            "weight": 5,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "effects": [
+              {
+                "type": "push",
+                "path": "career.hitos",
+                "values": [
+                  "Clasificación cómoda a playoffs",
+                  "Cierre de regular en zona alta",
+                  "Serie ganada sin sobresaltos"
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
         ]
       }
     ]
@@ -49,9 +131,18 @@
     "description": "Te suben a un torneo grande y el contexto cambia por completo.",
     "weight": 6,
     "cooldown": 4,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ]
+    },
     "conditions": [
-      { "field": "player.splitCount", "op": "gt", "value": 4 },
-      { "field": "phase", "op": "eq", "value": "profesional" }
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 4
+      }
     ],
     "options": [
       {
@@ -59,14 +150,56 @@
         "label": "Aprovechar la exposición",
         "weight": 5,
         "outcomes": [
-          { "weight": 7, "effects": [
-            { "type": "stat", "path": "player.stats.hype", "min": 4, "max": 7, "clamp": [0, 100] },
-            { "type": "stat", "path": "player.stats.adaptabilidad", "min": 1, "max": 2, "clamp": [0, 100] }
-          ]},
-          { "weight": 3, "effects": [
-            { "type": "stat", "path": "player.stats.hype", "min": 7, "max": 10, "clamp": [0, 100] },
-            { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
-          ]}
+          {
+            "weight": 7,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 7,
+                "max": 10,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
         ]
       },
       {
@@ -74,13 +207,46 @@
         "label": "Enfocarse solo en el juego",
         "weight": 5,
         "outcomes": [
-          { "weight": 7, "effects": [
-            { "type": "stat", "path": "player.stats.adaptabilidad", "min": 2, "max": 4, "clamp": [0, 100] },
-            { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 2, "clamp": [0, 100] }
-          ]},
-          { "weight": 3, "effects": [
-            { "type": "stat", "path": "player.stats.adaptabilidad", "min": 3, "max": 5, "clamp": [0, 100] }
-          ]}
+          {
+            "weight": 7,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
         ]
       }
     ]
@@ -92,9 +258,18 @@
     "description": "Llegás a un escenario grande y el objetivo de toda la carrera parece posible.",
     "weight": 4,
     "cooldown": 6,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ]
+    },
     "conditions": [
-      { "field": "player.splitCount", "op": "gt", "value": 6 },
-      { "field": "phase", "op": "eq", "value": "profesional" }
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 6
+      }
     ],
     "options": [
       {
@@ -102,13 +277,46 @@
         "label": "Jugar relajado, disfrutar el momento",
         "weight": 5,
         "outcomes": [
-          { "weight": 7, "effects": [
-            { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] },
-            { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
-          ]},
-          { "weight": 3, "effects": [
-            { "type": "stat", "path": "player.stats.hype", "min": 5, "max": 8, "clamp": [0, 100] }
-          ]}
+          {
+            "weight": 7,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 5,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
         ]
       },
       {
@@ -116,15 +324,66 @@
         "label": "Presionar al máximo por el resultado",
         "weight": 5,
         "outcomes": [
-          { "weight": 6, "effects": [
-            { "type": "stat", "path": "player.stats.hype", "min": 5, "max": 8, "clamp": [0, 100] },
-            { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 3, "clamp": [0, 100] },
-            { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
-          ]},
-          { "weight": 4, "effects": [
-            { "type": "stat", "path": "player.stats.hype", "min": 8, "max": 12, "clamp": [0, 100] },
-            { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -3, "clamp": [0, 100] }
-          ]}
+          {
+            "weight": 6,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 5,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 8,
+                "max": 12,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
         ]
       }
     ]

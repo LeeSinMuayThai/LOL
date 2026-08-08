@@ -6,7 +6,10 @@ import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 import { mulberry32 } from '../core/rng.js';
 import { createInitialState } from '../core/state.js';
 import { avanzarSplitAuto, ETAPAS_SPLIT } from '../core/pipeline.js';
-import { getPath } from '../core/selectors.js';
+import { getPath, etiquetaCampo } from '../core/selectors.js';
+import { calcularContexto } from '../core/contexto.js';
+import { TOKENS, tokensUsados } from '../core/plantillas.js';
+import { EJES, MARCAS, MOMENTOS_ACTIVOS, momentoPorId } from '../data/contextos.js';
 import { ARQUETIPOS } from '../data/meta-tags.js';
 import { ROLES, IDS_ROL } from '../data/roles.js';
 import LIGAS from '../data/leagues.json' with { type: 'json' };
@@ -274,8 +277,14 @@ check('Balance coherente', () => {
   if (BALANCE.meta.maxDelta <= 0) {
     throw new Error('meta.maxDelta debe ser positivo');
   }
-  if (BALANCE.meta.pesoDominante <= BALANCE.meta.pesoMinimo) {
-    throw new Error('meta.pesoDominante debe ser mayor que meta.pesoMinimo');
+  // Este check reemplaza a uno que referenciaba `meta.pesoDominante`, clave que
+  // se borró al reescribir la sección meta: `undefined <= 0.5` es false, así que
+  // el check nunca fallaba y daba falsa confianza.
+  if (BALANCE.meta.pesoMaximo <= BALANCE.meta.pesoMinimo) {
+    throw new Error('meta.pesoMaximo debe ser mayor que meta.pesoMinimo');
+  }
+  if (BALANCE.meta.sacudonDelta <= BALANCE.meta.maxDelta) {
+    throw new Error('un sacudón de meta tiene que mover más que un parche calmo');
   }
   if (BALANCE.stats.min >= BALANCE.stats.max) {
     throw new Error('stats.min debe ser menor que stats.max');
@@ -296,6 +305,123 @@ check('Hay al menos un evento de cierre de edad por fase amateur', () => {
   for (const evento of cierres) {
     if (!Array.isArray(evento.conditions)) {
       throw new Error(`${evento.id}: evento de cierre sin conditions`);
+    }
+  }
+});
+
+check('El contenido declara su contexto con vocabulario válido', () => {
+  const marcasValidas = new Set(MARCAS);
+
+  for (const evento of TODOS_LOS_EVENTOS) {
+    for (const pieza of [evento, ...evento.options]) {
+      // El gating grueso va SIEMPRE en `contexto`. Si se pudiera esconder
+      // adentro de una condición numérica, la matriz de cobertura mentiría.
+      for (const condicion of pieza.conditions ?? []) {
+        if (condicion.field === 'phase' || condicion.field === 'age') {
+          throw new Error(`${evento.id}: "${condicion.field}" va en el bloque contexto, no en conditions`);
+        }
+      }
+
+      for (const [eje, valores] of Object.entries(pieza.contexto ?? {})) {
+        if (eje === 'edadMin' || eje === 'edadMax') {
+          if (typeof valores !== 'number') {
+            throw new Error(`${evento.id}: ${eje} debe ser un número`);
+          }
+          continue;
+        }
+        if (eje === 'momento') {
+          for (const momento of valores) {
+            if (!momentoPorId(momento)) {
+              throw new Error(`${evento.id}: momento desconocido "${momento}"`);
+            }
+          }
+          continue;
+        }
+        if (eje === 'marcas') {
+          for (const marca of valores) {
+            if (!marcasValidas.has(marca.replace(/^!/, ''))) {
+              throw new Error(`${evento.id}: marca desconocida "${marca}"`);
+            }
+          }
+          continue;
+        }
+        if (!EJES[eje]) {
+          throw new Error(`${evento.id}: eje de contexto desconocido "${eje}"`);
+        }
+        for (const valor of valores) {
+          if (!EJES[eje].includes(valor)) {
+            throw new Error(`${evento.id}: valor "${valor}" no existe en el eje ${eje}`);
+          }
+        }
+      }
+    }
+  }
+});
+
+check('Todo texto de contenido usa tokens que existen', () => {
+  const textos = TODOS_LOS_EVENTOS.flatMap((evento) => [
+    evento.title,
+    evento.description,
+    ...evento.options.map((opcion) => opcion.label)
+  ]);
+
+  for (const texto of textos) {
+    for (const token of tokensUsados(texto)) {
+      if (!TOKENS[token]) {
+        throw new Error(`token desconocido "{${token}}" en: ${texto}`);
+      }
+    }
+  }
+});
+
+check('Todo efecto tiene etiqueta legible para el log', () => {
+  // Sin esto, un path sin etiqueta imprime el path crudo en el log del jugador.
+  for (const evento of TODOS_LOS_EVENTOS) {
+    for (const opcion of evento.options) {
+      for (const outcome of opcion.outcomes) {
+        for (const effect of outcome.effects) {
+          if (etiquetaCampo(effect.path) === effect.path) {
+            throw new Error(`${evento.id}: el path ${effect.path} no tiene entrada en ETIQUETAS_CAMPO`);
+          }
+        }
+      }
+    }
+  }
+});
+
+check('El contexto de carrera nombra siempre dónde estás parado', () => {
+  const vistos = new Set();
+
+  for (let seed = 1; seed <= 300; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+
+    for (let i = 0; i < 45 && !state.terminado; i += 1) {
+      const contexto = calcularContexto(state);
+
+      // Si el motor puede llegar a un estado que ningún momento declara, el
+      // juego no sabe dónde estás parado y el contenido no se puede gatear.
+      if (contexto.momento === 'desconocido') {
+        throw new Error(`seed ${seed}, split ${state.player.splitCount}: contexto sin momento declarado`);
+      }
+      vistos.add(contexto.momento);
+
+      state = avanzarSplitAuto(state, rng).state;
+
+      // El caché es una foto del arranque del split, a propósito: lo que gatea
+      // contenido calcula el contexto en vivo (la fase puede cambiar a mitad de
+      // split). Lo único que hay que garantizar es que el sistema lo refresque
+      // y que lo que quede guardado sea un contexto válido.
+      if (!state.contexto || !momentoPorId(state.contexto.momento)) {
+        throw new Error(`seed ${seed}: el split cerró sin dejar un contexto válido en cache`);
+      }
+    }
+  }
+
+  // Un momento activo que nunca aparece es contenido muerto esperando.
+  for (const momento of MOMENTOS_ACTIVOS) {
+    if (!vistos.has(momento.id)) {
+      throw new Error(`el momento "${momento.id}" no está marcado como pendiente y no apareció en 300 carreras`);
     }
   }
 });

@@ -22,6 +22,9 @@ export function createInitialState(seed, rng) {
     // Decision a medio resolver. Vive adentro de state para que una partida en
     // curso sea serializable y reanudable (regla invariable 9).
     pendiente: null,
+    // Cache de "dónde estás parado". La fuente de verdad es calcularContexto();
+    // esto existe para la UI, los logs y para no recalcularlo en cada filtro.
+    contexto: null,
     origen,
     mundo,
     player: {
@@ -54,6 +57,9 @@ export function createInitialState(seed, rng) {
       companeros: [],
       jerarquia: 0,
       sinergia: 0,
+      // Ventana móvil de "cómo te fue" (0-100 por split). Alimenta el momentum
+      // del contexto: es lo que distingue una racha de un slump.
+      historial: [],
       // Resultado del último split competitivo.
       posicion: null,
       titulos: 0,

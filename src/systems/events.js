@@ -1,5 +1,7 @@
 import { roll, weightedPick, chance } from '../core/rng.js';
 import { getPath, setPath, cumpleCondiciones, etiquetaCampo } from '../core/selectors.js';
+import { calcularContexto, coincideContexto } from '../core/contexto.js';
+import { resolverTexto } from '../core/plantillas.js';
 import { crearLog } from '../core/log.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
@@ -10,9 +12,32 @@ function cooldownActivo(state, eventId) {
   return (state.flags.cooldowns?.[eventId] ?? 0) > 0;
 }
 
+// El gating grueso ("donde estas parado") va en `contexto`; las `conditions`
+// solo estrechan con numeros. Esa division es lo que hace que la matriz de
+// cobertura sea confiable: si el gating grueso pudiera esconderse adentro de
+// una condicion numerica, la matriz mentiria.
+//
+// El contexto se calcula EN VIVO, no se lee de `state.contexto`: la fase puede
+// cambiar a mitad de split (el split en el que firmas, sin ir mas lejos) y el
+// cache del arranque ya estaria viejo. El cache es para la UI y los logs.
+export function disponibleEn(state, evento, contexto = calcularContexto(state)) {
+  return coincideContexto(contexto, evento.contexto, state.age)
+    && cumpleCondiciones(state, evento.conditions);
+}
+
+// Una opcion puede tener su propio gating: "esta salida solo existe si
+// terminaste el secundario".
+export function opcionesVivas(state, evento, contexto = calcularContexto(state)) {
+  return evento.options.filter((opcion) => disponibleEn(state, opcion, contexto));
+}
+
 function candidatos(state) {
+  const contexto = calcularContexto(state);
   return TODOS_LOS_EVENTOS.filter(
-    (event) => !event.cierreDeEdad && !cooldownActivo(state, event.id) && cumpleCondiciones(state, event.conditions)
+    (event) => !event.cierreDeEdad
+      && !cooldownActivo(state, event.id)
+      && disponibleEn(state, event, contexto)
+      && opcionesVivas(state, event, contexto).length >= 2
   );
 }
 
@@ -63,8 +88,12 @@ export function elegirEvento(state, rng, { excluirId } = {}) {
 }
 
 export function elegirEventoCierre(state, rng) {
+  const contexto = calcularContexto(state);
   const disponibles = TODOS_LOS_EVENTOS.filter(
-    (event) => event.cierreDeEdad && !cooldownActivo(state, event.id) && cumpleCondiciones(state, event.conditions)
+    (event) => event.cierreDeEdad
+      && !cooldownActivo(state, event.id)
+      && disponibleEn(state, event, contexto)
+      && opcionesVivas(state, event, contexto).length >= 2
   );
   if (disponibles.length === 0) {
     return null;
@@ -73,7 +102,8 @@ export function elegirEventoCierre(state, rng) {
 }
 
 export function resolverOpcion(state, evento, opcionId, rng) {
-  const opcion = evento.options.find((option) => option.id === opcionId) ?? evento.options[0];
+  const vivas = opcionesVivas(state, evento);
+  const opcion = vivas.find((option) => option.id === opcionId) ?? vivas[0] ?? evento.options[0];
   const outcome = weightedPick(opcion.outcomes, (out) => out.weight, rng);
 
   const descripciones = [];
@@ -87,19 +117,26 @@ export function resolverOpcion(state, evento, opcionId, rng) {
 
   return {
     state: actualizarCooldowns(nextState, evento),
-    logs: [crearLog('event', `${evento.title} — ${opcion.label}: ${resumenEfectos}.`)]
+    logs: [crearLog('event', `${resolverTexto(evento.title, state)} — ${resolverTexto(opcion.label, state)}: ${resumenEfectos}.`)]
   };
 }
 
 // Toda decision, venga de un evento o de un sistema, se presenta igual: titulo,
 // descripcion y una lista de opciones. La UI tiene un solo camino de render.
-export function decisionDesdeEvento(evento, { contexto, slot }) {
+// `franja` distingue la decision normal del split de la del cierre de edad; no
+// tiene nada que ver con el contexto de carrera.
+export function decisionDesdeEvento(state, evento, { franja, slot }) {
+  const titulo = resolverTexto(evento.title, state);
+
   return {
     tipo: 'opciones',
-    titulo: contexto === 'cierre' ? `${evento.title} (fin de temporada)` : evento.title,
-    descripcion: evento.description,
-    opciones: evento.options.map((option) => ({ id: option.id, label: option.label })),
-    contexto,
+    titulo: franja === 'cierre' ? `${titulo} (fin de temporada)` : titulo,
+    descripcion: resolverTexto(evento.description, state),
+    opciones: opcionesVivas(state, evento).map((option) => ({
+      id: option.id,
+      label: resolverTexto(option.label, state)
+    })),
+    franja,
     slot,
     datos: { evento }
   };
@@ -108,8 +145,8 @@ export function decisionDesdeEvento(evento, { contexto, slot }) {
 // Elige una opcion sola cuando no hay nadie mirando (simulacion masiva).
 // Respeta los pesos declarados, asi el camino headless mide lo mismo que juega
 // una persona con criterio promedio.
-export function elegirOpcionAutomatica(decision, rng) {
-  const opcion = weightedPick(decision.datos.evento.options, (option) => option.weight, rng);
+export function elegirOpcionAutomatica(state, decision, rng) {
+  const opcion = weightedPick(opcionesVivas(state, decision.datos.evento), (option) => option.weight, rng);
   return { opcionId: opcion.id };
 }
 
@@ -126,7 +163,7 @@ export function aplicar(state, rng) {
   return {
     state,
     logs: [],
-    decision: decisionDesdeEvento(evento, { contexto: 'normal', slot: 1 })
+    decision: decisionDesdeEvento(state, evento, { franja: 'normal', slot: 1 })
   };
 }
 
@@ -145,7 +182,7 @@ export function resolver(state, decision, respuesta, rng) {
       return {
         state: nextState,
         logs,
-        decision: decisionDesdeEvento(segundoEvento, { contexto: 'normal', slot: 2 })
+        decision: decisionDesdeEvento(nextState, segundoEvento, { franja: 'normal', slot: 2 })
       };
     }
   }
@@ -154,5 +191,5 @@ export function resolver(state, decision, respuesta, rng) {
 }
 
 export function resolverAuto(state, decision, rng) {
-  return elegirOpcionAutomatica(decision, rng);
+  return elegirOpcionAutomatica(state, decision, rng);
 }

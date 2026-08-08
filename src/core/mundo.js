@@ -191,6 +191,7 @@ export function generarMundo(rng, edadInicial) {
       ligas,
       ligaOrigen: ligaOrigen.id,
       regionOrigen: ligaOrigen.region,
+      regionIdOrigen: ligaOrigen.regionId,
       // Que region manda en esta generacion: sesga los internacionales.
       regionDominante: weightedPick(ligas, (liga) => liga.prestigio, rng).region,
       metaInicial: generarMetaInicial(rng),

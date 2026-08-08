@@ -4,6 +4,7 @@ import { crearLog } from '../core/log.js';
 import { clamp, clampStat } from '../core/numeros.js';
 import { rangoDeElo } from '../core/selectors.js';
 import { multiplicadorDeMeta } from '../core/ajusteMeta.js';
+import { registrarEnHistorial } from '../core/contexto.js';
 
 export const id = 'amateur';
 
@@ -207,7 +208,14 @@ function aplicarReparto(state, reparto, extra, rng) {
     logs.push(crearLog('amateur', 'Entraste en deuda de sueño: te cuesta encontrar la ventana, y el LP lo nota.'));
   }
 
-  return { state: { ...state, player, flags: { ...state.flags, robosConsecutivos } }, logs };
+  // En la etapa amateur "cómo te fue" es cuánto LP hiciste contra lo que se
+  // espera de un split normal. Alimenta el momentum del contexto.
+  const conHistorial = registrarEnHistorial(
+    { ...state, player, flags: { ...state.flags, robosConsecutivos } },
+    (lpGanado / a.lpReferenciaHistorial) * (BALANCE.stats.max / 2)
+  );
+
+  return { state: conHistorial, logs };
 }
 
 // --- Bandas de riesgo familiar ---

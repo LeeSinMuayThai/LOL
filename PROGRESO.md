@@ -24,6 +24,67 @@ y DECLIVE (§2), y contenido de eventos (20 de los ~200 que pide §8).
 
 ## Changelog
 
+### 2026-08-08 — Paso 7: modelo de contexto de carrera
+
+Pedido del usuario, textual: *"tienen que estar fijadas por el momento de la carrera... que se
+sepa cuándo sale cada opción de diálogo, se tiene que saber muy bien dónde estás parado en la
+carrera"*. Eso no es contenido, es **arquitectura**: hasta hoy los eventos se filtraban con
+`conditions` sobre paths arbitrarios del estado, y con eso era imposible responder "¿qué puede
+salir a los 17 estando en una academia?" sin simular.
+
+- **`src/core/contexto.js`** (nuevo): `calcularContexto(state)` deriva **9 ejes** —`etapa`,
+  `edadBanda`, `nivel`, `estatus`, `momentum`, `mercado`, `region`, `residencia`, `ventana`— más
+  una lista de `marcas`. Es **pura y no consume una sola tirada de RNG**, y eso es lo que la hace
+  segura: se puede enumerar sin simular, y agregarla no movió un decimal del balance calibrado.
+- **`src/data/contextos.js`** (nuevo): el vocabulario cerrado (`EJES`, `MARCAS`) más la tabla de
+  **25 momentos canónicos** resueltos por prioridad. El cruce completo de 9 ejes es intratable
+  para autorear; la etiqueta única lo colapsa a un nombre por situación: `amateur_al_limite`,
+  `tier1_debut`, `tier1_slump`, `veterano_al_margen`, `espera_edad_minima`, `sin_equipo`…
+  Los 15 que todavía no son alcanzables están marcados con el paso que los va a activar, y cada
+  paso posterior borra los suyos: eso le da a cada paso una definición de terminado nítida.
+- **Gating declarativo en los JSON**: bloque `contexto` (AND entre claves, OR adentro, `!` niega
+  marcas, `edadMin`/`edadMax` para edad exacta). **Regla dura sostenida por validate: se prohíben
+  `conditions` sobre `phase` y `age`** — si el gating grueso pudiera esconderse adentro de una
+  condición numérica, la matriz de cobertura mentiría. Las 12 condiciones que había se migraron.
+- **`src/core/plantillas.js`** (nuevo): tokens para que el contenido nombre tu carrera real —
+  `"{jungla} no camina más para vos"` → `"Zenvex no camina más para vos"`.
+- **`src/dev/cobertura.js`** (nuevo): la matriz que responde el pedido.
+  `node src/dev/cobertura.js` imprime momento × ventana; `--huecos` lista las celdas flojas;
+  `--momento tier1_debut` dice qué cae ahí; `--evento team_drama` hace la pregunta inversa. Cada
+  celda muestra **dos números**: eventos que pasan el contexto, y de esos cuántos **nunca llegan
+  a disparar** por sus condiciones numéricas — el detector de huecos disfrazados.
+- **Dos bugs arreglados**:
+  - `validate.js` referenciaba `BALANCE.meta.pesoDominante`, clave borrada al reescribir la
+    sección meta en el paso 5. `undefined <= 0.5` es `false`: **el check nunca fallaba**.
+  - `state.pendiente.etapa` guardaba un **índice** de `ETAPAS_SPLIT`. Con el registro pasando de
+    11 a ~17 sistemas, toda partida serializada a mitad de split quedaba corrupta. Ahora el
+    cursor se resuelve por `sistemaId`.
+- **Bug de diseño encontrado midiendo**: el filtro de eventos usaba el contexto **cacheado del
+  arranque del split**. En el split donde firmás, `phase` cambia a mitad de camino y el caché
+  queda viejo. Ahora el filtrado calcula el contexto **en vivo**; el caché es solo para la UI.
+- **4 checks nuevos** (16 en total): vocabulario de contexto válido · tokens que existen · todo
+  `effect.path` con etiqueta legible · y el central: **300 seeds × 45 splits sin que ningún
+  estado quede sin momento declarado**, más que todo momento no-pendiente aparezca de verdad.
+
+**Verificación de que no movió nada** (era el requisito del paso): se extrajo `HEAD` a un
+directorio aparte y se compararon las **400 primeras seeds × 3 estrategias**, con huella de
+`finAnticipado`, splits y LP. **Cero divergencias en las tres.** Además, la traza de tiradas de
+RNG por split es idéntica (`88,93,96,103,90,89,89,97,108,26` en seed 3).
+
+*(Corrección: la tabla de balance que este documento traía del paso 4 se usó por error como
+línea de base; había sido medida antes de que existieran los pasos 5 y 6. La línea de base real
+post-paso-6, 1500 carreras × 11 splits, es: equilibrado 56.3% sigue en carrera / 41.8% no llegó
+/ 1.4% prohibición / 0.5% burnout; ranked 79.1% burnout / 10.4% prohibición; prudente 58.9% /
+41.1%.)*
+
+El contexto se lee como una narración. Traza real (seed 19): *un pibe más grindeando soloQ →
+a un paso de que te bajen del ranked → los scouts te empezaron a mirar → debutando en primera →
+uno más del roster → en crisis de resultados → titular → referente → la franquicia del equipo*.
+
+- **Estado del catálogo**: 10 momentos alcanzables, 40 opciones de las 150 objetivo. 8 de los 20
+  eventos todavía no declaran contexto, así que aparecen en cualquier lado — que es exactamente
+  el problema que el usuario señaló, ahora visible en la matriz. Se cierra en el paso 13.
+
 ### 2026-08-07 — Paso 6: el ciclo del split profesional
 
 `AUDITORIA.md`: *"una vez que `phase` pasa a `profesional`, `soloqElo`, `studies`, `familyTrust`
