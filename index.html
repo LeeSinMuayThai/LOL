@@ -147,49 +147,15 @@
         letter-spacing: 0.08em;
         color: #8ea3c7;
       }
-      .reparto-fila {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 8px 0;
-        border-bottom: 1px solid rgba(255,255,255,0.06);
-      }
-      .reparto-nombre {
-        flex: 1 1 auto;
-        font-weight: 600;
-      }
-      .reparto-valor {
-        min-width: 28px;
-        text-align: center;
-        font-variant-numeric: tabular-nums;
-        font-size: 18px;
+      .option-title {
         font-weight: 700;
+        margin-bottom: 4px;
       }
-      .reparto-btn {
-        margin-top: 0;
-        width: 34px;
-        height: 34px;
-        padding: 0;
-        border-radius: 10px;
-        background: rgba(255,255,255,0.08);
-        border: 1px solid rgba(255,255,255,0.16);
-        font-size: 18px;
-        line-height: 1;
-        box-shadow: none;
-      }
-      .reparto-btn:disabled {
-        opacity: 0.3;
-        cursor: not-allowed;
-      }
-      .reparto-restantes {
-        margin: 12px 0 4px;
-        color: #c3cfe8;
-      }
-      .reparto-restantes strong {
-        color: #f3f6ff;
-      }
-      .reparto-robo {
-        color: #ffb27a;
+      .option-desc {
+        font-weight: 400;
+        font-size: 13px;
+        line-height: 1.45;
+        color: #a8b8d8;
       }
       .seed-input {
         background: rgba(255,255,255,0.06);
@@ -220,7 +186,7 @@
         <div class="stat-card"><div class="stat-label">Estudios</div><div id="stud" class="stat-value">—</div></div>
         <div class="stat-card"><div class="stat-label">Confianza</div><div id="trust" class="stat-value">—</div></div>
         <div class="stat-card"><div class="stat-label">Sueño</div><div id="sleep" class="stat-value">—</div></div>
-        <div class="stat-card"><div class="stat-label">SoloQ LP</div><div id="elo" class="stat-value">—</div></div>
+        <div class="stat-card"><div class="stat-label">SoloQ</div><div id="elo" class="stat-value">—</div></div>
         <div class="stat-card"><div class="stat-label">Dónde estás</div><div id="fase" class="stat-value">—</div></div>
       </div>
 
@@ -325,18 +291,28 @@
         decisionTitle.textContent = decision.titulo;
         decisionDesc.textContent = decision.descripcion;
 
-        if (decision.tipo === 'reparto') {
-          mostrarReparto(decision);
-        } else {
-          decisionOptions.innerHTML = '';
-          for (const opcion of decision.opciones) {
-            const opcionBtn = document.createElement('button');
-            opcionBtn.type = 'button';
-            opcionBtn.className = 'option-btn';
-            opcionBtn.textContent = opcion.label;
-            opcionBtn.addEventListener('click', () => responder({ opcionId: opcion.id }));
-            decisionOptions.appendChild(opcionBtn);
+        decisionOptions.innerHTML = '';
+        for (const opcion of decision.opciones) {
+          const opcionBtn = document.createElement('button');
+          opcionBtn.type = 'button';
+          opcionBtn.className = 'option-btn';
+
+          const titulo = document.createElement('div');
+          titulo.className = 'option-title';
+          titulo.textContent = opcion.label;
+          opcionBtn.appendChild(titulo);
+
+          // El texto de la rutina es la mitad de la decisión: sin él, elegir
+          // "Bootcamp en tu propia pieza" no significa nada.
+          if (opcion.descripcion) {
+            const detalle = document.createElement('div');
+            detalle.className = 'option-desc';
+            detalle.textContent = opcion.descripcion;
+            opcionBtn.appendChild(detalle);
           }
+
+          opcionBtn.addEventListener('click', () => responder({ opcionId: opcion.id }));
+          decisionOptions.appendChild(opcionBtn);
         }
 
         decisionPanel.hidden = false;
