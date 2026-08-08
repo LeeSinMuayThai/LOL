@@ -1,5 +1,6 @@
 import { BALANCE } from '../data/balance.js';
 import { clamp } from './numeros.js';
+import { bandaDeLadder, servidorDeLaPartida } from './ranked.js';
 import { MOMENTOS } from '../data/contextos.js';
 
 // "Donde estas parado en la carrera", derivado del estado.
@@ -126,6 +127,10 @@ function calcularMarcas(state) {
   if (state.player.signatureChampion) {
     marcas.push('signature');
   }
+  // Hay gente con nombre alrededor: recién desde el split siguiente al fichaje.
+  if ((state.career.companeros?.length ?? 0) > 0) {
+    marcas.push('con_vestuario');
+  }
   if (state.player.stats.mentalidad < BALANCE.atributos.burnoutUmbral + BALANCE.contexto.margenMentalidadAlLimite) {
     marcas.push('mentalidad_al_limite');
   }
@@ -149,6 +154,8 @@ export function calcularContexto(state, overrides = {}) {
     region: liga?.regionId ?? state.mundo.regionIdOrigen ?? null,
     residencia: 'local',
     ventana: calcularVentana(state),
+    ladder: bandaDeLadder(state.player.ranked, servidorDeLaPartida(state)),
+    rol: state.player.role,
     marcas: calcularMarcas(state),
     ...overrides
   };

@@ -2,94 +2,58 @@
   {
     "id": "visa_delay",
     "category": "salud_vida",
-    "title": "Visa en demora",
-    "description": "Tu salida a otra región se retrasa y el calendario te juega en contra.",
+    "title": "La visa no sale",
+    "description": "El trámite para viajar con {org} se trabó en el consulado. El calendario no espera y hay una fecha en la que tenés que estar del otro lado.",
     "weight": 6,
     "cooldown": 4,
     "contexto": {
-      "etapa": [
-        "debut",
-        "profesional"
-      ]
+      "etapa": ["debut", "profesional"],
+      "nivel": ["tier1"]
     },
     "conditions": [
-      {
-        "field": "player.splitCount",
-        "op": "gt",
-        "value": 4
-      }
+      { "field": "player.splitCount", "op": "gt", "value": 4 }
     ],
     "options": [
       {
         "id": "presionar_a_la_organizacion",
-        "label": "Presionar a la organización",
+        "label": "Apretar a la organización",
+        "descripcion": "Les caés al manager todos los días. Puede destrabarse, o podés quedar como el jugador problemático por algo que no depende de nadie.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
+            "texto": "Insistís tanto que alguien mueve un contacto y aparece un turno. Llegás justo, con el pasaporte todavía tibio.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -2,
-                "max": 0,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
+            "texto": "El trámite no se mueve un centímetro y vos gastaste tres semanas de energía peleando con un mostrador. Viajás igual, tarde y fundido.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -6,
-                "max": -3,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -3, "clamp": [0, 100] }
             ]
           }
         ]
       },
       {
         "id": "aceptar_la_demora",
-        "label": "Aceptar la demora con calma",
+        "label": "Bancártela y seguir entrenando",
+        "descripcion": "No podés hacer nada, así que hacés lo que sí podés. Perdés días de bootcamp con el equipo y los ganás solo.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
+            "texto": "Entrenás desde tu casa mientras los demás ya están allá. Se pierden dos semanas de sincronía que después se pagan.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -4,
-                "max": -2,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
+            "texto": "La espera se estira más de lo que nadie calculó. Cuando por fin llegás, el equipo ya armó su rutina sin vos.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -7,
-                "max": -4,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -7, "max": -4, "clamp": [0, 100] }
             ]
           }
         ]
@@ -99,118 +63,61 @@
   {
     "id": "tendinitis",
     "category": "salud_vida",
-    "title": "Tendinitis de muñeca",
-    "description": "El cuerpo empieza a pedirte un descanso que no te das.",
+    "title": "La muñeca",
+    "description": "Empezó como una molestia y ya es un dolor con horario. Aparece siempre a la misma hora de la sesión, y no se va con hielo.",
     "weight": 6,
     "cooldown": 4,
+    "contexto": {
+      "marcas": ["deuda_sueno"],
+      "edadMin": 16
+    },
     "conditions": [
-      {
-        "field": "player.splitCount",
-        "op": "gt",
-        "value": 3
-      }
+      { "field": "player.splitCount", "op": "gt", "value": 3 }
     ],
     "options": [
       {
         "id": "jugar_apretando_los_dientes",
-        "label": "Jugar igual, apretando los dientes",
+        "label": "Jugar igual y no decirle a nadie",
+        "descripcion": "Nadie se entera y no perdés un solo día. La muñeca no se arregla sola.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
+            "texto": "Aguantás. Se te va un poco de precisión en los combos largos y lo compensás jugando más simple, que es una forma elegante de decir que jugás peor.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mecanica",
-                "min": -4,
-                "max": -2,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -3,
-                "max": -1,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mecanica", "min": -4, "max": -2, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
+            "texto": "Una noche no podés cerrar la mano del todo. Te asustás, no se lo contás a nadie, y al otro día volvés a jugar.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mecanica",
-                "min": -6,
-                "max": -4,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -4,
-                "max": -2,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mecanica", "min": -6, "max": -4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
             ]
           }
         ]
       },
       {
         "id": "frenar_y_tratarte",
-        "label": "Frenar y tratarte la muñeca",
+        "label": "Frenar y hacerte ver",
+        "descripcion": "Kinesiología, menos horas y ejercicios aburridos. Perdés ritmo ahora para no perder la mano después.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
+            "texto": "Tres semanas de ejercicios que te dan vergüenza hacer y el dolor afloja. Perdiste ritmo; la mano te va a durar más.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mecanica",
-                "min": -2,
-                "max": -1,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": 1,
-                "max": 2,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mecanica", "min": -2, "max": -1, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
+            "texto": "Frenás, se va, y vuelve apenas retomás el volumen de siempre. Aprendés que esto no se cura: se administra.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mecanica",
-                "min": -3,
-                "max": -1,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mecanica", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
           }
         ]
@@ -220,118 +127,60 @@
   {
     "id": "burnout",
     "category": "salud_vida",
-    "title": "Burnout de calendario",
-    "description": "Las semanas se vuelven largas y el juego empieza a pesarte.",
+    "title": "Se te hizo trabajo",
+    "description": "Hace tres semanas que abrís el cliente y sentís lo mismo que abriendo un Excel. No estás jugando mal: no estás jugando.",
     "weight": 6,
     "cooldown": 5,
+    "contexto": {
+      "marcas": ["mentalidad_al_limite"]
+    },
     "conditions": [
-      {
-        "field": "player.splitCount",
-        "op": "gt",
-        "value": 4
-      }
+      { "field": "player.splitCount", "op": "gt", "value": 4 }
     ],
     "options": [
       {
         "id": "aguantar_el_calendario",
-        "label": "Aguantar el calendario",
+        "label": "Aguantar hasta que termine el split",
+        "descripcion": "Faltan pocas jornadas. Apretás los dientes y lo resolvés en el receso, si llegás.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
+            "texto": "Llegás al final del split en piloto automático. Los errores no son de manos: son de no estar mirando.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -8,
-                "max": -5,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.macro",
-                "min": -2,
-                "max": -1,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -8, "max": -5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.macro", "min": -2, "max": -1, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
+            "texto": "No llegás entero. Las últimas semanas son un borrón y hay un par de partidas que ni te acordás de haber jugado.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -10,
-                "max": -7,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.macro",
-                "min": -3,
-                "max": -2,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -10, "max": -7, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.macro", "min": -3, "max": -2, "clamp": [0, 100] }
             ]
           }
         ]
       },
       {
         "id": "pedir_un_quiebre",
-        "label": "Pedir un quiebre al staff",
+        "label": "Decírselo al staff",
+        "descripcion": "Pedís bajar carga. Se soluciona antes, y queda escrito en algún lado que pediste parar.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
+            "texto": "Te sacan dos bloques de scrim por semana durante un mes. No es mucho, pero alcanza para volver a tener ganas.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -3,
-                "max": -1,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
+            "texto": "Te escuchan y te bajan carga, pero el mensaje que queda adentro es otro: que sos el que no aguanta el calendario.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -5,
-                "max": -2,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.macro",
-                "min": -1,
-                "max": 0,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.macro", "min": -1, "max": 0, "clamp": [0, 100] }
             ]
           }
         ]
@@ -341,88 +190,57 @@
   {
     "id": "psychologist",
     "category": "salud_vida",
-    "title": "Psicólogo deportivo",
-    "description": "El staff te manda a trabajar la cabeza y te ayuda a bajar la presión.",
+    "title": "El psicólogo del club",
+    "description": "{org} tiene una psicóloga deportiva y el staff te anotó una sesión sin preguntarte. Está en el calendario, martes a las cinco.",
     "weight": 5,
     "cooldown": 3,
+    "contexto": {
+      "nivel": ["tier2", "tier1"]
+    },
     "conditions": [
-      {
-        "field": "player.stats.mentalidad",
-        "op": "lt",
-        "value": 60
-      }
+      { "field": "player.stats.mentalidad", "op": "lt", "value": 60 }
     ],
     "options": [
       {
         "id": "comprometerse_con_el_proceso",
-        "label": "Comprometerse con el proceso",
+        "label": "Ir en serio",
+        "descripcion": "Abrís la boca de verdad. Cuesta las primeras sesiones y es lo único que mueve la aguja.",
         "weight": 6,
         "outcomes": [
           {
             "weight": 7,
+            "texto": "A la cuarta sesión decís en voz alta algo que no le habías dicho a nadie. Salís liviano de una forma que no esperabas.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": 4,
-                "max": 7,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 4, "max": 7, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
+            "texto": "Enganchás rápido. Te da dos herramientas concretas para las series largas y las usás desde la semana siguiente.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": 7,
-                "max": 10,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 7, "max": 10, "clamp": [0, 100] }
             ]
           }
         ]
       },
       {
         "id": "ir_por_compromiso",
-        "label": "Ir por compromiso, sin abrirse del todo",
+        "label": "Ir y no decir nada importante",
+        "descripcion": "Cumplís el horario y contestás lo justo. Nadie te va a marcar la falta y tampoco te va a servir de mucho.",
         "weight": 4,
         "outcomes": [
           {
             "weight": 8,
+            "texto": "Cuarenta minutos de charla sobre nada. Igual desconectar te hizo algo, aunque no lo quieras contar así.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": 1,
-                "max": 3,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 2,
+            "texto": "Contestás en piloto automático hasta que una pregunta te agarra desprevenido y contestás de verdad sin querer. Algo se destrabó.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": 3,
-                "max": 4,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 4, "clamp": [0, 100] }
             ]
           }
         ]

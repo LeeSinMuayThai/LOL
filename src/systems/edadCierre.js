@@ -1,5 +1,6 @@
 import { getPath, etiquetaCampo } from '../core/selectors.js';
 import { crearLog } from '../core/log.js';
+import { deltaCorto } from '../core/formato.js';
 import { BALANCE } from '../data/balance.js';
 import { CAMPOS_EDAD } from './edadInicio.js';
 import { elegirEventoCierre, resolverOpcion, elegirOpcionAutomatica, decisionDesdeEvento } from './events.js';
@@ -8,18 +9,20 @@ export const id = 'edadCierre';
 
 function generarTextoResumen(state) {
   const snapshot = state.flags.edadSnapshot ?? {};
+  // Se filtra por el cambio YA REDONDEADO: una deriva de 0.4 no es una noticia
+  // de fin de temporada, y escribirla como "+0" es peor que no decirla.
   const cambios = CAMPOS_EDAD.map((path) => {
     const antes = snapshot[path] ?? getPath(state, path);
     const despues = getPath(state, path);
-    return { path, delta: despues - antes };
-  }).filter(({ delta }) => delta !== 0);
+    return { path, cambio: Math.round(despues - antes) };
+  }).filter(({ cambio }) => cambio !== 0);
 
   if (cambios.length === 0) {
     return `Fin de temporada a los ${state.age} años: un año tranquilo, sin cambios grandes.`;
   }
 
   const texto = cambios
-    .map(({ path, delta }) => `${etiquetaCampo(path)} ${delta >= 0 ? '+' : ''}${delta}`)
+    .map(({ path, cambio }) => `${etiquetaCampo(path)} ${deltaCorto(cambio)}`)
     .join(', ');
 
   return `Fin de temporada a los ${state.age} años: ${texto}.`;

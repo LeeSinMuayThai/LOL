@@ -2,123 +2,62 @@
   {
     "id": "academy_offer",
     "category": "debut_academy",
-    "title": "Oferta de academy",
-    "description": "Una org te ofrece entrar a su proyecto juvenil con un contrato pequeño.",
+    "title": "Te tantea un proyecto juvenil",
+    "description": "Una estructura chica de {region} está armando roster sub-18 y alguien pasó tu cuenta. Todavía no hay contrato: hay una charla y unas scrims de prueba.",
     "weight": 8,
-    "cooldown": 5,
+    "cooldown": 3,
     "contexto": {
-      "etapa": [
-        "amateur"
-      ]
+      "etapa": ["amateur"],
+      "ladder": ["alto", "apice", "elite"]
     },
     "conditions": [
-      {
-        "field": "player.splitCount",
-        "op": "gt",
-        "value": 2
-      }
+      { "field": "player.splitCount", "op": "gt", "value": 2 }
     ],
     "options": [
       {
         "id": "aceptar_el_contrato",
-        "label": "Aceptar el contrato de academy",
+        "label": "Ir a la prueba",
+        "descripcion": "Dos semanas de scrims con gente que juega en serio. Aprendés cosas que en soloQ no existen, y perdés horas de ladder.",
         "weight": 6,
         "outcomes": [
           {
             "weight": 8,
+            "texto": "Jugás tus primeras scrims de verdad y descubrís que el juego que vos jugabas era otro juego. No quedás, pero el coach se guarda tu nombre.",
             "effects": [
-              {
-                "type": "push",
-                "path": "career.orgs",
-                "values": [
-                  "Academy regional",
-                  "Proyecto juvenil de una org chica",
-                  "Roster secundario de una org media"
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 2,
-                "max": 6,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 6, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 2,
+            "texto": "Rompés en las pruebas y se corre la voz entre los coaches de la escena chica. No firmás nada, pero ahora hay tres personas que preguntan por vos.",
             "effects": [
-              {
-                "type": "push",
-                "path": "career.orgs",
-                "values": [
-                  "Academy de una org top",
-                  "Proyecto juvenil con presupuesto",
-                  "Academy con línea directa al primer equipo"
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 6,
-                "max": 10,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -3,
-                "max": -1,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 6, "max": 10, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
           }
         ]
       },
       {
         "id": "rechazar_y_seguir_libre",
-        "label": "Rechazar y seguir libre en soloQ",
+        "label": "Pasar y seguir en la ladder",
+        "descripcion": "Los proyectos chicos duran tres meses. Lo único que no se te cae es el rango.",
         "weight": 4,
         "outcomes": [
           {
             "weight": 7,
+            "texto": "Te quedás grindeando y hacés más LP en dos semanas que en el mes anterior. El proyecto, efectivamente, se disolvió en marzo.",
             "effects": [
-              {
-                "type": "ladder",
-                "path": "player.ranked",
-                "min": 15,
-                "max": 30
-              }
+              { "type": "ladder", "path": "player.ranked", "min": 15, "max": 30 }
             ]
           },
           {
             "weight": 3,
+            "texto": "Decís que no y le metés a la cuenta con todo. Subís tanto que el mismo coach te vuelve a escribir dos meses después, con otro tono.",
             "effects": [
-              {
-                "type": "ladder",
-                "path": "player.ranked",
-                "min": 30,
-                "max": 50
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 1,
-                "max": 3,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "ladder", "path": "player.ranked", "min": 30, "max": 50 },
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           }
         ]
@@ -128,124 +67,62 @@
   {
     "id": "redemption_game",
     "category": "debut_academy",
-    "title": "Partida de redención",
-    "description": "En la siguiente serie decisiva, el equipo te da una oportunidad de devolver la cara.",
+    "title": "El coach te banca una más",
+    "description": "Venís de un tramo feo y el staff podría sentarte. En vez de eso, {org} te pone de titular en la jornada que define la clasificación.",
     "weight": 8,
     "cooldown": 3,
     "contexto": {
-      "etapa": [
-        "debut",
-        "profesional"
-      ]
+      "etapa": ["debut", "profesional"],
+      "nivel": ["tier2", "tier1"],
+      "momentum": ["slump", "crisis"]
     },
     "conditions": [
-      {
-        "field": "player.splitCount",
-        "op": "gt",
-        "value": 1
-      }
+      { "field": "player.splitCount", "op": "gt", "value": 1 }
     ],
     "options": [
       {
         "id": "ir_con_todo",
-        "label": "Ir con todo por la revancha",
+        "label": "Jugarla como si fuera la última",
+        "descripcion": "Buscás la jugada. Si sale, se te acomoda el split entero; si no, le diste la razón al que quería sentarte.",
         "weight": 6,
         "outcomes": [
           {
             "weight": 7,
+            "texto": "Te tirás a una que no había que tirarse y sale. A partir de esa jugada jugás distinto, y el equipo también.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mecanica",
-                "min": 4,
-                "max": 8,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": 2,
-                "max": 4,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mecanica", "min": 4, "max": 8, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
+            "texto": "Buscás la jugada tres veces y las tres salen a medias. Ganan igual, pero no fue por vos y en el review se ve.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mecanica",
-                "min": 1,
-                "max": 3,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -2,
-                "max": 0,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
           }
         ]
       },
       {
         "id": "jugar_seguro",
-        "label": "Jugar seguro, sin arriesgar de más",
+        "label": "Jugar sin cometer un error",
+        "descripcion": "Farmeás, no morís, no perdés la partida solo. Nadie va a hablar de vos, y era exactamente lo que hacía falta.",
         "weight": 4,
         "outcomes": [
           {
             "weight": 8,
+            "texto": "Cero muertes, cero highlights, y el equipo ganó. El coach te lo dice en el review con dos palabras y eso vale más que un clip.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mecanica",
-                "min": 2,
-                "max": 4,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": 1,
-                "max": 3,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 2,
+            "texto": "Jugás tan cerrado que desaparecés del mapa. No perdiste la partida, pero tampoco exististe, y eso también es un dato.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mecanica",
-                "min": 1,
-                "max": 2,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 2, "clamp": [0, 100] }
             ]
           }
         ]
@@ -255,124 +132,61 @@
   {
     "id": "coach_demands_role",
     "category": "debut_academy",
-    "title": "El coach te cambia de rol",
-    "description": "Tu entrenador cree que tu futuro está en otra línea y te obliga a adaptarte.",
+    "title": "El coach te pide otro jugador",
+    "description": "En el review te dice que lo que hacés bien no es lo que el equipo necesita. Quiere que juegues más para el grupo y menos para tu línea, aunque eso te saque de lo que sabés hacer.",
     "weight": 7,
-    "cooldown": 5,
+    "cooldown": 4,
     "contexto": {
-      "etapa": [
-        "debut",
-        "profesional"
-      ]
+      "etapa": ["debut", "profesional"],
+      "nivel": ["tier2", "tier1"]
     },
     "conditions": [
-      {
-        "field": "player.splitCount",
-        "op": "gt",
-        "value": 3
-      }
+      { "field": "player.splitCount", "op": "gt", "value": 3 }
     ],
     "options": [
       {
         "id": "aceptar_el_cambio",
-        "label": "Aceptar el cambio de rol",
+        "label": "Adaptarte a lo que pide",
+        "descripcion": "Reaprendés a jugar tu propia línea. Te hace más completo y por unos meses vas a rendir peor que antes.",
         "weight": 6,
         "outcomes": [
           {
             "weight": 7,
+            "texto": "Te cuesta dos meses largos jugar contra tus propios reflejos. Cuando sale, entendés cosas del mapa que antes ni mirabas.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.adaptabilidad",
-                "min": 2,
-                "max": 4,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mecanica",
-                "min": -4,
-                "max": -2,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mecanica", "min": -4, "max": -2, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
+            "texto": "Te tirás de cabeza al cambio y por un tiempo no sos ni el jugador de antes ni el nuevo. El coach te banca; el resto del vestuario no tanto.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.adaptabilidad",
-                "min": 4,
-                "max": 7,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mecanica",
-                "min": -6,
-                "max": -3,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 4, "max": 7, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mecanica", "min": -6, "max": -3, "clamp": [0, 100] }
             ]
           }
         ]
       },
       {
         "id": "resistirse_y_plantarse",
-        "label": "Resistirse y plantarse",
+        "label": "Plantarte: te ficharon por lo que hacés",
+        "descripcion": "Defendés tu juego. Si tenías razón, ganás peso; si no, te ganaste un problema con el que decide quién juega.",
         "weight": 4,
         "outcomes": [
           {
             "weight": 5,
+            "texto": "Se lo discutís con VODs en la mano y el coach termina cediendo en la mitad. Te ganaste el derecho a opinar.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": 1,
-                "max": 3,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
+            "texto": "No cede y vos tampoco. Seguís jugando a tu manera con el staff mirándote esperando el error, que es la peor forma de jugar.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -5,
-                "max": -2,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.adaptabilidad",
-                "min": -2,
-                "max": 0,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
           }
         ]

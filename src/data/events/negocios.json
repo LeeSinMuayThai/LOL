@@ -2,98 +2,58 @@
   {
     "id": "sponsor_offer",
     "category": "negocios",
-    "title": "Oferta de sponsor",
-    "description": "Una marca te ofrece un contrato grande, pero con condiciones de imagen.",
+    "title": "Te quiere una marca",
+    "description": "Una marca de periféricos te ofrece contrato de imagen. La plata está bien; la letra chica pide cuatro publicaciones por mes y aparecer en lo que te digan.",
     "weight": 7,
     "cooldown": 4,
+    "contexto": {
+      "nivel": ["tier2", "tier1"]
+    },
     "conditions": [
-      {
-        "field": "player.stats.hype",
-        "op": "gt",
-        "value": 55
-      }
+      { "field": "player.stats.hype", "op": "gt", "value": 55 }
     ],
     "options": [
       {
         "id": "firmar_el_contrato",
-        "label": "Firmar el contrato de imagen",
+        "label": "Firmarlo",
+        "descripcion": "Plata tuya, no del club, y una vidriera que no depende de los resultados. A cambio, tu tiempo deja de ser del todo tuyo.",
         "weight": 6,
         "outcomes": [
           {
             "weight": 7,
+            "texto": "Firmás y en dos meses ya es rutina: una sesión de fotos, cuatro posteos, y una plata que no dependía de si ganabas.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 3,
-                "max": 6,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
+            "texto": "La campaña pega más de lo que nadie esperaba y de golpe sos la cara de la marca en tu región. También son tres días de agenda que no elegiste.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 6,
-                "max": 9,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -2,
-                "max": 0,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.hype", "min": 6, "max": 9, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
           }
         ]
       },
       {
         "id": "rechazar_por_las_condiciones",
-        "label": "Rechazar por las condiciones",
+        "label": "Decir que no por la letra chica",
+        "descripcion": "Te quedás con tu tiempo y tu cara. Dejás pasar plata y exposición que quizás no vuelvan.",
         "weight": 4,
         "outcomes": [
           {
             "weight": 7,
+            "texto": "Decís que no y te sacás un peso de encima que no sabías que tenías. Tu agenda sigue siendo tuya.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": 1,
-                "max": 3,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
+            "texto": "La marca firma con otro de tu liga y le va bien. Lo ves en todos lados durante meses y algo te queda dando vueltas.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": -2,
-                "max": -1,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.hype", "min": -2, "max": -1, "clamp": [0, 100] }
             ]
           }
         ]

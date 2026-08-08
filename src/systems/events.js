@@ -4,6 +4,7 @@ import { calcularContexto, coincideContexto } from '../core/contexto.js';
 import { resolverTexto } from '../core/plantillas.js';
 import { aplicarLPAlEstado, etiquetaDeRanked, servidorDeLaPartida } from '../core/ranked.js';
 import { crearLog } from '../core/log.js';
+import { deltaCorto, lista } from '../core/formato.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 
@@ -70,12 +71,12 @@ function aplicarEfecto(state, effect, rng) {
     const [min, max] = effect.clamp;
     despues = Math.min(max, Math.max(min, despues));
   }
-  const deltaEfectivo = despues - antes;
-  const signo = deltaEfectivo >= 0 ? '+' : '';
 
+  // El estado guarda el float (el clamp puede dejar un decimal arrastrado desde
+  // antes); el log muestra el cambio redondeado.
   return {
     state: setPath(state, effect.path, despues),
-    descripcion: `${etiquetaCampo(effect.path)} ${signo}${deltaEfectivo}`
+    descripcion: `${etiquetaCampo(effect.path)} ${deltaCorto(despues - antes)}`
   };
 }
 
@@ -114,10 +115,22 @@ export function elegirEventoCierre(state, rng) {
   return weightedPick(disponibles, (event) => event.weight, rng);
 }
 
+// Elegir tiene que devolver una historia, no un diff.
+//
+// Antes esto loguaba `"Meme de la prensa — Subirse a la ola: Hype +8, Mentalidad -1."`
+// y el jugador nunca se enteraba de QUE paso: solo veia moverse dos barras. El
+// `texto` del outcome es la mitad narrativa de la decision, igual que el `texto`
+// de una rutina. Los efectos quedan como pie, entre parentesis.
+//
+// El titulo y la etiqueta se resuelven contra el estado PREVIO (es lo que decia
+// la tarjeta que el jugador acaba de leer) y el texto del resultado contra el
+// estado POSTERIOR (es lo que quedo despues de aplicar los efectos).
 export function resolverOpcion(state, evento, opcionId, rng) {
   const vivas = opcionesVivas(state, evento);
   const opcion = vivas.find((option) => option.id === opcionId) ?? vivas[0] ?? evento.options[0];
   const outcome = weightedPick(opcion.outcomes, (out) => out.weight, rng);
+
+  const titulo = `${resolverTexto(evento.title, state)} · ${resolverTexto(opcion.label, state)}`;
 
   const descripciones = [];
   const nextState = outcome.effects.reduce((acc, effect) => {
@@ -126,11 +139,12 @@ export function resolverOpcion(state, evento, opcionId, rng) {
     return siguiente;
   }, state);
 
-  const resumenEfectos = descripciones.length > 0 ? descripciones.join(', ') : 'sin cambios';
+  const cuerpo = resolverTexto(outcome.texto, nextState);
+  const efectos = lista(descripciones);
 
   return {
     state: actualizarCooldowns(nextState, evento),
-    logs: [crearLog('event', `${resolverTexto(evento.title, state)} — ${resolverTexto(opcion.label, state)}: ${resumenEfectos}.`)]
+    logs: [crearLog('event', `${titulo} — ${cuerpo} (${efectos})`, { titulo, cuerpo, efectos })]
   };
 }
 
@@ -145,9 +159,13 @@ export function decisionDesdeEvento(state, evento, { franja, slot }) {
     tipo: 'opciones',
     titulo: franja === 'cierre' ? `${titulo} (fin de temporada)` : titulo,
     descripcion: resolverTexto(evento.description, state),
+    // `descripcion` es la mitad de la decision: sin ella, elegir "Subirse a la
+    // ola" no dice que estas arriesgando. Las rutinas ya la mandaban y la UI ya
+    // sabe pintarla; los eventos la descartaban en este map.
     opciones: opcionesVivas(state, evento).map((option) => ({
       id: option.id,
-      label: resolverTexto(option.label, state)
+      label: resolverTexto(option.label, state),
+      descripcion: resolverTexto(option.descripcion, state)
     })),
     franja,
     slot,

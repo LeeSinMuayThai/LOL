@@ -14,6 +14,7 @@ import {
   servidorConCutoffs, servidorDeLaPartida
 } from '../core/ranked.js';
 import { TOKENS, tokensUsados } from '../core/plantillas.js';
+import { RUTINAS } from '../core/rutinas.js';
 import { EJES, MARCAS, MOMENTOS_ACTIVOS, momentoPorId } from '../data/contextos.js';
 import { ARQUETIPOS } from '../data/meta-tags.js';
 import { ROLES, IDS_ROL } from '../data/roles.js';
@@ -363,17 +364,132 @@ check('El contenido declara su contexto con vocabulario válido', () => {
   }
 });
 
-check('Todo texto de contenido usa tokens que existen', () => {
-  const textos = TODOS_LOS_EVENTOS.flatMap((evento) => [
-    evento.title,
-    evento.description,
-    ...evento.options.map((opcion) => opcion.label)
-  ]);
+// Todo el texto que un evento puede llegar a mostrar, con el contexto efectivo
+// bajo el que se muestra. Una opcion hereda el contexto de su evento y puede
+// estrecharlo, asi que para chequearla hay que mirar los dos juntos.
+function textosDeEventos() {
+  const piezas = [];
 
-  for (const texto of textos) {
-    for (const token of tokensUsados(texto)) {
+  for (const evento of TODOS_LOS_EVENTOS) {
+    const base = evento.contexto ?? {};
+    piezas.push({ id: evento.id, contexto: base, texto: evento.title });
+    piezas.push({ id: evento.id, contexto: base, texto: evento.description });
+
+    for (const opcion of evento.options) {
+      const contexto = { ...base, ...(opcion.contexto ?? {}) };
+      const donde = `${evento.id}/${opcion.id}`;
+      piezas.push({ id: donde, contexto, texto: opcion.label });
+      piezas.push({ id: donde, contexto, texto: opcion.descripcion });
+      for (const outcome of opcion.outcomes) {
+        piezas.push({ id: donde, contexto, texto: outcome.texto });
+      }
+    }
+  }
+
+  return piezas;
+}
+
+check('Todo texto de contenido usa tokens que existen', () => {
+  for (const pieza of textosDeEventos()) {
+    for (const token of tokensUsados(pieza.texto)) {
       if (!TOKENS[token]) {
-        throw new Error(`token desconocido "{${token}}" en: ${texto}`);
+        throw new Error(`token desconocido "{${token}}" en ${pieza.id}: ${pieza.texto}`);
+      }
+    }
+  }
+});
+
+// --- Los cuatro checks de la fase 0 ---
+
+check('Todo contenido declara dónde aparece', () => {
+  // Sin esto, un evento cae en cualquier momento de la carrera: es la causa
+  // exacta de que un scout te llame en Platino y de que te salga un meme de la
+  // prensa antes de tener prensa. Además, mientras haya contenido sin gatear la
+  // matriz de cobertura miente, porque esas piezas llenan todas las celdas.
+  const sinContexto = [];
+
+  for (const evento of TODOS_LOS_EVENTOS) {
+    if (!evento.contexto || Object.keys(evento.contexto).length === 0) {
+      sinContexto.push(`evento ${evento.id}`);
+    }
+  }
+  for (const [pool, rutinas] of Object.entries(RUTINAS)) {
+    for (const rutina of rutinas) {
+      if (!rutina.contexto || Object.keys(rutina.contexto).length === 0) {
+        sinContexto.push(`rutina ${pool}/${rutina.id}`);
+      }
+    }
+  }
+
+  if (sinContexto.length > 0) {
+    throw new Error(`sin bloque contexto: ${sinContexto.join(', ')}`);
+  }
+});
+
+check('Toda opción se lee antes y todo resultado se cuenta después', () => {
+  // Una opcion sin `descripcion` es un boton sin apuesta: no sabes que estas
+  // arriesgando. Un outcome sin `texto` devuelve un diff en vez de una historia
+  // — "Hype +8, Mentalidad -1" y nunca te enteras de que paso.
+  for (const evento of TODOS_LOS_EVENTOS) {
+    for (const opcion of evento.options) {
+      if (typeof opcion.descripcion !== 'string' || opcion.descripcion.trim() === '') {
+        throw new Error(`${evento.id}/${opcion.id}: opción sin descripcion`);
+      }
+      for (const [i, outcome] of opcion.outcomes.entries()) {
+        if (typeof outcome.texto !== 'string' || outcome.texto.trim() === '') {
+          throw new Error(`${evento.id}/${opcion.id}: outcome ${i} sin texto narrativo`);
+        }
+      }
+    }
+  }
+});
+
+check('Ningún token puede quedar sin resolver donde el contenido aparece', () => {
+  // Análisis estático sobre el gating declarado, sin simular. Mata la clase
+  // entera de "oraciones sin sentido": un texto que dice "{jungla} no camina más
+  // para vos" en un evento que puede caer en la etapa amateur imprime la llave
+  // cruda en pantalla, porque ahí no hay equipo.
+  const CON_EQUIPO = ['debut', 'profesional', 'declive'];
+  const CON_ORG = ['tier3', 'tier2', 'tier1'];
+  const TOKENS_DE_ORG = ['org', 'liga'];
+  const TOKENS_DE_COMPANERO = ['top', 'jungla', 'mid', 'adc', 'support'];
+
+  const garantizaOrg = (contexto) => {
+    const etapas = contexto.etapa;
+    const niveles = contexto.nivel;
+    return (Array.isArray(etapas) && etapas.every((etapa) => CON_EQUIPO.includes(etapa)))
+      || (Array.isArray(niveles) && niveles.every((nivel) => CON_ORG.includes(nivel)));
+  };
+  const exigeMarca = (contexto, marca) => (contexto.marcas ?? []).includes(marca);
+
+  for (const pieza of textosDeEventos()) {
+    for (const token of tokensUsados(pieza.texto)) {
+      if (TOKENS_DE_ORG.includes(token) && !garantizaOrg(pieza.contexto)) {
+        throw new Error(`${pieza.id}: usa {${token}} pero puede aparecer sin equipo (declará etapa o nivel)`);
+      }
+      if (TOKENS_DE_COMPANERO.includes(token) && !exigeMarca(pieza.contexto, 'con_vestuario')) {
+        throw new Error(`${pieza.id}: usa {${token}} pero no exige la marca con_vestuario`);
+      }
+      if (token === 'signature' && !exigeMarca(pieza.contexto, 'signature')) {
+        throw new Error(`${pieza.id}: usa {signature} pero no exige la marca signature`);
+      }
+    }
+  }
+});
+
+check('Ningún número llega al jugador con decimales', () => {
+  // Los stats viven como float a proposito (redondear en cada split moveria el
+  // balance), pero un float crudo en pantalla —`mecánica 62.12317247563275`—
+  // tapa media pantalla y no significa nada. Se redondea al producir texto.
+  const conDecimales = /\d\.\d{2,}/;
+
+  for (let seed = 1; seed <= 200; seed += 1) {
+    const state = correrCarrera(seed, 60);
+    for (const entrada of state.logs) {
+      for (const texto of [entrada.message, entrada.cuerpo, entrada.efectos]) {
+        if (typeof texto === 'string' && conDecimales.test(texto)) {
+          throw new Error(`seed ${seed}: número sin redondear en el log — "${texto}"`);
+        }
       }
     }
   }

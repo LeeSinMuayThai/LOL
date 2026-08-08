@@ -2,122 +2,62 @@
   {
     "id": "title_run",
     "category": "competicion",
-    "title": "Carrera de títulos",
-    "description": "Una racha de victorias te devuelve el aire de campeón.",
+    "title": "{org} se prendió arriba",
+    "description": "Cinco jornadas seguidas ganando y la tabla se dio vuelta. En el vestuario nadie lo dice para no romperlo, pero todos lo están pensando.",
     "weight": 5,
     "cooldown": 4,
     "contexto": {
-      "etapa": [
-        "debut",
-        "profesional"
-      ]
+      "etapa": ["debut", "profesional"],
+      "nivel": ["tier2", "tier1"],
+      "momentum": ["racha", "estable"]
     },
     "conditions": [
-      {
-        "field": "player.splitCount",
-        "op": "gt",
-        "value": 5
-      }
+      { "field": "player.splitCount", "op": "gt", "value": 5 }
     ],
     "options": [
       {
         "id": "jugar_para_ganar",
-        "label": "Jugar a matar, sin guardarte nada",
+        "label": "Ir a matar y que se rompa lo que se rompa",
+        "descripcion": "Jugás cada partida como si fuera la final. Si la racha aguanta te ponés en otro lugar; si se corta, te la comés vos.",
         "weight": 6,
         "outcomes": [
           {
             "weight": 7,
+            "texto": "La racha aguanta y encima la estirás. Terminás la fase regular con una línea que el año que viene alguien va a citar.",
             "effects": [
-              {
-                "type": "push",
-                "path": "career.hitos",
-                "values": [
-                  "Racha de 9-1 en la regular",
-                  "MVP de la jornada dos semanas seguidas",
-                  "Remontada de 0-2 en una serie"
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": 2,
-                "max": 5,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 3,
-                "max": 8,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "push", "path": "career.hitos", "values": ["Racha histórica en fase regular", "Cinco jornadas invicto como titular", "El split en que nadie los pudo parar"] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 8, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
+            "texto": "La racha se corta en la peor jornada posible y quedaste vos como el que forzó la jugada. Nadie te lo dice de frente.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -2,
-                "max": 1,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 1, "clamp": [0, 100] }
             ]
           }
         ]
       },
       {
         "id": "jugar_conservador",
-        "label": "Jugar conservador para no arriesgar la racha",
+        "label": "Bajar un cambio y cuidar la clasificación",
+        "descripcion": "Jugás a no perder. Menos ruido, menos riesgo, y la sensación de haber dejado algo sobre la mesa.",
         "weight": 4,
         "outcomes": [
           {
             "weight": 5,
+            "texto": "Cerrás la fase sin sobresaltos. No hubo épica y tampoco hubo desastre: llegaron enteros, que era el plan.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": 3,
-                "max": 6,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
+            "texto": "Jugando tranquilos ganan igual, y de paso te sale una jornada en la que hiciste todo bien sin arriesgar nada. Es la clase de split que te consolida.",
             "effects": [
-              {
-                "type": "push",
-                "path": "career.hitos",
-                "values": [
-                  "Clasificación cómoda a playoffs",
-                  "Cierre de regular en zona alta",
-                  "Serie ganada sin sobresaltos"
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": 1,
-                "max": 3,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "push", "path": "career.hitos", "values": ["Split sólido sin una sola jornada floja", "Clasificación cómoda como titular"] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           }
         ]
@@ -127,124 +67,61 @@
   {
     "id": "international_trip",
     "category": "competicion",
-    "title": "Viaje internacional",
-    "description": "Te suben a un torneo grande y el contexto cambia por completo.",
+    "title": "Se viaja",
+    "description": "{org} clasificó y hay que hacer las valijas. Es la primera vez que vas a jugar contra gente que solo viste en VODs.",
     "weight": 6,
     "cooldown": 4,
     "contexto": {
-      "etapa": [
-        "debut",
-        "profesional"
-      ]
+      "etapa": ["debut", "profesional"],
+      "nivel": ["tier1"]
     },
     "conditions": [
-      {
-        "field": "player.splitCount",
-        "op": "gt",
-        "value": 4
-      }
+      { "field": "player.splitCount", "op": "gt", "value": 4 }
     ],
     "options": [
       {
         "id": "aprovechar_la_exposicion",
-        "label": "Aprovechar la exposición",
+        "label": "Aprovechar que te están mirando",
+        "descripcion": "Entrevistas, contenido, redes. Es la ventana más grande que vas a tener en el año, y come horas de preparación.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
+            "texto": "Das tres entrevistas y una sale bien de verdad. Gente de otras regiones aprende tu nombre esa semana.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 4,
-                "max": 7,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.adaptabilidad",
-                "min": 1,
-                "max": 2,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.hype", "min": 4, "max": 7, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 1, "max": 2, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
+            "texto": "Un clip tuyo del media day se vuelve viral y te comés dos días de agenda que iban a ser de scrim. Valió, aunque el coach no opine igual.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 7,
-                "max": 10,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -2,
-                "max": 0,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.hype", "min": 7, "max": 10, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
           }
         ]
       },
       {
         "id": "enfocarse_solo_en_el_juego",
-        "label": "Enfocarse solo en el juego",
+        "label": "Encerrarte a jugar",
+        "descripcion": "Hotel, sala de scrim, hotel. Nadie va a hablar de vos y vas a volver siendo mejor jugador.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
+            "texto": "Dos semanas scrimeando contra gente que hace cosas que vos no habías visto nunca. Volvés con el mapa distinto en la cabeza.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.adaptabilidad",
-                "min": 2,
-                "max": 4,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mecanica",
-                "min": 1,
-                "max": 2,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 2, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
+            "texto": "Te llevás una paliza en scrims durante días y en algún momento deja de doler y empieza a enseñar. Volvés distinto.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.adaptabilidad",
-                "min": 3,
-                "max": 5,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 3, "max": 5, "clamp": [0, 100] }
             ]
           }
         ]
@@ -254,134 +131,63 @@
   {
     "id": "worlds_dream",
     "category": "competicion",
-    "title": "Sueño de Worlds",
-    "description": "Llegás a un escenario grande y el objetivo de toda la carrera parece posible.",
+    "title": "Esto es Worlds",
+    "description": "Salís al escenario y el estadio no se parece a nada que hayas jugado. Toda la carrera apuntaba acá y ahora hay que jugar igual que siempre.",
     "weight": 4,
-    "cooldown": 6,
+    "cooldown": 4,
     "contexto": {
-      "etapa": [
-        "debut",
-        "profesional"
-      ]
+      "etapa": ["debut", "profesional"],
+      "nivel": ["tier1"]
     },
     "conditions": [
-      {
-        "field": "player.splitCount",
-        "op": "gt",
-        "value": 6
-      }
+      { "field": "player.splitCount", "op": "gt", "value": 6 },
+      { "field": "career.internacionales", "op": "gte", "value": 1 }
     ],
     "options": [
       {
         "id": "jugar_relajado",
-        "label": "Jugar relajado, disfrutar el momento",
+        "label": "Soltarlo y disfrutarlo",
+        "descripcion": "Te sacás la mochila y jugás como en tu pieza. Es lo que te va a dejar el mejor recuerdo, no necesariamente el mejor resultado.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
+            "texto": "Jugás sueltísimo y se te nota en la cara. No pasan de la fase que tenían que pasar, pero volvés con la certeza de que pertenecés.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 3,
-                "max": 6,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": 2,
-                "max": 4,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
+            "texto": "Te sale la jugada del torneo en el peor momento posible para el rival. La repiten todo el año.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 5,
-                "max": 8,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.hype", "min": 5, "max": 8, "clamp": [0, 100] }
             ]
           }
         ]
       },
       {
         "id": "presionar_al_maximo",
-        "label": "Presionar al máximo por el resultado",
+        "label": "Apretar por el resultado",
+        "descripcion": "Dormís cinco horas, mirás VODs hasta que se te cierran los ojos y exigís lo mismo al resto. Se puede ganar así, y se paga.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
+            "texto": "Llegan más lejos de lo que nadie los daba, y vos leíste el torneo mejor que nunca. También terminaste vacío.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 5,
-                "max": 8,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.macro",
-                "min": 1,
-                "max": 3,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -3,
-                "max": -1,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.hype", "min": 5, "max": 8, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
+            "texto": "Los exprimís a todos, incluido vos. El torneo termina, la gente habla de la campaña, y vos tardás meses en volver a tener ganas de abrir el cliente.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 8,
-                "max": 12,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -6,
-                "max": -3,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.hype", "min": 8, "max": 12, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -3, "clamp": [0, 100] }
             ]
           }
         ]

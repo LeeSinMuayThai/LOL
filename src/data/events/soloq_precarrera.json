@@ -2,104 +2,60 @@
   {
     "id": "scout_call",
     "category": "soloq_precarrera",
-    "title": "Llamado de un scout",
-    "description": "Un scout te sigue de cerca después de una semana sólida.",
+    "title": "Te escribió un scout",
+    "description": "Un tipo que dice trabajar para una org te manda un DM. Mira la ladder todos los días y tu nombre le viene apareciendo.",
     "weight": 10,
     "cooldown": 3,
+    "contexto": {
+      "etapa": ["amateur"],
+      "ladder": ["apice", "elite"],
+      "edadMax": 18
+    },
     "conditions": [],
     "options": [
       {
         "id": "responder_dms",
-        "label": "Responderle y venderte bien",
+        "label": "Contestarle y venderte bien",
+        "descripcion": "Le pasás tu op.gg, le contás tu horario, le decís que estás listo. Te vas a exponer, y si después bajás de nivel lo va a ver.",
         "weight": 6,
         "outcomes": [
           {
             "weight": 7,
+            "texto": "Charlan una hora. No te promete nada, pero te pide que le avises cuando llegues más arriba. Esa noche no dormís pensando en la conversación.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 4,
-                "max": 9,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -3,
-                "max": -1,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.hype", "min": 4, "max": 9, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
+            "texto": "Le cae bien tu forma de hablar del juego y te mete en un grupo con otros prospectos. De golpe hay gente que sabe quién sos, y eso pesa en las dos direcciones.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 9,
-                "max": 14,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -6,
-                "max": -3,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.hype", "min": 9, "max": 14, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -3, "clamp": [0, 100] }
             ]
           }
         ]
       },
       {
         "id": "ignorar_y_seguir_grindeando",
-        "label": "Ignorarlo y seguir grindeando soloQ",
+        "label": "Dejarlo en visto y seguir jugando",
+        "descripcion": "Si de verdad te quieren, van a volver. Lo único que te hace subir es la próxima partida.",
         "weight": 4,
         "outcomes": [
           {
             "weight": 8,
+            "texto": "No contestás. Metés una sesión larga con la cabeza limpia y se te nota en el LP.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 1,
-                "max": 3,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "ladder",
-                "path": "player.ranked",
-                "min": 10,
-                "max": 25
-              }
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": 10, "max": 25 }
             ]
           },
           {
             "weight": 2,
+            "texto": "El mensaje sin abrir te queda picando y jugás enojado toda la semana. Sale bien: no perdiste una.",
             "effects": [
-              {
-                "type": "ladder",
-                "path": "player.ranked",
-                "min": 25,
-                "max": 45
-              }
+              { "type": "ladder", "path": "player.ranked", "min": 25, "max": 45 }
             ]
           }
         ]
@@ -109,105 +65,58 @@
   {
     "id": "family_pressure",
     "category": "soloq_precarrera",
-    "title": "Presión familiar",
-    "description": "Tus viejos quieren que priorices los estudios y no solo el ranked.",
+    "title": "La charla del comedor",
+    "description": "Te sientan a la mesa un martes cualquiera. No hay gritos: es peor, es la conversación tranquila de los que ya lo pensaron.",
     "weight": 8,
     "cooldown": 3,
     "contexto": {
+      "etapa": ["amateur"],
       "edadMax": 17
     },
     "conditions": [],
     "options": [
       {
         "id": "priorizar_el_ranked",
-        "label": "Priorizar el ranked igual",
+        "label": "Decirles la verdad: el ranked va primero",
+        "descripcion": "Se lo bancás de frente. Vas a perder crédito en casa, pero deja de haber una mentira que sostener.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
+            "texto": "Tu vieja se queda callada un rato largo y después dice \"bueno\". No es permiso: es que no sabe qué contestarte. La semana siguiente hay menos preguntas y más silencio.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.familyTrust",
-                "min": -9,
-                "max": -6,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.studies",
-                "min": 1,
-                "max": 3,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.familyTrust", "min": -9, "max": -6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.studies", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
+            "texto": "Sale peor de lo que esperabas. Se levantan de la mesa antes de terminar y el tema queda abierto, que es la peor forma de que quede.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.familyTrust",
-                "min": -13,
-                "max": -9,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.familyTrust", "min": -13, "max": -9, "clamp": [0, 100] }
             ]
           }
         ]
       },
       {
         "id": "bajarle_un_cambio",
-        "label": "Bajarle un cambio y estudiar más",
+        "label": "Aflojar un par de semanas",
+        "descripcion": "Les mostrás que podés ordenarte. Comprás paz y algo de boletín, y pagás en LP.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 8,
+            "texto": "Dos semanas de portarte bien y en casa se relajan. Vos también, aunque no lo quieras admitir.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.familyTrust",
-                "min": -3,
-                "max": -1,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.studies",
-                "min": 3,
-                "max": 6,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.familyTrust", "min": -3, "max": -1, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.studies", "min": 3, "max": 6, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 2,
+            "texto": "Te enganchás estudiando y levantás dos materias que dabas por perdidas. En casa te miran distinto por primera vez en meses.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.studies",
-                "min": 5,
-                "max": 8,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.studies", "min": 5, "max": 8, "clamp": [0, 100] }
             ]
           }
         ]
@@ -217,116 +126,61 @@
   {
     "id": "ranked_streak",
     "category": "soloq_precarrera",
-    "title": "Racha de ranked",
-    "description": "El sistema te da una noche de LP y un poco de ego.",
-    "weight": 10,
-    "cooldown": 2,
+    "title": "La racha",
+    "description": "Seis seguidas. El matchmaking te está regalando la noche y lo sabés: estas ventanas no se abren seguido.",
+    "weight": 8,
+    "cooldown": 3,
+    "contexto": {
+      "etapa": ["amateur"],
+      "ladder": ["medio", "alto", "apice"]
+    },
     "conditions": [],
     "options": [
       {
         "id": "motear_hasta_la_madrugada",
-        "label": "Motear sin parar hasta la madrugada",
+        "label": "Estirarla hasta que se corte",
+        "descripcion": "Mientras siga ganando, sigo. Es la forma más rápida de subir y la más rápida de fundirte.",
         "weight": 6,
         "outcomes": [
           {
             "weight": 7,
+            "texto": "Cortás a las cuatro y media con el pecho ardiendo. Valió cada partida, y mañana lo vas a pagar.",
             "effects": [
-              {
-                "type": "ladder",
-                "path": "player.ranked",
-                "min": 30,
-                "max": 60
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 2,
-                "max": 5,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -3,
-                "max": -1,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "ladder", "path": "player.ranked", "min": 30, "max": 60 },
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
+            "texto": "La racha aguanta más de lo que cualquiera aguantaría. Terminás con la vista quemada y sin acordarte de las últimas tres partidas.",
             "effects": [
-              {
-                "type": "ladder",
-                "path": "player.ranked",
-                "min": 45,
-                "max": 75
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -6,
-                "max": -3,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "ladder", "path": "player.ranked", "min": 45, "max": 75 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -3, "clamp": [0, 100] }
             ]
           }
         ]
       },
       {
         "id": "cortar_a_horario",
-        "label": "Cortar la sesión a horario",
+        "label": "Cerrar en verde y apagar",
+        "descripcion": "Guardás la racha en el bolsillo. Menos LP hoy, cabeza entera mañana.",
         "weight": 4,
         "outcomes": [
           {
             "weight": 6,
+            "texto": "Apagás con el ratio arriba. Es la clase de decisión que nadie te aplaude y que a los tres meses se nota.",
             "effects": [
-              {
-                "type": "ladder",
-                "path": "player.ranked",
-                "min": 15,
-                "max": 30
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": 1,
-                "max": 3,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "ladder", "path": "player.ranked", "min": 15, "max": 30 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
+            "texto": "Te levantás para apagar y te quedan dos en cola. Las ganás las dos y ahí sí cerrás, con la sensación de haberla sabido leer.",
             "effects": [
-              {
-                "type": "ladder",
-                "path": "player.ranked",
-                "min": 25,
-                "max": 40
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 1,
-                "max": 2,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "ladder", "path": "player.ranked", "min": 25, "max": 40 },
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 2, "clamp": [0, 100] }
             ]
           }
         ]

@@ -1,8 +1,9 @@
 import { gauss, roll, chance, weightedPick } from '../core/rng.js';
 import { BALANCE } from '../data/balance.js';
 import { crearLog } from '../core/log.js';
+import { deltaCorto, entero, lista } from '../core/formato.js';
 import { clamp, clampStat } from '../core/numeros.js';
-import { aplicarLPAlEstado, etiquetaDeRanked, servidorDeLaPartida, rangoAproximado, esApice } from '../core/ranked.js';
+import { aplicarLPAlEstado, etiquetaDeRanked, servidorDeLaPartida, rangoAproximado, esApice, bandaDeLadder } from '../core/ranked.js';
 import { multiplicadorDeMeta } from '../core/ajusteMeta.js';
 import { registrarEnHistorial } from '../core/contexto.js';
 import { ofrecerRutinas, rutinaPorId, elegirRutinaAutomatica } from '../core/rutinas.js';
@@ -218,13 +219,28 @@ function aplicarReparto(state, reparto, extra, rng) {
   );
   const servidor = servidorDeLaPartida(conEscalera);
 
-  logs.push(crearLog(
-    'amateur',
-    `Semana repartida (${reparto.ranked} ranked / ${reparto.estudiar} colegio / ${reparto.dormir} dormir / ${reparto.familia} familia${extra > 0 ? ` + ${extra} robados al sueño` : ''}): `
-    + `${lpGanado >= 0 ? '+' : ''}${lpGanado} LP → ${etiquetaDeRanked(conEscalera.player.ranked, servidor)}, `
-    + `${Math.round(player.studies - state.player.studies)} estudios, `
-    + `${Math.round(player.sleep - state.player.sleep)} sueño, ${Math.round(player.familyTrust - state.player.familyTrust)} confianza.`
-  ));
+  // El pie del periodo: primero donde quedaste en la escalera (que es lo que te
+  // importa) y despues que costo. Los deltas van todos con signo — antes los
+  // negativos lo tenian y los positivos no, y se leia como una errata.
+  const cuerpo = `${deltaCorto(lpGanado)} LP → ${etiquetaDeRanked(conEscalera.player.ranked, servidor)}.`;
+  const costos = lista([
+    `${reparto.ranked} bloques al ranked`,
+    reparto.estudiar > 0 ? `${reparto.estudiar} al colegio` : null,
+    reparto.dormir > 0 ? `${reparto.dormir} a dormir` : null,
+    reparto.familia > 0 ? `${reparto.familia} a la familia` : null,
+    extra > 0 ? `${extra} robados al sueño` : null
+  ]);
+  const efectos = lista([
+    `estudios ${deltaCorto(player.studies - state.player.studies)}`,
+    `sueño ${deltaCorto(player.sleep - state.player.sleep)}`,
+    `confianza ${deltaCorto(player.familyTrust - state.player.familyTrust)}`
+  ]);
+
+  logs.push(crearLog('amateur', `${costos}. ${cuerpo} (${efectos})`, {
+    titulo: 'La semana',
+    cuerpo: `${costos}. ${cuerpo}`,
+    efectos
+  }));
 
   if (deudaSueno >= a.robosParaDeuda && state.player.deudaSueno < a.robosParaDeuda) {
     logs.push(crearLog('amateur', 'Entraste en deuda de sueño: te cuesta encontrar la ventana, y el LP lo nota.'));
@@ -310,18 +326,20 @@ export function nivelDeInteres(state) {
   const servidor = servidorDeLaPartida(state);
   const { ranked } = state.player;
 
-  if (!esApice(ranked)) {
+  // La altura pura la resuelve `bandaDeLadder`, que es la misma que gatea el
+  // contenido. Acá solo se le suma la condición de edad, que es propia del
+  // scouting: el mismo puesto a los 16 y a los 22 no vale lo mismo.
+  const banda = bandaDeLadder(ranked, servidor);
+
+  if (banda === 'apice') {
+    return 'apice';
+  }
+  if (banda !== 'elite') {
     return null;
   }
 
   const puesto = rangoAproximado(ranked, servidor);
-  if (puesto !== null && puesto <= a.puestoParaOrgGrande && state.age <= a.edadParaOrgGrande) {
-    return 'elite';
-  }
-  if (puesto !== null) {
-    return 'challenger';
-  }
-  return 'apice';
+  return puesto <= a.puestoParaOrgGrande && state.age <= a.edadParaOrgGrande ? 'elite' : 'challenger';
 }
 
 function probabilidadDeScouting(state) {

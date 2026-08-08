@@ -88,6 +88,19 @@
         border-radius: 10px;
         margin-bottom: 8px;
         border-left: 3px solid #44d48d;
+        line-height: 1.5;
+      }
+      .log-titulo {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #8ea3c7;
+        margin-bottom: 4px;
+      }
+      .log-efectos {
+        margin-top: 6px;
+        font-size: 12px;
+        color: #8ea3c7;
       }
       .meta-pill {
         display: inline-block;
@@ -230,30 +243,34 @@
 
       async function cargarModulos() {
         if (!modulos) {
-          const [{ mulberry32 }, { createInitialState }, pipeline, { BALANCE }, { etiquetaRol }, ranked, { describirContexto }] = await Promise.all([
+          const [{ mulberry32 }, { createInitialState }, pipeline, { BALANCE }, { etiquetaRol }, ranked, { describirContexto }, formato] = await Promise.all([
             import('./src/core/rng.js'),
             import('./src/core/state.js'),
             import('./src/core/pipeline.js'),
             import('./src/data/balance.js'),
             import('./src/data/roles.js'),
             import('./src/core/ranked.js'),
-            import('./src/core/contexto.js')
+            import('./src/core/contexto.js'),
+            import('./src/core/formato.js')
           ]);
-          modulos = { mulberry32, createInitialState, pipeline, BALANCE, etiquetaRol, ranked, describirContexto };
+          modulos = { mulberry32, createInitialState, pipeline, BALANCE, etiquetaRol, ranked, describirContexto, formato };
         }
         return modulos;
       }
 
       function renderStats(state) {
+        // Los stats viven como float adentro del estado a proposito (redondear en
+        // cada split moveria el balance). Se redondean ACA, al pintarlos.
+        const { entero } = modulos.formato;
         const pool = state.player.championPool.map((campeon) => campeon.name).join(', ');
         identidad.textContent =
           `${state.player.name} · ${modulos.etiquetaRol(state.player.role)} · ${state.mundo.ligaOrigen} (${state.mundo.regionOrigen}) · pool: ${pool}`;
         edad.textContent = state.age;
-        mec.textContent = state.player.stats.mecanica;
-        ment.textContent = state.player.stats.mentalidad;
-        stud.textContent = state.player.studies;
-        trust.textContent = state.player.familyTrust;
-        sleep.textContent = state.player.sleep;
+        mec.textContent = entero(state.player.stats.mecanica);
+        ment.textContent = entero(state.player.stats.mentalidad);
+        stud.textContent = entero(state.player.studies);
+        trust.textContent = entero(state.player.familyTrust);
+        sleep.textContent = entero(state.player.sleep);
         elo.style.fontSize = '15px';
         elo.textContent = modulos.ranked.etiquetaDeRanked(state.player.ranked, modulos.ranked.servidorDeLaPartida(state));
         fase.style.fontSize = '15px';
@@ -262,9 +279,38 @@
           : (FASE_LABEL[state.phase] ?? state.phase);
       }
 
+      // Una entrada con `cuerpo` es un resultado narrativo: lo que pasó va en
+      // grande y los efectos abajo, chicos. Sin esa jerarquía el feed es una
+      // lista de diffs y no se lee.
       function renderLogs(state) {
         const recientes = state.logs.slice(-8).reverse();
-        logList.innerHTML = recientes.map((entry) => `<div class="log-item">${entry.message}</div>`).join('');
+        logList.replaceChildren(...recientes.map((entry) => {
+          const item = document.createElement('div');
+          item.className = 'log-item';
+
+          if (!entry.cuerpo) {
+            item.textContent = entry.message;
+            return item;
+          }
+
+          const titulo = document.createElement('div');
+          titulo.className = 'log-titulo';
+          titulo.textContent = entry.titulo ?? '';
+          item.appendChild(titulo);
+
+          const cuerpo = document.createElement('div');
+          cuerpo.textContent = entry.cuerpo;
+          item.appendChild(cuerpo);
+
+          if (entry.efectos) {
+            const efectos = document.createElement('div');
+            efectos.className = 'log-efectos';
+            efectos.textContent = entry.efectos;
+            item.appendChild(efectos);
+          }
+
+          return item;
+        }));
       }
 
       function renderResumenFinal(state) {

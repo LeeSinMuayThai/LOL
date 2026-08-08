@@ -1,5 +1,6 @@
 import { gauss, chance } from '../core/rng.js';
 import { crearLog } from '../core/log.js';
+import { deltaCorto, entero } from '../core/formato.js';
 import { clamp, clampStat } from '../core/numeros.js';
 import { nivelDeCurva, techoDeCarrera } from '../core/curvas.js';
 import { BALANCE } from '../data/balance.js';
@@ -95,7 +96,7 @@ export function aplicar(state, rng) {
   const mentalidad = clampStat(conAcumulados.mentalidad - desgasteDeMentalidad({ ...state, player: { ...state.player, sleep } }, rng));
 
   const stats = { ...conAcumulados, mentalidad };
-  const deltaMecanica = Math.round(stats.mecanica - state.player.stats.mecanica);
+  const deltaMecanica = stats.mecanica - state.player.stats.mecanica;
 
   const nextState = {
     ...state,
@@ -111,8 +112,8 @@ export function aplicar(state, rng) {
 
   const logs = [crearLog(
     'split',
-    `Split ${state.career.currentSplit}: mecánica ${deltaMecanica >= 0 ? '+' : ''}${deltaMecanica}, `
-    + `macro ${Math.round(stats.macro)}, mentalidad ${Math.round(mentalidad)}.`
+    `Split ${state.career.currentSplit}: mecánica ${deltaCorto(deltaMecanica)}, `
+    + `macro ${entero(stats.macro)}, mentalidad ${entero(mentalidad)}.`
   )];
 
   // La mentalidad en cero es el fin de la carrera, pero el borde no es un

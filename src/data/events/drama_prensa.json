@@ -2,124 +2,61 @@
   {
     "id": "team_drama",
     "category": "drama_prensa",
-    "title": "Drama de vestuario",
-    "description": "Un compañero se pelea con el staff y el ambiente se vuelve tóxico.",
+    "title": "Se pudrió el vestuario",
+    "description": "{jungla} se agarró con el staff en pleno review y se fue dando un portazo. El grupo de {org} lleva dos días sin que nadie escriba.",
     "weight": 8,
     "cooldown": 3,
     "contexto": {
-      "etapa": [
-        "debut",
-        "profesional"
-      ]
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
     },
     "conditions": [
-      {
-        "field": "player.splitCount",
-        "op": "gt",
-        "value": 2
-      }
+      { "field": "player.splitCount", "op": "gt", "value": 2 }
     ],
     "options": [
       {
         "id": "meterse_en_el_conflicto",
-        "label": "Meterse en el conflicto",
+        "label": "Meterte y poner la cara",
+        "descripcion": "Alguien tiene que hablar. Ganás peso en el vestuario si sale bien, y quedás pegado si sale mal.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
+            "texto": "Terminás siendo el que trasmite mensajes entre dos lados que no se hablan. Se arregla a medias y te llevaste todo el desgaste.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -8,
-                "max": -5,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": -4,
-                "max": -2,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -8, "max": -5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": -4, "max": -2, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
+            "texto": "Decís en voz alta lo que todos pensaban y el aire se limpia. {jungla} vuelve al día siguiente y el staff toma nota de quién sostuvo el grupo.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -4,
-                "max": -2,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 1,
-                "max": 3,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           }
         ]
       },
       {
         "id": "mantenerse_al_margen",
-        "label": "Mantenerse al margen",
+        "label": "No meterte y jugar tus scrims",
+        "descripcion": "No es tu quilombo. Te ahorrás el desgaste, pero el grupo registra quién se hizo el distraído.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
+            "texto": "Cumplís tu horario, jugás tus scrims y te vas. Se arregla solo, más o menos, y nadie te agradece nada.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -3,
-                "max": -1,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
+            "texto": "Se estira dos semanas más y las scrims son un velorio. Al final alguien comenta que vos ni te enteraste, y no lo dice como un elogio.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -5,
-                "max": -3,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": -2,
-                "max": -1,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": -2, "max": -1, "clamp": [0, 100] }
             ]
           }
         ]
@@ -129,112 +66,60 @@
   {
     "id": "media_meme",
     "category": "drama_prensa",
-    "title": "Meme de la prensa",
-    "description": "Un gesto de la partida se vuelve viral y te pone en la mira de todos.",
+    "title": "Te hicieron un meme",
+    "description": "Un emote tuyo después de una muerte tonta se recorta y se vuelve una plantilla. En dos días lo usa gente que no sabe quién sos.",
     "weight": 7,
     "cooldown": 2,
-    "conditions": [],
+    "contexto": {
+      "nivel": ["tier2", "tier1"]
+    },
+    "conditions": [
+      { "field": "player.stats.hype", "op": "gte", "value": 45 }
+    ],
     "options": [
       {
         "id": "subirse_a_la_ola",
-        "label": "Subirse a la ola",
+        "label": "Subirte a la ola",
+        "descripcion": "Lo reposteás, te reís de vos mismo y le sacás el jugo. Fama gratis, con el costo de convertirte en el chiste.",
         "weight": 6,
         "outcomes": [
           {
             "weight": 7,
+            "texto": "Contestás con el meme puesto de foto de perfil y la gente te adopta. Ahora te conocen por eso, que no es exactamente lo que querías.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 6,
-                "max": 10,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -3,
-                "max": -1,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.hype", "min": 6, "max": 10, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
+            "texto": "Se te va de las manos: sale en el pre-show de la jornada y el caster lo usa dos veces. Tenés más alcance que {org} y el community manager te escribe pidiendo coordinar.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 10,
-                "max": 16,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -6,
-                "max": -3,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.hype", "min": 10, "max": 16, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -3, "clamp": [0, 100] }
             ]
           }
         ]
       },
       {
         "id": "ignorar_el_ruido",
-        "label": "Ignorar el ruido",
+        "label": "Ni mirarlo",
+        "descripcion": "Cerrás Twitter una semana. El meme muere solo, y con él la oportunidad.",
         "weight": 4,
         "outcomes": [
           {
             "weight": 8,
+            "texto": "Una semana sin abrir nada y el asunto se muere solo. Quedó el rastro justo para que alguien lo recuerde y nada más.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 1,
-                "max": 3,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 2,
+            "texto": "Que no contestes le gusta a una parte de la gente. \"Este está para jugar\", escriben. No es el hype que buscabas, pero es el que dura.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 3,
-                "max": 5,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": 1,
-                "max": 2,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
             ]
           }
         ]
@@ -244,118 +129,61 @@
   {
     "id": "old_rival",
     "category": "drama_prensa",
-    "title": "Reencuentro con un rival",
-    "description": "Tu rival de generación aparece otra vez y el matchup vuelve a ser noticia.",
+    "title": "Otra vez {rival} enfrente",
+    "description": "{rival} debutó tu mismo año y el cruce ya tiene historia. La prensa lo pone en la portada de la jornada antes de que se juegue.",
     "weight": 6,
     "cooldown": 4,
+    "contexto": {
+      "etapa": ["debut", "profesional"],
+      "nivel": ["tier2", "tier1"]
+    },
     "conditions": [
-      {
-        "field": "player.splitCount",
-        "op": "gt",
-        "value": 3
-      }
+      { "field": "player.splitCount", "op": "gt", "value": 3 }
     ],
     "options": [
       {
         "id": "picarse_publicamente",
-        "label": "Picarse públicamente",
+        "label": "Picarte en público",
+        "descripcion": "Le contestás con nombre y apellido. Se habla del partido toda la semana y ahora tenés que ganarlo.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
+            "texto": "Tu respuesta se cita en todos lados y la jornada se vende sola. Te bancás la presión mejor de lo que esperabas.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 4,
-                "max": 8,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -2,
-                "max": 0,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.hype", "min": 4, "max": 8, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
+            "texto": "Nadie le da bola a lo que dijiste y encima quedás como el que necesitaba hacer ruido. La semana se te hace larga.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 1,
-                "max": 2,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -4,
-                "max": -2,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 2, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
             ]
           }
         ]
       },
       {
         "id": "responder_con_el_nivel",
-        "label": "Responder solo con el nivel de juego",
+        "label": "No decir nada y prepararlo",
+        "descripcion": "Te encerrás a mirar VODs del matchup. Sin ruido, sin promesas: solo el partido.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
+            "texto": "Llegás con el matchup estudiado hasta las runas y se nota desde el minuto uno. Los que saben lo vieron.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 2,
-                "max": 4,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mecanica",
-                "min": 1,
-                "max": 3,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
+            "texto": "Preparás el matchup y no pasa gran cosa: sale un partido parejo y aburrido. Quedaste bien parado y nada más.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 1,
-                "max": 2,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 2, "clamp": [0, 100] }
             ]
           }
         ]
@@ -365,124 +193,60 @@
   {
     "id": "transfer_rumor",
     "category": "drama_prensa",
-    "title": "Rumor de transferencia",
-    "description": "La prensa te pega como pieza de cambio y el mercado empieza a hablar.",
+    "title": "Suena tu nombre en el mercado",
+    "description": "Un periodista tira que {org} te escucharía ofertas. No sabés si es humo o si te lo están avisando por elevación.",
     "weight": 6,
     "cooldown": 4,
     "contexto": {
-      "etapa": [
-        "debut",
-        "profesional"
-      ]
+      "etapa": ["debut", "profesional"]
     },
     "conditions": [
-      {
-        "field": "player.splitCount",
-        "op": "gt",
-        "value": 4
-      }
+      { "field": "player.splitCount", "op": "gt", "value": 4 }
     ],
     "options": [
       {
         "id": "alimentar_el_rumor",
-        "label": "Alimentar el rumor",
+        "label": "Dejar que corra",
+        "descripcion": "No lo desmentís. El mercado empieza a mirarte y adentro del club se dan cuenta de que lo estás usando.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
+            "texto": "El silencio hace más ruido que cualquier declaración. Aparecen dos nombres más en la nota y en el club empiezan a preguntar.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 4,
-                "max": 7,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -4,
-                "max": -2,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.hype", "min": 4, "max": 7, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
+            "texto": "Se te va de las manos: para el viernes te dan por vendido y hasta te ponen equipo. Jugás la jornada con medio vestuario mirándote de reojo.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 7,
-                "max": 10,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -6,
-                "max": -4,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.hype", "min": 7, "max": 10, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -4, "clamp": [0, 100] }
             ]
           }
         ]
       },
       {
         "id": "desmentirlo_rapido",
-        "label": "Desmentirlo rápido",
+        "label": "Cortarlo de una",
+        "descripcion": "Salís a decir que estás bien donde estás. Ordena el vestuario y cierra una puerta que quizás querías abierta.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
+            "texto": "Un tuit corto y el tema muere el mismo día. Adentro te lo agradecen sin decírtelo.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -1,
-                "max": 1,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
+            "texto": "Lo desmentís y quedás como el que se pone la camiseta. Sirve para la imagen; el que iba a llamar no llamó.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 1,
-                "max": 2,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -2,
-                "max": 0,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 2, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
           }
         ]

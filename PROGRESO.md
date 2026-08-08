@@ -24,6 +24,95 @@ y DECLIVE (§2), y contenido de eventos (20 de los ~200 que pide §8).
 
 ## Changelog
 
+### 2026-08-08 — Fase 0: higiene. El juego deja de verse roto
+
+Primera fase del plan maestro nuevo. El usuario reportó cuatro cosas y las cuatro resultaron ser
+defectos localizables, no percepción. Se midieron 400 carreras antes de tocar nada.
+
+| Reportado | Causa medida |
+|---|---|
+| `62.12317247563275` tapando la pantalla | `clampStat` clampea pero **no redondea**; `index.html` y `edadCierre.js` imprimían el float crudo |
+| "meme de prensa en Oro 4", "scout en Platino 3" | **8 de 20 eventos no declaraban `contexto`**, y eran los de mayor peso: los 4 sin gatear se llevaban el **39% de todos los disparos** |
+| "oraciones sin sentido" | Los `outcomes` no tenían texto: elegías y te devolvía `"Hype +8, Mentalidad -1"`. Y `decisionDesdeEvento` **descartaba la `descripcion`** de la opción — 0 de 40 la tenía |
+| "apretás 4 botones" | Toda decisión tenía la misma forma: 2 opciones sin descripción y ±3 a un stat |
+
+**`src/core/formato.js`** (nuevo). Los stats siguen viviendo como float adentro del estado a
+propósito: redondear en cada split introduce drift y movería el balance ya calibrado. Se redondea
+**al producir texto**. `entero` · `delta` · `deltaCorto` · `lp` · `sobre100` · `porcentaje` ·
+`plata` · `lista`. De paso se arregló que los deltas negativos llevaran signo y los positivos no.
+
+**Dos ejes nuevos en el modelo de contexto** — `ladder` y `rol`. Este es el arreglo de fondo:
+el modelo tenía nueve ejes y **ninguno era la escalera**, aunque la etapa amateur entera trata de
+la escalera. Por eso la regla "un scout solo te llama si estás arriba" no se podía ni expresar.
+`bandaDeLadder(ranked, servidor)` en `ranked.js` (bajo/medio/alto/apice/elite) es puro, no consume
+RNG, y `nivelDeInteres` de `amateur.js` pasó a reusarlo en vez de duplicar el criterio.
+
+**Esquema de contenido, dos campos nuevos:**
+
+- `option.descripcion` — qué estás eligiendo y qué arriesgás, sin números. La UI **ya sabía**
+  pintarla (lo usaban las rutinas); el motor la tiraba en un `map`.
+- `outcome.texto` — qué pasó. Es la mitad narrativa de la decisión y es la forma de El
+  Ídolo/Copero. El log pasó de `"Meme de la prensa — Subirse a la ola: Hype +8, Mentalidad -1."`
+  a título · elección → párrafo → efectos entre paréntesis. `crearLog` acepta un tercer argumento
+  con las partes sueltas para que la UI les dé jerarquía tipográfica.
+
+**Los 20 eventos reescritos**: 46 opciones con descripción, 92 outcomes con texto narrativo,
+tokens en uso por primera vez (`{org}`, `{jungla}`, `{rival}`, `{region}`) y los 8 sueltos
+gateados. Dos eventos eran directamente **incoherentes** y se reescribieron: `academy_offer` decía
+que firmabas un contrato y empujaba a `career.orgs` sin que pasara nada (ahora es una prueba, que
+es lo que era), y `coach_demands_role` decía que te cambiaban de rol sin cambiar `player.role`
+(ahora es el coach pidiéndote otro tipo de juego dentro de tu línea).
+
+**Dos eventos de cierre de edad para profesionales** (`balance_de_temporada`,
+`cuentas_de_la_carrera`). No estaba en el alcance de la fase, pero `edadCierre` solo tenía
+eventos amateur: **desde los 17 la "decisión grande del año" no existía**. Son además los dos
+primeros eventos del catálogo con 3 opciones (`CONCEPTO` §3 dice "2 a 4" y nunca se usaron 3 ni 4).
+
+**Marca `con_vestuario`.** En el split en que firmás, `roster` ya corrió y salió sin hacer nada,
+así que la etapa dice `debut` pero `career.companeros` está vacío. Un evento que dijera
+*"{jungla} se peleó con el staff"* imprimía la llave cruda. Ahora los tokens de compañero exigen
+la marca, y hay un check que lo verifica estáticamente.
+
+**Cinco checks nuevos (26 en total).** Los cuatro nuevos se verificaron contra el árbol de `HEAD`
+(trampa T5: un check que no falla cuando debe da falsa confianza):
+
+```
+Todo contenido declara dónde aparece                              FALLA en HEAD ✓ (8 eventos + 6 rutinas)
+Toda opción se lee antes y todo resultado se cuenta después       FALLA en HEAD ✓
+Ningún token puede quedar sin resolver donde el contenido aparece FALLA con {org}/{jungla}/{signature} inyectados ✓
+Ningún número llega al jugador con decimales                      FALLA en HEAD ✓
+```
+
+El de tokens es **análisis estático sobre el gating declarado**, sin simular: si un contenido
+puede aparecer con `etapa: amateur` o `nivel: soloq`, no puede usar `{org}`, `{liga}` ni tokens
+de compañero. Mata la clase entera de "oraciones sin sentido" de una vez.
+
+**Medido, antes → después** (400 carreras):
+
+| | antes | después |
+|---|---|---|
+| evento más visto | `ranked_streak` 2527 · top-4 sin gatear = **39%** del total | `balance_de_temporada` **8.0%**, ninguno arriba de eso |
+| eventos nunca disparados | 0 | 0 |
+| splits sin evento | 0% | **8.2%** (objetivo <25%, trampa T10) |
+| líneas de log con decimales | muchas | **0** en 200 carreras × 60 splits |
+
+`simulate.js 1500 40 todas`: 0 crashes, llega a pro 43.3% (era 40.2%; sube porque los cierres de
+edad de profesional agregan caminos de recuperación de mentalidad que antes no existían).
+`cobertura.js` pasa a decir la verdad: antes salía "sin huecos" porque los 8 eventos sin gatear
+llenaban todas las celdas por igual. Ahora las celdas amateur tienen 5-8 eventos y las de tier 1,
+13-16. **46 opciones de 150.**
+
+**Determinismo:** el paquete de formato + los ejes nuevos se verificó contra `HEAD` con una huella
+de 40 seeds (`finAnticipado:splits:soloqElo`) y salió **idéntica**: no movieron un decimal. El
+contenido sí corre el stream (trampa T1) y ninguna seed vieja reproduce su carrera; el
+determinismo intra-versión está intacto.
+
+**Sin arreglar a propósito, van en fases posteriores:** el 23% de las carreras que agotan el tope
+de 90 splits (no hay sistema de retiro — fase 6), los pesos de outcome estáticos que contradicen
+`CONCEPTO` §8 (fase 2), y que el meta se describa por arquetipo en vez de por campeón (fase 1).
+`tendinitis` dispara en el 11.5% de las carreras porque exige la marca `deuda_sueno`: es poco a
+propósito, es la consecuencia de una decisión concreta y no una tirada suelta.
+
 ### 2026-08-08 — Paso 9: rutinas narrativas en vez de la planilla de bloques
 
 Pedido del usuario: *"siento que eso de administrar los bloques hace todo muy robótico"*. Tenía

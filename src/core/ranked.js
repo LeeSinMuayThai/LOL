@@ -89,6 +89,31 @@ export function percentil(ranked) {
   return escalera[ranked.tier] ?? 0;
 }
 
+// En qué altura de la escalera estás, en el vocabulario con el que el contenido
+// se gatea. Es puro y no consume RNG.
+//
+// Existe porque sin esto no se podía EXPRESAR la regla "esto solo pasa si estás
+// arriba": el modelo de contexto tenía nueve ejes y ninguno era la ladder, que
+// es de lo que trata la etapa amateur entera. Por eso un scout te llamaba en
+// Platino y un meme de prensa te salía en Oro.
+//
+//   bajo   Hierro a Plata          — abajo de la mediana
+//   medio  Oro / Platino           — la mediana real de la ladder
+//   alto   Esmeralda / Diamante    — top 5%
+//   apice  Máster / Gran Máster    — top 1%
+//   elite  Challenger              — adentro de los cupos de tu servidor
+export function bandaDeLadder(ranked, servidor) {
+  if (esApice(ranked)) {
+    return rangoAproximado(ranked, servidor) === null ? 'apice' : 'elite';
+  }
+  const orden = tierPorId(ranked.tier)?.orden ?? 0;
+  const bandas = BALANCE.ranked.bandasDeLadder;
+  if (orden <= bandas.bajo) {
+    return 'bajo';
+  }
+  return orden <= bandas.medio ? 'medio' : 'alto';
+}
+
 // La UNICA funcion que mueve la escalera, y la unica que consume RNG (para el
 // LP con el que caes al descender de division).
 export function aplicarLP(ranked, deltaLP, servidor, rng) {

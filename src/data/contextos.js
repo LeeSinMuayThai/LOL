@@ -19,7 +19,14 @@ export const EJES = {
   // LATAM Norte quedo absorbida por LCS y LATAM Sur por CBLOL.
   region: ['KR', 'CN', 'EMEA', 'NA', 'BR', 'LATAM', 'APAC'],
   residencia: ['local', 'import', 'residente'],
-  ventana: ['pretemporada', 'regular', 'playoffs', 'internacional', 'offseason']
+  ventana: ['pretemporada', 'regular', 'playoffs', 'internacional', 'offseason'],
+  // Altura en la escalera de soloQ. Sin este eje no se podia expresar "esto
+  // solo pasa si estas arriba", y por eso un scout te llamaba en Platino: la
+  // etapa amateur entera trata de la ladder y el modelo no la miraba.
+  ladder: ['bajo', 'medio', 'alto', 'apice', 'elite'],
+  // Tu linea. El rol define que se espera de vos, que se ve de lo que hacés y
+  // que problemas tenés; sin el eje, ningun evento podia ser de un rol.
+  rol: ['top', 'jungla', 'mid', 'adc', 'support']
 };
 
 // Las marcas son booleanos enumerables que no merecen un eje propio. Se declaran
@@ -35,6 +42,11 @@ export const MARCAS = [
   'secundario_terminado',
   'signature',
   'mentalidad_al_limite',
+  // Tenés compañeros con nombre. No alcanza con ser profesional: en el split en
+  // que firmás, `roster` ya corrió y salió sin hacer nada, asi que la etapa dice
+  // 'debut' pero el vestuario todavia esta vacio. Sin esta marca, un evento que
+  // dice "{jungla} se peleó con el staff" imprime "{jungla}" en pantalla.
+  'con_vestuario',
   // Pendientes: los activan los pasos 10 a 12.
   'espera_edad_minima',
   'lesion_cronica',

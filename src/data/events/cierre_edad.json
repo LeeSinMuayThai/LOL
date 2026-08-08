@@ -2,126 +2,61 @@
   {
     "id": "balance_fin_de_ano",
     "category": "cierre_edad",
-    "cierreDeEdad": true,
-    "title": "Fin de temporada: balance",
-    "description": "Termina la edad. Tenés el receso por delante y una decisión sobre cómo lo usás.",
+    "title": "Se terminó el año",
+    "description": "Cerró la temporada y tenés el receso por delante. Es la única ventana del año en la que podés elegir qué clase de jugador querés ser en el que viene.",
     "weight": 5,
-    "cooldown": 5,
+    "cooldown": 0,
     "contexto": {
-      "etapa": [
-        "amateur"
-      ]
+      "etapa": ["amateur"]
     },
     "conditions": [],
+    "cierreDeEdad": true,
     "options": [
       {
         "id": "aprovechar_el_receso",
-        "label": "Aprovechar el receso para descansar de verdad",
+        "label": "Parar en serio: dormir y no tocar el cliente",
+        "descripcion": "Dos semanas sin abrir el juego. Volvés con cabeza y perdés el ritmo que te costó todo el año construir.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
+            "texto": "Dos semanas sin tocar el mouse. La primera te da culpa, la segunda te devuelve las ganas, y volvés queriendo jugar en vez de teniendo que jugar.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": 6,
-                "max": 10,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.sleep",
-                "min": 8,
-                "max": 14,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 6, "max": 10, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.sleep", "min": 8, "max": 14, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
+            "texto": "Descansás bien, pero volvés oxidado y las primeras partidas son un desastre. Se paga en LP lo que ganaste en cabeza.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": 3,
-                "max": 6,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "ladder",
-                "path": "player.ranked",
-                "min": -20,
-                "max": -5
-              }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": -20, "max": -5 }
             ]
           }
         ]
       },
       {
         "id": "meter_el_acelerador",
-        "label": "Meter el acelerador en el receso",
+        "label": "Usar el receso para despegarte",
+        "descripcion": "Mientras el resto descansa, vos subís. Es la forma más rápida de sacar diferencia y la más rápida de llegar quemado a febrero.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
+            "texto": "Dos semanas de cola vacía y gente jugando relajada: es el mejor momento del año para subir, y lo aprovechaste entero.",
             "effects": [
-              {
-                "type": "ladder",
-                "path": "player.ranked",
-                "min": 25,
-                "max": 45
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -6,
-                "max": -3,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "ladder", "path": "player.ranked", "min": 25, "max": 45 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
+            "texto": "Subís, sí, pero llegás al arranque del año siguiente ya cansado. Empezás la temporada con la batería que deberías tener en junio.",
             "effects": [
-              {
-                "type": "ladder",
-                "path": "player.ranked",
-                "min": 15,
-                "max": 30
-              },
-              {
-                "type": "stat",
-                "path": "player.sleep",
-                "min": -10,
-                "max": -5,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -9,
-                "max": -5,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "ladder", "path": "player.ranked", "min": 15, "max": 30 },
+              { "type": "stat", "path": "player.sleep", "min": -10, "max": -5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -9, "max": -5, "clamp": [0, 100] }
             ]
           }
         ]
@@ -131,108 +66,236 @@
   {
     "id": "revision_familiar",
     "category": "cierre_edad",
-    "cierreDeEdad": true,
-    "title": "Revisión familiar de fin de año",
-    "description": "Tu familia se sienta a mirar el año que pasó y quiere saber qué sigue.",
+    "title": "La charla de fin de año",
+    "description": "Cerró el año escolar y el de ranked. En casa se sientan a hacer las cuentas de los dos y quieren saber qué pensás hacer.",
     "weight": 5,
-    "cooldown": 5,
+    "cooldown": 0,
     "contexto": {
-      "etapa": [
-        "amateur"
-      ]
+      "etapa": ["amateur"]
     },
     "conditions": [],
+    "cierreDeEdad": true,
     "options": [
       {
         "id": "prometer_resultados",
-        "label": "Prometer resultados concretos para el año que viene",
+        "label": "Poner una fecha y un objetivo concreto",
+        "descripcion": "Te comprometés a llegar a algo antes de tal mes. Compra tiempo, y si no llegás, el que queda pagando sos vos.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
+            "texto": "Les ponés un objetivo concreto con fecha y les cierra. Por primera vez sienten que hay un plan y no un capricho.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.familyTrust",
-                "min": 8,
-                "max": 14,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.familyTrust", "min": 8, "max": 14, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
+            "texto": "Te compran el plan a medias y quedás con una fecha encima. Cada vez que perdés una partida te acordás de lo que prometiste.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.familyTrust",
-                "min": 3,
-                "max": 6,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -4,
-                "max": -2,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.familyTrust", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
             ]
           }
         ]
       },
       {
         "id": "pedir_mas_margen",
-        "label": "Pedir más margen y tiempo",
+        "label": "No prometer nada y ordenar el colegio",
+        "descripcion": "Sin fechas ni objetivos: les mostrás notas. Baja la presión en casa y también las expectativas sobre lo que hacés.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
+            "texto": "Levantás las materias que debías y el tema se corre del centro de la mesa. En casa dejan de preguntar, que es lo más parecido a un permiso que vas a conseguir.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.studies",
-                "min": 6,
-                "max": 10,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.familyTrust",
-                "min": -2,
-                "max": 0,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.studies", "min": 6, "max": 10, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.familyTrust", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
+            "texto": "No prometer nada lo leen como que ya no creés ni vos. La conversación termina peor de lo que empezó.",
             "effects": [
-              {
-                "type": "stat",
-                "path": "player.familyTrust",
-                "min": -6,
-                "max": -3,
-                "clamp": [
-                  0,
-                  100
-                ]
-              }
+              { "type": "stat", "path": "player.familyTrust", "min": -6, "max": -3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "balance_de_temporada",
+    "category": "cierre_edad",
+    "title": "El review del año",
+    "description": "Última reunión del año en {org}. Sale el VOD de las jornadas malas, se habla de lo que no funcionó, y en algún momento la mesa se queda callada esperando que hables vos.",
+    "weight": 6,
+    "contexto": {
+      "etapa": ["debut", "profesional"],
+      "nivel": ["tier2", "tier1"]
+    },
+    "conditions": [],
+    "cierreDeEdad": true,
+    "options": [
+      {
+        "id": "pedir_mas_peso",
+        "label": "Pedir que el equipo juegue más para vos",
+        "descripcion": "Decís en voz alta que podés cargar con más. Si el año que viene rendís, sos referente; si no, sos el que se creyó algo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Lo decís con datos y el staff te escucha. Salís de la reunión con más peso del que entraste, y con una vara más alta.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.shotcalling", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo planteás y el silencio dura un segundo de más. Nadie te contradice, pero el que estaba antes en ese lugar te mira distinto desde entonces.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.shotcalling", "min": 1, "max": 2, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hacerte_cargo",
+        "label": "Hacerte cargo de lo que salió mal",
+        "descripcion": "Ponés sobre la mesa tus propios errores antes de que los ponga otro. Cuesta, y compra crédito que después se cobra.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Abrís vos con tus errores y la reunión cambia de tono: dejan de buscar culpables y empiezan a hablar de cómo arreglarlo. Alguien te lo va a acordar en un año.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Te hacés cargo y el resto aprovecha para descansar ahí. La lista de cosas a corregir termina siendo casi toda tuya.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 2, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "no_decir_nada",
+        "label": "Escuchar y no abrir la boca",
+        "descripcion": "No te exponés ni te comprometés a nada. Es la opción sin costo, y también la única que no te mueve de donde estás.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 8,
+            "texto": "Asentís, tomás nota, te vas. La reunión pasa por arriba tuyo sin dejar marca, que era exactamente el plan.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 0, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 2,
+            "texto": "El coach te busca la mirada dos veces esperando que digas algo y vos no decís nada. Lo anota, aunque no te lo diga.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "cuentas_de_la_carrera",
+    "category": "cierre_edad",
+    "title": "Las cuentas",
+    "description": "Terminó otro año. A esta edad ya no se cuenta lo que falta: se cuenta lo que hay. Un rato antes de dormir hacés el balance que no le hacés a nadie.",
+    "weight": 6,
+    "contexto": {
+      "etapa": ["debut", "profesional"],
+      "edadBanda": ["pico", "tardia", "veterana"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 8 }
+    ],
+    "cierreDeEdad": true,
+    "options": [
+      {
+        "id": "ir_por_todo",
+        "label": "Este es el año: apostar todo al resultado",
+        "descripcion": "Reordenás el año entero alrededor de ganar algo. Es la única forma de que pase, y no deja nada de reserva.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Encarás el año con una claridad que no tenías a los veinte: sabés exactamente qué te falta y vas a buscarlo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Le ponés todo y el año se te va igual, sin la vuelta olímpica. Lo peor no es no ganar: es haber gastado el resto que te quedaba.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 2, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -9, "max": -5, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cuidarse",
+        "label": "Bajar las revoluciones y durar",
+        "descripcion": "Menos horas, más descanso, menos exigencia propia. Vas a rendir un poco menos y vas a seguir estando el año que viene.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Ordenás la vida alrededor de durar y no de brillar. Dormís, comés, jugás lo justo. Es la primera vez en años que llegás a diciembre entero.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 5, "max": 9, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.sleep", "min": 5, "max": 10, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Bajás un cambio y se nota en el escenario antes que en tu cuerpo. Alguien escribe que ya no sos el de antes, y en parte tiene razón.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": -5, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "empezar_a_construir_afuera",
+        "label": "Empezar a construir algo para después",
+        "descripcion": "Stream, contenido, contactos. Le sacás horas al juego para que el día que se termine no se termine todo.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Arrancás a streamear los días libres. Es poca gente al principio, pero por primera vez existe algo tuyo que no depende de que te renueven.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 4, "max": 8, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mecanica", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Le dedicás horas y no engancha con nadie. Perdiste tiempo de práctica y ganaste la certeza incómoda de que afuera hay que empezar de cero.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 0, "max": 2, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mecanica", "min": -3, "max": -1, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
           }
         ]

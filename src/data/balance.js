@@ -51,6 +51,11 @@ export const BALANCE = {
     puntosInicialesSpread: 180,
     puntosInicialesMin: 200,
 
+    // Techo de `orden` de tier para cada banda del eje `ladder` del contexto.
+    // Por encima de `medio` y sin llegar al apice: 'alto'. Los tiers apice
+    // resuelven por cupo, no por orden.
+    bandasDeLadder: { bajo: 2, medio: 4 },
+
     // Percentil de la playerbase por debajo de cada tier (distribucion real).
     percentilPorTier: {
       iron: 3, bronze: 19, silver: 41, gold: 65,
