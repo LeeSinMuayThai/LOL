@@ -91,42 +91,38 @@ La carrera debe incluir contratos, sueldos, cláusulas, imports, residencia, ada
 
 ### 4.1 Estructura de carpetas
 
+> Esta sección quedó desactualizada durante las fases 0-4 (los nombres pasaron a español
+> rioplatense y aparecieron módulos que este documento no preveía) y se corrige acá, más el
+> agregado de lo que `PLAN.md` fases 5 y 6 suman. Es un snapshot: el árbol real siempre manda
+> sobre este documento si difieren — para eso está `PLAN.md` como plan vigente.
+
 /src/core
-  rng.js
-  state.js
-  pipeline.js
-  selectors.js
-  log.js
+  rng.js · state.js · pipeline.js · selectors.js · log.js · numeros.js · formato.js
+  contexto.js · ajusteMeta.js · pool.js · presupuesto.js · plantillas.js · curvas.js
+  mundo.js · ranked.js · competicion.js · tier3.js · rutinas.js · serie.js
+  **temporada.js** (fase 5, nuevo — calendario, tabla de posiciones, fechas que importan)
+  **regimen.js** (fase 6, nuevo — tier list del meta con nombre, boost por coincidencia)
 
 /src/systems
-  attributes.js
-  champions.js
-  meta.js
-  practice.js
-  roster.js
-  performance.js
-  events.js
-  contracts.js
-  regions.js
-  rivals.js
-  scoring.js
+  contexto.js · edadInicio.js · meta.js · roster.js · competitivo.js · campeones.js
+  secundario.js · amateur.js · rendimiento.js · serie.js · events.js · atributos.js
+  practica.js · edadCierre.js · registro.js (el registro declarativo de `ETAPAS_SPLIT`)
+  **temporada.js** (fase 5, nuevo — se inserta en el registro antes de `rendimiento`)
 
 /src/data
-  balance.js
-  champions.json
-  leagues.json
-  meta-tags.js
-  /events
+  balance.js · champions.json · leagues.json · meta-tags.js · roles.js · ranked.js
+  servidores.js · contextos.js · minijuegos.json
+  **metas.json** (fase 6, nuevo — los nueve regímenes de meta)
+  /events (index.js + los JSON por categoría, incluido /rol)
+    **/partido** (fase 5, nuevo — presion.json, clasico.json, dentro_del_mapa.json,
+    postpartido.json: el contenido de las fechas marcadas de la temporada)
+  /rutinas (amateur.json, offseason.json)
 
 /src/ui
-  render.js
-  /screens
-  /components
+  — sigue vacía. Toda la UI vive en `index.html` (deuda D7, se resuelve en la fase 11).
 
 /src/dev
-  simulate.js
-  validate.js
-  guards.js
+  simulate.js · validate.js · guards.js · cobertura.js · estrategias.js
 
 ### 4.2 Pipeline
 

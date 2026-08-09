@@ -186,21 +186,31 @@ seguridad. Ninguno de los dos es el camino correcto.
 Una vez que sos pro, la partida avanza en splits. Cada split corre siempre en
 el mismo orden, y entender ese orden es entender el juego:
 
-**1. Llega el parche.** El vector del meta se mueve. Ciertos arquetipos de
-campeón suben y otros bajan.
+**1. Llega el parche.** Cada tres splits (al abrir la season) hay 60% de
+chance de que cambie el **régimen de meta** vigente — "meta de tanques",
+"meta de asesinos", "meta de hipercarry"— y a mitad de cualquier split hay 25%
+de un parche correctivo que puede virarlo de nuevo. El cambio se anuncia con
+nombre, nunca como una deriva silenciosa.
 
-**2. Se recalcula tu Ajuste al Meta.** Un número de 0 a 100 con desglose por
-campeón. Te dice, antes de jugar, si este split te toca a favor o en contra.
+**2. Se recalcula tu lugar en el meta.** Dos paneles, no un número: tu
+champion pool con sus maestrías al lado de la tier list (S/A/B/C) de tu rol
+para el régimen vigente. Si alguno de tus campeones coincide con la tier
+alta, tenés un boost — legible de un vistazo, no un promedio abstracto. La
+tier list tiene memoria: cuando cambia el régimen, el log dice los saltos que
+te tocan a vos ("tu Sylas: S → C").
 
-**3. Draft.** Acá se cruza todo: la probabilidad de que te den el campeón que
-querés depende de tu jerarquía en el equipo. Si te dan otro, jugás con menos
-maestría.
+**3. Se juega la temporada regular — pero no partido por partido.** El motor
+corre el calendario completo contra el resto de tu liga en silencio y arma
+una tabla de posiciones real. De esas 7 a 9 fechas, elige las 2 o 3 que
+tienen algo en juego —contra el puntero, un clásico contra tu ex equipo,
+la fecha que define la clasificación, la revancha— y esas sí las jugás: un
+draft corto si tu pool lo permite, un momento con 2 a 4 opciones que **mueve
+el resultado de ESE partido**, y el resultado inmediato con la tabla
+actualizada. El resto del calendario pasa resumido en una línea. La decisión
+llega antes del resultado, nunca después: es la diferencia entre apostar a un
+partido y leer su crónica.
 
-**4. Temporada regular.** El motor calcula tu rendimiento combinando
-atributos, ajuste al meta, maestría del campeón que terminaste jugando,
-sinergia del roster, jerarquía y ruido gaussiano.
-
-**5. Playoffs.** Si clasificaste, tu equipo entra a un bracket de 6 (los dos
+**4. Playoffs.** Si clasificaste, tu equipo entra a un bracket de 6 (los dos
 mejores sembrados con bye directo a semifinal) y tu camino se juega serie por
 serie, mapa a mapa, con **Fearless draft**: cada campeón que jugás vos o el
 rival queda bloqueado el resto de esa serie. El rival quema primero, y quema
@@ -215,10 +225,13 @@ liga; clasificar además a un internacional (por posición de temporada
 regular, no por el resultado del bracket) te pone una serie más, contra un
 rival de otra región.
 
-**6. Eventos.** Drama, salud, guita, vida personal. Lo que le pasa a un pibe
-de 21 años que de golpe cobra en dólares.
+**5. Eventos.** Drama, salud, guita, vida personal. Lo que le pasa a un pibe
+de 21 años que de golpe cobra en dólares. Cada tanto, un evento te deja
+elegir a qué campeón meterle horas las próximas semanas: así el pool se
+mueve durante la carrera, en vez de quedar clavado en lo que elegiste a los
+15 años.
 
-**7. Offseason.** Repartís puntos de preparación. Llegan ofertas. Decidís si
+**6. Offseason.** Repartís puntos de preparación. Llegan ofertas. Decidís si
 te quedás o te vas. El roster cambia y la sinergia se resetea parcialmente.
 
 Y vuelve a empezar. Entre 8 y 20 veces según cuánto dure tu carrera.
@@ -240,10 +253,14 @@ Los campeones que no jugás pierden maestría. No podés mantener diez a punto.
 Cuando uno pasa maestría 85 con muchas partidas encima, se vuelve tu signature
 y va a la tarjeta final: "el mejor Azir de Occidente".
 
-**META.** No está escrito, se genera. Es un vector de pesos sobre esos mismos
-tags, sorteado al inicio de la temporada, que deriva suave cada parche y a
-veces se sacude entero. Tu Ajuste al Meta sale de cruzar tu pool contra ese
-vector, ponderando por maestría. Multiplica tu rendimiento entre 0.75x y 1.25x.
+**META.** No es un número, es un **régimen con nombre**: meta de tanques, de
+asesinos, de hipercarry, de splitpush, de peleas 5v5, y así — nueve en total,
+cada uno sube ciertos arquetipos de campeón y hunde otros. Cambia como una
+noticia, no como una deriva: 60% de chance al abrir cada season, 25% de un
+parche correctivo a mitad de cualquier split. Contra ese régimen se arma la
+tier list de tu rol (S/A/B/C), y tu boost sale de cruzarla contra tu pool
+ponderando por maestría — cuantos más campeones tuyos caen en tier alta, más
+te favorece el parche. Multiplica tu rendimiento entre 0.75x y 1.25x.
 
 **JERARQUÍA.** Tu lugar dentro del equipo, de "el rookie" a "la franquicia".
 No es cosmética: define si te dan el pick que querés, si el jungla camina para

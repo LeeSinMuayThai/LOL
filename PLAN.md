@@ -20,10 +20,24 @@ el juego) → este documento → `PROGRESO.md` (changelog) → `TRASPASO.md` (da
 | **2** | Que las decisiones pesen: pesos dinámicos, densidad | ✅ ver `PROGRESO.md` |
 | **3** | Escalera competitiva: tier3 → tier2 → tier1, ligas 2026 | ✅ ver `PROGRESO.md` |
 | **4** | Competición jugable: series Bo5, Fearless, draft, minijuegos | ✅ ver `PROGRESO.md` |
-| **5** | Mercado: ofertas, contratos, salarios, imports | ⬜ |
-| **6** | Final emergente: retiro, servicio militar, lesiones, vuelta | ⬜ |
-| **7** | Contenido a escala (150+ opciones) | ⬜ |
-| **8** | Legado, rivales y UI | ⬜ |
+| **5** | La temporada existe: la fecha que importa | ⬜ |
+| **6** | El meta con nombre | ⬜ |
+| **7** | El prólogo se comprime y la repetición se rompe | ⬜ |
+| **8** | Mercado: ofertas, contratos, salarios, imports | ⬜ |
+| **9** | Final emergente: retiro, servicio militar, lesiones, vuelta | ⬜ |
+| **10** | Contenido a escala (150+ opciones) | ⬜ |
+| **11** | Legado, rivales y UI | ⬜ |
+
+> **Por qué estas tres fases se insertaron antes del mercado.** Jugando el juego con las cuatro
+> fases hechas aparecieron cuatro defectos medibles: la temporada regular se resuelve con una
+> tirada y una línea de log (nunca hay un partido con nombre, tabla ni marcador), la decisión de
+> un evento cae **después** de que el split ya se resolvió (nunca hay un "se viene tal partido"),
+> el meta es un número invisible (nadie sabe qué significa "Ajuste al meta: 49/100"), y la mitad
+> de la partida es la etapa amateur con un catálogo de eventos tan chico que se recicla en
+> round-robin. Las tres fases nuevas atacan esas cuatro cosas en el orden en que se necesitan una
+> a la otra: primero existe el partido (5), después el meta se puede mostrar sobre ÉL (6), y recién
+> ahí tiene sentido calibrar cuánto dura el prólogo y afinar la repetición (7). El detalle completo,
+> con los números medidos que motivan cada decisión, está en las tres secciones que siguen.
 
 ---
 
@@ -271,7 +285,7 @@ Ningún split queda sin ninguna línea de log
 > agregan mercado, series y retiro, que son fuentes de decisiones que hoy no existen):
 > gatearlo en la fase 2 sería medirse contra trabajo que todavía no se hizo (trampa T6).
 > El check de la fase 2 gatea la FORMA de la densidad (tope por split, ratio largo/mediano),
-> no el volumen total, que se vuelve a medir en la fase 8.
+> no el volumen total, que se vuelve a medir en la fase 11.
 
 ---
 
@@ -312,7 +326,7 @@ exige equipos inventados a este nivel. **Reusar `generarHandle`** de `core/mundo
 ## 3.3 — `src/systems/competitivo.js` (nuevo, después de `roster` en `ETAPAS_SPLIT`)
 
 - En qué tier competís, ascensos y descensos, y **la oferta cuando cambiás de tier** (el mercado
-  completo llega en la fase 5; el movimiento entre tiers ya es una decisión desde acá).
+  completo llega en la fase 8; el movimiento entre tiers ya es una decisión desde acá).
 - **Brevedad forzada del tier 3** (pedido explícito): `probSalida` ~0.45 por split, con dos
   salidas — subís a tier 2, o el equipo se disuelve y volvés a `nivel: 'libre'`.
 - **El año muerto:** LEC exige 18 desde 2024. Un europeo de 17 puede firmar pero no debutar →
@@ -410,7 +424,7 @@ Mapa 4  te queda Wukong y nada más del pool. El motor NO decide:
    │  C) Pedirle el pick al coach y que el equipo se acomode a vos.       │
    │     (solo con jerarquía ≥60)                  +rendimiento −sinergia │
    │  D) Cederle el pick a {jungla} y jugar de segunda opción.            │
-   │     (solo con relación ≥70 — necesita la fase 7)  −tuyo +del equipo  │
+   │     (solo con relación ≥70 — necesita la fase 10)  −tuyo +del equipo │
    └──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -485,7 +499,425 @@ minijuegos "aparecen solo en momentos bisagra" sin definir la cuota.
 
 ---
 
-# FASE 5 — Mercado: ofertas, contratos, salarios, imports
+# FASE 5 — La temporada existe: la fecha que importa
+
+## 5.0 — El problema, medido
+
+Se corrió el motor 300-400 carreras (semillas 1..N, estrategia `equilibrado`) para no opinar de
+memoria sobre por qué el juego "se siente como apretar botones". Los números:
+
+```
+Splits en fase profesional con una serie de playoffs jugable .... 21,0%
+   (el otro 79% resuelve la temporada regular con UNA tirada y una línea de log)
+Carreras que ven al menos un draft en toda la carrera ............ 33,5%
+Carreras que ven al menos un minijuego en toda la carrera ........ 29,8%
+Líneas de log en un split profesional sin playoffs ................ 5-6
+   (de las cuales 1-2 son decisiones; el resto son recibos numéricos)
+```
+
+La causa es estructural, no de contenido. `posicionEnLaLiga` en `systems/rendimiento.js` hace
+`rivales.filter(org => gauss(org.fuerza, 13, rng) > fuerza).length` y escupe *"RED Canids Kalunga
+terminó 1º de 8 en CBLOL"*. No hay fechas, ni rival con nombre, ni marcador, ni tabla. Y en
+`systems/registro.js`, `rendimiento` y `serie` corren **antes** que `events`: cuando el evento
+aparece en pantalla, el split ya se jugó entero. Por diseño no puede existir un *"se viene tal
+partido"* — la decisión es un recibo de algo que ya pasó, nunca una apuesta sobre algo que va a
+pasar. Esa es la referencia directa que pidió el usuario contra El Ídolo del Potrero y Copero: en
+esos juegos el partido se vive antes de saber el resultado, acá se narra después.
+
+La solución no es simular jugada por jugada — `CONCEPTO.md` §11 lo prohíbe explícitamente y con
+razón, y no hace falta para resolver esto. La solución es **simular la temporada regular completa
+en silencio, con una tabla de posiciones de verdad por debajo, y hacer que el jugador juegue solo
+los 2 o 3 partidos de esa temporada que tienen algo en juego.** La temporada pasa entera; el
+jugador cae adentro de los momentos que importan. Es, literalmente, cómo funciona la referencia:
+nadie juega los 38 partidos de una liga de fútbol en Potrero Fútbol, juega los que definen algo.
+
+## 5.1 — `src/core/temporada.js` (nuevo, puro, sin RNG en el calendario)
+
+Sigue el mismo patrón que `core/serie.js`: funciones puras, sin tocar el DOM, testeables sin
+simular una carrera entera.
+
+- **`generarCalendario(state)`** — un round-robin simple contra cada otra org de
+  `ligaOZonaDeCarrera(state)` (`core/competicion.js`, que ya resuelve tier 1, tier 2 y tier 3 con
+  la misma forma). Las ligas tienen 8 a 10 orgs, así que salen 7 a 9 fechas por split. Cada fecha:
+  `{ jornada, rival, fuerzaRival, local }`. **No consume `rng`**: el calendario es determinista
+  dado el estado, así se puede enumerar y testear sin tirar un dado.
+- **`resolverFecha(fuerzaPropia, fuerzaRival, rng)`** — booleano. Reusa exactamente la matemática
+  de `finalizarMapa` en `systems/serie.js`: `gauss(fuerzaPropia, ruidoFecha) > gauss(fuerzaRival,
+  ruidoRivalFecha)`. **No se reescribe la fórmula de rendimiento**: `calcularRendimiento` y
+  `fuerzaDelEquipo` de `systems/rendimiento.js` ya están exportadas justamente para reusarse así
+  (el comentario en ese archivo lo dice: la fase 4 ya las reusa mapa a mapa dentro de una serie).
+- **`simularResto(liga, calendario, rng)`** — resuelve los partidos entre los OTROS equipos, para
+  que la tabla no sea inventada. Con 10 orgs son 45 partidos por split, una tirada cada uno:
+  trivial en costo.
+- **`tablaDePosiciones(resultados)`** — array ordenado `{ org, ganados, perdidos, racha,
+  diferencia }`. Esta es la estructura que la fase 11 va a pintar como tabla de verdad.
+- **`fechasQueImportan(state, calendario, tabla, rng)`** — elige 2 o 3 índices del calendario. Es
+  el corazón de la fase y **no es aleatorio**: cada fecha se puntúa por qué tiene en juego, y se
+  eligen las de puntaje más alto (desempate por `rng`).
+
+  | `stakes` | Cuándo dispara |
+  |---|---|
+  | `clasico` | el rival está en `career.orgs` (jugaste ahí antes) o te dejó libre |
+  | `puntero` | el rival va 1º de la tabla |
+  | `define_clasificacion` | es la última fecha del split y estás en el borde del cupo de playoffs |
+  | `revancha` | el rival te eliminó en la última serie de playoffs que jugaste |
+  | `presion` | venís de dos o más derrotas seguidas en este split |
+  | `rival_de_generacion` | en el roster rival juega uno de los 5 de `mundo.rivales` |
+  | `parejo` | fallback: `|fuerzaRival − fuerzaPropia|` mínimo — "se define por detalles" |
+
+  `rival_de_generacion` es la primera vez que los cinco rivales generados desde la seed **hacen
+  algo**: hoy se generan en `core/mundo.js` y no corren su carrera (deuda **D8**, que sigue
+  abierta y se resuelve recién en la fase 11). Esto no cierra D8 — no les da una carrera propia —
+  pero les da su primer uso real: aparecen con nombre en una fecha marcada.
+
+## 5.2 — `src/systems/temporada.js` (nuevo sistema)
+
+Se agrega **una línea** al registro de `ETAPAS_SPLIT` (regla invariable 6), justo antes de
+`rendimiento`:
+
+```
+contexto, edadInicio, meta, roster, competitivo, campeones, secundario, amateur,
+temporada,     ← NUEVO: juega el calendario y pausa en las fechas marcadas
+rendimiento,   ← ahora SOLO aplica consecuencias, leyendo career.temporada.posicion
+serie, events, atributos, practica, edadCierre
+```
+
+`rendimiento.js` se parte en dos: `posicionEnLaLiga` se borra (la posición ahora sale de la
+tabla), y `consecuencias` **se queda exactamente igual**, salvo que lee `state.career.temporada`
+en vez de calcular la posición ella misma. Esto **no toca la fórmula de rendimiento, ni la de
+jerarquía, ni la de hype** — solo cambia de dónde viene el número de posición. Es deliberado: esas
+fórmulas ya están calibradas y no se retunean en el mismo commit que cambia la estructura (regla
+de proceso 2).
+
+El flujo de `aplicar`:
+
+1. Si no hay equipo o `phase !== 'profesional'`, **early return sin tocar `rng`** — mitigación de
+   la trampa **T1**: todo sistema que consume RNG cuando no le toca corre el stream de todo lo que
+   viene después.
+2. Genera el calendario, calcula `fuerzaPropia` una vez con `calcularRendimiento` +
+   `fuerzaDelEquipo`, y elige las 2-3 fechas marcadas con `fechasQueImportan`.
+3. Juega las fechas NO marcadas en silencio, acumulando W/L contra la tabla simulada del resto de
+   la liga. **No emite un log por fecha** — nueve líneas de *"Fecha 4 vs FURIA: ganan"* es
+   exactamente la planilla que esta fase existe para evitar. Emite una sola línea de resumen al
+   cierre del tramo silencioso.
+4. Al llegar a una fecha marcada, **pausa** y devuelve una decisión. El estado del calendario en
+   curso vive en `state.career.temporada` — **objeto completo de ceros al inicializar en
+   `createInitialState`, nunca `null`** (trampa T4) — así `resolverDecision` reanuda exactamente
+   donde quedó, igual que ya hace `serie.js`.
+
+## 5.3 — La fecha marcada: qué ve el jugador
+
+Tres beats, en este orden, y el orden es el punto — primero se apuesta, después se sabe:
+
+**1. El draft corto.** Solo si hay equipo y el pool tiene más de dos campeones. Se elige entre las
+opciones del pool, con la maestría al lado y — desde la fase 6 — la tier list del meta al lado.
+Reusa `decisionDeDraft` y `disponiblesDelPool` de `core/serie.js`, con la regla ya desambiguada en
+la fase 4 (4.3): *"0 disponibles → comodín automático; 1 → no hay elección real; exactamente 2 →
+siempre para; 3+ → el motor elige solo salvo falta de dominancia clara"*. Si la jerarquía es baja,
+a veces no se lo dan: se reusa la probabilidad `draftBase + jerarquia × draftPorJerarquia` que ya
+vive en `campeonDelSplit` (`systems/campeones.js`).
+
+**2. El momento.** Una situación del pool de contenido nuevo en `src/data/events/partido/*.json`,
+gateada por `stakes`, por rol, por el marcador de la temporada y por el eje `ventana`. De 2 a 4
+opciones. Y acá está el cambio que hace que toda la fase valga la pena:
+
+> **Un tipo de efecto nuevo, `type: 'partido'`, mueve el resultado de ESE partido, no un stat
+> abstracto.** Se agrega en `aplicarEfecto` (`systems/events.js`) al lado de `ladder`, `pool` y
+> `push`, con `min`/`max` en rango como manda la regla invariable 7:
+>
+> ```json
+> { "type": "partido", "min": -0.18, "max": 0.22 }
+> ```
+>
+> El valor tirado se suma como fracción a `fuerzaPropia` antes de resolver la fecha con
+> `resolverFecha`. Hoy elegir "ir a matar al jungla enemigo" da `Mentalidad -2, Hype +3` sobre un
+> partido que ya estaba resuelto. Con esto, elegir mueve si se gana o se pierde esa fecha en
+> concreto, y se ve en la línea inmediata siguiente. Esa es la diferencia entre un recibo y una
+> apuesta.
+
+**3. El resultado, inmediato.** *"Ganan. Quedan 3º de 8, a un partido del segundo."* Con la tabla
+actualizada por debajo (la fase 11 la va a pintar; hasta entonces es una línea de log de tipo
+`temporada`).
+
+## 5.4 — Contenido nuevo de la fase
+
+`src/data/events/partido/` con cuatro archivos, ~24 eventos y ~55 opciones. **Todos declaran
+`stakes` y `ventana`** — el eje `ventana` (pretemporada/regular/playoffs) existe en
+`core/contexto.js` desde el paso 7 del proyecto y hoy **cero de los 44 eventos del catálogo lo
+usan**, que es parte de por qué el contenido existente se siente flotando fuera del calendario.
+
+- **`presion.json`** (~6) — el partido que se juega con algo colgando: *"si pierden hoy quedan
+  afuera de playoffs"*, *"el coach dijo en la previa que este es el partido de la temporada"*.
+- **`clasico.json`** (~6) — contra el ex equipo, contra el que dejó libre al jugador, contra el
+  equipo del rival de generación. Usan tokens de compañero/rival y por lo tanto exigen la marca
+  `con_vestuario` (el check estático de la fase 0 ya la verifica).
+- **`dentro_del_mapa.json`** (~8) — el momento adentro del partido, por rol. Acá se **mudan y se
+  reescriben** las quince situaciones de rol que hoy viven en `data/events/rol/*.json` flotando
+  sin partido — *"el jungla enemigo está solo"*, *"ves la jugada y nadie te sigue"*. La misma
+  situación, pero ahora con un marcador, un rival con nombre y un resultado que cambia según lo
+  que se elige.
+- **`postpartido.json`** (~4) — la reacción inmediata: prensa, vestuario, el clip que se hizo
+  viral. Estos sí mueven stats y no el resultado, porque el partido ya terminó.
+
+## 5.5 — Riesgos y trampas conocidas
+
+- **T1, desplazamiento del stream de RNG.** Este cambio corre el stream: **ninguna seed reproduce
+  la carrera vieja.** Es inevitable con un cambio de esta forma y hay que decirlo en `PROGRESO.md`
+  sin maquillarlo, no descubrirlo después. El early return de 5.2.1 limita el daño a las carreras
+  que llegan a profesional.
+- **T2, el contexto se calcula en vivo.** Las fechas marcadas gatean contenido por `ventana`, así
+  que tienen que llamar a `calcularContexto(state, { ventana: '...' })` y nunca leer el caché
+  `state.contexto`. Este bug ya se cometió una vez en el proyecto y movió agregados sin motivo
+  aparente.
+- **T9 y el techo de decisiones.** `maxDecisionesPorSplit` está en 60 y el máximo real medido es
+  19. Tres fechas marcadas suman como mucho 6 decisiones más — no hace falta tocar el tope, pero
+  hay que medirlo y reportarlo.
+- **La inundación de logs es el riesgo real de diseño de esta fase, no un detalle.** Ya está
+  medido: una serie de playoffs sola escupe **42 líneas seguidas** sin una sola decisión (traza de
+  seed 1, split 11). Si las fechas NO marcadas emiten un log cada una, el split pasa de 6 líneas a
+  50 y el juego se siente **más** a planilla, no menos. El resumen comprimido de 5.2.3 no es
+  cosmética: es un requisito de la fase, no un detalle de UI.
+
+## Checks de la fase 5
+
+Recordando la regla de proceso 7: **al escribir un check nuevo, verificar que falla cuando debe**
+(la trampa T5 ya costó dos pasos de falsa confianza, porque `undefined <= 0.5` es `false` y el
+check pasaba siempre sin medir nada).
+
+```
+La tabla cierra: en cada split, Σ ganados === Σ perdidos sobre toda la liga
+Todo equipo de la liga juega la misma cantidad de fechas que el jugador
+La posición derivada de la tabla coincide con career.posicion en el 100% de los splits
+El jugador ve entre 2 y 3 fechas marcadas por split competitivo (medido poblacionalmente)
+Ninguna fecha marcada sale sin un `stakes` declarado ('parejo' cuenta como declarado)
+El momento mueve el resultado: forzando el outcome de percentil 10 contra el de percentil 90,
+   el % de victorias de la fecha cambia dentro de [8%, 25%] — la misma banda con la que se
+   validó el impacto de los minijuegos en la fase 4
+Cobertura: toda combinación alcanzable de stakes × rol tiene al menos un evento
+```
+
+## Números a medir al cerrar
+
+| Métrica | Antes de esta fase | Objetivo |
+|---|---|---|
+| Splits profesionales con al menos un partido jugable | 21,0% | **≥ 90%** |
+| Carreras que ven al menos un draft | 33,5% | **≥ 85%** |
+| Líneas de log por split profesional sin playoffs | 5-6 | 8-12 |
+| Decisiones por carrera (mediana) | 46 | 70-110 |
+| `llegaronAPro` (equilibrado) | 40,4% | sin cambios (± 3 puntos) |
+| Burnout (equilibrado) | 21,9% | sin cambios (± 3 puntos) |
+| Crashes en `simulate.js 1500 90 todas` | 0 | 0 |
+
+---
+
+# FASE 6 — El meta con nombre
+
+## 6.0 — El problema
+
+El pedido del usuario, textual: *"que no sea un número de afinidad al meta, que quizás la season
+diga meta de tanques, y que haya un 25% de chance de que cambie a mitad del split y un 60% de que
+cambie para la otra season, que diga tu champion pool y aparezcan tus champs, y otro que diga
+champions en el meta en tu rol y aparezcan los que están en el meta, y si coincide alguno tenés un
+boost, y que haya eventos que cada tanto te dejen elegir practicar más un champ para ir cambiando
+tu pool."*
+
+Hoy `systems/meta.js` mueve nueve pesos flotantes con `gauss(0, 0.15)` por split (más un
+`probSacudon: 0.07` que es lo mismo sin nombre), y `core/ajusteMeta.js` los promedia contra el
+pool para dar un escalar 0-100 que multiplica el rendimiento entre 0,75x y 1,25x. El jugador ve
+*"Ajuste al meta: 49/100"*. No hay régimen con nombre, no hay tier list, no hay forma de
+anticipar el cambio ni de decidir nada al respecto, y como los pesos derivan poco, el mismo par de
+campeones lidera muchos parches seguidos (en una traza real, el parche 11 y el parche 14 dicen
+ambos *"se mueve despacio hacia Yone y Yasuo"*).
+
+**Quedan fuera de alcance de esta fase**, por decisión explícita tomada con el usuario: los
+rumores de parche (apostar a practicar un campeón antes de que el meta lo favorezca) y que el
+meta mueva la fuerza de los otros equipos y la visibilidad por rol. Quedan anotados para una fase
+de contenido futura si se los quiere retomar; no están en la deuda técnica porque nunca se
+prometieron antes de este documento.
+
+## 6.1 — `src/data/metas.json` (nuevo)
+
+Nueve regímenes, definidos sobre los `ARQUETIPOS` que ya existen en `src/data/meta-tags.js`, para
+no tener que retaguear los 16-18 campeones por rol de `champions.json`:
+
+| id | Se anuncia como | Sube | Hunde |
+|---|---|---|---|
+| `tanques` | Meta de tanques | `tanque`, `engage` | `asesino`, `splitpush` |
+| `hipercarry` | Meta de hipercarry | `escalado`, `enchanter` | `early_game`, `splitpush` |
+| `asesinos` | Meta de asesinos | `asesino`, `early_game` | `escalado`, `enchanter` |
+| `control` | Meta de magos de control | `mago_control`, `enchanter` | `splitpush`, `early_game` |
+| `escalado` | Meta de partidas largas | `escalado`, `tanque` | `early_game`, `asesino` |
+| `agresion` | Meta de agresión temprana | `early_game`, `asesino` | `escalado`, `mago_control` |
+| `peleas` | Meta de peleas 5v5 | `engage`, `tanque`, `mago_control` | `splitpush` |
+| `splitpush` | Meta de splitpush | `splitpush`, `bruiser` | `engage`, `enchanter` |
+| `bruisers` | Meta de bruisers | `bruiser`, `early_game` | `mago_control`, `enchanter` |
+
+Cada régimen trae además su texto de anuncio y una línea de "cómo se juega este parche", para que
+el log tenga prosa y no una etiqueta.
+
+El régimen **fija** los pesos en vez de derivarlos: lo que sube va a ~2,0, lo que hunde a ~0,6, el
+resto a 1,0, más un `gauss(0, 0.12)` chico por split para que dos splits del mismo régimen no sean
+idénticos. Los pesos siguen existiendo por debajo para que `afinidadDeCampeon` no cambie de
+contrato: lo que cambia es quién los escribe.
+
+## 6.2 — El cambio de régimen es una noticia, no una deriva
+
+Los números son los que dio el usuario, sin redondear para el otro lado:
+
+- **Al abrir cada season** (cada 3 splits, cuando `player.splitCount % BALANCE.edad.splitsPorEdad
+  === 0`): `chance(0.60, rng)` de que el régimen cambie a otro sorteado. Log: *"Pretemporada. Se
+  dio vuelta el juego: se viene el meta de asesinos. Los magos de control quedaron atrás."*
+- **A mitad de split**: `chance(0.25, rng)` de un parche correctivo que puede virar el régimen. Log:
+  *"Parche 14.9 a mitad de split: nerfean a los tanques. El meta vira a peleas 5v5."*
+- **`BALANCE.meta.probSacudon: 0.07` se elimina.** El sacudón de hoy era exactamente este cambio de
+  régimen, pero sin nombre y con una probabilidad tan baja que casi nunca se sentía.
+
+## 6.3 — Los dos paneles y el boost por coincidencia
+
+Lo que el usuario pidió, textual: un panel que diga tu champion pool con tus campeones, otro que
+diga los campeones en meta de tu rol, y que si coincide alguno tengas un boost.
+
+`src/core/regimen.js` (nuevo, puro):
+
+- **`tierListDeRol(state)`** — los ~16 campeones del rol ordenados por `afinidadDeCampeon` contra
+  los pesos del régimen vigente, cortados en **S / A / B / C**.
+- **`coincidencias(pool, tierList)`** — qué campeones del pool caen en qué tier.
+- **`boostDelPool(pool, tierList)`** — reemplaza a `ajusteAlMeta`. En vez de promediar afinidades
+  (que es lo que hace que el resultado orbite siempre 50), suma sobre los campeones del pool
+  `maestría/100 × pesoTier`, con **S = 1,0 · A = 0,6 · B = 0,25 · C = 0**, y lo mapea al rango
+  [0,75x, 1,25x] que `CONCEPTO.md` §6 ya promete. Es legible de un vistazo: *"tengo uno de los tres
+  en S con maestría 80"* en vez de un número de afinidad abstracto.
+
+`state.meta` pasa a tener `regimen`, `tierList` (array `{ name, tier, enTuPool }`),
+`coincidencias` y `tierListAnterior` — todos inicializados con un valor real en
+`createInitialState`, nunca `null` (trampa T4). **La UI sigue siendo fase 11**: hasta entonces el
+motor imprime los dos paneles como dos columnas de texto en un log de tipo `meta`. Esta fase deja
+la estructura de datos lista y un log legible; la fase 11 la pinta como paneles de verdad.
+
+## 6.4 — La tier list con memoria
+
+`tierListAnterior` guarda la tier list del parche pasado. Cuando el régimen cambia, el log dice
+los saltos — pero **solo los que tocan al jugador**: los campeones del pool más los tres primeros
+del rol. Escupir dieciséis líneas de tier list cada parche es ruido, no información.
+
+> *"Zed: B → S. Katarina: A → S. Tu Sylas: S → C."*
+
+Ver al main propio caerse dos tiers de un parche al otro es el sistema entero en una línea, y es
+lo que hoy no pasa porque el ajuste se mueve de 51 a 49 y nadie se entera.
+
+## 6.5 — Los eventos de practicar
+
+Pedido textual del usuario: *"que haya eventos que cada tanto te dejen elegir practicar más un
+champ para ir cambiando tu pool."* Se agrega a `src/data/events/pool.json`:
+
+- **`pool_a_cual_le_metes`** (nuevo) — *"¿A cuál le metés las próximas semanas?"* Las opciones se
+  arman con dos campeones del pool y uno o dos del meta actual que todavía no se tienen. Usa el
+  efecto `pool` que ya existe (`accion: 'maestria'` y `accion: 'aprender'` con `criterio`, en
+  `systems/events.js`). Cooldown alto para que salga cada 5-6 splits: es una bisagra, no ambiente.
+- **`pool_main_muerto`** se reescribe: hoy cuelga de `umbralMainMuerto`, una fracción continua de
+  afinidad. Pasa a colgar del **salto de tier** (S/A → B/C), y el texto nombra el salto. La marca
+  `main_muerto` en `core/contexto.js` se recalcula sobre el mismo criterio nuevo.
+- Los otros cinco eventos de pool (`pool_estrechez`, `pool_identidad_diluida`,
+  `pool_viento_a_favor`, `pool_contra_la_corriente`, `pool_campeon_nuevo`) se retextean para hablar
+  de regímenes y tiers en vez de afinidad abstracta.
+
+## Checks de la fase 6
+
+```
+El régimen cambia entre seasons en el 55-65% de las transiciones (banda alrededor
+   del 0,60 declarado), medido sobre 1500 carreras
+El parche correctivo de mitad de split dispara en el 20-30%
+Toda carrera de más de 15 splits ve al menos tres regímenes distintos
+La tier list cubre siempre todos los campeones del rol, sin repetidos ni faltantes
+El boost está en [0,75, 1,25] y su distribución poblacional no se clava en el centro:
+   p10 y p90 separados por al menos 0,20 (hoy el ajuste orbita 50, que es el defecto)
+`pool_a_cual_le_metes` sale entre 3 y 8 veces por carrera de 30 splits
+Determinismo: misma seed, dos corridas, huella idéntica
+```
+
+---
+
+# FASE 7 — El prólogo se comprime y la repetición se rompe
+
+## 7.1 — Comprimir la etapa amateur
+
+Medido: la etapa amateur dura **15 splits de mediana**, de unos 30 totales — la mitad de la
+partida — eligiendo entre 4 de 15 rutinas, y el **49%** de las carreras termina ahí con *"nadie
+llamó"*. El juego que el usuario pidió está en la carrera profesional; el prólogo tiene que ser un
+prólogo, no la mitad de la partida.
+
+Las palancas están todas en `BALANCE.amateur` y ninguna es estructural: `lpPorBloque` (52),
+`puntosParaRadar` (2800), `splitMinimoScouting` (3), `scoutingProbPorNivel` (`apice: 0.26,
+challenger: 0.5, elite: 0.82`) y `scoutingSesgoEtario`.
+
+**Esto va en su propio commit, separado de todo lo demás de esta fase.** Es la regla de proceso 2
+del proyecto (*"nunca cambiar la estructura y retunear las constantes en el mismo commit"*), y es
+también la razón por la que esta fase va al final del bloque nuevo y no al principio: calibrar el
+amateur contra un ciclo de split que todavía se está terminando de mover (fases 5 y 6) es medir
+ruido, no señal.
+
+| Métrica | Antes de esta fase | Objetivo |
+|---|---|---|
+| Splits en etapa amateur (mediana) | 15 | **≤ 6** |
+| `llegaronAPro` (equilibrado) | 40,4% | **65-75%** |
+| `no_llego` | 49,0% | **≤ 25%** |
+| Burnout (equilibrado) | 21,9% | ≤ 15% |
+| Rutinas distintas elegidas por carrera | 7 | ≥ 4 (menos splits, menos rutinas, pero no cero) |
+
+## 7.2 — Romper la repetición de eventos
+
+`elegirEvento` (`systems/events.js`) usa pesos estáticos, y lo único que evita el repetido es el
+`cooldown` (2 a 6 splits). Medido: el evento más repetido de una carrera sale **10 veces**
+(mediana), hasta 15. Se le agrega **memoria**:
+
+```
+pesoConMemoria(state, evento) =
+    evento.weight
+  × 1 / (1 + vistos[evento.id] × BALANCE.eventos.fatigaPorVista)
+  × (vistos[evento.id] ? 1 : BALANCE.eventos.bonusNovedad)
+```
+
+con `state.flags.eventosVistos` (objeto vacío al inicializar, nunca `null` — trampa T4),
+`fatigaPorVista: 0.8` y `bonusNovedad: 2.5`. Son ~15 líneas de código y el objetivo es bajar la
+mediana de repeticiones de 10 a ≤4 **sin escribir un solo evento nuevo** — el mejor retorno por
+línea de todo este documento.
+
+Dos arreglos puntuales más de la misma queja:
+
+- **Los eventos de cierre de edad salen literalmente en orden** porque hay exactamente dos
+  (`balance_de_temporada`, `cuentas_de_la_carrera`) para todas las edades. Se agregan cuatro más,
+  gateados por banda de edad, para que haya baraja de verdad.
+- **El eje `ventana` se enciende.** Cero de 44 eventos del catálogo original lo declaran. Se
+  retrofitea el catálogo existente (además de todo el contenido nuevo de la fase 5, que ya lo
+  declara desde que se escribió). Un evento de pretemporada no puede caer en medio de playoffs.
+
+## 7.3 — Densidad: que un split no cierre con puro recibo
+
+Medido: un split profesional sin playoffs son 5-6 líneas, de las cuales cuatro son recibos
+numéricos (*"Split 13: mecánica +0, macro 54, mentalidad 99"*). Dos cambios:
+
+- Los logs puramente numéricos (`split`, parte de `campeones`, parte de `practica`) pasan a llevar
+  una marca `tecnico: true` en el `extra` de `crearLog`, para que la fase 11 los pueda esconder o
+  achicar tipográficamente. No se borran: siguen siendo útiles para depurar y para `simulate.js`.
+- `BALANCE.edad.probSegundaDecisionPorTipo` (`denso 0.85, normal 0.4, comprimido 0.12`) se
+  recalibra contra el ciclo nuevo. Con las fechas marcadas de la fase 5 metiendo decisiones
+  propias, el presupuesto de `core/presupuesto.js` cambia de forma y hay que volver a medirlo, no
+  asumir que sigue igual.
+
+## Checks de la fase 7
+
+```
+Repeticiones del evento más repetido por carrera: mediana ≤ 4, máximo ≤ 8
+Eventos distintos vistos por carrera de 30 splits: ≥ 28
+Ningún evento de categoría "de temporada" declara `ventana` vacía
+Splits sin ninguna línea narrativa: 0 (ya se cumple hoy, no puede regresionar)
+Fracción de splits sin evento < 25% en todos los contextos alcanzables (trampa T10,
+   ya existe como check; verificar que sigue pasando con el gating nuevo)
+```
+
+---
+
+# FASE 8 — Mercado: ofertas, contratos, salarios, imports
 
 **Acá es donde la carrera deja de tener duración fija.**
 
@@ -550,7 +982,7 @@ con fecha: vale un evento dedicado.
 Activar `sin_equipo`, `sin_renovacion`, `import_recien_llegado`, `veterano_util`,
 `veterano_al_margen`. Actualizar `CONCEPTO.md` §6.
 
-## Checks de la fase 5
+## Checks de la fase 8
 
 ```
 La distribución de salarios es claramente lognormal (mediana << media)
@@ -561,7 +993,7 @@ Nadie firma violando cupoImports ni edadMinima de la liga
 
 ---
 
-# FASE 6 — Final emergente: se borran los relojes
+# FASE 9 — Final emergente: se borran los relojes
 
 > *"para mí los splits no tienen que estar fixed: si no sos bueno no tenés ofertas, si sos muy
 > bueno tu carrera dura como la de Peanut o Faker."*
@@ -634,7 +1066,7 @@ edad fijo.
 
 ---
 
-# FASE 7 — Contenido a escala (150+ opciones)
+# FASE 10 — Contenido a escala (150+ opciones)
 
 `roster.js` enriquece a cada compañero: `edad`, `nacionalidad`, `esImport`, `personalidad`
 (`veterano_cinico | rookie_ansioso | estrella_egocentrica | soldado_callado | carismatico`) y
@@ -649,12 +1081,17 @@ con el que te odia — **y habilita la opción D del draft** (4.4).
 | `mercado.json` | `ventana: offseason`, `mercado: ultimo_ano/sin_renovacion` | 10 |
 | `region.json` | `residencia: import` | 8 |
 | `soloq_pro.json` | la cuota coreana, `nivel: tier2/tier3` | 6 |
-| `pool.json` | marcas de pool (1.4) | 10 |
+| `pool.json` | marcas de pool (1.4, ampliado en 6.5) | 10 |
 | `serie.json` | `ventana: playoffs/internacional` | 10 |
 | `declive.json` | `etapa: declive`, `edadBanda: tardia/veterana` | 10 |
 | `retiro.json` / `vuelta.json` | `etapa: retirado` | 8 |
 | `salud.json` | amplía el actual | +6 |
-| `rol/*.json` | eje `rol` | 15 |
+| `rol/*.json` | eje `rol`, lo que no es específico de un partido puntual | 15 |
+
+> `rol/*.json` ya perdió las quince situaciones que la fase 5 mudó a
+> `data/events/partido/dentro_del_mapa.json` reescritas con marcador y rival. Lo que queda acá (y
+> lo que se agrega) es contenido de rol que no depende de una fecha concreta: entrenamiento,
+> comparaciones con otros del rol, la vida fuera del mapa.
 
 **Flujo de autoría:** `cobertura.js --huecos` → escribir gateado exactamente a esas celdas →
 repetir hasta vacío. **El check de cobertura pasa de reporte a check duro acá**, cuando el
@@ -663,7 +1100,7 @@ contenido existe.
 **Usar 3 y 4 opciones.** Al cierre de la fase 0 el catálogo tiene 22 eventos / 46 opciones, y solo
 2 eventos usan 3 opciones. `CONCEPTO` §3 dice "2 a 4".
 
-## Checks de la fase 7
+## Checks de la fase 10
 
 ```
 cobertura.js --huecos vacío
@@ -673,7 +1110,7 @@ Fracción de splits sin evento < 25% EN TODOS los contextos alcanzables, no en p
 
 ---
 
-# FASE 8 — Legado, rivales y UI
+# FASE 11 — Legado, rivales y UI
 
 - **`src/systems/legado.js`** — la tarjeta final (`CONCEPTO` §9). El veredicto **se compone**:
   arquetipo base + modificador + un detalle único de esa partida ("El eterno cuarto puesto",
@@ -698,25 +1135,26 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | # | Hallazgo | Fase |
 |---|---|---|
 | D1 | ~~Los pesos de outcome son estáticos~~ — resuelto: `outcome.modificadores` | ✅ 2 |
-| D2 | El 23% de las carreras agota el tope de 90 splits: no hay retiro | 6 |
-| D3 | ~~`maxDecisionesPorSplit: 8` queda corto~~ — resuelto: subió a 16 | ✅ 2 |
+| D2 | El 23% de las carreras agota el tope de 90 splits: no hay retiro | 9 |
+| D3 | ~~`maxDecisionesPorSplit: 8` queda corto~~ — resuelto: subió a 16, luego a 60 | ✅ 2 |
 | D4 | ~~`posicionParaInternacional: 1` estaba mal para 2026~~ — resuelto: `liga.cuposInternacionales` | ✅ 3 |
 | D5 | ~~`regionOrigen` se sorteaba uniforme entre 8 ligas~~ — resuelto: pesado por prestigio, solo tier 1 | ✅ 3 |
 | D6 | ~~El meta se describía por arquetipo, no por campeón~~ — resuelto: `campeonesEnMeta` | ✅ 1 |
-| D7 | `src/ui/` está vacía; los 416 renglones de UI viven en `index.html` | 8 |
-| D8 | Los 5 rivales de generación se generan y no corren su carrera | 8 |
-| D9 | `player.deudaSueno` no se resetea al pasar a profesional y `atributos.js` la sigue cobrando toda la carrera. **Es útil**: es media cadena causal del sistema de lesiones, ya construida | 6 |
-| D10 | `secundario.js` usa `amateur.edadLimite` para congelar el flag. Al borrar ese tope hay que darle su propio umbral | 6 |
-| D11 | Las rutinas de offseason siguen gateadas solo por etapa, no por tier (un bootcamp en Corea no lo paga un tier 3). Deferido de la fase 3 por alcance: cuidar el check de segura/agresiva al diferenciar | 7 |
+| D7 | `src/ui/` está vacía; los 1.090 renglones de UI viven en `index.html` (creció de 416 a 1.090 entre la fase 0 y la fase 4, sobre todo por los 5 minijuegos) | 11 |
+| D8 | Los 5 rivales de generación se generan y no corren su carrera. La fase 5 les da su primer uso real (aparecen con nombre como `stakes: rival_de_generacion` en una fecha marcada) sin cerrar la deuda: seguir corriendo su carrera entera es esta fase | 11 |
+| D9 | `player.deudaSueno` no se resetea al pasar a profesional y `atributos.js` la sigue cobrando toda la carrera. **Es útil**: es media cadena causal del sistema de lesiones, ya construida | 9 |
+| D10 | `secundario.js` usa `amateur.edadLimite` para congelar el flag. Al borrar ese tope hay que darle su propio umbral | 9 |
+| D11 | Las rutinas de offseason siguen gateadas solo por etapa, no por tier (un bootcamp en Corea no lo paga un tier 3). Deferido de la fase 3 por alcance: cuidar el check de segura/agresiva al diferenciar | 10 |
 | D12 | ~~El eje `region` tenía `LATAM`~~ — resuelto: sacado, ya no hay tier-1 ahí | ✅ 3 |
 | D13 | ~~`academy_offer` empujaba a `career.orgs` sin fichar~~ — resuelto: el fichaje real lo hace `amateur.js`/`competitivo.js`, `academy_offer` quedó como la prueba narrativa que siempre fue | ✅ 3 |
-| D14 | Solo 2 eventos del catálogo usan 3 opciones; ninguno usa 4 | 7 |
+| D14 | Solo 2 eventos del catálogo usan 3 opciones; ninguno usa 4 | 10 |
 | D15 | LCP no tiene un circuito de desarrollo real investigado (TRASPASO no lo cubre). Se modeló como `LCP_CHALLENGERS`, generado igual que el resto de tier 2 — nombre plausible, no verificado como real. Si aparece la investigación real, reemplazar el id | 3 (abierto) |
-| D16 | Tier 1 es un piso: no hay descenso de tier1 a tier2 todavía. Una relegación real existe en las ligas de 2026 pero modelarla es más natural junto con contratos (fase 5) | 5 |
-| D17 | LRN/LRS (los circuitos tier 2 de LATAM que alimentan LCS/CBLOL) y la doble residencia LATAM 2026-2027 no están modelados: un jugador de la región nace directamente en NA o BR. Es la simplificación explícita que ya preveía `TRASPASO` §5 ("la doble residencia... vale un evento dedicado") | 5 |
+| D16 | Tier 1 es un piso: no hay descenso de tier1 a tier2 todavía. Una relegación real existe en las ligas de 2026 pero modelarla es más natural junto con contratos (fase 8) | 8 |
+| D17 | LRN/LRS (los circuitos tier 2 de LATAM que alimentan LCS/CBLOL) y la doble residencia LATAM 2026-2027 no están modelados: un jugador de la región nace directamente en NA o BR. Es la simplificación explícita que ya preveía `TRASPASO` §5 ("la doble residencia... vale un evento dedicado") | 8 |
 | D18 | ~~La ventana `internacional` era un único evento agregado (`chance()`)~~ — resuelto a medias en la fase 4: ahora es una serie Bo5 real de verdad contra un rival de otra región, con Fearless y minijuegos. Sigue **sin distinguir** First Stand/MSI/Worlds ni modelar un bracket Swiss+knockout: es una sola serie representativa, no el torneo real completo | ✅ 4 (parcial) |
 | D19 | El bracket de playoffs de tier 1 es de **eliminación simple** (6 clasificados, bye para los 2 mejores sembrados, Bo5 parejo). Las 6 ligas 2026 investigadas usan doble eliminación real (hay bracket de perdedores). Simplificación deliberada: el motor solo simula TU camino por el bracket, nunca el resto — una derrota ya cuenta una historia completa ("eliminado en cuartos") sin necesitar una corrida paralela por el lado de perdedores | 4 (abierto) |
-| D20 | Los 5 minijuegos comparten dos parámetros de balance genéricos (`impactoMinijuego` para los de mapa, `impactoDirecto` para bootcamp/rueda de prensa) en vez de tener cada uno el suyo ajustado a mano. Medido: el efecto agregado de CUALQUIERA de los dos lo satura la propia estructura del juego (máximo 1 minijuego por serie, un mapa de cinco) mucho antes de que el valor del parámetro importe — ver PROGRESO | 7/8 (abierto) |
+| D20 | Los 5 minijuegos comparten dos parámetros de balance genéricos (`impactoMinijuego` para los de mapa, `impactoDirecto` para bootcamp/rueda de prensa) en vez de tener cada uno el suyo ajustado a mano. Medido: el efecto agregado de CUALQUIERA de los dos lo satura la propia estructura del juego (máximo 1 minijuego por serie, un mapa de cinco) mucho antes de que el valor del parámetro importe — ver PROGRESO | 10/11 (abierto) |
+| D21 | La temporada regular de la fase 5 corre el stream de RNG respecto de cualquier seed anterior a esa fase (trampa T1: es un sistema nuevo que consume `rng` en el medio del registro). Ninguna seed de antes de la fase 5 reproduce la misma carrera después. Documentado, no es un bug | ✅ 5 (aceptado) |
 
 ---
 
@@ -729,7 +1167,9 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
    tocar constantes. Y decir en `PROGRESO.md` cuándo se tunea y por qué.
 4. **Reportar los números medidos, no los esperados.** Incluidos los que empeoran.
 5. **Actualizar `CONCEPTO.md` cuando el código lo contradiga.** Pendientes: §2 y §10 (fase 3) ·
-   §5 y §11 (fase 4) · §6 (fase 5) · §8 (fase 1) · §2 otra vez (fase 6).
+   §5 y §11 (fase 4) · §5 otra vez, el loop de split cambia de forma (fase 5) · §6, el meta cambia
+   de definición (fase 6) · §6 otra vez, contratos (fase 8) · §8 (fase 1) · §2 otra vez, se borran
+   los relojes (fase 9).
 6. Cada fase **activa sus momentos pendientes** en `data/contextos.js` y lo verifica con
    `cobertura.js`.
 7. **Al escribir un check nuevo, verificar que falla cuando debe** (trampa T5: un check que
@@ -775,10 +1215,18 @@ End-to-end por fase:
 - **4** — jugar una semifinal completa a mano: ver el marcador, los campeones quemándose mapa a
   mapa, y que el mapa 4-5 te pare **solo si el pool se agotó**. Un pool de 8 y uno de 3 producen
   series visiblemente distintas.
-- **5** — salarios lognormales; `sin_equipo` como final más frecuente; a un jugador de 28 con buena
+- **5** — jugar una temporada regular completa a mano: ver la tabla de posiciones moverse, caer en
+  una fecha marcada con `stakes` legible, elegir el momento y ver el resultado de ESE partido
+  cambiar según la elección. Confirmar que el split ya no cierra con seis líneas de recibo.
+- **6** — ver un cambio de régimen anunciado por nombre al abrir una season, con la tier list
+  propia moviéndose y un main cayendo de tier. Elegir `pool_a_cual_le_metes` al menos una vez en
+  una carrera de 20+ splits.
+- **7** — jugar una carrera entera de punta a punta desde la pantalla de inicio: la etapa amateur
+  dura unos pocos splits, no la mitad de la partida, y el mismo evento no se repite todo el tiempo.
+- **8** — salarios lognormales; `sin_equipo` como final más frecuente; a un jugador de 28 con buena
   hoja le llegan visiblemente menos ofertas que a los 21.
-- **6** — el bloque completo de checks de duración. **Cero carreras que agoten el tope.** Una traza
+- **9** — el bloque completo de checks de duración. **Cero carreras que agoten el tope.** Una traza
   de una carrera tipo Faker (30+) y una de un `no_llego` a los 19, y que las dos se lean como
   historias completas.
-- **7** — `--huecos` vacío, ≥150 opciones, ningún contexto alcanzable con >25% de splits mudos.
-- **8** — ningún arquetipo de la tarjeta final por encima del 25%.
+- **10** — `--huecos` vacío, ≥150 opciones, ningún contexto alcanzable con >25% de splits mudos.
+- **11** — ningún arquetipo de la tarjeta final por encima del 25%.

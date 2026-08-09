@@ -18,9 +18,11 @@ Documento vivo. Se actualiza al cierre de cada tarea, según la Definición de t
 | 10 | Simulación masiva y balance fino | 🔶 En curso — `simulate.js` corre 3 estrategias sobre el pipeline real y se usó para calibrar cada paso; falta la pasada final con el arco completo |
 | 11 | Refinamiento visual | ⬜ Pendiente — `src/ui/` sigue vacía y la UI vive en `index.html` |
 
-**Lo que falta para cerrar el arco de `CONCEPTO`**: retiro y tarjeta de legado (§9), contratos y
-movilidad entre regiones (§6), rivales de generación corriendo en paralelo (§6), las etapas DEBUT
-y DECLIVE (§2), y contenido de eventos (20 de los ~200 que pide §8).
+**Lo que falta para cerrar el arco de `CONCEPTO`**: la temporada regular como partidos jugables y
+el meta con nombre (`PLAN.md` fases 5 y 6, insertadas el 2026-08-09 antes del mercado — ver esa
+tabla de estado), retiro y tarjeta de legado (§9), contratos y movilidad entre regiones (§6),
+rivales de generación corriendo en paralelo (§6), las etapas DEBUT y DECLIVE (§2), y contenido de
+eventos (44 de los ~200 que pide §8, con 90 de las 150 opciones objetivo).
 
 ## Changelog
 
