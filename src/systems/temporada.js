@@ -9,7 +9,7 @@ import {
   registrarEnFila
 } from '../core/temporada.js';
 import { calcularRendimiento, fuerzaDelEquipo } from './rendimiento.js';
-import { disponibleEn, opcionesVivas, resolverOpcion, cooldownActivo } from './events.js';
+import { disponibleEn, opcionesVivas, resolverOpcion, cooldownActivo, pesoConMemoria } from './events.js';
 import { deseoPorCampeon } from '../core/ajusteMeta.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
@@ -185,7 +185,7 @@ function arrancarMomento(state, rng, logs, campeonElegido) {
     return resolverFechaMarcada(stConCampeon, rng, logs);
   }
 
-  const evento = weightedPick(candidatos, (candidato) => candidato.weight, rng);
+  const evento = weightedPick(candidatos, (candidato) => pesoConMemoria(state, candidato), rng);
   const contexto = calcularContexto(stConCampeon, { ventana: 'regular', stakes: motivo });
 
   return { state: stConCampeon, logs, decision: construirDecisionMomento(stConCampeon, evento, contexto, fecha, 'momento') };
@@ -231,7 +231,7 @@ function resolverFechaMarcada(state, rng, logsAcum) {
   if (chance(BALANCE.temporada.probReaccion, rng)) {
     const candidatos = candidatosDePartido(stConResultado, motivo, true);
     if (candidatos.length > 0) {
-      const evento = weightedPick(candidatos, (candidato) => candidato.weight, rng);
+      const evento = weightedPick(candidatos, (candidato) => pesoConMemoria(stConResultado, candidato), rng);
       const contexto = calcularContexto(stConResultado, { ventana: 'regular', stakes: motivo });
       // `fechaEnCurso` sigue vivo un turno más: {rivalDeLaFecha} tiene que
       // seguir resolviendo en el texto de la reacción. Se limpia al resolverla.

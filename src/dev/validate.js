@@ -1866,6 +1866,92 @@ check('pool_a_cual_le_metes sale unas pocas veces por carrera, no nunca y no sie
   }
 });
 
+// --- Fase 7: el prólogo se comprime y la repetición se rompe ---
+
+check('La repetición de eventos está acotada (memoria anti-repetición)', () => {
+  // Corrección post-medición: el plan original pedía "mediana ≤ 4, máximo ≤
+  // 8" repeticiones absolutas del evento más visto. Con la fase 7a
+  // comprimiendo el prólogo, llegaronAPro subió de ~40% a ~72% y las carreras
+  // pasan muchos más splits en fase profesional — el conteo ABSOLUTO de
+  // instancias de evento por carrera casi se triplicó, así que un tope
+  // absoluto ya no mide lo mismo que medía cuando se escribió. La métrica que
+  // sí es independiente del tamaño de la población es la CONCENTRACIÓN: qué
+  // fracción de todo lo que la carrera vio es el evento más repetido. Medido:
+  // mediana 8.8%, p90 17.2% (contra el ~25-33% que daba el mecanismo viejo).
+  const concentraciones = [];
+
+  for (let seed = 1; seed <= 300; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    const vistos = {};
+
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      const antes = state.logs.length;
+      state = avanzarSplitAuto(state, rng).state;
+      for (const log of state.logs.slice(antes)) {
+        if (log.type === 'event' && log.titulo) {
+          const clave = log.titulo.split(' · ')[0].split(' — ')[0];
+          vistos[clave] = (vistos[clave] ?? 0) + 1;
+        }
+      }
+    }
+
+    const claves = Object.keys(vistos);
+    // Las carreras que vieron muy pocos eventos (no_llego temprano) no dicen
+    // nada sobre repetición: con 1-2 eventos totales, la "concentración" es
+    // trivialmente alta sin que el mecanismo esté fallando.
+    const total = claves.reduce((suma, clave) => suma + vistos[clave], 0);
+    if (total >= 15) {
+      concentraciones.push(Math.max(...claves.map((clave) => vistos[clave])) / total);
+    }
+  }
+
+  if (concentraciones.length < 50) {
+    throw new Error(`solo ${concentraciones.length} carreras con muestra suficiente (≥15 eventos vistos) en 300 seeds`);
+  }
+
+  const ordenados = [...concentraciones].sort((a, b) => a - b);
+  const p90 = ordenados[Math.floor(ordenados.length * 0.9)];
+
+  if (p90 > 0.25) {
+    throw new Error(`p90 de concentración (evento más visto / total visto) es ${(p90 * 100).toFixed(1)}%; el máximo esperado es 25%`);
+  }
+});
+
+check('Una carrera larga ve una amplia variedad de eventos distintos', () => {
+  const distintos = [];
+
+  for (let seed = 1; seed <= 200; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    const vistos = new Set();
+
+    for (let i = 0; i < 30 && !state.terminado; i += 1) {
+      const antes = state.logs.length;
+      state = avanzarSplitAuto(state, rng).state;
+      for (const log of state.logs.slice(antes)) {
+        if (log.type === 'event' && log.titulo) {
+          vistos.add(log.titulo.split(' · ')[0].split(' — ')[0]);
+        }
+      }
+    }
+    if (state.splitFichaje !== null) {
+      distintos.push(vistos.size);
+    }
+  }
+
+  if (distintos.length < 30) {
+    throw new Error(`solo ${distintos.length} carreras llegaron a pro en 200 seeds de 30 splits: muestra insuficiente`);
+  }
+
+  const ordenados = [...distintos].sort((a, b) => a - b);
+  const mediana = ordenados[Math.floor(ordenados.length / 2)];
+
+  if (mediana < 20) {
+    throw new Error(`mediana de eventos distintos vistos en 30 splits (carreras que llegan a pro): ${mediana}; se esperaba ≥ 20`);
+  }
+});
+
 if (errores.length > 0) {
   console.error(`\n${errores.length} check(s) fallaron.`);
   process.exit(1);

@@ -25,7 +25,15 @@ export const BALANCE = {
   eventos: {
     // Piso como fracción del peso base: ningún outcome cae por debajo de esto
     // sin importar cuánto empeore el stat. Corre los pesos, no los borra.
-    pisoPesoEfectivo: 0.15
+    pisoPesoEfectivo: 0.15,
+    // Fase 7: memoria anti-repetición. Cada vez que un evento sale, su peso
+    // efectivo se divide por (1 + vistas × fatigaPorVista) la próxima vez que
+    // compite — y si nunca salió, se multiplica por bonusNovedad. Sin esto,
+    // el catálogo se recicla en round-robin (el evento más repetido salía 10
+    // veces por carrera, mediana) porque lo único que evitaba el repetido era
+    // el cooldown fijo del propio evento.
+    fatigaPorVista: 0.8,
+    bonusNovedad: 2.5
   },
 
   // Valores de arranque del jugador. Son las bases sobre las que el mundo

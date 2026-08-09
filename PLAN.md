@@ -22,7 +22,7 @@ el juego) → este documento → `PROGRESO.md` (changelog) → `TRASPASO.md` (da
 | **4** | Competición jugable: series Bo5, Fearless, draft, minijuegos | ✅ ver `PROGRESO.md` |
 | **5** | La temporada existe: la fecha que importa | ✅ ver `PROGRESO.md` |
 | **6** | El meta con nombre | ✅ ver `PROGRESO.md` |
-| **7** | El prólogo se comprime y la repetición se rompe | ⬜ |
+| **7** | El prólogo se comprime y la repetición se rompe | ✅ ver `PROGRESO.md` |
 | **8** | Mercado: ofertas, contratos, salarios, imports | ⬜ |
 | **9** | Final emergente: retiro, servicio militar, lesiones, vuelta | ⬜ |
 | **10** | Contenido a escala (150+ opciones) | ⬜ |
@@ -1135,7 +1135,7 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | # | Hallazgo | Fase |
 |---|---|---|
 | D1 | ~~Los pesos de outcome son estáticos~~ — resuelto: `outcome.modificadores` | ✅ 2 |
-| D2 | El 23% de las carreras agota el tope de 90 splits: no hay retiro | 9 |
+| D2 | El 23% de las carreras agota el tope de 90 splits: no hay retiro. Remedido tras la fase 7 (que hace que muchas más carreras lleguen a pro y se sostengan): **49,1%** — ver PROGRESO.md, changelog de la fase 7 | 9 |
 | D3 | ~~`maxDecisionesPorSplit: 8` queda corto~~ — resuelto: subió a 16, luego a 60 | ✅ 2 |
 | D4 | ~~`posicionParaInternacional: 1` estaba mal para 2026~~ — resuelto: `liga.cuposInternacionales` | ✅ 3 |
 | D5 | ~~`regionOrigen` se sorteaba uniforme entre 8 ligas~~ — resuelto: pesado por prestigio, solo tier 1 | ✅ 3 |

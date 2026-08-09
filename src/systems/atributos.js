@@ -110,10 +110,15 @@ export function aplicar(state, rng) {
     career: { ...state.career, currentSplit: state.career.currentSplit + 1 }
   };
 
+  // Fase 7: `tecnico: true` marca los logs puramente numéricos — nadie los
+  // borra (siguen siendo útiles para depurar y para simulate.js), pero le
+  // dan a la UI (fase 11) la señal para esconderlos o achicarlos. Un split
+  // profesional sin playoffs era 5-6 líneas, la mayoría de este tipo.
   const logs = [crearLog(
     'split',
     `Split ${state.career.currentSplit}: mecánica ${deltaCorto(deltaMecanica)}, `
-    + `macro ${entero(stats.macro)}, mentalidad ${entero(mentalidad)}.`
+    + `macro ${entero(stats.macro)}, mentalidad ${entero(mentalidad)}.`,
+    { tecnico: true }
   )];
 
   // La mentalidad en cero es el fin de la carrera, pero el borde no es un

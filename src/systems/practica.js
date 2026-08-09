@@ -108,7 +108,11 @@ export function resolver(state, decision, respuesta, rng) {
 
   return {
     state: { ...state, player: { ...state.player, championPool: aprendido.pool, stats } },
-    logs: [crearLog('practica', `Offseason: ${partes.length > 0 ? partes.join(', ') : 'no aprovechaste el receso'}.`)]
+    logs: [crearLog(
+      'practica',
+      `Offseason: ${partes.length > 0 ? partes.join(', ') : 'no aprovechaste el receso'}.`,
+      { tecnico: true }
+    )]
   };
 }
 

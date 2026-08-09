@@ -93,7 +93,8 @@ export function aplicar(state, rng) {
     'campeones',
     tuvoSuPick
       ? `Jugaste con ${jugado.name} (maestría ${maestriaJugada}). Ajuste al meta: ${ajuste}/100.`
-      : `En el draft no te dieron tu pick: te tocó ${jugado.name} (maestría ${maestriaJugada}). Ajuste al meta: ${ajuste}/100.`
+      : `En el draft no te dieron tu pick: te tocó ${jugado.name} (maestría ${maestriaJugada}). Ajuste al meta: ${ajuste}/100.`,
+    { tecnico: true }
   ));
 
   return {

@@ -26,6 +26,68 @@ eventos (44 de los ~200 que pide §8, con 90 de las 150 opciones objetivo).
 
 ## Changelog
 
+### 2026-08-09 — Fase 7: el prólogo se comprime y la repetición se rompe
+
+Última de las tres fases insertadas antes del mercado. Dos problemas medidos al arrancar: la etapa
+amateur medía 15 splits de mediana de ~30 totales (la mitad de la partida) y el 49% de las carreras
+no llegaba a pro; y el catálogo de eventos se reciclaba en round-robin (el evento más repetido
+salía 10 veces por carrera, mediana), porque lo único que evitaba el repetido era el cooldown fijo
+de cada evento.
+
+**7a — comprimir el prólogo (commit separado, solo constantes)**: `lpPorBloque` 52→68,
+`puntosEscaleraCompleta` (el freno de altura de la ladder) 4300→4700, `scoutingProbPorNivel` casi
+duplicado en cada banda, `puntosParaRadar` 2800→2200, `splitMinimoScouting` 3→2. Medido sobre 1500
+carreras × 90 splits: mediana de splits en amateur 15→8, `llegaronAPro` 40,4%→73,9% (banda 65-75%,
+cumplida), `no_llego` 49%→21,1% (objetivo ≤25%, cumplido). La mediana de 8 no llegó al objetivo de
+≤6 — se documenta sin retocar más constantes, porque seguir empujando ese número (se probaron ~10
+combinaciones) solo lo lograba aflojando tanto el freno de altura que `llegaronAPro` se iba muy por
+encima de la banda 65-75% que el usuario sí pidió explícitamente.
+
+**7b — memoria anti-repetición**: `pesoConMemoria` en `systems/events.js` — cada vista de un evento
+le corre el peso en contra (`1 / (1 + vistas × fatigaPorVista)`) la próxima vez que compite, y la
+primera vez sin ver suma un `bonusNovedad`. Se aplica tanto a la selección general
+(`elegirEvento`/`elegirEventoCierre`) como a la de las fechas marcadas de `systems/temporada.js`
+(momento y reacción), que comparten el mismo contador `state.flags.eventosVistos`. No reemplaza al
+cooldown (que sigue sacando el evento del todo un tiempo): esto además hace que, aun disponible, un
+evento visto compita peor contra uno que nunca salió.
+
+**7c — más baraja en el cierre de edad**: 4 eventos nuevos en `data/events/cierre_edad.json`.
+`balance_de_temporada` (el único disponible para un pro joven, ya que `cuentas_de_la_carrera`
+exige `edadBanda: pico/tardia/veterana`) dejó de ser la única opción: se agregó
+`joven_el_primer_balance` para esa misma franja de edad, `tier3_el_cierre_de_un_armado_chico`
+(hueco real: tier 3 no tenía NINGÚN evento de cierre, porque `balance_de_temporada` exige
+`nivel: tier2/tier1`), `el_year_review_publico` (nivel tier1) y `el_vestuario_que_se_arma_de_nuevo`
+(marca `con_vestuario`).
+
+**7d — densidad**: los logs puramente numéricos (el resumen de fin de split en `atributos.js`, el
+"Ajuste al meta: X/100" de `campeones.js`, el resumen de offseason en `practica.js`) pasan a llevar
+`tecnico: true` en el `extra` del log — no se esconden todavía (la UI es fase 11), pero dejan la
+señal lista. Se midió `BALANCE.edad.probSegundaDecisionPorTipo` contra el ciclo nuevo (con las
+fechas marcadas de la fase 5 metiendo sus propias decisiones) y no se tocó: la mediana de líneas
+de log por split profesional ya da 15, con splits sin ninguna línea narrativa en 0 sobre 12.896
+splits medidos — no hay indicio de que la densidad se haya roto en ninguna dirección.
+
+**55 checks** (53 → 55; 7b/7c no necesitaron checks propios, están cubiertos por los dos nuevos).
+Los dos nuevos son una **corrección post-medición sobre el propio plan de esta fase**: el objetivo
+original pedía "mediana ≤ 4, máximo ≤ 8" repeticiones ABSOLUTAS del evento más visto. Con
+`llegaronAPro` subiendo de ~40% a ~74%, las carreras pasan casi el triple de splits en fase
+profesional, así que el conteo absoluto de instancias de evento por carrera creció con la
+población — un tope absoluto ya no mide lo mismo que medía cuando se escribió el plan. La métrica
+que sí es independiente del tamaño de la población es la **concentración** (qué fracción de todo
+lo que la carrera vio es el evento más repetido): medida en 8,8% de mediana y 17,2% de p90, muy por
+debajo del ~25-33% que daba el mecanismo viejo estimado a mano. El segundo check nuevo mide
+variedad: una carrera de 30 splits que llega a pro ve una mediana de eventos distintos muy por
+encima del piso de 20 declarado.
+
+**Números medidos** (1500 carreras × 90 splits, equilibrado): 0 crashes; determinismo verificado.
+`llegaronAPro` 73,9%, `no_llego` 21,1%, `burnout` 27,3% — casi todo ese burnout (confirmado con una
+medición aparte) ocurre YA SIENDO PROFESIONAL, no en el amateurismo: es la consecuencia esperada de
+que muchas más carreras ahora sobrevivan lo bastante para exponerse al riesgo de burnout de la fase
+profesional, no un efecto nuevo introducido acá. Corregir esa cifra es tocar el mecanismo de
+burnout profesional o agregar un final emergente de verdad — trabajo de la fase 9, no de esta.
+También subió la fracción de carreras que siguen activas al tope de 90 splits sin haber retirado
+(deuda **D2**, ya anotada): sigue siendo la razón por la que la fase 9 existe.
+
 ### 2026-08-09 — Fase 6: el meta con nombre
 
 Segunda de las tres fases insertadas antes del mercado. Antes de esto, `systems/meta.js` movía nueve

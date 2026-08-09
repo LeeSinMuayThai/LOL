@@ -140,7 +140,30 @@ function actualizarCooldowns(state, eventoElegido) {
     cooldowns[eventoElegido.id] = eventoElegido.cooldown;
   }
 
-  return { ...state, flags: { ...state.flags, cooldowns } };
+  // Fase 7: cuenta cuántas veces salió cada evento, para que la próxima
+  // selección le corra el peso en contra (ver `pesoConMemoria`).
+  const eventosVistos = state.flags.eventosVistos ?? {};
+  const vistosActualizados = eventoElegido
+    ? { ...eventosVistos, [eventoElegido.id]: (eventosVistos[eventoElegido.id] ?? 0) + 1 }
+    : eventosVistos;
+
+  return { ...state, flags: { ...state.flags, cooldowns, eventosVistos: vistosActualizados } };
+}
+
+// Fase 7: memoria anti-repetición. Antes lo único que evitaba el repetido era
+// el cooldown fijo de cada evento, y con ~17 candidatos en fase profesional
+// el pool se reciclaba en round-robin — el evento más repetido salía 10 veces
+// por carrera (mediana). Cada vista corre el peso en contra
+// (1 + vistas × fatigaPorVista al denominador); la primera vez suma un bonus
+// de novedad. No reemplaza al cooldown (que sigue sacando el evento del todo
+// un tiempo): esto además hace que, aun disponible, un evento visto compita
+// peor contra uno que nunca salió.
+export function pesoConMemoria(state, evento) {
+  const e = BALANCE.eventos;
+  const vistas = state.flags.eventosVistos?.[evento.id] ?? 0;
+  const fatiga = 1 / (1 + vistas * e.fatigaPorVista);
+  const bonus = vistas === 0 ? e.bonusNovedad : 1;
+  return evento.weight * fatiga * bonus;
 }
 
 // Una bisagra siempre pasa; una normal compite por el turno (fase 2, densidad
@@ -157,7 +180,7 @@ export function elegirEvento(state, rng, { excluirId } = {}) {
   if (disponibles.length === 0) {
     return null;
   }
-  return weightedPick(disponibles, (event) => event.weight, rng);
+  return weightedPick(disponibles, (event) => pesoConMemoria(state, event), rng);
 }
 
 export function elegirEventoCierre(state, rng) {
@@ -171,7 +194,7 @@ export function elegirEventoCierre(state, rng) {
   if (disponibles.length === 0) {
     return null;
   }
-  return weightedPick(disponibles, (event) => event.weight, rng);
+  return weightedPick(disponibles, (event) => pesoConMemoria(state, event), rng);
 }
 
 // La promesa de CONCEPTO §8: "la opción obviamente correcta sale mal a veces.

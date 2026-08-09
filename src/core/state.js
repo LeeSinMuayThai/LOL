@@ -145,6 +145,10 @@ export function createInitialState(seed, rng, eleccion = null) {
     },
     flags: {
       cooldowns: {},
+      // Cuántas veces salió cada evento (fase 7): objeto vacío al arrancar,
+      // nunca null (trampa T4). `systems/events.js` lo lee para pesar la
+      // repetición contra la novedad.
+      eventosVistos: {},
       robosConsecutivos: 0,
       pcConfiscada: 0,
       avisos: 0,

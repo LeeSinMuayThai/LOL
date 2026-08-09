@@ -301,5 +301,254 @@
         ]
       }
     ]
+  },
+  {
+    "id": "tier3_el_cierre_de_un_armado_chico",
+    "category": "cierre_edad",
+    "title": "El cierre en un equipo de paso",
+    "description": "No hay reunión formal ni VOD: en tier 3 el año se cierra con un audio de grupo y cada uno yéndose para su casa. Igual hay que sacar algo en limpio antes del año que viene.",
+    "weight": 6,
+    "cooldown": 0,
+    "contexto": {
+      "etapa": ["debut", "profesional"],
+      "nivel": ["tier3"]
+    },
+    "conditions": [],
+    "cierreDeEdad": true,
+    "options": [
+      {
+        "id": "quedarte_con_lo_bueno",
+        "label": "Quedarte con lo que sí sirvió",
+        "descripcion": "Un equipo chico no te deja mucho, pero algo de esto te lo llevás igual.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Rescatás lo que aprendiste jugando partidas oficiales de verdad, aunque fuera con esta gente y en este nivel.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Buscás el lado bueno y no encontrás demasiado. El año fue lo que fue: un lugar para aterrizar, no para crecer.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 0, "max": 2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "prepararte_para_algo_mejor",
+        "label": "Usar el receso para apuntar más alto",
+        "descripcion": "En vez de mirar para atrás, le metés horas para que el año que viene no arranque en tier 3 de nuevo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Llegás al año siguiente con un nivel que ya no corresponde a este lugar, y en algún lado eso se termina notando.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Le metés todo el receso y llegás cansado a un año que necesitaba que llegaras entero.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "joven_el_primer_balance",
+    "category": "cierre_edad",
+    "title": "El primer balance en serio",
+    "description": "Todavía sos de los más jóvenes del vestuario, pero ya jugaste una temporada entera como profesional. Es tu primer cierre de año que no es de colegio.",
+    "weight": 5,
+    "cooldown": 0,
+    "contexto": {
+      "etapa": ["debut", "profesional"],
+      "edadBanda": ["temprana", "joven"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 5 }
+    ],
+    "cierreDeEdad": true,
+    "options": [
+      {
+        "id": "compararte_con_los_veteranos",
+        "label": "Medirte contra los que llevan más años",
+        "descripcion": "Mirás tu año al lado del de los veteranos del vestuario. Puede motivarte, o puede pesarte más de lo que esperabas.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "La comparación te sienta bien: para tu edad, vas adelantado. Te lo guardás como combustible para el año que viene.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Te comparás y salís perdiendo en tu propia cabeza, aunque en los números no sea tan así.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "medirte_solo_contra_vos",
+        "label": "Medirte solo contra el que eras hace un año",
+        "descripcion": "Nada de comparar con nadie más: solo importa si mejoraste respecto al pibe que firmó el contrato.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Contra el que eras hace un año, el progreso es innegable. Cerrás el balance más tranquilo de lo que pensabas.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Contra el que eras hace un año también sentís que estancaste más de lo que te gustaría admitir.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_year_review_publico",
+    "category": "cierre_edad",
+    "title": "El resumen del año que hace la prensa",
+    "description": "Un medio grande de la escena publica su repaso del año de {org}, con vos incluido. Se puede leer, o se puede dejar pasar.",
+    "weight": 4,
+    "cooldown": 0,
+    "contexto": {
+      "etapa": ["debut", "profesional"],
+      "nivel": ["tier1"]
+    },
+    "conditions": [],
+    "cierreDeEdad": true,
+    "options": [
+      {
+        "id": "leerlo_entero",
+        "label": "Leerlo entero, párrafo por párrafo",
+        "descripcion": "Ver cómo te lee la prensa después de un año completo, para bien o para mal.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El repaso es más generoso de lo que esperabas. Cerrás el año con una versión de vos mismo que te gusta un poco más.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El párrafo que te dedican pesa más de lo que un párrafo debería pesar. Te lo llevás puesto unos días.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "no_abrir_el_link",
+        "label": "No abrir el link",
+        "descripcion": "Cerrás el año con tu propia versión de cómo te fue, sin que nadie más te la escriba.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "No lo leés y el año se cierra en tus propios términos, sin la opinión de nadie de por medio.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Un compañero te lo cuenta igual, resumido y peor de lo que decía en realidad.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_vestuario_que_se_arma_de_nuevo",
+    "category": "cierre_edad",
+    "title": "El vestuario que viene se arma distinto",
+    "description": "Terminó la temporada y ya se sabe que el roster no va a ser el mismo el año que viene. Con {jungla} te tocó compartir todo este año; con el resto del roster que viene, hay que empezar de cero.",
+    "weight": 5,
+    "cooldown": 0,
+    "contexto": {
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "cierreDeEdad": true,
+    "options": [
+      {
+        "id": "despedirte_como_corresponde",
+        "label": "Hacer algo para despedir a los que se van",
+        "descripcion": "Un asado, un mensaje, lo que sea. Marcar que este año existió antes de que el vestuario cambie de cara.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "El gesto se agradece más de lo que esperabas. Cerrar bien un ciclo también es parte de sostener una carrera larga.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "El gesto sale un poco forzado: entre las mudanzas y los contratos, nadie tiene mucha cabeza para despedidas.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 0, "max": 2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ya_estar_en_otra_cosa",
+        "label": "Ya tener la cabeza en el año que viene",
+        "descripcion": "El roster que se va ya es historia. Preferís pensar en quién va a llegar antes que en quién se fue.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Entrás al offseason con la cabeza puesta adelante, sin cargar con lo que este roster fue o dejó de ser.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Pasar de página tan rápido deja una sensación rara: como si un año entero de tu vida no hubiera importado nada.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]
