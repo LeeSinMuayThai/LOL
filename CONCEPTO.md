@@ -18,8 +18,13 @@ pieza. Terminás retirándote — o no llegando nunca. En el medio, una carrera
 entera construida a partir de decisiones: qué campeones aprendés, cuánto
 sacrificás, a qué equipo firmás, cuándo te vas del país, cuándo decís que no.
 
-Dura entre 4 y 10 minutos. Se juega de una sentada, en el navegador, sin
+Dura entre 25 y 40 minutos. Se juega de una sentada, en el navegador, sin
 cuenta ni instalación. Al final te da una tarjeta con tu legado.
+
+> Actualizado en la fase 8 del `PLAN.md`: la estimación original (4-10 minutos) era anterior al
+> Bo5 con Fearless y draft (fase 4), a la temporada regular jugable (fase 5) y al mercado de pases
+> (fase 9) — sistemas que el usuario pidió explícitamente como centrales, no opcionales. La
+> duración larga es una decisión tomada, no una regresión de scope.
 
 **La referencia directa son El Ídolo (Potrero Fútbol) y Copero**: historias
 interactivas cortas donde un motor simula la carrera y vos solo decidís en los
@@ -267,6 +272,16 @@ No es cosmética: define si te dan el pick que querés, si el jungla camina para
 vos, si tus llamadas se ejecutan, quién se come la culpa cuando pierden, y
 cuánto poder tenés para negociar. Al cambiar de equipo se resetea parcialmente.
 
+**ARRAIGO.** Distinto de la jerarquía y no confundirlo con ella: la jerarquía
+es tu estatus *deportivo* dentro del roster (se resetea al cambiar de equipo);
+el arraigo es lo que la gente de una organización siente por vos, y **no se
+resetea nunca** — se acumula mientras estás, y queda registrado para siempre
+en tu historia con esa org. Sube con los splits jugados, los títulos y rendir
+por encima de lo esperado. Tiene cuatro hitos con nombre (uno más → querido →
+ídolo → leyenda) y es el costo emocional, hecho número, de aceptar la oferta
+del equipo grande: te vas con el arraigo que construiste tirado, y arrancás de
+nuevo casi en cero en el lugar nuevo — salvo que tu fama ya te haya precedido.
+
 **SINERGIA.** La química colectiva del roster, distinta de tu estatus personal.
 Un equipo con sinergia alta rinde por encima de la suma de sus partes.
 
@@ -488,9 +503,11 @@ explícita — como máximo uno por serie, y solo cuando el mapa está cerrado e
 semis, la final o el internacional (más "la prueba", el tryout único de la
 etapa amateur). Si aparecieran siempre, se volverían tarea.
 
-**No es largo.** Si una partida se pasa de doce minutos, algo se infló. El
-formato corto es lo que hace que la rejugués, y rejugarla es donde está el
-juego de verdad.
+**No es un juego largo para lo que cuenta.** Si una carrera completa (inicio → tarjeta final) se
+pasa de 40 minutos, algo se infló — pero la vara ya no son doce minutos: el Bo5 con Fearless y
+draft, la temporada regular jugable y el mercado de pases son sistema central, no relleno. Lo que
+sigue vigente es el espíritu de la regla: nada se agranda porque sí, y rejugar con otra seed —no
+alargar la misma partida— es donde está el juego de verdad.
 
 **No tiene una estrategia ganadora.** Si el simulador de 5000 carreras muestra
 que más del 25% termina en el mismo arquetipo, el balance está roto aunque

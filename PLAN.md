@@ -23,10 +23,12 @@ el juego) → este documento → `PROGRESO.md` (changelog) → `TRASPASO.md` (da
 | **5** | La temporada existe: la fecha que importa | ✅ ver `PROGRESO.md` |
 | **6** | El meta con nombre | ✅ ver `PROGRESO.md` |
 | **7** | El prólogo se comprime y la repetición se rompe | ✅ ver `PROGRESO.md` |
-| **8** | Mercado: ofertas, contratos, salarios, imports | ⬜ |
-| **9** | Final emergente: retiro, servicio militar, lesiones, vuelta | ⬜ |
-| **10** | Contenido a escala (150+ opciones) | ⬜ |
-| **11** | Legado, rivales y UI | ⬜ |
+| **8** | La ficha: el registro que acumula + la tarjeta permanente + `src/ui/` | ⬜ |
+| **9** | El mercado: ofertas, contratos, salarios, la trampa del equipo grande visible | ⬜ |
+| **10** | El final: retiro emergente + la tarjeta de legado | ⬜ |
+| **11** | El año: calendario, la nota de la temporada, el archirrival | ⬜ |
+| **12** | La jerarquía de la decisión: categorías, rareza, consecuencia previa, el dado | ⬜ |
+| **13** | Contenido a escala (150+ opciones) | ⬜ |
 
 > **Por qué estas tres fases se insertaron antes del mercado.** Jugando el juego con las cuatro
 > fases hechas aparecieron cuatro defectos medibles: la temporada regular se resuelve con una
@@ -38,6 +40,19 @@ el juego) → este documento → `PROGRESO.md` (changelog) → `TRASPASO.md` (da
 > a la otra: primero existe el partido (5), después el meta se puede mostrar sobre ÉL (6), y recién
 > ahí tiene sentido calibrar cuánto dura el prólogo y afinar la repetición (7). El detalle completo,
 > con los números medidos que motivan cada decisión, está en las tres secciones que siguen.
+>
+> **Por qué las fases 8-11 originales se reescribieron por completo (agosto 2026).** Comparando el
+> juego contra su referencia directa (El Ídolo del Potrero) imagen por imagen, con auditoría de
+> código contra cada diferencia observada, apareció un diagnóstico distinto del que se venía
+> siguiendo: el problema no era falta de motor — 7 fases y 14.020 líneas ya estaban— sino que **no
+> existe un registro que acumule la carrera y no existe una pantalla que lo muestre.** Sin
+> `career.registro` no hay mercado posible (las ofertas necesitan tu hoja), sin mercado no hay
+> retiro emergente con sentido (te retirás cuando el mercado deja de llamarte), y sin retiro no hay
+> tarjeta final. Las fases 8-11 se reordenaron por esa dependencia dura y se agregó una fase 12
+> dedicada exclusivamente a conectar a la pantalla lo que el motor ya calcula y nunca muestra. El
+> diagnóstico completo, con evidencia imagen-por-imagen y línea-de-código, vive en el historial de
+> `PROGRESO.md` (entrada "Auditoría contra El Ídolo del Potrero"). **Regla de proceso 12, nueva:
+> ninguna fase cierra sin su pantalla** — es la lección de las fases 0-7.
 
 ---
 
@@ -917,174 +932,861 @@ Fracción de splits sin evento < 25% en todos los contextos alcanzables (trampa 
 
 ---
 
-# FASE 8 — Mercado: ofertas, contratos, salarios, imports
+# FASE 8 — LA FICHA
 
-**Acá es donde la carrera deja de tener duración fija.**
+> **La fase más importante del documento. Todo lo demás la lee.**
+> Sin `registro`, la fase 9 no puede valuarte, la 10 no puede narrarte y la 11 no puede compararte.
 
-## 5.1 — `src/core/salarios.js` — lognormal
+## 8.0 — Commits
 
-Mediana muy por debajo de la media: LEC media €240k, **mediana ~€165k**, rookie ~€115k.
-Por rol: Mid €345k · Jungla €250k · ADC €240k · Top €192k · Support €168k. Ningún LEC supera €1M
-desde 2024; solo LCK/LPL habilitan los $6-8M de Faker. Premios marginales a propósito: Doublelift
-acumuló ~$300k en premios **en toda su carrera**.
+Por la regla de proceso 2 (nunca estructura + tuning en el mismo commit):
+
+| # | Commit | Contenido |
+|---|---|---|
+| 8a | `fase 8a: el registro acumula` | 8.1, 8.2, 8.4 (motor) + checks |
+| 8b | `fase 8b: src/ui/ y la ficha permanente` | 8.3, 8.5, 8.6 (pantalla) |
+| 8c | `fase 8c: calibrar arraigo` | solo constantes, después de medir 8a/8b |
+
+## 8.1 — `state.career.registro` (nuevo)
+
+Objeto que **solo crece**. Inicializado completo en
+[createInitialState](src/core/state.js#L15) — nunca `null` (trampa T4):
 
 ```js
+registro: {
+  // --- Contadores de por vida ---
+  splitsJugados: 0,
+  splitsConEquipo: 0,
+  fechasGanadas: 0,        // temporada regular (systems/temporada.js)
+  fechasPerdidas: 0,
+  mapasGanados: 0,         // series de playoffs (systems/serie.js)
+  mapasPerdidos: 0,
+  seriesGanadas: 0,
+  seriesPerdidas: 0,
+  dineroTotalUSD: 0,       // fase 9 lo alimenta; hasta entonces queda en 0
+
+  // --- Picos (imagen 15: "93 MEDIA MÁX", "US$95,6M VALOR MÁS ALTO") ---
+  picos: {
+    nivel: 0, edadDelPicoDeNivel: 0,
+    jerarquia: 0, arraigo: 0, hype: 0,
+    valorMercadoUSD: 0, salarioMensualUSD: 0,
+    rankedPuntos: 0
+  },
+
+  // --- La historia, org por org (imagen 15, "TU HISTORIA, CLUB POR CLUB") ---
+  // Se abre una fila al firmar y se cierra al irse. La fila NUNCA se borra:
+  // volver a la misma org abre una fila nueva (dos etapas, dos filas), que es
+  // como lo cuenta la referencia.
+  porOrg: [/* {
+    org, liga, tier,
+    desdeAnio, hastaAnio,          // null mientras sigue activa
+    desdeSplit, hastaSplit,
+    splits, fechasG, fechasP,
+    jerarquiaMaxima, arraigoFinal, arraigoMaximo,
+    titulos: [{ nombre, anio }],
+    salarioMensualUSD,             // fase 9
+    motivoDeSalida                 // 'transferencia'|'sin_renovacion'|'disolucion'|'ascenso'|'retiro'
+  } */],
+
+  // --- Trofeos de por vida, para agrupar "5× LCK 2030 2031 2033..." ---
+  titulos: [/* { nombre, anio, org, liga } */],
+  internacionales: [/* {
+    torneo, anio, org, resultado,
+    camino: [{ ronda, rival, marcador, ganado }]   // imagen 12: "EL CAMINO"
+  } */],
+
+  // --- Hitos narrativos con fecha, para que el contenido pueda citarlos ---
+  momentos: [/* { tipo, anio, edad, org, texto } */]
+}
+```
+
+**Regla dura nueva:** ningún sistema borra ni sobrescribe una entrada de `registro`. Solo `append`
+e incremento monótono. Se verifica con un check estático sobre `src/`.
+
+**Dónde escribe cada sistema** (una línea por sistema, sin sistemas nuevos):
+
+| Sistema | Qué incrementa |
+|---|---|
+| [`systems/temporada.js`](src/systems/temporada.js) | `fechasGanadas` / `fechasPerdidas`, y las de la fila de org |
+| [`systems/serie.js`](src/systems/serie.js) | `mapasGanados/Perdidos`, `seriesGanadas/Perdidas`, `internacionales[].camino` |
+| [`systems/rendimiento.js`](src/systems/rendimiento.js) | `titulos[]` (hoy empuja un string a `career.hitos`, línea 112) |
+| [`systems/roster.js`](src/systems/roster.js) | abre y cierra la fila de `porOrg`; `arraigo` |
+| [`systems/competitivo.js`](src/systems/competitivo.js) | cierra fila con `motivoDeSalida` |
+| [`systems/atributos.js`](src/systems/atributos.js) | `picos.nivel`, `picos.edadDelPicoDeNivel` |
+
+## 8.2 — `state.calendario` (nuevo — chico, y de altísimo retorno)
+
+Hoy no existe el año. Con `BALANCE.edad.splitsPorEdad: 3` y
+[`calcularVentana`](src/core/contexto.js#L101) ya mapeando `pretemporada / regular / playoffs`,
+alcanza con:
+
+```js
+calendario: {
+  anioBase: 2026,
+  anio: 2026,          // anioBase + floor(splitCount / splitsPorEdad)
+  temporada: 1,        // 1 + floor(splitCount / splitsPorEdad)
+  etiqueta: '2026'     // formato.js: "2026" en tier1, "2026/27" si se quiere el split-year
+}
+```
+
+Se calcula en [`systems/edadInicio.js`](src/systems/edadInicio.js), que ya corre en el momento
+justo. **Desbloquea:** trofeos fechados · `TEMPORADA 7` · `2026–2035` en la tarjeta final ·
+`Worlds 2033` · y la sensación de época. Cuesta ~10 líneas y lo consumen las fases 10 y 11.
+
+## 8.3 — `src/core/ficha.js` (nuevo, puro, cero RNG)
+
+La única función que la UI llama para pintar. Todo derivado, nada duplicado en el estado:
+
+```js
+// El número único. ESTA ES LA EXTRACCIÓN CLAVE:
+// las líneas 26-31 de systems/rendimiento.js se mueven acá y rendimiento.js
+// las importa. La fórmula NO se reescribe ni se retunea (regla de proceso 2).
+export function nivelDelJugador(state)        // -> 0-100
+export function bandaDeNivel(nivel)           // -> 'prospecto'|'titular'|'elite'|'clase_mundial'
+
+// Las flechas ▲▼. Requiere ampliar CAMPOS_EDAD (ver 8.3.1).
+export function deltasDeStats(state)          // -> { mecanica: +2, laneo: -1, ... }
+export function statDestacado(state)          // -> 'macro'  (el más alto ponderado por rol)
+
+// Las barras. bandaDeJerarquia REUSA bandaPorTecho + BALANCE.contexto.estatusBandas,
+// que ya producen rookie/titular/referente/franquicia en contexto.js:78.
+export function bandaDeJerarquia(state)       // -> { id, label, valor, techoDelHito, siguiente }
+export function bandaDeArraigo(state)         // -> { id, label, valor, techoDelHito, siguiente }
+
+// Los estados con nombre en vez de contadores.
+export function estadoInternacional(state)    // -> 'sin_chance'|'en_carpeta'|'clasificado'|'jugando'
+export function dueloDeGeneracion(state)      // -> { rival, tuyos, suyos } | null   (fase 11 lo llena)
+
+// El objeto único que consume src/ui/components/ficha.js
+export function fichaCompleta(state)
+```
+
+### 8.3.1 — Ampliar `CAMPOS_EDAD` (prerrequisito de las flechas)
+
+[`edadInicio.js:6`](src/systems/edadInicio.js#L6) hoy fotografía **7 campos** y solo 3 son stats
+(`mecanica`, `mentalidad`, `hype`). Para las ▲▼ de los 6 atributos de rol hay que agregar:
+
+```js
+'player.stats.macro', 'player.stats.teamfight',
+'player.stats.laneo', 'player.stats.shotcalling', 'player.stats.adaptabilidad'
+```
+
+> **Trampa:** `generarTextoResumen` en [`edadCierre.js:14`](src/systems/edadCierre.js#L14) itera
+> `CAMPOS_EDAD` para el log de cierre. Ampliarlo hace ese log más largo — pero ese log **se
+> reemplaza entero en la fase 11**, así que en la 8 se acota a los campos que ya listaba, y en la
+> 11 se borra la función.
+
+### 8.3.2 — Constantes nuevas
+
+```js
+BALANCE.ficha = {
+  // Bandas del NIVEL. Calibrar en 8c contra la distribución medida.
+  nivelBandas: { prospecto: 45, titular: 62, elite: 78 },  // por encima: clase_mundial
+  // Un delta menor a esto no dibuja flecha: una deriva de 0,4 no es una noticia.
+  umbralFlecha: 1
+};
+```
+
+## 8.4 — `career.arraigo` y su sistema
+
+El segundo eje decidido en la PARTE 3. **No es un sistema nuevo**: vive en
+[`systems/roster.js`](src/systems/roster.js), que ya maneja jerarquía y sinergia (regla invariable
+6 respetada: no hace falta una línea nueva en `ETAPAS_SPLIT`).
+
+| Fuente | Efecto |
+|---|---|
+| cada split en la org | `+[0.8, 1.6]`, escalado por `ROLES[].visibilidad` |
+| título | `+[8, 14]` |
+| rendir por encima de lo esperado | `+brecha × factor` (reusa la `brecha` de [rendimiento.js:90](src/systems/rendimiento.js#L90)) |
+| clasificar a un internacional | `+[4, 7]` |
+| split de fracaso (`posicion > equipos × posicionFracaso`) | `−[1, 3]` |
+
+**Al cambiar de org:** se cierra la fila de `porOrg` con `arraigoFinal` y `arraigoMaximo`, y el
+arraigo nuevo arranca en `hype × BALANCE.arraigo.pisoPorHype` — que es literalmente la línea *"tu
+fama te precede"* de la imagen 6.
+
+```js
+BALANCE.arraigo = {
+  porSplitMin: 0.8, porSplitMax: 1.6,
+  porTituloMin: 8, porTituloMax: 14,
+  porInternacionalMin: 4, porInternacionalMax: 7,
+  porFracasoMin: -3, porFracasoMax: -1,
+  factorBrechaRendimiento: 0.35,
+  pisoPorHype: 0.15,
+  hitos: { uno_mas: 0, querido: 25, idolo: 60, leyenda: 88 }
+};
+```
+
+Los cuatro hitos son los de Potrero (👍 Uno más → ❤️ Querido → ⭐ Ídolo → 🗿 Leyenda), traducidos.
+`Leyenda` habilita en la tarjeta final el detalle único *"tenés tu lugar en la base de la org"*.
+
+## 8.5 — `src/ui/` — la extracción (cierra D7)
+
+`index.html` tiene 1.090 líneas y `src/ui/` está **vacía**. La ficha permanente fuerza la
+extracción que `DISENO.md` §4.1 pide desde el arranque del proyecto:
+
+```
+src/ui/render.js                  orquestador: state -> pantalla; único punto de entrada
+src/ui/components/ficha.js        LA TARJETA (vive en TODAS las pantallas)
+src/ui/components/barra.js        barra con hitos dibujados y etiqueta (arraigo, jerarquía)
+src/ui/components/statRow.js      atributos con ▲▼ y destacado
+src/ui/components/decision.js     tarjeta de decisión (la fase 12 la enriquece)
+src/ui/components/feed.js         el log, con `tecnico: true` colapsado
+src/ui/screens/inicio.js          rol + mains (lo que hoy es #setup, index.html:425-453)
+src/ui/screens/carrera.js         ficha + decisión + feed
+```
+
+`index.html` queda como shell + `<style>`. **Los minijuegos NO se mueven en esta fase**
+(index.html:741-905): se migran en la fase 12, cuando se les cambia la presentación. Mover código
+que igual se va a reescribir es trabajo tirado.
+
+> **Regla invariable 2 (el motor no toca el DOM):** `src/ui/` es la única carpeta que puede. El
+> check estático de `dev/guards.js` se amplía para prohibir `document` fuera de `src/ui/`.
+
+## 8.6 — La tarjeta permanente
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│  77   🇰🇷 THONOR26 · JUNGLA                            [T1]   │
+│ NIVEL   T1 Esports · LCK · 2032 · 22 AÑOS · FAMA 25            │
+│ élite   🌍 INTERNACIONAL   EN CARPETA                           │
+├────────────────────────────────────────────────────────────────┤
+│    3.8 KDA  │  12 MVP  │  47 SPLITS  │  2 TÍTULOS              │
+├────────────────────────────────────────────────────────────────┤
+│ MEC 81▲  MACRO 81▲  TF 71▲  LANEO 55▲  SHOT 62  ADAPT 58       │
+│          ^^^^^^^^ destacado en color                            │
+├────────────────────────────────────────────────────────────────┤
+│ VALOR US$1,2M │ GANADO US$430K │ 83-136 vs DRAKKEN             │
+├────────────────────────────────────────────────────────────────┤
+│ ARRAIGO    ▓▓▓▓▓▓░░░░░░░░  QUERIDO · 26/100                    │
+│            👍        ❤️        ⭐        🗿                      │
+│ JERARQUÍA  ▓▓▓▓▓▓▓▓░░░░░░  REFERENTE · 71                      │
+├────────────────────────────────────────────────────────────────┤
+│ POOL  Lee Sin 78 [S] · Wukong 64 [C] · Elise 71 [A]            │
+│                                          ▸ VER CARRERA          │
+└────────────────────────────────────────────────────────────────┘
+```
+
+**Los detalles que NO son opcionales** (son los que hacen el trabajo, ver H7):
+
+1. **▲▼ por stat**, contra `flags.edadSnapshot`. Sin esto el declive es invisible y toda la
+   inversión en `curvas.js` y las formas de carrera no se percibe.
+2. **El destacado en color** — qué sos, de un vistazo.
+3. **Las barras con los 4 hitos dibujados**, no solo el número. Y **doradas** al llegar al último.
+4. **El NIVEL grande a la izquierda**, con color por banda.
+5. **`VER CARRERA`** abre `registro.porOrg` — **el mismo componente que reusa la tarjeta final de
+   la fase 10.** Se escribe una vez.
+6. **El pool con la tier del régimen vigente al lado** (`meta.tierList` ya existe en
+   [`core/regimen.js`](src/core/regimen.js) y hoy solo sale como texto en un log).
+7. En etapa amateur la ficha muestra otras filas (estudios, confianza, sueño, ranked) — **misma
+   estructura, campos distintos**, no una pantalla aparte.
+
+## 8.7 — Documentos a actualizar (regla de proceso 5)
+
+- `CONCEPTO.md` §1 y §11: la duración pasa a 25-40 min (ver PARTE 3).
+- `CONCEPTO.md` §6: se agrega `ARRAIGO` a la lista de sistemas, y se aclara que `JERARQUÍA` es el
+  eje deportivo y `ARRAIGO` el afectivo.
+- `DISENO.md` §4.1: la estructura de `src/ui/` deja de ser un plan y pasa a ser el mapa real.
+
+## 8.8 — Checks de la fase 8
+
+```
+registro.splitsJugados === player.splitCount en el 100% de las carreras
+Σ registro.porOrg[].splits === registro.splitsConEquipo (la hoja cierra)
+Ningún campo de registro decrece nunca en una carrera (check dinámico, 500 carreras)
+Ningún archivo fuera de src/ui/ referencia `document` (check estático, amplía guards.js)
+nivelDelJugador() da exactamente la `base` de calcularRendimiento() (no se retuneó nada)
+En carreras >20 splits, picos.nivel se alcanza antes del último split en ≥70%
+   (si el nivel nunca baja, el declive no existe y hay que decirlo en PROGRESO)
+El arraigo llega a 'idolo' en ≥15% de las carreras con ≥8 splits en una misma org
+calendario.anio avanza exactamente 1 cada splitsPorEdad splits
+deltasDeStats devuelve al menos un delta ≠ 0 en ≥80% de los cierres de edad
+Determinismo: misma seed, dos corridas, huella idéntica
+```
+
+> Regla de proceso 7: al escribir cada check, **verificar que falla cuando debe** (trampa T5).
+
+## 8.9 — Números a medir al cerrar
+
+| Métrica | Antes | Objetivo |
+|---|---|---|
+| Campos del estado visibles en pantalla | 8 | ≥ 22 |
+| Líneas de UI en `index.html` | 1.090 | ≤ 350 (shell + estilos) |
+| Carreras que alcanzan el hito `idolo` de arraigo | — | 15-30% |
+| `llegaronAPro`, burnout, splits medianos | — | **sin cambios** (± 3 pts): esta fase no toca balance |
+
+## 8.10 — Verificación end-to-end
+
+Jugar 12 splits a mano y confirmar: la ficha está en todas las pantallas · las flechas se mueven al
+cerrar la edad · el NIVEL sube · el arraigo cruza un hito con nombre y la barra cambia · `VER
+CARRERA` muestra la fila de la org con sus splits y su título · cero errores de consola.
+
+---
+
+# FASE 9 — EL MERCADO
+
+> Implementa `salarios.js` lognormal y `valorMercado.js` con sesgo etario, residencia y cupos de
+> import. **Esos números están investigados en `TRASPASO.md` §4 y no se vuelven a investigar ni a
+> discutir** (ver 9.2). Lo que agrega esta fase es que la oferta sea una decisión de verdad, con la
+> pantalla de la imagen 6.
+
+## 9.0 — Commits
+
+| # | Commit | Contenido |
+|---|---|---|
+| 9a | `fase 9a: contratos y valor de mercado` | 9.1, 9.2 (motor), sin quitarle nada a `competitivo.js` |
+| 9b | `fase 9b: el mercado decide, competitivo deja de sortear` | 9.3, 9.4 — **el cambio de riesgo** |
+| 9c | `fase 9c: la pantalla de ofertas` | 9.5, 9.6 |
+| 9d | `fase 9d: calibrar el mercado` | solo constantes |
+
+## 9.1 — El contrato existe
+
+```js
+career.contrato = {
+  org: null, liga: null, tier: null,
+  salarioMensualUSD: 0,
+  anios: 0, aniosRestantes: 0,
+  clausula: null,                 // 'salida'|'rescision'|null
+  tipo: 'ninguno',                // 'rookie'|'renovacion'|'transferencia'|'import'
+  firmadoAEdad: 0, firmadoEnAnio: 0
+}
+```
+
+Objeto completo de ceros, nunca `null` (T4). `registro.dineroTotalUSD` se incrementa cada split
+profesional. **Es la primera vez en el proyecto que `career.contracts` deja de ser `[]`.**
+
+## 9.2 — `src/core/salarios.js` y `src/core/valorMercado.js`
+
+Las fórmulas y los números investigados viven en `TRASPASO.md` §4 (líneas 560-660) y **no se
+vuelven a investigar ni a discutir** — es la misma cita que hacía la vieja fase 8 de este
+documento, ahora apuntada a la fuente original en vez de a una sección que este mismo plan
+reemplaza:
+
+```js
+// TRASPASO.md §4 — salarios: lognormal, mediana << media (LEC mediana ~€165k, media €240k)
 salarioDeOferta(liga, { rol, jerarquia, hype, edad, esImport }, rng)
   base  = liga.salario.medianaUSD
   mult  = exp(gauss(0, liga.salario.sigma))          // mediana << media
-  mult *= factorRol[rol]
+  mult *= factorRol[rol]                             // Mid > Jungla > ADC > Top > Support
   mult *= 0.6 + (jerarquia / 100) * 1.1
   mult *= 0.85 + (hype / 100) * 0.45
   return max(liga.salario.minimoUSD, base * mult)
-```
 
-## 5.2 — `src/core/valorMercado.js` — la pieza clave
-
-```
+// TRASPASO.md §4 — valor de mercado, con sesgo etario (el jugador de 28 recibe ~40% de las
+// ofertas que uno de 21 con la hoja idéntica)
 valorDeMercado = f(rendimientoReciente, jerarquia, hype, residencia, signature) × sesgoEtario
-
 sesgoEtario:  ≤22 → 1.00 · 23 → 0.95 · 24 → 0.88 · 25 → 0.78 · 26 → 0.66
               27 → 0.52 · 28 → 0.40 · 29 → 0.30 · 30 → 0.22 · 31+ → 0.15
 ```
 
-Un jugador de 28 con la hoja idéntica a la de uno de 21 recibe **40% de las ofertas**. No juega
-peor: el mercado dejó de mirarlo.
+**Reusar la forma de `BALANCE.amateur.scoutingSesgoEtario`**, que ya hace exactamente esto en la
+etapa amateur, para que el juego tenga **un solo modelo** de "el mercado prefiere jóvenes" en vez
+de dos curvas parecidas mantenidas por separado.
 
-> **El hallazgo que gobierna todo esto:** el declive casi **no es biológico**. El tiempo de reacción
-> cae ~1 ms/año después de los 25, contra **90 ms** de brecha entre un casual y un pro. Es ruido.
-> La causa modal de retiro es **que no te renuevan**, sistemáticamente sub-reportada porque nadie
-> anuncia "me retiro porque nadie me contrata". → Se modela **presión de mercado, no decadencia de
-> stats**.
-
-Reusar la forma de `BALANCE.amateur.scoutingSesgoEtario`, que ya hace exactamente esto en la etapa
-amateur, para que el juego tenga **un solo modelo** de "el mercado prefiere jóvenes".
+**El hallazgo que gobierna todo esto:** el declive casi **no es biológico**. El tiempo de reacción
+cae ~1 ms/año después de los 25, contra **90 ms** de brecha entre un casual y un pro — es ruido. La
+causa modal de retiro es que no te renuevan, sistemáticamente sub-reportada porque nadie anuncia
+"me retiro porque nadie me contrata". Se modela **presión de mercado, no decadencia de stats**: el
+declive no es lo que te retira, es el mercado dejando de mirarte.
 
 `atributos.js`: la curva de declive **no se borra** (`CONCEPTO` §6 la pide y es la razón mecánica
-para invertir en macro) pero se **suaviza ~40%**: sigue perceptible, deja de ser lo que te retira.
+para invertir en macro) pero se **suaviza ~40%**: sigue perceptible — y la fase 8 recién la hizo
+visible con las ▲▼, sería absurdo borrarla el mismo mes que se puede ver — pero deja de ser lo que
+te retira.
 
-## 5.3 — `src/systems/mercado.js` (nuevo, offseason)
+`valorMercado` alimenta `registro.picos.valorMercadoUSD` → imagen 15, `US$95,6M VALOR MÁS ALTO`.
+**Residencia:** `player.residencias = { KR: 0, EMEA: 0, … }` en splits (ya definido en TRASPASO §4);
+12 splits (4 años) = residencia y salto de valor de mercado. La doble residencia LATAM 2026-2027
+queda en D17, abierta (ver PARTE 8 / Deuda técnica).
 
-1. Calcula `valorDeMercado`.
-2. Renovación o no → `contexto.mercado = 'sin_renovacion'` con contenido propio.
-3. **0-3 ofertas**, filtradas por cupo de imports y edad mínima, con la **trampa del equipo grande
-   visible** (`CONCEPTO` §7: firmar con un gigante resetea tu jerarquía → volvés a ser uno más →
-   no te dan tus picks → rendís peor → y en la fase 4 eso significa que **no elegís en el mapa 5**).
-4. Sin ofertas por N splits → `nivel: 'libre'` → `finAnticipado: 'sin_equipo'`.
+## 9.3 — `src/systems/mercado.js` (nuevo)
 
-**Contratos:** `career.contrato = { org, liga, tier, salarioUSD, años, añosRestantes, clausula,
-tipo, firmadoAEdad }`, inicializado como **objeto completo de ceros, nunca `null`** (trampa T4).
-
-**Residencia:** `player.residencias = { KR: 0, EMEA: 0, … }` en splits. 12 splits (4 años) =
-residencia y salto de valor de mercado. La **doble residencia LATAM 2026-2027** (no contás como
-import ni en LCS ni en CBLOL, y **desde 2028 elegís región para siempre**) es una decisión única y
-con fecha: vale un evento dedicado.
-
-Activar `sin_equipo`, `sin_renovacion`, `import_recien_llegado`, `veterano_util`,
-`veterano_al_margen`. Actualizar `CONCEPTO.md` §6.
-
-## Checks de la fase 8
+**Una línea nueva** en [`ETAPAS_SPLIT`](src/systems/registro.js#L20), después de `competitivo`:
 
 ```
-La distribución de salarios es claramente lognormal (mediana << media)
-`sin_equipo` es la causa de retiro más frecuente
-A un jugador de 28 con la misma hoja le llegan visiblemente menos ofertas que a los 21
+contexto, edadInicio, meta, roster, competitivo,
+mercado,          ← NUEVO
+campeones, secundario, amateur, temporada, rendimiento, serie, events,
+atributos, practica, edadCierre
+```
+
+Flujo de `aplicar`:
+
+1. **Early return sin tocar `rng`** si `phase !== 'profesional'` o `ventana !== 'pretemporada'`
+   (regla de proceso 10, trampa T1).
+2. Calcula `valorDeMercado`, actualiza `picos`.
+3. Decrementa `contrato.aniosRestantes`. Si queda >0 y no hay bombazo, **no interrumpe**: emite una
+   línea (*"Te queda un año de contrato"*) y sigue.
+4. Genera **0 a 6 ofertas**, filtradas por `cupoImports`, `edadMinima` de la liga, y sesgo etario.
+5. Si hay ofertas → **pausa y devuelve la decisión** (9.5).
+6. Si hay 0 ofertas por `BALANCE.mercado.splitsSinOfertaParaLibre` splits seguidos →
+   `nivel: 'libre'`, marca `sin_equipo`. **Esta es la puerta por la que se termina la carrera**, y
+   por eso el mercado va antes que el retiro.
+
+## 9.4 — `competitivo.js` deja de sortear tu org
+
+**Este es el cambio de más riesgo del documento.** Se borran las líneas
+[33](src/systems/competitivo.js#L33) y [136](src/systems/competitivo.js#L136).
+
+| Responsabilidad | Antes | Después |
+|---|---|---|
+| ¿ascendés de tier? | `competitivo.js` | `competitivo.js` (**sin cambios**) |
+| ¿a qué org vas? | `weightedPick` hacia la más débil | **`mercado.js`, elegís vos** |
+| tier 3 se disuelve | `competitivo.js` | `competitivo.js` (sin cambios) |
+| tier 3 te vuelve a levantar | `competitivo.js` | `competitivo.js` (sin cambios — a ese nivel no se negocia, y es la característica del nivel) |
+
+Al ascender, `competitivo.js` marca `flags.ascensoPendiente = { ligaId, tier }` y **`mercado.js`
+genera las ofertas de esa liga**. El ascenso sigue siendo mérito; el destino pasa a ser elección.
+
+> **Trampa T1:** este cambio corre el stream de RNG. Ninguna seed anterior a la fase 9 reproduce su
+> carrera. Documentar en `PROGRESO.md` sin maquillarlo (igual que D21 con la fase 5).
+
+## 9.5 — La tarjeta de oferta (contrato de datos exacto)
+
+Cada oferta se genera del estado y declara **todo antes de que elijas**:
+
+```js
+{
+  id, org, liga, tier, region, colorOrg, monograma,
+  tag: 'renovacion'|'salto'|'lateral'|'bombazo'|'import'|'descenso',
+
+  salarioMensualUSD, anios,
+
+  // LA TRAMPA DEL EQUIPO GRANDE (CONCEPTO §7), hecha texto. Imagen 6, campo 44.
+  proyeccionJerarquia: {
+    desde: 71, hasta: 25,
+    etiqueta: 'Vas a ser un titular más',   // de bandaDeJerarquia(hasta)
+    flecha: 'baja'                           // 'sube'|'igual'|'baja'
+  },
+  // La consecuencia de la consecuencia — la espiral de CONCEPTO §7:
+  proyeccionPicks: 'Con esa jerarquía casi nunca vas a elegir tu campeón',
+
+  // El coste de irse. Imagen 6, campo 45.
+  costeArraigo: { pierde: 64, etiqueta: 'Dejás T1: perdés Querido (64/100)' },
+  // Dónde arrancás. Imagen 6, campo 46.
+  arraigoInicial: { valor: 13, etiqueta: 'Allá arrancás: Uno más — tu fama te precede' },
+
+  // Solo en la renovación: el motivo para quedarte. Imagen 6, campo 47.
+  progresoHito: { faltan: 25, hacia: 'Ídolo', actual: 63 },
+
+  // Una línea de riesgo, generada del roster real de la org destino.
+  riesgo: 'Vas a ser el 4º nombre de un vestuario con tres estrellas'
+}
+```
+
+> **`proyeccionJerarquia` NO es cosmética.** Es el valor real que va a escribir
+> [`roster.js:39`](src/systems/roster.js#L39), calculado antes y mostrado. `jerarquiaRetenidaAlCambiar`
+> **ya existe** — solo hay que evaluarlo antes y enseñarlo. Si el jugador acepta el bombazo, ve
+> caer **exactamente** lo que le avisaron. Esa coherencia es lo que hace que la decisión se sienta
+> real, y es la regla de proceso 15.
+
+## 9.6 — La pantalla y el representante
+
+Encabezado, copy exacto (H10, imagen 6):
+
+> **MERCADO DE PASES**
+> *El dado trajo estas ofertas. Elegí: ¿la guita o el proyecto?*
+
+Grilla de hasta 6 tarjetas + un botón al pie:
+
+> **📞 LLAMAR A TU REPRESENTANTE Y PEDIR OTRAS OFERTAS · 1 VEZ POR CARRERA**
+
+`flags.llamadaRepresentante: false` inicial. Rebaraja las ofertas una única vez en toda la partida.
+Recurso escaso, memorable, y da agencia sobre una mano mala **sin romper el azar** — no elimina la
+tirada, te da una segunda.
+
+## 9.7 — Constantes nuevas
+
+```js
+BALANCE.mercado = {
+  ofertasMax: 6,
+  probRenovacionBase: 0.55,
+  probRenovacionPorJerarquia: 0.35,
+  splitsSinOfertaParaLibre: 3,
+  aniosContratoMin: 1, aniosContratoMax: 3,
+  // Cuánto mejor tenés que ser que el mejor local para entrar como import
+  // (CONCEPTO §6: "claramente mejor, no apenas mejor").
+  margenImport: 8
+};
+```
+
+## 9.8 — Checks de la fase 9
+
+```
+Ningún split profesional cambia de org sin una decisión del jugador de por medio
+   (excepto tier 3, que es explícitamente automático)
+La distribución de salarios es lognormal: mediana < media × 0.75
+proyeccionJerarquia predice la jerarquía real post-fichaje con error ≤ 8 puntos
+   (si la tarjeta miente, la decisión vuelve a ser ruido — regla de proceso 15)
+A los 28 con la misma hoja llegan ≤50% de las ofertas que a los 21
 Nadie firma violando cupoImports ni edadMinima de la liga
+El representante se puede usar exactamente una vez por carrera, nunca dos
+registro.dineroTotalUSD es monótono creciente
+Ninguna oferta muestra un progresoHito si no es una renovación
 ```
+
+## 9.9 — Números a medir
+
+| Métrica | Antes | Objetivo |
+|---|---|---|
+| Decisiones de mercado por carrera | 0 | 3-8 |
+| % de carreras donde el jugador rechaza el mejor sueldo al menos una vez | — | ≥ 35% (si nadie rechaza, el dilema no existe) |
+| % de carreras con al menos un `sin_equipo` | 0 | se mide, alimenta la fase 10 |
+
+## 9.10 — Verificación end-to-end
+
+Llegar a una pretemporada con contrato venciendo, ver 4-6 ofertas, **aceptar un bombazo**, y
+confirmar en el split siguiente que la jerarquía cayó **al número exacto que la tarjeta prometió**
+y que el arraigo arrancó en el valor que decía. Después, en el draft de la serie, comprobar que
+efectivamente ya casi no elegís tu campeón — la espiral de `CONCEPTO` §7, cerrada de punta a punta
+y por primera vez.
 
 ---
 
-# FASE 9 — Final emergente: se borran los relojes
+# FASE 10 — EL FINAL
 
-> *"para mí los splits no tienen que estar fixed: si no sos bueno no tenés ofertas, si sos muy
-> bueno tu carrera dura como la de Peanut o Faker."*
+## 10.0 — Commits
 
-## 6.1 — Los relojes que se van
-
-| reloj | hoy | pasa a ser |
+| # | Commit | Contenido |
 |---|---|---|
-| `amateur.edadLimite: 20` | corte automático → `no_llego` | **se borra.** El `scoutingSesgoEtario` se extiende (20→0.06, 21→0.03, 22+→0.015: nunca cero, existen los tardíos) y desde los 19 el cierre de edad te ofrece **la decisión** de seguir o dejarlo. Que la ventana se cierre lo tenés que **sentir**, no leer en un cartel |
-| guard de 90 splits | **lo agota el 23% de las carreras** | pasa a ser un **error**: si una carrera lo agota, es un bug |
-| edad de retiro | no existe | no se agrega. **La carrera termina cuando el mercado deja de llamarte** |
+| 10a | `fase 10a: se borran los relojes` | 10.1 |
+| 10b | `fase 10b: la tarjeta de legado` | 10.2, 10.3 |
+| 10c | `fase 10c: lesiones y servicio militar` | 10.4 |
+| 10d | `fase 10d: calibrar la duración de la carrera` | solo constantes |
+
+## 10.1 — `src/systems/retiro.js` — la carrera termina cuando el mercado deja de llamarte
+
+Se implementa lo investigado en `TRASPASO.md` §4-5 (líneas 670-680: relojes, semántica de
+`terminado`/`retirado`, `vueltasMaximas`):
+
+| Reloj | Hoy | Pasa a ser |
+|---|---|---|
+| `amateur.edadLimite: 20` | corte automático → `no_llego` | **se borra.** `scoutingSesgoEtario` se extiende (20→0.06, 21→0.03, 22+→0.015: nunca cero) y desde los 19 el cierre de edad te **ofrece la decisión** de seguir o dejarlo |
+| guard de 90 splits | **lo agota el 49,1%** | pasa a ser un **error**: si una carrera lo agota, es un bug |
+| edad de retiro | no existe | **no se agrega** |
+
+Semántica nueva (riesgo alto — cambia el significado de un campo del motor):
+
+- `phase: 'retirado'` = estado **jugable**, ventana de vuelta abierta, `terminado: false`.
+- `state.terminado = true` = la run terminó. Lo setea **solo** `retiro.js`.
+- Terminales: `burnout`, `prohibicion_familiar`, `no_llego`.
+- Reversibles: `sin_equipo`, `retiro_elegido`, `retiro_por_lesion`. `vueltasMaximas: 2`.
+
+> **Trampa documentada (D10):** [`secundario.js`](src/systems/secundario.js) usa
+> `BALANCE.amateur.edadLimite` para congelar el flag del secundario. Al borrar el tope hay que
+> darle su propio umbral o **el flag nunca se congela** y no entra en la tarjeta final.
 
 Red única que queda: si a los 24 seguís en `amateur`, se fuerza `no_llego`. Es una red anti-loop,
 no una regla de juego, y se documenta como tal.
 
-> Ojo: `secundario.js` usa `BALANCE.amateur.edadLimite` para congelar el flag del secundario.
-> Al borrar el tope hay que darle su propio umbral o el flag nunca se congela por edad.
-
-## 6.2 — `terminado` deja de significar `retirado`
-
-**Riesgo ALTO: cambia la semántica del motor.** Hoy `avanzarSplit` es no-op si `state.terminado`, y
-`phase: 'retirado'` siempre viene con `terminado: true`.
-
-- `phase: 'retirado'` = **estado jugable**, ventana de vuelta abierta, `terminado: false`.
-- `state.terminado = true` = la run terminó. Lo setea **solo** `retiro.js`.
-- **Terminales:** `burnout`, `prohibicion_familiar`, `no_llego`.
-- **Reversibles:** `sin_equipo`, `retiro_elegido`, `retiro_por_lesion`.
-- `vueltasMaximas: 2` (Bjergsen y Doublelift volvieron dos veces cada uno). Volver cuesta:
-  jerarquía a cero, re-placement en la ladder, marca `vuelta_del_retiro`.
-
-## 6.3 — Servicio militar coreano — `src/systems/servicioMilitar.js`
-
-**Determinista, no probabilístico:** obligatorio, 18-21 meses, hay que enlistarse antes de los 28
-(30 si sos figura de élite, por la ley de 2020). Es la razón por la que la LCK tiene literalmente
-cero jugadores en la segunda mitad de los veinte. **La decisión es cuándo, no si.** Hace que una
-carrera coreana tipo Faker sea un logro distinto a una europea.
-
-## 6.4 — Lesiones — `src/systems/salud.js`
-
-`tunel_carpiano` (Toyz) · `tendinitis_muneca` (Hai: *"la muñeca solo me permite un split más"*) ·
-`hombro_cronico` (a Uzi un médico le dijo que tenía brazos de persona de 50 años). Riesgo escalado
-por **deuda de sueño acumulada**, splits jugados e intensidad de rutina. Una crónica pone techo
-permanente sobre `mecanica` vía `techoDeCarrera` (`core/curvas.js`) y agrega `lesion_cronica`.
-
-> Crea la cadena causal más valiosa del juego: **robarle horas al sueño a los 16 te puede costar la
-> muñeca a los 23.** Media construida ya: `player.deudaSueno` **no se resetea** al pasar a
-> profesional y `atributos.js` la sigue cobrando toda la carrera. El evento `tendinitis` ya está
-> gateado a esa marca desde la fase 0 y dispara en el 11.5% de las carreras.
-
-## 6.5 — El bloque de checks que mide el pedido del usuario
-
-2000 carreras × 4 estrategias. Requiere una **cuarta estrategia** en `src/dev/estrategias.js`:
-`carrera` (prioriza mentalidad, salud, jerarquía y estabilidad contractual sobre el pico de
-rendimiento).
+## 10.2 — `src/systems/legado.js` + `src/ui/screens/tarjeta.js`
 
 ```
-mediana de splits como pro ∈ [6, 10]              (2-3,3 años — el dato real)
-activo al 4º año como pro < 20%                    (el dato real)
-llega a age >= 30 ∈ [0.8%, 4%]                     (Peanut / Faker: posible, difícil)
+┌─── 🏆 FIGURITA BRILLANTE · LEYENDA ──────────────────────────┐
+│                   TE RETIRASTE A LOS 29                       │
+│           THONOR26 · JUNGLA · 🎀 SHOTCALLER                   │
+│                                                               │
+│              "EL MUNDIALISTA DE T1"                           │
+│                                                               │
+│                 LEYENDA DE T1  🗿                             │
+│         Tenés tu lugar en la pared de la base                 │
+├───────────────────────────────────────────────────────────────┤
+│ TU HISTORIA, ORG POR ORG                                      │
+│                                                               │
+│ ▌ Hanwha Life Esports    Uno más 18/100  ▓░░░░               │
+│   42 splits · 118-94 · 2026–2029                              │
+│                                                               │
+│ ▌ T1                     Leyenda 100/100 ▓▓▓▓▓  ⭐            │
+│   88 splits · 301-121 · 2029–2038                             │
+│   🏆 Worlds 2033 · 🥇 5× LCK 2030 2031 2033 2035 2037        │
+│   🌍 MSI 2031 (2º) · First Stand 2034 (semis)                 │
+├───────────────────────────────────────────────────────────────┤
+│  12 AÑOS │ 130 SPLITS │ 6 TÍTULOS │ NIVEL MÁX 93              │
+│  NOTA GENERAL 8.0 │ VALOR MÁX US$4,1M │ 3º DE TU GENERACIÓN   │
+└───────────────────────────────────────────────────────────────┘
+```
+
+**El veredicto se compone** (`CONCEPTO` §9), no se elige de una lista. La fórmula sale de la
+imagen 15 (`"El mundialista de Bayern Múnich"` = mayor logro + mayor org):
+
+```
+veredicto = plantillaDeArquetipo(registro) + modificador(registro) + detalleÚnico(registro)
+```
+
+| Arquetipo | Condición sobre `registro` |
+|---|---|
+| `El mundialista de {org}` | ganó un internacional |
+| `Leyenda de {liga}` | ≥3 títulos, nunca ganó internacional, una sola región |
+| `El eterno cuarto puesto` | ≥4 podios sin títulos |
+| `El que se fue a {region} y volvió peor` | cambió de región y `picos.nivel` fue antes del cambio |
+| `El pibe que no fue` | debutó en tier 1 antes de los 18 y no pasó de 3 splits ahí |
+| `El que no llegó` | `no_llego` |
+| `El que se bajó` | `burnout` |
+| `El que no lo dejaron` | `prohibicion_familiar` |
+
+**Todo esto sale de `registro.porOrg` y `registro.titulos`** — por eso la fase 8 va primero. Sin el
+registro, esta pantalla es literalmente imposible de escribir.
+
+**Reusa** el componente `VER CARRERA` de 8.6 punto 5: se escribió una vez, se usa dos veces.
+
+## 10.3 — Toda salida es una tarjeta
+
+`no_llego`, `burnout`, `prohibicion_familiar` y `sin_equipo` también terminan en tarjeta, con su
+propio marco (la imagen 15 tiene confeti; la del pibe al que le prohibieron jugar, no — pero tiene
+tarjeta, con su elo máximo, los scouts que lo miraron y qué fue de los cinco de su generación,
+exactamente como promete `CONCEPTO` §4).
+
+Es el motor de difusión del juego (`CONCEPTO` §9) y hoy **no existe para ningún final**.
+
+## 10.4 — Lesiones y servicio militar
+
+Se implementa lo investigado en `TRASPASO.md` §4-5 (líneas 682-690) sin cambios:
+`servicioMilitar.js` (determinista, coreano, 18-21 meses, antes de los 28 — 30 si es figura de
+élite) y `salud.js` (`tunel_carpiano`, `tendinitis_muneca`, `hombro_cronico`, escalados por
+`player.deudaSueno`).
+
+> **La cadena causal más valiosa del juego, y está medio construida:** `player.deudaSueno` **no se
+> resetea** al pasar a profesional (D9) y `atributos.js` la sigue cobrando toda la carrera.
+> **Robarle horas al sueño a los 16 te cuesta la muñeca a los 23.** Y con la fase 8, por primera
+> vez lo ves: el techo de `mecanica` aparece como un ▼ que no se recupera.
+
+## 10.5 — Checks de la fase 10
+
+```
+CERO carreras agotan maxSplitsDeSeguridad (hoy: 49,1%)
+mediana de splits como pro ∈ [6, 10]   (2-3,3 años — el dato real de TRASPASO)
+activo al 4º año como pro < 20%
+llega a age >= 30 ∈ [0.8%, 4%]         (Peanut / Faker: posible, difícil)
 causa de retiro más frecuente = 'sin_equipo'
-la estrategia 'carrera' llega a 30+ al menos 2.5x más seguido que 'ranked'
-CERO carreras agotan el tope de splits
+la estrategia 'carrera' llega a 30+ al menos 2.5× más seguido que 'ranked'
 la duración de la carrera correlaciona con el potencial oculto (r > 0.45)
-ninguna carrera coreana llega a 30 en 'profesional' sin el flag del servicio resuelto
+ninguna carrera coreana llega a 30 en 'profesional' sin el flag de servicio resuelto
+Ningún final —incluidos los amateur— sale sin tarjeta
+Ningún arquetipo de veredicto supera el 25% (CONCEPTO §11)
+El veredicto cita al menos un hecho real del registro de ESA carrera
 ```
 
-Las dos anteúltimas son la traducción falsable de *"si no sos bueno no tenés ofertas, si sos muy
-bueno tu carrera dura"*. `CONCEPTO.md` §2 hay que actualizarlo: las etapas dejan de tener rango de
-edad fijo.
+## 10.6 — Verificación end-to-end
+
+Dos trazas completas, leídas como historias: una carrera tipo Faker (30+ años) y un `no_llego` a
+los 19. Las dos tienen que cerrar con una tarjeta que se pueda mandar por WhatsApp y se entienda
+sola.
 
 ---
 
-# FASE 10 — Contenido a escala (150+ opciones)
+# FASE 11 — EL AÑO
+
+## 11.1 — `src/core/temporadaResumen.js` (nuevo, puro)
+
+Reemplaza `generarTextoResumen` de [`edadCierre.js:10-29`](src/systems/edadCierre.js#L10-L29),
+que se **borra**.
+
+### `notaDeLaTemporada(state)` → 0-10 con un decimal
+
+Compuesto ponderado de: posición en la liga · resultado de playoffs · rendimiento propio medio ·
+internacional · movimiento de jerarquía y arraigo. Bandas de color: `<5.5` rojo · `5.5-6.9` gris ·
+`7.0-7.9` ámbar · `≥8.0` verde. Se guarda en `registro` para que el año siguiente pueda comparar.
+
+### `titularDelAnio(state)` → `{ titular, bajada, tipo }`
+
+**El corazón de la fase.** Cada candidato puntúa por **peso emocional, no por magnitud numérica** —
+esa es la lección de la imagen 5, donde un año de 10 goles y 2º puesto lo titula un torneo que no
+jugó.
+
+| Tipo | Puntaje base | Ejemplo de titular | Bajada |
+|---|---|---|---|
+| `titulo_internacional` | 100 | `CAMPEONES DEL MUNDO` | — |
+| `titulo_liga` | 80 | `CAMPEONES DE LA LCK` | — |
+| `ausencia` | **75** | `WORLDS, POR TWITCH` | *"Worlds se jugó sin vos. La espina más grande de tu carrera."* |
+| `main_muerto` | 70 | `EL PARCHE QUE TE MATÓ EL LEE SIN` | — |
+| `debut` | 70 | `EL PIBE DE LA LCK` | — |
+| `sequia` | 65 | `¿Y EL SHOTCALLING?` | *"Año seco: las llamadas no salieron."* |
+| `rival` | 60 | `DRAKKEN LEVANTÓ LA COPA` | — |
+| `caida` | 60 | `EL AÑO QUE SE TE CAYÓ LA MANO` | — |
+| `transferencia` | 55 | `TE FUISTE A COREA` | — |
+| `eliminacion` | 50 | `AFUERA EN CUARTOS, OTRA VEZ` | — |
+| `estable` | 10 | fallback | — |
+
+> **El `75` de `ausencia` está arriba de casi todo a propósito.** Es lo que hace que el juego
+> tenga memoria emocional en vez de un boletín de notas.
+
+### `vinetasDelAnio(state)` → array
+
+Una viñeta **por sistema distinto**, con icono, en este orden fijo:
+
+1. 📊 tus números del año (KDA, MVPs, splits)
+2. 🏆 posición del equipo y resultado de playoffs
+3. 🌍 el internacional (o su ausencia)
+4. ⚡ el archirrival: sus números, su org actual, el duelo acumulado
+5. 🎯 el meta: si un régimen te mató un main o te lo revivió
+6. 🎀 **siempre: qué está en juego el año que viene** ← el gancho
+
+Ejemplo del punto 6, generado del estado: *"Quedaron 3º: el año que viene arrancan con cupo a First
+Stand."* / *"Se te vence el contrato: en la pretemporada vas a tener que decidir."*
+
+### La marca del medio
+
+`POTRERO DEPORTIVO` → se inventa el equivalente. Propuesta: **`LA GRIETA`**, con la etiqueta
+`{anio}/{anio+1} · TEMPORADA {n}` a la derecha.
+
+## 11.2 — El archirrival (cierra D8)
+
+De los 5 de `mundo.rivales`, **uno se promueve a archirrival**: se elige el de tu rol, y si no hay,
+el de tu región. **Corre su carrera** con la `formaCarrera` que ya tiene sorteada.
+
+```js
+mundo.archirrival = {
+  handle, rol, org, liga, nivel,
+  titulos: 0, internacionales: 0,
+  duelo: { tuyos: 0, suyos: 0 },     // títulos+internacionales acumulados
+  historial: [/* { anio, org, nivel, titulos } */]
+}
+```
+
+`src/systems/rivales.js` (nuevo, una línea en `ETAPAS_SPLIT`): corre la carrera del archirrival en
+silencio, sin logs propios. Aparece en **exactamente tres lugares** y en ninguno más:
+
+1. el contador de la ficha (`83-136 vs DRAKKEN`),
+2. la viñeta ⚡ del resumen anual,
+3. el `stakes: 'rival_de_generacion'` de la fase 5, **que ya existe**.
+
+Los otros 4 siguen siendo color para la tarjeta final (`3º de tu generación`).
+
+## 11.3 — Checks de la fase 11
+
+```
+Toda carrera de ≥6 splits ve al menos 2 resúmenes con titular y nota
+Los titulares de una carrera de 30 splits no repiten `tipo` más de 3 veces
+   (si repiten, el catálogo de titulares es chico y hay que ampliarlo, no bajar el check)
+La nota correlaciona con la posición en liga (r > 0.6) pero no la determina (r < 0.9)
+Toda viñeta 6 nombra algo del año que viene
+`ausencia` titula al menos una vez en ≥30% de las carreras que pasan de 15 splits
+El duelo con el archirrival cambia de signo al menos una vez en ≥40% de las carreras
+El archirrival nunca consume RNG cuando el jugador no está en fase profesional (T1)
+```
+
+## 11.4 — Verificación end-to-end
+
+Jugar 4 años seguidos y confirmar: cuatro titulares **distintos**, cuatro notas distintas, el rival
+apareciendo con números que cambian y con su org cambiando, y cada año cerrando con una frase que
+te dice qué se juega el año que viene.
+
+---
+
+# FASE 12 — LA JERARQUÍA DE LA DECISIÓN
+
+> Acá se conecta a la pantalla todo lo que el motor ya sabe y no dice. **Es la fase con mejor
+> relación resultado/esfuerzo del documento: casi no tiene código de motor.**
+
+## 12.1 — La categoría (dato, no código)
+
+Cada evento declara `categoria` en su JSON. La UI la pinta como banner con color y tono:
+
+| id | Color | Ejemplo de banner |
+|---|---|---|
+| `rutina` | gris | `LA SEMANA` |
+| `golpe_duro` | rojo | `GOLPE DURO` |
+| `oportunidad` | verde | `TE LLAMARON` |
+| `mercado` | dorado | `MERCADO DE PASES` |
+| `parche` | violeta | `PARCHE 14.9` |
+| `vestuario` | azul | `VESTUARIO` |
+| `prensa` | celeste | `SALA DE PRENSA` |
+| `familia` | naranja | `EN TU CASA` |
+| `salud` | rojo oscuro | `EL CUERPO` |
+| `partido` | rojo LoL | `SE VIENE {rival}` |
+| `serie` | rojo LoL | `SEMIFINAL · MAPA 4` |
+
+Un check estático exige `categoria` en todo evento del catálogo.
+
+## 12.2 — El peso visual sale del motor (cero código nuevo)
+
+`core/presupuesto.js` ya clasifica `denso/normal/comprimido`; el contenido ya declara
+`bisagra: true`; [`events.js:173`](src/systems/events.js#L173) ya le da prioridad absoluta.
+
+`decisionDesdeEvento` agrega **un campo**: `peso: 'bisagra'|'normal'|'ambiente'`. La UI lo lee:
+
+- `bisagra` → ocupa la pantalla, marca de agua, banner grande, animación de entrada.
+- `normal` → tarjeta estándar.
+- `ambiente` → tarjeta compacta, sin banner.
+
+**Es conectar un cable que ya está tendido.** Y es la respuesta directa a *"las preguntas se
+repiten todo el tiempo"* (H5).
+
+## 12.3 — La consecuencia, antes de elegir
+
+`decisionDesdeEvento` ([events.js:262](src/systems/events.js#L262)) pasa a mandar, por opción:
+
+```js
+{
+  id, label, descripcion,
+  // Dirección y magnitud CUALITATIVA, nunca el número: la regla invariable 7
+  // exige rangos, y mostrar "+7" sería mentir sobre un [4,11].
+  previa: [{ campo: 'mecanica', signo: '+', magnitud: 'alta' }],   // -> "+ MECÁNICA"
+  // Derivado de la dispersión REAL de outcomes de esta opción. Se calcula,
+  // no se escribe a mano, así nunca miente. (Imagen 4: "un abrazo o un incendio".)
+  riesgo: 'seguro'|'incierto'|'ruleta',
+  // Ya existe como option.contexto; solo hay que mostrarlo.
+  gate: 'Solo con jerarquía ≥60'
+}
+```
+
+`magnitud` se deriva de `(min+max)/2` contra bandas en `BALANCE.eventos.magnitudBandas`.
+`riesgo` se deriva del coeficiente de variación de los `weight` de los outcomes.
+
+## 12.4 — Rareza y el dado
+
+- Las decisiones de mejora (pretemporada, práctica, `pool_a_cual_le_metes`) muestran **rareza**
+  (`común` / `rara`) con payoff acorde. Imagen 3: `RARA` da `+4` contra `+3`.
+- **Todo menú generado por sorteo se encabeza diciéndolo** (H10):
+  *"El dado trajo tres caminos. Elegí uno."*
+- **Toda pantalla de decisión grande nombra el eje del dilema**: `¿la guita o el proyecto?` ·
+  `¿Qué clase de jungla sos?` · `Leé la sala.`
+
+## 12.5 — Los torneos, con identidad
+
+- Barra de progreso del bracket siempre visible (`CUARTOS · SEMI · FINAL`), etapas superadas en
+  verde. Imágenes 11-14.
+- Un minijuego con identidad y nombre **por competición**, con intro narrativa que explica la regla
+  en ficción, y dificultad que escala por ronda. Los 5 minijuegos existentes se migran a
+  `src/ui/components/minijuegos/` y se les da tema.
+- **El camino se guarda**: post-serie, la pantalla muestra cada mapa con su marcador y su cierre
+  narrativo, y se persiste en `registro.internacionales[].camino` (imagen 12) para que la tarjeta
+  final lo pueda citar.
+
+## 12.6 — Checks de la fase 12
+
+```
+Todo evento del catálogo declara `categoria` (check estático)
+Toda opción manda `previa` con ≥1 campo, o declara `previa: []` explícitamente
+El `riesgo` declarado coincide con la dispersión medida de outcomes (2000 resoluciones/opción)
+Una bisagra y una de ambiente producen `peso` distinto en el 100% de los casos
+Toda serie internacional deja su camino guardado en registro.internacionales
+Ningún minijuego puede setear `terminado` (ya existe, no puede regresionar)
+```
+
+---
+
+# FASE 13 — CONTENIDO A ESCALA
+
+## 13.0 — El catálogo, por archivo
 
 `roster.js` enriquece a cada compañero: `edad`, `nacionalidad`, `esImport`, `personalidad`
 (`veterano_cinico | rookie_ansioso | estrella_egocentrica | soldado_callado | carismatico`) y
 **`relacion` 0-100**, que deriva con los splits juntos y se mueve con los eventos. Es la variable
 más barata del juego: el mismo evento de vestuario se lee distinto con el jungla que te banca que
-con el que te odia — **y habilita la opción D del draft** (4.4).
+con el que te odia — **y habilita la opción D del draft** (ver 4.4 en las fases ya cerradas).
 
 | archivo | contexto principal | ~eventos |
 |---|---|---|
 | `equipo.json` | `nivel: tier1/tier2` | 12 |
 | `vestuario.json` | por `relacion` y `personalidad` | 10 |
-| `mercado.json` | `ventana: offseason`, `mercado: ultimo_ano/sin_renovacion` | 10 |
+| `mercado.json` | eventos narrativos alrededor del mercado (fase 9), `ventana: offseason` | 10 |
 | `region.json` | `residencia: import` | 8 |
 | `soloq_pro.json` | la cuota coreana, `nivel: tier2/tier3` | 6 |
-| `pool.json` | marcas de pool (1.4, ampliado en 6.5) | 10 |
+| `pool.json` | marcas de pool (1.4, ampliado en fase 6) | 10 |
 | `serie.json` | `ventana: playoffs/internacional` | 10 |
 | `declive.json` | `etapa: declive`, `edadBanda: tardia/veterana` | 10 |
-| `retiro.json` / `vuelta.json` | `etapa: retirado` | 8 |
+| `retiro.json` / `vuelta.json` | `etapa: retirado` (fase 10) | 8 |
 | `salud.json` | amplía el actual | +6 |
 | `rol/*.json` | eje `rol`, lo que no es específico de un partido puntual | 15 |
 
@@ -1098,33 +1800,46 @@ repetir hasta vacío. **El check de cobertura pasa de reporte a check duro acá*
 contenido existe.
 
 **Usar 3 y 4 opciones.** Al cierre de la fase 0 el catálogo tiene 22 eventos / 46 opciones, y solo
-2 eventos usan 3 opciones. `CONCEPTO` §3 dice "2 a 4".
+2 eventos usan 3 opciones. `CONCEPTO` §3 dice "2 a 4" (D14).
 
-## Checks de la fase 10
+**Objetivo de escala:** ≥150 opciones en el catálogo total, `cobertura.js --huecos` vacío.
+
+**Con tres agregados obligatorios** que salen del diagnóstico y no estaban en la especificación
+original de esta fase:
+
+1. Todo evento nuevo declara `categoria` (12.1) y `previa` (12.3). El check los exige desde acá.
+2. **Contenido que cita el registro.** Es lo que la fase 8 hace posible y **lo único que produce la
+   sensación de que la carrera se acuerda de vos**:
+   - *"Volvés a jugar contra {org que te dejó libre} — la que te soltó a los 19."*
+   - *"El {rol} rival es {handle}, al que le ganaste la final de {anio}."*
+   - *"Hace {n} splits que no levantás un trofeo. En {org} se empieza a notar."*
+   - *"Cumplís {n} años en {org}. Del vestuario que te recibió no queda nadie."*
+3. Se cierra D11: las 6 rutinas de offseason se diferencian por tier (un bootcamp en Corea no lo
+   paga un tier 3), **cuidando** que siempre quede al menos una `segura` y una `agresiva` por nivel
+   o el check de rutinas falla.
+
+## Checks de la fase 13
 
 ```
 cobertura.js --huecos vacío
 ≥150 opciones en el catálogo
 Fracción de splits sin evento < 25% EN TODOS los contextos alcanzables, no en promedio (T10)
+Todo evento nuevo declara categoria y previa (regla de proceso 12/13)
+≥10% de las carreras de ≥25 splits ven al menos un evento que cita el registro (13.0, punto 2)
 ```
 
 ---
 
-# FASE 11 — Legado, rivales y UI
+# Fuera de alcance (visto en las imágenes, decidido que no)
 
-- **`src/systems/legado.js`** — la tarjeta final (`CONCEPTO` §9). El veredicto **se compone**:
-  arquetipo base + modificador + un detalle único de esa partida ("El eterno cuarto puesto",
-  "Leyenda regional", "El que se fue a Corea y volvió peor", "El que no llegó"). Puntaje ponderado
-  **por rol** (si fuera KDA nadie jugaría support): `ROLES[].visibilidad` ya está.
-- **`src/systems/rivales.js`** — los 5 rivales de generación **ya se generan** en `core/mundo.js` y
-  no corren su carrera. Que la corran, y que la tarjeta diga tu puesto en la generación.
-- **`src/ui/`** — la carpeta existe y está **vacía**; toda la UI vive en `index.html`.
-  `DISENO.md` §4.1 pide `render.js`, `/screens` y `/components`. Pantallas: inicio (rol + mains) ·
-  carrera (quién sos, dónde estás, contrato, el split en curso, el feed narrativo) · decisión ·
-  **serie** (marcador, campeones quemados, el draft) · minijuego · tarjeta final.
-- **El criterio de balance final de `CONCEPTO` §11** (si >25% de las partidas termina en el mismo
-  arquetipo, el balance está roto) **no se puede evaluar hasta que exista la tarjeta**, porque los
-  arquetipos son de la tarjeta. La pasada de balance fina va acá, no antes.
+| Qué | Dónde se ve | Por qué no |
+|---|---|---|
+| Tienda, `ACTIVOS`, `STAFF` | El Ídolo del Potrero | La plata no es gastable — decisión ya registrada arriba. Es la capa de monetización de la referencia y `CONCEPTO` §11 la prohíbe explícitamente ("no es un manager") |
+| Selección nacional como track propio | El Ídolo del Potrero | En LoL el equivalente es el circuito internacional, que ya existe. Se porta el **estado con nombre** (`SIN CHANCE → EN CARPETA → CLASIFICADO`), no un segundo equipo |
+| Escudos reales de las orgs | El Ídolo del Potrero | `CLAUDE.md` permite ligas reales; los escudos son un problema de licencias. Se usa monograma + color de la org |
+| Simular el resto del bracket de playoffs | El Ídolo del Potrero | D19, simplificación deliberada ya documentada: el motor simula **tu** camino, y una derrota ya cuenta una historia completa |
+| Doble eliminación real en playoffs | — | ídem D19 |
+| Rumores de parche (apostar antes de que el meta gire) | — | Ya excluido explícitamente en la fase 6. Sigue excluido |
 
 ---
 
@@ -1135,26 +1850,27 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | # | Hallazgo | Fase |
 |---|---|---|
 | D1 | ~~Los pesos de outcome son estáticos~~ — resuelto: `outcome.modificadores` | ✅ 2 |
-| D2 | El 23% de las carreras agota el tope de 90 splits: no hay retiro. Remedido tras la fase 7 (que hace que muchas más carreras lleguen a pro y se sostengan): **49,1%** — ver PROGRESO.md, changelog de la fase 7 | 9 |
+| D2 | El 23% de las carreras agota el tope de 90 splits: no hay retiro. Remedido tras la fase 7 (que hace que muchas más carreras lleguen a pro y se sostengan): **49,1%** — ver PROGRESO.md, changelog de la fase 7 | 10 |
 | D3 | ~~`maxDecisionesPorSplit: 8` queda corto~~ — resuelto: subió a 16, luego a 60 | ✅ 2 |
 | D4 | ~~`posicionParaInternacional: 1` estaba mal para 2026~~ — resuelto: `liga.cuposInternacionales` | ✅ 3 |
 | D5 | ~~`regionOrigen` se sorteaba uniforme entre 8 ligas~~ — resuelto: pesado por prestigio, solo tier 1 | ✅ 3 |
 | D6 | ~~El meta se describía por arquetipo, no por campeón~~ — resuelto: `campeonesEnMeta` | ✅ 1 |
-| D7 | `src/ui/` está vacía; los 1.090 renglones de UI viven en `index.html` (creció de 416 a 1.090 entre la fase 0 y la fase 4, sobre todo por los 5 minijuegos) | 11 |
+| D7 | `src/ui/` está vacía; los 1.090 renglones de UI viven en `index.html` (creció de 416 a 1.090 entre la fase 0 y la fase 4, sobre todo por los 5 minijuegos) | 8 |
 | D8 | Los 5 rivales de generación se generan y no corren su carrera. La fase 5 les da su primer uso real (aparecen con nombre como `stakes: rival_de_generacion` en una fecha marcada) sin cerrar la deuda: seguir corriendo su carrera entera es esta fase | 11 |
-| D9 | `player.deudaSueno` no se resetea al pasar a profesional y `atributos.js` la sigue cobrando toda la carrera. **Es útil**: es media cadena causal del sistema de lesiones, ya construida | 9 |
-| D10 | `secundario.js` usa `amateur.edadLimite` para congelar el flag. Al borrar ese tope hay que darle su propio umbral | 9 |
-| D11 | Las rutinas de offseason siguen gateadas solo por etapa, no por tier (un bootcamp en Corea no lo paga un tier 3). Deferido de la fase 3 por alcance: cuidar el check de segura/agresiva al diferenciar | 10 |
+| D9 | `player.deudaSueno` no se resetea al pasar a profesional y `atributos.js` la sigue cobrando toda la carrera. **Es útil**: es media cadena causal del sistema de lesiones, ya construida | 10 |
+| D10 | `secundario.js` usa `amateur.edadLimite` para congelar el flag. Al borrar ese tope hay que darle su propio umbral | 10 |
+| D11 | Las rutinas de offseason siguen gateadas solo por etapa, no por tier (un bootcamp en Corea no lo paga un tier 3). Deferido de la fase 3 por alcance: cuidar el check de segura/agresiva al diferenciar | 13 |
 | D12 | ~~El eje `region` tenía `LATAM`~~ — resuelto: sacado, ya no hay tier-1 ahí | ✅ 3 |
 | D13 | ~~`academy_offer` empujaba a `career.orgs` sin fichar~~ — resuelto: el fichaje real lo hace `amateur.js`/`competitivo.js`, `academy_offer` quedó como la prueba narrativa que siempre fue | ✅ 3 |
-| D14 | Solo 2 eventos del catálogo usan 3 opciones; ninguno usa 4 | 10 |
+| D14 | Solo 2 eventos del catálogo usan 3 opciones; ninguno usa 4 | 13 |
 | D15 | LCP no tiene un circuito de desarrollo real investigado (TRASPASO no lo cubre). Se modeló como `LCP_CHALLENGERS`, generado igual que el resto de tier 2 — nombre plausible, no verificado como real. Si aparece la investigación real, reemplazar el id | 3 (abierto) |
-| D16 | Tier 1 es un piso: no hay descenso de tier1 a tier2 todavía. Una relegación real existe en las ligas de 2026 pero modelarla es más natural junto con contratos (fase 8) | 8 |
-| D17 | LRN/LRS (los circuitos tier 2 de LATAM que alimentan LCS/CBLOL) y la doble residencia LATAM 2026-2027 no están modelados: un jugador de la región nace directamente en NA o BR. Es la simplificación explícita que ya preveía `TRASPASO` §5 ("la doble residencia... vale un evento dedicado") | 8 |
+| D16 | Tier 1 es un piso: no hay descenso de tier1 a tier2 todavía. Una relegación real existe en las ligas de 2026 pero modelarla es más natural junto con contratos (fase 9) | 9 |
+| D17 | LRN/LRS (los circuitos tier 2 de LATAM que alimentan LCS/CBLOL) y la doble residencia LATAM 2026-2027 no están modelados: un jugador de la región nace directamente en NA o BR. Es la simplificación explícita que ya preveía `TRASPASO` §5 ("la doble residencia... vale un evento dedicado") | 9 |
 | D18 | ~~La ventana `internacional` era un único evento agregado (`chance()`)~~ — resuelto a medias en la fase 4: ahora es una serie Bo5 real de verdad contra un rival de otra región, con Fearless y minijuegos. Sigue **sin distinguir** First Stand/MSI/Worlds ni modelar un bracket Swiss+knockout: es una sola serie representativa, no el torneo real completo | ✅ 4 (parcial) |
 | D19 | El bracket de playoffs de tier 1 es de **eliminación simple** (6 clasificados, bye para los 2 mejores sembrados, Bo5 parejo). Las 6 ligas 2026 investigadas usan doble eliminación real (hay bracket de perdedores). Simplificación deliberada: el motor solo simula TU camino por el bracket, nunca el resto — una derrota ya cuenta una historia completa ("eliminado en cuartos") sin necesitar una corrida paralela por el lado de perdedores | 4 (abierto) |
-| D20 | Los 5 minijuegos comparten dos parámetros de balance genéricos (`impactoMinijuego` para los de mapa, `impactoDirecto` para bootcamp/rueda de prensa) en vez de tener cada uno el suyo ajustado a mano. Medido: el efecto agregado de CUALQUIERA de los dos lo satura la propia estructura del juego (máximo 1 minijuego por serie, un mapa de cinco) mucho antes de que el valor del parámetro importe — ver PROGRESO | 10/11 (abierto) |
+| D20 | Los 5 minijuegos comparten dos parámetros de balance genéricos (`impactoMinijuego` para los de mapa, `impactoDirecto` para bootcamp/rueda de prensa) en vez de tener cada uno el suyo ajustado a mano. Medido: el efecto agregado de CUALQUIERA de los dos lo satura la propia estructura del juego (máximo 1 minijuego por serie, un mapa de cinco) mucho antes de que el valor del parámetro importe — ver PROGRESO | 12 (abierto) |
 | D21 | La temporada regular de la fase 5 corre el stream de RNG respecto de cualquier seed anterior a esa fase (trampa T1: es un sistema nuevo que consume `rng` en el medio del registro). Ninguna seed de antes de la fase 5 reproduce la misma carrera después. Documentado, no es un bug | ✅ 5 (aceptado) |
+| D22 | La fase 9 (`competitivo.js` deja de sortear tu org) corre el stream de RNG: ninguna seed anterior a la fase 9 reproduce su carrera. Mismo criterio que D21 | ✅ 9 (aceptado) |
 
 ---
 
@@ -1168,8 +1884,9 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 4. **Reportar los números medidos, no los esperados.** Incluidos los que empeoran.
 5. **Actualizar `CONCEPTO.md` cuando el código lo contradiga.** Pendientes: §2 y §10 (fase 3) ·
    §5 y §11 (fase 4) · §5 otra vez, el loop de split cambia de forma (fase 5) · §6, el meta cambia
-   de definición (fase 6) · §6 otra vez, contratos (fase 8) · §8 (fase 1) · §2 otra vez, se borran
-   los relojes (fase 9).
+   de definición (fase 6) · §6 otra vez, contratos (fase 9) · §8 (fase 1) · §2 otra vez, se borran
+   los relojes (fase 10) · §1 y §11, duración de la partida (fase 8) · §6 otra vez, se agrega
+   ARRAIGO (fase 8).
 6. Cada fase **activa sus momentos pendientes** en `data/contextos.js` y lo verifica con
    `cobertura.js`.
 7. **Al escribir un check nuevo, verificar que falla cuando debe** (trampa T5: un check que
@@ -1180,6 +1897,20 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 10. **Un sistema que no aplica hace early return sin tocar `rng`** (trampa T1): si consume una
     tirada cuando no corresponde, corre el stream de todo lo que viene después.
 11. **El cursor de reanudación va por `sistemaId`, no por índice** (trampa T3).
+12. **Ninguna fase cierra sin su pantalla.** Un sistema que el jugador no puede ver no está
+    terminado. Es la lección de las fases 0-7: siete fases correctas hundidas en un feed de logs.
+13. **Todo número en pantalla lleva referente.** `29/100` a secas está prohibido: va con banda con
+    nombre, con flecha contra el valor anterior, o con comparación explícita. Si no se le puede dar
+    referente, el número no se muestra.
+14. **El registro solo crece.** Ningún sistema borra ni sobrescribe `career.registro`. Solo
+    `append` e incremento.
+15. **Lo que la tarjeta promete, el motor lo cumple.** Si una oferta dice `jerarquía 71 → 25`, el
+    valor real post-fichaje es ese. Cualquier divergencia es un bug de confianza, no de balance — y
+    es peor que un bug de balance, porque enseña al jugador a no leer.
+16. **El azar grande se declara; el azar chico se esconde.** Si el motor sortea algo que el jugador
+    va a sentir (una mano de ofertas, tres mejoras, un parche), la pantalla lo dice: *"el dado
+    trajo…"*. Si sortea ruido (±2 de sinergia), no. El azar visible se siente justo; el invisible se
+    siente roto.
 
 ---
 
@@ -1223,10 +1954,26 @@ End-to-end por fase:
   una carrera de 20+ splits.
 - **7** — jugar una carrera entera de punta a punta desde la pantalla de inicio: la etapa amateur
   dura unos pocos splits, no la mitad de la partida, y el mismo evento no se repite todo el tiempo.
-- **8** — salarios lognormales; `sin_equipo` como final más frecuente; a un jugador de 28 con buena
-  hoja le llegan visiblemente menos ofertas que a los 21.
-- **9** — el bloque completo de checks de duración. **Cero carreras que agoten el tope.** Una traza
-  de una carrera tipo Faker (30+) y una de un `no_llego` a los 19, y que las dos se lean como
-  historias completas.
-- **10** — `--huecos` vacío, ≥150 opciones, ningún contexto alcanzable con >25% de splits mudos.
-- **11** — ningún arquetipo de la tarjeta final por encima del 25%.
+- **8** — la ficha está en todas las pantallas; las flechas ▲▼ se mueven al cerrar la edad; el
+  NIVEL sube; el arraigo cruza un hito con nombre y la barra cambia; `VER CARRERA` muestra la fila
+  de la org con sus splits y su título; cero errores de consola.
+- **9** — llegar a una pretemporada con contrato venciendo, ver 4-6 ofertas, **aceptar un bombazo**,
+  y confirmar en el split siguiente que la jerarquía cayó al número exacto que la tarjeta prometió
+  y que el arraigo arrancó en el valor que decía. Comprobar en el draft de la serie siguiente que
+  efectivamente ya casi no elegís tu campeón — la espiral de `CONCEPTO` §7, cerrada de punta a
+  punta por primera vez.
+- **10** — dos trazas completas, leídas como historias: una carrera tipo Faker (30+ años) y un
+  `no_llego` a los 19. Las dos cierran con una tarjeta que se pueda mandar por WhatsApp y se
+  entienda sola. **Cero carreras que agoten el tope de splits** (hoy: 49,1%).
+- **11** — jugar 4 años seguidos: cuatro titulares distintos, cuatro notas distintas, el rival
+  apareciendo con números que cambian y con su org cambiando, y cada año cerrando con una frase que
+  dice qué se juega el año que viene.
+- **12** — jugar una serie completa a mano viendo la categoría de cada decisión con su color, la
+  consecuencia previa (dirección y magnitud, nunca el número exacto) antes de elegir, y un menú
+  sorteado que se declara como tal ("el dado trajo...").
+- **13** — `--huecos` vacío, ≥150 opciones, ningún contexto alcanzable con >25% de splits mudos.
+
+**La prueba final, la que importa y la que hoy falla:** jugar una carrera completa de la pantalla
+de inicio a la tarjeta final, y poder contarla como una historia — dónde empezaste, qué elegiste,
+qué perdiste, cuándo te llegó el bombazo, si lo tomaste, qué te costó, y cómo terminó. **Si al
+final la carrera se puede narrar en cinco frases sin mirar el log, el juego está.**
