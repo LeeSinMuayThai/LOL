@@ -141,7 +141,7 @@
       {
         "id": "aguantar_el_calendario",
         "label": "Aguantar hasta que termine el split",
-        "descripcion": "Faltan pocas jornadas. Apretás los dientes y lo resolvés en el receso, si llegás.",
+        "descripcion": "Falta poco para que se cierre el split. Apretás los dientes y lo resolvés en el receso, si llegás.",
         "weight": 5,
         "outcomes": [
           {
@@ -167,13 +167,13 @@
       },
       {
         "id": "pedir_un_quiebre",
-        "label": "Decírselo al staff",
-        "descripcion": "Pedís bajar carga. Se soluciona antes, y queda escrito en algún lado que pediste parar.",
+        "label": "Pedir bajar la carga",
+        "descripcion": "Pedís bajar el ritmo un tiempo. Se soluciona antes, y queda como precedente que en algún momento pediste parar.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Te sacan dos bloques de scrim por semana durante un mes. No es mucho, pero alcanza para volver a tener ganas.",
+            "texto": "Bajás la intensidad —menos sesiones, menos partidas por semana— durante un mes. No es mucho, pero alcanza para volver a tener ganas.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]

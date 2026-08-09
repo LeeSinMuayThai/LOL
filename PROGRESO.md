@@ -26,6 +26,69 @@ eventos (44 de los ~200 que pide §8, con 90 de las 150 opciones objetivo).
 
 ## Changelog
 
+### 2026-08-09 — Corrección: lenguaje de "equipo profesional" colándose en la etapa amateur
+
+Bug reportado directamente por el usuario jugando: a los 15 años, en soloQ (Oro), le salió el
+evento "Salió un campeón nuevo" con la opción *"Practicarlo a fondo antes del próximo partido"* y
+un resultado que hablaba de *"llevarlo a un partido oficial"*. A los 15 en soloQ no hay partido
+oficial — el mensaje no tenía sentido, y el usuario lo leyó (con razón) como evidencia de que nada
+de lo hecho en las fases 5-7 se había aplicado de verdad.
+
+**Causa real, dicha sin vueltas**: es un gap de esta misma sesión, no un defecto viejo. La entrada
+de la fase 6 (2026-08-09, más abajo en este changelog) dice textualmente que "los otros cinco
+eventos de pool... se retextean para hablar de regímenes y tiers en vez de afinidad abstracta" —
+pero en los hechos sólo se tocó la descripción de `pool_main_muerto`. Los otros cuatro
+(`pool_estrechez`, `pool_identidad_diluida`, `pool_contra_la_corriente`, `pool_campeon_nuevo`)
+quedaron con el texto viejo de "el draft"/"reunión de repaso"/"partido oficial", que nunca fue
+correcto para un jugador que todavía no tiene equipo. El changelog de esa fase sobreestimó lo que
+en realidad se había hecho.
+
+**Auditoría completa, no solo el caso reportado**: se armó un script que cruza cada evento de
+`data/events/**/*.json` contra su `contexto.etapa` (excluyendo `partido/*.json`, que gatea por
+`stakes` y estructuralmente no puede aparecer fuera de `systems/temporada.js`) y busca vocabulario
+de equipo real ("coach", "staff", "el draft", "reunión de repaso", "partido oficial", "ganó el
+partido", "vestuario", "prensa de la escena") en cualquier evento alcanzable durante `etapa:
+amateur`. Encontró **9 eventos**, 2 de ellos `bisagra: true` (alta frecuencia): `pool_campeon_nuevo`
+(el caso reportado), `pool_main_muerto`, `pool_estrechez`, `pool_identidad_diluida`,
+`pool_contra_la_corriente`, `support_nadie_te_vio`, `burnout`, `top_recorte_sin_contexto`,
+`adc_si_perdemos_es_por_vos`. Se descartaron como falsos positivos `academy_offer` (menciona
+"coach"/"scrim" pero es literalmente una prueba con un equipo amateur juvenil, contrastada a
+propósito contra el soloQ) y `psychologist` (exige `nivel: tier1/tier2`, que `core/contexto.js`
+nunca produce durante `phase: 'amateur'` — ahí `calcularNivel` siempre da `'soloq'`).
+
+**El arreglo**: los dos eventos `bisagra` se separaron en un par pro/amateur, porque salen tan
+seguido que ameritan texto propio para cada etapa: `pool_campeon_nuevo` ganó
+`etapa: ["debut","profesional"]` y se creó `pool_campeon_nuevo_soloq` (mismo peso/cooldown, texto
+de ranked — "la próxima seguidilla de rankeds", "partidas clasificatorias", nada de "partido
+oficial"); mismo tratamiento para `pool_main_muerto` → `pool_main_muerto_soloq`. Los siete
+restantes se retextearon en el mismo evento (más barato, y el mecanismo de fondo es igual de real
+en soloQ que en un equipo): "el draft" → "el champ select", "reunión de repaso" → "cualquiera que
+te vea jugar seguido", "el equipo ganó el partido" → "tu equipo ganó la partida", "decírselo al
+staff" → "pedir bajar la carga" (sin nombrar a quién). De paso, la traza de verificación encontró
+un décimo caso menor no listado originalmente: `burnout` decía "faltan pocas jornadas" (jornada =
+día de partido de una liga, no existe en soloQ) — se cambió a "falta poco para que se cierre el
+split" (split sí es vocabulario genérico del motor, usado en ambas etapas por `splitCount`).
+
+**Verificación, en cuatro pasos**:
+1. Re-corrida la auditoría: quedan sólo los 2 falsos positivos ya explicados, cero lenguaje roto de
+   verdad.
+2. `node src/dev/validate.js`: los 55 checks pasan sin tocar ninguno (es contenido, no estructura).
+3. Traza real de 60 seeds × 12 splits de etapa amateur (3205 logs leídos de punta a punta, no sólo
+   grep): apareció una segunda categoría de coincidencias — 28 casos de texto "pro" disparando
+   dentro de un split marcado como amateur. Investigado a fondo: los 28 son el **split exacto del
+   fichaje** (`amateur.js` corre antes que `events.js` en `ETAPAS_SPLIT`, así que en el split en que
+   firmás, para cuando `events.js` evalúa el contexto ya sos profesional) — comportamiento correcto
+   a propósito, no el bug. Confirmado marcando cada coincidencia con si ese split incluía un log
+   "Firmaste con...": las 28 lo incluían. Cero casos genuinos de amateur puro.
+4. La misma traza probó, de paso, que el sistema de meta con nombre de la fase 6 sí corre desde el
+   primer split amateur (`[meta] Parche 2: sigue la meta de tanques...`, saltos de tier del main
+   nombrados por parche) — la parte de la queja del usuario de "nada se aplicó" no aplica a esa
+   fase; el problema real era acotado al vocabulario de estos 9-10 eventos.
+
+Archivos tocados: `src/data/events/pool.json`, `src/data/events/rol/support.json`,
+`src/data/events/salud_vida.json`, `src/data/events/rol/top.json`, `src/data/events/rol/adc.json`.
+Sin cambios de balance ni de estructura — commit separado de cualquier retuning.
+
 ### 2026-08-09 — Fase 7: el prólogo se comprime y la repetición se rompe
 
 Última de las tres fases insertadas antes del mercado. Dos problemas medidos al arrancar: la etapa

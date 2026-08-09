@@ -66,7 +66,7 @@
     "id": "top_recorte_sin_contexto",
     "category": "rol_top",
     "title": "El streamer te sacó de contexto",
-    "description": "Un streamer grande recorta tu peor teamfight del split y lo sube sin la jugada anterior que la explica. El clip se ve más que cualquier cosa buena que hiciste en el año.",
+    "description": "Un streamer grande recorta tu peor teamfight de las últimas semanas y lo sube sin la jugada anterior que la explica. El clip se ve más que cualquier cosa buena que hiciste en el año.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {

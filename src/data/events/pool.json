@@ -3,7 +3,7 @@
     "id": "pool_estrechez",
     "category": "pool",
     "title": "Un cuchillo de un solo filo",
-    "description": "Con tres campeones a mano alcanza con que te baneen o te counter-pickeen uno para dejarte sin margen. En la reunión de repaso te lo marcan sin vueltas.",
+    "description": "Con tres campeones a mano alcanza con que te baneen o te counter-pickeen uno para dejarte sin margen. Cualquiera que te vea jugar seguido te lo va a marcar sin vueltas.",
     "weight": 6,
     "cooldown": 5,
     "contexto": {
@@ -19,7 +19,7 @@
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Sumás una opción más al pool. Todavía la manejás con lo justo, pero ya no sos un libro tan abierto en el draft.",
+            "texto": "Sumás una opción más al pool. Todavía la manejás con lo justo, pero ya no sos un libro tan abierto en el champ select.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -87,7 +87,7 @@
           },
           {
             "weight": 4,
-            "texto": "Recortás el pool y por un par de semanas se te nota la falta de opciones en el draft.",
+            "texto": "Recortás el pool y por un par de semanas se te nota la falta de opciones en el champ select.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "olvidar" },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -103,7 +103,7 @@
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Seguís sin un campeón que te defina, pero cualquier draft que te toque tiene una respuesta.",
+            "texto": "Seguís sin un campeón que te defina, pero cualquier champ select que te toque tiene una respuesta.",
             "effects": [
               { "type": "stat", "path": "player.stats.adaptabilidad", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
@@ -183,7 +183,7 @@
     "id": "pool_contra_la_corriente",
     "category": "pool",
     "title": "El meta no te quiere",
-    "description": "Nada de lo que sabés jugar está de moda. Cada partida arranca cuesta arriba, antes incluso de que empiece el draft.",
+    "description": "Nada de lo que sabés jugar está de moda. Cada partida arranca cuesta arriba, antes incluso de que empiece.",
     "weight": 6,
     "cooldown": 5,
     "contexto": {
@@ -199,7 +199,7 @@
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Sumás un campeón acorde al momento. No lo dominás todavía, pero al menos el draft deja de jugar en tu contra.",
+            "texto": "Sumás un campeón acorde al momento. No lo dominás todavía, pero al menos el parche deja de jugar en tu contra.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 }
             ]
@@ -248,6 +248,7 @@
     "cooldown": 6,
     "bisagra": true,
     "contexto": {
+      "etapa": ["debut", "profesional"],
       "marcas": ["main_muerto"]
     },
     "conditions": [],
@@ -303,6 +304,70 @@
     ]
   },
   {
+    "id": "pool_main_muerto_soloq",
+    "category": "pool",
+    "title": "Tu {main} quedó a contramano",
+    "description": "El campeón con el que más jugaste este año se cayó a la mitad de abajo de la tier list de tu rol. Seguís teniendo la maestría; el régimen actual ya no te la valora igual en el champ select.",
+    "weight": 6,
+    "cooldown": 6,
+    "bisagra": true,
+    "contexto": {
+      "etapa": ["amateur"],
+      "marcas": ["main_muerto"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "buscar_reemplazo",
+        "label": "Buscar un reemplazo ahora",
+        "descripcion": "Aceptás que el ciclo de tu main terminó, al menos por este parche, y arrancás de cero con otro.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Empezás a construir un nuevo principal. Duele soltar el que te llevó hasta acá, pero en el champ select se nota rápido.",
+            "effects": [
+              { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "El reemplazo te sale más caro de lo pensado: entrás con maestría baja justo cuando más necesitabas rendir.",
+            "effects": [
+              { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "apostar_que_vuelve",
+        "label": "Apostar a que el meta vuelve",
+        "descripcion": "Le seguís metiendo horas a tu main de siempre. O el parche te da la razón, o perdiste el tiempo remando contra todo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "Insistís y, contra el pronóstico, el próximo sacudón de meta te devuelve al frente. Fue una apuesta que salió.",
+            "effects": [
+              { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "principal", "min": 6, "max": 10 },
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "Seguís puliendo un campeón que ya nadie banea ni respeta en champ select. Jugás mejor con él y rendís peor igual.",
+            "effects": [
+              { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "principal", "min": 3, "max": 6 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     "id": "pool_campeon_nuevo",
     "category": "pool",
     "title": "Salió {campeonNuevo}",
@@ -311,6 +376,7 @@
     "cooldown": 6,
     "bisagra": true,
     "contexto": {
+      "etapa": ["debut", "profesional"],
       "marcas": ["campeon_nuevo"]
     },
     "conditions": [],
@@ -344,6 +410,69 @@
         "id": "pulir_lo_de_ahora",
         "label": "Pulir lo de ahora y aprenderlo después",
         "descripcion": "Dejás pasar la novedad. Seguís rindiendo con lo que ya dominás, mientras el resto de la región se pelea por entender al nuevo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Seguís firme con lo tuyo mientras medio servidor se rompe la cabeza probando al recién llegado.",
+            "effects": [
+              { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "principal", "min": 4, "max": 8 }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Para cuando te decidís a mirarlo, ya está en todos lados y llegás tarde a la novedad.",
+            "effects": [
+              { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "principal", "min": 2, "max": 4 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pool_campeon_nuevo_soloq",
+    "category": "pool",
+    "title": "Salió {campeonNuevo}",
+    "description": "El parche trajo un campeón nuevo para tu línea. Todavía nadie lo domina: aprenderlo ahora te pone adelante de todos en tu división, o te deja desprevenido si no te sale a tiempo para la próxima seguidilla de rankeds.",
+    "weight": 7,
+    "cooldown": 6,
+    "bisagra": true,
+    "contexto": {
+      "etapa": ["amateur"],
+      "marcas": ["campeon_nuevo"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "practicarlo_a_fondo",
+        "label": "Practicarlo a fondo antes de la próxima seguidilla",
+        "descripcion": "Le metés todas las horas disponibles al campeón nuevo. Si sale bien, sos de los primeros en dominarlo; si no llegás a tiempo, vas a rankeds con algo a medio cocinar.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Le agarrás la mano justo a tiempo. Sos de los primeros de tu división en llevarlo a partidas clasificatorias.",
+            "effects": [
+              { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "debut", "min": 1, "max": 2 },
+              { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "nuevo", "min": 8, "max": 14 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "No te termina de salir a tiempo. Entrás a rankeds con un campeón que todavía no es tuyo.",
+            "effects": [
+              { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "debut", "min": 1, "max": 2 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pulir_lo_de_ahora",
+        "label": "Pulir lo de ahora y aprenderlo después",
+        "descripcion": "Dejás pasar la novedad. Seguís rindiendo con lo que ya dominás, mientras el resto del servidor se pelea por entender al nuevo.",
         "weight": 5,
         "outcomes": [
           {

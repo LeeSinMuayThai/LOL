@@ -3,7 +3,7 @@
     "id": "support_nadie_te_vio",
     "category": "rol_support",
     "title": "Ganaron por vos y nadie lo sabe",
-    "description": "El ward que pusiste evitó una emboscada que nadie más vio venir. El equipo ganó el partido gracias a esa jugada, y en las estadísticas ni figura.",
+    "description": "El ward que pusiste evitó una emboscada que nadie más vio venir. Tu equipo ganó la partida gracias a esa jugada, y en las estadísticas ni figura.",
     "weight": 6,
     "cooldown": 5,
     "contexto": {
@@ -13,13 +13,13 @@
     "options": [
       {
         "id": "señalarlo_vos_mismo",
-        "label": "Marcarlo vos en el review",
+        "label": "Marcarlo vos en tu propio repaso",
         "descripcion": "Ponés el clip y explicás por qué esa visión cambió el partido. Nadie más lo iba a hacer por vos.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "El staff lo ve y lo valora: la jugada queda registrada como lo que fue. Pequeña victoria, pero es tuya.",
+            "texto": "Alguien lo ve y lo valora: la jugada queda registrada como lo que fue. Pequeña victoria, pero es tuya.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }

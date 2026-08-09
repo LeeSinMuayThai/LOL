@@ -64,7 +64,7 @@
     "id": "adc_si_perdemos_es_por_vos",
     "category": "rol_adc",
     "title": "La lupa está sobre vos",
-    "description": "En el chat y en la prensa de la escena se instaló que, si el equipo pierde, es porque el adc no está a la altura. Cada partida se juega con eso encima.",
+    "description": "En el chat y en cualquier lado donde se comente tus partidas se instaló que, si tu equipo pierde, es porque el adc no está a la altura. Cada partida se juega con eso encima.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
