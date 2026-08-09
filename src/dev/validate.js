@@ -2140,6 +2140,36 @@ check('deltasDeStats devuelve al menos un delta en la mayoría de los cierres de
   }
 });
 
+// --- Fase 8c: calibrar arraigo contra la distribución real (PLAN.md §8.4) ---
+
+check('El arraigo llega a Ídolo+ en una fracción sana de las carreras estables en una org', () => {
+  let elegibles = 0;
+  let llegaron = 0;
+
+  for (let seed = 1; seed <= 300; seed += 1) {
+    const state = correrCarrera(seed, 60);
+    const filaMasLarga = [...state.career.registro.porOrg].sort((a, b) => b.splits - a.splits)[0];
+    if (!filaMasLarga || filaMasLarga.splits < 8) {
+      continue;
+    }
+    elegibles += 1;
+    const arraigoMax = filaMasLarga.hastaSplit === null ? state.career.arraigo : filaMasLarga.arraigoMaximo;
+    const banda = bandaDeArraigo(arraigoMax);
+    if (banda === 'idolo' || banda === 'leyenda') {
+      llegaron += 1;
+    }
+  }
+
+  if (elegibles < 30) {
+    throw new Error(`solo ${elegibles} carreras con ≥8 splits en una misma org en 300 seeds: muestra insuficiente`);
+  }
+
+  const fraccion = llegaron / elegibles;
+  if (fraccion < 0.15) {
+    throw new Error(`el arraigo llega a Ídolo+ en ${(fraccion * 100).toFixed(1)}% de las carreras elegibles; se esperaba ≥15%`);
+  }
+});
+
 if (errores.length > 0) {
   console.error(`\n${errores.length} check(s) fallaron.`);
   process.exit(1);

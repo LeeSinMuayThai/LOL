@@ -26,6 +26,39 @@ eventos (44 de los ~200 que pide §8, con 90 de las 150 opciones objetivo).
 
 ## Changelog
 
+### 2026-08-09 — Fase 8c: se mide el arraigo, y la medición cierra la fase 8
+
+Tercera y última parte de la fase 8 (regla de proceso 2: primero la estructura — 8a/8b —, después
+se calibra). Se corrió una sonda de 600 carreras a 60 splits para medir de verdad la distribución
+de `career.arraigo` antes de tocar ninguna constante.
+
+**Medido**: de las carreras con ≥8 splits en una misma org (416 de 600, 69,3%), la distribución de
+la banda de arraigo más alta alcanzada es **bimodal**: `leyenda` (88+) en 210 (50,5%), `uno_mas`
+(<25) en 107 (25,7%), y `querido`+`idolo` juntos apenas 99 (23,8%). El arraigo máximo tiene mediana
+89 y p25 en 24 — la mayoría o casi no arranca o llega arriba de todo, con poco tránsito por el
+medio. La causa mecánica: la fila más larga de una carrera tiene mediana **44 splits** (p75: 48),
+y a ~1,2 de ganancia base por split eso solo ya se acerca a `idolo` (60) antes de sumar los bonos
+de título/internacional/brecha, que terminan de empujar a la mayoría hasta `leyenda`.
+
+**Decisión, sin retunear nada**: el check declarado en la fase 8a (`≥15% llega a Ídolo+`) mide
+**59,9%** — lo pasa cómodo. Por la regla de proceso 3 ("si el balance se sale de banda, primero
+agregar contenido, no tocar constantes") y porque acá el balance **no** se salió de banda —
+al revés, la superó ampliamente —, no hay nada que forzar. La curva quedó anotada como **D23** en
+`PLAN.md` (deuda técnica, abierta): si más adelante se quiere que "Leyenda" se sienta tan raro como
+en la referencia (aparece una sola vez en las 15 imágenes de El Ídolo del Potrero, al cierre de una
+carrera de 26 años), es candidata a suavizarse en la fase 11 o 13, con contenido real de por medio,
+no como un ajuste de número aislado.
+
+Se agregó el check que la fase 8a había dejado pendiente para después de medir: *"El arraigo llega
+a Ídolo+ en una fracción sana de las carreras estables en una org"* (`validate.js`), sobre 300
+seeds a 60 splits.
+
+**Verificado**: `node src/dev/validate.js` — **59 checks, todos OK** (1 nuevo). `simulate.js` no se
+volvió a correr: esta fase no tocó `src/core`, `src/systems` ni `src/data` — solo agregó un check y
+documentación —, así que la corrida de 6000 carreras de la fase 8b sigue siendo la huella vigente.
+
+**La fase 8 completa (a + b + c) queda cerrada.** Sigue la fase 9: el mercado.
+
 ### 2026-08-09 — Fase 8b: `src/ui/` deja de estar vacía + la ficha permanente
 
 Segunda mitad de la fase 8 (la primera, "el registro acumula", es la entrada anterior de este
