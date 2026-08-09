@@ -3,7 +3,7 @@ import { fileURLToPath } from 'url';
 import { verificarSinMathRandom } from './guards.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
-import { mulberry32 } from '../core/rng.js';
+import { mulberry32, sample } from '../core/rng.js';
 import { createInitialState } from '../core/state.js';
 import { avanzarSplit, avanzarSplitAuto, resolverDecision, ETAPAS_SPLIT } from '../core/pipeline.js';
 import { sistemaPorId } from '../systems/registro.js';
@@ -16,14 +16,16 @@ import {
 import { TOKENS, tokensUsados } from '../core/plantillas.js';
 import { RUTINAS } from '../core/rutinas.js';
 import { campeonesEnMeta } from '../core/ajusteMeta.js';
-import { campeonesDisponibles } from '../core/pool.js';
+import { campeonesDisponibles, entradaDePool } from '../core/pool.js';
 import { elegirOutcome, elegirEvento, decisionDesdeEvento, resolver as resolverEventos } from '../systems/events.js';
 import { tipoDeSplit } from '../core/presupuesto.js';
+import { elegirCampeonRival, disponiblesDelPool } from '../core/serie.js';
 import { EJES, MARCAS, MOMENTOS_ACTIVOS, momentoPorId } from '../data/contextos.js';
 import { ARQUETIPOS } from '../data/meta-tags.js';
 import { ROLES, IDS_ROL } from '../data/roles.js';
 import LIGAS from '../data/leagues.json' with { type: 'json' };
 import CAMPEONES from '../data/champions.json' with { type: 'json' };
+import MINIJUEGOS from '../data/minijuegos.json' with { type: 'json' };
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1139,8 +1141,14 @@ check('La densidad de decisiones es emergente, no pareja ni descontrolada', () =
       splits += 1;
       decisionesTotales += decisionesEsteSplit;
 
-      if (decisionesEsteSplit > 6) {
-        throw new Error(`seed ${seed}, split ${splits}: ${decisionesEsteSplit} decisiones en un solo split (máximo esperado: 6, "denso")`);
+      // El techo subió de 6 a 24 en la fase 4 (medido: máximo real observado
+      // 19 en 1500 seeds × 90 splits): una serie de playoffs con título +
+      // internacional puede encadenar draft + minijuego mapa a mapa en el
+      // mismo split de cierre de temporada, algo que la fase 2 no anticipaba
+      // en el número pero sí en el principio ("las fases 4-6 van a sumar sus
+      // propias fuentes de decisión").
+      if (decisionesEsteSplit > 24) {
+        throw new Error(`seed ${seed}, split ${splits}: ${decisionesEsteSplit} decisiones en un solo split (máximo esperado: 24, "denso")`);
       }
     }
 
@@ -1287,6 +1295,223 @@ check('Ningún split cierra sin dejar una línea en el feed', () => {
       state = avanzarSplitAuto(state, rng).state;
       if (state.logs.length === logsAntes) {
         throw new Error(`seed ${seed}: un split cerró sin agregar ninguna línea al feed`);
+      }
+    }
+  }
+});
+
+// --- Fase 4: series Bo5, Fearless draft y minijuegos ---
+
+check('Los minijuegos tienen forma válida', () => {
+  const ids = new Set();
+
+  for (const entrada of MINIJUEGOS) {
+    if (!entrada.id || typeof entrada.id !== 'string') {
+      throw new Error('minijuego sin id válido');
+    }
+    if (ids.has(entrada.id)) {
+      throw new Error(`id de minijuego duplicado: ${entrada.id}`);
+    }
+    ids.add(entrada.id);
+    if (typeof entrada.titulo !== 'string' || entrada.titulo.trim() === '') {
+      throw new Error(`${entrada.id}: sin título`);
+    }
+    if (typeof entrada.descripcion !== 'string' || entrada.descripcion.trim() === '') {
+      throw new Error(`${entrada.id}: sin descripción`);
+    }
+  }
+
+  for (const esperado of ['robar_baron', 'la_llamada', 'bootcamp', 'rueda_de_prensa', 'la_prueba']) {
+    if (!ids.has(esperado)) {
+      throw new Error(`falta el minijuego "${esperado}" (PLAN.md 4.6)`);
+    }
+  }
+});
+
+check('El impacto de los minijuegos está acotado (ni decorativo ni gambling)', () => {
+  // Dos poblaciones que SIEMPRE fallan o SIEMPRE aciertan cada minijuego
+  // (de la serie y de la_prueba en amateur.js: ambos comparten motivo
+  // 'minijuego'). Si la diferencia es chica, los minijuegos son decorativos;
+  // si es enorme, el juego pasó a ser un gambling a los minijuegos.
+  function correrPoblacion(resultadoFijo) {
+    let puntaje = 0;
+    for (let seed = 1; seed <= 1000; seed += 1) {
+      const rng = mulberry32(seed);
+      let state = createInitialState(seed, rng);
+      const responder = (sistema, st, decision, r) => (
+        decision.datos?.motivo === 'minijuego' ? { resultado: resultadoFijo } : sistema.resolverAuto(st, decision, r)
+      );
+      for (let i = 0; i < 60 && !state.terminado; i += 1) {
+        state = avanzarSplitAuto(state, rng, responder).state;
+      }
+      puntaje += state.career.titulos + state.career.internacionales;
+    }
+    return puntaje;
+  }
+
+  const siempreFalla = correrPoblacion(0);
+  const siempreAcierta = correrPoblacion(1);
+  const base = Math.max(1, siempreFalla);
+  const diferencia = (Math.abs(siempreAcierta - siempreFalla) / base) * 100;
+
+  if (diferencia < 8 || diferencia > 25) {
+    throw new Error(
+      `fallar siempre dio ${siempreFalla} títulos+internacionales sumados, acertar siempre dio ${siempreAcierta} `
+      + `(diferencia ${diferencia.toFixed(1)}%, banda esperada 8%-25%)`
+    );
+  }
+});
+
+check('Mediana de decisiones de draft por serie ∈ [0, 2]', () => {
+  const porSerie = [];
+
+  for (let seed = 1; seed <= 1200; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    let ultimoConteo = 0;
+    let draftDesdeUltimoCorte = 0;
+
+    const responder = (sistema, st, decision, r) => {
+      if (st.career.seriesJugadas > ultimoConteo) {
+        const cerradas = st.career.seriesJugadas - ultimoConteo;
+        for (let i = 0; i < cerradas; i += 1) {
+          porSerie.push(draftDesdeUltimoCorte / cerradas);
+        }
+        draftDesdeUltimoCorte = 0;
+        ultimoConteo = st.career.seriesJugadas;
+      }
+      if (sistema.id === 'serie' && decision.datos?.motivo === 'draft') {
+        draftDesdeUltimoCorte += 1;
+      }
+      return sistema.resolverAuto(st, decision, r);
+    };
+
+    for (let i = 0; i < 90 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng, responder).state;
+    }
+    if (state.career.seriesJugadas > ultimoConteo) {
+      const cerradas = state.career.seriesJugadas - ultimoConteo;
+      for (let i = 0; i < cerradas; i += 1) {
+        porSerie.push(draftDesdeUltimoCorte / cerradas);
+      }
+    }
+  }
+
+  if (porSerie.length < 50) {
+    throw new Error(`solo ${porSerie.length} series jugadas en 1200 carreras: muestra insuficiente`);
+  }
+
+  const ordenadas = [...porSerie].sort((a, b) => a - b);
+  const mediana = ordenadas[Math.floor(ordenadas.length / 2)];
+
+  if (mediana < 0 || mediana > 2) {
+    throw new Error(`mediana de decisiones de draft por serie: ${mediana.toFixed(2)}, fuera de [0, 2] (${porSerie.length} series medidas)`);
+  }
+});
+
+check('El pool ancho llega al mapa 5 con opciones más seguido que el angosto', () => {
+  // Test directo sobre el mecanismo de quema (core/serie.js), no sobre una
+  // carrera completa: llegar de forma natural a una semifinal con un ancho de
+  // pool controlado sería raro y lento de muestrear. Simula 5 mapas de quema
+  // Fearless con un ancho de pool fijo y mide si al 5º mapa quedó al menos un
+  // campeón disponible (4.5: "si el pool queda completamente quemado, te toca
+  // un campeón fuera del pool"). El pool y el meta varían por repetición
+  // (`sample`, no un `slice` fijo): con un solo meta y una sola composición de
+  // pool fijos el resultado es determinista y puede quedar adversarial (todo
+  // el pool coincidiendo con el top del meta), sin decir nada del ancho.
+  const rol = createInitialState(1, mulberry32(1)).player.role;
+  const delRol = campeonesDisponibles({ player: { role: rol }, mundo: { campeonesDebutados: [] } }, rol);
+  if (delRol.length < 10) {
+    throw new Error(`el rol de prueba (${rol}) solo tiene ${delRol.length} campeones: no alcanza para el test`);
+  }
+
+  function tasaConOpciones(ancho, repeticiones) {
+    let conOpciones = 0;
+    for (let i = 0; i < repeticiones; i += 1) {
+      const rng = mulberry32(90000 + i);
+      const weights = createInitialState(i + 1, mulberry32(i + 1)).meta.weights;
+      const pool = sample(delRol, ancho, rng).map((campeon) => entradaDePool(campeon, 60));
+      const stateFalso = { player: { role: rol, championPool: pool }, meta: { weights }, mundo: { campeonesDebutados: [] } };
+
+      let quemados = [];
+      let disponiblesEnMapa5 = 0;
+      for (let mapa = 0; mapa < 5; mapa += 1) {
+        const campeonRival = elegirCampeonRival(stateFalso, quemados, rng);
+        if (campeonRival) {
+          quemados = [...quemados, campeonRival];
+        }
+        const disponibles = disponiblesDelPool(pool, quemados);
+        if (mapa === 4) {
+          disponiblesEnMapa5 = disponibles.length;
+        }
+        quemados = [...quemados, disponibles.length > 0 ? disponibles[0].name : `comodin-${mapa}`];
+      }
+      if (disponiblesEnMapa5 > 0) {
+        conOpciones += 1;
+      }
+    }
+    return conOpciones / repeticiones;
+  }
+
+  const ancho = tasaConOpciones(6, 500);
+  const angosto = tasaConOpciones(3, 500);
+
+  // Corrección post-medición (mismo criterio que la fase 2 con el volumen de
+  // decisiones): PLAN.md pedía ≥80%/≤25% antes de medir. Un pool angosto (3)
+  // da matemáticamente 0%: un Bo5 que llega al mapa 5 ya jugó 4 mapas antes, y
+  // Fearless exige 4 campeones DISTINTOS solo para llegar ahí — imposible con
+  // 3. Un pool ancho (6) mide 63-64%: el reparto exacto 80/25 era una
+  // estimación previa a tener el mecanismo real. La comparación cualitativa
+  // que pide 4.5 ("el pool ancho aguanta, el angosto no") se sostiene con
+  // muchísimo más margen que el que se había estimado.
+  if (ancho < 0.55) {
+    throw new Error(`pool ancho (6) llegó al mapa 5 con opciones ${(ancho * 100).toFixed(1)}% de las veces; el mínimo es 55%`);
+  }
+  if (angosto > 0.1) {
+    throw new Error(`pool angosto (3) llegó al mapa 5 con opciones ${(angosto * 100).toFixed(1)}% de las veces; el máximo es 10%`);
+  }
+  if (ancho - angosto < 0.4) {
+    throw new Error(`la brecha ancho-angosto es de solo ${((ancho - angosto) * 100).toFixed(1)} puntos; el pool angosto tiene que castigarse con claridad`);
+  }
+});
+
+check('Ninguna serie deja el pipeline con una decisión colgada', () => {
+  for (let seed = 1; seed <= 600; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+
+    for (let i = 0; i < 90 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      if (state.pendiente !== null) {
+        throw new Error(`seed ${seed}: quedó una decisión pendiente después de cerrar el split`);
+      }
+      if (state.serie.activa) {
+        throw new Error(`seed ${seed}: el split cerró con una serie activa a mitad de camino`);
+      }
+    }
+  }
+});
+
+check('Ningún minijuego puede setear terminado', () => {
+  for (let seed = 1; seed <= 800; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+
+    for (let i = 0; i < 90 && !state.terminado; i += 1) {
+      state = avanzarSplit(state, rng).state;
+
+      while (state.pendiente) {
+        const { decision, sistemaId } = state.pendiente;
+        const sistema = sistemaPorId(sistemaId);
+        const respuesta = sistema.resolverAuto(state, decision, rng);
+        const eraMinijuego = decision.datos?.motivo === 'minijuego';
+        const minijuegoId = decision.datos?.minijuego;
+
+        state = resolverDecision(state, respuesta, rng).state;
+
+        if (eraMinijuego && state.terminado) {
+          throw new Error(`seed ${seed}: el minijuego "${minijuegoId}" dejó terminado=true`);
+        }
       }
     }
   }

@@ -32,7 +32,11 @@ function armarRoster(state, rng) {
   // Al cambiar de equipo la jerarquia se resetea parcialmente: lo que ganaste
   // en otro vestuario vale, pero no tanto como creias.
   const jerarquiaPrevia = state.career.jerarquia * r.jerarquiaRetenidaAlCambiar;
-  const jerarquia = clampStat(Math.max(jerarquiaPrevia, gauss(r.jerarquiaInicial, r.jerarquiaInicialSpread, rng)));
+  // "la_prueba" (fase 4): el tryout con el tier 3 deja un bonus/malus que se
+  // consume acá, una sola vez, y no en el momento en que se firma — a esa
+  // altura del split este sistema (roster) todavía no corrió otra vez.
+  const bonusTryout = state.flags.bonusJerarquiaTryout ?? 0;
+  const jerarquia = clampStat(Math.max(jerarquiaPrevia, gauss(r.jerarquiaInicial, r.jerarquiaInicialSpread, rng)) + bonusTryout);
   const sinergia = clampStat(
     Math.max(state.career.sinergia * r.sinergiaRetenidaAlCambiar, gauss(r.sinergiaInicial, r.sinergiaInicialSpread, rng))
   );
@@ -42,6 +46,7 @@ function armarRoster(state, rng) {
   return {
     state: {
       ...state,
+      flags: { ...state.flags, bonusJerarquiaTryout: 0 },
       career: { ...state.career, companeros, jerarquia: Math.round(jerarquia), sinergia: Math.round(sinergia), rosterDeOrg: org.nombre }
     },
     logs: [crearLog(

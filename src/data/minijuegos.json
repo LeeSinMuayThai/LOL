@@ -1,0 +1,27 @@
+[
+  {
+    "id": "robar_baron",
+    "titulo": "El Barón está bajo",
+    "descripcion": "El mapa está cerrado y el Barón se puede robar. Un smite mal cronometrado le da la vuelta a la pelea."
+  },
+  {
+    "id": "la_llamada",
+    "titulo": "La llamada",
+    "descripcion": "El mapa está cerrado y hay que decidir ya. El reloj no espera."
+  },
+  {
+    "id": "bootcamp",
+    "titulo": "Bootcamp antes de viajar",
+    "descripcion": "Días contados antes del internacional. Hay que decidir qué scrimear bajo presión."
+  },
+  {
+    "id": "rueda_de_prensa",
+    "titulo": "Rueda de prensa",
+    "descripcion": "Cámaras y micrófonos. El tono que elijas se comenta tanto como el resultado."
+  },
+  {
+    "id": "la_prueba",
+    "titulo": "La prueba",
+    "descripcion": "Un tryout con un equipo de tier 3: unos minutos para mostrar que valés el contrato mínimo."
+  }
+]

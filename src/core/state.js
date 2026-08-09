@@ -85,7 +85,25 @@ export function createInitialState(seed, rng, eleccion = null) {
       posicion: null,
       titulos: 0,
       podios: 0,
-      internacionales: 0
+      internacionales: 0,
+      // Cuantas series de playoffs (fase 4) se jugaron hasta el final, ganadas
+      // o perdidas. Denominador de "decisiones de draft por serie".
+      seriesJugadas: 0
+    },
+    // La serie de playoffs en curso (fase 4). Objeto completo de ceros, nunca
+    // null (trampa T4): se activa al clasificar y se resetea al arrancar cada
+    // ronda nueva (el Fearless no acumula entre rondas: cada rival es una serie
+    // propia, con sus propios quemados).
+    serie: {
+      activa: false,
+      ronda: null,
+      rival: { org: null, fuerza: 0 },
+      formato: 0,
+      marcador: [0, 0],
+      mapaActual: 0,
+      mapas: [],
+      quemados: [],
+      minijuegoUsado: false
     },
     meta: {
       patch: 1,
@@ -106,7 +124,11 @@ export function createInitialState(seed, rng, eleccion = null) {
       // El año muerto (fase 3): ganaste el ascenso a tier 1 pero la liga exige
       // más edad de la que tenés. Se resuelve solo apenas cumplís, sin volver
       // a sortear nada.
-      tier1Esperando: null
+      tier1Esperando: null,
+      // "la_prueba" (fase 4): el tryout con el tier 3 deja este bonus/malus,
+      // que `roster.js` consume una sola vez al armar el primer roster (el
+      // split del fichaje todavía no tiene equipo armado) y lo vuelve a cero.
+      bonusJerarquiaTryout: 0
     },
     logs: []
   };

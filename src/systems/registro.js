@@ -34,6 +34,10 @@ export const ETAPAS_SPLIT = [
   await import('./secundario.js'),
   await import('./amateur.js'),
   await import('./rendimiento.js'),
+  // La serie de playoffs (fase 4): temporada regular -> playoffs, siguiendo el
+  // orden de CONCEPTO §5. Solo actua en tier 1 con formatoPlayoffs; ahi le
+  // saca a rendimiento.js la resolucion instantanea de titulo/internacional.
+  await import('./serie.js'),
   await import('./events.js'),
   await import('./atributos.js'),
   await import('./practica.js'),

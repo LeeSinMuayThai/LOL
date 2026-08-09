@@ -10,6 +10,7 @@
     "dificultadAdaptacion": 85,
     "edadMinima": 17,
     "cuposInternacionales": 3,
+    "formatoPlayoffs": { "clasifican": 6, "byes": 2, "bo": 5 },
     "desciendeA": "LCK_CL",
     "servidor": "KR",
     "orgs": [
@@ -36,6 +37,7 @@
     "dificultadAdaptacion": 90,
     "edadMinima": 18,
     "cuposInternacionales": 3,
+    "formatoPlayoffs": { "clasifican": 6, "byes": 2, "bo": 5 },
     "desciendeA": "LDL",
     "servidor": "CN",
     "orgs": [
@@ -66,6 +68,7 @@
     "dificultadAdaptacion": 45,
     "edadMinima": 18,
     "cuposInternacionales": 3,
+    "formatoPlayoffs": { "clasifican": 6, "byes": 2, "bo": 5 },
     "desciendeA": "EMEA_MASTERS",
     "servidor": "EUW",
     "orgs": [
@@ -92,6 +95,7 @@
     "dificultadAdaptacion": 40,
     "edadMinima": 17,
     "cuposInternacionales": 3,
+    "formatoPlayoffs": { "clasifican": 6, "byes": 2, "bo": 5 },
     "desciendeA": "NACL",
     "servidor": "NA",
     "orgs": [
@@ -116,6 +120,7 @@
     "dificultadAdaptacion": 30,
     "edadMinima": 17,
     "cuposInternacionales": 2,
+    "formatoPlayoffs": { "clasifican": 6, "byes": 2, "bo": 5 },
     "desciendeA": "CD",
     "servidor": "BR",
     "orgs": [
@@ -140,6 +145,7 @@
     "dificultadAdaptacion": 58,
     "edadMinima": 17,
     "cuposInternacionales": 2,
+    "formatoPlayoffs": { "clasifican": 6, "byes": 2, "bo": 5 },
     "desciendeA": "LCP_CHALLENGERS",
     "servidor": "TW",
     "orgs": [

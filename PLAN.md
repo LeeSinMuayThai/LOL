@@ -19,9 +19,7 @@ el juego) → este documento → `PROGRESO.md` (changelog) → `TRASPASO.md` (da
 | **1** | Identidad: elegís rol y mains, y eso importa | ✅ ver `PROGRESO.md` |
 | **2** | Que las decisiones pesen: pesos dinámicos, densidad | ✅ ver `PROGRESO.md` |
 | **3** | Escalera competitiva: tier3 → tier2 → tier1, ligas 2026 | ✅ ver `PROGRESO.md` |
-| **2** | Que las decisiones pesen: pesos dinámicos, densidad | ⬜ |
-| **3** | Escalera competitiva: tier3 → tier2 → tier1, ligas 2026 | ⬜ |
-| **4** | Competición jugable: series Bo5, Fearless, draft, minijuegos | ⬜ |
+| **4** | Competición jugable: series Bo5, Fearless, draft, minijuegos | ✅ ver `PROGRESO.md` |
 | **5** | Mercado: ofertas, contratos, salarios, imports | ⬜ |
 | **6** | Final emergente: retiro, servicio militar, lesiones, vuelta | ⬜ |
 | **7** | Contenido a escala (150+ opciones) | ⬜ |
@@ -473,6 +471,15 @@ Ninguna serie deja el pipeline con una decisión colgada
 Ningún minijuego puede setear `terminado`
 ```
 
+> **Corrección post-medición** (mismo criterio que la fase 2 con el volumen de decisiones): el
+> 80%/25% de arriba era una estimación previa a tener el mecanismo de quema real. Medido:
+> pool angosto (3) da **0%** — es matemático, no de balance: un Bo5 que llega al mapa 5 ya jugó
+> 4 mapas antes, y Fearless exige 4 campeones **distintos** solo para llegar ahí, imposible con
+> un pool de 3. Pool ancho (6) da **63-64%**. El check quedó en ≥55%/≤10% (con un piso extra de
+> 40 puntos de brecha entre los dos), que es lo que la implementación real sostiene con margen.
+> La comparación cualitativa de 4.5 — "el pool ancho aguanta, el angosto no" — se sostiene con
+> muchísimo más contraste que el que se había estimado a ciegas.
+
 `CONCEPTO.md` §5 y §11 hay que actualizarlos: §5 describe los playoffs sin serie y §11 dice que los
 minijuegos "aparecen solo en momentos bisagra" sin definir la cuota.
 
@@ -707,7 +714,9 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D15 | LCP no tiene un circuito de desarrollo real investigado (TRASPASO no lo cubre). Se modeló como `LCP_CHALLENGERS`, generado igual que el resto de tier 2 — nombre plausible, no verificado como real. Si aparece la investigación real, reemplazar el id | 3 (abierto) |
 | D16 | Tier 1 es un piso: no hay descenso de tier1 a tier2 todavía. Una relegación real existe en las ligas de 2026 pero modelarla es más natural junto con contratos (fase 5) | 5 |
 | D17 | LRN/LRS (los circuitos tier 2 de LATAM que alimentan LCS/CBLOL) y la doble residencia LATAM 2026-2027 no están modelados: un jugador de la región nace directamente en NA o BR. Es la simplificación explícita que ya preveía `TRASPASO` §5 ("la doble residencia... vale un evento dedicado") | 5 |
-| D18 | La ventana `internacional` sigue siendo un único evento agregado al cierre de temporada (el que ya existía). Distinguir First Stand/MSI/Worlds por separado necesita el sistema de series de la fase 4 para tener sentido — hacerlo antes sería cosmético | 4 |
+| D18 | ~~La ventana `internacional` era un único evento agregado (`chance()`)~~ — resuelto a medias en la fase 4: ahora es una serie Bo5 real de verdad contra un rival de otra región, con Fearless y minijuegos. Sigue **sin distinguir** First Stand/MSI/Worlds ni modelar un bracket Swiss+knockout: es una sola serie representativa, no el torneo real completo | ✅ 4 (parcial) |
+| D19 | El bracket de playoffs de tier 1 es de **eliminación simple** (6 clasificados, bye para los 2 mejores sembrados, Bo5 parejo). Las 6 ligas 2026 investigadas usan doble eliminación real (hay bracket de perdedores). Simplificación deliberada: el motor solo simula TU camino por el bracket, nunca el resto — una derrota ya cuenta una historia completa ("eliminado en cuartos") sin necesitar una corrida paralela por el lado de perdedores | 4 (abierto) |
+| D20 | Los 5 minijuegos comparten dos parámetros de balance genéricos (`impactoMinijuego` para los de mapa, `impactoDirecto` para bootcamp/rueda de prensa) en vez de tener cada uno el suyo ajustado a mano. Medido: el efecto agregado de CUALQUIERA de los dos lo satura la propia estructura del juego (máximo 1 minijuego por serie, un mapa de cinco) mucho antes de que el valor del parámetro importe — ver PROGRESO | 7/8 (abierto) |
 
 ---
 

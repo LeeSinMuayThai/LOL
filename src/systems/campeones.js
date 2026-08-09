@@ -1,15 +1,10 @@
 import { gauss, chance, weightedPick } from '../core/rng.js';
 import { crearLog } from '../core/log.js';
 import { clamp } from '../core/numeros.js';
-import { afinidadDeCampeon, ajusteAlMeta } from '../core/ajusteMeta.js';
+import { deseoPorCampeon, ajusteAlMeta } from '../core/ajusteMeta.js';
 import { BALANCE } from '../data/balance.js';
 
 export const id = 'campeones';
-
-function deseoPorCampeon(campeon, weights) {
-  return Math.max(BALANCE.campeones.maestriaMinima, campeon.mastery) ** BALANCE.campeones.sesgoMaestriaEnPick
-    * afinidadDeCampeon(campeon, weights);
-}
 
 // Que campeon terminas jugando este split.
 //

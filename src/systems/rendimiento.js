@@ -4,6 +4,7 @@ import { clamp, clampStat } from '../core/numeros.js';
 import { multiplicadorDeMeta } from '../core/ajusteMeta.js';
 import { registrarEnHistorial } from '../core/contexto.js';
 import { ligaOZonaDeCarrera } from '../core/competicion.js';
+import { esCierreDeTemporada } from '../core/serie.js';
 import { BALANCE } from '../data/balance.js';
 import { ROLES } from '../data/roles.js';
 
@@ -12,7 +13,11 @@ export const id = 'rendimiento';
 // Rendimiento personal del split: la hoja de atributos ponderada por rol,
 // corrida por el ajuste al meta, la maestria del campeon que TERMINASTE
 // jugando, la sinergia del roster, la jerarquia y ruido gaussiano.
-function calcularRendimiento(state, rng) {
+//
+// Se exporta: la fase 4 (systems/serie.js) reusa exactamente esta formula para
+// resolver cada mapa de una serie, sobreescribiendo campeonDelSplit con el
+// campeon elegido en el draft de la serie. No se reescribe la formula.
+export function calcularRendimiento(state, rng) {
   const r = BALANCE.rendimiento;
   const { pesos } = ROLES[state.player.role];
 
@@ -35,7 +40,10 @@ function calcularRendimiento(state, rng) {
 
 // El equipo es sus companeros mas vos. Cuanto mas peso tenes en el resultado,
 // mas te sube y te baja la jerarquia lo que pase.
-function fuerzaDelEquipo(state, rendimiento) {
+//
+// Se exporta por la misma razon que calcularRendimiento: la fase 4 la reusa
+// mapa a mapa dentro de una serie.
+export function fuerzaDelEquipo(state, rendimiento) {
   const r = BALANCE.rendimiento;
   const nivelCompaneros = state.career.companeros.reduce((suma, c) => suma + c.nivel, 0)
     / Math.max(1, state.career.companeros.length);
@@ -54,14 +62,21 @@ function posicionEnLaLiga(state, fuerza, rng) {
   return { posicion: porEncima + 1, equipos: liga.orgs.length, liga };
 }
 
-function consecuencias(state, rendimiento, resultado, esCierreDeTemporada, rng) {
+function consecuencias(state, rendimiento, resultado, esCierre, rng) {
   const r = BALANCE.rendimiento;
   const { posicion, equipos, liga } = resultado;
   const logs = [];
 
+  // Tier 1 con formatoPlayoffs (fase 4) juega una serie de verdad: el título y
+  // el internacional los decide `systems/serie.js`, que corre a continuación
+  // en el registro. Acá solo queda la posición de temporada regular. Tier 2 y
+  // tier 3 (sin bracket modelado) siguen resolviendo el título al instante,
+  // como siempre.
+  const juegaSerieDePlayoffs = liga.tier === 1 && Boolean(liga.formatoPlayoffs);
+
   // El titulo se levanta cuando cierra la temporada, no en cada split: los
   // splits intermedios son regular season y dejan posicion, no trofeo.
-  const campeon = posicion === 1 && esCierreDeTemporada;
+  const campeon = !juegaSerieDePlayoffs && posicion === 1 && esCierre;
   const podio = posicion <= Math.max(2, Math.round(equipos * 0.34));
   const fracaso = posicion > equipos * r.posicionFracaso;
 
@@ -108,8 +123,9 @@ function consecuencias(state, rendimiento, resultado, esCierreDeTemporada, rng) 
 
   // Al cierre de temporada, el campeon de la liga viaja al internacional. Solo
   // las ligas tier 1 declaran cupos: tier 2 y tier 3 nunca clasifican (fase 3).
+  // Tier 1 con playoffs lo resuelve `serie.js` jugando la serie internacional.
   const cuposInternacionales = liga.cuposInternacionales ?? 0;
-  if (esCierreDeTemporada && posicion <= cuposInternacionales) {
+  if (!juegaSerieDePlayoffs && esCierre && posicion <= cuposInternacionales) {
     internacionales += 1;
     worlds += 1;
     const rendiBien = chance(clamp(liga.prestigio / (r.prestigioReferencia * 2) + rendimiento / (BALANCE.stats.max * 3), 0, 0.9), rng);
@@ -158,7 +174,6 @@ export function aplicar(state, rng) {
   const rendimiento = calcularRendimiento(state, rng);
   const fuerza = fuerzaDelEquipo(state, rendimiento);
   const resultado = posicionEnLaLiga(state, fuerza, rng);
-  const esCierreDeTemporada = (state.player.splitCount + 1) % BALANCE.edad.splitsPorEdad === 0;
 
-  return consecuencias(state, rendimiento, resultado, esCierreDeTemporada, rng);
+  return consecuencias(state, rendimiento, resultado, esCierreDeTemporada(state.player.splitCount), rng);
 }

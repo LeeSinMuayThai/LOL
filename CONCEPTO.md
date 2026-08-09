@@ -200,10 +200,20 @@ maestría.
 atributos, ajuste al meta, maestría del campeón que terminaste jugando,
 sinergia del roster, jerarquía y ruido gaussiano.
 
-**5. Playoffs.** Acá aparecen los eventos in-game de tu rol y los minijuegos.
-Un jungla decide si se tira a robar el Barón; un support decide si ejecuta el
-insec ahora o espera; un mid en el mapa 5 con draft fearless decide entre un
-meta pick que apenas conoce y un off-meta que domina hace años.
+**5. Playoffs.** Si clasificaste, tu equipo entra a un bracket de 6 (los dos
+mejores sembrados con bye directo a semifinal) y tu camino se juega serie por
+serie, mapa a mapa, con **Fearless draft**: cada campeón que jugás vos o el
+rival queda bloqueado el resto de esa serie. El rival quema primero, y quema
+del meta — por eso un pool todo-meta se te agota rápido y uno con comfort
+picks aguanta. El motor elige tu campeón solo cuando la elección es obvia; te
+para cuando quedan dos opciones, cuando el mapa es decisivo, o cuando se
+quemó todo y te toca un comodín fuera del pool. En semis, la final y el
+internacional, un mapa cerrado puede disparar un minijuego —robar el Barón si
+sos jungla, la llamada bajo reloj si no— que corre el resultado del mapa un
+puñado de puntos, nunca lo decide solo. Ganar la final te hace campeón de tu
+liga; clasificar además a un internacional (por posición de temporada
+regular, no por el resultado del bracket) te pone una serie más, contra un
+rival de otra región.
 
 **6. Eventos.** Drama, salud, guita, vida personal. Lo que le pasa a un pibe
 de 21 años que de golpe cobra en dólares.
@@ -454,8 +464,12 @@ jugadores. Sos UN jugador y solo controlás tus decisiones.
 fórmulas y ruido. Los eventos in-game son momentos narrativos puntuales, no
 una simulación táctica.
 
-**No es un juego de habilidad mecánica.** Los minijuegos son condimento y
-aparecen solo en momentos bisagra. Si aparecen siempre, se vuelven tarea.
+**No es un juego de habilidad mecánica.** Los minijuegos son condimento, no
+el juego: mueven el rendimiento de un mapa un puñado de puntos, nunca ganan
+ni pierden una serie solos y nunca terminan una carrera. La cuota es
+explícita — como máximo uno por serie, y solo cuando el mapa está cerrado en
+semis, la final o el internacional (más "la prueba", el tryout único de la
+etapa amateur). Si aparecieran siempre, se volverían tarea.
 
 **No es largo.** Si una partida se pasa de doce minutos, algo se infló. El
 formato corto es lo que hace que la rejugués, y rejugarla es donde está el

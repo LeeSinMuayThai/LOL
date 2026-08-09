@@ -24,6 +24,150 @@ y DECLIVE (§2), y contenido de eventos (20 de los ~200 que pide §8).
 
 ## Changelog
 
+### 2026-08-08 — Fase 4: series Bo5, Fearless draft y minijuegos
+
+Quinta fase de `PLAN.md`, y la que `PLAN` describe como el corazón de la
+versión de 25-40 minutos. Hasta acá, cerrar temporada en tier 1 resolvía el
+título con un `if (posicion === 1)` instantáneo en `rendimiento.js` y la
+clasificación a un internacional con un `chance()` suelto: no había serie, no
+había draft, no había Fearless, no había minijuegos.
+
+**Investigación previa, pedida explícitamente antes de modelar nada a
+ciegas**: no había datos de formato de playoffs 2026 en `TRASPASO.md`. Se
+confirmó que LCK, CBLOL y LCP usan **6 clasificados, todo Bo5**, con los 2
+mejores sembrados con bye directo a semifinal; LEC/LCS/LPL varían el detalle
+pero coinciden en 6 clasificados y Bo5 predominante. Las seis usan **doble
+eliminación real** (hay bracket de perdedores) y tanto MSI como Worlds
+confirman **Fearless Draft explícito** en las fases eliminatorias. Se modeló
+un bracket de **eliminación simple** (mismo `clasifican`/`byes`/Bo5 medidos,
+sin bracket de perdedores) porque el motor solo simula el camino del
+jugador, nunca el resto del bracket — documentado como D19, mismo criterio
+que `LCP_CHALLENGERS` en la fase 3 (D15).
+
+**`src/core/serie.js`** (nuevo) — los helpers puros del mecanismo: progresión
+de ronda (`rondaInicial`, `siguienteRonda`), generación de rival (doméstico
+pesado por fuerza dentro de la propia liga; internacional, de otra liga tier
+1 pesada por prestigio), y el Fearless (`disponiblesDelPool`,
+`elegirCampeonRival` — quema del top del meta no quemado, `campeonComodin`
+cuando se quema todo). `deseoPorCampeon` se movió de `systems/campeones.js` a
+`core/ajusteMeta.js` (donde ya vivía `afinidadDeCampeon`) para que
+`core/serie.js` lo pudiera reusar sin que `core/` importara de `systems/`.
+
+**La regla del draft (4.3), resuelta sin la ambigüedad que tenía el texto
+original de `PLAN`** (leído literal, "elige solo si ≥2 disponibles" contradice
+"para si quedan ≤2"): 0 disponibles → comodín automático; 1 → no hay
+elección real; **exactamente 2 → siempre para** (es el momento de pool
+exhausto donde cada pick importa); 3+ → el motor elige solo salvo mapa
+decisivo o falta de dominancia clara (`BALANCE.serie.dominanciaClara`).
+
+**`src/systems/serie.js`** (nuevo, registrado después de `rendimiento.js`) —
+orquesta la serie completa (rival quema → draft auto o pausa → minijuego si
+el mapa está cerrado → resultado, reusando `calcularRendimiento` y
+`fuerzaDelEquipo` de `rendimiento.js`, ahora exportadas en vez de
+reescritas). `rendimiento.js` deja de resolver título/internacional al
+instante **solo para tier 1 con `formatoPlayoffs`** (tier 2 y tier 3 sin
+bracket modelado siguen exactamente igual que antes). Al ganar la final o
+clasificar a un internacional (por posición de temporada regular, cupo
+existente desde la fase 3, sin cambios), se arranca la ronda siguiente
+reseteando quemados/marcador — el Fearless no acumula entre rondas: cada
+rival es una serie propia con sus propios bans, igual que en la vida real.
+
+**Los 5 minijuegos, cada uno con su propia mecánica real** (`src/data/
+minijuegos.json` para el texto, `index.html` para la interacción — nada de
+esto lo implementa el motor, que solo recibe un `resultado` 0-1):
+
+| id | mecánica en el navegador | dispara |
+|---|---|---|
+| `robar_baron` | barra con un marcador oscilando (RAF); parás el smite con un click | mapa cerrado, jungla, semis/final/internacional |
+| `la_llamada` | reflejos: señal a destiempo aleatorio, se mide la latencia del click | mapa cerrado, resto de roles |
+| `bootcamp` | asignar puntos entre 3 tarjetas antes de que se acabe una barra de tiempo | antes del primer mapa del internacional (siempre dispara) |
+| `rueda_de_prensa` | slider de tono con una zona objetivo oculta | al cerrar una serie `final` o `internacional` (si no se gastó ya el cupo) |
+| `la_prueba` | aim-trainer de 5 blancos | al firmar con un tier 3 (hook en `amateur.js`, no en `serie.js`) |
+
+`la_llamada` amortigua su impacto por jerarquía baja (`factorLlamadaSinJerarquia`):
+una buena llamada con jerarquía baja no se ejecuta igual, es la regla textual
+de 4.6. Los 4 minijuegos de `serie.js` comparten el cupo `serie.minijuegoUsado`
+(máximo 1 por serie); `la_prueba` es independiente (etapa amateur, sin `serie`
+todavía) y ajusta la jerarquía inicial del primer roster vía un flag
+transitorio (`flags.bonusJerarquiaTryout`) que `roster.js` consume una sola
+vez, porque en el split del fichaje el roster todavía no existe.
+
+**`BALANCE.partida.maxDecisionesPorSplit` subió de 16 a 60** (trampa T9,
+prevista desde la fase 2): medido, el máximo real en 1500 seeds × 90 splits
+es **19** decisiones en un solo split — un título + viaje al internacional
+encadena draft y minijuego mapa a mapa en el mismo split de cierre de
+temporada. El check de densidad de la fase 2 también subió su techo de 6 a
+24 con la misma medición.
+
+**6 checks nuevos (43 en total)**, verificados contra código mutado que falla
+cuando debe (trampa T5):
+
+```
+Los minijuegos tienen forma válida
+El impacto de los minijuegos está acotado (ni decorativo ni gambling)
+Mediana de decisiones de draft por serie ∈ [0, 2]
+El pool ancho llega al mapa 5 con opciones más seguido que el angosto
+Ninguna serie deja el pipeline con una decisión colgada
+Ningún minijuego puede setear terminado
+```
+
+**Corrección post-medición del check de ancho de pool** (mismo criterio que
+la fase 2 con el volumen de decisiones — ver `PLAN.md`): el 80%/25% original
+era una estimación previa a tener el mecanismo real. Medido: pool angosto (3)
+da **0%** — es matemático, no de balance: llegar al mapa 5 de un Bo5 ya
+jugó 4 mapas antes, y Fearless exige 4 campeones **distintos** solo para
+llegar ahí, imposible con un pool de 3. Pool ancho (6) da **63-64%**; ancho
+(8) da 97.6%; ancho (10), 100%. El check quedó en ≥55%/≤10% con un piso extra
+de 40 puntos de brecha, que es lo que la implementación real sostiene con
+margen — la comparación cualitativa de 4.5 se sostiene con mucho más
+contraste del que se había estimado a ciegas.
+
+**Hallazgo del check de impacto acotado**: variar solo `impactoMinijuego`
+(el de los minijuegos de mapa) entre 0.0001 y 200 casi no mueve la medición
+agregada — el efecto de un minijuego está **saturado por la propia
+estructura del juego**: como máximo 1 de los 5 mapas de un Bo5 se ve afectado
+y como máximo 1 minijuego por serie, así que forzar un mapa a ganancia o
+derrota segura no garantiza la serie. El check solo distingue con claridad
+cuando se degradan a la vez `impactoMinijuego` **y** `impactoDirecto` (el de
+bootcamp/rueda de prensa): con los dos en default, 1000 carreras × 60 splits
+dan 2610 (siempre falla) vs 3004 (siempre acierta) en títulos+internacionales
+sumados — **15.1%**, dentro de la banda [8%, 25%]. Documentado como D20: es
+una propiedad estructural deseable (los minijuegos estructuralmente no
+pueden volverse gambling, sin importar cuán mal calibrado esté un solo
+parámetro), no un bug, pero significa que ajustar cada minijuego por
+separado (fase 7/8) va a necesitar medir cada uno aislado, no el agregado.
+
+**Probado en navegador real** (Playwright, seed fija, click-through
+automático): una corrida de 260 iteraciones atravesó varias temporadas
+completas de playoffs de LCK — 38 decisiones de draft (incluida la escena de
+"Cuartos de final vs KT Rolster · Bo5 · 2-2" con el pool reducido a dos
+campeones de maestría 5, el escenario exacto del ejemplo 4.4), 5 `la_llamada`,
+7 `bootcamp`, 1 `rueda_de_prensa`, 1 `la_prueba` — con **cero errores de
+consola**. `robar_baron` (que solo dispara para jungla) se verificó aparte
+con un test aislado del widget: la barra anima con `requestAnimationFrame` y
+el click produce un `resultado` numérico correcto.
+
+`simulate.js 1500 90 todas`: 0 crashes en las 3 estrategias. `llegaronAPro`
+equilibrado se mantiene en 40.4% (sin cambios respecto del fin de la fase 3:
+el mecanismo de series no toca nada de la etapa amateur ni del ascenso a
+tier 1, solo lo que pasa una vez adentro). Diagnóstico sobre 2000 carreras ×
+90 splits: 659 tocan al menos una decisión de serie, 21998 series jugadas en
+total, 3099 títulos, 4753 internacionales.
+
+**`CONCEPTO.md` actualizado**: §5 describe ahora el mecanismo real de
+playoffs (bracket, Fearless, minijuegos, internacional) en vez de la
+promesa vaga; §11 define la cuota exacta de minijuegos (máximo 1 por serie,
+solo semis/final/internacional, más `la_prueba` en la etapa amateur).
+
+**Sin arreglar a propósito, documentado como deuda técnica**: D18 se resuelve
+a medias (la serie internacional es real, pero sigue siendo una sola Bo5
+representativa, no un bracket Swiss+knockout que distinga First
+Stand/MSI/Worlds); D19, eliminación simple en vez de doble eliminación real;
+D20, los 5 minijuegos comparten dos parámetros de balance genéricos en vez de
+tener cada uno el suyo afinado a mano; las opciones C/D del ejemplo 4.4 del
+draft (pedirle el pick al coach, cedérselo a un compañero) no se
+implementaron porque dependen de `relacion` de compañeros, que es la fase 7.
+
 ### 2026-08-08 — Fase 3: la escalera competitiva (tier 3 → tier 2 → tier 1)
 
 Cuarta fase de `PLAN.md`. Este es el paso que rompía la linealidad más grande

@@ -6,8 +6,10 @@ import { clamp, clampStat } from '../core/numeros.js';
 import { aplicarLPAlEstado, etiquetaDeRanked, servidorDeLaPartida, rangoAproximado, esApice, bandaDeLadder } from '../core/ranked.js';
 import { multiplicadorDeMeta } from '../core/ajusteMeta.js';
 import { registrarEnHistorial } from '../core/contexto.js';
+import { resolverTexto } from '../core/plantillas.js';
 import { ofrecerRutinas, rutinaPorId, elegirRutinaAutomatica } from '../core/rutinas.js';
 import { elegirOrgTier3, asignarOrgTier3 } from '../core/tier3.js';
+import MINIJUEGOS from '../data/minijuegos.json' with { type: 'json' };
 
 export const id = 'amateur';
 
@@ -464,8 +466,44 @@ function firmarConEquipo(state, decision) {
   return { state: conCareer, logs: [crearLog('amateur', texto)] };
 }
 
+// "la_prueba" (fase 4): el único minijuego de la etapa amateur, la bisagra del
+// tryout con un tier 3. No decide si fichás (eso ya se resolvió al aceptar la
+// oferta) — corre cuánto crédito te llevás de entrada, vía el bonus que
+// `roster.js` suma una sola vez al armar el primer roster.
+function decisionDeLaPrueba(state, datosOferta) {
+  const datos = MINIJUEGOS.find((entrada) => entrada.id === 'la_prueba');
+  return {
+    tipo: 'opciones',
+    presentacion: 'minijuego',
+    titulo: resolverTexto(datos.titulo, state),
+    descripcion: resolverTexto(datos.descripcion, state),
+    opciones: [],
+    datos: { motivo: 'minijuego', minijuego: 'la_prueba', statRelevante: 'mecanica', oferta: datosOferta }
+  };
+}
+
+function resolverLaPrueba(state, decision, respuesta) {
+  const resultado = clamp(respuesta.resultado ?? 0.5, 0, 1);
+  const bonus = Math.round((resultado - 0.5) * 2 * BALANCE.serie.impactoLaPrueba);
+  const conBonus = { ...state, flags: { ...state.flags, bonusJerarquiaTryout: bonus } };
+  const { state: firmado, logs } = firmarConEquipo(conBonus, { datos: decision.datos.oferta });
+
+  return {
+    state: firmado,
+    logs: [
+      crearLog('amateur', bonus >= 0
+        ? 'La prueba te sale bien: llegás con algo de crédito ganado de entrada.'
+        : 'La prueba es floja: entrás igual, pero sin nada ganado de entrada.'),
+      ...logs
+    ]
+  };
+}
+
 function resolverOferta(state, decision, opcionId, rng) {
   if (opcionId === 'firmar') {
+    if (decision.datos.tier === 3) {
+      return { state, logs: [], decision: decisionDeLaPrueba(state, decision.datos) };
+    }
     return firmarConEquipo(state, decision);
   }
 
@@ -569,6 +607,11 @@ export function resolver(state, decision, respuesta, rng) {
   }
 
   const { motivo } = decision.datos;
+
+  if (motivo === 'minijuego') {
+    return resolverLaPrueba(state, decision, respuesta);
+  }
+
   const { opcionId } = respuesta;
 
   if (motivo === 'oferta') {
@@ -600,6 +643,11 @@ function pesosAutomaticos(state, rng) {
 }
 
 export function resolverAuto(state, decision, rng) {
+  if (decision.datos.motivo === 'minijuego') {
+    // Regla 5 de 4.6: el motor no implementa el minijuego, lo simula con
+    // gauss corrido por el stat relevante.
+    return { resultado: clamp(gauss(state.player.stats.mecanica / 100, BALANCE.serie.minijuegoSpread, rng), 0, 1) };
+  }
   if (decision.datos.motivo !== 'reparto') {
     return { opcionId: weightedPick(decision.opciones, (opcion) => opcion.pesoAuto ?? 1, rng).id };
   }

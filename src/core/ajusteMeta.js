@@ -22,6 +22,15 @@ export function afinidadDeCampeon(campeon, weights) {
   return pesos.reduce((suma, peso) => suma + peso, 0) / pesos.length / media;
 }
 
+// Cuánto quiere el motor jugar este campeón: cruza cuánto lo domina (con sesgo,
+// para que especializarse pese) contra cuánto lo pide el meta. Lo usan el draft
+// de soloQ/equipo (systems/campeones.js) y el draft de la serie (fase 4,
+// core/serie.js), que comparten el mismo criterio de "cuál es la elección obvia".
+export function deseoPorCampeon(campeon, weights) {
+  return Math.max(BALANCE.campeones.maestriaMinima, campeon.mastery) ** BALANCE.campeones.sesgoMaestriaEnPick
+    * afinidadDeCampeon(campeon, weights);
+}
+
 export function ajusteAlMeta(state) {
   const { weights } = state.meta;
   const pool = state.player.championPool;

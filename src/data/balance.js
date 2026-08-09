@@ -10,9 +10,13 @@ export const BALANCE = {
   partida: {
     maxSplitsDeSeguridad: 90,
     // Con densidad emergente un split denso puede encadenar varias decisiones
-    // (evento + evento + mercado + cierre, fases 2 y 5). El tope sigue siendo
-    // una red anti-loop, no una regla de juego: si algo lo alcanza, es un bug.
-    maxDecisionesPorSplit: 16
+    // (evento + evento + mercado + cierre, fases 2 y 5). Fase 4 sube el techo
+    // de nuevo (trampa T9, prevista desde la fase 2): un título + viaje al
+    // internacional puede encadenar draft + minijuego por cada mapa de hasta
+    // 4 series (cuartos/semis/final/internacional), y eso solo en el split de
+    // cierre de temporada. El tope sigue siendo una red anti-loop, no una
+    // regla de juego: si algo lo alcanza, es un bug.
+    maxDecisionesPorSplit: 60
   },
 
   // Cuánto corren los stats la probabilidad de un outcome (CONCEPTO §8: "la
@@ -545,5 +549,36 @@ export const BALANCE = {
     // la LEC exige 18 para debutar. Si la edad no alcanza, el ascenso a tier 1
     // se frena un split más, cueste lo que cueste tu jerarquia.
     margenEdadMinima: 0
+  },
+
+  // La serie de playoffs (fase 4): Bo5 con Fearless draft, jugada mapa a mapa
+  // reusando calcularRendimiento/fuerzaDelEquipo de rendimiento.js.
+  serie: {
+    // Ratio mejor/segundo deseo de campeon para que el motor elija solo en vez
+    // de parar (4.3). Por debajo de esto, la eleccion no es obvia.
+    dominanciaClara: 1.35,
+    // |rendimiento base del jugador - fuerza del rival| <= esto: "mapa cerrado",
+    // condicion necesaria para que dispare un minijuego (regla 4 de 4.6).
+    margenMapaCerrado: 8,
+    // Cuanto puede mover el resultado de un minijuego el rendimiento del mapa:
+    // corre el resultado, no lo decide (regla 1 de 4.6).
+    impactoMinijuego: 0.12,
+    // Dispersion del resultado headless (resolverAuto): gauss centrado en
+    // statRelevante/100, para que simulate.js mida algo parecido a jugar de verdad.
+    minijuegoSpread: 0.2,
+    // "la_llamada": con jerarquia baja no te siguen aunque tengas razon — el
+    // impacto del minijuego se amortigua fuerte por debajo de este umbral.
+    jerarquiaMinimaParaSeguirLlamada: 60,
+    factorLlamadaSinJerarquia: 0.35,
+    ruidoMapa: 7,
+    ruidoRivalSerie: 12,
+    // Maestria del campeon "fuera del pool" cuando el Fearless te quema todo (4.5).
+    maestriaComodin: 20,
+    // "la_prueba" (tryout de tier 3, en amateur.js): cuanto mueve la jerarquia
+    // inicial del roster segun el resultado del minijuego.
+    impactoLaPrueba: 6,
+    // "bootcamp" y "rueda_de_prensa": minijuegos que no ajustan un mapa sino
+    // que aplican un efecto directo (mentalidad / hype / sinergia).
+    impactoDirecto: 6
   }
 };

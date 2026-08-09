@@ -295,6 +295,126 @@
       details.avanzado summary {
         cursor: pointer;
       }
+
+      /* --- Minijuegos (fase 4): un widget real por decisión, no un botón --- */
+      .minijuego {
+        margin-top: 16px;
+        padding: 16px;
+        background: rgba(229, 163, 90, 0.08);
+        border: 1px solid rgba(229, 163, 90, 0.4);
+        border-radius: 14px;
+      }
+      .minijuego-widget {
+        margin-top: 14px;
+      }
+      .minijuego-btn {
+        background: linear-gradient(135deg, #e5a35a, #f0c27b);
+        box-shadow: 0 10px 24px rgba(229, 163, 90, 0.25);
+      }
+      .minijuego-barra {
+        position: relative;
+        height: 26px;
+        background: rgba(255,255,255,0.08);
+        border-radius: 999px;
+        overflow: hidden;
+        margin-bottom: 14px;
+      }
+      .minijuego-zona {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        background: rgba(68, 212, 141, 0.4);
+      }
+      .minijuego-marcador {
+        position: absolute;
+        top: -3px;
+        bottom: -3px;
+        width: 4px;
+        background: #f3f6ff;
+        border-radius: 2px;
+        left: 0;
+        transform: translateX(-50%);
+      }
+      .minijuego-aviso {
+        font-size: 20px;
+        font-weight: 700;
+        text-align: center;
+        padding: 20px 0;
+        color: #f0c27b;
+      }
+      .minijuego-barra-tiempo {
+        height: 10px;
+        background: rgba(255,255,255,0.08);
+        border-radius: 999px;
+        overflow: hidden;
+        margin-bottom: 14px;
+      }
+      .minijuego-barra-tiempo-fill {
+        height: 100%;
+        width: 100%;
+        background: linear-gradient(90deg, #e5573f, #f0c27b);
+      }
+      .minijuego-cards {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .minijuego-card {
+        flex: 1 1 140px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.16);
+        color: #f3f6ff;
+        border-radius: 12px;
+        padding: 14px;
+        cursor: pointer;
+        text-align: center;
+        font-family: inherit;
+        font-weight: 600;
+      }
+      .minijuego-card:hover {
+        border-color: rgba(229, 163, 90, 0.6);
+      }
+      .minijuego-card-count {
+        display: block;
+        margin-top: 6px;
+        font-size: 20px;
+        font-weight: 800;
+        color: #f0c27b;
+      }
+      .minijuego-slider {
+        width: 100%;
+        margin: 10px 0;
+      }
+      .minijuego-slider-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: #8ea3c7;
+        margin-bottom: 12px;
+      }
+      .minijuego-campo {
+        position: relative;
+        height: 160px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 10px;
+      }
+      .minijuego-aim-info {
+        font-size: 12px;
+        color: #8ea3c7;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .minijuego-blanco {
+        position: absolute;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        border: none;
+        background: radial-gradient(circle, #f0c27b, #e5573f);
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
@@ -355,6 +475,12 @@
         <div id="decisionOptions" class="decision-options"></div>
       </div>
 
+      <div id="minijuego" class="minijuego" hidden>
+        <div id="minijuegoTitle" class="decision-title"></div>
+        <div id="minijuegoDesc" class="decision-desc"></div>
+        <div id="minijuegoWidget" class="minijuego-widget"></div>
+      </div>
+
       <div id="logList" class="log-list"></div>
       <button id="nuevaCarrera" type="button" hidden>Nueva carrera</button>
       </div>
@@ -385,6 +511,10 @@
       const decisionTitle = document.getElementById('decisionTitle');
       const decisionDesc = document.getElementById('decisionDesc');
       const decisionOptions = document.getElementById('decisionOptions');
+      const minijuegoPanel = document.getElementById('minijuego');
+      const minijuegoTitle = document.getElementById('minijuegoTitle');
+      const minijuegoDesc = document.getElementById('minijuegoDesc');
+      const minijuegoWidget = document.getElementById('minijuegoWidget');
 
       const seedInput = document.getElementById('seedInput');
       const identidad = document.getElementById('identidad');
@@ -599,7 +729,200 @@
         metaPill.textContent = `Meta dominante: ${strongestMeta} · seed ${state.seed}`;
       }
 
+      // --- Minijuegos (fase 4) ---
+      //
+      // El motor nunca los implementa (PLAN 4.6, regla 5): le pasás un
+      // `resultado` 0-1 y listo. Acá SÍ se juegan de verdad — cinco mecánicas
+      // chicas, cada una con su propia interacción, todas terminando en la
+      // misma salida: `onDone(resultado)`. `resolverAuto` (systems/serie.js y
+      // amateur.js) simula lo mismo con gauss corrido por el stat relevante
+      // cuando no hay nadie mirando (simulate.js).
+
+      function montarRobarBaron(container, state, onDone) {
+        const anchoZona = 14 + (state.player.stats.mecanica / 100) * 18;
+        const centroZona = 25 + Math.random() * 50;
+        container.innerHTML =
+          '<div class="minijuego-barra"><div class="minijuego-zona"></div><div class="minijuego-marcador"></div></div>' +
+          '<button type="button" class="minijuego-btn">¡Smite ya!</button>';
+
+        const zona = container.querySelector('.minijuego-zona');
+        zona.style.left = (centroZona - anchoZona / 2) + '%';
+        zona.style.width = anchoZona + '%';
+        const marcador = container.querySelector('.minijuego-marcador');
+        const boton = container.querySelector('.minijuego-btn');
+
+        let pos = 0;
+        let dir = 1;
+        let activo = true;
+        function frame() {
+          if (!activo) return;
+          pos += dir * 1.7;
+          if (pos >= 100) { pos = 100; dir = -1; }
+          if (pos <= 0) { pos = 0; dir = 1; }
+          marcador.style.left = pos + '%';
+          requestAnimationFrame(frame);
+        }
+        requestAnimationFrame(frame);
+
+        boton.addEventListener('click', () => {
+          activo = false;
+          const distancia = Math.abs(pos - centroZona);
+          onDone(Math.max(0, 1 - distancia / 45));
+        }, { once: true });
+      }
+
+      function montarLaLlamada(container, state, onDone) {
+        container.innerHTML =
+          '<div class="minijuego-aviso">Esperá la señal del equipo...</div>' +
+          '<button type="button" class="minijuego-btn">¡Ahora!</button>';
+        const aviso = container.querySelector('.minijuego-aviso');
+        const boton = container.querySelector('.minijuego-btn');
+
+        let listo = false;
+        let inicio = 0;
+        const espera = setTimeout(() => {
+          listo = true;
+          inicio = performance.now();
+          aviso.textContent = '¡AHORA!';
+        }, 900 + Math.random() * 2200);
+
+        boton.addEventListener('click', () => {
+          if (!listo) {
+            clearTimeout(espera);
+            onDone(0.05);
+            return;
+          }
+          const latencia = performance.now() - inicio;
+          onDone(Math.max(0, 1 - latencia / 700));
+        }, { once: true });
+      }
+
+      function montarBootcamp(container, state, onDone) {
+        const opciones = ['Matchups', 'El meta nuevo', 'Cabeza'];
+        const objetivo = 5;
+        let puntos = 0;
+        let activo = true;
+
+        container.innerHTML =
+          '<div class="minijuego-barra-tiempo"><div class="minijuego-barra-tiempo-fill"></div></div>' +
+          '<div class="minijuego-cards">' + opciones.map((label, i) => (
+            '<button type="button" class="minijuego-card" data-i="' + i + '">' + label
+            + '<span class="minijuego-card-count" data-count="' + i + '">0</span></button>'
+          )).join('') + '</div>';
+
+        const relleno = container.querySelector('.minijuego-barra-tiempo-fill');
+
+        function terminar() {
+          if (!activo) return;
+          activo = false;
+          onDone(Math.min(1, puntos / objetivo));
+        }
+
+        container.querySelectorAll('.minijuego-card').forEach((boton) => {
+          boton.addEventListener('click', () => {
+            if (!activo || puntos >= objetivo) return;
+            puntos += 1;
+            const contador = boton.querySelector('.minijuego-card-count');
+            contador.textContent = String(Number(contador.textContent) + 1);
+            if (puntos >= objetivo) terminar();
+          });
+        });
+
+        const duracion = 6000;
+        const inicio = performance.now();
+        function frame(t) {
+          if (!activo) return;
+          const restante = Math.max(0, duracion - (t - inicio));
+          relleno.style.width = (restante / duracion * 100) + '%';
+          if (restante <= 0) { terminar(); return; }
+          requestAnimationFrame(frame);
+        }
+        requestAnimationFrame(frame);
+      }
+
+      function montarRuedaDePrensa(container, state, onDone) {
+        const objetivo = Math.random() * 100;
+        container.innerHTML =
+          '<input type="range" min="0" max="100" value="50" class="minijuego-slider" />' +
+          '<div class="minijuego-slider-labels"><span>Humilde</span><span>Desafiante</span></div>' +
+          '<button type="button" class="minijuego-btn">Responder</button>';
+
+        const slider = container.querySelector('.minijuego-slider');
+        const boton = container.querySelector('.minijuego-btn');
+        boton.addEventListener('click', () => {
+          const distancia = Math.abs(Number(slider.value) - objetivo);
+          onDone(Math.max(0, 1 - distancia / 55));
+        }, { once: true });
+      }
+
+      function montarLaPrueba(container, state, onDone) {
+        const total = 5;
+        let aciertos = 0;
+        let ronda = 0;
+
+        container.innerHTML = '<div class="minijuego-campo"></div><div class="minijuego-aim-info"></div>';
+        const campo = container.querySelector('.minijuego-campo');
+        const info = container.querySelector('.minijuego-aim-info');
+
+        function siguiente() {
+          if (ronda >= total) {
+            onDone(aciertos / total);
+            return;
+          }
+          ronda += 1;
+          info.textContent = 'Blanco ' + ronda + ' de ' + total;
+
+          const blanco = document.createElement('button');
+          blanco.type = 'button';
+          blanco.className = 'minijuego-blanco';
+          blanco.style.left = (Math.random() * 85) + '%';
+          blanco.style.top = (Math.random() * 75) + '%';
+
+          const vencido = setTimeout(() => {
+            blanco.remove();
+            siguiente();
+          }, 900);
+
+          blanco.addEventListener('click', () => {
+            clearTimeout(vencido);
+            aciertos += 1;
+            blanco.remove();
+            siguiente();
+          }, { once: true });
+
+          campo.appendChild(blanco);
+        }
+        siguiente();
+      }
+
+      const MONTAR_MINIJUEGO = {
+        robar_baron: montarRobarBaron,
+        la_llamada: montarLaLlamada,
+        bootcamp: montarBootcamp,
+        rueda_de_prensa: montarRuedaDePrensa,
+        la_prueba: montarLaPrueba
+      };
+
+      function mostrarMinijuego(decision) {
+        decisionPanel.hidden = true;
+        minijuegoPanel.hidden = false;
+        minijuegoTitle.textContent = decision.titulo;
+        minijuegoDesc.textContent = decision.descripcion;
+        minijuegoWidget.innerHTML = '';
+
+        const montar = MONTAR_MINIJUEGO[decision.datos.minijuego];
+        montar(minijuegoWidget, estado, (resultado) => responder({ resultado }));
+
+        summary.textContent = 'Minijuego en curso.';
+      }
+
       function mostrarDecision(decision) {
+        if (decision.presentacion === 'minijuego') {
+          mostrarMinijuego(decision);
+          return;
+        }
+
+        minijuegoPanel.hidden = true;
         decisionTitle.textContent = decision.titulo;
         decisionDesc.textContent = decision.descripcion;
 
@@ -665,6 +988,7 @@
       function responder(respuesta) {
         const { pipeline } = modulos;
         decisionPanel.hidden = true;
+        minijuegoPanel.hidden = true;
 
         estado = pipeline.resolverDecision(estado, respuesta, rng).state;
 
@@ -692,6 +1016,7 @@
       async function comenzarCarrera() {
         button.disabled = true;
         decisionPanel.hidden = true;
+        minijuegoPanel.hidden = true;
         nuevaCarreraBtn.hidden = true;
         summary.textContent = 'Arrancando la carrera...';
         metaPill.textContent = '';
