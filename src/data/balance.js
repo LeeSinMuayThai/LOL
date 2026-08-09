@@ -87,7 +87,11 @@ export const BALANCE = {
 
     // Rendimiento por bloque de ranked. El factor de mecanica y el de mentalidad
     // van de "tiltrado" a "en llamas"; la deuda de sueño te frena aunque juegues.
-    lpPorBloque: 52,
+    // Fase 7 (recalibrado, medido — ver PROGRESO.md): 52 → 68. La etapa
+    // amateur medía 15 splits de mediana y el 49% de las carreras no llegaba
+    // a pro; con la carrera profesional ahora jugable de verdad (fases 5-6),
+    // el prólogo tiene que ser un prólogo, no la mitad de la partida.
+    lpPorBloque: 68,
     lpPorBloqueSpread: 12,
     lpFactorMecanicaBase: 0.7,
     lpFactorMecanicaRango: 0.6,
@@ -99,7 +103,10 @@ export const BALANCE = {
     // toca. `puntosEscaleraCompleta` es el punto de la escalera que se considera
     // nivel 100 (Challenger de un servidor grande), y la ganancia depende de la
     // distancia entre tu mecanica y el nivel que exige el rango donde estas.
-    puntosEscaleraCompleta: 4300,
+    // Fase 7: 4300 → 4700. Aflojar el freno un poco (sin sacarlo) es la otra
+    // mitad de comprimir el prólogo: con lpPorBloque más alto pero el mismo
+    // freno de siempre, la subida se frenaba igual cerca de la cima.
+    puntosEscaleraCompleta: 4700,
     escalaNivelLadder: 26,
     alturaFactorBase: 0.72,
     alturaFactorMin: 0.05,
@@ -168,7 +175,10 @@ export const BALANCE = {
     // El gate no es un umbral de LP: es la posicion en la ladder del servidor.
     // 'apice' = Master/Gran Master, 'challenger' = adentro de los cupos,
     // 'elite' = arriba de todo y todavia joven (el caso Calix).
-    scoutingProbPorNivel: { apice: 0.26, challenger: 0.5, elite: 0.82 },
+    // Fase 7: cada nivel casi duplicado (0.26/0.5/0.82 → 0.5/0.72/0.9). Antes
+    // de esto, llegar a Máster no significaba llegar a fichar: podías quedar
+    // ahí varios splits esperando que un scout tirara los dados.
+    scoutingProbPorNivel: { apice: 0.5, challenger: 0.72, elite: 0.9 },
     puestoParaOrgGrande: 50,
     edadParaOrgGrande: 17,
     scoutingPesoBase: 0.65,
@@ -180,9 +190,10 @@ export const BALANCE = {
     scoutingSesgoEtarioMinimo: 0.12,
     scoutingPesoHype: 0.35,
     hypeReferenciaScouting: 60,
-    splitMinimoScouting: 3,
-    // Master arranca el radar de los scouts.
-    puntosParaRadar: 2800,
+    splitMinimoScouting: 2,
+    // Master arranca el radar de los scouts. Fase 7: 2800 → 2200, junto con
+    // el freno más flojo de arriba, para que el radar se encienda antes.
+    puntosParaRadar: 2200,
 
     // --- Salida 2: la negociacion con los viejos al llegar a Master ---
     negociacionTrustMinimo: 38,
