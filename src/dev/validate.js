@@ -22,6 +22,8 @@ import { tipoDeSplit } from '../core/presupuesto.js';
 import { elegirCampeonRival, disponiblesDelPool } from '../core/serie.js';
 import { resolverFecha, motivosDeFecha } from '../core/temporada.js';
 import { tierListDeRol, boostDelPool } from '../core/regimen.js';
+import { nivelDelJugador } from '../core/ficha.js';
+import { bandaDeArraigo } from '../core/registro.js';
 import { EJES, MARCAS, MOMENTOS_ACTIVOS, momentoPorId } from '../data/contextos.js';
 import { ARQUETIPOS } from '../data/meta-tags.js';
 import { ROLES, IDS_ROL } from '../data/roles.js';
@@ -1949,6 +1951,148 @@ check('Una carrera larga ve una amplia variedad de eventos distintos', () => {
 
   if (mediana < 20) {
     throw new Error(`mediana de eventos distintos vistos en 30 splits (carreras que llegan a pro): ${mediana}; se esperaba ≥ 20`);
+  }
+});
+
+// --- Fase 8a: el registro acumula (PLAN.md §8.1, §8.2, §8.4) ---
+
+check('career.registro, career.arraigo y calendario arrancan completos (trampa T4)', () => {
+  const rng = mulberry32(1);
+  const state = createInitialState(1, rng);
+
+  if (state.career.registro === null || typeof state.career.registro !== 'object') {
+    throw new Error('career.registro es null en el estado inicial');
+  }
+  if (!Array.isArray(state.career.registro.porOrg) || !Array.isArray(state.career.registro.titulos)) {
+    throw new Error('career.registro.porOrg o .titulos no son arrays en el estado inicial');
+  }
+  if (typeof state.career.arraigo !== 'number') {
+    throw new Error('career.arraigo no es un número en el estado inicial');
+  }
+  if (!state.calendario || state.calendario.anio !== BALANCE.calendario.anioBase) {
+    throw new Error('calendario no arranca en anioBase');
+  }
+});
+
+check('registro.splitsJugados coincide con player.splitCount en toda carrera', () => {
+  for (let seed = 1; seed <= 60; seed += 1) {
+    const state = correrCarrera(seed, 40);
+    if (state.career.registro.splitsJugados !== state.player.splitCount) {
+      throw new Error(
+        `seed ${seed}: registro.splitsJugados=${state.career.registro.splitsJugados} `
+        + `vs player.splitCount=${state.player.splitCount}`
+      );
+    }
+  }
+});
+
+check('La suma de splits por org coincide con registro.splitsConEquipo', () => {
+  for (let seed = 1; seed <= 60; seed += 1) {
+    const state = correrCarrera(seed, 40);
+    const suma = state.career.registro.porOrg.reduce((acc, fila) => acc + fila.splits, 0);
+    if (suma !== state.career.registro.splitsConEquipo) {
+      throw new Error(`seed ${seed}: Σ porOrg.splits=${suma} vs splitsConEquipo=${state.career.registro.splitsConEquipo}`);
+    }
+  }
+});
+
+check('El registro solo crece: ningún campo decrece nunca en una carrera (regla de proceso 14)', () => {
+  const camposEscalares = [
+    'splitsJugados', 'splitsConEquipo', 'fechasGanadas', 'fechasPerdidas',
+    'mapasGanados', 'mapasPerdidos', 'seriesGanadas', 'seriesPerdidas', 'dineroTotalUSD'
+  ];
+
+  for (let seed = 1; seed <= 150; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    let anterior = state.career.registro;
+
+    for (let i = 0; i < 35 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      const actual = state.career.registro;
+
+      for (const campo of camposEscalares) {
+        if (actual[campo] < anterior[campo]) {
+          throw new Error(`seed ${seed}, split ${i}: registro.${campo} bajó de ${anterior[campo]} a ${actual[campo]}`);
+        }
+      }
+      if (actual.titulos.length < anterior.titulos.length) {
+        throw new Error(`seed ${seed}, split ${i}: registro.titulos perdió entradas`);
+      }
+      if (actual.internacionales.length < anterior.internacionales.length) {
+        throw new Error(`seed ${seed}, split ${i}: registro.internacionales perdió entradas`);
+      }
+      if (actual.porOrg.length < anterior.porOrg.length) {
+        throw new Error(`seed ${seed}, split ${i}: registro.porOrg perdió filas`);
+      }
+      anterior = actual;
+    }
+  }
+});
+
+check('nivelDelJugador() coincide con la fórmula ponderada por rol (extracción de rendimiento.js)', () => {
+  for (let seed = 1; seed <= 15; seed += 1) {
+    const state = correrCarrera(seed, 20);
+    const { pesos } = ROLES[state.player.role];
+    const manual = Object.entries(pesos).reduce((suma, [stat, peso]) => suma + state.player.stats[stat] * peso, 0);
+    const extraido = nivelDelJugador(state);
+    if (Math.abs(manual - extraido) > 1e-9) {
+      throw new Error(`seed ${seed}: nivelDelJugador()=${extraido} vs fórmula manual=${manual}`);
+    }
+  }
+});
+
+// Corrección post-medición: la primera versión de este check corría solo 30
+// splits (el techo original del plan) y medía 32,7% — muy por debajo del 70%
+// declarado. No es un bug: `correrCarrera` cuenta splits DESDE los 15 años
+// (amateur incluido), así que a los 30 splits la mayoría de las carreras
+// recién está a mitad de su tramo profesional, todavía en la parte que sube
+// (macro y shotcalling no declinan, CONCEPTO §6). Con la misma seed corrida a
+// 60 splits (ver PROGRESO.md), la fracción sube a 90,7%: el mecanismo de
+// declive funciona, lo que estaba mal calibrado era la ventana del check, no
+// el motor. 60 splits, no 30 (regla de proceso 4: reportar lo medido).
+check('picos.nivel se alcanza antes del último split en la mayoría de las carreras largas', () => {
+  let elegibles = 0;
+  let conPicoTemprano = 0;
+
+  for (let seed = 1; seed <= 150; seed += 1) {
+    const state = correrCarrera(seed, 60);
+    if (state.career.registro.splitsJugados <= 20) {
+      continue;
+    }
+    elegibles += 1;
+    const nivelFinal = nivelDelJugador(state);
+    if (state.career.registro.picos.nivel > nivelFinal + 1e-9) {
+      conPicoTemprano += 1;
+    }
+  }
+
+  if (elegibles < 30) {
+    throw new Error(`solo ${elegibles} carreras superaron 20 splits jugados en 150 seeds: muestra insuficiente`);
+  }
+
+  const fraccion = conPicoTemprano / elegibles;
+  if (fraccion < 0.7) {
+    throw new Error(`el pico de NIVEL llega antes del último split en ${(fraccion * 100).toFixed(1)}% de las carreras largas; se esperaba ≥70%`);
+  }
+});
+
+check('calendario.anio avanza exactamente 1 cada splitsPorEdad splits', () => {
+  const rng = mulberry32(7);
+  let state = createInitialState(7, rng);
+
+  for (let i = 0; i < 30 && !state.terminado; i += 1) {
+    // `calcularCalendario` (edadInicio.js) lee `player.splitCount` AL ARRANCAR
+    // el split, antes de que `atributos.js` lo incremente más adelante en el
+    // mismo split — así que el año de ESTE split corresponde al splitCount
+    // ANTERIOR al que queda una vez que `avanzarSplitAuto` ya terminó de
+    // correrlo entero.
+    const splitCountAlEmpezar = state.player.splitCount;
+    state = avanzarSplitAuto(state, rng).state;
+    const anioEsperado = BALANCE.calendario.anioBase + Math.floor(splitCountAlEmpezar / BALANCE.edad.splitsPorEdad);
+    if (state.calendario.anio !== anioEsperado) {
+      throw new Error(`split ${splitCountAlEmpezar}: calendario.anio=${state.calendario.anio}, esperado ${anioEsperado}`);
+    }
   }
 });
 

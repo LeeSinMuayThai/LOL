@@ -2,7 +2,18 @@ import { chance, weightedPick } from '../core/rng.js';
 import { clamp } from '../core/numeros.js';
 import { crearLog } from '../core/log.js';
 import { elegirOrgTier3, asignarOrgTier3 } from '../core/tier3.js';
+import { cerrarFila } from '../core/registro.js';
 import { BALANCE } from '../data/balance.js';
+
+// Fase 8: cierra la fila abierta del registro justo antes de cambiar de org
+// (ascenso o disolución). Sin fila abierta (primer fichaje de la carrera) no
+// hace nada — `cerrarFila` ya es un no-op en ese caso.
+function conFilaCerrada(state, motivo) {
+  return cerrarFila(state.career.registro, {
+    anio: state.calendario.anio, split: state.player.splitCount,
+    arraigoActual: state.career.arraigo, motivo
+  });
+}
 
 export const id = 'competitivo';
 
@@ -34,7 +45,10 @@ function ascenderATier2(state, rng, logsPrevios) {
   return {
     state: {
       ...state,
-      career: { ...state.career, tier: 2, liga: liga.id, currentOrg: org.nombre, orgs: [...state.career.orgs, org.nombre] }
+      career: {
+        ...state.career, tier: 2, liga: liga.id, currentOrg: org.nombre, orgs: [...state.career.orgs, org.nombre],
+        registro: conFilaCerrada(state, 'ascenso')
+      }
     },
     logs: [...logsPrevios, crearLog('competitivo', `Ascendiste a ${liga.id}. Firmaste con ${org.nombre}: se terminó tier 3.`)]
   };
@@ -46,7 +60,8 @@ function disolverEquipo(state, logsPrevios) {
       ...state,
       career: {
         ...state.career, tier: null, liga: null, currentOrg: null, rosterDeOrg: null,
-        companeros: [], jerarquia: 0, sinergia: 0
+        companeros: [], jerarquia: 0, arraigo: 0, sinergia: 0,
+        registro: conFilaCerrada(state, 'disolucion')
       }
     },
     logs: [...logsPrevios, crearLog('competitivo', `${state.career.currentOrg} se disuelve. Se acabó ese armado — a buscar otro equipo chico.`)]
@@ -99,7 +114,8 @@ function promoverATier1(state, ligaTier1, orgNombre) {
         orgs: [...state.career.orgs, orgNombre],
         // Reinicia el reloj del debut (CONCEPTO §2): pisar una liga real por
         // primera vez es el debut que importa, no cualquier contrato chico.
-        splitAscensoTier1: state.player.splitCount
+        splitAscensoTier1: state.player.splitCount,
+        registro: conFilaCerrada(state, 'ascenso')
       }
     },
     logs: [crearLog('competitivo', `¡Ascendiste a ${ligaTier1.id}! Firmaste con ${orgNombre}.`)]

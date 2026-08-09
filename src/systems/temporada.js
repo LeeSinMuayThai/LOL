@@ -11,6 +11,7 @@ import {
 import { calcularRendimiento, fuerzaDelEquipo } from './rendimiento.js';
 import { disponibleEn, opcionesVivas, resolverOpcion, cooldownActivo, pesoConMemoria } from './events.js';
 import { deseoPorCampeon } from '../core/ajusteMeta.js';
+import { registrarFecha } from '../core/registro.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 
@@ -115,6 +116,10 @@ function avanzarFechaSilenciosa(state, gano) {
     ...state,
     career: {
       ...state.career,
+      // Fase 8: cada fecha de temporada regular jugada —marcada o silenciosa,
+      // esta función es el único choke point de las dos— suma al registro
+      // global y a la fila de la org en curso.
+      registro: registrarFecha(state.career.registro, gano),
       temporada: {
         ...t,
         indice: t.indice + 1,

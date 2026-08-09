@@ -387,6 +387,15 @@ export const BALANCE = {
     probSegundaDecisionPorTipo: { denso: 0.85, normal: 0.4, comprimido: 0.12 }
   },
 
+  // El año calendario (fase 8, PLAN.md §8.2): no existía. `anio` sale de
+  // `anioBase + floor(splitCount / splitsPorEdad)`, calculado en
+  // `systems/edadInicio.js`. Desbloquea trofeos fechados y la tarjeta final
+  // ("2026-2035"). El motor no consume `rng` para esto: es determinista dado
+  // el estado.
+  calendario: {
+    anioBase: 2026
+  },
+
   // Umbrales que convierten el estado en contexto de carrera. Son las fronteras
   // de las bandas: todo el contenido se declara contra ellas, asi que moverlas
   // mueve que contenido aparece cuando.
@@ -444,6 +453,44 @@ export const BALANCE = {
     nivelCompaneroSpread: 8,
     // Cada tanto se va alguien y el roster se sacude.
     probCambioDeRoster: 0.1
+  },
+
+  // Arraigo (fase 8, PLAN.md §8.4 y decisión de PARTE 3): distinto de la
+  // jerarquia. La jerarquia es tu estatus DEPORTIVO (se resetea al cambiar de
+  // equipo, ver `jerarquiaRetenidaAlCambiar` arriba); el arraigo es lo que la
+  // gente de una org siente por vos: NUNCA se resetea, se cierra en
+  // `career.registro.porOrg` al irte y el nuevo arranca casi en cero, salvo
+  // que el hype ya te haya hecho conocido de antes ("tu fama te precede").
+  arraigo: {
+    porSplitMin: 0.8,
+    porSplitMax: 1.6,
+    porTituloMin: 8,
+    porTituloMax: 14,
+    porInternacionalMin: 4,
+    porInternacionalMax: 7,
+    porFracasoMin: -3,
+    porFracasoMax: -1,
+    // Cuanto de la brecha de rendimiento (rendimiento.js, misma `brecha` que
+    // mueve la jerarquia) se traduce en arraigo cuando rendís por encima de
+    // lo esperado.
+    factorBrechaRendimiento: 0.35,
+    // Con cuanto hype arrancas el arraigo nuevo al cambiar de org (0 a 1,
+    // fraccion del hype actual).
+    pisoPorHype: 0.15,
+    // Los cuatro hitos con nombre (imagen 6 de PLAN.md): Uno mas, Querido,
+    // Idolo, Leyenda. Umbral = piso de cada banda.
+    hitos: { uno_mas: 0, querido: 25, idolo: 60, leyenda: 88 }
+  },
+
+  // Bandas del NIVEL (fase 8): el numero unico 0-100 que resume la hoja de
+  // atributos, extraido de la MISMA formula que ya usa calcularRendimiento
+  // (core/ficha.js, `nivelDelJugador`). No se retunea la formula, solo se
+  // expone.
+  ficha: {
+    nivelBandas: { prospecto: 45, titular: 62, elite: 78 },
+    // Un delta de stat menor a esto no dibuja flecha en la ficha: una deriva
+    // de 0,4 no es una noticia.
+    umbralFlecha: 1
   },
 
   rendimiento: {

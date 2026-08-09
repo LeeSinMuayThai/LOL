@@ -1,4 +1,4 @@
-import { gauss, weightedPick } from '../core/rng.js';
+import { gauss, weightedPick, roll } from '../core/rng.js';
 import { crearLog } from '../core/log.js';
 import { clamp, clampStat } from '../core/numeros.js';
 import { resolverTexto } from '../core/plantillas.js';
@@ -12,6 +12,9 @@ import {
   esMapaCerrado, factorJerarquiaEnLlamada
 } from '../core/serie.js';
 import { calcularRendimiento, fuerzaDelEquipo } from './rendimiento.js';
+import {
+  registrarMapa, registrarSerie, registrarTitulo, registrarInternacional, registrarPico, registrarArraigoEnFila
+} from '../core/registro.js';
 import { BALANCE } from '../data/balance.js';
 import MINIJUEGOS from '../data/minijuegos.json' with { type: 'json' };
 
@@ -154,6 +157,7 @@ function finalizarMapa(state, campeonElegido, fuerzaPropia, ajusteMinijuego, rng
 
   const nextState = {
     ...state,
+    career: { ...state.career, registro: registrarMapa(state.career.registro, gano) },
     serie: {
       ...state.serie,
       marcador,
@@ -175,8 +179,18 @@ function finalizarMapa(state, campeonElegido, fuerzaPropia, ajusteMinijuego, rng
 
 // --- Fin de ronda: título, eliminación, o el internacional ---
 
-function aplicarTitulo(state, liga) {
+function aplicarTitulo(state, liga, rng) {
   const r = BALANCE.rendimiento;
+  const a = BALANCE.arraigo;
+  const arraigo = clampStat(state.career.arraigo + roll(a.porTituloMin, a.porTituloMax, rng));
+  const registro = registrarArraigoEnFila(
+    registrarTitulo(
+      registrarPico(state.career.registro, 'arraigo', Math.round(arraigo)),
+      { nombre: nombreLigaDe(liga), anio: state.calendario.anio, org: state.career.currentOrg }
+    ),
+    Math.round(arraigo)
+  );
+
   return {
     ...state,
     player: {
@@ -190,6 +204,8 @@ function aplicarTitulo(state, liga) {
     career: {
       ...state.career,
       titulos: state.career.titulos + 1,
+      arraigo: Math.round(arraigo),
+      registro,
       hitos: [...state.career.hitos, `Campeón de ${nombreLigaDe(liga)} a los ${state.age}`]
     }
   };
@@ -208,8 +224,24 @@ function aplicarEliminacionDomestica(state, ronda, liga) {
   };
 }
 
-function aplicarConsecuenciaInternacional(state, gano) {
+function aplicarConsecuenciaInternacional(state, gano, rng) {
   const r = BALANCE.rendimiento;
+  const a = BALANCE.arraigo;
+  const arraigo = clampStat(state.career.arraigo + roll(a.porInternacionalMin, a.porInternacionalMax, rng));
+  const registro = registrarArraigoEnFila(
+    registrarInternacional(
+      registrarPico(state.career.registro, 'arraigo', Math.round(arraigo)),
+      {
+        torneo: `internacional — ${nombreLigaDe(ligaDeCarrera(state))}`,
+        anio: state.calendario.anio,
+        org: state.career.currentOrg,
+        resultado: gano ? 'buen_papel' : 'eliminado',
+        camino: state.serie.mapas.map((mapa, i) => ({ mapa: i + 1, campeon: mapa.campeon, resultado: mapa.resultado }))
+      }
+    ),
+    Math.round(arraigo)
+  );
+
   return {
     ...state,
     player: {
@@ -220,6 +252,8 @@ function aplicarConsecuenciaInternacional(state, gano) {
     career: {
       ...state.career,
       internacionales: state.career.internacionales + 1,
+      arraigo: Math.round(arraigo),
+      registro,
       hitos: [...state.career.hitos, gano
         ? `Buen papel internacional con ${state.career.currentOrg} a los ${state.age}`
         : `Eliminado en el internacional a los ${state.age}`]
@@ -231,17 +265,24 @@ function concluirRonda(state, rng, logsAcum) {
   const { ronda, marcador } = state.serie;
   const gano = marcador[0] > marcador[1];
   const liga = ligaDeCarrera(state);
-  let st = { ...state, career: { ...state.career, seriesJugadas: state.career.seriesJugadas + 1 } };
+  let st = {
+    ...state,
+    career: {
+      ...state.career,
+      seriesJugadas: state.career.seriesJugadas + 1,
+      registro: registrarSerie(state.career.registro, gano)
+    }
+  };
   const logs = [...logsAcum];
 
   if (ronda === 'internacional') {
     logs.push(crearLog('serie', gano
       ? 'Ganaste tu serie en el internacional: se habló de vos afuera de tu región.'
       : 'Perdiste tu serie en el internacional: vuelta temprano a casa.'));
-    st = aplicarConsecuenciaInternacional(st, gano);
+    st = aplicarConsecuenciaInternacional(st, gano, rng);
   } else if (gano && ronda === 'final') {
     logs.push(crearLog('serie', `¡Campeones de ${nombreLigaDe(liga)}! Cerraste la serie ${marcador[0]}-${marcador[1]}.`));
-    st = aplicarTitulo(st, liga);
+    st = aplicarTitulo(st, liga, rng);
   } else if (!gano) {
     logs.push(crearLog(
       'serie',

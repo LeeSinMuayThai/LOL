@@ -29,6 +29,16 @@ export function createInitialState(seed, rng, eleccion = null) {
     // Cache de "dónde estás parado". La fuente de verdad es calcularContexto();
     // esto existe para la UI, los logs y para no recalcularlo en cada filtro.
     contexto: null,
+    // El año calendario (fase 8): `anioBase + floor(splitCount / splitsPorEdad)`,
+    // recalculado cada split por `systems/edadInicio.js`. No consume rng: es
+    // determinista dado el estado. Objeto completo desde el arranque, nunca
+    // null (trampa T4).
+    calendario: {
+      anioBase: BALANCE.calendario.anioBase,
+      anio: BALANCE.calendario.anioBase,
+      temporada: 1,
+      etiqueta: String(BALANCE.calendario.anioBase)
+    },
     origen,
     // Los campeones que salieron con un parche a mitad de esta carrera. Arranca
     // vacío: los marcados `debut` en champions.json todavía no existen en este
@@ -77,6 +87,12 @@ export function createInitialState(seed, rng, eleccion = null) {
       rosterDeOrg: null,
       companeros: [],
       jerarquia: 0,
+      // Distinto de la jerarquía (fase 8, decisión de PLAN.md PARTE 3): la
+      // jerarquía es tu estatus deportivo y se resetea al cambiar de equipo;
+      // el arraigo es el vínculo con la gente de la org y NUNCA se resetea —
+      // se cierra en `registro.porOrg` al irte y el nuevo arranca casi en
+      // cero, salvo que el hype ya te haya hecho conocido de antes.
+      arraigo: 0,
       sinergia: 0,
       // Ventana móvil de "cómo te fue" (0-100 por split). Alimenta el momentum
       // del contexto: es lo que distingue una racha de un slump.
@@ -112,6 +128,41 @@ export function createInitialState(seed, rng, eleccion = null) {
         posicion: null,
         tabla: [],
         fechaEnCurso: null
+      },
+      // El registro de carrera (fase 8, PLAN.md §8.1): la hoja que acumula.
+      // Regla dura (regla de proceso 14): solo crece — ningún sistema borra ni
+      // sobrescribe un campo de acá, solo `append` e incremento. Objeto
+      // completo de ceros desde el arranque, nunca null (trampa T4). Las
+      // funciones que lo tocan viven en `core/registro.js`.
+      registro: {
+        splitsJugados: 0,
+        splitsConEquipo: 0,
+        fechasGanadas: 0,
+        fechasPerdidas: 0,
+        mapasGanados: 0,
+        mapasPerdidos: 0,
+        seriesGanadas: 0,
+        seriesPerdidas: 0,
+        // La fase 9 lo alimenta; hasta entonces queda en 0.
+        dineroTotalUSD: 0,
+        // Los picos (imagen 15 de PLAN.md: "93 MEDIA MÁX", "US$95,6M VALOR
+        // MÁS ALTO"). Cobertura de mejor esfuerzo: se registran en los
+        // sistemas donde cada valor se mueve de verdad (roster, rendimiento,
+        // serie, atributos), no en cada línea que toca un stat.
+        picos: {
+          nivel: 0, edadDelPicoDeNivel: 0,
+          jerarquia: 0, arraigo: 0, hype: 0,
+          valorMercadoUSD: 0, salarioMensualUSD: 0,
+          rankedPuntos: 0
+        },
+        // Una fila por org por la que pasaste (imagen 15: "TU HISTORIA, CLUB
+        // POR CLUB"). Se abre al firmar y se cierra al irte; nunca se borra.
+        porOrg: [],
+        // Trofeos de por vida, para poder agrupar "5× LCK 2030 2031 2033...".
+        titulos: [],
+        internacionales: [],
+        // Hitos narrativos con fecha, para que la fase 13 pueda citarlos.
+        momentos: []
       }
     },
     // La serie de playoffs en curso (fase 4). Objeto completo de ceros, nunca

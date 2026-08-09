@@ -3,6 +3,8 @@ import { crearLog } from '../core/log.js';
 import { deltaCorto, entero } from '../core/formato.js';
 import { clamp, clampStat } from '../core/numeros.js';
 import { nivelDeCurva, techoDeCarrera } from '../core/curvas.js';
+import { nivelDelJugador } from '../core/ficha.js';
+import { registrarPicoNivel } from '../core/registro.js';
 import { BALANCE } from '../data/balance.js';
 
 export const id = 'atributos';
@@ -98,6 +100,18 @@ export function aplicar(state, rng) {
   const stats = { ...conAcumulados, mentalidad };
   const deltaMecanica = stats.mecanica - state.player.stats.mecanica;
 
+  // Fase 8: cada split del juego (amateur o pro) suma a `registro.splitsJugados`
+  // — coincide siempre con `player.splitCount`, que este mismo sistema
+  // incrementa acá abajo. El NIVEL (core/ficha.js) se mide con los stats YA
+  // movidos de este split, así que el pico refleja de verdad el mejor
+  // momento de la carrera, no el arranque de ella.
+  const nivelDeEsteSplit = nivelDelJugador({ player: { role: state.player.role, stats } });
+  const registro = registrarPicoNivel(
+    { ...state.career.registro, splitsJugados: state.career.registro.splitsJugados + 1 },
+    nivelDeEsteSplit,
+    state.age
+  );
+
   const nextState = {
     ...state,
     player: {
@@ -107,7 +121,7 @@ export function aplicar(state, rng) {
       oculto: { ...state.player.oculto, forma },
       splitCount: state.player.splitCount + 1
     },
-    career: { ...state.career, currentSplit: state.career.currentSplit + 1 }
+    career: { ...state.career, currentSplit: state.career.currentSplit + 1, registro }
   };
 
   // Fase 7: `tecnico: true` marca los logs puramente numéricos — nadie los

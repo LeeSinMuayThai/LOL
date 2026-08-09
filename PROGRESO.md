@@ -26,6 +26,105 @@ eventos (44 de los ~200 que pide §8, con 90 de las 150 opciones objetivo).
 
 ## Changelog
 
+### 2026-08-09 — Auditoría contra El Ídolo del Potrero + Fase 8a: el registro acumula
+
+**El pedido**: el usuario reportó que, jugando de verdad, "las decisiones no importan, las
+preguntas se repiten todo el tiempo, nada tiene sentido" — pasó de los 23 a los 49 años sin que se
+retire el personaje apretando botones. Pidió una auditoría imagen por imagen contra El Ídolo del
+Potrero (14 capturas de una carrera completa) para encontrar, con evidencia concreta, por qué un
+juego con 7 fases cerradas y 26+ checks se sentía así.
+
+**El diagnóstico** (documento completo: `PLAN.md`, PARTE 1 — 10 hallazgos, cada uno con imagen y
+línea de código). La tesis: *"Potrero no tiene más sistemas: tiene un registro que acumula y una
+ficha que lo muestra. Este proyecto tiene veinte sistemas y ningún registro."* Los hallazgos más
+graves, verificados en el código y no solo en la queja:
+
+- **H2 — nunca elegís tu equipo.** `competitivo.js:33/136` sorteaba la org con
+  `weightedPick(liga.orgs, c => 100 - c.fuerza, rng)` — ponderado hacia la MÁS DÉBIL de la liga. No
+  había oferta, contrato, ni sueldo en todo el proyecto. La "trampa de firmar por el equipo grande"
+  que `CONCEPTO.md` §7 documenta como cadena causal central era, literalmente, imposible de
+  disparar: no había firma.
+- **H3 — no hay final.** `maxSplitsDeSeguridad: 90` (comentado como "red anti-loop, no una regla de
+  juego") lo agotaba el 49,1% de las carreras (D2). No existía `retiro.js`, y `renderResumenFinal`
+  escribía una frase en un `<div>` — el juego cuyo producto final es una tarjeta compartible no
+  tenía la tarjeta.
+- **H7 — los números no tienen referente.** El NIVEL (media ponderada por rol) ya se calculaba
+  adentro de `calcularRendimiento` y nunca se mostraba; las bandas con nombre
+  (`rookie/titular/referente/franquicia`) ya existían en `contexto.js:78` y nunca llegaban a
+  pantalla — salía `jerarquía 47` en un log.
+
+**El plan de corrección** (`PLAN.md`, reescrito de punta a punta; las fases 0-7 no se tocaron):
+seis fases nuevas — **8 La ficha** (el registro que acumula + la tarjeta permanente + `src/ui/`),
+**9 El mercado** (elegís equipo; la trampa del equipo grande, visible), **10 El final** (retiro
+emergente + tarjeta de legado), **11 El año** (calendario, nota de temporada, archirrival),
+**12 La jerarquía de la decisión** (categorías, rareza, consecuencia antes de elegir), **13
+Contenido a escala** — reemplazan a las viejas fases 8-11. Regla de proceso nueva, la más
+importante: *"Ninguna fase cierra sin su pantalla."* Decisiones tomadas con el usuario: tarjeta
+completa tipo Potrero, un NIVEL 0-100 único (extraído de la fórmula que ya existía, sin
+retunearla), y **jerarquía + arraigo como dos ejes separados** (jerarquía = estatus deportivo, ya
+existía, se resetea; arraigo = vínculo con la gente de la org, nuevo, nunca se resetea).
+`CONCEPTO.md` §1/§11 (duración pasa de "4-10 min" a "25-40 min", alineado con una decisión ya
+tomada y nunca propagada al documento) y §6 (arraigo) se actualizaron.
+
+**Fase 8a implementada — "el registro acumula" (motor, sin pantalla todavía: eso es 8b).**
+
+- `state.js`: `career.registro` (objeto que **solo crece** — splits jugados, fechas/mapas/series
+  G-P, títulos e internacionales con año, picos de nivel/jerarquía/arraigo/hype, y una fila por
+  org con sus propios splits/fechas/títulos/jerarquía máxima/arraigo máximo) y `state.calendario`
+  (`anio`, calculado de `splitCount`, sin consumir `rng`). Los dos, objetos completos de ceros
+  desde el arranque (trampa T4). `career.arraigo` nuevo, distinto de `career.jerarquia`.
+- `src/core/registro.js` (nuevo, puro): único punto de escritura sobre `career.registro`
+  (`abrirFila`/`cerrarFila`/`registrarSplitEnFila`/`registrarFecha`/`registrarMapa`/
+  `registrarSerie`/`registrarTitulo`/`registrarInternacional`/`registrarPico`/
+  `registrarArraigoEnFila`/`bandaDeArraigo`/`arraigoInicial`) — para que "el registro solo crece"
+  (regla de proceso 14, nueva) se sostenga en un solo lugar en vez de reimplementarse en cada
+  sistema que lo toca.
+- `src/core/ficha.js` (nuevo, puro): `nivelDelJugador(state)`, la MISMA fórmula que ya vivía adentro
+  de `calcularRendimiento` (`rendimiento.js:26-31`), extraída sin retunear un solo número (regla de
+  proceso 2) para que se pueda exponer. `rendimiento.js` ahora la importa en vez de mantener dos
+  copias.
+- **Quién escribe qué**: `roster.js` abre/cierra filas de `porOrg`, suma el goteo de arraigo "de
+  base" por split (escalado por `ROLES[].visibilidad`) y da el arraigo inicial al fichar
+  ("tu fama te precede", proporcional al hype); `competitivo.js` cierra la fila con
+  `motivoDeSalida` (`ascenso`/`disolucion`) justo antes de cambiar de org; `temporada.js` registra
+  cada fecha (marcada o silenciosa) en `avanzarFechaSilenciosa`, el único choke point de las dos;
+  `serie.js` registra cada mapa, cada serie, y arma `internacionales[].camino` con los mapas
+  jugados; `rendimiento.js` registra títulos/internacionales de tier 2/3 (sin bracket) y el bono de
+  arraigo por rendir sobre lo esperado (reusa la misma `brecha` que ya mueve la jerarquía) y por
+  fracaso; `atributos.js` cuenta `splitsJugados` (coincide siempre con `player.splitCount`, ambos
+  se incrementan en el mismo sistema) y el pico de NIVEL.
+- `BALANCE.calendario` (`anioBase: 2026`), `BALANCE.arraigo` (rangos por split/título/internacional/
+  fracaso, factor de brecha, piso por hype, los 4 hitos con nombre: uno_mas/querido/idolo/leyenda)
+  y `BALANCE.ficha` (bandas de NIVEL) nuevos.
+
+**8 checks nuevos en `validate.js`.** Dos de ellos fallaron en la primera corrida y la causa, en
+los dos casos, fue el check — no el motor (regla de proceso 7: verificar que un check falla cuando
+debe, y por qué):
+
+- *`calendario.anio avanza exactamente 1...`*: el check comparaba `calendario.anio` (calculado por
+  `edadInicio.js` **al empezar** el split, con el `splitCount` de ANTES) contra el `splitCount` de
+  DESPUÉS de que `atributos.js` ya lo había incrementado en el mismo split. Se corrigió el check
+  para comparar contra el `splitCount` capturado al empezar, no al terminar.
+- *`picos.nivel se alcanza antes del último split...`*: medía 32,7% contra un 70% esperado, corrida
+  a 30 splits (el techo que traía la primera versión del check). Investigado con una traza directa
+  (`nivelDelJugador` split a split): el mecanismo de declive funciona — hay carreras que muestran
+  una curva clara de subida-pico-caída (ver seed 7 de la traza) — pero `correrCarrera` cuenta
+  splits desde los 15 años, así que a los 30 splits la mayoría todavía está a mitad de su tramo
+  profesional, en la parte que sube (macro y shotcalling no declinan, `CONCEPTO.md` §6). Corriendo
+  la misma medición a 60 splits: **90,7%**. Se corrigió la ventana del check a 60 splits, no el
+  umbral ni el motor.
+
+**Verificado**: `node src/dev/validate.js` — 56 checks, todos `OK` (los 8 nuevos incluidos).
+`node src/dev/simulate.js 1500 60 todas` — **0 crashes** en 6000 carreras (1500 seeds × 4
+estrategias); `llegaronAPro` da 73,9% (equilibrado) / 47,5% (ranked) / 65,7% (prudente), en línea
+con lo medido al cerrar la fase 7 — esta fase no tocó balance, solo agrega tracking, y los números
+lo confirman. `node server.js` sirve `index.html` y los módulos nuevos (`core/registro.js`,
+`core/ficha.js`) con 200. La UI de `index.html` no se tocó (no lee los campos nuevos todavía: eso
+es la fase 8b) y sigue funcionando exactamente igual.
+
+**Sigue en la fase 8**: 8b (`src/ui/`, la tarjeta permanente) y 8c (calibrar `BALANCE.arraigo`
+contra los números reales una vez que la tarjeta los hace visibles).
+
 ### 2026-08-09 — Corrección: lenguaje de "equipo profesional" colándose en la etapa amateur
 
 Bug reportado directamente por el usuario jugando: a los 15 años, en soloQ (Oro), le salió el

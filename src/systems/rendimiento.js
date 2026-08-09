@@ -1,10 +1,12 @@
-import { gauss, chance } from '../core/rng.js';
+import { gauss, chance, roll } from '../core/rng.js';
 import { crearLog } from '../core/log.js';
 import { clamp, clampStat } from '../core/numeros.js';
 import { multiplicadorDeMeta } from '../core/ajusteMeta.js';
 import { registrarEnHistorial } from '../core/contexto.js';
 import { ligaOZonaDeCarrera } from '../core/competicion.js';
 import { esCierreDeTemporada } from '../core/serie.js';
+import { nivelDelJugador } from '../core/ficha.js';
+import { registrarTitulo, registrarInternacional, registrarPico, registrarArraigoEnFila } from '../core/registro.js';
 import { BALANCE } from '../data/balance.js';
 import { ROLES } from '../data/roles.js';
 
@@ -21,9 +23,10 @@ export const id = 'rendimiento';
 // calendario entero. No se reescribe la formula.
 export function calcularRendimiento(state, rng) {
   const r = BALANCE.rendimiento;
-  const { pesos } = ROLES[state.player.role];
-
-  const base = Object.entries(pesos).reduce((suma, [stat, peso]) => suma + state.player.stats[stat] * peso, 0);
+  // Fase 8: `base` es EL NIVEL (core/ficha.js `nivelDelJugador`) — misma
+  // fórmula, extraída para que la UI la exponga sin mantener dos copias
+  // (regla de proceso 2: no se reescribe ni se retunea).
+  const base = nivelDelJugador(state);
 
   const campeon = state.player.championPool.find((c) => c.name === state.player.campeonDelSplit);
   const factorMaestria = 1 + ((campeon?.mastery ?? BALANCE.stats.max / 2) / BALANCE.stats.max - 0.5) * r.maestriaPesoEnRendimiento * 2;
@@ -98,6 +101,16 @@ function consecuencias(state, rendimiento, resultado, esCierre, rng) {
   let worlds = state.player.worlds;
   const hitos = [...state.career.hitos];
 
+  // Arraigo (fase 8.4): rendir por encima de lo esperado suma via la MISMA
+  // `brecha` que ya mueve la jerarquia; un split de fracaso lo cobra. El
+  // título y el internacional suman aparte, más abajo, cuando de verdad
+  // pasan (acá tier 2/tier 3 sin bracket; tier 1 con playoffs lo hace
+  // `serie.js`, que corre a continuación en el registro).
+  const a = BALANCE.arraigo;
+  let registro = state.career.registro;
+  let arraigo = clampStat(state.career.arraigo + brecha * a.factorBrechaRendimiento
+    + (fracaso ? roll(a.porFracasoMin, a.porFracasoMax, rng) : 0));
+
   // `nombreLiga` cubre el tier 3: ahí no hay una liga real que nombrar (fase 3).
   const nombreLiga = liga.nombreLiga ?? liga.id;
 
@@ -109,6 +122,8 @@ function consecuencias(state, rendimiento, resultado, esCierre, rng) {
 
   if (campeon) {
     titulos += 1;
+    arraigo = clampStat(arraigo + roll(a.porTituloMin, a.porTituloMax, rng));
+    registro = registrarTitulo(registro, { nombre: nombreLiga, anio: state.calendario.anio, org: state.career.currentOrg });
     hitos.push(`Campeón de ${nombreLiga} a los ${state.age}`);
     logs.push(crearLog('rendimiento', `Campeones de ${nombreLiga}. El título es tuyo también.`));
   }
@@ -122,6 +137,11 @@ function consecuencias(state, rendimiento, resultado, esCierre, rng) {
     worlds += 1;
     const rendiBien = chance(clamp(liga.prestigio / (r.prestigioReferencia * 2) + rendimiento / (BALANCE.stats.max * 3), 0, 0.9), rng);
     hype += rendiBien ? r.hypePorTitulo : r.hypePorPodio;
+    arraigo = clampStat(arraigo + roll(a.porInternacionalMin, a.porInternacionalMax, rng));
+    registro = registrarInternacional(registro, {
+      torneo: `internacional — ${nombreLiga}`, anio: state.calendario.anio, org: state.career.currentOrg,
+      resultado: rendiBien ? 'buen_papel' : 'eliminado', camino: []
+    });
     hitos.push(rendiBien
       ? `Buen papel internacional con ${state.career.currentOrg} a los ${state.age}`
       : `Eliminado en fase de grupos a los ${state.age}`);
@@ -132,6 +152,9 @@ function consecuencias(state, rendimiento, resultado, esCierre, rng) {
         : 'Viajaste al internacional y volviste temprano. Pasa.'
     ));
   }
+
+  registro = registrarPico(registrarPico(registro, 'jerarquia', Math.round(jerarquia)), 'arraigo', Math.round(arraigo));
+  registro = registrarArraigoEnFila(registrarPico(registro, 'hype', Math.round(clampStat(hype))), Math.round(arraigo));
 
   // "Cómo te fue" para el momentum: 100 si salieron primeros, 0 si últimos.
   const puntajeDelSplit = (1 - (posicion - 1) / Math.max(1, equipos - 1)) * BALANCE.stats.max;
@@ -147,6 +170,8 @@ function consecuencias(state, rendimiento, resultado, esCierre, rng) {
       career: {
         ...state.career,
         jerarquia: Math.round(jerarquia),
+        arraigo: Math.round(arraigo),
+        registro,
         posicion,
         titulos,
         podios: state.career.podios + (podio ? 1 : 0),
