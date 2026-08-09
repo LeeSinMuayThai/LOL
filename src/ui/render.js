@@ -1,0 +1,10 @@
+// El orquestador de la UI (fase 8, PLAN.md §8.5): único punto de entrada
+// para que index.html no tenga que conocer la carpeta interna de `src/ui/`.
+// `DISENO.md` §4.1 pedía esta estructura desde el arranque del proyecto —
+// hasta la fase 8 `src/ui/` estaba vacía y los 1.090 renglones de interfaz
+// vivían enteros en `index.html` (deuda D7 de PLAN.md).
+export { crearPantallaInicio } from './screens/inicio.js';
+export { renderCarrera, mostrarDecisionEnPantalla } from './screens/carrera.js';
+export { renderFicha } from './components/ficha.js';
+export { renderFeed } from './components/feed.js';
+export { renderDecision } from './components/decision.js';

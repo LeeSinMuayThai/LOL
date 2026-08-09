@@ -1,6 +1,6 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { verificarSinMathRandom } from './guards.js';
+import { verificarSinMathRandom, verificarDocumentSoloEnUi } from './guards.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 import { mulberry32, sample } from '../core/rng.js';
@@ -22,7 +22,7 @@ import { tipoDeSplit } from '../core/presupuesto.js';
 import { elegirCampeonRival, disponiblesDelPool } from '../core/serie.js';
 import { resolverFecha, motivosDeFecha } from '../core/temporada.js';
 import { tierListDeRol, boostDelPool } from '../core/regimen.js';
-import { nivelDelJugador } from '../core/ficha.js';
+import { nivelDelJugador, deltasDeStats } from '../core/ficha.js';
 import { bandaDeArraigo } from '../core/registro.js';
 import { EJES, MARCAS, MOMENTOS_ACTIVOS, momentoPorId } from '../data/contextos.js';
 import { ARQUETIPOS } from '../data/meta-tags.js';
@@ -2093,6 +2093,50 @@ check('calendario.anio avanza exactamente 1 cada splitsPorEdad splits', () => {
     if (state.calendario.anio !== anioEsperado) {
       throw new Error(`split ${splitCountAlEmpezar}: calendario.anio=${state.calendario.anio}, esperado ${anioEsperado}`);
     }
+  }
+});
+
+// --- Fase 8b: src/ui/ y la ficha permanente (PLAN.md §8.3, §8.5, §8.6) ---
+
+check('Ningún archivo fuera de src/ui/ referencia document (regla invariable 2)', () => {
+  const infractores = verificarDocumentSoloEnUi(srcDir);
+  if (infractores.length > 0) {
+    throw new Error(`encontrado en: ${infractores.join(', ')}`);
+  }
+});
+
+check('deltasDeStats devuelve al menos un delta en la mayoría de los cierres de edad', () => {
+  let cierres = 0;
+  let conDelta = 0;
+
+  for (let seed = 1; seed <= 60; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    let splitAnterior = state.player.splitCount;
+
+    for (let i = 0; i < 30 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      // Un cierre de edad acaba de pasar si `splitCount` cruzó un múltiplo de
+      // `splitsPorEdad` en este split (`edadInicio.js` tomó el snapshot ANTES
+      // de este split, así que recién ahora hay diferencia que medir).
+      if (Math.floor(state.player.splitCount / BALANCE.edad.splitsPorEdad)
+          > Math.floor(splitAnterior / BALANCE.edad.splitsPorEdad)) {
+        cierres += 1;
+        if (Object.keys(deltasDeStats(state)).length > 0) {
+          conDelta += 1;
+        }
+      }
+      splitAnterior = state.player.splitCount;
+    }
+  }
+
+  if (cierres < 30) {
+    throw new Error(`solo ${cierres} cierres de edad observados en 60 seeds: muestra insuficiente`);
+  }
+
+  const fraccion = conDelta / cierres;
+  if (fraccion < 0.8) {
+    throw new Error(`deltasDeStats() da vacío en ${((1 - fraccion) * 100).toFixed(1)}% de los cierres de edad; se esperaba ≥80% con al menos un delta`);
   }
 });
 

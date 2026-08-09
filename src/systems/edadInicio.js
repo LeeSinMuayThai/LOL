@@ -10,7 +10,15 @@ export const CAMPOS_EDAD = [
   'player.familyTrust',
   'player.stats.mecanica',
   'player.stats.mentalidad',
-  'player.stats.hype'
+  'player.stats.hype',
+  // Fase 8 (§8.3.1): faltaban 5 de los 6 atributos de rol — sin ellos las
+  // flechas ▲▼ de la ficha (core/ficha.js `deltasDeStats`) solo podían
+  // mostrarse para mecánica.
+  'player.stats.macro',
+  'player.stats.teamfight',
+  'player.stats.laneo',
+  'player.stats.shotcalling',
+  'player.stats.adaptabilidad'
 ];
 
 export function tomarSnapshotEdad(state) {

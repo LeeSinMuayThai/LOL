@@ -93,33 +93,48 @@ La carrera debe incluir contratos, sueldos, cláusulas, imports, residencia, ada
 
 > Esta sección quedó desactualizada durante las fases 0-4 (los nombres pasaron a español
 > rioplatense y aparecieron módulos que este documento no preveía) y se corrige acá, más el
-> agregado de lo que `PLAN.md` fases 5 y 6 suman. Es un snapshot: el árbol real siempre manda
+> agregado de lo que `PLAN.md` fases 5, 6 y 8 suman. Es un snapshot: el árbol real siempre manda
 > sobre este documento si difieren — para eso está `PLAN.md` como plan vigente.
 
 /src/core
   rng.js · state.js · pipeline.js · selectors.js · log.js · numeros.js · formato.js
   contexto.js · ajusteMeta.js · pool.js · presupuesto.js · plantillas.js · curvas.js
   mundo.js · ranked.js · competicion.js · tier3.js · rutinas.js · serie.js
-  **temporada.js** (fase 5, nuevo — calendario, tabla de posiciones, fechas que importan)
-  **regimen.js** (fase 6, nuevo — tier list del meta con nombre, boost por coincidencia)
+  temporada.js (fase 5 — calendario, tabla de posiciones, fechas que importan)
+  regimen.js (fase 6 — tier list del meta con nombre, boost por coincidencia)
+  **registro.js** (fase 8, nuevo — único punto de escritura sobre `career.registro`:
+  abrir/cerrar fila de org, registrar fecha/mapa/serie/título/internacional/pico, arraigo)
+  **ficha.js** (fase 8, nuevo — lo que la tarjeta permanente pinta: NIVEL, deltas de
+  stats, bandas de jerarquía/arraigo, estado internacional; puro, sin RNG)
 
 /src/systems
   contexto.js · edadInicio.js · meta.js · roster.js · competitivo.js · campeones.js
   secundario.js · amateur.js · rendimiento.js · serie.js · events.js · atributos.js
   practica.js · edadCierre.js · registro.js (el registro declarativo de `ETAPAS_SPLIT`)
-  **temporada.js** (fase 5, nuevo — se inserta en el registro antes de `rendimiento`)
+  temporada.js (fase 5 — se inserta en el registro antes de `rendimiento`)
 
 /src/data
   balance.js · champions.json · leagues.json · meta-tags.js · roles.js · ranked.js
   servidores.js · contextos.js · minijuegos.json
-  **metas.json** (fase 6, nuevo — los nueve regímenes de meta)
+  metas.json (fase 6 — los nueve regímenes de meta)
   /events (index.js + los JSON por categoría, incluido /rol)
-    **/partido** (fase 5, nuevo — presion.json, clasico.json, dentro_del_mapa.json,
+    /partido (fase 5 — presion.json, clasico.json, dentro_del_mapa.json,
     postpartido.json: el contenido de las fechas marcadas de la temporada)
   /rutinas (amateur.json, offseason.json)
 
-/src/ui
-  — sigue vacía. Toda la UI vive en `index.html` (deuda D7, se resuelve en la fase 11).
+/src/ui — deja de estar vacía en la fase 8 (cierra D7). `index.html` queda como shell +
+  `<style>` + los minijuegos (que la fase 8 no mueve, PLAN.md §8.5) + el control de flujo
+  que llama al pipeline (`comenzarCarrera`/`avanzar`/`responder`).
+  render.js — orquestador, único punto de entrada que importa `index.html`
+  /components
+    ficha.js — LA TARJETA permanente (vive en todas las pantallas de carrera)
+    barra.js — barra de progreso con hitos con nombre (arraigo, jerarquía)
+    statRow.js — los 6 atributos de rol con flechas ▲▼ y el destacado en color
+    decision.js — la tarjeta de decisión (opciones; los minijuegos se desvían antes)
+    feed.js — el log, con los logs `tecnico: true` atenuados
+  /screens
+    inicio.js — rol + mains (dueño de su propio estado de selección)
+    carrera.js — orquesta ficha + feed; la decisión se pinta aparte
 
 /src/dev
   simulate.js · validate.js · guards.js · cobertura.js · estrategias.js

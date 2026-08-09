@@ -26,6 +26,73 @@ eventos (44 de los ~200 que pide §8, con 90 de las 150 opciones objetivo).
 
 ## Changelog
 
+### 2026-08-09 — Fase 8b: `src/ui/` deja de estar vacía + la ficha permanente
+
+Segunda mitad de la fase 8 (la primera, "el registro acumula", es la entrada anterior de este
+changelog). Con el registro ya acumulando, esta mitad construye la pantalla que lo muestra — la
+regla de proceso 12 nueva ("ninguna fase cierra sin su pantalla") aplicada a sí misma.
+
+**`src/core/ficha.js` completo**: además de `nivelDelJugador` (de la fase 8a), ahora expone
+`bandaDeNivel`, `deltasDeStats` (las flechas ▲▼, contra `flags.edadSnapshot`), `statDestacado` (el
+stat más alto del rol), `bandaDeJerarquia` / `bandaDeArraigoFicha` (bandas con nombre, piso, techo
+del próximo hito y si ya es el máximo), `estadoInternacional` (`sin_chance`/`en_carpeta`/
+`clasificado`/`jugando`, según `career.posicion` contra `liga.cuposInternacionales`),
+`dueloDeGeneracion` (stub — la fase 11 lo llena) y `fichaCompleta`, el objeto único que consume la
+UI. Todo puro, sin RNG.
+
+**`CAMPOS_EDAD`** (`edadInicio.js`) se amplió de 3 a 6 stats de rol (agregó macro, teamfight,
+laneo, shotcalling, adaptabilidad) — sin esto las flechas solo podían mostrarse para mecánica.
+
+**`src/ui/` deja de estar vacía (cierra D7)**: 476 líneas en 8 módulos —
+`components/{ficha,barra,statRow,decision,feed}.js` y `screens/{inicio,carrera}.js`, más
+`render.js` como único punto de entrada. `index.html` extrae `renderRoles`/`renderCampeones`/
+`actualizarBotonEmpezar` (ahora `screens/inicio.js`, dueño de su propio estado de selección),
+`renderLogs` (`components/feed.js`) y la mitad no-minijuego de `mostrarDecision`
+(`components/decision.js`). **Los 5 minijuegos NO se movieron** (PLAN.md §8.5: se les cambia la
+presentación recién en la fase 12) — siguen inline en `index.html`, igual que el control de flujo
+que llama al pipeline (`comenzarCarrera`/`avanzar`/`responder`).
+
+**La tarjeta permanente** (`components/ficha.js`, nueva): NIVEL grande con banda de color, ▲▼ por
+atributo contra el snapshot de la edad, el destacado resaltado, dos barras con los 4 hitos
+dibujados (arraigo y jerarquía, como pidió PARTE 3 del plan), el estado internacional con nombre,
+el pool con la tier del régimen vigente al lado, y un `<details>` "Ver carrera" con
+`registro.porOrg` — el mismo componente que la fase 10 va a reusar para la tarjeta final. En etapa
+amateur pinta otra fila (estudios/confianza/sueño/ranked) en vez de arraigo/jerarquía/pool, como
+pedía §8.6 punto 7.
+
+**Guardas nuevas**: `dev/guards.js` agrega `verificarDocumentSoloEnUi` (regex `\bdocument\s*[.[]`,
+que no confunde con la prosa "documento"/"documentación") y un check en `validate.js` que falla si
+algo fuera de `src/ui/` toca el DOM (regla invariable 2). Otro check nuevo mide que
+`deltasDeStats()` dé al menos un delta en ≥80% de los cierres de edad — medido: **pasa** sin
+tunear nada, la ampliación de `CAMPOS_EDAD` alcanzó.
+
+**Números medidos** (`PLAN.md` §8.9, con su corrección post-medición ahí mismo): campos del estado
+visibles en pantalla, 8 → **≥22** (NIVEL, 6 atributos con flecha, jerarquía y arraigo con banda,
+internacional, pool con tier, historia). `index.html` **no** bajó a ≤350 líneas como se había
+estimado a ciegas — quedó en 1.069, casi igual que antes (1.090) — porque la ficha nueva agrega
+~330 líneas de CSS real (barras con hitos, stat-row, badges) y los minijuegos (~230 líneas) se
+quedan adentro a propósito. Lo que sí se movió es lo que la deuda D7 pedía: `src/ui/` pasó de 0 a
+**476 líneas** en módulos reusables — no es lo mismo tener 1.069 líneas en un archivo que 593 en
+uno más los 476 repartidos en 8 módulos con una sola responsabilidad cada uno.
+
+**`DISENO.md` §4.1** actualizado con el árbol real de `src/core/` (+`registro.js`, `+ficha.js`) y
+`src/ui/` (deja de decir "sigue vacía").
+
+**Verificado**: `node src/dev/validate.js` — **58 checks, todos OK** (2 nuevos de esta mitad).
+`node src/dev/simulate.js 1500 60 todas` — 0 crashes en 6000 carreras (esta fase no toca game
+logic, solo presentación). Y, por primera vez en el proyecto desde la fase 0, **verificación real
+en navegador**: Chrome headless vía CDP crudo (WebSocket nativo de Node, sin Puppeteer/Playwright
+instalados — mismo criterio que la verificación manual documentada en el changelog del
+2026-08-06), perfil aislado, seed fija. Se clickeó rol → 3 campeones → "Empezar carrera" → 45
+decisiones seguidas (incluido un minijuego real). La ficha se actualizó en cada split, pasó del
+panel de amateur al de profesional en el momento justo, el destacado cambió de stat, las barras de
+arraigo/jerarquía mostraron los hitos con nombre reales (`Uno más · 15/100`, `Rookie · 23/100`), y
+**cero errores y cero excepciones de consola** en toda la corrida. Screenshot revisado a mano.
+
+**Sigue en la fase 8**: 8c — calibrar `BALANCE.arraigo` contra la distribución real medida (el
+check de "llega a Ídolo en ≥15%" quedó para esa calibración, no se fuerza acá sin medir primero,
+regla de proceso 2).
+
 ### 2026-08-09 — Auditoría contra El Ídolo del Potrero + Fase 8a: el registro acumula
 
 **El pedido**: el usuario reportó que, jugando de verdad, "las decisiones no importan, las

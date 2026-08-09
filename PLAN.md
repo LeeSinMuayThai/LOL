@@ -1210,16 +1210,35 @@ Determinismo: misma seed, dos corridas, huella idéntica
 
 | Métrica | Antes | Objetivo |
 |---|---|---|
-| Campos del estado visibles en pantalla | 8 | ≥ 22 |
-| Líneas de UI en `index.html` | 1.090 | ≤ 350 (shell + estilos) |
+| Campos del estado visibles en pantalla | 8 | ≥ 22 — logrado: NIVEL, 6 atributos con ▲▼, jerarquía y arraigo con banda con nombre, estado internacional, pool con tier, historia por org |
+| Líneas de UI en `index.html` | 1.090 | medido: **1.069** (no ≤350 — corrección post-medición abajo) |
+| Líneas reales en `src/ui/` (antes: 0, carpeta vacía) | 0 | medido: **476**, en 8 módulos reusables |
 | Carreras que alcanzan el hito `idolo` de arraigo | — | 15-30% |
 | `llegaronAPro`, burnout, splits medianos | — | **sin cambios** (± 3 pts): esta fase no toca balance |
+
+> **Corrección post-medición (mismo criterio que la fase 2 con la densidad de decisiones).**
+> El ≤350 era una estimación a ciegas de "shell + estilos" antes de saber cuánto CSS iba a
+> necesitar la ficha nueva. Medido: la nueva tarjeta permanente agrega **~330 líneas de `<style>`**
+> (barras con hitos, stat-row con destacado, badges, historia) — CSS real, no relleno — y los 5
+> minijuegos (~230 líneas) se quedan adentro de `index.html` a propósito, tal como dice §8.5 ("no
+> se mueven en esta fase"). La suma de las dos cosas explica casi toda la distancia entre 1.069 y
+> 350. La métrica que sí importa —y que el ≤350 quería decir sin saberlo todavía— es la otra fila
+> de esta tabla: `src/ui/` pasó de una carpeta vacía (D7) a **476 líneas reales en 8 módulos
+> reusables**, y eso es lo que hoy hace posible reusar `renderFicha` en la tarjeta final de la
+> fase 10 sin escribirla de nuevo.
 
 ## 8.10 — Verificación end-to-end
 
 Jugar 12 splits a mano y confirmar: la ficha está en todas las pantallas · las flechas se mueven al
 cerrar la edad · el NIVEL sube · el arraigo cruza un hito con nombre y la barra cambia · `VER
 CARRERA` muestra la fila de la org con sus splits y su título · cero errores de consola.
+
+**Hecho** (verificado en Chrome real, headless vía CDP, no solo con `validate.js`/`simulate.js`):
+elegir rol y 3 mains, arrancar una carrera, jugar 45 decisiones seguidas con seed fija — la ficha
+se actualiza en cada split, muestra el panel de amateur (estudios/confianza/sueño/ranked) y después
+el de profesional (arraigo/jerarquía/pool/internacional/ver carrera) en el momento justo, el
+destacado cambia de stat cuando corresponde, y **cero errores y cero excepciones de consola** en
+toda la corrida.
 
 ---
 

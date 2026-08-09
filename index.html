@@ -48,29 +48,6 @@
         opacity: 0.6;
         cursor: wait;
       }
-      .stats {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 12px;
-        margin: 18px 0;
-      }
-      .stat-card {
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 12px;
-        padding: 12px;
-      }
-      .stat-label {
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #8ea3c7;
-      }
-      .stat-value {
-        font-size: 24px;
-        margin-top: 6px;
-        font-weight: 700;
-      }
       .summary {
         margin-top: 16px;
         padding: 14px 16px;
@@ -89,6 +66,11 @@
         margin-bottom: 8px;
         border-left: 3px solid #44d48d;
         line-height: 1.5;
+      }
+      .log-item--tecnico {
+        opacity: 0.6;
+        border-left-color: #5b708e;
+        font-size: 13px;
       }
       .log-titulo {
         font-size: 12px;
@@ -296,6 +278,204 @@
         cursor: pointer;
       }
 
+      /* --- La ficha permanente (fase 8, PLAN.md §8.6) --- */
+      .ficha-card {
+        margin-top: 4px;
+        padding: 18px;
+        background: rgba(255,255,255,0.045);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 16px;
+      }
+      .ficha-card--dorada {
+        border-color: rgba(240, 194, 123, 0.6);
+        box-shadow: 0 0 0 1px rgba(240, 194, 123, 0.35) inset;
+      }
+      .ficha-encabezado {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+      }
+      .ficha-nivel {
+        flex: 0 0 auto;
+        text-align: center;
+        min-width: 64px;
+        padding: 8px 10px;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.05);
+      }
+      .ficha-nivel-numero {
+        font-size: 34px;
+        font-weight: 800;
+        line-height: 1;
+      }
+      .ficha-nivel--prospecto .ficha-nivel-numero { color: #9fb0d2; }
+      .ficha-nivel--titular .ficha-nivel-numero { color: #8bf0bc; }
+      .ficha-nivel--elite .ficha-nivel-numero { color: #5b8cff; }
+      .ficha-nivel--clase_mundial .ficha-nivel-numero { color: #f0c27b; }
+      .ficha-nivel-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #8ea3c7;
+        margin-top: 2px;
+      }
+      .ficha-identidad {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+      .ficha-nombre-linea {
+        font-weight: 700;
+        font-size: 18px;
+      }
+      .ficha-contexto-linea {
+        color: #9fb0d2;
+        font-size: 13px;
+        margin-top: 2px;
+      }
+      .ficha-estado-linea {
+        color: #8bf0bc;
+        font-size: 12px;
+        margin-top: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .ficha-totales {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(255,255,255,0.08);
+        color: #c3cfe8;
+        font-size: 13px;
+      }
+      .ficha-stat-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .ficha-stat {
+        background: rgba(255,255,255,0.04);
+        border-radius: 10px;
+        padding: 8px 10px;
+        text-align: center;
+      }
+      .ficha-stat--destacado {
+        background: rgba(240, 194, 123, 0.16);
+        box-shadow: 0 0 0 1px rgba(240, 194, 123, 0.4) inset;
+      }
+      .ficha-stat-label {
+        display: block;
+        font-size: 10px;
+        letter-spacing: 0.06em;
+        color: #8ea3c7;
+      }
+      .ficha-stat-valor {
+        display: block;
+        font-weight: 700;
+        font-size: 17px;
+        margin-top: 2px;
+      }
+      .ficha-stat--destacado .ficha-stat-valor {
+        color: #f0c27b;
+      }
+      .ficha-stat-flecha {
+        font-size: 11px;
+        margin-left: 3px;
+      }
+      .ficha-stat-flecha--sube { color: #44d48d; }
+      .ficha-stat-flecha--baja { color: #e5573f; }
+      .ficha-barra-wrap {
+        margin-top: 14px;
+      }
+      .ficha-barra-cabecera {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        margin-bottom: 6px;
+      }
+      .ficha-barra-nombre {
+        letter-spacing: 0.06em;
+        color: #8ea3c7;
+      }
+      .ficha-barra-valor {
+        font-weight: 700;
+        color: #dfe9ff;
+      }
+      .ficha-barra-valor--maxima {
+        color: #f0c27b;
+      }
+      .ficha-barra-pista {
+        position: relative;
+        height: 12px;
+        background: rgba(255,255,255,0.08);
+        border-radius: 999px;
+        overflow: visible;
+      }
+      .ficha-barra-relleno {
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #2f6fed, #5b8cff);
+      }
+      .ficha-barra-relleno--maxima {
+        background: linear-gradient(90deg, #e5a35a, #f0c27b);
+      }
+      .ficha-barra-hito {
+        position: absolute;
+        top: -3px;
+        width: 3px;
+        height: 18px;
+        background: rgba(255,255,255,0.25);
+        transform: translateX(-50%);
+      }
+      .ficha-barra-hito--alcanzado {
+        background: rgba(255,255,255,0.7);
+      }
+      .ficha-barra-hitos-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 10px;
+        color: #6f80a3;
+        margin-top: 6px;
+      }
+      .ficha-hito-alcanzado {
+        color: #c3cfe8;
+        font-weight: 600;
+      }
+      .ficha-badge {
+        display: inline-block;
+        margin-top: 12px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        background: rgba(255,255,255,0.06);
+        color: #9fb0d2;
+      }
+      .ficha-badge--clasificado, .ficha-badge--jugando {
+        background: rgba(68, 212, 141, 0.16);
+        color: #8bf0bc;
+      }
+      .ficha-badge--en_carpeta {
+        background: rgba(229, 163, 90, 0.16);
+        color: #f0c27b;
+      }
+      .ficha-pool {
+        margin-top: 12px;
+        font-size: 13px;
+        color: #c3cfe8;
+      }
+      .ficha-historia {
+        margin-top: 12px;
+        font-size: 12px;
+        color: #9fb0d2;
+      }
+      .ficha-historia summary {
+        cursor: pointer;
+        color: #8ea3c7;
+      }
+      .ficha-historia-fila {
+        padding: 6px 0;
+        border-top: 1px solid rgba(255,255,255,0.06);
+      }
+
       /* --- Minijuegos (fase 4): un widget real por decisión, no un botón --- */
       .minijuego {
         margin-top: 16px;
@@ -452,37 +632,26 @@
         </details>
       </div>
 
-      <p class="subtitle" id="identidad" hidden></p>
-
       <div id="carrera" hidden>
-      <div class="stats">
-        <div class="stat-card"><div class="stat-label">Edad</div><div id="edad" class="stat-value">—</div></div>
-        <div class="stat-card"><div class="stat-label">Mecánica</div><div id="mec" class="stat-value">—</div></div>
-        <div class="stat-card"><div class="stat-label">Mentalidad</div><div id="ment" class="stat-value">—</div></div>
-        <div class="stat-card"><div class="stat-label">Estudios</div><div id="stud" class="stat-value">—</div></div>
-        <div class="stat-card"><div class="stat-label">Confianza</div><div id="trust" class="stat-value">—</div></div>
-        <div class="stat-card"><div class="stat-label">Sueño</div><div id="sleep" class="stat-value">—</div></div>
-        <div class="stat-card"><div class="stat-label">SoloQ</div><div id="elo" class="stat-value">—</div></div>
-        <div class="stat-card"><div class="stat-label">Dónde estás</div><div id="fase" class="stat-value">—</div></div>
-      </div>
+        <div id="fichaContainer" class="ficha-card"></div>
 
-      <div id="summary" class="summary">Aún no empezaste tu carrera.</div>
-      <div id="metaPill" class="meta-pill"></div>
+        <div id="summary" class="summary">Aún no empezaste tu carrera.</div>
+        <div id="metaPill" class="meta-pill"></div>
 
-      <div id="decision" class="decision" hidden>
-        <div id="decisionTitle" class="decision-title"></div>
-        <div id="decisionDesc" class="decision-desc"></div>
-        <div id="decisionOptions" class="decision-options"></div>
-      </div>
+        <div id="decision" class="decision" hidden>
+          <div id="decisionTitle" class="decision-title"></div>
+          <div id="decisionDesc" class="decision-desc"></div>
+          <div id="decisionOptions" class="decision-options"></div>
+        </div>
 
-      <div id="minijuego" class="minijuego" hidden>
-        <div id="minijuegoTitle" class="decision-title"></div>
-        <div id="minijuegoDesc" class="decision-desc"></div>
-        <div id="minijuegoWidget" class="minijuego-widget"></div>
-      </div>
+        <div id="minijuego" class="minijuego" hidden>
+          <div id="minijuegoTitle" class="decision-title"></div>
+          <div id="minijuegoDesc" class="decision-desc"></div>
+          <div id="minijuegoWidget" class="minijuego-widget"></div>
+        </div>
 
-      <div id="logList" class="log-list"></div>
-      <button id="nuevaCarrera" type="button" hidden>Nueva carrera</button>
+        <div id="logList" class="log-list"></div>
+        <button id="nuevaCarrera" type="button" hidden>Nueva carrera</button>
       </div>
     </div>
 
@@ -494,16 +663,9 @@
       const campeonGrid = document.getElementById('campeonGrid');
       const poolContador = document.getElementById('poolContador');
 
-      const button = document.getElementById('run');
+      const runButton = document.getElementById('run');
       const nuevaCarreraBtn = document.getElementById('nuevaCarrera');
-      const edad = document.getElementById('edad');
-      const mec = document.getElementById('mec');
-      const ment = document.getElementById('ment');
-      const stud = document.getElementById('stud');
-      const trust = document.getElementById('trust');
-      const sleep = document.getElementById('sleep');
-      const elo = document.getElementById('elo');
-      const fase = document.getElementById('fase');
+      const fichaContainer = document.getElementById('fichaContainer');
       const summary = document.getElementById('summary');
       const metaPill = document.getElementById('metaPill');
       const logList = document.getElementById('logList');
@@ -515,12 +677,16 @@
       const minijuegoTitle = document.getElementById('minijuegoTitle');
       const minijuegoDesc = document.getElementById('minijuegoDesc');
       const minijuegoWidget = document.getElementById('minijuegoWidget');
-
       const seedInput = document.getElementById('seedInput');
-      const identidad = document.getElementById('identidad');
-      const FASE_LABEL = { amateur: 'Amateur', profesional: 'Profesional', retirado: 'Retirado' };
+
+      // El contrato de elementos que `src/ui/render.js` necesita para pintar
+      // la pantalla de carrera y la de decisión (fase 8, §8.5).
+      const carreraElements = { fichaContainer, logList };
+      const decisionElements = { decisionPanel, decisionTitle, decisionDesc, decisionOptions };
 
       let modulos = null;
+      let ui = null;
+      let pantallaInicio = null;
       let estado = null;
       let rng = null;
 
@@ -528,7 +694,7 @@
         if (!modulos) {
           const [
             { mulberry32 }, { createInitialState }, pipeline, { BALANCE },
-            rolesModulo, ranked, { describirContexto }, formato, campeonesModulo
+            rolesModulo, ranked, { describirContexto }, formato, campeonesModulo, render
           ] = await Promise.all([
             import('./src/core/rng.js'),
             import('./src/core/state.js'),
@@ -538,7 +704,8 @@
             import('./src/core/ranked.js'),
             import('./src/core/contexto.js'),
             import('./src/core/formato.js'),
-            import('./src/data/champions.json', { with: { type: 'json' } })
+            import('./src/data/champions.json', { with: { type: 'json' } }),
+            import('./src/ui/render.js')
           ]);
           modulos = {
             mulberry32, createInitialState, pipeline, BALANCE, formato,
@@ -547,186 +714,9 @@
             ranked, describirContexto,
             CAMPEONES: campeonesModulo.default
           };
+          ui = render;
         }
         return modulos;
-      }
-
-      // --- Pantalla de inicio: elegís tu línea y tus tres mains ---
-
-      const ETIQUETA_STAT = {
-        mecanica: 'Mecánica', macro: 'Macro', teamfight: 'Teamfight', laneo: 'Laneo',
-        shotcalling: 'Shotcalling', adaptabilidad: 'Adaptabilidad'
-      };
-
-      let rolElegido = null;
-      let camposElegidos = [];
-
-      function actualizarBotonEmpezar() {
-        button.disabled = !(rolElegido && camposElegidos.length === modulos.BALANCE.mundo.campeonesIniciales);
-      }
-
-      function renderRoles() {
-        const { IDS_ROL, ROLES, atributosClave } = modulos;
-        rolGrid.replaceChildren(...IDS_ROL.map((rol) => {
-          const card = document.createElement('button');
-          card.type = 'button';
-          card.className = 'rol-card' + (rol === rolElegido ? ' elegido' : '');
-
-          const nombre = document.createElement('div');
-          nombre.className = 'rol-nombre';
-          nombre.textContent = ROLES[rol].label;
-          card.appendChild(nombre);
-
-          const tono = document.createElement('div');
-          tono.className = 'rol-tono';
-          tono.textContent = ROLES[rol].tono;
-          card.appendChild(tono);
-
-          const clave = document.createElement('div');
-          clave.className = 'rol-tono';
-          clave.textContent = 'Vive de: ' + atributosClave(rol).map((stat) => ETIQUETA_STAT[stat]).join(' y ') + '.';
-          card.appendChild(clave);
-
-          const costo = document.createElement('div');
-          costo.className = 'rol-costo';
-          costo.textContent = ROLES[rol].costo;
-          card.appendChild(costo);
-
-          card.addEventListener('click', () => {
-            if (rolElegido === rol) {
-              return;
-            }
-            rolElegido = rol;
-            camposElegidos = [];
-            renderRoles();
-            renderCampeones();
-            actualizarBotonEmpezar();
-          });
-
-          return card;
-        }));
-      }
-
-      function renderCampeones() {
-        if (!rolElegido) {
-          campeonGrid.replaceChildren();
-          poolContador.textContent = 'Elegí una línea primero.';
-          return;
-        }
-
-        const { CAMPEONES, BALANCE } = modulos;
-        const objetivo = BALANCE.mundo.campeonesIniciales;
-        // Los `debut` no existen todavía en el mundo: son los que salen con un
-        // parche a mitad de carrera, no se pueden elegir al empezar.
-        const elegibles = CAMPEONES.filter((campeon) => campeon.role === rolElegido && !campeon.debut);
-
-        campeonGrid.replaceChildren(...elegibles.map((campeon) => {
-          const elegido = camposElegidos.includes(campeon.name);
-          const card = document.createElement('button');
-          card.type = 'button';
-          card.className = 'campeon-card' + (elegido ? ' elegido' : '');
-          card.disabled = !elegido && camposElegidos.length >= objetivo;
-
-          const nombre = document.createElement('div');
-          nombre.className = 'campeon-nombre';
-          nombre.textContent = campeon.name;
-          card.appendChild(nombre);
-
-          const tags = document.createElement('div');
-          tags.className = 'campeon-tags';
-          tags.textContent = campeon.tags.join(' · ');
-          card.appendChild(tags);
-
-          card.addEventListener('click', () => {
-            camposElegidos = elegido
-              ? camposElegidos.filter((nombre) => nombre !== campeon.name)
-              : [...camposElegidos, campeon.name].slice(0, objetivo);
-            renderCampeones();
-            actualizarBotonEmpezar();
-          });
-
-          return card;
-        }));
-
-        poolContador.textContent = `${camposElegidos.length} / ${objetivo} elegidos.`
-          + (camposElegidos.length === objetivo
-            ? ' Un pool ancho aguanta mejor un cambio de meta; uno angosto rinde más mientras el meta te acompañe.'
-            : '');
-      }
-
-      function renderStats(state) {
-        // Los stats viven como float adentro del estado a proposito (redondear en
-        // cada split moveria el balance). Se redondean ACA, al pintarlos.
-        const { entero } = modulos.formato;
-        const pool = state.player.championPool.map((campeon) => campeon.name).join(', ');
-        identidad.textContent =
-          `${state.player.name} · ${modulos.etiquetaRol(state.player.role)} · ${state.mundo.ligaOrigen} (${state.mundo.regionOrigen}) · pool: ${pool}`;
-        edad.textContent = state.age;
-        mec.textContent = entero(state.player.stats.mecanica);
-        ment.textContent = entero(state.player.stats.mentalidad);
-        stud.textContent = entero(state.player.studies);
-        trust.textContent = entero(state.player.familyTrust);
-        sleep.textContent = entero(state.player.sleep);
-        elo.style.fontSize = '15px';
-        elo.textContent = modulos.ranked.etiquetaDeRanked(state.player.ranked, modulos.ranked.servidorDeLaPartida(state));
-        fase.style.fontSize = '15px';
-        fase.textContent = state.contexto
-          ? modulos.describirContexto(state.contexto)
-          : (FASE_LABEL[state.phase] ?? state.phase);
-      }
-
-      // Una entrada con `cuerpo` es un resultado narrativo: lo que pasó va en
-      // grande y los efectos abajo, chicos. Sin esa jerarquía el feed es una
-      // lista de diffs y no se lee.
-      function renderLogs(state) {
-        const recientes = state.logs.slice(-8).reverse();
-        logList.replaceChildren(...recientes.map((entry) => {
-          const item = document.createElement('div');
-          item.className = 'log-item';
-
-          if (!entry.cuerpo) {
-            item.textContent = entry.message;
-            return item;
-          }
-
-          const titulo = document.createElement('div');
-          titulo.className = 'log-titulo';
-          titulo.textContent = entry.titulo ?? '';
-          item.appendChild(titulo);
-
-          const cuerpo = document.createElement('div');
-          cuerpo.textContent = entry.cuerpo;
-          item.appendChild(cuerpo);
-
-          if (entry.efectos) {
-            const efectos = document.createElement('div');
-            efectos.className = 'log-efectos';
-            efectos.textContent = entry.efectos;
-            item.appendChild(efectos);
-          }
-
-          return item;
-        }));
-      }
-
-      function renderResumenFinal(state) {
-        const strongestMeta = Object.entries(state.meta.weights).sort((a, b) => b[1] - a[1])[0][0];
-
-        if (state.finAnticipado === 'burnout') {
-          summary.textContent = `Te bajaste a los ${state.age}: no daba más la cabeza. `
-            + `${state.career.titulos} título(s) con ${state.career.currentOrg ?? 'nadie'}.`;
-        } else if (state.finAnticipado === 'prohibicion_familiar') {
-          summary.textContent = `En tu casa te bajaron del ranked a los ${state.age}. Máximo alcanzado: ${modulos.ranked.etiquetaDeRanked(state.player.ranked, modulos.ranked.servidorDeLaPartida(state))}.`;
-        } else if (state.finAnticipado === 'no_llego') {
-          summary.textContent = `Se cerró la ventana de los prospectos en ${modulos.ranked.etiquetaDeRanked(state.player.ranked, modulos.ranked.servidorDeLaPartida(state))}. Nadie llamó.`;
-        } else if (state.phase === 'profesional') {
-          summary.textContent = `${state.career.currentOrg} · jerarquía ${state.career.jerarquia} · sinergia ${state.career.sinergia}`
-            + ` · ${state.career.titulos} título(s) · ${state.career.internacionales} internacional(es)`
-            + `${state.player.signatureChampion ? ` · signature: ${state.player.signatureChampion}` : ''}. Meta: ${strongestMeta}.`;
-        } else {
-          summary.textContent = 'Seguís en etapa amateur, grindeando soloQ para llamar la atención de un equipo.';
-        }
-        metaPill.textContent = `Meta dominante: ${strongestMeta} · seed ${state.seed}`;
       }
 
       // --- Minijuegos (fase 4) ---
@@ -736,7 +726,8 @@
       // chicas, cada una con su propia interacción, todas terminando en la
       // misma salida: `onDone(resultado)`. `resolverAuto` (systems/serie.js y
       // amateur.js) simula lo mismo con gauss corrido por el stat relevante
-      // cuando no hay nadie mirando (simulate.js).
+      // cuando no hay nadie mirando (simulate.js). No se mueven a `src/ui/`
+      // en la fase 8 (PLAN.md §8.5): se les cambia la presentación en la 12.
 
       function montarRobarBaron(container, state, onDone) {
         const anchoZona = 14 + (state.player.stats.mecanica / 100) * 18;
@@ -923,40 +914,32 @@
         }
 
         minijuegoPanel.hidden = true;
-        decisionTitle.textContent = decision.titulo;
-        decisionDesc.textContent = decision.descripcion;
-
-        decisionOptions.innerHTML = '';
-        for (const opcion of decision.opciones) {
-          const opcionBtn = document.createElement('button');
-          opcionBtn.type = 'button';
-          opcionBtn.className = 'option-btn';
-
-          const titulo = document.createElement('div');
-          titulo.className = 'option-title';
-          titulo.textContent = opcion.label;
-          opcionBtn.appendChild(titulo);
-
-          // El texto de la rutina es la mitad de la decisión: sin él, elegir
-          // "Bootcamp en tu propia pieza" no significa nada.
-          if (opcion.descripcion) {
-            const detalle = document.createElement('div');
-            detalle.className = 'option-desc';
-            detalle.textContent = opcion.descripcion;
-            opcionBtn.appendChild(detalle);
-          }
-
-          opcionBtn.addEventListener('click', () => responder({ opcionId: opcion.id }));
-          decisionOptions.appendChild(opcionBtn);
-        }
-
-        decisionPanel.hidden = false;
+        ui.mostrarDecisionEnPantalla(decisionElements, decision, responder);
         summary.textContent = 'Tenés una decisión pendiente.';
       }
 
+      function renderResumenFinal(state) {
+        const strongestMeta = Object.entries(state.meta.weights).sort((a, b) => b[1] - a[1])[0][0];
+
+        if (state.finAnticipado === 'burnout') {
+          summary.textContent = `Te bajaste a los ${state.age}: no daba más la cabeza. `
+            + `${state.career.titulos} título(s) con ${state.career.currentOrg ?? 'nadie'}.`;
+        } else if (state.finAnticipado === 'prohibicion_familiar') {
+          summary.textContent = `En tu casa te bajaron del ranked a los ${state.age}. Máximo alcanzado: ${modulos.ranked.etiquetaDeRanked(state.player.ranked, modulos.ranked.servidorDeLaPartida(state))}.`;
+        } else if (state.finAnticipado === 'no_llego') {
+          summary.textContent = `Se cerró la ventana de los prospectos en ${modulos.ranked.etiquetaDeRanked(state.player.ranked, modulos.ranked.servidorDeLaPartida(state))}. Nadie llamó.`;
+        } else if (state.phase === 'profesional') {
+          summary.textContent = `${state.career.currentOrg} · jerarquía ${state.career.jerarquia} · sinergia ${state.career.sinergia}`
+            + ` · ${state.career.titulos} título(s) · ${state.career.internacionales} internacional(es)`
+            + `${state.player.signatureChampion ? ` · signature: ${state.player.signatureChampion}` : ''}. Meta: ${strongestMeta}.`;
+        } else {
+          summary.textContent = 'Seguís en etapa amateur, grindeando soloQ para llamar la atención de un equipo.';
+        }
+        metaPill.textContent = `Meta dominante: ${strongestMeta} · seed ${state.seed}`;
+      }
+
       function pintar() {
-        renderStats(estado);
-        renderLogs(estado);
+        ui.renderCarrera(carreraElements, estado, modulos);
 
         if (estado.pendiente) {
           mostrarDecision(estado.pendiente.decision);
@@ -979,8 +962,7 @@
           }
         }
 
-        renderStats(estado);
-        renderLogs(estado);
+        ui.renderCarrera(carreraElements, estado, modulos);
         renderResumenFinal(estado);
         nuevaCarreraBtn.hidden = false;
       }
@@ -1014,7 +996,7 @@
       }
 
       async function comenzarCarrera() {
-        button.disabled = true;
+        runButton.disabled = true;
         decisionPanel.hidden = true;
         minijuegoPanel.hidden = true;
         nuevaCarreraBtn.hidden = true;
@@ -1031,11 +1013,11 @@
           // La elección de la pantalla de inicio entra como tercer argumento.
           // Si el jugador no eligió nada (camino headless), `createInitialState`
           // sortea todo de la seed exactamente como antes.
-          const eleccion = { handle: handleInput.value, rol: rolElegido, campeones: camposElegidos };
+          const { rol, campeones } = pantallaInicio.getSeleccion();
+          const eleccion = { handle: handleInput.value, rol, campeones };
           estado = createInitialState(seed, rng, eleccion);
 
           setupPanel.hidden = true;
-          identidad.hidden = false;
           carreraPanel.hidden = false;
 
           avanzar();
@@ -1051,28 +1033,25 @@
           console.error(error);
           setupPanel.hidden = false;
           carreraPanel.hidden = true;
-          button.disabled = false;
+          runButton.disabled = false;
         }
       }
 
       function volverAlInicio() {
         carreraPanel.hidden = true;
-        identidad.hidden = true;
         setupPanel.hidden = false;
         nuevaCarreraBtn.hidden = true;
-        rolElegido = null;
-        camposElegidos = [];
-        renderRoles();
-        renderCampeones();
-        actualizarBotonEmpezar();
+        pantallaInicio.reset();
       }
 
       async function iniciarSetup() {
         try {
           await cargarModulos();
-          renderRoles();
-          renderCampeones();
-          actualizarBotonEmpezar();
+          pantallaInicio = ui.crearPantallaInicio(
+            { rolGrid, campeonGrid, poolContador, runButton },
+            modulos
+          );
+          pantallaInicio.render();
         } catch (error) {
           const esArchivoLocal = location.protocol === 'file:';
           rolGrid.textContent = esArchivoLocal
@@ -1082,7 +1061,7 @@
         }
       }
 
-      button.addEventListener('click', comenzarCarrera);
+      runButton.addEventListener('click', comenzarCarrera);
       nuevaCarreraBtn.addEventListener('click', volverAlInicio);
       iniciarSetup();
     </script>
