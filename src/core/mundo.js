@@ -103,6 +103,10 @@ function generarRankedInicial(servidorId, potencial, rng) {
   return rankedInicial(servidorId, puntos);
 }
 
+// Bootstrap: `systems/meta.js` (fase 6) corre siempre y sobreescribe este
+// vector con los pesos de un régimen de verdad ya en el split 1, antes de que
+// nadie más lo lea. Se mantiene la tirada acá para no correr el stream de RNG
+// del resto de `generarMundo` (rivales, tier3PorRegion) que viene después.
 function generarMetaInicial(rng) {
   const { pesoMetaInicialMin, pesoMetaInicialMax } = BALANCE.mundo;
   const rango = pesoMetaInicialMax - pesoMetaInicialMin;

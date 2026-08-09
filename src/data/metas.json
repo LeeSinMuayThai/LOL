@@ -1,0 +1,65 @@
+[
+  {
+    "id": "tanques",
+    "nombre": "meta de tanques",
+    "sube": ["tanque", "engage"],
+    "hunde": ["asesino", "splitpush"],
+    "descripcion": "Los tanques abren y aguantan; las peleas se deciden por quién resiste, no por quién pega primero."
+  },
+  {
+    "id": "hipercarry",
+    "nombre": "meta de hipercarry",
+    "sube": ["escalado", "enchanter"],
+    "hunde": ["early_game", "splitpush"],
+    "descripcion": "Todo el mundo juega para el minuto 30: proteger al que escala vale más que ganar la línea temprano."
+  },
+  {
+    "id": "asesinos",
+    "nombre": "meta de asesinos",
+    "sube": ["asesino", "early_game"],
+    "hunde": ["escalado", "enchanter"],
+    "descripcion": "Se caza uno por uno antes de que la partida llegue a las peleas de cinco. Nadie está a salvo en solitario."
+  },
+  {
+    "id": "control",
+    "nombre": "meta de magos de control",
+    "sube": ["mago_control", "enchanter"],
+    "hunde": ["splitpush", "early_game"],
+    "descripcion": "Las líneas se ganan a control de zona: el que pisa el área del otro primero, pierde la pelea."
+  },
+  {
+    "id": "escalado",
+    "nombre": "meta de partidas largas",
+    "sube": ["escalado", "tanque"],
+    "hunde": ["early_game", "asesino"],
+    "descripcion": "Nadie fuerza nada antes del minuto 20: el objetivo es llegar entero al momento en que el juego se abre."
+  },
+  {
+    "id": "agresion",
+    "nombre": "meta de agresión temprana",
+    "sube": ["early_game", "asesino"],
+    "hunde": ["escalado", "mago_control"],
+    "descripcion": "El que arranca ganando la línea temprano rara vez suelta esa ventaja hasta el final del partido."
+  },
+  {
+    "id": "peleas",
+    "nombre": "meta de peleas 5v5",
+    "sube": ["engage", "tanque", "mago_control"],
+    "hunde": ["splitpush"],
+    "descripcion": "Todo se define en la pelea grande de cinco contra cinco; irse a splitear se lee como abandonar el partido."
+  },
+  {
+    "id": "splitpush",
+    "nombre": "meta de splitpush",
+    "sube": ["splitpush", "bruiser"],
+    "hunde": ["engage", "enchanter"],
+    "descripcion": "Se gana dividiendo el mapa, no juntándose: el que fuerza la pelea de cinco suele estar perdiendo la carrera de torres."
+  },
+  {
+    "id": "bruisers",
+    "nombre": "meta de bruisers",
+    "sube": ["bruiser", "early_game"],
+    "hunde": ["mago_control", "enchanter"],
+    "descripcion": "Los duelos cuerpo a cuerpo mandan: el que gana la línea con daño físico se lleva el partido de arrastre."
+  }
+]

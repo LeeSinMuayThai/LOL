@@ -243,7 +243,7 @@
     "id": "pool_main_muerto",
     "category": "pool",
     "title": "Tu {main} quedó a contramano",
-    "description": "El campeón con el que más jugaste este año se cayó del meta actual. Seguís teniendo la maestría; el juego ya no te la valora igual.",
+    "description": "El campeón con el que más jugaste este año se cayó a la mitad de abajo de la tier list de tu rol. Seguís teniendo la maestría; el régimen actual ya no te la valora igual.",
     "weight": 6,
     "cooldown": 6,
     "bisagra": true,
@@ -421,6 +421,65 @@
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "principal", "min": 4, "max": 8 },
               { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pool_a_cual_le_metes",
+    "category": "pool",
+    "title": "¿A cuál le metés estas semanas?",
+    "description": "Tenés un hueco entre partidos para practicar en serio. Podés pulir al que ya es tu bandera, o meterle horas a uno nuevo que el régimen actual está pidiendo.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "etapa": ["debut", "profesional"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "pulir_tu_bandera",
+        "label": "Pulir al que ya es tu bandera",
+        "descripcion": "Vas a lo seguro: más horas al que mejor conocés, pase lo que pase con el parche.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Le metés horas al de siempre y se nota: cada partida te sale más automática.",
+            "effects": [
+              { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "principal", "min": 4, "max": 8 }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Rendimientos decrecientes: ya estabas cerca del techo, y las horas rinden cada vez menos.",
+            "effects": [
+              { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "principal", "min": 1, "max": 3 }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "meterle_al_del_regimen",
+        "label": "Meterle horas a uno nuevo que pide el régimen",
+        "descripcion": "Cambiás la comodidad por vigencia. Entra con maestría baja, pero es la única forma de que tu pool no quede clavado en lo que elegiste a los 15.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Sumás un campeón acorde al régimen vigente. Todavía no lo dominás, pero tu pool ya no es el mismo de hace tres parches.",
+            "effects": [
+              { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El campeón nuevo te cuesta más de lo esperado: sumaste una opción en el papel que todavía no confiás en jugar.",
+            "effects": [
+              { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
           }
         ]

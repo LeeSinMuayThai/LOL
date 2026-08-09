@@ -1,57 +1,58 @@
 import { BALANCE } from '../data/balance.js';
 import { gauss, chance, pick } from '../core/rng.js';
 import { clamp } from '../core/numeros.js';
-import { campeonesEnMeta, campeonesMuertos } from '../core/ajusteMeta.js';
-import { campeonesDisponibles, campeonesPorDebutar, principalDelPool } from '../core/pool.js';
+import { tierListDeRol, saltosDeTierPropios } from '../core/regimen.js';
+import { campeonesPorDebutar } from '../core/pool.js';
 import { crearLog } from '../core/log.js';
+import { ARQUETIPOS } from '../data/meta-tags.js';
+import METAS from '../data/metas.json' with { type: 'json' };
 
 export const id = 'meta';
 
-// Cada split es un parche. Casi siempre el meta se mueve poco: reacomoda pesos
-// entre arquetipos sin volantazos. Cada tanto se sacude entero, y ahi es donde
-// un pool angosto se queda sin nada que jugar.
-function moverPesos(state, delta, rng) {
-  const { pesoMinimo, pesoMaximo, derivaMedia } = BALANCE.meta;
+// El meta con nombre (fase 6): reemplaza el random walk de nueve pesos por un
+// régimen de `data/metas.json` que los fija. El cambio de régimen es una
+// noticia, no una deriva: 60% de chance al abrir cada season, 25% de un
+// parche correctivo a mitad de cualquier split (números textuales del
+// usuario). Los pesos siguen viviendo en `state.meta.weights` sobre el mismo
+// vocabulario de ARQUETIPOS de siempre — lo único que cambia es quién los
+// escribe, así que `afinidadDeCampeon`, `deseoPorCampeon` y todo lo que ya
+// cruzaba el pool contra el meta sigue funcionando sin tocarse.
 
-  return Object.fromEntries(
-    Object.entries(state.meta.weights).map(([tag, peso]) => [
-      tag,
-      clamp(peso + gauss(derivaMedia, delta, rng), pesoMinimo, pesoMaximo)
-    ])
-  );
+// Los pesos base de un régimen: lo que sube va a pesoSube, lo que hunde a
+// pesoHunde, el resto (ni mencionado en `sube` ni en `hunde`) queda neutro.
+// Un `gauss` chico por encima de cada base evita que dos splits del mismo
+// régimen sean idénticos, sin que se note como un régimen distinto.
+function pesosDelRegimen(regimen, rng) {
+  const r = BALANCE.regimen;
+  const m = BALANCE.meta;
+
+  return Object.fromEntries(ARQUETIPOS.map((tag) => {
+    const base = regimen.sube.includes(tag) ? r.pesoSube : regimen.hunde.includes(tag) ? r.pesoHunde : r.pesoNeutro;
+    return [tag, clamp(gauss(base, r.ruidoPorSplit, rng), m.pesoMinimo, m.pesoMaximo)];
+  }));
 }
 
-// El parche se cuenta con nombres, no con arquetipos.
-//
-// Antes decia "el meta se mueve despacio hacia los magos de control": correcto,
-// y completamente abstracto. Un jugador no piensa en arquetipos, piensa "este
-// parche manda Sejuani". Nombrar el meta es lo que convierte el vector de pesos
-// en algo que se siente, y es lo que hace que "tu Lee Sin quedo a contramano"
-// se pueda escribir.
-// Tu main quedó fuera del meta con ESTE parche. Se compara antes contra después
-// a propósito: si el main ya venía muerto, no es noticia — decirlo cada parche
-// durante diez splits es ruido, no información.
-function mainReciénMuerto(antes, despues) {
-  const pool = despues.player.championPool;
-  if (pool.length === 0) {
-    return null;
+function elegirRegimenDistinto(idActual, rng) {
+  const candidatos = METAS.filter((regimen) => regimen.id !== idActual);
+  return pick(candidatos.length > 0 ? candidatos : METAS, rng);
+}
+
+function esAperturaDeSeason(state) {
+  return state.player.splitCount % BALANCE.edad.splitsPorEdad === 0;
+}
+
+// Decide si el régimen cambia este split, y a cuál. `tipo` queda null si no
+// cambió: el parche sigue siendo el mismo régimen, solo se movió un poco.
+function decidirCambioDeRegimen(state, rng) {
+  const r = BALANCE.regimen;
+
+  if (esAperturaDeSeason(state) && chance(r.probCambioApertura, rng)) {
+    return { regimen: elegirRegimenDistinto(state.meta.regimen, rng), tipo: 'apertura' };
   }
-  const principal = principalDelPool(pool);
-  const estaba = campeonesMuertos([principal], antes.meta.weights, campeonesDisponibles(antes)).length > 0;
-  const esta = campeonesMuertos([principal], despues.meta.weights, campeonesDisponibles(despues)).length > 0;
-  return !estaba && esta ? principal.name : null;
-}
-
-function textoDelParche(state, sacudon, mainMuerto) {
-  const patch = state.meta.patch;
-  const arriba = campeonesEnMeta(state.meta.weights, campeonesDisponibles(state)).map((campeon) => campeon.name);
-  const manda = arriba.length >= 2 ? `${arriba[0]} y ${arriba[1]}` : arriba[0];
-
-  const cabeza = sacudon
-    ? `Parche ${patch}: volantazo de balance. Se dio vuelta todo y ahora manda ${manda}.`
-    : `Parche ${patch}: se mueve despacio hacia ${manda}.`;
-
-  return mainMuerto ? `${cabeza} Tu ${mainMuerto} quedó a contramano de un día para el otro.` : cabeza;
+  if (!esAperturaDeSeason(state) && chance(r.probCambioCorrectivo, rng)) {
+    return { regimen: elegirRegimenDistinto(state.meta.regimen, rng), tipo: 'correctivo' };
+  }
+  return { regimen: METAS.find((candidato) => candidato.id === state.meta.regimen) ?? METAS[0], tipo: null };
 }
 
 // Cada tanto sale un campeon nuevo. No es cosmetico: es la decision que pediste
@@ -77,16 +78,33 @@ function debutarCampeon(state, rng) {
   };
 }
 
+function textoDelParche(patch, regimenVigente, tipoDeCambio, saltos) {
+  const cabeza = tipoDeCambio === 'apertura'
+    ? `Pretemporada. Se dio vuelta el juego: se viene la ${regimenVigente.nombre}. ${regimenVigente.descripcion}`
+    : tipoDeCambio === 'correctivo'
+      ? `Parche ${patch} a mitad de split: nerfean lo que venía arriba. El meta vira a la ${regimenVigente.nombre}.`
+      : `Parche ${patch}: sigue la ${regimenVigente.nombre}. ${regimenVigente.descripcion}`;
+
+  return saltos.length > 0 ? `${cabeza} ${saltos.join('. ')}.` : cabeza;
+}
+
 export function aplicar(state, rng) {
-  const { probSacudon, sacudonDelta, maxDelta } = BALANCE.meta;
-  const sacudon = chance(probSacudon, rng);
+  const { regimen, tipo } = decidirCambioDeRegimen(state, rng);
+  const patch = state.meta.patch + 1;
+  const weights = pesosDelRegimen(regimen, rng);
 
-  const weights = moverPesos(state, sacudon ? sacudonDelta : maxDelta, rng);
-  const conPesos = { ...state, meta: { ...state.meta, patch: state.meta.patch + 1, weights } };
+  const conPesos = { ...state, meta: { ...state.meta, patch, regimen: regimen.id, weights } };
+  const tierListNueva = tierListDeRol(conPesos);
+  const saltos = saltosDeTierPropios(state.meta.tierList, tierListNueva, state.player.championPool);
 
-  const logs = [crearLog('meta', textoDelParche(conPesos, sacudon, mainReciénMuerto(state, conPesos)))];
+  const logs = [crearLog('meta', textoDelParche(patch, regimen, tipo, saltos))];
 
-  const { state: nextState, log } = debutarCampeon(conPesos, rng);
+  const conTierList = {
+    ...conPesos,
+    meta: { ...conPesos.meta, tierList: tierListNueva, tierListAnterior: state.meta.tierList }
+  };
+
+  const { state: nextState, log } = debutarCampeon(conTierList, rng);
   if (log) {
     logs.push(log);
   }

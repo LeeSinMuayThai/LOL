@@ -26,6 +26,59 @@ eventos (44 de los ~200 que pide §8, con 90 de las 150 opciones objetivo).
 
 ## Changelog
 
+### 2026-08-09 — Fase 6: el meta con nombre
+
+Segunda de las tres fases insertadas antes del mercado. Antes de esto, `systems/meta.js` movía nueve
+pesos con un random walk gaussiano y el jugador veía *"Ajuste al meta: 49/100"* — un número sin
+nombre, sin forma de anticiparlo y clavado casi siempre cerca del centro (era literalmente el
+defecto que el usuario señaló: *"que no sea un número de afinidad al meta"*).
+
+**Nuevo**: `src/data/metas.json` (9 regímenes — tanques, hipercarry, asesinos, magos de control,
+partidas largas, agresión temprana, peleas 5v5, splitpush, bruisers — cada uno con qué sube, qué
+hunde y una línea de cómo se juega el parche) y `src/core/regimen.js` (`tierListDeRol`,
+`coincidencias`, `boostDelPool`, `saltosDeTierPropios` — todo puro, sin RNG). `systems/meta.js` se
+reescribió entero sobre esto. El vector de pesos (`state.meta.weights`) sigue existiendo con el
+mismo vocabulario de arquetipos de siempre — lo único que cambió es quién lo escribe — así que
+`afinidadDeCampeon`, `deseoPorCampeon`, `campeonesEnMeta` y todo lo que ya cruzaba el pool contra
+el meta (el draft de `campeones.js`, el rival de una serie en `core/serie.js`) siguió funcionando
+sin tocarse.
+
+**El mecanismo**: el régimen cambia como una noticia, no como una deriva — 60% de chance al abrir
+cada season (cada 3 splits), 25% de un parche correctivo a mitad de cualquier split (números
+textuales del usuario). `campeonesMuertos` (antes: fracción continua de afinidad,
+`umbralMainMuerto`) pasa a colgar del salto de tier real (S/A → B/C), que es lo que el log nombra.
+El boost del pool (`ajusteAlMeta`, ahora `boostDelPool`) dejó de promediar afinidad ponderada por
+maestría —lo que lo clavaba siempre cerca de 50— y pasa a sumar, para cada campeón del pool,
+`maestría × peso de su tier` (S=1.0 · A=0.6 · B=0.25 · C=0): tener uno en S con maestría alta pesa
+mucho, tener diez en C no suma nada. El evento nuevo `pool_a_cual_le_metes`
+(`data/events/pool.json`) es la decisión explícita que pidió el usuario — practicar al de siempre o
+meterle horas a uno del régimen actual— y `pool_main_muerto` se retexteó para hablar de tier list en
+vez de afinidad abstracta.
+
+**48 checks pasaron a 53.** Los 5 nuevos: el régimen cambia en la banda declarada (55-65% en
+apertura, 20-30% correctivo), toda carrera de más de 15 splits ve al menos tres regímenes
+distintos, la tier list cubre el rol completo sin repetidos, el boost no se clava en el centro
+(CONCEPTO §6: 0.75x-1.25x), y `pool_a_cual_le_metes` sale entre 1 y 8 veces por carrera entre las
+que llegan a pro. Dos correcciones de check antes de que pasaran, ambas trampa T6 (medir contra una
+población que diluye el efecto real): la tier list se calcula ANTES de que el mismo `aplicar()`
+resuelva el debut de un campeón nuevo, así que puede quedar un campeón corta exactamente ese split
+— se toleró un desfasaje de 1; y la mediana de apariciones de `pool_a_cual_le_metes` se median
+sobre las 200 seeds completas, incluidas las que nunca llegan a pro (más de la mitad) — se
+restringió a la subpoblación que sí llega, como ya advertía la nota de la fase 5 sobre esta misma
+trampa.
+
+**Números medidos** (400-1500 carreras según el check): el régimen cambió en el 61,5% de las
+aperturas de season y en el 24,9% de los splits correctivos (declarado: 60% y 25%). El multiplicador
+de meta real —lo que CONCEPTO §6 promete entre 0,75x y 1,25x— corre con p10 = 0,850, mediana = 0,960,
+p90 = 1,085: una separación de 0,235 entre p10 y p90, contra el defecto viejo que orbitaba siempre
+cerca de 50/100. Una carrera de 45 splits ve una mediana de 6 regímenes distintos. `simulate.js 1500
+90 todas`: 0 crashes; `llegaronAPro` (equilibrado) 41,4% contra el 40,4%-41,9% ya medido; burnout
+23,5%, dentro del ruido ya visto entre fases. Determinismo verificado.
+
+**Fuera de alcance, por decisión tomada con el usuario**: los rumores de parche (apostar a practicar
+un campeón antes de que el meta lo favorezca) y que el régimen mueva la fuerza de los otros equipos
+o la visibilidad por rol. Quedan anotados, no son deuda — nunca se prometieron en `PLAN.md`.
+
 ### 2026-08-09 — Fase 5: la temporada existe, la fecha que importa
 
 Primera de las tres fases insertadas antes del mercado (`PLAN.md`, commit del mismo día). El

@@ -1,14 +1,10 @@
 import { BALANCE } from '../data/balance.js';
-import { clamp } from './numeros.js';
 
-// El Ajuste al Meta (CONCEPTO §6): un numero de 0 a 100 con desglose por
-// campeon que te dice, ANTES de jugar, si este split te toca a favor o en
-// contra.
-//
-// Sale de cruzar los tags de tu pool contra el vector de pesos del meta,
-// ponderando por maestria. Que los dos hablen el mismo vocabulario de
-// arquetipos es lo que hace que el sistema exista: si no coinciden, el ajuste
-// es siempre neutro y nadie se entera.
+// El vocabulario compartido del meta (CONCEPTO §6): afinidad de un campeón
+// contra el vector de pesos vigente, y el deseo con el que el motor lo elige
+// en un draft. El boost legible del pool (6.3, "cuántos de tus campeones
+// están en tier alta") vive en `core/regimen.js`, que reusa `afinidadDeCampeon`
+// de acá para construir la tier list del rol.
 
 function mediaDePesos(weights) {
   const valores = Object.values(weights);
@@ -31,34 +27,6 @@ export function deseoPorCampeon(campeon, weights) {
     * afinidadDeCampeon(campeon, weights);
 }
 
-export function ajusteAlMeta(state) {
-  const { weights } = state.meta;
-  const pool = state.player.championPool;
-
-  const desglose = pool.map((campeon) => {
-    const afinidad = afinidadDeCampeon(campeon, weights);
-    return {
-      name: campeon.name,
-      mastery: campeon.mastery,
-      afinidad: Number(afinidad.toFixed(2)),
-      // Un campeon que domina y que el meta pide vale mucho; el mismo campeon
-      // con maestria 20 no te salva el split.
-      peso: campeon.mastery / BALANCE.stats.max
-    };
-  });
-
-  const pesoTotal = desglose.reduce((suma, entrada) => suma + entrada.peso, 0);
-
-  if (pesoTotal === 0) {
-    return { valor: BALANCE.campeones.ajusteNeutro, desglose };
-  }
-
-  const afinidadPonderada = desglose.reduce((suma, entrada) => suma + entrada.afinidad * entrada.peso, 0) / pesoTotal;
-  const valor = clamp(Math.round(BALANCE.campeones.ajusteNeutro * afinidadPonderada), BALANCE.stats.min, BALANCE.stats.max);
-
-  return { valor, desglose };
-}
-
 // El meta con nombre y apellido.
 //
 // `meta.weights` es un vector sobre nueve arquetipos, y por eso el log decía
@@ -75,16 +43,18 @@ export function campeonesEnMeta(weights, campeonesDelRol, cantidad = BALANCE.cam
     .slice(0, cantidad);
 }
 
-// Los campeones de TU pool que el parche dejó a contramano: su afinidad quedó
-// muy por debajo de la del mejor campeón del rol. Es la señal que dispara la
-// marca `main_muerto` y los eventos de reconstrucción de pool.
-export function campeonesMuertos(pool, weights, campeonesDelRol) {
-  if (pool.length === 0 || campeonesDelRol.length === 0) {
-    return [];
-  }
-  const techo = Math.max(...campeonesDelRol.map((campeon) => afinidadDeCampeon(campeon, weights)));
-  const corte = techo * BALANCE.campeones.umbralMainMuerto;
-  return pool.filter((campeon) => afinidadDeCampeon(campeon, weights) < corte);
+// Los campeones de TU pool que el régimen dejó en la mitad de abajo de la
+// tier list de su rol (tier B o C). Antes esto colgaba de una fracción
+// continua de afinidad (`umbralMainMuerto`); desde la fase 6 cuelga del
+// salto de tier real, que es lo que el jugador ve nombrado en el log de
+// `systems/meta.js`. Es la señal que dispara la marca `main_muerto` y los
+// eventos de reconstrucción de pool.
+export function campeonesMuertos(pool, tierList) {
+  const porNombre = new Map(tierList.map((entrada) => [entrada.name, entrada.tier]));
+  return pool.filter((campeon) => {
+    const tier = porNombre.get(campeon.name);
+    return tier === 'B' || tier === 'C';
+  });
 }
 
 // Multiplica el rendimiento entre 0.75x y 1.25x (CONCEPTO §6).

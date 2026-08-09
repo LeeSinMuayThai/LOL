@@ -15,18 +15,20 @@ import {
 } from '../core/ranked.js';
 import { TOKENS, tokensUsados } from '../core/plantillas.js';
 import { RUTINAS } from '../core/rutinas.js';
-import { campeonesEnMeta } from '../core/ajusteMeta.js';
+import { campeonesEnMeta, multiplicadorDeMeta } from '../core/ajusteMeta.js';
 import { campeonesDisponibles, entradaDePool } from '../core/pool.js';
 import { elegirOutcome, elegirEvento, decisionDesdeEvento, resolver as resolverEventos } from '../systems/events.js';
 import { tipoDeSplit } from '../core/presupuesto.js';
 import { elegirCampeonRival, disponiblesDelPool } from '../core/serie.js';
 import { resolverFecha, motivosDeFecha } from '../core/temporada.js';
+import { tierListDeRol, boostDelPool } from '../core/regimen.js';
 import { EJES, MARCAS, MOMENTOS_ACTIVOS, momentoPorId } from '../data/contextos.js';
 import { ARQUETIPOS } from '../data/meta-tags.js';
 import { ROLES, IDS_ROL } from '../data/roles.js';
 import LIGAS from '../data/leagues.json' with { type: 'json' };
 import CAMPEONES from '../data/champions.json' with { type: 'json' };
 import MINIJUEGOS from '../data/minijuegos.json' with { type: 'json' };
+import METAS from '../data/metas.json' with { type: 'json' };
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -355,17 +357,23 @@ check('Balance coherente', () => {
     }
   }
 
-  if (BALANCE.meta.maxDelta <= 0) {
-    throw new Error('meta.maxDelta debe ser positivo');
-  }
   // Este check reemplaza a uno que referenciaba `meta.pesoDominante`, clave que
   // se borró al reescribir la sección meta: `undefined <= 0.5` es false, así que
   // el check nunca fallaba y daba falsa confianza.
   if (BALANCE.meta.pesoMaximo <= BALANCE.meta.pesoMinimo) {
     throw new Error('meta.pesoMaximo debe ser mayor que meta.pesoMinimo');
   }
-  if (BALANCE.meta.sacudonDelta <= BALANCE.meta.maxDelta) {
-    throw new Error('un sacudón de meta tiene que mover más que un parche calmo');
+  // Fase 6: el meta con nombre. pesoSube > pesoNeutro > pesoHunde es lo que
+  // hace que "sube"/"hunde" signifiquen algo; si no, un régimen sería idéntico
+  // a otro con las etiquetas cambiadas.
+  if (!(BALANCE.regimen.pesoSube > BALANCE.regimen.pesoNeutro && BALANCE.regimen.pesoNeutro > BALANCE.regimen.pesoHunde)) {
+    throw new Error('regimen.pesoSube > pesoNeutro > pesoHunde tiene que cumplirse siempre');
+  }
+  if (!(BALANCE.regimen.corteS < BALANCE.regimen.corteA && BALANCE.regimen.corteA < BALANCE.regimen.corteB && BALANCE.regimen.corteB < 1)) {
+    throw new Error('los cortes de tier list (S < A < B < 1) tienen que ir en orden estricto');
+  }
+  if (BALANCE.regimen.probCambioApertura <= 0 || BALANCE.regimen.probCambioApertura > 1) {
+    throw new Error('regimen.probCambioApertura debe estar en (0, 1]');
   }
   if (BALANCE.stats.min >= BALANCE.stats.max) {
     throw new Error('stats.min debe ser menor que stats.max');
@@ -1690,6 +1698,171 @@ check('Cobertura: toda combinación de stakes × rol tiene al menos un evento', 
 
   if (faltantes.length > 0) {
     throw new Error(`combinaciones de stakes × rol sin ningún evento: ${faltantes.join(', ')}`);
+  }
+});
+
+// --- Fase 6: el meta con nombre ---
+
+check('El régimen cambia entre seasons en la banda declarada (55-65%)', () => {
+  let aperturas = 0;
+  let cambiosEnApertura = 0;
+  let correctivos = 0;
+  let cambiosCorrectivos = 0;
+
+  for (let seed = 1; seed <= 400; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      // `esAperturaDeSeason` en systems/meta.js lee splitCount ANTES de que
+      // atributos.js lo incremente al cierre del split (mismo split, más
+      // adelante en el registro): por eso se captura acá, antes de avanzar.
+      const esApertura = state.player.splitCount % BALANCE.edad.splitsPorEdad === 0;
+      const regimenAntes = state.meta.regimen;
+      state = avanzarSplitAuto(state, rng).state;
+      const cambio = state.meta.regimen !== regimenAntes;
+
+      if (esApertura) {
+        aperturas += 1;
+        if (cambio) cambiosEnApertura += 1;
+      } else {
+        correctivos += 1;
+        if (cambio) cambiosCorrectivos += 1;
+      }
+    }
+  }
+
+  const fraccionApertura = cambiosEnApertura / aperturas;
+  const fraccionCorrectivo = cambiosCorrectivos / correctivos;
+
+  if (fraccionApertura < 0.55 || fraccionApertura > 0.65) {
+    throw new Error(`el régimen cambió en el ${(fraccionApertura * 100).toFixed(1)}% de las aperturas de season (banda 55-65%, declarado 60%)`);
+  }
+  if (fraccionCorrectivo < 0.2 || fraccionCorrectivo > 0.3) {
+    throw new Error(`el parche correctivo cambió el régimen en el ${(fraccionCorrectivo * 100).toFixed(1)}% de los splits (banda 20-30%, declarado 25%)`);
+  }
+});
+
+check('Toda carrera de más de 15 splits ve al menos tres regímenes distintos', () => {
+  for (let seed = 1; seed <= 300; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    const regimenesVistos = new Set([state.meta.regimen]);
+
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      regimenesVistos.add(state.meta.regimen);
+    }
+
+    if (state.player.splitCount > 15 && regimenesVistos.size < 3) {
+      throw new Error(`seed ${seed}: ${state.player.splitCount} splits y solo ${regimenesVistos.size} régimen(es) distinto(s)`);
+    }
+  }
+});
+
+check('La tier list cubre todos los campeones del rol, sin repetidos ni faltantes', () => {
+  for (let seed = 1; seed <= 100; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+
+    for (let i = 0; i < 30 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      const disponibles = campeonesDisponibles(state, state.player.role);
+      const nombresTierList = state.meta.tierList.map((entrada) => entrada.name);
+
+      // `meta.js` calcula la tier list ANTES de resolver el debut de un
+      // campeón nuevo dentro del mismo `aplicar()`: en el split exacto en que
+      // debuta, la tier list queda un campeón corta hasta el split siguiente.
+      // Cualquier otra diferencia es un bug real.
+      if (disponibles.length - nombresTierList.length > 1 || nombresTierList.length > disponibles.length) {
+        throw new Error(`seed ${seed}: la tier list tiene ${nombresTierList.length} entradas, el rol tiene ${disponibles.length} campeones disponibles`);
+      }
+      if (new Set(nombresTierList).size !== nombresTierList.length) {
+        throw new Error(`seed ${seed}: la tier list tiene nombres repetidos`);
+      }
+      for (const nombre of nombresTierList) {
+        if (!disponibles.some((campeon) => campeon.name === nombre)) {
+          throw new Error(`seed ${seed}: la tier list nombra a "${nombre}", que no es un campeón disponible del rol`);
+        }
+      }
+      for (const entrada of state.meta.tierList) {
+        if (!['S', 'A', 'B', 'C'].includes(entrada.tier)) {
+          throw new Error(`seed ${seed}: ${entrada.name} tiene un tier inválido ("${entrada.tier}")`);
+        }
+      }
+    }
+  }
+});
+
+check('El boost del pool no se clava en el centro (CONCEPTO §6: 0.75x-1.25x)', () => {
+  // El defecto que reemplaza esta fase: el viejo ajuste-por-afinidad-promedio
+  // orbitaba siempre 50. Se mide el MULTIPLICADOR real (lo que multiplica el
+  // rendimiento), no el ajuste crudo, para probar la promesa de CONCEPTO §6
+  // tal como está escrita.
+  const multiplicadores = [];
+
+  for (let seed = 1; seed <= 300; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+
+    for (let i = 0; i < 45 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      multiplicadores.push(multiplicadorDeMeta(state.meta.ajuste));
+    }
+  }
+
+  const ordenados = [...multiplicadores].sort((a, b) => a - b);
+  const p10 = ordenados[Math.floor(ordenados.length * 0.1)];
+  const p90 = ordenados[Math.floor(ordenados.length * 0.9)];
+
+  if (p90 - p10 < 0.2) {
+    throw new Error(`p10=${p10.toFixed(3)} y p90=${p90.toFixed(3)} del multiplicador de meta están separados por solo ${(p90 - p10).toFixed(3)}; el mínimo es 0.2`);
+  }
+  if (ordenados[0] < 0.75 || ordenados[ordenados.length - 1] > 1.25) {
+    throw new Error('el multiplicador de meta se salió del rango [0.75, 1.25] que promete CONCEPTO §6');
+  }
+});
+
+check('pool_a_cual_le_metes sale unas pocas veces por carrera, no nunca y no siempre', () => {
+  const evento = TODOS_LOS_EVENTOS.find((candidato) => candidato.id === 'pool_a_cual_le_metes');
+  if (!evento) {
+    throw new Error('no se encontró el evento pool_a_cual_le_metes: el check apunta a contenido que ya no existe');
+  }
+
+  // Medido SOLO sobre las carreras que llegan a pro: el evento está gateado a
+  // `etapa: debut/profesional`, así que promediarlo contra las carreras que
+  // nunca salen del amateurismo (más de la mitad de la población, trampa T6)
+  // diluiría la mediana a 0 aunque el evento funcione perfecto para quien sí
+  // llega.
+  const conteos = [];
+  for (let seed = 1; seed <= 200; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    let veces = 0;
+    let llegoAPro = false;
+
+    for (let i = 0; i < 30 && !state.terminado; i += 1) {
+      const antes = state.logs.length;
+      state = avanzarSplitAuto(state, rng).state;
+      if (state.phase === 'profesional') {
+        llegoAPro = true;
+      }
+      veces += state.logs.slice(antes).filter((log) => log.type === 'event' && log.titulo?.startsWith(evento.title)).length;
+    }
+    if (llegoAPro) {
+      conteos.push(veces);
+    }
+  }
+
+  if (conteos.length < 20) {
+    throw new Error(`solo ${conteos.length} carreras llegaron a pro en 200 seeds: muestra insuficiente para medir el evento`);
+  }
+
+  const ordenados = [...conteos].sort((a, b) => a - b);
+  const mediana = ordenados[Math.floor(ordenados.length / 2)];
+
+  if (mediana < 1 || mediana > 8) {
+    throw new Error(`pool_a_cual_le_metes salió una mediana de ${mediana} veces entre las carreras que llegan a pro; se esperaba entre 1 y 8`);
   }
 });
 

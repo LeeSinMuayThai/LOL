@@ -131,8 +131,16 @@ export function createInitialState(seed, rng, eleccion = null) {
     },
     meta: {
       patch: 1,
+      // Placeholder: `systems/meta.js` corre siempre (primer sistema real del
+      // registro que toca el meta) y resuelve un régimen de verdad ya en el
+      // split 1 — este valor nunca lo lee nadie más antes de eso.
+      regimen: 'tanques',
       weights: mundo.metaInicial,
-      // Se recalcula cada split cruzando el pool contra los pesos del meta.
+      // La tier list del rol para el régimen vigente y la del parche anterior
+      // (fase 6): objetos completos desde el arranque, nunca null (trampa T4).
+      tierList: [],
+      tierListAnterior: [],
+      // Se recalcula cada split cruzando el pool contra la tier list vigente.
       ajuste: BALANCE.campeones.ajusteNeutro
     },
     flags: {

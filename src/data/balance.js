@@ -281,21 +281,46 @@ export const BALANCE = {
   },
 
   meta: {
-    pesoInicial: 1,
     pesoMinimo: 0.5,
     pesoMaximo: 2.6,
-    derivaMedia: 0,
-    maxDelta: 0.15,
-    // Casi siempre el parche es calmo. Cada tanto el meta se sacude entero y
-    // deja obsoleto medio pool: es lo que puede costarte un año de carrera.
-    probSacudon: 0.07,
-    sacudonDelta: 0.55,
     // Cada tanto sale un campeon nuevo de tu rol. Con ~0.08 por split, una
     // carrera de 30 splits ve dos o tres, que es el ritmo real.
     probCampeonNuevo: 0.08,
     // Cuantos splits "salió un campeón nuevo" sigue siendo noticia. Sin fecha de
     // vencimiento la marca queda prendida el resto de la carrera.
     splitsCampeonNuevo: 3
+  },
+
+  // El meta con nombre (fase 6). Reemplaza el random walk de nueve pesos por
+  // un régimen de `data/metas.json` que fija esos mismos pesos: "meta de
+  // tanques" en vez de un ajuste de 49/100 que nadie puede leer.
+  regimen: {
+    // Lo que el régimen sube, lo neutro, y lo que hunde. El vector de pesos
+    // sigue siendo el vocabulario de siempre (ARQUETIPOS); lo único que
+    // cambia es quién lo escribe.
+    pesoSube: 2.0,
+    pesoNeutro: 1.0,
+    pesoHunde: 0.6,
+    // Ruido chico por split para que dos splits del mismo régimen no sean
+    // idénticos, sin que se note como un régimen distinto.
+    ruidoPorSplit: 0.12,
+    // Al abrir cada season el régimen puede cambiar entero (número textual
+    // del usuario). A mitad de cualquier split, un parche correctivo más
+    // raro puede virarlo de nuevo.
+    probCambioApertura: 0.6,
+    probCambioCorrectivo: 0.25,
+    // La tier list de tu rol corta por RANGO (fracción del rol ordenado por
+    // afinidad), no por afinidad absoluta: así el corte se comporta igual
+    // sin importar qué tan extremo sea el régimen vigente.
+    corteS: 0.18,
+    corteA: 0.45,
+    corteB: 0.75,
+    // Cuánto pesa cada tier al construir el boost del pool (6.3): un campeón
+    // en S con maestría alta pesa mucho, uno en C no suma nada.
+    pesoTierS: 1.0,
+    pesoTierA: 0.6,
+    pesoTierB: 0.25,
+    pesoTierC: 0
   },
 
   campeones: {

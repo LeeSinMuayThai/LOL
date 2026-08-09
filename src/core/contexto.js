@@ -2,7 +2,7 @@ import { BALANCE } from '../data/balance.js';
 import { clamp } from './numeros.js';
 import { bandaDeLadder, servidorDeLaPartida } from './ranked.js';
 import { campeonesMuertos } from './ajusteMeta.js';
-import { campeonesDisponibles, campeonNuevoPendiente } from './pool.js';
+import { campeonNuevoPendiente } from './pool.js';
 import { MOMENTOS } from '../data/contextos.js';
 
 // "Donde estas parado en la carrera", derivado del estado.
@@ -182,7 +182,7 @@ function marcasDePool(state) {
   // sobre TU main, que es lo único que se siente como una pérdida.
   if (pool.length > 0) {
     const principal = pool.reduce((mejor, campeon) => (campeon.mastery > mejor.mastery ? campeon : mejor));
-    if (campeonesMuertos([principal], state.meta.weights, campeonesDisponibles(state)).length > 0) {
+    if (campeonesMuertos([principal], state.meta.tierList).length > 0) {
       marcas.push('main_muerto');
     }
   }

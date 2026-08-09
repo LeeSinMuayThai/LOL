@@ -1,7 +1,8 @@
 import { gauss, chance, weightedPick } from '../core/rng.js';
 import { crearLog } from '../core/log.js';
 import { clamp } from '../core/numeros.js';
-import { deseoPorCampeon, ajusteAlMeta } from '../core/ajusteMeta.js';
+import { deseoPorCampeon } from '../core/ajusteMeta.js';
+import { boostDelPool } from '../core/regimen.js';
 import { BALANCE } from '../data/balance.js';
 
 export const id = 'campeones';
@@ -77,7 +78,10 @@ export function aplicar(state, rng) {
   const championPool = moverMaestrias(state, jugado, rng);
   const signatureChampion = buscarSignature(championPool, state.player.signatureChampion);
 
-  const { valor: ajuste } = ajusteAlMeta({ ...state, player: { ...state.player, championPool } });
+  // `state.meta.tierList` ya la calculó `systems/meta.js` este mismo split
+  // (corre antes en el registro): no hace falta recalcularla, solo cruzarla
+  // contra el pool que acaba de moverse.
+  const { valor: ajuste } = boostDelPool(championPool, state.meta.tierList);
   const logs = [];
 
   if (signatureChampion !== state.player.signatureChampion) {

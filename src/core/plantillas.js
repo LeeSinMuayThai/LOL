@@ -43,7 +43,7 @@ export const TOKENS = {
       return null;
     }
     const principal = principalDelPool(state.player.championPool);
-    const muertos = campeonesMuertos([principal], state.meta.weights, campeonesDisponibles(state));
+    const muertos = campeonesMuertos([principal], state.meta.tierList);
     return muertos.length > 0 ? principal.name : null;
   },
   // El campeón que salió con el último parche y todavía no tenés.

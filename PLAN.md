@@ -21,7 +21,7 @@ el juego) → este documento → `PROGRESO.md` (changelog) → `TRASPASO.md` (da
 | **3** | Escalera competitiva: tier3 → tier2 → tier1, ligas 2026 | ✅ ver `PROGRESO.md` |
 | **4** | Competición jugable: series Bo5, Fearless, draft, minijuegos | ✅ ver `PROGRESO.md` |
 | **5** | La temporada existe: la fecha que importa | ✅ ver `PROGRESO.md` |
-| **6** | El meta con nombre | ⬜ |
+| **6** | El meta con nombre | ✅ ver `PROGRESO.md` |
 | **7** | El prólogo se comprime y la repetición se rompe | ⬜ |
 | **8** | Mercado: ofertas, contratos, salarios, imports | ⬜ |
 | **9** | Final emergente: retiro, servicio militar, lesiones, vuelta | ⬜ |
