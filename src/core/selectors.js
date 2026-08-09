@@ -59,7 +59,12 @@ const ETIQUETAS_CAMPO = {
   'player.titles': 'Títulos',
   'player.worlds': 'Apariciones en Worlds',
   'career.orgs': 'Organizaciones',
-  'career.hitos': 'Hitos'
+  'career.hitos': 'Hitos',
+  'career.sinergia': 'Sinergia',
+  // Fase 5: el efecto `type: 'partido'` no usa esta etiqueta en su propio
+  // texto (arma el suyo en `aplicarEfecto`), pero el check de esquema exige
+  // que todo `path` declarado tenga una entrada legible igual.
+  'career.temporada.ajustePartido': 'El partido'
 };
 
 export function etiquetaCampo(path) {

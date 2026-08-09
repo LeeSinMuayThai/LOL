@@ -26,6 +26,11 @@ export const TOKENS = {
   adc: (state) => companeroDeRol(state, 'adc')?.handle,
   support: (state) => companeroDeRol(state, 'support')?.handle,
   rival: (state) => state.mundo.rivales[0]?.handle,
+  // El rival de ESTA fecha de temporada regular (fase 5) — no confundir con
+  // {rival}, que es el rival de generación. Solo resuelve mientras hay una
+  // fecha marcada en curso, que es el único momento en que este token puede
+  // aparecer en un texto (data/events/partido/*.json).
+  rivalDeLaFecha: (state) => state.career.temporada?.fechaEnCurso?.rival ?? null,
   // El campeón que domina el parche en tu línea. Deja escribir "todos pickean
   // {metaTop}" sin cablear un nombre en el JSON.
   metaTop: (state) => campeonesEnMeta(state.meta.weights, campeonesDisponibles(state), 1)[0]?.name,

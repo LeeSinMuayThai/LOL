@@ -200,7 +200,10 @@ function aplicarEliminacionDomestica(state, ronda, liga) {
     ...state,
     career: {
       ...state.career,
-      hitos: [...state.career.hitos, `Eliminado en ${etiquetaDeRonda(ronda).toLowerCase()} de ${nombreLigaDe(liga)} a los ${state.age}`]
+      hitos: [...state.career.hitos, `Eliminado en ${etiquetaDeRonda(ronda).toLowerCase()} de ${nombreLigaDe(liga)} a los ${state.age}`],
+      // Fase 5: queda anotado quién te eliminó, para que una fecha de
+      // temporada regular contra esa misma org se pueda leer como revancha.
+      ultimoEliminadoPor: state.serie.rival.org
     }
   };
 }

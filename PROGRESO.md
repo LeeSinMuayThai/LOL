@@ -26,6 +26,88 @@ eventos (44 de los ~200 que pide §8, con 90 de las 150 opciones objetivo).
 
 ## Changelog
 
+### 2026-08-09 — Fase 5: la temporada existe, la fecha que importa
+
+Primera de las tres fases insertadas antes del mercado (`PLAN.md`, commit del mismo día). El
+disparador fue jugar el simulador con las cuatro fases previas hechas: la temporada regular se
+resolvía con una sola tirada (`posicionEnLaLiga`, ahora borrada de `rendimiento.js`) y el evento
+del split caía *después* de que el resultado ya estaba decidido — nunca podía existir un "se viene
+tal partido".
+
+**Nuevo**: `src/core/temporada.js` (calendario, tabla de posiciones, elección de fechas marcadas —
+todo puro) y `src/systems/temporada.js` (el sistema, insertado en `registro.js` justo antes de
+`rendimiento`). `rendimiento.js` se recortó: ya no tira su propia `gauss` para la posición, lee
+`career.temporada.{posicion,tabla,rendimiento}` que dejó `temporada.js`. Contenido nuevo:
+`src/data/events/partido/{presion,clasico,dentro_del_mapa,postpartido}.json` (24 eventos, 55
+opciones), gateados por un eje nuevo `stakes` (`data/contextos.js`) que **solo existe con el
+override que arma `systems/temporada.js`** — `calcularContexto(state)` sin overrides nunca lo
+produce, así que este contenido no puede colarse por la selección normal de `events.js` y
+`dev/cobertura.js` no lo puede medir (se verifica con un check propio, ver abajo).
+
+**El mecanismo**: cada split profesional genera un calendario real (una fecha contra cada otra org
+de la liga o zona de tier 3), resuelve TODAS las fechas de una vez en silencio salvo 2-3 que se
+puntúan por lo que tienen en juego (`clasico`, `puntero`, `define_clasificacion`, `revancha`,
+`presion`, `rival_de_generacion`, con `parejo` de red). Esas se juegan de verdad: un draft corto
+(mucho más liviano que el Fearless de playoffs — reusa la misma lógica de dominancia de
+`core/serie.js`, sin quema de campeones), un momento con 2-4 opciones cuyo efecto nuevo
+`type: 'partido'` mueve el resultado de ESA fecha puntual (nunca un stat abstracto), y a veces una
+reacción posterior que ya no toca el resultado. Los tokens de contenido ganaron `{rivalDeLaFecha}`
+(`core/plantillas.js`) para nombrar al rival de la fecha sin confundirlo con el rival de generación.
+
+**Bug real encontrado simulando, no leyendo código**: la tabla no cerraba (Σ ganados ≠ Σ perdidos)
+porque cuando el jugador le ganaba o perdía a un rival, el resultado se anotaba solo en la fila
+propia — la fila del rival, ya cerrada por `simularResto`, nunca se enteraba. Se arregló
+anotando las dos filas a la vez en `avanzarFechaSilenciosa`. Un segundo bug, más sutil: un tier 3
+recién refichado puede tener `currentOrg` fresco pero `companeros` todavía vacío un split entero
+(`roster.js` corre antes que `competitivo.js` en el registro), y `temporada.js` tenía un guard
+extra (`liga.orgs.length < 2`) que `rendimiento.js` no compartía — un resto de una asunción
+descartada durante el desarrollo. Se sacó: los dos sistemas comparten ahora exactamente el mismo
+guard, regla de proceso nueva para cualquier par sistema-productor/sistema-consumidor.
+
+**43 checks pasaron a 48.** Los 5 nuevos: la tabla cierra y respeta el calendario (300 seeds), 2-3
+fechas marcadas por split competitivo (< 5% fuera de rango), ninguna fecha marcada sale sin
+`stakes` (test directo sobre `motivosDeFecha`), el momento mueve el resultado (peor extremo del
+efecto `partido` vs. mejor extremo: +54 puntos de tasa de victoria en una moneda 50/50 — muy por
+encima del piso de 15), cobertura completa de `stakes × rol` sobre el catálogo declarado (no se
+puede medir con `cobertura.js`, que nunca ve `stakes` sin el override).
+
+**Corrección post-medición** (regla de proceso 4, mismo criterio que las fases 2 y 4): dos números
+salieron distintos de lo estimado al escribir el plan, y hay que decirlo sin maquillarlo.
+
+- *Splits profesionales con al menos una fecha jugable*: 21,0% → **96,9%** (objetivo ≥90%, superado
+  con margen).
+- *Líneas de log por split profesional sin playoffs*: 5-6 → **11 de mediana** (objetivo 8-12, en banda).
+- *Carreras que ven al menos un draft de fecha*: el objetivo estimado era ≥85%; midió **13,0%**. La
+  causa es la misma regla de dominancia que ya se documentó en la fase 4 para el draft de playoffs
+  (`decisionDeDraftFecha` reusa el criterio de `decisionDeDraft`): con un pool típico, un campeón
+  suele dominar con claridad, así que el motor elige solo la mayoría de las veces y el draft nunca
+  pausa. El mecanismo funciona como se diseñó — el objetivo del 85% fue una estimación optimista
+  antes de medir, no una promesa incumplida.
+- *Decisiones por carrera (mediana)*: 46 → **47**, prácticamente sin moverse (el objetivo era
+  70-110). Misma trampa T6 que ya advirtió la fase 2: con `llegaronAPro` en 41,9-44,5%, más de la
+  mitad de las carreras simuladas nunca pisan la fase profesional, así que la carrera MEDIANA
+  apenas toca el contenido nuevo de `temporada.js`. Este número no se puede juzgar hasta que la
+  fase 7 comprima el prólogo amateur (hoy 15 splits de mediana) y `llegaronAPro` suba a 65-75% como
+  pide esa misma fase — recién ahí la mediana de decisiones va a reflejar lo que agregó esta fase.
+
+**Sin cambios fuera de banda**: `llegaronAPro` (equilibrado) 41,9% contra el 40,4% de referencia;
+burnout 21,1% contra 21,9%. Ambos dentro de los ±3 puntos esperados. `simulate.js 1500 90 todas`:
+**0 crashes**. Determinismo verificado (misma seed, dos corridas, salida idéntica).
+
+**Deuda que esta fase no cierra pero usa por primera vez**: D8 (los 5 rivales de generación) — el
+`stakes: rival_de_generacion` les da su primer uso real (aparecen con nombre en una fecha marcada
+cuando juegan en la misma liga tier 1 que el jugador, vía un hash determinista campeón↔org en
+`core/temporada.js` que no consume `rng`), pero seguir corriendo su carrera entera sigue siendo
+trabajo de la fase 11.
+
+**Migración de contenido**: 5 de las quince situaciones de rol de `data/events/rol/*.json`
+(`jungla_invadir_o_no`, `top_la_isla`, `mid_el_duelo`, `adc_la_pelea_que_define`,
+`support_el_ward_que_te_costo` — una por rol, las más claramente "momento dentro del mapa") se
+mudaron y reescribieron a `data/events/partido/dentro_del_mapa.json` con marcador y rival con
+nombre. Las diez restantes (más orientadas a política de vestuario y prensa que a un momento de
+partido puntual) se quedaron donde estaban; quedan como candidatas para la migración completa que
+la fase 10 va a hacer con el resto del contenido a escala.
+
 ### 2026-08-08 — Fase 4: series Bo5, Fearless draft y minijuegos
 
 Quinta fase de `PLAN.md`, y la que `PLAN` describe como el corazón de la

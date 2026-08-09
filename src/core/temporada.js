@@ -1,0 +1,218 @@
+import { gauss } from './rng.js';
+import { clamp } from './numeros.js';
+import { afinidadDeCampeon, deseoPorCampeon } from './ajusteMeta.js';
+import { ligaOZonaDeCarrera } from './competicion.js';
+import { BALANCE } from '../data/balance.js';
+
+// La temporada regular (fase 5): antes se resolvía con UNA tirada
+// (`posicionEnLaLiga`, ahora borrada de `systems/rendimiento.js`) y una sola
+// línea de log. Acá se simula el calendario completo — con nombre, tabla y
+// racha — y el split elige 2 o 3 fechas con algo en juego para jugarlas de
+// verdad; el resto pasa resumido. Todo lo que vive acá es puro (salvo lo que
+// recibe `rng` por parámetro): `systems/temporada.js` es el único que muta
+// estado, siguiendo el mismo reparto que ya usan `core/serie.js` y
+// `systems/serie.js`.
+//
+// Simplificación deliberada, en el mismo espíritu que D19 (el bracket de
+// playoffs solo simula TU camino): los partidos entre los OTROS equipos de la
+// liga se resuelven todos de una vez al abrir el split (`simularResto`), no
+// fecha a fecha en paralelo con los tuyos. La tabla que ves mezcla tu
+// progreso real, fecha a fecha, con el resultado YA CERRADO de los demás —
+// es una aproximación a cómo se leería una tabla a mitad de temporada, no la
+// tabla real minuto a minuto. Alcanza para que "el puntero" y "cerca del
+// corte" tengan sentido sin timear 45 partidos ajenos fecha por fecha.
+
+// El calendario del jugador: una vez contra cada otra org de su liga (o zona,
+// en tier 3). Puro y determinista: no consume `rng`, así se puede enumerar y
+// testear sin simular nada (regla del proyecto: el calendario no depende de
+// cuándo se lo mira).
+export function generarCalendario(state) {
+  const liga = ligaOZonaDeCarrera(state);
+  if (!liga) {
+    return [];
+  }
+  const propia = state.career.currentOrg;
+  return liga.orgs
+    .filter((org) => org.nombre !== propia)
+    .map((org, indice) => ({ jornada: indice + 1, rival: org.nombre, fuerzaRival: org.fuerza, local: indice % 2 === 0 }));
+}
+
+// Misma forma que `finalizarMapa` en `systems/serie.js`: cada lado tira
+// alrededor de su fuerza y gana el que saca el número más alto. No se
+// reescribe la fórmula de rendimiento: `fuerzaPropia` ya sale de
+// `calcularRendimiento` + `fuerzaDelEquipo`, calculada una sola vez por split
+// en `systems/temporada.js`.
+export function resolverFecha(fuerzaPropia, fuerzaRival, rng) {
+  const t = BALANCE.temporada;
+  return gauss(fuerzaPropia, t.ruidoFecha, rng) > gauss(fuerzaRival, t.ruidoRivalFecha, rng);
+}
+
+export function filaVacia(org) {
+  return { org, ganados: 0, perdidos: 0 };
+}
+
+export function registrarEnFila(fila, gano) {
+  return gano
+    ? { ...fila, ganados: fila.ganados + 1 }
+    : { ...fila, perdidos: fila.perdidos + 1 };
+}
+
+// Los partidos entre los equipos que NO son el jugador, resueltos todos de
+// una vez (ver nota de simplificación arriba). Con 8-10 orgs son 21-36
+// partidos, una tirada cada uno: trivial en costo.
+export function simularResto(liga, propia, rng) {
+  const otras = liga.orgs.filter((org) => org.nombre !== propia);
+  const registros = Object.fromEntries(otras.map((org) => [org.nombre, filaVacia(org.nombre)]));
+
+  for (let i = 0; i < otras.length; i += 1) {
+    for (let j = i + 1; j < otras.length; j += 1) {
+      const a = otras[i];
+      const b = otras[j];
+      const ganaA = resolverFecha(a.fuerza, b.fuerza, rng);
+      registros[a.nombre] = registrarEnFila(registros[a.nombre], ganaA);
+      registros[b.nombre] = registrarEnFila(registros[b.nombre], !ganaA);
+    }
+  }
+
+  return registros;
+}
+
+// La tabla completa: la fila del jugador (su progreso real hasta este punto
+// del split) más las filas ya cerradas de `simularResto`, ordenada por
+// ganados y diferencia.
+export function tablaDePosiciones(registrosOtros, filaPropia) {
+  const filas = [filaPropia, ...Object.values(registrosOtros)];
+  return filas
+    .map((fila) => ({ ...fila, diferencia: fila.ganados - fila.perdidos }))
+    .sort((a, b) => b.ganados - a.ganados || b.diferencia - a.diferencia);
+}
+
+export function posicionEnTabla(tabla, org) {
+  const indice = tabla.findIndex((fila) => fila.org === org);
+  return indice < 0 ? tabla.length : indice + 1;
+}
+
+// El hash determinista que le da un equipo "de local" a cada rival de
+// generación DENTRO de su liga tier 1. No consume `rng`: los rivales no
+// tienen una org asignada en `core/mundo.js` (se generan antes de que exista
+// ninguna carrera profesional), así que esto les da una sin tocar el stream
+// ni el módulo de generación del mundo. Solo importa cuando el jugador
+// compite en la MISMA liga tier 1 que el rival: es la única situación real en
+// la que se cruzarían.
+function orgDelRival(rival, liga) {
+  if (!liga || liga.tier !== 1 || rival.liga !== liga.id || liga.orgs.length === 0) {
+    return null;
+  }
+  const hash = [...rival.handle].reduce((suma, caracter) => suma + caracter.charCodeAt(0), 0);
+  return liga.orgs[hash % liga.orgs.length].nombre;
+}
+
+export function esRivalDeGeneracion(state, liga, orgRival) {
+  return state.mundo.rivales.some((rival) => orgDelRival(rival, liga) === orgRival);
+}
+
+// Los motivos por los que ESTA fecha, entre todas las del split, tiene algo
+// en juego. Puede haber varios a la vez (una revancha contra el puntero
+// también sería un clásico); `motivoPrincipal` abajo elige cuál manda para
+// filtrar contenido. `parejo` es el único que siempre está disponible como
+// red: sin él, una liga sin clásicos ni racha nunca completaría su cupo de
+// fechas marcadas.
+export function motivosDeFecha(state, liga, fecha, tablaAntes, rachaPropia, indice, totalFechas) {
+  const motivos = [];
+
+  if (state.career.orgs.includes(fecha.rival)) {
+    motivos.push('clasico');
+  }
+
+  const puntero = tablaAntes[0];
+  if (puntero && puntero.org === fecha.rival && puntero.ganados > 0) {
+    motivos.push('puntero');
+  }
+
+  if (liga?.formatoPlayoffs && indice === totalFechas - 1) {
+    const clasifican = liga.formatoPlayoffs.clasifican;
+    const propia = tablaAntes.find((fila) => fila.org === state.career.currentOrg) ?? filaVacia(state.career.currentOrg);
+    const siGana = posicionEnTabla(
+      [...tablaAntes.filter((fila) => fila.org !== propia.org), { ...propia, ganados: propia.ganados + 1, diferencia: propia.diferencia + 1 }]
+        .sort((a, b) => b.ganados - a.ganados || (b.diferencia ?? 0) - (a.diferencia ?? 0)),
+      propia.org
+    );
+    const siPierde = posicionEnTabla(
+      [...tablaAntes.filter((fila) => fila.org !== propia.org), { ...propia, perdidos: propia.perdidos + 1, diferencia: propia.diferencia - 1 }]
+        .sort((a, b) => b.ganados - a.ganados || (b.diferencia ?? 0) - (a.diferencia ?? 0)),
+      propia.org
+    );
+    if ((siGana <= clasifican) !== (siPierde <= clasifican)) {
+      motivos.push('define_clasificacion');
+    }
+  }
+
+  if (state.career.ultimoEliminadoPor && state.career.ultimoEliminadoPor === fecha.rival) {
+    motivos.push('revancha');
+  }
+
+  if (rachaPropia <= -BALANCE.temporada.derrotasParaPresion) {
+    motivos.push('presion');
+  }
+
+  if (esRivalDeGeneracion(state, liga, fecha.rival)) {
+    motivos.push('rival_de_generacion');
+  }
+
+  return motivos.length > 0 ? motivos : ['parejo'];
+}
+
+// Orden de prioridad narrativa para cuando una fecha junta varios motivos a
+// la vez: el que manda es el que más se pueda nombrar en una línea de texto.
+const PRIORIDAD_MOTIVOS = ['define_clasificacion', 'revancha', 'clasico', 'puntero', 'presion', 'rival_de_generacion', 'parejo'];
+
+export function motivoPrincipal(motivos) {
+  return PRIORIDAD_MOTIVOS.find((motivo) => motivos.includes(motivo)) ?? 'parejo';
+}
+
+// Cuánto pesa cada fecha para decidir si es una de las 2-3 que se juegan: una
+// fecha con un motivo "real" (no `parejo`) siempre pesa más que una pareja de
+// pura casualidad, y entre las parejas gana la de fuerza más cercana.
+export function puntajeDeFecha(motivos, fecha, fuerzaPropia) {
+  const tieneMotivoReal = motivos.some((motivo) => motivo !== 'parejo');
+  const cercania = 1 / (1 + Math.abs(fecha.fuerzaRival - fuerzaPropia));
+  return tieneMotivoReal ? 10 + motivos.length + cercania : cercania;
+}
+
+// El draft corto de una fecha marcada (5.3): mucho más liviano que el
+// Fearless de playoffs (no hay quema de campeones acá, es temporada
+// regular), pero misma idea de fondo — con un pool chico no hay mucho que
+// elegir, y con uno grande el motor para solo si la elección no es obvia.
+export function decisionDeDraftFecha(state) {
+  const pool = state.player.championPool;
+  if (pool.length === 0) {
+    return { pausa: false, elegido: null };
+  }
+  if (pool.length <= 2) {
+    const mejor = pool.reduce((acc, campeon) => (
+      deseoPorCampeon(campeon, state.meta.weights) > deseoPorCampeon(acc, state.meta.weights) ? campeon : acc
+    ));
+    return { pausa: false, elegido: mejor };
+  }
+
+  const ordenados = [...pool].sort((a, b) => deseoPorCampeon(b, state.meta.weights) - deseoPorCampeon(a, state.meta.weights));
+  const [mejor, segundo] = ordenados;
+  const dominancia = deseoPorCampeon(mejor, state.meta.weights) / Math.max(0.001, deseoPorCampeon(segundo, state.meta.weights));
+
+  return dominancia >= BALANCE.serie.dominanciaClara ? { pausa: false, elegido: mejor } : { pausa: true };
+}
+
+// Cuánto mueve la fuerza de ESTA fecha el campeón elegido en el draft corto:
+// acotado a propósito (`impactoDraftFecha`), la fórmula de rendimiento del
+// split no se reescribe, esto solo la corre un poco para esta fecha puntual.
+export function factorDraftFecha(campeon, weights) {
+  if (!campeon) {
+    return 0;
+  }
+  return (afinidadDeCampeon(campeon, weights) - 1) * BALANCE.temporada.impactoDraftFecha;
+}
+
+export function factorDelMomento(resultadoTirado) {
+  const t = BALANCE.temporada;
+  return clamp(resultadoTirado, t.partidoMin, t.partidoMax);
+}

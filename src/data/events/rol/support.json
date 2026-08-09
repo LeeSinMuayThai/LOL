@@ -59,64 +59,6 @@
     ]
   },
   {
-    "id": "support_el_ward_que_te_costo",
-    "category": "rol_support",
-    "title": "La visión no es gratis",
-    "description": "Comprar el control ward en el momento justo te deja sin oro para lo tuyo, otra vez. El mapa lo agradece; tu build, no.",
-    "weight": 6,
-    "cooldown": 4,
-    "contexto": {
-      "rol": ["support"]
-    },
-    "conditions": [],
-    "options": [
-      {
-        "id": "comprar_la_vision",
-        "label": "Comprar el control ward igual",
-        "descripcion": "El mapa vale más que tu propio ítem. Es la decisión correcta y la que nadie te agradece.",
-        "weight": 6,
-        "outcomes": [
-          {
-            "weight": 7,
-            "texto": "La visión evita una jugada del rival en el momento exacto. Nadie te lo va a mencionar, pero funcionó.",
-            "effects": [
-              { "type": "stat", "path": "player.stats.shotcalling", "min": 2, "max": 4, "clamp": [0, 100] }
-            ]
-          },
-          {
-            "weight": 3,
-            "texto": "El ward no evita nada esta vez, y te quedaste atrás de ítems para el resto del partido por una jugada que no pasó.",
-            "effects": [
-              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
-            ]
-          }
-        ]
-      },
-      {
-        "id": "priorizar_tu_build",
-        "label": "Priorizar tu propio ítem",
-        "descripcion": "Por una vez jugás para vos. El mapa queda más ciego de lo que debería.",
-        "weight": 4,
-        "outcomes": [
-          {
-            "weight": 6,
-            "texto": "Con el ítem de más, respondés mejor en la pelea que se arma después. Nadie conecta las dos cosas.",
-            "effects": [
-              { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 4, "clamp": [0, 100] }
-            ]
-          },
-          {
-            "weight": 4,
-            "texto": "La falta de visión les cuesta una jugada evitable, y en el review alguien pregunta dónde estaba el ward.",
-            "effects": [
-              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
-            ]
-          }
-        ]
-      }
-    ]
-  },
-  {
     "id": "support_no_te_siguen_la_llamada",
     "category": "rol_support",
     "title": "Ves la jugada y nadie te sigue",

@@ -1,0 +1,375 @@
+[
+  {
+    "id": "el_clasico_de_siempre",
+    "category": "partido_clasico",
+    "title": "El clásico de siempre",
+    "description": "Contra {rivalDeLaFecha} no hace falta explicarle a nadie por qué este partido importa más que los otros ocho de la temporada.",
+    "weight": 7,
+    "cooldown": 4,
+    "contexto": {
+      "stakes": ["clasico"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "jugarlo_con_la_cabeza",
+        "label": "Jugarlo con la cabeza fría",
+        "descripcion": "El clásico calienta solo: vos tratás de que no se te suba a la cabeza antes de tiempo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Mientras el resto se calienta con el historial, vos jugás el partido que tenés adelante.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.04, "max": 0.18 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La cabeza fría no alcanza cuando {rivalDeLaFecha} llega con todo el hambre del clásico.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": 0.04 }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejarse_llevar",
+        "label": "Dejarte llevar por el clásico",
+        "descripcion": "Total, para esto se juega: entrás con toda la sangre que pide el partido.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "La intensidad te sale rendimiento puro: jugás arriba de lo que jugás normalmente.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.07, "max": 0.22 },
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Te calentás de más y el partido se te va de las manos por decisiones que no tomarías otro día.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.18, "max": -0.02 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_revancha",
+    "category": "partido_clasico",
+    "title": "La revancha",
+    "description": "{rivalDeLaFecha} fue el equipo que te sacó de la última serie que jugaste. Hoy es la primera vez que te los volvés a cruzar.",
+    "weight": 7,
+    "cooldown": 4,
+    "contexto": {
+      "stakes": ["revancha"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "cobrarsela",
+        "label": "Ir a cobrártela",
+        "descripcion": "No te olvidaste de esa eliminación. Hoy vas directo a demostrar que fue un accidente.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Se las cobrás con intereses. Se nota que veniste a esto desde el día que te eliminaron.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.06, "max": 0.22 },
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Jugás pensando en la revancha en vez de jugar el partido que tenés enfrente, y se paga caro.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.17, "max": -0.01 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejar_el_pasado",
+        "label": "Dejar esa serie en el pasado",
+        "descripcion": "Fue hace un tiempo, era otro equipo, casi otro vos. Hoy es un partido más de temporada regular.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Sin la mochila de esa eliminación, jugás con una libertad que se nota enseguida.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.03, "max": 0.16 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Dejarlo atrás no te salva: {rivalDeLaFecha} viene con el mismo plan que la última vez, y funciona otra vez.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.11, "max": 0.02 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "presentarse_ante_los_viejos",
+    "category": "partido_clasico",
+    "title": "Presentarte ante los que te dejaron ir",
+    "description": "Del otro lado está {rivalDeLaFecha}, la organización que decidió no renovarte. {jungla} te dijo antes del partido que sabe lo que este cruce significa para vos.",
+    "weight": 6,
+    "cooldown": 5,
+    "contexto": {
+      "stakes": ["clasico"],
+      "ventana": ["regular"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "hacerselo_notar",
+        "label": "Hacerles notar el error que cometieron",
+        "descripcion": "Cada jugada como un mensaje directo a la sala de decisiones que te bajó del roster.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Jugás el partido de tu vida contra la gente que decidió que no valías la pena. El mensaje llega clarísimo.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.08, "max": 0.22 },
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Querés demostrar demasiado de una sola vez y el partido se te complica solo.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.18, "max": -0.02 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugarlo_profesional",
+        "label": "Jugarlo profesional, sin drama",
+        "descripcion": "Es un partido de liga, no una revancha personal. Al menos en voz alta.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Con la cabeza en el partido y no en la vieja organización, jugás liviano.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.02, "max": 0.15 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Por más que lo digas tranquilo, algo del cruce se te mete en las decisiones importantes.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": 0.03 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_cruce_de_generacion",
+    "category": "partido_clasico",
+    "title": "Cruce de generación",
+    "description": "Del otro lado juega alguien que debutó el mismo año que vos. Todos los que siguen ambas carreras van a comparar esta noche.",
+    "weight": 6,
+    "cooldown": 5,
+    "contexto": {
+      "stakes": ["rival_de_generacion"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "medirse_en_su_linea",
+        "label": "Buscar el duelo directo",
+        "descripcion": "Que se note quién de los dos llegó más lejos con la misma edad.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Ganás el duelo, y el resto de tu generación lo va a saber al día siguiente.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.05, "max": 0.2 },
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Buscar el duelo directo te deja parado en un lugar que el resto del equipo no puede tapar.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.13, "max": 0.0 }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugar_para_el_equipo",
+        "label": "Ignorar la comparación y jugar para el equipo",
+        "descripcion": "El duelo individual es una nota de color. El partido lo gana el equipo, no vos solo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Sin la presión de la comparación, tomás las decisiones que el equipo necesita, no las que quedan mejor en el resumen.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.03, "max": 0.15 },
+              { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El otro sí buscó el duelo, y arrastra a su equipo con él.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.12, "max": 0.01 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "les_prometiste_algo",
+    "category": "partido_clasico",
+    "title": "Les prometiste algo",
+    "description": "Antes del partido le dijiste a {jungla} que hoy no perdían, así, en esos términos. Ahora hay que sostenerlo en la práctica.",
+    "weight": 5,
+    "cooldown": 5,
+    "contexto": {
+      "stakes": ["clasico", "presion"],
+      "ventana": ["regular"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "sostener_la_promesa",
+        "label": "Jugar como si la promesa fuera literal",
+        "descripcion": "Dijiste que no perdían y lo vas a bancar con cada decisión.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "La palabra empeñada se convierte en el mejor combustible que tuviste en semanas.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.05, "max": 0.19 },
+              { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El peso de la promesa te tensa más de lo que ayuda.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.15, "max": -0.01 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "olvidarse_de_la_frase",
+        "label": "Olvidarte de la frase y jugar normal",
+        "descripcion": "Fue una frase de vestuario, no un contrato. Jugás como jugarías cualquier otro día.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Sin cargar con tus propias palabras, el partido te sale suelto.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.02, "max": 0.14 }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "{jungla} se acuerda de la frase igual, aunque vos ya la hayas soltado.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.08, "max": 0.04 },
+              { "type": "stat", "path": "career.sinergia", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ese_nombre_en_el_otro_lado",
+    "category": "partido_clasico",
+    "title": "Ese nombre en el otro lado",
+    "description": "Alguien de tu propia generación juega hoy en las filas de {rivalDeLaFecha}, y encima es el equipo que ya te sacó una vez de playoffs.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "stakes": ["revancha", "rival_de_generacion"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "todo_junto",
+        "label": "Jugarlo con todo lo que representa",
+        "descripcion": "La revancha y la comparación de generación en el mismo partido. Vas con todo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Toda esa carga te sale rendimiento en vez de nervios, y el partido queda para el recuerdo.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.07, "max": 0.22 },
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 7, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Es demasiado peso para un solo partido, y se te nota en la cabeza fría que te falta.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.18, "max": -0.03 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "separarlo_en_partes",
+        "label": "Separarlo: es un partido, no una novela",
+        "descripcion": "Le bajás el volumen a todo lo demás y lo jugás como una fecha más de la tabla.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Bajarle el volumen a la historia te deja jugar el partido real que tenés adelante.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.03, "max": 0.16 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Por más que lo bajes, el partido igual pesa distinto, y se nota en los primeros minutos.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": 0.03 }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -88,7 +88,31 @@ export function createInitialState(seed, rng, eleccion = null) {
       internacionales: 0,
       // Cuantas series de playoffs (fase 4) se jugaron hasta el final, ganadas
       // o perdidas. Denominador de "decisiones de draft por serie".
-      seriesJugadas: 0
+      seriesJugadas: 0,
+      // La org que te eliminó de la última serie de playoffs que jugaste
+      // (fase 5, `stakes: 'revancha'`). `null` hasta la primera eliminación;
+      // lo escribe `systems/serie.js`.
+      ultimoEliminadoPor: null,
+      // La temporada regular del split en curso (fase 5). Objeto completo de
+      // ceros, nunca null (trampa T4): se llena al arrancar cada split
+      // profesional y `rendimiento.js` lee `posicion`/`tabla`/`rendimiento` de
+      // acá en vez de resolverlos de nuevo.
+      temporada: {
+        activa: false,
+        calendario: [],
+        indice: 0,
+        rendimiento: 0,
+        fuerzaPropia: 0,
+        registrosOtros: {},
+        filaPropia: { org: null, ganados: 0, perdidos: 0 },
+        racha: 0,
+        objetivoMarcadas: 0,
+        marcadasHechas: 0,
+        ajustePartido: 0,
+        posicion: null,
+        tabla: [],
+        fechaEnCurso: null
+      }
     },
     // La serie de playoffs en curso (fase 4). Objeto completo de ceros, nunca
     // null (trampa T4): se activa al clasificar y se resetea al arrancar cada

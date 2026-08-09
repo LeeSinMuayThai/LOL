@@ -12,7 +12,7 @@ import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 
 export const id = 'eventos';
 
-function cooldownActivo(state, eventId) {
+export function cooldownActivo(state, eventId) {
   return (state.flags.cooldowns?.[eventId] ?? 0) > 0;
 }
 
@@ -98,6 +98,20 @@ function aplicarEfecto(state, effect, rng) {
     return {
       state: setPath(state, effect.path, [...lista, valor]),
       descripcion: `${etiquetaCampo(effect.path)}: se suma "${valor}"`
+    };
+  }
+
+  // Fase 5: mueve el resultado de la fecha de temporada que está en curso, no
+  // un stat. `min`/`max` son una fracción (p.ej. -0.18 a 0.22) que
+  // `systems/temporada.js` lee de `career.temporada.ajustePartido` apenas
+  // vuelve de resolver esta opción, y usa para correr `resolverFecha`. Nunca
+  // decide el resultado solo (regla 1 de los minijuegos, 4.6): sigue
+  // compitiendo contra la fuerza real del rival.
+  if (effect.type === 'partido') {
+    const valor = effect.min + rng() * (effect.max - effect.min);
+    return {
+      state: setPath(state, effect.path, valor),
+      descripcion: valor >= 0 ? 'esto ayuda al partido' : 'esto complica el partido'
     };
   }
 

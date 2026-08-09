@@ -33,6 +33,12 @@ export const ETAPAS_SPLIT = [
   // del secundario ya quedo congelado y entra en la tarjeta final.
   await import('./secundario.js'),
   await import('./amateur.js'),
+  // La temporada regular (fase 5): calendario real, tabla de posiciones, y
+  // 2-3 fechas por split que se juegan de verdad. Va justo antes de
+  // `rendimiento`, que ahora SOLO aplica las consecuencias (hype, mentalidad,
+  // jerarquia, titulos) leyendo la posicion que este sistema calculo — no
+  // vuelve a resolverla.
+  await import('./temporada.js'),
   await import('./rendimiento.js'),
   // La serie de playoffs (fase 4): temporada regular -> playoffs, siguiendo el
   // orden de CONCEPTO §5. Solo actua en tier 1 con formatoPlayoffs; ahi le

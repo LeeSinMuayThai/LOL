@@ -1,0 +1,512 @@
+[
+  {
+    "id": "la_jungla_enemiga_esta_sola",
+    "category": "partido_dentro_del_mapa",
+    "title": "La jungla enemiga está sola",
+    "description": "Ves al jungla de {rivalDeLaFecha} lejos de su lado del mapa. Invadir puede darte la ventaja del partido, o dejarte sin recursos para el resto de la jungla.",
+    "weight": 6,
+    "cooldown": 4,
+    "contexto": {
+      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
+      "ventana": ["regular"],
+      "rol": ["jungla"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "invadir",
+        "label": "Invadirle la jungla",
+        "descripcion": "Vas a buscar el golpe grande. Si sale bien, quedás muy arriba; si sale mal, empezás el partido en deuda.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "modificadores": [
+              { "field": "player.stats.mecanica", "referencia": 55, "factor": 0.02 }
+            ],
+            "texto": "Lo agarrás limpiando su propio buff y le arruinás el arranque del partido a {rivalDeLaFecha}.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.05, "max": 0.2 },
+              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te estaba esperando. Perdés recursos y llegás al primer objetivo grande sin nivel para pelearlo.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.16, "max": -0.02 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugar_tu_jungla",
+        "label": "Farmear tu propio lado",
+        "descripcion": "Dejás pasar la ventana. Llegás a nivel y con recursos, sin haber arriesgado nada.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Terminás la ruta a full recursos y llegás al primer objetivo grande con margen.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.0, "max": 0.12 },
+              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Jugás tan seguro que {rivalDeLaFecha} te saca ventaja de mapa sin que nadie lo note hasta el minuto quince.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.09, "max": 0.02 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "top_la_isla",
+    "category": "partido_dentro_del_mapa",
+    "title": "Solo en tu línea",
+    "description": "Te comen la línea contra {rivalDeLaFecha} y del otro lado del mapa nadie se entera hasta que ya es tarde. En top el error es tuyo y la ayuda casi nunca llega a horario.",
+    "weight": 6,
+    "cooldown": 4,
+    "contexto": {
+      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
+      "ventana": ["regular"],
+      "rol": ["top"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "jugar_pasivo",
+        "label": "Achicarte y farmear atrás",
+        "descripcion": "No arriesgás nada más. Esperás que el resto del mapa te compre tiempo mientras vos aguantás.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Sobrevivís la línea con lo justo. No sumaste nada, pero al menos no perdiste más de lo que ya habías perdido.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.04, "max": 0.08 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Te quedás tan atrás que ni de bloqueador servís. La torre cae igual, solo que más despacio.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.14, "max": -0.02 }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "buscar_la_revancha",
+        "label": "Ir a buscarla de vuelta",
+        "descripcion": "Arriesgás lo que te queda para recuperar la línea antes de que sea tarde.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "modificadores": [
+              { "field": "player.stats.mecanica", "referencia": 55, "factor": 0.02 }
+            ],
+            "texto": "Te sale la jugada arriesgada y la línea vuelve a estar pareja contra {rivalDeLaFecha}.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.06, "max": 0.2 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Sale mal. Perdés la torre y la paciencia, en ese orden.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.18, "max": -0.03 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "mid_el_duelo",
+    "category": "partido_dentro_del_mapa",
+    "title": "El duelo de línea",
+    "description": "Del otro lado, alguien de {rivalDeLaFecha} te pushea la línea y te invita a una pelea 1v1 en pleno medio del mapa. Todo el chat lo está mirando en vivo.",
+    "weight": 6,
+    "cooldown": 4,
+    "contexto": {
+      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
+      "ventana": ["regular"],
+      "rol": ["mid"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "aceptar_el_duelo",
+        "label": "Aceptar la pelea",
+        "descripcion": "Le entrás de frente. Si ganás, quedás como el mejor mid de la fecha; si perdés, lo va a repetir todo el mundo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "modificadores": [
+              { "field": "player.stats.mecanica", "referencia": 55, "factor": 0.025 }
+            ],
+            "texto": "Le ganás el 1v1 en pleno mapa y el clip se corta solo. Ese momento vale más que cualquier estadística de la fecha.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.07, "max": 0.22 },
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Perdés el duelo delante de todos. El highlight es tuyo, pero por el motivo equivocado.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.18, "max": -0.03 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "no_caer_en_la_provocacion",
+        "label": "No caer en la provocación",
+        "descripcion": "Seguís farmeando y le negás el show. Es la jugada aburrida y también la más sólida.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Te negás a jugarle el juego y del otro lado se quedan hablando solos en el chat. Ganás la línea sin necesitar el duelo.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.02, "max": 0.13 }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Negarte también se lee como que le tuviste miedo a la pelea, y {rivalDeLaFecha} juega más suelto después de eso.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.08, "max": 0.03 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "adc_la_pelea_que_define",
+    "category": "partido_dentro_del_mapa",
+    "title": "Todo el daño pasa por vos",
+    "description": "Llegás a la pelea de mitad de partido siendo la única fuente de daño real del equipo. Si te posicionás mal contra {rivalDeLaFecha}, no hay plan B.",
+    "weight": 6,
+    "cooldown": 4,
+    "contexto": {
+      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
+      "ventana": ["regular"],
+      "rol": ["adc"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "jugar_al_frente",
+        "label": "Meterte adelante a buscar el daño",
+        "descripcion": "Te exponés más de lo cómodo para asegurar que tu daño llegue a tiempo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "modificadores": [
+              { "field": "player.stats.teamfight", "referencia": 50, "factor": 0.02 },
+              { "field": "player.stats.mecanica", "referencia": 55, "factor": 0.015 }
+            ],
+            "texto": "Te arriesgás, conectás todo el daño, y la pelea se define en tres segundos gracias a vos.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.07, "max": 0.22 },
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te agarran de entrada y la pelea se pierde antes de que hicieras nada. Sin tu daño, no había pelea que ganar.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.18, "max": -0.03 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugar_seguro_atras",
+        "label": "Quedarte atrás y esperar la abertura",
+        "descripcion": "Priorizás sobrevivir la pelea por sobre entrar rápido. Menos daño total, menos riesgo de morir primero.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Sobrevivís toda la pelea y terminás limpiando lo que queda. No fue vistoso, pero funcionó.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.02, "max": 0.14 }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Jugás tan atrás que tu daño llega cuando la pelea ya estaba decidida. Vivo, pero inútil.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.11, "max": 0.0 },
+              { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "support_el_ward_que_te_costo",
+    "category": "partido_dentro_del_mapa",
+    "title": "La visión no es gratis",
+    "description": "Comprar el control ward en el momento justo te deja sin oro para lo tuyo, otra vez. Contra {rivalDeLaFecha} el mapa lo agradece; tu build, no.",
+    "weight": 6,
+    "cooldown": 4,
+    "contexto": {
+      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
+      "ventana": ["regular"],
+      "rol": ["support"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "comprar_la_vision",
+        "label": "Comprar el control ward igual",
+        "descripcion": "El mapa vale más que tu propio ítem. Es la decisión correcta y la que nadie te agradece.",
+        "weight": 6,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "La visión evita una jugada de {rivalDeLaFecha} en el momento exacto. Nadie te lo va a mencionar, pero funcionó.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.03, "max": 0.17 },
+              { "type": "stat", "path": "player.stats.shotcalling", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "El ward no evita nada esta vez, y te quedaste atrás de ítems para el resto del partido por una jugada que no pasó.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.07, "max": 0.03 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "priorizar_tu_build",
+        "label": "Priorizar tu propio ítem",
+        "descripcion": "Por una vez jugás para vos. El mapa queda más ciego de lo que debería.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Con el ítem de más, respondés mejor en la pelea que se arma después. Nadie conecta las dos cosas.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.02, "max": 0.15 }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La falta de visión le cuesta al equipo una jugada evitable de {rivalDeLaFecha}.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.15, "max": -0.02 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_objetivo_que_define_la_fecha",
+    "category": "partido_dentro_del_mapa",
+    "title": "El objetivo que define la fecha",
+    "description": "El Barón está por spawnear y las dos vanguardias se miran de lejos. Nadie quiere pelear primero, pero alguien tiene que moverse.",
+    "weight": 6,
+    "cooldown": 3,
+    "contexto": {
+      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "forzar_la_pelea",
+        "label": "Forzar la pelea antes de que agarren visión",
+        "descripcion": "Vas primero, sin esperar la formación perfecta.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Sorprendés a {rivalDeLaFecha} a mitad de acomodarse y te llevás el objetivo casi gratis.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.06, "max": 0.2 }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Forzás la pelea contra un equipo que ya estaba listo, y la pagás cara.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.18, "max": -0.03 }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "esperar_el_error",
+        "label": "Esperar a que se muevan ellos primero",
+        "descripcion": "Jugás la paciencia: dejás que el reloj y la presión trabajen para vos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La espera rinde: {rivalDeLaFecha} se apura y comete el error que estabas esperando.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.04, "max": 0.17 }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Esperar tanto le regala tiempo a {rivalDeLaFecha} para armar la jugada perfecta.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.12, "max": 0.0 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_error_ajeno",
+    "category": "partido_dentro_del_mapa",
+    "title": "Un compañero se mandó solo",
+    "description": "Uno del equipo se metió a pelear sin avisar y quedó colgado en el medio del mapa. Todavía se puede hacer algo, o se puede dejar que pase.",
+    "weight": 5,
+    "cooldown": 4,
+    "contexto": {
+      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
+      "ventana": ["regular"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "ir_a_salvarlo",
+        "label": "Ir a buscarlo aunque sea arriesgado",
+        "descripcion": "Metés el cuerpo para que la pelea no se convierta en una desventaja de hombres.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Llegás justo a tiempo: lo que iba a ser un desastre queda en una pelea pareja.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.04, "max": 0.18 },
+              { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Vas a buscarlo y termina siendo una pelea de dos contra el equipo entero de {rivalDeLaFecha}.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.17, "max": -0.02 }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejarlo_ir",
+        "label": "Dejar que se resuelva solo",
+        "descripcion": "Un hombre abajo duele menos que dos. Seguís con el plan del resto del mapa.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Se pierde una vida, pero el resto del equipo convierte esa ventaja en otro lado del mapa.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.01, "max": 0.11 }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El vestuario lo lee como que lo abandonaste, aunque la decisión fuera la correcta en el mapa.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.05, "max": 0.05 },
+              { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_remontada_posible",
+    "category": "partido_dentro_del_mapa",
+    "title": "Abajo, pero no afuera",
+    "description": "Se les fue el partido temprano y van perdiendo por una diferencia incómoda. Todavía hay tiempo, si alguien se anima a jugarlo distinto.",
+    "weight": 5,
+    "cooldown": 4,
+    "contexto": {
+      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "jugar_todo_o_nada",
+        "label": "Jugar todo o nada por la remontada",
+        "descripcion": "Con esta diferencia, jugar seguro es perder despacio. Vas a buscarla.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "La apuesta rinde: {rivalDeLaFecha} no esperaba que jugaras tan arriesgado estando abajo, y el partido se da vuelta.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.1, "max": 0.22 },
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "El todo o nada no sale, y la diferencia que ya era incómoda se hace definitiva.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.18, "max": -0.05 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "administrar_la_derrota",
+        "label": "Administrar lo que queda",
+        "descripcion": "Aceptás que hoy no sale y jugás para llegar entero al partido siguiente.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "No se da la remontada, pero tampoco se convierte en una masacre. Guardás algo para la próxima fecha.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": 0.02 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Jugar para administrar a veces también deja una puerta abierta que nadie esperaba.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.02, "max": 0.13 }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

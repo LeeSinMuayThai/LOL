@@ -16,7 +16,9 @@ export const id = 'rendimiento';
 //
 // Se exporta: la fase 4 (systems/serie.js) reusa exactamente esta formula para
 // resolver cada mapa de una serie, sobreescribiendo campeonDelSplit con el
-// campeon elegido en el draft de la serie. No se reescribe la formula.
+// campeon elegido en el draft de la serie, y la fase 5 (systems/temporada.js)
+// la llama una vez por split para fijar la fuerza con la que se juega el
+// calendario entero. No se reescribe la formula.
 export function calcularRendimiento(state, rng) {
   const r = BALANCE.rendimiento;
   const { pesos } = ROLES[state.player.role];
@@ -50,16 +52,6 @@ export function fuerzaDelEquipo(state, rendimiento) {
 
   const bruto = nivelCompaneros * (1 - r.pesoJugadorEnEquipo) + rendimiento * r.pesoJugadorEnEquipo;
   return bruto * (1 + (state.career.sinergia / BALANCE.stats.max - 0.5) * r.sinergiaPesoEnRendimiento);
-}
-
-function posicionEnLaLiga(state, fuerza, rng) {
-  const liga = ligaOZonaDeCarrera(state);
-  const rivales = liga.orgs.filter((org) => org.nombre !== state.career.currentOrg);
-
-  // Cada rival tira su propio split: los favoritos ganan mas seguido, no siempre.
-  const porEncima = rivales.filter((org) => gauss(org.fuerza, BALANCE.rendimiento.ruidoRival, rng) > fuerza).length;
-
-  return { posicion: porEncima + 1, equipos: liga.orgs.length, liga };
 }
 
 function consecuencias(state, rendimiento, resultado, esCierre, rng) {
@@ -171,9 +163,13 @@ export function aplicar(state, rng) {
     return { state, logs: [] };
   }
 
-  const rendimiento = calcularRendimiento(state, rng);
-  const fuerza = fuerzaDelEquipo(state, rendimiento);
-  const resultado = posicionEnLaLiga(state, fuerza, rng);
+  // La fase 5 movió la resolución de la temporada regular a `systems/temporada.js`,
+  // que corre justo antes en el registro (`registro.js`) y deja la posición y el
+  // rendimiento que la produjo en `career.temporada`. Esto ya no vuelve a tirar
+  // el split: solo lee el resultado y aplica sus consecuencias.
+  const t = state.career.temporada;
+  const liga = ligaOZonaDeCarrera(state);
+  const resultado = { posicion: t.posicion ?? 1, equipos: t.tabla.length || (liga?.orgs.length ?? 1), liga };
 
-  return consecuencias(state, rendimiento, resultado, esCierreDeTemporada(state.player.splitCount), rng);
+  return consecuencias(state, t.rendimiento, resultado, esCierreDeTemporada(state.player.splitCount), rng);
 }

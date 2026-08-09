@@ -1,0 +1,239 @@
+[
+  {
+    "id": "el_review_de_hoy",
+    "category": "partido_postpartido",
+    "title": "El review de hoy",
+    "description": "Apenas se corta la transmisión, el coach ya está mandando el link del VOD al grupo. El partido contra {rivalDeLaFecha} todavía no terminó de digerirse y ya hay que analizarlo.",
+    "weight": 6,
+    "cooldown": 3,
+    "contexto": {
+      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "mirar_ahora",
+        "label": "Mirarlo ahora, en caliente",
+        "descripcion": "Todavía tenés el partido fresco en el cuerpo. Puede ser la mejor forma de aprender, o la peor de procesarlo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Con todo tan fresco, ves detalles que en frío se te iban a escapar. Anotás dos cosas para la próxima fecha.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.shotcalling", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Mirarlo en caliente solo te hace revivir cada error con la sangre todavía arriba.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejarlo_para_mañana",
+        "label": "Dejarlo para mañana con la cabeza fría",
+        "descripcion": "Hoy ya diste lo que tenías. El análisis puede esperar a mañana.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Descansás la cabeza y al otro día el mismo VOD se lee distinto, sin el peso del partido todavía encima.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "El coach lo toma como que no te importa lo suficiente como para mirarlo ya.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "las_redes_despues_del_partido",
+    "category": "partido_postpartido",
+    "title": "Las redes después del partido",
+    "description": "El clip de la jugada más comentada contra {rivalDeLaFecha} ya está circulando, con opiniones para todos los gustos en los comentarios.",
+    "weight": 5,
+    "cooldown": 4,
+    "contexto": {
+      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "leer_todo",
+        "label": "Leer todos los comentarios",
+        "descripcion": "Un rato de scroll infinito viendo qué dice la gente de tu partido.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Entre todo el ruido hay algo de reconocimiento genuino que te sube el ánimo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Como siempre, te quedás con los tres comentarios negativos en vez de los cien positivos.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cerrar_la_app",
+        "label": "Cerrar la aplicación y listo",
+        "descripcion": "Ya jugaste el partido. Lo que se diga ahora no cambia nada de lo que pasó.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Te vas a dormir sin el ruido de las redes en la cabeza. Mañana es otra fecha.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Un compañero te reenvía igual el mejor clip. Nadie se salva del todo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_cena_de_despues",
+    "category": "partido_postpartido",
+    "title": "La cena de después",
+    "description": "Terminado el partido contra {rivalDeLaFecha}, alguien propone pedir algo y comer todos juntos en la gaming house antes de que cada uno se encierre en su cuarto.",
+    "weight": 5,
+    "cooldown": 4,
+    "contexto": {
+      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
+      "ventana": ["regular"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "quedarse",
+        "label": "Quedarte a comer con todos",
+        "descripcion": "Un rato de mesa, sin hablar de LoL si se puede evitar.",
+        "weight": 6,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Se ríen de cualquier cosa menos del partido, y eso también arma equipo.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "La charla deriva igual al partido y termina siendo un review informal que nadie pidió.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "encerrarse",
+        "label": "Encerrarte en tu cuarto",
+        "descripcion": "Necesitás estar solo un rato después de un partido así.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El silencio te hace bien. Procesás el partido a tu propio ritmo, sin la mesa encima.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te perdés la mesa una vez más, y alguien lo comenta como al pasar.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_mensaje_del_manager",
+    "category": "partido_postpartido",
+    "title": "El mensaje del manager",
+    "description": "Recibís un mensaje corto de tu manager apenas termina el partido contra {rivalDeLaFecha}: quiere saber cómo estás, o quiere saber qué pasó. A veces es difícil distinguir cuál de las dos.",
+    "weight": 4,
+    "cooldown": 5,
+    "contexto": {
+      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "contestar_en_detalle",
+        "label": "Contestar con detalle cómo estás",
+        "descripcion": "Le contás de verdad, más allá del resultado.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El manager lo agradece y la conversación te deja más liviano de lo que esperabas.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Poner en palabras cómo estuvo el partido te hace notar cosas que preferías no pensar todavía.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "responder_corto",
+        "label": "Responder corto: \"todo bien\"",
+        "descripcion": "Dos palabras y listo. No tenés ganas de analizar nada todavía.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "El mensaje corto cierra el tema por hoy, que es exactamente lo que necesitabas.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "El manager insiste con una pregunta más, y el \"todo bien\" no le alcanza.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

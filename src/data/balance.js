@@ -551,6 +551,38 @@ export const BALANCE = {
     margenEdadMinima: 0
   },
 
+  // La temporada regular (fase 5): antes era una sola tirada (`gauss` contra
+  // cada rival) escupiendo una posición sin fechas ni tabla. Ahora es un
+  // calendario real, con 2-3 fechas por split que el jugador juega de verdad.
+  temporada: {
+    // Ruido de cada fecha individual. Mismo orden de magnitud que
+    // `rendimiento.ruidoRendimiento` (7) y el `ruidoMapa`/`ruidoRivalSerie`
+    // de una serie de playoffs (7 y 12): una fecha de temporada regular es
+    // tan volátil como un mapa de playoffs, ni más ni menos.
+    ruidoFecha: 7,
+    ruidoRivalFecha: 12,
+    // Cuántas fechas del split se juegan de verdad. El resto se resuelve en
+    // silencio y pasa resumido en una línea.
+    fechasMarcadasMin: 2,
+    fechasMarcadasMax: 3,
+    // Racha de derrotas propias (dentro del split) que dispara `presion`.
+    derrotasParaPresion: 2,
+    // Cuánto puede mover el draft corto de una fecha marcada la fuerza de
+    // ESA fecha puntual. Acotado a propósito: no reemplaza a `campeones.js`,
+    // que ya elige el campeón del split entero antes de que esto corra.
+    impactoDraftFecha: 0.08,
+    // Rango del efecto `type: 'partido'`: lo que el momento de la fecha
+    // marcada le suma o resta a la fuerza propia de ESE partido puntual.
+    partidoMin: -0.18,
+    partidoMax: 0.22,
+    // Con el resultado ya resuelto, a veces hay una reacción — prensa,
+    // vestuario, el clip que se viralizó (`data/events/partido/postpartido.json`).
+    // No mueve el resultado (ya pasó): mueve hype, mentalidad o sinergia.
+    // Probabilístico y no siempre, para que una fecha marcada no sea siempre
+    // tres decisiones seguidas.
+    probReaccion: 0.4
+  },
+
   // La serie de playoffs (fase 4): Bo5 con Fearless draft, jugada mapa a mapa
   // reusando calcularRendimiento/fuerzaDelEquipo de rendimiento.js.
   serie: {

@@ -27,7 +27,17 @@ export const EJES = {
   ladder: ['bajo', 'medio', 'alto', 'apice', 'elite'],
   // Tu linea. El rol define que se espera de vos, que se ve de lo que hacés y
   // que problemas tenés; sin el eje, ningun evento podia ser de un rol.
-  rol: ['top', 'jungla', 'mid', 'adc', 'support']
+  rol: ['top', 'jungla', 'mid', 'adc', 'support'],
+  // Qué tiene en juego una fecha de la temporada regular (fase 5). A
+  // diferencia de los demás ejes, `calcularContexto(state)` SIN overrides
+  // nunca produce un valor real acá (queda `null`): solo existe adentro de
+  // `systems/temporada.js`, que calcula el motivo principal de la fecha
+  // marcada y lo pasa como override. Es management deliberado: un evento de
+  // `stakes` nunca puede colarse por la selección normal de `events.js`, y
+  // `dev/cobertura.js` (que solo recorre `calcularContexto` sin overrides) no
+  // los va a ver alcanzables — por eso la fase 5 valida esta celda con un
+  // check propio en `validate.js`, no con `cobertura.js --huecos`.
+  stakes: ['clasico', 'puntero', 'define_clasificacion', 'revancha', 'presion', 'rival_de_generacion', 'parejo']
 };
 
 // Las marcas son booleanos enumerables que no merecen un eje propio. Se declaran
