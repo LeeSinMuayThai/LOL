@@ -66,6 +66,14 @@ export const MARCAS = [
   'pool_fuera_meta',
   'main_muerto',
   'campeon_nuevo',
+  // Lo que ya viviste, leído de `career.registro` (fase 8D). Nunca se
+  // resetean: una vez campeón, `es_campeon` queda prendida el resto de la
+  // carrera, igual que `nomade` una vez que pasaste por tu tercer club.
+  'es_campeon',
+  'multicampeon',
+  'paso_por_tier3',
+  'curtido',
+  'nomade',
   // Pendientes: los activan los pasos 10 a 12.
   'espera_edad_minima',
   'lesion_cronica',

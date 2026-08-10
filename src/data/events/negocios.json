@@ -59,5 +59,187 @@
         ]
       }
     ]
+  },
+  {
+    "id": "streaming_paralelo",
+    "category": "negocios",
+    "title": "El streaming te deja más que el sueldo base",
+    "description": "Entre donaciones y suscriptores, el canal te está dejando una plata que hace un año ni soñabas. El problema es que las horas de stream y las horas de práctica compiten por el mismo espacio del día.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "nivel": ["tier2", "tier1"]
+    },
+    "conditions": [
+      { "field": "player.stats.hype", "op": "gt", "value": 50 }
+    ],
+    "options": [
+      {
+        "id": "meterle_mas_horas_al_stream",
+        "label": "Meterle más horas al stream",
+        "descripcion": "Subís la frecuencia y la plata sube con ella. Cada hora en vivo es una hora que no scrimeás.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Los números del canal crecen en serio: ya no es plata extra, es un ingreso que compite con el sueldo del club.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mecanica", "min": -2, "max": -1, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El coach te frena en seco: te pide elegir entre el canal y las scrims de la tarde. No te lo pide dos veces.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "poner_un_techo",
+        "label": "Ponerle un techo fijo de horas",
+        "descripcion": "Cortás el stream siempre a la misma hora, pase lo que pase con el chat. Menos plata extra, cero roce con el club.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El techo se respeta y el equilibrio se sostiene. El canal crece más lento, pero crece sin pelearte con nadie.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Cumplís el horario, pero ves crecer canales de gente que arriesga más que vos y te preguntás si no estás siendo demasiado prudente.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": -1, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_agente_te_llama",
+    "category": "negocios",
+    "title": "Tu representante te propone adelantar la renegociación",
+    "description": "Todavía te queda contrato, pero tu representante te llama con un plan: abrir la charla ahora, con el mercado a tu favor, en vez de esperar al último año como haría cualquiera.",
+    "weight": 4,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": ["debut", "profesional"],
+      "nivel": ["tier1"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 6 }
+    ],
+    "options": [
+      {
+        "id": "adelantar_la_charla",
+        "label": "Darle luz verde para que la abra ya",
+        "descripcion": "Confiás en el timing de tu representante. Si el club muerde, mejorás tu situación antes de tiempo; si no, quedás pidiendo algo que todavía no te ganaste del todo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El club escucha la propuesta con más apertura de la esperada. No cierran nada todavía, pero la conversación quedó abierta en tus términos.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El club corta la charla en seco: \"hablamos cuando corresponda\". Queda la sensación de haber jugado una carta antes de tiempo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "esperar_el_momento_normal",
+        "label": "Decirle que espere al último año",
+        "descripcion": "Preferís jugar tus cartas cuando el contrato realmente se venza. Menos riesgo de sonar ansioso, y el mercado puede cambiar para entonces.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu representante respeta el plan y guarda la jugada para más adelante. Seguís jugando sin esa conversación pendiente.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Un compañero de tu nivel firma una mejora en otro club mientras vos esperás tu turno. Te preguntás si dejaste pasar el momento.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": -1, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_regalo_del_sponsor",
+    "category": "negocios",
+    "title": "Todo el setup gratis, con una condición",
+    "description": "Una marca de periféricos te ofrece renovar todo tu equipo sin costo — mouse, teclado, silla — a cambio de exclusividad: nada de otras marcas en cámara, ni siquiera las que ya usabas por gusto.",
+    "weight": 4,
+    "cooldown": 6,
+    "contexto": {
+      "nivel": ["tier2", "tier1"]
+    },
+    "conditions": [
+      { "field": "player.stats.hype", "op": "gt", "value": 40 }
+    ],
+    "options": [
+      {
+        "id": "aceptar_la_exclusividad",
+        "label": "Aceptar la exclusividad",
+        "descripcion": "Todo el setup nuevo, a cambio de no volver a mostrar nada de otra marca. Ahorrás plata; perdés margen de maniobra con lo que ya usabas.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El setup nuevo llega completo y funciona mejor de lo esperado. La exclusividad no te pesa tanto como pensabas.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Extrañás el mouse que usabas antes de firmar. Nada grave, pero cada tanto te acordás de que ya no podés elegir.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "quedarte_con_lo_tuyo",
+        "label": "Quedarte con lo que ya elegiste vos",
+        "descripcion": "Rechazás la exclusividad. Seguís pagando tu propio equipo, con la ventaja de que sigue siendo exactamente el que vos querés.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Seguís con el setup que ya conocés perfecto. La plata que dejás sobre la mesa se siente menos importante de lo que pensabas.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El sponsor firma con un compañero tuyo, que ahora aparece en cámara con equipo nuevo mientras vos seguís con el de siempre.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": -1, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

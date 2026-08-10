@@ -4,6 +4,7 @@ import { calcularContexto, coincideContexto } from '../core/contexto.js';
 import { resolverTexto } from '../core/plantillas.js';
 import { aplicarLPAlEstado, etiquetaDeRanked, servidorDeLaPartida } from '../core/ranked.js';
 import { aprenderCampeones, subirMaestria, olvidarPeor, principalDelPool } from '../core/pool.js';
+import { registrarMomento } from '../core/registro.js';
 import { crearLog } from '../core/log.js';
 import { deltaCorto, lista } from '../core/formato.js';
 import { tipoDeSplit } from '../core/presupuesto.js';
@@ -47,17 +48,32 @@ function candidatos(state) {
 
 // Las tres cosas que un evento puede hacerle al pool. Toda la mecánica vive en
 // core/pool.js; acá solo se traduce el JSON.
+//
+// `objetivo: 'nuevo'` (bug encontrado en la auditoría de contenido, agosto
+// 2026): `aprenderCampeones` YA devuelve qué campeón entró (`resultado.campeones`),
+// pero como cada efecto de un outcome se aplica por separado, ese dato se
+// perdía apenas terminaba el efecto `aprender` — el siguiente efecto
+// `maestria objetivo:'nuevo'` no tenía forma de saber a quién apuntar y caía,
+// en silencio, sobre `principalDelPool` (el campeón de siempre, no el
+// recién llegado). Se arregla dejando un rastro de un solo split en
+// `state.flags.ultimoAprendidoPool` (T4-safe, se pisa en cada `aprender` y no
+// se lee en ningún otro lado) para que el efecto siguiente, DEL MISMO
+// outcome, lo pueda usar.
 function aplicarAlPool(state, effect, rng) {
   const pool = state.player.championPool;
 
   if (effect.accion === 'aprender') {
-    return aprenderCampeones(state, pool, roll(effect.min, effect.max, rng), rng, { criterio: effect.criterio });
+    const resultado = aprenderCampeones(state, pool, roll(effect.min, effect.max, rng), rng, { criterio: effect.criterio });
+    return { ...resultado, ultimoAprendido: resultado.campeones ?? [] };
   }
 
   if (effect.accion === 'maestria') {
+    const nombreNuevo = state.flags.ultimoAprendidoPool?.[0];
     const objetivo = effect.objetivo === 'jugado'
       ? pool.find((campeon) => campeon.name === state.player.campeonDelSplit) ?? principalDelPool(pool)
-      : principalDelPool(pool);
+      : effect.objetivo === 'nuevo'
+        ? pool.find((campeon) => campeon.name === nombreNuevo) ?? principalDelPool(pool)
+        : principalDelPool(pool);
     const cantidad = roll(effect.min, effect.max, rng);
     return {
       pool: subirMaestria(pool, objetivo.name, cantidad),
@@ -86,9 +102,33 @@ function aplicarEfecto(state, effect, rng) {
   // core/pool.js y las comparten el offseason, los eventos y el draft.
   if (effect.type === 'pool') {
     const resultado = aplicarAlPool(state, effect, rng);
+    const flags = effect.accion === 'aprender'
+      ? { ...state.flags, ultimoAprendidoPool: resultado.ultimoAprendido ?? [] }
+      : state.flags;
     return {
-      state: { ...state, player: { ...state.player, championPool: resultado.pool } },
+      state: { ...state, player: { ...state.player, championPool: resultado.pool }, flags },
       descripcion: resultado.texto ?? 'el pool queda igual'
+    };
+  }
+
+  // Un momento narrativo permanente (fase 8D, PLAN.md §8D.2): a diferencia de
+  // `push` (que solo amontona strings en `career.hitos` y nadie los lee), esto
+  // escribe en `career.registro.momentos` — el slot que la fase 8 dejó listo
+  // "para que la fase 13 pueda citarlos" — con fecha y edad, y la ficha
+  // (`src/ui/components/ficha.js`) lo muestra. Es la marca que hace que UNA
+  // decisión, no todas, le quede pegada al resto de la carrera.
+  //
+  // `effect.path` no se usa acá adentro (el destino es siempre
+  // `career.registro.momentos`, vía `registrarMomento`, que espera el
+  // registro completo y no un path suelto) — se declara igual en el JSON
+  // porque el chequeo de esquema de `validate.js` lo exige para TODO efecto,
+  // antes de mirar el tipo.
+  if (effect.type === 'momento') {
+    const valor = weightedPick(effect.values, () => 1, rng);
+    const momento = { tipo: effect.tipo, anio: state.calendario.anio, edad: state.age, org: state.career.currentOrg, texto: valor };
+    return {
+      state: { ...state, career: { ...state.career, registro: registrarMomento(state.career.registro, momento) } },
+      descripcion: `Momento: "${valor}"`
     };
   }
 

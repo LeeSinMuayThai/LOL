@@ -61,10 +61,17 @@ const ETIQUETAS_CAMPO = {
   'career.orgs': 'Organizaciones',
   'career.hitos': 'Hitos',
   'career.sinergia': 'Sinergia',
+  'career.jerarquia': 'Jerarquía',
+  'career.arraigo': 'Arraigo',
   // Fase 5: el efecto `type: 'partido'` no usa esta etiqueta en su propio
   // texto (arma el suyo en `aplicarEfecto`), pero el check de esquema exige
   // que todo `path` declarado tenga una entrada legible igual.
-  'career.temporada.ajustePartido': 'El partido'
+  'career.temporada.ajustePartido': 'El partido',
+  // Fase 8D: el efecto `type: 'momento'` tampoco usa esta etiqueta en su
+  // propio texto (arma el suyo en `aplicarEfecto`, "Momento: ..."), pero
+  // declara este path para el chequeo de esquema — mismo criterio que
+  // `partido` arriba.
+  'career.registro.momentos': 'Momentos'
 };
 
 export function etiquetaCampo(path) {

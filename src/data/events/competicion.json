@@ -193,5 +193,131 @@
         ]
       }
     ]
+  },
+  {
+    "id": "el_invicto_se_corta",
+    "category": "competicion",
+    "title": "Se cortó la racha",
+    "description": "Perdieron. Nada más que eso, pero después de tantas jornadas ganando se siente distinto: el vestuario tiene que aprender de nuevo a perder sin que se le venga todo abajo.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "etapa": ["debut", "profesional"],
+      "nivel": ["tier2", "tier1"],
+      "momentum": ["slump"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 5 }
+    ],
+    "options": [
+      {
+        "id": "bajarle_el_peso",
+        "label": "Bajarle el peso en la charla del día siguiente",
+        "descripcion": "Le decís al grupo que una derrota no borra las jornadas anteriores. Ordena la cabeza colectiva, aunque suene a minimizar lo que pasó.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El mensaje calma al vestuario justo a tiempo. La racha se cortó, pero el clima de laburo no.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Bajarle el peso suena bien en la charla, pero en la práctica siguiente se nota que algo quedó pegado.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "analizarla_en_frio",
+        "label": "Analizarla en frío, sin filtro",
+        "descripcion": "Revisás el VOD completo buscando qué falló de verdad. Más incómodo en el momento, y con mejor información para la próxima.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El análisis encuentra dos errores puntuales y repetibles. Duro de ver, útil de corregir.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.shotcalling", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El análisis se estira tanto que el grupo termina más golpeado por la revisión que por la derrota misma.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_equipo_ideal_del_split",
+    "category": "competicion",
+    "title": "Te nombran en el equipo ideal del split",
+    "description": "La liga publica el All-Pro Team de la temporada y tu nombre está ahí, votado entre medios y fanáticos. Es el tipo de reconocimiento que no depende de un título, pero que se siente como uno.",
+    "weight": 4,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": ["profesional"],
+      "nivel": ["tier1"],
+      "momentum": ["racha", "estable"]
+    },
+    "conditions": [
+      { "field": "player.stats.hype", "op": "gt", "value": 45 }
+    ],
+    "options": [
+      {
+        "id": "usarlo_para_negociar",
+        "label": "Usarlo como argumento para tu próximo contrato",
+        "descripcion": "Le pedís a tu representante que lo sume a la carpeta de negociación. Convertís un reconocimiento en una herramienta concreta.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El reconocimiento pesa en la mesa de negociación más de lo esperado. Tu representante lo agrega como argumento de peso.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "momento", "path": "career.registro.momentos", "tipo": "equipo_ideal", "values": ["El año que entraste al equipo ideal de la liga", "El reconocimiento que usaste para negociar mejor"] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El club te felicita, pero deja claro que un premio de fin de año no cambia la charla del contrato.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] },
+              { "type": "momento", "path": "career.registro.momentos", "tipo": "equipo_ideal", "values": ["El año que entraste al equipo ideal, aunque no cambiara nada del contrato", "El reconocimiento que quedó como una línea más en el currículum"] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "compartirlo_con_el_equipo",
+        "label": "Compartirlo públicamente con tu equipo",
+        "descripcion": "Decís que el mérito es tan tuyo como de los cuatro que jugaron al lado tuyo. Cede protagonismo individual y suma puertas adentro.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El gesto no pasa desapercibido en el vestuario. Compartir el mérito individual construye algo que un trofeo solo no construye.",
+            "effects": [
+              { "type": "stat", "path": "career.arraigo", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El gesto queda bien, pero puertas afuera nadie discute el equipo ideal: la placa tiene tu nombre y solo el tuyo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

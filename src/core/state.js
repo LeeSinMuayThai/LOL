@@ -200,6 +200,13 @@ export function createInitialState(seed, rng, eleccion = null) {
       // nunca null (trampa T4). `systems/events.js` lo lee para pesar la
       // repetición contra la novedad.
       eventosVistos: {},
+      // Rastro de un solo split: qué campeón(es) entró el último efecto `pool`
+      // con `accion: 'aprender'` de ESTE outcome. Lo usa el siguiente efecto
+      // del mismo outcome (`accion: 'maestria', objetivo: 'nuevo'`) para saber
+      // a quién apuntarle — arreglo del bug donde el bono caía siempre en el
+      // campeón de siempre en vez de en el recién aprendido (fase 8D). Nunca
+      // se lee fuera de `aplicarAlPool`.
+      ultimoAprendidoPool: [],
       robosConsecutivos: 0,
       pcConfiscada: 0,
       avisos: 0,

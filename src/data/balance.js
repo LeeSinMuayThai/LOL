@@ -493,6 +493,19 @@ export const BALANCE = {
     umbralFlecha: 1
   },
 
+  // Marcas derivadas de `career.registro` (fase 8D, contenido vivo): leen
+  // datos que la fase 8 ya acumula, cero persistencia nueva. `es_campeon` y
+  // `paso_por_tier3` son existencia pura (>0), sin umbral que tunear — mismo
+  // criterio que ya usa `con_vestuario` en `core/contexto.js`.
+  registro: {
+    multicampeonUmbral: 3,
+    // Splits jugados (con o sin equipo) para contar como "curtido": ya vio de
+    // todo, es al que un rookie le pregunta cómo no quemarse.
+    curtidoSplitsUmbral: 30,
+    // Cuántas organizaciones distintas para leerse como nómade.
+    nomadeOrgsUmbral: 3
+  },
+
   rendimiento: {
     // El draft: la probabilidad de que te den el campeon que queres depende de
     // tu jerarquia. Es el primer eslabon de la espiral central de CONCEPTO §7.

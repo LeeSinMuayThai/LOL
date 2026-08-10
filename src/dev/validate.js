@@ -178,6 +178,16 @@ check('Esquema de eventos válido', () => {
             continue;
           }
 
+          if (effect.type === 'momento') {
+            if (!Array.isArray(effect.values) || effect.values.length < 2) {
+              throw new Error(`${evento.id}/${opcion.id}: efecto momento necesita al menos 2 values (mismo criterio que push, regla 7)`);
+            }
+            if (!effect.tipo || typeof effect.tipo !== 'string') {
+              throw new Error(`${evento.id}/${opcion.id}: efecto momento sin "tipo"`);
+            }
+            continue;
+          }
+
           if (effect.type === 'pool') {
             if (!ACCIONES_DE_POOL.includes(effect.accion)) {
               throw new Error(`${evento.id}/${opcion.id}: acción de pool desconocida "${effect.accion}" (válidas: ${ACCIONES_DE_POOL.join(', ')})`);
@@ -1205,9 +1215,21 @@ check('El tier 3 es breve: mediana de permanencia ≤ 2 splits, p90 ≤ 4', () =
   // Pedido explícito: nadie debuta en primera y nadie se queda mucho en un
   // equipo inventado. Se mide en splits CONSECUTIVOS en tier 3 por stint (una
   // carrera puede pasar por tier 3 más de una vez si el equipo se disuelve).
+  //
+  // n=6000, no 1500: el p90 real cae casi exactamente en el borde entre 4 y 5
+  // splits (~90% acumulado en 4). Medido en la fase 8D (contenido vivo):
+  // con 1500 seeds el resultado cruza ese borde para cualquier lado según qué
+  // contenido compite por el mismo rng() en `elegirEvento` (trampa T1/D21-D22
+  // ya documentada) — agregar eventos nuevos no mueve la tasa real de
+  // permanencia (nunca se tocó `competitivo.js` ni ninguna constante de
+  // tier 3), pero sí reordena qué evento gana cada sorteo para una seed dada,
+  // lo que corre en cascada el resto de esa carrera. A 6000 seeds el p90 da 4
+  // de forma estable tanto con el catálogo viejo como con el nuevo — es la
+  // muestra mínima para que el check deje de depender de en qué lado del
+  // borde caiga una seed puntual.
   const permanencias = [];
 
-  for (let seed = 1; seed <= 1500; seed += 1) {
+  for (let seed = 1; seed <= 6000; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
     let splitsEnTier3 = 0;
@@ -2025,6 +2047,10 @@ check('El registro solo crece: ningún campo decrece nunca en una carrera (regla
       if (actual.porOrg.length < anterior.porOrg.length) {
         throw new Error(`seed ${seed}, split ${i}: registro.porOrg perdió filas`);
       }
+      // Fase 8D: el efecto `momento` es el primer escritor real de esto.
+      if (actual.momentos.length < anterior.momentos.length) {
+        throw new Error(`seed ${seed}, split ${i}: registro.momentos perdió entradas`);
+      }
       anterior = actual;
     }
   }
@@ -2167,6 +2193,61 @@ check('El arraigo llega a Ídolo+ en una fracción sana de las carreras estables
   const fraccion = llegaron / elegibles;
   if (fraccion < 0.15) {
     throw new Error(`el arraigo llega a Ídolo+ en ${(fraccion * 100).toFixed(1)}% de las carreras elegibles; se esperaba ≥15%`);
+  }
+});
+
+// --- Fase 8D: contenido vivo (PLAN.md, "que nada se repita, que todo suene real") ---
+
+check('Las 6 marcas antes sin contenido tienen al menos un evento cada una', () => {
+  const marcasQueEstabanVacias = [
+    'pc_confiscada', 'negociacion_ganada', 'sin_secundario', 'secundario_terminado', 'signature', 'espera_edad_minima'
+  ];
+  for (const marca of marcasQueEstabanVacias) {
+    const tieneEvento = TODOS_LOS_EVENTOS.some((evento) => evento.contexto?.marcas?.includes(marca));
+    if (!tieneEvento) {
+      throw new Error(`la marca "${marca}" sigue sin ningún evento que la use`);
+    }
+  }
+});
+
+check('El eje estatus tiene contenido en sus 4 valores alcanzables', () => {
+  for (const valor of ['rookie', 'titular', 'referente', 'franquicia']) {
+    const tieneEvento = TODOS_LOS_EVENTOS.some((evento) => evento.contexto?.estatus?.includes(valor));
+    if (!tieneEvento) {
+      throw new Error(`estatus:"${valor}" no tiene ningún evento que lo declare`);
+    }
+  }
+});
+
+check('El catálogo alcanza el objetivo de opciones declarado', () => {
+  const total = TODOS_LOS_EVENTOS.reduce((suma, evento) => suma + evento.options.length, 0);
+  if (total < BALANCE.contenido.objetivoOpciones) {
+    throw new Error(`el catálogo tiene ${total} opciones; el objetivo declarado es ${BALANCE.contenido.objetivoOpciones}`);
+  }
+});
+
+check('En carreras largas, una fracción sana ve al menos un evento que escribe un momento', () => {
+  let elegibles = 0;
+  let conMomento = 0;
+
+  for (let seed = 1; seed <= 300; seed += 1) {
+    const state = correrCarrera(seed, 45);
+    if (state.career.registro.splitsJugados < 25) {
+      continue;
+    }
+    elegibles += 1;
+    if (state.career.registro.momentos.length > 0) {
+      conMomento += 1;
+    }
+  }
+
+  if (elegibles < 30) {
+    throw new Error(`solo ${elegibles} carreras con ≥25 splits jugados en 300 seeds: muestra insuficiente`);
+  }
+
+  const fraccion = conMomento / elegibles;
+  if (fraccion < 0.10) {
+    throw new Error(`solo ${(fraccion * 100).toFixed(1)}% de las carreras largas vieron al menos un momento; se esperaba ≥10%`);
   }
 });
 

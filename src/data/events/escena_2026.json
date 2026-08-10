@@ -1,0 +1,319 @@
+[
+  {
+    "id": "first_selection",
+    "category": "competicion",
+    "title": "¿Lado, o quién dibujea primero?",
+    "description": "Ganaron el sorteo. Con la regla nueva de este año no elegís las dos cosas: si te quedás con el lado, el rival decide el orden de pick; si pedís dibujear primero, ellos eligen de qué lado juegan. El capitán te pregunta qué priorizás.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "etapa": ["debut", "profesional"],
+      "nivel": ["tier1"],
+      "ventana": ["playoffs"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [
+      { "field": "serie.activa", "op": "eq", "value": true }
+    ],
+    "options": [
+      {
+        "id": "pedir_el_lado",
+        "label": "Pedir el lado que mejor les rinde",
+        "descripcion": "Priorizás la comodidad de mapa y le dejás al rival el orden de picks. Es la apuesta más conservadora.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El lado les da la estructura que veníais practicando toda la semana. El rival elige dibujear primero y arranca picking, como esperaban.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.02, "max": 0.1 }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El lado no alcanza: el rival usa el orden de pick para forzar una comp que no habían scrimeado.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pedir_dibujear_primero",
+        "label": "Pedir dibujear primero",
+        "descripcion": "Priorizás el control del draft por sobre el lado del mapa. Más agresivo, y más dependiente de que el plan de pick esté afilado.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Abrís el draft con el pick que tenían preparado y el rival tiene que reaccionar en el lado que no eligió.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.03, "max": 0.14 },
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Abren el draft, pero el lado que les queda no acompaña la comp que armaron. Ganaron el orden y perdieron el mapa.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.12, "max": -0.02 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_burn_de_cuarenta",
+    "category": "competicion",
+    "title": "A partir del mapa 4 no queda casi nada",
+    "description": "Con Fearless activo toda la serie, entre las dos series pueden quedar hasta cuarenta campeones quemados. El coach te avisa antes del mapa: lo que tenías pensado para cerrar la serie ya no está disponible.",
+    "weight": 4,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": ["debut", "profesional"],
+      "nivel": ["tier1"],
+      "ventana": ["playoffs"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [
+      { "field": "serie.activa", "op": "eq", "value": true }
+    ],
+    "options": [
+      {
+        "id": "tirar_de_un_comfort_pick",
+        "label": "Tirar de un comfort pick fuera del meta",
+        "descripcion": "Vas a algo que sabés jugar aunque no esté de moda. Menos potente en el papel, mucho más confiable en tus manos a esta altura de la serie.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "modificadores": [
+              { "field": "player.championPool.length", "referencia": 4, "factor": 0.03 }
+            ],
+            "texto": "El comfort pick te sostiene justo cuando el resto del pool ya no está. Jugás con la comodidad de mil partidas encima.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.02, "max": 0.12 }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El pick te sale cómodo, pero el rival lo tenía scouteado hace rato — un pool angosto también es predecible.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.14, "max": -0.02 }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "forzar_algo_nuevo",
+        "label": "Forzar algo que casi no practicaste",
+        "descripcion": "Con el pool quemado, probás algo fuera de lo tuyo en el peor momento posible para experimentar.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "Sale mejor de lo que nadie esperaba, arrancando con vos. El riesgo, esta vez, paga.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.05, "max": 0.18 },
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "Se nota que no lo tenías afilado. El rival lo lee rápido y te castiga cada vez que dudás.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.2, "max": -0.05 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_camada_que_se_retira",
+    "category": "declive",
+    "title": "Se retira toda una generación",
+    "description": "Tres veteranos de tu misma camada —de otros equipos, carreras de diez, doce años— anuncian el retiro la misma semana. Un periodista te pregunta, sin filtro, si vos también lo estás pensando.",
+    "weight": 4,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": ["profesional"],
+      "edadBanda": ["tardia", "veterana"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "contestar_que_no",
+        "label": "Decir que no lo pensaste ni un segundo",
+        "descripcion": "Cerrás el tema con seguridad. Puede sonar a negación si tu forma viene cayendo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Lo decís con una firmeza que se nota real. La nota sale y ya está: nadie te vuelve a preguntar en un tiempo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 0, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo negás, pero la pregunta te queda dando vueltas más de lo que esperabas — sobre todo de noche, después de una derrota.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "admitir_que_lo_pensaste",
+        "label": "Admitir que sí, alguna vez lo pensaste",
+        "descripcion": "Decís la verdad incómoda en público. Genera empatía real, y también le da munición a cualquiera que ya dudaba de vos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "La honestidad pega mejor de lo que esperabas: mucha gente se identifica y el respeto que ganás pesa más que el ruido.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "momento", "path": "career.registro.momentos", "tipo": "penso_en_retirarse", "values": ["La entrevista donde admitiste que alguna vez lo pensaste", "El día que dijiste en voz alta que no es para siempre"] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Un par de titulares recortan tu frase fuera de contexto: \"{handle} piensa en el retiro\". Pasás la semana aclarando algo que dijiste con matices.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] },
+              { "type": "momento", "path": "career.registro.momentos", "tipo": "penso_en_retirarse", "values": ["El titular que te sacó de contexto por decir la verdad", "El día que dijiste en voz alta que no es para siempre"] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_sueldo_del_companero",
+    "category": "negocios",
+    "title": "Se filtró cuánto cobra tu compañero",
+    "description": "Un leak de sueldos circula por Twitter y ahí aparece: uno de tu roster cobra bastante más que vos, con un rendimiento parecido al tuyo esta temporada. Nadie lo dijo en voz alta todavía, pero todos ya lo vieron.",
+    "weight": 5,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": ["debut", "profesional"],
+      "nivel": ["tier1"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "pedirle_al_representante_que_negocie",
+        "label": "Pedirle a tu representante que abra la renegociación",
+        "descripcion": "Usás el número filtrado como palanca. Con jerarquía alta el club te escucha rápido; sin ella, corrés el riesgo de sonar a queja.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "modificadores": [
+              { "field": "career.jerarquia", "referencia": 55, "factor": 0.02 }
+            ],
+            "texto": "El club abre la conversación antes de lo esperado: el número filtrado te dio el argumento que te faltaba.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El club escucha el reclamo y lo archiva para \"la próxima ventana\". Queda la sensación de que hablar no cambió nada todavía.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "no_decir_nada",
+        "label": "No decir nada y dejarlo pasar",
+        "descripcion": "Te tragás el número y seguís como si no lo hubieras visto. Te ahorrás la incomodidad de la charla; también dejás la diferencia tal cual está.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El tema se diluye en un par de días, como pasa siempre con estos leaks. Vos sabés el número, y seguís jugando igual.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 0, "max": 1, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te lo guardás, pero te queda dando vueltas cada vez que ves a ese compañero en la sala de prácticas.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_servicio_que_se_viene",
+    "category": "identidad",
+    "title": "El servicio militar se acerca",
+    "description": "Tenés que enlistarte antes de los 28 —hasta los 30 si sos figura de élite reconocida—, dieciocho a veintiún meses fuera del circuito. Nadie te obliga a decidir hoy, pero cuanto más lo pateás, menos margen te queda para elegir el momento.",
+    "weight": 4,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": ["debut", "profesional"],
+      "region": ["KR"],
+      "edadBanda": ["pico", "tardia", "veterana"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "anticiparlo",
+        "label": "Anticiparlo mientras todavía rendís arriba",
+        "descripcion": "Elegís irte antes de que el club te lo pida. Cortás una racha que venía bien, y volvés con margen de carrera todavía por delante.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Anunciás la baja en tu mejor momento, no en el peor. El club lo agradece en silencio: mejor planificarlo que sufrirlo de golpe.",
+            "effects": [
+              { "type": "stat", "path": "career.arraigo", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "momento", "path": "career.registro.momentos", "tipo": "decidio_el_servicio", "values": ["El día que elegiste anticipar el servicio militar en tu mejor momento", "Cuando decidiste irte antes de que te lo pidieran"] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Cortar una racha así de buena para irte es más difícil de lo que pensabas — te vas preguntándote qué hubiera pasado si te quedabas un split más.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "estirarlo_al_maximo",
+        "label": "Estirarlo hasta el límite legal",
+        "descripcion": "Postergás la decisión todo lo que la ley permite. Más años de carrera activa ahora, y cada vez menos margen para elegir cuándo cortar.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Ganás los años extra que buscabas. La fecha límite sigue ahí, pero por ahora es un problema de otro año.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Postergarlo tanto empieza a sentirse menos a plan y más a esquive. El club empieza a preguntar, con cuidado, cuándo pensás resolverlo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

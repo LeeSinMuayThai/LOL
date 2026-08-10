@@ -120,5 +120,64 @@
         ]
       }
     ]
+  },
+  {
+    "id": "jungla_el_mapa_es_tuyo",
+    "category": "rol_jungla",
+    "title": "Nadie más va a leer el mapa por vos",
+    "description": "En soloQ no hay coach que te diga por dónde arrancar: la primera invasión, el primer camino, salen de tu lectura y de nadie más. Si sale mal, no hay a quién señalar.",
+    "weight": 6,
+    "cooldown": 4,
+    "contexto": {
+      "rol": ["jungla"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "invadir_de_arranque",
+        "label": "Invadir de arranque",
+        "descripcion": "Buscás el golpe grande desde el minuto uno. Si conecta, arrancás con ventaja limpia; si no, empezás la partida ya abajo de recursos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Conectás la invasión y arrancás la partida con la jungla rival en déficit. El resto del equipo lo nota enseguida.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": 15, "max": 30 }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Te esperaban del otro lado. Arrancás la partida sin buffs y con el smite gastado antes de tiempo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "farmear_tu_lado",
+        "label": "Farmear tu propio lado y esperar",
+        "descripcion": "Jugás seguro: tu jungla, tu ritmo, sin exponerte al minuto dos. Menos varianza, y el resto del mapa se define sin que vos empujes nada.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Llegás a nivel completo y a tiempo a la primera pelea grande. Nada espectacular, pero tampoco nada regalado.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Jugás tan seguro que llegás al primer objetivo grande sin ninguna ventaja para pelearlo.",
+            "effects": [
+              { "type": "ladder", "path": "player.ranked", "min": -20, "max": -5 }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

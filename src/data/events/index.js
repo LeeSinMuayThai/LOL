@@ -11,6 +11,15 @@ import rolJungla from './rol/jungla.json' with { type: 'json' };
 import rolMid from './rol/mid.json' with { type: 'json' };
 import rolAdc from './rol/adc.json' with { type: 'json' };
 import rolSupport from './rol/support.json' with { type: 'json' };
+// Fase 8D (contenido vivo, PLAN.md): las 6 marcas que se calculaban y no
+// tenían contenido detrás, el eje `estatus`, lo que cita `career.registro`
+// (títulos, tier 3, nomadismo), y la escena real de 2026 (Fearless, First
+// Selection, mercado, servicio militar). No confundir con la FASE 13 —
+// "contenido a escala" — que depende de sistemas que todavía no existen.
+import marcasVivas from './marcas_vivas.json' with { type: 'json' };
+import estatus from './estatus.json' with { type: 'json' };
+import registroCita from './registro_cita.json' with { type: 'json' };
+import escena2026 from './escena_2026.json' with { type: 'json' };
 // Fase 5: el contenido de las fechas marcadas de la temporada regular. Se
 // gatea por `contexto.stakes`, un eje que `calcularContexto(state)` sin
 // overrides nunca produce — así que esto nunca puede colarse por la
@@ -35,6 +44,10 @@ export const TODOS_LOS_EVENTOS = [
   ...rolMid,
   ...rolAdc,
   ...rolSupport,
+  ...marcasVivas,
+  ...estatus,
+  ...registroCita,
+  ...escena2026,
   ...partidoPresion,
   ...partidoClasico,
   ...partidoDentroDelMapa,

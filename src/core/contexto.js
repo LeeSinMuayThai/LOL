@@ -152,7 +152,36 @@ function calcularMarcas(state) {
     marcas.push('espera_edad_minima');
   }
 
-  return [...marcas, ...marcasDePool(state)];
+  return [...marcas, ...marcasDePool(state), ...marcasDeRegistro(state)];
+}
+
+// Lo que ya viviste, leído como contexto (fase 8D). Todo esto sale de
+// `career.registro` (fase 8), que ya lo acumula — cero persistencia nueva acá,
+// solo la traducción a marca. Es lo que hace que un título de hace diez
+// splits, o el club número tres de la carrera, le sigan importando al
+// contenido de ahora, no solo al del momento en que pasó.
+function marcasDeRegistro(state) {
+  const r = BALANCE.registro;
+  const registro = state.career.registro;
+  const marcas = [];
+
+  if (registro.titulos.length > 0) {
+    marcas.push('es_campeon');
+  }
+  if (registro.titulos.length >= r.multicampeonUmbral) {
+    marcas.push('multicampeon');
+  }
+  if (registro.porOrg.some((fila) => fila.tier === 3)) {
+    marcas.push('paso_por_tier3');
+  }
+  if (registro.splitsJugados >= r.curtidoSplitsUmbral) {
+    marcas.push('curtido');
+  }
+  if (registro.porOrg.length >= r.nomadeOrgsUmbral) {
+    marcas.push('nomade');
+  }
+
+  return marcas;
 }
 
 // El pool que elegiste, leído como contexto.

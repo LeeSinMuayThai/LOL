@@ -1,0 +1,360 @@
+[
+  {
+    "id": "sin_pc",
+    "category": "identidad",
+    "title": "La PC adentro del placard",
+    "description": "Se acabó la discusión: te sacaron la PC y la guardaron. El próximo movimiento es tuyo — negociar el regreso o dejar pasar unos días para que se enfríe todo.",
+    "weight": 6,
+    "cooldown": 6,
+    "contexto": {
+      "etapa": ["amateur"],
+      "marcas": ["pc_confiscada"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "negociar_ahora",
+        "label": "Sentarte a negociar ahora mismo",
+        "descripcion": "Proponés un trato: horarios, notas, lo que haga falta. Si aceptan, volvés rápido; si te dicen que no, quedás peor parado para la próxima.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Aceptan el trato con condiciones. Volvés a jugar antes de lo que pensabas, con un horario que ahora es innegociable.",
+            "effects": [
+              { "type": "stat", "path": "player.familyTrust", "min": 2, "max": 5, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "No aceptan nada todavía: quieren verte cumplir primero y recién después hablar. Salís de la charla con las manos vacías.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejar_que_se_enfrie",
+        "label": "Dejar pasar unos días",
+        "descripcion": "No insistís. Le das tiempo a que se calme la casa, aunque eso también sea tiempo sin jugar.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Los días pasan y la vuelven a traer solas, sin que lo pidas. A veces no insistir es lo que más rápido funciona.",
+            "effects": [
+              { "type": "stat", "path": "player.familyTrust", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El silencio se estira más de lo esperado. Cada día sin jugar es un día que el resto de tu división te saca ventaja.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_negociacion_que_ganaste",
+    "category": "identidad",
+    "title": "El permiso que conseguiste",
+    "description": "Ganaste la negociación con tus viejos: te dejan seguir, por ahora. Es un permiso, no una rendición — y depende de que sigas sosteniendo lo que prometiste.",
+    "weight": 5,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": ["amateur"],
+      "marcas": ["negociacion_ganada"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "usarlo_a_fondo",
+        "label": "Usarlo a fondo mientras dure",
+        "descripcion": "Le metés todo lo que podés al ranked ahora que tenés la puerta abierta. Cuanto más forzás, más rápido puede volver a cerrarse.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Le sacás el jugo al permiso: subís de rango rápido y todavía nadie te lo reprocha en tu casa.",
+            "effects": [
+              { "type": "ladder", "path": "player.ranked", "min": 20, "max": 45 }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Forzás tanto que empieza a notarse otra vez. Nadie dijo nada todavía, pero la mirada en tu casa ya cambió.",
+            "effects": [
+              { "type": "stat", "path": "player.familyTrust", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cuidarlo",
+        "label": "Cuidarlo para que no se caiga",
+        "descripcion": "Sostenés exactamente lo que prometiste, ni un poco más. Menos ranked del que querrías, pero el permiso no corre peligro.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Cumplís lo prometido al pie de la letra. En tu casa lo notan, y el permiso deja de sentirse frágil.",
+            "effects": [
+              { "type": "stat", "path": "player.familyTrust", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Jugás tan medido que sentís que estás desperdiciando el margen que te ganaste.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sin_titulo_secundario",
+    "category": "identidad",
+    "title": "El formulario que te pide un título que no tenés",
+    "description": "Un trámite de visa te pide el secundario terminado y vos lo dejaste a mitad de camino. No es la primera vez que este papel te frena algo, y probablemente no sea la última.",
+    "weight": 4,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": ["debut", "profesional"],
+      "marcas": ["sin_secundario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "retomar_a_distancia",
+        "label": "Retomarlo a distancia, aunque sea de a poco",
+        "descripcion": "Averiguás cómo terminarlo online entre partidos. Te suma una carga más a la semana, y te saca este problema de encima para siempre.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Arrancás el trámite para terminarlo a distancia. Es lento y aburrido, pero es la primera vez que sentís que el papel deja de perseguirte.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "momento", "path": "career.registro.momentos", "tipo": "retomo_secundario", "values": ["El día que arrancaste a terminar el secundario a distancia", "Cuando decidiste que el papel dejara de perseguirte"] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Entre partidos y viajes, el trámite avanza mucho más lento de lo que pensabas.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "resolverlo_con_el_club",
+        "label": "Dejar que el club lo resuelva por vos",
+        "descripcion": "El área legal de la organización se encarga del papeleo. Te ahorrás el trámite; también les debés un favor más.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "El club mueve el trámite por su cuenta y el formulario deja de ser tu problema. Una llamada menos que hacer vos mismo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 0, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "El club lo resuelve, pero te queda la sensación de necesitar que alguien más te resuelva algo que era tuyo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_secundario_que_sirvio",
+    "category": "identidad",
+    "title": "Lo que aprendiste en el colegio, ahora te sirve",
+    "description": "Un problema con el contrato o con un sponsor aparece en una reunión y nadie en el vestuario le encuentra la vuelta. Vos sí — algo de lo que aprendiste antes de dejar todo por esto te resuelve el entuerto.",
+    "weight": 4,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": ["debut", "profesional"],
+      "marcas": ["secundario_terminado"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "resolverlo_vos",
+        "label": "Resolverlo vos mismo ahí",
+        "descripcion": "Te metés en la letra chica y proponés la solución en el momento. Queda claro delante de todos que sabés de más de una cosa.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Resolvés el problema en la reunión y el manager te mira distinto el resto de la tarde. Nadie esperaba que fueras vos.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "career.jerarquia", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Tu idea sirve a medias: destraba el problema pero abre otro que nadie había visto.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "avisarle_al_manager",
+        "label": "Avisarle al manager en privado",
+        "descripcion": "Se lo comentás aparte, sin exponerte delante del vestuario. Menos protagonismo, y la solución igual llega.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El manager usa tu idea sin decir de dónde salió. El problema se resuelve, y el mérito queda flotando en otro lado.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 0, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El manager te lo agradece en privado, un gesto chico que nadie más ve.",
+            "effects": [
+              { "type": "stat", "path": "career.arraigo", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_dia_que_tuviste_signature",
+    "category": "identidad",
+    "title": "Ya sos \"el {signature}\" para todos",
+    "description": "Un caster te presenta en la previa como \"el {signature} de la región\" y no lo dice como un chiste. Es la primera vez que un campeón queda pegado a tu nombre en vez de al revés.",
+    "weight": 5,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": ["debut", "profesional"],
+      "marcas": ["signature"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "abrazar_la_etiqueta",
+        "label": "Abrazar la etiqueta",
+        "descripcion": "Lo usás a tu favor: skin, contenido, entrevistas alrededor del campeón. También te volvés más fácil de banear.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te subís a la ola: la marca te sigue a todos lados y la usás en tu favor. Del otro lado, ya nadie te lo deja pasar sin banear.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 4, "max": 8, "clamp": [0, 100] },
+              { "type": "momento", "path": "career.registro.momentos", "tipo": "signature_consolidado", "values": ["El día que la prensa te empezó a llamar por tu signature", "El campeón que te puso nombre propio"] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te lo banean en cuatro de las últimas cinco partidas. La etiqueta te queda pegada justo cuando menos podés usarla.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] },
+              { "type": "momento", "path": "career.registro.momentos", "tipo": "signature_consolidado", "values": ["El campeón por el que te empezaron a banear primero", "La etiqueta que te siguió a todos lados"] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "recordar_que_hay_mas",
+        "label": "Recordarle a todos que jugás otras cosas",
+        "descripcion": "Forzás pool en las próximas semanas para no quedar reducido a un solo campeón. Cuesta maestría en el que te hizo conocido.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Mostrás que hay más pool detrás de la etiqueta. Nadie te la saca del todo, pero tampoco te define.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Diluís la marca sin construir otra igual de fuerte. Ganaste margen; perdiste la identidad que tenías gratis.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_ano_muerto",
+    "category": "identidad",
+    "title": "Fichado, y todavía sin edad para debutar",
+    "description": "El club ya te firmó y te reservó el lugar, pero la liga exige una edad que todavía no tenés. Falta menos de lo que parece, pero un año esperando se siente eterno cuando ya te sentís listo.",
+    "weight": 5,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": ["debut", "profesional"],
+      "marcas": ["espera_edad_minima"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "entrenar_con_la_academia",
+        "label": "Entrenar con la academia mientras esperás",
+        "descripcion": "Te metés de lleno en scrims con el equipo de desarrollo. No cuenta para las estadísticas oficiales, pero te llega la fecha con menos óxido.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Las scrims con la academia te mantienen afilado. Cuando por fin cumplís la edad, no vas a llegar de cero.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Entrenás contra gente que sabe que no te va a definir nada todavía, y el nivel de exigencia se resiente.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "aceptar_la_espera",
+        "label": "Aceptar la espera y cuidar la cabeza",
+        "descripcion": "No forzás nada: descansás, seguís de cerca a tu futuro equipo desde afuera, y llegás entero al día que por fin te toca.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Llegás a la fecha del debut con la cabeza descansada, aunque el cuerpo competitivo esté un poco más frío de lo ideal.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La espera se hace más larga de lo que imaginabas. Ver desde afuera cómo juega el equipo que ya es tuyo, sin poder subirte, cansa distinto.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

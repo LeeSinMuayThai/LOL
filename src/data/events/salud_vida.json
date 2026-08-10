@@ -249,5 +249,130 @@
         ]
       }
     ]
+  },
+  {
+    "id": "tunel_carpiano",
+    "category": "salud_vida",
+    "title": "El antebrazo",
+    "description": "No es la muñeca esta vez: es un hormigueo que arranca en los dedos y sube por todo el antebrazo después de las sesiones largas. Un fisioterapeuta te dice la palabra que no querías escuchar: túnel carpiano.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "marcas": ["deuda_sueno"],
+      "edadMin": 17
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 5 }
+    ],
+    "options": [
+      {
+        "id": "operarte_ahora",
+        "label": "Operarte ahora, mientras es leve",
+        "descripcion": "Una intervención chica y semanas de recuperación. Perdés tiempo de juego ahora para no perder la mano en dos años.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La operación sale bien y la recuperación es más corta de lo que temías. Volvés con la mano descomprimida de verdad.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": -3, "max": -1, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Las semanas afuera del roster se sienten eternas, viendo scrims desde el sillón con la mano vendada.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": -5, "max": -3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "manejarlo_con_ferula",
+        "label": "Manejarlo con férula y seguir jugando",
+        "descripcion": "Nada de cirugía todavía: férula de noche, ejercicios, y jugar con la molestia. Podés seguir compitiendo ya, al precio de que el problema no se va.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "La férula y los ejercicios contienen el avance sin frenarte del roster. No se cura, pero se vuelve manejable.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": -2, "max": -1, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El hormigueo vuelve cada vez que la carga sube. Terminás jugando pendiente de la mano más de lo que jugás pendiente del mapa.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": -4, "max": -2, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hombro_cronico",
+    "category": "salud_vida",
+    "title": "Años de postura, todos juntos",
+    "description": "No fue una noche ni un split: fueron años de la misma silla, el mismo ángulo, el mismo agarre del mouse. El médico del club lo dice sin vueltas — para tu edad, tenés el hombro de alguien que vivió el doble.",
+    "weight": 4,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": ["profesional"],
+      "edadBanda": ["tardia", "veterana"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 15 }
+    ],
+    "options": [
+      {
+        "id": "rearmar_la_rutina",
+        "label": "Rearmar toda la rutina de entrenamiento",
+        "descripcion": "Kinesiología permanente, ejercicios de movilidad antes de cada sesión, un ergónomo revisando tu setup. Cambia cómo entrenás de acá en adelante.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La rutina nueva no borra los años acumulados, pero frena el deterioro. Vas a tener que sostenerla el resto de la carrera.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Cambiar una rutina de años cuesta más disciplina de la que pensabas, y las primeras semanas rinden peor, no mejor.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": -2, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugar_con_el_dolor",
+        "label": "Aprender a jugar con el dolor de fondo",
+        "descripcion": "No cambiás nada de tu rutina de años. Es lo que sabés hacer, y para llegar hasta acá te vino sirviendo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Seguís exactamente igual. El dolor es una constante más, como el ping o el ruido de la sala.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Sin ajustar nada, el hombro empieza a limitarte en las sesiones largas — algo que hace dos años ni notabas.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

@@ -51,6 +51,17 @@ export function filaHistoria(fila) {
   return item;
 }
 
+// Una fila de momento (fase 8D, `career.registro.momentos`): la decisión que
+// te quedó pegada. Distinto de `filaHistoria` — esto no es "cuánto jugaste en
+// cada club", es "qué te pasó y cuándo", el efecto `momento` escribe acá.
+export function filaMomento(momento) {
+  const item = document.createElement('div');
+  item.className = 'ficha-historia-fila';
+  const lugar = momento.org ? ` · ${momento.org}` : '';
+  item.textContent = `${momento.anio} (${momento.edad} años)${lugar} — ${momento.texto}`;
+  return item;
+}
+
 export function renderFicha(container, state, modulos) {
   const ficha = fichaCompleta(state);
   const registro = state.career.registro;
@@ -150,5 +161,16 @@ export function renderFicha(container, state, modulos) {
     detalle.appendChild(resumen);
     detalle.append(...registro.porOrg.map(filaHistoria));
     container.appendChild(detalle);
+  }
+
+  // --- Los momentos que te marcaron (fase 8D): algunas decisiones, no todas ---
+  if (registro.momentos.length > 0) {
+    const detalleMomentos = document.createElement('details');
+    detalleMomentos.className = 'ficha-historia';
+    const resumenMomentos = document.createElement('summary');
+    resumenMomentos.textContent = `Momentos (${registro.momentos.length})`;
+    detalleMomentos.appendChild(resumenMomentos);
+    detalleMomentos.append(...[...registro.momentos].reverse().slice(0, 10).map(filaMomento));
+    container.appendChild(detalleMomentos);
   }
 }

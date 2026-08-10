@@ -21,10 +21,71 @@ Documento vivo. Se actualiza al cierre de cada tarea, según la Definición de t
 **Lo que falta para cerrar el arco de `CONCEPTO`**: la temporada regular como partidos jugables y
 el meta con nombre (`PLAN.md` fases 5 y 6, insertadas el 2026-08-09 antes del mercado — ver esa
 tabla de estado), retiro y tarjeta de legado (§9), contratos y movilidad entre regiones (§6),
-rivales de generación corriendo en paralelo (§6), las etapas DEBUT y DECLIVE (§2), y contenido de
-eventos (44 de los ~200 que pide §8, con 90 de las 150 opciones objetivo).
+rivales de generación corriendo en paralelo (§6), las etapas DEBUT y DECLIVE (§2). El objetivo de
+contenido de §8 (150 opciones) ya se superó — 98 eventos / 196 opciones tras la fase 8D
+(`PLAN.md` fase 8D, insertada el 2026-08-10 antes del mercado, mismo criterio que 5/6) —, aunque el
+catálogo completo de §8 (~200 eventos, con `equipo.json`/`vestuario.json`/`region.json`/etc.) sigue
+pendiente de la fase 13 real, que depende del mercado (9) y el retiro (10).
 
 ## Changelog
+
+### 2026-08-10 — Fase 8D: contenido vivo — las marcas sin frase, el eje estatus, el registro que se cita
+
+Insertada fuera de la secuencia lineal (mismo criterio que las fases 5/6 el 2026-08-09): pedido del
+usuario de llenar el juego de contenido real, que nada se repita, y que algunas decisiones "marquen
+el resto de la carrera" — usando lo que la fase 8 dejó construido y sin estrenar. Detalle completo
+en `PLAN.md`, `# FASE 8D`.
+
+**Auditado antes de escribir una línea** (tres exploraciones en paralelo + investigación propia del
+estado real de LoL 2026): el catálogo medía 70 eventos/142 opciones/284 outcomes (no 20/40 como
+decían documentos viejos — solo faltaban ~8 opciones del objetivo de 150, no 110); 6 marcas que
+`calcularMarcas` ya calculaba cada split (`pc_confiscada`, `negociacion_ganada`, `sin_secundario`,
+`secundario_terminado`, `signature`, `espera_edad_minima`) no tenían ni un evento detrás; el eje
+`estatus` (rookie→titular→referente→franquicia) no gateaba ni un evento; `career.registro.momentos`
+—el slot que la fase 8 dejó listo "para que la fase 13 pueda citarlos"— tenía cero llamadas.
+
+**Motor** (3 cambios chicos, todos aditivos): efecto nuevo `type: "momento"` que escribe en
+`career.registro.momentos`; 5 marcas nuevas derivadas del registro (`es_campeon`, `multicampeon`,
+`paso_por_tier3`, `curtido`, `nomade` — cero persistencia nueva, leen lo que fase 8 ya acumula); fix
+de un bug encontrado en la auditoría (`objetivo: "nuevo"` en el efecto `maestria` caía siempre en el
+campeón principal en vez del recién aprendido — `pool_campeon_nuevo`/`pool_campeon_nuevo_soloq`
+llevaban este bug desde antes de esta fase); la ficha muestra los momentos junto a "Ver carrera".
+
+**Contenido**: 28 eventos nuevos / 54 opciones nuevas en 8 archivos (4 nuevos: `marcas_vivas.json`,
+`estatus.json`, `registro_cita.json`, `escena_2026.json`; 4 extendidos: `rol/jungla.json`,
+`negocios.json`, `salud_vida.json`, `competicion.json`). Todo evento nuevo declara `etapa` y, cuando
+aplica, `edadBanda`/`nivel`/`estatus`/`marcas` explícitamente. `escena_2026.json` usa grounding real
+investigado aparte (parche ~26.15/26.16, Fearless Draft, la regla nueva "First Selection" de 2026)
+solo para textura/jerga — nunca para afirmar balance real de campeones, mismo criterio que ya
+sostiene `metas.json`. Se descartó a tiempo un evento de "selección nacional" (no existe en LoL,
+la escena es 100% de clubes) y se reemplazó por el equipo ideal del split (All-Pro Team, honor real).
+
+**Medido**:
+- `node src/dev/validate.js` — **65 checks, todos OK** (5 nuevos: esquema de `momento`, las 6 marcas
+  con contenido, el eje `estatus` cubierto, el catálogo alcanza el objetivo, una fracción sana de
+  carreras largas ve un `momento`).
+- `node src/dev/simulate.js 1500 60 todas` — **0 crashes** en 4.500 carreras (3 estrategias × 1500).
+- `node src/dev/cobertura.js --huecos` — **"Sin huecos: todas las celdas alcanzables llegan al
+  mínimo"**; catálogo: **196 opciones / objetivo 150**.
+- Verificación manual en Chrome real (headless vía CDP): una seed elegida por motor puro (seed 3342,
+  60 splits) pasa por 3 organizaciones (tier3→tier2→tier1), 18 títulos y **12 momentos de 6 tipos
+  distintos**, todos citando org/año/edad reales de esa carrera — no genéricos. Por separado, se
+  cargaron los módulos reales de motor y UI **dentro de la página servida** y se llamó al
+  `renderCarrera` de producción (no un mock) contra un DOM fabricado: el HTML resultante trae
+  `<details><summary>Momentos (1)</summary>` con el texto correcto — confirma que la ficha renderiza
+  un momento con el código real, no solo a nivel de estado.
+
+**Corrección post-medición, fuera del alcance original**: agregar contenido corrió el stream de RNG
+(trampa T1, misma familia que D21/D22) y el check de la fase 3 *"tier 3 es breve"* pasó de p90=4 a
+p90=5 a n=1500. Investigado con una sonda aparte antes de tocar nada: medido a n=1500/3000/6000
+**antes y después** del contenido nuevo, el p90 real cae casi exactamente en el borde 4/5 (~90%
+acumulado en 4) en ambas versiones — a n=1500 cualquiera de las dos puede caer para cualquier lado
+del borde según qué seeds entran; a n=6000 ambas dan p90=4 estable. No se tocó ninguna constante de
+balance de tier 3: se subió la muestra del check (1500 → 6000). Documentado como **D24** en
+`PLAN.md`.
+
+**La fase 8D queda cerrada.** No confundir con la fase 13 real (`# FASE 13 — CONTENIDO A ESCALA` en
+`PLAN.md`), que sigue pendiente y depende del mercado (fase 9) y el retiro (fase 10).
 
 ### 2026-08-09 — Fase 8c: se mide el arraigo, y la medición cierra la fase 8
 

@@ -1242,6 +1242,139 @@ toda la corrida.
 
 ---
 
+# FASE 8D — CONTENIDO VIVO: LAS MARCAS SIN CONTENIDO, EL EJE ESTATUS, EL REGISTRO QUE SE CITA
+
+> Insertada fuera de la secuencia lineal (mismo criterio que las fases 5/6 el 2026-08-09): pedido
+> del usuario de llenar el juego de contenido real, que nada se repita, y que algunas decisiones
+> "marquen el resto de la carrera" — usando exactamente lo que la fase 8 dejó construido y sin
+> estrenar. **No es la fase 13** (`§ FASE 13 — CONTENIDO A ESCALA` más abajo): esa depende de
+> sistemas que todavía no existen (`mercado.js` de la fase 9, `declive.js`/`retiro.js` de la 10,
+> `relacion`/`personalidad` de compañeros). Esta fase solo toca lo que fase 8 ya construyó.
+
+## 8D.1 — El diagnóstico (auditoría antes de escribir una línea)
+
+Tres exploraciones en paralelo sobre el catálogo, la memoria anti-repetición y los mecanismos de
+persistencia, más investigación propia del estado real de League of Legends en 2026 (parche
+~26.15/26.16, Fearless Draft vigente en toda tier-1, la regla nueva "First Selection", los
+arquetipos de campeón que dominan hoy). Hallazgos:
+
+1. **El catálogo real medía 70 eventos / 142 opciones / 284 outcomes** — no 20/40 como decían
+   documentos viejos. El objetivo declarado (`BALANCE.contenido.objetivoOpciones`) era 150:
+   faltaban ~8, no 110. La fase 7 (memoria anti-repetición) mide bien (concentración del evento más
+   visto: 8,8% mediana / 17,2% p90, muy por debajo del techo del 25%) — la sensación de repetición
+   no era un fallo del mecanismo, era que el catálogo es angosto en zonas concretas.
+2. **Seis marcas vivas, cero contenido detrás**: `calcularMarcas` calcula `pc_confiscada`,
+   `negociacion_ganada`, `sin_secundario`, `secundario_terminado`, `signature` y
+   `espera_edad_minima` cada split, activas y calculadas — pero ningún evento las leía.
+3. **El eje `estatus`** (rookie → titular → referente → franquicia, 4 momentos con nombre en
+   `contextos.js`) **no tenía un solo evento** gateando por él.
+4. **`career.hitos` es un sumidero de solo escritura**: dos outcomes empujan ahí y nada en el
+   proyecto lo lee — ni la UI, ni una condición, ni un token. Queda así (deuda anotada, no se migra
+   en esta pasada: tocar `rendimiento.js`/`serie.js` está fuera de alcance de una pasada de
+   contenido).
+5. **`career.registro.momentos` — el lugar correcto — tenía cero llamadas.** La fase 8 construyó
+   `registrarMomento(registro, momento)` en `core/registro.js` con el comentario *"para que la fase
+   13 pueda citarlos"*, sin un solo evento que lo usara. Es la pieza que falta para que una decisión
+   "marque el resto de la carrera": el registro solo crece (regla de proceso 14) y nunca se resetea.
+6. **`outcome.modificadores`** (CONCEPTO §8: los stats corren los pesos de un outcome) se usaba en
+   el 2,8% de los outcomes (8 de 284). Nunca se había usado `career.jerarquia` ni `career.arraigo`.
+
+**Decisión explícita: no se escribe contra balance real de parche.** El meta que vive el jugador
+sigue siendo el régimen ficticio con nombre de `metas.json` (9 regímenes, ya balanceado); lo real de
+2026 se usa solo como textura/jerga (First Selection, Fearless, arquetipos), nunca para afirmar la
+fuerza real de un campeón — es la misma convención que ya sostiene el proyecto, y evita contenido
+que caduque en semanas.
+
+## 8D.2 — Motor: tres cambios chicos, todos aditivos
+
+- **El efecto `momento`** (`systems/events.js`): `{ type: "momento", tipo, values }` arma
+  `{ tipo, anio: state.calendario.anio, edad: state.age, org: state.career.currentOrg, texto }` y
+  llama `registrarMomento`. Caso de esquema nuevo en `validate.js` (mismo criterio que `push`: ≥2
+  `values`, `tipo` no vacío).
+- **Cinco marcas nuevas derivadas de `career.registro`** (`core/contexto.js`, cero persistencia
+  nueva — leen lo que la fase 8 ya acumula): `es_campeon` (`titulos.length >= 1`), `multicampeon`
+  (`>= 3`), `paso_por_tier3` (`porOrg.some(f => f.tier === 3)`), `curtido`
+  (`splitsJugados >= 30`), `nomade` (`porOrg.length >= 3`). Umbrales nuevos en
+  `BALANCE.registro`.
+- **Fix de un bug encontrado en la auditoría**: `pool_campeon_nuevo`/`pool_campeon_nuevo_soloq`
+  usaban `objetivo: "nuevo"` en un efecto `maestria` para bonificar al campeón recién aprendido,
+  pero `aplicarAlPool` nunca reconocía ese valor y caía silenciosamente a `principalDelPool` — el
+  bono caía en el campeón equivocado. Arreglado con `state.flags.ultimoAprendidoPool` (T4-safe,
+  scratch de un split): la rama `aprender` lo escribe, la rama `maestria` con `objetivo: "nuevo"` lo
+  lee (con el mismo fallback de antes si está vacío).
+- **La ficha muestra los momentos** (`ui/components/ficha.js`): segundo `<details>` al lado de "Ver
+  carrera", mismo patrón (`filaMomento`, texto + año + edad).
+
+## 8D.3 — Contenido nuevo (28 eventos / 54 opciones nuevas en 8 archivos)
+
+Cada evento nuevo declara explícitamente `etapa` y, cuando aplica, `edadBanda`/`nivel`/`estatus`/
+`marcas` — nada librado al default (regla dura de esta pasada). Los marcados **[momento]** escriben
+en `career.registro.momentos`; son "algunas" decisiones, no todas — el resto es ambiente, a
+propósito.
+
+| archivo | qué cubre |
+|---|---|
+| `marcas_vivas.json` (nuevo, 6 eventos) | las 6 marcas de 8D.1.2 — PC confiscada, negociación ganada, título secundario (sin/con), signature consolidado **[momento]**, año muerto esperando edad |
+| `estatus.json` (nuevo, 4 eventos) | el arco rookie → titular → referente **[momento]** → franquicia **[momento]** |
+| `registro_cita.json` (nuevo, 4 eventos) | las 5 marcas derivadas del registro (8D.2): multicampeón, origen tier3 **[momento]**, curtido, tercera org **[momento]** |
+| `escena_2026.json` (nuevo, 5 eventos) | First Selection (regla 2026 real), el burn de 40 campeones con Fearless, una camada de veteranos que se retira **[momento]**, el sueldo filtrado de un compañero, el servicio militar coreano **[momento]** |
+| `rol/jungla.json` (+1) | jungla era el único rol sin contenido alcanzable desde soloQ amateur (los otros 2 eventos exigen `con_vestuario`) |
+| `negocios.json` (+3) | tenía 1 solo evento en todo el archivo |
+| `salud_vida.json` (+2) | túnel carpiano (antebrazo, distinto de la tendinitis de muñeca) y hombro crónico (desgaste de años, no de un split) |
+| `competicion.json` (+2) | cortarse una racha invicta, el equipo ideal del split (All-Pro Team — honor real de la escena, no "selección nacional": eso no existe en LoL, es fútbol coló) **[momento]** |
+
+> Se descartó un evento de cruce de región (`residencia: import`): `residencia` está hardcodeada a
+> `'local'` en `calcularContexto` — terreno de una fase futura de movilidad, no de esta. Gatear
+> contenido ahí sería escribir algo que nunca puede disparar; queda como deuda ya conocida, no nueva.
+
+## 8D.4 — Checks nuevos en `validate.js`
+
+```
+El efecto `momento` exige ≥2 values y un `tipo` no vacío (mismo criterio que `push`)
+Las 6 marcas antes sin contenido tienen ≥1 evento cada una
+El eje `estatus` tiene contenido en sus 4 valores alcanzables
+El catálogo alcanza el objetivo de opciones declarado (BALANCE.contenido.objetivoOpciones)
+En carreras de ≥25 splits, una fracción sana ve al menos un evento que escribe un momento
+registro.momentos solo crece (extensión del check de la fase 8, regla de proceso 14)
+```
+
+## 8D.5 — Verificación end-to-end
+
+```
+node src/dev/validate.js               → 65 checks, todos OK
+node src/dev/simulate.js 1500 60 todas → 0 crashes (3 estrategias × 1500 carreras)
+node src/dev/cobertura.js --huecos     → "Sin huecos: todas las celdas alcanzables llegan al mínimo"
+                                          catálogo: 196 opciones / objetivo 150
+```
+
+**Verificación manual en Chrome real (headless vía CDP, mismo criterio que la fase 8)**: se
+construyó una carrera completa por motor puro (sin UI) hasta encontrar una seed rica en momentos —
+seed 3342, 60 splits: 3 organizaciones (tier3 → tier2 → tier1), 18 títulos, 12 momentos de 6 tipos
+distintos (`signature_consolidado`, `origen_tier3`, `equipo_ideal`, `penso_en_retirarse`,
+`tercera_org`, `referente_del_vestuario`), todos citando org/año/edad reales de esa carrera
+específica, no genéricos. Por separado, se cargaron los módulos reales de motor y UI **dentro de la
+página servida** (no un mock) y se llamó al `renderCarrera` de producción contra un contenedor de
+DOM fabricado con el estado de la seed 71 (momento a los 16 años, "Cuando decidiste que el papel
+dejara de perseguirte"): el HTML resultante contiene `<details><summary>Momentos (1)</summary>...`
+con el texto y el año correctos — confirma que A.2 (ui/components/ficha.js) funciona con el
+renderer real, no solo a nivel de estado.
+
+**Corrección post-medición, fuera del alcance original de esta fase**: al agregar contenido nuevo,
+el check de la fase 3 *"El tier 3 es breve: mediana ≤ 2 splits, p90 ≤ 4"* empezó a fallar
+(p90 medido: 5). Investigado con una sonda aparte antes de tocar nada: el fallo es ruido de
+corrimiento de stream de RNG (misma familia que D21/D22, trampa T1) — agregar eventos nuevos cambia
+qué evento gana cada sorteo de `elegirEvento` para una seed dada (mismo número de llamadas a
+`rng()`, resultado distinto), lo que corre en cascada el resto de esa carrera simulada, incluida la
+tirada de `probSalidaTier3` varios splits después. Confirmado con una medición aparte a n=1500/3000/
+6000, **antes y después** del contenido nuevo: en ambas versiones el p90 real cae casi exactamente en
+el borde entre 4 y 5 (~90% acumulado en el valor 4) — a n=1500 cualquiera de las dos versiones puede
+caer para cualquier lado del borde según qué seeds se muestreen, pero a n=6000 ambas dan p90=4 de
+forma estable. No se tocó ninguna constante de balance de tier 3: se subió el tamaño de muestra del
+check (1500 → 6000), la medida mínima para que deje de depender de en qué lado del borde cae una
+seed puntual. Ver D24.
+
+---
+
 # FASE 9 — EL MERCADO
 
 > Implementa `salarios.js` lognormal y `valorMercado.js` con sesgo etario, residencia y cupos de
@@ -1891,6 +2024,7 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D21 | La temporada regular de la fase 5 corre el stream de RNG respecto de cualquier seed anterior a esa fase (trampa T1: es un sistema nuevo que consume `rng` en el medio del registro). Ninguna seed de antes de la fase 5 reproduce la misma carrera después. Documentado, no es un bug | ✅ 5 (aceptado) |
 | D22 | La fase 9 (`competitivo.js` deja de sortear tu org) va a correr el stream de RNG: ninguna seed anterior a esa fase va a reproducir su carrera. Mismo criterio que D21 — anotado de antemano para no descubrirlo tarde | 9 (anticipado, no implementado aún) |
 | D23 | Medido al calibrar el arraigo (fase 8c, 300 carreras a 60 splits): la distribución es bimodal — de las carreras con ≥8 splits en una misma org, 50,5% termina en `leyenda` (88+) y 25,7% se queda en `uno_mas` (<25); `querido` e `idolo` juntos son solo el 23,8%. El check declarado (≥15% llega a Ídolo+) pasa cómodo (59,9%), así que no fuerza retunear nada — pero si en la fase 11/13 se quiere que "Leyenda" se sienta tan raro como en la referencia (aparece una sola vez en las 15 imágenes, al cierre de una carrera de 26 años), la curva de ganancia por split es candidata a suavizarse recién ahí, con contenido real de por medio (regla de proceso 3: agregar contenido antes que tocar constantes) | 11/13 (abierto) |
+| D24 | El check de la fase 3 "tier 3 es breve" (`p90 ≤ 4`) era frágil a n=1500: la fase 8D midió que el p90 real cae casi exactamente en el borde 4/5 (~90% acumulado en 4) tanto antes como después de agregar contenido — cualquier cambio que reordene qué evento gana un sorteo para una seed dada (trampa T1, misma familia que D21/D22) puede empujar el resultado para cualquier lado del borde a esa muestra. Confirmado con una sonda aparte a n=3000/6000: ambas versiones (con y sin el contenido nuevo) dan p90=4 estable. Resuelto subiendo la muestra del check a 6000 — no se tocó ninguna constante de balance de tier 3 | ✅ 8D |
 
 ---
 
