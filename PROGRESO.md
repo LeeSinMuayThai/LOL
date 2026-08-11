@@ -29,6 +29,43 @@ pendiente de la fase 13 real, que depende del mercado (9) y el retiro (10).
 
 ## Changelog
 
+### 2026-08-11 — Fase 9c: la pantalla de ofertas
+
+La pantalla que le pone cara a la fase 9 (`PLAN.md` §9.5-9.6): la tarjeta de oferta, la grilla de
+hasta 6, y el botón del representante. Puro trabajo de presentación — ningún archivo de `src/core/`
+o `src/systems/` cambia, así que no hace falta un check nuevo de `validate.js` (corre en Node, sin
+DOM) ni afecta `simulate.js`.
+
+**Nuevo**: `src/ui/components/mercado.js` (`renderMercado`), siguiendo el mismo patrón que
+`components/decision.js` — no calcula nada, solo pinta lo que `systems/mercado.js` ya resolvió
+(regla de proceso 2). Cada tarjeta muestra org, liga, tag, sueldo/años, la proyección de jerarquía
+con flecha (▲/▼/→) y la etiqueta de banda, la frase sobre picks, el costo de arraigo al irse (si
+aplica), dónde arrancás en la nueva org, `progresoHito` cuando es una renovación, y la línea de
+riesgo. `screens/carrera.js` suma `mostrarMercadoEnPantalla`, exportada desde `render.js` con el
+mismo criterio que ya usan `renderDecision`/`renderFicha`.
+
+`index.html`: un tercer panel (`#mercado`, junto a `#decision` y `#minijuego`) y una rama nueva en
+`mostrarDecision` que revisa `decision.presentacion === 'mercado'` antes de caer al renderer
+genérico — mismo patrón que ya separaba minijuegos de decisiones normales. CSS nuevo (`.mercado`,
+`.mercado-card`, etc.) reusa la paleta ya establecida (verde para lo bueno, naranja para el riesgo,
+el mismo tono que `.rol-costo`).
+
+**Verificación end-to-end en Chrome real** (headless vía CDP, mismo método que la fase 8D): seed 2,
+Mid, tres campeones — la carrera asciende tier3→LDL→LPL. Se vieron 3 pantallas de mercado completas:
+- 6 ofertas de ascenso a LDL con salarios entre \$18k y \$442k/año (el spread lognormal, visible), la
+  misma jerarquía proyectada (71→25/29/32/34 según el roll de cada org) y la línea de riesgo que
+  cambia según cuán fuerte es la org destino.
+- Se usó el botón del representante: rebarajó una segunda mano de 6 ofertas distintas y desapareció
+  (ya no vuelve a aparecer esa carrera — el guard del motor, no solo la UI, lo garantiza).
+- Una tercera pantalla con una sola oferta (ascenso a LPL, ThunderTalk Gaming) tras la segunda
+  promoción.
+- Cero errores de consola atribuibles al código del proyecto (el único mensaje de red — un 404
+  genérico sin URL asociada en el listener de `response` — no corresponde a ningún recurso servido
+  por el proyecto; se investigó explícitamente para no darlo por sentado).
+
+**Medido**: `node src/dev/validate.js` — 80 checks, todos OK (sin cambios: 9c es UI pura).
+`node src/dev/simulate.js 1500 60 todas` — 0 crashes, mismos porcentajes que 9b (esperable).
+
 ### 2026-08-11 — Fase 9b: el mercado decide, competitivo.js deja de sortear
 
 El cambio de más riesgo del documento (`PLAN.md` §9.4, palabras del propio plan): `competitivo.js`

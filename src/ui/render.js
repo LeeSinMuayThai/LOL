@@ -4,7 +4,8 @@
 // hasta la fase 8 `src/ui/` estaba vacía y los 1.090 renglones de interfaz
 // vivían enteros en `index.html` (deuda D7 de PLAN.md).
 export { crearPantallaInicio } from './screens/inicio.js';
-export { renderCarrera, mostrarDecisionEnPantalla } from './screens/carrera.js';
+export { renderCarrera, mostrarDecisionEnPantalla, mostrarMercadoEnPantalla } from './screens/carrera.js';
 export { renderFicha } from './components/ficha.js';
 export { renderFeed } from './components/feed.js';
 export { renderDecision } from './components/decision.js';
+export { renderMercado } from './components/mercado.js';

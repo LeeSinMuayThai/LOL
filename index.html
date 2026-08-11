@@ -595,6 +595,94 @@
         background: radial-gradient(circle, #f0c27b, #e5573f);
         cursor: pointer;
       }
+
+      /* --- El mercado (fase 9c): "el dado trajo estas ofertas" --- */
+      .mercado {
+        margin-top: 16px;
+        padding: 16px;
+        background: rgba(68, 212, 141, 0.06);
+        border: 1px solid rgba(68, 212, 141, 0.35);
+        border-radius: 14px;
+      }
+      .mercado-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 10px;
+      }
+      .mercado-card {
+        text-align: left;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.16);
+        border-radius: 12px;
+        padding: 14px;
+        cursor: pointer;
+        color: #f3f6ff;
+        font-family: inherit;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .mercado-card:hover {
+        background: rgba(68, 212, 141, 0.14);
+        border-color: rgba(68, 212, 141, 0.5);
+      }
+      .mercado-card--bombazo {
+        border-color: rgba(229, 163, 90, 0.55);
+      }
+      .mercado-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 8px;
+      }
+      .mercado-card-org {
+        font-weight: 700;
+        font-size: 16px;
+      }
+      .mercado-card-tag {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #8bf0bc;
+        white-space: nowrap;
+      }
+      .mercado-card-liga {
+        font-size: 12px;
+        color: #8ea3c7;
+      }
+      .mercado-card-salario {
+        font-weight: 700;
+        color: #8bf0bc;
+      }
+      .mercado-card-jerarquia,
+      .mercado-card-picks,
+      .mercado-card-arraigo,
+      .mercado-card-hito {
+        font-size: 13px;
+        color: #c3cfe8;
+        line-height: 1.4;
+      }
+      .mercado-card-riesgo {
+        font-size: 12px;
+        color: #e5a35a;
+        line-height: 1.4;
+      }
+      .mercado-representante-btn {
+        margin-top: 14px;
+        width: 100%;
+        background: rgba(255,255,255,0.06);
+        border: 1px dashed rgba(255,255,255,0.28);
+        color: #c3cfe8;
+        border-radius: 12px;
+        padding: 10px 14px;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 13px;
+      }
+      .mercado-representante-btn:hover {
+        border-color: rgba(91, 140, 255, 0.5);
+        color: #f3f6ff;
+      }
     </style>
   </head>
   <body>
@@ -650,6 +738,15 @@
           <div id="minijuegoWidget" class="minijuego-widget"></div>
         </div>
 
+        <div id="mercado" class="mercado" hidden>
+          <div id="mercadoTitle" class="decision-title"></div>
+          <div id="mercadoDesc" class="decision-desc"></div>
+          <div id="mercadoGrid" class="mercado-grid"></div>
+          <button id="mercadoRepresentante" type="button" class="mercado-representante-btn" hidden>
+            📞 Llamar a tu representante y pedir otras ofertas · 1 vez por carrera
+          </button>
+        </div>
+
         <div id="logList" class="log-list"></div>
         <button id="nuevaCarrera" type="button" hidden>Nueva carrera</button>
       </div>
@@ -677,12 +774,19 @@
       const minijuegoTitle = document.getElementById('minijuegoTitle');
       const minijuegoDesc = document.getElementById('minijuegoDesc');
       const minijuegoWidget = document.getElementById('minijuegoWidget');
+      const mercadoPanel = document.getElementById('mercado');
+      const mercadoTitle = document.getElementById('mercadoTitle');
+      const mercadoDesc = document.getElementById('mercadoDesc');
+      const mercadoGrid = document.getElementById('mercadoGrid');
+      const mercadoRepresentante = document.getElementById('mercadoRepresentante');
       const seedInput = document.getElementById('seedInput');
 
       // El contrato de elementos que `src/ui/render.js` necesita para pintar
-      // la pantalla de carrera y la de decisión (fase 8, §8.5).
+      // la pantalla de carrera y la de decisión (fase 8, §8.5; fase 9c suma
+      // la pantalla de ofertas).
       const carreraElements = { fichaContainer, logList };
       const decisionElements = { decisionPanel, decisionTitle, decisionDesc, decisionOptions };
+      const mercadoElements = { mercadoPanel, mercadoTitle, mercadoDesc, mercadoGrid, mercadoRepresentante };
 
       let modulos = null;
       let ui = null;
@@ -896,6 +1000,7 @@
 
       function mostrarMinijuego(decision) {
         decisionPanel.hidden = true;
+        mercadoPanel.hidden = true;
         minijuegoPanel.hidden = false;
         minijuegoTitle.textContent = decision.titulo;
         minijuegoDesc.textContent = decision.descripcion;
@@ -914,6 +1019,15 @@
         }
 
         minijuegoPanel.hidden = true;
+
+        if (decision.presentacion === 'mercado') {
+          decisionPanel.hidden = true;
+          ui.mostrarMercadoEnPantalla(mercadoElements, decision, responder, () => responder({ representante: true }));
+          summary.textContent = 'Llegaron ofertas: elegí con quién vas.';
+          return;
+        }
+
+        mercadoPanel.hidden = true;
         ui.mostrarDecisionEnPantalla(decisionElements, decision, responder);
         summary.textContent = 'Tenés una decisión pendiente.';
       }
@@ -971,6 +1085,7 @@
         const { pipeline } = modulos;
         decisionPanel.hidden = true;
         minijuegoPanel.hidden = true;
+        mercadoPanel.hidden = true;
 
         estado = pipeline.resolverDecision(estado, respuesta, rng).state;
 
@@ -999,6 +1114,7 @@
         runButton.disabled = true;
         decisionPanel.hidden = true;
         minijuegoPanel.hidden = true;
+        mercadoPanel.hidden = true;
         nuevaCarreraBtn.hidden = true;
         summary.textContent = 'Arrancando la carrera...';
         metaPill.textContent = '';
