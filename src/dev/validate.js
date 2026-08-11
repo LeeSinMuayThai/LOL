@@ -24,6 +24,8 @@ import { resolverFecha, motivosDeFecha } from '../core/temporada.js';
 import { tierListDeRol, boostDelPool } from '../core/regimen.js';
 import { nivelDelJugador, deltasDeStats } from '../core/ficha.js';
 import { bandaDeArraigo } from '../core/registro.js';
+import { salarioDeOferta } from '../core/salarios.js';
+import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
 import { EJES, MARCAS, MOMENTOS_ACTIVOS, momentoPorId } from '../data/contextos.js';
 import { ARQUETIPOS } from '../data/meta-tags.js';
 import { ROLES, IDS_ROL } from '../data/roles.js';
@@ -296,6 +298,104 @@ check('Campeones, roles y ligas coherentes', () => {
     if (liga.tier === 1 && liga.desciendeA && !LIGAS.some((candidata) => candidata.id === liga.desciendeA)) {
       throw new Error(`${liga.id}: desciendeA apunta a "${liga.desciendeA}", que no existe en leagues.json`);
     }
+
+    // Fase 9: toda liga necesita `salario` para que `salarioDeOferta` tenga
+    // de dónde partir. minimoUSD < medianaUSD < mediaUSD: la mediana real
+    // queda por debajo de la media (unos pocos contratos enormes la estiran).
+    const { salario } = liga;
+    if (!salario || typeof salario.medianaUSD !== 'number' || typeof salario.mediaUSD !== 'number'
+      || typeof salario.sigma !== 'number' || typeof salario.minimoUSD !== 'number') {
+      throw new Error(`${liga.id}: falta salario {medianaUSD, mediaUSD, sigma, minimoUSD}`);
+    }
+    if (!(salario.minimoUSD < salario.medianaUSD && salario.medianaUSD < salario.mediaUSD)) {
+      throw new Error(`${liga.id}: salario tiene que cumplir minimoUSD < medianaUSD < mediaUSD`);
+    }
+    if (salario.sigma <= 0) {
+      throw new Error(`${liga.id}: salario.sigma tiene que ser positivo (es la dispersión lognormal)`);
+    }
+  }
+});
+
+check('factorSalario existe y es positivo para los cinco roles', () => {
+  for (const rol of IDS_ROL) {
+    if (typeof ROLES[rol].factorSalario !== 'number' || ROLES[rol].factorSalario <= 0) {
+      throw new Error(`${rol}: factorSalario ausente o no positivo`);
+    }
+  }
+});
+
+check('salarioDeOferta produce una distribución lognormal (mediana < media × 0.75)', () => {
+  const rng = mulberry32(7);
+  const muestras = 4000;
+
+  for (const liga of LIGAS) {
+    const sueldos = Array.from({ length: muestras }, () => (
+      salarioDeOferta(liga, { rol: 'mid', jerarquia: 50, hype: 50 }, rng)
+    )).sort((a, b) => a - b);
+
+    const mediana = sueldos[Math.floor(muestras / 2)];
+    const media = sueldos.reduce((suma, valor) => suma + valor, 0) / muestras;
+
+    if (!(mediana < media * 0.75)) {
+      throw new Error(`${liga.id}: mediana empírica ${Math.round(mediana)} no es menor que media × 0.75 (${Math.round(media * 0.75)})`);
+    }
+    if (sueldos[0] < liga.salario.minimoUSD) {
+      throw new Error(`${liga.id}: salió una oferta (${sueldos[0]}) por debajo del mínimo de la liga`);
+    }
+  }
+});
+
+check('El sesgo etario del mercado favorece a los jóvenes (28 recibe ≤50% que 21, TRASPASO §4)', () => {
+  const { sesgoEtario: tabla, sesgoEtarioMinimo } = BALANCE.mercado;
+
+  if (!(sesgoEtario(28) <= sesgoEtario(21) * 0.5)) {
+    throw new Error(`sesgoEtario(28)=${sesgoEtario(28)} tiene que ser ≤ 50% de sesgoEtario(21)=${sesgoEtario(21)}`);
+  }
+
+  // Tiene que ser no creciente con la edad: si el mercado alguna vez prefiere
+  // a un jugador más viejo por igual hoja, el sesgo dejó de modelar lo que dice modelar.
+  const edades = Object.keys(tabla).map(Number).sort((a, b) => a - b);
+  for (let i = 1; i < edades.length; i += 1) {
+    if (tabla[edades[i]] > tabla[edades[i - 1]]) {
+      throw new Error(`sesgoEtario sube entre ${edades[i - 1]} y ${edades[i]}: tiene que ser no creciente`);
+    }
+  }
+  if (sesgoEtarioMinimo > tabla[edades[edades.length - 1]]) {
+    throw new Error('sesgoEtarioMinimo tiene que ser menor o igual que el último valor de la tabla');
+  }
+});
+
+check('career.contrato arranca completo y en cero (trampa T4)', () => {
+  const state = createInitialState(1, mulberry32(1));
+  const c = state.career.contrato;
+
+  if (c === null || typeof c !== 'object') {
+    throw new Error('career.contrato no puede ser null al arrancar');
+  }
+  if (c.org !== null || c.liga !== null || c.tier !== null) {
+    throw new Error('career.contrato.{org,liga,tier} tienen que arrancar null: todavía no hay firma');
+  }
+  if (c.salarioAnualUSD !== 0 || c.anios !== 0 || c.aniosRestantes !== 0) {
+    throw new Error('career.contrato numérico tiene que arrancar en 0');
+  }
+  if (c.tipo !== 'ninguno') {
+    throw new Error(`career.contrato.tipo tiene que arrancar 'ninguno', llegó "${c.tipo}"`);
+  }
+});
+
+check('valorDeMercado es 0 fuera de una liga real y positivo adentro', () => {
+  const state = createInitialState(1, mulberry32(1));
+  if (valorDeMercado(state) !== 0) {
+    throw new Error('un jugador recién generado (sin liga) no puede tener valor de mercado');
+  }
+
+  const conLiga = {
+    ...state,
+    career: { ...state.career, liga: 'LEC', jerarquia: 60, historial: [70, 75, 68] },
+    player: { ...state.player, stats: { ...state.player.stats, hype: 55 } }
+  };
+  if (!(valorDeMercado(conLiga) > 0)) {
+    throw new Error('con una liga real asignada, valorDeMercado tiene que ser positivo');
   }
 });
 

@@ -267,10 +267,15 @@ export const BALANCE = {
     // --- Stats que siguen la curva (suben y bajan) ---
     // `declive` modula cuanto les pega la caida: el laneo y el teamfight son
     // en parte conocimiento, asi que se caen menos que las manos.
+    // Fase 9 (TRASPASO §4): suavizado ~40% desde el valor original (1 / 0.6 /
+    // 0.45). El hallazgo que lo motiva es que el declive real es casi todo
+    // mercado y casi nada biológico — la curva sigue notándose (`CONCEPTO` §6
+    // la necesita: es la razón mecánica para invertir en macro, y la fase 8
+    // recién la hizo visible con las ▲▼) pero deja de ser lo que retira.
     curvas: {
-      mecanica: { declive: 1, velocidad: 0.3, ruido: 1.7 },
-      laneo: { declive: 0.6, velocidad: 0.22, ruido: 1.5 },
-      teamfight: { declive: 0.45, velocidad: 0.2, ruido: 1.5 }
+      mecanica: { declive: 0.6, velocidad: 0.3, ruido: 1.7 },
+      laneo: { declive: 0.36, velocidad: 0.22, ruido: 1.5 },
+      teamfight: { declive: 0.27, velocidad: 0.2, ruido: 1.5 }
     },
 
     // --- Stats que se acumulan (el macro no declina: sostiene a los veteranos) ---
@@ -653,6 +658,55 @@ export const BALANCE = {
     // la LEC exige 18 para debutar. Si la edad no alcanza, el ascenso a tier 1
     // se frena un split más, cueste lo que cueste tu jerarquia.
     margenEdadMinima: 0
+  },
+
+  // El mercado (fase 9, PLAN.md §9.2/§9.7): contratos, sueldos y el sesgo
+  // etario que de verdad termina las carreras. TRASPASO §4: el declive de
+  // atributos casi no es biológico (~1ms/año de reacción contra 90ms de
+  // brecha pro/casual) — lo que retira es que el mercado deja de mirarte, no
+  // que bajen tus stats. Constantes que consumen `core/salarios.js` y
+  // `core/valorMercado.js`; no se vuelven a investigar (cita ya hecha ahí).
+  mercado: {
+    ofertasMax: 6,
+    probRenovacionBase: 0.55,
+    probRenovacionPorJerarquia: 0.35,
+    // Splits sin ninguna oferta antes de caer a nivel 'libre' — la puerta por
+    // la que se termina la carrera (§9.3 paso 6): mercado.js va antes que el
+    // retiro (fase 10) justamente por esto.
+    splitsSinOfertaParaLibre: 3,
+    aniosContratoMin: 1,
+    aniosContratoMax: 3,
+    // Cuánto mejor tenés que ser que el mejor local para entrar como import
+    // (CONCEPTO §6: "claramente mejor, no apenas mejor"). Lo evalúa
+    // `mercado.js` al filtrar ofertas, no `salarioDeOferta`.
+    margenImport: 8,
+
+    // --- salarioDeOferta: mult = exp(gauss(0,sigma)) * factorRol * jerarquía * hype ---
+    salarioJerarquiaBase: 0.6,
+    salarioJerarquiaPeso: 1.1,
+    salarioHypeBase: 0.85,
+    salarioHypePeso: 0.45,
+
+    // --- sesgoEtario: mismo modelo que `amateur.scoutingSesgoEtario` (lookup
+    // por edad + piso), pero para la franja de la carrera pro en vez de la
+    // ventana de fichaje amateur — un jugador de 28 recibe ~40% de las
+    // ofertas que uno de 21 con la hoja idéntica. Un solo concepto ("el
+    // mercado prefiere jóvenes"), dos tablas porque cubren edades distintas.
+    sesgoEtario: {
+      15: 1, 16: 1, 17: 1, 18: 1, 19: 1, 20: 1, 21: 1, 22: 1,
+      23: 0.95, 24: 0.88, 25: 0.78, 26: 0.66, 27: 0.52, 28: 0.40, 29: 0.30, 30: 0.22
+    },
+    sesgoEtarioMinimo: 0.15, // 31+
+
+    // --- valorDeMercado: cuánto pesa cada insumo antes del sesgo etario ---
+    valorRendimientoPeso: 0.5,
+    valorJerarquiaPeso: 0.3,
+    valorHypePeso: 0.25,
+    // Splits sostenidos en la misma región (TRASPASO §4: 12 splits/4 años =
+    // "residencia", salto de valor de mercado) y tener un campeón de firma.
+    valorResidenciaSplits: 12,
+    valorResidenciaBonus: 0.15,
+    valorSignatureBonus: 0.20
   },
 
   // La temporada regular (fase 5): antes era una sola tirada (`gauss` contra

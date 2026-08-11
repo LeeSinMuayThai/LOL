@@ -10,7 +10,11 @@
     "dificultadAdaptacion": 85,
     "edadMinima": 17,
     "cuposInternacionales": 3,
-    "formatoPlayoffs": { "clasifican": 6, "byes": 2, "bo": 5 },
+    "formatoPlayoffs": {
+      "clasifican": 6,
+      "byes": 2,
+      "bo": 5
+    },
     "desciendeA": "LCK_CL",
     "servidor": "KR",
     "orgs": [
@@ -24,7 +28,14 @@
       "Nongshim RedForce",
       "Hanjin Brion",
       "DN SOOPers"
-    ]
+    ],
+    "salario": {
+      "medianaUSD": 90000,
+      "mediaUSD": 280000,
+      "sigma": 1.507,
+      "minimoUSD": 45000,
+      "modelado": false
+    }
   },
   {
     "id": "LPL",
@@ -37,7 +48,11 @@
     "dificultadAdaptacion": 90,
     "edadMinima": 18,
     "cuposInternacionales": 3,
-    "formatoPlayoffs": { "clasifican": 6, "byes": 2, "bo": 5 },
+    "formatoPlayoffs": {
+      "clasifican": 6,
+      "byes": 2,
+      "bo": 5
+    },
     "desciendeA": "LDL",
     "servidor": "CN",
     "orgs": [
@@ -55,7 +70,14 @@
       "ThunderTalk Gaming",
       "Ultra Prime",
       "Weibo Gaming"
-    ]
+    ],
+    "salario": {
+      "medianaUSD": 130000,
+      "mediaUSD": 320000,
+      "sigma": 1.342,
+      "minimoUSD": 50000,
+      "modelado": true
+    }
   },
   {
     "id": "LEC",
@@ -68,7 +90,11 @@
     "dificultadAdaptacion": 45,
     "edadMinima": 18,
     "cuposInternacionales": 3,
-    "formatoPlayoffs": { "clasifican": 6, "byes": 2, "bo": 5 },
+    "formatoPlayoffs": {
+      "clasifican": 6,
+      "byes": 2,
+      "bo": 5
+    },
     "desciendeA": "EMEA_MASTERS",
     "servidor": "EUW",
     "orgs": [
@@ -82,7 +108,14 @@
       "SK Gaming",
       "Team Heretics",
       "Team Vitality"
-    ]
+    ],
+    "salario": {
+      "medianaUSD": 178000,
+      "mediaUSD": 259000,
+      "sigma": 0.866,
+      "minimoUSD": 65000,
+      "modelado": false
+    }
   },
   {
     "id": "LCS",
@@ -95,7 +128,11 @@
     "dificultadAdaptacion": 40,
     "edadMinima": 17,
     "cuposInternacionales": 3,
-    "formatoPlayoffs": { "clasifican": 6, "byes": 2, "bo": 5 },
+    "formatoPlayoffs": {
+      "clasifican": 6,
+      "byes": 2,
+      "bo": 5
+    },
     "desciendeA": "NACL",
     "servidor": "NA",
     "orgs": [
@@ -107,7 +144,14 @@
       "Sentinels",
       "Shopify Rebellion",
       "Team Liquid"
-    ]
+    ],
+    "salario": {
+      "medianaUSD": 150000,
+      "mediaUSD": 210000,
+      "sigma": 0.82,
+      "minimoUSD": 75000,
+      "modelado": true
+    }
   },
   {
     "id": "CBLOL",
@@ -120,7 +164,11 @@
     "dificultadAdaptacion": 30,
     "edadMinima": 17,
     "cuposInternacionales": 2,
-    "formatoPlayoffs": { "clasifican": 6, "byes": 2, "bo": 5 },
+    "formatoPlayoffs": {
+      "clasifican": 6,
+      "byes": 2,
+      "bo": 5
+    },
     "desciendeA": "CD",
     "servidor": "BR",
     "orgs": [
@@ -132,7 +180,14 @@
       "paiN Gaming",
       "RED Canids Kalunga",
       "Vivo Keyd Stars"
-    ]
+    ],
+    "salario": {
+      "medianaUSD": 70000,
+      "mediaUSD": 110000,
+      "sigma": 0.951,
+      "minimoUSD": 40000,
+      "modelado": true
+    }
   },
   {
     "id": "LCP",
@@ -145,7 +200,11 @@
     "dificultadAdaptacion": 58,
     "edadMinima": 17,
     "cuposInternacionales": 2,
-    "formatoPlayoffs": { "clasifican": 6, "byes": 2, "bo": 5 },
+    "formatoPlayoffs": {
+      "clasifican": 6,
+      "byes": 2,
+      "bo": 5
+    },
     "desciendeA": "LCP_CHALLENGERS",
     "servidor": "TW",
     "orgs": [
@@ -157,7 +216,14 @@
       "MVK Esports",
       "Deep Cross Gaming",
       "Ground Zero Gaming"
-    ]
+    ],
+    "salario": {
+      "medianaUSD": 75000,
+      "mediaUSD": 120000,
+      "sigma": 0.97,
+      "minimoUSD": 42000,
+      "modelado": true
+    }
   },
   {
     "id": "LCK_CL",
@@ -171,7 +237,14 @@
     "edadMinima": 16,
     "servidor": "KR",
     "orgsGeneradas": true,
-    "cantidadOrgs": 10
+    "cantidadOrgs": 10,
+    "salario": {
+      "medianaUSD": 25000,
+      "mediaUSD": 40000,
+      "sigma": 0.97,
+      "minimoUSD": 15000,
+      "modelado": true
+    }
   },
   {
     "id": "LDL",
@@ -185,7 +258,14 @@
     "edadMinima": 15,
     "servidor": "CN",
     "orgsGeneradas": true,
-    "cantidadOrgs": 12
+    "cantidadOrgs": 12,
+    "salario": {
+      "medianaUSD": 30000,
+      "mediaUSD": 50000,
+      "sigma": 1.011,
+      "minimoUSD": 18000,
+      "modelado": true
+    }
   },
   {
     "id": "EMEA_MASTERS",
@@ -199,7 +279,14 @@
     "edadMinima": 15,
     "servidor": "EUW",
     "orgsGeneradas": true,
-    "cantidadOrgs": 12
+    "cantidadOrgs": 12,
+    "salario": {
+      "medianaUSD": 35000,
+      "mediaUSD": 55000,
+      "sigma": 0.951,
+      "minimoUSD": 20000,
+      "modelado": true
+    }
   },
   {
     "id": "NACL",
@@ -213,7 +300,14 @@
     "edadMinima": 15,
     "servidor": "NA",
     "orgsGeneradas": true,
-    "cantidadOrgs": 10
+    "cantidadOrgs": 10,
+    "salario": {
+      "medianaUSD": 32000,
+      "mediaUSD": 50000,
+      "sigma": 0.945,
+      "minimoUSD": 20000,
+      "modelado": true
+    }
   },
   {
     "id": "CD",
@@ -227,7 +321,14 @@
     "edadMinima": 15,
     "servidor": "BR",
     "orgsGeneradas": true,
-    "cantidadOrgs": 10
+    "cantidadOrgs": 10,
+    "salario": {
+      "medianaUSD": 20000,
+      "mediaUSD": 32000,
+      "sigma": 0.97,
+      "minimoUSD": 12000,
+      "modelado": true
+    }
   },
   {
     "id": "LCP_CHALLENGERS",
@@ -241,6 +342,13 @@
     "edadMinima": 15,
     "servidor": "TW",
     "orgsGeneradas": true,
-    "cantidadOrgs": 10
+    "cantidadOrgs": 10,
+    "salario": {
+      "medianaUSD": 22000,
+      "mediaUSD": 35000,
+      "sigma": 0.964,
+      "minimoUSD": 12000,
+      "modelado": true
+    }
   }
 ]

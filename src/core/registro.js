@@ -27,7 +27,7 @@ export function abrirFila(registro, { org, liga, tier, anio, split }) {
       splits: 0, fechasG: 0, fechasP: 0,
       jerarquiaMaxima: 0, arraigoFinal: null, arraigoMaximo: 0,
       titulos: [],
-      salarioMensualUSD: 0, // la fase 9 lo llena
+      salarioAnualUSD: 0, // la fase 9 lo llena
       motivoDeSalida: null
     }]
   };
@@ -81,6 +81,20 @@ export function registrarArraigoEnFila(registro, arraigo) {
   return {
     ...registro,
     porOrg: registro.porOrg.map((fila) => (fila === abierta ? { ...fila, arraigoMaximo: arraigo } : fila))
+  };
+}
+
+// Fase 9: el sueldo del contrato vigente, escrito en la fila abierta al firmar
+// (nunca cambia a mitad de contrato — una renovación cierra la fila y abre
+// una nueva, como cualquier cambio de org).
+export function registrarSalarioEnFila(registro, salarioAnualUSD) {
+  const abierta = filaAbierta(registro);
+  if (!abierta) {
+    return registro;
+  }
+  return {
+    ...registro,
+    porOrg: registro.porOrg.map((fila) => (fila === abierta ? { ...fila, salarioAnualUSD } : fila))
   };
 }
 

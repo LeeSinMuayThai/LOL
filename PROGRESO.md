@@ -29,6 +29,74 @@ pendiente de la fase 13 real, que depende del mercado (9) y el retiro (10).
 
 ## Changelog
 
+### 2026-08-11 — Fase 9a: contratos y valor de mercado
+
+Primer commit de la fase 9 (`PLAN.md` §9), el mercado. Este paso es solo el motor y los datos —
+`competitivo.js` todavía elige tu org (eso es 9b, el cambio de riesgo) y no hay pantalla de ofertas
+todavía (9c). Detalle completo del diseño en `PLAN.md`, `# FASE 9 — EL MERCADO`.
+
+**Motor nuevo**: `career.contrato` (objeto completo de ceros desde el arranque, nunca `null` —
+trampa T4) en `src/core/state.js`; `core/salarios.js` (`salarioDeOferta`, la fórmula lognormal de
+`TRASPASO.md` §4: `mediana * exp(gauss(0,sigma)) * factorRol * jerarquía * hype`, con piso en
+`liga.salario.minimoUSD`); `core/valorMercado.js` (`valorDeMercado`, pura y sin rng — una valuación
+es una lectura del estado, no una negociación; `sesgoEtario`, el mismo modelo de "el mercado
+prefiere jóvenes" que `amateur.scoutingSesgoEtario` pero para la franja de la carrera pro;
+`splitsDeResidencia`, derivada de `career.registro.porOrg` sin agregar estado nuevo — evita otro
+punto T1/T4 para la regla de "12 splits en una región = residencia" de TRASPASO §4).
+
+**Datos**: `salario: {medianaUSD, mediaUSD, sigma, minimoUSD, modelado}` en las 12 ligas de
+`leagues.json` — LEC con las cifras reales citadas en `TRASPASO.md` (Sheep Esports: mediana
+~€165k/€178k, media ~€240k/€259k, mínimo oficial €60k/€65k) y LCK/LCS ancladas en sus datos reales
+parciales (mínimo LCS $75k oficial; LCK con el outlier real de Faker $6-8M/año tirando la media
+muy por encima de la mediana). El resto (LPL, CBLOL, LCP y las 6 ligas de tier 2) está modelado por
+prestigio relativo y marcado `modelado: true` para no confundir cifra medida con estimada.
+`factorSalario` por rol en `roles.js` (Mid 1.44 · Jungla 1.04 · ADC 1.00 · Top 0.80 · Support 0.70,
+TRASPASO §4). `BALANCE.mercado` nuevo con las constantes de §9.7 más la tabla `sesgoEtario` y los
+pesos de `valorDeMercado`. `atributos.curvas.*.declive` suavizado ~40% (1/0.6/0.45 → 0.6/0.36/0.27):
+el hallazgo de TRASPASO §4 es que el declive real es casi todo mercado (no te renuevan) y casi nada
+biológico (~1ms/año de reacción contra 90ms de brecha pro/casual) — la curva se nota menos sin
+desaparecer, porque `CONCEPTO` §6 la necesita como razón mecánica para invertir en macro.
+
+**Corrección de nombre, documentada acá porque no hubo turno de usuario de por medio**: `PLAN.md`
+§9.1 nombra el campo `salarioMensualUSD`, pero tanto la fórmula de TRASPASO como todos los datos
+reales citados (LEC ~€165k/año, Faker $6-8M/año) están en cifras **anuales** — el juego además
+opera en splits, no en meses. Se corrigió a `salarioAnualUSD` en todo el motor (`state.js`,
+`registro.js`) antes de escribir ningún dato nuevo, para no fijar una inconsistencia desde el
+arranque.
+
+**Bug encontrado por el check nuevo, no por lectura de código**: los primeros números de `sigma`
+elegidos a mano para las 12 ligas no eran consistentes con la `mediana`/`media` citadas en el mismo
+archivo — para una lognormal, `media = mediana * exp(sigma²/2)`, y el check
+*"mediana empírica < media × 0.75"* falló en LEC (0.72 de sigma a mano da un ratio teórico
+mediana/media ≈ 0.77, por encima del 0.75 que exige el check). Se recalculó `sigma` para las 12
+ligas como `sqrt(2·ln(mediaUSD/medianaUSD))`, consistente con los datos ya citados — no se tocó
+`medianaUSD`/`mediaUSD` (esos siguen anclados en TRASPASO donde hay dato real). El efecto lateral es
+que LCK quedó con el sigma más alto de las doce (1.51): es el mercado con el outlier más extremo
+(Faker), así que un spread grande ahí es el modelo funcionando, no un error.
+
+**Checks nuevos** (verificados con trampa T5 — mutados a mano y confirmado que fallan antes de
+confirmar que el arreglo los deja en verde, revertido después):
+- esquema `salario` completo y `minimoUSD < medianaUSD < mediaUSD` en las 12 ligas (dentro de
+  *"Campeones, roles y ligas coherentes"*)
+- `factorSalario` existe y es positivo para los cinco roles
+- `salarioDeOferta` produce una distribución lognormal (mediana empírica < media × 0.75) — **este
+  es el que atrapó el bug de sigma de arriba**, verificado además con el piso de `minimoUSD`
+- `sesgoEtario(28) ≤ sesgoEtario(21) × 0.5` (TRASPASO §4) y la tabla es no creciente con la edad
+- `career.contrato` arranca completo y en cero (trampa T4)
+- `valorDeMercado` es 0 fuera de una liga real (tier 3 o sin equipo) y positivo adentro
+
+**Medido**:
+- `node src/dev/validate.js` — **74 checks, todos OK** (69 + 5 nuevos).
+- `node src/dev/simulate.js 1500 60 todas` — **0 crashes**, mismos porcentajes de `llegaronAPro`
+  que la línea de base pre-fase-9 (equilibrado 73.7% / ranked 47.5% / prudente 67.9%): esperable,
+  `mercado.js` todavía no existe y no hay ninguna línea nueva en `ETAPAS_SPLIT` — este commit no
+  cambia ni una sola decisión de una carrera real todavía, solo agrega el motor que 9b va a usar.
+- Determinismo verificado (misma seed, dos corridas, estado final idéntico en JSON).
+
+**Sin trampa T1 todavía**: a diferencia de 9b (que si va a correr el stream de rng, documentado por
+adelantado en `PLAN.md` §9.4), este commit no cambia el orden ni la cantidad de tiradas de ninguna
+carrera existente — los tres módulos nuevos no se llaman desde ningún sistema del pipeline todavía.
+
 ### 2026-08-10 — Fase 8D: contenido vivo — las marcas sin frase, el eje estatus, el registro que se cita
 
 Insertada fuera de la secuencia lineal (mismo criterio que las fases 5/6 el 2026-08-09): pedido del

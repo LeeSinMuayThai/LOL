@@ -109,6 +109,21 @@ export function createInitialState(seed, rng, eleccion = null) {
       // (fase 5, `stakes: 'revancha'`). `null` hasta la primera eliminación;
       // lo escribe `systems/serie.js`.
       ultimoEliminadoPor: null,
+      // El contrato vigente (fase 9). Objeto completo de ceros, nunca null
+      // (trampa T4): antes de la primera firma profesional no hay contrato,
+      // pero el campo tiene que existir para que validate.js pueda verificar
+      // cualquier `field`/`path` que lo toque. `salarioAnualUSD` (no mensual:
+      // TRASPASO.md §4 reporta todo en cifras anuales — LEC mediana ~€165k/año,
+      // Faker $6-8M/año — y `registro.dineroTotalUSD` solo tiene sentido como
+      // acumulado de años, no de meses).
+      contrato: {
+        org: null, liga: null, tier: null,
+        salarioAnualUSD: 0,
+        anios: 0, aniosRestantes: 0,
+        clausula: null,      // 'salida'|'rescision'|null
+        tipo: 'ninguno',     // 'rookie'|'renovacion'|'transferencia'|'import'
+        firmadoAEdad: 0, firmadoEnAnio: 0
+      },
       // La temporada regular del split en curso (fase 5). Objeto completo de
       // ceros, nunca null (trampa T4): se llena al arrancar cada split
       // profesional y `rendimiento.js` lee `posicion`/`tabla`/`rendimiento` de
@@ -152,7 +167,7 @@ export function createInitialState(seed, rng, eleccion = null) {
         picos: {
           nivel: 0, edadDelPicoDeNivel: 0,
           jerarquia: 0, arraigo: 0, hype: 0,
-          valorMercadoUSD: 0, salarioMensualUSD: 0,
+          valorMercadoUSD: 0, salarioAnualUSD: 0,
           rankedPuntos: 0
         },
         // Una fila por org por la que pasaste (imagen 15: "TU HISTORIA, CLUB
