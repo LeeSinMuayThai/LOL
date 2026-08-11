@@ -689,6 +689,15 @@ export const BALANCE = {
     bombazoMultiplo: 1.4,
     margenBombazoFuerza: 10,
 
+    // Fase 9d (medido): con el sigma completo de la liga, una renovación con
+    // tu PROPIA org caía por debajo de la mitad del contrato anterior en un
+    // 34.8% de los casos (y hasta 4.5x para arriba) — ruido de una oferta
+    // nueva, no la lectura que tendría un club que ya te conoce. Renovar
+    // sigue moviéndose con la jerarquía/hype actuales (esa señal no se toca),
+    // pero el ruido lognormal se achica: la org que ya te tiene no tira los
+    // dados de cero cada vez.
+    renovacionSigmaFactor: 0.35,
+
     // --- salarioDeOferta: mult = exp(gauss(0,sigma)) * factorRol * jerarquía * hype ---
     salarioJerarquiaBase: 0.6,
     salarioJerarquiaPeso: 1.1,

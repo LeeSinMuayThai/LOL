@@ -56,7 +56,14 @@ function construirOferta(state, liga, org, tagForzado, rng) {
   const esRenovacion = tagForzado === 'renovacion';
   const esOrgActual = org.nombre === state.career.currentOrg;
 
-  const salarioAnualUSD = salarioDeOferta(liga, {
+  // Fase 9d (medido): una renovación con ruido lognormal completo caía a
+  // menos de la mitad del contrato anterior en 1 de cada 3 casos — el club
+  // que ya te tiene no te tasa de cero cada vez. `renovacionSigmaFactor`
+  // achica el ruido sin tocar la señal de jerarquía/hype.
+  const ligaParaSalario = esRenovacion
+    ? { ...liga, salario: { ...liga.salario, sigma: liga.salario.sigma * m.renovacionSigmaFactor } }
+    : liga;
+  const salarioAnualUSD = salarioDeOferta(ligaParaSalario, {
     rol: state.player.role, jerarquia: jerarquiaActual, hype: state.player.stats.hype
   }, rng);
   const anios = roll(m.aniosContratoMin, m.aniosContratoMax, rng);

@@ -1610,6 +1610,49 @@ check('Ninguna oferta de mercado.js muestra progresoHito si no es una renovació
   }
 });
 
+check('Fase 9d: una renovación no se desploma por ruido puro (menos de 30% cae por debajo de la mitad del contrato anterior)', () => {
+  // Medido antes de `renovacionSigmaFactor` (PLAN.md §9d): 34.8% de las
+  // renovaciones pagaban menos de la mitad del contrato anterior, hasta 4.5x
+  // para arriba — ruido de una oferta nueva, no la lectura de un club que ya
+  // te tiene. El umbral acá (30%) deja margen sobre el 24.5% medido después
+  // del ajuste: lo que sigue cayendo por debajo de la mitad es la señal real
+  // de jerarquía/hype (que no se toca), no el ruido.
+  let renovaciones = 0;
+  let caidasFuertes = 0;
+
+  for (let seed = 1; seed <= 1500; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplit(state, rng).state;
+      while (state.pendiente) {
+        const sistema = sistemaPorId(state.pendiente.sistemaId);
+        const { decision } = state.pendiente;
+        if (sistema.id === 'mercado' && decision.datos?.motivo === 'oferta') {
+          const renovacion = decision.opciones.find((opcion) => opcion.tag === 'renovacion');
+          if (renovacion && state.career.contrato.salarioAnualUSD > 0) {
+            renovaciones += 1;
+            if (renovacion.salarioAnualUSD < state.career.contrato.salarioAnualUSD * 0.5) {
+              caidasFuertes += 1;
+            }
+          }
+        }
+        const respuesta = sistema.resolverAuto(state, decision, rng);
+        state = resolverDecision(state, respuesta, rng).state;
+      }
+    }
+  }
+
+  if (renovaciones < 100) {
+    throw new Error(`solo ${renovaciones} renovaciones observadas en 1500 carreras: muestra insuficiente`);
+  }
+  const fraccion = caidasFuertes / renovaciones;
+  if (fraccion > 0.3) {
+    throw new Error(`${(fraccion * 100).toFixed(1)}% de las renovaciones cae por debajo de la mitad del contrato anterior (tope 30%)`);
+  }
+});
+
 check('Nadie clasifica a un internacional por encima del cupo real de su liga', () => {
   // `posicionParaInternacional` hardcodeado a 1 quedó atrás (fase 3): ahora es
   // `liga.cuposInternacionales`, que no existe para tier 2 ni tier 3. Si algo

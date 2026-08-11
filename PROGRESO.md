@@ -29,6 +29,54 @@ pendiente de la fase 13 real, que depende del mercado (9) y el retiro (10).
 
 ## Changelog
 
+### 2026-08-11 — Fase 9d: calibrar el mercado (cierra la fase 9)
+
+Último commit de la fase 9. Medido con un script ad hoc (headless, mismo pipeline que
+`simulate.js`, 1500 carreras × 60 splits, borrado después de medir — no queda en el repo) contra
+las métricas de `PLAN.md` §9.9:
+
+| Métrica | Medido | Objetivo | Lectura |
+|---|---|---|---|
+| Decisiones de mercado/carrera (toda la población) | mediana 0 | 3-8 | El 60% de las carreras nunca llega a una liga real dentro de la ventana medida — eso es la escalera de la fase 3 (tier3→tier2→tier1), no algo que la fase 9 controle |
+| Decisiones de mercado/carrera (solo quien llega al mercado) | mediana 9, p90 11 | 3-8 | Se pasa un poco. Ver nota abajo — no se retocó |
+| Carreras donde rechazar el mejor sueldo tiene sentido (la mejor oferta NO es también la de mejor jerarquía) | 98.5% | ≥ 35% | La trampa del equipo grande (CONCEPTO §7) está viva casi siempre que hay ofertas |
+| Carreras con al menos un split "libre" | 0.3% | se mide, alimenta la fase 10 | Bajo, pero es dato para la fase 10 — no hay objetivo que cumplir todavía |
+
+**Por qué la mediana condicional (9) no se retocó pese a pasarse del objetivo (3-8):** sin retiro
+emergente (fase 10, todavía no existe), ninguna carrera profesional termina antes de agotar los 60
+splits medidos salvo por burnout — así que cualquiera que llega al mercado se queda ahí acumulando
+renovaciones el resto de la simulación. Achicar `aniosContratoMax` para forzar el número a bajar
+habría sido calibrar contra un artefacto (la ausencia de retiro), no contra el sistema real, y
+`aniosContratoMin`/`Max` (1-3 años) ya están anclados a los contratos reales que cita `TRASPASO.md`
+— tocarlos sin esa razón real habría sido shotgun-debugging. Queda anotado para remedir después de
+la fase 10, cuando el retiro acote la duración de la carrera y el denominador de esta cuenta deje de
+estar sesgado hacia las carreras más largas.
+
+**El ajuste que sí se hizo, con datos**: una renovación con el sueldo de la propia org caía por
+debajo de la mitad del contrato anterior en **34,8%** de los casos (hasta 4,5× para arriba en el
+p90) — puro ruido lognormal de una oferta nueva, no la lectura de un club que ya te conoce. Nueva
+constante `BALANCE.mercado.renovacionSigmaFactor: 0.35`: achica el `sigma` de `salarioDeOferta`
+SOLO para la oferta de renovación (una liga con el sigma escalado, construida al vuelo en
+`mercado.js`, sin tocar `core/salarios.js` — ese sigue puro y sin cambios desde la fase 9a), sin
+tocar la señal de jerarquía/hype. Después del ajuste: caídas fuertes 34,8% → **24,5%**, p90 del
+ratio 4,49× → **2,15×**. Lo que sigue cayendo por debajo de la mitad ahora es sobre todo jerarquía/
+hype que bajaron de verdad, no el dado.
+
+**Check nuevo** (verificado con T5 — revertido el factor a 1.0, confirmado que el check reproduce
+el 34,8% original y falla, revertido de nuevo): *"una renovación no se desploma por ruido puro"* —
+menos de 30% de las renovaciones por debajo de la mitad del contrato anterior, sobre 1500 carreras.
+
+**Medido**: `node src/dev/validate.js` — **81 checks, todos OK** (80 + 1 nuevo).
+`node src/dev/simulate.js 1500 60 todas` — 0 crashes, mismos porcentajes de `llegaronAPro` que 9a-9c
+(esperable: 9d no toca nada de la etapa amateur). Determinismo verificado en 3 seeds.
+
+**Fase 9 cerrada.** El mercado completo: contratos y valor de mercado (9a), la elección real de a
+qué org vas (9b, el cambio de más riesgo del documento), la pantalla (9c), calibrado con datos
+reales de 1500 carreras (9d). Sigue pendiente para más adelante (no bloqueante, documentado arriba
+y en la entrada de 9b): fichajes cross-liga/import (`cupoImports`/`minimoResidentes`/`margenImport`
+siguen sin consumirse), y remedir la mediana de decisiones/carrera después de que exista el retiro
+(fase 10).
+
 ### 2026-08-11 — Fase 9c: la pantalla de ofertas
 
 La pantalla que le pone cara a la fase 9 (`PLAN.md` §9.5-9.6): la tarjeta de oferta, la grilla de
