@@ -24,7 +24,7 @@ el juego) → este documento → `PROGRESO.md` (changelog) → `TRASPASO.md` (da
 | **6** | El meta con nombre | ✅ ver `PROGRESO.md` |
 | **7** | El prólogo se comprime y la repetición se rompe | ✅ ver `PROGRESO.md` |
 | **8** | La ficha: el registro que acumula + la tarjeta permanente + `src/ui/` | ✅ ver `PROGRESO.md` |
-| **9** | El mercado: ofertas, contratos, salarios, la trampa del equipo grande visible | 🔶 9a hecha (motor y datos) — ver `PROGRESO.md` |
+| **9** | El mercado: ofertas, contratos, salarios, la trampa del equipo grande visible | 🔶 9a y 9b hechas (motor, datos, el cambio de riesgo) — falta 9c/9d — ver `PROGRESO.md` |
 | **10** | El final: retiro emergente + la tarjeta de legado | ⬜ |
 | **11** | El año: calendario, la nota de la temporada, el archirrival | ⬜ |
 | **12** | La jerarquía de la decisión: categorías, rareza, consecuencia previa, el dado | ⬜ |

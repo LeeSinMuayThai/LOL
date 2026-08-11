@@ -28,6 +28,10 @@ export const ETAPAS_SPLIT = [
   // todavia no corrio (viene mas adelante en la lista), asi que esto ve
   // `phase: 'amateur'` y no hace nada — recien actua desde el split siguiente.
   await import('./competitivo.js'),
+  // El mercado (fase 9): contratos que vencen y ofertas que llegan. Va justo
+  // despues de `competitivo`, que decide SI ascendes; este decide A QUE ORG
+  // vas — la eleccion real de PLAN.md §9.4.
+  await import('./mercado.js'),
   await import('./campeones.js'),
   // Antes de amateur a proposito: si la carrera se corta en este split, el flag
   // del secundario ya quedo congelado y entra en la tarjeta final.

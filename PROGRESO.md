@@ -29,6 +29,106 @@ pendiente de la fase 13 real, que depende del mercado (9) y el retiro (10).
 
 ## Changelog
 
+### 2026-08-11 — Fase 9b: el mercado decide, competitivo.js deja de sortear
+
+El cambio de más riesgo del documento (`PLAN.md` §9.4, palabras del propio plan): `competitivo.js`
+deja de elegir a qué org fichás. Ahora solo decide SI ascendés (mérito: jerarquía y suerte);
+`mercado.js` —sistema nuevo, corre justo después en `ETAPAS_SPLIT`— decide A QUÉ ORG vas, y esa es
+la decisión real del jugador que pedía la fase.
+
+**El flujo**: `competitivo.js` marca `flags.ascensoPendiente = {ligaId, tier}` al ganar un ascenso
+(tier3→tier2 o tier2→tier1) y no toca `career.tier`/`liga`/`currentOrg` — seguís jugando donde
+estabas hasta que se resuelve. `mercado.js` corre en cada pretemporada (`ventana === 'pretemporada'`,
+trampa T2: contexto en vivo, nunca cacheado): si hay un ascenso pendiente y ya tenés la edad mínima
+de la liga destino, genera 1-6 ofertas y pausa con una decisión; si no tenés equipo real todavía
+(tier 3, o esperando edad), no hace nada. Para quien YA está en una liga real, decrementa
+`contrato.aniosRestantes`; en 0, genera ofertas (una posible renovación con la org actual +
+laterales de otras orgs de la liga, pesadas por fuerza) — 0 ofertas 3 pretemporadas seguidas te deja
+`libre` (currentOrg null, pero conservás tier/liga: seguís siendo talento de esa categoría, no caés
+a tier 3). "Llamar al representante" (§9.6) rebaraja la mano una única vez por carrera — el motor
+lo garantiza en el propio `resolver`, no confía en que la UI oculte el botón después de usarlo.
+
+**El año muerto se unifica**: `flags.tier1Esperando` (fase 3, guardaba liga+org+edad) desaparece —
+ya no tiene sentido reservar una org de antemano si la org pasa a elegirse en `mercado.js`. La
+espera por edad ahora es una consecuencia de `ascensoPendiente` sin más: `mercado.js` no genera
+ofertas hasta que `state.age >= liga.edadMinima`, sin volver a sortear nada, exactamente el mismo
+comportamiento de antes con un flag menos que mantener sincronizado.
+
+**Regla de proceso 15, resuelta sin volver a tirar el dado dos veces**: la jerarquía que promete la
+tarjeta de oferta (`proyeccionJerarquia.hasta`) tiene que ser la que de verdad asigna `roster.js` al
+fichar. Se extrajo `jerarquiaAlFichar(state, rng)` de `roster.js` (mismo cálculo de siempre, ahora
+reusable) y `mercado.js` la tira UNA vez al construir cada oferta, guardando el resultado crudo en
+`oferta.datos.jerarquiaProyectada`. Al aceptar, ese número viaja por
+`flags.jerarquiaProyectadaAlFichar`; `roster.js` lo usa tal cual (`?? jerarquiaAlFichar(...)` como
+fallback solo para fichajes que NO vienen del mercado, como el primer tryout de tier 3) en vez de
+tirar un segundo gauss — evita exactamente la trampa T1 de "dos tiradas para el mismo evento".
+El sueldo también se registra en la fila del registro (`registrarSalarioEnFila`) desde
+`roster.js` (al abrir fila) y desde `mercado.js` (al renovar, donde no hay fila nueva que abrir).
+
+**`registro.dineroTotalUSD` empieza a moverse**: `roster.js` cobra `contrato.salarioAnualUSD / 3`
+(=`BALANCE.edad.splitsPorEdad`) cada split jugado con equipo — prorrateado porque el sueldo es
+anual y un año son 3 splits. Ya estaba en la lista de campos monótonos del check de la regla de
+proceso 14 desde la fase 8 (por adelantado, en 0); ahora por fin se mueve.
+
+**Corrección al interactuar con tier 3**: encontrada ANTES de escribir código, razonando la
+interacción — `competitivo.js`'s `aplicar` re-fichaba automático a CUALQUIER jugador sin
+`currentOrg`, asumiendo que la única forma de quedarte sin org era una disolución de tier 3. Con la
+fase 9, un jugador de tier 1/2 puede quedar libre también, y ese dispatcher lo habría re-fichado a
+un equipo de tier 3 por error — un downgrade absurdo para alguien con jerarquía de verdad. Se
+corrigió el guard a `state.career.tier === 3` antes de llamar `reFicharTier3`; un libre de tier 1/2
+espera a que `mercado.js` le consiga equipo, no cae mecánicamente a la categoría más baja.
+
+**Checks nuevos** (verificados con T5 — mutados y confirmado que fallan antes del arreglo,
+revertido después):
+- ningún cambio de org en tier 1/2 pasa sin un log de `mercado.js` en el split (excepto tier 3)
+- `proyeccionJerarquia` predice la jerarquía real con error ≤ 8 puntos (PLAN.md §9.8; en la
+  práctica el roll es EXACTO al firmar — el margen cubre que `rendimiento.js` puede correr la
+  jerarquía un poco más tarde en el mismo split, por el propio desempeño de esa fecha, que es
+  comportamiento esperado y no una promesa rota)
+- el sesgo etario reduce cuántas ofertas llegan, no solo si llegan: 28 recibe ≤50% del promedio de
+  ofertas que 21 con la misma hoja
+- nadie ficha por una liga sin cumplir su `edadMinima`
+- el representante se usa exactamente una vez por carrera (atrapó un bug real: la primera versión
+  del `resolver` no tenía el guard y permitía rebarajar sin límite)
+- ninguna oferta muestra `progresoHito` si no es una renovación (el primer intento de este check
+  colisionaba con `amateur.js`, que también usa `motivo: 'oferta'` para la decisión de scouting —
+  corregido para filtrar también por `sistemaId === 'mercado'`)
+
+**Ajustes a checks existentes, todos documentados como consecuencia del cambio de flujo, no como
+regresiones silenciosas**:
+- *"El tier 3 es breve"*: p90 sube de 4 a 5 splits por diseño. Ascender ya no es instantáneo — el
+  split de espera hasta la próxima pretemporada cuenta como "en tier 3" en esta medición. La
+  mediana se mantiene en 2.
+- La marca `espera_edad_minima` y el check del año muerto se reescribieron contra
+  `flags.ascensoPendiente` en vez de `flags.tier1Esperando` (que ya no existe).
+
+**Medido**:
+- `node src/dev/validate.js` — **80 checks, todos OK** (74 + 6 nuevos).
+- `node src/dev/simulate.js 1500 60 todas` — **0 crashes** en 4.500 carreras; `llegaronAPro` idéntico
+  a la fase 9a (73.7% / 47.5% / 67.9%: esperable, la etapa amateur no la toca esta fase). Sin
+  NaN/undefined en la salida.
+- Determinismo verificado en 4 seeds distintas (misma seed, dos corridas, JSON final idéntico).
+- Lectura manual de una carrera completa (seed 2): ascenso tier3→LDL→LPL, dos renovaciones y una
+  transferencia, cierra con un bombazo a Weibo Gaming (\$1,5M/año). Se lee como se pedía: "¿la guita
+  o el proyecto?" con números que cambian carrera a carrera.
+
+**Trampa T1, tal como estaba documentado por adelantado en la entrada de la fase 9a**: correr esto
+movió el stream de rng — ninguna seed de antes de esta fase reproduce la misma carrera que producía
+antes. Es el costo esperado de que `mercado.js` ahora tire dados donde antes `competitivo.js` no
+tiraba ninguno.
+
+**Deuda técnica para 9c/9d, no bloqueante**:
+- Los campos puramente visuales de la tarjeta (`colorOrg`, `monograma` de §9.5) no existen en el
+  modelo de datos: son responsabilidad de la pantalla (9c), no del motor.
+- `cupoImports`, `minimoResidentes` y `margenImport` siguen sin consumirse — esta fase solo genera
+  ofertas DENTRO de tu propia liga/región (renovación, laterales, el ascenso ganado). Fichajes
+  cross-liga ("import" de verdad) quedan fuera de alcance de 9b, documentado para no confundir con
+  un olvido.
+- Se observó al menos una renovación con una caída de sueldo grande (\$625k → \$93k en la misma org,
+  mismo jugador) puramente por el ruido lognormal independiente en cada tirada. No es un bug — la
+  fórmula es la que cita `TRASPASO.md` sin retocar — pero es candidato a revisar en 9d si medir
+  muestra que las renovaciones deberían tener menos varianza que un fichaje nuevo.
+
 ### 2026-08-11 — Fase 9a: contratos y valor de mercado
 
 Primer commit de la fase 9 (`PLAN.md` §9), el mercado. Este paso es solo el motor y los datos —

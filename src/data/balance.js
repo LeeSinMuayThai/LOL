@@ -681,6 +681,14 @@ export const BALANCE = {
     // `mercado.js` al filtrar ofertas, no `salarioDeOferta`.
     margenImport: 8,
 
+    // Una oferta lateral se etiqueta 'bombazo' cuando paga bastante más que
+    // el contrato vigente — la tarjeta que hace sentir la decisión real
+    // (CONCEPTO §7). `margenBombazoFuerza` decide el texto de `riesgo`: si la
+    // org destino es bastante más fuerte que el promedio de su liga, avisa
+    // que vas a competir por lugar en vez de mandar.
+    bombazoMultiplo: 1.4,
+    margenBombazoFuerza: 10,
+
     // --- salarioDeOferta: mult = exp(gauss(0,sigma)) * factorRol * jerarquía * hype ---
     salarioJerarquiaBase: 0.6,
     salarioJerarquiaPeso: 1.1,

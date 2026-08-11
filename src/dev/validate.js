@@ -26,6 +26,7 @@ import { nivelDelJugador, deltasDeStats } from '../core/ficha.js';
 import { bandaDeArraigo } from '../core/registro.js';
 import { salarioDeOferta } from '../core/salarios.js';
 import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
+import { aplicar as aplicarMercado } from '../systems/mercado.js';
 import { EJES, MARCAS, MOMENTOS_ACTIVOS, momentoPorId } from '../data/contextos.js';
 import { ARQUETIPOS } from '../data/meta-tags.js';
 import { ROLES, IDS_ROL } from '../data/roles.js';
@@ -1311,7 +1312,7 @@ check('La densidad de decisiones es emergente, no pareja ni descontrolada', () =
 
 // --- Fase 3: la escalera competitiva (tier 3 -> tier 2 -> tier 1) ---
 
-check('El tier 3 es breve: mediana de permanencia ≤ 2 splits, p90 ≤ 4', () => {
+check('El tier 3 es breve: mediana de permanencia ≤ 2 splits, p90 ≤ 5', () => {
   // Pedido explícito: nadie debuta en primera y nadie se queda mucho en un
   // equipo inventado. Se mide en splits CONSECUTIVOS en tier 3 por stint (una
   // carrera puede pasar por tier 3 más de una vez si el equipo se disuelve).
@@ -1327,6 +1328,14 @@ check('El tier 3 es breve: mediana de permanencia ≤ 2 splits, p90 ≤ 4', () =
   // de forma estable tanto con el catálogo viejo como con el nuevo — es la
   // muestra mínima para que el check deje de depender de en qué lado del
   // borde caiga una seed puntual.
+  //
+  // Fase 9b: p90 sube de 4 a 5 por diseño, no por ruido — a diferencia de lo
+  // de arriba. Ascender de tier 3 ya no es instantáneo: `competitivo.js`
+  // marca el ascenso ganado, pero `career.tier` se queda en 3 hasta que
+  // `mercado.js` lo resuelve en la próxima pretemporada (regla de proceso 10,
+  // la misma lógica que ya usaba el año muerto). Ese split de espera cuenta
+  // como "en tier 3" en esta medición. La mediana sigue en 2: la mayoría de
+  // los ascensos cae cerca de una pretemporada igual.
   const permanencias = [];
 
   for (let seed = 1; seed <= 6000; seed += 1) {
@@ -1359,42 +1368,53 @@ check('El tier 3 es breve: mediana de permanencia ≤ 2 splits, p90 ≤ 4', () =
   if (medianaPermanencia > 2) {
     throw new Error(`mediana de permanencia en tier 3: ${medianaPermanencia} splits (máximo 2)`);
   }
-  if (p90 > 4) {
-    throw new Error(`p90 de permanencia en tier 3: ${p90} splits (máximo 4)`);
+  if (p90 > 5) {
+    throw new Error(`p90 de permanencia en tier 3: ${p90} splits (máximo 5)`);
   }
 });
 
 check('El año muerto: firmado pero sin edad para debutar se observa y se resuelve solo', () => {
   // LEC y LPL exigen más edad que LCS/LCK/CBLOL/LCP (dato real, TRASPASO): un
   // ascenso ganado a los 17 se congela ahí hasta que la edad alcanza, sin
-  // volver a sortear nada.
+  // volver a sortear nada. Fase 9b: la org ya no se reserva de antemano (eso
+  // ahora es la decisión de `mercado.js`) — lo que no puede volver a
+  // sortearse es la LIGA/TIER ya ganada.
+  // Ojo: `ascensoPendiente` puede seguir vivo un rato SIN el bloqueo de edad
+  // (esperando nomás la próxima pretemporada, fase 9b) — que la marca se
+  // apague no significa que el ascenso ya se resolvió. Por eso este check
+  // sigue `ascensoPendiente` de punta a punta y verifica la marca por
+  // separado, contra la edad, no contra si el flag sigue puesto.
   let vioEspera = false;
   let vioResolucionSinResortear = false;
 
   for (let seed = 1; seed <= 800 && !(vioEspera && vioResolucionSinResortear); seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
-    let esperandoAntes = null;
+    let ascensoAntes = null;
 
     for (let i = 0; i < 60 && !state.terminado; i += 1) {
       state = avanzarSplitAuto(state, rng).state;
 
-      if (state.flags.tier1Esperando) {
-        vioEspera = true;
-        esperandoAntes = state.flags.tier1Esperando;
-      } else if (esperandoAntes) {
+      const ascenso = state.flags.ascensoPendiente;
+      if (ascenso) {
+        if (ascensoAntes && (ascensoAntes.ligaId !== ascenso.ligaId || ascensoAntes.tier !== ascenso.tier)) {
+          throw new Error(
+            `seed ${seed}: el ascenso pendiente cambió de "${ascensoAntes.ligaId}" a "${ascenso.ligaId}" antes de resolverse`
+          );
+        }
+        ascensoAntes = { ligaId: ascenso.ligaId, tier: ascenso.tier };
+
+        const ligaDestino = state.mundo.ligas.find((liga) => liga.id === ascenso.ligaId);
+        if (state.age < (ligaDestino?.edadMinima ?? 0)) {
+          vioEspera = true;
+        }
+      } else if (ascensoAntes) {
         // Se resolvió (para bien o para mal): tiene que haber sido CON la
-        // liga Y la org que ya estaban reservadas, no una tirada nueva.
-        if (state.career.tier === 1 && state.career.liga === esperandoAntes.ligaId) {
-          if (state.career.currentOrg !== esperandoAntes.orgNombre) {
-            throw new Error(
-              `seed ${seed}: el año muerto se resolvió con "${state.career.currentOrg}" en vez de la org ya `
-              + `reservada ("${esperandoAntes.orgNombre}")`
-            );
-          }
+        // liga Y el tier que ya estaban ganados, no una tirada nueva.
+        if (state.career.tier === ascensoAntes.tier && state.career.liga === ascensoAntes.ligaId) {
           vioResolucionSinResortear = true;
         }
-        esperandoAntes = null;
+        ascensoAntes = null;
       }
     }
   }
@@ -1403,7 +1423,190 @@ check('El año muerto: firmado pero sin edad para debutar se observa y se resuel
     throw new Error('la marca espera_edad_minima nunca se observó en 800 carreras');
   }
   if (!vioResolucionSinResortear) {
-    throw new Error('nunca se vio un año muerto resolverse en la MISMA liga/org que ya tenía reservada');
+    throw new Error('nunca se vio un año muerto resolverse en la MISMA liga/tier que ya tenía ganada');
+  }
+});
+
+// --- Fase 9b: el mercado decide, competitivo.js deja de sortear la org ---
+
+check('Ningún cambio de org en tier 1/2 pasa sin una decisión de mercado.js de por medio', () => {
+  for (let seed = 1; seed <= 300; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+
+    for (let i = 0; i < 40 && !state.terminado; i += 1) {
+      const orgAntes = state.career.currentOrg;
+      const tierAntes = state.career.tier;
+      const resultado = avanzarSplitAuto(state, rng);
+      state = resultado.state;
+
+      const cambioDeOrgEnLigaReal = tierAntes !== null && tierAntes !== 3
+        && orgAntes !== state.career.currentOrg;
+      if (cambioDeOrgEnLigaReal) {
+        const huboDecisionDeMercado = resultado.logs.some((log) => log.type === 'mercado');
+        if (!huboDecisionDeMercado) {
+          throw new Error(
+            `seed ${seed}: currentOrg pasó de "${orgAntes}" a "${state.career.currentOrg}" en tier ${tierAntes} `
+            + 'sin ningún log de mercado.js en el split'
+          );
+        }
+      }
+    }
+  }
+});
+
+check('proyeccionJerarquia predice la jerarquía real con error ≤ 8 puntos (regla de proceso 15, PLAN.md §9.8)', () => {
+  let vioFichaje = false;
+
+  for (let seed = 1; seed <= 400 && !vioFichaje; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+
+    for (let i = 0; i < 40 && !state.terminado; i += 1) {
+      const proyectada = state.flags.jerarquiaProyectadaAlFichar;
+      state = avanzarSplitAuto(state, rng).state;
+
+      if (proyectada !== null && state.career.rosterDeOrg === state.career.currentOrg) {
+        // roster.js asigna EXACTO lo que la tarjeta mostró — sin volver a
+        // tirar el dado (bonusTryout no aplica acá: es exclusivo del tryout
+        // de tier 3). Lo que puede correrlo un poco más es el propio
+        // rendimiento de ESE split (rendimiento.js corre después, en el
+        // mismo split): el check mide contra eso, con el margen que pide
+        // PLAN.md §9.8, no contra el instante exacto de la firma.
+        const esperada = Math.round(Math.max(0, Math.min(100, proyectada)));
+        const error = Math.abs(state.career.jerarquia - esperada);
+        if (error > 8) {
+          throw new Error(
+            `seed ${seed}: la tarjeta prometió jerarquía ${esperada} y terminó en ${state.career.jerarquia} (error ${error} > 8)`
+          );
+        }
+        vioFichaje = true;
+        break;
+      }
+    }
+  }
+
+  if (!vioFichaje) {
+    throw new Error('nunca se observó un fichaje de mercado con jerarquiaProyectadaAlFichar en 400 carreras');
+  }
+});
+
+check('El sesgo etario reduce cuántas ofertas llegan: 28 recibe ≤50% del promedio de ofertas que 21', () => {
+  const estadoDeEdad = (edad) => {
+    const rng = mulberry32(1);
+    const base = createInitialState(1, rng);
+    return {
+      ...base,
+      age: edad,
+      phase: 'profesional',
+      career: {
+        ...base.career, tier: 1, liga: 'LEC', currentOrg: 'Fnatic', jerarquia: 55,
+        contrato: { ...base.career.contrato, org: 'Fnatic', liga: 'LEC', tier: 1, aniosRestantes: 0 }
+      },
+      player: { ...base.player, stats: { ...base.player.stats, hype: 55 } }
+    };
+  };
+
+  const promedioOfertas = (edad) => {
+    const rng = mulberry32(42);
+    let total = 0;
+    const muestras = 300;
+    for (let i = 0; i < muestras; i += 1) {
+      const resultado = aplicarMercado(estadoDeEdad(edad), rng);
+      total += resultado.decision ? resultado.decision.opciones.length : 0;
+    }
+    return total / muestras;
+  };
+
+  const prom21 = promedioOfertas(21);
+  const prom28 = promedioOfertas(28);
+  if (!(prom28 <= prom21 * 0.5)) {
+    throw new Error(`promedio de ofertas a los 28 (${prom28.toFixed(2)}) no es ≤ 50% del de los 21 (${prom21.toFixed(2)})`);
+  }
+});
+
+check('Nadie firma un ascenso a una liga sin cumplir su edadMinima', () => {
+  for (let seed = 1; seed <= 400; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    let ligaPrevia = state.career.liga;
+
+    for (let i = 0; i < 40 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      if (state.career.liga !== ligaPrevia && state.career.liga !== null) {
+        const liga = state.mundo.ligas.find((candidata) => candidata.id === state.career.liga);
+        if (liga && state.age < (liga.edadMinima ?? 0)) {
+          throw new Error(`seed ${seed}: fichó por ${liga.id} (edadMinima ${liga.edadMinima}) a los ${state.age}`);
+        }
+      }
+      ligaPrevia = state.career.liga;
+    }
+  }
+});
+
+check('El representante se puede usar exactamente una vez por carrera, nunca dos', () => {
+  let probado = false;
+
+  for (let seed = 1; seed <= 300 && !probado; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+
+    for (let i = 0; i < 40 && !state.terminado && !probado; i += 1) {
+      state = avanzarSplit(state, rng).state;
+
+      while (state.pendiente) {
+        const sistema = sistemaPorId(state.pendiente.sistemaId);
+        const { decision } = state.pendiente;
+
+        if (sistema.id === 'mercado' && decision.datos?.motivo === 'oferta') {
+          const primeraLlamada = sistema.resolver(state, decision, { representante: true }, rng);
+          if (!primeraLlamada.state.flags.llamadaRepresentante) {
+            throw new Error(`seed ${seed}: la primera llamada al representante no marcó flags.llamadaRepresentante`);
+          }
+          if (primeraLlamada.decision) {
+            const segundaLlamada = sistema.resolver(primeraLlamada.state, primeraLlamada.decision, { representante: true }, rng);
+            if (segundaLlamada.decision !== primeraLlamada.decision) {
+              throw new Error(`seed ${seed}: una segunda llamada al representante generó una mano nueva de ofertas`);
+            }
+          }
+          probado = true;
+          break;
+        }
+
+        const respuesta = sistema.resolverAuto(state, decision, rng);
+        state = resolverDecision(state, respuesta, rng).state;
+      }
+    }
+  }
+
+  if (!probado) {
+    throw new Error('nunca apareció una decisión de mercado.js en 300 carreras: no se pudo probar el representante');
+  }
+});
+
+check('Ninguna oferta de mercado.js muestra progresoHito si no es una renovación', () => {
+  for (let seed = 1; seed <= 300; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+
+    for (let i = 0; i < 40 && !state.terminado; i += 1) {
+      state = avanzarSplit(state, rng).state;
+      while (state.pendiente) {
+        const sistema = sistemaPorId(state.pendiente.sistemaId);
+        // `motivo: 'oferta'` no alcanza para identificar la decisión: amateur.js
+        // usa el mismo string para el fichaje inicial de scouting. Hace falta
+        // el sistema, no solo el motivo.
+        if (sistema.id === 'mercado' && state.pendiente.decision.datos?.motivo === 'oferta') {
+          for (const opcion of state.pendiente.decision.opciones) {
+            if (opcion.progresoHito !== null && opcion.tag !== 'renovacion') {
+              throw new Error(`seed ${seed}: la oferta con tag "${opcion.tag}" trae progresoHito, y no es una renovación`);
+            }
+          }
+        }
+        const respuesta = sistema.resolverAuto(state, state.pendiente.decision, rng);
+        state = resolverDecision(state, respuesta, rng).state;
+      }
+    }
   }
 });
 

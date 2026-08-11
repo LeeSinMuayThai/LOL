@@ -146,10 +146,14 @@ function calcularMarcas(state) {
   if (state.player.stats.mentalidad < BALANCE.atributos.burnoutUmbral + BALANCE.contexto.margenMentalidadAlLimite) {
     marcas.push('mentalidad_al_limite');
   }
-  // El año muerto (fase 3): ya ganaste el ascenso a tier 1, la liga te espera,
-  // pero todavía no tenés la edad que exige.
-  if (state.flags.tier1Esperando) {
-    marcas.push('espera_edad_minima');
+  // El año muerto (fases 3 y 9): ya ganaste el ascenso, la liga te espera,
+  // pero todavía no tenés la edad que exige (`mercado.js` lo resuelve solo,
+  // sin volver a sortear nada, apenas cumplís).
+  if (state.flags.ascensoPendiente) {
+    const ligaDestino = state.mundo.ligas.find((liga) => liga.id === state.flags.ascensoPendiente.ligaId);
+    if (state.age < (ligaDestino?.edadMinima ?? 0)) {
+      marcas.push('espera_edad_minima');
+    }
   }
 
   return [...marcas, ...marcasDePool(state), ...marcasDeRegistro(state)];

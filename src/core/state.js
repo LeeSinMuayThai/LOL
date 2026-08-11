@@ -230,14 +230,29 @@ export function createInitialState(seed, rng, eleccion = null) {
       // Se congela a los 18 (o al dejar la etapa amateur) y acompaña el resto
       // de la carrera: 'terminado' o 'lo_dejo'.
       secundario: null,
-      // El año muerto (fase 3): ganaste el ascenso a tier 1 pero la liga exige
-      // más edad de la que tenés. Se resuelve solo apenas cumplís, sin volver
-      // a sortear nada.
-      tier1Esperando: null,
+      // El año muerto (fases 3 y 9): ganaste el ascenso pero la liga exige más
+      // edad de la que tenés. `mercado.js` lo resuelve solo apenas cumplís,
+      // sin volver a sortear nada (unifica lo que hasta la fase 9 vivía
+      // partido entre `competitivo.js` eligiendo destino Y esperando edad —
+      // ahora competitivo.js solo marca el ascenso ganado, `{ligaId, tier}`;
+      // mercado.js decide cuándo y con quién se hace efectivo).
+      ascensoPendiente: null,
       // "la_prueba" (fase 4): el tryout con el tier 3 deja este bonus/malus,
       // que `roster.js` consume una sola vez al armar el primer roster (el
       // split del fichaje todavía no tiene equipo armado) y lo vuelve a cero.
-      bonusJerarquiaTryout: 0
+      bonusJerarquiaTryout: 0,
+      // Fase 9: la jerarquía que `mercado.js` ya sorteó y mostró en la
+      // tarjeta de oferta ANTES de aceptar. `roster.js` la usa tal cual en
+      // vez de volver a tirar el dado (regla de proceso 15) y la resetea acá.
+      jerarquiaProyectadaAlFichar: null,
+      // Fase 9: splits de pretemporada consecutivos sin una sola oferta. Al
+      // llegar a `BALANCE.mercado.splitsSinOfertaParaLibre` te quedás libre
+      // — la puerta por la que se termina la carrera (fase 10, todavía no
+      // construida).
+      splitsSinOfertaConsecutivos: 0,
+      // Fase 9: "llamar al representante" (PLAN.md §9.6) rebaraja la mano de
+      // ofertas una única vez en toda la carrera.
+      llamadaRepresentante: false
     },
     logs: []
   };

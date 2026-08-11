@@ -5,7 +5,7 @@ import { generarHandle } from '../core/mundo.js';
 import { orgDeCarrera } from '../core/competicion.js';
 import {
   abrirFila, registrarSplitEnFila, registrarJerarquiaEnFila, registrarArraigoEnFila,
-  registrarPico, arraigoInicial
+  registrarPico, registrarSalarioEnFila, arraigoInicial
 } from '../core/registro.js';
 import { BALANCE } from '../data/balance.js';
 import { ROLES, IDS_ROL, etiquetaRol } from '../data/roles.js';
@@ -25,6 +25,17 @@ function generarCompaneros(state, org, rng) {
   }));
 }
 
+// Al cambiar de equipo la jerarquia se resetea parcialmente: lo que ganaste
+// en otro vestuario vale, pero no tanto como creias. Extraída para que
+// `mercado.js` pueda proyectar EXACTAMENTE este mismo número en la tarjeta de
+// oferta (regla de proceso 15) sin volver a tirar el dado: el roll se hace
+// una sola vez, en `mercado.js`, y viaja a acá por `flags.jerarquiaProyectadaAlFichar`.
+export function jerarquiaAlFichar(state, rng) {
+  const r = BALANCE.roster;
+  const jerarquiaPrevia = state.career.jerarquia * r.jerarquiaRetenidaAlCambiar;
+  return Math.max(jerarquiaPrevia, gauss(r.jerarquiaInicial, r.jerarquiaInicialSpread, rng));
+}
+
 function armarRoster(state, rng) {
   const r = BALANCE.roster;
   const org = orgActual(state);
@@ -33,14 +44,16 @@ function armarRoster(state, rng) {
     return { state, logs: [] };
   }
 
-  // Al cambiar de equipo la jerarquia se resetea parcialmente: lo que ganaste
-  // en otro vestuario vale, pero no tanto como creias.
-  const jerarquiaPrevia = state.career.jerarquia * r.jerarquiaRetenidaAlCambiar;
   // "la_prueba" (fase 4): el tryout con el tier 3 deja un bonus/malus que se
   // consume acá, una sola vez, y no en el momento en que se firma — a esa
   // altura del split este sistema (roster) todavía no corrió otra vez.
   const bonusTryout = state.flags.bonusJerarquiaTryout ?? 0;
-  const jerarquia = clampStat(Math.max(jerarquiaPrevia, gauss(r.jerarquiaInicial, r.jerarquiaInicialSpread, rng)) + bonusTryout);
+  // Fase 9: si este fichaje vino de una oferta de mercado.js, la jerarquía ya
+  // se sorteó y se mostró en la tarjeta ANTES de aceptar — usar ese número
+  // tal cual, sin volver a tirar el dado (trampa T1: dos tiradas para el
+  // mismo evento correrían el stream distinto a lo que se mostró).
+  const jerarquiaCruda = state.flags.jerarquiaProyectadaAlFichar ?? jerarquiaAlFichar(state, rng);
+  const jerarquia = clampStat(jerarquiaCruda + bonusTryout);
   const sinergia = clampStat(
     Math.max(state.career.sinergia * r.sinergiaRetenidaAlCambiar, gauss(r.sinergiaInicial, r.sinergiaInicialSpread, rng))
   );
@@ -49,17 +62,22 @@ function armarRoster(state, rng) {
   const jerarquiaRedondeada = Math.round(jerarquia);
 
   // Fase 8: se abre la fila de esta org en el registro (regla de proceso 14:
-  // el registro solo crece — `competitivo.js` ya cerró la fila anterior, si
-  // había una, antes de cambiar `currentOrg`). El split en que fichás cuenta
-  // como jugado ahí.
-  const registroConFila = registrarJerarquiaEnFila(
-    registrarSplitEnFila(
-      abrirFila(state.career.registro, {
-        org: org.nombre, liga: state.career.liga, tier: state.career.tier,
-        anio: state.calendario.anio, split: state.player.splitCount
-      })
+  // el registro solo crece — `competitivo.js`/`mercado.js` ya cerró la fila
+  // anterior, si había una, antes de cambiar `currentOrg`). El split en que
+  // fichás cuenta como jugado ahí. Fase 9: el sueldo del contrato vigente
+  // (0 en tier 3, donde el mercado todavía no existe) queda registrado en la
+  // fila desde que se abre.
+  const registroConFila = registrarSalarioEnFila(
+    registrarJerarquiaEnFila(
+      registrarSplitEnFila(
+        abrirFila(state.career.registro, {
+          org: org.nombre, liga: state.career.liga, tier: state.career.tier,
+          anio: state.calendario.anio, split: state.player.splitCount
+        })
+      ),
+      jerarquiaRedondeada
     ),
-    jerarquiaRedondeada
+    state.career.contrato.salarioAnualUSD
   );
 
   // Arraigo (fase 8.4): NUNCA se resetea a 0 a secas — arranca en una
@@ -74,7 +92,7 @@ function armarRoster(state, rng) {
   return {
     state: {
       ...state,
-      flags: { ...state.flags, bonusJerarquiaTryout: 0 },
+      flags: { ...state.flags, bonusJerarquiaTryout: 0, jerarquiaProyectadaAlFichar: null },
       career: {
         ...state.career, companeros, jerarquia: jerarquiaRedondeada, sinergia: Math.round(sinergia),
         rosterDeOrg: org.nombre, arraigo: arraigoNuevo, registro: registroConPicos
