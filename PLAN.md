@@ -4,10 +4,10 @@
 > Nada se planea en el momento: si algo no está acá, no se hace hasta escribirlo acá.
 > `PROGRESO.md` cuenta lo que ya pasó y con qué números; este documento cuenta lo que falta.
 > Los datos de investigación (ligas 2026, salarios, duración de carreras, Fearless) viven en
-> `TRASPASO.md` PARTE 4 y **no hay que volver a investigarlos**.
+> `CONCEPTO.md` §12 y **no hay que volver a investigarlos**.
 
 Orden de lectura para quien abre el proyecto: `CLAUDE.md` (reglas duras) → `CONCEPTO.md` (qué es
-el juego) → este documento → `PROGRESO.md` (changelog) → `TRASPASO.md` (datos de investigación).
+el juego, con los datos de la investigación en §12) → este documento → `PROGRESO.md` (changelog).
 
 ---
 
@@ -25,6 +25,7 @@ el juego) → este documento → `PROGRESO.md` (changelog) → `TRASPASO.md` (da
 | **7** | El prólogo se comprime y la repetición se rompe | ✅ ver `PROGRESO.md` |
 | **8** | La ficha: el registro que acumula + la tarjeta permanente + `src/ui/` | ✅ ver `PROGRESO.md` |
 | **9** | El mercado: ofertas, contratos, salarios, la trampa del equipo grande visible | ✅ ver `PROGRESO.md` |
+| **9E** | El varado: la carrera vuelve a tener juego después del primer equipo | 🔴 **bug crítico abierto** |
 | **10** | El final: retiro emergente + la tarjeta de legado | ⬜ |
 | **11** | El año: calendario, la nota de la temporada, el archirrival | ⬜ |
 | **12** | La jerarquía de la decisión: categorías, rareza, consecuencia previa, el dado | ⬜ |
@@ -204,7 +205,7 @@ angosto rinde más mientras el meta te acompaña.** Es real desde la fase 4.
 - **≥3 eventos por rol** (15 en total), gateados por el eje `rol`.
 - **≥6 eventos de pool** gateados por las marcas de 1.4: el campeón nuevo que sale a dos semanas
   del partido, el main que se murió con el parche, el coach que te pide ampliar.
-- **La cuota coreana de soloQ** — dato real de `TRASPASO` §4.5, prometido en `CONCEPTO` §7 y nunca
+- **La cuota coreana de soloQ** — dato real de `CONCEPTO` §12.5, prometido en `CONCEPTO` §7 y nunca
   implementado: Diamante 80 partidas/**5 campeones** · Máster 65/**8** · GM 50/**15**. El requisito
   de amplitud **sube con el rango** y empuja contra `sesgoMaestriaEnPick`, que premia
   especializarse.
@@ -323,7 +324,7 @@ LATAM Norte quedó absorbida por LCS y LATAM Sur por CBLOL.
 | CBLOL | Brasil + LATAM Sur | 8 | 17 | BR | 2 |
 | LCP | Asia-Pacífico | 8 | 17 | TW | 2 |
 
-Rosters exactos en `TRASPASO` §4.3. Esquema ampliado por liga: `edadMinima`, `cupoImports: 2`,
+Rosters exactos en `CONCEPTO` §12.3. Esquema ampliado por liga: `edadMinima`, `cupoImports: 2`,
 `minimoResidentes: 3`, `cuposInternacionales`, `desciendeA`,
 `salario: { medianaUSD, mediaUSD, sigma, minimoUSD }`, y **`formatoPlayoffs`** (cuántos clasifican,
 Bo3/Bo5 por ronda) que consume la fase 4.
@@ -1378,7 +1379,7 @@ seed puntual. Ver D24.
 # FASE 9 — EL MERCADO
 
 > Implementa `salarios.js` lognormal y `valorMercado.js` con sesgo etario, residencia y cupos de
-> import. **Esos números están investigados en `TRASPASO.md` §4 y no se vuelven a investigar ni a
+> import. **Esos números están investigados en `CONCEPTO.md` §12 y no se vuelven a investigar ni a
 > discutir** (ver 9.2). Lo que agrega esta fase es que la oferta sea una decisión de verdad, con la
 > pantalla de la imagen 6.
 
@@ -1409,13 +1410,13 @@ profesional. **Es la primera vez en el proyecto que `career.contracts` deja de s
 
 ## 9.2 — `src/core/salarios.js` y `src/core/valorMercado.js`
 
-Las fórmulas y los números investigados viven en `TRASPASO.md` §4 (líneas 560-660) y **no se
+Las fórmulas y los números investigados viven en `CONCEPTO.md` §12.6 y **no se
 vuelven a investigar ni a discutir** — es la misma cita que hacía la vieja fase 8 de este
 documento, ahora apuntada a la fuente original en vez de a una sección que este mismo plan
 reemplaza:
 
 ```js
-// TRASPASO.md §4 — salarios: lognormal, mediana << media (LEC mediana ~€165k, media €240k)
+// CONCEPTO.md §12.6 — salarios: lognormal, mediana << media (LEC mediana ~€165k, media €240k)
 salarioDeOferta(liga, { rol, jerarquia, hype, edad, esImport }, rng)
   base  = liga.salario.medianaUSD
   mult  = exp(gauss(0, liga.salario.sigma))          // mediana << media
@@ -1424,7 +1425,7 @@ salarioDeOferta(liga, { rol, jerarquia, hype, edad, esImport }, rng)
   mult *= 0.85 + (hype / 100) * 0.45
   return max(liga.salario.minimoUSD, base * mult)
 
-// TRASPASO.md §4 — valor de mercado, con sesgo etario (el jugador de 28 recibe ~40% de las
+// CONCEPTO.md §12.4 — valor de mercado, con sesgo etario (el jugador de 28 recibe ~40% de las
 // ofertas que uno de 21 con la hoja idéntica)
 valorDeMercado = f(rendimientoReciente, jerarquia, hype, residencia, signature) × sesgoEtario
 sesgoEtario:  ≤22 → 1.00 · 23 → 0.95 · 24 → 0.88 · 25 → 0.78 · 26 → 0.66
@@ -1447,7 +1448,7 @@ visible con las ▲▼, sería absurdo borrarla el mismo mes que se puede ver �
 te retira.
 
 `valorMercado` alimenta `registro.picos.valorMercadoUSD` → imagen 15, `US$95,6M VALOR MÁS ALTO`.
-**Residencia:** `player.residencias = { KR: 0, EMEA: 0, … }` en splits (ya definido en TRASPASO §4);
+**Residencia:** `player.residencias = { KR: 0, EMEA: 0, … }` en splits (ya definido en `CONCEPTO` §12.3);
 12 splits (4 años) = residencia y salto de valor de mercado. La doble residencia LATAM 2026-2027
 queda en D17, abierta (ver PARTE 8 / Deuda técnica).
 
@@ -1595,6 +1596,156 @@ y por primera vez.
 
 ---
 
+# FASE 9E — EL VARADO
+
+> **Fase de corrección, no de features.** Nace de la auditoría del 2026-09-02 (ver deuda D25-D28,
+> D31, D33). No agrega un solo sistema: arregla un bug que hace que **el 30,7% de las carreras no
+> tengan juego después del primer equipo**, y tapa el agujero de medición por el que ese bug
+> convivió con 38 checks en verde.
+>
+> Va antes de la fase 10 por dependencia dura: el retiro emergente se define como *"te retirás
+> cuando el mercado deja de llamarte"*, y hoy el estado "sin equipo" está tan roto que no se puede
+> usar como señal de nada.
+
+## 9E.0 — El diagnóstico, medido
+
+Sonda headless sobre el mismo pipeline que corre el navegador, 400 carreras × 60 splits, estrategia
+por defecto:
+
+| Métrica | Medido | Debería ser |
+|---|---|---|
+| Carreras que terminan varadas (`tier=null`, sin org) | **30,7%** | ~0% |
+| Splits profesionales jugados sin equipo | **47,5%** (7.100 de 14.938) | unos pocos, entre contratos |
+| Racha máxima sin equipo | **57 splits** | 1-2 (`competitivo.splitsLibrePromedioTier3`) |
+| Apariciones del momento `sin_equipo` | **7.238** — el más frecuente del juego | marginal |
+| Carreras varadas por la vía del mercado | **0** | — |
+
+La última fila es la que cierra el diagnóstico: **no es el mercado, es tier 3.**
+
+Traza de la seed 7: firma con Fénix Esports en el split 7, el equipo se disuelve en el 8, y los 52
+splits restantes son zombis — sin equipo, sin liga, sin tier, sin ofertas, hasta el tope.
+
+## 9E.1 — La causa
+
+`disolverEquipo()` (`systems/competitivo.js`) deja el estado en `tier: null, liga: null,
+currentOrg: null`. La fase 9b (`9a163b6`) cambió el re-fichaje de incondicional a:
+
+```js
+// antes (fase 3):
+if (!state.career.currentOrg) return reFicharTier3(state, rng);
+// después (fase 9b):
+if (!state.career.currentOrg) {
+  return state.career.tier === 3 ? reFicharTier3(state, rng) : { state, logs: [] };
+}
+```
+
+El guard es correcto en intención — un libre de tier 1/2 lo tiene que resolver `mercado.js`, no
+este sistema — pero se apoya en un `tier` que `disolverEquipo` acaba de anular tres funciones más
+arriba. **La condición nunca es cierta en el único caso para el que se escribió.**
+
+Y `mercado.js` tampoco rescata: hace early return porque `ligaDeCarrera()` devuelve `null` con
+`career.liga` en null. Las dos puertas cerradas, ninguna de las dos por su cuenta equivocada.
+
+## 9E.2 — El arreglo
+
+**`disolverEquipo` conserva `tier: 3`.** Se te disolvió el equipo, no dejaste de ser un jugador de
+tier 3. Es verdad semántica, mantiene `ligaOZonaDeCarrera()` funcionando, y hace que el guard de
+`aplicar()` diga exactamente lo que quería decir sin tocarlo.
+
+Descartado: ampliar el guard a `tier === 3 || tier === null`. Arregla el síntoma y deja el estado
+mintiendo — un jugador sin tier que sin embargo compite en tier 3.
+
+`liga` sigue en `null`: tier 3 no es una liga real, eso ya estaba bien.
+
+> Trampa T1: esto **no** agrega ni saca consumo de `rng` en el camino feliz, pero sí cambia qué
+> rama toma `competitivo.aplicar()` en las carreras varadas, y ahí `reFicharTier3` vuelve a tirar.
+> Ninguna seed anterior reproduce su carrera. Es el precio del arreglo, no un efecto colateral
+> evitable: anotarlo en `PROGRESO.md` y no intentar preservar la huella.
+
+## 9E.3 — Que el agujero no se vuelva a abrir
+
+Los tres cambios de tooling importan tanto como el arreglo, porque el bug vivió cuatro commits
+debajo de 38 checks en verde.
+
+1. **`sin_equipo` deja de estar `pendiente`** en `data/contextos.js`. Hoy `cobertura.js` saltea
+   los pendientes, así que reporta "Sin huecos" sobre el momento más frecuente del juego. Al
+   activarlo, `--huecos` va a marcar la celda vacía — que es exactamente lo que tiene que hacer.
+2. **KPIs de carrera en `simulate.js`.** Hoy solo reporta métricas de la etapa amateur
+   (`soloqElo`, `estudios`, `familyTrust`, `mecanica`, `mentalidad`, `hype`, `splitFichaje`): 1.500
+   carreras no ven nada de lo que pasa después de firmar. Agregar, como mínimo: fracción de splits
+   con equipo, racha máxima sin equipo, distribución de tier alcanzado, y carreras varadas.
+3. **Check nuevo en `validate.js`**: ninguna carrera pasa más de N splits seguidos sin equipo
+   estando en `phase: 'profesional'`. Regla de proceso 7 — **verificar que falla contra el `HEAD`
+   actual antes de arreglar nada**; si pasa en verde sobre el código roto, el check está mal
+   escrito.
+
+## 9E.4 — El contenido que se cuela sin vestuario (D27)
+
+Con el varado arreglado, `nivel: 'libre'` pasa de ser el estado dominante a una ventana de 1-2
+splits. Pero el contenido sigue sin gatearse, y ahí ya se observó lo peor que puede pasar: **Arraigo
++2 al manager de una org que no existe** (y se pierde, porque `cerrarFila` es no-op sin fila
+abierta), y *"en el draft no te dieron tu pick"* seis veces sin equipo ni serie.
+
+Dos cambios chicos:
+
+- **`campeones.js`**: el draft se gatea por `career.currentOrg`, no por `phase === 'profesional'`.
+  Sin equipo no hay draft; elegís vos, como en soloQ.
+- **Los eventos que nombran vestuario, manager o staff declaran `marcas: ["con_vestuario"]`.** La
+  marca ya existe desde la fase 0 y ya se usa para esto mismo; lo que falta es aplicarla al
+  contenido que se escribió después. Barrer el catálogo con `cobertura.js` una vez que `sin_equipo`
+  esté activo.
+
+## 9E.5 — Los `Math.random()` de `index.html` (D28)
+
+Cinco usos (zona del Smite en "Robar Barón", espera de "La Llamada", posición de los blancos)
+deciden el `resultado` que el minijuego le devuelve al motor — que entra a la serie y cambia el
+mapa. **Jugando a mano, la misma seed no reproduce la misma carrera.** La regla invariable 1 no
+tiene asterisco para la UI.
+
+- Extender `guards.js` a `.html` (hoy filtra por `EXTENSIONES_A_REVISAR = new Set(['.js'])` dentro
+  de `/src`, así que `index.html` le queda fuera dos veces).
+- Pasarle el `rng` de la partida a los cinco `montar*`. El módulo ya viaja hasta ahí: `index.html`
+  importa `mulberry32` y arma el stream — es cuestión de pasarlo, no de crear nada.
+- Ojo trampa T1: consumir tiradas del stream principal adentro del minijuego lo corre. Si molesta,
+  derivar un stream aparte desde la seed y el número de split.
+
+## 9E.6 — Limpieza de constantes (D31)
+
+Borrar o usar, sin dejarlas mintiendo: `amateur.autoProbRobar`, `rendimiento.ruidoRival` (resto de
+la fase 5, cuando `temporada.js` le sacó a `rendimiento.js` la resolución de la temporada) y
+`competitivo.margenEdadMinima`. `mercado.margenImport` **no** se toca acá: es D29 y se resuelve
+junto con el eje `residencia` en la fase 11.
+
+Y redirigir los 13 comentarios de `/src` que citan `TRASPASO.md §4` a `CONCEPTO.md §12` (D33): la
+numeración se conservó al mover la investigación, así que es reemplazo de texto, sin lógica.
+
+## 9E.7 — Checks de la fase
+
+- Ninguna carrera de 60 splits pasa más de `N` splits seguidos sin equipo en `phase: 'profesional'`.
+- Fracción de splits profesionales con equipo **≥ 90%** (hoy: 52,5%).
+- Carreras varadas (`tier === null` y sin org al cerrar) **= 0%** (hoy: 30,7%).
+- `cobertura.js --huecos` mide `sin_equipo` — y si no hay contenido, lo dice.
+- `guards.js` falla sobre el `index.html` actual y pasa después de inyectar el `rng`.
+- Cero apariciones de "draft" o "manager" en los logs de un split sin `currentOrg`.
+
+## 9E.8 — Números a medir al cerrar
+
+Los cuatro de 9E.0, remedidos con la misma sonda y el mismo `n`. Más el que la fase 9d midió mal:
+**carreras con al menos un split libre** — reportado 0,3%, real 35,3%. Es el número que dice si el
+estado "sin equipo" volvió a ser lo que tiene que ser: una transición, no un destino.
+
+Y D2 (`% de carreras que agotan el tope de splits`) se remide después de esto y **antes** de
+empezar la fase 10: hoy da 65,5% a 60 splits, pero una parte de ese número son carreras varadas,
+no carreras largas. La fase 10 necesita la lectura limpia.
+
+## 9E.9 — Verificación end-to-end
+
+Jugar la seed 7 a mano de punta a punta. Hoy: firmás en el split 7, el equipo se disuelve en el 8,
+y quedan 52 splits de nada con eventos de vestuario cayendo igual. Después: te levanta otro equipo
+chico en uno o dos splits y la escalera de la fase 3 sigue su curso.
+
+---
+
 # FASE 10 — EL FINAL
 
 ## 10.0 — Commits
@@ -1608,7 +1759,7 @@ y por primera vez.
 
 ## 10.1 — `src/systems/retiro.js` — la carrera termina cuando el mercado deja de llamarte
 
-Se implementa lo investigado en `TRASPASO.md` §4-5 (líneas 670-680: relojes, semántica de
+Se implementa lo investigado en `CONCEPTO.md` §12.4 (relojes, semántica de
 `terminado`/`retirado`, `vueltasMaximas`):
 
 | Reloj | Hoy | Pasa a ser |
@@ -1692,7 +1843,7 @@ Es el motor de difusión del juego (`CONCEPTO` §9) y hoy **no existe para ning�
 
 ## 10.4 — Lesiones y servicio militar
 
-Se implementa lo investigado en `TRASPASO.md` §4-5 (líneas 682-690) sin cambios:
+Se implementa lo investigado en `CONCEPTO.md` §12.4 sin cambios:
 `servicioMilitar.js` (determinista, coreano, 18-21 meses, antes de los 28 — 30 si es figura de
 élite) y `salud.js` (`tunel_carpiano`, `tendinitis_muneca`, `hombro_cronico`, escalados por
 `player.deudaSueno`).
@@ -1706,7 +1857,7 @@ Se implementa lo investigado en `TRASPASO.md` §4-5 (líneas 682-690) sin cambio
 
 ```
 CERO carreras agotan maxSplitsDeSeguridad (hoy: 49,1%)
-mediana de splits como pro ∈ [6, 10]   (2-3,3 años — el dato real de TRASPASO)
+mediana de splits como pro ∈ [6, 10]   (2-3,3 años — el dato real de `CONCEPTO` §12.4)
 activo al 4º año como pro < 20%
 llega a age >= 30 ∈ [0.8%, 4%]         (Peanut / Faker: posible, difícil)
 causa de retiro más frecuente = 'sin_equipo'
@@ -2015,9 +2166,9 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D12 | ~~El eje `region` tenía `LATAM`~~ — resuelto: sacado, ya no hay tier-1 ahí | ✅ 3 |
 | D13 | ~~`academy_offer` empujaba a `career.orgs` sin fichar~~ — resuelto: el fichaje real lo hace `amateur.js`/`competitivo.js`, `academy_offer` quedó como la prueba narrativa que siempre fue | ✅ 3 |
 | D14 | Solo 2 eventos del catálogo usan 3 opciones; ninguno usa 4 | 13 |
-| D15 | LCP no tiene un circuito de desarrollo real investigado (TRASPASO no lo cubre). Se modeló como `LCP_CHALLENGERS`, generado igual que el resto de tier 2 — nombre plausible, no verificado como real. Si aparece la investigación real, reemplazar el id | 3 (abierto) |
+| D15 | LCP no tiene un circuito de desarrollo real investigado (`CONCEPTO` §12.3 no lo cubre). Se modeló como `LCP_CHALLENGERS`, generado igual que el resto de tier 2 — nombre plausible, no verificado como real. Si aparece la investigación real, reemplazar el id | 3 (abierto) |
 | D16 | Tier 1 es un piso: no hay descenso de tier1 a tier2 todavía. Una relegación real existe en las ligas de 2026 pero modelarla es más natural junto con contratos (fase 9) | 9 |
-| D17 | LRN/LRS (los circuitos tier 2 de LATAM que alimentan LCS/CBLOL) y la doble residencia LATAM 2026-2027 no están modelados: un jugador de la región nace directamente en NA o BR. Es la simplificación explícita que ya preveía `TRASPASO` §5 ("la doble residencia... vale un evento dedicado") | 9 |
+| D17 | LRN/LRS (los circuitos tier 2 de LATAM que alimentan LCS/CBLOL) y la doble residencia LATAM 2026-2027 no están modelados: un jugador de la región nace directamente en NA o BR. Es la simplificación explícita que ya preveía la investigación ("la doble residencia... vale un evento dedicado") | 9 |
 | D18 | ~~La ventana `internacional` era un único evento agregado (`chance()`)~~ — resuelto a medias en la fase 4: ahora es una serie Bo5 real de verdad contra un rival de otra región, con Fearless y minijuegos. Sigue **sin distinguir** First Stand/MSI/Worlds ni modelar un bracket Swiss+knockout: es una sola serie representativa, no el torneo real completo | ✅ 4 (parcial) |
 | D19 | El bracket de playoffs de tier 1 es de **eliminación simple** (6 clasificados, bye para los 2 mejores sembrados, Bo5 parejo). Las 6 ligas 2026 investigadas usan doble eliminación real (hay bracket de perdedores). Simplificación deliberada: el motor solo simula TU camino por el bracket, nunca el resto — una derrota ya cuenta una historia completa ("eliminado en cuartos") sin necesitar una corrida paralela por el lado de perdedores | 4 (abierto) |
 | D20 | Los 5 minijuegos comparten dos parámetros de balance genéricos (`impactoMinijuego` para los de mapa, `impactoDirecto` para bootcamp/rueda de prensa) en vez de tener cada uno el suyo ajustado a mano. Medido: el efecto agregado de CUALQUIERA de los dos lo satura la propia estructura del juego (máximo 1 minijuego por serie, un mapa de cinco) mucho antes de que el valor del parámetro importe — ver PROGRESO | 12 (abierto) |
@@ -2025,6 +2176,93 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D22 | La fase 9 (`competitivo.js` deja de sortear tu org) va a correr el stream de RNG: ninguna seed anterior a esa fase va a reproducir su carrera. Mismo criterio que D21 — anotado de antemano para no descubrirlo tarde | 9 (anticipado, no implementado aún) |
 | D23 | Medido al calibrar el arraigo (fase 8c, 300 carreras a 60 splits): la distribución es bimodal — de las carreras con ≥8 splits en una misma org, 50,5% termina en `leyenda` (88+) y 25,7% se queda en `uno_mas` (<25); `querido` e `idolo` juntos son solo el 23,8%. El check declarado (≥15% llega a Ídolo+) pasa cómodo (59,9%), así que no fuerza retunear nada — pero si en la fase 11/13 se quiere que "Leyenda" se sienta tan raro como en la referencia (aparece una sola vez en las 15 imágenes, al cierre de una carrera de 26 años), la curva de ganancia por split es candidata a suavizarse recién ahí, con contenido real de por medio (regla de proceso 3: agregar contenido antes que tocar constantes) | 11/13 (abierto) |
 | D24 | El check de la fase 3 "tier 3 es breve" (`p90 ≤ 4`) era frágil a n=1500: la fase 8D midió que el p90 real cae casi exactamente en el borde 4/5 (~90% acumulado en 4) tanto antes como después de agregar contenido — cualquier cambio que reordene qué evento gana un sorteo para una seed dada (trampa T1, misma familia que D21/D22) puede empujar el resultado para cualquier lado del borde a esa muestra. Confirmado con una sonda aparte a n=3000/6000: ambas versiones (con y sin el contenido nuevo) dan p90=4 estable. Resuelto subiendo la muestra del check a 6000 — no se tocó ninguna constante de balance de tier 3 | ✅ 8D |
+| D25 | **La carrera se vara para siempre tras disolverse un tier 3.** Regresión de la fase 9b (`9a163b6`): `competitivo.js` guardó el re-fichaje detrás de `career.tier === 3`, pero `disolverEquipo` ya puso `tier: null` — la condición nunca es cierta en el único caso para el que se escribió. `mercado.js` tampoco rescata (`ligaDeCarrera` es null porque `career.liga` también se anuló). Medido a 400 carreras × 60 splits: **30,7% de las carreras terminan varadas**, **47,5% de todos los splits profesionales se juegan sin equipo**, racha máxima **57 splits**. Detalle y arreglo en la fase 9E | **9E** |
+| D26 | **El agujero de medición que dejó pasar D25.** `sin_equipo` está marcado `pendiente: 'paso11'` en `contextos.js`, y `cobertura.js` no mide los pendientes: reporta "Sin huecos" sobre el momento **más frecuente del juego** (7.238 apariciones, más que `tier1_rookie` y `amateur_prometedor` juntos). Y `simulate.js` no tiene ningún KPI de equipo, tier ni mercado. Por eso la fase 9d cerró reportando "carreras con al menos un split libre: 0,3%" cuando el número real es **35,3%**: esa métrica solo miraba la puerta del mercado. Misma familia que la trampa T5 — la herramienta no falla, mira para otro lado | **9E** |
+| D27 | **Contenido de vestuario disparando sin vestuario.** Ningún evento declara ni excluye `nivel: ["libre"]`, así que el catálogo tier-agnóstico cae igual sin equipo. Observado en la traza de la seed 7 ya varado: "avisarle al manager en privado" dando **Arraigo +2** a una org que no existe (y perdiéndose, porque `cerrarFila` es no-op sin fila abierta), y "en el draft no te dieron tu pick" seis veces sin equipo ni serie — `campeones.js` gatea el draft por `phase`, nunca por `career.currentOrg`. Rompe el principio rector 1 al pie de la letra | **9E** |
+| D28 | **`Math.random()` × 5 en `index.html`** (zona del Smite, espera de "La Llamada", posición de los blancos). Viola la regla invariable 1 y rompe el determinismo jugando a mano: esos valores deciden el `resultado` del minijuego, que entra al motor y cambia la serie. `guards.js` no los ve porque solo escanea `.js` dentro de `/src` — el guard tiene que mirar `.html` también | **9E** |
+| D29 | **El eje `residencia` está muerto entero.** `contexto.js` escribe `residencia: 'local'` fijo. En cadena: el momento `import_recien_llegado` es inalcanzable por construcción, `BALANCE.mercado.margenImport` no lo lee nadie (pese a que `salarios.js` afirma que "lo evalúa `mercado.js`"), `contrato.tipo: 'import'` nunca se produce, y `mercado.js` solo genera ofertas de tu liga actual — no existe la transferencia entre regiones que prometen `CONCEPTO` §6 y `DISENO` §3.7 | 11 |
+| D30 | **Valores de eje que la fase 9 debía llenar y no llenó.** `calcularMercado()` devuelve solo `contrato_firme`/`sin_contrato`; `ultimo_ano` y `sin_renovacion` están declarados en `EJES` y nunca se calculan, pese a que `contrato.aniosRestantes` ya existe y es exactamente el dato que hace falta. `etapa: 'declive'` tampoco se computa | 10/11 |
+| D31 | **Constantes muertas en `balance.js`**: `mercado.margenImport` (ver D29), `amateur.autoProbRobar`, `rendimiento.ruidoRival` (resto de la fase 5, cuando `temporada.js` le sacó a `rendimiento.js` la resolución de la temporada) y `competitivo.margenEdadMinima`. Son las únicas 4 de ~250 claves; se borran o se usan, pero no se dejan mintiendo | 9E (las 3 sin D29) |
+| D32 | **`node src/dev/validate.js` tarda 6m47s** y la Definición de terminado lo exige en cada cambio. Candidato a partirse en `--rapido` (esquema, contratos, determinismo) y `--completo` (los checks estadísticos de n grande, que son los que se comen el tiempo) | 12 (abierto) |
+| D33 | **13 comentarios de `/src` citan `TRASPASO.md §4`**, archivo borrado el 2026-09-02 — `salarios.js`, `state.js`, `valorMercado.js` (×3), `balance.js` (×3), `roles.js`, `validate.js` (×2), `amateur.js`, `mercado.js`. La numeración se conservó al mover la investigación (`§4.N` → `CONCEPTO.md §12.N`), así que la redirección es un reemplazo de texto por comentario, sin tocar lógica. Se deja para el próximo commit que toque `/src` | 9E |
+
+---
+
+# Trampas conocidas (esto ya costó tiempo)
+
+> Vienen de `TRASPASO.md` PARTE 7, borrado el 2026-09-02. Se mudan acá enteras porque este
+> documento y varios comentarios de `/src` las citan por número: sin esta tabla, cada `(trampa
+> TN)` del repo queda colgado.
+
+## T1 — Desplazamiento del stream de RNG
+
+Todo sistema nuevo que consuma `rng()` corre el stream de todo lo que viene después. Los
+agregados se sostienen pero **ninguna seed reproduce la misma carrera entre versiones**.
+**Mitigación**: early return sin tocar `rng` cuando el sistema no aplica. El determinismo
+intra-versión (lo que validate mide) sigue intacto; la pérdida de comparabilidad entre versiones
+es aceptable y se documenta en `PROGRESO.md`.
+
+**Técnica útil para verificar que un paso no movió nada**: extraer `HEAD` a un directorio aparte
+con `git archive HEAD | tar -x -C <dir>` y comparar una huella de N seeds
+(`finAnticipado:splits:soloqElo`) entre ambas versiones. Así se comprobó que el paso 7 no movió
+un decimal.
+
+## T2 — El contexto se calcula EN VIVO, no se lee del caché
+
+`state.contexto` es una foto del **arranque** del split. La fase puede cambiar a mitad de split
+(el split en el que firmás, sin ir más lejos). **Todo filtrado de contenido tiene que llamar a
+`calcularContexto(state)`**, no leer `state.contexto`. Este bug ya se cometió una vez y movió
+los agregados sin motivo aparente.
+
+## T3 — El cursor de reanudación va por `sistemaId`, no por índice
+
+`state.pendiente` guardaba un índice de `ETAPAS_SPLIT`. Agregar un sistema corre todos los
+índices y corrompe cualquier partida serializada a mitad de split. Ya está arreglado — **no
+volver a introducirlo**.
+
+## T4 — Paths que no existen en `createInitialState`
+
+`validate.js` exige que todo `field` de condición y todo `path` de efecto exista en el estado
+inicial. Entonces `career.contrato`, `player.lesion`, `player.residencias` tienen que
+inicializarse como **objetos completos con ceros, nunca `null`**.
+
+## T5 — Un check que referencia una clave inexistente nunca falla
+
+`validate.js` tenía `if (BALANCE.meta.pesoDominante <= BALANCE.meta.pesoMinimo)` después de que
+esa clave se borrara. `undefined <= 0.5` es `false`: **el check pasaba siempre y daba falsa
+confianza durante dos pasos.** Al escribir un check nuevo, verificar que falla cuando debe.
+
+## T6 — No comparar contra una línea de base vieja
+
+El balance de un changelog viejo puede haber sido medido antes de que existieran sistemas
+posteriores. Ya pasó: se comparó el paso 7 contra una tabla del paso 4 y pareció una regresión
+que no existía. **Medir la línea de base en el momento, no citarla de memoria.**
+
+## T7 — Elegir por argmax sobre suma ponderada siempre da el extremo
+
+El jugador automático elegía la rutina maximizando la suma ponderada contra los pesos → siempre
+la más extrema → 70% de burnout. La función correcta es **minimizar la distancia contra las
+proporciones deseadas**: "cuál de estas se parece más a cómo lo habría repartido yo".
+
+## T8 — Verificar que las ediciones de HTML/JSON por script realmente aplicaron
+
+Un reemplazo de texto que no matchea falla en silencio. Ya pasó: se borró `mostrarReparto` pero
+quedó la llamada, y el reemplazo del render de opciones no se aplicó, así que las rutinas se
+mostraban **sin su texto narrativo** — la mitad de la decisión. **Después de editar por script,
+grepear el resultado.**
+
+## T9 — `maxDecisionesPorSplit: 8` va a quedar corto
+
+Con mercado + rutina + evento + evento + cierre de edad ya son 5, y el paso 12 agrega retiro y
+vuelta. Subirlo **conservando el tope**: es la única red contra un loop infinito.
+Y ojo con `CONCEPTO` §2, que dice **1-2 decisiones por split**: la oferta de mercado y la rutina
+de offseason deberían ser la misma decisión cuando ambas caen, o alternarse.
+
+## T10 — El pool de eventos se vacía con gating fino
+
+`events.js` loguea *"Un split tranquilo, sin eventos destacados"* cuando no hay candidatos. Con
+`contexto` estrechando, eso va a pasar más hasta que exista el contenido. **Medirlo**: fracción
+de splits sin evento < 25% en todos los contextos alcanzables.
 
 ---
 

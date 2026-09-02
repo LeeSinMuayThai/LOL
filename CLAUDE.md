@@ -53,11 +53,15 @@ Orden de lectura al abrir el proyecto:
 | Documento | Qué es |
 |---|---|
 | `CLAUDE.md` | este archivo: las reglas duras |
-| `CONCEPTO.md` | qué es el juego y por qué los sistemas están conectados así |
-| **`PLAN.md`** | **el plan vigente, fase por fase, hasta el juego terminado** |
+| `CONCEPTO.md` | qué es el juego y por qué los sistemas están conectados así. **§12 es el archivo de investigación**: ligas 2026, salarios, duración de carreras, Fearless — no hay que volver a investigarlo |
+| **`PLAN.md`** | **el plan vigente, fase por fase, hasta el juego terminado.** Incluye la tabla de deuda técnica, las trampas conocidas (T1-T10) y las reglas de proceso |
 | `PROGRESO.md` | changelog: qué se hizo, por qué, y con qué números medidos |
-| `TRASPASO.md` | archivo de investigación (ligas 2026, salarios, carreras) y trampas conocidas |
 | `DISENO.md` | arquitectura de archivos |
+
+> `TRASPASO.md` y `AUDITORIA.md` se borraron el 2026-09-02: describían un repo de 28 commits
+> atrás y ya se contradecían con el código. Lo que seguía vivo se mudó — la investigación a
+> `CONCEPTO.md` §12 (conservando la numeración: `TRASPASO §4.N` → `§12.N`) y las trampas a
+> `PLAN.md`. Los originales siguen en git: `git show 3d6ee90:TRASPASO.md`.
 
 ## Workflow recomendado
 

@@ -512,3 +512,176 @@ alargar la misma partida— es donde está el juego de verdad.
 **No tiene una estrategia ganadora.** Si el simulador de 5000 carreras muestra
 que más del 25% termina en el mismo arquetipo, el balance está roto aunque
 cada partida individual se sienta variada.
+
+---
+
+## 12. Datos de la investigación (2026)
+
+> **Archivo de investigación. Estos datos no hay que volver a investigarlos.** Se relevaron con
+> búsqueda web en agosto 2026 y son la base de todo el realismo del juego: la escalera de ranked,
+> las ligas 2026, la duración real de una carrera, el Fearless Draft y los salarios. Vivían en
+> `TRASPASO.md`, borrado el 2026-09-02 cuando el resto de ese documento quedó superado por
+> `PLAN.md`; la numeración se conservó (`TRASPASO §4.N` → `§12.N`) para que las citas del código
+> sigan resolviendo.
+>
+> A diferencia del resto de `CONCEPTO.md`, esta sección describe **el mundo real**, no el juego.
+> Donde el código se aparta de acá es una simplificación deliberada, y como tal está anotada en la
+> tabla de deuda técnica de `PLAN.md`.
+
+### 12.1 Sistema de ranked
+
+- 10 tiers: Iron → Bronze → Silver → Gold → Platinum → **Emerald** (agregado 2023) → Diamond,
+  cada uno con **4 divisiones** (IV→I) de **0-100 LP**; luego Master → Grandmaster →
+  Challenger, **sin divisiones, LP acumulativo sin techo**.
+- **Las series de promoción no existen desde 2023** (Split 2, mismo paquete que introdujo
+  Emerald). Al llegar a 100 LP se promociona con *rollover* del excedente.
+- Descenso: perder a 0 LP baja de división con LP en **25 / 50 / 75** según MMR.
+- Escudo anti-descenso: 10 partidas tras subir de tier (3 en Máster).
+- Placements: 5 partidas, techo alcanzable Diamond III.
+- LP baseline ±20; **±30 en tiers ápice** (desde parche 26.9, abril 2026).
+- Umbrales ápice desde 26.9: **GM 400 LP, Challenger 800 LP** — pero el filtro real son los
+  **cupos**: Challenger tiene **300 plazas** (NA, KR, EUW, VN, PH) o **200** (LAS, LAN, EUNE,
+  CN, BR, TW, TR); GM ~700 y ~500 respectivamente. La ladder se reordena cada 24h.
+- **Cutoffs reales medidos (ago 2026)**: EUW 2398 · KR 1831 · NA 1528 · LAN 1465 · LAS 1287.
+  EUW es hoy más duro que KR.
+- **Distribución de la población**: Iron 3-8% · Bronze 16-20% · Silver 20-22% · Gold 19-24% ·
+  Platinum 15-18% · Emerald 12% · Diamond 4% · Master ~0,3% steady-state · GM 0,062% ·
+  **Challenger 0,025% (1 de cada 4.000)**. Diamante+ = top 5%. Máster+ = top 1%.
+- **Decay** (implementado como NO existente por decisión del usuario): Diamond −50 LP/día,
+  ápice −75 LP/día tras agotar el banco de días.
+
+### 12.2 A qué rango juegan los pros y cómo se los descubre
+
+- El roster de LCK abarca **desde Diamond I hasta 1.800+ LP**. La mediana está en **700-1.400 LP**
+  (Challenger bajo / GM alto). Varios supports y veteranos **no grindean soloQ** y pueden estar
+  en Diamond o sin cuenta rankeada. **El rango de soloQ no es proxy directo de ser pro.**
+- **El prospecto que ficha está en el top 1-50 de Challenger de su servidor a los 15-17.** Caso
+  canónico: **Calix**, rank 1 de Corea a los 16, viral por un outplay en soloQ contra el ADC
+  titular de T1, fichado por Nongshim RedForce. **Estar en Challenger #250 a los 22 no te ficha
+  nadie.**
+- Tres vías reales de descubrimiento: (A) ladder de Challenger — angosta, solo top absoluto y
+  muy joven; (B) **circuitos tier 2 — la vía dominante**; (C) scouting grounds/combines — en NA
+  probablemente muerto desde 2021.
+
+### 12.3 Estructura competitiva 2026
+
+> Cuando se relevó esto, `leagues.json` estaba mal. La fase 3 lo reescribió contra esta tabla.
+
+**La LTA duró una sola temporada.** Riot la anunció en junio 2024, arrancó en 2025 (fusionando
+LCS + CBLOL + LLA) y la **disolvió en septiembre 2025**, devolviendo LCS y CBLOL como ligas
+independientes desde 2026. La **LCP sí sobrevivió**. **La LLA no volvió**: LATAM Norte quedó
+absorbida por LCS y LATAM Sur por CBLOL.
+
+**6 ligas tier-1 en 2026:**
+
+| Liga | Región | Equipos | Edad mín. | Servidor |
+|---|---|---|---|---|
+| LCK | Corea | 10 | 17 | KR |
+| LPL | China | 14 (12 en Split 3) | 18 | CN |
+| LEC | EMEA | 10 (12 en LEC Versus) | **18** | EUW |
+| LCS | Norteamérica + Centroamérica | 8 | 17 | NA |
+| CBLOL | Brasil + LATAM Sur | 8 | 17 | BR |
+| LCP | Asia-Pacífico | 8 | 17 | TW |
+
+**Rosters exactos 2026:**
+
+- **LCK**: Gen.G · T1 · Hanwha Life Esports · KT Rolster · Dplus KIA · BNK FearX · KIWOOM DRX ·
+  Nongshim RedForce · Hanjin Brion · DN SOOPers
+- **LPL**: Anyone's Legend · Bilibili Gaming · Edward Gaming · Invictus Gaming · JD Gaming ·
+  LGD Gaming · LNG Esports · Ninjas in Pyjamas · Oh My God · Team WE · Top Esports ·
+  ThunderTalk Gaming · Ultra Prime · Weibo Gaming
+- **LEC**: Fnatic · G2 Esports · GIANTX · Karmine Corp · Movistar KOI · Natus Vincere ·
+  Shifters · SK Gaming · Team Heretics · Team Vitality
+- **LCS**: Cloud9 KIA · Dignitas · Disguised · FlyQuest · LYON · Sentinels ·
+  Shopify Rebellion · Team Liquid
+- **CBLOL**: Fluxo w7m · FURIA · Leviatán · Los Grandes · LOUD · paiN Gaming ·
+  RED Canids Kalunga · Vivo Keyd Stars
+- **LCP**: CTBC Flying Oyster · GAM Esports · Fukuoka SoftBank HAWKS gaming ·
+  Team Secret Whales · DetonatioN FocusMe · MVK Esports · Deep Cross Gaming ·
+  Ground Zero Gaming
+
+**Tier 2 real por región:**
+
+| Región | Circuito | Detalle |
+|---|---|---|
+| Norteamérica | **NACL** | equipos independientes (ya no hay academy obligatoria), 10 equipos, torneo de promoción a LCS |
+| EMEA | **13 ERLs → EMEA Masters** | LFL (Francia), Prime League (DACH), TCL (Turquía), NLC, Ultraliga, LIT, Arabian League, Hitpoint Masters, Rift Legends, LPLOL, EBL, ROL, y la ERL española. 3 splits/año |
+| Brasil | **Circuito Desafiante** | 10 equipos, promoción a CBLOL |
+| LATAM | **LRN** (Norte) y **LRS** (Sur) | 8 equipos c/u, organizadas por Liga ACE. LRN alimenta LCS, LRS alimenta CBLOL |
+| Corea | **LCK CL** + **LCK Academy Series** | academias de las 10 franquicias, **edad mínima 16**, roster integrado con LCK sin call-up formal |
+| China | **LDL** | 24 equipos (17 academy + 7 independientes) |
+
+**Calendario 2026**: 3 splits por año en todas las ligas mayores (coincide con
+`BALANCE.edad.splitsPorEdad: 3`, que **no hay que tocar**). Internacionales: **First Stand**
+(marzo, 8 equipos), **MSI** (junio-julio, 11 equipos), **Worlds** (octubre-noviembre, **19
+equipos: 3 por liga mayor + 2 de CBLOL + 2 bonus por MSI**).
+
+**Imports y residencia**: máximo **2 no residentes** en la alineación titular (mínimo 3
+residentes) en todas las tier-1. Residencia por ciudadanía o por **4 años compitiendo en la
+región**. En 2026 los jugadores de LATAM (excluyendo Brasil) tienen **doble residencia**: no
+cuentan como import ni en LCS ni en CBLOL durante 2026-2027, y **desde 2028 deben elegir región
+permanentemente**.
+
+**El año muerto es real**: LEC exige 18 años desde 2024. Un prospecto europeo de 17 puede ser
+fichado pero no puede debutar.
+
+### 12.4 Carreras: duración, pico y declive
+
+- **Duración media 2,1 años** en la cohorte nacida en 2002+ (mediana 2,43). **Menos del 20%
+  sigue activo al 4º año.** Las carreras modernas son ~50% más cortas que las de generaciones
+  anteriores (comparaciones entre cohortes con p < 0,001).
+- LCK: carrera promedio 2,8 años; 53% tiene menos de 3 años de experiencia; solo 3,9% llega a
+  4-5 años.
+- **Pico de rendimiento ~21 años, desvío estándar 2,7.** Ventana biológica 16-26, pero la
+  mayoría no la agota ni de lejos. Framework de 5 etapas: Entry (≤17) → Growth (17-19) →
+  Maturity (19-23) → Decline (23-25) → Transition (25+).
+- **EL HALLAZGO MÁS IMPORTANTE — el declive casi no es biológico.** El tiempo de reacción cae
+  **~1 ms/año después de los 25**, contra una brecha de **90 ms** entre un casual (280 ms) y un
+  pro (190 ms). Es ruido. Lo que sí explica el declive observado: las orgs prefieren jóvenes
+  (más baratos, más entrenables), y a los mayores de 25 se les dice que están acabados →
+  profecía autocumplida. **La causa modal de retiro es que no te renuevan**, sistemáticamente
+  sub-reportada porque nadie anuncia "me retiro porque nadie me contrata".
+  → **Consecuencia de diseño: modelar presión de mercado, no decadencia de stats.**
+- **El retiro es reversible**: Bjergsen y Doublelift se retiraron y volvieron **dos veces cada
+  uno**. Faker sigue activo a los 29-30 con 13+ años de carrera.
+- **Servicio militar coreano: determinista, no probabilístico.** Obligatorio, 18-21 meses, hay
+  que enlistarse **antes de los 28** (30 si sos figura de élite, por la ley de 2020). Es la
+  razón por la que la LCK tiene literalmente cero jugadores en la segunda mitad de los veinte.
+- **Lesiones documentadas**: túnel carpiano (Toyz), tendinitis de muñeca (Hai, "la muñeca solo
+  me permite un split más"), hombro crónico (Uzi, un médico le dijo que **tenía brazos de
+  persona de 50 años**).
+- Burnout: 38,3% de los jugadores activos en riesgo alto — **es prevalencia, no tasa de
+  retiro**. No leerlo como "38% se retira por burnout".
+
+### 12.5 Champion pool y Fearless Draft
+
+- **Fearless Draft es estándar en todas las tier-1 desde 2025**: cada campeón elegido queda
+  bloqueado para ambos equipos el resto de la serie. En el mapa 5 de un Bo5 puede haber **hasta
+  40 campeones quemados**.
+- Efecto medido: MSI 2023 → 81 campeones únicos; MSI 2024 → 88; **MSI 2025 → 109 en 80 juegos**.
+  Worlds 2025: 102 únicos, 75 solo en Swiss. **Faker jugó 14 campeones distintos** en Worlds
+  2025 (récord del torneo).
+- Pool individual: **post-Fearless típico 10-15 por split, los más anchos 24** (Chovy, Knight).
+  Pre-Fearless el típico era 5-8.
+- **Requisitos de trainees coreanos, por rango** — dato precioso y todavía sin usar:
+  **Diamante 80 partidas/semana y 5 campeones · Máster 65/8 · Gran Máster 50/15.**
+  El requisito de **amplitud de pool sube con el rango**. Es una tensión real contra
+  `sesgoMaestriaEnPick`, que premia especializarse.
+
+### 12.6 Salarios — distribución lognormal, mediana muy por debajo de la media
+
+- **Mínimos oficiales**: LEC €60.000/año · LCS $75.000/año. LCK tiene piso de gasto por equipo
+  (70% del ingreso 2022) y **salary cap con luxury tax** sobre los 5 mejor pagos. LPL tiene soft
+  cap de 10M CNY (~$1,4M) por equipo, con tiers S y A que permiten excederlo.
+- **LEC** (Sheep Esports, ±€20k): media **€240.000**, **mediana ~€165.000**, rookie ~€115.000.
+  Por rol: **Mid €345k · Jungla €250k · ADC €240k · Top €192k · Support €168k**. Imports
+  coreanos €160k de promedio. **Ningún jugador de LEC supera €1M desde 2024.**
+- **LCK 2018**: media 175M won (~$155k) pero **37,2% ganaba $18-44k** y **más de la mitad menos
+  de $89k**. 91,1% generaba ingreso extra.
+- **Faker: $6-8M USD/año** estimado. LPL pre-cap llegaba a 30-45M RMB ($4-6,6M).
+- **Los premios son marginales**: Doublelift acumuló **poco más de $300.000 en premios en toda
+  su carrera** — mucho menos que un solo año de salario.
+- Streaming ex-pro top: ~$378.000/año — comparable a un salario de LCS, sin techo de edad ni
+  riesgo de no renovación.
+
+---

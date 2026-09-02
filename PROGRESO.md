@@ -2,32 +2,97 @@
 
 Documento vivo. Se actualiza al cierre de cada tarea, según la Definición de terminado de CLAUDE.md.
 
-## Estado por fase (DISENO.md §6 "Orden de construcción")
+## Estado por fase
 
-| # | Fase | Estado |
-|---|---|---|
-| 1 | Andamiaje (state, rng, pipeline, guards, validate) | ✅ Completa — reconstruida en el paso 1 del 2026-08-07 |
-| 2 | Jugador inicial, etapa amateur y loop de splits | ✅ Completa — bucle de atención, bandas de riesgo y tres salidas (paso 3) |
-| 3 | Atributos, rendimiento y progresión básica | ✅ Completa — `atributos.js` con formas de carrera y `rendimiento.js` (pasos 4 y 6) |
-| 4 | Champion pool, meta y ajuste al meta | ✅ Completa — `campeones.js` + `ajusteMeta.js` (paso 5) |
-| 5 | Práctica dirigida entre splits | ✅ Completa — `practica.js` con puntos de preparación (paso 6) |
-| 6 | Motor de eventos y validación | ✅ Completa |
-| 7 | Roster, sinergia y jerarquía | ✅ Completa — `roster.js` + draft condicionado por jerarquía (paso 6) |
-| 8 | Contratos, regiones y movilidad | ⬜ Pendiente — no existen `contracts.js` ni `regions.js` |
-| 9 | Rivales de generación y scoring final | 🔶 Parcial — los 5 rivales se generan de la seed, pero no corren su carrera ni existe `scoring.js`; **falta el retiro y la tarjeta de legado** |
-| 10 | Simulación masiva y balance fino | 🔶 En curso — `simulate.js` corre 3 estrategias sobre el pipeline real y se usó para calibrar cada paso; falta la pasada final con el arco completo |
-| 11 | Refinamiento visual | ⬜ Pendiente — `src/ui/` sigue vacía y la UI vive en `index.html` |
+**La tabla de estado vigente vive en `PLAN.md`**, y es la única que se mantiene al día. Este
+documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
-**Lo que falta para cerrar el arco de `CONCEPTO`**: la temporada regular como partidos jugables y
-el meta con nombre (`PLAN.md` fases 5 y 6, insertadas el 2026-08-09 antes del mercado — ver esa
-tabla de estado), retiro y tarjeta de legado (§9), contratos y movilidad entre regiones (§6),
-rivales de generación corriendo en paralelo (§6), las etapas DEBUT y DECLIVE (§2). El objetivo de
-contenido de §8 (150 opciones) ya se superó — 98 eventos / 196 opciones tras la fase 8D
-(`PLAN.md` fase 8D, insertada el 2026-08-10 antes del mercado, mismo criterio que 5/6) —, aunque el
-catálogo completo de §8 (~200 eventos, con `equipo.json`/`vestuario.json`/`region.json`/etc.) sigue
-pendiente de la fase 13 real, que depende del mercado (9) y el retiro (10).
+> **Reemplazada el 2026-09-02.** Acá había una tabla anclada a la lista de 11 pasos de
+> `DISENO.md` §6, que quedó superada por las 13 fases de `PLAN.md`. Se había desincronizado tanto
+> que se contradecía con su propio changelog cuarenta líneas más abajo: declaraba *"contratos,
+> regiones y movilidad — ⬜ pendiente, no existen `contracts.js` ni `regions.js`"* cuando la fase 9
+> ya había construido el mercado entero, y *"refinamiento visual — ⬜, `src/ui/` sigue vacía"*
+> cuando la fase 8b la había llenado. Mantener dos tablas de estado garantizaba que una mintiera;
+> ahora hay una sola. `DISENO.md` §6 se cortó en el mismo movimiento.
+
+**Lo que falta para cerrar el arco de `CONCEPTO`**: el varado de tier 3 (`PLAN.md` fase 9E — bug
+crítico abierto, el 30,7% de las carreras se quedan sin juego después del primer equipo), retiro y
+tarjeta de legado (§9), movilidad entre regiones e imports (§6), rivales de generación corriendo
+en paralelo (§6), las etapas DEBUT y DECLIVE (§2). El objetivo de contenido de §8 (150 opciones)
+ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catálogo completo de §8
+(~200 eventos, con `equipo.json`/`vestuario.json`/`region.json`/etc.) sigue pendiente de la fase
+13 real, que depende del mercado (9) y el retiro (10).
+
+> **Nota documental (2026-09-02).** `AUDITORIA.md` y `TRASPASO.md` se borraron del repo: describían
+> el estado del proyecto 28 commits atrás y ya se contradecían con el código. Lo que seguía vivo se
+> mudó — la investigación de ligas/salarios/carreras a `CONCEPTO.md` §12 (conservando la
+> numeración) y las trampas T1-T10 a `PLAN.md`. **Las citas a esos dos archivos en el changelog de
+> abajo se dejaron intactas a propósito**: son historia, un changelog citando documentos que
+> existían cuando se escribió. Los originales siguen en git (`git show 3d6ee90:AUDITORIA.md`).
 
 ## Changelog
+
+### 2026-09-02 — Auditoría del simulador + limpieza de documentación
+
+Sin cambios en `/src`. Dos entregables: una auditoría del estado real del motor, medida corriendo
+y no leyendo, y la poda de la documentación que ya se contradecía con el código.
+
+**Lo que está bien**, verificado corriendo: los **38 checks** de `validate.js` pasan (6m47s),
+incluido el determinismo end-to-end. Dentro de `/src` no hay un solo `Math.random(` ni un
+`document.` fuera de `src/ui/`. El motor de eventos sigue sin una línea de lógica por id de
+evento: 97 eventos / **196 opciones** contra un objetivo de 150. `calcularContexto()` sigue pura y
+sin consumir RNG. De ~250 claves de `BALANCE`, solo **4** están muertas. El mercado de la fase 9
+mide bien lo que dice medir: salario lognormal verificado y la trampa del equipo grande viva en el
+98,5% de las carreras con ofertas.
+
+**Lo que está mal**, en un renglón cada uno (el detalle, con números, está en la tabla de deuda de
+`PLAN.md`, D25-D33, y el arreglo en la fase 9E):
+
+| # | Hallazgo | Medido |
+|---|---|---|
+| D25 | **La carrera se vara para siempre tras disolverse un tier 3** — regresión de la fase 9b | **30,7%** de las carreras, **47,5%** de los splits pro sin equipo, racha máx. **57 splits** |
+| D26 | El agujero de medición que lo dejó pasar: `sin_equipo` está `pendiente` y `cobertura.js` no mide pendientes; `simulate.js` no tiene KPIs de carrera | `sin_equipo` es el momento **más frecuente del juego** (7.238) y `--huecos` reporta "sin huecos" |
+| D27 | Contenido de vestuario disparando sin vestuario | "Arraigo +2" a una org inexistente; "en el draft no te dieron tu pick" ×6 sin equipo |
+| D28 | 5 `Math.random()` en `index.html` que deciden el resultado de los minijuegos | jugando a mano, la misma seed **no** reproduce la carrera |
+| D29 | El eje `residencia` está clavado en `'local'`: sin imports, sin transferencias entre regiones | el momento `import_recien_llegado` es inalcanzable por construcción |
+| D30 | `ultimo_ano` y `sin_renovacion` declarados en `EJES` y nunca calculados | pese a que `contrato.aniosRestantes` ya existe |
+| D31 | 4 constantes muertas en `balance.js` | `margenImport`, `autoProbRobar`, `ruidoRival`, `margenEdadMinima` |
+| D32 | `validate.js` tarda **6m47s** y la Definición de terminado lo exige en cada cambio | — |
+
+**Corrección al changelog de la fase 9d** (regla de proceso 4: reportar los números medidos,
+incluidos los que empeoran). Esa entrada reporta *"carreras con al menos un split libre: **0,3%**"*.
+El número real es **35,3%**. La métrica no estaba mal calculada: estaba mirando solo la puerta del
+mercado (`quedarLibre`), y la vía dominante hacia "sin equipo" es la disolución de un tier 3, que
+no pasa por ahí. La entrada vieja se deja como está — es historia; la corrección vive acá.
+
+**Por qué 38 checks en verde convivieron cuatro commits con un bug que le saca el juego al 30% de
+las partidas.** No fue mala suerte, fueron tres ciegos alineados: `cobertura.js` saltea los momentos
+marcados `pendiente`, y el que este bug produce (`sin_equipo`) está marcado así desde la fase 7;
+`simulate.js` solo reporta métricas de la etapa amateur, así que 1.500 carreras no ven nada
+después del fichaje; y la métrica de la fase 9d medía la puerta equivocada. **La fase 9E arregla
+las tres herramientas junto con el bug** — si no, el próximo se esconde igual.
+
+**Limpieza de documentación.** Se borraron `AUDITORIA.md` (242 líneas, diagnóstico del commit
+`464ccf7`, 28 commits atrás: decía "5 checks" cuando son 38 y "24 archivos de `/src`" cuando son
+60) y `TRASPASO.md` (891 líneas, cuyo propio encabezado declaraba superadas las PARTES 0-3, 5, 6,
+9 y 10). Lo que seguía vivo se mudó antes de borrar:
+
+- **La investigación** (PARTE 4: ranked, ligas 2026, duración de carreras, Fearless, salarios) →
+  `CONCEPTO.md` **§12**, con la numeración conservada (`TRASPASO §4.N` → `§12.N`) para que las
+  citas viejas sigan resolviendo.
+- **Las trampas T1-T10** (PARTE 7) → `PLAN.md`. No era opcional: hay 17 referencias `(trampa TN)`
+  en `PLAN.md` y 13 más en `/src` cuya única definición vivía ahí.
+- La PARTE 8 (reglas de proceso) ya estaba en `PLAN.md` como superset. El resto no tenía nada vivo.
+
+También: `DISENO.md` §1 decía *"3 a 5 minutos por partida"* contra la decisión textual del usuario
+(25-40 min), su árbol de archivos no listaba 21 archivos que existen, y su §6 "Orden de
+construcción" —la lista de 11 pasos superada por las 13 fases— se cortó junto con la tabla de
+`PROGRESO.md` que la usaba como eje y arrastraba el error. `CLAUDE.md` dejó de nombrar un archivo
+que ya no existe.
+
+Quedan colgados **13 comentarios de `/src`** que citan `TRASPASO.md §4`: la redirección a
+`CONCEPTO.md §12` es un reemplazo de texto sin lógica, anotado como D33 para el próximo commit que
+toque `/src`.
 
 ### 2026-08-11 — Fase 9d: calibrar el mercado (cierra la fase 9)
 

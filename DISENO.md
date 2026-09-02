@@ -2,14 +2,21 @@
 
 ## 1. Visión general
 
-El objetivo del juego es convertir la carrera de un jugador profesional de League of Legends en una experiencia breve, intensa y rejugable. La partida debe combinar estrategia, gestión de carrera, presión emocional y contexto competitivo.
+El objetivo del juego es convertir la carrera de un jugador profesional de League of Legends en una experiencia acotada, intensa y rejugable. La partida debe combinar estrategia, gestión de carrera, presión emocional y contexto competitivo.
 
 La experiencia ideal es:
 
-- breve: 3 a 5 minutos por partida;
+- **acotada: 25 a 40 minutos por partida**, de una sentada;
 - determinista: el mismo seed produce el mismo mundo;
 - profunda: decisiones con consecuencias reales;
 - escalable: agregar contenido sin romper la arquitectura.
+
+> **Corregido el 2026-09-02.** Este documento decía "3 a 5 minutos", que era la estimación
+> original y quedó vieja: el Bo5 con Fearless y draft (fase 4), la temporada regular jugable
+> (fase 5) y el mercado de pases (fase 9) son sistemas centrales pedidos explícitamente por el
+> usuario, no relleno. La duración larga es una decisión tomada — está registrada textual en
+> `PLAN.md` ("Decisiones del usuario") y en `CONCEPTO.md` §1. El techo sigue siendo 40 minutos:
+> pasarse significa que algo se infló.
 
 ## 2. Principios de diseño
 
@@ -87,14 +94,20 @@ Ambos deben afectar el rendimiento, el draft y la capacidad de negociar.
 
 La carrera debe incluir contratos, sueldos, cláusulas, imports, residencia, adaptación a nuevas regiones y eventos de visa.
 
+> **Estado al 2026-09-02**: la fase 9 construyó contratos y sueldos. **Imports, residencia y
+> movilidad entre regiones no existen todavía** — el eje `residencia` está clavado en `'local'` y
+> `mercado.js` solo genera ofertas de tu propia liga. Es la deuda D29 de `PLAN.md`, hacia la fase
+> 11. Las cláusulas están en el modelo (`contrato.clausula`) pero ningún sistema las emite.
+
 ## 4. Arquitectura técnica
 
 ### 4.1 Estructura de carpetas
 
 > Esta sección quedó desactualizada durante las fases 0-4 (los nombres pasaron a español
-> rioplatense y aparecieron módulos que este documento no preveía) y se corrige acá, más el
-> agregado de lo que `PLAN.md` fases 5, 6 y 8 suman. Es un snapshot: el árbol real siempre manda
-> sobre este documento si difieren — para eso está `PLAN.md` como plan vigente.
+> rioplatense y aparecieron módulos que este documento no preveía) y se corrige acá. **Última
+> sincronización contra el árbol real: 2026-09-02** (fase 9 cerrada), donde se agregaron los tres
+> módulos del mercado y los 17 JSON de eventos que faltaban. Es un snapshot: el árbol real siempre
+> manda sobre este documento si difieren — para eso está `PLAN.md` como plan vigente.
 
 /src/core
   rng.js · state.js · pipeline.js · selectors.js · log.js · numeros.js · formato.js
@@ -102,27 +115,35 @@ La carrera debe incluir contratos, sueldos, cláusulas, imports, residencia, ada
   mundo.js · ranked.js · competicion.js · tier3.js · rutinas.js · serie.js
   temporada.js (fase 5 — calendario, tabla de posiciones, fechas que importan)
   regimen.js (fase 6 — tier list del meta con nombre, boost por coincidencia)
-  **registro.js** (fase 8, nuevo — único punto de escritura sobre `career.registro`:
+  registro.js (fase 8 — único punto de escritura sobre `career.registro`:
   abrir/cerrar fila de org, registrar fecha/mapa/serie/título/internacional/pico, arraigo)
-  **ficha.js** (fase 8, nuevo — lo que la tarjeta permanente pinta: NIVEL, deltas de
+  ficha.js (fase 8 — lo que la tarjeta permanente pinta: NIVEL, deltas de
   stats, bandas de jerarquía/arraigo, estado internacional; puro, sin RNG)
+  **salarios.js** (fase 9 — `salarioDeOferta`: lognormal por liga y rol, `CONCEPTO` §12.6)
+  **valorMercado.js** (fase 9 — `valorDeMercado`, `sesgoEtario`, `splitsDeResidencia`; puro)
 
 /src/systems
   contexto.js · edadInicio.js · meta.js · roster.js · competitivo.js · campeones.js
   secundario.js · amateur.js · rendimiento.js · serie.js · events.js · atributos.js
   practica.js · edadCierre.js · registro.js (el registro declarativo de `ETAPAS_SPLIT`)
   temporada.js (fase 5 — se inserta en el registro antes de `rendimiento`)
+  **mercado.js** (fase 9 — contratos que vencen, ofertas, el año muerto; va justo
+  después de `competitivo`: ese decide SI ascendés, este decide A QUÉ ORG vas)
 
 /src/data
   balance.js · champions.json · leagues.json · meta-tags.js · roles.js · ranked.js
   servidores.js · contextos.js · minijuegos.json
   metas.json (fase 6 — los nueve regímenes de meta)
-  /events (index.js + los JSON por categoría, incluido /rol)
+  /events — index.js + un JSON por categoría:
+    cierre_edad · competicion · debut_academy · drama_prensa · negocios ·
+    pool · salud_vida · soloq_precarrera
+    escena_2026 · estatus · marcas_vivas · registro_cita (fase 8D — contenido vivo)
+    /rol (top, jungla, mid, adc, support: lo que solo ve tu línea)
     /partido (fase 5 — presion.json, clasico.json, dentro_del_mapa.json,
     postpartido.json: el contenido de las fechas marcadas de la temporada)
   /rutinas (amateur.json, offseason.json)
 
-/src/ui — deja de estar vacía en la fase 8 (cierra D7). `index.html` queda como shell +
+/src/ui — dejó de estar vacía en la fase 8 (cierra D7). `index.html` queda como shell +
   `<style>` + los minijuegos (que la fase 8 no mueve, PLAN.md §8.5) + el control de flujo
   que llama al pipeline (`comenzarCarrera`/`avanzar`/`responder`).
   render.js — orquestador, único punto de entrada que importa `index.html`
@@ -132,6 +153,8 @@ La carrera debe incluir contratos, sueldos, cláusulas, imports, residencia, ada
     statRow.js — los 6 atributos de rol con flechas ▲▼ y el destacado en color
     decision.js — la tarjeta de decisión (opciones; los minijuegos se desvían antes)
     feed.js — el log, con los logs `tecnico: true` atenuados
+    **mercado.js** (fase 9) — la tarjeta de oferta: sueldo, jerarquía proyectada,
+    coste de arraigo y el riesgo, todo antes de firmar
   /screens
     inicio.js — rol + mains (dueño de su propio estado de selección)
     carrera.js — orquesta ficha + feed; la decisión se pinta aparte
@@ -163,7 +186,14 @@ El proyecto debe incluir:
 
 - validate.js para verificar integridad de datos;
 - simulate.js para correr muchas partidas y medir patrones;
+- cobertura.js para saber qué contenido falta por contexto;
 - guards.js para bloquear Math.random() en desarrollo.
+
+> **Estado al 2026-09-02**: `guards.js` solo escanea archivos `.js` dentro de `/src`, así que los
+> 5 `Math.random()` de `index.html` le quedan fuera por dos motivos a la vez. Deuda D28. Y
+> `cobertura.js` saltea los momentos marcados `pendiente`, que fue por donde se coló el bug D25.
+> Una herramienta que mira para otro lado da peor información que no tenerla: los dos huecos se
+> cierran en la fase 9E.
 
 ## 5. Contenido narrativo
 
@@ -181,17 +211,15 @@ Todos los eventos deben ser datos y no lógica hardcodeada.
 
 ## 6. Orden de construcción
 
-1. Andamiaje: state, rng, pipeline y guards.
-2. Jugador inicial, etapa amateur y loop de splits.
-3. Atributos, rendimiento y progresión básica.
-4. Champion pool, meta y ajuste al meta.
-5. Práctica dirigida entre splits.
-6. Motor de eventos y validación.
-7. Roster, sinergia y jerarquía.
-8. Contratos, regiones y movilidad.
-9. Rivales de generación y scoring final.
-10. Simulación masiva y balance fino.
-11. Refinamiento visual.
+**El orden vigente es la tabla de estado de `PLAN.md`** (fases 0 a 13), que es el único lugar que
+se mantiene al día. Este documento describe la arquitectura, no el cronograma.
+
+> **Actualizado el 2026-09-02.** Acá vivía la lista original de 11 pasos, escrita antes de que
+> existiera `PLAN.md`. Quedó superada: agrupaba en un solo paso ("contratos, regiones y
+> movilidad") lo que terminó siendo la fase 9 entera, y ponía el refinamiento visual al final
+> cuando la regla de proceso 12 de `PLAN.md` dice lo contrario — *ninguna fase cierra sin su
+> pantalla*. `PROGRESO.md` la usaba como eje y arrastraba el error, así que se cortó de raíz en
+> los dos documentos a la vez.
 
 ## 7. Criterios de calidad
 
