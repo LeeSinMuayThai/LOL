@@ -136,7 +136,7 @@ function avanzarFechaSilenciosa(state, gano) {
 // Dos pools separados por `category`, no por `stakes`: el momento (antes del
 // resultado, con `type: 'partido'` en sus efectos) y la reacción post-partido
 // (después, solo mueve stats). Comparten el mismo eje `stakes` y el mismo
-// cooldown compartido con el resto del catálogo (`state.flags.cooldowns`).
+// cooldown compartido con el resto del catálogo (`state.flags.cooldownHasta`).
 function candidatosDePartido(state, motivo, soloPostpartido) {
   const contexto = calcularContexto(state, { ventana: 'regular', stakes: motivo });
   return TODOS_LOS_EVENTOS.filter((evento) => (

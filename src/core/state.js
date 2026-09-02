@@ -210,7 +210,14 @@ export function createInitialState(seed, rng, eleccion = null) {
       ajuste: BALANCE.campeones.ajusteNeutro
     },
     flags: {
-      cooldowns: {},
+      // Fase 9Ra: por evento, el `splitCount` en el que su cooldown vence. Un
+      // evento está bloqueado mientras `cooldownHasta[id] > splitCount`. Antes
+      // esto era `cooldowns` (un contador que se decrementaba en cada evento
+      // resuelto, ~4,5 por split, así que un `cooldown: 4` duraba 0,89 splits).
+      // El rename es a propósito: si algo quedó leyendo `flags.cooldowns` rompe
+      // en voz alta en vez de comparar un número de split como si fuera un
+      // contador. Objeto vacío al arrancar, nunca null (trampa T4).
+      cooldownHasta: {},
       // Cuántas veces salió cada evento (fase 7): objeto vacío al arrancar,
       // nunca null (trampa T4). `systems/events.js` lo lee para pesar la
       // repetición contra la novedad.

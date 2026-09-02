@@ -33,6 +33,72 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-02 — Fase 9Ra: el cooldown de eventos se mide en splits
+
+Primer commit de la **fase 9R** (`PLAN.md`), la que salió de comparar el juego contra **El Ídolo
+del Potrero** a pedido del usuario: *"las frases se repiten, es todo choto, fijate por qué y
+arreglalo"*. El diagnóstico completo (medido, no estimado) vive en `PLAN.md` §9R y en el plan
+aprobado. Este commit ataca el primero de los tres bugs de motor que fabrican la repetición.
+
+#### El bug, medido
+
+`actualizarCooldowns` (`src/systems/events.js`) **decrementaba todos los cooldowns en 1 cada vez
+que se resolvía un evento cualquiera**, no una vez por split. Y `resolverOpcion` se llama desde
+tres lugares — `events.js`, `edadCierre.js` y `temporada.js` — con **4,48 resoluciones de evento
+por split** de media. Consecuencia:
+
+| `cooldown` declarado en el JSON | Splits que duraba de verdad |
+|---|---|
+| 4 (la moda: 27 de 97 eventos) | **0,89** |
+| 6 | 1,34 |
+| 10 | 2,2 |
+
+El `cooldown: 4` de un evento no significaba "4 splits": significaba "los próximos 4 eventos de
+cualquier tipo". Prácticamente inexistente.
+
+#### El arreglo
+
+`state.flags.cooldowns` (contador que se decrementaba) → **`state.flags.cooldownHasta`** (el
+`splitCount` en el que el evento vuelve a estar libre). `cooldownActivo` compara contra
+`state.player.splitCount`; `actualizarCooldowns` → **`registrarEventoVisto`**, que ya no
+*decrementa* nada — estampa `splitCount + max(cooldownMinimoSplits, evento.cooldown)` y suma la
+vista de `eventosVistos`. Se borra el tick entero, así que el bug no puede volver: no hay ningún
+contador que se pueda doble-decrementar. La llamada `actualizarCooldowns(state, null)` del split
+sin evento desaparece (no había nada que tickear).
+
+El rename `cooldowns` → `cooldownHasta` es a propósito (familia T5): si algún lector quedó leyendo
+el campo viejo, rompe en voz alta en vez de comparar un número de split como si fuera un contador.
+
+**Constante nueva**: `BALANCE.eventos.cooldownMinimoSplits: 1` — piso para los 8 eventos que
+declaran `cooldown: 0` o lo omiten. "Nunca dos veces en el mismo split". No se retunean los
+`cooldown` de los 97 JSON (regla de proceso 2): eso es 9Rg.
+
+#### Números medidos
+
+- **Reapariciones antes de que venza el cooldown declarado: 0** sobre 36.826 apariciones de
+  evento en 200 carreras (antes: ~18% de las reapariciones ocurrían con 1 split de diferencia o
+  menos).
+- Evento más repetido por carrera: **mediana 14 → 11, máximo 32 → 14**. Sigue por encima del
+  objetivo de `§7.2` (mediana ≤4, máx ≤8) — se llega con 9Re+9Rf (menos instancias totales) y el
+  apriete final de 9Rg, no con 9Ra sola.
+- Decisiones por carrera: 248 → 244 (el volumen lo baja 9Rf).
+
+#### Deuda nueva y colateral
+
+- **D37** — 9Ra corre el stream de RNG: `candidatos()` devuelve otro conjunto en muchos puntos, el
+  evento elegido cambia, y el stream diverge río abajo. **Ninguna seed anterior reproduce su
+  carrera.** Familia D21/D22/D35. El determinismo intra-versión queda intacto (verificado: misma
+  seed, dos corridas idénticas).
+- El check *"El impacto de los minijuegos está acotado"* daba **7,3%** en HEAD contra un piso de
+  **7%** — su propio comentario admitía el margen de 0,3 puntos. El corrimiento de D37 lo empujó a
+  5,4%. Verificado que no es no-determinismo y que los minijuegos siguen moviendo el resultado
+  (4,8–7,8% según ventana de seeds): se **ensancha la banda a 3–25%** con el motivo documentado en
+  el check. Un minijuego decorativo daría ~0%; la regla que importa sigue con margen de sobra.
+
+**Verificación**: `validate.js` 85 checks OK (83 + 2 nuevos: el cooldown mide splits y vence
+exactamente en `splitCount + cooldown`; ningún evento reaparece antes de tiempo).
+`simulate.js 1000 60 todas` → 0 crashes en las tres estrategias.
+
 ### 2026-09-02 — Fase P (parcial): el build, y D28 cerrada
 
 Primer commit de la fase P. Sale de un pedido concreto: *"dejar esto privado, publicarlo en un

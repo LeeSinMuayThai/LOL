@@ -26,7 +26,8 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **8** | La ficha: el registro que acumula + la tarjeta permanente + `src/ui/` | ✅ ver `PROGRESO.md` |
 | **9** | El mercado: ofertas, contratos, salarios, la trampa del equipo grande visible | ✅ ver `PROGRESO.md` |
 | **9E** | El varado: la carrera vuelve a tener juego después del primer equipo | 🔶 **9Ea+b hechas** (el bug, cerrado) · faltan 9Ec y 9Ed |
-| **9M** | **El mercado de pases**: el mundo se puebla de jugadores, la demanda existe, alguien compite por tu asiento, la escalera deja de ser un dado | ⬜ **próxima** |
+| **9R** | **Que el juego se juegue**: el cooldown mide splits, la tabla deja de mentir, la interrupción vuelve a ser escasa (248 → ~70 decisiones/carrera), y elegir cambia el resultado | ⬜ **próxima** |
+| **9M** | **El mercado de pases**: el mundo se puebla de jugadores, la demanda existe, alguien compite por tu asiento, la escalera deja de ser un dado | ⬜ |
 | **10** | El final: retiro emergente + la tarjeta de legado | ⬜ |
 | **11** | El año: calendario, la nota de la temporada, el archirrival | ⬜ |
 | **12** | La jerarquía de la decisión: categorías, rareza, consecuencia previa, el dado | ⬜ |
@@ -1784,6 +1785,146 @@ no carreras largas. La fase 10 necesita la lectura limpia.
 Jugar la seed 7 a mano de punta a punta. Hoy: firmás en el split 7, el equipo se disuelve en el 8,
 y quedan 52 splits de nada con eventos de vestuario cayendo igual. Después: te levanta otro equipo
 chico en uno o dos splits y la escalera de la fase 3 sigue su curso.
+
+---
+
+# FASE 9R — QUE EL JUEGO SE JUEGUE
+
+> **Por qué esta fase se insertó entre 9E y 9M (2026-09-02).** Comparando el juego contra su
+> referencia directa (**El Ídolo del Potrero**) a pedido del usuario — *"fijate lo divertido que es
+> y comparalo con el mío, las frases se repiten, es todo choto, fijate por qué y arreglalo"* — y
+> auditando el código contra cada diferencia, salió un diagnóstico aritmético, no estético.
+>
+> **El Ídolo**: carrera completa en 5-10 min, 300+ eventos, un archirrival con nombre toda la
+> partida, y una tarjeta final comparándote contra leyendas hecha para screenshot.
+>
+> **Este juego, medido** (headless sobre el mismo `avanzarSplitAuto` que corre el navegador):
+>
+> | Métrica | Medido | Objetivo |
+> |---|---|---|
+> | Decisiones por carrera | **248** | ~70-90 |
+> | Baraja elegible por turno (profesional) | **22** de 97 | ≥45 |
+> | Baraja elegible en amateur | **3,09** de 97 | ≥12 |
+> | Repeticiones del evento más repetido | **14 mediana, hasta 32** | mediana ≤4, máx ≤8 |
+> | Líneas de log por carrera | **615 mediana** (67% relleno técnico) | — |
+> | Carreras sin final a los 35 años | **69%** | 0 |
+>
+> 248 decisiones sacadas de una baraja de 22 son 11 pasadas completas por el mazo: la repetición es
+> aritmética, no balance. Y el check de la fase 7 (`§7.2`, *"mediana ≤ 4, máximo ≤ 8"*) es una
+> **regresión** — hoy mide 14 y 22. Además elegir casi no cambia nada: aportás el **35%** de la
+> fuerza de tu equipo, la decisión más frecuente mueve la probabilidad de ganar **4,5 puntos**,
+> `mid_el_duelo` tiene dos opciones **idénticas**, `modificadores` (la promesa de `CONCEPTO` §8)
+> está en **11 de 392 outcomes**, y **Mentalidad/Hype no se dibujan** aunque el 74% de los efectos
+> del contenido las mueva y el 12,5% de las carreras muera de burnout por esas barras.
+>
+> Va **antes de 9M** por dependencia dura: 9M valúa al jugador por su posición en la liga, y esa
+> posición sale de una tabla que miente media temporada (R1.2); y 9M ya declara que corre el stream
+> de RNG (D35), así que el corrimiento de esta fase se paga una sola vez si van juntas en el orden.
+
+El plan completo, fase por fase, vive en `.claude/plans/escuchame-posta-*.md` (aprobado por el
+usuario). Resumen ejecutable:
+
+## Decisiones del usuario (textuales — respetarlas)
+
+| Tema | Decisión |
+|---|---|
+| **Formato** | *"cortar el relleno, mantener la larga"* → la carrera sigue durando 25-40 min en splits; baja de 248 a ~70-90 decisiones. Se respeta la decisión previa de PLAN.md:78 |
+| **Contenido** | *"catálogo completo en full thinking, llamando agents para no escribir boludeces y checkeando todo a esta season"* → se escribe con agentes, en tandas por archivo, cada una verificada contra `CONCEPTO` §12 y contra `cobertura.js --huecos` |
+| **Ganchos de El Ídolo** | **la tarjeta final compartible** y **los minijuegos en momentos clave**. El archirrival y las cartas de pretemporada **no** entran (siguen en la fase 11 donde están) |
+
+## 9R.1 — Los tres bugs de motor (subfases 9Ra-9Rg)
+
+**Orden de commits** (regla de proceso 2: estructura y retuneo separados):
+
+| # | Commit | Qué entra |
+|---|---|---|
+| **9Ra** | `el cooldown mide splits` | `flags.cooldowns` → `flags.cooldownHasta` (split de expiración, no contador). `actualizarCooldowns` → `registrarEventoVisto`: se borra el tick entero. `cooldownActivo` compara contra `splitCount`. Constante nueva `eventos.cooldownMinimoSplits: 1`. **Cero RNG nuevo**, pero `candidatos()` devuelve otro conjunto → el stream diverge río abajo: **deuda D37**, familia D21/D35 |
+| **9Rb** | `la tabla deja de mentir` | `simularResto` (round-robin completo al abrir el split, con tu fila en 0-0) → fixture round-robin real resuelto jornada a jornada. `tablaDePosiciones(temporada, jornada)`. Reordena llamadas de RNG existentes, no agrega: **deuda D38** |
+| **9Rc** | `un solo criterio de valor de campeón` | Tres fórmulas que no se hablan (`calcularRendimiento` solo maestría, `deseoPorCampeon` maestría²×afinidad, `factorDraftFecha` solo afinidad) → una sola `factorDeCampeon(campeon, weights)`. Extraer `rendimientoBase(state)` (puro, sin el `gauss` de ruido). Constante `rendimiento.afinidadPesoEnRendimiento: 0.15` |
+| **9Rd** | `se para cuando hay algo en juego` | Criterio de pausa **invertido**: hoy pausa cuando `dominancia < 1.35` (empate) y elige solo cuando hay respuesta clara. Nuevo: `probabilidadDeGanar(fp, fr, σ₁, σ₂)` en forma cerrada (Φ logística), y pausa sii `puntosEnJuego ≥ umbral`. Constantes `numeros.factorLogisticoNormal: 1.702`, `serie.puntosEnJuegoParaPreguntar: 0.04`, `temporada.puntosEnJuegoParaPreguntar: 0.07`. Se borra `serie.dominanciaClara` |
+| **9Re** | `la temporada regular deja de ser una cinta` | `fechasMarcadasMin/Max` (2-3/split) → `fechasMarcadasPorSplit: 1`, y solo si `puntajeDeFecha ≥ puntajeMinimoParaMarcar: 11` (motivo real, no `parejo`). La reacción postpartido se **degrada a crónica**: se resuelve sola y se cuenta en una línea (el contenido no se borra). `forzarMarca` se borra |
+| **9Rf** | `el presupuesto de interrupción` | `src/systems/presupuesto.js` (nuevo, primero en `ETAPAS_SPLIT`, **no toca RNG**): `state.presupuesto = { total: interrupcionesPorTipo[tipoDeSplit], gastadas: 0 }`. `pipeline.pausar()` incrementa `gastadas` (choke point único). `eventos` y `temporada` consultan `hayPresupuesto`; `mercado`/`amateur`/`edadCierre`/`practica`/`serie` exentos. Constante `presupuesto.interrupcionesPorTipo: { denso: 4, normal: 2, comprimido: 1 }` |
+| **9Rg** | `calibrar el volumen` | **solo constantes**, línea de base re-medida en el momento (T6). Orden: `cooldownMinimoSplits` → `interrupcionesPorTipo` → `puntajeMinimoParaMarcar`/`probReaccion` → los dos `puntosEnJuegoParaPreguntar` → `afinidadPesoEnRendimiento` (último, mueve el balance agregado). Recién acá se aprietan los `cooldown` de los 97 JSON si el catálogo se agota (bajar los altos, no subir todos) |
+
+Dependencias: 9Rc → 9Rd → 9Re. 9Ra y 9Rb independientes. **Medir entre 9Rf y 9Rg.**
+
+## 9R.2 — Que elegir importe (contenido + UI, después de medir 9Rf)
+
+1. `modificadores` de 2,8% → **≥60%** de los outcomes (el motor ya lo soporta, `events.js:245`).
+2. Check nuevo: **ninguna opción puede ser gratis** — toda opción que declare mover un eje se
+   separa de sus hermanas por ≥3 pts de valor esperado. Hoy `mid_el_duelo` tiene dos con 0,0.
+3. `pesoJugadorEnEquipo` 0,35 → ~0,5 (commit de tuneo separado).
+4. **Mentalidad y Hype se dibujan** en `statRow.js` y la rama profesional de `ficha.js`.
+5. Los efectos dejan de disolverse: `atributos.js` converge `mecanica`/`laneo`/`teamfight` a
+   `velocidad: 0.3` — un `+3` desaparece en ~5 splits. Redistribuir hacia los stats que acumulan.
+
+## 9R.3 — El catálogo completo: 97 → ~280 eventos
+
+Absorbe y amplía la **FASE 13**, cuyo objetivo (*"≥150 opciones"*) ya está cumplido (hay 196) y aun
+así el juego se repite: la métrica correcta es **baraja elegible por turno**, no opciones totales.
+
+| Pool | Hoy | Objetivo |
+|---|---|---|
+| `partido/dentro_del_mapa.json` | 8 | 30 |
+| `partido/presion.json` / `clasico.json` | 6 / 6 | 20 / 20 |
+| `partido/postpartido.json` | **4** | 20 |
+| `rol/*.json` (5 archivos) | 11 | 50 |
+| elegibles en amateur | 19 | 45 |
+| resto | 43 | ~95 → `cobertura.js --huecos` vacío |
+
+Y **variación léxica, que hoy no existe** (0 arrays de frases, 100% strings fijos):
+`outcome.texto` acepta array de variantes; `FRASES_MOTIVO` (7 frases fijas narran 79 fechas/carrera)
+pasa a ~40; los pools de nombres (30×30 sílabas de handle, 20×10 de org) se amplían para que el
+mundo no suene igual en toda partida; 4 eventos que nunca salen en 100 carreras se regatean o borran.
+
+## 9R.4 — Los minijuegos de verdad (gancho de El Ídolo)
+
+Hoy `minijuegos.json` son **5 stubs sin opciones**, disparan en el 3,7% de las decisiones. Se
+completan y se suman los momentos que hoy se resuelven solos: final de liga, internacional, tryout
+de tier 3, el Barón de un mapa 5. Respetando PLAN.md:80: *"que tampoco todo sea un gambling a los
+minijuegos"* — varianza que el jugador controla, acotada, dentro de las competiciones.
+
+## 9R.5 — El final y la tarjeta compartible (gancho de El Ídolo, adelanta la FASE 10)
+
+Hoy la carrera **no tiene un final exitoso**: `terminado: true` existe en tres lugares y los tres
+son fracasos anteriores a ser profesional; el 69% de las carreras sigue "en_carrera" a los 35.
+`src/systems/retiro.js` + `src/systems/legado.js` + `src/ui/screens/tarjeta.js`, con
+`career.registro` (ya completo) como materia prima. Disparador provisional: curva de edad + declive
+medido + ausencia de ofertas; **se deja anotado que 9M lo vuelve emergente de verdad** — si la 9M
+se hace después, el disparador se re-mide, no se reescribe.
+
+## Checks nuevos de la fase 9R (para que nada regresione)
+
+```
+Decisiones por carrera completa: mediana ∈ [60, 85], p90 ≤ 120        (hoy 248)
+Ningún sistema aporta > 35% de las decisiones de la carrera mediana   (hoy temporada 44%)
+Repeticiones del evento más repetido: mediana ≤ 4, máximo ≤ 8         (hoy 14 / 32; check de §7.2 recuperado)
+El cooldown se mide en splits: expira EXACTAMENTE en splitCount+cooldown
+Ningún evento reaparece antes de que expire su cooldown declarado: 0 violaciones
+El fixture es un round-robin real: N-1 jornadas, cada par una vez
+La tabla no miente: posición relativa media en la jornada 1 ∈ [0.35, 0.65]
+Cada fila de la tabla cumple ganados+perdidos === jornada, en TODA jornada
+Nadie te para por un pick que no mueve el partido: 0 pausas con puntosEnJuego < umbral
+El motor nunca auto-pickea un campeón peor que otro disponible: 0 violaciones
+Mediana de decisiones de draft por serie ∈ [0, 1], y ≥30% de series con 0 drafts
+El jugador ve ≤ 1 fecha marcada por split competitivo, y 1 en el 40-75% de ellos
+La reacción postpartido no repite: máximo 6 apariciones del mismo evento por carrera
+El presupuesto de interrupción no consume RNG: 0 llamadas
+Ningún split gasta más interrupciones de las que su presupuesto permite
+Outcomes con `modificadores`: ≥ 60%
+Separación en valor esperado entre opciones de un mismo evento: ≥ 3 pts
+Eventos que nunca salen en 200 carreras: 0                            (hoy 4)
+Carreras sin final a los 35 años: 0                                   (hoy 69%)
+```
+
+## Deudas nuevas
+
+- **D37** — 9Ra corre el stream de RNG: ninguna seed anterior reproduce su carrera. Familia
+  D21/D22/D35. Determinismo intra-versión intacto.
+- **D38** — 9Rb reordena (no agrega) llamadas de RNG al intercalar los resultados ajenos con las
+  fechas del jugador. Familia D21.
+- **D26(c)** reaparece: con 9Re la celda `stakes: parejo` queda alcanzable-y-casi-nunca-alcanzada;
+  `cobertura.js` la va a reportar. Anotar, no arreglar acá (cobertura mide cantidad, no pertinencia).
 
 ---
 

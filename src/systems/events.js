@@ -13,8 +13,11 @@ import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 
 export const id = 'eventos';
 
+// Fase 9Ra: el cooldown se cuenta en splits. `cooldownHasta[id]` es el
+// `splitCount` en el que el evento vuelve a estar libre; sigue bloqueado
+// mientras ese número sea mayor al split actual.
 export function cooldownActivo(state, eventId) {
-  return (state.flags.cooldowns?.[eventId] ?? 0) > 0;
+  return (state.flags.cooldownHasta?.[eventId] ?? -1) > state.player.splitCount;
 }
 
 // El gating grueso ("donde estas parado") va en `contexto`; las `conditions`
@@ -170,24 +173,27 @@ function aplicarEfecto(state, effect, rng) {
   };
 }
 
-function actualizarCooldowns(state, eventoElegido) {
-  const cooldownsPrevios = state.flags.cooldowns ?? {};
-  const cooldowns = Object.fromEntries(
-    Object.entries(cooldownsPrevios).map(([eventId, restante]) => [eventId, Math.max(0, restante - 1)])
-  );
-
-  if (eventoElegido?.cooldown) {
-    cooldowns[eventoElegido.id] = eventoElegido.cooldown;
+// Fase 9Ra: antes esto DECREMENTABA todos los cooldowns en 1 cada vez que se
+// resolvía un evento cualquiera (`resolverOpcion` se llama desde `events`,
+// `edadCierre` y `temporada`, ~4,5 veces por split), así que un `cooldown: 4`
+// —la moda del catálogo— duraba 0,89 splits. Ya no hay nada que decrementar:
+// se estampa el split de expiración y `cooldownActivo` compara contra
+// `splitCount`. Con eventoElegido null (split sin evento) no hace nada.
+function registrarEventoVisto(state, eventoElegido) {
+  if (!eventoElegido) {
+    return state;
   }
+
+  const cooldownHasta = { ...(state.flags.cooldownHasta ?? {}) };
+  const duracion = Math.max(BALANCE.eventos.cooldownMinimoSplits, eventoElegido.cooldown ?? 0);
+  cooldownHasta[eventoElegido.id] = state.player.splitCount + duracion;
 
   // Fase 7: cuenta cuántas veces salió cada evento, para que la próxima
   // selección le corra el peso en contra (ver `pesoConMemoria`).
   const eventosVistos = state.flags.eventosVistos ?? {};
-  const vistosActualizados = eventoElegido
-    ? { ...eventosVistos, [eventoElegido.id]: (eventosVistos[eventoElegido.id] ?? 0) + 1 }
-    : eventosVistos;
+  const vistosActualizados = { ...eventosVistos, [eventoElegido.id]: (eventosVistos[eventoElegido.id] ?? 0) + 1 };
 
-  return { ...state, flags: { ...state.flags, cooldowns, eventosVistos: vistosActualizados } };
+  return { ...state, flags: { ...state.flags, cooldownHasta, eventosVistos: vistosActualizados } };
 }
 
 // Fase 7: memoria anti-repetición. Antes lo único que evitaba el repetido era
@@ -290,7 +296,7 @@ export function resolverOpcion(state, evento, opcionId, rng) {
   const efectos = lista(descripciones);
 
   return {
-    state: actualizarCooldowns(nextState, evento),
+    state: registrarEventoVisto(nextState, evento),
     logs: [crearLog('event', `${titulo} — ${cuerpo} (${efectos})`, { titulo, cuerpo, efectos })]
   };
 }
@@ -333,7 +339,7 @@ export function aplicar(state, rng) {
 
   if (!evento) {
     return {
-      state: actualizarCooldowns(state, null),
+      state,
       logs: [crearLog('event', 'Un split tranquilo, sin eventos destacados.')]
     };
   }

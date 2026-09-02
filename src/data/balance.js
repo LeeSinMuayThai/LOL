@@ -33,7 +33,13 @@ export const BALANCE = {
     // veces por carrera, mediana) porque lo único que evitaba el repetido era
     // el cooldown fijo del propio evento.
     fatigaPorVista: 0.8,
-    bonusNovedad: 2.5
+    bonusNovedad: 2.5,
+    // Fase 9Ra: el cooldown de un evento se cuenta en SPLITS, no en "próximos N
+    // eventos resueltos". Este es el piso para los 8 eventos que declaran
+    // `cooldown: 0` o lo omiten — sin él podían repetir en el mismo split.
+    // 1 = "nunca dos veces en el mismo split". No se retunea acá (regla 2): el
+    // ajuste fino de los cooldown del catálogo es 9Rg.
+    cooldownMinimoSplits: 1
   },
 
   // Valores de arranque del jugador. Son las bases sobre las que el mundo
