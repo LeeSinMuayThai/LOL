@@ -1269,8 +1269,20 @@ check('La densidad de decisiones es emergente, no pareja ni descontrolada', () =
       // mismo split de cierre de temporada, algo que la fase 2 no anticipaba
       // en el número pero sí en el principio ("las fases 4-6 van a sumar sus
       // propias fuentes de decisión").
-      if (decisionesEsteSplit > 24) {
-        throw new Error(`seed ${seed}, split ${splits}: ${decisionesEsteSplit} decisiones en un solo split (máximo esperado: 24, "denso")`);
+      //
+      // Corrección post-medición de la fase 9E (mismo criterio y mismo lugar
+      // que las de las fases 2, 4 y 5): 24 → 28. Al arreglar D25, las carreras
+      // dejaron de pasar la mitad de sus splits profesionales varadas sin
+      // equipo (49,7% → 98,1% con equipo), así que MUCHOS más splits traen la
+      // carga profesional completa —temporada con fechas marcadas, serie,
+      // draft— en vez de ser splits vacíos. No es un split más pesado: son
+      // más splits pesados. Medido con la estructura nueva, 400 carreras ×
+      // 25.688 splits: p50=6, p90=12, p99=17, p999=21, máximo 25 — UN solo
+      // split en 25.688 (0,004%) pasa de 24. La regla que importa sigue
+      // intacta: la densidad sigue siendo emergente y acotada, y el tope
+      // anti-loop real (`maxDecisionesPorSplit`, 60) no se toca.
+      if (decisionesEsteSplit > 28) {
+        throw new Error(`seed ${seed}, split ${splits}: ${decisionesEsteSplit} decisiones en un solo split (máximo esperado: 28, "denso")`);
       }
     }
 
@@ -1336,25 +1348,51 @@ check('El tier 3 es breve: mediana de permanencia ≤ 2 splits, p90 ≤ 5', () =
   // la misma lógica que ya usaba el año muerto). Ese split de espera cuenta
   // como "en tier 3" en esta medición. La mediana sigue en 2: la mayoría de
   // los ascensos cae cerca de una pretemporada igual.
+  //
+  // Fase 9E — la medición pasa a ser POR ORG, que es lo que este check dijo
+  // siempre que medía ("nadie se queda mucho en un equipo inventado... una
+  // carrera puede pasar por tier 3 más de una vez SI EL EQUIPO SE DISUELVE").
+  // Hasta acá el corte entre stints lo hacía, sin querer, el bug D25:
+  // `disolverEquipo` ponía `tier: null`, así que la disolución terminaba el
+  // stint —y de paso la carrera, que quedaba varada para siempre—. Al
+  // conservar `tier: 3`, contar por tier junta todos los equipos chicos de
+  // una carrera en un solo número y mide otra cosa: no "cuánto durás en un
+  // equipo inventado" sino "cuánto tardás en salir del nivel". Medido a 1500
+  // carreras: por org mediana 2 / p90 5 (idéntico al diseño), por tier
+  // mediana 5 / p90 12. El corte por org es el que responde el pedido.
   const permanencias = [];
 
   for (let seed = 1; seed <= 6000; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
-    let splitsEnTier3 = 0;
+    let splitsEnLaOrg = 0;
+    let orgAnterior = null;
+
+    const cerrarStint = () => {
+      if (splitsEnLaOrg > 0) {
+        permanencias.push(splitsEnLaOrg);
+      }
+      splitsEnLaOrg = 0;
+    };
 
     for (let i = 0; i < 90 && !state.terminado; i += 1) {
       state = avanzarSplitAuto(state, rng).state;
-      if (state.career.tier === 3) {
-        splitsEnTier3 += 1;
-      } else if (splitsEnTier3 > 0) {
-        permanencias.push(splitsEnTier3);
-        splitsEnTier3 = 0;
+      const org = state.career.tier === 3 ? state.career.currentOrg : null;
+
+      if (!org) {
+        // Fuera de tier 3, o en tier 3 sin equipo (el split entre que se te
+        // disuelve el armado y te levanta otro): el stint con ESA org cerró.
+        cerrarStint();
+        orgAnterior = null;
+        continue;
       }
+      if (org !== orgAnterior) {
+        cerrarStint();
+        orgAnterior = org;
+      }
+      splitsEnLaOrg += 1;
     }
-    if (splitsEnTier3 > 0) {
-      permanencias.push(splitsEnTier3);
-    }
+    cerrarStint();
   }
 
   if (permanencias.length < 100) {
@@ -1366,10 +1404,10 @@ check('El tier 3 es breve: mediana de permanencia ≤ 2 splits, p90 ≤ 5', () =
   const p90 = ordenados[Math.floor(ordenados.length * 0.9)];
 
   if (medianaPermanencia > 2) {
-    throw new Error(`mediana de permanencia en tier 3: ${medianaPermanencia} splits (máximo 2)`);
+    throw new Error(`mediana de permanencia en una org de tier 3: ${medianaPermanencia} splits (máximo 2)`);
   }
   if (p90 > 5) {
-    throw new Error(`p90 de permanencia en tier 3: ${p90} splits (máximo 5)`);
+    throw new Error(`p90 de permanencia en una org de tier 3: ${p90} splits (máximo 5)`);
   }
 });
 
@@ -2594,6 +2632,99 @@ check('En carreras largas, una fracción sana ve al menos un evento que escribe 
   const fraccion = conMomento / elegibles;
   if (fraccion < 0.10) {
     throw new Error(`solo ${(fraccion * 100).toFixed(1)}% de las carreras largas vieron al menos un momento; se esperaba ≥10%`);
+  }
+});
+
+// --- Fase 9E: que la carrera no se vare ---
+//
+// El bug D25 vivió cuatro commits debajo de 38 checks en verde porque nadie
+// miraba lo que pasa DESPUÉS del fichaje: `cobertura.js` saltea los momentos
+// `pendiente` (y `sin_equipo` lo estaba), y `simulate.js` solo reportaba
+// métricas de la etapa amateur. Estos dos checks son el piso que faltaba —
+// no verifican el arreglo, verifican que el jugador siga teniendo juego.
+
+// Recorre una carrera split a split en vez de mirar solo el estado final:
+// una racha de 57 splits sin equipo es invisible desde el estado final, que
+// solo dice "sin equipo" una vez.
+function trazaDeEquipo(seed, splits) {
+  const rng = mulberry32(seed);
+  let state = createInitialState(seed, rng);
+
+  let splitsPro = 0;
+  let splitsProConEquipo = 0;
+  let rachaSinEquipo = 0;
+  let maxRachaSinEquipo = 0;
+
+  for (let i = 0; i < splits && !state.terminado; i += 1) {
+    state = avanzarSplitAuto(state, rng).state;
+
+    if (state.phase !== 'profesional') {
+      continue;
+    }
+    splitsPro += 1;
+
+    if (state.career.currentOrg) {
+      splitsProConEquipo += 1;
+      rachaSinEquipo = 0;
+    } else {
+      rachaSinEquipo += 1;
+      maxRachaSinEquipo = Math.max(maxRachaSinEquipo, rachaSinEquipo);
+    }
+  }
+
+  return { splitsPro, splitsProConEquipo, maxRachaSinEquipo, state };
+}
+
+check('Nadie se queda varado: sin equipo es una transición, no un destino', () => {
+  // Cota generosa a propósito: tier 3 te levanta en ~`splitsLibrePromedioTier3`
+  // y el mercado te da `splitsSinOfertaParaLibre` pretemporadas antes de
+  // soltarte. Una racha larga de verdad es un bug de estado, no mala suerte.
+  const TOPE_RACHA = 12;
+  const peores = [];
+
+  for (let seed = 1; seed <= 150; seed += 1) {
+    const { maxRachaSinEquipo } = trazaDeEquipo(seed, 60);
+    if (maxRachaSinEquipo > TOPE_RACHA) {
+      peores.push(`seed ${seed}: ${maxRachaSinEquipo} splits`);
+    }
+  }
+
+  if (peores.length > 0) {
+    throw new Error(
+      `${peores.length} de 150 carreras pasan más de ${TOPE_RACHA} splits seguidos sin equipo `
+      + `(${peores.slice(0, 5).join(', ')}${peores.length > 5 ? ', …' : ''})`
+    );
+  }
+});
+
+check('La carrera profesional se juega mayormente con equipo', () => {
+  let splitsPro = 0;
+  let splitsProConEquipo = 0;
+  let varadas = 0;
+
+  for (let seed = 1; seed <= 150; seed += 1) {
+    const traza = trazaDeEquipo(seed, 60);
+    splitsPro += traza.splitsPro;
+    splitsProConEquipo += traza.splitsProConEquipo;
+
+    // Varada: quedó en profesional, sin org y sin tier — no hay sistema que
+    // la pueda rescatar, porque `competitivo` se guarda detrás del tier y
+    // `mercado` detrás de la liga.
+    const { phase, career } = traza.state;
+    if (phase === 'profesional' && !career.currentOrg && career.tier === null) {
+      varadas += 1;
+    }
+  }
+
+  if (varadas > 0) {
+    throw new Error(`${varadas} de 150 carreras terminan varadas (profesional, sin org y sin tier)`);
+  }
+
+  const fraccion = splitsProConEquipo / splitsPro;
+  if (fraccion < 0.90) {
+    throw new Error(
+      `solo el ${(fraccion * 100).toFixed(1)}% de los splits profesionales se juega con equipo; se esperaba ≥90%`
+    );
   }
 });
 

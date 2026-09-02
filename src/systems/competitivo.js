@@ -50,12 +50,19 @@ function marcarAscenso(state, ligaId, tier, logsPrevios) {
   };
 }
 
+// Fase 9E (bug D25): `tier` se CONSERVA en 3. Se te disolvió el equipo, no
+// dejaste de ser un jugador de tier 3 — y el tier es justamente el dato con
+// el que `aplicar()` decide que te toca volver a buscar un armado chico.
+// Anulándolo, ese guard nunca se cumplía y la carrera quedaba varada para
+// siempre: ni `competitivo` te re-fichaba (mira el tier) ni `mercado` te
+// mandaba ofertas (mira la liga). `liga` sí sigue en null: tier 3 no es una
+// liga real, eso siempre estuvo bien.
 function disolverEquipo(state, logsPrevios) {
   return {
     state: {
       ...state,
       career: {
-        ...state.career, tier: null, liga: null, currentOrg: null, rosterDeOrg: null,
+        ...state.career, tier: 3, liga: null, currentOrg: null, rosterDeOrg: null,
         companeros: [], jerarquia: 0, arraigo: 0, sinergia: 0,
         registro: conFilaCerrada(state, 'disolucion')
       }

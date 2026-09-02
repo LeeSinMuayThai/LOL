@@ -25,7 +25,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **7** | El prólogo se comprime y la repetición se rompe | ✅ ver `PROGRESO.md` |
 | **8** | La ficha: el registro que acumula + la tarjeta permanente + `src/ui/` | ✅ ver `PROGRESO.md` |
 | **9** | El mercado: ofertas, contratos, salarios, la trampa del equipo grande visible | ✅ ver `PROGRESO.md` |
-| **9E** | El varado: la carrera vuelve a tener juego después del primer equipo | 🔴 **bug crítico abierto** |
+| **9E** | El varado: la carrera vuelve a tener juego después del primer equipo | 🔶 **9Ea+b hechas** (el bug, cerrado) · faltan 9Ec y 9Ed |
 | **10** | El final: retiro emergente + la tarjeta de legado | ⬜ |
 | **11** | El año: calendario, la nota de la temporada, el archirrival | ⬜ |
 | **12** | La jerarquía de la decisión: categorías, rareza, consecuencia previa, el dado | ⬜ |
@@ -1601,7 +1601,7 @@ y por primera vez.
 > **Fase de corrección, no de features.** Nace de la auditoría del 2026-09-02 (ver deuda D25-D28,
 > D31, D33). No agrega un solo sistema: arregla un bug que hace que **el 30,7% de las carreras no
 > tengan juego después del primer equipo**, y tapa el agujero de medición por el que ese bug
-> convivió con 38 checks en verde.
+> convivió con 83 checks en verde.
 >
 > Va antes de la fase 10 por dependencia dura: el retiro emergente se define como *"te retirás
 > cuando el mercado deja de llamarte"*, y hoy el estado "sin equipo" está tan roto que no se puede
@@ -1664,20 +1664,33 @@ mintiendo — un jugador sin tier que sin embargo compite en tier 3.
 
 ## 9E.3 — Que el agujero no se vuelva a abrir
 
-Los tres cambios de tooling importan tanto como el arreglo, porque el bug vivió cuatro commits
-debajo de 38 checks en verde.
+Los cambios de tooling importan tanto como el arreglo, porque el bug vivió cuatro commits debajo
+de 83 checks en verde.
 
-1. **`sin_equipo` deja de estar `pendiente`** en `data/contextos.js`. Hoy `cobertura.js` saltea
-   los pendientes, así que reporta "Sin huecos" sobre el momento más frecuente del juego. Al
-   activarlo, `--huecos` va a marcar la celda vacía — que es exactamente lo que tiene que hacer.
-2. **KPIs de carrera en `simulate.js`.** Hoy solo reporta métricas de la etapa amateur
-   (`soloqElo`, `estudios`, `familyTrust`, `mecanica`, `mentalidad`, `hype`, `splitFichaje`): 1.500
-   carreras no ven nada de lo que pasa después de firmar. Agregar, como mínimo: fracción de splits
-   con equipo, racha máxima sin equipo, distribución de tier alcanzado, y carreras varadas.
-3. **Check nuevo en `validate.js`**: ninguna carrera pasa más de N splits seguidos sin equipo
-   estando en `phase: 'profesional'`. Regla de proceso 7 — **verificar que falla contra el `HEAD`
-   actual antes de arreglar nada**; si pasa en verde sobre el código roto, el check está mal
-   escrito.
+1. **KPIs de carrera en `simulate.js`.** Era el hueco más grande: el reporte solo tenía métricas
+   de la etapa amateur (`soloqElo`, `estudios`, `familyTrust`, `mecanica`, `mentalidad`, `hype`,
+   `splitFichaje`), así que 1.500 carreras no veían nada de lo que pasa después de firmar. Y una
+   racha de 57 splits sin equipo es **invisible desde el estado final**, que solo dice "sin
+   equipo" una vez — hay que recorrer la carrera split a split. Agregar: fracción de splits con
+   equipo, racha máxima sin equipo, distribución de tier alcanzado, y carreras varadas.
+2. **Checks nuevos en `validate.js`**: ninguna carrera pasa más de N splits seguidos sin equipo
+   estando en `phase: 'profesional'`, y la fracción de splits profesionales con equipo se mantiene
+   alta. Regla de proceso 7 — **verificar que fallan contra el `HEAD` actual antes de arreglar
+   nada**; si pasan en verde sobre el código roto, el check está mal escrito.
+3. **`sin_equipo` deja de estar `pendiente`** en `data/contextos.js`. Es corrección de etiqueta:
+   lo estaba desde la fase 7, cuando ningún sistema producía ese estado, y la fase 9 le dio dos
+   puertas sin sacarle la marca.
+
+> **Corrección al diagnóstico original (medido el 2026-09-02, después de escribir esta fase).**
+> Acá decía que `cobertura.js` reportaba "sin huecos" *porque saltea los pendientes*. **Es falso**:
+> el `pendiente` solo cambia la etiqueta de una fila nunca observada, nunca suprime un hueco. El
+> mecanismo real es peor. `sin_equipo` fue observado siempre, y la celda reporta **58 eventos** —
+> muy por encima de `minimoEventosPorCelda`— porque los 58 son el contenido mal gateado de D27:
+> eventos de rol que hablan de partidos que no jugás, `transfer_rumor` sin contrato del que
+> irse, `tercer_club_ya` sin club. **`cobertura.js` mide cantidad, no pertinencia**, así que
+> cuanto más contenido sin gatear se escribe, más sana se ve una celda inapropiada. Eso hace a
+> D27 más importante, no menos, y agrega un ítem propio: que la matriz sepa distinguir "hay 58
+> eventos acá" de "hay 58 eventos que tienen sentido acá".
 
 ## 9E.4 — El contenido que se cuela sin vestuario (D27)
 
@@ -1686,14 +1699,25 @@ splits. Pero el contenido sigue sin gatearse, y ahí ya se observó lo peor que 
 +2 al manager de una org que no existe** (y se pierde, porque `cerrarFila` es no-op sin fila
 abierta), y *"en el draft no te dieron tu pick"* seis veces sin equipo ni serie.
 
-Dos cambios chicos:
+Medido con `cobertura.js --momento sin_equipo`: **20 eventos** caen en la pretemporada sin equipo,
+y los peores son los cinco de rol (`mid_roamear_o_no` — *"tu línea está ganada"*,
+`adc_si_perdemos_es_por_vos`, `support_nadie_te_vio`, `jungla_el_mapa_es_tuyo`,
+`top_recorte_sin_contexto`), que hablan de partidos profesionales que no estás jugando. Más
+`transfer_rumor` sin contrato del que irse, `tercer_club_ya` sin club, y `el_secundario_que_sirvio`
+dando Arraigo a un manager inexistente.
+
+Tres cambios:
 
 - **`campeones.js`**: el draft se gatea por `career.currentOrg`, no por `phase === 'profesional'`.
   Sin equipo no hay draft; elegís vos, como en soloQ.
-- **Los eventos que nombran vestuario, manager o staff declaran `marcas: ["con_vestuario"]`.** La
-  marca ya existe desde la fase 0 y ya se usa para esto mismo; lo que falta es aplicarla al
-  contenido que se escribió después. Barrer el catálogo con `cobertura.js` una vez que `sin_equipo`
-  esté activo.
+- **Los eventos que nombran vestuario, manager, staff o partido declaran `marcas:
+  ["con_vestuario"]`** (o `nivel` explícito). La marca ya existe desde la fase 0 y ya se usa para
+  esto mismo; lo que falta es aplicarla al contenido escrito después. Los 5 de rol son el caso
+  claro: son eventos de partido, no de identidad.
+- **`cobertura.js` tiene que distinguir cantidad de pertinencia.** Hoy una celda con 58 eventos
+  mal gateados se ve más sana que una con 6 bien gateados. Mínimo viable: marcar las celdas donde
+  la mayoría del contenido llega **sin declarar `nivel` ni `marcas`** — contenido que cae ahí por
+  omisión, no por decisión.
 
 ## 9E.5 — Los `Math.random()` de `index.html` (D28)
 
@@ -2176,14 +2200,15 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D22 | La fase 9 (`competitivo.js` deja de sortear tu org) va a correr el stream de RNG: ninguna seed anterior a esa fase va a reproducir su carrera. Mismo criterio que D21 — anotado de antemano para no descubrirlo tarde | 9 (anticipado, no implementado aún) |
 | D23 | Medido al calibrar el arraigo (fase 8c, 300 carreras a 60 splits): la distribución es bimodal — de las carreras con ≥8 splits en una misma org, 50,5% termina en `leyenda` (88+) y 25,7% se queda en `uno_mas` (<25); `querido` e `idolo` juntos son solo el 23,8%. El check declarado (≥15% llega a Ídolo+) pasa cómodo (59,9%), así que no fuerza retunear nada — pero si en la fase 11/13 se quiere que "Leyenda" se sienta tan raro como en la referencia (aparece una sola vez en las 15 imágenes, al cierre de una carrera de 26 años), la curva de ganancia por split es candidata a suavizarse recién ahí, con contenido real de por medio (regla de proceso 3: agregar contenido antes que tocar constantes) | 11/13 (abierto) |
 | D24 | El check de la fase 3 "tier 3 es breve" (`p90 ≤ 4`) era frágil a n=1500: la fase 8D midió que el p90 real cae casi exactamente en el borde 4/5 (~90% acumulado en 4) tanto antes como después de agregar contenido — cualquier cambio que reordene qué evento gana un sorteo para una seed dada (trampa T1, misma familia que D21/D22) puede empujar el resultado para cualquier lado del borde a esa muestra. Confirmado con una sonda aparte a n=3000/6000: ambas versiones (con y sin el contenido nuevo) dan p90=4 estable. Resuelto subiendo la muestra del check a 6000 — no se tocó ninguna constante de balance de tier 3 | ✅ 8D |
-| D25 | **La carrera se vara para siempre tras disolverse un tier 3.** Regresión de la fase 9b (`9a163b6`): `competitivo.js` guardó el re-fichaje detrás de `career.tier === 3`, pero `disolverEquipo` ya puso `tier: null` — la condición nunca es cierta en el único caso para el que se escribió. `mercado.js` tampoco rescata (`ligaDeCarrera` es null porque `career.liga` también se anuló). Medido a 400 carreras × 60 splits: **30,7% de las carreras terminan varadas**, **47,5% de todos los splits profesionales se juegan sin equipo**, racha máxima **57 splits**. Detalle y arreglo en la fase 9E | **9E** |
-| D26 | **El agujero de medición que dejó pasar D25.** `sin_equipo` está marcado `pendiente: 'paso11'` en `contextos.js`, y `cobertura.js` no mide los pendientes: reporta "Sin huecos" sobre el momento **más frecuente del juego** (7.238 apariciones, más que `tier1_rookie` y `amateur_prometedor` juntos). Y `simulate.js` no tiene ningún KPI de equipo, tier ni mercado. Por eso la fase 9d cerró reportando "carreras con al menos un split libre: 0,3%" cuando el número real es **35,3%**: esa métrica solo miraba la puerta del mercado. Misma familia que la trampa T5 — la herramienta no falla, mira para otro lado | **9E** |
+| D25 | ~~**La carrera se vara para siempre tras disolverse un tier 3.**~~ — resuelto en 9Ea+b: `disolverEquipo` conserva `tier: 3`. Regresión de la fase 9b (`9a163b6`), que guardó el re-fichaje detrás de `career.tier === 3` mientras `disolverEquipo` ponía `tier: null` — la condición nunca era cierta en el único caso para el que se escribió. Medido antes: **30,7% de carreras varadas**, **47,5% de los splits profesionales sin equipo**, racha máxima **57 splits**. Después: **0 varadas**, racha máxima **1 split**, **98,1%** de los splits pro con equipo | ✅ 9E |
+| D26 | **El agujero de medición que dejó pasar D25.** Tres herramientas mirando para otro lado a la vez: (a) `simulate.js` no tenía **ningún** KPI posterior al fichaje, así que 1.500 carreras no veían una racha de 57 splits sin equipo — desde el estado final eso se lee como un solo split libre (**resuelto en 9Ea+b**: bloque `carrera` con recorrido split a split); (b) `validate.js` no tenía ningún check sobre el estado "sin equipo" (**resuelto**: checks 39 y 40); (c) **`cobertura.js` mide cantidad, no pertinencia**: la celda `sin_equipo` reporta **58 eventos** —bien por encima del mínimo— y por eso sale "sin huecos", pero esos 58 son exactamente el contenido mal gateado de D27. Cuanto más contenido sin gatear se escribe, más sana se ve una celda inapropiada. **(c) sigue abierto, va en 9Ec.** Por eso la fase 9d cerró reportando "carreras con al menos un split libre: 0,3%" cuando el real es **35,3%**: esa métrica miraba solo la puerta del mercado. Misma familia que la trampa T5 — la herramienta no falla, mira para otro lado | 🔶 **9E (a y b hechas)** |
 | D27 | **Contenido de vestuario disparando sin vestuario.** Ningún evento declara ni excluye `nivel: ["libre"]`, así que el catálogo tier-agnóstico cae igual sin equipo. Observado en la traza de la seed 7 ya varado: "avisarle al manager en privado" dando **Arraigo +2** a una org que no existe (y perdiéndose, porque `cerrarFila` es no-op sin fila abierta), y "en el draft no te dieron tu pick" seis veces sin equipo ni serie — `campeones.js` gatea el draft por `phase`, nunca por `career.currentOrg`. Rompe el principio rector 1 al pie de la letra | **9E** |
 | D28 | **`Math.random()` × 5 en `index.html`** (zona del Smite, espera de "La Llamada", posición de los blancos). Viola la regla invariable 1 y rompe el determinismo jugando a mano: esos valores deciden el `resultado` del minijuego, que entra al motor y cambia la serie. `guards.js` no los ve porque solo escanea `.js` dentro de `/src` — el guard tiene que mirar `.html` también | **9E** |
 | D29 | **El eje `residencia` está muerto entero.** `contexto.js` escribe `residencia: 'local'` fijo. En cadena: el momento `import_recien_llegado` es inalcanzable por construcción, `BALANCE.mercado.margenImport` no lo lee nadie (pese a que `salarios.js` afirma que "lo evalúa `mercado.js`"), `contrato.tipo: 'import'` nunca se produce, y `mercado.js` solo genera ofertas de tu liga actual — no existe la transferencia entre regiones que prometen `CONCEPTO` §6 y `DISENO` §3.7 | 11 |
 | D30 | **Valores de eje que la fase 9 debía llenar y no llenó.** `calcularMercado()` devuelve solo `contrato_firme`/`sin_contrato`; `ultimo_ano` y `sin_renovacion` están declarados en `EJES` y nunca se calculan, pese a que `contrato.aniosRestantes` ya existe y es exactamente el dato que hace falta. `etapa: 'declive'` tampoco se computa | 10/11 |
 | D31 | **Constantes muertas en `balance.js`**: `mercado.margenImport` (ver D29), `amateur.autoProbRobar`, `rendimiento.ruidoRival` (resto de la fase 5, cuando `temporada.js` le sacó a `rendimiento.js` la resolución de la temporada) y `competitivo.margenEdadMinima`. Son las únicas 4 de ~250 claves; se borran o se usan, pero no se dejan mintiendo | 9E (las 3 sin D29) |
 | D32 | **`node src/dev/validate.js` tarda 6m47s** y la Definición de terminado lo exige en cada cambio. Candidato a partirse en `--rapido` (esquema, contratos, determinismo) y `--completo` (los checks estadísticos de n grande, que son los que se comen el tiempo) | 12 (abierto) |
+| D34 | **Cuánto se tarda en SALIR del nivel tier 3 nunca se había podido medir**, porque el bug D25 mataba la carrera en la primera disolución: las carreras largas en tier 3 no existían, se varaban. Con D25 cerrado, medido a 1500 carreras: por org la permanencia sigue clavada en el diseño (**mediana 2, p90 5** — el pedido "nadie se queda mucho en un equipo inventado" se cumple), pero el tiempo total en el NIVEL da **mediana 5, p90 12, máximo 36 splits**. El 98,3% de las carreras que pisan tier 3 igual escapan a tier 2 o 1, así que no es una trampa — pero un p90 de 12 splits (4 años) dando vueltas por equipos chicos es candidato a revisar `probAscensoBaseDesdeTier3`. **No se tocó ninguna constante**: regla de proceso 2, primero medir con la estructura nueva. El check gatea la métrica por org, que es la que responde el pedido | 10 (abierto) |
 | D33 | **13 comentarios de `/src` citan `TRASPASO.md §4`**, archivo borrado el 2026-09-02 — `salarios.js`, `state.js`, `valorMercado.js` (×3), `balance.js` (×3), `roles.js`, `validate.js` (×2), `amateur.js`, `mercado.js`. La numeración se conservó al mover la investigación (`§4.N` → `CONCEPTO.md §12.N`), así que la redirección es un reemplazo de texto por comentario, sin tocar lógica. Se deja para el próximo commit que toque `/src` | 9E |
 
 ---

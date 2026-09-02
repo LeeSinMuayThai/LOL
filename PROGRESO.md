@@ -15,8 +15,9 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 > cuando la fase 8b la había llenado. Mantener dos tablas de estado garantizaba que una mintiera;
 > ahora hay una sola. `DISENO.md` §6 se cortó en el mismo movimiento.
 
-**Lo que falta para cerrar el arco de `CONCEPTO`**: el varado de tier 3 (`PLAN.md` fase 9E — bug
-crítico abierto, el 30,7% de las carreras se quedan sin juego después del primer equipo), retiro y
+**Lo que falta para cerrar el arco de `CONCEPTO`**: el contenido que se cuela sin vestuario y los
+`Math.random()` de los minijuegos (`PLAN.md` fases 9Ec y 9Ed — el varado de tier 3 ya está cerrado
+en 9Ea+b), retiro y
 tarjeta de legado (§9), movilidad entre regiones e imports (§6), rivales de generación corriendo
 en paralelo (§6), las etapas DEBUT y DECLIVE (§2). El objetivo de contenido de §8 (150 opciones)
 ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catálogo completo de §8
@@ -32,12 +33,133 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-02 — Fase 9Ea+b: la carrera deja de vararse
+
+El arreglo del bug D25, junto con las tres herramientas que lo dejaron pasar. Va en un solo commit
+a propósito: la regla de proceso 7 pide verificar que un check nuevo **falla cuando debe**, y eso
+solo se puede hacer con el código roto todavía en el árbol. Los checks se escribieron primero, se
+corrió la medición contra `HEAD` para verlos en rojo, y recién después se aplicó el arreglo.
+
+**Los checks, en rojo contra el código roto** (150 carreras × 60 splits, previo al arreglo):
+
+| Check | Contra `HEAD` roto |
+|---|---|
+| Racha > 12 splits seguidos sin equipo | **58 de 150 carreras** la violan · peores: seed 7 (52), seed 9 (55), seed 21 (56) |
+| Carreras varadas (pro, sin org, sin tier) | **50 de 150** |
+| Fracción de splits pro con equipo (umbral 90%) | **49,7%** |
+
+**El arreglo, una línea.** `disolverEquipo()` en `systems/competitivo.js` ponía `tier: null`, y la
+fase 9b había guardado el re-fichaje detrás de `career.tier === 3` — la condición nunca era cierta
+en el único caso para el que se escribió. Ahora el tier se conserva en 3: se te disolvió el equipo,
+no dejaste de ser un jugador de tier 3. `liga` sigue en `null`, que siempre estuvo bien (tier 3 no
+es una liga real). Vale la pena notar que la fase 9b **sí** conservaba tier y liga en el camino del
+mercado (`quedarLibre`) — por eso ESE camino nunca se rompió, y por eso las 0 carreras varadas por
+la vía del mercado en la medición.
+
+**Después del arreglo**, mismas 150 seeds:
+
+| Métrica | Antes | Después |
+|---|---|---|
+| Carreras con racha > 12 splits sin equipo | 58 de 150 | **0** |
+| Racha máxima observada | 56 splits | **1 split** |
+| Carreras varadas | 50 de 150 | **0** |
+| Splits profesionales con equipo | 49,7% | **98,1%** |
+
+**Las herramientas** (lo que impide que el próximo se esconda igual):
+
+- **`simulate.js`** ahora recorre la carrera split a split, no solo mira el estado final. Bloque
+  `carrera` nuevo en el reporte: `splitsProConEquipo`, `varadas`, `maxRachaSinEquipo` y
+  `tierMaximo`. Era el hueco más grande — una racha de 57 splits sin equipo es **invisible desde
+  el estado final**, que solo dice "sin equipo" una vez. Por eso 1.500 carreras no la veían.
+- **`validate.js`**: dos checks nuevos (39 y 40), los de la tabla de arriba.
+- **`contextos.js`**: `sin_equipo` deja de estar `pendiente: 'paso11'`. Corrección de etiqueta —
+  lo estaba desde la fase 7, cuando ningún sistema producía ese estado, y la fase 9 le dio dos
+  puertas sin sacarle la marca.
+
+**Corrección al diagnóstico de la auditoría de esta misma mañana** (regla de proceso 4). La entrada
+anterior y la fila D26 decían que `cobertura.js` reportaba "sin huecos" *porque saltea los momentos
+`pendiente`*. **Es falso**: el `pendiente` solo cambia la etiqueta de una fila nunca observada,
+nunca suprime un hueco. El mecanismo real es peor y se midió con `--momento sin_equipo`: la celda
+`sin_equipo` reporta **58 eventos**, muy por encima del mínimo, porque los 58 son exactamente el
+contenido mal gateado de D27 — los cinco eventos de rol (*"tu línea está ganada"*, *"la lupa está
+sobre vos"*) que hablan de partidos profesionales que no estás jugando, `transfer_rumor` sin
+contrato del que irse, `tercer_club_ya` sin club. **`cobertura.js` mide cantidad, no pertinencia**:
+cuanto más contenido sin gatear se escribe, más sana se ve una celda inapropiada. Eso hace a D27
+más importante, no menos, y le agrega un ítem a 9Ec: que la matriz sepa distinguir "hay 58 eventos
+acá" de "hay 58 eventos que tienen sentido acá". D26 y la fase 9E quedaron corregidas en `PLAN.md`.
+
+**Una cota de check movida, con la medición al lado** (regla de proceso 2: primero medir con la
+estructura nueva). El check de densidad de decisiones falló en `seed 326, split 87: 25 decisiones`
+contra un tope de 24. No es una regresión: al dejar de vararse, las carreras pasan de 49,7% a 98,1%
+de splits profesionales **con equipo**, así que muchos más splits traen la carga profesional
+completa (temporada con fechas marcadas, serie, draft) en vez de ser splits vacíos. No es un split
+más pesado: son más splits pesados. Medido con la estructura nueva sobre 400 carreras / **25.688
+splits**: p50=6, p90=12, p99=17, p999=21, máximo 25 — **un solo split en 25.688 (0,004%)** pasa
+de 24. El tope sube a 28, en el mismo lugar y con el mismo criterio que las correcciones de las
+fases 2, 4 y 5. El tope anti-loop real (`maxDecisionesPorSplit`, 60) no se tocó.
+
+**El check de tier 3 pasa a medir por org, que es lo que siempre dijo que medía.** Falló con
+"mediana de permanencia en tier 3: 5 splits (máximo 2)", y la causa es que el corte entre stints lo
+hacía —sin querer— el propio bug D25: al poner `tier: null`, la disolución terminaba el stint *y de
+paso la carrera*. Con `tier: 3` conservado, contar por tier junta todos los equipos chicos de una
+carrera en un número solo y mide otra cosa. El comentario del check siempre dijo *"nadie se queda
+mucho en **un equipo inventado**... una carrera puede pasar por tier 3 más de una vez **si el
+equipo se disuelve**"*, así que el corte correcto es por org. Medido a 1500 carreras:
+
+| Métrica | Mediana | p90 | Máx |
+|---|---|---|---|
+| Splits en **una misma org** de tier 3 (lo que gatea el check) | **2** | **5** | 19 |
+| Splits totales en el **nivel** tier 3 | 5 | 12 | 36 |
+| Gap sin equipo dentro de tier 3 | 1 | 1 | **1** |
+
+La primera fila es idéntica al diseño original — el pedido se sigue cumpliendo. La tercera muestra
+el arreglo funcionando: nunca pasás más de un split sin que te levante otro equipo. La segunda es
+**un número que nunca se había podido medir**, porque antes las carreras largas en tier 3 no
+existían: se varaban. Va a la deuda como D34, sin tocar una sola constante (regla de proceso 2).
+
+**Conteo de checks corregido: son 83, no 38.** El número que reporté esta mañana salió de leer una
+salida truncada de `validate.js` y se propagó a `PLAN.md`, a la entrada anterior de este changelog
+y al mensaje del commit `d8e3eec`. Los documentos quedaron corregidos; el mensaje del commit no se
+reescribe. La suite hoy: **83 checks, 83 en verde**, dos de ellos nuevos de esta fase.
+
+**Trampa T1**: el arreglo cambia qué rama toma `competitivo.aplicar()` en las carreras que antes
+quedaban varadas, y ahí `reFicharTier3` vuelve a consumir del stream. **Ninguna seed anterior
+reproduce su carrera.** Es el precio del arreglo, no un efecto evitable.
+
+**Verificación end-to-end (9E.9), seed 7 leída a mano.** Antes: firmaba con Fénix Esports en el
+split 7, se disolvía en el 8, y los 52 splits restantes eran zombis — 4 a 6 logs por split, con
+"Arraigo +2 al manager" y "en el draft no te dieron tu pick" cayendo sin equipo. Ahora:
+
+```
+split  7  Fénix Esports (tier 3)          split 11  Nova Uprising
+split  8  se disuelve — un split libre    split 12  ASCIENDE a tier 2 · Cuadro Esports
+split  9  Nexo Collective lo levanta      split 15  DEBUTA en tier 1 · Shifters
+split 10  un split libre
+```
+
+Es una carrera. Y la densidad de logs pasa de 4-6 por split varado a 16-18 por split profesional.
+
+**Cierre, 1000 carreras × 60 splits (`simulate.js`, estrategia equilibrado):**
+
+| | |
+|---|---|
+| crashes | **0** |
+| splits profesionales con equipo | **98,4%** |
+| carreras varadas | **0 (0,0%)** |
+| racha máxima sin equipo | 6 splits (la puerta del mercado: 3 pretemporadas sin oferta + libre, por diseño) |
+| tier máximo alcanzado | tier1 71,9% · nunca fichado 26,8% · tier3 1,1% · tier2 0,2% |
+| `validate.js` | **83/83** |
+
+Falta de la fase 9E: **9Ec** (el gating del contenido sin vestuario, D27, ahora con el ítem de
+`cobertura.js`) y **9Ed** (los `Math.random()` de `index.html`, las 3 constantes muertas, los 13
+comentarios que citan `TRASPASO.md`).
+
 ### 2026-09-02 — Auditoría del simulador + limpieza de documentación
 
 Sin cambios en `/src`. Dos entregables: una auditoría del estado real del motor, medida corriendo
 y no leyendo, y la poda de la documentación que ya se contradecía con el código.
 
-**Lo que está bien**, verificado corriendo: los **38 checks** de `validate.js` pasan (6m47s),
+**Lo que está bien**, verificado corriendo: los **83 checks** de `validate.js` pasan (6m47s),
 incluido el determinismo end-to-end. Dentro de `/src` no hay un solo `Math.random(` ni un
 `document.` fuera de `src/ui/`. El motor de eventos sigue sin una línea de lógica por id de
 evento: 97 eventos / **196 opciones** contra un objetivo de 150. `calcularContexto()` sigue pura y
@@ -65,7 +187,7 @@ El número real es **35,3%**. La métrica no estaba mal calculada: estaba mirand
 mercado (`quedarLibre`), y la vía dominante hacia "sin equipo" es la disolución de un tier 3, que
 no pasa por ahí. La entrada vieja se deja como está — es historia; la corrección vive acá.
 
-**Por qué 38 checks en verde convivieron cuatro commits con un bug que le saca el juego al 30% de
+**Por qué 83 checks en verde convivieron cuatro commits con un bug que le saca el juego al 30% de
 las partidas.** No fue mala suerte, fueron tres ciegos alineados: `cobertura.js` saltea los momentos
 marcados `pendiente`, y el que este bug produce (`sin_equipo`) está marcado así desde la fase 7;
 `simulate.js` solo reporta métricas de la etapa amateur, así que 1.500 carreras no ven nada

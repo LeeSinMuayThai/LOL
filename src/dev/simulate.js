@@ -3,15 +3,47 @@ import { createInitialState } from '../core/state.js';
 import { avanzarSplitAuto } from '../core/pipeline.js';
 import { ESTRATEGIAS, NOMBRES_ESTRATEGIA } from './estrategias.js';
 
+// Fase 9E: además del estado final, la carrera se observa SPLIT A SPLIT.
+//
+// Hasta acá simulate.js solo miraba el estado final, y por eso 1.500 carreras
+// no vieron nunca el bug D25: una racha de 57 splits sin equipo es invisible
+// desde el final, que solo dice "sin equipo" una vez. `carrera` es lo que
+// pasó en el medio — es la mitad de la partida que el reporte no miraba.
 function correrCarrera(seed, splits, responder) {
   const rng = mulberry32(seed);
   let state = createInitialState(seed, rng);
 
+  const carrera = { splitsPro: 0, splitsConEquipo: 0, maxRachaSinEquipo: 0, tierMaximo: null };
+  let rachaSinEquipo = 0;
+
   for (let i = 0; i < splits && !state.terminado; i += 1) {
     state = avanzarSplitAuto(state, rng, responder ?? undefined).state;
+
+    if (state.phase !== 'profesional') {
+      continue;
+    }
+    carrera.splitsPro += 1;
+
+    if (state.career.currentOrg) {
+      carrera.splitsConEquipo += 1;
+      rachaSinEquipo = 0;
+    } else {
+      rachaSinEquipo += 1;
+      carrera.maxRachaSinEquipo = Math.max(carrera.maxRachaSinEquipo, rachaSinEquipo);
+    }
+
+    // El tier es 1 arriba y 3 abajo: el máximo alcanzado es el MENOR número.
+    if (state.career.tier !== null && (carrera.tierMaximo === null || state.career.tier < carrera.tierMaximo)) {
+      carrera.tierMaximo = state.career.tier;
+    }
   }
 
-  return state;
+  // Varada: profesional, sin org y sin tier. Ningún sistema la puede rescatar
+  // —`competitivo` se guarda detrás del tier, `mercado` detrás de la liga—,
+  // así que no es "estar libre": es no tener juego.
+  carrera.varada = state.phase === 'profesional' && !state.career.currentOrg && state.career.tier === null;
+
+  return { state, carrera };
 }
 
 function reporteDetallado(state, seed) {
@@ -69,11 +101,14 @@ function porcentajes(mapa, total) {
 function correrLote(corridas, splits, estrategia) {
   const responder = ESTRATEGIAS[estrategia];
   const resultados = [];
+  const carreras = [];
   let crashes = 0;
 
   for (let seed = 1; seed <= corridas; seed += 1) {
     try {
-      resultados.push(correrCarrera(seed, splits, responder));
+      const { state, carrera } = correrCarrera(seed, splits, responder);
+      resultados.push(state);
+      carreras.push(carrera);
     } catch (error) {
       crashes += 1;
       console.error(`Crash en seed ${seed} (${estrategia}): ${error.message}`);
@@ -91,6 +126,22 @@ function correrLote(corridas, splits, estrategia) {
     finales: porcentajes(conteo(resultados, (r) => r.finAnticipado ?? (r.phase === 'amateur' ? 'sigue_amateur' : 'en_carrera')), total),
     llegaronAPro: `${llegaronAPro.length} (${((llegaronAPro.length / total) * 100).toFixed(1)}%)`,
     splitFichaje: estadisticas(llegaronAPro.map((r) => r.splitFichaje)),
+    // Fase 9E: la mitad de la partida que este reporte no miraba. Sin esto,
+    // 1.500 carreras podían salir "sanas" con el 47,5% de los splits
+    // profesionales jugándose sin equipo (bug D25).
+    carrera: (() => {
+      const conPro = carreras.filter((c) => c.splitsPro > 0);
+      const splitsPro = conPro.reduce((s, c) => s + c.splitsPro, 0);
+      const conEquipo = conPro.reduce((s, c) => s + c.splitsConEquipo, 0);
+      const varadas = carreras.filter((c) => c.varada).length;
+
+      return {
+        splitsProConEquipo: splitsPro > 0 ? `${((conEquipo / splitsPro) * 100).toFixed(1)}%` : 'sin splits pro',
+        varadas: `${varadas} (${((varadas / total) * 100).toFixed(1)}%)`,
+        maxRachaSinEquipo: estadisticas(conPro.map((c) => c.maxRachaSinEquipo)),
+        tierMaximo: porcentajes(conteo(carreras, (c) => (c.tierMaximo === null ? 'nunca_fichado' : `tier${c.tierMaximo}`)), total)
+      };
+    })(),
     secundario: porcentajes(conteo(resultados, (r) => r.flags.secundario ?? 'sin_congelar'), total),
     salidas: {
       nocturno: resultados.filter((r) => r.flags.nocturno).length,
@@ -117,7 +168,8 @@ if (!(estrategia in ESTRATEGIAS) && estrategia !== 'todas') {
 
 if (corridas <= 1) {
   const seed = 42;
-  console.log(JSON.stringify(reporteDetallado(correrCarrera(seed, splits, ESTRATEGIAS[estrategia]), seed), null, 2));
+  const { state, carrera } = correrCarrera(seed, splits, ESTRATEGIAS[estrategia]);
+  console.log(JSON.stringify({ ...reporteDetallado(state, seed), carrera }, null, 2));
 } else if (estrategia === 'todas') {
   console.log(JSON.stringify(NOMBRES_ESTRATEGIA.map((nombre) => correrLote(corridas, splits, nombre)), null, 2));
 } else {

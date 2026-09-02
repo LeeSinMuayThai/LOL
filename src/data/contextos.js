@@ -111,7 +111,15 @@ export const MOMENTOS = [
     label: 'Firmado, pero sin edad para debutar',
     patron: { marcas: ['espera_edad_minima'] } },
 
-  { id: 'sin_equipo', prioridad: 85, pendiente: 'paso11',
+  // Fase 9E: deja de estar `pendiente`. Lo estaba desde la fase 7, cuando
+  // "sin equipo" todavía no lo producía ningún sistema — pero la fase 9 le
+  // dio dos puertas (el mercado que deja de llamarte, y la disolución de un
+  // tier 3) y nadie sacó la marca. Consecuencia: `cobertura.js` saltea los
+  // pendientes, así que reportaba "sin huecos" sobre el momento MÁS
+  // frecuente del juego mientras el bug D25 lo volvía el estado dominante.
+  // Un momento alcanzable marcado como pendiente es una herramienta mirando
+  // para otro lado.
+  { id: 'sin_equipo', prioridad: 85,
     label: 'Sin equipo',
     patron: { nivel: ['libre'] } },
 
