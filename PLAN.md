@@ -31,7 +31,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **11** | El año: calendario, la nota de la temporada, el archirrival | ⬜ |
 | **12** | La jerarquía de la decisión: categorías, rareza, consecuencia previa, el dado | ⬜ |
 | **13** | Contenido a escala (150+ opciones) | ⬜ |
-| **P** | Publicar: guardado en el navegador, seed en la URL, el repo y el host | ⬜ (independiente de las demás; P.1 y P.2 antes de difundirlo) |
+| **P** | Publicar: build, guardado en el navegador, seed en la URL, el repo y el host | 🔶 **build y pre-flight hechos** (P.7, P.10) · D28 cerrada · falta **P.2, el guardado**, que es el último bloqueante |
 
 > **Por qué estas tres fases se insertaron antes del mercado.** Jugando el juego con las cuatro
 > fases hechas aparecieron cuatro defectos medibles: la temporada regular se resuelve con una
@@ -2480,14 +2480,16 @@ no es el hosting, son las tres cosas de P.1.
 1. **No se guarda nada, y la sesión objetivo son 25-40 minutos.** Es el bloqueante real: en
    `localhost` uno no recarga; un desconocido sí, y pierde dos horas de carrera. Se resuelve en P.2
    **sin backend**.
-2. **Los 5 `Math.random()` de `index.html`** (D28, asignada a 9Ed). En público pesa el doble que en
-   local: rompe la regla invariable 1, y sin determinismo un link con seed no reproduce nada — o
-   sea, mata P.3 antes de empezar.
-3. **`with { type: 'json' }` en 32 imports.** Chrome/Edge desde la 123, Safari desde la 17.2,
-   Firefox fue el último en sumarse (2025). En un navegador anterior esto **no degrada**: es un
-   error de sintaxis y el juego no arranca. Hay que decidir explícitamente: exigir navegador
-   moderno y decirlo en pantalla, o cargar los JSON con `fetch` en un módulo de carga. Verificar
-   abriéndolo, no de memoria.
+2. ~~**Los 5 `Math.random()` de `index.html`**~~ (D28) — **cerrado.** Pasaron a `rngUi`, un stream
+   propio sembrado con `mulberry32((seed ^ 0x9E3779B9) >>> 0)`. Se le dio stream **separado** del
+   `rng` del motor a propósito: si comieran del principal, el navegador (que juega los minijuegos)
+   y `simulate.js` (que resuelve por `resolverAuto` y nunca los monta) divergirían para la misma
+   seed — justo lo contrario de lo que P.3 necesita. Así el mundo sale idéntico de los dos lados,
+   los minijuegos son deterministas, y **no se corre el stream** (trampa T1): las seeds anteriores
+   siguen reproduciendo su carrera.
+3. ~~**`with { type: 'json' }` en 32 imports**~~ — **cerrado por el build** (P.10), que los inlinea.
+   `dist/` no lleva una sola declaración de import attributes y el piso de navegador baja de
+   "Chrome 123 / Safari 17.2 / Firefox 138" a "soporta ES modules", que es 2018.
 
 `file://` ya está cubierto: `index.html` detecta `location.protocol` y muestra un mensaje que
 explica que hay que servirlo. No hace falta tocarlo.
@@ -2549,26 +2551,38 @@ muestra una tarjeta vacía. Falta:
 
 ## P.6 — El host
 
-**GitHub Pages** es lo más directo estando ya en git:
+**Decisión tomada (2026-09-02): el repo queda privado y el sitio es público.** Publicar el repo
+publicaba también `PLAN.md`, `PROGRESO.md`, `CONCEPTO.md`, `DISENO.md` y `CLAUDE.md` — todo el
+diseño, las mediciones de balance y el razonamiento interno. Eso descarta **GitHub Pages**, que
+desde un repo privado exige plan pago.
 
-```bash
-git remote add origin <url>
-git push -u origin master
-# Settings → Pages → Source: Deploy from a branch → master / (root)
-```
+**Cloudflare Pages o Netlify**, que sí despliegan desde un repo privado en el plan gratuito:
 
-Netlify, Cloudflare Pages o Vercel funcionan arrastrando la carpeta. **Sin build command y sin
-output directory**: no hay build. `src/dev/` (148 KB) y `server.js` se pueden excluir del deploy,
-pero tampoco molestan.
+| Campo | Valor |
+|---|---|
+| Build command | `npm run build` |
+| Output directory | `dist` |
+| Node version | cualquiera ≥ 18 |
+| Variables de entorno | ninguna |
 
-## P.7 — El pre-flight, reproducible (`src/dev/preflight.js`, nuevo)
+No hay dependencias que instalar: `npm ci` sobre un `package.json` sin `dependencies` no hace nada
+y el build es Node puro.
 
-El chequeo de capitalización se corrió una vez a mano y encontró 0 problemas sobre 274 imports.
-Un chequeo que no se puede repetir no sirve: se guarda como script y se corre antes de cada deploy.
+**Sin conectar el repo**: `npm run build` y arrastrar `dist/` a Netlify Drop o a Cloudflare Pages
+("Direct Upload"). Es el camino de un minuto para que lo pruebe alguien.
 
-Verifica: cada import relativo resuelve con la capitalización exacta · no hay archivos con `_`
-inicial · no hay `Math.random(` fuera de `src/dev` (extiende `guards.js` a `.html`, que es la mitad
-de 9Ed) · todo `.json` importado existe y parsea.
+## P.7 — El pre-flight ✅
+
+Hecho, y no como script aparte: **vive dentro de `src/dev/build.js`** y corre en cada build, sobre
+`dist/` — que es lo que realmente se sube, no sobre las fuentes. El build falla con exit 1 si algo
+no da.
+
+Verifica: cada import relativo resuelve con la capitalización exacta (Windows no distingue, el host
+Linux sí) · no quedó ningún import attribute sin reescribir · no hay llamadas al azar del navegador
+· ningún archivo empieza con `_` (Jekyll los ignora) · todo `.json` parsea.
+
+Queda pendiente de 9Ed extender `guards.js` a `.html`: el build ya cubre el camino del deploy, pero
+el guard del repo sigue mirando solo `.js` dentro de `/src`.
 
 ## P.8 — Verificación end-to-end
 
@@ -2577,6 +2591,27 @@ de 9Ed) · todo `.json` importado existe y parsea.
 3. Abrir el mismo `?seed=N` en dos navegadores distintos y confirmar que la carrera es idéntica.
 4. Consola sin errores en toda la partida (ya se hizo así en la fase 8b, con Chrome headless
    vía CDP).
+
+## P.10 — El build ✅ (`src/dev/build.js`)
+
+`npm run build` → `dist/`, **576 KB**. Sin bundler y sin una sola dependencia: el proyecto no tiene
+ninguna y esta fase no es excusa para agregar la primera.
+
+1. **Copia** `index.html` + `src/core`, `src/data`, `src/systems`, `src/ui`. Deja afuera
+   `src/dev/` (148 KB), `server.js` y los cinco `.md`.
+2. **Inlinea los JSON**: cada `foo.json` pasa a `foo.json.js` con `export default {...}` y los 32
+   imports se reescriben, incluido el dinámico de `index.html`. Parsear cada archivo valida el JSON
+   de paso: uno roto revienta en el build y no en la pantalla del jugador.
+3. **Comprueba** `dist/` (P.7).
+4. **Verifica que el build no cambió el juego**: corre 12 seeds × 30 splits contra `src/` y contra
+   `dist/` y compara la huella de cada carrera. Una transformación de código que rompe en silencio
+   produce el peor bug posible —el juego local anda y el publicado no—, así que no se confía en que
+   salió bien: se comprueba. Si una sola carrera difiere, el build falla.
+
+**Verificación real hecha** (2026-09-02): `dist/` servido y cargado en Chrome headless. **87
+peticiones, 87 con 200**; el único 404 es `/favicon.ico` (P.4). Los 5 roles y el grid de campeones
+renderizan, y los 27 módulos JSON inlineados cargan. El módulo de errores de `index.html` no se
+disparó.
 
 ## P.9 — Qué queda explícitamente afuera
 
@@ -2632,7 +2667,7 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D25 | ~~**La carrera se vara para siempre tras disolverse un tier 3.**~~ — resuelto en 9Ea+b: `disolverEquipo` conserva `tier: 3`. Regresión de la fase 9b (`9a163b6`), que guardó el re-fichaje detrás de `career.tier === 3` mientras `disolverEquipo` ponía `tier: null` — la condición nunca era cierta en el único caso para el que se escribió. Medido antes: **30,7% de carreras varadas**, **47,5% de los splits profesionales sin equipo**, racha máxima **57 splits**. Después: **0 varadas**, racha máxima **1 split**, **98,1%** de los splits pro con equipo | ✅ 9E |
 | D26 | **El agujero de medición que dejó pasar D25.** Tres herramientas mirando para otro lado a la vez: (a) `simulate.js` no tenía **ningún** KPI posterior al fichaje, así que 1.500 carreras no veían una racha de 57 splits sin equipo — desde el estado final eso se lee como un solo split libre (**resuelto en 9Ea+b**: bloque `carrera` con recorrido split a split); (b) `validate.js` no tenía ningún check sobre el estado "sin equipo" (**resuelto**: checks 39 y 40); (c) **`cobertura.js` mide cantidad, no pertinencia**: la celda `sin_equipo` reporta **58 eventos** —bien por encima del mínimo— y por eso sale "sin huecos", pero esos 58 son exactamente el contenido mal gateado de D27. Cuanto más contenido sin gatear se escribe, más sana se ve una celda inapropiada. **(c) sigue abierto, va en 9Ec.** Por eso la fase 9d cerró reportando "carreras con al menos un split libre: 0,3%" cuando el real es **35,3%**: esa métrica miraba solo la puerta del mercado. Misma familia que la trampa T5 — la herramienta no falla, mira para otro lado | 🔶 **9E (a y b hechas)** |
 | D27 | **Contenido de vestuario disparando sin vestuario.** Ningún evento declara ni excluye `nivel: ["libre"]`, así que el catálogo tier-agnóstico cae igual sin equipo. Observado en la traza de la seed 7 ya varado: "avisarle al manager en privado" dando **Arraigo +2** a una org que no existe (y perdiéndose, porque `cerrarFila` es no-op sin fila abierta), y "en el draft no te dieron tu pick" seis veces sin equipo ni serie — `campeones.js` gatea el draft por `phase`, nunca por `career.currentOrg`. Rompe el principio rector 1 al pie de la letra | **9E** |
-| D28 | **`Math.random()` × 5 en `index.html`** (zona del Smite, espera de "La Llamada", posición de los blancos). Viola la regla invariable 1 y rompe el determinismo jugando a mano: esos valores deciden el `resultado` del minijuego, que entra al motor y cambia la serie. `guards.js` no los ve porque solo escanea `.js` dentro de `/src` — el guard tiene que mirar `.html` también | **9E** (prerrequisito de **P**: sin determinismo, un link con seed no reproduce nada) |
+| D28 | ~~**`Math.random()` × 5 en `index.html`**~~ — resuelto en la fase P: pasaron a `rngUi`, un stream propio sembrado desde la seed (`mulberry32((seed ^ 0x9E3779B9) >>> 0)`), separado del `rng` del motor para no correr el stream (T1) ni desincronizar el navegador de `simulate.js`. `src/dev/build.js` falla el build si vuelve a aparecer una llamada al azar del navegador. **Sigue pendiente de 9Ed** extender `guards.js` a `.html` | ✅ **P** (falta el guard, 9Ed) |
 | D29 | **El eje `residencia` está muerto entero.** `contexto.js` escribe `residencia: 'local'` fijo. En cadena: el momento `import_recien_llegado` es inalcanzable por construcción, `BALANCE.mercado.margenImport` no lo lee nadie (pese a que `salarios.js` afirma que "lo evalúa `mercado.js`"), `contrato.tipo: 'import'` nunca se produce, y `mercado.js` solo genera ofertas de tu liga actual — no existe la transferencia entre regiones que prometen `CONCEPTO` §6 y `DISENO` §3.7 | **9M** |
 | D30 | **Valores de eje que la fase 9 debía llenar y no llenó.** `calcularMercado()` devuelve solo `contrato_firme`/`sin_contrato`; `ultimo_ano` y `sin_renovacion` están declarados en `EJES` y nunca se calculan, pese a que `contrato.aniosRestantes` ya existe y es exactamente el dato que hace falta. `etapa: 'declive'` tampoco se computa | **9M** / 10 |
 | D31 | **Constantes muertas en `balance.js`**: `mercado.margenImport` (ver D29), `amateur.autoProbRobar`, `rendimiento.ruidoRival` (resto de la fase 5, cuando `temporada.js` le sacó a `rendimiento.js` la resolución de la temporada) y `competitivo.margenEdadMinima`. Son las únicas 4 de ~250 claves; se borran o se usan, pero no se dejan mintiendo | 9E (las 3 sin D29) |

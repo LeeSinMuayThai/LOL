@@ -33,6 +33,81 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-02 — Fase P (parcial): el build, y D28 cerrada
+
+Primer commit de la fase P. Sale de un pedido concreto: *"dejar esto privado, publicarlo en un
+hosting después, buildea lo necesario pero para que salga todo bien."*
+
+#### El repo queda privado, y eso cambia el host
+
+Al pushear a GitHub se publicaron también `PLAN.md` (2.828 líneas), `PROGRESO.md`, `CONCEPTO.md`,
+`DISENO.md` y `CLAUDE.md`: todo el diseño, las mediciones de balance y el razonamiento interno del
+proyecto. Decisión del usuario: **el repo va privado y el sitio va público.**
+
+Eso descarta GitHub Pages, que desde un repo privado exige plan pago. El destino pasa a ser
+**Cloudflare Pages o Netlify** (build `npm run build`, output `dist`), que sí despliegan desde un
+repo privado en el plan gratuito. `PLAN.md` §P.6 reescrito.
+
+#### `src/dev/build.js` (nuevo) — `npm run build` → `dist/`, 576 KB
+
+Sin bundler y **sin una sola dependencia**: el proyecto no tiene ninguna y esta fase no era excusa
+para agregar la primera.
+
+1. **Copia** `index.html` + `src/core`, `src/data`, `src/systems`, `src/ui`. Deja afuera
+   `src/dev/` (148 KB), `server.js` y los cinco `.md`.
+2. **Inlinea los JSON.** Los 32 imports con `with { type: 'json' }` necesitan Chrome 123+ /
+   Safari 17.2+ / Firefox 138+, y en un navegador anterior no degradan: es un error de sintaxis, la
+   pantalla queda en blanco y no hay nada en el log. Cada `foo.json` pasa a `foo.json.js` con
+   `export default {...}`. **`dist/` no lleva una sola declaración de import attributes** y el piso
+   de navegador baja a "soporta ES modules", que es 2018. Parsear cada archivo valida el JSON de
+   paso.
+3. **Comprueba `dist/`** — capitalización exacta de cada import (Windows no distingue, el host
+   Linux sí), cero import attributes sin reescribir, cero llamadas al azar del navegador, ningún
+   archivo con `_` inicial. Exit 1 si algo falla.
+4. **Verifica que el build no cambió el juego**: 12 seeds × 30 splits corridas contra `src/` y
+   contra `dist/`, comparando la huella de cada carrera. Una transformación de código que rompe en
+   silencio da el peor bug posible —el local anda, el publicado no—, así que no se confía: se
+   comprueba. **Las 12 carreras salieron idénticas.**
+
+**El check funcionó a la primera vez que corrió**: el build falló señalando las 5 llamadas al azar
+nativo de `index.html`. Era exactamente lo que tenía que atrapar.
+
+Y después se atrapó a sí mismo. `validate.js` pasó a **82 OK y 1 FAIL**: *"Sin aleatoriedad nativa
+fuera del RNG inyectado — encontrado en `src/dev/build.js`"*. El literal estaba en el **mensaje de
+error del propio check**. Se resolvió con el mismo idioma que ya usa `guards.js`
+(`const AZAR_NATIVO = 'Math' + '.random(';`), que existe exactamente por este motivo.
+
+Verificado que el check **falla cuando debe** (regla de proceso 7, trampa T5): con una llamada al
+azar nativo inyectada a mano en `index.html`, el build corta con exit 1 y la señala; restaurado el
+archivo, vuelve a verde.
+
+#### D28 cerrada — los 5 `Math.random()` de `index.html`
+
+`PLAN.md` 9Ed decía "pasar el `rng` a los cinco `montar*`". **Se hizo distinto, a propósito**: los
+minijuegos reciben `rngUi`, un stream **propio**, sembrado con
+`mulberry32((seed ^ 0x9E3779B9) >>> 0)`.
+
+Comer del stream principal habría hecho divergir al navegador —que juega los minijuegos— de
+`simulate.js`, que resuelve por `resolverAuto` y nunca los monta: la misma seed daría dos carreras
+distintas según dónde corriera, que es lo contrario de lo que la seed compartible (P.3) necesita.
+Con stream separado el mundo sale idéntico de los dos lados, los minijuegos son deterministas, y
+**no se corre el stream** (trampa T1): **las seeds anteriores siguen reproduciendo su carrera.**
+
+#### Verificación en navegador de verdad
+
+`dist/` servido y cargado en Chrome headless: **87 peticiones, 87 con 200.** El único 404 es
+`/favicon.ico` (P.4, pendiente). Los 5 roles y el grid de campeones renderizan y los 27 módulos
+JSON inlineados cargan; el manejador de errores de `index.html` no se disparó.
+
+#### Lo que falta para publicar
+
+**Un solo bloqueante: P.2, el guardado** (D36). Sin él, un refresh borra una carrera de 25-40
+minutos. Después: la seed en la URL (P.3), los meta tags y el favicon (P.4), y el `README`/`LICENSE`
+(P.5).
+
+**Verificación**: `npm run build` OK · `node src/dev/validate.js` → **83 checks OK, 0 fallos**.
+
+
 ### 2026-09-02 — Se planean dos fases: 9M (el mercado de pases) y P (publicar)
 
 Commit de documentación, **cero cambios en `/src`**. Existe porque `CLAUDE.md` es explícito: *"Nada

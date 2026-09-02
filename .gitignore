@@ -1,0 +1,11 @@
+# Salida de `npm run build` (src/dev/build.js). Se regenera y se sube al host;
+# no se versiona.
+dist/
+
+# El proyecto no tiene una sola dependencia (package.json no declara ninguna),
+# asi que un lockfile es ruido: no fija nada.
+package-lock.json
+node_modules/
+
+# Config local de Claude Code, por maquina.
+.claude/settings.local.json

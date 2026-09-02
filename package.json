@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "simulate": "node src/dev/simulate.js",
+    "start": "node server.js",
+    "build": "node src/dev/build.js",
     "validate": "node src/dev/validate.js",
-    "start": "node server.js"
+    "simulate": "node src/dev/simulate.js"
   }
 }

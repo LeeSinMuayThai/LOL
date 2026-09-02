@@ -793,6 +793,14 @@
       let pantallaInicio = null;
       let estado = null;
       let rng = null;
+      // Regla invariable 1: los minijuegos tampoco pueden usar el azar del
+      // navegador. Stream PROPIO, sembrado desde la misma seed pero separado del
+      // rng del motor: si comieran del stream principal, el navegador (que juega
+      // los minijuegos) y `simulate.js` (que resuelve por `resolverAuto` y nunca
+      // los monta) divergirian para la misma seed, y una seed compartida dejaria
+      // de reproducir la carrera. Asi el mundo sale igual en los dos lados y los
+      // minijuegos siguen siendo deterministas (trampa T1).
+      let rngUi = null;
 
       async function cargarModulos() {
         if (!modulos) {
@@ -835,7 +843,7 @@
 
       function montarRobarBaron(container, state, onDone) {
         const anchoZona = 14 + (state.player.stats.mecanica / 100) * 18;
-        const centroZona = 25 + Math.random() * 50;
+        const centroZona = 25 + rngUi() * 50;
         container.innerHTML =
           '<div class="minijuego-barra"><div class="minijuego-zona"></div><div class="minijuego-marcador"></div></div>' +
           '<button type="button" class="minijuego-btn">¡Smite ya!</button>';
@@ -879,7 +887,7 @@
           listo = true;
           inicio = performance.now();
           aviso.textContent = '¡AHORA!';
-        }, 900 + Math.random() * 2200);
+        }, 900 + rngUi() * 2200);
 
         boton.addEventListener('click', () => {
           if (!listo) {
@@ -936,7 +944,7 @@
       }
 
       function montarRuedaDePrensa(container, state, onDone) {
-        const objetivo = Math.random() * 100;
+        const objetivo = rngUi() * 100;
         container.innerHTML =
           '<input type="range" min="0" max="100" value="50" class="minijuego-slider" />' +
           '<div class="minijuego-slider-labels"><span>Humilde</span><span>Desafiante</span></div>' +
@@ -970,8 +978,8 @@
           const blanco = document.createElement('button');
           blanco.type = 'button';
           blanco.className = 'minijuego-blanco';
-          blanco.style.left = (Math.random() * 85) + '%';
-          blanco.style.top = (Math.random() * 75) + '%';
+          blanco.style.left = (rngUi() * 85) + '%';
+          blanco.style.top = (rngUi() * 75) + '%';
 
           const vencido = setTimeout(() => {
             blanco.remove();
@@ -1126,6 +1134,7 @@
           const seed = leerSeed();
           seedInput.value = String(seed);
           rng = mulberry32(seed);
+          rngUi = mulberry32((seed ^ 0x9E3779B9) >>> 0);
           // La elección de la pantalla de inicio entra como tercer argumento.
           // Si el jugador no eligió nada (camino headless), `createInitialState`
           // sortea todo de la seed exactamente como antes.
