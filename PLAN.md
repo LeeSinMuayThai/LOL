@@ -26,10 +26,12 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **8** | La ficha: el registro que acumula + la tarjeta permanente + `src/ui/` | ✅ ver `PROGRESO.md` |
 | **9** | El mercado: ofertas, contratos, salarios, la trampa del equipo grande visible | ✅ ver `PROGRESO.md` |
 | **9E** | El varado: la carrera vuelve a tener juego después del primer equipo | 🔶 **9Ea+b hechas** (el bug, cerrado) · faltan 9Ec y 9Ed |
+| **9M** | **El mercado de pases**: el mundo se puebla de jugadores, la demanda existe, alguien compite por tu asiento, la escalera deja de ser un dado | ⬜ **próxima** |
 | **10** | El final: retiro emergente + la tarjeta de legado | ⬜ |
 | **11** | El año: calendario, la nota de la temporada, el archirrival | ⬜ |
 | **12** | La jerarquía de la decisión: categorías, rareza, consecuencia previa, el dado | ⬜ |
 | **13** | Contenido a escala (150+ opciones) | ⬜ |
+| **P** | Publicar: guardado en el navegador, seed en la URL, el repo y el host | ⬜ (independiente de las demás; P.1 y P.2 antes de difundirlo) |
 
 > **Por qué estas tres fases se insertaron antes del mercado.** Jugando el juego con las cuatro
 > fases hechas aparecieron cuatro defectos medibles: la temporada regular se resuelve con una
@@ -54,6 +56,18 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 > diagnóstico completo, con evidencia imagen-por-imagen y línea-de-código, vive en el historial de
 > `PROGRESO.md` (entrada "Auditoría contra El Ídolo del Potrero"). **Regla de proceso 12, nueva:
 > ninguna fase cierra sin su pantalla** — es la lección de las fases 0-7.
+>
+> **Por qué la 9M se insertó entre el mercado y el final (2026-09-02).** Midiendo el juego con la
+> fase 9 cerrada: el mercado se abre **3,05 veces por carrera**, deja **3,80 pretemporadas en
+> silencio**, y en 120 carreras nadie pisó más de **2 ligas** (media 1,48). El **74%** termina en
+> tier 1 y **nadie** cae de vuelta a tier 2, porque el ascenso es `chance(0.12 + jerarquia × 0.45)`
+> y no existe el descenso. La causa es la misma en los tres casos: **el mercado no tiene un mundo
+> del otro lado** — una org es `{ nombre, liga, fuerza }`, los compañeros se inventan de cero cada
+> vez que cambiás de equipo, y nadie más compite por tu asiento. La fase 9M puebla ese mundo y
+> convierte la oferta en una consecuencia legible en vez de un dado. Va **antes de la 10** por
+> dependencia dura, la misma que ordenó las fases 8-11: la 10 define el retiro como emergente
+> ("te retirás cuando el mercado deja de llamarte") y con el mercado de hoy eso vuelve a ser un
+> dado. Se hace bien a la primera, o se hace dos veces.
 
 ---
 
@@ -71,6 +85,9 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **Ranked** | Escalera visible completa. **Sin decay**: *"si sos pro player vas a tener siempre que jugar soloq así que decaer no tendría mucho sentido"* |
 | **Seed vs. elección** | *"lo podemos ver después"* → **parkeado**. Mientras tanto: el mundo sale de la seed, tu identidad la elegís vos |
 | **La plata** | No es gastable (`CONCEPTO` §11: no es un manager). Es métrica de la tarjeta final, gate de eventos y peso en las ofertas |
+| **El mundo del mercado** (2026-09-02) | **Rosters NPC reales**, no un modelo de demanda liviano. Cada org de tier 1 y de tu tier 2 tiene 5 jugadores con edad, nivel, contrato y carrera propia: envejecen, se retiran, se mueven. Es lo que hace real al mercado, al vestuario y al retiro de una sola vez |
+| **Orden mercado / retiro** (2026-09-02) | **El mercado primero.** La fase 10 define el retiro como emergente ("te retirás cuando el mercado deja de llamarte"); con el mercado de hoy eso vuelve a ser un dado. Se hace bien a la primera o se hace dos veces |
+| **La escalera** (2026-09-02) | **Sí a reescribirla.** El ascenso deja de sortearse: subís porque un club tiene un hueco en tu rol y te puede pagar. Aparece el descenso de tier 1 (D16) y los cupos de import y la residencia empiezan a existir (D29). Se asume el corrimiento del stream de RNG (D35) |
 
 ---
 
@@ -1770,6 +1787,281 @@ chico en uno o dos splits y la escalera de la fase 3 sigue su curso.
 
 ---
 
+# FASE 9M — EL MERCADO DE PASES
+
+> La fase 9 construyó **el contrato**. Esta construye **el mercado**: el mundo se puebla de
+> jugadores con carrera propia, las orgs pasan a tener huecos y presupuesto, alguien más compite por
+> tu asiento, y la escalera competitiva deja de ser un dado. Va **antes de la fase 10** porque el
+> retiro que esa fase promete ("te retirás cuando el mercado deja de llamarte") solo es honesto si
+> existe un mercado que pueda dejar de llamarte.
+
+## 9M.0 — El diagnóstico, medido
+
+Sonda propia sobre 120 carreras × 45 splits (más 60 × 45 para el conteo de eventos), 2026-09-02:
+
+| Síntoma | Medido | Qué significa |
+|---|---|---|
+| Fichajes con elección real | **3,05 por carrera** | El mercado se abre 3 veces en 15 años de juego |
+| Pretemporadas con el mercado en silencio | **3,80 por carrera** | *"Te queda un año de contrato"* y nada más |
+| Ligas distintas pisadas por carrera | **media 1,48 · máximo 2** | Nadie, en 120 carreras, jugó en 3 ligas |
+| Tier al cierre | **89 de 120 en tier 1 · 0 en tier 2** | La escalera es una cinta de un solo sentido |
+| Carreras que terminan en 45 splits | **32%** | El 68% sigue apretando botones a los 30 (D2) |
+| Decisiones por carrera | **162**, top-10 familias ≈ **40%** | La repetición vive en `events/partido/` |
+
+Y la causa, leída en el código:
+
+1. **El jugador es un pasajero.** El ascenso tier2→tier1 es `chance(0.12 + jerarquia/100 × 0.45)`
+   (`systems/competitivo.js:124`). Ganar la liga no cambia nada; perderla tampoco. La forma de la
+   carrera la decide un dado sobre una stat, no los resultados.
+2. **El mundo es de cartón.** Una org es literalmente `{ nombre, liga, fuerza }`
+   (`core/mundo.js:57-80`) — sin presupuesto, sin plantel, sin historia. Los compañeros son
+   `{ handle, role, nivel }` **regenerados de cero cada vez que cambiás de equipo**
+   (`systems/roster.js:18`): sin edad, sin contrato, sin memoria. Los 5 rivales de generación
+   tienen `puntaje: 0` y `desenlace: null` y **nadie los escribe nunca** (D8). No existe un solo
+   jugador NPC con carrera propia en todo el repo.
+3. **El mercado no tiene demanda.** `generarOfertasParaLiga` tira `roll(0, techo)` y reparte entre
+   las orgs de **tu liga solamente**, pesado por `org.fuerza` (`systems/mercado.js:138-167`). Nadie
+   compite por tu asiento; nadie te puede echar; no se puede negociar, ni esperar, ni rechazar todo.
+   `contrato.clausula` está en el modelo y **siempre vale `null`**; `cupoImports`,
+   `minimoResidentes` y `margenImport` están en los datos y **no los lee nadie**.
+
+Deuda que esta fase absorbe: **D8** (a medias), **D16**, **D17**, **D29**, **D30**, **D31** (la
+mitad de `margenImport`).
+
+## 9M.1 — Commits
+
+| # | Commit | Contenido |
+|---|---|---|
+| 9Ma | `fase 9Ma: el mundo tiene gente` | 9M.2 |
+| 9Mb | `fase 9Mb: la demanda existe` | 9M.3 |
+| 9Mc | `fase 9Mc: alguien mas quiere tu asiento` | 9M.4 |
+| 9Md | `fase 9Md: la escalera deja de ser un dado` | 9M.5 |
+| 9Me | `fase 9Me: negociar, no aceptar` | 9M.6 |
+| 9Mf | `fase 9Mf: traspasos a mitad de contrato` | 9M.7 |
+| 9Mg | `fase 9Mg: la pantalla del mercado` | 9M.8 |
+| 9Mh | `fase 9Mh: calibrar el mercado` | solo constantes |
+
+**Prerrequisito**: cerrar 9Ec y 9Ed primero. 9Ed en particular — los 5 `Math.random()` de
+`index.html` rompen el determinismo jugando a mano, que es exactamente cómo hay que verificar una
+pantalla de mercado (regla de proceso 12).
+
+## 9M.2 — El mundo tiene gente
+
+**Archivos**: `src/core/plantel.js` (nuevo, puro) · `src/systems/plantel.js` (nuevo, una línea en
+`ETAPAS_SPLIT` de `systems/registro.js:20`) · `src/core/mundo.js` · `src/systems/roster.js`.
+
+`state.mundo.planteles = { [orgNombre]: { top, jungla, mid, adc, support } }`, cada casilla:
+
+```js
+{ handle, role, edad, regionId, nivel, potencial, formaCarrera, edadPico,
+  contrato: { anios, salarioAnualUSD },
+  splitsEnRegion: { KR: 0, CN: 0, ... },
+  rivalDeGeneracion: false }
+```
+
+Se genera **una sola vez** en `generarMundo`, en posición fija del stream (después de
+`generarLigas`, antes de `generarRivales` — trampa T1). Reusa lo que ya existe: `generarHandle`
+(`core/mundo.js:27`), `BALANCE.formasCarrera`, `nivelDeCurva` (`core/curvas.js`), y **la misma
+escala 0-100 que `nivelDelJugador`** de `core/ficha.js`: un NPC y vos se miden con la misma regla,
+que es lo que después deja comparar candidatos para un asiento.
+
+**El cambio que le da vida al mundo sin mover el balance**: `org.fuerza` deja de ser un valor
+sorteado y **pasa a derivarse** del promedio de nivel de su plantel, recalculado al cerrar cada
+mercado. Al generar el mundo el plantel se sortea *alrededor* del `fuerza` de hoy, así que el día 1
+la distribución agregada es idéntica y ningún consumidor (`temporada.js`, `rendimiento.js`,
+`serie.js`, `mercado.js`) cambia una línea. Desde el año 2, **un equipo que ficha bien sube de
+fuerza y te gana la liga el año que viene.**
+
+`generarCompaneros` (`systems/roster.js:18`) **deja de inventar gente** y pasa a leer
+`mundo.planteles[org]`. Ese solo cambio le da memoria al vestuario: si volvés a una org cinco años
+después, están o no están los mismos, y ahora tienen edad y contrato.
+
+Los 5 rivales de generación se generan como NPCs normales con `rivalDeGeneracion: true` y viven en
+planteles reales — **empieza a cerrar D8**; la ficha del archirrival sigue siendo fase 11.
+
+`systems/plantel.js` corre **solo en offseason** (early return sin tocar `rng`, regla 10):
+envejece, mueve `nivel` por la curva, decrementa contratos, retira al que nadie quiere y sube
+canteranos de 17-19 desde tier 2/3.
+
+**Presupuesto de cómputo, declarado por adelantado** (D32 ya duele: `validate.js` tarda 6m47s): se
+simulan en detalle las 6 ligas tier 1 (~58 orgs) más la tier 2 de tu región (~10 orgs) ≈ **340
+NPCs**. El resto de tier 2 sigue con `fuerza` escalar. Si `simulate.js 1500 60 todas` más que
+duplica su tiempo base, se recorta el alcance a tier 1.
+
+**Pantalla**: panel de plantel en la ficha — los 5 con nombre, rol, edad y años de contrato.
+
+## 9M.3 — La demanda existe (se acabó el dado)
+
+**Archivos**: `src/core/demanda.js` (nuevo, puro, sin rng) · `src/systems/mercado.js` ·
+`src/core/contexto.js` · `src/data/balance.js`.
+
+`asientosAbiertos(state, liga)` → por org y por rol hay asiento si el NPC de ese rol tiene contrato
+vencido, se retiró, o el club lo quiere reemplazar. `presupuestoDeOrg(org, liga)` acota lo que la
+org puede pagar por ese asiento, descontando lo que ya gasta en los cuatro que se quedan.
+
+`ofertaPosible(state, asiento)` devuelve **bool + el motivo**, y es donde se enciende todo lo que
+hoy está muerto en los datos:
+
+- `liga.edadMinima` — hoy solo se mira en la rama del ascenso.
+- **`cupoImports` / `minimoResidentes`** — contar cuántos no residentes quedarían en el plantel si
+  te firman. Nunca los leyó nadie.
+- **`margenImport`** — como import tenés que ser *claramente* mejor que el mejor local disponible
+  para ese asiento (`CONCEPTO` §6: "claramente mejor, no apenas mejor"). Constante muerta que pasa
+  a estar viva (mitad de D31).
+- Presupuesto ≥ tu `valorDeMercado`, y banda de nivel: una org no ficha muy por debajo de su fuerza
+  ni puede pagar muy por encima.
+
+`core/contexto.js` deja de escribir `residencia: 'local'` fijo y la calcula con
+`splitsDeResidencia`, que **ya existe** en `core/valorMercado.js:20`. Con eso el momento
+`import_recien_llegado` deja de ser inalcanzable por construcción y `contrato.tipo: 'import'` se
+produce por primera vez. **Cierra D29.**
+
+`sesgoEtario` **no se toca**: sigue decidiendo a quién prefiere el club entre dos candidatos
+parecidos. Lo que muere es `roll(0, techo)`. Una oferta deja de ser un dado y pasa a ser una
+consecuencia legible: *"Gen.G busca ADC (se les va Nyxel, 27) y te puede pagar $410k."*
+
+**No se tocan** `core/salarios.js` ni `core/valorMercado.js`: están calibrados contra la
+investigación de `CONCEPTO` §12.6 y siguen respondiendo *cuánto* paga la oferta que existe.
+
+## 9M.4 — Alguien más quiere tu asiento
+
+**Archivos**: `src/systems/mercado.js` · `src/core/demanda.js`.
+
+En la pretemporada, **antes** de mostrarte nada, el mercado del mundo se resuelve por rondas de
+arriba hacia abajo: las orgs más fuertes eligen primero y cada una toma el mejor candidato que
+puede pagar y que las cuotas permiten. Los asientos donde vos calificás quedan **congelados** hasta
+que respondas.
+
+Si rechazás todo, o esperás, el asiento se cierra con un NPC y el log lo dice con nombre:
+*"Karmine Corp firmó a Drakken (mid, 21) para el puesto que te ofrecían."*
+
+Es el cambio que convierte *"elegí una tarjeta"* en **"decidí, y el mundo siguió sin vos"**.
+Regla de proceso 16: el azar grande se declara — la pantalla cuenta los 4-6 traspasos que movieron
+el mercado.
+
+## 9M.5 — La escalera deja de ser un dado
+
+**Archivos**: `src/systems/competitivo.js` (reescritura parcial) · `src/systems/mercado.js` ·
+`src/data/balance.js`.
+
+- **`flags.ascensoPendiente` desaparece.** No hay "ascenso": hay asientos. Si un club de tier 1
+  tiene hueco en tu rol, tu nivel entra en su banda y te pueden pagar, te llega la oferta. Si no,
+  seguís en tier 2 — y eso es información, no castigo.
+- `competitivo.js` queda **solo con tier 3**, que no cambia ("a ese nivel no se negocia"). Se
+  borran `probAscensoBaseDesdeTier2` y `probAscensoPorJerarquiaDesdeTier2`.
+- **Descenso (cierra D16)**: la org que termina última de una liga con `desciendeA` baja de
+  categoría; tu contrato viaja con ella salvo cláusula. Y caer deja de ser imposible por la vía
+  natural: si el mercado de tier 1 no te da asiento, el de tier 2 sí.
+- **Tu liga deja de ser una jaula**: los asientos son de las 6 ligas tier 1, no solo la tuya. Recién
+  ahí `mundo.regionDominante`, `liga.dificultadAdaptacion` y `player.residencias` significan algo.
+
+**Riesgo asumido, anotado como D35**: esto corre el stream de RNG y mueve el balance agregado
+entero. Misma familia que D21/D22. Regla de proceso 2: este commit **no retunea ninguna constante**
+— primero se mide con la estructura nueva (9Mh).
+
+## 9M.6 — Negociar, no aceptar
+
+**Archivos**: `src/systems/mercado.js` · `src/ui/components/mercado.js` · `src/data/balance.js`.
+
+Tres acciones nuevas, todas **dentro de la misma decisión** (trampa T9: la interrupción es un
+recurso escaso, no se multiplica):
+
+- **Pedir más** — subís el pedido un escalón. El club acepta, contraoferta o se levanta de la mesa,
+  pesado por cuánto te quieren (la brecha entre vos y su mejor alternativa). El riesgo se declara
+  antes de apretar: *"Te quieren mucho: es difícil que se caiga"* / *"Sos su plan B: si apretás, se
+  van a otro"*.
+- **Pedir cláusula de salida** — `contrato.clausula` deja de valer `null` por primera vez. Se paga
+  con sueldo, y a cambio un club grande te puede sacar a mitad de contrato sin que el tuyo opine.
+- **Esperar** — no firmás nada esta ventana. Los asientos se cierran. Puede salir bien, o podés
+  quedarte libre.
+
+El **representante** deja de ser un reroll de dados y pasa a ser información: te dice qué clubes te
+están mirando sin haber ofertado todavía. El check de "una sola vez por carrera"
+(`validate.js:1599`) se reescribe con él.
+
+Regla 15 intacta: lo que la tarjeta promete, el motor lo cumple — el patrón `jerarquiaAlFichar` +
+`flags.jerarquiaProyectadaAlFichar` se extiende a todo lo que se negocie.
+
+## 9M.7 — Traspasos a mitad de contrato, y el banquillo
+
+**Archivos**: `src/systems/mercado.js` · `src/core/registro.js` · `src/systems/rendimiento.js`.
+
+Hoy, con contrato corriendo, el mercado imprime una línea y no pasa nada: **3,80 pretemporadas por
+carrera desperdiciadas**. A partir de acá:
+
+- **Con cláusula**: te vas, tu club cobra, no opina.
+- **Sin cláusula**: el comprador ofrece un `traspasoUSD`; tu club acepta o no según cuánto te
+  necesita. Vos podés **pedir salir**, y cuesta arraigo y jerarquía si sale mal.
+- **Banquillo**: si tu nivel cae por debajo del suplente que tu club tiene o puede fichar, perdés la
+  titularidad. La jerarquía se derrumba, jugás la liga de desarrollo y el mercado te tasa peor.
+  **Es la puerta al declive que hoy no existe**, y es de donde la fase 10 va a sacar el retiro
+  (`CONCEPTO` §12.4: "la causa modal de retiro es que no te renuevan").
+
+Dos cosas rotas que se arreglan acá, encontradas auditando: `registro.dineroTotalUSD` **nunca se
+incrementa** (`PROGRESO.md` afirma que `roster.js` cobra `salarioAnualUSD/3` por split; el código no
+lo hace, y el check de monotonía pasa trivialmente sobre un 0), y `registro.picos.salarioAnualUSD`
+nunca se escribe.
+
+## 9M.8 — La pantalla (regla de proceso 12)
+
+Cada subfase entrega su pedazo; el destino es una pantalla de mercado de tres bloques, montada
+sobre el `presentacion: 'mercado'` que la UI y el pipeline headless **ya entienden**:
+
+1. **Vos en el mercado** — valor, banda con nombre (regla 13: ningún número sin referente), quién te
+   mira, tu contrato y los años que quedan.
+2. **Las ofertas** — las tarjetas de hoy más las acciones de negociación.
+3. **El mercado del mundo** — los traspasos cerrados y los asientos que siguen abiertos en tu rol.
+   Con esto el jugador entiende *por qué* le llegó lo que le llegó.
+
+Y en la ficha permanente: **sueldo, contrato y valor de mercado**, que hoy no se muestran en ningún
+lado pese a estar los tres calculados.
+
+## 9M.9 — Constantes nuevas
+
+Bloque `BALANCE.plantel`: tamaño de plantel, edad de cantera, spread de nivel inicial, velocidad de
+retiro NPC, ritmo de reemplazo. Extensión de `BALANCE.mercado`: presupuesto por org, banda de nivel
+aceptable, escalones de negociación y su probabilidad de ruptura, precio de la cláusula, fórmula de
+traspaso, umbral de banquillo.
+
+**Valores puestos por criterio y medidos después** — regla de proceso 2: nunca cambiar estructura y
+retunear constantes en el mismo commit. El retune vive en 9Mh.
+
+## 9M.10 — Checks de la fase
+
+Cada uno verificado en rojo antes de darlo por bueno (regla 7 / trampa T5).
+
+| # | Check | Hoy | Objetivo |
+|---|---|---|---|
+| 1 | Ninguna org termina la pretemporada con ≠5 jugadores o dos del mismo rol | — | 0 violaciones |
+| 2 | Nadie viola `cupoImports` / `minimoResidentes` / `edadMinima` — ni vos ni un NPC | no se comprueba | 0 violaciones |
+| 3 | Ningún plantel gasta más que su presupuesto | — | 0 violaciones |
+| 4 | Ligas distintas pisadas por carrera | media 1,48 · máx 2 | mediana ≥ 2 y ≥15% pisa 3+ |
+| 5 | Fichajes con elección real por carrera | 3,05 | 4-8 |
+| 6 | Carreras con ≥1 traspaso a mitad de contrato | 0% | ≥25% |
+| 7 | Tier al cierre = tier 1 | 74% (89/120) | ≤65% |
+| 8 | Carreras que caen de tier 1 a tier 2 al menos una vez | 0% | ≥15% |
+| 9 | Correlación nivel ↔ mejor liga alcanzada | el dado la rompe | r > 0,5 |
+| 10 | Oferta rechazada que sigue disponible sin log de quién la tomó | — | 0 casos |
+| 11 | `registro.dineroTotalUSD` > 0 y monótono en toda carrera con contrato | siempre 0 | 100% |
+| 12 | `contexto.residencia === 'import'` alcanzable | inalcanzable | ≥10% de las carreras |
+| 13 | Determinismo: misma seed → mismo mundo, planteles y traspasos incluidos | — | idéntico |
+| 14 | `simulate.js 1500 60 todas` | base a medir en 9Ma | ≤ 2× el base |
+
+## 9M.11 — Verificación end-to-end
+
+```bash
+node src/dev/validate.js
+node src/dev/simulate.js 1500 60 todas    # 0 crashes
+node src/dev/cobertura.js --huecos
+node server.js                            # y jugar una carrera entera a mano
+```
+
+Aplicada a esta fase, la prueba final del proyecto ("si al final la carrera se puede narrar en cinco
+frases sin mirar el log, el juego está"): después de 9M, dos de esas cinco frases tienen que poder
+ser sobre el mercado — **a qué club le dijiste que no, y quién te sacó el puesto.**
+
+---
+
 # FASE 10 — EL FINAL
 
 ## 10.0 — Commits
@@ -2157,6 +2449,143 @@ Todo evento nuevo declara categoria y previa (regla de proceso 12/13)
 
 ---
 
+# FASE P — PUBLICAR
+
+> No es una fase de juego: es la fase que convierte el repo en algo que otra persona puede abrir.
+> Va acá porque `CLAUDE.md` no admite planear en el momento, y porque publicar destapa tres cosas
+> que jugando en `localhost` no molestan y en público rompen el juego.
+
+## P.0 — El estado, medido
+
+Auditado el 2026-09-02, antes de escribir nada:
+
+| Qué | Estado |
+|---|---|
+| Base de datos | **No hay ninguna.** Cero `localStorage`, `fetch`, `IndexedDB`, SQL o servicio externo |
+| "Los datos" | Archivos estáticos: `src/data/*.json` + `balance.js`, importados en tiempo de módulo |
+| Dependencias | **0.** `package.json` no tiene un solo `dependencies` |
+| Build | **Ninguno.** ES modules nativos, sin bundler ni transpilación |
+| Peso a servir | **850 KB** (`index.html` + `src/core` + `src/data` + `src/systems` + `src/ui`) |
+| `server.js` | 60 líneas de servidor estático **solo para desarrollo**. No hace falta en producción |
+| Imports relativos | **274, todos resuelven en un filesystem case-sensitive** (verificado; Windows no distingue mayúsculas, el host sí) |
+| Archivos con `_` inicial | Ninguno → no hace falta `.nojekyll` para GitHub Pages |
+| Remote de git | **No hay.** El repo es local, rama `master` |
+| Persistencia de la partida | **Ninguna.** Un refresh borra la carrera |
+
+**Conclusión**: subirlo es arrastrar una carpeta a cualquier host estático. Lo que hay que arreglar
+no es el hosting, son las tres cosas de P.1.
+
+## P.1 — Los tres bloqueantes, por gravedad
+
+1. **No se guarda nada, y la sesión objetivo son 25-40 minutos.** Es el bloqueante real: en
+   `localhost` uno no recarga; un desconocido sí, y pierde dos horas de carrera. Se resuelve en P.2
+   **sin backend**.
+2. **Los 5 `Math.random()` de `index.html`** (D28, asignada a 9Ed). En público pesa el doble que en
+   local: rompe la regla invariable 1, y sin determinismo un link con seed no reproduce nada — o
+   sea, mata P.3 antes de empezar.
+3. **`with { type: 'json' }` en 32 imports.** Chrome/Edge desde la 123, Safari desde la 17.2,
+   Firefox fue el último en sumarse (2025). En un navegador anterior esto **no degrada**: es un
+   error de sintaxis y el juego no arranca. Hay que decidir explícitamente: exigir navegador
+   moderno y decirlo en pantalla, o cargar los JSON con `fetch` en un módulo de carga. Verificar
+   abriéndolo, no de memoria.
+
+`file://` ya está cubierto: `index.html` detecta `location.protocol` y muestra un mensaje que
+explica que hay que servirlo. No hace falta tocarlo.
+
+## P.2 — El guardado, sin base de datos (`src/core/guardado.js`, nuevo)
+
+La arquitectura ya está preparada y nadie la usó: `state.pendiente` guarda
+`{ sistemaId, decision }` **justamente para que la partida sea serializable a mitad de split**, y
+`state` es todo objetos planos. Falta una sola pieza.
+
+`mulberry32` guarda su contador en una variable de clausura (`core/rng.js:2`) y no lo expone, así
+que hoy no se puede restaurar el punto del stream. El estado interno es un uint32 que avanza por
+una constante fija por llamada: exponerlo son ~5 líneas y no cambia una tirada.
+
+- `mulberry32` devuelve la función con un `.estado()` / `.restaurar(n)` (o se agrega
+  `mulberry32Desde(seed, llamadas)`). **Check obligatorio**: la misma seed con `n` llamadas
+  restauradas produce exactamente la misma secuencia que correrla de corrido — si no, el guardado
+  miente y es peor que no tenerlo (regla 15).
+- `guardar(state, rng)` → `localStorage` al cerrar cada split y en cada `pausar()`.
+- `cargar()` → si hay partida, la pantalla de inicio ofrece **Continuar** además de **Empezar**.
+- Versionado del guardado: una clave `version` que se compara contra la del build. Si no coincide,
+  se avisa y se descarta en vez de cargar un estado que ningún sistema actual entiende (los
+  cambios de forma del `state` son constantes en este proyecto).
+
+Esto no necesita servidor, cuenta ni base de datos. Todo vive en el navegador del jugador.
+
+## P.3 — La seed en la URL
+
+`leerSeed()` (`index.html:1103`) solo lee el input; no mira la URL. Con determinismo real (P.1.2):
+
+- `?seed=42` precarga la seed.
+- Botón **copiar link de esta carrera** en la tarjeta final.
+
+Es barato y es la función social que el juego pide: `CONCEPTO` §1 dice que *"el objetivo del
+jugador no es ganar Worlds, es descubrir qué carrera le tocó"* — poder pasarle esa carrera a otro
+es la consecuencia natural.
+
+## P.4 — La página como página
+
+Hoy `index.html` tiene `lang`, `charset`, `viewport` y `<title>`, y **nada más**. Compartir el link
+muestra una tarjeta vacía. Falta:
+
+- `<meta name="description">`.
+- Open Graph + Twitter card (`og:title`, `og:description`, `og:image`) con una imagen propia.
+- Favicon.
+- Un `<title>` con el nombre real del juego, no `LOL Career Simulator`.
+
+## P.5 — El repo
+
+- Crear el remote y pushear (`master` no tiene ninguno hoy).
+- `.gitignore` — no existe. Mínimo: `node_modules/` y `package-lock.json` (un lockfile sin una sola
+  dependencia es ruido; hoy está sin trackear).
+- `README.md` — no existe. Qué es, cómo correrlo (`npm start`), cómo correr los checks.
+- `LICENSE` — decisión del usuario, pendiente.
+- **Marcas**: `CLAUDE.md` habilita ligas y organizaciones reales, y `leagues.json` tiene 58 orgs
+  reales con nombre. Local es una cosa y público es otra: conviene una línea de descargo de
+  proyecto de fan y revisar la política de contenido de fans de Riot antes de difundirlo. No es un
+  bloqueante técnico; es una decisión a tomar a ojos abiertos.
+
+## P.6 — El host
+
+**GitHub Pages** es lo más directo estando ya en git:
+
+```bash
+git remote add origin <url>
+git push -u origin master
+# Settings → Pages → Source: Deploy from a branch → master / (root)
+```
+
+Netlify, Cloudflare Pages o Vercel funcionan arrastrando la carpeta. **Sin build command y sin
+output directory**: no hay build. `src/dev/` (148 KB) y `server.js` se pueden excluir del deploy,
+pero tampoco molestan.
+
+## P.7 — El pre-flight, reproducible (`src/dev/preflight.js`, nuevo)
+
+El chequeo de capitalización se corrió una vez a mano y encontró 0 problemas sobre 274 imports.
+Un chequeo que no se puede repetir no sirve: se guarda como script y se corre antes de cada deploy.
+
+Verifica: cada import relativo resuelve con la capitalización exacta · no hay archivos con `_`
+inicial · no hay `Math.random(` fuera de `src/dev` (extiende `guards.js` a `.html`, que es la mitad
+de 9Ed) · todo `.json` importado existe y parsea.
+
+## P.8 — Verificación end-to-end
+
+1. Abrir la **URL publicada** (no `localhost`) en Chrome, Firefox y Safari, y en un móvil.
+2. Jugar hasta mitad de carrera, **recargar la pestaña** y confirmar que continúa donde estaba.
+3. Abrir el mismo `?seed=N` en dos navegadores distintos y confirmar que la carrera es idéntica.
+4. Consola sin errores en toda la partida (ya se hizo así en la fase 8b, con Chrome headless
+   vía CDP).
+
+## P.9 — Qué queda explícitamente afuera
+
+Backend, cuentas de usuario, tabla de récords global, guardado en la nube y analytics. Todo eso
+deja de ser un sitio estático y trae servidor, base de datos y datos personales. Si alguna vez se
+quiere, es una decisión de producto nueva — **no un requisito para publicar**.
+
+---
+
 # Fuera de alcance (visto en las imágenes, decidido que no)
 
 | Qué | Dónde se ve | Por qué no |
@@ -2183,7 +2612,7 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D5 | ~~`regionOrigen` se sorteaba uniforme entre 8 ligas~~ — resuelto: pesado por prestigio, solo tier 1 | ✅ 3 |
 | D6 | ~~El meta se describía por arquetipo, no por campeón~~ — resuelto: `campeonesEnMeta` | ✅ 1 |
 | D7 | `src/ui/` está vacía; los 1.090 renglones de UI viven en `index.html` (creció de 416 a 1.090 entre la fase 0 y la fase 4, sobre todo por los 5 minijuegos) | 8 |
-| D8 | Los 5 rivales de generación se generan y no corren su carrera. La fase 5 les da su primer uso real (aparecen con nombre como `stakes: rival_de_generacion` en una fecha marcada) sin cerrar la deuda: seguir corriendo su carrera entera es esta fase | 11 |
+| D8 | Los 5 rivales de generación se generan y no corren su carrera. La fase 5 les da su primer uso real (aparecen con nombre como `stakes: rival_de_generacion` en una fecha marcada) sin cerrar la deuda: seguir corriendo su carrera entera es esta fase | 9M (parcial) / 11 |
 | D9 | `player.deudaSueno` no se resetea al pasar a profesional y `atributos.js` la sigue cobrando toda la carrera. **Es útil**: es media cadena causal del sistema de lesiones, ya construida | 10 |
 | D10 | `secundario.js` usa `amateur.edadLimite` para congelar el flag. Al borrar ese tope hay que darle su propio umbral | 10 |
 | D11 | Las rutinas de offseason siguen gateadas solo por etapa, no por tier (un bootcamp en Corea no lo paga un tier 3). Deferido de la fase 3 por alcance: cuidar el check de segura/agresiva al diferenciar | 13 |
@@ -2191,8 +2620,8 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D13 | ~~`academy_offer` empujaba a `career.orgs` sin fichar~~ — resuelto: el fichaje real lo hace `amateur.js`/`competitivo.js`, `academy_offer` quedó como la prueba narrativa que siempre fue | ✅ 3 |
 | D14 | Solo 2 eventos del catálogo usan 3 opciones; ninguno usa 4 | 13 |
 | D15 | LCP no tiene un circuito de desarrollo real investigado (`CONCEPTO` §12.3 no lo cubre). Se modeló como `LCP_CHALLENGERS`, generado igual que el resto de tier 2 — nombre plausible, no verificado como real. Si aparece la investigación real, reemplazar el id | 3 (abierto) |
-| D16 | Tier 1 es un piso: no hay descenso de tier1 a tier2 todavía. Una relegación real existe en las ligas de 2026 pero modelarla es más natural junto con contratos (fase 9) | 9 |
-| D17 | LRN/LRS (los circuitos tier 2 de LATAM que alimentan LCS/CBLOL) y la doble residencia LATAM 2026-2027 no están modelados: un jugador de la región nace directamente en NA o BR. Es la simplificación explícita que ya preveía la investigación ("la doble residencia... vale un evento dedicado") | 9 |
+| D16 | Tier 1 es un piso: no hay descenso de tier1 a tier2 todavía. Una relegación real existe en las ligas de 2026 pero modelarla es más natural junto con contratos (fase 9) | **9M** |
+| D17 | LRN/LRS (los circuitos tier 2 de LATAM que alimentan LCS/CBLOL) y la doble residencia LATAM 2026-2027 no están modelados: un jugador de la región nace directamente en NA o BR. Es la simplificación explícita que ya preveía la investigación ("la doble residencia... vale un evento dedicado") | **9M** |
 | D18 | ~~La ventana `internacional` era un único evento agregado (`chance()`)~~ — resuelto a medias en la fase 4: ahora es una serie Bo5 real de verdad contra un rival de otra región, con Fearless y minijuegos. Sigue **sin distinguir** First Stand/MSI/Worlds ni modelar un bracket Swiss+knockout: es una sola serie representativa, no el torneo real completo | ✅ 4 (parcial) |
 | D19 | El bracket de playoffs de tier 1 es de **eliminación simple** (6 clasificados, bye para los 2 mejores sembrados, Bo5 parejo). Las 6 ligas 2026 investigadas usan doble eliminación real (hay bracket de perdedores). Simplificación deliberada: el motor solo simula TU camino por el bracket, nunca el resto — una derrota ya cuenta una historia completa ("eliminado en cuartos") sin necesitar una corrida paralela por el lado de perdedores | 4 (abierto) |
 | D20 | Los 5 minijuegos comparten dos parámetros de balance genéricos (`impactoMinijuego` para los de mapa, `impactoDirecto` para bootcamp/rueda de prensa) en vez de tener cada uno el suyo ajustado a mano. Medido: el efecto agregado de CUALQUIERA de los dos lo satura la propia estructura del juego (máximo 1 minijuego por serie, un mapa de cinco) mucho antes de que el valor del parámetro importe — ver PROGRESO | 12 (abierto) |
@@ -2203,13 +2632,15 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D25 | ~~**La carrera se vara para siempre tras disolverse un tier 3.**~~ — resuelto en 9Ea+b: `disolverEquipo` conserva `tier: 3`. Regresión de la fase 9b (`9a163b6`), que guardó el re-fichaje detrás de `career.tier === 3` mientras `disolverEquipo` ponía `tier: null` — la condición nunca era cierta en el único caso para el que se escribió. Medido antes: **30,7% de carreras varadas**, **47,5% de los splits profesionales sin equipo**, racha máxima **57 splits**. Después: **0 varadas**, racha máxima **1 split**, **98,1%** de los splits pro con equipo | ✅ 9E |
 | D26 | **El agujero de medición que dejó pasar D25.** Tres herramientas mirando para otro lado a la vez: (a) `simulate.js` no tenía **ningún** KPI posterior al fichaje, así que 1.500 carreras no veían una racha de 57 splits sin equipo — desde el estado final eso se lee como un solo split libre (**resuelto en 9Ea+b**: bloque `carrera` con recorrido split a split); (b) `validate.js` no tenía ningún check sobre el estado "sin equipo" (**resuelto**: checks 39 y 40); (c) **`cobertura.js` mide cantidad, no pertinencia**: la celda `sin_equipo` reporta **58 eventos** —bien por encima del mínimo— y por eso sale "sin huecos", pero esos 58 son exactamente el contenido mal gateado de D27. Cuanto más contenido sin gatear se escribe, más sana se ve una celda inapropiada. **(c) sigue abierto, va en 9Ec.** Por eso la fase 9d cerró reportando "carreras con al menos un split libre: 0,3%" cuando el real es **35,3%**: esa métrica miraba solo la puerta del mercado. Misma familia que la trampa T5 — la herramienta no falla, mira para otro lado | 🔶 **9E (a y b hechas)** |
 | D27 | **Contenido de vestuario disparando sin vestuario.** Ningún evento declara ni excluye `nivel: ["libre"]`, así que el catálogo tier-agnóstico cae igual sin equipo. Observado en la traza de la seed 7 ya varado: "avisarle al manager en privado" dando **Arraigo +2** a una org que no existe (y perdiéndose, porque `cerrarFila` es no-op sin fila abierta), y "en el draft no te dieron tu pick" seis veces sin equipo ni serie — `campeones.js` gatea el draft por `phase`, nunca por `career.currentOrg`. Rompe el principio rector 1 al pie de la letra | **9E** |
-| D28 | **`Math.random()` × 5 en `index.html`** (zona del Smite, espera de "La Llamada", posición de los blancos). Viola la regla invariable 1 y rompe el determinismo jugando a mano: esos valores deciden el `resultado` del minijuego, que entra al motor y cambia la serie. `guards.js` no los ve porque solo escanea `.js` dentro de `/src` — el guard tiene que mirar `.html` también | **9E** |
-| D29 | **El eje `residencia` está muerto entero.** `contexto.js` escribe `residencia: 'local'` fijo. En cadena: el momento `import_recien_llegado` es inalcanzable por construcción, `BALANCE.mercado.margenImport` no lo lee nadie (pese a que `salarios.js` afirma que "lo evalúa `mercado.js`"), `contrato.tipo: 'import'` nunca se produce, y `mercado.js` solo genera ofertas de tu liga actual — no existe la transferencia entre regiones que prometen `CONCEPTO` §6 y `DISENO` §3.7 | 11 |
-| D30 | **Valores de eje que la fase 9 debía llenar y no llenó.** `calcularMercado()` devuelve solo `contrato_firme`/`sin_contrato`; `ultimo_ano` y `sin_renovacion` están declarados en `EJES` y nunca se calculan, pese a que `contrato.aniosRestantes` ya existe y es exactamente el dato que hace falta. `etapa: 'declive'` tampoco se computa | 10/11 |
+| D28 | **`Math.random()` × 5 en `index.html`** (zona del Smite, espera de "La Llamada", posición de los blancos). Viola la regla invariable 1 y rompe el determinismo jugando a mano: esos valores deciden el `resultado` del minijuego, que entra al motor y cambia la serie. `guards.js` no los ve porque solo escanea `.js` dentro de `/src` — el guard tiene que mirar `.html` también | **9E** (prerrequisito de **P**: sin determinismo, un link con seed no reproduce nada) |
+| D29 | **El eje `residencia` está muerto entero.** `contexto.js` escribe `residencia: 'local'` fijo. En cadena: el momento `import_recien_llegado` es inalcanzable por construcción, `BALANCE.mercado.margenImport` no lo lee nadie (pese a que `salarios.js` afirma que "lo evalúa `mercado.js`"), `contrato.tipo: 'import'` nunca se produce, y `mercado.js` solo genera ofertas de tu liga actual — no existe la transferencia entre regiones que prometen `CONCEPTO` §6 y `DISENO` §3.7 | **9M** |
+| D30 | **Valores de eje que la fase 9 debía llenar y no llenó.** `calcularMercado()` devuelve solo `contrato_firme`/`sin_contrato`; `ultimo_ano` y `sin_renovacion` están declarados en `EJES` y nunca se calculan, pese a que `contrato.aniosRestantes` ya existe y es exactamente el dato que hace falta. `etapa: 'declive'` tampoco se computa | **9M** / 10 |
 | D31 | **Constantes muertas en `balance.js`**: `mercado.margenImport` (ver D29), `amateur.autoProbRobar`, `rendimiento.ruidoRival` (resto de la fase 5, cuando `temporada.js` le sacó a `rendimiento.js` la resolución de la temporada) y `competitivo.margenEdadMinima`. Son las únicas 4 de ~250 claves; se borran o se usan, pero no se dejan mintiendo | 9E (las 3 sin D29) |
 | D32 | **`node src/dev/validate.js` tarda 6m47s** y la Definición de terminado lo exige en cada cambio. Candidato a partirse en `--rapido` (esquema, contratos, determinismo) y `--completo` (los checks estadísticos de n grande, que son los que se comen el tiempo) | 12 (abierto) |
 | D34 | **Cuánto se tarda en SALIR del nivel tier 3 nunca se había podido medir**, porque el bug D25 mataba la carrera en la primera disolución: las carreras largas en tier 3 no existían, se varaban. Con D25 cerrado, medido a 1500 carreras: por org la permanencia sigue clavada en el diseño (**mediana 2, p90 5** — el pedido "nadie se queda mucho en un equipo inventado" se cumple), pero el tiempo total en el NIVEL da **mediana 5, p90 12, máximo 36 splits**. El 98,3% de las carreras que pisan tier 3 igual escapan a tier 2 o 1, así que no es una trampa — pero un p90 de 12 splits (4 años) dando vueltas por equipos chicos es candidato a revisar `probAscensoBaseDesdeTier3`. **No se tocó ninguna constante**: regla de proceso 2, primero medir con la estructura nueva. El check gatea la métrica por org, que es la que responde el pedido | 10 (abierto) |
 | D33 | **13 comentarios de `/src` citan `TRASPASO.md §4`**, archivo borrado el 2026-09-02 — `salarios.js`, `state.js`, `valorMercado.js` (×3), `balance.js` (×3), `roles.js`, `validate.js` (×2), `amateur.js`, `mercado.js`. La numeración se conservó al mover la investigación (`§4.N` → `CONCEPTO.md §12.N`), así que la redirección es un reemplazo de texto por comentario, sin tocar lógica. Se deja para el próximo commit que toque `/src` | 9E |
+| D35 | **La fase 9M corre el stream de RNG y mueve el balance agregado entero**: los planteles NPC consumen `rng` en `generarMundo` y en cada offseason, y la escalera deja de sortearse. Ninguna seed anterior a 9M reproduce su carrera. Misma familia y mismo criterio que D21/D22 — anotado de antemano para no descubrirlo tarde. La linea de base se remide en el momento (trampa T6), nunca se cita de memoria | 9M (anticipado, no implementado aun) |
+| D36 | **La partida no se guarda: un refresh borra la carrera.** Cero `localStorage` en todo el repo. Irrelevante en `localhost`, bloqueante en público con una sesión objetivo de 25-40 minutos. La arquitectura ya está lista —`state.pendiente` existe justamente para que la partida sea serializable a mitad de split y `state` es todo objetos planos—; falta exponer el contador de `mulberry32` (`core/rng.js:2`), que hoy vive en una clausura, para poder restaurar el punto del stream. No necesita backend | **P** |
 
 ---
 

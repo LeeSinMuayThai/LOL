@@ -96,8 +96,12 @@ La carrera debe incluir contratos, sueldos, cláusulas, imports, residencia, ada
 
 > **Estado al 2026-09-02**: la fase 9 construyó contratos y sueldos. **Imports, residencia y
 > movilidad entre regiones no existen todavía** — el eje `residencia` está clavado en `'local'` y
-> `mercado.js` solo genera ofertas de tu propia liga. Es la deuda D29 de `PLAN.md`, hacia la fase
-> 11. Las cláusulas están en el modelo (`contrato.clausula`) pero ningún sistema las emite.
+> `mercado.js` solo genera ofertas de tu propia liga. Es la deuda D29 de `PLAN.md`. Las cláusulas
+> están en el modelo (`contrato.clausula`) pero ningún sistema las emite.
+>
+> Todo esto se reasignó ese mismo día a la **fase 9M — El mercado de pases** (antes iba a la 11),
+> que además puebla el mundo de jugadores NPC con carrera propia y saca del dado la escalera
+> competitiva. Ver `PLAN.md` §9M.
 
 ## 4. Arquitectura técnica
 

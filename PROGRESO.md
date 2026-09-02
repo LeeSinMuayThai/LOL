@@ -33,6 +33,111 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-02 — Se planean dos fases: 9M (el mercado de pases) y P (publicar)
+
+Commit de documentación, **cero cambios en `/src`**. Existe porque `CLAUDE.md` es explícito: *"Nada
+se planea en el momento: si algo no está escrito en `PLAN.md`, se escribe ahí antes de
+implementarlo."*
+
+---
+
+#### Fase 9M — El mercado de pases
+
+**El pedido**: *"el juego me parece una mierda, fijate cómo hacer que el juego deje de ser una
+mierda y planeá el mercado de pases."* Resultó ser un solo pedido: lo que hace que el juego se
+sienta muerto es exactamente lo que un mercado de verdad arregla.
+
+**Lo medido antes de escribir una línea** (sonda propia, 120 carreras × 45 splits; 60 × 45 para el
+conteo de eventos):
+
+| Métrica | Medido | Lectura |
+|---|---|---|
+| Fichajes con elección real por carrera | **3,05** | el mercado se abre 3 veces en 15 años de juego |
+| Pretemporadas con el mercado en silencio | **3,80** | *"Te queda un año de contrato"* y nada más |
+| Ligas distintas pisadas por carrera | **media 1,48 · máx 2** | nadie, en 120 carreras, jugó en 3 ligas |
+| Tier al cierre | **89 de 120 en tier 1 · 0 en tier 2** | la escalera es una cinta de un solo sentido |
+| Carreras terminadas en 45 splits | **32%** | confirma D2 desde otra sonda |
+| Decisiones por carrera | **162**, top-10 familias ≈ **40%** | la repetición vive en `events/partido/` |
+
+La causa, leída en el código: el ascenso tier2→tier1 es `chance(0.12 + jerarquia/100 × 0.45)`
+(`competitivo.js:124`) — ganar la liga no cambia nada; una org es `{ nombre, liga, fuerza }`
+(`mundo.js:57-80`) y los compañeros se regeneran de cero al cambiar de equipo (`roster.js:18`), sin
+edad ni contrato ni memoria; y `generarOfertasParaLiga` tira `roll(0, techo)` **solo sobre tu propia
+liga** (`mercado.js:138-167`). **No hay un solo jugador NPC con carrera propia en todo el repo.**
+
+**Tres afirmaciones del changelog viejo verificadas de primera mano** (trampa T6: no citar de
+memoria):
+
+- `registro.dineroTotalUSD` **nunca se incrementa.** Solo aparece en `state.js:162` (declaración) y
+  `validate.js:2408` (un check de monotonía que pasa trivialmente sobre un 0). El changelog de la
+  fase 9b afirma que `roster.js` cobra `salarioAnualUSD / 3` por split: **el código no lo hace.**
+- `registro.picos.salarioAnualUSD` y `picos.rankedPuntos` están declarados y `registrarPico` nunca
+  se llama con ninguno de los dos.
+- `rivales[].puntaje` y `.desenlace`: solo la declaración en `mundo.js:235`, cero escrituras (D8).
+
+**Precisión sobre la repetición**: el catálogo general está sano — la fase 8D midió 8,8% de
+concentración mediana para el evento más visto, bajo el techo de 25%. La repetición está
+**concentrada en `data/events/partido/`**: 24 fichas sorteadas ~75 veces por carrera (2-3 fechas
+marcadas × ~30 splits pro). *"El objetivo que define la fecha"* sale ~10 veces por carrera. Va a la
+fase 13, con un arreglo barato disponible antes: subir la fatiga anti-repetición solo para esa
+familia.
+
+**Lo escrito**: `PLAN.md` §9M completo (8 subfases con archivos, contratos de datos, constantes
+nuevas y 14 checks con su valor de hoy y su objetivo), la fila **9M** en la tabla de estado y la
+nota de por qué se inserta entre el mercado y el final.
+
+La idea que sostiene la fase entera: **`org.fuerza` deja de ser un valor sorteado y pasa a derivarse
+del promedio de nivel de su plantel.** Así ningún consumidor (`temporada.js`, `rendimiento.js`,
+`serie.js`) cambia una línea el día 1, y desde el año 2 un equipo que ficha bien sube de fuerza y te
+gana la liga.
+
+**Decisiones del usuario** (a la tabla de `PLAN.md`, no se vuelven a preguntar):
+
+1. **Rosters NPC reales**, no un modelo de demanda liviano.
+2. **Mercado antes que retiro** — la fase 10 define el retiro como emergente y con el mercado de hoy
+   eso vuelve a ser un dado.
+3. **Sí a reescribir la escalera competitiva** — el ascenso deja de sortearse; aparece el descenso.
+
+---
+
+#### Fase P — Publicar
+
+**El pedido**: *"cómo es la base de datos de este proyecto para poder subirlo"*.
+
+**No hay ninguna.** Cero `localStorage`, `fetch`, `IndexedDB`, SQL o servicio externo en todo el
+repo; el único `process.env` es el `PORT` de `server.js`. Lo que hace de base de datos son archivos
+estáticos importados en tiempo de módulo. El proyecto es un **sitio estático de 850 KB, 0
+dependencias y 0 build**; `server.js` son 60 líneas solo para desarrollo.
+
+**Pre-flight corrido**: los **274 imports relativos resuelven con la capitalización exacta** (Windows
+no distingue mayúsculas, el host Linux sí — la forma clásica de que un sitio ande local y explote
+publicado) y no hay archivos con `_` inicial, así que no hace falta `.nojekyll`. El repo **no tiene
+remote**.
+
+Subirlo es trivial. Lo que **no** es trivial son los tres bloqueantes que en `localhost` no molestan:
+
+1. **La partida no se guarda** — un refresh borra la carrera, con una sesión objetivo de 25-40
+   minutos. Nueva deuda **D36**. Se arregla sin backend: `state.pendiente` ya existe para que la
+   partida sea serializable a mitad de split, y falta exponer el contador de `mulberry32`
+   (`rng.js:2`), hoy encerrado en una clausura.
+2. **Los 5 `Math.random()` de `index.html`** (D28, ya asignada a 9Ed) — sin determinismo, un link
+   con seed no reproduce nada. **D28 queda marcada como prerrequisito de P.**
+3. **`with { type: 'json' }` en 32 imports** — en un navegador anterior a Chrome 123 / Safari 17.2 /
+   Firefox 2025 no degrada: el juego no arranca. Hay que decidirlo explícitamente y verificarlo
+   abriéndolo, no de memoria.
+
+`PLAN.md` §P cubre además la seed en la URL, los meta tags (hoy compartir el link muestra una
+tarjeta vacía), `.gitignore`/`README`/`LICENSE` (ninguno existe), el host, un `src/dev/preflight.js`
+que haga repetible el chequeo de capitalización, y una verificación end-to-end sobre la URL
+publicada. Fuera de alcance explícito: backend, cuentas, tabla de récords global y analytics.
+
+---
+
+**Verificación de este commit**: `node src/dev/validate.js` → **83 checks OK, 0 fallos**. Sin cambios en
+`/src`, se corrió igual para tomar la línea de base en el momento en vez de citarla de memoria
+(trampa T6).
+
+
 ### 2026-09-02 — Fase 9Ea+b: la carrera deja de vararse
 
 El arreglo del bug D25, junto con las tres herramientas que lo dejaron pasar. Va en un solo commit
