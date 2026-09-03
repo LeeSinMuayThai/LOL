@@ -32,7 +32,7 @@ momentos que importan. El esqueleto es el mismo — motor de simulación, baraja
 de eventos, decisiones en momentos bisagra, tarjeta final compartible. Lo que
 cambia es que el ecosistema de LoL da sistemas que el fútbol no tiene: el meta
 que rota y te deja obsoleto, el champion pool como identidad, los cupos de
-import, y carreras que se terminan a los 25.
+import, y carreras que se terminan a los 27-28.
 
 **El jugador siempre quiere ir a más** — como en El Ídolo del Potrero. Ganar el
 scrim, subir de liga, ganar el clásico, llegar al internacional, ganarlo. La
@@ -59,11 +59,11 @@ llegaste contra hasta dónde podías llegar.
                   tramo de tier 3. Sos el rookie, no decidís casi nada.
                   Duración: ~60 segundos.
 
-    19-25 años    CARRERA PROFESIONAL
+    19-27 años    CARRERA PROFESIONAL
                   El grueso del juego. Splits, metas, fichajes, torneos.
                   Duración: ~4 minutos.
 
-    23-30 años    DECLIVE Y RETIRO
+    27-34 años    DECLIVE Y RETIRO
                   La mecánica baja, el macro no. Última decisión: cómo salís.
                   Duración: ~40 segundos.
 

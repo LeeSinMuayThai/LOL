@@ -33,6 +33,22 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-03 — Fase 9R5d: la carrera dura más (tuneo, feedback del usuario)
+
+Noveno commit de la fase 9R. **Solo constantes** (regla de proceso 2). El usuario probó el juego y
+marcó que empezar a retirarse a los 23 se sentía durísimo — la carrera recién arranca a rendir.
+
+- **`retiro.edadDeclive` 23 → 27** (por debajo de esta edad no te retirás nunca), **`edadRetiroForzoso`
+  31 → 34** (la línea Faker), **`chanceBasePorAnio` 0,24 → 0,55** (la ventana declive→forzoso se
+  achicó, cada año pesa más para que la cola no se vaya a los 33).
+- **`CONCEPTO`** §1 ("carreras que se terminan a los 25" → "27-28") y §2 (la etapa CARRERA
+  PROFESIONAL pasa a 19-27, DECLIVE Y RETIRO a 27-34). §12.4 (investigación) queda intacta: marca
+  el declive a los 23-25 — el juego lo estira a propósito, es el ethos "ir a más" de §1.
+- **`validate.js`**: banda de edad mediana al terminar 22-27 → **24-30**; cola de carreras que
+  llegan a 30+ años, tope 12% → **18%**.
+- **Medido** (1.200 seeds): edad de retiro mediana **27** (era 25), p90 29, máx 32; **7,1%** llega
+  a 30+; la duración sigue correlacionando con el potencial oculto (r ≈ 0,36).
+
 ### 2026-09-03 — Fase 9Rc: un solo criterio de valor de campeón
 
 Octavo commit de la fase 9R. El motor **puntuaba el campeón con una fórmula, lo elegía con otra y

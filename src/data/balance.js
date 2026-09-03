@@ -769,17 +769,24 @@ export const BALANCE = {
   // final ni tarjeta. `systems/retiro.js` la cierra: pasada la edad de declive,
   // cada pretemporada hay una probabilidad creciente de retirarse, modulada por
   // cómo te trata el mercado (sin equipo empuja fuerte; una franquicia aguanta).
-  // Duración objetivo: mediana 8-18 splits como pro (CONCEPTO §12.4: 2-6 años).
+  //
+  // Fase 9R5d: `edadDeclive` 23 → 27. Empezar a retirar a los 23 se sentía
+  // durísimo — la carrera recién empieza a rendir. La investigación (CONCEPTO
+  // §12.4) marca el declive a los 23-25, pero el juego lo estira a propósito:
+  // el ethos es "ir a más" (CONCEPTO §1) y una carrera que cierra a los 27-28
+  // se juega mejor que una que cierra a los 24. Mediana de retiro objetivo: ~27.
   retiro: {
     // Por debajo de esta edad no te retirás nunca (salvo los finales de
     // `amateur.js`/`atributos.js`): la carrera todavía tiene recorrido.
-    edadDeclive: 23,
+    edadDeclive: 27,
     // La línea Faker: pasada esta edad te retirás sí o sí. Alta a propósito
-    // — Faker/Peanut son la excepción (CONCEPTO §12.4).
-    edadRetiroForzoso: 31,
+    // — Faker sigue activo a los 29-30 (CONCEPTO §12.4), es la excepción.
+    edadRetiroForzoso: 34,
     // Probabilidad base por año pasado el declive: p = base × (edad − declive)
-    // × factorNivel × factorSinEquipo, evaluada cada pretemporada.
-    chanceBasePorAnio: 0.24,
+    // × factorNivel × factorSinEquipo, evaluada cada pretemporada. Subió de
+    // 0,24 con `edadDeclive` — la ventana declive→forzoso es más corta ahora,
+    // así que cada año pesa más para que la cola no se vaya a los 33.
+    chanceBasePorAnio: 0.55,
     // El nivel actual del jugador (`nivelDelJugador`) modula fuerte: un
     // clase-mundial casi no se retira antes de los 30 (Faker), un prospecto
     // cuelga a los 24. Es lo que hace que la duración correlacione con lo buena

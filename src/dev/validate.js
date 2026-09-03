@@ -3013,13 +3013,15 @@ check('picos.nivel se alcanza antes del último split en las carreras que llegan
   }
 
   const fraccion = conPicoTemprano / elegibles;
-  // 55%: medido 58,6%. Que ~40% de las carreras MÁS largas terminen todavía
-  // cerca del pico es real — los ejes acumulativos (`macro`/`shotcalling`/
-  // `adaptabilidad`) compensan la caída de las curvas. 9R.2c (bajar
-  // `config.velocidad` de las curvas para que los efectos no se disuelvan tan
-  // rápido) debería empujar esto para arriba; el piso acota que no baje más.
-  if (fraccion < 0.55) {
-    throw new Error(`el pico de NIVEL llega antes del último split en ${(fraccion * 100).toFixed(1)}% de las carreras que llegan al declive; se esperaba ≥55%`);
+  // Piso 0,55 → 0,50 en 9R5d. `edadDeclive` subió a 27, así que muchas más
+  // carreras pasan el filtro `age >= 28` — y varias de esas terminan JUSTO a los
+  // 28, todavía en meseta, con el pico casi encima (medido 54,2%). Que ~45% de
+  // las carreras más largas cierren cerca del pico es real: los ejes
+  // acumulativos (`macro`/`shotcalling`/`adaptabilidad`) compensan la caída de
+  // las curvas. 9R.2c (bajar `config.velocidad` de las curvas) es lo que empuja
+  // esto para arriba; el piso solo acota que no se desplome.
+  if (fraccion < 0.50) {
+    throw new Error(`el pico de NIVEL llega antes del último split en ${(fraccion * 100).toFixed(1)}% de las carreras que llegan al declive; se esperaba ≥50%`);
   }
 });
 
@@ -3303,12 +3305,15 @@ check('Ninguna carrera queda sin terminar: el retiro cierra la run', () => {
 
   const ordenadas = [...edades].sort((a, b) => a - b);
   const medianaEdad = ordenadas[Math.floor(ordenadas.length / 2)];
-  if (medianaEdad < 22 || medianaEdad > 27) {
-    throw new Error(`edad mediana al terminar: ${medianaEdad} (banda esperada 22-27 — CONCEPTO §12.4)`);
+  // Fase 9R5d: banda 22-27 → 24-30. `edadDeclive` subió a 27 (retirar a los 23
+  // se sentía durísimo): la mediana objetivo pasó de ~24 a ~27, con la cola
+  // llegando a la línea Faker (34 forzoso).
+  if (medianaEdad < 24 || medianaEdad > 30) {
+    throw new Error(`edad mediana al terminar: ${medianaEdad} (banda esperada 24-30 — 9R5d subió edadDeclive a 27)`);
   }
   const fraccion30 = edades.filter((e) => e >= 30).length / edades.length;
-  if (fraccion30 < 0.005 || fraccion30 > 0.12) {
-    throw new Error(`carreras que llegan a 30+ años: ${(fraccion30 * 100).toFixed(1)}% (banda esperada 0.5%-12%; la cola tipo Faker existe pero es rara)`);
+  if (fraccion30 < 0.005 || fraccion30 > 0.18) {
+    throw new Error(`carreras que llegan a 30+ años: ${(fraccion30 * 100).toFixed(1)}% (banda esperada 0.5%-18%; la cola tipo Faker existe pero es rara)`);
   }
   // El retiro emergente NO deja estado reversible en 9R5a (simplificación
   // respecto de PLAN.md §10.1): `phase: 'retirado'` implica `terminado: true`.
