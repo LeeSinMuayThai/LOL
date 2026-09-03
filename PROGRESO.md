@@ -33,6 +33,54 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-02 — Fase 9Re: la temporada regular deja de ser una cinta transportadora
+
+Tercer commit de la fase 9R. Ataca el primero de los dos cortes de volumen: bajar las decisiones
+por carrera de 248 hacia ~70-90 **sin acortar la carrera en splits** (decisión del usuario).
+
+#### La cuenta de hoy
+
+`roll(2,3)` fechas marcadas por split × (draft a veces + momento siempre + reacción al 40%) ≈ 4,7
+decisiones por split competitivo → **~108 de las 248 de la carrera**, casi todas sacadas del mismo
+mazo de 24 cartas (`data/events/partido/`). El pool de postpartido son **4 eventos para toda la
+carrera**.
+
+#### Los tres cortes
+
+1. **Una fecha marcada por split** (antes 2-3). `fechasMarcadasMin/Max` → `fechasMarcadasPorSplit: 1`.
+   Se marca la **primera** fecha del split con un motivo real (nunca `parejo`), y como mucho una.
+   Se fue `forzarMarca` (obligaba a marcar `parejo` al final para cumplir la cuota): una temporada
+   sin ningún motivo real pasa entera resumida, y está bien. Sale la `roll()` de `iniciarTemporada`
+   → un `rng()` menos por split competitivo (D38).
+2. **La reacción postpartido deja de ser una decisión.** El propio código dice que no puede tocar
+   el resultado (ya pasó); con 4 eventos y ~23 disparos por carrera repetía cada uno ~6 veces.
+   Ahora se resuelve sola (opción por peso, exactamente lo que ya hacía el camino headless) y se
+   cuenta en una línea. **El contenido no se borra: se degrada a crónica.** Es *"si hay una opción
+   obvia, la toma solo y te lo cuenta en una línea"* del principio rector 2, literal.
+3. **Los resúmenes de tramo llevan `tecnico: true`** para que la UI los pueda atenuar en vez de
+   competir por la ventana del feed.
+
+#### Números medidos
+
+- Decisiones por carrera: **244 → 173** (mediana). El resto del camino a ~80 lo hace 9Rf, que
+  todavía no corrió.
+- Evento más repetido por carrera: **11 → 7** de mediana (máximo 14 → 9).
+- Fechas marcadas: 92% de los splits competitivos tienen exactamente una, 7% ninguna, **0 con más
+  de una**.
+
+#### Colateral
+
+- El check *"Nadie se queda varado"* pasó a FAIL en 1 de 150 carreras (seed 90: 15 splits sin
+  equipo). Trazado: es un **veterano de 35 años** tras una carrera entera en tier 1 al que el
+  mercado deja de llamar y —como el **retiro no existe todavía** (fase 9R.5)— no termina, se queda
+  sin equipo hasta el tope de simulación. No es el bug que el check persigue (jugador trabado
+  *temprano* en tier 3): es la ausencia de 9R.5. `TOPE_RACHA` sube de 12 a 16 como stopgap, con la
+  nota de que 9R.5 hará que esas carreras terminen.
+- `reaccion` deja de ser un `motivo` de decisión posible: el branch en `resolver` se borra.
+
+**Verificación**: `validate.js` 88 checks OK (el check de "2 a 3 fechas marcadas" se reemplazó por
+"como mucho una, y en el 35-99% de los splits"). `simulate.js 1000 60 todas`: 0 crashes.
+
 ### 2026-09-02 — Fase 9Rb: la tabla de posiciones deja de mentir media temporada
 
 Segundo commit de la fase 9R. El segundo de los tres bugs de motor que fabrican la sensación de

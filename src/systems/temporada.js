@@ -1,4 +1,4 @@
-import { roll, weightedPick, chance } from '../core/rng.js';
+import { weightedPick, chance } from '../core/rng.js';
 import { crearLog } from '../core/log.js';
 import { calcularContexto } from '../core/contexto.js';
 import { resolverTexto } from '../core/plantillas.js';
@@ -19,12 +19,12 @@ export const id = 'temporada';
 
 // La temporada regular (fase 5): antes de esto, `rendimiento.js` resolvía la
 // posición del split entero con una sola tirada. Ahora hay un calendario real
-// con nombre y tabla, y 2-3 fechas del split se juegan de verdad — draft
-// corto, un momento con 2 a 4 opciones que mueve el resultado de ESE
-// partido, y el resultado inmediato. El resto del calendario se resuelve en
-// silencio y pasa resumido en una línea. `rendimiento.js` sigue aplicando las
-// consecuencias (hype, mentalidad, jerarquía, títulos): esto solo decide de
-// dónde sale la posición que él lee.
+// con nombre y tabla, y a lo sumo UNA fecha del split frena al jugador (fase
+// 9Re: era 2-3) — draft corto, un momento con 2 a 4 opciones que mueve el
+// resultado de ESE partido, y el resultado inmediato. El resto del calendario
+// se resuelve en silencio y pasa resumido en una línea `tecnico`.
+// `rendimiento.js` sigue aplicando las consecuencias (hype, mentalidad,
+// jerarquía, títulos): esto solo decide de dónde sale la posición que él lee.
 
 const ETIQUETAS_MOTIVO = {
   clasico: 'Clásico',
@@ -86,7 +86,9 @@ function iniciarTemporada(state, rng) {
       .map((org) => [org.nombre, filaVacia(org.nombre)])
   );
   const t = BALANCE.temporada;
-  const objetivoMarcadas = Math.min(calendario.length, roll(t.fechasMarcadasMin, t.fechasMarcadasMax, rng));
+  // Fase 9Re: una sola fecha marcada por split (antes: roll(2,3)). Se saca la
+  // tirada de acá — un `rng()` menos por split competitivo (D38).
+  const objetivoMarcadas = Math.min(calendario.length, t.fechasMarcadasPorSplit);
 
   const rendimiento = calcularRendimiento(state, rng);
   const fuerzaPropia = fuerzaDelEquipo(state, rendimiento);
@@ -243,14 +245,19 @@ function resolverFechaMarcada(state, rng, logsAcum) {
     + `${fecha.campeonElegido ? ` jugando ${fecha.campeonElegido.name}` : ''}.`
   )];
 
+  // Fase 9Re: la reacción postpartido dejó de ser una decisión. Es flavor —
+  // el código mismo dice que no puede tocar el resultado (ya pasó)— y con 4
+  // eventos de postpartido para toda la carrera repetía cada uno ~6 veces. Se
+  // resuelve sola (opción por peso, exactamente lo que hacía el camino
+  // headless) y se cuenta en una línea. El contenido no se borra: se degrada a
+  // crónica. El consumo de RNG es idéntico al del camino headless de antes.
   if (chance(BALANCE.temporada.probReaccion, rng)) {
     const candidatos = candidatosDePartido(stConResultado, motivo, true);
     if (candidatos.length > 0) {
       const evento = weightedPick(candidatos, (candidato) => pesoConMemoria(stConResultado, candidato), rng);
-      const contexto = calcularContexto(stConResultado, { ventana: 'regular', stakes: motivo });
-      // `fechaEnCurso` sigue vivo un turno más: {rivalDeLaFecha} tiene que
-      // seguir resolviendo en el texto de la reacción. Se limpia al resolverla.
-      return { state: stConResultado, logs, decision: construirDecisionMomento(stConResultado, evento, contexto, fecha, 'reaccion') };
+      const opcion = weightedPick(opcionesVivas(stConResultado, evento), (candidata) => candidata.weight, rng);
+      const { state: trasReaccion, logs: logsReaccion } = resolverOpcion(stConResultado, evento, opcion.id, rng);
+      return continuarTemporada(limpiarFechaEnCurso(trasReaccion), rng, [...logs, ...logsReaccion]);
     }
   }
 
@@ -261,7 +268,7 @@ function limpiarFechaEnCurso(state) {
   return { ...state, career: { ...state.career, temporada: { ...state.career.temporada, fechaEnCurso: null } } };
 }
 
-// --- El loop principal: recorre el calendario, marca 2-3 fechas, resuelve el resto en silencio ---
+// --- El loop principal: recorre el calendario, marca a lo sumo una fecha, resuelve el resto en silencio ---
 
 function continuarTemporada(state, rng, logsAcum) {
   let st = state;
@@ -274,7 +281,7 @@ function continuarTemporada(state, rng, logsAcum) {
       const logs = [...logsAcum];
       const resumen = textoResumenSilencioso(silenciosas);
       if (resumen) {
-        logs.push(crearLog('temporada', resumen));
+        logs.push(crearLog('temporada', resumen, { tecnico: true }));
       }
       const tablaFinal = tablaDePosiciones(t.registrosOtros, t.filaPropia);
       const posicion = posicionEnTabla(tablaFinal, st.career.currentOrg);
@@ -289,16 +296,17 @@ function continuarTemporada(state, rng, logsAcum) {
     const tablaAntes = tablaDePosiciones(t.registrosOtros, t.filaPropia);
     const motivos = motivosDeFecha(st, liga, fecha, tablaAntes, t.racha, t.indice, t.calendario.length);
 
-    const fechasRestantes = t.calendario.length - t.indice;
+    // Fase 9Re: se marca la PRIMERA fecha del split con un motivo real (nunca
+    // `parejo`), y como mucho una. Se fue `forzarMarca`: una temporada sin
+    // ningún motivo real pasa entera resumida, y está bien.
     const marcadasQueFaltan = t.objetivoMarcadas - t.marcadasHechas;
-    const forzarMarca = marcadasQueFaltan > 0 && fechasRestantes <= marcadasQueFaltan;
-    const marcar = marcadasQueFaltan > 0 && (forzarMarca || motivos.some((motivo) => motivo !== 'parejo'));
+    const marcar = marcadasQueFaltan > 0 && motivos.some((motivo) => motivo !== 'parejo');
 
     if (marcar) {
       const logs = [...logsAcum];
       const resumen = textoResumenSilencioso(silenciosas);
       if (resumen) {
-        logs.push(crearLog('temporada', resumen));
+        logs.push(crearLog('temporada', resumen, { tecnico: true }));
       }
       const stConFecha = {
         ...st,
@@ -340,12 +348,10 @@ export function resolver(state, decision, respuesta, rng) {
     return arrancarMomento(state, rng, [], elegido);
   }
 
+  // Solo queda el 'momento': la reacción postpartido dejó de ser una decisión
+  // (fase 9Re, se resuelve sola en `resolverFechaMarcada`).
   const evento = TODOS_LOS_EVENTOS.find((candidato) => candidato.id === decision.datos.eventoId);
   const { state: nextState, logs } = resolverOpcion(state, evento, respuesta.opcionId, rng);
-
-  if (motivo === 'reaccion') {
-    return continuarTemporada(limpiarFechaEnCurso(nextState), rng, logs);
-  }
 
   return resolverFechaMarcada(nextState, rng, logs);
 }

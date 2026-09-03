@@ -742,10 +742,12 @@ export const BALANCE = {
     // tan volátil como un mapa de playoffs, ni más ni menos.
     ruidoFecha: 7,
     ruidoRivalFecha: 12,
-    // Cuántas fechas del split se juegan de verdad. El resto se resuelve en
-    // silencio y pasa resumido en una línea.
-    fechasMarcadasMin: 2,
-    fechasMarcadasMax: 3,
+    // Fase 9Re: cuántas fechas del split frenan al jugador. Bajó de "2 a 3"
+    // (roll) a UNA: con 2-3 por split × ~23 splits competitivos la temporada
+    // regular era ~108 de las 248 decisiones de la carrera, casi todas sacadas
+    // del mismo mazo de 24 cartas. Ahora se marca a lo sumo la primera fecha
+    // del split con un motivo real (nunca `parejo`); el resto pasa resumido.
+    fechasMarcadasPorSplit: 1,
     // Racha de derrotas propias (dentro del split) que dispara `presion`.
     derrotasParaPresion: 2,
     // Cuánto puede mover el draft corto de una fecha marcada la fuerza de

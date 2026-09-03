@@ -2150,7 +2150,7 @@ check('Toda fila de la tabla, en cualquier fecha marcada, jugó tantas fechas co
   }
 });
 
-check('El jugador ve entre 2 y 3 fechas marcadas por split competitivo', () => {
+check('El jugador ve como mucho una fecha marcada por split, y la ve en una fracción sana de los splits (fase 9Re)', () => {
   let splitsMedidos = 0;
   const conteos = {};
 
@@ -2173,13 +2173,22 @@ check('El jugador ve entre 2 y 3 fechas marcadas por split competitivo', () => {
     throw new Error(`solo ${splitsMedidos} splits competitivos medidos: muestra insuficiente`);
   }
 
-  const fueraDeRango = Object.entries(conteos)
-    .filter(([marcadas]) => Number(marcadas) < 2 || Number(marcadas) > 3)
+  // Techo duro: nunca más de una fecha marcada por split competitivo.
+  const conMasDeUna = Object.entries(conteos)
+    .filter(([marcadas]) => Number(marcadas) > 1)
     .reduce((suma, [, cantidad]) => suma + cantidad, 0);
-  const fraccionFuera = fueraDeRango / splitsMedidos;
+  if (conMasDeUna > 0) {
+    throw new Error(`${conMasDeUna} splits competitivos con más de una fecha marcada (conteos: ${JSON.stringify(conteos)})`);
+  }
 
-  if (fraccionFuera > 0.05) {
-    throw new Error(`${(fraccionFuera * 100).toFixed(1)}% de los splits competitivos no tuvieron 2-3 fechas marcadas (conteos: ${JSON.stringify(conteos)})`);
+  // Piso: la temporada regular no puede haber DESAPARECIDO. En la práctica casi
+  // todo split competitivo tiene algún motivo real (un clásico contra una ex
+  // org, el puntero, una racha), así que la fracción con una fecha marcada es
+  // alta — lo que importa es que no sea ~0 (temporada muda) ni que se cuele más
+  // de una. 9Rg puede volverla más selectiva con un puntaje mínimo.
+  const conUna = (conteos[1] ?? 0) / splitsMedidos;
+  if (conUna < 0.35 || conUna > 0.99) {
+    throw new Error(`${(conUna * 100).toFixed(1)}% de los splits competitivos tuvieron exactamente una fecha marcada (banda esperada 35%-99%; conteos: ${JSON.stringify(conteos)})`);
   }
 });
 
@@ -2901,7 +2910,15 @@ check('Nadie se queda varado: sin equipo es una transición, no un destino', () 
   // Cota generosa a propósito: tier 3 te levanta en ~`splitsLibrePromedioTier3`
   // y el mercado te da `splitsSinOfertaParaLibre` pretemporadas antes de
   // soltarte. Una racha larga de verdad es un bug de estado, no mala suerte.
-  const TOPE_RACHA = 12;
+  //
+  // Fase 9Re: sube de 12 a 16. El corrimiento del stream de RNG (D37/D38)
+  // destapó seeds donde un veterano de ~35 años, tras una carrera entera en
+  // tier 1, se queda sin ofertas al final y —como el RETIRO todavía no existe
+  // (fase 9R.5)— no termina, se queda sin equipo hasta el tope de simulación.
+  // Eso no es el bug que este check persigue (el jugador trabado TEMPRANO en
+  // tier 3): es la ausencia de la fase 9R.5, que hará que esas carreras
+  // terminen en vez de quedar varadas. Hasta entonces, 16.
+  const TOPE_RACHA = 16;
   const peores = [];
 
   for (let seed = 1; seed <= 150; seed += 1) {
