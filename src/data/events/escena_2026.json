@@ -263,6 +263,7 @@
     "weight": 4,
     "cooldown": 12,
     "contexto": {
+      "ventana": ["pretemporada"],
       "etapa": ["debut", "profesional"],
       "region": ["KR"],
       "edadBanda": ["pico", "tardia", "veterana"]

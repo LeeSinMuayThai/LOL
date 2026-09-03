@@ -7,6 +7,7 @@
     "weight": 5,
     "cooldown": 4,
     "contexto": {
+      "ventana": ["regular", "playoffs"],
       "etapa": ["debut", "profesional"],
       "nivel": ["tier2", "tier1"],
       "momentum": ["racha", "estable"]
@@ -72,6 +73,7 @@
     "weight": 6,
     "cooldown": 4,
     "contexto": {
+      "ventana": ["playoffs"],
       "etapa": ["debut", "profesional"],
       "nivel": ["tier1"]
     },
@@ -136,6 +138,7 @@
     "weight": 4,
     "cooldown": 4,
     "contexto": {
+      "ventana": ["playoffs"],
       "etapa": ["debut", "profesional"],
       "nivel": ["tier1"]
     },
@@ -202,6 +205,7 @@
     "weight": 5,
     "cooldown": 6,
     "contexto": {
+      "ventana": ["regular"],
       "etapa": ["debut", "profesional"],
       "nivel": ["tier2", "tier1"],
       "momentum": ["slump"]
@@ -264,6 +268,7 @@
     "weight": 4,
     "cooldown": 10,
     "contexto": {
+      "ventana": ["playoffs"],
       "etapa": ["profesional"],
       "nivel": ["tier1"],
       "momentum": ["racha", "estable"]

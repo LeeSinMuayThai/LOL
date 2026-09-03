@@ -70,6 +70,9 @@ function elegirArquetipo(datos) {
     return { frase: `El que se bajó a los ${edad}`, esExito: false };
   }
 
+  if (intBuenos >= 3) {
+    return { frase: `La dinastía de ${internacional.org}: ${intBuenos} internacionales`, esExito: true };
+  }
   if (intBuenos >= 2) {
     return { frase: `El bicampeón: dos internacionales con ${internacional.org}`, esExito: true };
   }

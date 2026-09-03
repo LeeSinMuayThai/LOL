@@ -198,6 +198,7 @@
     "weight": 6,
     "cooldown": 4,
     "contexto": {
+      "ventana": ["pretemporada"],
       "etapa": ["debut", "profesional"]
     },
     "conditions": [

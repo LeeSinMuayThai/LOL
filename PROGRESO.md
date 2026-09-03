@@ -33,6 +33,47 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-03 — Fase 9R0c: encender `ventana` en los eventos atados al calendario
+
+Tercer commit de la fase 9R.0. El eje `ventana` (pretemporada / regular / playoffs / …) existe en
+`data/contextos.js` desde el paso 7 del proyecto y **sólo 26 de 97 eventos lo declaraban**, así
+que un `international_trip` o un momento dentro de un partido podía caer en la pretemporada — la
+queja del usuario ("2 meses afuera antes de Worlds a mitad de un split", "muchas cosas no son
+coherentes con el calendario").
+
+- **20 eventos gateados** (26 → **46** con `ventana`), sólo los inequívocamente atados al
+  calendario, sin reformatear los JSON (inserción de una línea como primera clave de `contexto`):
+  - `competicion` (5): `international_trip` / `worlds_dream` / `el_equipo_ideal_del_split` →
+    `["playoffs"]`; `title_run` → `["regular","playoffs"]`; `el_invicto_se_corta` → `["regular"]`.
+  - `rol/*` (11): situaciones dentro de un partido/serie → `["regular","playoffs"]`.
+  - ventana de mercado (4): `transfer_rumor`, `el_agente_te_llama`, `el_ano_muerto`,
+    `el_servicio_que_se_viene` → `["pretemporada"]`.
+- **El resto (51 eventos) queda sin `ventana` a propósito**: salud, familia, negocios y la
+  identidad reflexiva pueden pasar en cualquier ventana competitiva. El retrofit completo es
+  trabajo de contenido y se hace en **9R.3**.
+- **Rutinas por tier (D11) deferido**: gatear `bootcamp_corea` fuera de tier 3 lo deja sin ninguna
+  rutina `agresiva` en offseason (es la única) y hay que escribir una de reemplazo — sigue en
+  fase 13, con la nota.
+- **Check nuevo**: todo evento de categoría `competicion` o `rol_*` declara `ventana` con valores
+  válidos de `EJES.ventana`. `cobertura.js --huecos`: "sin huecos" (no se volvió inalcanzable
+  ninguna celda).
+
+#### Colateral (corrimiento de stream, familia D37 / trampa T6)
+
+Gatear eventos por `ventana` cambia qué evento gana cada `weightedPick` para una seed dada, y eso
+corre el stream río abajo. Dos checks anclados a una carrera concreta empezaron a fallar — **ni
+uno es una regresión de balance**:
+
+- *"La ficha profesional expone Mentalidad y Hype"* hardcodeaba `seed 7` y *"llega a profesional en
+  20 splits"*. Con el stream corrido, la seed 7 ahora se cae en la etapa amateur. Reescrito para
+  tomar la **primera de las primeras 50 seeds** que llegue a fase profesional — T6-proof.
+- *"Ningún arquetipo de veredicto supera el 25%"*: *"El bicampeón"* (≥2 internacionales con buen
+  papel) pasó de 11,3% (medido en 9R5b) a **25,3%** — el driver real es **9R5d** (carreras más
+  largas: `edadDeclive` 23→27, `edadRetiroForzoso` 31→34), que acumula más internacionales; 9R0c
+  fue el último empujón sobre la línea. Se **desglosó fino** (como ya hace el resto de la tabla de
+  arquetipos): `intBuenos >= 3` → nuevo arquetipo *"La dinastía de {org}: N internacionales"*
+  (11,0% de las carreras). *"El bicampeón"* baja a **14,3%**. `legado.js`, una rama nueva.
+
 ### 2026-09-03 — Fase 9R0b: feedback de resultado de minijuego
 
 Segundo commit de la fase 9R.0. **Sólo UI** (`index.html`). El motor ya recibía el `resultado`

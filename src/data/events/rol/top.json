@@ -7,6 +7,7 @@
     "weight": 6,
     "cooldown": 5,
     "contexto": {
+      "ventana": ["regular", "playoffs"],
       "rol": ["top"],
       "etapa": ["debut", "profesional"],
       "marcas": ["con_vestuario"]
@@ -70,6 +71,7 @@
     "weight": 5,
     "cooldown": 5,
     "contexto": {
+      "ventana": ["regular", "playoffs"],
       "rol": ["top"]
     },
     "conditions": [

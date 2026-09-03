@@ -638,6 +638,38 @@ check('Todo contenido declara dónde aparece', () => {
   }
 });
 
+check('Todo evento atado al calendario declara su ventana (fase 9R0c)', () => {
+  // "2 meses afuera antes de Worlds a mitad de un split de temporada regular":
+  // el eje `ventana` existe desde el paso 7 y casi nadie lo declaraba, así que
+  // un evento de competición o un momento dentro de un partido caía en
+  // pretemporada igual. Un evento de estas categorías SIN ventana declarada es
+  // el bug. El resto del catálogo (salud, familia, negocios, identidad) puede
+  // pasar en cualquier ventana y no se fuerza acá.
+  const VENTANAS = new Set(EJES.ventana);
+  const faltan = [];
+
+  for (const evento of TODOS_LOS_EVENTOS) {
+    const atadoAlCalendario = evento.category === 'competicion' || String(evento.category).startsWith('rol_');
+    if (!atadoAlCalendario) {
+      continue;
+    }
+    const ventana = evento.contexto?.ventana;
+    if (!Array.isArray(ventana) || ventana.length === 0) {
+      faltan.push(evento.id);
+      continue;
+    }
+    for (const v of ventana) {
+      if (!VENTANAS.has(v)) {
+        throw new Error(`${evento.id}: ventana "${v}" no está en EJES.ventana`);
+      }
+    }
+  }
+
+  if (faltan.length > 0) {
+    throw new Error(`eventos de competición/rol sin ventana declarada: ${faltan.join(', ')}`);
+  }
+});
+
 check('Toda opción se lee antes y todo resultado se cuenta después', () => {
   // Una opcion sin `descripcion` es un boton sin apuesta: no sabes que estas
   // arriesgando. Un outcome sin `texto` devuelve un diff en vez de una historia
@@ -3428,13 +3460,23 @@ check('La duración de la carrera correlaciona con el potencial oculto (r > 0.35
 // --- Fase 9R.2: Mentalidad y Hype se dibujan ---
 
 check('La ficha profesional expone Mentalidad y Hype con banda y flecha', () => {
-  const rng = mulberry32(7);
-  let state = createInitialState(7, rng);
-  for (let i = 0; i < 20 && state.phase !== 'profesional'; i += 1) {
-    state = avanzarSplitAuto(state, rng).state;
+  // No se ancla a una seed fija: cualquier cambio que corra el stream de RNG
+  // (fase 9R0a/9R0c y toda la familia D37) cambia qué carrera reproduce una
+  // seed dada, y "la seed 7 llega a profesional" dejó de ser cierto. Se toma
+  // la primera de las primeras 50 seeds que llegue a fase profesional.
+  let state = null;
+  for (let seed = 1; seed <= 50 && !state; seed += 1) {
+    const rng = mulberry32(seed);
+    let s = createInitialState(seed, rng);
+    for (let i = 0; i < 40 && s.phase !== 'profesional' && !s.terminado; i += 1) {
+      s = avanzarSplitAuto(s, rng).state;
+    }
+    if (s.phase === 'profesional') {
+      state = s;
+    }
   }
-  if (state.phase !== 'profesional') {
-    throw new Error('la seed 7 no llegó a profesional en 20 splits');
+  if (!state) {
+    throw new Error('ninguna de las primeras 50 seeds llegó a fase profesional en 40 splits');
   }
   const ficha = fichaCompleta(state);
   for (const eje of ['mentalidad', 'hype']) {

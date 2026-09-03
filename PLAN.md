@@ -2089,7 +2089,33 @@ Carreras sin final a los 35 años: 0                                   (hoy 69%)
 - **Checks nuevos:** cada motivo tiene ≥5 frases / ≥3 etiquetas sin duplicados; la línea de fecha
   marcada más repetida por carrera tiene mediana ≤4 y máx ≤10.
 
-## 9R0b–9R0e — (pendientes, ver tabla de arriba)
+## 9R0b — feedback de resultado de minijuego ✅
+
+`index.html` (`mostrarMinijuego`). El motor ya recibía el `resultado` 0-1 y seguía de largo. Ahora
+el `onDone` pinta un beat de 1,6 s — `¡Clavado! / Salió parejo / No salió` + la consecuencia
+concreta por tipo de minijuego — antes de llamar a `responder`. No toca el motor. e2e en Chrome
+real (CDP).
+
+## 9R0c — encender `ventana` en los eventos atados al calendario ✅
+
+**Archivos:** `data/events/{competicion,rol/*,drama_prensa,negocios,marcas_vivas,escena_2026}.json`,
+`dev/validate.js`. **`data/contextos.js` describe `ventana` desde el paso 7 y sólo 26/97 eventos lo
+declaraban** → un `international_trip` o un momento dentro de un partido caía en pretemporada igual.
+
+- **20 eventos gateados** (26 → 46 con `ventana`): los 5 de `competicion` (`international_trip` /
+  `worlds_dream` / `el_equipo_ideal_del_split` → `['playoffs']`, `title_run` →
+  `['regular','playoffs']`, `el_invicto_se_corta` → `['regular']`), los 11 de `rol/*` (momentos
+  dentro de un partido → `['regular','playoffs']`), y 4 de ventana de mercado (`transfer_rumor`,
+  `el_agente_te_llama`, `el_ano_muerto`, `el_servicio_que_se_viene` → `['pretemporada']`).
+- El resto del catálogo (salud, familia, negocios, identidad reflexiva) **puede pasar en cualquier
+  ventana** y no se fuerza: el retrofit completo de los 51 restantes es contenido, va a **9R.3**.
+- **Rutinas por tier (D11):** deferido — gatear `bootcamp_corea` a tier 1/2 deja al tier 3 sin
+  `agresiva` en offseason y hay que escribir una de reemplazo. Sigue en fase 13, con la nota.
+- **Check nuevo:** todo evento de categoría `competicion` o `rol_*` declara `ventana` con valores de
+  `EJES.ventana`. `cobertura.js --huecos`: sin huecos nuevos.
+
+## 9R0d — que cada split remate en algo — (pendiente)
+## 9R0e — el mercado lee tu nivel — (pendiente)
 
 ---
 
