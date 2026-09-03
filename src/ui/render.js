@@ -5,6 +5,7 @@
 // vivían enteros en `index.html` (deuda D7 de PLAN.md).
 export { crearPantallaInicio } from './screens/inicio.js';
 export { renderCarrera, mostrarDecisionEnPantalla, mostrarMercadoEnPantalla } from './screens/carrera.js';
+export { renderTarjeta } from './screens/tarjeta.js';
 export { renderFicha } from './components/ficha.js';
 export { renderFeed } from './components/feed.js';
 export { renderDecision } from './components/decision.js';

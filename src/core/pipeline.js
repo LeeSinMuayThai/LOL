@@ -1,5 +1,6 @@
 import { BALANCE } from '../data/balance.js';
 import { ETAPAS_SPLIT, sistemaPorId } from '../systems/registro.js';
+import { componerLegado } from './legado.js';
 
 export { ETAPAS_SPLIT };
 
@@ -8,6 +9,18 @@ function acumularLogs(state, logsNuevos) {
     return state;
   }
   return { ...state, logs: [...state.logs, ...logsNuevos] };
+}
+
+// Fase 9R5b: en cuanto una carrera termina —por retiro, burnout, o cualquiera
+// de los finales de la etapa amateur— se compone la tarjeta de legado una sola
+// vez. `componerLegado` es puro; esto es el único lugar por el que pasa toda
+// carrera al cerrar (`correrEtapas` corta el bucle en `terminado`, así que un
+// "sistema final" nunca correría).
+function conTarjeta(resultado) {
+  if (resultado.state.terminado && !resultado.state.tarjeta) {
+    return { ...resultado, state: { ...resultado.state, tarjeta: componerLegado(resultado.state) } };
+  }
+  return resultado;
 }
 
 // Fase 9Rf: toda pausa —venga del sistema que venga— descuenta una
@@ -65,7 +78,7 @@ export function avanzarSplit(state, rng) {
   if (state.terminado || state.pendiente) {
     return { state, logs: [] };
   }
-  return correrEtapas(state, 0, rng);
+  return conTarjeta(correrEtapas(state, 0, rng));
 }
 
 export function resolverDecision(state, respuesta, rng) {
@@ -88,10 +101,10 @@ export function resolverDecision(state, respuesta, rng) {
   nextState = { ...nextState, pendiente: null };
 
   if (nextState.terminado) {
-    return { state: nextState, logs };
+    return conTarjeta({ state: nextState, logs });
   }
 
-  const continuacion = correrEtapas(nextState, etapaDe(sistemaId) + 1, rng);
+  const continuacion = conTarjeta(correrEtapas(nextState, etapaDe(sistemaId) + 1, rng));
   return { state: continuacion.state, logs: [...logs, ...continuacion.logs] };
 }
 

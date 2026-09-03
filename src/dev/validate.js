@@ -27,6 +27,7 @@ import {
 } from '../core/temporada.js';
 import { tierListDeRol, boostDelPool } from '../core/regimen.js';
 import { nivelDelJugador, deltasDeStats } from '../core/ficha.js';
+import { componerLegado } from '../core/legado.js';
 import { bandaDeArraigo } from '../core/registro.js';
 import { salarioDeOferta } from '../core/salarios.js';
 import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
@@ -3215,6 +3216,108 @@ check('La duración de la carrera correlaciona con el potencial oculto (r > 0.35
   const r = num / Math.sqrt(dx * dy);
   if (r <= 0.35) {
     throw new Error(`r(potencial, duración de carrera) = ${r.toFixed(2)} (se esperaba > 0.35: un crack juega más años)`);
+  }
+});
+
+// --- Fase 9R5b: la tarjeta de legado ---
+
+function correrHastaTerminar(seed) {
+  const rng = mulberry32(seed);
+  let state = createInitialState(seed, rng);
+  for (let i = 0; i < 90 && !state.terminado; i += 1) {
+    state = avanzarSplitAuto(state, rng).state;
+  }
+  return state;
+}
+
+check('Toda carrera terminada compone una tarjeta de legado bien formada', () => {
+  let terminadas = 0;
+  for (let seed = 1; seed <= 400; seed += 1) {
+    const state = correrHastaTerminar(seed);
+    if (!state.terminado) {
+      continue;
+    }
+    terminadas += 1;
+    const t = state.tarjeta;
+    if (!t) {
+      throw new Error(`seed ${seed}: carrera terminada (${state.finAnticipado}) sin state.tarjeta`);
+    }
+    if (typeof t.veredicto !== 'string' || t.veredicto.trim().length < 10) {
+      throw new Error(`seed ${seed}: veredicto vacío o trivial ("${t.veredicto}")`);
+    }
+    if (typeof t.esExito !== 'boolean' || !t.totales || !Array.isArray(t.historia)) {
+      throw new Error(`seed ${seed}: tarjeta mal formada`);
+    }
+  }
+  if (terminadas < 300) {
+    throw new Error(`solo ${terminadas} carreras terminaron en 400 seeds: muestra insuficiente`);
+  }
+});
+
+check('Ningún arquetipo de veredicto se lleva a toda la población (tope 25%, CONCEPTO §11)', () => {
+  const stems = {};
+  let total = 0;
+  for (let seed = 1; seed <= 800; seed += 1) {
+    const state = correrHastaTerminar(seed);
+    if (!state.terminado || !state.tarjeta) {
+      continue;
+    }
+    total += 1;
+    // El arquetipo es la plantilla, no la frase con la org/el año/el número
+    // rellenados: se agrupa quitando todo lo que sigue a " de "/" con "/":".
+    const stem = state.tarjeta.veredicto
+      .split('.')[0]
+      .split(':')[0]
+      .replace(/ (de|con) .+$/i, '')
+      .replace(/a los \d+/i, 'a los N')
+      .trim();
+    stems[stem] = (stems[stem] ?? 0) + 1;
+  }
+  if (total < 400) {
+    throw new Error(`solo ${total} carreras con tarjeta en 800 seeds: muestra insuficiente`);
+  }
+  const peor = Object.entries(stems).sort((a, b) => b[1] - a[1])[0];
+  if (peor[1] / total > 0.25) {
+    throw new Error(`el arquetipo "${peor[0]}" es el ${((peor[1] / total) * 100).toFixed(1)}% de los veredictos (tope 25%)`);
+  }
+});
+
+check('El veredicto cita al menos un hecho real del registro de esa carrera', () => {
+  let revisados = 0;
+  for (let seed = 1; seed <= 300; seed += 1) {
+    const state = correrHastaTerminar(seed);
+    if (!state.terminado || !state.tarjeta) {
+      continue;
+    }
+    revisados += 1;
+    const v = state.tarjeta.veredicto;
+    const r = state.career.registro;
+    const orgs = r.porOrg.map((fila) => fila.org);
+    const anios = r.porOrg.flatMap((fila) => [String(fila.desdeAnio), String(fila.hastaAnio)]);
+    const cita = orgs.some((org) => org && v.includes(org))
+      || anios.some((anio) => anio && anio !== 'null' && v.includes(anio))
+      || v.includes(String(r.splitsJugados))
+      || (r.momentos.length > 0 && v.includes(r.momentos[r.momentos.length - 1].texto));
+    if (!cita) {
+      throw new Error(`seed ${seed}: el veredicto "${v}" no cita ningún hecho del registro (orgs: ${orgs.join(', ')})`);
+    }
+  }
+  if (revisados < 200) {
+    throw new Error(`solo ${revisados} veredictos revisados en 300 seeds: muestra insuficiente`);
+  }
+});
+
+check('componerLegado es puro: no toca el RNG ni muta el estado que recibe', () => {
+  const rngQueRevienta = () => { throw new Error('componerLegado tocó el rng'); };
+  const state = correrHastaTerminar(2);
+  if (!state.terminado) {
+    throw new Error('la seed 2 no terminó: no se puede probar componerLegado');
+  }
+  const antes = JSON.stringify(state.career.registro);
+  // Se ignora `_`: solo interesa que no explote por tocar el rng y que no mute.
+  componerLegado({ ...state, tarjeta: null }, rngQueRevienta);
+  if (JSON.stringify(state.career.registro) !== antes) {
+    throw new Error('componerLegado mutó state.career.registro');
   }
 });
 

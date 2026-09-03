@@ -33,6 +33,58 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-03 — Fase 9R5b: la tarjeta de legado
+
+Sexto commit de la fase 9R. Con 9R5a la carrera ya termina; esta le da el **pago**: una tarjeta
+final con un veredicto compuesto, hecha para screenshot (`CONCEPTO` §1/§9: *"todo el motor de
+difusión del juego"*). **Toda** salida termina en tarjeta — la del mundialista con confeti y la
+del pibe al que no lo dejaron, con su propio marco.
+
+#### `src/core/legado.js` (nuevo, puro — como `core/ficha.js`)
+
+`componerLegado(state)` arma `state.tarjeta`. El veredicto **se compone** (`PLAN.md` §10.2), no se
+elige de una lista: `plantillaDeArquetipo + ". " + detalleDeCarrera`, donde el detalle **siempre
+cita un hecho real** del registro de esa carrera (splits en tal org, años, un momento narrativo).
+
+13 arquetipos gateados por `career.registro` / `finAnticipado`, desglosados fino para que ninguno
+se lleve a toda la población (`CONCEPTO` §11, tope 25%): *el bicampeón* (≥2 internacionales) ·
+*leyenda de {liga}* (1 internacional + ≥3 títulos t1) · *el mundialista de {org}* · *el que llegó
+al internacional* · *campeón de {liga}* · *el eterno cuarto puesto* · *el pibe que pasó por primera
+y no se quedó* · *el nómade que nunca echó raíces* · *el del ascenso* · *un profesional más* · más
+los tres finales de fracaso (*el que no llegó / no lo dejaron / se bajó a los N*).
+
+#### `src/ui/screens/tarjeta.js` (nuevo) + plomería
+
+`renderTarjeta` pinta el marco (según `finAnticipado`), el veredicto, la franja de totales (años,
+splits, títulos, nivel máx, valor máx) y la **historia org por org reusando `filaHistoria`** de
+`ui/components/ficha.js` — escrita en la fase 8 explícitamente "para que la tarjeta de la fase 10
+la reuse". `render.js` la exporta; `index.html` monta `#tarjetaPanel` en `renderResumenFinal`
+cuando `state.tarjeta` existe, y lo limpia al empezar una carrera nueva. CSS `.tarjeta` /
+`.tarjeta--exito` (confeti dorado) / `.tarjeta--sobria`.
+
+#### El hook
+
+`core/pipeline.js` compone la tarjeta una sola vez, en `conTarjeta(resultado)`, aplicado en los
+tres puntos de retorno que pueden llevar `terminado: true` (`correrEtapas` corta el bucle en
+`terminado`, así que un "sistema final" en `ETAPAS_SPLIT` nunca correría). `state.tarjeta: null`
+nuevo en el estado inicial (T4).
+
+#### Números medidos (800 seeds)
+
+- **0** carreras terminadas sin `state.tarjeta`.
+- Arquetipo más frecuente: **21,5%** (*"El que no llegó"*), bajo el tope de 25%. Reparto:
+  nómade 18,5% · llegó al internacional 15,3% · mundialista 12,8% · bicampeón 11,3% · resto <5%.
+- **0** veredictos que no citen un hecho real del registro.
+
+> **Nota**: ~42% de las carreras tocan un internacional (mundialista + bicampeón + "llegó al
+> internacional"). El internacional es demasiado accesible en el sim — es balance de 9Rg/9M, no de
+> la tarjeta; el desglose fino del veredicto lo absorbe por ahora.
+
+**Verificación**: `validate.js` 98 checks OK (+4: toda carrera terminada compone tarjeta bien
+formada; ningún arquetipo supera el 25%; el veredicto cita un hecho real; `componerLegado` es puro
+—no toca RNG ni muta el estado). `simulate.js 1000 60 todas`: 0 crashes. Pendiente: e2e en el
+navegador (se hace junto con 9R.2, que también es UI).
+
 ### 2026-09-03 — Fase 9R5a: la carrera termina (retiro emergente)
 
 Quinto commit de la fase 9R, primero del bloque "el final" (§9R.5). Antes **ninguna carrera tenía

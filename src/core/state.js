@@ -22,6 +22,10 @@ export function createInitialState(seed, rng, eleccion = null) {
     phase: 'amateur',
     terminado: false,
     finAnticipado: null,
+    // Fase 9R5b: la tarjeta de legado, compuesta una sola vez por
+    // `core/pipeline.js` cuando `terminado` pasa a true. `null` mientras la
+    // carrera sigue viva.
+    tarjeta: null,
     splitFichaje: null,
     // Decision a medio resolver. Vive adentro de state para que una partida en
     // curso sea serializable y reanudable (regla invariable 9).

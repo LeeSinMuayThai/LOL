@@ -476,6 +476,59 @@
         border-top: 1px solid rgba(255,255,255,0.06);
       }
 
+      /* --- Tarjeta de legado (fase 9R5b): la pantalla final --- */
+      .tarjeta {
+        margin-top: 18px;
+        padding: 20px;
+        border-radius: 16px;
+        border: 1px solid rgba(255,255,255,0.12);
+        background: rgba(255,255,255,0.03);
+        text-align: center;
+      }
+      .tarjeta--exito {
+        border-color: rgba(240, 200, 90, 0.55);
+        background: linear-gradient(180deg, rgba(240,200,90,0.12), rgba(240,200,90,0.03));
+      }
+      .tarjeta--sobria {
+        border-color: rgba(160, 175, 205, 0.35);
+      }
+      .tarjeta-marco {
+        font-size: 12px;
+        letter-spacing: 0.14em;
+        color: #9fb0d2;
+      }
+      .tarjeta-identidad {
+        margin-top: 6px;
+        font-size: 13px;
+        color: #c3cfe8;
+      }
+      .tarjeta-veredicto {
+        margin: 14px 0;
+        font-size: 20px;
+        font-weight: 700;
+        line-height: 1.35;
+        color: #f4f7ff;
+      }
+      .tarjeta--exito .tarjeta-veredicto { color: #ffe6a6; }
+      .tarjeta-totales {
+        font-size: 12px;
+        color: #9fb0d2;
+        padding-bottom: 14px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+      }
+      .tarjeta-historia {
+        margin-top: 14px;
+        font-size: 12px;
+        color: #9fb0d2;
+        text-align: left;
+      }
+      .tarjeta-historia-titulo {
+        font-size: 11px;
+        letter-spacing: 0.12em;
+        color: #8ea3c7;
+        margin-bottom: 4px;
+      }
+
       /* --- Minijuegos (fase 4): un widget real por decisión, no un botón --- */
       .minijuego {
         margin-top: 16px;
@@ -748,6 +801,10 @@
         </div>
 
         <div id="logList" class="log-list"></div>
+
+        <!-- Fase 9R5b: la tarjeta de legado. Se muestra cuando la carrera termina. -->
+        <div id="tarjeta" class="tarjeta" hidden></div>
+
         <button id="nuevaCarrera" type="button" hidden>Nueva carrera</button>
       </div>
     </div>
@@ -779,6 +836,7 @@
       const mercadoDesc = document.getElementById('mercadoDesc');
       const mercadoGrid = document.getElementById('mercadoGrid');
       const mercadoRepresentante = document.getElementById('mercadoRepresentante');
+      const tarjetaPanel = document.getElementById('tarjeta');
       const seedInput = document.getElementById('seedInput');
 
       // El contrato de elementos que `src/ui/render.js` necesita para pintar
@@ -1058,6 +1116,15 @@
           summary.textContent = 'Seguís en etapa amateur, grindeando soloQ para llamar la atención de un equipo.';
         }
         metaPill.textContent = `Meta dominante: ${strongestMeta} · seed ${state.seed}`;
+
+        // Fase 9R5b: si la carrera terminó, la tarjeta de legado es la pantalla
+        // final. Se ocultan los paneles de decisión y se pinta la tarjeta.
+        if (state.terminado && state.tarjeta) {
+          decisionPanel.hidden = true;
+          minijuegoPanel.hidden = true;
+          mercadoPanel.hidden = true;
+          ui.renderTarjeta(tarjetaPanel, state, modulos);
+        }
       }
 
       function pintar() {
@@ -1123,6 +1190,8 @@
         decisionPanel.hidden = true;
         minijuegoPanel.hidden = true;
         mercadoPanel.hidden = true;
+        tarjetaPanel.hidden = true;
+        tarjetaPanel.replaceChildren();
         nuevaCarreraBtn.hidden = true;
         summary.textContent = 'Arrancando la carrera...';
         metaPill.textContent = '';
