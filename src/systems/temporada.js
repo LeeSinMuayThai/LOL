@@ -4,9 +4,9 @@ import { calcularContexto } from '../core/contexto.js';
 import { resolverTexto } from '../core/plantillas.js';
 import { ligaOZonaDeCarrera } from '../core/competicion.js';
 import {
-  generarCalendario, simularResto, tablaDePosiciones, posicionEnTabla,
+  generarFixture, aplicarCrucesDeJornada, tablaDePosiciones, posicionEnTabla,
   resolverFecha, motivosDeFecha, motivoPrincipal, decisionDeDraftFecha, factorDraftFecha,
-  registrarEnFila
+  registrarEnFila, filaVacia
 } from '../core/temporada.js';
 import { calcularRendimiento, fuerzaDelEquipo } from './rendimiento.js';
 import { disponibleEn, opcionesVivas, resolverOpcion, cooldownActivo, pesoConMemoria } from './events.js';
@@ -73,12 +73,18 @@ function textoResumenSilencioso({ ganados, perdidos }) {
 function iniciarTemporada(state, rng) {
   // `ligaOZonaDeCarrera` no debería devolver null nunca con currentOrg seteado
   // (todo tier tiene una liga o una zona sintética), pero si alguna vez pasa,
-  // la temporada queda vacía en vez de reventar: calendario sin fechas,
-  // registrosOtros vacío, y `continuarTemporada` cierra en el primer chequeo
-  // con una tabla de un solo equipo.
+  // la temporada queda vacía en vez de reventar: calendario sin fechas, cruces
+  // vacíos, registrosOtros vacío, y `continuarTemporada` cierra en el primer
+  // chequeo con una tabla de un solo equipo.
   const liga = ligaOZonaDeCarrera(state);
-  const calendario = generarCalendario(state);
-  const registrosOtros = liga ? simularResto(liga, state.career.currentOrg, rng) : {};
+  const { calendario, cruces } = generarFixture(liga, state.career.currentOrg);
+  // Fase 9Rb: las filas ajenas arrancan en cero, igual que la tuya. Se llenan
+  // jornada a jornada en `avanzarFechaSilenciosa`, en paso con tus fechas.
+  const registrosOtros = Object.fromEntries(
+    (liga?.orgs ?? [])
+      .filter((org) => org.nombre !== state.career.currentOrg)
+      .map((org) => [org.nombre, filaVacia(org.nombre)])
+  );
   const t = BALANCE.temporada;
   const objetivoMarcadas = Math.min(calendario.length, roll(t.fechasMarcadasMin, t.fechasMarcadasMax, rng));
 
@@ -88,6 +94,7 @@ function iniciarTemporada(state, rng) {
   return {
     activa: true,
     calendario,
+    cruces,
     indice: 0,
     rendimiento,
     fuerzaPropia,
@@ -103,15 +110,16 @@ function iniciarTemporada(state, rng) {
   };
 }
 
-// Registra el resultado de la fecha en curso (`t.calendario[t.indice]`) en
-// LOS DOS lados de la tabla: la fila propia Y la fila del rival de esa fecha.
-// Sin esto, un partido que el jugador gana o pierde solo se anota en su
-// propia fila y la tabla nunca cierra: cada fecha jugada por el jugador tiene
-// que sumar exactamente un ganado de un lado y un perdido del otro, igual que
-// ya hace `simularResto` entre las demás orgs.
-function avanzarFechaSilenciosa(state, gano) {
+// El único choke point por el que avanza una jornada, marcada o silenciosa.
+// Registra el resultado de tu fecha (`t.calendario[t.indice]`) en los DOS
+// lados — tu fila y la del rival — y resuelve los cruces ajenos de ESA misma
+// jornada (`t.cruces[t.indice]`), para que todas las filas de la tabla
+// avancen juntas (fase 9Rb). Cada jornada suma exactamente un ganado y un
+// perdido por equipo.
+function avanzarFechaSilenciosa(state, gano, rng) {
   const t = state.career.temporada;
   const fecha = t.calendario[t.indice];
+  const registrosTrasOtros = aplicarCrucesDeJornada(t.registrosOtros, t.cruces?.[t.indice] ?? [], rng);
   return {
     ...state,
     career: {
@@ -124,7 +132,7 @@ function avanzarFechaSilenciosa(state, gano) {
         ...t,
         indice: t.indice + 1,
         filaPropia: registrarEnFila(t.filaPropia, gano),
-        registrosOtros: { ...t.registrosOtros, [fecha.rival]: registrarEnFila(t.registrosOtros[fecha.rival], !gano) },
+        registrosOtros: { ...registrosTrasOtros, [fecha.rival]: registrarEnFila(registrosTrasOtros[fecha.rival], !gano) },
         racha: gano ? (t.racha > 0 ? t.racha + 1 : 1) : (t.racha < 0 ? t.racha - 1 : -1)
       }
     }
@@ -214,8 +222,18 @@ function resolverFechaMarcada(state, rng, logsAcum) {
   const fuerzaFecha = t.fuerzaPropia * (1 + factorDraft + (t.ajustePartido ?? 0));
   const gano = resolverFecha(fuerzaFecha, fecha.fuerzaRival, rng);
 
-  const filaTrasFecha = registrarEnFila(t.filaPropia, gano);
-  const tablaTrasFecha = tablaDePosiciones(t.registrosOtros, filaTrasFecha);
+  // El resultado ya quedó fijo: se avanza la jornada COMPLETA (tu fecha + los
+  // cruces ajenos de esa ronda) ANTES de leer la tabla, para que la posición
+  // que se loguea sea la de una jornada de verdad cerrada y no la de
+  // vos-jugaste-y-el-resto-no (fase 9Rb). La reacción posterior es flavor y no
+  // puede volver a tocar el resultado.
+  const stConResultado = avanzarFechaSilenciosa(
+    { ...state, career: { ...state.career, temporada: { ...t, ajustePartido: 0 } } },
+    gano,
+    rng
+  );
+  const tt = stConResultado.career.temporada;
+  const tablaTrasFecha = tablaDePosiciones(tt.registrosOtros, tt.filaPropia);
   const posicion = posicionEnTabla(tablaTrasFecha, state.career.currentOrg);
 
   const logs = [...logsAcum, crearLog(
@@ -224,14 +242,6 @@ function resolverFechaMarcada(state, rng, logsAcum) {
     + `Quedan ${posicion}º de ${tablaTrasFecha.length}`
     + `${fecha.campeonElegido ? ` jugando ${fecha.campeonElegido.name}` : ''}.`
   )];
-
-  // El resultado ya quedó fijo (indice, tabla y racha avanzan) ANTES de mirar
-  // si hay una reacción posterior: la reacción es flavor y no puede volver a
-  // tocar el resultado de esta fecha.
-  const stConResultado = avanzarFechaSilenciosa(
-    { ...state, career: { ...state.career, temporada: { ...t, ajustePartido: 0 } } },
-    gano
-  );
 
   if (chance(BALANCE.temporada.probReaccion, rng)) {
     const candidatos = candidatosDePartido(stConResultado, motivo, true);
@@ -302,7 +312,7 @@ function continuarTemporada(state, rng, logsAcum) {
 
     const gano = resolverFecha(t.fuerzaPropia, fecha.fuerzaRival, rng);
     silenciosas = { ...silenciosas, [gano ? 'ganados' : 'perdidos']: silenciosas[gano ? 'ganados' : 'perdidos'] + 1 };
-    st = avanzarFechaSilenciosa(st, gano);
+    st = avanzarFechaSilenciosa(st, gano, rng);
   }
 }
 

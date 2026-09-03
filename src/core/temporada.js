@@ -13,28 +13,69 @@ import { BALANCE } from '../data/balance.js';
 // estado, siguiendo el mismo reparto que ya usan `core/serie.js` y
 // `systems/serie.js`.
 //
-// Simplificación deliberada, en el mismo espíritu que D19 (el bracket de
-// playoffs solo simula TU camino): los partidos entre los OTROS equipos de la
-// liga se resuelven todos de una vez al abrir el split (`simularResto`), no
-// fecha a fecha en paralelo con los tuyos. La tabla que ves mezcla tu
-// progreso real, fecha a fecha, con el resultado YA CERRADO de los demás —
-// es una aproximación a cómo se leería una tabla a mitad de temporada, no la
-// tabla real minuto a minuto. Alcanza para que "el puntero" y "cerca del
-// corte" tengan sentido sin timear 45 partidos ajenos fecha por fecha.
+// Fase 9Rb: antes los partidos entre los OTROS equipos se resolvían TODOS de
+// una vez al abrir el split (`simularResto`), mientras tu fila arrancaba 0-0 y
+// crecía fecha a fecha. La tabla mezclaba tu jornada 3 con la jornada 9 de los
+// demás, así que en la primera mitad de toda temporada te decía que ibas
+// último (posición relativa media 0,96 en la jornada 1) gobiernes como
+// gobiernes — y sobre esa tabla falsa se calculaban `puntero` y
+// `define_clasificacion`. Ahora hay un fixture round-robin real y los cruces
+// ajenos de cada jornada se resuelven EN PASO con los tuyos: la tabla siempre
+// tiene a todos con la misma cantidad de fechas jugadas.
 
-// El calendario del jugador: una vez contra cada otra org de su liga (o zona,
-// en tier 3). Puro y determinista: no consume `rng`, así se puede enumerar y
-// testear sin simular nada (regla del proyecto: el calendario no depende de
-// cuándo se lo mira).
-export function generarCalendario(state) {
-  const liga = ligaOZonaDeCarrera(state);
-  if (!liga) {
-    return [];
+// Round-robin de una sola vuelta por el método del círculo. Con N equipos
+// (siempre par en las ligas y zonas del juego) da N-1 jornadas, cada equipo
+// contra cada otro exactamente una vez y sin fechas libres. Puro y
+// determinista: NO consume `rng` — el fixture no depende de cuándo se lo mira,
+// igual que el calendario que reemplaza. Devuelve el calendario del jugador
+// (misma forma de siempre: `{ jornada, rival, fuerzaRival, local }`) y, por
+// jornada, los cruces que NO lo involucran.
+export function generarFixture(liga, propiaNombre) {
+  if (!liga || !Array.isArray(liga.orgs) || liga.orgs.length < 2) {
+    return { calendario: [], cruces: [] };
   }
-  const propia = state.career.currentOrg;
-  return liga.orgs
-    .filter((org) => org.nombre !== propia)
-    .map((org, indice) => ({ jornada: indice + 1, rival: org.nombre, fuerzaRival: org.fuerza, local: indice % 2 === 0 }));
+
+  const equipos = liga.orgs;
+  const n = equipos.length;
+  const mitad = Math.floor(n / 2);
+  const calendario = [];
+  const cruces = [];
+
+  // Posiciones 0..n-1: la 0 queda fija y el resto rota una posición por
+  // jornada. En cada jornada se enfrentan pos[i] y pos[n-1-i]. Con n impar
+  // (no debería pasar) el último "equipo" es un hueco y ese rival tiene fecha
+  // libre esa jornada.
+  const pos = equipos.map((_, i) => i);
+
+  for (let r = 0; r < n - 1; r += 1) {
+    const crucesJornada = [];
+    for (let i = 0; i < mitad; i += 1) {
+      const a = equipos[pos[i]];
+      const b = equipos[pos[n - 1 - i]];
+      if (!a || !b) {
+        continue;
+      }
+      if (a.nombre === propiaNombre || b.nombre === propiaNombre) {
+        const rival = a.nombre === propiaNombre ? b : a;
+        // `local` = sos vos el primero del par. No cambia ninguna fórmula (no
+        // hay ventaja de localía en resolverFecha), solo le da un valor
+        // coherente al campo que el calendario ya traía.
+        calendario.push({ jornada: r + 1, rival: rival.nombre, fuerzaRival: rival.fuerza, local: a.nombre === propiaNombre });
+      } else {
+        crucesJornada.push({ local: a.nombre, visitante: b.nombre, fuerzaLocal: a.fuerza, fuerzaVisitante: b.fuerza });
+      }
+    }
+    cruces.push(crucesJornada);
+    pos.splice(1, 0, pos.pop());
+  }
+
+  return { calendario, cruces };
+}
+
+// El calendario del jugador, derivado del fixture. Misma firma y misma forma
+// de retorno que antes: `systems/temporada.js` y los checks no cambian.
+export function generarCalendario(state) {
+  return generarFixture(ligaOZonaDeCarrera(state), state.career.currentOrg).calendario;
 }
 
 // Misma forma que `finalizarMapa` en `systems/serie.js`: cada lado tira
@@ -57,29 +98,27 @@ export function registrarEnFila(fila, gano) {
     : { ...fila, perdidos: fila.perdidos + 1 };
 }
 
-// Los partidos entre los equipos que NO son el jugador, resueltos todos de
-// una vez (ver nota de simplificación arriba). Con 8-10 orgs son 21-36
-// partidos, una tirada cada uno: trivial en costo.
-export function simularResto(liga, propia, rng) {
-  const otras = liga.orgs.filter((org) => org.nombre !== propia);
-  const registros = Object.fromEntries(otras.map((org) => [org.nombre, filaVacia(org.nombre)]));
-
-  for (let i = 0; i < otras.length; i += 1) {
-    for (let j = i + 1; j < otras.length; j += 1) {
-      const a = otras[i];
-      const b = otras[j];
-      const ganaA = resolverFecha(a.fuerza, b.fuerza, rng);
-      registros[a.nombre] = registrarEnFila(registros[a.nombre], ganaA);
-      registros[b.nombre] = registrarEnFila(registros[b.nombre], !ganaA);
-    }
+// Los cruces ajenos de UNA jornada (los que no involucran al jugador),
+// resueltos una tirada cada uno. Se llama en paso con cada fecha del jugador,
+// así todas las filas de la tabla avanzan juntas. El total de tiradas sobre la
+// temporada es idéntico al del viejo `simularResto` ((N-1)(N-2)/2): lo único
+// que cambia es EN QUÉ ORDEN caen (deuda D38, familia D21).
+export function aplicarCrucesDeJornada(registrosOtros, crucesJornada, rng) {
+  let registros = registrosOtros;
+  for (const cruce of crucesJornada) {
+    const ganaLocal = resolverFecha(cruce.fuerzaLocal, cruce.fuerzaVisitante, rng);
+    registros = {
+      ...registros,
+      [cruce.local]: registrarEnFila(registros[cruce.local], ganaLocal),
+      [cruce.visitante]: registrarEnFila(registros[cruce.visitante], !ganaLocal)
+    };
   }
-
   return registros;
 }
 
-// La tabla completa: la fila del jugador (su progreso real hasta este punto
-// del split) más las filas ya cerradas de `simularResto`, ordenada por
-// ganados y diferencia.
+// La tabla completa: la fila del jugador más las de los demás equipos, todas
+// con la misma cantidad de fechas jugadas (ver nota de la fase 9Rb arriba),
+// ordenada por ganados y diferencia.
 export function tablaDePosiciones(registrosOtros, filaPropia) {
   const filas = [filaPropia, ...Object.values(registrosOtros)];
   return filas

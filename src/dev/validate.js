@@ -20,7 +20,10 @@ import { campeonesDisponibles, entradaDePool } from '../core/pool.js';
 import { elegirOutcome, elegirEvento, decisionDesdeEvento, resolver as resolverEventos, resolverOpcion, cooldownActivo } from '../systems/events.js';
 import { tipoDeSplit } from '../core/presupuesto.js';
 import { elegirCampeonRival, disponiblesDelPool } from '../core/serie.js';
-import { resolverFecha, motivosDeFecha } from '../core/temporada.js';
+import {
+  resolverFecha, motivosDeFecha, generarFixture, aplicarCrucesDeJornada,
+  tablaDePosiciones, posicionEnTabla, filaVacia, registrarEnFila
+} from '../core/temporada.js';
 import { tierListDeRol, boostDelPool } from '../core/regimen.js';
 import { nivelDelJugador, deltasDeStats } from '../core/ficha.js';
 import { bandaDeArraigo } from '../core/registro.js';
@@ -2006,6 +2009,144 @@ check('La tabla de temporada cierra y respeta el calendario', () => {
         throw new Error(`seed ${seed}: posición derivada de la tabla (${posicionDerivada}) ≠ career.posicion (${state.career.posicion})`);
       }
     }
+  }
+});
+
+// --- Fase 9Rb: el fixture round-robin real y la tabla que ya no miente ---
+
+check('generarFixture produce un round-robin real (N-1 jornadas, cada par una vez)', () => {
+  for (const n of [6, 8, 10, 12, 14]) {
+    const orgs = Array.from({ length: n }, (_, i) => ({ nombre: `T${i}`, fuerza: 70 }));
+    const propia = 'T0';
+    const { calendario, cruces } = generarFixture({ orgs }, propia);
+
+    if (calendario.length !== n - 1) {
+      throw new Error(`N=${n}: el calendario propio tiene ${calendario.length} jornadas, se esperaban ${n - 1}`);
+    }
+    if (cruces.length !== n - 1) {
+      throw new Error(`N=${n}: hay ${cruces.length} jornadas de cruces ajenos, se esperaban ${n - 1}`);
+    }
+
+    const pares = new Set();
+    for (let j = 0; j < n - 1; j += 1) {
+      const jugaron = new Set([propia, calendario[j].rival]);
+      // Cada jornada: tu partido + (n/2 - 1) cruces ajenos = n/2 partidos, y
+      // cada equipo aparece exactamente una vez.
+      if (cruces[j].length !== n / 2 - 1) {
+        throw new Error(`N=${n}, jornada ${j + 1}: ${cruces[j].length} cruces ajenos, se esperaban ${n / 2 - 1}`);
+      }
+      const registrarPar = (x, y) => {
+        for (const org of [x, y]) {
+          if (jugaron.has(org) && org !== propia && org !== calendario[j].rival) {
+            throw new Error(`N=${n}, jornada ${j + 1}: ${org} juega dos veces`);
+          }
+          jugaron.add(org);
+        }
+        pares.add([x, y].sort().join('|'));
+      };
+      registrarPar(propia, calendario[j].rival);
+      for (const cruce of cruces[j]) {
+        registrarPar(cruce.local, cruce.visitante);
+      }
+      if (jugaron.size !== n) {
+        throw new Error(`N=${n}, jornada ${j + 1}: jugaron ${jugaron.size} equipos de ${n}`);
+      }
+    }
+
+    // Cada par de equipos se enfrenta exactamente una vez en toda la vuelta.
+    if (pares.size !== (n * (n - 1)) / 2) {
+      throw new Error(`N=${n}: ${pares.size} enfrentamientos distintos, se esperaban ${(n * (n - 1)) / 2}`);
+    }
+  }
+});
+
+check('La tabla no miente a mitad de temporada: el jugador no arranca clavado último', () => {
+  // Semi-puro: un fixture con todos los equipos de la misma fuerza (aísla el
+  // mecanismo del talento), resuelto jornada a jornada con el mismo
+  // `aplicarCrucesDeJornada` del motor y un jugador que gana ~la mitad. Con el
+  // bug viejo (`simularResto` de una vez, tu fila en 0-0) la posición relativa
+  // de la primera mitad de la temporada daba ~0,85-0,96 — último o casi —
+  // gobiernes como gobiernes; con el fixture real ronda 0,3 (centrada, con un
+  // pequeño sesgo hacia arriba porque en un empate la fila propia ordena
+  // primero).
+  const relPrimeraMitad = [];
+  let filasChequeadas = 0;
+
+  for (let seed = 1; seed <= 300; seed += 1) {
+    const rng = mulberry32(seed);
+    const n = [8, 10, 12, 14][seed % 4];
+    const orgs = Array.from({ length: n }, (_, i) => ({ nombre: `T${i}`, fuerza: 72 }));
+    const propia = 'T3';
+    const { calendario, cruces } = generarFixture({ orgs }, propia);
+
+    let filaPropia = filaVacia(propia);
+    let registrosOtros = Object.fromEntries(orgs.filter((o) => o.nombre !== propia).map((o) => [o.nombre, filaVacia(o.nombre)]));
+
+    for (let j = 0; j < calendario.length; j += 1) {
+      const gano = resolverFecha(72, calendario[j].fuerzaRival, rng);
+      registrosOtros = aplicarCrucesDeJornada(registrosOtros, cruces[j], rng);
+      registrosOtros = { ...registrosOtros, [calendario[j].rival]: registrarEnFila(registrosOtros[calendario[j].rival], !gano) };
+      filaPropia = registrarEnFila(filaPropia, gano);
+
+      const tabla = tablaDePosiciones(registrosOtros, filaPropia);
+      // Toda fila jugó la misma cantidad de fechas que el jugador.
+      const jugadas = filaPropia.ganados + filaPropia.perdidos;
+      for (const fila of tabla) {
+        filasChequeadas += 1;
+        if (fila.ganados + fila.perdidos !== jugadas) {
+          throw new Error(`seed ${seed}, jornada ${j + 1}: ${fila.org} jugó ${fila.ganados + fila.perdidos}, el jugador ${jugadas}`);
+        }
+      }
+      if (j < calendario.length / 2) {
+        relPrimeraMitad.push((posicionEnTabla(tabla, propia) - 1) / (tabla.length - 1));
+      }
+    }
+  }
+
+  if (filasChequeadas < 10000) {
+    throw new Error(`solo ${filasChequeadas} filas de tabla chequeadas: muestra insuficiente`);
+  }
+  const media = relPrimeraMitad.reduce((a, b) => a + b, 0) / relPrimeraMitad.length;
+  // El bug daba ~0,85+. Con equipos iguales y jugador 50% la media honesta
+  // ronda 0,35; la banda deja margen para el ruido de seeds sin dejar pasar la
+  // regresión.
+  if (media < 0.20 || media > 0.60) {
+    throw new Error(`posición relativa media en la primera mitad de la temporada: ${media.toFixed(2)} (banda esperada 0.20-0.60; el bug viejo daba ~0.85)`);
+  }
+});
+
+check('Toda fila de la tabla, en cualquier fecha marcada, jugó tantas fechas como el jugador', () => {
+  let muestras = 0;
+
+  for (let seed = 1; seed <= 200; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+
+    const responder = (sistema, st, decision, r) => {
+      if (['momento', 'draft', 'reaccion'].includes(decision.datos?.motivo)) {
+        const t = st.career.temporada;
+        const tabla = tablaDePosiciones(t.registrosOtros, t.filaPropia);
+        const jugadas = t.filaPropia.ganados + t.filaPropia.perdidos;
+        for (const fila of tabla) {
+          if (fila.ganados + fila.perdidos !== jugadas) {
+            throw new Error(
+              `seed ${seed}: en una fecha marcada (indice ${t.indice}), ${fila.org} jugó `
+              + `${fila.ganados + fila.perdidos} fechas y el jugador ${jugadas}`
+            );
+          }
+        }
+        muestras += 1;
+      }
+      return sistema.resolverAuto(st, decision, r);
+    };
+
+    for (let i = 0; i < 45 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng, responder).state;
+    }
+  }
+
+  if (muestras < 200) {
+    throw new Error(`solo ${muestras} fechas marcadas inspeccionadas en 200 seeds: muestra insuficiente`);
   }
 });
 

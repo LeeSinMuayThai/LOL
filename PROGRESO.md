@@ -33,6 +33,66 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-02 — Fase 9Rb: la tabla de posiciones deja de mentir media temporada
+
+Segundo commit de la fase 9R. El segundo de los tres bugs de motor que fabrican la sensación de
+que "es todo choto".
+
+#### El bug, medido
+
+`simularResto` (`src/core/temporada.js`) resolvía **el round-robin completo de todos los demás
+equipos al abrir el split**, mientras tu fila (`filaPropia`) arrancaba 0-0 y crecía fecha a fecha.
+`tablaDePosiciones` ordena por ganados absolutos. En la jornada *k* vos tenías *k* partidos y todos
+los demás tenían *N-2*. Resultado: posición relativa media al llegar a cada jornada (1 = último):
+
+```
+jornada 1: 0,96    jornada 4: 0,79    jornada 7: 0,45    jornada 11: 0,37
+```
+
+**En la primera mitad de toda temporada el juego te informaba que ibas último, gobiernes como
+gobiernes.** Y sobre esa tabla falsa se calculaban los motivos `puntero` y `define_clasificacion`
+— la tensión narrativa entera de la fase 5.
+
+#### El arreglo
+
+`simularResto` (todo de una vez) → **`generarFixture(liga, propia)`**: un round-robin real de una
+sola vuelta por el método del círculo. Con N equipos —siempre par en las ligas y zonas del juego
+(tier 1: 8/10/14, tier 2: 10/12, tier 3: 6)— da N-1 jornadas, cada equipo contra cada otro una
+vez, sin fechas libres. Puro y determinista, no consume RNG.
+
+- `generarCalendario(state)` pasa a derivarse del fixture (misma firma, misma forma de retorno).
+  Cambia **el orden de tus rivales** (antes: orden del archivo de liga) y `local` pasa a salir del
+  cruce en vez de `indice % 2`.
+- Los cruces ajenos de cada jornada se resuelven **en paso** con tus fechas, vía
+  `aplicarCrucesDeJornada`, dentro de `avanzarFechaSilenciosa` — el único choke point por el que
+  avanza una jornada, marcada o silenciosa. Todas las filas de la tabla avanzan juntas.
+- `resolverFechaMarcada` ahora avanza la jornada **completa** (tu fecha + los cruces ajenos) antes
+  de leer la tabla para el log "Quedan Xº de Y", así esa posición es la de una jornada de verdad
+  cerrada.
+- `career.temporada.cruces: []` nuevo en el estado inicial (T4).
+- `simularResto` se borra (nadie más lo importaba).
+
+#### Números medidos
+
+- Posición relativa media en la primera mitad de la temporada: **~0,85 → ~0,35** (test aislado con
+  equipos de igual fuerza y jugador al 50%). El pequeño sesgo hacia arriba es correcto: en un
+  empate la fila propia ordena primero.
+- Las **3.444 tablas finales** de 120 carreras cierran perfecto: Σ ganados = Σ perdidos, y todo
+  equipo jugó tantas fechas como el jugador — en **toda jornada**, no solo al cierre.
+- 3.040 temporadas (incluidas 327 de tier 3): 0 con calendario vacío.
+
+#### Deuda nueva
+
+- **D38** — 9Rb **reordena** (no agrega) llamadas de RNG: el total sobre la temporada es idéntico
+  al viejo `simularResto` — `(N-1)(N-2)/2` tiradas —, pero ahora caen intercaladas con tus fechas
+  y tus eventos en vez de todas juntas al abrir el split, y **qué pares** se cruzan en qué jornada
+  cambia. Familia D21/D37. Peor para comparar seeds entre versiones, idéntico en balance agregado.
+
+**Verificación**: `validate.js` 88 checks OK (+3: el fixture es un round-robin real; la tabla no
+miente a mitad de temporada; toda fila jugó tantas fechas como el jugador en cualquier fecha
+marcada). Se amplió el check *"La tabla de temporada cierra"* con la consistencia jornada a
+jornada. `simulate.js 1000 60 todas`: 0 crashes.
+
 ### 2026-09-02 — Fase 9Ra: el cooldown de eventos se mide en splits
 
 Primer commit de la **fase 9R** (`PLAN.md`), la que salió de comparar el juego contra **El Ídolo

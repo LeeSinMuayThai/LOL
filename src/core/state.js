@@ -131,6 +131,9 @@ export function createInitialState(seed, rng, eleccion = null) {
       temporada: {
         activa: false,
         calendario: [],
+        // Fase 9Rb: los cruces ajenos por jornada del fixture round-robin.
+        // Objeto/array completo desde el arranque, nunca null (trampa T4).
+        cruces: [],
         indice: 0,
         rendimiento: 0,
         fuerzaPropia: 0,
