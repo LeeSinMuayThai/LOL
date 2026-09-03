@@ -1,16 +1,20 @@
 import { gauss, chance, roll } from '../core/rng.js';
 import { crearLog } from '../core/log.js';
 import { clamp, clampStat } from '../core/numeros.js';
-import { multiplicadorDeMeta } from '../core/ajusteMeta.js';
 import { registrarEnHistorial } from '../core/contexto.js';
 import { ligaOZonaDeCarrera } from '../core/competicion.js';
 import { esCierreDeTemporada } from '../core/serie.js';
-import { nivelDelJugador } from '../core/ficha.js';
+import { rendimientoBase, fuerzaDelEquipo } from '../core/fuerza.js';
 import { registrarTitulo, registrarInternacional, registrarPico, registrarArraigoEnFila } from '../core/registro.js';
 import { BALANCE } from '../data/balance.js';
 import { ROLES } from '../data/roles.js';
 
 export const id = 'rendimiento';
+
+// Fase 4 (systems/serie.js) y fase 5 (systems/temporada.js) importan
+// `fuerzaDelEquipo` desde acá: se re-exporta para no cambiar ningún llamador
+// cuando la fórmula se mudó a `core/fuerza.js` (9Rc).
+export { fuerzaDelEquipo };
 
 // Rendimiento personal del split: la hoja de atributos ponderada por rol,
 // corrida por el ajuste al meta, la maestria del campeon que TERMINASTE
@@ -22,39 +26,11 @@ export const id = 'rendimiento';
 // la llama una vez por split para fijar la fuerza con la que se juega el
 // calendario entero. No se reescribe la formula.
 export function calcularRendimiento(state, rng) {
-  const r = BALANCE.rendimiento;
-  // Fase 8: `base` es EL NIVEL (core/ficha.js `nivelDelJugador`) — misma
-  // fórmula, extraída para que la UI la exponga sin mantener dos copias
-  // (regla de proceso 2: no se reescribe ni se retunea).
-  const base = nivelDelJugador(state);
-
-  const campeon = state.player.championPool.find((c) => c.name === state.player.campeonDelSplit);
-  const factorMaestria = 1 + ((campeon?.mastery ?? BALANCE.stats.max / 2) / BALANCE.stats.max - 0.5) * r.maestriaPesoEnRendimiento * 2;
-  const factorSinergia = 1 + (state.career.sinergia / BALANCE.stats.max - 0.5) * r.sinergiaPesoEnRendimiento * 2;
-  const factorJerarquia = 1 + (state.career.jerarquia / BALANCE.stats.max - 0.5) * r.jerarquiaPesoEnRendimiento * 2;
-
-  const bruto = base
-    * multiplicadorDeMeta(state.meta.ajuste)
-    * factorMaestria
-    * factorSinergia
-    * factorJerarquia
-    + gauss(0, r.ruidoRendimiento, rng);
-
-  return clampStat(bruto);
-}
-
-// El equipo es sus companeros mas vos. Cuanto mas peso tenes en el resultado,
-// mas te sube y te baja la jerarquia lo que pase.
-//
-// Se exporta por la misma razon que calcularRendimiento: la fase 4 la reusa
-// mapa a mapa dentro de una serie.
-export function fuerzaDelEquipo(state, rendimiento) {
-  const r = BALANCE.rendimiento;
-  const nivelCompaneros = state.career.companeros.reduce((suma, c) => suma + c.nivel, 0)
-    / Math.max(1, state.career.companeros.length);
-
-  const bruto = nivelCompaneros * (1 - r.pesoJugadorEnEquipo) + rendimiento * r.pesoJugadorEnEquipo;
-  return bruto * (1 + (state.career.sinergia / BALANCE.stats.max - 0.5) * r.sinergiaPesoEnRendimiento);
+  // Fase 9Rc: la parte determinista se calcula en `core/fuerza.js`
+  // (`rendimientoBase`, la MISMA fórmula extraída para que el draft la mire sin
+  // el ruido). Acá solo se le suma el gaussiano y se clampea una vez — un solo
+  // `gauss`, en el mismo orden que antes: el stream de RNG no se corre.
+  return clampStat(rendimientoBase(state) + gauss(0, BALANCE.rendimiento.ruidoRendimiento, rng));
 }
 
 function consecuencias(state, rendimiento, resultado, esCierre, rng) {

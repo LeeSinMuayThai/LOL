@@ -10,7 +10,7 @@ import {
 } from '../core/temporada.js';
 import { calcularRendimiento, fuerzaDelEquipo } from './rendimiento.js';
 import { disponibleEn, opcionesVivas, resolverOpcion, cooldownActivo, pesoConMemoria } from './events.js';
-import { deseoPorCampeon } from '../core/ajusteMeta.js';
+import { pesoDePick } from '../core/ajusteMeta.js';
 import { registrarFecha } from '../core/registro.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
@@ -220,7 +220,10 @@ function resolverFechaMarcada(state, rng, logsAcum) {
   const t = state.career.temporada;
   const fecha = t.fechaEnCurso;
   const motivo = motivoPrincipal(fecha.motivos);
-  const factorDraft = factorDraftFecha(fecha.campeonElegido, state.meta.weights);
+  // Fase 9Rc: el factor del draft es RELATIVO al campeón del split (el que ya
+  // asumió `t.fuerzaPropia`). Elegir ese mismo campeón para la fecha da 0.
+  const campeonDelSplit = state.player.championPool.find((c) => c.name === state.player.campeonDelSplit);
+  const factorDraft = factorDraftFecha(fecha.campeonElegido, campeonDelSplit, state.meta.weights);
   const fuerzaFecha = t.fuerzaPropia * (1 + factorDraft + (t.ajustePartido ?? 0));
   const gano = resolverFecha(fuerzaFecha, fecha.fuerzaRival, rng);
 
@@ -360,10 +363,10 @@ export function resolverAuto(state, decision, rng) {
   const { motivo } = decision.datos;
 
   if (motivo === 'draft') {
-    // Mismo criterio que el draft de una serie de playoffs (fase 4): pesa por
-    // deseo (maestría × afinidad al meta), no uniforme, para que el camino
+    // Mismo criterio único que el draft de una serie de playoffs (fase 9Rc):
+    // `pesoDePick` (factorDeCampeon exagerado), no uniforme, para que el camino
     // headless mida algo parecido a jugar con criterio.
-    const elegido = weightedPick(state.player.championPool, (campeon) => deseoPorCampeon(campeon, state.meta.weights), rng);
+    const elegido = weightedPick(state.player.championPool, (campeon) => pesoDePick(campeon, state.meta.weights), rng);
     return { opcionId: elegido.name };
   }
 

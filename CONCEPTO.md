@@ -34,11 +34,11 @@ cambia es que el ecosistema de LoL da sistemas que el fútbol no tiene: el meta
 que rota y te deja obsoleto, el champion pool como identidad, los cupos de
 import, y carreras que se terminan a los 25.
 
-**El objetivo del jugador no es ganar Worlds.** Es descubrir qué carrera le
-tocó y qué hizo con ella. Un jugador que nunca salió de su región y se volvió
-un ídolo local es un final tan bueno como un campeón mundial. Un pibe al que
-la madre le prohibió jugar a los 16 también es un final, y de los que más se
-comparten.
+**El jugador siempre quiere ir a más** — como en El Ídolo del Potrero. Ganar el
+scrim, subir de liga, ganar el clásico, llegar al internacional, ganarlo. La
+carrera empuja hacia arriba todo el tiempo; el techo real lo ponen el talento
+que te tocó, el meta y las decisiones. La tarjeta final mide hasta dónde
+llegaste contra hasta dónde podías llegar.
 
 ---
 

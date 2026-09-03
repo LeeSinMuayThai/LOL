@@ -1,6 +1,6 @@
 import { gauss } from './rng.js';
 import { clamp } from './numeros.js';
-import { afinidadDeCampeon, deseoPorCampeon } from './ajusteMeta.js';
+import { deseoPorCampeon, factorDeCampeon } from './ajusteMeta.js';
 import { ligaOZonaDeCarrera } from './competicion.js';
 import { BALANCE } from '../data/balance.js';
 
@@ -227,28 +227,36 @@ export function decisionDeDraftFecha(state) {
   if (pool.length === 0) {
     return { pausa: false, elegido: null };
   }
+  // Fase 9Rc: "el mejor" se mide con `factorDeCampeon` (maestría Y afinidad, el
+  // criterio con el que la fecha se resuelve), no con `deseoPorCampeon`. Si
+  // parar o no sigue siendo el de siempre hasta 9Rd.
   if (pool.length <= 2) {
     const mejor = pool.reduce((acc, campeon) => (
-      deseoPorCampeon(campeon, state.meta.weights) > deseoPorCampeon(acc, state.meta.weights) ? campeon : acc
+      factorDeCampeon(campeon, state.meta.weights) > factorDeCampeon(acc, state.meta.weights) ? campeon : acc
     ));
     return { pausa: false, elegido: mejor };
   }
 
-  const ordenados = [...pool].sort((a, b) => deseoPorCampeon(b, state.meta.weights) - deseoPorCampeon(a, state.meta.weights));
+  const ordenados = [...pool].sort((a, b) => factorDeCampeon(b, state.meta.weights) - factorDeCampeon(a, state.meta.weights));
   const [mejor, segundo] = ordenados;
   const dominancia = deseoPorCampeon(mejor, state.meta.weights) / Math.max(0.001, deseoPorCampeon(segundo, state.meta.weights));
 
   return dominancia >= BALANCE.serie.dominanciaClara ? { pausa: false, elegido: mejor } : { pausa: true };
 }
 
-// Cuánto mueve la fuerza de ESTA fecha el campeón elegido en el draft corto:
-// acotado a propósito (`impactoDraftFecha`), la fórmula de rendimiento del
-// split no se reescribe, esto solo la corre un poco para esta fecha puntual.
-export function factorDraftFecha(campeon, weights) {
-  if (!campeon) {
+// Cuánto mueve la fuerza de ESTA fecha el campeón elegido en el draft corto,
+// RELATIVO al que ya asumió `t.fuerzaPropia` (el campeón del split). Fase 9Rc:
+// antes usaba solo la afinidad absoluta del elegido, así que elegir el MISMO
+// campeón del split igual sumaba un factor ≠ 0 — doble conteo. Ahora es el ratio
+// de `factorDeCampeon` menos 1: mismo campeón → exactamente 0. Acotado a
+// `impactoDraftFecha`: una fecha de temporada regular no se gana en el draft.
+export function factorDraftFecha(elegido, base, weights) {
+  if (!elegido) {
     return 0;
   }
-  return (afinidadDeCampeon(campeon, weights) - 1) * BALANCE.temporada.impactoDraftFecha;
+  const t = BALANCE.temporada;
+  const ratio = factorDeCampeon(elegido, weights) / Math.max(0.001, factorDeCampeon(base, weights));
+  return clamp(ratio - 1, -t.impactoDraftFecha, t.impactoDraftFecha);
 }
 
 export function factorDelMomento(resultadoTirado) {

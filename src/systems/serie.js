@@ -3,7 +3,7 @@ import { crearLog } from '../core/log.js';
 import { clamp, clampStat } from '../core/numeros.js';
 import { resolverTexto } from '../core/plantillas.js';
 import { ligaDeCarrera } from '../core/competicion.js';
-import { deseoPorCampeon } from '../core/ajusteMeta.js';
+import { pesoDePick } from '../core/ajusteMeta.js';
 import {
   esCierreDeTemporada, calificaAPlayoffs, calificaAInternacional,
   rondaInicial, siguienteRonda, etiquetaDeRonda, generarRival,
@@ -406,9 +406,12 @@ export function resolverAuto(state, decision, rng) {
   const { motivo } = decision.datos;
 
   if (motivo === 'draft') {
+    // Fase 9Rc: mismo criterio único que `decisionDeDraft` (factorDeCampeon,
+    // exagerado para que el headless no tire una moneda entre un pick bueno y
+    // uno apenas peor).
     const elegido = weightedPick(decision.opciones, (opcion) => {
       const campeon = state.player.championPool.find((candidato) => candidato.name === opcion.id);
-      return campeon ? deseoPorCampeon(campeon, state.meta.weights) : 1;
+      return campeon ? pesoDePick(campeon, state.meta.weights) : 1;
     }, rng);
     return { opcionId: elegido.id };
   }

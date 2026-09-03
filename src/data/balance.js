@@ -553,6 +553,11 @@ export const BALANCE = {
     // Rendimiento = atributos ponderados por rol, corridos por meta, maestria,
     // sinergia, jerarquia y ruido gaussiano.
     maestriaPesoEnRendimiento: 0.3,
+    // Fase 9Rc: la afinidad del campeon al meta pesa la MITAD que la maestria
+    // (CONCEPTO §6). Antes `calcularRendimiento` la ignoraba (0 implicito) y el
+    // meta solo tocaba el rendimiento via `multiplicadorDeMeta`; ahora tambien
+    // via el campeon que terminas jugando (`factorDeCampeon`). Se calibra en 9Rg.
+    afinidadPesoEnRendimiento: 0.15,
     sinergiaPesoEnRendimiento: 0.2,
     jerarquiaPesoEnRendimiento: 0.12,
     ruidoRendimiento: 7,
@@ -821,6 +826,17 @@ export const BALANCE = {
     // Probabilístico y no siempre, para que una fecha marcada no sea siempre
     // tres decisiones seguidas.
     probReaccion: 0.4
+  },
+
+  // El draft, de la serie y de la fecha marcada (fase 9Rc/9Rd).
+  draft: {
+    // `lecturaDePick` (core/ajusteMeta.js) cruza dos ejes en una frase sin
+    // numeros. Afinidad al meta (`afinidadDeCampeon`, 1 = campeon promedio):
+    afinidadAFavor: 1.06,
+    afinidadEnContra: 0.95,
+    // Maestria del campeon normalizada al rango [peor, mejor] de TU pool:
+    maestriaAlta: 0.8,
+    maestriaFloja: 0.35
   },
 
   // La serie de playoffs (fase 4): Bo5 con Fearless draft, jugada mapa a mapa

@@ -1842,7 +1842,7 @@ usuario). Resumen ejecutable:
 | **9Rb** | `la tabla deja de mentir` | `simularResto` → `generarFixture` (round-robin real por método del círculo) + `aplicarCrucesDeJornada` en paso con tus fechas. `career.temporada.cruces`. **Deuda D38** (reordena el stream) + **D39** (sesgo +6 en `proyeccionJerarquia`). | ✅ `7c07f49` — posición relativa media jornada 1: 0,96 → ~0,35 |
 | **9Re** | `la temporada regular deja de ser una cinta` | `fechasMarcadasMin/Max` → `fechasMarcadasPorSplit: 1`; se marca la primera fecha con `motivos.some(m !== 'parejo')`, `forzarMarca` borrado. La reacción postpartido se resuelve sola (`weightedPick` por peso, igual que el camino headless) y se cuenta en una línea. Resúmenes de tramo con `tecnico: true`. | ✅ `5e3099f` — temporada 108 → ~35 decisiones/carrera |
 | **9Rf** | `el presupuesto de interrupción` | `src/systems/presupuesto.js` (primero en `ETAPAS_SPLIT`, **no toca RNG**): cupo `esSplitEventful(state) ? interrupcionesPorSplit.eventful : .rutina`. `pipeline.pausar()` descuenta (choke point único). Solo `events.js` consulta `hayPresupuesto`; el resto descuenta pero no consulta. El 2º evento lo sigue gobernando `probSegundaDecisionPorTipo`. Constante `presupuesto.interrupcionesPorSplit: { eventful: 2, rutina: 1 }`. | ✅ `6ebc268` — **248 → 122 decisiones/carrera** (40 splits), evento más repetido **14 → 5 (máx 8)** |
-| **9Rc** | `un solo criterio de valor de campeón` | Tres fórmulas que no se hablan (`calcularRendimiento` solo maestría, `deseoPorCampeon` maestría²×afinidad, `factorDraftFecha` solo afinidad) → una sola `factorDeCampeon(campeon, weights)`. Extraer `rendimientoBase(state)` (puro, sin el `gauss` de ruido — T1-neutral). Constante `rendimiento.afinidadPesoEnRendimiento: 0.15` | ⬜ |
+| **9Rc** | `un solo criterio de valor de campeón` | Tres fórmulas que no se hablan (`calcularRendimiento` solo maestría, `deseoPorCampeon` maestría²×afinidad, `factorDraftFecha` solo afinidad) → una sola `factorDeCampeon(campeon, weights)`. `core/fuerza.js` nuevo: `rendimientoBase(state)` (puro, sin el `gauss` — T1-neutral) + `fuerzaDelEquipo` movida. `factorDraftFecha(elegido, base, weights)` relativo al campeón del split. Constante `rendimiento.afinidadPesoEnRendimiento: 0.15`, bloque `draft.lectura`. | ✅ `PENDIENTE_HASH_9RC` — 104 checks OK, 0 crashes, auto-pick peor imposible (0/2368) |
 | **9Rd** | `se para cuando hay algo en juego` | Criterio de pausa **invertido**: hoy pausa cuando `dominancia < 1.35` (empate). Nuevo: `probabilidadDeGanar(fp, fr, σ₁, σ₂)` (Φ logística sobre `rendimientoBase`, cero RNG), pausa sii `puntosEnJuego ≥ umbral`; excepción incondicional `disponibles.length === 2`. Constantes `numeros.factorLogisticoNormal: 1.702`, `serie.puntosEnJuegoParaPreguntar: 0.04`, `temporada.puntosEnJuegoParaPreguntar: 0.07`. Se borra `serie.dominanciaClara` (D31) | ⬜ |
 | **9Rg** | `calibrar el volumen` | **solo constantes**, línea de base re-medida (T6). Orden: `interrupcionesPorSplit` → los dos `puntosEnJuegoParaPreguntar` → `afinidadPesoEnRendimiento` (último) → `cooldown` de los JSON si el catálogo se agota → `pesoJugadorEnEquipo` 0,35→~0,5 → **D39** recalibrar `proyeccionJerarquia`. Cierra con `npm run build` (regenerar `dist/`) | ⬜ |
 
@@ -1944,6 +1944,66 @@ El veredicto cita al menos un hecho real del registro de ESA carrera
 Mentalidad y Hype aparecen en el objeto que consume la ficha profesional
 Un +N de evento a un stat de curva sigue medible ≥ 10 splits después (hoy ~5)
 El burnout no puede pasar sin que la banda de Mentalidad haya estado en `al límite` ≥ 2 splits antes
+```
+
+## 9Rc + 9Rd — Que elegir el campeón importe
+
+> Detalle de las dos filas `9Rc`/`9Rd` de la tabla de §9R.1. El plan completo, con los tramos de
+> código citados, quedó en el archivo de plan mode aprobado el 2026-09-03. **Regla de proceso 2**:
+> 9Rc estructura, 9Rd estructura, el tuneo de `afinidadPesoEnRendimiento` y los tres
+> `puntosEnJuegoParaPreguntar` va a 9Rg.
+
+**El problema, medido:** el motor puntúa el campeón con una fórmula (`calcularRendimiento`, solo
+maestría), lo elige con otra (`deseoPorCampeon`, maestría²×afinidad) y lo pausa con una tercera
+(`factorDraftFecha`, solo afinidad). Puede auto-pickear un campeón peor, y para cuando la elección
+da igual (`dominancia < 1.35`) — al revés del principio rector (`PLAN.md:100-102`).
+
+**9Rc — un solo criterio:**
+
+- **`core/fuerza.js`** (nuevo, puro, sin RNG): `rendimientoBase(state)` (todo `calcularRendimiento`
+  menos el `gauss`) y `fuerzaDelEquipo` **movida tal cual** desde `systems/rendimiento.js`, que las
+  re-exporta. `calcularRendimiento` queda en `clampStat(rendimientoBase(state) + gauss(…))` — un
+  solo `gauss`, mismo orden: **T1-neutral**. Mismo movimiento que la fase 8 con `nivelDelJugador`.
+- **`factorDeCampeon(campeon, weights)`** en `core/ajusteMeta.js`: maestría **y** afinidad, reusa
+  `afinidadDeCampeon`. Constante nueva **`rendimiento.afinidadPesoEnRendimiento: 0.15`** (la mitad
+  de `maestriaPesoEnRendimiento`, `CONCEPTO` §6). Con afinidad neutra = el `factorMaestria` de hoy.
+  `rendimientoBase` la usa en vez de `factorMaestria`.
+- Los cuatro puntos de elección (`decisionDeDraft`, `decisionDeDraftFecha`, los dos `resolverAuto`)
+  ordenan/pesan por `factorDeCampeon`, no `deseoPorCampeon`. `pesoDePick = factorDeCampeon **
+  sesgoMaestriaEnPick` (monótona, no invierte el orden). Cuando el motor elige por vos: argmax, no
+  sorteo → el auto-pick peor se vuelve imposible por construcción.
+- `factorDraftFecha(elegido, base, weights)` cambia de firma: `clamp(ratio de factorDeCampeon − 1,
+  ±impactoDraftFecha)`. Elegir el mismo campeón del split da **exactamente 0** (hoy suma siempre —
+  doble conteo).
+- `deseoPorCampeon` **se queda** donde el compounding de maestría² es diseño: `campeones.js`,
+  `elegirCampeonRival`, `campeonComodin`.
+
+**9Rd — se para cuando hay algo en juego:**
+
+- **`probabilidadDeGanar(fp, fr, σ₁, σ₂)`** en `core/numeros.js`: `Φ((fp−fr)/√(σ₁²+σ₂²))` logística
+  sobre `rendimientoBase`, cero RNG. Constante **`numeros.factorLogisticoNormal: 1.702`**.
+- `puntosEnJuego` = `P(con el mejor) − P(con el segundo)`. Pausa **sii `puntosEnJuego ≥ umbral`**.
+  Constantes nuevas `serie.puntosEnJuegoParaPreguntar: 0.04`,
+  `serie.puntosEnJuegoParaPreguntarDecisivo: 0.015` (el mapa decisivo **baja** el umbral, no lo
+  saltea), `temporada.puntosEnJuegoParaPreguntar: 0.07`. Excepción incondicional
+  `disponibles.length === 2`. Se **borra `serie.dominanciaClara`** (D31). `motivoPrincipal ===
+  'parejo'` en una fecha nunca pausa.
+- **`lecturaDePick(campeon, weights, pool)`** en `core/ajusteMeta.js` (pura, sin números): matriz
+  3×3 afinidad-al-parche × maestría-relativa-a-tu-pool → frase que suena a LoL ("la tenés verde y
+  el parche la pide", "la dominás pero quedó a contramano"). `construirDecisionDraft` (en
+  `systems/serie.js` y `systems/temporada.js`) la muestra por opción, ordenadas por
+  `factorDeCampeon` desc. Bandas en `BALANCE.draft.lectura`.
+
+**Checks 9Rc+9Rd** (regla de proceso 7 — verificar que fallan contra `HEAD` antes de arreglar):
+
+```
+probabilidadDeGanar: monótona, simétrica (P(a,b) = 1 − P(b,a)) y exactamente 0.5 en el empate
+El motor nunca elige por vos un campeón peor que otro disponible: 0 violaciones en 300 carreras
+Nadie te para por un pick que no mueve el partido: 0 pausas con puntosEnJuego < umbral (salvo len==2)
+Elegir el mismo campeón del split en una fecha marcada da factorDraftFecha == 0
+La afinidad al meta mueve el rendimiento (pool en meta vs a contramano, dos poblaciones)
+Toda opción de draft trae su lectura, y su orden coincide con factorDeCampeon
+Mediana de decisiones de draft por serie ∈ [0, 1], y ≥30% de series con 0 drafts
 ```
 
 ## Checks nuevos de la fase 9R (para que nada regresione)

@@ -33,6 +33,51 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-03 — Fase 9Rc: un solo criterio de valor de campeón
+
+Octavo commit de la fase 9R. El motor **puntuaba el campeón con una fórmula, lo elegía con otra y
+decidía si pausar con una tercera**: `calcularRendimiento` usaba solo maestría, `deseoPorCampeon`
+maestría²×afinidad, `factorDraftFecha` solo afinidad. Podía auto-pickear un campeón peor para el
+resultado del mapa. Esta subfase unifica el criterio. **Estructura, no tuneo** (regla de proceso 2):
+`afinidadPesoEnRendimiento` se calibra en 9Rg.
+
+#### `core/fuerza.js` (nuevo, puro — como `core/ficha.js`)
+
+`rendimientoBase(state)` es todo `calcularRendimiento` **menos el `gauss`** de ruido; `fuerzaDelEquipo`
+se movió tal cual desde `systems/rendimiento.js`, que ahora importa de acá y **re-exporta**
+`fuerzaDelEquipo` (ningún llamador de fase 4/5 cambia). `calcularRendimiento` quedó en una línea:
+`clampStat(rendimientoBase(state) + gauss(0, ruidoRendimiento, rng))` — un solo `gauss`, mismo orden,
+**no corre el stream**. Lo hizo así la fase 8 con `nivelDelJugador`.
+
+#### `factorDeCampeon` — la única respuesta a "cuánto vale este campeón"
+
+`core/ajusteMeta.js`: cruza maestría **y** afinidad al meta, con la afinidad pesando la mitad
+(`rendimiento.afinidadPesoEnRendimiento: 0.15`, `CONCEPTO` §6). Con afinidad neutra devuelve
+exactamente el `factorMaestria` de antes — sin cambio de meta, el balance agregado no se mueve.
+`rendimientoBase` la usa en vez de la maestría sola: **ahora el parche te mueve el rendimiento
+también vía el campeón que terminás jugando**, no solo vía `multiplicadorDeMeta`. Los cuatro puntos
+de elección (`decisionDeDraft`, `decisionDeDraftFecha`, los dos `resolverAuto`) ordenan/pesan por
+`factorDeCampeon` (`pesoDePick` = `factorDeCampeon ** sesgoMaestriaEnPick`, monótona). Cuando el
+motor elige por vos devuelve el **argmax** → el auto-pick peor es imposible por construcción.
+`deseoPorCampeon` se queda donde el compounding de maestría² es el diseño (qué maineás, la quema del
+rival, el comodín).
+
+#### `factorDraftFecha` deja de contar doble
+
+Nueva firma `(elegido, base, weights)`: ratio de `factorDeCampeon` contra el campeón del split,
+clampeado a `±impactoDraftFecha`. Elegir el **mismo** campeón del split para la fecha da **0** (antes
+sumaba un factor ≠ 0 siempre).
+
+`lecturaDePick` (frase sin números para la tarjeta de draft, cruzando afinidad × maestría relativa
+al pool) queda **definida y con sus bandas** (`BALANCE.draft.lectura`); se cablea en 9Rd.
+
+**Verificación**: `validate.js` 104 checks OK (+4: factorDeCampeon sube con maestría y con afinidad ·
+la afinidad al meta mueve el rendimiento base [Δ2,9 en la sonda] · el motor nunca auto-pickea un
+campeón peor [0 violaciones en 2.368 auto-picks] · elegir el mismo campeón del split da
+factorDraftFecha 0). `simulate.js 1000 60 todas`: 0 crashes. Determinismo con la misma seed OK.
+**Deuda D37/D38**: el término de afinidad corre el stream — ninguna seed vieja reproduce su carrera.
+Línea de base 9Rc/9Rd (T6, para 9Rd): drafts por serie mediana 1, solo 3% de las series con 0.
+
 ### 2026-09-03 — Fase 9R.2: Mentalidad y Hype se dibujan, y el burnout se ve venir
 
 Séptimo commit de la fase 9R. `statRow.js` y la rama profesional de `ui/components/ficha.js` **no

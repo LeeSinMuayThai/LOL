@@ -1,5 +1,5 @@
 import { weightedPick } from './rng.js';
-import { campeonesEnMeta, deseoPorCampeon } from './ajusteMeta.js';
+import { campeonesEnMeta, deseoPorCampeon, factorDeCampeon } from './ajusteMeta.js';
 import { campeonesDisponibles, entradaDePool } from './pool.js';
 import { BALANCE } from '../data/balance.js';
 
@@ -139,8 +139,12 @@ export function decisionDeDraft(state, disponibles, esDecisivo) {
     return { pausa: true };
   }
 
+  // Fase 9Rc: cuál campeón es "el mejor" se decide con `factorDeCampeon` —el
+  // mismo criterio con el que el mapa se va a resolver—, no con `deseoPorCampeon`
+  // (maestría², que podía dejar arriba a un campeón peor para el resultado). El
+  // criterio de si PARAR o no sigue siendo el de siempre hasta 9Rd.
   const ordenados = [...disponibles].sort(
-    (a, b) => deseoPorCampeon(b, state.meta.weights) - deseoPorCampeon(a, state.meta.weights)
+    (a, b) => factorDeCampeon(b, state.meta.weights) - factorDeCampeon(a, state.meta.weights)
   );
   const [mejor, segundo] = ordenados;
   const dominancia = deseoPorCampeon(mejor, state.meta.weights) / Math.max(0.001, deseoPorCampeon(segundo, state.meta.weights));

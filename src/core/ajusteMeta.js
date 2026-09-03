@@ -20,11 +20,75 @@ export function afinidadDeCampeon(campeon, weights) {
 
 // Cuánto quiere el motor jugar este campeón: cruza cuánto lo domina (con sesgo,
 // para que especializarse pese) contra cuánto lo pide el meta. Lo usan el draft
-// de soloQ/equipo (systems/campeones.js) y el draft de la serie (fase 4,
-// core/serie.js), que comparten el mismo criterio de "cuál es la elección obvia".
+// de soloQ/equipo (systems/campeones.js) y la quema del rival / el comodín
+// (core/serie.js) — los lugares donde el compounding de maestría² ES el diseño
+// (especializarte tiene que pesar), no una predicción del resultado del mapa.
 export function deseoPorCampeon(campeon, weights) {
   return Math.max(BALANCE.campeones.maestriaMinima, campeon.mastery) ** BALANCE.campeones.sesgoMaestriaEnPick
     * afinidadDeCampeon(campeon, weights);
+}
+
+// Fase 9Rc: la ÚNICA respuesta a "cuánto vale este campeón para el resultado
+// del mapa". Antes había tres fórmulas que no se hablaban —`calcularRendimiento`
+// (solo maestría), `deseoPorCampeon` (maestría²×afinidad) y `factorDraftFecha`
+// (solo afinidad)—, y por eso el motor podía auto-pickear un campeón peor para
+// el resultado. Esta cruza los dos ejes con el peso que ya declara CONCEPTO §6:
+// la afinidad al meta pesa la mitad que la maestría. Con un campeón exactamente
+// promedio para el parche (afinidad 1) devuelve el `factorMaestria` de siempre,
+// así que sin cambio de meta el balance agregado no se mueve.
+export function factorDeCampeon(campeon, weights) {
+  const r = BALANCE.rendimiento;
+  const maestria = campeon?.mastery ?? BALANCE.stats.max / 2;
+  const afinidad = campeon ? afinidadDeCampeon(campeon, weights) : 1;
+  return (1 + (maestria / BALANCE.stats.max - 0.5) * r.maestriaPesoEnRendimiento * 2)
+    * (1 + (afinidad - 1) * r.afinidadPesoEnRendimiento);
+}
+
+// El mismo criterio único, exagerado por `sesgoMaestriaEnPick` para que el
+// camino headless (los `resolverAuto`) no tire una moneda entre un pick bueno y
+// uno apenas peor. Es una transformación monótona de `factorDeCampeon`: NUNCA
+// invierte el orden, solo separa las opciones. Cuando el motor elige solo
+// devuelve el argmax de `factorDeCampeon`, no un sorteo — esto es solo para el
+// `weightedPick` del headless, que necesita pesos y no un único ganador.
+export function pesoDePick(campeon, weights) {
+  return factorDeCampeon(campeon, weights) ** BALANCE.campeones.sesgoMaestriaEnPick;
+}
+
+// Fase 9Rd: la lectura en palabras de un pick, para la tarjeta de draft. Cruza
+// los DOS ejes que ya componen `factorDeCampeon` —afinidad al parche y maestría
+// del campeón relativa a tu propio pool— en una frase que suena a LoL. Pura, sin
+// números en pantalla: el jugador lee "la tenés verde y el parche la pide", no
+// "afinidad 1,12 · maestría 0,84".
+const LECTURA_DE_PICK = {
+  favor: {
+    top: 'tu mejor carta, y el parche la pide',
+    media: 'sólida, y encima está fuerte este parche',
+    floja: 'no la tenés fina, pero está rota este parche'
+  },
+  neutro: {
+    top: 'tu carta de siempre',
+    media: 'una opción más, sin nada que la empuje',
+    floja: 'la tenés de relleno'
+  },
+  contra: {
+    top: 'la dominás, pero quedó a contramano del parche',
+    media: 'ni la dominás ni la pide el parche',
+    floja: 'floja y a contramano: pick de necesidad'
+  }
+};
+
+export function lecturaDePick(campeon, weights, pool) {
+  const l = BALANCE.draft.lectura;
+  const afinidad = afinidadDeCampeon(campeon, weights);
+  const ejeAfinidad = afinidad >= l.afinidadAFavor ? 'favor' : afinidad <= l.afinidadEnContra ? 'contra' : 'neutro';
+
+  const maestrias = pool.map((c) => c.mastery);
+  const lo = Math.min(...maestrias);
+  const hi = Math.max(...maestrias);
+  const t = hi > lo ? (campeon.mastery - lo) / (hi - lo) : 0.5;
+  const ejeMaestria = t >= l.maestriaAlta ? 'top' : t <= l.maestriaFloja ? 'floja' : 'media';
+
+  return LECTURA_DE_PICK[ejeAfinidad][ejeMaestria];
 }
 
 // El meta con nombre y apellido.

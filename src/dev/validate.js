@@ -15,15 +15,17 @@ import {
 } from '../core/ranked.js';
 import { TOKENS, tokensUsados } from '../core/plantillas.js';
 import { RUTINAS } from '../core/rutinas.js';
-import { campeonesEnMeta, multiplicadorDeMeta } from '../core/ajusteMeta.js';
+import { campeonesEnMeta, multiplicadorDeMeta, factorDeCampeon, pesoDePick } from '../core/ajusteMeta.js';
 import { campeonesDisponibles, entradaDePool } from '../core/pool.js';
 import { elegirOutcome, elegirEvento, decisionDesdeEvento, resolver as resolverEventos, resolverOpcion, cooldownActivo } from '../systems/events.js';
 import { tipoDeSplit, hayPresupuesto } from '../core/presupuesto.js';
 import { aplicar as aplicarPresupuesto } from '../systems/presupuesto.js';
-import { elegirCampeonRival, disponiblesDelPool } from '../core/serie.js';
+import { elegirCampeonRival, disponiblesDelPool, decisionDeDraft } from '../core/serie.js';
+import { rendimientoBase } from '../core/fuerza.js';
 import {
   resolverFecha, motivosDeFecha, generarFixture, aplicarCrucesDeJornada,
-  tablaDePosiciones, posicionEnTabla, filaVacia, registrarEnFila
+  tablaDePosiciones, posicionEnTabla, filaVacia, registrarEnFila,
+  decisionDeDraftFecha, factorDraftFecha
 } from '../core/temporada.js';
 import { tierListDeRol, boostDelPool } from '../core/regimen.js';
 import { nivelDelJugador, deltasDeStats, fichaCompleta } from '../core/ficha.js';
@@ -2074,6 +2076,136 @@ check('El pool ancho llega al mapa 5 con opciones más seguido que el angosto', 
   }
   if (ancho - angosto < 0.4) {
     throw new Error(`la brecha ancho-angosto es de solo ${((ancho - angosto) * 100).toFixed(1)} puntos; el pool angosto tiene que castigarse con claridad`);
+  }
+});
+
+// --- Fase 9Rc: un solo criterio de valor de campeón ---
+
+check('factorDeCampeon sube con la maestría y con la afinidad al meta', () => {
+  const weights = createInitialState(3, mulberry32(3)).meta.weights;
+  // A igual afinidad (mismos tags), más maestría vale más.
+  const flojo = entradaDePool({ name: 'A', tags: ['tanque'] }, 30);
+  const fino = entradaDePool({ name: 'A', tags: ['tanque'] }, 80);
+  if (!(factorDeCampeon(fino, weights) > factorDeCampeon(flojo, weights))) {
+    throw new Error('más maestría no dio más factorDeCampeon');
+  }
+  // A igual maestría, el que el meta pide (tag con peso alto) vale más que el
+  // que quedó a contramano (tag con peso bajo). En la seed 3: enchanter 1.508,
+  // splitpush 0.669.
+  const enMeta = entradaDePool({ name: 'B', tags: ['enchanter'] }, 60);
+  const contraMeta = entradaDePool({ name: 'C', tags: ['splitpush'] }, 60);
+  if (!(factorDeCampeon(enMeta, weights) > factorDeCampeon(contraMeta, weights))) {
+    throw new Error('la afinidad al meta no movió factorDeCampeon');
+  }
+  // Sin campeón (comodín / pool vacío) el factor es neutro-ish y finito.
+  const nulo = factorDeCampeon(undefined, weights);
+  if (!Number.isFinite(nulo) || nulo <= 0) {
+    throw new Error(`factorDeCampeon(undefined) = ${nulo}`);
+  }
+  // `pesoDePick` es una transformación monótona: nunca puede invertir el orden
+  // de `factorDeCampeon` (por eso el headless puede pesar por él sin que el
+  // motor elija distinto al argmax).
+  const escala = [flojo, fino, enMeta, contraMeta];
+  for (const a of escala) {
+    for (const b of escala) {
+      const fa = factorDeCampeon(a, weights);
+      const fb = factorDeCampeon(b, weights);
+      const pa = pesoDePick(a, weights);
+      const pb = pesoDePick(b, weights);
+      if (fa > fb && !(pa > pb)) {
+        throw new Error('pesoDePick invirtió el orden de factorDeCampeon');
+      }
+    }
+  }
+});
+
+check('La afinidad al meta mueve el rendimiento base (no solo la maestría)', () => {
+  // Dos estados idénticos salvo el campeón que se termina jugando: uno en el
+  // corazón del meta, otro a contramano, MISMA maestría. `rendimientoBase` (que
+  // ahora usa `factorDeCampeon`) los tiene que separar.
+  const semilla = createInitialState(3, mulberry32(3));
+  const base = {
+    ...semilla,
+    player: {
+      ...semilla.player,
+      championPool: [
+        entradaDePool({ name: 'Meta', tags: ['enchanter'] }, 60),
+        entradaDePool({ name: 'Anti', tags: ['splitpush'] }, 60)
+      ]
+    }
+  };
+  const conMeta = rendimientoBase({ ...base, player: { ...base.player, campeonDelSplit: 'Meta' } });
+  const contraMeta = rendimientoBase({ ...base, player: { ...base.player, campeonDelSplit: 'Anti' } });
+  if (!(conMeta - contraMeta > 0.5)) {
+    throw new Error(`rendimientoBase con meta ${conMeta.toFixed(2)} vs contra ${contraMeta.toFixed(2)}: la afinidad no pesó`);
+  }
+});
+
+check('El motor nunca elige por vos un campeón peor que otro disponible', () => {
+  // Sonda directa sobre `decisionDeDraft` / `decisionDeDraftFecha`: cuando NO
+  // pausan (`elegido` != null), el campeón que devuelven tiene que ser el argmax
+  // de `factorDeCampeon` entre los disponibles. Antes ordenaban por
+  // `deseoPorCampeon` (maestría²) y podían dejar arriba a un campeón peor para
+  // el resultado del mapa.
+  const pool = campeonesDisponibles(
+    { player: { role: 'mid' }, mundo: { campeonesDebutados: [] } }, 'mid'
+  );
+  let autoPicks = 0;
+  let violaciones = 0;
+  for (let i = 0; i < 3000; i += 1) {
+    const rng = mulberry32(50000 + i);
+    const weights = createInitialState(i + 1, mulberry32(i + 1)).meta.weights;
+    const ancho = 3 + (i % 4);
+    const entradas = sample(pool, ancho, rng).map((c) => entradaDePool(c, 20 + Math.floor(rng() * 70)));
+    const state = { player: { role: 'mid', championPool: entradas }, meta: { weights } };
+
+    for (const decision of [
+      decisionDeDraft(state, entradas, i % 2 === 0),
+      decisionDeDraftFecha(state)
+    ]) {
+      if (decision.pausa || !decision.elegido) {
+        continue;
+      }
+      autoPicks += 1;
+      // Los dos miran el mismo universo acá: `entradas` es a la vez el pool y
+      // los `disponibles` que le paso a `decisionDeDraft`.
+      const mejorFactor = Math.max(...entradas.map((c) => factorDeCampeon(c, weights)));
+      if (factorDeCampeon(decision.elegido, weights) < mejorFactor - 1e-9) {
+        violaciones += 1;
+      }
+    }
+  }
+  if (autoPicks < 200) {
+    throw new Error(`solo ${autoPicks} auto-picks en 3000 sondas: muestra insuficiente`);
+  }
+  if (violaciones > 0) {
+    throw new Error(`${violaciones}/${autoPicks} auto-picks eligieron un campeón peor que otro disponible`);
+  }
+});
+
+check('Elegir el mismo campeón del split en una fecha marcada da factorDraftFecha == 0', () => {
+  const weights = createInitialState(3, mulberry32(3)).meta.weights;
+  for (const tags of [['enchanter'], ['splitpush'], ['tanque', 'engage'], ['asesino']]) {
+    for (const mastery of [15, 45, 80]) {
+      const campeon = entradaDePool({ name: 'X', tags }, mastery);
+      const factor = factorDraftFecha(campeon, campeon, weights);
+      if (factor !== 0) {
+        throw new Error(`factorDraftFecha(c, c) = ${factor} (tags ${tags}, m${mastery})`);
+      }
+    }
+  }
+  // Y elegir uno MEJOR que el del split da > 0, uno peor da < 0, ambos topeados.
+  const delSplit = entradaDePool({ name: 'Base', tags: ['splitpush'] }, 40);
+  const mejor = entradaDePool({ name: 'Mejor', tags: ['enchanter'] }, 80);
+  const peor = entradaDePool({ name: 'Peor', tags: ['splitpush'] }, 15);
+  const tope = BALANCE.temporada.impactoDraftFecha;
+  const fMejor = factorDraftFecha(mejor, delSplit, weights);
+  const fPeor = factorDraftFecha(peor, delSplit, weights);
+  if (!(fMejor > 0 && fMejor <= tope + 1e-9)) {
+    throw new Error(`campeón mejor dio ${fMejor}, esperaba (0, ${tope}]`);
+  }
+  if (!(fPeor < 0 && fPeor >= -tope - 1e-9)) {
+    throw new Error(`campeón peor dio ${fPeor}, esperaba [${-tope}, 0)`);
   }
 });
 
