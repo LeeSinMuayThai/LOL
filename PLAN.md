@@ -26,7 +26,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **8** | La ficha: el registro que acumula + la tarjeta permanente + `src/ui/` | ✅ ver `PROGRESO.md` |
 | **9** | El mercado: ofertas, contratos, salarios, la trampa del equipo grande visible | ✅ ver `PROGRESO.md` |
 | **9E** | El varado: la carrera vuelve a tener juego después del primer equipo | 🔶 **9Ea+b hechas** (el bug, cerrado) · faltan 9Ec y 9Ed |
-| **9R** | **Que el juego se juegue**: el cooldown mide splits, la tabla deja de mentir, la interrupción vuelve a ser escasa (248 → ~70 decisiones/carrera), y elegir cambia el resultado | ⬜ **próxima** |
+| **9R** | **Que el juego se juegue**: el cooldown mide splits, la tabla deja de mentir, la interrupción vuelve a ser escasa, y elegir cambia el resultado | 🔶 **9Ra/9Rb/9Re/9Rf hechas** (248 → 122 decisiones/carrera, evento más repetido 14 → 5) · faltan 9R.5 (el final), 9R.2 (Mentalidad/Hype visibles), 9Rc/9Rd (agencia), 9R.3/9R.4 (catálogo), 9Rg |
 | **9M** | **El mercado de pases**: el mundo se puebla de jugadores, la demanda existe, alguien compite por tu asiento, la escalera deja de ser un dado | ⬜ |
 | **10** | El final: retiro emergente + la tarjeta de legado | ⬜ |
 | **11** | El año: calendario, la nota de la temporada, el archirrival | ⬜ |
@@ -1836,17 +1836,24 @@ usuario). Resumen ejecutable:
 
 **Orden de commits** (regla de proceso 2: estructura y retuneo separados):
 
-| # | Commit | Qué entra |
-|---|---|---|
-| **9Ra** | `el cooldown mide splits` | `flags.cooldowns` → `flags.cooldownHasta` (split de expiración, no contador). `actualizarCooldowns` → `registrarEventoVisto`: se borra el tick entero. `cooldownActivo` compara contra `splitCount`. Constante nueva `eventos.cooldownMinimoSplits: 1`. **Cero RNG nuevo**, pero `candidatos()` devuelve otro conjunto → el stream diverge río abajo: **deuda D37**, familia D21/D35 |
-| **9Rb** | `la tabla deja de mentir` | `simularResto` (round-robin completo al abrir el split, con tu fila en 0-0) → fixture round-robin real resuelto jornada a jornada. `tablaDePosiciones(temporada, jornada)`. Reordena llamadas de RNG existentes, no agrega: **deuda D38** |
-| **9Rc** | `un solo criterio de valor de campeón` | Tres fórmulas que no se hablan (`calcularRendimiento` solo maestría, `deseoPorCampeon` maestría²×afinidad, `factorDraftFecha` solo afinidad) → una sola `factorDeCampeon(campeon, weights)`. Extraer `rendimientoBase(state)` (puro, sin el `gauss` de ruido). Constante `rendimiento.afinidadPesoEnRendimiento: 0.15` |
-| **9Rd** | `se para cuando hay algo en juego` | Criterio de pausa **invertido**: hoy pausa cuando `dominancia < 1.35` (empate) y elige solo cuando hay respuesta clara. Nuevo: `probabilidadDeGanar(fp, fr, σ₁, σ₂)` en forma cerrada (Φ logística), y pausa sii `puntosEnJuego ≥ umbral`. Constantes `numeros.factorLogisticoNormal: 1.702`, `serie.puntosEnJuegoParaPreguntar: 0.04`, `temporada.puntosEnJuegoParaPreguntar: 0.07`. Se borra `serie.dominanciaClara` |
-| **9Re** | `la temporada regular deja de ser una cinta` | `fechasMarcadasMin/Max` (2-3/split) → `fechasMarcadasPorSplit: 1`, y solo si `puntajeDeFecha ≥ puntajeMinimoParaMarcar: 11` (motivo real, no `parejo`). La reacción postpartido se **degrada a crónica**: se resuelve sola y se cuenta en una línea (el contenido no se borra). `forzarMarca` se borra |
-| **9Rf** | `el presupuesto de interrupción` | `src/systems/presupuesto.js` (nuevo, primero en `ETAPAS_SPLIT`, **no toca RNG**): `state.presupuesto = { total: interrupcionesPorTipo[tipoDeSplit], gastadas: 0 }`. `pipeline.pausar()` incrementa `gastadas` (choke point único). `eventos` y `temporada` consultan `hayPresupuesto`; `mercado`/`amateur`/`edadCierre`/`practica`/`serie` exentos. Constante `presupuesto.interrupcionesPorTipo: { denso: 4, normal: 2, comprimido: 1 }` |
-| **9Rg** | `calibrar el volumen` | **solo constantes**, línea de base re-medida en el momento (T6). Orden: `cooldownMinimoSplits` → `interrupcionesPorTipo` → `puntajeMinimoParaMarcar`/`probReaccion` → los dos `puntosEnJuegoParaPreguntar` → `afinidadPesoEnRendimiento` (último, mueve el balance agregado). Recién acá se aprietan los `cooldown` de los 97 JSON si el catálogo se agota (bajar los altos, no subir todos) |
+| # | Commit | Qué entra | Estado |
+|---|---|---|---|
+| **9Ra** | `el cooldown mide splits` | `flags.cooldowns` → `flags.cooldownHasta` (split de expiración). `actualizarCooldowns` → `registrarEventoVisto`: se borra el tick. Constante `eventos.cooldownMinimoSplits: 1`. **Deuda D37** (corre el stream). | ✅ `3cce01c` — 0 reapariciones antes de tiempo en 36.826 eventos |
+| **9Rb** | `la tabla deja de mentir` | `simularResto` → `generarFixture` (round-robin real por método del círculo) + `aplicarCrucesDeJornada` en paso con tus fechas. `career.temporada.cruces`. **Deuda D38** (reordena el stream) + **D39** (sesgo +6 en `proyeccionJerarquia`). | ✅ `7c07f49` — posición relativa media jornada 1: 0,96 → ~0,35 |
+| **9Re** | `la temporada regular deja de ser una cinta` | `fechasMarcadasMin/Max` → `fechasMarcadasPorSplit: 1`; se marca la primera fecha con `motivos.some(m !== 'parejo')`, `forzarMarca` borrado. La reacción postpartido se resuelve sola (`weightedPick` por peso, igual que el camino headless) y se cuenta en una línea. Resúmenes de tramo con `tecnico: true`. | ✅ `5e3099f` — temporada 108 → ~35 decisiones/carrera |
+| **9Rf** | `el presupuesto de interrupción` | `src/systems/presupuesto.js` (primero en `ETAPAS_SPLIT`, **no toca RNG**): cupo `esSplitEventful(state) ? interrupcionesPorSplit.eventful : .rutina`. `pipeline.pausar()` descuenta (choke point único). Solo `events.js` consulta `hayPresupuesto`; el resto descuenta pero no consulta. El 2º evento lo sigue gobernando `probSegundaDecisionPorTipo`. Constante `presupuesto.interrupcionesPorSplit: { eventful: 2, rutina: 1 }`. | ✅ `6ebc268` — **248 → 122 decisiones/carrera** (40 splits), evento más repetido **14 → 5 (máx 8)** |
+| **9Rc** | `un solo criterio de valor de campeón` | Tres fórmulas que no se hablan (`calcularRendimiento` solo maestría, `deseoPorCampeon` maestría²×afinidad, `factorDraftFecha` solo afinidad) → una sola `factorDeCampeon(campeon, weights)`. Extraer `rendimientoBase(state)` (puro, sin el `gauss` de ruido — T1-neutral). Constante `rendimiento.afinidadPesoEnRendimiento: 0.15` | ⬜ |
+| **9Rd** | `se para cuando hay algo en juego` | Criterio de pausa **invertido**: hoy pausa cuando `dominancia < 1.35` (empate). Nuevo: `probabilidadDeGanar(fp, fr, σ₁, σ₂)` (Φ logística sobre `rendimientoBase`, cero RNG), pausa sii `puntosEnJuego ≥ umbral`; excepción incondicional `disponibles.length === 2`. Constantes `numeros.factorLogisticoNormal: 1.702`, `serie.puntosEnJuegoParaPreguntar: 0.04`, `temporada.puntosEnJuegoParaPreguntar: 0.07`. Se borra `serie.dominanciaClara` (D31) | ⬜ |
+| **9Rg** | `calibrar el volumen` | **solo constantes**, línea de base re-medida (T6). Orden: `interrupcionesPorSplit` → los dos `puntosEnJuegoParaPreguntar` → `afinidadPesoEnRendimiento` (último) → `cooldown` de los JSON si el catálogo se agota → `pesoJugadorEnEquipo` 0,35→~0,5 → **D39** recalibrar `proyeccionJerarquia`. Cierra con `npm run build` (regenerar `dist/`) | ⬜ |
 
-Dependencias: 9Rc → 9Rd → 9Re. 9Ra y 9Rb independientes. **Medir entre 9Rf y 9Rg.**
+Dependencias: 9Rc → 9Rd. 9Ra/9Rb/9Re/9Rf independientes y **ya hechas**. **Medir entre 9Rf y 9Rg.**
+
+> **Orden de trabajo revisado (2026-09-03).** Tras cerrar 9Ra/9Rb/9Re/9Rf (el corte de volumen:
+> 248 → 122 decisiones, evento más repetido 14 → 5), el resto va en este orden por impacto y
+> dependencia: **9R.5** (el final + la tarjeta — cierra el loop, alto pago visible, destraba medir
+> carreras a su largo real) → **9R.2** (Mentalidad/Hype se dibujan — bug real: 12,5% de burnout por
+> una barra invisible) → **9Rc + 9Rd** (agencia) → **9R.3 + 9R.4** (catálogo a escala + minijuegos,
+> con agentes) → **9Rg** (calibrar + `dist`).
 
 ## 9R.2 — Que elegir importe (contenido + UI, después de medir 9Rf)
 
@@ -1887,11 +1894,57 @@ minijuegos"* — varianza que el jugador controla, acotada, dentro de las compet
 ## 9R.5 — El final y la tarjeta compartible (gancho de El Ídolo, adelanta la FASE 10)
 
 Hoy la carrera **no tiene un final exitoso**: `terminado: true` existe en tres lugares y los tres
-son fracasos anteriores a ser profesional; el 69% de las carreras sigue "en_carrera" a los 35.
-`src/systems/retiro.js` + `src/systems/legado.js` + `src/ui/screens/tarjeta.js`, con
-`career.registro` (ya completo) como materia prima. Disparador provisional: curva de edad + declive
-medido + ausencia de ofertas; **se deja anotado que 9M lo vuelve emergente de verdad** — si la 9M
-se hace después, el disparador se re-mide, no se reescribe.
+son fracasos anteriores a ser profesional; el 69% de las carreras sigue "en_carrera" a los 35. La
+tarjeta final es *"todo el motor de difusión del juego"* (`CONCEPTO` §1/§9) y no existe. Además
+cierra el falso positivo D37 del check "Nadie se queda varado" (el veterano de 35 que no se retira).
+
+Versión acotada de la **FASE 10** de `PLAN.md` (§10.1-10.3). **Sin** 10.4 (lesiones / servicio
+militar) — eso queda para la FASE 10 real.
+
+**Orden de commits:**
+
+| # | Commit | Qué entra |
+|---|---|---|
+| **9R5a** | `retiro.js: la carrera termina` | `src/systems/retiro.js` nuevo, una línea en `ETAPAS_SPLIT` **después de `mercado`**. Semántica nueva (riesgo alto, `PLAN.md` §10.1): `phase: 'retirado'` = `terminado: false`, ventana de vuelta abierta; `state.terminado = true` lo setea **solo** este sistema. Terminales: `burnout`, `prohibicion_familiar`, `no_llego`. Reversibles: `sin_equipo`, `retiro_elegido`, `retiro_por_lesion`; `vueltasMaximas: 2`. Los tres `terminado: true` actuales pasan a marcar `finAnticipado` y dejar que `retiro.js` cierre. Disparador provisional (sin 9M): mercado sin llamar `splitsSinOfertaParaRetiro` (~2) pretemporadas seguidas **y** `etapa === 'declive'` o `age >= edadDeclive`; **o** el jugador se baja en el evento de cierre de edad desde `edadRetiroOfrecible` (~26). Red anti-loop: 24 años en `amateur` → `no_llego`. **Trampa D10**: `secundario.js` usa `BALANCE.amateur.edadLimite` para congelar su flag — si se toca, darle umbral propio |
+| **9R5b** | `la tarjeta de legado` | `src/systems/legado.js` (puro): `veredicto = plantillaDeArquetipo(registro) + modificador + detalleÚnico` (`PLAN.md` §10.2), 8 arquetipos gateados por `registro.porOrg`/`registro.titulos`/`finAnticipado`. `src/ui/screens/tarjeta.js`: la pantalla, **reusa `filaHistoria`** de `ui/components/ficha.js:43` y `crearBarra`/bandas de `core/ficha.js`. Marco distinto por final (confeti / sobrio). **Toda salida es una tarjeta** (§10.3). `state.tarjeta` (objeto nuevo, poblado por `legado.js`). `index.html`: `renderResumenFinal` monta `#tarjetaPanel` vía `ui.renderTarjeta`; `render.js` exporta `renderTarjeta` |
+| **9R5c** | `calibrar la duración` | **solo constantes**: `splitsSinOfertaParaRetiro`, `edadRetiroOfrecible`, `edadDeclive`, hasta que los checks de duración caigan en banda |
+
+**Checks 9R.5** (de `PLAN.md` §10.5, los alcanzables sin 9M):
+
+```
+CERO carreras agotan maxSplitsDeSeguridad                          (hoy 69% sigue "en carrera" a 60 splits)
+mediana de splits como pro ∈ [8, 18]                               (banda ancha sin el mercado de 9M)
+llega a age >= 30 ∈ [1%, 8%]
+la duración de la carrera correlaciona con el potencial oculto (r > 0.4)
+Ningún final —incluidos los amateur— sale sin `state.tarjeta` poblado
+Ningún arquetipo de veredicto supera el 25% de las carreras (CONCEPTO §11)
+El veredicto cita al menos un hecho real del registro de ESA carrera
+`phase: 'retirado'` con `terminado: false` es alcanzable; la vuelta funciona y respeta `vueltasMaximas`
+```
+
+## 9R.2 (bis) — Que la barra que te mata se vea
+
+> Esta es la parte de UI de la §9R.2 de arriba, separada porque va **después de 9R.5** en el orden
+> revisado. El punto 3 (`pesoJugadorEnEquipo`) y el punto 1 (`modificadores` a escala) se mudan a
+> 9Rg y 9R.3 respectivamente.
+
+- **`core/ficha.js`**: `bandaDeMentalidad(state)` / `bandaDeHype(state)` (misma forma que
+  `bandaDeJerarquia`). Mentalidad: `al límite` (cerca de `atributos.burnoutUmbral`) · `tensionado`
+  · `entero` · `en llamas`. Hype: reusa las bandas del eje `estatus`/`hype` de `core/contexto.js`.
+  Se suman a `fichaCompleta`.
+- **`ui/components/ficha.js`** rama profesional: fila `MENTALIDAD {v} · {banda} — HYPE {v} · {banda}`
+  después de las barras, con flecha ▲▼ contra `edadSnapshot` (misma mecánica que `deltasDeStats`;
+  `CAMPOS_EDAD` ya incluye ambos). Mentalidad en rojo bajo `burnoutUmbral` — el aviso que no existe.
+- **`atributos.js` `moverStatsDeCurva`** (commit de tuneo aparte): bajar `config.velocidad` de las
+  curvas para que un bump de evento tarde ~10-12 splits en diluirse, no ~5.
+
+**Checks 9R.2 (bis):**
+
+```
+Mentalidad y Hype aparecen en el objeto que consume la ficha profesional
+Un +N de evento a un stat de curva sigue medible ≥ 10 splits después (hoy ~5)
+El burnout no puede pasar sin que la banda de Mentalidad haya estado en `al límite` ≥ 2 splits antes
+```
 
 ## Checks nuevos de la fase 9R (para que nada regresione)
 

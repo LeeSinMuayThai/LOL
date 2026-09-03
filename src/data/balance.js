@@ -745,6 +745,36 @@ export const BALANCE = {
     valorSignatureBonus: 0.20
   },
 
+  // Fase 9R5a: la carrera termina. Antes NADA seteaba `terminado` en fase
+  // profesional — el 69% de las carreras seguía "en carrera" a los 35, sin
+  // final ni tarjeta. `systems/retiro.js` la cierra: pasada la edad de declive,
+  // cada pretemporada hay una probabilidad creciente de retirarse, modulada por
+  // cómo te trata el mercado (sin equipo empuja fuerte; una franquicia aguanta).
+  // Duración objetivo: mediana 8-18 splits como pro (CONCEPTO §12.4: 2-6 años).
+  retiro: {
+    // Por debajo de esta edad no te retirás nunca (salvo los finales de
+    // `amateur.js`/`atributos.js`): la carrera todavía tiene recorrido.
+    edadDeclive: 23,
+    // La línea Faker: pasada esta edad te retirás sí o sí. Alta a propósito
+    // — Faker/Peanut son la excepción (CONCEPTO §12.4).
+    edadRetiroForzoso: 31,
+    // Probabilidad base por año pasado el declive: p = base × (edad − declive)
+    // × factorNivel × factorSinEquipo, evaluada cada pretemporada.
+    chanceBasePorAnio: 0.24,
+    // El nivel actual del jugador (`nivelDelJugador`) modula fuerte: un
+    // clase-mundial casi no se retira antes de los 30 (Faker), un prospecto
+    // cuelga a los 24. Es lo que hace que la duración correlacione con lo buena
+    // que fue la carrera. Se interpola linealmente entre estos dos anclas y se
+    // clampea a [min, max].
+    nivelAncla: { bajo: 45, alto: 82 },
+    factorNivelEnBajo: 2.2,
+    factorNivelEnAlto: 0.45,
+    factorNivelMin: 0.3,
+    factorNivelMax: 3,
+    // Estar sin equipo empuja aparte, multiplicativo.
+    factorSinEquipo: 2.2
+  },
+
   // La temporada regular (fase 5): antes era una sola tirada (`gauss` contra
   // cada rival) escupiendo una posición sin fechas ni tabla. Ahora es un
   // calendario real, con 2-3 fechas por split que el jugador juega de verdad.

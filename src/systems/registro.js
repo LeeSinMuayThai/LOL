@@ -36,6 +36,9 @@ export const ETAPAS_SPLIT = [
   // despues de `competitivo`, que decide SI ascendes; este decide A QUE ORG
   // vas — la eleccion real de PLAN.md §9.4.
   await import('./mercado.js'),
+  // Fase 9R5a: la carrera termina cuando el mercado deja de llamarte. Va justo
+  // despues de `mercado`, que este split ya actualizo splitsSinOfertaConsecutivos.
+  await import('./retiro.js'),
   await import('./campeones.js'),
   // Antes de amateur a proposito: si la carrera se corta en este split, el flag
   // del secundario ya quedo congelado y entra en la tarjeta final.

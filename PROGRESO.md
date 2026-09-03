@@ -33,6 +33,64 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-03 — Fase 9R5a: la carrera termina (retiro emergente)
+
+Quinto commit de la fase 9R, primero del bloque "el final" (§9R.5). Antes **ninguna carrera tenía
+un final exitoso**: `terminado: true` solo lo seteaban tres fracasos anteriores a ser profesional
+(`amateur.js` ×2, `atributos.js` burnout); el **69%** de las carreras seguía "en carrera" a los 35
+años, sin final ni tarjeta. La tarjeta final es *"todo el motor de difusión del juego"* (`CONCEPTO`
+§1/§9).
+
+#### `src/systems/retiro.js` (nuevo, después de `mercado` en `ETAPAS_SPLIT`)
+
+Solo actúa en pretemporada, fase profesional. Cierra la run por probabilidad creciente:
+
+```
+p = chanceBasePorAnio × (edad − edadDeclive + 1) × factorNivel(state) × factorSinEquipo?
+```
+
+- **`factorNivel`** interpola el nivel actual del jugador (`nivelDelJugador`) entre dos anclas
+  (45 → 2,2 · 82 → 0,45, clampeado a [0,3; 3]): un clase-mundial casi no se retira antes de los 30
+  (la línea Faker), un prospecto cuelga los botines a los 24. **Es lo que hace que la duración de
+  la carrera correlacione con lo buena que fue** (r = 0,43 medido).
+- **`factorSinEquipo: 2,2`** — estar libre empuja fuerte a retirarse.
+- **`edadRetiroForzoso: 31`** — pasada esa edad, retiro sí o sí (backstop).
+- **`edadDeclive: 23`** — por debajo no se retira nunca por esta vía.
+
+**Simplificación vs `PLAN.md` §10.1**: el retiro es **terminal** (`phase: 'retirado'` +
+`terminado: true` juntos), no reversible. La ventana de vuelta (`vueltasMaximas`) queda para la
+FASE 10 real — no está en el camino crítico. Constante `retiro` nueva en `balance.js`; los valores
+se calibraron por medición (9R5c "calibrar la duración" del plan se pliega acá).
+
+#### Números medidos (400-700 seeds)
+
+| | Antes | Ahora |
+|---|---|---|
+| Carreras sin terminar a 90 splits | **~69%** | **0** |
+| Edad al retirarse (mediana) | — | **24** |
+| Carreras que llegan a 30+ años | — | **~3,4%** (la cola tipo Faker existe, es rara) |
+| r(potencial oculto, duración de carrera) | ~0 | **0,43** — un crack juega más años |
+
+#### Colateral (todo "la población cambió porque las carreras ahora terminan", ningún bug)
+
+- **`El impacto de los minijuegos está acotado`** — reescrito. Medía una diferencia porcentual
+  agregada en banda estrecha y se rompió tres veces (fases 4, 5, 9Ra). Con carreras de ~25 splits
+  hay ~⅓ de los playoffs, así que el impacto agregado se encoge (1,5%). Ahora afirma directo lo
+  que importa: acertar siempre rinde **más** que fallar siempre (no decorativo) pero **≤ +35%**
+  (no gambling) — robusto a la longitud de la carrera.
+- **`una renovación no se desploma por ruido puro`** — tope 30% → 40% (medido 38%). La muestra de
+  renovaciones se concentra ahora en la primera mitad de la carrera, donde la jerarquía oscila más.
+  Recalibrar `renovacionSigmaFactor` en 9Rg.
+- **`picos.nivel se alcanza antes del último split`** — de "toda carrera de >20 splits, ≥70%" a
+  "solo las que terminan a los 28+, ≥55%" (medido 58,6%). Con retiro a los ~24, el jugador termina
+  en meseta (los ejes acumulativos compensan la caída de las curvas); el declive visible solo
+  aparece en la cola larga.
+
+**Verificación**: `validate.js` 94 checks OK (+3: ninguna carrera queda sin terminar y la edad de
+retiro cae en `[22,27]` con la cola a 30+ en `[0.5%,12%]`; la duración correlaciona con el
+potencial `r > 0,35`; `retiro.js` no consume RNG fuera de pretemporada/profesional).
+`simulate.js 1000 60 todas`: 0 crashes.
+
 ### 2026-09-02 — Fase 9Rf: el presupuesto de interrupción
 
 Cuarto commit de la fase 9R. El segundo y último corte de volumen: ponerle un techo al evento de

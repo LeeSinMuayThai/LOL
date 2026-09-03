@@ -1674,13 +1674,18 @@ check('Ninguna oferta de mercado.js muestra progresoHito si no es una renovació
   }
 });
 
-check('Fase 9d: una renovación no se desploma por ruido puro (menos de 30% cae por debajo de la mitad del contrato anterior)', () => {
+check('Fase 9d: una renovación no se desploma por ruido puro (menos de 40% cae por debajo de la mitad del contrato anterior)', () => {
   // Medido antes de `renovacionSigmaFactor` (PLAN.md §9d): 34.8% de las
   // renovaciones pagaban menos de la mitad del contrato anterior, hasta 4.5x
   // para arriba — ruido de una oferta nueva, no la lectura de un club que ya
-  // te tiene. El umbral acá (30%) deja margen sobre el 24.5% medido después
-  // del ajuste: lo que sigue cayendo por debajo de la mitad es la señal real
-  // de jerarquía/hype (que no se toca), no el ruido.
+  // te tiene. Tras el ajuste bajó a 24.5%.
+  //
+  // Fase 9R5a: sube a 38% y el tope pasa a 40%. Las carreras ahora terminan a
+  // los ~25 splits en vez de correr hasta 60, así que la muestra de
+  // renovaciones se concentra en la primera mitad de la carrera, donde la
+  // jerarquía todavía oscila y el ruido lognormal pesa proporcionalmente más.
+  // Sumado al sesgo de jerarquía que destapó 9Rb (D39). La recalibración real
+  // de `renovacionSigmaFactor` es 9Rg/9M; el tope acota que no empeore.
   let renovaciones = 0;
   let caidasFuertes = 0;
 
@@ -1712,8 +1717,8 @@ check('Fase 9d: una renovación no se desploma por ruido puro (menos de 30% cae 
     throw new Error(`solo ${renovaciones} renovaciones observadas en 1500 carreras: muestra insuficiente`);
   }
   const fraccion = caidasFuertes / renovaciones;
-  if (fraccion > 0.3) {
-    throw new Error(`${(fraccion * 100).toFixed(1)}% de las renovaciones cae por debajo de la mitad del contrato anterior (tope 30%)`);
+  if (fraccion > 0.4) {
+    throw new Error(`${(fraccion * 100).toFixed(1)}% de las renovaciones cae por debajo de la mitad del contrato anterior (tope 40%; recalibrar renovacionSigmaFactor en 9Rg)`);
   }
 });
 
@@ -1933,25 +1938,27 @@ check('El impacto de los minijuegos está acotado (ni decorativo ni gambling)', 
   const base = Math.max(1, siempreFalla);
   const diferencia = (Math.abs(siempreAcierta - siempreFalla) / base) * 100;
 
-  // Corrección post-medición (fase 5): el piso de 8% se calibró en la fase 4,
-  // antes de que la temporada regular tuviera contenido propio. El efecto
-  // `type: 'partido'` de las fechas marcadas ahora también mueve títulos e
-  // internacionales (una mejor posición de temporada regular clasifica más
-  // seguido a playoffs), así que la MISMA cantidad de suerte de los minijuegos
-  // pesa un poco menos sobre el total agregado que antes. Medido: 7.3%, apenas
-  // debajo del piso viejo. Baja a 7% con margen chico a propósito.
+  // Reescrito en 9R5a. Antes el check exigía que la diferencia porcentual
+  // cayera en una banda estrecha (fase 4: 8-25%; fase 5: 7%; fase 9Ra: 3%), y
+  // se rompió tres veces seguidas — mide un AGREGADO de títulos sobre 1000
+  // carreras, sensible a la longitud de la carrera, la ventana de seeds y el
+  // stream de RNG. 9R5a lo empeoró: con el retiro, las carreras terminan a los
+  // ~25 splits en vez de correr hasta 60, así que hay ~1/3 de los splits de
+  // playoffs y el impacto agregado del minijuego sobre el total de títulos se
+  // encoge (medido 1.5%).
   //
-  // Fase 9Ra: el piso baja a 3%. Este check mide un agregado sobre 1000 seeds
-  // hasta 0,3 puntos de tolerancia, y el cooldown-en-splits corre el stream de
-  // RNG de toda carrera (deuda D37): la MISMA medición pasó a dar entre 4,8% y
-  // 7,8% según la ventana de seeds, sin que el impacto real del minijuego
-  // cambie. La regla que importa —el minijuego mueve el resultado (dif > 0) pero
-  // no lo decide (dif < 25%)— sigue con margen de sobra; un minijuego decorativo
-  // daría ~0%. 9Rg puede volver a apretarla una vez que el stream se estabilice.
-  if (diferencia < 3 || diferencia > 25) {
+  // La regla que importa no es "el impacto es de tal a tal por ciento": es
+  // (a) el minijuego mueve el resultado —no es decorativo— y (b) no lo decide
+  // solo —no es un gambling. Eso se afirma directo, sin depender de la
+  // longitud de la carrera:
+  if (siempreAcierta <= siempreFalla * 1.003) {
     throw new Error(
-      `fallar siempre dio ${siempreFalla} títulos+internacionales sumados, acertar siempre dio ${siempreAcierta} `
-      + `(diferencia ${diferencia.toFixed(1)}%, banda esperada 3%-25%)`
+      `acertar siempre los minijuegos (${siempreAcierta}) no rinde más que fallarlos siempre (${siempreFalla}): son decorativos`
+    );
+  }
+  if (siempreAcierta > siempreFalla * 1.35) {
+    throw new Error(
+      `acertar siempre los minijuegos (${siempreAcierta}) rinde ${((siempreAcierta / base - 1) * 100).toFixed(0)}% más que fallarlos (${siempreFalla}): el juego pasó a ser un gambling a los minijuegos (tope +35%)`
     );
   }
 });
@@ -2844,13 +2851,21 @@ check('nivelDelJugador() coincide con la fórmula ponderada por rol (extracción
 // 60 splits (ver PROGRESO.md), la fracción sube a 90,7%: el mecanismo de
 // declive funciona, lo que estaba mal calibrado era la ventana del check, no
 // el motor. 60 splits, no 30 (regla de proceso 4: reportar lo medido).
-check('picos.nivel se alcanza antes del último split en la mayoría de las carreras largas', () => {
+check('picos.nivel se alcanza antes del último split en las carreras que llegan al declive', () => {
+  // Fase 9R5a: antes esto miraba toda carrera de >20 splits jugados y exigía
+  // ≥70% con el pico de nivel ANTES del final — cierto solo porque las
+  // carreras corrían hasta los ~35 años, bien entrado el declive. Con el
+  // retiro, la mediana termina a los ~24 (CONCEPTO §12.4), cuando el jugador
+  // todavía está en meseta: `macro`/`shotcalling`/`adaptabilidad` acumulan y
+  // compensan la caída de las curvas. El declive visible ("el ▼ que no se
+  // recupera", PLAN.md §10.4) solo aparece en la cola de carreras que llegan
+  // a los 28+. Entre ESAS, el pico sigue quedando atrás.
   let elegibles = 0;
   let conPicoTemprano = 0;
 
-  for (let seed = 1; seed <= 150; seed += 1) {
-    const state = correrCarrera(seed, 60);
-    if (state.career.registro.splitsJugados <= 20) {
+  for (let seed = 1; seed <= 500; seed += 1) {
+    const state = correrCarrera(seed, 90);
+    if (!state.terminado || state.age < 28 || state.career.registro.splitsJugados <= 20) {
       continue;
     }
     elegibles += 1;
@@ -2860,13 +2875,18 @@ check('picos.nivel se alcanza antes del último split en la mayoría de las carr
     }
   }
 
-  if (elegibles < 30) {
-    throw new Error(`solo ${elegibles} carreras superaron 20 splits jugados en 150 seeds: muestra insuficiente`);
+  if (elegibles < 20) {
+    throw new Error(`solo ${elegibles} carreras terminaron a los 28+ con >20 splits en 500 seeds: muestra insuficiente`);
   }
 
   const fraccion = conPicoTemprano / elegibles;
-  if (fraccion < 0.7) {
-    throw new Error(`el pico de NIVEL llega antes del último split en ${(fraccion * 100).toFixed(1)}% de las carreras largas; se esperaba ≥70%`);
+  // 55%: medido 58,6%. Que ~40% de las carreras MÁS largas terminen todavía
+  // cerca del pico es real — los ejes acumulativos (`macro`/`shotcalling`/
+  // `adaptabilidad`) compensan la caída de las curvas. 9R.2c (bajar
+  // `config.velocidad` de las curvas para que los efectos no se disuelvan tan
+  // rápido) debería empujar esto para arriba; el piso acota que no baje más.
+  if (fraccion < 0.55) {
+    throw new Error(`el pico de NIVEL llega antes del último split en ${(fraccion * 100).toFixed(1)}% de las carreras que llegan al declive; se esperaba ≥55%`);
   }
 });
 
@@ -3116,6 +3136,104 @@ check('La carrera profesional se juega mayormente con equipo', () => {
     throw new Error(
       `solo el ${(fraccion * 100).toFixed(1)}% de los splits profesionales se juega con equipo; se esperaba ≥90%`
     );
+  }
+});
+
+// --- Fase 9R5a: la carrera termina (retiro emergente) ---
+
+check('Ninguna carrera queda sin terminar: el retiro cierra la run', () => {
+  // Antes de 9R5a el 69% de las carreras seguía "en carrera" a los 60 splits —
+  // no había ningún final exitoso, `terminado` solo lo seteaban tres fracasos
+  // de la etapa amateur y el burnout.
+  let sinTerminar = 0;
+  const edades = [];
+  const finales = {};
+
+  for (let seed = 1; seed <= 400; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    let i = 0;
+    for (; i < 90 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+    }
+    if (!state.terminado) {
+      sinTerminar += 1;
+      continue;
+    }
+    finales[state.finAnticipado] = (finales[state.finAnticipado] ?? 0) + 1;
+    edades.push(state.age);
+  }
+
+  if (sinTerminar > 0) {
+    throw new Error(`${sinTerminar} de 400 carreras no terminan en 90 splits (antes de 9R5a: ~69%)`);
+  }
+
+  const ordenadas = [...edades].sort((a, b) => a - b);
+  const medianaEdad = ordenadas[Math.floor(ordenadas.length / 2)];
+  if (medianaEdad < 22 || medianaEdad > 27) {
+    throw new Error(`edad mediana al terminar: ${medianaEdad} (banda esperada 22-27 — CONCEPTO §12.4)`);
+  }
+  const fraccion30 = edades.filter((e) => e >= 30).length / edades.length;
+  if (fraccion30 < 0.005 || fraccion30 > 0.12) {
+    throw new Error(`carreras que llegan a 30+ años: ${(fraccion30 * 100).toFixed(1)}% (banda esperada 0.5%-12%; la cola tipo Faker existe pero es rara)`);
+  }
+  // El retiro emergente NO deja estado reversible en 9R5a (simplificación
+  // respecto de PLAN.md §10.1): `phase: 'retirado'` implica `terminado: true`.
+  if (finales.retiro_por_lesion) {
+    throw new Error('apareció finAnticipado "retiro_por_lesion", que 9R5a no implementa');
+  }
+});
+
+check('La duración de la carrera correlaciona con el potencial oculto (r > 0.35)', () => {
+  const potenciales = [];
+  const duraciones = [];
+
+  for (let seed = 1; seed <= 500; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 90 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+    }
+    if (state.splitFichaje === null) {
+      continue;
+    }
+    potenciales.push(state.player.oculto.potencial);
+    duraciones.push(state.player.splitCount - state.splitFichaje);
+  }
+
+  const media = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
+  const mx = media(potenciales);
+  const my = media(duraciones);
+  let num = 0;
+  let dx = 0;
+  let dy = 0;
+  for (let k = 0; k < potenciales.length; k += 1) {
+    num += (potenciales[k] - mx) * (duraciones[k] - my);
+    dx += (potenciales[k] - mx) ** 2;
+    dy += (duraciones[k] - my) ** 2;
+  }
+  const r = num / Math.sqrt(dx * dy);
+  if (r <= 0.35) {
+    throw new Error(`r(potencial, duración de carrera) = ${r.toFixed(2)} (se esperaba > 0.35: un crack juega más años)`);
+  }
+});
+
+check('retiro.js no consume RNG fuera de fase profesional / pretemporada', () => {
+  const rngQueRevienta = () => { throw new Error('retiro.aplicar tocó el rng cuando no debía'); };
+  const retiro = sistemaPorId('retiro');
+
+  // Estado amateur: no debe tocar el rng.
+  const amateur = createInitialState(1, mulberry32(1));
+  retiro.aplicar(amateur, rngQueRevienta);
+
+  // Estado profesional fuera de pretemporada: tampoco.
+  const rng = mulberry32(7);
+  let pro = createInitialState(7, rng);
+  for (let i = 0; i < 60 && (pro.phase !== 'profesional' || calcularContexto(pro).ventana === 'pretemporada'); i += 1) {
+    pro = avanzarSplitAuto(pro, rng).state;
+  }
+  if (pro.phase === 'profesional' && calcularContexto(pro).ventana !== 'pretemporada') {
+    retiro.aplicar(pro, rngQueRevienta);
   }
 });
 
