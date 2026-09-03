@@ -33,6 +33,28 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-03 — Fase 9R0b: feedback de resultado de minijuego
+
+Segundo commit de la fase 9R.0. **Sólo UI** (`index.html`). El motor ya recibía el `resultado`
+0-1 del minijuego y seguía de largo: el jugador jugaba el mini-juego y **nunca sabía si lo había
+clavado** — la queja textual del usuario ("después de los minijuegos no sabés si ganaste o
+perdiste").
+
+- **`mostrarMinijuego`** envuelve el `onDone(resultado)`: antes de llamar a `responder`, pinta un
+  beat de 1,6 s con el veredicto (`¡Clavado!` / `Salió parejo` / `No salió`, con color) y la
+  consecuencia concreta en el tono de los logs que el motor emite después ("El Barón es tuyo: el
+  mapa se te va a favor", "El bootcamp rindió: llegás mejor preparado", etc.), por tipo de
+  minijuego. Guard `resuelto` para los minijuegos que podrían llamar `onDone` más de una vez.
+- **CSS** `.minijuego-resultado` (+`--bien`/`--parejo`/`--mal`) con una animación de entrada corta.
+- **No toca el motor**: el `resultado` que se le pasa es exactamente el mismo. `npm run build` OK
+  (12 carreras src vs dist idénticas), sin aleatoriedad nativa nueva (`setTimeout`, no `Math.random`).
+
+**Verificación e2e en Chrome real** (headless vía CDP, mismo criterio que fases 8/8D): un script
+juega una carrera de verdad clickeando la primera opción de cada decisión hasta que aparece un
+minijuego, lo juega, y confirma que `.minijuego-resultado` aparece con su clase y su texto —
+`minijuego-resultado--bien "¡Clavado! Impresionaste en el tryout: entrás con crédito."` sobre el
+tryout `la_prueba` de tier 3. Screenshot guardado.
+
 ### 2026-09-03 — Fase 9R0a: matar la repetición de fechas marcadas
 
 Primer commit de la **fase 9R.0** (`PLAN.md`), insertada tras una segunda tanda de feedback: el

@@ -552,6 +552,35 @@
       .minijuego-widget {
         margin-top: 14px;
       }
+      /* Fase 9R0b: el beat de resultado que aparece 1,6 s despues de jugar el
+         minijuego, antes de que el motor siga. Sin esto el jugador nunca sabia
+         si habia clavado la jugada. */
+      .minijuego-resultado {
+        text-align: center;
+        padding: 22px 16px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        animation: minijuego-resultado-in 180ms ease-out;
+      }
+      @keyframes minijuego-resultado-in {
+        from { opacity: 0; transform: translateY(6px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      .minijuego-resultado--bien   { background: rgba(68, 212, 141, 0.14); border-color: rgba(68, 212, 141, 0.5); }
+      .minijuego-resultado--parejo { background: rgba(240, 194, 123, 0.12); border-color: rgba(240, 194, 123, 0.45); }
+      .minijuego-resultado--mal    { background: rgba(229, 87, 63, 0.14); border-color: rgba(229, 87, 63, 0.5); }
+      .minijuego-resultado-titulo {
+        font-size: 22px;
+        font-weight: 800;
+        margin-bottom: 6px;
+      }
+      .minijuego-resultado--bien   .minijuego-resultado-titulo { color: #44d48d; }
+      .minijuego-resultado--parejo .minijuego-resultado-titulo { color: #f0c27b; }
+      .minijuego-resultado--mal    .minijuego-resultado-titulo { color: #e5573f; }
+      .minijuego-resultado-detalle {
+        font-size: 14px;
+        opacity: 0.85;
+      }
       .minijuego-btn {
         background: linear-gradient(135deg, #e5a35a, #f0c27b);
         box-shadow: 0 10px 24px rgba(229, 163, 90, 0.25);
@@ -1076,6 +1105,48 @@
         la_prueba: montarLaPrueba
       };
 
+      // Fase 9R0b: el motor ya recibia el `resultado` 0-1 y seguia de largo,
+      // asi que el jugador nunca sabia si habia clavado el minijuego. Esto
+      // traduce el 0-1 a un veredicto ("clavado / parejo / no salio") y la
+      // consecuencia concreta, en el tono de los logs que el motor emite
+      // despues. No toca el motor: el `resultado` que se le pasa es el mismo.
+      const RESULTADO_MINIJUEGO = {
+        robar_baron: {
+          bien: 'El Barón es tuyo: el mapa se te va a favor.',
+          parejo: 'Lo smiteás justo, sin sacar ventaja clara.',
+          mal: 'Te roban el Barón: el mapa se complica.'
+        },
+        la_llamada: {
+          bien: 'La llamada sale y todos te siguen: el mapa se inclina para tu lado.',
+          parejo: 'La jugada sale a medias, sin cambiar mucho.',
+          mal: 'Nadie reacciona a tiempo: el mapa se complica.'
+        },
+        bootcamp: {
+          bien: 'El bootcamp rindió: llegás mejor preparado.',
+          parejo: 'El bootcamp fue parejo, no alcanzó a pulir todo.',
+          mal: 'El bootcamp se hizo cuesta arriba: llegás justo.'
+        },
+        rueda_de_prensa: {
+          bien: 'El tono cae justo: el vestuario y la prensa lo toman bien.',
+          parejo: 'La rueda de prensa pasa sin pena ni gloria.',
+          mal: 'El tono no fue el mejor: la nota sale rara.'
+        },
+        la_prueba: {
+          bien: 'Impresionaste en el tryout: entrás con crédito.',
+          parejo: 'El tryout fue correcto, sin más.',
+          mal: 'El tryout no terminó de convencer.'
+        }
+      };
+
+      function veredictoMinijuego(minijuegoId, resultado) {
+        const nivel = resultado >= 0.72 ? 'bien' : resultado >= 0.42 ? 'parejo' : 'mal';
+        const titulo = nivel === 'bien' ? '¡Clavado!' : nivel === 'parejo' ? 'Salió parejo' : 'No salió';
+        const porTipo = RESULTADO_MINIJUEGO[minijuegoId] ?? {
+          bien: 'Salió bien.', parejo: 'Salió parejo.', mal: 'No salió.'
+        };
+        return { nivel, titulo, detalle: porTipo[nivel] };
+      }
+
       function mostrarMinijuego(decision) {
         decisionPanel.hidden = true;
         mercadoPanel.hidden = true;
@@ -1085,7 +1156,21 @@
         minijuegoWidget.innerHTML = '';
 
         const montar = MONTAR_MINIJUEGO[decision.datos.minijuego];
-        montar(minijuegoWidget, estado, (resultado) => responder({ resultado }));
+        let resuelto = false;
+        montar(minijuegoWidget, estado, (resultado) => {
+          if (resuelto) {
+            return;
+          }
+          resuelto = true;
+          const v = veredictoMinijuego(decision.datos.minijuego, resultado);
+          minijuegoWidget.innerHTML =
+            '<div class="minijuego-resultado minijuego-resultado--' + v.nivel + '">'
+            + '<div class="minijuego-resultado-titulo">' + v.titulo + '</div>'
+            + '<div class="minijuego-resultado-detalle">' + v.detalle + '</div>'
+            + '</div>';
+          summary.textContent = v.titulo + ' ' + v.detalle;
+          setTimeout(() => responder({ resultado }), 1600);
+        });
 
         summary.textContent = 'Minijuego en curso.';
       }
