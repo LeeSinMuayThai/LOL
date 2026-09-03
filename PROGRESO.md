@@ -33,6 +33,68 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-02 — Fase 9Rf: el presupuesto de interrupción
+
+Cuarto commit de la fase 9R. El segundo y último corte de volumen: ponerle un techo al evento de
+ambiente, que tras 9Re era la fuente más grande de decisiones que quedaba (~38 de las ~173 de una
+carrera de 60 splits) y **nunca tuvo tope** — `events.js` pausaba una vez por split siempre que
+hubiera candidato.
+
+#### El sistema
+
+- **`src/systems/presupuesto.js`** (nuevo, primero en `ETAPAS_SPLIT`, antes de `contexto` — no
+  consume RNG): fija el cupo de interrupciones del split. Un split **eventful** (debutás, cambiás
+  de tier, se te muere el main, o es split de playoffs) tiene cupo `eventful: 2`; uno de rutina,
+  `rutina: 1`.
+- **`core/pipeline.js` `pausar`**: descuenta uno del cupo en **toda** pausa — es el único choke
+  point (`correrEtapas` y `resolverDecision` pausan por ahí).
+- **`core/presupuesto.js` `hayPresupuesto`** / **`esSplitEventful`**: `events.js` consulta el
+  saldo antes de frenar; el resto de los sistemas (mercado, cierre de edad, serie) igual descuenta
+  pero no consulta — son decisiones obligatorias o ya gateadas por su propio sistema.
+- El **segundo** evento encadenado lo sigue gobernando `probSegundaDecisionPorTipo` (fase 2), no
+  el cupo: el presupuesto solo gatea el primero.
+- `state.presupuesto: { total, gastadas }` nuevo en el estado inicial (T4).
+
+> **Nota de implementación**: la primera versión usaba `tipoDeSplit` (denso/normal/comprimido)
+> para el cupo, pero el **66%** de los splits profesionales daban "denso" (cupo 4) porque
+> `tipoDeSplit` compara contra el `state.contexto` del split anterior y casi siempre algo se
+> movió. Se reemplazó por `esSplitEventful`, que solo mira etapa/tier/main/playoffs — los ejes que
+> de verdad marcan un split cargado.
+
+#### Números medidos (carrera de 40 splits — el centro de "25-40 min")
+
+| | Antes de 9R | Ahora (9Ra+9Rb+9Re+9Rf) |
+|---|---|---|
+| Decisiones por carrera | 248 (en 45 splits) | **122** |
+| Decisiones por split | ~5,5 | **3,2** |
+| Evento de ambiente por carrera | 68 | **~30** |
+| Evento más repetido | 14 (hasta 32) | **5 (hasta 8)** |
+
+A 40 splits el evento más repetido ya está en el objetivo de `§7.2` (mediana ≤4, máx ≤8). Sube a
+~8 solo si se fuerza la simulación a 60 splits — un largo que no va a existir cuando esté el retiro
+(9R.5).
+
+#### Deuda nueva
+
+- **D39** — 9Rb destapó un **sesgo de +6 puntos** en la proyección de jerarquía de la tarjeta de
+  oferta (el debutante termina más arriba de lo prometido). `proyeccionJerarquia` estaba calibrada
+  contra la tabla con el bug. Recalibrar en 9Rg/9M. El check `proyeccionJerarquia predice…` se
+  reescribió: medía **un solo** fichaje contra un tope de 8 puntos; ahora mide la distribución
+  sobre ~290 fichajes (|error| medio ≤ 9, sesgo ≤ +9, p90 ≤ 17) y acota el sesgo para que no
+  empeore.
+
+#### Checks tocados
+
+- **3 nuevos**: el sistema de presupuesto no consume RNG; el evento de ambiente respeta el cupo;
+  el volumen de decisiones bajó de la cinta (mediana ≤150 y ≤4/split a 40 splits, evento más
+  repetido mediana ≤7 / máx ≤11).
+- `Ningún minijuego puede setear terminado`: excluye el burnout (lo dispara `atributos.js` en el
+  mismo split, no el minijuego — falso positivo que destapó el corrimiento de RNG).
+- `El chaining de un segundo evento usa tipoDeSplit`: sin cambios (la primera versión de 9Rf le
+  metía el cupo también al segundo evento y lo rompía; se revirtió).
+
+**Verificación**: `validate.js` 91 checks OK. `simulate.js 1000 60 todas`: 0 crashes.
+
 ### 2026-09-02 — Fase 9Re: la temporada regular deja de ser una cinta transportadora
 
 Tercer commit de la fase 9R. Ataca el primero de los dos cortes de volumen: bajar las decisiones

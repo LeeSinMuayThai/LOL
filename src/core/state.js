@@ -26,6 +26,10 @@ export function createInitialState(seed, rng, eleccion = null) {
     // Decision a medio resolver. Vive adentro de state para que una partida en
     // curso sea serializable y reanudable (regla invariable 9).
     pendiente: null,
+    // Fase 9Rf: el cupo de interrupciones del split. `systems/presupuesto.js`
+    // lo fija al arrancar cada split; `core/pipeline.js` descuenta una por
+    // pausa. Objeto completo desde el arranque, nunca null (trampa T4).
+    presupuesto: { total: BALANCE.partida.maxDecisionesPorSplit, gastadas: 0 },
     // Cache de "dónde estás parado". La fuente de verdad es calcularContexto();
     // esto existe para la UI, los logs y para no recalcularlo en cada filtro.
     contexto: null,

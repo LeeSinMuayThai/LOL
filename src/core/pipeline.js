@@ -10,8 +10,18 @@ function acumularLogs(state, logsNuevos) {
   return { ...state, logs: [...state.logs, ...logsNuevos] };
 }
 
+// Fase 9Rf: toda pausa —venga del sistema que venga— descuenta una
+// interrupción del cupo del split (`systems/presupuesto.js` lo fijó al
+// arrancar). Es el único choke point: `correrEtapas` y `resolverDecision`
+// pausan por acá. `events.js` es el único que consulta el saldo antes de
+// frenar; el resto (mercado, cierre de edad, serie) igual descuenta.
 function pausar(state, sistema, decision) {
-  return { ...state, pendiente: { sistemaId: sistema.id, decision } };
+  const p = state.presupuesto ?? { total: BALANCE.partida.maxDecisionesPorSplit, gastadas: 0 };
+  return {
+    ...state,
+    pendiente: { sistemaId: sistema.id, decision },
+    presupuesto: { ...p, gastadas: p.gastadas + 1 }
+  };
 }
 
 // El cursor de reanudacion se resuelve por id, no por indice: agregar un sistema

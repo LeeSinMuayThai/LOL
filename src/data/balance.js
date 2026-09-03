@@ -398,6 +398,19 @@ export const BALANCE = {
     probSegundaDecisionPorTipo: { denso: 0.85, normal: 0.4, comprimido: 0.12 }
   },
 
+  // Fase 9Rf: el presupuesto de interrupción. `events.js` pausaba una vez por
+  // split siempre que hubiera candidato (más una segunda por probabilidad), y
+  // eso nunca tuvo techo — era la fuente más grande de decisiones que quedaba
+  // tras 9Re (~68 de las ~173 de la carrera). Ahora cada split tiene un cupo:
+  // uno EVENTFUL (debutás, cambiás de tier, se te murió el main, o es un split
+  // de playoffs) te puede frenar `eventful` veces; uno de rutina, `rutina`.
+  // Todas las pausas cuentan contra el cupo —incluidas las de mercado, cierre
+  // de edad y serie—, pero solo `events` lo consulta antes de frenar; el resto
+  // son decisiones obligatorias o ya gateadas por su propio sistema.
+  presupuesto: {
+    interrupcionesPorSplit: { eventful: 2, rutina: 1 }
+  },
+
   // El año calendario (fase 8, PLAN.md §8.2): no existía. `anio` sale de
   // `anioBase + floor(splitCount / splitsPorEdad)`, calculado en
   // `systems/edadInicio.js`. Desbloquea trofeos fechados y la tarjeta final

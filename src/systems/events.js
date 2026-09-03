@@ -7,7 +7,7 @@ import { aprenderCampeones, subirMaestria, olvidarPeor, principalDelPool } from 
 import { registrarMomento } from '../core/registro.js';
 import { crearLog } from '../core/log.js';
 import { deltaCorto, lista } from '../core/formato.js';
-import { tipoDeSplit } from '../core/presupuesto.js';
+import { tipoDeSplit, hayPresupuesto } from '../core/presupuesto.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 
@@ -335,6 +335,15 @@ export function elegirOpcionAutomatica(state, decision, rng) {
 }
 
 export function aplicar(state, rng) {
+  // Fase 9Rf: en fase profesional el evento de ambiente compite por el
+  // presupuesto de interrupción del split. Si ya se gastó (una fecha marcada,
+  // el mercado, un cierre de edad), el split no frena además por color.
+  // Early return SIN tocar rng (regla de proceso 10): el split ya tiene sus
+  // líneas de los otros sistemas, así que no queda mudo.
+  if (state.phase === 'profesional' && !hayPresupuesto(state)) {
+    return { state, logs: [] };
+  }
+
   const evento = elegirEvento(state, rng);
 
   if (!evento) {
@@ -361,7 +370,10 @@ export function resolver(state, decision, respuesta, rng) {
 
   // A veces la vida se amontona: un segundo evento antes de que cierre el
   // split. Cuánto de seguido depende de cuánto cambió ya este split (fase 2):
-  // un split denso casi siempre amontona, uno comprimido casi nunca.
+  // un split denso casi siempre amontona, uno comprimido casi nunca. El cupo
+  // de la fase 9Rf gatea el PRIMER evento (arriba, en `aplicar`); si ese
+  // pasó, este segundo lo sigue gobernando `probSegundaDecisionPorTipo` como
+  // en la fase 2 — el presupuesto no lo pisa.
   const probabilidad = BALANCE.edad.probSegundaDecisionPorTipo[tipoDeSplit(nextState)];
   if (decision.slot === 1 && chance(probabilidad, rng)) {
     const segundoEvento = elegirEvento(nextState, rng, { excluirId: evento.id });

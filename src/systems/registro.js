@@ -18,6 +18,10 @@
 // recalcula el Ajuste al Meta, se juega, caen los eventos, y recien despues se
 // mueven los atributos y cierra la temporada.
 export const ETAPAS_SPLIT = [
+  // Fase 9Rf: antes que nada fija el cupo de interrupciones del split. Va
+  // ANTES de `contexto` a proposito: `tipoDeSplit` necesita el `state.contexto`
+  // del split anterior, que `contexto.js` esta por pisar. No consume rng.
+  await import('./presupuesto.js'),
   // Primero de todo: recalcula donde estas parado en la carrera. Todo el
   // contenido de los sistemas que siguen se filtra contra eso.
   await import('./contexto.js'),

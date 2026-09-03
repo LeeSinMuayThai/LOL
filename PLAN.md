@@ -1923,6 +1923,11 @@ Carreras sin final a los 35 años: 0                                   (hoy 69%)
   D21/D22/D35. Determinismo intra-versión intacto.
 - **D38** — 9Rb reordena (no agrega) llamadas de RNG al intercalar los resultados ajenos con las
   fechas del jugador. Familia D21.
+- **D39** — 9Rb destapó un **sesgo de +6 puntos** en la proyección de jerarquía de la tarjeta de
+  oferta: el debutante termina más arriba de lo prometido. `proyeccionJerarquia`
+  (`roster.js`/`valorMercado.js`) estaba calibrada contra la tabla con el bug (el debutante
+  figuraba último a media temporada). **Recalibrar en 9Rg o 9M** (regla de proceso 2). El check
+  `proyeccionJerarquia predice…` acota el sesgo para que no empeore.
 - **D26(c)** reaparece: con 9Re la celda `stakes: parejo` queda alcanzable-y-casi-nunca-alcanzada;
   `cobertura.js` la va a reportar. Anotar, no arreglar acá (cobertura mide cantidad, no pertinencia).
 

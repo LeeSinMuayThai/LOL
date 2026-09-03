@@ -34,3 +34,34 @@ export function tipoDeSplit(state) {
   const nadaSeMovio = antes.momentum === ahora.momentum && antes.estatus === ahora.estatus;
   return nadaSeMovio ? 'comprimido' : 'normal';
 }
+
+// Fase 9Rf: ¿este split es de los eventful (cupo de interrupciones alto) o de
+// rutina (cupo bajo)? Se compara la foto de contexto del split ANTERIOR
+// (`state.contexto`, que `contexto.js` todavía no pisó porque `presupuesto`
+// corre antes) contra el contexto en vivo. Un debut, un cambio de tier, que se
+// te muera el main o un split de playoffs son eventful; el resto es rutina. NO
+// usa el eje momentum/estatus de `tipoDeSplit`: cambian con cada resultado y
+// harían "eventful" a casi todo.
+export function esSplitEventful(state) {
+  const antes = state.contexto;
+  const ahora = calcularContexto(state);
+  if (!antes) {
+    return true;
+  }
+  return antes.etapa !== ahora.etapa
+    || antes.nivel !== ahora.nivel
+    || ahora.ventana === 'playoffs'
+    || (!antes.marcas.includes('main_muerto') && ahora.marcas.includes('main_muerto'));
+}
+
+// ¿Le queda al split cupo para otra interrupción? El cupo lo fija
+// `systems/presupuesto.js` al arrancar el split y `core/pipeline.js` descuenta
+// uno en cada pausa. Fuera de la fase profesional no hay tope (el prólogo
+// amateur ya está comprimido por la fase 7).
+export function hayPresupuesto(state) {
+  const p = state.presupuesto;
+  if (!p) {
+    return true;
+  }
+  return p.gastadas < p.total;
+}

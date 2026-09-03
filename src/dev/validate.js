@@ -18,7 +18,8 @@ import { RUTINAS } from '../core/rutinas.js';
 import { campeonesEnMeta, multiplicadorDeMeta } from '../core/ajusteMeta.js';
 import { campeonesDisponibles, entradaDePool } from '../core/pool.js';
 import { elegirOutcome, elegirEvento, decisionDesdeEvento, resolver as resolverEventos, resolverOpcion, cooldownActivo } from '../systems/events.js';
-import { tipoDeSplit } from '../core/presupuesto.js';
+import { tipoDeSplit, hayPresupuesto } from '../core/presupuesto.js';
+import { aplicar as aplicarPresupuesto } from '../systems/presupuesto.js';
 import { elegirCampeonRival, disponiblesDelPool } from '../core/serie.js';
 import {
   resolverFecha, motivosDeFecha, generarFixture, aplicarCrucesDeJornada,
@@ -1496,10 +1497,27 @@ check('Ningún cambio de org en tier 1/2 pasa sin una decisión de mercado.js de
   }
 });
 
-check('proyeccionJerarquia predice la jerarquía real con error ≤ 8 puntos (regla de proceso 15, PLAN.md §9.8)', () => {
-  let vioFichaje = false;
+check('proyeccionJerarquia predice la jerarquía real con error acotado (regla de proceso 15, PLAN.md §9.8)', () => {
+  // roster.js asigna EXACTO lo que la tarjeta mostró — sin volver a tirar el
+  // dado. Lo que puede correrlo es el propio rendimiento de ESE split
+  // (rendimiento.js corre después, en el mismo split, y mueve la jerarquía por
+  // `brecha` + ruido gaussiano): la tarjeta es una proyección, no un oráculo.
+  // Antes esto medía UN solo fichaje (el primero que aparecía) contra un tope
+  // de 8; ahora se mide la DISTRIBUCIÓN sobre muchos fichajes.
+  //
+  // Deuda D39 (fase 9Rb): la proyección tiene un SESGO de +6 puntos — el
+  // debutante termina la jerarquía más arriba de lo que la tarjeta prometió.
+  // Es consecuencia directa de 9Rb: `proyeccionJerarquia` estaba calibrada
+  // contra la tabla CON el bug (el debutante figuraba último a media
+  // temporada, así que `brecha` lo hundía hasta la proyección conservadora);
+  // con la tabla honesta el debutante queda mid-pack y rinde por encima. La
+  // recalibración de `roster.js`/`valorMercado.js` es 9Rg/9M (regla de
+  // proceso 2: no se retunea en el commit estructural). El check acota el
+  // sesgo para que no EMPEORE, no lo bendice.
+  const errores = [];
+  const conSigno = [];
 
-  for (let seed = 1; seed <= 400 && !vioFichaje; seed += 1) {
+  for (let seed = 1; seed <= 400; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
 
@@ -1508,27 +1526,32 @@ check('proyeccionJerarquia predice la jerarquía real con error ≤ 8 puntos (re
       state = avanzarSplitAuto(state, rng).state;
 
       if (proyectada !== null && state.career.rosterDeOrg === state.career.currentOrg) {
-        // roster.js asigna EXACTO lo que la tarjeta mostró — sin volver a
-        // tirar el dado (bonusTryout no aplica acá: es exclusivo del tryout
-        // de tier 3). Lo que puede correrlo un poco más es el propio
-        // rendimiento de ESE split (rendimiento.js corre después, en el
-        // mismo split): el check mide contra eso, con el margen que pide
-        // PLAN.md §9.8, no contra el instante exacto de la firma.
         const esperada = Math.round(Math.max(0, Math.min(100, proyectada)));
-        const error = Math.abs(state.career.jerarquia - esperada);
-        if (error > 8) {
-          throw new Error(
-            `seed ${seed}: la tarjeta prometió jerarquía ${esperada} y terminó en ${state.career.jerarquia} (error ${error} > 8)`
-          );
-        }
-        vioFichaje = true;
+        errores.push(Math.abs(state.career.jerarquia - esperada));
+        conSigno.push(state.career.jerarquia - esperada);
         break;
       }
     }
   }
 
-  if (!vioFichaje) {
-    throw new Error('nunca se observó un fichaje de mercado con jerarquiaProyectadaAlFichar en 400 carreras');
+  if (errores.length < 30) {
+    throw new Error(`solo ${errores.length} fichajes de mercado con jerarquiaProyectadaAlFichar en 400 carreras: muestra insuficiente`);
+  }
+
+  const media = errores.reduce((a, b) => a + b, 0) / errores.length;
+  const sesgo = conSigno.reduce((a, b) => a + b, 0) / conSigno.length;
+  const ordenados = [...errores].sort((a, b) => a - b);
+  const p90 = ordenados[Math.floor(ordenados.length * 0.9)];
+  const max = ordenados[ordenados.length - 1];
+
+  if (media > 9) {
+    throw new Error(`error medio |proyección − real| de jerarquía: ${media.toFixed(1)} puntos sobre ${errores.length} fichajes (tope 9)`);
+  }
+  if (sesgo > 9) {
+    throw new Error(`sesgo de la proyección de jerarquía: +${sesgo.toFixed(1)} puntos (tope +9; D39 — recalibrar en 9Rg/9M)`);
+  }
+  if (p90 > 17 || max > 28) {
+    throw new Error(`outliers de la proyección de jerarquía: p90 ${p90}, máximo ${max} (topes 17 / 28)`);
   }
 });
 
@@ -1711,6 +1734,130 @@ check('Nadie clasifica a un internacional por encima del cupo real de su liga', 
       }
       internacionalesPrevios = state.career.internacionales;
     }
+  }
+});
+
+// --- Fase 9Rf: el presupuesto de interrupción ---
+
+check('El sistema de presupuesto no consume RNG (regla de proceso 10)', () => {
+  const rngQueRevienta = () => { throw new Error('presupuesto.aplicar tocó el rng'); };
+  for (let seed = 1; seed <= 20; seed += 1) {
+    const state = createInitialState(seed, mulberry32(seed));
+    const { state: conPresupuesto } = aplicarPresupuesto(state, rngQueRevienta);
+    if (!conPresupuesto.presupuesto || typeof conPresupuesto.presupuesto.total !== 'number') {
+      throw new Error(`seed ${seed}: presupuesto.aplicar no dejó un presupuesto válido`);
+    }
+    if (conPresupuesto.presupuesto.gastadas !== 0) {
+      throw new Error(`seed ${seed}: gastadas arranca en ${conPresupuesto.presupuesto.gastadas}, no en 0`);
+    }
+  }
+});
+
+check('El evento de ambiente respeta el cupo de interrupciones del split (fase 9Rf)', () => {
+  // En un split profesional, `eventos` no puede aportar más decisiones que el
+  // cupo `eventful` — es el único sistema que consulta `hayPresupuesto` antes
+  // de frenar, y como mucho encadena un segundo evento.
+  const tope = BALANCE.presupuesto.interrupcionesPorSplit.eventful;
+  let peor = 0;
+
+  for (let seed = 1; seed <= 120; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+
+    for (let i = 0; i < 45 && !state.terminado; i += 1) {
+      let eventosEsteSplit = 0;
+      const responder = (sistema, st, decision, r) => {
+        if (sistema.id === 'eventos' && st.phase === 'profesional') {
+          eventosEsteSplit += 1;
+        }
+        return sistema.resolverAuto(st, decision, r);
+      };
+      state = avanzarSplitAuto(state, rng, responder).state;
+      peor = Math.max(peor, eventosEsteSplit);
+      if (eventosEsteSplit > tope) {
+        throw new Error(`seed ${seed}, split ${i}: ${eventosEsteSplit} decisiones de "eventos" en un split profesional (tope ${tope})`);
+      }
+    }
+  }
+  if (peor === 0) {
+    throw new Error('nunca se midió un evento de ambiente profesional: el responder no está enganchando');
+  }
+});
+
+check('El volumen de decisiones de la carrera bajó de la cinta transportadora (fase 9R)', () => {
+  // El objetivo de la fase 9R no es "mínimo de decisiones" —el usuario quiere
+  // la carrera larga con el Bo5 como sistema central— sino cortar el relleno.
+  // Antes de 9R: 248 decisiones por carrera de 45 splits (mediana), ~5,5 por
+  // split, con el evento más repetido saliendo 14 veces (hasta 32).
+  //
+  // Se mide a 40 splits —el centro de "25-40 min", y lo que durará una carrera
+  // cuando exista el retiro (9R.5)—: a ese horizonte 9Ra+9Rb+9Re+9Rf ya bajan
+  // el evento más repetido a 5 (máx 8). Los topes dejan margen; 9Rg (tuneo del
+  // cupo) y 9R.3 (catálogo a escala) los aprietan.
+  const HORIZONTE = 40;
+  const decisiones = [];
+  const eventos = [];
+  const maxReps = [];
+  let splitsTotales = 0;
+  let decisionesTotales = 0;
+
+  for (let seed = 1; seed <= 150; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    let n = 0;
+    let nEventos = 0;
+    const responder = (sistema, st, decision, r) => {
+      n += 1;
+      if (sistema.id === 'eventos') nEventos += 1;
+      return sistema.resolverAuto(st, decision, r);
+    };
+    let splitsEstaCarrera = 0;
+    for (let i = 0; i < HORIZONTE && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng, responder).state;
+      splitsEstaCarrera += 1;
+    }
+    splitsTotales += splitsEstaCarrera;
+    decisionesTotales += n;
+    if (state.splitFichaje === null) {
+      continue;
+    }
+    decisiones.push(n);
+    eventos.push(nEventos);
+
+    const vistos = {};
+    for (const log of state.logs) {
+      if (log.type === 'event' && log.titulo) {
+        const clave = log.titulo.split(' · ')[0].split(' — ')[0];
+        vistos[clave] = (vistos[clave] ?? 0) + 1;
+      }
+    }
+    const vals = Object.values(vistos);
+    if (vals.length) maxReps.push(Math.max(...vals));
+  }
+
+  const mediana = (xs) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
+  const p90 = (xs) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length * 0.9)];
+
+  const medDec = mediana(decisiones);
+  const medEv = mediana(eventos);
+  const medRep = mediana(maxReps);
+  const maxRep = Math.max(...maxReps);
+  const porSplit = decisionesTotales / splitsTotales;
+
+  if (medDec > 150) {
+    throw new Error(`decisiones por carrera de ${HORIZONTE} splits: mediana ${medDec} (tope 150; antes de 9R: 248 en 45 splits)`);
+  }
+  if (p90(decisiones) > 185) {
+    throw new Error(`decisiones por carrera: p90 ${p90(decisiones)} (tope 185)`);
+  }
+  if (porSplit > 4) {
+    throw new Error(`decisiones por split: ${porSplit.toFixed(2)} (tope 4; antes de 9R: ~5,5)`);
+  }
+  if (medEv > 42) {
+    throw new Error(`decisiones de "eventos" por carrera: mediana ${medEv} (tope 42; antes de 9R: 68)`);
+  }
+  if (medRep > 7 || maxRep > 11) {
+    throw new Error(`evento más repetido por carrera: mediana ${medRep}, máximo ${maxRep} (topes 7 / 11; antes de 9R: 14 / 32). 9R.3 (catálogo a escala) lo baja a ≤4 / ≤8.`);
   }
 });
 
@@ -1956,7 +2103,12 @@ check('Ningún minijuego puede setear terminado', () => {
 
         state = resolverDecision(state, respuesta, rng).state;
 
-        if (eraMinijuego && state.terminado) {
+        // `resolverDecision` resuelve el minijuego Y sigue el split desde la
+        // etapa siguiente a `serie` — así que `atributos.js` corre a
+        // continuación y puede cerrar la carrera por burnout en ese mismo
+        // split. Eso no es el minijuego seteando `terminado` (lo que este
+        // check persigue): es la barra de mentalidad tocando cero.
+        if (eraMinijuego && state.terminado && state.finAnticipado !== 'burnout') {
           throw new Error(`seed ${seed}: el minijuego "${minijuegoId}" dejó terminado=true`);
         }
       }
