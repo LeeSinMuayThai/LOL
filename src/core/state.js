@@ -242,6 +242,10 @@ export function createInitialState(seed, rng, eleccion = null) {
       ultimoAprendidoPool: [],
       robosConsecutivos: 0,
       pcConfiscada: 0,
+      // Fase 9R.2: splits seguidos con la mentalidad en zona roja
+      // (`al_limite`). El burnout solo pincha cuando llega a
+      // `burnoutSplitsMinimos`. Nunca null (trampa T4).
+      splitsMentalBajo: 0,
       avisos: 0,
       nocturno: false,
       negociacionGanada: false,

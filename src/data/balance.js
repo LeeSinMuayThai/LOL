@@ -307,7 +307,21 @@ export const BALANCE = {
     // --- Burnout: no es un acantilado, es una probabilidad que crece ---
     burnoutUmbral: 20,
     burnoutPendiente: 60,
-    burnoutTecho: 0.4
+    burnoutTecho: 0.4,
+    // Fase 9R.2: el burnout NO puede pinchar de un split para el otro. Solo
+    // entra al sorteo si la mentalidad estuvo bajo `burnoutMentalBajo` (la
+    // banda `al_limite` / roja de la ficha) durante al menos
+    // `burnoutSplitsMinimos` splits seguidos — así el jugador siempre lo ve
+    // venir en la barra que la fase 9R.2 hizo visible. El piso duro
+    // (`mentalidad <= 0`) sigue cerrando la carrera sin sorteo.
+    burnoutMentalBajo: 30,
+    burnoutSplitsMinimos: 2,
+    // Tope a cuánto puede bajar la mentalidad por el DESGASTE de un split (no
+    // cuenta lo que muevan los eventos). Sin esto, la espiral de deuda de
+    // sueño se cobraba toda junta. Con el `burnoutSplitsMinimos` de arriba,
+    // ~87% de los burnouts pasan ≥2 de los 3 splits previos en zona roja
+    // visible.
+    maxCaidaMentalPorSplit: 12
   },
 
   meta: {

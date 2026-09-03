@@ -64,6 +64,47 @@ export function statDestacado(state) {
   return stats.reduce((mejor, stat) => (state.player.stats[stat] > state.player.stats[mejor] ? stat : mejor), stats[0]);
 }
 
+// --- Mentalidad y Hype (fase 9R.2) ---
+//
+// Hasta acá NO se dibujaban en ninguna pantalla profesional, y el 74% de los
+// efectos del contenido mueve una de las dos. El 12,5% de las carreras muere
+// de burnout (`atributos.js`, `mentalidad ≤ burnoutUmbral` con probabilidad
+// creciente) sin que el jugador vea nunca la barra. `al_limite` es el aviso
+// que no existía.
+function delta(state, campo) {
+  const antes = state.flags.edadSnapshot?.[`player.stats.${campo}`];
+  if (antes === undefined) {
+    return 0;
+  }
+  const diferencia = state.player.stats[campo] - antes;
+  return Math.abs(diferencia) >= BALANCE.ficha.umbralFlecha ? Math.round(diferencia) : 0;
+}
+
+const LABELS_MENTALIDAD = { al_limite: 'al límite', tensionado: 'tensionado', entero: 'entero', en_llamas: 'en llamas' };
+
+export function bandaDeMentalidad(state) {
+  const valor = state.player.stats.mentalidad;
+  // `al_limite` = la zona roja desde la que el burnout puede pinchar
+  // (`atributos.burnoutMentalBajo`). Es exactamente la barra que hay que
+  // mirar.
+  const id = valor <= BALANCE.atributos.burnoutMentalBajo ? 'al_limite'
+    : valor <= 50 ? 'tensionado'
+      : valor <= 75 ? 'entero'
+        : 'en_llamas';
+  return { id, label: LABELS_MENTALIDAD[id], valor: Math.round(valor), delta: delta(state, 'mentalidad'), peligro: id === 'al_limite' };
+}
+
+const LABELS_HYPE = { ignoto: 'ignoto', conocido: 'conocido', figura: 'figura', estrella: 'estrella' };
+
+export function bandaDeHype(state) {
+  const valor = state.player.stats.hype;
+  const id = valor <= 25 ? 'ignoto'
+    : valor <= 55 ? 'conocido'
+      : valor <= 80 ? 'figura'
+        : 'estrella';
+  return { id, label: LABELS_HYPE[id], valor: Math.round(valor), delta: delta(state, 'hype') };
+}
+
 // --- Las barras con hitos (jerarquía y arraigo) ---
 
 const LABELS_JERARQUIA = { rookie: 'Rookie', titular: 'Titular', referente: 'Referente', franquicia: 'Franquicia' };
@@ -147,6 +188,8 @@ export function fichaCompleta(state) {
     deltas: deltasDeStats(state),
     jerarquia: bandaDeJerarquia(state),
     arraigo: bandaDeArraigoFicha(state.career.arraigo),
+    mentalidad: bandaDeMentalidad(state),
+    hype: bandaDeHype(state),
     estadoInternacional: estadoInternacional(state),
     duelo: dueloDeGeneracion(state)
   };

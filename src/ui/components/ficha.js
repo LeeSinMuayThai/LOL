@@ -134,6 +134,20 @@ export function renderFicha(container, state, modulos) {
   container.appendChild(crearBarra({ nombre: 'ARRAIGO', banda: ficha.arraigo, hitos: hitosArraigo() }));
   container.appendChild(crearBarra({ nombre: 'JERARQUÍA', banda: ficha.jerarquia, hitos: hitosJerarquia() }));
 
+  // --- Mentalidad y Hype (fase 9R.2): las barras que el 74% del contenido
+  // mueve y hasta acá no se dibujaban. Mentalidad en rojo si está `al límite`
+  // — el aviso de burnout que no existía. ---
+  const animo = document.createElement('div');
+  animo.className = 'ficha-animo' + (ficha.mentalidad.peligro ? ' ficha-animo--peligro' : '');
+  for (const [nombre, banda] of [['MENTALIDAD', ficha.mentalidad], ['HYPE', ficha.hype]]) {
+    const celda = document.createElement('span');
+    celda.className = 'ficha-animo-celda';
+    const flecha = banda.delta > 0 ? ' ▲' : banda.delta < 0 ? ' ▼' : '';
+    celda.textContent = `${nombre} ${banda.valor} · ${banda.label}${flecha}`;
+    animo.appendChild(celda);
+  }
+  container.appendChild(animo);
+
   // --- Estado internacional, con nombre en vez de un contador ---
   const internacional = document.createElement('div');
   internacional.className = `ficha-badge ficha-badge--${ficha.estadoInternacional}`;

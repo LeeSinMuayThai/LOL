@@ -95,7 +95,11 @@ export function aplicar(state, rng) {
 
   const conCurva = moverStatsDeCurva(state.player.stats, state, forma, rng);
   const conAcumulados = moverStatsAcumulativos(conCurva, state, rng);
-  const mentalidad = clampStat(conAcumulados.mentalidad - desgasteDeMentalidad({ ...state, player: { ...state.player, sleep } }, rng));
+  // Fase 9R.2: la caída NETA de mentalidad de un split (lo que ya movieron los
+  // eventos, en `conAcumulados`, + el desgaste de acá) se topea, para que la
+  // barra roja siempre se vea venir. La subida no se topea.
+  const mentalidadSinTope = clampStat(conAcumulados.mentalidad - desgasteDeMentalidad({ ...state, player: { ...state.player, sleep } }, rng));
+  const mentalidad = Math.max(mentalidadSinTope, state.player.stats.mentalidad - BALANCE.atributos.maxCaidaMentalPorSplit);
 
   const stats = { ...conAcumulados, mentalidad };
   const deltaMecanica = stats.mecanica - state.player.stats.mecanica;
@@ -112,6 +116,14 @@ export function aplicar(state, rng) {
     state.age
   );
 
+  // Fase 9R.2: cuántos splits seguidos lleva la mentalidad en zona roja
+  // (`al_limite`). El burnout solo puede pinchar si esto llega a
+  // `burnoutSplitsMinimos` — así siempre se ve venir en la barra.
+  const a = BALANCE.atributos;
+  const splitsMentalBajo = mentalidad <= a.burnoutMentalBajo
+    ? (state.flags.splitsMentalBajo ?? 0) + 1
+    : 0;
+
   const nextState = {
     ...state,
     player: {
@@ -121,6 +133,7 @@ export function aplicar(state, rng) {
       oculto: { ...state.player.oculto, forma },
       splitCount: state.player.splitCount + 1
     },
+    flags: { ...state.flags, splitsMentalBajo },
     career: { ...state.career, currentSplit: state.career.currentSplit + 1, registro }
   };
 
@@ -137,7 +150,10 @@ export function aplicar(state, rng) {
 
   // La mentalidad en cero es el fin de la carrera, pero el borde no es un
   // acantilado: abajo del umbral la probabilidad crece hasta volverse segura.
-  if (mentalidad <= BALANCE.stats.min || chance(probabilidadDeBurnout(mentalidad), rng)) {
+  // Fase 9R.2: salvo el piso duro (mentalidad ≤ 0), el sorteo solo entra
+  // después de `burnoutSplitsMinimos` splits seguidos en rojo.
+  const sostenido = splitsMentalBajo >= a.burnoutSplitsMinimos;
+  if (mentalidad <= BALANCE.stats.min || (sostenido && chance(probabilidadDeBurnout(mentalidad), rng))) {
     return {
       state: { ...nextState, phase: 'retirado', terminado: true, finAnticipado: 'burnout' },
       logs: [...logs, crearLog('split', 'No da más la cabeza. Te bajás: esto se terminó acá.')]

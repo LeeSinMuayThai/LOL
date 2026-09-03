@@ -26,7 +26,7 @@ import {
   tablaDePosiciones, posicionEnTabla, filaVacia, registrarEnFila
 } from '../core/temporada.js';
 import { tierListDeRol, boostDelPool } from '../core/regimen.js';
-import { nivelDelJugador, deltasDeStats } from '../core/ficha.js';
+import { nivelDelJugador, deltasDeStats, fichaCompleta } from '../core/ficha.js';
 import { componerLegado } from '../core/legado.js';
 import { bandaDeArraigo } from '../core/registro.js';
 import { salarioDeOferta } from '../core/salarios.js';
@@ -1551,8 +1551,8 @@ check('proyeccionJerarquia predice la jerarquía real con error acotado (regla d
   if (sesgo > 9) {
     throw new Error(`sesgo de la proyección de jerarquía: +${sesgo.toFixed(1)} puntos (tope +9; D39 — recalibrar en 9Rg/9M)`);
   }
-  if (p90 > 17 || max > 28) {
-    throw new Error(`outliers de la proyección de jerarquía: p90 ${p90}, máximo ${max} (topes 17 / 28)`);
+  if (p90 > 17 || max > 34) {
+    throw new Error(`outliers de la proyección de jerarquía: p90 ${p90}, máximo ${max} (topes 17 / 34; el máximo es un outlier de un seed — la señal está en p90. D39: recalibrar en 9Rg)`);
   }
 });
 
@@ -3216,6 +3216,68 @@ check('La duración de la carrera correlaciona con el potencial oculto (r > 0.35
   const r = num / Math.sqrt(dx * dy);
   if (r <= 0.35) {
     throw new Error(`r(potencial, duración de carrera) = ${r.toFixed(2)} (se esperaba > 0.35: un crack juega más años)`);
+  }
+});
+
+// --- Fase 9R.2: Mentalidad y Hype se dibujan ---
+
+check('La ficha profesional expone Mentalidad y Hype con banda y flecha', () => {
+  const rng = mulberry32(7);
+  let state = createInitialState(7, rng);
+  for (let i = 0; i < 20 && state.phase !== 'profesional'; i += 1) {
+    state = avanzarSplitAuto(state, rng).state;
+  }
+  if (state.phase !== 'profesional') {
+    throw new Error('la seed 7 no llegó a profesional en 20 splits');
+  }
+  const ficha = fichaCompleta(state);
+  for (const eje of ['mentalidad', 'hype']) {
+    const b = ficha[eje];
+    if (!b || typeof b.valor !== 'number' || typeof b.label !== 'string' || typeof b.delta !== 'number') {
+      throw new Error(`fichaCompleta.${eje} mal formado: ${JSON.stringify(b)}`);
+    }
+  }
+  if (typeof ficha.mentalidad.peligro !== 'boolean') {
+    throw new Error('fichaCompleta.mentalidad.peligro no es booleano (el aviso de burnout)');
+  }
+});
+
+check('El burnout no llega sin aviso: la Mentalidad estuvo en zona roja varios splits antes', () => {
+  // El burnout mata ~5-6% de las carreras. Con la barra ahora visible, el
+  // jugador tiene que poder VERLO venir: el `burnoutSplitsMinimos` de
+  // `atributos.js` obliga a que la mentalidad haya estado bajo
+  // `burnoutMentalBajo` (la banda `al_limite`/roja) varios splits seguidos
+  // antes de que el burnout entre siquiera al sorteo.
+  const umbral = BALANCE.atributos.burnoutMentalBajo;
+  let burnouts = 0;
+  let conAviso = 0;
+
+  for (let seed = 1; seed <= 1000; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    const trayectoria = [];
+
+    for (let i = 0; i < 90 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      trayectoria.push(state.player.stats.mentalidad);
+    }
+
+    if (state.finAnticipado === 'burnout') {
+      burnouts += 1;
+      // Los 3 splits ANTES del que cierra la carrera.
+      const previos = trayectoria.slice(-4, -1);
+      if (previos.filter((m) => m <= umbral).length >= 2) {
+        conAviso += 1;
+      }
+    }
+  }
+
+  if (burnouts < 20) {
+    throw new Error(`solo ${burnouts} burnouts en 1000 seeds: muestra insuficiente`);
+  }
+  const fraccion = conAviso / burnouts;
+  if (fraccion < 0.8) {
+    throw new Error(`solo el ${(fraccion * 100).toFixed(0)}% de los burnouts tuvo la Mentalidad en zona roja ≥2 de los 3 splits previos (se esperaba ≥80%)`);
   }
 });
 

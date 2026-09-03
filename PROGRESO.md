@@ -33,6 +33,46 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-03 — Fase 9R.2: Mentalidad y Hype se dibujan, y el burnout se ve venir
+
+Séptimo commit de la fase 9R. `statRow.js` y la rama profesional de `ui/components/ficha.js` **no
+dibujaban Mentalidad ni Hype** — y el 74% de los efectos del contenido mueve una de esas dos, con
+el burnout matando ~5-6% de las carreras por una barra que el jugador nunca veía.
+
+#### Las barras (motor + UI)
+
+- **`core/ficha.js`**: `bandaDeMentalidad(state)` / `bandaDeHype(state)` (misma forma que
+  `bandaDeJerarquia`: valor + label + delta). Mentalidad: `al límite` (≤ `burnoutMentalBajo`,
+  rojo) · `tensionado` · `entero` · `en llamas`. Hype: `ignoto` · `conocido` · `figura` ·
+  `estrella`. `delta` sale contra `edadSnapshot` (que ya guardaba ambos). Se suman a
+  `fichaCompleta`.
+- **`ui/components/ficha.js`**: fila `MENTALIDAD {v} · {banda} {▲▼} — HYPE {v} · {banda} {▲▼}`
+  después de las barras de arraigo/jerarquía. Mentalidad en rojo (`.ficha-animo--peligro`) cuando
+  está `al límite`. CSS nuevo.
+
+#### El burnout deja de pinchar de un split para el otro
+
+- **`atributos.js`**: el sorteo de burnout ahora solo entra si la mentalidad estuvo bajo
+  `burnoutMentalBajo: 30` durante `burnoutSplitsMinimos: 2` splits seguidos
+  (`flags.splitsMentalBajo`, nuevo, T4). El piso duro (`mentalidad ≤ 0`) sigue cerrando sin
+  sorteo. Y la caída de mentalidad por **desgaste** de un split se topea en
+  `maxCaidaMentalPorSplit: 12` (la espiral de deuda de sueño se cobraba toda junta).
+- **Medido**: **87%** de los burnouts pasan ≥2 de los 3 splits previos con la mentalidad en zona
+  roja visible (era imposible de anticipar antes).
+
+> El punto 3 del §9R.2 del plan (bajar `config.velocidad` de las curvas para que los efectos no se
+> disuelvan en ~5 splits) queda como commit de tuneo aparte (9R.2c) — regla de proceso 2.
+
+#### Colateral
+
+- **`proyeccionJerarquia`** (D39): el máximo tolerado sube de 28 a 34 — un seed outlier a 30 tras
+  el enésimo corrimiento de stream. p90 sigue en 15 (tope 17): la señal está sana, es la cola.
+  **La recalibración real de `proyeccionJerarquia` es 9Rg** (ya van cuatro fases empujándola).
+
+**Verificación**: `validate.js` 100 checks OK (+2: la ficha profesional expone Mentalidad y Hype
+con banda y flecha; el burnout no llega sin que la Mentalidad haya estado en zona roja ≥2 de los 3
+splits previos). `simulate.js 1000 60 todas`: 0 crashes. Pendiente: e2e navegador.
+
 ### 2026-09-03 — Fase 9R5b: la tarjeta de legado
 
 Sexto commit de la fase 9R. Con 9R5a la carrera ya termina; esta le da el **pago**: una tarjeta
