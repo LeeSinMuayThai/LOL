@@ -233,6 +233,13 @@ export function createInitialState(seed, rng, eleccion = null) {
       // nunca null (trampa T4). `systems/events.js` lo lee para pesar la
       // repetición contra la novedad.
       eventosVistos: {},
+      // Fase 9R0a: los pares (motivo, rival) de fecha marcada usados
+      // últimamente, cada uno con el `splitCount` en el que se marcó. Vive
+      // en `flags` y no en `career.temporada` porque ese objeto se rearma
+      // entero cada split. `systems/temporada.js` lo consulta para no
+      // re-marcar la misma revancha/clásico contra el mismo rival un split
+      // sí y otro también. Array vacío al arrancar, nunca null (trampa T4).
+      motivosFechaRecientes: [],
       // Rastro de un solo split: qué campeón(es) entró el último efecto `pool`
       // con `accion: 'aprender'` de ESTE outcome. Lo usa el siguiente efecto
       // del mismo outcome (`accion: 'maestria', objetivo: 'nuevo'`) para saber

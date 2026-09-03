@@ -26,32 +26,109 @@ export const id = 'temporada';
 // `rendimiento.js` sigue aplicando las consecuencias (hype, mentalidad,
 // jerarquía, títulos): esto solo decide de dónde sale la posición que él lee.
 
-const ETIQUETAS_MOTIVO = {
-  clasico: 'Clásico',
-  puntero: 'Contra el puntero',
-  define_clasificacion: 'Se define la clasificación',
-  revancha: 'La revancha',
-  presion: 'Con la soga al cuello',
-  rival_de_generacion: 'Cruce de generación',
-  parejo: 'Partido parejo'
+// Fase 9R0a: eran siete strings fijos y una fecha marcada por split durante
+// ~20 splits, así que el jugador leía la MISMA frase una y otra vez ("La
+// revancha contra tal, que te sacó de la última serie"). Ahora cada motivo
+// tiene varias variantes y se elige una de forma determinista según el rival y
+// el split — sin tocar el `rng`, para no correr el stream.
+export const ETIQUETAS_MOTIVO = {
+  clasico: ['Clásico', 'El clásico', 'Viejo conocido'],
+  puntero: ['Contra el puntero', 'El de arriba', 'Choque de arriba'],
+  define_clasificacion: ['Se define la clasificación', 'Partido bisagra', 'Todo o nada'],
+  revancha: ['La revancha', 'Cuentas pendientes', 'El desquite'],
+  presion: ['Con la soga al cuello', 'Sin margen', 'Obligados'],
+  rival_de_generacion: ['Cruce de generación', 'El de tu camada', 'Mano a mano generacional'],
+  parejo: ['Partido parejo', 'Mano a mano', 'Se define por detalles']
 };
 
-const FRASES_MOTIVO = {
-  clasico: (rival) => `El clásico contra ${rival}.`,
-  puntero: (rival) => `Contra el puntero, ${rival}.`,
-  define_clasificacion: (rival) => `Contra ${rival}, con la clasificación en juego.`,
-  revancha: (rival) => `La revancha contra ${rival}, que te sacó de la última serie que jugaste.`,
-  presion: (rival) => `Contra ${rival}, veniendo de racha negativa.`,
-  rival_de_generacion: (rival) => `Contra ${rival}, con uno de tu generación del otro lado.`,
-  parejo: (rival) => `Contra ${rival}, mano a mano.`
+export const FRASES_MOTIVO = {
+  clasico: [
+    (r) => `El clásico contra ${r}.`,
+    (r) => `Otra vez contra ${r}: siempre pesa distinto.`,
+    (r) => `${r} enfrente. Con estos ya hay historia.`,
+    (r) => `Toca ${r}, y no es un partido más.`,
+    (r) => `Contra ${r}, el rival de siempre.`
+  ],
+  puntero: [
+    (r) => `Contra el puntero, ${r}.`,
+    (r) => `${r} va primero: hoy se mide contra el mejor.`,
+    (r) => `Choque contra ${r}, que lidera la tabla.`,
+    (r) => `${r} arriba de todos. A ver de qué están hechos.`,
+    (r) => `Contra ${r}, el que manda la liga por ahora.`
+  ],
+  define_clasificacion: [
+    (r) => `Contra ${r}, con la clasificación en juego.`,
+    (r) => `${r}, y de este partido depende entrar a playoffs.`,
+    (r) => `Contra ${r}: ganar es entrar, perder es quedar afuera.`,
+    (r) => `${r} enfrente, con el boleto a playoffs sobre la mesa.`,
+    (r) => `Contra ${r}, partido bisagra por la clasificación.`
+  ],
+  revancha: [
+    (r) => `La revancha contra ${r}, que te dejó afuera la última vez.`,
+    (r) => `${r} otra vez: los mismos que te eliminaron.`,
+    (r) => `Contra ${r}, con la eliminación todavía atragantada.`,
+    (r) => `${r} enfrente. Hay cuentas pendientes de la última serie.`,
+    (r) => `Toca ${r}, los que te sacaron de los playoffs pasados.`
+  ],
+  presion: [
+    (r) => `Contra ${r}, veniendo de racha negativa.`,
+    (r) => `${r} enfrente, y no podés permitirte otra derrota.`,
+    (r) => `Contra ${r}, con la cabeza cargada de las últimas caídas.`,
+    (r) => `${r}, y el vestuario necesita ganar ya.`,
+    (r) => `Contra ${r}, obligados a cortar la mala racha.`
+  ],
+  rival_de_generacion: [
+    (r) => `Contra ${r}, con uno de tu generación del otro lado.`,
+    (r) => `${r} enfrente: del otro lado juega uno de tu camada.`,
+    (r) => `Contra ${r}, mano a mano con alguien que debutó con vos.`,
+    (r) => `${r}, y enfrente está uno con el que te comparan.`,
+    (r) => `Toca ${r}: cruce con un rival de tu propia generación.`
+  ],
+  parejo: [
+    (r) => `Contra ${r}, mano a mano.`,
+    (r) => `${r} enfrente, de los que se definen por detalles.`,
+    (r) => `Contra ${r}, parejo de arriba a abajo.`,
+    (r) => `${r}, y en el papel no hay favorito.`,
+    (r) => `Contra ${r}, uno de esos que salen 50 y 50.`
+  ]
 };
 
-function etiquetaDeMotivo(motivo) {
-  return ETIQUETAS_MOTIVO[motivo] ?? 'Partido';
+function hashCorto(texto) {
+  let h = 0;
+  for (const caracter of String(texto ?? '')) {
+    h = (h * 31 + caracter.charCodeAt(0)) | 0;
+  }
+  return Math.abs(h);
 }
 
-function fraseDeMotivo(motivo, rival) {
-  return (FRASES_MOTIVO[motivo] ?? FRASES_MOTIVO.parejo)(rival);
+function variante(lista, semilla) {
+  return lista[hashCorto(semilla) % lista.length];
+}
+
+function etiquetaDeMotivo(motivo, semilla = '') {
+  const opciones = ETIQUETAS_MOTIVO[motivo] ?? ['Partido'];
+  return variante(opciones, `${motivo}|${semilla}`);
+}
+
+function fraseDeMotivo(motivo, rival, semilla = '') {
+  const opciones = FRASES_MOTIVO[motivo] ?? FRASES_MOTIVO.parejo;
+  return variante(opciones, `${motivo}|${rival}|${semilla}`)(rival);
+}
+
+// Fase 9R0a: un par (motivo, rival) recién marcado entra en cooldown para que
+// la misma fecha no se repita split tras split. `flags.motivosFechaRecientes`
+// guarda `{ motivo, rival, splitCount }` y se poda a la ventana de cooldown.
+function parEnCooldown(state, motivo, rival) {
+  const limite = state.player.splitCount - BALANCE.temporada.motivoRivalCooldownSplits;
+  return (state.flags.motivosFechaRecientes ?? []).some(
+    (par) => par.motivo === motivo && par.rival === rival && par.splitCount > limite
+  );
+}
+
+function registrarParMarcado(state, motivo, rival) {
+  const limite = state.player.splitCount - BALANCE.temporada.motivoRivalCooldownSplits;
+  const vivos = (state.flags.motivosFechaRecientes ?? []).filter((par) => par.splitCount > limite);
+  return [...vivos, { motivo, rival, splitCount: state.player.splitCount }];
 }
 
 function textoResumenSilencioso({ ganados, perdidos }) {
@@ -162,7 +239,7 @@ function construirDecisionDraft(state) {
   const fecha = state.career.temporada.fechaEnCurso;
   return {
     tipo: 'opciones',
-    titulo: `vs ${fecha.rival} · ${etiquetaDeMotivo(motivoPrincipal(fecha.motivos))}`,
+    titulo: `vs ${fecha.rival} · ${etiquetaDeMotivo(motivoPrincipal(fecha.motivos), state.player.splitCount)}`,
     descripcion: 'Con qué campeón vas a este partido.',
     opciones: state.player.championPool.map((campeon) => ({
       id: campeon.name,
@@ -227,13 +304,25 @@ function resolverFechaMarcada(state, rng, logsAcum) {
   const fuerzaFecha = t.fuerzaPropia * (1 + factorDraft + (t.ajustePartido ?? 0));
   const gano = resolverFecha(fuerzaFecha, fecha.fuerzaRival, rng);
 
+  // Fase 9R0a: la revancha se juega UNA vez. Después, ese rival deja de ser
+  // "el que te eliminó": si no se limpiaba, `ultimoEliminadoPor` quedaba
+  // pegado toda la carrera y la revancha se marcaba split tras split.
+  const limpiaEliminado = motivo === 'revancha' && fecha.rival === state.career.ultimoEliminadoPor;
+
   // El resultado ya quedó fijo: se avanza la jornada COMPLETA (tu fecha + los
   // cruces ajenos de esa ronda) ANTES de leer la tabla, para que la posición
   // que se loguea sea la de una jornada de verdad cerrada y no la de
   // vos-jugaste-y-el-resto-no (fase 9Rb). La reacción posterior es flavor y no
   // puede volver a tocar el resultado.
   const stConResultado = avanzarFechaSilenciosa(
-    { ...state, career: { ...state.career, temporada: { ...t, ajustePartido: 0 } } },
+    {
+      ...state,
+      career: {
+        ...state.career,
+        ultimoEliminadoPor: limpiaEliminado ? null : state.career.ultimoEliminadoPor,
+        temporada: { ...t, ajustePartido: 0 }
+      }
+    },
     gano,
     rng
   );
@@ -243,7 +332,7 @@ function resolverFechaMarcada(state, rng, logsAcum) {
 
   const logs = [...logsAcum, crearLog(
     'temporada',
-    `${fraseDeMotivo(motivo, fecha.rival)} ${gano ? 'Ganan.' : 'Pierden.'} `
+    `${fraseDeMotivo(motivo, fecha.rival, state.player.splitCount)} ${gano ? 'Ganan.' : 'Pierden.'} `
     + `Quedan ${posicion}º de ${tablaTrasFecha.length}`
     + `${fecha.campeonElegido ? ` jugando ${fecha.campeonElegido.name}` : ''}.`
   )];
@@ -298,12 +387,18 @@ function continuarTemporada(state, rng, logsAcum) {
     const liga = ligaOZonaDeCarrera(st);
     const tablaAntes = tablaDePosiciones(t.registrosOtros, t.filaPropia);
     const motivos = motivosDeFecha(st, liga, fecha, tablaAntes, t.racha, t.indice, t.calendario.length);
+    const principal = motivoPrincipal(motivos);
 
     // Fase 9Re: se marca la PRIMERA fecha del split con un motivo real (nunca
-    // `parejo`), y como mucho una. Se fue `forzarMarca`: una temporada sin
-    // ningún motivo real pasa entera resumida, y está bien.
+    // `parejo`), y como mucho una. Fase 9R0a: y sólo si el par (motivo, rival)
+    // no está en cooldown — sin esto la misma revancha/clásico contra el mismo
+    // rival se marcaba split tras split (el fixture es determinista y ese
+    // rival no cambiaba). Una temporada sin ningún motivo libre pasa entera
+    // resumida, y está bien.
     const marcadasQueFaltan = t.objetivoMarcadas - t.marcadasHechas;
-    const marcar = marcadasQueFaltan > 0 && motivos.some((motivo) => motivo !== 'parejo');
+    const marcar = marcadasQueFaltan > 0
+      && principal !== 'parejo'
+      && !parEnCooldown(st, principal, fecha.rival);
 
     if (marcar) {
       const logs = [...logsAcum];
@@ -313,6 +408,7 @@ function continuarTemporada(state, rng, logsAcum) {
       }
       const stConFecha = {
         ...st,
+        flags: { ...st.flags, motivosFechaRecientes: registrarParMarcado(st, principal, fecha.rival) },
         career: {
           ...st.career,
           temporada: { ...t, marcadasHechas: t.marcadasHechas + 1, fechaEnCurso: { ...fecha, motivos } }

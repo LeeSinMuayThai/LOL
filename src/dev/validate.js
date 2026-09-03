@@ -34,6 +34,7 @@ import { bandaDeArraigo } from '../core/registro.js';
 import { salarioDeOferta } from '../core/salarios.js';
 import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
 import { aplicar as aplicarMercado } from '../systems/mercado.js';
+import { FRASES_MOTIVO, ETIQUETAS_MOTIVO } from '../systems/temporada.js';
 import { EJES, MARCAS, MOMENTOS_ACTIVOS, momentoPorId } from '../data/contextos.js';
 import { ARQUETIPOS } from '../data/meta-tags.js';
 import { ROLES, IDS_ROL } from '../data/roles.js';
@@ -2481,6 +2482,74 @@ check('El jugador ve como mucho una fecha marcada por split, y la ve en una frac
   const conUna = (conteos[1] ?? 0) / splitsMedidos;
   if (conUna < 0.35 || conUna > 0.99) {
     throw new Error(`${(conUna * 100).toFixed(1)}% de los splits competitivos tuvieron exactamente una fecha marcada (banda esperada 35%-99%; conteos: ${JSON.stringify(conteos)})`);
+  }
+});
+
+check('Cada motivo de fecha marcada tiene varias frases y etiquetas (fase 9R0a, anti-repetición)', () => {
+  const motivos = Object.keys(FRASES_MOTIVO);
+  for (const motivo of motivos) {
+    const frases = FRASES_MOTIVO[motivo];
+    const etiquetas = ETIQUETAS_MOTIVO[motivo];
+    if (!Array.isArray(frases) || frases.length < 5) {
+      throw new Error(`el motivo "${motivo}" tiene ${frases?.length ?? 0} frases (mínimo 5)`);
+    }
+    if (!Array.isArray(etiquetas) || etiquetas.length < 3) {
+      throw new Error(`el motivo "${motivo}" tiene ${etiquetas?.length ?? 0} etiquetas (mínimo 3)`);
+    }
+    const renderizadas = new Set(frases.map((fn) => fn('RIVAL')));
+    if (renderizadas.size !== frases.length) {
+      throw new Error(`el motivo "${motivo}" tiene frases duplicadas`);
+    }
+    if (new Set(etiquetas).size !== etiquetas.length) {
+      throw new Error(`el motivo "${motivo}" tiene etiquetas duplicadas`);
+    }
+  }
+});
+
+check('La fecha marcada no se repite palabra por palabra (fase 9R0a)', () => {
+  // El bug: `career.ultimoEliminadoPor` no se limpiaba nunca y `career.orgs`
+  // sólo crece, así que "la revancha contra tal" o "el clásico contra tal"
+  // salían idénticos split tras split — medido: mediana 9, hasta 33 veces la
+  // misma línea en la seed 1720243215. Con el cooldown por par (motivo, rival),
+  // la limpieza de `ultimoEliminadoPor` y las frases variadas, baja a ~2.
+  const maxPorCarrera = [];
+  let totalMarcadas = 0;
+
+  for (let seed = 1; seed <= 200; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    const conteo = {};
+
+    for (let i = 0; i < 80 && !state.terminado; i += 1) {
+      const antes = state.logs.length;
+      state = avanzarSplitAuto(state, rng).state;
+      for (const log of state.logs.slice(antes)) {
+        if (log.type !== 'temporada' || log.message.startsWith('Temporada regular')) {
+          continue;
+        }
+        // La parte que el jugador ve idéntica: la frase de motivo, antes del
+        // "Ganan./Pierden." y de la posición.
+        const linea = log.message.split(/ Ganan\.| Pierden\./)[0];
+        conteo[linea] = (conteo[linea] ?? 0) + 1;
+        totalMarcadas += 1;
+      }
+    }
+
+    const vals = Object.values(conteo);
+    maxPorCarrera.push(vals.length > 0 ? Math.max(...vals) : 0);
+  }
+
+  if (totalMarcadas < 1500) {
+    throw new Error(`solo ${totalMarcadas} fechas marcadas en 200 carreras: muestra insuficiente`);
+  }
+  maxPorCarrera.sort((a, b) => a - b);
+  const mediana = maxPorCarrera[Math.floor(maxPorCarrera.length / 2)];
+  const maximo = maxPorCarrera[maxPorCarrera.length - 1];
+  if (mediana > 4) {
+    throw new Error(`la línea de fecha marcada más repetida por carrera tiene mediana ${mediana} (máx tolerado 4; el bug daba 9)`);
+  }
+  if (maximo > 10) {
+    throw new Error(`una carrera repitió la misma línea de fecha marcada ${maximo} veces (máx tolerado 10; el bug daba 33)`);
   }
 });
 

@@ -2047,6 +2047,52 @@ Carreras sin final a los 35 años: 0                                   (hoy 69%)
 
 ---
 
+# FASE 9R.0 — COHERENCIA Y VARIEDAD
+
+> **Insertada el 2026-09-03** tras una segunda tanda de feedback del usuario: jugó una partida
+> (seed `1720243215`) y salió con ~25 quejas. Reproducidas headless, la mayoría son **bugs
+> medibles**, no sensación — y casi todas ya estaban en el PLAN.md, pero en fases que quedaron para
+> el final. Esta fase adelanta las correcciones baratas y de alto impacto en cómo se siente el
+> juego. El diagnóstico completo y el mapeo queja→fase→gap vive en
+> `.claude/plans/eres-un-experto-*.md` (aprobado por el usuario). Orden de commits:
+>
+> | # | Commit | Gap que tapa |
+> |---|---|---|
+> | **9R0a** | `matar la repetición de fechas marcadas` | `career.ultimoEliminadoPor` nunca se limpiaba + `career.orgs` sticky + fixture determinista → la MISMA línea de fecha marcada ("la revancha contra tal") salía hasta 15 splits seguidos. El PLAN.md sólo preveía "más frases" (9R.3), no el bug de selección. |
+> | **9R0b** | `feedback de resultado de minijuego` | `onDone(resultado)` → `responder` y sigue de largo. El jugador no ve si clavó el minijuego. UI pura. |
+> | **9R0c** | `encender ventana en todo el catálogo` | La fase 7.2 se dio por cerrada con `ventana` gateando 26/97 eventos → bootcamp de pretemporada cae en playoffs. |
+> | **9R0d** | `que cada split remate en algo` | 2 de cada 3 splits terminan en una línea `[rendimiento]` técnica. Ninguna fase le da un cierre legible al split que no es de playoffs. |
+> | **9R0e** | `el mercado lee tu nivel` | Adelanto quirúrgico de 9M.3 (sin el sim NPC): `roll(0, techo)` ignora que sos el mejor de la liga → "franquicia, clasificado a Worlds, me quedé sin equipo". |
+>
+> Hallazgo anotado, tuneo a 9Rg: **9R0f** — `rendimiento` satura en 100/100 (~20× en la seed del
+> usuario); un jugador de élite debería orbitar ~85-95 con techo real.
+
+## 9R0a — matar la repetición de fechas marcadas ✅
+
+**Archivos:** `core/temporada.js` (`motivosDeFecha`), `systems/temporada.js` (`FRASES_MOTIVO`,
+`ETIQUETAS_MOTIVO`, `continuarTemporada`, `resolverFechaMarcada`), `core/state.js`
+(`flags.motivosFechaRecientes`), `data/balance.js`, `dev/validate.js`.
+
+- **`career.ultimoEliminadoPor` se limpia** al jugar la revancha (`resolverFechaMarcada`, cuando el
+  motivo principal es `revancha` contra ese rival). Antes: sólo lo escribía `serie.js`, nadie lo
+  borraba → la revancha se marcaba cada split para siempre.
+- **`clasico` acotado a los últimos `clasicoOrgsRecientes: 2` ex-equipos** (`motivosDeFecha`), no a
+  toda org por la que pasaste alguna vez.
+- **Cooldown por par (motivo, rival):** `flags.motivosFechaRecientes` (`[{motivo, rival, splitCount}]`,
+  T4). Un par recién marcado no se re-marca hasta `motivoRivalCooldownSplits: 4` splits después. Si
+  el único motivo libre está en cooldown, el split pasa resumido, y está bien.
+- **Frases variadas:** `FRASES_MOTIVO` de 7 lambdas fijas a **5 variantes por motivo**;
+  `ETIQUETAS_MOTIVO` a 3. Elección determinista por `hash(rival) + splitCount` — **no toca el `rng`**,
+  no corre el stream.
+- **Medido (200 carreras):** línea de fecha marcada idéntica más repetida por carrera — mediana
+  **9 → 2**, máx **33 → 6**. Determinismo intra-versión intacto. `simulate.js 400 60 todas`: 0 crashes.
+- **Checks nuevos:** cada motivo tiene ≥5 frases / ≥3 etiquetas sin duplicados; la línea de fecha
+  marcada más repetida por carrera tiene mediana ≤4 y máx ≤10.
+
+## 9R0b–9R0e — (pendientes, ver tabla de arriba)
+
+---
+
 # FASE 9M — EL MERCADO DE PASES
 
 > La fase 9 construyó **el contrato**. Esta construye **el mercado**: el mundo se puebla de

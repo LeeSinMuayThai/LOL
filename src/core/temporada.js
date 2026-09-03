@@ -159,7 +159,14 @@ export function esRivalDeGeneracion(state, liga, orgRival) {
 export function motivosDeFecha(state, liga, fecha, tablaAntes, rachaPropia, indice, totalFechas) {
   const motivos = [];
 
-  if (state.career.orgs.includes(fecha.rival)) {
+  // Fase 9R0a: `career.orgs` sólo crece, así que sin este tope toda org por
+  // la que pasaste alguna vez quedaba de "clásico" el resto de la carrera.
+  // Sólo cuentan tus últimos ex-equipos (el actual nunca aparece como rival
+  // en el fixture, así que se filtra para no gastar el cupo).
+  const exEquiposRecientes = state.career.orgs
+    .filter((org) => org !== state.career.currentOrg)
+    .slice(-BALANCE.temporada.clasicoOrgsRecientes);
+  if (exEquiposRecientes.includes(fecha.rival)) {
     motivos.push('clasico');
   }
 

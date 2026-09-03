@@ -819,6 +819,18 @@ export const BALANCE = {
     fechasMarcadasPorSplit: 1,
     // Racha de derrotas propias (dentro del split) que dispara `presion`.
     derrotasParaPresion: 2,
+    // Fase 9R0a: la fecha marcada dejaba de mentir pero se repetía sola.
+    // `career.ultimoEliminadoPor` no se limpiaba nunca y `career.orgs` sólo
+    // crece, así que "la revancha contra tal" o "el clásico contra tal"
+    // salían idénticos split tras split (medido: hasta 15 seguidos en la
+    // seed 1720243215). Dos topes:
+    //   - `clasicoOrgsRecientes`: sólo tus últimos N ex-equipos cuentan como
+    //     clásico, no toda org por la que pasaste alguna vez.
+    //   - `motivoRivalCooldownSplits`: un par (motivo, rival) recién marcado
+    //     no se vuelve a marcar hasta N splits después. Un split entero sin
+    //     ningún motivo libre pasa resumido, y está bien.
+    clasicoOrgsRecientes: 2,
+    motivoRivalCooldownSplits: 4,
     // Cuánto puede mover el draft corto de una fecha marcada la fuerza de
     // ESA fecha puntual. Acotado a propósito: no reemplaza a `campeones.js`,
     // que ya elige el campeón del split entero antes de que esto corra.

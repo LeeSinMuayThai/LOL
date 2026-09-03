@@ -33,6 +33,56 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-03 — Fase 9R0a: matar la repetición de fechas marcadas
+
+Primer commit de la **fase 9R.0** (`PLAN.md`), insertada tras una segunda tanda de feedback: el
+usuario jugó la seed `1720243215` y salió con ~25 quejas. Reproducidas headless, la mayoría son
+bugs medibles y casi todas ya estaban en el `PLAN.md` — pero en fases (9R.3, 9M, 11, 12) que
+quedaron para el final. 9R.0 adelanta las correcciones baratas de alto impacto. El diagnóstico
+completo y el mapeo queja→fase→gap está en `.claude/plans/eres-un-experto-*.md`.
+
+#### El bug, medido
+
+`career.ultimoEliminadoPor` lo escribe `serie.js` cuando te eliminan de una serie doméstica y
+**ningún código lo borra jamás**. `career.orgs` sólo crece. El fixture de la temporada regular es
+determinista. Y `continuarTemporada` marca **la primera fecha del split con un motivo real**.
+Resultado en la seed del usuario: *"La revancha contra MVK Esports, que te sacó de la última serie
+que jugaste"* sale **~15 splits seguidos, palabra por palabra**. Medido sobre 200 carreras: la
+línea de fecha marcada idéntica más repetida por carrera tenía **mediana 9, máximo 33**.
+
+#### El arreglo (estructura, no tuneo — regla de proceso 2)
+
+- **`career.ultimoEliminadoPor` se limpia** al jugar la revancha (`resolverFechaMarcada`): el
+  motivo `revancha` contra ese rival vale una vez, después ese rival vuelve a ser uno más.
+- **`clasico` acotado** a los últimos `BALANCE.temporada.clasicoOrgsRecientes: 2` ex-equipos, no a
+  toda org por la que pasaste (`motivosDeFecha`, `core/temporada.js`).
+- **Cooldown por par (motivo, rival):** `flags.motivosFechaRecientes` nuevo (`[{motivo, rival,
+  splitCount}]`, objeto completo desde el arranque — trampa T4). Un par recién marcado no se
+  re-marca hasta `motivoRivalCooldownSplits: 4` splits después; se poda a la ventana en cada
+  escritura. Si el único motivo libre está en cooldown, el split pasa entero resumido.
+- **Frases variadas:** `FRASES_MOTIVO` de 7 lambdas fijas a **5 variantes por motivo** (35 en
+  total); `ETIQUETAS_MOTIVO` a 3 por motivo. La variante se elige de forma determinista con
+  `hash(rival) + splitCount` — **no consume `rng`**, así el stream no se corre (a diferencia de
+  9Ra/9Rb, este cambio es T1-neutral en el camino headless).
+
+#### Números medidos
+
+| | Antes | Ahora |
+|---|---|---|
+| Línea de fecha marcada idéntica más repetida / carrera (mediana) | 9 | **2** |
+| Ídem, máximo | 33 | **6** |
+| Fechas marcadas / carrera | ~18 | ~18 (sin cambio) |
+
+Determinismo intra-versión: OK (misma seed, dos corridas idénticas). `simulate.js 400 60 todas`:
+0 crashes.
+
+#### Checks nuevos (2)
+
+- *Cada motivo de fecha marcada tiene varias frases y etiquetas*: ≥5 frases / ≥3 etiquetas por
+  motivo, sin duplicados (estático sobre `FRASES_MOTIVO`/`ETIQUETAS_MOTIVO`, ahora exportados).
+- *La fecha marcada no se repite palabra por palabra*: sobre 200 carreras, la línea idéntica más
+  repetida por carrera tiene mediana ≤4 y máximo ≤10 (el bug daba 9 / 33).
+
 ### 2026-09-03 — Fase 9R5d: la carrera dura más (tuneo, feedback del usuario)
 
 Noveno commit de la fase 9R. **Solo constantes** (regla de proceso 2). El usuario probó el juego y
