@@ -415,7 +415,7 @@ check('salarioDeOferta produce una distribución lognormal (mediana < media × 0
   }
 });
 
-check('El sesgo etario del mercado favorece a los jóvenes (28 recibe ≤50% que 21, TRASPASO §4)', () => {
+check('El sesgo etario del mercado favorece a los jóvenes (28 recibe ≤50% que 21, CONCEPTO §12)', () => {
   const { sesgoEtario: tabla, sesgoEtarioMinimo } = BALANCE.mercado;
 
   if (!(sesgoEtario(28) <= sesgoEtario(21) * 0.5)) {
@@ -1636,7 +1636,7 @@ check('El tier 3 es breve: mediana de permanencia ≤ 2 splits, p90 ≤ 5', () =
 });
 
 check('El año muerto: firmado pero sin edad para debutar se observa y se resuelve solo', () => {
-  // LEC y LPL exigen más edad que LCS/LCK/CBLOL/LCP (dato real, TRASPASO): un
+  // LEC y LPL exigen más edad que LCS/LCK/CBLOL/LCP (dato real, CONCEPTO §12.3): un
   // ascenso ganado a los 17 se congela ahí hasta que la edad alcanza, sin
   // volver a sortear nada. Fase 9b: la org ya no se reserva de antemano (eso
   // ahora es la decisión de `mercado.js`) — lo que no puede volver a

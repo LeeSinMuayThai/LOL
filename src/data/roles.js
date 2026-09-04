@@ -7,7 +7,7 @@
 // decision de la partida y tiene que leerse como una decision, no como un menu
 // desplegable. `costo` dice en voz alta lo que el rol te va a cobrar.
 
-// `factorSalario` (fase 9, TRASPASO §4): cuánto multiplica la oferta de sueldo
+// `factorSalario` (fase 9, CONCEPTO §12): cuánto multiplica la oferta de sueldo
 // según la línea, aparte del rendimiento — el mercado real paga mid y jungla
 // mejor que support a paridad de nivel. Lo usa `core/salarios.js`.
 export const ROLES = {

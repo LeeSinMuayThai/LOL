@@ -121,7 +121,7 @@ export function createInitialState(seed, rng, eleccion = null) {
       // (trampa T4): antes de la primera firma profesional no hay contrato,
       // pero el campo tiene que existir para que validate.js pueda verificar
       // cualquier `field`/`path` que lo toque. `salarioAnualUSD` (no mensual:
-      // TRASPASO.md §4 reporta todo en cifras anuales — LEC mediana ~€165k/año,
+      // CONCEPTO.md §12.6 reporta todo en cifras anuales — LEC mediana ~€165k/año,
       // Faker $6-8M/año — y `registro.dineroTotalUSD` solo tiene sentido como
       // acumulado de años, no de meses).
       contrato: {

@@ -282,7 +282,7 @@ export const BALANCE = {
     // --- Stats que siguen la curva (suben y bajan) ---
     // `declive` modula cuanto les pega la caida: el laneo y el teamfight son
     // en parte conocimiento, asi que se caen menos que las manos.
-    // Fase 9 (TRASPASO §4): suavizado ~40% desde el valor original (1 / 0.6 /
+    // Fase 9 (CONCEPTO §12.4): suavizado ~40% desde el valor original (1 / 0.6 /
     // 0.45). El hallazgo que lo motiva es que el declive real es casi todo
     // mercado y casi nada biológico — la curva sigue notándose (`CONCEPTO` §6
     // la necesita: es la razón mecánica para invertir en macro, y la fase 8
@@ -720,7 +720,7 @@ export const BALANCE = {
   },
 
   // El mercado (fase 9, PLAN.md §9.2/§9.7): contratos, sueldos y el sesgo
-  // etario que de verdad termina las carreras. TRASPASO §4: el declive de
+  // etario que de verdad termina las carreras. CONCEPTO §12.4: el declive de
   // atributos casi no es biológico (~1ms/año de reacción contra 90ms de
   // brecha pro/casual) — lo que retira es que el mercado deja de mirarte, no
   // que bajen tus stats. Constantes que consumen `core/salarios.js` y
@@ -799,7 +799,7 @@ export const BALANCE = {
     valorRendimientoPeso: 0.5,
     valorJerarquiaPeso: 0.3,
     valorHypePeso: 0.25,
-    // Splits sostenidos en la misma región (TRASPASO §4: 12 splits/4 años =
+    // Splits sostenidos en la misma región (CONCEPTO §12: 12 splits/4 años =
     // "residencia", salto de valor de mercado) y tener un campeón de firma.
     valorResidenciaSplits: 12,
     valorResidenciaBonus: 0.15,

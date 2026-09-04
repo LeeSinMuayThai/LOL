@@ -2,7 +2,7 @@ import { BALANCE } from '../data/balance.js';
 import { ROLES } from '../data/roles.js';
 import { gauss } from './rng.js';
 
-// TRASPASO.md §4 (líneas 560-660): lognormal a propósito — mediana << media,
+// CONCEPTO.md §12.6: lognormal a propósito — mediana << media,
 // como el salario real (LEC mediana ~€165k, media €240k: pocos contratos
 // enormes estiran el promedio sin mover a la mayoría). Fórmula y números ya
 // investigados ahí; no se vuelven a discutir (PLAN.md §9.2).

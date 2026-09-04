@@ -153,7 +153,7 @@ function generarOfertasParaLiga(state, liga, rng, { esAscenso }) {
   // Fase 9R0e: cuánto te busca el mercado sale de tu NIVEL contra la liga, no
   // de `roll(0, techo)` con sesgo etario a secas. Un jugador claramente por
   // encima SIEMPRE tiene ofertas (piso por demanda); uno por debajo, casi
-  // ninguna. El `sesgoEtario` sigue acotando el techo (TRASPASO §4: el mercado
+  // ninguna. El `sesgoEtario` sigue acotando el techo (CONCEPTO §12: el mercado
   // prefiere jóvenes), pero ahora convive con la lectura de nivel.
   const nivel = nivelDelJugador(state);
   const brecha = nivel - (liga.prestigio ?? m.nivelLigaPorDefecto);

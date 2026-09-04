@@ -33,6 +33,28 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-04 — D33: los 13 comentarios que citaban TRASPASO.md se redirigen
+
+Workstream DOCS (paralelo, no bloquea — `PLAN.md`). `TRASPASO.md` se borró el 2026-09-02; la
+investigación que citaba se mudó a `CONCEPTO.md §12` conservando la numeración, pero nadie había
+ido a actualizar los comentarios de `/src` que seguían apuntando al archivo muerto.
+
+- 13 comentarios en `salarios.js`, `state.js`, `valorMercado.js` (×3), `balance.js` (×3),
+  `roles.js`, `validate.js` (×2), `amateur.js`, `mercado.js` — exactamente los que listaba la
+  entrada D33 de la tabla de deuda técnica.
+- Donde el comentario original ya tenía sub-número (`§4.2`, el caso Calix) se conservó
+  (`§12.2`). Donde no lo tenía, se verificó contra el índice real de `CONCEPTO.md §12` (12.1
+  ranked, 12.2 scouting, 12.3 estructura competitiva, 12.4 duración/declive, 12.5 pool/Fearless,
+  12.6 salarios) y se agregó el sub-número solo cuando el tema calzaba exacto (declive → 12.4,
+  edad mínima de liga → 12.3, lognormal de salarios → 12.6); el resto quedó en `§12` a secas para
+  no inventar un mapeo que no podía verificar.
+- Se soltaron los artefactos que no viajan de un archivo al otro: "líneas 560-660" e "imagen 15"
+  eran referencias a la posición del dato DENTRO de `TRASPASO.md`, sin equivalente en
+  `CONCEPTO.md`.
+- `grep -r TRASPASO src/`: 0 resultados. Puro comentario, cero cambio de lógica ejecutable.
+- `validate.js`: 118/118 OK (mismo resultado que antes del cambio, como corresponde a un cambio
+  que no toca una sola línea de código). Cierra **D33** en `PLAN.md`.
+
 ### 2026-09-04 — Fase 9ML.a: otras ligas vivas (digest anual)
 
 Primera pieza de **9M-lite** (`PLAN.md`, decisión del usuario de ir liviano en vez del sim de ~340

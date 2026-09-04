@@ -372,7 +372,7 @@ function probabilidadDeScouting(state) {
 
 // A quién te fichan la primera vez (fase 3). Nadie debuta directo en una liga
 // real: CONCEPTO §2 dice "sos el rookie, no decidís casi nada", y eso empieza
-// acá. La única excepción es el caso Calix (TRASPASO §4.2): estar en el
+// acá. La única excepción es el caso Calix (CONCEPTO §12.2): estar en el
 // top absoluto de Challenger y todavía joven te salta el tramo de probarte en
 // un equipo de tier 3 y te lleva directo a una liga de desarrollo real.
 function ligaTier2DeLaRegion(state) {

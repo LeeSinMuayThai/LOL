@@ -1,7 +1,7 @@
 import { BALANCE } from '../data/balance.js';
 import { ligaDeCarrera } from './competicion.js';
 
-// TRASPASO.md §4: el mismo sesgo etario que gobierna el scouting amateur
+// CONCEPTO.md §12.2: el mismo sesgo etario que gobierna el scouting amateur
 // (`amateur.scoutingSesgoEtario`), pero para la franja de la carrera pro —
 // un jugador de 28 recibe ~40% de las ofertas que uno de 21 con la hoja
 // idéntica. Reusa la FORMA de esa tabla (lookup por edad + piso), no la
@@ -11,7 +11,7 @@ export function sesgoEtario(edad) {
   return mercado.sesgoEtario[edad] ?? mercado.sesgoEtarioMinimo;
 }
 
-// Splits vividos en una región (TRASPASO §4: 12 splits/4 años = "residencia").
+// Splits vividos en una región (CONCEPTO §12: 12 splits/4 años = "residencia").
 // Deriva de `career.registro.porOrg`, que la fase 8 ya acumula — sin agregar
 // estado nuevo (evita otro punto T1/T4). Tier 3 (`fila.liga === null`)
 // cuenta como la región de origen: ahí siempre te ficha una org de tu propia
@@ -25,7 +25,7 @@ export function splitsDeResidencia(state, regionId) {
   }, 0);
 }
 
-// Cuánto valés hoy, en dólares (TRASPASO §4, imagen 15: "VALOR MÁS ALTO").
+// Cuánto valés hoy, en dólares (CONCEPTO §12: "VALOR MÁS ALTO").
 // No es tu sueldo actual — podés estar atado a un contrato viejo que te
 // subpaga — es lo que el mejor postor de tu propia liga pagaría si te
 // ofertara ahora. Pura, sin rng: una valuación es una lectura del estado, no
