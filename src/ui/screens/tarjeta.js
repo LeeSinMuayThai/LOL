@@ -1,4 +1,5 @@
 import { filaHistoria } from '../components/ficha.js';
+import { descargarTarjeta, copiarTarjeta, copiarLinkDeCarrera, linkDeCarrera } from '../exportar.js';
 
 // La tarjeta de legado (fase 9R5b, PLAN.md §10.2/§10.3): la pantalla final.
 // TODA salida termina acá — la del mundialista con confeti y la del pibe al que
@@ -32,6 +33,12 @@ export function renderTarjeta(container, state, modulos) {
   container.replaceChildren();
   container.hidden = false;
   container.className = 'tarjeta' + (t.esExito ? ' tarjeta--exito' : ' tarjeta--sobria');
+  // El marco por cada uno de los 5 finales (T7): antes de esta fase, solo
+  // había dos tonos (éxito/sobria) — el mundialista y el pibe al que no lo
+  // dejaron jugar compartían marco si ninguno era "éxito". `data-marco`
+  // deja que pantallas.css los distinga sin tocar esta función de nuevo
+  // cuando cambie el diseño.
+  container.dataset.marco = t.finAnticipado ?? 'retiro_elegido';
 
   // --- Marco + identidad ---
   container.appendChild(linea('tarjeta-marco', TITULO_MARCO[t.finAnticipado] ?? 'FIN DE LA CARRERA'));
@@ -61,4 +68,58 @@ export function renderTarjeta(container, state, modulos) {
     historia.append(...t.historia.map(filaHistoria));
     container.appendChild(historia);
   }
+
+  container.appendChild(crearAcciones(state, modulos));
+}
+
+// --- Las tres acciones de cierre (T7) ---------------------------------
+//
+// Copiar imagen / bajarla / copiar el link. `CONCEPTO` §9 llama al link
+// "todo el motor de difusión del juego" — es la única de las tres que no
+// depende de una API de navegador que puede faltar.
+function botonConEstado(texto, accion) {
+  const boton = document.createElement('button');
+  boton.type = 'button';
+  boton.className = 'tarjeta-accion-btn';
+  boton.textContent = texto;
+  boton.addEventListener('click', async () => {
+    boton.disabled = true;
+    const original = boton.textContent;
+    try {
+      await accion(boton);
+    } finally {
+      setTimeout(() => { boton.textContent = original; boton.disabled = false; }, 1800);
+    }
+  });
+  return boton;
+}
+
+function crearAcciones(state, modulos) {
+  const acciones = document.createElement('div');
+  acciones.className = 'tarjeta-acciones';
+
+  acciones.appendChild(botonConEstado('📋 Copiar imagen', async (boton) => {
+    const copiado = await copiarTarjeta(state, modulos);
+    if (copiado) {
+      boton.textContent = '¡Copiada!';
+    } else {
+      // `navigator.clipboard.write` con imágenes no está en todos lados
+      // (Firefox/Safari con restricciones) — la descarga es el respaldo
+      // universal, no un error silencioso.
+      await descargarTarjeta(state, modulos);
+      boton.textContent = 'Se bajó como archivo';
+    }
+  }));
+
+  acciones.appendChild(botonConEstado('⬇ Bajar imagen', async (boton) => {
+    await descargarTarjeta(state, modulos);
+    boton.textContent = '¡Bajada!';
+  }));
+
+  acciones.appendChild(botonConEstado('🔗 Copiar link de esta carrera', async (boton) => {
+    const copiado = await copiarLinkDeCarrera(state.seed);
+    boton.textContent = copiado ? '¡Copiado!' : linkDeCarrera(state.seed);
+  }));
+
+  return acciones;
 }

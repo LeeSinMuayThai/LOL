@@ -33,6 +33,50 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-04 — Fase T7: la tarjeta final, el PNG y el link
+
+Exportar a PNG y copiar el link de la carrera, más los 5 marcos de verdad para la tarjeta de
+legado — que resultó estar más avanzada de lo que el plan asumía.
+
+#### Lo que ya existía, medido antes de escribir código
+
+`src/ui/screens/tarjeta.js` no era una pantalla nueva: la fase 9R5b ya la había escrito, con
+`TITULO_MARCO` (5 títulos + ícono, uno por `finAnticipado`: `retiro_elegido`, `sin_equipo`,
+`burnout`, `no_llego`, `prohibicion_familiar`), veredicto y la historia org por org reusando
+`filaHistoria`. Lo que el CSS real mostraba, sin embargo, eran solo **2 tonos** —
+`.tarjeta--exito`/`.tarjeta--sobria` — así que el mundialista y el pibe al que no lo dejaron jugar
+sí compartían marco visual cuando ninguno de los dos era "éxito", aunque el título ya fuera
+distinto. Esa es la brecha real que cerró T7, no una pantalla desde cero.
+
+#### Qué entra
+
+- **`pantallas.css`**: 5 colores de borde por `data-marco` (`--live`/`--warn`/`--danger`/
+  `--line-strong`/`--cat-familia`). `.tarjeta--exito` pasó a `.tarjeta.tarjeta--exito` (dos clases
+  juntas) para no perder por especificidad contra `.tarjeta[data-marco]` — mismo tipo de trampa
+  que el `:where(button)` de T0b, esta vez al revés (había que GANAR especificidad, no perderla).
+- **`src/ui/exportar.js`** (nuevo): `dibujarTarjeta(state, modulos)` — canvas 1200×630, fondo en
+  capas (mismo lenguaje que el shell: viñeta + malla), banda superior y borde del color del
+  marco, lockup, identidad, veredicto con ajuste de línea a mano, totales, seed. Los colores se
+  leen de los tokens vía `getComputedStyle` en vez de duplicarlos en hex. `descargarTarjeta`
+  (`toBlob` → `<a download>`) y `copiarTarjeta` (`navigator.clipboard.write` con `ClipboardItem`,
+  `false` si no está disponible — el llamador cae a la descarga). `linkDeCarrera`/
+  `copiarLinkDeCarrera` arman y copian `?seed=N`.
+- **`tarjeta.js`**: tres botones nuevos al pie (copiar imagen, bajar imagen, copiar link), cada
+  uno con confirmación visual temporal en el propio botón (`¡Copiada!`, `¡Bajada!`, `¡Copiado!` —
+  o el link crudo como texto si el portapapeles no está disponible, en vez de fallar en silencio).
+
+**Split a propósito con T8**: el botón de esta fase arma y copia `?seed=N`; que abrir ese link
+precargue la seed es trabajo de T8 (`leerSeed()` hoy solo mira el input, no la URL).
+
+#### Verificación
+
+Carrera completa por CDP hasta la tarjeta final (seed 99, `no_llego`): marco gris correcto
+(`--line-strong`), los 3 botones renderizados. "Bajar imagen" → pipeline completo (canvas → blob →
+`URL.createObjectURL` → click) sin una sola excepción, confirmado en el propio navegador con la
+carrera real. "Copiar link" → en Chrome headless sin permiso de portapapeles, cayó al fallback
+(mostró `http://localhost:8000/?seed=99` en el botón) exactamente como está diseñado — no un error
+silencioso. Cero errores de consola en la corrida completa.
+
 ### 2026-09-04 — Fase T6: el partido y la serie como transmisión
 
 Tarjeta de resultado de fecha, barra de bracket, el camino Fearless mapa a mapa, y los 5

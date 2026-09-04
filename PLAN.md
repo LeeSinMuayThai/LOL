@@ -2363,7 +2363,7 @@ sumar otras cuatro tandas de CSS suelto que después hay que unificar igual.
 | **T4** | la decisión con jerarquía | Banner por categoría (18 valores reales medidos, agrupados a 11 familias) y peso bisagra/cierre/normal (dos campos reales, no el "ambiente" inventado que decía una versión vieja de este plan) — sin motor |
 | **T5** | el riel de contexto | Tabla, calendario, plantilla, meta y generación. Cinco paneles, cero motor — la tabla se deriva en vivo (`career.temporada.tabla` es un campo muerto durante toda la temporada, ver T5) |
 | **T6** | el partido y la serie | Tarjeta de resultado (derivada, sin tocar `systems/`), barra de bracket, el camino mapa a mapa, los 5 minijuegos migrados con `rngUi` explícito |
-| **T7** | la tarjeta final y el PNG | Legado rediseñado + export a canvas 1200×630 + copiar link |
+| **T7** | la tarjeta final y el PNG | El legado de fase 9R5b ya traía marco+veredicto+historia; T7 suma 5 marcos por color (no 2), export a canvas 1200×630 y copiar link/imagen |
 | **T8** | la página como página | P.2 (guardado), P.3 (seed en la URL), P.4 (meta y OG), P.5 (repo) |
 
 ## T0 — El sistema de diseño
@@ -2668,20 +2668,34 @@ nunca del `rng` del motor.
 
 ## T7 — La tarjeta final, el PNG y el link
 
-La pantalla de legado rediseñada sobre `state.tarjeta` y `registro.porOrg` (reusando `filaHistoria`,
-escrita en la fase 8 justamente para esto). Marco distinto por cada uno de los 5 finales: el
-mundialista y el pibe al que no lo dejaron jugar **no comparten marco** (§10.3).
+**Revisado antes de implementar**: la pantalla de legado **ya existía**, escrita en la fase 9R5b
+(`src/ui/screens/tarjeta.js`) — no era una pantalla nueva, tenía marco por `TITULO_MARCO` (5
+títulos+ícono, uno por `finAnticipado`), veredicto, franja de totales y la historia org por org
+(reusando `filaHistoria` de `core/ficha.js`, tal como decía el plan). Lo que **de verdad** faltaba,
+medido contra el CSS real: el marco visual (borde/color) solo distinguía 2 tonos —
+`.tarjeta--exito`/`.tarjeta--sobria` — así que el mundialista y el pibe al que no lo dejaron jugar
+**sí compartían marco** cuando ninguno de los dos era "éxito" (§10.3 incumplida en la práctica,
+aunque el título ya fuera distinto). T7 sube esos 2 tonos a 5 colores reales, uno por
+`finAnticipado` (`data-marco` en el DOM), con `--live`/`--warn`/`--danger`/`--line-strong`/
+`--cat-familia`; el dorado de éxito sigue ganando cuando aplica (necesitó `.tarjeta.tarjeta--exito`
+— dos clases juntas — para no perder por especificidad contra `.tarjeta[data-marco]`).
 
 **Exportar a PNG** — `src/ui/exportar.js`, canvas 2D a mano, **1200×630** (medida de OG, así la
 misma rutina sirve para las dos cosas):
 
-- `await document.fonts.ready` **antes** de dibujar, o el canvas sale en la fuente de fallback.
+- `await document.fonts.ready` **antes** de dibujar.
+- Los colores se leen de los tokens vía `getComputedStyle` en vez de duplicarlos en hex — una sola
+  fuente de verdad entre el CSS y el canvas.
 - `canvas.toBlob()` → `<a download>`.
 - `navigator.clipboard.write([new ClipboardItem({'image/png': blob})])` para copiarla, con la
-  descarga como fallback donde no esté disponible.
+  descarga como fallback donde no esté disponible (`ClipboardItem` con imágenes no está en todos
+  los navegadores) — verificado: en Chrome headless sin permiso de portapapeles, el fallback
+  entra solo, sin que el jugador vea un error.
 
 **Copiar link de esta carrera** (P.3): `?seed=N`. Es la función social que `CONCEPTO` §9 llama
-*"todo el motor de difusión del juego"*.
+*"todo el motor de difusión del juego"*. **Solo la mitad del círculo**: esta fase agrega el botón
+que arma y copia el link; que ABRIR ese link precargue la seed es T8 (`leerSeed()` today solo mira
+el input, no la URL) — split a propósito entre las dos fases, no un olvido.
 
 ## T8 — La página como página
 

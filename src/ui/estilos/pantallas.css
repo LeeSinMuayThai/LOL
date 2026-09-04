@@ -622,7 +622,13 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   border-radius: var(--r-lg);
   animation: entrar-decision var(--dur-slow) var(--ease) both;
 }
-.tarjeta--exito {
+/* El marco por cada uno de los 5 finales (T7, §10.3): "el mundialista y
+   el pibe al que no lo dejaron jugar no comparten marco" — antes de esta
+   fase compartían el mismo `.tarjeta--sobria` gris. `.tarjeta.tarjeta--exito`
+   (dos clases juntas, no una) sigue ganando cuando aplica — necesita esa
+   especificidad extra para no perder contra `.tarjeta[data-marco]`, que
+   por tener clase+atributo pesa más que una sola clase suelta. */
+.tarjeta.tarjeta--exito {
   border-color: var(--gold);
   background:
     radial-gradient(120% 80% at 50% 0%, var(--gold-glow), transparent 60%),
@@ -630,6 +636,12 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   box-shadow: inset 0 0 0 1px var(--gold-glow), 0 0 60px -20px var(--gold-glow);
 }
 .tarjeta--sobria { border-color: var(--line-strong); }
+
+.tarjeta[data-marco="retiro_elegido"]        { border-color: var(--live); }
+.tarjeta[data-marco="sin_equipo"]            { border-color: var(--warn); }
+.tarjeta[data-marco="burnout"]               { border-color: var(--danger); }
+.tarjeta[data-marco="no_llego"]              { border-color: var(--line-strong); }
+.tarjeta[data-marco="prohibicion_familiar"]  { border-color: var(--cat-familia); }
 
 .tarjeta-marco {
   font-family: var(--font-display);
@@ -671,6 +683,22 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   text-transform: uppercase;
   letter-spacing: var(--track-cartel);
   color: var(--live);
+}
+
+/* --- Las tres acciones de cierre (T7): PNG + link ------------------------- */
+.tarjeta-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--s-3);
+  margin-top: var(--s-5);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--line-faint);
+}
+.tarjeta-accion-btn {
+  flex: 0 1 auto;
+  font-size: var(--fs-1);
+  padding: var(--s-2) var(--s-4);
 }
 
 /* ==========================================================================
