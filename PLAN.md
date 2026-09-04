@@ -2133,7 +2133,22 @@ orgs**, no cuánto pagan (`salarios.js` intacto).
 - **Check nuevo:** 0 pretemporadas sin ofertas para un jugador ≥10 sobre su liga; ≥90% del
   silencio le toca a un jugador a-nivel-o-por-debajo. (Verificado en rojo contra HEAD: 21 casos.)
 
-## 9R0d — que cada split remate en algo — (pendiente, versión liviana)
+## 9R0d — que cada split remate en algo ✅
+
+**Archivos:** `systems/rendimiento.js`, `dev/validate.js`. 2 de cada 3 splits no son de playoffs y
+cerraban con una sola línea `[rendimiento]` "terminó 4º de 10" — sin decir qué significa ese 4º
+("los 3 splits no sirven para nada, clasificar es un cartel").
+
+- `consecuencias()` emite una línea `temporada` de **qué hay en juego** tras el recibo de
+  rendimiento: tier 1 → "dentro de la zona de playoffs" / "a N de la zona" / "afuera por N";
+  tier 2/3 (sin bracket, fase 4) → "arriba de todo" / "en la mitad de la tabla" / "peleando abajo".
+- **La excepción**: el split de cierre que clasifica a playoffs devuelve `null` — lo narra
+  `serie.js` con su propia fanfarria, no se duplica.
+- 4 variantes por banda, elegidas por `hash(liga)+splitCount` — **no toca el `rng`**, T1-neutral.
+- **Check nuevo:** todo split competitivo que no clasifica a playoffs cierra con una línea
+  `temporada` no técnica de qué significa la posición (0 de 2986 sin ella).
+
+> **Fase 9R.0 cerrada.** Sigue el orden de PLAN.md: **9Rd** (se para cuando hay algo en juego).
 
 ---
 

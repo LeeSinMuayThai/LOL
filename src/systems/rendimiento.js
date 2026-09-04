@@ -33,6 +33,86 @@ export function calcularRendimiento(state, rng) {
   return clampStat(rendimientoBase(state) + gauss(0, BALANCE.rendimiento.ruidoRendimiento, rng));
 }
 
+// Fase 9R0d: 2 de cada 3 splits no son de playoffs, y cerraban con una sola
+// línea `[rendimiento]` — "terminó 4º de 10" sin decir qué significa ese 4º.
+// El usuario lo leyó como "los 3 splits no sirven para nada, clasificar es un
+// cartel". Esto le pone al cierre de CADA split competitivo una frase de qué
+// hay en juego. No promete lo que el motor no cumple: en tier 2/3 no hay
+// bracket (fase 4), así que ahí es posición + momentum, no playoffs. Varias
+// variantes por banda, elegidas de forma determinista (sin tocar el `rng`),
+// para que un jugador dominante en una liga chica no lea "arriba de todo"
+// diez splits seguidos.
+function hashCorto(texto) {
+  let h = 0;
+  for (const caracter of String(texto ?? '')) {
+    h = (h * 31 + caracter.charCodeAt(0)) | 0;
+  }
+  return Math.abs(h);
+}
+
+const PARADA_ZONA = {
+  dentro: [
+    (p, n, l) => `Cerrás el split ${p}º de ${n}: dentro de la zona de playoffs de ${l} por ahora.`,
+    (p, n, l) => `${p}º de ${n} en ${l}: el split cierra con lugar de playoffs.`,
+    (p, n, l) => `Terminás ${p}º de ${n}: hoy jugarías los playoffs de ${l}.`,
+    (p, n, l) => `${p}º de ${n}: adentro de la zona, sin margen para relajarse.`
+  ],
+  fuera: [
+    (p, n, l, k) => `Cerrás el split ${p}º de ${n}: a ${k} de la zona de playoffs de ${l}.`,
+    (p, n, l, k) => `${p}º de ${n} en ${l}: te faltan ${k} puesto${k === 1 ? '' : 's'} para los playoffs.`,
+    (p, n, l, k) => `Terminás ${p}º de ${n}: la zona de playoffs queda a ${k} de distancia.`,
+    (p, n, l, k) => `${p}º de ${n}: afuera de playoffs por ${k}, hay que apretar.`
+  ]
+};
+
+const PARADA_TABLA = {
+  arriba: [
+    (p, n, l) => `Cerrás el split ${p}º de ${n}: arriba de todo en ${l}.`,
+    (p, n, l) => `${p}º de ${n} en ${l}: nadie te movió de la punta.`,
+    (p, n, l) => `Terminás ${p}º de ${n}: cerrás el split como el equipo a vencer de ${l}.`,
+    (p, n, l) => `${p}º de ${n}: dominás ${l} de arriba a abajo.`
+  ],
+  media: [
+    (p, n, l) => `Cerrás el split ${p}º de ${n}: en la mitad de la tabla de ${l}.`,
+    (p, n, l) => `${p}º de ${n} en ${l}: ni arriba ni abajo, a mejorar.`,
+    (p, n, l) => `Terminás ${p}º de ${n}: un split del montón en ${l}.`,
+    (p, n, l) => `${p}º de ${n}: quedás a mitad de camino en ${l}.`
+  ],
+  abajo: [
+    (p, n, l) => `Cerrás el split ${p}º de ${n}: peleando en la parte baja de ${l}.`,
+    (p, n, l) => `${p}º de ${n} en ${l}: el split se sufrió de abajo.`,
+    (p, n, l) => `Terminás ${p}º de ${n}: hay que levantar, ${l} no perdona.`,
+    (p, n, l) => `${p}º de ${n}: mal split, quedás en el fondo de ${l}.`
+  ]
+};
+
+function variantePorSemilla(lista, semilla) {
+  return lista[hashCorto(semilla) % lista.length];
+}
+
+function textoDeParadaEnLaTabla(nombreLiga, liga, posicion, equipos, esCierre, juegaSerie, splitCount) {
+  if (juegaSerie) {
+    const corte = liga.formatoPlayoffs.clasifican;
+    // El split de cierre que clasifica lo narra `serie.js` con su propia
+    // fanfarria ("Clasificaste a playoffs de X como Nº sembrado…"): no se
+    // duplica acá.
+    if (esCierre && posicion <= corte) {
+      return null;
+    }
+    if (esCierre) {
+      const faltan = posicion - corte;
+      return `Cerrás ${posicion}º de ${equipos} en ${nombreLiga}: afuera de los playoffs por ${faltan} puesto${faltan === 1 ? '' : 's'}.`;
+    }
+    if (posicion <= corte) {
+      return variantePorSemilla(PARADA_ZONA.dentro, `dentro|${nombreLiga}|${splitCount}`)(posicion, equipos, nombreLiga);
+    }
+    return variantePorSemilla(PARADA_ZONA.fuera, `fuera|${nombreLiga}|${splitCount}`)(posicion, equipos, nombreLiga, posicion - corte);
+  }
+
+  const banda = posicion <= 2 ? 'arriba' : posicion <= Math.ceil(equipos / 2) ? 'media' : 'abajo';
+  return variantePorSemilla(PARADA_TABLA[banda], `${banda}|${nombreLiga}|${splitCount}`)(posicion, equipos, nombreLiga);
+}
+
 function consecuencias(state, rendimiento, resultado, esCierre, rng) {
   const r = BALANCE.rendimiento;
   const { posicion, equipos, liga } = resultado;
@@ -95,6 +175,15 @@ function consecuencias(state, rendimiento, resultado, esCierre, rng) {
     `${state.career.currentOrg} terminó ${posicion}º de ${equipos} en ${nombreLiga}. `
     + `Tu rendimiento: ${Math.round(rendimiento)}/100 con ${state.player.campeonDelSplit}. Jerarquía ${Math.round(jerarquia)}.`
   ));
+
+  // Fase 9R0d: qué significa esa posición — para que el split no muera en un
+  // recibo numérico.
+  const paradaEnTabla = textoDeParadaEnLaTabla(
+    nombreLiga, liga, posicion, equipos, esCierre, juegaSerieDePlayoffs, state.player.splitCount
+  );
+  if (paradaEnTabla) {
+    logs.push(crearLog('temporada', paradaEnTabla));
+  }
 
   if (campeon) {
     titulos += 1;

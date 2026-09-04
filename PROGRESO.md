@@ -33,6 +33,44 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-03 — Fase 9R0d: que cada split remate en algo
+
+Quinto y último commit de la fase 9R.0. Feedback textual del usuario: *"Clasificás a playoffs o a
+Worlds pero no sabés qué pasó"*, *"lo de los 3 splits no sirve para nada"*, *"clasificar es solo un
+cartel"*.
+
+#### El problema
+
+2 de cada 3 splits no son de playoffs (`serie.js` sólo corre en el split de cierre de edad, y
+sólo en tier 1). Esos splits cerraban con **una sola línea** `[rendimiento]`: *"Team X terminó 4º
+de 10 en LCP. Tu rendimiento: 100/100. Jerarquía 100."* — el número de posición sin ninguna
+lectura de qué significa.
+
+#### El arreglo (sólo agrega logs, no toca el `rng` — T1-neutral)
+
+- `systems/rendimiento.js` `consecuencias()` emite, tras el recibo, una línea `temporada` de qué
+  hay en juego:
+  - **tier 1**: "dentro de la zona de playoffs de {liga} por ahora" / "a {N} de la zona" /
+    (split de cierre) "afuera de los playoffs por {N} puestos".
+  - **tier 2 / tier 3** (sin bracket modelado, fase 4): "arriba de todo en {liga}" / "en la mitad
+    de la tabla" / "peleando en la parte baja".
+- **Excepción**: el split de cierre que **sí** clasifica a playoffs devuelve `null` — lo narra
+  `serie.js` con su propia entrada ("Clasificaste a playoffs de X como Nº sembrado…"), no se
+  duplica.
+- 4 variantes por banda (`PARADA_TABLA` / `PARADA_ZONA`), elegidas de forma determinista con
+  `hash(liga)+splitCount` para que un dominador de una liga chica no lea "arriba de todo" diez
+  splits seguidos. Plantilla de parada idéntica más repetida por carrera: mediana 4, p90 6.
+
+#### Check nuevo
+
+*Todo split competitivo cierra con lo que significa su posición, no sólo el recibo* — sobre 150
+carreras, 0 de 2986 splits competitivos (excluyendo los que clasifican a playoffs) cerraron sin
+una línea `temporada` no técnica de qué significa la posición.
+
+**Fase 9R.0 cerrada** (9R0a-e). Sigue el orden del PLAN.md: **9Rd** (se para cuando hay algo en
+juego). Pendiente de 9R.0: **9R0f** (headroom de `rendimiento`, satura en 100/100) → va a 9Rg
+como tuneo.
+
 ### 2026-09-03 — Fase 9R0e: el mercado lee tu nivel
 
 Cuarto commit de la fase 9R.0. Adelanto quirúrgico de **9M.3** (sin el sim NPC completo). El

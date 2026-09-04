@@ -2645,6 +2645,50 @@ check('La fecha marcada no se repite palabra por palabra (fase 9R0a)', () => {
   }
 });
 
+check('Todo split competitivo cierra con lo que significa su posición, no sólo el recibo (fase 9R0d)', () => {
+  // 2 de cada 3 splits no son de playoffs y cerraban en una línea `[rendimiento]`
+  // "terminó 4º de 10" — "los 3 splits no sirven para nada". Ahora cada split
+  // competitivo deja una línea `temporada` de qué hay en juego. La excepción:
+  // el split de cierre que clasifica a playoffs, que lo narra `serie.js`.
+  let splitsMedidos = 0;
+  let sinParada = 0;
+
+  for (let seed = 1; seed <= 150; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+
+    for (let i = 0; i < 80 && !state.terminado; i += 1) {
+      const antes = state.logs.length;
+      state = avanzarSplitAuto(state, rng).state;
+      const nuevos = state.logs.slice(antes);
+
+      const cerroTemporada = nuevos.some((l) => l.type === 'rendimiento' && l.message.includes(' terminó '));
+      if (!cerroTemporada) {
+        continue;
+      }
+      const clasificoAPlayoffs = nuevos.some((l) => l.type === 'serie' && l.message.includes('Clasificaste a playoffs'));
+      if (clasificoAPlayoffs) {
+        continue;
+      }
+
+      splitsMedidos += 1;
+      const tieneParada = nuevos.some(
+        (l) => l.type === 'temporada' && !l.tecnico && /(^Cerrás |^Terminás |^\d+º de )/.test(l.message)
+      );
+      if (!tieneParada) {
+        sinParada += 1;
+      }
+    }
+  }
+
+  if (splitsMedidos < 300) {
+    throw new Error(`sólo ${splitsMedidos} splits competitivos medidos: muestra insuficiente`);
+  }
+  if (sinParada > 0) {
+    throw new Error(`${sinParada} de ${splitsMedidos} splits competitivos cerraron sin una línea de qué significa la posición`);
+  }
+});
+
 check('Ninguna fecha marcada sale sin un stakes declarado', () => {
   // Test directo sobre la función pura: un escenario sin ningún motivo real
   // (sin clásico, sin puntero, sin racha, sin rival de generación) tiene que
