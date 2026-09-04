@@ -736,6 +736,27 @@ export const BALANCE = {
     // dados de cero cada vez.
     renovacionSigmaFactor: 0.35,
 
+    // --- Fase 9R0e: la demanda del mercado sale de tu NIVEL contra la liga,
+    // no de `roll(0, techo)` a secas. Antes un 85-media franquicia podía sacar
+    // roll(0,3)=0 tres pretemporadas y quedarse sin equipo ("clasificado a
+    // Worlds y me quedé libre"). Adelanto quirúrgico de 9M.3 (sin el sim NPC):
+    // sólo cambia CUÁNTAS ofertas llegan y de qué orgs, no cuánto pagan. ---
+    // Nivel de liga por defecto cuando `liga.prestigio` no existe (zonas tier 3).
+    nivelLigaPorDefecto: 60,
+    // Rango de la brecha nivel−prestigio que mapea a demanda [0,1]: ±25 puntos
+    // de nivel = demanda 1.0 / 0.0.
+    brechaNivelRango: 50,
+    // Piso de ofertas para un jugador de demanda máxima (claramente arriba de
+    // su liga): nunca se queda sin mercado.
+    ofertasPisoPorDemanda: 3,
+    // El techo de ofertas escala con la demanda por encima del techo etario:
+    // demanda 0 → 0,7× · demanda 1 → 1,4× (después lo capa `ofertasMax`).
+    techoDemandaBase: 0.7,
+    techoDemandaPeso: 0.7,
+    // Las ofertas laterales vienen de orgs a ~esta distancia de fuerza de tu
+    // nivel — así un 50-media no recibe "firmás con [el mejor de la liga]".
+    afinidadOfertaRango: 15,
+
     // --- salarioDeOferta: mult = exp(gauss(0,sigma)) * factorRol * jerarquía * hype ---
     salarioJerarquiaBase: 0.6,
     salarioJerarquiaPeso: 1.1,

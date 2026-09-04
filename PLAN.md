@@ -2114,8 +2114,26 @@ declaraban** → un `international_trip` o un momento dentro de un partido caía
 - **Check nuevo:** todo evento de categoría `competicion` o `rol_*` declara `ventana` con valores de
   `EJES.ventana`. `cobertura.js --huecos`: sin huecos nuevos.
 
-## 9R0d — que cada split remate en algo — (pendiente)
-## 9R0e — el mercado lee tu nivel — (pendiente)
+## 9R0e — el mercado lee tu nivel ✅
+
+**Archivos:** `systems/mercado.js` (`generarOfertasParaLiga`), `data/balance.js`, `dev/validate.js`.
+Adelanto quirúrgico de 9M.3 sin el sim NPC: sólo cambia **cuántas** ofertas llegan y **de qué
+orgs**, no cuánto pagan (`salarios.js` intacto).
+
+- `roll(0, techo)` con sesgo etario a secas → `demanda = clamp(0.5 + (nivelDelJugador − liga.prestigio)
+  / brechaNivelRango, 0, 1)`; `piso = round(demanda × ofertasPisoPorDemanda)`; `techo` escala con
+  la demanda por encima del techo etario. Un jugador claramente por encima de su liga tiene
+  **piso ≥ 2-3 ofertas siempre**.
+- Las ofertas laterales vienen de orgs a `afinidadOfertaRango` de tu nivel (peso `1/(1+|fuerza−nivel|/rango)`),
+  no siempre de las más fuertes → un 50-media no firma con el mejor equipo de la liga.
+- **Medido (300-400 carreras):** "Nadie te llama" a un jugador ≥10 sobre su liga: **21 → 0**;
+  el silencio de mercado que queda (22/300) es **todo de jugadores a nivel de su liga o por
+  debajo**. Firmas/renovaciones por carrera: mediana 5, p90 7 (sin flood). 63% de las firmas son
+  con org a ≤20 de tu nivel.
+- **Check nuevo:** 0 pretemporadas sin ofertas para un jugador ≥10 sobre su liga; ≥90% del
+  silencio le toca a un jugador a-nivel-o-por-debajo. (Verificado en rojo contra HEAD: 21 casos.)
+
+## 9R0d — que cada split remate en algo — (pendiente, versión liviana)
 
 ---
 

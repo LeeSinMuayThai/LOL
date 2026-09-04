@@ -7,7 +7,7 @@ import { ligaDeCarrera } from '../core/competicion.js';
 import { salarioDeOferta } from '../core/salarios.js';
 import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
 import { cerrarFila, registrarPico, registrarSalarioEnFila, arraigoInicial } from '../core/registro.js';
-import { bandaDeJerarquia, bandaDeArraigoFicha } from '../core/ficha.js';
+import { bandaDeJerarquia, bandaDeArraigoFicha, nivelDelJugador } from '../core/ficha.js';
 import { jerarquiaAlFichar } from './roster.js';
 import { BALANCE } from '../data/balance.js';
 
@@ -150,14 +150,28 @@ function generarOfertasParaLiga(state, liga, rng, { esAscenso }) {
     }
   }
 
-  // TRASPASO §4: el mercado prefiere jóvenes también en CUÁNTAS ofertas
-  // llegan, no solo en si llegan — el mismo `sesgoEtario` que multiplica
-  // `valorDeMercado` acota acá el techo de la tirada.
-  const techo = Math.max(1, Math.round(m.ofertasMax * sesgoEtario(state.age)));
-  const cantidadTotal = esAscenso ? roll(1, techo, rng) : roll(0, techo, rng);
+  // Fase 9R0e: cuánto te busca el mercado sale de tu NIVEL contra la liga, no
+  // de `roll(0, techo)` con sesgo etario a secas. Un jugador claramente por
+  // encima SIEMPRE tiene ofertas (piso por demanda); uno por debajo, casi
+  // ninguna. El `sesgoEtario` sigue acotando el techo (TRASPASO §4: el mercado
+  // prefiere jóvenes), pero ahora convive con la lectura de nivel.
+  const nivel = nivelDelJugador(state);
+  const brecha = nivel - (liga.prestigio ?? m.nivelLigaPorDefecto);
+  const demanda = clamp(0.5 + brecha / m.brechaNivelRango, 0, 1);
+  const piso = Math.round(demanda * m.ofertasPisoPorDemanda);
+  const techoEtario = Math.max(1, Math.round(m.ofertasMax * sesgoEtario(state.age)));
+  const techo = Math.max(piso + 1, Math.round(techoEtario * (m.techoDemandaBase + demanda * m.techoDemandaPeso)));
+  const cantidadTotal = esAscenso ? roll(Math.max(1, piso), techo, rng) : roll(piso, techo, rng);
   const cupoLaterales = Math.max(0, cantidadTotal - ofertas.length);
   const candidatos = liga.orgs.filter((org) => org.nombre !== state.career.currentOrg);
-  const elegidos = sampleWeighted(candidatos, (org) => org.fuerza, Math.min(cupoLaterales, candidatos.length), rng);
+  // Y las laterales vienen de orgs cerca de TU nivel, no siempre de las más
+  // fuertes: así un 50-media no firma con el mejor equipo de la liga.
+  const elegidos = sampleWeighted(
+    candidatos,
+    (org) => 1 / (1 + Math.abs(org.fuerza - nivel) / m.afinidadOfertaRango),
+    Math.min(cupoLaterales, candidatos.length),
+    rng
+  );
 
   for (const org of elegidos) {
     ofertas.push(construirOferta(state, liga, org, esAscenso ? 'salto' : null, rng));

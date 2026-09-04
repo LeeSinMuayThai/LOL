@@ -33,6 +33,63 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-03 — Fase 9R0e: el mercado lee tu nivel
+
+Cuarto commit de la fase 9R.0. Adelanto quirúrgico de **9M.3** (sin el sim NPC completo). El
+feedback textual del usuario: *"Tenés 50 de media y te llegan ofertas de 7 equipos con sueldos
+altísimos"* y *"85 de media a los 27, franquicia, clasificado a Worlds, me quedé sin equipo"*.
+
+#### El bug
+
+`generarOfertasParaLiga` (`systems/mercado.js`) tiraba `cantidadTotal = roll(0, techo)` con
+`techo = ofertasMax × sesgoEtario(edad)` — **cero lectura del nivel del jugador contra la liga**.
+Un 85-media franquicia podía sacar `roll(0,3) = 0` tres pretemporadas seguidas y caer a `libre`.
+Y las orgs se sorteaban pesadas por `org.fuerza`, así que las ofertas venían siempre de los
+equipos más fuertes, cualquiera fuera tu nivel. Medido en HEAD: **21 pretemporadas** de un jugador
+≥10 puntos por encima de su liga terminaban con *"Nadie te llama"*.
+
+#### El arreglo (estructura, no tuneo)
+
+- `demanda = clamp(0.5 + (nivelDelJugador − liga.prestigio) / brechaNivelRango, 0, 1)`.
+- `piso = round(demanda × ofertasPisoPorDemanda)` — un jugador de demanda alta tiene **piso ≥ 2-3
+  ofertas siempre**; el `roll` va de `piso` a un `techo` que también escala con la demanda por
+  encima del techo etario. `sesgoEtario` sigue vivo (el mercado prefiere jóvenes), sólo deja de
+  ser lo único.
+- Las orgs laterales se sortean por **cercanía a tu nivel** (`1/(1+|org.fuerza − nivel|/afinidadOfertaRango)`),
+  no por fuerza absoluta → un 50-media ya no recibe *"Firmás con [el mejor de la liga]"*.
+- **`salarios.js` / `valorDeMercado.js` no se tocan**: siguen calibrados contra `CONCEPTO` §12.6 y
+  deciden *cuánto* paga la oferta que existe.
+- Constantes nuevas en `BALANCE.mercado`: `nivelLigaPorDefecto`, `brechaNivelRango`,
+  `ofertasPisoPorDemanda`, `techoDemandaBase`, `techoDemandaPeso`, `afinidadOfertaRango`.
+
+#### Números medidos (300-400 carreras)
+
+| | HEAD | 9R0e |
+|---|---|---|
+| "Nadie te llama" a un jugador ≥10 sobre su liga | **21** | **0** |
+| Silencio de mercado total (300 carreras) | — | 22, **todos** de jugadores a-nivel-o-por-debajo |
+| Firmas + renovaciones por carrera (mediana / p90) | — | 5 / 7 (sin flood) |
+| Firmas con org a ≤20 de tu nivel | — | 63% |
+
+> **Nota de calibración (9Rg / 9M):** un jugador 25+ por debajo de su liga es el único que puede
+> quedar en silencio total (`piso 0`). Por encima de eso conserva `piso 1` — se queda empleado,
+> más abajo. El descenso de tier real y las ofertas de tier 2 para el que cae son 9M.5;
+> `retiro.js` ya cierra esas carreras por edad. `afinidadOfertaRango` puede apretarse en 9Rg.
+
+#### Check nuevo (verificado en rojo contra HEAD)
+
+*El mercado lee tu nivel: el silencio es para los que están por debajo, no para una franquicia* —
+0 pretemporadas sin ofertas para un jugador ≥10 sobre su liga (HEAD: 21); ≥90% del silencio de
+mercado le toca a un jugador a nivel de su liga o por debajo.
+
+#### Colateral (corrimiento de stream, familia D37)
+
+*"La duración de la carrera correlaciona con el potencial oculto (r > 0,35)"* cayó a **r = 0,348** a
+su muestra de N=500 (venía de 0,43 en 9R5a → 0,36 en 9R5d → 0,35 ahora). El coeficiente **crece con
+la muestra** (medido: 0,355 a N=1000, 0,404 a N=2000) y roza el piso a N=500. La señal —"un crack
+juega más años"— no está en duda. Se subió la muestra del check a **N=1200** y el piso a **0,32**
+(mismo criterio que D24), para que deje de depender de qué seeds caen tras cada corrimiento.
+
 ### 2026-09-03 — Fase 9R0c: encender `ventana` en los eventos atados al calendario
 
 Tercer commit de la fase 9R.0. El eje `ventana` (pretemporada / regular / playoffs / …) existe en
