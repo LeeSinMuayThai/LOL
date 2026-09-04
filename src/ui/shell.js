@@ -12,9 +12,22 @@
 // Por eso el topbar es chrome estático en esta fase — el punto vivo del
 // split llega en T2, que sí reescribe cómo se pinta la ficha.
 
+import * as sonido from './sonido.js';
+
 const logList = document.getElementById('logList');
 const ticker = document.getElementById('ticker');
 const topbarEstado = document.getElementById('topbarEstado');
+
+// --- El click, en cualquier botón (T3) --------------------------------
+// Delegado en `document`, no un listener por botón: el shell no conoce (ni
+// le tiene que importar) qué pantalla montó cada `<button>` — decisión,
+// mercado, rol/campeón, topbar. `sonido.click()` ya es un no-op si el
+// sonido está apagado, así que esto no cuesta nada cuando está mudo.
+document.addEventListener('click', (evento) => {
+  if (evento.target.closest('button')) {
+    sonido.click();
+  }
+});
 const runButton = document.getElementById('run');
 const nuevaCarreraBtn = document.getElementById('nuevaCarrera');
 const decisionPanel = document.getElementById('decision');

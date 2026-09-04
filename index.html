@@ -31,8 +31,11 @@
         </div>
         <div class="topbar-estado" id="topbarEstado"></div>
         <div class="topbar-controles">
-          <button type="button" class="topbar-toggle" disabled title="El motion llega en la fase T3">⚙</button>
-          <button type="button" class="topbar-toggle" disabled title="El audio llega en la fase T3">🔊</button>
+          <!-- T3: velocidad del reproductor (x1/x2/instantáneo, cíclico) y
+               sonido (apagado por defecto). Vivos recién cuando cargarModulos()
+               resuelve — ver comenzarSetup()/iniciarSetup() más abajo. -->
+          <button type="button" id="toggleVelocidad" class="topbar-toggle" disabled title="Velocidad del reproductor">x1</button>
+          <button type="button" id="toggleSonido" class="topbar-toggle" disabled title="Sonido">🔇</button>
         </div>
       </header>
 
@@ -143,6 +146,8 @@
       const mercadoRepresentante = document.getElementById('mercadoRepresentante');
       const tarjetaPanel = document.getElementById('tarjeta');
       const seedInput = document.getElementById('seedInput');
+      const toggleVelocidad = document.getElementById('toggleVelocidad');
+      const toggleSonido = document.getElementById('toggleSonido');
 
       // El contrato de elementos que `src/ui/render.js` necesita para pintar
       // la pantalla de carrera y la de decisión (fase 8, §8.5; fase 9c suma
@@ -153,7 +158,14 @@
 
       let modulos = null;
       let ui = null;
+      let reproductor = null;
+      let sonido = null;
       let pantallaInicio = null;
+      // Fase T3: bloquea que avanzar()/responder() se disparen dos veces en
+      // paralelo mientras el reproductor está a mitad de una tanda de beats
+      // (dos clicks rápidos, una tecla repetida). `correrSplits()` es el
+      // núcleo sin guardia — lo llaman los dos wrappers de afuera.
+      let reproduciendo = false;
       let estado = null;
       let rng = null;
       // Regla invariable 1: los minijuegos tampoco pueden usar el azar del
@@ -169,7 +181,8 @@
         if (!modulos) {
           const [
             { mulberry32 }, { createInitialState }, pipeline, { BALANCE },
-            rolesModulo, ranked, { describirContexto }, formato, campeonesModulo, render
+            rolesModulo, ranked, { describirContexto }, formato, campeonesModulo, render,
+            reproductorModulo, sonidoModulo
           ] = await Promise.all([
             import('./src/core/rng.js'),
             import('./src/core/state.js'),
@@ -180,7 +193,9 @@
             import('./src/core/contexto.js'),
             import('./src/core/formato.js'),
             import('./src/data/champions.json', { with: { type: 'json' } }),
-            import('./src/ui/render.js')
+            import('./src/ui/render.js'),
+            import('./src/ui/reproductor.js'),
+            import('./src/ui/sonido.js')
           ]);
           modulos = {
             mulberry32, createInitialState, pipeline, BALANCE, formato,
@@ -190,6 +205,8 @@
             CAMPEONES: campeonesModulo.default
           };
           ui = render;
+          reproductor = reproductorModulo;
+          sonido = sonidoModulo;
         }
         return modulos;
       }
@@ -488,8 +505,17 @@
         }
       }
 
-      function pintar() {
-        ui.renderCarrera(carreraElements, estado, modulos);
+      // Fase T3: antes, `pintar()` volcaba `state.logs` entero de un saque
+      // (`renderCarrera` → `renderFeed` → `replaceChildren`). Ahora la ficha
+      // sigue siendo instantánea (es un HUD, no un beat) pero el feed se
+      // revela de a una línea por `reproductor.reproducirBeats` — mismo
+      // `estado`, mismo motor, solo cambia CUÁNDO entra cada línea al DOM.
+      async function revelarYVerDecision(logsAntes, registroAntes) {
+        ui.renderFicha(fichaContainer, estado, modulos);
+        const bisagra = estado.pendiente?.decision?.datos?.evento?.bisagra ?? false;
+        await reproductor.reproducirBeats(logList, estado.logs.slice(logsAntes), {
+          registroAntes, registroDespues: estado.career.registro, bisagra
+        });
 
         if (estado.pendiente) {
           mostrarDecision(estado.pendiente.decision);
@@ -498,13 +524,18 @@
         return false;
       }
 
-      function avanzar() {
+      // El núcleo sin guardia: lo llaman `avanzar()` y, al final de su
+      // propia tanda, `responder()` — directo, no a través de `avanzar()`,
+      // para no chocar con la guardia de `reproduciendo` (ver la constante).
+      async function correrSplits() {
         const { pipeline, BALANCE } = modulos;
 
         for (let pasos = 0; pasos < BALANCE.partida.maxSplitsDeSeguridad; pasos += 1) {
+          const logsAntes = estado.logs.length;
+          const registroAntes = estado.career.registro;
           estado = pipeline.avanzarSplit(estado, rng).state;
 
-          if (pintar()) {
+          if (await revelarYVerDecision(logsAntes, registroAntes)) {
             return;
           }
           if (estado.terminado) {
@@ -517,24 +548,42 @@
         nuevaCarreraBtn.hidden = false;
       }
 
-      function responder(respuesta) {
-        const { pipeline } = modulos;
-        decisionPanel.hidden = true;
-        minijuegoPanel.hidden = true;
-        mercadoPanel.hidden = true;
-
-        estado = pipeline.resolverDecision(estado, respuesta, rng).state;
-
-        if (pintar()) {
-          return;
+      async function avanzar() {
+        if (reproduciendo) return;
+        reproduciendo = true;
+        try {
+          await correrSplits();
+        } finally {
+          reproduciendo = false;
         }
-        if (estado.terminado) {
-          renderResumenFinal(estado);
-          nuevaCarreraBtn.hidden = false;
-          return;
-        }
+      }
 
-        avanzar();
+      async function responder(respuesta) {
+        if (reproduciendo) return;
+        reproduciendo = true;
+        try {
+          const { pipeline } = modulos;
+          decisionPanel.hidden = true;
+          minijuegoPanel.hidden = true;
+          mercadoPanel.hidden = true;
+
+          const logsAntes = estado.logs.length;
+          const registroAntes = estado.career.registro;
+          estado = pipeline.resolverDecision(estado, respuesta, rng).state;
+
+          if (await revelarYVerDecision(logsAntes, registroAntes)) {
+            return;
+          }
+          if (estado.terminado) {
+            renderResumenFinal(estado);
+            nuevaCarreraBtn.hidden = false;
+            return;
+          }
+
+          await correrSplits();
+        } finally {
+          reproduciendo = false;
+        }
       }
 
       function leerSeed() {
@@ -575,7 +624,11 @@
           setupPanel.hidden = true;
           carreraPanel.hidden = false;
 
-          avanzar();
+          // `avanzar()` es async desde la fase T3 (el reproductor pausa
+          // entre beats): si no se espera acá, un error en el primer split
+          // se pierde como rechazo de promesa sin manejar en vez de caer en
+          // este catch.
+          await avanzar();
         } catch (error) {
           const esArchivoLocal = location.protocol === 'file:';
           summary.textContent = esArchivoLocal
@@ -599,6 +652,16 @@
         pantallaInicio.reset();
       }
 
+      // Fase T3: refleja el estado de `reproductor`/`sonido` en los dos
+      // toggles del topbar. Se llama al cargar los módulos y en cada click.
+      function actualizarTogglesTopbar() {
+        toggleVelocidad.textContent = reproductor.labelVelocidad();
+        toggleVelocidad.title = `Velocidad del reproductor: ${reproductor.labelVelocidad()} (click para cambiar)`;
+        const on = sonido.estaHabilitado();
+        toggleSonido.textContent = on ? '🔊' : '🔇';
+        toggleSonido.title = on ? 'Sonido activado (click para apagar)' : 'Sonido apagado (click para activar)';
+      }
+
       async function iniciarSetup() {
         try {
           await cargarModulos();
@@ -607,6 +670,10 @@
             modulos
           );
           pantallaInicio.render();
+
+          toggleVelocidad.disabled = false;
+          toggleSonido.disabled = false;
+          actualizarTogglesTopbar();
         } catch (error) {
           const esArchivoLocal = location.protocol === 'file:';
           rolGrid.textContent = esArchivoLocal
@@ -618,6 +685,18 @@
 
       runButton.addEventListener('click', comenzarCarrera);
       nuevaCarreraBtn.addEventListener('click', volverAlInicio);
+      toggleVelocidad.addEventListener('click', () => {
+        reproductor.ciclarVelocidad();
+        actualizarTogglesTopbar();
+      });
+      // El click audible de este mismo botón lo dispara la delegación
+      // global de `shell.js` (dispara DESPUÉS de este handler: la fase de
+      // burbujeo llega al `document` una vez que el listener del propio
+      // botón ya corrió, así que `sonido.alternar()` ya habilitó todo).
+      toggleSonido.addEventListener('click', () => {
+        sonido.alternar();
+        actualizarTogglesTopbar();
+      });
       iniciarSetup();
     </script>
   </body>

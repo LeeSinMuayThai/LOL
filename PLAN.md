@@ -2514,20 +2514,44 @@ final**: el jugador ve un salto con ocho líneas de log ya escritas. En un juego
 *"cada split trae 1 o 2 decisiones, nunca más"* (`CONCEPTO` §2), eso tira a la basura el ritmo que
 el motor construye.
 
-`src/ui/reproductor.js` toma los `logs` que devuelve **un** `avanzarSplit` y los revela como beats:
+`src/ui/reproductor.js` toma los `logs` que devuelve **un** `avanzarSplit` y los revela como beats,
+uno por uno, en vez de que `renderFeed` los reemplace todos juntos de un `replaceChildren`.
 
-- Cada log entra con `--dur` y `--ease`, con icono y color por `type`.
-- Los `tecnico:true` se agrupan en una tira compacta en vez de competir con lo narrativo.
-- Un log de `type:'temporada'` no es una línea: es la tarjeta de resultado de T6.
-- **Saltear siempre disponible**: click, `Espacio`, o el botón `▸ SEGUIR`.
-- Velocidad `x1 / x2 / instantáneo`, persistida. `instantáneo` reproduce el comportamiento de hoy.
+**A diferencia de T1, esta fase SÍ toca el controlador** (`avanzar()`/`responder()` pasan a async,
+con una guardia `reproduciendo` para que dos invocaciones no se solapen si el jugador dispara dos
+veces mientras el reproductor todavía está revelando la tanda anterior) — es la pieza responsable
+de CUÁNDO se pisa el split siguiente, así que es exactamente lo que hay que cambiar. El motor no
+se toca: `pipeline.avanzarSplit`/`resolverDecision` se llaman igual que siempre, mismo `rng`, mismo
+resultado — solo cambia cuándo el DOM se entera.
 
-**Impacto de motor: cero.** Solo cambia *cuándo pinta el DOM*, nunca qué calcula el motor. El tope
-`maxSplitsDeSeguridad` se mantiene intacto (trampa T9).
+**Revisado contra lo implementado (2026-09-04) — tres recortes de alcance, a propósito:**
 
-`src/ui/sonido.js` — sintetizador WebAudio de ~80 líneas, **sin un solo archivo de audio**: click,
-tick de beat, stinger de victoria/derrota, swell de bisagra, arpegio de título. **Apagado por
-defecto**, toggle en la topbar, `AudioContext` creado recién en el primer gesto del usuario.
+1. *"Cada log entra con icono y color por `type`"* y **D41** (`log.type` sin usar en la UI) siguen
+   **sin resolver**. El reproductor solo lee `entry.tecnico` (ya existía) para decidir si suena el
+   tick — no diferencia los 16 `type` emisores visualmente. D41 sigue abierta.
+2. *"Los `tecnico:true` se agrupan en una tira compacta"* — no entró. Se revelan igual que el resto,
+   dimmed (`.log-item--tecnico`, ya existía desde antes de T3).
+3. *"Saltear con click / Espacio / botón ▸ SEGUIR"* — no hay un skip por beat. El control de
+   ritmo quedó a nivel de **velocidad**, no de beat individual: pasar a `instantáneo` (el toggle
+   del topbar) es el skip — reproduce el comportamiento de antes de T3 sin pausas. Un skip fino
+   por beat queda para si hace falta más adelante, no se inventó una interacción que nadie pidió.
+
+Lo que **sí** entró tal cual el plan: `type:'temporada'` sigue siendo una línea de texto (la
+tarjeta de resultado real es de **T6**, como corresponde — la frase original del plan la
+mencionaba acá, corregido). Velocidad `x1/x2/instantáneo` cíclica desde el topbar, persistida en
+`localStorage`. `instantáneo` **y** `prefers-reduced-motion: reduce` saltan la espera entre beats.
+
+**Impacto de motor: cero**, verificado (no solo asumido): sandbox aislado con el motor tal cual
+commiteado + solo los archivos de `src/ui/`, `validate.js` 117/117, determinismo intacto. El tope
+`maxSplitsDeSeguridad` se mantiene intacto.
+
+`src/ui/sonido.js` — sintetizador WebAudio (~105 líneas), **sin un solo archivo de audio**: click
+(delegado en `document` desde `shell.js`, cualquier `<button>`), tick de beat, stinger de
+victoria/derrota (leído de los contadores de `career.registro`, no de texto del log — no hay un
+campo booleano en ningún log), swell de bisagra (`decision.datos.evento.bisagra`, ya existe desde
+antes de T4 — el sonido no necesitaba esperar la parte visual), y arpegio de título (exportado,
+sin disparador todavía: espera la tarjeta de legado de **T7**). **Apagado por defecto**, toggle en
+la topbar, `AudioContext` creado recién en el primer click real sobre ese mismo toggle.
 
 ## T4 — La decisión con jerarquía
 

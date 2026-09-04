@@ -33,6 +33,69 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-04 — Fase T3: el escenario y el reproductor
+
+El cambio de sensación más grande de la fase T hasta acá. Antes, `avanzar()` corría splits en un
+`for` hasta que algo interrumpía y pintaba todo junto al final — un salto con ocho líneas de log
+ya escritas, en un juego cuyo compás propio (`CONCEPTO` §2) es "cada split trae 1 o 2 decisiones,
+nunca más". Ahora cada línea entra al feed una por vez, con pausa entre beats.
+
+#### A diferencia de T1, esta fase sí toca el controlador
+
+`avanzar()`/`responder()` (el `<script>` de `index.html`) pasan a `async`. Es la pieza dueña de
+CUÁNDO se pisa el split siguiente — exactamente lo que cambia. Se agregó `correrSplits()` como
+núcleo sin guardia (lo llaman los dos wrappers), y una guardia `reproduciendo` a nivel módulo para
+que dos invocaciones no se solapen si el jugador dispara dos veces mientras el reproductor todavía
+está revelando la tanda anterior. El motor no se toca: `pipeline.avanzarSplit`/`resolverDecision`
+se llaman exactamente igual, mismo `rng`.
+
+#### Qué entra
+
+- **`src/ui/reproductor.js`** (nuevo): `reproducirBeats(logList, nuevasEntradas, opts)` inserta
+  cada entrada nueva una por vez (`insertBefore` al frente — mismo orden "más reciente primero"
+  que `renderFeed`), recorta al límite de 8 al terminar. Espera `--dur-beat` (700ms, el token que
+  T0 ya había dejado escrito "para el pulso del reproductor de T3") en `x1`, la mitad en `x2`, nada
+  en `instantáneo` — y tampoco espera con `prefers-reduced-motion: reduce`, sin depender de que el
+  jugador toque el toggle.
+- **`feed.js`**: `crearLogItem(entry)` extraído del `.map()` de `renderFeed` — el reproductor
+  necesita crear el mismo nodo de a uno, no todos juntos.
+- **`src/ui/sonido.js`** (nuevo, ~105 líneas): sintetizador WebAudio sin un solo archivo de audio
+  — osciladores + envolvente de ganancia. `click` (delegado en `document` desde `shell.js`, en
+  cualquier `<button>`), `tick` (un beat), `victoria`/`derrota` (leídos de los contadores de
+  `career.registro` antes/después del split — no hay campo booleano en el log, el resultado vive
+  en la prosa), `swellBisagra` (`decision.datos.evento.bisagra`, ya existía antes de T4),
+  `arpegioTitulo` (exportado, sin disparador — espera la tarjeta de T7). Apagado por defecto,
+  preferencia en `localStorage`, `AudioContext` creado en el primer click real sobre el toggle.
+- **Topbar**: los dos toggles inertes de T1 cobran vida — velocidad (`1× → 2× → ⚡`, cíclico) y
+  sonido (`🔇 ⇄ 🔊`), ambos persistidos.
+
+**Tres recortes de alcance, escritos en `PLAN.md` antes de cerrar la fase** (no en el momento):
+sin icono/color por `log.type` (D41 sigue abierta), los `tecnico:true` no se agrupan en tira
+compacta, y no hay skip por beat individual — el control de ritmo quedó a nivel de velocidad
+(`instantáneo` es el skip). `type:'temporada'` como tarjeta de resultado es de T6, no de acá; la
+frase original del plan lo mencionaba en T3 por error, corregido.
+
+#### Verificación
+
+Recorrida CDP a 1440/1180/900/640/390: sin errores, sin desborde. **Los toggles, clickeados de
+verdad**: velocidad `1× → 2× → ⚡`, sonido `🔇 → 🔊`, confirmado por `textContent` antes/después de
+cada click. **Teclado con el flujo async nuevo**: Espacio arranca, "1" elige, mismo log resultante
+que en T1 para la misma seed — determinismo intacto. **Una carrera completa jugada por CDP** con
+mercado y minijuegos, en velocidad `instantáneo`: firma contrato, cero errores de consola — la
+primera corrida a velocidad `x1` por default pareció trabada, pero era la propia pausa de 700ms/
+beat venciendo el `dormir(350)` del script de test, no un bug del juego (diagnosticado cambiando
+el script a velocidad instantánea antes de jugar, que resolvió el falso síntoma al toque).
+
+**Trabajo concurrente**: otra sesión tenía sin commitear `salarios.js`, `state.js`,
+`valorMercado.js`, `balance.js`, `roles.js`, `validate.js`, `amateur.js`, `mercado.js` (D33: la
+redirección de los 13 comentarios `TRASPASO.md §4` → `CONCEPTO.md §12`) y una edición chica de
+`PLAN.md` (cerrando D33 en la tabla de deuda) cuando terminé T3. Ningún archivo de motor es mío en
+este commit — verificado igual que en T2, con un sandbox aislado (`git archive HEAD` + solo mis
+archivos de `src/ui/` e `index.html`): **117/117 OK**, determinismo intacto, `simulate.js 1000` sin
+crashear, build con `dist/` bajo el techo. El diff de `PLAN.md` que entra en este commit incluye
+la línea de cierre de D33 de la otra sesión — se dejó así a propósito (separar un archivo de texto
+en dos commits por un cierre de dos líneas no vale la fricción) y queda declarado acá.
+
 ### 2026-09-04 — D33: los 13 comentarios que citaban TRASPASO.md se redirigen
 
 Workstream DOCS (paralelo, no bloquea — `PLAN.md`). `TRASPASO.md` se borró el 2026-09-02; la
