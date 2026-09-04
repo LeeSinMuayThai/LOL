@@ -2360,7 +2360,7 @@ sumar otras cuatro tandas de CSS suelto que después hay que unificar igual.
 | **T1** | el shell de transmisión | Grid de dos zonas (riel izq + escenario; el riel der llega vacío hasta T5 — "un panel vacío es peor que un panel ausente") desktop-first + breakpoints + teclado. El shell se escribe en `index.html` como HTML declarativo con los mismos `id` de siempre — no un DOM armado desde `shell.js` — para que el controlador existente no se toque y una corrida desatendida no pueda dejar la página en blanco por un error de montaje |
 | **T2** | la ficha es el HUD | El riel izquierdo permanente, con contrato, valor de mercado y marcas que hoy no se ven |
 | **T3** | el escenario y el reproductor | El split se resuelve en beats, no de un salto. Audio sintetizado, apagado por defecto |
-| **T4** | la decisión con jerarquía | Banner por categoría y peso bisagra/normal/ambiente — la mitad visual de la fase 12, sin motor |
+| **T4** | la decisión con jerarquía | Banner por categoría (18 valores reales medidos, agrupados a 11 familias) y peso bisagra/cierre/normal (dos campos reales, no el "ambiente" inventado que decía una versión vieja de este plan) — sin motor |
 | **T5** | el riel de contexto | Tabla, calendario, plantilla, meta y generación. Cinco paneles, cero motor |
 | **T6** | el partido y la serie | Tarjeta de resultado, barra de bracket, el camino mapa a mapa, los 5 minijuegos migrados |
 | **T7** | la tarjeta final y el PNG | Legado rediseñado + export a canvas 1200×630 + copiar link |
@@ -2556,17 +2556,44 @@ la topbar, `AudioContext` creado recién en el primer click real sobre ese mismo
 ## T4 — La decisión con jerarquía
 
 Adelanta **la mitad visual de la fase 12**, porque los cables ya están tendidos y no cuesta una
-línea de motor:
+línea de motor.
 
-- **Banner por categoría** (12.1). Los eventos ya declaran `category` (21 valores como
-  `partido_presion`, `drama_prensa`, `salud_vida`). La UI mapea esos 21 a las 11 familias de banner
-  de la tabla de §12.1, con los colores ya tokenizados en T0.
-- **Peso visual** (12.2). `decisionDesdeEvento` manda `datos: { evento }`, así que la UI **ya
-  tiene** el `bisagra: true`. `bisagra` → toma el escenario entero, con velo, marca de agua y
-  entrada animada. Normal → tarjeta estándar. Ambiente → tarjeta compacta sin banner.
-- **"El dado trajo tres caminos"** (12.4, regla 16): todo menú sorteado se encabeza diciéndolo. El
-  mercado ya lo hace; se generaliza.
-- Opciones como tarjetas con label, descripción y el atajo de teclado visible.
+**Re-medido antes de implementar (2026-09-04), dos correcciones sobre la versión anterior de este
+bloque:**
+
+1. Los eventos declaran `category` en **18 valores reales** (medido con grep sobre
+   `src/data/events/**/*.json`, no los "21 valores" que decía la versión vieja — esa cifra
+   confundía **21 archivos** con valores distintos; hay repetidos, ej. `estatus.json` y
+   `marcas_vivas.json` comparten `identidad`). Se agrupan a 11 familias sobre los tokens `--cat-*`
+   de T0 en `src/ui/formatoUi.js` — tabla completa ahí, con la fuente de cada mapeo.
+2. El tercer peso **"ambiente" no corresponde a ningún campo real** — no existe en el modelo de
+   datos. Los dos pesos reales son `evento.bisagra` (booleano, ya usado en `pool.json`) y
+   `franja === 'cierre'` (lo pone `systems/edadCierre.js`, distinto de `'normal'`). `pesoDeDecision`
+   en `formatoUi.js` deriva de esos dos, nada más.
+
+- **Banner por categoría** (12.1): `familiaDeCategoria(category)` en `formatoUi.js`. Solo aplica a
+  decisiones que vienen de `decisionDesdeEvento` (`systems/events.js`) — es la única función que
+  arma `datos: { evento }`. Las de `systems/temporada.js` (fecha marcada) y `systems/amateur.js`
+  (la rutina semanal) no traen el evento completo en `datos`, así que caen al banner genérico
+  "Decisión" — **no es un bug, es el límite real de "T4 no toca motor"**: sumarles el evento
+  completo a esos `datos` es tocar `systems/`, y no correspondía a esta fase.
+- **Peso visual** (12.2): `bisagra` engorda el borde, agrega glow del color de categoría y una
+  marca de agua enorme (`content: attr(data-tab-label)`) al 6% de opacidad — no un velo de pantalla
+  completa (eso pide un overlay aparte); `cierre` reusa el oro de "hito" que ya significa lo mismo
+  en toda la ficha desde T0b, con el rótulo "Fin de año" en vez de la categoría.
+- Opciones como tarjetas con label, descripción y el atajo de teclado **visible** (`.option-atajo`,
+  un cuadradito con el número 1-4 — `shell.js` los escucha desde T1, pero hasta esta fase el atajo
+  era invisible).
+- **"El dado trajo tres caminos"** (12.4, regla 16) — **no entró.** Es una convención de
+  *redacción* de la `descripcion` de cada decisión (`mercado.js` la escribe a mano), no algo que
+  la UI pueda generar sola sin inventar texto. Generalizarla es reescribir la `descripcion` de
+  decenas de eventos JSON — trabajo de contenido, no de esta fase. Queda para cuando se audite el
+  copy en conjunto.
+
+**Verificado jugando de verdad, no solo leyendo el código**: una carrera completa por CDP mostró
+los 8 colores de categoría resolviendo bien contra `getComputedStyle` (incluida la propiedad
+`--tab-color` anidada, `var(--tab-color, var(--live))` con el color real fijado por JS), un peso
+`bisagra` real (`pool.json`, "Se te enfrió Ornn") y ocho `cierre` ("Fin de año", dorado).
 
 **Lo que sigue siendo de la fase 12** (necesita motor de verdad, no se toca acá): `previa`, `riesgo`
 derivado de la dispersión medida de outcomes, `gate`, `rareza`, y el campo `categoria` **declarado**

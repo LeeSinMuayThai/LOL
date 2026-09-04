@@ -163,9 +163,9 @@ details.avanzado summary:hover { color: var(--ink-dim); }
 
 /* ==========================================================================
    2. LA DECISIÓN
-   El banner por categoría y el peso `bisagra` llegan en T4; acá se prepara
-   la forma: barra de acento a la izquierda, título en condensada, opciones
-   como tarjetas.
+   Barra de acento a la izquierda, título en condensada, opciones como
+   tarjetas. El banner por categoría y el peso bisagra/cierre/normal son de
+   T4 — ver `formatoUi.js` para de dónde sale cada uno.
    ========================================================================== */
 
 .decision {
@@ -175,15 +175,58 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   padding-left: calc(var(--s-5) - 3px);
   background: var(--bg-surface);
   border: 1px solid var(--line);
-  border-left: 3px solid var(--live);
+  border-left: 3px solid var(--tab-color, var(--live));
   animation: entrar-decision var(--dur-slow) var(--ease) both;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
 
+/* --- Peso visual (T4) -------------------------------------------------
+   `bisagra`: el escenario entero se nota — borde más grueso en el color de
+   la categoría, con glow, y una marca de agua enorme del label detrás del
+   texto (no un velo de pantalla completa: eso exige un overlay aparte, y
+   esto ya cambia la lectura sin sumar una capa nueva). `cierre`: un
+   milestone, no una alarma — reusa el oro que ya significa "hito" en toda
+   la ficha desde T0b, no el color de la categoría. */
+.decision[data-peso="bisagra"] {
+  padding: var(--s-6);
+  border-left-width: 6px;
+  border-color: var(--tab-color, var(--live));
+  box-shadow: 0 0 50px -14px var(--tab-color, var(--live-glow)), var(--sombra-3);
+  animation: entrar-decision-bisagra var(--dur-slow) var(--ease) both;
+  overflow: hidden;
+}
+.decision[data-peso="bisagra"]::after {
+  content: attr(data-tab-label);
+  position: absolute;
+  right: var(--s-4);
+  bottom: -0.15em;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 96px;
+  line-height: 1;
+  letter-spacing: var(--track-cartel);
+  text-transform: uppercase;
+  color: var(--tab-color, var(--live));
+  opacity: 0.06;
+  pointer-events: none;
+  white-space: nowrap;
+}
+@keyframes entrar-decision-bisagra {
+  from { opacity: 0; transform: scale(0.98) translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.decision[data-peso="cierre"] {
+  border-left-color: var(--gold);
+  box-shadow: inset 0 0 0 1px var(--gold-glow);
+}
+.decision[data-peso="cierre"]::before { background: var(--gold); }
+
 /* La pestaña de lower-third (T0b): dice qué es el panel antes de que el
-   jugador lea una sola palabra del contenido. El mismo patrón se repite en
-   `.mercado`/`.minijuego` con su propio texto y color de categoría — T4
-   más adelante reemplaza el `content` fijo por el banner real de las 11
-   categorías, sin tocar la forma. */
+   jugador lea una sola palabra del contenido. `.decision` la arma en JS
+   (`decision.js`, T4) con `data-tab-label`/`--tab-color`; `.mercado`/
+   `.minijuego` se quedan con el texto fijo — no vienen de un evento
+   categorizado. */
 .decision::before,
 .mercado::before,
 .minijuego::before {
@@ -199,7 +242,7 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   color: var(--bg-void);
   clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 100%, 0 100%);
 }
-.decision::before  { content: "Decisión";  background: var(--live); }
+.decision::before  { content: attr(data-tab-label); background: var(--tab-color, var(--live)); }
 .mercado::before   { content: "Mercado";   background: var(--cat-mercado); }
 .minijuego::before { content: "Minijuego"; background: var(--warn); }
 
@@ -227,8 +270,10 @@ details.avanzado summary:hover { color: var(--ink-dim); }
 .decision-options { display: flex; flex-wrap: wrap; gap: var(--s-3); }
 
 .option-btn {
+  position: relative;
   flex: 1 1 240px;
   padding: var(--s-4);
+  padding-right: var(--s-7);
   text-align: left;
   background: var(--bg-raised);
   border: 1px solid var(--line);
@@ -248,6 +293,26 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   background: var(--bg-raised);
   box-shadow: 0 0 30px -16px var(--live-glow);
 }
+
+/* El atajo de teclado (T4): shell.js escucha 1-4 desde T1, pero hasta acá
+   nada en pantalla lo decía — era un atajo invisible. */
+.option-atajo {
+  position: absolute;
+  top: var(--s-3);
+  right: var(--s-3);
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sharp);
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 700;
+  color: var(--ink-mute);
+  transition: border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.option-btn:hover .option-atajo { border-color: var(--live); color: var(--live); }
 
 .option-title {
   margin-bottom: var(--s-1);

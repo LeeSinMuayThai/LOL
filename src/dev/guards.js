@@ -104,7 +104,14 @@ export function verificarSinColorLiteral(estilosDir) {
   return hallazgos;
 }
 
-// Todo var(--x) que se usa tiene que estar definido en tokens.css.
+// Todo var(--x) SIN fallback que se usa tiene que estar definido en
+// tokens.css. `var(--x, algo)` CON fallback queda afuera a propósito (T4):
+// `--tab-color` es una custom property que `decision.js` fija por JS
+// (`element.style.setProperty(...)`) para el color de categoría del
+// evento — nunca vive en tokens.css, y el fallback (`var(--live)`) es
+// justamente lo que la vuelve segura si algún día no se fija. Un var()
+// SIN fallback que apunte a un nombre inexistente, en cambio, se rompe en
+// silencio — eso es lo que este check sigue cazando.
 export function verificarTokensDefinidos(estilosDir) {
   const archivos = listarArchivosCss(estilosDir);
   const archivoTokens = archivos.find((archivo) => path.basename(archivo) === 'tokens.css');
@@ -120,8 +127,12 @@ export function verificarTokensDefinidos(estilosDir) {
   const usados = new Set();
   for (const archivo of archivos) {
     const texto = fs.readFileSync(archivo, 'utf8');
-    for (const [, nombre] of texto.matchAll(/var\(\s*(--[a-z0-9_-]+)/gi)) {
-      usados.add(nombre);
+    // El grupo 2 es el separador que sigue al nombre: `,` = tiene fallback,
+    // `)` = no tiene. Solo se exige definición para el segundo caso.
+    for (const [, nombre, separador] of texto.matchAll(/var\(\s*(--[a-z0-9_-]+)\s*([,)])/gi)) {
+      if (separador === ')') {
+        usados.add(nombre);
+      }
     }
   }
   return [...usados].filter((nombre) => !definidos.has(nombre));

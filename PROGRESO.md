@@ -33,6 +33,60 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-04 — Fase T4: la decisión con jerarquía
+
+Adelanta la mitad visual de la fase 12 — banner por categoría y peso bisagra/cierre/normal —
+porque los cables ya estaban tendidos y no costó una línea de motor. Dos cosas que la versión
+vieja de este bloque en `PLAN.md` decía mal, corregidas *antes* de escribir código (no después):
+
+#### Lo que medí antes de tocar nada
+
+1. **"21 valores de `category`" era falso.** Grep real sobre `src/data/events/**/*.json`: son
+   **21 archivos**, pero solo **18 valores distintos** de `category` (`estatus.json` y
+   `marcas_vivas.json` comparten `identidad`; `competicion.json` y `escena_2026.json` comparten
+   `competicion`). La cifra vieja confundía archivos con valores.
+2. **El peso "ambiente" no correspondía a ningún campo real.** No hay un tercer nivel en el modelo
+   de datos. Los dos pesos reales: `evento.bisagra` (booleano) y `franja === 'cierre'` (lo pone
+   `systems/edadCierre.js`). Se corrigió a dos pesos, no tres.
+
+#### Qué entra
+
+- **`src/ui/formatoUi.js`** (nuevo): `familiaDeCategoria(category)` mapea los 18 valores a 11
+  familias sobre los tokens `--cat-*` de T0 (rol_\* → "Tu línea"/rutina, partido_\* → "Partido",
+  `pool` → "Pool"/parche, `drama_prensa` → "Prensa", `negocios` → "Negocios"/mercado, etc. — tabla
+  completa en el archivo). `pesoDeDecision(decision)` deriva bisagra/cierre/normal.
+- **`decision.js`**: fija `data-tab-label` + una custom property `--tab-color` (con
+  `element.style.setProperty`) que la pestaña de T0b ya sabía leer con un cambio mínimo de CSS
+  (`content: attr(data-tab-label)` en vez de texto fijo). Solo aplica a decisiones de
+  `systems/events.js` (la única fuente que arma `datos: { evento }`) — las de `temporada.js`
+  (fecha marcada) y `amateur.js` (rutina semanal) caen al banner genérico "Decisión", documentado
+  como el límite real de no tocar motor.
+- **`pantallas.css`**: `[data-peso="bisagra"]` — borde más grueso en el color de la categoría, glow,
+  y una marca de agua del label al 6% de opacidad detrás del texto. `[data-peso="cierre"]` — reusa
+  el oro de "hito" de la ficha, rótulo "Fin de año". Cada `.option-btn` gana un atajo visible
+  (`.option-atajo`, un cuadrado con 1-4) — `shell.js` los escucha desde T1, pero hasta esta fase
+  el atajo era invisible en pantalla.
+- **No entró**: "el dado trajo tres caminos" (regla 16) generalizada — es redacción de la
+  `descripcion` de cada evento, no algo que la UI arme sola. Es trabajo de contenido (JSON), no de
+  esta fase; queda para una auditoría de copy en conjunto.
+
+#### El candado, ajustado
+
+`guards.js`'s "todo `var(--token)` tiene que estar definido en `tokens.css`" daba un falso
+positivo con `--tab-color` (una custom property que fija JS, no un token de diseño). Se corrigió
+para exigir definición solo a `var(--x)` **sin** fallback — `var(--x, algo)` con fallback queda
+exento, que es justo el patrón que este mismo cambio introdujo. Auditado: es el único caso en el
+CSS actual, cero riesgo de esconder un typo real.
+
+#### Verificación
+
+Una carrera completa por CDP (seed 1, instantáneo) recorriendo cada decisión y registrando
+`data-tab-label`/`data-peso`/color computado: **8 combinaciones distintas vistas**, todas
+correctas contra la tabla de `formatoUi.js` — incluida `Pool|bisagra|rgb(169,123,255)` (el morado
+de `--cat-parche`) y `Fin de año|cierre|rgb(255,200,97)` (oro). Capturada una decisión bisagra
+real ("Se te enfrió Ornn", `pool.json`): borde grueso morado con glow, marca de agua "POOL" visible
+detrás del texto, atajos "1"/"2" en las tarjetas. Recorrida CDP a los 5 breakpoints sin errores.
+
 ### 2026-09-04 — Fase T3: el escenario y el reproductor
 
 El cambio de sensación más grande de la fase T hasta acá. Antes, `avanzar()` corría splits en un
