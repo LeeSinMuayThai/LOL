@@ -26,7 +26,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **8** | La ficha: el registro que acumula + la tarjeta permanente + `src/ui/` | ✅ ver `PROGRESO.md` |
 | **9** | El mercado: ofertas, contratos, salarios, la trampa del equipo grande visible | ✅ ver `PROGRESO.md` |
 | **9E** | El varado: la carrera vuelve a tener juego después del primer equipo | 🔶 **9Ea+b hechas** (el bug, cerrado) · faltan 9Ec y 9Ed |
-| **9R** | **Que el juego se juegue**: el cooldown mide splits, la tabla deja de mentir, la interrupción vuelve a ser escasa, y elegir cambia el resultado | 🔶 **9Ra/9Rb/9Re/9Rf hechas** (248 → 122 decisiones/carrera, evento más repetido 14 → 5) · faltan 9R.5 (el final), 9R.2 (Mentalidad/Hype visibles), 9Rc/9Rd (agencia), 9R.3/9R.4 (catálogo), 9Rg |
+| **9R** | **Que el juego se juegue**: el cooldown mide splits, la tabla deja de mentir, la interrupción vuelve a ser escasa, y elegir cambia el resultado | 🔶 **9Ra/9Rb/9Re/9Rf/9R.5/9R.2/9R.0/9Rc/9Rd hechas** · faltan 9R.3/9R.4 (catálogo), 9Rg |
 | **9M** | **El mercado de pases**: el mundo se puebla de jugadores, la demanda existe, alguien compite por tu asiento, la escalera deja de ser un dado | ⬜ |
 | **10** | El final: retiro emergente + la tarjeta de legado | ⬜ |
 | **11** | El año: calendario, la nota de la temporada, el archirrival | ⬜ |
@@ -1984,11 +1984,17 @@ da igual (`dominancia < 1.35`) — al revés del principio rector (`PLAN.md:100-
 - **`probabilidadDeGanar(fp, fr, σ₁, σ₂)`** en `core/numeros.js`: `Φ((fp−fr)/√(σ₁²+σ₂²))` logística
   sobre `rendimientoBase`, cero RNG. Constante **`numeros.factorLogisticoNormal: 1.702`**.
 - `puntosEnJuego` = `P(con el mejor) − P(con el segundo)`. Pausa **sii `puntosEnJuego ≥ umbral`**.
-  Constantes nuevas `serie.puntosEnJuegoParaPreguntar: 0.04`,
-  `serie.puntosEnJuegoParaPreguntarDecisivo: 0.015` (el mapa decisivo **baja** el umbral, no lo
-  saltea), `temporada.puntosEnJuegoParaPreguntar: 0.07`. Excepción incondicional
+  Constantes nuevas `serie.puntosEnJuegoParaPreguntar`,
+  `serie.puntosEnJuegoParaPreguntarDecisivo` (el mapa decisivo **baja** el umbral a la mitad, no lo
+  saltea), `temporada.puntosEnJuegoParaPreguntar`. Excepción incondicional
   `disponibles.length === 2`. Se **borra `serie.dominanciaClara`** (D31). `motivoPrincipal ===
   'parejo'` en una fecha nunca pausa.
+  - **Recalibrado al implementar (2026-09-03):** el plan escribió `0.04 / 0.015 / 0.07`, pero medido
+    daban **mediana 3 drafts/serie y 7% de series sin draft** — el propio check pide `≤1` y `≥30%`.
+    La distribución real de `puntosEnJuego` tiene su mediana en ~`0.13` (un umbral de `0.04` frena el
+    85% de los drafts). Valores que cierran el check: **`0.18 / 0.09 / 0.16`** (mediana 1, 32% de
+    series sin draft). Elegir el valor inicial de una constante nueva es parte de aterrizar la
+    estructura; el ajuste fino contra el presupuesto de decisiones re-medido sigue siendo 9Rg.
 - **`lecturaDePick(campeon, weights, pool)`** en `core/ajusteMeta.js` (pura, sin números): matriz
   3×3 afinidad-al-parche × maestría-relativa-a-tu-pool → frase que suena a LoL ("la tenés verde y
   el parche la pide", "la dominás pero quedó a contramano"). `construirDecisionDraft` (en
@@ -2148,7 +2154,8 @@ cerraban con una sola línea `[rendimiento]` "terminó 4º de 10" — sin decir 
 - **Check nuevo:** todo split competitivo que no clasifica a playoffs cierra con una línea
   `temporada` no técnica de qué significa la posición (0 de 2986 sin ella).
 
-> **Fase 9R.0 cerrada.** Sigue el orden de PLAN.md: **9Rd** (se para cuando hay algo en juego).
+> **Fase 9R.0 + 9Rd cerradas.** Sigue el orden de PLAN.md: **9R.3** (catálogo 97→~250 + variación
+> léxica). 9R0a ya adelantó las frases de motivo de fecha; el resto de 9R.3 es catálogo nuevo.
 
 ---
 

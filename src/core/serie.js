@@ -1,6 +1,8 @@
 import { weightedPick } from './rng.js';
 import { campeonesEnMeta, deseoPorCampeon, factorDeCampeon } from './ajusteMeta.js';
 import { campeonesDisponibles, entradaDePool } from './pool.js';
+import { rendimientoBase, fuerzaDelEquipo } from './fuerza.js';
+import { probabilidadDeGanar } from './numeros.js';
 import { BALANCE } from '../data/balance.js';
 
 // La mecánica de la serie de playoffs (fase 4): Bo5 con Fearless draft, jugada
@@ -125,9 +127,12 @@ export function serieTerminada(marcador, formato) {
 }
 
 // La regla de 4.3, resuelta sin ambigüedad (ver PROGRESO): con 0 disponibles,
-// comodín automático; con 1, no hay elección real; con exactamente 2, siempre
-// para (es el momento de pool exhausto donde cada pick importa); con 3 o más,
-// el motor elige solo salvo mapa decisivo o falta de dominancia clara.
+// comodín automático (no llega acá); con 1, no hay elección; con exactamente 2,
+// siempre para (pool exhausto, cada pick pesa). Con 3 o más, el motor elige
+// solo salvo que el mejor campeón mueva la probabilidad de ganar el mapa más
+// que `puntosEnJuegoParaPreguntar` respecto del segundo; el mapa decisivo baja
+// ese umbral. Fase 9Rd: antes el criterio era un ratio de `deseoPorCampeon`
+// (maestría²) contra `dominanciaClara`, que no medía el resultado del mapa.
 export function decisionDeDraft(state, disponibles, esDecisivo) {
   if (disponibles.length === 1) {
     return { pausa: false, elegido: disponibles[0] };
@@ -135,21 +140,38 @@ export function decisionDeDraft(state, disponibles, esDecisivo) {
   if (disponibles.length === 2) {
     return { pausa: true };
   }
-  if (esDecisivo) {
-    return { pausa: true };
-  }
 
-  // Fase 9Rc: cuál campeón es "el mejor" se decide con `factorDeCampeon` —el
-  // mismo criterio con el que el mapa se va a resolver—, no con `deseoPorCampeon`
-  // (maestría², que podía dejar arriba a un campeón peor para el resultado). El
-  // criterio de si PARAR o no sigue siendo el de siempre hasta 9Rd.
-  const ordenados = [...disponibles].sort(
-    (a, b) => factorDeCampeon(b, state.meta.weights) - factorDeCampeon(a, state.meta.weights)
+  // Fase 9Rc/9Rd: "el mejor" se ordena con `factorDeCampeon` —el mismo criterio
+  // con el que el mapa se resuelve—, no con `deseoPorCampeon` (maestría²).
+  const [mejor, segundo] = ordenarPorFactor(disponibles, state.meta.weights);
+  const umbral = esDecisivo
+    ? BALANCE.serie.puntosEnJuegoParaPreguntarDecisivo
+    : BALANCE.serie.puntosEnJuegoParaPreguntar;
+
+  return puntosEnJuegoDeMapa(state, mejor, segundo) >= umbral
+    ? { pausa: true }
+    : { pausa: false, elegido: mejor };
+}
+
+function ordenarPorFactor(campeones, weights) {
+  return [...campeones].sort(
+    (a, b) => factorDeCampeon(b, weights) - factorDeCampeon(a, weights)
   );
-  const [mejor, segundo] = ordenados;
-  const dominancia = deseoPorCampeon(mejor, state.meta.weights) / Math.max(0.001, deseoPorCampeon(segundo, state.meta.weights));
+}
 
-  return dominancia >= BALANCE.serie.dominanciaClara ? { pausa: false, elegido: mejor } : { pausa: true };
+// Cuánta probabilidad de ganar ESTE mapa te da un campeón: `rendimientoBase`
+// con ese campeón (determinista, sin el gauss de ruido) → `fuerzaDelEquipo` →
+// logística contra la fuerza del rival, con los mismos σ que `finalizarMapa`.
+function probabilidadConCampeon(state, campeon) {
+  const rb = rendimientoBase({ ...state, player: { ...state.player, campeonDelSplit: campeon.name } });
+  const fp = fuerzaDelEquipo(state, rb);
+  return probabilidadDeGanar(fp, state.serie.rival.fuerza, BALANCE.serie.ruidoMapa, BALANCE.serie.ruidoRivalSerie);
+}
+
+// P(mejor) − P(segundo). ≥ 0 siempre: más `factorDeCampeon` ⇒ más
+// `rendimientoBase` ⇒ más fuerza propia ⇒ más probabilidad.
+function puntosEnJuegoDeMapa(state, mejor, segundo) {
+  return probabilidadConCampeon(state, mejor) - probabilidadConCampeon(state, segundo);
 }
 
 // "Mapa cerrado" (regla 4 de 4.6): el rendimiento base del jugador y la fuerza

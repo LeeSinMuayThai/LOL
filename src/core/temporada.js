@@ -1,6 +1,6 @@
 import { gauss } from './rng.js';
-import { clamp } from './numeros.js';
-import { deseoPorCampeon, factorDeCampeon } from './ajusteMeta.js';
+import { clamp, probabilidadDeGanar } from './numeros.js';
+import { factorDeCampeon } from './ajusteMeta.js';
 import { ligaOZonaDeCarrera } from './competicion.js';
 import { BALANCE } from '../data/balance.js';
 
@@ -225,30 +225,51 @@ export function puntajeDeFecha(motivos, fecha, fuerzaPropia) {
   return tieneMotivoReal ? 10 + motivos.length + cercania : cercania;
 }
 
-// El draft corto de una fecha marcada (5.3): mucho más liviano que el
-// Fearless de playoffs (no hay quema de campeones acá, es temporada
-// regular), pero misma idea de fondo — con un pool chico no hay mucho que
-// elegir, y con uno grande el motor para solo si la elección no es obvia.
+// El draft corto de una fecha marcada (5.3): más liviano que el Fearless de
+// playoffs (no hay quema de campeones acá, es temporada regular). Fase 9Rd:
+// mismo criterio que la serie — frena sólo si el mejor campeón te mueve la
+// probabilidad de ganar la fecha más que `temporada.puntosEnJuegoParaPreguntar`
+// respecto del segundo. Sin contexto de temporada (sondas de validate) o con
+// 1-2 campeones, auto-elige el mejor por `factorDeCampeon` y no frena.
 export function decisionDeDraftFecha(state) {
   const pool = state.player.championPool;
   if (pool.length === 0) {
     return { pausa: false, elegido: null };
   }
-  // Fase 9Rc: "el mejor" se mide con `factorDeCampeon` (maestría Y afinidad, el
-  // criterio con el que la fecha se resuelve), no con `deseoPorCampeon`. Si
-  // parar o no sigue siendo el de siempre hasta 9Rd.
+
+  const [mejor, segundo] = [...pool].sort(
+    (a, b) => factorDeCampeon(b, state.meta.weights) - factorDeCampeon(a, state.meta.weights)
+  );
   if (pool.length <= 2) {
-    const mejor = pool.reduce((acc, campeon) => (
-      factorDeCampeon(campeon, state.meta.weights) > factorDeCampeon(acc, state.meta.weights) ? campeon : acc
-    ));
     return { pausa: false, elegido: mejor };
   }
 
-  const ordenados = [...pool].sort((a, b) => factorDeCampeon(b, state.meta.weights) - factorDeCampeon(a, state.meta.weights));
-  const [mejor, segundo] = ordenados;
-  const dominancia = deseoPorCampeon(mejor, state.meta.weights) / Math.max(0.001, deseoPorCampeon(segundo, state.meta.weights));
+  const t = state.career?.temporada;
+  const fecha = t?.fechaEnCurso;
+  if (!fecha || !Number.isFinite(t.fuerzaPropia)) {
+    return { pausa: false, elegido: mejor };
+  }
+  // Una fecha sólo se marca con un motivo real (`continuarTemporada` lo
+  // garantiza); si aun así llegara una pareja, nunca frena.
+  if (motivoPrincipal(fecha.motivos ?? []) === 'parejo') {
+    return { pausa: false, elegido: mejor };
+  }
 
-  return dominancia >= BALANCE.serie.dominanciaClara ? { pausa: false, elegido: mejor } : { pausa: true };
+  const campeonDelSplit = pool.find((c) => c.name === state.player.campeonDelSplit) ?? mejor;
+  const puntos = probabilidadDeFecha(t, fecha, campeonDelSplit, mejor, state.meta.weights)
+    - probabilidadDeFecha(t, fecha, campeonDelSplit, segundo, state.meta.weights);
+
+  return puntos >= BALANCE.temporada.puntosEnJuegoParaPreguntar
+    ? { pausa: true }
+    : { pausa: false, elegido: mejor };
+}
+
+// La probabilidad de ganar la fecha con `elegido`, construida igual que
+// `resolverFechaMarcada`: `t.fuerzaPropia` corrida por `factorDraftFecha`
+// (relativo al campeón del split) → logística con los σ de `resolverFecha`.
+function probabilidadDeFecha(t, fecha, campeonDelSplit, elegido, weights) {
+  const fuerzaFecha = t.fuerzaPropia * (1 + factorDraftFecha(elegido, campeonDelSplit, weights));
+  return probabilidadDeGanar(fuerzaFecha, fecha.fuerzaRival, BALANCE.temporada.ruidoFecha, BALANCE.temporada.ruidoRivalFecha);
 }
 
 // Cuánto mueve la fuerza de ESTA fecha el campeón elegido en el draft corto,

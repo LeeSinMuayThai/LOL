@@ -19,6 +19,15 @@ export const BALANCE = {
     maxDecisionesPorSplit: 60
   },
 
+  // Constantes puras de `core/numeros.js`: la matemática que otros sistemas
+  // consumen, sin efecto de juego propio.
+  numeros: {
+    // Aproximación logística de la CDF normal: Φ(x) ≈ 1/(1+e^(−1.702·x)). El
+    // 1.702 minimiza el error máximo contra la normal. Lo usa
+    // `probabilidadDeGanar` (draft de 9Rd).
+    factorLogisticoNormal: 1.702
+  },
+
   // Cuánto corren los stats la probabilidad de un outcome (CONCEPTO §8: "la
   // opción obviamente correcta sale mal a veces; tus stats corren esos pesos,
   // no los eliminan"). Ver `modificadores` en el esquema de eventos.
@@ -856,6 +865,13 @@ export const BALANCE = {
     // ESA fecha puntual. Acotado a propósito: no reemplaza a `campeones.js`,
     // que ya elige el campeón del split entero antes de que esto corra.
     impactoDraftFecha: 0.08,
+    // Fase 9Rd: mismo criterio que la serie (`probabilidadDeGanar` sobre la
+    // fuerza de la fecha corrida por `factorDraftFecha`), un poco más bajo que
+    // el 0,18 de la serie — una fecha de temporada regular se gana mucho menos
+    // en el draft (`impactoDraftFecha` ya acota su efecto a ±0,08). El plan
+    // escribió 0,07; al recalibrar la serie se subió en proporción. Ajuste
+    // fino en 9Rg (regla 2).
+    puntosEnJuegoParaPreguntar: 0.16,
     // Rango del efecto `type: 'partido'`: lo que el momento de la fecha
     // marcada le suma o resta a la fuerza propia de ESE partido puntual.
     partidoMin: -0.18,
@@ -871,20 +887,36 @@ export const BALANCE = {
   // El draft, de la serie y de la fecha marcada (fase 9Rc/9Rd).
   draft: {
     // `lecturaDePick` (core/ajusteMeta.js) cruza dos ejes en una frase sin
-    // numeros. Afinidad al meta (`afinidadDeCampeon`, 1 = campeon promedio):
-    afinidadAFavor: 1.06,
-    afinidadEnContra: 0.95,
-    // Maestria del campeon normalizada al rango [peor, mejor] de TU pool:
-    maestriaAlta: 0.8,
-    maestriaFloja: 0.35
+    // numeros para la tarjeta de draft (9Rd).
+    lectura: {
+      // Afinidad al meta (`afinidadDeCampeon`, 1 = campeon promedio del parche):
+      afinidadAFavor: 1.06,
+      afinidadEnContra: 0.95,
+      // Maestria del campeon normalizada al rango [peor, mejor] de TU pool:
+      maestriaAlta: 0.8,
+      maestriaFloja: 0.35
+    }
   },
 
   // La serie de playoffs (fase 4): Bo5 con Fearless draft, jugada mapa a mapa
   // reusando calcularRendimiento/fuerzaDelEquipo de rendimiento.js.
   serie: {
-    // Ratio mejor/segundo deseo de campeon para que el motor elija solo en vez
-    // de parar (4.3). Por debajo de esto, la eleccion no es obvia.
-    dominanciaClara: 1.35,
+    // Fase 9Rd: el motor sólo te frena en el draft si el mejor campeón
+    // disponible te da bastante más probabilidad de ganar el mapa que el
+    // segundo (`puntosEnJuego` = P(mejor) − P(segundo), vía
+    // `probabilidadDeGanar`). Por debajo de esto la elección no cambia el
+    // partido y se resuelve sola. El mapa decisivo BAJA el umbral (la mitad),
+    // no lo saltea.
+    //
+    // El plan escribió 0,04 / 0,015, pero al medir daban mediana 3
+    // drafts/serie y sólo 7% de series sin ninguno — el objetivo del propio
+    // plan es mediana ≤1 y ≥30% de series sin draft. La distribución real de
+    // `puntosEnJuego` (top-1 vs top-2 del pool disponible) tiene su mediana en
+    // ~0,13, así que un umbral de 0,04 frenaba el 85% de los drafts. 0,18
+    // (≈4,5×) deja mediana 1 y 32% de series sin draft. El ajuste fino contra
+    // el presupuesto de decisiones re-medido sigue siendo 9Rg (regla 2).
+    puntosEnJuegoParaPreguntar: 0.18,
+    puntosEnJuegoParaPreguntarDecisivo: 0.09,
     // |rendimiento base del jugador - fuerza del rival| <= esto: "mapa cerrado",
     // condicion necesaria para que dispare un minijuego (regla 4 de 4.6).
     margenMapaCerrado: 8,

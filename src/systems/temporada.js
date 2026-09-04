@@ -10,7 +10,7 @@ import {
 } from '../core/temporada.js';
 import { calcularRendimiento, fuerzaDelEquipo } from './rendimiento.js';
 import { disponibleEn, opcionesVivas, resolverOpcion, cooldownActivo, pesoConMemoria } from './events.js';
-import { pesoDePick } from '../core/ajusteMeta.js';
+import { pesoDePick, factorDeCampeon, lecturaDePick } from '../core/ajusteMeta.js';
 import { registrarFecha } from '../core/registro.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
@@ -235,16 +235,23 @@ function candidatosDePartido(state, motivo, soloPostpartido) {
   ));
 }
 
+// Fase 9Rd: mismas reglas que el draft de una serie — opciones ordenadas
+// best-first por `factorDeCampeon` y cada una con su lectura en palabras.
 function construirDecisionDraft(state) {
   const fecha = state.career.temporada.fechaEnCurso;
+  const weights = state.meta.weights;
+  const pool = state.player.championPool;
+  const ordenados = [...pool].sort(
+    (a, b) => factorDeCampeon(b, weights) - factorDeCampeon(a, weights)
+  );
   return {
     tipo: 'opciones',
     titulo: `vs ${fecha.rival} · ${etiquetaDeMotivo(motivoPrincipal(fecha.motivos), state.player.splitCount)}`,
     descripcion: 'Con qué campeón vas a este partido.',
-    opciones: state.player.championPool.map((campeon) => ({
+    opciones: ordenados.map((campeon) => ({
       id: campeon.name,
       label: campeon.name,
-      descripcion: `Maestría ${Math.round(campeon.mastery)}.`
+      descripcion: `${lecturaDePick(campeon, weights, pool)} · maestría ${Math.round(campeon.mastery)}`
     })),
     datos: { motivo: 'draft' }
   };

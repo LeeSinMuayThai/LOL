@@ -3,7 +3,7 @@ import { crearLog } from '../core/log.js';
 import { clamp, clampStat } from '../core/numeros.js';
 import { resolverTexto } from '../core/plantillas.js';
 import { ligaDeCarrera } from '../core/competicion.js';
-import { pesoDePick } from '../core/ajusteMeta.js';
+import { pesoDePick, factorDeCampeon, lecturaDePick } from '../core/ajusteMeta.js';
 import {
   esCierreDeTemporada, calificaAPlayoffs, calificaAInternacional,
   rondaInicial, siguienteRonda, etiquetaDeRonda, generarRival,
@@ -38,16 +38,25 @@ function nombreLigaDe(liga) {
 
 // --- Construcción de decisiones ---
 
+// Fase 9Rd: las opciones van ordenadas best-first por `factorDeCampeon` (el
+// mismo criterio con el que el motor auto-pickearía) y cada una trae su lectura
+// en palabras —afinidad al parche × maestría relativa a tu pool— en vez de un
+// número de maestría suelto.
 function construirDecisionDraft(state, disponibles) {
   const { ronda, rival, formato, marcador, quemados } = state.serie;
+  const weights = state.meta.weights;
+  const pool = state.player.championPool;
+  const ordenados = [...disponibles].sort(
+    (a, b) => factorDeCampeon(b, weights) - factorDeCampeon(a, weights)
+  );
   return {
     tipo: 'opciones',
     titulo: `${etiquetaDeRonda(ronda)} vs ${rival.org} · Bo${formato} · ${marcador[0]}-${marcador[1]}`,
     descripcion: `Quemados esta serie: ${quemados.length > 0 ? quemados.join(', ') : 'ninguno todavía'}.`,
-    opciones: disponibles.map((campeon) => ({
+    opciones: ordenados.map((campeon) => ({
       id: campeon.name,
       label: campeon.name,
-      descripcion: `Maestría ${Math.round(campeon.mastery)}.`
+      descripcion: `${lecturaDePick(campeon, weights, pool)} · maestría ${Math.round(campeon.mastery)}`
     })),
     datos: { motivo: 'draft' }
   };

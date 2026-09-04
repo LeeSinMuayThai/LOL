@@ -15,13 +15,14 @@ import {
 } from '../core/ranked.js';
 import { TOKENS, tokensUsados } from '../core/plantillas.js';
 import { RUTINAS } from '../core/rutinas.js';
-import { campeonesEnMeta, multiplicadorDeMeta, factorDeCampeon, pesoDePick } from '../core/ajusteMeta.js';
+import { campeonesEnMeta, multiplicadorDeMeta, factorDeCampeon, pesoDePick, lecturaDePick } from '../core/ajusteMeta.js';
 import { campeonesDisponibles, entradaDePool } from '../core/pool.js';
 import { elegirOutcome, elegirEvento, decisionDesdeEvento, resolver as resolverEventos, resolverOpcion, cooldownActivo } from '../systems/events.js';
 import { tipoDeSplit, hayPresupuesto } from '../core/presupuesto.js';
 import { aplicar as aplicarPresupuesto } from '../systems/presupuesto.js';
 import { elegirCampeonRival, disponiblesDelPool, decisionDeDraft } from '../core/serie.js';
-import { rendimientoBase } from '../core/fuerza.js';
+import { rendimientoBase, fuerzaDelEquipo } from '../core/fuerza.js';
+import { probabilidadDeGanar } from '../core/numeros.js';
 import {
   resolverFecha, motivosDeFecha, generarFixture, aplicarCrucesDeJornada,
   tablaDePosiciones, posicionEnTabla, filaVacia, registrarEnFila,
@@ -2059,7 +2060,7 @@ check('El impacto de los minijuegos está acotado (ni decorativo ni gambling)', 
   }
 });
 
-check('Mediana de decisiones de draft por serie ∈ [0, 2]', () => {
+check('Mediana de decisiones de draft por serie ∈ [0, 1] y ≥30% de series sin ningún draft', () => {
   const porSerie = [];
 
   for (let seed = 1; seed <= 1200; seed += 1) {
@@ -2100,9 +2101,15 @@ check('Mediana de decisiones de draft por serie ∈ [0, 2]', () => {
 
   const ordenadas = [...porSerie].sort((a, b) => a - b);
   const mediana = ordenadas[Math.floor(ordenadas.length / 2)];
+  const sinDraft = porSerie.filter((n) => n === 0).length / porSerie.length;
 
-  if (mediana < 0 || mediana > 2) {
-    throw new Error(`mediana de decisiones de draft por serie: ${mediana.toFixed(2)}, fuera de [0, 2] (${porSerie.length} series medidas)`);
+  if (mediana < 0 || mediana > 1) {
+    throw new Error(`mediana de decisiones de draft por serie: ${mediana.toFixed(2)}, fuera de [0, 1] (${porSerie.length} series medidas)`);
+  }
+  // Fase 9Rd: el motor sólo frena cuando el pick mueve la probabilidad del
+  // mapa. Una porción grande de las series no debería frenarte nunca.
+  if (sinDraft < 0.30) {
+    throw new Error(`sólo el ${(sinDraft * 100).toFixed(0)}% de las series no tuvieron ningún draft (mínimo 30%)`);
   }
 });
 
@@ -2234,12 +2241,42 @@ check('La afinidad al meta mueve el rendimiento base (no solo la maestría)', ()
   }
 });
 
+// Fase 9Rd: `decisionDeDraft` / `decisionDeDraftFecha` ya no deciden con un
+// ratio de `deseoPorCampeon` — miran `probabilidadDeGanar` sobre
+// `rendimientoBase`, así que la sonda necesita un estado con hoja de atributos,
+// compañeros, sinergia/jerarquía y una fuerza de rival. `createInitialState` da
+// todo eso; sólo se le fija el pool y un contexto de fecha/serie.
+function estadoDraftFalso(seed, entradas, rivalFuerza) {
+  const base = createInitialState(seed, mulberry32(seed));
+  return {
+    ...base,
+    player: { ...base.player, championPool: entradas, campeonDelSplit: null },
+    meta: { ...base.meta, ajuste: 50 },
+    career: {
+      ...base.career,
+      companeros: [{ nivel: 62 }, { nivel: 62 }, { nivel: 62 }, { nivel: 62 }],
+      sinergia: 60,
+      jerarquia: 55,
+      temporada: {
+        fuerzaPropia: 62,
+        fechaEnCurso: { rival: 'X', fuerzaRival: rivalFuerza, motivos: ['clasico'] }
+      }
+    },
+    serie: { rival: { org: 'X', fuerza: rivalFuerza } }
+  };
+}
+
+// La probabilidad de mapa con un campeón, replicada para la sonda: mismo
+// cálculo que `probabilidadConCampeon` en core/serie.js.
+function probMapaSonda(state, campeon) {
+  const rb = rendimientoBase({ ...state, player: { ...state.player, campeonDelSplit: campeon.name } });
+  const fp = fuerzaDelEquipo(state, rb);
+  return probabilidadDeGanar(fp, state.serie.rival.fuerza, BALANCE.serie.ruidoMapa, BALANCE.serie.ruidoRivalSerie);
+}
+
 check('El motor nunca elige por vos un campeón peor que otro disponible', () => {
-  // Sonda directa sobre `decisionDeDraft` / `decisionDeDraftFecha`: cuando NO
-  // pausan (`elegido` != null), el campeón que devuelven tiene que ser el argmax
-  // de `factorDeCampeon` entre los disponibles. Antes ordenaban por
-  // `deseoPorCampeon` (maestría²) y podían dejar arriba a un campeón peor para
-  // el resultado del mapa.
+  // Cuando NO pausan (`elegido` != null), el campeón devuelto tiene que ser el
+  // argmax de `factorDeCampeon` entre los disponibles.
   const pool = campeonesDisponibles(
     { player: { role: 'mid' }, mundo: { campeonesDebutados: [] } }, 'mid'
   );
@@ -2250,18 +2287,19 @@ check('El motor nunca elige por vos un campeón peor que otro disponible', () =>
     const weights = createInitialState(i + 1, mulberry32(i + 1)).meta.weights;
     const ancho = 3 + (i % 4);
     const entradas = sample(pool, ancho, rng).map((c) => entradaDePool(c, 20 + Math.floor(rng() * 70)));
-    const state = { player: { role: 'mid', championPool: entradas }, meta: { weights } };
+    const state = {
+      ...estadoDraftFalso(50000 + i, entradas, 45 + Math.floor(rng() * 30)),
+      meta: { weights, ajuste: 50 }
+    };
 
     for (const decision of [
       decisionDeDraft(state, entradas, i % 2 === 0),
-      decisionDeDraftFecha(state)
+      decisionDeDraftFecha({ ...state, player: { ...state.player, championPool: entradas } })
     ]) {
       if (decision.pausa || !decision.elegido) {
         continue;
       }
       autoPicks += 1;
-      // Los dos miran el mismo universo acá: `entradas` es a la vez el pool y
-      // los `disponibles` que le paso a `decisionDeDraft`.
       const mejorFactor = Math.max(...entradas.map((c) => factorDeCampeon(c, weights)));
       if (factorDeCampeon(decision.elegido, weights) < mejorFactor - 1e-9) {
         violaciones += 1;
@@ -2273,6 +2311,133 @@ check('El motor nunca elige por vos un campeón peor que otro disponible', () =>
   }
   if (violaciones > 0) {
     throw new Error(`${violaciones}/${autoPicks} auto-picks eligieron un campeón peor que otro disponible`);
+  }
+});
+
+check('probabilidadDeGanar es monótona, simétrica y 0.5 en el empate', () => {
+  if (probabilidadDeGanar(50, 50, 7, 12) !== 0.5) {
+    throw new Error(`empate no dio 0.5: ${probabilidadDeGanar(50, 50, 7, 12)}`);
+  }
+  let previo = -1;
+  for (let fp = 10; fp <= 90; fp += 2) {
+    const p = probabilidadDeGanar(fp, 50, 7, 12);
+    if (p <= previo) {
+      throw new Error(`no es monótona creciente en fp=${fp} (${p} <= ${previo})`);
+    }
+    previo = p;
+  }
+  for (const [a, b] of [[55, 40], [48, 61], [70, 70], [33, 90], [50, 50]]) {
+    const suma = probabilidadDeGanar(a, b, 7, 12) + probabilidadDeGanar(b, a, 12, 7);
+    if (Math.abs(suma - 1) > 1e-12) {
+      throw new Error(`P(${a},${b}) + P(${b},${a}) = ${suma}, esperaba 1`);
+    }
+  }
+  // Ruido cero: colapsa a un escalón limpio, sin NaN.
+  if (probabilidadDeGanar(60, 50, 0, 0) !== 1 || probabilidadDeGanar(40, 50, 0, 0) !== 0) {
+    throw new Error('con σ=0 no colapsó a 0/1');
+  }
+});
+
+check('Nadie te frena en el draft por un pick que no mueve el partido', () => {
+  const pool = campeonesDisponibles(
+    { player: { role: 'mid' }, mundo: { campeonesDebutados: [] } }, 'mid'
+  );
+  let pausas = 0;
+  let malas = 0;
+  for (let i = 0; i < 4000; i += 1) {
+    const rng = mulberry32(70000 + i);
+    const weights = createInitialState(i + 1, mulberry32(i + 1)).meta.weights;
+    const ancho = 3 + (i % 4);
+    const entradas = sample(pool, ancho, rng).map((c) => entradaDePool(c, 20 + Math.floor(rng() * 70)));
+    const state = {
+      ...estadoDraftFalso(70000 + i, entradas, 45 + Math.floor(rng() * 30)),
+      meta: { weights, ajuste: 50 }
+    };
+    const decisivo = i % 2 === 0;
+    const dec = decisionDeDraft(state, entradas, decisivo);
+    if (!dec.pausa) {
+      continue;
+    }
+    pausas += 1;
+    if (entradas.length === 2) {
+      continue; // excepción incondicional: pool exhausto
+    }
+    const [mejor, segundo] = [...entradas].sort(
+      (a, b) => factorDeCampeon(b, weights) - factorDeCampeon(a, weights)
+    );
+    const puntos = probMapaSonda(state, mejor) - probMapaSonda(state, segundo);
+    const umbral = decisivo
+      ? BALANCE.serie.puntosEnJuegoParaPreguntarDecisivo
+      : BALANCE.serie.puntosEnJuegoParaPreguntar;
+    if (puntos < umbral - 1e-9) {
+      malas += 1;
+    }
+  }
+  if (pausas < 30) {
+    throw new Error(`sólo ${pausas} pausas en 4000 sondas: muestra insuficiente`);
+  }
+  if (malas > 0) {
+    throw new Error(`${malas}/${pausas} pausas de draft con puntosEnJuego < umbral`);
+  }
+});
+
+check('Toda opción de draft trae su lectura y va ordenada por factorDeCampeon', () => {
+  // Smoke test directo de la matriz: dos ejes extremos dan frases distintas.
+  const weightsBase = createInitialState(3, mulberry32(3)).meta.weights;
+  const poolMix = [
+    entradaDePool({ name: 'Fuerte', tags: ['enchanter'] }, 90),
+    entradaDePool({ name: 'Flojo', tags: ['splitpush'] }, 20)
+  ];
+  if (lecturaDePick(poolMix[0], weightsBase, poolMix) === lecturaDePick(poolMix[1], weightsBase, poolMix)) {
+    throw new Error('lecturaDePick devolvió la misma frase para dos picks opuestos');
+  }
+
+  const lecturasConocidas = new Set();
+  let decisionesVistas = 0;
+  for (let seed = 1; seed <= 250; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+
+    const responder = (sistema, st, decision, r) => {
+      if (decision.datos?.motivo === 'draft' && (sistema.id === 'serie' || sistema.id === 'temporada')) {
+        decisionesVistas += 1;
+        if (decision.opciones.length < 2) {
+          throw new Error(`seed ${seed}: draft con ${decision.opciones.length} opción(es)`);
+        }
+        const weights = st.meta.weights;
+        const pool = st.player.championPool;
+        let factorPrevio = Infinity;
+        for (const opcion of decision.opciones) {
+          if (typeof opcion.descripcion !== 'string' || !/ · maestría \d+$/.test(opcion.descripcion)) {
+            throw new Error(`seed ${seed}: opción de draft sin lectura ("${opcion.descripcion}")`);
+          }
+          const lectura = opcion.descripcion.replace(/ · maestría \d+$/, '');
+          if (lectura.length < 8 || /^\d/.test(lectura)) {
+            throw new Error(`seed ${seed}: lectura de pick vacía o numérica ("${lectura}")`);
+          }
+          lecturasConocidas.add(lectura);
+          const campeon = pool.find((c) => c.name === opcion.id);
+          const factor = campeon ? factorDeCampeon(campeon, weights) : -Infinity;
+          if (factor > factorPrevio + 1e-9) {
+            throw new Error(`seed ${seed}: opciones de draft fuera de orden por factorDeCampeon`);
+          }
+          factorPrevio = factor;
+        }
+      }
+      return sistema.resolverAuto(st, decision, r);
+    };
+
+    for (let i = 0; i < 90 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng, responder).state;
+    }
+  }
+  if (decisionesVistas < 20) {
+    throw new Error(`sólo ${decisionesVistas} decisiones de draft en 250 carreras: muestra insuficiente`);
+  }
+  // La matriz 3×3 real tiene 9 frases; una carrera headless no las toca todas,
+  // pero sí varias — si sólo apareció una, algo quedó hardcodeado.
+  if (lecturasConocidas.size < 3) {
+    throw new Error(`sólo ${lecturasConocidas.size} lecturas de pick distintas en 250 carreras`);
   }
 });
 
@@ -3299,7 +3464,10 @@ check('El arraigo llega a Ídolo+ en una fracción sana de las carreras estables
   let elegibles = 0;
   let llegaron = 0;
 
-  for (let seed = 1; seed <= 300; seed += 1) {
+  // Fase 9Rd: 300 seeds caían en 14,7% (por debajo del 15%) tras el corrimiento
+  // de stream — a 600+ el rate real es 16-17% (D37, familia D21). Muestra
+  // ampliada, mismo criterio.
+  for (let seed = 1; seed <= 600; seed += 1) {
     const state = correrCarrera(seed, 60);
     const filaMasLarga = [...state.career.registro.porOrg].sort((a, b) => b.splits - a.splits)[0];
     if (!filaMasLarga || filaMasLarga.splits < 8) {
@@ -3314,7 +3482,7 @@ check('El arraigo llega a Ídolo+ en una fracción sana de las carreras estables
   }
 
   if (elegibles < 30) {
-    throw new Error(`solo ${elegibles} carreras con ≥8 splits en una misma org en 300 seeds: muestra insuficiente`);
+    throw new Error(`solo ${elegibles} carreras con ≥8 splits en una misma org en 600 seeds: muestra insuficiente`);
   }
 
   const fraccion = llegaron / elegibles;

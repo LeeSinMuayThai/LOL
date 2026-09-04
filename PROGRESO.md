@@ -33,6 +33,79 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-03 — Fase 9Rd: se para cuando hay algo en juego
+
+Segundo y último commit del par 9Rc/9Rd ("que elegir el campeón importe"). 9Rc unificó **cuánto
+vale** un campeón (`factorDeCampeon`); 9Rd cambia **cuándo el motor te frena para elegirlo** y
+**qué te muestra cuando lo hace**. Feedback textual del usuario: *"una vez que sabés cuál es la
+correcta elegís siempre esa"*, *"las maestrías son aleatorias, no sabés si ganás nada"*.
+
+#### El problema
+
+El draft (serie de playoffs y fecha marcada) paraba con un ratio de `deseoPorCampeon` (maestría²)
+contra `serie.dominanciaClara: 1.35`: **frenaba cuando los dos mejores picks eran parecidos** —
+justo cuando la elección da igual— y **resolvía solo cuando uno dominaba** —justo cuando podrías
+querer opinar—. Al revés del principio rector (`PLAN.md:100-102`). Y la tarjeta de draft mostraba
+`"Maestría 72."` a secas: sin decir si ese campeón le sirve al parche, sin orden.
+
+#### El arreglo (estructura; el único número "de balance" es el valor inicial de las constantes nuevas)
+
+- **`probabilidadDeGanar(fp, fr, σ₁, σ₂)`** en `core/numeros.js`: `Φ((fp−fr)/√(σ₁²+σ₂²))` con la
+  aproximación logística de la normal (`numeros.factorLogisticoNormal: 1.702`). Cero RNG. Es
+  `P(gauss(fp,σ₁) > gauss(fr,σ₂))` — el mismo modelo con el que `finalizarMapa` y `resolverFecha`
+  ya tiran el resultado.
+- `decisionDeDraft` (`core/serie.js`) y `decisionDeDraftFecha` (`core/temporada.js`): ordenan los
+  disponibles por `factorDeCampeon` y **paran sii `puntosEnJuego = P(mejor) − P(segundo) ≥ umbral`**.
+  El mapa decisivo baja el umbral a la mitad. Excepción incondicional `disponibles.length === 2`
+  (pool exhausto). `motivoPrincipal === 'parejo'` en una fecha nunca para. Se borró
+  `serie.dominanciaClara` (**D31**). Las funciones siguen sin consumir `rng`.
+- `construirDecisionDraft` (`systems/serie.js` y `systems/temporada.js`): opciones ordenadas
+  best-first por `factorDeCampeon`, cada una con su **lectura en palabras** (`lecturaDePick`, matriz
+  3×3 afinidad-al-parche × maestría-relativa-a-tu-pool): *"tu mejor carta, y el parche la pide"* /
+  *"la dominás, pero quedó a contramano del parche"* / *"floja y a contramano: pick de necesidad"*.
+- `lecturaDePick` estaba escrita desde 9Rc pero **nunca cableada**; leía `BALANCE.draft.lectura`,
+  que no existía (las bandas estaban un nivel arriba, sueltas bajo `BALANCE.draft`). Cableada +
+  anidada acá. Bug latente desde 9Rc, sin efecto hasta ahora porque nadie la llamaba.
+
+#### Recalibrado al implementar (medido, anotado en PLAN.md §9Rc+9Rd)
+
+El plan escribió `serie.puntosEnJuegoParaPreguntar: 0.04` / `...Decisivo: 0.015` /
+`temporada: 0.07`, pero medido daban **mediana 3 drafts/serie y 7% de series sin ninguno** — el
+propio check del plan pide mediana ≤1 y ≥30%. La distribución real de `puntosEnJuego` (top-1 vs
+top-2 del pool disponible) tiene su mediana en ~`0.13`, así que `0.04` frenaba el 85% de los
+drafts. Valores que cierran el check: **`0.18 / 0.09 / 0.16`** (mediana 1, 32,4% de series sin
+draft, media 1,3). Elegir el valor inicial de una constante nueva es parte de aterrizar la
+estructura; el ajuste fino contra el presupuesto de decisiones re-medido sigue siendo **9Rg**
+(regla de proceso 2).
+
+#### Números medidos
+
+- Drafts por serie: mediana **3 → 1**; series sin ningún draft **7% → 32,4%**; media **2,66 → 1,3**
+  (8.785 series, 1.200 carreras).
+- `probabilidadDeGanar`: monótona, `P(a,b) + P(b,a) = 1` exacto, `0.5` en el empate, colapsa a 0/1
+  con σ=0.
+- 0 auto-picks de un campeón peor que otro disponible (3.000 sondas × 2 funciones).
+- 0 pausas de draft con `puntosEnJuego < umbral` (salvo `len==2`), 4.000 sondas.
+- `simulate.js 1000` 0 crashes · determinismo intra-versión intacto (120 seeds).
+
+#### Checks nuevos
+
+- *probabilidadDeGanar es monótona, simétrica y 0.5 en el empate.*
+- *Nadie te frena en el draft por un pick que no mueve el partido* (0 pausas con `puntosEnJuego <
+  umbral`, salvo `len==2`).
+- *Toda opción de draft trae su lectura y va ordenada por factorDeCampeon* (250 carreras).
+- *El motor nunca elige por vos un campeón peor* — reescrito: ahora arma un estado completo
+  (`estadoDraftFalso`) para que las sondas puedan medir probabilidad.
+- *Mediana de decisiones de draft por serie ∈ [0, 1] y ≥30% de series sin ningún draft* (era `∈ [0, 2]`).
+
+#### Colateral
+
+- **D37 (familia):** la tarjeta de draft ordena las opciones por `factorDeCampeon` en vez de por
+  orden del pool, y hay menos pausas → el `weightedPick` del camino headless (`resolverAuto`) cae
+  distinto para la misma seed. Ninguna seed vieja reproduce su carrera; determinismo intra-versión
+  intacto. Damnificado: *"El arraigo llega a Ídolo+…"* cayó a 14,7% en 300 seeds (por debajo del
+  15%); a 600+ el rate real es 16-17% — muestra ampliada 300 → 600, mismo criterio.
+
 ### 2026-09-03 — Fase 9R0d: que cada split remate en algo
 
 Quinto y último commit de la fase 9R.0. Feedback textual del usuario: *"Clasificás a playoffs o a
