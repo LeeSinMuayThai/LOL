@@ -20,15 +20,16 @@
     <a class="saltar-al-contenido" href="#escenario">Saltar al contenido</a>
 
     <div class="shell">
-      <!-- Chrome estático en T1 (ver PLAN.md "T1 — El shell de transmisión"):
-           `estado` vive en el closure del <script> de abajo, y exponerlo acá
-           sería tocar el controlador. El punto vivo llega en T2. -->
+      <!-- El punto vivo (fase T2): `actualizarTopbar` en shell.js lo llena
+           desde `ficha.js` en cada render — no desde acá, `estado` vive en
+           el closure del <script> de abajo. Ver PLAN.md "T1/T2". -->
       <header class="topbar">
         <div class="topbar-live"><span class="topbar-live-punto"></span>LIVE</div>
         <div class="topbar-lockup">
           <span class="topbar-monograma">LC</span>
           <span class="topbar-nombre">LoL Career Simulator</span>
         </div>
+        <div class="topbar-estado" id="topbarEstado"></div>
         <div class="topbar-controles">
           <button type="button" class="topbar-toggle" disabled title="El motion llega en la fase T3">⚙</button>
           <button type="button" class="topbar-toggle" disabled title="El audio llega en la fase T3">🔊</button>

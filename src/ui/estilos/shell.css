@@ -64,7 +64,7 @@ body { padding: 0; }
   display: flex;
   align-items: center;
   gap: var(--s-3);
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-width: 0;
 }
 .topbar-monograma {
@@ -92,6 +92,26 @@ body { padding: 0; }
   text-transform: uppercase;
   color: var(--ink);
 }
+
+/* El punto vivo (T2): "2026 · SPLIT 1 · REGULAR". Vacío hasta que arranca
+   una carrera (`ficha.js` lo llena en cada render) — `:empty` lo colapsa
+   para no dejar un hueco fantasma en el topbar durante el setup. */
+.topbar-estado {
+  flex: 1 1 auto;
+  text-align: center;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  font-weight: 600;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  font-variant-numeric: tabular-nums;
+}
+.topbar-estado:empty { display: none; }
 
 .topbar-controles { display: flex; gap: var(--s-2); flex: 0 0 auto; }
 .topbar-toggle {

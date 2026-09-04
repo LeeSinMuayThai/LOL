@@ -33,6 +33,58 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-04 — Fase T2: la ficha es el HUD
+
+`career.contrato` y `valorDeMercado()` existen desde la fase 9 y nunca se habían dibujado en
+ninguna pantalla. Esta fase los conecta — cero cambios de motor, `fichaCompleta(state)` sigue tal
+cual estaba.
+
+#### Qué entra, y de dónde sale cada dato
+
+- **Contrato**: `state.career.contrato` (org, liga, `salarioAnualUSD` vía `modulos.formato.plata()`,
+  `aniosRestantes`). Guardado en `contrato.org` — el objeto existe siempre (trampa T4, ceros desde
+  el arranque) pero solo se dibuja cuando hay una firma real.
+- **Valor de mercado**: `valorDeMercado(state)`, ya puro y sin rng desde la fase 9. Se marca en
+  `--warn` en vez de `--gold` cuando supera el sueldo actual en más de 15% — la señal de "te
+  subpaga tu propio contrato" que antes no tenía dónde mostrarse.
+- **Marcas de contexto, como chips**: `state.contexto.marcas` (calculado cada split por
+  `systems/contexto.js`, hasta 26 ids posibles) — nuevo mapa de 26 etiquetas en
+  `src/ui/components/ficha.js` (`data/contextos.js` solo declara los ids, para que `validate.js`
+  detecte una marca inventada; nunca tuvo texto de display). 4 ids se marcan `--peligro`
+  (`deuda_sueno`, `pc_confiscada`, `riesgo_familiar`, `mentalidad_al_limite`); el resto, contexto
+  neutro. Universal a las dos fases — no solo profesional.
+- **El punto vivo del topbar**, diferido de T1: `actualizarTopbar(state)` (nueva export de
+  `shell.js`) se llama desde `renderFicha`, el único lugar que ya corre `state` en cada tick. Lee
+  `state.calendario.etiqueta` + `state.contexto.ventana` → `"2028 · Pretemporada"`. `shell.js` no
+  gana acceso a `estado`: `ficha.js` se lo pasa, en línea con la arquitectura que ya evita tocar el
+  controlador.
+- El ranked completo en amateur (`etiquetaDeRanked()`) ya estaba desde antes de T2 — no hizo falta
+  tocarlo.
+
+**Campos muertos, confirmado que siguen sin dibujarse**: `registro.dineroTotalUSD`,
+`registro.picos.rankedPuntos` y `mundo.archirrival` (D40) — ninguno de los tres aparece en
+`renderFicha`. `ficha.duelo` (que lee `mundo.archirrival`) sigue calculándose en `fichaCompleta()`
+y sigue sin usarse en el render, exactamente como antes de esta fase.
+
+#### Verificación
+
+**Caso negativo**: seeds 9001 y 12 corridas hasta el final sin firmar nunca — cero sección de
+contrato, cero valor de mercado, tal como tiene que ser cuando `contrato.org` es `null`. **Caso
+positivo**: seed 1, jugada automáticamente por CDP hasta la firma — `LOUD · CBLOL · $122k/año · 2
+años restantes` y `Valor de mercado $121k/año` renderizados correctamente, 4 chips de marca
+visibles, topbar en `2028 · Pretemporada`. Recorrida CDP a 1440/1180/900/640/390 sin errores de
+consola en ninguno de los dos casos.
+
+**Trabajo concurrente, esta vez interfiriendo con la medición**: otra sesión tenía
+`src/data/balance.js` sin commitear (`pesoJugadorEnEquipo` 0,35→0,5, fase 9Rg) cuando corrí
+`validate.js` sobre el árbol de trabajo — falló *"mediana de decisiones de draft por serie"* (23%
+de series sin draft, mínimo 30%). No es un bug de T2: `src/ui/*` no puede mover una estadística de
+draft. Verificado armando un sandbox aislado (`git archive HEAD` — el motor tal cual está
+commiteado, sin el ajuste a medio terminar — más únicamente mis archivos de `src/ui/` e
+`index.html`): **117/117 OK**, `simulate.js 1000` con `crashes: 0`, build con determinismo
+`src`/`dist` sobre 12 carreras × 30 splits OK, **1041 KB** (bajo el techo de 1100). El commit de
+T2 solo toca `src/ui/` + `index.html` + estos dos documentos — nunca `balance.js`.
+
 ### 2026-09-04 — Fase 9Rg (parcial 1/6): pesoJugadorEnEquipo sube a 0,5
 
 Primer ítem de la cola de calibración de 9Rg (`PLAN.md` §9R.1: *"solo constantes"*, regla de

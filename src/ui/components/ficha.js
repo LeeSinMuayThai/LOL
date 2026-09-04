@@ -1,7 +1,9 @@
 import { fichaCompleta } from '../../core/ficha.js';
+import { valorDeMercado } from '../../core/valorMercado.js';
 import { crearBarra } from './barra.js';
 import { crearStatRow } from './statRow.js';
 import { BALANCE } from '../../data/balance.js';
+import { actualizarTopbar } from '../shell.js';
 
 // LA TARJETA (fase 8, PLAN.md §8.6): vive en todas las pantallas de carrera.
 // Es la respuesta directa a H7 del diagnóstico — "los números que ves no
@@ -16,6 +18,42 @@ const LABEL_INTERNACIONAL = {
   jugando: 'Jugando el internacional'
 };
 const FASE_LABEL = { amateur: 'Amateur', profesional: 'Profesional', retirado: 'Retirado' };
+
+// `data/contextos.js` declara los ids de `MARCAS` para que `validate.js`
+// pueda detectar una marca inventada en un JSON — no trae etiqueta de
+// display, porque hasta T2 nada las mostraba. Las 5 útlimas ('pendiente')
+// las activan pasos que todavía no existen: quedan acá para el día que
+// aparezcan, hoy nunca las emite `calcularContexto`.
+const LABEL_MARCA = {
+  deuda_sueno: 'Deuda de sueño',
+  pc_confiscada: 'PC confiscada',
+  riesgo_familiar: 'Riesgo familiar',
+  en_el_radar: 'En el radar',
+  nocturno: 'Nocturno',
+  negociacion_ganada: 'Negociación ganada',
+  sin_secundario: 'Sin secundario',
+  secundario_terminado: 'Secundario terminado',
+  signature: 'Tiene signature',
+  mentalidad_al_limite: 'Mentalidad al límite',
+  con_vestuario: 'Con vestuario',
+  pool_angosto: 'Pool angosto',
+  pool_ancho: 'Pool ancho',
+  pool_en_meta: 'Pool en meta',
+  pool_fuera_meta: 'Pool fuera de meta',
+  main_muerto: 'Main fuera de meta',
+  campeon_nuevo: 'Campeón nuevo en el pool',
+  es_campeon: 'Campeón',
+  multicampeon: 'Multicampeón',
+  paso_por_tier3: 'Pasó por tier 3',
+  curtido: 'Curtido',
+  nomade: 'Nómade',
+  espera_edad_minima: 'Espera edad mínima',
+  lesion_cronica: 'Lesión crónica',
+  servicio_militar: 'Servicio militar',
+  ventana_de_vuelta: 'Ventana de vuelta',
+  vuelta_del_retiro: 'Vuelta del retiro'
+};
+const MARCAS_DE_RIESGO = new Set(['deuda_sueno', 'pc_confiscada', 'riesgo_familiar', 'mentalidad_al_limite']);
 
 function hitosJerarquia() {
   const { estatusBandas } = BALANCE.contexto;
@@ -67,6 +105,10 @@ export function renderFicha(container, state, modulos) {
   const registro = state.career.registro;
   const enHitoMaximo = ficha.jerarquia.esMaxima || ficha.arraigo.esMaxima;
 
+  // El topbar no tiene forma de leer `state` por su cuenta (T1/T2, ver
+  // PLAN.md): se actualiza acá, en el único lugar que ya corre en cada tick.
+  actualizarTopbar(state);
+
   container.replaceChildren();
   container.className = 'ficha-card' + (enHitoMaximo ? ' ficha-card--dorada' : '');
 
@@ -117,6 +159,23 @@ export function renderFicha(container, state, modulos) {
   // --- Los 6 atributos, con flechas y el destacado en color ---
   container.appendChild(crearStatRow(state, ficha));
 
+  // --- Marcas de contexto, como chips (fase T2) -------------------------
+  // `contexto.marcas` se calcula cada split y hasta acá no se veía en
+  // ningún lado. Universal a las dos fases: 'riesgo_familiar'/'deuda_sueno'
+  // son de la etapa amateur, 'nomade'/'multicampeon' de la profesional.
+  const marcas = state.contexto?.marcas ?? [];
+  if (marcas.length > 0) {
+    const marcasRow = document.createElement('div');
+    marcasRow.className = 'ficha-marcas';
+    for (const id of marcas) {
+      const chip = document.createElement('span');
+      chip.className = 'ficha-marca' + (MARCAS_DE_RIESGO.has(id) ? ' ficha-marca--peligro' : '');
+      chip.textContent = LABEL_MARCA[id] ?? id;
+      marcasRow.appendChild(chip);
+    }
+    container.appendChild(marcasRow);
+  }
+
   // La etapa amateur muestra otras filas (estudios, confianza, sueño, ranked)
   // — misma estructura, campos distintos (PLAN.md §8.6, punto 7) — y no
   // tiene jerarquía, arraigo, pool ni internacional todavía.
@@ -147,6 +206,47 @@ export function renderFicha(container, state, modulos) {
     animo.appendChild(celda);
   }
   container.appendChild(animo);
+
+  // --- Contrato y valor de mercado (fase T2) -----------------------------
+  // `career.contrato` existe desde la fase 9 y nunca se dibujó: el jugador
+  // no tenía forma de ver con quién firmó, por cuánto, ni por cuántos años
+  // más. `contrato.org` es `null` hasta la primera firma (trampa T4: el
+  // objeto siempre existe, pero no hay nada real que mostrar todavía).
+  const contrato = state.career.contrato;
+  if (contrato.org) {
+    const contratoBox = document.createElement('div');
+    contratoBox.className = 'ficha-contrato';
+    const label = document.createElement('div');
+    label.className = 'ficha-contrato-label';
+    label.textContent = 'Contrato';
+    const linea = document.createElement('div');
+    linea.className = 'ficha-contrato-linea';
+    const restantes = contrato.aniosRestantes === 1 ? '1 año restante' : `${contrato.aniosRestantes} años restantes`;
+    const salarioSpan = document.createElement('span');
+    salarioSpan.className = 'ficha-contrato-salario';
+    salarioSpan.textContent = `${modulos.formato.plata(contrato.salarioAnualUSD)}/año`;
+    linea.append(`${contrato.org} · ${contrato.liga ?? ''} · `, salarioSpan, ` · ${restantes}`);
+    contratoBox.append(label, linea);
+    container.appendChild(contratoBox);
+  }
+
+  // Distinto del sueldo: lo que el mejor postor de tu propia liga pagaría
+  // HOY. `0` fuera de una liga real (tier 3 o sin equipo) — ahí no hay
+  // mercado que te tase todavía, así que no se dibuja nada.
+  const valor = valorDeMercado(state);
+  if (valor > 0) {
+    const bajoSueldo = contrato.org && valor > contrato.salarioAnualUSD * 1.15;
+    const valorBox = document.createElement('div');
+    valorBox.className = 'ficha-valor-mercado' + (bajoSueldo ? ' ficha-valor-mercado--bajo-sueldo' : '');
+    const label = document.createElement('div');
+    label.className = 'ficha-valor-mercado-label';
+    label.textContent = 'Valor de mercado';
+    const cifra = document.createElement('div');
+    cifra.className = 'ficha-valor-mercado-cifra';
+    cifra.textContent = `${modulos.formato.plata(valor)}/año`;
+    valorBox.append(label, cifra);
+    container.appendChild(valorBox);
+  }
 
   // --- Estado internacional, con nombre en vez de un contador ---
   const internacional = document.createElement('div');

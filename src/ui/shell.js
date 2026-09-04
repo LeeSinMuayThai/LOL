@@ -14,6 +14,7 @@
 
 const logList = document.getElementById('logList');
 const ticker = document.getElementById('ticker');
+const topbarEstado = document.getElementById('topbarEstado');
 const runButton = document.getElementById('run');
 const nuevaCarreraBtn = document.getElementById('nuevaCarrera');
 const decisionPanel = document.getElementById('decision');
@@ -21,6 +22,32 @@ const decisionOptions = document.getElementById('decisionOptions');
 const mercadoPanel = document.getElementById('mercado');
 const mercadoGrid = document.getElementById('mercadoGrid');
 const avanzadoDetails = document.querySelector('.avanzado');
+
+// --- El punto vivo del topbar (T2) ------------------------------------------
+// `estado` vive en el closure del controlador, así que esto no se llama
+// solo: `renderFicha` (src/ui/components/ficha.js) ya corre en cada tick de
+// pintado y ya tiene `state` a mano — llama acá con lo que necesita, en vez
+// de que el controlador exponga nada. `ventana` sale de `calcularContexto`
+// (core/contexto.js): pretemporada/regular/playoffs por ahora — internacional
+// y offseason solo existen hoy vía overrides de `systems/temporada.js`, que
+// no llegan al `state.contexto` general.
+const LABEL_VENTANA = {
+  pretemporada: 'Pretemporada',
+  regular: 'Temporada regular',
+  playoffs: 'Playoffs',
+  internacional: 'Internacional',
+  offseason: 'Offseason'
+};
+
+export function actualizarTopbar(state) {
+  if (!topbarEstado) return;
+  if (!state?.contexto || state.phase === 'retirado') {
+    topbarEstado.textContent = '';
+    return;
+  }
+  const ventana = LABEL_VENTANA[state.contexto.ventana] ?? '';
+  topbarEstado.textContent = [state.calendario.etiqueta, ventana].filter(Boolean).join(' · ');
+}
 
 // --- El ticker: la última línea de #logList, en marquesina -----------------
 // `feed.js` hace `logList.replaceChildren(...)` con lo más reciente PRIMERO
