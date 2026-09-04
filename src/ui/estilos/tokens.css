@@ -81,6 +81,10 @@
   --live-fill: rgba(46, 232, 255, 0.10);
   --gold-fill: rgba(255, 200, 97, 0.10);
   --warn-fill: rgba(255, 171, 74, 0.12);
+  /* T6: el camino de la serie (mapa ganado/perdido) necesitaba un relleno
+     tenue de --up/--down — mismo criterio que los de arriba. */
+  --up-fill:   rgba(61, 220, 151, 0.15);
+  --down-fill: rgba(255, 95, 86, 0.15);
 
   /* --- Las 11 categorías de decisión ------------------------------------
      La tabla de PLAN.md §12.1, tokenizada desde el día uno para que la

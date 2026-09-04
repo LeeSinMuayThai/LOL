@@ -1,13 +1,9 @@
+import { etiquetaDeFuerza } from '../formatoUi.js';
+
 // El panel de Calendario (fase T5). Fuente: `career.temporada.calendario`
 // (el fixture, generado por `core/temporada.js:generarFixture`) + `.indice`
 // (qué fecha toca ahora). Jugadas, la de hoy, las que vienen — con rival y
 // una lectura cualitativa de su fuerza en vez del número crudo.
-function etiquetaDeFuerza(fuerzaRival, fuerzaPropia) {
-  const diferencia = fuerzaRival - fuerzaPropia;
-  if (diferencia > 8) return 'favorito';
-  if (diferencia < -8) return 'débil';
-  return 'parejo';
-}
 
 export function renderCalendario(container, state) {
   const { temporada } = state.career;

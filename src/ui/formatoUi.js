@@ -48,6 +48,14 @@ export function familiaDeCategoria(category) {
   return FAMILIA_POR_CATEGORIA[category] ?? FAMILIA_DEFECTO;
 }
 
+// --- Fuerza relativa de un rival, en palabras (T5, reusada en T6) ----------
+export function etiquetaDeFuerza(fuerzaRival, fuerzaPropia) {
+  const diferencia = fuerzaRival - fuerzaPropia;
+  if (diferencia > 8) return 'favorito';
+  if (diferencia < -8) return 'débil';
+  return 'parejo';
+}
+
 // --- El peso visual: bisagra > cierre > normal ------------------------------
 // Dos campos reales, no tres inventados: `evento.bisagra` (boolean, ya
 // existe en varios eventos de `pool.json`) y `franja` ('normal' | 'cierre',

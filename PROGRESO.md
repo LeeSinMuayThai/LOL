@@ -33,6 +33,60 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-04 — Fase T6: el partido y la serie como transmisión
+
+Tarjeta de resultado de fecha, barra de bracket, el camino Fearless mapa a mapa, y los 5
+minijuegos migrados fuera de `index.html`. Cero motor — el único cambio de motor de toda la fase T
+sigue siendo T8, sin tocar todavía.
+
+#### Otro campo que no era lo que el plan decía
+
+El plan original suponía un "motivo de la fecha" leíble después de resolver. No existe:
+`systems/temporada.js` arma la frase completa en un solo log `type:'temporada'` y **nunca deja el
+motivo en un campo separado** — `fechaEnCurso` (donde vivía antes de resolver) se pone en `null`
+en el mismo golpe que resuelve la fecha. Escribirlo en algún lado sería tocar `systems/`.
+
+La tarjeta se armó con lo que sí persiste sin tocar nada: `calendario[indice - 1]` (rival, fuerza,
+local/visitante — la fecha recién jugada), el signo de `racha` (victoria/derrota), la tabla
+derivada en vivo (posición — mismo hallazgo de campo muerto que T5), y el `message` completo del
+log tal cual, sin re-parsearlo, como cuerpo de la tarjeta.
+
+#### Un bug real encontrado por probar, no por leer
+
+`etiquetaDeRonda` lo importé de `core/temporada.js` — está en `core/serie.js`. La recorrida CDP lo
+agarró al toque: `SyntaxError: the requested module '../../core/temporada.js' does not provide an
+export named 'etiquetaDeRonda'`, página en blanco. Corregido antes de seguir.
+
+#### Qué entra
+
+- **`src/ui/components/serie.js`** (nuevo): `crearTarjetaResultado(entry, state)` — reemplaza el
+  log plano de `type:'temporada'` por una tarjeta con cabecera (GANARON/PERDIERON, rival, lectura
+  de fuerza) y pie (posición, racha). `renderSerieContexto(container, state)` — el bracket
+  (`CUARTOS DE FINAL · SEMIFINAL · LA FINAL`, `etiquetaDeRonda` de `core/serie.js`; la ronda
+  `'internacional'` se muestra sola) + el marcador + el camino mapa a mapa con los quemados.
+- **`reproductor.js`**: `reproducirBeats` gana un parámetro `state` — cuando una entrada nueva es
+  `type:'temporada'`, arma la tarjeta en vez del log-item genérico.
+- **`src/ui/components/minijuegos/{robarBaron,laLlamada,bootcamp,ruedaDePrensa,laPrueba}.js`**
+  (nuevos) + `index.js` (barrel, mismo patrón que `render.js`): el código migró tal cual desde
+  `index.html`, con un cambio: `rngUi` entra como **cuarto parámetro explícito** — vivía en el
+  closure del controlador, y movidos a sus propios módulos ya no hay closure que compartir. Es
+  mejor práctica que la alternativa (importar un singleton), y "contrato intacto" se cumple en lo
+  que importa: la forma `(container, state, onDone) → onDone(0..1)`.
+- **`formatoUi.js`**: `etiquetaDeFuerza` se extrajo de `calendario.js` (T5) para reusarla acá.
+- **`tokens.css`**: `--up-fill`/`--down-fill` (relleno tenue para el camino de la serie — mismo
+  criterio que `--live-fill`/`--gold-fill`/`--warn-fill`).
+
+#### Verificación
+
+Carrera completa por CDP (seed 1, instantáneo, 250 pasos, 39 splits jugados): pasó por decisión,
+mercado, minijuego (los 4 tipos de widget probados — botón simple, slider, cards, blanco móvil,
+todos sin error) y serie de playoffs, hasta la tarjeta de legado final. Capturado el bracket en
+plena semifinal: "CUARTOS DE FINAL" en verde (superada), "SEMIFINAL" en cyan pulsando (actual),
+"LA FINAL" en gris; marcador 1-0, "M1 Ornn" en verde, quemados "Malphite, Ornn, Jax"; el minijuego
+La Llamada corriendo debajo, y una tarjeta de resultado "GANARON @ FLUXO W7M · DÉBIL · 2º de 8 ·
+Racha de 6 triunfos" más abajo en el feed. Cero errores de consola en toda la corrida.
+`validate.js`/`simulate.js`/build: ver el cierre del commit.
+
 ### 2026-09-04 — Fase T5: el riel de contexto
 
 Cinco paneles nuevos en una tercera columna del shell — tabla, calendario, plantilla, meta,

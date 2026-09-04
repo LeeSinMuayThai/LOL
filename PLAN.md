@@ -2362,7 +2362,7 @@ sumar otras cuatro tandas de CSS suelto que después hay que unificar igual.
 | **T3** | el escenario y el reproductor | El split se resuelve en beats, no de un salto. Audio sintetizado, apagado por defecto |
 | **T4** | la decisión con jerarquía | Banner por categoría (18 valores reales medidos, agrupados a 11 familias) y peso bisagra/cierre/normal (dos campos reales, no el "ambiente" inventado que decía una versión vieja de este plan) — sin motor |
 | **T5** | el riel de contexto | Tabla, calendario, plantilla, meta y generación. Cinco paneles, cero motor — la tabla se deriva en vivo (`career.temporada.tabla` es un campo muerto durante toda la temporada, ver T5) |
-| **T6** | el partido y la serie | Tarjeta de resultado, barra de bracket, el camino mapa a mapa, los 5 minijuegos migrados |
+| **T6** | el partido y la serie | Tarjeta de resultado (derivada, sin tocar `systems/`), barra de bracket, el camino mapa a mapa, los 5 minijuegos migrados con `rngUi` explícito |
 | **T7** | la tarjeta final y el PNG | Legado rediseñado + export a canvas 1200×630 + copiar link |
 | **T8** | la página como página | P.2 (guardado), P.3 (seed en la URL), P.4 (meta y OG), P.5 (repo) |
 
@@ -2629,21 +2629,42 @@ del riel es CSS puro (`:has()`), sin que el controlador tenga que togglear una c
 
 ## T6 — El partido y la serie como transmisión
 
-**La tarjeta de resultado de fecha**, con lo que el motor sí tiene: rival, fuerza del rival,
-local/visitante, motivo de la fecha (los 7 `stakes`, con sus etiquetas y frases ya escritas),
-campeón jugado, victoria/derrota, racha y posición nueva. **Sin KDA inventado** (T.3.5).
+**La tarjeta de resultado de fecha.** Revisado antes de implementar: el plan original decía "sale
+de `motivo` con sus 7 `stakes`" como si fuera un campo leíble después de resolver — no lo es.
+`systems/temporada.js` arma la frase completa (`fraseDeMotivo` + resultado + posición + campeón)
+en un solo log `type:'temporada'`, pero **nunca la deja en campos separados**, y `fechaEnCurso`
+(donde vivía el `motivo` antes de resolver) se resetea a `null` en el mismo golpe que resuelve la
+fecha. Guardar el motivo estructurado ahí sería tocar `systems/temporada.js` — y **T6, como T4 y
+T5, es cero motor** (el único cambio de motor de toda la fase T es T8).
 
-**La barra de bracket** (12.5): `CUARTOS · SEMI · FINAL`, superadas en `--up`, la actual pulsando en
-`--live`. Sale de `serie.ronda` + `liga.formatoPlayoffs`.
+La tarjeta usa en cambio lo que **sí** persiste sin tocar nada:
+- `career.temporada.calendario[indice - 1]` → rival, fuerza del rival, local/visitante (la fecha
+  recién jugada, disponible porque `indice` ya avanzó).
+- El signo de `career.temporada.racha` → victoria/derrota (siempre correcto post-resolución, no
+  hace falta re-derivarlo).
+- `tablaDePosiciones(registrosOtros, filaPropia)` derivada en vivo (mismo hallazgo que T5) →
+  posición nueva.
+- El `message` completo del log, tal cual, como cuerpo de la tarjeta — no se re-parsea (frágil:
+  un cambio de redacción rompería el parser en silencio) ni se inventa un campo que no existe.
 
-**El camino de la serie**: `serie.mapas` ya guarda `[{campeon, resultado}]` y los `quemados`. Se
-dibuja el marcador mapa a mapa con los campeones quemados tachados — es la mecánica más distintiva
-del juego y hoy es una línea de texto.
+**Sin KDA inventado** (T.3.5): el motor no tiene esos números y la tarjeta no los muestra.
 
-**Los 5 minijuegos se migran** de `index.html` a `src/ui/components/minijuegos/`, uno por archivo,
-con el tema de su competición. La fase 8 los dejó sin mover a propósito *"porque la fase 12 les
-cambia la presentación"* — es acá. Contrato intacto: `montar(container, state, onDone)` →
-`onDone(0..1)`, y **siguen comiendo de `rngUi`**.
+**La barra de bracket** (12.5): `CUARTOS DE FINAL · SEMIFINAL · LA FINAL` (etiquetas de
+`core/serie.js:etiquetaDeRonda`, no `core/temporada.js` — ojo con el import), superadas en `--up`,
+la actual pulsando en `--live`. Sale de `serie.ronda`; la ronda `'internacional'` (fuera del
+bracket de 3 pasos) se muestra sola, con su propio título.
+
+**El camino de la serie**: `serie.mapas` (`[{campeon, resultado:'W'|'L'}]`) y `serie.quemados`, tal
+cual estaban. Marcador mapa a mapa, quemados tachados.
+
+**Los 5 minijuegos se migraron** de `index.html` a `src/ui/components/minijuegos/`, uno por
+archivo + un `index.js` de barrel (mismo patrón que `render.js`). Contrato:
+`montar(container, state, onDone, rngUi)` → `onDone(0..1)`. `rngUi` entró como **cuarto parámetro
+explícito**, no como el closure implícito que tenían dentro de `index.html` — moverlos a módulos
+propios significa que ya no hay closure que compartir, y pasar la dependencia explícita es mejor
+práctica que la alternativa (un import de un singleton). "Contrato intacto" se cumple en lo que
+importa: la forma `(container, state, onDone) → onDone(0..1)` y que siguen comiendo de `rngUi`,
+nunca del `rng` del motor.
 
 ## T7 — La tarjeta final, el PNG y el link
 
@@ -2728,15 +2749,13 @@ de un `:hover`/`:active`/`:focus` usa un token de tinta (`guards.js`, candado de
 Toda la UI corre con `prefers-reduced-motion: reduce` sin perder información
 Una carrera completa se termina solo con teclado
 Contraste ≥4.5:1 en todo par (texto, fondo) de los tokens
-`dist/` ≤ **1100 KB**. Historial de la trampa T6 en esta sola línea, porque cada vez
-que se citó un número viejo estaba mal: 576 KB (fase P, 2026-09-02) → 725 KB (T0,
-97→137 eventos por 9R3a/9R3b) → 837 KB *calculado* (T0 sumaba +112, nunca verificado
-contra un build real) → **950 KB medido de verdad** el 2026-09-04 sobre `git archive
-HEAD` (`0cb0ee9`): otra sesión concurrente sumó 9R3c/9R3d entre medio, +2600 líneas de
-JSON de eventos. T0b (candado del hover + vocabulario visual, solo CSS) mide **948 KB**
-— neto casi cero, la variación es contenido de eventos, no diseño. El techo sube a
-1100 KB para dejarle margen a T1-T8 sin perseguir un número que la fase 9R sigue
-moviendo por su cuenta. Si se acerca, se subsetean más las fuentes
+`dist/` ≤ **1200 KB**. Historial de la trampa T6 en esta sola línea, porque cada vez
+que se citó un número viejo estaba mal: 576 KB (fase P) → 725 KB (T0) → 950 KB
+(re-medido en T0b, otra sesión había sumado 9R3c/9R3d) → 1041 KB (T2) → 1080 KB (T5)
+→ **1092 KB medido en T6**. El techo subió de 1100 a 1200 acá mismo: quedaban 8 KB de
+margen y todavía faltan T7 (canvas de exportación) y T8 (guardado + `almacenamiento.js`
++ meta/OG), que van a sumar código aunque sea liviano. Re-medir en T7/T8, no citar 1200
+como si fuera el número final
 T8: la misma seed con N llamadas restauradas produce la misma secuencia que correrla de corrido
 T8: las seeds anteriores a T8 siguen reproduciendo su carrera (huella idéntica)
 ```

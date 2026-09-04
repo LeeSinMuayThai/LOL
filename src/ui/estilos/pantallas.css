@@ -839,3 +839,77 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   white-space: nowrap;
   text-align: right;
 }
+
+/* ==========================================================================
+   7. EL BRACKET Y EL CAMINO DE LA SERIE (fase T6)
+   Visible mientras `state.serie.activa`. `serie.mapas` + `serie.quemados`
+   son la mecánica más distintiva del juego (Fearless draft) y hasta esta
+   fase eran una línea de texto plana.
+   ========================================================================== */
+
+.serie-contexto {
+  margin-top: var(--s-4);
+  padding: var(--s-3) var(--s-4);
+  background: var(--bg-raised);
+  border-left: 3px solid var(--gold);
+}
+
+.serie-bracket { display: flex; gap: var(--s-1); margin-bottom: var(--s-2); }
+.serie-bracket-paso {
+  flex: 1 1 0;
+  padding: var(--s-1) var(--s-2);
+  text-align: center;
+  background: var(--bg-sunken);
+  border-radius: var(--r-sharp);
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.serie-bracket-paso--superada { background: var(--up); color: var(--bg-void); }
+.serie-bracket-paso--actual {
+  background: var(--live);
+  color: var(--bg-void);
+  animation: latir-vivo-suave 2s var(--ease-in-out) infinite;
+}
+@keyframes latir-vivo-suave {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.7; }
+}
+.serie-bracket-titulo-solo {
+  margin-bottom: var(--s-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-2);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--gold);
+}
+
+.serie-marcador {
+  margin-bottom: var(--s-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-5);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.serie-camino { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.serie-mapa {
+  padding: 2px var(--s-2);
+  border-radius: var(--r-sharp);
+  font-size: var(--fs-1);
+  font-variant-numeric: tabular-nums;
+}
+.serie-mapa--ganado  { background: var(--up-fill); color: var(--up); }
+.serie-mapa--perdido { background: var(--down-fill); color: var(--down); }
+
+.serie-quemados {
+  margin-top: var(--s-2);
+  font-size: var(--fs-0);
+  color: var(--ink-mute);
+  text-decoration: line-through;
+  text-decoration-color: var(--line-strong);
+}

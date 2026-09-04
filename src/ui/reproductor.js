@@ -5,6 +5,7 @@
 // "cada split trae 1 o 2 decisiones, nunca más" (`CONCEPTO` §2). Esto no
 // cambia qué calcula el motor — solo cuándo y cómo entra cada línea al DOM.
 import { crearLogItem } from './components/feed.js';
+import { crearTarjetaResultado } from './components/serie.js';
 import * as sonido from './sonido.js';
 
 const CLAVE_VELOCIDAD = 'lolcs-velocidad-reproductor';
@@ -70,7 +71,7 @@ const LIMITE_FEED = 8; // mismo número que `renderFeed` (components/feed.js)
 // — el resultado vive en la prosa del `message` — así que se lee la
 // diferencia en los contadores que el registro ya lleva, en vez de
 // adivinar por texto.
-export async function reproducirBeats(logList, nuevasEntradas, { registroAntes, registroDespues, bisagra } = {}) {
+export async function reproducirBeats(logList, nuevasEntradas, { registroAntes, registroDespues, bisagra, state } = {}) {
   if (!logList || nuevasEntradas.length === 0) {
     return;
   }
@@ -79,7 +80,13 @@ export async function reproducirBeats(logList, nuevasEntradas, { registroAntes, 
   const espera = instantaneo ? 0 : ESPERA_MS[velocidad];
 
   for (const entrada of nuevasEntradas) {
-    logList.insertBefore(crearLogItem(entrada), logList.firstChild);
+    // T6: un log de `type: 'temporada'` es la tarjeta de resultado de
+    // fecha, no una línea más — `crearTarjetaResultado` necesita `state`
+    // para leer el fixture y la tabla en vivo (ver `components/serie.js`).
+    const nodo = entrada.type === 'temporada' && state
+      ? crearTarjetaResultado(entrada, state)
+      : crearLogItem(entrada);
+    logList.insertBefore(nodo, logList.firstChild);
     if (!entrada.tecnico) {
       sonido.tick();
     }

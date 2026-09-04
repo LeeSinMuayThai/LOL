@@ -82,6 +82,10 @@
             <div id="summary" class="summary">Aún no empezaste tu carrera.</div>
             <div id="metaPill" class="meta-pill"></div>
 
+            <!-- El bracket + el camino de la serie (fase T6): visible
+                 mientras `state.serie.activa`, oculto el resto del tiempo. -->
+            <div id="serieContexto" class="serie-contexto" hidden></div>
+
             <div id="decision" class="decision" hidden>
               <div id="decisionTitle" class="decision-title"></div>
               <div id="decisionDesc" class="decision-desc"></div>
@@ -132,6 +136,10 @@
 
     <script type="module" src="./src/ui/shell.js"></script>
     <script type="module">
+      // Los 5 minijuegos, migrados a su propia carpeta en la fase T6 (ver
+      // el comentario junto a `mostrarMinijuego` más abajo).
+      import { MONTAR_MINIJUEGO, veredictoMinijuego } from './src/ui/components/minijuegos/index.js';
+
       const setupPanel = document.getElementById('setup');
       const carreraPanel = document.getElementById('carrera');
       const handleInput = document.getElementById('handleInput');
@@ -170,6 +178,7 @@
         panelMeta: document.getElementById('panelMeta'),
         panelGeneracion: document.getElementById('panelGeneracion')
       };
+      const serieContextoEl = document.getElementById('serieContexto');
       const toggleVelocidad = document.getElementById('toggleVelocidad');
       const toggleSonido = document.getElementById('toggleSonido');
 
@@ -235,223 +244,12 @@
         return modulos;
       }
 
-      // --- Minijuegos (fase 4) ---
-      //
-      // El motor nunca los implementa (PLAN 4.6, regla 5): le pasás un
-      // `resultado` 0-1 y listo. Acá SÍ se juegan de verdad — cinco mecánicas
-      // chicas, cada una con su propia interacción, todas terminando en la
-      // misma salida: `onDone(resultado)`. `resolverAuto` (systems/serie.js y
-      // amateur.js) simula lo mismo con gauss corrido por el stat relevante
-      // cuando no hay nadie mirando (simulate.js). No se mueven a `src/ui/`
-      // en la fase 8 (PLAN.md §8.5): se les cambia la presentación en la 12.
-
-      function montarRobarBaron(container, state, onDone) {
-        const anchoZona = 14 + (state.player.stats.mecanica / 100) * 18;
-        const centroZona = 25 + rngUi() * 50;
-        container.innerHTML =
-          '<div class="minijuego-barra"><div class="minijuego-zona"></div><div class="minijuego-marcador"></div></div>' +
-          '<button type="button" class="minijuego-btn">¡Smite ya!</button>';
-
-        const zona = container.querySelector('.minijuego-zona');
-        zona.style.left = (centroZona - anchoZona / 2) + '%';
-        zona.style.width = anchoZona + '%';
-        const marcador = container.querySelector('.minijuego-marcador');
-        const boton = container.querySelector('.minijuego-btn');
-
-        let pos = 0;
-        let dir = 1;
-        let activo = true;
-        function frame() {
-          if (!activo) return;
-          pos += dir * 1.7;
-          if (pos >= 100) { pos = 100; dir = -1; }
-          if (pos <= 0) { pos = 0; dir = 1; }
-          marcador.style.left = pos + '%';
-          requestAnimationFrame(frame);
-        }
-        requestAnimationFrame(frame);
-
-        boton.addEventListener('click', () => {
-          activo = false;
-          const distancia = Math.abs(pos - centroZona);
-          onDone(Math.max(0, 1 - distancia / 45));
-        }, { once: true });
-      }
-
-      function montarLaLlamada(container, state, onDone) {
-        container.innerHTML =
-          '<div class="minijuego-aviso">Esperá la señal del equipo...</div>' +
-          '<button type="button" class="minijuego-btn">¡Ahora!</button>';
-        const aviso = container.querySelector('.minijuego-aviso');
-        const boton = container.querySelector('.minijuego-btn');
-
-        let listo = false;
-        let inicio = 0;
-        const espera = setTimeout(() => {
-          listo = true;
-          inicio = performance.now();
-          aviso.textContent = '¡AHORA!';
-        }, 900 + rngUi() * 2200);
-
-        boton.addEventListener('click', () => {
-          if (!listo) {
-            clearTimeout(espera);
-            onDone(0.05);
-            return;
-          }
-          const latencia = performance.now() - inicio;
-          onDone(Math.max(0, 1 - latencia / 700));
-        }, { once: true });
-      }
-
-      function montarBootcamp(container, state, onDone) {
-        const opciones = ['Matchups', 'El meta nuevo', 'Cabeza'];
-        const objetivo = 5;
-        let puntos = 0;
-        let activo = true;
-
-        container.innerHTML =
-          '<div class="minijuego-barra-tiempo"><div class="minijuego-barra-tiempo-fill"></div></div>' +
-          '<div class="minijuego-cards">' + opciones.map((label, i) => (
-            '<button type="button" class="minijuego-card" data-i="' + i + '">' + label
-            + '<span class="minijuego-card-count" data-count="' + i + '">0</span></button>'
-          )).join('') + '</div>';
-
-        const relleno = container.querySelector('.minijuego-barra-tiempo-fill');
-
-        function terminar() {
-          if (!activo) return;
-          activo = false;
-          onDone(Math.min(1, puntos / objetivo));
-        }
-
-        container.querySelectorAll('.minijuego-card').forEach((boton) => {
-          boton.addEventListener('click', () => {
-            if (!activo || puntos >= objetivo) return;
-            puntos += 1;
-            const contador = boton.querySelector('.minijuego-card-count');
-            contador.textContent = String(Number(contador.textContent) + 1);
-            if (puntos >= objetivo) terminar();
-          });
-        });
-
-        const duracion = 6000;
-        const inicio = performance.now();
-        function frame(t) {
-          if (!activo) return;
-          const restante = Math.max(0, duracion - (t - inicio));
-          relleno.style.width = (restante / duracion * 100) + '%';
-          if (restante <= 0) { terminar(); return; }
-          requestAnimationFrame(frame);
-        }
-        requestAnimationFrame(frame);
-      }
-
-      function montarRuedaDePrensa(container, state, onDone) {
-        const objetivo = rngUi() * 100;
-        container.innerHTML =
-          '<input type="range" min="0" max="100" value="50" class="minijuego-slider" />' +
-          '<div class="minijuego-slider-labels"><span>Humilde</span><span>Desafiante</span></div>' +
-          '<button type="button" class="minijuego-btn">Responder</button>';
-
-        const slider = container.querySelector('.minijuego-slider');
-        const boton = container.querySelector('.minijuego-btn');
-        boton.addEventListener('click', () => {
-          const distancia = Math.abs(Number(slider.value) - objetivo);
-          onDone(Math.max(0, 1 - distancia / 55));
-        }, { once: true });
-      }
-
-      function montarLaPrueba(container, state, onDone) {
-        const total = 5;
-        let aciertos = 0;
-        let ronda = 0;
-
-        container.innerHTML = '<div class="minijuego-campo"></div><div class="minijuego-aim-info"></div>';
-        const campo = container.querySelector('.minijuego-campo');
-        const info = container.querySelector('.minijuego-aim-info');
-
-        function siguiente() {
-          if (ronda >= total) {
-            onDone(aciertos / total);
-            return;
-          }
-          ronda += 1;
-          info.textContent = 'Blanco ' + ronda + ' de ' + total;
-
-          const blanco = document.createElement('button');
-          blanco.type = 'button';
-          blanco.className = 'minijuego-blanco';
-          blanco.style.left = (rngUi() * 85) + '%';
-          blanco.style.top = (rngUi() * 75) + '%';
-
-          const vencido = setTimeout(() => {
-            blanco.remove();
-            siguiente();
-          }, 900);
-
-          blanco.addEventListener('click', () => {
-            clearTimeout(vencido);
-            aciertos += 1;
-            blanco.remove();
-            siguiente();
-          }, { once: true });
-
-          campo.appendChild(blanco);
-        }
-        siguiente();
-      }
-
-      const MONTAR_MINIJUEGO = {
-        robar_baron: montarRobarBaron,
-        la_llamada: montarLaLlamada,
-        bootcamp: montarBootcamp,
-        rueda_de_prensa: montarRuedaDePrensa,
-        la_prueba: montarLaPrueba
-      };
-
-      // Fase 9R0b: el motor ya recibia el `resultado` 0-1 y seguia de largo,
-      // asi que el jugador nunca sabia si habia clavado el minijuego. Esto
-      // traduce el 0-1 a un veredicto ("clavado / parejo / no salio") y la
-      // consecuencia concreta, en el tono de los logs que el motor emite
-      // despues. No toca el motor: el `resultado` que se le pasa es el mismo.
-      const RESULTADO_MINIJUEGO = {
-        robar_baron: {
-          bien: 'El Barón es tuyo: el mapa se te va a favor.',
-          parejo: 'Lo smiteás justo, sin sacar ventaja clara.',
-          mal: 'Te roban el Barón: el mapa se complica.'
-        },
-        la_llamada: {
-          bien: 'La llamada sale y todos te siguen: el mapa se inclina para tu lado.',
-          parejo: 'La jugada sale a medias, sin cambiar mucho.',
-          mal: 'Nadie reacciona a tiempo: el mapa se complica.'
-        },
-        bootcamp: {
-          bien: 'El bootcamp rindió: llegás mejor preparado.',
-          parejo: 'El bootcamp fue parejo, no alcanzó a pulir todo.',
-          mal: 'El bootcamp se hizo cuesta arriba: llegás justo.'
-        },
-        rueda_de_prensa: {
-          bien: 'El tono cae justo: el vestuario y la prensa lo toman bien.',
-          parejo: 'La rueda de prensa pasa sin pena ni gloria.',
-          mal: 'El tono no fue el mejor: la nota sale rara.'
-        },
-        la_prueba: {
-          bien: 'Impresionaste en el tryout: entrás con crédito.',
-          parejo: 'El tryout fue correcto, sin más.',
-          mal: 'El tryout no terminó de convencer.'
-        }
-      };
-
-      function veredictoMinijuego(minijuegoId, resultado) {
-        const nivel = resultado >= 0.72 ? 'bien' : resultado >= 0.42 ? 'parejo' : 'mal';
-        const titulo = nivel === 'bien' ? '¡Clavado!' : nivel === 'parejo' ? 'Salió parejo' : 'No salió';
-        const porTipo = RESULTADO_MINIJUEGO[minijuegoId] ?? {
-          bien: 'Salió bien.', parejo: 'Salió parejo.', mal: 'No salió.'
-        };
-        return { nivel, titulo, detalle: porTipo[nivel] };
-      }
-
+      // Los 5 minijuegos (fase 4) se migraron a
+      // `src/ui/components/minijuegos/` en la fase T6 — PLAN.md §8.5 los
+      // dejó sin mover a propósito "porque la fase 12 les cambia la
+      // presentación". Import estático: son livianos y no necesitan el
+      // manejo de error de `cargarModulos()` (esa ruta existe por si
+      // `location.protocol === 'file:'`, que ya rompe mucho antes).
       function mostrarMinijuego(decision) {
         decisionPanel.hidden = true;
         mercadoPanel.hidden = true;
@@ -475,7 +273,7 @@
             + '</div>';
           summary.textContent = v.titulo + ' ' + v.detalle;
           setTimeout(() => responder({ resultado }), 1600);
-        });
+        }, rngUi);
 
         summary.textContent = 'Minijuego en curso.';
       }
@@ -537,9 +335,10 @@
       async function revelarYVerDecision(logsAntes, registroAntes) {
         ui.renderFicha(fichaContainer, estado, modulos);
         ui.renderRielContexto(rielElements, estado, modulos);
+        ui.renderSerieContexto(serieContextoEl, estado);
         const bisagra = estado.pendiente?.decision?.datos?.evento?.bisagra ?? false;
         await reproductor.reproducirBeats(logList, estado.logs.slice(logsAntes), {
-          registroAntes, registroDespues: estado.career.registro, bisagra
+          registroAntes, registroDespues: estado.career.registro, bisagra, state: estado
         });
 
         if (estado.pendiente) {
@@ -570,6 +369,7 @@
 
         ui.renderCarrera(carreraElements, estado, modulos);
         ui.renderRielContexto(rielElements, estado, modulos);
+        ui.renderSerieContexto(serieContextoEl, estado);
         renderResumenFinal(estado);
         nuevaCarreraBtn.hidden = false;
       }
@@ -681,6 +481,7 @@
         for (const panel of Object.values(rielElements)) {
           panel.hidden = true;
         }
+        serieContextoEl.hidden = true;
         pantallaInicio.reset();
       }
 

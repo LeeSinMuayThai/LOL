@@ -206,6 +206,36 @@ h1::before {
   font-variant-numeric: tabular-nums;
 }
 
+/* --- La tarjeta de resultado de fecha (fase T6) ----------------------------
+   Un log `type: 'temporada'` deja de ser una línea más: gana su propia
+   cabecera de scoreboard. Verde/rojo por resultado, como el resto del
+   sistema semántico (--up/--down), no por categoría. */
+.log-item--resultado { padding: var(--s-3) var(--s-4); }
+.log-item--resultado-victoria { border-left-color: var(--up); }
+.log-item--resultado-derrota { border-left-color: var(--down); }
+
+.resultado-cabecera {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  margin-bottom: var(--s-1);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+}
+.resultado-marcador { font-size: var(--fs-3); font-weight: 700; }
+.log-item--resultado-victoria .resultado-marcador { color: var(--up); }
+.log-item--resultado-derrota .resultado-marcador { color: var(--down); }
+.resultado-rival { font-size: var(--fs-1); color: var(--ink-dim); }
+.resultado-fuerza { font-size: var(--fs-0); color: var(--ink-mute); margin-left: auto; }
+
+.resultado-pie {
+  margin-top: var(--s-2);
+  font-size: var(--fs-0);
+  color: var(--ink-mute);
+  font-variant-numeric: tabular-nums;
+}
+
 /* ==========================================================================
    3. LA FICHA (PLAN.md §8.6)
    ========================================================================== */
