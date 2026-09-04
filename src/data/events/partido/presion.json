@@ -5,7 +5,7 @@
     "title": "Todo se define hoy",
     "description": "Ganás y clasificás. Perdés y quedás afuera esperando un milagro en la última fecha. El coach lo dijo en la reunión: acá no hay mañana.",
     "weight": 7,
-    "cooldown": 3,
+    "cooldown": 4,
     "contexto": {
       "stakes": ["define_clasificacion"],
       "ventana": ["regular"]
@@ -20,7 +20,10 @@
         "outcomes": [
           {
             "weight": 6,
-            "texto": "El plan funciona tal cual se armó: sin sobresaltos, sin heridos.",
+            "texto": [
+              "El plan funciona tal cual se armó: sin sobresaltos, sin heridos.",
+              "Jugás cerrado noventa minutos y {rivalDeLaFecha} se impacienta primero. La W es fea y perfecta."
+            ],
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.02, "max": 0.1 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 0, "max": 2, "clamp": [0, 100] }
@@ -71,7 +74,7 @@
     "title": "Dos seguidas abajo",
     "description": "Perdiste las últimas dos y en el chat del equipo nadie escribe nada. Hoy toca cortar la racha o entrar en zona de pánico.",
     "weight": 7,
-    "cooldown": 3,
+    "cooldown": 4,
     "contexto": {
       "stakes": ["presion"],
       "ventana": ["regular"]
@@ -86,7 +89,10 @@
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Cortás la racha sin necesitar nada nuevo. A veces alcanza con dejar de complicarla.",
+            "texto": [
+              "Cortás la racha sin necesitar nada nuevo. A veces alcanza con dejar de complicarla.",
+              "Volvés a lo básico y a los veinte minutos el partido ya se siente distinto. La racha se corta acá."
+            ],
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.02, "max": 0.16 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
@@ -371,6 +377,454 @@
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.15, "max": -0.02 },
               { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_ping_de_panico",
+    "category": "partido_presion",
+    "title": "El equipo entra en pánico",
+    "description": "Van perdiendo por poco y el minimapa es una fiesta de pings de retirada y de peligro. Nadie decide nada, todos avisan de todo. Contra {rivalDeLaFecha} así se pierde solo.",
+    "weight": 6,
+    "cooldown": 4,
+    "contexto": {
+      "stakes": ["presion", "define_clasificacion"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "tomar_la_voz_cantante",
+        "label": "Agarrar el shotcalling vos",
+        "descripcion": "Cortás el ruido y empezás a llamar jugadas concretas, aunque no sea tu rol el que suele hacerlo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "modificadores": [
+              { "field": "player.stats.shotcalling", "referencia": 55, "factor": 0.02 }
+            ],
+            "texto": [
+              "Poner una sola voz ordena el caos. En dos jugadas el equipo vuelve a estar jugando junto.",
+              "Llamás claro y firme y el resto se cuelga de eso. La pelea siguiente sale coordinada."
+            ],
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.05, "max": 0.2 },
+              { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Llamás jugadas y nadie te sigue: ahora hay una voz más en el ruido, y encima es la tuya.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.13, "max": 0.0 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "silenciar_y_jugar",
+        "label": "Bajar el volumen y jugar tu parte",
+        "descripcion": "Te callás, hacés lo que te toca impecable y esperás que el pánico se agote solo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El pánico se apaga cuando pasan un par de minutos sin morir nadie. El silencio también ordena.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.02, "max": 0.13 }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Nadie toma el timón y el barco se hunde despacio. Jugaste bien tu parte de un naufragio.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.15, "max": -0.02 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_puesto_en_riesgo",
+    "category": "partido_presion",
+    "title": "Tu titularidad en la balanza",
+    "description": "Se filtró que el staff está mirando reemplazos para tu rol y que este split define si seguís de titular. Todos en el server lo saben y {rivalDeLaFecha} también.",
+    "weight": 5,
+    "cooldown": 5,
+    "contexto": {
+      "stakes": ["presion", "define_clasificacion"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "jugar_para_los_numeros",
+        "label": "Jugar para que tus números no dejen dudas",
+        "descripcion": "Cada decisión pensando en cómo se va a ver en la planilla y en el VOD que va a mirar el staff.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "Te salen los números y el partido: la clase de actuación que corta la discusión de raíz.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.05, "max": 0.19 },
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "Jugás para la cámara y no para el partido. El equipo lo nota, y tus números tampoco quedan tan bien.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.17, "max": -0.02 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugar_para_el_equipo_igual",
+        "label": "Jugar para el equipo y bancarte el ruido",
+        "descripcion": "Ignorás el rumor, hacés las jugadas correctas aunque no luzcan y confiás en que ganar tapa todo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "modificadores": [
+              { "field": "player.stats.mentalidad", "referencia": 58, "factor": 0.02 }
+            ],
+            "texto": "Jugás como si no pasara nada. El equipo gana, y una actuación de equipo pesa más que cualquier planilla.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.04, "max": 0.18 },
+              { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te bancás el ruido pero el ruido igual pesa: el partido se te hace cuesta arriba con la cabeza en otro lado.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.12, "max": 0.02 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "remar_desde_el_fondo",
+    "category": "partido_presion",
+    "title": "Últimos en la tabla",
+    "description": "El split se les escapó temprano y están anteúltimos. Matemáticamente todavía se puede, pero hay que ganar casi todo lo que queda, empezando por hoy contra {rivalDeLaFecha}.",
+    "weight": 5,
+    "cooldown": 5,
+    "contexto": {
+      "stakes": ["presion"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "partido_a_partido",
+        "label": "Cerrar la tabla y jugar solo el de hoy",
+        "descripcion": "No mirás la cuenta grande. Un partido, ganarlo, y recién ahí pensar en el siguiente.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Sacarte la cuenta imposible de la cabeza te libera. Jugás el de hoy suelto y lo ganás.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.04, "max": 0.17 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Por más que lo digas, el fondo de la tabla pesa, y {rivalDeLaFecha} juega con la soltura del que no tiene nada que perder.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.12, "max": 0.02 }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugar_con_la_bronca",
+        "label": "Usar la bronca del split como combustible",
+        "descripcion": "Todo lo que salió mal este split entra a la cancha como energía. Vas a incomodar a {rivalDeLaFecha} desde el minuto uno.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "La bronca bien canalizada es rendimiento: jugás el mejor partido del split cuando ya casi no servía.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.05, "max": 0.2 },
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "La bronca se te va de las manos: jugás caliente, tomás decisiones de caliente y el split termina de hundirse hoy.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.16, "max": -0.02 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_partido_bisagra",
+    "category": "partido_presion",
+    "title": "El que cambia toda la cuenta",
+    "description": "Si ganás hoy, la matemática de clasificación se te da vuelta a favor de un plumazo. Si perdés, dependés de resultados ajenos el resto del split.",
+    "weight": 6,
+    "cooldown": 4,
+    "contexto": {
+      "stakes": ["define_clasificacion", "presion"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "asumir_el_peso",
+        "label": "Asumir el peso: hoy dependemos de nosotros",
+        "descripcion": "Lo hablás en la previa: mejor que dependa de ustedes a estar esperando que otro pierda. Entran a jugarlo como la final que es.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Entrar sabiendo lo que se juega los hace jugar mejor, no peor. Ganan y la tabla se acomoda sola.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.05, "max": 0.2 },
+              { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El peso los agarra tensos y las manos no responden en los momentos clave. La cuenta ahora depende de otros.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.17, "max": -0.02 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "quitarle_dramatismo",
+        "label": "Quitarle dramatismo: es una fecha más",
+        "descripcion": "En la previa lo bajan a tierra: nueve fechas iguales, esta es una. Menos épica, más rutina.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tratándolo como una fecha cualquiera juegan con la naturalidad de siempre, y la naturalidad alcanza.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.03, "max": 0.16 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Bajarle el precio no cambia que lo era: a mitad de partido el peso aparece igual y ya es tarde para asumirlo.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": 0.03 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_scrim_desastroso",
+    "category": "partido_presion",
+    "title": "La semana de práctica fue un desastre",
+    "description": "Perdieron todos los scrims de la semana y el bloque de ayer terminó con el coach cortando temprano. Hoy en serio, contra {rivalDeLaFecha}, y nadie llega con confianza.",
+    "weight": 5,
+    "cooldown": 5,
+    "contexto": {
+      "stakes": ["presion", "define_clasificacion"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "confiar_en_que_scrims_no_son_oficial",
+        "label": "Recordarle a todos que los scrims no son el oficial",
+        "descripcion": "Muchos equipos prueban cosas raras en la semana y en el oficial son otra cosa. Lo decís convencido, y medio te lo creés.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "En el oficial vuelven a lo que saben y funciona. Los scrims quedaron donde tenían que quedar: en la semana.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.04, "max": 0.17 },
+              { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Los problemas de la semana no eran de laboratorio: se repiten calcados en el oficial.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.15, "max": -0.01 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pedir_volver_a_lo_simple",
+        "label": "Pedir tirar la semana a la basura y jugar simple",
+        "descripcion": "Le proponés al coach dejar el plan nuevo, volver a las composiciones de siempre y jugar sin pensar de más.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Vuelven a lo conocido y el equipo respira. Sin el plan nuevo encima, juegan sueltos y ganan.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.03, "max": 0.16 }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El coach cede pero a media máquina, y salen con un pie en el plan viejo y otro en el nuevo. Ni uno ni otro.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.11, "max": 0.02 },
+              { "type": "stat", "path": "career.sinergia", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_fe_publica_del_coach",
+    "category": "partido_presion",
+    "title": "El coach te bancó en la conferencia",
+    "description": "En la nota previa le preguntaron por tu bajón y salió a bancarte con nombre y apellido delante de todos. Ahora hay que devolvérselo en el server, hoy, contra {rivalDeLaFecha}.",
+    "weight": 5,
+    "cooldown": 5,
+    "contexto": {
+      "stakes": ["presion"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "usarlo_de_impulso",
+        "label": "Usar el respaldo como impulso",
+        "descripcion": "Que alguien apueste por vos en público cuando podía tirarte abajo es combustible. Salís a honrarlo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "modificadores": [
+              { "field": "player.stats.mentalidad", "referencia": 55, "factor": 0.02 }
+            ],
+            "texto": [
+              "Jugás sabiendo que hay una espalda cubriéndote y se te nota en la soltura. Le devolvés el gesto con un partidazo.",
+              "El respaldo público te saca el freno de mano. Salís a jugar sin miedo a equivocarte, y así jugás bien."
+            ],
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.05, "max": 0.2 },
+              { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El respaldo se te convierte en una deuda: jugás con miedo a fallarle y el miedo te traba.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.14, "max": -0.01 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "no_pensar_en_eso",
+        "label": "Sacarlo de la cabeza y jugar",
+        "descripcion": "Agradecés el gesto en privado y lo archivás. Adentro del server el respaldo no juega: jugás vos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Separás las cosas y jugás liviano. El coach ve exactamente lo que dijo que iba a ver.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.03, "max": 0.15 }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Por más que lo archives, en cada error te acordás de la conferencia. Pesa igual.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.09, "max": 0.03 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sin_red_este_split",
+    "category": "partido_presion",
+    "title": "Sin red de contención",
+    "description": "No hay revancha en playoffs si esto sale mal: el formato es directo y el equipo no tiene margen de error. Cada fecha de acá al final es una eliminación.",
+    "weight": 5,
+    "cooldown": 5,
+    "contexto": {
+      "stakes": ["define_clasificacion", "presion"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "jugar_conservador",
+        "label": "Jugar conservador: no regalar nada",
+        "descripcion": "Sin red, un error se paga con la temporada. Minimizás riesgo en cada decisión.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Jugás sin regalar una sola jugada y {rivalDeLaFecha}, que necesitaba que te equivocaras, se queda esperando.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.03, "max": 0.16 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 0, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Jugar con tanto miedo a errar te vuelve pasivo, y la pasividad también es una forma de perder.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.12, "max": 0.02 }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugar_tu_juego",
+        "label": "Jugar tu juego de siempre, sin achicarte",
+        "descripcion": "La única forma de jugar bien es jugar como sabés. Si te achicás por el formato, ya perdiste.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Jugás con la misma agresividad de siempre y funciona: el que no tiene red sos vos, pero también sos el mejor.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.05, "max": 0.2 },
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Jugás tu juego, un riesgo que otro día sale bien hoy sale mal, y el margen cero no perdona.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.17, "max": -0.03 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
           }
         ]

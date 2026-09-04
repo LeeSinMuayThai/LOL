@@ -20,7 +20,10 @@
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Mientras el resto se calienta con el historial, vos jugás el partido que tenés adelante.",
+            "texto": [
+              "Mientras el resto se calienta con el historial, vos jugás el partido que tenés adelante.",
+              "Le quitás la carga de clásico y lo jugás como una fecha más. Sin la sangre en la cabeza, jugás mejor."
+            ],
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.04, "max": 0.18 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -366,6 +369,452 @@
             "texto": "Por más que lo bajes, el partido igual pesa distinto, y se nota en los primeros minutos.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": 0.03 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_historial_en_contra",
+    "category": "partido_clasico",
+    "title": "Nunca les ganaste",
+    "description": "Contra {rivalDeLaFecha} tu récord es feo: los cruzaste varias veces y no ganaste ninguna. En la previa alguien lo saca en un gráfico y se hace tendencia.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "stakes": ["clasico", "revancha"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "hacerse_cargo_del_historial",
+        "label": "Hacerte cargo: hoy se corta",
+        "descripcion": "Asumís el fantasma en voz alta y lo convertís en objetivo. Hoy es el día o no es ninguno.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": [
+              "Cortás la racha justo cuando todos daban por hecho que no podías. Ese peso menos se siente en el cuerpo.",
+              "Ganás, y el gráfico que era una burla ahora es una anécdota. Nunca más te lo van a poder tirar en la cara igual."
+            ],
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.05, "max": 0.2 },
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "Salís con el historial en la cabeza y {rivalDeLaFecha} lo huele. El fantasma pesa y el récord se estira.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.16, "max": -0.02 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ignorar_el_historial",
+        "label": "El historial no juega: lo ignorás",
+        "descripcion": "Partidos viejos, equipos distintos, metas distintos. Lo tratás como un cruce cualquiera y listo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "modificadores": [
+              { "field": "player.stats.mentalidad", "referencia": 55, "factor": 0.02 }
+            ],
+            "texto": "Jugás sin la mochila del récord y por primera vez el cruce se siente parejo de verdad. Y esta vez lo ganás.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.04, "max": 0.18 }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo ignorás bien, pero {rivalDeLaFecha} de verdad te tiene el número: el plan que siempre les funcionó vuelve a funcionar.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.11, "max": 0.02 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_pique_en_redes",
+    "category": "partido_clasico",
+    "title": "El ida y vuelta en redes",
+    "description": "Alguien de {rivalDeLaFecha} tiró una chicana en la previa y te etiquetó. Todo el mundo espera tu respuesta antes del partido.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "stakes": ["clasico", "rival_de_generacion"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "contestar_con_filo",
+        "label": "Contestar con filo",
+        "descripcion": "Le devolvés la chicana con una mejor. Ahora el clásico se vende solo y vos tenés que respaldarlo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Tu respuesta la rompe, el partido se hace evento, y encima ganás. La semana entera es tuya.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.05, "max": 0.19 },
+              { "type": "stat", "path": "player.stats.hype", "min": 4, "max": 8, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Te subiste al pique y perdiste el partido. El recorte de tu chicana ahora es un meme con tu cara.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.16, "max": -0.02 },
+              { "type": "stat", "path": "player.stats.hype", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "no_engancharse",
+        "label": "No engancharte y contestar en el server",
+        "descripcion": "Le ponés un like para que sepa que lo viste y nada más. La respuesta va adentro del juego.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "No le das el ida y vuelta que buscaba y en el server le pasás por arriba. El silencio quedó mejor que cualquier tweet.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.04, "max": 0.17 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "No contestás, pero la chicana te quedó dando vueltas igual, y en el server jugás más caliente de lo que querías.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": 0.03 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_que_te_reemplazo",
+    "category": "partido_clasico",
+    "title": "El que ocupó tu silla",
+    "description": "En {rivalDeLaFecha} juega el que trajeron para tu rol cuando a vos te soltaron. Toda la previa gira alrededor de esa comparación.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "stakes": ["clasico", "revancha"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "ganarle_el_mano_a_mano",
+        "label": "Ir a ganarle el mano a mano",
+        "descripcion": "Que quede clarísimo, en su cara y en la de todos, que la organización se equivocó de nombre.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Le ganás la línea, le ganás el partido y le ganás el titular del día siguiente. Mensaje entregado.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.06, "max": 0.21 },
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Jugás obsesionado con su columna en la planilla y descuidás el partido. Él hace lo suyo tranquilo y ganan ellos.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.17, "max": -0.02 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "que_hable_el_equipo",
+        "label": "Dejar que hable el equipo, no el ego",
+        "descripcion": "La mejor respuesta a que te reemplazaron es un equipo que funciona alrededor tuyo mejor que el de ellos alrededor de él.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Jugás para tu equipo, ganan cómodo, y la comparación se resuelve sola: el que mejor juega en equipo sos vos.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.04, "max": 0.18 },
+              { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Jugás desapegado pero la comparación te pica igual cada vez que él hace una jugada. No rinde ni una cosa ni la otra.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": 0.02 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_rival_en_su_pico",
+    "category": "partido_clasico",
+    "title": "Tu rival de camada, en su mejor momento",
+    "description": "El que debutó tu mismo año viene de dos MVPs seguidos y toda la prensa lo pone por encima tuyo por primera vez. Hoy los cruzás.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "stakes": ["rival_de_generacion"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "aprovechar_para_dar_el_golpe",
+        "label": "Aprovechar: ganarle ahora vale doble",
+        "descripcion": "Está arriba de todos. Bajarlo justo hoy reordena toda la conversación sobre tu generación.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "Le ganás en su mejor momento y eso no se lo saca nadie. La conversación sobre tu camada vuelve a incluirte primero.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.06, "max": 0.21 },
+              { "type": "stat", "path": "player.stats.hype", "min": 4, "max": 8, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "Está en su pico por algo: te pasa por arriba en el duelo y el gráfico que te ponía segundo ahora te pone tercero.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.17, "max": -0.03 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "no_comerse_la_comparacion",
+        "label": "No comerte la comparación de la prensa",
+        "descripcion": "Su racha es su racha. Vos jugás tu partido y tu carrera es larga: no se define en una tabla de rendimiento de este mes.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "modificadores": [
+              { "field": "player.stats.mentalidad", "referencia": 58, "factor": 0.02 }
+            ],
+            "texto": "Jugás sin querer probar nada y te sale un partido sólido. Que él esté en racha no te obliga a forzar la tuya.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.03, "max": 0.16 }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Decís que no te importa la comparación y cada vez que él aparece en pantalla se te nota que sí.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.09, "max": 0.03 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_clasico_sin_nada_en_juego",
+    "category": "partido_clasico",
+    "title": "Clásico, pero la tabla ya está resuelta",
+    "description": "Contra {rivalDeLaFecha} es siempre especial, pero esta vez ninguno de los dos se juega nada en la tabla. Es orgullo puro, y el orgullo a veces distrae.",
+    "weight": 4,
+    "cooldown": 6,
+    "contexto": {
+      "stakes": ["clasico"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "jugarlo_como_final",
+        "label": "Jugarlo como si fuera una final igual",
+        "descripcion": "Que no valga puntos no significa que no valga. Un clásico se juega a muerte siempre.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Le ponés intensidad de playoffs a un partido sin puntos y ganás el que a la gente le importa de verdad.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.05, "max": 0.19 },
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Le ponés todo a un partido que no daba nada y salís gastado para la semana que sí importa.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.12, "max": 0.02 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "usarlo_de_ensayo",
+        "label": "Usarlo de ensayo para playoffs",
+        "descripcion": "Sin presión de resultado, probás la composición nueva y las jugadas que querés tener listas para la serie que viene.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Probás cosas sin miedo, la mitad funciona, y llegás a playoffs con un as en la manga que nadie te vio usar.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.02, "max": 0.13 },
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Experimentás tanto que perdés un clásico igual, y a la gente no le explicás con que era un ensayo.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": 0.02 },
+              { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "revancha_de_la_final",
+    "category": "partido_clasico",
+    "title": "Los de la final perdida",
+    "description": "{rivalDeLaFecha} te ganó la última final que jugaste, en su casa, con el trofeo en la mesa. Hoy es un partido de fase regular, pero para vos nunca va a ser solo eso.",
+    "weight": 5,
+    "cooldown": 7,
+    "contexto": {
+      "stakes": ["revancha"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "canalizar_la_final",
+        "label": "Meter la final perdida adentro del partido",
+        "descripcion": "Cada jugada con la imagen de ellos levantando el trofeo. Es bronca vieja, y hoy tiene dónde ir.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": [
+              "La bronca de esa final, bien puesta, es el mejor combustible que tuviste en meses. Los pasás por arriba.",
+              "Jugás con un año de bronca acumulada y sale rendimiento puro. Fase regular, pero se sintió como cobrarse la final."
+            ],
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.06, "max": 0.21 },
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Jugás la final de nuevo en tu cabeza en vez de jugar el partido de hoy, y la historia se repite.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.18, "max": -0.03 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "guardar_la_final_para_playoffs",
+        "label": "Guardar esa bronca para cuando importe",
+        "descripcion": "Hoy no es la revancha de verdad. Jugás normal y reservás toda esa carga para si los cruzás en playoffs.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Jugás el de hoy sin gastar la bala grande. Ganás igual, y la revancha de verdad sigue esperando entera.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.03, "max": 0.15 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Guardar la bronca te deja jugar sin intensidad, y {rivalDeLaFecha} te vuelve a ganar, esta vez sin trofeo de por medio.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.11, "max": 0.02 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sin_calentar_el_clasico",
+    "category": "partido_clasico",
+    "title": "Bajarle el precio al clásico, de adentro",
+    "description": "El vestuario ya está encendido con el cruce contra {rivalDeLaFecha} tres días antes. {jungla} habla de nada más. Vos sabés que llegar así de caliente al viernes cansa.",
+    "weight": 4,
+    "cooldown": 6,
+    "contexto": {
+      "stakes": ["clasico"],
+      "ventana": ["regular"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "enfriar_el_vestuario",
+        "label": "Enfriar el vestuario a propósito",
+        "descripcion": "Cortás la charla de clásico en la semana. Rutina normal, foco en el juego, la épica se guarda para el viernes.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Llegan al viernes con energía en vez de quemados de hablarlo. La intensidad justa aparece sola cuando arranca.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.04, "max": 0.18 },
+              { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Cortás tanto el clima que el viernes entran fríos, y un clásico frío contra {rivalDeLaFecha} lo agarra el que llegó caliente.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.12, "max": 0.02 }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejar_que_se_encienda",
+        "label": "Dejar que el vestuario se encienda",
+        "descripcion": "Si el equipo quiere vivir el clásico toda la semana, lo vivís con ellos. La energía compartida también une.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Llegan al viernes como una sola cosa, con tres días de hype compartido. Esa unión se ve en cada pelea.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.04, "max": 0.17 },
+              { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Tres días a fuego máximo los deja fundidos para el viernes. La cabeza pide el partido que el cuerpo ya no tiene.",
+            "effects": [
+              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.13, "max": 0.0 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
           }
         ]

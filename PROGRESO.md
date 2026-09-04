@@ -33,6 +33,59 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-04 — Fase 9R3b: los pools de fecha marcada se hacen profundos
+
+Segundo commit de 9R.3. 9R3a puso la infraestructura de variantes y expandió la reacción
+post-partido; 9R3b ataca el otro lado del mismo problema: **el "momento" de la fecha marcada**
+(el evento que el jugador decide antes del resultado). Feedback del usuario: *"El objetivo que
+define la fecha aparece 3 veces por carrera, siempre igual"*.
+
+#### El problema, medido
+
+De un jugador de rol X, el pool de "momento" de una fecha marcada eran **3 eventos genéricos + 1
+de su rol** en `partido/dentro_del_mapa.json` (8 en total, 5 de ellos rol-específicos). Los 3
+genéricos (*"El objetivo que define la fecha"*, *"Abajo, pero no afuera"*, *"Un compañero se mandó
+solo"*) aparecían en TODA fecha marcada sin importar el motivo → los tres eventos más repetidos de
+una carrera después de arreglar `pool.json` en 9R3a.
+
+#### El arreglo (contenido)
+
+- **`partido/dentro_del_mapa.json` 8 → 23.** Genéricos 3 → 13 (Barón 4v5, la ventaja que no
+  cierra, el flanco que solo viste vos, splitear o agrupar, la ventaja se derrite, escaramuza en
+  el scuttle, la ventana del plan, el partido te ofrece la jugada, primer sangre en contra, …).
+  Rol 5 → 10 (un segundo evento por cada rol: gank/farm, el TP, roam/lane, kite tardío,
+  engage/peel).
+- **`partido/presion.json` 6 → 13** (el pánico del equipo, la titularidad en la balanza, remar
+  desde el fondo, el partido bisagra, la semana de scrims desastrosa, el respaldo público del
+  coach, sin red de contención).
+- **`partido/clasico.json` 6 → 13** (nunca les ganaste, el ida y vuelta en redes, el que ocupó tu
+  silla, tu rival de camada en su pico, clásico sin nada en juego, la revancha de la final, bajarle
+  el precio al clásico de adentro).
+- `texto` en array de variantes en ~10 de los eventos nuevos + los 3 genéricos viejos de
+  `dentro_del_mapa` y los 2 más vistos de `presion`/`clasico`.
+
+#### Números medidos
+
+- Evento más repetido por carrera: **mediana 4 → 3**, máx **7 → 6** (N=150/250).
+- Eventos distintos por carrera: mediana **53 → 63**.
+- Catálogo: **108 → 137 eventos** (+29).
+- `simulate.js 1000`: 0 crashes · determinismo intra-versión 150/150 · build OK (717 KB).
+
+#### Sin checks nuevos
+
+El check *"volumen de decisiones"* (tope 4/8 del evento más repetido, fijado en 9R3a) pasa ahora
+con margen (3/6). No se aprieta más acá: 9R3c/9R3d vuelven a mover el stream de RNG y conviene
+dejar aire. Se aprieta al cierre de 9R.3 si el número aguanta.
+
+#### Colateral
+
+- **D37 (familia):** +29 eventos en `TODOS_LOS_EVENTOS` → `weightedPick` de `candidatosDePartido`
+  (momento) cae distinto. Determinismo intra-versión intacto.
+- **D37 (damnificado, familia D21):** *"El arraigo llega a Ídolo+…"* volvió a rozar su borde
+  (600 seeds → 14,8%, bajo el 15%). Es el mismo check que 9Rd ya movió de 300 a 600. El rate real
+  orbita el umbral: 1000 → 15,1%, 1500 → 15,5%. Muestra ampliada **600 → 1200** (estimador estable
+  ~15,4%), umbral 15% intacto.
+
 ### 2026-09-04 — Fase 9R3a: la variación léxica existe
 
 Primer commit de la **fase 9R.3** (catálogo 97 → ~280 + variación léxica). Feedback del usuario:

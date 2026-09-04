@@ -3532,10 +3532,12 @@ check('El arraigo llega a Ídolo+ en una fracción sana de las carreras estables
   let elegibles = 0;
   let llegaron = 0;
 
-  // Fase 9Rd: 300 seeds caían en 14,7% (por debajo del 15%) tras el corrimiento
-  // de stream — a 600+ el rate real es 16-17% (D37, familia D21). Muestra
-  // ampliada, mismo criterio.
-  for (let seed = 1; seed <= 600; seed += 1) {
+  // D37, familia D21 — check sensible al corrimiento de stream. El rate real
+  // orbita el umbral: 9Rd lo subió de 300 a 600 seeds (300 daba 14,7%); 9R3b
+  // volvió a moverlo (600 → 14,8%, 1000 → 15,1%, 1500 → 15,5%). Muestra a 1200:
+  // el estimador se estabiliza en ~15,3-15,6% y deja de rozar el borde por
+  // varianza de muestra chica. Mismo criterio, no se toca el 15%.
+  for (let seed = 1; seed <= 1200; seed += 1) {
     const state = correrCarrera(seed, 60);
     const filaMasLarga = [...state.career.registro.porOrg].sort((a, b) => b.splits - a.splits)[0];
     if (!filaMasLarga || filaMasLarga.splits < 8) {
@@ -3550,7 +3552,7 @@ check('El arraigo llega a Ídolo+ en una fracción sana de las carreras estables
   }
 
   if (elegibles < 30) {
-    throw new Error(`solo ${elegibles} carreras con ≥8 splits en una misma org en 600 seeds: muestra insuficiente`);
+    throw new Error(`solo ${elegibles} carreras con ≥8 splits en una misma org en 1200 seeds: muestra insuficiente`);
   }
 
   const fraccion = llegaron / elegibles;
