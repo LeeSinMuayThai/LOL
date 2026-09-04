@@ -121,5 +121,465 @@
         ]
       }
     ]
+  },
+  {
+    "id": "mid_el_priority_de_la_liga",
+    "category": "rol_mid",
+    "title": "El early del equipo depende de tu prioridad",
+    "description": "El plan de {org} arranca por la jungla, y para que funcione vos tenés que ganar el push de la línea todos los partidos. Si tu rival empuja primero, el jungla queda sin nada que hacer.",
+    "weight": 6,
+    "cooldown": 5,
+    "contexto": {
+      "ventana": ["regular", "playoffs"],
+      "rol": ["mid"],
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "priorizar_el_push",
+        "label": "Jugar para la prioridad aunque pierdas oro",
+        "descripcion": "Pusheás cada ola aunque signifique perder farm por posición y exponerte a ganks. El jungla te lo va a devolver si convierte esa prioridad.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "Tenés prioridad los primeros diez minutos y el jungla la convierte en dos objetivos y una línea ganada. Tu partido chico infló el del equipo.",
+              "Cedés farm y ganás tempo: cada vez que el jungla quiere hacer algo, vos ya estás empujado y podés seguir. El plan corre sobre tus olas."
+            ],
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.laneo", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Pusheás sin visión y te comés dos ganks seguidos. Tenías la prioridad justo hasta que la perdiste con la vida.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugar_tu_partido",
+        "label": "Jugar tu línea para ganarla, no para pushear",
+        "descripcion": "Priorizás tu propio desarrollo: farmeás lo tuyo, buscás el solokill y dejás que el jungla se las arregle. Tu carril crece, el early del equipo se resiente.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Ganás la línea en oro y experiencia y para el minuto quince sos el más fuerte del mapa. El jungla la pasó mal temprano, pero ahora lo cargás vos.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 5, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Tu jungla no llega a hacer un solo camino con prioridad y el rival le come la jungla entera. Ganaste tu línea y perdieron el mapa.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "mid_el_confort_baneado",
+    "category": "rol_mid",
+    "title": "Te banean el confort toda la serie",
+    "description": "El rival de {org} dedicó dos baneos por partido a sacarte tus dos campeones de siempre. Toda la serie la vas a jugar con la tercera y la cuarta opción de tu pool.",
+    "weight": 5,
+    "cooldown": 5,
+    "contexto": {
+      "ventana": ["regular", "playoffs"],
+      "rol": ["mid"],
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "ampliar_el_pool",
+        "label": "Meterle a los picks nuevos toda la semana",
+        "descripcion": "En vez de quejarte del baneo, usás la semana para dejar afilados otros tres campeones. Si te salen, los baneos dejan de dolerte para siempre.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "Aparecés en la serie con un pick que nadie te vio jugar y funciona igual de bien. Ahora banearte dos campeones no alcanza.",
+              "El pool ancho paga: jugás la cuarta opción como si fuera la primera y el scouting rival se queda corto."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 3, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Una semana no alcanza para llevar tres campeones a nivel de playoffs. Jugás decente pero se nota que no es tu terreno.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "forzar_el_confort",
+        "label": "Obligar al equipo a first-pickear tu confort",
+        "descripcion": "Le pedís al coach que gaste el primer pick de la serie en asegurarte tu campeón. Le sacás flexibilidad al draft del equipo para que vos estés cómodo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Con tu confort en la mano jugás el mejor partido de la serie y el equipo lo banca. El first pick invertido en vos rindió.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El equipo gasta el first pick en vos y el rival arma toda su composición contra eso. Te dieron el confort y te lo cobraron en la partida.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "mid_seguir_al_jungla",
+    "category": "rol_mid",
+    "title": "Tu jungla te quiere siempre arriba",
+    "description": "El jungla de {org} vive del lado de arriba del mapa y te pide que lo sigas partido tras partido. Mientras tanto tu bot se ahoga sin que nadie los mire.",
+    "weight": 5,
+    "cooldown": 5,
+    "contexto": {
+      "ventana": ["regular", "playoffs"],
+      "rol": ["mid"],
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "acompañar_al_jungla",
+        "label": "Jugar topside con tu jungla",
+        "descripcion": "Concentrás el juego arriba con él y armás una ventaja pesada de ese lado. El bot va a sufrir; la apuesta es que arriba alcance para tapar el agujero.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "Arriba se vuelve tierra quemada para el rival: dos torres, el heraldo y la jungla enemiga partida al medio. El bot perdió, pero el mapa es de ustedes.",
+              "Vos y el jungla jugan como una dupla y el lado de arriba no tiene respuesta. Compensa de sobra lo que se pierde abajo."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "career.sinergia", "min": 2, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Arriba se juega parejo y abajo se prende fuego. La ventaja que armaron no alcanzó y el bot te lo va a recordar.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "repartir_el_mapa",
+        "label": "Insistir en jugar los dos lados",
+        "descripcion": "Le decís al jungla que no podés vivir arriba, que el bot también existe. Te obliga a caminar más y a leer mejor cuándo ir a cada lado.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Repartís tu presencia y ningún lado del mapa se hunde. Menos ventaja concentrada, pero un equipo entero que sigue en partido.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Caminás de un lado al otro y no incidís en ninguno a tiempo. El jungla juega solo arriba y te reprocha que lo dejaste sin mid.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.laneo", "min": -1, "max": 1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "mid_el_win_condition",
+    "category": "rol_mid",
+    "title": "Vos sos la condición de victoria",
+    "description": "El equipo de {org} armó la composición para diferir todo al minuto treinta y ponerte el partido en las manos. Si la pelea final la ganás, sos un héroe; si no, fue tu partido para perder.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "ventana": ["regular", "playoffs"],
+      "rol": ["mid"],
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "asumir_el_peso",
+        "label": "Aceptar que el partido pasa por vos",
+        "descripcion": "Jugás los primeros treinta minutos para llegar entero y bien, sabiendo que la pelea que importa la tenés que resolver vos. Es el peso que pediste al elegir el rol.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": [
+              "En la pelea de Barón ponés cuatro objetivos de daño en dos segundos y el partido se termina ahí. Para eso te lo dieron.",
+              "Llegás al late enorme y resolvés la teamfight que define. El equipo confió en la condición de victoria y la condición respondió."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.teamfight", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "La pelea que tenías que ganar la perdés por un posicionamiento de más. Todo el partido se jugó para ese momento y no estuviste.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pedir_reparto",
+        "label": "Pedir que el partido no dependa solo de vos",
+        "descripcion": "Le decís al coach que preferís composiciones donde el peso esté repartido. Más margen de error para vos, menos techo para el equipo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El equipo juega con más frentes y a vos te saca presión de encima. Jugás más suelto y con menos miedo a equivocarte.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Sin una condición de victoria clara, los partidos parejos se les escapan por no tener a quién darle la pelota. El coach lo anota.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": -2, "max": 0, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "mid_el_duelo_de_pantalla",
+    "category": "rol_mid",
+    "title": "Cada mid es un 1v1 de ego",
+    "description": "En soloQ el matchup de mid se siente personal: el otro te escribe en el chat, te hace emotes y el partido se convierte en quién le gana a quién, aunque haya otros ocho jugadores.",
+    "weight": 6,
+    "cooldown": 4,
+    "contexto": {
+      "ventana": ["regular", "playoffs"],
+      "rol": ["mid"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "aceptar_el_duelo",
+        "label": "Entrar al duelo y ganarlo",
+        "descripcion": "Aceptás el 1v1: cada onda, cada all-in, jugás para romperlo a él. Si le ganás la línea con contundencia, el resto del mapa suele seguir.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Lo matás tres veces antes del minuto diez y deja de escribir. Con la línea rota, roameás y el partido se cae solo para tu lado.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.laneo", "min": 3, "max": 5, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": 15, "max": 28 }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El duelo te absorbe tanto que dejás de mirar el mapa. Le ganás la línea y perdés la partida porque los otros cuatro carriles se hundieron.",
+            "effects": [
+              { "type": "ladder", "path": "player.ranked", "min": -22, "max": -8 }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ignorar_el_pique",
+        "label": "Ignorar el pique y jugar el mapa",
+        "descripcion": "Muteás el chat, jugás la línea a no perder y ponés la cabeza en objetivos y roams. Menos catártico, más LP.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "Jugás la línea parejo y te la pasás mirando minimapa. Ganás tres peleas por estar en el lugar correcto y subís sin haber tryhardeado el 1v1.",
+              "El otro se cansa de escribirle a alguien que no contesta. Vos ya estás roameando bot mientras él sigue esperando el duelo."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": 8, "max": 20 }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Jugar tan a no perder te deja sin prioridad y tu jungla se queja de que nunca estás para ayudarlo. El LP queda igual que al empezar.",
+            "effects": [
+              { "type": "ladder", "path": "player.ranked", "min": -12, "max": -2 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "mid_el_prodigio_que_sube",
+    "category": "rol_mid",
+    "title": "El pibe de la academia que te apuntan",
+    "description": "Un mid de dieciséis de la academia de {org} está haciendo números absurdos en la liga de desarrollo y en la prensa ya lo ponen como tu reemplazo natural para el año que viene.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "ventana": ["regular", "playoffs"],
+      "rol": ["mid"],
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "usarlo_de_combustible",
+        "label": "Usar la presión para exigirte más",
+        "descripcion": "En vez de sentirte amenazado, tomás al pibe como la razón para volver a entrenar como cuando subías vos. Puede renovarte, o puede quemarte.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": [
+              "Volvés a las diez horas de práctica con hambre de rookie y tu nivel pega un salto. El pibe que te empujaba te terminó haciendo mejor.",
+              "La amenaza te despierta: mejorás en dos meses lo que no movías hacía un año. Que espere sentado."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 3, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Entrenás con miedo en vez de con ganas y el rendimiento no sube: solo te cansás más. La sombra del pibe te juega en contra.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "tomarlo_bajo_el_ala",
+        "label": "Ayudarlo vos mismo en las scrims",
+        "descripcion": "Le pasás VODs, le corregís la fase de líneas, lo tratás como proyecto y no como rival. Si algún día te reemplaza, que sea alguien que aprendió de vos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El pibe mejora rápido y el vestuario ve que fuiste vos quien lo formó. Tu lugar en el equipo deja de medirse solo en stats.",
+            "effects": [
+              { "type": "stat", "path": "career.jerarquia", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Le enseñás todo lo que sabés y a fin de año el que se queda es él. Hiciste bien tu parte y igual dolió.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "mid_el_flash_por_el_equipo",
+    "category": "rol_mid",
+    "title": "Quemar el flash por una jugada ajena",
+    "description": "El jungla y el top están por forzar arriba y necesitan que gastes tu flash en el combo para asegurarlo. Si lo hacés, quedás sin escape en tu línea diez minutos.",
+    "weight": 6,
+    "cooldown": 4,
+    "contexto": {
+      "ventana": ["regular", "playoffs"],
+      "rol": ["mid"],
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "quemar_el_flash",
+        "label": "Gastar el flash y asegurar la jugada",
+        "descripcion": "Ponés tu recurso al servicio de la jugada del equipo. Vas a jugar tu línea a pie y muy respetuoso hasta que vuelva.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "Tu flash cierra el combo y la jugada sale redonda: doble kill arriba. Jugás tu línea con miedo un rato, pero el mapa ya se inclinó.",
+              "El equipo agarra el objetivo porque vos pusiste el summoner. Diez minutos incómodos a cambio de una ventaja que dura todo el partido."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.shotcalling", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Gastás el flash, la jugada igual se cae, y a los dos minutos el jungla rival te mata sin summoner. Pagaste por una jugada de otros que no salió.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "guardar_el_flash",
+        "label": "Guardar el flash y quedarte seguro",
+        "descripcion": "No comprometés tu recurso: la jugada arriba se hace sin vos o no se hace. Tu línea queda a salvo, el equipo con una herramienta menos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "La jugada arriba no se fuerza, pero vos mantenés tu línea sólida y presionás fuerte con el flash arriba. Elegiste tu tempo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.laneo", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El jungla te putea por comm: tenían la jugada servida y vos no quisiste poner el summoner. El clima queda espeso.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

@@ -122,5 +122,465 @@
         ]
       }
     ]
+  },
+  {
+    "id": "adc_el_2v2_perdido",
+    "category": "rol_adc",
+    "title": "El 2v2 lo perdés en el draft",
+    "description": "El matchup de {support} contra el support rival es de los que no se juegan. Vas a pasar la fase de líneas bajo torre haciendo nada, sin que sea culpa tuya.",
+    "weight": 6,
+    "cooldown": 5,
+    "contexto": {
+      "ventana": ["regular", "playoffs"],
+      "rol": ["adc"],
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "farmear_bajo_torre",
+        "label": "Aceptar el CS bajo torre y llegar al late",
+        "descripcion": "No forzás nada: farmeás lo que puedas bajo torre, no regalás nada y jugás para existir en el minuto treinta. Paciencia pura.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "Perdés diez de CS pero no una sola vida. Llegás al late a tiempo y ahí el matchup se da vuelta: en teamfight pegás vos.",
+              "Aguantás la fase de líneas sin romperte y para el minuto veinticinco estás a items de él. La paciencia te dejó en partido."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El rival te niega tanto que llegás al late diez de nivel abajo. Sobreviviste la línea sin poder recuperarte nunca.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pedir_jungla_abajo",
+        "label": "Pedir que la jungla resuelva tu línea",
+        "descripcion": "Le pedís al equipo que prioricen bot para desnivelar el 2v2 con un 2v3. Es tempo que le sacás al resto del mapa para tapar tu problema.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El jungla baja dos veces, mueren los dos rivales y el matchup imposible pasa a ser tu línea ganada. Pediste ayuda a tiempo.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.laneo", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "La jungla baja, no sale nada, y ese tempo que gastaron abajo el rival lo cobró arriba. Tu línea sigue perdida y ahora el mapa también.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "adc_el_pick_del_meta",
+    "category": "rol_adc",
+    "title": "El ADC del meta es uno que odiás",
+    "description": "El parche dejó como mejor tirador de la liga a un campeón con el que nunca te sentiste cómodo. El coach de {org} lo quiere en tu ficha; vos preferís tu confort aunque esté un escalón abajo.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "ventana": ["pretemporada", "regular", "playoffs"],
+      "rol": ["adc"],
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "aprender_el_meta",
+        "label": "Aprender el pick del meta aunque no te guste",
+        "descripcion": "Le metés las horas al campeón que no disfrutás porque es lo que le da más chances al equipo. Profesionalismo sobre gusto.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "Termina cayéndote bien de tanto jugarlo, y lo jugás al nivel de los mejores de la liga. El equipo entra a cada partido con el pick fuerte.",
+              "No te encanta y no importa: lo jugás sólido y el draft del equipo respira. Sumaste un campeón de verdad al pool."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 3, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo jugás obligado y se nota: mecánicamente correcto, sin la chispa que tenés con tu confort. Un pick del montón.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": -1, "max": 1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "bancar_tu_confort_adc",
+        "label": "Jugar tu confort y compensar con nivel",
+        "descripcion": "Le decís al coach que rendís más con lo tuyo aunque el meta diga otra cosa. Te la jugás a que tu ejecución tape la diferencia de pick.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Tu confort en tus manos rinde más que el pick del meta en manos incómodas. El coach te deja de romper las bolas con el tema.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El pick del meta era mejor por algo: en playoffs los rivales lo pickean y te pasan por encima en cada teamfight. Tu confort no alcanzó.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "adc_farm_o_pelea",
+    "category": "rol_adc",
+    "title": "Se arma la pelea y tenés tres olas encima",
+    "description": "El equipo hace una llamada de pelea en mid y vos tenés tres olas chocando en la línea de al lado. Ir es dejar sesenta de oro tirados; no ir es un 4v5.",
+    "weight": 6,
+    "cooldown": 4,
+    "contexto": {
+      "ventana": ["regular", "playoffs"],
+      "rol": ["adc"],
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "ir_a_la_pelea",
+        "label": "Soltar el farm e ir a la pelea",
+        "descripcion": "Priorizás el número: un ADC en la teamfight vale más que tres olas. Perdés oro seguro por una pelea que puede salir para cualquier lado.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "Llegás justo, ponés el daño que faltaba y la pelea se gana limpia. Las tres olas perdidas no le importan a nadie.",
+              "Con vos la pelea es 5v5 y la ganan. El oro del farm se recupera en los objetivos que vienen atrás."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.teamfight", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Llegás a la pelea, se pierde igual, y encima cediste las tres olas. El peor de los dos mundos.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "quedarte_farmeando",
+        "label": "Quedarte a juntar las olas",
+        "descripcion": "Confiás en que el equipo aguante el 4v5 unos segundos y priorizás no perder tu economía. Egoísta si sale mal, correcto si el equipo no se compromete.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Juntás las tres olas, subís un item antes que el ADC rival y con esa ventaja ganás la teamfight siguiente vos solo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El equipo se compromete al 4v5 sin vos, lo pierden feo, y el review empieza y termina en \"el ADC estaba farmeando\".",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "adc_el_frontline_sos_vos",
+    "category": "rol_adc",
+    "title": "La composición no tiene quién vaya al frente",
+    "description": "El draft de {org} salió sin un solo iniciador. Para que las peleas pasen, alguien tiene que caminar primero al rango de daño, y ese alguien vas a tener que ser vos.",
+    "weight": 5,
+    "cooldown": 5,
+    "contexto": {
+      "ventana": ["regular", "playoffs"],
+      "rol": ["adc"],
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "dar_la_cara",
+        "label": "Aceptar jugar más adelante de lo que te gusta",
+        "descripcion": "Te ponés a tiro para que el equipo pueda pelear, sabiendo que un error de posición te cuesta la vida y probablemente la teamfight.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": [
+              "Encontrás la distancia justa: cerca para pegar, lejos para que no te maten. Las peleas empiezan cuando vos decidís y las ganan.",
+              "Jugás un ADC valiente sin ser un ADC tonto. El equipo pelea porque vos les diste el punto de partida."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.teamfight", "min": 3, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Jugar tan adelante te cuesta caro: te agarran de entrada dos peleas seguidas y sin ADC no hay daño. La composición te expuso y lo pagaste.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugar_atras_igual",
+        "label": "Jugar tu posición de siempre y que el equipo se adapte",
+        "descripcion": "No cambiás nada: si el draft salió sin frontline, que lo resuelvan con jugadas lentas. Vos protegés tu daño para el momento que importa.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El equipo juega alrededor de emboscadas y visión en vez de engages, y a vos te llega intacto cada teamfight. Se puede ganar sin caminar primero.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Sin nadie que abra, las peleas nunca pasan y el partido se muere en un empate largo que el rival rompe primero. Faltó que alguien diera el paso.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "adc_la_soloq_a_las_cuatro",
+    "category": "rol_adc",
+    "title": "Ladder a las cuatro de la mañana",
+    "description": "Estás a un par de partidas del corte que te propusiste y son las cuatro. La próxima decide si cerrás la noche arriba o tirando lo que ganaste.",
+    "weight": 6,
+    "cooldown": 4,
+    "contexto": {
+      "ventana": ["regular", "playoffs"],
+      "rol": ["adc"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "una_mas_cansado",
+        "label": "Jugar una más aunque estés fundido",
+        "descripcion": "Te la jugás a que el hambre le gane al cansancio. Si tu mecánica aguanta despierta, cerrás el objetivo esta noche.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "El piloto automático te alcanza: farmeás limpio, no forzás nada y ganás el último por inercia. Cerraste el corte y a dormir.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": 12, "max": 25 }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "A las cuatro tu tiempo de reacción no existe: fallás kites que dormido ni pensás y regalás la partida. Te vas a dormir más abajo que al empezar la noche.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": -22, "max": -8 }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cortar_y_dormir",
+        "label": "Cerrar el cliente y dormir",
+        "descripcion": "Aceptás que el LP de hoy es el que hay y priorizás llegar entero a las scrims de mañana. Disciplina sobre ansiedad.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": [
+              "Dormís ocho horas y al otro día jugás las scrims fino y descansado. El corte va a estar mañana, y vos vas a llegar mejor.",
+              "Cerrás sin drama. Tu yo de mañana, con reflejos, te lo agradece más que dos LP de hoy a las cuatro."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Cortás, pero te quedás en la cama pensando en las dos partidas que no jugaste. Descansaste el cuerpo, no la cabeza.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "adc_el_support_nuevo",
+    "category": "rol_adc",
+    "title": "Te cambian el support a mitad de split",
+    "description": "El equipo mueve fichas y te ponés a jugar con un {support} nuevo con el que nunca compartiste una scrim. La sincronía de bot, que tardó un año en cuajar, vuelve a foja cero.",
+    "weight": 5,
+    "cooldown": 5,
+    "contexto": {
+      "ventana": ["regular", "playoffs"],
+      "rol": ["adc"],
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "poner_las_horas_de_bot",
+        "label": "Meter horas de bloqueo de bot todos los días",
+        "descripcion": "Te quedás después de las scrims a jugar líneas 2v2 con él hasta que los timings salgan sin hablar. Es tiempo y paciencia que nadie te devuelve.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "En tres semanas se entienden mejor que con el anterior en seis meses. El all-in sincronizado vuelve, y esta vez lo construiste vos.",
+              "El laboratorio paga: el bot nuevo funciona y el equipo recupera un frente que había perdido. Ese trabajo invisible fue tuyo."
+            ],
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": 3, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.laneo", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Le metés las horas pero los estilos no encajan: vos querés jugar parado y él respetar. La línea funciona a medias.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugar_seguro_hasta_que_cuaje",
+        "label": "Jugar la línea a lo seguro hasta conocerlo",
+        "descripcion": "Bajás el riesgo: nada de all-ins a ciegas, farmeás y esperás a leerlo en partidos reales. Menos accidentes, menos ventaja temprana.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Jugás conservador un mes y la sincronía llega sola, sin sustos. Perdiste algo de agresión temprana y ganaste una línea que no regala nada.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Jugar tan a lo seguro los vuelve predecibles y los rivales de bot los explotan. La sincronía nunca arranca porque nunca la probaron.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": -2, "max": 0, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.laneo", "min": -1, "max": 1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "adc_los_numeros_publicos",
+    "category": "rol_adc",
+    "title": "Publican tu reparto de daño todas las semanas",
+    "description": "Una cuenta de estadísticas postea cada lunes el DPM y el porcentaje de daño de cada tirador de la liga. El tuyo está siempre a la vista, y jugar para el número no siempre es jugar para ganar.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "ventana": ["regular", "playoffs"],
+      "rol": ["adc"],
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "jugar_para_ganar",
+        "label": "Jugar para el partido y que el número sea el que sea",
+        "descripcion": "Te olvidás del ranking de daño: chippeás tanques, quemás cooldowns, hacés el trabajo feo que no infla el DPM pero gana peleas.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "Tu porcentaje de daño baja y tu winrate sube. Los que entienden el juego lo notan; el resto sigue mirando la tabla.",
+              "Jugás el ADC que el equipo necesita, no el que queda lindo en las stats. El coach te lo reconoce en privado."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.teamfight", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Hacés el trabajo sucio todo el split y en la mesa de analistas igual te bajan porque \"no aparecés en los números\". Cansa que no se vea.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugar_para_el_numero",
+        "label": "Buscar el daño que te mantiene arriba en la tabla",
+        "descripcion": "El número también es tu valor de mercado: buscás las posiciones de daño grande aunque a veces sea más arriesgado de lo que el partido pide.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Terminás el split como el ADC con más daño de la liga y eso te pone en todas las listas de fichajes. El hype es real y te sirve.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Buscar el daño grande te pone en posiciones que no estaban y morís en peleas que se ganaban. Lindo el DPM, feo el marcador.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

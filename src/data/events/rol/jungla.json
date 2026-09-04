@@ -182,5 +182,398 @@
         ]
       }
     ]
+  },
+  {
+    "id": "jungla_el_pathing_del_coach",
+    "category": "rol_jungla",
+    "title": "El coach te dibujó la ruta",
+    "description": "El staff de {org} llega al partido con tu pathing de los primeros tres minutos ya escrito en una pizarra. No es como vos leerías el mapa, pero es lo que ensayaron toda la semana.",
+    "weight": 6,
+    "cooldown": 5,
+    "contexto": {
+      "ventana": ["regular", "playoffs"],
+      "rol": ["jungla"],
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "seguir_la_pizarra",
+        "label": "Seguir la ruta al pie de la letra",
+        "descripcion": "Confiás en la preparación del staff aunque tu instinto te pida otra cosa. Si funciona, el equipo entero arranca sincronizado.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "La ruta ensayada calza con lo que hace el jungla rival: llegás a cada cruce con un aliado de más. El plan era bueno y lo ejecutaste.",
+              "Cada gank cae en el segundo que marcaba la pizarra. El equipo se mueve como una sola cosa y vos sos el reloj."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El rival no hace nada de lo que decía el scouting y la ruta te deja a contramano toda la fase temprana. Ejecutaste bien un plan que no servía para este partido.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugar_tu_lectura",
+        "label": "Romper el plan y jugar lo que ves",
+        "descripcion": "A los dos minutos ves que el mapa no es el que ensayaron y te vas por otro lado. Si sale, sos vos; si sale mal, desobedeciste.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Tu lectura en vivo era la correcta: encontrás al jungla rival donde el plan decía que no iba a estar y le sacás el primer campamento y el buff.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.shotcalling", "min": 3, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Te fuiste del plan y no salió. En el review no se discute la lectura, se discute que hiciste otra cosa de la que habían acordado.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "jungla_espejo_del_enemigo",
+    "category": "rol_jungla",
+    "title": "El jungla rival juega a tu ritmo",
+    "description": "Enfrente hay alguien que farmea cuando vos farmeás y aparece cuando vos aparecés. El partido se va a definir por quién rompe el espejo primero.",
+    "weight": 5,
+    "cooldown": 5,
+    "contexto": {
+      "ventana": ["regular", "playoffs"],
+      "rol": ["jungla"],
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "forzar_el_desvio",
+        "label": "Forzar una jugada que te saque del espejo",
+        "descripcion": "Arriesgás un movimiento agresivo para romper el empate de tempo. Si el rival reacciona tarde, quedás un paso adelante todo el partido.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Encontrás la ventana: un gank doble que el rival no puede copiar porque su carril no coopera. El espejo se rompe para tu lado.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El rival te leyó el desvío y castigó el hueco que dejaste. Ahora el que va un paso atrás sos vos.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ganar_el_farm",
+        "label": "Aguantar el espejo y ganarlo por farm",
+        "descripcion": "No te apurás: jugás cada campamento limpio y dejás que la ventaja se acumule de a poco. Menos épico, más seguro.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "A los veinte minutos tenés un nivel completo de ventaja sin haber arriesgado nada. El espejo lo ganaste con paciencia.",
+              "Nunca pasó nada espectacular, y esa era la idea: llegás a la primera pelea grande con más items que el otro jungla."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Jugar tan parejo hace que el partido lo terminen decidiendo los carriles, y el tuyo perdió el suyo. Tu ventaja de jungla no alcanzó para tapar eso.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "jungla_el_carril_que_te_reclama",
+    "category": "rol_jungla",
+    "title": "Un carril te llena de pings",
+    "description": "{top} viene perdiendo desde el minuto tres y te spamea pings para que subas. Ir es tirar tempo a la línea que menos rinde; no ir es prender fuego el vestuario.",
+    "weight": 6,
+    "cooldown": 4,
+    "contexto": {
+      "ventana": ["regular", "playoffs"],
+      "rol": ["jungla"],
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "subir_igual",
+        "label": "Subir a bancarlo aunque no sea óptimo",
+        "descripcion": "Priorizás el clima del equipo por encima de la jugada perfecta. Un compañero que se siente acompañado juega mejor el resto del partido.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El gank ni siquiera mata, pero le saca la presión de encima a {top} y lo devuelve al partido. A veces la jugada correcta no es la del mapa.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Perdés dos campamentos y un buff por un gank que no cambió nada arriba. El rival aprovechó cada segundo que no estuviste en tu jungla.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ignorar_los_pings",
+        "label": "Ignorar los pings y jugar el mapa",
+        "descripcion": "Le decís por comm que aguante y te vas a farmear tu lado. Es la decisión fría, y va a quedar como que lo abandonaste si el partido se pierde.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "Jugás tu propio partido y a los quince minutos sos el que más oro tiene del mapa. Arriba se quejaron, pero el marcador te da la razón.",
+              "Aguantaste la presión de los pings y convertiste el tempo en objetivos. El review te da la razón, aunque {top} siga caliente."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.shotcalling", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "{top} termina injugable y el partido con él. En el vestuario queda la versión de que no subiste nunca, aunque tu farm haya sido perfecto.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "jungla_la_proxima_es_la_ultima",
+    "category": "rol_jungla",
+    "title": "Todo se juega en el smite",
+    "description": "En soloQ no hay quien te ayude a asegurar objetivos: cada dragón y cada Barón se define por tu smite contra el del otro jungla, y no hay revancha si lo errás.",
+    "weight": 6,
+    "cooldown": 4,
+    "contexto": {
+      "ventana": ["regular", "playoffs"],
+      "rol": ["jungla"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "jugar_el_50_50",
+        "label": "Ir al objetivo y disputar el smite",
+        "descripcion": "Te la jugás al duelo de smite aunque el equipo no esté para cubrirte. Si lo ganás, el partido gira; si lo perdés, regalaste el objetivo y probablemente tu vida.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Clavás el smite por diez de vida y te vas vivo. El objetivo es tuyo y el chat del equipo cambia de tono.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 3, "max": 5, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": 15, "max": 30 }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El otro jungla tenía más daño de smite del que calculaste. Perdés el objetivo, la pelea que viene atrás y una tira de LP.",
+            "effects": [
+              { "type": "ladder", "path": "player.ranked", "min": -25, "max": -8 }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cederlo_y_jugar_mapa",
+        "label": "Ceder el objetivo y jugar en otro lado",
+        "descripcion": "Renunciás al duelo y buscás compensar con presión en los carriles o una torre del otro lado del mapa. Más seguro, y le regalás un recurso al rival.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "Mientras se pelean por el dragón, vos te llevás dos torres y el rebote de oro. El trade te terminó saliendo a favor.",
+              "Cediste el objetivo y agarraste todo lo demás: el mapa quedó abierto para tu lado y el LP subió igual."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": 5, "max": 18 }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Los objetivos que cediste se acumulan y al final el alma de dragón decide la partida sin que hayas peleado ninguna. Jugaste seguro hasta perder.",
+            "effects": [
+              { "type": "ladder", "path": "player.ranked", "min": -20, "max": -6 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "jungla_temprano_o_escala",
+    "category": "rol_jungla",
+    "title": "Tu campeón caduca a los veinte",
+    "description": "El draft te dejó un jungla de tempo temprano en una composición que escala. Tenés una ventana chica para hacer daño antes de volverte irrelevante en las peleas.",
+    "weight": 5,
+    "cooldown": 5,
+    "contexto": {
+      "ventana": ["regular", "playoffs"],
+      "rol": ["jungla"],
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "apretar_temprano",
+        "label": "Apretar el acelerador antes de los quince",
+        "descripcion": "Invertís todo en la ventana temprana: invades, ganks, objetivos tempranos. Si el equipo te sigue, cerrás antes de que tu campeón se apague.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Le sacás tres kills y un dragón al partido antes del minuto doce. Para cuando tu campeón deja de pegar, la ventaja ya es de todo el equipo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "career.sinergia", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El equipo no te siguió el ritmo y la ventana se cerró sin ventaja. Ahora tenés un campeón que no pega y treinta minutos por jugar.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugar_para_el_late",
+        "label": "Aguantar y jugar para el equipo que escala",
+        "descripcion": "Aceptás ser secundario: farmeás, no arriesgás y ponés todo al servicio de los que sí van a pegar en el minuto treinta.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "Sacrificás tu protagonismo y llegás al late con los carries intactos. En la pelea que define, vos ponés la visión y ellos el daño.",
+              "No hiciste una sola jugada de highlight y el equipo ganó igual, porque los que escalaban llegaron enteros. Ese era el trabajo."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Renunciaste a tu ventana temprana y el rival usó la suya para cerrar antes de que tu late existiera. Esperaste un minuto treinta que nunca llegó.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "jungla_el_tracking_publico",
+    "category": "rol_jungla",
+    "title": "Te miden el tracking",
+    "description": "Un analista publica un desglose de tu temporada: buen farm, buen daño, y una lectura de la jungla rival muy por debajo de los demás junglas de la liga. El número quedó dando vueltas.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "ventana": ["regular", "playoffs"],
+      "rol": ["jungla"],
+      "etapa": ["debut", "profesional"]
+    },
+    "conditions": [
+      { "field": "player.stats.macro", "op": "lt", "value": 70 }
+    ],
+    "options": [
+      {
+        "id": "meterle_al_tracking",
+        "label": "Meterle horas al tracking en el VOD",
+        "descripcion": "Te sentás con el analista a revisar cada minuto donde perdiste al jungla rival. Es tedioso y es exactamente lo que te falta.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "Después de dos semanas de VOD, empezás a adivinar dónde está el otro jungla antes de que aparezca en el mapa. El agujero se cierra.",
+              "El trabajo aburrido paga: tu tracking deja de ser el peor de la liga y tus ganks empiezan a caer donde el rival no está mirando."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 3, "max": 6, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Le metés las horas pero el tracking no se arregla en dos semanas. Mejoraste un poco y te queda claro que es trabajo de todo el año.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "confiar_en_lo_demas",
+        "label": "Apoyarte en lo que sí hacés bien",
+        "descripcion": "Aceptás que el tracking no es tu fuerte y jugás alrededor de tu mecánica y tu farm, que están entre los mejores de la liga.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Jugás un estilo de farmear y ganar los duelos en vez de emboscar, y te funciona: no todos los junglas ganan igual.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "En playoffs los rivales te explotan justo el agujero que el analista marcó, y no tenés cómo taparlo. Lo que dejaste sin trabajar se cobró solo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

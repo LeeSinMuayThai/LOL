@@ -33,6 +33,66 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-04 — Fase 9R3c: cada rol tiene decisiones propias de verdad
+
+Tercer commit de 9R.3. 9R3a puso la infraestructura de variantes; 9R3b hizo profundos los pools
+de fecha marcada; 9R3c ataca el eje `rol`: **elegir tu línea en la pantalla de inicio casi no
+cambiaba el contenido que veías**.
+
+#### El problema, medido
+
+`data/events/rol/*.json` tenía **11 eventos para los cinco roles** (adc 2, jungla 3, mid 2, top 2,
+support 2). Con los 2 por rol de `partido/dentro_del_mapa.json` (9R3b), un support veía **4
+situaciones exclusivas de su puesto** en toda la carrera. El check *"cada rol tiene eventos propios
+que ningún otro rol ve"* pedía un mínimo de 3 y varios roles estaban a un evento de romperlo.
+
+#### El arreglo (contenido)
+
+- **`rol/*.json` 11 → 45** (cada archivo a 9). +34 eventos, todos decisiones con trade-off atado
+  a lo que sube:
+  - **jungla:** el pathing del coach vs tu lectura, el espejo de tempo del jungla rival, el carril
+    que te spamea pings, el duelo de smite en soloQ, campeón de early en comp que escala, te miden
+    el tracking.
+  - **top:** weakside toda la carrera, te contrapickean siempre, la llamada del TP, el meta te
+    quiere de tanque, media hora sin que nadie te nombre, el jungla rival vive en tu línea (soloQ),
+    enfrente el que reinó la línea diez años.
+  - **mid:** el early del equipo depende de tu prioridad, te banean el confort toda la serie, tu
+    jungla te quiere siempre topside, sos la condición de victoria, el 1v1 de ego en soloQ, el
+    prodigio de la academia, quemar el flash por una jugada ajena.
+  - **adc:** el 2v2 perdido en el draft, el ADC del meta es uno que odiás, farm o pelea con tres
+    olas encima, la comp no tiene frontline y te toca a vos, ladder a las 4am, support nuevo a
+    mitad de split, publican tu reparto de daño todas las semanas.
+  - **support:** roam o babysit al carry, sos el único que compra visión, el equipo llama con tu
+    voz, engancharla y rezar que te sigan, enchanter o tanque, cargar desde support en soloQ, la
+    niñera del pibe que promocionan.
+- **1 evento de soloQ puro por rol** (sin `con_vestuario`, efecto `ladder`), alcanzable también en
+  amateur — el patrón que hasta ahora solo tenía jungla.
+- `outcome.texto` en array de variantes en ~la mitad de los outcomes nuevos.
+- **Reparto de efectos deliberado** (queja: *"el 51% del contenido toca mentalidad"*): sobre los 45
+  eventos de rol, mentalidad queda en **~29%**; el resto va a las stats de firma de cada puesto
+  (`macro`/`shotcalling` jungla, `laneo`/`adaptabilidad` top, `mecanica`/`teamfight` adc,
+  `career.sinergia` transversal, `career.jerarquia` en los de voz de equipo).
+
+#### Números medidos
+
+- Eventos single-rol por rol: **4 → 11** (mínimo del check: 3).
+- Catálogo: **137 → 171 eventos** (+34). Opciones: 344.
+- Evento de ambiente más repetido por carrera (check, HOR=40 / N=150): mediana **4**, máx **5**
+  (venía de ~4 / 6). Con N=400: mediana 3.
+- `cobertura.js --huecos`: sin huecos. `simulate.js 1000`: 0 crashes · determinismo intra-versión
+  150/150 · build OK (902 KB) · validate 113/113.
+
+#### Sin checks nuevos
+
+El check *"volumen de decisiones"* (tope 4/8) sigue pasando. No se aprieta acá: 9R3d vuelve a mover
+el stream y conviene dejar aire. Se aprieta al cerrar 9R.3 si el número aguanta.
+
+#### Colateral
+
+- **D37 (familia):** +34 eventos en `TODOS_LOS_EVENTOS` → el `weightedPick` de `elegirEvento`
+  (evento de ambiente) cae distinto. Ningún check damnificado esta vez — el de arraigo, que rozó
+  su borde en 9R3b, pasó con la muestra ya ampliada a 1200. Determinismo intra-versión intacto.
+
 ### 2026-09-04 — Fase T0: el sistema de diseño
 
 Primer commit de la **FASE T (la transmisión)**, escrita en `PLAN.md` antes de tocar código.

@@ -26,7 +26,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **8** | La ficha: el registro que acumula + la tarjeta permanente + `src/ui/` | ✅ ver `PROGRESO.md` |
 | **9** | El mercado: ofertas, contratos, salarios, la trampa del equipo grande visible | ✅ ver `PROGRESO.md` |
 | **9E** | El varado: la carrera vuelve a tener juego después del primer equipo | 🔶 **9Ea+b hechas** (el bug, cerrado) · faltan 9Ec y 9Ed |
-| **9R** | **Que el juego se juegue**: el cooldown mide splits, la tabla deja de mentir, la interrupción vuelve a ser escasa, y elegir cambia el resultado | 🔶 **9Ra/9Rb/9Re/9Rf/9R.5/9R.2/9R.0/9Rc/9Rd/9R3a/9R3b hechas** · falta 9R.3 resto (9R3c-d), 9R.4, 9Rg |
+| **9R** | **Que el juego se juegue**: el cooldown mide splits, la tabla deja de mentir, la interrupción vuelve a ser escasa, y elegir cambia el resultado | 🔶 **9Ra/9Rb/9Re/9Rf/9R.5/9R.2/9R.0/9Rc/9Rd/9R3a/9R3b/9R3c hechas** · falta 9R.3 resto (9R3d), 9R.4, 9Rg |
 | **T** | **La transmisión**: el sistema de diseño, el shell de tres zonas, el ritmo del split, y las pantallas que faltan. Va antes de 9M para que 9M/10/11/12/13 tengan dónde enchufar su pantalla | ⬜ |
 | **9M** | **El mercado de pases**: el mundo se puebla de jugadores, la demanda existe, alguien compite por tu asiento, la escalera deja de ser un dado | ⬜ |
 | **10** | El final: retiro emergente + la tarjeta de legado | ⬜ |
@@ -1877,7 +1877,7 @@ así el juego se repite: la métrica correcta es **baraja elegible por turno**, 
 | `partido/postpartido.json` | ~~4~~ **15** | 15 | ✅ 9R3a |
 | `partido/dentro_del_mapa.json` | ~~8~~ **23** | 22 | ✅ 9R3b |
 | `partido/presion.json` / `clasico.json` | ~~6 / 6~~ **13 / 13** | 13 / 13 | ✅ 9R3b |
-| `rol/*.json` (5 archivos) | 11 | ~45 | 9R3c |
+| `rol/*.json` (5 archivos) | ~~11~~ **45** | 45 | ✅ 9R3c |
 | elegibles en amateur | 19 | 45 | 9R3d |
 | resto | 43 | ~95 → `cobertura.js --huecos` vacío | 9R3d |
 
@@ -1885,6 +1885,17 @@ Y **variación léxica, que hoy no existe** (0 arrays de frases, 100% strings fi
 `outcome.texto` acepta array de variantes; `FRASES_MOTIVO` (7 frases fijas narran 79 fechas/carrera)
 pasa a ~40; los pools de nombres (30×30 sílabas de handle, 20×10 de org) se amplían para que el
 mundo no suene igual en toda partida; 4 eventos que nunca salen en 100 carreras se regatean o borran.
+
+### 9R3c — cada rol tiene decisiones propias de verdad ✅ (2026-09-04)
+
+- `rol/*.json` **11 → 45** (cada archivo 2-3 → 9). +34 eventos, decisiones con trade-off atado a
+  la stat que sube; 1 evento soloQ puro por rol (sin `con_vestuario`, efecto `ladder`); `texto` en
+  array en ~la mitad de los outcomes nuevos.
+- Reparto de efectos deliberado: sobre los 45 eventos de rol, mentalidad **~29%** (la queja era
+  51% del catálogo); el resto en las stats de firma de cada puesto + `career.sinergia`/`jerarquia`.
+- **Medido:** eventos single-rol por rol **4 → 11** (mínimo del check: 3); catálogo **137 → 171**;
+  evento de ambiente más repetido/carrera mediana **4**, máx **5** (venía ~4 / 6); `cobertura.js
+  --huecos` vacío. El check *"volumen de decisiones"* (4/8) pasa; no se aprieta hasta cerrar 9R.3.
 
 ### 9R3b — los pools de fecha marcada se hacen profundos ✅ (2026-09-04)
 
@@ -2179,10 +2190,10 @@ cerraban con una sola línea `[rendimiento]` "terminó 4º de 10" — sin decir 
 - **Check nuevo:** todo split competitivo que no clasifica a playoffs cierra con una línea
   `temporada` no técnica de qué significa la posición (0 de 2986 sin ella).
 
-> **Fase 9R.0 + 9Rd + 9R3a + 9R3b cerradas.** Sigue el orden de PLAN.md dentro de **9R.3**:
-> **9R3c** (`rol/*` 11→~45) → **9R3d** (amateur + `resto` hasta `cobertura --huecos` vacío + los
-> eventos que nunca salen + apretar el check de repetición si aguanta). Después: 9R.4.
-> Catálogo: 97 → **137** (9R3a+b). Evento más repetido por carrera: mediana 5 → **3**.
+> **Fase 9R.0 + 9Rd + 9R3a + 9R3b + 9R3c cerradas.** Sigue el orden de PLAN.md dentro de **9R.3**:
+> **9R3d** (amateur 19→45 + `resto` hasta `cobertura --huecos` vacío al listón alto + los eventos
+> que nunca salen + apretar el check de repetición si aguanta). Después: 9R.4.
+> Catálogo: 97 → **171** (9R3a+b+c). `rol/*` 11 → **45** (cada rol con 11 eventos single-rol).
 
 ---
 
