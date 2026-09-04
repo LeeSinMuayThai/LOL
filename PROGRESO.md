@@ -33,6 +33,64 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-04 — Fase 9Rg (parcial 1/6): pesoJugadorEnEquipo sube a 0,5
+
+Primer ítem de la cola de calibración de 9Rg (`PLAN.md` §9R.1: *"solo constantes"*, regla de
+proceso 2). El orden completo de la fase es `interrupcionesPorSplit` → los dos
+`puntosEnJuegoParaPreguntar` → `afinidadPesoEnRendimiento` → `cooldown` de los JSON si el catálogo
+se agota → `pesoJugadorEnEquipo` → D39. Los tres primeros ya están en un valor medido y estable
+(9Rf/9Rd los dejaron ahí); el más urgente y el que el usuario más nombró en su feedback
+(*"85 de media, franquicia... no podés ganar títulos"*, *"sube algo que no tiene nada que ver"* de
+tener compañeros que no reflejan lo bueno que sos) es este. El resto de la cola (D39 incluida)
+queda para una continuación de 9Rg.
+
+#### El problema, medido
+
+`fuerzaDelEquipo` (`core/fuerza.js`) pondera `nivelCompaneros * (1 − peso) + rendimiento * peso`.
+Con `pesoJugadorEnEquipo: 0,35`, tu propio rendimiento pesaba **35%** del resultado del equipo — el
+65% restante son compañeros que `core/roster.js` sortea una vez al fichar y **nunca mejoran**
+(9M-full, diferida). Medido sobre 500 carreras: correlación entre el nivel del jugador al cierre
+de una temporada de tier 1 y `1/posición final de la tabla`: **r = 0,09** — casi nula. Un jugador
+de clase mundial en un roster mediocre terminaba con casi la misma tabla que uno mediocre en un
+roster mediocre.
+
+#### El arreglo
+
+`BALANCE.rendimiento.pesoJugadorEnEquipo` **0,35 → 0,5** (el valor que pedía el plan). Sin cambio
+de estructura: mismo `fuerzaDelEquipo`, mismo consumidor (`serie.js`/`temporada.js`).
+
+#### El efecto de cadena (por qué el orden del plan importa)
+
+La primera corrida de `validate.js` con `pesoJugadorEnEquipo: 0,5` dio **1 FAIL**: *"Mediana de
+decisiones de draft por serie ∈ [0, 1] y ≥30% de series sin ningún draft"* — cayó a 23%. Motivo:
+subir el peso del jugador amplifica cuánto mueve el campeón elegido a `fuerzaDelEquipo`, y por lo
+tanto `puntosEnJuego` (`P(mejor) − P(segundo)`, `core/serie.js`) — el mismo umbral fijo
+(`serie.puntosEnJuegoParaPreguntar: 0,18`) ahora frena MÁS series. Exactamente la interacción por
+la que `PLAN.md` ordena `puntosEnJuegoParaPreguntar` **antes** que `pesoJugadorEnEquipo` en la cola
+de 9Rg. Barrido sobre 1200 series (N por punto ≈ 9500 series medidas): `0,18`→23% sin draft,
+`0,20`→25%, `0,22`→28%, `0,24`→31%, `0,26`→32,5%, `0,28`→34,6%. Se fija **`0,26`** (y su
+`Decisivo` en la misma proporción, `0,09`→**`0,13`**): recupera el margen original (32,5% vs el
+32% de la calibración de 9Rd), mediana sigue en 1.
+
+#### Números medidos
+
+- Correlación (nivel del jugador ↔ 1/posición final, N=500, temporadas de tier 1): **r = 0,09 →
+  0,18**. Sigue sin ser el único factor —el roster real importa, como tiene que importar en un
+  juego de equipo— pero el jugador deja de ser ruido en su propio resultado.
+- `validate.js`: **117/117 OK** (tras la recalibración de `puntosEnJuegoParaPreguntar`; la primera
+  corrida con solo `pesoJugadorEnEquipo` tocado daba 116/117, ver arriba).
+- `simulate.js 1000 60 todas`: 0 crashes. Determinismo intra-versión 150/150 (no se tocó RNG, solo
+  pesos de mezcla y un umbral deterministas).
+
+#### Colateral
+
+- **Sin D37 nuevo**: son pesos/umbrales de mezcla puros, no consumen ni reordenan `rng`. Todas las
+  seeds reproducen su carrera igual que antes de este commit.
+- **Queda abierto**: `interrupcionesPorSplit`, `temporada.puntosEnJuegoParaPreguntar` (no rompió
+  ningún check, no se tocó), `afinidadPesoEnRendimiento`, `cooldown` de eventos y **D39** (sesgo de
+  +6 en `proyeccionJerarquia` — el check que lo acota siguió pasando, pero conviene re-medir el
+  sesgo real antes de recalibrarlo, no solo confiar en que el check no explotó).
+
 ### 2026-09-04 — Fase 9R3f: se aprieta el check de repetición — cierra 9R.3
 
 Sexto commit y cierre de 9R.3. Puro tuneo de checks (regla de proceso 2: 9R3a-e fueron estructura

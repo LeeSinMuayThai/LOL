@@ -576,8 +576,15 @@ export const BALANCE = {
     jerarquiaPesoEnRendimiento: 0.12,
     ruidoRendimiento: 7,
 
-    // Como se traduce a resultado del equipo.
-    pesoJugadorEnEquipo: 0.35,
+    // Como se traduce a resultado del equipo. 0,35 → 0,5 en 9Rg: medido, un
+    // jugador de nivel pico en el cuartil superior de tier1 apenas se
+    // distinguía de uno del cuartil inferior (correlación nivel↔posición
+    // final de la tabla r=0,09) — "94 de mecánica, franquicia, terminás 8º"
+    // porque los compañeros (ruido aleatorio, no mejoran nunca) pesaban el
+    // 65% del resultado. A 0,5 la correlación sube a r=0,18: sigue sin ser
+    // el único factor (el roster real importa), pero el jugador deja de ser
+    // ruido en su propio resultado.
+    pesoJugadorEnEquipo: 0.5,
     ruidoRival: 13,
 
     // Consecuencias
@@ -918,10 +925,14 @@ export const BALANCE = {
     // plan es mediana ≤1 y ≥30% de series sin draft. La distribución real de
     // `puntosEnJuego` (top-1 vs top-2 del pool disponible) tiene su mediana en
     // ~0,13, así que un umbral de 0,04 frenaba el 85% de los drafts. 0,18
-    // (≈4,5×) deja mediana 1 y 32% de series sin draft. El ajuste fino contra
-    // el presupuesto de decisiones re-medido sigue siendo 9Rg (regla 2).
-    puntosEnJuegoParaPreguntar: 0.18,
-    puntosEnJuegoParaPreguntarDecisivo: 0.09,
+    // (≈4,5×) dejaba mediana 1 y 32% de series sin draft.
+    // 9Rg: subir `pesoJugadorEnEquipo` (0,35→0,5) amplificó cuánto mueve el
+    // campeón elegido a `fuerzaDelEquipo`, y con eso `puntosEnJuego` — a 0,18
+    // el sinDraft cayó a 23%. Re-medido (N=1200 series): 0,26 devuelve el
+    // margen original (32,5% sin draft, mediana 1). Misma proporción
+    // decisivo/base (~0,5) que antes.
+    puntosEnJuegoParaPreguntar: 0.26,
+    puntosEnJuegoParaPreguntarDecisivo: 0.13,
     // |rendimiento base del jugador - fuerza del rival| <= esto: "mapa cerrado",
     // condicion necesaria para que dispare un minijuego (regla 4 de 4.6).
     margenMapaCerrado: 8,
