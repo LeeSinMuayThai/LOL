@@ -13,78 +13,106 @@
     <link rel="stylesheet" href="./src/ui/estilos/base.css" />
     <link rel="stylesheet" href="./src/ui/estilos/componentes.css" />
     <link rel="stylesheet" href="./src/ui/estilos/pantallas.css" />
+    <!-- El shell de transmisión (fase T1): grilla de dos zonas, topbar, ticker. -->
+    <link rel="stylesheet" href="./src/ui/estilos/shell.css" />
   </head>
   <body>
-    <div class="panel">
-      <h1>LOL Career Simulator</h1>
-      <p class="subtitle">Elegís tu línea y tus mains. El resto de la carrera sale de ahí.</p>
+    <a class="saltar-al-contenido" href="#escenario">Saltar al contenido</a>
 
-      <div id="setup">
-        <div class="paso">
-          <div class="paso-label">Tu handle (opcional)</div>
-          <input id="handleInput" class="handle-input" type="text" maxlength="16" placeholder="vacío = uno al azar" />
+    <div class="shell">
+      <!-- Chrome estático en T1 (ver PLAN.md "T1 — El shell de transmisión"):
+           `estado` vive en el closure del <script> de abajo, y exponerlo acá
+           sería tocar el controlador. El punto vivo llega en T2. -->
+      <header class="topbar">
+        <div class="topbar-live"><span class="topbar-live-punto"></span>LIVE</div>
+        <div class="topbar-lockup">
+          <span class="topbar-monograma">LC</span>
+          <span class="topbar-nombre">LoL Career Simulator</span>
         </div>
-
-        <div class="paso">
-          <div class="paso-label">Paso 1 — Tu línea</div>
-          <div id="rolGrid" class="rol-grid"></div>
+        <div class="topbar-controles">
+          <button type="button" class="topbar-toggle" disabled title="El motion llega en la fase T3">⚙</button>
+          <button type="button" class="topbar-toggle" disabled title="El audio llega en la fase T3">🔊</button>
         </div>
+      </header>
 
-        <div class="paso">
-          <div class="paso-label">Paso 2 — Tus 3 mains</div>
-          <div id="campeonGrid" class="campeon-grid"></div>
-          <div id="poolContador" class="pool-contador">Elegí una línea primero.</div>
-        </div>
+      <div class="shell-cuerpo">
+        <aside class="riel" aria-label="Tu ficha">
+          <div id="fichaContainer" class="ficha-card"></div>
+        </aside>
 
-        <div class="setup-footer">
-          <button id="run" disabled>Empezar carrera</button>
-        </div>
+        <div class="escenario" id="escenario">
+          <div id="setup" class="panel">
+            <h1>LOL Career Simulator</h1>
+            <p class="subtitle">Elegís tu línea y tus mains. El resto de la carrera sale de ahí.</p>
 
-        <details class="avanzado">
-          <summary>Avanzado: fijar una seed</summary>
-          <div class="seed-row" style="margin-top: 10px;">
-            <label class="seed-label" for="seedInput">Seed</label>
-            <input id="seedInput" class="seed-input" type="text" inputmode="numeric" placeholder="vacío = al azar" />
+            <div class="paso">
+              <div class="paso-label">Tu handle (opcional)</div>
+              <input id="handleInput" class="handle-input" type="text" maxlength="16" placeholder="vacío = uno al azar" />
+            </div>
+
+            <div class="paso">
+              <div class="paso-label">Paso 1 — Tu línea</div>
+              <div id="rolGrid" class="rol-grid"></div>
+            </div>
+
+            <div class="paso">
+              <div class="paso-label">Paso 2 — Tus 3 mains</div>
+              <div id="campeonGrid" class="campeon-grid"></div>
+              <div id="poolContador" class="pool-contador">Elegí una línea primero.</div>
+            </div>
+
+            <div class="setup-footer">
+              <button id="run" disabled>Empezar carrera</button>
+            </div>
+
+            <details class="avanzado">
+              <summary>Avanzado: fijar una seed</summary>
+              <div class="seed-row" style="margin-top: 10px;">
+                <label class="seed-label" for="seedInput">Seed</label>
+                <input id="seedInput" class="seed-input" type="text" inputmode="numeric" placeholder="vacío = al azar" />
+              </div>
+            </details>
           </div>
-        </details>
+
+          <div id="carrera" class="panel" hidden>
+            <div id="summary" class="summary">Aún no empezaste tu carrera.</div>
+            <div id="metaPill" class="meta-pill"></div>
+
+            <div id="decision" class="decision" hidden>
+              <div id="decisionTitle" class="decision-title"></div>
+              <div id="decisionDesc" class="decision-desc"></div>
+              <div id="decisionOptions" class="decision-options"></div>
+            </div>
+
+            <div id="minijuego" class="minijuego" hidden>
+              <div id="minijuegoTitle" class="decision-title"></div>
+              <div id="minijuegoDesc" class="decision-desc"></div>
+              <div id="minijuegoWidget" class="minijuego-widget"></div>
+            </div>
+
+            <div id="mercado" class="mercado" hidden>
+              <div id="mercadoTitle" class="decision-title"></div>
+              <div id="mercadoDesc" class="decision-desc"></div>
+              <div id="mercadoGrid" class="mercado-grid"></div>
+              <button id="mercadoRepresentante" type="button" class="mercado-representante-btn" hidden>
+                📞 Llamar a tu representante y pedir otras ofertas · 1 vez por carrera
+              </button>
+            </div>
+
+            <div id="logList" class="log-list" aria-live="polite"></div>
+
+            <!-- Fase 9R5b: la tarjeta de legado. Se muestra cuando la carrera termina. -->
+            <div id="tarjeta" class="tarjeta" hidden></div>
+
+            <button id="nuevaCarrera" type="button" hidden>Nueva carrera</button>
+          </div>
+        </div>
       </div>
 
-      <div id="carrera" hidden>
-        <div id="fichaContainer" class="ficha-card"></div>
-
-        <div id="summary" class="summary">Aún no empezaste tu carrera.</div>
-        <div id="metaPill" class="meta-pill"></div>
-
-        <div id="decision" class="decision" hidden>
-          <div id="decisionTitle" class="decision-title"></div>
-          <div id="decisionDesc" class="decision-desc"></div>
-          <div id="decisionOptions" class="decision-options"></div>
-        </div>
-
-        <div id="minijuego" class="minijuego" hidden>
-          <div id="minijuegoTitle" class="decision-title"></div>
-          <div id="minijuegoDesc" class="decision-desc"></div>
-          <div id="minijuegoWidget" class="minijuego-widget"></div>
-        </div>
-
-        <div id="mercado" class="mercado" hidden>
-          <div id="mercadoTitle" class="decision-title"></div>
-          <div id="mercadoDesc" class="decision-desc"></div>
-          <div id="mercadoGrid" class="mercado-grid"></div>
-          <button id="mercadoRepresentante" type="button" class="mercado-representante-btn" hidden>
-            📞 Llamar a tu representante y pedir otras ofertas · 1 vez por carrera
-          </button>
-        </div>
-
-        <div id="logList" class="log-list"></div>
-
-        <!-- Fase 9R5b: la tarjeta de legado. Se muestra cuando la carrera termina. -->
-        <div id="tarjeta" class="tarjeta" hidden></div>
-
-        <button id="nuevaCarrera" type="button" hidden>Nueva carrera</button>
-      </div>
+      <footer class="ticker" id="ticker" aria-hidden="true"></footer>
     </div>
 
+    <script type="module" src="./src/ui/shell.js"></script>
     <script type="module">
       const setupPanel = document.getElementById('setup');
       const carreraPanel = document.getElementById('carrera');

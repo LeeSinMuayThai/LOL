@@ -2366,33 +2366,61 @@ uno de los 16 `log.type`.
 
 ## T1 — El shell de transmisión
 
-`src/ui/shell.js` monta el layout y expone los slots. `index.html` queda en ~120 líneas: el shell,
-los `<link>` y el bucle de control.
+**Revisado en la corrida de T0b/T1** (2026-09-04): el criterio original de este bloque decía
+*"`shell.js` monta el layout, `index.html` queda en ~120 líneas"*. Eso implica construir el DOM
+del shell desde JS — y el controlador de `index.html` busca todo por `getElementById`: si algo
+falla al montar, la página queda en blanco. Mal negocio en una corrida sin supervisión. En cambio:
+**el shell se escribe como HTML declarativo**, conservando cada `id` que el controlador ya usa
+(`fichaContainer`, `summary`, `decision`, `minijuego`, `mercado`, `logList`, `tarjeta`,
+`nuevaCarrera`, `run`, `rolGrid`, `campeonGrid`, `seedInput`, `handleInput`, `poolContador`,
+`metaPill`), y **`shell.js` queda solo con comportamiento** (teclado + ticker), importado como
+módulo. El controlador no se toca ni una línea: cero riesgo de página en blanco por un fallo de
+montaje, y de paso mejor arquitectura para un proyecto sin bundler.
+
+Consecuencia de lo mismo: **el layout es de dos zonas, no tres.** El riel derecho es la fila de
+paneles de T5, y hoy no hay con qué llenarlo — la propia regla del proyecto dice *"un panel vacío
+es peor que un panel ausente"*. La grilla se declara a dos columnas; T5 agrega la tercera cuando
+tenga contenido real.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│ ● LIVE │ monograma+nombre │ 2033 · SPLIT 2 · PLAYOFFS ▓▓▓▓▓░░ │ ⚙ 🔊 │
-├───────────┬──────────────────────────────────┬───────────────────────┤
-│ RIEL IZQ  │        ESCENARIO                 │      RIEL DER         │
-│ la ficha  │  el único slot que cambia:       │  tabla · calendario   │
-│ (T2)      │  feed · decisión · minijuego     │  plantilla · meta     │
-│           │  mercado · serie · temporada     │  generación (T5)      │
-│           │  legado                          │                       │
-├───────────┴──────────────────────────────────┴───────────────────────┤
-│ TICKER: la última línea del feed, en marquesina                       │
+│ ●LIVE │ ⌗ NOMBRE │        (el estado del split llega en T2)     ⚙ 🔊 │
+├───────────────────┬──────────────────────────────────────────────────┤
+│  RIEL IZQUIERDO   │              ESCENARIO                           │
+│  #fichaContainer  │  #setup  →  #decision / #minijuego / #mercado /  │
+│  (HUD, T2)        │  #tarjeta + #logList                             │
+├───────────────────┴──────────────────────────────────────────────────┤
+│ TICKER: la última línea de #logList, en marquesina                    │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
+**Otra revisión, misma causa**: el topbar de la maqueta original mostraba `2033 · SPLIT 2 ·
+PLAYOFFS ▓▓▓▓▓░░` en vivo. Esa lectura sale de `estado`, que vive en el *closure* del
+`<script type="module">` del controlador — `shell.js`, un módulo aparte, no tiene forma de leerlo
+sin que el controlador lo exponga, y exponerlo es tocarlo. En T1 el topbar es **chrome estático**:
+la banda LIVE, el punto que pulsa, el lockup (monograma + nombre, diseñado para cualquier nombre
+corto — el nombre del juego se decide después) y los toggles ⚙/🔊 **inertes** (`disabled`, con
+`title` explicando que llegan con el audio de T3). El estado dinámico del split se cablea en
+**T2**, que ya reescribe cómo se pinta la ficha y es el lugar natural para sumar una llamada más
+al mismo `pintar()` sin romper la promesa de "controlador intacto" de T1.
+
 | Ancho | Layout |
 |---|---|
-| ≥1440 | `320px \| 1fr \| 320px`, escenario máx 860px |
-| 1180–1439 | `280px \| 1fr \| 280px` |
-| 900–1179 | `260px \| 1fr` — el riel derecho pasa a pestañas arriba del escenario |
-| 640–899 | Una columna. La ficha se vuelve una barra HUD compacta y pegajosa |
-| <640 | Igual, con la escala tipográfica un paso abajo |
+| ≥1440 | `320px \| 1fr`, escenario máx 860px, centrado en el espacio sobrante |
+| 1180–1439 | `280px \| 1fr` |
+| 900–1179 | `260px \| 1fr` |
+| 640–899 | Una columna; la ficha se vuelve una barra HUD compacta y pegajosa arriba (CSS puro:
+  `position: sticky` bajo el breakpoint, sin JS) |
+| <640 | Igual, con la escala tipográfica un paso abajo (ya está en `tokens.css` desde T0) |
 
-**Teclado desde el arranque**: `Espacio`/`Enter` avanza o saltea, `1..4` elige opción, `Esc` cierra.
-`aria-live="polite"` en el feed; `role="dialog"` + trampa de foco en las decisiones bisagra.
+**Teclado desde el arranque** (`shell.js`, con guardia para no interceptar texto en
+`handleInput`/`seedInput`): `Espacio`/`Enter` dispara `#run` o `#nuevaCarrera` cuando están
+visibles y habilitados — el sentido de "saltear un beat" llega en T3, cuando el reproductor tenga
+algo que saltear; `1`-`4` clickea la opción N de `#decisionOptions` o `#mercadoGrid`, la que esté
+visible; `Esc` cierra `<details class="avanzado">` si está abierto, si no dispara `#nuevaCarrera`
+cuando está visible. `aria-live="polite"` en `#logList` (atributo estático en el HTML, no hace
+falta JS). `role="dialog"` en `#decision` queda para cuando T4 le dé sentido real (categoría +
+peso bisagra); ponerlo antes sin esa semántica sería un dialog que no se comporta como uno.
 
 ## T2 — La ficha es el HUD
 

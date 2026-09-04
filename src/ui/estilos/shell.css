@@ -1,0 +1,177 @@
+/* ==========================================================================
+   SHELL — la grilla de dos zonas, el topbar, el ticker (fase T1)
+
+   `PLAN.md` "T1 — El shell de transmisión": dos columnas, no tres — el riel
+   derecho es la fila de paneles de T5, y hoy no hay con qué llenarlo. El
+   topbar es chrome estático en esta fase (el punto vivo del split llega en
+   T2); acá solo va su forma.
+   ========================================================================== */
+
+/* T0 dejaba el padding en `body` para centrar el `.panel` único de antes.
+   El shell ahora es full-bleed (el topbar va a sangre) y cada zona pone su
+   propio padding — si `body` sigue sumando el suyo, todo queda corrido. */
+body { padding: 0; }
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* --- El topbar --------------------------------------------------------- */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: var(--s-5);
+  height: var(--topbar-alto);
+  padding: 0 var(--s-5);
+  background: var(--bg-chrome);
+  border-bottom: 3px solid var(--live);
+  box-shadow: 0 0 20px -4px var(--live-glow);
+}
+
+.topbar-live {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex: 0 0 auto;
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  font-weight: 700;
+  letter-spacing: var(--track-cartel);
+  color: var(--live);
+}
+.topbar-live-punto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--live);
+  box-shadow: 0 0 8px var(--live-glow);
+  animation: latir-vivo 2s var(--ease-in-out) infinite;
+}
+@keyframes latir-vivo {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+
+/* El lockup: monograma + nombre. Diseñado para cualquier nombre corto — el
+   nombre del juego se decide después (decisión del usuario, PLAN.md T.2). */
+.topbar-lockup {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.topbar-monograma {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  background: var(--live-fill);
+  border: 1px solid var(--live-deep);
+  border-radius: var(--r-sharp);
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  font-weight: 700;
+  color: var(--live);
+}
+.topbar-nombre {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: var(--fs-3);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.topbar-controles { display: flex; gap: var(--s-2); flex: 0 0 auto; }
+.topbar-toggle {
+  padding: var(--s-1) var(--s-3);
+  font-size: var(--fs-3);
+  line-height: 1;
+}
+/* Inertes hasta T3 (el audio): que se vean apagados, no rotos. */
+.topbar-toggle:disabled { opacity: 0.3; cursor: default; }
+
+/* --- El cuerpo: riel + escenario ----------------------------------------- */
+
+.shell-cuerpo {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: var(--riel-izq) 1fr;
+  align-items: start;
+  gap: var(--s-5);
+  padding: var(--s-5);
+}
+
+.riel { grid-column: 1; min-width: 0; }
+
+.escenario {
+  grid-column: 2;
+  min-width: 0;
+  max-width: var(--escenario-max);
+  width: 100%;
+  display: grid;
+  gap: var(--s-5);
+}
+/* `#setup`/`#carrera` traen su propio `.panel` (chaflán, sombra); acá solo
+   se les saca el centrado de 1080px que tenía sentido cuando `.panel` era
+   el único contenedor de la página entera — ahora el ancho lo da la
+   columna del grid. Especificidad natural por anidamiento, sin !important. */
+.escenario .panel { max-width: none; margin: 0; }
+
+/* --- El ticker ------------------------------------------------------------ */
+
+.ticker {
+  height: 32px;
+  padding: 0 var(--s-5);
+  display: flex;
+  align-items: center;
+  background: var(--bg-chrome);
+  border-top: 1px solid var(--line);
+  color: var(--ink-dim);
+  font-size: var(--fs-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ticker:empty::before { content: "En vivo."; color: var(--ink-mute); }
+
+/* ==========================================================================
+   Breakpoints (PLAN.md T1). `tokens.css` ya reajusta --riel-izq y la escala
+   tipográfica en estos mismos cortes — acá solo cambia la estructura.
+   ========================================================================== */
+
+/* 900–1179: una sola columna angosta todavía alcanza para el riel fijo. */
+
+/* 640–899: una columna. La ficha se vuelve una barra HUD compacta y
+   pegajosa arriba — CSS puro, sin JS: el shell no necesita saber en qué
+   ancho está. */
+@media (max-width: 899px) {
+  .shell-cuerpo { grid-template-columns: 1fr; padding: var(--s-4); gap: var(--s-4); }
+  .riel {
+    grid-column: 1;
+    position: sticky;
+    top: var(--topbar-alto);
+    z-index: 90;
+    background: var(--bg-void);
+    padding-bottom: var(--s-2);
+  }
+  .escenario { grid-column: 1; max-width: none; }
+}
+
+@media (max-width: 639px) {
+  .topbar { gap: var(--s-3); padding: 0 var(--s-3); }
+  .topbar-nombre { font-size: var(--fs-2); }
+  .shell-cuerpo { padding: var(--s-3); }
+  .ticker { padding: 0 var(--s-3); }
+}

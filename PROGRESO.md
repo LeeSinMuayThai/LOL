@@ -33,6 +33,72 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-04 — Fase T1: el shell de transmisión
+
+`index.html` pasa a vivir dentro de una grilla de dos zonas con topbar y ticker, en vez de una
+sola tarjeta centrada. Es el cambio de percepción más grande de la fase T hasta acá: el juego deja
+de leerse como una página y empieza a leerse como una aplicación.
+
+#### El cambio de criterio, escrito antes de tocar código
+
+El plan original decía *"`shell.js` monta el layout, `index.html` queda en ~120 líneas"* — eso
+implica construir el DOM del shell desde JS. El controlador de `index.html` busca todo por
+`getElementById`: si el montaje falla, la página queda en blanco. Se corrigió el criterio en
+`PLAN.md` antes de escribir una línea: **el shell es HTML declarativo**, con los mismos `id` de
+siempre (`fichaContainer`, `summary`, `decision`, `minijuego`, `mercado`, `logList`, `tarjeta`,
+`nuevaCarrera`, `run`, `rolGrid`, `campeonGrid`, `seedInput`, `handleInput`, `poolContador`,
+`metaPill`), y **`shell.js` es solo comportamiento** — teclado + ticker, cero DOM propio. El
+`<script type="module">` original de `index.html` no se tocó ni una línea.
+
+Consecuencia del mismo razonamiento: el layout quedó en **dos columnas, no tres**. El riel derecho
+es la fila de paneles de T5 (tabla, calendario, plantilla, meta, generación) y hoy no hay con qué
+llenarlo — la regla propia del proyecto dice que un panel vacío es peor que uno ausente.
+
+Y una tercera revisión, misma causa: el topbar de la maqueta mostraba `2026 · SPLIT 1` en vivo,
+pero eso sale de `estado`, que vive en el *closure* del controlador — exponerlo sería tocarlo. El
+topbar de T1 es chrome estático (LIVE + lockup + toggles inertes de audio); el punto vivo del
+split se cablea en T2, que de todos modos reescribe cómo se pinta la ficha.
+
+#### Qué entra
+
+- **`index.html`**: `#fichaContainer` sale de `#carrera` y pasa a vivir en `<aside class="riel">`,
+  permanente, fuera del toggle de `#carrera`. `#setup` y `#carrera` quedan como dos `.panel`
+  independientes dentro de `<div class="escenario" id="escenario">` (antes eran hijos de un único
+  `.panel` que envolvía la página entera). El `<h1>`/`.subtitle` se mudan adentro de `#setup` — la
+  identidad persistente ahora la lleva el lockup del topbar, no un título repetido en cada estado.
+- **`src/ui/shell.js`** (nuevo): teclado (con guardia para no interceptar texto en
+  `handleInput`/`seedInput`) — Espacio/Enter dispara `#run` o `#nuevaCarrera` cuando están
+  visibles y habilitados; `1`-`4` clickea la opción N de `#decisionOptions` o `#mercadoGrid`; Esc
+  cierra `<details class="avanzado">` si está abierto, si no dispara `#nuevaCarrera`. Un
+  `MutationObserver` sobre `#logList` espeja la línea más reciente al ticker — ojo con
+  `feed.js`: hace `replaceChildren` con lo más nuevo **primero**, así que el ticker lee
+  `firstElementChild`, no `lastElementChild`.
+- **`src/ui/estilos/shell.css`** (nuevo, 5ª hoja): grilla `320px | 1fr` (280/260 en los
+  breakpoints de `tokens.css`), topbar sticky con banda LIVE de 3px, ticker inferior, y bajo
+  899px la ficha se vuelve una barra sticky arriba de una sola columna — CSS puro, sin JS.
+- **`server.js`**/`build.js`: sin cambios — ya servían `.css` y ya copiaban `src/ui/` entero.
+
+#### Verificación
+
+Recorrida CDP a 1440/1180/900/640/390: fuentes `loaded`, cero errores de consola, cero scroll
+horizontal, único 404 esperado. **Teclado real, no leído**: `Input.dispatchKeyEvent` con Espacio
+arrancó la carrera (`setup` se ocultó, `carrera`/`decision` aparecieron) y con `"1"` eligió la
+primera opción — el log resultante coincide con la opción elegida. `validate.js`: 117/117 OK.
+`simulate.js 1000`: sin crashear. `git diff --name-only -- src/core src/systems src/data`: vacío.
+
+**Una carrera completa solo con teclado queda parcial, y por qué**: el teclado de `shell.js` cubre
+lo que le corresponde a T1 (arrancar, elegir decisión/mercado, volver a empezar), pero los 5
+minijuegos (fase 4, sin tocar en esta fase) dependen de mouse/puntero — arrastrar un slider,
+clickear un blanco que se mueve. Es una limitación preexistente, no algo que T1 rompió, y su
+arreglo es explícitamente de **T6** (*"los 5 minijuegos se migran... con el tema de su
+competición"*). Documentado acá para no repetir el chequeo dándolo por hecho en una fase donde
+todavía no corresponde.
+
+**Trabajo concurrente**: otra sesión modificó `src/data/balance.js` y varios `src/data/events/*.json`
+durante esta corrida (fase 9R3e/9Rg en paralelo). Cero superposición de archivos — `git status` lo
+confirma antes de cada commit — y se stageó exclusivamente por ruta explícita (`git add index.html
+src/ui/shell.js src/ui/estilos/shell.css PLAN.md PROGRESO.md`), nunca `git add -A`.
+
 ### 2026-09-04 — Fase 9R3e: el resto del catálogo + el listón de cobertura sube
 
 Quinto y último commit de contenido de 9R.3. 9R3a-d ampliaron los pools calientes de la fase
