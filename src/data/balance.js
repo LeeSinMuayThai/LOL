@@ -460,7 +460,12 @@ export const BALANCE = {
   },
 
   contenido: {
-    minimoEventosPorCelda: 3,
+    // El listón de `cobertura.js --huecos`: cada celda momento×ventana
+    // alcanzable tiene que ofrecer al menos esto. Subido 3 → 6 al cerrar 9R.3
+    // (9R3e): tras 97 → 218 eventos, la celda más floja alcanzable
+    // (`amateur_arranque` / pretemporada) ofrece 11, así que el piso real del
+    // catálogo está muy por encima de 6 y el chequeo mide algo exigente.
+    minimoEventosPorCelda: 6,
     objetivoOpciones: 150
   },
 

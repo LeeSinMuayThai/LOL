@@ -324,5 +324,273 @@
         ]
       }
     ]
+  },
+  {
+    "id": "el_mapa_5_en_casa",
+    "category": "competicion",
+    "title": "Mapa 5, de local, con el estadio lleno",
+    "description": "Se fue a la máxima y el quinto se juega en tu ciudad. El ruido no se parece a nada de las scrims: cada pelea la corea gente que pagó la entrada para verte a vos.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "ventana": ["playoffs"],
+      "etapa": ["debut", "profesional"],
+      "nivel": ["tier1"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 5 }
+    ],
+    "options": [
+      {
+        "id": "usar_el_estadio_a_favor",
+        "label": "Dejar que el estadio te empuje",
+        "descripcion": "Te prendés del ruido y jugás con la adrenalina arriba. Puede llevarte a otra dimensión o puede hacerte forzar la primera pelea.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "El primer teamfight lo ganás y el estadio explota. A partir de ahí jugás cinco centímetros más adelante que el rival.",
+              "La energía del lugar te lleva. Clavás una jugada que hace temblar las tribunas y el mapa se te acomoda solo."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.teamfight", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 5, "max": 10, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La adrenalina te gana. Buscás la jugada para la tribuna en el minuto seis, te la comés, y el estadio pasa de coro a silencio incómodo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -1, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "aislarte_del_ruido",
+        "label": "Aislarte y jugar tu partido de siempre",
+        "descripcion": "Auriculares, mirada en la pantalla, cero tribuna. Le sacás emoción al momento a cambio de no cometer un error por euforia.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Jugás como si fuera una scrim más. Sin picos ni bajones: la ejecución fría en el mapa que más pesaba de la temporada.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.shotcalling", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te aislás tanto que jugás sin chispa. Cero errores y cero momentos: un mapa correcto y olvidable en el partido más grande del año.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.shotcalling", "min": 1, "max": 2, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_bye_a_semis",
+    "category": "competicion",
+    "title": "Terminaron arriba y hay semana libre",
+    "description": "Cerraron la fase regular en los dos primeros puestos y les toca bye a semifinales. Una semana entera sin partido oficial mientras el resto se saca chispas en cuartos.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "ventana": ["playoffs"],
+      "etapa": ["debut", "profesional"],
+      "nivel": ["tier1"],
+      "momentum": ["racha", "estable"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 5 }
+    ],
+    "options": [
+      {
+        "id": "usar_la_semana_para_scrimear",
+        "label": "Meterle scrims toda la semana",
+        "descripcion": "Aprovechás para pulir la comp y llegar afiladísimo. Riesgo: llegar a semis con la energía de fin de temporada regular en vez de fresco.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Una semana de scrims contra sparrings bien elegidos y llegás a semis con tres planes distintos preparados. El bye lo convertiste en ventaja.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Scrimean tanto que llegan a semis sin frescura. El equipo que salió de cuartos con ritmo de partido los pasa por arriba el primer mapa.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "usar_la_semana_para_descansar",
+        "label": "Bajar la carga y llegar fresco",
+        "descripcion": "Sesiones cortas, dormir, desconectar. Llegás con la cabeza entera; el riesgo es perder el ritmo de competir.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Llegás a semis descansado y con hambre. El primer mapa lo jugás con una claridad que el rival, que viene de una guerra en cuartos, no tiene.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.sleep", "min": 3, "max": 7, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Descansan de más y el primer mapa de semis lo juegan oxidados: tardan veinte minutos en agarrar el ritmo que el rival ya traía.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": -2, "max": 0, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_serie_de_desempate",
+    "category": "competicion",
+    "title": "Un desempate por el último boleto",
+    "description": "Terminaron la fase regular empatados en puntos con otro equipo por el último lugar de playoffs. Un solo partido, a muerte, para definir quién sigue y quién se va de vacaciones antes.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "ventana": ["regular", "playoffs"],
+      "etapa": ["debut", "profesional"],
+      "nivel": ["tier2", "tier1"],
+      "momentum": ["estable", "slump"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 3 }
+    ],
+    "options": [
+      {
+        "id": "asumir_que_te_toca_a_vos",
+        "label": "Pedir la responsabilidad de cerrar el partido",
+        "descripcion": "Le decís al equipo que la bola caliente te la tiren a vos. Si sale, sos el que los metió en playoffs; si no, sos el que los dejó afuera.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "La jugada del partido pasa por tus manos y la resolvés. Entran a playoffs por vos, y eso el vestuario no lo olvida.",
+            "effects": [
+              { "type": "push", "path": "career.hitos", "values": ["El desempate que cerraste vos", "La jugada que los metió en playoffs sobre la hora"] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "La jugada te queda a vos y no sale. Quedan afuera de playoffs y, aunque nadie lo diga fuerte, la última imagen del split es esa.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugar_tu_parte_sin_cargar_con_todo",
+        "label": "Jugar tu parte y confiar en el equipo",
+        "descripcion": "Hacés lo tuyo bien y dejás que la definición sea colectiva. Menos gloria si sale, menos mochila si no.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Cada uno pone su parte y el partido se gana entre los cinco. Entran a playoffs sin un héroe, que a veces es la mejor forma de entrar.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El partido se pierde por un error que no fue tuyo, pero quedan afuera igual. Jugaste bien y te vas de vacaciones lo mismo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_internacional_de_mitad_de_ano",
+    "category": "competicion",
+    "title": "Clasificaron al torneo de mitad de año",
+    "description": "Ganar el primer split del año tiene premio: dos semanas afuera midiéndose con los campeones de las otras regiones, antes de que la mayoría de la gente entienda cómo quedó el meta nuevo.",
+    "weight": 5,
+    "cooldown": 8,
+    "contexto": {
+      "ventana": ["playoffs"],
+      "etapa": ["debut", "profesional"],
+      "nivel": ["tier1"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 5 }
+    ],
+    "options": [
+      {
+        "id": "ir_a_probar_el_meta",
+        "label": "Usarlo de laboratorio del meta nuevo",
+        "descripcion": "Probás picks y estilos que en tu liga nadie se anima todavía. Podés volver tres parches adelantado, o quedar expuesto contra gente que ya lo resolvió.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Volvés con lecturas del meta que en tu región tardan un mes en aparecer. El resto del año jugás con esa ventaja.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Los experimentos salen mal contra rivales que ya masticaron el parche. Volvés con una eliminación temprana y un par de VODs para tapar.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ir_a_ganar_con_lo_conocido",
+        "label": "Ir a ganar con lo que ya te sale",
+        "descripcion": "Nada de inventos: llevás tu mejor versión del split que ganaste. Menos aprendizaje, más chances de traerte un título internacional.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Jugás tu identidad a full y funciona lejos de casa también. Llegan a la final y el nombre del equipo pesa distinto de acá en adelante.",
+            "effects": [
+              { "type": "push", "path": "career.hitos", "values": ["Final de un internacional de mitad de año", "El torneo que jugaste afuera y casi ganás"] },
+              { "type": "stat", "path": "player.stats.hype", "min": 4, "max": 8, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Lo conocido no alcanza contra las otras regiones. Caen en fase de grupos y volvés con la sensación de que faltó animarse a algo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

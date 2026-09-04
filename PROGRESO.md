@@ -33,6 +33,75 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-04 — Fase 9R3e: el resto del catálogo + el listón de cobertura sube
+
+Quinto y último commit de contenido de 9R.3. 9R3a-d ampliaron los pools calientes de la fase
+profesional, los de fecha marcada, los de rol y el prólogo amateur. 9R3e cierra el resto:
+drama/prensa, salud/vida, negocios, competición, estatus, registro y la escena 2026.
+
+#### El arreglo (contenido, data-only)
+
+- **`drama_prensa.json` 4 → 8**: el tweet que borraste tarde, la frase que te recortaron, el
+  compañero que habló de más en su stream (`{adc}`, `con_vestuario`), el documental interno del club.
+- **`salud_vida.json` 6 → 10**: el nutricionista del club, mudarte a la gaming house
+  (`sinergia`), el pico de ansiedad antes de salir al escenario, y la vida afuera del juego que
+  pide su lugar (pico/tardía/veterana).
+- **`negocios.json` 4 → 8**: tu propia línea de merch, el showmatch de exhibición, el sponsor de
+  cripto que ofrece una fortuna con riesgo reputacional, la cláusula de imagen a cuatro años.
+- **`competicion.json` 5 → 9** (todos con `ventana`): mapa 5 de local con el estadio lleno, el
+  bye a semis (descanso vs óxido), el desempate por el último boleto, el internacional de mitad
+  de año.
+- **`estatus.json` 4 → 8**: uno por valor de `estatus` — el rookie que subieron por encima de un
+  veterano, el titular con un rookie detrás, el referente y el coach nuevo, la franquicia y la
+  reconstrucción del proyecto.
+- **`registro_cita.json` 4 → 7**: el primer título recordado (`es_campeon`, que antes solo tenía
+  contenido vía `multicampeon`), la línea de tiempo de tu carrera (`curtido`), el que pasó por
+  todos los tiers (`paso_por_tier3` + `curtido`).
+- **`escena_2026.json` 5 → 9**: el All-Star, el superteam que se rumorea, el cambio de reglamento
+  a mitad de año, el pico histórico de audiencia.
+- **`pool.json` 10 → 13**: el flex pick de dos roles, la tentación del one-trick (`pool_angosto`),
+  el pick que solo funciona con equipo coordinado (`con_vestuario`).
+
+#### Los eventos que nunca salían (triage)
+
+Instrumentando el `responder` de `avanzarSplitAuto` sobre 600 carreras: **3 eventos de ambiente
+disparaban 0 veces**.
+
+- **`first_selection`** y **`el_burn_de_cuarenta`** (First Selection y el burn de Fearless):
+  gateaban con `conditions: [{ field: "serie.activa", op: "eq", value: true }]`, pero `serie.js`
+  no elige de `TODOS_LOS_EVENTOS` y el picker de ambiente nunca ve `serie.activa` en `true` (el
+  flag vive solo dentro de `temporada.aplicar` / `serie.js`). Eran contenido muerto.
+  **Regateados**: se saca la condición de serie, se anclan a `ventana` (`regular`/`playoffs` y
+  `playoffs`) y los efectos `partido` (`career.temporada.ajustePartido`, que sin serie que lo
+  consuma quedaba colgando hasta el reset de temporada) pasan a `stat` — quedan como eventos de
+  ambiente autocontenidos. Ahora disparan 75 y 32 veces en 500 carreras.
+- **`el_ano_muerto`** (`espera_edad_minima` + `ventana: ["pretemporada"]`): el momento
+  `espera_edad_minima` nunca se observa en la ventana `pretemporada`, así que la intersección era
+  vacía. Se saca la `ventana` (la categoría `identidad` no la exige). Ahora dispara 2 veces en
+  500 carreras — la rareza propia de la marca.
+
+#### El listón de cobertura sube (3 → 6)
+
+`BALANCE.contenido.minimoEventosPorCelda` **3 → 6**. Con 97 → 218 eventos, la celda alcanzable
+más floja (`amateur_arranque` / pretemporada) ofrece 11 por contexto, así que `cobertura.js
+--huecos` sigue vacío a un listón el doble de exigente.
+
+#### Números medidos
+
+- Catálogo: **188 → 218 eventos** (+30). Opciones: **378 → 438**.
+- Los 3 eventos muertos ahora disparan; `cobertura.js --huecos` vacío al listón 6.
+- `simulate.js 1000 60 todas`: 0 crashes · determinismo intra-versión 150/150 · build OK.
+- `validate.js`: los checks de datos/eventos pasan. Las 2 FAIL de CSS de 9R3d ya no están: la
+  sesión concurrente cerró Fase T0b (`1f0a234`).
+
+#### Colateral
+
+- **D37 (familia):** +30 eventos → el `weightedPick` de `elegirEvento` cae distinto. Determinismo
+  intra-versión intacto; seeds pre-9R3e no reproducen (familia D21/D22/D35, aceptada).
+- **`PLAN.md` sin tocar en este commit**: la sesión concurrente tiene `PLAN.md` modificado en el
+  working tree (revisión de la Fase T1). La actualización de la sección 9R.3 / ESTADO REAL de
+  PLAN.md queda para un commit de docs aparte cuando esa edición aterrice, para no barrerla.
+
 ### 2026-09-04 — Fase T0b: el candado y el vocabulario visual
 
 El usuario jugó T0 (`5736a23`) y dijo dos cosas, las dos ciertas: *"el color blanco del hovering

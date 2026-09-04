@@ -638,5 +638,199 @@
         ]
       }
     ]
+  },
+  {
+    "id": "pool_el_flex_pick",
+    "category": "pool",
+    "title": "Un pick que se juega en dos roles",
+    "description": "Sale a la luz un campeón que tu equipo puede dibujear como tuyo o como el de otra línea sin que el rival sepa hasta el último pick. Aprenderlo no suma un campeón: suma ambigüedad al draft entero.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "etapa": ["debut", "profesional"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 3 }
+    ],
+    "options": [
+      {
+        "id": "aprender_el_flex",
+        "label": "Meterle horas al flex pick",
+        "descripcion": "Practicás un campeón que quizás termine jugando otro. El beneficio es del equipo más que tuyo, y te come tiempo de pulir lo propio.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Lo incorporás y el coach lo empieza a usar de señuelo en cada draft. El rival banea a ciegas y tu equipo saca ventaja antes de jugar.",
+            "effects": [
+              { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Le metés horas y el equipo casi no lo usa: el flex quedó de adorno en la pizarra y vos perdiste ese tiempo de tu propio pool.",
+            "effects": [
+              { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejar_el_flex_a_otro",
+        "label": "Que lo aprenda el que lo va a jugar",
+        "descripcion": "Le pasás la responsabilidad del flex a otra línea y te concentrás en tu identidad. Más simple para vos, menos herramientas para el equipo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Otro se hace cargo del flex y vos seguís puliendo lo tuyo. El draft pierde una capa de engaño, pero tu nivel individual no se resiente.",
+            "effects": [
+              { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "principal", "min": 3, "max": 6 }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El que agarró el flex no le encuentra la mano y el equipo se queda sin esa carta. Cada tanto pensás que deberías haberlo tomado vos.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pool_el_one_trick",
+    "category": "pool",
+    "title": "La tentación de hacerte one-trick",
+    "description": "Hay un campeón de tu línea tan por encima del resto que la gente que solo lo juega a él está subiendo como si nada. La idea de tirar todo lo demás por la borda y volverte especialista te da vueltas.",
+    "weight": 5,
+    "cooldown": 7,
+    "contexto": {
+      "marcas": ["pool_angosto"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "abrazar_el_one_trick",
+        "label": "Ir all-in con ese campeón",
+        "descripcion": "Todas tus horas a uno solo. Vas a jugarlo mejor que casi nadie, y el día que lo baneen o lo nerfeen no vas a tener a dónde ir.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": [
+              "Te volvés una referencia con él. Cuando lo dejan abierto, ganás la línea sí o sí; se nota en cada partida que lo tenés.",
+              "El nivel que alcanzás con él es de otra categoría. Mientras el meta lo banque, sos casi imparable."
+            ],
+            "effects": [
+              { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "principal", "min": 8, "max": 14 },
+              { "type": "stat", "path": "player.stats.laneo", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Lo nerfean fuerte al parche siguiente y quedás desnudo: sin él, tu pool es un desierto y tu rendimiento se cae por un barranco.",
+            "effects": [
+              { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "principal", "min": 4, "max": 8 },
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": -4, "max": -2, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "resistir_la_tentacion",
+        "label": "Resistir y seguir construyendo pool",
+        "descripcion": "Lo jugás, pero no dejás de sumar otras opciones. Subís más lento que los one-trick, con una base que no depende de un solo parche.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Seguís ampliando despacio. No sos el mejor del servidor con ninguno, pero tampoco estás a un nerfeo de quedarte sin juego.",
+            "effects": [
+              { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Ves a un one-trick de tu misma división pasarte de largo en la ladder mes tras mes. Sabés que hiciste lo correcto y igual te carcome.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pool_pick_de_escenario",
+    "category": "pool",
+    "title": "Un pick que solo funciona con equipo",
+    "description": "Hay un campeón que en soloQ es una lotería, pero con cinco personas coordinadas y comunicación por voz se vuelve una máquina. El coach te lo pide para el plan de playoffs; tu ladder va a sufrir mientras lo practicás.",
+    "weight": 4,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 4 }
+    ],
+    "options": [
+      {
+        "id": "aprenderlo_para_el_plan",
+        "label": "Aprenderlo para el plan del equipo",
+        "descripcion": "Le metés horas a algo que solo sirve en scrims y oficial. En la ladder vas a perder puntos jugando un campeón que solo no rinde.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Para playoffs lo tenés listo y en el mapa que importa el equipo lo ejecuta redondo. Fueron horas invertidas donde había que invertirlas.",
+            "effects": [
+              { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
+              { "type": "stat", "path": "player.stats.teamfight", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": -12, "max": -3 }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo aprendés, pero el rival lo banea en cada draft que importa y el plan nunca se llega a usar. Perdiste ladder por un pick que quedó en la sala de scrims.",
+            "effects": [
+              { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
+              { "type": "ladder", "path": "player.ranked", "min": -15, "max": -5 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "decir_que_no_te_convence",
+        "label": "Decirle al coach que no te cierra",
+        "descripcion": "Le planteás que preferís ir a playoffs con algo que dominás de verdad. Defendés tu criterio y te arriesgás a que el plan salga igual sin vos cómodo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El coach te escucha y arma el plan alrededor de tus picks de confianza. Llegás a playoffs cómodo, con lo tuyo.",
+            "effects": [
+              { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "principal", "min": 3, "max": 6 }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El coach insiste y lo termina jugando otro. Funciona, y te queda la duda de si tu terquedad le costó al equipo una herramienta.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": -2, "max": 0, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

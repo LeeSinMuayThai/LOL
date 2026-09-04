@@ -258,5 +258,263 @@
         ]
       }
     ]
+  },
+  {
+    "id": "el_tweet_borrado",
+    "category": "drama_prensa",
+    "title": "El tweet que borraste tarde",
+    "description": "Posteaste algo caliente sobre un arbitraje en pleno enojo post-derrota y lo borraste veinte minutos después. Veinte minutos alcanzan: ya hay captura y ya circula.",
+    "weight": 6,
+    "cooldown": 4,
+    "contexto": {
+      "nivel": ["tier2", "tier1"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 3 }
+    ],
+    "options": [
+      {
+        "id": "salir_a_aclarar",
+        "label": "Salir a aclarar con la cabeza fría",
+        "descripcion": "Un comunicado corto, sin excusas: estabas caliente, no era la forma. Cierra el tema o le da otra vuelta, según cómo caiga.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La aclaración madura le gusta a la gente. En un día el tema pasó de escándalo a \"le pasa a cualquiera\".",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": -1, "max": 1, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Aclarás, y la aclaración genera su propio hilo de gente discutiendo si hacía falta aclarar. El tema respira dos días más.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "no_decir_nada_mas",
+        "label": "No decir una palabra más",
+        "descripcion": "Ni aclaración ni disculpa. Aguantás el chubasco callado y esperás que el ciclo de noticias siga de largo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": [
+              "Tres días de silencio y el tema se lo come otra polémica ajena. Nadie se acuerda para el fin de semana.",
+              "No decís nada y la ausencia de reacción le baja el aire al asunto. Se apaga solo, más rápido de lo que temías."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "El silencio lo leen como soberbia. El club te termina obligando a sacar un comunicado que te sale peor que si lo hacías vos de una.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": -3, "max": -1, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_frase_fuera_de_contexto",
+    "category": "drama_prensa",
+    "title": "Te recortaron una frase",
+    "description": "Diste una nota larga y matizada sobre el nivel de la liga. El título que salió agarra seis palabras del medio y las convierte en un desprecio a media escena.",
+    "weight": 6,
+    "cooldown": 4,
+    "contexto": {
+      "nivel": ["tier2", "tier1"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 4 }
+    ],
+    "options": [
+      {
+        "id": "pelearte_con_el_medio",
+        "label": "Salir a pelearte con el medio",
+        "descripcion": "Publicás el audio completo y bancás que el periodista tergiversó. Tenés razón, y ahora tenés un enemigo con micrófono.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El audio te da la razón y una parte de la gente te la reconoce. El medio, en cambio, te marca en la libreta para la próxima.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "La pelea escala. Ahora la nota es \"jugador vs periodista\" y nadie se acuerda de lo que dijiste en serio.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejar_que_se_diluya",
+        "label": "Dejar que se diluya solo",
+        "descripcion": "No confirmás ni desmentís. La gente que te sigue de cerca sabe cómo hablás; el resto se olvida en una semana.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Una semana después ya nadie lo cita. Los rivales que se ofendieron siguen ofendidos, pero eso te va a durar menos que a ellos.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 0, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Un rival lo usa de combustible y te gana el cruce de la jornada con eso de bandera. La frase recortada te siguió hasta la cancha.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_stream_del_companero",
+    "category": "drama_prensa",
+    "title": "{adc} habló de más en su stream",
+    "description": "En vivo, sin filtro, {adc} contó una interna de una scrim y te nombró en el medio de una anécdota que no te deja bien parado. Ya está clippeado.",
+    "weight": 6,
+    "cooldown": 5,
+    "contexto": {
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 3 }
+    ],
+    "options": [
+      {
+        "id": "hablarlo_en_privado",
+        "label": "Hablarlo con {adc} de frente y en privado",
+        "descripcion": "Nada de exponerlo público: le decís cara a cara que eso no se cuenta al aire. Se arregla adentro o se pudre adentro.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Se disculpa en serio y al día siguiente aclara en su stream sin que se lo pidas. El vestuario registra que lo manejaste puertas adentro.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Se lo toma a mal — \"era un chiste\" — y quedan un par de días raros en la sala. Se ordena, pero deja marca.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "contestar_en_redes",
+        "label": "Contestar tu versión en redes",
+        "descripcion": "Salís a dar tu lado de la anécdota. Quedás bien parado con tu público, y convertís una interna en una novela pública.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Tu versión convence y el clip se da vuelta a tu favor. {adc} queda como el bocón, y eso también te va a costar algo adentro.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "career.sinergia", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "La ida y vuelta pública la mira todo el mundo menos el coach, que los cita a los dos y les baja el martillo por lavar los trapos afuera.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] },
+              { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_documental_interno",
+    "category": "drama_prensa",
+    "title": "Filman un detrás de escena del equipo",
+    "description": "{org} arregló con una productora una serie de documentales del split: cámaras en la gaming house, en las reuniones tácticas, en los viajes. Sos uno de los que más pantalla van a tener.",
+    "weight": 5,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": ["profesional"],
+      "nivel": ["tier1"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 6 }
+    ],
+    "options": [
+      {
+        "id": "jugar_el_personaje",
+        "label": "Aprovechar la cámara y construir personaje",
+        "descripcion": "Te mostrás, tirás frases para el corte, dejás que te sigan en los momentos buenos. Sale hype, y también sale una versión tuya editada por otros.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "El episodio en el que salís más se vuelve el favorito de la gente. De golpe tenés un fandom que no tenías.",
+              "Tu manera de hablar del juego engancha en cámara. El documental te instala como cara de la liga, no solo del club."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 6, "max": 12, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El montaje te agarra en una mala racha y te pinta como el punto débil del equipo. La edición no miente, pero elige.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "mantenerte_al_costado",
+        "label": "Colaborar lo justo y no dar más",
+        "descripcion": "Respondés lo que te preguntan y nada más. Menos protagonismo en la serie, más control sobre lo que se ve de vos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Salís poco y bien. No sos la estrella del documental, pero tampoco te expusiste a que te editen una versión que no elegiste.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Tu bajo perfil en cámara lo leen como frialdad. Un compañero más histriónico se lleva toda la simpatía del público.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

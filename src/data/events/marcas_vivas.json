@@ -306,7 +306,6 @@
     "weight": 5,
     "cooldown": 8,
     "contexto": {
-      "ventana": ["pretemporada"],
       "etapa": ["debut", "profesional"],
       "marcas": ["espera_edad_minima"]
     },

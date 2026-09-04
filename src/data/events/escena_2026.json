@@ -9,11 +9,11 @@
     "contexto": {
       "etapa": ["debut", "profesional"],
       "nivel": ["tier1"],
-      "ventana": ["playoffs"],
+      "ventana": ["regular", "playoffs"],
       "marcas": ["con_vestuario"]
     },
     "conditions": [
-      { "field": "serie.activa", "op": "eq", "value": true }
+      { "field": "player.splitCount", "op": "gt", "value": 4 }
     ],
     "options": [
       {
@@ -24,16 +24,18 @@
         "outcomes": [
           {
             "weight": 6,
-            "texto": "El lado les da la estructura que veníais practicando toda la semana. El rival elige dibujear primero y arranca picking, como esperaban.",
+            "texto": "El lado les da la estructura que veníais practicando toda la semana. Jugás el mapa desde una posición cómoda y se nota en la ejecución.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.02, "max": 0.1 }
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 2, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "El lado no alcanza: el rival usa el orden de pick para forzar una comp que no habían scrimeado.",
+            "texto": "El lado no alcanza: el rival usa el orden de pick para forzar una comp que no habían scrimeado. Aprendés el contragolpe a los golpes.",
             "effects": [
-              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 1, "max": 2, "clamp": [0, 100] }
             ]
           }
         ]
@@ -46,17 +48,17 @@
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Abrís el draft con el pick que tenían preparado y el rival tiene que reaccionar en el lado que no eligió.",
+            "texto": "Abrís el draft con el pick que tenían preparado y el rival tiene que reaccionar en el lado que no eligió. El plan sale como en la pizarra.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.03, "max": 0.14 },
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 2, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
-            "texto": "Abren el draft, pero el lado que les queda no acompaña la comp que armaron. Ganaron el orden y perdieron el mapa.",
+            "texto": "Abren el draft, pero el lado que les queda no acompaña la comp que armaron. Ganaron el orden y jugaron todo el mapa a contramano.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.12, "max": -0.02 }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
           }
         ]
@@ -77,7 +79,7 @@
       "marcas": ["con_vestuario"]
     },
     "conditions": [
-      { "field": "serie.activa", "op": "eq", "value": true }
+      { "field": "player.splitCount", "op": "gt", "value": 5 }
     ],
     "options": [
       {
@@ -91,16 +93,17 @@
             "modificadores": [
               { "field": "player.championPool.length", "referencia": 4, "factor": 0.03 }
             ],
-            "texto": "El comfort pick te sostiene justo cuando el resto del pool ya no está. Jugás con la comodidad de mil partidas encima.",
+            "texto": "El comfort pick te sostiene justo cuando el resto del pool ya no está. Jugás con la comodidad de mil partidas encima y cerrás la serie.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.02, "max": 0.12 }
+              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "El pick te sale cómodo, pero el rival lo tenía scouteado hace rato — un pool angosto también es predecible.",
+            "texto": "El pick te sale cómodo, pero el rival lo tenía scouteado hace rato — un pool angosto también es predecible, y esta vez lo pagás.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.14, "max": -0.02 }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
           }
         ]
@@ -113,18 +116,18 @@
         "outcomes": [
           {
             "weight": 4,
-            "texto": "Sale mejor de lo que nadie esperaba, arrancando con vos. El riesgo, esta vez, paga.",
+            "texto": "Sale mejor de lo que nadie esperaba, arrancando con vos. El riesgo, esta vez, paga, y encima sumás un campeón nuevo a tu repertorio.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.05, "max": 0.18 },
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 2, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 6,
-            "texto": "Se nota que no lo tenías afilado. El rival lo lee rápido y te castiga cada vez que dudás.",
+            "texto": "Se nota que no lo tenías afilado. El rival lo lee rápido y te castiga cada vez que dudás. Igual, algo del pick te queda para la próxima.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.2, "max": -0.05 },
-              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 1, "max": 2, "clamp": [0, 100] }
             ]
           }
         ]
@@ -311,6 +314,269 @@
             "texto": "Postergarlo tanto empieza a sentirse menos a plan y más a esquive. El club empieza a preguntar, con cuidado, cuándo pensás resolverlo.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_all_star_del_ano",
+    "category": "identidad",
+    "title": "Te votaron para el All-Star",
+    "description": "Los fans de tu región te eligieron para el evento de fin de año: showmatches, modos raros, un 1v1 con micrófono abierto. Es un premio a la popularidad más que al nivel, y se transmite a todo el mundo.",
+    "weight": 4,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": ["profesional"],
+      "nivel": ["tier1"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [
+      { "field": "player.stats.hype", "op": "gt", "value": 55 }
+    ],
+    "options": [
+      {
+        "id": "ir_a_hacer_show",
+        "label": "Ir a hacer show y ganarte al público",
+        "descripcion": "Te preparás el 1v1, tirás trash talk para el casteo, jugás picks de meme. Ganás cariño de la gente y perdés días de descanso del receso.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "Ganás el 1v1 con una jugada de circo y el clip te da la vuelta al mundo. Volvés del All-Star más conocido de lo que entraste.",
+              "Tu carisma en el micrófono abierto sorprende a todos. Pasás de \"buen jugador\" a \"personaje\" de la escena en un fin de semana."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 6, "max": 12, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.sleep", "min": -4, "max": -1, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Perdés el 1v1 contra un rival directo y te lo van a recordar en cada cruce del año que viene. El receso te lo comiste igual.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "declinar_para_descansar",
+        "label": "Declinar y usar el receso para parar",
+        "descripcion": "Agradecés la votación y te bajás. La gente que quería verte se decepciona un poco; vos llegás a pretemporada con la batería llena.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te tomás el receso completo y arrancás la pretemporada con una frescura que el resto, que anduvo de evento en evento, no tiene.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.sleep", "min": 3, "max": 7, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Una parte del público lo lee como que te la creés. \"Ni al All-Star va\", escriben. Descansaste bien y pagaste un peaje de imagen.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": -3, "max": -1, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_superteam_que_se_rumorea",
+    "category": "negocios",
+    "title": "Se rumorea un superequipo y aparece tu nombre",
+    "description": "Un club con plata fresca está juntando figuras de varios equipos para el año que viene. En las listas que circulan, tu nombre aparece como uno de los apuntados para completar el proyecto.",
+    "weight": 5,
+    "cooldown": 8,
+    "contexto": {
+      "ventana": ["pretemporada"],
+      "etapa": ["debut", "profesional"],
+      "nivel": ["tier1"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 6 }
+    ],
+    "options": [
+      {
+        "id": "escuchar_al_superteam",
+        "label": "Dejar que tu representante escuche la propuesta",
+        "descripcion": "Abrís la puerta a la charla. Jugar con cuatro cracks es tentador; también lo es la presión de un proyecto que solo se mide por títulos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "La propuesta es real y la plata también. Todavía no firmás nada, pero por primera vez te ves jugando en otro lado el año que viene.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 4, "max": 8, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El proyecto se cae antes de concretarse —problemas de cupos, egos, presupuesto— y vos quedaste como el que ya tenía un pie afuera de tu club.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cerrar_la_puerta",
+        "label": "Cerrar la puerta y bancar tu proyecto",
+        "descripcion": "Decís públicamente que estás donde querés estar. Ganás crédito puertas adentro y dejás pasar la chance de un salto.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu club valora el gesto y se relaja el clima de pretemporada. Apostaste a lo conocido y el vestuario lo registra.",
+            "effects": [
+              { "type": "stat", "path": "career.arraigo", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El superequipo se arma sin vos, gana todo ese año, y te toca verlo desde enfrente preguntándote si te bajaste demasiado rápido.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_regla_nueva_de_la_liga",
+    "category": "identidad",
+    "title": "La liga cambia el reglamento a mitad de año",
+    "description": "Anuncian ajustes para el segundo split: más Bo activos con Fearless, un formato de playoffs distinto y una tuerca nueva en los cupos de import. Todos arrancan de cero a entender las implicancias.",
+    "weight": 5,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": ["debut", "profesional"],
+      "nivel": ["tier1", "tier2"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 4 }
+    ],
+    "options": [
+      {
+        "id": "adelantarte_a_la_regla",
+        "label": "Encerrarte a resolver la regla antes que nadie",
+        "descripcion": "Sesiones extra con el analista para exprimir el reglamento nuevo. Si le encontrás la vuelta primero, tenés un split de ventaja.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Le encontrás el hueco al formato nuevo antes que el resto de la liga. Los primeros partidos con la regla los jugás con un plan que nadie más tiene.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Le dedicás horas y llegás a una lectura que la liga desarma en dos semanas. Estudiaste mucho para un examen que cambió de tema.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "esperar_a_ver_como_queda",
+        "label": "Esperar a que se asiente y copiar lo que funcione",
+        "descripcion": "Dejás que otros paguen el costo de experimentar y te subís cuando el meta de la regla nueva se estabilice. Menos riesgo, y llegás un poco tarde.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Mirás dos jornadas, ves qué equipos le encontraron la vuelta, y copiás lo mejor sin haber perdido puntos probando.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Para cuando te subís, los que experimentaron ya sacaron tres jornadas de ventaja que no vas a recuperar este split.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_pico_historico_de_audiencia",
+    "category": "competicion",
+    "title": "Tu serie rompió el récord de audiencia de la región",
+    "description": "El partido que jugaste anoche fue el más visto en la historia de la liga. Los números salen en todos lados y, de golpe, mucha gente que nunca te vio jugar sabe quién sos.",
+    "weight": 4,
+    "cooldown": 10,
+    "contexto": {
+      "ventana": ["playoffs"],
+      "etapa": ["debut", "profesional"],
+      "nivel": ["tier1"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 6 }
+    ],
+    "options": [
+      {
+        "id": "capitalizar_la_ventana",
+        "label": "Capitalizar la ventana ahora",
+        "descripcion": "Streams, entrevistas, contenido: la mayor cantidad de ojos que vas a tener nunca está mirando esta semana. Come preparación de la serie que sigue.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Aprovechás cada minuto de atención y salís de la semana con una base de seguidores que no tenías. El hype se te dispara.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 8, "max": 15, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La semana de exposición te saca del foco justo antes de la serie más importante, y se nota: llegás disperso y lo pagás en el mapa.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 5, "max": 10, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ignorar_los_numeros",
+        "label": "Ignorar los números y seguir la rutina",
+        "descripcion": "Que el récord lo festeje la liga. Vos tenés una serie que preparar y los viewers no juegan por vos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Ni mirás las cifras y seguís con tu semana normal. Llegás a la serie siguiente exactamente igual de enfocado que a cualquier otra.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "El club te pide igual dos notas obligatorias por el récord. Las hacés rápido y volvés a lo tuyo sin que te muevan el eje.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
           }
         ]

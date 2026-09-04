@@ -238,5 +238,190 @@
         ]
       }
     ]
+  },
+  {
+    "id": "el_primer_titulo_que_contas",
+    "category": "identidad",
+    "title": "Te preguntan por aquel primer título",
+    "description": "Un pibe que no lo vio en vivo te pregunta cómo fue ganar por primera vez. Hace años de eso. Te sorprende cuánto de esa noche te acordás y cuánto se te borró.",
+    "weight": 4,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": ["profesional"],
+      "marcas": ["es_campeon"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "contarlo_con_todo",
+        "label": "Contarlo con lujo de detalles",
+        "descripcion": "Le describís la jugada, el confeti, la llamada a tu vieja. Revivís la mejor noche de tu carrera y te das cuenta de cuánto la extrañás.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Contarlo te vuelve a encender. Salís de la charla con ganas de sentir eso otra vez, que es el mejor combustible que hay.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "momento", "path": "career.registro.momentos", "tipo": "primer_titulo_recordado", "values": ["El día que le contaste a un rookie cómo fue ganar la primera", "Cuando te diste cuenta de cuánto extrañabas ganar"] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "A mitad del relato caés en que hace mucho que no volvés a esa sensación. La nostalgia te deja algo melancólico el resto del día.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 1, "clamp": [0, 100] },
+              { "type": "momento", "path": "career.registro.momentos", "tipo": "primer_titulo_recordado", "values": ["La charla sobre el primer título que te dejó nostálgico", "El día que contaste la primera y sonó a hace mucho"] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "restarle_epica",
+        "label": "Contarlo sin épica, como un dato",
+        "descripcion": "\"Ganamos, estuvo bueno, al otro día a entrenar.\" Te protegés de la nostalgia y también le sacás el brillo a lo que fue.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Lo contás plano y seguís con tu día sin que te remueva nada. Eficiente; quizás demasiado.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 0, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El rookie se va con la sensación de que ganar no era para tanto. Más tarde pensás que le mentiste un poco.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_linea_de_tiempo_de_tu_carrera",
+    "category": "identidad",
+    "title": "Un analista armó la línea de tiempo de tu carrera",
+    "description": "Para un video largo, alguien reconstruyó cada split que jugaste: los equipos, los picos, los pozos, los cambios de región. Verlo todo junto en una barra te pega distinto que vivirlo.",
+    "weight": 4,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": ["debut", "profesional"],
+      "marcas": ["curtido"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "mirarlo_completo",
+        "label": "Mirar el video entero",
+        "descripcion": "Te sentás a ver los cuarenta minutos, incluidos los tramos que preferirías olvidar. Puede ordenarte la cabeza o abrirte viejas heridas.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "Verlo entero te da una perspectiva que no tenías: los pozos duraron menos de lo que se sintieron y los picos fueron más de los que recordabas.",
+              "El video te ordena la carrera en una sola historia con sentido. Salís con la sensación de que, mal que mal, valió."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "momento", "path": "career.registro.momentos", "tipo": "carrera_en_perspectiva", "values": ["El día que viste tu carrera entera en una sola barra", "Cuando entendiste tu recorrido mirándolo de afuera"] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El tramo del peor año te agarra desprevenido y te arruina la tarde. Algunas cosas todavía no estaban listas para verse en repetición.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "no_verlo",
+        "label": "No verlo: preferís seguir para adelante",
+        "descripcion": "Agradecés el laburo y no lo abrís. No querés que un balance ajeno te condicione cómo encarás lo que queda.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "No lo mirás y seguís enfocado en el próximo split. Ya vas a tener tiempo de hacer balances cuando esto termine.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Alguien te spoilea el tono del video en una charla y te quedás con la versión de otro de tu propia carrera. Deberías haberlo visto vos primero.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_que_paso_por_todos_los_tiers",
+    "category": "identidad",
+    "title": "Jugaste en cada escalón de la pirámide",
+    "description": "Un periodista lo nota preparando una nota: sos de los poquísimos en actividad que jugó tier 3, tier 2 y tier 1. La mayoría entra directo arriba o se queda abajo para siempre.",
+    "weight": 4,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": ["profesional"],
+      "marcas": ["paso_por_tier3", "curtido"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "reivindicar_el_camino_largo",
+        "label": "Reivindicar el camino largo",
+        "descripcion": "Contás que subir escalón por escalón te dio una base que los que entraron directo no tienen. Le das identidad a tu historia y sonás, un poco, a viejo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La nota pega bien: hay una generación de pibes de tier 3 que te empiezan a ver como la prueba de que se puede. Te escriben para pedirte consejo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "momento", "path": "career.registro.momentos", "tipo": "todos_los_tiers", "values": ["La nota sobre el jugador que pasó por los tres tiers", "El día que tu camino largo se volvió un ejemplo para otros"] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El enfoque \"yo la remé de abajo\" le cae soberbio a una parte de la escena. Te ganás un par de comentarios ácidos que no esperabas.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "quitarle_dramatismo",
+        "label": "Quitarle dramatismo: fue el camino que había",
+        "descripcion": "Decís que no lo elegiste, que era eso o nada, y que tampoco lo recomendás. Honesto, y menos épico de lo que la nota buscaba.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La franqueza le gusta a los que ya la vivieron. \"Es la verdad, no es lindo\", comentan los que pasaron por lo mismo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "momento", "path": "career.registro.momentos", "tipo": "todos_los_tiers", "values": ["El día que contaste el camino largo sin adornarlo", "Cuando dijiste en voz alta que subir de abajo no es romántico"] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El periodista se queda sin la historia inspiradora que quería y la nota sale corta y sin gancho. Nadie la comparte.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": -1, "max": 1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

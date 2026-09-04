@@ -374,5 +374,271 @@
         ]
       }
     ]
+  },
+  {
+    "id": "el_nutricionista_del_club",
+    "category": "salud_vida",
+    "title": "El club trae un nutricionista",
+    "description": "{org} sumó a alguien que te arma un plan de comidas, te mide, y te pide cortar la Coca de las tres de la mañana. La ciencia dice que rendís mejor; tu costumbre dice otra cosa.",
+    "weight": 5,
+    "cooldown": 8,
+    "contexto": {
+      "nivel": ["tier1"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 4 }
+    ],
+    "options": [
+      {
+        "id": "seguir_el_plan_a_rajatabla",
+        "label": "Seguir el plan a rajatabla",
+        "descripcion": "Dos meses comiendo lo que te dicen y durmiendo cuando te dicen. Aburrido, y con un efecto que se nota en las series largas.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": [
+              "A las tres semanas te levantás sin el bajón de siempre. En el mapa 4 de un Bo5 seguís teniendo cabeza, y eso es nuevo.",
+              "El plan es un plomo, pero funciona: aguantás las sesiones largas sin ese pozo de energía del mediodía."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.sleep", "min": 5, "max": 10, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Lo seguís entero y llegás a playoffs en la mejor forma física de tu carrera. No te hace mejor jugador, pero te deja rendir el tuyo completo.",
+            "effects": [
+              { "type": "stat", "path": "player.sleep", "min": 8, "max": 14, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 4, "max": 7, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "seguirlo_a_medias",
+        "label": "Seguirlo cuando te acordás",
+        "descripcion": "Agarrás lo fácil —el desayuno, la hidratación— y dejás el resto. Menos beneficio, cero pelea con tus hábitos de siempre.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Cumplís la mitad y sentís una mejora chica. El nutricionista te mira con cara de \"podría ser más\", y tiene razón.",
+            "effects": [
+              { "type": "stat", "path": "player.sleep", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "En la práctica no cambiás casi nada y a los dos meses el plan es un PDF que nadie abre. Volviste a la Coca de las tres.",
+            "effects": [
+              { "type": "stat", "path": "player.sleep", "min": -2, "max": 1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_gaming_house",
+    "category": "salud_vida",
+    "title": "Te mudás a la casa del equipo",
+    "description": "El club alquiló una casa y quiere a los cinco titulares viviendo ahí durante el split. Compartís cocina, baño y horarios con la gente con la que ya compartís diez horas de scrim.",
+    "weight": 5,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 2 }
+    ],
+    "options": [
+      {
+        "id": "hacer_vida_en_comun",
+        "label": "Hacer vida en común con el equipo",
+        "descripcion": "Cenás con ellos, mirás VODs en el living, te quedás charlando. El vestuario se hace más fuerte y tu tiempo a solas desaparece.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "En dos meses el equipo se conoce de otra forma: sabés cómo juega cada uno porque sabés cómo es cada uno. Las llamadas salen antes.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La convivencia amplifica todo: cuando el equipo pierde, la casa es un velorio del que no podés irte. Terminás el split sin un solo día de desconexión.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "poner_limites_en_la_casa",
+        "label": "Cumplir el horario y encerrarte en tu pieza",
+        "descripcion": "Vivís ahí pero te reservás las noches. Menos camaradería, más chances de llegar entero a fin de split.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Preservás tu espacio y llegás a playoffs con la cabeza más entera que el resto. Alguno te dice \"ermitaño\", medio en serio.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "career.sinergia", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El resto hace grupo en el living y vos quedás afuera de los chistes internos. En las scrims se nota un pelín, en el clima más.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_pico_de_ansiedad",
+    "category": "salud_vida",
+    "title": "El pecho apretado antes de salir",
+    "description": "Faltan veinte minutos para salir al escenario y no te entra el aire. Ya te había pasado en scrims, pero nunca así, nunca el día de un partido que importa.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "nivel": ["tier1"]
+    },
+    "conditions": [
+      { "field": "player.stats.mentalidad", "op": "lt", "value": 58 },
+      { "field": "player.splitCount", "op": "gt", "value": 5 }
+    ],
+    "options": [
+      {
+        "id": "avisar_al_staff",
+        "label": "Avisarle al staff ahora mismo",
+        "descripcion": "Lo decís antes de salir, aunque falten minutos. Pueden ayudarte a bajarlo, y también queda registrado que te pasó.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La psicóloga del club te saca a un pasillo, te hace respirar contando, y salís al escenario tarde pero entero. Nadie afuera se enteró.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Se maneja, pero el staff queda con el ojo puesto. En las alineaciones siguientes sentís que te evalúan la cabeza además del juego.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 2, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "bancartelo_y_salir",
+        "label": "Bancártelo y salir igual",
+        "descripcion": "No decís nada, te mojás la cara y salís. Si lo controlás vos solo, nadie tiene por qué saberlo. Si no, se ve en pantalla.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Los primeros minutos jugás en piloto automático hasta que el cuerpo se acomoda. Para la mitad del mapa ya estás. Zafaste solo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": [
+              "No se acomoda. Jugás toda la serie con medio cerebro puesto en respirar y se te nota en cada decisión.",
+              "El nudo no afloja. Cometés dos errores de posicionamiento que no son de nivel: son de no estar ahí del todo."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -7, "max": -4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.shotcalling", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_vida_afuera_del_juego",
+    "category": "salud_vida",
+    "title": "Hay una vida esperándote afuera",
+    "description": "Alguien con quien la cosa va en serio te plantea lo obvio: que hace meses que cancelás planes, que el calendario manda, que no sabe cuánto más quiere una relación a control remoto.",
+    "weight": 4,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": ["profesional"],
+      "edadBanda": ["pico", "tardia", "veterana"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 10 }
+    ],
+    "options": [
+      {
+        "id": "hacer_lugar",
+        "label": "Hacer lugar de verdad, aunque cueste horas",
+        "descripcion": "Bloqueás noches en el calendario y las respetás. Vas a llegar a alguna scrim con menos preparación, y a tener algo que no se mide en stats.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "Tener a alguien afuera del juego te descomprime más de lo que esperabas. Volvés a las sesiones con ganas, no por obligación.",
+              "Las noches que cortás a horario te devuelven algo. Rendís parecido y vivís mejor, que no es poca cosa a esta altura."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 4, "max": 8, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.familyTrust", "min": 3, "max": 7, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.macro", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Encontrás el equilibrio y funciona: la relación se sostiene y tu juego no se cae. Aprendés que no todo tiene que ser el juego para seguir siendo bueno en el juego.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 6, "max": 10, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.familyTrust", "min": 5, "max": 9, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "priorizar_la_ventana",
+        "label": "Pedir que espere hasta el final de la carrera",
+        "descripcion": "Le pedís paciencia: quedan pocos años buenos y no querés mirarlos y pensar en lo que dejaste a medias. La ventana deportiva no se reabre; la otra conversación, quizás sí.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Lo entiende, o dice que lo entiende, y seguís enfocado. En el corto plazo rendís; en el fondo queda una deuda anotada.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.familyTrust", "min": -4, "max": -1, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "No espera. La relación se termina a mitad de split y lo cargás en silencio durante semanas, jugando bien de afuera y roto de adentro.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -8, "max": -4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.familyTrust", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]
