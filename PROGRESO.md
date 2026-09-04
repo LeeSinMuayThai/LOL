@@ -33,6 +33,53 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-04 — Fase 9ML.a: otras ligas vivas (digest anual)
+
+Primera pieza de **9M-lite** (`PLAN.md`, decisión del usuario de ir liviano en vez del sim de ~340
+NPCs de la FASE 9M completa). El resto de la cola de 9R (9R.4, fase 12, 9Rg completo) tiene
+superficie de UI que hoy colisiona con la sesión concurrente que está en plena Fase T (T0→T2); esto
+no: es motor y datos puros, cero `src/ui/`.
+
+#### Qué entra
+
+- **`src/core/escena.js`** (nuevo, puro): `ligasParaDigest(state)` (las ligas de tier 1 que no son
+  la del jugador — todas si todavía no tiene una), `todosLosOrgsTier1(state)` (el pool para el
+  campeón "del mundo"), y dos formateadores de línea.
+- **`src/systems/escena.js`** (nuevo, 1 línea en `ETAPAS_SPLIT`, justo después de `edadCierre` —
+  así si ese sistema pausó por un evento de cierre, `resolverDecision` retoma exactamente acá por
+  el cursor-por-id, y el digest nunca se salta un año). Early-return sin tocar `rng` en los 2 de
+  cada 3 splits que no cierran edad (regla de proceso 10). Al cerrar año: sortea hasta 4 ligas de
+  tier 1 (`sample`), resuelve campeón y subcampeón de cada una por `weightedPick` sobre
+  `org.fuerza` (mismo criterio que ya usa `rendimiento.js` para el rival — nada nuevo que calibrar),
+  arma un marcador de Bo5, y agrega un campeón "mundial" sobre el pool de las seis ligas. 4-5 líneas
+  `type: 'escena'`, `tecnico: false`.
+- **`BALANCE.escena`**: `ligasEnDigest: 4`, `marcadoresBo5: ['3-0','3-1','3-2']`.
+- **Check nuevo**: *"El digest anual de otras ligas se ve en toda carrera de ≥2 años, y el campeón
+  no es siempre el mismo"* — mide sobre 150 seeds que ninguna carrera de ≥2 años (2×
+  `splitsPorEdad`) se quede sin al menos un digest, y que en 150 carreras salgan ≥5 organizaciones
+  campeonas distintas (no siempre gana la misma).
+
+#### Lo que NO entra (9ML.b, no implementado)
+
+`org.fuerza` sigue siendo estática toda la carrera — el mismo escalar que ya leía
+`rendimiento.js`. Quién es fuerte hoy no cambia año a año todavía; el sorteo pondera por esa
+fuerza, así que las ligas más fuertes ganan más seguido (correcto: no es un sorteo parejo), pero el
+mapa de fuerzas de una carrera de 15 años es el mismo en el año 1 y en el año 15. Eso es 9ML.b.
+
+#### Números medidos
+
+- Smoke test (8 splits, seed 1): digest en split 2 (edad 16) y split 5 (edad 17), 5 líneas cada
+  uno, campeones distintos entre ligas y entre años.
+- `validate.js`: 118/118 OK (117 + el check nuevo).
+- `simulate.js 1000 60 todas`: 0 crashes. Determinismo intra-versión 150/150.
+- `npm run build`: OK.
+
+#### Colateral
+
+- **D37 (familia):** sistema nuevo que consume `rng` en el cierre de cada edad → el stream se
+  corre desde ahí para toda carrera de ≥1 año. Ninguna seed anterior reproduce su carrera completa
+  desde ese punto en adelante. Determinismo intra-versión intacto.
+
 ### 2026-09-04 — Fase T2: la ficha es el HUD
 
 `career.contrato` y `valorDeMercado()` existen desde la fase 9 y nunca se habían dibujado en

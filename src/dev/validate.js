@@ -3548,6 +3548,56 @@ check('calendario.anio avanza exactamente 1 cada splitsPorEdad splits', () => {
   }
 });
 
+// --- 9M-lite / 9ML.a: el mundo tiene escena (digest anual, PLAN.md) ---
+
+check('El digest anual de otras ligas se ve en toda carrera de ≥2 años, y el campeón no es siempre el mismo', () => {
+  const campeonesVistos = new Set();
+  let carrerasConDigest = 0;
+  let carrerasDeDosAnios = 0;
+
+  for (let seed = 1; seed <= 150; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    let vioDigest = false;
+
+    for (let i = 0; i < 40 && !state.terminado; i += 1) {
+      const antes = state.logs.length;
+      state = avanzarSplitAuto(state, rng).state;
+      for (const log of state.logs.slice(antes)) {
+        if (log.type !== 'escena') {
+          continue;
+        }
+        vioDigest = true;
+        // Dos formatos: "LIGA: Org campeón (marcador)." (lineaDeLiga) y
+        // "Worlds AÑO: se lo lleva Org (LIGA)." (lineaDeInternacional).
+        const campeon = log.message.match(/^\S+: (.+?) campeón \(/)?.[1]
+          ?? log.message.match(/se lo lleva (.+?) \(/)?.[1];
+        if (campeon) {
+          campeonesVistos.add(campeon.trim());
+        }
+      }
+    }
+
+    // Dos años = 2 * splitsPorEdad splits jugados de verdad.
+    if (state.player.splitCount >= BALANCE.edad.splitsPorEdad * 2) {
+      carrerasDeDosAnios += 1;
+      if (vioDigest) {
+        carrerasConDigest += 1;
+      }
+    }
+  }
+
+  if (carrerasDeDosAnios < 30) {
+    throw new Error(`solo ${carrerasDeDosAnios} carreras llegaron a los 2 años en 150 seeds: muestra insuficiente`);
+  }
+  if (carrerasConDigest < carrerasDeDosAnios) {
+    throw new Error(`${carrerasDeDosAnios - carrerasConDigest} de ${carrerasDeDosAnios} carreras de ≥2 años no vieron ningún digest de escena`);
+  }
+  if (campeonesVistos.size < 5) {
+    throw new Error(`solo ${campeonesVistos.size} organización(es) distinta(s) salieron campeonas en 150 carreras: el sorteo no varía`);
+  }
+});
+
 // --- Fase 8b: src/ui/ y la ficha permanente (PLAN.md §8.3, §8.5, §8.6) ---
 
 check('Ningún archivo fuera de src/ui/ referencia document (regla invariable 2)', () => {

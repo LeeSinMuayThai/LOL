@@ -58,7 +58,11 @@ export const ETAPAS_SPLIT = [
   await import('./events.js'),
   await import('./atributos.js'),
   await import('./practica.js'),
-  await import('./edadCierre.js')
+  await import('./edadCierre.js'),
+  // 9M-lite: el mundo tiene escena. Va DESPUES de edadCierre a proposito: si
+  // ese sistema pauso por un evento de cierre, resolverDecision retoma justo
+  // aca (regla del cursor por id) y el digest anual nunca se salta un año.
+  await import('./escena.js')
 ];
 
 export function sistemaPorId(sistemaId) {

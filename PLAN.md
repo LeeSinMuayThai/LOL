@@ -2239,6 +2239,38 @@ cerraban con una sola línea `[rendimiento]` "terminó 4º de 10" — sin decir 
 
 ---
 
+## FASE 9M-lite — el mundo tiene escena
+
+> No es el sim de ~340 NPCs de la FASE 9M completa (planteles de 5 con edad/contrato/retiro,
+> `core/plantel.js`, alguien-te-saca-el-asiento-con-nombre, descenso con contrato que viaja). Eso
+> es **9M-full**, diferida (decisión del usuario de ir liviano). Esto da la *sensación* de escena
+> viva por una fracción del costo — y es motor/datos puro, sin superficie de `src/ui/`, así que
+> puede avanzar en paralelo de la Fase T sin colisionar.
+
+| # | Qué entra | Estado |
+|---|---|---|
+| **9ML.a** | Otras ligas vivas (digest anual): `src/systems/escena.js` + `src/core/escena.js`, una línea en `ETAPAS_SPLIT` justo después de `edadCierre`. Al cerrar cada año, sortea hasta 4 ligas de tier 1 ajenas y resuelve su campeón/subcampeón por `weightedPick` sobre `org.fuerza` (el mismo escalar que ya usa `rendimiento.js`) + un campeón "mundial" sobre las seis ligas. 4-5 líneas `type: 'escena'`, `tecnico: false`. | ✅ (2026-09-04) — validate 118/118 (check nuevo incluido), simulate 1000 sin crashes, determinismo 150/150 |
+| **9ML.b** | `org.fuerza` deriva año a año (`gauss` chico + empujón por resultado del digest de 9ML.a). Sin esto, el mapa de fuerzas de una carrera de 15 años es idéntico en el año 1 y en el año 15 — hoy así es. | ⬜ |
+| **9ML.c** | El archirrival corre su carrera (`src/systems/rival.js`, adelanto acotado de la fase 11.2): uno de los 5 `mundo.rivales` se promueve a `mundo.archirrival` y le corren nivel/org/títulos en silencio. Aparece en la ficha, en el digest de 9ML.a, y en el `stakes: 'rival_de_generacion'` que ya existe. | ⬜ |
+| **9ML.d** | Transferencia de región: `mercado.js` puede ofertar desde otra liga tier 1; `contexto.js` deja de fijar `residencia: 'local'` (usa `splitsDeResidencia`, ya existe en `core/valorMercado.js`). Cierra D29 parcialmente. | ⬜ |
+| **9ML.e** | Calibrar (solo constantes). | ⬜ |
+
+### 9ML.a — otras ligas vivas (digest anual) ✅ (2026-09-04)
+
+- `core/escena.js` (puro): `ligasParaDigest`, `todosLosOrgsTier1`, dos formateadores de línea.
+  `systems/escena.js`: early-return sin `rng` fuera del cierre de edad (regla de proceso 10);
+  va después de `edadCierre` en el registro para que `resolverDecision` retome ahí si ese sistema
+  pausó — el digest nunca se salta un año.
+- Check nuevo: *"El digest anual de otras ligas se ve en toda carrera de ≥2 años, y el campeón no
+  es siempre el mismo"* — 150 seeds, 0 carreras de ≥2 años sin digest, ≥5 organizaciones campeonas
+  distintas.
+- **Medido:** validate 118/118, simulate 1000 sin crashes, determinismo intra-versión 150/150,
+  build OK.
+- **Colateral D37:** sistema nuevo con `rng` en el cierre de cada edad — el stream se corre para
+  toda carrera de ≥1 año. Determinismo intra-versión intacto.
+
+---
+
 # FASE T — LA TRANSMISIÓN
 
 > El juego está terminado por dentro y roto por fuera. Esta fase no inventa nada de juego: conecta

@@ -956,5 +956,16 @@ export const BALANCE = {
     // "bootcamp" y "rueda_de_prensa": minijuegos que no ajustan un mapa sino
     // que aplican un efecto directo (mentalidad / hype / sinergia).
     impactoDirecto: 6
+  },
+
+  // 9M-lite: el mundo tiene escena. El digest anual de las otras ligas
+  // (systems/escena.js) — nunca simula un split ajeno, solo resuelve en
+  // silencio quién ganó.
+  escena: {
+    // Con 5-6 ligas de tier 1 en juego, resumir todas cada año es ruido;
+    // una muestra sostiene la sorpresa de "quién ganó este año".
+    ligasEnDigest: 4,
+    // Marcadores plausibles de una final a Bo5 (CONCEPTO: Fearless, series largas).
+    marcadoresBo5: ['3-0', '3-1', '3-2']
   }
 };
