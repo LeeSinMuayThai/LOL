@@ -58,9 +58,29 @@ body {
   font-size: var(--fs-3);
   line-height: var(--lh);
   color: var(--ink);
-  background: var(--bg-void);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* --- El fondo (fase T0b) --------------------------------------------
+     T0 dejaba un color plano: la mitad de la sensación de "transmisión" se
+     pierde ahí. Cuatro capas, de adelante para atrás — no un pseudo-elemento
+     con z-index (eso obliga a pelear el orden de pintado contra `.panel`);
+     el propio `background` de un elemento SIEMPRE pinta detrás de sus
+     hijos, así que esto queda atrás de todo sin trucos.
+       1. viñeta: transparente en el centro-arriba, opaca en los bordes —
+          el escenario queda en el punto de luz, y de paso apaga la malla
+          antes de que llegue al borde (el mismo efecto que un mask radial).
+       2. horizonte: un halo apenas visible detrás de donde va la topbar.
+       3-4. malla: líneas cada 64px al 8% — la retícula de un gráfico de
+          transmisión, no un fondo de pantalla a cuadros.
+     `background-attachment: fixed` para que no se mueva con el scroll: es
+     el marco de la aplicación, no un elemento más de la página. */
+  background:
+    radial-gradient(130% 90% at 50% -10%, transparent 0%, transparent 40%, var(--bg-void) 78%),
+    radial-gradient(55% 25% at 50% 0%, var(--live-horizon), transparent 70%),
+    repeating-linear-gradient(0deg, var(--line-faint) 0 1px, transparent 1px 64px),
+    repeating-linear-gradient(90deg, var(--line-faint) 0 1px, transparent 1px 64px),
+    var(--bg-void);
+  background-attachment: fixed;
 }
 
 h1, h2, h3, h4, p, figure { margin: 0; }

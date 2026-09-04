@@ -20,11 +20,14 @@
      Cinco niveles, de atrás para adelante. `void` es el fondo de la página;
      `chrome` es la topbar y los rieles (tienen que leerse como marco, no
      como contenido); `surface` es una tarjeta; `raised` es algo apoyado
-     sobre una tarjeta; `sunken` son las pistas de barra y los campos. */
+     sobre una tarjeta; `sunken` son las pistas de barra y los campos.
+     `raised` se subió en T0b (`#161d2c` → `#1c2436`, +9 puntos de
+     luminancia): el rango de T0 era de 17 puntos sobre 255 entre la más
+     oscura y la más clara — casi todo se leía como un solo gris. */
   --bg-void:    #05070d;
   --bg-chrome:  #0a0e17;
   --bg-surface: #0f1420;
-  --bg-raised:  #161d2c;
+  --bg-raised:  #1c2436;
   --bg-sunken:  #070a11;
 
   /* --- Líneas -----------------------------------------------------------
@@ -50,6 +53,10 @@
   --live-deep: #0d7f92;
   --live-glow: rgba(46, 232, 255, 0.35);
 
+  /* Un halo de fondo, no una superficie: para la ambientación de base.css,
+     dos escalones más tenue que --live-glow. */
+  --live-horizon: rgba(46, 232, 255, 0.06);
+
   /* --- El oro ----------------------------------------------------------
      Logro, hito máximo, título, banda `clase_mundial`. Se usa POCO a
      propósito: si el oro está en todos lados, no significa nada. */
@@ -62,6 +69,18 @@
   --down:   #ff5f56;   /* baja, pierde, negativo */
   --warn:   #ffab4a;   /* costo, riesgo, atención */
   --danger: #ff3355;   /* mentalidad al límite, burnout inminente */
+
+  /* --- Rellenos ("fase T0b" — el candado del botón) ----------------------
+     REGLA DURA: --ink, --ink-dim e --ink-mute son TINTA. Nunca son fondo.
+     Antes de T0b, `button:hover` ponía --ink de fondo: un bloque casi blanco
+     con halo sobre un fondo casi negro, ~19:1 de golpe bajo el cursor. Un
+     botón se arma al pasarle el mouse, no se prende: reposo en relleno
+     tenue del color de acento, hover en el color sólido. `validate.js`
+     verifica en estático que ningún `background`/`background-color` de
+     este directorio use `var(--ink)` o `var(--ink-dim)`. */
+  --live-fill: rgba(46, 232, 255, 0.10);
+  --gold-fill: rgba(255, 200, 97, 0.10);
+  --warn-fill: rgba(255, 171, 74, 0.12);
 
   /* --- Las 11 categorías de decisión ------------------------------------
      La tabla de PLAN.md §12.1, tokenizada desde el día uno para que la
@@ -117,7 +136,10 @@
   --r:       8px;
   --r-lg:    14px;
   --r-pill:  999px;
-  --chamfer: 10px;   /* el corte de esquina de los paneles hero */
+  /* El corte de esquina del escenario. Subió de 10px a 18px en T0b: a 10px,
+     sobre un panel de +1000px, era invisible — no se veía en ninguna
+     captura. A 18px se lee como una forma, no como un redondeo raro. */
+  --chamfer: 18px;
 
   /* --- Elevación --------------------------------------------------------- */
   --sombra-1: 0 1px 2px rgba(0, 0, 0, 0.4);

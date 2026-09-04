@@ -1,6 +1,10 @@
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { verificarSinMathRandom, verificarDocumentSoloEnUi } from './guards.js';
+import {
+  verificarSinMathRandom, verificarDocumentSoloEnUi,
+  verificarSinFondoDeTinta, verificarSinColorLiteral, verificarTokensDefinidos
+} from './guards.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 import { mulberry32, sample } from '../core/rng.js';
@@ -75,6 +79,62 @@ check('Sin aleatoriedad nativa fuera del RNG inyectado', () => {
   const infractores = verificarSinMathRandom(srcDir);
   if (infractores.length > 0) {
     throw new Error(`encontrado en: ${infractores.join(', ')}`);
+  }
+});
+
+// --- El candado del sistema de diseño (fase T0b) ---------------------------
+const estilosDir = path.join(srcDir, 'ui', 'estilos');
+
+check('CSS: ningún background usa un token de tinta (el bug del hover ciego)', () => {
+  const hallazgos = verificarSinFondoDeTinta(estilosDir);
+  if (hallazgos.length > 0) {
+    throw new Error(`encontrado en: ${hallazgos.join(', ')}`);
+  }
+});
+
+check('CSS: ningún color literal fuera de tokens.css', () => {
+  const hallazgos = verificarSinColorLiteral(estilosDir);
+  if (hallazgos.length > 0) {
+    throw new Error(`encontrado en: ${hallazgos.join(', ')}`);
+  }
+});
+
+check('CSS: todo var(--token) usado está definido en tokens.css', () => {
+  const hallazgos = verificarTokensDefinidos(estilosDir);
+  if (hallazgos.length > 0) {
+    throw new Error(`sin definir: ${hallazgos.join(', ')}`);
+  }
+});
+
+check('CSS: contraste WCAG ≥ 4.5:1 en los pares tinta/superficie que se leen', () => {
+  const tokensTexto = fs.readFileSync(path.join(estilosDir, 'tokens.css'), 'utf8');
+  const hex = (nombre) => {
+    const m = tokensTexto.match(new RegExp(`--${nombre}:\\s*(#[0-9a-fA-F]{6})`));
+    if (!m) throw new Error(`token --${nombre} no encontrado para medir contraste`);
+    return m[1];
+  };
+  const luminancia = (h) => {
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255)
+      .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const ratio = (a, b) => {
+    const [l1, l2] = [luminancia(hex(a)), luminancia(hex(b))].sort((x, y) => y - x);
+    return (l1 + 0.05) / (l2 + 0.05);
+  };
+  // Los pares que el CSS realmente usa para texto que hay que leer, más el
+  // botón principal (texto bg-void sobre --live sólido, el estado hover).
+  const pares = [
+    ['ink', 'bg-surface'], ['ink-dim', 'bg-surface'],
+    ['ink', 'bg-raised'], ['ink-dim', 'bg-raised'],
+    ['ink', 'bg-void'], ['live', 'bg-surface'], ['gold', 'bg-surface'],
+    ['bg-void', 'live']
+  ];
+  const fallas = pares
+    .map(([a, b]) => [a, b, ratio(a, b)])
+    .filter(([, , r]) => r < 4.5);
+  if (fallas.length > 0) {
+    throw new Error(fallas.map(([a, b, r]) => `${a}/${b} = ${r.toFixed(2)}:1`).join(', '));
   }
 });
 

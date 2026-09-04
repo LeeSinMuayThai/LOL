@@ -33,6 +33,89 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-04 — Fase T0b: el candado y el vocabulario visual
+
+El usuario jugó T0 (`5736a23`) y dijo dos cosas, las dos ciertas: *"el color blanco del hovering
+te deja ciego"* y *"es muy igual al anterior"*.
+
+#### El bug del hover, medido
+
+`button:hover:not(:disabled) { background: var(--ink); box-shadow: ...; }` — `--ink` es `#e8eefc`,
+casi blanco. Es la regla global de `button`, así que cada botón del juego pasaba de reposo sólido
+en `--live` (cyan brillante) a un bloque casi blanco bajo el cursor: dos golpes de luz, y el
+segundo cegaba. La causa no era el valor, era que nada impedía escribirlo.
+
+**El arreglo**: "se arma, no se prende". Reposo en relleno tenue de `--live` (10% de opacidad) con
+borde y texto en `--live`; hover rellena a `--live` sólido con texto `--bg-void`. El único bloque
+brillante de la pantalla pasa a ser el botón bajo el cursor, nunca el estado de reposo.
+
+**El candado**, en `guards.js` + `validate.js` (3 checks nuevos + 1 de contraste, 113 → 117):
+ningún `background`/`background-color` de un `:hover`/`:active`/`:focus` usa `var(--ink)` ni
+`var(--ink-dim)`; ningún color literal (hex/rgb/hsl) fuera de `tokens.css`; todo `var(--token)`
+usado está definido; y el contraste WCAG de los pares tinta/superficie que el CSS realmente usa
+para texto, calculado (no afirmado) — todos ≥6:1, el más bajo es `ink-dim`/`bg-raised` a 6.11:1.
+
+**Bug real que destapó la propia verificación** (plan T.8, punto 3: "capturar el hover de verdad,
+no confiar en el CSS"): una captura por CDP con `Input.dispatchMouseEvent` sobre `.option-btn`
+mostró la tarjeta con fondo cyan sólido y el texto de la descripción — que sigue en `--ink-dim` —
+casi ilegible encima. Causa: `.option-btn`/`.rol-card`/`.campeon-card`/`.mercado-card`/
+`.minijuego-card`/`.mercado-representante-btn`/`.minijuego-blanco` son todos `<button>` (`decision.js`,
+`inicio.js`, `mercado.js`), y `button:hover:not(:disabled)` (un elemento + dos pseudo-clases) le
+ganaba en especificidad CSS a varias de sus propias reglas `.clase:hover` (una clase + una
+pseudo-clase) — el hover genérico tapaba el hover propio de cada tarjeta. Ya pasaba en T0 (con
+`--ink` en vez de `--live`) pero nunca se había capturado un hover de verdad para notarlo. Se
+arregló envolviendo la regla base en `:where(button)`, que baja su especificidad a cero: cualquier
+clase, sin importar el orden en el archivo, le gana.
+
+#### "Es muy igual al anterior", medido
+
+Sobre la captura de la carrera a 1440px: 17 rectángulos redondeados, 2 radios visualmente
+indistinguibles, 17 puntos de luminancia sobre 255 entre la superficie más oscura y la más clara,
+y el chaflán de 10px invisible en un panel de +1000px. La infraestructura de tokens era real; el
+golpe de vista no había cambiado.
+
+**El arreglo, solo CSS** (`index.html` y `src/ui/*.js` sin tocar):
+- Fondo en capas: viñeta + malla de 64px + halo — en el `background` de `body`, no un
+  pseudo-elemento (así pinta detrás de todo sin pelear z-index).
+- `--chamfer` 10px → 18px; esquinas de encuadre (`::before`/`::after` en `.panel`, dos ángulos en
+  L en las esquinas que el chaflán no corta).
+- Tres siluetas distintas: escenario (chaflán), lower-third (radio 0 — `.ficha-card`, `.summary`,
+  `.log-item`, `.decision`/`.mercado`/`.minijuego`), telemetría (`--r-sharp`, densa — los 6
+  atributos de la ficha, ahora alineados a la izquierda con regla inferior en vez de 6 cajas
+  centradas).
+- Pestaña de categoría (`::before` con `content` + `clip-path`) sobre decisión/mercado/minijuego —
+  T4 le cambia el texto por el banner real de las 11 categorías sin tocar la forma.
+- `--bg-raised` `#161d2c` → `#1c2436` (rango de superficie más ancho).
+
+#### Antes / después (medido)
+
+| Qué | T0 | T0b |
+|---|---|---|
+| Checks de `validate.js` | 113 | **117** |
+| Radios distintos usados | 2, indistinguibles | 3 formas con función (chaflán 18px / radio 0 / r-sharp) |
+| `--chamfer` | 10px (invisible) | 18px |
+| Rango de luminancia de superficies | 17/255 | ampliado (`bg-raised` +9) |
+| `dist/` | — | **999 KB** (techo revisado a 1100 KB, ver nota T6 abajo) |
+
+**Trampa T6, otra vez, en la misma línea de la fase**: el techo de "T0: 837 KB calculado" nunca se
+verificó contra un build real. Entre T0 y esta corrida, otra sesión concurrente commiteó 9R3c/9R3d
+(+2600 líneas de eventos). Base real re-medida sobre `git archive HEAD` (`0cb0ee9`): **950 KB** —
+ya arriba de los 900 KB que decía el plan, y sin que T0b hubiera tocado una línea todavía. T0b
+mide 999 KB: el candado + vocabulario visual suman ~49 KB (redondeos de `:where()`, la pestaña de
+categoría, el fondo en capas), el resto es contenido de eventos, no diseño. Techo revisado a
+1100 KB en `PLAN.md` §T.7.
+
+#### Verificación
+
+`validate.js`: 117/117 OK (incluye los 4 checks nuevos). Determinismo: 12 seeds, cada una corrida
+dos veces, huella `finAnticipado:splits` idéntica — T0b es CSS puro, así que esto confirma que no
+tocó el motor, no que haya riesgo de que lo hiciera. `simulate.js 1000`: exit 0. `npm run build`:
+determinismo `src` vs `dist` sobre 12 carreras × 30 splits, OK. `git diff --name-only -- src/core
+src/systems src/data`: vacío en las dos rondas de cambios. Recorrida CDP a 1440/1180/900/640/390
+dos veces (antes y después del fix de `:where()`): fuentes `loaded`, cero errores de consola, cero
+scroll horizontal, único 404 esperado (`favicon.ico`) — y esta vez con hover real vía
+`Input.dispatchMouseEvent` sobre `#run` y `.option-btn`, no solo lectura del CSS.
+
 ### 2026-09-04 — Fase 9R3d: el prólogo amateur tiene decisiones propias
 
 Cuarto commit de 9R.3. 9R3a/b/c ampliaron los pools calientes de la fase profesional (postpartido,

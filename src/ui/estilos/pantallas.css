@@ -170,15 +170,38 @@ details.avanzado summary:hover { color: var(--ink-dim); }
 
 .decision {
   position: relative;
-  margin-top: var(--s-4);
+  margin-top: var(--s-6);
   padding: var(--s-5);
   padding-left: calc(var(--s-5) - 3px);
   background: var(--bg-surface);
   border: 1px solid var(--line);
   border-left: 3px solid var(--live);
-  border-radius: var(--r-lg);
   animation: entrar-decision var(--dur-slow) var(--ease) both;
 }
+
+/* La pestaña de lower-third (T0b): dice qué es el panel antes de que el
+   jugador lea una sola palabra del contenido. El mismo patrón se repite en
+   `.mercado`/`.minijuego` con su propio texto y color de categoría — T4
+   más adelante reemplaza el `content` fijo por el banner real de las 11
+   categorías, sin tocar la forma. */
+.decision::before,
+.mercado::before,
+.minijuego::before {
+  position: absolute;
+  top: -13px;
+  left: var(--s-4);
+  padding: 3px var(--s-4) 3px var(--s-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 700;
+  letter-spacing: var(--track-cartel);
+  text-transform: uppercase;
+  color: var(--bg-void);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 100%, 0 100%);
+}
+.decision::before  { content: "Decisión";  background: var(--live); }
+.mercado::before   { content: "Mercado";   background: var(--cat-mercado); }
+.minijuego::before { content: "Minijuego"; background: var(--warn); }
 
 @keyframes entrar-decision {
   from { opacity: 0; transform: translateY(12px); }
@@ -248,13 +271,13 @@ details.avanzado summary:hover { color: var(--ink-dim); }
    ========================================================================== */
 
 .mercado {
-  margin-top: var(--s-4);
+  position: relative;
+  margin-top: var(--s-6);
   padding: var(--s-5);
   padding-left: calc(var(--s-5) - 3px);
   background: var(--bg-surface);
   border: 1px solid var(--line);
   border-left: 3px solid var(--cat-mercado);
-  border-radius: var(--r-lg);
   animation: entrar-decision var(--dur-slow) var(--ease) both;
 }
 
@@ -362,13 +385,13 @@ details.avanzado summary:hover { color: var(--ink-dim); }
    ========================================================================== */
 
 .minijuego {
-  margin-top: var(--s-4);
+  position: relative;
+  margin-top: var(--s-6);
   padding: var(--s-5);
   padding-left: calc(var(--s-5) - 3px);
   background: var(--bg-surface);
   border: 1px solid var(--line);
   border-left: 3px solid var(--warn);
-  border-radius: var(--r-lg);
   animation: entrar-decision var(--dur-slow) var(--ease) both;
 }
 
@@ -406,8 +429,11 @@ details.avanzado summary:hover { color: var(--ink-dim); }
 
 .minijuego-resultado-detalle { font-size: var(--fs-3); color: var(--ink-dim); }
 
-.minijuego-btn { background: var(--warn); color: var(--bg-void); }
-.minijuego-btn:hover:not(:disabled) { background: var(--gold); box-shadow: 0 0 24px var(--gold-glow); }
+/* Mismo criterio "se arma, no se prende" que el botón base: reposo tenue,
+   hover sólido. Antes el reposo ya era --warn sólido — el minijuego era el
+   único botón del juego que arrancaba encendido. */
+.minijuego-btn { background: var(--warn-fill); border-color: var(--warn); color: var(--warn); }
+.minijuego-btn:hover:not(:disabled) { background: var(--gold); border-color: var(--gold); color: var(--bg-void); box-shadow: 0 0 24px var(--gold-glow); }
 
 .minijuego-barra {
   position: relative;

@@ -2292,7 +2292,8 @@ sumar otras cuatro tandas de CSS suelto que después hay que unificar igual.
 | # | Commit | Qué entrega |
 |---|---|---|
 | **T0** | el sistema de diseño | `src/ui/estilos/` + fuentes auto-hospedadas. El juego se ve distinto sin mover una sola pantalla |
-| **T1** | el shell de transmisión | Grid de tres zonas desktop-first + breakpoints + teclado. `index.html` 1360 → ~120 líneas |
+| **T0b** | el candado y el vocabulario visual | El usuario probó T0: `button:hover` ponía `--ink` (casi blanco) de fondo sobre un reposo ya sólido — dos golpes de luz, el segundo cegaba — y "se parece al anterior" (T0 tokenizó color pero no cambió una sola forma: 17 rectángulos redondeados iguales). Se arregla el hover ("se arma, no se prende": reposo tenue, hover sólido) con candado en `validate.js`; se rompe la silueta con fondo en capas, esquinas de encuadre en el escenario, lower-thirds a radio 0, telemetría densa en los 6 atributos, y una pestaña de categoría en decisión/mercado/minijuego. Solo CSS + `guards.js`/`validate.js`, ni una línea de `index.html` ni de `src/ui/*.js` |
+| **T1** | el shell de transmisión | Grid de dos zonas (riel izq + escenario; el riel der llega vacío hasta T5 — "un panel vacío es peor que un panel ausente") desktop-first + breakpoints + teclado. El shell se escribe en `index.html` como HTML declarativo con los mismos `id` de siempre — no un DOM armado desde `shell.js` — para que el controlador existente no se toque y una corrida desatendida no pueda dejar la página en blanco por un error de montaje |
 | **T2** | la ficha es el HUD | El riel izquierdo permanente, con contrato, valor de mercado y marcas que hoy no se ven |
 | **T3** | el escenario y el reproductor | El split se resuelve en beats, no de un salto. Audio sintetizado, apagado por defecto |
 | **T4** | la decisión con jerarquía | Banner por categoría y peso bisagra/normal/ambiente — la mitad visual de la fase 12, sin motor |
@@ -2567,14 +2568,20 @@ cualquier fórmula · mecánicas nuevas · `previa`/`riesgo`/`rareza` (siguen si
 ```
 Cero `Math.random()` en todo `src/ui/` (el guard de build.js ya lo verifica)
 Cero `document` fuera de `src/ui/` (guards.js; `core/guardado.js` NO puede tocar localStorage)
-Ningún hex literal en `componentes.css`/`pantallas.css`: todo color sale de un token
+Ningún color literal (hex/rgb/hsl) fuera de `tokens.css`, y ningún `background`/`background-color`
+de un `:hover`/`:active`/`:focus` usa un token de tinta (`guards.js`, candado de T0b)
 Toda la UI corre con `prefers-reduced-motion: reduce` sin perder información
 Una carrera completa se termina solo con teclado
 Contraste ≥4.5:1 en todo par (texto, fondo) de los tokens
-`dist/` ≤ 900 KB. La línea de base NO son los 576 KB de la fase P: eso se midió el
-2026-09-02, antes de que 9R3a/9R3b llevaran el catálogo de 97 a 137 eventos. Re-medido
-sobre `git archive HEAD` el 2026-09-04: **725 KB**. T0 suma +112 KB (90 de fuentes,
-41 de CSS, −19 que adelgaza `index.html`) → 837 KB. Trampa T6: re-medir, no citar
+`dist/` ≤ **1100 KB**. Historial de la trampa T6 en esta sola línea, porque cada vez
+que se citó un número viejo estaba mal: 576 KB (fase P, 2026-09-02) → 725 KB (T0,
+97→137 eventos por 9R3a/9R3b) → 837 KB *calculado* (T0 sumaba +112, nunca verificado
+contra un build real) → **950 KB medido de verdad** el 2026-09-04 sobre `git archive
+HEAD` (`0cb0ee9`): otra sesión concurrente sumó 9R3c/9R3d entre medio, +2600 líneas de
+JSON de eventos. T0b (candado del hover + vocabulario visual, solo CSS) mide **948 KB**
+— neto casi cero, la variación es contenido de eventos, no diseño. El techo sube a
+1100 KB para dejarle margen a T1-T8 sin perseguir un número que la fase 9R sigue
+moviendo por su cuenta. Si se acerca, se subsetean más las fuentes
 T8: la misma seed con N llamadas restauradas produce la misma secuencia que correrla de corrido
 T8: las seeds anteriores a T8 siguen reproduciendo su carrera (huella idéntica)
 ```

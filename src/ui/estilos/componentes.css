@@ -18,6 +18,7 @@ body { padding: var(--s-5) var(--s-4); }
 /* El contenedor de la página. En T1 se convierte en el shell de tres zonas;
    por ahora sigue siendo la columna centrada de siempre. */
 .panel {
+  position: relative;
   max-width: 1080px;
   margin: 0 auto;
   padding: var(--s-5);
@@ -25,9 +26,10 @@ body { padding: var(--s-5) var(--s-4); }
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   box-shadow: var(--sombra-3);
-  /* El chaflán: la firma visual de la fase. Va acá, en el contenedor, y no
-     en la ficha: `.ficha-barra-hito` sobresale de su pista a propósito
-     (`top: -4px`) y un `clip-path` más adentro le comería las marcas. */
+  /* El chaflán: la firma visual del ESCENARIO (T1 lo renombra `.escenario`).
+     Va acá, en el contenedor, y no en la ficha: `.ficha-barra-hito`
+     sobresale de su pista a propósito (`top: -4px`) y un `clip-path` más
+     adentro le comería las marcas. */
   clip-path: polygon(
     0 0,
     calc(100% - var(--chamfer)) 0,
@@ -37,6 +39,22 @@ body { padding: var(--s-5) var(--s-4); }
     0 calc(100% - var(--chamfer))
   );
 }
+
+/* Esquinas de encuadre (T0b): dos ángulos en L, en las dos esquinas que el
+   chaflán NO corta (arriba-izq, abajo-der — mirar el polígono de arriba).
+   Es el detalle que dice "monitor de transmisión" sin escribirlo. */
+.panel::before,
+.panel::after {
+  content: "";
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  pointer-events: none;
+  border-color: var(--live);
+  opacity: 0.4;
+}
+.panel::before { top: 0; left: 0; border-top: 2px solid; border-left: 2px solid; }
+.panel::after  { bottom: 0; right: 0; border-bottom: 2px solid; border-right: 2px solid; }
 
 /* El título es un cartel de transmisión, no un h1 de blog. */
 h1 {
@@ -68,8 +86,27 @@ h1::before {
 
 /* --- Botones --------------------------------------------------------------
    El primario es sólido y cuadrado, no una píldora con degradé: en broadcast
-   el llamado a la acción es un bloque. */
-button {
+   el llamado a la acción es un bloque.
+
+   "Se arma, no se prende" (T0b): reposo en relleno tenue de --live con
+   borde y texto en --live; hover rellena a --live sólido. Antes el reposo
+   YA era sólido y el hover saltaba a --ink (casi blanco): dos golpes de luz
+   en vez de uno, y el segundo cegaba. Ahora el único bloque brillante de la
+   pantalla es el botón bajo el cursor.
+
+   `:where(...)`, no `button` a secas — a propósito, y es otro bug que
+   destapó esta misma corrida: `.option-btn`/`.rol-card`/`.campeon-card`/
+   `.mercado-card`/`.minijuego-card`/`.mercado-representante-btn` son todos
+   `<button>` (ver `decision.js`, `inicio.js`, `mercado.js`), y
+   `button:hover:not(:disabled)` — un elemento + dos pseudo-clases — le
+   ganaba en especificidad a `.option-btn:hover` — una clase + una
+   pseudo-clase. El fondo cyan sólido de acá tapaba el hover propio de CADA
+   tarjeta del juego, con el texto gris quedando ilegible encima. Ya pasaba
+   en T0 (con --ink en vez de --live) pero quedaba disimulado. `:where()`
+   pone la especificidad de esta regla en cero: cualquier clase, incluida
+   una escrita antes en el archivo, le gana. Los botones sin clase propia
+   (`#run`, `#nuevaCarrera`) siguen cayendo acá igual. */
+:where(button) {
   font-family: var(--font-display);
   font-size: var(--fs-3);
   font-weight: 700;
@@ -77,27 +114,34 @@ button {
   text-transform: uppercase;
   padding: var(--s-3) var(--s-5);
   border-radius: var(--r);
-  background: var(--live);
-  color: var(--bg-void);
+  background: var(--live-fill);
+  border: 1px solid var(--live-deep);
+  color: var(--live);
   transition: background var(--dur-fast) var(--ease),
+              border-color var(--dur-fast) var(--ease),
+              color var(--dur-fast) var(--ease),
               transform var(--dur-fast) var(--ease),
               box-shadow var(--dur-fast) var(--ease);
 }
-button:hover:not(:disabled) {
-  background: var(--ink);
-  box-shadow: 0 0 24px var(--live-glow);
+:where(button:hover:not(:disabled)) {
+  background: var(--live);
+  border-color: var(--live);
+  color: var(--bg-void);
+  box-shadow: 0 0 28px -8px var(--live-glow);
 }
-button:active:not(:disabled) { transform: translateY(1px); }
-button:disabled { opacity: 0.35; cursor: not-allowed; }
+:where(button:active:not(:disabled)) { transform: translateY(1px); }
+:where(button:disabled) { opacity: 0.35; cursor: not-allowed; }
 
 /* --- La línea de estado y la píldora de meta ------------------------------ */
 
+/* Lower-third (T0b): radio 0, banda izquierda de 3px. Rectangular a
+   propósito — es la silueta de una banda de gráfico de TV, no una tarjeta. */
 .summary {
   margin-top: var(--s-4);
   padding: var(--s-3) var(--s-4);
   background: var(--bg-raised);
   border-left: 3px solid var(--live);
-  border-radius: 0 var(--r) var(--r) 0;
+  border-top: 1px solid var(--line-strong);
   color: var(--ink);
   font-size: var(--fs-3);
 }
@@ -126,7 +170,6 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
 .log-item {
   padding: var(--s-3) var(--s-4);
   background: var(--bg-raised);
-  border-radius: var(--r);
   border-left: 3px solid var(--up);
   line-height: var(--lh);
   animation: entrar-log var(--dur) var(--ease) both;
@@ -167,13 +210,15 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
    3. LA FICHA (PLAN.md §8.6)
    ========================================================================== */
 
+/* Lower-third, como `.summary`/`.log-item`: la ficha es el HUD permanente
+   (T2 la vuelve el riel izquierdo), no una tarjeta más entre las demás. */
 .ficha-card {
   position: relative;
   margin-top: var(--s-1);
   padding: var(--s-5);
   background: var(--bg-surface);
   border: 1px solid var(--line);
-  border-radius: var(--r-lg);
+  border-top: 2px solid var(--line-strong);
 }
 
 /* Dorada al llegar al último hito de arraigo o jerarquía. */
@@ -248,25 +293,27 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
 
 /* --- Los 6 atributos ------------------------------------------------------ */
 
+/* Telemetría (T0b), no seis cajas centradas: fila densa, alineada a la
+   izquierda, dividida por líneas — la ficha lee como un panel de datos, no
+   como un dashboard genérico. `ink-mute` para el label es el uso que
+   `tokens.css` reserva para "etiquetas de eje": exactamente lo que es. */
 .ficha-stat-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
-  gap: var(--s-2);
+  grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
   margin-top: var(--s-3);
+  border-top: 1px solid var(--line-faint);
 }
 
 .ficha-stat {
-  padding: var(--s-2) var(--s-3);
-  text-align: center;
-  background: var(--bg-sunken);
-  border: 1px solid var(--line-faint);
-  border-radius: var(--r);
-  transition: border-color var(--dur) var(--ease);
+  padding: var(--s-2) var(--s-3) 0;
+  text-align: left;
+  border-left: 1px solid var(--line-faint);
+  transition: background var(--dur) var(--ease);
 }
+.ficha-stat:first-child { border-left: none; }
 .ficha-stat--destacado {
-  border-color: var(--gold);
-  background: var(--bg-raised);
-  box-shadow: inset 0 0 0 1px var(--gold-glow);
+  background: var(--gold-fill);
+  box-shadow: inset 2px 0 0 var(--gold);
 }
 
 .ficha-stat-label {
@@ -275,18 +322,20 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
   font-size: var(--fs-0);
   font-weight: 600;
   letter-spacing: var(--track-label);
-  color: var(--ink-dim);
+  color: var(--ink-mute);
 }
 .ficha-stat-valor {
   display: block;
   margin-top: var(--s-1);
+  padding-bottom: var(--s-2);
+  border-bottom: 2px solid var(--line-strong);
   font-family: var(--font-display);
   font-size: var(--fs-5);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
-.ficha-stat--destacado .ficha-stat-valor { color: var(--gold); }
+.ficha-stat--destacado .ficha-stat-valor { color: var(--gold); border-bottom-color: var(--gold); }
 
 /* Las flechas son el único indicador de envejecimiento que ve el jugador
    (H7 de PLAN.md): sin ellas, todo `curvas.js` es invisible. */
