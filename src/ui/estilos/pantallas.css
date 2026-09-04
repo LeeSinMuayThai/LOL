@@ -1,0 +1,583 @@
+/* ==========================================================================
+   PANTALLAS — inicio, decisión, mercado, minijuegos y legado (fase T / T0)
+
+   Mismos nombres de clase que antes de la fase T (ver la cabecera de
+   componentes.css). Ningún color literal: todo sale de tokens.css.
+   ========================================================================== */
+
+/* ==========================================================================
+   1. INICIO — rol y mains
+   ========================================================================== */
+
+.paso { margin-top: var(--s-5); }
+
+.paso-label {
+  margin-bottom: var(--s-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--track-cartel);
+  color: var(--live);
+}
+
+.handle-input,
+.seed-input {
+  width: 100%;
+  max-width: 320px;
+  padding: var(--s-3) var(--s-4);
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  color: var(--ink);
+  font-size: var(--fs-3);
+  transition: border-color var(--dur-fast) var(--ease);
+}
+.handle-input:hover,
+.seed-input:hover { border-color: var(--line-strong); }
+.handle-input::placeholder,
+.seed-input::placeholder { color: var(--ink-mute); }
+
+.seed-input { max-width: 190px; font-variant-numeric: tabular-nums; }
+
+.seed-row { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
+.seed-label {
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--ink-dim);
+}
+
+/* Un <button> centra su contenido en vertical por defecto. Como el grid las
+   estira todas a la misma altura, los títulos quedaban a alturas distintas
+   entre una tarjeta y la de al lado. Todas las tarjetas-botón alinean arriba. */
+.rol-card,
+.campeon-card,
+.option-btn,
+.minijuego-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+/* --- Las cinco líneas ------------------------------------------------------ */
+
+.rol-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--s-3);
+}
+
+.rol-card {
+  padding: var(--s-4);
+  text-align: left;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-2);
+  text-transform: none;
+  letter-spacing: normal;
+  transition: border-color var(--dur-fast) var(--ease),
+              background var(--dur-fast) var(--ease),
+              transform var(--dur-fast) var(--ease);
+}
+.rol-card:hover { border-color: var(--live); transform: translateY(-2px); background: var(--bg-raised); box-shadow: none; }
+.rol-card.elegido {
+  border-color: var(--live);
+  background: var(--bg-surface);
+  box-shadow: inset 0 0 0 1px var(--live-glow), 0 0 30px -14px var(--live-glow);
+}
+
+.rol-nombre {
+  margin-bottom: var(--s-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-5);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.rol-card.elegido .rol-nombre { color: var(--live); }
+
+.rol-tono { color: var(--ink-dim); line-height: var(--lh-snug); margin-bottom: var(--s-2); }
+.rol-costo { color: var(--warn); line-height: var(--lh-snug); font-size: var(--fs-1); }
+
+/* --- Los campeones --------------------------------------------------------- */
+
+.campeon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--s-2);
+}
+
+.campeon-card {
+  padding: var(--s-2) var(--s-3);
+  text-align: left;
+  background: var(--bg-raised);
+  border: 1px solid var(--line-faint);
+  border-radius: var(--r);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-2);
+  text-transform: none;
+  letter-spacing: normal;
+  transition: border-color var(--dur-fast) var(--ease),
+              background var(--dur-fast) var(--ease);
+}
+.campeon-card:hover:not(:disabled) { border-color: var(--live); box-shadow: none; background: var(--bg-raised); }
+.campeon-card.elegido {
+  border-color: var(--up);
+  background: var(--bg-surface);
+  box-shadow: inset 0 0 0 1px var(--up);
+}
+.campeon-card:disabled { opacity: 0.34; cursor: not-allowed; }
+
+.campeon-nombre { font-weight: 700; }
+.campeon-card.elegido .campeon-nombre { color: var(--up); }
+.campeon-tags { margin-top: 2px; color: var(--ink-mute); font-size: var(--fs-0); }
+
+.pool-contador { margin-top: var(--s-2); font-size: var(--fs-2); color: var(--ink-dim); }
+
+.setup-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  flex-wrap: wrap;
+  margin-top: var(--s-6);
+}
+
+details.avanzado { margin-top: var(--s-5); font-size: var(--fs-2); color: var(--ink-dim); }
+details.avanzado summary {
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--ink-mute);
+}
+details.avanzado summary:hover { color: var(--ink-dim); }
+
+/* ==========================================================================
+   2. LA DECISIÓN
+   El banner por categoría y el peso `bisagra` llegan en T4; acá se prepara
+   la forma: barra de acento a la izquierda, título en condensada, opciones
+   como tarjetas.
+   ========================================================================== */
+
+.decision {
+  position: relative;
+  margin-top: var(--s-4);
+  padding: var(--s-5);
+  padding-left: calc(var(--s-5) - 3px);
+  background: var(--bg-surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--live);
+  border-radius: var(--r-lg);
+  animation: entrar-decision var(--dur-slow) var(--ease) both;
+}
+
+@keyframes entrar-decision {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.decision-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-6);
+  font-weight: 700;
+  line-height: var(--lh-tight);
+  text-transform: uppercase;
+  margin-bottom: var(--s-2);
+}
+
+.decision-desc {
+  color: var(--ink-dim);
+  font-size: var(--fs-3);
+  line-height: var(--lh);
+  margin-bottom: var(--s-4);
+}
+
+.decision-options { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+
+.option-btn {
+  flex: 1 1 240px;
+  padding: var(--s-4);
+  text-align: left;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-2);
+  text-transform: none;
+  letter-spacing: normal;
+  transition: border-color var(--dur-fast) var(--ease),
+              background var(--dur-fast) var(--ease),
+              transform var(--dur-fast) var(--ease);
+}
+.option-btn:hover {
+  border-color: var(--live);
+  transform: translateY(-2px);
+  background: var(--bg-raised);
+  box-shadow: 0 0 30px -16px var(--live-glow);
+}
+
+.option-title {
+  margin-bottom: var(--s-1);
+  font-family: var(--font-display);
+  font-size: var(--fs-4);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.option-btn:hover .option-title { color: var(--live); }
+
+.option-desc {
+  font-weight: 400;
+  font-size: var(--fs-2);
+  line-height: var(--lh-snug);
+  color: var(--ink-dim);
+}
+
+/* ==========================================================================
+   3. EL MERCADO (fase 9c)
+   ========================================================================== */
+
+.mercado {
+  margin-top: var(--s-4);
+  padding: var(--s-5);
+  padding-left: calc(var(--s-5) - 3px);
+  background: var(--bg-surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--cat-mercado);
+  border-radius: var(--r-lg);
+  animation: entrar-decision var(--dur-slow) var(--ease) both;
+}
+
+.mercado-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--s-3);
+}
+
+.mercado-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-4);
+  text-align: left;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-2);
+  text-transform: none;
+  letter-spacing: normal;
+  transition: border-color var(--dur-fast) var(--ease),
+              transform var(--dur-fast) var(--ease);
+}
+.mercado-card:hover {
+  border-color: var(--cat-mercado);
+  transform: translateY(-2px);
+  background: var(--bg-raised);
+  box-shadow: 0 0 30px -16px var(--gold-glow);
+}
+.mercado-card--bombazo { border-color: var(--gold-deep); }
+
+.mercado-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--s-2);
+}
+.mercado-card-org {
+  font-family: var(--font-display);
+  font-size: var(--fs-5);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.mercado-card-tag {
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--cat-mercado);
+}
+
+.mercado-card-liga { font-size: var(--fs-1); color: var(--ink-mute); }
+
+.mercado-card-salario {
+  font-family: var(--font-display);
+  font-size: var(--fs-5);
+  font-weight: 700;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+
+.mercado-card-jerarquia,
+.mercado-card-picks,
+.mercado-card-arraigo,
+.mercado-card-hito {
+  font-size: var(--fs-2);
+  line-height: var(--lh-snug);
+  color: var(--ink-dim);
+}
+.mercado-card-riesgo {
+  font-size: var(--fs-1);
+  line-height: var(--lh-snug);
+  color: var(--warn);
+}
+
+.mercado-representante-btn {
+  width: 100%;
+  margin-top: var(--s-4);
+  padding: var(--s-3) var(--s-4);
+  background: transparent;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r);
+  color: var(--ink-dim);
+  font-family: var(--font-ui);
+  font-size: var(--fs-2);
+  text-transform: none;
+  letter-spacing: normal;
+}
+.mercado-representante-btn:hover:not(:disabled) {
+  border-color: var(--live);
+  color: var(--ink);
+  background: transparent;
+  box-shadow: none;
+}
+
+/* ==========================================================================
+   4. LOS MINIJUEGOS (fase 4)
+   Se migran a `src/ui/components/minijuegos/` y se tematizan en T6; acá solo
+   se les da el vocabulario visual nuevo.
+   ========================================================================== */
+
+.minijuego {
+  margin-top: var(--s-4);
+  padding: var(--s-5);
+  padding-left: calc(var(--s-5) - 3px);
+  background: var(--bg-surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--warn);
+  border-radius: var(--r-lg);
+  animation: entrar-decision var(--dur-slow) var(--ease) both;
+}
+
+.minijuego-widget { margin-top: var(--s-4); }
+
+/* El beat de resultado (fase 9R0b): sin esto el jugador nunca sabía si había
+   clavado la jugada. */
+.minijuego-resultado {
+  padding: var(--s-5) var(--s-4);
+  text-align: center;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--bg-raised);
+  animation: entrar-resultado var(--dur) var(--ease);
+}
+@keyframes entrar-resultado {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+.minijuego-resultado--bien   { border-color: var(--up); }
+.minijuego-resultado--parejo { border-color: var(--gold); }
+.minijuego-resultado--mal    { border-color: var(--down); }
+
+.minijuego-resultado-titulo {
+  margin-bottom: var(--s-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-6);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+}
+.minijuego-resultado--bien   .minijuego-resultado-titulo { color: var(--up); }
+.minijuego-resultado--parejo .minijuego-resultado-titulo { color: var(--gold); }
+.minijuego-resultado--mal    .minijuego-resultado-titulo { color: var(--down); }
+
+.minijuego-resultado-detalle { font-size: var(--fs-3); color: var(--ink-dim); }
+
+.minijuego-btn { background: var(--warn); color: var(--bg-void); }
+.minijuego-btn:hover:not(:disabled) { background: var(--gold); box-shadow: 0 0 24px var(--gold-glow); }
+
+.minijuego-barra {
+  position: relative;
+  height: 26px;
+  margin-bottom: var(--s-4);
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+.minijuego-zona { position: absolute; top: 0; bottom: 0; background: var(--up); opacity: 0.35; }
+.minijuego-marcador {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  left: 0;
+  width: 3px;
+  background: var(--ink);
+  box-shadow: 0 0 10px var(--live-glow);
+  transform: translateX(-50%);
+}
+
+.minijuego-aviso {
+  padding: var(--s-5) 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: var(--fs-6);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--warn);
+}
+
+.minijuego-barra-tiempo {
+  height: 8px;
+  margin-bottom: var(--s-4);
+  background: var(--bg-sunken);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+.minijuego-barra-tiempo-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, var(--down), var(--warn));
+}
+
+.minijuego-cards { display: flex; gap: var(--s-3); flex-wrap: wrap; }
+.minijuego-card {
+  flex: 1 1 140px;
+  padding: var(--s-4);
+  text-align: center;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-2);
+  text-transform: none;
+  letter-spacing: normal;
+}
+.minijuego-card:hover { border-color: var(--warn); background: var(--bg-raised); box-shadow: none; }
+.minijuego-card-count {
+  display: block;
+  margin-top: var(--s-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-6);
+  font-weight: 700;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+
+.minijuego-slider { width: 100%; margin: var(--s-3) 0; accent-color: var(--live); }
+.minijuego-slider-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--s-3);
+  font-size: var(--fs-1);
+  color: var(--ink-mute);
+}
+
+.minijuego-campo {
+  position: relative;
+  height: 170px;
+  margin-bottom: var(--s-3);
+  background: var(--bg-sunken);
+  border: 1px solid var(--line-faint);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.minijuego-aim-info {
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--ink-dim);
+}
+.minijuego-blanco {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--gold), var(--down));
+  box-shadow: 0 0 18px -4px var(--gold-glow);
+}
+.minijuego-blanco:hover { background: radial-gradient(circle, var(--gold), var(--down)); box-shadow: 0 0 24px -2px var(--gold-glow); }
+
+/* ==========================================================================
+   5. LA TARJETA DE LEGADO (fase 9R5b / PLAN.md §10.2)
+   Toda salida termina acá: la del mundialista y la del pibe al que no lo
+   dejaron jugar, con marcos distintos.
+   ========================================================================== */
+
+.tarjeta {
+  margin-top: var(--s-5);
+  padding: var(--s-6) var(--s-5);
+  text-align: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  animation: entrar-decision var(--dur-slow) var(--ease) both;
+}
+.tarjeta--exito {
+  border-color: var(--gold);
+  background:
+    radial-gradient(120% 80% at 50% 0%, var(--gold-glow), transparent 60%),
+    var(--bg-surface);
+  box-shadow: inset 0 0 0 1px var(--gold-glow), 0 0 60px -20px var(--gold-glow);
+}
+.tarjeta--sobria { border-color: var(--line-strong); }
+
+.tarjeta-marco {
+  font-family: var(--font-display);
+  font-size: var(--fs-2);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-cartel);
+  color: var(--ink-dim);
+}
+.tarjeta--exito .tarjeta-marco { color: var(--gold); }
+
+.tarjeta-identidad { margin-top: var(--s-2); font-size: var(--fs-2); color: var(--ink-dim); }
+
+.tarjeta-veredicto {
+  margin: var(--s-4) 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-7);
+  font-weight: 700;
+  line-height: var(--lh-tight);
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.tarjeta--exito .tarjeta-veredicto { color: var(--gold); }
+
+.tarjeta-totales {
+  padding-bottom: var(--s-4);
+  border-bottom: 1px solid var(--line-faint);
+  font-size: var(--fs-2);
+  color: var(--ink-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.tarjeta-historia { margin-top: var(--s-4); text-align: left; font-size: var(--fs-2); color: var(--ink-dim); }
+.tarjeta-historia-titulo {
+  margin-bottom: var(--s-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--track-cartel);
+  color: var(--live);
+}

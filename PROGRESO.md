@@ -33,6 +33,91 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-04 — Fase T0: el sistema de diseño
+
+Primer commit de la **FASE T (la transmisión)**, escrita en `PLAN.md` antes de tocar código.
+Pedido del usuario: *"un diseño full profesional para cuando subamos la página, moderno y
+futurista"*. Decisiones tomadas: estética **broadcast de esports**, **desktop primero**, las
+cuatro features (guardado + link, tarjeta a PNG, motion + audio, pantallas de contexto), y el
+nombre del juego se decide después.
+
+T0 es **un cambio de piel, no de estructura**: mismos nombres de clase, mismo DOM, mismos
+módulos de `src/ui/`. El juego funciona igual y se ve distinto. El shell de tres zonas, el
+reproductor y las pantallas nuevas son T1-T8.
+
+#### El problema, medido (auditado antes de escribir nada)
+
+| Qué | Antes |
+|---|---|
+| Archivos `.css` | **0.** 773 líneas dentro de un `<style>` en `index.html` |
+| Custom properties | **0.** El único `:root` era `color-scheme: dark`. ~120 clases con ~20 hex a mano, `#8ea3c7` catorce veces |
+| Media queries | **0** |
+| Fuentes cargadas | **0.** `font-family: Inter` declarada y **nunca cargada**: el juego se veía en Arial |
+| `transition` | **0.** Un solo `@keyframes` en todo el proyecto |
+| `aria-*` / `:focus-visible` | **0.** No se podía jugar con teclado |
+
+#### Lo que entró
+
+- **`src/ui/estilos/tokens.css`** — 77 tokens: cinco superficies, tres líneas, tres niveles de
+  tinta, el acento `--live` (cyan de transmisión), `--gold`, cuatro semánticos, **las 11
+  categorías de decisión de la fase 12.1 ya tokenizadas** (para que 12 solo tenga que declarar
+  el campo en los JSON), las 4 bandas de nivel, escala tipográfica de 10 pasos, espacio de 8,
+  radios, motion y las medidas del shell de T1.
+- **`base.css`** — reset, `@font-face`, el grano (SVG de ruido inline al 3,5%), foco en `--live`,
+  scrollbars, `.solo-lectores` y el interruptor de `prefers-reduced-motion`.
+- **`componentes.css`** (la ficha, el feed, las barras) y **`pantallas.css`** (inicio, decisión,
+  mercado, minijuegos, legado).
+- **Tres fuentes auto-hospedadas**, subset latin, 90 KB: Inter Variable + Barlow Condensed 600/700.
+  Auto-hospedadas a propósito: linkear a Google Fonts sería la primera dependencia de red del
+  proyecto. **Arregla el bug de Inter declarada-y-nunca-cargada.**
+- `index.html` **1360 → 595 líneas** (`<style>` → cuatro `<link>` + dos `preload` de fuente).
+- `server.js`: MIME de `.woff2`, `.svg`, `.png`, `.ico` (sin el de `woff2` el navegador descarta
+  la fuente en silencio).
+- `CLAUDE.md`: se corrigieron las dos líneas que decían *"priorizar la lógica sobre la estética"*
+  y *"el visual vendrá después"*. Eran anteriores a la **regla de proceso 12** de `PLAN.md`
+  (*"ninguna fase cierra sin su pantalla"*), que las reemplazó el 2026-09-02 y quedaron
+  desincronizadas. Era la única contradicción documental viva sobre el tema.
+
+#### Regla nueva
+
+**Ningún archivo de estilo escribe un color literal.** Verificado: 0 hex fuera de `tokens.css`,
+y 0 `var()` usada sin definir.
+
+#### Números
+
+| Métrica | Antes | Después |
+|---|---|---|
+| `index.html` | 1360 líneas / 43 KB | **595 líneas / 24 KB** |
+| Tokens de diseño | 0 | **77** |
+| Fuentes cargadas | 0 (se veía Arial) | **3, las tres `loaded`** |
+| `dist/` | 725 KB | **837 KB** (+112: 90 de fuentes, 41 de CSS, −19 de `index.html`) |
+
+> El techo de peso que la fase T declaró al planear (750 KB) estaba mal: se ancló a los **576 KB**
+> medidos en la fase P el 2026-09-02, antes de que 9R3a/9R3b llevaran el catálogo de 97 a 137
+> eventos. Re-medido sobre `git archive HEAD`: la línea de base real son **725 KB**. Es la
+> trampa T6 del propio `PLAN.md` (*"no comparar contra una línea de base vieja"*) — se corrigió
+> el check en el momento en vez de dejar el número mintiendo.
+
+#### Verificación
+
+- **Recorrida visual por CDP** en Chrome headless, una carrera real (seed 424242) capturada a
+  **1440 / 1180 / 900 / 640 / 390 px**: cero errores de consola, cero desborde horizontal en
+  todos los anchos, y las tres fuentes reportan `loaded` con `document.fonts.check()` en true.
+  El único 404 sigue siendo `/favicon.ico` (P.4, planeado para T8).
+- **El motor no se tocó**: `git diff` sobre `src/core`, `src/systems` y `src/data` no devuelve
+  un solo archivo de esta fase.
+- Determinismo verificado sobre 5 seeds (misma seed dos veces = misma huella
+  `finAnticipado:splits:soloqElo:edad`), `simulate.js 1000` sin crashear, y `npm run build` con
+  sus 12 carreras × 30 splits comparando `src/` contra `dist/`.
+
+#### Dos hallazgos anotados como deuda (D40, D41)
+
+- **D40 — tres campos que ningún sistema escribe nunca**: `registro.dineroTotalUSD`,
+  `registro.picos.rankedPuntos` y `mundo.archirrival`. La primera pantalla que los pinte va a
+  mostrar `US$0 ganado`, que viola la regla 15. La fase T no los dibuja.
+- **D41 — `log.type` no se usa en la UI**: los 16 sistemas etiquetan cada log y `feed.js` solo
+  mira `tecnico: true`. Es el gancho listo para icono y color por categoría.
+
 ### 2026-09-04 — Fase 9R3b: los pools de fecha marcada se hacen profundos
 
 Segundo commit de 9R.3. 9R3a puso la infraestructura de variantes y expandió la reacción

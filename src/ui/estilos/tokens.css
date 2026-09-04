@@ -1,0 +1,159 @@
+/* ==========================================================================
+   TOKENS — la fase T, PLAN.md "FASE T / T0"
+
+   Hasta acá el proyecto tenía CERO custom properties: el único `:root` de
+   index.html era `color-scheme: dark`, y ~120 clases repetían ~20 hex a mano
+   (`#8ea3c7` catorce veces). Esto es la capa que faltaba.
+
+   Regla dura de acá en adelante: NINGÚN archivo de estilo de este proyecto
+   escribe un color literal. Si un color no está acá, no existe.
+
+   La estética es BROADCAST DE ESPORTS (decisión del usuario, PLAN.md T.2):
+   base casi negra, un acento cyan de "en vivo", oro para logros, y una
+   condensada para todo lo que sea número o cartel.
+   ========================================================================== */
+
+:root {
+  color-scheme: dark;
+
+  /* --- Superficies ------------------------------------------------------
+     Cinco niveles, de atrás para adelante. `void` es el fondo de la página;
+     `chrome` es la topbar y los rieles (tienen que leerse como marco, no
+     como contenido); `surface` es una tarjeta; `raised` es algo apoyado
+     sobre una tarjeta; `sunken` son las pistas de barra y los campos. */
+  --bg-void:    #05070d;
+  --bg-chrome:  #0a0e17;
+  --bg-surface: #0f1420;
+  --bg-raised:  #161d2c;
+  --bg-sunken:  #070a11;
+
+  /* --- Líneas -----------------------------------------------------------
+     Azuladas, no blancas: sobre un fondo con matiz azul, una línea blanca
+     pura se ve sucia. */
+  --line-faint:  rgba(148, 176, 255, 0.08);
+  --line:        rgba(148, 176, 255, 0.15);
+  --line-strong: rgba(148, 176, 255, 0.28);
+
+  /* --- Tinta ------------------------------------------------------------
+     Tres niveles. Contraste verificado sobre --bg-surface (#0f1420):
+     ink 15.8:1 · ink-dim 7.4:1 · ink-mute 3.6:1.
+     `ink-mute` NO se usa para texto que haya que leer: solo para etiquetas
+     de eje y marcas de escala, que se apoyan en la posición, no en el texto. */
+  --ink:      #e8eefc;
+  --ink-dim:  #93a3c4;
+  --ink-mute: #5b6883;
+
+  /* --- El acento de transmisión ----------------------------------------
+     El cyan es "en vivo / ahora / esto es lo activo". No es decoración: si
+     algo está en --live es porque está pasando en este momento. */
+  --live:      #2ee8ff;
+  --live-deep: #0d7f92;
+  --live-glow: rgba(46, 232, 255, 0.35);
+
+  /* --- El oro ----------------------------------------------------------
+     Logro, hito máximo, título, banda `clase_mundial`. Se usa POCO a
+     propósito: si el oro está en todos lados, no significa nada. */
+  --gold:      #ffc861;
+  --gold-deep: #8a6524;
+  --gold-glow: rgba(255, 200, 97, 0.28);
+
+  /* --- Semánticos ------------------------------------------------------- */
+  --up:     #3ddc97;   /* sube, gana, positivo */
+  --down:   #ff5f56;   /* baja, pierde, negativo */
+  --warn:   #ffab4a;   /* costo, riesgo, atención */
+  --danger: #ff3355;   /* mentalidad al límite, burnout inminente */
+
+  /* --- Las 11 categorías de decisión ------------------------------------
+     La tabla de PLAN.md §12.1, tokenizada desde el día uno para que la
+     fase 12 solo tenga que declarar el campo `categoria` en los JSON: los
+     colores ya van a estar acá esperándola. */
+  --cat-rutina:      #6b7a99;
+  --cat-golpe:       #ff4d4d;
+  --cat-oportunidad: #3ddc97;
+  --cat-mercado:     #ffc861;
+  --cat-parche:      #a97bff;
+  --cat-vestuario:   #4d8dff;
+  --cat-prensa:      #48d6ff;
+  --cat-familia:     #ff9646;
+  --cat-salud:       #c1272d;
+  --cat-partido:     #e8402a;   /* el rojo LoL */
+
+  /* --- Las 4 bandas de nivel (core/ficha.js `bandaDeNivel`) ------------- */
+  --nivel-prospecto:     #93a3c4;
+  --nivel-titular:       #3ddc97;
+  --nivel-elite:         #2ee8ff;
+  --nivel-clase_mundial: #ffc861;
+
+  /* --- Tipografía -------------------------------------------------------
+     Dos familias, auto-hospedadas en `fuentes/` (93 KB en total, subset
+     latin). Antes de la fase T el proyecto declaraba `Inter` y NUNCA la
+     cargaba: el juego se veía en Arial. */
+  --font-ui: Inter, ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Barlow Condensed", "Bahnschrift", "Arial Narrow", var(--font-ui);
+
+  /* Escala. El salto 40 → 64 → 96 existe para una sola cosa: el marcador
+     y el nivel. Nada más puede usar --fs-9. */
+  --fs-0: 11px;  --fs-1: 12px;  --fs-2: 13px;  --fs-3: 15px;
+  --fs-4: 17px;  --fs-5: 21px;  --fs-6: 28px;  --fs-7: 40px;
+  --fs-8: 64px;  --fs-9: 96px;
+
+  --lh-tight: 1.1;
+  --lh-snug:  1.3;
+  --lh:       1.55;
+
+  /* El tracking de los carteles de broadcast: en condensada y en
+     mayúsculas, sin separar las letras, el texto se apelmaza. */
+  --track-cartel: 0.10em;
+  --track-label:  0.06em;
+
+  /* --- Espacio: escala de 4 ---------------------------------------------- */
+  --s-1: 4px;   --s-2: 8px;   --s-3: 12px;  --s-4: 16px;
+  --s-5: 24px;  --s-6: 32px;  --s-7: 48px;  --s-8: 64px;
+
+  /* --- Radios ------------------------------------------------------------
+     Broadcast es más cuadrado que la web: el radio grande se reserva para
+     los contenedores, no para los elementos chicos. */
+  --r-sharp: 2px;
+  --r:       8px;
+  --r-lg:    14px;
+  --r-pill:  999px;
+  --chamfer: 10px;   /* el corte de esquina de los paneles hero */
+
+  /* --- Elevación --------------------------------------------------------- */
+  --sombra-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sombra-2: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --sombra-3: 0 20px 60px rgba(0, 0, 0, 0.55);
+
+  /* --- Motion -----------------------------------------------------------
+     `--ease` es expo-out: arranca rápido y frena largo. Es la curva que
+     hace que una animación se sienta cara en vez de mecánica.
+     Antes de la fase T había CERO `transition` en todo el proyecto. */
+  --dur-fast: 120ms;
+  --dur:      220ms;
+  --dur-slow: 420ms;
+  --dur-beat: 700ms;   /* el pulso del reproductor de T3 */
+
+  --ease:        cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* --- Layout (T1) ------------------------------------------------------- */
+  --riel-izq:  320px;
+  --riel-der:  320px;
+  --escenario-max: 860px;
+  --topbar-alto: 56px;
+}
+
+/* El shell se estrecha antes de romperse. Los breakpoints completos viven
+   en shell.css; acá solo se reajustan las medidas que son token. */
+@media (max-width: 1439px) {
+  :root { --riel-izq: 280px; --riel-der: 280px; }
+}
+@media (max-width: 1179px) {
+  :root { --riel-izq: 260px; }
+}
+@media (max-width: 639px) {
+  :root {
+    --fs-6: 24px; --fs-7: 32px; --fs-8: 48px; --fs-9: 64px;
+    --topbar-alto: 48px;
+  }
+}

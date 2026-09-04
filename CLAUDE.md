@@ -6,7 +6,7 @@ Este proyecto implementa un simulador de carrera profesional de League of Legend
 
 - Simular la carrera de un jugador profesional desde los 15 años hasta el retiro.
 - Mantener una arquitectura limpia, determinista y escalable.
-- Priorizar la lógica de juego y el balance sobre la estética inicial.
+- Un sistema que el jugador no puede ver no está terminado (regla de proceso 12 de `PLAN.md`).
 
 ## Reglas invariables
 
@@ -70,4 +70,6 @@ Orden de lectura al abrir el proyecto:
   implementarlo. Lo que se descubre midiendo va a la tabla de deuda técnica del mismo documento.
 - Si un concepto no está claro, pedir aclaración antes de implementar.
 - No agregar funcionalidad fuera del alcance.
-- Construir primero el motor y los sistemas de datos; el visual vendrá después.
+- Ninguna fase cierra sin su pantalla. Esta línea decía "el visual vendrá después" y se corrigió
+  el 2026-09-04: era anterior a la regla de proceso 12 de `PLAN.md`, que la reemplazó cuando se
+  midió que ese orden había producido "siete fases correctas hundidas en un feed de logs".

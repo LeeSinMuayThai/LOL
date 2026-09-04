@@ -12,7 +12,14 @@ const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'application/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
-  '.css': 'text/css; charset=utf-8'
+  '.css': 'text/css; charset=utf-8',
+  // Fase T / T0: las fuentes se auto-hospedan (linkear a Google Fonts sería
+  // la primera dependencia de red del proyecto). Sin el MIME correcto el
+  // navegador las descarta en silencio y el juego cae al fallback.
+  '.woff2': 'font/woff2',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.ico': 'image/x-icon'
 };
 
 function createServer() {

@@ -27,6 +27,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **9** | El mercado: ofertas, contratos, salarios, la trampa del equipo grande visible | ✅ ver `PROGRESO.md` |
 | **9E** | El varado: la carrera vuelve a tener juego después del primer equipo | 🔶 **9Ea+b hechas** (el bug, cerrado) · faltan 9Ec y 9Ed |
 | **9R** | **Que el juego se juegue**: el cooldown mide splits, la tabla deja de mentir, la interrupción vuelve a ser escasa, y elegir cambia el resultado | 🔶 **9Ra/9Rb/9Re/9Rf/9R.5/9R.2/9R.0/9Rc/9Rd/9R3a/9R3b hechas** · falta 9R.3 resto (9R3c-d), 9R.4, 9Rg |
+| **T** | **La transmisión**: el sistema de diseño, el shell de tres zonas, el ritmo del split, y las pantallas que faltan. Va antes de 9M para que 9M/10/11/12/13 tengan dónde enchufar su pantalla | ⬜ |
 | **9M** | **El mercado de pases**: el mundo se puebla de jugadores, la demanda existe, alguien compite por tu asiento, la escalera deja de ser un dado | ⬜ |
 | **10** | El final: retiro emergente + la tarjeta de legado | ⬜ |
 | **11** | El año: calendario, la nota de la temporada, el archirrival | ⬜ |
@@ -2185,6 +2186,399 @@ cerraban con una sola línea `[rendimiento]` "terminó 4º de 10" — sin decir 
 
 ---
 
+# FASE T — LA TRANSMISIÓN
+
+> El juego está terminado por dentro y roto por fuera. Esta fase no inventa nada de juego: conecta
+> a la pantalla lo que el motor ya calcula, y le pone encima un sistema de diseño para que las
+> fases que faltan tengan dónde enchufar su pantalla.
+>
+> Estética **broadcast de esports**, **desktop primero**, cero dependencias nuevas.
+
+## T.0 — El estado, medido
+
+Auditado el 2026-09-04, antes de escribir nada:
+
+| Qué | Estado real |
+|---|---|
+| Hojas de estilo | **0 archivos `.css`.** Las 773 líneas de CSS viven en un `<style>` dentro de `index.html` (líneas 7-780) |
+| Custom properties | **0.** El único `:root` es `color-scheme: dark`. ~120 clases con ~20 hex repetidos a mano, `#8ea3c7` catorce veces |
+| Media queries | **0.** El layout aguanta por el `auto-fit` de los grids; no hay diseño pensado para ningún tamaño |
+| Fuentes cargadas | **0.** `font-family: Inter` está declarada y **Inter nunca se carga** → hoy el juego se ve en Arial |
+| `transition` en CSS | **0.** Un solo `@keyframes` en todo el proyecto, de 180ms, dentro de un minijuego |
+| `aria-*` / `role=` | **0.** Cero `:focus-visible`, cero `prefers-reduced-motion` |
+| `<svg>` / iconos | **0.** La iconografía entera son 5 emojis y los glifos `▲ ▼ ·` |
+| Pantallas | **2** (`#setup` / `#carrera`) + 3 paneles que se prenden con el atributo `hidden` |
+| Meta de la página | `lang`, `charset`, `viewport` y `<title>`. Nada más (P.4 sigue abierta) |
+| `src/ui/` | 670 líneas en 10 módulos — la extracción de la fase 8b, correcta y sin estilo propio |
+
+Y del otro lado, **el motor calcula un montón de cosas que no se muestran en ningún lado**:
+`career.temporada.tabla` (la tabla de posiciones completa, ordenada), `career.temporada.calendario`
+(el fixture round-robin con rival y fuerza), `career.temporada.cruces`, `serie.mapas` (el camino
+mapa a mapa con los quemados del Fearless), `meta.tierList`, `meta.regimen`, `career.companeros`
+(4 compañeros con nombre y nivel), `career.contrato` entero, `valorDeMercado()`, `mundo.rivales`
+(los 5 rivales de generación), `registro.picos`, `contexto.marcas` (26 posibles), y los 16 valores
+de `log.type`, que la UI hoy **no usa para nada**.
+
+## T.1 — Por qué esta fase existe, y por qué no contradice la regla 12
+
+`PLAN.md` borró a propósito la fase de "refinamiento visual" el 2026-09-02 y la reemplazó por la
+**regla de proceso 12** (*"ninguna fase cierra sin su pantalla"*), con la justificación de que el
+modelo de dejar lo visual para el final ya había producido *"siete fases correctas hundidas en un
+feed de logs"*.
+
+**Esta fase no es ese pulido diferido: es el sustrato.** Hoy cada fase nueva paga el costo de
+inventar su estilo desde cero — la fase 8 midió **+330 líneas de `<style>`** solo por la ficha. Si
+T entra antes, las pantallas que 9M.8, 10.2, 11 y 12 ya tienen escritas salen del sistema en vez de
+sumar otras cuatro tandas de CSS suelto que después hay que unificar igual.
+
+**Por eso va después de que cierre 9R y antes de 9M.**
+
+> **Contradicción documental a arreglar en esta fase.** `CLAUDE.md:9` (*"priorizar la lógica de
+> juego y el balance sobre la estética inicial"*) y `CLAUDE.md:73` (*"construir primero el motor y
+> los sistemas de datos; el visual vendrá después"*) quedaron sin sincronizar cuando se instauró la
+> regla 12. Se actualizan en T0.
+
+## T.2 — Decisiones del usuario (textuales — respetarlas, no volver a preguntar)
+
+- **Estética: broadcast de esports.** Lower-thirds, scoreboard, telemetría. Números grandes en
+  condensada, un acento cyan de "en vivo" más oro para logros.
+- **Desktop primero.** Layout de aplicación con paneles; el celular es la versión reducida.
+- **El nombre del juego se decide después.** El sistema de identidad se diseña con un lockup
+  tipográfico que funcione con cualquier nombre corto.
+- **Entran las cuatro features**: guardado + link de carrera · tarjeta final a PNG ·
+  motion + audio · pantallas nuevas de contexto.
+
+## T.3 — Restricciones duras
+
+1. **Cero dependencias.** Sin framework, sin bundler. `build.js` ya lo dice: *"el proyecto no tiene
+   ninguna y esta fase no es excusa para agregar la primera"*. Las fuentes se **auto-hospedan**; no
+   se linkea a Google Fonts (sería la primera dependencia de red del proyecto).
+2. **Cero `Math.random()`**, tampoco en efectos visuales (regla invariable 1). Lo que necesite azar
+   usa `rngUi`, el stream separado que ya existe.
+3. **El motor no toca el DOM** (regla invariable 2). `core/guardado.js` es **puro**
+   (`serializar`/`deserializar`); el `localStorage` vive en `src/ui/almacenamiento.js`, para que
+   `validate.js` y `simulate.js` sigan corriendo en Node.
+4. **No se retunea una sola fórmula** (regla de proceso 2). Esta fase expone, no recalcula.
+5. **No se inventan datos.** El motor **no tiene KDA, oro, torres ni duración**: un partido es
+   victoria/derrota + `rendimiento` 0-100 + campeón + posición. Dibujar un box score inventado
+   violaría la regla 15.
+6. **Sin escudos reales de las orgs** (decidido en "fuera de alcance": licencias). Monograma + color
+   derivado del nombre con `hashCadena`, que ya existe.
+
+## T.4 — Commits
+
+| # | Commit | Qué entrega |
+|---|---|---|
+| **T0** | el sistema de diseño | `src/ui/estilos/` + fuentes auto-hospedadas. El juego se ve distinto sin mover una sola pantalla |
+| **T1** | el shell de transmisión | Grid de tres zonas desktop-first + breakpoints + teclado. `index.html` 1360 → ~120 líneas |
+| **T2** | la ficha es el HUD | El riel izquierdo permanente, con contrato, valor de mercado y marcas que hoy no se ven |
+| **T3** | el escenario y el reproductor | El split se resuelve en beats, no de un salto. Audio sintetizado, apagado por defecto |
+| **T4** | la decisión con jerarquía | Banner por categoría y peso bisagra/normal/ambiente — la mitad visual de la fase 12, sin motor |
+| **T5** | el riel de contexto | Tabla, calendario, plantilla, meta y generación. Cinco paneles, cero motor |
+| **T6** | el partido y la serie | Tarjeta de resultado, barra de bracket, el camino mapa a mapa, los 5 minijuegos migrados |
+| **T7** | la tarjeta final y el PNG | Legado rediseñado + export a canvas 1200×630 + copiar link |
+| **T8** | la página como página | P.2 (guardado), P.3 (seed en la URL), P.4 (meta y OG), P.5 (repo) |
+
+## T0 — El sistema de diseño
+
+```
+src/ui/estilos/
+  tokens.css        color, tipografía, espacio, radios, motion, colores de categoría
+  base.css          reset, foco, scrollbar, grano, prefers-reduced-motion
+  componentes.css   ficha, barras, botones, banners, tarjetas, feed
+  fuentes/          inter-var-latin.woff2, barlow-condensed-600.woff2, -700.woff2
+```
+
+`src/ui/` **ya está** en el `A_COPIAR` de `build.js` → estilos y fuentes se copian a `dist/` solos.
+Solo hay que sumar `.css`, `.woff2`, `.svg` y `.png` a los `mimeTypes` de `server.js`.
+
+**Paleta** (reemplaza los ~20 hex sueltos de hoy):
+
+```css
+:root{
+  --bg-void:#05070d; --bg-chrome:#0a0e17; --bg-surface:#0f1420;
+  --bg-raised:#161d2c; --bg-sunken:#070a11;
+  --line-faint:rgba(148,176,255,.08); --line:rgba(148,176,255,.15);
+  --line-strong:rgba(148,176,255,.28);
+  --ink:#e8eefc; --ink-dim:#93a3c4; --ink-mute:#5b6883;
+  --live:#2ee8ff; --live-glow:rgba(46,232,255,.35);   /* el acento de transmisión */
+  --gold:#ffc861;                                      /* logro, hito máximo, título */
+  --up:#3ddc97; --down:#ff5f56; --warn:#ffab4a; --danger:#ff3355;
+  /* las 11 categorías de decisión de la fase 12.1, como tokens desde el día uno */
+  --cat-rutina:#6b7a99;  --cat-golpe:#ff4d4d;  --cat-oportunidad:#3ddc97;
+  --cat-mercado:#ffc861; --cat-parche:#a97bff; --cat-vestuario:#4d8dff;
+  --cat-prensa:#48d6ff;  --cat-familia:#ff9646; --cat-salud:#c1272d;
+  --cat-partido:#e8402a;
+}
+```
+
+**Tipografía.** Dos familias auto-hospedadas, subset latin, ~85 KB en total:
+
+- `--font-display`: **Barlow Condensed** 600/700 — banners, marcadores, el nivel grande. Es la voz
+  de broadcast. Fallback `"Arial Narrow", system-ui`.
+- `--font-ui`: **Inter Variable** — todo lo demás. Arregla de paso el bug de hoy. Con
+  `font-variant-numeric: tabular-nums` en todo número: sin eso, un contador que sube tiembla.
+
+Escala tipográfica `11 12 13 15 17 21 28 40 64 96` · espacio `4 8 12 16 24 32 48 64` ·
+radios `--r-sharp:2px --r:8px --r-lg:14px --r-pill:999px` + `--chamfer:10px` (corte de esquina por
+`clip-path` en los paneles hero: es la firma visual de la fase).
+
+**Motion:**
+
+```css
+--dur-fast:120ms; --dur:220ms; --dur-slow:420ms; --dur-beat:700ms;
+--ease:cubic-bezier(.16,1,.3,1);   /* expo-out */
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:1ms!important;transition-duration:1ms!important}
+}
+```
+
+**Los cinco detalles que hacen el trabajo:** la banda LIVE de 3px con punto que pulsa · el grano
+(un SVG de ruido inline al 3%, `position:fixed`, `pointer-events:none`) · el chaflán · los números
+tabulares con conteo animado · el anillo de foco en `--live`.
+
+**Nuevo — `src/ui/formatoUi.js`**: monograma y color de org (`hashCadena(nombre) % 360` → hue;
+determinista, cero rng — resuelve la restricción de "sin escudos reales"), e icono + color por cada
+uno de los 16 `log.type`.
+
+## T1 — El shell de transmisión
+
+`src/ui/shell.js` monta el layout y expone los slots. `index.html` queda en ~120 líneas: el shell,
+los `<link>` y el bucle de control.
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│ ● LIVE │ monograma+nombre │ 2033 · SPLIT 2 · PLAYOFFS ▓▓▓▓▓░░ │ ⚙ 🔊 │
+├───────────┬──────────────────────────────────┬───────────────────────┤
+│ RIEL IZQ  │        ESCENARIO                 │      RIEL DER         │
+│ la ficha  │  el único slot que cambia:       │  tabla · calendario   │
+│ (T2)      │  feed · decisión · minijuego     │  plantilla · meta     │
+│           │  mercado · serie · temporada     │  generación (T5)      │
+│           │  legado                          │                       │
+├───────────┴──────────────────────────────────┴───────────────────────┤
+│ TICKER: la última línea del feed, en marquesina                       │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+| Ancho | Layout |
+|---|---|
+| ≥1440 | `320px \| 1fr \| 320px`, escenario máx 860px |
+| 1180–1439 | `280px \| 1fr \| 280px` |
+| 900–1179 | `260px \| 1fr` — el riel derecho pasa a pestañas arriba del escenario |
+| 640–899 | Una columna. La ficha se vuelve una barra HUD compacta y pegajosa |
+| <640 | Igual, con la escala tipográfica un paso abajo |
+
+**Teclado desde el arranque**: `Espacio`/`Enter` avanza o saltea, `1..4` elige opción, `Esc` cierra.
+`aria-live="polite"` en el feed; `role="dialog"` + trampa de foco en las decisiones bisagra.
+
+## T2 — La ficha es el HUD
+
+Reusa `fichaCompleta(state)` de `core/ficha.js` **tal cual está** — ya devuelve todo semantizado con
+`id`+`label`+banda, y es el único view-model real del proyecto. Cero cambios de motor.
+
+Rediseña lo que ya hay (§8.6: nivel grande por banda, los 6 atributos con ▲▼, las barras con los 4
+hitos dibujados, mentalidad/hype, badge internacional, pool con tier) y **suma lo calculado que no
+se ve en ningún lado**: el contrato (org, liga, sueldo con `plata()`, años restantes), el valor de
+mercado (`valorDeMercado()`, distinto del sueldo), el ranked completo en amateur
+(`etiquetaDeRanked()` ya devuelve `"Challenger · 1997 LP (#1 de Brasil)"`), y las marcas de
+contexto como chips.
+
+Regla 13 sin excepción: ningún número sale sin banda con nombre, sin flecha o sin comparación.
+
+> **Campos muertos — no dibujarlos (deuda nueva, ver abajo).** `registro.dineroTotalUSD`,
+> `registro.picos.rankedPuntos` y `mundo.archirrival` están declarados y **ningún sistema los
+> escribe nunca**. Pintar "US$0 ganado" sería mentir. Los paneles que los usarían se ocultan hasta
+> que 9M/11 los alimenten.
+
+## T3 — El escenario y el reproductor
+
+**El cambio de sensación más grande de la fase.**
+
+Hoy `avanzar()` corre splits en un `for` hasta que algo interrumpe y **pinta una sola vez al
+final**: el jugador ve un salto con ocho líneas de log ya escritas. En un juego cuyo compás es
+*"cada split trae 1 o 2 decisiones, nunca más"* (`CONCEPTO` §2), eso tira a la basura el ritmo que
+el motor construye.
+
+`src/ui/reproductor.js` toma los `logs` que devuelve **un** `avanzarSplit` y los revela como beats:
+
+- Cada log entra con `--dur` y `--ease`, con icono y color por `type`.
+- Los `tecnico:true` se agrupan en una tira compacta en vez de competir con lo narrativo.
+- Un log de `type:'temporada'` no es una línea: es la tarjeta de resultado de T6.
+- **Saltear siempre disponible**: click, `Espacio`, o el botón `▸ SEGUIR`.
+- Velocidad `x1 / x2 / instantáneo`, persistida. `instantáneo` reproduce el comportamiento de hoy.
+
+**Impacto de motor: cero.** Solo cambia *cuándo pinta el DOM*, nunca qué calcula el motor. El tope
+`maxSplitsDeSeguridad` se mantiene intacto (trampa T9).
+
+`src/ui/sonido.js` — sintetizador WebAudio de ~80 líneas, **sin un solo archivo de audio**: click,
+tick de beat, stinger de victoria/derrota, swell de bisagra, arpegio de título. **Apagado por
+defecto**, toggle en la topbar, `AudioContext` creado recién en el primer gesto del usuario.
+
+## T4 — La decisión con jerarquía
+
+Adelanta **la mitad visual de la fase 12**, porque los cables ya están tendidos y no cuesta una
+línea de motor:
+
+- **Banner por categoría** (12.1). Los eventos ya declaran `category` (21 valores como
+  `partido_presion`, `drama_prensa`, `salud_vida`). La UI mapea esos 21 a las 11 familias de banner
+  de la tabla de §12.1, con los colores ya tokenizados en T0.
+- **Peso visual** (12.2). `decisionDesdeEvento` manda `datos: { evento }`, así que la UI **ya
+  tiene** el `bisagra: true`. `bisagra` → toma el escenario entero, con velo, marca de agua y
+  entrada animada. Normal → tarjeta estándar. Ambiente → tarjeta compacta sin banner.
+- **"El dado trajo tres caminos"** (12.4, regla 16): todo menú sorteado se encabeza diciéndolo. El
+  mercado ya lo hace; se generaliza.
+- Opciones como tarjetas con label, descripción y el atajo de teclado visible.
+
+**Lo que sigue siendo de la fase 12** (necesita motor de verdad, no se toca acá): `previa`, `riesgo`
+derivado de la dispersión medida de outcomes, `gate`, `rareza`, y el campo `categoria` **declarado**
+en el JSON con su check estático — T4 usa una tabla de derivación como puente y la fase 12 la
+reemplaza por el campo real.
+
+## T5 — El riel de contexto
+
+Cinco paneles, **todos con datos que el motor ya calcula. Cero motor.**
+
+| Panel | Fuente | Qué muestra |
+|---|---|---|
+| **Tabla** | `career.temporada.tabla` | La liga ordenada, tu fila resaltada, la línea de corte de playoffs y la de cupos internacionales |
+| **Calendario** | `career.temporada.calendario` + `.indice` | El fixture: jugadas, la de hoy, las que vienen, con rival y fuerza |
+| **Plantilla** | `career.companeros` + `sinergia` | Los 4 compañeros con nombre, rol y nivel; sinergia como barra |
+| **Meta** | `meta.regimen` + `meta.tierList` | El régimen con nombre y tu pool marcado contra la tier list del parche |
+| **Generación** | `mundo.rivales` | Los 5 rivales con los que arrancaste. Hoy se generan y no se ven nunca (deuda D8) |
+
+Los paneles **se ocultan** cuando no hay dato (el amateur no tiene tabla ni plantilla). Nunca se
+muestran en cero: un panel vacío es peor que un panel ausente.
+
+## T6 — El partido y la serie como transmisión
+
+**La tarjeta de resultado de fecha**, con lo que el motor sí tiene: rival, fuerza del rival,
+local/visitante, motivo de la fecha (los 7 `stakes`, con sus etiquetas y frases ya escritas),
+campeón jugado, victoria/derrota, racha y posición nueva. **Sin KDA inventado** (T.3.5).
+
+**La barra de bracket** (12.5): `CUARTOS · SEMI · FINAL`, superadas en `--up`, la actual pulsando en
+`--live`. Sale de `serie.ronda` + `liga.formatoPlayoffs`.
+
+**El camino de la serie**: `serie.mapas` ya guarda `[{campeon, resultado}]` y los `quemados`. Se
+dibuja el marcador mapa a mapa con los campeones quemados tachados — es la mecánica más distintiva
+del juego y hoy es una línea de texto.
+
+**Los 5 minijuegos se migran** de `index.html` a `src/ui/components/minijuegos/`, uno por archivo,
+con el tema de su competición. La fase 8 los dejó sin mover a propósito *"porque la fase 12 les
+cambia la presentación"* — es acá. Contrato intacto: `montar(container, state, onDone)` →
+`onDone(0..1)`, y **siguen comiendo de `rngUi`**.
+
+## T7 — La tarjeta final, el PNG y el link
+
+La pantalla de legado rediseñada sobre `state.tarjeta` y `registro.porOrg` (reusando `filaHistoria`,
+escrita en la fase 8 justamente para esto). Marco distinto por cada uno de los 5 finales: el
+mundialista y el pibe al que no lo dejaron jugar **no comparten marco** (§10.3).
+
+**Exportar a PNG** — `src/ui/exportar.js`, canvas 2D a mano, **1200×630** (medida de OG, así la
+misma rutina sirve para las dos cosas):
+
+- `await document.fonts.ready` **antes** de dibujar, o el canvas sale en la fuente de fallback.
+- `canvas.toBlob()` → `<a download>`.
+- `navigator.clipboard.write([new ClipboardItem({'image/png': blob})])` para copiarla, con la
+  descarga como fallback donde no esté disponible.
+
+**Copiar link de esta carrera** (P.3): `?seed=N`. Es la función social que `CONCEPTO` §9 llama
+*"todo el motor de difusión del juego"*.
+
+## T8 — La página como página
+
+Cierra los bloqueantes que quedan de la **FASE P**. El detalle completo vive allá; acá va lo que
+esta fase ejecuta.
+
+- **P.2 — El guardado** (deuda D36, el último bloqueante real). `mulberry32` gana
+  `.estado()`/`.restaurar(n)`; `core/guardado.js` puro con clave `version`;
+  `src/ui/almacenamiento.js` hace el `localStorage`; la pantalla de inicio ofrece **Continuar**.
+  **Es el único cambio de motor de toda la fase**, y por eso lleva el check de determinismo con
+  lupa (abajo).
+- **P.3 — La seed en la URL.** `?seed=N` precarga; `leerSeed()` hoy solo mira el input.
+- **P.4 — La página.** `description`, Open Graph + Twitter card con imagen propia, favicon, y el
+  `<title>` con el nombre real.
+- **P.5 — El repo.** `README.md`, `LICENSE` y la línea de descargo de proyecto de fan.
+- **`build.js`** gana un check de pre-flight: que cada `url()` de CSS y cada `<link href>` resuelva
+  con la capitalización exacta. Es la misma trampa que P.7 cubre para los imports de JS (Windows no
+  distingue mayúsculas, el host Linux sí) y hoy no está cubierta porque no había CSS.
+
+## T.5 — Archivos
+
+**Nuevos**
+
+```
+src/ui/estilos/{tokens,base,componentes,pantallas,shell}.css + fuentes/*.woff2
+src/ui/shell.js  reproductor.js  sonido.js  formatoUi.js  exportar.js  almacenamiento.js
+src/ui/components/{banner,resultado,bracket}.js
+src/ui/components/minijuegos/{robarBaron,laLlamada,bootcamp,ruedaDePrensa,laPrueba}.js
+src/ui/paneles/{tabla,calendario,plantilla,meta,generacion}.js
+src/ui/screens/{decision,mercado,serie,temporada,legado}.js
+src/core/guardado.js
+```
+
+**Modificados**
+
+```
+index.html            1360 → ~120 líneas: shell + <link> + el bucle de control
+src/ui/render.js      el barrel crece
+src/ui/components/*   los 6 actuales, reescritos sobre los tokens
+src/ui/screens/*      los 3 actuales, reescritos
+src/core/rng.js       .estado()/.restaurar() — el ÚNICO cambio de motor
+src/dev/build.js      check de capitalización en CSS
+server.js             mimeTypes: .css .woff2 .svg .png
+CLAUDE.md             líneas 9 y 73 (la contradicción con la regla 12)
+DISENO.md             §4.1, el árbol de src/ui/
+```
+
+**Reusar, no reescribir**: `fichaCompleta()`, `filaHistoria`/`filaMomento`, `crearBarra`,
+`crearStatRow`, todo `core/formato.js`, `etiquetaDeRanked`/`rangoAproximado`/`percentil`,
+`describirContexto`, `etiquetaDeRonda`, `hashCadena` y `rngUi`.
+
+## T.6 — Fuera de alcance
+
+Framework, bundler, cualquier dependencia · backend, cuentas, tabla de récords, analytics (P.9) ·
+box scores de partida (el motor no tiene los datos) · escudos reales de las orgs · retunear
+cualquier fórmula · mecánicas nuevas · `previa`/`riesgo`/`rareza` (siguen siendo fase 12).
+
+## T.7 — Checks de la fase T
+
+```
+Cero `Math.random()` en todo `src/ui/` (el guard de build.js ya lo verifica)
+Cero `document` fuera de `src/ui/` (guards.js; `core/guardado.js` NO puede tocar localStorage)
+Ningún hex literal en `componentes.css`/`pantallas.css`: todo color sale de un token
+Toda la UI corre con `prefers-reduced-motion: reduce` sin perder información
+Una carrera completa se termina solo con teclado
+Contraste ≥4.5:1 en todo par (texto, fondo) de los tokens
+`dist/` ≤ 900 KB. La línea de base NO son los 576 KB de la fase P: eso se midió el
+2026-09-02, antes de que 9R3a/9R3b llevaran el catálogo de 97 a 137 eventos. Re-medido
+sobre `git archive HEAD` el 2026-09-04: **725 KB**. T0 suma +112 KB (90 de fuentes,
+41 de CSS, −19 que adelgaza `index.html`) → 837 KB. Trampa T6: re-medir, no citar
+T8: la misma seed con N llamadas restauradas produce la misma secuencia que correrla de corrido
+T8: las seeds anteriores a T8 siguen reproduciendo su carrera (huella idéntica)
+```
+
+## T.8 — Verificación end-to-end
+
+Por cada subfase, la Definición de terminado de `CLAUDE.md` completa (`validate.js`, determinismo,
+`simulate.js 1000`, commit, `PROGRESO.md`), más `npm run build` — que ya compara 12 seeds × 30
+splits entre `src/` y `dist/`.
+
+Específico de esta fase:
+
+1. **Determinismo con lupa en T8.** Antes y después de tocar `rng.js`, huella
+   `finAnticipado:splits:soloqElo` sobre ≥12 seeds contra `git archive HEAD` (trampa T1). Cero
+   divergencias, o no entra.
+2. **Recorrida visual en Chrome headless por CDP** (el método de 8b y P.10): una carrera entera
+   capturando cada pantalla a **1440 / 1180 / 900 / 640 / 390 px**. Consola limpia, cero 404, y el
+   body sin scroll horizontal en ningún ancho.
+3. **Una carrera completa sin tocar el mouse.**
+4. **Una carrera con `prefers-reduced-motion: reduce`** y otra en velocidad `instantáneo`.
+5. **T8 en la URL publicada, no en localhost** (P.8): jugar hasta la mitad, **recargar la pestaña**
+   y confirmar que sigue donde estaba; abrir el mismo `?seed=N` en dos navegadores y confirmar que
+   la carrera es idéntica; probar en Chrome, Firefox, Safari y un móvil.
+
+---
+
 # FASE 9M — EL MERCADO DE PASES
 
 > La fase 9 construyó **el contrato**. Esta construye **el mercado**: el mundo se puebla de
@@ -3073,6 +3467,8 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D34 | **Cuánto se tarda en SALIR del nivel tier 3 nunca se había podido medir**, porque el bug D25 mataba la carrera en la primera disolución: las carreras largas en tier 3 no existían, se varaban. Con D25 cerrado, medido a 1500 carreras: por org la permanencia sigue clavada en el diseño (**mediana 2, p90 5** — el pedido "nadie se queda mucho en un equipo inventado" se cumple), pero el tiempo total en el NIVEL da **mediana 5, p90 12, máximo 36 splits**. El 98,3% de las carreras que pisan tier 3 igual escapan a tier 2 o 1, así que no es una trampa — pero un p90 de 12 splits (4 años) dando vueltas por equipos chicos es candidato a revisar `probAscensoBaseDesdeTier3`. **No se tocó ninguna constante**: regla de proceso 2, primero medir con la estructura nueva. El check gatea la métrica por org, que es la que responde el pedido | 10 (abierto) |
 | D33 | **13 comentarios de `/src` citan `TRASPASO.md §4`**, archivo borrado el 2026-09-02 — `salarios.js`, `state.js`, `valorMercado.js` (×3), `balance.js` (×3), `roles.js`, `validate.js` (×2), `amateur.js`, `mercado.js`. La numeración se conservó al mover la investigación (`§4.N` → `CONCEPTO.md §12.N`), así que la redirección es un reemplazo de texto por comentario, sin tocar lógica. Se deja para el próximo commit que toque `/src` | 9E |
 | D35 | **La fase 9M corre el stream de RNG y mueve el balance agregado entero**: los planteles NPC consumen `rng` en `generarMundo` y en cada offseason, y la escalera deja de sortearse. Ninguna seed anterior a 9M reproduce su carrera. Misma familia y mismo criterio que D21/D22 — anotado de antemano para no descubrirlo tarde. La linea de base se remide en el momento (trampa T6), nunca se cita de memoria | 9M (anticipado, no implementado aun) |
+| D40 | **Tres campos del estado declarados que ningún sistema escribe nunca.** Verificado por grep sobre `/src/core` y `/src/systems` el 2026-09-04: `career.registro.dineroTotalUSD` (0 escrituras — el comentario de `state.js` dice "la fase 9 lo alimenta", y no lo alimentó), `career.registro.picos.rankedPuntos` (0) y `mundo.archirrival` (0; lo espera `dueloDeGeneracion` en `core/ficha.js:179`, que devuelve `null` siempre). No es un bug de motor: es un bug de confianza esperando a pasar, porque la primera pantalla que los pinte va a mostrar `US$0 ganado` y eso viola la regla 15. La fase T **no los dibuja**; oculta el panel hasta que alguien los alimente | 9M (dinero) / 11 (archirrival) |
+| D41 | **`log.type` no se usa en la UI.** Los 16 sistemas emisores etiquetan cada log (`amateur`, `serie`, `mercado`, `temporada`, …) y `feed.js` solo distingue `tecnico: true`. Es el gancho listo para icono, color y filtro por categoría, gratis. Lo consume la fase T | T |
 | D36 | **La partida no se guarda: un refresh borra la carrera.** Cero `localStorage` en todo el repo. Irrelevante en `localhost`, bloqueante en público con una sesión objetivo de 25-40 minutos. La arquitectura ya está lista —`state.pendiente` existe justamente para que la partida sea serializable a mitad de split y `state` es todo objetos planos—; falta exponer el contador de `mulberry32` (`core/rng.js:2`), que hoy vive en una clausura, para poder restaurar el punto del stream. No necesita backend | **P** |
 
 ---
