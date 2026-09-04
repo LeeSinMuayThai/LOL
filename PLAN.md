@@ -26,7 +26,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **8** | La ficha: el registro que acumula + la tarjeta permanente + `src/ui/` | ✅ ver `PROGRESO.md` |
 | **9** | El mercado: ofertas, contratos, salarios, la trampa del equipo grande visible | ✅ ver `PROGRESO.md` |
 | **9E** | El varado: la carrera vuelve a tener juego después del primer equipo | 🔶 **9Ea+b hechas** (el bug, cerrado) · faltan 9Ec y 9Ed |
-| **9R** | **Que el juego se juegue**: el cooldown mide splits, la tabla deja de mentir, la interrupción vuelve a ser escasa, y elegir cambia el resultado | 🔶 **9Ra/9Rb/9Re/9Rf/9R.5/9R.2/9R.0/9Rc/9Rd hechas** · faltan 9R.3/9R.4 (catálogo), 9Rg |
+| **9R** | **Que el juego se juegue**: el cooldown mide splits, la tabla deja de mentir, la interrupción vuelve a ser escasa, y elegir cambia el resultado | 🔶 **9Ra/9Rb/9Re/9Rf/9R.5/9R.2/9R.0/9Rc/9Rd/9R3a hechas** · falta 9R.3 resto (9R3b-d), 9R.4, 9Rg |
 | **9M** | **El mercado de pases**: el mundo se puebla de jugadores, la demanda existe, alguien compite por tu asiento, la escalera deja de ser un dado | ⬜ |
 | **10** | El final: retiro emergente + la tarjeta de legado | ⬜ |
 | **11** | El año: calendario, la nota de la temporada, el archirrival | ⬜ |
@@ -1871,19 +1871,35 @@ Dependencias: 9Rc → 9Rd. 9Ra/9Rb/9Re/9Rf independientes y **ya hechas**. **Med
 Absorbe y amplía la **FASE 13**, cuyo objetivo (*"≥150 opciones"*) ya está cumplido (hay 196) y aun
 así el juego se repite: la métrica correcta es **baraja elegible por turno**, no opciones totales.
 
-| Pool | Hoy | Objetivo |
-|---|---|---|
-| `partido/dentro_del_mapa.json` | 8 | 30 |
-| `partido/presion.json` / `clasico.json` | 6 / 6 | 20 / 20 |
-| `partido/postpartido.json` | **4** | 20 |
-| `rol/*.json` (5 archivos) | 11 | 50 |
-| elegibles en amateur | 19 | 45 |
-| resto | 43 | ~95 → `cobertura.js --huecos` vacío |
+| Pool | Hoy (9R3a) | Objetivo | Subfase |
+|---|---|---|---|
+| `partido/postpartido.json` | ~~4~~ **15** | 15 | ✅ 9R3a |
+| `partido/dentro_del_mapa.json` | 8 | 24 | 9R3b |
+| `partido/presion.json` / `clasico.json` | 6 / 6 | 18 / 18 | 9R3b |
+| `rol/*.json` (5 archivos) | 11 | ~45 | 9R3c |
+| elegibles en amateur | 19 | 45 | 9R3d |
+| resto | 43 | ~95 → `cobertura.js --huecos` vacío | 9R3d |
 
 Y **variación léxica, que hoy no existe** (0 arrays de frases, 100% strings fijos):
 `outcome.texto` acepta array de variantes; `FRASES_MOTIVO` (7 frases fijas narran 79 fechas/carrera)
 pasa a ~40; los pools de nombres (30×30 sílabas de handle, 20×10 de org) se amplían para que el
 mundo no suene igual en toda partida; 4 eventos que nunca salen en 100 carreras se regatean o borran.
+
+### 9R3a — la infraestructura de variantes + el pool más caliente ✅ (2026-09-04)
+
+- `resolverTexto` / `tokensUsados` / `textoResuelveCompleto` (`core/plantillas.js`) aceptan un
+  **array de variantes** en cualquier campo de texto. Selección por `hashCadena(join + splitCount)`
+  — determinista, **cero `rng`**. `hashCadena` unificado en `core/numeros.js` (estaba duplicado en
+  `rendimiento.js` y `temporada.js`).
+- `title` con 3-4 variantes en los 6 eventos que una carrera ve más: `pool_main_muerto` (+`_soloq`),
+  `pool_campeon_nuevo` (+`_soloq`), `pool_a_cual_le_metes`, `old_rival`.
+- `partido/postpartido.json` **4 → 15** (los 4 viejos con `outcome.texto` en array).
+- **Medido:** evento más repetido por carrera mediana **5 → 4**; eventos distintos **47 → 53**;
+  catálogo **97 → 108**. Check *"volumen de decisiones"*: tope del más repetido **7/11 → 4/8**.
+  Check nuevo *"La variación léxica de outcome.texto elige distinto y sin tocar el RNG"*.
+- **Nota:** `FRASES_MOTIVO` (7 → ~40) y los pools de nombres (30×30 / 20×10) **ya estaban hechos**
+  desde 9R0a — el texto de arriba es del plan viejo. Lo que falta de "variación léxica" es
+  convertir más `outcome.texto` de eventos existentes a arrays (va saliendo con cada subfase).
 
 ## 9R.4 — Los minijuegos de verdad (gancho de El Ídolo)
 
@@ -2154,8 +2170,10 @@ cerraban con una sola línea `[rendimiento]` "terminó 4º de 10" — sin decir 
 - **Check nuevo:** todo split competitivo que no clasifica a playoffs cierra con una línea
   `temporada` no técnica de qué significa la posición (0 de 2986 sin ella).
 
-> **Fase 9R.0 + 9Rd cerradas.** Sigue el orden de PLAN.md: **9R.3** (catálogo 97→~250 + variación
-> léxica). 9R0a ya adelantó las frases de motivo de fecha; el resto de 9R.3 es catálogo nuevo.
+> **Fase 9R.0 + 9Rd + 9R3a cerradas.** Sigue el orden de PLAN.md dentro de **9R.3**: **9R3b**
+> (`dentro_del_mapa` 8→24 + `presion`/`clasico` 6→18) → **9R3c** (`rol/*` 11→~45) → **9R3d**
+> (amateur + `resto` hasta `cobertura --huecos` vacío + los eventos que nunca salen). Después: 9R.4.
+> Catálogo: 97 → **108** (9R3a). Evento más repetido por carrera: mediana 5 → **4**.
 
 ---
 

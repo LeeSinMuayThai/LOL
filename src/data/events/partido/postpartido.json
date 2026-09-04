@@ -5,7 +5,7 @@
     "title": "El review de hoy",
     "description": "Apenas se corta la transmisión, el coach ya está mandando el link del VOD al grupo. El partido contra {rivalDeLaFecha} todavía no terminó de digerirse y ya hay que analizarlo.",
     "weight": 6,
-    "cooldown": 3,
+    "cooldown": 5,
     "contexto": {
       "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
       "ventana": ["regular"]
@@ -20,14 +20,20 @@
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Con todo tan fresco, ves detalles que en frío se te iban a escapar. Anotás dos cosas para la próxima fecha.",
+            "texto": [
+              "Con todo tan fresco, ves detalles que en frío se te iban a escapar. Anotás dos cosas para la próxima fecha.",
+              "En caliente reconocés la jugada exacta donde se dio vuelta. Queda anotada para no repetirla."
+            ],
             "effects": [
               { "type": "stat", "path": "player.stats.shotcalling", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "Mirarlo en caliente solo te hace revivir cada error con la sangre todavía arriba.",
+            "texto": [
+              "Mirarlo en caliente solo te hace revivir cada error con la sangre todavía arriba.",
+              "Cada pausa del VOD te devuelve el mismo nudo en el estómago. No se aprende así."
+            ],
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -42,7 +48,10 @@
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Descansás la cabeza y al otro día el mismo VOD se lee distinto, sin el peso del partido todavía encima.",
+            "texto": [
+              "Descansás la cabeza y al otro día el mismo VOD se lee distinto, sin el peso del partido todavía encima.",
+              "Dormís primero. A la mañana el review es media hora de trabajo limpio, no una hora de bronca."
+            ],
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
@@ -51,7 +60,7 @@
             "weight": 3,
             "texto": "El coach lo toma como que no te importa lo suficiente como para mirarlo ya.",
             "effects": [
-              { "type": "stat", "path": "career.sinergia", "min": -2, "max": 0, "clamp": [0, 100] }
+              { "type": "stat", "path": "career.sinergia", "min": -2, "max": -1, "clamp": [0, 100] }
             ]
           }
         ]
@@ -64,7 +73,7 @@
     "title": "Las redes después del partido",
     "description": "El clip de la jugada más comentada contra {rivalDeLaFecha} ya está circulando, con opiniones para todos los gustos en los comentarios.",
     "weight": 5,
-    "cooldown": 4,
+    "cooldown": 5,
     "contexto": {
       "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
       "ventana": ["regular"]
@@ -79,14 +88,20 @@
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Entre todo el ruido hay algo de reconocimiento genuino que te sube el ánimo.",
+            "texto": [
+              "Entre todo el ruido hay algo de reconocimiento genuino que te sube el ánimo.",
+              "Un par de mensajes de gente que sabe te dejan pensando que no jugaste tan mal como sentías."
+            ],
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
-            "texto": "Como siempre, te quedás con los tres comentarios negativos en vez de los cien positivos.",
+            "texto": [
+              "Como siempre, te quedás con los tres comentarios negativos en vez de los cien positivos.",
+              "Encontrás el único hilo que te destroza y lo leés entero dos veces. Clásico."
+            ],
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -123,7 +138,7 @@
     "title": "La cena de después",
     "description": "Terminado el partido contra {rivalDeLaFecha}, alguien propone pedir algo y comer todos juntos en la gaming house antes de que cada uno se encierre en su cuarto.",
     "weight": 5,
-    "cooldown": 4,
+    "cooldown": 5,
     "contexto": {
       "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
       "ventana": ["regular"],
@@ -139,7 +154,10 @@
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Se ríen de cualquier cosa menos del partido, y eso también arma equipo.",
+            "texto": [
+              "Se ríen de cualquier cosa menos del partido, y eso también arma equipo.",
+              "{jungla} cuenta una anécdota vieja y la mesa se relaja. El partido queda a un costado por una hora."
+            ],
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
@@ -148,7 +166,7 @@
             "weight": 3,
             "texto": "La charla deriva igual al partido y termina siendo un review informal que nadie pidió.",
             "effects": [
-              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": -1, "clamp": [0, 100] }
             ]
           }
         ]
@@ -170,7 +188,7 @@
             "weight": 4,
             "texto": "Te perdés la mesa una vez más, y alguien lo comenta como al pasar.",
             "effects": [
-              { "type": "stat", "path": "career.sinergia", "min": -2, "max": 0, "clamp": [0, 100] }
+              { "type": "stat", "path": "career.sinergia", "min": -2, "max": -1, "clamp": [0, 100] }
             ]
           }
         ]
@@ -207,7 +225,7 @@
             "weight": 4,
             "texto": "Poner en palabras cómo estuvo el partido te hace notar cosas que preferías no pensar todavía.",
             "effects": [
-              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": -1, "clamp": [0, 100] }
             ]
           }
         ]
@@ -230,6 +248,687 @@
             "texto": "El manager insiste con una pregunta más, y el \"todo bien\" no le alcanza.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_vuelo_de_vuelta",
+    "category": "partido_postpartido",
+    "title": "El vuelo de vuelta",
+    "description": "El partido contra {rivalDeLaFecha} fue de visitante y ahora quedan cuatro horas de aeropuerto y avión con el resultado todavía dando vueltas.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "dormir_en_el_avion",
+        "label": "Bajar la persiana y dormir",
+        "descripcion": "El cuerpo pide descanso más que cualquier otra cosa. El análisis puede esperar a la gaming house.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": [
+              "Dormís casi todo el vuelo y llegás con la cabeza en cero, listo para arrancar la semana.",
+              "Te despertás cuando bajan el tren de aterrizaje. El partido quedó a mil kilómetros atrás."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Dormís mal, en tandas de veinte minutos, y llegás peor que si te hubieras quedado despierto.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "repasar_en_la_tablet",
+        "label": "Repasar el partido en la tablet",
+        "descripcion": "Aprovechás las horas muertas para adelantar el review vos solo, antes de que lo haga el coach.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Llegás al review del coach con tus propias notas ya hechas. La reunión rinde el doble.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.shotcalling", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Cuatro horas mirando la misma derrota en una pantalla chica. Bajás del avión fundido.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_clip_que_se_viraliza",
+    "category": "partido_postpartido",
+    "title": "El clip de la fecha",
+    "description": "Una jugada tuya del partido contra {rivalDeLaFecha} se está compartiendo sola. Para bien o para mal, mañana la va a haber visto todo el mundo.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "surfear_la_ola",
+        "label": "Subirte a la ola y postear",
+        "descripcion": "Le ponés tu propia leyenda al clip antes de que se la pongan otros.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "Tu posteo la rompe y el clip pasa de jugada a momento de la temporada.",
+              "El caption que le ponés se cita más que la jugada misma. Sabés jugar este juego también."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El clip envejece mal en dos horas y tu posteo queda ahí, un poco fuera de tiempo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": -1, "max": 1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejar_que_hable_solo",
+        "label": "No decir nada y que hable solo",
+        "descripcion": "Si la jugada vale, no necesita que la expliques. Si no vale, mejor no señalarla.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El clip circula igual y suma más porque no lo forzaste. Queda como algo que pasó, no como algo que buscaste.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Sin nadie que lo empuje, el clip se apaga para el mediodía. Una jugada linda y nada más.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 0, "max": 2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_llamada_a_casa",
+    "category": "partido_postpartido",
+    "title": "La llamada a casa",
+    "description": "Después del partido contra {rivalDeLaFecha}, en tu casa están despiertos esperando que llames para contar cómo te fue.",
+    "weight": 4,
+    "cooldown": 6,
+    "contexto": {
+      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "llamar_ahora",
+        "label": "Llamar ahora, aunque estés cansado",
+        "descripcion": "Diez minutos de hablar de cualquier cosa con gente que no te evalúa por el KDA.",
+        "weight": 6,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": [
+              "Escuchar sus voces te baja las pulsaciones más rápido que cualquier otra cosa. El partido se achica a su tamaño real.",
+              "Terminás hablando del perro y de la comida, no del partido. Colgás mejor de lo que empezaste."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 5, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Preguntan por el resultado y no lográs que la charla salga de ahí. Cortás con un poco más de bronca.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "mandar_un_mensaje",
+        "label": "Mandar un mensaje y llamar mañana",
+        "descripcion": "Hoy no te dan las fuerzas para una llamada. Un texto corto y a dormir.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Entienden sin drama y quedan para mañana. Guardar la energía también es cuidarse.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te vas a dormir con la sensación de que les debías la llamada. No es grave, pero está ahí.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_scrim_de_mañana",
+    "category": "partido_postpartido",
+    "title": "Ya hay bloque para mañana",
+    "description": "Todavía estás guardando el equipo y el coach ya avisó que mañana a las 11 hay scrims contra otro equipo de la liga. El partido contra {rivalDeLaFecha} pasó a ser pasado.",
+    "weight": 4,
+    "cooldown": 6,
+    "contexto": {
+      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "aceptar_el_ritmo",
+        "label": "Aceptar el ritmo y preparar mañana",
+        "descripcion": "El calendario no espera a que proceses nada. Dejás el partido de hoy donde está y mirás para adelante.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Pasar de página rápido te sale bien: mañana llegás al bloque enchufado y sin arrastrar la fecha de hoy.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Forzás el reseteo pero la fecha de hoy sigue ahí, sin digerir. Mañana la vas a arrastrar igual.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pedir_la_mañana",
+        "label": "Pedir arrancar más tarde",
+        "descripcion": "Le decís al coach que el equipo necesita dormir bien antes que un bloque a las 11.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El coach lo piensa y corre el bloque un par de horas. El equipo llega descansado y te lo agradece por lo bajo.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El coach no afloja: el calendario es el calendario. Quedás como el que pide excepciones.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_entrevista_flash",
+    "category": "partido_postpartido",
+    "title": "La nota en el escenario",
+    "description": "Te agarran para la entrevista flash apenas salís del server. Micrófono en la cara, el resultado contra {rivalDeLaFecha} todavía caliente y una cámara en vivo.",
+    "weight": 4,
+    "cooldown": 6,
+    "contexto": {
+      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "jugar_al_personaje",
+        "label": "Jugarla de personaje",
+        "descripcion": "Le das a la gente lo que vino a buscar: una frase, una chicana, un titular.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "Tirás la frase justa y el recorte es tuyo hasta el próximo partido. La gente te quiere en cámara.",
+              "Salís gracioso y filoso en la medida exacta. El clip de la nota compite con el de la jugada."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te pasás de rosca con una chicana y la nota se lee como que faltaste el respeto. Vas a tener que ganar para taparlo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "contestar_sobrio",
+        "label": "Contestar sobrio y corto",
+        "descripcion": "Frases de manual, nada que se pueda recortar mal. Sos jugador, no showman.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Salís correcto y sin aristas. Nadie va a hacer un clip, y para vos eso es un buen resultado.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Tan de manual contestás que un comentarista bromea con que te programaron. Inofensivo, pero queda.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": -1, "max": 1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_mvp_de_la_fecha",
+    "category": "partido_postpartido",
+    "title": "El MVP de la jornada",
+    "description": "La liga publica su elección del mejor jugador de la fecha. Después del partido contra {rivalDeLaFecha}, tu nombre estaba en la conversación.",
+    "weight": 4,
+    "cooldown": 7,
+    "contexto": {
+      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "tomarlo_como_combustible",
+        "label": "Tomarlo como combustible",
+        "descripcion": "Salga o no salga tu nombre, lo usás para la próxima. El reconocimiento es una herramienta, no un premio.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "Te lo dan y en vez de aflojarte te enciende: querés que la próxima no quede ni en duda.",
+              "No te lo dan por poco, y esa bronca justa te sirve de motor toda la semana."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Le das más vueltas de las que querés admitir a por qué lo eligieron a otro. No es sano, pero pasa.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "no_darle_bola",
+        "label": "No darle bola al ranking",
+        "descripcion": "Los premios individuales de temporada regular no ganan títulos. Seguís de largo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Ni lo mirás. La cabeza en el equipo y en la tabla, que es lo único que se cobra en playoffs.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Decís que no te importa y un poco te importa. Está bien, sos humano.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 0, "max": 2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_grupo_del_equipo",
+    "category": "partido_postpartido",
+    "title": "El grupo del equipo después",
+    "description": "En el chat del equipo se está armando la conversación del post partido contra {rivalDeLaFecha}: alguien tira un audio largo, alguien manda un sticker, alguien pide hablarlo mañana.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
+      "ventana": ["regular"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "poner_la_cara",
+        "label": "Escribir lo que pensás sin filtro",
+        "descripcion": "Si algo no funcionó, lo decís ahora que está fresco, aunque incomode.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": [
+              "Lo decís bien y {jungla} te sigue. La charla se pone honesta y el equipo sale más unido que antes del partido.",
+              "Tu mensaje abre la conversación que hacía falta. Nadie se ofende y algo se acomoda."
+            ],
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": 2, "max": 5, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Cae mal el timing. Alguien lo lee como reproche y el chat se enfría en dos mensajes.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": -4, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejarlo_para_la_reunion",
+        "label": "Proponer hablarlo en la reunión",
+        "descripcion": "El chat en caliente no es el lugar. Pedís bajar un cambio y hablarlo con el coach delante.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Todos coinciden en que mejor mañana. Se apaga el chat sin que nadie diga una boludez de la que arrepentirse.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Postergarlo deja a un par con la bronca guardada. En la reunión ya no está tan fresco y se dice a medias.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": -1, "max": 1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_racha_en_tu_cabeza",
+    "category": "partido_postpartido",
+    "title": "Las cuentas propias",
+    "description": "Terminado el partido contra {rivalDeLaFecha}, hacés la cuenta que nadie te pidió: cómo venís, cuántas ganaste de las últimas, si esto es una racha o un bajón.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "cortar_la_cuenta",
+        "label": "Cortar la cuenta ahí",
+        "descripcion": "Reconocés el bucle y lo frenás antes de que te coma la noche.",
+        "weight": 6,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": [
+              "Te obligás a soltarlo: un partido es un partido. Dormís sin la calculadora en la cabeza.",
+              "Cerrás la libreta mental. Mañana el coach te va a dar los números reales; hoy no hacen falta."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Lo intentás y la cuenta vuelve igual, más chica, cada vez que cerrás los ojos.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "anotarlo_para_el_coach",
+        "label": "Anotar lo que sentís y llevárselo al coach",
+        "descripcion": "En vez de rumiarlo solo, lo escribís para hablarlo con alguien que tenga el cuadro completo.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Pasarlo a papel le saca dramatismo. Mañana lo hablás con el coach y resulta que venís mejor de lo que sentías.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "career.sinergia", "min": 0, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo escribís y al releerlo suena más grave de lo que querías. Te vas a dormir con eso encima.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_analista_te_escribe",
+    "category": "partido_postpartido",
+    "title": "El analista te manda un audio",
+    "description": "El analista del equipo te escribe aparte del grupo: vio algo puntual de tu {rol} en el partido contra {rivalDeLaFecha} y te lo quiere pasar antes de que se le mezcle con el resto.",
+    "weight": 4,
+    "cooldown": 6,
+    "contexto": {
+      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
+      "ventana": ["regular"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "escucharlo_ahora",
+        "label": "Escucharlo ahora y responder",
+        "descripcion": "Le das cinco minutos mientras está fresco, aunque estés cansado.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tiene razón en lo que marca y lo ves al toque en tu cabeza. Mañana ya vas a la práctica con eso resuelto.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "No terminás de coincidir con lo que dice, pero lo charlan sin pelearse y quedan en revisarlo con VOD.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "guardarlo_para_mañana",
+        "label": "Guardarlo para escucharlo con la cabeza fresca",
+        "descripcion": "Le avisás que lo escuchás a primera hora. Ahora no vas a retener nada.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "A la mañana lo escuchás con un café y lo aprovechás de verdad, en vez de que te entre por una oreja.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Se te cruza con mil cosas a la mañana y lo terminás escuchando a las apuradas antes del bloque.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 0, "max": 1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dormir_despues_de_esto",
+    "category": "partido_postpartido",
+    "title": "Bajar la adrenalina",
+    "description": "Son las dos de la mañana, mañana hay práctica y el cuerpo todavía está en modo partido después de lo de {rivalDeLaFecha}. Dormir no va a ser automático.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "rutina_de_bajada",
+        "label": "Hacer la rutina de bajada aunque dé fiaca",
+        "descripcion": "Ducha, pantalla lejos, algo tranquilo. Lo que el preparador te repite siempre.",
+        "weight": 6,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": [
+              "La rutina funciona: a los cuarenta minutos estás dormido y mañana llegás entero al bloque.",
+              "Cuesta arrancarla, pero a mitad de camino ya sentís que el cuerpo afloja. Dormís bien."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Hacés todo bien y el cuerpo tarda igual. Dormís poco, pero sin la culpa de no haberlo intentado.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 0, "max": 2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "unas_partidas_para_cortar",
+        "label": "Tirar unas partidas para descargar",
+        "descripcion": "Un par de normales tontas para sacarte el partido de encima. Lo que siempre termina mal y siempre volvés a hacer.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "Contra todo pronóstico, un par de partidas relajadas te descargan y te acostás liviano.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": [
+              "Son las cuatro cuando cerrás el cliente. Mañana el bloque va a ser un castigo.",
+              "Una se hace tres, una mala te calienta, y de golpe perdiste la noche entera."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "los_numeros_de_la_fecha",
+    "category": "partido_postpartido",
+    "title": "La planilla de la jornada",
+    "description": "Sale la planilla oficial de la fecha contra {rivalDeLaFecha}: daño, visión, oro por minuto, participación en kills. Los números nunca cuentan todo, pero cuentan algo.",
+    "weight": 4,
+    "cooldown": 7,
+    "contexto": {
+      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
+      "ventana": ["regular"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "leerlos_con_criterio",
+        "label": "Leerlos con criterio, sin regodearte ni castigarte",
+        "descripcion": "Buscás la tendencia, no el número suelto de un partido.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Ves un patrón chico que se repite hace tres fechas y que en caliente no habías notado. Eso sí sirve.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.shotcalling", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Los números de hoy no dicen nada nuevo. Un partido, ruido estadístico, seguís de largo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 0, "max": 2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "compararte_con_el_rival",
+        "label": "Compararte línea por línea con tu marca",
+        "descripcion": "Vas directo a la columna del jugador que te tocó enfrente y medís todo contra eso.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Le ganaste casi todas las columnas y eso te da una base sólida para pararte esta semana.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Te pasó en las columnas que más te importan y te quedás con eso, aunque el equipo haya ganado.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
           }
         ]

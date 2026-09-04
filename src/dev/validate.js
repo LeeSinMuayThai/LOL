@@ -13,7 +13,7 @@ import {
   aplicarLP, desdePuntos, puntosAbsolutos, esApice, rangoAproximado,
   servidorConCutoffs, servidorDeLaPartida
 } from '../core/ranked.js';
-import { TOKENS, tokensUsados } from '../core/plantillas.js';
+import { TOKENS, tokensUsados, resolverTexto } from '../core/plantillas.js';
 import { RUTINAS } from '../core/rutinas.js';
 import { campeonesEnMeta, multiplicadorDeMeta, factorDeCampeon, pesoDePick, lecturaDePick } from '../core/ajusteMeta.js';
 import { campeonesDisponibles, entradaDePool } from '../core/pool.js';
@@ -666,7 +666,59 @@ check('Todo texto de contenido usa tokens que existen', () => {
   for (const pieza of textosDeEventos()) {
     for (const token of tokensUsados(pieza.texto)) {
       if (!TOKENS[token]) {
-        throw new Error(`token desconocido "{${token}}" en ${pieza.id}: ${pieza.texto}`);
+        throw new Error(`token desconocido "{${token}}" en ${pieza.id}: ${JSON.stringify(pieza.texto)}`);
+      }
+    }
+  }
+});
+
+check('La variación léxica de outcome.texto elige distinto y sin tocar el RNG (fase 9R.3)', () => {
+  // `outcome.texto` acepta un array de variantes que se narran alternadas para
+  // que la misma opción no cuente igual la quinta vez. La selección tiene que
+  // ser (a) determinista y sin `rng` —misma seed, misma historia—, (b) sensible
+  // al split —si no, el array no sirve de nada— y (c) tiene que resolver los
+  // tokens de TODAS las variantes, no solo la elegida.
+  const variantes = [
+    'Se te fue en la última pelea contra {rivalDeLaFecha}.',
+    'La cerraste vos contra {rivalDeLaFecha}, y se notó.',
+    'Terminó pareja contra {rivalDeLaFecha}, moneda al aire.'
+  ];
+  const estadoBase = {
+    player: { splitCount: 0 },
+    career: { temporada: { fechaEnCurso: { rival: 'Hanwha Life' } } }
+  };
+
+  const elegidas = new Set();
+  for (let split = 0; split < 12; split += 1) {
+    const state = { ...estadoBase, player: { splitCount: split } };
+    const salida = resolverTexto(variantes, state);
+    if (salida.includes('{')) {
+      throw new Error(`una variante no resolvió sus tokens en el split ${split}: ${salida}`);
+    }
+    elegidas.add(salida);
+  }
+  if (elegidas.size < 2) {
+    throw new Error(`el array de variantes narró siempre lo mismo en 12 splits (${elegidas.size} distinta/s)`);
+  }
+
+  // Determinismo: el mismo (texto, split) elige siempre igual.
+  const a = resolverTexto(variantes, { player: { splitCount: 5 }, career: { temporada: { fechaEnCurso: { rival: 'T1' } } } });
+  const b = resolverTexto(variantes, { player: { splitCount: 5 }, career: { temporada: { fechaEnCurso: { rival: 'T1' } } } });
+  if (a !== b) {
+    throw new Error(`misma seed, dos resultados: "${a}" vs "${b}"`);
+  }
+
+  // Y toda variante de todo array real del catálogo resuelve en su contexto
+  // declarado — la misma garantía que el check de tokens, extendida a arrays.
+  for (const pieza of textosDeEventos()) {
+    if (!Array.isArray(pieza.texto)) {
+      continue;
+    }
+    for (const v of pieza.texto) {
+      for (const token of tokensUsados(v)) {
+        if (!TOKENS[token]) {
+          throw new Error(`variante de ${pieza.id} usa token inexistente {${token}}`);
+        }
       }
     }
   }
@@ -735,14 +787,25 @@ check('Toda opción se lee antes y todo resultado se cuenta después', () => {
   // Una opcion sin `descripcion` es un boton sin apuesta: no sabes que estas
   // arriesgando. Un outcome sin `texto` devuelve un diff en vez de una historia
   // — "Hype +8, Mentalidad -1" y nunca te enteras de que paso.
+  //
+  // Fase 9R.3: `outcome.texto` acepta un array de variantes. Un array vale si
+  // tiene ≥2 entradas y todas son strings no vacíos — un array de una sola
+  // variante es un string disfrazado, y uno con un hueco imprime "".
+  const textoNarrativoValido = (texto) => {
+    if (Array.isArray(texto)) {
+      return texto.length >= 2 && texto.every((v) => typeof v === 'string' && v.trim() !== '');
+    }
+    return typeof texto === 'string' && texto.trim() !== '';
+  };
+
   for (const evento of TODOS_LOS_EVENTOS) {
     for (const opcion of evento.options) {
       if (typeof opcion.descripcion !== 'string' || opcion.descripcion.trim() === '') {
         throw new Error(`${evento.id}/${opcion.id}: opción sin descripcion`);
       }
       for (const [i, outcome] of opcion.outcomes.entries()) {
-        if (typeof outcome.texto !== 'string' || outcome.texto.trim() === '') {
-          throw new Error(`${evento.id}/${opcion.id}: outcome ${i} sin texto narrativo`);
+        if (!textoNarrativoValido(outcome.texto)) {
+          throw new Error(`${evento.id}/${opcion.id}: outcome ${i} sin texto narrativo (string no vacío o array de ≥2 variantes)`);
         }
       }
     }
@@ -1958,8 +2021,8 @@ check('El volumen de decisiones de la carrera bajó de la cinta transportadora (
   if (medEv > 42) {
     throw new Error(`decisiones de "eventos" por carrera: mediana ${medEv} (tope 42; antes de 9R: 68)`);
   }
-  if (medRep > 7 || maxRep > 11) {
-    throw new Error(`evento más repetido por carrera: mediana ${medRep}, máximo ${maxRep} (topes 7 / 11; antes de 9R: 14 / 32). 9R.3 (catálogo a escala) lo baja a ≤4 / ≤8.`);
+  if (medRep > 4 || maxRep > 8) {
+    throw new Error(`evento más repetido por carrera: mediana ${medRep}, máximo ${maxRep} (topes 4 / 8; antes de 9R: 14 / 32; tras 9Ra-f: 5 / 7). 9R.3 baja los topes al ampliar los pools calientes.`);
   }
 });
 
@@ -3061,6 +3124,9 @@ check('pool_a_cual_le_metes sale unas pocas veces por carrera, no nunca y no sie
   // nunca salen del amateurismo (más de la mitad de la población, trampa T6)
   // diluiría la mediana a 0 aunque el evento funcione perfecto para quien sí
   // llega.
+  // Fase 9R3a: `title` puede ser un array de variantes. El evento se cuenta si el
+  // log arranca con CUALQUIERA de sus titulares posibles.
+  const titulares = Array.isArray(evento.title) ? evento.title : [evento.title];
   const conteos = [];
   for (let seed = 1; seed <= 200; seed += 1) {
     const rng = mulberry32(seed);
@@ -3074,7 +3140,9 @@ check('pool_a_cual_le_metes sale unas pocas veces por carrera, no nunca y no sie
       if (state.phase === 'profesional') {
         llegoAPro = true;
       }
-      veces += state.logs.slice(antes).filter((log) => log.type === 'event' && log.titulo?.startsWith(evento.title)).length;
+      veces += state.logs.slice(antes).filter((log) => (
+        log.type === 'event' && titulares.some((t) => log.titulo?.startsWith(t))
+      )).length;
     }
     if (llegoAPro) {
       conteos.push(veces);

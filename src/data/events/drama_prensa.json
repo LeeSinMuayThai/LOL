@@ -129,7 +129,12 @@
   {
     "id": "old_rival",
     "category": "drama_prensa",
-    "title": "Otra vez {rival} enfrente",
+    "title": [
+      "Otra vez {rival} enfrente",
+      "De nuevo cara a cara con {rival}",
+      "{rival} otra vez del otro lado",
+      "Se repite el cruce con {rival}"
+    ],
     "description": "{rival} debutó tu mismo año y el cruce ya tiene historia. La prensa lo pone en la portada de la jornada antes de que se juegue.",
     "weight": 6,
     "cooldown": 4,

@@ -1,4 +1,5 @@
 import { etiquetaRol } from '../data/roles.js';
+import { hashCadena } from './numeros.js';
 import { campeonesEnMeta, campeonesMuertos } from './ajusteMeta.js';
 import { campeonesDisponibles, principalDelPool, campeonNuevoPendiente } from './pool.js';
 
@@ -52,7 +53,20 @@ export const TOKENS = {
 
 const PATRON_TOKEN = /\{(\w+)\}/g;
 
+// `outcome.texto` (y cualquier campo de texto de un evento) puede ser un array de
+// variantes en vez de un string: "salió bien" dicho de cuatro formas para que la
+// misma opción no narre igual la quinta vez. La variante se elige con un hash
+// determinista del propio texto + el split en curso — sin tocar el RNG (regla
+// invariable 1) y estable: la misma seed cuenta la misma historia dos veces.
+function elegirVariante(variantes, state) {
+  const semilla = variantes.join('¦') + String(state?.player?.splitCount ?? 0);
+  return variantes[hashCadena(semilla) % variantes.length];
+}
+
 export function tokensUsados(texto) {
+  if (Array.isArray(texto)) {
+    return texto.flatMap((variante) => tokensUsados(variante));
+  }
   return [...String(texto ?? '').matchAll(PATRON_TOKEN)].map(([, token]) => token);
 }
 
@@ -61,7 +75,8 @@ export function tokensUsados(texto) {
 // Devolver el marcador crudo hace que el bug se vea en pantalla y que validate
 // lo pueda detectar en vez de imprimir "undefined" en silencio.
 export function resolverTexto(texto, state) {
-  return String(texto ?? '').replace(PATRON_TOKEN, (crudo, token) => {
+  const crudoTexto = Array.isArray(texto) ? elegirVariante(texto, state) : texto;
+  return String(crudoTexto ?? '').replace(PATRON_TOKEN, (crudo, token) => {
     const getter = TOKENS[token];
     if (!getter) {
       return crudo;
@@ -72,5 +87,8 @@ export function resolverTexto(texto, state) {
 }
 
 export function textoResuelveCompleto(texto, state) {
+  if (Array.isArray(texto)) {
+    return texto.every((variante) => textoResuelveCompleto(variante, state));
+  }
   return tokensUsados(resolverTexto(texto, state)).length === 0;
 }

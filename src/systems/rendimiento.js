@@ -1,6 +1,6 @@
 import { gauss, chance, roll } from '../core/rng.js';
 import { crearLog } from '../core/log.js';
-import { clamp, clampStat } from '../core/numeros.js';
+import { clamp, clampStat, hashCadena } from '../core/numeros.js';
 import { registrarEnHistorial } from '../core/contexto.js';
 import { ligaOZonaDeCarrera } from '../core/competicion.js';
 import { esCierreDeTemporada } from '../core/serie.js';
@@ -41,14 +41,7 @@ export function calcularRendimiento(state, rng) {
 // bracket (fase 4), así que ahí es posición + momentum, no playoffs. Varias
 // variantes por banda, elegidas de forma determinista (sin tocar el `rng`),
 // para que un jugador dominante en una liga chica no lea "arriba de todo"
-// diez splits seguidos.
-function hashCorto(texto) {
-  let h = 0;
-  for (const caracter of String(texto ?? '')) {
-    h = (h * 31 + caracter.charCodeAt(0)) | 0;
-  }
-  return Math.abs(h);
-}
+// diez splits seguidos. El hash determinista vive en core/numeros.js desde 9R.3.
 
 const PARADA_ZONA = {
   dentro: [
@@ -87,7 +80,7 @@ const PARADA_TABLA = {
 };
 
 function variantePorSemilla(lista, semilla) {
-  return lista[hashCorto(semilla) % lista.length];
+  return lista[hashCadena(semilla) % lista.length];
 }
 
 function textoDeParadaEnLaTabla(nombreLiga, liga, posicion, equipos, esCierre, juegaSerie, splitCount) {

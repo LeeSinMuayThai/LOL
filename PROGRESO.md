@@ -33,6 +33,65 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-04 — Fase 9R3a: la variación léxica existe
+
+Primer commit de la **fase 9R.3** (catálogo 97 → ~280 + variación léxica). Feedback del usuario:
+*"las decisiones se repiten, son siempre las mismas ~9 situaciones"*, *"el mundo suena igual toda
+la partida"*. 9R3a no escribe las ~180 piezas de una vez: pone la **infraestructura de variantes**
+que 9R.3 necesita y ataca el **pool más caliente** (la reacción post-partido) y los **6 eventos
+que una carrera ve más veces**.
+
+#### El problema, medido
+
+`outcome.texto` (y `title`, y todo el texto de un evento) era **100% strings fijos, 0 arrays**. El
+evento más repetido de una carrera salía **mediana 5, máx 7** veces palabra por palabra (tras
+9Ra-f; antes de 9R eran 14 / 32). El check ya avisaba: *"9R.3 baja los topes a ≤4 / ≤8"*. Medido
+por categoría: los que más se repiten dentro de UNA carrera son `pool_main_muerto` /
+`pool_campeon_nuevo` (su título lleva el nombre del campeón, fijo en la carrera → *"Tu Poppy quedó
+a contramano"* ×6) y la reacción post-partido (`partido/postpartido.json`: **4 eventos** para todas
+las fechas marcadas de la carrera).
+
+#### El arreglo
+
+- **`resolverTexto` / `tokensUsados` / `textoResuelveCompleto` (`core/plantillas.js`) aceptan un
+  array de variantes.** La variante se elige con `hashCadena(variantes.join + splitCount) %
+  n` — determinista, **cero `rng`** (regla invariable 1), y cambia split a split. Sirve para
+  cualquier campo: `title`, `description`, `label`, `descripcion`, `outcome.texto`.
+- **`hashCadena`** unificado en `core/numeros.js`. Nació duplicado en `systems/rendimiento.js` y
+  `systems/temporada.js` (9R0a/9R0d); ahora lo importan de ahí. Movimiento puro, sin `rng`.
+- **`title` con variantes** en los 6 eventos que una carrera ve más: `pool_main_muerto` (+`_soloq`),
+  `pool_campeon_nuevo` (+`_soloq`), `pool_a_cual_le_metes`, `old_rival`. 3-4 titulares por evento
+  (*"Tu {main} quedó a contramano"* / *"El parche dejó a {main} sin lugar"* / *"{main} ya no entra
+  en el meta"*).
+- **`partido/postpartido.json`: 4 → 15 eventos.** Los 4 viejos ahora con `outcome.texto` en array;
+  11 nuevos (el vuelo de vuelta, el clip que se viraliza, la llamada a casa, el bloque de mañana,
+  la nota en el escenario, el MVP de la jornada, el grupo del equipo, las cuentas propias, el audio
+  del analista, bajar la adrenalina, la planilla de la jornada).
+
+#### Números medidos
+
+- Evento más repetido por carrera: **mediana 5 → 4**, máx **7 → 7** (N=150/200/300, estable).
+- Eventos distintos por carrera: mediana **47 → 53**.
+- Catálogo: **97 → 108 eventos**.
+- `simulate.js 1000`: 0 crashes · determinismo intra-versión intacto.
+
+#### Checks nuevos / cambiados
+
+- *La variación léxica de outcome.texto elige distinto y sin tocar el RNG* (nuevo): un array de 3
+  variantes narra ≥2 distintas en 12 splits, el mismo `(texto, split)` elige siempre igual, y toda
+  variante de todo array real del catálogo resuelve sus tokens.
+- *Toda opción se lee antes y todo resultado se cuenta después*: `outcome.texto` vale si es string
+  no vacío **o array de ≥2 strings no vacíos** (antes exigía string).
+- *El volumen de decisiones de la carrera bajó de la cinta transportadora*: tope del evento más
+  repetido **7 / 11 → 4 / 8**.
+
+#### Colateral
+
+- **D37 (familia):** 11 eventos nuevos en `TODOS_LOS_EVENTOS` → el `weightedPick` de
+  `candidatosDePartido` y del resto del catálogo cae distinto para la misma seed. Ninguna seed
+  vieja reproduce su carrera; determinismo intra-versión intacto. Selección de variante por
+  `hashCadena`: no toca el stream.
+
 ### 2026-09-03 — Fase 9Rd: se para cuando hay algo en juego
 
 Segundo y último commit del par 9Rc/9Rd ("que elegir el campeón importe"). 9Rc unificó **cuánto

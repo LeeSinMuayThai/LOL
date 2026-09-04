@@ -242,7 +242,12 @@
   {
     "id": "pool_main_muerto",
     "category": "pool",
-    "title": "Tu {main} quedó a contramano",
+    "title": [
+      "Tu {main} quedó a contramano",
+      "El parche dejó a {main} sin lugar",
+      "{main} ya no entra en el meta",
+      "Se te enfrió {main}"
+    ],
     "description": "El campeón con el que más jugaste este año se cayó a la mitad de abajo de la tier list de tu rol. Seguís teniendo la maestría; el régimen actual ya no te la valora igual.",
     "weight": 6,
     "cooldown": 6,
@@ -306,7 +311,12 @@
   {
     "id": "pool_main_muerto_soloq",
     "category": "pool",
-    "title": "Tu {main} quedó a contramano",
+    "title": [
+      "Tu {main} quedó a contramano",
+      "El parche dejó a {main} sin lugar",
+      "{main} ya no entra en el meta",
+      "Se te enfrió {main} en la ladder"
+    ],
     "description": "El campeón con el que más jugaste este año se cayó a la mitad de abajo de la tier list de tu rol. Seguís teniendo la maestría; el régimen actual ya no te la valora igual en el champ select.",
     "weight": 6,
     "cooldown": 6,
@@ -370,7 +380,12 @@
   {
     "id": "pool_campeon_nuevo",
     "category": "pool",
-    "title": "Salió {campeonNuevo}",
+    "title": [
+      "Salió {campeonNuevo}",
+      "{campeonNuevo} llegó con el parche",
+      "Hay {campeonNuevo} nuevo para tu línea",
+      "El parche soltó a {campeonNuevo}"
+    ],
     "description": "El parche trajo un campeón nuevo para tu línea. Todavía nadie lo domina: aprenderlo ahora te pone adelante de todos, o te deja desprevenido si no te sale a tiempo para el próximo partido.",
     "weight": 7,
     "cooldown": 6,
@@ -433,7 +448,12 @@
   {
     "id": "pool_campeon_nuevo_soloq",
     "category": "pool",
-    "title": "Salió {campeonNuevo}",
+    "title": [
+      "Salió {campeonNuevo}",
+      "{campeonNuevo} llegó con el parche",
+      "Hay {campeonNuevo} nuevo para tu línea",
+      "El parche soltó a {campeonNuevo}"
+    ],
     "description": "El parche trajo un campeón nuevo para tu línea. Todavía nadie lo domina: aprenderlo ahora te pone adelante de todos en tu división, o te deja desprevenido si no te sale a tiempo para la próxima seguidilla de rankeds.",
     "weight": 7,
     "cooldown": 6,
@@ -559,7 +579,11 @@
   {
     "id": "pool_a_cual_le_metes",
     "category": "pool",
-    "title": "¿A cuál le metés estas semanas?",
+    "title": [
+      "¿A cuál le metés estas semanas?",
+      "¿Dónde ponés las horas de práctica?",
+      "El hueco entre partidos: ¿a cuál?"
+    ],
     "description": "Tenés un hueco entre partidos para practicar en serio. Podés pulir al que ya es tu bandera, o meterle horas a uno nuevo que el régimen actual está pidiendo.",
     "weight": 5,
     "cooldown": 6,

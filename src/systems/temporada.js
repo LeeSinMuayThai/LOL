@@ -1,5 +1,6 @@
 import { weightedPick, chance } from '../core/rng.js';
 import { crearLog } from '../core/log.js';
+import { hashCadena } from '../core/numeros.js';
 import { calcularContexto } from '../core/contexto.js';
 import { resolverTexto } from '../core/plantillas.js';
 import { ligaOZonaDeCarrera } from '../core/competicion.js';
@@ -93,16 +94,8 @@ export const FRASES_MOTIVO = {
   ]
 };
 
-function hashCorto(texto) {
-  let h = 0;
-  for (const caracter of String(texto ?? '')) {
-    h = (h * 31 + caracter.charCodeAt(0)) | 0;
-  }
-  return Math.abs(h);
-}
-
 function variante(lista, semilla) {
-  return lista[hashCorto(semilla) % lista.length];
+  return lista[hashCadena(semilla) % lista.length];
 }
 
 function etiquetaDeMotivo(motivo, semilla = '') {
