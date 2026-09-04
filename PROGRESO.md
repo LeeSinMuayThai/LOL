@@ -33,6 +33,68 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-04 — Fase 9R3d: el prólogo amateur tiene decisiones propias
+
+Cuarto commit de 9R.3. 9R3a/b/c ampliaron los pools calientes de la fase profesional (postpartido,
+fecha marcada, rol). 9R3d hace lo mismo con **el otro extremo de la carrera**: la etapa amateur,
+donde el jugador pasa los primeros splits y solo tenía **~19 eventos elegibles** (11 con `etapa:
+["amateur"]` explícita + genéricos de salud/pool).
+
+#### El problema, medido
+
+La fase amateur es soloQ, familia, colegio, sueño, scouts y la ladder — y casi todo eso lo
+cubrían **3 eventos** (`soloq_precarrera.json`: `scout_call`, `family_pressure`, `ranked_streak`).
+Los momentos `amateur_sin_pc` / `amateur_al_limite` / `amateur_prometedor` (marcas `pc_confiscada`
+/ `riesgo_familiar` / `en_el_radar`) se llenaban **solo con genéricos**: ni un evento gateaba sobre
+`riesgo_familiar` o `en_el_radar`. La matriz de cobertura los daba "sin huecos" al listón de 3,
+pero cada celda amateur rozaba el piso.
+
+#### El arreglo (contenido, data-only)
+
+- **`soloq_precarrera.json` 3 → 15** (+12). El grind sin equipo: los inhouse de conocidos, un pro
+  smurfeando en tu partida, un clip tuyo que se despega, la deuda de sueño que ya te pasa factura
+  (`deuda_sueno`), el bootcamp que te armás vos solo, el roster amateur que te llama (`en_el_radar`),
+  el rol prestado en un torneo, la cuenta nueva para jugar sin miedo, el abierto online con
+  scouts casteando, la sesión con un ex-jugador, el dúo que abandona, el examen que define el año.
+- **`marcas_vivas.json` 6 → 9** (+3): jugar desde la PC de un amigo y el pacto por recuperar la
+  tuya (`pc_confiscada`, antes solo `sin_pc`); el ultimátum del boletín (`riesgo_familiar`, antes
+  **cero** contenido propio).
+- **`cierre_edad.json` 8 → 10** (+2 cierres amateur): el año en que el teléfono no sonó (redoblar
+  o abrir un plan B), y las cuentas del año a solas.
+- Trade-offs atados a lo que sube: la ladder (efecto `ladder`, con rangos negativos cuando el
+  evento te saca de la cola), `mecanica`/`laneo` cuando practicás, `macro`/`shotcalling` cuando
+  alguien te enseña estructura, `studies`/`familyTrust`/`sleep` cuando la vida de afuera cobra.
+  `outcome.texto` en array de variantes en ~la mitad de los outcomes nuevos.
+
+#### Números medidos
+
+- Eventos con `etapa: ["amateur"]` explícita: **11 → 28**. Elegibles en amateur (explícitos +
+  genéricos sin `etapa`): **~19 → 50**.
+- Catálogo: **171 → 188 eventos** (+17). Opciones: **344 → 378**.
+- Cobertura de las celdas amateur (contexto que pasa, N=300):
+  `amateur_sin_pc` 20/21/24 → **38/31/40**, `amateur_al_limite` 21/14/23 → **35/29/33**,
+  `amateur_prometedor` 20/12/22 → **37/29/35**, `amateur_arranque` 20/5/21 → **30/11/31**
+  (playoffs/pretemp/regular). `cobertura.js --huecos`: sin huecos.
+- `simulate.js 1000 60 todas`: 0 crashes · determinismo intra-versión 150/150 · build OK (948 KB).
+- `validate.js`: **115/117 OK**. Los 2 FAIL son checks de CSS (`CSS: ningún background usa un token
+  de tinta`, `CSS: var(--token) definido`) que **una sesión concurrente agregó al working tree
+  como parte de la Fase T0b** (`src/dev/validate.js`, `src/dev/guards.js` y `src/ui/estilos/*.css`
+  modificados sin commitear, ajenos a 9R3d). Todos los checks que tocan datos/eventos pasan. Este
+  commit toca **solo** los 3 JSON de eventos + PROGRESO + PLAN (pathspec explícito); la Fase T0b
+  queda intacta en el working tree para que la cierre quien la está haciendo.
+
+#### Sin checks nuevos
+
+El check *"volumen de decisiones"* y el de repetición siguen pasando con margen. 9R3e (el resto
+del catálogo) vuelve a mover el stream; los topes se aprietan al cerrar 9R.3 (9R3f, cuando el
+working tree de T0b esté commiteado y `validate.js` se pueda tocar sin colisión).
+
+#### Colateral
+
+- **D37 (familia):** +17 eventos en `TODOS_LOS_EVENTOS` → el `weightedPick` de `elegirEvento` cae
+  distinto. Ningún check damnificado. Determinismo intra-versión intacto; las seeds pre-9R3d no
+  reproducen su carrera (familia D21/D22/D35, aceptada).
+
 ### 2026-09-04 — Fase 9R3c: cada rol tiene decisiones propias de verdad
 
 Tercer commit de 9R.3. 9R3a puso la infraestructura de variantes; 9R3b hizo profundos los pools

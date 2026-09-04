@@ -189,5 +189,852 @@
         ]
       }
     ]
+  },
+  {
+    "id": "el_inhouse_de_conocidos",
+    "category": "soloq_precarrera",
+    "title": "Te suman a los inhouse",
+    "description": "Un par de tipos que ya juegan en ligas chicas arman lobbies cerrados tres veces por semana. Te preguntan si querés entrar. Se juega en serio, con Discord y un review corto después.",
+    "weight": 8,
+    "cooldown": 3,
+    "contexto": {
+      "etapa": ["amateur"],
+      "ladder": ["medio", "alto", "apice"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 1 }
+    ],
+    "options": [
+      {
+        "id": "entrar_a_los_inhouse",
+        "label": "Meterte a los lobbies",
+        "descripcion": "Dejás de farmear LP tres noches por semana. A cambio, jugás contra gente que castiga los errores que en soloQ te dejan pasar.",
+        "weight": 6,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": [
+              "Los primeros lobbies te comen vivo. Para el mes te das cuenta de que leés la partida distinto: sabés qué va a pasar antes de que pase.",
+              "Perdés las primeras dos semanas casi todo. Después algo hace clic y empezás a ganar duelos que antes ni jugabas."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.laneo", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": -15, "max": -5 }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Te va tan bien en los inhouse que uno de los organizadores te propone para un equipo amateur que está armando.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 5, "max": 9, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "seguir_en_la_ladder",
+        "label": "Quedarte en soloQ",
+        "descripcion": "El rango es lo único que un scout puede ver de vos. Los inhouse no dan puntos.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Seguís grindeando solo. Subís, pero cada tanto pensás en lo que estarás perdiendo por no jugar contra gente que piensa.",
+            "effects": [
+              { "type": "ladder", "path": "player.ranked", "min": 15, "max": 30 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Metés una sesión enorme y cerrás el mes más arriba de lo que esperabas. La ladder, cuando la respetás, te devuelve.",
+            "effects": [
+              { "type": "ladder", "path": "player.ranked", "min": 30, "max": 50 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_pro_en_tu_partida",
+    "category": "soloq_precarrera",
+    "title": "Hay un pro smurfeando",
+    "description": "Cargás la partida y en el equipo rival está el mid de un equipo de tier 2, con una skin vieja y el nombre cambiado. Todo el chat lo saluda. Te toca laneo directo.",
+    "weight": 7,
+    "cooldown": 3,
+    "contexto": {
+      "etapa": ["amateur"],
+      "ladder": ["alto", "apice", "elite"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "ir_a_matarlo",
+        "label": "Ir a buscarlo a la línea",
+        "descripcion": "Es la vara real. Si le aguantás el carril tenés algo que contar; si te revienta, lo va a ver todo el lobby.",
+        "weight": 6,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "Te gana la línea pero no te rompe. Al final de la partida te escribe \"jugás bien para el elo que tenés\". No dormís pensando en eso.",
+              "Te mata dos veces temprano y después el carril se estabiliza. Perdés la partida, pero sabés exactamente en qué te ganó."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Le aguantás el carril entero y en teamfights lo superás. Ganás la partida. El clip circula un par de días.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 5, "max": 9, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 6, "max": 12, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugar_seguro_el_matchup",
+        "label": "Jugarla cerrada y no regalar",
+        "descripcion": "No le das la satisfacción de un pentakill. Farmeás bajo torre y esperás a que la partida se defina en otro carril.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Le cedés CS pero no muertes. La partida se define en otro lado. No aprendiste nada nuevo, pero tampoco te expusiste.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.laneo", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": [
+              "Jugás tan sólido que se frustra y empieza a forzar. Muere solo dos veces y ahí se te abre la partida.",
+              "Lo aburrís. Se va a roamear, la caga, y de golpe estás vos arriba en oro sin haber hecho nada especial."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.laneo", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_clip_viral",
+    "category": "soloq_precarrera",
+    "title": "Un clip tuyo se despega",
+    "description": "Alguien recortó una jugada tuya de la ladder y la subió. En dos días tiene más views que toda tu cuenta de Twitch junta. Los comentarios están divididos entre \"quién es\" y \"tuvo suerte\".",
+    "weight": 7,
+    "cooldown": 4,
+    "contexto": {
+      "etapa": ["amateur"],
+      "ladder": ["alto", "apice", "elite"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 1 }
+    ],
+    "options": [
+      {
+        "id": "surfear_la_ola",
+        "label": "Aprovechar el envión",
+        "descripcion": "Streameás todos los días esta semana, contestás los DMs, te mostrás. La ventana de que se acuerden de tu nombre es corta.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Juntás seguidores de verdad y un par de cuentas de scouting te empiezan a seguir. También juntás gente esperando que falles.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 8, "max": 14, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": [
+              "Un caster chico te menciona en un video y de golpe hay gente que te reconoce en la fila del ranked.",
+              "El clip llega a un subreddit grande. Por una semana sos \"el pibe de la jugada\", y eso abre puertas y pone una vara."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 12, "max": 20, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejarlo_pasar",
+        "label": "No darle bola y seguir jugando",
+        "descripcion": "Un clip no es una carrera. Si te ponés a mirar métricas de views dejás de mirar el minimapa.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Lo ignorás y seguís con tu rutina. El clip se apaga en una semana, pero vos cerraste el mes con el mejor winrate del año.",
+            "effects": [
+              { "type": "ladder", "path": "player.ranked", "min": 20, "max": 35 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "No hacés nada y el clip igual hace su trabajo: un coach lo vio, se guardó tu nombre, y te va a escribir dentro de tres meses.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 4, "max": 7, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": 10, "max": 20 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_deuda_de_sueno_amateur",
+    "category": "soloq_precarrera",
+    "title": "Otra noche hasta las cinco",
+    "description": "Hace semanas que dormís cuatro horas para meter una cola más antes de que se acabe el horario bueno. Hoy te quedaste dormido en una clase y alguien te filmó.",
+    "weight": 8,
+    "cooldown": 3,
+    "contexto": {
+      "etapa": ["amateur"],
+      "marcas": ["deuda_sueno"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "ordenar_el_horario",
+        "label": "Cortar a las doce, sí o sí",
+        "descripcion": "Vas a perder las partidas de la madrugada, que son las que más LP te daban. Vas a recuperar la cabeza.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": [
+              "Las primeras noches te cuesta dormirte de la costumbre. Para la segunda semana jugás la mitad de partidas y ganás más.",
+              "Te cuesta una semana larga romper la inercia. Después te levantás con ganas de jugar por primera vez en meses."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.sleep", "min": 8, "max": 15, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": -10, "max": -3 }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Dormís ocho horas por primera vez en un mes y al otro día clavás una sesión perfecta. Te acordás de por qué te gustaba esto.",
+            "effects": [
+              { "type": "stat", "path": "player.sleep", "min": 12, "max": 20, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 5, "max": 9, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "aguantar_hasta_el_corte",
+        "label": "Aguantar hasta que cierre la ventana de ranked",
+        "descripcion": "Faltan tres semanas para el corte de temporada. Dormís en vacaciones.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Llegás al corte con el rango que querías y una cara que asusta. Lo lográs, pero algo te vas a tener que devolver de esto.",
+            "effects": [
+              { "type": "ladder", "path": "player.ranked", "min": 25, "max": 45 },
+              { "type": "stat", "path": "player.sleep", "min": -8, "max": -3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": [
+              "El cuerpo te pasa la factura antes del corte: te agarrás una gripe de las feas y perdés cuatro días enteros.",
+              "A mitad de semana te das cuenta de que estás jugando peor cansado de lo que jugarías durmiendo. Pero ya es tarde para el corte."
+            ],
+            "effects": [
+              { "type": "ladder", "path": "player.ranked", "min": 5, "max": 15 },
+              { "type": "stat", "path": "player.sleep", "min": -12, "max": -6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -7, "max": -4, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_bootcamp_casero",
+    "category": "soloq_precarrera",
+    "title": "Te armás un bootcamp vos solo",
+    "description": "Sin equipo que te organice, te hacés vos el cronograma: bloques de VODs, sesiones de mecánica, ladder con objetivo, revisión escrita. Suena a mucho para un pibe sin contrato.",
+    "weight": 7,
+    "cooldown": 4,
+    "contexto": {
+      "etapa": ["amateur"],
+      "ladder": ["medio", "alto", "apice"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 2 }
+    ],
+    "options": [
+      {
+        "id": "seguir_el_cronograma",
+        "label": "Bancarte la rutina completa",
+        "descripcion": "Cuatro semanas de disciplina de jugador profesional sin ser jugador profesional. El colegio y todo lo demás pasan a segundo plano.",
+        "weight": 6,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": [
+              "Las primeras semanas te sentís un impostor haciéndote reviews a vos mismo. Después los números te empiezan a dar la razón.",
+              "Te cuesta sostenerlo sin nadie que te controle. Lo que aguantás, igual, se nota en cómo entrás a las partidas."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.laneo", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.studies", "min": -8, "max": -3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Lo sostenés entero el mes. Terminás con un nivel de juego que no tenías y una carpeta de notas que un coach, cuando la vea, va a valorar.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 5, "max": 9, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.laneo", "min": 4, "max": 7, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.studies", "min": -10, "max": -4, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hacerlo_a_medias",
+        "label": "Agarrar solo lo que te sirve",
+        "descripcion": "Te quedás con las sesiones de mecánica y largás el resto. Menos ambicioso, más sostenible.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 8,
+            "texto": "Practicás mecánica una hora antes de cada sesión de ladder y listo. Subís parejo, sin quemarte, sin sentir que dejaste algo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 2,
+            "texto": "El poco orden que te imponés igual te cambia el resultado. No es un bootcamp, pero es más de lo que hace el 90% del ladder.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.laneo", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_equipo_amateur_que_se_arma",
+    "category": "soloq_precarrera",
+    "title": "Te llaman para un roster amateur",
+    "description": "Cinco pibes de la ladder, un mánager de 19 que consiguió sponsor de una cafetería, y un torneo online con algo de premio en tres meses. Te quieren de titular.",
+    "weight": 8,
+    "cooldown": 3,
+    "contexto": {
+      "etapa": ["amateur"],
+      "marcas": ["en_el_radar"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "sumarte_al_proyecto",
+        "label": "Entrar y jugarte el torneo",
+        "descripcion": "Tu primera experiencia de equipo de verdad: horarios, roles, un IGL que te grita. Vas a aprender un montón y a bajar de la ladder.",
+        "weight": 6,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": [
+              "El torneo lo perdés en cuartos, pero salís sabiendo lo que es jugar los cinco para el mismo plan. No hay soloQ que te enseñe eso.",
+              "Llegan a semis y ahí se cae todo. Igual, tres meses de scrims te hicieron un jugador distinto."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.teamfight", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": -12, "max": -4 }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "El armado funciona mejor de lo que nadie esperaba: ganan el torneo y el VOD de la final lo miran coaches de tier 2.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 8, "max": 14, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.teamfight", "min": 2, "max": 5, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "quedarte_solo",
+        "label": "Decir que no y seguir tu camino",
+        "descripcion": "Los rosters amateur sin estructura se disuelven a la primera derrota. Vos ya estás en el radar solo.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Seguís en la ladder. El roster, como era previsible, explotó tras perder la primera scrim seria. Vos seguís subiendo.",
+            "effects": [
+              { "type": "ladder", "path": "player.ranked", "min": 15, "max": 30 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Decís que no y a las dos semanas te llama un proyecto más serio, con contrato de verdad sobre la mesa. Esperar valió.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 5, "max": 10, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": 10, "max": 20 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_rol_prestado",
+    "category": "soloq_precarrera",
+    "title": "Te piden jugar de otra cosa",
+    "description": "En el equipo amateur del torneo falta un jungla y sos el que mejor entiende el mapa. Te piden que te muevas de tu rol para el fin de semana.",
+    "weight": 6,
+    "cooldown": 4,
+    "contexto": {
+      "etapa": ["amateur"],
+      "ladder": ["medio", "alto", "apice"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 2 }
+    ],
+    "options": [
+      {
+        "id": "agarrar_el_rol_nuevo",
+        "label": "Jugar de jungla el finde",
+        "descripcion": "Vas a estar incómodo y expuesto. También vas a entender de dónde vienen la mitad de tus problemas en tu carril real.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": [
+              "Jugás dos días fuera de tu rol y volvés al tuyo viendo el mapa con otros ojos. Los pathings del enemigo dejaron de ser un misterio.",
+              "Sos un desastre de jungla, pero desde adentro entendés por qué tu jungla nunca llegaba. Volvés a tu carril más paciente."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mecanica", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Te sale sorprendentemente bien. No lo vas a hacer tu rol, pero saber jugarlo te hace mejor compañero para el que sí.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 4, "max": 7, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.macro", "min": 3, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.shotcalling", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "plantarte_en_tu_rol",
+        "label": "Decir que busquen a otro",
+        "descripcion": "Sos main de tu carril y en tres meses te jugás quedar bien parado. No es momento de experimentos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Consiguen a otro y vos seguís afilando lo tuyo. Sos el mejor de tu rol del equipo por bastante, y eso es lo que se ve.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.laneo", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Te mantenés en tu carril y metés el mejor split de tu vida en la ladder. La especialización, a veces, también es una apuesta ganada.",
+            "effects": [
+              { "type": "ladder", "path": "player.ranked", "min": 20, "max": 35 },
+              { "type": "stat", "path": "player.stats.laneo", "min": 2, "max": 5, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_cuenta_nueva",
+    "category": "soloq_precarrera",
+    "title": "Empezás una cuenta de cero",
+    "description": "En tu main cada partida pesa: si perdés, perdés el rango que te costó meses. Te hacés una cuenta nueva para jugar sin esa mochila y ver de qué sos capaz sin el miedo.",
+    "weight": 6,
+    "cooldown": 4,
+    "contexto": {
+      "etapa": ["amateur"],
+      "ladder": ["alto", "apice", "elite"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "subirla_en_serio",
+        "label": "Escalarla hasta arriba lo más rápido posible",
+        "descripcion": "Sin escudos ni ansiedad, a ver cuántas ganás seguidas. Es un test de nivel real, y también un montón de horas repetidas.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": [
+              "Subís los primeros mil puntos casi sin perder. Te das cuenta de que el techo tuyo estaba más arriba de lo que el miedo te dejaba ver.",
+              "La cuenta nueva vuela. El problema deja de ser el nivel y pasa a ser la cabeza en las partidas que importan."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 4, "max": 7, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": 10, "max": 20 }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Enganchás una racha de las que se cuentan. Terminás más arriba en la cuenta nueva que en la vieja, y con otra confianza.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 6, "max": 10, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": 20, "max": 35 }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "usarla_para_probar_cosas",
+        "label": "Usarla de laboratorio",
+        "descripcion": "Picks nuevos, rutas raras, estilos que en tu main no te animás. Vas a perder partidas a propósito y a aprender de eso.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 8,
+            "texto": "Probás diez campeones que nunca tocaste y tres te quedan. Tu pool real crece sin haber arriesgado un solo LP de la cuenta que importa.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 2,
+            "texto": [
+              "Descubrís un pick de contra-meta que te encaja perfecto. Meses después va a ser tu carta ganadora.",
+              "Uno de los experimentos resulta ser tu mejor campeón. Nunca lo habrías encontrado con miedo a perder puntos."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.laneo", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_torneo_abierto",
+    "category": "soloq_precarrera",
+    "title": "Un abierto online con premio",
+    "description": "Una marca de periféricos organiza una copa abierta: te anotás solo y te asignan equipo por la ronda. Hay algo de plata y, más importante, lo castea un canal que miran los scouts.",
+    "weight": 7,
+    "cooldown": 4,
+    "contexto": {
+      "etapa": ["amateur"],
+      "ladder": ["alto", "apice", "elite"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 2 }
+    ],
+    "options": [
+      {
+        "id": "jugar_para_el_highlight",
+        "label": "Ir a buscar la jugada para la cámara",
+        "descripcion": "Sabés que hay coaches mirando. Una jugada grande en cámara vale más que tres partidas sólidas que nadie ve.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": [
+              "Clavás un 1v3 en cuartos que el casteo repite cuatro veces. Perdés en semis, pero ya conseguiste lo que fuiste a buscar.",
+              "La jugada te sale en la fase de grupos y se hace un clip. Después jugás tenso todo el resto y no repetís."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 9, "max": 16, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -1, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Buscás el highlight, te sale, y encima el equipo random que te tocó llega a la final. Salís del torneo con nombre.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 14, "max": 22, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mecanica", "min": 3, "max": 6, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugar_solido_y_ganar",
+        "label": "Jugar para ganar, sin fuegos artificiales",
+        "descripcion": "Ganar el torneo también se ve. Menos épico, más difícil de discutir.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Jugás limpio, sin muertes tontas, cargando a cuatro desconocidos ronda tras ronda. Llegan lejos y en el review queda claro quién los llevó.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.shotcalling", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 4, "max": 8, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": [
+              "Ganan el torneo. No hubo un clip tuyo, pero el que mire la planilla ve tu nombre arriba de todo.",
+              "Te llevás el abierto arrastrando al equipo. Un coach te escribe esa misma noche, y no por una jugada: por la consistencia."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 8, "max": 14, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_charla_con_el_ex_pro",
+    "category": "soloq_precarrera",
+    "title": "Te asesora un ex jugador",
+    "description": "Un tipo que llegó a jugar tier 2 hace unos años y ahora hace coaching por horas te ofrece una sesión gratis para engancharte de cliente. Media hora mirando tus VODs.",
+    "weight": 7,
+    "cooldown": 4,
+    "contexto": {
+      "etapa": ["amateur"],
+      "ladder": ["medio", "alto", "apice"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 1 }
+    ],
+    "options": [
+      {
+        "id": "escuchar_todo",
+        "label": "Escucharlo y anotar",
+        "descripcion": "Te va a marcar errores que tenías tan naturalizados que ni los veías. Un baldazo, pero del bueno.",
+        "weight": 6,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": [
+              "Te destroza el VOD con cariño. La mitad de lo que hacías \"porque sí\" tenía un error atrás. Salís incómodo y mejor.",
+              "Te muestra tres hábitos que te estaban costando partidas sin que lo notaras. Cambiarlos te lleva un mes."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.shotcalling", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "La sesión te reordena la cabeza entera. Le pagás cuatro más y en dos meses sos un jugador distinto.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.shotcalling", "min": 3, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.laneo", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "tomarlo_con_pinzas",
+        "label": "Escuchar, pero filtrar",
+        "descripcion": "Llegó a tier 2 y no más lejos por algo. Te quedás con lo que te cierra y descartás el resto.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Te llevás dos o tres ideas concretas y dejás pasar el sermón sobre actitud. Las ideas eran buenas; el sermón, cuestión de gustos.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.shotcalling", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Filtrás bien: agarrás justo el consejo que te servía y lo aplicás. Subís medio tier en tres semanas.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": 10, "max": 20 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_amigo_que_deja",
+    "category": "soloq_precarrera",
+    "title": "Tu dúo lo deja",
+    "description": "El pibe con el que subiste los últimos dos años te avisa que baja los brazos: empieza a laburar con el padre y el sueño se termina. Te quedás grindeando la ladder solo por primera vez.",
+    "weight": 6,
+    "cooldown": 5,
+    "contexto": {
+      "etapa": ["amateur"],
+      "ladder": ["medio", "alto", "apice"]
+    },
+    "conditions": [
+      { "field": "player.splitCount", "op": "gt", "value": 3 }
+    ],
+    "options": [
+      {
+        "id": "bancar_la_soledad",
+        "label": "Seguir solo y hacerte fuerte",
+        "descripcion": "Sin nadie que te levante la moral después de una derrota. Si aguantás esto, aguantás casi cualquier cosa.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": [
+              "Las primeras semanas jugás peor: te faltaba ese \"vamos que la próxima la ganamos\". Después te acostumbrás a ser vos el que se lo dice.",
+              "Extrañás tener con quién putear al jungla. Con el tiempo, jugar solo te hace menos dependiente del ánimo ajeno."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Solo, sin distracciones, metés la mejor racha en meses. Resulta que parte de lo que te frenaba era coordinar con otro.",
+            "effects": [
+              { "type": "ladder", "path": "player.ranked", "min": 20, "max": 35 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "buscar_dueto_nuevo",
+        "label": "Salir a buscar otro dúo",
+        "descripcion": "Posteás en Discords de tu elo buscando alguien de tu nivel y horario. Puede salir un crack o un ancla.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Después de probar con cuatro, encontrás uno que juega parecido a vos. En un mes ya subieron juntos medio tier.",
+            "effects": [
+              { "type": "ladder", "path": "player.ranked", "min": 12, "max": 25 },
+              { "type": "stat", "path": "player.stats.teamfight", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": [
+              "El primero que probás es mejor que tu dúo anterior. A veces perder algo te obliga a buscar y encontrás mejor.",
+              "Das con un dúo que te exige más. Te cuesta seguirle el ritmo, y por eso mismo mejorás."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.laneo", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_examen_que_define",
+    "category": "soloq_precarrera",
+    "title": "Se viene el examen que define el año",
+    "description": "Rendís la prueba que decide si pasás de año o repetís. Repetir sería un año más de ranked sin la presión del secundario encima; también sería el argumento que tus viejos venían buscando.",
+    "weight": 7,
+    "cooldown": 0,
+    "contexto": {
+      "etapa": ["amateur"],
+      "edadMin": 16
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "estudiar_para_pasar",
+        "label": "Ponerte y aprobar",
+        "descripcion": "Dos semanas de estudiar de verdad. Perdés práctica, pero cerrás un frente y les sacás el argumento.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": [
+              "Aprobás sin brillar. El secundario deja de ser una espada sobre la cabeza y podés pensar en el juego sin culpa.",
+              "Pasás de año raspando. No es un logro académico, pero es un problema menos entre vos y la ladder."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.studies", "min": 8, "max": 15, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.familyTrust", "min": 5, "max": 10, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": -10, "max": -3 }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Aprobás con buenas notas y de paso demostrás que podés con las dos cosas. En casa esa idea vale oro.",
+            "effects": [
+              { "type": "stat", "path": "player.studies", "min": 12, "max": 20, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.familyTrust", "min": 10, "max": 16, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "priorizar_el_ranked_en_el_examen",
+        "label": "Ir con lo puesto y priorizar el ranked",
+        "descripcion": "Estudiás lo mínimo y seguís jugando. Si pasás, ganaste tiempo; si repetís, es un año que igual ibas a usar para esto.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Repetís. En casa es un golpe duro, pero vos ya decidiste que el año que viene es para el juego, con o sin su bendición.",
+            "effects": [
+              { "type": "stat", "path": "player.familyTrust", "min": -12, "max": -6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": 15, "max": 30 }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": [
+              "Pasás de milagro con lo justo. Zafaste, y encima no perdiste una sola noche de ranked.",
+              "Aprobás sin haber abierto la carpeta. Suerte y algo de calle; no siempre va a alcanzar, pero esta vez sí."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.studies", "min": -4, "max": -1, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": 20, "max": 35 },
+              { "type": "stat", "path": "player.familyTrust", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

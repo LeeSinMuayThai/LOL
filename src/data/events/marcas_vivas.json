@@ -357,5 +357,217 @@
         ]
       }
     ]
+  },
+  {
+    "id": "la_pc_del_amigo",
+    "category": "identidad",
+    "title": "Jugás desde lo de un amigo",
+    "description": "Con tu PC guardada bajo llave, un amigo te presta la suya tres tardes por semana cuando él sale a laburar. Su setup es peor y el tiempo es prestado, pero es jugar.",
+    "weight": 5,
+    "cooldown": 6,
+    "contexto": {
+      "etapa": ["amateur"],
+      "marcas": ["pc_confiscada"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "aprovechar_cada_minuto",
+        "label": "Exprimir las tres tardes",
+        "descripcion": "Nada de calentar: entrás y ya estás jugando ranked. Cada partida cuenta doble porque no sabés cuándo vuelve a haber.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": [
+              "Jugás con una concentración que no tenías cuando la PC era tuya y estaba siempre. La escasez te ordenó.",
+              "Tres tardes rendidas al máximo te dan más LP que semanas enteras de jugar por inercia en tu casa."
+            ],
+            "effects": [
+              { "type": "ladder", "path": "player.ranked", "min": 12, "max": 25 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.familyTrust", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Rendís tanto en tan poco que tu amigo empieza a contarle a la gente. La historia del pibe que sube sin PC propia gusta.",
+            "effects": [
+              { "type": "ladder", "path": "player.ranked", "min": 20, "max": 35 },
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cuidar_la_relacion",
+        "label": "No abusar del favor",
+        "descripcion": "Usás dos tardes en vez de tres y le dejás la máquina impecable. El acceso vale más que un par de partidas extra.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 8,
+            "texto": "Sos un huésped perfecto y el favor se sostiene meses. Menos horas, pero constantes, y sin deberle nada a nadie.",
+            "effects": [
+              { "type": "ladder", "path": "player.ranked", "min": 8, "max": 16 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 2,
+            "texto": "Tu prolijidad lo convence de armarte un rincón fijo en su pieza. De golpe tenés horario propio otra vez.",
+            "effects": [
+              { "type": "ladder", "path": "player.ranked", "min": 12, "max": 22 },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_pacto_por_la_pc",
+    "category": "identidad",
+    "title": "Tu vieja te ofrece un trato",
+    "description": "Golpea la puerta con la torre de la PC en los brazos. \"Te la devuelvo. Pero aprobás todo este trimestre o esto se termina en serio.\" No es una amenaza vacía y los dos lo saben.",
+    "weight": 5,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": ["amateur"],
+      "marcas": ["pc_confiscada"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "firmar_el_pacto",
+        "label": "Aceptar y cumplirlo",
+        "descripcion": "Recuperás la PC hoy. A cambio, dos meses de estudiar en serio con el ranked de rehén.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": [
+              "Estudiás lo justo para cumplir y jugás con la PC de vuelta en tu escritorio. Rendís peor de lo que te gustaría, pero rendís.",
+              "Cumplir el trato te come horas de práctica. Igual, tener la máquina en tu pieza otra vez te devuelve algo que no se mide en LP."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.studies", "min": 8, "max": 15, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.familyTrust", "min": 6, "max": 12, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": 5, "max": 15 }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Aprobás todo con margen y encima te sobra tiempo para jugar. Tu vieja, sin decirlo, empieza a mirar esto de otra manera.",
+            "effects": [
+              { "type": "stat", "path": "player.studies", "min": 12, "max": 20, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.familyTrust", "min": 10, "max": 18, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pedir_mas_plazo",
+        "label": "Negociar los plazos",
+        "descripcion": "Le proponés un trimestre entero en vez de dos meses, con metas parciales. Más realista, pero le estás pidiendo que confíe más.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Acepta a regañadientes. El plazo largo te da aire, pero cada boletín parcial es una prueba que tenés que pasar sí o sí.",
+            "effects": [
+              { "type": "stat", "path": "player.familyTrust", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.studies", "min": 4, "max": 9, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": [
+              "Tu contraoferta la convence de que te lo tomás en serio. Te da el trimestre y baja la guardia un poco.",
+              "Negociás bien y salís con más margen del que esperabas. Ahora hay que no desperdiciarlo."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.familyTrust", "min": 6, "max": 12, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.studies", "min": 3, "max": 7, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_ultimatum_del_boletin",
+    "category": "identidad",
+    "title": "El boletín que define",
+    "description": "Estás a una materia de que en casa se termine la discusión, y no a tu favor. Falta una semana para la prueba que la levanta o la hunde, y esa semana pinta la mejor de la temporada en la ladder.",
+    "weight": 6,
+    "cooldown": 6,
+    "contexto": {
+      "etapa": ["amateur"],
+      "marcas": ["riesgo_familiar"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "estudiar_la_semana",
+        "label": "Cerrar el ranked y estudiar",
+        "descripcion": "Perdés la mejor ventana de LP del año. Comprás meses de paz y el derecho a seguir jugando.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": [
+              "Aprobás raspando y en casa se descomprime todo. La ladder esperó; la casa no habría esperado.",
+              "Levantás la materia y de paso dos más. Por primera vez en meses nadie te controla las horas de juego."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.studies", "min": 10, "max": 18, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.familyTrust", "min": 8, "max": 15, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": -8, "max": -2 }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Aprobás con nota alta. Tus viejos, que esperaban lo peor, te levantan el control casi entero. Ganaste tiempo de verdad.",
+            "effects": [
+              { "type": "stat", "path": "player.studies", "min": 14, "max": 22, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.familyTrust", "min": 12, "max": 20, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugarte_la_ventana",
+        "label": "Aprovechar la racha y arriesgar la materia",
+        "descripcion": "Es el elo más alto de tu vida al alcance de la mano. Si zafás de la materia igual, ganaste todo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Clavás el mejor rango de tu vida esa semana. La materia la desaprobás, y en casa se pudre de una forma que va a tardar en arreglarse.",
+            "effects": [
+              { "type": "ladder", "path": "player.ranked", "min": 30, "max": 50 },
+              { "type": "stat", "path": "player.familyTrust", "min": -14, "max": -8, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.studies", "min": -5, "max": -1, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": [
+              "Subís un montón y encima la prueba te sale mejor de lo que merecías por lo poco que estudiaste. Zafaste de milagro.",
+              "La racha aguanta y la materia la salvás con un oral de rebote. Saliste ileso, pero por poco."
+            ],
+            "effects": [
+              { "type": "ladder", "path": "player.ranked", "min": 25, "max": 45 },
+              { "type": "stat", "path": "player.familyTrust", "min": -3, "max": 0, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

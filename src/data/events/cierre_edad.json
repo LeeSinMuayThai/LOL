@@ -550,5 +550,148 @@
         ]
       }
     ]
+  },
+  {
+    "id": "el_ano_sin_llamado",
+    "category": "cierre_edad",
+    "title": "Otro año y el teléfono no sonó",
+    "description": "Cerraste la temporada con buen rango y ni un scout te escribió. En los foros a la gente de tu elo la fichan a los 16; vos ya casi no lo sos.",
+    "weight": 5,
+    "cooldown": 0,
+    "contexto": {
+      "etapa": ["amateur"]
+    },
+    "conditions": [],
+    "cierreDeEdad": true,
+    "options": [
+      {
+        "id": "redoblar_la_apuesta",
+        "label": "Meter un año más, a fondo",
+        "descripcion": "Le das doce meses más sin red. Si no pasa nada, va a ser difícil justificar el trece.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": [
+              "Arrancás el año con una convicción rara, casi terca. No sabés si es fe o negación, pero te levanta a jugar.",
+              "Te prometés que este es el año. La promesa no cambia tu nivel, pero cambia con qué cara entrás a cada partida."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.familyTrust", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Le contás a tus viejos que vas por un año más y, para tu sorpresa, te bancan. Tener a alguien atrás cambia el peso de la mochila.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 5, "max": 9, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.familyTrust", "min": 3, "max": 7, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "abrir_un_plan_b",
+        "label": "Empezar a mirar otra cosa en paralelo",
+        "descripcion": "Anotarte en algo, retomar el estudio, buscar una changa. Le sacás dramatismo a que esto no funcione.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": [
+              "Retomás un par de materias y buscás algo de changa. Jugás con menos horas y, raro, con menos ansiedad.",
+              "Armás un plan B de verdad. Descubrís que jugar sin que sea la única salida posible te sale mejor."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.studies", "min": 6, "max": 12, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": -8, "max": -2 }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "El plan B te descomprime tanto que tu juego mejora. A veces la carrera despega justo cuando dejás de necesitarla tanto.",
+            "effects": [
+              { "type": "stat", "path": "player.studies", "min": 4, "max": 9, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 4, "max": 8, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": 5, "max": 15 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_cuenta_de_los_anos",
+    "category": "cierre_edad",
+    "title": "Las cuentas del año, a solas",
+    "description": "Sin equipo con quien hacer el balance, lo hacés vos: cuánto subiste, cuánto dormiste, qué dejaste por el camino y qué te queda por probar antes de que la edad juegue en contra.",
+    "weight": 5,
+    "cooldown": 0,
+    "contexto": {
+      "etapa": ["amateur"],
+      "edadMin": 17
+    },
+    "conditions": [],
+    "cierreDeEdad": true,
+    "options": [
+      {
+        "id": "mirar_lo_que_falta",
+        "label": "Enfocarte en lo que te falta",
+        "descripcion": "Hacés la lista de agujeros de tu juego y te la clavás en la pared. Motiva y también pesa.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": [
+              "La lista es más larga de lo que esperabas. Te da un plan claro para el año y una semana de bajón antes de arrancarlo.",
+              "Ver todo lo que te falta junto asusta. También ordena: sabés exactamente en qué trabajar."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.shotcalling", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "La autocrítica te sale honesta sin ser destructiva. Entrás al año con un mapa de ruta que la mayoría del ladder no tiene.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 3, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.shotcalling", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "contar_lo_ganado",
+        "label": "Enfocarte en lo que ya lográs",
+        "descripcion": "Repasás de dónde saliste. Menos plan de mejora, más combustible para no aflojar.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Ver cuánto subiste desde que empezaste te recuerda que esto no es imposible, solo lento. Arrancás el año con la moral entera.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 4, "max": 8, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": [
+              "El repaso te devuelve la fe justo cuando más falta hacía. No cambia tu nivel, pero cambia cuánto aguantás.",
+              "Contar lo ganado te saca la urgencia de encima. Jugás el año siguiente más suelto, y se nota."
+            ],
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 6, "max": 10, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]
