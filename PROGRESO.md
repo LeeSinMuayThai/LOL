@@ -33,6 +33,26 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-04 — Fase 9R3f: se aprieta el check de repetición — cierra 9R.3
+
+Sexto commit y cierre de 9R.3. Puro tuneo de checks (regla de proceso 2: 9R3a-e fueron estructura
+de contenido; esto es solo apretar dos topes ya existentes), habilitado porque el catálogo terminó
+en 218 eventos (97 al arrancar la fase) y la repetición bajó con margen de sobra.
+
+- **Volumen** (`El volumen de decisiones...`, HOR=40/N=150): medido a N=400, mediana 3, p90 4, p99
+  5, **máximo absoluto 6** — estable al variar N. Tope `medRep > 4 || maxRep > 8` → `medRep > 4 ||
+  maxRep > 7` (un escalón de margen sobre el máximo observado; la mediana no baja más para no
+  quedar sin aire).
+- **Concentración** (`La repetición de eventos está acotada`, N=300): medido a N=300 y N=500, p90
+  7.4%, p95 8.0%, **máximo 11.5%** — estable. Tope `p90 > 0.25` → `p90 > 0.15` (2× de margen sobre
+  lo medido).
+- `validate.js`: **117/117 OK**. `simulate.js 1000`: 0 crashes. Determinismo intra-versión intacto
+  (no se tocó ningún sistema, solo dos umbrales de check).
+
+Con esto se cierra **9R.3 — El catálogo completo**: 97 → 218 eventos, 150 → 438 opciones,
+`cobertura.js --huecos` vacío al listón 6 (era 3), 0 eventos muertos, evento más repetido mediana
+14→3 / máximo 32→6 desde antes de la fase 9R.
+
 ### 2026-09-04 — Fase T1: el shell de transmisión
 
 `index.html` pasa a vivir dentro de una grilla de dos zonas con topbar y ticker, en vez de una

@@ -26,7 +26,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **8** | La ficha: el registro que acumula + la tarjeta permanente + `src/ui/` | ✅ ver `PROGRESO.md` |
 | **9** | El mercado: ofertas, contratos, salarios, la trampa del equipo grande visible | ✅ ver `PROGRESO.md` |
 | **9E** | El varado: la carrera vuelve a tener juego después del primer equipo | 🔶 **9Ea+b hechas** (el bug, cerrado) · faltan 9Ec y 9Ed |
-| **9R** | **Que el juego se juegue**: el cooldown mide splits, la tabla deja de mentir, la interrupción vuelve a ser escasa, y elegir cambia el resultado | 🔶 **9Ra/9Rb/9Re/9Rf/9R.5/9R.2/9R.0/9Rc/9Rd/9R3a/9R3b/9R3c/9R3d hechas** · falta 9R.3 resto (9R3e), 9R.4, 9Rg |
+| **9R** | **Que el juego se juegue**: el cooldown mide splits, la tabla deja de mentir, la interrupción vuelve a ser escasa, y elegir cambia el resultado | 🔶 **9Ra/9Rb/9Re/9Rf/9R.5/9R.2/9R.0/9Rc/9Rd/9R.3 (9R3a-f) hechas** · falta 9R.4, 9Rg |
 | **T** | **La transmisión**: el sistema de diseño, el shell de tres zonas, el ritmo del split, y las pantallas que faltan. Va antes de 9M para que 9M/10/11/12/13 tengan dónde enchufar su pantalla | ⬜ |
 | **9M** | **El mercado de pases**: el mundo se puebla de jugadores, la demanda existe, alguien compite por tu asiento, la escalera deja de ser un dado | ⬜ |
 | **10** | El final: retiro emergente + la tarjeta de legado | ⬜ |
@@ -1867,24 +1867,53 @@ Dependencias: 9Rc → 9Rd. 9Ra/9Rb/9Re/9Rf independientes y **ya hechas**. **Med
 5. Los efectos dejan de disolverse: `atributos.js` converge `mecanica`/`laneo`/`teamfight` a
    `velocidad: 0.3` — un `+3` desaparece en ~5 splits. Redistribuir hacia los stats que acumulan.
 
-## 9R.3 — El catálogo completo: 97 → ~280 eventos
+## 9R.3 — El catálogo completo: 97 → 218 eventos ✅ (2026-09-04)
 
 Absorbe y amplía la **FASE 13**, cuyo objetivo (*"≥150 opciones"*) ya está cumplido (hay 196) y aun
 así el juego se repite: la métrica correcta es **baraja elegible por turno**, no opciones totales.
 
-| Pool | Hoy | Objetivo | Subfase |
+| Pool | Antes | Final | Subfase |
 |---|---|---|---|
 | `partido/postpartido.json` | ~~4~~ **15** | 15 | ✅ 9R3a |
 | `partido/dentro_del_mapa.json` | ~~8~~ **23** | 22 | ✅ 9R3b |
 | `partido/presion.json` / `clasico.json` | ~~6 / 6~~ **13 / 13** | 13 / 13 | ✅ 9R3b |
 | `rol/*.json` (5 archivos) | ~~11~~ **45** | 45 | ✅ 9R3c |
 | elegibles en amateur | ~~19~~ **50** (28 con `etapa` amateur) | 45 | ✅ 9R3d |
-| resto (drama/salud/negocios/competición/estatus/registro/escena/pool) | 62 | ~95 → `cobertura.js --huecos` vacío al listón alto | 9R3e |
+| resto (drama/salud/negocios/competición/estatus/registro/escena/pool) | ~~62~~ **91** | ~95 | ✅ 9R3e |
+| listón de `cobertura.js --huecos` | ~~3~~ **6** | — | ✅ 9R3e |
+| check de repetición apretado | ~~4/8 · 25%~~ **4/7 · 15%** | — | ✅ 9R3f |
 
 Y **variación léxica, que hoy no existe** (0 arrays de frases, 100% strings fijos):
 `outcome.texto` acepta array de variantes; `FRASES_MOTIVO` (7 frases fijas narran 79 fechas/carrera)
 pasa a ~40; los pools de nombres (30×30 sílabas de handle, 20×10 de org) se amplían para que el
-mundo no suene igual en toda partida; 4 eventos que nunca salen en 100 carreras se regatean o borran.
+mundo no suene igual en toda partida; los 3 eventos que nunca salían se regatearon (0 borrados).
+
+**Catálogo final: 97 → 218 eventos, 150 → 438 opciones.** Cierra 9R.3. Sigue **9R.4**.
+
+### 9R3f — se aprieta el check de repetición, cierra 9R.3 ✅ (2026-09-04)
+
+- Puro tuneo de checks (regla 2): tope de volumen `4/8` → `4/7` (medido a N=400: mediana 3, p90 4,
+  máximo absoluto 6, estable); tope de concentración `25%` → `15%` (medido a N=500: p90 7.4%,
+  máximo 11.5%, estable).
+- validate 117/117, simulate 1000 sin crashes, determinismo intacto (no se tocó ningún sistema).
+
+### 9R3e — el resto del catálogo + el listón de cobertura sube ✅ (2026-09-04)
+
+- `drama_prensa` 4→8, `salud_vida` 6→10, `negocios` 4→8, `competicion` 5→9 (todos con `ventana`),
+  `estatus` 4→8 (uno por valor de `estatus`), `registro_cita` 4→7, `escena_2026` 5→9, `pool` 10→13.
+  +30 eventos, data-only.
+- Triage de eventos muertos (0/600 carreras): `first_selection` y `el_burn_de_cuarenta` gateaban
+  con `serie.activa==true`, un flag que el picker de ambiente nunca ve (vive dentro de
+  `temporada`/`serie.js`, que no elige de `TODOS_LOS_EVENTOS`) — contenido estructuralmente muerto.
+  Regateados: se saca la condición de serie, se anclan a `ventana`, sus efectos `partido` pasan a
+  `stat` (autocontenidos). `el_ano_muerto` pedía `ventana: pretemporada` para un momento
+  (`espera_edad_minima`) que solo se observa en `playoffs`; se saca la `ventana`. Los 3 disparan
+  ahora (75 / 32 / 2 en 500 carreras).
+- `BALANCE.contenido.minimoEventosPorCelda` 3 → 6: con 218 eventos la celda alcanzable más floja
+  ofrece 11, `cobertura.js --huecos` sigue vacío al doble de exigente.
+- **Medido:** catálogo 188 → 218, opciones 378 → 438. validate 117/117 (0 FAIL de datos/eventos;
+  las 2 FAIL de CSS que aparecían eran de la Fase T0b concurrente, ya cerrada). simulate 1000 sin
+  crashes, determinismo 150/150.
 
 ### 9R3d — el prólogo amateur tiene decisiones propias ✅ (2026-09-04)
 
@@ -2200,11 +2229,13 @@ cerraban con una sola línea `[rendimiento]` "terminó 4º de 10" — sin decir 
 - **Check nuevo:** todo split competitivo que no clasifica a playoffs cierra con una línea
   `temporada` no técnica de qué significa la posición (0 de 2986 sin ella).
 
-> **Fase 9R.0 + 9Rd + 9R3a + 9R3b + 9R3c + 9R3d cerradas.** Sigue el orden de PLAN.md dentro de
-> **9R.3**: **9R3e** (`resto` — drama/salud/negocios/competición/estatus/registro/escena/pool —
-> hasta `cobertura --huecos` vacío al listón alto + los eventos que nunca salen + apretar el check
-> de repetición si aguanta). Cierra 9R.3. Después: 9R.4.
-> Catálogo: 97 → **188** (9R3a+b+c+d). `rol/*` 11 → **45**; amateur 3 → **28** con `etapa` propia.
+> **9R.3 cerrada** (9R3a-f, 2026-09-04). Catálogo: 97 → **218** eventos, 150 → **438** opciones.
+> `rol/*` 11 → **45**; amateur 3 → **28** con `etapa` propia; 0 eventos muertos; `cobertura.js
+> --huecos` vacío al listón 6 (era 3); evento más repetido mediana 14→3 / máximo 32→6 desde antes
+> de 9R. Sigue el orden de PLAN.md: **9R.4** (los minijuegos de verdad). Nota de proceso: la fase
+> **T** (transmisión, UI) corre en paralelo en otra sesión — T0/T0b/T1 cerradas, siguiendo con T2+.
+> 9R.4 tiene una superficie de UI (feedback de minijuego, ya resuelta en 9R0b) pequeña; el resto
+> de la cola (9Rg, 9M-lite) es motor/datos puro y no colisiona con `src/ui/`.
 
 ---
 

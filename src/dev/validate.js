@@ -2081,8 +2081,12 @@ check('El volumen de decisiones de la carrera bajó de la cinta transportadora (
   if (medEv > 42) {
     throw new Error(`decisiones de "eventos" por carrera: mediana ${medEv} (tope 42; antes de 9R: 68)`);
   }
-  if (medRep > 4 || maxRep > 8) {
-    throw new Error(`evento más repetido por carrera: mediana ${medRep}, máximo ${maxRep} (topes 4 / 8; antes de 9R: 14 / 32; tras 9Ra-f: 5 / 7). 9R.3 baja los topes al ampliar los pools calientes.`);
+  // 9R3f: catálogo cerrado en 218 eventos (97 al arrancar 9R.3). Medido a
+  // N=400: mediana 3, p90 4, p99 5, máximo absoluto 6 — estable al variar N.
+  // Tope bajado 4/8 → 4/7 (un escalón de margen sobre el máximo observado,
+  // no sobre la mediana: la mediana ya rozaba 4 y bajarla más sería frágil).
+  if (medRep > 4 || maxRep > 7) {
+    throw new Error(`evento más repetido por carrera: mediana ${medRep}, máximo ${maxRep} (topes 4 / 7; antes de 9R: 14 / 32; tras 9Ra-f: 5 / 7; tras 9R.3: 3 / 6). 9R3f aprieta el tope al cerrar el catálogo.`);
   }
 });
 
@@ -3233,6 +3237,8 @@ check('La repetición de eventos está acotada (memoria anti-repetición)', () =
   // sí es independiente del tamaño de la población es la CONCENTRACIÓN: qué
   // fracción de todo lo que la carrera vio es el evento más repetido. Medido:
   // mediana 8.8%, p90 17.2% (contra el ~25-33% que daba el mecanismo viejo).
+  // 9R3f, catálogo cerrado (97 → 218 eventos): p90 7.4%, p95 8.0%, máximo
+  // observado 11.5% — estable a N=300 y N=500. Tope bajado 25% → 15%.
   const concentraciones = [];
 
   for (let seed = 1; seed <= 300; seed += 1) {
@@ -3268,8 +3274,8 @@ check('La repetición de eventos está acotada (memoria anti-repetición)', () =
   const ordenados = [...concentraciones].sort((a, b) => a - b);
   const p90 = ordenados[Math.floor(ordenados.length * 0.9)];
 
-  if (p90 > 0.25) {
-    throw new Error(`p90 de concentración (evento más visto / total visto) es ${(p90 * 100).toFixed(1)}%; el máximo esperado es 25%`);
+  if (p90 > 0.15) {
+    throw new Error(`p90 de concentración (evento más visto / total visto) es ${(p90 * 100).toFixed(1)}%; el máximo esperado es 15% (bajado de 25% en 9R3f)`);
   }
 });
 
