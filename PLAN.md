@@ -2361,7 +2361,7 @@ sumar otras cuatro tandas de CSS suelto que después hay que unificar igual.
 | **T2** | la ficha es el HUD | El riel izquierdo permanente, con contrato, valor de mercado y marcas que hoy no se ven |
 | **T3** | el escenario y el reproductor | El split se resuelve en beats, no de un salto. Audio sintetizado, apagado por defecto |
 | **T4** | la decisión con jerarquía | Banner por categoría (18 valores reales medidos, agrupados a 11 familias) y peso bisagra/cierre/normal (dos campos reales, no el "ambiente" inventado que decía una versión vieja de este plan) — sin motor |
-| **T5** | el riel de contexto | Tabla, calendario, plantilla, meta y generación. Cinco paneles, cero motor |
+| **T5** | el riel de contexto | Tabla, calendario, plantilla, meta y generación. Cinco paneles, cero motor — la tabla se deriva en vivo (`career.temporada.tabla` es un campo muerto durante toda la temporada, ver T5) |
 | **T6** | el partido y la serie | Tarjeta de resultado, barra de bracket, el camino mapa a mapa, los 5 minijuegos migrados |
 | **T7** | la tarjeta final y el PNG | Legado rediseñado + export a canvas 1200×630 + copiar link |
 | **T8** | la página como página | P.2 (guardado), P.3 (seed en la URL), P.4 (meta y OG), P.5 (repo) |
@@ -2606,14 +2606,26 @@ Cinco paneles, **todos con datos que el motor ya calcula. Cero motor.**
 
 | Panel | Fuente | Qué muestra |
 |---|---|---|
-| **Tabla** | `career.temporada.tabla` | La liga ordenada, tu fila resaltada, la línea de corte de playoffs y la de cupos internacionales |
+| **Tabla** | `tablaDePosiciones(registrosOtros, filaPropia)`, derivada en vivo | La liga ordenada, tu fila resaltada, la línea de corte de playoffs y la de cupos internacionales |
 | **Calendario** | `career.temporada.calendario` + `.indice` | El fixture: jugadas, la de hoy, las que vienen, con rival y fuerza |
 | **Plantilla** | `career.companeros` + `sinergia` | Los 4 compañeros con nombre, rol y nivel; sinergia como barra |
 | **Meta** | `meta.regimen` + `meta.tierList` | El régimen con nombre y tu pool marcado contra la tier list del parche |
 | **Generación** | `mundo.rivales` | Los 5 rivales con los que arrancaste. Hoy se generan y no se ven nunca (deuda D8) |
 
 Los paneles **se ocultan** cuando no hay dato (el amateur no tiene tabla ni plantilla). Nunca se
-muestran en cero: un panel vacío es peor que un panel ausente.
+muestran en cero: un panel vacío es peor que un panel ausente. El colapso de la tercera columna
+del riel es CSS puro (`:has()`), sin que el controlador tenga que togglear una clase por render.
+
+> **`career.temporada.tabla` es un campo muerto — descubierto jugando, no leyendo el código.**
+> Este bloque decía "Fuente: `career.temporada.tabla`" y ese campo existe, pero
+> `avanzarFechaSilenciosa` (`systems/temporada.js`) nunca lo escribe: actualiza
+> `registrosOtros`/`filaPropia`/`indice` cada fecha y deja `.tabla` en `[]` toda la temporada regular.
+> Se llena una única vez, al CERRAR la temporada, en el mismo golpe que pone `activa: false` — leerlo
+> tal cual habría mostrado el panel vacío toda la temporada y con datos reales justo cuando ya no
+> corresponde mostrarlo. La fuente real que usa el panel es `tablaDePosiciones(registrosOtros,
+> filaPropia)` — la misma función pura que `systems/temporada.js` ya llama para el texto del log de
+> cada fecha —, derivada en el momento sobre los dos campos que sí se actualizan. Cero motor: ninguna
+> línea de `systems/` se tocó, solo se dejó de leer un campo que nunca tuvo datos útiles en vivo.
 
 ## T6 — El partido y la serie como transmisión
 

@@ -33,6 +33,60 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-04 — Fase T5: el riel de contexto
+
+Cinco paneles nuevos en una tercera columna del shell — tabla, calendario, plantilla, meta,
+generación —, todos con datos que el motor ya calculaba desde hace fases y que hasta hoy no se
+veían en ningún lado. Cero motor.
+
+#### Un campo muerto real, encontrado jugando
+
+`career.temporada.tabla` parecía la fuente obvia para el panel de Tabla — hasta que jugar una
+carrera de verdad mostró el panel vacío toda la temporada regular. Grep confirmó por qué:
+`avanzarFechaSilenciosa` (`systems/temporada.js`) actualiza `registrosOtros`/`filaPropia`/`indice`
+cada fecha, pero **nunca escribe `.tabla`** — ese campo se llena una sola vez, al cerrar la
+temporada, en el mismo golpe que pone `activa: false`. Leerlo tal cual habría sido un panel vacío
+toda la temporada y, la única vez que tiene datos, ya no corresponde mostrarlo.
+
+El arreglo: el panel deriva la tabla en vivo con `tablaDePosiciones(registrosOtros, filaPropia)` —
+la misma función pura de `core/temporada.js` que `systems/temporada.js` ya usa para el texto del
+log de cada fecha ("Quedan Xº de Y"). Cero línea de motor tocada; solo se dejó de leer un campo
+que nunca tuvo datos útiles durante la temporada.
+
+#### Qué entra
+
+- **`src/ui/paneles/{tabla,calendario,plantilla,meta,generacion}.js`** (nuevos): un render puro
+  por panel, cada uno oculta su contenedor si no hay dato real (amateur no tiene tabla ni
+  plantilla; meta/generación sí existen desde el split 1).
+  - Tabla: la liga ordenada, fila propia resaltada, línea punteada de corte de playoffs (verde) y
+    de cupos internacionales (oro) — de `liga.formatoPlayoffs.clasifican`/`cuposInternacionales`.
+  - Calendario: el fixture completo, jugadas atenuadas, la de hoy resaltada, las que vienen con
+    una lectura cualitativa de la fuerza del rival (favorito/parejo/débil) — nunca un resultado
+    inventado para fechas ya jugadas, el fixture no guarda eso por fecha (regla 15).
+  - Plantilla: los 4 compañeros con rol y nivel, sinergia como barra.
+  - Meta: el régimen vigente (`data/metas.json`, `nombre`+`descripcion`) y las primeras 8 entradas
+    de la tier list S/A/B/C, con el pool del jugador resaltado en oro donde coincide.
+  - Generación: los 5 rivales de `mundo.rivales` (deuda D8) — handle, rol, liga; `desenlace` los
+    reemplaza cuando el cierre de su carrera lo complete (fase 9M/11, todavía no corre).
+- **`carrera.js`**: nuevo `renderRielContexto(elements, state, modulos)`, orquesta los 5 — mismo
+  patrón que `renderCarrera` con la ficha y el feed.
+- **`shell.css`**: la grilla pasa de dos a tres columnas **solo cuando hay contenido real**
+  (`:has(.riel-der > .panel-contexto:not([hidden]))`), sin que el controlador tenga que togglear
+  una clase en cada render. El breakpoint de 899px necesitó repetir el mismo `:has()` en su propio
+  override — la versión con `:has()` tiene más especificidad que un `.shell-cuerpo` a secas, así
+  que sin repetirlo le ganaba al layout de una columna en mobile (misma familia de trampa que el
+  `:where(button)` de T0b).
+- **`index.html`**: `volverAlInicio()` ahora oculta los 5 paneles explícitamente — sin eso, la
+  columna se quedaba desplegada con datos de la carrera anterior mientras el setup estaba arriba.
+
+#### Verificación
+
+Jugada una carrera completa por CDP (seed 1, instantáneo): los 5 paneles aparecieron con datos
+reales en el orden esperado (meta/generación desde el split 1, plantilla al fichar, calendario al
+arrancar la temporada, tabla recién en la primera fecha jugada — coherente con que se deriva en
+vivo). Capturado a 1600px y 1180px: la tercera columna se despliega sin desborde en ninguno de los
+dos anchos, cero errores de consola. Recorrida CDP completa a los 5 breakpoints, sin regresiones.
+
 ### 2026-09-04 — Fase T4: la decisión con jerarquía
 
 Adelanta la mitad visual de la fase 12 — banner por categoría y peso bisagra/cierre/normal —

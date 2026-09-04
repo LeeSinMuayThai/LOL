@@ -132,8 +132,24 @@ body { padding: 0; }
   gap: var(--s-5);
   padding: var(--s-5);
 }
+/* T1 dejó la grilla en dos columnas a propósito: "un panel vacío es peor
+   que un panel ausente", y el riel derecho no tenía con qué llenarse
+   todavía. T5 le suma la tercera columna, pero solo cuando de verdad hay
+   algo — `:has()` lo resuelve sin que el controlador tenga que togglear
+   una clase en cada render. */
+.shell-cuerpo:has(.riel-der > .panel-contexto:not([hidden])) {
+  grid-template-columns: var(--riel-izq) 1fr var(--riel-der);
+}
 
 .riel { grid-column: 1; min-width: 0; }
+
+.riel-der {
+  grid-column: 3;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
 
 .escenario {
   grid-column: 2;
@@ -177,7 +193,17 @@ body { padding: 0; }
    pegajosa arriba — CSS puro, sin JS: el shell no necesita saber en qué
    ancho está. */
 @media (max-width: 899px) {
-  .shell-cuerpo { grid-template-columns: 1fr; padding: var(--s-4); gap: var(--s-4); }
+  /* La versión `:has()` de la regla de arriba tiene más especificidad que
+     un `.shell-cuerpo` a secas (dos "clases" contra una) — sin repetir el
+     mismo `:has()` acá, esa regla le gana a ÉSTA aunque esté adentro de un
+     media query más específico en ancho. Es la misma trampa de
+     especificidad que ya apareció en T0b con los botones. */
+  .shell-cuerpo,
+  .shell-cuerpo:has(.riel-der > .panel-contexto:not([hidden])) {
+    grid-template-columns: 1fr;
+    padding: var(--s-4);
+    gap: var(--s-4);
+  }
   .riel {
     grid-column: 1;
     position: sticky;
@@ -187,6 +213,7 @@ body { padding: 0; }
     padding-bottom: var(--s-2);
   }
   .escenario { grid-column: 1; max-width: none; }
+  .riel-der { grid-column: 1; }
 }
 
 @media (max-width: 639px) {

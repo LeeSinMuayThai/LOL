@@ -111,6 +111,20 @@
             <button id="nuevaCarrera" type="button" hidden>Nueva carrera</button>
           </div>
         </div>
+
+        <!-- El riel derecho (fase T5): cinco paneles de contexto, todos con
+             datos que el motor ya calcula y hasta esta fase no se veían en
+             ningún lado. Cada uno se oculta solo (`hidden`) si no tiene
+             nada real que mostrar — la columna entera se colapsa por CSS
+             (`:has()` en shell.css) cuando los cinco están vacíos, en vez
+             de dejar un hueco fantasma durante el setup o en amateur. -->
+        <aside class="riel-der" aria-label="Contexto de la carrera">
+          <div id="panelTabla" class="panel-contexto" hidden></div>
+          <div id="panelCalendario" class="panel-contexto" hidden></div>
+          <div id="panelPlantilla" class="panel-contexto" hidden></div>
+          <div id="panelMeta" class="panel-contexto" hidden></div>
+          <div id="panelGeneracion" class="panel-contexto" hidden></div>
+        </aside>
       </div>
 
       <footer class="ticker" id="ticker" aria-hidden="true"></footer>
@@ -146,6 +160,16 @@
       const mercadoRepresentante = document.getElementById('mercadoRepresentante');
       const tarjetaPanel = document.getElementById('tarjeta');
       const seedInput = document.getElementById('seedInput');
+      // El riel derecho (T5): un objeto solo, para pasarlo entero a
+      // ui.renderRielContexto en cada tick — mismo patrón que
+      // `carreraElements`.
+      const rielElements = {
+        panelTabla: document.getElementById('panelTabla'),
+        panelCalendario: document.getElementById('panelCalendario'),
+        panelPlantilla: document.getElementById('panelPlantilla'),
+        panelMeta: document.getElementById('panelMeta'),
+        panelGeneracion: document.getElementById('panelGeneracion')
+      };
       const toggleVelocidad = document.getElementById('toggleVelocidad');
       const toggleSonido = document.getElementById('toggleSonido');
 
@@ -512,6 +536,7 @@
       // `estado`, mismo motor, solo cambia CUÁNDO entra cada línea al DOM.
       async function revelarYVerDecision(logsAntes, registroAntes) {
         ui.renderFicha(fichaContainer, estado, modulos);
+        ui.renderRielContexto(rielElements, estado, modulos);
         const bisagra = estado.pendiente?.decision?.datos?.evento?.bisagra ?? false;
         await reproductor.reproducirBeats(logList, estado.logs.slice(logsAntes), {
           registroAntes, registroDespues: estado.career.registro, bisagra
@@ -544,6 +569,7 @@
         }
 
         ui.renderCarrera(carreraElements, estado, modulos);
+        ui.renderRielContexto(rielElements, estado, modulos);
         renderResumenFinal(estado);
         nuevaCarreraBtn.hidden = false;
       }
@@ -649,6 +675,12 @@
         carreraPanel.hidden = true;
         setupPanel.hidden = false;
         nuevaCarreraBtn.hidden = true;
+        // Los paneles del riel derecho (T5) quedan con el `hidden` de la
+        // última carrera terminada — sin esto, la columna entera se queda
+        // desplegada con datos viejos mientras el setup está arriba.
+        for (const panel of Object.values(rielElements)) {
+          panel.hidden = true;
+        }
         pantallaInicio.reset();
       }
 
