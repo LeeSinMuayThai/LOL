@@ -127,6 +127,15 @@ se corta** — queda anotado para que sea una decisión, no una deriva.
 `validate.js` **126/126 OK, 0 FAIL** · `simulate.js 1000 60 todas` **0 crashes** · determinismo
 intra-versión **150/150** · `npm run build` OK (**1162 KB**, techo 1200).
 
+#### La verificación que pide la Definición de terminado: jugarlo
+
+Una carrera completa jugada en Chrome real por CDP —desde elegir línea y campeones en la pantalla
+de inicio hasta el final—, contestando toda decisión y jugando todo minijuego que apareciera. Por el
+camino real del controlador (decisión → panel → apuesta → widget → `responder` → el motor sigue)
+salieron **siete mecánicas distintas en una sola carrera**: `la_prueba`, `la_llamada`, `el_combo`,
+`bootcamp`, `rueda_de_prensa`, `robar_baron` y `la_vision`. **Cero errores de consola.** Antes de
+9R.4 esa misma carrera habría visto dos: la prueba del tryout y la llamada, una y otra vez.
+
 Con esto **cierra la fase 9R** entera (9Ra→9Rg, 9R.0→9R.5). Sigue **9M** (o 9M-lite b/c/d/e).
 
 ### 2026-09-05 — Fase 9R4e: calibrar el banco (cierra la fase 9R.4)
