@@ -2341,6 +2341,96 @@ check('El impacto de los minijuegos está acotado (ni decorativo ni gambling)', 
   }
 });
 
+check('El banco de mecánicas se reparte: ninguna se lleva la carrera (9R4c)', () => {
+  // Antes de 9R.4 el reparto era: cuatro de los cinco roles jugaban SIEMPRE
+  // `la_llamada` (33% de todos los minijuegos) y el jungla SIEMPRE el Barón.
+  // Con once mecánicas en el catálogo y el cooldown de 9R4a, ninguna debería
+  // llevarse más de un tercio, y cada rol tiene que tener de dónde elegir.
+  const TOPE = 0.35;
+  const MINIMO_POR_ROL = 4;
+
+  for (const rol of IDS_ROL) {
+    const elegibles = new Set();
+    for (const momento of ['mapa_cerrado', 'mapa_decisivo', 'pre_internacional', 'post_serie', 'tryout']) {
+      for (const entrada of minijuegosPara({ player: { role: rol } }, momento)) {
+        elegibles.add(entrada.id);
+      }
+    }
+    if (elegibles.size < MINIMO_POR_ROL) {
+      throw new Error(`${rol} sólo tiene ${elegibles.size} mecánicas elegibles (mínimo ${MINIMO_POR_ROL})`);
+    }
+  }
+
+  const porTipo = {};
+  let total = 0;
+  for (let seed = 1; seed <= 300; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    const responder = (sistema, st, decision, r) => {
+      if (decision.datos?.motivo === 'minijuego') {
+        total += 1;
+        porTipo[decision.datos.minijuego] = (porTipo[decision.datos.minijuego] ?? 0) + 1;
+      }
+      return sistema.resolverAuto(st, decision, r);
+    };
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng, responder).state;
+    }
+  }
+
+  if (total < 500) {
+    throw new Error(`sólo ${total} minijuegos en 300 carreras: muestra insuficiente`);
+  }
+  const [idTop, vecesTop] = Object.entries(porTipo).sort((a, b) => b[1] - a[1])[0];
+  if (vecesTop / total > TOPE) {
+    throw new Error(
+      `"${idTop}" se lleva el ${((vecesTop / total) * 100).toFixed(0)}% de los minijuegos `
+      + `(tope ${TOPE * 100}%; antes de 9R.4, la_llamada: 33%)`
+    );
+  }
+  // Y que el catálogo no tenga mecánicas muertas: todas tienen que salir.
+  const nuncaSalieron = MINIJUEGOS.filter((entrada) => !porTipo[entrada.id]).map((entrada) => entrada.id);
+  if (nuncaSalieron.length > 0) {
+    throw new Error(`mecánicas que no salieron nunca en 300 carreras: ${nuncaSalieron.join(', ')}`);
+  }
+});
+
+check('Toda mecánica se puede terminar sin mouse y sin animación (9R4c)', () => {
+  // Los dos requisitos duros de la fase T que un widget nuevo puede romper sin
+  // que nada más se entere: que el blanco sea un `<button>` de verdad (o que la
+  // mecánica escuche el teclado) y que el timing respete
+  // `prefers-reduced-motion`. Se verifica sobre el CÓDIGO de cada widget: en
+  // Node no hay DOM para montarlos de verdad, y un check que no puede correr
+  // es peor que no tenerlo (trampa T5).
+  const dir = path.join(srcDir, 'ui', 'components', 'minijuegos');
+  const archivos = fs.readdirSync(dir).filter((nombre) => nombre.endsWith('.js') && nombre !== 'index.js' && nombre !== 'comun.js');
+
+  if (archivos.length !== Object.keys(MONTAR_MINIJUEGO).length) {
+    throw new Error(`${archivos.length} archivos de mecánica contra ${Object.keys(MONTAR_MINIJUEGO).length} widgets registrados`);
+  }
+
+  for (const nombre of archivos) {
+    const codigo = fs.readFileSync(path.join(dir, nombre), 'utf8');
+    const tieneBoton = codigo.includes("'button'") || codigo.includes('minijuego-btn') || codigo.includes('<button');
+    const escuchaTeclas = codigo.includes('escuchaTeclado') || codigo.includes('keydown');
+    if (!tieneBoton && !escuchaTeclas) {
+      throw new Error(`${nombre}: no se puede terminar sin mouse (ni botones ni teclado)`);
+    }
+    // Si anima con requestAnimationFrame o cronometra con Date/performance,
+    // tiene que consultar la preferencia de motion reducido.
+    const anima = codigo.includes('requestAnimationFrame') || codigo.includes('setInterval');
+    const declaraMotion = codigo.includes('motionReducido') || codigo.includes('relojDeMinijuego')
+      // Escapatoria explicita, no silenciosa: una mecanica cuyo timing son pasos
+      // discretos (nada que se deslice) escribe `motion-reducido: no aplica` y dice
+      // por que; el check la deja pasar, pero alguien tuvo que decidirlo.
+      || codigo.includes('motion-reducido: no aplica');
+    if (anima && !declaraMotion) {
+      throw new Error(`${nombre}: anima o cronometra sin mirar prefers-reduced-motion`);
+    }
+    // (el azar nativo lo cubre `guards.js` para todo /src, no hace falta acá)
+  }
+});
+
 check('El internacional tiene su jugada, no sólo el bootcamp (9R4b)', () => {
   // Medido antes de 9R4b: 643 de 643 internacionales se resolvían con el
   // bootcamp y nada más. El bootcamp pasa ANTES del primer mapa y gastaba el

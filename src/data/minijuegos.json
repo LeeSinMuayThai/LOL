@@ -1,10 +1,17 @@
 [
   {
     "id": "robar_baron",
-    "momentos": ["mapa_cerrado", "mapa_decisivo"],
-    "roles": ["jungla"],
+    "momentos": [
+      "mapa_cerrado",
+      "mapa_decisivo"
+    ],
+    "roles": [
+      "jungla"
+    ],
     "statRelevante": "mecanica",
-    "efecto": { "tipo": "mapa" },
+    "efecto": {
+      "tipo": "mapa"
+    },
     "impacto": 0.12,
     "spread": 0.2,
     "titulos": [
@@ -35,10 +42,16 @@
   },
   {
     "id": "la_llamada",
-    "momentos": ["mapa_cerrado", "mapa_decisivo"],
+    "momentos": [
+      "mapa_cerrado",
+      "mapa_decisivo"
+    ],
     "roles": [],
     "statRelevante": "shotcalling",
-    "efecto": { "tipo": "mapa", "amortiguador": "jerarquia" },
+    "efecto": {
+      "tipo": "mapa",
+      "amortiguador": "jerarquia"
+    },
     "impacto": 0.12,
     "spread": 0.2,
     "titulos": [
@@ -69,10 +82,17 @@
   },
   {
     "id": "bootcamp",
-    "momentos": ["pre_internacional"],
+    "momentos": [
+      "pre_internacional"
+    ],
     "roles": [],
     "statRelevante": "macro",
-    "efecto": { "tipo": "stat", "targets": ["player.stats.mentalidad"] },
+    "efecto": {
+      "tipo": "stat",
+      "targets": [
+        "player.stats.mentalidad"
+      ]
+    },
     "impacto": 6,
     "spread": 0.2,
     "titulos": [
@@ -103,10 +123,18 @@
   },
   {
     "id": "rueda_de_prensa",
-    "momentos": ["post_serie"],
+    "momentos": [
+      "post_serie"
+    ],
     "roles": [],
     "statRelevante": "adaptabilidad",
-    "efecto": { "tipo": "stat", "targets": ["player.stats.hype", "career.sinergia"] },
+    "efecto": {
+      "tipo": "stat",
+      "targets": [
+        "player.stats.hype",
+        "career.sinergia"
+      ]
+    },
     "impacto": 6,
     "spread": 0.2,
     "titulos": [
@@ -137,10 +165,14 @@
   },
   {
     "id": "la_prueba",
-    "momentos": ["tryout"],
+    "momentos": [
+      "tryout"
+    ],
     "roles": [],
     "statRelevante": "mecanica",
-    "efecto": { "tipo": "roster" },
+    "efecto": {
+      "tipo": "roster"
+    },
     "impacto": 6,
     "spread": 0.2,
     "titulos": [
@@ -166,6 +198,248 @@
       "mal": [
         "El tryout no terminó de convencer.",
         "Salió flojo: entrás debiendo algo."
+      ]
+    }
+  },
+  {
+    "id": "last_hit",
+    "momentos": [
+      "mapa_cerrado"
+    ],
+    "roles": [
+      "top",
+      "mid",
+      "adc"
+    ],
+    "statRelevante": "laneo",
+    "efecto": {
+      "tipo": "mapa"
+    },
+    "impacto": 0.12,
+    "spread": 0.2,
+    "titulos": [
+      "La ola que define",
+      "Cinco minions y una torre",
+      "El CS que no se puede perder"
+    ],
+    "descripciones": [
+      "El mapa está cerrado y la línea decide: si te llevás la ola completa salís con el item antes que él.",
+      "La ola entra a la torre y el jungla rival está cerca. Todo lo que remates es ventaja.",
+      "Está parejo y la diferencia son cinco last hits."
+    ],
+    "apuesta": "Cada minion que rematás empuja este mapa para tu lado; los que perdés, para el otro.",
+    "veredictos": {
+      "bien": [
+        "Te llevás la ola entera: salís de la línea con ventaja.",
+        "No se te cae uno: el item llega antes y se nota."
+      ],
+      "parejo": [
+        "Rematás lo justo, sin sacar diferencia.",
+        "La ola sale medio partida, ni ganás ni perdés."
+      ],
+      "mal": [
+        "Se te va media ola: quedás atrás en la línea.",
+        "Fallás los remates y el farmeo se te complica."
+      ]
+    }
+  },
+  {
+    "id": "el_combo",
+    "momentos": [
+      "mapa_cerrado",
+      "mapa_decisivo"
+    ],
+    "roles": [],
+    "statRelevante": "mecanica",
+    "efecto": {
+      "tipo": "mapa"
+    },
+    "impacto": 0.12,
+    "spread": 0.2,
+    "titulos": [
+      "El combo completo",
+      "Todo el kit, en orden",
+      "La secuencia que no se puede errar"
+    ],
+    "descripciones": [
+      "Lo tenés a un combo. Si sale entero, no se levanta.",
+      "Hay una ventana para el full combo y dura lo que dura el stun.",
+      "Toda la pelea depende de que la secuencia salga completa y en orden."
+    ],
+    "apuesta": "Si el combo sale entero el mapa se te va a favor; si se te traba, quedás vendido.",
+    "veredictos": {
+      "bien": [
+        "Sale entero y limpio: se lo llevás puesto.",
+        "El combo completo, sin un frame de más: pelea ganada."
+      ],
+      "parejo": [
+        "Sale la mitad y alcanza para sacarlo, nada más.",
+        "Lo trabás a medias: queda vivo, pero atrás."
+      ],
+      "mal": [
+        "Se te traba el combo y quedás vendido.",
+        "Errás el orden y la pelea se da vuelta."
+      ]
+    }
+  },
+  {
+    "id": "dodge",
+    "momentos": [
+      "mapa_cerrado",
+      "mapa_decisivo"
+    ],
+    "roles": [],
+    "statRelevante": "mecanica",
+    "efecto": {
+      "tipo": "mapa"
+    },
+    "impacto": 0.12,
+    "spread": 0.2,
+    "titulos": [
+      "Esquivar o morir",
+      "Todo lo que te tiran",
+      "El baile de skillshots"
+    ],
+    "descripciones": [
+      "Te tiran todo y estás sin flash: hay que leer y moverse.",
+      "El mapa está cerrado y cada skillshot que comés es la pelea.",
+      "Están buscándote a vos: si no te enganchan, ganan ellos el tiempo."
+    ],
+    "apuesta": "Cada skillshot que esquivás inclina este mapa; cada uno que comés, también, para el otro lado.",
+    "veredictos": {
+      "bien": [
+        "No te tocan una: sobrevivís y la pelea se da vuelta.",
+        "Los esquivás todos y el equipo se te acopla."
+      ],
+      "parejo": [
+        "Comés alguno, aguantás igual.",
+        "Te enganchan a medias: seguís vivo, con menos."
+      ],
+      "mal": [
+        "Te enganchan de entrada: la pelea se pierde ahí.",
+        "Comés todo lo que te tiran y el mapa se complica."
+      ]
+    }
+  },
+  {
+    "id": "la_vision",
+    "momentos": [
+      "mapa_cerrado"
+    ],
+    "roles": [
+      "support",
+      "jungla"
+    ],
+    "statRelevante": "macro",
+    "efecto": {
+      "tipo": "mapa"
+    },
+    "impacto": 0.12,
+    "spread": 0.2,
+    "titulos": [
+      "Dónde no ves",
+      "La visión antes del objetivo",
+      "El mapa a oscuras"
+    ],
+    "descripciones": [
+      "El objetivo sale en un minuto y hay zonas del mapa que quedaron sin visión.",
+      "Se apagaron las wards justo donde se va a jugar.",
+      "Nadie tiene visión de la mitad del mapa y hay que decidir dónde ponerla."
+    ],
+    "apuesta": "La visión que armás bien te da el objetivo; la que dejás abierta se la regalás.",
+    "veredictos": {
+      "bien": [
+        "Wardeás exactamente donde se juega: los ves venir.",
+        "Con esa visión el objetivo lo tomás sin pelear."
+      ],
+      "parejo": [
+        "Algo de visión queda, no toda la que hacía falta.",
+        "Cubrís la mitad: se pelea a ciegas igual."
+      ],
+      "mal": [
+        "Wardeás para otro lado: te entran por donde no mirabas.",
+        "El mapa queda oscuro justo donde se define."
+      ]
+    }
+  },
+  {
+    "id": "el_kite",
+    "momentos": [
+      "mapa_cerrado"
+    ],
+    "roles": [
+      "adc"
+    ],
+    "statRelevante": "mecanica",
+    "efecto": {
+      "tipo": "mapa"
+    },
+    "impacto": 0.12,
+    "spread": 0.2,
+    "titulos": [
+      "Kitear al bruiser",
+      "Atacar y moverse",
+      "El baile con el que te busca"
+    ],
+    "descripciones": [
+      "Te van a buscar a vos: todo el mapa depende de que sigas pegando mientras te movés.",
+      "El bruiser rival entra derecho. Si lo kiteás, la pelea es tuya.",
+      "Está cerrado y sos el daño: pegar, moverse, pegar."
+    ],
+    "apuesta": "Cada golpe que metés sin comerte el suyo empuja el mapa; si perdés el ritmo, te caés.",
+    "veredictos": {
+      "bien": [
+        "Lo kiteás entero: no te toca y se muere caminando.",
+        "El ritmo perfecto: pegás todo y no comés nada."
+      ],
+      "parejo": [
+        "Perdés algún golpe pero aguantás la pelea.",
+        "Kiteás a medias: sobrevivís, con menos daño."
+      ],
+      "mal": [
+        "Te alcanzan de entrada y no pegás nada.",
+        "Se te va el ritmo y te caés primero."
+      ]
+    }
+  },
+  {
+    "id": "el_teleport",
+    "momentos": [
+      "mapa_cerrado",
+      "mapa_decisivo"
+    ],
+    "roles": [
+      "top"
+    ],
+    "statRelevante": "macro",
+    "efecto": {
+      "tipo": "mapa"
+    },
+    "impacto": 0.12,
+    "spread": 0.2,
+    "titulos": [
+      "El TP que define",
+      "Bajar o no bajar",
+      "El teleport, a tiempo"
+    ],
+    "descripciones": [
+      "Se está armando la pelea abajo y tenés TP. El teleport tarda: hay que apretarlo antes.",
+      "Si bajás justo, sos uno de más. Si bajás tarde, llegás a mirar.",
+      "El mapa se define en el otro lado y vos tenés el TP listo."
+    ],
+    "apuesta": "Un TP a tiempo te da el mapa; uno tarde te deja mirando cómo se pierde.",
+    "veredictos": {
+      "bien": [
+        "Bajás justo a tiempo: sos uno de más y se define ahí.",
+        "El TP cae perfecto y les da vuelta la pelea."
+      ],
+      "parejo": [
+        "Llegás con la pelea empezada: sirve a medias.",
+        "El TP entra tarde pero salvás algo."
+      ],
+      "mal": [
+        "Llegás a mirar: la pelea ya estaba perdida.",
+        "Tirás el TP temprano y avisás que bajabas."
       ]
     }
   }

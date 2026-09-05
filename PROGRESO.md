@@ -33,6 +33,78 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-05 — Fase 9R4c: el banco de mecánicas (5 → 11 minijuegos)
+
+Tercer commit de **9R.4**, y el que responde al pedido textual del usuario: *"1 por rol sería muy
+repetitivo, tienen que ser varios, desde last hit de minions fast, hasta dodgear, smite, y que se
+te ocurran cosas del lol, apretar teclas en orden tipo combo etc"*.
+
+#### Seis mecánicas nuevas
+
+| id | qué se juega | stat | roles |
+|---|---|---|---|
+| `last_hit` | rematar 5 minions en la ventana de ejecución; la ventana la abre el laneo | `laneo` | top · mid · adc |
+| `el_combo` | la secuencia Q-W-E-R se ve un momento y hay que repetirla con el teclado | `mecanica` | todos |
+| `dodge` | esquivar 3-4 skillshots moviéndose entre carriles con flechas o A/D | `mecanica` | todos |
+| `la_vision` | acordarse de qué zonas del mapa quedaron a oscuras y wardearlas | `macro` | support · jungla |
+| `el_kite` | alternar atacar/moverse contra un metrónomo, 8 tiempos | `mecanica` | adc |
+| `el_teleport` | el TP tarda en canalizar: hay que apretarlo **antes** de la ventana | `macro` | top |
+
+Todas cumplen el contrato de T6 sin tocarlo: `montar(container, state, onDone, rngUi)` →
+`onDone(0..1)`. Lo compartido vive en `components/minijuegos/comun.js` (nuevo): `motionReducido`,
+`ventanaPorStat` (la regla 2 de §4.6 —"los stats corren tus odds"— en una sola función),
+`unaSolaVez`, `escuchaTeclado` (que devuelve cómo soltarlo: si no, el teclado de un minijuego sigue
+vivo durante el siguiente), `relojDeMinijuego` y `marcadorDeRondas`.
+
+#### El reparto, medido (300 carreras × 60 splits)
+
+| | Antes de 9R.4 | Ahora |
+|---|---|---|
+| Mecánica más frecuente | `la_llamada` **33%** | `bootcamp` **23,6%** |
+| `la_llamada` | 33% | **12,3%** |
+| Mecánicas distintas que ve un rol | 2 | **7-8** |
+| Mismo minijuego repetido por carrera | mediana 1 · p90 8 · máx **17** | mediana 1 · p90 **7** · máx **11** |
+| Minijuegos / decisiones | 5,71% | **8,77%** |
+| Decisiones por carrera | mediana 115 | **115** (p90 156) |
+
+Reparto completo: `bootcamp` 23,6% · `rueda_de_prensa` 17,6% · `el_combo` 13,1% · `la_llamada`
+12,3% · `dodge` 11,7% · `la_prueba` 7,5% · `last_hit` 5,3% · `la_vision` 3,5% · `robar_baron` 2,3%
+· `el_teleport` 1,9% · `el_kite` 1,2%. Ninguna mecánica está muerta.
+
+#### Un agujero viejo que el check nuevo destapó
+
+La fase T declara *"toda la UI corre con `prefers-reduced-motion: reduce` sin perder información"*, y
+el CSS de `base.css` apaga las animaciones **de CSS**. Los minijuegos de la fase 4 no animan con
+CSS: escriben estilos desde JS con `requestAnimationFrame`. **Cuatro años de preferencia del
+sistema ignorados en el único lugar de la UI que pide reflejos.** `bootcamp.js` (barra de tiempo) y
+`robarBaron.js` (el cursor que barre) se retrofitearon: el primero usa `relojDeMinijuego`, el
+segundo salta de escalón en escalón mostrando el número cuando la preferencia está activa.
+
+#### Checks nuevos (2)
+
+1. **"El banco de mecánicas se reparte"**: ninguna se lleva más del 35% de los minijuegos jugados,
+   cada rol tiene ≥4 elegibles, y ninguna del catálogo queda sin salir nunca en 300 carreras.
+2. **"Toda mecánica se puede terminar sin mouse y sin animación"**: cada widget tiene botones reales
+   o escucha el teclado, y si anima o cronometra tiene que consultar `prefers-reduced-motion` — o
+   declarar en el código `motion-reducido: no aplica` y decir por qué (`el_kite` es el caso: su
+   metrónomo son pasos que cambian de estado, no algo que se desliza). *Este check nació en rojo*:
+   agarró `bootcamp.js` de entrada.
+
+#### e2e en Chrome real (CDP), las 11 mecánicas × 2 modos
+
+Se montan las 11 en la página servida de verdad, se les manda teclado y clicks, y se verifica el
+contrato: **`onDone` exactamente una vez, con un número en [0,1], y cero errores de consola** — una
+pasada con motion normal y otra con `prefers-reduced-motion: reduce` emulado.
+
+Encontró un problema real: `el_kite` con motion reducido tardaba **9 s** contra 6,4 s, porque
+estiraba el tempo un 40% "por las dudas". El metrónomo no se desliza, así que estirarlo sólo
+alargaba el minijuego sin dar una sola información más. Corregido y re-verificado: **22 de 22 OK**.
+
+#### Verificación
+
+`validate.js` **125/125 OK, 0 FAIL** · `simulate.js 1000 60 todas` **0 crashes** · determinismo
+intra-versión **150/150** · e2e CDP 22/22 · `npm run build` OK (**1158 KB**, techo 1200).
+
 ### 2026-09-05 — Fase 9R4b: el cupo se reparte (el internacional y el mapa 5)
 
 Segundo commit de **9R.4**. Un solo cupo de minijuego por serie tapaba los dos momentos más

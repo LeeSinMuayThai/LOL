@@ -956,3 +956,185 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   text-decoration: line-through;
   text-decoration-color: var(--line-strong);
 }
+
+/* --- El banco de mecánicas (fase 9R4c) -------------------------------------
+   Seis mecánicas nuevas sobre los mismos tokens y las mismas clases base que
+   las cinco de la fase 4. Nada de color literal acá (guards.js): todo sale de
+   tokens.css. Ninguna depende de una animación para poder jugarse — con
+   `prefers-reduced-motion` el JS cambia el timing y estos estilos siguen
+   diciendo lo mismo. */
+
+/* last_hit — la ola de minions */
+.minijuego-ola {
+  display: flex;
+  gap: var(--s-3);
+  align-items: flex-end;
+  margin: var(--s-4) 0 var(--s-3);
+}
+
+.minijuego-minion {
+  position: relative;
+  width: 56px;
+  height: 88px;
+  padding: 0 0 var(--s-2);
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sharp);
+  color: var(--ink-dim);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.minijuego-minion:disabled { opacity: 0.4; }
+.minijuego-minion[data-resultado="bien"] { border-color: var(--up); }
+.minijuego-minion[data-resultado="mal"] { border-color: var(--down); }
+
+.minijuego-minion-hp {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100%;
+  background: var(--live-fill);
+  border-top: 2px solid var(--live);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  font-size: var(--fs-1);
+  color: var(--ink-dim);
+}
+
+.minijuego-minion[data-zona="ejecucion"] .minijuego-minion-hp {
+  background: var(--warn-fill);
+  border-top-color: var(--warn);
+}
+
+.minijuego-minion-num {
+  position: relative;
+  font-family: var(--font-display);
+  font-size: var(--fs-3);
+  color: var(--ink);
+}
+
+/* el_combo — la secuencia de teclas */
+.minijuego-teclas {
+  display: flex;
+  gap: var(--s-2);
+  margin: var(--s-4) 0 var(--s-3);
+}
+
+.minijuego-tecla {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: var(--fs-4);
+  color: var(--ink);
+  background: var(--bg-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sharp);
+}
+
+.minijuego-tecla[data-resultado="bien"] { border-color: var(--up); color: var(--up); }
+.minijuego-tecla[data-resultado="mal"] { border-color: var(--down); color: var(--down); }
+.minijuego-tecla-btn { min-width: 52px; }
+
+/* dodge — los carriles */
+.minijuego-carriles {
+  display: flex;
+  gap: var(--s-2);
+  height: 96px;
+  margin: var(--s-4) 0 var(--s-3);
+}
+
+.minijuego-carril {
+  flex: 1;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sharp);
+  background: var(--bg-sunken);
+  position: relative;
+}
+
+.minijuego-carril[data-peligro="si"] {
+  background: var(--down-fill);
+  border-color: var(--down);
+}
+
+.minijuego-carril[data-yo="si"]::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: var(--s-2);
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  border-radius: var(--r-pill);
+  background: var(--live);
+}
+
+.minijuego-carril[data-impacto="acierto"] { background: var(--down); }
+.minijuego-carril[data-impacto="fallo"] { background: var(--up-fill); border-color: var(--up); }
+
+/* la_vision — las zonas del mapa */
+.minijuego-zonas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-2);
+  margin: var(--s-4) 0 var(--s-3);
+}
+
+.minijuego-zona-btn {
+  padding: var(--s-3) var(--s-2);
+  font-size: var(--fs-1);
+  color: var(--ink-dim);
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sharp);
+}
+
+.minijuego-zona-btn[data-estado="oscura"] { background: var(--bg-void); color: var(--ink-mute); }
+.minijuego-zona-btn[data-estado="tapada"] { background: var(--bg-surface); color: var(--ink); }
+.minijuego-zona-btn[data-resultado="bien"] { border-color: var(--up); color: var(--up); }
+.minijuego-zona-btn[data-resultado="mal"] { border-color: var(--down); color: var(--down); }
+
+/* el_kite — el metrónomo */
+.minijuego-metronomo {
+  display: flex;
+  gap: var(--s-2);
+  margin: var(--s-4) 0 var(--s-3);
+}
+
+.minijuego-paso {
+  flex: 1;
+  height: 12px;
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+}
+
+.minijuego-paso[data-activo="si"] { border-color: var(--live); background: var(--live-fill); }
+.minijuego-paso[data-resultado="bien"] { background: var(--up); border-color: var(--up); }
+.minijuego-paso[data-resultado="mal"] { background: var(--down-fill); border-color: var(--down); }
+
+/* La apuesta: qué se juega ANTES de jugarlo (9R4d) */
+.minijuego-apuesta {
+  margin: var(--s-3) 0 0;
+  padding: var(--s-3);
+  border-left: 2px solid var(--warn);
+  background: var(--warn-fill);
+  color: var(--ink);
+  font-size: var(--fs-2);
+}
+
+.minijuego-apuesta-stat {
+  display: block;
+  margin-top: var(--s-1);
+  color: var(--ink-dim);
+  font-size: var(--fs-1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
