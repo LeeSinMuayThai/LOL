@@ -27,7 +27,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **9** | El mercado: ofertas, contratos, salarios, la trampa del equipo grande visible | ✅ ver `PROGRESO.md` |
 | **9E** | El varado: la carrera vuelve a tener juego después del primer equipo | 🔶 **9Ea+b hechas** (el bug, cerrado) · faltan 9Ec y 9Ed |
 | **9R** | **Que el juego se juegue**: el cooldown mide splits, la tabla deja de mentir, la interrupción vuelve a ser escasa, y elegir cambia el resultado | 🔶 **9Ra/9Rb/9Re/9Rf/9R.5/9R.2/9R.0/9Rc/9Rd/9R.3 (9R3a-f) hechas** · falta 9R.4, 9Rg |
-| **T** | **La transmisión**: el sistema de diseño, el shell de tres zonas, el ritmo del split, y las pantallas que faltan. Va antes de 9M para que 9M/10/11/12/13 tengan dónde enchufar su pantalla | ⬜ |
+| **T** | **La transmisión**: el sistema de diseño, el shell, el ritmo del split, y las pantallas que faltaban. Fue antes de 9M para que 9M/10/11/12/13 tengan dónde enchufar su pantalla | ✅ T0→T8, ver `PROGRESO.md` |
 | **9M** | **El mercado de pases**: el mundo se puebla de jugadores, la demanda existe, alguien compite por tu asiento, la escalera deja de ser un dado | ⬜ |
 | **10** | El final: retiro emergente + la tarjeta de legado | ⬜ |
 | **11** | El año: calendario, la nota de la temporada, el archirrival | ⬜ |
