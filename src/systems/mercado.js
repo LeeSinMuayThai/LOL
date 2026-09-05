@@ -82,13 +82,17 @@ function construirOferta(state, liga, org, tagForzado, rng) {
     proyeccionJerarquia = { desde: Math.round(jerarquiaActual), hasta: Math.round(jerarquiaActual), etiqueta: banda.label, flecha: 'igual' };
   } else {
     jerarquiaProyectadaCruda = jerarquiaAlFichar(state, rng);
-    const hasta = Math.round(clampStat(jerarquiaProyectadaCruda));
+    // D39: lo que se muestra es donde vas a estar al cerrar el split, no el
+    // instante de firmar — `rendimiento.js` corre despues, en el mismo split.
+    const hasta = Math.round(clampStat(jerarquiaProyectadaCruda + BALANCE.roster.derivaPrimerSplit));
     const banda = bandaDeJerarquia({ career: { jerarquia: hasta } });
     const flecha = hasta > jerarquiaActual ? 'sube' : (hasta < jerarquiaActual ? 'baja' : 'igual');
     proyeccionJerarquia = { desde: Math.round(jerarquiaActual), hasta, etiqueta: banda.label, flecha };
   }
 
-  const jerarquiaFutura = esOrgActual ? jerarquiaActual : (jerarquiaProyectadaCruda ?? jerarquiaActual);
+  const jerarquiaFutura = esOrgActual
+    ? jerarquiaActual
+    : (jerarquiaProyectadaCruda === null ? jerarquiaActual : jerarquiaProyectadaCruda + BALANCE.roster.derivaPrimerSplit);
   const proyeccionPicks = jerarquiaFutura < BALANCE.serie.jerarquiaMinimaParaSeguirLlamada
     ? 'Con esa jerarquía casi nunca vas a elegir tu campeón.'
     : 'Tu palabra todavía va a pesar en el draft.';

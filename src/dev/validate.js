@@ -1762,7 +1762,9 @@ check('proyeccionJerarquia predice la jerarquía real con error acotado (regla d
       state = avanzarSplitAuto(state, rng).state;
 
       if (proyectada !== null && state.career.rosterDeOrg === state.career.currentOrg) {
-        const esperada = Math.round(Math.max(0, Math.min(100, proyectada)));
+        // 9Rg cierra D39: la tarjeta muestra `cruda + derivaPrimerSplit`, que es
+        // donde vas a estar al cerrar el split — no el instante de firmar.
+        const esperada = Math.round(Math.max(0, Math.min(100, proyectada + BALANCE.roster.derivaPrimerSplit)));
         errores.push(Math.abs(state.career.jerarquia - esperada));
         conSigno.push(state.career.jerarquia - esperada);
         break;
@@ -1780,14 +1782,14 @@ check('proyeccionJerarquia predice la jerarquía real con error acotado (regla d
   const p90 = ordenados[Math.floor(ordenados.length * 0.9)];
   const max = ordenados[ordenados.length - 1];
 
-  if (media > 9) {
-    throw new Error(`error medio |proyección − real| de jerarquía: ${media.toFixed(1)} puntos sobre ${errores.length} fichajes (tope 9)`);
+  if (media > 8) {
+    throw new Error(`error medio |proyección − real| de jerarquía: ${media.toFixed(1)} puntos sobre ${errores.length} fichajes (tope 8)`);
   }
-  if (sesgo > 9) {
-    throw new Error(`sesgo de la proyección de jerarquía: +${sesgo.toFixed(1)} puntos (tope +9; D39 — recalibrar en 9Rg/9M)`);
+  if (Math.abs(sesgo) > 3) {
+    throw new Error(`sesgo de la proyección de jerarquía: ${sesgo.toFixed(1)} puntos (tope ±3; D39 se cerró en 9Rg: si volvió a abrirse, la deriva quedó mal calibrada)`);
   }
-  if (p90 > 17 || max > 34) {
-    throw new Error(`outliers de la proyección de jerarquía: p90 ${p90}, máximo ${max} (topes 17 / 34; el máximo es un outlier de un seed — la señal está en p90. D39: recalibrar en 9Rg)`);
+  if (p90 > 14 || max > 28) {
+    throw new Error(`outliers de la proyección de jerarquía: p90 ${p90}, máximo ${max} (topes 14 / 28, apretados en 9Rg tras cerrar D39: p90 16 → 11, máximo 26 → 20. El máximo es un outlier de un seed, la señal está en p90)`);
   }
 });
 

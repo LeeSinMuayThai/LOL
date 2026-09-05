@@ -482,6 +482,14 @@ export const BALANCE = {
     // ganarsela split a split. Cambiar de equipo la resetea parcialmente.
     jerarquiaInicial: 22,
     jerarquiaInicialSpread: 7,
+    // D39 / 9Rg: la tarjeta de oferta mostraba la jerarquia del INSTANTE de
+    // firmar, pero el jugador la lee al cerrar ese mismo split — y para
+    // entonces `rendimiento.js` ya la movio. Medido a 438 fichajes: el real
+    // termina +6,45 arriba de lo prometido (mediana +6). La tarjeta prometia
+    // de menos siempre, que es un bug de confianza al reves pero bug igual
+    // (regla de proceso 15). La proyeccion suma esta deriva; `roster.js`
+    // sigue asignando el valor crudo al firmar.
+    derivaPrimerSplit: 6,
     jerarquiaRetenidaAlCambiar: 0.35,
     jerarquiaVelocidad: 0.4,
     // Lo que se espera de vos crece con tu propia jerarquia: a la franquicia no

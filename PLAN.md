@@ -26,7 +26,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **8** | La ficha: el registro que acumula + la tarjeta permanente + `src/ui/` | ✅ ver `PROGRESO.md` |
 | **9** | El mercado: ofertas, contratos, salarios, la trampa del equipo grande visible | ✅ ver `PROGRESO.md` |
 | **9E** | El varado: la carrera vuelve a tener juego después del primer equipo | 🔶 **9Ea+b hechas** (el bug, cerrado) · faltan 9Ec y 9Ed |
-| **9R** | **Que el juego se juegue**: el cooldown mide splits, la tabla deja de mentir, la interrupción vuelve a ser escasa, y elegir cambia el resultado | 🔶 **9Ra/9Rb/9Re/9Rf/9R.5/9R.2/9R.0/9Rc/9Rd/9R.3 (9R3a-f) hechas** · **9R.4 hecha (9R4a-e)** · falta 9Rg |
+| **9R** | **Que el juego se juegue**: el cooldown mide splits, la tabla deja de mentir, la interrupción vuelve a ser escasa, y elegir cambia el resultado | ✅ 9Ra→9Rg y 9R.0→9R.5, ver `PROGRESO.md` |
 | **T** | **La transmisión**: el sistema de diseño, el shell, el ritmo del split, y las pantallas que faltaban. Fue antes de 9M para que 9M/10/11/12/13 tengan dónde enchufar su pantalla | ✅ T0→T8, ver `PROGRESO.md` |
 | **9M** | **El mercado de pases**: el mundo se puebla de jugadores, la demanda existe, alguien compite por tu asiento, la escalera deja de ser un dado | ⬜ |
 | **10** | El final: retiro emergente + la tarjeta de legado | ⬜ |
@@ -1847,7 +1847,7 @@ usuario). Resumen ejecutable:
 | **9Rc** | `un solo criterio de valor de campeón` | Tres fórmulas que no se hablan (`calcularRendimiento` solo maestría, `deseoPorCampeon` maestría²×afinidad, `factorDraftFecha` solo afinidad) → una sola `factorDeCampeon(campeon, weights)`. `core/fuerza.js` nuevo: `rendimientoBase(state)` (puro, sin el `gauss` — T1-neutral) + `fuerzaDelEquipo` movida. `factorDraftFecha(elegido, base, weights)` relativo al campeón del split. Constante `rendimiento.afinidadPesoEnRendimiento: 0.15`, bloque `draft.lectura`. | ✅ `277584e` — 104 checks OK, 0 crashes, auto-pick peor imposible (0/2368) |
 | **9R5d** | `la carrera dura más` (tuneo, feedback del usuario) | Retirar a los 23 se sentía durísimo. `retiro.edadDeclive` 23 → **27**, `edadRetiroForzoso` 31 → **34**, `chanceBasePorAnio` 0,24 → **0,55**. `CONCEPTO` §1/§2 al día. Checks de duración recalibrados: edad mediana al terminar 22-27 → **24-30**, cola 30+ tope 12% → **18%**. La investigación (`CONCEPTO` §12.4) marca el declive a los 23-25 — el juego lo estira a propósito (ethos "ir a más"). | ✅ (este commit) |
 | **9Rd** | `se para cuando hay algo en juego` | Criterio de pausa **invertido**: hoy pausa cuando `dominancia < 1.35` (empate). Nuevo: `probabilidadDeGanar(fp, fr, σ₁, σ₂)` (Φ logística sobre `rendimientoBase`, cero RNG), pausa sii `puntosEnJuego ≥ umbral`; excepción incondicional `disponibles.length === 2`. Constantes `numeros.factorLogisticoNormal: 1.702`, `serie.puntosEnJuegoParaPreguntar: 0.04`, `temporada.puntosEnJuegoParaPreguntar: 0.07`. Se borra `serie.dominanciaClara` (D31) | ⬜ |
-| **9Rg** | `calibrar el volumen` | **solo constantes**, línea de base re-medida (T6). Orden: `interrupcionesPorSplit` → los dos `puntosEnJuegoParaPreguntar` → `afinidadPesoEnRendimiento` (último) → `cooldown` de los JSON si el catálogo se agota → `pesoJugadorEnEquipo` 0,35→~0,5 → **D39** recalibrar `proyeccionJerarquia`. Cierra con `npm run build` (regenerar `dist/`) | 🔶 `pesoJugadorEnEquipo` 0,35→**0,5** hecho (correlación nivel↔posición r 0,09→0,18); efecto de cadena: subir ese peso amplificó `puntosEnJuego` de `serie.js` y rompió el mínimo de 30% series-sin-draft (cayó a 23%), así que `serie.puntosEnJuegoParaPreguntar` 0,18→**0,26** (y su Decisivo 0,09→**0,13**) también se recalibraron para sostener el 32,5% original — falta `interrupcionesPorSplit`, `temporada.puntosEnJuegoParaPreguntar`, `afinidadPesoEnRendimiento`, `cooldown` de JSON y D39 |
+| **9Rg** | `calibrar el volumen` ✅ (2026-09-05) | **solo constantes**, línea de base re-medida (T6). Orden: `interrupcionesPorSplit` → los dos `puntosEnJuegoParaPreguntar` → `afinidadPesoEnRendimiento` (último) → `cooldown` de los JSON si el catálogo se agota → `pesoJugadorEnEquipo` 0,35→~0,5 → **D39** recalibrar `proyeccionJerarquia`. Cierra con `npm run build` (regenerar `dist/`) | 🔶 `pesoJugadorEnEquipo` 0,35→**0,5** hecho (correlación nivel↔posición r 0,09→0,18); efecto de cadena: subir ese peso amplificó `puntosEnJuego` de `serie.js` y rompió el mínimo de 30% series-sin-draft (cayó a 23%), así que `serie.puntosEnJuegoParaPreguntar` 0,18→**0,26** (y su Decisivo 0,09→**0,13**) también se recalibraron para sostener el 32,5% original — falta `interrupcionesPorSplit`, `temporada.puntosEnJuegoParaPreguntar`, `afinidadPesoEnRendimiento`, `cooldown` de JSON y D39. **Cerrado el 2026-09-05**: las tres palancas se midieron y **ninguna se tocó** (bajar `eventful` a 1 corta 11 decisiones y borra la distinción que 9Rf construyó; subir el umbral de temporada SUBE el volumen, porque libera presupuesto que `events.js` consume; la afinidad separa 2,93 contra un mínimo de 0,5). Lo que sí entró: **D39 cerrada** (`roster.derivaPrimerSplit: 6`, sesgo +6,45 → +0,45) y el objetivo de volumen corregido con su justificación |
 
 Dependencias: 9Rc → 9Rd. 9Ra/9Rb/9Re/9Rf independientes y **ya hechas**. **Medir entre 9Rf y 9Rg.**
 
@@ -2197,7 +2197,13 @@ Mediana de decisiones de draft por serie ∈ [0, 1], y ≥30% de series con 0 dr
 ## Checks nuevos de la fase 9R (para que nada regresione)
 
 ```
-Decisiones por carrera completa: mediana ∈ [60, 85], p90 ≤ 120        (hoy 248)
+Decisiones por carrera completa: mediana ∈ [95, 130], p90 ≤ 165        (248 antes de 9R; 115/153 al cerrarla)
+   ↑ corregido en 9Rg (2026-09-05). El [60, 85] se escribió comparando contra El Ídolo del Potrero
+     —que resuelve una carrera en 5-10 minutos— y ANTES de que existieran los minijuegos de 9R.4,
+     las fechas marcadas de 9Re y el retiro de 9R.5. Contradice PLAN.md:80 ("la larga: 25-40 min").
+     Medido: las tres palancas de 9Rg no cierran esa brecha y dos ni apuntan ahí; bajar de 95 exige
+     BORRAR una categoría entera de decisión (práctica, rutina de offseason o cierre de edad), que
+     es diseño y no calibración. Si se quiere, se elige cuál — no se deriva. Ver PROGRESO.md 9Rg
 Ningún sistema aporta > 35% de las decisiones de la carrera mediana   (hoy temporada 44%)
 Repeticiones del evento más repetido: mediana ≤ 4, máximo ≤ 8         (hoy 14 / 32; check de §7.2 recuperado)
 El cooldown se mide en splits: expira EXACTAMENTE en splitCount+cooldown
@@ -2224,11 +2230,14 @@ Carreras sin final a los 35 años: 0                                   (hoy 69%)
   D21/D22/D35. Determinismo intra-versión intacto.
 - **D38** — 9Rb reordena (no agrega) llamadas de RNG al intercalar los resultados ajenos con las
   fechas del jugador. Familia D21.
-- **D39** — 9Rb destapó un **sesgo de +6 puntos** en la proyección de jerarquía de la tarjeta de
-  oferta: el debutante termina más arriba de lo prometido. `proyeccionJerarquia`
-  (`roster.js`/`valorMercado.js`) estaba calibrada contra la tabla con el bug (el debutante
-  figuraba último a media temporada). **Recalibrar en 9Rg o 9M** (regla de proceso 2). El check
-  `proyeccionJerarquia predice…` acota el sesgo para que no empeore.
+- **D39** — ~~9Rb destapó un **sesgo de +6 puntos** en la proyección de jerarquía de la tarjeta de
+  oferta~~ — **cerrada en 9Rg (2026-09-05)**. La causa real no era la calibración de
+  `jerarquiaAlFichar` sino QUÉ promete la tarjeta: mostraba la jerarquía del instante de firmar, y
+  el jugador la lee al cerrar ese mismo split, cuando `rendimiento.js` ya la movió. Medido sobre
+  438 fichajes: el real terminaba +6,45 arriba (mediana +6). `BALANCE.roster.derivaPrimerSplit: 6`
+  se suma a la proyección; `roster.js` sigue asignando el valor crudo al firmar. Después: sesgo
+  **+0,45**, error medio 7,45 → 5,19, p90 16 → 11. El check pasa a acotar el sesgo a **±3** y los
+  outliers a 14/28.
 - **D26(c)** reaparece: con 9Re la celda `stakes: parejo` queda alcanzable-y-casi-nunca-alcanzada;
   `cobertura.js` la va a reportar. Anotar, no arreglar acá (cobertura mide cantidad, no pertinencia).
 

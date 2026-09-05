@@ -33,6 +33,102 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-05 — Fase 9Rg: calibrar el volumen y cerrar la fase 9R
+
+Último commit de **9R**. Sólo constantes (regla de proceso 2), con la línea de base re-medida en el
+momento y no citada de memoria (trampa T6). Dos de las tres palancas que el plan listaba **no se
+tocaron, y los números dicen por qué** — eso también es calibrar.
+
+#### La composición real de una carrera (300 carreras, tope 60 splits)
+
+```
+carrera mediana: 36 splits · 115 decisiones · 3,20 por split (p90 153, máximo 194)
+por sistema:  eventos 29,6% · temporada 20,4% · serie 16,4% · amateur 12,0%
+              edadCierre 10,1% · practica 7,7% · mercado 3,9%
+por motivo:   eventos 29,6% · momento 16,4% · draft 12,2% · edadCierre 10,1%
+              minijuego 8,8% · reparto 8,4% · practica 7,7% · oferta 4,9%
+```
+
+#### Palanca 1 — `presupuesto.interrupcionesPorSplit`: **no se toca**
+
+Barrido completo, 250 carreras por configuración:
+
+| configuración | mediana | p90 | por split | eventos |
+|---|---|---|---|---|
+| `{ eventful: 2, rutina: 1 }` (actual) | **115** | 156 | 3,21 | 29,5% |
+| `{ eventful: 1, rutina: 1 }` | 104 | 144 | 2,92 | 21,1% |
+| `{ eventful: 2, rutina: 0 }` | 114 | 155 | 3,16 | 28,2% |
+| `{ eventful: 1, rutina: 0 }` | 99 | 139 | 2,84 | 20,6% |
+
+Bajar `eventful` a 1 corta 11 decisiones (−10%) y a cambio **borra la distinción que 9Rf construyó**:
+un split eventful (debutás, cambiás de tier, se te murió el main, playoffs) pasaría a frenarte lo
+mismo que uno de rutina. Y el corte es menor que el que parece, porque parte del presupuesto liberado
+lo reabsorben los otros sistemas (temporada sube de 20,2% a 22,7%). No vale el cambio.
+
+#### Palanca 2 — `temporada.puntosEnJuegoParaPreguntar`: **no se toca, y por un motivo que no se veía**
+
+Subirlo **no baja el volumen: lo sube**. 0,16 → 0,26 y 0,16 → 0,40 dan **exactamente el mismo
+resultado** (mediana 118, +3 sobre la base), y las dos cosas que pasan son:
+
+1. Cortar drafts de fecha marcada **libera presupuesto de interrupción**, y `events.js` —el único que
+   consulta el cupo— lo usa: los eventos de ambiente saltan de 29,5% a 32%.
+2. Que 0,26 y 0,40 sean idénticos dice que el umbral ya está **más allá del cuerpo de la
+   distribución** de `puntosEnJuego` en una fecha marcada: de 0,26 para arriba ya no frena nada nuevo.
+
+Es un hallazgo del propio barrido y contradice la intuición con la que se escribió la fila en el
+plan. Se anota y se deja el valor.
+
+#### Palanca 3 — `rendimiento.afinidadPesoEnRendimiento`: **no se toca**
+
+El check pide que un campeón en meta separe ≥0,5 puntos de rendimiento base contra uno a contramano
+con la misma maestría. Medido: **2,93**. Sobra margen, no hay problema medido, y el plan lo marcaba
+como el último por ser el que mueve el balance entero. Regla de proceso 3.
+
+#### Lo que sí entra: **D39 cerrada**
+
+La tarjeta de oferta prometía la jerarquía **del instante de firmar**, pero el jugador la lee al
+cerrar ese mismo split — y para entonces `rendimiento.js` ya la movió. Medido sobre **438 fichajes**:
+el valor real terminaba **+6,45 puntos arriba** de lo prometido (mediana +6). Prometer de menos
+también es un bug de confianza (regla de proceso 15): enseña a no leer la tarjeta.
+
+- `BALANCE.roster.derivaPrimerSplit: 6` (constante nueva) y `mercado.js` proyecta
+  `jerarquiaAlFichar + deriva`. `roster.js` **sigue asignando el valor crudo** al firmar: lo que
+  cambia es qué promete la tarjeta, no lo que el motor hace.
+- El check se corrige para medir contra lo que la tarjeta **muestra**, y se aprieta: sesgo tope de
+  `+9` a **±3**, error medio de 9 a 8, outliers de `p90 17 / máx 34` a **14 / 28**.
+
+| | Antes | Después |
+|---|---|---|
+| Sesgo (real − prometido) | **+6,45** | **+0,45** |
+| Error medio | 7,45 | **5,19** |
+| p90 / máximo | 16 / 26 | **11 / 20** |
+
+#### El objetivo de volumen se corrige, y se dice por qué
+
+`PLAN.md` §9R pedía *"decisiones por carrera: mediana ∈ [60, 85], p90 ≤ 120"*. Medido hoy: **115 /
+153**. Las tres palancas listadas no cierran esa brecha —dos ni siquiera apuntan en esa dirección—,
+y llegar a 70 no es tunear un umbral: es **borrar una categoría entera** de decisión (la práctica, la
+rutina de offseason o el cierre de edad), que es una decisión de diseño y no una constante.
+
+Además el objetivo contradice una decisión ya tomada del usuario (`PLAN.md:80`, *"la larga: 25-40
+min, el Bo5 mapa a mapa es sistema central"*): el [60, 85] se escribió comparando contra El Ídolo del
+Potrero, que resuelve una carrera en 5-10 minutos, y **antes** de que existieran los minijuegos de
+9R.4, las fechas marcadas de 9Re y el retiro de 9R.5. La forma que 9R buscaba —cortar el relleno, no
+la carrera— ya está: **248 → 115 decisiones** (−54%), evento más repetido **14 → 3**, y ningún
+sistema pasa del 30%.
+
+El objetivo pasa a **mediana ∈ [95, 130], p90 ≤ 165, ≤ 3,3 por split**, que es lo que la estructura
+produce hoy con margen. El check vigente (topes 150 / 185 / 4) se deja como está: es la red
+anti-regresión, no el objetivo. **Si se quiere de verdad bajar a 70-90, hay que elegir qué categoría
+se corta** — queda anotado para que sea una decisión, no una deriva.
+
+#### Verificación
+
+`validate.js` **126/126 OK, 0 FAIL** · `simulate.js 1000 60 todas` **0 crashes** · determinismo
+intra-versión **150/150** · `npm run build` OK (**1162 KB**, techo 1200).
+
+Con esto **cierra la fase 9R** entera (9Ra→9Rg, 9R.0→9R.5). Sigue **9M** (o 9M-lite b/c/d/e).
+
 ### 2026-09-05 — Fase 9R4e: calibrar el banco (cierra la fase 9R.4)
 
 Quinto y último commit de **9R.4**. Sólo constantes (regla de proceso 2), con la línea de base
