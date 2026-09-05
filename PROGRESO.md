@@ -33,6 +33,67 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-04 — Fase T8: la página como página (cierra la fase T)
+
+El último bloqueante real de publicar: el guardado (P.2), la seed en la URL (P.3), la página como
+metadata (P.4), y el repo como repo (P.5). Con esto cierra toda la fase T (T0→T8, nueve commits).
+
+#### El único cambio de motor de la fase T, verificado dos veces
+
+`mulberry32` gana `.estado()`/`.restaurar(n)` — puramente aditivo, `state` sigue siendo la única
+variable que gobierna la secuencia. Verificado con dos chequeos independientes, no uno:
+
+1. **Restaurar reproduce exacto**: 5 seeds, cada una corrida de dos formas — de corrido (20
+   números) vs. interrumpida (10 números, `estado()`, un objeto `mulberry32` NUEVO —
+   simulando recargar la página — `restaurar()`, 10 números más). Las dos secuencias, idénticas
+   en las 5 seeds.
+2. **Las seeds viejas no divergen**: 12 seeds, huella `finAnticipado:splits:soloqElo`, motor actual
+   vs. `git archive HEAD` (el motor tal cual estaba commiteado, antes de este cambio). Cero
+   divergencias.
+
+`core/guardado.js` (puro: `serializar`/`deserializar`, clave `version`, guarda también
+`rngUiEstado` para que los minijuegos no repitan tirada al continuar) + `src/ui/almacenamiento.js`
+(el `localStorage`, mejor esfuerzo). Se guarda al cerrar cada split; se borra al terminar la
+carrera o al arrancar una nueva a propósito. "Continuar" en el setup, visible solo si hay de
+verdad algo guardado.
+
+**Verificado con una recarga de página real** (no simulada): jugar unos splits, `Page.navigate` de
+nuevo a la misma URL (el equivalente exacto de un F5), confirmar que "Continuar" aparece, clickear,
+y confirmar que el nivel/splits de la ficha son IDÉNTICOS a los de antes de recargar. Coincidieron.
+
+#### Un bug real y preexistente, destapado por P.3
+
+`?seed=N` en la URL requiere que la página cargue de verdad con un querystring — algo que hasta
+esta fase nadie había hecho nunca (la seed siempre se tipeaba en el input). Al probarlo:
+`server.js` devolvía 404 para cualquier URL con `?algo`. La causa: `req.url === '/'` se comparaba
+CONTRA el querystring todavía pegado (`'/?seed=424242' !== '/'`), así que la rama que sirve
+`index.html` nunca se activaba y el código quedaba tratando de leer un archivo llamado `/` (la
+carpeta). **El link que arma T7 nunca había funcionado** — no por T7, sino porque nadie lo había
+abierto de verdad hasta ahora. Corregido: cortar el `?` primero, decidir si es la raíz después.
+
+#### Qué más entra
+
+- **P.4**: `description`, Open Graph + Twitter card, favicon (SVG inline con el monograma del
+  topbar — cero archivo binario nuevo). **Sin imagen propia**: no hay manera en este entorno de
+  producir un archivo de imagen real sin tocar el controlador de producción solo para exponerle
+  `estado`/`modulos` a una captura automatizada, y el plan pide autoría a mano, no un headless en
+  el build. Declarado pendiente, no silenciado.
+- **P.5**: `README.md` (cómo correrlo, cómo está armado, el descargo de proyecto de fan) y
+  `LICENSE` (MIT).
+- **`build.js`**: nuevo check de capitalización para `url()` de CSS y `<link href>` de HTML — la
+  misma trampa que P.7 ya cubría para imports de JS, sin cubrir todavía porque no había CSS hasta
+  la fase T. Al escribirlo salió un falso positivo real: el grano de `base.css` es un SVG en un
+  `data:` URI que trae su propio `url(%23n)` interno (un filtro), y el regex —sin saber que estaba
+  anidado en OTRO `url("data:...")`— lo leía como una ruta de archivo rota. Se filtran los
+  especificadores que empiezan con `#`/`%23`. Verificado que el check agarra un caso real
+  (capitalización rota a mano → build falla; restaurada → pasa).
+
+#### Verificación
+
+`validate.js`/`simulate.js 1000`/build: ver el cierre del commit. Recorrida CDP a los 5
+breakpoints: cero errores, cero desborde, y ahora "peticiones fallidas: ninguna" (antes había un
+404 esperado de `favicon.ico`, que el favicon SVG inline eliminó del todo).
+
 ### 2026-09-04 — Fase T7: la tarjeta final, el PNG y el link
 
 Exportar a PNG y copiar el link de la carrera, más los 5 marcos de verdad para la tarjeta de

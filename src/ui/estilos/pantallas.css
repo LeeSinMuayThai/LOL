@@ -150,6 +150,21 @@
   margin-top: var(--s-6);
 }
 
+/* "Continuar" (T8, P.2): un ghost dorado, no el cyan sólido de "Empezar
+   carrera" — son la misma jerarquía de decisión (arrancar algo), pero
+   "seguir lo que ya tenías" no debería competir visualmente con la opción
+   de arrancar de cero. */
+.continuar-btn {
+  background: var(--gold-fill);
+  border: 1px solid var(--gold-deep);
+  color: var(--gold);
+}
+.continuar-btn:hover:not(:disabled) {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--bg-void);
+}
+
 details.avanzado { margin-top: var(--s-5); font-size: var(--fs-2); color: var(--ink-dim); }
 details.avanzado summary {
   cursor: pointer;

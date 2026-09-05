@@ -2364,7 +2364,7 @@ sumar otras cuatro tandas de CSS suelto que después hay que unificar igual.
 | **T5** | el riel de contexto | Tabla, calendario, plantilla, meta y generación. Cinco paneles, cero motor — la tabla se deriva en vivo (`career.temporada.tabla` es un campo muerto durante toda la temporada, ver T5) |
 | **T6** | el partido y la serie | Tarjeta de resultado (derivada, sin tocar `systems/`), barra de bracket, el camino mapa a mapa, los 5 minijuegos migrados con `rngUi` explícito |
 | **T7** | la tarjeta final y el PNG | El legado de fase 9R5b ya traía marco+veredicto+historia; T7 suma 5 marcos por color (no 2), export a canvas 1200×630 y copiar link/imagen |
-| **T8** | la página como página | P.2 (guardado), P.3 (seed en la URL), P.4 (meta y OG), P.5 (repo) |
+| **T8** | la página como página | P.2 (guardado, único cambio de motor de la fase), P.3 (seed en la URL — destapó un bug real en `server.js`), P.4 (meta y OG, sin imagen propia todavía), P.5 (repo) |
 
 ## T0 — El sistema de diseño
 
@@ -2700,20 +2700,40 @@ el input, no la URL) — split a propósito entre las dos fases, no un olvido.
 ## T8 — La página como página
 
 Cierra los bloqueantes que quedan de la **FASE P**. El detalle completo vive allá; acá va lo que
-esta fase ejecuta.
+esta fase ejecuta, y lo que cambió al implementarla.
 
 - **P.2 — El guardado** (deuda D36, el último bloqueante real). `mulberry32` gana
-  `.estado()`/`.restaurar(n)`; `core/guardado.js` puro con clave `version`;
-  `src/ui/almacenamiento.js` hace el `localStorage`; la pantalla de inicio ofrece **Continuar**.
-  **Es el único cambio de motor de toda la fase**, y por eso lleva el check de determinismo con
-  lupa (abajo).
-- **P.3 — La seed en la URL.** `?seed=N` precarga; `leerSeed()` hoy solo mira el input.
-- **P.4 — La página.** `description`, Open Graph + Twitter card con imagen propia, favicon, y el
-  `<title>` con el nombre real.
-- **P.5 — El repo.** `README.md`, `LICENSE` y la línea de descargo de proyecto de fan.
-- **`build.js`** gana un check de pre-flight: que cada `url()` de CSS y cada `<link href>` resuelva
-  con la capitalización exacta. Es la misma trampa que P.7 cubre para los imports de JS (Windows no
-  distingue mayúsculas, el host Linux sí) y hoy no está cubierta porque no había CSS.
+  `.estado()`/`.restaurar(n)` — puramente aditivo, `state` sigue siendo la única variable que
+  gobierna la secuencia. `core/guardado.js` puro (`serializar`/`deserializar`, clave `version`,
+  guarda también `rngUiEstado` para que los minijuegos no repitan la misma tirada al continuar);
+  `src/ui/almacenamiento.js` hace el `localStorage` (mejor esfuerzo: si falla, la carrera sigue
+  jugándose igual, solo que sin red de seguridad). La pantalla de inicio ofrece **Continuar**,
+  visible solo si `hayCarreraGuardada()` es real. Se guarda al cerrar cada split (siga de largo o
+  pare en una decisión — las dos son "una pausa"); se borra si la carrera termina o si se arranca
+  una nueva a propósito. **Es el único cambio de motor de toda la fase**, verificado con dos
+  chequeos (no uno): `.restaurar()` reproduce exacto sobre 5 seeds (corrida interrumpida vs.
+  corrida de corrido) **y** 12 seeds viejas siguen dando la misma huella `finAnticipado:splits:
+  soloqElo` contra el motor pre-T8 vía `git archive HEAD`. Cero divergencias en los dos.
+- **P.3 — La seed en la URL.** `?seed=N` precarga el input (`leerSeedDeUrl()`), sin arrancar la
+  carrera sola. **Esto destapó un bug real y preexistente en `server.js`**: `req.url === '/'` se
+  comparaba CONTRA el querystring todavía pegado, así que `/?seed=N` nunca calzaba con `'/'` y cada
+  visita con seed caía derecho al 404 — el link que arma T7 nunca había funcionado, porque hasta
+  esta fase nadie había visitado la página con un querystring real. Corregido: cortar el `?`
+  primero, decidir la raíz después.
+- **P.4 — La página.** `description`, Open Graph + Twitter card, favicon (SVG inline — el mismo
+  monograma cyan del topbar, cero archivo binario nuevo), `<title>` (el nombre del juego sigue
+  siendo el placeholder: decidirlo era explícitamente "después", T.2). **Sin imagen propia**: no
+  hay forma en este entorno de generar un archivo de imagen real sin tocar el controlador de
+  producción solo para exponerle `estado`/`modulos` a una captura automatizada — y el plan pide
+  autoría a mano, no un headless en el build. Queda declarado como pendiente, no silenciado.
+- **P.5 — El repo.** `README.md`, `LICENSE` (MIT) y la línea de descargo de proyecto de fan.
+- **`build.js`** gana un check de pre-flight: `url()` de CSS y `<link href>` de HTML, misma
+  verificación de capitalización exacta que P.7 ya hacía para los imports de JS. Encontró un falso
+  positivo real al escribirlo: el grano de `base.css` es un SVG en un `data:` URI que trae su
+  propio `url(%23n)` (un filtro interno) — el regex, sin saber que estaba anidado en OTRO `url(
+  "data:...")`, lo leía como una ruta rota. Se filtran los especificadores que empiezan con `#`/
+  `%23` antes de resolverlos. Verificado además que el check agarra un caso real (capitalización
+  cambiada a mano, build falla; restaurada, pasa).
 
 ## T.5 — Archivos
 

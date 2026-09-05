@@ -139,6 +139,24 @@ function existeConCapitalizacionExacta(absoluto) {
 
 const ESPECIFICADOR_RELATIVO = /(?:^|\n)\s*(?:import|export)[^'"\n]*from\s*['"](\.[^'"]+)['"]/g;
 
+// Fase T8: la misma trampa de P.7, pero del lado del CSS — no estaba
+// cubierta porque hasta la fase T no había CSS. `url()` de las fuentes
+// (`base.css`) y `<link href>` de las hojas de estilo (`index.html`) son
+// las dos formas en que un archivo puede referenciar al otro con la
+// capitalización que sea en Windows y romper 404 en un host case-sensitive.
+const URL_CSS = /url\(\s*(['"]?)([^'")]+)\1\s*\)/g;
+const LINK_HREF = /<link\b[^>]*\bhref\s*=\s*(['"])([^'"]+)\1/gi;
+
+function esRutaLocal(especificador) {
+  // `#`/`%23` es un fragmento SVG (`url(#n)` de un filtro), no un archivo
+  // — aparece adentro del data URI del grano de `base.css`, y como el
+  // regex de `url()` no sabe que está anidado en OTRO `url("data:...")`,
+  // sin este filtro lo confunde con una ruta relativa rota.
+  return !especificador.startsWith('data:')
+    && !especificador.startsWith('#') && !especificador.startsWith('%23')
+    && !/^[a-z]+:\/\//i.test(especificador);
+}
+
 // Concatenado, igual que `guards.js`: escrito de corrido, este archivo se
 // delataría a sí mismo ante el check "sin aleatoriedad nativa" de validate.
 const AZAR_NATIVO = 'Math' + '.random(';
@@ -168,6 +186,32 @@ function comprobarDist() {
     if (texto.includes(AZAR_NATIVO)) {
       const n = texto.split(AZAR_NATIVO).length - 1;
       problemas.push(`${relativo}: ${n} llamada(s) al azar nativo del navegador (rompe el determinismo)`);
+    }
+
+    // `<link href>` (hojas de estilo, preload de fuentes) — mismo chequeo
+    // que los imports, pero es HTML, no JS.
+    for (const [, , especificador] of texto.matchAll(LINK_HREF)) {
+      if (!esRutaLocal(especificador)) continue;
+      imports += 1;
+      const destino = path.resolve(path.dirname(archivo), especificador);
+      if (!existeConCapitalizacionExacta(destino)) {
+        problemas.push(`${relativo}: <link href="${especificador}"> no resuelve en un filesystem case-sensitive`);
+      }
+    }
+  }
+
+  // `url()` de CSS (las fuentes de `base.css`) — mismo chequeo, sobre las
+  // hojas de estilo en vez de sobre JS/HTML.
+  for (const archivo of archivosPorExtension(DIST, ['.css'])) {
+    const texto = fs.readFileSync(archivo, 'utf8');
+    const relativo = path.relative(DIST, archivo);
+    for (const [, , especificador] of texto.matchAll(URL_CSS)) {
+      if (!esRutaLocal(especificador)) continue;
+      imports += 1;
+      const destino = path.resolve(path.dirname(archivo), especificador);
+      if (!existeConCapitalizacionExacta(destino)) {
+        problemas.push(`${relativo}: url("${especificador}") no resuelve en un filesystem case-sensitive`);
+      }
     }
   }
 

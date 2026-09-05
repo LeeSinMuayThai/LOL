@@ -24,8 +24,16 @@ const mimeTypes = {
 
 function createServer() {
   return http.createServer((req, res) => {
-    let requestPath = req.url === '/' ? '/index.html' : req.url;
-    requestPath = requestPath.split('?')[0];
+    // Fase T8: `?seed=N` (P.3, el link de T7) es la primera vez que alguien
+    // visita la página con un querystring de verdad. El `req.url === '/'`
+    // de antes se comparaba CONTRA el querystring todavía pegado — `/`
+    // nunca es igual a `/?seed=424242`, así que la raíz con seed caía
+    // derecho al 404. Cortar el `?` primero, y recién ahí decidir si es
+    // la raíz.
+    let requestPath = req.url.split('?')[0];
+    if (requestPath === '/') {
+      requestPath = '/index.html';
+    }
     const filePath = path.join(__dirname, requestPath);
 
     fs.readFile(filePath, (error, content) => {

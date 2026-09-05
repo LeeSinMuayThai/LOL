@@ -4,6 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LOL Career Simulator</title>
+    <meta name="description" content="Simulá la carrera de un jugador profesional de League of Legends, de los 15 años al retiro: elegís tu línea y tus mains, y cada decisión — soloQ, el mercado, el draft Fearless — deja una marca real en cómo termina la historia." />
+
+    <!-- Fase T8 (P.4): Open Graph + Twitter Card. Sin imagen propia
+         todavía — generarla a mano (1200×630, la misma medida que el
+         canvas de `exportar.js`) queda pendiente; no hay forma de
+         producir un archivo de imagen real en este entorno sin tocar el
+         controlador de producción solo para exponer estado a una captura
+         automatizada, y el plan pide autoría a mano, no un headless en
+         el build. Documentado en PLAN.md/PROGRESO.md, no silenciado. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="LOL Career Simulator" />
+    <meta property="og:description" content="Simulá la carrera de un jugador profesional de League of Legends, de los 15 años al retiro." />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="LOL Career Simulator" />
+    <meta name="twitter:description" content="Simulá la carrera de un jugador profesional de League of Legends, de los 15 años al retiro." />
+
+    <!-- El favicon: el mismo monograma cyan-sobre-negro del topbar, como
+         SVG inline — cero archivo binario nuevo, coherente con "cero
+         dependencias" del proyecto. -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%2305070d'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='15' font-weight='700' fill='%232ee8ff' text-anchor='middle'%3ELC%3C/text%3E%3C/svg%3E" />
 
     <!-- El sistema de diseño (fase T / T0). Hasta acá las 773 líneas de CSS
          vivían en un <style> acá adentro, sin una sola custom property. -->
@@ -66,6 +86,9 @@
             </div>
 
             <div class="setup-footer">
+              <!-- Fase T8 (P.2): oculto hasta que iniciarSetup() confirme
+                   que hay una carrera guardada de verdad. -->
+              <button id="continuarBtn" type="button" class="continuar-btn" hidden>▸ Continuar carrera guardada</button>
               <button id="run" disabled>Empezar carrera</button>
             </div>
 
@@ -168,6 +191,7 @@
       const mercadoRepresentante = document.getElementById('mercadoRepresentante');
       const tarjetaPanel = document.getElementById('tarjeta');
       const seedInput = document.getElementById('seedInput');
+      const continuarBtn = document.getElementById('continuarBtn');
       // El riel derecho (T5): un objeto solo, para pasarlo entero a
       // ui.renderRielContexto en cada tick — mismo patrón que
       // `carreraElements`.
@@ -193,6 +217,7 @@
       let ui = null;
       let reproductor = null;
       let sonido = null;
+      let almacenamiento = null;
       let pantallaInicio = null;
       // Fase T3: bloquea que avanzar()/responder() se disparen dos veces en
       // paralelo mientras el reproductor está a mitad de una tanda de beats
@@ -215,7 +240,7 @@
           const [
             { mulberry32 }, { createInitialState }, pipeline, { BALANCE },
             rolesModulo, ranked, { describirContexto }, formato, campeonesModulo, render,
-            reproductorModulo, sonidoModulo
+            reproductorModulo, sonidoModulo, almacenamientoModulo
           ] = await Promise.all([
             import('./src/core/rng.js'),
             import('./src/core/state.js'),
@@ -228,7 +253,8 @@
             import('./src/data/champions.json', { with: { type: 'json' } }),
             import('./src/ui/render.js'),
             import('./src/ui/reproductor.js'),
-            import('./src/ui/sonido.js')
+            import('./src/ui/sonido.js'),
+            import('./src/ui/almacenamiento.js')
           ]);
           modulos = {
             mulberry32, createInitialState, pipeline, BALANCE, formato,
@@ -240,6 +266,7 @@
           ui = render;
           reproductor = reproductorModulo;
           sonido = sonidoModulo;
+          almacenamiento = almacenamientoModulo;
         }
         return modulos;
       }
@@ -341,6 +368,17 @@
           registroAntes, registroDespues: estado.career.registro, bisagra, state: estado
         });
 
+        // Fase T8 (P.2): se guarda al cerrar cada split, siga de largo o
+        // pare en una decisión — las dos son "una pausa" desde el punto de
+        // vista de "¿qué pasa si recargás acá?". Si ya terminó no hay nada
+        // que continuar: se borra en vez de dejar un guardado que
+        // apuntaría a un `estado.terminado`.
+        if (estado.terminado) {
+          almacenamiento.borrarCarreraGuardada();
+        } else {
+          almacenamiento.guardarCarrera(estado, rng, rngUi);
+        }
+
         if (estado.pendiente) {
           mostrarDecision(estado.pendiente.decision);
           return true;
@@ -412,6 +450,19 @@
         }
       }
 
+      // Fase T8 (P.3): `?seed=N` en la URL precarga el input, para que
+      // "copiar link de esta carrera" (T7) de verdad reproduzca la misma
+      // carrera al abrirlo — antes de esta fase `leerSeed()` solo miraba
+      // el input y el link no hacía nada al visitarlo.
+      function leerSeedDeUrl() {
+        const crudo = new URLSearchParams(location.search).get('seed');
+        if (crudo === null) {
+          return null;
+        }
+        const numero = Number(crudo);
+        return Number.isFinite(numero) ? Math.abs(Math.trunc(numero)) : null;
+      }
+
       function leerSeed() {
         const crudo = seedInput.value.trim();
         const elegida = Number(crudo);
@@ -446,6 +497,11 @@
           const { rol, campeones } = pantallaInicio.getSeleccion();
           const eleccion = { handle: handleInput.value, rol, campeones };
           estado = createInitialState(seed, rng, eleccion);
+
+          // "Empezar carrera" es una carrera NUEVA — pisa cualquier
+          // guardado anterior a propósito, mismo criterio que un jugador
+          // que dice "no, esta la abandono" en vez de tocar Continuar.
+          almacenamiento.borrarCarreraGuardada();
 
           setupPanel.hidden = true;
           carreraPanel.hidden = false;
@@ -482,6 +538,12 @@
           panel.hidden = true;
         }
         serieContextoEl.hidden = true;
+        // Ya se borró en `revelarYVerDecision` cuando `estado.terminado`
+        // se puso en true — esto es la red de seguridad, no el borrado
+        // principal. Refresca el botón por si el estado cambió mientras
+        // tanto (debería estar oculto: no queda nada que continuar).
+        almacenamiento.borrarCarreraGuardada();
+        continuarBtn.hidden = true;
         pantallaInicio.reset();
       }
 
@@ -493,6 +555,54 @@
         const on = sonido.estaHabilitado();
         toggleSonido.textContent = on ? '🔊' : '🔇';
         toggleSonido.title = on ? 'Sonido activado (click para apagar)' : 'Sonido apagado (click para activar)';
+      }
+
+      // Fase T8 (P.2): retoma exactamente donde quedó — mismo `rng`/`rngUi`
+      // restaurados a su posición exacta (core/rng.js `.restaurar()`), no
+      // una carrera nueva con la misma seed. Si hay una decisión pendiente
+      // se muestra tal cual; si no, `avanzar()` sigue de largo, mismo
+      // camino que arrancar una carrera nueva.
+      async function continuarCarrera() {
+        continuarBtn.disabled = true;
+        try {
+          const { mulberry32 } = await cargarModulos();
+          const datos = almacenamiento.cargarCarreraGuardada();
+          if (!datos) {
+            continuarBtn.hidden = true;
+            return;
+          }
+
+          rng = mulberry32(datos.seed);
+          rng.restaurar(datos.rngEstado);
+          rngUi = mulberry32((datos.seed ^ 0x9E3779B9) >>> 0);
+          if (datos.rngUiEstado !== null) {
+            rngUi.restaurar(datos.rngUiEstado);
+          }
+          estado = datos.state;
+          seedInput.value = String(datos.seed);
+
+          setupPanel.hidden = true;
+          carreraPanel.hidden = false;
+          nuevaCarreraBtn.hidden = true;
+
+          ui.renderFicha(fichaContainer, estado, modulos);
+          ui.renderRielContexto(rielElements, estado, modulos);
+          ui.renderSerieContexto(serieContextoEl, estado);
+          summary.textContent = 'Retomando la carrera...';
+
+          if (estado.pendiente) {
+            mostrarDecision(estado.pendiente.decision);
+          } else {
+            await avanzar();
+          }
+        } catch (error) {
+          console.error(error);
+          summary.textContent = 'No se pudo continuar la carrera guardada.';
+          setupPanel.hidden = false;
+          carreraPanel.hidden = true;
+        } finally {
+          continuarBtn.disabled = false;
+        }
       }
 
       async function iniciarSetup() {
@@ -507,6 +617,18 @@
           toggleVelocidad.disabled = false;
           toggleSonido.disabled = false;
           actualizarTogglesTopbar();
+
+          // P.2: el botón "Continuar" solo aparece si hay de verdad algo
+          // que continuar.
+          continuarBtn.hidden = !almacenamiento.hayCarreraGuardada();
+
+          // P.3: `?seed=N` precarga el input — no arranca la carrera sola
+          // (eso seguiría siendo un click en "Empezar carrera"), solo dice
+          // con qué seed.
+          const seedDeUrl = leerSeedDeUrl();
+          if (seedDeUrl !== null) {
+            seedInput.value = String(seedDeUrl);
+          }
         } catch (error) {
           const esArchivoLocal = location.protocol === 'file:';
           rolGrid.textContent = esArchivoLocal
@@ -517,6 +639,7 @@
       }
 
       runButton.addEventListener('click', comenzarCarrera);
+      continuarBtn.addEventListener('click', continuarCarrera);
       nuevaCarreraBtn.addEventListener('click', volverAlInicio);
       toggleVelocidad.addEventListener('click', () => {
         reproductor.ciclarVelocidad();
