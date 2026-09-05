@@ -33,6 +33,72 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-05 — Fase 9R4b: el cupo se reparte (el internacional y el mapa 5)
+
+Segundo commit de **9R.4**. Un solo cupo de minijuego por serie tapaba los dos momentos más
+grandes del juego. Ahora son tres cupos y cada uno cubre lo suyo.
+
+#### Los dos agujeros, medidos
+
+1. **El bootcamp se comía el internacional entero**: se dispara al clasificar, antes del primer
+   mapa, y gastaba `serie.minijuegoUsado`. Resultado medido antes de este commit: **0 de 643
+   internacionales** tenían una jugada dentro de un mapa o rueda de prensa. La serie más grande del
+   juego se resolvía sola.
+2. **El mapa que define podía pasar sin una sola jugada tuya**: o el cupo ya se había gastado en el
+   mapa 2, o el mapa no entraba en "cerrado" (`margenMapaCerrado: 8`) por unos puntos. Es
+   exactamente el momento que `PLAN.md` §9R.4 pide que exista ("el Barón de un mapa 5").
+
+#### Qué entra
+
+- **Tres cupos** en `state.serie` (trampa T4, todos `false` al iniciar la ronda): `preSerieUsado`
+  (el bootcamp), `minijuegoUsado` (el mapa normal y la rueda de prensa, como hasta ahora) y
+  `decisivoUsado` (el mapa de desempate). `systems/serie.js` los gasta con `cupoGastado(momento)`.
+- **`esMapaDeDesempate(marcador, formato)`** en `core/serie.js`, nueva y distinta de
+  `esMapaDecisivo`: el desempate es el **último mapa posible**, con los dos equipos en punto de
+  partido (2-2 en un Bo5, 1-1 en un Bo3). `esMapaDecisivo` incluye el 2-0 de un barrido, que según
+  la regla 4 de §4.6 justamente **no** merece minijuego.
+- **`esMapaCerrado` toma el margen por parámetro** y el desempate usa
+  `margenMapaCerradoDecisivo: 22` contra el `margenMapaCerrado: 8` de un mapa cualquiera. Un 3-0 no
+  tiene minijuego; un mapa 5 lo tiene casi siempre.
+
+**Primera versión descartada, y por qué**: el mapa "decisivo" se ató primero a cualquier match
+point. Medido, disparaba **1.413 veces** en 300 carreras (los minijuegos pasaban de 5,7% a **11,8%**
+de las decisiones, mediana por carrera 3 → 6, p90 17 → 39) porque toda serie tiene un match point,
+barridos incluidos. Atarlo al desempate real lo baja a **304** y lo deja donde el plan lo pedía.
+
+#### Números medidos (300 carreras × 60 splits, misma sonda que 9R4a)
+
+| Métrica | Antes de 9R.4 | Ahora |
+|---|---|---|
+| Minijuegos / decisiones | 5,71% | **8,52%** |
+| Minijuegos por carrera | mediana 3 · p90 17 · máx 28 | mediana **3** · p90 **26** · máx **46** |
+| Internacionales con algo más que el bootcamp | **0 de 643 (0%)** | **629 de 629 (100%)** |
+| — de esos, con jugada dentro de un mapa | 0% | **47,4%** |
+| — con rueda de prensa | 0% | **53,7%** |
+| Mapas de desempate (en semis/final/internacional) con jugada | — | **304 de 323 (94,1%)** |
+| Decisiones por carrera | mediana 115 · p90 147 | mediana **115** · p90 **149** |
+
+El volumen total de decisiones no se movió (115 de mediana): lo que se agregó son minijuegos, que
+entran en lugar de resolverse solos, no decisiones nuevas encima de las que había.
+
+#### Checks nuevos (2), los dos verificados en rojo
+
+1. **"El internacional tiene su jugada, no sólo el bootcamp"**: ≥90% de los internacionales ven un
+   minijuego que no es el bootcamp (medido: 100%). *Verificado en rojo* haciendo que el bootcamp
+   vuelva a gastar el cupo de la serie → cae a **13%** y falla.
+2. **"El mapa 5 es el mapa 5"**: `esMapaDeDesempate` distingue el desempate del match point
+   cualquiera, el margen ancho cubre lo que el normal rechaza, y **ninguna pausa de `mapa_decisivo`
+   sale con un marcador que no sea el desempate** (200 carreras). *Verificado en rojo* volviendo a
+   `esMapaDecisivo` → falla en la seed 2 con marcador 0-2.
+
+#### Verificación
+
+`validate.js` **123/123 OK, 0 FAIL** · `simulate.js 1000 60 todas` **0 crashes** · determinismo
+intra-versión **150/150** · `npm run build` OK (**1124 KB**, techo 1200).
+
+**Trampa T1**: hay más minijuegos, y cada uno consume una tirada en `resolverAuto`. Ninguna seed
+anterior reproduce su carrera; el determinismo intra-versión queda intacto.
+
 ### 2026-09-05 — Fase 9R4a: el minijuego es dato (cierra D20)
 
 Primer commit de la fase **9R.4**. Estructura pura: ningún minijuego cambia lo que hace, cambia

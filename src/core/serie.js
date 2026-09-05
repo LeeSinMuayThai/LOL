@@ -121,6 +121,16 @@ export function esMapaDecisivo(marcador, formato) {
   return marcador[0] === punto || marcador[1] === punto;
 }
 
+// Fase 9R4b: el mapa de DESEMPATE — el último posible de la serie, con los dos
+// equipos en punto de partido (2-2 en un Bo5, 1-1 en un Bo3). Es "el mapa 5"
+// del que habla PLAN.md §9R.4, y no es lo mismo que `esMapaDecisivo`: ese es
+// cualquier mapa que PUEDE cerrar la serie, incluido el 2-0 de un barrido, que
+// según la regla 4 de §4.6 justamente no merece minijuego.
+export function esMapaDeDesempate(marcador, formato) {
+  const punto = necesitaGanarPara(formato) - 1;
+  return marcador[0] === punto && marcador[1] === punto;
+}
+
 export function serieTerminada(marcador, formato) {
   const necesarias = necesitaGanarPara(formato);
   return marcador[0] >= necesarias || marcador[1] >= necesarias;
@@ -176,8 +186,13 @@ function puntosEnJuegoDeMapa(state, mejor, segundo) {
 
 // "Mapa cerrado" (regla 4 de 4.6): el rendimiento base del jugador y la fuerza
 // del rival quedaron a un margen chico. Condición necesaria para un minijuego.
-export function esMapaCerrado(rendimientoBase, fuerzaRival) {
-  return Math.abs(rendimientoBase - fuerzaRival) <= BALANCE.serie.margenMapaCerrado;
+//
+// Fase 9R4b: el margen entra por parámetro porque el mapa que CIERRA la serie
+// usa uno mucho más ancho (`margenMapaCerradoDecisivo`). "El Barón de un mapa 5"
+// (PLAN.md §9R.4) no se puede quedar sin jugarse porque el mapa venía diez
+// puntos torcido: es el mapa que define, y ahí la jugada existe casi siempre.
+export function esMapaCerrado(rendimientoBase, fuerzaRival, margen = BALANCE.serie.margenMapaCerrado) {
+  return Math.abs(rendimientoBase - fuerzaRival) <= margen;
 }
 
 // El minijuego "la_llamada" depende de shotcalling, pero una buena llamada con

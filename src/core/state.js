@@ -204,7 +204,13 @@ export function createInitialState(seed, rng, eleccion = null) {
       mapaActual: 0,
       mapas: [],
       quemados: [],
-      minijuegoUsado: false
+      minijuegoUsado: false,
+      // Fase 9R4b: tres cupos, no uno. `minijuegoUsado` es el del mapa normal y
+      // la rueda de prensa; `decisivoUsado` es el del mapa que cierra la serie;
+      // `preSerieUsado` es el del bootcamp, que pasa ANTES del primer mapa y
+      // hasta acá se comía el cupo entero del internacional (medido: 643 de 643).
+      decisivoUsado: false,
+      preSerieUsado: false
     },
     meta: {
       patch: 1,

@@ -936,6 +936,13 @@ export const BALANCE = {
     // |rendimiento base del jugador - fuerza del rival| <= esto: "mapa cerrado",
     // condicion necesaria para que dispare un minijuego (regla 4 de 4.6).
     margenMapaCerrado: 8,
+    // 9R4b: el mapa de DESEMPATE (2-2 en un Bo5) juega con un margen mucho mas
+    // ancho y con cupo propio. Antes el mapa 5 podia pasar sin una sola jugada
+    // tuya —el minijuego ya se habia gastado en el mapa 2, o el mapa no era
+    // "cerrado" por diez puntos— y es justo el momento que PLAN.md §9R.4 pide
+    // que exista ("el Baron de un mapa 5"). No aplica a cualquier match point:
+    // el 2-0 de un barrido no lo merece (regla 4 de §4.6).
+    margenMapaCerradoDecisivo: 22,
     // Fase 9R4a: cuanto mueve cada minijuego (`impacto`) y con cuanta
     // dispersion lo simula el camino headless (`spread`) ya NO viven aca: cada
     // entrada de `data/minijuegos.json` trae los suyos. Es el cierre de D20

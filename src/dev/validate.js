@@ -47,6 +47,7 @@ import LIGAS from '../data/leagues.json' with { type: 'json' };
 import CAMPEONES from '../data/champions.json' with { type: 'json' };
 import MINIJUEGOS from '../data/minijuegos.json' with { type: 'json' };
 import { elegirMinijuego, minijuegosPara, veredictoDeMinijuego, textoDeMinijuego } from '../core/minijuegos.js';
+import { esMapaDeDesempate, esMapaCerrado } from '../core/serie.js';
 import { MONTAR_MINIJUEGO } from '../ui/components/minijuegos/index.js';
 import METAS from '../data/metas.json' with { type: 'json' };
 
@@ -2337,6 +2338,103 @@ check('El impacto de los minijuegos está acotado (ni decorativo ni gambling)', 
     throw new Error(
       `acertar siempre los minijuegos (${siempreAcierta}) rinde ${((siempreAcierta / base - 1) * 100).toFixed(0)}% más que fallarlos (${siempreFalla}): el juego pasó a ser un gambling a los minijuegos (tope +35%)`
     );
+  }
+});
+
+check('El internacional tiene su jugada, no sólo el bootcamp (9R4b)', () => {
+  // Medido antes de 9R4b: 643 de 643 internacionales se resolvían con el
+  // bootcamp y nada más. El bootcamp pasa ANTES del primer mapa y gastaba el
+  // cupo entero de la serie, así que la serie más grande del juego no tenía ni
+  // una jugada dentro de un mapa ni rueda de prensa. Ahora tiene su cupo aparte.
+  const porInternacional = [];
+
+  for (let seed = 1; seed <= 300; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    let abierto = false;
+    let tuvoJugada = false;
+
+    const responder = (sistema, st, decision, r) => {
+      const datos = decision.datos ?? {};
+      if (datos.motivo === 'minijuego') {
+        if (datos.momento === 'pre_internacional') {
+          if (abierto) {
+            porInternacional.push(tuvoJugada);
+          }
+          abierto = true;
+          tuvoJugada = false;
+        } else if (abierto && st.serie?.ronda === 'internacional') {
+          tuvoJugada = true;
+        }
+      }
+      return sistema.resolverAuto(st, decision, r);
+    };
+
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng, responder).state;
+    }
+    if (abierto) {
+      porInternacional.push(tuvoJugada);
+    }
+  }
+
+  if (porInternacional.length < 100) {
+    throw new Error(`sólo ${porInternacional.length} internacionales en 300 carreras: muestra insuficiente`);
+  }
+  const conJugada = porInternacional.filter(Boolean).length / porInternacional.length;
+  if (conJugada < 0.9) {
+    throw new Error(
+      `sólo el ${(conJugada * 100).toFixed(0)}% de los internacionales vio algo más que el bootcamp `
+      + `(mínimo 90%; antes de 9R4b: 0%, ${porInternacional.length} medidos)`
+    );
+  }
+});
+
+check('El mapa 5 es el mapa 5: el cupo del desempate no se gasta en otro lado (9R4b)', () => {
+  // Las dos mitades de "el Barón de un mapa 5" (PLAN.md §9R.4):
+  //   (a) el desempate es el ÚLTIMO mapa posible, no cualquier match point —
+  //       el 2-0 de un barrido no lo merece (regla 4 de §4.6);
+  //   (b) el margen ancho del desempate cubre mapas que el margen normal
+  //       rechaza, o el mapa que define seguiría pasando sin jugada.
+  if (!esMapaDeDesempate([2, 2], 5) || !esMapaDeDesempate([1, 1], 3)) {
+    throw new Error('esMapaDeDesempate no reconoce el último mapa de la serie');
+  }
+  if (esMapaDeDesempate([2, 0], 5) || esMapaDeDesempate([2, 1], 5)) {
+    throw new Error('esMapaDeDesempate confunde un match point cualquiera con el desempate');
+  }
+  const normal = BALANCE.serie.margenMapaCerrado;
+  const ancho = BALANCE.serie.margenMapaCerradoDecisivo;
+  if (ancho <= normal) {
+    throw new Error(`el margen del desempate (${ancho}) no es más ancho que el normal (${normal})`);
+  }
+  const brecha = (normal + ancho) / 2;
+  if (esMapaCerrado(50, 50 + brecha) || !esMapaCerrado(50, 50 + brecha, ancho)) {
+    throw new Error('el margen ancho del desempate no cubre lo que el normal rechaza');
+  }
+
+  // Y en carrera: ninguna pausa de `mapa_decisivo` sale fuera del desempate.
+  let vistos = 0;
+  for (let seed = 1; seed <= 200; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    const responder = (sistema, st, decision, r) => {
+      if (decision.datos?.momento === 'mapa_decisivo') {
+        vistos += 1;
+        if (!esMapaDeDesempate(st.serie.marcador, st.serie.formato)) {
+          throw new Error(`seed ${seed}: pausa de desempate con marcador ${st.serie.marcador.join('-')}`);
+        }
+        if (!['semis', 'final', 'internacional'].includes(st.serie.ronda)) {
+          throw new Error(`seed ${seed}: pausa de desempate en ${st.serie.ronda}`);
+        }
+      }
+      return sistema.resolverAuto(st, decision, r);
+    };
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng, responder).state;
+    }
+  }
+  if (vistos < 40) {
+    throw new Error(`sólo ${vistos} jugadas de desempate en 200 carreras: el momento no está llegando`);
   }
 });
 

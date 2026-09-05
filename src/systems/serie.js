@@ -7,7 +7,7 @@ import {
   esCierreDeTemporada, calificaAPlayoffs, calificaAInternacional,
   rondaInicial, siguienteRonda, etiquetaDeRonda, generarRival,
   disponiblesDelPool, elegirCampeonRival, campeonComodin,
-  esMapaDecisivo, serieTerminada, decisionDeDraft,
+  esMapaDecisivo, esMapaDeDesempate, serieTerminada, decisionDeDraft,
   esMapaCerrado, factorJerarquiaEnLlamada
 } from '../core/serie.js';
 import { calcularRendimiento, fuerzaDelEquipo } from './rendimiento.js';
@@ -57,6 +57,17 @@ function construirDecisionDraft(state, disponibles) {
     })),
     datos: { motivo: 'draft' }
   };
+}
+
+// Cuál de los tres cupos de la serie gasta cada momento (9R4b).
+function cupoGastado(momento) {
+  if (momento === 'pre_internacional') {
+    return { preSerieUsado: true };
+  }
+  if (momento === 'mapa_decisivo') {
+    return { decisivoUsado: true };
+  }
+  return { minijuegoUsado: true };
 }
 
 // Fase 9R4a: el minijuego sale del catálogo (`data/minijuegos.json`) por
@@ -127,7 +138,9 @@ function iniciarRonda(state, ronda, rng) {
       mapaActual: 0,
       mapas: [],
       quemados: [],
-      minijuegoUsado: false
+      minijuegoUsado: false,
+      decisivoUsado: false,
+      preSerieUsado: false
     }
   };
 }
@@ -177,11 +190,25 @@ function jugarConCampeon(state, campeonElegido, rng, logsAcum, entradaExtra = nu
   );
   const fuerzaPropia = fuerzaDelEquipo(state, rendimiento);
 
-  const puedeMinijuego = ['semis', 'final', 'internacional'].includes(state.serie.ronda) && !state.serie.minijuegoUsado;
-  if (puedeMinijuego && esMapaCerrado(fuerzaPropia, state.serie.rival.fuerza)) {
-    const pausa = pausaDeMinijuego(state, 'mapa_cerrado', logsAcum, { campeonElegido, fuerzaPropia });
-    if (pausa) {
-      return pausa;
+  // Fase 9R4b: el mapa que cierra la serie tiene su propio cupo y su propio
+  // margen. El del mapa normal sigue siendo uno por serie (PLAN.md:80: "que
+  // tampoco todo sea un gambling a los minijuegos"), pero ya no se puede comer
+  // el del mapa que define.
+  const rondaConMinijuego = ['semis', 'final', 'internacional'].includes(state.serie.ronda);
+  if (rondaConMinijuego) {
+    const desempate = esMapaDeDesempate(state.serie.marcador, state.serie.formato);
+    const momento = desempate && !state.serie.decisivoUsado ? 'mapa_decisivo'
+      : !state.serie.minijuegoUsado ? 'mapa_cerrado'
+        : null;
+    const margen = momento === 'mapa_decisivo'
+      ? BALANCE.serie.margenMapaCerradoDecisivo
+      : BALANCE.serie.margenMapaCerrado;
+
+    if (momento && esMapaCerrado(fuerzaPropia, state.serie.rival.fuerza, margen)) {
+      const pausa = pausaDeMinijuego(state, momento, logsAcum, { campeonElegido, fuerzaPropia });
+      if (pausa) {
+        return pausa;
+      }
     }
   }
 
@@ -369,6 +396,9 @@ function intentarInternacional(state, rng, logsAcum) {
   const st = iniciarRonda(state, 'internacional', rng);
   const logs = [...logsAcum, crearLog('serie', `Clasificaste al internacional: rival, ${st.serie.rival.org}.`)];
 
+  // El bootcamp NO gasta el cupo de la serie (9R4b): pasa antes del primer
+  // mapa, y hasta acá dejaba al internacional —la serie más grande del juego—
+  // sin una sola jugada dentro de un mapa ni rueda de prensa.
   return pausaDeMinijuego(st, 'pre_internacional', logs) ?? jugarMapaSiguiente(st, rng, logs);
 }
 
@@ -410,7 +440,7 @@ export function resolver(state, decision, respuesta, rng) {
   const entrada = minijuegoPorId(decision.datos.minijuego);
   const resultado = clamp(respuesta.resultado ?? 0.5, 0, 1);
   const ajusteBase = (resultado - 0.5) * 2;
-  const stConCupo = { ...state, serie: { ...state.serie, minijuegoUsado: true } };
+  const stConCupo = { ...state, serie: { ...state.serie, ...cupoGastado(decision.datos.momento) } };
 
   if (entrada.efecto.tipo === 'mapa') {
     const { campeonElegido, fuerzaPropia } = decision.datos;
