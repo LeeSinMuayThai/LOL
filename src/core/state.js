@@ -240,6 +240,11 @@ export function createInitialState(seed, rng, eleccion = null) {
       // re-marcar la misma revancha/clásico contra el mismo rival un split
       // sí y otro también. Array vacío al arrancar, nunca null (trampa T4).
       motivosFechaRecientes: [],
+      // Fase 9R4a: los minijuegos jugados ultimamente, cada uno con el
+      // `splitCount` en el que salio. `core/minijuegos.js` lo consulta para no
+      // repetir la misma mecanica dos series seguidas si hay otra elegible para
+      // ese momento. Array vacio al arrancar, nunca null (trampa T4).
+      minijuegosRecientes: [],
       // Rastro de un solo split: qué campeón(es) entró el último efecto `pool`
       // con `accion: 'aprender'` de ESTE outcome. Lo usa el siguiente efecto
       // del mismo outcome (`accion: 'maestria', objetivo: 'nuevo'`) para saber

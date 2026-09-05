@@ -9,7 +9,7 @@ import { registrarEnHistorial } from '../core/contexto.js';
 import { resolverTexto } from '../core/plantillas.js';
 import { ofrecerRutinas, rutinaPorId, elegirRutinaAutomatica } from '../core/rutinas.js';
 import { elegirOrgTier3, asignarOrgTier3 } from '../core/tier3.js';
-import MINIJUEGOS from '../data/minijuegos.json' with { type: 'json' };
+import { elegirMinijuego, minijuegoPorId, textoDeMinijuego, registrarMinijuegoVisto } from '../core/minijuegos.js';
 
 export const id = 'amateur';
 
@@ -470,21 +470,35 @@ function firmarConEquipo(state, decision) {
 // tryout con un tier 3. No decide si fichás (eso ya se resolvió al aceptar la
 // oferta) — corre cuánto crédito te llevás de entrada, vía el bonus que
 // `roster.js` suma una sola vez al armar el primer roster.
-function decisionDeLaPrueba(state, datosOferta) {
-  const datos = MINIJUEGOS.find((entrada) => entrada.id === 'la_prueba');
+// Fase 9R4a: sale del catálogo por momento (`tryout`), con su texto y su stat
+// en el dato — igual que los de la serie. Devuelve la pausa entera porque el id
+// elegido se anota en `flags.minijuegosRecientes`.
+function pausaDeLaPrueba(state, datosOferta) {
+  const entrada = elegirMinijuego(state, 'tryout');
+  const textos = textoDeMinijuego(entrada, state);
   return {
-    tipo: 'opciones',
-    presentacion: 'minijuego',
-    titulo: resolverTexto(datos.titulo, state),
-    descripcion: resolverTexto(datos.descripcion, state),
-    opciones: [],
-    datos: { motivo: 'minijuego', minijuego: 'la_prueba', statRelevante: 'mecanica', oferta: datosOferta }
+    state: { ...state, flags: { ...state.flags, minijuegosRecientes: registrarMinijuegoVisto(state, entrada.id) } },
+    decision: {
+      tipo: 'opciones',
+      presentacion: 'minijuego',
+      titulo: textos.titulo,
+      descripcion: textos.descripcion,
+      opciones: [],
+      datos: {
+        motivo: 'minijuego',
+        minijuego: entrada.id,
+        momento: 'tryout',
+        statRelevante: entrada.statRelevante,
+        apuesta: textos.apuesta,
+        oferta: datosOferta
+      }
+    }
   };
 }
 
 function resolverLaPrueba(state, decision, respuesta) {
   const resultado = clamp(respuesta.resultado ?? 0.5, 0, 1);
-  const bonus = Math.round((resultado - 0.5) * 2 * BALANCE.serie.impactoLaPrueba);
+  const bonus = Math.round((resultado - 0.5) * 2 * minijuegoPorId(decision.datos.minijuego).impacto);
   const conBonus = { ...state, flags: { ...state.flags, bonusJerarquiaTryout: bonus } };
   const { state: firmado, logs } = firmarConEquipo(conBonus, { datos: decision.datos.oferta });
 
@@ -502,7 +516,8 @@ function resolverLaPrueba(state, decision, respuesta) {
 function resolverOferta(state, decision, opcionId, rng) {
   if (opcionId === 'firmar') {
     if (decision.datos.tier === 3) {
-      return { state, logs: [], decision: decisionDeLaPrueba(state, decision.datos) };
+      const pausa = pausaDeLaPrueba(state, decision.datos);
+      return { state: pausa.state, logs: [], decision: pausa.decision };
     }
     return firmarConEquipo(state, decision);
   }
@@ -646,7 +661,9 @@ export function resolverAuto(state, decision, rng) {
   if (decision.datos.motivo === 'minijuego') {
     // Regla 5 de 4.6: el motor no implementa el minijuego, lo simula con
     // gauss corrido por el stat relevante.
-    return { resultado: clamp(gauss(state.player.stats.mecanica / 100, BALANCE.serie.minijuegoSpread, rng), 0, 1) };
+    const entrada = minijuegoPorId(decision.datos.minijuego);
+    const valor = state.player.stats[decision.datos.statRelevante] ?? 50;
+    return { resultado: clamp(gauss(valor / 100, entrada.spread, rng), 0, 1) };
   }
   if (decision.datos.motivo !== 'reparto') {
     return { opcionId: weightedPick(decision.opciones, (opcion) => opcion.pesoAuto ?? 1, rng).id };

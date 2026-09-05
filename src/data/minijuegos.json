@@ -1,27 +1,172 @@
 [
   {
     "id": "robar_baron",
-    "titulo": "El Barón está bajo",
-    "descripcion": "El mapa está cerrado y el Barón se puede robar. Un smite mal cronometrado le da la vuelta a la pelea."
+    "momentos": ["mapa_cerrado", "mapa_decisivo"],
+    "roles": ["jungla"],
+    "statRelevante": "mecanica",
+    "efecto": { "tipo": "mapa" },
+    "impacto": 0.12,
+    "spread": 0.2,
+    "titulos": [
+      "El Barón está bajo",
+      "El Barón, a un smite",
+      "Nadie tiene visión y el Barón está en rojo"
+    ],
+    "descripciones": [
+      "El mapa está cerrado y el Barón se puede robar. Un smite mal cronometrado le da la vuelta a la pelea.",
+      "Entrás al foso sin visión: si clavás el smite se da vuelta el mapa, si lo tirás temprano quedás vendido.",
+      "Los cinco están pegados al Barón y vos tenés un smite y media ventana."
+    ],
+    "apuesta": "Si clavás el smite, este mapa se te va a favor; si lo errás, se complica.",
+    "veredictos": {
+      "bien": [
+        "El Barón es tuyo: el mapa se te va a favor.",
+        "Se lo robás en la cara: el mapa cambia de dueño."
+      ],
+      "parejo": [
+        "Lo smiteás justo, sin sacar ventaja clara.",
+        "Sale, pero sin la ventaja que estabas buscando."
+      ],
+      "mal": [
+        "Te roban el Barón: el mapa se complica.",
+        "Tirás el smite temprano y quedás vendido."
+      ]
+    }
   },
   {
     "id": "la_llamada",
-    "titulo": "La llamada",
-    "descripcion": "El mapa está cerrado y hay que decidir ya. El reloj no espera."
+    "momentos": ["mapa_cerrado", "mapa_decisivo"],
+    "roles": [],
+    "statRelevante": "shotcalling",
+    "efecto": { "tipo": "mapa", "amortiguador": "jerarquia" },
+    "impacto": 0.12,
+    "spread": 0.2,
+    "titulos": [
+      "La llamada",
+      "Hay que llamarla ya",
+      "El mapa pide una decisión"
+    ],
+    "descripciones": [
+      "El mapa está cerrado y hay que decidir ya. El reloj no espera.",
+      "Todos esperan que alguien diga algo por voz. Sos vos.",
+      "Se abre la ventana de una jugada y dura lo que dura un pestañeo."
+    ],
+    "apuesta": "Si la llamás a tiempo y te siguen, el mapa se inclina; si llegás tarde, lo pagás.",
+    "veredictos": {
+      "bien": [
+        "La llamada sale y todos te siguen: el mapa se inclina para tu lado.",
+        "La cantás y el equipo se mueve como un bloque."
+      ],
+      "parejo": [
+        "La jugada sale a medias, sin cambiar mucho.",
+        "Se ejecuta tarde, pero no se pierde nada."
+      ],
+      "mal": [
+        "Nadie reacciona a tiempo: el mapa se complica.",
+        "La llamás con el equipo partido y se muere solo."
+      ]
+    }
   },
   {
     "id": "bootcamp",
-    "titulo": "Bootcamp antes de viajar",
-    "descripcion": "Días contados antes del internacional. Hay que decidir qué scrimear bajo presión."
+    "momentos": ["pre_internacional"],
+    "roles": [],
+    "statRelevante": "macro",
+    "efecto": { "tipo": "stat", "targets": ["player.stats.mentalidad"] },
+    "impacto": 6,
+    "spread": 0.2,
+    "titulos": [
+      "Bootcamp antes de viajar",
+      "Última semana de scrims",
+      "Bootcamp: se viaja en seis días"
+    ],
+    "descripciones": [
+      "Días contados antes del internacional. Hay que decidir qué scrimear bajo presión.",
+      "El staff arma la agenda de la semana y te deja repartir el foco.",
+      "Seis días de scrims contra equipos que juegan otro juego."
+    ],
+    "apuesta": "Lo que saques del bootcamp llega como Mentalidad al internacional.",
+    "veredictos": {
+      "bien": [
+        "El bootcamp rindió: llegás mejor preparado.",
+        "La semana cierra fina: llegás enchufado."
+      ],
+      "parejo": [
+        "El bootcamp fue parejo, no alcanzó a pulir todo.",
+        "La semana pasa sin pena ni gloria."
+      ],
+      "mal": [
+        "El bootcamp se hizo cuesta arriba: llegás justo.",
+        "Se scrimeó mal toda la semana y se nota."
+      ]
+    }
   },
   {
     "id": "rueda_de_prensa",
-    "titulo": "Rueda de prensa",
-    "descripcion": "Cámaras y micrófonos. El tono que elijas se comenta tanto como el resultado."
+    "momentos": ["post_serie"],
+    "roles": [],
+    "statRelevante": "adaptabilidad",
+    "efecto": { "tipo": "stat", "targets": ["player.stats.hype", "career.sinergia"] },
+    "impacto": 6,
+    "spread": 0.2,
+    "titulos": [
+      "Rueda de prensa",
+      "Micrófonos abiertos",
+      "La sala de prensa te espera"
+    ],
+    "descripciones": [
+      "Cámaras y micrófonos. El tono que elijas se comenta tanto como el resultado.",
+      "Tres preguntas y una cámara en vivo: lo que digas se recorta mañana.",
+      "El periodista busca el titular y vos elegís si se lo das."
+    ],
+    "apuesta": "El tono que elijas se te devuelve en Hype y en cómo te mira el vestuario.",
+    "veredictos": {
+      "bien": [
+        "El tono cae justo: el vestuario y la prensa lo toman bien.",
+        "Decís lo que había que decir y queda como frase de la semana."
+      ],
+      "parejo": [
+        "La rueda de prensa pasa sin pena ni gloria.",
+        "Respondés correcto y nadie se lleva un titular."
+      ],
+      "mal": [
+        "El tono no fue el mejor: la nota sale rara.",
+        "Te sale una frase incómoda y se recorta sola."
+      ]
+    }
   },
   {
     "id": "la_prueba",
-    "titulo": "La prueba",
-    "descripcion": "Un tryout con un equipo de tier 3: unos minutos para mostrar que valés el contrato mínimo."
+    "momentos": ["tryout"],
+    "roles": [],
+    "statRelevante": "mecanica",
+    "efecto": { "tipo": "roster" },
+    "impacto": 6,
+    "spread": 0.2,
+    "titulos": [
+      "La prueba",
+      "El tryout",
+      "Diez minutos para mostrar algo"
+    ],
+    "descripciones": [
+      "Un tryout con un equipo de tier 3: unos minutos para mostrar que valés el contrato mínimo.",
+      "El coach mira la pantalla en silencio. Vos jugás.",
+      "Es una prueba corta y nadie te va a explicar qué están midiendo."
+    ],
+    "apuesta": "Lo que hagas acá decide cuánto crédito traés el primer día en el equipo.",
+    "veredictos": {
+      "bien": [
+        "Impresionaste en el tryout: entrás con crédito.",
+        "Se te quedaron mirando: entrás con la vara alta."
+      ],
+      "parejo": [
+        "El tryout fue correcto, sin más.",
+        "Cumplís, y con eso alcanza para firmar."
+      ],
+      "mal": [
+        "El tryout no terminó de convencer.",
+        "Salió flojo: entrás debiendo algo."
+      ]
+    }
   }
 ]

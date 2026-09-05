@@ -936,12 +936,19 @@ export const BALANCE = {
     // |rendimiento base del jugador - fuerza del rival| <= esto: "mapa cerrado",
     // condicion necesaria para que dispare un minijuego (regla 4 de 4.6).
     margenMapaCerrado: 8,
-    // Cuanto puede mover el resultado de un minijuego el rendimiento del mapa:
-    // corre el resultado, no lo decide (regla 1 de 4.6).
-    impactoMinijuego: 0.12,
-    // Dispersion del resultado headless (resolverAuto): gauss centrado en
-    // statRelevante/100, para que simulate.js mida algo parecido a jugar de verdad.
-    minijuegoSpread: 0.2,
+    // Fase 9R4a: cuanto mueve cada minijuego (`impacto`) y con cuanta
+    // dispersion lo simula el camino headless (`spread`) ya NO viven aca: cada
+    // entrada de `data/minijuegos.json` trae los suyos. Es el cierre de D20
+    // ("los 5 minijuegos comparten dos parametros genericos en vez de tener
+    // cada uno el suyo"). Lo que queda aca es lo que no es de un minijuego en
+    // particular sino de como se reparten:
+    //
+    // Un minijuego recien jugado se saltea mientras haya otro elegible para ese
+    // momento (misma forma que `motivoRivalCooldownSplits` en 9R0a).
+    minijuegoCooldownSplits: 3,
+    // Los cortes del veredicto 0-1 que lee el jugador al terminar (9R0b): de
+    // aca para arriba "Clavado", de aca para abajo "No salio".
+    veredictoMinijuego: { bien: 0.72, parejo: 0.42 },
     // "la_llamada": con jerarquia baja no te siguen aunque tengas razon — el
     // impacto del minijuego se amortigua fuerte por debajo de este umbral.
     jerarquiaMinimaParaSeguirLlamada: 60,
@@ -950,12 +957,8 @@ export const BALANCE = {
     ruidoRivalSerie: 12,
     // Maestria del campeon "fuera del pool" cuando el Fearless te quema todo (4.5).
     maestriaComodin: 20,
-    // "la_prueba" (tryout de tier 3, en amateur.js): cuanto mueve la jerarquia
-    // inicial del roster segun el resultado del minijuego.
-    impactoLaPrueba: 6,
-    // "bootcamp" y "rueda_de_prensa": minijuegos que no ajustan un mapa sino
-    // que aplican un efecto directo (mentalidad / hype / sinergia).
-    impactoDirecto: 6
+    // 9R4a: `impactoLaPrueba` e `impactoDirecto` se mudaron al dato
+    // (`impacto` de cada entrada de minijuegos.json), igual que impactoMinijuego
   },
 
   // 9M-lite: el mundo tiene escena. El digest anual de las otras ligas

@@ -33,6 +33,110 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-05 — Fase 9R4a: el minijuego es dato (cierra D20)
+
+Primer commit de la fase **9R.4**. Estructura pura: ningún minijuego cambia lo que hace, cambia
+**de dónde sale lo que hace**.
+
+#### El diagnóstico, re-medido antes de tocar nada (trampa T6)
+
+`PLAN.md` §9R.4 decía *"disparan en el 3,7% de las decisiones"* — un número del 2026-09-02,
+anterior a 9R0b y a T6. Medido hoy sobre `HEAD`, 300 carreras × 60 splits:
+
+| Métrica | Medido |
+|---|---|
+| Minijuegos / decisiones | 1.724 de 30.208 = **5,71%** |
+| Minijuegos por carrera | mediana **3**, p90 **17**, máx **28** |
+| Carreras que no ven ninguno | **29,3%** |
+| Reparto | `bootcamp` 643 · `la_llamada` 574 · `la_prueba` 204 · `robar_baron` 159 · `rueda_de_prensa` 144 |
+| Internacionales con jugada dentro del mapa | **0 de 643** |
+| Impacto agregado (siempre acierta vs. siempre falla, N=400) | **+7,49%** en títulos+internacionales |
+
+Las dos filas que ordenan la fase: el **bootcamp se come el cupo del 100% de los internacionales**
+(se dispara antes del primer mapa y `serie.minijuegoUsado` es uno por serie), y **cuatro de los
+cinco roles juegan siempre lo mismo** — `robar_baron` es del jungla y todo el resto cae en
+`la_llamada`. Las dos se arreglan en 9R4b y 9R4c; este commit prepara el terreno.
+
+#### Qué entra
+
+`minijuegos.json` eran **5 stubs de tres campos** (`id`/`titulo`/`descripcion`). Todo lo que
+importa —a quién le toca, qué stat lo corre, cuánto mueve, qué se lee al terminar— vivía hardcodeado
+en `systems/serie.js`, `systems/amateur.js` y, duplicado, en `ui/components/minijuegos/index.js`.
+Ahora es dato:
+
+```json
+{ "id": "robar_baron", "momentos": ["mapa_cerrado", "mapa_decisivo"], "roles": ["jungla"],
+  "statRelevante": "mecanica", "efecto": { "tipo": "mapa" }, "impacto": 0.12, "spread": 0.2,
+  "titulos": [3 variantes], "descripciones": [3], "apuesta": "…", "veredictos": { … } }
+```
+
+- **`src/core/minijuegos.js`** (nuevo, puro, **cero RNG**): `minijuegosPara` (filtra por momento y
+  rol), `elegirMinijuego` (determinista por `hashCadena`, con anti-repetición sobre
+  `flags.minijuegosRecientes` — misma forma que `motivosFechaRecientes` de 9R0a),
+  `textoDeMinijuego`, `veredictoDeMinijuego`, `registrarMinijuegoVisto`.
+- **`systems/serie.js`**: `construirDecisionMinijuego(state, id, stat, …)` → `pausaDeMinijuego(state,
+  momento, …)`. `resolver` conmuta por **`efecto.tipo`** (`mapa` / `stat` / `roster`), no por el id:
+  agregar una mecánica al catálogo ya no toca este archivo. Los efectos de stat declaran su target
+  en el dato (`player.stats.mentalidad`, `career.sinergia`) y el motor los aplica sin saber cuál es
+  cuál. `resolverAuto` lee el `spread` del dato.
+- **`systems/amateur.js`**: la_prueba sale del catálogo por el momento `tryout`, con su stat y su
+  impacto propios.
+- **`ui/components/minijuegos/index.js`**: la tabla `RESULTADO_MINIJUEGO` (9R0b) se borra y
+  re-exporta `veredictoDeMinijuego` del core. Había **dos** tablas de frases para lo mismo, y podían
+  quedar diciendo cosas distintas: la UI mostraba una y el log del motor imprimía otra dos líneas
+  después.
+- **D20 cerrada**: `impactoMinijuego` / `impactoDirecto` / `impactoLaPrueba` / `minijuegoSpread` se
+  van de `balance.js` (eran dos parámetros genéricos para cinco minijuegos). Quedan las dos
+  constantes que sí son del reparto y no de un minijuego: `minijuegoCooldownSplits: 3` y
+  `veredictoMinijuego: { bien: 0.72, parejo: 0.42 }` (los cortes que 9R0b tenía hardcodeados).
+- **Variación léxica** donde no había nada: 3 títulos + 2-3 descripciones + 2 frases por nivel de
+  veredicto en cada entrada. Se eligen con el mismo hash determinista de 9R3a — **no tocan el RNG**.
+
+#### Herramienta nueva: `validate.js --solo=<texto>`
+
+Corre sólo los checks cuyo nombre contiene el texto. La corrida completa tarda ~7 minutos (D32), y
+la regla de proceso 7 (*"al escribir un check nuevo, verificar que falla cuando debe"*) costaba
+siete minutos por intento. Con esto, segundos. Es tooling: sin la bandera, `validate.js` corre
+exactamente lo que corría.
+
+#### Checks nuevos (4), los tres primeros verificados en rojo
+
+1. **Esquema de 9R4a**: momentos válidos, roles válidos, `statRelevante` que exista en
+   `player.stats`, `efecto.tipo` válido, targets que existan en `createInitialState` (trampa T4),
+   `impacto`/`spread` numéricos, ≥3 títulos, ≥2 descripciones, `apuesta` y los tres veredictos.
+   *Verificado en rojo*: sacándole la apuesta a `robar_baron` → FAIL.
+2. **Todo minijuego tiene su widget y todo widget su entrada** — el hueco que nadie verificaba: un id
+   nuevo sin `montar` no rompe ningún check, rompe la partida en el navegador con el panel en blanco.
+   *Verificado en rojo*: agregando `sin_widget` al catálogo → FAIL.
+3. **`elegirMinijuego` es determinista, respeta el rol y no consume RNG.**
+   *Verificado en rojo*: metiéndole una llamada al `rng` adentro → FAIL ("consumió RNG, trampa T1").
+4. **El veredicto y la apuesta salen del mismo dato que consume el motor**: los tres niveles ordenan
+   (1 → bien, 0,5 → parejo, 0 → mal) y ninguno queda sin frase.
+
+#### Números medidos después del cambio (misma sonda, N=300)
+
+| Métrica | Antes | Después |
+|---|---|---|
+| Minijuegos / decisiones | 5,71% | **5,69%** |
+| Minijuegos por carrera | mediana 3 · p90 17 | **igual** |
+| `robar_baron` | 159 | **81** |
+| `la_llamada` | 574 | **647** |
+
+Estructura pura, como se esperaba: lo único que se movió es que **el jungla ya no juega siempre el
+Barón** — ahora comparte el momento del mapa con la llamada y la anti-repetición alterna entre las
+dos. Es el primer efecto visible del catálogo, y va en la dirección de la fase.
+
+#### Verificación
+
+`validate.js` **121/121 OK, 0 FAIL** · `simulate.js 1000 60 todas` **0 crashes** (las tres
+estrategias) · determinismo intra-versión **150/150** · `cobertura.js --huecos` sin huecos ·
+`npm run build` OK (**1121 KB**, techo 1200).
+
+**Trampa T1, anotada:** el minijuego que toca en un mapa cerrado ahora puede ser otro (el jungla
+alterna Barón/llamada), así que **ninguna seed anterior reproduce su carrera**. El determinismo
+intra-versión queda intacto y la elección **no** consume RNG: el corrimiento viene de qué
+minijuego se juega, no de cuántas tiradas se gastan.
+
 ### 2026-09-04 — Fase T8: la página como página (cierra la fase T)
 
 El último bloqueante real de publicar: el guardado (P.2), la seed en la URL (P.3), la página como

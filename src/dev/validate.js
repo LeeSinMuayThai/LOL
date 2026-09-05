@@ -46,6 +46,8 @@ import { ROLES, IDS_ROL } from '../data/roles.js';
 import LIGAS from '../data/leagues.json' with { type: 'json' };
 import CAMPEONES from '../data/champions.json' with { type: 'json' };
 import MINIJUEGOS from '../data/minijuegos.json' with { type: 'json' };
+import { elegirMinijuego, minijuegosPara, veredictoDeMinijuego, textoDeMinijuego } from '../core/minijuegos.js';
+import { MONTAR_MINIJUEGO } from '../ui/components/minijuegos/index.js';
 import METAS from '../data/metas.json' with { type: 'json' };
 
 const __filename = fileURLToPath(import.meta.url);
@@ -56,7 +58,18 @@ const errores = [];
 
 const ACCIONES_DE_POOL = ['aprender', 'maestria', 'olvidar'];
 
+// `--solo=<texto>` corre unicamente los checks cuyo nombre contiene ese texto.
+// Es lo que hace practicable la regla de proceso 7 ("al escribir un check nuevo,
+// verificar que falla cuando debe"): la corrida completa tarda ~7 minutos (D32),
+// asi que verificar un check en rojo costaba siete minutos por intento.
+const SOLO = process.argv.slice(2)
+  .filter((arg) => arg.startsWith("--solo="))
+  .map((arg) => arg.slice("--solo=".length).toLowerCase());
+
 function check(nombre, fn) {
+  if (SOLO.length > 0 && !SOLO.some((texto) => nombre.toLowerCase().includes(texto))) {
+    return;
+  }
   try {
     fn();
     console.log(`OK   ${nombre}`);
@@ -2110,7 +2123,14 @@ check('Ningún split cierra sin dejar una línea en el feed', () => {
 
 // --- Fase 4: series Bo5, Fearless draft y minijuegos ---
 
-check('Los minijuegos tienen forma válida', () => {
+check('Los minijuegos tienen forma válida (esquema de 9R4a)', () => {
+  // Hasta 9R4a el esquema eran tres campos (`id`/`titulo`/`descripcion`) y todo
+  // lo que importaba —a quién le toca, qué stat lo corre, cuánto mueve, qué se
+  // lee al terminar— vivía hardcodeado en los sistemas. Ahora es dato, así que
+  // el dato se valida entero.
+  const MOMENTOS = ['mapa_cerrado', 'mapa_decisivo', 'pre_internacional', 'post_serie', 'tryout'];
+  const TIPOS_EFECTO = ['mapa', 'stat', 'roster'];
+  const estadoDeMuestra = createInitialState(1, mulberry32(1));
   const ids = new Set();
 
   for (const entrada of MINIJUEGOS) {
@@ -2121,17 +2141,150 @@ check('Los minijuegos tienen forma válida', () => {
       throw new Error(`id de minijuego duplicado: ${entrada.id}`);
     }
     ids.add(entrada.id);
-    if (typeof entrada.titulo !== 'string' || entrada.titulo.trim() === '') {
-      throw new Error(`${entrada.id}: sin título`);
+
+    if (!Array.isArray(entrada.momentos) || entrada.momentos.length === 0) {
+      throw new Error(`${entrada.id}: sin momentos declarados`);
     }
-    if (typeof entrada.descripcion !== 'string' || entrada.descripcion.trim() === '') {
-      throw new Error(`${entrada.id}: sin descripción`);
+    for (const momento of entrada.momentos) {
+      if (!MOMENTOS.includes(momento)) {
+        throw new Error(`${entrada.id}: momento desconocido "${momento}"`);
+      }
+    }
+    if (!Array.isArray(entrada.roles)) {
+      throw new Error(`${entrada.id}: \`roles\` tiene que ser un array (vacío = todos)`);
+    }
+    for (const rol of entrada.roles) {
+      if (!IDS_ROL.includes(rol)) {
+        throw new Error(`${entrada.id}: rol desconocido "${rol}"`);
+      }
+    }
+    if (!(entrada.statRelevante in estadoDeMuestra.player.stats)) {
+      throw new Error(`${entrada.id}: statRelevante "${entrada.statRelevante}" no existe en player.stats`);
+    }
+    if (!entrada.efecto || !TIPOS_EFECTO.includes(entrada.efecto.tipo)) {
+      throw new Error(`${entrada.id}: efecto.tipo inválido`);
+    }
+    if (entrada.efecto.tipo === 'stat') {
+      if (!Array.isArray(entrada.efecto.targets) || entrada.efecto.targets.length === 0) {
+        throw new Error(`${entrada.id}: un efecto de stat necesita targets`);
+      }
+      for (const target of entrada.efecto.targets) {
+        // Trampa T4: el target tiene que existir en el estado inicial.
+        const existe = target.startsWith('player.stats.')
+          ? target.slice('player.stats.'.length) in estadoDeMuestra.player.stats
+          : target.startsWith('career.') && target.slice('career.'.length) in estadoDeMuestra.career;
+        if (!existe) {
+          throw new Error(`${entrada.id}: target "${target}" no existe en createInitialState`);
+        }
+      }
+    }
+    if (!(typeof entrada.impacto === 'number') || entrada.impacto <= 0) {
+      throw new Error(`${entrada.id}: impacto inválido (D20: cada minijuego trae el suyo)`);
+    }
+    if (!(typeof entrada.spread === 'number') || entrada.spread <= 0) {
+      throw new Error(`${entrada.id}: spread inválido`);
+    }
+    if (!Array.isArray(entrada.titulos) || entrada.titulos.length < 3) {
+      throw new Error(`${entrada.id}: hacen falta al menos 3 títulos (variación léxica, 9R.3)`);
+    }
+    if (!Array.isArray(entrada.descripciones) || entrada.descripciones.length < 2) {
+      throw new Error(`${entrada.id}: hacen falta al menos 2 descripciones`);
+    }
+    if (typeof entrada.apuesta !== 'string' || entrada.apuesta.trim() === '') {
+      throw new Error(`${entrada.id}: sin apuesta (qué se juega ANTES de jugarlo)`);
+    }
+    for (const nivel of ['bien', 'parejo', 'mal']) {
+      const variantes = entrada.veredictos?.[nivel];
+      if (!Array.isArray(variantes) || variantes.length === 0) {
+        throw new Error(`${entrada.id}: sin veredicto "${nivel}"`);
+      }
     }
   }
 
   for (const esperado of ['robar_baron', 'la_llamada', 'bootcamp', 'rueda_de_prensa', 'la_prueba']) {
     if (!ids.has(esperado)) {
       throw new Error(`falta el minijuego "${esperado}" (PLAN.md 4.6)`);
+    }
+  }
+});
+
+check('Todo minijuego del catálogo tiene su widget, y todo widget su entrada (9R4a)', () => {
+  // El hueco que hasta 9R4a nadie verificaba: un id nuevo en el JSON sin su
+  // `montar` correspondiente no rompe ningún check —rompe la partida en el
+  // navegador, con el panel del minijuego en blanco y el split colgado.
+  const delDato = MINIJUEGOS.map((entrada) => entrada.id).sort();
+  const deLaUi = Object.keys(MONTAR_MINIJUEGO).sort();
+
+  for (const id of delDato) {
+    if (!deLaUi.includes(id)) {
+      throw new Error(`el minijuego "${id}" no tiene widget en MONTAR_MINIJUEGO`);
+    }
+  }
+  for (const id of deLaUi) {
+    if (!delDato.includes(id)) {
+      throw new Error(`el widget "${id}" no tiene entrada en minijuegos.json`);
+    }
+  }
+});
+
+check('elegirMinijuego es determinista, respeta el rol y no consume RNG (9R4a)', () => {
+  // Regla invariable 1 + trampa T1: la elección del minijuego no puede tocar el
+  // stream, o cada minijuego nuevo del catálogo correría la carrera entera.
+  const rng = mulberry32(4242);
+  const base = createInitialState(4242, rng);
+  const antes = rng.estado();
+
+  const estado = { ...base, player: { ...base.player, role: 'jungla', splitCount: 12 } };
+  const primera = elegirMinijuego(estado, 'mapa_cerrado');
+  const segunda = elegirMinijuego(estado, 'mapa_cerrado');
+
+  if (!primera || primera.id !== segunda.id) {
+    throw new Error('elegirMinijuego no es determinista para el mismo estado');
+  }
+  if (rng.estado() !== antes) {
+    throw new Error('elegirMinijuego consumió RNG (trampa T1)');
+  }
+
+  // El Barón es del jungla: ningún otro rol lo puede ver.
+  for (const rol of IDS_ROL.filter((candidato) => candidato !== 'jungla')) {
+    const elegibles = minijuegosPara({ ...estado, player: { ...estado.player, role: rol } }, 'mapa_cerrado');
+    if (elegibles.some((entrada) => entrada.roles.length > 0 && !entrada.roles.includes(rol))) {
+      throw new Error(`${rol} puede recibir un minijuego que no es de su rol`);
+    }
+    if (elegibles.length === 0) {
+      throw new Error(`${rol} no tiene ningún minijuego elegible en un mapa cerrado`);
+    }
+  }
+
+  // Y todo momento declarado tiene al menos un minijuego para todo rol.
+  for (const momento of ['mapa_cerrado', 'mapa_decisivo', 'pre_internacional', 'post_serie', 'tryout']) {
+    for (const rol of IDS_ROL) {
+      const estadoRol = { ...estado, player: { ...estado.player, role: rol } };
+      if (!elegirMinijuego(estadoRol, momento)) {
+        throw new Error(`el momento "${momento}" no tiene minijuego para ${rol}`);
+      }
+    }
+  }
+});
+
+check('El veredicto y la apuesta salen del mismo dato que consume el motor (9R4a)', () => {
+  const estado = createInitialState(7, mulberry32(7));
+
+  for (const entrada of MINIJUEGOS) {
+    const textos = textoDeMinijuego(entrada, estado);
+    for (const [campo, valor] of Object.entries(textos)) {
+      if (typeof valor !== 'string' || valor.trim() === '') {
+        throw new Error(`${entrada.id}: ${campo} vacío`);
+      }
+    }
+    const niveles = [1, 0.5, 0].map((resultado) => veredictoDeMinijuego(entrada.id, resultado, estado));
+    if (niveles.map((v) => v.nivel).join(',') !== 'bien,parejo,mal') {
+      throw new Error(`${entrada.id}: los cortes del veredicto no ordenan bien → ${niveles.map((v) => v.nivel).join(',')}`);
+    }
+    for (const veredicto of niveles) {
+      if (!veredicto.detalle || veredicto.detalle.trim() === '') {
+        throw new Error(`${entrada.id}: veredicto sin frase (${veredicto.nivel})`);
+      }
     }
   }
 });

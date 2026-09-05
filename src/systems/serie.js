@@ -1,7 +1,6 @@
 import { gauss, weightedPick, roll } from '../core/rng.js';
 import { crearLog } from '../core/log.js';
 import { clamp, clampStat } from '../core/numeros.js';
-import { resolverTexto } from '../core/plantillas.js';
 import { ligaDeCarrera } from '../core/competicion.js';
 import { pesoDePick, factorDeCampeon, lecturaDePick } from '../core/ajusteMeta.js';
 import {
@@ -15,8 +14,10 @@ import { calcularRendimiento, fuerzaDelEquipo } from './rendimiento.js';
 import {
   registrarMapa, registrarSerie, registrarTitulo, registrarInternacional, registrarPico, registrarArraigoEnFila
 } from '../core/registro.js';
+import {
+  elegirMinijuego, minijuegoPorId, textoDeMinijuego, registrarMinijuegoVisto, veredictoDeMinijuego
+} from '../core/minijuegos.js';
 import { BALANCE } from '../data/balance.js';
-import MINIJUEGOS from '../data/minijuegos.json' with { type: 'json' };
 
 export const id = 'serie';
 
@@ -27,10 +28,6 @@ export const id = 'serie';
 // (CONCEPTO §5: temporada regular → playoffs), que ya dejó `career.posicion`
 // fresca este split y — para tier 1 con `formatoPlayoffs` — se abstuvo de
 // resolver título/internacional al instante: eso lo hace este sistema.
-
-function minijuegoPorId(minijuegoId) {
-  return MINIJUEGOS.find((entrada) => entrada.id === minijuegoId);
-}
 
 function nombreLigaDe(liga) {
   return liga.nombreLiga ?? liga.id;
@@ -62,16 +59,54 @@ function construirDecisionDraft(state, disponibles) {
   };
 }
 
-function construirDecisionMinijuego(state, minijuegoId, statRelevante, datosExtra = {}) {
-  const datos = minijuegoPorId(minijuegoId);
+// Fase 9R4a: el minijuego sale del catálogo (`data/minijuegos.json`) por
+// MOMENTO y por rol, no de un `if` sobre `player.role`. Devuelve la pausa
+// entera —estado incluido— porque el id elegido se anota en
+// `flags.minijuegosRecientes` para no repetir la misma mecánica dos series
+// seguidas cuando hay otra elegible. `null` si el momento no tiene contenido:
+// el que llama sigue de largo.
+function pausaDeMinijuego(state, momento, logsAcum, datosExtra = {}) {
+  const entrada = elegirMinijuego(state, momento);
+  if (!entrada) {
+    return null;
+  }
+  const textos = textoDeMinijuego(entrada, state);
   return {
-    tipo: 'opciones',
-    presentacion: 'minijuego',
-    titulo: resolverTexto(datos.titulo, state),
-    descripcion: resolverTexto(datos.descripcion, state),
-    opciones: [],
-    datos: { motivo: 'minijuego', minijuego: minijuegoId, statRelevante, ...datosExtra }
+    state: { ...state, flags: { ...state.flags, minijuegosRecientes: registrarMinijuegoVisto(state, entrada.id) } },
+    logs: logsAcum,
+    decision: {
+      tipo: 'opciones',
+      presentacion: 'minijuego',
+      titulo: textos.titulo,
+      descripcion: textos.descripcion,
+      opciones: [],
+      datos: {
+        motivo: 'minijuego',
+        minijuego: entrada.id,
+        momento,
+        statRelevante: entrada.statRelevante,
+        apuesta: textos.apuesta,
+        ...datosExtra
+      }
+    }
   };
+}
+
+// Los efectos `tipo: 'stat'` declaran a qué apuntan en el propio dato
+// (`player.stats.mentalidad`, `career.sinergia`): el motor no sabe cuál es el
+// del bootcamp y cuál el de la rueda de prensa, los aplica.
+function aplicarStatsDeMinijuego(state, targets, delta) {
+  return targets.reduce((st, target) => {
+    if (target.startsWith('player.stats.')) {
+      const stat = target.slice('player.stats.'.length);
+      return {
+        ...st,
+        player: { ...st.player, stats: { ...st.player.stats, [stat]: clampStat(st.player.stats[stat] + delta) } }
+      };
+    }
+    const campo = target.slice('career.'.length);
+    return { ...st, career: { ...st.career, [campo]: clampStat(st.career[campo] + delta) } };
+  }, state);
 }
 
 // --- Arrancar una ronda ---
@@ -144,13 +179,10 @@ function jugarConCampeon(state, campeonElegido, rng, logsAcum, entradaExtra = nu
 
   const puedeMinijuego = ['semis', 'final', 'internacional'].includes(state.serie.ronda) && !state.serie.minijuegoUsado;
   if (puedeMinijuego && esMapaCerrado(fuerzaPropia, state.serie.rival.fuerza)) {
-    const minijuego = state.player.role === 'jungla' ? 'robar_baron' : 'la_llamada';
-    const statRelevante = minijuego === 'robar_baron' ? 'mecanica' : 'shotcalling';
-    return {
-      state,
-      logs: logsAcum,
-      decision: construirDecisionMinijuego(state, minijuego, statRelevante, { campeonElegido, fuerzaPropia })
-    };
+    const pausa = pausaDeMinijuego(state, 'mapa_cerrado', logsAcum, { campeonElegido, fuerzaPropia });
+    if (pausa) {
+      return pausa;
+    }
   }
 
   return finalizarMapa(state, campeonElegido, fuerzaPropia, 0, rng, logsAcum);
@@ -303,11 +335,10 @@ function concluirRonda(state, rng, logsAcum) {
   }
 
   if (['final', 'internacional'].includes(ronda) && !st.serie.minijuegoUsado) {
-    return {
-      state: st,
-      logs,
-      decision: construirDecisionMinijuego(st, 'rueda_de_prensa', 'adaptabilidad', { trasRonda: ronda, gano })
-    };
+    const pausa = pausaDeMinijuego(st, 'post_serie', logs, { trasRonda: ronda, gano });
+    if (pausa) {
+      return pausa;
+    }
   }
 
   return continuarTrasRonda(st, ronda, gano, rng, logs);
@@ -338,7 +369,7 @@ function intentarInternacional(state, rng, logsAcum) {
   const st = iniciarRonda(state, 'internacional', rng);
   const logs = [...logsAcum, crearLog('serie', `Clasificaste al internacional: rival, ${st.serie.rival.org}.`)];
 
-  return { state: st, logs, decision: construirDecisionMinijuego(st, 'bootcamp', 'macro') };
+  return pausaDeMinijuego(st, 'pre_internacional', logs) ?? jugarMapaSiguiente(st, rng, logs);
 }
 
 // --- Contrato del sistema ---
@@ -374,41 +405,27 @@ export function resolver(state, decision, respuesta, rng) {
     return jugarConCampeon(state, respuesta.opcionId, rng, []);
   }
 
-  const { minijuego } = decision.datos;
+  // Fase 9R4a: la rama la decide el DATO (`efecto.tipo`), no el id del
+  // minijuego. Agregar una mecánica nueva al catálogo no toca este archivo.
+  const entrada = minijuegoPorId(decision.datos.minijuego);
   const resultado = clamp(respuesta.resultado ?? 0.5, 0, 1);
   const ajusteBase = (resultado - 0.5) * 2;
-  const s = BALANCE.serie;
   const stConCupo = { ...state, serie: { ...state.serie, minijuegoUsado: true } };
 
-  if (minijuego === 'robar_baron' || minijuego === 'la_llamada') {
+  if (entrada.efecto.tipo === 'mapa') {
     const { campeonElegido, fuerzaPropia } = decision.datos;
-    const amortiguado = minijuego === 'la_llamada' ? factorJerarquiaEnLlamada(state.career.jerarquia) : 1;
-    return finalizarMapa(stConCupo, campeonElegido, fuerzaPropia, ajusteBase * s.impactoMinijuego * amortiguado, rng, []);
+    const amortiguado = entrada.efecto.amortiguador === 'jerarquia'
+      ? factorJerarquiaEnLlamada(state.career.jerarquia)
+      : 1;
+    return finalizarMapa(stConCupo, campeonElegido, fuerzaPropia, ajusteBase * entrada.impacto * amortiguado, rng, []);
   }
 
-  if (minijuego === 'bootcamp') {
-    const delta = ajusteBase * s.impactoDirecto;
-    const st = {
-      ...stConCupo,
-      player: { ...stConCupo.player, stats: { ...stConCupo.player.stats, mentalidad: clampStat(stConCupo.player.stats.mentalidad + delta) } }
-    };
-    const logs = [crearLog('serie', delta >= 0
-      ? 'El bootcamp rindió: llegás mejor preparado.'
-      : 'El bootcamp fue parejo, no alcanzó a pulir todo.')];
-    return jugarMapaSiguiente(st, rng, logs);
-  }
+  const st = aplicarStatsDeMinijuego(stConCupo, entrada.efecto.targets, ajusteBase * entrada.impacto);
+  const logs = [crearLog('serie', veredictoDeMinijuego(entrada.id, resultado, state).detalle)];
 
-  // rueda_de_prensa
-  const delta = ajusteBase * s.impactoDirecto;
-  const st = {
-    ...stConCupo,
-    player: { ...stConCupo.player, stats: { ...stConCupo.player.stats, hype: clampStat(stConCupo.player.stats.hype + delta) } },
-    career: { ...stConCupo.career, sinergia: clampStat(stConCupo.career.sinergia + delta) }
-  };
-  const logs = [crearLog('serie', delta >= 0
-    ? 'La rueda de prensa te queda bien: el tono cayó justo.'
-    : 'La rueda de prensa sale rara: el tono no fue el mejor.')];
-  return continuarTrasRonda(st, decision.datos.trasRonda, decision.datos.gano, rng, logs);
+  return decision.datos.momento === 'pre_internacional'
+    ? jugarMapaSiguiente(st, rng, logs)
+    : continuarTrasRonda(st, decision.datos.trasRonda, decision.datos.gano, rng, logs);
 }
 
 export function resolverAuto(state, decision, rng) {
@@ -427,6 +444,7 @@ export function resolverAuto(state, decision, rng) {
 
   // Regla 5 de 4.6: Node simula el minijuego con gauss corrido por el stat
   // relevante — el motor no lo implementa, solo lo consume.
+  const entrada = minijuegoPorId(decision.datos.minijuego);
   const valor = state.player.stats[decision.datos.statRelevante] ?? 50;
-  return { resultado: clamp(gauss(valor / 100, BALANCE.serie.minijuegoSpread, rng), 0, 1) };
+  return { resultado: clamp(gauss(valor / 100, entrada.spread, rng), 0, 1) };
 }

@@ -1963,10 +1963,115 @@ mundo no suene igual en toda partida; los 3 eventos que nunca salían se regatea
 
 ## 9R.4 — Los minijuegos de verdad (gancho de El Ídolo)
 
-Hoy `minijuegos.json` son **5 stubs sin opciones**, disparan en el 3,7% de las decisiones. Se
-completan y se suman los momentos que hoy se resuelven solos: final de liga, internacional, tryout
-de tier 3, el Barón de un mapa 5. Respetando PLAN.md:80: *"que tampoco todo sea un gambling a los
-minijuegos"* — varianza que el jugador controla, acotada, dentro de las competiciones.
+> **Reescrita el 2026-09-05.** El texto original de esta sección eran cinco líneas del 2026-09-02,
+> anteriores a **9R0b** (el feedback de resultado) y a **T6** (los 5 minijuegos migrados de
+> `index.html` a `src/ui/components/minijuegos/`). Decía *"disparan en el 3,7% de las decisiones"*;
+> re-medido antes de escribir una línea de código (trampa T6), da otra cosa.
+
+**El diagnóstico, medido en HEAD** (300 carreras × 60 splits, responder por defecto):
+
+| Métrica | Medido |
+|---|---|
+| Minijuegos / decisiones | **1.724 de 30.208 = 5,71%** |
+| Minijuegos por carrera | mediana **3**, p90 **17**, máx **28** |
+| Carreras que no ven ninguno | **29,3%** |
+| Reparto | `bootcamp` 643 · `la_llamada` 574 · `la_prueba` 204 · `robar_baron` 159 · `rueda_de_prensa` 144 |
+| Internacionales con jugada dentro del mapa | **0 de 643** |
+| Impacto agregado (siempre acierta vs. siempre falla, N=400) | **+7,49%** en títulos+internacionales |
+
+Los cuatro defectos que salen de esos números:
+
+1. **El cupo de la serie se lo come el bootcamp.** `serie.minijuegoUsado` es uno por serie y el
+   bootcamp dispara **antes del primer mapa, siempre** (643/643 internacionales): la serie más
+   grande del juego nunca tiene una jugada dentro del mapa ni rueda de prensa.
+2. **Cuatro de los cinco roles juegan siempre lo mismo.** `robar_baron` es sólo jungla; el resto cae
+   en `la_llamada` sin excepción.
+3. **`minijuegos.json` son 5 stubs** (`id`/`titulo`/`descripcion`): el stat, el impacto, el disparo y
+   los veredictos están hardcodeados en `systems/serie.js`, `systems/amateur.js` y
+   `ui/components/minijuegos/index.js`. Rompe la regla invariable 4 (el contenido es dato) y es la
+   causa directa de **D20**.
+4. **Cero variación léxica**: cinco títulos fijos que una carrera larga ve hasta 28 veces — justo lo
+   que 9R.3 corrigió en todo el resto del catálogo.
+
+**Decisión del usuario (textual, 2026-09-05):** *"1 por rol sería muy repetitivo, tienen que ser
+varios, desde last hit de minions fast, hasta dodgear, smite, y que se te ocurran cosas del lol,
+apretar teclas en orden tipo combo etc"* → **un banco de mecánicas de LoL**, elegidas por rol y
+momento con anti-repetición, no una mecánica fija por puesto.
+
+Lo que **no** cambia: `PLAN.md:80` (*"que tampoco todo sea un gambling a los minijuegos"*). El cupo
+sigue siendo **uno de mapa por serie**; lo que cambia es cuál te toca, y que el internacional y el
+mapa que cierra dejen de quedarse sin el suyo.
+
+**Orden de commits:**
+
+| # | Commit | Qué entra | Estado |
+|---|---|---|---|
+| **9R4a** | `el minijuego es dato` | Esquema completo en `minijuegos.json` (`momentos`, `roles`, `statRelevante`, `efecto`, `impacto`, `spread`, `titulos[]`, `descripciones[]`, `apuesta`, `veredictos`). `src/core/minijuegos.js` nuevo (puro, **cero RNG**): `minijuegosPara` / `elegirMinijuego` (determinista por `hashCadena`, con anti-repetición vía `flags.minijuegosRecientes`) / `textoDeMinijuego` / `veredictoDeMinijuego`. `systems/serie.js` y `systems/amateur.js` dejan de hardcodear id, stat e impacto; `resolver` conmuta por `efecto.tipo`, no por `id`. **Cierra D20.** Impactos iniciales = los de hoy (regla de proceso 2) | ✅ (2026-09-05) |
+| **9R4b** | `el cupo se reparte` | El bootcamp deja de consumir el cupo de la serie (`serie.preSerieUsado` propio): el internacional recupera su jugada de mapa y su rueda de prensa. El **mapa que cierra la serie** ofrece la jugada aunque no sea parejo — constante nueva `serie.margenMapaCerradoDecisivo` ("el Barón de un mapa 5") | ⬜ |
+| **9R4c** | `el banco de mecánicas` | Seis mecánicas nuevas de UI, contrato intacto `montar(container, state, onDone, rngUi)` | ⬜ |
+| **9R4d** | `la apuesta antes, el veredicto después` | El panel dice **qué se juega antes de jugarlo** (principio rector 3, reglas de proceso 13 y 16) + variación léxica en las 11 entradas | ⬜ |
+| **9R4e** | `calibrar el banco` | Sólo constantes: impacto y spread propios por minijuego, contra el check "ni decorativo ni gambling" | ⬜ |
+
+### El esquema de `minijuegos.json`
+
+```json
+{
+  "id": "robar_baron",
+  "momentos": ["mapa_cerrado", "mapa_decisivo"],
+  "roles": ["jungla"],
+  "statRelevante": "mecanica",
+  "efecto": { "tipo": "mapa" },
+  "impacto": 0.12,
+  "spread": 0.2,
+  "titulos": ["El Barón está bajo", "…", "…"],
+  "descripciones": ["…", "…"],
+  "apuesta": "Si sale, el mapa se te va a favor; si no, se complica.",
+  "veredictos": { "bien": ["…"], "parejo": ["…"], "mal": ["…"] }
+}
+```
+
+`efecto.tipo` ∈ `mapa` (corre el resultado del mapa vía `impacto`) · `stat` (`target`:
+`mentalidad` / `hype` / `sinergia`) · `roster` (`flags.bonusJerarquiaTryout`). `roles: []` = todos.
+`momentos` ∈ `mapa_cerrado` · `mapa_decisivo` · `pre_internacional` · `post_serie` · `tryout`.
+
+### El banco de mecánicas (9R4c)
+
+| id | mecánica | stat | roles | momento |
+|---|---|---|---|---|
+| `last_hit` | 5-6 minions con la vida bajando: rematar en la ventana de ejecución, que abre `laneo` | `laneo` | top, mid, adc | mapa cerrado |
+| `el_combo` | la secuencia Q-W-E-R se muestra 1,5 s y hay que repetirla con el teclado | `mecanica` | todos | mapa cerrado / decisivo |
+| `dodge` | esquivar 3-4 skillshots moviéndose con flechas o WASD | `mecanica` | todos | mapa cerrado |
+| `la_vision` | plantar N wards en las zonas correctas antes de que corra el reloj | `macro` | support, jungla | mapa cerrado |
+| `el_kite` | alternar mover/atacar en ritmo contra una barra de tempo | `mecanica` | adc | mapa cerrado |
+| `el_teleport` | elegir el momento del TP sobre una barra que corre: tarde no llega, temprano lo tirás | `macro` | top | mapa cerrado / decisivo |
+
+Con los 5 de hoy quedan **11 minijuegos** y cada rol tiene 4-5 elegibles: `la_llamada` deja de ser el
+default de cuatro roles, y la anti-repetición de 9R4a hace el resto.
+
+Requisitos duros que vienen de la fase T y ya son checks vigentes: cero color literal fuera de
+`tokens.css` · cero `Math.random()` (todo por `rngUi`) · **teclado** (toda mecánica se termina sin
+mouse) · **`prefers-reduced-motion: reduce`** (nada que dependa de una animación para ser jugable) ·
+`dist/` ≤ 1200 KB (1092 KB medidos en T6, re-medir).
+
+### Checks de la fase 9R.4
+
+```
+Esquema: todo minijuego declara momentos, statRelevante, efecto válido, impacto,
+   ≥3 títulos y los tres veredictos; statRelevante existe en player.stats
+MONTAR_MINIJUEGO tiene exactamente una entrada por id del JSON, y al revés
+   (hoy nadie lo verifica: un id sin widget rompe el navegador y no validate.js)
+elegirMinijuego es determinista y no consume RNG
+Todo minijuego declara su apuesta, y la apuesta se ve ANTES de jugarlo
+El internacional ve su jugada dentro del mapa (hoy 0 de 643)
+Ninguna mecánica se lleva más del ~35% de los minijuegos jugados
+El impacto sigue acotado: acertar siempre rinde más que fallar siempre, y menos de +35%
+```
+
+### Deudas
+
+- **D20 — cerrada por 9R4a**: cada minijuego pasa a tener su `impacto`/`spread` propio, en el dato.
+- **Deuda nueva, familia D37**: más minijuegos = más tiradas de `resolverAuto` ⇒ el stream se corre.
+  Ninguna seed anterior reproduce su carrera; el determinismo intra-versión queda intacto.
 
 ## 9R.5 — El final y la tarjeta compartible (gancho de El Ídolo, adelanta la FASE 10)
 
@@ -3688,7 +3793,7 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D17 | LRN/LRS (los circuitos tier 2 de LATAM que alimentan LCS/CBLOL) y la doble residencia LATAM 2026-2027 no están modelados: un jugador de la región nace directamente en NA o BR. Es la simplificación explícita que ya preveía la investigación ("la doble residencia... vale un evento dedicado") | **9M** |
 | D18 | ~~La ventana `internacional` era un único evento agregado (`chance()`)~~ — resuelto a medias en la fase 4: ahora es una serie Bo5 real de verdad contra un rival de otra región, con Fearless y minijuegos. Sigue **sin distinguir** First Stand/MSI/Worlds ni modelar un bracket Swiss+knockout: es una sola serie representativa, no el torneo real completo | ✅ 4 (parcial) |
 | D19 | El bracket de playoffs de tier 1 es de **eliminación simple** (6 clasificados, bye para los 2 mejores sembrados, Bo5 parejo). Las 6 ligas 2026 investigadas usan doble eliminación real (hay bracket de perdedores). Simplificación deliberada: el motor solo simula TU camino por el bracket, nunca el resto — una derrota ya cuenta una historia completa ("eliminado en cuartos") sin necesitar una corrida paralela por el lado de perdedores | 4 (abierto) |
-| D20 | Los 5 minijuegos comparten dos parámetros de balance genéricos (`impactoMinijuego` para los de mapa, `impactoDirecto` para bootcamp/rueda de prensa) en vez de tener cada uno el suyo ajustado a mano. Medido: el efecto agregado de CUALQUIERA de los dos lo satura la propia estructura del juego (máximo 1 minijuego por serie, un mapa de cinco) mucho antes de que el valor del parámetro importe — ver PROGRESO | 12 (abierto) |
+| D20 | ~~Los 5 minijuegos comparten dos parámetros de balance genéricos (`impactoMinijuego`, `impactoDirecto`) en vez de tener cada uno el suyo~~ — **cerrada en 9R4a**: cada entrada de `data/minijuegos.json` trae su `impacto` y su `spread`, y `balance.js` se queda solo con lo que es del reparto (`minijuegoCooldownSplits`, los cortes del veredicto). El diagnóstico viejo decía que la estructura del juego satura el efecto de cualquiera de los dos parámetros mucho antes de que su valor importe; sigue siendo cierto y por eso el calibrado fino es 9R4e | ✅ 9R4a |
 | D21 | La temporada regular de la fase 5 corre el stream de RNG respecto de cualquier seed anterior a esa fase (trampa T1: es un sistema nuevo que consume `rng` en el medio del registro). Ninguna seed de antes de la fase 5 reproduce la misma carrera después. Documentado, no es un bug | ✅ 5 (aceptado) |
 | D22 | La fase 9 (`competitivo.js` deja de sortear tu org) va a correr el stream de RNG: ninguna seed anterior a esa fase va a reproducir su carrera. Mismo criterio que D21 — anotado de antemano para no descubrirlo tarde | 9 (anticipado, no implementado aún) |
 | D23 | Medido al calibrar el arraigo (fase 8c, 300 carreras a 60 splits): la distribución es bimodal — de las carreras con ≥8 splits en una misma org, 50,5% termina en `leyenda` (88+) y 25,7% se queda en `uno_mas` (<25); `querido` e `idolo` juntos son solo el 23,8%. El check declarado (≥15% llega a Ídolo+) pasa cómodo (59,9%), así que no fuerza retunear nada — pero si en la fase 11/13 se quiere que "Leyenda" se sienta tan raro como en la referencia (aparece una sola vez en las 15 imágenes, al cierre de una carrera de 26 años), la curva de ganancia por split es candidata a suavizarse recién ahí, con contenido real de por medio (regla de proceso 3: agregar contenido antes que tocar constantes) | 11/13 (abierto) |

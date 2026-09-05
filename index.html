@@ -161,7 +161,7 @@
     <script type="module">
       // Los 5 minijuegos, migrados a su propia carpeta en la fase T6 (ver
       // el comentario junto a `mostrarMinijuego` más abajo).
-      import { MONTAR_MINIJUEGO, veredictoMinijuego } from './src/ui/components/minijuegos/index.js';
+      import { MONTAR_MINIJUEGO, veredictoDeMinijuego } from './src/ui/components/minijuegos/index.js';
 
       const setupPanel = document.getElementById('setup');
       const carreraPanel = document.getElementById('carrera');
@@ -292,7 +292,7 @@
             return;
           }
           resuelto = true;
-          const v = veredictoMinijuego(decision.datos.minijuego, resultado);
+          const v = veredictoDeMinijuego(decision.datos.minijuego, resultado, estado);
           minijuegoWidget.innerHTML =
             '<div class="minijuego-resultado minijuego-resultado--' + v.nivel + '">'
             + '<div class="minijuego-resultado-titulo">' + v.titulo + '</div>'
