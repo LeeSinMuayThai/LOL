@@ -118,6 +118,7 @@
             <div id="minijuego" class="minijuego" hidden>
               <div id="minijuegoTitle" class="decision-title"></div>
               <div id="minijuegoDesc" class="decision-desc"></div>
+              <div id="minijuegoApuesta"></div>
               <div id="minijuegoWidget" class="minijuego-widget"></div>
             </div>
 
@@ -161,7 +162,7 @@
     <script type="module">
       // Los 5 minijuegos, migrados a su propia carpeta en la fase T6 (ver
       // el comentario junto a `mostrarMinijuego` más abajo).
-      import { MONTAR_MINIJUEGO, veredictoDeMinijuego } from './src/ui/components/minijuegos/index.js';
+      import { MONTAR_MINIJUEGO, veredictoDeMinijuego, crearApuesta } from './src/ui/components/minijuegos/index.js';
 
       const setupPanel = document.getElementById('setup');
       const carreraPanel = document.getElementById('carrera');
@@ -183,6 +184,7 @@
       const minijuegoPanel = document.getElementById('minijuego');
       const minijuegoTitle = document.getElementById('minijuegoTitle');
       const minijuegoDesc = document.getElementById('minijuegoDesc');
+      const minijuegoApuesta = document.getElementById('minijuegoApuesta');
       const minijuegoWidget = document.getElementById('minijuegoWidget');
       const mercadoPanel = document.getElementById('mercado');
       const mercadoTitle = document.getElementById('mercadoTitle');
@@ -283,6 +285,8 @@
         minijuegoPanel.hidden = false;
         minijuegoTitle.textContent = decision.titulo;
         minijuegoDesc.textContent = decision.descripcion;
+        // Fase 9R4d: qué se juega, ANTES de jugarlo.
+        minijuegoApuesta.replaceChildren(crearApuesta(decision, estado));
         minijuegoWidget.innerHTML = '';
 
         const montar = MONTAR_MINIJUEGO[decision.datos.minijuego];

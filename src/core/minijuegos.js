@@ -91,3 +91,18 @@ export function veredictoDeMinijuego(id, resultado, state = null) {
     detalle: variantes ? resolverTexto(variantes, state) : ''
   };
 }
+
+// Fase 9R4d: "qué te juega tu stat en esta jugada", en palabras y con el número
+// al lado. Es la mitad que faltaba del principio rector 3 (todo número tiene
+// una frase) y de la regla de proceso 13 (todo número lleva referente): hasta
+// acá el minijuego decía qué era, nunca qué abría o cerraba tu hoja.
+export function lecturaDeVentana(entrada, state) {
+  const bandas = BALANCE.serie.bandasVentanaMinijuego;
+  const valor = Math.round(state.player.stats[entrada.statRelevante] ?? 0);
+  const frase = valor >= bandas.ancha
+    ? 'te abre la ventana'
+    : valor >= bandas.normal
+      ? 'te da la ventana de siempre'
+      : 'te deja la ventana angosta';
+  return { stat: entrada.statRelevante, valor, frase };
+}

@@ -16,7 +16,8 @@ export function montar(container, state, onDone, rngUi) {
   const msAviso = ventanaPorStat(state.player.stats.mecanica, 700, 1600);
 
   container.innerHTML =
-    '<div class="minijuego-aviso">Salí del carril marcado: ← → o A/D.</div>'
+    '<div class="minijuego-aviso">Salí del carril marcado</div>'
+    + '<div class="minijuego-aim-info">Flechas o A/D.</div>'
     + '<div class="minijuego-carriles"></div>'
     + '<div class="minijuego-cards minijuego-mover"></div>';
 

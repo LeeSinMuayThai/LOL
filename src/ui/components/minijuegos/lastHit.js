@@ -16,8 +16,8 @@ export function montar(container, state, onDone, rngUi) {
   const reducido = motionReducido();
 
   container.innerHTML =
-    '<div class="minijuego-aviso">Rematá cada minion cuando entre en zona de ejecución'
-    + ' (click, Enter o su número).</div>'
+    '<div class="minijuego-aviso">Rematalos en zona de ejecución</div>'
+    + '<div class="minijuego-aim-info">Click, Enter o el número del minion.</div>'
     + '<div class="minijuego-ola"></div>';
 
   const ola = container.querySelector('.minijuego-ola');

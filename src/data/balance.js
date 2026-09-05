@@ -956,6 +956,10 @@ export const BALANCE = {
     // Los cortes del veredicto 0-1 que lee el jugador al terminar (9R0b): de
     // aca para arriba "Clavado", de aca para abajo "No salio".
     veredictoMinijuego: { bien: 0.72, parejo: 0.42 },
+    // 9R4d: los cortes con los que se le pone palabras al stat que corre el
+    // minijuego ("tu mecanica, 71: te abre la ventana"). Sin esto el numero
+    // se muestra sin referente, que es justo lo que prohibe la regla 13.
+    bandasVentanaMinijuego: { ancha: 70, normal: 45 },
     // "la_llamada": con jerarquia baja no te siguen aunque tengas razon — el
     // impacto del minijuego se amortigua fuerte por debajo de este umbral.
     jerarquiaMinimaParaSeguirLlamada: 60,

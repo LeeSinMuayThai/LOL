@@ -38,4 +38,35 @@ export const MONTAR_MINIJUEGO = {
 // `core/minijuegos.js`, leyendo los textos del mismo `minijuegos.json` que
 // consume el motor: acá había una segunda tabla de frases que podía quedar
 // diciendo algo distinto de lo que el log del motor contaba dos líneas después.
+import { minijuegoPorId, lecturaDeVentana } from "../../../core/minijuegos.js";
+
 export { veredictoDeMinijuego } from "../../../core/minijuegos.js";
+
+// La apuesta, antes de jugar (fase 9R4d). Hasta acá entrabas al minijuego sin
+// saber qué te estabas jugando y lo descubrías al terminar, en el beat de
+// 9R0b. Son dos líneas: qué mueve esta jugada (del catálogo) y qué te da tu
+// hoja para jugarla, con el número y su referente (regla de proceso 13).
+const NOMBRE_STAT = {
+  mecanica: 'mecánica',
+  macro: 'macro',
+  teamfight: 'teamfight',
+  laneo: 'laneo',
+  shotcalling: 'shotcalling',
+  adaptabilidad: 'adaptabilidad'
+};
+
+export function crearApuesta(decision, state) {
+  const caja = document.createElement('div');
+  caja.className = 'minijuego-apuesta';
+  caja.textContent = decision.datos.apuesta ?? '';
+
+  const entrada = minijuegoPorId(decision.datos.minijuego);
+  if (entrada) {
+    const lectura = lecturaDeVentana(entrada, state);
+    const linea = document.createElement('span');
+    linea.className = 'minijuego-apuesta-stat';
+    linea.textContent = `Tu ${NOMBRE_STAT[lectura.stat] ?? lectura.stat} ${lectura.valor} · ${lectura.frase}`;
+    caja.appendChild(linea);
+  }
+  return caja;
+}

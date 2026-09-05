@@ -33,6 +33,50 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-05 — Fase 9R4d: la apuesta antes, el veredicto después
+
+Cuarto commit de **9R.4**. Hasta acá el minijuego te decía **qué era** y nunca **qué te estabas
+jugando**: la consecuencia aparecía recién al terminar, en el beat que agregó 9R0b. Es el principio
+rector 3 (*todo resultado tiene una frase*) cumplido a medias, y la regla de proceso 13 (*todo
+número lleva referente*) incumplida entera.
+
+#### Qué entra
+
+- **`lecturaDeVentana(entrada, state)`** en `core/minijuegos.js` (pura): devuelve el stat que corre
+  el minijuego, su valor y la frase que lo explica — *"te abre la ventana"* / *"te da la ventana de
+  siempre"* / *"te deja la ventana angosta"*. Cortes en `BALANCE.serie.bandasVentanaMinijuego`
+  (`{ ancha: 70, normal: 45 }`), no en la UI.
+- **`crearApuesta(decision, state)`** en `ui/components/minijuegos/index.js`: dos líneas arriba del
+  widget — la apuesta que declara el catálogo (*"Si clavás el smite, este mapa se te va a favor; si
+  lo errás, se complica"*) y **`TU LANEO 74 · TE ABRE LA VENTANA`**.
+- **`index.html`**: `#minijuegoApuesta` entre la descripción y el widget; `mostrarMinijuego` la
+  pinta antes de montar la mecánica.
+- **Ajuste visual, medido con capturas**: la vida del minion pasa de un relleno al 10% de opacidad
+  (que no se leía) a color sólido, y a naranja sólido cuando entra en zona de ejecución; los botones
+  de mover ganan ancho mínimo; y cuatro avisos largos se parten en título corto + línea de controles,
+  porque `.minijuego-aviso` es tipografía de cartel y una frase de dos renglones en mayúsculas se
+  comía la pantalla.
+
+#### Check nuevo, verificado en rojo
+
+**"Ningún minijuego llega a la pantalla sin decir qué se juega"**: sobre 150 carreras, toda decisión
+de minijuego trae una `apuesta` no vacía, la lectura cita el valor real del stat que la corre, y las
+tres bandas producen tres frases distintas (si las tres dijeran lo mismo, la frase sería decorativa).
+*Verificado en rojo* sacando `apuesta` de los datos de la decisión → FAIL en la seed 2.
+
+#### e2e en Chrome real (CDP)
+
+El script de 9R4c se amplió: además de montar las 11 mecánicas, ahora arma la apuesta de cada una y
+verifica que el texto pintado contenga la frase del catálogo **y** el stat con su número. 11
+mecánicas × 2 modos de motion, **cero errores de consola**. Más tres capturas del panel real
+(`last_hit`, `dodge`, `el_combo`, `el_kite`) miradas con ojos, no sólo con checks — de ahí salió el
+ajuste visual de arriba.
+
+#### Verificación
+
+`validate.js` **126/126 OK, 0 FAIL** · `simulate.js 1000 60 todas` **0 crashes** · determinismo
+intra-versión **150/150** · e2e CDP OK · `npm run build` OK (**1161 KB**, techo 1200).
+
 ### 2026-09-05 — Fase 9R4c: el banco de mecánicas (5 → 11 minijuegos)
 
 Tercer commit de **9R.4**, y el que responde al pedido textual del usuario: *"1 por rol sería muy

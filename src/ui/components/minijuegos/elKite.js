@@ -14,7 +14,8 @@ export function montar(container, state, onDone) {
   const msTiempo = ventanaPorStat(state.player.stats.mecanica, 520, 1000);
 
   container.innerHTML =
-    '<div class="minijuego-aviso">Alterná: A para atacar, S para moverte. Uno por tiempo.</div>'
+    '<div class="minijuego-aviso">Atacá (A)</div>'
+    + '<div class="minijuego-aim-info">Alterná A y S, uno por tiempo.</div>'
     + '<div class="minijuego-metronomo"></div>'
     + '<div class="minijuego-cards minijuego-kite"></div>';
 

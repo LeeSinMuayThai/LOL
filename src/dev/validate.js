@@ -46,7 +46,9 @@ import { ROLES, IDS_ROL } from '../data/roles.js';
 import LIGAS from '../data/leagues.json' with { type: 'json' };
 import CAMPEONES from '../data/champions.json' with { type: 'json' };
 import MINIJUEGOS from '../data/minijuegos.json' with { type: 'json' };
-import { elegirMinijuego, minijuegosPara, veredictoDeMinijuego, textoDeMinijuego } from '../core/minijuegos.js';
+import {
+  elegirMinijuego, minijuegosPara, veredictoDeMinijuego, textoDeMinijuego, lecturaDeVentana, minijuegoPorId
+} from '../core/minijuegos.js';
 import { esMapaDeDesempate, esMapaCerrado } from '../core/serie.js';
 import { MONTAR_MINIJUEGO } from '../ui/components/minijuegos/index.js';
 import METAS from '../data/metas.json' with { type: 'json' };
@@ -2338,6 +2340,52 @@ check('El impacto de los minijuegos está acotado (ni decorativo ni gambling)', 
     throw new Error(
       `acertar siempre los minijuegos (${siempreAcierta}) rinde ${((siempreAcierta / base - 1) * 100).toFixed(0)}% más que fallarlos (${siempreFalla}): el juego pasó a ser un gambling a los minijuegos (tope +35%)`
     );
+  }
+});
+
+check('Ningún minijuego llega a la pantalla sin decir qué se juega (9R4d)', () => {
+  // Principio rector 3 y regla de proceso 13: hasta 9R4d entrabas al minijuego
+  // sin saber qué te estabas jugando y lo descubrías al terminar. La apuesta
+  // viaja en la decisión, así que se puede verificar sin DOM.
+  let vistos = 0;
+  for (let seed = 1; seed <= 150; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    const responder = (sistema, st, decision, r) => {
+      if (decision.datos?.motivo === 'minijuego') {
+        vistos += 1;
+        const apuesta = decision.datos.apuesta;
+        if (typeof apuesta !== 'string' || apuesta.trim() === '') {
+          throw new Error(`seed ${seed}: el minijuego "${decision.datos.minijuego}" llegó sin apuesta`);
+        }
+        const lectura = lecturaDeVentana(minijuegoPorId(decision.datos.minijuego), st);
+        if (lectura.valor !== Math.round(st.player.stats[decision.datos.statRelevante])) {
+          throw new Error(`seed ${seed}: la lectura de la ventana no cita el stat real`);
+        }
+        if (!lectura.frase) {
+          throw new Error(`seed ${seed}: número sin referente (regla de proceso 13)`);
+        }
+      }
+      return sistema.resolverAuto(st, decision, r);
+    };
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng, responder).state;
+    }
+  }
+  if (vistos < 200) {
+    throw new Error(`sólo ${vistos} minijuegos en 150 carreras: muestra insuficiente`);
+  }
+
+  // Y las tres bandas existen de verdad: un stat alto, uno medio y uno bajo no
+  // pueden leerse igual (si no, la frase es decorativa).
+  const base = createInitialState(11, mulberry32(11));
+  const entrada = minijuegoPorId('el_combo');
+  const lecturas = [95, 55, 15].map((valor) => lecturaDeVentana(
+    entrada,
+    { ...base, player: { ...base.player, stats: { ...base.player.stats, [entrada.statRelevante]: valor } } }
+  ).frase);
+  if (new Set(lecturas).size !== 3) {
+    throw new Error(`las bandas de la ventana no distinguen: ${lecturas.join(' / ')}`);
   }
 });
 

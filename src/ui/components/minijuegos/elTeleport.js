@@ -18,8 +18,8 @@ export function montar(container, state, onDone, rngUi) {
   const centro = 30 + rngUi() * 45;
 
   container.innerHTML =
-    '<div class="minijuego-aviso">La pelea se prende en la zona marcada. El TP tarda en llegar:'
-    + ' apretá antes.</div>'
+    '<div class="minijuego-aviso">El TP tarda: apretá antes</div>'
+    + '<div class="minijuego-aim-info">La pelea se prende en la zona marcada.</div>'
     + '<div class="minijuego-barra"><div class="minijuego-zona"></div>'
     + '<div class="minijuego-marcador"></div></div>'
     + '<button type="button" class="minijuego-btn">TP ya</button>';

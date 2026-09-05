@@ -997,7 +997,7 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   right: 0;
   bottom: 0;
   height: 100%;
-  background: var(--live-fill);
+  background: var(--live-deep);
   border-top: 2px solid var(--live);
   display: flex;
   align-items: flex-start;
@@ -1007,8 +1007,9 @@ details.avanzado summary:hover { color: var(--ink-dim); }
 }
 
 .minijuego-minion[data-zona="ejecucion"] .minijuego-minion-hp {
-  background: var(--warn-fill);
-  border-top-color: var(--warn);
+  background: var(--warn);
+  border-top-color: var(--gold);
+  color: var(--bg-void);
 }
 
 .minijuego-minion-num {
@@ -1138,3 +1139,6 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   letter-spacing: var(--track-label);
   text-transform: uppercase;
 }
+
+.minijuego-mover .minijuego-btn,
+.minijuego-kite .minijuego-btn { min-width: 72px; }
