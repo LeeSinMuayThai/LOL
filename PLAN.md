@@ -26,7 +26,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **8** | La ficha: el registro que acumula + la tarjeta permanente + `src/ui/` | ✅ ver `PROGRESO.md` |
 | **9** | El mercado: ofertas, contratos, salarios, la trampa del equipo grande visible | ✅ ver `PROGRESO.md` |
 | **9E** | El varado: la carrera vuelve a tener juego después del primer equipo | 🔶 **9Ea+b hechas** (el bug, cerrado) · faltan 9Ec y 9Ed |
-| **9R** | **Que el juego se juegue**: el cooldown mide splits, la tabla deja de mentir, la interrupción vuelve a ser escasa, y elegir cambia el resultado | 🔶 **9Ra/9Rb/9Re/9Rf/9R.5/9R.2/9R.0/9Rc/9Rd/9R.3 (9R3a-f) hechas** · falta 9R.4, 9Rg |
+| **9R** | **Que el juego se juegue**: el cooldown mide splits, la tabla deja de mentir, la interrupción vuelve a ser escasa, y elegir cambia el resultado | 🔶 **9Ra/9Rb/9Re/9Rf/9R.5/9R.2/9R.0/9Rc/9Rd/9R.3 (9R3a-f) hechas** · **9R.4 hecha (9R4a-e)** · falta 9Rg |
 | **T** | **La transmisión**: el sistema de diseño, el shell, el ritmo del split, y las pantallas que faltaban. Fue antes de 9M para que 9M/10/11/12/13 tengan dónde enchufar su pantalla | ✅ T0→T8, ver `PROGRESO.md` |
 | **9M** | **El mercado de pases**: el mundo se puebla de jugadores, la demanda existe, alguien compite por tu asiento, la escalera deja de ser un dado | ⬜ |
 | **10** | El final: retiro emergente + la tarjeta de legado | ⬜ |
@@ -1961,7 +1961,7 @@ mundo no suene igual en toda partida; los 3 eventos que nunca salían se regatea
   desde 9R0a — el texto de arriba es del plan viejo. Lo que falta de "variación léxica" es
   convertir más `outcome.texto` de eventos existentes a arrays (va saliendo con cada subfase).
 
-## 9R.4 — Los minijuegos de verdad (gancho de El Ídolo)
+## 9R.4 — Los minijuegos de verdad ✅ (2026-09-05)
 
 > **Reescrita el 2026-09-05.** El texto original de esta sección eran cinco líneas del 2026-09-02,
 > anteriores a **9R0b** (el feedback de resultado) y a **T6** (los 5 minijuegos migrados de
@@ -2010,7 +2010,7 @@ mapa que cierra dejen de quedarse sin el suyo.
 | **9R4b** | `el cupo se reparte` | El bootcamp deja de consumir el cupo de la serie (`serie.preSerieUsado` propio): el internacional recupera su jugada de mapa y su rueda de prensa. El **mapa que cierra la serie** ofrece la jugada aunque no sea parejo — constante nueva `serie.margenMapaCerradoDecisivo`, atada al mapa de DESEMPATE (2-2), no a cualquier match point | ✅ (2026-09-05) |
 | **9R4c** | `el banco de mecánicas` | Seis mecánicas nuevas de UI, contrato intacto `montar(container, state, onDone, rngUi)`, más `comun.js` (motion reducido, teclado, ventana por stat) y el retrofit de `bootcamp`/`robarBaron`, que animaban sin mirar `prefers-reduced-motion` | ✅ (2026-09-05) |
 | **9R4d** | `la apuesta antes, el veredicto después` | El panel dice **qué se juega antes de jugarlo** (principio rector 3, reglas de proceso 13 y 16): `lecturaDeVentana` en el core, `crearApuesta` en la UI, más el ajuste visual que salió de mirar las capturas | ✅ (2026-09-05) |
-| **9R4e** | `calibrar el banco` | Sólo constantes: impacto y spread propios por minijuego, contra el check "ni decorativo ni gambling" | ⬜ |
+| **9R4e** | `calibrar el banco` | Sólo constantes: impacto y spread propios por minijuego (impacto agregado +11,94% → **+12,56%**, banda 0,3%-35%). El cooldown se midió en 3/4/6 y no cambia nada: la repetición que queda es de los momentos con una sola mecánica | ✅ (2026-09-05) |
 
 ### El esquema de `minijuegos.json`
 

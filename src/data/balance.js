@@ -952,6 +952,12 @@ export const BALANCE = {
     //
     // Un minijuego recien jugado se saltea mientras haya otro elegible para ese
     // momento (misma forma que `motivoRivalCooldownSplits` en 9R0a).
+    //
+    // 9R4e, medido a 200 carreras: subirlo a 4 o a 6 no cambia nada (mas
+    // repetido: mediana 3, p90 7, maximo 11 -> 10). La repeticion que queda no
+    // es de los momentos con varias mecanicas sino de los que tienen UNA sola
+    // (bootcamp, rueda de prensa, la prueba), donde el cooldown no puede hacer
+    // nada: la unica cura es escribirles competencia, y eso es contenido.
     minijuegoCooldownSplits: 3,
     // Los cortes del veredicto 0-1 que lee el jugador al terminar (9R0b): de
     // aca para arriba "Clavado", de aca para abajo "No salio".

@@ -33,6 +33,65 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-05 — Fase 9R4e: calibrar el banco (cierra la fase 9R.4)
+
+Quinto y último commit de **9R.4**. Sólo constantes (regla de proceso 2), con la línea de base
+re-medida en el momento y no citada de memoria (trampa T6).
+
+#### Cada mecánica con su peso, que es lo que D20 pedía
+
+Hasta 9R4a los cinco minijuegos compartían dos números. Ahora cada entrada del catálogo trae los
+suyos, y por primera vez se pueden separar por lo que la jugada significa dentro del mapa:
+
+| mecánica | impacto | spread | por qué |
+|---|---|---|---|
+| `robar_baron` | 0,16 | 0,22 | un Barón robado da vuelta el mapa, y es una sola tirada |
+| `el_teleport` | 0,15 | 0,22 | llegar o no llegar a la pelea define |
+| `la_llamada` | 0,14 | 0,20 | pesa fuerte, pero ya se amortigua por jerarquía |
+| `el_combo` | 0,12 | 0,18 | una pelea, no el mapa entero |
+| `dodge` · `el_kite` | 0,11 | 0,16 | varias rondas: menos varianza por diseño |
+| `la_vision` | 0,10 | 0,16 | ventaja de información, no de daño |
+| `last_hit` | 0,09 | 0,14 | ventaja que se acumula, la más lenta de las once |
+| `bootcamp` · `rueda_de_prensa` · `la_prueba` | 6 | 0,20 | efecto directo sobre un stat, no sobre un mapa |
+
+**Impacto agregado, medido a N=400** (dos poblaciones: una que siempre acierta y otra que siempre
+falla, títulos + internacionales): **+11,94% antes de calibrar → +12,56% después**. Sigue cómodo
+dentro de la banda del check (más que +0,3%, menos que +35%): los minijuegos mueven el resultado y
+no lo deciden, que es exactamente `PLAN.md:80`.
+
+#### El cooldown no se tocó, y el número dice por qué
+
+`minijuegoCooldownSplits` se probó en 3, 4 y 6 sobre 200 carreras: **el mismo minijuego más repetido
+por carrera da mediana 3 / p90 7 / máximo 11 → 10 en los tres casos.** La repetición que queda no
+viene de los momentos con varias mecánicas —ahí el cooldown ya rota— sino de los que tienen **una
+sola**: `bootcamp` (pre-internacional), `rueda_de_prensa` (post-serie) y `la_prueba` (tryout). Ahí
+el cooldown no puede hacer nada: la única cura es escribirles competencia, y eso es contenido, no
+una constante. Queda anotado en `balance.js` al lado del valor.
+
+#### El estado del banco al cerrar 9R.4 (300 carreras × 60 splits)
+
+| | Antes de 9R.4 | Al cerrar |
+|---|---|---|
+| Minijuegos del catálogo | 5 | **11** |
+| Minijuegos / decisiones | 5,71% | **8,77%** |
+| Mecánica más frecuente | `la_llamada` 33% | `bootcamp` **23,7%** |
+| Mecánicas distintas por carrera | 2-3 | mediana **6** |
+| Internacionales con algo más que el bootcamp | **0%** | **100%** |
+| Mapas de desempate con jugada | — | **94,1%** |
+| Impacto agregado | +7,49% | **+12,56%** |
+| Decisiones por carrera | mediana 115 · p90 147 | mediana **115** · p90 **156** |
+
+Reparto final: `bootcamp` 23,7% · `rueda_de_prensa` 17,6% · `el_combo` 12,9% · `la_llamada` 12,4% ·
+`dodge` 11,8% · `la_prueba` 7,5% · `last_hit` 5,2% · `la_vision` 3,4% · `robar_baron` 2,3% ·
+`el_teleport` 1,8% · `el_kite` 1,2%.
+
+#### Verificación
+
+`validate.js` **126/126 OK, 0 FAIL** · `simulate.js 1000 60 todas` **0 crashes** · determinismo
+intra-versión **150/150** · `npm run build` OK (**1161 KB**, techo 1200).
+
+Con esto cierra **9R.4**. Queda **9Rg** (calibrar el volumen de decisiones) para cerrar la fase 9R.
+
 ### 2026-09-05 — Fase 9R4d: la apuesta antes, el veredicto después
 
 Cuarto commit de **9R.4**. Hasta acá el minijuego te decía **qué era** y nunca **qué te estabas

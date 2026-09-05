@@ -12,8 +12,8 @@
     "efecto": {
       "tipo": "mapa"
     },
-    "impacto": 0.12,
-    "spread": 0.2,
+    "impacto": 0.16,
+    "spread": 0.22,
     "titulos": [
       "El Barón está bajo",
       "El Barón, a un smite",
@@ -52,7 +52,7 @@
       "tipo": "mapa",
       "amortiguador": "jerarquia"
     },
-    "impacto": 0.12,
+    "impacto": 0.14,
     "spread": 0.2,
     "titulos": [
       "La llamada",
@@ -215,8 +215,8 @@
     "efecto": {
       "tipo": "mapa"
     },
-    "impacto": 0.12,
-    "spread": 0.2,
+    "impacto": 0.09,
+    "spread": 0.14,
     "titulos": [
       "La ola que define",
       "Cinco minions y una torre",
@@ -255,7 +255,7 @@
       "tipo": "mapa"
     },
     "impacto": 0.12,
-    "spread": 0.2,
+    "spread": 0.18,
     "titulos": [
       "El combo completo",
       "Todo el kit, en orden",
@@ -293,8 +293,8 @@
     "efecto": {
       "tipo": "mapa"
     },
-    "impacto": 0.12,
-    "spread": 0.2,
+    "impacto": 0.11,
+    "spread": 0.16,
     "titulos": [
       "Esquivar o morir",
       "Todo lo que te tiran",
@@ -334,8 +334,8 @@
     "efecto": {
       "tipo": "mapa"
     },
-    "impacto": 0.12,
-    "spread": 0.2,
+    "impacto": 0.1,
+    "spread": 0.16,
     "titulos": [
       "Dónde no ves",
       "La visión antes del objetivo",
@@ -374,8 +374,8 @@
     "efecto": {
       "tipo": "mapa"
     },
-    "impacto": 0.12,
-    "spread": 0.2,
+    "impacto": 0.11,
+    "spread": 0.16,
     "titulos": [
       "Kitear al bruiser",
       "Atacar y moverse",
@@ -415,8 +415,8 @@
     "efecto": {
       "tipo": "mapa"
     },
-    "impacto": 0.12,
-    "spread": 0.2,
+    "impacto": 0.15,
+    "spread": 0.22,
     "titulos": [
       "El TP que define",
       "Bajar o no bajar",
