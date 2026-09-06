@@ -15,10 +15,29 @@ export const id = 'roster';
 // Sea tier 1, 2 o 3: `orgDeCarrera` sabe dónde buscar en cada caso (fase 3).
 const orgActual = orgDeCarrera;
 
+// Fase 9M (PLAN.md §9M.2): si la org tiene plantel NPC (tier 1 y la tier 2 de
+// tu región), los compañeros SALEN de ahí — con edad y contrato, y con memoria:
+// si volvés cinco años después están o no están los mismos. Sin plantel (tier
+// 3, o una tier 2 fuera del set modelado) se siguen inventando como antes.
+//
+// Trampa T1: leer del plantel no consume `rng`; el fallback sí. Ninguna seed
+// anterior a 9M reproduce su carrera (D35, anticipado).
 function generarCompaneros(state, org, rng) {
-  const usados = new Set(state.career.companeros.map((companero) => companero.handle));
+  const plantel = state.mundo.planteles?.[org.nombre];
+  const otrosRoles = IDS_ROL.filter((rol) => rol !== state.player.role);
 
-  return IDS_ROL.filter((rol) => rol !== state.player.role).map((rol) => ({
+  if (plantel) {
+    return otrosRoles.map((rol) => ({
+      handle: plantel[rol].handle,
+      role: rol,
+      nivel: plantel[rol].nivel,
+      edad: plantel[rol].edad,
+      aniosContrato: plantel[rol].contrato.anios
+    }));
+  }
+
+  const usados = new Set(state.career.companeros.map((companero) => companero.handle));
+  return otrosRoles.map((rol) => ({
     handle: generarHandle(rng, usados),
     role: rol,
     nivel: Math.round(clampStat(gauss(org.fuerza, BALANCE.roster.nivelCompaneroSpread, rng)))

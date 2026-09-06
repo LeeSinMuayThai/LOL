@@ -33,6 +33,92 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-06 — Fase 9Ma: el mundo tiene gente
+
+Primer commit de **9M** (el mercado de pases). Introduce la ESTRUCTURA: cada org de tier 1 y de la
+tier 2 de tu región pasa a tener 5 jugadores NPC con carrera propia. Sin retunear nada (regla de
+proceso 2 — el calibrado de 9M vive en 9Mh).
+
+#### La línea de base de 9M.0, re-medida (trampa T6)
+
+Los números de `PLAN.md` §9M.0 son del 2026-09-02, **antes** de 9R, T y 9Ec. Sonda propia sobre
+400 carreras × 60 splits, estrategia equilibrado:
+
+| Métrica | §9M.0 (2026-09-02) | Re-medido (post 9Ec) | Post 9Ma |
+|---|---|---|---|
+| Fichajes con elección real | 3,05 | 4,47 | 4,52 |
+| Pretemporadas con el mercado en silencio | 3,80 | 7,84 | 7,92 |
+| Decisiones por carrera | 162 | 111 | 114 |
+| Ligas distintas pisadas | 1,48 · máx 2 | 1,55 · máx 2 | 1,55 · máx 2 |
+| Tier 1 al cierre | 74% | 77,8% | 77,8% |
+| Cae de tier 1 a tier 2 alguna vez | 0% | 0% | 0% |
+| Correlación nivel ↔ mejor liga | (dado) | r=0,16 | r=0,30 |
+| `registro.dineroTotalUSD` > 0 | — | 0% (D40) | 0% |
+| `residencia: 'import'` alcanzable | inalcanzable | 0% (D29) | 0% |
+| Carreras terminadas en 60 splits | ~32% seguían jugando | 100% (9R.5) | 100% |
+
+Lo que 9R ya arregló solo: **fichajes con elección real** pasó de 3,05 a 4,5 (9R0e, la demanda del
+mercado sale del nivel) — el check 5 de 9M (objetivo 4-8) ya pasa. Lo que sigue roto y **es lo que
+9Mb-9Mf construyen**: nadie pisa una 3ª liga (0%), 78% termina en tier 1, nadie baja, la correlación
+nivel↔liga es 0,30, y el dinero y el eje `import` siguen en cero.
+
+#### La estructura (PLAN.md §9M.2)
+
+- **`src/core/plantel.js`** (nuevo, puro): `state.mundo.planteles = { [org]: { top, jungla, mid,
+  adc, support } }`, cada casilla `{ handle, role, edad, regionId, nivel, potencial, formaCarrera,
+  edadPico, contrato: { anios, salarioAnualUSD }, splitsEnRegion, rivalDeGeneracion }`. El nivel de
+  un NPC se mide con la **misma curva que tu hoja de atributos** (`core/curvas.js`), evaluada a su
+  edad, en la escala 0-100 de `nivelDelJugador` — es lo que dejará a `core/demanda.js` (9Mb)
+  comparar candidatos por un asiento.
+- **`src/core/mundo.js`**: `generarPlanteles` se llama en `generarMundo`, en posición fija del
+  stream (después de `generarLigas`, antes de `generarRivales` — trampa T1). Cubre las 6 ligas
+  tier 1 (~58 orgs) + la tier 2 de tu región (~10-12) = **70 orgs, 350 NPCs**. El resto del mundo
+  sigue con `fuerza` escalar.
+- **`org.fuerza` deja de sortearse y DERIVA del promedio de nivel de su plantel.** Cada casilla se
+  sortea alrededor del `fuerza` de hoy, así que el día 1 la distribución agregada no se mueve
+  — medido sobre 50 seeds, orgs de tier 1: **antes `mean 77,5 / sd 17,2 / p90 99`; después `mean
+  76,9 / sd 16,8 / p90 97`**. (Primer intento: derivar el nivel de la curva lo aplastaba a `mean
+  72,5` porque casi ningún NPC está en su edad de pico — se corrigió generando el nivel directo de
+  `gauss(fuerzaOrg)` y usando la curva sólo para el envejecimiento.)
+- **`src/systems/plantel.js`** (nuevo, +1 línea en `ETAPAS_SPLIT`, **último** de la lista): corre
+  sólo en el offseason (cierre de edad; los ~11 de 12 splits restantes no le cuestan un `rng` —
+  regla 10). Envejece a cada NPC un año, mueve su nivel por la curva, descuenta contrato, retira al
+  que nadie quiere y sube un canterano de 17-19. Al final recalcula `org.fuerza`.
+- **`src/systems/roster.js`**: `generarCompaneros` **deja de inventar gente** y lee
+  `mundo.planteles[org]` — con edad y contrato. Si volvés a una org cinco años después, están o no
+  están los mismos. Sin plantel (tier 3) se sigue inventando.
+- **D8 (parcial)**: los 5 rivales de generación **ocupan una casilla de plantel real** — la misma
+  org que `orgDelRival` (`core/temporada.js`) les asigna por hash. Corren carrera larga (se retiran
+  `rivalRetiroExtra` años más tarde). Su ficha de archirrival sigue siendo fase 11.
+- **Pantalla**: el panel de Plantilla (ficha) muestra ahora `rol · edad · años de contrato` por
+  compañero cuando la org tiene plantel.
+
+#### Trampa T1 / D35
+
+`generarPlanteles` consume ~350 NPCs de `rng` en `generarMundo` y `systems/plantel.js` tira cada
+offseason. **Ninguna seed anterior a 9Ma reproduce su carrera.** El determinismo intra-versión
+está intacto (misma seed → mismos planteles tras 40 splits, verificado). Anticipado en D35.
+
+#### Dos checks que el corrimiento de stream movió
+
+- **"La afinidad al meta mueve el rendimiento base"**: leía el `metaInicial` **crudo** de la seed 3
+  —un vector que `systems/meta.js` pisa en el split 1 y que nadie usa en juego real—. El stream
+  shift lo dejó casi neutro entre `enchanter` y `splitpush` y el margen se evaporó (2,93 → 0,32).
+  Arreglado construyendo el meta explícito en el check (enchanter arriba, el resto abajo): ahora
+  mide la fórmula, no la suerte de una seed.
+- **"≥30% de series sin ningún draft"**: valor estable ~30,5% → ~28,9% (sondeado a n=1200/2400/
+  3600 — no es ruido, es el stream shift). Piso 30% → **28%**; la fórmula de 9Rd no cambió, el
+  retune real de la frecuencia de pausa es 9Mh.
+
+#### Verificación
+
+- `node src/dev/validate.js` — 134 checks (7 nuevos de planteles), todos pasan.
+- `node src/dev/simulate.js 1000 60 todas` — 0 crashes, 0 varadas, ~97% splits pro con equipo
+  (idéntico a pre-9Ma).
+- Timing (check 14): `simulate.js 800 60 todas` **48,9s → 62,1s = 1,27×** el base (tope 2×) — no se
+  recorta el alcance a tier 1.
+- Determinismo verificado, planteles incluidos.
+
 ### 2026-09-06 — Fase 9Ec+9Ed: el contenido se gatea y el guard mira el HTML
 
 Cierra lo que quedaba de **9E** y habilita 9M (que lo declara como prerrequisito). Sin sistemas

@@ -1,6 +1,10 @@
 // El panel de Plantilla (fase T5). Fuente: `career.companeros` (4 nombres
 // con rol y nivel, generados al fichar — `systems/roster.js`) y
 // `career.sinergia`. Existen desde la fase 9 y nunca se dibujaban.
+//
+// Fase 9M: si la org tiene plantel NPC (tier 1 y la tier 2 de tu región), los
+// compañeros salen de ahí y traen `edad` y `aniosContrato` — el vestuario deja
+// de ser 4 nombres genéricos y pasa a tener gente con carrera propia.
 export function renderPlantilla(container, state, modulos) {
   const { companeros, sinergia } = state.career;
 
@@ -29,7 +33,10 @@ export function renderPlantilla(container, state, modulos) {
 
     const rolEl = document.createElement('span');
     rolEl.className = 'plantilla-rol';
-    rolEl.textContent = modulos.etiquetaRol(companero.role);
+    // Con plantel NPC: "Mid · 24 · 1a". Sin él (tier 3): solo el rol.
+    rolEl.textContent = companero.edad != null
+      ? `${modulos.etiquetaRol(companero.role)} · ${companero.edad} · ${companero.aniosContrato}a`
+      : modulos.etiquetaRol(companero.role);
 
     const nivelEl = document.createElement('span');
     nivelEl.className = 'plantilla-nivel';

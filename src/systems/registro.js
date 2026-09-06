@@ -62,7 +62,12 @@ export const ETAPAS_SPLIT = [
   // 9M-lite: el mundo tiene escena. Va DESPUES de edadCierre a proposito: si
   // ese sistema pauso por un evento de cierre, resolverDecision retoma justo
   // aca (regla del cursor por id) y el digest anual nunca se salta un año.
-  await import('./escena.js')
+  await import('./escena.js'),
+  // Fase 9M: el mundo envejece. ULTIMO a proposito: el mercado del jugador
+  // (mas arriba) ya se resolvio con la fuerza del año que cierra; los
+  // planteles NPC envejecen aca y la temporada del año que viene los ve.
+  // Corre solo en el offseason (cierre de edad), sin tocar `rng` el resto.
+  await import('./plantel.js')
 ];
 
 export function sistemaPorId(sistemaId) {

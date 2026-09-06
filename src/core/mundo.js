@@ -8,6 +8,7 @@ import { ARQUETIPOS } from '../data/meta-tags.js';
 import { IDS_ROL } from '../data/roles.js';
 import { campeonesElegiblesAlInicio, entradaDePool } from './pool.js';
 import { generarNombreOrg, generarOrgsTier3 } from './tier3.js';
+import { generarPlanteles, fuerzaDePlantel } from './plantel.js';
 import LIGAS from '../data/leagues.json' with { type: 'json' };
 
 // Los handles se arman por silabas para que cada seed invente los suyos. Los
@@ -216,6 +217,28 @@ function generarPoolInicial(rol, rng, elegidos) {
 // nunca una de desarrollo.
 const LIGAS_TIER1 = LIGAS.filter((liga) => liga.tier === 1);
 
+// D8 (parcial, fase 9M): cada rival de generación deja de ser una ficha suelta
+// y pasa a OCUPAR la casilla de su rol en un plantel real — la misma org que
+// `orgDelRival` (core/temporada.js) le asigna por hash del handle. La casilla
+// ya está bien formada (nivel que orbita la fuerza de la org, edad, contrato);
+// el rival sólo le presta su identidad y queda marcado para que
+// `systems/plantel.js` lo trate como carrera larga. Cero `rng`: es un swap.
+function insertarRivalesEnPlanteles(rivales, planteles, ligas) {
+  for (const rival of rivales) {
+    const liga = ligas.find((candidata) => candidata.id === rival.liga);
+    if (!liga || liga.tier !== 1 || liga.orgs.length === 0) {
+      continue;
+    }
+    const hash = [...rival.handle].reduce((suma, caracter) => suma + caracter.charCodeAt(0), 0);
+    const orgNombre = liga.orgs[hash % liga.orgs.length].nombre;
+    const plantel = planteles[orgNombre];
+    if (!plantel) {
+      continue;
+    }
+    plantel[rival.role] = { ...plantel[rival.role], handle: rival.handle, rivalDeGeneracion: true };
+  }
+}
+
 function generarRivales(rng, usados) {
   const m = BALANCE.mundo;
 
@@ -250,8 +273,8 @@ function generarRivales(rng, usados) {
 export function generarMundo(rng, edadInicial, eleccion = null) {
   const usados = new Set();
   const usadosOrgs = new Set();
-  const ligas = generarLigas(rng, usadosOrgs);
-  const ligasTier1 = ligas.filter((liga) => liga.tier === 1);
+  const ligasBase = generarLigas(rng, usadosOrgs);
+  const ligasTier1 = ligasBase.filter((liga) => liga.tier === 1);
 
   // De dónde sos. Pesado por prestigio (tamaño de escena): nacer en Corea no
   // es 1 en 6 como nacer en Brasil (fase 3) — antes era un sorteo parejo entre
@@ -263,6 +286,23 @@ export function generarMundo(rng, edadInicial, eleccion = null) {
 
   const handleSorteado = generarHandle(rng, usados);
   const handle = eleccion?.handle?.trim() ? eleccion.handle.trim() : handleSorteado;
+
+  // Fase 9M (PLAN.md §9M.2): el mundo tiene gente. Se genera acá, en posición
+  // fija del stream (después de generarLigas, antes de generarRivales — trampa
+  // T1). Cada casilla orbita el `fuerza` sorteado de su org, y después
+  // `org.fuerza` pasa a DERIVAR del promedio de nivel de su plantel: el día 1
+  // la distribución agregada es idéntica; desde el año 2 un equipo que ficha
+  // bien sube de fuerza (lo recalcula `systems/plantel.js` cada offseason).
+  const planteles = generarPlanteles(rng, ligasBase, ligaOrigen.regionId, usados);
+  const rivales = generarRivales(rng, usados);
+  insertarRivalesEnPlanteles(rivales, planteles, ligasBase);
+
+  const ligas = ligasBase.map((liga) => ({
+    ...liga,
+    orgs: liga.orgs.map((org) => (
+      planteles[org.nombre] ? { ...org, fuerza: fuerzaDePlantel(planteles[org.nombre]) } : org
+    ))
+  }));
 
   return {
     jugador: {
@@ -286,7 +326,11 @@ export function generarMundo(rng, edadInicial, eleccion = null) {
       // entre las tier 1: una de desarrollo nunca es la region dominante.
       regionDominante: weightedPick(ligasTier1, (liga) => liga.prestigio, rng).region,
       metaInicial: generarMetaInicial(rng),
-      rivales: generarRivales(rng, usados),
+      rivales,
+      // Los 5 planteles por org de tier 1 y de la tier 2 de tu región (~340
+      // NPCs con edad, contrato y carrera propia). El resto del mundo sigue con
+      // `fuerza` escalar. `systems/plantel.js` los envejece cada offseason.
+      planteles,
       // Los equipos chicos por region donde ficha todo el mundo la primera
       // vez (fase 3): comparten el pool de nombres con las orgs de tier 2
       // para que dos niveles distintos nunca terminen con el mismo nombre.

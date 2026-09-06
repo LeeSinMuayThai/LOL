@@ -720,6 +720,47 @@ export const BALANCE = {
     probAscensoPorJerarquiaDesdeTier2: 0.45
   },
 
+  // Los planteles NPC (fase 9M, PLAN.md §9M.2). Valores puestos por criterio
+  // y a MEDIR después: regla de proceso 2, el retune de 9M vive en 9Mh. Nadie
+  // los toca en el commit que introduce la estructura.
+  plantel: {
+    tamano: 5,
+    // Generación: el nivel de cada casilla orbita la `fuerza` sorteada de su
+    // org, así el promedio del plantel ≈ ese valor y la distribución agregada
+    // del día 1 no se mueve.
+    nivelSpread: 7,
+    // Edad de un NPC pro al generar el mundo: mayoría 20-25, algún rookie,
+    // algún veterano.
+    edadMedia: 22,
+    edadSpread: 3,
+    edadMin: 17,
+    edadMax: 31,
+    // Splits ya jugados en la región de su liga al generar (tenencia inicial;
+    // lo lee la `residencia` de 9Mb).
+    splitsRegionMax: 12,
+    // Años de contrato que le quedan al generar.
+    contratoAniosMin: 1,
+    contratoAniosMax: 3,
+    // Sueldo NPC = mediana de su liga · (base + nivel/100 · factor).
+    salarioBaseFactor: 0.5,
+    salarioNivelFactor: 0.9,
+    // Offseason: ruido gaussiano sobre el nivel-de-curva de cada año (rachas).
+    ruidoNivelAnual: 3,
+    // Un NPC se va del equipo si le venció el contrato, ya pasó su pico por
+    // más de `retiroEdadSobrePico` años, y su nivel cayó `retiroNivelBajoOrg`
+    // por debajo de la fuerza de la org — o si llegó a `retiroEdadDura`.
+    retiroEdadSobrePico: 2,
+    retiroNivelBajoOrg: 12,
+    retiroEdadDura: 30,
+    // Un rival de generación corre una carrera larga (D8): sólo se va de viejo,
+    // `rivalRetiroExtra` años más tarde que el resto.
+    rivalRetiroExtra: 3,
+    // El canterano que sube a cubrir un asiento vacante.
+    canteraEdadMin: 17,
+    canteraEdadMax: 19,
+    canteraNivelBajoOrg: 10
+  },
+
   // El mercado (fase 9, PLAN.md §9.2/§9.7): contratos, sueldos y el sesgo
   // etario que de verdad termina las carreras. CONCEPTO §12.4: el declive de
   // atributos casi no es biológico (~1ms/año de reacción contra 90ms de
