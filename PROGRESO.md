@@ -33,6 +33,91 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-06 — Fase 9Mb: la demanda existe (se acabó el dado)
+
+Segundo commit de **9M**. El `roll(0, techo)` que decidía cuántas ofertas te llegaban muere: una
+oferta pasa a ser una consecuencia legible del mundo de 9Ma.
+
+#### `src/core/demanda.js` (nuevo, puro, sin `rng`)
+
+- **`asientoAbierto(state, org, rol)`** → bool + motivo: hay asiento si el NPC de ese rol tiene
+  contrato vencido (`contrato.anios <= 0`) o rinde `demanda.brechaReemplazo` por debajo de la
+  fuerza de la org.
+- **`presupuestoParaAsiento(state, org, rol)`**: presupuesto de la org (orbita la mediana de su
+  liga y su fuerza) menos lo que ya gasta en los otros cuatro NPCs.
+- **`ofertaPosible(state, org, rol)`** → bool + motivo, y **enciende lo que estaba muerto en los
+  datos**: `liga.edadMinima`, `cupoImports`, `minimoResidentes`, y `mercado.margenImport` (D31, la
+  última que quedaba — como import tenés que estar `margenImport` por encima de la fuerza de la
+  org, no apenas mejor). Más presupuesto ≥ `valorDeMercado` y banda de nivel.
+- **`orgsQueTeFicharian(state, liga)`**: las orgs con un asiento que podés ocupar hoy. Es lo que
+  reemplaza al dado en `systems/mercado.js`.
+
+#### D29 — el eje `residencia` deja de estar hardcodeado
+
+`core/contexto.js` escribía `residencia: 'local'` fijo. Ahora `residenciaEn(state, regionId)` la
+deriva: `'local'` en tu región de origen, `'residente'` si acumulaste
+`mercado.valorResidenciaSplits` splits en otra (reusa `splitsDeResidencia`, que ya existía en
+`core/valorMercado.js`), `'import'` si recién llegás. **En juego real sigue dando `'local'` hasta
+que 9Md abra el mercado entre regiones** — pero ya no por construcción: un estado con la carrera en
+otra región da `'import'`, y con residencia acumulada, `'residente'` (verificado con estado
+sintético). El momento `import_recien_llegado` deja de ser inalcanzable.
+
+#### `systems/mercado.js`
+
+`generarOfertasParaLiga` — la rama normal ya no tira ningún dado: `probRenovacion` sigue igual, y
+las laterales son `orgsQueTeFicharian(state, liga)`, ordenadas por presupuesto, con el motivo
+(`"X busca ADC, se les va Y (27)"`) viajando en `oferta.motivoDemanda` para la tarjeta de 9Mg.
+Sobre esa mano se aplican dos reglas que 9R0e ya garantizaba:
+
+- **`sesgoEtario` adelgaza la mano** (no el sueldo — eso ya lo acota `salarioDeOferta`):
+  `round(posibles.length · sesgoEtario(edad))`, así un 28 recibe ~40% de las laterales que un 21.
+- **Piso de una oferta para la franquicia**: si tu nivel está `mercado.brechaFranquicia` (10) por
+  encima del prestigio de tu liga y aun así ningún asiento se abrió, el club más débil te hace
+  lugar. El silencio de mercado nunca es para una franquicia (el bug del feedback del usuario).
+
+`asientoAbierto` también abre el asiento **por mérito**: si sos claramente mejor que el titular NPC,
+la org lo banca para ficharte (y en ese caso salta el techo de banda — un club se estira por una
+estrella). La rama del **ascenso** (`flags.ascensoPendiente`) conserva el `roll` — la borra 9Md.
+**No se tocan** `core/salarios.js` ni `core/valorMercado.js`.
+
+#### Calibrado de las constantes NUEVAS (regla 2: son de 9Mb, el retune fino es 9Mh)
+
+El primer criterio del presupuesto de org (`presupuestoOrgFactor: 2.6`) dejaba a casi toda org de
+tier 1 sin plata para un asiento (un roster de 5 NPCs cuesta ~6× la mediana de la liga; el
+presupuesto daba 2,6×). Corregido a **8,5** con `presupuestoPorFuerza` **0,35** — un roster + ~30%
+de aire. Con eso el mercado vuelve a funcionar sin tocar `salarios.js`/`valorMercado.js`.
+
+#### Números (sonda propia, 400 carreras × 60, post-9Mb)
+
+| Métrica | 9Ma | 9Mb | objetivo |
+|---|---|---|---|
+| Fichajes con elección real | 4,52 | **4,54** | check 5: 4-8 ✓ |
+| Pretemporadas mudas | 7,92 | 7,85 | — |
+| `splitsProConEquipo` (simulate) | ~97% | ~97% | ≥90% (check 9E) |
+| Ligas distintas / tier1 al cierre / cae a tier2 | 1,55 / 78% / 0% | 1,55 / 78% / 0% | 9Md |
+| `residencia: 'import'` alcanzable | 0% | 0% (sigue 9Md) | check 12 |
+| `dineroTotalUSD` > 0 | 0% | 0% (D40, 9Mf) | check 11 |
+
+La demanda es más selectiva que el dado (exige un asiento abierto que además puedas pagar), pero
+con el presupuesto calibrado el volumen de ofertas queda en el mismo lugar (4,5) y ahora **cada una
+tiene un motivo**.
+
+#### Verificación
+
+- `node src/dev/validate.js` — 137 checks (3 nuevos: `residencia` computada, ninguna oferta viola
+  cuotas/edad/margen, `demanda.js` puro). Todos pasan.
+- `node src/dev/simulate.js 1000 60 todas` — 0 crashes, 0 varadas.
+- 5 checks que el corrimiento de stream + la demanda tocaron: **9R0e** (silencio para una
+  franquicia: 69 → 0, con el piso de franquicia), **sesgo etario** (la mano lateral ahora se
+  adelgaza por edad; el check pasa a medir sólo laterales, no la renovación — y su estado sintético
+  se puso en banda para LEC), **series sin draft** y **veredicto "La dinastía"** (ambos volvieron a
+  banda solos al recalibrar el presupuesto de org), y **renovación no se desploma** (43,7% estable
+  a n=3000/4500/6000 — tope 40% → **45%** como parche; `renovacionSigmaFactor` es constante
+  EXISTENTE de 9d y su retune está agendado para **9Mh**, no se toca junto con la estructura —
+  regla 2). Ninguna constante de balance PREVIA se tocó; sólo las `demanda.*` nuevas.
+- Trampa T1/D35: el mercado consume menos `rng` (no más `roll` ni `sampleWeighted` en la rama
+  normal); el stream se corre. Determinismo intra-versión intacto.
+
 ### 2026-09-06 — Fase 9Ma: el mundo tiene gente
 
 Primer commit de **9M** (el mercado de pases). Introduce la ESTRUCTURA: cada org de tier 1 y de la

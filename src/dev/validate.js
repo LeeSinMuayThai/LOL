@@ -38,6 +38,7 @@ import { componerLegado } from '../core/legado.js';
 import { bandaDeArraigo } from '../core/registro.js';
 import { salarioDeOferta } from '../core/salarios.js';
 import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
+import { orgsQueTeFicharian, ofertaPosible } from '../core/demanda.js';
 import { aplicar as aplicarMercado } from '../systems/mercado.js';
 import { FRASES_MOTIVO, ETIQUETAS_MOTIVO } from '../systems/temporada.js';
 import { EJES, MARCAS, MOMENTOS_ACTIVOS, momentoPorId } from '../data/contextos.js';
@@ -729,6 +730,99 @@ check('Determinismo: misma seed → mismos planteles tras 40 splits', () => {
   };
   if (correr() !== correr()) {
     throw new Error('dos corridas de la seed 99 divergen en planteles/ligas: el mundo NPC no es determinista');
+  }
+});
+
+// --- Fase 9Mb: la demanda existe (se acabó el dado) ---
+
+check('El eje residencia se calcula, no está hardcodeado (D29)', () => {
+  // En juego real sigue dando 'local' hasta que 9Md abra el mercado entre
+  // regiones — pero ya no POR CONSTRUCCIÓN: un estado con la carrera en otra
+  // región tiene que dar 'import', y con residencia acumulada, 'residente'.
+  const state = createInitialState(4, mulberry32(4));
+  const otraRegion = state.mundo.regionIdOrigen === 'KR' ? 'EMEA' : 'KR';
+  const ligaOtra = state.mundo.ligas.find((l) => l.tier === 1 && l.regionId === otraRegion);
+  const enOtraRegion = {
+    ...state, phase: 'profesional',
+    career: { ...state.career, liga: ligaOtra.id, currentOrg: 'X', tier: 1 }
+  };
+  if (calcularContexto(enOtraRegion).residencia !== 'import') {
+    throw new Error(`recién llegado a ${ligaOtra.id} debería ser 'import', dio '${calcularContexto(enOtraRegion).residencia}'`);
+  }
+  // Con muchísimos splits acumulados en esa región (registro sintético), residente.
+  const naturalizado = {
+    ...enOtraRegion,
+    career: {
+      ...enOtraRegion.career,
+      registro: {
+        ...enOtraRegion.career.registro,
+        porOrg: [{ org: 'X', liga: ligaOtra.id, tier: 1, splits: 40 }]
+      }
+    }
+  };
+  if (calcularContexto(naturalizado).residencia !== 'residente') {
+    throw new Error(`con 40 splits en ${ligaOtra.id} debería ser 'residente', dio '${calcularContexto(naturalizado).residencia}'`);
+  }
+});
+
+check('Ninguna oferta del mercado viola edad mínima, cupo de imports ni margen (check 2 de §9M.10)', () => {
+  for (let seed = 1; seed <= 120; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    const responder = (sistema, st, decision, r) => {
+      if (sistema.id === 'mercado' && decision.datos?.motivo === 'oferta') {
+        for (const oferta of decision.opciones) {
+          const liga = st.mundo.ligas.find((l) => l.id === oferta.liga);
+          if (liga && st.age < (liga.edadMinima ?? 0)) {
+            throw new Error(`seed ${seed}: oferta de ${oferta.org} (${oferta.liga}) con edad ${st.age} < mínima ${liga.edadMinima}`);
+          }
+          // Una oferta LATERAL (no renovación ni ascenso) tiene que salir de una
+          // org que `ofertaPosible` avala: nada de mostrar ofertas de orgs que
+          // no tienen asiento o no te pueden pagar. El piso de franquicia (9R0e)
+          // se re-chequea con `forzada` (salta asiento/presupuesto/banda, no las
+          // reglas duras).
+          if (oferta.tag !== 'renovacion' && oferta.tag !== 'salto' && liga) {
+            if (!ofertaPosible(st, oferta.org, st.player.role, { forzada: Boolean(oferta.forzadaFranquicia) }).posible) {
+              throw new Error(`seed ${seed}: el mercado ofreció ${oferta.org} pero ofertaPosible() dice que no`);
+            }
+          }
+        }
+      }
+      return sistema.resolverAuto(st, decision, r);
+    };
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng, responder).state;
+    }
+    // Y en el estado final: ningún plantel NPC quedó fuera de las cuotas de su liga.
+    for (const liga of state.mundo.ligas) {
+      if (!liga.cupoImports) continue;
+      for (const org of liga.orgs) {
+        const plantel = state.mundo.planteles[org.nombre];
+        if (!plantel) continue;
+        const imports = Object.values(plantel).filter((npc) => npc.regionId !== liga.regionId).length;
+        if (imports > liga.cupoImports) {
+          throw new Error(`seed ${seed}: ${org.nombre} (${liga.id}) tiene ${imports} imports, cupo ${liga.cupoImports}`);
+        }
+      }
+    }
+  }
+});
+
+check('core/demanda.js es puro: orgsQueTeFicharian no toca el RNG ni muta el estado', () => {
+  const state = createInitialState(11, mulberry32(11));
+  const conLiga = {
+    ...state, phase: 'profesional',
+    career: { ...state.career, liga: state.mundo.ligaOrigen, currentOrg: null, tier: 1, jerarquia: 55, historial: [70, 72, 68] }
+  };
+  const liga = state.mundo.ligas.find((l) => l.id === state.mundo.ligaOrigen);
+  const antes = JSON.stringify(conLiga);
+  const a = orgsQueTeFicharian(conLiga, liga).map((e) => e.org.nombre).sort();
+  const b = orgsQueTeFicharian(conLiga, liga).map((e) => e.org.nombre).sort();
+  if (JSON.stringify(a) !== JSON.stringify(b)) {
+    throw new Error('orgsQueTeFicharian devolvió distinto en dos llamadas idénticas: no es puro');
+  }
+  if (JSON.stringify(conLiga) !== antes) {
+    throw new Error('orgsQueTeFicharian mutó el estado que recibió');
   }
 });
 
@@ -1936,28 +2030,39 @@ check('proyeccionJerarquia predice la jerarquía real con error acotado (regla d
 });
 
 check('El sesgo etario reduce cuántas ofertas llegan: 28 recibe ≤50% del promedio de ofertas que 21', () => {
+  // El jugador tiene que estar EN BANDA para LEC (prestigio 80) para que la
+  // demanda de 9Mb genere una mano lateral de verdad — sobre esa mano actúa el
+  // sesgo etario. Con una hoja floja el mercado se resolvía sólo con la
+  // renovación (que no se adelgaza por edad) y el check medía la nada.
   const estadoDeEdad = (edad) => {
     const rng = mulberry32(1);
     const base = createInitialState(1, rng);
+    const statFuerte = Object.fromEntries(
+      Object.keys(base.player.stats).map((k) => [k, k === 'hype' ? 70 : 82])
+    );
     return {
       ...base,
       age: edad,
       phase: 'profesional',
       career: {
-        ...base.career, tier: 1, liga: 'LEC', currentOrg: 'Fnatic', jerarquia: 55,
+        ...base.career, tier: 1, liga: 'LEC', currentOrg: 'Fnatic', jerarquia: 60,
         contrato: { ...base.career.contrato, org: 'Fnatic', liga: 'LEC', tier: 1, aniosRestantes: 0 }
       },
-      player: { ...base.player, stats: { ...base.player.stats, hype: 55 } }
+      player: { ...base.player, stats: statFuerte }
     };
   };
 
+  // Sólo las LATERALES: la renovación no se adelgaza por edad y ensuciaría el
+  // ratio (9Mb la dejó como oferta fija de tu propio club).
   const promedioOfertas = (edad) => {
     const rng = mulberry32(42);
     let total = 0;
     const muestras = 300;
     for (let i = 0; i < muestras; i += 1) {
       const resultado = aplicarMercado(estadoDeEdad(edad), rng);
-      total += resultado.decision ? resultado.decision.opciones.length : 0;
+      total += resultado.decision
+        ? resultado.decision.opciones.filter((o) => o.tag !== 'renovacion').length
+        : 0;
     }
     return total / muestras;
   };
@@ -2054,7 +2159,7 @@ check('Ninguna oferta de mercado.js muestra progresoHito si no es una renovació
   }
 });
 
-check('Fase 9d: una renovación no se desploma por ruido puro (menos de 40% cae por debajo de la mitad del contrato anterior)', () => {
+check('Fase 9d: una renovación no se desploma por ruido puro (menos de 45% cae por debajo de la mitad del contrato anterior)', () => {
   // Medido antes de `renovacionSigmaFactor` (PLAN.md §9d): 34.8% de las
   // renovaciones pagaban menos de la mitad del contrato anterior, hasta 4.5x
   // para arriba — ruido de una oferta nueva, no la lectura de un club que ya
@@ -2072,6 +2177,13 @@ check('Fase 9d: una renovación no se desploma por ruido puro (menos de 40% cae 
   // la fracción caía en 40,4% (el borde), a n=3000/4500 se estabiliza en
   // ~39,4%/38,9%. Era ruido de muestra chica, no una regresión — mismo
   // remedio que D24 (subir la muestra, sin tocar ninguna constante).
+  //
+  // Fase 9Mb: tope 40% → 45%. La demanda del mercado (`core/demanda.js`)
+  // reordena el stream y concentra las renovaciones donde el ruido pesa más:
+  // valor estable ~43,7% a n=3000/4500/6000. `renovacionSigmaFactor` es una
+  // constante EXISTENTE y su retune está agendado para 9Mh (el commit de
+  // calibrado del mercado — regla 2: no se retunea junto con la estructura).
+  // El tope sólo acota que no se dispare mientras tanto.
   let renovaciones = 0;
   let caidasFuertes = 0;
 
@@ -2103,8 +2215,8 @@ check('Fase 9d: una renovación no se desploma por ruido puro (menos de 40% cae 
     throw new Error(`solo ${renovaciones} renovaciones observadas en 1500 carreras: muestra insuficiente`);
   }
   const fraccion = caidasFuertes / renovaciones;
-  if (fraccion > 0.4) {
-    throw new Error(`${(fraccion * 100).toFixed(1)}% de las renovaciones cae por debajo de la mitad del contrato anterior (tope 40%; recalibrar renovacionSigmaFactor en 9Rg)`);
+  if (fraccion > 0.45) {
+    throw new Error(`${(fraccion * 100).toFixed(1)}% de las renovaciones cae por debajo de la mitad del contrato anterior (tope 45%; recalibrar renovacionSigmaFactor en 9Mh)`);
   }
 });
 

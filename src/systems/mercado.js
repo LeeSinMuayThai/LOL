@@ -8,6 +8,7 @@ import { salarioDeOferta } from '../core/salarios.js';
 import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
 import { cerrarFila, registrarPico, registrarSalarioEnFila, arraigoInicial } from '../core/registro.js';
 import { bandaDeJerarquia, bandaDeArraigoFicha, nivelDelJugador } from '../core/ficha.js';
+import { orgsQueTeFicharian, ofertaPosible } from '../core/demanda.js';
 import { jerarquiaAlFichar } from './roster.js';
 import { BALANCE } from '../data/balance.js';
 
@@ -139,46 +140,76 @@ function construirOferta(state, liga, org, tagForzado, rng) {
   };
 }
 
-function generarOfertasParaLiga(state, liga, rng, { esAscenso }) {
+// Fase 9R0e → 9Mb: cuando había ascenso pendiente el mercado todavía sortea la
+// mano (esa rama la borra 9Md junto con `flags.ascensoPendiente`). El mercado
+// NORMAL ya no tira ningún dado: las ofertas son las orgs de la liga que TIENEN
+// un asiento abierto en tu rol y te pueden pagar (`core/demanda.js`).
+function ofertasPorAscenso(state, liga, rng, ofertas) {
   const m = BALANCE.mercado;
-  const ofertas = [];
-
-  if (!esAscenso) {
-    const orgActual = liga.orgs.find((org) => org.nombre === state.career.currentOrg);
-    const probRenovacion = clamp(
-      m.probRenovacionBase + (state.career.jerarquia / BALANCE.stats.max) * m.probRenovacionPorJerarquia,
-      0, 1
-    );
-    if (orgActual && chance(probRenovacion, rng)) {
-      ofertas.push(construirOferta(state, liga, orgActual, 'renovacion', rng));
-    }
-  }
-
-  // Fase 9R0e: cuánto te busca el mercado sale de tu NIVEL contra la liga, no
-  // de `roll(0, techo)` con sesgo etario a secas. Un jugador claramente por
-  // encima SIEMPRE tiene ofertas (piso por demanda); uno por debajo, casi
-  // ninguna. El `sesgoEtario` sigue acotando el techo (CONCEPTO §12: el mercado
-  // prefiere jóvenes), pero ahora convive con la lectura de nivel.
   const nivel = nivelDelJugador(state);
   const brecha = nivel - (liga.prestigio ?? m.nivelLigaPorDefecto);
   const demanda = clamp(0.5 + brecha / m.brechaNivelRango, 0, 1);
   const piso = Math.round(demanda * m.ofertasPisoPorDemanda);
   const techoEtario = Math.max(1, Math.round(m.ofertasMax * sesgoEtario(state.age)));
   const techo = Math.max(piso + 1, Math.round(techoEtario * (m.techoDemandaBase + demanda * m.techoDemandaPeso)));
-  const cantidadTotal = esAscenso ? roll(Math.max(1, piso), techo, rng) : roll(piso, techo, rng);
-  const cupoLaterales = Math.max(0, cantidadTotal - ofertas.length);
+  const cupoLaterales = Math.max(0, roll(Math.max(1, piso), techo, rng) - ofertas.length);
   const candidatos = liga.orgs.filter((org) => org.nombre !== state.career.currentOrg);
-  // Y las laterales vienen de orgs cerca de TU nivel, no siempre de las más
-  // fuertes: así un 50-media no firma con el mejor equipo de la liga.
   const elegidos = sampleWeighted(
     candidatos,
     (org) => 1 / (1 + Math.abs(org.fuerza - nivel) / m.afinidadOfertaRango),
     Math.min(cupoLaterales, candidatos.length),
     rng
   );
-
   for (const org of elegidos) {
-    ofertas.push(construirOferta(state, liga, org, esAscenso ? 'salto' : null, rng));
+    ofertas.push(construirOferta(state, liga, org, 'salto', rng));
+  }
+  return ofertas.slice(0, m.ofertasMax);
+}
+
+function generarOfertasParaLiga(state, liga, rng, { esAscenso }) {
+  const m = BALANCE.mercado;
+  const ofertas = [];
+
+  if (esAscenso) {
+    return ofertasPorAscenso(state, liga, rng, ofertas);
+  }
+
+  const orgActual = liga.orgs.find((org) => org.nombre === state.career.currentOrg);
+  const probRenovacion = clamp(
+    m.probRenovacionBase + (state.career.jerarquia / BALANCE.stats.max) * m.probRenovacionPorJerarquia,
+    0, 1
+  );
+  if (orgActual && chance(probRenovacion, rng)) {
+    ofertas.push(construirOferta(state, liga, orgActual, 'renovacion', rng));
+  }
+
+  // La demanda: cada org de la liga con un asiento abierto en tu rol que te
+  // puede pagar. El motivo viaja a la tarjeta ("X busca ADC, se les va Y...").
+  // Las mejores ofertas primero (más presupuesto).
+  const posibles = orgsQueTeFicharian(state, liga).sort((a, b) => b.presupuesto - a.presupuesto);
+
+  // 9R0e: si sos claramente una franquicia para tu liga y aun así ningún
+  // asiento se abrió, el club más débil hace lugar (respetando las reglas
+  // duras de la liga) — el silencio no es para una franquicia.
+  const claramenteArriba = nivelDelJugador(state) - (liga.prestigio ?? m.nivelLigaPorDefecto) >= m.brechaFranquicia;
+  if (claramenteArriba && posibles.length === 0) {
+    const masDebil = liga.orgs
+      .filter((org) => org.nombre !== state.career.currentOrg)
+      .sort((a, b) => a.fuerza - b.fuerza)[0];
+    const forzada = masDebil && ofertaPosible(state, masDebil.nombre, state.player.role, { forzada: true });
+    if (forzada?.posible) {
+      posibles.push({ org: masDebil, motivo: forzada.motivo, forzadaFranquicia: true });
+    }
+  }
+
+  // El mercado prefiere jóvenes (CONCEPTO §12): `sesgoEtario` adelgaza la mano
+  // —no el sueldo, que ya lo acota `salarioDeOferta`—. Piso 1 para la franquicia.
+  const cupoEtario = Math.max(claramenteArriba ? 1 : 0, Math.round(posibles.length * sesgoEtario(state.age)));
+  const candidatas = posibles.slice(0, Math.min(cupoEtario, m.ofertasMax - ofertas.length));
+
+  for (const { org, motivo, forzadaFranquicia } of candidatas) {
+    const oferta = construirOferta(state, liga, org, null, rng);
+    ofertas.push({ ...oferta, motivoDemanda: motivo, ...(forzadaFranquicia ? { forzadaFranquicia: true } : {}) });
   }
 
   return ofertas.slice(0, m.ofertasMax);

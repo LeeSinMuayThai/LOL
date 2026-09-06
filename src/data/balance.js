@@ -761,6 +761,29 @@ export const BALANCE = {
     canteraNivelBajoOrg: 10
   },
 
+  // La demanda del mercado (fase 9M, PLAN.md §9M.3): reemplaza el `roll(0,
+  // techo)` de `systems/mercado.js`. Una oferta llega SI la org tiene un
+  // asiento abierto en tu rol, tu nivel entra en su banda y te puede pagar.
+  // Valores por criterio, a medir en 9Mh (regla 2).
+  demanda: {
+    // El NPC de un rol se considera reemplazable si su nivel cayó esto por
+    // debajo de la fuerza de la org (aparte de que se le venza el contrato).
+    brechaReemplazo: 10,
+    // Y el asiento se "abre" si el jugador está claramente por encima del NPC
+    // que lo ocupa: la org banca a su titular para ficharte (9R0e — el silencio
+    // de mercado no es para una franquicia).
+    forzarAsientoSobreNpc: 8,
+    // Presupuesto de una org = mediana de su liga · factor · (1 ± fuerza).
+    presupuestoOrgFactor: 8.5,
+    presupuestoPorFuerza: 0.35,
+    // La oferta necesita presupuesto ≥ tu valor de mercado · esto.
+    presupuestoMinimoFactor: 0.9,
+    // Banda de nivel: una org no ficha muy por debajo de su fuerza ni paga muy
+    // por encima de lo que sostiene.
+    bandaNivelAbajo: 14,
+    bandaNivelArriba: 22
+  },
+
   // El mercado (fase 9, PLAN.md §9.2/§9.7): contratos, sueldos y el sesgo
   // etario que de verdad termina las carreras. CONCEPTO §12.4: el declive de
   // atributos casi no es biológico (~1ms/año de reacción contra 90ms de
@@ -809,6 +832,10 @@ export const BALANCE = {
     // Rango de la brecha nivel−prestigio que mapea a demanda [0,1]: ±25 puntos
     // de nivel = demanda 1.0 / 0.0.
     brechaNivelRango: 50,
+    // Brecha nivel−prestigio a partir de la cual sos "una franquicia" para tu
+    // liga: el mercado nunca te deja sin al menos una oferta (9R0e), ni
+    // siquiera con el sesgo etario en contra.
+    brechaFranquicia: 10,
     // Piso de ofertas para un jugador de demanda máxima (claramente arriba de
     // su liga): nunca se queda sin mercado.
     ofertasPisoPorDemanda: 3,

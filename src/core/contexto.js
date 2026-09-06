@@ -3,6 +3,7 @@ import { clamp } from './numeros.js';
 import { bandaDeLadder, servidorDeLaPartida } from './ranked.js';
 import { campeonesMuertos } from './ajusteMeta.js';
 import { campeonNuevoPendiente } from './pool.js';
+import { residenciaEn } from './demanda.js';
 import { MOMENTOS } from '../data/contextos.js';
 
 // "Donde estas parado en la carrera", derivado del estado.
@@ -245,7 +246,12 @@ export function calcularContexto(state, overrides = {}) {
     momentum: calcularMomentum(state),
     mercado: calcularMercado(state),
     region: liga?.regionId ?? state.mundo.regionIdOrigen ?? null,
-    residencia: 'local',
+    // D29: dejaba de ser el literal 'local' fijo. `residenciaEn` la deriva de
+    // `career.registro.porOrg` (splits acumulados en la región). Hasta que 9Md
+    // abra el mercado entre regiones, sigue dando 'local' en la práctica —
+    // pero ya no por construcción: un estado con carrera en otra región da
+    // 'import'/'residente'.
+    residencia: residenciaEn(state, liga?.regionId ?? state.mundo.regionIdOrigen),
     ventana: calcularVentana(state),
     ladder: bandaDeLadder(state.player.ranked, servidorDeLaPartida(state)),
     rol: state.player.role,
