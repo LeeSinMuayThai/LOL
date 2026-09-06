@@ -246,7 +246,6 @@ export const BALANCE = {
     autoSuenoObjetivo: 70,
     autoRuido: 0.3,
     autoPesoMinimo: 0.15,
-    autoProbRobar: 0.4,
 
     // Umbral de estudios con el que se congela el flag del secundario.
     secundarioAprobadoUmbral: 45,
@@ -593,7 +592,6 @@ export const BALANCE = {
     // el único factor (el roster real importa), pero el jugador deja de ser
     // ruido en su propio resultado.
     pesoJugadorEnEquipo: 0.5,
-    ruidoRival: 13,
 
     // Consecuencias
     hypePorTitulo: 9,
@@ -719,12 +717,7 @@ export const BALANCE = {
 
     // Tier 2: el ascenso a primera es mas lento y se gana, no se sortea parejo.
     probAscensoBaseDesdeTier2: 0.12,
-    probAscensoPorJerarquiaDesdeTier2: 0.45,
-
-    // El año muerto (CONCEPTO, dato real): un europeo de 17 puede firmar pero
-    // la LEC exige 18 para debutar. Si la edad no alcanza, el ascenso a tier 1
-    // se frena un split más, cueste lo que cueste tu jerarquia.
-    margenEdadMinima: 0
+    probAscensoPorJerarquiaDesdeTier2: 0.45
   },
 
   // El mercado (fase 9, PLAN.md §9.2/§9.7): contratos, sueldos y el sesgo

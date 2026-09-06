@@ -91,8 +91,11 @@ function correrCarrera(seed, splits) {
   return state;
 }
 
-check('Sin aleatoriedad nativa fuera del RNG inyectado', () => {
-  const infractores = verificarSinMathRandom(srcDir);
+check('Sin aleatoriedad nativa fuera del RNG inyectado (src/ + index.html)', () => {
+  // `src/` recursivo + la raíz del repo en su primer nivel: ahí vive
+  // `index.html`, que hasta 9Ed le quedaba fuera al guard dos veces (ni
+  // `.html` en las extensiones, ni la raíz en el árbol recorrido).
+  const infractores = verificarSinMathRandom(srcDir, [path.join(srcDir, '..')]);
   if (infractores.length > 0) {
     throw new Error(`encontrado en: ${infractores.join(', ')}`);
   }
@@ -1923,11 +1926,17 @@ check('Fase 9d: una renovación no se desploma por ruido puro (menos de 40% cae 
   // renovaciones se concentra en la primera mitad de la carrera, donde la
   // jerarquía todavía oscila y el ruido lognormal pesa proporcionalmente más.
   // Sumado al sesgo de jerarquía que destapó 9Rb (D39). La recalibración real
-  // de `renovacionSigmaFactor` es 9Rg/9M; el tope acota que no empeore.
+  // de `renovacionSigmaFactor` es 9M; el tope acota que no empeore.
+  //
+  // Fase 9Ec: n 1500 → 3000. El gateo de contenido de D27 y el corrimiento de
+  // stream de `campeones.js` (T1) reordenaron la población sorteada: a n=1500
+  // la fracción caía en 40,4% (el borde), a n=3000/4500 se estabiliza en
+  // ~39,4%/38,9%. Era ruido de muestra chica, no una regresión — mismo
+  // remedio que D24 (subir la muestra, sin tocar ninguna constante).
   let renovaciones = 0;
   let caidasFuertes = 0;
 
-  for (let seed = 1; seed <= 1500; seed += 1) {
+  for (let seed = 1; seed <= 3000; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
 
@@ -4224,6 +4233,52 @@ check('La carrera profesional se juega mayormente con equipo', () => {
   }
 });
 
+// Fase 9Ec (D27): sin equipo no hay vestuario ni serie, así que el split no
+// puede narrar un draft como algo que PASÓ (elegís el campeón vos, como en
+// soloQ) ni una charla con el manager (no hay club). Antes de gatear el
+// contenido, la traza de la seed 7 ya varada logueaba "en el draft no te
+// dieron tu pick" seis veces y daba Arraigo al manager de una org inexistente.
+//
+// El check mira el MECANISMO, no la palabra: un evento de pool puede decir "el
+// draft lo agradece" como color y eso es legítimo en soloQ. Lo que no puede
+// pasar es que `campeones.js`/`serie.js`/`temporada.js` —los sistemas que
+// resuelven un draft de verdad— logueen uno sin equipo, ni que un evento hable
+// del "manager" del club (salvo el community manager, que es otra cosa).
+check('Ningún split sin equipo narra un draft mecánico ni al manager del club (D27)', () => {
+  const DRAFT_DE_SISTEMA = new Set(['campeones', 'serie', 'temporada']);
+  const infracciones = [];
+
+  for (let seed = 1; seed <= 120; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      const antes = state.logs.length;
+      state = avanzarSplitAuto(state, rng).state;
+      if (state.career.currentOrg) {
+        continue;
+      }
+      for (const log of state.logs.slice(antes)) {
+        if (DRAFT_DE_SISTEMA.has(log.type) && /\bdraft/i.test(log.message ?? '')) {
+          infracciones.push(`seed ${seed} split ${state.player.splitCount} [${log.type}]: "${log.message}"`);
+        }
+        for (const texto of [log.message, log.titulo, log.cuerpo, log.efectos]) {
+          if (typeof texto === 'string' && /\bmanager\b/i.test(texto) && !/community manager/i.test(texto)) {
+            infracciones.push(`seed ${seed} split ${state.player.splitCount}: "${texto}"`);
+          }
+        }
+      }
+    }
+  }
+
+  if (infracciones.length > 0) {
+    throw new Error(
+      `${infracciones.length} log(s) de un split sin equipo narran draft mecánico/manager `
+      + `(${infracciones.slice(0, 4).join(' · ')}${infracciones.length > 4 ? ' · …' : ''})`
+    );
+  }
+});
+
 // --- Fase 9R5a: la carrera termina (retiro emergente) ---
 
 check('Ninguna carrera queda sin terminar: el retiro cierra la run', () => {
@@ -4351,11 +4406,16 @@ check('El burnout no llega sin aviso: la Mentalidad estuvo en zona roja varios s
   // `atributos.js` obliga a que la mentalidad haya estado bajo
   // `burnoutMentalBajo` (la banda `al_limite`/roja) varios splits seguidos
   // antes de que el burnout entre siquiera al sorteo.
+  // Fase 9Ec: n 1000 → 3000. A n=1000 sólo hay ~48 burnouts, así que un solo
+  // caso mueve la fracción 2 puntos: el gateo de D27 (menos eventos de
+  // mentalidad en los splits sin equipo) la empujó de ~81% a 79,2%. A
+  // n=2000/3000 vuelve a 85,7%/84,2% — el mecanismo de telegrafía
+  // (`burnoutSplitsMinimos`) no cambió; era la muestra. Mismo remedio que D24.
   const umbral = BALANCE.atributos.burnoutMentalBajo;
   let burnouts = 0;
   let conAviso = 0;
 
-  for (let seed = 1; seed <= 1000; seed += 1) {
+  for (let seed = 1; seed <= 3000; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
     const trayectoria = [];

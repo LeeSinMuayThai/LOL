@@ -72,7 +72,8 @@
     "cooldown": 5,
     "contexto": {
       "ventana": ["regular", "playoffs"],
-      "rol": ["top"]
+      "rol": ["top"],
+      "marcas": ["con_vestuario"]
     },
     "conditions": [
       { "field": "player.stats.hype", "op": "gte", "value": 35 }

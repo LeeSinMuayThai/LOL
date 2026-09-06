@@ -186,7 +186,7 @@
     "cooldown": 10,
     "contexto": {
       "etapa": ["debut", "profesional"],
-      "marcas": ["secundario_terminado"]
+      "marcas": ["secundario_terminado", "con_vestuario"]
     },
     "conditions": [],
     "options": [

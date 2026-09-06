@@ -8,7 +8,8 @@
     "cooldown": 5,
     "contexto": {
       "ventana": ["regular", "playoffs"],
-      "rol": ["support"]
+      "rol": ["support"],
+      "marcas": ["con_vestuario"]
     },
     "conditions": [],
     "options": [

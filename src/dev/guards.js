@@ -2,14 +2,18 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const EXTENSIONES_A_REVISAR = new Set(['.js']);
+// `.html` entra desde 9Ed (D28): los cinco montadores de minijuego de
+// `index.html` ya usan `rngUi` (un stream propio sembrado desde la seed), pero
+// nada impedía que volviera un `Math.random()` del navegador y rompiera el
+// determinismo de una carrera jugada a mano. El guard es ese candado.
+const EXTENSIONES_A_REVISAR = new Set(['.js', '.html']);
 
-function listarArchivos(dir) {
+function listarArchivos(dir, { recursivo = true } = {}) {
   const entradas = fs.readdirSync(dir, { withFileTypes: true });
   return entradas.flatMap((entrada) => {
     const fullPath = path.join(dir, entrada.name);
     if (entrada.isDirectory()) {
-      return listarArchivos(fullPath);
+      return recursivo ? listarArchivos(fullPath) : [];
     }
     return EXTENSIONES_A_REVISAR.has(path.extname(entrada.name)) ? [fullPath] : [];
   });
@@ -17,9 +21,14 @@ function listarArchivos(dir) {
 
 const PATRON_PROHIBIDO = 'Math' + '.random(';
 
-export function verificarSinMathRandom(srcDir) {
+// `srcDir` se recorre entero; `extrasDirs` sólo en su primer nivel (la raíz del
+// repo, donde vive `index.html`, sin descender a `node_modules` ni a `src/`).
+export function verificarSinMathRandom(srcDir, extrasDirs = []) {
   const archivoActual = fileURLToPath(import.meta.url);
-  const archivos = listarArchivos(srcDir).filter((archivo) => archivo !== archivoActual);
+  const archivos = [
+    ...listarArchivos(srcDir),
+    ...extrasDirs.flatMap((dir) => listarArchivos(dir, { recursivo: false }))
+  ].filter((archivo) => archivo !== archivoActual);
   return archivos.filter((archivo) => fs.readFileSync(archivo, 'utf8').includes(PATRON_PROHIBIDO));
 }
 

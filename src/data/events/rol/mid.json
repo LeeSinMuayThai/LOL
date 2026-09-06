@@ -70,7 +70,8 @@
     "cooldown": 4,
     "contexto": {
       "ventana": ["regular", "playoffs"],
-      "rol": ["mid"]
+      "rol": ["mid"],
+      "marcas": ["con_vestuario"]
     },
     "conditions": [],
     "options": [

@@ -13,6 +13,11 @@ export const id = 'campeones';
 // hay draft, y ahi se cruza todo: la probabilidad de que te den el campeon que
 // queres depende de tu jerarquia. Si te dan otro, jugas con menos maestria,
 // rendis peor, y la jerarquia baja mas. Es la espiral central de CONCEPTO §7.
+//
+// D27: el draft se gatea por `career.currentOrg`, no por `phase`. Sin equipo
+// —amateur, o un libre de tier 1/2 entre contratos— no hay draft ni pizarra:
+// elegis vos, igual que en soloQ. Antes un split sin equipo logueaba "en el
+// draft no te dieron tu pick" sin serie ni vestuario de por medio.
 function campeonDelSplit(state, rng) {
   const { weights } = state.meta;
   const pool = state.player.championPool;
@@ -20,7 +25,7 @@ function campeonDelSplit(state, rng) {
     deseoPorCampeon(campeon, weights) > deseoPorCampeon(mejor, weights) ? campeon : mejor
   ));
 
-  if (state.phase !== 'profesional' || pool.length === 1) {
+  if (!state.career.currentOrg || pool.length === 1) {
     return { campeon: weightedPick(pool, (c) => deseoPorCampeon(c, weights), rng), tuvoSuPick: true };
   }
 

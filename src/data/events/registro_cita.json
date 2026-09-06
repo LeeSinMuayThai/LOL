@@ -188,7 +188,7 @@
     "cooldown": 10,
     "contexto": {
       "etapa": ["debut", "profesional"],
-      "marcas": ["nomade"]
+      "marcas": ["nomade", "con_vestuario"]
     },
     "conditions": [],
     "options": [

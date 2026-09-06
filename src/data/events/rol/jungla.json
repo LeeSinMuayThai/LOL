@@ -520,7 +520,8 @@
     "contexto": {
       "ventana": ["regular", "playoffs"],
       "rol": ["jungla"],
-      "etapa": ["debut", "profesional"]
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
     },
     "conditions": [
       { "field": "player.stats.macro", "op": "lt", "value": 70 }

@@ -33,6 +33,102 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-06 — Fase 9Ec+9Ed: el contenido se gatea y el guard mira el HTML
+
+Cierra lo que quedaba de **9E** y habilita 9M (que lo declara como prerrequisito). Sin sistemas
+nuevos: gatea el contenido que se colaba sin vestuario (D27), le enseña a `cobertura.js` a
+distinguir cantidad de pertinencia (D26c), pone el candado que faltaba sobre `index.html` (D28,
+resto) y borra tres constantes muertas (D31, las que no son D29).
+
+#### D27 — el contenido de vestuario dejó de dispararse sin vestuario
+
+`campeones.js` gateaba el draft por `state.phase !== 'profesional'`. Un **libre de tier 1/2** entre
+contratos (`phase: 'profesional'`, `currentOrg: null`) caía igual en la rama del draft y logueaba
+*"En el draft no te dieron tu pick"* sin serie ni vestuario. Ahora el gate es
+`!state.career.currentOrg`: sin equipo elegís el campeón vos, como en soloQ. Medido con el check
+nuevo, contra el HEAD previo: **65 logs `[campeones]`** de un split sin equipo narraban un draft
+mecánico en 120 carreras × 60 splits → **0** después.
+
+Nueve eventos declararon `marcas: ["con_vestuario"]` (la marca ya existía y ya se calculaba en
+`core/contexto.js`; 9R.3 la aplicó al contenido nuevo y dejó afuera al viejo):
+
+- **Rol** (5 del plan + 1 encontrada verificando): `mid_roamear_o_no`, `top_recorte_sin_contexto`,
+  `adc_si_perdemos_es_por_vos`, `support_nadie_te_vio`, y `jungla_el_tracking_publico` (mismo
+  defecto, mismo archivo). Se **dejaron sin gatear** los seis eventos de rol que se enmarcan
+  explícitamente en soloQ (`mid_el_duelo_de_pantalla`, `adc_la_soloq_a_las_cuatro`,
+  `support_la_soloq_de_support`, `top_el_1v2_constante`, `jungla_el_mapa_es_tuyo`,
+  `jungla_la_proxima_es_la_ultima`): un libre también juega ladder.
+- **No-rol**: `transfer_rumor` (no hay `{org}` de la que irse), `tercer_club_ya` (*"firmás con un
+  club nuevo"* sin club), `el_secundario_que_sirvio` (daba **Arraigo** al manager de una org
+  inexistente, y se perdía porque `cerrarFila` es no-op sin fila abierta — el bug exacto de D27).
+
+Con `campeones.js` gateado por `currentOrg`, `serie.js` y `temporada.js` (los otros dos que
+resuelven un draft) ya sólo corren con liga/playoffs, así que no hay más fugas de draft mecánico
+ni de "manager" sin club.
+
+> Trampa T1 anotada: gatear por `currentOrg` cambia qué rama toma `campeonDelSplit` para un
+> **libre profesional** (antes: rama de draft, consume `chance` + a veces `weightedPick`; ahora:
+> rama soloQ, un solo `weightedPick`). Corre el stream de RNG para toda carrera con splits
+> libre-pro. Ninguna seed anterior reproduce su carrera; el determinismo intra-versión sigue
+> intacto (misma seed → misma carrera, verificado). Amateur no se mueve: ya tomaba la rama soloQ.
+
+#### D26c — `cobertura.js` mide cantidad; ahora también reporta pertinencia
+
+La matriz contaba eventos por celda. Una celda de **estado excepcional** (sin equipo, retirado)
+donde `etapa`/`nivel` no te sacan de ahí se veía sana con 58 eventos aunque fueran vestuario mal
+gateado — y cuanto más contenido sin gatear se escribía, más sana se veía. Nuevo bloque de salida:
+para cada celda de momento con `prioridad ≥ 80`, la partición **anclados** (declaran `nivel` o
+`marcas`) vs. **sin gatear** (ninguno de los dos). El número "sin gatear" que baja de un commit al
+siguiente es la señal de que el contenido mal ubicado se está yendo:
+
+```
+sin_equipo / playoffs:  antes 11 anclados · 16 sin gatear (27)  →  6 anclados · 10 sin gatear (16)
+sin_equipo / regular:   antes  9 anclados · 13 sin gatear (22)  →  8 anclados · 10 sin gatear (18)
+```
+
+Los ~10 que quedan sin gatear en `sin_equipo` son los eventos de soloQ y de reflexión vital
+(`la_vida_afuera_del_juego`, `cuentas_de_la_carrera`, `joven_el_primer_balance`): apropiados ahí,
+pero declarados por omisión. Anclarlos con un eje explícito es un pase de contenido futuro, no de
+9Ec. La marca `~` de la matriz se reemplazó por este reporte: un umbral binario "mayoría sin
+gatear" se prendía siempre en `sin_equipo` por ese fondo legítimo y no servía de alarma.
+
+#### D28 (resto) — el guard mira `.html`
+
+`guards.js` filtraba por `EXTENSIONES_A_REVISAR = new Set(['.js'])` y sólo recorría `src/`, así que
+`index.html` le quedaba fuera dos veces. Los cinco montadores de minijuego ya usan `rngUi` desde la
+fase P; faltaba el candado. Ahora `verificarSinMathRandom(srcDir, [raízRepo])` suma `.html` y
+recorre el primer nivel de la raíz. Verificado en rojo con un `.html` de prueba que trae
+`Math.random(` → lo caza; sin él, verde.
+
+#### D31 — tres constantes muertas borradas
+
+`amateur.autoProbRobar`, `rendimiento.ruidoRival` (resto de la fase 5) y
+`competitivo.margenEdadMinima` — 0 lecturas en todo `/src` (grep). `mercado.margenImport` **no se
+tocó**: es D29 y se enciende en 9Mb.
+
+#### Dos checks estadísticos que el corrimiento de stream empujó al borde (D24, mismo remedio)
+
+El full de `validate.js` quedó en rojo por dos checks de muestra chica que el gateo de contenido +
+el T1 de `campeones.js` reordenaron:
+
+| Check | n viejo | medido a n viejo | a n=3000 | fix |
+|---|---|---|---|---|
+| renovación no se desploma (tope 40%) | 1500 | 40,4% | 39,4% | n → 3000 |
+| burnout con aviso (piso 80%) | 1000 | 79,2% (48 burnouts) | 84,2% | n → 3000 |
+
+Ninguna constante de balance ni umbral de check se tocó: era ruido de muestra chica, confirmado
+sondeando a n=1500/3000/4500. Mismo remedio que D24 (subir la muestra). El listón de `validate.js`
+(D32) sube un poco más.
+
+#### Verificación
+
+- `node src/dev/validate.js` — todos los checks pasan (incluidos los dos nuevos: guard sobre
+  `.html`, y "ningún split sin equipo narra un draft mecánico ni al manager").
+- `node src/dev/simulate.js 1000 60 todas` — **0 crashes**, 0 varadas, 97,5% de splits pro con
+  equipo.
+- Determinismo: misma seed, dos corridas idénticas.
+- `node src/dev/cobertura.js` — sin huecos, 438 opciones.
+
 ### 2026-09-05 — Fase 9Rg: calibrar el volumen y cerrar la fase 9R
 
 Último commit de **9R**. Sólo constantes (regla de proceso 2), con la línea de base re-medida en el

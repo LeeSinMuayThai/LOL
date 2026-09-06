@@ -204,7 +204,8 @@
     "cooldown": 4,
     "contexto": {
       "ventana": ["pretemporada"],
-      "etapa": ["debut", "profesional"]
+      "etapa": ["debut", "profesional"],
+      "marcas": ["con_vestuario"]
     },
     "conditions": [
       { "field": "player.splitCount", "op": "gt", "value": 4 }

@@ -70,7 +70,8 @@
     "cooldown": 5,
     "contexto": {
       "ventana": ["regular", "playoffs"],
-      "rol": ["adc"]
+      "rol": ["adc"],
+      "marcas": ["con_vestuario"]
     },
     "conditions": [
       { "field": "player.stats.mentalidad", "op": "lt", "value": 65 }
