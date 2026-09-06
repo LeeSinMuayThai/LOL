@@ -438,6 +438,28 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   color: var(--warn);
 }
 
+/* Fase 9Mc: "el mundo siguió sin vos". El bloque completo de tres columnas es
+   9Mg; esto es la línea que hace que la elección no se sienta en el vacío. */
+.mercado-mundo {
+  margin-top: var(--s-5);
+  padding: var(--s-4);
+  border-left: 3px solid var(--line-strong);
+  background: var(--bg-sunken);
+  border-radius: var(--r);
+}
+.mercado-mundo-titulo {
+  font-size: var(--fs-1);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--ink-mute);
+  margin-bottom: var(--s-2);
+}
+.mercado-mundo-item {
+  font-size: var(--fs-2);
+  line-height: var(--lh-snug);
+  color: var(--ink-dim);
+}
+
 .mercado-representante-btn {
   width: 100%;
   margin-top: var(--s-4);

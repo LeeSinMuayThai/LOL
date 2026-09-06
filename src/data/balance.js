@@ -758,7 +758,15 @@ export const BALANCE = {
     // El canterano que sube a cubrir un asiento vacante.
     canteraEdadMin: 17,
     canteraEdadMax: 19,
-    canteraNivelBajoOrg: 10
+    canteraNivelBajoOrg: 10,
+    // Fase 9Mc: el nivel de un reemplazo (canterano o fichaje del mercado del
+    // mundo) regresa un poco hacia el prestigio de su liga en vez de orbitar
+    // sólo la `org.fuerza` — que deriva del plantel y, con mucha rotación,
+    // se desangra (canterano bajo → fuerza baja → canterano más bajo aún).
+    // 0 = puro prestigio de liga, 1 = pura fuerza de la org. En 0,4 la deriva
+    // agregada de `org.fuerza` en 20 años queda en ~-3,5 (la misma banda que
+    // el mundo pre-9Mc).
+    reemplazoRegresionALiga: 0.4
   },
 
   // La demanda del mercado (fase 9M, PLAN.md §9M.3): reemplaza el `roll(0,
@@ -781,7 +789,25 @@ export const BALANCE = {
     // Banda de nivel: una org no ficha muy por debajo de su fuerza ni paga muy
     // por encima de lo que sostiene.
     bandaNivelAbajo: 14,
-    bandaNivelArriba: 22
+    bandaNivelArriba: 22,
+
+    // --- Fase 9Mc: la resolución del mercado del mundo (core/mercadoMundial.js).
+    // Cada offseason, ANTES de la pantalla del jugador, las orgs con un asiento
+    // en juego eligen de arriba hacia abajo. Valores por criterio, retune 9Mh
+    // (regla 2). ---
+    // Un NPC con contrato vencido que NO se retira: probabilidad de que su org
+    // no lo renueve y lo suelte al mercado. Baja (la mayoría renueva); más alta
+    // si viene flojo (la org busca upgrade). Sin esto, con contratos de 1-3
+    // años el mundo entero rota cada offseason — el grueso del movimiento del
+    // mundo son los retiros forzados a los 30 (`plantel.retiroEdadDura`).
+    probNoRenovarNpc: 0.04,
+    probNoRenovarNpcFlojo: 0.18,
+    // El pool de agentes libres sobrantes que viaja en el estado hasta que el
+    // jugador responde (sirve para cerrar los asientos congelados con nombre).
+    libresRestantesMax: 12,
+    // Cuántos traspasos del mundo se le muestran al jugador en la tarjeta de
+    // mercado (regla 16: "el dado trajo…"). Los más jugosos primero.
+    traspasosEnPantalla: 6
   },
 
   // El mercado (fase 9, PLAN.md §9.2/§9.7): contratos, sueldos y el sesgo

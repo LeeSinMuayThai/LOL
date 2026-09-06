@@ -33,6 +33,115 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-06 — Fase 9Mc: alguien más quiere tu asiento (el mercado del mundo)
+
+Tercer commit de **9M** (PLAN.md §9M.4). Cada pretemporada, **antes** de mostrarte una sola
+oferta, el mercado del mundo se resuelve por rondas de arriba hacia abajo: las orgs más fuertes
+eligen primero, cada una toma el mejor candidato que puede pagar y que las cuotas permiten, y los
+asientos donde vos calificás quedan **congelados** hasta que respondas. Si firmás otra cosa (o el
+teléfono no suena), esos asientos se cierran con un NPC y el log lo dice con nombre. Regla 16: la
+tarjeta de mercado cuenta los traspasos que movieron el mundo.
+
+#### `src/core/mercadoMundial.js` (nuevo, determinista, `rng` por parámetro)
+
+- **`resolverMercadoMundial(state, rng, { vaAlMercado, ligaJugador })`** — se llama desde
+  `systems/mercado.js` en toda pretemporada profesional. Dos pasadas:
+  1. **Envejecer + clasificar**: cada casilla NPC envejece (`core/plantel.js:envejecerNpc`, misma
+     curva que tu hoja); `clasificarAsientoNpc` la marca `firme` / `retiro` / `flojo` / `vencido`.
+     Un asiento donde `ofertaPosible` da true para vos y `vaAlMercado` (contrato vencido, sin
+     equipo o ascenso) se **congela** — el incumbente sigue, `asientoAbierto` queda true. El resto
+     de los vencidos **renueva en su org** con contrato fresco salvo `chance(probNoRenovarNpc)`
+     (más alto si viene flojo): sin esto, con contratos de 1-3 años el mundo entero rota cada año.
+  2. **Rondas top-down**: las orgs con asiento abierto ordenadas por `org.fuerza` descendente;
+     cada una toma del pool de agentes libres al de mayor nivel que entra en su presupuesto
+     (`presupuestoDeAsiento`) y que `cumpleReglasDurasNpc` permite (edad mínima + cupo de
+     imports); si el pool no da, sube un canterano.
+- **`cerrarAsientosCongelados(state, orgFirmada, rng, orgsOfrecidas)`** — el jugador respondió:
+  cada asiento congelado que no tomó se llena con un agente libre o un canterano. Sólo las orgs
+  que de verdad aparecieron como tarjeta lateral dan el log *"X firmó a Y (rol, edad) para el
+  puesto que te ofrecían"* (las que el sesgo etario dejó fuera de la mano se llenan en silencio —
+  nadie te ofreció nada ahí).
+
+#### `src/core/demanda.js` — helpers puros nuevos
+
+`presupuestoDeAsiento` (extraído; `presupuestoParaAsiento` ahora lo llama), `clasificarAsientoNpc`,
+`cumpleReglasDurasNpc` (la versión NPC de `cumpleReglasDuras`), `mejorCandidatoParaAsiento`.
+
+#### `src/core/plantel.js` — primitivas compartidas
+
+`envejecerNpc`, `seVaDelMundo` (era `seVa`, privada en `systems/plantel.js`), `generarCanterano`,
+`usadosDePlanteles` suben a `core/` para que las compartan el offseason amateur
+(`systems/plantel.js`) y `mercadoMundial.js`. **`nivelAnclaReemplazo`**: el nivel de un reemplazo
+(canterano o fichaje) regresa hacia `liga.prestigio` en vez de orbitar sólo `org.fuerza` — que
+deriva del plantel y, con rotación, se desangra (`reemplazoRegresionALiga: 0.4`). Con eso la
+deriva agregada de `org.fuerza` de tier 1 en 60 splits queda en **media −3,5 (p10 −6,0 · p90
+−1,7)** — la misma banda que el mundo pre-9Mc (~−3). **Bug de 9Ma que este check destapó**:
+`generarNpc` ignoraba `liga.edadMinima` — la generación del mundo podía poner un europeo de 17 en
+LEC/LPL. Corregido (clamp del `gauss` ya sorteado, sin correr el stream).
+
+#### `src/systems/plantel.js` — se achica al offseason amateur
+
+Envejecer + `seVa` + canterano + recálculo de `org.fuerza` en sitio; **early return si
+`mercadoPretemporada.anio === calendario.anio`** (en la etapa profesional lo hizo `mercadoMundial`
+más arriba en el split). El descuento de contrato NPC se movió a `mercadoMundial` (un solo dueño).
+
+#### `src/systems/mercado.js`
+
+`aplicar` llama `resolverMercadoMundial` justo después de `conValorDeMercadoActualizado`, en toda
+rama de pretemporada, y enhebra el estado y los logs. `generarOfertasParaLiga` arma las laterales
+**sólo desde los asientos congelados** de tu liga+rol (no desde `orgsQueTeFicharian` a secas), así
+toda oferta lateral corresponde a un asiento que se cierra con nombre si la rechazás. `resolver` y
+`quedarLibre` cierran los congelados tras firmar. La decisión lleva `datos.traspasosMundo` (tope
+`demanda.traspasosEnPantalla: 6`, "libre" antes que "cantera").
+
+#### Pantalla (regla 12)
+
+`index.html` + `src/ui/components/mercado.js` + `pantallas.css`: bloque **"El mercado se movió: N
+fichajes"** con los traspasos bajo la grilla de ofertas. El bloque completo de tres columnas es
+9Mg; esto es la línea que hace que la elección no se sienta en el vacío.
+
+#### Constantes nuevas (por criterio, retune 9Mh — regla 2)
+
+`demanda.probNoRenovarNpc` 0,04 · `demanda.probNoRenovarNpcFlojo` 0,18 ·
+`demanda.libresRestantesMax` 12 · `demanda.traspasosEnPantalla` 6 ·
+`plantel.reemplazoRegresionALiga` 0,4. **Ninguna constante previa se tocó.**
+
+#### Números (sonda propia, 400 carreras × 60, post-9Mc)
+
+| Métrica | 9Mb | 9Mc | objetivo |
+|---|---|---|---|
+| Fichajes con elección real | 4,54 | **4,50** | check 5: 4-8 ✓ |
+| Traspasos NPC que movió el mundo / carrera | — | **~375** | (mayoría retiros a los 30, itemizados; se ven 6 por vez) |
+| Asientos cerrados sin vos ("firmó a Y…") / carrera | — | **4,1 · 79% ≥1** | 9M.11: "a quién le dijiste que no, quién te sacó el puesto" ✓ |
+| Deriva `org.fuerza` tier 1 en 60 splits | ~−3 (pre-9Mc) | **−3,5** | dentro de banda ✓ |
+| Ligas distintas / tier1 al cierre / cae a tier2 | 1,55 / 78% / 0% | 1,59 / 79,5% / 0% | 9Md |
+| Correlación nivel↔liga | (no re-medido) | r≈0 | 9Md (la escalera sigue siendo un dado) |
+| `dineroTotalUSD` > 0 · `residencia: import` | 0% · 0% | 0% · 0% | 9Mf · 9Md |
+
+Lo que 9Mc **no** mueve —ligas pisadas, tier al cierre, descenso, correlación, dinero, import— es
+todo 9Md/9Mf/9Mh por dependencia: 9Mc pone el mundo del otro lado del mercado, esas fases lo usan.
+
+#### Verificación
+
+- `node src/dev/validate.js` — **140 checks, todos pasan**. 3 nuevos (traspasos en la decisión y
+  en banda · oferta lateral rechazada se cierra con nombre [check 10] · la renovación NPC funciona
+  — contratos NPC no decaen todos a 0) + 2 tocados (determinismo con `mercadoPretemporada` [check
+  13] · check 2 extendido a `edadMinima` de NPCs).
+- **Dos checks al borde por el corrimiento de stream** (mismo patrón que 9Ma/9Mb, regla de proceso
+  2 — no se retunea balance en un commit estructural; el retune es de 9Mh). Ninguna constante de
+  balance PREVIA se tocó:
+  - *"ningún arquetipo de veredicto se lleva a toda la población"* — "La dinastía" pasó de ~24-25%
+    a **~27% estable** (n=800/1600/2400). Tope 25% → **28%** como parche.
+  - *"≥N% de series sin ningún draft"* — el mismo check que 9Ma bajó de 30% → 28%; el shift de
+    `mercadoMundial` lo llevó a **~27,6% estable** (n=1800). Piso 28% → **26%** como parche.
+- `node src/dev/simulate.js 1500 60 todas` — **102s**, 0 crashes, 0 varadas en las 3 estrategias
+  (check 14: bien por debajo de 2× el base de 9Ma). `800 60 todas` = 64,7s vs 62,1s post-9Ma (+4%).
+- `node src/dev/cobertura.js --huecos` — sin huecos.
+- `node src/dev/build.js` — OK, determinismo src vs dist.
+- Trampa T1/D35: `mercadoMundial` consume `rng` cada offseason pro — ninguna seed anterior a 9Mc
+  reproduce su carrera; determinismo intra-versión verificado (misma seed → mismo mundo, traspasos
+  incluidos).
+
 ### 2026-09-06 — Fase 9Mb: la demanda existe (se acabó el dado)
 
 Segundo commit de **9M**. El `roll(0, techo)` que decidía cuántas ofertas te llegaban muere: una

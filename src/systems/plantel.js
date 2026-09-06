@@ -1,89 +1,32 @@
-import { gauss, roll } from '../core/rng.js';
-import { clampStat } from '../core/numeros.js';
 import { crearLog } from '../core/log.js';
-import { BALANCE } from '../data/balance.js';
 import { esCierreDeEdad } from './edadCierre.js';
-import { nivelNpc, generarNpc, fuerzaDePlantel, ligasConPlantel } from '../core/plantel.js';
+import {
+  usadosDePlanteles, envejecerNpc, seVaDelMundo, generarCanterano,
+  fuerzaDePlantel, ligasConPlantel
+} from '../core/plantel.js';
 import { IDS_ROL } from '../data/roles.js';
 
-// EL MUNDO ENVEJECE (fase 9M, PLAN.md §9M.2).
+// EL MUNDO ENVEJECE — el offseason de la etapa amateur (fase 9M / 9Mc).
 //
 // Corre SOLO en el offseason (cierre de edad): envejece a cada NPC un año,
 // mueve su nivel por la curva, descuenta un año de contrato, retira al que
 // nadie quiere y sube un canterano a cubrir el asiento. Al final recalcula
-// `org.fuerza` desde el plantel — desde el año 2, un equipo que renovó bien
-// sube de fuerza y te gana la liga el año que viene.
+// `org.fuerza` desde el plantel.
 //
-// Regla de proceso 10 / trampa T1: los ~11 de cada 12 splits que no son de
-// cierre de edad no le cuestan un `rng()` a este sistema. Va ÚLTIMO en
-// `ETAPAS_SPLIT`, después de `escena`: el mercado del jugador (más arriba en
-// el split) ya se resolvió con la fuerza del año que cierra, y el mundo
-// envejecido lo ve la temporada del año que viene.
+// Fase 9Mc: en la etapa PROFESIONAL este trabajo lo hace `core/mercadoMundial.js`
+// (llamado desde `systems/mercado.js`, más arriba en el split) ANTES de la
+// pantalla de mercado — la resolución top-down con nombres. Este sistema queda
+// como el envejecedor de la etapa amateur, donde el mercado del jugador todavía
+// no corre y el mundo tiene que moverse igual; si `mercadoMundial` ya resolvió
+// este año, hace un early return.
+//
+// Regla de proceso 10 / trampa T1: los ~2 de cada 3 splits que no son de cierre
+// de edad no le cuestan un `rng()` a este sistema. Va ÚLTIMO en `ETAPAS_SPLIT`.
 
 export const id = 'plantel';
 
-function usadosDe(state) {
-  const usados = new Set([state.player.name]);
-  for (const plantel of Object.values(state.mundo.planteles ?? {})) {
-    for (const npc of Object.values(plantel)) {
-      usados.add(npc.handle);
-    }
-  }
-  for (const rival of state.mundo.rivales ?? []) {
-    usados.add(rival.handle);
-  }
-  return usados;
-}
-
-function envejecer(npc, rng) {
-  const p = BALANCE.plantel;
-  const edad = npc.edad + 1;
-  const nivelCurva = nivelNpc({ ...npc, edad });
-  const nivel = Math.round(clampStat(gauss(nivelCurva, p.ruidoNivelAnual, rng)));
-  return {
-    ...npc,
-    edad,
-    nivel,
-    contrato: { ...npc.contrato, anios: Math.max(0, npc.contrato.anios - 1) }
-  };
-}
-
-// ¿Este NPC deja el equipo este offseason? Un rival de generación corre una
-// carrera larga (D8): sólo se va de viejo. El resto: contrato vencido, ya pasó
-// su pico, y su nivel cayó por debajo del piso de la org — o demasiado viejo.
-function seVa(npc, fuerzaOrg) {
-  const p = BALANCE.plantel;
-  if (npc.rivalDeGeneracion) {
-    return npc.edad >= p.retiroEdadDura + p.rivalRetiroExtra;
-  }
-  if (npc.edad >= p.retiroEdadDura) {
-    return true;
-  }
-  return npc.contrato.anios <= 0
-    && npc.edad > npc.edadPico + p.retiroEdadSobrePico
-    && npc.nivel < fuerzaOrg - p.retiroNivelBajoOrg;
-}
-
-function canterano(rng, rol, liga, fuerzaOrg, usados) {
-  const p = BALANCE.plantel;
-  return generarNpc(rng, {
-    rol,
-    regionId: liga.regionId,
-    medianaSalarioUSD: liga.salario.medianaUSD,
-    usados,
-    edad: roll(p.canteraEdadMin, p.canteraEdadMax, rng),
-    fuerzaOrg: fuerzaOrg - p.canteraNivelBajoOrg
-  });
-}
-
-export function aplicar(state, rng) {
-  // Regla 10: fuera del offseason, cero `rng`. `splitCount === 0` es el mundo
-  // recién generado — no hay nada que envejecer todavía.
-  if (state.player.splitCount === 0 || !esCierreDeEdad(state) || !state.mundo.planteles) {
-    return { state, logs: [] };
-  }
-
-  const usados = usadosDe(state);
+function envejecerEnSitio(state, rng) {
+  const usados = usadosDePlanteles(state);
   const planteles = {};
   const cambiosPorOrg = new Map();
 
@@ -95,9 +38,9 @@ export function aplicar(state, rng) {
     const nuevo = {};
     let bajas = 0;
     for (const rol of IDS_ROL) {
-      const envejecido = envejecer(plantel[rol], rng);
-      if (seVa(envejecido, fuerzaOrg)) {
-        nuevo[rol] = liga ? canterano(rng, rol, liga, fuerzaOrg, usados) : envejecido;
+      const envejecido = envejecerNpc(plantel[rol], rng);
+      if (!envejecido.esJugador && seVaDelMundo(envejecido, fuerzaOrg)) {
+        nuevo[rol] = liga ? generarCanterano(rng, { rol, liga, fuerzaOrg, usados }) : envejecido;
         if (liga) bajas += 1;
       } else {
         nuevo[rol] = envejecido;
@@ -126,8 +69,22 @@ export function aplicar(state, rng) {
 
   const totalBajas = [...cambiosPorOrg.values()].reduce((suma, n) => suma + n, 0);
   const logs = totalBajas > 0
-    ? [crearLog('plantel', `Movimiento de pretemporada en el mundo: ${totalBajas} relevo(s) de cantera en ${cambiosPorOrg.size} organización(es).`, { tecnico: true })]
+    ? [crearLog('mercado', `Movimiento de pretemporada en el mundo: ${totalBajas} relevo(s) de cantera en ${cambiosPorOrg.size} organización(es).`, { tecnico: true })]
     : [];
 
   return { state: { ...state, mundo: { ...state.mundo, planteles, ligas } }, logs };
+}
+
+export function aplicar(state, rng) {
+  // Regla 10: fuera del offseason, cero `rng`. `splitCount === 0` es el mundo
+  // recién generado — no hay nada que envejecer todavía.
+  if (state.player.splitCount === 0 || !esCierreDeEdad(state) || !state.mundo.planteles) {
+    return { state, logs: [] };
+  }
+  // Fase 9Mc: `core/mercadoMundial.js` ya envejeció y resolvió el mundo este
+  // offseason (etapa profesional). No se toca de nuevo.
+  if (state.mundo.mercadoPretemporada?.anio === state.calendario.anio) {
+    return { state, logs: [] };
+  }
+  return envejecerEnSitio(state, rng);
 }

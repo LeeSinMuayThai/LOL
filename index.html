@@ -126,6 +126,7 @@
               <div id="mercadoTitle" class="decision-title"></div>
               <div id="mercadoDesc" class="decision-desc"></div>
               <div id="mercadoGrid" class="mercado-grid"></div>
+              <div id="mercadoMundo" class="mercado-mundo" hidden></div>
               <button id="mercadoRepresentante" type="button" class="mercado-representante-btn" hidden>
                 📞 Llamar a tu representante y pedir otras ofertas · 1 vez por carrera
               </button>
@@ -190,6 +191,7 @@
       const mercadoTitle = document.getElementById('mercadoTitle');
       const mercadoDesc = document.getElementById('mercadoDesc');
       const mercadoGrid = document.getElementById('mercadoGrid');
+      const mercadoMundo = document.getElementById('mercadoMundo');
       const mercadoRepresentante = document.getElementById('mercadoRepresentante');
       const tarjetaPanel = document.getElementById('tarjeta');
       const seedInput = document.getElementById('seedInput');
@@ -213,7 +215,7 @@
       // la pantalla de ofertas).
       const carreraElements = { fichaContainer, logList };
       const decisionElements = { decisionPanel, decisionTitle, decisionDesc, decisionOptions };
-      const mercadoElements = { mercadoPanel, mercadoTitle, mercadoDesc, mercadoGrid, mercadoRepresentante };
+      const mercadoElements = { mercadoPanel, mercadoTitle, mercadoDesc, mercadoGrid, mercadoMundo, mercadoRepresentante };
 
       let modulos = null;
       let ui = null;

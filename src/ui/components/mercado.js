@@ -69,8 +69,24 @@ function construirTarjeta(oferta, onElegir) {
   return boton;
 }
 
+// Fase 9Mc: "el mundo siguió sin vos" — los traspasos que movieron el mercado
+// esta pretemporada. El bloque completo de tres columnas es 9Mg; esto es la
+// línea que hace que la elección no se sienta en el vacío (regla 12).
+function renderMundo(contenedor, traspasos) {
+  contenedor.innerHTML = '';
+  if (!traspasos || traspasos.length === 0) {
+    contenedor.hidden = true;
+    return;
+  }
+  contenedor.appendChild(fila('mercado-mundo-titulo', `El mercado se movió: ${traspasos.length} fichaje${traspasos.length === 1 ? '' : 's'} en el mundo`));
+  for (const t of traspasos) {
+    contenedor.appendChild(fila('mercado-mundo-item', t.motivo));
+  }
+  contenedor.hidden = false;
+}
+
 export function renderMercado(elements, decision, onElegir, onRepresentante) {
-  const { mercadoPanel, mercadoTitle, mercadoDesc, mercadoGrid, mercadoRepresentante } = elements;
+  const { mercadoPanel, mercadoTitle, mercadoDesc, mercadoGrid, mercadoMundo, mercadoRepresentante } = elements;
 
   mercadoTitle.textContent = decision.titulo;
   mercadoDesc.textContent = decision.descripcion;
@@ -78,6 +94,10 @@ export function renderMercado(elements, decision, onElegir, onRepresentante) {
   mercadoGrid.innerHTML = '';
   for (const oferta of decision.opciones) {
     mercadoGrid.appendChild(construirTarjeta(oferta, onElegir));
+  }
+
+  if (mercadoMundo) {
+    renderMundo(mercadoMundo, decision.datos.traspasosMundo);
   }
 
   mercadoRepresentante.hidden = !decision.datos.representanteDisponible;

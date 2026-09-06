@@ -9,6 +9,7 @@ import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
 import { cerrarFila, registrarPico, registrarSalarioEnFila, arraigoInicial } from '../core/registro.js';
 import { bandaDeJerarquia, bandaDeArraigoFicha, nivelDelJugador } from '../core/ficha.js';
 import { orgsQueTeFicharian, ofertaPosible } from '../core/demanda.js';
+import { resolverMercadoMundial, cerrarAsientosCongelados } from '../core/mercadoMundial.js';
 import { jerarquiaAlFichar } from './roster.js';
 import { BALANCE } from '../data/balance.js';
 
@@ -186,7 +187,22 @@ function generarOfertasParaLiga(state, liga, rng, { esAscenso }) {
   // La demanda: cada org de la liga con un asiento abierto en tu rol que te
   // puede pagar. El motivo viaja a la tarjeta ("X busca ADC, se les va Y...").
   // Las mejores ofertas primero (más presupuesto).
-  const posibles = orgsQueTeFicharian(state, liga).sort((a, b) => b.presupuesto - a.presupuesto);
+  //
+  // Fase 9Mc: sólo los asientos que `core/mercadoMundial.js` CONGELÓ para vos
+  // este offseason. Así toda oferta lateral corresponde a un asiento congelado
+  // y, si la rechazás, `cerrarAsientosCongelados` la cierra con nombre (check
+  // 10). Un asiento que el mundo ya llenó con un canterano flojo puede volver a
+  // dar `asientoAbierto` true por mérito, pero no es una oferta: nadie te esperó.
+  // Si no hubo resolución del mundo (estado sintético de un check), no se filtra.
+  const pre = state.mundo.mercadoPretemporada;
+  const congeladosOrgs = pre
+    ? new Set(pre.congelados
+      .filter((c) => c.liga === liga.id && c.rol === state.player.role)
+      .map((c) => c.org))
+    : null;
+  const posibles = orgsQueTeFicharian(state, liga)
+    .filter((entrada) => !congeladosOrgs || congeladosOrgs.has(entrada.org.nombre))
+    .sort((a, b) => b.presupuesto - a.presupuesto);
 
   // 9R0e: si sos claramente una franquicia para tu liga y aun así ningún
   // asiento se abrió, el club más débil hace lugar (respetando las reglas
@@ -215,6 +231,18 @@ function generarOfertasParaLiga(state, liga, rng, { esAscenso }) {
   return ofertas.slice(0, m.ofertasMax);
 }
 
+// Los traspasos del mundo que se le muestran al jugador (regla 16: "el dado
+// trajo…"). Los fichajes de agentes libres antes que las subidas de cantera, y
+// tope `traspasosEnPantalla`.
+function traspasosParaPantalla(state) {
+  const pre = state.mundo.mercadoPretemporada;
+  const rank = (desde) => (desde === 'libre' ? 0 : 1);
+  return (pre?.traspasos ?? [])
+    .slice()
+    .sort((a, b) => rank(a.desde) - rank(b.desde))
+    .slice(0, BALANCE.demanda.traspasosEnPantalla);
+}
+
 function construirDecisionOfertas(state, ofertas) {
   const ascenso = state.flags.ascensoPendiente;
   return {
@@ -227,7 +255,9 @@ function construirDecisionOfertas(state, ofertas) {
       motivo: 'oferta',
       esAscenso: Boolean(ascenso),
       ligaId: ascenso ? ascenso.ligaId : state.career.liga,
-      representanteDisponible: !state.flags.llamadaRepresentante
+      representanteDisponible: !state.flags.llamadaRepresentante,
+      // Fase 9Mc: los 4-6 traspasos que movieron el mercado este offseason.
+      traspasosMundo: traspasosParaPantalla(state)
     }
   };
 }
@@ -242,17 +272,21 @@ function conValorDeMercadoActualizado(state) {
   };
 }
 
-function quedarLibre(state, racha) {
+function quedarLibre(state, racha, rng) {
+  // El jugador se queda sin equipo: los asientos que le habían congelado se
+  // cierran con un NPC (el mundo siguió sin vos), aunque nunca llegó a ver la
+  // tarjeta.
+  const cerrado = cerrarAsientosCongelados(state, null, rng);
   return {
     state: {
-      ...state,
-      flags: { ...state.flags, splitsSinOfertaConsecutivos: 0 },
+      ...cerrado.state,
+      flags: { ...cerrado.state.flags, splitsSinOfertaConsecutivos: 0 },
       career: {
-        ...state.career, currentOrg: null, rosterDeOrg: null, companeros: [], sinergia: 0,
-        registro: conFilaCerrada(state, 'libre')
+        ...cerrado.state.career, currentOrg: null, rosterDeOrg: null, companeros: [], sinergia: 0,
+        registro: conFilaCerrada(cerrado.state, 'libre')
       }
     },
-    logs: [crearLog('mercado', `Nadie te ofrece nada hace ${racha} pretemporadas seguidas. Te quedás sin equipo.`)]
+    logs: [...cerrado.logs, crearLog('mercado', `Nadie te ofrece nada hace ${racha} pretemporadas seguidas. Te quedás sin equipo.`)]
   };
 }
 
@@ -265,37 +299,48 @@ export function aplicar(state, rng) {
     return { state, logs: [] };
   }
 
-  const stConValor = conValorDeMercadoActualizado(state);
-  const ascenso = stConValor.flags.ascensoPendiente;
+  // Fase 9Mc: ANTES de nada, el mercado del mundo se resuelve. `vaAlMercado` es
+  // true cuando el jugador realmente va a elegir este offseason (contrato
+  // vencido, sin equipo, o ascenso ganado): sólo entonces se le congelan
+  // asientos.
+  const ascenso = state.flags.ascensoPendiente;
+  const contratoVencido = !state.career.currentOrg
+    || Math.max(0, state.career.contrato.aniosRestantes - 1) <= 0;
+  const vaAlMercado = Boolean(ascenso) || contratoVencido;
+  const ligaJugador = ascenso ? ascenso.ligaId : (ligaDeCarrera(state)?.id ?? null);
+
+  const mundo = resolverMercadoMundial(state, rng, { vaAlMercado, ligaJugador });
+  const logsMundo = mundo.logs;
+  const stConValor = conValorDeMercadoActualizado(mundo.state);
 
   if (ascenso) {
     const liga = stConValor.mundo.ligas.find((candidata) => candidata.id === ascenso.ligaId);
     if (!liga || stConValor.age < (liga.edadMinima ?? 0)) {
       // El año muerto (fase 3, ahora resuelto acá): ya ganaste el ascenso,
       // todavía no llegás a la edad. No se vuelve a tirar nada.
-      return { state: stConValor, logs: [] };
+      return { state: stConValor, logs: logsMundo };
     }
     const ofertas = generarOfertasParaLiga(stConValor, liga, rng, { esAscenso: true });
     if (ofertas.length === 0) {
       // No debería pasar (toda liga real tiene orgs candidatas), pero si
       // pasa, el ascenso ganado no se pierde: se reintenta la próxima.
-      return { state: stConValor, logs: [] };
+      return { state: stConValor, logs: logsMundo };
     }
-    return { state: stConValor, logs: [], decision: construirDecisionOfertas(stConValor, ofertas) };
+    return { state: stConValor, logs: logsMundo, decision: construirDecisionOfertas(stConValor, ofertas) };
   }
 
   const liga = ligaDeCarrera(stConValor);
   if (!liga) {
     // Tier 3 (o recién disuelto): a ese nivel no hay mercado, es automático
     // (competitivo.js lo resuelve solo).
-    return { state: stConValor, logs: [] };
+    return { state: stConValor, logs: logsMundo };
   }
 
   const aniosRestantes = Math.max(0, stConValor.career.contrato.aniosRestantes - 1);
   if (aniosRestantes > 0) {
     return {
       state: { ...stConValor, career: { ...stConValor.career, contrato: { ...stConValor.career.contrato, aniosRestantes } } },
-      logs: [crearLog('mercado', `Te queda ${aniosRestantes === 1 ? 'un año' : `${aniosRestantes} años`} de contrato con ${stConValor.career.currentOrg}.`)]
+      logs: [...logsMundo, crearLog('mercado', `Te queda ${aniosRestantes === 1 ? 'un año' : `${aniosRestantes} años`} de contrato con ${stConValor.career.currentOrg}.`)]
     };
   }
 
@@ -303,15 +348,19 @@ export function aplicar(state, rng) {
   if (ofertas.length === 0) {
     const racha = stConValor.flags.splitsSinOfertaConsecutivos + 1;
     if (racha >= BALANCE.mercado.splitsSinOfertaParaLibre) {
-      return quedarLibre(stConValor, racha);
+      const libre = quedarLibre(stConValor, racha, rng);
+      return { state: libre.state, logs: [...logsMundo, ...libre.logs] };
     }
+    // El teléfono no suena: si algún asiento se había congelado para vos, el
+    // mundo igual lo llena.
+    const cerrado = cerrarAsientosCongelados(stConValor, null, rng);
     return {
-      state: { ...stConValor, flags: { ...stConValor.flags, splitsSinOfertaConsecutivos: racha } },
-      logs: [crearLog('mercado', 'Nadie te llama esta pretemporada. El teléfono no suena.')]
+      state: { ...cerrado.state, flags: { ...cerrado.state.flags, splitsSinOfertaConsecutivos: racha } },
+      logs: [...logsMundo, ...cerrado.logs, crearLog('mercado', 'Nadie te llama esta pretemporada. El teléfono no suena.')]
     };
   }
 
-  return { state: stConValor, logs: [], decision: construirDecisionOfertas(stConValor, ofertas) };
+  return { state: stConValor, logs: logsMundo, decision: construirDecisionOfertas(stConValor, ofertas) };
 }
 
 // --- Aceptar una oferta (o pedir una mano nueva) ---
@@ -388,7 +437,16 @@ export function resolver(state, decision, respuesta, rng) {
   }
 
   const elegida = decision.opciones.find((opcion) => opcion.id === respuesta.opcionId);
-  return aceptarOferta(state, elegida);
+  const firmado = aceptarOferta(state, elegida);
+  // Fase 9Mc: firmaste — los demás asientos que te habían ofrecido se cierran
+  // con un NPC, y el log lo dice con nombre ("el mundo siguió sin vos"). Sólo
+  // las orgs que aparecieron como tarjeta lateral (no las que el sesgo etario
+  // dejó fuera de la mano) dan ese log.
+  const orgsOfrecidas = new Set(
+    decision.opciones.filter((o) => o.tag !== 'renovacion' && !o.forzadaFranquicia).map((o) => o.org)
+  );
+  const cerrado = cerrarAsientosCongelados(firmado.state, elegida.org, rng, orgsOfrecidas);
+  return { state: cerrado.state, logs: [...firmado.logs, ...cerrado.logs] };
 }
 
 export function resolverAuto(state, decision, rng) {

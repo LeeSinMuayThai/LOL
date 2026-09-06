@@ -51,7 +51,10 @@ export function createInitialState(seed, rng, eleccion = null) {
     // Los campeones que salieron con un parche a mitad de esta carrera. Arranca
     // vacío: los marcados `debut` en champions.json todavía no existen en este
     // mundo (trampa T4 — tiene que existir en el estado inicial, nunca null).
-    mundo: { ...mundo, campeonesDebutados: [] },
+    // `mercadoPretemporada` (fase 9Mc): la resolución del mercado del mundo del
+    // último offseason — traspasos, asientos congelados y agentes libres. `null`
+    // hasta el primer offseason profesional; lo escribe `core/mercadoMundial.js`.
+    mundo: { ...mundo, campeonesDebutados: [], mercadoPretemporada: null },
     player: {
       name: jugador.handle,
       role: jugador.role,

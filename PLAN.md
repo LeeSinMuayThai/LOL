@@ -28,7 +28,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **9E** | El varado: la carrera vuelve a tener juego después del primer equipo | ✅ 9Ea→9Ed, ver `PROGRESO.md` |
 | **9R** | **Que el juego se juegue**: el cooldown mide splits, la tabla deja de mentir, la interrupción vuelve a ser escasa, y elegir cambia el resultado | ✅ 9Ra→9Rg y 9R.0→9R.5, ver `PROGRESO.md` |
 | **T** | **La transmisión**: el sistema de diseño, el shell, el ritmo del split, y las pantallas que faltaban. Fue antes de 9M para que 9M/10/11/12/13 tengan dónde enchufar su pantalla | ✅ T0→T8, ver `PROGRESO.md` |
-| **9M** | **El mercado de pases**: el mundo se puebla de jugadores, la demanda existe, alguien compite por tu asiento, la escalera deja de ser un dado | 🔶 **9Ma+9Mb hechas** (planteles NPC · la demanda) · faltan 9Mc→9Mh |
+| **9M** | **El mercado de pases**: el mundo se puebla de jugadores, la demanda existe, alguien compite por tu asiento, la escalera deja de ser un dado | 🔶 **9Ma+9Mb+9Mc hechas** (planteles NPC · la demanda · el mercado del mundo top-down) · faltan 9Md→9Mh |
 | **10** | El final: retiro emergente + la tarjeta de legado | ⬜ |
 | **11** | El año: calendario, la nota de la temporada, el archirrival | ⬜ |
 | **12** | La jerarquía de la decisión: categorías, rareza, consecuencia previa, el dado | ⬜ |
@@ -2977,7 +2977,7 @@ mitad de `margenImport`).
 |---|---|---|
 | 9Ma | `fase 9Ma: el mundo tiene gente` | 9M.2 — ✅ 2026-09-06, ver `PROGRESO.md` |
 | 9Mb | `fase 9Mb: la demanda existe` | 9M.3 — ✅ 2026-09-06, ver `PROGRESO.md` |
-| 9Mc | `fase 9Mc: alguien mas quiere tu asiento` | 9M.4 |
+| 9Mc | `fase 9Mc: alguien mas quiere tu asiento` | 9M.4 — ✅ 2026-09-06, ver `PROGRESO.md` |
 | 9Md | `fase 9Md: la escalera deja de ser un dado` | 9M.5 |
 | 9Me | `fase 9Me: negociar, no aceptar` | 9M.6 |
 | 9Mf | `fase 9Mf: traspasos a mitad de contrato` | 9M.7 |
@@ -3169,11 +3169,20 @@ traspaso, umbral de banquillo.
 **Valores puestos por criterio y medidos después** — regla de proceso 2: nunca cambiar estructura y
 retunear constantes en el mismo commit. El retune vive en 9Mh.
 
-> **Deuda de calibrado para 9Mh** (anotada al implementar): `renovacionSigmaFactor` (constante de
-> 9d) drifteó a **43,7%** de renovaciones cayendo bajo la mitad del contrato anterior (estable a
-> n=3000/4500/6000) por el corrimiento de stream de la demanda. El check subió su tope a 45% como
-> parche; 9Mh tiene que bajarlo de vuelta. También revisar `demanda.presupuestoOrgFactor` (8,5,
-> puesto por criterio en 9Mb) y la banda `bandaNivelAbajo`/`bandaNivelArriba`.
+> **Deuda de calibrado para 9Mh** (anotada al implementar):
+> - `renovacionSigmaFactor` (constante de 9d) drifteó a **43,7%** de renovaciones cayendo bajo la
+>   mitad del contrato anterior (estable a n=3000/4500/6000) por el corrimiento de stream de la
+>   demanda. El check subió su tope a 45% como parche; 9Mh tiene que bajarlo de vuelta. También
+>   revisar `demanda.presupuestoOrgFactor` (8,5, puesto por criterio en 9Mb) y la banda
+>   `bandaNivelAbajo`/`bandaNivelArriba`.
+> - **9Mc**: dos checks parcheados por el shift de `core/mercadoMundial.js`. (a) El arquetipo de
+>   veredicto "La dinastía" pasó a **~27% estable** (tope 25% → 28%). (b) "≥N% de series sin ningún
+>   draft" (el mismo que 9Ma bajó a 28%) cayó a **~27,6%** (piso 28% → 26%). La causa de (a) es la
+>   deriva agregada de `org.fuerza` de tier 1 (media −3,5 en 60 splits — dentro de la banda
+>   pre-9Mc, pero el mundo un poco más blando produce más internacionales). 9Mh: subir
+>   `plantel.reemplazoRegresionALiga` (0,4) o bajar la rotación (`demanda.probNoRenovarNpc` 0,04 /
+>   `probNoRenovarNpcFlojo` 0,18) para achicar la deriva; devolver los dos topes a su valor
+>   (25% / 28-30%).
 
 ## 9M.10 — Checks de la fase
 
@@ -3798,7 +3807,7 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D5 | ~~`regionOrigen` se sorteaba uniforme entre 8 ligas~~ — resuelto: pesado por prestigio, solo tier 1 | ✅ 3 |
 | D6 | ~~El meta se describía por arquetipo, no por campeón~~ — resuelto: `campeonesEnMeta` | ✅ 1 |
 | D7 | `src/ui/` está vacía; los 1.090 renglones de UI viven en `index.html` (creció de 416 a 1.090 entre la fase 0 y la fase 4, sobre todo por los 5 minijuegos) | 8 |
-| D8 | Los 5 rivales de generación se generan y no corren su carrera. La fase 5 les da su primer uso real (aparecen con nombre como `stakes: rival_de_generacion` en una fecha marcada). **9Ma**: ahora ocupan una casilla de plantel real (la que `orgDelRival` les asigna por hash) y `systems/plantel.js` los envejece como NPCs de carrera larga. Falta la ficha de archirrival con `desenlace` | 🔶 **9Ma (viven en planteles)** / 11 (la ficha) |
+| D8 | Los 5 rivales de generación se generan y no corren su carrera. La fase 5 les da su primer uso real (aparecen con nombre como `stakes: rival_de_generacion` en una fecha marcada). **9Ma**: ahora ocupan una casilla de plantel real (la que `orgDelRival` les asigna por hash) y `systems/plantel.js` los envejece como NPCs de carrera larga. **9Mc**: `core/mercadoMundial.js` los mueve/renueva con el resto del mundo (no se van al mercado ni se retiran antes de tiempo — `seVaDelMundo` los protege). Falta la ficha de archirrival con `desenlace` | 🔶 **9Ma+9Mc (viven y se mueven en el mundo)** / 11 (la ficha) |
 | D9 | `player.deudaSueno` no se resetea al pasar a profesional y `atributos.js` la sigue cobrando toda la carrera. **Es útil**: es media cadena causal del sistema de lesiones, ya construida | 10 |
 | D10 | `secundario.js` usa `amateur.edadLimite` para congelar el flag. Al borrar ese tope hay que darle su propio umbral | 10 |
 | D11 | Las rutinas de offseason siguen gateadas solo por etapa, no por tier (un bootcamp en Corea no lo paga un tier 3). Deferido de la fase 3 por alcance: cuidar el check de segura/agresiva al diferenciar | 13 |

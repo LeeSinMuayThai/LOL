@@ -51,10 +51,12 @@ function potencialParaNivel(nivel, edad, forma, edadPico) {
 
 // Un NPC nuevo. `rivalDeGeneracion` marca a los 5 que corren su carrera de
 // primera en paralelo a la tuya (CONCEPTO §6, D8): viven en planteles reales.
-export function generarNpc(rng, { rol, regionId, fuerzaOrg, medianaSalarioUSD, usados, edad, rivalDeGeneracion = false }) {
+// `edadMinima` (fase 9Mc): ninguna casilla arranca por debajo de la edad legal
+// de su liga (LEC/LPL exigen 18) — antes la generación del mundo la ignoraba.
+export function generarNpc(rng, { rol, regionId, fuerzaOrg, medianaSalarioUSD, usados, edad, edadMinima = 0, rivalDeGeneracion = false }) {
   const p = BALANCE.plantel;
   const [formaCarrera, forma] = weightedPick(Object.entries(BALANCE.formasCarrera), ([, datos]) => datos.peso, rng);
-  const edadReal = edad ?? Math.round(clamp(gauss(p.edadMedia, p.edadSpread, rng), p.edadMin, p.edadMax));
+  const edadReal = edad ?? Math.round(clamp(gauss(p.edadMedia, p.edadSpread, rng), Math.max(p.edadMin, edadMinima), p.edadMax));
   const edadPico = Number(gauss(forma.picoEdad, forma.picoSpread, rng).toFixed(2));
   const nivel = Math.round(clampStat(gauss(fuerzaOrg, p.nivelSpread, rng)));
   const potencial = Math.round(potencialParaNivel(nivel, edadReal, forma, edadPico));
@@ -78,12 +80,97 @@ export function generarNpc(rng, { rol, regionId, fuerzaOrg, medianaSalarioUSD, u
   return npc;
 }
 
+// --- El envejecimiento del mundo (fase 9M) ---
+//
+// Estas tres primitivas las comparten `systems/plantel.js` (el offseason de la
+// etapa amateur, donde el mercado del jugador todavía no corre) y
+// `core/mercadoMundial.js` (9Mc: la resolución top-down de la pretemporada
+// profesional). Antes vivían privadas en `systems/plantel.js`; se subieron acá
+// para que una sola implementación envejezca el mundo, la mire quien la mire.
+
+// El set de handles ya tomados en la partida: el jugador, cada casilla de
+// plantel y cada rival de generación. `generarHandle` lo necesita para no
+// repetir a nadie.
+export function usadosDePlanteles(state) {
+  const usados = new Set([state.player.name]);
+  for (const plantel of Object.values(state.mundo.planteles ?? {})) {
+    for (const npc of Object.values(plantel)) {
+      usados.add(npc.handle);
+    }
+  }
+  for (const rival of state.mundo.rivales ?? []) {
+    usados.add(rival.handle);
+  }
+  return usados;
+}
+
+// Un NPC, un año más viejo: la edad sube, el nivel persigue la curva con ruido
+// (rachas), y el contrato descuenta un año. La casilla del jugador (`esJugador`)
+// no envejece por acá — el jugador tiene su propia hoja de atributos.
+export function envejecerNpc(npc, rng) {
+  if (npc.esJugador) {
+    return npc;
+  }
+  const p = BALANCE.plantel;
+  const edad = npc.edad + 1;
+  const nivelCurva = nivelNpc({ ...npc, edad });
+  const nivel = Math.round(clampStat(gauss(nivelCurva, p.ruidoNivelAnual, rng)));
+  return {
+    ...npc,
+    edad,
+    nivel,
+    contrato: { ...npc.contrato, anios: Math.max(0, npc.contrato.anios - 1) }
+  };
+}
+
+// ¿Este NPC deja el mundo este offseason (se retira, nadie lo quiere)? Un rival
+// de generación corre una carrera larga (D8): sólo se va de viejo. El resto:
+// contrato vencido, ya pasó su pico, y su nivel cayó por debajo del piso de la
+// org — o demasiado viejo.
+export function seVaDelMundo(npc, fuerzaOrg) {
+  const p = BALANCE.plantel;
+  if (npc.rivalDeGeneracion) {
+    return npc.edad >= p.retiroEdadDura + p.rivalRetiroExtra;
+  }
+  if (npc.edad >= p.retiroEdadDura) {
+    return true;
+  }
+  return npc.contrato.anios <= 0
+    && npc.edad > npc.edadPico + p.retiroEdadSobrePico
+    && npc.nivel < fuerzaOrg - p.retiroNivelBajoOrg;
+}
+
+// El nivel-ancla de un reemplazo: regresa hacia el prestigio de la liga en vez
+// de orbitar la `org.fuerza` (que deriva del plantel; sin regresión el mundo se
+// desangra offseason a offseason). `prestigioPorDefecto` cubre las zonas sin
+// `liga.prestigio` (tier 3).
+export function nivelAnclaReemplazo(liga, fuerzaOrg, prestigioPorDefecto) {
+  const prestigio = liga.prestigio ?? prestigioPorDefecto ?? fuerzaOrg;
+  return prestigio + BALANCE.plantel.reemplazoRegresionALiga * (fuerzaOrg - prestigio);
+}
+
+// El canterano de 17-19 que sube a cubrir un asiento vacante. El piso de edad
+// respeta la `edadMinima` de la liga (LEC/LPL exigen 18): un canterano nunca
+// entra por debajo de la edad legal de su liga.
+export function generarCanterano(rng, { rol, liga, fuerzaOrg, usados, prestigioPorDefecto }) {
+  const p = BALANCE.plantel;
+  const edadMin = Math.max(p.canteraEdadMin, liga.edadMinima ?? 0);
+  return generarNpc(rng, {
+    rol,
+    regionId: liga.regionId,
+    medianaSalarioUSD: liga.salario.medianaUSD,
+    usados,
+    edad: roll(Math.min(edadMin, p.canteraEdadMax), p.canteraEdadMax, rng),
+    fuerzaOrg: nivelAnclaReemplazo(liga, fuerzaOrg, prestigioPorDefecto) - p.canteraNivelBajoOrg
+  });
+}
+
 // El plantel de una org: una casilla por rol. `usados` es el set global de
 // handles de la partida, para que nadie se repita.
-export function generarPlantel(rng, { orgNombre, regionId, fuerzaOrg, medianaSalarioUSD, usados }) {
+export function generarPlantel(rng, { orgNombre, regionId, fuerzaOrg, medianaSalarioUSD, usados, edadMinima = 0 }) {
   const plantel = {};
   for (const rol of IDS_ROL) {
-    plantel[rol] = generarNpc(rng, { rol, regionId, fuerzaOrg, medianaSalarioUSD, usados });
+    plantel[rol] = generarNpc(rng, { rol, regionId, fuerzaOrg, medianaSalarioUSD, usados, edadMinima });
   }
   return plantel;
 }
@@ -118,7 +205,8 @@ export function generarPlanteles(rng, ligas, regionIdOrigen, usados) {
         regionId: liga.regionId,
         fuerzaOrg: org.fuerza,
         medianaSalarioUSD: liga.salario.medianaUSD,
-        usados
+        usados,
+        edadMinima: liga.edadMinima ?? 0
       });
     }
   }

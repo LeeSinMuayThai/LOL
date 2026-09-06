@@ -3,6 +3,7 @@ import { splitsDeResidencia, valorDeMercado } from './valorMercado.js';
 import { nivelDelJugador } from './ficha.js';
 import { etiquetaRol } from '../data/roles.js';
 import { plata } from './formato.js';
+import { seVaDelMundo } from './plantel.js';
 
 // LA DEMANDA EXISTE (fase 9M, PLAN.md §9M.3): se acabó el `roll(0, techo)`.
 //
@@ -70,9 +71,23 @@ export function asientoAbierto(state, orgNombre, rol) {
   return { abierto: false };
 }
 
-// Lo que la org puede pagar por ese asiento: su presupuesto (orbita la mediana
-// de su liga y su propia fuerza) menos lo que ya gasta en los cuatro que se
-// quedan.
+// Lo que una org puede pagar por un asiento: su presupuesto (orbita la mediana
+// de su liga y su propia fuerza) menos lo que ya gasta en los otros cuatro. Puro
+// y sin estado — `mercadoMundial.js` (9Mc) lo llama sobre planteles a medio
+// armar (casillas `null` mientras se resuelve la ronda) y por eso ignora lo que
+// no es un NPC con contrato.
+export function presupuestoDeAsiento(liga, fuerzaOrg, plantel, rol) {
+  const d = BALANCE.demanda;
+  const presupuestoTotal = liga.salario.medianaUSD * d.presupuestoOrgFactor
+    * (1 + (fuerzaOrg / BALANCE.stats.max - 0.5) * d.presupuestoPorFuerza);
+  const yaGasta = Object.entries(plantel)
+    .filter(([r, npc]) => r !== rol && npc && !npc.esJugador)
+    .reduce((suma, [, npc]) => suma + (npc.contrato?.salarioAnualUSD ?? 0), 0);
+  return Math.max(0, Math.round(presupuestoTotal - yaGasta));
+}
+
+// El presupuesto de la org de `orgNombre` para su asiento de `rol`, leído del
+// estado (planteles de 9Ma).
 export function presupuestoParaAsiento(state, orgNombre, rol) {
   const plantel = state.mundo.planteles?.[orgNombre];
   const org = orgDe(state, orgNombre);
@@ -80,13 +95,66 @@ export function presupuestoParaAsiento(state, orgNombre, rol) {
   if (!plantel || !org || !liga) {
     return 0;
   }
-  const d = BALANCE.demanda;
-  const presupuestoTotal = liga.salario.medianaUSD * d.presupuestoOrgFactor
-    * (1 + (org.fuerza / BALANCE.stats.max - 0.5) * d.presupuestoPorFuerza);
-  const yaGasta = Object.entries(plantel)
-    .filter(([r]) => r !== rol)
-    .reduce((suma, [, npc]) => suma + npc.contrato.salarioAnualUSD, 0);
-  return Math.max(0, Math.round(presupuestoTotal - yaGasta));
+  return presupuestoDeAsiento(liga, org.fuerza, plantel, rol);
+}
+
+// --- Fase 9Mc: la resolución del mercado del mundo ---
+//
+// En qué estado está el asiento de un NPC al abrir el offseason. `mercadoMundial.js`
+// lo llama sobre el NPC YA envejecido (contrato descontado). Puro.
+export function clasificarAsientoNpc(npc, fuerzaOrg) {
+  if (seVaDelMundo(npc, fuerzaOrg)) {
+    return 'retiro';
+  }
+  if (npc.contrato.anios > 0) {
+    return 'firme';
+  }
+  if (npc.nivel < fuerzaOrg - BALANCE.demanda.brechaReemplazo) {
+    return 'flojo';
+  }
+  return 'vencido';
+}
+
+// Las reglas DURAS de una liga aplicadas a un NPC candidato: edad mínima y
+// cuotas de import. `plantel` es la casilla-a-casilla YA en construcción (puede
+// traer `null`). Es la versión NPC de `cumpleReglasDuras` (que mira al jugador).
+export function cumpleReglasDurasNpc(npc, liga, rol, plantel) {
+  if (npc.edad < (liga.edadMinima ?? 0)) {
+    return false;
+  }
+  if (npc.regionId !== liga.regionId) {
+    const otrosImports = Object.entries(plantel)
+      .filter(([r, x]) => r !== rol && x && !x.esJugador && x.regionId !== liga.regionId)
+      .length;
+    if (otrosImports + 1 > (liga.cupoImports ?? 99)) {
+      return false;
+    }
+    if (BALANCE.plantel.tamano - (otrosImports + 1) < (liga.minimoResidentes ?? 0)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// De un pool de agentes libres, el mejor que una org puede fichar para `rol`:
+// el de mayor nivel que entra en el presupuesto y que las cuotas permiten.
+// Puro: no muta el pool. Devuelve la entrada `{ npc, origen }` o `null`.
+export function mejorCandidatoParaAsiento(pool, { liga, fuerzaOrg, plantel, rol }) {
+  const presupuesto = presupuestoDeAsiento(liga, fuerzaOrg, plantel, rol);
+  let mejor = null;
+  for (const entrada of pool) {
+    const { npc } = entrada;
+    if ((npc.contrato?.salarioAnualUSD ?? 0) > presupuesto) {
+      continue;
+    }
+    if (!cumpleReglasDurasNpc(npc, liga, rol, plantel)) {
+      continue;
+    }
+    if (!mejor || npc.nivel > mejor.npc.nivel) {
+      mejor = entrada;
+    }
+  }
+  return mejor;
 }
 
 // Cuántos no residentes quedarían en el plantel de `orgNombre` si te firman

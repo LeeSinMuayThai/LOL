@@ -63,9 +63,10 @@ export const ETAPAS_SPLIT = [
   // ese sistema pauso por un evento de cierre, resolverDecision retoma justo
   // aca (regla del cursor por id) y el digest anual nunca se salta un año.
   await import('./escena.js'),
-  // Fase 9M: el mundo envejece. ULTIMO a proposito: el mercado del jugador
-  // (mas arriba) ya se resolvio con la fuerza del año que cierra; los
-  // planteles NPC envejecen aca y la temporada del año que viene los ve.
+  // Fase 9M: el mundo envejece. ULTIMO a proposito, y solo para la etapa
+  // AMATEUR: en la etapa profesional `core/mercadoMundial.js` (llamado desde
+  // `mercado.js`, mas arriba) ya envejecio y resolvio el mundo ANTES de la
+  // pantalla de mercado (9Mc) — este sistema entonces hace early return.
   // Corre solo en el offseason (cierre de edad), sin tocar `rng` el resto.
   await import('./plantel.js')
 ];

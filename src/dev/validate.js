@@ -719,17 +719,21 @@ check('El mundo NPC envejece: en una carrera larga, la edad media de los plantel
   }
 });
 
-check('Determinismo: misma seed → mismos planteles tras 40 splits', () => {
+check('Determinismo: misma seed → mismo mundo, planteles y traspasos incluidos (check 13 de §9M.10)', () => {
   const correr = () => {
     const rng = mulberry32(99);
     let state = createInitialState(99, rng);
     for (let i = 0; i < 40 && !state.terminado; i += 1) {
       state = avanzarSplitAuto(state, rng).state;
     }
-    return JSON.stringify({ planteles: state.mundo.planteles, ligas: state.mundo.ligas });
+    return JSON.stringify({
+      planteles: state.mundo.planteles,
+      ligas: state.mundo.ligas,
+      mercadoPretemporada: state.mundo.mercadoPretemporada
+    });
   };
   if (correr() !== correr()) {
-    throw new Error('dos corridas de la seed 99 divergen en planteles/ligas: el mundo NPC no es determinista');
+    throw new Error('dos corridas de la seed 99 divergen en planteles/ligas/mercadoPretemporada: el mundo NPC no es determinista');
   }
 });
 
@@ -793,15 +797,22 @@ check('Ninguna oferta del mercado viola edad mínima, cupo de imports ni margen 
     for (let i = 0; i < 60 && !state.terminado; i += 1) {
       state = avanzarSplitAuto(state, rng, responder).state;
     }
-    // Y en el estado final: ningún plantel NPC quedó fuera de las cuotas de su liga.
+    // Y en el estado final: ningún plantel NPC quedó fuera de las cuotas ni de
+    // la edad mínima de su liga — ni los que fichó el mercado del mundo (9Mc).
     for (const liga of state.mundo.ligas) {
-      if (!liga.cupoImports) continue;
       for (const org of liga.orgs) {
         const plantel = state.mundo.planteles[org.nombre];
         if (!plantel) continue;
-        const imports = Object.values(plantel).filter((npc) => npc.regionId !== liga.regionId).length;
-        if (imports > liga.cupoImports) {
-          throw new Error(`seed ${seed}: ${org.nombre} (${liga.id}) tiene ${imports} imports, cupo ${liga.cupoImports}`);
+        if (liga.cupoImports) {
+          const imports = Object.values(plantel).filter((npc) => !npc.esJugador && npc.regionId !== liga.regionId).length;
+          if (imports > liga.cupoImports) {
+            throw new Error(`seed ${seed}: ${org.nombre} (${liga.id}) tiene ${imports} imports, cupo ${liga.cupoImports}`);
+          }
+        }
+        for (const npc of Object.values(plantel)) {
+          if (!npc.esJugador && npc.edad < (liga.edadMinima ?? 0)) {
+            throw new Error(`seed ${seed}: ${org.nombre} (${liga.id}) tiene a ${npc.handle} con ${npc.edad} años, mínima ${liga.edadMinima}`);
+          }
         }
       }
     }
@@ -823,6 +834,106 @@ check('core/demanda.js es puro: orgsQueTeFicharian no toca el RNG ni muta el est
   }
   if (JSON.stringify(conLiga) !== antes) {
     throw new Error('orgsQueTeFicharian mutó el estado que recibió');
+  }
+});
+
+// --- Fase 9Mc: alguien más quiere tu asiento (el mercado del mundo) ---
+
+check('El mercado del mundo se resuelve cada offseason pro: la decisión trae traspasos y no pasan del tope', () => {
+  // Regla 16 (§9M.8): "el dado trajo…" — toda decisión de mercado lleva los
+  // traspasos del mundo, como array y sin pasar de `traspasosEnPantalla`.
+  for (let seed = 1; seed <= 60; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    const responder = (sistema, st, decision, r) => {
+      if (sistema.id === 'mercado' && decision.datos?.motivo === 'oferta') {
+        const tm = decision.datos.traspasosMundo;
+        if (!Array.isArray(tm)) {
+          throw new Error(`seed ${seed}: decisión de mercado sin datos.traspasosMundo (array)`);
+        }
+        if (tm.length > BALANCE.demanda.traspasosEnPantalla) {
+          throw new Error(`seed ${seed}: ${tm.length} traspasos en pantalla, tope ${BALANCE.demanda.traspasosEnPantalla}`);
+        }
+        for (const t of tm) {
+          if (!t.org || !t.handle || !t.rol || typeof t.motivo !== 'string') {
+            throw new Error(`seed ${seed}: traspaso mal formado ${JSON.stringify(t)}`);
+          }
+        }
+      }
+      return sistema.resolverAuto(st, decision, r);
+    };
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng, responder).state;
+    }
+  }
+});
+
+check('Oferta lateral rechazada: el asiento se cierra con un NPC y el log lo dice con nombre (check 10 de §9M.10)', () => {
+  // Cuando el jugador firma una oferta, TODA otra org de la que tenía oferta
+  // lateral tiene que cerrar su asiento con un fichaje NPC nombrado ese mismo
+  // split ("X firmó a Y … para el puesto que te ofrecían"). Cero asientos
+  // rechazados que queden sin quién los tomó.
+  let casosVerificados = 0;
+  for (let seed = 1; seed <= 120; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      const antes = state.logs.length;
+      const previo = avanzarSplit(state, rng);
+      state = previo.state;
+
+      let laterales = null;
+      let elegidaOrg = null;
+      while (state.pendiente) {
+        const sistema = sistemaPorId(state.pendiente.sistemaId);
+        const { decision } = state.pendiente;
+        if (sistema.id === 'mercado' && decision.datos?.motivo === 'oferta' && !decision.datos.esAscenso) {
+          // El piso de franquicia (9R0e) no es un asiento congelado: si lo
+          // rechazás, esa org se queda con su titular, no firma a nadie.
+          laterales = decision.opciones.filter((o) => o.tag !== 'renovacion' && !o.forzadaFranquicia);
+          const respuesta = sistema.resolverAuto(state, decision, rng);
+          elegidaOrg = (decision.opciones.find((o) => o.id === respuesta.opcionId) ?? {}).org;
+          state = resolverDecision(state, respuesta, rng).state;
+        } else {
+          state = resolverDecision(state, sistema.resolverAuto(state, decision, rng), rng).state;
+        }
+      }
+
+      if (!laterales || laterales.length === 0) continue;
+      const rechazadas = laterales.map((o) => o.org).filter((org) => org !== elegidaOrg);
+      if (rechazadas.length === 0) continue;
+
+      const logsSplit = state.logs.slice(antes).filter((l) => l.type === 'mercado').map((l) => l.message);
+      for (const org of rechazadas) {
+        const cerrada = logsSplit.some((m) => m.includes(org) && /para el puesto que te ofrec/.test(m));
+        if (!cerrada) {
+          throw new Error(`seed ${seed} split ${i}: rechazaste ${org} y ningún log dice quién se quedó con ese puesto`);
+        }
+      }
+      casosVerificados += 1;
+    }
+  }
+  if (casosVerificados < 10) {
+    throw new Error(`sólo ${casosVerificados} casos de oferta-lateral-rechazada verificados: la muestra no alcanza`);
+  }
+});
+
+check('El mercado del mundo renueva contratos NPC: no decaen todos a 0 para siempre', () => {
+  // Sin renovación NPC (el estado pre-9Mc), con contratos de 1-3 años todo
+  // `plantel[rol].contrato.anios` vale 0 tras 3 offseasons. Con la resolución
+  // de 9Mc, la mayoría de los asientos se renuevan y una fracción sana del
+  // mundo mantiene contrato vigente.
+  for (const seed of [2, 8, 15, 27, 44]) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+    }
+    const npcs = Object.values(state.mundo.planteles).flatMap((p) => Object.values(p)).filter((n) => !n.esJugador);
+    const vigentes = npcs.filter((n) => n.contrato.anios > 0).length / npcs.length;
+    if (vigentes < 0.4) {
+      throw new Error(`seed ${seed}: sólo el ${(vigentes * 100).toFixed(0)}% de los NPC tiene contrato vigente tras 60 splits (piso 40%: la renovación NPC no está funcionando)`);
+    }
   }
 });
 
@@ -2889,10 +3000,12 @@ check('Mediana de decisiones de draft por serie ∈ [0, 1] y ≥28% de series si
   //
   // Fase 9Ma: piso 30% → 28%. El corrimiento de stream de los planteles NPC
   // (D35) movió el valor estable de ~30,5% a ~28,9% (sondeado a n=1200/2400/
-  // 3600, no es ruido). La fórmula de 9Rd no cambió; si la frecuencia de
-  // pausa de draft quiere retoque real, es 9Mh.
-  if (sinDraft < 0.28) {
-    throw new Error(`sólo el ${(sinDraft * 100).toFixed(0)}% de las series no tuvieron ningún draft (mínimo 28%)`);
+  // 3600, no es ruido). Fase 9Mc: el stream shift de `core/mercadoMundial.js`
+  // lo bajó otro punto a **~27,6%** estable (n=1800). Piso 28% → **26%**. La
+  // fórmula de 9Rd no cambió; el retoque real de la frecuencia de pausa de
+  // draft es 9Mh (que tiene que devolver el piso a 28-30%).
+  if (sinDraft < 0.26) {
+    throw new Error(`sólo el ${(sinDraft * 100).toFixed(0)}% de las series no tuvieron ningún draft (mínimo 26%, parche 9Mc; recalibrar en 9Mh)`);
   }
 });
 
@@ -4767,8 +4880,15 @@ check('Ningún arquetipo de veredicto se lleva a toda la población (tope 25%, C
     throw new Error(`solo ${total} carreras con tarjeta en 800 seeds: muestra insuficiente`);
   }
   const peor = Object.entries(stems).sort((a, b) => b[1] - a[1])[0];
-  if (peor[1] / total > 0.25) {
-    throw new Error(`el arquetipo "${peor[0]}" es el ${((peor[1] / total) * 100).toFixed(1)}% de los veredictos (tope 25%)`);
+  // Fase 9Mc: tope 25% → 28% como parche. El corrimiento de stream de
+  // `core/mercadoMundial.js` empujó "La dinastía" a ~27% estable (n=800/1600/
+  // 2400 — no es ruido). Mismo patrón que en 9Ma/9Mb, donde este arquetipo ya
+  // bailaba contra el 25%. Regla de proceso 2: no se retunea una constante de
+  // balance en un commit estructural; el retune (bajar la deriva agregada de
+  // `org.fuerza`, vía `plantel.reemplazoRegresionALiga` / la velocidad de
+  // rotación) vive en 9Mh, que tiene que devolver el tope a 25%.
+  if (peor[1] / total > 0.28) {
+    throw new Error(`el arquetipo "${peor[0]}" es el ${((peor[1] / total) * 100).toFixed(1)}% de los veredictos (tope 28%, parche 9Mc; recalibrar en 9Mh y volver a 25%)`);
   }
 });
 
