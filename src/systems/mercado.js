@@ -31,6 +31,32 @@ function conFilaCerrada(state, motivo) {
   });
 }
 
+// La org de `orgNombre` en cualquiera de las 6 ligas del mundo (una oferta
+// puede venir de una liga que no es la tuya — 9Md).
+function orgDelMundo(state, orgNombre) {
+  for (const liga of state.mundo.ligas) {
+    const org = liga.orgs.find((candidata) => candidata.nombre === orgNombre);
+    if (org) {
+      return org;
+    }
+  }
+  return null;
+}
+
+// Fase 9Me (§9M.6): la "mejor alternativa" de una org a ficharte para tu rol —
+// su titular NPC (si no sos vos), o el mejor agente libre que quedó dando
+// vueltas este offseason. Es lo que pesa cuánto te quieren cuando pedís más: si
+// tu nivel está muy por encima de eso, difícil que se levanten de la mesa.
+function nivelAlternativaAsiento(state, orgNombre) {
+  const rol = state.player.role;
+  const asiento = state.mundo.planteles?.[orgNombre]?.[rol];
+  const nivelNpc = asiento && !asiento.esJugador ? (asiento.nivel ?? 0) : 0;
+  const libres = state.mundo.mercadoPretemporada?.libresRestantes ?? [];
+  const mejorLibre = libres.reduce((max, npc) => Math.max(max, npc?.nivel ?? 0), 0);
+  const org = orgDelMundo(state, orgNombre);
+  return Math.max(nivelNpc, mejorLibre, (org?.fuerza ?? 0) - BALANCE.mercado.margenBombazoFuerza);
+}
+
 // --- Construcción de una oferta (§9.5: el contrato de datos exacto) ---
 
 function tipoDeContrato(state, liga, esRenovacion) {
@@ -117,6 +143,17 @@ function construirOferta(state, liga, org, tagForzado, rng) {
       ? 'Vas a competir por un lugar en un vestuario cargado de estrellas.'
       : 'Acá vas a tener margen para mandar vos.');
 
+  // Fase 9Me: cuánto te quieren, para el texto de riesgo de "pedir más". La
+  // brecha entre tu nivel y su mejor alternativa gobierna si el club aguanta el
+  // apriete o se va a otro (`negociarPedirMas`).
+  const brechaNegociacion = nivelDelJugador(state) - nivelAlternativaAsiento(state, org.nombre);
+  const negociacionInfo = {
+    riesgoTexto: brechaNegociacion >= m.brechaNegociacionComoda
+      ? 'Te quieren: difícil que se caiga si pedís más.'
+      : 'Sos su plan B: si apretás, se pueden ir a otro.',
+    escalonesMax: m.escalonesNegociacionMax
+  };
+
   return {
     id: org.nombre,
     org: org.nombre, liga: liga.id, tier: liga.tier, region: liga.regionId,
@@ -126,13 +163,23 @@ function construirOferta(state, liga, org, tagForzado, rng) {
     costeArraigo, arraigoInicial: arraigoAlLlegar,
     progresoHito,
     riesgo,
+    // Fase 9Me: estado de la negociación (arranca en cero) e info para el
+    // texto de riesgo. `salarioBase` es el ancla para calcular los escalones.
+    negociacion: { escalones: 0, clausula: false, salarioBase: salarioAnualUSD },
+    negociacionInfo,
     label: `${org.nombre} · ${liga.id}`,
     descripcion: esOrgActual
       ? 'Te renueva tu propia organización.'
       : (liga.tier < (state.career.tier ?? 9) ? 'El salto a una liga más grande.'
         : (liga.tier > (state.career.tier ?? 0) ? 'Un escalón para abajo, pero es jugar.'
           : (tag === 'bombazo' ? 'La oferta grande.' : 'Una salida lateral.'))),
-    datos: { tipo: tipoDeContrato(state, liga, esRenovacion), jerarquiaProyectada: jerarquiaProyectadaCruda }
+    datos: {
+      tipo: tipoDeContrato(state, liga, esRenovacion),
+      jerarquiaProyectada: jerarquiaProyectadaCruda,
+      // Fase 9Me: `null` hasta que se negocie la cláusula de salida; entonces
+      // `'salida'` y `aceptarOferta` la escribe en el contrato (regla 15).
+      clausula: null
+    }
   };
 }
 
@@ -220,7 +267,10 @@ function traspasosParaPantalla(state) {
     .slice(0, BALANCE.demanda.traspasosEnPantalla);
 }
 
-function construirDecisionOfertas(state, ofertas) {
+// `carry` sobrevive a la re-presentación de la decisión cuando se negocia
+// (§9M.6): los asientos que un club te cerró por apretar de más y los clubes
+// que el representante reveló que te miran.
+function construirDecisionOfertas(state, ofertas, carry = {}) {
   return {
     tipo: 'opciones',
     presentacion: 'mercado',
@@ -231,7 +281,12 @@ function construirDecisionOfertas(state, ofertas) {
       motivo: 'oferta',
       representanteDisponible: !state.flags.llamadaRepresentante,
       // Fase 9Mc: los 4-6 traspasos que movieron el mercado este offseason.
-      traspasosMundo: traspasosParaPantalla(state)
+      traspasosMundo: traspasosParaPantalla(state),
+      // Fase 9Me: asientos que se cerraron porque apretaste de más en la
+      // negociación — siguen contando para "quién te sacó el puesto" (check 10).
+      negociacionesRotas: carry.negociacionesRotas ?? [],
+      // Fase 9Me: los clubes que te miran sin haber ofertado (representante).
+      clubesInteresados: carry.clubesInteresados ?? []
     }
   };
 }
@@ -328,10 +383,14 @@ function aceptarOferta(state, oferta) {
     org: oferta.org, liga: oferta.liga, tier: oferta.tier,
     salarioAnualUSD: oferta.salarioAnualUSD,
     anios: oferta.anios, aniosRestantes: oferta.anios,
-    clausula: null,
+    // Fase 9Me: `contrato.clausula` deja de valer siempre `null` — si la
+    // negociaste, viaja acá (regla 15: lo que la tarjeta promete, el motor lo
+    // cumple). La consume 9Mf (traspasos a mitad de contrato).
+    clausula: oferta.datos.clausula ?? null,
     tipo: oferta.datos.tipo,
     firmadoAEdad: state.age, firmadoEnAnio: state.calendario.anio
   };
+  const conClausula = contrato.clausula === 'salida' ? ' Con cláusula de salida.' : '';
 
   if (esRenovacion) {
     return {
@@ -343,7 +402,7 @@ function aceptarOferta(state, oferta) {
           registro: registrarSalarioEnFila(state.career.registro, contrato.salarioAnualUSD)
         }
       },
-      logs: [crearLog('mercado', `Renovás con ${oferta.org}: ${plata(contrato.salarioAnualUSD)}/año, ${contrato.anios} año(s).`)]
+      logs: [crearLog('mercado', `Renovás con ${oferta.org}: ${plata(contrato.salarioAnualUSD)}/año, ${contrato.anios} año(s).${conClausula}`)]
     };
   }
 
@@ -371,41 +430,184 @@ function aceptarOferta(state, oferta) {
         registro: conFilaCerrada(state, motivoFila)
       }
     },
-    logs: [crearLog('mercado', `Firmás con ${oferta.org} (${oferta.liga}): ${plata(contrato.salarioAnualUSD)}/año, ${contrato.anios} año(s).`)]
+    logs: [crearLog('mercado', `Firmás con ${oferta.org} (${oferta.liga}): ${plata(contrato.salarioAnualUSD)}/año, ${contrato.anios} año(s).${conClausula}`)]
+  };
+}
+
+// --- Fase 9Me: negociar, no aceptar (§9M.6) ---
+//
+// Tres acciones DENTRO de la misma decisión de mercado (trampa T9: la
+// interrupción no se multiplica) — `resolver` devuelve otra vez la decisión,
+// igual que el representante. `resolverAuto` nunca las produce, así que el
+// pipeline headless jamás entra al bucle de negociación.
+
+// Las orgs cuyo asiento se cierra con nombre cuando el jugador firma o espera:
+// las que fueron tarjeta lateral + las que se levantaron de la mesa por apretar
+// de más (check 10: ninguna oferta rechazada desaparece sin un log de quién la
+// tomó).
+function orgsOfrecidasDe(decision) {
+  return new Set([
+    ...decision.opciones.filter((o) => o.tag !== 'renovacion' && !o.forzadaFranquicia).map((o) => o.org),
+    ...(decision.datos.negociacionesRotas ?? []).map((r) => r.org)
+  ]);
+}
+
+// "Esperar": no se firma nada esta ventana. Los asientos congelados se cierran
+// (con nombre si eran tarjetas laterales) y la racha sin equipo corre — si
+// llega al tope, quedás libre. Reutilizado cuando se cae la última oferta.
+function resolverEspera(state, decision, rng, motivo) {
+  const racha = state.flags.splitsSinOfertaConsecutivos + 1;
+  if (racha >= BALANCE.mercado.splitsSinOfertaParaLibre) {
+    const libre = quedarLibre(state, racha, rng);
+    return { state: libre.state, logs: [crearLog('mercado', motivo), ...libre.logs] };
+  }
+  const cerrado = cerrarAsientosCongelados(state, null, rng, orgsOfrecidasDe(decision));
+  return {
+    state: { ...cerrado.state, flags: { ...cerrado.state.flags, splitsSinOfertaConsecutivos: racha } },
+    logs: [crearLog('mercado', motivo), ...cerrado.logs]
+  };
+}
+
+// Pedir más: el club sube el número, contraoferta a medias, o se levanta de la
+// mesa — pesado por cuánto te quieren (tu nivel sobre su mejor alternativa) y
+// por cuántos escalones ya pediste. Devuelve { ofertas, logs, nuevasRotas, corte }.
+function negociarPedirMas(ofertas, idx, state, rng) {
+  const m = BALANCE.mercado;
+  const oferta = ofertas[idx];
+  const neg = oferta.negociacion ?? { escalones: 0, clausula: false, salarioBase: oferta.salarioAnualUSD };
+  if (neg.escalones >= m.escalonesNegociacionMax) {
+    return { ofertas, logs: [crearLog('mercado', `${oferta.org} no se mueve más del número.`)], nuevasRotas: [] };
+  }
+
+  const brecha = nivelDelJugador(state) - nivelAlternativaAsiento(state, oferta.org);
+  const probRuptura = clamp(
+    m.rupturaNegociacionBase - brecha * m.rupturaPorBrechaNivel + neg.escalones * m.rupturaPorEscalonPedido,
+    m.rupturaNegociacionMin, m.rupturaNegociacionMax
+  );
+
+  if (chance(probRuptura, rng)) {
+    const ofertasRestantes = ofertas.filter((_, i) => i !== idx);
+    return {
+      ofertas: ofertasRestantes,
+      logs: [crearLog('mercado', `${oferta.org} se levanta de la mesa: apretaste de más.`)],
+      nuevasRotas: [{ org: oferta.org, rol: state.player.role }],
+      corte: ofertasRestantes.length === 0
+    };
+  }
+
+  const entero = chance(m.probAceptaEscalonEntero, rng);
+  const suba = Math.round(neg.salarioBase * m.escalonNegociacionFactor * (entero ? 1 : m.contraofertaFactor));
+  const actualizada = {
+    ...oferta,
+    salarioAnualUSD: oferta.salarioAnualUSD + suba,
+    negociacion: { ...neg, escalones: neg.escalones + 1 }
+  };
+  return {
+    ofertas: ofertas.map((o, i) => (i === idx ? actualizada : o)),
+    logs: [crearLog('mercado', entero
+      ? `${oferta.org} sube la oferta a ${plata(actualizada.salarioAnualUSD)}/año.`
+      : `${oferta.org} no llega a todo, pero contraoferta: ${plata(actualizada.salarioAnualUSD)}/año.`)],
+    nuevasRotas: []
+  };
+}
+
+// Pedir cláusula de salida: `contrato.clausula` deja de valer siempre `null`.
+// Se paga con sueldo. A cambio, un club grande te puede sacar a mitad de
+// contrato (lo consume 9Mf). Trato directo, sin dado.
+function negociarClausula(ofertas, idx) {
+  const m = BALANCE.mercado;
+  const oferta = ofertas[idx];
+  const neg = oferta.negociacion ?? { escalones: 0, clausula: false, salarioBase: oferta.salarioAnualUSD };
+  if (neg.clausula) {
+    return { ofertas, logs: [crearLog('mercado', `${oferta.org} ya te incluyó la cláusula.`)], nuevasRotas: [] };
+  }
+  const costo = Math.round(oferta.salarioAnualUSD * m.precioClausulaSalida);
+  const actualizada = {
+    ...oferta,
+    salarioAnualUSD: oferta.salarioAnualUSD - costo,
+    negociacion: { ...neg, clausula: true },
+    datos: { ...oferta.datos, clausula: 'salida' }
+  };
+  return {
+    ofertas: ofertas.map((o, i) => (i === idx ? actualizada : o)),
+    logs: [crearLog('mercado', `${oferta.org} te suma la cláusula de salida: cuesta ${plata(costo)} de sueldo (${plata(actualizada.salarioAnualUSD)}/año).`)],
+    nuevasRotas: []
   };
 }
 
 export function resolver(state, decision, respuesta, rng) {
+  // El representante ya no rebaraja (§9M.6): te dice qué clubes te miran sin
+  // haber ofertado todavía. Una sola vez por carrera; si ya se usó, la UI no
+  // debería ofrecer el botón, pero el motor no confía en eso.
   if (respuesta.representante) {
-    // Una sola vez por carrera (§9.6): si ya se usó, la UI no debería ofrecer
-    // el botón, pero el motor no confía en eso — vuelve a pausar con la
-    // MISMA decisión, sin rebarajar de nuevo.
     if (state.flags.llamadaRepresentante) {
       return { state, logs: [], decision };
     }
     const stConLlamada = { ...state, flags: { ...state.flags, llamadaRepresentante: true } };
-    const ofertas = generarOfertas(stConLlamada, rng);
-
-    if (ofertas.length === 0) {
-      return { state: stConLlamada, logs: [crearLog('mercado', 'Tu representante mueve algunos hilos, pero no aparece nada nuevo.')] };
-    }
+    // Ni las que ya son tarjeta, ni las que se levantaron de la mesa por apretar
+    // de más (esas ya no te miran).
+    const fuera = new Set([
+      ...decision.opciones.map((o) => o.org),
+      ...(decision.datos.negociacionesRotas ?? []).map((r) => r.org)
+    ]);
+    const interesados = orgsQueTeFicharian(stConLlamada)
+      .filter((entrada) => !fuera.has(entrada.org.nombre))
+      .sort((a, b) => b.presupuesto - a.presupuesto)
+      .slice(0, BALANCE.mercado.clubesInteresadosMax)
+      .map((entrada) => ({ org: entrada.org.nombre, liga: entrada.liga.id, motivo: entrada.motivo }));
     return {
       state: stConLlamada,
-      logs: [crearLog('mercado', 'Tu representante te consigue una segunda mano de ofertas.')],
-      decision: construirDecisionOfertas(stConLlamada, ofertas)
+      logs: [crearLog('mercado', interesados.length
+        ? `Tu representante te dice quién te sigue: ${interesados.map((i) => i.org).join(', ')}.`
+        : 'Tu representante mueve hilos, pero nadie más está mirando tu puesto ahora.')],
+      decision: construirDecisionOfertas(stConLlamada, decision.opciones, {
+        negociacionesRotas: decision.datos.negociacionesRotas ?? [],
+        clubesInteresados: interesados
+      })
     };
   }
 
+  // Esperar: no firmás nada esta ventana.
+  if (respuesta.negociar === 'esperar') {
+    return resolverEspera(state, decision, rng, 'Elegís esperar: esta ventana no firmás con nadie.');
+  }
+
+  // Negociar sobre una oferta concreta (pedir más / pedir cláusula).
+  if (respuesta.negociar) {
+    const idx = decision.opciones.findIndex((o) => o.id === respuesta.opcionId);
+    if (idx < 0) {
+      return { state, logs: [], decision };
+    }
+    const res = respuesta.negociar === 'clausula'
+      ? negociarClausula(decision.opciones, idx)
+      : negociarPedirMas(decision.opciones, idx, state, rng);
+    const negociacionesRotas = [...(decision.datos.negociacionesRotas ?? []), ...res.nuevasRotas];
+
+    if (res.corte) {
+      const decisionActualizada = construirDecisionOfertas(state, res.ofertas, {
+        negociacionesRotas, clubesInteresados: decision.datos.clubesInteresados
+      });
+      return resolverEspera(state, decisionActualizada, rng, `${res.logs[0].message} No queda nada que firmar esta ventana.`);
+    }
+
+    return {
+      state,
+      logs: res.logs,
+      decision: construirDecisionOfertas(state, res.ofertas, {
+        negociacionesRotas,
+        clubesInteresados: decision.datos.clubesInteresados ?? []
+      })
+    };
+  }
+
+  // Firmar.
   const elegida = decision.opciones.find((opcion) => opcion.id === respuesta.opcionId);
   const firmado = aceptarOferta(state, elegida);
   // Fase 9Mc: firmaste — los demás asientos que te habían ofrecido se cierran
   // con un NPC, y el log lo dice con nombre ("el mundo siguió sin vos"). Sólo
-  // las orgs que aparecieron como tarjeta lateral (no las que el sesgo etario
-  // dejó fuera de la mano) dan ese log.
-  const orgsOfrecidas = new Set(
-    decision.opciones.filter((o) => o.tag !== 'renovacion' && !o.forzadaFranquicia).map((o) => o.org)
-  );
-  const cerrado = cerrarAsientosCongelados(firmado.state, elegida.org, rng, orgsOfrecidas);
+  // las orgs que aparecieron como tarjeta lateral (o se levantaron de la mesa
+  // por apretar de más) dan ese log.
+  const cerrado = cerrarAsientosCongelados(firmado.state, elegida.org, rng, orgsOfrecidasDe(decision));
   return { state: cerrado.state, logs: [...firmado.logs, ...cerrado.logs] };
 }
 

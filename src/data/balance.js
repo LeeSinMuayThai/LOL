@@ -918,7 +918,40 @@ export const BALANCE = {
     // "residencia", salto de valor de mercado) y tener un campeón de firma.
     valorResidenciaSplits: 12,
     valorResidenciaBonus: 0.15,
-    valorSignatureBonus: 0.20
+    valorSignatureBonus: 0.20,
+
+    // --- Fase 9Me: negociar, no aceptar (PLAN.md §9M.6). Tres acciones DENTRO
+    // de la misma decisión de mercado (trampa T9: la interrupción no se
+    // multiplica) — `resolver` devuelve otra vez la decisión, como el
+    // representante. Valores por criterio, retune 9Mh (regla 2). ---
+    // Cuántas veces se puede "pedir más" por oferta antes de que el club corte
+    // la charla. Red anti-loop propia; el pipeline capa a `maxDecisionesPorSplit`
+    // igual.
+    escalonesNegociacionMax: 2,
+    // Cada escalón sube el pedido este % del salario de la oferta.
+    escalonNegociacionFactor: 0.12,
+    // Si el club NO acepta el escalón entero pero tampoco se levanta, contraoferta
+    // con esta fracción del escalón.
+    contraofertaFactor: 0.45,
+    // Probabilidad de que el club se levante de la mesa al pedir más: base, menos
+    // cuánto te quieren (tu nivel sobre su mejor alternativa para ese asiento),
+    // más cuántos escalones ya pediste. Clampeada a [min, max].
+    rupturaNegociacionBase: 0.30,
+    rupturaPorBrechaNivel: 0.015,
+    rupturaPorEscalonPedido: 0.18,
+    rupturaNegociacionMin: 0.03,
+    rupturaNegociacionMax: 0.80,
+    // Si NO se rompe: con esta probabilidad acepta el escalón entero; si no,
+    // contraoferta (`contraofertaFactor`).
+    probAceptaEscalonEntero: 0.55,
+    // La brecha de nivel (vos − su mejor alternativa) a partir de la cual el
+    // texto de riesgo pasa de "sos su plan B" a "te quieren mucho".
+    brechaNegociacionComoda: 8,
+    // La cláusula de salida cuesta este % del salario de la oferta (se paga con
+    // sueldo). A cambio, un club grande te puede sacar a mitad de contrato (9Mf).
+    precioClausulaSalida: 0.10,
+    // Cuántos clubes "que te miran sin haber ofertado" revela el representante.
+    clubesInteresadosMax: 4
   },
 
   // Fase 9R5a: la carrera termina. Antes NADA seteaba `terminado` en fase

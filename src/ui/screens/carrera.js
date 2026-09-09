@@ -35,6 +35,6 @@ export function mostrarDecisionEnPantalla(elements, decision, onElegir) {
   renderDecision(elements, decision, onElegir);
 }
 
-export function mostrarMercadoEnPantalla(elements, decision, onElegir, onRepresentante) {
-  renderMercado(elements, decision, onElegir, onRepresentante);
+export function mostrarMercadoEnPantalla(elements, decision, onElegir, onRepresentante, onNegociar, onEsperar) {
+  renderMercado(elements, decision, onElegir, onRepresentante, onNegociar, onEsperar);
 }

@@ -6,6 +6,11 @@ import { plata } from '../../core/formato.js';
 // (regla de proceso 2: la fórmula no se reescribe ni se retunea, solo se
 // expone). `proyeccionJerarquia` en particular tiene que leerse tal cual
 // llega: es el mismo número que `roster.js` va a asignar si se acepta.
+//
+// Fase 9Me (§9M.6): negociar, no aceptar. Cada tarjeta suma acciones —firmar,
+// pedir más, pedir cláusula— y abajo hay un "esperar" que no firma nada. El
+// representante pasó de rebarajar a informar: `clubesInteresados`. El bloque
+// completo de tres columnas es 9Mg.
 
 const ETIQUETAS_TAG = {
   renovacion: 'Renovación',
@@ -25,10 +30,18 @@ function fila(clase, texto) {
   return div;
 }
 
-function construirTarjeta(oferta, onElegir) {
-  const boton = document.createElement('button');
-  boton.type = 'button';
-  boton.className = `mercado-card mercado-card--${oferta.tag}`;
+function boton(clase, texto, onClick) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = clase;
+  b.textContent = texto;
+  b.addEventListener('click', onClick);
+  return b;
+}
+
+function construirTarjeta(oferta, onElegir, onNegociar) {
+  const card = document.createElement('div');
+  card.className = `mercado-card mercado-card--${oferta.tag}`;
 
   const header = document.createElement('div');
   header.className = 'mercado-card-header';
@@ -39,69 +52,119 @@ function construirTarjeta(oferta, onElegir) {
   tag.className = 'mercado-card-tag';
   tag.textContent = ETIQUETAS_TAG[oferta.tag] ?? oferta.tag;
   header.append(org, tag);
-  boton.appendChild(header);
+  card.appendChild(header);
 
-  boton.appendChild(fila('mercado-card-liga', `${oferta.liga} · ${oferta.anios} año${oferta.anios === 1 ? '' : 's'}`));
-  boton.appendChild(fila('mercado-card-salario', `${plata(oferta.salarioAnualUSD)}/año`));
+  card.appendChild(fila('mercado-card-liga', `${oferta.liga} · ${oferta.anios} año${oferta.anios === 1 ? '' : 's'}`));
+  card.appendChild(fila('mercado-card-salario', `${plata(oferta.salarioAnualUSD)}/año`));
 
   const pj = oferta.proyeccionJerarquia;
-  boton.appendChild(fila(
+  card.appendChild(fila(
     'mercado-card-jerarquia',
     `Jerarquía: ${pj.desde} ${FLECHAS[pj.flecha] ?? '→'} ${pj.hasta} — ${pj.etiqueta}`
   ));
-  boton.appendChild(fila('mercado-card-picks', oferta.proyeccionPicks));
+  card.appendChild(fila('mercado-card-picks', oferta.proyeccionPicks));
 
   if (oferta.costeArraigo.pierde > 0) {
-    boton.appendChild(fila('mercado-card-arraigo', oferta.costeArraigo.etiqueta));
+    card.appendChild(fila('mercado-card-arraigo', oferta.costeArraigo.etiqueta));
   }
-  boton.appendChild(fila('mercado-card-arraigo', oferta.arraigoInicial.etiqueta));
+  card.appendChild(fila('mercado-card-arraigo', oferta.arraigoInicial.etiqueta));
 
   if (oferta.progresoHito) {
     const { faltan, hacia } = oferta.progresoHito;
-    boton.appendChild(fila('mercado-card-hito', `Te faltan ${faltan} para ${hacia}`));
+    card.appendChild(fila('mercado-card-hito', `Te faltan ${faltan} para ${hacia}`));
   }
 
   if (oferta.riesgo) {
-    boton.appendChild(fila('mercado-card-riesgo', oferta.riesgo));
+    card.appendChild(fila('mercado-card-riesgo', oferta.riesgo));
   }
 
-  boton.addEventListener('click', () => onElegir({ opcionId: oferta.id }));
-  return boton;
+  // Fase 9Me: estado de la negociación.
+  const neg = oferta.negociacion ?? { escalones: 0, clausula: false };
+  if (neg.escalones > 0) {
+    card.appendChild(fila('mercado-card-neg', `Pediste más ${neg.escalones}×`));
+  }
+  if (neg.clausula) {
+    card.appendChild(fila('mercado-card-neg', 'Con cláusula de salida'));
+  }
+
+  const acciones = document.createElement('div');
+  acciones.className = 'mercado-card-acciones';
+  acciones.appendChild(boton('mercado-card-btn mercado-card-btn--firmar', 'Firmar', () => onElegir({ opcionId: oferta.id })));
+
+  const info = oferta.negociacionInfo;
+  const puedePedirMas = info && neg.escalones < info.escalonesMax;
+  if (puedePedirMas) {
+    const pm = boton('mercado-card-btn', 'Pedir más', () => onNegociar({ negociar: 'pedirMas', opcionId: oferta.id }));
+    pm.title = info.riesgoTexto ?? '';
+    acciones.appendChild(pm);
+  }
+  if (!neg.clausula) {
+    acciones.appendChild(boton('mercado-card-btn', 'Pedir cláusula', () => onNegociar({ negociar: 'clausula', opcionId: oferta.id })));
+  }
+  card.appendChild(acciones);
+
+  if (puedePedirMas && info.riesgoTexto) {
+    card.appendChild(fila('mercado-card-riesgo-neg', info.riesgoTexto));
+  }
+
+  return card;
 }
 
 // Fase 9Mc: "el mundo siguió sin vos" — los traspasos que movieron el mercado
 // esta pretemporada. El bloque completo de tres columnas es 9Mg; esto es la
 // línea que hace que la elección no se sienta en el vacío (regla 12).
-function renderMundo(contenedor, traspasos) {
+function renderLista(contenedor, titulo, items) {
   contenedor.innerHTML = '';
-  if (!traspasos || traspasos.length === 0) {
+  if (!items || items.length === 0) {
     contenedor.hidden = true;
     return;
   }
-  contenedor.appendChild(fila('mercado-mundo-titulo', `El mercado se movió: ${traspasos.length} fichaje${traspasos.length === 1 ? '' : 's'} en el mundo`));
-  for (const t of traspasos) {
-    contenedor.appendChild(fila('mercado-mundo-item', t.motivo));
+  contenedor.appendChild(fila('mercado-mundo-titulo', titulo));
+  for (const texto of items) {
+    contenedor.appendChild(fila('mercado-mundo-item', texto));
   }
   contenedor.hidden = false;
 }
 
-export function renderMercado(elements, decision, onElegir, onRepresentante) {
-  const { mercadoPanel, mercadoTitle, mercadoDesc, mercadoGrid, mercadoMundo, mercadoRepresentante } = elements;
+export function renderMercado(elements, decision, onElegir, onRepresentante, onNegociar, onEsperar) {
+  const {
+    mercadoPanel, mercadoTitle, mercadoDesc, mercadoGrid, mercadoMundo,
+    mercadoRepresentante, mercadoEsperar, mercadoInteresados
+  } = elements;
 
   mercadoTitle.textContent = decision.titulo;
   mercadoDesc.textContent = decision.descripcion;
 
   mercadoGrid.innerHTML = '';
   for (const oferta of decision.opciones) {
-    mercadoGrid.appendChild(construirTarjeta(oferta, onElegir));
+    mercadoGrid.appendChild(construirTarjeta(oferta, onElegir, onNegociar));
+  }
+
+  if (mercadoInteresados) {
+    const interesados = decision.datos.clubesInteresados ?? [];
+    renderLista(
+      mercadoInteresados,
+      'Te siguen (sin ofertar todavía)',
+      interesados.map((i) => `${i.org} · ${i.liga}`)
+    );
   }
 
   if (mercadoMundo) {
-    renderMundo(mercadoMundo, decision.datos.traspasosMundo);
+    const traspasos = decision.datos.traspasosMundo ?? [];
+    renderLista(
+      mercadoMundo,
+      `El mercado se movió: ${traspasos.length} fichaje${traspasos.length === 1 ? '' : 's'} en el mundo`,
+      traspasos.map((t) => t.motivo)
+    );
   }
 
   mercadoRepresentante.hidden = !decision.datos.representanteDisponible;
   mercadoRepresentante.onclick = () => onRepresentante();
+
+  if (mercadoEsperar) {
+    mercadoEsperar.hidden = false;
+    mercadoEsperar.onclick = () => onEsperar();
+  }
 
   mercadoPanel.hidden = false;
 }

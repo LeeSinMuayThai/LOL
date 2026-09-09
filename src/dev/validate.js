@@ -2203,7 +2203,10 @@ check('Nadie firma un ascenso a una liga sin cumplir su edadMinima', () => {
   }
 });
 
-check('El representante se puede usar exactamente una vez por carrera, nunca dos', () => {
+check('El representante informa (no rebaraja) y se usa exactamente una vez por carrera', () => {
+  // Fase 9Me (§9M.6): el representante dejó de ser un reroll de ofertas — ahora
+  // te dice qué clubes te miran sin haber ofertado (`datos.clubesInteresados`).
+  // La mano de ofertas NO cambia, y una segunda llamada es un no-op.
   let probado = false;
 
   for (let seed = 1; seed <= 300 && !probado; seed += 1) {
@@ -2218,15 +2221,29 @@ check('El representante se puede usar exactamente una vez por carrera, nunca dos
         const { decision } = state.pendiente;
 
         if (sistema.id === 'mercado' && decision.datos?.motivo === 'oferta') {
-          const primeraLlamada = sistema.resolver(state, decision, { representante: true }, rng);
-          if (!primeraLlamada.state.flags.llamadaRepresentante) {
-            throw new Error(`seed ${seed}: la primera llamada al representante no marcó flags.llamadaRepresentante`);
+          const manoAntes = decision.opciones.map((o) => `${o.org}:${o.salarioAnualUSD}`).join('|');
+
+          const primera = sistema.resolver(state, decision, { representante: true }, rng);
+          if (!primera.state.flags.llamadaRepresentante) {
+            throw new Error(`seed ${seed}: la llamada al representante no marcó flags.llamadaRepresentante`);
           }
-          if (primeraLlamada.decision) {
-            const segundaLlamada = sistema.resolver(primeraLlamada.state, primeraLlamada.decision, { representante: true }, rng);
-            if (segundaLlamada.decision !== primeraLlamada.decision) {
-              throw new Error(`seed ${seed}: una segunda llamada al representante generó una mano nueva de ofertas`);
-            }
+          if (!primera.decision) {
+            throw new Error(`seed ${seed}: el representante no devolvió la decisión de mercado`);
+          }
+          const manoDespues = primera.decision.opciones.map((o) => `${o.org}:${o.salarioAnualUSD}`).join('|');
+          if (manoDespues !== manoAntes) {
+            throw new Error(`seed ${seed}: el representante cambió la mano de ofertas (${manoAntes} → ${manoDespues})`);
+          }
+          if (!Array.isArray(primera.decision.datos.clubesInteresados)) {
+            throw new Error(`seed ${seed}: el representante no dejó datos.clubesInteresados`);
+          }
+          if (primera.decision.datos.representanteDisponible) {
+            throw new Error(`seed ${seed}: el botón de representante sigue disponible tras usarlo`);
+          }
+
+          const segunda = sistema.resolver(primera.state, primera.decision, { representante: true }, rng);
+          if (segunda.logs.length !== 0 || segunda.decision !== primera.decision) {
+            throw new Error(`seed ${seed}: una segunda llamada al representante no fue un no-op`);
           }
           probado = true;
           break;
@@ -2240,6 +2257,91 @@ check('El representante se puede usar exactamente una vez por carrera, nunca dos
 
   if (!probado) {
     throw new Error('nunca apareció una decisión de mercado.js en 300 carreras: no se pudo probar el representante');
+  }
+});
+
+check('Fase 9Me: negociar es determinista, termina, y la cláusula negociada llega al contrato', () => {
+  // Tres cosas: (1) `pedir más` corta la charla en `escalonesNegociacionMax` y
+  // no encadena decisiones sin fin; (2) dos corridas con la misma seed dan el
+  // mismo resultado; (3) si negociás la cláusula y firmás, `contrato.clausula`
+  // vale 'salida' (regla 15).
+  const maxEscalones = BALANCE.mercado.escalonesNegociacionMax;
+  let probadoNegociacion = false;
+  let probadaClausula = false;
+
+  for (let seed = 1; seed <= 400 && !(probadoNegociacion && probadaClausula); seed += 1) {
+    const correr = () => {
+      const rng = mulberry32(seed);
+      let state = createInitialState(seed, rng);
+      for (let i = 0; i < 45 && !state.terminado; i += 1) {
+        state = avanzarSplit(state, rng).state;
+        while (state.pendiente) {
+          const sistema = sistemaPorId(state.pendiente.sistemaId);
+          const decision = state.pendiente.decision;
+          if (sistema.id === 'mercado' && decision.datos?.motivo === 'oferta' && decision.opciones.length > 0) {
+            return { state, decision, rng };
+          }
+          state = resolverDecision(state, sistema.resolverAuto(state, decision, rng), rng).state;
+        }
+      }
+      return null;
+    };
+
+    const a = correr();
+    if (!a) {
+      continue;
+    }
+
+    // (1) + (2): apretar "pedir más" sobre la primera oferta hasta que el
+    // sistema deje de devolver decisión, dos veces, y comparar.
+    const secuencia = (ctx) => {
+      let { state, decision, rng } = ctx;
+      const objetivo = decision.opciones[0].id;
+      const trazas = [];
+      for (let paso = 0; paso < maxEscalones + 4; paso += 1) {
+        const r = resolverDecision(state, { negociar: 'pedirMas', opcionId: objetivo }, rng);
+        state = r.state;
+        trazas.push(r.logs.map((l) => l.message).join(' / '));
+        if (!state.pendiente) {
+          break;
+        }
+        decision = state.pendiente.decision;
+        const oferta = decision.opciones.find((o) => o.id === objetivo);
+        if (!oferta || oferta.negociacion.escalones >= maxEscalones) {
+          break;
+        }
+      }
+      return trazas.join(' >> ');
+    };
+
+    const t1 = secuencia(correr());
+    const t2 = secuencia(correr());
+    if (t1 !== t2) {
+      throw new Error(`seed ${seed}: negociar no es determinista\n  ${t1}\n  ${t2}`);
+    }
+    probadoNegociacion = true;
+
+    // (3): pedir cláusula y firmar esa misma oferta — el contrato tiene que
+    // quedar con `clausula: 'salida'` (regla 15).
+    const ctx = correr();
+    const objetivo = ctx.decision.opciones[0].id;
+    const conClausula = resolverDecision(ctx.state, { negociar: 'clausula', opcionId: objetivo }, ctx.rng);
+    const dec = conClausula.state.pendiente?.decision;
+    const oferta = dec?.opciones.find((o) => o.id === objetivo);
+    if (oferta?.negociacion.clausula) {
+      const firmado = resolverDecision(conClausula.state, { opcionId: objetivo }, ctx.rng);
+      if (firmado.state.career.contrato.clausula !== 'salida') {
+        throw new Error(`seed ${seed}: firmaste con cláusula negociada y contrato.clausula = ${firmado.state.career.contrato.clausula}`);
+      }
+      probadaClausula = true;
+    }
+  }
+
+  if (!probadoNegociacion) {
+    throw new Error('no se pudo ejercitar "pedir más" en 400 carreras');
+  }
+  if (!probadaClausula) {
+    throw new Error('no se pudo ejercitar "pedir cláusula" + firmar en 400 carreras');
   }
 });
 

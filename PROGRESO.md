@@ -33,6 +33,80 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-09 — Fase 9Me: negociar, no aceptar
+
+Quinto commit de **9M** (PLAN.md §9M.6). El mercado dejaba una sola respuesta: aceptar la tarjeta
+o rechazarla. Ahora, **dentro de la misma decisión** (trampa T9: la interrupción no se multiplica),
+hay tres acciones nuevas — pedir más, pedir cláusula de salida, esperar — y el representante pasó
+de rebarajar ofertas a **informar** qué clubes te miran sin haber ofertado.
+
+#### `src/systems/mercado.js`
+
+- **Pedir más** (`negociarPedirMas`): el club sube el número, contraoferta a medias
+  (`contraofertaFactor`), o **se levanta de la mesa**. La probabilidad de ruptura sale de la brecha
+  entre tu nivel y `nivelAlternativaAsiento` (su titular NPC o el mejor agente libre del offseason)
+  y sube con cada escalón ya pedido. Tope `escalonesNegociacionMax` — red anti-loop propia; el
+  pipeline capa a `maxDecisionesPorSplit` (60) igual. Si el club se levanta y era la última oferta
+  en pie, cae a "esperar".
+- **Pedir cláusula de salida** (`negociarClausula`): `contrato.clausula` deja de valer **siempre
+  `null`** — se negocia, se paga con sueldo (`precioClausulaSalida`), y viaja al contrato por
+  `oferta.datos.clausula` → `aceptarOferta` (regla 15). La consume 9Mf.
+- **Esperar** (`resolverEspera`): no firmás nada esta ventana; los asientos congelados se cierran
+  (con nombre si eran tarjeta lateral) y la racha sin equipo corre — si llega a
+  `splitsSinOfertaParaLibre`, quedás libre.
+- **Representante = información** (§9M.6): ya no llama `generarOfertas` de nuevo. Devuelve la misma
+  mano con `datos.clubesInteresados` = las orgs que `orgsQueTeFicharian` encuentra fuera de la mano
+  (el sesgo etario las dejó afuera) y fuera de las que se levantaron de la mesa. Sigue siendo una
+  sola vez por carrera.
+- `orgsOfrecidasDe(decision)` junta las tarjetas laterales **+ las negociaciones rotas**, así una
+  oferta que se cayó por apretar de más igual cierra su asiento con un log de quién lo tomó
+  (check 10). `construirDecisionOfertas` gana un tercer arg `carry` (`negociacionesRotas`,
+  `clubesInteresados`) que sobrevive a la re-presentación de la decisión.
+- `resolverAuto` **no se toca**: nunca produce `negociar`/`representante`, así que el pipeline
+  headless (simulate/validate) jamás entra al bucle de negociación — el comportamiento de sim
+  (elegir la oferta que más paga) queda idéntico.
+
+#### Pantalla (regla 12) — `src/ui/components/mercado.js` · `index.html` · `pantallas.css`
+
+- La tarjeta pasó de `<button>` a `<div>` con una fila de acciones: **Firmar · Pedir más · Pedir
+  cláusula**. El texto de riesgo de "pedir más" (`negociacionInfo.riesgoTexto`: "te quieren" vs.
+  "sos su plan B") se muestra antes de apretar. El estado de la negociación ("Pediste más 2×",
+  "Con cláusula de salida") se pinta en la tarjeta.
+- Botón **⏳ Esperar** y bloque **"Te siguen (sin ofertar todavía)"** con los clubes del
+  representante. El rediseño de tres columnas completo es 9Mg; esto es la versión funcional.
+
+#### Constantes nuevas (`BALANCE.mercado`, por criterio — retune 9Mh, regla 2)
+
+`escalonesNegociacionMax` 2 · `escalonNegociacionFactor` 0,12 · `contraofertaFactor` 0,45 ·
+`rupturaNegociacionBase` 0,30 · `rupturaPorBrechaNivel` 0,015 · `rupturaPorEscalonPedido` 0,18 ·
+`rupturaNegociacionMin` 0,03 · `rupturaNegociacionMax` 0,80 · `probAceptaEscalonEntero` 0,55 ·
+`brechaNegociacionComoda` 8 · `precioClausulaSalida` 0,10 · `clubesInteresadosMax` 4. **Ninguna
+constante previa se tocó.** El stream de RNG no se corre en el camino headless (las acciones nuevas
+son sólo del jugador).
+
+#### Verificación
+
+- `node src/dev/validate.js` — **141/141 OK** ("Todos los checks pasaron"). Antes 140: el check
+  del representante se **reescribió** ("El representante informa (no rebaraja) y se usa exactamente
+  una vez por carrera" — la mano de ofertas no cambia, `datos.clubesInteresados` aparece, 2ª
+  llamada = no-op), y se **agregó** "Fase 9Me: negociar es determinista, termina, y la cláusula
+  negociada llega al contrato" (dos corridas misma seed → misma traza de negociación; `pedir más`
+  corta en `escalonesNegociacionMax`; `pedir cláusula` + firmar → `contrato.clausula === 'salida'`).
+- `node src/dev/simulate.js 1500 60 todas` — **111s** (base 9Md 112s → **0,99×**, tope 2× —
+  check 14), **0 crashes** y 0 varadas en las 3 estrategias. `resolverAuto` no cambió, así que la
+  población simulada es la misma que 9Md.
+- `node src/dev/build.js` — Build OK, determinismo src vs dist (12 carreras × 30 splits) intacto.
+- Determinismo: cubierto por el check nuevo (la negociación es pura salvo `chance` sobre el `rng`
+  inyectado; el camino headless no la toca, así que el stream agregado **no se corre** — a
+  diferencia de 9Ma-9Md).
+- **Pantalla (regla 12)**: jugada a mano en el navegador (Chrome headless vía CDP, guardado
+  posicionado en la decisión de mercado). Las 6 tarjetas muestran **Firmar · Pedir más · Pedir
+  cláusula** + la línea de riesgo; botones **⏳ Esperar** y representante presentes. "Pedir más" en
+  Deep Cross Gaming: **$97k → $108k/año** y estado **"Pediste más 1×"** en la tarjeta. "Firmar":
+  el panel se cierra, "Firmás con Deep Cross Gaming", y el asiento de Nexo Esports se cierra con
+  nombre ("Nexo Esports firmó a Jornyx (Mid, 18) para el puesto que te ofrecían" — check 10
+  visible en juego).
+
 ### 2026-09-09 — Fase 9Md: la escalera deja de ser un dado
 
 Cuarto commit de **9M** (PLAN.md §9M.5), el de más riesgo de la fase. **`flags.ascensoPendiente`

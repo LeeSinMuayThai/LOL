@@ -28,7 +28,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **9E** | El varado: la carrera vuelve a tener juego después del primer equipo | ✅ 9Ea→9Ed, ver `PROGRESO.md` |
 | **9R** | **Que el juego se juegue**: el cooldown mide splits, la tabla deja de mentir, la interrupción vuelve a ser escasa, y elegir cambia el resultado | ✅ 9Ra→9Rg y 9R.0→9R.5, ver `PROGRESO.md` |
 | **T** | **La transmisión**: el sistema de diseño, el shell, el ritmo del split, y las pantallas que faltaban. Fue antes de 9M para que 9M/10/11/12/13 tengan dónde enchufar su pantalla | ✅ T0→T8, ver `PROGRESO.md` |
-| **9M** | **El mercado de pases**: el mundo se puebla de jugadores, la demanda existe, alguien compite por tu asiento, la escalera deja de ser un dado | 🔶 **9Ma→9Md hechas** (planteles NPC · la demanda · el mercado del mundo top-down · la escalera por asientos + descenso) · faltan 9Me→9Mh |
+| **9M** | **El mercado de pases**: el mundo se puebla de jugadores, la demanda existe, alguien compite por tu asiento, la escalera deja de ser un dado | 🔶 **9Ma→9Me hechas** (planteles NPC · la demanda · el mercado del mundo top-down · la escalera por asientos + descenso · negociar/pedir cláusula/esperar) · faltan 9Mf→9Mh |
 | **10** | El final: retiro emergente + la tarjeta de legado | ⬜ |
 | **11** | El año: calendario, la nota de la temporada, el archirrival | ⬜ |
 | **12** | La jerarquía de la decisión: categorías, rareza, consecuencia previa, el dado | ⬜ |
@@ -2979,7 +2979,7 @@ mitad de `margenImport`).
 | 9Mb | `fase 9Mb: la demanda existe` | 9M.3 — ✅ 2026-09-06, ver `PROGRESO.md` |
 | 9Mc | `fase 9Mc: alguien mas quiere tu asiento` | 9M.4 — ✅ 2026-09-06, ver `PROGRESO.md` |
 | 9Md | `fase 9Md: la escalera deja de ser un dado` | 9M.5 — ✅ 2026-09-09, ver `PROGRESO.md` |
-| 9Me | `fase 9Me: negociar, no aceptar` | 9M.6 |
+| 9Me | `fase 9Me: negociar, no aceptar` | 9M.6 — ✅ 2026-09-09, ver `PROGRESO.md` |
 | 9Mf | `fase 9Mf: traspasos a mitad de contrato` | 9M.7 |
 | 9Mg | `fase 9Mg: la pantalla del mercado` | 9M.8 |
 | 9Mh | `fase 9Mh: calibrar el mercado` | solo constantes |

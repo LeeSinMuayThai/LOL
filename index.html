@@ -126,9 +126,13 @@
               <div id="mercadoTitle" class="decision-title"></div>
               <div id="mercadoDesc" class="decision-desc"></div>
               <div id="mercadoGrid" class="mercado-grid"></div>
+              <div id="mercadoInteresados" class="mercado-interesados" hidden></div>
               <div id="mercadoMundo" class="mercado-mundo" hidden></div>
               <button id="mercadoRepresentante" type="button" class="mercado-representante-btn" hidden>
-                📞 Llamar a tu representante y pedir otras ofertas · 1 vez por carrera
+                📞 Llamar a tu representante y ver quién te sigue · 1 vez por carrera
+              </button>
+              <button id="mercadoEsperar" type="button" class="mercado-representante-btn" hidden>
+                ⏳ Esperar · no firmás nada esta ventana
               </button>
             </div>
 
@@ -191,8 +195,10 @@
       const mercadoTitle = document.getElementById('mercadoTitle');
       const mercadoDesc = document.getElementById('mercadoDesc');
       const mercadoGrid = document.getElementById('mercadoGrid');
+      const mercadoInteresados = document.getElementById('mercadoInteresados');
       const mercadoMundo = document.getElementById('mercadoMundo');
       const mercadoRepresentante = document.getElementById('mercadoRepresentante');
+      const mercadoEsperar = document.getElementById('mercadoEsperar');
       const tarjetaPanel = document.getElementById('tarjeta');
       const seedInput = document.getElementById('seedInput');
       const continuarBtn = document.getElementById('continuarBtn');
@@ -215,7 +221,7 @@
       // la pantalla de ofertas).
       const carreraElements = { fichaContainer, logList };
       const decisionElements = { decisionPanel, decisionTitle, decisionDesc, decisionOptions };
-      const mercadoElements = { mercadoPanel, mercadoTitle, mercadoDesc, mercadoGrid, mercadoMundo, mercadoRepresentante };
+      const mercadoElements = { mercadoPanel, mercadoTitle, mercadoDesc, mercadoGrid, mercadoInteresados, mercadoMundo, mercadoRepresentante, mercadoEsperar };
 
       let modulos = null;
       let ui = null;
@@ -321,7 +327,12 @@
 
         if (decision.presentacion === 'mercado') {
           decisionPanel.hidden = true;
-          ui.mostrarMercadoEnPantalla(mercadoElements, decision, responder, () => responder({ representante: true }));
+          ui.mostrarMercadoEnPantalla(
+            mercadoElements, decision, responder,
+            () => responder({ representante: true }),
+            responder,
+            () => responder({ negociar: 'esperar' })
+          );
           summary.textContent = 'Llegaron ofertas: elegí con quién vas.';
           return;
         }
