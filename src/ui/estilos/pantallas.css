@@ -524,12 +524,63 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   font-weight: 600;
 }
 
-.mercado-interesados {
-  margin-top: var(--s-4);
+/* Fase 9Mg (§9M.8): la pantalla de mercado de tres bloques.
+   Bloque 1 — "Vos en el mercado": tu valor con su referente, el contrato y los
+   años que quedan, y quién te mira. Va arriba de las ofertas. */
+.mercado-vos {
+  margin-bottom: var(--s-4);
   padding: var(--s-4);
-  border-left: 3px solid var(--line-strong);
+  border-left: 3px solid var(--cat-mercado);
   background: var(--bg-sunken);
   border-radius: var(--r);
+}
+.mercado-vos-titulo {
+  font-size: var(--fs-1);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--ink-mute);
+  margin-bottom: var(--s-2);
+}
+.mercado-vos-valor {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+.mercado-vos-cifra {
+  font-family: var(--font-display);
+  font-size: var(--fs-5);
+  font-weight: 700;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+.mercado-vos-ref {
+  font-size: var(--fs-1);
+  color: var(--ink-mute);
+}
+.mercado-vos-contrato {
+  margin-top: var(--s-2);
+  font-size: var(--fs-2);
+  line-height: var(--lh-snug);
+  color: var(--ink-dim);
+}
+.mercado-vos-miran {
+  margin-top: var(--s-2);
+  font-size: var(--fs-1);
+  line-height: var(--lh-snug);
+  color: var(--ink-mute);
+}
+
+/* Bloque 3: sub-encabezados dentro de "El mercado del mundo" (traspasos
+   cerrados / asientos abiertos). */
+.mercado-mundo-sub {
+  margin-top: var(--s-3);
+  margin-bottom: var(--s-1);
+  font-size: var(--fs-0);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--ink-mute);
 }
 
 /* ==========================================================================

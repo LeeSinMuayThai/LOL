@@ -33,6 +33,71 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-09 — Fase 9Mg: la pantalla del mercado
+
+Séptimo commit de **9M** (PLAN.md §9M.8). Cada subfase de 9M entregó su pedazo de pantalla con
+regla 12; 9Mg los junta en la pantalla de tres bloques que §9M.8 dibuja, sobre el
+`presentacion: 'mercado'` que la UI y el pipeline headless **ya entienden**. **Sólo presentación**:
+cero constantes nuevas, cero cambios de lógica de mercado o de RNG — el motor ya calculaba todo lo
+que ahora se pinta (carreras byte a byte idénticas a 9Mf, agregado incluido).
+
+#### `src/systems/mercado.js` — dos datos nuevos en `decision.datos`
+
+- `vosEnElMercado(state)` → `datos.vos`: `valorUSD` (de `valorDeMercado`), `sueldoUSD`,
+  `sobreSueldoPct` (el valor como % sobre el sueldo vigente — el referente de regla 13; `null` si
+  sos agente libre o no hay liga que te tase) y `contrato` (org, liga, sueldo, años restantes,
+  cláusula — espejo directo de `career.contrato`, o `null`). Va en la decisión de oferta y en la de
+  traspaso (ahí con el contrato **vigente** y sus años).
+- `asientosAbiertosParaPantalla(state, ofertas, fichadores)` → `datos.asientosAbiertos`: las orgs
+  del escaneo de la demanda (`orgsQueTeFicharian`) que **no** te ofertaron y no son tu club — los
+  huecos en tu rol que el mercado no convirtió en oferta (el sesgo etario, el asiento no congelado).
+  Capado a `clubesInteresadosMax`. Para no escanear el mundo dos veces, `generarOfertas` pasó a
+  devolver `{ ofertas, fichadores }` — el escaneo ya lo hacía adentro.
+
+#### `src/ui/components/mercado.js` + `index.html` + `pantallas.css` — los tres bloques
+
+1. **Vos en el mercado** (`construirBloqueVos`, nuevo `<div id="mercadoVos">` antes de la grilla):
+   el valor en oro con su línea de referente ("N% por encima/por debajo de tu sueldo" / "en línea" /
+   "tu valor de mercado hoy" si sos libre), el contrato con los años que quedan ("vence esta
+   pretemporada" cuando `aniosRestantes ≤ 0`), y —si ya llamaste al representante— "Te siguen sin
+   ofertar: …".
+2. **Las ofertas**: las tarjetas de 9Me/9Mf, sin cambios.
+3. **El mercado del mundo** (`renderMundo` reemplaza a `renderLista`): un bloque con dos sub-listas
+   — los `N fichajes cerrados este offseason` (traspasos del mundo, 9Mc) y, debajo, `Asientos
+   abiertos en tu puesto que no llegaron a oferta`. Los clubes que el bloque 1 ya nombró no se
+   repiten acá. Juntos responden "por qué me llegó lo que me llegó" (§9M.8).
+
+El `<div id="mercadoInteresados">` suelto de 9Me se eliminó — "quién te mira" es contenido del
+bloque 1 ahora. `renderLista` quedó sin usar y se borró.
+
+#### La ficha permanente ya mostraba sueldo, contrato y valor
+
+§9M.8 también pedía sueldo/contrato/valor en la ficha permanente. **Lo entregó la fase T2** (bloques
+`ficha-contrato` y `ficha-valor-mercado` en `components/ficha.js`, con la marca `--bajo-sueldo`
+cuando el valor supera al sueldo en más de 15%). No se volvió a tocar.
+
+#### Verificación
+
+- `node src/dev/validate.js` — **144/144 OK**. Check nuevo: "Fase 9Mg: toda pantalla de mercado
+  (oferta y traspaso) lleva el bloque 'vos' y los asientos abiertos, sin pasar el tope (§9M.8)" —
+  120 seeds; asserta que `datos.vos.contrato` espeja `career.contrato` (regla 15), que
+  `asientosAbiertos` es array capado a `clubesInteresadosMax`, sin tu club ni una org que ya te
+  ofertó / el comprador. Exige ≥30 pantallas de oferta y ≥1 de traspaso vistas. Ningún check previo
+  se movió. (Corrido dos veces: antes y después de que `generarOfertas` devolviera `fichadores`.)
+- `node src/dev/simulate.js 1500 60 todas` — **90s solo** (base 9Mf 99s → **0,91×**, tope 2× —
+  check 14; el refactor de `generarOfertas` sacó un escaneo redundante de `orgsQueTeFicharian` por
+  decisión de mercado), **0 crashes / 0 varadas** en 4500 carreras. 9Mg no toca estado ni `rng`: el
+  agregado es **idéntico** al de 9Mf — equilibrado tier1 al cierre 77,4% · retiro 77,4% ·
+  mentalidad 89,1 · mecánica 75,1 · soloqElo 3246,8. Ranked (burnout 51,5% · tier1 41,8%) y
+  prudente (tier1 71,6%) igual de estables.
+- `node src/dev/build.js` — Build OK, determinismo src vs dist (12×30) intacto.
+- Determinismo: 60 seeds, misma seed → carrera idéntica byte a byte (antes y después del refactor de
+  `generarOfertas`).
+- **A mano (navegador, CDP headless)**: dos saves parados en el mercado —uno de agente libre sin
+  representante, otro con representante ya llamado y asientos abiertos—. Los tres bloques renderizan
+  sin un solo error de consola: bloque 1 con valor + referente + estado de contrato, las tarjetas,
+  y "El mercado del mundo" con las dos sub-listas (y el de-dup contra el bloque 1 funcionando).
+
 ### 2026-09-09 — Fase 9Mf: traspasos a mitad de contrato, y el banquillo
 
 Sexto commit de **9M** (PLAN.md §9M.7). Con el contrato corriendo, el mercado imprimía una línea

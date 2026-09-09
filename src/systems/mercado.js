@@ -187,6 +187,10 @@ function construirOferta(state, liga, org, tagForzado, rng) {
 // MUNDO con un asiento congelado para vos este offseason (`core/mercadoMundial.js`).
 // Fase 9Md: `orgsQueTeFicharian` ya no recibe una liga — escanea las 6 tier 1
 // + tu tier 2. El mercado ya no tira ningún dado.
+//
+// Devuelve `{ ofertas, fichadores }`: `fichadores` es el escaneo crudo de la
+// demanda (antes del filtro de congelados) para que 9Mg arme los "asientos
+// abiertos" sin volver a escanear el mundo.
 function generarOfertas(state, rng) {
   const m = BALANCE.mercado;
   const ofertas = [];
@@ -210,7 +214,8 @@ function generarOfertas(state, rng) {
     ? new Set(pre.congelados.filter((c) => c.rol === state.player.role).map((c) => c.org))
     : null;
   const dominante = state.mundo.regionDominante;
-  const posibles = orgsQueTeFicharian(state)
+  const fichadores = orgsQueTeFicharian(state);
+  const posibles = fichadores
     .filter((entrada) => !congeladosOrgs || congeladosOrgs.has(entrada.org.nombre))
     // `regionDominante` (9Md): las orgs de esa región suben en el orden de la mano.
     .map((entrada) => ({
@@ -252,7 +257,7 @@ function generarOfertas(state, rng) {
     ofertas.push({ ...oferta, motivoDemanda: motivo, ...(forzadaFranquicia ? { forzadaFranquicia: true } : {}) });
   }
 
-  return ofertas.slice(0, m.ofertasMax);
+  return { ofertas: ofertas.slice(0, m.ofertasMax), fichadores };
 }
 
 // Los traspasos del mundo que se le muestran al jugador (regla 16: "el dado
@@ -265,6 +270,47 @@ function traspasosParaPantalla(state) {
     .slice()
     .sort((a, b) => rank(a.desde) - rank(b.desde))
     .slice(0, BALANCE.demanda.traspasosEnPantalla);
+}
+
+// Fase 9Mg (§9M.8): el bloque "Vos en el mercado" de la pantalla. Valor de
+// mercado con su referente (regla 13: contra tu sueldo vigente, nunca un número
+// suelto) y el contrato con los años que quedan. No calcula nada nuevo — lee
+// `valorDeMercado` y `career.contrato`, que ya existen.
+function vosEnElMercado(state) {
+  const c = state.career.contrato;
+  const valorUSD = valorDeMercado(state);
+  const sueldoUSD = c.org ? c.salarioAnualUSD : 0;
+  return {
+    valorUSD,
+    sueldoUSD,
+    // El valor como % sobre el sueldo vigente. `null` si no hay con qué
+    // comparar (agente libre, o sin liga que te tase todavía).
+    sobreSueldoPct: sueldoUSD > 0 ? Math.round((valorUSD / sueldoUSD - 1) * 100) : null,
+    contrato: c.org
+      ? {
+        org: c.org, liga: c.liga ?? null,
+        salarioUSD: c.salarioAnualUSD,
+        aniosRestantes: c.aniosRestantes,
+        clausula: c.clausula ?? null
+      }
+      : null
+  };
+}
+
+// Fase 9Mg: los asientos abiertos en tu rol que este offseason NO se
+// tradujeron en oferta —el mercado prefirió jóvenes, o el asiento no se
+// congeló para vos—. Es lo que explica "por qué me llegó lo que me llegó".
+// `fichadores` es el escaneo de la demanda que `generarOfertas` ya hizo (o
+// `orgsQueTeFicharian` directo, para el traspaso); se le quitan las orgs que ya
+// son tarjeta y tu club actual. Capado como la lista del representante.
+function asientosAbiertosParaPantalla(state, ofertas, fichadores) {
+  const fuera = new Set(ofertas.map((oferta) => oferta.org));
+  fuera.add(state.career.currentOrg);
+  return fichadores
+    .filter((entrada) => !fuera.has(entrada.org.nombre))
+    .sort((a, b) => b.org.fuerza - a.org.fuerza)
+    .slice(0, BALANCE.mercado.clubesInteresadosMax)
+    .map((entrada) => ({ org: entrada.org.nombre, liga: entrada.liga.id }));
 }
 
 // `carry` sobrevive a la re-presentación de la decisión cuando se negocia
@@ -280,8 +326,15 @@ function construirDecisionOfertas(state, ofertas, carry = {}) {
     datos: {
       motivo: 'oferta',
       representanteDisponible: !state.flags.llamadaRepresentante,
+      // Fase 9Mg: el bloque "Vos en el mercado" —valor con su referente, el
+      // contrato, los años que quedan—. Se recalcula en cada re-presentación
+      // (el estado no cambia al negociar, pero es barato).
+      vos: vosEnElMercado(state),
       // Fase 9Mc: los 4-6 traspasos que movieron el mercado este offseason.
       traspasosMundo: traspasosParaPantalla(state),
+      // Fase 9Mg: asientos abiertos en tu rol que no llegaron a oferta. Se
+      // computa una vez (`aplicar`) y viaja por `carry` en cada re-presentación.
+      asientosAbiertos: carry.asientosAbiertos ?? [],
       // Fase 9Me: asientos que se cerraron porque apretaste de más en la
       // negociación — siguen contando para "quién te sacó el puesto" (check 10).
       negociacionesRotas: carry.negociacionesRotas ?? [],
@@ -372,7 +425,7 @@ export function aplicar(state, rng) {
     }
   }
 
-  const ofertas = generarOfertas(stConValor, rng);
+  const { ofertas, fichadores } = generarOfertas(stConValor, rng);
   if (ofertas.length === 0) {
     const racha = stConValor.flags.splitsSinOfertaConsecutivos + 1;
     if (racha >= BALANCE.mercado.splitsSinOfertaParaLibre) {
@@ -388,7 +441,11 @@ export function aplicar(state, rng) {
     };
   }
 
-  return { state: stConValor, logs: logsMundo, decision: construirDecisionOfertas(stConValor, ofertas) };
+  const asientosAbiertos = asientosAbiertosParaPantalla(stConValor, ofertas, fichadores);
+  return {
+    state: stConValor, logs: logsMundo,
+    decision: construirDecisionOfertas(stConValor, ofertas, { asientosAbiertos })
+  };
 }
 
 // --- Aceptar una oferta (o pedir una mano nueva) ---
@@ -473,7 +530,8 @@ function ofertaDeTraspaso(state, rng) {
     return null;
   }
 
-  const pretendiente = orgsQueTeFicharian(state)
+  const fichadores = orgsQueTeFicharian(state);
+  const pretendiente = fichadores
     .filter((entrada) => entrada.org.fuerza >= orgActual.fuerza + m.traspasoBrechaFuerzaMin)
     .sort((a, b) => b.org.fuerza - a.org.fuerza)[0];
   if (!pretendiente || !chance(m.probTraspasoMitadContrato, rng)) {
@@ -532,7 +590,12 @@ function ofertaDeTraspaso(state, rng) {
       traspasoUSD,
       comprador: org.nombre,
       representanteDisponible: false,
+      // Fase 9Mg: la misma pantalla de tres bloques. Bloque 1 (vos) y bloque 3
+      // (mundo + asientos abiertos), acá con el contrato VIGENTE y sus años. El
+      // comprador se pasa como "oferta" para que el helper lo excluya.
+      vos: vosEnElMercado(state),
       traspasosMundo: traspasosParaPantalla(state),
+      asientosAbiertos: asientosAbiertosParaPantalla(state, [{ org: org.nombre }], fichadores),
       negociacionesRotas: [],
       clubesInteresados: []
     }
@@ -773,7 +836,8 @@ export function resolver(state, decision, respuesta, rng) {
         : 'Tu representante mueve hilos, pero nadie más está mirando tu puesto ahora.')],
       decision: construirDecisionOfertas(stConLlamada, decision.opciones, {
         negociacionesRotas: decision.datos.negociacionesRotas ?? [],
-        clubesInteresados: interesados
+        clubesInteresados: interesados,
+        asientosAbiertos: decision.datos.asientosAbiertos ?? []
       })
     };
   }
@@ -796,7 +860,9 @@ export function resolver(state, decision, respuesta, rng) {
 
     if (res.corte) {
       const decisionActualizada = construirDecisionOfertas(state, res.ofertas, {
-        negociacionesRotas, clubesInteresados: decision.datos.clubesInteresados
+        negociacionesRotas,
+        clubesInteresados: decision.datos.clubesInteresados,
+        asientosAbiertos: decision.datos.asientosAbiertos ?? []
       });
       return resolverEspera(state, decisionActualizada, rng, `${res.logs[0].message} No queda nada que firmar esta ventana.`);
     }
@@ -806,7 +872,8 @@ export function resolver(state, decision, respuesta, rng) {
       logs: res.logs,
       decision: construirDecisionOfertas(state, res.ofertas, {
         negociacionesRotas,
-        clubesInteresados: decision.datos.clubesInteresados ?? []
+        clubesInteresados: decision.datos.clubesInteresados ?? [],
+        asientosAbiertos: decision.datos.asientosAbiertos ?? []
       })
     };
   }

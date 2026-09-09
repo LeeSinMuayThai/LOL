@@ -1033,6 +1033,80 @@ check('Fase 9Mf: ≥25% de las carreras ven un traspaso a mitad de contrato, y "
   }
 });
 
+check('Fase 9Mg: toda pantalla de mercado (oferta y traspaso) lleva el bloque "vos" y los asientos abiertos, sin pasar el tope (§9M.8)', () => {
+  // Regla de proceso 12: la fase no cierra sin su pantalla. El test honesto de
+  // una pantalla acá es que la decisión cargue lo que los tres bloques pintan —
+  // (1) `datos.vos` con valor y contrato espejo del motor (regla 15), (3)
+  // `datos.asientosAbiertos` como array capado y sin tu propio club. El bloque
+  // 2 (las ofertas) ya lo cubren otros checks.
+  const cap = BALANCE.mercado.clubesInteresadosMax;
+  let vistasOferta = 0;
+  let vistasTraspaso = 0;
+  for (let seed = 1; seed <= 120; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    const responder = (sistema, st, decision, r) => {
+      if (sistema.id === 'mercado' && (decision.datos?.motivo === 'oferta' || decision.datos?.motivo === 'traspaso')) {
+        const { vos, asientosAbiertos } = decision.datos;
+        if (!vos || typeof vos !== 'object') {
+          throw new Error(`seed ${seed}: decisión de mercado (${decision.datos.motivo}) sin datos.vos`);
+        }
+        if (typeof vos.valorUSD !== 'number' || vos.valorUSD < 0) {
+          throw new Error(`seed ${seed}: datos.vos.valorUSD inválido (${vos.valorUSD})`);
+        }
+        if (vos.sobreSueldoPct !== null && typeof vos.sobreSueldoPct !== 'number') {
+          throw new Error(`seed ${seed}: datos.vos.sobreSueldoPct ni número ni null (${vos.sobreSueldoPct})`);
+        }
+        if (!('contrato' in vos)) {
+          throw new Error(`seed ${seed}: datos.vos sin campo contrato`);
+        }
+        if (vos.contrato) {
+          // Espejo del contrato vigente del motor: si diverge, la pantalla miente.
+          if (vos.contrato.salarioUSD !== st.career.contrato.salarioAnualUSD
+            || vos.contrato.aniosRestantes !== st.career.contrato.aniosRestantes) {
+            throw new Error(`seed ${seed}: datos.vos.contrato no espeja career.contrato`);
+          }
+        } else if (st.career.currentOrg && st.career.contrato.org) {
+          throw new Error(`seed ${seed}: datos.vos.contrato null pero el jugador tiene contrato con ${st.career.contrato.org}`);
+        }
+        if (!Array.isArray(asientosAbiertos)) {
+          throw new Error(`seed ${seed}: datos.asientosAbiertos no es array`);
+        }
+        if (asientosAbiertos.length > cap) {
+          throw new Error(`seed ${seed}: ${asientosAbiertos.length} asientos abiertos en pantalla, tope ${cap}`);
+        }
+        const ofertadas = new Set(decision.opciones.map((o) => o.org));
+        for (const a of asientosAbiertos) {
+          if (typeof a.org !== 'string' || typeof a.liga !== 'string') {
+            throw new Error(`seed ${seed}: asiento abierto mal formado ${JSON.stringify(a)}`);
+          }
+          if (a.org === st.career.currentOrg) {
+            throw new Error(`seed ${seed}: "${a.org}" es tu club actual y aparece como asiento abierto`);
+          }
+          if (decision.datos.motivo === 'oferta' && ofertadas.has(a.org)) {
+            throw new Error(`seed ${seed}: "${a.org}" ya te ofertó y aparece como asiento abierto`);
+          }
+          if (decision.datos.motivo === 'traspaso' && a.org === decision.datos.comprador) {
+            throw new Error(`seed ${seed}: el comprador "${a.org}" aparece como asiento abierto`);
+          }
+        }
+        if (decision.datos.motivo === 'oferta') vistasOferta += 1;
+        else vistasTraspaso += 1;
+      }
+      return sistema.resolverAuto(st, decision, r);
+    };
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng, responder).state;
+    }
+  }
+  if (vistasOferta < 30) {
+    throw new Error(`sólo ${vistasOferta} pantallas de oferta vistas en 120 seeds: muestra insuficiente`);
+  }
+  if (vistasTraspaso < 1) {
+    throw new Error('ninguna pantalla de traspaso vista en 120 seeds: el bloque "vos" del traspaso quedó sin ejercitar');
+  }
+});
+
 check('El mercado del mundo renueva contratos NPC: no decaen todos a 0 para siempre', () => {
   // Sin renovación NPC (el estado pre-9Mc), con contratos de 1-3 años todo
   // `plantel[rol].contrato.anios` vale 0 tras 3 offseasons. Con la resolución
