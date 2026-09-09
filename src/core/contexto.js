@@ -4,6 +4,7 @@ import { bandaDeLadder, servidorDeLaPartida } from './ranked.js';
 import { campeonesMuertos } from './ajusteMeta.js';
 import { campeonNuevoPendiente } from './pool.js';
 import { residenciaEn } from './demanda.js';
+import { nivelDelJugador } from './ficha.js';
 import { MOMENTOS } from '../data/contextos.js';
 
 // "Donde estas parado en la carrera", derivado del estado.
@@ -147,14 +148,19 @@ function calcularMarcas(state) {
   if (state.player.stats.mentalidad < BALANCE.atributos.burnoutUmbral + BALANCE.contexto.margenMentalidadAlLimite) {
     marcas.push('mentalidad_al_limite');
   }
-  // El año muerto (fases 3 y 9): ya ganaste el ascenso, la liga te espera,
-  // pero todavía no tenés la edad que exige (`mercado.js` lo resuelve solo,
-  // sin volver a sortear nada, apenas cumplís).
-  if (state.flags.ascensoPendiente) {
-    const ligaDestino = state.mundo.ligas.find((liga) => liga.id === state.flags.ascensoPendiente.ligaId);
-    if (state.age < (ligaDestino?.edadMinima ?? 0)) {
-      marcas.push('espera_edad_minima');
-    }
+  // El año muerto (fases 3 y 9Md): sos nivel de tier 1 pero te falta la edad
+  // que exigen LEC/LPL (18). Seguís en tier 2 hasta que el cumpleaños destraba
+  // la oferta (el mercado la genera solo apenas calificás).
+  if (state.career.tier === 2
+    && state.age < BALANCE.competitivo.edadDebutTardio
+    && nivelDelJugador(state) >= BALANCE.competitivo.nivelParaTier1) {
+    marcas.push('espera_edad_minima');
+  }
+
+  // Descenso reciente de tier 1 (fase 9Md, D16).
+  if (state.flags.splitDescenso != null
+    && state.player.splitCount - state.flags.splitDescenso < BALANCE.contexto.ventanaDescenso) {
+    marcas.push('descenso');
   }
 
   return [...marcas, ...marcasDePool(state), ...marcasDeRegistro(state)];

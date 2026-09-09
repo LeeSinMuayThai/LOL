@@ -85,16 +85,18 @@ function envejecerYClasificar(state, rng, congelar) {
         continue;
       }
 
-      if (clase === 'firme') {
-        nuevo[rol] = envejecido;
-        continue;
-      }
-
-      // Asiento en juego. ¿Se reserva para el jugador? (También el del que se
-      // retira: "se les va X, 27" es justo el asiento que el jugador reclama.)
+      // ¿Se reserva para el jugador? Se chequea ANTES del `firme`: un asiento
+      // `porMerito` (el jugador supera claramente al titular) se congela aunque
+      // el titular tenga contrato — es la vía por la que sube una franquicia
+      // (9R0e / 9Md). También el del que se retira ("se les va X, 27").
       if (congelar(orgNombre, rol)) {
         nuevo[rol] = envejecido;   // el incumbente sigue: `asientoAbierto` queda true
         congelados.push({ org: orgNombre, liga: liga.id, rol });
+        continue;
+      }
+
+      if (clase === 'firme') {
+        nuevo[rol] = envejecido;
         continue;
       }
 
@@ -195,8 +197,9 @@ function conFuerzasRecalculadas(state, planteles) {
 }
 
 // Resuelve el mercado del mundo de esta pretemporada. `vaAlMercado` es true
-// cuando el jugador realmente va a elegir este offseason (contrato vencido, sin
-// equipo, o ascenso ganado): sólo entonces se congelan asientos para él.
+// cuando el jugador realmente va a elegir este offseason (contrato vencido o sin
+// equipo): sólo entonces se congelan asientos para él. Fase 9Md: los asientos
+// que se congelan son de las 6 ligas tier 1 + tu tier 2, no sólo tu liga.
 export function resolverMercadoMundial(state, rng, { vaAlMercado }) {
   if (state.player.splitCount === 0 || !state.mundo.planteles) {
     return { state, logs: [] };

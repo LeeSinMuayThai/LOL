@@ -273,13 +273,10 @@ export function createInitialState(seed, rng, eleccion = null) {
       // Se congela a los 18 (o al dejar la etapa amateur) y acompaña el resto
       // de la carrera: 'terminado' o 'lo_dejo'.
       secundario: null,
-      // El año muerto (fases 3 y 9): ganaste el ascenso pero la liga exige más
-      // edad de la que tenés. `mercado.js` lo resuelve solo apenas cumplís,
-      // sin volver a sortear nada (unifica lo que hasta la fase 9 vivía
-      // partido entre `competitivo.js` eligiendo destino Y esperando edad —
-      // ahora competitivo.js solo marca el ascenso ganado, `{ligaId, tier}`;
-      // mercado.js decide cuándo y con quién se hace efectivo).
-      ascensoPendiente: null,
+      // Fase 9Md: el split en que descendiste de tier 1 (D16). `null` si nunca
+      // pasó. `core/contexto.js` prende la marca `descenso` mientras esté
+      // dentro de `BALANCE.contexto.ventanaDescenso` splits.
+      splitDescenso: null,
       // "la_prueba" (fase 4): el tryout con el tier 3 deja este bonus/malus,
       // que `roster.js` consume una sola vez al armar el primer roster (el
       // split del fichaje todavía no tiene equipo armado) y lo vuelve a cero.

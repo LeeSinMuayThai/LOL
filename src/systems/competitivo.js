@@ -3,13 +3,25 @@ import { clamp } from '../core/numeros.js';
 import { crearLog } from '../core/log.js';
 import { elegirOrgTier3, asignarOrgTier3 } from '../core/tier3.js';
 import { cerrarFila } from '../core/registro.js';
+import { calcularContexto } from '../core/contexto.js';
+import { usadosDePlanteles, generarPlantel, fuerzaDePlantel } from '../core/plantel.js';
 import { BALANCE } from '../data/balance.js';
 
-// Fase 8: cierra la fila abierta del registro justo antes de cambiar de org
-// (disolución de tier 3, el único cambio de org que sigue siendo automático
-// acá — fase 9: ascenso a tier 2 o tier 1 cierra su fila en `mercado.js`,
-// recién cuando el jugador elige con quién firma). Sin fila abierta (primer
-// fichaje de la carrera) no hace nada — `cerrarFila` ya es un no-op ahí.
+// El tránsito entre tiers.
+//
+// Fase 3: tier 3 (equipos inventados, efímeros) se resuelve solo — subís o el
+// equipo se disuelve. Fase 9 (§9.4): el mercado decide A QUÉ ORG vas.
+//
+// Fase 9Md (§9M.5): **la escalera de tier 2 y tier 1 deja de sortearse**. Ya no
+// hay "ascenso ganado" — hay asientos (`systems/mercado.js`, que corre justo
+// después). Este sistema queda con:
+//  - tier 3, que no cambia ("a ese nivel no se negocia"): disolución, re-fichaje,
+//    y el salto a tier 2 (que ahora te deja como AGENTE LIBRE de tier 2 — el
+//    mercado te ofrece club en la pretemporada).
+//  - el DESCENSO de tier 1 (D16): si tu org termina última de una liga con
+//    `desciendeA`, baja de categoría y tu contrato viaja con ella; su org tier-2
+//    más fuerte de la región promociona a taparla.
+
 function conFilaCerrada(state, motivo) {
   return cerrarFila(state.career.registro, {
     anio: state.calendario.anio, split: state.player.splitCount,
@@ -19,44 +31,14 @@ function conFilaCerrada(state, motivo) {
 
 export const id = 'competitivo';
 
-// El tránsito entre tiers (fase 3). Va después de `roster` en el registro: en
-// el split del fichaje, `amateur` todavía no corrió (viene más adelante), así
-// que este sistema ve `phase: 'amateur'` y no hace nada — recién actúa desde
-// el split siguiente, con el fichaje ya hecho.
-//
-// Fase 9 (PLAN.md §9.4, "el cambio de más riesgo del documento"): este
-// sistema sigue decidiendo SI ascendés (mérito: jerarquía y suerte), pero ya
-// no decide A QUÉ ORG vas — eso pasa a ser una decisión real del jugador en
-// `mercado.js`, que corre justo después en el registro. Acá solo se marca
-// `flags.ascensoPendiente = { ligaId, tier }`; tier 3 disolviéndose y
-// volviendo a levantarte siguen exactamente igual (a ese nivel no se
-// negocia, es la característica del nivel).
-
-// --- Tier 3: brevedad forzada ---
-//
-// Pedido explícito: nadie se queda mucho en un equipo inventado. Cada split
-// hay chance de que se resuelva — subís a tier 2, o el equipo se disuelve y
-// volvés a buscar otro (nunca te quedás "sin nada": tier 3 siempre te levanta
-// de nuevo, es la característica del nivel).
-
 function ligaTier2DeLaRegion(state) {
   return state.mundo.ligas.find((liga) => liga.tier === 2 && liga.regionId === state.mundo.regionIdOrigen) ?? null;
 }
 
-function marcarAscenso(state, ligaId, tier, logsPrevios) {
-  return {
-    state: { ...state, flags: { ...state.flags, ascensoPendiente: { ligaId, tier } } },
-    logs: [...logsPrevios, crearLog('competitivo', `¡Te ganaste el ascenso a ${ligaId}! En la próxima pretemporada elegís con quién firmás.`)]
-  };
-}
+// --- Tier 3: brevedad forzada ---
 
 // Fase 9E (bug D25): `tier` se CONSERVA en 3. Se te disolvió el equipo, no
-// dejaste de ser un jugador de tier 3 — y el tier es justamente el dato con
-// el que `aplicar()` decide que te toca volver a buscar un armado chico.
-// Anulándolo, ese guard nunca se cumplía y la carrera quedaba varada para
-// siempre: ni `competitivo` te re-fichaba (mira el tier) ni `mercado` te
-// mandaba ofertas (mira la liga). `liga` sí sigue en null: tier 3 no es una
-// liga real, eso siempre estuvo bien.
+// dejaste de ser un jugador de tier 3.
 function disolverEquipo(state, logsPrevios) {
   return {
     state: {
@@ -71,13 +53,30 @@ function disolverEquipo(state, logsPrevios) {
   };
 }
 
-function resolverTier3(state, rng) {
-  // Ya ganaste el ascenso y estás esperando la pretemporada para elegir
-  // equipo (mercado.js): no se vuelve a tirar nada mientras tanto.
-  if (state.flags.ascensoPendiente) {
-    return { state, logs: [] };
+// Fase 9Md: el salto de tier 3 te deja como AGENTE LIBRE de tier 2 — "deja el
+// asiento abierto". La próxima pretemporada el mercado te ofrece club.
+function saltarATier2(state, logsPrevios) {
+  const liga = ligaTier2DeLaRegion(state);
+  if (!liga) {
+    // No debería pasar (las 6 regiones tienen tier 2 en leagues.json).
+    return { state, logs: logsPrevios };
   }
+  return {
+    state: {
+      ...state,
+      career: {
+        ...state.career,
+        tier: 2, liga: liga.id, currentOrg: null, rosterDeOrg: null,
+        companeros: [], jerarquia: 0, arraigo: 0, sinergia: 0,
+        contrato: { ...state.career.contrato, org: null, liga: liga.id, tier: 2, anios: 0, aniosRestantes: 0 },
+        registro: conFilaCerrada(state, 'ascenso')
+      }
+    },
+    logs: [...logsPrevios, crearLog('competitivo', `Te ganás el salto a ${liga.id}. Sos agente libre de tier 2: en la pretemporada elegís club.`)]
+  };
+}
 
+function resolverTier3(state, rng) {
   const c = BALANCE.competitivo;
   if (!chance(c.probSalidaTier3, rng)) {
     return { state, logs: [] };
@@ -90,14 +89,7 @@ function resolverTier3(state, rng) {
   if (!chance(probAscenso, rng)) {
     return disolverEquipo(state, []);
   }
-
-  const liga = ligaTier2DeLaRegion(state);
-  if (!liga) {
-    // No debería pasar (las 6 regiones tienen tier 2 en leagues.json), pero
-    // sin liga de destino no hay ascenso posible: seguís en tier 3.
-    return { state, logs: [] };
-  }
-  return marcarAscenso(state, liga.id, 2, []);
+  return saltarATier2(state, []);
 }
 
 // Un tier 3 disuelto nunca queda mucho tiempo sin equipo: es la característica
@@ -113,27 +105,83 @@ function reFicharTier3(state, rng) {
   };
 }
 
-// --- Tier 2: el ascenso se gana, no se sortea parejo ---
+// --- Descenso de tier 1 (fase 9Md, cierra D16) ---
 
-function resolverTier2(state, rng) {
-  if (state.flags.ascensoPendiente) {
-    return { state, logs: [] };
+// ¿La liga de destino tiene planteles? La tier 2 de tu región siempre; una liga
+// extranjera (te relegaron siendo import) puede no tenerlos — se generan al
+// vuelo para que el mercado tenga con qué trabajar.
+function conPlantelesDe(state, liga, rng) {
+  if (liga.orgs.every((org) => state.mundo.planteles?.[org.nombre])) {
+    return state.mundo.planteles;
+  }
+  const usados = usadosDePlanteles(state);
+  const planteles = { ...state.mundo.planteles };
+  for (const org of liga.orgs) {
+    if (planteles[org.nombre]) {
+      continue;
+    }
+    planteles[org.nombre] = generarPlantel(rng, {
+      orgNombre: org.nombre,
+      regionId: liga.regionId,
+      fuerzaOrg: org.fuerza,
+      medianaSalarioUSD: liga.salario.medianaUSD,
+      usados,
+      edadMinima: liga.edadMinima ?? 0
+    });
+  }
+  return planteles;
+}
+
+function resolverDescenso(state, rng) {
+  if (state.career.tier !== 1 || !state.career.currentOrg) {
+    return null;
+  }
+  if (calcularContexto(state).ventana !== 'pretemporada') {
+    return null;
+  }
+  const ligaActual = state.mundo.ligas.find((liga) => liga.id === state.career.liga);
+  if (!ligaActual?.desciendeA) {
+    return null;
+  }
+  const equipos = ligaActual.orgs.length;
+  // `career.posicion` trae el resultado del split de cierre que acaba de pasar.
+  if (state.career.posicion == null || state.career.posicion < equipos) {
+    return null;
   }
 
-  const c = BALANCE.competitivo;
-  const probAscenso = clamp(
-    c.probAscensoBaseDesdeTier2 + (state.career.jerarquia / BALANCE.stats.max) * c.probAscensoPorJerarquiaDesdeTier2,
-    0, 1
-  );
-  if (!chance(probAscenso, rng)) {
-    return { state, logs: [] };
+  const ligaDestino = state.mundo.ligas.find((liga) => liga.id === ligaActual.desciendeA);
+  if (!ligaDestino) {
+    return null;
   }
 
-  const ligaTier1 = state.mundo.ligas.find((liga) => liga.tier === 1 && liga.desciendeA === state.career.liga);
-  if (!ligaTier1) {
-    return { state, logs: [] };
-  }
-  return marcarAscenso(state, ligaTier1.id, 1, []);
+  const planteles = conPlantelesDe(state, ligaDestino, rng);
+  const orgQueBaja = ligaActual.orgs.find((org) => org.nombre === state.career.currentOrg);
+  // La org tier-2 más fuerte de esa región promociona a tapar el hueco.
+  const orgQueSube = [...ligaDestino.orgs].sort((a, b) => b.fuerza - a.fuerza)[0];
+
+  const ligas = state.mundo.ligas.map((liga) => {
+    if (liga.id === ligaActual.id) {
+      return { ...liga, orgs: liga.orgs.map((org) => (org.nombre === orgQueBaja.nombre ? orgQueSube : org)) };
+    }
+    if (liga.id === ligaDestino.id) {
+      return { ...liga, orgs: liga.orgs.map((org) => (org.nombre === orgQueSube.nombre ? orgQueBaja : org)) };
+    }
+    return liga;
+  });
+
+  return {
+    state: {
+      ...state,
+      flags: { ...state.flags, splitDescenso: state.player.splitCount },
+      mundo: { ...state.mundo, ligas, planteles },
+      career: {
+        ...state.career,
+        tier: 2, liga: ligaDestino.id,
+        contrato: { ...state.career.contrato, tier: 2, liga: ligaDestino.id }
+      }
+    },
+    logs: [crearLog('competitivo', `${orgQueBaja.nombre} termina último en ${ligaActual.id}: desciende a ${ligaDestino.id}. Bajás con ellos — el contrato viaja.`)]
+  };
 }
 
 export function aplicar(state, rng) {
@@ -141,19 +189,21 @@ export function aplicar(state, rng) {
     return { state, logs: [] };
   }
 
+  const descenso = resolverDescenso(state, rng);
+  if (descenso) {
+    return descenso;
+  }
+
   if (!state.career.currentOrg) {
-    // Sólo tier 3 se re-ofrece solo: es la característica del nivel. Un
-    // jugador libre de tier 1/2 (fase 9: el mercado no le consiguió equipo,
-    // o está esperando resolver un ascenso) no se re-ficha automático acá —
-    // eso es exactamente lo que `mercado.js` va a intentar resolver.
+    // Sólo tier 3 se re-ofrece solo. Un tier-2 libre (recién saltó de tier 3, o
+    // el mercado no le consiguió equipo) lo resuelve `mercado.js`.
     return state.career.tier === 3 ? reFicharTier3(state, rng) : { state, logs: [] };
   }
 
   if (state.career.tier === 3) {
     return resolverTier3(state, rng);
   }
-  if (state.career.tier === 2) {
-    return resolverTier2(state, rng);
-  }
+  // Tier 1 y tier 2 con equipo: no se sortea nada. El mercado (más abajo en el
+  // split) decide si te vas, te quedás o subís.
   return { state, logs: [] };
 }

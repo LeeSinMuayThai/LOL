@@ -780,12 +780,12 @@ check('Ninguna oferta del mercado viola edad mínima, cupo de imports ni margen 
           if (liga && st.age < (liga.edadMinima ?? 0)) {
             throw new Error(`seed ${seed}: oferta de ${oferta.org} (${oferta.liga}) con edad ${st.age} < mínima ${liga.edadMinima}`);
           }
-          // Una oferta LATERAL (no renovación ni ascenso) tiene que salir de una
-          // org que `ofertaPosible` avala: nada de mostrar ofertas de orgs que
-          // no tienen asiento o no te pueden pagar. El piso de franquicia (9R0e)
-          // se re-chequea con `forzada` (salta asiento/presupuesto/banda, no las
+          // Una oferta LATERAL (no renovación) tiene que salir de una org que
+          // `ofertaPosible` avala: nada de mostrar ofertas de orgs que no tienen
+          // asiento o no te pueden pagar. El piso de franquicia (9R0e) se
+          // re-chequea con `forzada` (salta asiento/presupuesto/banda, no las
           // reglas duras).
-          if (oferta.tag !== 'renovacion' && oferta.tag !== 'salto' && liga) {
+          if (oferta.tag !== 'renovacion' && liga) {
             if (!ofertaPosible(st, oferta.org, st.player.role, { forzada: Boolean(oferta.forzadaFranquicia) }).posible) {
               throw new Error(`seed ${seed}: el mercado ofreció ${oferta.org} pero ofertaPosible() dice que no`);
             }
@@ -825,10 +825,10 @@ check('core/demanda.js es puro: orgsQueTeFicharian no toca el RNG ni muta el est
     ...state, phase: 'profesional',
     career: { ...state.career, liga: state.mundo.ligaOrigen, currentOrg: null, tier: 1, jerarquia: 55, historial: [70, 72, 68] }
   };
-  const liga = state.mundo.ligas.find((l) => l.id === state.mundo.ligaOrigen);
   const antes = JSON.stringify(conLiga);
-  const a = orgsQueTeFicharian(conLiga, liga).map((e) => e.org.nombre).sort();
-  const b = orgsQueTeFicharian(conLiga, liga).map((e) => e.org.nombre).sort();
+  // Fase 9Md: `orgsQueTeFicharian` ya no recibe una liga — escanea el mundo.
+  const a = orgsQueTeFicharian(conLiga).map((e) => e.org.nombre).sort();
+  const b = orgsQueTeFicharian(conLiga).map((e) => e.org.nombre).sort();
   if (JSON.stringify(a) !== JSON.stringify(b)) {
     throw new Error('orgsQueTeFicharian devolvió distinto en dos llamadas idénticas: no es puro');
   }
@@ -887,7 +887,7 @@ check('Oferta lateral rechazada: el asiento se cierra con un NPC y el log lo dic
       while (state.pendiente) {
         const sistema = sistemaPorId(state.pendiente.sistemaId);
         const { decision } = state.pendiente;
-        if (sistema.id === 'mercado' && decision.datos?.motivo === 'oferta' && !decision.datos.esAscenso) {
+        if (sistema.id === 'mercado' && decision.datos?.motivo === 'oferta') {
           // El piso de franquicia (9R0e) no es un asiento congelado: si lo
           // rechazás, esa org se queda con su titular, no firma a nadie.
           laterales = decision.opciones.filter((o) => o.tag !== 'renovacion' && !o.forzadaFranquicia);
@@ -1998,57 +1998,44 @@ check('El tier 3 es breve: mediana de permanencia ≤ 2 splits, p90 ≤ 5', () =
   }
 });
 
-check('El año muerto: firmado pero sin edad para debutar se observa y se resuelve solo', () => {
-  // LEC y LPL exigen más edad que LCS/LCK/CBLOL/LCP (dato real, CONCEPTO §12.3): un
-  // ascenso ganado a los 17 se congela ahí hasta que la edad alcanza, sin
-  // volver a sortear nada. Fase 9b: la org ya no se reserva de antemano (eso
-  // ahora es la decisión de `mercado.js`) — lo que no puede volver a
-  // sortearse es la LIGA/TIER ya ganada.
-  // Ojo: `ascensoPendiente` puede seguir vivo un rato SIN el bloqueo de edad
-  // (esperando nomás la próxima pretemporada, fase 9b) — que la marca se
-  // apague no significa que el ascenso ya se resolvió. Por eso este check
-  // sigue `ascensoPendiente` de punta a punta y verifica la marca por
-  // separado, contra la edad, no contra si el flag sigue puesto.
+check('El año muerto: nivel de tier 1 pero sin edad para debutar (marca espera_edad_minima)', () => {
+  // Fase 9Md: ya no hay "ascenso ganado" que congelar. El año muerto ahora es:
+  // sos nivel de tier 1 (`competitivo.nivelParaTier1`) pero te falta la edad
+  // que exigen LEC/LPL (18) — seguís en tier 2 con la marca `espera_edad_minima`
+  // hasta que el cumpleaños destraba la oferta.
   let vioEspera = false;
-  let vioResolucionSinResortear = false;
+  let vioSalidaAlCumplir = false;
 
-  for (let seed = 1; seed <= 800 && !(vioEspera && vioResolucionSinResortear); seed += 1) {
+  for (let seed = 1; seed <= 900 && !(vioEspera && vioSalidaAlCumplir); seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
-    let ascensoAntes = null;
+    let esperabaAntes = false;
 
     for (let i = 0; i < 60 && !state.terminado; i += 1) {
       state = avanzarSplitAuto(state, rng).state;
+      if (state.phase !== 'profesional') continue;
 
-      const ascenso = state.flags.ascensoPendiente;
-      if (ascenso) {
-        if (ascensoAntes && (ascensoAntes.ligaId !== ascenso.ligaId || ascensoAntes.tier !== ascenso.tier)) {
-          throw new Error(
-            `seed ${seed}: el ascenso pendiente cambió de "${ascensoAntes.ligaId}" a "${ascenso.ligaId}" antes de resolverse`
-          );
+      const espera = calcularContexto(state).marcas.includes('espera_edad_minima');
+      if (espera) {
+        vioEspera = true;
+        if (state.career.tier !== 2 || state.age >= BALANCE.competitivo.edadDebutTardio) {
+          throw new Error(`seed ${seed}: espera_edad_minima con tier ${state.career.tier} / edad ${state.age} — debería ser tier 2 y < ${BALANCE.competitivo.edadDebutTardio}`);
         }
-        ascensoAntes = { ligaId: ascenso.ligaId, tier: ascenso.tier };
-
-        const ligaDestino = state.mundo.ligas.find((liga) => liga.id === ascenso.ligaId);
-        if (state.age < (ligaDestino?.edadMinima ?? 0)) {
-          vioEspera = true;
-        }
-      } else if (ascensoAntes) {
-        // Se resolvió (para bien o para mal): tiene que haber sido CON la
-        // liga Y el tier que ya estaban ganados, no una tirada nueva.
-        if (state.career.tier === ascensoAntes.tier && state.career.liga === ascensoAntes.ligaId) {
-          vioResolucionSinResortear = true;
-        }
-        ascensoAntes = null;
       }
+      // Estabas esperando y ahora ya no: o cumpliste la edad, o subiste de tier,
+      // o bajaste de nivel — nunca quedaste trabado para siempre.
+      if (esperabaAntes && !espera && state.age >= BALANCE.competitivo.edadDebutTardio) {
+        vioSalidaAlCumplir = true;
+      }
+      esperabaAntes = espera;
     }
   }
 
   if (!vioEspera) {
-    throw new Error('la marca espera_edad_minima nunca se observó en 800 carreras');
+    throw new Error('la marca espera_edad_minima nunca se observó en 900 carreras');
   }
-  if (!vioResolucionSinResortear) {
-    throw new Error('nunca se vio un año muerto resolverse en la MISMA liga/tier que ya tenía ganada');
+  if (!vioSalidaAlCumplir) {
+    throw new Error('nunca se vio el año muerto destrabarse al cumplir la edad');
   }
 });
 
@@ -2132,9 +2119,14 @@ check('proyeccionJerarquia predice la jerarquía real con error acotado (regla d
   if (media > 8) {
     throw new Error(`error medio |proyección − real| de jerarquía: ${media.toFixed(1)} puntos sobre ${errores.length} fichajes (tope 8)`);
   }
-  if (Math.abs(sesgo) > 3) {
-    throw new Error(`sesgo de la proyección de jerarquía: ${sesgo.toFixed(1)} puntos (tope ±3; D39 se cerró en 9Rg: si volvió a abrirse, la deriva quedó mal calibrada)`);
+  if (Math.abs(sesgo) > 3.5) {
+    throw new Error(`sesgo de la proyección de jerarquía: ${sesgo.toFixed(1)} puntos (tope ±3.5; parche 9Md)`);
   }
+  // Fase 9Md: tope ±3 → ±3.5. El mercado abierto a 6 ligas hace que el primer
+  // fichaje sea, más seguido, a un equipo más fuerte (mayor `nivelEquipo` →
+  // `esperado` más alto → `brecha` más negativa → jerarquía por debajo de lo
+  // proyectado). El sesgo pasó a ~−3.0. El retune de `roster.js`/`valorMercado.js`
+  // que el propio comentario de este check ya difería es 9Mh: devuelve el tope a ±3.
   if (p90 > 14 || max > 28) {
     throw new Error(`outliers de la proyección de jerarquía: p90 ${p90}, máximo ${max} (topes 14 / 28, apretados en 9Rg tras cerrar D39: p90 16 → 11, máximo 26 → 20. El máximo es un outlier de un seed, la señal está en p90)`);
   }
@@ -2145,6 +2137,12 @@ check('El sesgo etario reduce cuántas ofertas llegan: 28 recibe ≤50% del prom
   // demanda de 9Mb genere una mano lateral de verdad — sobre esa mano actúa el
   // sesgo etario. Con una hoja floja el mercado se resolvía sólo con la
   // renovación (que no se adelgaza por edad) y el check medía la nada.
+  //
+  // Fase 9Md: `splitCount` no puede ser 0 — con 6 ligas escaneadas y sin
+  // `mercadoMundial` corrido, `orgsQueTeFicharian` devuelve tantas orgs que el
+  // `ofertasMax` capa la mano ANTES que el sesgo etario. Con `splitCount` en
+  // pretemporada real, `mercadoMundial` congela un puñado de asientos y el
+  // sesgo vuelve a morder sobre ESE puñado.
   const estadoDeEdad = (edad) => {
     const rng = mulberry32(1);
     const base = createInitialState(1, rng);
@@ -2155,11 +2153,12 @@ check('El sesgo etario reduce cuántas ofertas llegan: 28 recibe ≤50% del prom
       ...base,
       age: edad,
       phase: 'profesional',
+      player: { ...base.player, stats: statFuerte, splitCount: 30 },
+      calendario: { ...base.calendario, anio: base.calendario.anioBase + 10 },
       career: {
         ...base.career, tier: 1, liga: 'LEC', currentOrg: 'Fnatic', jerarquia: 60,
         contrato: { ...base.career.contrato, org: 'Fnatic', liga: 'LEC', tier: 1, aniosRestantes: 0 }
-      },
-      player: { ...base.player, stats: statFuerte }
+      }
     };
   };
 

@@ -8,7 +8,7 @@ import { salarioDeOferta } from '../core/salarios.js';
 import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
 import { cerrarFila, registrarPico, registrarSalarioEnFila, arraigoInicial } from '../core/registro.js';
 import { bandaDeJerarquia, bandaDeArraigoFicha, nivelDelJugador } from '../core/ficha.js';
-import { orgsQueTeFicharian, ofertaPosible } from '../core/demanda.js';
+import { orgsQueTeFicharian, ofertaPosible, esResidenteDe } from '../core/demanda.js';
 import { resolverMercadoMundial, cerrarAsientosCongelados } from '../core/mercadoMundial.js';
 import { jerarquiaAlFichar } from './roster.js';
 import { BALANCE } from '../data/balance.js';
@@ -17,9 +17,12 @@ export const id = 'mercado';
 
 // El mercado (fase 9, PLAN.md §9.3-9.6): contratos que vencen, ofertas que
 // llegan (o no), y la trampa del equipo grande hecha texto ANTES de firmar.
-// Va después de `competitivo` en el registro: ese sistema decide SI ascendés
-// (mérito), este decide A QUÉ ORG vas (elección real, §9.4) y qué te paga
-// cualquier organización, ascenso o no.
+// Va después de `competitivo` en el registro.
+//
+// Fase 9Md (PLAN.md §9M.5): la escalera deja de ser un dado. `competitivo.js`
+// ya no "marca un ascenso"; este sistema escanea las 6 ligas tier 1 (+ tu tier
+// 2) y te llega la oferta si un club tiene hueco en tu rol y te puede pagar.
+// Subís a primera porque hay asiento, no porque salió `chance()`.
 
 function conFilaCerrada(state, motivo) {
   return cerrarFila(state.career.registro, {
@@ -30,24 +33,14 @@ function conFilaCerrada(state, motivo) {
 
 // --- Construcción de una oferta (§9.5: el contrato de datos exacto) ---
 
-function sampleWeighted(items, getWeight, n, rng) {
-  const restantes = [...items];
-  const elegidos = [];
-  while (elegidos.length < n && restantes.length > 0) {
-    const elegido = weightedPick(restantes, getWeight, rng);
-    elegidos.push(elegido);
-    restantes.splice(restantes.indexOf(elegido), 1);
-  }
-  return elegidos;
-}
-
-function tipoDeContrato(tag, tierActual) {
-  if (tag === 'renovacion') {
+function tipoDeContrato(state, liga, esRenovacion) {
+  if (esRenovacion) {
     return 'renovacion';
   }
-  if (tag === 'salto' && tierActual === 3) {
-    // Primera vez que pisás una liga real: es el debut, no una transferencia.
-    return 'rookie';
+  // Sos import si firmás en una región que no es la tuya y todavía no
+  // acumulaste residencia ahí (D29: el eje `residencia` ya lo calcula así).
+  if (liga.regionId !== state.mundo.regionIdOrigen && !esResidenteDe(state, liga.regionId)) {
+    return 'import';
   }
   return 'transferencia';
 }
@@ -136,94 +129,78 @@ function construirOferta(state, liga, org, tagForzado, rng) {
     label: `${org.nombre} · ${liga.id}`,
     descripcion: esOrgActual
       ? 'Te renueva tu propia organización.'
-      : (tag === 'salto' ? 'El ascenso que te ganaste.' : (tag === 'bombazo' ? 'La oferta grande.' : 'Una salida lateral.')),
-    datos: { tipo: tipoDeContrato(tag, state.career.tier), jerarquiaProyectada: jerarquiaProyectadaCruda }
+      : (liga.tier < (state.career.tier ?? 9) ? 'El salto a una liga más grande.'
+        : (liga.tier > (state.career.tier ?? 0) ? 'Un escalón para abajo, pero es jugar.'
+          : (tag === 'bombazo' ? 'La oferta grande.' : 'Una salida lateral.'))),
+    datos: { tipo: tipoDeContrato(state, liga, esRenovacion), jerarquiaProyectada: jerarquiaProyectadaCruda }
   };
 }
 
-// Fase 9R0e → 9Mb: cuando había ascenso pendiente el mercado todavía sortea la
-// mano (esa rama la borra 9Md junto con `flags.ascensoPendiente`). El mercado
-// NORMAL ya no tira ningún dado: las ofertas son las orgs de la liga que TIENEN
-// un asiento abierto en tu rol y te pueden pagar (`core/demanda.js`).
-function ofertasPorAscenso(state, liga, rng, ofertas) {
-  const m = BALANCE.mercado;
-  const nivel = nivelDelJugador(state);
-  const brecha = nivel - (liga.prestigio ?? m.nivelLigaPorDefecto);
-  const demanda = clamp(0.5 + brecha / m.brechaNivelRango, 0, 1);
-  const piso = Math.round(demanda * m.ofertasPisoPorDemanda);
-  const techoEtario = Math.max(1, Math.round(m.ofertasMax * sesgoEtario(state.age)));
-  const techo = Math.max(piso + 1, Math.round(techoEtario * (m.techoDemandaBase + demanda * m.techoDemandaPeso)));
-  const cupoLaterales = Math.max(0, roll(Math.max(1, piso), techo, rng) - ofertas.length);
-  const candidatos = liga.orgs.filter((org) => org.nombre !== state.career.currentOrg);
-  const elegidos = sampleWeighted(
-    candidatos,
-    (org) => 1 / (1 + Math.abs(org.fuerza - nivel) / m.afinidadOfertaRango),
-    Math.min(cupoLaterales, candidatos.length),
-    rng
-  );
-  for (const org of elegidos) {
-    ofertas.push(construirOferta(state, liga, org, 'salto', rng));
-  }
-  return ofertas.slice(0, m.ofertasMax);
-}
-
-function generarOfertasParaLiga(state, liga, rng, { esAscenso }) {
+// La mano de ofertas: la renovación de tu club (si te quieren) + las orgs del
+// MUNDO con un asiento congelado para vos este offseason (`core/mercadoMundial.js`).
+// Fase 9Md: `orgsQueTeFicharian` ya no recibe una liga — escanea las 6 tier 1
+// + tu tier 2. El mercado ya no tira ningún dado.
+function generarOfertas(state, rng) {
   const m = BALANCE.mercado;
   const ofertas = [];
 
-  if (esAscenso) {
-    return ofertasPorAscenso(state, liga, rng, ofertas);
-  }
-
-  const orgActual = liga.orgs.find((org) => org.nombre === state.career.currentOrg);
+  const ligaActual = ligaDeCarrera(state);
+  const orgActual = ligaActual?.orgs.find((org) => org.nombre === state.career.currentOrg);
   const probRenovacion = clamp(
     m.probRenovacionBase + (state.career.jerarquia / BALANCE.stats.max) * m.probRenovacionPorJerarquia,
     0, 1
   );
   if (orgActual && chance(probRenovacion, rng)) {
-    ofertas.push(construirOferta(state, liga, orgActual, 'renovacion', rng));
+    ofertas.push(construirOferta(state, ligaActual, orgActual, 'renovacion', rng));
   }
 
-  // La demanda: cada org de la liga con un asiento abierto en tu rol que te
-  // puede pagar. El motivo viaja a la tarjeta ("X busca ADC, se les va Y...").
-  // Las mejores ofertas primero (más presupuesto).
-  //
-  // Fase 9Mc: sólo los asientos que `core/mercadoMundial.js` CONGELÓ para vos
-  // este offseason. Así toda oferta lateral corresponde a un asiento congelado
-  // y, si la rechazás, `cerrarAsientosCongelados` la cierra con nombre (check
-  // 10). Un asiento que el mundo ya llenó con un canterano flojo puede volver a
-  // dar `asientoAbierto` true por mérito, pero no es una oferta: nadie te esperó.
-  // Si no hubo resolución del mundo (estado sintético de un check), no se filtra.
+  // Sólo los asientos que `mercadoMundial.js` CONGELÓ para vos (9Mc): así toda
+  // oferta lateral corresponde a un asiento que, si lo rechazás,
+  // `cerrarAsientosCongelados` cierra con nombre (check 10). Sin resolución del
+  // mundo (estado sintético de un check) no se filtra.
   const pre = state.mundo.mercadoPretemporada;
   const congeladosOrgs = pre
-    ? new Set(pre.congelados
-      .filter((c) => c.liga === liga.id && c.rol === state.player.role)
-      .map((c) => c.org))
+    ? new Set(pre.congelados.filter((c) => c.rol === state.player.role).map((c) => c.org))
     : null;
-  const posibles = orgsQueTeFicharian(state, liga)
+  const dominante = state.mundo.regionDominante;
+  const posibles = orgsQueTeFicharian(state)
     .filter((entrada) => !congeladosOrgs || congeladosOrgs.has(entrada.org.nombre))
-    .sort((a, b) => b.presupuesto - a.presupuesto);
+    // `regionDominante` (9Md): las orgs de esa región suben en el orden de la mano.
+    .map((entrada) => ({
+      ...entrada,
+      orden: entrada.presupuesto + (entrada.liga.region === dominante ? m.nudgeRegionDominante : 0)
+    }))
+    .sort((a, b) => b.orden - a.orden);
 
-  // 9R0e: si sos claramente una franquicia para tu liga y aun así ningún
-  // asiento se abrió, el club más débil hace lugar (respetando las reglas
-  // duras de la liga) — el silencio no es para una franquicia.
-  const claramenteArriba = nivelDelJugador(state) - (liga.prestigio ?? m.nivelLigaPorDefecto) >= m.brechaFranquicia;
+  // 9R0e: si sos claramente una franquicia para TU liga y aun así ningún
+  // asiento se abrió, el club más débil de tu liga hace lugar — el silencio no
+  // es para una franquicia. (Sin liga —recién ascendido de tier 3— no aplica.)
+  const claramenteArriba = ligaActual
+    && nivelDelJugador(state) - (ligaActual.prestigio ?? m.nivelLigaPorDefecto) >= m.brechaFranquicia;
   if (claramenteArriba && posibles.length === 0) {
-    const masDebil = liga.orgs
+    // El club más débil de tu liga que PUEDE ficharte (respeta las reglas duras
+    // — cupo de imports incluido, 9Md). Se prueba de la más débil hacia arriba.
+    const candidatas = ligaActual.orgs
       .filter((org) => org.nombre !== state.career.currentOrg)
-      .sort((a, b) => a.fuerza - b.fuerza)[0];
-    const forzada = masDebil && ofertaPosible(state, masDebil.nombre, state.player.role, { forzada: true });
-    if (forzada?.posible) {
-      posibles.push({ org: masDebil, motivo: forzada.motivo, forzadaFranquicia: true });
+      .sort((a, b) => a.fuerza - b.fuerza);
+    for (const org of candidatas) {
+      const forzada = ofertaPosible(state, org.nombre, state.player.role, { forzada: true });
+      if (forzada?.posible) {
+        posibles.push({ org, liga: ligaActual, motivo: forzada.motivo, forzadaFranquicia: true });
+        break;
+      }
     }
   }
 
-  // El mercado prefiere jóvenes (CONCEPTO §12): `sesgoEtario` adelgaza la mano
-  // —no el sueldo, que ya lo acota `salarioDeOferta`—. Piso 1 para la franquicia.
-  const cupoEtario = Math.max(claramenteArriba ? 1 : 0, Math.round(posibles.length * sesgoEtario(state.age)));
-  const candidatas = posibles.slice(0, Math.min(cupoEtario, m.ofertasMax - ofertas.length));
+  // El mercado prefiere jóvenes (CONCEPTO §12): `sesgoEtario` adelgaza la mano.
+  // 9Md: se escala la mano YA capada a `ofertasMax` (con 6 ligas `posibles`
+  // puede ser enorme y el tope tapaba el sesgo antes de que mordiera). Piso 1
+  // para la franquicia.
+  const manoBase = Math.min(posibles.length, m.ofertasMax - ofertas.length);
+  const cupoEtario = Math.max(claramenteArriba ? 1 : 0, Math.round(manoBase * sesgoEtario(state.age)));
+  const candidatas = posibles.slice(0, cupoEtario);
 
-  for (const { org, motivo, forzadaFranquicia } of candidatas) {
+  for (const { org, liga, motivo, forzadaFranquicia } of candidatas) {
     const oferta = construirOferta(state, liga, org, null, rng);
     ofertas.push({ ...oferta, motivoDemanda: motivo, ...(forzadaFranquicia ? { forzadaFranquicia: true } : {}) });
   }
@@ -244,7 +221,6 @@ function traspasosParaPantalla(state) {
 }
 
 function construirDecisionOfertas(state, ofertas) {
-  const ascenso = state.flags.ascensoPendiente;
   return {
     tipo: 'opciones',
     presentacion: 'mercado',
@@ -253,8 +229,6 @@ function construirDecisionOfertas(state, ofertas) {
     opciones: ofertas,
     datos: {
       motivo: 'oferta',
-      esAscenso: Boolean(ascenso),
-      ligaId: ascenso ? ascenso.ligaId : state.career.liga,
       representanteDisponible: !state.flags.llamadaRepresentante,
       // Fase 9Mc: los 4-6 traspasos que movieron el mercado este offseason.
       traspasosMundo: traspasosParaPantalla(state)
@@ -301,50 +275,33 @@ export function aplicar(state, rng) {
 
   // Fase 9Mc: ANTES de nada, el mercado del mundo se resuelve. `vaAlMercado` es
   // true cuando el jugador realmente va a elegir este offseason (contrato
-  // vencido, sin equipo, o ascenso ganado): sólo entonces se le congelan
-  // asientos.
-  const ascenso = state.flags.ascensoPendiente;
+  // vencido o sin equipo): sólo entonces se le congelan asientos.
   const contratoVencido = !state.career.currentOrg
     || Math.max(0, state.career.contrato.aniosRestantes - 1) <= 0;
-  const vaAlMercado = Boolean(ascenso) || contratoVencido;
-  const ligaJugador = ascenso ? ascenso.ligaId : (ligaDeCarrera(state)?.id ?? null);
 
-  const mundo = resolverMercadoMundial(state, rng, { vaAlMercado, ligaJugador });
+  const mundo = resolverMercadoMundial(state, rng, { vaAlMercado: contratoVencido });
   const logsMundo = mundo.logs;
   const stConValor = conValorDeMercadoActualizado(mundo.state);
 
-  if (ascenso) {
-    const liga = stConValor.mundo.ligas.find((candidata) => candidata.id === ascenso.ligaId);
-    if (!liga || stConValor.age < (liga.edadMinima ?? 0)) {
-      // El año muerto (fase 3, ahora resuelto acá): ya ganaste el ascenso,
-      // todavía no llegás a la edad. No se vuelve a tirar nada.
-      return { state: stConValor, logs: logsMundo };
-    }
-    const ofertas = generarOfertasParaLiga(stConValor, liga, rng, { esAscenso: true });
-    if (ofertas.length === 0) {
-      // No debería pasar (toda liga real tiene orgs candidatas), pero si
-      // pasa, el ascenso ganado no se pierde: se reintenta la próxima.
-      return { state: stConValor, logs: logsMundo };
-    }
-    return { state: stConValor, logs: logsMundo, decision: construirDecisionOfertas(stConValor, ofertas) };
-  }
-
-  const liga = ligaDeCarrera(stConValor);
-  if (!liga) {
-    // Tier 3 (o recién disuelto): a ese nivel no hay mercado, es automático
-    // (competitivo.js lo resuelve solo).
+  // Tier 3: a ese nivel no hay mercado, es automático (competitivo.js lo
+  // resuelve). Un tier-2 LIBRE (recién ascendido de tier 3, o sin equipo) SÍ va
+  // al mercado — abajo.
+  if (stConValor.career.tier === 3) {
     return { state: stConValor, logs: logsMundo };
   }
 
-  const aniosRestantes = Math.max(0, stConValor.career.contrato.aniosRestantes - 1);
-  if (aniosRestantes > 0) {
-    return {
-      state: { ...stConValor, career: { ...stConValor.career, contrato: { ...stConValor.career.contrato, aniosRestantes } } },
-      logs: [...logsMundo, crearLog('mercado', `Te queda ${aniosRestantes === 1 ? 'un año' : `${aniosRestantes} años`} de contrato con ${stConValor.career.currentOrg}.`)]
-    };
+  // Contrato corriendo: descuenta un año y listo.
+  if (stConValor.career.currentOrg) {
+    const aniosRestantes = Math.max(0, stConValor.career.contrato.aniosRestantes - 1);
+    if (aniosRestantes > 0) {
+      return {
+        state: { ...stConValor, career: { ...stConValor.career, contrato: { ...stConValor.career.contrato, aniosRestantes } } },
+        logs: [...logsMundo, crearLog('mercado', `Te queda ${aniosRestantes === 1 ? 'un año' : `${aniosRestantes} años`} de contrato con ${stConValor.career.currentOrg}.`)]
+      };
+    }
   }
 
-  const ofertas = generarOfertasParaLiga(stConValor, liga, rng, { esAscenso: false });
+  const ofertas = generarOfertas(stConValor, rng);
   if (ofertas.length === 0) {
     const racha = stConValor.flags.splitsSinOfertaConsecutivos + 1;
     if (racha >= BALANCE.mercado.splitsSinOfertaParaLibre) {
@@ -380,7 +337,7 @@ function aceptarOferta(state, oferta) {
     return {
       state: {
         ...state,
-        flags: { ...state.flags, ascensoPendiente: null, splitsSinOfertaConsecutivos: 0 },
+        flags: { ...state.flags, splitsSinOfertaConsecutivos: 0 },
         career: {
           ...state.career, contrato,
           registro: registrarSalarioEnFila(state.career.registro, contrato.salarioAnualUSD)
@@ -390,12 +347,18 @@ function aceptarOferta(state, oferta) {
     };
   }
 
+  // El motivo de cierre de fila para el registro: subiste de tier ('ascenso'),
+  // bajaste ('descenso') o te moviste al mismo nivel ('transferencia'). Tier 1
+  // es el número más bajo.
+  const tierPrevio = state.career.tier ?? 9;
+  const motivoFila = oferta.tier < tierPrevio ? 'ascenso'
+    : (oferta.tier > tierPrevio ? 'descenso' : 'transferencia');
+
   return {
     state: {
       ...state,
       flags: {
         ...state.flags,
-        ascensoPendiente: null,
         splitsSinOfertaConsecutivos: 0,
         jerarquiaProyectadaAlFichar: oferta.datos.jerarquiaProyectada
       },
@@ -405,7 +368,7 @@ function aceptarOferta(state, oferta) {
         orgs: [...state.career.orgs, oferta.org],
         splitAscensoTier1: oferta.tier === 1 ? state.player.splitCount : state.career.splitAscensoTier1,
         contrato,
-        registro: conFilaCerrada(state, oferta.tag === 'salto' ? 'ascenso' : 'transferencia')
+        registro: conFilaCerrada(state, motivoFila)
       }
     },
     logs: [crearLog('mercado', `Firmás con ${oferta.org} (${oferta.liga}): ${plata(contrato.salarioAnualUSD)}/año, ${contrato.anios} año(s).`)]
@@ -420,11 +383,8 @@ export function resolver(state, decision, respuesta, rng) {
     if (state.flags.llamadaRepresentante) {
       return { state, logs: [], decision };
     }
-    const liga = decision.datos.esAscenso
-      ? state.mundo.ligas.find((candidata) => candidata.id === decision.datos.ligaId)
-      : ligaDeCarrera(state);
     const stConLlamada = { ...state, flags: { ...state.flags, llamadaRepresentante: true } };
-    const ofertas = liga ? generarOfertasParaLiga(stConLlamada, liga, rng, { esAscenso: decision.datos.esAscenso }) : [];
+    const ofertas = generarOfertas(stConLlamada, rng);
 
     if (ofertas.length === 0) {
       return { state: stConLlamada, logs: [crearLog('mercado', 'Tu representante mueve algunos hilos, pero no aparece nada nuevo.')] };

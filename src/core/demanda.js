@@ -182,8 +182,12 @@ export function cumpleReglasDuras(state, org, liga, rol) {
     if (BALANCE.plantel.tamano - noResidentes < (liga.minimoResidentes ?? 0)) {
       return { ok: false, motivo: `${liga.id} necesita más residentes en el roster` };
     }
-    if (nivelDelJugador(state) < org.fuerza + BALANCE.mercado.margenImport) {
-      return { ok: false, motivo: `como import no alcanza con estar apenas mejor` };
+    // Fase 9Md: el listón para un import escala con `dificultadAdaptacion` — a
+    // LCK/LPL hay que ser mucho mejor que el local; a CBLOL/LCS, apenas.
+    const margenImport = BALANCE.mercado.margenImport
+      * (1 + (liga.dificultadAdaptacion ?? 50) / 100 * BALANCE.mercado.factorDificultadImport);
+    if (nivelDelJugador(state) < org.fuerza + margenImport) {
+      return { ok: false, motivo: `como import a ${liga.id} no alcanza con estar apenas mejor` };
     }
   }
   return { ok: true };
@@ -244,12 +248,29 @@ export function ofertaPosible(state, orgNombre, rol, { forzada = false } = {}) {
   };
 }
 
-// Las orgs de una liga con un asiento que el jugador puede ocupar hoy. Es lo
-// que reemplaza al `roll(0, techo)` en `systems/mercado.js`.
-export function orgsQueTeFicharian(state, liga) {
+// Todas las orgs del mundo (las 6 ligas tier 1 + tu tier 2 — las que tienen
+// plantel) con un asiento que el jugador puede ocupar hoy. Es lo que reemplaza
+// al `roll(0, techo)` en `systems/mercado.js`.
+//
+// Fase 9Md: antes recibía UNA liga (tu liga era una jaula). Ahora escanea el
+// mundo entero: subís a tier 1 porque un club de cualquiera de las 6 tiene
+// hueco en tu rol y te puede pagar, no porque salió un dado.
+export function orgsQueTeFicharian(state) {
   const rol = state.player.role;
-  return liga.orgs
-    .filter((org) => org.nombre !== state.career.currentOrg)
-    .map((org) => ({ org, ...ofertaPosible(state, org.nombre, rol) }))
-    .filter((entrada) => entrada.posible);
+  const entradas = [];
+  for (const liga of state.mundo.ligas) {
+    for (const org of liga.orgs) {
+      if (org.nombre === state.career.currentOrg) {
+        continue;
+      }
+      if (!state.mundo.planteles?.[org.nombre]) {
+        continue;
+      }
+      const res = ofertaPosible(state, org.nombre, rol);
+      if (res.posible) {
+        entradas.push({ org, liga, ...res });
+      }
+    }
+  }
+  return entradas;
 }

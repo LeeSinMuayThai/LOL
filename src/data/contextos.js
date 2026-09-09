@@ -74,6 +74,8 @@ export const MARCAS = [
   'paso_por_tier3',
   'curtido',
   'nomade',
+  // Fase 9Md (D16): bajaste de tier 1 hace poco.
+  'descenso',
   // Pendientes: los activan los pasos 10 a 12.
   'espera_edad_minima',
   'lesion_cronica',
@@ -161,6 +163,11 @@ export const MOMENTOS = [
   { id: 'tier2_rookie', prioridad: 48,
     label: 'Rookie en la liga de desarrollo',
     patron: { nivel: ['tier2'], estatus: ['rookie'] } },
+
+  // Fase 9Md (D16): descendiste y estás rearmándote en tier 2.
+  { id: 'recien_descendido', prioridad: 46,
+    label: 'Recién descendido de primera',
+    patron: { nivel: ['tier2'], marcas: ['descenso'] } },
 
   { id: 'tier2_titular', prioridad: 45,
     label: 'Titular en la liga de desarrollo',

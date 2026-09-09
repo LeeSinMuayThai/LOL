@@ -455,7 +455,10 @@ export const BALANCE = {
     historialMaximo: 3,
     // Percentil de posicion en la liga; por encima del ultimo, 'crisis'.
     momentumBandas: { racha: 0.22, estable: 0.55, slump: 0.8 },
-    margenMentalidadAlLimite: 12
+    margenMentalidadAlLimite: 12,
+    // Fase 9Md: cuántos splits después de un descenso de tier 1 sigue prendida
+    // la marca `descenso`.
+    ventanaDescenso: 4
   },
 
   contenido: {
@@ -694,8 +697,8 @@ export const BALANCE = {
     fuerzaMax: 35
   },
 
-  // El tránsito entre tiers (fase 3). `CLAUDE.md`/el usuario piden que el tier
-  // 3 dure poco: `probSalida` alto y sin escalón intermedio, para que la
+  // El tránsito entre tiers (fase 3 / 9Md). `CLAUDE.md`/el usuario piden que el
+  // tier 3 dure poco: `probSalida` alto y sin escalón intermedio, para que la
   // mediana de permanencia quede en 1-2 splits, nunca en una carrera entera.
   competitivo: {
     // Fuerza de los equipos de tier 2: mas que tier 3, bien por debajo de
@@ -707,7 +710,7 @@ export const BALANCE = {
     // Tier 3: cada split hay chance de que se resuelva tu paso por acá. Las
     // dos salidas son subir a tier 2 o que el equipo se disuelva.
     probSalidaTier3: 0.45,
-    // De las salidas, cuánto pesa el ascenso contra la disolución. Corrido por
+    // De las salidas, cuánto pesa el salto contra la disolución. Corrido por
     // jerarquia: un titular tiene mas para mostrar que un suplente.
     probAscensoBaseDesdeTier3: 0.4,
     probAscensoPorJerarquiaDesdeTier3: 0.35,
@@ -715,9 +718,17 @@ export const BALANCE = {
     // equipo de tier 3 te levante (siempre alguno te levanta: es tier 3).
     splitsLibrePromedioTier3: 1,
 
-    // Tier 2: el ascenso a primera es mas lento y se gana, no se sortea parejo.
-    probAscensoBaseDesdeTier2: 0.12,
-    probAscensoPorJerarquiaDesdeTier2: 0.45
+    // Fase 9Md: la escalera de tier 2 y tier 1 deja de sortearse. Se sube y se
+    // baja por asientos (`core/demanda.js` / `systems/mercado.js`) y por la
+    // tabla (el último de una liga con `desciendeA` desciende, y su org tier-2
+    // más fuerte de la región promociona a taparlo). Se borraron
+    // `probAscensoBaseDesdeTier2` / `probAscensoPorJerarquiaDesdeTier2`.
+    //
+    // El "año muerto": sos nivel de tier 1 pero te falta edad para las ligas
+    // que la exigen (LEC/LPL: 18). La marca `espera_edad_minima` se prende con
+    // esto en tier 2.
+    nivelParaTier1: 62,
+    edadDebutTardio: 18
   },
 
   // Los planteles NPC (fase 9M, PLAN.md §9M.2). Valores puestos por criterio
@@ -830,6 +841,15 @@ export const BALANCE = {
     // (CONCEPTO §6: "claramente mejor, no apenas mejor"). Lo evalúa
     // `mercado.js` al filtrar ofertas, no `salarioDeOferta`.
     margenImport: 8,
+    // Fase 9Md: la escalera deja de ser una jaula — el mercado escanea las 6
+    // ligas tier 1. `dificultadAdaptacion` (leagues.json) sube el `margenImport`
+    // efectivo: un import a LCK (85) tiene que ser MUCHO mejor que el local; a
+    // CBLOL (30), apenas. `margenImportEfectivo = margenImport · (1 +
+    // dificultadAdaptacion/100 · factorDificultadImport)`.
+    factorDificultadImport: 0.6,
+    // `regionDominante` (mundo): las orgs de esa región suben en el orden de la
+    // mano (nudge sobre el presupuesto al ordenar, en USD).
+    nudgeRegionDominante: 60000,
 
     // Una oferta lateral se etiqueta 'bombazo' cuando paga bastante más que
     // el contrato vigente — la tarjeta que hace sentir la decisión real

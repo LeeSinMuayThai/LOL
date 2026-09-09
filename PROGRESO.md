@@ -33,6 +33,100 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-09 — Fase 9Md: la escalera deja de ser un dado
+
+Cuarto commit de **9M** (PLAN.md §9M.5), el de más riesgo de la fase. **`flags.ascensoPendiente`
+desaparece**: no hay "ascenso ganado", hay asientos. Subís a primera porque un club de cualquiera
+de las 6 ligas tier 1 tiene hueco en tu rol y te puede pagar — y bajás porque tu org terminó
+última (D16). Cierra **D16** y **D29** (el eje `residencia: 'import'` por fin se produce en juego).
+
+#### `systems/competitivo.js` — reescritura parcial
+
+- `resolverTier2` y `marcarAscenso` **borrados**. Tier 2 con equipo → no-op (decide el mercado).
+- Tier 3 igual, salvo que el "salto" te deja como **agente libre de tier 2**
+  (`tier: 2, currentOrg: null`): la próxima pretemporada el mercado te ofrece club (decisión del
+  usuario: "deja el asiento abierto").
+- **`resolverDescenso`** (nuevo): en la pretemporada, si `career.tier === 1`, la liga tiene
+  `desciendeA` y tu `career.posicion` fue **última** del split de cierre → tu org baja de tier y
+  tu contrato viaja con ella; la org tier-2 más fuerte de esa región promociona a taparla (swap
+  en `mundo.ligas`, los planteles viajan por nombre). Si `desciendeA` no tiene planteles
+  (relegado siendo import), se generan al vuelo. Solo el jugador desciende — la pirámide completa
+  (todas las ligas relegan cada año) es 9Mh.
+
+#### `systems/mercado.js` — el mercado escanea el mundo
+
+- `ofertasPorAscenso` / `sampleWeighted` / la rama `if (ascenso)` **borradas**.
+  `generarOfertasParaLiga(state, liga, …)` → **`generarOfertas(state, rng)`**: la renovación de tu
+  club + los asientos que `mercadoMundial` congeló para vos en **las 6 tier 1 + tu tier 2**
+  (`orgsQueTeFicharian(state)`, sin liga fija). Tope `ofertasMax` y el filtro de congelados de 9Mc.
+- `contrato.tipo` gana **`'import'`** (firmás fuera de tu región y sin residencia acumulada).
+- El motivo de cierre de fila del registro: `'ascenso'` / `'descenso'` / `'transferencia'` según
+  el tier de la oferta contra el tuyo.
+- El piso de franquicia (9R0e) ahora prueba de la org más débil hacia arriba hasta encontrar una
+  que **puede** ficharte (cupo de imports incluido — la vieja fallaba si la más débil estaba
+  import-full).
+
+#### `core/mercadoMundial.js` — congela también por mérito
+
+`congelar` se evalúa ANTES del `firme`: un asiento `porMerito` (superás claramente al titular) se
+congela aunque el titular tenga contrato. Es la vía por la que sube una franquicia sin depender
+del piso.
+
+#### `core/demanda.js`
+
+- `orgsQueTeFicharian(state)` recorre todas las orgs con plantel del mundo (era: una liga).
+- `cumpleReglasDuras`: el `margenImport` de un import escala con `liga.dificultadAdaptacion`
+  (`margenImportEfectivo = margenImport · (1 + dificultadAdaptacion/100 · factorDificultadImport)`)
+  — a LCK/LPL hay que ser mucho mejor que el local; a CBLOL, apenas. `regionDominante`: las orgs
+  de esa región suben en el orden de la mano (nudge sobre el presupuesto). **Solo gatea la oferta**
+  — sin malus de rendimiento (decisión del usuario).
+
+#### `core/contexto.js` / `core/state.js` / `data/contextos.js`
+
+- `flags.ascensoPendiente` → **`flags.splitDescenso`** (el split en que descendiste).
+- `espera_edad_minima` deja de depender de `ascensoPendiente`: se prende en tier 2 si sos nivel de
+  tier 1 (`competitivo.nivelParaTier1`) y te falta la edad de LEC/LPL (`edadDebutTardio: 18`).
+- Marca **`descenso`** nueva + momento `recien_descendido` (prioridad 46). Contenido dedicado es 13.
+
+#### Constantes nuevas (por criterio, retune 9Mh — regla 2)
+
+`competitivo`: se borran `probAscensoBaseDesdeTier2` / `probAscensoPorJerarquiaDesdeTier2`; se
+agregan `nivelParaTier1` 62, `edadDebutTardio` 18. `mercado`: `factorDificultadImport` 0,6,
+`nudgeRegionDominante` 60000. `contexto`: `ventanaDescenso` 4. **Ninguna constante previa se tocó.**
+
+#### Números (sonda propia, 400 carreras × 60, post-9Md)
+
+| Métrica | 9Mc | 9Md | check §9M.10 |
+|---|---|---|---|
+| Ligas distintas pisadas / carrera | 1,59 · máx 2 | **2,60 · máx 6** · ≥3 ligas: **60%** | 4: mediana ≥2 y ≥15% pisa 3+ ✅ |
+| Carreras que caen de tier 1 a tier 2 | 0% | **21,8%** | 8: ≥15% ✅ |
+| `residencia: 'import'` alcanzada | 0% | **71,8%** | 12: ≥10% ✅ |
+| Fichajes con elección real | 4,50 | **4,24** | 5: 4-8 ✅ |
+| Tier 1 al cierre | 79,5% | **77,8%** | 7: ≤65% ❌ → **9Mh** (el mercado abierto es más generoso con los asientos de primera) |
+| Correlación nivel↔mejor liga | ~0 | **r=0,22** | 9: r>0,5 ❌ → **9Mh** (mejora, pero el proxy de "mejor liga" es grueso y `nivelFinal` es post-declive) |
+| `dineroTotalUSD` > 0 | 0% | 0% | 11: 9Mf |
+
+**Checks 4, 8, 12 pasan.** 7 y 9 mejoran pero necesitan calibrado de banda de nivel / presupuesto:
+regla de proceso 2 — el retune vive en 9Mh. La escalera ya no es una jaula ni un dado; falta
+apretarla.
+
+#### Verificación
+
+- `node src/dev/validate.js` — **140/140 OK** (mismo conteo que 9Mc). 3 checks reescritos ("año
+  muerto" sin `ascensoPendiente`, ahora sobre la marca `espera_edad_minima` · "core/demanda.js es
+  puro" sin arg de liga · "sesgo etario" con `splitCount` en pretemporada real) + check 2 sin tag
+  `'salto'` + check 10 sin `esAscenso` + `proyeccionJerarquia` tope ±3 → ±3,5 (parche 9Md, ver
+  §9M.9 / D35).
+- `node src/dev/simulate.js 1500 60 todas` — **112s** (base 9Mc: 102s → **1,10×**, tope 2×),
+  **0 crashes** y 0 varadas en las 3 estrategias.
+- `node src/dev/cobertura.js --huecos` — sin huecos (18 momentos alcanzables de 26). `recien_descendido`
+  aparece en el barrido de 300 carreras de validate.js — el descenso se ve (log + label de contexto).
+- Determinismo: misma seed → estado final idéntico byte a byte (10/10 seeds, 80 splits). Mundo tras
+  los descensos: 6 ligas tier 1, tamaños 10/14/10/8/8/8 intactos, 122 orgs sin colisión.
+- Trampa T1/D35: `orgsQueTeFicharian` escanea 6 ligas, el descenso reescribe `mundo.ligas`, y
+  `competitivo.js` deja de tirar `chance()` para tier 2 — el stream se corre y el balance
+  agregado se mueve. Se asume (D35); el determinismo intra-versión queda intacto.
+
 ### 2026-09-06 — Fase 9Mc: alguien más quiere tu asiento (el mercado del mundo)
 
 Tercer commit de **9M** (PLAN.md §9M.4). Cada pretemporada, **antes** de mostrarte una sola
