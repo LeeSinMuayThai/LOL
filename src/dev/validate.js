@@ -918,6 +918,121 @@ check('Oferta lateral rechazada: el asiento se cierra con un NPC y el log lo dic
   }
 });
 
+check('Fase 9Mf: registro.dineroTotalUSD se acumula (>0 y monótono) en toda carrera con contrato (check 11 de §9M.10)', () => {
+  // Antes de 9Mf `dineroTotalUSD` NUNCA se incrementaba: el check de monotonía
+  // pasaba trivialmente sobre un 0, y `PROGRESO.md` afirmaba —falsamente— que
+  // `roster.js` lo cobraba. Ahora `roster.js` acumula `salarioAnualUSD /
+  // splitsPorEdad` cada split bajo contrato y escribe el pico de sueldo.
+  let conContrato = 0;
+  for (let seed = 1; seed <= 140; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    let prev = 0;
+    let tuvoContrato = false;
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      const d = state.career.registro.dineroTotalUSD;
+      if (d < prev) {
+        throw new Error(`seed ${seed} split ${i}: dineroTotalUSD bajó de ${prev} a ${d}`);
+      }
+      prev = d;
+      if (state.phase === 'profesional' && state.career.contrato.salarioAnualUSD > 0) {
+        tuvoContrato = true;
+      }
+    }
+    if (!tuvoContrato) {
+      continue;
+    }
+    conContrato += 1;
+    if (state.career.registro.dineroTotalUSD <= 0) {
+      throw new Error(`seed ${seed}: carrera con contrato y dineroTotalUSD = ${state.career.registro.dineroTotalUSD}`);
+    }
+    if (state.career.registro.picos.salarioAnualUSD <= 0) {
+      throw new Error(`seed ${seed}: carrera con contrato y picos.salarioAnualUSD = ${state.career.registro.picos.salarioAnualUSD}`);
+    }
+  }
+  if (conContrato < 80) {
+    throw new Error(`sólo ${conContrato} carreras con contrato en 140 seeds: muestra insuficiente para el check`);
+  }
+});
+
+check('Fase 9Mf: ≥25% de las carreras ven un traspaso a mitad de contrato, y "pedir salir" hace una de sus dos cosas (check 6 de §9M.10)', () => {
+  // (1) frecuencia: con el auto-resolver (toma el paso arriba salvo recorte de
+  // sueldo real) al menos 1 de cada 4 carreras cierra un traspaso a mitad de
+  // contrato. (2) "pedir salir" nunca es un no-op: o te vas, o te lo niegan y
+  // perdés arraigo/jerarquía (regla 15). Se llama a `mercado.resolver` directo
+  // para aislar la mutación del sistema del ruido de `rendimiento.js`, que
+  // corre después en el mismo split.
+  const mercado = sistemaPorId('mercado');
+
+  let conTraspaso = 0;
+  let total = 0;
+  for (let seed = 1; seed <= 320; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    total += 1;
+    let visto = false;
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      const antes = state.logs.length;
+      state = avanzarSplitAuto(state, rng).state;
+      if (state.logs.slice(antes).some((l) => /^Traspaso cerrado: te vas/.test(l.message))) {
+        visto = true;
+      }
+    }
+    if (visto) {
+      conTraspaso += 1;
+    }
+  }
+  const frac = conTraspaso / total;
+  if (frac < 0.25) {
+    throw new Error(`sólo ${(frac * 100).toFixed(1)}% de las carreras cierran un traspaso a mitad de contrato (objetivo ≥25%)`);
+  }
+
+  let ejercido = 0;
+  let seFue = 0;
+  let penalizado = 0;
+  for (let seed = 1; seed <= 400 && !(seFue && penalizado); seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplit(state, rng).state;
+      while (state.pendiente) {
+        const sistema = sistemaPorId(state.pendiente.sistemaId);
+        const { decision } = state.pendiente;
+        if (sistema.id === 'mercado' && decision.datos?.motivo === 'traspaso'
+          && !decision.datos.conClausula && decision.opciones.some((o) => o.id === 'pedirSalir')) {
+          const c0 = state.career;
+          // El fork se descarta: se prueban varias semillas sobre el MISMO
+          // estado para cubrir las dos ramas de `teSuelta` (que se vaya, o que
+          // se lo nieguen y pague arraigo/jerarquía) sin depender de qué cara
+          // salió en la corrida real.
+          for (let k = 0; k < 40; k += 1) {
+            const res = mercado.resolver(state, decision, { opcionId: 'pedirSalir' }, mulberry32(seed * 4096 + i * 64 + k));
+            ejercido += 1;
+            const c1 = res.state.career;
+            const movido = c1.currentOrg !== c0.currentOrg;
+            const castigo = c1.currentOrg === c0.currentOrg
+              && (c1.arraigo < c0.arraigo || c1.jerarquia < c0.jerarquia);
+            if (!movido && !castigo) {
+              throw new Error(`seed ${seed} split ${i} k${k}: "pedir salir" fue un no-op (ni te fuiste ni perdiste arraigo/jerarquía)`);
+            }
+            if (movido) seFue += 1;
+            if (castigo) penalizado += 1;
+            if (seFue && penalizado) break;
+          }
+        }
+        state = resolverDecision(state, sistema.resolverAuto(state, decision, rng), rng).state;
+      }
+    }
+  }
+  if (ejercido < 1) {
+    throw new Error('no apareció ninguna decisión de traspaso sin cláusula en 400 carreras: no se pudo ejercitar "pedir salir"');
+  }
+  if (!seFue || !penalizado) {
+    throw new Error(`"pedir salir" no cubrió sus dos ramas (te fuiste: ${seFue}, te lo negaron con castigo: ${penalizado})`);
+  }
+});
+
 check('El mercado del mundo renueva contratos NPC: no decaen todos a 0 para siempre', () => {
   // Sin renovación NPC (el estado pre-9Mc), con contratos de 1-3 años todo
   // `plantel[rol].contrato.anios` vale 0 tras 3 offseasons. Con la resolución

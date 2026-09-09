@@ -33,6 +33,96 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-09 — Fase 9Mf: traspasos a mitad de contrato, y el banquillo
+
+Sexto commit de **9M** (PLAN.md §9M.7). Con el contrato corriendo, el mercado imprimía una línea
+("Te queda un año de contrato con X") y **no pasaba nada** — 3,80 pretemporadas por carrera
+desperdiciadas. Ahora un club grande puede venir a buscarte a mitad de contrato, y si tu nivel cae
+por debajo del suplente **perdés la titularidad** — la puerta al declive de la que la fase 10 saca
+el retiro (`CONCEPTO` §12.4).
+
+#### Dos bugs de confianza arreglados (D40, mitad)
+
+- **`registro.dineroTotalUSD` nunca se incrementaba.** `PROGRESO.md` afirmaba que `roster.js`
+  cobraba `salarioAnualUSD/3` por split; el código no lo hacía, y el check de monotonía (regla 14)
+  pasaba trivialmente sobre un 0. Ahora `roster.js` acumula `salarioAnualUSD / splitsPorEdad` cada
+  split bajo contrato (`core/registro.js:acumularDinero`, monótona por construcción — sólo suma un
+  positivo). Único punto donde se toca la plata, corre cada split, headless incluido. En tier 3
+  (sueldo 0) es no-op.
+- **`registro.picos.salarioAnualUSD` nunca se escribía.** Se registra en el mismo lugar
+  (`roster.js:conPagaDelSplit` → `registrarPico`), así que una renovación al split siguiente lo
+  levanta también.
+
+#### `src/systems/mercado.js` — traspaso a mitad de contrato
+
+- `ofertaDeTraspaso(state, rng)`: en la rama "contrato corriendo" de `aplicar`, si hay un
+  pretendiente que califica (`orgsQueTeFicharian` filtrado a `org.fuerza ≥ tu org +
+  traspasoBrechaFuerzaMin` — un club grande, no lateral) y sale `chance(probTraspasoMitadContrato)`,
+  se devuelve una decisión `motivo: 'traspaso'`. La oferta del comprador tiene piso
+  `traspasoSalarioMinFactor` sobre tu contrato (un club que te saca viene a mejorarte). `traspasoUSD`
+  = `valorDeMercado · traspasoBaseFactor · (1 + añosRestantes · traspasoPorAnioRestante)` — **lo
+  cobra tu club, no vos**: no entra a `dineroTotalUSD`.
+- `resolverTraspaso`: tres opciones. **Quedarte** (nada cambia). **Aceptar** — con cláusula te vas
+  y tu club cobra sin opinar; sin cláusula tu club decide (`clubRetieneBase + brechaNivel ·
+  clubRetienePorBrechaNivel`, clamp [0,1]). **Pedir salir** — empuja a favor (`- pedirSalirBonusSalida`);
+  si te lo niegan, se resiente el vestuario: `arraigo ·= (1 - pedirSalirCastigoArraigo)`, `jerarquía
+  ·= (1 - pedirSalirCastigoJerarquia)` (regla 15). Irte reusa `aceptarOferta` (cierra la fila, abre
+  el contrato nuevo, proyecta la jerarquía) + `cerrarAsientosCongelados`.
+- `resolverAuto` gana una rama `motivo: 'traspaso'`: toma el paso arriba salvo recorte de sueldo
+  real (`< contrato · traspasoAutoRecorteMax`). Determinista, sin `rng`.
+
+#### `src/systems/rendimiento.js` + `src/systems/mercado.js` — el banquillo
+
+- **Trigger** (`rendimiento.js`, en `consecuencias`): en tier 1/2, en un split de `fracaso`, si
+  `nivelDelJugador < promedioDelPlantel - umbralBanquillo` y sale `chance(probBanquilloPorBrecha)`
+  → `flags.banquilloPendiente = true`, la jerarquía se derrumba a `banquilloJerarquiaFactor` y el
+  arraigo a `banquilloArraigoFactor`. El `chance` sólo se consume en un split flojo de un jugador
+  ya descolgado: corre el stream poco.
+- **Consecuencia** (`mercado.js:resolverBanquillo`, consume el flag ANTES de todo lo demás): tu
+  club te cede a la liga de desarrollo de su región — la org tier-2 más débil te toma, con el
+  contrato reescrito hacia abajo (fila cerrada con motivo `'banquillo'`). Desde ahí se pelea la
+  vuelta por la escalera de 9Md, o se termina la carrera. Sin liga tier-2 en la región (import
+  relegado, raro) el banquillo te deja sin equipo.
+
+#### Pantalla (regla 12) — `src/ui/components/mercado.js`
+
+- `renderMercado` ramifica en `decision.datos.motivo === 'traspaso'`: `construirTarjetaTraspaso`
+  pinta una tarjeta por opción (Aceptar / Pedir salir / Quedarte) con su `descripcion` y, para las
+  de irse, sueldo + liga + proyección de jerarquía. Un botón **Elegir** por tarjeta. El botón
+  **⏳ Esperar** se oculta (en un traspaso, "quedarte" ES rechazar). El rediseño de tres columnas
+  completo sigue siendo 9Mg.
+
+#### Constantes nuevas (`BALANCE.mercado`, por criterio — retune 9Mh, regla 2)
+
+`probTraspasoMitadContrato` 0,35 · `traspasoBrechaFuerzaMin` 5 · `traspasoSalarioMinFactor` 1,05 ·
+`traspasoBaseFactor` 1,1 · `traspasoPorAnioRestante` 0,35 · `traspasoAutoRecorteMax` 0,85 ·
+`clubRetieneBase` 0,3 · `clubRetienePorBrechaNivel` 0,015 · `pedirSalirBonusSalida` 0,35 ·
+`pedirSalirCastigoArraigo` 0,5 · `pedirSalirCastigoJerarquia` 0,15 · `umbralBanquillo` 16 ·
+`probBanquilloPorBrecha` 0,55 · `banquilloJerarquiaFactor` 0,4 · `banquilloArraigoFactor` 0,6.
+El sueldo por split usa `BALANCE.edad.splitsPorEdad` (3) — no hay constante nueva para eso.
+**Ninguna constante previa se tocó.**
+
+#### Verificación
+
+- `node src/dev/validate.js` — **143/143 OK**. Dos checks nuevos: "Fase 9Mf:
+  `registro.dineroTotalUSD` se acumula (>0 y monótono) en toda carrera con contrato" (check 11 de
+  §9M.10 — 100%, media US$2,8M de por vida, `picos.salarioAnualUSD` escrito) y "Fase 9Mf: ≥25% de
+  las carreras ven un traspaso a mitad de contrato, y 'pedir salir' hace una de sus dos cosas"
+  (check 6 — **35,0%** a n=1000, objetivo ≥25%; `pedir salir` nunca es no-op: o te vas o perdés
+  arraigo/jerarquía, ambas ramas cubiertas). Ningún check parcheado (dinastía 28%, series sin
+  draft, `proyeccionJerarquia` ±3,5, renovación <45%) se movió.
+- `node src/dev/simulate.js 1500 60 todas` — **99s** (base 9Me 111s → **0,89×**, tope 2× —
+  check 14), **0 crashes** y 0 varadas en 4500 carreras. El corrimiento de stream de 9Mf (D35) es
+  **casi invisible en agregado**: el fix del dinero no consume `rng`; el `chance` del banquillo
+  casi no salta (2-3% de las carreras); el `chance` + `construirOferta` del traspaso saltan seguido
+  pero mueven poco. Equilibrado: tier1 al cierre 77,5→77,4% · retiro 77,3→77,4% · mentalidad
+  88,6→89,1 · mecánica 75,2→75,1 · soloqElo 3246,6→3246,8. Ranked y prudente igual de estables.
+- `node src/dev/build.js` — Build OK, determinismo src vs dist (12 carreras × 30 splits) intacto.
+- Determinismo: 60 seeds, misma seed → carrera idéntica byte a byte.
+- **Pantalla (regla 12)**: la decisión `motivo: 'traspaso'` usa el panel `mercado` que la UI y el
+  pipeline ya entienden; `construirTarjetaTraspaso` la pinta con las tres opciones y un botón por
+  tarjeta.
+
 ### 2026-09-09 — Fase 9Me: negociar, no aceptar
 
 Quinto commit de **9M** (PLAN.md §9M.6). El mercado dejaba una sola respuesta: aceptar la tarjeta

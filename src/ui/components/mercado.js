@@ -110,6 +110,48 @@ function construirTarjeta(oferta, onElegir, onNegociar) {
   return card;
 }
 
+// Fase 9Mf: la decisión de traspaso a mitad de contrato (`motivo: 'traspaso'`).
+// Mismo panel `mercado`, tarjetas más chatas: aceptar / pedir salir / quedarse.
+// El bloque de tres columnas sigue siendo 9Mg; esto cumple regla 12 para la
+// decisión nueva sin adelantar esa pantalla.
+function construirTarjetaTraspaso(opcion, onElegir) {
+  const card = document.createElement('div');
+  card.className = `mercado-card mercado-card--${opcion.tipo === 'aceptar' ? 'bombazo' : 'lateral'}`;
+
+  const header = document.createElement('div');
+  header.className = 'mercado-card-header';
+  const org = document.createElement('span');
+  org.className = 'mercado-card-org';
+  org.textContent = opcion.label;
+  header.appendChild(org);
+  card.appendChild(header);
+
+  if (opcion.tipo !== 'quedarse') {
+    card.appendChild(fila('mercado-card-liga', `${opcion.liga} · ${opcion.anios} año${opcion.anios === 1 ? '' : 's'}`));
+    card.appendChild(fila('mercado-card-salario', `${plata(opcion.salarioAnualUSD)}/año`));
+    const pj = opcion.proyeccionJerarquia;
+    if (pj) {
+      card.appendChild(fila(
+        'mercado-card-jerarquia',
+        `Jerarquía: ${pj.desde} ${FLECHAS[pj.flecha] ?? '→'} ${pj.hasta} — ${pj.etiqueta}`
+      ));
+    }
+  }
+
+  card.appendChild(fila('mercado-card-picks', opcion.descripcion));
+
+  const acciones = document.createElement('div');
+  acciones.className = 'mercado-card-acciones';
+  acciones.appendChild(boton(
+    `mercado-card-btn${opcion.tipo === 'quedarse' ? '' : ' mercado-card-btn--firmar'}`,
+    'Elegir',
+    () => onElegir({ opcionId: opcion.id })
+  ));
+  card.appendChild(acciones);
+
+  return card;
+}
+
 // Fase 9Mc: "el mundo siguió sin vos" — los traspasos que movieron el mercado
 // esta pretemporada. El bloque completo de tres columnas es 9Mg; esto es la
 // línea que hace que la elección no se sienta en el vacío (regla 12).
@@ -135,9 +177,13 @@ export function renderMercado(elements, decision, onElegir, onRepresentante, onN
   mercadoTitle.textContent = decision.titulo;
   mercadoDesc.textContent = decision.descripcion;
 
+  const esTraspaso = decision.datos.motivo === 'traspaso';
+
   mercadoGrid.innerHTML = '';
   for (const oferta of decision.opciones) {
-    mercadoGrid.appendChild(construirTarjeta(oferta, onElegir, onNegociar));
+    mercadoGrid.appendChild(esTraspaso
+      ? construirTarjetaTraspaso(oferta, onElegir)
+      : construirTarjeta(oferta, onElegir, onNegociar));
   }
 
   if (mercadoInteresados) {
@@ -162,7 +208,8 @@ export function renderMercado(elements, decision, onElegir, onRepresentante, onN
   mercadoRepresentante.onclick = () => onRepresentante();
 
   if (mercadoEsperar) {
-    mercadoEsperar.hidden = false;
+    // En un traspaso no se "espera": quedarse ES la opción de rechazar.
+    mercadoEsperar.hidden = esTraspaso;
     mercadoEsperar.onclick = () => onEsperar();
   }
 

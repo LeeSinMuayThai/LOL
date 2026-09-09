@@ -5,7 +5,7 @@ import { generarHandle } from '../core/mundo.js';
 import { orgDeCarrera } from '../core/competicion.js';
 import {
   abrirFila, registrarSplitEnFila, registrarJerarquiaEnFila, registrarArraigoEnFila,
-  registrarPico, registrarSalarioEnFila, arraigoInicial
+  registrarPico, registrarSalarioEnFila, acumularDinero, arraigoInicial
 } from '../core/registro.js';
 import { BALANCE } from '../data/balance.js';
 import { ROLES, IDS_ROL, etiquetaRol } from '../data/roles.js';
@@ -103,9 +103,12 @@ function armarRoster(state, rng) {
   // fracción del hype que ya tenías ("tu fama te precede", imagen 6 de
   // PLAN.md). El registro guarda el pico independientemente del split-a-split.
   const arraigoNuevo = Math.round(arraigoInicial(state.player.stats.hype));
-  const registroConPicos = registrarArraigoEnFila(
-    registrarPico(registrarPico(registroConFila, 'jerarquia', jerarquiaRedondeada), 'arraigo', arraigoNuevo),
-    arraigoNuevo
+  const registroConPicos = conPagaDelSplit(
+    registrarArraigoEnFila(
+      registrarPico(registrarPico(registroConFila, 'jerarquia', jerarquiaRedondeada), 'arraigo', arraigoNuevo),
+      arraigoNuevo
+    ),
+    state.career.contrato.salarioAnualUSD
   );
 
   return {
@@ -123,6 +126,18 @@ function armarRoster(state, rng) {
       + `Entrás como uno más: jerarquía ${jerarquiaRedondeada}.`
     )]
   };
+}
+
+// Fase 9Mf: cada split jugado bajo contrato cobra `salarioAnualUSD / splitsPorEdad`
+// (el año son `splitsPorEdad` splits) — se acumula en `registro.dineroTotalUSD`
+// (monótono) y se registra el pico de sueldo. En tier 3 el sueldo es 0: los dos
+// son no-op. Único punto donde se toca la plata: corre cada split (armado de
+// roster nuevo y equipo repetido), headless incluido.
+function conPagaDelSplit(registro, salarioAnualUSD) {
+  return registrarPico(
+    acumularDinero(registro, salarioAnualUSD / BALANCE.edad.splitsPorEdad),
+    'salarioAnualUSD', salarioAnualUSD
+  );
 }
 
 // El arraigo sube solo con el tiempo (fase 8.4), escalado por cuánto se habla
@@ -157,7 +172,10 @@ export function aplicar(state, rng) {
     ...state,
     career: {
       ...state.career,
-      registro: registrarJerarquiaEnFila(registrarSplitEnFila(state.career.registro), state.career.jerarquia)
+      registro: conPagaDelSplit(
+        registrarJerarquiaEnFila(registrarSplitEnFila(state.career.registro), state.career.jerarquia),
+        state.career.contrato.salarioAnualUSD
+      )
     }
   };
   const stConArraigo = conArraigoDelSplit(stConRegistro, rng);

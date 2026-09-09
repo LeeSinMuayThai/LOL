@@ -6,7 +6,7 @@ import { calcularContexto } from '../core/contexto.js';
 import { ligaDeCarrera } from '../core/competicion.js';
 import { salarioDeOferta } from '../core/salarios.js';
 import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
-import { cerrarFila, registrarPico, registrarSalarioEnFila, arraigoInicial } from '../core/registro.js';
+import { cerrarFila, registrarPico, registrarSalarioEnFila, registrarArraigoEnFila, arraigoInicial } from '../core/registro.js';
 import { bandaDeJerarquia, bandaDeArraigoFicha, nivelDelJugador } from '../core/ficha.js';
 import { orgsQueTeFicharian, ofertaPosible, esResidenteDe } from '../core/demanda.js';
 import { resolverMercadoMundial, cerrarAsientosCongelados } from '../core/mercadoMundial.js';
@@ -345,12 +345,28 @@ export function aplicar(state, rng) {
     return { state: stConValor, logs: logsMundo };
   }
 
-  // Contrato corriendo: descuenta un año y listo.
+  // Fase 9Mf: el banquillo se cobra ANTES que nada. `rendimiento.js` lo marcó
+  // el split pasado; tu club te cede a la liga de desarrollo de su región.
+  if (stConValor.career.currentOrg && stConValor.flags.banquilloPendiente) {
+    return resolverBanquillo(stConValor, logsMundo, rng);
+  }
+
+  // Contrato corriendo: descuenta un año. Y a mitad de contrato (§9M.7) un club
+  // grande puede venir a buscarte — con cláusula te vas y tu club cobra, sin
+  // cláusula tu club decide.
   if (stConValor.career.currentOrg) {
     const aniosRestantes = Math.max(0, stConValor.career.contrato.aniosRestantes - 1);
     if (aniosRestantes > 0) {
+      const stConAnio = {
+        ...stConValor,
+        career: { ...stConValor.career, contrato: { ...stConValor.career.contrato, aniosRestantes } }
+      };
+      const traspaso = ofertaDeTraspaso(stConAnio, rng);
+      if (traspaso) {
+        return { state: stConAnio, logs: logsMundo, decision: traspaso };
+      }
       return {
-        state: { ...stConValor, career: { ...stConValor.career, contrato: { ...stConValor.career.contrato, aniosRestantes } } },
+        state: stConAnio,
         logs: [...logsMundo, crearLog('mercado', `Te queda ${aniosRestantes === 1 ? 'un año' : `${aniosRestantes} años`} de contrato con ${stConValor.career.currentOrg}.`)]
       };
     }
@@ -377,7 +393,10 @@ export function aplicar(state, rng) {
 
 // --- Aceptar una oferta (o pedir una mano nueva) ---
 
-function aceptarOferta(state, oferta) {
+// `motivoFila`: el motivo con el que se cierra la fila de la org anterior en el
+// registro. Por defecto se deriva del cambio de tier (ascenso/descenso/
+// transferencia); 9Mf lo pasa explícito para el banquillo.
+function aceptarOferta(state, oferta, { motivoFila } = {}) {
   const esRenovacion = oferta.tag === 'renovacion';
   const contrato = {
     org: oferta.org, liga: oferta.liga, tier: oferta.tier,
@@ -408,10 +427,10 @@ function aceptarOferta(state, oferta) {
 
   // El motivo de cierre de fila para el registro: subiste de tier ('ascenso'),
   // bajaste ('descenso') o te moviste al mismo nivel ('transferencia'). Tier 1
-  // es el número más bajo.
+  // es el número más bajo. 9Mf lo puede forzar ('banquillo').
   const tierPrevio = state.career.tier ?? 9;
-  const motivoFila = oferta.tier < tierPrevio ? 'ascenso'
-    : (oferta.tier > tierPrevio ? 'descenso' : 'transferencia');
+  const motivoFilaFinal = motivoFila ?? (oferta.tier < tierPrevio ? 'ascenso'
+    : (oferta.tier > tierPrevio ? 'descenso' : 'transferencia'));
 
   return {
     state: {
@@ -427,10 +446,196 @@ function aceptarOferta(state, oferta) {
         orgs: [...state.career.orgs, oferta.org],
         splitAscensoTier1: oferta.tier === 1 ? state.player.splitCount : state.career.splitAscensoTier1,
         contrato,
-        registro: conFilaCerrada(state, motivoFila)
+        registro: conFilaCerrada(state, motivoFilaFinal)
       }
     },
     logs: [crearLog('mercado', `Firmás con ${oferta.org} (${oferta.liga}): ${plata(contrato.salarioAnualUSD)}/año, ${contrato.anios} año(s).${conClausula}`)]
+  };
+}
+
+// --- Fase 9Mf: traspasos a mitad de contrato, y el banquillo (§9M.7) ---
+//
+// Hoy, con el contrato corriendo, el mercado imprime una línea y no pasa nada
+// (3,80 pretemporadas por carrera desperdiciadas). Desde acá: un club grande
+// puede venir a buscarte a mitad de contrato, y si tu nivel cae por debajo del
+// suplente perdés la titularidad — la puerta al declive.
+
+// El pretendiente a mitad de contrato: sale de `orgsQueTeFicharian` (asiento
+// abierto en tu rol, te puede pagar, entrás en su banda) y tiene que ser
+// bastante más fuerte que tu org actual — una salida hacia arriba, no lateral.
+// Devuelve una decisión `motivo: 'traspaso'` o `null` si nadie califica o no
+// sale el dado.
+function ofertaDeTraspaso(state, rng) {
+  const m = BALANCE.mercado;
+  const ligaActual = ligaDeCarrera(state);
+  const orgActual = ligaActual?.orgs.find((org) => org.nombre === state.career.currentOrg);
+  if (!orgActual) {
+    return null;
+  }
+
+  const pretendiente = orgsQueTeFicharian(state)
+    .filter((entrada) => entrada.org.fuerza >= orgActual.fuerza + m.traspasoBrechaFuerzaMin)
+    .sort((a, b) => b.org.fuerza - a.org.fuerza)[0];
+  if (!pretendiente || !chance(m.probTraspasoMitadContrato, rng)) {
+    return null;
+  }
+
+  const { org, liga } = pretendiente;
+  const ofertaCruda = construirOferta(state, liga, org, null, rng);
+  // Un club que te saca a mitad de contrato viene a mejorar lo que ganás — si
+  // no, no te moverías. Piso: `traspasoSalarioMinFactor` sobre el contrato
+  // vigente (el ruido lognormal de `salarioDeOferta` no debería dejar la
+  // propuesta por debajo de lo que ya cobrás).
+  const salarioAnualUSD = Math.max(
+    ofertaCruda.salarioAnualUSD,
+    Math.round(state.career.contrato.salarioAnualUSD * m.traspasoSalarioMinFactor)
+  );
+  const oferta = {
+    ...ofertaCruda, salarioAnualUSD,
+    negociacion: { ...ofertaCruda.negociacion, salarioBase: salarioAnualUSD }
+  };
+  const conClausula = state.career.contrato.clausula === 'salida';
+  const traspasoUSD = Math.round(
+    valorDeMercado(state) * m.traspasoBaseFactor
+    * (1 + Math.max(0, state.career.contrato.aniosRestantes) * m.traspasoPorAnioRestante)
+  );
+
+  const quedarse = {
+    id: 'quedarse', tipo: 'quedarse',
+    label: `Quedarte en ${state.career.currentOrg}`,
+    descripcion: 'Seguís tu contrato como estaba.'
+  };
+  const aceptar = {
+    ...oferta, id: 'aceptar', tipo: 'aceptar',
+    label: `Aceptar: irte a ${org.nombre} (${liga.id})`,
+    descripcion: conClausula
+      ? `Tenés cláusula: te vas y ${state.career.currentOrg} cobra ${plata(traspasoUSD)}. No opina.`
+      : `${org.nombre} pone ${plata(traspasoUSD)} de traspaso. ${state.career.currentOrg} decide si te suelta.`
+  };
+  const opciones = conClausula
+    ? [aceptar, quedarse]
+    : [aceptar, {
+      ...oferta, id: 'pedirSalir', tipo: 'pedirSalir',
+      label: 'Pedir salir',
+      descripcion: 'Apretás para irte. Si te lo niegan, se resiente el vestuario: perdés arraigo y jerarquía.'
+    }, quedarse];
+
+  return {
+    tipo: 'opciones',
+    presentacion: 'mercado',
+    titulo: 'Te quieren a mitad de contrato',
+    descripcion: `${org.nombre} preguntó por vos. Te quedan ${state.career.contrato.aniosRestantes} año(s) de contrato con ${state.career.currentOrg}.`,
+    opciones,
+    datos: {
+      motivo: 'traspaso',
+      conClausula,
+      traspasoUSD,
+      comprador: org.nombre,
+      representanteDisponible: false,
+      traspasosMundo: traspasosParaPantalla(state),
+      negociacionesRotas: [],
+      clubesInteresados: []
+    }
+  };
+}
+
+// Resuelve el traspaso: quedarse (nada cambia), aceptar (tu club decide si te
+// suelta, salvo cláusula), o pedir salir (empuja a favor, pero si te lo niegan
+// cuesta arraigo y jerarquía). El `traspasoUSD` lo cobra tu club, no vos: no
+// entra a `registro.dineroTotalUSD`.
+function resolverTraspaso(state, decision, respuesta, rng) {
+  const m = BALANCE.mercado;
+  const elegida = decision.opciones.find((opcion) => opcion.id === respuesta.opcionId)
+    ?? decision.opciones.find((opcion) => opcion.id === 'quedarse');
+
+  if (elegida.tipo === 'quedarse') {
+    return { state, logs: [crearLog('mercado', `Te quedás en ${state.career.currentOrg}. El traspaso no se hace.`)] };
+  }
+
+  const ligaActual = ligaDeCarrera(state);
+  const orgActual = ligaActual?.orgs.find((org) => org.nombre === state.career.currentOrg);
+  const brechaNivel = nivelDelJugador(state) - (orgActual?.fuerza ?? 0);
+
+  let teSuelta = decision.datos.conClausula;
+  if (!teSuelta) {
+    const probRetiene = clamp(
+      m.clubRetieneBase + Math.max(0, brechaNivel) * m.clubRetienePorBrechaNivel
+      - (elegida.tipo === 'pedirSalir' ? m.pedirSalirBonusSalida : 0),
+      0, 1
+    );
+    teSuelta = !chance(probRetiene, rng);
+  }
+
+  if (!teSuelta) {
+    if (elegida.tipo === 'pedirSalir') {
+      const arraigoNuevo = Math.round(clampStat(state.career.arraigo * (1 - m.pedirSalirCastigoArraigo)));
+      const jerarquiaNueva = Math.round(clampStat(state.career.jerarquia * (1 - m.pedirSalirCastigoJerarquia)));
+      return {
+        state: {
+          ...state,
+          career: {
+            ...state.career, arraigo: arraigoNuevo, jerarquia: jerarquiaNueva,
+            registro: registrarArraigoEnFila(state.career.registro, arraigoNuevo)
+          }
+        },
+        logs: [crearLog('mercado', `${state.career.currentOrg} te niega la salida y el pedido no cayó bien: perdés peso en el vestuario.`)]
+      };
+    }
+    return { state, logs: [crearLog('mercado', `${decision.datos.comprador} preguntó, pero ${state.career.currentOrg} no te suelta. Seguís.`)] };
+  }
+
+  const origen = state.career.currentOrg;
+  const firmado = aceptarOferta(state, elegida, { motivoFila: 'transferencia' });
+  const cerrado = cerrarAsientosCongelados(firmado.state, elegida.org, rng, new Set([elegida.org]));
+  const clausulaTxt = decision.datos.conClausula ? ' Se ejecuta la cláusula.' : '';
+  return {
+    state: cerrado.state,
+    logs: [
+      crearLog('mercado', `Traspaso cerrado: te vas de ${origen} a ${elegida.org} a mitad de contrato por ${plata(decision.datos.traspasoUSD)}.${clausulaTxt}`),
+      ...firmado.logs,
+      ...cerrado.logs
+    ]
+  };
+}
+
+// El banquillo: `rendimiento.js` marcó `flags.banquilloPendiente`. Tu club te
+// cede a la liga de desarrollo de su región — la org tier-2 más débil te toma,
+// con el contrato reescrito hacia abajo. Desde ahí se pelea la vuelta, o se
+// termina la carrera (fase 10). Sin liga de desarrollo en la región (import
+// relegado, raro) el banquillo te deja sin equipo. No es una decisión: te
+// sentaron.
+function resolverBanquillo(state, logsPrevios, rng) {
+  const origen = state.career.currentOrg;
+  const regionId = ligaDeCarrera(state)?.regionId ?? state.mundo.regionIdOrigen;
+  const dev = state.mundo.ligas.find((liga) => liga.tier === 2 && liga.regionId === regionId);
+
+  if (!dev || dev.orgs.length === 0) {
+    return {
+      state: {
+        ...state,
+        flags: {
+          ...state.flags, banquilloPendiente: false,
+          splitsSinOfertaConsecutivos: state.flags.splitsSinOfertaConsecutivos + 1
+        },
+        career: {
+          ...state.career, currentOrg: null, rosterDeOrg: null, companeros: [], sinergia: 0,
+          registro: conFilaCerrada(state, 'banquillo')
+        }
+      },
+      logs: [...logsPrevios, crearLog('mercado', `${origen} te deja fuera del equipo y no hay filial donde jugar. Te quedás sin lugar.`)]
+    };
+  }
+
+  const orgDestino = [...dev.orgs].sort((a, b) => a.fuerza - b.fuerza)[0];
+  const oferta = construirOferta(state, dev, orgDestino, null, rng);
+  const firmado = aceptarOferta(state, { ...oferta, id: oferta.org }, { motivoFila: 'banquillo' });
+  return {
+    state: { ...firmado.state, flags: { ...firmado.state.flags, banquilloPendiente: false } },
+    logs: [
+      ...logsPrevios,
+      crearLog('mercado', `${origen} te manda a la filial: bajás a ${dev.id} con ${orgDestino.nombre}. Desde abajo se vuelve.`),
+      ...firmado.logs
+    ]
   };
 }
 
@@ -536,6 +741,12 @@ function negociarClausula(ofertas, idx) {
 }
 
 export function resolver(state, decision, respuesta, rng) {
+  // Fase 9Mf: traspaso a mitad de contrato — quedarse / aceptar / pedir salir.
+  // No se re-presenta: se resuelve de una.
+  if (decision.datos.motivo === 'traspaso') {
+    return resolverTraspaso(state, decision, respuesta, rng);
+  }
+
   // El representante ya no rebaraja (§9M.6): te dice qué clubes te miran sin
   // haber ofertado todavía. Una sola vez por carrera; si ya se usó, la UI no
   // debería ofrecer el botón, pero el motor no confía en eso.
@@ -612,6 +823,16 @@ export function resolver(state, decision, respuesta, rng) {
 }
 
 export function resolverAuto(state, decision, rng) {
+  // Fase 9Mf: el `aceptar` de un traspaso es, por construcción, un club bastante
+  // más fuerte — un paso arriba en lo deportivo. El headless lo toma salvo que
+  // sea un recorte de sueldo real (`traspasoAutoRecorteMax`). Determinista, sin
+  // rng: el stream lo corre `resolver` al firmar (D35), no esta elección.
+  if (decision.datos.motivo === 'traspaso') {
+    const aceptar = decision.opciones.find((opcion) => opcion.id === 'aceptar');
+    const vale = aceptar
+      && aceptar.salarioAnualUSD >= state.career.contrato.salarioAnualUSD * BALANCE.mercado.traspasoAutoRecorteMax;
+    return { opcionId: vale ? 'aceptar' : 'quedarse' };
+  }
   const elegida = weightedPick(decision.opciones, (opcion) => Math.max(1, opcion.salarioAnualUSD), rng);
   return { opcionId: elegida.id };
 }

@@ -292,7 +292,12 @@ export function createInitialState(seed, rng, eleccion = null) {
       splitsSinOfertaConsecutivos: 0,
       // Fase 9: "llamar al representante" (PLAN.md §9.6) rebaraja la mano de
       // ofertas una única vez en toda la carrera.
-      llamadaRepresentante: false
+      llamadaRepresentante: false,
+      // Fase 9Mf: `systems/rendimiento.js` lo prende cuando perdés la
+      // titularidad (tu nivel cayó por debajo del suplente en un split flojo);
+      // `systems/mercado.js` lo consume la pretemporada siguiente cediéndote a
+      // la liga de desarrollo, y lo apaga. `false` al arrancar (trampa T4).
+      banquilloPendiente: false
     },
     logs: []
   };

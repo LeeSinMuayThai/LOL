@@ -951,7 +951,60 @@ export const BALANCE = {
     // sueldo). A cambio, un club grande te puede sacar a mitad de contrato (9Mf).
     precioClausulaSalida: 0.10,
     // Cuántos clubes "que te miran sin haber ofertado" revela el representante.
-    clubesInteresadosMax: 4
+    clubesInteresadosMax: 4,
+
+    // --- Fase 9Mf: traspasos a mitad de contrato, y el banquillo (PLAN.md
+    // §9M.7). Cada pretemporada con el contrato corriendo, un club grande
+    // puede intentar sacarte: con cláusula te vas y tu club cobra, sin
+    // cláusula tu club decide. Y si tu nivel cae por debajo del suplente,
+    // perdés la titularidad — la puerta al declive. Valores por criterio,
+    // retune 9Mh (regla de proceso 2). ---
+    // El sueldo se cobra por split: `salarioAnualUSD / splitsPorEdad` va a
+    // `registro.dineroTotalUSD` (antes NUNCA se incrementaba — el check de
+    // monotonía pasaba trivialmente sobre 0). No hay constante nueva: el año
+    // son `BALANCE.edad.splitsPorEdad` splits.
+    //
+    // Probabilidad de que aparezca un pretendiente a mitad de contrato, si hay
+    // alguno que califica (asiento abierto en tu rol + te puede pagar + entra
+    // en su banda + es bastante más fuerte que tu org). Baja: la mano viene de
+    // `orgsQueTeFicharian`, así que un club grande con tu asiento abierto
+    // aparece seguido — el dado sólo decide si además viene a buscarte ESTA
+    // ventana.
+    probTraspasoMitadContrato: 0.35,
+    // El pretendiente tiene que ser al menos esto más fuerte que tu org actual
+    // (un club grande, no una salida lateral).
+    traspasoBrechaFuerzaMin: 5,
+    // El club que te saca a mitad de contrato mejora el sueldo: piso sobre el
+    // contrato vigente.
+    traspasoSalarioMinFactor: 1.05,
+    // `traspasoUSD` = valor de mercado · factor · (1 + añosRestantes · porAnio).
+    // Lo cobra tu club, no vos: no entra a `dineroTotalUSD`.
+    traspasoBaseFactor: 1.1,
+    traspasoPorAnioRestante: 0.35,
+    // El auto-resolver (headless / simulate.js) toma el traspaso —un club más
+    // fuerte— salvo que el sueldo caiga por debajo de esta fracción del actual.
+    traspasoAutoRecorteMax: 0.85,
+    // Sin cláusula: probabilidad base de que tu club NO te suelte ("aceptar la
+    // oferta"), más lo que sube por cada punto que superás su fuerza (te
+    // retienen más), menos el empujón de "pedir salir". Clampeada a [0, 1].
+    // Baja: un club chico suele cobrar el traspaso — es cómo se financia.
+    clubRetieneBase: 0.3,
+    clubRetienePorBrechaNivel: 0.015,
+    pedirSalirBonusSalida: 0.35,
+    // "Pedir salir" que sale mal: el vestuario se resiente. Arraigo y jerarquía
+    // se multiplican por (1 − esto).
+    pedirSalirCastigoArraigo: 0.5,
+    pedirSalirCastigoJerarquia: 0.15,
+    // El banquillo: perdés la titularidad si tu nivel cae este umbral por
+    // debajo del promedio del plantel (el suplente que el club tiene o puede
+    // fichar). No es automático — un mal split bajo esa brecha lo puede
+    // gatillar (`probBanquilloPorBrecha`).
+    umbralBanquillo: 16,
+    probBanquilloPorBrecha: 0.55,
+    // Al sentarte: la jerarquía se derrumba a esta fracción, el arraigo cae a
+    // esta otra, y la pretemporada te cede a la liga de desarrollo de tu región.
+    banquilloJerarquiaFactor: 0.4,
+    banquilloArraigoFactor: 0.6
   },
 
   // Fase 9R5a: la carrera termina. Antes NADA seteaba `terminado` en fase

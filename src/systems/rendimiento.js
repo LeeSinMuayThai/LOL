@@ -6,6 +6,7 @@ import { ligaOZonaDeCarrera } from '../core/competicion.js';
 import { esCierreDeTemporada } from '../core/serie.js';
 import { rendimientoBase, fuerzaDelEquipo } from '../core/fuerza.js';
 import { registrarTitulo, registrarInternacional, registrarPico, registrarArraigoEnFila } from '../core/registro.js';
+import { nivelDelJugador } from '../core/ficha.js';
 import { BALANCE } from '../data/balance.js';
 import { ROLES } from '../data/roles.js';
 
@@ -140,7 +141,7 @@ function consecuencias(state, rendimiento, resultado, esCierre, rng) {
   const esperado = nivelEquipo * (BALANCE.roster.exigenciaBase
     + (state.career.jerarquia / BALANCE.stats.max) * BALANCE.roster.exigenciaPorJerarquia);
   const brecha = (rendimiento - esperado) / BALANCE.roster.jerarquiaReferenciaRendimiento;
-  const jerarquia = clampStat(
+  let jerarquia = clampStat(
     state.career.jerarquia + brecha * BALANCE.roster.jerarquiaVelocidad * BALANCE.stats.max / 10
     + gauss(0, BALANCE.roster.jerarquiaRuido, rng)
   );
@@ -159,6 +160,27 @@ function consecuencias(state, rendimiento, resultado, esCierre, rng) {
   let registro = state.career.registro;
   let arraigo = clampStat(state.career.arraigo + brecha * a.factorBrechaRendimiento
     + (fracaso ? roll(a.porFracasoMin, a.porFracasoMax, rng) : 0));
+
+  // Fase 9Mf: el banquillo. Si tu nivel cayó bien por debajo del plantel —el
+  // suplente que el club tiene o puede fichar— y encima el split fue flojo,
+  // podés perder la titularidad: la jerarquía se derrumba y la pretemporada te
+  // cede a la liga de desarrollo (`systems/mercado.js` consume el flag). Es la
+  // puerta al declive de la que la fase 10 saca el retiro (CONCEPTO §12.4). El
+  // `chance` sólo se consume en un split flojo de un jugador ya descolgado:
+  // corre el stream poco (D35).
+  const mkt = BALANCE.mercado;
+  let banquilloPendiente = state.flags.banquilloPendiente ?? false;
+  const enTierConPlantel = state.career.tier === 1 || state.career.tier === 2;
+  if (enTierConPlantel && !banquilloPendiente && fracaso
+    && nivelDelJugador(state) < nivelEquipo - mkt.umbralBanquillo
+    && chance(mkt.probBanquilloPorBrecha, rng)) {
+    banquilloPendiente = true;
+    jerarquia = clampStat(jerarquia * mkt.banquilloJerarquiaFactor);
+    arraigo = clampStat(arraigo * mkt.banquilloArraigoFactor);
+    logs.push(crearLog('mercado',
+      `Te sientan en el banquillo: tu nivel quedó por debajo del suplente. `
+      + `En la próxima ventana ${state.career.currentOrg} te cede a su filial.`));
+  }
 
   // `nombreLiga` cubre el tier 3: ahí no hay una liga real que nombrar (fase 3).
   const nombreLiga = liga.nombreLiga ?? liga.id;
@@ -219,6 +241,7 @@ function consecuencias(state, rendimiento, resultado, esCierre, rng) {
 
   const nextState = registrarEnHistorial({
       ...state,
+      flags: { ...state.flags, banquilloPendiente },
       player: {
         ...state.player,
         worlds,

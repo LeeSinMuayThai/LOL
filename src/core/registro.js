@@ -84,6 +84,18 @@ export function registrarArraigoEnFila(registro, arraigo) {
   };
 }
 
+// Fase 9Mf: el dinero de por vida. Se acumula cada split jugado bajo contrato
+// (`systems/roster.js`), un `salarioAnualUSD / BALANCE.edad.splitsPorEdad` por
+// split. Monótono por construcción — solo suma un monto positivo. Antes NUNCA
+// se incrementaba: `PROGRESO.md` afirmaba que `roster.js` lo cobraba, el código
+// no lo hacía, y el check de monotonía pasaba trivialmente sobre un 0.
+export function acumularDinero(registro, montoUSD) {
+  if (!(montoUSD > 0)) {
+    return registro;
+  }
+  return { ...registro, dineroTotalUSD: registro.dineroTotalUSD + Math.round(montoUSD) };
+}
+
 // Fase 9: el sueldo del contrato vigente, escrito en la fila abierta al firmar
 // (nunca cambia a mitad de contrato — una renovación cierra la fila y abre
 // una nueva, como cualquier cambio de org).
