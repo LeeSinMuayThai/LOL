@@ -67,8 +67,14 @@
 
 .rol-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: var(--s-3);
+}
+@media (max-width: 899px) {
+  .rol-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 479px) {
+  .rol-grid { grid-template-columns: 1fr; }
 }
 
 .rol-card {
@@ -86,6 +92,12 @@
               background var(--dur-fast) var(--ease),
               transform var(--dur-fast) var(--ease);
 }
+.rol-card .rol-marca {
+  font-size: 28px;
+  color: var(--ink-mute);
+  margin-bottom: var(--s-2);
+}
+.rol-card.elegido .rol-marca { color: var(--live); }
 .rol-card:hover { border-color: var(--live); transform: translateY(-2px); background: var(--bg-raised); box-shadow: none; }
 .rol-card.elegido {
   border-color: var(--live);
@@ -108,9 +120,47 @@
 
 /* --- Los campeones --------------------------------------------------------- */
 
+.draft-slots {
+  display: flex;
+  gap: var(--s-3);
+  margin-bottom: var(--s-4);
+}
+.draft-slot {
+  width: 64px;
+  height: 72px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: var(--bg-sunken);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r);
+  color: var(--ink-mute);
+  font-family: var(--font-display);
+  font-size: var(--fs-5);
+  font-weight: 700;
+}
+.draft-slot--lleno {
+  border-style: solid;
+  border-color: var(--up);
+  padding: 4px;
+}
+.draft-slot:hover:not(:disabled) {
+  background: var(--bg-sunken);
+  border-color: var(--live);
+  color: var(--live);
+  box-shadow: none;
+}
+.draft-slot .campeon-tile { width: 100%; height: 100%; }
+.rol-card:not(.elegido) .rol-tono {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .campeon-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
   gap: var(--s-2);
 }
 
@@ -125,8 +175,20 @@
   font-size: var(--fs-2);
   text-transform: none;
   letter-spacing: normal;
+  gap: var(--s-2);
   transition: border-color var(--dur-fast) var(--ease),
               background var(--dur-fast) var(--ease);
+}
+.campeon-card .campeon-tile { align-self: flex-start; }
+.campeon-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.campeon-tag-chip {
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sharp);
+  font-size: 10px;
+  color: var(--ink-mute);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
 }
 .campeon-card:hover:not(:disabled) { border-color: var(--live); box-shadow: none; background: var(--bg-raised); }
 .campeon-card.elegido {
@@ -155,6 +217,10 @@
    "seguir lo que ya tenías" no debería competir visualmente con la opción
    de arrancar de cero. */
 .continuar-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
   background: var(--gold-fill);
   border: 1px solid var(--gold-deep);
   color: var(--gold);
@@ -163,6 +229,22 @@
   background: var(--gold);
   border-color: var(--gold);
   color: var(--bg-void);
+}
+.continuar-kicker {
+  font-family: var(--font-display);
+  font-size: var(--fs-3);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
+.continuar-detalle {
+  font-family: var(--font-ui);
+  font-size: var(--fs-1);
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: inherit;
+  opacity: 0.8;
 }
 
 details.avanzado { margin-top: var(--s-5); font-size: var(--fs-2); color: var(--ink-dim); }
@@ -399,6 +481,10 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   gap: var(--s-2);
 }
 .mercado-card-org {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 0;
   font-family: var(--font-display);
   font-size: var(--fs-5);
   font-weight: 700;
@@ -914,7 +1000,15 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   border-radius: var(--r-sharp);
 }
 .tabla-puesto { color: var(--ink-mute); }
-.tabla-org { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tabla-org {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
 .tabla-fila--corte-playoffs { border-top: 1px dashed var(--up); padding-top: 4px; }
 .tabla-fila--corte-internacional { border-top: 1px dashed var(--gold); padding-top: 4px; }
 

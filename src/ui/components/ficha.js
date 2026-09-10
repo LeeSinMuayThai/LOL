@@ -1,9 +1,14 @@
 import { fichaCompleta } from '../../core/ficha.js';
 import { valorDeMercado } from '../../core/valorMercado.js';
-import { crearBarra } from './barra.js';
+import { crearBarra, crearInstrumento } from './barra.js';
 import { crearStatRow } from './statRow.js';
+import { crearOrgChip } from './orgChip.js';
+import { crearCampeonTile } from './campeonTile.js';
+import { marcaRol } from './iconos.js';
+import { countUp } from './countUp.js';
 import { BALANCE } from '../../data/balance.js';
-import { actualizarTopbar } from '../shell.js';
+import { romano, tierPorId } from '../../data/ranked.js';
+import { actualizarTopbar, aplicarEstudio } from '../shell.js';
 
 // LA TARJETA (fase 8, PLAN.md §8.6): vive en todas las pantallas de carrera.
 // Es la respuesta directa a H7 del diagnóstico — "los números que ves no
@@ -19,11 +24,6 @@ const LABEL_INTERNACIONAL = {
 };
 const FASE_LABEL = { amateur: 'Amateur', profesional: 'Profesional', retirado: 'Retirado' };
 
-// `data/contextos.js` declara los ids de `MARCAS` para que `validate.js`
-// pueda detectar una marca inventada en un JSON — no trae etiqueta de
-// display, porque hasta T2 nada las mostraba. Las 5 útlimas ('pendiente')
-// las activan pasos que todavía no existen: quedan acá para el día que
-// aparezcan, hoy nunca las emite `calcularContexto`.
 const LABEL_MARCA = {
   deuda_sueno: 'Deuda de sueño',
   pc_confiscada: 'PC confiscada',
@@ -54,6 +54,10 @@ const LABEL_MARCA = {
   vuelta_del_retiro: 'Vuelta del retiro'
 };
 const MARCAS_DE_RIESGO = new Set(['deuda_sueno', 'pc_confiscada', 'riesgo_familiar', 'mentalidad_al_limite']);
+const MARCAS_VISIBLES = 6;
+const POOL_TILES = 8;
+
+let fichaPrevia = { seed: null, nivel: null, lp: null };
 
 function hitosJerarquia() {
   const { estatusBandas } = BALANCE.contexto;
@@ -75,9 +79,6 @@ function hitosArraigo() {
   ];
 }
 
-// Una fila de "TU HISTORIA, CLUB POR CLUB" (imagen 15 de PLAN.md). La misma
-// función la va a reusar la tarjeta final de la fase 10 — se escribe acá
-// una vez.
 export function filaHistoria(fila) {
   const item = document.createElement('div');
   item.className = 'ficha-historia-fila';
@@ -89,9 +90,6 @@ export function filaHistoria(fila) {
   return item;
 }
 
-// Una fila de momento (fase 8D, `career.registro.momentos`): la decisión que
-// te quedó pegada. Distinto de `filaHistoria` — esto no es "cuánto jugaste en
-// cada club", es "qué te pasó y cuándo", el efecto `momento` escribe acá.
 export function filaMomento(momento) {
   const item = document.createElement('div');
   item.className = 'ficha-historia-fila';
@@ -100,19 +98,199 @@ export function filaMomento(momento) {
   return item;
 }
 
+function tonoDeEstudio(valor, a) {
+  if (valor < a.confiscacionUmbral) return 'danger';
+  if (valor < a.avisoUmbral) return 'warn';
+  return null;
+}
+
+function crearRankedHero(state, modulos) {
+  const ranked = state.player.ranked;
+  const servidor = modulos.ranked.servidorDeLaPartida(state);
+  const tier = tierPorId(ranked.tier);
+  const wrap = document.createElement('div');
+  wrap.className = `ficha-ranked ficha-ranked--${ranked.tier ?? 'iron'}`;
+
+  const nombre = document.createElement('div');
+  nombre.className = 'ficha-ranked-nombre';
+  nombre.textContent = !tier
+    ? 'Sin rango'
+    : (tier.apice ? tier.label : `${tier.label} ${romano(ranked.division)}`);
+
+  let pct = 0;
+  let sufijo = ' LP';
+  if (!tier) {
+    pct = 0;
+  } else if (!tier.apice) {
+    pct = ranked.lp;
+  } else if (ranked.tier === 'challenger') {
+    pct = 100;
+    const puesto = modulos.ranked.rangoAproximado(ranked, servidor);
+    if (puesto) sufijo = ` LP · #${puesto} de ${servidor.label}`;
+  } else if (ranked.tier === 'grandmaster') {
+    const span = Math.max(1, servidor.cutoffChallenger - servidor.cutoffGM);
+    pct = Math.max(0, Math.min(100, ((ranked.lp - servidor.cutoffGM) / span) * 100));
+  } else {
+    pct = Math.max(0, Math.min(100, (ranked.lp / Math.max(1, servidor.cutoffGM)) * 100));
+  }
+
+  const lpEl = document.createElement('div');
+  lpEl.className = 'ficha-ranked-lp';
+  const num = document.createElement('span');
+  num.className = 'num';
+  countUp(num, fichaPrevia.lp, ranked.lp);
+  lpEl.append(num, document.createTextNode(sufijo));
+
+  const pista = document.createElement('div');
+  pista.className = 'ficha-ranked-pista';
+  const relleno = document.createElement('div');
+  relleno.className = 'ficha-ranked-relleno';
+  relleno.style.width = `${pct}%`;
+  pista.appendChild(relleno);
+
+  wrap.append(nombre, lpEl, pista);
+  fichaPrevia.lp = ranked.lp;
+  return wrap;
+}
+
+function crearMarcas(marcas) {
+  const ordenadas = [...marcas].sort((a, b) => Number(MARCAS_DE_RIESGO.has(b)) - Number(MARCAS_DE_RIESGO.has(a)));
+  const visibles = ordenadas.slice(0, MARCAS_VISIBLES);
+  const resto = ordenadas.slice(MARCAS_VISIBLES);
+  const row = document.createElement('div');
+  row.className = 'ficha-marcas';
+  for (const id of visibles) {
+    const chip = document.createElement('span');
+    chip.className = 'ficha-marca' + (MARCAS_DE_RIESGO.has(id) ? ' ficha-marca--peligro' : '');
+    chip.textContent = LABEL_MARCA[id] ?? id;
+    row.appendChild(chip);
+  }
+  if (resto.length > 0) {
+    const mas = document.createElement('span');
+    mas.className = 'ficha-marca';
+    mas.textContent = `+${resto.length}`;
+    mas.title = resto.map((id) => LABEL_MARCA[id] ?? id).join(' · ');
+    row.appendChild(mas);
+  }
+  return row;
+}
+
+function crearPoolTiles(state) {
+  const pool = state.player.championPool ?? [];
+  if (pool.length === 0) return null;
+  const row = document.createElement('div');
+  row.className = 'ficha-pool-tiles';
+  const tierList = state.meta?.tierList ?? [];
+  const mostrar = pool.slice(0, POOL_TILES);
+  for (const campeon of mostrar) {
+    const tier = tierList.find((entrada) => entrada.name === campeon.name)?.tier ?? null;
+    row.appendChild(crearCampeonTile(campeon, { tier, size: 'ficha' }));
+  }
+  if (pool.length > POOL_TILES) {
+    const mas = document.createElement('span');
+    mas.className = 'ficha-pool-mas';
+    mas.textContent = `+${pool.length - POOL_TILES}`;
+    row.appendChild(mas);
+  }
+  return row;
+}
+
+function envolverMas(siempre, extra) {
+  const frag = document.createDocumentFragment();
+  for (const n of siempre) if (n) frag.appendChild(n);
+  const extras = extra.filter(Boolean);
+  if (extras.length === 0) return frag;
+  const mas = document.createElement('details');
+  mas.className = 'ficha-mas';
+  mas.open = window.matchMedia?.('(min-width: 900px)').matches ?? true;
+  const sum = document.createElement('summary');
+  sum.textContent = 'Más datos';
+  mas.appendChild(sum);
+  for (const n of extras) mas.appendChild(n);
+  frag.appendChild(mas);
+  return frag;
+}
+
+function crearContratoFranja(state, modulos) {
+  const contrato = state.career.contrato;
+  const valor = valorDeMercado(state);
+  if (!contrato.org && valor <= 0) return null;
+
+  const franja = document.createElement('div');
+  franja.className = 'ficha-contrato-franja';
+  if (contrato.org) franja.appendChild(crearOrgChip(contrato.org, { size: 28 }));
+
+  const datos = document.createElement('div');
+  datos.className = 'ficha-contrato-datos';
+  if (contrato.org) {
+    const label = document.createElement('div');
+    label.className = 'ficha-contrato-label';
+    label.textContent = 'Contrato';
+    const linea = document.createElement('div');
+    linea.className = 'ficha-contrato-linea';
+    const restantes = contrato.aniosRestantes === 1 ? '1 año restante' : `${contrato.aniosRestantes} años restantes`;
+    const salarioSpan = document.createElement('span');
+    salarioSpan.className = 'ficha-contrato-salario';
+    salarioSpan.textContent = `${modulos.formato.plata(contrato.salarioAnualUSD)}/año`;
+    linea.append(salarioSpan, ` · ${restantes}`);
+    datos.append(label, linea);
+  }
+  if (valor > 0) {
+    const bajoSueldo = contrato.org && valor > contrato.salarioAnualUSD * 1.15;
+    const cifra = document.createElement('span');
+    cifra.className = 'ficha-valor-mercado-cifra' + (bajoSueldo ? ' ficha-valor-mercado--bajo-sueldo' : '');
+    cifra.textContent = `valor ${modulos.formato.plata(valor)}/año`;
+    datos.appendChild(cifra);
+  }
+  franja.appendChild(datos);
+  return franja;
+}
+
+function crearBadgeInternacional(ficha) {
+  const internacional = document.createElement('div');
+  internacional.className = `ficha-badge ficha-badge--${ficha.estadoInternacional}`;
+  internacional.textContent = LABEL_INTERNACIONAL[ficha.estadoInternacional];
+  return internacional;
+}
+
+function crearDetalleHistoria(registro) {
+  if (registro.porOrg.length === 0) return null;
+  const detalle = document.createElement('details');
+  detalle.className = 'ficha-historia';
+  const resumen = document.createElement('summary');
+  resumen.textContent = 'Ver carrera';
+  detalle.appendChild(resumen);
+  detalle.append(...registro.porOrg.map(filaHistoria));
+  return detalle;
+}
+
+function crearDetalleMomentos(registro) {
+  if (registro.momentos.length === 0) return null;
+  const detalleMomentos = document.createElement('details');
+  detalleMomentos.className = 'ficha-historia';
+  const resumenMomentos = document.createElement('summary');
+  resumenMomentos.textContent = `Momentos (${registro.momentos.length})`;
+  detalleMomentos.appendChild(resumenMomentos);
+  detalleMomentos.append(...[...registro.momentos].reverse().slice(0, 10).map(filaMomento));
+  return detalleMomentos;
+}
+
 export function renderFicha(container, state, modulos) {
   const ficha = fichaCompleta(state);
   const registro = state.career.registro;
   const enHitoMaximo = ficha.jerarquia.esMaxima || ficha.arraigo.esMaxima;
+  const marcas = state.contexto?.marcas ?? [];
 
-  // El topbar no tiene forma de leer `state` por su cuenta (T1/T2, ver
-  // PLAN.md): se actualiza acá, en el único lugar que ya corre en cada tick.
+  if (fichaPrevia.seed !== state.seed) {
+    fichaPrevia = { seed: state.seed, nivel: null, lp: null };
+  }
+
   actualizarTopbar(state);
+  aplicarEstudio(state, ficha);
 
   container.replaceChildren();
   container.className = 'ficha-card' + (enHitoMaximo ? ' ficha-card--dorada' : '');
 
-  // --- Encabezado: NIVEL grande a la izquierda + identidad ---
   const encabezado = document.createElement('div');
   encabezado.className = 'ficha-encabezado';
 
@@ -120,7 +298,8 @@ export function renderFicha(container, state, modulos) {
   nivelBox.className = `ficha-nivel ficha-nivel--${ficha.bandaNivel}`;
   const nivelNum = document.createElement('div');
   nivelNum.className = 'ficha-nivel-numero';
-  nivelNum.textContent = String(ficha.nivel);
+  countUp(nivelNum, fichaPrevia.nivel, ficha.nivel);
+  fichaPrevia.nivel = ficha.nivel;
   const nivelLabel = document.createElement('div');
   nivelLabel.className = 'ficha-nivel-label';
   nivelLabel.textContent = LABEL_NIVEL[ficha.bandaNivel];
@@ -131,7 +310,10 @@ export function renderFicha(container, state, modulos) {
 
   const nombreLinea = document.createElement('div');
   nombreLinea.className = 'ficha-nombre-linea';
-  nombreLinea.textContent = `${state.player.name} · ${modulos.etiquetaRol(state.player.role)}`;
+  nombreLinea.append(marcaRol(state.player.role));
+  const nombreTxt = document.createElement('span');
+  nombreTxt.textContent = `${state.player.name} · ${modulos.etiquetaRol(state.player.role)}`;
+  nombreLinea.appendChild(nombreTxt);
 
   const contextoLinea = document.createElement('div');
   contextoLinea.className = 'ficha-contexto-linea';
@@ -149,142 +331,60 @@ export function renderFicha(container, state, modulos) {
   encabezado.append(nivelBox, identidad);
   container.appendChild(encabezado);
 
-  // --- Totales de por vida ---
+  if (state.phase === 'amateur') {
+    const a = BALANCE.amateur;
+    container.appendChild(envolverMas(
+      [
+        crearRankedHero(state, modulos),
+        crearInstrumento({
+          nombre: 'ESTUDIOS',
+          valor: state.player.studies,
+          tono: tonoDeEstudio(state.player.studies, a)
+        })
+      ],
+      [
+        crearInstrumento({
+          nombre: 'CONFIANZA',
+          valor: state.player.familyTrust,
+          tono: marcas.includes('riesgo_familiar') ? 'danger' : null
+        }),
+        crearInstrumento({
+          nombre: 'SUEÑO',
+          valor: state.player.sleep,
+          tono: marcas.includes('deuda_sueno') ? 'danger' : null
+        }),
+        crearStatRow(state, ficha),
+        marcas.length > 0 ? crearMarcas(marcas) : null
+      ]
+    ));
+    return;
+  }
+
   const totales = document.createElement('div');
   totales.className = 'ficha-totales';
   const partidos = registro.fechasGanadas + registro.fechasPerdidas + registro.mapasGanados + registro.mapasPerdidos;
   totales.textContent = `${registro.splitsJugados} splits · ${partidos} partidos · ${registro.titulos.length} título(s)`;
-  container.appendChild(totales);
 
-  // --- Los 6 atributos, con flechas y el destacado en color ---
-  container.appendChild(crearStatRow(state, ficha));
+  const mentalidad = crearBarra({
+    nombre: 'MENTALIDAD',
+    banda: ficha.mentalidad,
+    tono: ficha.mentalidad.peligro ? 'peligro' : null
+  });
 
-  // --- Marcas de contexto, como chips (fase T2) -------------------------
-  // `contexto.marcas` se calcula cada split y hasta acá no se veía en
-  // ningún lado. Universal a las dos fases: 'riesgo_familiar'/'deuda_sueno'
-  // son de la etapa amateur, 'nomade'/'multicampeon' de la profesional.
-  const marcas = state.contexto?.marcas ?? [];
-  if (marcas.length > 0) {
-    const marcasRow = document.createElement('div');
-    marcasRow.className = 'ficha-marcas';
-    for (const id of marcas) {
-      const chip = document.createElement('span');
-      chip.className = 'ficha-marca' + (MARCAS_DE_RIESGO.has(id) ? ' ficha-marca--peligro' : '');
-      chip.textContent = LABEL_MARCA[id] ?? id;
-      marcasRow.appendChild(chip);
-    }
-    container.appendChild(marcasRow);
-  }
-
-  // La etapa amateur muestra otras filas (estudios, confianza, sueño, ranked)
-  // — misma estructura, campos distintos (PLAN.md §8.6, punto 7) — y no
-  // tiene jerarquía, arraigo, pool ni internacional todavía.
-  if (state.phase === 'amateur') {
-    const amateurRow = document.createElement('div');
-    amateurRow.className = 'ficha-totales';
-    amateurRow.textContent = `Estudios ${Math.round(state.player.studies)} · Confianza ${Math.round(state.player.familyTrust)}`
-      + ` · Sueño ${Math.round(state.player.sleep)} · `
-      + `${modulos.ranked.etiquetaDeRanked(state.player.ranked, modulos.ranked.servidorDeLaPartida(state))}`;
-    container.appendChild(amateurRow);
-    return;
-  }
-
-  // --- Arraigo y jerarquía: dos ejes separados (PARTE 3 de PLAN.md) ---
-  container.appendChild(crearBarra({ nombre: 'ARRAIGO', banda: ficha.arraigo, hitos: hitosArraigo() }));
-  container.appendChild(crearBarra({ nombre: 'JERARQUÍA', banda: ficha.jerarquia, hitos: hitosJerarquia() }));
-
-  // --- Mentalidad y Hype (fase 9R.2): las barras que el 74% del contenido
-  // mueve y hasta acá no se dibujaban. Mentalidad en rojo si está `al límite`
-  // — el aviso de burnout que no existía. ---
-  const animo = document.createElement('div');
-  animo.className = 'ficha-animo' + (ficha.mentalidad.peligro ? ' ficha-animo--peligro' : '');
-  for (const [nombre, banda] of [['MENTALIDAD', ficha.mentalidad], ['HYPE', ficha.hype]]) {
-    const celda = document.createElement('span');
-    celda.className = 'ficha-animo-celda';
-    const flecha = banda.delta > 0 ? ' ▲' : banda.delta < 0 ? ' ▼' : '';
-    celda.textContent = `${nombre} ${banda.valor} · ${banda.label}${flecha}`;
-    animo.appendChild(celda);
-  }
-  container.appendChild(animo);
-
-  // --- Contrato y valor de mercado (fase T2) -----------------------------
-  // `career.contrato` existe desde la fase 9 y nunca se dibujó: el jugador
-  // no tenía forma de ver con quién firmó, por cuánto, ni por cuántos años
-  // más. `contrato.org` es `null` hasta la primera firma (trampa T4: el
-  // objeto siempre existe, pero no hay nada real que mostrar todavía).
-  const contrato = state.career.contrato;
-  if (contrato.org) {
-    const contratoBox = document.createElement('div');
-    contratoBox.className = 'ficha-contrato';
-    const label = document.createElement('div');
-    label.className = 'ficha-contrato-label';
-    label.textContent = 'Contrato';
-    const linea = document.createElement('div');
-    linea.className = 'ficha-contrato-linea';
-    const restantes = contrato.aniosRestantes === 1 ? '1 año restante' : `${contrato.aniosRestantes} años restantes`;
-    const salarioSpan = document.createElement('span');
-    salarioSpan.className = 'ficha-contrato-salario';
-    salarioSpan.textContent = `${modulos.formato.plata(contrato.salarioAnualUSD)}/año`;
-    linea.append(`${contrato.org} · ${contrato.liga ?? ''} · `, salarioSpan, ` · ${restantes}`);
-    contratoBox.append(label, linea);
-    container.appendChild(contratoBox);
-  }
-
-  // Distinto del sueldo: lo que el mejor postor de tu propia liga pagaría
-  // HOY. `0` fuera de una liga real (tier 3 o sin equipo) — ahí no hay
-  // mercado que te tase todavía, así que no se dibuja nada.
-  const valor = valorDeMercado(state);
-  if (valor > 0) {
-    const bajoSueldo = contrato.org && valor > contrato.salarioAnualUSD * 1.15;
-    const valorBox = document.createElement('div');
-    valorBox.className = 'ficha-valor-mercado' + (bajoSueldo ? ' ficha-valor-mercado--bajo-sueldo' : '');
-    const label = document.createElement('div');
-    label.className = 'ficha-valor-mercado-label';
-    label.textContent = 'Valor de mercado';
-    const cifra = document.createElement('div');
-    cifra.className = 'ficha-valor-mercado-cifra';
-    cifra.textContent = `${modulos.formato.plata(valor)}/año`;
-    valorBox.append(label, cifra);
-    container.appendChild(valorBox);
-  }
-
-  // --- Estado internacional, con nombre en vez de un contador ---
-  const internacional = document.createElement('div');
-  internacional.className = `ficha-badge ficha-badge--${ficha.estadoInternacional}`;
-  internacional.textContent = LABEL_INTERNACIONAL[ficha.estadoInternacional];
-  container.appendChild(internacional);
-
-  // --- El pool, con la tier del régimen vigente al lado ---
-  if (state.player.championPool?.length > 0) {
-    const poolRow = document.createElement('div');
-    poolRow.className = 'ficha-pool';
-    const tierList = state.meta?.tierList ?? [];
-    poolRow.textContent = state.player.championPool.map((campeon) => {
-      const tier = tierList.find((entrada) => entrada.name === campeon.name)?.tier;
-      return `${campeon.name} ${Math.round(campeon.mastery)}${tier ? ` [${tier}]` : ''}`;
-    }).join(' · ');
-    container.appendChild(poolRow);
-  }
-
-  // --- Ver carrera: el registro por org (imagen 15 de PLAN.md) ---
-  if (registro.porOrg.length > 0) {
-    const detalle = document.createElement('details');
-    detalle.className = 'ficha-historia';
-    const resumen = document.createElement('summary');
-    resumen.textContent = 'Ver carrera';
-    detalle.appendChild(resumen);
-    detalle.append(...registro.porOrg.map(filaHistoria));
-    container.appendChild(detalle);
-  }
-
-  // --- Los momentos que te marcaron (fase 8D): algunas decisiones, no todas ---
-  if (registro.momentos.length > 0) {
-    const detalleMomentos = document.createElement('details');
-    detalleMomentos.className = 'ficha-historia';
-    const resumenMomentos = document.createElement('summary');
-    resumenMomentos.textContent = `Momentos (${registro.momentos.length})`;
-    detalleMomentos.appendChild(resumenMomentos);
-    detalleMomentos.append(...[...registro.momentos].reverse().slice(0, 10).map(filaMomento));
-    container.appendChild(detalleMomentos);
-  }
+  container.appendChild(envolverMas(
+    [mentalidad],
+    [
+      totales,
+      crearStatRow(state, ficha),
+      marcas.length > 0 ? crearMarcas(marcas) : null,
+      crearBarra({ nombre: 'ARRAIGO', banda: ficha.arraigo, hitos: hitosArraigo() }),
+      crearBarra({ nombre: 'JERARQUÍA', banda: ficha.jerarquia, hitos: hitosJerarquia() }),
+      crearBarra({ nombre: 'HYPE', banda: ficha.hype }),
+      crearContratoFranja(state, modulos),
+      crearBadgeInternacional(ficha),
+      crearPoolTiles(state),
+      crearDetalleHistoria(registro),
+      crearDetalleMomentos(registro)
+    ]
+  ));
 }

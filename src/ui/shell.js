@@ -13,10 +13,12 @@
 // split llega en T2, que sí reescribe cómo se pinta la ficha.
 
 import * as sonido from './sonido.js';
+import { BALANCE } from '../data/balance.js';
 
 const logList = document.getElementById('logList');
 const ticker = document.getElementById('ticker');
 const topbarEstado = document.getElementById('topbarEstado');
+const topbarPips = document.getElementById('topbarPips');
 
 // --- El click, en cualquier botón (T3) --------------------------------
 // Delegado en `document`, no un listener por botón: el shell no conoce (ni
@@ -56,10 +58,64 @@ export function actualizarTopbar(state) {
   if (!topbarEstado) return;
   if (!state?.contexto || state.phase === 'retirado') {
     topbarEstado.textContent = '';
+    if (topbarPips) {
+      topbarPips.hidden = true;
+      topbarPips.replaceChildren();
+    }
     return;
   }
   const ventana = LABEL_VENTANA[state.contexto.ventana] ?? '';
   topbarEstado.textContent = [state.calendario.etiqueta, ventana].filter(Boolean).join(' · ');
+
+  if (topbarPips && Number.isFinite(state.player?.splitCount)) {
+    const n = BALANCE.edad.splitsPorEdad;
+    const actual = state.player.splitCount % n;
+    topbarPips.hidden = false;
+    topbarPips.replaceChildren(...Array.from({ length: n }, (_, i) => {
+      const pip = document.createElement('span');
+      pip.className = 'topbar-pip'
+        + (i < actual ? ' topbar-pip--hecho' : '')
+        + (i === actual ? ' topbar-pip--actual' : '');
+      pip.title = `Split ${i + 1} de ${n}`;
+      return pip;
+    }));
+  }
+}
+
+// Luz de estudio: atributos en body que shell.css traduce a horizonte.
+// Lo llama `renderFicha` en cada tick — el único pintado que ya tiene `state`.
+export function aplicarEstudio(state, ficha) {
+  const body = document.body;
+  body.dataset.fase = state.phase ?? '';
+  if (state.contexto?.ventana) {
+    body.dataset.ventana = state.contexto.ventana;
+  } else {
+    delete body.dataset.ventana;
+  }
+  if (state.serie?.activa) body.dataset.serie = 'on';
+  else delete body.dataset.serie;
+
+  const marcas = state.contexto?.marcas ?? [];
+  const peligroAmateur = state.phase === 'amateur' && (
+    marcas.includes('deuda_sueno')
+    || marcas.includes('riesgo_familiar')
+    || marcas.includes('pc_confiscada')
+  );
+  const peligro = Boolean(ficha?.mentalidad?.peligro) || peligroAmateur;
+  if (peligro) body.dataset.peligro = 'on';
+  else delete body.dataset.peligro;
+}
+
+export function limpiarEstudio() {
+  const body = document.body;
+  delete body.dataset.fase;
+  delete body.dataset.ventana;
+  delete body.dataset.serie;
+  delete body.dataset.peligro;
+  if (topbarPips) {
+    topbarPips.hidden = true;
+    topbarPips.replaceChildren();
+  }
 }
 
 // --- El ticker: la última línea de #logList, en marquesina -----------------
@@ -76,7 +132,13 @@ function textoDeTicker(item) {
 
 if (logList && ticker) {
   const actualizarTicker = () => {
-    ticker.textContent = textoDeTicker(logList.firstElementChild);
+    const texto = textoDeTicker(logList.firstElementChild) || 'En vivo.';
+    const pista = document.createElement('div');
+    pista.className = 'ticker-pista';
+    const a = document.createElement('span');
+    a.textContent = texto;
+    pista.append(a, a.cloneNode(true));
+    ticker.replaceChildren(pista);
   };
   new MutationObserver(actualizarTicker).observe(logList, { childList: true });
   actualizarTicker();

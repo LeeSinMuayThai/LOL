@@ -1,4 +1,5 @@
 import { plata } from '../../core/formato.js';
+import { crearOrgChip } from './orgChip.js';
 
 // La pantalla de ofertas (fase 9c, PLAN.md §9.5-9.6): "la trampa del equipo
 // grande visible" hecha tarjeta. Cada campo que se pinta acá ya viene resuelto
@@ -52,7 +53,7 @@ function construirTarjeta(oferta, onElegir, onNegociar) {
   header.className = 'mercado-card-header';
   const org = document.createElement('span');
   org.className = 'mercado-card-org';
-  org.textContent = oferta.org;
+  org.append(crearOrgChip(oferta.org, { size: 28 }), document.createTextNode(oferta.org));
   const tag = document.createElement('span');
   tag.className = 'mercado-card-tag';
   tag.textContent = ETIQUETAS_TAG[oferta.tag] ?? oferta.tag;

@@ -54,8 +54,28 @@
   --live-glow: rgba(46, 232, 255, 0.35);
 
   /* Un halo de fondo, no una superficie: para la ambientación de base.css,
-     dos escalones más tenue que --live-glow. */
+     dos escalones más tenue que --live-glow. `--horizon` es el que pinta
+     el body; las fases lo pisan (amateur más frío, playoffs oro, peligro
+     rojo) sin reescribir el stack de fondos. */
   --live-horizon: rgba(46, 232, 255, 0.06);
+  --gold-horizon: rgba(255, 200, 97, 0.08);
+  --danger-horizon: rgba(255, 51, 85, 0.12);
+  --horizon-amateur: rgba(46, 232, 255, 0.03);
+  --horizon: var(--live-horizon);
+
+  /* --- Ranked (identidad de la escalera, no un acento más) --------------
+     El oro se reserva a Challenger. Hierro/bronce van más claros que el
+     metal real para que el nombre del tier se lea sobre --bg-sunken. */
+  --rank-iron:        #c4b4a8;
+  --rank-bronze:      #e09a62;
+  --rank-silver:      #c5cde0;
+  --rank-gold:        #ffc861;
+  --rank-platinum:    #7ee0e0;
+  --rank-emerald:     #3ddc97;
+  --rank-diamond:     #7eb0ff;
+  --rank-master:      #c4a0ff;
+  --rank-grandmaster: #ff6b7a;
+  --rank-challenger:  #ffc861;
 
   /* --- El oro ----------------------------------------------------------
      Logro, hito máximo, título, banda `clase_mundial`. Se usa POCO a

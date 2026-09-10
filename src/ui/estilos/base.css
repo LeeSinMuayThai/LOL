@@ -76,7 +76,7 @@ body {
      el marco de la aplicación, no un elemento más de la página. */
   background:
     radial-gradient(130% 90% at 50% -10%, transparent 0%, transparent 40%, var(--bg-void) 78%),
-    radial-gradient(55% 25% at 50% 0%, var(--live-horizon), transparent 70%),
+    radial-gradient(55% 25% at 50% 0%, var(--horizon), transparent 70%),
     repeating-linear-gradient(0deg, var(--line-faint) 0 1px, transparent 1px 64px),
     repeating-linear-gradient(90deg, var(--line-faint) 0 1px, transparent 1px 64px),
     var(--bg-void);

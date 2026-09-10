@@ -16,7 +16,7 @@ const ESPERA_MS = { x1: 700, x2: 350, instantaneo: 0 };
 // Compacto a propósito: comparte espacio en el topbar con el toggle de
 // sonido, que es un solo emoji. `title` (en index.html) lleva la palabra
 // completa para quien lo lea con lupa.
-const LABEL_VELOCIDAD = { x1: '1×', x2: '2×', instantaneo: '⚡' };
+const LABEL_VELOCIDAD = { x1: '1×', x2: '2×', instantaneo: 'INST' };
 
 let velocidad = leerVelocidad();
 

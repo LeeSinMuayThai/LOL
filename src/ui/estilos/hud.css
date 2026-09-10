@@ -1,0 +1,117 @@
+/* ==========================================================================
+   HUD — ficha compacta, ranked amateur, contrato en franja, compact mobile
+   ========================================================================== */
+
+.ficha-nombre-linea {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+.ficha-ranked {
+  margin-top: var(--s-4);
+  padding: var(--s-3);
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--rank-color, var(--live));
+}
+.ficha-ranked-nombre {
+  font-family: var(--font-display);
+  font-size: var(--fs-6);
+  font-weight: 700;
+  line-height: var(--lh-tight);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--rank-color, var(--ink));
+}
+.ficha-ranked-lp {
+  margin-top: 2px;
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  font-weight: 600;
+  letter-spacing: var(--track-label);
+  color: var(--ink-dim);
+  font-variant-numeric: tabular-nums;
+}
+.ficha-ranked-pista {
+  margin-top: var(--s-2);
+  height: 8px;
+  background: var(--bg-void);
+  border: 1px solid var(--line-faint);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+.ficha-ranked-relleno {
+  height: 100%;
+  background: linear-gradient(90deg, transparent, var(--rank-color, var(--live)));
+  transition: width var(--dur-slow) var(--ease);
+}
+
+.ficha-ranked--iron        { --rank-color: var(--rank-iron); }
+.ficha-ranked--bronze      { --rank-color: var(--rank-bronze); }
+.ficha-ranked--silver      { --rank-color: var(--rank-silver); }
+.ficha-ranked--gold        { --rank-color: var(--rank-gold); }
+.ficha-ranked--platinum    { --rank-color: var(--rank-platinum); }
+.ficha-ranked--emerald     { --rank-color: var(--rank-emerald); }
+.ficha-ranked--diamond     { --rank-color: var(--rank-diamond); }
+.ficha-ranked--master      { --rank-color: var(--rank-master); }
+.ficha-ranked--grandmaster { --rank-color: var(--rank-grandmaster); }
+.ficha-ranked--challenger  { --rank-color: var(--rank-challenger); }
+
+.ficha-barra-wrap--warn .ficha-barra-relleno {
+  background: linear-gradient(90deg, var(--gold-deep), var(--warn));
+  box-shadow: none;
+}
+.ficha-barra-wrap--danger .ficha-barra-relleno,
+.ficha-barra-wrap--peligro .ficha-barra-relleno {
+  background: linear-gradient(90deg, var(--danger), var(--warn));
+  box-shadow: 0 0 12px -2px var(--danger);
+}
+.ficha-barra-wrap--peligro .ficha-barra-nombre,
+.ficha-barra-wrap--peligro .ficha-barra-valor,
+.ficha-barra-wrap--danger .ficha-barra-nombre {
+  color: var(--danger);
+}
+
+.ficha-contrato-franja {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-top: var(--s-3);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--line-faint);
+}
+.ficha-contrato-franja .org-chip { flex: 0 0 auto; }
+.ficha-contrato-datos { min-width: 0; flex: 1 1 auto; }
+.ficha-valor-mercado-cifra { display: inline; font-size: var(--fs-3); margin-left: var(--s-2); }
+
+.ficha-mas {
+  margin-top: var(--s-3);
+}
+.ficha-mas > summary {
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 600;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  padding: var(--s-1) 0;
+}
+.ficha-mas > summary:hover { color: var(--ink-dim); }
+
+@media (min-width: 900px) {
+  .ficha-mas { display: contents; }
+  .ficha-mas > summary { display: none; }
+}
+
+.ficha-valor-mercado-cifra.ficha-valor-mercado--bajo-sueldo { color: var(--warn); }
+
+@media (max-width: 899px) {
+  .ficha-card { padding: var(--s-3); }
+  .ficha-nivel { min-width: 56px; }
+  .ficha-nivel-numero { font-size: var(--fs-6); }
+  .ficha-ranked-nombre { font-size: var(--fs-5); }
+  .ficha-stat-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

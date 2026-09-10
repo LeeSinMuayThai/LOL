@@ -35,6 +35,9 @@
     <link rel="stylesheet" href="./src/ui/estilos/pantallas.css" />
     <!-- El shell de transmisión (fase T1): grilla de dos zonas, topbar, ticker. -->
     <link rel="stylesheet" href="./src/ui/estilos/shell.css" />
+    <link rel="stylesheet" href="./src/ui/estilos/iconos.css" />
+    <link rel="stylesheet" href="./src/ui/estilos/hud.css" />
+    <link rel="stylesheet" href="./src/ui/estilos/overlay.css" />
   </head>
   <body>
     <a class="saltar-al-contenido" href="#escenario">Saltar al contenido</a>
@@ -50,12 +53,13 @@
           <span class="topbar-nombre">LoL Career Simulator</span>
         </div>
         <div class="topbar-estado" id="topbarEstado"></div>
+        <div class="topbar-pips" id="topbarPips" hidden></div>
         <div class="topbar-controles">
           <!-- T3: velocidad del reproductor (x1/x2/instantáneo, cíclico) y
                sonido (apagado por defecto). Vivos recién cuando cargarModulos()
                resuelve — ver comenzarSetup()/iniciarSetup() más abajo. -->
-          <button type="button" id="toggleVelocidad" class="topbar-toggle" disabled title="Velocidad del reproductor">x1</button>
-          <button type="button" id="toggleSonido" class="topbar-toggle" disabled title="Sonido">🔇</button>
+          <button type="button" id="toggleVelocidad" class="topbar-toggle" disabled title="Velocidad del reproductor">1×</button>
+          <button type="button" id="toggleSonido" class="topbar-toggle" disabled title="Sonido" aria-pressed="false"></button>
         </div>
       </header>
 
@@ -66,7 +70,7 @@
 
         <div class="escenario" id="escenario">
           <div id="setup" class="panel">
-            <h1>LOL Career Simulator</h1>
+            <h1 class="solo-lectores">LoL Career Simulator</h1>
             <p class="subtitle">Elegís tu línea y tus mains. El resto de la carrera sale de ahí.</p>
 
             <div class="paso">
@@ -75,12 +79,13 @@
             </div>
 
             <div class="paso">
-              <div class="paso-label">Paso 1 — Tu línea</div>
+              <div class="paso-label">Tu línea</div>
               <div id="rolGrid" class="rol-grid"></div>
             </div>
 
             <div class="paso">
-              <div class="paso-label">Paso 2 — Tus 3 mains</div>
+              <div class="paso-label">Tus 3 mains</div>
+              <div id="draftSlots" class="draft-slots" aria-label="Mains elegidos"></div>
               <div id="campeonGrid" class="campeon-grid"></div>
               <div id="poolContador" class="pool-contador">Elegí una línea primero.</div>
             </div>
@@ -88,7 +93,10 @@
             <div class="setup-footer">
               <!-- Fase T8 (P.2): oculto hasta que iniciarSetup() confirme
                    que hay una carrera guardada de verdad. -->
-              <button id="continuarBtn" type="button" class="continuar-btn" hidden>▸ Continuar carrera guardada</button>
+              <button id="continuarBtn" type="button" class="continuar-btn" hidden>
+                <span class="continuar-kicker">Continuar</span>
+                <span id="continuarDetalle" class="continuar-detalle"></span>
+              </button>
               <button id="run" disabled>Empezar carrera</button>
             </div>
 
@@ -129,10 +137,10 @@
               <div id="mercadoGrid" class="mercado-grid"></div>
               <div id="mercadoMundo" class="mercado-mundo" hidden></div>
               <button id="mercadoRepresentante" type="button" class="mercado-representante-btn" hidden>
-                📞 Llamar a tu representante y ver quién te sigue · 1 vez por carrera
+                Llamar a tu representante y ver quién te sigue · 1 vez por carrera
               </button>
               <button id="mercadoEsperar" type="button" class="mercado-representante-btn" hidden>
-                ⏳ Esperar · no firmás nada esta ventana
+                Esperar · no firmás nada esta ventana
               </button>
             </div>
 
@@ -168,13 +176,17 @@
       // Los 5 minijuegos, migrados a su propia carpeta en la fase T6 (ver
       // el comentario junto a `mostrarMinijuego` más abajo).
       import { MONTAR_MINIJUEGO, veredictoDeMinijuego, crearApuesta } from './src/ui/components/minijuegos/index.js';
+      import { iconoSonido } from './src/ui/components/iconos.js';
+      import { limpiarEstudio } from './src/ui/shell.js';
 
       const setupPanel = document.getElementById('setup');
       const carreraPanel = document.getElementById('carrera');
       const handleInput = document.getElementById('handleInput');
       const rolGrid = document.getElementById('rolGrid');
       const campeonGrid = document.getElementById('campeonGrid');
+      const draftSlots = document.getElementById('draftSlots');
       const poolContador = document.getElementById('poolContador');
+      const continuarDetalle = document.getElementById('continuarDetalle');
 
       const runButton = document.getElementById('run');
       const nuevaCarreraBtn = document.getElementById('nuevaCarrera');
@@ -555,6 +567,7 @@
           panel.hidden = true;
         }
         serieContextoEl.hidden = true;
+        limpiarEstudio();
         // Ya se borró en `revelarYVerDecision` cuando `estado.terminado`
         // se puso en true — esto es la red de seguridad, no el borrado
         // principal. Refresca el botón por si el estado cambió mientras
@@ -570,7 +583,8 @@
         toggleVelocidad.textContent = reproductor.labelVelocidad();
         toggleVelocidad.title = `Velocidad del reproductor: ${reproductor.labelVelocidad()} (click para cambiar)`;
         const on = sonido.estaHabilitado();
-        toggleSonido.textContent = on ? '🔊' : '🔇';
+        toggleSonido.replaceChildren(iconoSonido(on));
+        toggleSonido.setAttribute('aria-pressed', on ? 'true' : 'false');
         toggleSonido.title = on ? 'Sonido activado (click para apagar)' : 'Sonido apagado (click para activar)';
       }
 
@@ -626,7 +640,7 @@
         try {
           await cargarModulos();
           pantallaInicio = ui.crearPantallaInicio(
-            { rolGrid, campeonGrid, poolContador, runButton },
+            { rolGrid, campeonGrid, poolContador, runButton, draftSlots },
             modulos
           );
           pantallaInicio.render();
@@ -636,8 +650,21 @@
           actualizarTogglesTopbar();
 
           // P.2: el botón "Continuar" solo aparece si hay de verdad algo
-          // que continuar.
-          continuarBtn.hidden = !almacenamiento.hayCarreraGuardada();
+          // que continuar. La card muestra handle · rol · edad · org.
+          const guardada = almacenamiento.hayCarreraGuardada()
+            ? almacenamiento.cargarCarreraGuardada()
+            : null;
+          continuarBtn.hidden = !guardada?.state;
+          if (guardada?.state && continuarDetalle) {
+            const s = guardada.state;
+            continuarDetalle.textContent = [
+              s.player?.name,
+              s.player?.role ? modulos.etiquetaRol(s.player.role) : null,
+              s.age != null ? `${s.age} años` : null,
+              s.career?.currentOrg,
+              s.calendario?.etiqueta
+            ].filter(Boolean).join(' · ');
+          }
 
           // P.3: `?seed=N` precarga el input — no arranca la carrera sola
           // (eso seguiría siendo un click en "Empezar carrera"), solo dice

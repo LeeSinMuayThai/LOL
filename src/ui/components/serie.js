@@ -1,6 +1,9 @@
 import { tablaDePosiciones, posicionEnTabla } from '../../core/temporada.js';
 import { etiquetaDeRonda } from '../../core/serie.js';
 import { etiquetaDeFuerza } from '../formatoUi.js';
+import { crearOrgChip } from './orgChip.js';
+import { crearCampeonTile } from './campeonTile.js';
+import { countUp } from './countUp.js';
 
 // La transmisión del partido y la serie (fase T6, PLAN.md "T6 — El partido
 // y la serie como transmisión"). Dos piezas: la tarjeta de resultado de
@@ -31,6 +34,7 @@ export function crearTarjetaResultado(entry, state) {
 
   const item = document.createElement('div');
   item.className = 'log-item log-item--resultado';
+  item.dataset.type = 'temporada';
 
   if (!fecha) {
     // Red de seguridad: si algún día un log `type:'temporada'` no viene de
@@ -41,6 +45,7 @@ export function crearTarjetaResultado(entry, state) {
   }
 
   const gano = temporada.racha > 0;
+  item.dataset.acento = gano ? 'up' : 'down';
   const tabla = tablaDePosiciones(temporada.registrosOtros, temporada.filaPropia);
   const posicion = posicionEnTabla(tabla, currentOrg);
 
@@ -86,12 +91,14 @@ export function crearTarjetaResultado(entry, state) {
 // que el Fearless draft ya gastó: es la mecánica más distintiva del juego
 // y hoy es una línea de texto plana.
 const RONDAS_BRACKET = ['cuartos', 'semis', 'final'];
+let seriePrevia = { a: 0, b: 0 };
 
 export function renderSerieContexto(container, state) {
   const { serie } = state;
 
   if (!serie.activa) {
     container.hidden = true;
+    seriePrevia = { a: 0, b: 0 };
     return;
   }
 
@@ -120,30 +127,82 @@ export function renderSerieContexto(container, state) {
     container.appendChild(titulo);
   }
 
-  const marcadorEl = document.createElement('div');
-  marcadorEl.className = 'serie-marcador';
-  marcadorEl.textContent = `${state.serie.rival.org} · ${serie.marcador[0]}-${serie.marcador[1]}`;
-  container.appendChild(marcadorEl);
+  const propia = state.career.currentOrg ?? state.player.name;
+  const rivalNombre = serie.rival?.org ?? 'Rival';
+  const slots = Math.max(serie.formato || 0, serie.mapas.length, 1);
 
-  // El camino mapa a mapa: el campeón jugado en cada uno, con los quemados
-  // tachados. El Fearless no se entiende leído en una línea de texto.
-  if (serie.mapas.length > 0 || serie.quemados.length > 0) {
-    const camino = document.createElement('div');
-    camino.className = 'serie-camino';
-    serie.mapas.forEach((mapa, indice) => {
-      const paso = document.createElement('span');
-      paso.className = `serie-mapa serie-mapa--${mapa.resultado === 'W' ? 'ganado' : 'perdido'}`;
-      paso.textContent = `M${indice + 1} ${mapa.campeon}`;
-      camino.appendChild(paso);
-    });
-    if (serie.quemados.length > 0) {
-      const quemadosEl = document.createElement('div');
-      quemadosEl.className = 'serie-quemados';
-      quemadosEl.textContent = `Quemados: ${serie.quemados.join(', ')}`;
-      container.appendChild(camino);
-      container.appendChild(quemadosEl);
-    } else {
-      container.appendChild(camino);
+  const score = document.createElement('div');
+  score.className = 'serie-scoreboard';
+
+  const ladoPropio = document.createElement('div');
+  ladoPropio.className = 'serie-lado';
+  ladoPropio.append(crearOrgChip(propia, { size: 36 }));
+  const nomP = document.createElement('span');
+  nomP.className = 'serie-lado-nombre';
+  nomP.textContent = propia;
+  ladoPropio.appendChild(nomP);
+
+  const nums = document.createElement('div');
+  nums.className = 'serie-score';
+  const a = document.createElement('span');
+  const b = document.createElement('span');
+  const sep = document.createElement('span');
+  sep.className = 'serie-score-sep';
+  sep.textContent = '–';
+  countUp(a, seriePrevia.a, serie.marcador[0], { dur: 220 });
+  countUp(b, seriePrevia.b, serie.marcador[1], { dur: 220 });
+  seriePrevia = { a: serie.marcador[0], b: serie.marcador[1] };
+  nums.append(a, sep, b);
+
+  const ladoRival = document.createElement('div');
+  ladoRival.className = 'serie-lado serie-lado--rival';
+  const nomR = document.createElement('span');
+  nomR.className = 'serie-lado-nombre';
+  nomR.textContent = rivalNombre;
+  ladoRival.append(nomR, crearOrgChip(rivalNombre, { size: 36 }));
+
+  score.append(ladoPropio, nums, ladoRival);
+  container.appendChild(score);
+
+  const camino = document.createElement('div');
+  camino.className = 'serie-camino';
+  for (let i = 0; i < slots; i += 1) {
+    const mapa = serie.mapas[i];
+    const paso = document.createElement('div');
+    paso.className = 'serie-mapa' + (mapa
+      ? ` serie-mapa--${mapa.resultado === 'W' ? 'ganado' : 'perdido'}`
+      : '');
+    const n = document.createElement('span');
+    n.className = 'serie-mapa-n';
+    n.textContent = `M${i + 1}`;
+    const c = document.createElement('span');
+    c.className = 'serie-mapa-c';
+    c.textContent = mapa ? mapa.campeon : '—';
+    paso.append(n, c);
+    camino.appendChild(paso);
+  }
+  container.appendChild(camino);
+
+  const quemados = serie.quemados ?? [];
+  const pool = state.player.championPool ?? [];
+  if (quemados.length > 0 || pool.length > 0) {
+    const fearless = document.createElement('div');
+    fearless.className = 'serie-fearless';
+    const titulo = document.createElement('div');
+    titulo.className = 'serie-fearless-titulo';
+    titulo.textContent = 'Fearless';
+    const grid = document.createElement('div');
+    grid.className = 'serie-fearless-grid';
+    const vistos = new Set();
+    for (const nombre of quemados) {
+      vistos.add(nombre);
+      grid.appendChild(crearCampeonTile({ name: nombre }, { quemado: true, size: 'mini' }));
     }
+    for (const campeon of pool) {
+      if (vistos.has(campeon.name)) continue;
+      grid.appendChild(crearCampeonTile(campeon, { size: 'mini' }));
+    }
+    fearless.append(titulo, grid);
+    container.appendChild(fearless);
   }
 }

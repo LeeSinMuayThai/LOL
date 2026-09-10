@@ -1,4 +1,5 @@
 import { tablaDePosiciones } from '../../core/temporada.js';
+import { crearOrgChip } from '../components/orgChip.js';
 
 // El panel de Tabla (fase T5, PLAN.md "T5 — El riel de contexto").
 //
@@ -61,7 +62,7 @@ export function renderTabla(container, state) {
 
     const orgEl = document.createElement('span');
     orgEl.className = 'tabla-org';
-    orgEl.textContent = fila.org;
+    orgEl.append(crearOrgChip(fila.org, { size: 16 }), document.createTextNode(fila.org));
 
     const recordEl = document.createElement('span');
     recordEl.className = 'tabla-record';

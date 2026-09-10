@@ -7,9 +7,9 @@
 // `banda` = { id, label, valor, esMaxima } (de `bandaDeJerarquia` /
 // `bandaDeArraigoFicha`). `hitos` = [{ id, label, piso }], los 4 techos con
 // nombre de esa escala.
-export function crearBarra({ nombre, banda, hitos }) {
+export function crearBarra({ nombre, banda, hitos = [], tono = null }) {
   const wrap = document.createElement('div');
-  wrap.className = 'ficha-barra-wrap';
+  wrap.className = 'ficha-barra-wrap' + (tono ? ` ficha-barra-wrap--${tono}` : '');
 
   const cabecera = document.createElement('div');
   cabecera.className = 'ficha-barra-cabecera';
@@ -39,15 +39,45 @@ export function crearBarra({ nombre, banda, hitos }) {
     pista.appendChild(marca);
   }
 
-  const etiquetas = document.createElement('div');
-  etiquetas.className = 'ficha-barra-hitos-labels';
-  etiquetas.replaceChildren(...hitos.map((hito) => {
-    const span = document.createElement('span');
-    span.textContent = hito.label;
-    span.className = banda.valor >= hito.piso ? 'ficha-hito-alcanzado' : '';
-    return span;
-  }));
+  wrap.append(cabecera, pista);
 
-  wrap.append(cabecera, pista, etiquetas);
+  if (hitos.length > 0) {
+    const etiquetas = document.createElement('div');
+    etiquetas.className = 'ficha-barra-hitos-labels';
+    etiquetas.replaceChildren(...hitos.map((hito) => {
+      const span = document.createElement('span');
+      span.textContent = hito.label;
+      span.className = banda.valor >= hito.piso ? 'ficha-hito-alcanzado' : '';
+      return span;
+    }));
+    wrap.appendChild(etiquetas);
+  }
+  return wrap;
+}
+
+// Barra chica sin hitos: estudios / confianza / sueño. Mismo lenguaje que
+// arraigo, sin las marcas de banda — esas tres no tienen hitos con nombre.
+export function crearInstrumento({ nombre, valor, tono = null, detalle = null }) {
+  const wrap = document.createElement('div');
+  wrap.className = 'ficha-barra-wrap' + (tono ? ` ficha-barra-wrap--${tono}` : '');
+
+  const cabecera = document.createElement('div');
+  cabecera.className = 'ficha-barra-cabecera';
+  const nombreEl = document.createElement('span');
+  nombreEl.className = 'ficha-barra-nombre';
+  nombreEl.textContent = nombre;
+  const valorEl = document.createElement('span');
+  valorEl.className = 'ficha-barra-valor';
+  valorEl.textContent = detalle ?? `${Math.round(valor)}/100`;
+  cabecera.append(nombreEl, valorEl);
+
+  const pista = document.createElement('div');
+  pista.className = 'ficha-barra-pista';
+  const relleno = document.createElement('div');
+  relleno.className = 'ficha-barra-relleno';
+  relleno.style.width = `${Math.max(0, Math.min(100, valor))}%`;
+  pista.appendChild(relleno);
+
+  wrap.append(cabecera, pista);
   return wrap;
 }

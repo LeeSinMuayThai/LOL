@@ -170,9 +170,31 @@ h1::before {
 .log-item {
   padding: var(--s-3) var(--s-4);
   background: var(--bg-raised);
-  border-left: 3px solid var(--up);
+  border-left: 3px solid var(--line-strong);
   line-height: var(--lh);
   animation: entrar-log var(--dur) var(--ease) both;
+}
+.log-item[data-acento="up"]      { border-left-color: var(--up); }
+.log-item[data-acento="parche"]  { border-left-color: var(--cat-parche); }
+.log-item[data-acento="gold"]    { border-left-color: var(--gold); }
+.log-item[data-acento="mercado"] { border-left-color: var(--cat-mercado); }
+.log-item[data-acento="familia"] { border-left-color: var(--cat-familia); }
+.log-item[data-acento="live"]    { border-left-color: var(--live); }
+.log-item[data-acento="danger"]  { border-left-color: var(--danger); }
+.log-item[data-acento="mute"]    { border-left-color: var(--line-strong); }
+.log-item--breaking {
+  border-left-width: 4px;
+  background:
+    linear-gradient(90deg, var(--gold-fill), transparent 40%),
+    var(--bg-raised);
+  animation: entrar-breaking var(--dur-slow) var(--ease) both;
+}
+.log-item--breaking .log-titulo { color: var(--cat-parche); }
+.log-item--escena { border-left-color: var(--gold); }
+.log-item--escena .log-titulo { color: var(--gold); }
+@keyframes entrar-breaking {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: none; }
 }
 
 @keyframes entrar-log {

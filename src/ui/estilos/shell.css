@@ -115,6 +115,9 @@ body { padding: 0; }
 
 .topbar-controles { display: flex; gap: var(--s-2); flex: 0 0 auto; }
 .topbar-toggle {
+  display: grid;
+  place-items: center;
+  min-width: 40px;
   padding: var(--s-1) var(--s-3);
   font-size: var(--fs-3);
   line-height: 1;
@@ -169,7 +172,7 @@ body { padding: 0; }
 
 .ticker {
   height: 32px;
-  padding: 0 var(--s-5);
+  padding: 0;
   display: flex;
   align-items: center;
   background: var(--bg-chrome);
@@ -178,9 +181,46 @@ body { padding: 0; }
   font-size: var(--fs-1);
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
-.ticker:empty::before { content: "En vivo."; color: var(--ink-mute); }
+.ticker-pista {
+  display: flex;
+  gap: var(--s-8);
+  width: max-content;
+  padding-left: var(--s-5);
+  animation: ticker-marquee 18s linear infinite;
+}
+.ticker:hover .ticker-pista { animation-play-state: paused; }
+@keyframes ticker-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker-pista { animation-name: none !important; }
+}
+
+/* Luz de estudio: pisa `--horizon` del body (base.css lo consume). */
+body[data-fase="amateur"] { --horizon: var(--horizon-amateur); }
+body[data-ventana="playoffs"],
+body[data-ventana="internacional"],
+body[data-serie="on"] { --horizon: var(--gold-horizon); }
+body[data-peligro="on"] { --horizon: var(--danger-horizon); }
+
+.topbar-pips {
+  display: flex;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+.topbar-pip {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+.topbar-pip--actual {
+  background: var(--live);
+  box-shadow: 0 0 6px var(--live-glow);
+}
+.topbar-pip--hecho { background: var(--ink-dim); }
 
 /* ==========================================================================
    Breakpoints (PLAN.md T1). `tokens.css` ya reajusta --riel-izq y la escala

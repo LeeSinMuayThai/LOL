@@ -10,9 +10,15 @@
 // inline en el `.map()` de `renderFeed` — `reproductor.js` necesita crear el
 // MISMO nodo uno por uno, a su propio ritmo, en vez de todos juntos en un
 // `replaceChildren`.
+import { acentoDeLog } from '../formatoUi.js';
+
 export function crearLogItem(entry) {
   const item = document.createElement('div');
   item.className = 'log-item' + (entry.tecnico ? ' log-item--tecnico' : '');
+  item.dataset.type = entry.type ?? '';
+  item.dataset.acento = acentoDeLog(entry.type);
+  if (entry.type === 'meta') item.classList.add('log-item--breaking');
+  if (entry.type === 'escena') item.classList.add('log-item--escena');
 
   if (!entry.cuerpo) {
     item.textContent = entry.message;

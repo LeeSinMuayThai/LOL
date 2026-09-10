@@ -2,6 +2,7 @@
 // jerarquía"): de un dato que el motor ya calcula a cómo se ve. Nada de
 // esto es lógica de juego — la fase T separa exactamente esto: `src/ui/`
 // traduce, `src/core`/`src/systems` deciden.
+import { hashCadena } from '../core/numeros.js';
 
 // --- La categoría del evento → familia de banner ---------------------------
 // Medido sobre `src/data/events/**/*.json` el 2026-09-04 (no asumido): 18
@@ -70,4 +71,78 @@ export function pesoDeDecision(decision) {
     return 'cierre';
   }
   return 'normal';
+}
+
+// --- Identidad de org (T0 lo prometió, nunca se codeó) ---------------------
+// `hashCadena` es puro y determinista: el mismo nombre da el mismo hue en
+// cada render y en el PNG de la tarjeta. Cero RNG.
+
+export function hueDeOrg(nombre) {
+  return hashCadena(nombre ?? '') % 360;
+}
+
+// 2-3 letras. "T1" se queda T1, "Gen.G" → GEN, "Cloud9 KIA" → C9K,
+// "JD Gaming" → JDG. Nada de escudos.
+export function inicialesDeOrg(nombre) {
+  const limpio = String(nombre ?? '').trim();
+  if (!limpio) return '?';
+  if (limpio.length <= 3) return limpio.toUpperCase();
+  const partes = limpio.split(/[\s_-]+/).filter(Boolean);
+  if (partes.length >= 2) {
+    return partes.slice(0, 3).map((p) => {
+      const letra = p[0] ?? '';
+      const num = p.match(/\d+/);
+      return (letra + (num ? num[0] : '')).toUpperCase();
+    }).join('').slice(0, 3);
+  }
+  return limpio.replace(/[^A-Za-z0-9]/g, '').slice(0, 3).toUpperCase();
+}
+
+export function inicialesDeCampeon(nombre) {
+  const limpio = String(nombre ?? '').trim();
+  if (!limpio) return '?';
+  const partes = limpio.split(/[\s']+/).filter(Boolean);
+  if (partes.length >= 2) {
+    return (partes[0][0] + partes[1][0]).toUpperCase();
+  }
+  // "K'Sante" ya se partió. "Jarvan IV" → J + I. "Aatrox" → AA.
+  return limpio.replace(/[^A-Za-z0-9]/g, '').slice(0, 2).toUpperCase();
+}
+
+const ARQ_POR_TAG = {
+  tanque: 'tanque',
+  bruiser: 'bruiser',
+  asesino: 'asesino',
+  mago_control: 'mago',
+  enchanter: 'mago',
+  escalado: 'escalado',
+  early_game: 'early',
+  engage: 'engage',
+  splitpush: 'split'
+};
+
+export function arquetipoDeTags(tags) {
+  if (!tags || tags.length === 0) return 'early';
+  return ARQ_POR_TAG[tags[0]] ?? 'early';
+}
+
+// --- log.type → acento (cierra D41, recortado en T3) ----------------------
+
+const ACENTO_LOG = {
+  temporada: 'up',
+  meta: 'parche',
+  escena: 'gold',
+  mercado: 'mercado',
+  amateur: 'familia',
+  event: 'live',
+  competitivo: 'live',
+  edad: 'gold',
+  campeones: 'parche',
+  contexto: 'mute',
+  split: 'danger',
+  practica: 'live'
+};
+
+export function acentoDeLog(type) {
+  return ACENTO_LOG[type] ?? 'mute';
 }

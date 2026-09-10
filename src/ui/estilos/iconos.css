@@ -1,0 +1,119 @@
+/* ==========================================================================
+   ICONOS — marcas de rol, org-chip, campeon-tile, chrome SVG
+   El color del org-chip va inline: el candado de CSS no admite funciones
+   de color fuera de tokens.
+   ========================================================================== */
+
+.rol-marca,
+.icono-chrome {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  line-height: 0;
+}
+.rol-marca svg,
+.icono-chrome svg {
+  width: 1em;
+  height: 1em;
+  display: block;
+}
+.rol-marca { font-size: 18px; color: var(--ink-dim); }
+.ficha-nombre-linea .rol-marca { font-size: 16px; margin-right: var(--s-1); vertical-align: -2px; display: inline-grid; }
+.icono-chrome { font-size: 16px; color: currentColor; }
+
+.org-chip {
+  display: inline-grid;
+  place-items: center;
+  width: var(--org-size, 22px);
+  height: var(--org-size, 22px);
+  flex: 0 0 auto;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sharp);
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.campeon-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sharp);
+  color: var(--ink);
+  overflow: hidden;
+}
+.campeon-tile--ficha { width: 40px; height: 48px; }
+.campeon-tile--setup { width: 56px; height: 64px; }
+.campeon-tile--mini  { width: 28px; height: 32px; }
+
+.campeon-tile-ini {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--fs-1);
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+.campeon-tile--setup .campeon-tile-ini { font-size: var(--fs-3); }
+.campeon-tile--mini .campeon-tile-ini { font-size: 9px; }
+
+.campeon-tile-mae {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-dim);
+  line-height: 1;
+}
+.campeon-tile-tier {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  font-size: 8px;
+}
+
+.campeon-tile--tanque  { border-color: var(--ink-mute); color: var(--ink-dim); }
+.campeon-tile--bruiser { border-color: var(--warn); color: var(--warn); }
+.campeon-tile--asesino { border-color: var(--danger); color: var(--danger); }
+.campeon-tile--mago    { border-color: var(--cat-parche); color: var(--cat-parche); }
+.campeon-tile--escalado { border-color: var(--gold); color: var(--gold); }
+.campeon-tile--early   { border-color: var(--live); color: var(--live); }
+.campeon-tile--engage  { border-color: var(--cat-vestuario); color: var(--cat-vestuario); }
+.campeon-tile--split   { border-color: var(--up); color: var(--up); }
+
+.campeon-tile--elegido { box-shadow: inset 0 0 0 1px var(--up); border-color: var(--up); }
+.campeon-tile--quemado {
+  filter: grayscale(1);
+  opacity: 0.45;
+  text-decoration: line-through;
+  text-decoration-color: var(--line-strong);
+}
+
+.ficha-pool-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1);
+  margin-top: var(--s-3);
+}
+.ficha-pool-mas {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 48px;
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  font-weight: 700;
+  color: var(--ink-mute);
+  border: 1px dashed var(--line);
+  border-radius: var(--r-sharp);
+}
