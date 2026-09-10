@@ -1,4 +1,4 @@
-import { familiaDeCategoria, pesoDeDecision } from '../formatoUi.js';
+import { pesoDeDecision, rotuloDeDecision } from '../formatoUi.js';
 
 // La tarjeta de decisión: título, descripción y una opción por botón.
 // Extraído de index.html (fase 8, §8.5). La fase 12 la va a enriquecer con
@@ -14,16 +14,15 @@ import { familiaDeCategoria, pesoDeDecision } from '../formatoUi.js';
 // categoría real del evento, y el panel entero cambia de peso según
 // `pesoDeDecision` — ver `formatoUi.js` para las dos reglas reales detrás
 // (`evento.bisagra` y `franja === 'cierre'`), sin un tercer peso inventado.
-export function renderDecision(elements, decision, onElegir) {
+export function renderDecision(elements, decision, onElegir, state) {
   const { decisionPanel, decisionTitle, decisionDesc, decisionOptions } = elements;
 
-  const categoria = decision.datos?.evento?.category ?? null;
-  const familia = familiaDeCategoria(categoria);
+  const rotulo = rotuloDeDecision(decision, state);
   const peso = pesoDeDecision(decision);
 
   decisionPanel.dataset.peso = peso;
-  decisionPanel.dataset.tabLabel = peso === 'cierre' ? 'Fin de año' : familia.label;
-  decisionPanel.style.setProperty('--tab-color', `var(--cat-${familia.token})`);
+  decisionPanel.dataset.tabLabel = rotulo.label;
+  decisionPanel.style.setProperty('--tab-color', `var(--cat-${rotulo.token})`);
 
   decisionTitle.textContent = decision.titulo;
   decisionDesc.textContent = decision.descripcion;

@@ -11,6 +11,14 @@
 
 .paso { margin-top: var(--s-5); }
 
+.panel.escenario-entrar {
+  animation: wipe-escenario var(--dur-slow) var(--ease) both;
+}
+@keyframes wipe-escenario {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+
 .paso-label {
   margin-bottom: var(--s-3);
   font-family: var(--font-display);
@@ -289,8 +297,14 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   border-left-width: 6px;
   border-color: var(--tab-color, var(--live));
   box-shadow: 0 0 50px -14px var(--tab-color, var(--live-glow)), var(--sombra-3);
-  animation: entrar-decision-bisagra var(--dur-slow) var(--ease) both;
+  animation:
+    entrar-decision-bisagra var(--dur-slow) var(--ease) both,
+    flash-bisagra 180ms var(--ease);
   overflow: hidden;
+}
+@keyframes flash-bisagra {
+  from { box-shadow: 0 0 80px -6px var(--tab-color, var(--live)); }
+  to   { box-shadow: 0 0 50px -14px var(--tab-color, var(--live-glow)), var(--sombra-3); }
 }
 .decision[data-peso="bisagra"]::after {
   content: attr(data-tab-label);
@@ -328,9 +342,9 @@ details.avanzado summary:hover { color: var(--ink-dim); }
 .mercado::before,
 .minijuego::before {
   position: absolute;
-  top: -13px;
+  top: -15px;
   left: var(--s-4);
-  padding: 3px var(--s-4) 3px var(--s-2);
+  padding: 5px var(--s-4) 5px var(--s-2);
   font-family: var(--font-display);
   font-size: var(--fs-0);
   font-weight: 700;
@@ -504,7 +518,7 @@ details.avanzado summary:hover { color: var(--ink-dim); }
 
 .mercado-card-salario {
   font-family: var(--font-display);
-  font-size: var(--fs-5);
+  font-size: var(--fs-6);
   font-weight: 700;
   color: var(--gold);
   font-variant-numeric: tabular-nums;
@@ -541,6 +555,9 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   margin-bottom: var(--s-2);
 }
 .mercado-mundo-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
   font-size: var(--fs-2);
   line-height: var(--lh-snug);
   color: var(--ink-dim);
@@ -606,8 +623,14 @@ details.avanzado summary:hover { color: var(--ink-dim); }
 }
 .mercado-card-btn--firmar {
   border-color: var(--cat-mercado);
-  color: var(--ink);
-  font-weight: 600;
+  background: var(--cat-mercado);
+  color: var(--bg-void);
+  font-weight: 700;
+}
+.mercado-card-btn--firmar:hover {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--bg-void);
 }
 
 /* Fase 9Mg (§9M.8): la pantalla de mercado de tres bloques.
@@ -635,7 +658,7 @@ details.avanzado summary:hover { color: var(--ink-dim); }
 }
 .mercado-vos-cifra {
   font-family: var(--font-display);
-  font-size: var(--fs-5);
+  font-size: var(--fs-6);
   font-weight: 700;
   color: var(--gold);
   font-variant-numeric: tabular-nums;
@@ -645,16 +668,29 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   color: var(--ink-mute);
 }
 .mercado-vos-contrato {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
   margin-top: var(--s-2);
   font-size: var(--fs-2);
   line-height: var(--lh-snug);
   color: var(--ink-dim);
 }
 .mercado-vos-miran {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
   margin-top: var(--s-2);
   font-size: var(--fs-1);
   line-height: var(--lh-snug);
   color: var(--ink-mute);
+}
+.mercado-chip-org {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  color: var(--ink-dim);
 }
 
 /* Bloque 3: sub-encabezados dentro de "El mercado del mundo" (traspasos
@@ -686,7 +722,50 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   animation: entrar-decision var(--dur-slow) var(--ease) both;
 }
 
-.minijuego-widget { margin-top: var(--s-4); }
+.minijuego-widget {
+  position: relative;
+  margin-top: var(--s-4);
+  padding: var(--s-5);
+  background: var(--bg-void);
+  border: 1px solid var(--line);
+}
+.minijuego-widget::before,
+.minijuego-widget::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+.minijuego-widget::before {
+  top: 0;
+  left: 0;
+  border-top: 2px solid var(--warn);
+  border-left: 2px solid var(--warn);
+}
+.minijuego-widget::after {
+  right: 0;
+  bottom: 0;
+  border-right: 2px solid var(--warn);
+  border-bottom: 2px solid var(--warn);
+}
+.minijuego-widget--hit {
+  box-shadow: inset 0 0 0 2px var(--up);
+  animation: minijuego-hit 80ms var(--ease);
+}
+.minijuego-widget--miss {
+  box-shadow: inset 0 0 0 2px var(--down);
+  animation: minijuego-miss 120ms var(--ease);
+}
+@keyframes minijuego-hit {
+  from { background: var(--up-fill); }
+  to   { background: var(--bg-void); }
+}
+@keyframes minijuego-miss {
+  0%, 100% { transform: none; }
+  25%      { transform: translateX(-4px); }
+  75%      { transform: translateX(4px); }
+}
 
 /* El beat de resultado (fase 9R0b): sin esto el jugador nunca sabía si había
    clavado la jugada. */
@@ -890,14 +969,35 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   text-transform: uppercase;
   color: var(--ink);
 }
-.tarjeta--exito .tarjeta-veredicto { color: var(--gold); }
+.tarjeta--exito .tarjeta-veredicto { font-size: var(--fs-8); color: var(--gold); }
 
 .tarjeta-totales {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+  gap: var(--s-3);
   padding-bottom: var(--s-4);
   border-bottom: 1px solid var(--line-faint);
-  font-size: var(--fs-2);
-  color: var(--ink-dim);
+}
+.tarjeta-celda {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+.tarjeta-celda-k {
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.tarjeta-celda-v {
+  font-family: var(--font-display);
+  font-size: var(--fs-5);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
+  color: var(--ink);
 }
 
 .tarjeta-historia { margin-top: var(--s-4); text-align: left; font-size: var(--fs-2); color: var(--ink-dim); }
@@ -1017,7 +1117,7 @@ details.avanzado summary:hover { color: var(--ink-dim); }
 .calendario-lista { display: grid; gap: 2px; font-size: var(--fs-1); }
 .calendario-fila {
   display: grid;
-  grid-template-columns: 32px 1fr auto;
+  grid-template-columns: auto 1fr auto;
   gap: var(--s-2);
   padding: 3px var(--s-1);
   color: var(--ink-mute);
@@ -1029,8 +1129,37 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   font-weight: 700;
   border-radius: var(--r-sharp);
 }
-.calendario-jornada { font-variant-numeric: tabular-nums; }
-.calendario-rival { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.calendario-jornada {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  font-variant-numeric: tabular-nums;
+}
+.punto-vivo {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--live);
+  box-shadow: 0 0 6px var(--live-glow);
+  animation: latir-vivo 2s var(--ease-in-out) infinite;
+}
+.calendario-rival {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.calendario-lado { color: var(--ink-mute); flex: 0 0 auto; }
+.calendario-rival-nom {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
 .calendario-estado { font-size: var(--fs-0); text-transform: uppercase; letter-spacing: var(--track-label); }
 .calendario-estado--favorito { color: var(--up); }
 .calendario-estado--debil { color: var(--down); }
@@ -1041,10 +1170,27 @@ details.avanzado summary:hover { color: var(--ink-dim); }
 .plantilla-lista { display: grid; gap: 2px; margin-bottom: var(--s-3); font-size: var(--fs-1); }
 .plantilla-fila {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 8px 16px minmax(0, 1fr) auto auto;
+  align-items: center;
   gap: var(--s-2);
-  padding: 3px var(--s-1);
+  padding: 4px var(--s-1);
 }
+.plantilla-fila--propia {
+  background: var(--live-fill);
+  border-radius: var(--r-sharp);
+}
+.plantilla-pip {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: transparent;
+}
+.plantilla-fila--propia .plantilla-pip {
+  background: var(--live);
+  box-shadow: 0 0 6px var(--live-glow);
+}
+.plantilla-fila .rol-marca { font-size: 14px; color: var(--ink-dim); }
+.plantilla-fila--propia .rol-marca { color: var(--live); }
 .plantilla-handle { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .plantilla-rol { color: var(--ink-mute); font-size: var(--fs-0); text-transform: uppercase; }
 .plantilla-nivel { color: var(--ink-dim); font-variant-numeric: tabular-nums; font-weight: 700; }
@@ -1063,6 +1209,32 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   font-size: var(--fs-1);
   color: var(--ink-dim);
   line-height: var(--lh-snug);
+}
+.meta-columnas {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+}
+.meta-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.meta-col-nombre {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-0);
+  color: var(--ink-mute);
+  text-align: center;
+}
+.meta-col-mas {
+  font-size: var(--fs-0);
+  color: var(--ink-mute);
 }
 .meta-tierlist { display: grid; gap: 2px; font-size: var(--fs-1); }
 .meta-tierlist-fila { display: flex; align-items: center; gap: var(--s-2); padding: 2px var(--s-1); color: var(--ink-mute); }
@@ -1350,6 +1522,15 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   font-size: var(--fs-2);
 }
 
+.minijuego-apuesta-kicker {
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 700;
+  letter-spacing: var(--track-cartel);
+  text-transform: uppercase;
+  color: var(--warn);
+  margin-bottom: var(--s-1);
+}
 .minijuego-apuesta-stat {
   display: block;
   margin-top: var(--s-1);

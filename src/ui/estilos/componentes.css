@@ -138,22 +138,28 @@ h1::before {
    propósito — es la silueta de una banda de gráfico de TV, no una tarjeta. */
 .summary {
   margin-top: var(--s-4);
+  margin-bottom: 0;
   padding: var(--s-3) var(--s-4);
   background: var(--bg-raised);
   border-left: 3px solid var(--live);
   border-top: 1px solid var(--line-strong);
   color: var(--ink);
   font-size: var(--fs-3);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
 }
 
 .meta-pill {
-  display: inline-block;
-  margin-top: var(--s-2);
-  padding: var(--s-1) var(--s-3);
-  border-radius: var(--r-pill);
-  border: 1px solid var(--line);
-  background: var(--bg-sunken);
-  color: var(--ink-dim);
+  display: block;
+  margin-top: 0;
+  padding: 0 var(--s-4) var(--s-2);
+  border-radius: 0;
+  border: none;
+  border-left: 3px solid var(--live);
+  background: var(--bg-raised);
+  color: var(--ink-mute);
   font-size: var(--fs-1);
   font-variant-numeric: tabular-nums;
 }
@@ -192,6 +198,28 @@ h1::before {
 .log-item--breaking .log-titulo { color: var(--cat-parche); }
 .log-item--escena { border-left-color: var(--gold); }
 .log-item--escena .log-titulo { color: var(--gold); }
+.log-pestana {
+  display: inline-block;
+  margin-bottom: var(--s-1);
+  padding: 1px var(--s-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 700;
+  letter-spacing: var(--track-cartel);
+  text-transform: uppercase;
+  color: var(--bg-void);
+  background: var(--cat-parche);
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 100%, 0 100%);
+}
+.log-tira-tecnica {
+  margin-top: var(--s-2);
+  padding-top: var(--s-2);
+  border-top: 1px solid var(--line-faint);
+  font-size: var(--fs-0);
+  color: var(--ink-mute);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--lh-snug);
+}
 @keyframes entrar-breaking {
   from { opacity: 0; transform: translateY(-8px); }
   to   { opacity: 1; transform: none; }
@@ -248,7 +276,13 @@ h1::before {
 .resultado-marcador { font-size: var(--fs-3); font-weight: 700; }
 .log-item--resultado-victoria .resultado-marcador { color: var(--up); }
 .log-item--resultado-derrota .resultado-marcador { color: var(--down); }
-.resultado-rival { font-size: var(--fs-1); color: var(--ink-dim); }
+.resultado-rival {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  font-size: var(--fs-1);
+  color: var(--ink-dim);
+}
 .resultado-fuerza { font-size: var(--fs-0); color: var(--ink-mute); margin-left: auto; }
 
 .resultado-pie {
@@ -590,6 +624,9 @@ h1::before {
 }
 .ficha-historia summary:hover { color: var(--ink); }
 .ficha-historia-fila {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
   padding: var(--s-2) 0;
   border-top: 1px solid var(--line-faint);
   font-variant-numeric: tabular-nums;

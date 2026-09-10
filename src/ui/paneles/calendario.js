@@ -1,4 +1,5 @@
 import { etiquetaDeFuerza } from '../formatoUi.js';
+import { crearOrgChip } from '../components/orgChip.js';
 
 // El panel de Calendario (fase T5). Fuente: `career.temporada.calendario`
 // (el fixture, generado por `core/temporada.js:generarFixture`) + `.indice`
@@ -36,11 +37,24 @@ export function renderCalendario(container, state) {
 
     const jornadaEl = document.createElement('span');
     jornadaEl.className = 'calendario-jornada';
-    jornadaEl.textContent = `J${fecha.jornada}`;
+    if (esHoy) {
+      const pip = document.createElement('span');
+      pip.className = 'punto-vivo';
+      pip.setAttribute('aria-hidden', 'true');
+      jornadaEl.append(pip, document.createTextNode(`J${fecha.jornada}`));
+    } else {
+      jornadaEl.textContent = `J${fecha.jornada}`;
+    }
 
     const rivalEl = document.createElement('span');
     rivalEl.className = 'calendario-rival';
-    rivalEl.textContent = `${fecha.local ? 'vs' : '@'} ${fecha.rival}`;
+    const lado = document.createElement('span');
+    lado.className = 'calendario-lado';
+    lado.textContent = fecha.local ? 'vs' : '@';
+    const nom = document.createElement('span');
+    nom.className = 'calendario-rival-nom';
+    nom.textContent = fecha.rival;
+    rivalEl.append(lado, crearOrgChip(fecha.rival, { size: 16 }), nom);
 
     // El fixture no guarda el resultado puntual de cada fecha jugada (solo
     // el agregado, en `registro`/`tabla`) — mostrar un resultado inventado

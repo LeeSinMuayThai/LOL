@@ -1,10 +1,34 @@
+import { marcaRol } from '../components/iconos.js';
+import { fichaCompleta } from '../../core/ficha.js';
+
 // El panel de Plantilla (fase T5). Fuente: `career.companeros` (4 nombres
 // con rol y nivel, generados al fichar — `systems/roster.js`) y
-// `career.sinergia`. Existen desde la fase 9 y nunca se dibujaban.
-//
-// Fase 9M: si la org tiene plantel NPC (tier 1 y la tier 2 de tu región), los
-// compañeros salen de ahí y traen `edad` y `aniosContrato` — el vestuario deja
-// de ser 4 nombres genéricos y pasa a tener gente con carrera propia.
+// `career.sinergia`. Cinco filas: vos primero, con pip live y marca de rol.
+
+function filaDePlantilla({ handle, role, detalle, nivel, propio }) {
+  const fila = document.createElement('div');
+  fila.className = 'plantilla-fila' + (propio ? ' plantilla-fila--propia' : '');
+
+  const pip = document.createElement('span');
+  pip.className = 'plantilla-pip';
+  pip.setAttribute('aria-hidden', 'true');
+
+  const handleEl = document.createElement('span');
+  handleEl.className = 'plantilla-handle';
+  handleEl.textContent = handle;
+
+  const rolEl = document.createElement('span');
+  rolEl.className = 'plantilla-rol';
+  rolEl.textContent = detalle;
+
+  const nivelEl = document.createElement('span');
+  nivelEl.className = 'plantilla-nivel';
+  nivelEl.textContent = String(nivel);
+
+  fila.append(pip, marcaRol(role), handleEl, rolEl, nivelEl);
+  return fila;
+}
+
 export function renderPlantilla(container, state, modulos) {
   const { companeros, sinergia } = state.career;
 
@@ -23,32 +47,29 @@ export function renderPlantilla(container, state, modulos) {
 
   const lista = document.createElement('div');
   lista.className = 'plantilla-lista';
+
+  const ficha = fichaCompleta(state);
+  lista.appendChild(filaDePlantilla({
+    handle: state.player.name,
+    role: state.player.role,
+    detalle: modulos.etiquetaRol(state.player.role),
+    nivel: ficha.nivel,
+    propio: true
+  }));
+
   for (const companero of companeros) {
-    const fila = document.createElement('div');
-    fila.className = 'plantilla-fila';
-
-    const handleEl = document.createElement('span');
-    handleEl.className = 'plantilla-handle';
-    handleEl.textContent = companero.handle;
-
-    const rolEl = document.createElement('span');
-    rolEl.className = 'plantilla-rol';
-    // Con plantel NPC: "Mid · 24 · 1a". Sin él (tier 3): solo el rol.
-    rolEl.textContent = companero.edad != null
-      ? `${modulos.etiquetaRol(companero.role)} · ${companero.edad} · ${companero.aniosContrato}a`
-      : modulos.etiquetaRol(companero.role);
-
-    const nivelEl = document.createElement('span');
-    nivelEl.className = 'plantilla-nivel';
-    nivelEl.textContent = String(companero.nivel);
-
-    fila.append(handleEl, rolEl, nivelEl);
-    lista.appendChild(fila);
+    lista.appendChild(filaDePlantilla({
+      handle: companero.handle,
+      role: companero.role,
+      detalle: companero.edad != null
+        ? `${modulos.etiquetaRol(companero.role)} · ${companero.edad} · ${companero.aniosContrato}a`
+        : modulos.etiquetaRol(companero.role),
+      nivel: companero.nivel,
+      propio: false
+    }));
   }
   container.appendChild(lista);
 
-  // La sinergia, como barra — mismo lenguaje visual que arraigo/jerarquía
-  // en la ficha (T0b/T2), sin los hitos (no tiene bandas declaradas).
   const sinergiaWrap = document.createElement('div');
   sinergiaWrap.className = 'panel-contexto-barra-wrap';
   const sinergiaCabecera = document.createElement('div');

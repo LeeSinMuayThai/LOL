@@ -41,6 +41,7 @@ export const MONTAR_MINIJUEGO = {
 import { minijuegoPorId, lecturaDeVentana } from "../../../core/minijuegos.js";
 
 export { veredictoDeMinijuego } from "../../../core/minijuegos.js";
+export { marcarHit, marcarMiss } from './comun.js';
 
 // La apuesta, antes de jugar (fase 9R4d). Hasta acá entrabas al minijuego sin
 // saber qué te estabas jugando y lo descubrías al terminar, en el beat de
@@ -58,11 +59,23 @@ const NOMBRE_STAT = {
 export function crearApuesta(decision, state) {
   const caja = document.createElement('div');
   caja.className = 'minijuego-apuesta';
-  caja.textContent = decision.datos.apuesta ?? '';
 
   const entrada = minijuegoPorId(decision.datos.minijuego);
-  if (entrada) {
-    const lectura = lecturaDeVentana(entrada, state);
+  const lectura = entrada ? lecturaDeVentana(entrada, state) : null;
+  if (lectura) {
+    const kicker = document.createElement('div');
+    kicker.className = 'minijuego-apuesta-kicker';
+    kicker.textContent = `SE JUEGA ${(NOMBRE_STAT[lectura.stat] ?? lectura.stat).toUpperCase()}`;
+    caja.appendChild(kicker);
+  }
+
+  if (decision.datos.apuesta) {
+    const texto = document.createElement('div');
+    texto.textContent = decision.datos.apuesta;
+    caja.appendChild(texto);
+  }
+
+  if (lectura) {
     const linea = document.createElement('span');
     linea.className = 'minijuego-apuesta-stat';
     linea.textContent = `Tu ${NOMBRE_STAT[lectura.stat] ?? lectura.stat} ${lectura.valor} · ${lectura.frase}`;

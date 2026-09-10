@@ -205,6 +205,20 @@ body[data-ventana="internacional"],
 body[data-serie="on"] { --horizon: var(--gold-horizon); }
 body[data-peligro="on"] { --horizon: var(--danger-horizon); }
 
+body[data-legado="on"] .shell-cuerpo,
+body[data-legado="on"] .shell-cuerpo:has(.riel-der > .panel-contexto:not([hidden])) {
+  grid-template-columns: var(--riel-izq) 1fr;
+}
+body[data-legado="on"] .riel-der { display: none; }
+body[data-legado="on"] .log-list,
+body[data-legado="on"] .summary,
+body[data-legado="on"] .meta-pill,
+body[data-legado="on"] .serie-contexto { display: none; }
+body[data-legado="on"] .tarjeta { margin-top: 0; }
+@media (max-width: 899px) {
+  body[data-legado="on"] .riel { display: none; }
+}
+
 .topbar-pips {
   display: flex;
   gap: 4px;

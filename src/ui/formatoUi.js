@@ -73,6 +73,28 @@ export function pesoDeDecision(decision) {
   return 'normal';
 }
 
+// Rótulo de la pestaña, sin parsear `descripcion` y sin campo nuevo en JSON.
+// Si hay `category` manda T4. Si no: partido (serie o fecha en curso),
+// semana amateur, o el fallback de siempre.
+export function rotuloDeDecision(decision, state) {
+  const peso = pesoDeDecision(decision);
+  if (peso === 'cierre') {
+    return { label: 'Fin de año', token: 'rutina' };
+  }
+  const categoria = decision?.datos?.evento?.category ?? null;
+  if (categoria) {
+    return familiaDeCategoria(categoria);
+  }
+  if (state?.serie?.activa || state?.career?.temporada?.fechaEnCurso) {
+    return { label: 'Partido', token: 'partido' };
+  }
+  const motivo = decision?.datos?.motivo;
+  if (motivo === 'reparto' || motivo === 'practica' || state?.phase === 'amateur') {
+    return { label: 'La semana', token: 'rutina' };
+  }
+  return FAMILIA_DEFECTO;
+}
+
 // --- Identidad de org (T0 lo prometió, nunca se codeó) ---------------------
 // `hashCadena` es puro y determinista: el mismo nombre da el mismo hue en
 // cada render y en el PNG de la tarjeta. Cero RNG.

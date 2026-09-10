@@ -1,5 +1,6 @@
 import { plata } from '../../core/formato.js';
 import { crearOrgChip } from './orgChip.js';
+import { countUp } from './countUp.js';
 
 // La pantalla de ofertas (fase 9c, PLAN.md §9.5-9.6): "la trampa del equipo
 // grande visible" hecha tarjeta. Cada campo que se pinta acá ya viene resuelto
@@ -61,7 +62,10 @@ function construirTarjeta(oferta, onElegir, onNegociar) {
   card.appendChild(header);
 
   card.appendChild(fila('mercado-card-liga', `${oferta.liga} · ${oferta.anios} año${oferta.anios === 1 ? '' : 's'}`));
-  card.appendChild(fila('mercado-card-salario', `${plata(oferta.salarioAnualUSD)}/año`));
+  const salarioEl = document.createElement('div');
+  salarioEl.className = 'mercado-card-salario';
+  countUp(salarioEl, 0, oferta.salarioAnualUSD, { format: (n) => `${plata(n)}/año` });
+  card.appendChild(salarioEl);
 
   const pj = oferta.proyeccionJerarquia;
   card.appendChild(fila(
@@ -128,13 +132,20 @@ function construirTarjetaTraspaso(opcion, onElegir) {
   header.className = 'mercado-card-header';
   const org = document.createElement('span');
   org.className = 'mercado-card-org';
-  org.textContent = opcion.label;
+  if (opcion.org) {
+    org.append(crearOrgChip(opcion.org, { size: 28 }), document.createTextNode(opcion.label));
+  } else {
+    org.textContent = opcion.label;
+  }
   header.appendChild(org);
   card.appendChild(header);
 
   if (opcion.tipo !== 'quedarse') {
     card.appendChild(fila('mercado-card-liga', `${opcion.liga} · ${opcion.anios} año${opcion.anios === 1 ? '' : 's'}`));
-    card.appendChild(fila('mercado-card-salario', `${plata(opcion.salarioAnualUSD)}/año`));
+    const salarioEl = document.createElement('div');
+    salarioEl.className = 'mercado-card-salario';
+    countUp(salarioEl, 0, opcion.salarioAnualUSD, { format: (n) => `${plata(n)}/año` });
+    card.appendChild(salarioEl);
     const pj = opcion.proyeccionJerarquia;
     if (pj) {
       card.appendChild(fila(
@@ -172,7 +183,7 @@ function construirBloqueVos(vos, interesados) {
   if (vos.valorUSD > 0) {
     const cifra = document.createElement('span');
     cifra.className = 'mercado-vos-cifra';
-    cifra.textContent = `${plata(vos.valorUSD)}/año`;
+    countUp(cifra, 0, vos.valorUSD, { format: (n) => `${plata(n)}/año` });
     const ref = document.createElement('span');
     ref.className = 'mercado-vos-ref';
     if (vos.sobreSueldoPct === null) {
@@ -199,19 +210,32 @@ function construirBloqueVos(vos, interesados) {
       ? 'vence esta pretemporada'
       : (c.aniosRestantes === 1 ? '1 año restante' : `${c.aniosRestantes} años restantes`);
     const clausula = c.clausula === 'salida' ? ' · con cláusula de salida' : '';
-    box.appendChild(fila(
-      'mercado-vos-contrato',
-      `Contrato: ${c.org}${c.liga ? ` · ${c.liga}` : ''} · ${plata(c.salarioUSD)}/año · ${restante}${clausula}`
-    ));
+    const contratoEl = document.createElement('div');
+    contratoEl.className = 'mercado-vos-contrato';
+    contratoEl.append(
+      crearOrgChip(c.org, { size: 18 }),
+      document.createTextNode(
+        `${c.org}${c.liga ? ` · ${c.liga}` : ''} · ${plata(c.salarioUSD)}/año · ${restante}${clausula}`
+      )
+    );
+    box.appendChild(contratoEl);
   } else {
     box.appendChild(fila('mercado-vos-contrato', 'Sos agente libre: no tenés contrato.'));
   }
 
   if (interesados && interesados.length > 0) {
-    box.appendChild(fila(
-      'mercado-vos-miran',
-      `Te siguen sin ofertar: ${interesados.map((i) => i.org).join(', ')}`
-    ));
+    const miran = document.createElement('div');
+    miran.className = 'mercado-vos-miran';
+    const kicker = document.createElement('span');
+    kicker.textContent = 'Te siguen sin ofertar';
+    miran.appendChild(kicker);
+    for (const i of interesados) {
+      const chip = document.createElement('span');
+      chip.className = 'mercado-chip-org';
+      chip.append(crearOrgChip(i.org, { size: 16 }), document.createTextNode(i.org));
+      miran.appendChild(chip);
+    }
+    box.appendChild(miran);
   }
 
   return box;
@@ -237,13 +261,19 @@ function renderMundo(contenedor, traspasos, asientos, yaEnBloque1) {
     contenedor.appendChild(fila('mercado-mundo-sub',
       `${n} fichaje${n === 1 ? '' : 's'} cerrado${n === 1 ? '' : 's'} este offseason`));
     for (const t of traspasos) {
-      contenedor.appendChild(fila('mercado-mundo-item', t.motivo));
+      const item = document.createElement('div');
+      item.className = 'mercado-mundo-item';
+      item.append(crearOrgChip(t.org, { size: 16 }), document.createTextNode(t.motivo));
+      contenedor.appendChild(item);
     }
   }
   if (asientosNuevos.length > 0) {
     contenedor.appendChild(fila('mercado-mundo-sub', 'Asientos abiertos en tu puesto que no llegaron a oferta'));
     for (const a of asientosNuevos) {
-      contenedor.appendChild(fila('mercado-mundo-item', `${a.org} · ${a.liga}`));
+      const item = document.createElement('div');
+      item.className = 'mercado-mundo-item';
+      item.append(crearOrgChip(a.org, { size: 16 }), document.createTextNode(`${a.org} · ${a.liga}`));
+      contenedor.appendChild(item);
     }
   }
 }

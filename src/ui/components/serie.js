@@ -60,7 +60,11 @@ export function crearTarjetaResultado(entry, state) {
 
   const rivalEl = document.createElement('span');
   rivalEl.className = 'resultado-rival';
-  rivalEl.textContent = `${fecha.local ? 'vs' : '@'} ${fecha.rival}`;
+  rivalEl.append(
+    document.createTextNode(`${fecha.local ? 'vs' : '@'} `),
+    crearOrgChip(fecha.rival, { size: 16 }),
+    document.createTextNode(fecha.rival)
+  );
 
   const fuerzaEl = document.createElement('span');
   fuerzaEl.className = 'resultado-fuerza';

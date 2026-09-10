@@ -14,6 +14,7 @@
 
 import * as sonido from './sonido.js';
 import { BALANCE } from '../data/balance.js';
+import { saltarBeat, velocidadActual } from './reproductor.js';
 
 const logList = document.getElementById('logList');
 const ticker = document.getElementById('ticker');
@@ -37,6 +38,8 @@ const decisionOptions = document.getElementById('decisionOptions');
 const mercadoPanel = document.getElementById('mercado');
 const mercadoGrid = document.getElementById('mercadoGrid');
 const avanzadoDetails = document.querySelector('.avanzado');
+const carreraPanel = document.getElementById('carrera');
+const minijuegoPanel = document.getElementById('minijuego');
 
 // --- El punto vivo del topbar (T2) ------------------------------------------
 // `estado` vive en el closure del controlador, así que esto no se llama
@@ -104,6 +107,9 @@ export function aplicarEstudio(state, ficha) {
   const peligro = Boolean(ficha?.mentalidad?.peligro) || peligroAmateur;
   if (peligro) body.dataset.peligro = 'on';
   else delete body.dataset.peligro;
+
+  if (state.terminado && state.tarjeta) body.dataset.legado = 'on';
+  else delete body.dataset.legado;
 }
 
 export function limpiarEstudio() {
@@ -112,6 +118,7 @@ export function limpiarEstudio() {
   delete body.dataset.ventana;
   delete body.dataset.serie;
   delete body.dataset.peligro;
+  delete body.dataset.legado;
   if (topbarPips) {
     topbarPips.hidden = true;
     topbarPips.replaceChildren();
@@ -188,7 +195,21 @@ document.addEventListener('keydown', (evento) => {
   if (escribiendoEnUnCampo()) return;
 
   if (evento.key === ' ' || evento.key === 'Enter') {
-    if (activarPrimario()) evento.preventDefault();
+    if (activarPrimario()) {
+      evento.preventDefault();
+      return;
+    }
+    if (
+      evento.key === ' '
+      && visible(carreraPanel)
+      && !visible(decisionPanel)
+      && !visible(mercadoPanel)
+      && !visible(minijuegoPanel)
+      && velocidadActual() !== 'instantaneo'
+    ) {
+      evento.preventDefault();
+      saltarBeat();
+    }
     return;
   }
 

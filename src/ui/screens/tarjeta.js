@@ -5,15 +5,14 @@ import { descargarTarjeta, copiarTarjeta, copiarLinkDeCarrera, linkDeCarrera } f
 // TODA salida termina acá — la del mundialista con confeti y la del pibe al que
 // no lo dejaron, con su propio marco. El veredicto y los totales salen de
 // `state.tarjeta` (compuesto por `core/legado.js`); la historia org por org
-// reusa `filaHistoria` de la ficha, escrita una vez en la fase 8 "para que la
-// tarjeta de la fase 10 la reuse".
+// reusa `filaHistoria` de la ficha.
 
 const TITULO_MARCO = {
-  retiro_elegido: '🏆 SE CIERRA UNA CARRERA',
-  sin_equipo: '📞 EL TELÉFONO DEJÓ DE SONAR',
-  burnout: '🔌 NO DABA MÁS',
-  no_llego: '⌛ SE CERRÓ LA VENTANA',
-  prohibicion_familiar: '🚪 EN CASA DIJERON QUE NO'
+  retiro_elegido: 'SE CIERRA UNA CARRERA',
+  sin_equipo: 'EL TELÉFONO DEJÓ DE SONAR',
+  burnout: 'NO DABA MÁS',
+  no_llego: 'SE CERRÓ LA VENTANA',
+  prohibicion_familiar: 'EN CASA DIJERON QUE NO'
 };
 
 function linea(clase, texto) {
@@ -21,6 +20,19 @@ function linea(clase, texto) {
   div.className = clase;
   div.textContent = texto;
   return div;
+}
+
+function celda(kicker, valor) {
+  const el = document.createElement('div');
+  el.className = 'tarjeta-celda';
+  const k = document.createElement('span');
+  k.className = 'tarjeta-celda-k';
+  k.textContent = kicker;
+  const v = document.createElement('span');
+  v.className = 'tarjeta-celda-v';
+  v.textContent = valor;
+  el.append(k, v);
+  return el;
 }
 
 export function renderTarjeta(container, state, modulos) {
@@ -33,34 +45,29 @@ export function renderTarjeta(container, state, modulos) {
   container.replaceChildren();
   container.hidden = false;
   container.className = 'tarjeta' + (t.esExito ? ' tarjeta--exito' : ' tarjeta--sobria');
-  // El marco por cada uno de los 5 finales (T7): antes de esta fase, solo
-  // había dos tonos (éxito/sobria) — el mundialista y el pibe al que no lo
-  // dejaron jugar compartían marco si ninguno era "éxito". `data-marco`
-  // deja que pantallas.css los distinga sin tocar esta función de nuevo
-  // cuando cambie el diseño.
   container.dataset.marco = t.finAnticipado ?? 'retiro_elegido';
 
-  // --- Marco + identidad ---
   container.appendChild(linea('tarjeta-marco', TITULO_MARCO[t.finAnticipado] ?? 'FIN DE LA CARRERA'));
   container.appendChild(linea('tarjeta-identidad',
     `${state.player.name} · ${modulos.etiquetaRol(state.player.role)} · se retiró a los ${t.edadRetiro}`));
 
-  // --- El veredicto compuesto ---
   container.appendChild(linea('tarjeta-veredicto', t.veredicto));
 
-  // --- La franja de totales ---
   const totales = t.totales;
-  const franja = [
-    `${totales.anios} años`,
-    `${totales.splits} splits`,
-    `${totales.titulos} título(s)`,
-    totales.internacionales > 0 ? `${totales.internacionales} internacional(es)` : null,
-    `nivel máx ${totales.nivelMax}`,
-    totales.valorMaxUSD > 0 ? `valor máx ${formato.plata(totales.valorMaxUSD)}` : null
-  ].filter(Boolean).join('  ·  ');
-  container.appendChild(linea('tarjeta-totales', franja));
+  const franja = document.createElement('div');
+  franja.className = 'tarjeta-totales';
+  franja.appendChild(celda('Años', String(totales.anios)));
+  franja.appendChild(celda('Splits', String(totales.splits)));
+  franja.appendChild(celda('Títulos', String(totales.titulos)));
+  if (totales.internacionales > 0) {
+    franja.appendChild(celda('Intl', String(totales.internacionales)));
+  }
+  franja.appendChild(celda('Nivel máx', String(totales.nivelMax)));
+  if (totales.valorMaxUSD > 0) {
+    franja.appendChild(celda('Valor máx', formato.plata(totales.valorMaxUSD)));
+  }
+  container.appendChild(franja);
 
-  // --- Tu historia, org por org (reusa filaHistoria de la ficha) ---
   if (t.historia.length > 0) {
     const historia = document.createElement('div');
     historia.className = 'tarjeta-historia';
@@ -72,11 +79,6 @@ export function renderTarjeta(container, state, modulos) {
   container.appendChild(crearAcciones(state, modulos));
 }
 
-// --- Las tres acciones de cierre (T7) ---------------------------------
-//
-// Copiar imagen / bajarla / copiar el link. `CONCEPTO` §9 llama al link
-// "todo el motor de difusión del juego" — es la única de las tres que no
-// depende de una API de navegador que puede faltar.
 function botonConEstado(texto, accion) {
   const boton = document.createElement('button');
   boton.type = 'button';
@@ -98,25 +100,22 @@ function crearAcciones(state, modulos) {
   const acciones = document.createElement('div');
   acciones.className = 'tarjeta-acciones';
 
-  acciones.appendChild(botonConEstado('📋 Copiar imagen', async (boton) => {
+  acciones.appendChild(botonConEstado('Copiar imagen', async (boton) => {
     const copiado = await copiarTarjeta(state, modulos);
     if (copiado) {
       boton.textContent = '¡Copiada!';
     } else {
-      // `navigator.clipboard.write` con imágenes no está en todos lados
-      // (Firefox/Safari con restricciones) — la descarga es el respaldo
-      // universal, no un error silencioso.
       await descargarTarjeta(state, modulos);
       boton.textContent = 'Se bajó como archivo';
     }
   }));
 
-  acciones.appendChild(botonConEstado('⬇ Bajar imagen', async (boton) => {
+  acciones.appendChild(botonConEstado('Bajar imagen', async (boton) => {
     await descargarTarjeta(state, modulos);
     boton.textContent = '¡Bajada!';
   }));
 
-  acciones.appendChild(botonConEstado('🔗 Copiar link de esta carrera', async (boton) => {
+  acciones.appendChild(botonConEstado('Copiar link de esta carrera', async (boton) => {
     const copiado = await copiarLinkDeCarrera(state.seed);
     boton.textContent = copiado ? '¡Copiado!' : linkDeCarrera(state.seed);
   }));

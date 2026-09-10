@@ -82,11 +82,14 @@ function hitosArraigo() {
 export function filaHistoria(fila) {
   const item = document.createElement('div');
   item.className = 'ficha-historia-fila';
+  item.appendChild(crearOrgChip(fila.org, { size: 16 }));
+  const texto = document.createElement('span');
   const rango = fila.hastaAnio ? `${fila.desdeAnio}–${fila.hastaAnio}` : `${fila.desdeAnio}–`;
   const titulos = fila.titulos.length > 0
-    ? ` · 🏆 ${fila.titulos.map((t) => `${t.nombre} ${t.anio}`).join(', ')}`
+    ? ` · ${fila.titulos.map((t) => `${t.nombre} ${t.anio}`).join(', ')}`
     : '';
-  item.textContent = `${fila.org} — ${fila.splits} splits · ${fila.fechasG}-${fila.fechasP} · ${rango}${titulos}`;
+  texto.textContent = `${fila.org} — ${fila.splits} splits · ${fila.fechasG}-${fila.fechasP} · ${rango}${titulos}`;
+  item.appendChild(texto);
   return item;
 }
 

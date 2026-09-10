@@ -1,9 +1,13 @@
 import METAS from '../../data/metas.json' with { type: 'json' };
+import { crearCampeonTile } from '../components/campeonTile.js';
+
+const TIERS = ['S', 'A', 'B', 'C'];
+const MAX_POR_COL = 3;
 
 // El panel de Meta (fase T5). Fuente: `meta.regimen` (un id — se busca en
 // `METAS` el nombre real) + `meta.tierList` (ya calculada por
 // `core/regimen.js:tierListDeRol` cada split) marcada contra el pool del
-// jugador.
+// jugador. Columnas S/A/B/C: tus campeones son tile, el resto nombre.
 export function renderMeta(container, state) {
   const { regimen, tierList } = state.meta;
   const regimenObj = METAS.find((m) => m.id === regimen);
@@ -31,26 +35,48 @@ export function renderMeta(container, state) {
   descripcion.textContent = regimenObj.descripcion;
   container.appendChild(descripcion);
 
-  // El pool del jugador contra la tier list vigente: los mismos campeones
-  // que la ficha ya lista (T0.6), acá con el resto de la tier list de
-  // fondo para que se vea DÓNDE cae tu pool, no solo cuánto vale.
-  const pool = new Set((state.player.championPool ?? []).map((c) => c.name));
-  const lista = document.createElement('div');
-  lista.className = 'meta-tierlist';
-  for (const entrada of tierList.slice(0, 8)) {
-    const fila = document.createElement('div');
-    fila.className = 'meta-tierlist-fila' + (pool.has(entrada.name) ? ' meta-tierlist-fila--pool' : '');
+  const poolArr = state.player.championPool ?? [];
+  const pool = new Map(poolArr.map((c) => [c.name, c]));
 
-    const tierEl = document.createElement('span');
-    tierEl.className = `meta-tier meta-tier--${entrada.tier}`;
-    tierEl.textContent = entrada.tier;
-
-    const nombreEl = document.createElement('span');
-    nombreEl.className = 'meta-tierlist-nombre';
-    nombreEl.textContent = entrada.name;
-
-    fila.append(tierEl, nombreEl);
-    lista.appendChild(fila);
+  const porTier = { S: [], A: [], B: [], C: [] };
+  for (const entrada of tierList) {
+    const bucket = porTier[entrada.tier] ?? porTier.C;
+    bucket.push(entrada);
   }
-  container.appendChild(lista);
+
+  const columnas = document.createElement('div');
+  columnas.className = 'meta-columnas';
+  for (const tier of TIERS) {
+    const col = document.createElement('div');
+    col.className = 'meta-col';
+
+    const head = document.createElement('span');
+    head.className = `meta-tier meta-tier--${tier}`;
+    head.textContent = tier;
+    col.appendChild(head);
+
+    const items = porTier[tier];
+    const visibles = items.slice(0, MAX_POR_COL);
+    for (const entrada of visibles) {
+      const propio = pool.get(entrada.name);
+      if (propio) {
+        col.appendChild(crearCampeonTile(propio, { size: 'mini' }));
+      } else {
+        const nom = document.createElement('span');
+        nom.className = 'meta-col-nombre';
+        nom.textContent = entrada.name;
+        nom.title = entrada.name;
+        col.appendChild(nom);
+      }
+    }
+    const extra = items.length - MAX_POR_COL;
+    if (extra > 0) {
+      const mas = document.createElement('span');
+      mas.className = 'meta-col-mas';
+      mas.textContent = `+${extra}`;
+      col.appendChild(mas);
+    }
+    columnas.appendChild(col);
+  }
+  container.appendChild(columnas);
 }

@@ -1,5 +1,5 @@
 import { renderFicha } from '../components/ficha.js';
-import { renderFeed } from '../components/feed.js';
+import { renderFeed, renderLowerThird } from '../components/feed.js';
 import { renderDecision } from '../components/decision.js';
 import { renderMercado } from '../components/mercado.js';
 import { renderTabla } from '../paneles/tabla.js';
@@ -31,8 +31,10 @@ export function renderRielContexto(elements, state, modulos) {
   renderGeneracion(elements.panelGeneracion, state, modulos);
 }
 
-export function mostrarDecisionEnPantalla(elements, decision, onElegir) {
-  renderDecision(elements, decision, onElegir);
+export { renderLowerThird };
+
+export function mostrarDecisionEnPantalla(elements, decision, onElegir, state) {
+  renderDecision(elements, decision, onElegir, state);
 }
 
 export function mostrarMercadoEnPantalla(elements, decision, onElegir, onRepresentante, onNegociar, onEsperar) {

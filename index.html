@@ -175,7 +175,7 @@
     <script type="module">
       // Los 5 minijuegos, migrados a su propia carpeta en la fase T6 (ver
       // el comentario junto a `mostrarMinijuego` más abajo).
-      import { MONTAR_MINIJUEGO, veredictoDeMinijuego, crearApuesta } from './src/ui/components/minijuegos/index.js';
+      import { MONTAR_MINIJUEGO, veredictoDeMinijuego, crearApuesta, marcarHit, marcarMiss } from './src/ui/components/minijuegos/index.js';
       import { iconoSonido } from './src/ui/components/iconos.js';
       import { limpiarEstudio } from './src/ui/shell.js';
 
@@ -317,16 +317,18 @@
           }
           resuelto = true;
           const v = veredictoDeMinijuego(decision.datos.minijuego, resultado, estado);
+          if (resultado >= 0.67) marcarHit(minijuegoWidget);
+          else if (resultado <= 0.33) marcarMiss(minijuegoWidget);
           minijuegoWidget.innerHTML =
             '<div class="minijuego-resultado minijuego-resultado--' + v.nivel + '">'
             + '<div class="minijuego-resultado-titulo">' + v.titulo + '</div>'
             + '<div class="minijuego-resultado-detalle">' + v.detalle + '</div>'
             + '</div>';
-          summary.textContent = v.titulo + ' ' + v.detalle;
+          ui.renderLowerThird(summary, metaPill, estado, { modo: 'minijuego' });
           setTimeout(() => responder({ resultado }), 1600);
         }, rngUi);
 
-        summary.textContent = 'Minijuego en curso.';
+        ui.renderLowerThird(summary, metaPill, estado, { modo: 'minijuego' });
       }
 
       function mostrarDecision(decision) {
@@ -345,40 +347,24 @@
             responder,
             () => responder({ negociar: 'esperar' })
           );
-          summary.textContent = 'Llegaron ofertas: elegí con quién vas.';
+          ui.renderLowerThird(summary, metaPill, estado, { modo: 'mercado', decision });
           return;
         }
 
         mercadoPanel.hidden = true;
-        ui.mostrarDecisionEnPantalla(decisionElements, decision, responder);
-        summary.textContent = 'Tenés una decisión pendiente.';
+        ui.mostrarDecisionEnPantalla(decisionElements, decision, responder, estado);
+        ui.renderLowerThird(summary, metaPill, estado, { modo: 'decision', decision });
       }
 
       function renderResumenFinal(state) {
-        const strongestMeta = Object.entries(state.meta.weights).sort((a, b) => b[1] - a[1])[0][0];
+        ui.renderLowerThird(summary, metaPill, state);
 
-        if (state.finAnticipado === 'burnout') {
-          summary.textContent = `Te bajaste a los ${state.age}: no daba más la cabeza. `
-            + `${state.career.titulos} título(s) con ${state.career.currentOrg ?? 'nadie'}.`;
-        } else if (state.finAnticipado === 'prohibicion_familiar') {
-          summary.textContent = `En tu casa te bajaron del ranked a los ${state.age}. Máximo alcanzado: ${modulos.ranked.etiquetaDeRanked(state.player.ranked, modulos.ranked.servidorDeLaPartida(state))}.`;
-        } else if (state.finAnticipado === 'no_llego') {
-          summary.textContent = `Se cerró la ventana de los prospectos en ${modulos.ranked.etiquetaDeRanked(state.player.ranked, modulos.ranked.servidorDeLaPartida(state))}. Nadie llamó.`;
-        } else if (state.phase === 'profesional') {
-          summary.textContent = `${state.career.currentOrg} · jerarquía ${state.career.jerarquia} · sinergia ${state.career.sinergia}`
-            + ` · ${state.career.titulos} título(s) · ${state.career.internacionales} internacional(es)`
-            + `${state.player.signatureChampion ? ` · signature: ${state.player.signatureChampion}` : ''}. Meta: ${strongestMeta}.`;
-        } else {
-          summary.textContent = 'Seguís en etapa amateur, grindeando soloQ para llamar la atención de un equipo.';
-        }
-        metaPill.textContent = `Meta dominante: ${strongestMeta} · seed ${state.seed}`;
-
-        // Fase 9R5b: si la carrera terminó, la tarjeta de legado es la pantalla
-        // final. Se ocultan los paneles de decisión y se pinta la tarjeta.
         if (state.terminado && state.tarjeta) {
           decisionPanel.hidden = true;
           minijuegoPanel.hidden = true;
           mercadoPanel.hidden = true;
+          logList.hidden = true;
+          serieContextoEl.hidden = true;
           ui.renderTarjeta(tarjetaPanel, state, modulos);
         }
       }
@@ -412,6 +398,7 @@
           mostrarDecision(estado.pendiente.decision);
           return true;
         }
+        ui.renderLowerThird(summary, metaPill, estado);
         return false;
       }
 
@@ -501,6 +488,14 @@
         return Date.now() >>> 0;
       }
 
+      function revelarEscenario() {
+        setupPanel.hidden = true;
+        carreraPanel.hidden = false;
+        carreraPanel.classList.remove('escenario-entrar');
+        void carreraPanel.offsetWidth;
+        carreraPanel.classList.add('escenario-entrar');
+      }
+
       async function comenzarCarrera() {
         runButton.disabled = true;
         decisionPanel.hidden = true;
@@ -509,6 +504,9 @@
         tarjetaPanel.hidden = true;
         tarjetaPanel.replaceChildren();
         nuevaCarreraBtn.hidden = true;
+        summary.hidden = false;
+        metaPill.hidden = false;
+        logList.hidden = false;
         summary.textContent = 'Arrancando la carrera...';
         metaPill.textContent = '';
         logList.innerHTML = '';
@@ -532,8 +530,7 @@
           // que dice "no, esta la abandono" en vez de tocar Continuar.
           almacenamiento.borrarCarreraGuardada();
 
-          setupPanel.hidden = true;
-          carreraPanel.hidden = false;
+          revelarEscenario();
 
           // `avanzar()` es async desde la fase T3 (el reproductor pausa
           // entre beats): si no se espera acá, un error en el primer split
@@ -612,14 +609,13 @@
           estado = datos.state;
           seedInput.value = String(datos.seed);
 
-          setupPanel.hidden = true;
-          carreraPanel.hidden = false;
+          revelarEscenario();
           nuevaCarreraBtn.hidden = true;
 
           ui.renderFicha(fichaContainer, estado, modulos);
           ui.renderRielContexto(rielElements, estado, modulos);
           ui.renderSerieContexto(serieContextoEl, estado);
-          summary.textContent = 'Retomando la carrera...';
+          ui.renderLowerThird(summary, metaPill, estado);
 
           if (estado.pendiente) {
             mostrarDecision(estado.pendiente.decision);

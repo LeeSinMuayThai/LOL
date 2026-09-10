@@ -38,7 +38,9 @@ export function renderTabla(container, state) {
 
   const titulo = document.createElement('div');
   titulo.className = 'panel-contexto-titulo';
-  titulo.textContent = 'Tabla';
+  const jornada = temporada.calendario?.[temporada.indice]?.jornada;
+  const ligaId = ligaObj?.id ?? liga;
+  titulo.textContent = Number.isFinite(jornada) ? `${ligaId} · J${jornada}` : (ligaId || 'Tabla');
   container.appendChild(titulo);
 
   const lista = document.createElement('div');

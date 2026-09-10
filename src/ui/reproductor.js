@@ -4,8 +4,7 @@
 // un salto con ocho líneas de log ya escritas, en un juego cuyo compás es
 // "cada split trae 1 o 2 decisiones, nunca más" (`CONCEPTO` §2). Esto no
 // cambia qué calcula el motor — solo cuándo y cómo entra cada línea al DOM.
-import { crearLogItem } from './components/feed.js';
-import { crearTarjetaResultado } from './components/serie.js';
+import { agruparBeats, nodoDeBeat } from './components/feed.js';
 import * as sonido from './sonido.js';
 
 const CLAVE_VELOCIDAD = 'lolcs-velocidad-reproductor';
@@ -50,7 +49,27 @@ export function ciclarVelocidad() {
   return velocidad;
 }
 
-const dormir = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+let skipActual = null;
+
+export function saltarBeat() {
+  if (typeof skipActual === 'function') skipActual();
+}
+
+function dormir(ms) {
+  if (ms <= 0) return Promise.resolve();
+  return new Promise((resolve) => {
+    const t = setTimeout(() => {
+      if (skipActual === resolver) skipActual = null;
+      resolve();
+    }, ms);
+    const resolver = () => {
+      clearTimeout(t);
+      skipActual = null;
+      resolve();
+    };
+    skipActual = resolver;
+  });
+}
 
 // La misma preferencia que ya apaga las animaciones en CSS (base.css):
 // acá se respeta también para el TIMING de JS — sin esto, el CSS no
@@ -79,15 +98,11 @@ export async function reproducirBeats(logList, nuevasEntradas, { registroAntes, 
   const instantaneo = velocidad === 'instantaneo' || motionReducido();
   const espera = instantaneo ? 0 : ESPERA_MS[velocidad];
 
-  for (const entrada of nuevasEntradas) {
-    // T6: un log de `type: 'temporada'` es la tarjeta de resultado de
-    // fecha, no una línea más — `crearTarjetaResultado` necesita `state`
-    // para leer el fixture y la tabla en vivo (ver `components/serie.js`).
-    const nodo = entrada.type === 'temporada' && state
-      ? crearTarjetaResultado(entrada, state)
-      : crearLogItem(entrada);
+  const beats = agruparBeats(nuevasEntradas);
+  for (const beat of beats) {
+    const nodo = nodoDeBeat(beat, state);
     logList.insertBefore(nodo, logList.firstChild);
-    if (!entrada.tecnico) {
+    if (beat.narrativa && !beat.narrativa.tecnico) {
       sonido.tick();
     }
     if (espera > 0) {
@@ -98,6 +113,7 @@ export async function reproducirBeats(logList, nuevasEntradas, { registroAntes, 
   while (logList.children.length > LIMITE_FEED) {
     logList.removeChild(logList.lastChild);
   }
+  skipActual = null;
 
   if (registroAntes && registroDespues) {
     if (registroDespues.seriesGanadas > registroAntes.seriesGanadas

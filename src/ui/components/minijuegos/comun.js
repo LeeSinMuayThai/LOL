@@ -93,3 +93,15 @@ export function marcadorDeRondas(container) {
   container.appendChild(linea);
   return (texto) => { linea.textContent = texto; };
 }
+
+export function marcarHit(el) {
+  if (!el) return;
+  el.classList.remove('minijuego-widget--miss');
+  el.classList.add('minijuego-widget--hit');
+}
+
+export function marcarMiss(el) {
+  if (!el) return;
+  el.classList.remove('minijuego-widget--hit');
+  el.classList.add('minijuego-widget--miss');
+}

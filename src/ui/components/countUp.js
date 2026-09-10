@@ -5,7 +5,10 @@ function motionReducido() {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 }
 
-export function countUp(el, from, to, { dur = 420 } = {}) {
+export function countUp(el, from, to, { dur = 420, format } = {}) {
+  const pintar = (n) => {
+    el.textContent = format ? format(n) : String(n);
+  };
   const fin = Number(to);
   const inicio = Number(from);
   if (!Number.isFinite(fin)) {
@@ -13,13 +16,13 @@ export function countUp(el, from, to, { dur = 420 } = {}) {
     return;
   }
   if (!Number.isFinite(inicio) || inicio === fin || motionReducido() || dur <= 0) {
-    el.textContent = String(Math.round(fin));
+    pintar(Math.round(fin));
     return;
   }
   const t0 = performance.now();
   const tick = (now) => {
     const t = Math.min(1, (now - t0) / dur);
-    el.textContent = String(Math.round(inicio + (fin - inicio) * t));
+    pintar(Math.round(inicio + (fin - inicio) * t));
     if (t < 1) requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);

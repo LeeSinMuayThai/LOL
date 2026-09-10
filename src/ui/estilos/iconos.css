@@ -61,6 +61,7 @@
 }
 .campeon-tile--setup .campeon-tile-ini { font-size: var(--fs-3); }
 .campeon-tile--mini .campeon-tile-ini { font-size: 9px; }
+.campeon-tile--mini .campeon-tile-mae { display: none; }
 
 .campeon-tile-mae {
   position: absolute;

@@ -5,6 +5,8 @@
 //
 // Los colores se leen de los tokens en vez de duplicarlos en hex acá: una
 // sola fuente de verdad entre el CSS y el canvas.
+import { hueDeOrg, inicialesDeOrg } from './formatoUi.js';
+
 const ANCHO = 1200;
 const ALTO = 630;
 
@@ -104,19 +106,34 @@ export async function dibujarTarjeta(state, modulos) {
   // --- El veredicto, la pieza central ---
   ctx.fillStyle = acento;
   ctx.font = '700 46px "Barlow Condensed", sans-serif';
-  envolver(ctx, t.veredicto, 60, 220, ANCHO - 120, 56, 3);
+  envolver(ctx, t.veredicto, 60, 200, ANCHO - 120, 56, 3);
 
-  // --- Los totales ---
+  // --- Totales como celdas ---
   const totales = t.totales;
-  const franja = [
-    `${totales.anios} años`, `${totales.splits} splits`, `${totales.titulos} título(s)`,
-    totales.internacionales > 0 ? `${totales.internacionales} internacional(es)` : null,
-    `nivel máx ${totales.nivelMax}`,
-    totales.valorMaxUSD > 0 ? `valor máx ${modulos.formato.plata(totales.valorMaxUSD)}` : null
-  ].filter(Boolean).join('   ·   ');
-  ctx.fillStyle = leerToken('--ink-dim');
-  ctx.font = '400 22px Inter, sans-serif';
-  ctx.fillText(franja, 60, ALTO - 70);
+  const celdas = [
+    { k: 'AÑOS', v: String(totales.anios) },
+    { k: 'SPLITS', v: String(totales.splits) },
+    { k: 'TÍTULOS', v: String(totales.titulos) },
+    totales.internacionales > 0 ? { k: 'INTL', v: String(totales.internacionales) } : null,
+    { k: 'NIVEL', v: String(totales.nivelMax) },
+    totales.valorMaxUSD > 0 ? { k: 'VALOR', v: modulos.formato.plata(totales.valorMaxUSD) } : null
+  ].filter(Boolean);
+  const celdaAncho = Math.min(160, (ANCHO - 120) / celdas.length);
+  celdas.forEach((c, i) => {
+    const x = 60 + i * celdaAncho;
+    ctx.fillStyle = leerToken('--ink-mute');
+    ctx.font = '600 12px "Barlow Condensed", sans-serif';
+    ctx.fillText(c.k, x, 470);
+    ctx.fillStyle = leerToken('--ink');
+    ctx.font = '700 28px "Barlow Condensed", sans-serif';
+    ctx.fillText(c.v, x, 504);
+  });
+
+  // --- Historia: chips de org ---
+  const historia = (t.historia ?? []).slice(0, 6);
+  historia.forEach((fila, i) => {
+    dibujarOrgChip(ctx, fila.org, 60 + i * 44, 530, 32);
+  });
 
   // --- Pie: la seed, para que el link y la imagen cuenten la misma historia ---
   ctx.fillStyle = leerToken('--ink-mute');
@@ -124,6 +141,29 @@ export async function dibujarTarjeta(state, modulos) {
   ctx.fillText(`seed ${state.seed}`, 60, ALTO - 40);
 
   return canvas;
+}
+
+function dibujarOrgChip(ctx, nombre, x, y, size) {
+  const hue = hueDeOrg(nombre);
+  const r = 3;
+  ctx.fillStyle = `hsl(${hue} 38% 16%)`;
+  ctx.strokeStyle = `hsl(${hue} 52% 42%)`;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  if (typeof ctx.roundRect === 'function') {
+    ctx.roundRect(x, y, size, size, r);
+  } else {
+    ctx.rect(x, y, size, size);
+  }
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = `hsl(${hue} 72% 78%)`;
+  ctx.font = '700 11px "Barlow Condensed", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(inicialesDeOrg(nombre), x + size / 2, y + size / 2 + 0.5);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
 }
 
 function aBlob(canvas) {
