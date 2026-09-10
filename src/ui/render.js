@@ -15,4 +15,5 @@ export { renderCalendario } from './paneles/calendario.js';
 export { renderPlantilla } from './paneles/plantilla.js';
 export { renderMeta } from './paneles/meta.js';
 export { renderGeneracion } from './paneles/generacion.js';
+export { renderTopMundial } from './paneles/topMundial.js';
 export { crearTarjetaResultado, renderSerieContexto } from './components/serie.js';

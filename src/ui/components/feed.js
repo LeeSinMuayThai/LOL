@@ -12,15 +12,72 @@
 // `replaceChildren`.
 import METAS from '../../data/metas.json' with { type: 'json' };
 import { acentoDeLog, rotuloDeDecision } from '../formatoUi.js';
+import { crearOrgChip } from './orgChip.js';
+import { etiquetaRol } from '../../data/roles.js';
 import { crearTarjetaResultado } from './serie.js';
 
+// El reveal del Top 20 al cierre de temporada (fase 9Wc). El log `top_mundial`
+// que trae la lista entera (`entry.top20`) deja de ser una línea: se abre en
+// una tabla con tu fila resaltada, o con "quedaste #23" al pie si te quedaste
+// afuera pero cerca. El Top 5 del riel es el norte permanente; esto es la foto
+// anual completa — "porque quizás estuviste cerca".
+function crearRevealTop20(entry) {
+  const item = document.createElement('div');
+  item.className = 'log-item log-item--top-mundial';
+  item.dataset.type = 'top_mundial';
+  item.dataset.acento = 'gold';
+
+  const titulo = document.createElement('div');
+  titulo.className = 'log-titulo';
+  titulo.textContent = 'Los mejores del mundo';
+  item.appendChild(titulo);
+
+  const sub = document.createElement('div');
+  sub.className = 'reveal-top20-sub';
+  sub.textContent = entry.message;
+  item.appendChild(sub);
+
+  const lista = document.createElement('div');
+  lista.className = 'reveal-top20-lista';
+  for (const fila of entry.top20) {
+    const filaEl = document.createElement('div');
+    filaEl.className = ['reveal-top20-fila',
+      fila.esJugador && 'reveal-top20-fila--propia',
+      fila.rivalDeGeneracion && 'reveal-top20-fila--rival'
+    ].filter(Boolean).join(' ');
+
+    const puesto = document.createElement('span');
+    puesto.className = 'reveal-top20-puesto';
+    puesto.textContent = `#${fila.pos}`;
+
+    const handle = document.createElement('span');
+    handle.className = 'reveal-top20-handle';
+    handle.append(crearOrgChip(fila.org, { size: 16 }), document.createTextNode(fila.handle));
+
+    const detalle = document.createElement('span');
+    detalle.className = 'reveal-top20-detalle';
+    detalle.textContent = [fila.rol ? etiquetaRol(fila.rol) : '', fila.liga].filter(Boolean).join(' · ');
+
+    filaEl.append(puesto, handle, detalle);
+    lista.appendChild(filaEl);
+  }
+  item.appendChild(lista);
+
+  return item;
+}
+
 export function crearLogItem(entry) {
+  if (entry.type === 'top_mundial' && Array.isArray(entry.top20)) {
+    return crearRevealTop20(entry);
+  }
+
   const item = document.createElement('div');
   item.className = 'log-item' + (entry.tecnico ? ' log-item--tecnico' : '');
   item.dataset.type = entry.type ?? '';
   item.dataset.acento = acentoDeLog(entry.type);
   if (entry.type === 'meta') item.classList.add('log-item--breaking');
   if (entry.type === 'escena') item.classList.add('log-item--escena');
+  if (entry.type === 'top_mundial') item.classList.add('log-item--top-mundial');
 
   if (entry.type === 'meta') {
     const pestana = document.createElement('span');

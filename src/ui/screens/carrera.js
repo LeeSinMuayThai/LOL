@@ -7,6 +7,7 @@ import { renderCalendario } from '../paneles/calendario.js';
 import { renderPlantilla } from '../paneles/plantilla.js';
 import { renderMeta } from '../paneles/meta.js';
 import { renderGeneracion } from '../paneles/generacion.js';
+import { renderTopMundial } from '../paneles/topMundial.js';
 
 // Orquesta la pantalla de carrera: la ficha (siempre visible, en todas las
 // pantallas — PLAN.md §8.5) y el feed. La decisión pendiente, si hay una, se
@@ -18,17 +19,19 @@ export function renderCarrera(elements, state, modulos) {
   renderFeed(elements.logList, state);
 }
 
-// El riel derecho (fase T5): cinco paneles de contexto, todos con datos que
-// el motor ya calcula — cada uno se oculta solo si no tiene nada real que
+// El riel derecho (fase T5): paneles de contexto, todos con datos que el
+// motor ya calcula — cada uno se oculta solo si no tiene nada real que
 // mostrar (regla de la fase: "un panel vacío es peor que un panel
 // ausente"). Se llama junto a `renderFicha`, no adentro: la ficha vive en
-// el riel izquierdo y no depende de esto para nada.
+// el riel izquierdo y no depende de esto para nada. El Top 5 mundial (9Wc)
+// es el único que se ve siempre: es el norte al que se apunta.
 export function renderRielContexto(elements, state, modulos) {
   renderTabla(elements.panelTabla, state);
   renderCalendario(elements.panelCalendario, state);
   renderPlantilla(elements.panelPlantilla, state, modulos);
   renderMeta(elements.panelMeta, state);
   renderGeneracion(elements.panelGeneracion, state, modulos);
+  renderTopMundial(elements.panelTopMundial, state, modulos);
 }
 
 export { renderLowerThird };

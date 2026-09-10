@@ -1268,6 +1268,12 @@ export const BALANCE = {
     // determinista `hashCadena(seed + handle + anio)`, en ± puntos de nivel.
     // Constante dentro de un año, se re-tira en el borde de año — así el corte
     // #20 se mueve sin que nadie tire un dado.
-    ruidoSpread: 5
+    ruidoSpread: 5,
+    // Fase 9Wc: cuánto más allá del corte #20 sigue contando como "estuviste
+    // cerca". Si quedaste rankeable pero afuera y a menos de `margenReveal`
+    // puestos, el reveal de cierre dice "quedaste #23" en vez de sólo "no
+    // entraste" — el "porque quizás estuviste cerca" del pedido de §9W. Es un
+    // umbral de presentación: no toca el ranking ni ninguna distribución.
+    margenReveal: 10
   }
 };

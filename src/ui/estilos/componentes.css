@@ -198,6 +198,52 @@ h1::before {
 .log-item--breaking .log-titulo { color: var(--cat-parche); }
 .log-item--escena { border-left-color: var(--gold); }
 .log-item--escena .log-titulo { color: var(--gold); }
+
+/* --- El reveal del Top 20 al cierre de temporada (fase 9Wc) ---------------
+   Un log `top_mundial` con la lista entera (`entry.top20`) se abre en tabla;
+   el resto de los `top_mundial` (entrás / te caés / #1) quedan como línea,
+   con el mismo acento oro que la escena. */
+.log-item--top-mundial { border-left-color: var(--gold); }
+.log-item--top-mundial .log-titulo { color: var(--gold); }
+.reveal-top20-sub { margin-bottom: var(--s-3); color: var(--ink-dim); }
+.reveal-top20-lista {
+  display: grid;
+  gap: 1px;
+  font-size: var(--fs-1);
+  font-variant-numeric: tabular-nums;
+}
+.reveal-top20-fila {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  gap: var(--s-2);
+  align-items: center;
+  padding: 2px var(--s-1);
+  color: var(--ink-dim);
+}
+.reveal-top20-fila--propia {
+  background: var(--gold-fill);
+  color: var(--ink);
+  font-weight: 700;
+  border-radius: var(--r-sharp);
+}
+.reveal-top20-fila--rival { color: var(--ink); }
+.reveal-top20-puesto { color: var(--ink-mute); }
+.reveal-top20-handle {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reveal-top20-detalle {
+  color: var(--ink-mute);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .log-pestana {
   display: inline-block;
   margin-bottom: var(--s-1);

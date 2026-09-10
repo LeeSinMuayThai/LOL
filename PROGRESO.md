@@ -33,6 +33,48 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-10 — Fase 9Wc: la pantalla (regla de proceso 12)
+
+Tercer commit de **9W** (PLAN.md §9W.2). 9Wa metió el ranking en el estado, 9Wb lo enganchó a lo
+que el jugador siente en el mercado / el legado / la ficha — pero **nada de eso se veía**. Regla de
+proceso 12: un sistema que el jugador no puede ver no está terminado.
+
+**Panel Top 5** (`src/ui/paneles/topMundial.js`, nuevo, calcado de `paneles/generacion.js`): sexto
+panel del riel derecho — `<div id="panelTopMundial">` en `index.html`, una línea en `render.js` y
+otra en `renderRielContexto` (`screens/carrera.js`). Fuente: `mundo.topMundial` (que
+`systems/topMundial.js` reescribe cada split sin `rng`) + `flags.rankMundialActual` +
+`career.registro.picos.rankMundial`.
+- Se ve **siempre**, también en amateur y tier 3 con handles que no conocés — es el norte al que se
+  apunta, no un tablero de tu liga.
+- Tu fila resaltada (`--propia`) si estás en el Top 5; una fila al pie (`--pie`) con tu puesto
+  exacto si estás rankeado pero afuera del 5 visible; una leyenda "Tu pico: #N" si ya no estás pero
+  alguna vez lo tocaste (el gancho del que la fase 10 cuelga el retiro). Filas de rivales de
+  generación con `--rival`.
+
+**Reveal del Top 20** al cierre de temporada (`src/ui/components/feed.js`): el log `top_mundial` que
+ya traía la lista entera (`entry.top20`, emitido desde 9Wa/9Wb) deja de ser una línea —
+`crearRevealTop20` lo abre en una tabla de 20 filas con tu fila resaltada. El resto de los
+`top_mundial` (entrás / te caés / sos #1) quedan como línea con acento oro (`log-item--top-mundial`,
+`ACENTO_LOG.top_mundial = 'gold'` en `formatoUi.js`).
+
+**"Quedaste #23 — cerca"** (el *"porque quizás estuviste cerca"* del pedido de §9W):
+`systems/topMundial.js` ahora emite `rankJugadorGlobal` en el payload del reveal — la posición del
+jugador en la población entera (`rankearPoblacion`, ya computada), pero **sólo** cuando quedaste
+rankeable, afuera del Top 20 y a menos de `BALANCE.topMundial.margenReveal` (10) puestos del corte.
+Es un dato de presentación: `poblacion.findIndex` es puro, **cero `rng`** — `simulate.js 150 60
+todas` da agregados **byte-idénticos** pre/post 9Wc.
+
+**CSS** (`estilos/pantallas.css` para el panel, `estilos/componentes.css` para el reveal): sólo
+tokens existentes, calcado del lenguaje de `.tabla-*` / `.generacion-*`.
+
+**Verificación**: `validate.js` completo **153/153 en verde** (sin checks nuevos — 9Wc es pantalla;
+los de rotación / entrada del jugador son de 9Wd, rojo-primero allá). Smoke con stub de DOM:
+`renderTopMundial` + `crearRevealTop20` sin errores sobre 10 seeds × 240 splits, más las ramas
+forzadas (jugador #4 dentro del Top 5 / #12 fila al pie / con-pico sin estar / reveal #3 / "quedaste
+#23"). `simulate.js 1500 60 todas` **0 crashes, 0 varadas**. Cero-stream verificado byte a byte.
+Pendiente: jugar a mano en el navegador (el panel se ve siempre; el reveal necesita una carrera que
+llegue a primera y cierre un año en el Top 20).
+
 ### 2026-09-10 — Fase 9Wb: entrar cuesta y se siente (los ganchos)
 
 Segundo commit de **9W** (PLAN.md §9W.2). 9Wa dejó el ranking existiendo en el estado sin que

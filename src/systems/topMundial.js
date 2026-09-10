@@ -59,11 +59,14 @@ function lineaMovimiento(rankActual, rankAnterior, anio) {
   return null;
 }
 
-function lineaReveal(top20, rankActual) {
+function lineaReveal(top20, rankActual, rankGlobal) {
   if (rankActual !== null) {
     return `Top 20 del mundo: estás #${rankActual}.`;
   }
   const primeros = top20.slice(0, 3).map((fila) => fila.handle).join(', ');
+  if (rankGlobal !== null) {
+    return `Top 20 del mundo: lo encabezan ${primeros}. Quedaste #${rankGlobal} — cerca.`;
+  }
   return `Top 20 del mundo: lo encabezan ${primeros}. No entraste este año.`;
 }
 
@@ -89,6 +92,18 @@ export function aplicar(state, rng) { // eslint-disable-line no-unused-vars
   const rankMundialActual = esRankeable(state) && filaJugador
     ? topMundial.indexOf(filaJugador) + 1
     : null;
+
+  // La posición del jugador en la población entera, no sólo en el corte. Sólo
+  // interesa para el reveal de cierre y sólo cuando quedaste RANKEABLE pero
+  // afuera y CERCA (`margenReveal`): es el "quedaste #23" de §9W. Se lee de
+  // `poblacion`, ya ordenada — cero `rng`.
+  let rankGlobalJugador = null;
+  if (esRankeable(state) && rankMundialActual === null) {
+    const pos = poblacion.findIndex((entrada) => entrada.esJugador) + 1;
+    if (pos > 0 && pos <= tamano + BALANCE.topMundial.margenReveal) {
+      rankGlobalJugador = pos;
+    }
+  }
 
   // Fase 9Wb (D8/D40): `mundo.rivales[].puntaje` deja de ser 0 muerto y pasa a
   // ser el MEJOR (menor) rank que el rival tocó dentro del Top 20. `0` = nunca
@@ -142,10 +157,11 @@ export function aplicar(state, rng) { // eslint-disable-line no-unused-vars
     if (movimiento) {
       logs.push(crearLog('top_mundial', movimiento, { tecnico: false }));
     }
-    logs.push(crearLog('top_mundial', lineaReveal(topMundial, rankMundialActual), {
+    logs.push(crearLog('top_mundial', lineaReveal(topMundial, rankMundialActual, rankGlobalJugador), {
       tecnico: false,
       top20: topMundial.map((entrada, i) => filaPublica(entrada, i + 1)),
-      rankJugador: rankMundialActual
+      rankJugador: rankMundialActual,
+      rankJugadorGlobal: rankGlobalJugador
     }));
 
     const { entraron, salieron } = diffDeRanking(previoAnual, topMundial);

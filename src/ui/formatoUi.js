@@ -154,6 +154,7 @@ const ACENTO_LOG = {
   temporada: 'up',
   meta: 'parche',
   escena: 'gold',
+  top_mundial: 'gold',
   mercado: 'mercado',
   amateur: 'familia',
   event: 'live',
