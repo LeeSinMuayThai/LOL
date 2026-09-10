@@ -25,6 +25,18 @@ export function castigoEtario(edad) {
   return (1 - sesgoEtario(edad)) * BALANCE.demanda.castigoEtarioNivel;
 }
 
+// Fase 9Wb (§9W.4): estar en el Top 20 del mundo mueve tu valor de mercado,
+// escalado por el rank — pleno para el #1, casi nada para el #20. `null`
+// (fuera de la lista) no aporta. Espeja `valorSignatureBonus`.
+export function bonoTopMundial(state) {
+  const rank = state.flags?.rankMundialActual;
+  const { tamano } = BALANCE.topMundial;
+  if (rank == null || rank > tamano) {
+    return 0;
+  }
+  return BALANCE.mercado.valorTopMundialBonus * ((tamano - rank + 1) / tamano);
+}
+
 // Splits vividos en una región (CONCEPTO §12: 12 splits/4 años = "residencia").
 // Deriva de `career.registro.porOrg`, que la fase 8 ya acumula — sin agregar
 // estado nuevo (evita otro punto T1/T4). Tier 3 (`fila.liga === null`)
@@ -65,7 +77,8 @@ export function valorDeMercado(state) {
     + (jerarquia / 100) * mercado.valorJerarquiaPeso
     + (state.player.stats.hype / 100) * mercado.valorHypePeso
     + (residente ? mercado.valorResidenciaBonus : 0)
-    + (tieneSignature ? mercado.valorSignatureBonus : 0);
+    + (tieneSignature ? mercado.valorSignatureBonus : 0)
+    + bonoTopMundial(state);
 
   return Math.round(liga.salario.medianaUSD * factor * sesgoEtario(state.age));
 }

@@ -1,0 +1,120 @@
+[
+  {
+    "id": "portada_del_ano",
+    "category": "drama_prensa",
+    "title": "Te ponen en la lista",
+    "description": "Sale la lista de los mejores del mundo del año y estás ahí, con foto y todo. El grupo de la organización explota, tu madre te manda una captura, y de golpe cada partido tuyo es 'a ver si lo mantiene'. La atención no es gratis.",
+    "weight": 5,
+    "cooldown": 8,
+    "contexto": {
+      "marcas": ["top_mundial"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "bancar_el_foco",
+        "label": "Salir a bancar el puesto en público",
+        "descripcion": "Hacés las notas, contestás en redes, te ponés la mochila de ser referencia. Si rendís, la ola te lleva; si pinchás, el mismo micrófono se te da vuelta.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La banca la escena y vos respondés en el Rift. Dejás de ser 'uno de la lista' y pasás a ser una cara del split.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 4, "max": 8, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La semana siguiente jugás tenso, midiendo cada movimiento como si te calificaran en vivo. Rinde el ruido, no vos.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cabeza_abajo",
+        "label": "Cabeza abajo y a entrenar",
+        "descripcion": "Agradecés la lista en una línea y desaparecés del ruido. La prensa se aburre, pero el vestuario ve que no se te subió.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Nadie te escucha hablar del tema y en la práctica estás igual de enfocado que siempre. El respeto interno sube más que cualquier portada.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Al esquivar la ola también esquivás sponsors y prensa que hubieran empujado tu nombre afuera de la región. La lista pasa sin que la aproveches.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_pibe_que_te_quiere_el_puesto",
+    "category": "identidad",
+    "title": "El que viene por tu silla",
+    "description": "En la liga de tu región hay un pibe de 17 al que ya le dicen 'el próximo vos'. Las cuentas de highlights lo comparan con tu año de debut. Te lo cruzás en un scrim y te mira como si el puesto ya fuera suyo.",
+    "weight": 4,
+    "cooldown": 10,
+    "contexto": {
+      "marcas": ["top_mundial"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "tirarle_la_soga",
+        "label": "Darle un par de consejos",
+        "descripcion": "Le hablás después del scrim, le marcás dos cosas de su lane. No te cuesta nada y algún día jugás en el mismo lado.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El pibe lo agradece en una entrevista y te nombra como referencia. Ser el que forma, no solo el que gana, te acomoda la cabeza.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Le pasás lo que sabés y a los tres meses te lo ponen enfrente en un Bo5, jugando exactamente lo que le mostraste. Nadie te lo agradece dos veces.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "usarlo_de_combustible",
+        "label": "Usarlo de combustible",
+        "descripcion": "No le decís una palabra. Te guardás la comparación para la próxima vez que necesites una razón para levantarte a scrimear a las nueve.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Cada highlight suyo te empuja una hora más de práctica. Llegás al split siguiente con una marcha que no tenías.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te obsesionás con un pibe que todavía no jugó un playoff. Gastás cabeza en compararte para abajo en vez de mirar a los que tenés al lado en la lista.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

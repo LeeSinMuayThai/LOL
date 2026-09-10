@@ -76,6 +76,9 @@ export const MARCAS = [
   'nomade',
   // Fase 9Md (D16): bajaste de tier 1 hace poco.
   'descenso',
+  // Fase 9Wb (§9W.4): estás en el Top 20 del mundo AHORA / sos el #1.
+  'top_mundial',
+  'mejor_del_mundo',
   // Pendientes: los activan los pasos 10 a 12.
   'espera_edad_minima',
   'lesion_cronica',
@@ -132,6 +135,20 @@ export const MOMENTOS = [
   { id: 'retirado', prioridad: 80, pendiente: 'paso12',
     label: 'Retirado',
     patron: { etapa: ['retirado'] } },
+
+  // --- Fase 9Wb (§9W.4): la cima ---
+  // `top_del_mundo` aparece en ~24 de 300 carreras (medido) — cobertura de
+  // sobra. `el_mejor_del_mundo` (ser el #1) sale 1 vez en 300×45 con las
+  // constantes por criterio de 9Wa: queda `pendiente` hasta que 9Wd recalibre
+  // y lo haga alcanzable de verdad. La marca y el momento ya existen para que
+  // el catálogo de la fase 13 tenga dónde colgarse.
+  { id: 'el_mejor_del_mundo', prioridad: 62, pendiente: 'paso9Wd',
+    label: 'El mejor del mundo',
+    patron: { marcas: ['mejor_del_mundo'] } },
+
+  { id: 'top_del_mundo', prioridad: 58,
+    label: 'De los mejores del mundo',
+    patron: { marcas: ['top_mundial'] } },
 
   // --- Etapa amateur ---
   { id: 'amateur_sin_pc', prioridad: 70,

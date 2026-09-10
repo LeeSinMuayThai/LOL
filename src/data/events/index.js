@@ -29,6 +29,10 @@ import partidoPresion from './partido/presion.json' with { type: 'json' };
 import partidoClasico from './partido/clasico.json' with { type: 'json' };
 import partidoDentroDelMapa from './partido/dentro_del_mapa.json' with { type: 'json' };
 import partidoPostpartido from './partido/postpartido.json' with { type: 'json' };
+// Fase 9Wb (§9W.4 gancho 3): 2 eventos semilla para la marca `top_mundial`.
+// El catálogo real de la cima (sponsor bomba, "defendé el #1", la prensa que
+// te destrona, el archirrival que te pasa) es fase 13.
+import topMundial from './top_mundial.json' with { type: 'json' };
 
 export const TODOS_LOS_EVENTOS = [
   ...soloqPrecarrera,
@@ -51,5 +55,6 @@ export const TODOS_LOS_EVENTOS = [
   ...partidoPresion,
   ...partidoClasico,
   ...partidoDentroDelMapa,
-  ...partidoPostpartido
+  ...partidoPostpartido,
+  ...topMundial
 ];

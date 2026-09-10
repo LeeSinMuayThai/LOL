@@ -33,6 +33,49 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-10 — Fase 9Wb: entrar cuesta y se siente (los ganchos)
+
+Segundo commit de **9W** (PLAN.md §9W.2). 9Wa dejó el ranking existiendo en el estado sin que
+hiciera nada; 9Wb lo engancha a lo que el jugador siente. Los seis ganchos de §9W.4:
+
+1. **Valor de mercado** (`core/valorMercado.js`): `bonoTopMundial(state)` suma al `factor` de
+   `valorDeMercado`, escalado por rank — pleno para el #1, ~0,05× para el #20
+   (`valorTopMundialBonus 0,40 · (tamano − rank + 1) / tamano`). Espeja `valorSignatureBonus`.
+2. **Piso de franquicia** (`systems/mercado.js`): estar en el Top 20 hace `claramenteArriba` (junto
+   a la brecha de nivel de 9R0e) — el mercado siempre le tiene asiento a un top 20, y `cupoEtario`
+   nunca le muestra la mano vacía.
+3. **Contenido** (`data/contextos.js` + `core/contexto.js`): marcas `top_mundial` (rank ≤ 20) /
+   `mejor_del_mundo` (rank === 1), prendidas desde `flags.rankMundialActual`. Momento
+   `top_del_mundo` (prioridad 58, **activo** — sale en ~24 de 300 carreras) y `el_mejor_del_mundo`
+   (prioridad 62, **`pendiente: 'paso9Wd'`** — ser el #1 sale 1 vez en 300×45 con las constantes
+   por criterio; 9Wd lo activa). 2 eventos semilla en `data/events/top_mundial.json` (`portada_del_ano`,
+   `el_pibe_que_te_quiere_el_puesto`) — el catálogo real de la cima es fase 13.
+4. **Tarjeta de legado** (`core/legado.js`): `totales.rankMundialMax` / `totales.splitsEnTopMundial`,
+   y tres ramas nuevas en `elegirArquetipo` **antes** de los títulos: #1 → "El mejor del mundo
+   (año 20XX)" (el año sale del momento), ≤ 5 → "De los mejores del mundo: Nº3 en su pico", y
+   tocaste el Top 20 sin trofeos → "El que tocó el Top 20 del mundo".
+5. **Ficha** (`core/ficha.js`): `fichaCompleta` expone `rankMundial` / `rankMundialPico`;
+   `dueloDeGeneracion` (hasta ahora siempre `null`) devuelve
+   `{ rivalHandle, rivalRol, rivalRank, tuRank, vasGanando }` — el rival de tu generación que más
+   lejos llegó en el ranking contra tu mejor rank. `mundo.archirrival` (fase 11) sigue teniendo
+   prioridad.
+6. **Rivales vivos** (D8/D40): `mundo.rivales[].puntaje` deja de ser `0` muerto y pasa a ser el
+   mejor rank que el rival tocó dentro del Top 20 (`systems/topMundial.js` lo mantiene cada split).
+
+**El ranking sigue siendo cero-RNG** (`topMundial.js` / `escena.js` no tocan `rng` — check verde).
+**Pero 9Wb corre el stream levemente**: el piso de franquicia (gancho 2) genera una oferta forzada
+para un top 20 en silencio de mercado que antes no existía, y eso consume `rng`. Medido: `simulate.js
+200 60 todas` mueve 6 promedios agregados ~0,05-0,13 (≈1-3 carreras de 1000). Es un cambio de
+juego, no de la mecánica del ranking — la familia D35, no una violación de la regla de oro. §9W.1
+actualizado: la regla de oro es sobre el CÓMPUTO del ranking, no sobre que la fase entera no toque
+el stream.
+
+**Verificación**: `validate.js` completo **153/153 en verde** (sin checks nuevos en 9Wb — los de
+9Wa cubren la mecánica, los de rotación/entrada son de 9Wd; el evento nuevo pasa el esquema, el
+arquetipo nuevo no rompe el tope 25% de CONCEPTO §11). `simulate.js 1500 60 todas` **0 crashes, 0
+varadas, ~155s**; el reparto de tiers no se movió (76,7% / 41,4% / 70,8%). Determinismo: check 13
+en verde.
+
 ### 2026-09-10 — Fase 9Wa: el mundo tiene ranking (estructural)
 
 Primer commit de **9W** (PLAN.md §9W.2), la única fase entre 9M y 10. El juego tenía el mundo de

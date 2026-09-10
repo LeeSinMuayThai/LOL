@@ -173,10 +173,33 @@ export function estadoInternacional(state) {
   return state.career.posicion <= cupos + 2 ? 'en_carpeta' : 'sin_chance';
 }
 
-// El duelo contra el archirrival: la fase 11 (`mundo.archirrival`) lo llena.
-// Hasta entonces no hay nada que mostrar.
+// El duelo contra el archirrival: la fase 11 (`mundo.archirrival`) lo llena y
+// tiene prioridad. Hasta entonces, fase 9Wb (§9W.4 gancho 6): el duelo es
+// contra el rival de TU generación que más lejos llegó en el ranking mundial
+// — su mejor rank (`rival.puntaje`, que `systems/topMundial.js` mantiene vivo;
+// `0` = nunca tocó el Top 20) contra tu mejor rank (`picos.rankMundial`). Si
+// ningún rival entró nunca y vos tampoco, no hay nada que mostrar.
 export function dueloDeGeneracion(state) {
-  return state.mundo.archirrival ?? null;
+  if (state.mundo.archirrival) {
+    return state.mundo.archirrival;
+  }
+  const rivales = state.mundo.rivales ?? [];
+  const mejorRival = rivales
+    .filter((rival) => (rival.puntaje ?? 0) > 0)
+    .sort((a, b) => a.puntaje - b.puntaje)[0] ?? null;
+  const tuRank = state.career.registro?.picos?.rankMundial ?? 0;
+  if (!mejorRival && tuRank === 0) {
+    return null;
+  }
+  return {
+    rivalHandle: mejorRival?.handle ?? null,
+    rivalRol: mejorRival?.role ?? null,
+    rivalRank: mejorRival?.puntaje ?? null,
+    tuRank: tuRank > 0 ? tuRank : null,
+    // `true` si llegaste igual o más arriba que el mejor rival (o si vos
+    // tocaste el Top 20 y ninguno de ellos).
+    vasGanando: tuRank > 0 && (!mejorRival || tuRank <= mejorRival.puntaje)
+  };
 }
 
 // El objeto único que consume `src/ui/components/ficha.js`.
@@ -191,6 +214,10 @@ export function fichaCompleta(state) {
     mentalidad: bandaDeMentalidad(state),
     hype: bandaDeHype(state),
     estadoInternacional: estadoInternacional(state),
-    duelo: dueloDeGeneracion(state)
+    duelo: dueloDeGeneracion(state),
+    // Fase 9Wb (§9W.4 gancho 5): el rank mundial actual (`null` fuera del Top
+    // 20) y el mejor de la vida (`0` = nunca). La pantalla (9Wc) los pinta.
+    rankMundial: state.flags?.rankMundialActual ?? null,
+    rankMundialPico: state.career.registro?.picos?.rankMundial ?? 0
   };
 }

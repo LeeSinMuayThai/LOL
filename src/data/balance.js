@@ -969,6 +969,10 @@ export const BALANCE = {
     valorResidenciaSplits: 12,
     valorResidenciaBonus: 0.15,
     valorSignatureBonus: 0.20,
+    // Fase 9Wb: estar en el Top 20 del mundo (§9W.4). Escala con el rank —
+    // pleno para el #1, ~0,05× para el #20: `bonus · (tamano − rank + 1) / tamano`.
+    // Espeja `valorSignatureBonus`. Por criterio; retune en 9Wd.
+    valorTopMundialBonus: 0.40,
 
     // --- Fase 9Me: negociar, no aceptar (PLAN.md §9M.6). Tres acciones DENTRO
     // de la misma decisión de mercado (trampa T9: la interrupción no se

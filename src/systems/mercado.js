@@ -228,8 +228,13 @@ function generarOfertas(state, rng) {
   // 9R0e: si sos claramente una franquicia para TU liga y aun así ningún
   // asiento se abrió, el club más débil de tu liga hace lugar — el silencio no
   // es para una franquicia. (Sin liga —recién ascendido de tier 3— no aplica.)
-  const claramenteArriba = ligaActual
-    && nivelDelJugador(state) - (ligaActual.prestigio ?? m.nivelLigaPorDefecto) >= m.brechaFranquicia;
+  // Fase 9Wb (§9W.4): estar en el Top 20 del mundo TAMBIÉN te hace franquicia
+  // — el mercado siempre le tiene asiento a un top 20.
+  const enTopMundial = state.flags.rankMundialActual != null
+    && state.flags.rankMundialActual <= BALANCE.topMundial.tamano;
+  const claramenteArriba = Boolean(ligaActual)
+    && (nivelDelJugador(state) - (ligaActual.prestigio ?? m.nivelLigaPorDefecto) >= m.brechaFranquicia
+      || enTopMundial);
   if (claramenteArriba && posibles.length === 0) {
     // El club más débil de tu liga que PUEDE ficharte (respeta las reglas duras
     // — cupo de imports incluido, 9Md). Se prueba de la más débil hacia arriba.

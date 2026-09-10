@@ -57,7 +57,8 @@ function ligaInsignia(registro) {
 function elegirArquetipo(datos) {
   const {
     fin, edad, intBuenos, intTotales, internacional,
-    titulosT1, titulosTotales, orgs, arraigoMax, splitsT1, podios, insignia
+    titulosT1, titulosTotales, orgs, arraigoMax, splitsT1, podios, insignia,
+    rankPico, anioMejorDelMundo
   } = datos;
 
   if (fin === 'no_llego') {
@@ -68,6 +69,15 @@ function elegirArquetipo(datos) {
   }
   if (fin === 'burnout') {
     return { frase: `El que se bajó a los ${edad}`, esExito: false };
+  }
+
+  // Fase 9Wb (§9W.4): haber sido de los mejores del mundo es el dato más
+  // evocador de la tarjeta — va antes que los títulos. Ser el #1 gana a todo.
+  if (rankPico === 1) {
+    return { frase: `El mejor del mundo${anioMejorDelMundo ? ` (${anioMejorDelMundo})` : ''}`, esExito: true };
+  }
+  if (rankPico >= 2 && rankPico <= 5) {
+    return { frase: `De los mejores del mundo: Nº${rankPico} en su pico`, esExito: true };
   }
 
   if (intBuenos >= 3) {
@@ -90,6 +100,11 @@ function elegirArquetipo(datos) {
   }
   if (titulosT1 >= 1) {
     return { frase: `Campeón de ${insignia.liga ?? 'primera'}`, esExito: true };
+  }
+  // Fase 9Wb: tocaste el Top 20 del mundo sin levantar un trofeo — igual
+  // estuviste entre los 20 mejores del planeta.
+  if (rankPico > 0 && rankPico <= BALANCE.topMundial.tamano && titulosTotales === 0 && intTotales === 0) {
+    return { frase: `El que tocó el Top 20 del mundo (Nº${rankPico})`, esExito: true };
   }
   if (podios >= 4 && titulosTotales === 0) {
     return { frase: 'El eterno cuarto puesto', esExito: false };
@@ -128,6 +143,8 @@ export function componerLegado(state) {
   const orgPrincipal = orgMasImportante(r);
   const insignia = ligaInsignia(r);
 
+  const momentoMejorDelMundo = r.momentos.find((m) => m.tipo === 'el_mejor_del_mundo') ?? null;
+
   const { frase, esExito } = elegirArquetipo({
     fin,
     edad: state.age,
@@ -140,7 +157,9 @@ export function componerLegado(state) {
     arraigoMax: Math.max(0, ...r.porOrg.map((fila) => fila.arraigoMaximo ?? 0)),
     splitsT1: splitsDeTier(r, 1),
     podios: state.career.podios,
-    insignia
+    insignia,
+    rankPico: r.picos.rankMundial ?? 0,
+    anioMejorDelMundo: momentoMejorDelMundo?.anio ?? null
   });
 
   return {
@@ -155,7 +174,11 @@ export function componerLegado(state) {
       internacionales: r.internacionales.length,
       nivelMax: Math.round(r.picos.nivel),
       valorMaxUSD: r.picos.valorMercadoUSD,
-      hypeMax: Math.round(r.picos.hype)
+      hypeMax: Math.round(r.picos.hype),
+      // Fase 9Wb: el mejor rank mundial de la vida (0 = nunca entró al Top 20)
+      // y cuántos cierres de temporada terminó dentro.
+      rankMundialMax: r.picos.rankMundial ?? 0,
+      splitsEnTopMundial: r.splitsEnTopMundial ?? 0
     },
     // La UI reusa `filaHistoria` de `ui/components/ficha.js` sobre esto.
     historia: r.porOrg

@@ -13,8 +13,9 @@
 
 import { crearLog } from '../core/log.js';
 import { registrarMomento, registrarPicoRank } from '../core/registro.js';
-import { rankearMundo, diffDeRanking } from '../core/topMundial.js';
+import { rankearPoblacion, diffDeRanking } from '../core/topMundial.js';
 import { esCierreDeEdad } from './edadCierre.js';
+import { BALANCE } from '../data/balance.js';
 
 export const id = 'topMundial';
 
@@ -71,8 +72,17 @@ function lineaReveal(top20, rankActual) {
 // `Fase 9W: el ranking es determinista y no consume RNG` le pasa un rng que
 // revienta si se lo llama.
 export function aplicar(state, rng) { // eslint-disable-line no-unused-vars
+  const { tamano } = BALANCE.topMundial;
+  const anioActual = state.calendario.anio;
+
+  // Una sola pasada: la población entera puntuada y ordenada. El Top 20 es el
+  // corte; los ranks globales alimentan `mundo.rivales[].puntaje`.
+  const poblacion = rankearPoblacion(state);
   const previo = state.mundo.topMundial ?? [];
-  const topMundial = rankearMundo(state, previo);
+  const entroPorHandle = new Map(previo.map((entrada) => [entrada.handle, entrada.entroAnio]));
+  const topMundial = poblacion.slice(0, tamano).map((entrada) => ({
+    ...entrada, entroAnio: entroPorHandle.get(entrada.handle) ?? anioActual
+  }));
   const mejorDelMundo = topMundial[0] ?? null;
 
   const filaJugador = topMundial.find((entrada) => entrada.esJugador) ?? null;
@@ -80,9 +90,32 @@ export function aplicar(state, rng) { // eslint-disable-line no-unused-vars
     ? topMundial.indexOf(filaJugador) + 1
     : null;
 
+  // Fase 9Wb (D8/D40): `mundo.rivales[].puntaje` deja de ser 0 muerto y pasa a
+  // ser el MEJOR (menor) rank que el rival tocó dentro del Top 20. `0` = nunca
+  // entró. Lo consume `dueloDeGeneracion` (core/ficha.js).
+  const rankTop20 = new Map(topMundial.map((entrada, i) => [entrada.handle, i + 1]));
+  let rivalesTocados = false;
+  const rivales = (state.mundo.rivales ?? []).map((rival) => {
+    const rank = rankTop20.get(rival.handle);
+    if (!rank) {
+      return rival;
+    }
+    const mejor = (rival.puntaje ?? 0) > 0 ? Math.min(rival.puntaje, rank) : rank;
+    if (mejor === rival.puntaje) {
+      return rival;
+    }
+    rivalesTocados = true;
+    return { ...rival, puntaje: mejor };
+  });
+
   let next = {
     ...state,
-    mundo: { ...state.mundo, topMundial, mejorDelMundo },
+    mundo: {
+      ...state.mundo,
+      topMundial,
+      mejorDelMundo,
+      ...(rivalesTocados ? { rivales } : {})
+    },
     flags: { ...state.flags, rankMundialActual }
   };
 
@@ -91,7 +124,7 @@ export function aplicar(state, rng) { // eslint-disable-line no-unused-vars
   }
 
   // --- Cierre de edad: los hitos ---
-  const anio = state.calendario.anio;
+  const anio = anioActual;
   const rankAnterior = state.flags.rankMundialAnterior ?? null;
   const previoAnual = state.mundo.topMundialPrevioAnual ?? [];
   const logs = [];
