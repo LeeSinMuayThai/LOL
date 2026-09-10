@@ -3445,17 +3445,14 @@ check('Mediana de decisiones de draft por serie ∈ [0, 1] y ≥28% de series si
   // mapa. Una porción grande de las series no debería frenarte nunca.
   //
   // Fase 9Ma: piso 30% → 28%. El corrimiento de stream de los planteles NPC
-  // (D35) movió el valor estable de ~30,5% a ~28,9% (sondeado a n=1200/2400/
-  // 3600, no es ruido). Fase 9Mc: el stream shift de `core/mercadoMundial.js`
-  // lo bajó otro punto a ~27,6% estable (n=1800). Piso 28% → 26% como parche.
-  // Fase 9Mh: NO cerrado acá. La causa es la deriva agregada de `org.fuerza`
-  // de tier 1 (un mundo que se ablanda → el jugador domina más → menos
-  // drafts), y la única palanca de constante para eso
-  // (`plantel.reemplazoRegresionALiga`) tiene un efecto lateral peor (rota el
-  // mundo y lo hace más joven). Se ataca de raíz en 9Mi (la escalera con
-  // competencia real: menos deriva porque los asientos se disputan). Piso 26%.
-  if (sinDraft < 0.26) {
-    throw new Error(`sólo el ${(sinDraft * 100).toFixed(0)}% de las series no tuvieron ningún draft (mínimo 26%, parche 9Mc; cierra en 9Mi)`);
+  // (D35) movió el valor estable de ~30,5% a ~28,9%. Fase 9Mc: el stream shift
+  // de `core/mercadoMundial.js` lo bajó otro punto a ~27,6% (piso 28% → 26%
+  // como parche). La causa era la deriva agregada de `org.fuerza` de tier 1
+  // (mundo que se ablanda → el jugador domina más → menos drafts). Fase 9Mi:
+  // el asiento se disputa → menos deriva → volvió a **29,3%** (sonda n=400 ×
+  // 90). Piso **devuelto a 28%** en 9Mj, como preveía §9M.12.3.
+  if (sinDraft < 0.28) {
+    throw new Error(`sólo el ${(sinDraft * 100).toFixed(0)}% de las series no tuvieron ningún draft (mínimo 28%)`);
   }
 });
 
@@ -5331,14 +5328,13 @@ check('Ningún arquetipo de veredicto se lleva a toda la población (tope 25%, C
   }
   const peor = Object.entries(stems).sort((a, b) => b[1] - a[1])[0];
   // Fase 9Mc: tope 25% → 28% como parche. El corrimiento de stream de
-  // `core/mercadoMundial.js` empujó "La dinastía" a ~27% estable (n=800/1600/
-  // 2400 — no es ruido). Mismo patrón que en 9Ma/9Mb, donde este arquetipo ya
-  // bailaba contra el 25%.
-  // Fase 9Mh: NO cerrado acá — misma causa y misma palanca fallida que "series
-  // sin ningún draft" (deriva de `org.fuerza`; subir `reemplazoRegresionALiga`
-  // rota el mundo). Cierra en 9Mi (la escalera con competencia real).
-  if (peor[1] / total > 0.28) {
-    throw new Error(`el arquetipo "${peor[0]}" es el ${((peor[1] / total) * 100).toFixed(1)}% de los veredictos (tope 28%, parche 9Mc; cierra en 9Mi)`);
+  // `core/mercadoMundial.js` empujó "La dinastía" a ~27% estable — un mundo que
+  // se ablandaba porque `org.fuerza` se desangraba y nadie disputaba los
+  // asientos. Fase 9Mi: el asiento se disputa (contra el calibre de la liga) →
+  // `org.fuerza` deja de desangrarse → el arquetipo dominante volvió a **23,5%**
+  // (sonda n=400). Tope **devuelto a 25%** en 9Mj, como preveía §9M.12.3.
+  if (peor[1] / total > 0.25) {
+    throw new Error(`el arquetipo "${peor[0]}" es el ${((peor[1] / total) * 100).toFixed(1)}% de los veredictos (tope 25%, CONCEPTO §11)`);
   }
 });
 

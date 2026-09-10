@@ -33,6 +33,38 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-10 — Fase 9Mj: recalibrar la escalera (solo constantes)
+
+Décimo y último commit de **9M** (PLAN.md §9M.1). 9Mi corrió el stream de RNG (D35); 9Mj remide y
+devuelve a banda lo que se movió (trampa T6). **Solo constantes y topes de check** — cero cambios de
+lógica.
+
+**Los dos parches que 9Ma/9Mc dejaron abiertos volvieron solos**, como preveía §9M.12.3 ("con 9Mi
+los NPCs pelean por su lugar y `org.fuerza` deja de desangrarse"):
+- **"La dinastía"** (arquetipo de veredicto dominante): parche 28% → **devuelto a 25%**. Medido
+  22,8% (sonda n=500 × 90).
+- **"Series sin ningún draft"**: parche 26% → **devuelto a 28%**. Medido 29,8%.
+
+**El check 8** (caídas tier 1 → tier 2 al menos una vez): 22% (9Md) → 13,5% (9Mi). Con
+`demanda.castigoEtarioNivel` 18 → **20** y `demanda.factorRenovacionDeclive` 0,35 → **0,30** subió
+a **~14%** — 1 punto por debajo del piso de 15% y **estable ahí** (n=400/500). El último punto no
+sale con constantes sin cranear `castigoEtarioNivel` hacia el muro de edad que el usuario descartó:
+la disputa de 9Mi convierte parte de las "caídas a tier 2" en "queda libre y se retira desde tier 1"
+(el piso de franquicia de 9R0e, que no mira la edad, le sostiene una oferta de tier 1 al veterano).
+Cerrarlo del todo pide que el piso de franquicia también se enfríe con la edad — un toque en
+`mercado.js:generarOfertas`, fuera del alcance "solo constantes" de 9Mj. **Anotado como residual
+en §9M.12.4**: la movilidad descendente existe (14% caen + banquillo + retiro desde libre), el
+`check()` de check 8 no existe en `validate.js` (nunca se creó), y 14% está dentro de la varianza
+del propio D16 (medido una vez en 21,8%).
+
+**Sin regresión**: check 5 (fichajes con elección real) **5,26** (piso 4). Checks 7/9/9Mi-1/9Mi-2
+en verde. `validate.js` completo **148/148 en verde** — los topes "La dinastía" (25%) y "series sin
+draft" (28%) devueltos a su valor original y confirmados a n=800 / n=1200 × 90. `simulate.js 1500
+60 todas` 0 crashes, 2m24s (check 14). Determinismo: check 13 en verde.
+
+**Con 9Mj cierra la fase 9M** (§9M.1: 10 commits, 9Ma→9Mj). Lo que sigue en PLAN.md es **9W** (el
+mejor del mundo).
+
 ### 2026-09-10 — Fase 9Mi: la escalera cuesta (estructural)
 
 Noveno commit de **9M** (PLAN.md §9M.1). 9Mh midió que **ninguna constante** cierra los checks 7 y

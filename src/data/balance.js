@@ -832,16 +832,19 @@ export const BALANCE = {
     // que la org apunta.
     alternativaPisoFuerza: 2,
     // El enfriamiento etario, en puntos de nivel que se te descuentan en la
-    // disputa (`core/valorMercado.js:castigoEtario`). 0 a los ≤22, ~9 a los 27,
-    // ~14 a los 30 — un veterano en declive cae bajo la vara de CBLOL y el
+    // disputa (`core/valorMercado.js:castigoEtario`). 0 a los ≤22, ~10 a los 27,
+    // ~16 a los 30 — un veterano en declive cae bajo la vara de su liga y el
     // mercado de primera deja de llamarlo (gancho del retiro de la fase 10).
-    castigoEtarioNivel: 18,
+    // 9Mj: 18 → 20 (junto con `factorRenovacionDeclive`) empuja las caídas
+    // tier 1 → tier 2 hacia banda (check 8, quedó en ~14% — ver §9M.12.4).
+    castigoEtarioNivel: 20,
     // Tu propio club también se enfría: un veterano pasado el declive Y bajo la
     // banda de su liga tiene la renovación castigada por este factor (el club
     // prefiere rejuvenecer). Un 30 que sigue claramente mejor que la camada
     // joven se renueva normal. Es lo que convierte "renovado para siempre en
     // CBLOL" en "quedó libre a los 31, sólo ofertas de tier 2, se retiró ahí".
-    factorRenovacionDeclive: 0.35,
+    // 9Mj: 0,35 → 0,30 (junto con `castigoEtarioNivel` 18→20) para el check 8.
+    factorRenovacionDeclive: 0.30,
 
     // --- Fase 9Mc: la resolución del mercado del mundo (core/mercadoMundial.js).
     // Cada offseason, ANTES de la pantalla del jugador, las orgs con un asiento
