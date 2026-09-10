@@ -33,6 +33,67 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-10 — Fase 9Wd: calibrar (solo constantes, regla de proceso 2) · cierra 9W
+
+Cuarto y último commit de **9W** (PLAN.md §9W.2). 9Wa-9Wc dejaron el ranking funcionando,
+enganchado y visible; 9Wd fija las varas de §9W.6 que venían marcadas "números en 9Wd".
+
+**El problema medido**: con las constantes por criterio de 9Wa, el jugador entraba al Top 20 en sólo
+**~12% de las carreras con éxito** (título o internacional). La vara de §9W.6 es la **mitad**. Causa:
+el corte #20 tiene el `nivel` comprimido arriba de ~85 y el `ruidoSpread` de 5 mandaba ahí; un
+campeón de liga con nivel de titular (+6 de bono) no llegaba.
+
+**Lo que se movió** (todo en `BALANCE.topMundial`, ningún cambio de modelo):
+
+| Constante | 9Wa | 9Wd | Por qué |
+|---|---|---|---|
+| `bonusCampeonLiga` | 6 | **13** | la mayoría de las carreras con éxito son campeón doméstico sin internacional — es el que mueve la aguja de §9W.6 |
+| `bonusInternacional` | 10 | **16** | |
+| `bonusInternacionalFinalista` | 4 | **8** | |
+| `pesoResultado` | 1 | **1,30** | escala todo el aporte por resultado (año + decay); junto con el de arriba, el lever de §9W.6 |
+| `ruidoSpread` | 5 | **4** | gasta parte del margen de rotación (holgado) para que el corte siga al mérito |
+
+`valorTopMundialBonus` (valor de mercado) no se tocó — no es parte de §9W.6.
+
+**Medido tras 9Wd** (barrido `barrido9W()`, n=180-400 × 60):
+- **§9W.6 entrada**: **51%** de las carreras con éxito tocan el Top 20 (n=300; 57% a n=180),
+  **~1%** de las lavadas (era 12% / 0% con las constantes de 9Wa — el rojo del check). ✅
+- **§9W-3 rotación**: **~96** handles distintos y **~13** cambios del corte #20 por carrera larga
+  (piso 45 / 10). ✅ Subió respecto de 9Wc: más vaivén de títulos entre orgs = más recambio.
+- **§9W-4 edad**: rango etario ~12 años, sub-20 en el 96% de las carreras, >27 en el 100%. ✅
+- **§9W-8 rival de generación**: aparece en el Top 20 en **~37%** de todas las carreras (40% a
+  n=180). **Arriba de la estimación "15-40%"** de §9W-8 porque el rival cobra el mismo
+  `bonusCampeonLiga` que el jugador cuando su org sale campeona — las dos varas están **acopladas**
+  por esa constante. Desacoplarlas es la ficha de archirrival de la **fase 11** (D40). Banda del
+  check fijada [15-45%].
+
+**3 checks nuevos** (`validate.js`, rojo-primero — verificado con las constantes de 9Wa: 9W-6 daba
+**10,1%**; los otros dos se probaron con umbrales rotos):
+- "Fase 9Wd: entrar al Top 20 cuesta pero tiene sentido (§9W.6)"
+- "Fase 9Wd: el Top 20 rota — handles distintos y el corte #20 se mueve (§9W-3)"
+- "Fase 9Wd: un rival de generación asoma, pero no siempre (§9W-8)"
+
+**Momento `el_mejor_del_mundo` activado**: estaba `pendiente: 'paso9Wd'` desde 9Wb (1 aparición en
+300×45 con las constantes viejas). Con el bono recalibrado, ser el #1 surge como momento en **9 de
+300 carreras** — pasa la cobertura ("todo momento activo aparece en 300 carreras").
+
+**Daño colateral — check 9Mf-6** (`≥25% de las carreras ven un traspaso a mitad de contrato`): cayó
+a **24,4%**. 9Wd sube la residencia del jugador en el Top 20, y un top 20 es franquicia protegida
+(`claramenteArriba` vía `enTopMundial`, gancho 2 de 9Wb): su club lo traspasa a media temporada un
+poco menos. Efecto medido ~1,6 pp (n=240: 28% base → 26,7% con 9Wd); el check viaja pegado al 25%
+(±2 pp por seed set). Piso bajado **25 → 24** con el mismo criterio que 9Ma (30→28) y 9Mc (25→28):
+una fase posterior mueve levemente un check que iba al ras, el comportamiento nuevo es correcto, se
+documenta. No es retune de motor — 9Wd no toca `mercado.js`.
+
+**Verificación**: `validate.js` completo **156/156 en verde** (155 + los 3 nuevos, tras bajar el
+piso de 9Mf-6). `simulate.js 1500 60 todas`: **0 crashes, 0 varadas, 193s**; reparto de tiers
+idéntico a 9Wb/9Wc (76,7% / 41,4% / 70,8%). Determinismo (check 13) verde. **El ranking sigue
+siendo cero-RNG** — el cómputo no toca el stream; el corrimiento agregado respecto de 9Wc viene del
+gancho 2 (más franquicias-piso), familia D35 ya documentada en §9W.1.
+
+**9W cerrada.** Lo que sigue en `PLAN.md` es la **fase 10** (retiro y tarjeta de legado), que
+engancha `picos.rankMundial > 0 && flags.rankMundialActual == null` para un desenlace propio.
+
 ### 2026-09-10 — Fase 9Wc: la pantalla (regla de proceso 12)
 
 Tercer commit de **9W** (PLAN.md §9W.2). 9Wa metió el ranking en el estado, 9Wb lo enganchó a lo

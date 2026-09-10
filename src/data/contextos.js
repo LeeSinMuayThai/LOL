@@ -138,11 +138,11 @@ export const MOMENTOS = [
 
   // --- Fase 9Wb (§9W.4): la cima ---
   // `top_del_mundo` aparece en ~24 de 300 carreras (medido) — cobertura de
-  // sobra. `el_mejor_del_mundo` (ser el #1) sale 1 vez en 300×45 con las
-  // constantes por criterio de 9Wa: queda `pendiente` hasta que 9Wd recalibre
-  // y lo haga alcanzable de verdad. La marca y el momento ya existen para que
-  // el catálogo de la fase 13 tenga dónde colgarse.
-  { id: 'el_mejor_del_mundo', prioridad: 62, pendiente: 'paso9Wd',
+  // sobra. `el_mejor_del_mundo` (ser el #1) estaba `pendiente` desde 9Wb
+  // porque con las constantes por criterio salía 1 vez en 300×45. 9Wd
+  // recalibró el bono por resultado (bonusCampeonLiga 6 → 13, pesoResultado
+  // 1 → 1,30): ahora el #1 aparece como momento en 9 de 300 carreras — activo.
+  { id: 'el_mejor_del_mundo', prioridad: 62,
     label: 'El mejor del mundo',
     patron: { marcas: ['mejor_del_mundo'] } },
 

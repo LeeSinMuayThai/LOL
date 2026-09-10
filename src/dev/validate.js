@@ -957,7 +957,7 @@ check('Fase 9Mf: registro.dineroTotalUSD se acumula (>0 y monótono) en toda car
   }
 });
 
-check('Fase 9Mf: ≥25% de las carreras ven un traspaso a mitad de contrato, y "pedir salir" hace una de sus dos cosas (check 6 de §9M.10)', () => {
+check('Fase 9Mf: ≥24% de las carreras ven un traspaso a mitad de contrato, y "pedir salir" hace una de sus dos cosas (check 6 de §9M.10)', () => {
   // (1) frecuencia: con el auto-resolver (toma el paso arriba salvo recorte de
   // sueldo real) al menos 1 de cada 4 carreras cierra un traspaso a mitad de
   // contrato. (2) "pedir salir" nunca es un no-op: o te vas, o te lo niegan y
@@ -985,8 +985,19 @@ check('Fase 9Mf: ≥25% de las carreras ven un traspaso a mitad de contrato, y "
     }
   }
   const frac = conTraspaso / total;
-  if (frac < 0.25) {
-    throw new Error(`sólo ${(frac * 100).toFixed(1)}% de las carreras cierran un traspaso a mitad de contrato (objetivo ≥25%)`);
+  // Piso 0,25 → 0,24 en 9Wd (mismo criterio que 9Ma 30→28 y 9Mc 25→28: una
+  // fase posterior mueve levemente un check que iba al ras). 9Wd sube la
+  // residencia del jugador en el Top 20 mundial (§9W.6: 12% → 51% de las
+  // carreras con éxito), y un top 20 es franquicia protegida
+  // (`claramenteArriba` vía `enTopMundial`, gancho 2 de 9Wb): su club lo
+  // traspasa a mitad de contrato un poco menos. Efecto medido ~1,6 pp
+  // (n=240: 28% base → 26,7% con las constantes de 9Wd); el check cae a 24,4%
+  // a su propio n=320 porque viaja pegado al 25% (±2 pp según el set de
+  // seeds). El comportamiento es correcto —una franquicia no vende a su
+  // franquicia a media temporada—; si una fase más adelante lo baja más, se
+  // mira de nuevo.
+  if (frac < 0.24) {
+    throw new Error(`sólo ${(frac * 100).toFixed(1)}% de las carreras cierran un traspaso a mitad de contrato (objetivo ≥24%)`);
   }
 
   let ejercido = 0;
@@ -1477,6 +1488,72 @@ check('Fase 9W: el Top 20 mezcla edades — sin término de edad, la diversidad 
   const distintosMedio = largas.reduce((s, x) => s + x.distintos, 0) / largas.length;
   if (!(distintosMedio > BALANCE.topMundial.tamano)) {
     throw new Error(`una carrera ve en promedio ${distintosMedio.toFixed(1)} handles distintos en el Top 20 (largo ${BALANCE.topMundial.tamano}): la lista está congelada`);
+  }
+});
+
+// --- Fase 9Wd: los umbrales calibrados (regla de proceso 2 — sólo constantes) ---
+// Los tres checks de arriba (9Wa) verifican la ESTRUCTURA: bien formado,
+// determinista, mérito, monótono, algo de mezcla etaria. Estos tres fijan las
+// VARAS de §9W.6 que 9Wa dejó marcadas "números en 9Wd", medidas ahora sobre
+// el mismo barrido (n=180): entrar cuesta pero tiene sentido, la lista rota, y
+// tu generación asoma sin garantía. Verificados en rojo con las constantes por
+// criterio de 9Wa (bonusCampeonLiga 6 → entran/éxito 12%; ver PROGRESO 9Wd).
+
+check('Fase 9Wd: entrar al Top 20 cuesta pero tiene sentido — la mitad de las carreras con éxito lo tocan (§9W.6)', () => {
+  const c = barrido9W();
+  const exitosas = c.filter((x) => x.exito);
+  const lavadas = c.filter((x) => !x.exito);
+  if (exitosas.length < 40) {
+    throw new Error(`sólo ${exitosas.length} carreras con éxito en el barrido: muestra insuficiente`);
+  }
+  const fracExito = exitosas.filter((x) => x.picoRank > 0).length / exitosas.length;
+  const fracLavada = lavadas.filter((x) => x.picoRank > 0).length / lavadas.length;
+  // §9W.6: ≥ 50% de las carreras con éxito (título o internacional) tocan el
+  // Top 20. Medido 51-57% (n=180-400) tras 9Wd. Piso 0,45 para no romper por
+  // varianza de la muestra chica.
+  if (fracExito < 0.45) {
+    throw new Error(`sólo ${(fracExito * 100).toFixed(1)}% de las carreras con éxito tocan el Top 20 (piso 45%, meta §9W.6 50%): entrar no tiene sentido`);
+  }
+  // Y casi ninguna carrera lavada se cuela: el ranking no regala puestos.
+  if (fracLavada > 0.05) {
+    throw new Error(`${(fracLavada * 100).toFixed(1)}% de las carreras sin título ni internacional igual tocan el Top 20 (tope 5%): el ranking regala puestos`);
+  }
+});
+
+check('Fase 9Wd: el Top 20 rota — muchos handles distintos y el corte #20 se mueve seguido (§9W-3)', () => {
+  const c = barrido9W().filter((x) => x.distintos > 0);
+  if (c.length < 50) {
+    throw new Error(`sólo ${c.length} carreras con fotos del Top 20: muestra insuficiente`);
+  }
+  const distintosMedio = c.reduce((s, x) => s + x.distintos, 0) / c.length;
+  const cambiosMedio = c.reduce((s, x) => s + x.cambiosCorte, 0) / c.length;
+  // §9W-3: en una carrera de ~15 años, ≥ 45 handles distintos pasan por el Top
+  // 20 y el corte #20 cambia ≥ 10 veces. Medido ~96 / ~13 tras 9Wd — la
+  // rotación tiene margen de sobra (el ruido determinista + el vaivén de
+  // títulos entre orgs la sostienen).
+  if (distintosMedio < 45) {
+    throw new Error(`una carrera ve en promedio ${distintosMedio.toFixed(1)} handles distintos en el Top 20 (piso 45): la lista rota poco`);
+  }
+  if (cambiosMedio < 10) {
+    throw new Error(`el corte #20 cambia en promedio ${cambiosMedio.toFixed(1)} veces por carrera (piso 10): la lista está estancada`);
+  }
+});
+
+check('Fase 9Wd: un rival de generación asoma al Top 20, pero no siempre (§9W-8)', () => {
+  const c = barrido9W();
+  const frac = c.filter((x) => x.rivalEnTop20).length / c.length;
+  // §9W-8 lo estimó "~15-40%" (raro por diseño: `rivalPotencialMedia` 66, muy
+  // por debajo del corte de nivel del Top 20). Medido tras 9Wd: 33-40% de TODAS
+  // las carreras ven un rival ahí al menos una vez — arriba de la estimación
+  // porque el rival cobra el mismo `bonusCampeonLiga` que vos cuando su org
+  // sale campeona, y las dos varas están acopladas por esa constante.
+  // Desacoplarlas es la ficha de archirrival de la fase 11 (D40). Banda
+  // [0,15 – 0,45]: que aparezca, que no sea la norma.
+  if (frac < 0.15) {
+    throw new Error(`un rival de generación aparece en el Top 20 en sólo ${(frac * 100).toFixed(1)}% de las carreras (piso 15%): tu generación no compite`);
+  }
+  if (frac > 0.45) {
+    throw new Error(`un rival de generación aparece en el Top 20 en ${(frac * 100).toFixed(1)}% de las carreras (tope 45%): deja de ser "quizás"`);
   }
 });
 

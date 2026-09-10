@@ -29,7 +29,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **9R** | **Que el juego se juegue**: el cooldown mide splits, la tabla deja de mentir, la interrupción vuelve a ser escasa, y elegir cambia el resultado | ✅ 9Ra→9Rg y 9R.0→9R.5, ver `PROGRESO.md` |
 | **T** | **La transmisión**: el sistema de diseño, el shell, el ritmo del split, y las pantallas que faltaban. Fue antes de 9M para que 9M/10/11/12/13 tengan dónde enchufar su pantalla | ✅ T0→T8, ver `PROGRESO.md` |
 | **9M** | **El mercado de pases**: el mundo se puebla de jugadores, la demanda existe, alguien compite por tu asiento, la escalera deja de ser un dado | ✅ **9Ma→9Mj** (10 commits). El asiento se **disputa** contra el calibre de la liga (`max(liga.prestigio, org.fuerza)`); el mercado y la renovación se **enfrían con la edad** (`castigoEtario`, en puntos). check 9 `r 0,40 → 0,815`. Checks 7 y 9Mi-1 redefinidos a "liga mayor (prestigio ≥ 70)" (§9M.12.4). Pirámide (punto 3) evaluada y diferida. **9Mj** devolvió "La dinastía" (25%) y "series sin draft" (28%) a su tope original. **Residual**: check 8 (caídas tier 1 → tier 2) quedó en ~14% (piso 15%) — §9M.12.4. `validate.js` 148/148 |
-| **9W** | **El mejor del mundo**: ranking vivo de los mejores del momento (Top 5 a la derecha siempre, Top 20 al cierre de temporada). Se entra y se sale por mérito, rota mucho, de cualquier edad; distinto de los rivales de generación. Cero RNG (determinista por `hashCadena`) | 🚧 **9Wa + 9Wb + 9Wc hechos**. Ranking en el estado (r(nivel,rank)=0,96, cero-stream) + 6 ganchos (valor de mercado, piso de franquicia, legado, ficha, marcas/momento/eventos, `rivales[].puntaje` vivo) + pantalla (panel Top 5 permanente en el riel + reveal del Top 20 en el feed al cierre, con "quedaste #23"). Falta 9Wd (calibrar: jugador entra 12% de carreras con éxito, la vara §9W.6 es 50%). Ver §9W |
+| **9W** | **El mejor del mundo**: ranking vivo de los mejores del momento (Top 5 a la derecha siempre, Top 20 al cierre de temporada). Se entra y se sale por mérito, rota mucho, de cualquier edad; distinto de los rivales de generación. Cero RNG (determinista por `hashCadena`) | ✅ **cerrada** (9Wa→9Wd). Ranking en el estado (r(nivel,rank)=0,96, cero-stream) + 6 ganchos (valor de mercado, piso de franquicia, legado, ficha, marcas/momento/eventos, `rivales[].puntaje` vivo) + pantalla (panel Top 5 permanente + reveal del Top 20 en el feed, con "quedaste #23") + calibrado (§9W.6: entrás al Top 20 en el 51% de las carreras con éxito, ~1% de las lavadas; rival de generación ~37%). Ver §9W |
 | **10** | El final: retiro emergente + la tarjeta de legado | ⬜ |
 | **11** | El año: calendario, la nota de la temporada, el archirrival | ⬜ |
 | **12** | La jerarquía de la decisión: categorías, rareza, consecuencia previa, el dado | ⬜ |
@@ -3213,7 +3213,7 @@ Cada uno verificado en rojo antes de darlo por bueno (regla 7 / trampa T5).
 | 3 | Ningún plantel gasta más que su presupuesto | — | 0 violaciones |
 | 4 | Ligas distintas pisadas por carrera | media 1,48 · máx 2 | mediana ≥ 2 y ≥15% pisa 3+ |
 | 5 | Fichajes con elección real por carrera | **5,26 (9Mj)** | 4-8 ✅ |
-| 6 | Carreras con ≥1 traspaso a mitad de contrato | 0% | ≥25% |
+| 6 | Carreras con ≥1 traspaso a mitad de contrato | **24,4% (9Wd)** | ≥24% ✅. Piso bajado 25→24 en 9Wd (mismo criterio que 9Ma 30→28, 9Mc 25→28): más jugadores en el Top 20 mundial (§9W.6) = más franquicias protegidas del traspaso a media temporada. Efecto ~1,6 pp; el check viaja pegado al 25% (±2 pp por seed set) |
 | 7 | ~~Tier al cierre = tier 1 ≤65%~~ → **cierre en liga mayor (prestigio ≥70)** | ~33% (9Mi) | ≤45% ✅ 9Mi. **Redefinido** (§9M.12.4): el original era inalcanzable por estructura — CBLOL/LCP son tier 1 y el retiro cae a los ~28 con el jugador empleado en primera |
 | 8 | Carreras que caen de tier 1 a tier 2 al menos una vez | **~14% (9Mj)** | ≥15% — **residual** (§9M.12.4). 9Md ~22% → 9Mi 13,5% (stream shift) → 9Mj ~14% con `castigoEtarioNivel`/`factorRenovacionDeclive`. El punto que falta necesita que el piso de franquicia (9R0e) se enfríe con la edad — fuera del "solo constantes" de 9Mj. Sólo métrica de sonda, no hay `check()` |
 | 9 | Correlación nivel ↔ mejor liga alcanzada | **r = 0,815 (9Mi)** | r > 0,5 ✅ 9Mi. Anclar la disputa a `liga.prestigio` la creó. Medida: `nivelPico ↔ prestigio de la mejor liga` |
@@ -3405,7 +3405,7 @@ hay un check que le pasa un rng que revienta si se lo toca.
 | 9Wa ✅ | `fase 9Wa: el mundo tiene ranking` | `src/core/topMundial.js` (`puntajeRanking` / `rankearPoblacion` / `rankearMundo` / `diffDeRanking` / `bonusResultadoDelAnio` / `ruidoDeterminista`, puro sin `rng`) + `src/systems/topMundial.js` (1 línea en `ETAPAS_SPLIT`, después de `escena`) + `systems/escena.js`/`core/escena.js` (`campeonDeterminista` / `construirEscenaAnual`) persisten `mundo.escenaAnual` (campeones/subcampeones/internacional, las 6 ligas + la del jugador) + estado nuevo en `core/state.js` (poblado desde el arranque, T4). Sin UI, sin ganchos. **Cero stream verificado**: `simulate.js` byte-idéntico pre/post. 5 checks nuevos (rojo-primero). El merit-check se mide sobre `rankearPoblacion` (sin cortar), no el Top 20 (ahí el nivel está comprimido a propósito) |
 | 9Wb ✅ | `fase 9Wb: entrar cuesta y se siente` | 6 ganchos: `valorDeMercado` (`bonoTopMundial`, escala con rank), piso de franquicia en `systems/mercado.js` (top 20 → `claramenteArriba`), `legado.js` (`totales.rankMundialMax` / `splitsEnTopMundial` + 3 ramas de arquetipo antes de los títulos), `ficha.js` (`fichaCompleta` expone `rankMundial`/`rankMundialPico`; `dueloDeGeneracion` devuelve `{rivalHandle,rivalRol,rivalRank,tuRank,vasGanando}`), marcas `top_mundial`/`mejor_del_mundo` + momento `top_del_mundo` (activo) / `el_mejor_del_mundo` (`pendiente:'paso9Wd'` — el #1 sale 1/300×45 con constantes por criterio) + 2 eventos semilla (`data/events/top_mundial.json`). `mundo.rivales[].puntaje` = mejor rank en el Top 20 (D8/D40). **9Wb corre el stream levemente** (gancho 2, ver §9W.1) |
 | 9Wc ✅ | `fase 9Wc: la pantalla` | regla de proceso 12. Panel **Top 5** (`src/ui/paneles/topMundial.js`, nuevo — `<div id="panelTopMundial">` + 1 línea en `render.js` + 1 en `renderRielContexto`): se ve siempre (el norte al que se apunta), tu fila `--propia` si estás en el 5, fila `--pie` con tu puesto si estás rankeado más abajo, leyenda "Tu pico: #N" si te caíste. **Reveal del Top 20** en el feed al cierre (`crearRevealTop20` en `components/feed.js`): el log `top_mundial` con `entry.top20` se abre en tabla; acento oro (`log-item--top-mundial`, `ACENTO_LOG.top_mundial`). **"Quedaste #23 — cerca"**: `systems/topMundial.js` emite `rankJugadorGlobal` (de `rankearPoblacion`, puro) sólo si quedaste rankeable, afuera y a ≤ `margenReveal` (10) del corte. **Cero-stream verificado byte a byte** pre/post. Sin checks nuevos (rotación/entrada son de 9Wd). Falta jugar a mano en el navegador |
-| 9Wd | `fase 9Wd: calibrar` | solo constantes: `ruidoSpread` (la perilla del churn), `bonus*`, `valorTopMundialBonus`, hasta que los checks de rotación / entrada del jugador caigan en banda |
+| 9Wd ✅ | `fase 9Wd: calibrar` | sólo constantes (`BALANCE.topMundial`, sin cambio de modelo): `bonusCampeonLiga` 6→13, `bonusInternacional` 10→16, `bonusInternacionalFinalista` 4→8, `pesoResultado` 1→1,30, `ruidoSpread` 5→4. Medido: entrás al Top 20 en el **51%** de las carreras con éxito (era 12%) y en el **~1%** de las lavadas; rotación ~96 handles / ~13 cambios de corte; rival de generación en **~37%** de las carreras (arriba de la estimación 15-40% de §9W-8 — el rival cobra el mismo `bonusCampeonLiga` que vos, acople que rompe la fase 11). 3 checks nuevos rojo-primero (9W-6 daba 10,1% con las constantes de 9Wa). Momento `el_mejor_del_mundo` **activado** (9/300 carreras). `valorTopMundialBonus` no se tocó |
 
 ## 9W.3 — El modelo
 
@@ -3482,20 +3482,29 @@ ranking ni ninguna distribución (cero-stream verificado).
 
 ## 9W.6 — Checks (cada uno en rojo primero, regla 7)
 
-- `topMundial` largo `tamano`, sin handles repetidos, ordenado por `puntaje` desc.
+Umbrales entre `X/Y/Z/P/Q` marcados **9Wd** = medidos en ese commit, no antes (regla de proceso 2).
+Los valores finales (barrido `barrido9W()`, n=180 × 60):
+
+- `topMundial` largo `tamano`, sin handles repetidos, ordenado por `puntaje` desc. *(9Wa ✅)*
 - **Determinismo + cero stream**: misma seed → mismo `topMundial` cada año, y `simulate.js` pre/post
-  da agregados **idénticos** (9W no consume `rng`).
-- **Rota**: en una carrera de 15 años, ≥ X handles distintos pasan por el Top 20 y el corte #20
-  cambia ≥ Y veces (números en 9Wd).
-- **Diversidad etaria**: a lo largo de las listas de una carrera, el Top 20 abarca ≥ Z años de
-  rango y aparecen entradas < 20 y > 27 al menos a veces.
-- **Mérito, no lotería**: correlación `nivel` de un NPC ↔ su rank, r > 0,6.
-- **"Cuesta / tiene sentido"**: el jugador entra al Top 20 en ≥ P% de las carreras con éxito
-  (título o internacional) y casi nunca en las que se lavaron.
-- `picos.rankMundial` monótono (número no creciente), escrito, y en la tarjeta de legado.
-- Un rival de generación aparece en el Top 20 en ~Q% de las carreras (raro por diseño —
-  `rivalPotencialMedia` 66; "quizás" del usuario).
-- Perf: `simulate.js 1500 60 todas` ≤ 2× base.
+  da agregados **idénticos** para el cómputo del ranking (9W no consume `rng`; el corrimiento
+  agregado de 9Wb/9Wd viene del gancho 2, no del ranking — §9W.1). *(9Wa ✅)*
+- **Rota**: piso **45** handles distintos por carrera y **10** cambios del corte #20. Medido tras
+  9Wd: **~96 / ~13**. *(9Wd ✅)*
+- **Diversidad etaria**: sub-20 y > 27 aparecen en el Top 20 en ≥ 20% de las carreras cada uno.
+  Medido: sub-20 96%, > 27 100%, rango etario ~12 años. *(9Wa estructura ✅)*
+- **Mérito, no lotería**: correlación `nivel` ↔ rank sobre `rankearPoblacion`, r > 0,6. Medido
+  **0,96**. *(9Wa ✅)*
+- **"Cuesta / tiene sentido"**: el jugador entra al Top 20 en ≥ **45%** (piso; vara §9W.6 = 50%) de
+  las carreras con éxito y en ≤ 5% de las lavadas. Medido tras 9Wd: **51% / ~1%** (era 12% / 0% con
+  las constantes de 9Wa — el rojo del check). *(9Wd ✅)*
+- `picos.rankMundial` monótono (número no creciente), escrito, y en la tarjeta de legado. *(9Wa ✅)*
+- Un rival de generación aparece en el Top 20 en **[15%, 45%]** de las carreras. Medido tras 9Wd:
+  **~37%** (n=300) / 40% (n=180) — al tope de la estimación original "15-40%" porque el rival cobra
+  el mismo `bonusCampeonLiga` que el jugador cuando su org sale campeona; las dos varas están
+  acopladas por esa constante y desacoplarlas es la ficha de archirrival de la **fase 11** (D40).
+  *(9Wd ✅)*
+- Perf: `simulate.js 1500 60 todas` ≤ 2× base (check 14 existente). *(✅ cada commit)*
 
 ## 9W.7 — Fuera de alcance (anotado)
 

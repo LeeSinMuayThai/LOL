@@ -1247,28 +1247,40 @@ export const BALANCE = {
   // Fase 9W: el ranking vivo de los mejores del mundo — el equivalente de las
   // listas "Top 20 players" que se publican cada pretemporada. Se computa sin
   // tocar `rng` (regla de oro de §9W): el puntaje es nivel + bonus por
-  // resultado del año + un ruido determinista por `hashCadena`. Valores por
-  // criterio; el retune vive en 9Wd.
+  // resultado del año + un ruido determinista por `hashCadena`. Constantes
+  // calibradas en 9Wd contra los umbrales de §9W.6 (medido n=300-400 × 60):
+  // entrás al Top 20 en el 51% de las carreras con éxito y en el ~1% de las que
+  // se lavaron; ~96 handles distintos y ~13 cambios del corte #20 por carrera
+  // larga; un rival de generación asoma en el 35-37%.
   topMundial: {
     // Cuántos entran a la lista. 20 = la conversación completa; el Top 5 es lo
     // que se ve en el riel, el Top 20 el reveal de cierre de temporada.
     tamano: 20,
-    // Peso del bono por resultado deportivo sobre el nivel crudo. 1 = un
-    // internacional pesa `bonusInternacional` puntos de nivel.
-    pesoResultado: 1,
+    // Peso del bono por resultado deportivo sobre el nivel crudo. Con
+    // `pesoResultado 1` un `bonusInternacional` pesa exactamente ese número de
+    // puntos de nivel. 9Wd: 1 → 1.30 — escala todo el aporte por resultado
+    // (año actual + el decay del año previo). Junto con `bonusCampeonLiga` es
+    // el lever de la vara §9W.6 (la mitad de las carreras con éxito tocan el
+    // Top 20); más arriba empuja al rival de generación fuera de su banda.
+    pesoResultado: 1.30,
     // El resultado del año pasado todavía cuenta, pero menos: un campeón no
     // desaparece del top al día siguiente de perder la final.
     decayResultado: 0.4,
     // Ganar la liga doméstica, ganar el internacional, ser finalista del
     // internacional. En puntos de nivel (0-100), sumados al puntaje.
-    bonusCampeonLiga: 6,
-    bonusInternacional: 10,
-    bonusInternacionalFinalista: 4,
+    // 9Wd: subidos de 6/10/4 — con los originales un campeón de liga con nivel
+    // de titular entraba al Top 20 sólo 1 de cada 8 veces. La mayoría de las
+    // carreras con éxito son campeón doméstico sin internacional, así que
+    // `bonusCampeonLiga` es el que mueve la aguja de §9W.6.
+    bonusCampeonLiga: 13,
+    bonusInternacional: 16,
+    bonusInternacionalFinalista: 8,
     // La perilla del churn ("que rote bastante"): amplitud del ruido
     // determinista `hashCadena(seed + handle + anio)`, en ± puntos de nivel.
     // Constante dentro de un año, se re-tira en el borde de año — así el corte
-    // #20 se mueve sin que nadie tire un dado.
-    ruidoSpread: 5,
+    // #20 se mueve sin que nadie tire un dado. 9Wd: 5 → 4, gastando parte del
+    // margen de rotación (medido holgado) para que el corte siga al mérito.
+    ruidoSpread: 4,
     // Fase 9Wc: cuánto más allá del corte #20 sigue contando como "estuviste
     // cerca". Si quedaste rankeable pero afuera y a menos de `margenReveal`
     // puestos, el reveal de cierre dice "quedaste #23" en vez de sólo "no
