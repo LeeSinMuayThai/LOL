@@ -33,6 +33,48 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-10 — Fase 9Mh: calibrar el mercado (alcance recortado al medir)
+
+Octavo commit de **9M** (PLAN.md §9M.1). Estaba escrita como "solo constantes" para cerrar los
+checks 7 (tier al cierre = tier 1 ≤ 65%) y 9 (correlación nivel ↔ mejor liga r > 0,5) que 9Md dejó
+fuera de banda. **Midiendo con sondas aisladas ninguna constante los mueve**: `bandaNivelAbajo`
+14→6 (check 7 sin cambio, 74,6%), `probRenovacionBase` 0,55→0,35 (sin cambio, 75,0%), bandas +
+`factorDificultadImport` juntas (empeora a 76,8%). La causa es **estructural**: con ~58 orgs tier 1
+× contratos de 1-3 años, siempre hay un asiento abierto en tu rol en alguna liga, y `ofertaPosible`
+te lo da por estar "en banda". Esto se separó a **9Mi** ("la escalera cuesta": el asiento se
+disputa, el mercado se enfría con la edad — spec en PLAN.md §9M.12) + **9Mj** (recalibrar). El
+usuario lo confirmó como defecto ("que el 95% lleguen a mucho... debería costar más").
+
+**Lo que sí entró en 9Mh** (constantes que NO corren el stream de RNG):
+- `roster.derivaPrimerSplit` 6 → 3. La proyección de jerarquía se muestra como `cruda +
+  derivaPrimerSplit`; el mercado abierto de 9Md hace que el primer fichaje sea a equipos más
+  fuertes → la jerarquía real termina ~3 por debajo de la proyección inflada con +6 (sesgo pasó de
+  +6,45 a −3,0). Con +3 se recentra. **Cosmético**: `roster.js` asigna el crudo, no toca esta
+  constante. Check *proyección jerarquía* despinchado: tope ±3,5 → **±3**.
+- `mercado.renovacionSigmaFactor` 0,35 → 0,27. El corrimiento de stream de 9Mb/9Mc concentró las
+  renovaciones donde el ruido lognormal pesa más y la fracción que caía bajo la mitad del contrato
+  anterior drifteó a ~43,7%. Con 0,27 vuelve por debajo del 40% original. Check *renovación se
+  desploma* despinchado: tope 45% → **40%**. (Sólo escala el valor de un `gauss`, no corre el
+  stream.)
+- `_probe_9m_baseline.mjs`: métrica de check 9 más honesta — `nivelPico ↔ prestigio de la mejor
+  liga` (continuo), no el proxy grueso tier-rank ↔ nivel post-declive que el propio PROGRESO de
+  9Md marcaba como inadecuado. Baseline r ≈ 0,40.
+
+**NO cerrado en 9Mh** (va a 9Mi/9Mj): checks 7 y 9, y los parches de "La dinastía" (tope 25% →
+28%) y "series sin draft" (piso 28% → 26%) de 9Ma/9Mc — la única palanca de constante para esos
+dos (`plantel.reemplazoRegresionALiga`) tiene un efecto lateral peor (rota el mundo NPC y lo hace
+más joven: check "el mundo NPC envejece" en seed 7 pasa de 0,37 a 0,23). Su causa raíz —un mundo
+que se ablanda porque nadie disputa los asientos— la ataca 9Mi.
+
+**Verificación**: `simulate.js 40 30` sin crash. `validate.js` completo **no se corrió limpio**:
+había una tanda de UI/HUD concurrente en el árbol (color literal en `iconos.css`, ajeno a 9Mh).
+Las dos constantes de 9Mh no corren el stream, así que el agregado de `simulate.js` no cambia.
+Commit rápido a pedido; el retune completo y su verde de `validate.js` viven en 9Mj.
+
+**También en este commit** (planning, PLAN.md): spec completo de **9Mi/9Mj** (§9M.12) y de la
+fase nueva **9W — "el mejor del mundo"** (ranking vivo de top players, Top 5 a la derecha + Top 20
+al cierre de temporada, cero RNG — pedido del usuario). D8/D16/D35 anotadas.
+
 ### 2026-09-09 — Fase 9Mg: la pantalla del mercado
 
 Séptimo commit de **9M** (PLAN.md §9M.8). Cada subfase de 9M entregó su pedazo de pantalla con

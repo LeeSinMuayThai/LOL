@@ -491,7 +491,15 @@ export const BALANCE = {
     // de menos siempre, que es un bug de confianza al reves pero bug igual
     // (regla de proceso 15). La proyeccion suma esta deriva; `roster.js`
     // sigue asignando el valor crudo al firmar.
-    derivaPrimerSplit: 6,
+    //
+    // 9Mh: 6 → 3. Medido tras 9Md, el mercado abierto a 6 ligas hace que el
+    // primer fichaje sea, mas seguido, a un equipo mas fuerte — `esperado`
+    // sube, `brecha` se hace mas negativa, y la jerarquia real termina ~3
+    // POR DEBAJO de la proyeccion inflada con +6 (sesgo pasó de +6,45 a
+    // ~-3,0). Con +3 el `esperada` del check vuelve a centrarse en el real.
+    // El valor es puramente cosmetico: `roster.js` asigna el crudo, no toca
+    // esta constante, asi que bajarla no corre el stream (D35).
+    derivaPrimerSplit: 3,
     jerarquiaRetenidaAlCambiar: 0.35,
     jerarquiaVelocidad: 0.4,
     // Lo que se espera de vos crece con tu propia jerarquia: a la franquicia no
@@ -777,6 +785,14 @@ export const BALANCE = {
     // 0 = puro prestigio de liga, 1 = pura fuerza de la org. En 0,4 la deriva
     // agregada de `org.fuerza` en 20 años queda en ~-3,5 (la misma banda que
     // el mundo pre-9Mc).
+    //
+    // 9Mh (probado, NO se movió): subirlo a 0,6 sí achica la deriva, pero como
+    // efecto lateral sube la `fuerzaDePlantel` de cada org y con eso el bar
+    // de `seVaDelMundo` (fuerzaOrg − retiroNivelBajoOrg) — más veteranos caen
+    // por debajo, el mundo rota más y se hace MÁS JOVEN (check "El mundo NPC
+    // envejece" en seed 7: 0,37 → 0,23). La deriva de `org.fuerza` que ablanda
+    // el mundo se ataca de raíz en 9Mi (la escalera con competencia real), no
+    // con esta palanca.
     reemplazoRegresionALiga: 0.4
   },
 
@@ -866,7 +882,13 @@ export const BALANCE = {
     // sigue moviéndose con la jerarquía/hype actuales (esa señal no se toca),
     // pero el ruido lognormal se achica: la org que ya te tiene no tira los
     // dados de cero cada vez.
-    renovacionSigmaFactor: 0.35,
+    //
+    // 9Mh: 0,35 → 0,27. El corrimiento de stream de la demanda (9Mb) y del
+    // mercado del mundo (9Mc) concentró las renovaciones donde el ruido pesa
+    // más y la fracción que caía bajo la mitad del contrato anterior drifteó
+    // a ~43,7% (parche: tope del check 40% → 45%). Con 0,27 vuelve por debajo
+    // del 40% original.
+    renovacionSigmaFactor: 0.27,
 
     // --- Fase 9R0e: la demanda del mercado sale de tu NIVEL contra la liga,
     // no de `roll(0, techo)` a secas. Antes un 85-media franquicia podía sacar

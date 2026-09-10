@@ -2308,14 +2308,16 @@ check('proyeccionJerarquia predice la jerarquía real con error acotado (regla d
   if (media > 8) {
     throw new Error(`error medio |proyección − real| de jerarquía: ${media.toFixed(1)} puntos sobre ${errores.length} fichajes (tope 8)`);
   }
-  if (Math.abs(sesgo) > 3.5) {
-    throw new Error(`sesgo de la proyección de jerarquía: ${sesgo.toFixed(1)} puntos (tope ±3.5; parche 9Md)`);
+  if (Math.abs(sesgo) > 3) {
+    throw new Error(`sesgo de la proyección de jerarquía: ${sesgo.toFixed(1)} puntos (tope ±3)`);
   }
-  // Fase 9Md: tope ±3 → ±3.5. El mercado abierto a 6 ligas hace que el primer
-  // fichaje sea, más seguido, a un equipo más fuerte (mayor `nivelEquipo` →
-  // `esperado` más alto → `brecha` más negativa → jerarquía por debajo de lo
-  // proyectado). El sesgo pasó a ~−3.0. El retune de `roster.js`/`valorMercado.js`
-  // que el propio comentario de este check ya difería es 9Mh: devuelve el tope a ±3.
+  // Fase 9Md: tope ±3 → ±3.5 como parche — el mercado abierto a 6 ligas hacía
+  // que el primer fichaje fuera, más seguido, a un equipo más fuerte (mayor
+  // `nivelEquipo` → `esperado` más alto → `brecha` más negativa → jerarquía
+  // por debajo de lo proyectado), y el sesgo pasó a ~−3.0.
+  // Fase 9Mh: cerrado. `roster.derivaPrimerSplit` 6 → 3 recentra la proyección
+  // sobre el real (la deriva es cosmética: `roster.js` asigna el crudo). Tope
+  // de vuelta en ±3.
   if (p90 > 14 || max > 28) {
     throw new Error(`outliers de la proyección de jerarquía: p90 ${p90}, máximo ${max} (topes 14 / 28, apretados en 9Rg tras cerrar D39: p90 16 → 11, máximo 26 → 20. El máximo es un outlier de un seed, la señal está en p90)`);
   }
@@ -2560,7 +2562,7 @@ check('Ninguna oferta de mercado.js muestra progresoHito si no es una renovació
   }
 });
 
-check('Fase 9d: una renovación no se desploma por ruido puro (menos de 45% cae por debajo de la mitad del contrato anterior)', () => {
+check('Fase 9d: una renovación no se desploma por ruido puro (menos de 40% cae por debajo de la mitad del contrato anterior)', () => {
   // Medido antes de `renovacionSigmaFactor` (PLAN.md §9d): 34.8% de las
   // renovaciones pagaban menos de la mitad del contrato anterior, hasta 4.5x
   // para arriba — ruido de una oferta nueva, no la lectura de un club que ya
@@ -2579,12 +2581,11 @@ check('Fase 9d: una renovación no se desploma por ruido puro (menos de 45% cae 
   // ~39,4%/38,9%. Era ruido de muestra chica, no una regresión — mismo
   // remedio que D24 (subir la muestra, sin tocar ninguna constante).
   //
-  // Fase 9Mb: tope 40% → 45%. La demanda del mercado (`core/demanda.js`)
-  // reordena el stream y concentra las renovaciones donde el ruido pesa más:
-  // valor estable ~43,7% a n=3000/4500/6000. `renovacionSigmaFactor` es una
-  // constante EXISTENTE y su retune está agendado para 9Mh (el commit de
-  // calibrado del mercado — regla 2: no se retunea junto con la estructura).
-  // El tope sólo acota que no se dispare mientras tanto.
+  // Fase 9Mb: tope 40% → 45% como parche. La demanda del mercado
+  // (`core/demanda.js`) reordena el stream y concentra las renovaciones donde
+  // el ruido pesa más: valor estable ~43,7% a n=3000/4500/6000.
+  // Fase 9Mh: cerrado. `mercado.renovacionSigmaFactor` 0,35 → 0,27 achica el
+  // ruido lognormal de la renovación y la fracción vuelve por debajo del 40%.
   let renovaciones = 0;
   let caidasFuertes = 0;
 
@@ -2616,8 +2617,8 @@ check('Fase 9d: una renovación no se desploma por ruido puro (menos de 45% cae 
     throw new Error(`solo ${renovaciones} renovaciones observadas en 1500 carreras: muestra insuficiente`);
   }
   const fraccion = caidasFuertes / renovaciones;
-  if (fraccion > 0.45) {
-    throw new Error(`${(fraccion * 100).toFixed(1)}% de las renovaciones cae por debajo de la mitad del contrato anterior (tope 45%; recalibrar renovacionSigmaFactor en 9Mh)`);
+  if (fraccion > 0.40) {
+    throw new Error(`${(fraccion * 100).toFixed(1)}% de las renovaciones cae por debajo de la mitad del contrato anterior (tope 40%)`);
   }
 });
 
@@ -3291,11 +3292,15 @@ check('Mediana de decisiones de draft por serie ∈ [0, 1] y ≥28% de series si
   // Fase 9Ma: piso 30% → 28%. El corrimiento de stream de los planteles NPC
   // (D35) movió el valor estable de ~30,5% a ~28,9% (sondeado a n=1200/2400/
   // 3600, no es ruido). Fase 9Mc: el stream shift de `core/mercadoMundial.js`
-  // lo bajó otro punto a **~27,6%** estable (n=1800). Piso 28% → **26%**. La
-  // fórmula de 9Rd no cambió; el retoque real de la frecuencia de pausa de
-  // draft es 9Mh (que tiene que devolver el piso a 28-30%).
+  // lo bajó otro punto a ~27,6% estable (n=1800). Piso 28% → 26% como parche.
+  // Fase 9Mh: NO cerrado acá. La causa es la deriva agregada de `org.fuerza`
+  // de tier 1 (un mundo que se ablanda → el jugador domina más → menos
+  // drafts), y la única palanca de constante para eso
+  // (`plantel.reemplazoRegresionALiga`) tiene un efecto lateral peor (rota el
+  // mundo y lo hace más joven). Se ataca de raíz en 9Mi (la escalera con
+  // competencia real: menos deriva porque los asientos se disputan). Piso 26%.
   if (sinDraft < 0.26) {
-    throw new Error(`sólo el ${(sinDraft * 100).toFixed(0)}% de las series no tuvieron ningún draft (mínimo 26%, parche 9Mc; recalibrar en 9Mh)`);
+    throw new Error(`sólo el ${(sinDraft * 100).toFixed(0)}% de las series no tuvieron ningún draft (mínimo 26%, parche 9Mc; cierra en 9Mi)`);
   }
 });
 
@@ -5173,12 +5178,12 @@ check('Ningún arquetipo de veredicto se lleva a toda la población (tope 25%, C
   // Fase 9Mc: tope 25% → 28% como parche. El corrimiento de stream de
   // `core/mercadoMundial.js` empujó "La dinastía" a ~27% estable (n=800/1600/
   // 2400 — no es ruido). Mismo patrón que en 9Ma/9Mb, donde este arquetipo ya
-  // bailaba contra el 25%. Regla de proceso 2: no se retunea una constante de
-  // balance en un commit estructural; el retune (bajar la deriva agregada de
-  // `org.fuerza`, vía `plantel.reemplazoRegresionALiga` / la velocidad de
-  // rotación) vive en 9Mh, que tiene que devolver el tope a 25%.
+  // bailaba contra el 25%.
+  // Fase 9Mh: NO cerrado acá — misma causa y misma palanca fallida que "series
+  // sin ningún draft" (deriva de `org.fuerza`; subir `reemplazoRegresionALiga`
+  // rota el mundo). Cierra en 9Mi (la escalera con competencia real).
   if (peor[1] / total > 0.28) {
-    throw new Error(`el arquetipo "${peor[0]}" es el ${((peor[1] / total) * 100).toFixed(1)}% de los veredictos (tope 28%, parche 9Mc; recalibrar en 9Mh y volver a 25%)`);
+    throw new Error(`el arquetipo "${peor[0]}" es el ${((peor[1] / total) * 100).toFixed(1)}% de los veredictos (tope 28%, parche 9Mc; cierra en 9Mi)`);
   }
 });
 

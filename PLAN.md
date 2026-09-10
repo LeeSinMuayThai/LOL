@@ -28,7 +28,8 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **9E** | El varado: la carrera vuelve a tener juego después del primer equipo | ✅ 9Ea→9Ed, ver `PROGRESO.md` |
 | **9R** | **Que el juego se juegue**: el cooldown mide splits, la tabla deja de mentir, la interrupción vuelve a ser escasa, y elegir cambia el resultado | ✅ 9Ra→9Rg y 9R.0→9R.5, ver `PROGRESO.md` |
 | **T** | **La transmisión**: el sistema de diseño, el shell, el ritmo del split, y las pantallas que faltaban. Fue antes de 9M para que 9M/10/11/12/13 tengan dónde enchufar su pantalla | ✅ T0→T8, ver `PROGRESO.md` |
-| **9M** | **El mercado de pases**: el mundo se puebla de jugadores, la demanda existe, alguien compite por tu asiento, la escalera deja de ser un dado | 🔶 **9Ma→9Mg hechas** (planteles NPC · la demanda · el mercado del mundo top-down · la escalera por asientos + descenso · negociar/pedir cláusula/esperar · traspasos a mitad de contrato + banquillo · la pantalla de tres bloques) · falta 9Mh (calibrar) |
+| **9M** | **El mercado de pases**: el mundo se puebla de jugadores, la demanda existe, alguien compite por tu asiento, la escalera deja de ser un dado | 🔶 **9Ma→9Mg hechas** (planteles NPC · la demanda · el mercado del mundo top-down · la escalera por asientos + descenso · negociar/pedir cláusula/esperar · traspasos a mitad de contrato + banquillo · la pantalla de tres bloques) · **9Mh** (calibrar — parte medida: subir a tier 1 es estructural, no constante) · falta **9Mi** (la escalera cuesta: el asiento se disputa, el mercado se enfría con la edad) + **9Mj** (recalibrar) |
+| **9W** | **El mejor del mundo**: ranking vivo de los mejores del momento (Top 5 a la derecha siempre, Top 20 al cierre de temporada). Se entra y se sale por mérito, rota mucho, de cualquier edad; distinto de los rivales de generación. Cero RNG (determinista por `hashCadena`) | ⬜ 9Wa→9Wd, ver §9W |
 | **10** | El final: retiro emergente + la tarjeta de legado | ⬜ |
 | **11** | El año: calendario, la nota de la temporada, el archirrival | ⬜ |
 | **12** | La jerarquía de la decisión: categorías, rareza, consecuencia previa, el dado | ⬜ |
@@ -2982,7 +2983,9 @@ mitad de `margenImport`).
 | 9Me | `fase 9Me: negociar, no aceptar` | 9M.6 — ✅ 2026-09-09, ver `PROGRESO.md` |
 | 9Mf | `fase 9Mf: traspasos a mitad de contrato` | 9M.7 — ✅ 2026-09-09, ver `PROGRESO.md` |
 | 9Mg | `fase 9Mg: la pantalla del mercado` | 9M.8 — ✅ 2026-09-09, ver `PROGRESO.md` |
-| 9Mh | `fase 9Mh: calibrar el mercado` | solo constantes |
+| 9Mh | `fase 9Mh: calibrar el mercado` | solo constantes. **Alcance recortado al medir** (2026-09-10): `derivaPrimerSplit` 6→3 y `renovacionSigmaFactor` 0,35→0,27 despinchan *proyección jerarquía* (±3) y *renovación se desploma* (40%). **Checks 7, 9, "La dinastía" y "series sin draft" NO se cierran con constantes** — la causa es estructural (el asiento de tier 1 siempre está disponible; el mundo se ablanda porque nadie disputa los asientos). Van a 9Mi. Medición en `PROGRESO.md` |
+| 9Mi | `fase 9Mi: la escalera cuesta` | 9M.12 — estructural: el asiento se **disputa** (le tenés que ganar a la mejor alternativa real de la org, no estar "en banda") y el mercado se **enfría con la edad** (el sesgo etario gatea si el asiento existe, no sólo la mano). Cierra checks 7 y 9; corre el stream (D35) |
+| 9Mj | `fase 9Mj: recalibrar la escalera` | solo constantes — todo lo que 9Mi corra + despinchar "La dinastía" / "series sin draft" / lo que 9Mi rompa |
 
 **Prerrequisito**: ~~cerrar 9Ec y 9Ed primero~~ — hecho (commit `fase 9Ec+9Ed`, 2026-09-06). El
 azar de `index.html` ya vivía en `rngUi` desde la fase P; 9Ed puso el candado en `guards.js`. El
@@ -3211,9 +3214,9 @@ Cada uno verificado en rojo antes de darlo por bueno (regla 7 / trampa T5).
 | 4 | Ligas distintas pisadas por carrera | media 1,48 · máx 2 | mediana ≥ 2 y ≥15% pisa 3+ |
 | 5 | Fichajes con elección real por carrera | 3,05 | 4-8 |
 | 6 | Carreras con ≥1 traspaso a mitad de contrato | 0% | ≥25% |
-| 7 | Tier al cierre = tier 1 | 74% (89/120) | ≤65% |
-| 8 | Carreras que caen de tier 1 a tier 2 al menos una vez | 0% | ≥15% |
-| 9 | Correlación nivel ↔ mejor liga alcanzada | el dado la rompe | r > 0,5 |
+| 7 | Tier al cierre = tier 1 | 74% (89/120) | ≤65% — **9Mi** (constantes probadas en 9Mh, no lo mueven: el asiento de tier 1 siempre está) |
+| 8 | Carreras que caen de tier 1 a tier 2 al menos una vez | 0% | ≥15% ✅ 9Md (~22%) |
+| 9 | Correlación nivel ↔ mejor liga alcanzada | el dado la rompe | r > 0,5 — **9Mi**. Medida honesta (9Mh): `nivelPico ↔ prestigio de la mejor liga`, no el proxy grueso tier-rank ↔ nivel post-declive. Baseline r≈0,40 |
 | 10 | Oferta rechazada que sigue disponible sin log de quién la tomó | — | 0 casos |
 | 11 | `registro.dineroTotalUSD` > 0 y monótono en toda carrera con contrato | siempre 0 | 100% |
 | 12 | `contexto.residencia === 'import'` alcanzable | inalcanzable | ≥10% de las carreras |
@@ -3232,6 +3235,224 @@ node server.js                            # y jugar una carrera entera a mano
 Aplicada a esta fase, la prueba final del proyecto ("si al final la carrera se puede narrar en cinco
 frases sin mirar el log, el juego está"): después de 9M, dos de esas cinco frases tienen que poder
 ser sobre el mercado — **a qué club le dijiste que no, y quién te sacó el puesto.**
+
+## 9M.12 — La escalera cuesta (9Mi + 9Mj)
+
+> **Por qué esto se separó de 9Mh (2026-09-10).** 9Mh estaba escrita como "solo constantes" para
+> cerrar los checks 7 (tier al cierre = tier 1 ≤ 65%) y 9 (correlación nivel ↔ mejor liga r > 0,5),
+> que 9Md dejó fuera de banda. **Midiendo con sondas aisladas se descubrió que ninguna constante los
+> mueve** (`bandaNivelAbajo` 14→6: check 7 sin cambio; `probRenovacionBase` 0,55→0,35: sin cambio;
+> bandas + `factorDificultadImport` juntos: empeora). El modelo de §9M.9 —"el mercado abierto
+> reparte asientos con la mano blanda"— era incompleto: el problema no es *cuántas* ofertas llegan,
+> es que **el asiento de tier 1 siempre está disponible**. Con ~58 orgs tier 1 × contratos de 1-3
+> años, todos los offseasons hay un hueco en tu rol en alguna liga, y `ofertaPosible` te lo da por
+> estar "en banda" (`org.fuerza − 14 ≤ nivel ≤ org.fuerza + 22`) — que no es "sos el mejor
+> candidato", es "no sos un desastre". Cualquiera que llega a nivel ~62 (y con `potencialMedia` 74
+> casi todos lo cruzan) tiene asiento de primera, todos los años, hasta el retiro forzoso. Medido:
+> **el 99% de las carreras que fichan alcanzan tier 1**, y el **74,6%** termina ahí. El usuario lo
+> confirmó como defecto: *"que el 95% lleguen a mucho... debería costar más, no todas deberían
+> hacerlo"*. Eso es estructural, no de calibrado — de ahí 9Mi.
+
+### 9M.12.1 — El diagnóstico, medido (2026-09-10, probe `_probe_9m_baseline.mjs` n=500 × 60)
+
+| Síntoma | Medido | Objetivo |
+|---|---|---|
+| Carreras que fichan y alcanzan tier 1 | ~99% | que subir cueste |
+| Tier al cierre = tier 1 | 74,6% | ≤ 65% (check 7) |
+| Correlación `nivelPico ↔ prestigio de la mejor liga` | r ≈ 0,40 | r > 0,5 (check 9) |
+| Carreras que caen de tier 1 a tier 2 alguna vez | ~22% | ≥ 15% (check 8, ya pasa) |
+| Fichajes con elección real / carrera | ~4,1 | 4-8 (check 5, cuidar el piso) |
+
+### 9M.12.2 — 9Mi: el cambio (estructural — corre el stream, D35)
+
+**Archivos**: `src/core/demanda.js` · `src/core/mercadoMundial.js` · `src/data/balance.js`
+(constantes nuevas) · `src/systems/competitivo.js` (sólo si hace falta el punto 3).
+
+**1. El asiento se DISPUTA.** `ofertaPosible` deja de aceptarte por estar "en banda": ahora exige
+que le ganes a la **mejor alternativa real de la org para ese asiento** — el NPC que ya lo ocupa (si
+no se va), el mejor agente libre del offseason para tu rol (`mercadoPretemporada.libresRestantes`),
+o el canterano que subiría (`nivelAnclaReemplazo − canteraNivelBajoOrg`). Tenés que estar
+`demanda.margenSobreAlternativa` (~3, por criterio) por encima de ese nivel — "sos claramente la
+elección, no una moneda al aire", el mismo criterio que `margenImport`. Reusa
+`nivelAlternativaAsiento` (ya existe en `systems/mercado.js`, se sube a `core/`). El piso de
+franquicia (9R0e) sigue salteando esto: una estrella genuina siempre tiene asiento. **Efecto**: un
+jugador de nivel 63 que compite por un asiento donde la org podía firmar a un libre de 67 no recibe
+la oferta → se queda en tier 2 hasta que de verdad es mejor. La correlación nivel↔liga (check 9)
+sube porque el tier pasa a medir "¿le ganás a la competencia de tier 1?", que es lo que el check
+quiere.
+
+**2. El mercado se ENFRÍA con la edad.** El `sesgoEtario` hoy sólo adelgaza la mano que ves
+(`cupoEtario` en `generarOfertas`), nunca decide si el asiento existe. Ahora también descuenta tu
+nivel efectivo en la disputa del punto 1: `nivel · sesgoEtario(edad) ≥ nivelAlternativa + margen`.
+Un club que te evalúa a los 29 contra un libre de 21 de nivel parecido se queda con el pibe. Un
+veterano en declive que ya no es *claramente* mejor que la camada joven consigue **cero** asientos
+congelados → tier 2 o retiro. Es lo que mueve check 7 "al cierre", y es el gancho explícito del
+retiro de la fase 10 ("te retirás cuando el mercado deja de llamarte" — hoy eso vuelve a ser un
+dado porque el mercado nunca deja de llamar).
+
+**3. La pirámide completa releva (cierra D16 del todo) — sólo si 1+2 no alcanzan.**
+`resolverDescenso` hoy sólo baja a TU org si terminás último. Se generaliza: cada offseason, cada
+liga tier 1 con `desciendeA` releva a su última (por `org.fuerza`) y su tier-2 más fuerte
+promociona — swap en `mundo.ligas`, planteles viajan por nombre (la mecánica del swap ya existe en
+`competitivo.js`). Da churn real al mapa de fuerzas: la org de un jugador mid-pack tiene, en una
+carrera de 15 años, chance concreta de irse a pique y arrastrarlo (el contrato ya viaja). Se
+implementa **después de medir 1+2**: si con el asiento disputado + el enfriamiento etario el check 7
+ya cae en banda, la pirámide queda como mejora futura anotada, no se fuerza en 9Mi.
+
+**Riesgo a vigilar**: que subir deje de ser posible para carreras buenas (check 5 fichajes < 4,
+check 4 ligas pisadas, "nunca_fichado" se dispara). El `resolverAuto` headless tiene que seguir
+resolviendo (los helpers de `libresRestantes` ya están en el estado cuando corre `ofertaPosible`,
+porque `mercadoMundial` corre primero en el split). D35: se acepta el corrimiento de stream, igual
+que 9Ma-9Mf.
+
+### 9M.12.3 — 9Mj: recalibrar (solo constantes)
+
+Todo lo que 9Mi corra + despinchar los checks que 9Ma-9Mc dejaron parcheados y 9Mh no pudo cerrar
+con constantes limpias: **"La dinastía"** (tope 25%, hoy parcheado a 28%) y **"series sin ningún
+draft"** (piso 28%, hoy 26%). Ambos son síntomas de un mundo que se ablanda porque nadie disputa los
+asientos — con 9Mi los NPCs pelean por su lugar y `org.fuerza` deja de desangrarse, así que deberían
+volver solos; 9Mj confirma y ajusta. Palancas candidatas si no vuelven: `demanda.margenSobreAlternativa`,
+`plantel.probNoRenovarNpc*`.
+
+### 9M.12.4 — Checks
+
+Los de §9M.10 (7, 9) más:
+- **9Mi-1**: subir a tier 1 cuesta — de las carreras que fichan, ≤ 90% alcanzan tier 1 (hoy ~99%);
+  y las que no llegan correlacionan con nivel bajo (no es un dado).
+- **9Mi-2**: el mercado se enfría — ninguna carrera con `nivelPico` de tier 1 sostiene ofertas de
+  tier 1 pasada la `edadRetiroForzoso − 3` si su nivel cayó bajo la banda (regla 15 del retiro).
+- **9Mi-3**: determinismo intacto (misma seed → misma carrera, dentro de 9Mi).
+- **9Mj**: "La dinastía" ≤ 25%, "series sin draft" ≥ 28%, check 5 ∈ [4, 8], `simulate.js 1500 60
+  todas` ≤ 2× base.
+
+---
+
+# FASE 9W — EL MEJOR DEL MUNDO
+
+> **Por qué esta fase existe (2026-09-10, pedido del usuario).** El juego tiene el mundo de NPCs
+> (9Ma) y la escena (9ML.a: quién gana cada liga y Worlds cada año), pero **no hay un ranking vivo
+> de los mejores jugadores del momento** — el equivalente de las listas "Top 20 players" que se
+> publican cada pretemporada, y del discurso "el mejor del mundo". Es un eje de prestigio que hoy no
+> existe: los títulos miden al equipo, la jerarquía tu estatus dentro de la org, el arraigo tu
+> vínculo con la org, la ladder tu soloQ. Ninguno responde *"¿fuiste de los mejores del mundo
+> alguna vez?"*. Pedido textual: *"algo tipo top players aparte de lo de la generación... que se
+> pueda entrar o salir de ahí, que quizás entre uno de tu generación, que entren players más viejos
+> o más jóvenes, que rote bastante, y que tenga sentido entrar ahí"* · *"top 5 a la derecha a
+> medida que vas jugando, y el top 20 a final de temporada, porque quizás estuviste cerca"*.
+>
+> **Va entre 9M y 10** por dependencia: la fase 10 lee "eras top 20 y te caíste" para un desenlace
+> de retiro, y la fase 11 construye la narrativa del archirrival sobre el ranking. Depende de 9Ma
+> (planteles) y 9ML.a (escena), ambos hechos. Refuerza 9Mi (un top 20 es franquicia: el mercado
+> siempre le tiene asiento).
+
+## 9W.1 — Regla de oro: cero RNG
+
+El ranking se computa **determinísticamente sin tocar `rng`**, con `hashCadena` (`src/core/numeros.js`,
+ya usado por `core/minijuegos.js` y `core/plantillas.js`). A diferencia de 9Ma-9Mi, **9W NO corre el
+stream** (no hay D35 nuevo): el stream agregado de una carrera es idéntico antes y después de 9W.
+
+## 9W.2 — Commits
+
+| # | Commit | Contenido |
+|---|---|---|
+| 9Wa | `fase 9Wa: el mundo tiene ranking` | `src/core/topMundial.js` (`puntajeRanking` / `rankearMundo` / `diffDeRanking`, puro sin `rng`) + `src/systems/topMundial.js` (1 línea en `ETAPAS_SPLIT`, después de `escena`) + `systems/escena.js`/`core/escena.js` persisten `mundo.escenaAnual` (campeones/subcampeones/Worlds, las 6 ligas + la del jugador) + estado nuevo en `core/state.js`. Sin UI, sin ganchos |
+| 9Wb | `fase 9Wb: entrar cuesta y se siente` | ganchos: `valorDeMercado` (+bonus por rank), piso de franquicia en `demanda.js` (top 20 = franquicia), `legado.js` (`picos.rankMundial` en `totales` + ramas de arquetipo), `ficha.js` (`fichaCompleta` expone el rank; `dueloDeGeneracion` devuelve el duelo de ranks), marca `top_mundial`/`mejor_del_mundo` + momento `el_mejor_del_mundo` + 2-3 eventos semilla. `mundo.rivales[].puntaje` en vivo (D8/D40) |
+| 9Wc | `fase 9Wc: la pantalla` | regla de proceso 12: panel persistente **Top 5** en el rail derecho del HUD + **reveal del Top 20** al cierre de temporada (`presentacion: 'top_mundial'` o bloque de feed), con tu fila resaltada o *"quedaste #23"*. Coordinar con el shell de la fase T |
+| 9Wd | `fase 9Wd: calibrar` | solo constantes: `ruidoSpread` (la perilla del churn), `bonus*`, `valorTopMundialBonus`, hasta que los checks de rotación / entrada del jugador caigan en banda |
+
+## 9W.3 — El modelo
+
+**Estado nuevo** (`core/state.js`, objetos completos desde el arranque — trampa T4):
+- `mundo.topMundial`: array de largo `BALANCE.topMundial.tamano` (20), reescrito **cada split**
+  (barato: ~290 NPCs de tier 1 + el jugador, aritmética + un sort). Entrada:
+  `{ handle, org, liga, regionId, rol, edad, nivel, puntaje, rivalDeGeneracion, esJugador, entroAnio, bonusResultado }`.
+- `mundo.mejorDelMundo`: espejo de `topMundial[0]`.
+- `mundo.escenaAnual` / `escenaAnualPrevia`: `{ campeones: {ligaId: org}, subcampeones, campeonMundial, finalistasMundo }`.
+  Un año de memoria para el decay del bonus.
+- `career.registro.picos.rankMundial`: mejor (**menor**) rank de la vida; `0` = nunca. Mínimo
+  monótono → helper propio `registrarPicoRank` en `core/registro.js`.
+- `career.registro.splitsEnTopMundial`: contador monótono.
+- `flags.rankMundialActual` (number|null) / `flags.rankMundialAnterior`: el rank absoluto del
+  jugador ahora y al cierre del año pasado (suben y bajan — son flags). `null` si no es
+  **rankeable**: sólo `career.tier === 1` califica (el Top 20 es conversación de tier 1 — refuerza
+  9Mi: "no estás en la conversación hasta que llegás a primera").
+
+**`puntajeRanking(entidad)`** (puro):
+```
+nivel
+  + pesoResultado       · bonusResultadoDelAnio(entidad, escenaAnual, career)
+  + pesoResultadoPrevio · bonusResultadoDelAnio(entidad, escenaAnualPrevia)   // decay
+  + ruidoDeterminista(handle, anio)
+```
+- `nivel`: `npc.nivel` / `nivelDelJugador(state)` — misma escala 0-100 (garantizado por
+  `core/plantel.js`).
+- `bonusResultadoDelAnio`: la org de la entidad ganó su liga (`+bonusCampeonLiga`), ganó Worlds
+  (`+bonusInternacional`), fue finalista (`+bonusInternacionalFinalista`). NPCs: de `escenaAnual`.
+  Jugador: de deltas de `career` este año (`titulos`, `internacionales`, `posicion`).
+- `ruidoDeterminista(handle, anio)`: `hashCadena(seed + handle + anio)` normalizado a
+  `[-ruidoSpread, +ruidoSpread]`. **Constante dentro de un año, se re-tira en el borde** — el motor
+  del churn ("que rote bastante") sin consumir `rng`.
+- **La edad NO es un término.** La diversidad etaria es emergente: `nivelNpc` sigue la curva de
+  carrera (pico ~20-26, declive después), así que el Top 20 tiene trepadores de 18-20, pico de
+  21-26 y algún veterano de 27-30. `retiroEdadDura` (30) lo tapa por arriba.
+
+**El sistema** (`systems/topMundial.js`, después de `escena` en `registro.js`): cada split
+recomputa `topMundial` sin logs (mid-season sólo se mueve el jugador, según sube su nivel — sentís
+que trepás). Al **cierre de edad** (`esCierreDeEdad`), difea contra `flags.rankMundialAnterior` y
+emite los beats (entrás / te caés después de N splits / llegás al #1 / un rival de generación entra
+o sale / el reveal del Top 20), escribe `picos.rankMundial` / `splitsEnTopMundial` / un `momento`,
+y guarda `rankMundialAnterior` + `escenaAnualPrevia`. Nunca consume `rng`.
+
+## 9W.4 — Los ganchos ("que tenga sentido entrar ahí")
+
+1. **Valor de mercado** (`core/valorMercado.js`): `+ mercado.valorTopMundialBonus · escala(rank)`
+   al `factor` — espeja `valorSignatureBonus` / `valorResidenciaBonus`.
+2. **Piso de franquicia** (`core/demanda.js`, 9R0e / 9Mi): top 20 = franquicia, el mercado siempre
+   te tiene asiento de tier 1.
+3. **Contenido** (`data/contextos.js`): marcas `top_mundial` (rank ≤ 20) / `mejor_del_mundo`
+   (rank === 1) + momento `el_mejor_del_mundo` (prioridad alta). El catálogo de eventos que lo usa
+   (sponsor bomba, "defendé el #1", la prensa que te corona/destrona, el rookie que va por tu
+   lugar, el archirrival que te pasa) es **fase 13**; 9W deja 2-3 semilla.
+4. **Tarjeta de legado** (`core/legado.js`): `picos.rankMundial` en `totales` ("Nº3 EN EL MUNDO",
+   "14 splits en el Top 20") y ramas de `elegirArquetipo` (#1 → "El mejor del mundo (año 20XX)";
+   ≤ 5 → "De los mejores del mundo"; breve → "El que tocó el Top 20"). El dato más evocador de la
+   tarjeta final.
+5. **Retiro** (fase 10, gancho): `picos.rankMundial > 0 && flags.rankMundialActual == null` para un
+   desenlace propio.
+6. **Rivales de generación vivos** (D8 / D40): `mundo.rivales[].puntaje` deja de ser 0 muerto y
+   pasa a ser "mejor rank mundial alcanzado" en vivo; `dueloDeGeneracion` (`core/ficha.js`, hoy
+   siempre `null`) empieza a devolver `{ tuRank, rivalRank, rivalHandle }`.
+
+## 9W.5 — Constantes nuevas — `BALANCE.topMundial`
+
+`tamano: 20` · `pesoResultado` · `decayResultado: 0.4` · `bonusCampeonLiga` · `bonusInternacional` ·
+`bonusInternacionalFinalista` · `ruidoSpread` (**la perilla del churn**). En `BALANCE.mercado`:
+`valorTopMundialBonus`. Valores por criterio, retune en 9Wd.
+
+## 9W.6 — Checks (cada uno en rojo primero, regla 7)
+
+- `topMundial` largo `tamano`, sin handles repetidos, ordenado por `puntaje` desc.
+- **Determinismo + cero stream**: misma seed → mismo `topMundial` cada año, y `simulate.js` pre/post
+  da agregados **idénticos** (9W no consume `rng`).
+- **Rota**: en una carrera de 15 años, ≥ X handles distintos pasan por el Top 20 y el corte #20
+  cambia ≥ Y veces (números en 9Wd).
+- **Diversidad etaria**: a lo largo de las listas de una carrera, el Top 20 abarca ≥ Z años de
+  rango y aparecen entradas < 20 y > 27 al menos a veces.
+- **Mérito, no lotería**: correlación `nivel` de un NPC ↔ su rank, r > 0,6.
+- **"Cuesta / tiene sentido"**: el jugador entra al Top 20 en ≥ P% de las carreras con éxito
+  (título o internacional) y casi nunca en las que se lavaron.
+- `picos.rankMundial` monótono (número no creciente), escrito, y en la tarjeta de legado.
+- Un rival de generación aparece en el Top 20 en ~Q% de las carreras (raro por diseño —
+  `rivalPotencialMedia` 66; "quizás" del usuario).
+- Perf: `simulate.js 1500 60 todas` ≤ 2× base.
+
+## 9W.7 — Fuera de alcance (anotado)
+
+- El catálogo completo de eventos `top_mundial` → **fase 13**.
+- La ficha del archirrival con `desenlace` y el duelo de ranks como eje narrativo completo →
+  **fase 11** (9W deja `mundo.rivales[].puntaje` vivo y `dueloDeGeneracion` devolviendo algo).
+- `escena.js` simulando de verdad un split ajeno → sigue siendo mundo de cartón con una capa de
+  vida (9ML.a); 9W no lo cambia.
 
 ---
 
@@ -3822,7 +4043,7 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D5 | ~~`regionOrigen` se sorteaba uniforme entre 8 ligas~~ — resuelto: pesado por prestigio, solo tier 1 | ✅ 3 |
 | D6 | ~~El meta se describía por arquetipo, no por campeón~~ — resuelto: `campeonesEnMeta` | ✅ 1 |
 | D7 | `src/ui/` está vacía; los 1.090 renglones de UI viven en `index.html` (creció de 416 a 1.090 entre la fase 0 y la fase 4, sobre todo por los 5 minijuegos) | 8 |
-| D8 | Los 5 rivales de generación se generan y no corren su carrera. La fase 5 les da su primer uso real (aparecen con nombre como `stakes: rival_de_generacion` en una fecha marcada). **9Ma**: ahora ocupan una casilla de plantel real (la que `orgDelRival` les asigna por hash) y `systems/plantel.js` los envejece como NPCs de carrera larga. **9Mc**: `core/mercadoMundial.js` los mueve/renueva con el resto del mundo (no se van al mercado ni se retiran antes de tiempo — `seVaDelMundo` los protege). Falta la ficha de archirrival con `desenlace` | 🔶 **9Ma+9Mc (viven y se mueven en el mundo)** / 11 (la ficha) |
+| D8 | Los 5 rivales de generación se generan y no corren su carrera. La fase 5 les da su primer uso real (aparecen con nombre como `stakes: rival_de_generacion` en una fecha marcada). **9Ma**: ahora ocupan una casilla de plantel real (la que `orgDelRival` les asigna por hash) y `systems/plantel.js` los envejece como NPCs de carrera larga. **9Mc**: `core/mercadoMundial.js` los mueve/renueva con el resto del mundo (no se van al mercado ni se retiran antes de tiempo — `seVaDelMundo` los protege). **9W**: `mundo.rivales[].puntaje` deja de ser 0 y pasa a ser su mejor rank en el Top 20 mundial, en vivo; `dueloDeGeneracion` empieza a devolver el duelo de ranks. Falta la ficha de archirrival con `desenlace` | 🔶 **9Ma+9Mc (viven y se mueven)** · 9W (rank en vivo) / 11 (la ficha) |
 | D9 | `player.deudaSueno` no se resetea al pasar a profesional y `atributos.js` la sigue cobrando toda la carrera. **Es útil**: es media cadena causal del sistema de lesiones, ya construida | 10 |
 | D10 | `secundario.js` usa `amateur.edadLimite` para congelar el flag. Al borrar ese tope hay que darle su propio umbral | 10 |
 | D11 | Las rutinas de offseason siguen gateadas solo por etapa, no por tier (un bootcamp en Corea no lo paga un tier 3). Deferido de la fase 3 por alcance: cuidar el check de segura/agresiva al diferenciar | 13 |
@@ -3830,7 +4051,7 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D13 | ~~`academy_offer` empujaba a `career.orgs` sin fichar~~ — resuelto: el fichaje real lo hace `amateur.js`/`competitivo.js`, `academy_offer` quedó como la prueba narrativa que siempre fue | ✅ 3 |
 | D14 | Solo 2 eventos del catálogo usan 3 opciones; ninguno usa 4 | 13 |
 | D15 | LCP no tiene un circuito de desarrollo real investigado (`CONCEPTO` §12.3 no lo cubre). Se modeló como `LCP_CHALLENGERS`, generado igual que el resto de tier 2 — nombre plausible, no verificado como real. Si aparece la investigación real, reemplazar el id | 3 (abierto) |
-| D16 | ✅ **Cerrada (9Md).** El último de una liga tier 1 con `desciendeA` desciende y su contrato viaja; la org tier-2 más fuerte de la región promociona a taparla (swap en `mundo.ligas`). **21,8%** de las carreras caen de tier 1 a tier 2 al menos una vez (check 8: ≥15%). La pirámide completa (todas las ligas relegan cada año, no solo la del jugador) queda para 9Mh | ✅ 9Md |
+| D16 | ✅ **Cerrada (9Md)** para el jugador. El último de una liga tier 1 con `desciendeA` desciende y su contrato viaja; la org tier-2 más fuerte de la región promociona a taparla (swap en `mundo.ligas`). **21,8%** de las carreras caen de tier 1 a tier 2 al menos una vez (check 8: ≥15%). La **pirámide completa** (todas las ligas relegan cada año, no solo la del jugador) pasó de 9Mh a **9Mi** (§9M.12.2 punto 3), y sólo si el asiento disputado + el enfriamiento etario no alcanzan para el check 7 | 🔶 9Md · pirámide → 9Mi (condicional) |
 | D17 | LRN/LRS (los circuitos tier 2 de LATAM que alimentan LCS/CBLOL) y la doble residencia LATAM 2026-2027 no están modelados: un jugador de la región nace directamente en NA o BR. Es la simplificación explícita que ya preveía la investigación ("la doble residencia... vale un evento dedicado") | **9M** |
 | D18 | ~~La ventana `internacional` era un único evento agregado (`chance()`)~~ — resuelto a medias en la fase 4: ahora es una serie Bo5 real de verdad contra un rival de otra región, con Fearless y minijuegos. Sigue **sin distinguir** First Stand/MSI/Worlds ni modelar un bracket Swiss+knockout: es una sola serie representativa, no el torneo real completo | ✅ 4 (parcial) |
 | D19 | El bracket de playoffs de tier 1 es de **eliminación simple** (6 clasificados, bye para los 2 mejores sembrados, Bo5 parejo). Las 6 ligas 2026 investigadas usan doble eliminación real (hay bracket de perdedores). Simplificación deliberada: el motor solo simula TU camino por el bracket, nunca el resto — una derrota ya cuenta una historia completa ("eliminado en cuartos") sin necesitar una corrida paralela por el lado de perdedores | 4 (abierto) |
@@ -3849,7 +4070,7 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D32 | **`node src/dev/validate.js` tarda 6m47s** y la Definición de terminado lo exige en cada cambio. Candidato a partirse en `--rapido` (esquema, contratos, determinismo) y `--completo` (los checks estadísticos de n grande, que son los que se comen el tiempo) | 12 (abierto) |
 | D34 | **Cuánto se tarda en SALIR del nivel tier 3 nunca se había podido medir**, porque el bug D25 mataba la carrera en la primera disolución: las carreras largas en tier 3 no existían, se varaban. Con D25 cerrado, medido a 1500 carreras: por org la permanencia sigue clavada en el diseño (**mediana 2, p90 5** — el pedido "nadie se queda mucho en un equipo inventado" se cumple), pero el tiempo total en el NIVEL da **mediana 5, p90 12, máximo 36 splits**. El 98,3% de las carreras que pisan tier 3 igual escapan a tier 2 o 1, así que no es una trampa — pero un p90 de 12 splits (4 años) dando vueltas por equipos chicos es candidato a revisar `probAscensoBaseDesdeTier3`. **No se tocó ninguna constante**: regla de proceso 2, primero medir con la estructura nueva. El check gatea la métrica por org, que es la que responde el pedido | 10 (abierto) |
 | D33 | ✅ **Cerrada (2026-09-04).** 13 comentarios de `/src` citaban `TRASPASO.md §4` — redirigidos a `CONCEPTO.md §12`, con sub-número (`§12.N`) donde el tema calza con una subsección real (Calix/scouting → 12.2, edad mínima de liga → 12.3, declive → 12.4, lognormal de salarios → 12.6) y bare `§12` donde no había un mapeo 1:1 verificable. Se soltaron los artefactos propios de TRASPASO que no viajan (rangos de línea, "imagen N"). 0 archivos con `TRASPASO` restantes en `/src` | 9E |
-| D35 | **La fase 9M corre el stream de RNG y mueve el balance agregado entero**: los planteles NPC consumen `rng` en `generarMundo` y en cada offseason, y la escalera deja de sortearse. Ninguna seed anterior a 9M reproduce su carrera. Misma familia y mismo criterio que D21/D22. **9Ma**: `org.fuerza` día 1 `mean 77,5→76,9`; 2 checks al borde. **9Mc**: `mercadoMundial` cada offseason; "La dinastía" 25→28% y "series sin draft" 28→26% (parches). **9Md**: el mercado escanea 6 ligas + descenso; **checks 7 (tier1 al cierre 77,8%, tope 65%) y 9 (correlación nivel↔liga r=0,22, piso 0,5) fuera de banda** — el retune de banda de nivel / presupuesto / `dificultadAdaptacion` es 9Mh. **9Mf**: `chance` del traspaso a mitad de contrato (+ `construirOferta` cuando salta) cada pretemporada con contrato corriendo, y `chance` del banquillo en splits de fracaso — shift **casi invisible en agregado** (equilibrado: tier1 al cierre 77,5→77,4%, mentalidad 88,6→89,1, mecánica 75,2→75,1; 0 crashes en 4500 carreras; ningún check parcheado se movió). El resto se remide en 9Mh (trampa T6) | 🔶 **9Ma-9Mf (shift aceptado y medido)** · retune 9Mh |
+| D35 | **La fase 9M corre el stream de RNG y mueve el balance agregado entero**: los planteles NPC consumen `rng` en `generarMundo` y en cada offseason, y la escalera deja de sortearse. Ninguna seed anterior a 9M reproduce su carrera. Misma familia y mismo criterio que D21/D22. **9Ma**: `org.fuerza` día 1 `mean 77,5→76,9`; 2 checks al borde. **9Mc**: `mercadoMundial` cada offseason; "La dinastía" 25→28% y "series sin draft" 28→26% (parches). **9Md**: el mercado escanea 6 ligas + descenso; **checks 7 (tier1 al cierre 77,8%, tope 65%) y 9 (correlación nivel↔liga r=0,22, piso 0,5) fuera de banda** — el retune de banda de nivel / presupuesto / `dificultadAdaptacion` es 9Mh. **9Mf**: `chance` del traspaso a mitad de contrato (+ `construirOferta` cuando salta) cada pretemporada con contrato corriendo, y `chance` del banquillo en splits de fracaso — shift **casi invisible en agregado** (equilibrado: tier1 al cierre 77,5→77,4%, mentalidad 88,6→89,1, mecánica 75,2→75,1; 0 crashes en 4500 carreras; ningún check parcheado se movió). **9Mh**: `derivaPrimerSplit` 6→3 (cosmético, no corre stream) y `renovacionSigmaFactor` 0,35→0,27 (sólo escala el valor, no corre stream) — despincha *proyección jerarquía* (±3) y *renovación* (40%). **9Mi** vuelve a correr el stream (el asiento se disputa) y cierra 7/9 + "La dinastía"/"series sin draft" en 9Mj (trampa T6, remedición completa) | 🔶 **9Ma-9Mh (shift aceptado y medido)** · 9Mi corre stream · retune 9Mj |
 | D40 | **Tres campos del estado declarados que ningún sistema escribe nunca.** Verificado por grep sobre `/src/core` y `/src/systems` el 2026-09-04: ~~`career.registro.dineroTotalUSD`~~ (**cerrado 9Mf**: `roster.js` acumula `salarioAnualUSD/splitsPorEdad` por split; check 11 lo verifica >0 y monótono), `career.registro.picos.rankedPuntos` (0) y `mundo.archirrival` (0; lo espera `dueloDeGeneracion` en `core/ficha.js:179`, que devuelve `null` siempre). También `registro.picos.salarioAnualUSD` (0 escrituras, §9M.7) — **cerrado 9Mf** en el mismo lugar. Lo que queda: `picos.rankedPuntos` y `archirrival`. No es un bug de motor: es un bug de confianza esperando a pasar (la primera pantalla que pinte `US$0 ganado` viola la regla 15) | 🔶 dinero + sueldo (9Mf) · falta `rankedPuntos` / `archirrival` (11) |
 | D41 | **`log.type` no se usa en la UI.** Los 16 sistemas emisores etiquetan cada log (`amateur`, `serie`, `mercado`, `temporada`, …) y `feed.js` solo distingue `tecnico: true`. Es el gancho listo para icono, color y filtro por categoría, gratis. Lo consume la fase T | T |
 | D36 | **La partida no se guarda: un refresh borra la carrera.** Cero `localStorage` en todo el repo. Irrelevante en `localhost`, bloqueante en público con una sesión objetivo de 25-40 minutos. La arquitectura ya está lista —`state.pendiente` existe justamente para que la partida sea serializable a mitad de split y `state` es todo objetos planos—; falta exponer el contador de `mulberry32` (`core/rng.js:2`), que hoy vive en una clausura, para poder restaurar el punto del stream. No necesita backend | **P** |
