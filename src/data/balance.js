@@ -818,6 +818,31 @@ export const BALANCE = {
     bandaNivelAbajo: 14,
     bandaNivelArriba: 22,
 
+    // --- Fase 9Mi (PLAN.md §9M.12): la escalera cuesta. Estar "en banda" no
+    // alcanza — el asiento se DISPUTA contra la mejor alternativa real de la
+    // org (su titular, el mejor libre de tu rol, o el canterano que subiría).
+    // Valores por criterio, medidos en 9Mj (regla 2). ---
+    // Cuánto por encima de esa alternativa tenés que estar para que la oferta
+    // llegue: "sos claramente la elección, no una moneda al aire" — el mismo
+    // criterio que `mercado.margenImport`.
+    margenSobreAlternativa: 4,
+    // El piso de la alternativa: una org no baja de `max(liga.prestigio,
+    // org.fuerza)` menos esto para un titular. El canterano
+    // (`nivelAnclaReemplazo − canteraNivelBajoOrg`) es el último recurso, no lo
+    // que la org apunta.
+    alternativaPisoFuerza: 2,
+    // El enfriamiento etario, en puntos de nivel que se te descuentan en la
+    // disputa (`core/valorMercado.js:castigoEtario`). 0 a los ≤22, ~9 a los 27,
+    // ~14 a los 30 — un veterano en declive cae bajo la vara de CBLOL y el
+    // mercado de primera deja de llamarlo (gancho del retiro de la fase 10).
+    castigoEtarioNivel: 18,
+    // Tu propio club también se enfría: un veterano pasado el declive Y bajo la
+    // banda de su liga tiene la renovación castigada por este factor (el club
+    // prefiere rejuvenecer). Un 30 que sigue claramente mejor que la camada
+    // joven se renueva normal. Es lo que convierte "renovado para siempre en
+    // CBLOL" en "quedó libre a los 31, sólo ofertas de tier 2, se retiró ahí".
+    factorRenovacionDeclive: 0.35,
+
     // --- Fase 9Mc: la resolución del mercado del mundo (core/mercadoMundial.js).
     // Cada offseason, ANTES de la pantalla del jugador, las orgs con un asiento
     // en juego eligen de arriba hacia abajo. Valores por criterio, retune 9Mh

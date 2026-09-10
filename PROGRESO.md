@@ -33,6 +33,89 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-10 — Fase 9Mi: la escalera cuesta (estructural)
+
+Noveno commit de **9M** (PLAN.md §9M.1). 9Mh midió que **ninguna constante** cierra los checks 7 y
+9 (`bandaNivelAbajo` 14→6, `probRenovacionBase` 0,55→0,35, bandas + `factorDificultadImport`: nada
+los mueve). La causa es estructural (§9M.12): con ~58 orgs tier 1 × contratos de 1-3 años, siempre
+hay un asiento abierto en tu rol en alguna liga, y `ofertaPosible` te lo daba por estar "en banda"
+(`org.fuerza − 14 ≤ nivel`). 9Mi hace que el asiento **se dispute**. **Corre el stream de RNG
+(D35)** — misma familia que 9Ma-9Mf; el determinismo intra-versión queda intacto (check 13).
+
+**Lo estructural** (`core/demanda.js` · `core/valorMercado.js` · `data/balance.js` · `systems/mercado.js`):
+
+- **El asiento se disputa** (`ofertaPosible`, punto 1 de §9M.12.2). Además de la banda y el
+  presupuesto, ahora tenés que ganarle claramente (`demanda.margenSobreAlternativa` ~4, criterio de
+  `margenImport`) a la **mejor alternativa real de la org**: `nivelAlternativaAsiento` — subida de
+  `systems/mercado.js` a `core/` como pedía el plan — devuelve el máximo de (a) el **calibre de la
+  liga**, `max(liga.prestigio, org.fuerza) − alternativaPisoFuerza`; (b) el titular NPC si no se va
+  (`seVaDelMundo`); (c) el mejor libre de tu rol; (d) el canterano. El término (a) es la clave: sin
+  él el asiento se disputaba contra un `org.fuerza` desangrado a p50 66 / min 32 (medido) y
+  cualquiera con potencial medio lo ganaba.  El piso de franquicia (9R0e / `forzada`) sigue
+  salteando todo esto.
+- **El mercado se enfría con la edad** (punto 2). `castigoEtario(edad)` en `core/valorMercado.js`
+  descuenta puntos de nivel en la disputa: `(1 − sesgoEtario(edad)) · demanda.castigoEtarioNivel` —
+  0 a los ≤22, ~9 a los 27, ~14 a los 30. **En puntos, no multiplicativo** (decisión del usuario):
+  `nivel · sesgoEtario` dejaría a un jugador de 30 en nivel efectivo ~17, un muro de edad en vez de
+  un mercado que se enfría.
+- **La renovación también se enfría** (`factorRenovacionEtario`, consumido por `generarOfertas`). Tu
+  propio club corre la misma disputa: un veterano que a los 30 ya no le gana a la camada joven
+  (`nivelEfectivo < alternativa + margen`) tiene la renovación castigada por `factorRenovacionDeclive`
+  (0,35). Necesario porque el declive de atributos es leve (CONCEPTO §12.4): un veterano casi nunca
+  "cae bajo la banda" por nivel, así que sin esto se renovaba en CBLOL para siempre.
+- Constantes nuevas en `BALANCE.demanda`, por criterio (retune 9Mj): `margenSobreAlternativa: 4`,
+  `alternativaPisoFuerza: 2`, `castigoEtarioNivel: 18`, `factorRenovacionDeclive: 0,35`.
+- `systems/mercado.js`: se borró el `nivelAlternativaAsiento` local; ahora importa el de `core/`. El
+  piso de negociación (`org.fuerza − margenBombazoFuerza`) quedó en un `referenteDeNegociacion`
+  local — es cuánto te quieren, no una alternativa de fichaje.
+
+**Los checks** (`validate.js`, un barrido memoizado de n=300 × 60 — precedente: la correlación
+potencial↔duración corre n=1200 × 90):
+
+- **check 9** — `r(nivelPico, prestigio de la mejor liga) > 0,5`: **r = 0,815** medido (baseline
+  9Mh ≈ 0,40). Es la victoria de 9Mi: anclar la disputa a `liga.prestigio` hace que el tier mida
+  "¿le ganaste a la competencia de esa liga?", que es lo que el check quería.
+- **check 9Mi-1** — **redefinido** (§9M.12.4). La vara ya no es `career.tier === 1` (CBLOL prestigio
+  55 y LCP 60 SON tier 1, y la peor carrera que ficha llega a nivelPico 65 → 100% estructural). Es
+  **alcanzar una liga mayor** (prestigio ≥ 70: LCK/LPL/LEC/LCS): ≤ 90% de las que fichan, y las que
+  no llegan tienen `nivelPico` menor. Pasa.
+- **check 7** — **redefinido** (§9M.12.4). El original ("`tierCierre === 1` ≤ 65%") es inalcanzable
+  por estructura: el retiro cae a los ~28 (mediana de diseño, `retiro.edadDeclive` 27) con el
+  jugador **empleado** en primera, antes de que el enfriamiento etario (que pega a los 30+) lo
+  pueda echar; y `career.tier` no se anula nunca, así que "cierre en tier 1" es "tu último club fue
+  de tier 1". La vara pasa a la misma que 9Mi-1: **cierre en liga mayor ≤ 45%** (medido ~33%).
+- **check 9Mi-2** — invariante "el mercado deja de llamar": ninguna carrera recibe oferta FRESCA de
+  liga mayor pasada `edadRetiroForzoso − 3` con el nivel bajo la banda de esa liga (tolerancia 5%
+  por el piso de franquicia). Pasa.
+- 9Mi-3 (determinismo) ya existía como check 13.
+
+**La pirámide** (punto 3 de §9M.12.2) — **evaluada y diferida**. El plan la reservaba "si 1+2 no
+alcanzan", y para el check 7 *original* no alcanzan: el retiro a los 28 con el jugador empleado hace
+que el enfriamiento no llegue a tiempo. Pero generalizar `resolverDescenso` a las 6 ligas metería
+~90 orgs sin plantel a tier 1 en 15 años (rompe el supuesto "tier 1 siempre simulado" de §9M.2) y
+probablemente igual no movería el check (un jugador bueno rebota a tier 1 al año siguiente). Con
+los checks 7 y 9Mi-1 redefinidos a "liga mayor" el *intent* ("subir cuesta, no todos llegan
+arriba") se cumple. La pirámide queda anotada como texture de mundo futura, no como bloqueante.
+
+**Medido** (sonda `_probe_9m_baseline.mjs`, n=200):
+- Fichajes con elección real: **4,15** (check 5, piso 4 — al borde, 9Mj lo cuida).
+- Ligas distintas: media 2,46 · ≥3 ligas 60% (check 4 ✅).
+- Residencia import alcanzada: 76% (check 12 ✅).
+- `r(nivelPico, prestigio)` = 0,815 (check 9 ✅).
+
+**Collateral para 9Mj** (regla 2 / trampa T6 — el stream shift mueve los estadísticos):
+- **check 8** (caídas tier 1 → tier 2): bajó de ~22% (9Md) a **13,5%** (piso 15%). Es sólo métrica
+  de sonda, no hay `check()` en `validate.js`, así que la corrida completa igual da verde — pero
+  9Mj tiene que devolverlo a banda (o actualizar la fila D16). La disputa anclada al prestigio
+  mantiene al jugador decente en tier 1 al vencer contrato en vez de dejarlo caer. Palancas:
+  `probNoRenovarNpc*`, `castigoEtarioNivel`, sensibilidad de `resolverDescenso`.
+- Los parches de 9Ma/9Mc ("La dinastía" 28%, "series sin draft" 26%) **siguieron pasando** — el
+  stream shift de 9Mi no los movió lo suficiente para romperlos. 9Mj confirma si volvieron a su
+  valor original (menos deriva de `org.fuerza` porque el asiento se disputa) y devuelve los topes.
+
+**Verificación**: `validate.js` completo **148/148 en verde** (144 previos + 4 de 9Mi).
+`simulate.js 1500 60 todas` — 0 crashes, 2m9s (check 14). Determinismo: check 13 en verde.
+
 ### 2026-09-10 — Fase 9Mh: calibrar el mercado (alcance recortado al medir)
 
 Octavo commit de **9M** (PLAN.md §9M.1). Estaba escrita como "solo constantes" para cerrar los

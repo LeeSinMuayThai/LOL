@@ -8,7 +8,7 @@ import { salarioDeOferta } from '../core/salarios.js';
 import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
 import { cerrarFila, registrarPico, registrarSalarioEnFila, registrarArraigoEnFila, arraigoInicial } from '../core/registro.js';
 import { bandaDeJerarquia, bandaDeArraigoFicha, nivelDelJugador } from '../core/ficha.js';
-import { orgsQueTeFicharian, ofertaPosible, esResidenteDe } from '../core/demanda.js';
+import { orgsQueTeFicharian, ofertaPosible, esResidenteDe, nivelAlternativaAsiento, factorRenovacionEtario } from '../core/demanda.js';
 import { resolverMercadoMundial, cerrarAsientosCongelados } from '../core/mercadoMundial.js';
 import { jerarquiaAlFichar } from './roster.js';
 import { BALANCE } from '../data/balance.js';
@@ -43,18 +43,16 @@ function orgDelMundo(state, orgNombre) {
   return null;
 }
 
-// Fase 9Me (§9M.6): la "mejor alternativa" de una org a ficharte para tu rol —
-// su titular NPC (si no sos vos), o el mejor agente libre que quedó dando
-// vueltas este offseason. Es lo que pesa cuánto te quieren cuando pedís más: si
-// tu nivel está muy por encima de eso, difícil que se levanten de la mesa.
-function nivelAlternativaAsiento(state, orgNombre) {
-  const rol = state.player.role;
-  const asiento = state.mundo.planteles?.[orgNombre]?.[rol];
-  const nivelNpc = asiento && !asiento.esJugador ? (asiento.nivel ?? 0) : 0;
-  const libres = state.mundo.mercadoPretemporada?.libresRestantes ?? [];
-  const mejorLibre = libres.reduce((max, npc) => Math.max(max, npc?.nivel ?? 0), 0);
+// Fase 9Me (§9M.6): cuánto te quieren, para el texto de riesgo de negociar y la
+// probabilidad de ruptura al pedir más. Es la alternativa real del asiento
+// (`core/demanda.js:nivelAlternativaAsiento`, 9Mi) con un piso de negociación:
+// una org nunca te trata como plan B si sos peor que su propia fuerza menos un
+// bombazo (`margenBombazoFuerza`). Ese piso es una heurística de negociación,
+// no una alternativa de fichaje — por eso vive acá y no en `core`.
+function referenteDeNegociacion(state, orgNombre) {
+  const base = nivelAlternativaAsiento(state, orgNombre, state.player.role);
   const org = orgDelMundo(state, orgNombre);
-  return Math.max(nivelNpc, mejorLibre, (org?.fuerza ?? 0) - BALANCE.mercado.margenBombazoFuerza);
+  return Math.max(base, (org?.fuerza ?? 0) - BALANCE.mercado.margenBombazoFuerza);
 }
 
 // --- Construcción de una oferta (§9.5: el contrato de datos exacto) ---
@@ -146,7 +144,7 @@ function construirOferta(state, liga, org, tagForzado, rng) {
   // Fase 9Me: cuánto te quieren, para el texto de riesgo de "pedir más". La
   // brecha entre tu nivel y su mejor alternativa gobierna si el club aguanta el
   // apriete o se va a otro (`negociarPedirMas`).
-  const brechaNegociacion = nivelDelJugador(state) - nivelAlternativaAsiento(state, org.nombre);
+  const brechaNegociacion = nivelDelJugador(state) - referenteDeNegociacion(state, org.nombre);
   const negociacionInfo = {
     riesgoTexto: brechaNegociacion >= m.brechaNegociacionComoda
       ? 'Te quieren: difícil que se caiga si pedís más.'
@@ -197,8 +195,11 @@ function generarOfertas(state, rng) {
 
   const ligaActual = ligaDeCarrera(state);
   const orgActual = ligaActual?.orgs.find((org) => org.nombre === state.career.currentOrg);
+  // Fase 9Mi: la renovación también se enfría con la edad — un veterano en
+  // declive que ya no le gana a la camada joven no se renueva "para siempre".
   const probRenovacion = clamp(
-    m.probRenovacionBase + (state.career.jerarquia / BALANCE.stats.max) * m.probRenovacionPorJerarquia,
+    (m.probRenovacionBase + (state.career.jerarquia / BALANCE.stats.max) * m.probRenovacionPorJerarquia)
+      * factorRenovacionEtario(state, ligaActual),
     0, 1
   );
   if (orgActual && chance(probRenovacion, rng)) {
@@ -747,7 +748,7 @@ function negociarPedirMas(ofertas, idx, state, rng) {
     return { ofertas, logs: [crearLog('mercado', `${oferta.org} no se mueve más del número.`)], nuevasRotas: [] };
   }
 
-  const brecha = nivelDelJugador(state) - nivelAlternativaAsiento(state, oferta.org);
+  const brecha = nivelDelJugador(state) - referenteDeNegociacion(state, oferta.org);
   const probRuptura = clamp(
     m.rupturaNegociacionBase - brecha * m.rupturaPorBrechaNivel + neg.escalones * m.rupturaPorEscalonPedido,
     m.rupturaNegociacionMin, m.rupturaNegociacionMax

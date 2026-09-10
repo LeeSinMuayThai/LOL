@@ -1,9 +1,9 @@
 import { BALANCE } from '../data/balance.js';
-import { splitsDeResidencia, valorDeMercado } from './valorMercado.js';
+import { splitsDeResidencia, valorDeMercado, castigoEtario } from './valorMercado.js';
 import { nivelDelJugador } from './ficha.js';
 import { etiquetaRol } from '../data/roles.js';
 import { plata } from './formato.js';
-import { seVaDelMundo } from './plantel.js';
+import { seVaDelMundo, nivelAnclaReemplazo } from './plantel.js';
 
 // LA DEMANDA EXISTE (fase 9M, PLAN.md §9M.3): se acabó el `roll(0, techo)`.
 //
@@ -193,12 +193,76 @@ export function cumpleReglasDuras(state, org, liga, rol) {
   return { ok: true };
 }
 
+// Fase 9Mi (PLAN.md §9M.12.2 punto 1): la mejor alternativa REAL de una org a
+// ficharte para `rol` — contra la que se disputa el asiento en `ofertaPosible`.
+// Es lo mejor de:
+//   - el calibre de la liga: `max(liga.prestigio, org.fuerza) −
+//     alternativaPisoFuerza`. Un asiento en LCK atrae talento de LCK aunque el
+//     club venga colapsado; un club fuerte en una liga chica pide su propia
+//     fuerza. Es el término que hace que el tier mida "¿le ganás a la
+//     competencia de esa liga?" — que es lo que quiere el check 9. Sin él, el
+//     asiento se disputa contra un `org.fuerza` que se desangró a ~40 y
+//     cualquiera con potencial medio lo gana (medido en 9Mi: tier1.fuerza p50
+//     66, min 32);
+//   - su titular NPC, salvo que se vaya del mundo (`seVaDelMundo`);
+//   - el mejor agente libre de TU rol que quedó del offseason
+//     (`mercadoPretemporada.libresRestantes`, filtrado por `role`);
+//   - el canterano que subiría (`nivelAnclaReemplazo − canteraNivelBajoOrg`).
+// Subida de `systems/mercado.js` a `core/` (lo pedía §9M.12.2). La heurística
+// de negociación de `mercado.js` (piso `org.fuerza − margenBombazoFuerza`)
+// quedó allá: no es una alternativa de fichaje, es cuánto te quieren.
+export function nivelAlternativaAsiento(state, orgNombre, rol) {
+  const org = orgDe(state, orgNombre);
+  const liga = ligaDeOrg(state, orgNombre);
+  const fuerzaOrg = org?.fuerza ?? 0;
+  const calibre = Math.max(liga?.prestigio ?? 0, fuerzaOrg);
+
+  const titular = state.mundo.planteles?.[orgNombre]?.[rol];
+  const nivelTitular = titular && !titular.esJugador && !seVaDelMundo(titular, fuerzaOrg)
+    ? (titular.nivel ?? 0)
+    : 0;
+
+  const libres = state.mundo.mercadoPretemporada?.libresRestantes ?? [];
+  const nivelMejorLibre = libres.reduce(
+    (max, npc) => (npc?.role === rol ? Math.max(max, npc.nivel ?? 0) : max),
+    0
+  );
+
+  const nivelCanterano = liga
+    ? nivelAnclaReemplazo(liga, fuerzaOrg, BALANCE.mercado.nivelLigaPorDefecto) - BALANCE.plantel.canteraNivelBajoOrg
+    : 0;
+
+  return Math.max(
+    calibre - BALANCE.demanda.alternativaPisoFuerza,
+    nivelTitular, nivelMejorLibre, nivelCanterano
+  );
+}
+
+// Fase 9Mi (PLAN.md §9M.12.2 punto 2): tu propio club también se enfría. La
+// renovación pasa por la MISMA disputa que un fichaje —tu nivel efectivo (con
+// el castigo etario) contra la mejor alternativa de la org— porque el declive
+// de atributos en este juego es leve (CONCEPTO §12.4): un veterano casi nunca
+// "cae bajo la banda" por nivel, pero a los 30 el club igual prefiere al pibe.
+// Un jugador que sigue siendo *claramente* mejor que la camada joven se renueva
+// normal. Lo consume `systems/mercado.js:generarOfertas`.
+export function factorRenovacionEtario(state, ligaActual) {
+  const org = ligaActual?.orgs.find((o) => o.nombre === state.career.currentOrg);
+  if (!org) {
+    return 1;
+  }
+  const nivelEfectivo = nivelDelJugador(state) - castigoEtario(state.age);
+  const alternativa = nivelAlternativaAsiento(state, org.nombre, state.player.role);
+  const claramenteMejor = nivelEfectivo >= alternativa + BALANCE.demanda.margenSobreAlternativa;
+  return claramenteMejor ? 1 : BALANCE.demanda.factorRenovacionDeclive;
+}
+
 // ¿Puede esta org fichar al jugador para ese asiento? bool + motivo legible.
 // Es donde se enciende TODO lo que hoy está muerto en los datos: `edadMinima`,
 // `cupoImports`, `minimoResidentes`, `margenImport`.
 //
-// `forzada`: el piso de franquicia (9R0e) salta el asiento, el presupuesto y la
-// banda —un club se estira por una estrella— pero NUNCA las reglas duras.
+// `forzada`: el piso de franquicia (9R0e) salta el asiento, el presupuesto, la
+// banda y la disputa del asiento —un club se estira por una estrella— pero
+// NUNCA las reglas duras.
 export function ofertaPosible(state, orgNombre, rol, { forzada = false } = {}) {
   const asiento = forzada ? { abierto: true, porMerito: true, motivo: 'te hacen lugar en el roster' } : asientoAbierto(state, orgNombre, rol);
   if (!asiento.abierto) {
@@ -239,6 +303,17 @@ export function ofertaPosible(state, orgNombre, rol, { forzada = false } = {}) {
   const presupuesto = presupuestoParaAsiento(state, orgNombre, rol);
   if (presupuesto < valor * d.presupuestoMinimoFactor) {
     return { posible: false, motivo: `${org.nombre} no te puede pagar` };
+  }
+
+  // Fase 9Mi: el asiento se DISPUTA. Estar en banda no alcanza — tenés que
+  // ganarle claramente (`margenSobreAlternativa`, mismo criterio que
+  // `margenImport`) a la mejor alternativa real de la org, y el mercado te
+  // descuenta nivel por la edad en esa disputa (`castigoEtario`). El piso de
+  // franquicia ya salteó esto arriba (rama `forzada`).
+  const nivelEfectivo = nivel - castigoEtario(state.age);
+  const alternativa = nivelAlternativaAsiento(state, orgNombre, rol);
+  if (nivelEfectivo < alternativa + d.margenSobreAlternativa) {
+    return { posible: false, motivo: `${org.nombre} tiene mejores opciones para el puesto` };
   }
 
   return {

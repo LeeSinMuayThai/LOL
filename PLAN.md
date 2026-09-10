@@ -28,7 +28,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **9E** | El varado: la carrera vuelve a tener juego después del primer equipo | ✅ 9Ea→9Ed, ver `PROGRESO.md` |
 | **9R** | **Que el juego se juegue**: el cooldown mide splits, la tabla deja de mentir, la interrupción vuelve a ser escasa, y elegir cambia el resultado | ✅ 9Ra→9Rg y 9R.0→9R.5, ver `PROGRESO.md` |
 | **T** | **La transmisión**: el sistema de diseño, el shell, el ritmo del split, y las pantallas que faltaban. Fue antes de 9M para que 9M/10/11/12/13 tengan dónde enchufar su pantalla | ✅ T0→T8, ver `PROGRESO.md` |
-| **9M** | **El mercado de pases**: el mundo se puebla de jugadores, la demanda existe, alguien compite por tu asiento, la escalera deja de ser un dado | 🔶 **9Ma→9Mg hechas** (planteles NPC · la demanda · el mercado del mundo top-down · la escalera por asientos + descenso · negociar/pedir cláusula/esperar · traspasos a mitad de contrato + banquillo · la pantalla de tres bloques) · **9Mh** (calibrar — parte medida: subir a tier 1 es estructural, no constante) · falta **9Mi** (la escalera cuesta: el asiento se disputa, el mercado se enfría con la edad) + **9Mj** (recalibrar) |
+| **9M** | **El mercado de pases**: el mundo se puebla de jugadores, la demanda existe, alguien compite por tu asiento, la escalera deja de ser un dado | 🔶 **9Ma→9Mi hechas** (planteles NPC · la demanda · el mercado del mundo top-down · la escalera por asientos + descenso · negociar/pedir cláusula/esperar · traspasos a mitad de contrato + banquillo · la pantalla de tres bloques · calibrar · **9Mi: el asiento se disputa contra el calibre de la liga + el mercado y la renovación se enfrían con la edad** — check 9 `r=0,815`, checks 7 y 9Mi-1 redefinidos a "liga mayor" §9M.12.4, la pirámide diferida) · falta **9Mj** (recalibrar: check 8 cayó a 13,5%, "dinastía"/"series sin draft" a confirmar) |
 | **9W** | **El mejor del mundo**: ranking vivo de los mejores del momento (Top 5 a la derecha siempre, Top 20 al cierre de temporada). Se entra y se sale por mérito, rota mucho, de cualquier edad; distinto de los rivales de generación. Cero RNG (determinista por `hashCadena`) | ⬜ 9Wa→9Wd, ver §9W |
 | **10** | El final: retiro emergente + la tarjeta de legado | ⬜ |
 | **11** | El año: calendario, la nota de la temporada, el archirrival | ⬜ |
@@ -2984,8 +2984,8 @@ mitad de `margenImport`).
 | 9Mf | `fase 9Mf: traspasos a mitad de contrato` | 9M.7 — ✅ 2026-09-09, ver `PROGRESO.md` |
 | 9Mg | `fase 9Mg: la pantalla del mercado` | 9M.8 — ✅ 2026-09-09, ver `PROGRESO.md` |
 | 9Mh | `fase 9Mh: calibrar el mercado` | solo constantes. **Alcance recortado al medir** (2026-09-10): `derivaPrimerSplit` 6→3 y `renovacionSigmaFactor` 0,35→0,27 despinchan *proyección jerarquía* (±3) y *renovación se desploma* (40%). **Checks 7, 9, "La dinastía" y "series sin draft" NO se cierran con constantes** — la causa es estructural (el asiento de tier 1 siempre está disponible; el mundo se ablanda porque nadie disputa los asientos). Van a 9Mi. Medición en `PROGRESO.md` |
-| 9Mi | `fase 9Mi: la escalera cuesta` | 9M.12 — estructural: el asiento se **disputa** (le tenés que ganar a la mejor alternativa real de la org, no estar "en banda") y el mercado se **enfría con la edad** (el sesgo etario gatea si el asiento existe, no sólo la mano). Cierra checks 7 y 9; corre el stream (D35) |
-| 9Mj | `fase 9Mj: recalibrar la escalera` | solo constantes — todo lo que 9Mi corra + despinchar "La dinastía" / "series sin draft" / lo que 9Mi rompa |
+| 9Mi | `fase 9Mi: la escalera cuesta` | ✅ 2026-09-10. Estructural: `ofertaPosible` disputa el asiento contra `nivelAlternativaAsiento` (subida a `core/`, anclada a `max(liga.prestigio, org.fuerza) − alternativaPisoFuerza`); `castigoEtario(edad)` descuenta nivel en la disputa (en puntos, no multiplicativo); `factorRenovacionEtario` corre la misma disputa para tu propio club. **check 9 `r=0,815`** (baseline 0,40). Checks 7 y 9Mi-1 **redefinidos** a "liga mayor (prestigio ≥ 70)" (§9M.12.4) — el original era inalcanzable por estructura (CBLOL/LCP son tier 1, retiro a los 28 empleado). Pirámide (punto 3) **evaluada y diferida**. Corre el stream (D35). `validate.js` 148/148. Ver `PROGRESO.md` |
+| 9Mj | `fase 9Mj: recalibrar la escalera` | solo constantes — todo lo que 9Mi corra + **check 8 (13,5%, piso 15%)** + confirmar "La dinastía" / "series sin draft" (siguieron pasando en 9Mi; ver si volvieron a su valor original) + cuidar check 5 (fichajes 4,15, piso 4) |
 
 **Prerrequisito**: ~~cerrar 9Ec y 9Ed primero~~ — hecho (commit `fase 9Ec+9Ed`, 2026-09-06). El
 azar de `index.html` ya vivía en `rngUi` desde la fase P; 9Ed puso el candado en `guards.js`. El
@@ -3212,11 +3212,11 @@ Cada uno verificado en rojo antes de darlo por bueno (regla 7 / trampa T5).
 | 2 | Nadie viola `cupoImports` / `minimoResidentes` / `edadMinima` — ni vos ni un NPC | no se comprueba | 0 violaciones |
 | 3 | Ningún plantel gasta más que su presupuesto | — | 0 violaciones |
 | 4 | Ligas distintas pisadas por carrera | media 1,48 · máx 2 | mediana ≥ 2 y ≥15% pisa 3+ |
-| 5 | Fichajes con elección real por carrera | 3,05 | 4-8 |
+| 5 | Fichajes con elección real por carrera | 4,15 (9Mi) | 4-8 ✅ al borde — 9Mj lo cuida |
 | 6 | Carreras con ≥1 traspaso a mitad de contrato | 0% | ≥25% |
-| 7 | Tier al cierre = tier 1 | 74% (89/120) | ≤65% — **9Mi** (constantes probadas en 9Mh, no lo mueven: el asiento de tier 1 siempre está) |
-| 8 | Carreras que caen de tier 1 a tier 2 al menos una vez | 0% | ≥15% ✅ 9Md (~22%) |
-| 9 | Correlación nivel ↔ mejor liga alcanzada | el dado la rompe | r > 0,5 — **9Mi**. Medida honesta (9Mh): `nivelPico ↔ prestigio de la mejor liga`, no el proxy grueso tier-rank ↔ nivel post-declive. Baseline r≈0,40 |
+| 7 | ~~Tier al cierre = tier 1 ≤65%~~ → **cierre en liga mayor (prestigio ≥70)** | ~33% (9Mi) | ≤45% ✅ 9Mi. **Redefinido** (§9M.12.4): el original era inalcanzable por estructura — CBLOL/LCP son tier 1 y el retiro cae a los ~28 con el jugador empleado en primera |
+| 8 | Carreras que caen de tier 1 a tier 2 al menos una vez | **13,5% (9Mi)** | ≥15% — ✅ 9Md (~22%), lo bajó el stream shift de 9Mi. **9Mj** (sólo métrica de sonda, no hay `check()`) |
+| 9 | Correlación nivel ↔ mejor liga alcanzada | **r = 0,815 (9Mi)** | r > 0,5 ✅ 9Mi. Anclar la disputa a `liga.prestigio` la creó. Medida: `nivelPico ↔ prestigio de la mejor liga` |
 | 10 | Oferta rechazada que sigue disponible sin log de quién la tomó | — | 0 casos |
 | 11 | `registro.dineroTotalUSD` > 0 y monótono en toda carrera con contrato | siempre 0 | 100% |
 | 12 | `contexto.residencia === 'import'` alcanzable | inalcanzable | ≥10% de las carreras |
@@ -3299,6 +3299,17 @@ carrera de 15 años, chance concreta de irse a pique y arrastrarlo (el contrato 
 implementa **después de medir 1+2**: si con el asiento disputado + el enfriamiento etario el check 7
 ya cae en banda, la pirámide queda como mejora futura anotada, no se fuerza en 9Mi.
 
+> **9Mi (2026-09-10): evaluada y DIFERIDA.** Midiendo 1+2: el check 7 *original* ("`tierCierre === 1`
+> ≤ 65%") no cae porque el retiro se dispara a los ~28 (mediana de diseño de `retiro.js`) con el
+> jugador todavía empleado en primera, **antes** de que el enfriamiento etario (que pega fuerte a
+> los 30+) pueda echarlo — y `career.tier` nunca se anula, así que "cierre en tier 1" es "tu último
+> club fue de tier 1". La pirámide no arregla eso: un jugador bueno relegado rebota a tier 1 al año
+> siguiente. Y generalizar el relevo metería ~90 orgs sin plantel a tier 1 en 15 años (rompe el
+> supuesto "tier 1 siempre simulado" de §9M.2). En vez de eso se **redefinieron los checks 7 y
+> 9Mi-1** a "liga mayor (prestigio ≥ 70)" (decisión del usuario) — mide el mismo *intent* ("subir
+> cuesta, no todos terminan arriba") de forma alcanzable. La pirámide queda como texture de mundo
+> futura, fuera de 9M.
+
 **Riesgo a vigilar**: que subir deje de ser posible para carreras buenas (check 5 fichajes < 4,
 check 4 ligas pisadas, "nunca_fichado" se dispara). El `resolverAuto` headless tiene que seguir
 resolviendo (los helpers de `libresRestantes` ya están en el estado cuando corre `ofertaPosible`,
@@ -3316,14 +3327,28 @@ volver solos; 9Mj confirma y ajusta. Palancas candidatas si no vuelven: `demanda
 
 ### 9M.12.4 — Checks
 
-Los de §9M.10 (7, 9) más:
-- **9Mi-1**: subir a tier 1 cuesta — de las carreras que fichan, ≤ 90% alcanzan tier 1 (hoy ~99%);
-  y las que no llegan correlacionan con nivel bajo (no es un dado).
-- **9Mi-2**: el mercado se enfría — ninguna carrera con `nivelPico` de tier 1 sostiene ofertas de
-  tier 1 pasada la `edadRetiroForzoso − 3` si su nivel cayó bajo la banda (regla 15 del retiro).
-- **9Mi-3**: determinismo intacto (misma seed → misma carrera, dentro de 9Mi).
-- **9Mj**: "La dinastía" ≤ 25%, "series sin draft" ≥ 28%, check 5 ∈ [4, 8], `simulate.js 1500 60
-  todas` ≤ 2× base.
+> **Redefinidos en 9Mi (2026-09-10).** CBLOL (prestigio 55) y LCP (60) **son** tier 1, y la peor
+> carrera que ficha llega a `nivelPico` 65 → toda carrera que ficha cruza la vara de CBLOL tarde o
+> temprano: "% que alcanza `career.tier === 1`" es ~100% por estructura, y "% que cierra en tier 1"
+> es ~75% por estructura (retiro a los 28 empleado + `career.tier` no se anula). La vara pasa a ser
+> **una liga MAYOR — prestigio ≥ 70: LCK / LPL / LEC / LCS**. CBLOL/LCP son el tier 1 accesible; a la
+> elite se sube. Decisión del usuario.
+
+Barrido memoizado de n=300 × 60 en `validate.js` (precedente de muestra grande: la correlación
+potencial↔duración corre n=1200 × 90). Los cuatro leen del mismo resultado.
+
+- **check 7 (redefinido)**: no todas las carreras terminan arriba — **≤ 45% cierra en una liga
+  mayor** (medido 9Mi ~33%). Denominador: todas las carreras.
+- **check 9**: `r(nivelPico, prestigio de la mejor liga) > 0,5` — medido 9Mi **0,815** (baseline
+  0,40). El ancla `liga.prestigio` en la disputa lo creó.
+- **9Mi-1 (redefinido)**: subir cuesta — de las carreras que fichan, **≤ 90% alcanza una liga
+  mayor**, y las que no llegan tienen `nivelPico` menor (no es un dado).
+- **9Mi-2**: el mercado deja de llamar — **ninguna carrera recibe una oferta FRESCA (no renovación)
+  de una liga mayor** pasada `edadRetiroForzoso − 3` con el nivel bajo la banda de esa liga
+  (tolerancia < 5% por el piso de franquicia).
+- **9Mi-3**: determinismo intacto — ya cubierto por el check 13 de §9M.10.
+- **9Mj**: "La dinastía" ≤ 25%, "series sin draft" ≥ 28%, **check 8 ≥ 15%** (cayó a 13,5% con el
+  stream shift), check 5 ∈ [4, 8], `simulate.js 1500 60 todas` ≤ 2× base.
 
 ---
 
@@ -4051,7 +4076,7 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D13 | ~~`academy_offer` empujaba a `career.orgs` sin fichar~~ — resuelto: el fichaje real lo hace `amateur.js`/`competitivo.js`, `academy_offer` quedó como la prueba narrativa que siempre fue | ✅ 3 |
 | D14 | Solo 2 eventos del catálogo usan 3 opciones; ninguno usa 4 | 13 |
 | D15 | LCP no tiene un circuito de desarrollo real investigado (`CONCEPTO` §12.3 no lo cubre). Se modeló como `LCP_CHALLENGERS`, generado igual que el resto de tier 2 — nombre plausible, no verificado como real. Si aparece la investigación real, reemplazar el id | 3 (abierto) |
-| D16 | ✅ **Cerrada (9Md)** para el jugador. El último de una liga tier 1 con `desciendeA` desciende y su contrato viaja; la org tier-2 más fuerte de la región promociona a taparla (swap en `mundo.ligas`). **21,8%** de las carreras caen de tier 1 a tier 2 al menos una vez (check 8: ≥15%). La **pirámide completa** (todas las ligas relegan cada año, no solo la del jugador) pasó de 9Mh a **9Mi** (§9M.12.2 punto 3), y sólo si el asiento disputado + el enfriamiento etario no alcanzan para el check 7 | 🔶 9Md · pirámide → 9Mi (condicional) |
+| D16 | ✅ **Cerrada (9Md)** para el jugador. El último de una liga tier 1 con `desciendeA` desciende y su contrato viaja; la org tier-2 más fuerte de la región promociona a taparla (swap en `mundo.ligas`). Caídas tier 1 → tier 2: **21,8% (9Md)** → **13,5% (9Mi**, el stream shift; 9Mj lo devuelve a ≥15%). La **pirámide completa** (todas las ligas relegan cada año) se **evaluó y difirió en 9Mi** (§9M.12.2 punto 3): no arregla el check 7 (el jugador bueno rebota a tier 1) y metería ~90 orgs sin plantel a tier 1 en 15 años. Los checks 7/9Mi-1 se redefinieron a "liga mayor" en su lugar. Pirámide = texture de mundo futura, fuera de 9M | 🔶 9Md · 9Mj devuelve check 8 a banda · pirámide diferida |
 | D17 | LRN/LRS (los circuitos tier 2 de LATAM que alimentan LCS/CBLOL) y la doble residencia LATAM 2026-2027 no están modelados: un jugador de la región nace directamente en NA o BR. Es la simplificación explícita que ya preveía la investigación ("la doble residencia... vale un evento dedicado") | **9M** |
 | D18 | ~~La ventana `internacional` era un único evento agregado (`chance()`)~~ — resuelto a medias en la fase 4: ahora es una serie Bo5 real de verdad contra un rival de otra región, con Fearless y minijuegos. Sigue **sin distinguir** First Stand/MSI/Worlds ni modelar un bracket Swiss+knockout: es una sola serie representativa, no el torneo real completo | ✅ 4 (parcial) |
 | D19 | El bracket de playoffs de tier 1 es de **eliminación simple** (6 clasificados, bye para los 2 mejores sembrados, Bo5 parejo). Las 6 ligas 2026 investigadas usan doble eliminación real (hay bracket de perdedores). Simplificación deliberada: el motor solo simula TU camino por el bracket, nunca el resto — una derrota ya cuenta una historia completa ("eliminado en cuartos") sin necesitar una corrida paralela por el lado de perdedores | 4 (abierto) |
@@ -4070,7 +4095,7 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D32 | **`node src/dev/validate.js` tarda 6m47s** y la Definición de terminado lo exige en cada cambio. Candidato a partirse en `--rapido` (esquema, contratos, determinismo) y `--completo` (los checks estadísticos de n grande, que son los que se comen el tiempo) | 12 (abierto) |
 | D34 | **Cuánto se tarda en SALIR del nivel tier 3 nunca se había podido medir**, porque el bug D25 mataba la carrera en la primera disolución: las carreras largas en tier 3 no existían, se varaban. Con D25 cerrado, medido a 1500 carreras: por org la permanencia sigue clavada en el diseño (**mediana 2, p90 5** — el pedido "nadie se queda mucho en un equipo inventado" se cumple), pero el tiempo total en el NIVEL da **mediana 5, p90 12, máximo 36 splits**. El 98,3% de las carreras que pisan tier 3 igual escapan a tier 2 o 1, así que no es una trampa — pero un p90 de 12 splits (4 años) dando vueltas por equipos chicos es candidato a revisar `probAscensoBaseDesdeTier3`. **No se tocó ninguna constante**: regla de proceso 2, primero medir con la estructura nueva. El check gatea la métrica por org, que es la que responde el pedido | 10 (abierto) |
 | D33 | ✅ **Cerrada (2026-09-04).** 13 comentarios de `/src` citaban `TRASPASO.md §4` — redirigidos a `CONCEPTO.md §12`, con sub-número (`§12.N`) donde el tema calza con una subsección real (Calix/scouting → 12.2, edad mínima de liga → 12.3, declive → 12.4, lognormal de salarios → 12.6) y bare `§12` donde no había un mapeo 1:1 verificable. Se soltaron los artefactos propios de TRASPASO que no viajan (rangos de línea, "imagen N"). 0 archivos con `TRASPASO` restantes en `/src` | 9E |
-| D35 | **La fase 9M corre el stream de RNG y mueve el balance agregado entero**: los planteles NPC consumen `rng` en `generarMundo` y en cada offseason, y la escalera deja de sortearse. Ninguna seed anterior a 9M reproduce su carrera. Misma familia y mismo criterio que D21/D22. **9Ma**: `org.fuerza` día 1 `mean 77,5→76,9`; 2 checks al borde. **9Mc**: `mercadoMundial` cada offseason; "La dinastía" 25→28% y "series sin draft" 28→26% (parches). **9Md**: el mercado escanea 6 ligas + descenso; **checks 7 (tier1 al cierre 77,8%, tope 65%) y 9 (correlación nivel↔liga r=0,22, piso 0,5) fuera de banda** — el retune de banda de nivel / presupuesto / `dificultadAdaptacion` es 9Mh. **9Mf**: `chance` del traspaso a mitad de contrato (+ `construirOferta` cuando salta) cada pretemporada con contrato corriendo, y `chance` del banquillo en splits de fracaso — shift **casi invisible en agregado** (equilibrado: tier1 al cierre 77,5→77,4%, mentalidad 88,6→89,1, mecánica 75,2→75,1; 0 crashes en 4500 carreras; ningún check parcheado se movió). **9Mh**: `derivaPrimerSplit` 6→3 (cosmético, no corre stream) y `renovacionSigmaFactor` 0,35→0,27 (sólo escala el valor, no corre stream) — despincha *proyección jerarquía* (±3) y *renovación* (40%). **9Mi** vuelve a correr el stream (el asiento se disputa) y cierra 7/9 + "La dinastía"/"series sin draft" en 9Mj (trampa T6, remedición completa) | 🔶 **9Ma-9Mh (shift aceptado y medido)** · 9Mi corre stream · retune 9Mj |
+| D35 | **La fase 9M corre el stream de RNG y mueve el balance agregado entero**: los planteles NPC consumen `rng` en `generarMundo` y en cada offseason, y la escalera deja de sortearse. Ninguna seed anterior a 9M reproduce su carrera. Misma familia y mismo criterio que D21/D22. **9Ma**: `org.fuerza` día 1 `mean 77,5→76,9`; 2 checks al borde. **9Mc**: `mercadoMundial` cada offseason; "La dinastía" 25→28% y "series sin draft" 28→26% (parches). **9Md**: el mercado escanea 6 ligas + descenso; **checks 7 (tier1 al cierre 77,8%, tope 65%) y 9 (correlación nivel↔liga r=0,22, piso 0,5) fuera de banda** — el retune de banda de nivel / presupuesto / `dificultadAdaptacion` es 9Mh. **9Mf**: `chance` del traspaso a mitad de contrato (+ `construirOferta` cuando salta) cada pretemporada con contrato corriendo, y `chance` del banquillo en splits de fracaso — shift **casi invisible en agregado** (equilibrado: tier1 al cierre 77,5→77,4%, mentalidad 88,6→89,1, mecánica 75,2→75,1; 0 crashes en 4500 carreras; ningún check parcheado se movió). **9Mh**: `derivaPrimerSplit` 6→3 (cosmético, no corre stream) y `renovacionSigmaFactor` 0,35→0,27 (sólo escala el valor, no corre stream) — despincha *proyección jerarquía* (±3) y *renovación* (40%). **9Mi** vuelve a correr el stream (el asiento se disputa contra el calibre de la liga + la renovación se enfría con la edad): **check 9 `r=0,815`** (baseline 0,40), checks 7/9Mi-1 redefinidos a "liga mayor", `validate.js` 148/148 en verde (los parches "dinastía"/"series sin draft" **siguieron pasando**). **9Mj**: check 8 (13,5% → ≥15%) + confirmar dinastía/series + cuidar check 5 (4,15) — remedición completa, trampa T6 | 🔶 **9Ma-9Mi (shift aceptado y medido)** · retune 9Mj |
 | D40 | **Tres campos del estado declarados que ningún sistema escribe nunca.** Verificado por grep sobre `/src/core` y `/src/systems` el 2026-09-04: ~~`career.registro.dineroTotalUSD`~~ (**cerrado 9Mf**: `roster.js` acumula `salarioAnualUSD/splitsPorEdad` por split; check 11 lo verifica >0 y monótono), `career.registro.picos.rankedPuntos` (0) y `mundo.archirrival` (0; lo espera `dueloDeGeneracion` en `core/ficha.js:179`, que devuelve `null` siempre). También `registro.picos.salarioAnualUSD` (0 escrituras, §9M.7) — **cerrado 9Mf** en el mismo lugar. Lo que queda: `picos.rankedPuntos` y `archirrival`. No es un bug de motor: es un bug de confianza esperando a pasar (la primera pantalla que pinte `US$0 ganado` viola la regla 15) | 🔶 dinero + sueldo (9Mf) · falta `rankedPuntos` / `archirrival` (11) |
 | D41 | **`log.type` no se usa en la UI.** Los 16 sistemas emisores etiquetan cada log (`amateur`, `serie`, `mercado`, `temporada`, …) y `feed.js` solo distingue `tecnico: true`. Es el gancho listo para icono, color y filtro por categoría, gratis. Lo consume la fase T | T |
 | D36 | **La partida no se guarda: un refresh borra la carrera.** Cero `localStorage` en todo el repo. Irrelevante en `localhost`, bloqueante en público con una sesión objetivo de 25-40 minutos. La arquitectura ya está lista —`state.pendiente` existe justamente para que la partida sea serializable a mitad de split y `state` es todo objetos planos—; falta exponer el contador de `mulberry32` (`core/rng.js:2`), que hoy vive en una clausura, para poder restaurar el punto del stream. No necesita backend | **P** |

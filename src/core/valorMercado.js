@@ -11,6 +11,20 @@ export function sesgoEtario(edad) {
   return mercado.sesgoEtario[edad] ?? mercado.sesgoEtarioMinimo;
 }
 
+// Fase 9Mi (PLAN.md §9M.12.2 punto 2): el mercado se ENFRÍA con la edad. El
+// `sesgoEtario` de arriba sólo adelgaza la mano que ves (`cupoEtario` en
+// `generarOfertas`); nunca decide si el asiento existe. `castigoEtario` sí:
+// descuenta tu nivel en la DISPUTA por un asiento (`ofertaPosible`), en puntos
+// de nivel. A los ≤22 no castiga (`sesgoEtario` = 1 → 0 puntos); a los 27
+// son ~9 puntos, a los 30 ~14. Un veterano que ya no es *claramente* mejor que
+// la camada joven pierde la disputa y cae a tier 2 o al retiro; uno que sigue
+// siendo mejor de verdad, se queda. Es en puntos de nivel a propósito: un
+// factor multiplicativo (`nivel · sesgoEtario`) dejaría a un jugador de 30 en
+// nivel efectivo ~17 — un muro de edad, no un mercado que se enfría.
+export function castigoEtario(edad) {
+  return (1 - sesgoEtario(edad)) * BALANCE.demanda.castigoEtarioNivel;
+}
+
 // Splits vividos en una región (CONCEPTO §12: 12 splits/4 años = "residencia").
 // Deriva de `career.registro.porOrg`, que la fase 8 ya acumula — sin agregar
 // estado nuevo (evita otro punto T1/T4). Tier 3 (`fila.liga === null`)

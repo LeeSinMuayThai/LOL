@@ -1126,6 +1126,161 @@ check('El mercado del mundo renueva contratos NPC: no decaen todos a 0 para siem
   }
 });
 
+// --- Fase 9Mi: la escalera cuesta (PLAN.md §9M.12) ---
+//
+// Un solo barrido de n=300 × 60 splits, memoizado: los checks 7, 9, 9Mi-1 y
+// 9Mi-2 leen del mismo resultado (se paga una vez). Mide lo mismo que la sonda
+// `_probe_9m_baseline.mjs`: pico de nivel de la carrera, prestigio de la mejor
+// liga pisada, tier al cierre, y si el mercado de tier 1 se enfría con la edad.
+const PRESTIGIO_TIER3_9MI = 25;
+// La vara de "liga mayor" (9Mi-1, definición de §9M.12.4): LCK/LPL/LEC/LCS.
+// CBLOL (55) y LCP (60) son el tier 1 accesible; a la elite se sube.
+const PRESTIGIO_LIGA_MAYOR = 70;
+
+function pearson9Mi(xs, ys) {
+  const n = xs.length;
+  const mx = xs.reduce((s, v) => s + v, 0) / n;
+  const my = ys.reduce((s, v) => s + v, 0) / n;
+  let sxy = 0;
+  let sxx = 0;
+  let syy = 0;
+  for (let i = 0; i < n; i += 1) {
+    sxy += (xs[i] - mx) * (ys[i] - my);
+    sxx += (xs[i] - mx) ** 2;
+    syy += (ys[i] - my) ** 2;
+  }
+  return sxy / Math.sqrt(sxx * syy);
+}
+
+let _barrido9Mi = null;
+function barrido9Mi() {
+  if (_barrido9Mi) {
+    return _barrido9Mi;
+  }
+  const carreras = [];
+  for (let seed = 1; seed <= 300; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    let nivelPico = 0;
+    let mejorLigaPrestigio = 0;
+    let alcanzoTier1 = false;
+    let fichó = false;
+
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      if (state.phase !== 'profesional') {
+        continue;
+      }
+      if (state.splitFichaje !== null) {
+        fichó = true;
+      }
+      nivelPico = Math.max(nivelPico, nivelDelJugador(state));
+      if (state.career.liga) {
+        const pres = state.mundo.ligas.find((l) => l.id === state.career.liga)?.prestigio ?? PRESTIGIO_TIER3_9MI;
+        mejorLigaPrestigio = Math.max(mejorLigaPrestigio, pres);
+      }
+      if (state.career.tier === 1) {
+        alcanzoTier1 = true;
+      }
+    }
+
+    const prestigioCierre = state.career?.liga
+      ? (state.mundo.ligas.find((l) => l.id === state.career.liga)?.prestigio ?? PRESTIGIO_TIER3_9MI)
+      : 0;
+    carreras.push({
+      seed, nivelPico, mejorLigaPrestigio, alcanzoTier1, fichó, prestigioCierre,
+      tierCierre: state.career?.tier ?? null,
+      edadFinal: state.age ?? null
+    });
+  }
+  _barrido9Mi = carreras;
+  return carreras;
+}
+
+check('Fase 9Mi: no todas las carreras terminan arriba — cierre en liga mayor acotado (check 7 de §9M.10)', () => {
+  // §9M.12.4: redefinido. El check original ("tierCierre === 1 ≤ 65%") es
+  // inalcanzable por estructura — CBLOL/LCP son tier 1 y el retiro cae a los
+  // ~28 con el jugador todavía empleado en primera, antes de que el
+  // enfriamiento etario (que pega a los 30+) pueda echarlo; y `career.tier` no
+  // se anula nunca, así que "cierre en tier 1" es "tu último club fue de tier
+  // 1". La vara pasa a ser la misma que 9Mi-1: cerrar en una liga MAYOR
+  // (prestigio ≥ 70). Denominador: TODAS las carreras (como la base de §9M.10).
+  const c = barrido9Mi();
+  const mayor = c.filter((x) => x.prestigioCierre >= PRESTIGIO_LIGA_MAYOR).length / c.length;
+  if (mayor > 0.45) {
+    throw new Error(`${(mayor * 100).toFixed(1)}% de las carreras cierra en una liga mayor (tope 45%): terminar arriba no cuesta`);
+  }
+});
+
+check('Fase 9Mi: el nivel del jugador correlaciona con la mejor liga que alcanzó (check 9 de §9M.10: r > 0,5)', () => {
+  const c = barrido9Mi().filter((x) => x.nivelPico > 0 && x.mejorLigaPrestigio > 0);
+  if (c.length < 100) {
+    throw new Error(`sólo ${c.length} carreras con nivel y liga: muestra insuficiente`);
+  }
+  const r = pearson9Mi(c.map((x) => x.nivelPico), c.map((x) => x.mejorLigaPrestigio));
+  if (!(r > 0.5)) {
+    throw new Error(`r(nivelPico, prestigio de la mejor liga) = ${r.toFixed(3)} (piso 0,5): la liga que alcanzás no depende de lo bueno que sos`);
+  }
+});
+
+check('Fase 9Mi: subir a una liga MAYOR cuesta, y las que no llegan son peores (check 9Mi-1: ≤ 90% de las que fichan)', () => {
+  // §9M.12.4: la vara ya no es `career.tier === 1` (CBLOL/LCP son tier 1 y
+  // cualquier pro competente los alcanza — 100% estructural). Es llegar a una
+  // liga mayor (prestigio ≥ 70): LCK/LPL/LEC/LCS. Eso sí se gana.
+  const c = barrido9Mi().filter((x) => x.fichó);
+  if (c.length < 100) {
+    throw new Error(`sólo ${c.length} carreras que fichan: muestra insuficiente`);
+  }
+  const llegan = c.filter((x) => x.mejorLigaPrestigio >= PRESTIGIO_LIGA_MAYOR);
+  const noLlegan = c.filter((x) => x.mejorLigaPrestigio < PRESTIGIO_LIGA_MAYOR);
+  const frac = llegan.length / c.length;
+  if (frac > 0.90) {
+    throw new Error(`${(frac * 100).toFixed(1)}% de las carreras que fichan llega a una liga mayor (tope 90%): subir no cuesta`);
+  }
+  const picoMedio = (xs) => xs.reduce((s, x) => s + x.nivelPico, 0) / xs.length;
+  if (noLlegan.length >= 10 && picoMedio(noLlegan) >= picoMedio(llegan)) {
+    throw new Error(`las que NO llegan a una liga mayor (nivelPico medio ${picoMedio(noLlegan).toFixed(1)}) no son peores que las que llegan (${picoMedio(llegan).toFixed(1)}): el filtro es un dado, no el nivel`);
+  }
+});
+
+check('Fase 9Mi: el mercado se enfría — nadie sostiene oferta de liga mayor pasada la edad si su nivel cayó (check 9Mi-2)', () => {
+  // §9M.12.4: ninguna carrera recibe una oferta FRESCA (no renovación) de una
+  // liga mayor pasada `edadRetiroForzoso − 3` con el nivel claramente bajo la
+  // banda de esa liga. Es la invariante "el mercado deja de llamar" — el
+  // gancho del retiro de la fase 10. El piso de franquicia (9R0e) puede dar 1
+  // a una estrella genuina; lo que no puede es ser la norma (tolerancia < 5%).
+  let casos = 0;
+  let carrerasConCaso = 0;
+  for (let seed = 1; seed <= 300; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    let visto = false;
+    const prestigioDe = (ligaId) => state.mundo.ligas.find((l) => l.id === ligaId)?.prestigio ?? 0;
+    const responder = (sistema, st, decision, r) => {
+      if (sistema.id === 'mercado' && decision.datos?.motivo === 'oferta'
+          && st.age >= BALANCE.retiro.edadRetiroForzoso - 3) {
+        const nivel = nivelDelJugador(st);
+        const ofertaMayorBajoBanda = decision.opciones.some((o) => (
+          o.tag !== 'renovacion'
+          && prestigioDe(o.liga) >= PRESTIGIO_LIGA_MAYOR
+          && nivel < prestigioDe(o.liga) - BALANCE.demanda.bandaNivelAbajo
+        ));
+        if (ofertaMayorBajoBanda) {
+          casos += 1;
+          if (!visto) { carrerasConCaso += 1; visto = true; }
+        }
+      }
+      return sistema.resolverAuto(st, decision, r);
+    };
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng, responder).state;
+    }
+  }
+  if (carrerasConCaso / 300 >= 0.05) {
+    throw new Error(`${carrerasConCaso}/300 carreras (${casos} ofertas) reciben liga mayor pasados los ${BALANCE.retiro.edadRetiroForzoso - 3} con el nivel bajo la banda (tope 5%): el mercado no deja de llamar`);
+  }
+});
+
 check('Balance coherente', () => {
   const a = BALANCE.atributos;
 
