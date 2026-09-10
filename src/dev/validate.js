@@ -36,6 +36,7 @@ import { tierListDeRol, boostDelPool } from '../core/regimen.js';
 import { nivelDelJugador, deltasDeStats, fichaCompleta } from '../core/ficha.js';
 import { componerLegado } from '../core/legado.js';
 import { bandaDeArraigo } from '../core/registro.js';
+import { rankearMundo, rankearPoblacion, puntajeRanking } from '../core/topMundial.js';
 import { salarioDeOferta } from '../core/salarios.js';
 import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
 import { orgsQueTeFicharian, ofertaPosible } from '../core/demanda.js';
@@ -1278,6 +1279,204 @@ check('Fase 9Mi: el mercado se enfría — nadie sostiene oferta de liga mayor p
   }
   if (carrerasConCaso / 300 >= 0.05) {
     throw new Error(`${carrerasConCaso}/300 carreras (${casos} ofertas) reciben liga mayor pasados los ${BALANCE.retiro.edadRetiroForzoso - 3} con el nivel bajo la banda (tope 5%): el mercado no deja de llamar`);
+  }
+});
+
+// --- Fase 9W: el mejor del mundo (PLAN.md §9W) ---
+//
+// Un solo barrido de n=180 × 60 splits, memoizado. Toma una foto del Top 20 a
+// cada cierre de temporada (cuando `topMundial.js` emite el reveal) y acumula
+// agregados por carrera —sin guardar todas las fotos—: cuántos handles
+// distintos pasan por la lista, cuántas veces se mueve el corte #20, el rango
+// etario, si el jugador entró y si tuvo éxito, y si un rival de generación
+// asomó. Además verifica en caliente que `picos.rankMundial` es monótono.
+let _barrido9W = null;
+function barrido9W() {
+  if (_barrido9W) {
+    return _barrido9W;
+  }
+  const carreras = [];
+  for (let seed = 1; seed <= 180; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+
+    const handlesVistos = new Set();
+    let cambiosCorte = 0;
+    let corteAnterior = null;
+    let edadMin = Infinity;
+    let edadMax = -Infinity;
+    let aparicionSub20 = 0;
+    let aparicionSobre27 = 0;
+    let rivalEnTop20 = false;
+    let picoRankPrevio = 0;
+    let monotonoOk = true;
+
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+
+      const pico = state.career.registro.picos.rankMundial;
+      if (picoRankPrevio !== 0 && pico !== 0 && pico > picoRankPrevio) {
+        monotonoOk = false;
+      }
+      if (pico !== 0) {
+        picoRankPrevio = pico;
+      }
+
+      const reveal = state.logs.find((l) => l.type === 'top_mundial' && Array.isArray(l.top20));
+      if (!reveal) {
+        continue;
+      }
+      const top = state.mundo.topMundial;
+      for (const fila of top) {
+        handlesVistos.add(fila.handle);
+        edadMin = Math.min(edadMin, fila.edad);
+        edadMax = Math.max(edadMax, fila.edad);
+        if (fila.edad < 20) aparicionSub20 += 1;
+        if (fila.edad > 27) aparicionSobre27 += 1;
+        if (fila.rivalDeGeneracion) rivalEnTop20 = true;
+      }
+      const corte = top.length === BALANCE.topMundial.tamano ? top[top.length - 1].handle : null;
+      if (corteAnterior !== null && corte !== null && corte !== corteAnterior) {
+        cambiosCorte += 1;
+      }
+      corteAnterior = corte;
+    }
+
+    const r = state.career.registro;
+    const exito = r.titulos.length > 0 || r.internacionales.some((e) => e.resultado === 'buen_papel');
+    const llegoATier1 = state.career.splitAscensoTier1 !== null;
+    carreras.push({
+      distintos: handlesVistos.size,
+      cambiosCorte,
+      edadMin: edadMin === Infinity ? null : edadMin,
+      edadMax: edadMax === -Infinity ? null : edadMax,
+      aparicionSub20,
+      aparicionSobre27,
+      rivalEnTop20,
+      picoRank: r.picos.rankMundial,
+      splitsEnTop: r.splitsEnTopMundial,
+      monotonoOk,
+      exito,
+      llegoATier1
+    });
+  }
+  _barrido9W = carreras;
+  return carreras;
+}
+
+check('Fase 9W: el Top 20 está bien formado (largo tamano, sin repetidos, ordenado por puntaje desc)', () => {
+  const revisar = (top, dónde) => {
+    if (top.length !== BALANCE.topMundial.tamano) {
+      throw new Error(`${dónde}: topMundial tiene ${top.length} entradas, no ${BALANCE.topMundial.tamano}`);
+    }
+    if (new Set(top.map((e) => e.handle)).size !== top.length) {
+      throw new Error(`${dónde}: hay handles repetidos en el Top 20`);
+    }
+    for (let i = 1; i < top.length; i += 1) {
+      if (top[i].puntaje > top[i - 1].puntaje) {
+        throw new Error(`${dónde}: el Top 20 no está ordenado por puntaje desc (pos ${i})`);
+      }
+    }
+  };
+  const inicial = createInitialState(1, mulberry32(1));
+  revisar(inicial.mundo.topMundial, 'estado inicial');
+  if (inicial.mundo.mejorDelMundo?.handle !== inicial.mundo.topMundial[0].handle) {
+    throw new Error('mejorDelMundo no espeja topMundial[0]');
+  }
+  const rng = mulberry32(7);
+  let state = createInitialState(7, rng);
+  for (let i = 0; i < 40 && !state.terminado; i += 1) {
+    state = avanzarSplitAuto(state, rng).state;
+  }
+  revisar(state.mundo.topMundial, 'tras 40 splits');
+});
+
+check('Fase 9W: el ranking es determinista y no consume RNG (regla de oro de §9W)', () => {
+  // No RNG: el sistema `topMundial` recibe un rng que revienta si se lo toca.
+  const sistema = sistemaPorId('topMundial');
+  const rngQueRevienta = () => { throw new Error('topMundial.aplicar tocó el rng'); };
+  const s0 = createInitialState(3, mulberry32(3));
+  sistema.aplicar(s0, rngQueRevienta);
+  const rng = mulberry32(5);
+  let s = createInitialState(5, rng);
+  for (let i = 0; i < 30 && !s.terminado; i += 1) {
+    s = avanzarSplitAuto(s, rng).state;
+  }
+  sistema.aplicar(s, rngQueRevienta);
+
+  // Determinista: misma seed, dos corridas → mismo topMundial y mismo pico.
+  const correr = (seed) => {
+    const r = mulberry32(seed);
+    let st = createInitialState(seed, r);
+    for (let i = 0; i < 45 && !st.terminado; i += 1) {
+      st = avanzarSplitAuto(st, r).state;
+    }
+    return JSON.stringify({ top: st.mundo.topMundial, pico: st.career.registro.picos.rankMundial });
+  };
+  if (correr(11) !== correr(11)) {
+    throw new Error('dos corridas con la misma seed dan distinto topMundial');
+  }
+});
+
+check('Fase 9W: el ranking premia el nivel, no la lotería (r(nivel, rank) > 0,6 sobre la población)', () => {
+  // Dentro del Top 20 el nivel está comprimido y el ruido manda —eso es el
+  // churn buscado—; la correlación se mide sobre `rankearPoblacion` entera.
+  const nivel = [];
+  const rankInv = [];
+  for (let seed = 1; seed <= 40; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 45 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+    }
+    rankearPoblacion(state).forEach((e, idx) => {
+      nivel.push(e.nivel);
+      rankInv.push(-(idx + 1));
+    });
+  }
+  const r = pearson9Mi(nivel, rankInv);
+  if (!(r > 0.6)) {
+    throw new Error(`r(nivel, -rank) = ${r.toFixed(3)} sobre la población (piso 0,6): el ranking es lotería`);
+  }
+});
+
+check('Fase 9W: picos.rankMundial es monótono (no crece nunca) y se escribe cuando entrás', () => {
+  const c = barrido9W();
+  const rotos = c.filter((x) => !x.monotonoOk);
+  if (rotos.length > 0) {
+    throw new Error(`${rotos.length}/${c.length} carreras vieron subir picos.rankMundial (tiene que ser no creciente)`);
+  }
+  const entraron = c.filter((x) => x.picoRank > 0);
+  if (entraron.length === 0) {
+    throw new Error('ninguna carrera del barrido entró al Top 20: el jugador nunca es rankeable');
+  }
+  const sinContador = entraron.filter((x) => x.splitsEnTop === 0);
+  if (sinContador.length > 0) {
+    throw new Error(`${sinContador.length} carreras con picoRank > 0 pero splitsEnTopMundial == 0: el contador no se escribe`);
+  }
+});
+
+check('Fase 9W: el Top 20 mezcla edades — sin término de edad, la diversidad es emergente (§9W.3)', () => {
+  // La edad NO es un término del puntaje: la mezcla etaria sale de que
+  // `nivelNpc` sigue la curva de carrera (trepadores de 18-20, pico 21-26,
+  // algún veterano). Se verifica que a lo largo de una carrera aparecen tanto
+  // sub-20 como > 27 en el Top 20. El umbral FINO de rotación (handles
+  // distintos, cambios de corte) se calibra en 9Wd — acá sólo la estructura.
+  const c = barrido9W();
+  const largas = c.filter((x) => x.distintos > 0);
+  if (largas.length < 50) {
+    throw new Error(`sólo ${largas.length} carreras con fotos del Top 20: muestra insuficiente`);
+  }
+  const conSub20 = largas.filter((x) => x.aparicionSub20 > 0).length / largas.length;
+  const conSobre27 = largas.filter((x) => x.aparicionSobre27 > 0).length / largas.length;
+  if (conSub20 < 0.2 || conSobre27 < 0.2) {
+    throw new Error(`edades poco diversas en el Top 20: sub-20 en ${(conSub20 * 100).toFixed(0)}% de las carreras, >27 en ${(conSobre27 * 100).toFixed(0)}% (piso 20% cada uno)`);
+  }
+  // Y que la lista NO está congelada: en una carrera pasan por ella más
+  // handles que su largo (hay recambio, por poco que sea).
+  const distintosMedio = largas.reduce((s, x) => s + x.distintos, 0) / largas.length;
+  if (!(distintosMedio > BALANCE.topMundial.tamano)) {
+    throw new Error(`una carrera ve en promedio ${distintosMedio.toFixed(1)} handles distintos en el Top 20 (largo ${BALANCE.topMundial.tamano}): la lista está congelada`);
   }
 });
 

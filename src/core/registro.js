@@ -184,6 +184,20 @@ export function registrarPico(registro, campo, valor) {
   return { ...registro, picos: { ...registro.picos, [campo]: valor } };
 }
 
+// Fase 9W: el rank mundial es un pico AL REVÉS — mejor es MENOR (#1 es el
+// techo). `0` = nunca rankeado. Una vez que entrás, `picos.rankMundial` sólo
+// puede bajar: es monótono no creciente, como exige el check de 9W.
+export function registrarPicoRank(registro, rank) {
+  if (!rank || rank <= 0) {
+    return registro;
+  }
+  const actual = registro.picos.rankMundial ?? 0;
+  if (actual !== 0 && rank >= actual) {
+    return registro;
+  }
+  return { ...registro, picos: { ...registro.picos, rankMundial: rank } };
+}
+
 // --- Arraigo (fase 8.4) ---
 
 export function bandaDeArraigo(valor) {

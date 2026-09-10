@@ -33,6 +33,72 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-10 — Fase 9Wa: el mundo tiene ranking (estructural)
+
+Primer commit de **9W** (PLAN.md §9W.2), la única fase entre 9M y 10. El juego tenía el mundo de
+NPCs (9Ma) y la escena anual (9ML.a) pero **ningún eje respondía "¿fuiste de los mejores del mundo
+alguna vez?"**. 9Wa mete el ranking vivo — el equivalente de las listas "Top 20 players" de cada
+pretemporada — en el estado. **Sin UI (9Wc) ni ganchos (9Wb)**: sólo el ranking existiendo.
+
+**Regla de oro: cero RNG.** El puntaje se computa con `hashCadena` (`core/numeros.js`), nunca con
+el stream. **Verificado**: `simulate.js 200 60 todas` da agregados **byte-idénticos** antes y
+después de 9Wa (no hay D35 nuevo — a diferencia de 9Ma-9Mi). El check `Fase 9W: el ranking es
+determinista y no consume RNG` le pasa a `topMundial.aplicar` un `rng` que revienta si se lo toca.
+
+**El modelo** (`core/topMundial.js`, puro):
+`puntaje = nivel + pesoResultado·bonusResultado(añoActual) + pesoResultado·decay·bonusResultado(añoPrevio) + ruidoDeterminista(seed, handle, año)`.
+- `nivel`: `npc.nivel` / `nivelDelJugador` — misma escala 0-100.
+- `bonusResultado`: la org ganó su liga (`+6`), ganó el internacional (`+10`), fue finalista
+  (`+4`). NPCs de `mundo.escenaAnual`; el jugador, del mismo lugar (si ganó su liga, el campeón de
+  su liga es su org).
+- `ruidoDeterminista`: `hashCadena(seed|handle|año)` en `±ruidoSpread` (5). **Constante dentro de un
+  año, se re-tira en el borde** — el motor del churn sin tocar `rng`.
+- **La edad no es un término**: la diversidad etaria es emergente (la curva de `nivelNpc`). El
+  check mide sub-20 y > 27 apareciendo en el Top 20 a lo largo de una carrera.
+
+**`mundo.escenaAnual`** (nuevo): el digest de `escena.js` sólo narra 4 de las 6 ligas de tier 1 y
+excluye siempre la del jugador. El ranking necesita las 6 todos los años. `construirEscenaAnual`
+(`core/escena.js`) completa el hueco **sin `rng`**: las ligas narradas usan el campeón que
+`escena.js` ya decidió; las demás, `campeonDeterminista` (pick ponderado por `org.fuerza` vía
+`hashCadena`). `systems/escena.js` ahora devuelve el `state` con `escenaAnual` / `escenaAnualPrevia`
+escritas (antes sólo logs).
+
+**Estado nuevo** (`core/state.js`, poblado desde el arranque — trampa T4):
+`mundo.topMundial` (largo 20, reescrito cada split), `mundo.mejorDelMundo`, `mundo.topMundialPrevioAnual`,
+`mundo.escenaAnual` / `escenaAnualPrevia`, `career.registro.picos.rankMundial` (mejor = **menor**;
+0 = nunca; helper propio `registrarPicoRank`, monótono no creciente), `career.registro.splitsEnTopMundial`,
+`flags.rankMundialActual` / `rankMundialAnterior` (`null` si no sos **rankeable** — sólo
+`career.tier === 1`, refuerza 9Mi).
+
+**`systems/topMundial.js`** (nuevo, 1 línea en `ETAPAS_SPLIT` después de `escena`): recomputa el
+ranking cada split sin logs; al cierre de edad difea contra la foto del cierre anterior y narra los
+hitos (entrás / te caés / #1 / un rival de generación entra o sale / el reveal del Top 20), escribe
+`picos.rankMundial` / `splitsEnTopMundial` / un `momento`. Nunca toca `rng`.
+
+**Medido (constantes por criterio, n=180-200 × 60)**: correlación `nivel ↔ rank` sobre la población
+entera **r = 0,96** (el ranking es mérito, no lotería — dentro del Top 20 el nivel está comprimido y
+el ruido manda, que es el churn buscado). El jugador entra al Top 20 en **12,3% de las carreras con
+éxito** (título/internacional) y **0% de las que se lavaron** — el "cuesta" está, el "tiene sentido"
+falta y es de 9Wd: con los bonos subidos a prueba (`bonusCampeonLiga` 14, `bonusInternacional` 20,
+`pesoResultado` 1,4) sube a **65% / 0%**, así que el modelo llega a la vara de §9W.6 con calibrado.
+
+**Checks nuevos** (`validate.js`, los 5 verificados en rojo revirtiendo el cambio — regla 7):
+Top 20 bien formado (largo, sin repetidos, orden), determinismo + cero RNG, mérito (r > 0,6 sobre
+la población), `picos.rankMundial` monótono + escrito, mezcla de edades. Los umbrales de rotación
+fina / entrada del jugador / rival en el Top 20 se fijan en **9Wd** (regla de proceso 2).
+
+**Bug encontrado y corregido**: el motor **nunca inserta al jugador en `mundo.planteles`** — la
+marca `esJugador` está prevista (7 guardas defensivas en `demanda.js` / `plantel.js` /
+`mercadoMundial.js`) pero nadie la escribe. La casilla del jugador conserva el NPC "al que le
+sacaste el puesto". `rankearPoblacion` saltea ese asiento cuando el jugador es rankeable, para no
+contar un fantasma en su propio lugar.
+
+**Verificación**: `validate.js` completo **153/153 en verde** (148 previos + 5 de 9W). `simulate.js
+1500 60 todas` **0 crashes, 0 varadas, ~190s** (~1,3× la base de 9Mj, dentro del ≤ 2× del check
+14; el reparto de tiers no se movió — tier 1 76,7% / 41,4% / 70,8%, idéntico a pre-9Wa).
+Determinismo: check 13 en verde. Cero stream: agregados byte-idénticos pre/post (`simulate.js 200
+60 todas`).
+
 ### 2026-09-10 — Fase 9Mj: recalibrar la escalera (solo constantes)
 
 Décimo y último commit de **9M** (PLAN.md §9M.1). 9Mi corrió el stream de RNG (D35); 9Mj remide y

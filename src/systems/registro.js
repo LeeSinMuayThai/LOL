@@ -63,6 +63,11 @@ export const ETAPAS_SPLIT = [
   // ese sistema pauso por un evento de cierre, resolverDecision retoma justo
   // aca (regla del cursor por id) y el digest anual nunca se salta un año.
   await import('./escena.js'),
+  // Fase 9W: el ranking vivo de los mejores del mundo. Va DESPUES de `escena`
+  // —necesita la `mundo.escenaAnual` que ese sistema acaba de escribir— y
+  // antes de `plantel`, que envejece el mundo. Cero rng: recomputa cada split
+  // y narra los hitos solo al cierre de edad.
+  await import('./topMundial.js'),
   // Fase 9M: el mundo envejece. ULTIMO a proposito, y solo para la etapa
   // AMATEUR: en la etapa profesional `core/mercadoMundial.js` (llamado desde
   // `mercado.js`, mas arriba) ya envejecio y resolvio el mundo ANTES de la

@@ -1238,5 +1238,32 @@ export const BALANCE = {
     ligasEnDigest: 4,
     // Marcadores plausibles de una final a Bo5 (CONCEPTO: Fearless, series largas).
     marcadoresBo5: ['3-0', '3-1', '3-2']
+  },
+
+  // Fase 9W: el ranking vivo de los mejores del mundo — el equivalente de las
+  // listas "Top 20 players" que se publican cada pretemporada. Se computa sin
+  // tocar `rng` (regla de oro de §9W): el puntaje es nivel + bonus por
+  // resultado del año + un ruido determinista por `hashCadena`. Valores por
+  // criterio; el retune vive en 9Wd.
+  topMundial: {
+    // Cuántos entran a la lista. 20 = la conversación completa; el Top 5 es lo
+    // que se ve en el riel, el Top 20 el reveal de cierre de temporada.
+    tamano: 20,
+    // Peso del bono por resultado deportivo sobre el nivel crudo. 1 = un
+    // internacional pesa `bonusInternacional` puntos de nivel.
+    pesoResultado: 1,
+    // El resultado del año pasado todavía cuenta, pero menos: un campeón no
+    // desaparece del top al día siguiente de perder la final.
+    decayResultado: 0.4,
+    // Ganar la liga doméstica, ganar el internacional, ser finalista del
+    // internacional. En puntos de nivel (0-100), sumados al puntaje.
+    bonusCampeonLiga: 6,
+    bonusInternacional: 10,
+    bonusInternacionalFinalista: 4,
+    // La perilla del churn ("que rote bastante"): amplitud del ruido
+    // determinista `hashCadena(seed + handle + anio)`, en ± puntos de nivel.
+    // Constante dentro de un año, se re-tira en el borde de año — así el corte
+    // #20 se mueve sin que nadie tire un dado.
+    ruidoSpread: 5
   }
 };

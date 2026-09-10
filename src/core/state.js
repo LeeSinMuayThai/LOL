@@ -1,6 +1,7 @@
 import { BALANCE } from '../data/balance.js';
 import { generarMundo } from './mundo.js';
 import { puntosAbsolutos } from './ranked.js';
+import { rankearMundo } from './topMundial.js';
 
 // El mundo entero sale de la seed (CONCEPTO §8): rol, region, colegio, viejos,
 // potencial oculto, forma de carrera, pool inicial, meta y rivales. Por eso el
@@ -16,7 +17,7 @@ export function createInitialState(seed, rng, eleccion = null) {
   const { inicial } = BALANCE;
   const { jugador, origen, mundo } = generarMundo(rng, EDAD_INICIAL, eleccion);
 
-  return {
+  const state = {
     seed,
     age: EDAD_INICIAL,
     phase: 'amateur',
@@ -54,7 +55,26 @@ export function createInitialState(seed, rng, eleccion = null) {
     // `mercadoPretemporada` (fase 9Mc): la resolución del mercado del mundo del
     // último offseason — traspasos, asientos congelados y agentes libres. `null`
     // hasta el primer offseason profesional; lo escribe `core/mercadoMundial.js`.
-    mundo: { ...mundo, campeonesDebutados: [], mercadoPretemporada: null },
+    //
+    // Fase 9W: `topMundial` es el ranking vivo de los mejores (largo
+    // `BALANCE.topMundial.tamano`), reescrito cada split por
+    // `systems/topMundial.js`. Se puebla abajo, ya en el arranque (trampa T4:
+    // objeto completo, no un array vacío que la UI tenga que tolerar).
+    // `mejorDelMundo` espeja `topMundial[0]`. `topMundialPrevioAnual` es la
+    // foto del cierre de edad anterior, para el diff año a año.
+    // `escenaAnual` / `escenaAnualPrevia`: el campeón de cada liga de tier 1 y
+    // del internacional, este año y el pasado. `null` hasta el primer cierre
+    // de edad (igual que `mercadoPretemporada`): todavía no cerró un año.
+    mundo: {
+      ...mundo,
+      campeonesDebutados: [],
+      mercadoPretemporada: null,
+      topMundial: [],
+      mejorDelMundo: null,
+      topMundialPrevioAnual: [],
+      escenaAnual: null,
+      escenaAnualPrevia: null
+    },
     player: {
       name: jugador.handle,
       role: jugador.role,
@@ -182,7 +202,10 @@ export function createInitialState(seed, rng, eleccion = null) {
           nivel: 0, edadDelPicoDeNivel: 0,
           jerarquia: 0, arraigo: 0, hype: 0,
           valorMercadoUSD: 0, salarioAnualUSD: 0,
-          rankedPuntos: 0
+          rankedPuntos: 0,
+          // Fase 9W: el mejor (MENOR) rank mundial de la vida. `0` = nunca
+          // rankeado. Monótono no creciente — lo escribe `registrarPicoRank`.
+          rankMundial: 0
         },
         // Una fila por org por la que pasaste (imagen 15: "TU HISTORIA, CLUB
         // POR CLUB"). Se abre al firmar y se cierra al irte; nunca se borra.
@@ -191,7 +214,11 @@ export function createInitialState(seed, rng, eleccion = null) {
         titulos: [],
         internacionales: [],
         // Hitos narrativos con fecha, para que la fase 13 pueda citarlos.
-        momentos: []
+        momentos: [],
+        // Fase 9W: cuántos cierres de edad terminaste dentro del Top 20 del
+        // mundo. Contador monótono, para "14 splits en el Top 20" de la
+        // tarjeta de legado.
+        splitsEnTopMundial: 0
       }
     },
     // La serie de playoffs en curso (fase 4). Objeto completo de ceros, nunca
@@ -297,8 +324,23 @@ export function createInitialState(seed, rng, eleccion = null) {
       // titularidad (tu nivel cayó por debajo del suplente en un split flojo);
       // `systems/mercado.js` lo consume la pretemporada siguiente cediéndote a
       // la liga de desarrollo, y lo apaga. `false` al arrancar (trampa T4).
-      banquilloPendiente: false
+      banquilloPendiente: false,
+      // Fase 9W: el rank mundial absoluto del jugador AHORA
+      // (`systems/topMundial.js` lo reescribe cada split) y al cierre de edad
+      // anterior (para el diff). `null` si no es rankeable — sólo `tier === 1`
+      // entra en la conversación del Top 20 (refuerza 9Mi).
+      rankMundialActual: null,
+      rankMundialAnterior: null
     },
     logs: []
   };
+
+  // Fase 9W: el ranking arranca poblado (trampa T4). El jugador todavía no es
+  // rankeable (`career.tier === null`), así que es puro NPC — nivel + ruido
+  // determinista, sin bono de resultado (no cerró ningún año).
+  state.mundo.topMundial = rankearMundo(state);
+  state.mundo.mejorDelMundo = state.mundo.topMundial[0] ?? null;
+  state.mundo.topMundialPrevioAnual = state.mundo.topMundial;
+
+  return state;
 }

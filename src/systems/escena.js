@@ -13,7 +13,9 @@ import { crearLog } from '../core/log.js';
 import { weightedPick, sample } from '../core/rng.js';
 import { BALANCE } from '../data/balance.js';
 import { esCierreDeEdad } from './edadCierre.js';
-import { ligasParaDigest, todosLosOrgsTier1, lineaDeLiga, lineaDeInternacional } from '../core/escena.js';
+import {
+  ligasParaDigest, todosLosOrgsTier1, lineaDeLiga, lineaDeInternacional, construirEscenaAnual
+} from '../core/escena.js';
 
 export const id = 'escena';
 
@@ -30,16 +32,29 @@ export function aplicar(state, rng) {
     return { state, logs: [] };
   }
 
+  const anio = state.calendario.anio;
   const candidatas = ligasParaDigest(state);
   const ligasElegidas = sample(candidatas, Math.min(BALANCE.escena.ligasEnDigest, candidatas.length), rng);
 
-  const logs = ligasElegidas.map((liga) => {
-    const { campeon, subcampeon, marcador } = resolverFinal(liga.orgs, rng);
-    return crearLog('escena', lineaDeLiga(liga, campeon, subcampeon, marcador), { tecnico: false });
-  });
+  // Las finales que se narran: se resuelven con `rng` como siempre. Se guarda
+  // el resultado por liga para que `construirEscenaAnual` no lo vuelva a tirar.
+  const narradas = ligasElegidas.map((liga) => ({ liga, ...resolverFinal(liga.orgs, rng) }));
+  const logs = narradas.map(({ liga, campeon, subcampeon, marcador }) =>
+    crearLog('escena', lineaDeLiga(liga, campeon, subcampeon, marcador), { tecnico: false }));
 
   const campeonMundial = weightedPick(todosLosOrgsTier1(state), (org) => org.fuerza, rng);
-  logs.push(crearLog('escena', lineaDeInternacional(state.calendario.anio, campeonMundial), { tecnico: false }));
+  logs.push(crearLog('escena', lineaDeInternacional(anio, campeonMundial), { tecnico: false }));
 
-  return { state, logs };
+  // Fase 9W: persistir el resultado del año para el ranking mundial. El
+  // digest sólo narra 4 ligas; el ranking necesita las 6 (más el internacional)
+  // todos los años — `construirEscenaAnual` completa el hueco sin tocar `rng`.
+  const escenaAnual = construirEscenaAnual(state, anio, narradas, campeonMundial);
+
+  return {
+    state: {
+      ...state,
+      mundo: { ...state.mundo, escenaAnual, escenaAnualPrevia: state.mundo.escenaAnual }
+    },
+    logs
+  };
 }
