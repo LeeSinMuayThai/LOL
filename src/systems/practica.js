@@ -90,6 +90,15 @@ export function resolver(state, decision, respuesta, rng) {
   if (reparto.mecanica > 0) {
     const ganancia = Math.max(0, gauss(p.gananciaMecanica * reparto.mecanica, p.ruidoPractica * reparto.mecanica, rng));
     stats.mecanica = clampStat(stats.mecanica + ganancia);
+    // Fase 10c: `practica.js` es el único sistema que mueve mecánica DESPUÉS
+    // de `atributos.js` en `ETAPAS_SPLIT` (offseason) — sin este clamp, un
+    // receso de entrenamiento podía devolverte por encima del techo que dejó
+    // una lesión crónica hasta el split siguiente. El resto de los que
+    // tocan `player.stats.mecanica` (eventos, minijuegos) corren ANTES de
+    // `atributos.js` en el mismo split, así que ya quedan atrapados ahí.
+    if (state.player.techoLesionMecanica != null) {
+      stats.mecanica = Math.min(stats.mecanica, state.player.techoLesionMecanica);
+    }
     partes.push(`mecánica +${Math.round(ganancia)}`);
   }
 

@@ -39,6 +39,12 @@ export const ETAPAS_SPLIT = [
   // Fase 9R5a: la carrera termina cuando el mercado deja de llamarte. Va justo
   // despues de `mercado`, que este split ya actualizo splitsSinOfertaConsecutivos.
   await import('./retiro.js'),
+  // Fase 10c: el servicio militar coreano y las lesiones. Van despues de
+  // `retiro` (si ya te retiraste este split, no tienen nada que hacer —
+  // `splitTerminaAca` corta antes de llegar) y ANTES de `temporada`, que es
+  // quien consume `flags.fechasBajaLesion` fecha a fecha ese mismo split.
+  await import('./servicioMilitar.js'),
+  await import('./salud.js'),
   await import('./campeones.js'),
   // Antes de amateur a proposito: si la carrera se corta en este split, el flag
   // del secundario ya quedo congelado y entra en la tarjeta final.

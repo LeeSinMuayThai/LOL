@@ -70,6 +70,11 @@ function elegirArquetipo(datos) {
   if (fin === 'burnout') {
     return { frase: `El que se bajó a los ${edad}`, esExito: false };
   }
+  // Fase 10c: el cuerpo, no la cabeza ni el mercado. Mismo nivel que
+  // burnout — un final que corta la carrera de golpe, sin ventana de vuelta.
+  if (fin === 'retiro_por_lesion') {
+    return { frase: `El que no pudo seguir a los ${edad}`, esExito: false };
+  }
 
   // Fase 9Wb (§9W.4): haber sido de los mejores del mundo es el dato más
   // evocador de la tarjeta — va antes que los títulos. Ser el #1 gana a todo.

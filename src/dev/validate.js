@@ -486,7 +486,14 @@ check('El mercado lee tu nivel: el silencio es para los que están por debajo, n
   let silencioTotal = 0;
   let silencioMerecido = 0;
 
-  for (let seed = 1; seed <= 300; seed += 1) {
+  // n=1500, no 300 (fase 10c): `silencioTotal` es un evento raro (~80 en
+  // 1500 seeds), así que a n=300 la proporción tiene demasiado ruido para
+  // ser una señal confiable — y 10c, al insertar dos sistemas nuevos que
+  // consumen RNG en pretemporada/profesional, corre la cinta de RNG de cada
+  // carrera y cambia qué seeds puntuales caen de cada lado sin cambiar la
+  // tasa real (medida en ambos casos ~70-72%). Subir la muestra ataca la
+  // causa (ruido), no el síntoma — bajar el piso otra vez no lo haría.
+  for (let seed = 1; seed <= 1500; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
 
@@ -2115,8 +2122,20 @@ check('El contexto de carrera nombra siempre dónde estás parado', () => {
     }
   }
 
+  // Fase 10c: `servicio_militar` resuelve entero DENTRO de un split (la
+  // garantía de "La cadena de servicio militar no deja
+  // flags.enServicioMilitar prendido entre splits", más abajo) — así que
+  // este loop, que solo mira `calcularContexto` en el límite entre splits,
+  // nunca lo va a ver. Mismo criterio que el eje `stakes`
+  // (`data/contextos.js`): inalcanzable a propósito por esta vía genérica,
+  // verificado por un check propio en vez de forzar la cobertura acá.
+  const VERIFICADOS_POR_OTRO_CHECK = new Set(['servicio_militar']);
+
   // Un momento activo que nunca aparece es contenido muerto esperando.
   for (const momento of MOMENTOS_ACTIVOS) {
+    if (VERIFICADOS_POR_OTRO_CHECK.has(momento.id)) {
+      continue;
+    }
     if (!vistos.has(momento.id)) {
       throw new Error(`el momento "${momento.id}" no está marcado como pendiente y no apareció en 300 carreras`);
     }
@@ -5747,6 +5766,176 @@ check('retiro.js no consume RNG fuera de fase profesional / pretemporada', () =>
   }
   if (pro.phase === 'profesional' && calcularContexto(pro).ventana !== 'pretemporada') {
     retiro.aplicar(pro, rngQueRevienta);
+  }
+});
+
+// --- Fase 10c: lesiones y servicio militar (PLAN.md §10.4) ---
+
+check('El estado nuevo de la fase 10c arranca completo (trampa T4)', () => {
+  const state = createInitialState(1, mulberry32(1));
+
+  if (state.player.techoLesionMecanica !== null) {
+    throw new Error('player.techoLesionMecanica no arranca en null');
+  }
+  const f = state.flags;
+  if (f.splitsRiesgoFisico !== 0 || f.fechasBajaLesion !== 0) {
+    throw new Error('flags.splitsRiesgoFisico o flags.fechasBajaLesion no arrancan en 0');
+  }
+  if (f.lesionGraveSplit !== null) {
+    throw new Error('flags.lesionGraveSplit no arranca en null');
+  }
+  if (f.enServicioMilitar !== false || f.servicioCumplido !== false || f.exentoServicio !== false) {
+    throw new Error('flags.enServicioMilitar/servicioCumplido/exentoServicio no arrancan en false');
+  }
+});
+
+check('Ninguna carrera coreana profesional llega a la edad límite sin resolver el servicio', () => {
+  // CONCEPTO §12.4: "determinista, no probabilístico" — `servicioMilitar.js`
+  // dispara sin dado en cuanto se cumple la edad; este check confirma que el
+  // disparo nunca falla en llegar (a diferencia de una lesión, que sí es
+  // `chance()`).
+  let coreanosProResueltos = 0;
+  let sinResolver = 0;
+
+  for (let seed = 1; seed <= 600; seed += 1) {
+    const state = correrCarrera(seed, 60);
+    if (state.mundo.regionIdOrigen !== 'KR' || state.phase !== 'profesional') {
+      continue;
+    }
+    const limite = state.career.registro.picos.rankMundial > 0
+      ? BALANCE.servicioMilitar.edadLimiteServicioElite
+      : BALANCE.servicioMilitar.edadLimiteServicio;
+    if (state.age < limite) {
+      continue;
+    }
+    coreanosProResueltos += 1;
+    if (!state.flags.servicioCumplido && !state.flags.exentoServicio) {
+      sinResolver += 1;
+    }
+  }
+
+  if (coreanosProResueltos < 20) {
+    throw new Error(`solo ${coreanosProResueltos} carreras coreanas profesionales llegaron a la edad límite en 600 seeds: muestra insuficiente`);
+  }
+  if (sinResolver > 0) {
+    throw new Error(`${sinResolver}/${coreanosProResueltos} carreras coreanas llegaron a la edad límite sin servicioCumplido ni exentoServicio`);
+  }
+});
+
+check('La exención por Asian Games (ganar un internacional siendo coreano) es alcanzable', () => {
+  let coreanosProResueltos = 0;
+  let exentos = 0;
+
+  for (let seed = 1; seed <= 600; seed += 1) {
+    const state = correrCarrera(seed, 60);
+    if (state.mundo.regionIdOrigen !== 'KR' || !(state.flags.servicioCumplido || state.flags.exentoServicio)) {
+      continue;
+    }
+    coreanosProResueltos += 1;
+    if (state.flags.exentoServicio) {
+      exentos += 1;
+    }
+  }
+
+  if (coreanosProResueltos < 20) {
+    throw new Error(`solo ${coreanosProResueltos} carreras coreanas resolvieron el servicio en 600 seeds: muestra insuficiente`);
+  }
+  const fraccion = exentos / coreanosProResueltos;
+  if (fraccion <= 0 || fraccion >= 1) {
+    throw new Error(`fracción exenta = ${(fraccion * 100).toFixed(1)}% — tiene que haber carreras que se enlisten Y carreras que se eximan`);
+  }
+});
+
+check('La cadena de servicio militar no deja flags.enServicioMilitar prendido entre splits', () => {
+  // Las 3 decisiones resuelven dentro del mismo split (no se modela tiempo
+  // que pasa): si esto quedara prendido después de `avanzarSplitAuto`, algún
+  // sistema más abajo en `ETAPAS_SPLIT` se habría cortado a mitad de cadena.
+  for (let seed = 1; seed <= 400; seed += 1) {
+    const state = correrCarrera(seed, 60);
+    if (state.flags.enServicioMilitar) {
+      throw new Error(`seed ${seed}: flags.enServicioMilitar sigue true al cierre de la carrera`);
+    }
+  }
+});
+
+check('lesion_cronica y retiro_por_lesion son alcanzables (raros, no cero)', () => {
+  let lesionCronica = 0;
+  let retiroPorLesion = 0;
+  const N = 1200;
+
+  for (let seed = 1; seed <= N; seed += 1) {
+    const state = correrCarrera(seed, 60);
+    if (state.flags.lesionGraveSplit != null) {
+      lesionCronica += 1;
+    }
+    if (state.finAnticipado === 'retiro_por_lesion') {
+      retiroPorLesion += 1;
+    }
+  }
+
+  if (lesionCronica === 0) {
+    throw new Error('lesion_cronica nunca se alcanzó en 1200 seeds');
+  }
+  if (retiroPorLesion === 0) {
+    throw new Error('retiro_por_lesion nunca se alcanzó en 1200 seeds');
+  }
+  const fraccion = retiroPorLesion / N;
+  if (fraccion > 0.1) {
+    throw new Error(`retiro_por_lesion en el ${(fraccion * 100).toFixed(1)}% de las carreras — demasiado frecuente para un final que debería ser raro`);
+  }
+});
+
+check('player.stats.mecanica nunca cruza player.techoLesionMecanica una vez fijado', () => {
+  for (let seed = 1; seed <= 250; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      if (state.player.techoLesionMecanica != null && state.player.stats.mecanica > state.player.techoLesionMecanica + 0.01) {
+        throw new Error(`seed ${seed}, split ${i}: mecanica=${state.player.stats.mecanica.toFixed(2)} > techoLesionMecanica=${state.player.techoLesionMecanica.toFixed(2)}`);
+      }
+    }
+  }
+});
+
+check('flags.fechasBajaLesion nunca queda negativo', () => {
+  for (let seed = 1; seed <= 250; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      if (state.flags.fechasBajaLesion < 0) {
+        throw new Error(`seed ${seed}, split ${i}: flags.fechasBajaLesion=${state.flags.fechasBajaLesion}`);
+      }
+    }
+  }
+});
+
+check('servicioMilitar.js y salud.js no consumen RNG fuera de cuando corresponde', () => {
+  const rngQueRevienta = () => { throw new Error('tocó el rng sin que el sistema aplicara'); };
+  const servicio = sistemaPorId('servicioMilitar');
+  const salud = sistemaPorId('salud');
+
+  // Amateur: ninguno de los dos tiene nada que hacer.
+  const amateur = createInitialState(1, mulberry32(1));
+  servicio.aplicar(amateur, rngQueRevienta);
+  salud.aplicar(amateur, rngQueRevienta);
+
+  // Un no-coreano profesional: `servicioMilitar.js` no debe tocar el rng
+  // (early return por región).
+  let noCoreanoPro = null;
+  for (let seed = 1; seed <= 30 && !noCoreanoPro; seed += 1) {
+    const rng = mulberry32(seed);
+    let s = createInitialState(seed, rng);
+    for (let i = 0; i < 40 && s.phase !== 'profesional' && !s.terminado; i += 1) {
+      s = avanzarSplitAuto(s, rng).state;
+    }
+    if (s.phase === 'profesional' && s.mundo.regionIdOrigen !== 'KR') {
+      noCoreanoPro = s;
+    }
+  }
+  if (noCoreanoPro) {
+    servicio.aplicar(noCoreanoPro, rngQueRevienta);
   }
 });
 

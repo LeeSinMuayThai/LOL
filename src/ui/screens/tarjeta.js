@@ -12,7 +12,8 @@ const TITULO_MARCO = {
   sin_equipo: 'EL TELÉFONO DEJÓ DE SONAR',
   burnout: 'NO DABA MÁS',
   no_llego: 'SE CERRÓ LA VENTANA',
-  prohibicion_familiar: 'EN CASA DIJERON QUE NO'
+  prohibicion_familiar: 'EN CASA DIJERON QUE NO',
+  retiro_por_lesion: 'EL CUERPO DIJO BASTA'
 };
 
 function linea(clase, texto) {

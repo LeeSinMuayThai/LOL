@@ -91,6 +91,12 @@ export function createInitialState(seed, rng, eleccion = null) {
       soloqElo: puntosAbsolutos(jugador.ranked),
       // Periodos consecutivos robandole al sueño, ya convertidos en deuda.
       deudaSueno: 0,
+      // Fase 10c: el techo de mecanica que una lesion cronica deja permanente
+      // (`systems/salud.js`, aplicado en `systems/atributos.js`). `null` =
+      // sin tope todavia. Nunca baja solo: una vez que se fija, la
+      // convergencia de edad no puede volver a llevarte por encima (trampa T4:
+      // nunca undefined).
+      techoLesionMecanica: null,
       splitCount: 0,
       titles: 0,
       worlds: 0,
@@ -349,7 +355,30 @@ export function createInitialState(seed, rng, eleccion = null) {
       vueltasUsadas: 0,
       // El `splitCount` de la última vuelta, para la marca transitoria
       // `vuelta_del_retiro` (mismo patrón que `splitDescenso`/`ventanaDescenso`).
-      splitVuelta: null
+      splitVuelta: null,
+      // Fase 10c (`systems/salud.js`): splits seguidos con `deudaSueno` sobre
+      // el umbral de riesgo físico. Sube y baja de a uno, igual que
+      // `splitsMentalBajo` de `atributos.js`. Nunca null (trampa T4).
+      splitsRiesgoFisico: 0,
+      // El `splitCount` en el que pinchó la última lesión GRAVE (tendinitis /
+      // hombro). `null` hasta la primera vez; distinto de una recaída, que se
+      // detecta comparando contra este valor ya seteado. Prende la marca
+      // permanente `lesion_cronica` (no se apaga nunca, mismo criterio que
+      // `es_campeon`/`nomade`).
+      lesionGraveSplit: null,
+      // Fechas de temporada regular que quedan por perderte por lesión
+      // (`systems/temporada.js` lo consume fecha a fecha en
+      // `continuarTemporada`, nunca splits enteros). Nunca negativo.
+      fechasBajaLesion: 0,
+      // Fase 10c (`systems/servicioMilitar.js`): true mientras dura la cadena
+      // de 3 decisiones del servicio (un solo split — no se modela tiempo que
+      // pasa). Alimenta la marca `servicio_militar`.
+      enServicioMilitar: false,
+      // Ya cumpliste el servicio: no se te vuelve a disparar.
+      servicioCumplido: false,
+      // Ganaste un internacional siendo coreano: la medalla de los Asian
+      // Games te exime — nunca se dispara el servicio.
+      exentoServicio: false
     },
     logs: []
   };

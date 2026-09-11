@@ -96,7 +96,16 @@ export const MARCAS = [
 // borra la marca: eso le da a cada paso una definicion de terminado nitida.
 export const MOMENTOS = [
   // --- Estados excepcionales, por encima de todo lo demas ---
-  { id: 'servicio_militar', prioridad: 100, pendiente: 'paso12',
+  // Fase 10c: deja de estar pendiente. Dura poco (la cadena de 3 decisiones
+  // de `systems/servicioMilitar.js` resuelve dentro de un solo split, sin
+  // que `events.js` llegue a correr en el medio), así que ningún evento del
+  // catálogo puede estar gateado a esta marca — sería contenido inalcanzable
+  // a propósito, la trampa que D26c ya advirtió. `dev/cobertura.js` lo va a
+  // reportar como "nunca observado": es honesto, no un hueco (mismo criterio
+  // que el eje `stakes`, más abajo). La verificación real de este momento es
+  // el check de `validate.js` "La cadena de servicio militar no deja
+  // flags.enServicioMilitar prendido entre splits".
+  { id: 'servicio_militar', prioridad: 100,
     label: 'Cumpliendo el servicio militar',
     patron: { marcas: ['servicio_militar'] } },
 
@@ -112,7 +121,9 @@ export const MOMENTOS = [
     label: 'De vuelta después del retiro',
     patron: { marcas: ['vuelta_del_retiro'] } },
 
-  { id: 'lesionado', prioridad: 90, pendiente: 'paso12',
+  // Fase 10c: deja de estar pendiente (`systems/salud.js` prende
+  // `lesion_cronica` desde la primera lesión grave y no la apaga más).
+  { id: 'lesionado', prioridad: 90,
     label: 'Arrastrando una lesión que no se va',
     patron: { marcas: ['lesion_cronica'] } },
 

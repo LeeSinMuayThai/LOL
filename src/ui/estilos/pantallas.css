@@ -996,6 +996,7 @@ details.avanzado summary:hover { color: var(--ink-dim); }
 .tarjeta[data-marco="burnout"]               { border-color: var(--danger); }
 .tarjeta[data-marco="no_llego"]              { border-color: var(--line-strong); }
 .tarjeta[data-marco="prohibicion_familiar"]  { border-color: var(--cat-familia); }
+.tarjeta[data-marco="retiro_por_lesion"]     { border-color: var(--cat-salud); }
 
 .tarjeta-marco {
   font-family: var(--font-display);

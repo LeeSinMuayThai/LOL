@@ -31,6 +31,15 @@ function moverStatsDeCurva(stats, state, forma, rng) {
     // se nota recien cuando ya lleva un par de splits pasando.
     const delta = (objetivo - movidos[stat]) * config.velocidad + gauss(0, config.ruido, rng);
     movidos[stat] = clampStat(movidos[stat] + delta);
+
+    // Fase 10c: una lesión crónica (`systems/salud.js`) topea la mecánica —
+    // solo la mecánica, es de manos, no de lectura de juego, así que no se
+    // toca `techoDeCarrera` (que hoy comparte un solo techo entre los tres
+    // stats de curva). El objetivo de la curva puede seguir moviéndose, pero
+    // el valor movido nunca vuelve a cruzar el techo: por eso la caída queda.
+    if (stat === 'mecanica' && state.player.techoLesionMecanica != null) {
+      movidos[stat] = Math.min(movidos[stat], state.player.techoLesionMecanica);
+    }
   }
 
   return movidos;

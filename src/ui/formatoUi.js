@@ -96,6 +96,13 @@ export function rotuloDeDecision(decision, state) {
   if (motivo === 'retiro_declive' || motivo === 'retiro_vuelta' || motivo === 'salida_amateur') {
     return { label: 'Retiro', token: 'salud' };
   }
+  // Fase 10c: mismas dos estructurales que no vienen de `events.js`.
+  if (motivo === 'lesion_grave') {
+    return { label: 'Salud', token: 'salud' };
+  }
+  if (motivo === 'servicio_te_vas' || motivo === 'servicio_adentro' || motivo === 'servicio_volver') {
+    return { label: 'Servicio militar', token: 'salud' };
+  }
   if (motivo === 'reparto' || motivo === 'practica' || state?.phase === 'amateur') {
     return { label: 'La semana', token: 'rutina' };
   }

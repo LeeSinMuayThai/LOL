@@ -124,6 +124,130 @@ dato de investigación de `CONCEPTO` §12.4) se reemplazan por los de arriba, do
 `player.deudaSueno`) y `servicioMilitar.js` (Corea, determinista). `retiro_por_lesion` no existe
 todavía como `finAnticipado`.
 
+### 2026-09-11 — Fase 10c: lesiones y servicio militar (PLAN.md §10.4)
+
+Cierra la fase 10. Dos sistemas nuevos (`systems/salud.js`, `systems/servicioMilitar.js`), el
+terminal `retiro_por_lesion` que 10a ya citaba como pendiente, y las dos marcas
+(`lesion_cronica`/`servicio_militar`) que `data/contextos.js` traía declaradas con
+`pendiente: 'paso12'` desde antes de que existiera el motor que las prende.
+
+**Cambio de diseño en el momento** (regla de proceso 2/7, mismo criterio que 10a): el plan original
+(§10.4 vieja) pedía congelar splits para la lesión grave y un salto narrativo o splits vacíos para
+el servicio militar. El usuario lo objetó explícito: *"que puedas skippearlo si ganás la medalla en
+los Asian Games también, que tengan uno que otro evento así como 3 que se vean distintos que estás
+en el servicio militar y tomás 3 decisiones con respecto a eso y nada que pase el tiempo"* para el
+servicio, y que la lesión grave costara **partidos, no splits**. Se rediseñaron los dos sistemas
+antes de escribir código — detalle completo en `PLAN.md` §10.4.1/§10.4.2.
+
+#### La lesión: la cadena causal de D9, con un consumidor por fin
+
+**`systems/salud.js`** (nuevo): `player.deudaSueno` (0-4, nunca se resetea al pasar a profesional)
+mueve un riesgo sostenido (`flags.splitsRiesgoFisico`, mismo armado que `splitsMentalBajo` de
+`atributos.js`). Tres tiers, cero RNG salvo el `chance()` de cada uno: **leve** (túnel carpiano,
+automática, solo un aviso — corta `player.techoLesionMecanica`), **grave** (tendinitis de muñeca /
+hombro crónico, decisión real: jugás lesionado —baja corta, techo se corta fuerte— o parás a
+tratarte —baja larga, techo se cuida más—) y **recaída** (la misma decisión, pero con salida:
+seguís o `retiro_por_lesion`, terminal, sin ventana de vuelta — mismo criterio que burnout).
+
+La baja se mide en **fechas de temporada regular**, nunca splits: `flags.fechasBajaLesion` se
+consume en `continuarTemporada` (`systems/temporada.js`) fecha a fecha — no marca la fecha como
+draft, y la resuelve con `t.fuerzaPropia * factorFuerzaLesionado` en vez de tu fuerza real. No
+corre el stream de RNG (trampa T1): sigue siendo una sola llamada a `resolverFecha` por fecha, solo
+cambia el valor que recibe.
+
+**`systems/atributos.js`**: una línea en `moverStatsDeCurva` — solo para `stat === 'mecanica'` (la
+lesión es de manos, no de lectura de juego, así que `laneo`/`teamfight` no se tocan y
+`techoDeCarrera` sigue compartiendo un solo techo entre los tres). El objetivo de la curva de edad
+puede seguir moviéndose; el valor movido nunca vuelve a cruzar `techoLesionMecanica`.
+
+**Trampa encontrada al medir**: con solo ese clamp, una sonda de 1500 seeds midió **157
+violaciones** del invariante (`mecanica > techoLesionMecanica`) — `practica.js` es el único sistema
+que mueve `player.stats.mecanica` DESPUÉS de `atributos.js` en `ETAPAS_SPLIT` (offseason): un
+receso de entrenamiento te devolvía por encima del techo hasta el split siguiente. Se agregó el
+mismo clamp ahí. Todo lo demás que toca `stats.mecanica` (eventos, minijuegos) corre ANTES de
+`atributos.js` en el mismo split, así que ya quedaba atrapado.
+
+#### El servicio militar: 3 decisiones, cero tiempo
+
+**`systems/servicioMilitar.js`** (nuevo): aplica solo a `mundo.regionIdOrigen === 'KR'`. El
+disparador es determinista (`CONCEPTO` §12.4: "no probabilístico") — `state.age >=
+edadLimiteServicio` (28, o **30** si `registro.picos.rankMundial` estuvo alguna vez en el Top 20,
+reusa 9W: "figura de élite") — sin pregunta sobre el hecho de ir, mismo criterio que la línea Faker
+de `retiro.js`. **La exención real**: ganar un internacional (`registro.internacionales`,
+`resultado: 'buen_papel'`) siendo coreano te exime — la medalla de los Asian Games (hecho real: el
+oro de 2022 eximió al plantel coreano).
+
+Al dispararse: **3 decisiones encadenadas** (mismo patrón que `decisionDeclive`/`decisionVuelta` de
+`retiro.js` — estructurales, no eventos JSON) — *"Te vas"* (despedida pública vs. discreta),
+*"Adentro"* (te mantenés afilado vs. te desconectás), *"Volver"* (peleás tu lugar vs. dejás que se
+acomode). Resuelven dentro del mismo split: `player.splitCount` solo lo mueve `atributos.js`, más
+abajo en `ETAPAS_SPLIT`, así que la cadena entera pasa antes de que el split "avance" en ningún
+sentido medible — cero splits perdidos, cero valor de `phase` nuevo, cero necesidad de barrear
+`data/rutinas/offseason.json` (la trampa que documentó 10a para un `etapa` nuevo no aplicó acá:
+no se agregó ningún valor a `EJES.etapa`).
+
+**Hueco de cobertura, aceptado a propósito**: `dev/cobertura.js` reporta `servicio_militar` como
+"nunca observado" — ningún evento del catálogo puede estar gateado a esa marca sin ser contenido
+inalcanzable (D26c): la cadena resuelve sin que `events.js` llegue a correr en el medio. Mismo
+criterio que el eje `stakes` (`data/contextos.js`), documentado ahí; la verificación real es el
+check dedicado de `validate.js`.
+
+#### Medido (600-1500 seeds, n=60 splits)
+
+- **0** carreras cruzan la edad límite de servicio sin `servicioCumplido` ni `exentoServicio`
+  (determinista, como preveía `CONCEPTO`).
+- De las carreras coreanas que resuelven el servicio: **~71%** se exime (ganó un internacional) ·
+  **~24%** lo cumple. Alto, pero consistente con que el mercado de este juego ya manda a la mayoría
+  de los profesionales que sobreviven mucho tiempo a algún internacional — candidato a revisar si
+  se siente demasiado fácil, no tocado en este commit (regla de proceso 2/3).
+- `lesion_cronica` alcanzable en **~1,5-2%** de las carreras (estrategia `equilibrado`); `retiro_por_lesion`
+  en **~1,2%** con `equilibrado`, hasta **8,8%** con la estrategia `ranked` (grindea soloQ agresivo
+  en la etapa amateur → más `deudaSueno` → más riesgo). La variación por estilo de juego es la señal
+  de que la cadena causal (D9) funciona de verdad, no solo que existe.
+- `player.stats.mecanica` nunca cruza `techoLesionMecanica` una vez fijado (250 seeds × 60 splits,
+  verificado tras el fix de `practica.js`) · `flags.fechasBajaLesion` nunca queda negativo (mismo
+  barrido).
+- **Causa de retiro más frecuente entre los que declinan** (el check que quedaba abierto en §10.5):
+  medido sobre 1500 seeds, `retiro_elegido` domina de lejos (707) sobre todo lo demás; acotado a
+  `sin_equipo` vs. `retiro_por_lesion` específicamente —la comparación real que motivó el check—,
+  **`retiro_por_lesion` (18) ya es MÁS frecuente que `sin_equipo` (4)**. La hipótesis original
+  ("sin_equipo es la causa más frecuente") no se sostiene: con la lesión real construida, el cuerpo
+  termina más carreras por decisión propia que el silencio del mercado. Se documenta como hallazgo,
+  no se fuerza un check con una banda artificial — regla de proceso 4.
+
+**`src/dev/validate.js`**: 8 checks nuevos (estado completo trampa T4, servicio sin resolver = 0,
+exención alcanzable, cadena no deja `enServicioMilitar` prendido, lesión/retiro alcanzables y
+acotados, el invariante del techo, `fechasBajaLesion` nunca negativo, T1 en los dos sistemas
+nuevos). Dos verificados en rojo antes del fix correspondiente (regla de proceso 7): el del techo
+contra el bug de `practica.js` real que se encontró midiendo, y el de servicio contra el disparador
+roto a mano.
+
+**UI** (regla de proceso 12, alcance chico): `TITULO_MARCO`/`MARCO_TOKEN`/`.tarjeta[data-marco]`
+para `retiro_por_lesion` en `tarjeta.js`/`exportar.js`/`pantallas.css` (el PNG y la pantalla tenían
+que decir lo mismo); `elegirArquetipo` en `legado.js`; `rotuloDeDecision` en `formatoUi.js` etiqueta
+los `motivo` nuevos ("Salud", "Servicio militar") en vez de caer al genérico "Decisión". Cero
+componente nuevo: la flecha ▼ que ya existe en `core/ficha.js` (contra `flags.edadSnapshot`, una
+vez por año) es lo que hace visible el techo de mecánica sin escribir una línea de UI.
+
+**Corrida completa de `validate.js` antes de cerrar (regla de proceso 7): 2 en rojo, ninguno de
+diseño.**
+
+1. *"El contexto de carrera nombra siempre dónde estás parado"* — el check genérico de cobertura
+   de `MOMENTOS_ACTIVOS` no tenía la excepción que sí tiene el eje `stakes`: `servicio_militar`
+   resuelve entero DENTRO de un split (la garantía del check dedicado de la cadena) y por eso
+   `calcularContexto` en el límite entre splits nunca lo va a observar. Agregado
+   `VERIFICADOS_POR_OTRO_CHECK` en `validate.js`, documentado con el mismo criterio que `stakes`.
+2. *"El mercado lee tu nivel"* (fase 9R0e) cayó a 59% (piso 60%) a n=300. Medido aparte con una
+   sonda a n=1500: la tasa real es 70% — estable, consistente con el 72% que ya documentaba el
+   check. La causa no es un cambio de lógica de mercado: `silencioTotal` es un evento raro (~80 en
+   1500 seeds), y 10c insertó dos sistemas nuevos que consumen RNG en profesional/pretemporada,
+   así que la cinta de RNG de cada carrera corre distinto y cambia qué seeds puntuales caen de cada
+   lado sin mover la tasa real. Se subió la muestra del check de 300 a 1500 (ataca el ruido, no el
+   síntoma) en vez de bajar el piso otra vez.
+
+Con los dos fixes, `validate.js` (166 checks) corre limpio. Determinismo verificado (misma seed,
+mismo estado final serializado) y `simulate.js 1000` corre sin crashear.
+
 ### 2026-09-10 — Fase 9Wd: calibrar (solo constantes, regla de proceso 2) · cierra 9W
 
 Cuarto y último commit de **9W** (PLAN.md §9W.2). 9Wa-9Wc dejaron el ranking funcionando,

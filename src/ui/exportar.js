@@ -15,7 +15,8 @@ const MARCO_TOKEN = {
   sin_equipo: '--warn',
   burnout: '--danger',
   no_llego: '--line-strong',
-  prohibicion_familiar: '--cat-familia'
+  prohibicion_familiar: '--cat-familia',
+  retiro_por_lesion: '--cat-salud'
 };
 
 function leerToken(nombre) {

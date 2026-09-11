@@ -1112,6 +1112,56 @@ export const BALANCE = {
     ventanaDeVueltaSplits: 6
   },
 
+  // Fase 10c (PLAN.md §10.4.2): la cadena causal de D9. `player.deudaSueno`
+  // (0-4, `amateur.deudaMaxima`) nunca se resetea al pasar a profesional —
+  // acá por fin tiene un consumidor. Cero RNG en el disparo salvo el `chance`
+  // final, mismo armado que `probabilidadDeBurnout` de `atributos.js`.
+  salud: {
+    // `deudaSueno` a partir de acá empieza a sumar riesgo físico sostenido.
+    deudaUmbralRiesgo: 2,
+    // Splits seguidos de riesgo antes de que el tier leve pueda pinchar.
+    splitsParaLesionLeve: 6,
+    probLesionLeveBase: 0.05,
+    probLesionLevePorDeuda: 0.02,
+    // Corte de techo del tier leve (túnel carpiano): un aviso, no una condena.
+    penalizacionLeveMin: 2,
+    penalizacionLeveMax: 5,
+    // Splits seguidos de riesgo DESPUÉS del leve antes de que el grave pueda
+    // pinchar (tendinitis de muñeca / hombro crónico, PLAN.md §12.4).
+    splitsParaLesionGrave: 5,
+    probLesionGraveBase: 0.06,
+    probLesionGravePorDeuda: 0.03,
+    // "Jugás lesionado": baja corta, techo se corta fuerte.
+    penalizacionGraveJugarMin: 5,
+    penalizacionGraveJugarMax: 9,
+    fechasBajaJugarLesionadoMin: 2,
+    fechasBajaJugarLesionadoMax: 3,
+    // "Parás a tratarte": baja larga, el techo se cuida más.
+    penalizacionGravePararMin: 2,
+    penalizacionGravePararMax: 4,
+    fechasBajaPararATratarteMin: 4,
+    fechasBajaPararATratarteMax: 6,
+    // Cuánto rinde el equipo mientras jugás de baja (`systems/temporada.js`,
+    // `continuarTemporada`): sin vos, con el suplente.
+    factorFuerzaLesionado: 0.85,
+    // Recaída: con `lesionGraveSplit` ya seteado, cuánto riesgo sostenido más
+    // hace falta para que la MISMA decisión ofrezca el retiro.
+    splitsParaReLesion: 6,
+    probReLesionBase: 0.08,
+    probReLesionPorDeuda: 0.03
+  },
+
+  // Fase 10c (PLAN.md §10.4.1, CONCEPTO §12.4): "determinista, no
+  // probabilístico" — cero RNG en el disparo. Solo aplica a
+  // `mundo.regionIdOrigen === 'KR'`.
+  servicioMilitar: {
+    // Edad límite para enlistarse (ley 2020). 30 si sos figura de élite
+    // reconocida (estuviste en el Top 20 del ranking mundial alguna vez,
+    // `registro.picos.rankMundial` — reusa 9W).
+    edadLimiteServicio: 28,
+    edadLimiteServicioElite: 30
+  },
+
   // La temporada regular (fase 5): antes era una sola tirada (`gauss` contra
   // cada rival) escupiendo una posición sin fechas ni tabla. Ahora es un
   // calendario real, con 2-3 fechas por split que el jugador juega de verdad.

@@ -226,6 +226,18 @@ function calcularMarcas(state) {
     marcas.push('mejor_del_mundo');
   }
 
+  // Fase 10c: `lesion_cronica` prende con la primera lesión GRAVE y ya no se
+  // apaga (mismo criterio que `es_campeon`/`nomade`) — la leve es solo un
+  // aviso, no te deja marca permanente. `servicio_militar` dura lo que tarda
+  // en resolverse la cadena de 3 decisiones (`systems/servicioMilitar.js`),
+  // normalmente un solo split.
+  if (state.flags.lesionGraveSplit != null) {
+    marcas.push('lesion_cronica');
+  }
+  if (state.flags.enServicioMilitar) {
+    marcas.push('servicio_militar');
+  }
+
   return [...marcas, ...marcasDePool(state), ...marcasDeRegistro(state)];
 }
 

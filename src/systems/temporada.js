@@ -395,8 +395,13 @@ function continuarTemporada(state, rng, logsAcum) {
     // rival se marcaba split tras split (el fixture es determinista y ese
     // rival no cambiaba). Una temporada sin ningún motivo libre pasa entera
     // resumida, y está bien.
+    // Fase 10c: mientras haya baja por lesión pendiente (`systems/salud.js`),
+    // el equipo juega esta fecha sin vos — nunca se marca (no hay draft de
+    // fecha para un partido que no jugás).
+    const enBajaPorLesion = st.flags.fechasBajaLesion > 0;
+
     const marcadasQueFaltan = t.objetivoMarcadas - t.marcadasHechas;
-    const marcar = marcadasQueFaltan > 0
+    const marcar = !enBajaPorLesion && marcadasQueFaltan > 0
       && principal !== 'parejo'
       && !parEnCooldown(st, principal, fecha.rival);
 
@@ -417,9 +422,17 @@ function continuarTemporada(state, rng, logsAcum) {
       return arrancarFechaMarcada(stConFecha, rng, logs);
     }
 
-    const gano = resolverFecha(t.fuerzaPropia, fecha.fuerzaRival, rng);
+    // Fuerza penalizada mientras dura la baja — no suma ni saca ninguna
+    // tirada de `rng` (trampa T1): sigue siendo una sola llamada a
+    // `resolverFecha`, cambia el valor que recibe, no la cantidad de tiradas.
+    const fuerzaEfectiva = enBajaPorLesion ? t.fuerzaPropia * BALANCE.salud.factorFuerzaLesionado : t.fuerzaPropia;
+    const gano = resolverFecha(fuerzaEfectiva, fecha.fuerzaRival, rng);
     silenciosas = { ...silenciosas, [gano ? 'ganados' : 'perdidos']: silenciosas[gano ? 'ganados' : 'perdidos'] + 1 };
-    st = avanzarFechaSilenciosa(st, gano, rng);
+    st = avanzarFechaSilenciosa(
+      enBajaPorLesion ? { ...st, flags: { ...st.flags, fechasBajaLesion: st.flags.fechasBajaLesion - 1 } } : st,
+      gano,
+      rng
+    );
   }
 }
 
