@@ -75,12 +75,43 @@ body {
      `background-attachment: fixed` para que no se mueva con el scroll: es
      el marco de la aplicación, no un elemento más de la página. */
   background:
-    radial-gradient(120% 80% at 50% -8%, transparent 0%, transparent 36%, var(--bg-void) 72%),
-    radial-gradient(40% 22% at 50% 0%, var(--horizon), transparent 70%),
-    repeating-linear-gradient(0deg, var(--line-faint) 0 1px, transparent 1px 48px),
-    repeating-linear-gradient(90deg, var(--line-faint) 0 1px, transparent 1px 48px),
+    radial-gradient(110% 75% at 50% -6%, transparent 0%, transparent 32%, var(--bg-void) 68%),
+    radial-gradient(80% 36% at 50% 0%, var(--horizon), transparent 72%),
+    radial-gradient(50% 30% at 100% 100%, var(--horizon), transparent 70%),
+    repeating-linear-gradient(0deg, var(--line-faint) 0 1px, transparent 1px 40px),
+    repeating-linear-gradient(90deg, var(--line-faint) 0 1px, transparent 1px 40px),
     var(--bg-void);
   background-attachment: fixed;
+}
+
+/* Encuadre del monitor: 4 L de 32px en el viewport. Se lee a un metro. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: calc(var(--topbar-alto) + 8px) 12px 40px 12px;
+  z-index: 9998;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--ice), var(--ice)),
+    linear-gradient(var(--ice), var(--ice)),
+    linear-gradient(var(--ice), var(--ice)),
+    linear-gradient(var(--ice), var(--ice)),
+    linear-gradient(var(--ice), var(--ice)),
+    linear-gradient(var(--ice), var(--ice)),
+    linear-gradient(var(--ice), var(--ice)),
+    linear-gradient(var(--ice), var(--ice));
+  background-size:
+    32px 3px, 3px 32px,
+    32px 3px, 3px 32px,
+    32px 3px, 3px 32px,
+    32px 3px, 3px 32px;
+  background-position:
+    left top, left top,
+    right top, right top,
+    left bottom, left bottom,
+    right bottom, right bottom;
+  background-repeat: no-repeat;
+  opacity: 0.85;
 }
 
 h1, h2, h3, h4, p, figure { margin: 0; }

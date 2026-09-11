@@ -31,9 +31,9 @@
   /* --- Líneas -----------------------------------------------------------
      Hielo, no azul 148/176/255. Sobre grafito, una arista azul se lee
      "HTML oscuro". El hairline blanco-frío es el de un overlay 2026. */
-  --line-faint:  rgba(210, 222, 236, 0.07);
-  --line:        rgba(210, 222, 236, 0.14);
-  --line-strong: rgba(210, 222, 236, 0.26);
+  --line-faint:  rgba(210, 222, 236, 0.14);
+  --line:        rgba(210, 222, 236, 0.24);
+  --line-strong: rgba(210, 222, 236, 0.42);
 
   /* --- Tinta ------------------------------------------------------------
      Hielo. Contraste se re-verifica en validate.js sobre las superficies
@@ -46,16 +46,16 @@
   /* --- Hielo (arista, no significado) -----------------------------------
      `--ice` es el metal del HUD: ticks, labels de eje, monograma. NUNCA
      significa "en vivo" — eso sigue siendo `--live`. */
-  --ice:      #c5d4e4;
-  --ice-dim:  rgba(197, 212, 228, 0.45);
-  --ice-glow: rgba(197, 212, 228, 0.16);
-  --edge-lo:  rgba(0, 0, 0, 0.5);
-  --scanline: rgba(0, 0, 0, 0.18);
-  --cut:      10px;
-  --cut-sm:   6px;
+  --ice:      #d5e4f4;
+  --ice-dim:  rgba(213, 228, 244, 0.7);
+  --ice-glow: rgba(213, 228, 244, 0.28);
+  --edge-lo:  rgba(0, 0, 0, 0.55);
+  --scanline: rgba(0, 0, 0, 0.28);
+  --cut:      20px;
+  --cut-sm:   8px;
   --tick:     var(--ice);
-  --tick-len: 12px;
-  --tick-w:   2px;
+  --tick-len: 28px;
+  --tick-w:   3px;
   --clip-corte: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, var(--cut) 100%, 0 calc(100% - var(--cut)));
   --clip-corte-sm: polygon(0 0, calc(100% - var(--cut-sm)) 0, 100% var(--cut-sm), 100% 100%, var(--cut-sm) 100%, 0 calc(100% - var(--cut-sm)));
 
@@ -64,16 +64,16 @@
      algo está en --live es porque está pasando en este momento. */
   --live:      #2ee8ff;
   --live-deep: #0d7f92;
-  --live-glow: rgba(46, 232, 255, 0.35);
+  --live-glow: rgba(46, 232, 255, 0.6);
 
   /* Un halo de fondo, no una superficie: para la ambientación de base.css,
      dos escalones más tenue que --live-glow. `--horizon` es el que pinta
      el body; las fases lo pisan (amateur más frío, playoffs oro, peligro
      rojo) sin reescribir el stack de fondos. */
-  --live-horizon: rgba(46, 232, 255, 0.04);
-  --gold-horizon: rgba(255, 200, 97, 0.07);
-  --danger-horizon: rgba(255, 51, 85, 0.11);
-  --horizon-amateur: rgba(46, 232, 255, 0.018);
+  --live-horizon: rgba(46, 232, 255, 0.16);
+  --gold-horizon: rgba(255, 200, 97, 0.14);
+  --danger-horizon: rgba(255, 51, 85, 0.16);
+  --horizon-amateur: rgba(46, 232, 255, 0.1);
   --horizon: var(--live-horizon);
 
   /* --- Ranked (identidad de la escalera, no un acento más) --------------
@@ -111,7 +111,7 @@
      tenue del color de acento, hover en el color sólido. `validate.js`
      verifica en estático que ningún `background`/`background-color` de
      este directorio use `var(--ink)` o `var(--ink-dim)`. */
-  --live-fill: rgba(46, 232, 255, 0.10);
+  --live-fill: rgba(46, 232, 255, 0.22);
   --gold-fill: rgba(255, 200, 97, 0.10);
   --warn-fill: rgba(255, 171, 74, 0.12);
   /* T6: el camino de la serie (mapa ganado/perdido) necesitaba un relleno
@@ -176,7 +176,7 @@
   /* El corte de esquina del escenario. Subió de 10px a 18px en T0b: a 10px,
      sobre un panel de +1000px, era invisible — no se veía en ninguna
      captura. A 18px se lee como una forma, no como un redondeo raro. */
-  --chamfer: 22px;
+  --chamfer: 40px;
 
   /* --- Elevación --------------------------------------------------------- */
   --sombra-1: 0 1px 2px rgba(0, 0, 0, 0.4);
@@ -198,8 +198,8 @@
   /* --- Layout (T1) ------------------------------------------------------- */
   --riel-izq:  320px;
   --riel-der:  320px;
-  --escenario-max: 860px;
-  --topbar-alto: 56px;
+  --escenario-max: 960px;
+  --topbar-alto: 64px;
 }
 
 /* El shell se estrecha antes de romperse. Los breakpoints completos viven
@@ -213,6 +213,9 @@
 @media (max-width: 639px) {
   :root {
     --fs-6: 24px; --fs-7: 32px; --fs-8: 48px; --fs-9: 64px;
-    --topbar-alto: 48px;
+    --topbar-alto: 56px;
+    --cut: 14px;
+    --chamfer: 28px;
+    --tick-len: 18px;
   }
 }

@@ -19,9 +19,9 @@
   position: relative;
   max-width: 1080px;
   margin: 0 auto;
-  padding: var(--s-5);
+  padding: var(--s-7) var(--s-6);
   background: var(--bg-surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   border-radius: 0;
   box-shadow: var(--sombra-3), inset 0 1px 0 var(--ice-dim);
   /* El chaflán: la firma visual del ESCENARIO (T1 lo renombra `.escenario`).
@@ -44,14 +44,14 @@
 .panel::after {
   content: "";
   position: absolute;
-  width: 22px;
-  height: 22px;
+  width: 40px;
+  height: 40px;
   pointer-events: none;
   border-color: var(--ice);
-  opacity: 0.7;
+  opacity: 1;
 }
-.panel::before { top: 0; left: 0; border-top: 2px solid; border-left: 2px solid; }
-.panel::after  { bottom: 0; right: 0; border-bottom: 2px solid; border-right: 2px solid; }
+.panel::before { top: 0; left: 0; border-top: 3px solid; border-left: 3px solid; }
+.panel::after  { bottom: 0; right: 0; border-bottom: 3px solid; border-right: 3px solid; }
 body[data-serie="on"] .escenario .panel::before,
 body[data-serie="on"] .escenario .panel::after,
 .escenario .panel:has(.decision[data-peso="bisagra"])::before,
@@ -141,15 +141,18 @@ h1::before {
   background: var(--live);
   border-color: var(--live);
   color: var(--bg-void);
-  font-size: var(--fs-5);
-  letter-spacing: var(--track-cartel);
+  font-size: var(--fs-6);
+  letter-spacing: 0.14em;
+  min-height: 56px;
+  padding: var(--s-4) var(--s-7);
+  box-shadow: 0 0 48px -8px var(--live-glow);
 }
 #run:hover:not(:disabled),
 #nuevaCarrera:hover:not(:disabled) {
   background: var(--live);
   border-color: var(--live);
   color: var(--bg-void);
-  box-shadow: 0 0 28px -8px var(--live-glow);
+  box-shadow: 0 0 64px -4px var(--live-glow);
 }
 
 /* --- La línea de estado y la píldora de meta ------------------------------ */

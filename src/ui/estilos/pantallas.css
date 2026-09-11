@@ -9,7 +9,7 @@
    1. INICIO — rol y mains
    ========================================================================== */
 
-.paso { margin-top: var(--s-5); }
+.paso { margin-top: var(--s-7); }
 
 .panel.escenario-entrar {
   animation: wipe-escenario var(--dur-slow) var(--ease) both;
@@ -19,29 +19,65 @@
   to   { opacity: 1; transform: none; }
 }
 
-.paso-label {
-  margin-bottom: var(--s-3);
-  padding-bottom: var(--s-2);
-  border-bottom: 1px solid var(--line-faint);
+#setup .subtitle {
   font-family: var(--font-display);
-  font-size: var(--fs-1);
+  font-size: var(--fs-7);
+  font-weight: 700;
+  line-height: var(--lh-tight);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  max-width: 16em;
+  margin-bottom: var(--s-2);
+}
+#setup .subtitle::after {
+  content: "";
+  display: block;
+  width: 80px;
+  height: 3px;
+  margin-top: var(--s-4);
+  background: var(--live);
+  box-shadow: 0 0 18px var(--live-glow);
+}
+
+.paso-label {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-bottom: var(--s-4);
+  padding-bottom: var(--s-3);
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-display);
+  font-size: var(--fs-3);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: var(--track-cartel);
-  color: var(--ice);
+  color: var(--ink);
 }
+.paso-label::before {
+  font-size: var(--fs-6);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--live);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-shadow: 0 0 18px var(--live-glow);
+}
+.paso:nth-of-type(1) .paso-label::before { content: "01"; }
+.paso:nth-of-type(2) .paso-label::before { content: "02"; }
+.paso:nth-of-type(3) .paso-label::before { content: "03"; }
 
 .handle-input,
 .seed-input {
   width: 100%;
-  max-width: 320px;
+  max-width: 520px;
   padding: var(--s-3) 0;
   background: transparent;
   border: none;
-  border-bottom: 1px solid var(--ice-dim);
+  border-bottom: 2px solid var(--ice-dim);
   border-radius: 0;
   color: var(--ink);
-  font-size: var(--fs-4);
+  font-size: var(--fs-7);
   font-family: var(--font-display);
   font-weight: 700;
   letter-spacing: var(--track-label);
@@ -53,9 +89,9 @@
 .handle-input:focus,
 .seed-input:focus { border-color: var(--live); outline: none; }
 .handle-input::placeholder,
-.seed-input::placeholder { color: var(--ink-mute); font-weight: 600; }
+.seed-input::placeholder { color: var(--ink-mute); font-weight: 600; font-size: var(--fs-4); }
 
-.seed-input { max-width: 190px; font-variant-numeric: tabular-nums; }
+.seed-input { max-width: 220px; font-size: var(--fs-5); font-variant-numeric: tabular-nums; }
 
 .seed-row { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
 .seed-label {
@@ -85,7 +121,7 @@
 .rol-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: var(--s-3);
+  gap: var(--s-4);
 }
 @media (max-width: 899px) {
   .rol-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -95,10 +131,11 @@
 }
 
 .rol-card {
-  padding: var(--s-4);
+  min-height: 200px;
+  padding: var(--s-5) var(--s-4);
   text-align: left;
   background: var(--bg-raised);
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   border-radius: 0;
   clip-path: var(--clip-corte);
   color: var(--ink);
@@ -107,29 +144,30 @@
   text-transform: none;
   letter-spacing: normal;
   transition: border-color var(--dur-fast) var(--ease),
-              background var(--dur-fast) var(--ease);
+              background var(--dur-fast) var(--ease),
+              box-shadow var(--dur) var(--ease);
 }
 .rol-card .rol-marca {
-  font-size: var(--fs-7);
+  font-size: var(--fs-8);
   color: var(--ink-mute);
-  margin-bottom: var(--s-2);
+  margin-bottom: var(--s-3);
 }
-.rol-card.elegido .rol-marca { color: var(--live); }
+.rol-card.elegido .rol-marca { color: var(--live); filter: drop-shadow(0 0 12px var(--live-glow)); }
 .rol-card:hover { border-color: var(--ice); background: var(--bg-raised); box-shadow: none; }
 .rol-card.elegido {
   border-color: var(--live);
-  background-color: var(--bg-surface);
-  box-shadow: inset 0 0 0 1px var(--live);
+  background-color: var(--live-fill);
+  box-shadow: inset 0 0 0 2px var(--live), 0 0 48px -8px var(--live-glow);
 }
-.rol-card.elegido:hover { border-color: var(--live); }
+.rol-card.elegido:hover { border-color: var(--live); background-color: var(--live-fill); }
 
 .rol-nombre {
   margin-bottom: var(--s-2);
   font-family: var(--font-display);
-  font-size: var(--fs-6);
+  font-size: var(--fs-7);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
   line-height: var(--lh-tight);
 }
 .rol-card.elegido .rol-nombre { color: var(--live); }
@@ -143,22 +181,22 @@
 
 .draft-slots {
   display: flex;
-  gap: var(--s-3);
-  margin-bottom: var(--s-4);
+  gap: var(--s-4);
+  margin-bottom: var(--s-5);
 }
 .draft-slot {
-  width: 72px;
-  height: 84px;
+  width: 104px;
+  height: 124px;
   padding: 0;
   display: grid;
   place-items: center;
   background-color: var(--bg-sunken);
-  border: 1px dashed var(--ice-dim);
+  border: 2px dashed var(--ice-dim);
   border-radius: 0;
   clip-path: var(--clip-corte);
   color: var(--ink-mute);
   font-family: var(--font-display);
-  font-size: var(--fs-5);
+  font-size: var(--fs-7);
   font-weight: 700;
 }
 .draft-slot--lleno {
@@ -176,8 +214,8 @@
 
 .campeon-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
-  gap: var(--s-2);
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--s-3);
 }
 
 .campeon-card {
@@ -223,14 +261,12 @@
 
 .setup-footer {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   gap: var(--s-4);
-  flex-wrap: wrap;
-  margin-top: var(--s-6);
+  margin-top: var(--s-8);
 }
-@media (max-width: 639px) {
-  .setup-footer #run { width: 100%; }
-}
+.setup-footer #run { width: 100%; }
 
 /* "Continuar" (T8, P.2): un ghost dorado, no el cyan sólido de "Empezar
    carrera" — son la misma jerarquía de decisión (arrancar algo), pero
