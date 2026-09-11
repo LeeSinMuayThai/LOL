@@ -507,7 +507,16 @@ function aceptarOferta(state, oferta, { motivoFila } = {}) {
         ...state.career,
         tier: oferta.tier, liga: oferta.liga, currentOrg: oferta.org,
         orgs: [...state.career.orgs, oferta.org],
-        splitAscensoTier1: oferta.tier === 1 ? state.player.splitCount : state.career.splitAscensoTier1,
+        // "En qué split entraste a una liga real POR PRIMERA VEZ" (`core/state.js`,
+        // `core/contexto.js:47`) — de un solo trazo. Bug encontrado en fase 11
+        // (medido con `candidatoDebut` de `core/temporadaResumen.js`, D8):
+        // sin el `=== null`, cada re-fichaje a tier 1 (transferencia,
+        // renovación tras bajar y volver a subir) pisaba el split del debut
+        // real con el de HOY, y tanto `calcularEtapa` (eje `debut`) como el
+        // titular `debut` de la fase 11 leían un debut que no era.
+        splitAscensoTier1: oferta.tier === 1 && state.career.splitAscensoTier1 === null
+          ? state.player.splitCount
+          : state.career.splitAscensoTier1,
         contrato,
         registro: conFilaCerrada(state, motivoFilaFinal)
       }

@@ -239,6 +239,34 @@ function insertarRivalesEnPlanteles(rivales, planteles, ligas) {
   }
 }
 
+// Fase 11 (§11.2, cierra D8): uno de los 5 se promueve a archirrival — el
+// que comparte tu rol, y si no hay ninguno, el que comparte tu región de
+// origen. Cero `rng` (es una elección, no un sorteo): determinista sobre el
+// orden en que `generarRivales` ya los generó. `org`/`nivel` arrancan vacíos
+// — `systems/rivales.js` los llena cada cierre de edad, junto con
+// `titulos`/`internacionales`/`duelo`/`historial`.
+function elegirArchirrival(rivales, rol, regionIdOrigen) {
+  const regionIdDe = (rival) => LIGAS_TIER1.find((liga) => liga.id === rival.liga)?.regionId;
+  const elegido = rivales.find((rival) => rival.role === rol)
+    ?? rivales.find((rival) => regionIdDe(rival) === regionIdOrigen)
+    ?? rivales[0]
+    ?? null;
+  if (!elegido) {
+    return null;
+  }
+  return {
+    handle: elegido.handle,
+    rol: elegido.role,
+    org: null,
+    liga: elegido.liga,
+    nivel: elegido.potencial,
+    titulos: 0,
+    internacionales: 0,
+    duelo: { tuyos: 0, suyos: 0 },
+    historial: []
+  };
+}
+
 function generarRivales(rng, usados) {
   const m = BALANCE.mundo;
 
@@ -327,6 +355,7 @@ export function generarMundo(rng, edadInicial, eleccion = null) {
       regionDominante: weightedPick(ligasTier1, (liga) => liga.prestigio, rng).region,
       metaInicial: generarMetaInicial(rng),
       rivales,
+      archirrival: elegirArchirrival(rivales, rol, ligaOrigen.regionId),
       // Los 5 planteles por org de tier 1 y de la tier 2 de tu región (~340
       // NPCs con edad, contrato y carrera propia). El resto del mundo sigue con
       // `fuerza` escalar. `systems/plantel.js` los envejece cada offseason.

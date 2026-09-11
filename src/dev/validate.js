@@ -39,7 +39,7 @@ import { bandaDeArraigo } from '../core/registro.js';
 import { rankearMundo, rankearPoblacion, puntajeRanking } from '../core/topMundial.js';
 import { salarioDeOferta } from '../core/salarios.js';
 import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
-import { orgsQueTeFicharian, ofertaPosible } from '../core/demanda.js';
+import { orgsQueTeFicharian, ofertaPosible, residenciaEn } from '../core/demanda.js';
 import { aplicar as aplicarMercado } from '../systems/mercado.js';
 import { FRASES_MOTIVO, ETIQUETAS_MOTIVO } from '../systems/temporada.js';
 import { EJES, MARCAS, MOMENTOS_ACTIVOS, momentoPorId } from '../data/contextos.js';
@@ -493,6 +493,19 @@ check('El mercado lee tu nivel: el silencio es para los que están por debajo, n
   // carrera y cambia qué seeds puntuales caen de cada lado sin cambiar la
   // tasa real (medida en ambos casos ~70-72%). Subir la muestra ataca la
   // causa (ruido), no el síntoma — bajar el piso otra vez no lo haría.
+  // Fase 11: trampa encontrada al medir (D8/mercado.js, no de esta fase —
+  // el fix de `splitAscensoTier1` que corrigió `candidatoDebut` cambió la
+  // trayectoria de RNG de varias seeds y una cayó acá). El piso de
+  // franquicia (`claramenteArriba` en `generarOfertas`) hace lugar en el
+  // roster, pero NO puede saltarse una `regla dura` real: un jugador que
+  // cayó a una liga con `cupoImports: 0` para SU región de origen no puede
+  // ficharse ahí aunque sea el mejor del mundo — ninguna org de esa liga
+  // tiene ni tendrá jamás un cupo de import que ofrecerle. Es la misma regla
+  // que blindó el cupo de imports desde la fase 9M (nunca se salteó a
+  // propósito, ni siquiera para una franquicia); el bug de 9R0e era otro:
+  // negarle oferta a alguien elegible. Medido: seed 974, split 55 — CD
+  // (Brasil, `cupoImports: 0`) contra un jugador de origen CN.
+  let silencioSinCupoImport = 0;
   for (let seed = 1; seed <= 1500; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
@@ -511,6 +524,7 @@ check('El mercado lee tu nivel: el silencio es para los que están por debajo, n
       if (brecha >= 10) {
         arriba += 1;
       }
+      const sinCupoImport = residenciaEn(state, liga.regionId) === 'import' && (liga.cupoImports ?? 99) <= 0;
       for (const log of state.logs.slice(antes)) {
         if (log.type !== 'mercado') {
           continue;
@@ -521,7 +535,11 @@ check('El mercado lee tu nivel: el silencio es para los que están por debajo, n
         }
         silencioTotal += 1;
         if (brecha >= 10) {
-          silencioArriba += 1;
+          if (sinCupoImport) {
+            silencioSinCupoImport += 1;
+          } else {
+            silencioArriba += 1;
+          }
         }
         if (brecha <= 5) {
           silencioMerecido += 1;
@@ -532,6 +550,9 @@ check('El mercado lee tu nivel: el silencio es para los que están por debajo, n
 
   if (arriba < 500) {
     throw new Error(`sólo ${arriba} splits de un jugador por encima de su liga: muestra insuficiente`);
+  }
+  if (silencioSinCupoImport > 5) {
+    throw new Error(`${silencioSinCupoImport} silencios de franquicia por cupo de import agotado — más de lo esperado para un evento así de específico, revisar`);
   }
   if (silencioArriba > 0) {
     throw new Error(`${silencioArriba} pretemporadas de un jugador claramente por encima de su liga terminaron sin ofertas (el bug daba ~21; tope 0)`);
@@ -5937,6 +5958,180 @@ check('servicioMilitar.js y salud.js no consumen RNG fuera de cuando corresponde
   if (noCoreanoPro) {
     servicio.aplicar(noCoreanoPro, rngQueRevienta);
   }
+});
+
+// --- Fase 11: el año (checks de §11.3) --------------------------------
+
+check('Fase 11: toda carrera de 6+ splits ve al menos 2 resúmenes con titular y nota (§11.3)', () => {
+  let elegibles = 0;
+  let conflictivos = 0;
+  const N = 250;
+  for (let seed = 1; seed <= N; seed += 1) {
+    const state = correrCarrera(seed, 60);
+    if (state.player.splitCount < 6) {
+      continue;
+    }
+    elegibles += 1;
+    const resumenes = state.logs.filter((l) => l.type === 'edad' && typeof l.nota === 'number');
+    if (resumenes.length < 2) {
+      conflictivos += 1;
+    }
+  }
+  if (elegibles < 30) {
+    throw new Error(`solo ${elegibles} carreras de 6+ splits en ${N} seeds — muestra insuficiente`);
+  }
+  if (conflictivos > 0) {
+    throw new Error(`${conflictivos}/${elegibles} carreras de 6+ splits vieron menos de 2 resúmenes anuales`);
+  }
+});
+
+check('Fase 11: los titulares de una carrera de 30 splits no repiten tipo más de 3 veces (§11.3)', () => {
+  const N = 150;
+  for (let seed = 1; seed <= N; seed += 1) {
+    const state = correrCarrera(seed, 60);
+    if (state.player.splitCount < 30) {
+      continue;
+    }
+    const primeros10 = state.logs
+      .filter((l) => l.type === 'edad' && typeof l.nota === 'number')
+      .slice(0, 10);
+    const conteo = {};
+    for (const resumen of primeros10) {
+      conteo[resumen.tipo] = (conteo[resumen.tipo] ?? 0) + 1;
+    }
+    for (const [tipo, veces] of Object.entries(conteo)) {
+      if (veces > 3) {
+        throw new Error(`seed ${seed}: el titular "${tipo}" se repite ${veces} veces en los primeros 30 splits`);
+      }
+    }
+  }
+});
+
+check('Fase 11: la nota correlaciona con la posición en liga sin determinarla (0.6 < r < 0.9, §11.3)', () => {
+  const pares = [];
+  for (let seed = 1; seed <= 120; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    let logsAntes = state.logs.length;
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      const nuevos = state.logs.slice(logsAntes);
+      logsAntes = state.logs.length;
+      const resumen = nuevos.find((l) => l.type === 'edad' && typeof l.nota === 'number');
+      if (resumen && state.phase !== 'amateur' && state.career.posicion) {
+        pares.push({ nota: resumen.nota, posicion: state.career.posicion });
+      }
+    }
+  }
+  if (pares.length < 30) {
+    throw new Error(`solo ${pares.length} pares nota/posición recolectados — muestra insuficiente`);
+  }
+  // Se invierte la posición (1 = mejor) para que la correlación con la nota
+  // salga positiva y legible: "mejor posición, mejor nota".
+  const r = pearson9Mi(pares.map((p) => -p.posicion), pares.map((p) => p.nota));
+  if (r <= 0.6) {
+    throw new Error(`r=${r.toFixed(3)} — la nota no sigue la posición en liga lo suficiente`);
+  }
+  if (r >= 0.9) {
+    throw new Error(`r=${r.toFixed(3)} — la posición determina la nota casi sola, los otros cuatro componentes no pesan`);
+  }
+});
+
+check('Fase 11: la viñeta 6 del resumen siempre nombra algo del año que viene (§11.3)', () => {
+  const N = 150;
+  for (let seed = 1; seed <= N; seed += 1) {
+    const state = correrCarrera(seed, 60);
+    const resumenes = state.logs.filter((l) => l.type === 'edad' && typeof l.nota === 'number');
+    for (const resumen of resumenes) {
+      const ultima = resumen.vinetas[resumen.vinetas.length - 1];
+      if (!ultima || ultima.icono !== '🎀' || !ultima.texto.includes('año que viene')) {
+        throw new Error(`seed ${seed}: la viñeta 6 no nombra el año que viene ("${ultima?.texto}")`);
+      }
+    }
+  }
+});
+
+check('Fase 11: `ausencia` titula en al menos 30% de las carreras que pasan de 15 splits (§11.3)', () => {
+  let elegibles = 0;
+  let conAusencia = 0;
+  const N = 400;
+  for (let seed = 1; seed <= N; seed += 1) {
+    const state = correrCarrera(seed, 60);
+    if (state.player.splitCount <= 15) {
+      continue;
+    }
+    elegibles += 1;
+    const resumenes = state.logs.filter((l) => l.type === 'edad' && typeof l.nota === 'number');
+    // `tipoBase`, no `tipo`: una racha de ausencias repetidas escala a
+    // `ausencia_racha2`/`_racha3` (§11.3 check 2) y seguiría siendo la
+    // misma historia de fondo.
+    if (resumenes.some((r) => r.tipoBase === 'ausencia')) {
+      conAusencia += 1;
+    }
+  }
+  if (elegibles < 30) {
+    throw new Error(`solo ${elegibles} carreras pasaron de 15 splits en ${N} seeds — muestra insuficiente`);
+  }
+  const fraccion = conAusencia / elegibles;
+  if (fraccion < 0.3) {
+    throw new Error(`"ausencia" tituló en el ${(fraccion * 100).toFixed(1)}% de las carreras elegibles — el mínimo es 30%`);
+  }
+});
+
+check('Fase 11: el duelo con el archirrival cambia de signo en al menos 40% de las carreras (§11.3)', () => {
+  let elegibles = 0;
+  let cambianDeSigno = 0;
+  // n=800, no 300: medido en 41,1% (n=400) — a un solo punto del piso, así
+  // que a n=300 el ruido de muestreo (±~2,8pp) puede tumbarlo sin que la tasa
+  // real haya cambiado. Mismo criterio que el check de silencio de mercado
+  // (10c): se ataca el ruido, no se toca el piso.
+  const N = 800;
+  for (let seed = 1; seed <= N; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    const signos = [];
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      if (state.mundo.archirrival) {
+        signos.push(state.mundo.archirrival.duelo.tuyos >= state.mundo.archirrival.duelo.suyos);
+      }
+    }
+    if (signos.length < 2) {
+      continue;
+    }
+    elegibles += 1;
+    if (signos.some((signo, idx) => idx > 0 && signo !== signos[idx - 1])) {
+      cambianDeSigno += 1;
+    }
+  }
+  if (elegibles < 30) {
+    throw new Error(`solo ${elegibles} carreras con al menos 2 lecturas del duelo en ${N} seeds — muestra insuficiente`);
+  }
+  const fraccion = cambianDeSigno / elegibles;
+  if (fraccion < 0.4) {
+    throw new Error(`el duelo cambió de signo en el ${(fraccion * 100).toFixed(1)}% de las carreras — el mínimo es 40%`);
+  }
+});
+
+check('Fase 11: el archirrival nunca consume RNG, sea cual sea la fase del jugador (§11.3, T1)', () => {
+  const rngQueRevienta = () => { throw new Error('tocó el rng sin que el sistema aplicara'); };
+  const rivales = sistemaPorId('rivales');
+  const resumenAnio = sistemaPorId('resumenAnio');
+
+  // Split 0: esCierreDeEdad es true (splitCount % 3 === 0) y el jugador
+  // todavía está en amateur.
+  const s0 = createInitialState(3, mulberry32(3));
+  rivales.aplicar(s0, rngQueRevienta);
+  resumenAnio.aplicar(s0, rngQueRevienta);
+
+  // Un split de cierre ya en fase profesional.
+  const rng = mulberry32(9);
+  let s = createInitialState(9, rng);
+  for (let i = 0; i < 40 && s.phase !== 'profesional' && !s.terminado; i += 1) {
+    s = avanzarSplitAuto(s, rng).state;
+  }
+  rivales.aplicar(s, rngQueRevienta);
+  resumenAnio.aplicar(s, rngQueRevienta);
 });
 
 if (errores.length > 0) {

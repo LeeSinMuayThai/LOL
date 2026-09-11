@@ -256,6 +256,18 @@ function crearBadgeInternacional(ficha) {
   return internacional;
 }
 
+// El duelo contra el archirrival (fase 11, §11.2): "el contador de la ficha"
+// — uno de los tres únicos lugares donde el duelo aparece. `ficha.duelo`
+// existe desde la fase 9Wb pero nunca se había dibujado en ninguna pantalla.
+function crearBadgeDuelo(ficha) {
+  if (!ficha.duelo) return null;
+  const { handle, org, tuyos, suyos, vasGanando } = ficha.duelo;
+  const badge = document.createElement('div');
+  badge.className = `ficha-badge ficha-badge--duelo-${vasGanando ? 'ganando' : 'perdiendo'}`;
+  badge.textContent = `${tuyos}-${suyos} vs ${handle}${org ? ` (${org})` : ''}`;
+  return badge;
+}
+
 function crearDetalleHistoria(registro) {
   if (registro.porOrg.length === 0) return null;
   const detalle = document.createElement('details');
@@ -385,6 +397,7 @@ export function renderFicha(container, state, modulos) {
       crearBarra({ nombre: 'HYPE', banda: ficha.hype }),
       crearContratoFranja(state, modulos),
       crearBadgeInternacional(ficha),
+      crearBadgeDuelo(ficha),
       crearPoolTiles(state),
       crearDetalleHistoria(registro),
       crearDetalleMomentos(registro)

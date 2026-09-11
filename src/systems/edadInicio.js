@@ -18,7 +18,14 @@ export const CAMPOS_EDAD = [
   'player.stats.teamfight',
   'player.stats.laneo',
   'player.stats.shotcalling',
-  'player.stats.adaptabilidad'
+  'player.stats.adaptabilidad',
+  // Fase 11 (§11.1): `notaDeLaTemporada` necesita el movimiento del año de
+  // jerarquía y arraigo, y ninguna otra cosa los snapshoteaba todavía. No se
+  // suman a `STATS_DE_ROL` de `core/ficha.js` — esas dos barras ya tienen su
+  // propio delta (`bandaDeJerarquia`/`bandaDeArraigoFicha`), esto es solo
+  // para el cálculo de la nota.
+  'career.jerarquia',
+  'career.arraigo'
 ];
 
 export function tomarSnapshotEdad(state) {

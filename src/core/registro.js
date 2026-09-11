@@ -168,6 +168,13 @@ export function registrarMomento(registro, momento) {
   return { ...registro, momentos: [...registro.momentos, momento] };
 }
 
+// Fase 11 (§11.1): una fila por cierre de edad (`core/temporadaResumen.js`
+// arma `entrada`). `titularDelAnio` la lee al año siguiente para no repetir
+// bajada de "otra vez" en falso.
+export function registrarTemporada(registro, entrada) {
+  return { ...registro, temporadas: [...registro.temporadas, entrada] };
+}
+
 // --- Picos (imagen 15 de PLAN.md: "93 MEDIA MÁX", "US$95,6M VALOR MÁS ALTO") ---
 
 export function registrarPicoNivel(registro, nivel, edad) {

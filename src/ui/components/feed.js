@@ -66,9 +66,71 @@ function crearRevealTop20(entry) {
   return item;
 }
 
+// El resumen anual (fase 11, §11.1). El log `edad` que emite
+// `systems/resumenAnio.js` trae la nota, el titular, la bajada opcional y las
+// 6 viñetas ya armadas — acá solo se pintan, en el mismo orden fijo que
+// `core/temporadaResumen.js` las generó. "LA GRIETA" es la marca del medio
+// que pide el plan (el equivalente ficticio del resumen deportivo).
+const LABEL_BANDA = { rojo: 'Flojo', gris: 'Parejo', ambar: 'Bueno', verde: 'Excelente' };
+
+function crearRevealResumenAnio(entry) {
+  const item = document.createElement('div');
+  item.className = 'log-item log-item--resumen-anio';
+  item.dataset.type = 'edad';
+  item.dataset.acento = 'gold';
+
+  const marco = document.createElement('div');
+  marco.className = 'resumen-anio-marco';
+  const marca = document.createElement('span');
+  marca.className = 'resumen-anio-marca';
+  marca.textContent = 'LA GRIETA';
+  const etiqueta = document.createElement('span');
+  etiqueta.className = 'resumen-anio-etiqueta';
+  etiqueta.textContent = `${entry.anio}/${entry.anio + 1} · TEMPORADA ${entry.temporada}`;
+  marco.append(marca, etiqueta);
+  item.appendChild(marco);
+
+  const titulo = document.createElement('div');
+  titulo.className = 'log-titulo resumen-anio-titular';
+  titulo.textContent = entry.message;
+  item.appendChild(titulo);
+
+  if (entry.bajada) {
+    const bajada = document.createElement('div');
+    bajada.className = 'resumen-anio-bajada';
+    bajada.textContent = entry.bajada;
+    item.appendChild(bajada);
+  }
+
+  const nota = document.createElement('div');
+  nota.className = `resumen-anio-nota resumen-anio-nota--${entry.banda}`;
+  nota.textContent = `Nota de la temporada: ${entry.nota.toFixed(1)} — ${LABEL_BANDA[entry.banda] ?? entry.banda}`;
+  item.appendChild(nota);
+
+  const vinetas = document.createElement('div');
+  vinetas.className = 'resumen-anio-vinetas';
+  for (const vineta of entry.vinetas ?? []) {
+    const fila = document.createElement('div');
+    fila.className = 'resumen-anio-vineta';
+    const icono = document.createElement('span');
+    icono.className = 'resumen-anio-icono';
+    icono.textContent = vineta.icono;
+    const texto = document.createElement('span');
+    texto.textContent = vineta.texto;
+    fila.append(icono, texto);
+    vinetas.appendChild(fila);
+  }
+  item.appendChild(vinetas);
+
+  return item;
+}
+
 export function crearLogItem(entry) {
   if (entry.type === 'top_mundial' && Array.isArray(entry.top20)) {
     return crearRevealTop20(entry);
+  }
+  if (entry.type === 'edad' && typeof entry.nota === 'number') {
+    return crearRevealResumenAnio(entry);
   }
 
   const item = document.createElement('div');

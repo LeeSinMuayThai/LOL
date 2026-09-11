@@ -74,6 +74,14 @@ export const ETAPAS_SPLIT = [
   // antes de `plantel`, que envejece el mundo. Cero rng: recomputa cada split
   // y narra los hitos solo al cierre de edad.
   await import('./topMundial.js'),
+  // Fase 11 (§11.2): el archirrival corre su carrera. Justo despues de
+  // `topMundial` (mundo.escenaAnual ya esta fresca) y antes de `plantel`,
+  // que envejece el mundo y podria moverlo de org para el año que viene.
+  await import('./rivales.js'),
+  // Fase 11 (§11.1): el resumen anual (nota, titular, viñetas). Justo
+  // despues de `rivales` —necesita `mundo.archirrival` ya actualizado este
+  // año— y antes de `plantel`, por la misma razon que `rivales`.
+  await import('./resumenAnio.js'),
   // Fase 9M: el mundo envejece. ULTIMO a proposito, y solo para la etapa
   // AMATEUR: en la etapa profesional `core/mercadoMundial.js` (llamado desde
   // `mercado.js`, mas arriba) ya envejecio y resolvio el mundo ANTES de la

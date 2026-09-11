@@ -173,32 +173,23 @@ export function estadoInternacional(state) {
   return state.career.posicion <= cupos + 2 ? 'en_carpeta' : 'sin_chance';
 }
 
-// El duelo contra el archirrival: la fase 11 (`mundo.archirrival`) lo llena y
-// tiene prioridad. Hasta entonces, fase 9Wb (§9W.4 gancho 6): el duelo es
-// contra el rival de TU generación que más lejos llegó en el ranking mundial
-// — su mejor rank (`rival.puntaje`, que `systems/topMundial.js` mantiene vivo;
-// `0` = nunca tocó el Top 20) contra tu mejor rank (`picos.rankMundial`). Si
-// ningún rival entró nunca y vos tampoco, no hay nada que mostrar.
+// El duelo contra el archirrival (fase 11, §11.2): `mundo.archirrival` sale
+// elegido desde `generarMundo` (siempre hay uno mientras haya rivales de
+// generación) y `systems/rivales.js` le mantiene el `duelo` al día cada
+// cierre de edad — títulos + internacionales acumulados, de cada lado. El
+// contador de la ficha (item 1 de los "tres lugares" de §11.2) lee esto.
 export function dueloDeGeneracion(state) {
-  if (state.mundo.archirrival) {
-    return state.mundo.archirrival;
-  }
-  const rivales = state.mundo.rivales ?? [];
-  const mejorRival = rivales
-    .filter((rival) => (rival.puntaje ?? 0) > 0)
-    .sort((a, b) => a.puntaje - b.puntaje)[0] ?? null;
-  const tuRank = state.career.registro?.picos?.rankMundial ?? 0;
-  if (!mejorRival && tuRank === 0) {
+  const archirrival = state.mundo.archirrival;
+  if (!archirrival) {
     return null;
   }
+  const { tuyos, suyos } = archirrival.duelo;
   return {
-    rivalHandle: mejorRival?.handle ?? null,
-    rivalRol: mejorRival?.role ?? null,
-    rivalRank: mejorRival?.puntaje ?? null,
-    tuRank: tuRank > 0 ? tuRank : null,
-    // `true` si llegaste igual o más arriba que el mejor rival (o si vos
-    // tocaste el Top 20 y ninguno de ellos).
-    vasGanando: tuRank > 0 && (!mejorRival || tuRank <= mejorRival.puntaje)
+    handle: archirrival.handle,
+    org: archirrival.org,
+    tuyos,
+    suyos,
+    vasGanando: tuyos >= suyos
   };
 }
 

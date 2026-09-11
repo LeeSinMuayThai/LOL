@@ -267,6 +267,66 @@ h1::before {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* --- El resumen anual (fase 11, §11.1): nota, titular, viñetas ----------- */
+.log-item--resumen-anio { border-left-color: var(--gold); }
+.resumen-anio-marco {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--s-2);
+}
+.resumen-anio-marca {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.resumen-anio-etiqueta {
+  font-size: var(--fs-1);
+  color: var(--ink-mute);
+  font-variant-numeric: tabular-nums;
+}
+.resumen-anio-titular {
+  font-family: var(--font-display);
+  font-size: var(--fs-5);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
+.resumen-anio-bajada {
+  margin-top: var(--s-1);
+  color: var(--ink-dim);
+  font-style: italic;
+}
+.resumen-anio-nota {
+  display: inline-block;
+  margin-top: var(--s-3);
+  padding: var(--s-1) var(--s-3);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  font-size: var(--fs-1);
+  font-weight: 600;
+}
+.resumen-anio-nota--rojo   { border-color: var(--danger); color: var(--danger); background: var(--down-fill); }
+.resumen-anio-nota--gris   { color: var(--ink-dim); }
+.resumen-anio-nota--ambar  { border-color: var(--warn); color: var(--warn); background: var(--warn-fill); }
+.resumen-anio-nota--verde  { border-color: var(--up); color: var(--up); background: var(--up-fill); }
+.resumen-anio-vinetas {
+  display: grid;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--line-faint);
+  font-size: var(--fs-2);
+}
+.resumen-anio-vineta {
+  display: grid;
+  grid-template-columns: 1.4em 1fr;
+  gap: var(--s-2);
+  color: var(--ink-dim);
+}
+.resumen-anio-icono { text-align: center; }
 .log-pestana {
   display: inline-block;
   margin-bottom: var(--s-1);
@@ -586,6 +646,8 @@ h1::before {
 .ficha-badge--clasificado,
 .ficha-badge--jugando { border-color: var(--up); color: var(--up); }
 .ficha-badge--en_carpeta { border-color: var(--gold); color: var(--gold); }
+.ficha-badge--duelo-ganando { border-color: var(--up); color: var(--up); }
+.ficha-badge--duelo-perdiendo { border-color: var(--danger); color: var(--danger); }
 
 .ficha-pool {
   margin-top: var(--s-3);

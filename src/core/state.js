@@ -224,7 +224,13 @@ export function createInitialState(seed, rng, eleccion = null) {
         // Fase 9W: cuántos cierres de edad terminaste dentro del Top 20 del
         // mundo. Contador monótono, para "14 splits en el Top 20" de la
         // tarjeta de legado.
-        splitsEnTopMundial: 0
+        splitsEnTopMundial: 0,
+        // Fase 11 (§11.1): una fila por cierre de edad — la nota y el titular
+        // que `core/temporadaResumen.js` calculó ese año. Lo consume el año
+        // siguiente para comparar ("otra vez") y `validate.js` para medir la
+        // correlación nota/posición y la repetición de titulares. Array vacío
+        // al arrancar, nunca null (trampa T4).
+        temporadas: []
       }
     },
     // La serie de playoffs en curso (fase 4). Objeto completo de ceros, nunca

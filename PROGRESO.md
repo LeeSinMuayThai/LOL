@@ -33,6 +33,157 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-11 — Fase 11: el año (PLAN.md §11.1+§11.2, cierra D8)
+
+9W cerró el ranking mundial y 10 el retiro; esta fase ataca lo último que le
+faltaba a cada cierre de edad: el archirrival corre su propia carrera en vez
+de ser un `puntaje: 0` muerto (§11.2), y el resumen anual deja de ser una
+línea de diffs (`Hype +3, Mecánica +5`) para tener nota, titular y seis
+viñetas fijas (§11.1) — la respuesta directa a la imagen 5 del diagnóstico
+original: un año de 10 goles lo titula el torneo que no jugaste, no el
+promedio de las stats.
+
+#### 11.2 — El archirrival (`core/mundo.js`, `systems/rivales.js`, `core/ficha.js`)
+
+De los 5 rivales de generación, `elegirArchirrival` promueve a uno en
+`generarMundo` — el de tu mismo rol, o si no hay, el de tu región de origen.
+Cero RNG: es una elección sobre el orden en que `generarRivales` ya los
+sorteó, no un sorteo nuevo. `systems/rivales.js` (nuevo, entra al registro
+justo después de `topMundial`) le actualiza org/liga/nivel/títulos cada
+cierre de edad leyendo `mundo.escenaAnual` — la misma fuente sin RNG que ya
+resuelve el título de cada liga tier 1 (fase 9W) — así que corre gratis
+(T1) en cualquier fase del jugador. `core/ficha.js` reescribe
+`dueloDeGeneracion` para leer `mundo.archirrival.duelo` en vez de buscar al
+mejor de los 5 por rank mundial (el gancho provisorio de 9Wb).
+
+**El contador de la ficha, wireado por fin**: `dueloDeGeneracion` existe
+desde la fase 9Wb pero ningún componente de `src/ui/` lo dibujaba nunca — un
+sistema que el jugador no puede ver no está terminado (regla de proceso 12).
+`src/ui/components/ficha.js` agrega `crearBadgeDuelo` (mismo patrón que el
+badge de internacional): `"83-136 vs DRAKKEN"`, verde si vas ganando, rojo
+si no.
+
+#### 11.1 — El resumen anual (`core/temporadaResumen.js`, `systems/resumenAnio.js`)
+
+`core/temporadaResumen.js` (nuevo, puro): `notaDeLaTemporada` (0-10, un
+decimal), `titularDelAnio` (`{ tipo, titular, bajada }`) y `vinetasDelAnio`
+(6 viñetas de orden fijo). Reemplaza `generarTextoResumen` de
+`edadCierre.js`, que se borró.
+
+**Por qué es un sistema nuevo y no vive en `edadCierre.js`**: la nota y las
+viñetas necesitan `mundo.escenaAnual` (título del año) y `mundo.archirrival`
+(duelo actualizado) de ESTE cierre — pero `escena`/`topMundial`/`rivales`
+corren DESPUÉS de `edadCierre` en `ETAPAS_SPLIT`, a propósito, para que el
+cursor de una decisión pendiente los retome sin saltarse un año. Reordenar
+esos sistemas antes de `edadCierre` habría corrido su RNG (escena tira
+finales de otras ligas) antes en el split, recalibrando en silencio TODO lo
+medido en 9M/9W/10. En cambio, `systems/resumenAnio.js` (nuevo) se inserta
+DESPUÉS de `rivales` — cero RNG, así que no mueve el stream de nadie (T1) —
+y `edadCierre.js` se queda solo con incrementar la edad y disparar la
+decisión de cierre.
+
+**`notaDeLaTemporada`**: profesional, pondera posición en liga (0,20) ·
+llegada a playoffs/internacional (0,15) · rendimiento propio medio del año
+(0,30, `career.historial` últimos 3 splits) · resultado internacional (0,15)
+· movimiento de jerarquía+arraigo (0,20, nuevos en `CAMPOS_EDAD` — no
+tenían snapshot). Amateur: soloQ del año (0,40) + estudios/familia/sueño
+absolutos (0,20 c/u) — antes de debutar no hay liga ni playoffs que pesar.
+**Recalibrado en el momento** (0,30/0,20 → 0,20/0,15 en posición/playoffs,
+subiendo rendimiento propio y jerarquía+arraigo): medido a 0,30/0,20 la nota
+correlacionaba r=0,896 con la posición en liga — a un pelo del techo 0,9 del
+check ("correlaciona pero no determina"), porque posición y playoffs son
+casi la misma señal cuantizada distinto. Con el peso corrido, r=0,836.
+
+**`titularDelAnio`**: 10 tipos con puntaje fijo por peso emocional (PLAN.md
+§11.1: `ausencia` 75 puntúa por encima de `eliminacion` 50, aunque la
+segunda sea "mejor" temporada) + `estable` como piso. Gana el de mayor
+puntaje entre los elegibles.
+
+#### Trampas encontradas al medir (regla de proceso 7)
+
+1. **`splitAscensoTier1` se pisaba en cada re-fichaje** (`systems/mercado.js`,
+   bug preexistente a esta fase, no introducido acá): el campo documentado
+   como "en qué split entraste a tier 1 por primera vez" se reescribía en
+   CADA fichaje a tier 1, no sólo el primero — así que un veterano que
+   volvía a firmar 10 años después de debutar quedaba con `splitAscensoTier1`
+   de HOY, y tanto `calcularEtapa` (eje `debut`) como el `candidatoDebut`
+   nuevo de esta fase leían un debut falso (o, para `debut`, ninguno: 0
+   apariciones en 40 seeds). Se corrigió a set-once (`=== null`). De paso,
+   `candidatoDebut` tenía su propio off-by-one en el límite del año (perdía
+   el debut si pasaba en el primer split del año): también 0/40 antes,
+   corregido junto con lo anterior.
+2. **`main_muerto` es una condición sostenida, no un evento**: sin cortar
+   por transición, titulaba hasta 8 de los primeros 10 años de una carrera
+   (viola el check de repetición). `titularDelAnio` ahora sólo lo titula el
+   año en que la marca ENTRA (`ctx.anioAnterior?.mainMuerto`, persistido en
+   `registro.temporadas`), no cada año que sigue prendida.
+3. **`sequia` no podía medir lo que decía medir**: el diseño original
+   (delta de shotcalling) nunca se cumplía — medido sobre 1137 cierres de
+   edad, el delta jamás baja de -0,5 bajo juego automático. Se rediseñó
+   sobre el RESULTADO del año (`rendimientoPropioMedio` ≤ 30/100), que sí
+   tiene varianza real.
+4. **La repetición no es sólo por racha consecutiva**: una dinastía de liga
+   o una sequía de Worlds pueden salir salteadas (año 1, 3, 5, 7...) y
+   siguen saturando la ventana de 10 años del check aunque ninguna racha
+   consecutiva pase de 3. Se armó `contarEnVentana` (cuenta apariciones del
+   mismo `tipoBase` en los últimos 9 años, consecutivos o no) y cada tramo
+   de 3 se vuelve su propia variante (`titulo_liga_racha2`, `_racha3`...)
+   con un prefijo ("OTRA VEZ — ", "Y SIGUE — ") que nombra la racha en vez
+   de repetir el titular como si fuera la primera vez. 0 fallos en 467
+   carreras de 30+ splits (antes: 69/119).
+5. **`career.posicion` puede ser `null` con equipo** (tier 3, o cualquier
+   año sin tabla real): sin guard, `calificaAPlayoffs`/`calificaAInternacional`
+   lo coercionan a 0 y un año sin club se leía como "clasificado en el
+   puesto 0" (`"Quedaron nullº"` en las viñetas). Guardado en los 4 lugares
+   de `temporadaResumen.js` que llaman a esas dos funciones.
+6. **El silencio de mercado por cupo de import agotado** (`validate.js`,
+   check de fase 9R0e): el fix de `splitAscensoTier1` corrió la cinta de RNG
+   de varias seeds y una (974) cayó en un caso legítimo que el check no
+   contemplaba — un jugador en declive, caído a una liga (CD, Brasil,
+   `cupoImports: 0`) donde es import y esa liga NO acepta imports, punto.
+   No es el bug original (negarle oferta a un elegible); es una regla dura
+   real que ni una franquicia puede saltarse. El check ahora separa
+   `silencioSinCupoImport` (tolera hasta 5 en 1500 seeds) del
+   `silencioArriba` de verdad (tope 0, intacto).
+7. **Una rama de la viñeta 6 no nombraba el año que viene**: el check
+   rojo-primero (§11.3) lo encontró en la primera corrida completa — la
+   rama de "se te vence el contrato" decía *"en la pretemporada vas a tener
+   que decidir"* sin la frase. Corregida: *"el año que viene, en la
+   pretemporada, vas a tener que decidir"*.
+
+#### Medido (300-800 seeds según el check)
+
+- Toda carrera de 6+ splits ve ≥2 resúmenes (250 seeds, 0 fallos).
+- Ningún tipo de titular repite más de 3 veces en 10 años (467 carreras de
+  30+ splits, 0 fallos — antes del fix de racha, 58%).
+- r(nota, posición en liga) ≈ 0,84 (estable en n=120/300/600), dentro de
+  (0,6; 0,9).
+- Viñeta 6 nombra el año que viene en el 100% de los resúmenes (150 seeds).
+- `ausencia` titula en ~79% de las carreras de 15+ splits (piso 30%).
+- El duelo con el archirrival cambia de signo en ~41% de las carreras (piso
+  40% — a un punto, se subió la muestra del check 300→800, mismo criterio
+  que el check de silencio de mercado de 10c).
+- `rivales.js`/`resumenAnio.js` nunca tocan el RNG, en amateur o profesional
+  (T1).
+
+**`src/dev/validate.js`**: 7 checks nuevos de §11.3 + 1 check de 9R0e
+ajustado (separa el silencio por cupo de import agotado del silencio real).
+
+**UI** (regla de proceso 12): el badge de duelo en la ficha (arriba) y una
+pantalla nueva para el resumen anual en el feed (`src/ui/components/feed.js`
+`crearRevealResumenAnio`, mismo patrón que el reveal del Top 20 de 9Wc) —
+"LA GRIETA" como marca del medio con `{año}/{año+1} · TEMPORADA {n}`, la
+nota con banda de color, el titular grande, la bajada si hay, y las 6
+viñetas con ícono. Probado con Chrome headless real vía CDP crudo (perfil
+aislado, sin tocar la sesión del usuario): el módulo completo importa y
+renderiza sin excepciones ni errores de consola, con datos reales de una
+carrera de 40+ splits.
+
+**Corrida completa de `validate.js` antes de cerrar (regla de proceso 7): 1 en rojo** (trampa 7
+de arriba), corregido y reverificado con una segunda corrida completa — **173/173 en verde**.
+Determinismo confirmado (misma seed, mismo estado final serializado). `simulate.js 1000` sin
+crashes.
+
 ### 2026-09-11 — Fase 10a: el retiro real (PLAN.md §10.1)
 
 Primer commit de la **fase 10**. 9W cerró el ranking mundial; esto ataca lo que quedaba de la

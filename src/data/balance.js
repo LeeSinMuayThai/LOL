@@ -1162,6 +1162,88 @@ export const BALANCE = {
     edadLimiteServicioElite: 30
   },
 
+  // Fase 11 (PLAN.md §11.1): el resumen anual. `notaDeLaTemporada` compone un
+  // 0-10 de cinco señales que ya existen en el motor — nunca inventa una
+  // nueva. Los pesos de `pesos` (profesional) suman 1; cada componente entra
+  // normalizado a 0-1 antes de ponderar.
+  temporadaResumen: {
+    // Recalibrado (fase 11, medido en 400 carreras): con 0.30/0.20 la nota
+    // correlacionaba r=0,896 con la posición — casi el techo de 0,9 del check
+    // (§11.3: "correlaciona pero no determina"). `posicion` y `playoffs` son
+    // casi la misma señal cuantizada distinto, así que juntas pesaban 0,50 de
+    // una sola cosa. Se corre peso hacia `rendimientoPropio` (tiene ruido
+    // propio, split a split) y `jerarquiaArraigo` (no depende de la tabla).
+    pesos: {
+      posicion: 0.20,
+      playoffs: 0.15,
+      rendimientoPropio: 0.30,
+      internacional: 0.15,
+      jerarquiaArraigo: 0.20
+    },
+    // Sin cupo/clasificación a internacional este año: ni castiga ni premia
+    // de más — la mayoría de los años de la mayoría de las carreras no tienen
+    // internacional, así que un 0 duro hundiría la nota de un año por lo
+    // demás bueno.
+    scoreInternacionalNeutro: 0.4,
+    // Llegaste al internacional y perdiste tu serie: ya es mejor año que no
+    // llegar (`scoreInternacionalNeutro`), pero no tan bueno como el buen
+    // papel (1.0).
+    scoreInternacionalEliminado: 0.7,
+    // El componente `playoffs` (distinto de `internacional`: éste mide cuán
+    // lejos llegaste en TU liga, no cómo te fue afuera) sin un número de
+    // ronda persistido — el motor no guarda en qué ronda te eliminaron, sólo
+    // si jugaste playoffs y si llegaste al internacional (que ya implica
+    // haber cruzado tu bracket doméstico). Bandas de mejor esfuerzo con la
+    // señal que sí existe.
+    scorePlayoffs: {
+      sinLigaReal: 0.3,       // tier 3, o etapa amateur (no aplica el peso)
+      noClasificado: 0.15,
+      clasificado: 0.5,
+      llegoAlInternacional: 0.9,
+      campeon: 1.0
+    },
+    // La jerarquía y el arraigo raramente se mueven ±100 en un solo año: la
+    // escala achica el delta antes de centrarlo en 0.5 (sin movimiento = nota
+    // neutra en ese componente).
+    escalaJerarquiaArraigo: 60,
+    // Cuánto tiene que caer el nivel en un año para que `titularDelAnio` lo
+    // titule como `caida` en vez de dejarlo pasar como ruido. Medido sobre
+    // 1137 cierres de edad (60 seeds × 60 splits): el delta de nivel real
+    // cae en [-6.4, 9.7] con media +1.35 — un piso de 8 nunca se alcanzaba
+    // (0 casos), y con 4 (el 1% peor) `caida` casi nunca gana el desempate
+    // contra `main_muerto`/`titulo_liga`, que dominan la mayoría de los años
+    // (medido: 0 en 50 carreras). 3 (el 3.6% peor) sigue siendo un año malo
+    // de verdad y se observa de verdad (medido: ~6 en 50 carreras).
+    umbralCaida: 3,
+    // `sequia` no mide el shotcalling (medido: nunca baja más de -0.5 en un
+    // año bajo juego automático, así que un umbral de delta nunca dispara) —
+    // mide el RESULTADO del año (`rendimientoPropioMedio`, 0-100): un año
+    // donde el rendimiento medio se hunde aunque el nivel no haya caído es
+    // la sequía real ("¿y el shotcalling?", jugás bien y no te sale nada).
+    // Medido: ≤30 cae en ~5% de los años profesionales.
+    umbralSequiaRendimiento: 30,
+    // Sin carrera competitiva todavía (etapa amateur): la nota compone otra
+    // cosa — el ladder de soloQ y el cuidado del cuerpo/estudios/familia en
+    // vez de liga/playoffs/internacional, que no existen antes del debut.
+    pesosAmateur: {
+      soloq: 0.40,
+      estudios: 0.20,
+      familia: 0.20,
+      sueno: 0.20
+    },
+    // Cuánto soloQ (puntos absolutos, `core/ranked.js`) hace falta subir en
+    // un año para que ese componente sature en 1. No calibrado contra datos
+    // reales de LP anual — es una escala de arranque, documentada para poder
+    // revisarla si el check de fase 11 la encuentra plana.
+    escalaSoloqAnual: 300,
+    // Bandas de color de la nota (PLAN.md §11.1).
+    bandas: { rojo: 5.5, gris: 6.9, ambar: 7.9 },
+    // La ventana que mira el check de repetición de §11.3 (10 años) menos el
+    // año actual, que todavía no está guardado en `registro.temporadas`
+    // cuando `titularDelAnio` la consulta.
+    ventanaRacha: 9
+  },
+
   // La temporada regular (fase 5): antes era una sola tirada (`gauss` contra
   // cada rival) escupiendo una posición sin fechas ni tabla. Ahora es un
   // calendario real, con 2-3 fechas por split que el jugador juega de verdad.
