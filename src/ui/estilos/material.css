@@ -1,0 +1,96 @@
+/* ==========================================================================
+   MATERIAL — primitivos de HUD (F1)
+   Grafito, hielo, una lámpara. Cero hex: todo sale de tokens.css.
+   ========================================================================== */
+
+.corte { clip-path: var(--clip-corte); border-radius: 0; }
+.corte-sm { clip-path: var(--clip-corte-sm); border-radius: 0; }
+
+.bisel {
+  box-shadow: inset 0 1px 0 var(--ice-dim), inset 0 -1px 0 var(--edge-lo);
+}
+
+/* 4 ticks de encuadre: 8 hairlines, una por pata de cada L. `--tick` se
+   pisa a --live / --gold cuando el bloque está "en vivo". */
+.ticks {
+  --tick: var(--ice);
+  --tick-len: 12px;
+  --tick-w: 2px;
+  background-image:
+    linear-gradient(var(--tick), var(--tick)),
+    linear-gradient(var(--tick), var(--tick)),
+    linear-gradient(var(--tick), var(--tick)),
+    linear-gradient(var(--tick), var(--tick)),
+    linear-gradient(var(--tick), var(--tick)),
+    linear-gradient(var(--tick), var(--tick)),
+    linear-gradient(var(--tick), var(--tick)),
+    linear-gradient(var(--tick), var(--tick));
+  background-size:
+    var(--tick-len) var(--tick-w), var(--tick-w) var(--tick-len),
+    var(--tick-len) var(--tick-w), var(--tick-w) var(--tick-len),
+    var(--tick-len) var(--tick-w), var(--tick-w) var(--tick-len),
+    var(--tick-len) var(--tick-w), var(--tick-w) var(--tick-len);
+  background-position:
+    left top, left top,
+    right top, right top,
+    left bottom, left bottom,
+    right bottom, right bottom;
+  background-repeat: no-repeat;
+}
+
+/* Frames de estudio: ficha, riel, serie. Decisión/mercado/minijuego NO
+   se clippean — su pestaña lower-third vive a -15px y el clip se la come. */
+.marco,
+.ficha-card,
+.panel-contexto,
+.serie-contexto,
+.tarjeta {
+  border-radius: 0;
+  box-shadow: inset 0 1px 0 var(--ice-dim), inset 0 -1px 0 var(--edge-lo);
+}
+
+.ficha-card,
+.panel-contexto,
+.serie-contexto,
+.ficha-nivel,
+.ficha-ranked,
+.draft-slot,
+.rol-card.elegido,
+.decision,
+.mercado,
+.minijuego,
+.tarjeta {
+  --tick: var(--ice);
+  --tick-len: 12px;
+  --tick-w: 2px;
+  background-image:
+    linear-gradient(var(--tick), var(--tick)),
+    linear-gradient(var(--tick), var(--tick)),
+    linear-gradient(var(--tick), var(--tick)),
+    linear-gradient(var(--tick), var(--tick)),
+    linear-gradient(var(--tick), var(--tick)),
+    linear-gradient(var(--tick), var(--tick)),
+    linear-gradient(var(--tick), var(--tick)),
+    linear-gradient(var(--tick), var(--tick));
+  background-size:
+    var(--tick-len) var(--tick-w), var(--tick-w) var(--tick-len),
+    var(--tick-len) var(--tick-w), var(--tick-w) var(--tick-len),
+    var(--tick-len) var(--tick-w), var(--tick-w) var(--tick-len),
+    var(--tick-len) var(--tick-w), var(--tick-w) var(--tick-len);
+  background-position:
+    left top, left top,
+    right top, right top,
+    left bottom, left bottom,
+    right bottom, right bottom;
+  background-repeat: no-repeat;
+}
+
+.rol-card.elegido,
+body[data-serie="on"] .serie-contexto,
+.decision[data-peso="bisagra"] { --tick: var(--live); }
+
+body[data-ventana="playoffs"] .serie-contexto,
+body[data-ventana="internacional"] .serie-contexto,
+.decision[data-peso="cierre"] { --tick: var(--gold); }
+
+.ficha-ranked { --tick: var(--rank-color, var(--ice)); }

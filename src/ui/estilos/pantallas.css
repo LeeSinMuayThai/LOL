@@ -21,30 +21,39 @@
 
 .paso-label {
   margin-bottom: var(--s-3);
+  padding-bottom: var(--s-2);
+  border-bottom: 1px solid var(--line-faint);
   font-family: var(--font-display);
   font-size: var(--fs-1);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: var(--track-cartel);
-  color: var(--live);
+  color: var(--ice);
 }
 
 .handle-input,
 .seed-input {
   width: 100%;
   max-width: 320px;
-  padding: var(--s-3) var(--s-4);
-  background: var(--bg-sunken);
-  border: 1px solid var(--line);
-  border-radius: var(--r);
+  padding: var(--s-3) 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--ice-dim);
+  border-radius: 0;
   color: var(--ink);
-  font-size: var(--fs-3);
+  font-size: var(--fs-4);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
   transition: border-color var(--dur-fast) var(--ease);
 }
 .handle-input:hover,
-.seed-input:hover { border-color: var(--line-strong); }
+.seed-input:hover { border-color: var(--ice); }
+.handle-input:focus,
+.seed-input:focus { border-color: var(--live); outline: none; }
 .handle-input::placeholder,
-.seed-input::placeholder { color: var(--ink-mute); }
+.seed-input::placeholder { color: var(--ink-mute); font-weight: 600; }
 
 .seed-input { max-width: 190px; font-variant-numeric: tabular-nums; }
 
@@ -90,41 +99,45 @@
   text-align: left;
   background: var(--bg-raised);
   border: 1px solid var(--line);
-  border-radius: var(--r-lg);
+  border-radius: 0;
+  clip-path: var(--clip-corte);
   color: var(--ink);
   font-family: var(--font-ui);
   font-size: var(--fs-2);
   text-transform: none;
   letter-spacing: normal;
   transition: border-color var(--dur-fast) var(--ease),
-              background var(--dur-fast) var(--ease),
-              transform var(--dur-fast) var(--ease);
+              background var(--dur-fast) var(--ease);
 }
 .rol-card .rol-marca {
-  font-size: 28px;
+  font-size: var(--fs-7);
   color: var(--ink-mute);
   margin-bottom: var(--s-2);
 }
 .rol-card.elegido .rol-marca { color: var(--live); }
-.rol-card:hover { border-color: var(--live); transform: translateY(-2px); background: var(--bg-raised); box-shadow: none; }
+.rol-card:hover { border-color: var(--ice); background: var(--bg-raised); box-shadow: none; }
 .rol-card.elegido {
   border-color: var(--live);
-  background: var(--bg-surface);
-  box-shadow: inset 0 0 0 1px var(--live-glow), 0 0 30px -14px var(--live-glow);
+  background-color: var(--bg-surface);
+  box-shadow: inset 0 0 0 1px var(--live);
 }
+.rol-card.elegido:hover { border-color: var(--live); }
 
 .rol-nombre {
   margin-bottom: var(--s-2);
   font-family: var(--font-display);
-  font-size: var(--fs-5);
+  font-size: var(--fs-6);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.02em;
+  line-height: var(--lh-tight);
 }
 .rol-card.elegido .rol-nombre { color: var(--live); }
 
 .rol-tono { color: var(--ink-dim); line-height: var(--lh-snug); margin-bottom: var(--s-2); }
 .rol-costo { color: var(--warn); line-height: var(--lh-snug); font-size: var(--fs-1); }
+.rol-card:not(.elegido) .rol-tono,
+.rol-card:not(.elegido) .rol-costo { display: none; }
 
 /* --- Los campeones --------------------------------------------------------- */
 
@@ -134,14 +147,15 @@
   margin-bottom: var(--s-4);
 }
 .draft-slot {
-  width: 64px;
-  height: 72px;
+  width: 72px;
+  height: 84px;
   padding: 0;
   display: grid;
   place-items: center;
-  background: var(--bg-sunken);
-  border: 1px dashed var(--line-strong);
-  border-radius: var(--r);
+  background-color: var(--bg-sunken);
+  border: 1px dashed var(--ice-dim);
+  border-radius: 0;
+  clip-path: var(--clip-corte);
   color: var(--ink-mute);
   font-family: var(--font-display);
   font-size: var(--fs-5);
@@ -159,12 +173,6 @@
   box-shadow: none;
 }
 .draft-slot .campeon-tile { width: 100%; height: 100%; }
-.rol-card:not(.elegido) .rol-tono {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
 
 .campeon-grid {
   display: grid;
@@ -177,7 +185,8 @@
   text-align: left;
   background: var(--bg-raised);
   border: 1px solid var(--line-faint);
-  border-radius: var(--r);
+  border-radius: 0;
+  clip-path: var(--clip-corte-sm);
   color: var(--ink);
   font-family: var(--font-ui);
   font-size: var(--fs-2);
@@ -218,6 +227,9 @@
   gap: var(--s-4);
   flex-wrap: wrap;
   margin-top: var(--s-6);
+}
+@media (max-width: 639px) {
+  .setup-footer #run { width: 100%; }
 }
 
 /* "Continuar" (T8, P.2): un ghost dorado, no el cyan sólido de "Empezar
@@ -278,7 +290,7 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   margin-top: var(--s-6);
   padding: var(--s-5);
   padding-left: calc(var(--s-5) - 3px);
-  background: var(--bg-surface);
+  background-color: var(--bg-surface);
   border: 1px solid var(--line);
   border-left: 3px solid var(--tab-color, var(--live));
   animation: entrar-decision var(--dur-slow) var(--ease) both;
@@ -388,21 +400,20 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   text-align: left;
   background: var(--bg-raised);
   border: 1px solid var(--line);
-  border-radius: var(--r);
+  border-radius: 0;
+  clip-path: var(--clip-corte);
   color: var(--ink);
   font-family: var(--font-ui);
   font-size: var(--fs-2);
   text-transform: none;
   letter-spacing: normal;
   transition: border-color var(--dur-fast) var(--ease),
-              background var(--dur-fast) var(--ease),
-              transform var(--dur-fast) var(--ease);
+              background var(--dur-fast) var(--ease);
 }
 .option-btn:hover {
   border-color: var(--live);
-  transform: translateY(-2px);
-  background: var(--bg-raised);
-  box-shadow: 0 0 30px -16px var(--live-glow);
+  background: var(--live-fill);
+  box-shadow: none;
 }
 
 /* El atajo de teclado (T4): shell.js escucha 1-4 desde T1, pero hasta acá
@@ -451,7 +462,7 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   margin-top: var(--s-6);
   padding: var(--s-5);
   padding-left: calc(var(--s-5) - 3px);
-  background: var(--bg-surface);
+  background-color: var(--bg-surface);
   border: 1px solid var(--line);
   border-left: 3px solid var(--cat-mercado);
   animation: entrar-decision var(--dur-slow) var(--ease) both;
@@ -471,20 +482,19 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   text-align: left;
   background: var(--bg-raised);
   border: 1px solid var(--line);
-  border-radius: var(--r);
+  border-radius: 0;
+  clip-path: var(--clip-corte);
   color: var(--ink);
   font-family: var(--font-ui);
   font-size: var(--fs-2);
   text-transform: none;
   letter-spacing: normal;
-  transition: border-color var(--dur-fast) var(--ease),
-              transform var(--dur-fast) var(--ease);
+  transition: border-color var(--dur-fast) var(--ease);
 }
 .mercado-card:hover {
   border-color: var(--cat-mercado);
-  transform: translateY(-2px);
   background: var(--bg-raised);
-  box-shadow: 0 0 30px -16px var(--gold-glow);
+  box-shadow: none;
 }
 .mercado-card--bombazo { border-color: var(--gold-deep); }
 
@@ -545,7 +555,7 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   padding: var(--s-4);
   border-left: 3px solid var(--line-strong);
   background: var(--bg-sunken);
-  border-radius: var(--r);
+  border-radius: 0;
 }
 .mercado-mundo-titulo {
   font-size: var(--fs-1);
@@ -569,7 +579,8 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   padding: var(--s-3) var(--s-4);
   background: transparent;
   border: 1px dashed var(--line-strong);
-  border-radius: var(--r);
+  border-radius: 0;
+  clip-path: var(--clip-corte);
   color: var(--ink-dim);
   font-family: var(--font-ui);
   font-size: var(--fs-2);
@@ -608,7 +619,8 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   padding: var(--s-2) var(--s-3);
   background: transparent;
   border: 1px solid var(--line-strong);
-  border-radius: var(--r);
+  border-radius: 0;
+  clip-path: var(--clip-corte-sm);
   color: var(--ink-dim);
   font-family: var(--font-ui);
   font-size: var(--fs-1);
@@ -641,7 +653,7 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   padding: var(--s-4);
   border-left: 3px solid var(--cat-mercado);
   background: var(--bg-sunken);
-  border-radius: var(--r);
+  border-radius: 0;
 }
 .mercado-vos-titulo {
   font-size: var(--fs-1);
@@ -716,7 +728,7 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   margin-top: var(--s-6);
   padding: var(--s-5);
   padding-left: calc(var(--s-5) - 3px);
-  background: var(--bg-surface);
+  background-color: var(--bg-surface);
   border: 1px solid var(--line);
   border-left: 3px solid var(--warn);
   animation: entrar-decision var(--dur-slow) var(--ease) both;
@@ -907,6 +919,7 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   padding: 0;
   border: none;
   border-radius: 50%;
+  clip-path: none;
   background: radial-gradient(circle, var(--gold), var(--down));
   box-shadow: 0 0 18px -4px var(--gold-glow);
 }
@@ -922,9 +935,9 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   margin-top: var(--s-5);
   padding: var(--s-6) var(--s-5);
   text-align: center;
-  background: var(--bg-surface);
+  background-color: var(--bg-surface);
   border: 1px solid var(--line);
-  border-radius: var(--r-lg);
+  border-radius: 0;
   animation: entrar-decision var(--dur-slow) var(--ease) both;
 }
 /* El marco por cada uno de los 5 finales (T7, §10.3): "el mundialista y
@@ -1008,7 +1021,7 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: var(--track-cartel);
-  color: var(--live);
+  color: var(--ice);
 }
 
 /* --- Las tres acciones de cierre (T7): PNG + link ------------------------- */
@@ -1036,9 +1049,8 @@ details.avanzado summary:hover { color: var(--ink-dim); }
 
 .panel-contexto {
   padding: var(--s-4);
-  background: var(--bg-surface);
+  background-color: var(--bg-surface);
   border: 1px solid var(--line);
-  border-top: 2px solid var(--line-strong);
 }
 
 .panel-contexto-titulo {
@@ -1048,7 +1060,7 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   font-weight: 700;
   letter-spacing: var(--track-cartel);
   text-transform: uppercase;
-  color: var(--live);
+  color: var(--ice);
 }
 
 .panel-contexto-leyenda {
@@ -1079,7 +1091,7 @@ details.avanzado summary:hover { color: var(--ink-dim); }
 }
 .panel-contexto-barra-relleno {
   height: 100%;
-  background: linear-gradient(90deg, var(--live-deep), var(--live));
+  background: linear-gradient(90deg, var(--ice-dim), var(--live));
   transition: width var(--dur-slow) var(--ease);
 }
 

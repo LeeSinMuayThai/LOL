@@ -12,7 +12,7 @@
 .ficha-ranked {
   margin-top: var(--s-4);
   padding: var(--s-3);
-  background: var(--bg-sunken);
+  background-color: var(--bg-sunken);
   border: 1px solid var(--line);
   border-left: 3px solid var(--rank-color, var(--live));
 }

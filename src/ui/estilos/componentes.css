@@ -13,8 +13,6 @@
    1. PRIMITIVOS
    ========================================================================== */
 
-body { padding: var(--s-5) var(--s-4); }
-
 /* El contenedor de la página. En T1 se convierte en el shell de tres zonas;
    por ahora sigue siendo la columna centrada de siempre. */
 .panel {
@@ -24,8 +22,8 @@ body { padding: var(--s-5) var(--s-4); }
   padding: var(--s-5);
   background: var(--bg-surface);
   border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  box-shadow: var(--sombra-3);
+  border-radius: 0;
+  box-shadow: var(--sombra-3), inset 0 1px 0 var(--ice-dim);
   /* El chaflán: la firma visual del ESCENARIO (T1 lo renombra `.escenario`).
      Va acá, en el contenedor, y no en la ficha: `.ficha-barra-hito`
      sobresale de su pista a propósito (`top: -4px`) y un `clip-path` más
@@ -40,9 +38,8 @@ body { padding: var(--s-5) var(--s-4); }
   );
 }
 
-/* Esquinas de encuadre (T0b): dos ángulos en L, en las dos esquinas que el
-   chaflán NO corta (arriba-izq, abajo-der — mirar el polígono de arriba).
-   Es el detalle que dice "monitor de transmisión" sin escribirlo. */
+/* Esquinas de encuadre: dos ángulos en L, hielo en reposo. Cyan solo
+   cuando el estudio está en vivo (serie o bisagra). */
 .panel::before,
 .panel::after {
   content: "";
@@ -50,11 +47,18 @@ body { padding: var(--s-5) var(--s-4); }
   width: 22px;
   height: 22px;
   pointer-events: none;
-  border-color: var(--live);
-  opacity: 0.4;
+  border-color: var(--ice);
+  opacity: 0.7;
 }
 .panel::before { top: 0; left: 0; border-top: 2px solid; border-left: 2px solid; }
 .panel::after  { bottom: 0; right: 0; border-bottom: 2px solid; border-right: 2px solid; }
+body[data-serie="on"] .escenario .panel::before,
+body[data-serie="on"] .escenario .panel::after,
+.escenario .panel:has(.decision[data-peso="bisagra"])::before,
+.escenario .panel:has(.decision[data-peso="bisagra"])::after {
+  border-color: var(--live);
+  opacity: 1;
+}
 
 /* El título es un cartel de transmisión, no un h1 de blog. */
 h1 {
@@ -72,10 +76,9 @@ h1::before {
   content: "";
   display: block;
   width: 56px;
-  height: 3px;
+  height: 2px;
   margin-bottom: var(--s-3);
-  background: var(--live);
-  box-shadow: 0 0 12px var(--live-glow);
+  background: var(--ice);
 }
 
 .subtitle {
@@ -113,10 +116,11 @@ h1::before {
   letter-spacing: var(--track-label);
   text-transform: uppercase;
   padding: var(--s-3) var(--s-5);
-  border-radius: var(--r);
-  background: var(--live-fill);
-  border: 1px solid var(--live-deep);
-  color: var(--live);
+  border-radius: 0;
+  clip-path: var(--clip-corte);
+  background: var(--bg-raised);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
   transition: background var(--dur-fast) var(--ease),
               border-color var(--dur-fast) var(--ease),
               color var(--dur-fast) var(--ease),
@@ -124,13 +128,29 @@ h1::before {
               box-shadow var(--dur-fast) var(--ease);
 }
 :where(button:hover:not(:disabled)) {
+  background: var(--live-fill);
+  border-color: var(--live);
+  color: var(--live);
+  box-shadow: none;
+}
+:where(button:active:not(:disabled)) { transform: translateY(1px); }
+:where(button:disabled) { opacity: 0.35; cursor: not-allowed; }
+
+#run,
+#nuevaCarrera {
+  background: var(--live);
+  border-color: var(--live);
+  color: var(--bg-void);
+  font-size: var(--fs-5);
+  letter-spacing: var(--track-cartel);
+}
+#run:hover:not(:disabled),
+#nuevaCarrera:hover:not(:disabled) {
   background: var(--live);
   border-color: var(--live);
   color: var(--bg-void);
   box-shadow: 0 0 28px -8px var(--live-glow);
 }
-:where(button:active:not(:disabled)) { transform: translateY(1px); }
-:where(button:disabled) { opacity: 0.35; cursor: not-allowed; }
 
 /* --- La línea de estado y la píldora de meta ------------------------------ */
 
@@ -291,7 +311,7 @@ h1::before {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: var(--track-cartel);
-  color: var(--live);
+  color: var(--ice);
   margin-bottom: var(--s-1);
 }
 
@@ -348,9 +368,8 @@ h1::before {
   position: relative;
   margin-top: var(--s-1);
   padding: var(--s-5);
-  background: var(--bg-surface);
+  background-color: var(--bg-surface);
   border: 1px solid var(--line);
-  border-top: 2px solid var(--line-strong);
 }
 
 /* Dorada al llegar al último hito de arraigo o jerarquía. */
@@ -367,9 +386,10 @@ h1::before {
   min-width: 78px;
   padding: var(--s-2) var(--s-3);
   text-align: center;
-  background: var(--bg-sunken);
+  background-color: var(--bg-sunken);
   border: 1px solid var(--line);
-  border-radius: var(--r);
+  border-radius: 0;
+  clip-path: var(--clip-corte-sm);
 }
 .ficha-nivel-numero {
   font-family: var(--font-display);
@@ -666,7 +686,7 @@ h1::before {
   font-weight: 600;
   letter-spacing: var(--track-label);
   text-transform: uppercase;
-  color: var(--live);
+  color: var(--ice);
 }
 .ficha-historia summary:hover { color: var(--ink); }
 .ficha-historia-fila {

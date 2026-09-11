@@ -21,30 +21,43 @@
      `chrome` es la topbar y los rieles (tienen que leerse como marco, no
      como contenido); `surface` es una tarjeta; `raised` es algo apoyado
      sobre una tarjeta; `sunken` son las pistas de barra y los campos.
-     `raised` se subió en T0b (`#161d2c` → `#1c2436`, +9 puntos de
-     luminancia): el rango de T0 era de 17 puntos sobre 255 entre la más
-     oscura y la más clara — casi todo se leía como un solo gris. */
-  --bg-void:    #05070d;
-  --bg-chrome:  #0a0e17;
-  --bg-surface: #0f1420;
-  --bg-raised:  #1c2436;
-  --bg-sunken:  #070a11;
+     F0 saca el navy: grafito / obsidiana, sin matiz azul de dashboard. */
+  --bg-void:    #030407;
+  --bg-chrome:  #07080c;
+  --bg-surface: #0b0d12;
+  --bg-raised:  #14171e;
+  --bg-sunken:  #05060a;
 
   /* --- Líneas -----------------------------------------------------------
-     Azuladas, no blancas: sobre un fondo con matiz azul, una línea blanca
-     pura se ve sucia. */
-  --line-faint:  rgba(148, 176, 255, 0.08);
-  --line:        rgba(148, 176, 255, 0.15);
-  --line-strong: rgba(148, 176, 255, 0.28);
+     Hielo, no azul 148/176/255. Sobre grafito, una arista azul se lee
+     "HTML oscuro". El hairline blanco-frío es el de un overlay 2026. */
+  --line-faint:  rgba(210, 222, 236, 0.07);
+  --line:        rgba(210, 222, 236, 0.14);
+  --line-strong: rgba(210, 222, 236, 0.26);
 
   /* --- Tinta ------------------------------------------------------------
-     Tres niveles. Contraste verificado sobre --bg-surface (#0f1420):
-     ink 15.8:1 · ink-dim 7.4:1 · ink-mute 3.6:1.
-     `ink-mute` NO se usa para texto que haya que leer: solo para etiquetas
-     de eje y marcas de escala, que se apoyan en la posición, no en el texto. */
-  --ink:      #e8eefc;
-  --ink-dim:  #93a3c4;
-  --ink-mute: #5b6883;
+     Hielo. Contraste se re-verifica en validate.js sobre las superficies
+     nuevas. `ink-mute` NO se usa para texto que haya que leer: solo para
+     etiquetas de eje y marcas de escala. */
+  --ink:      #eef3f8;
+  --ink-dim:  #9aa8b8;
+  --ink-mute: #5e6a78;
+
+  /* --- Hielo (arista, no significado) -----------------------------------
+     `--ice` es el metal del HUD: ticks, labels de eje, monograma. NUNCA
+     significa "en vivo" — eso sigue siendo `--live`. */
+  --ice:      #c5d4e4;
+  --ice-dim:  rgba(197, 212, 228, 0.45);
+  --ice-glow: rgba(197, 212, 228, 0.16);
+  --edge-lo:  rgba(0, 0, 0, 0.5);
+  --scanline: rgba(0, 0, 0, 0.18);
+  --cut:      10px;
+  --cut-sm:   6px;
+  --tick:     var(--ice);
+  --tick-len: 12px;
+  --tick-w:   2px;
+  --clip-corte: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, var(--cut) 100%, 0 calc(100% - var(--cut)));
+  --clip-corte-sm: polygon(0 0, calc(100% - var(--cut-sm)) 0, 100% var(--cut-sm), 100% 100%, var(--cut-sm) 100%, 0 calc(100% - var(--cut-sm)));
 
   /* --- El acento de transmisión ----------------------------------------
      El cyan es "en vivo / ahora / esto es lo activo". No es decoración: si
@@ -57,10 +70,10 @@
      dos escalones más tenue que --live-glow. `--horizon` es el que pinta
      el body; las fases lo pisan (amateur más frío, playoffs oro, peligro
      rojo) sin reescribir el stack de fondos. */
-  --live-horizon: rgba(46, 232, 255, 0.06);
-  --gold-horizon: rgba(255, 200, 97, 0.08);
-  --danger-horizon: rgba(255, 51, 85, 0.12);
-  --horizon-amateur: rgba(46, 232, 255, 0.03);
+  --live-horizon: rgba(46, 232, 255, 0.04);
+  --gold-horizon: rgba(255, 200, 97, 0.07);
+  --danger-horizon: rgba(255, 51, 85, 0.11);
+  --horizon-amateur: rgba(46, 232, 255, 0.018);
   --horizon: var(--live-horizon);
 
   /* --- Ranked (identidad de la escalera, no un acento más) --------------
@@ -163,7 +176,7 @@
   /* El corte de esquina del escenario. Subió de 10px a 18px en T0b: a 10px,
      sobre un panel de +1000px, era invisible — no se veía en ninguna
      captura. A 18px se lee como una forma, no como un redondeo raro. */
-  --chamfer: 18px;
+  --chamfer: 22px;
 
   /* --- Elevación --------------------------------------------------------- */
   --sombra-1: 0 1px 2px rgba(0, 0, 0, 0.4);

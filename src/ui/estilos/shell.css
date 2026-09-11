@@ -28,29 +28,37 @@ body { padding: 0; }
   align-items: center;
   gap: var(--s-5);
   height: var(--topbar-alto);
-  padding: 0 var(--s-5);
-  background: var(--bg-chrome);
-  border-bottom: 3px solid var(--live);
-  box-shadow: 0 0 20px -4px var(--live-glow);
+  padding: 0 var(--s-5) 0 0;
+  background-color: var(--bg-chrome);
+  background-image: repeating-linear-gradient(
+    0deg,
+    var(--scanline) 0 1px,
+    transparent 1px 3px
+  );
+  border-bottom: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 var(--ice-dim);
 }
 
 .topbar-live {
   display: flex;
   align-items: center;
+  align-self: stretch;
   gap: var(--s-2);
   flex: 0 0 auto;
+  padding: 0 var(--s-5) 0 var(--s-4);
   font-family: var(--font-display);
   font-size: var(--fs-1);
   font-weight: 700;
   letter-spacing: var(--track-cartel);
-  color: var(--live);
+  color: var(--bg-void);
+  background: var(--live);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 100%, 0 100%);
 }
 .topbar-live-punto {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--live);
-  box-shadow: 0 0 8px var(--live-glow);
+  background: var(--bg-void);
   animation: latir-vivo 2s var(--ease-in-out) infinite;
 }
 @keyframes latir-vivo {
@@ -73,13 +81,14 @@ body { padding: 0; }
   width: 28px;
   height: 28px;
   flex: 0 0 auto;
-  background: var(--live-fill);
-  border: 1px solid var(--live-deep);
-  border-radius: var(--r-sharp);
+  background: var(--bg-sunken);
+  border: 1px solid var(--ice-dim);
+  border-radius: 0;
+  clip-path: var(--clip-corte-sm);
   font-family: var(--font-display);
   font-size: var(--fs-1);
   font-weight: 700;
-  color: var(--live);
+  color: var(--ice);
 }
 .topbar-nombre {
   overflow: hidden;
@@ -97,23 +106,35 @@ body { padding: 0; }
    una carrera (`ficha.js` lo llena en cada render) — `:empty` lo colapsa
    para no dejar un hueco fantasma en el topbar durante el setup. */
 .topbar-estado {
+  position: relative;
   flex: 1 1 auto;
   text-align: center;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding-left: 28px;
   font-family: var(--font-display);
   font-size: var(--fs-1);
   font-weight: 600;
   letter-spacing: var(--track-label);
   text-transform: uppercase;
-  color: var(--ink-dim);
+  color: var(--ice);
   font-variant-numeric: tabular-nums;
+}
+.topbar-estado::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 18px;
+  height: 12px;
+  transform: translateY(-50%);
+  background: repeating-linear-gradient(90deg, var(--line-strong) 0 1px, transparent 1px 3px);
 }
 .topbar-estado:empty { display: none; }
 
-.topbar-controles { display: flex; gap: var(--s-2); flex: 0 0 auto; }
+.topbar-controles { display: flex; gap: var(--s-2); flex: 0 0 auto; padding-right: var(--s-5); }
 .topbar-toggle {
   display: grid;
   place-items: center;
@@ -121,6 +142,21 @@ body { padding: 0; }
   padding: var(--s-1) var(--s-3);
   font-size: var(--fs-3);
   line-height: 1;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink-dim);
+  clip-path: var(--clip-corte-sm);
+  border-radius: 0;
+}
+.topbar-toggle:hover:not(:disabled) {
+  background: var(--live-fill);
+  border-color: var(--live);
+  color: var(--live);
+  box-shadow: none;
+}
+.topbar-toggle[aria-pressed="true"] {
+  border-color: var(--live);
+  color: var(--live);
 }
 /* Inertes hasta T3 (el audio): que se vean apagados, no rotos. */
 .topbar-toggle:disabled { opacity: 0.3; cursor: default; }
@@ -175,10 +211,19 @@ body { padding: 0; }
   padding: 0;
   display: flex;
   align-items: center;
-  background: var(--bg-chrome);
+  background-color: var(--bg-chrome);
+  background-image: repeating-linear-gradient(
+    0deg,
+    var(--scanline) 0 1px,
+    transparent 1px 3px
+  );
   border-top: 1px solid var(--line);
-  color: var(--ink-dim);
+  color: var(--ice);
+  font-family: var(--font-display);
   font-size: var(--fs-1);
+  font-weight: 600;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
   white-space: nowrap;
   overflow: hidden;
 }
@@ -196,6 +241,7 @@ body { padding: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .ticker-pista { animation-name: none !important; }
+  .topbar, .ticker { background-image: none; }
 }
 
 /* Luz de estudio: pisa `--horizon` del body (base.css lo consume). */
@@ -271,7 +317,8 @@ body[data-legado="on"] .tarjeta { margin-top: 0; }
 }
 
 @media (max-width: 639px) {
-  .topbar { gap: var(--s-3); padding: 0 var(--s-3); }
+  .topbar { gap: var(--s-3); padding: 0 var(--s-3) 0 0; }
+  .topbar-controles { padding-right: var(--s-3); }
   .topbar-nombre { font-size: var(--fs-2); }
   .shell-cuerpo { padding: var(--s-3); }
   .ticker { padding: 0 var(--s-3); }

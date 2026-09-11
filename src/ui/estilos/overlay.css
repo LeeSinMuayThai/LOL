@@ -5,7 +5,7 @@
 .serie-contexto {
   margin-top: var(--s-4);
   padding: var(--s-4) var(--s-5);
-  background: var(--bg-raised);
+  background-color: var(--bg-raised);
   border: 1px solid var(--line);
   border-left: 3px solid var(--gold);
 }
@@ -52,8 +52,9 @@
   min-width: 72px;
   padding: var(--s-2);
   text-align: center;
-  border: 1px dashed var(--line);
-  border-radius: var(--r-sharp);
+  border: 1px solid var(--line);
+  border-radius: 0;
+  clip-path: var(--clip-corte-sm);
   font-size: var(--fs-1);
   color: var(--ink-mute);
   font-variant-numeric: tabular-nums;
