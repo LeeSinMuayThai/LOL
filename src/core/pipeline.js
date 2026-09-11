@@ -11,6 +11,16 @@ function acumularLogs(state, logsNuevos) {
   return { ...state, logs: [...state.logs, ...logsNuevos] };
 }
 
+// Fase 10a: `phase: 'retirado'` corta el resto de `ETAPAS_SPLIT` tanto si es
+// terminal (`terminado: true`, los finales de siempre) como si es la ventana
+// de vuelta reversible (`terminado: false`, `systems/retiro.js`) — ninguno de
+// los dos casos tiene nada que hacer en el resto del registro (campeones,
+// temporada, eventos...) ese split. Sin esto, un retiro reversible seguía
+// jugando splits de verdad durante la ventana.
+function splitTerminaAca(state) {
+  return state.terminado || state.phase === 'retirado';
+}
+
 // Fase 9R5b: en cuanto una carrera termina —por retiro, burnout, o cualquiera
 // de los finales de la etapa amateur— se compone la tarjeta de legado una sola
 // vez. `componerLegado` es puro; esto es el único lugar por el que pasa toda
@@ -66,7 +76,7 @@ function correrEtapas(state, desdeEtapa, rng) {
       return { state: pausar(nextState, sistema, resultado.decision), logs };
     }
 
-    if (nextState.terminado) {
+    if (splitTerminaAca(nextState)) {
       break;
     }
   }
@@ -77,6 +87,14 @@ function correrEtapas(state, desdeEtapa, rng) {
 export function avanzarSplit(state, rng) {
   if (state.terminado || state.pendiente) {
     return { state, logs: [] };
+  }
+  // Fase 10a: si el split ARRANCA con `phase: 'retirado'` (la ventana de
+  // vuelta, ya veníamos así del split anterior), `splitTerminaAca` cortaría
+  // el registro en la primerísima etapa (`presupuesto`, que no toca `phase`)
+  // sin llegar nunca a `retiro.js` — el único sistema que tiene algo que
+  // hacer acá. Se arranca directo en su índice.
+  if (state.phase === 'retirado') {
+    return conTarjeta(correrEtapas(state, etapaDe('retiro'), rng));
   }
   return conTarjeta(correrEtapas(state, 0, rng));
 }
@@ -100,7 +118,7 @@ export function resolverDecision(state, respuesta, rng) {
 
   nextState = { ...nextState, pendiente: null };
 
-  if (nextState.terminado) {
+  if (splitTerminaAca(nextState)) {
     return conTarjeta({ state: nextState, logs });
   }
 

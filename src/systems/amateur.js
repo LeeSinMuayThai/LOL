@@ -10,6 +10,7 @@ import { resolverTexto } from '../core/plantillas.js';
 import { ofrecerRutinas, rutinaPorId, elegirRutinaAutomatica } from '../core/rutinas.js';
 import { elegirOrgTier3, asignarOrgTier3 } from '../core/tier3.js';
 import { elegirMinijuego, minijuegoPorId, textoDeMinijuego, registrarMinijuegoVisto } from '../core/minijuegos.js';
+import { esCierreDeEdad } from './edadCierre.js';
 
 export const id = 'amateur';
 
@@ -581,6 +582,27 @@ function resolverNocturno(state, opcionId, rng) {
   };
 }
 
+// Fase 10a (§10.1): antes de esto, `edadLimite` cortaba en silencio a los 20
+// — un dado sin que el jugador eligiera nada. Ahora `edadLimite` es la red
+// anti-loop (24: nadie se queda en soloQ para siempre) y, desde
+// `edadOfertaDeSalida` (19), cada cierre de temporada pregunta de verdad:
+// ¿la seguís peleando, sabiendo que la ventana se sigue cerrando (el sesgo
+// etario de `scoutingSesgoEtario` ya lo dice), o la dejás vos antes de que
+// lo decida la edad?
+function decisionSalidaAmateur(state) {
+  return {
+    tipo: 'opciones',
+    bisagra: true,
+    titulo: `Fin de temporada, ${state.age} años: ¿seguís?`,
+    descripcion: 'Los scouts miran cada vez menos. ¿La seguís peleando en soloQ o la dejás vos, antes de que se cierre sola?',
+    opciones: [
+      { id: 'seguir', label: 'La seguís peleando', descripcion: 'Un año más de grindeo. Cada vez entra menos gente por esta puerta.' },
+      { id: 'dejar', label: 'La dejás acá', descripcion: 'Cerrás la etapa amateur por tu cuenta.' }
+    ],
+    datos: { motivo: 'salida_amateur' }
+  };
+}
+
 // --- Contrato del sistema ---
 
 export function aplicar(state, rng) {
@@ -595,6 +617,10 @@ export function aplicar(state, rng) {
     };
   }
 
+  if (state.age >= BALANCE.amateur.edadOfertaDeSalida && esCierreDeEdad(state)) {
+    return { state, logs: [], decision: decisionSalidaAmateur(state) };
+  }
+
   if ((state.flags.pcConfiscada ?? 0) > 0) {
     return periodoSinPC(state, rng);
   }
@@ -603,6 +629,16 @@ export function aplicar(state, rng) {
 }
 
 export function resolver(state, decision, respuesta, rng) {
+  if (decision.datos.motivo === 'salida_amateur') {
+    if (respuesta.opcionId === 'dejar') {
+      return {
+        state: { ...state, phase: 'retirado', terminado: true, finAnticipado: 'no_llego' },
+        logs: [crearLog('amateur', `A los ${state.age} la dejás vos, antes de que se cierre sola.`)]
+      };
+    }
+    return { state, logs: [crearLog('amateur', 'Decidís seguir. La ventana se sigue cerrando igual.')] };
+  }
+
   if (decision.datos.motivo === 'reparto') {
     const rutina = rutinaPorId(decision.datos.rutinas, respuesta.opcionId);
     // `normalizarReparto` sigue corriendo: es la red que garantiza que una
@@ -658,6 +694,12 @@ function pesosAutomaticos(state, rng) {
 }
 
 export function resolverAuto(state, decision, rng) {
+  // El jugador automático no abandona por su cuenta: sigue peleándola hasta
+  // que la red anti-loop (`edadLimite`) decida por él, igual que antes de
+  // que esta decisión existiera — la agencia es para el humano.
+  if (decision.datos.motivo === 'salida_amateur') {
+    return { opcionId: 'seguir' };
+  }
   if (decision.datos.motivo === 'minijuego') {
     // Regla 5 de 4.6: el motor no implementa el minijuego, lo simula con
     // gauss corrido por el stat relevante.

@@ -330,7 +330,26 @@ export function createInitialState(seed, rng, eleccion = null) {
       // anterior (para el diff). `null` si no es rankeable — sólo `tier === 1`
       // entra en la conversación del Top 20 (refuerza 9Mi).
       rankMundialActual: null,
-      rankMundialAnterior: null
+      rankMundialAnterior: null,
+      // Fase 10a: cuántas pretemporadas seguidas lleva `contexto.etapa` en
+      // 'declive' (sin equipo, banqueado, o por debajo de su pico de nivel).
+      // `systems/retiro.js` lo acumula y lo usa como el reloj real del retiro
+      // — no una edad fija: sube mientras el mercado te rechaza, se resetea
+      // apenas volvés a pisar terreno firme. Nunca null (trampa T4).
+      splitsEnDeclive: 0,
+      // Cuántos splits lleva abierta la ventana de vuelta actual. Reloj
+      // propio, no `player.splitCount`: mientras `phase: 'retirado'` corta
+      // el registro (`core/pipeline.js`), ese contador queda congelado — así
+      // que la ventana necesita el suyo. Lo escribe y lo resetea
+      // `systems/retiro.js`.
+      splitsEnVentana: 0,
+      // Cuántas veces ya volvió de un retiro reversible en esta carrera
+      // (Bjergsen/Doublelift: dos cada uno — `CONCEPTO` §12.4). Al llegar a
+      // `BALANCE.retiro.vueltasMaximas` el próximo retiro ya no abre ventana.
+      vueltasUsadas: 0,
+      // El `splitCount` de la última vuelta, para la marca transitoria
+      // `vuelta_del_retiro` (mismo patrón que `splitDescenso`/`ventanaDescenso`).
+      splitVuelta: null
     },
     logs: []
   };

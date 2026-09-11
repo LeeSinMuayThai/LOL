@@ -209,8 +209,12 @@ export const BALANCE = {
     // prospectos: no es un limite de edad duro, es que a los 19 ya casi nadie
     // te mira aunque tengas el mismo rango que a los 16. Es el mismo sesgo
     // etario que despues gobierna el retiro.
-    scoutingSesgoEtario: { 15: 1, 16: 1, 17: 0.85, 18: 0.55, 19: 0.28 },
-    scoutingSesgoEtarioMinimo: 0.12,
+    //
+    // Fase 10a (§10.1): se extiende 20/21 en vez de cortar seco en
+    // `edadLimite` — la ventana sigue cerrandose, pero nunca a cero (el caso
+    // Calix es raro, no imposible). `scoutingSesgoEtarioMinimo` cubre 22+.
+    scoutingSesgoEtario: { 15: 1, 16: 1, 17: 0.85, 18: 0.55, 19: 0.28, 20: 0.06, 21: 0.03 },
+    scoutingSesgoEtarioMinimo: 0.015,
     scoutingPesoHype: 0.35,
     hypeReferenciaScouting: 60,
     splitMinimoScouting: 2,
@@ -228,9 +232,18 @@ export const BALANCE = {
     nocturnoBloquesExtra: 2,
     nocturnoFactorDecaeEstudio: 0.35,
 
-    // Tope duro de la etapa. La ventana real se cierra antes, por el sesgo
-    // etario del scouting: esto es solo la red que impide una etapa infinita.
-    edadLimite: 20,
+    // Fase 10a (§10.1): deja de ser el corte duro ("cumpliste 20, se acabó").
+    // La ventana real ya la cierra el sesgo etario del scouting (arriba); esto
+    // ahora es la RED anti-loop — nadie se queda en soloQ para siempre — y
+    // ademas el techo que usa `secundario.js` para congelar su flag (D10: el
+    // significado real, "la edad en la que ya no sos amateur pase lo que
+    // pase", no cambió, solo el valor).
+    edadLimite: 24,
+    // Desde esta edad, el cierre de temporada te ofrece la decision real:
+    // seguir peleandola en soloQ o dejarlo por tu cuenta (antes de que
+    // `edadLimite` lo decida por vos). Antes de esto no hay nada en juego
+    // todavia (regla 1: el motor no para si la decision no cambia nada).
+    edadOfertaDeSalida: 19,
 
     // --- Como reparte el jugador automatico (simulacion masiva) ---
     // No reparte al azar: reacciona a las barras que tiene en rojo, como haria
@@ -458,7 +471,11 @@ export const BALANCE = {
     margenMentalidadAlLimite: 12,
     // Fase 9Md: cuántos splits después de un descenso de tier 1 sigue prendida
     // la marca `descenso`.
-    ventanaDescenso: 4
+    ventanaDescenso: 4,
+    // Fase 10a (D30): cuántos puntos de NIVEL por debajo de tu propio pico
+    // cuentan como declive biológico real (una de las tres puertas de
+    // `etapa: 'declive'`, junto con estar libre o banqueado).
+    margenDeclive: 10
   },
 
   contenido: {
@@ -1061,41 +1078,38 @@ export const BALANCE = {
     banquilloArraigoFactor: 0.6
   },
 
-  // Fase 9R5a: la carrera termina. Antes NADA seteaba `terminado` en fase
-  // profesional — el 69% de las carreras seguía "en carrera" a los 35, sin
-  // final ni tarjeta. `systems/retiro.js` la cierra: pasada la edad de declive,
-  // cada pretemporada hay una probabilidad creciente de retirarse, modulada por
-  // cómo te trata el mercado (sin equipo empuja fuerte; una franquicia aguanta).
-  //
-  // Fase 9R5d: `edadDeclive` 23 → 27. Empezar a retirar a los 23 se sentía
-  // durísimo — la carrera recién empieza a rendir. La investigación (CONCEPTO
-  // §12.4) marca el declive a los 23-25, pero el juego lo estira a propósito:
-  // el ethos es "ir a más" (CONCEPTO §1) y una carrera que cierra a los 27-28
-  // se juega mejor que una que cierra a los 24. Mediana de retiro objetivo: ~27.
+  // Fase 9R5a: la carrera termina. Fase 10a la reescribe (PLAN.md §10.1):
+  // antes, la edad de declive era un piso FIJO (nadie se retiraba antes de
+  // los 27 sin importar cómo le fuera) — eso contradecía el pedido del
+  // usuario ("si llegás a tier 1 y la hacés mal, que te puedas retirar a los
+  // dos años; si venís para arriba, que puedas seguir subiendo"). Ahora el
+  // reloj es `contexto.etapa === 'declive'` (`core/contexto.js`, D30): sin
+  // equipo, banqueado, o por debajo de tu propio pico de nivel — presión de
+  // mercado real, no una edad. Mientras sigas subiendo o sostenido, esto no
+  // te toca (salvo la línea Faker). Y la decisión es del JUGADOR, no un
+  // dado: `systems/retiro.js` pausa y pregunta en vez de tirar `chance()` —
+  // cero RNG en todo este sistema.
   retiro: {
-    // Por debajo de esta edad no te retirás nunca (salvo los finales de
-    // `amateur.js`/`atributos.js`): la carrera todavía tiene recorrido.
-    edadDeclive: 27,
-    // La línea Faker: pasada esta edad te retirás sí o sí. Alta a propósito
-    // — Faker sigue activo a los 29-30 (CONCEPTO §12.4), es la excepción.
+    // Antes de esta edad, `etapa` nunca lee 'declive' por esta vía (un
+    // debut flojo no es un retiro): la carrera recién empieza.
+    edadMinimaDeclive: 19,
+    // Cuántas pretemporadas SEGUIDAS en declive antes de que se te pregunte
+    // en serio. 2 ≈ dos años del "más o menos 2 años" que pidió el usuario.
+    // `factorSeguirPeleandola` (abajo) hace que elegir seguir no resetee el
+    // contador entero — compra tiempo, no borra la presión.
+    splitsDeclivePorAviso: 2,
+    factorSeguirPeleandola: 0.5,
+    // La línea Faker: pasada esta edad te retirás sí o sí, sin pregunta (no
+    // hay nada que elegir — regla 1). Alta a propósito — Faker sigue activo
+    // a los 29-30 (CONCEPTO §12.4), es la excepción, no la regla.
     edadRetiroForzoso: 34,
-    // Probabilidad base por año pasado el declive: p = base × (edad − declive)
-    // × factorNivel × factorSinEquipo, evaluada cada pretemporada. Subió de
-    // 0,24 con `edadDeclive` — la ventana declive→forzoso es más corta ahora,
-    // así que cada año pesa más para que la cola no se vaya a los 33.
-    chanceBasePorAnio: 0.55,
-    // El nivel actual del jugador (`nivelDelJugador`) modula fuerte: un
-    // clase-mundial casi no se retira antes de los 30 (Faker), un prospecto
-    // cuelga a los 24. Es lo que hace que la duración correlacione con lo buena
-    // que fue la carrera. Se interpola linealmente entre estos dos anclas y se
-    // clampea a [min, max].
-    nivelAncla: { bajo: 45, alto: 82 },
-    factorNivelEnBajo: 2.2,
-    factorNivelEnAlto: 0.45,
-    factorNivelMin: 0.3,
-    factorNivelMax: 3,
-    // Estar sin equipo empuja aparte, multiplicativo.
-    factorSinEquipo: 2.2
+    // El retiro por decisión propia o por el mercado (no el burnout, no la
+    // familia, no `no_llego`) abre una ventana de vuelta — Bjergsen y
+    // Doublelift se retiraron y volvieron dos veces cada uno (CONCEPTO
+    // §12.4). `ventanaDeVueltaSplits` son pretemporadas de gracia (2, a
+    // splitsPorEdad=3) antes de que se cierre sola si no la usás.
+    vueltasMaximas: 2,
+    ventanaDeVueltaSplits: 6
   },
 
   // La temporada regular (fase 5): antes era una sola tirada (`gauss` contra

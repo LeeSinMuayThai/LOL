@@ -30,7 +30,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **T** | **La transmisión**: el sistema de diseño, el shell, el ritmo del split, y las pantallas que faltaban. Fue antes de 9M para que 9M/10/11/12/13 tengan dónde enchufar su pantalla | ✅ T0→T8, ver `PROGRESO.md` |
 | **9M** | **El mercado de pases**: el mundo se puebla de jugadores, la demanda existe, alguien compite por tu asiento, la escalera deja de ser un dado | ✅ **9Ma→9Mj** (10 commits). El asiento se **disputa** contra el calibre de la liga (`max(liga.prestigio, org.fuerza)`); el mercado y la renovación se **enfrían con la edad** (`castigoEtario`, en puntos). check 9 `r 0,40 → 0,815`. Checks 7 y 9Mi-1 redefinidos a "liga mayor (prestigio ≥ 70)" (§9M.12.4). Pirámide (punto 3) evaluada y diferida. **9Mj** devolvió "La dinastía" (25%) y "series sin draft" (28%) a su tope original. **Residual**: check 8 (caídas tier 1 → tier 2) quedó en ~14% (piso 15%) — §9M.12.4. `validate.js` 148/148 |
 | **9W** | **El mejor del mundo**: ranking vivo de los mejores del momento (Top 5 a la derecha siempre, Top 20 al cierre de temporada). Se entra y se sale por mérito, rota mucho, de cualquier edad; distinto de los rivales de generación. Cero RNG (determinista por `hashCadena`) | ✅ **cerrada** (9Wa→9Wd). Ranking en el estado (r(nivel,rank)=0,96, cero-stream) + 6 ganchos (valor de mercado, piso de franquicia, legado, ficha, marcas/momento/eventos, `rivales[].puntaje` vivo) + pantalla (panel Top 5 permanente + reveal del Top 20 en el feed, con "quedaste #23") + calibrado (§9W.6: entrás al Top 20 en el 51% de las carreras con éxito, ~1% de las lavadas; rival de generación ~37%). Ver §9W |
-| **10** | El final: retiro emergente + la tarjeta de legado | ⬜ |
+| **10** | El final: retiro emergente + la tarjeta de legado | 🔶 **10a cerrada** (el retiro real: presión de mercado, cero RNG, decisión del jugador, ventana de vuelta — ver §10.1) · 10b ya estaba cerrada desde 9R5b · falta **10c** (lesiones/servicio militar) |
 | **11** | El año: calendario, la nota de la temporada, el archirrival | ⬜ |
 | **12** | La jerarquía de la decisión: categorías, rareza, consecuencia previa, el dado | ⬜ |
 | **13** | Contenido a escala (150+ opciones) | ⬜ |
@@ -3522,32 +3522,62 @@ Los valores finales (barrido `barrido9W()`, n=180 × 60):
 
 | # | Commit | Contenido |
 |---|---|---|
-| 10a | `fase 10a: se borran los relojes` | 10.1 |
-| 10b | `fase 10b: la tarjeta de legado` | 10.2, 10.3 |
-| 10c | `fase 10c: lesiones y servicio militar` | 10.4 |
-| 10d | `fase 10d: calibrar la duración de la carrera` | solo constantes |
+| 10a | `fase 10a: se borran los relojes` | ✅ 10.1 (ver abajo, reescrito al implementar) |
+| 10b | `fase 10b: la tarjeta de legado` | ✅ **ya cerrado en 9R5b** — `core/legado.js` + `ui/screens/tarjeta.js` existen desde la fase 9R con 13 arquetipos (más finos que los 8 originales de §10.2) y marco por final (§10.3). No queda nada por hacer acá |
+| 10c | `fase 10c: lesiones y servicio militar` | 10.4 (abierto) |
+| 10d | `fase 10d: calibrar la duración de la carrera` | solo constantes (abierto — 10a ya midió y fijó una primera banda, ver checks §10.5) |
 
-## 10.1 — `src/systems/retiro.js` — la carrera termina cuando el mercado deja de llamarte
+## 10.1 — `src/systems/retiro.js` — la carrera termina cuando el mercado deja de llamarte ✅ (2026-09-11)
 
-Se implementa lo investigado en `CONCEPTO.md` §12.4 (relojes, semántica de
-`terminado`/`retirado`, `vueltasMaximas`):
+**Reescrito al implementar** (regla de proceso 2/7): el plan original pedía una edad de declive fija
+(`edadDeclive`) con una probabilidad `chance()` creciente — la misma forma que 9R5a, solo con
+`vueltasMaximas` sumado encima. Jugándolo así (con las constantes de 9R5d, `edadDeclive: 27`) el
+usuario lo objetó en el momento: *"si llegás a tier 1 y te equivocás bastante, que te retires a los
+2 años sí; si no, mínimo 23, y de ahí si venís para arriba que puedas seguir subiendo"* — un piso de
+edad fijo no puede expresar eso, porque no distingue al que asciende del que se cae. Se cambió el
+reloj completo:
 
-| Reloj | Hoy | Pasa a ser |
+| Reloj | 9R5a/9R5d | Pasa a ser (10a) |
 |---|---|---|
-| `amateur.edadLimite: 20` | corte automático → `no_llego` | **se borra.** `scoutingSesgoEtario` se extiende (20→0.06, 21→0.03, 22+→0.015: nunca cero) y desde los 19 el cierre de edad te **ofrece la decisión** de seguir o dejarlo |
-| guard de 90 splits | **lo agota el 49,1%** | pasa a ser un **error**: si una carrera lo agota, es un bug |
-| edad de retiro | no existe | **no se agrega** |
+| Disparador del retiro | edad fija (`edadDeclive: 27`) × `chance()` | `contexto.etapa === 'declive'` (D30, presión de mercado real: banqueado, caíste de tier 1 y no volviste, o tu nivel cayó ≥`margenDeclive` de tu propio pico) **o** estar sin equipo — nunca una edad. Alguien que sigue ascendiendo no entra en esta cuenta pase lo que pase |
+| La decisión | dado silencioso (`chance()`) | **decisión real**, sin RNG: al segundo año consecutivo (neto — un año bueno no borra dos malos) de presión, se pausa y se pregunta "¿la seguís o colgás los botines?" |
+| `amateur.edadLimite: 20` | corte automático → `no_llego` | pasa a ser la **red anti-loop** (subida a **24**, no se borra: D10 la sigue necesitando con el mismo significado). `scoutingSesgoEtario` se extiende (20→0.06, 21→0.03, 22+→0.015: nunca cero) y **desde los 19** el cierre de temporada de la etapa amateur ofrece la misma decisión real: seguir o dejarlo |
+| edad de retiro forzoso | no existía | `edadRetiroForzoso: 34` (línea Faker) — el único disparador que sigue siendo una edad dura, sin pregunta (no hay nada que elegir, regla 1) y **sin ventana de vuelta** (ver trampa abajo) |
+| guard de 90 splits | lo agotaba el 49,1% en 9R2 (0% ya en 9R5a) | se mantiene en 0%, verificado (`validate.js`) |
 
-Semántica nueva (riesgo alto — cambia el significado de un campo del motor):
+Semántica de estado (riesgo alto, tal como preveía el plan):
 
-- `phase: 'retirado'` = estado **jugable**, ventana de vuelta abierta, `terminado: false`.
-- `state.terminado = true` = la run terminó. Lo setea **solo** `retiro.js`.
-- Terminales: `burnout`, `prohibicion_familiar`, `no_llego`.
-- Reversibles: `sin_equipo`, `retiro_elegido`, `retiro_por_lesion`. `vueltasMaximas: 2`.
+- `phase: 'retirado'` + `terminado: false` = la ventana de vuelta (`retiro_elegido`/`sin_equipo`,
+  si `vueltasUsadas < vueltasMaximas: 2`). Reloj propio (`flags.splitsEnVentana`), NO
+  `player.splitCount`: `core/pipeline.js` corta el resto de `ETAPAS_SPLIT` mientras dure (nuevo
+  helper `splitTerminaAca`, misma familia que el corte por `terminado`), así que ese contador queda
+  congelado.
+- `phase: 'retirado'` + `terminado: true` = la run terminó de verdad. Lo setea **solo** `retiro.js`
+  (vía `terminar()`) — salvo los tres terminales de siempre (`burnout`/`atributos.js`,
+  `no_llego`/`prohibicion_familiar`/`amateur.js`), que no pasan por acá.
+- **Trampa nueva, encontrada al implementar**: la línea Faker (`edadRetiroForzoso`) NO puede abrir
+  ventana de vuelta — si la abre, alguien con `vueltasUsadas < 2` rebota de vuelta contra la MISMA
+  edad una y otra vez, corriendo el retiro "de verdad" varios años de más (medido: mediana de
+  retiro saltaba de 34 a 35 con esto mal). `reversible: false` fijo en ese branch.
+- **Trampa nueva D30-bis**: el check estático de `validate.js` ("Ningún token puede quedar sin
+  resolver...") ya asumía que `etapa: 'declive'` garantiza tener equipo (`CON_EQUIPO` la incluye
+  junto a `debut`/`profesional`, para que el contenido use `{org}`/`{liga}` sin blindaje extra). Por
+  eso `enDeclive` (`core/contexto.js`) **no** incluye "sin equipo" — ese cruce se suma aparte, solo
+  adentro de `systems/retiro.js`, leyendo `career.currentOrg` directo.
+- **Trampa nueva, offseason vacío**: `data/rutinas/offseason.json` declaraba `etapa: ["debut",
+  "profesional"]` en sus 6 rutinas — con 'declive' ahora alcanzable, un jugador banqueado o caído de
+  tier 1 llegaba a `practica.js` con CERO rutinas candidatas y `elegirRutinaAutomatica` reventaba en
+  un `reduce` de array vacío. Se agregó `"declive"` a las 6 (¿qué hacés en el receso estando en la
+  cuerda floja? es, si acaso, más relevante ahí). Cualquier fase futura que introduzca un valor
+  nuevo de `etapa` tiene que barrer el contenido existente por la misma razón.
+- `retiro_por_lesion` **no existe todavía** (es 10.4/10c, lesiones — abierto). Reversibles hoy:
+  `sin_equipo`, `retiro_elegido`. Terminales: `burnout`, `prohibicion_familiar`, `no_llego`, y el
+  retiro forzoso de la línea Faker.
 
-> **Trampa documentada (D10):** [`secundario.js`](src/systems/secundario.js) usa
-> `BALANCE.amateur.edadLimite` para congelar el flag del secundario. Al borrar el tope hay que
-> darle su propio umbral o **el flag nunca se congela** y no entra en la tarjeta final.
+> **D10 cerrada distinto de lo previsto**: no hizo falta darle a `secundario.js` un umbral propio.
+> `edadLimite` no se borró — cambió de rol (de corte duro a red anti-loop) pero el significado que
+> `secundario.js` necesita ("la edad en la que definitivamente ya no sos amateur") no cambió, solo
+> el valor (20→24). Sigue leyendo el mismo campo.
 
 Red única que queda: si a los 24 seguís en `amateur`, se fuerza `no_llego`. Es una red anti-loop,
 no una regla de juego, y se documenta como tal.
@@ -3625,19 +3655,54 @@ Se implementa lo investigado en `CONCEPTO.md` §12.4 sin cambios:
 
 ## 10.5 — Checks de la fase 10
 
+**Reescritos al implementar 10a (2026-09-11).** Los siete originales (abajo, tachados) suponían la
+carrera corta de `CONCEPTO` §12.4 (mediana 2,1-2,4 años como pro). Puesto a jugar, el usuario pidió
+explícitamente lo contrario — *"si venís haciendo las cosas bien y para arriba, que puedas
+subir"* — y hay que elegir uno: **gana el pedido del usuario**, documentado como una decisión de
+diseño consciente (mismo criterio que 9R5d, que ya había estirado `edadDeclive` 23→27 por el mismo
+motivo). `CONCEPTO` §12.4 queda intacta como el dato de investigación — el juego lo estira a
+propósito, ídem nota de §1/§2.
+
 ```
-CERO carreras agotan maxSplitsDeSeguridad (hoy: 49,1%)
+CERO carreras agotan maxSplitsDeSeguridad                                          ✅ (0%, medido)
+edad mediana al retirarse ∈ [30, 34]      (la mayoría sostiene hasta la línea Faker) ✅ (34)
+carreras que llegan a age ≥ 30 ∈ [50%, 90%]                                         ✅ (78%)
+de los retiros por mercado/decisión, [15%, 45%] cortan ANTES de la línea Faker       ✅ (24%)
+  — la variación real: "si la hacés mal, te retirás mucho antes" sigue siendo cierto
+la ventana de vuelta se usa en ≥10% de las carreras y nadie excede vueltasMaximas    ✅ (38%, 0)
+la duración de la carrera correlaciona con el potencial oculto (r > 0.32)           ✅ (r=0,44)
+Ningún final —incluidos los amateur— sale sin tarjeta                        ✅ (ya cerrado, 9R5b)
+Ningún arquetipo de veredicto supera el 25% (CONCEPTO §11)                   ✅ (ya cerrado, 9R5b)
+El veredicto cita al menos un hecho real del registro de ESA carrera         ✅ (ya cerrado, 9R5b)
+```
+
+Quedan abiertos para **10c** (dependen de `salud.js`/`servicioMilitar.js`, todavía no existen):
+
+```
+ninguna carrera coreana llega a 30 en 'profesional' sin el flag de servicio resuelto
+causa de retiro más frecuente entre los que declinan = 'sin_equipo' (medible recién con datos de
+  lesión — hoy 'sin_equipo' ya es más frecuente que 'retirado por lesión' porque lesión no existe)
+```
+
+Descartados (no hay un concepto `estrategia: 'carrera'|'ranked'` en el motor — ninguna fase lo
+construyó nunca; el check original lo daba por sentado sin que existiera):
+
+```
+~~la estrategia 'carrera' llega a 30+ al menos 2.5× más seguido que 'ranked'~~
+```
+
+<details>
+<summary>Los siete originales, preservados para no perder el historial</summary>
+
+```
 mediana de splits como pro ∈ [6, 10]   (2-3,3 años — el dato real de `CONCEPTO` §12.4)
 activo al 4º año como pro < 20%
 llega a age >= 30 ∈ [0.8%, 4%]         (Peanut / Faker: posible, difícil)
 causa de retiro más frecuente = 'sin_equipo'
 la estrategia 'carrera' llega a 30+ al menos 2.5× más seguido que 'ranked'
 la duración de la carrera correlaciona con el potencial oculto (r > 0.45)
-ninguna carrera coreana llega a 30 en 'profesional' sin el flag de servicio resuelto
-Ningún final —incluidos los amateur— sale sin tarjeta
-Ningún arquetipo de veredicto supera el 25% (CONCEPTO §11)
-El veredicto cita al menos un hecho real del registro de ESA carrera
 ```
+</details>
 
 ## 10.6 — Verificación end-to-end
 
@@ -4097,7 +4162,7 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | # | Hallazgo | Fase |
 |---|---|---|
 | D1 | ~~Los pesos de outcome son estáticos~~ — resuelto: `outcome.modificadores` | ✅ 2 |
-| D2 | El 23% de las carreras agota el tope de 90 splits: no hay retiro. Remedido tras la fase 7 (que hace que muchas más carreras lleguen a pro y se sostengan): **49,1%** — ver PROGRESO.md, changelog de la fase 7 | 10 |
+| D2 | ✅ **Cerrada (9R5a, reconfirmada 10a).** El 23% de las carreras agotaba el tope de 90 splits: no había retiro. Remedido tras la fase 7: **49,1%** — ver PROGRESO.md, changelog de la fase 7. 9R5a lo bajó a 0%; 10a (el retiro real, sin edad fija) lo reconfirma en 0% sobre 400/1500 seeds | ✅ 9R5a + 10a |
 | D3 | ~~`maxDecisionesPorSplit: 8` queda corto~~ — resuelto: subió a 16, luego a 60 | ✅ 2 |
 | D4 | ~~`posicionParaInternacional: 1` estaba mal para 2026~~ — resuelto: `liga.cuposInternacionales` | ✅ 3 |
 | D5 | ~~`regionOrigen` se sorteaba uniforme entre 8 ligas~~ — resuelto: pesado por prestigio, solo tier 1 | ✅ 3 |
@@ -4105,7 +4170,7 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D7 | `src/ui/` está vacía; los 1.090 renglones de UI viven en `index.html` (creció de 416 a 1.090 entre la fase 0 y la fase 4, sobre todo por los 5 minijuegos) | 8 |
 | D8 | Los 5 rivales de generación se generan y no corren su carrera. La fase 5 les da su primer uso real (aparecen con nombre como `stakes: rival_de_generacion` en una fecha marcada). **9Ma**: ahora ocupan una casilla de plantel real (la que `orgDelRival` les asigna por hash) y `systems/plantel.js` los envejece como NPCs de carrera larga. **9Mc**: `core/mercadoMundial.js` los mueve/renueva con el resto del mundo (no se van al mercado ni se retiran antes de tiempo — `seVaDelMundo` los protege). **9Wb** ✅: `mundo.rivales[].puntaje` es su mejor rank en el Top 20 mundial, vivo (`systems/topMundial.js` lo mantiene cada split); `dueloDeGeneracion` (`core/ficha.js`) devuelve `{rivalHandle,rivalRol,rivalRank,tuRank,vasGanando}`. Falta la ficha de archirrival con `desenlace` (fase 11) | 🔶 **9Ma+9Mc (viven y se mueven) · 9Wb (rank en vivo)** · falta la ficha (11) |
 | D9 | `player.deudaSueno` no se resetea al pasar a profesional y `atributos.js` la sigue cobrando toda la carrera. **Es útil**: es media cadena causal del sistema de lesiones, ya construida | 10 |
-| D10 | `secundario.js` usa `amateur.edadLimite` para congelar el flag. Al borrar ese tope hay que darle su propio umbral | 10 |
+| D10 | ✅ **Cerrada (10a), distinto de lo previsto.** `secundario.js` usa `amateur.edadLimite` para congelar el flag. No hizo falta darle un umbral propio: `edadLimite` no se borró (10a lo convirtió en la red anti-loop, 20→24) — el significado que `secundario.js` necesita no cambió, solo el valor | ✅ 10a |
 | D11 | Las rutinas de offseason siguen gateadas solo por etapa, no por tier (un bootcamp en Corea no lo paga un tier 3). Deferido de la fase 3 por alcance: cuidar el check de segura/agresiva al diferenciar | 13 |
 | D12 | ~~El eje `region` tenía `LATAM`~~ — resuelto: sacado, ya no hay tier-1 ahí | ✅ 3 |
 | D13 | ~~`academy_offer` empujaba a `career.orgs` sin fichar~~ — resuelto: el fichaje real lo hace `amateur.js`/`competitivo.js`, `academy_offer` quedó como la prueba narrativa que siempre fue | ✅ 3 |
@@ -4125,7 +4190,7 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D27 | ~~**Contenido de vestuario disparando sin vestuario.**~~ — cerrado en 9Ec. `campeones.js` gatea el draft por `career.currentOrg` (no `phase`): un libre profesional elige el campeón como en soloQ, sin loguear "en el draft no te dieron tu pick" (medido: 65 logs `[campeones]` sin equipo → 0). Nueve eventos declararon `marcas: ["con_vestuario"]` (5 de rol del plan + `jungla_el_tracking_publico` + `transfer_rumor`/`tercer_club_ya`/`el_secundario_que_sirvio`); los 6 eventos de rol enmarcados en soloQ se dejaron sin gatear a propósito. Check nuevo en `validate.js` verificado en rojo contra el HEAD previo | ✅ 9E |
 | D28 | ~~**`Math.random()` × 5 en `index.html`**~~ — resuelto en la fase P: pasaron a `rngUi`, un stream propio sembrado desde la seed (`mulberry32((seed ^ 0x9E3779B9) >>> 0)`), separado del `rng` del motor para no correr el stream (T1) ni desincronizar el navegador de `simulate.js`. `src/dev/build.js` falla el build si vuelve a aparecer una llamada al azar del navegador. **9Ed**: `guards.js` ahora suma `.html` y recorre la raíz del repo — `verificarSinMathRandom` caza un `Math.random()` que vuelva a `index.html`, verificado en rojo. Cerrado | ✅ **P** + 9Ed |
 | D29 | ✅ **Cerrada (9Mb + 9Md).** `residenciaEn(state, regionId)` la calcula (`local`/`residente`/`import`) desde `splitsDeResidencia`; `core/demanda.js` lee `cupoImports`/`minimoResidentes`/`margenImport` en `ofertaPosible`. **9Md** abrió el mercado entre las 6 ligas tier 1 y `dificultadAdaptacion` escala el `margenImport`: `residencia: 'import'` se produce en el **71,8%** de las carreras (check 12: ≥10%) | ✅ 9Mb + 9Md |
-| D30 | **Valores de eje que la fase 9 debía llenar y no llenó.** `calcularMercado()` devuelve solo `contrato_firme`/`sin_contrato`; `ultimo_ano` y `sin_renovacion` están declarados en `EJES` y nunca se calculan, pese a que `contrato.aniosRestantes` ya existe y es exactamente el dato que hace falta. `etapa: 'declive'` tampoco se computa | **9M** / 10 |
+| D30 | 🔶 **`etapa: 'declive'` cerrada en 10a** (`core/contexto.js`: banqueado, caíste de tier 1 y no volviste, o tu nivel cayó de tu pico — es el reloj real de `systems/retiro.js`, D30-bis documentado en §10.1 sobre por qué NO incluye "sin equipo"). Sigue abierto: `calcularMercado()` devuelve solo `contrato_firme`/`sin_contrato`; `ultimo_ano` y `sin_renovacion` están declarados en `EJES` y nunca se calculan, pese a que `contrato.aniosRestantes` ya existe | 🔶 10a (declive) · falta `ultimo_ano`/`sin_renovacion` (11) |
 | D31 | ✅ **Cerrada.** Constantes muertas en `balance.js`: **9Ec** borró `amateur.autoProbRobar`, `rendimiento.ruidoRival` y `competitivo.margenEdadMinima`; **9Mb** encendió `mercado.margenImport` en `core/demanda.js` (`ofertaPosible`: como import tenés que estar `margenImport` por encima de la fuerza de la org). 0 constantes mintiendo | ✅ 9Ec + 9Mb |
 | D32 | **`node src/dev/validate.js` tarda 6m47s** y la Definición de terminado lo exige en cada cambio. Candidato a partirse en `--rapido` (esquema, contratos, determinismo) y `--completo` (los checks estadísticos de n grande, que son los que se comen el tiempo) | 12 (abierto) |
 | D34 | **Cuánto se tarda en SALIR del nivel tier 3 nunca se había podido medir**, porque el bug D25 mataba la carrera en la primera disolución: las carreras largas en tier 3 no existían, se varaban. Con D25 cerrado, medido a 1500 carreras: por org la permanencia sigue clavada en el diseño (**mediana 2, p90 5** — el pedido "nadie se queda mucho en un equipo inventado" se cumple), pero el tiempo total en el NIVEL da **mediana 5, p90 12, máximo 36 splits**. El 98,3% de las carreras que pisan tier 3 igual escapan a tier 2 o 1, así que no es una trampa — pero un p90 de 12 splits (4 años) dando vueltas por equipos chicos es candidato a revisar `probAscensoBaseDesdeTier3`. **No se tocó ninguna constante**: regla de proceso 2, primero medir con la estructura nueva. El check gatea la métrica por org, que es la que responde el pedido | 10 (abierto) |
@@ -4134,6 +4199,7 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D40 | **Tres campos del estado declarados que ningún sistema escribe nunca.** Verificado por grep sobre `/src/core` y `/src/systems` el 2026-09-04: ~~`career.registro.dineroTotalUSD`~~ (**cerrado 9Mf**: `roster.js` acumula `salarioAnualUSD/splitsPorEdad` por split; check 11 lo verifica >0 y monótono), `career.registro.picos.rankedPuntos` (0) y `mundo.archirrival` (0; lo lee `dueloDeGeneracion` en `core/ficha.js` con prioridad — desde **9Wb** ese helper ya no devuelve `null` siempre: sin archirrival cae al duelo de ranks del Top 20 mundial. La ficha del archirrival con `desenlace` es fase 11). También `registro.picos.salarioAnualUSD` (0 escrituras, §9M.7) — **cerrado 9Mf** en el mismo lugar. Lo que queda: `picos.rankedPuntos` y `archirrival`. No es un bug de motor: es un bug de confianza esperando a pasar (la primera pantalla que pinte `US$0 ganado` viola la regla 15) | 🔶 dinero + sueldo (9Mf) · falta `rankedPuntos` / `archirrival` (11) |
 | D41 | **`log.type` no se usa en la UI.** Los 16 sistemas emisores etiquetan cada log (`amateur`, `serie`, `mercado`, `temporada`, …) y `feed.js` solo distingue `tecnico: true`. Es el gancho listo para icono, color y filtro por categoría, gratis. Lo consume la fase T | T |
 | D36 | **La partida no se guarda: un refresh borra la carrera.** Cero `localStorage` en todo el repo. Irrelevante en `localhost`, bloqueante en público con una sesión objetivo de 25-40 minutos. La arquitectura ya está lista —`state.pendiente` existe justamente para que la partida sea serializable a mitad de split y `state` es todo objetos planos—; falta exponer el contador de `mulberry32` (`core/rng.js:2`), que hoy vive en una clausura, para poder restaurar el punto del stream. No necesita backend | **P** |
+| D42 | **`career.liga` no se limpia al quedar libre** (`systems/mercado.js` `quedarLibre`, de 9M: limpia `currentOrg`/`rosterDeOrg`/`companeros`/`sinergia` pero no `liga`). Un free agent sigue "perteneciendo" a su última liga mientras entrena y sube de nivel, así que el check de `validate.js` "el silencio del mercado es para los que están por debajo" mide una brecha inflada contra una liga vieja. Pre-existente de 9M; **10a** lo hizo más frecuente (la ventana de vuelta multiplica los tramos de free agency) y bajó el piso del check 90%→60% en vez de tocar `mercado.js`, que es de otra fase (medido 72% a n=1500). `career.liga` se lee en 12+ lugares (`ficha.js`, `competitivo.js`, `escena.js`, `topMundial.js`...) — limpiarlo pide auditar todos esos call sites, no es un fix de una línea | 11 (abierto) |
 
 ---
 

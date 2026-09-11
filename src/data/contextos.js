@@ -100,11 +100,15 @@ export const MOMENTOS = [
     label: 'Cumpliendo el servicio militar',
     patron: { marcas: ['servicio_militar'] } },
 
-  { id: 'retirado_reciente', prioridad: 95, pendiente: 'paso12',
+  // Fase 10a: el retiro reversible. `ventana_de_vuelta` prende mientras
+  // `phase: 'retirado'` y `terminado: false` (la puerta sigue entreabierta,
+  // `BALANCE.retiro.ventanaDeVueltaSplits`); `vuelta_del_retiro` prende un rato
+  // después de usar esa ventana (mismo patrón que `descenso`/`ventanaDescenso`).
+  { id: 'retirado_reciente', prioridad: 95,
     label: 'Retirado, con la puerta entreabierta',
     patron: { etapa: ['retirado'], marcas: ['ventana_de_vuelta'] } },
 
-  { id: 'vuelta_del_retiro', prioridad: 92, pendiente: 'paso12',
+  { id: 'vuelta_del_retiro', prioridad: 92,
     label: 'De vuelta después del retiro',
     patron: { marcas: ['vuelta_del_retiro'] } },
 

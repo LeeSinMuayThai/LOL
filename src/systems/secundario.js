@@ -11,6 +11,11 @@ export const id = 'secundario';
 //
 // Se congela tambien al dejar la etapa amateur aunque sea antes de los 18:
 // firmar y mudarte a una gaming house es, en los hechos, la decision tomada.
+//
+// D10 (fase 10a): `edadLimite` dejó de ser el corte duro de la etapa amateur
+// — ahora es la red anti-loop (24) — pero el significado que este sistema
+// necesita ("la edad en la que definitivamente ya no sos amateur, pase lo
+// que pase") no cambió, solo el valor. Sigue siendo el mismo campo.
 export function aplicar(state, rng) {
   if (state.flags.secundario !== null) {
     return { state, logs: [] };

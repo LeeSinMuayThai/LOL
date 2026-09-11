@@ -63,8 +63,12 @@ export function etiquetaDeFuerza(fuerzaRival, fuerzaPropia) {
 // puesto por `systems/edadCierre.js`). Una versión anterior de PLAN.md
 // hablaba de un tercer peso "ambiente" que no correspondía a ningún campo
 // real — se sacó al escribir esta fase.
+//
+// Fase 10a: `decision.bisagra` directo (sin pasar por `datos.evento`) cubre
+// las decisiones que no vienen de `systems/events.js` pero cambian el
+// resultado igual — retiro y salida de la etapa amateur, las dos primeras.
 export function pesoDeDecision(decision) {
-  if (decision?.datos?.evento?.bisagra) {
+  if (decision?.bisagra || decision?.datos?.evento?.bisagra) {
     return 'bisagra';
   }
   if (decision?.franja === 'cierre') {
@@ -89,6 +93,9 @@ export function rotuloDeDecision(decision, state) {
     return { label: 'Partido', token: 'partido' };
   }
   const motivo = decision?.datos?.motivo;
+  if (motivo === 'retiro_declive' || motivo === 'retiro_vuelta' || motivo === 'salida_amateur') {
+    return { label: 'Retiro', token: 'salud' };
+  }
   if (motivo === 'reparto' || motivo === 'practica' || state?.phase === 'amateur') {
     return { label: 'La semana', token: 'rutina' };
   }

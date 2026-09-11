@@ -54,8 +54,46 @@ function calcularEtapa(state, nivel) {
     return 'debut';
   }
 
-  // 'declive' lo activa el paso 11: no es una edad, es presion de mercado.
+  // Fase 10a (D30): 'declive' deja de ser un valor muerto — no es una edad
+  // fija, es presión de mercado real: banqueado, caíste de tier 1 y no
+  // volviste, o tu nivel cayó por debajo de tu propio pico (ver `enDeclive`
+  // más abajo). `systems/retiro.js` es el que actúa sobre esto de verdad (el
+  // reloj real del retiro); el resto del contenido lo puede leer como
+  // cualquier otra etapa.
+  if (enDeclive(state)) {
+    return 'declive';
+  }
+
   return 'profesional';
+}
+
+// NOTA: a propósito NO incluye "sin equipo" (`nivel === 'libre'`) — el check
+// estático "Ningún token puede quedar sin resolver..." (`validate.js`) ya
+// asume que `etapa: 'declive'` implica tener equipo (`CON_EQUIPO` incluye
+// 'declive' junto a 'debut'/'profesional'), así que el contenido puede usar
+// `{org}`/`{liga}` con esa condición sin blindaje extra. La presión de estar
+// sin equipo es señal real igual — `systems/retiro.js` la suma por su cuenta,
+// leyendo `career.currentOrg` directo, sin pasar por este eje compartido.
+function enDeclive(state) {
+  const r = BALANCE.retiro;
+  if (state.age < r.edadMinimaDeclive) {
+    return false;
+  }
+  // Banqueado: perdiste el puesto frente al suplente.
+  if (state.flags.banquilloPendiente) {
+    return true;
+  }
+  // Llegaste a tier 1 alguna vez y hoy no estás ahí: te cayó la escalera
+  // (D16, `competitivo.js`/`mercado.js`) y no volviste a subir. Señal
+  // discreta, no un margen de puntos — "llegaste a tier 1 y la hiciste
+  // mal" es exactamente el caso que pidió el usuario.
+  if (state.career.splitAscensoTier1 !== null && state.career.tier !== 1) {
+    return true;
+  }
+  // O tu nivel actual cayó en serio respecto de tu propio pico — el declive
+  // biológico de verdad (`CONCEPTO` §12.4: es raro, pero existe).
+  const pico = state.career.registro.picos.nivel;
+  return pico > 0 && (pico - nivelDelJugador(state)) >= BALANCE.contexto.margenDeclive;
 }
 
 function calcularNivel(state) {
@@ -161,6 +199,18 @@ function calcularMarcas(state) {
   if (state.flags.splitDescenso != null
     && state.player.splitCount - state.flags.splitDescenso < BALANCE.contexto.ventanaDescenso) {
     marcas.push('descenso');
+  }
+
+  // Fase 10a: el retiro reversible. La ventana está abierta mientras
+  // `phase: 'retirado'` y `terminado: false` (lo cierra `systems/retiro.js`,
+  // no una edad); la vuelta queda marcada un rato después de usarla, mismo
+  // patrón que `descenso`/`ventanaDescenso`.
+  if (state.phase === 'retirado' && !state.terminado) {
+    marcas.push('ventana_de_vuelta');
+  }
+  if (state.flags.splitVuelta != null
+    && state.player.splitCount - state.flags.splitVuelta < BALANCE.contexto.ventanaDescenso) {
+    marcas.push('vuelta_del_retiro');
   }
 
   // Fase 9Wb (§9W.4): estás en el Top 20 del mundo AHORA / sos el #1. Estado

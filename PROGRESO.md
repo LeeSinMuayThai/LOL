@@ -33,6 +33,97 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-11 — Fase 10a: el retiro real (PLAN.md §10.1)
+
+Primer commit de la **fase 10**. 9W cerró el ranking mundial; esto ataca lo que quedaba de la
+fase 10 después de que 9R5a/9R5b adelantaran una versión acotada (retiro terminal por edad fija +
+la tarjeta, que ya estaba completa). Lo que faltaba: que el retiro sea presión de mercado real, no
+un dado contra una edad, y que sea reversible (`CONCEPTO` §12.4: Bjergsen/Doublelift, dos veces
+cada uno).
+
+**Cambio de diseño en el momento** (regla de proceso 2/7): jugado con las constantes de 9R5d
+(`edadDeclive: 27` + `chance()`), el usuario lo objetó explícito: *"si llegás a tier 1 y te
+equivocás bastante, que te retires a los 2 años; si no, mínimo 23, y de ahí si venís para arriba
+que puedas seguir subiendo"*. Un piso de edad fijo no puede expresar eso — se rediseñó el reloj
+entero antes de calibrar un solo número. Detalle completo, con las tres trampas encontradas al
+implementar, en `PLAN.md` §10.1.
+
+#### El reloj: `contexto.etapa === 'declive'` (D30), no una edad
+
+**`core/contexto.js`**: `calcularEtapa` deja de tener 'declive' como valor muerto. `enDeclive(state)`
+es true si estás banqueado, si llegaste a tier 1 alguna vez y hoy no estás ahí (`career.
+splitAscensoTier1 !== null && career.tier !== 1` — discreto, no un margen de puntos), o si tu nivel
+actual cayó `BALANCE.contexto.margenDeclive` (10) puntos por debajo de tu propio pico. A propósito
+**no** incluye estar sin equipo — el check estático de `validate.js` ya asumía que `etapa: 'declive'`
+garantiza tener org (`CON_EQUIPO` la incluye para que el contenido use `{org}`/`{liga}` sin blindaje
+extra); ese cruce lo suma aparte, solo `systems/retiro.js`, leyendo `career.currentOrg` directo.
+
+#### La decisión: cero RNG, agencia real
+
+**`src/systems/retiro.js`** (reescrito entero): sin `chance()`, sin `nivelAncla`/`factorNivel*`. Dos
+años netos consecutivos en declive (`flags.splitsEnDeclive`, sube con la presión y BAJA de a uno —
+no se resetea entero — cuando salís, para que un año bueno en medio de una racha mala no tape dos
+reales) → se pausa y se pregunta: *"¿la seguís o colgás los botines?"*. Elegir seguir compra tiempo
+(`factorSeguirPeleandola: 0,5`, no lo borra). La línea Faker (`edadRetiroForzoso: 34`) sigue siendo
+la única puerta sin pregunta — no hay nada que elegir ahí (regla 1) — y **sin ventana de vuelta**
+(trampa encontrada: si la tiene, alguien con vueltas de sobra rebota contra la MISMA edad una y otra
+vez y el retiro "de verdad" se corre varios años).
+
+#### La ventana de vuelta
+
+Retirarse por decisión propia o por mercado (no burnout/familia/no_llego) deja `phase: 'retirado'`,
+`terminado: false` mientras `flags.vueltasUsadas < vueltasMaximas` (2). **`core/pipeline.js`**: nuevo
+`splitTerminaAca(state)` (`terminado || phase==='retirado'`) reemplaza el corte por `terminado` solo
+en `correrEtapas` y `resolverDecision` — la ventana corta el resto de `ETAPAS_SPLIT` igual que un
+final de verdad. Trampa encontrada al medir: `avanzarSplit` arrancaba `correrEtapas` siempre desde el
+índice 0, así que en un split que YA arrancaba `retirado` el corte pegaba en el primer sistema
+(`presupuesto`, que no toca `phase`) y `retiro.js` (índice 7) nunca llegaba a correr — se arregla
+saltando directo a su índice cuando `phase` ya viene `'retirado'`. Con eso, `player.splitCount` queda
+congelado durante la ventana (lo mueve `atributos.js`, que no llega a correr), así que el reloj de la
+ventana es propio (`flags.splitsEnVentana`), no ese contador.
+
+#### `amateur.edadLimite` deja de ser un corte duro
+
+`edadLimite` 20→**24**: pasa de "cumpliste 20, se acabó" a la red anti-loop (D10: `secundario.js`
+sigue leyendo el mismo campo, con el mismo significado, solo el valor cambió — no hizo falta un
+umbral propio). `scoutingSesgoEtario` se extiende (20: 0,06 · 21: 0,03) y `scoutingSesgoEtarioMinimo`
+baja a 0,015 para 22+: la ventana de los prospectos nunca llega a cero. **`amateur.js`**: desde los
+19, el cierre de temporada pregunta lo mismo que el retiro profesional — *"¿la seguís o la dejás?"*
+— en vez de que la edad decida en silencio.
+
+#### Trampa de contenido encontrada al medir
+
+`data/rutinas/offseason.json` declaraba `etapa: ["debut", "profesional"]` en sus 6 rutinas. Con
+'declive' alcanzable, un jugador banqueado o caído de tier 1 llegaba a `practica.js` con CERO
+candidatas y `elegirRutinaAutomatica` reventaba (`reduce` de array vacío) — encontrado recién al
+correr 30 seeds, no en el diseño. Se agregó `"declive"` a las 6. Cualquier fase que introduzca un
+valor de eje nuevo tiene que barrer el contenido existente por la misma razón — no hay chequeo
+estático que lo cace hoy.
+
+#### Medido (400-1500 seeds)
+
+- **0** carreras agotan `maxSplitsDeSeguridad` (1500 seeds, 0 crashes).
+- Determinismo: misma seed, mismo resultado (verificado 5 seeds, comparación byte a byte del
+  estado final).
+- Edad mediana al retirarse: **34** (banda 30-34) — la mayoría de quienes llegan a profesional
+  (potencial medio ~75 entre los que fichan, la etapa amateur ya filtró al resto) sostiene la
+  carrera hasta la línea Faker. **24%** de los retiros por mercado/decisión cortan antes — la
+  variación real que pidió el usuario.
+- **78%** llega a 30+ años (banda 50-90%).
+- La ventana de vuelta se usa en **38%** de las carreras; nadie excede `vueltasMaximas`.
+- r(potencial oculto, duración de carrera) = **0,44** (piso 0,32).
+
+**`src/dev/validate.js`**: 3 checks nuevos (variación real antes de la línea Faker, ventana de
+vuelta alcanzable y acotada) + 1 reescrito (bandas de edad mediana / 30+, ya no las de 9R5d). Los
+siete checks originales de `PLAN.md` §10.5 (mediana 6-10 splits, activo al 4º año <20%, etc. — el
+dato de investigación de `CONCEPTO` §12.4) se reemplazan por los de arriba, documentados en
+`PLAN.md` con el porqué. Uno se descarta: "la estrategia 'carrera' llega a 30+ 2,5× más que
+'ranked'" — ninguna fase construyó nunca un concepto `estrategia` en el motor.
+
+**Pendiente** (10c, `PLAN.md` §10.4, abierto): `salud.js` (lesiones escaladas por
+`player.deudaSueno`) y `servicioMilitar.js` (Corea, determinista). `retiro_por_lesion` no existe
+todavía como `finAnticipado`.
+
 ### 2026-09-10 — Fase 9Wd: calibrar (solo constantes, regla de proceso 2) · cierra 9W
 
 Cuarto y último commit de **9W** (PLAN.md §9W.2). 9Wa-9Wc dejaron el ranking funcionando,
