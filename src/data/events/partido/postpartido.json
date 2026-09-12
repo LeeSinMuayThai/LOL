@@ -2,6 +2,7 @@
   {
     "id": "el_review_de_hoy",
     "category": "partido_postpartido",
+    "categoria": "partido",
     "title": "El review de hoy",
     "description": "Apenas se corta la transmisión, el coach ya está mandando el link del VOD al grupo. El partido contra {rivalDeLaFecha} todavía no terminó de digerirse y ya hay que analizarlo.",
     "weight": 6,
@@ -70,6 +71,7 @@
   {
     "id": "las_redes_despues_del_partido",
     "category": "partido_postpartido",
+    "categoria": "partido",
     "title": "Las redes después del partido",
     "description": "El clip de la jugada más comentada contra {rivalDeLaFecha} ya está circulando, con opiniones para todos los gustos en los comentarios.",
     "weight": 5,
@@ -135,6 +137,7 @@
   {
     "id": "la_cena_de_despues",
     "category": "partido_postpartido",
+    "categoria": "partido",
     "title": "La cena de después",
     "description": "Terminado el partido contra {rivalDeLaFecha}, alguien propone pedir algo y comer todos juntos en la gaming house antes de que cada uno se encierre en su cuarto.",
     "weight": 5,
@@ -198,6 +201,7 @@
   {
     "id": "el_mensaje_del_manager",
     "category": "partido_postpartido",
+    "categoria": "partido",
     "title": "El mensaje del manager",
     "description": "Recibís un mensaje corto de tu manager apenas termina el partido contra {rivalDeLaFecha}: quiere saber cómo estás, o quiere saber qué pasó. A veces es difícil distinguir cuál de las dos.",
     "weight": 4,
@@ -257,6 +261,7 @@
   {
     "id": "el_vuelo_de_vuelta",
     "category": "partido_postpartido",
+    "categoria": "partido",
     "title": "El vuelo de vuelta",
     "description": "El partido contra {rivalDeLaFecha} fue de visitante y ahora quedan cuatro horas de aeropuerto y avión con el resultado todavía dando vueltas.",
     "weight": 5,
@@ -319,6 +324,7 @@
   {
     "id": "el_clip_que_se_viraliza",
     "category": "partido_postpartido",
+    "categoria": "partido",
     "title": "El clip de la fecha",
     "description": "Una jugada tuya del partido contra {rivalDeLaFecha} se está compartiendo sola. Para bien o para mal, mañana la va a haber visto todo el mundo.",
     "weight": 5,
@@ -381,6 +387,7 @@
   {
     "id": "la_llamada_a_casa",
     "category": "partido_postpartido",
+    "categoria": "partido",
     "title": "La llamada a casa",
     "description": "Después del partido contra {rivalDeLaFecha}, en tu casa están despiertos esperando que llames para contar cómo te fue.",
     "weight": 4,
@@ -443,6 +450,7 @@
   {
     "id": "el_scrim_de_mañana",
     "category": "partido_postpartido",
+    "categoria": "partido",
     "title": "Ya hay bloque para mañana",
     "description": "Todavía estás guardando el equipo y el coach ya avisó que mañana a las 11 hay scrims contra otro equipo de la liga. El partido contra {rivalDeLaFecha} pasó a ser pasado.",
     "weight": 4,
@@ -502,6 +510,7 @@
   {
     "id": "la_entrevista_flash",
     "category": "partido_postpartido",
+    "categoria": "partido",
     "title": "La nota en el escenario",
     "description": "Te agarran para la entrevista flash apenas salís del server. Micrófono en la cara, el resultado contra {rivalDeLaFecha} todavía caliente y una cámara en vivo.",
     "weight": 4,
@@ -565,6 +574,7 @@
   {
     "id": "el_mvp_de_la_fecha",
     "category": "partido_postpartido",
+    "categoria": "partido",
     "title": "El MVP de la jornada",
     "description": "La liga publica su elección del mejor jugador de la fecha. Después del partido contra {rivalDeLaFecha}, tu nombre estaba en la conversación.",
     "weight": 4,
@@ -628,6 +638,7 @@
   {
     "id": "el_grupo_del_equipo",
     "category": "partido_postpartido",
+    "categoria": "partido",
     "title": "El grupo del equipo después",
     "description": "En el chat del equipo se está armando la conversación del post partido contra {rivalDeLaFecha}: alguien tira un audio largo, alguien manda un sticker, alguien pide hablarlo mañana.",
     "weight": 5,
@@ -691,6 +702,7 @@
   {
     "id": "la_racha_en_tu_cabeza",
     "category": "partido_postpartido",
+    "categoria": "partido",
     "title": "Las cuentas propias",
     "description": "Terminado el partido contra {rivalDeLaFecha}, hacés la cuenta que nadie te pidió: cómo venís, cuántas ganaste de las últimas, si esto es una racha o un bajón.",
     "weight": 5,
@@ -754,6 +766,7 @@
   {
     "id": "el_analista_te_escribe",
     "category": "partido_postpartido",
+    "categoria": "partido",
     "title": "El analista te manda un audio",
     "description": "El analista del equipo te escribe aparte del grupo: vio algo puntual de tu {rol} en el partido contra {rivalDeLaFecha} y te lo quiere pasar antes de que se le mezcle con el resto.",
     "weight": 4,
@@ -814,6 +827,7 @@
   {
     "id": "dormir_despues_de_esto",
     "category": "partido_postpartido",
+    "categoria": "partido",
     "title": "Bajar la adrenalina",
     "description": "Son las dos de la mañana, mañana hay práctica y el cuerpo todavía está en modo partido después de lo de {rivalDeLaFecha}. Dormir no va a ser automático.",
     "weight": 5,
@@ -879,6 +893,7 @@
   {
     "id": "los_numeros_de_la_fecha",
     "category": "partido_postpartido",
+    "categoria": "partido",
     "title": "La planilla de la jornada",
     "description": "Sale la planilla oficial de la fecha contra {rivalDeLaFecha}: daño, visión, oro por minuto, participación en kills. Los números nunca cuentan todo, pero cuentan algo.",
     "weight": 4,

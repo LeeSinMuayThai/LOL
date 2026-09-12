@@ -2,6 +2,7 @@
   {
     "id": "todo_se_define_hoy",
     "category": "partido_presion",
+    "categoria": "partido",
     "title": "Todo se define hoy",
     "description": "Ganás y clasificás. Perdés y quedás afuera esperando un milagro en la última fecha. El coach lo dijo en la reunión: acá no hay mañana.",
     "weight": 7,
@@ -71,6 +72,7 @@
   {
     "id": "la_racha_negativa",
     "category": "partido_presion",
+    "categoria": "partido",
     "title": "Dos seguidas abajo",
     "description": "Perdiste las últimas dos y en el chat del equipo nadie escribe nada. Hoy toca cortar la racha o entrar en zona de pánico.",
     "weight": 7,
@@ -137,6 +139,7 @@
   {
     "id": "el_discurso_del_coach",
     "category": "partido_presion",
+    "categoria": "partido",
     "title": "El discurso antes del partido",
     "description": "El coach junta al equipo antes de conectarse. Quiere decir algo que cambie la cabeza de todos, y te mira a vos para que lo respaldes o no.",
     "weight": 6,
@@ -199,6 +202,7 @@
   {
     "id": "cerrar_la_boca_de_la_critica",
     "category": "partido_presion",
+    "categoria": "partido",
     "title": "Todos esperan que te caigas",
     "description": "Después de la racha, la prensa y el propio ladder te dan por bajoneado. Es la clase de partido que se juega con algo para probar.",
     "weight": 6,
@@ -261,6 +265,7 @@
   {
     "id": "la_ultima_bala",
     "category": "partido_presion",
+    "categoria": "partido",
     "title": "La última bala del split",
     "description": "Si no ganás hoy, no hay otra fecha que valga. El resto del roster lo sabe, y se nota en cómo entran al draft.",
     "weight": 6,
@@ -324,6 +329,7 @@
   {
     "id": "con_media_liga_mirando",
     "category": "partido_presion",
+    "categoria": "partido",
     "title": "Con media liga mirando este partido",
     "description": "El resultado de hoy mueve la tabla de varios equipos a la vez, y el stream tiene el doble de espectadores que un split normal.",
     "weight": 5,
@@ -386,6 +392,7 @@
   {
     "id": "el_ping_de_panico",
     "category": "partido_presion",
+    "categoria": "partido",
     "title": "El equipo entra en pánico",
     "description": "Van perdiendo por poco y el minimapa es una fiesta de pings de retirada y de peligro. Nadie decide nada, todos avisan de todo. Contra {rivalDeLaFecha} así se pierde solo.",
     "weight": 6,
@@ -453,6 +460,7 @@
   {
     "id": "el_puesto_en_riesgo",
     "category": "partido_presion",
+    "categoria": "partido",
     "title": "Tu titularidad en la balanza",
     "description": "Se filtró que el staff está mirando reemplazos para tu rol y que este split define si seguís de titular. Todos en el server lo saben y {rivalDeLaFecha} también.",
     "weight": 5,
@@ -519,6 +527,7 @@
   {
     "id": "remar_desde_el_fondo",
     "category": "partido_presion",
+    "categoria": "partido",
     "title": "Últimos en la tabla",
     "description": "El split se les escapó temprano y están anteúltimos. Matemáticamente todavía se puede, pero hay que ganar casi todo lo que queda, empezando por hoy contra {rivalDeLaFecha}.",
     "weight": 5,
@@ -581,6 +590,7 @@
   {
     "id": "el_partido_bisagra",
     "category": "partido_presion",
+    "categoria": "partido",
     "title": "El que cambia toda la cuenta",
     "description": "Si ganás hoy, la matemática de clasificación se te da vuelta a favor de un plumazo. Si perdés, dependés de resultados ajenos el resto del split.",
     "weight": 6,
@@ -643,6 +653,7 @@
   {
     "id": "el_scrim_desastroso",
     "category": "partido_presion",
+    "categoria": "partido",
     "title": "La semana de práctica fue un desastre",
     "description": "Perdieron todos los scrims de la semana y el bloque de ayer terminó con el coach cortando temprano. Hoy en serio, contra {rivalDeLaFecha}, y nadie llega con confianza.",
     "weight": 5,
@@ -705,6 +716,7 @@
   {
     "id": "la_fe_publica_del_coach",
     "category": "partido_presion",
+    "categoria": "partido",
     "title": "El coach te bancó en la conferencia",
     "description": "En la nota previa le preguntaron por tu bajón y salió a bancarte con nombre y apellido delante de todos. Ahora hay que devolvérselo en el server, hoy, contra {rivalDeLaFecha}.",
     "weight": 5,
@@ -772,6 +784,7 @@
   {
     "id": "sin_red_este_split",
     "category": "partido_presion",
+    "categoria": "partido",
     "title": "Sin red de contención",
     "description": "No hay revancha en playoffs si esto sale mal: el formato es directo y el equipo no tiene margen de error. Cada fecha de acá al final es una eliminación.",
     "weight": 5,

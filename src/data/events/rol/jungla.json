@@ -2,6 +2,7 @@
   {
     "id": "jungla_donde_se_juega",
     "category": "rol_jungla",
+    "categoria": "rutina",
     "title": "Vos decidís dónde se juega el partido",
     "description": "Con el mapa como está, podés forzar la acción arriba, donde tu top está perdiendo, o abajo, donde tu adc está rompiendo. Solo alcanza para uno de los dos.",
     "weight": 6,
@@ -64,6 +65,7 @@
   {
     "id": "jungla_la_culpa_es_tuya",
     "category": "rol_jungla",
+    "categoria": "rutina",
     "title": "Cuando sale mal, fuiste vos",
     "description": "Pierden la jornada y el análisis del staff empieza y termina en tus rutas de la jungla. Nadie menciona la línea que se rindió sola a los diez minutos.",
     "weight": 6,
@@ -126,6 +128,7 @@
   {
     "id": "jungla_el_mapa_es_tuyo",
     "category": "rol_jungla",
+    "categoria": "rutina",
     "title": "Nadie más va a leer el mapa por vos",
     "description": "En soloQ no hay coach que te diga por dónde arrancar: la primera invasión, el primer camino, salen de tu lectura y de nadie más. Si sale mal, no hay a quién señalar.",
     "weight": 6,
@@ -186,6 +189,7 @@
   {
     "id": "jungla_el_pathing_del_coach",
     "category": "rol_jungla",
+    "categoria": "rutina",
     "title": "El coach te dibujó la ruta",
     "description": "El staff de {org} llega al partido con tu pathing de los primeros tres minutos ya escrito en una pizarra. No es como vos leerías el mapa, pero es lo que ensayaron toda la semana.",
     "weight": 6,
@@ -253,6 +257,7 @@
   {
     "id": "jungla_espejo_del_enemigo",
     "category": "rol_jungla",
+    "categoria": "rutina",
     "title": "El jungla rival juega a tu ritmo",
     "description": "Enfrente hay alguien que farmea cuando vos farmeás y aparece cuando vos aparecés. El partido se va a definir por quién rompe el espejo primero.",
     "weight": 5,
@@ -318,6 +323,7 @@
   {
     "id": "jungla_el_carril_que_te_reclama",
     "category": "rol_jungla",
+    "categoria": "rutina",
     "title": "Un carril te llena de pings",
     "description": "{top} viene perdiendo desde el minuto tres y te spamea pings para que subas. Ir es tirar tempo a la línea que menos rinde; no ir es prender fuego el vestuario.",
     "weight": 6,
@@ -383,6 +389,7 @@
   {
     "id": "jungla_la_proxima_es_la_ultima",
     "category": "rol_jungla",
+    "categoria": "rutina",
     "title": "Todo se juega en el smite",
     "description": "En soloQ no hay quien te ayude a asegurar objetivos: cada dragón y cada Barón se define por tu smite contra el del otro jungla, y no hay revancha si lo errás.",
     "weight": 6,
@@ -447,6 +454,7 @@
   {
     "id": "jungla_temprano_o_escala",
     "category": "rol_jungla",
+    "categoria": "rutina",
     "title": "Tu campeón caduca a los veinte",
     "description": "El draft te dejó un jungla de tempo temprano en una composición que escala. Tenés una ventana chica para hacer daño antes de volverte irrelevante en las peleas.",
     "weight": 5,
@@ -513,6 +521,7 @@
   {
     "id": "jungla_el_tracking_publico",
     "category": "rol_jungla",
+    "categoria": "rutina",
     "title": "Te miden el tracking",
     "description": "Un analista publica un desglose de tu temporada: buen farm, buen daño, y una lectura de la jungla rival muy por debajo de los demás junglas de la liga. El número quedó dando vueltas.",
     "weight": 5,

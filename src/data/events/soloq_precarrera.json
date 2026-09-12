@@ -2,6 +2,7 @@
   {
     "id": "scout_call",
     "category": "soloq_precarrera",
+    "categoria": "oportunidad",
     "title": "Te escribió un scout",
     "description": "Un tipo que dice trabajar para una org te manda un DM. Mira la ladder todos los días y tu nombre le viene apareciendo.",
     "weight": 10,
@@ -65,6 +66,7 @@
   {
     "id": "family_pressure",
     "category": "soloq_precarrera",
+    "categoria": "oportunidad",
     "title": "La charla del comedor",
     "description": "Te sientan a la mesa un martes cualquiera. No hay gritos: es peor, es la conversación tranquila de los que ya lo pensaron.",
     "weight": 8,
@@ -126,6 +128,7 @@
   {
     "id": "ranked_streak",
     "category": "soloq_precarrera",
+    "categoria": "oportunidad",
     "title": "La racha",
     "description": "Seis seguidas. El matchmaking te está regalando la noche y lo sabés: estas ventanas no se abren seguido.",
     "weight": 8,
@@ -193,6 +196,7 @@
   {
     "id": "el_inhouse_de_conocidos",
     "category": "soloq_precarrera",
+    "categoria": "oportunidad",
     "title": "Te suman a los inhouse",
     "description": "Un par de tipos que ya juegan en ligas chicas arman lobbies cerrados tres veces por semana. Te preguntan si querés entrar. Se juega en serio, con Discord y un review corto después.",
     "weight": 8,
@@ -261,6 +265,7 @@
   {
     "id": "el_pro_en_tu_partida",
     "category": "soloq_precarrera",
+    "categoria": "oportunidad",
     "title": "Hay un pro smurfeando",
     "description": "Cargás la partida y en el equipo rival está el mid de un equipo de tier 2, con una skin vieja y el nombre cambiado. Todo el chat lo saluda. Te toca laneo directo.",
     "weight": 7,
@@ -331,6 +336,7 @@
   {
     "id": "el_clip_viral",
     "category": "soloq_precarrera",
+    "categoria": "oportunidad",
     "title": "Un clip tuyo se despega",
     "description": "Alguien recortó una jugada tuya de la ladder y la subió. En dos días tiene más views que toda tu cuenta de Twitch junta. Los comentarios están divididos entre \"quién es\" y \"tuvo suerte\".",
     "weight": 7,
@@ -399,6 +405,7 @@
   {
     "id": "la_deuda_de_sueno_amateur",
     "category": "soloq_precarrera",
+    "categoria": "oportunidad",
     "title": "Otra noche hasta las cinco",
     "description": "Hace semanas que dormís cuatro horas para meter una cola más antes de que se acabe el horario bueno. Hoy te quedaste dormido en una clase y alguien te filmó.",
     "weight": 8,
@@ -472,6 +479,7 @@
   {
     "id": "el_bootcamp_casero",
     "category": "soloq_precarrera",
+    "categoria": "oportunidad",
     "title": "Te armás un bootcamp vos solo",
     "description": "Sin equipo que te organice, te hacés vos el cronograma: bloques de VODs, sesiones de mecánica, ladder con objetivo, revisión escrita. Suena a mucho para un pibe sin contrato.",
     "weight": 7,
@@ -543,6 +551,7 @@
   {
     "id": "el_equipo_amateur_que_se_arma",
     "category": "soloq_precarrera",
+    "categoria": "oportunidad",
     "title": "Te llaman para un roster amateur",
     "description": "Cinco pibes de la ladder, un mánager de 19 que consiguió sponsor de una cafetería, y un torneo online con algo de premio en tres meses. Te quieren de titular.",
     "weight": 8,
@@ -611,6 +620,7 @@
   {
     "id": "el_rol_prestado",
     "category": "soloq_precarrera",
+    "categoria": "oportunidad",
     "title": "Te piden jugar de otra cosa",
     "description": "En el equipo amateur del torneo falta un jungla y sos el que mejor entiende el mapa. Te piden que te muevas de tu rol para el fin de semana.",
     "weight": 6,
@@ -681,6 +691,7 @@
   {
     "id": "la_cuenta_nueva",
     "category": "soloq_precarrera",
+    "categoria": "oportunidad",
     "title": "Empezás una cuenta de cero",
     "description": "En tu main cada partida pesa: si perdés, perdés el rango que te costó meses. Te hacés una cuenta nueva para jugar sin esa mochila y ver de qué sos capaz sin el miedo.",
     "weight": 6,
@@ -752,6 +763,7 @@
   {
     "id": "el_torneo_abierto",
     "category": "soloq_precarrera",
+    "categoria": "oportunidad",
     "title": "Un abierto online con premio",
     "description": "Una marca de periféricos organiza una copa abierta: te anotás solo y te asignan equipo por la ronda. Hay algo de plata y, más importante, lo castea un canal que miran los scouts.",
     "weight": 7,
@@ -826,6 +838,7 @@
   {
     "id": "la_charla_con_el_ex_pro",
     "category": "soloq_precarrera",
+    "categoria": "oportunidad",
     "title": "Te asesora un ex jugador",
     "description": "Un tipo que llegó a jugar tier 2 hace unos años y ahora hace coaching por horas te ofrece una sesión gratis para engancharte de cliente. Media hora mirando tus VODs.",
     "weight": 7,
@@ -896,6 +909,7 @@
   {
     "id": "el_amigo_que_deja",
     "category": "soloq_precarrera",
+    "categoria": "oportunidad",
     "title": "Tu dúo lo deja",
     "description": "El pibe con el que subiste los últimos dos años te avisa que baja los brazos: empieza a laburar con el padre y el sueño se termina. Te quedás grindeando la ladder solo por primera vez.",
     "weight": 6,
@@ -967,6 +981,7 @@
   {
     "id": "el_examen_que_define",
     "category": "soloq_precarrera",
+    "categoria": "oportunidad",
     "title": "Se viene el examen que define el año",
     "description": "Rendís la prueba que decide si pasás de año o repetís. Repetir sería un año más de ranked sin la presión del secundario encima; también sería el argumento que tus viejos venían buscando.",
     "weight": 7,

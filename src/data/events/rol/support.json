@@ -2,6 +2,7 @@
   {
     "id": "support_nadie_te_vio",
     "category": "rol_support",
+    "categoria": "rutina",
     "title": "Ganaron por vos y nadie lo sabe",
     "description": "El ward que pusiste evitó una emboscada que nadie más vio venir. Tu equipo ganó la partida gracias a esa jugada, y en las estadísticas ni figura.",
     "weight": 6,
@@ -63,6 +64,7 @@
   {
     "id": "support_no_te_siguen_la_llamada",
     "category": "rol_support",
+    "categoria": "rutina",
     "title": "Ves la jugada y nadie te sigue",
     "description": "Desde tu posición ves clarísimo que el equipo puede robar un objetivo grande. Lo pedís por el comm, y {adc} sigue farmeando como si no te hubiera escuchado.",
     "weight": 5,
@@ -126,6 +128,7 @@
   {
     "id": "support_roam_o_babysit",
     "category": "rol_support",
+    "categoria": "rutina",
     "title": "Tu ADC atrás, el mapa te reclama",
     "description": "{adc} viene comiendo una fase de líneas dura y necesita que te quedes a cuidarlo. Al mismo tiempo, arriba y en mid hay jugadas para hacer si aparecés vos.",
     "weight": 6,
@@ -192,6 +195,7 @@
   {
     "id": "support_la_vision_del_equipo",
     "category": "rol_support",
+    "categoria": "rutina",
     "title": "Sos el único que compra visión",
     "description": "Mirás la tienda del equipo y los pinks los pagás siempre vos. Cuando estás muerto o sin oro, el mapa se apaga y nadie más lo enciende.",
     "weight": 5,
@@ -258,6 +262,7 @@
   {
     "id": "support_el_shotcaller",
     "category": "rol_support",
+    "categoria": "rutina",
     "title": "El equipo llama con tu voz",
     "description": "Nadie más toma la iniciativa en el comm: cuando hay que decidir si se pelea o se cede, el equipo espera a que hables vos. Te volviste el shotcaller sin haberlo pedido.",
     "weight": 5,
@@ -324,6 +329,7 @@
   {
     "id": "support_el_engage_a_ciegas",
     "category": "rol_support",
+    "categoria": "rutina",
     "title": "Engancharla y rezar que te sigan",
     "description": "La composición de {org} necesita que vos abras las peleas. Cada engage es soltar el gatillo sin saber todavía si el equipo va a estar atrás para rematar.",
     "weight": 6,
@@ -389,6 +395,7 @@
   {
     "id": "support_enchanter_o_tanque",
     "category": "rol_support",
+    "categoria": "rutina",
     "title": "Escudo para el carry o iniciar las peleas",
     "description": "El draft de {org} te deja elegir tu identidad del partido: enchanter que mantiene vivo al ADC, o tanque que va al frente y crea las jugadas. Dos trabajos distintos.",
     "weight": 5,
@@ -455,6 +462,7 @@
   {
     "id": "support_la_soloq_de_support",
     "category": "rol_support",
+    "categoria": "rutina",
     "title": "Cargar una partida desde support",
     "description": "En soloQ el support es el rol que nadie agradece y todos culpan. Estás para ganar puntos y tenés que hacerlo desde el puesto con menos oro del mapa.",
     "weight": 6,
@@ -520,6 +528,7 @@
   {
     "id": "support_el_carry_estrella",
     "category": "rol_support",
+    "categoria": "rutina",
     "title": "Sos la niñera del pibe que promocionan",
     "description": "El equipo de {org} gira alrededor de un {adc} joven al que la prensa ya trata de estrella. Tu trabajo, además de jugar, es mantenerle la cabeza en su lugar.",
     "weight": 5,

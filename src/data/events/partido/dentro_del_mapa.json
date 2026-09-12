@@ -2,6 +2,7 @@
   {
     "id": "la_jungla_enemiga_esta_sola",
     "category": "partido_dentro_del_mapa",
+    "categoria": "partido",
     "title": "La jungla enemiga está sola",
     "description": "Ves al jungla de {rivalDeLaFecha} lejos de su lado del mapa. Invadir puede darte la ventaja del partido, o dejarte sin recursos para el resto de la jungla.",
     "weight": 6,
@@ -68,6 +69,7 @@
   {
     "id": "jungla_gank_o_farm",
     "category": "partido_dentro_del_mapa",
+    "categoria": "partido",
     "title": "Nivel 3 y dos líneas pidiendo",
     "description": "Terminás el primer campamento y te escriben del top y del bot: los dos quieren que subas. Uno tiene la línea empujada a torre; el otro, un flash abajo. No llegás a las dos.",
     "weight": 5,
@@ -134,6 +136,7 @@
   {
     "id": "top_la_isla",
     "category": "partido_dentro_del_mapa",
+    "categoria": "partido",
     "title": "Solo en tu línea",
     "description": "Te comen la línea contra {rivalDeLaFecha} y del otro lado del mapa nadie se entera hasta que ya es tarde. En top el error es tuyo y la ayuda casi nunca llega a horario.",
     "weight": 6,
@@ -200,6 +203,7 @@
   {
     "id": "top_el_tp",
     "category": "partido_dentro_del_mapa",
+    "categoria": "partido",
     "title": "El TP en la mochila",
     "description": "Abajo se está armando una pelea 5v5 sobre el primer heraldo. Tenés el TP listo. Si bajás, tu línea contra {rivalDeLaFecha} queda sola dos oleadas; si no, la pelea es 4v5 para los tuyos.",
     "weight": 5,
@@ -262,6 +266,7 @@
   {
     "id": "mid_el_duelo",
     "category": "partido_dentro_del_mapa",
+    "categoria": "partido",
     "title": "El duelo de línea",
     "description": "Del otro lado, alguien de {rivalDeLaFecha} te pushea la línea y te invita a una pelea 1v1 en pleno medio del mapa. Todo el chat lo está mirando en vivo.",
     "weight": 6,
@@ -327,6 +332,7 @@
   {
     "id": "mid_roam_o_lane",
     "category": "partido_dentro_del_mapa",
+    "categoria": "partido",
     "title": "La ola crashea en dos",
     "description": "Tu oleada revienta contra la torre rival en dos segundos y el mid de {rivalDeLaFecha} está sin visión. Podés rotar a bot con ventaja de tempo, o quedarte a no perder ni un CS.",
     "weight": 5,
@@ -392,6 +398,7 @@
   {
     "id": "adc_la_pelea_que_define",
     "category": "partido_dentro_del_mapa",
+    "categoria": "partido",
     "title": "Todo el daño pasa por vos",
     "description": "Llegás a la pelea de mitad de partido siendo la única fuente de daño real del equipo. Si te posicionás mal contra {rivalDeLaFecha}, no hay plan B.",
     "weight": 6,
@@ -459,6 +466,7 @@
   {
     "id": "adc_el_kite_tardio",
     "category": "partido_dentro_del_mapa",
+    "categoria": "partido",
     "title": "Kitear con las manos temblando",
     "description": "Minuto 34, pelea por el alma en el río. Estás full ítems y el asesino de {rivalDeLaFecha} te va a saltar sí o sí. Toda la pelea se juega en cómo muevas los pies los próximos cuatro segundos.",
     "weight": 5,
@@ -527,6 +535,7 @@
   {
     "id": "support_el_ward_que_te_costo",
     "category": "partido_dentro_del_mapa",
+    "categoria": "partido",
     "title": "La visión no es gratis",
     "description": "Comprar el control ward en el momento justo te deja sin oro para lo tuyo, otra vez. Contra {rivalDeLaFecha} el mapa lo agradece; tu build, no.",
     "weight": 6,
@@ -590,6 +599,7 @@
   {
     "id": "support_engage_o_peel",
     "category": "partido_dentro_del_mapa",
+    "categoria": "partido",
     "title": "Vos abrís o vos tapás",
     "description": "La pelea está por estallar y tu campeón hace las dos cosas: podés tirar el engage que empieza todo, o guardarte para tapar al carry cuando salten sobre él. No hay tiempo para las dos.",
     "weight": 5,
@@ -653,6 +663,7 @@
   {
     "id": "el_objetivo_que_define_la_fecha",
     "category": "partido_dentro_del_mapa",
+    "categoria": "partido",
     "title": "El objetivo que define la fecha",
     "description": "El Barón está por spawnear y las dos vanguardias se miran de lejos. Nadie quiere pelear primero, pero alguien tiene que moverse.",
     "weight": 6,
@@ -721,6 +732,7 @@
   {
     "id": "el_error_ajeno",
     "category": "partido_dentro_del_mapa",
+    "categoria": "partido",
     "title": "Un compañero se mandó solo",
     "description": "Uno del equipo se metió a pelear sin avisar y quedó colgado en el medio del mapa. Todavía se puede hacer algo, o se puede dejar que pase.",
     "weight": 5,
@@ -786,6 +798,7 @@
   {
     "id": "la_remontada_posible",
     "category": "partido_dentro_del_mapa",
+    "categoria": "partido",
     "title": "Abajo, pero no afuera",
     "description": "Se les fue el partido temprano y van perdiendo por una diferencia incómoda. Todavía hay tiempo, si alguien se anima a jugarlo distinto.",
     "weight": 5,
@@ -854,6 +867,7 @@
   {
     "id": "el_early_que_se_pudrio",
     "category": "partido_dentro_del_mapa",
+    "categoria": "partido",
     "title": "Primer sangre en contra al minuto tres",
     "description": "Arranca el partido contra {rivalDeLaFecha} y ya vas 0-2 en el mapa por dos jugadas que no fueron ni tuyas. El chat del equipo se llena de pings y de silencio.",
     "weight": 5,
@@ -921,6 +935,7 @@
   {
     "id": "la_ventaja_que_no_cierra",
     "category": "partido_dentro_del_mapa",
+    "categoria": "partido",
     "title": "Arriba por cinco mil y sin cerrarlo",
     "description": "Le sacaste cinco mil de oro a {rivalDeLaFecha} pero ya van tres intentos de cierre que no terminan en nada. Cada minuto que pasa, la ventaja vale un poco menos.",
     "weight": 5,
@@ -985,6 +1000,7 @@
   {
     "id": "la_llamada_de_baron",
     "category": "partido_dentro_del_mapa",
+    "categoria": "partido",
     "title": "Barón con uno menos",
     "description": "Cae un compañero en el río y el Barón queda a la vista, casi sin vida. {rivalDeLaFecha} está a diez segundos. Se puede robar 4v5, o se puede soltar y jugar la pelea después.",
     "weight": 5,
@@ -1050,6 +1066,7 @@
   {
     "id": "el_flanco_que_viste",
     "category": "partido_dentro_del_mapa",
+    "categoria": "partido",
     "title": "El flanco que solo viste vos",
     "description": "El equipo de {rivalDeLaFecha} está agrupado mirando un objetivo y vos tenés el ángulo perfecto por atrás. Si avisás y esperás, se pierde. Si vas solo y sale, es la pelea.",
     "weight": 5,
@@ -1118,6 +1135,7 @@
   {
     "id": "la_torre_expuesta",
     "category": "partido_dentro_del_mapa",
+    "categoria": "partido",
     "title": "Splitear o agrupar",
     "description": "Tu campeón parte torres como nadie y hay dos inhibidoras a tiro por el lateral. Pero el equipo quiere agrupar para Alma, y contra {rivalDeLaFecha} no alcanzan cuatro si vos estás en la otra punta.",
     "weight": 5,
@@ -1182,6 +1200,7 @@
   {
     "id": "el_reloj_corre",
     "category": "partido_dentro_del_mapa",
+    "categoria": "partido",
     "title": "La ventaja se derrite",
     "description": "Ibas quince mil arriba al minuto veinte. Son las 41 y la diferencia es de cuatro mil: {rivalDeLaFecha} llegó a sus power spikes y cada pelea ahora es una moneda.",
     "weight": 5,
@@ -1245,6 +1264,7 @@
   {
     "id": "la_inhibidora_caida",
     "category": "partido_dentro_del_mapa",
+    "categoria": "partido",
     "title": "Inhibidora abajo, ¿entrás o volvés?",
     "description": "Rompés la primera inhibidora de {rivalDeLaFecha} y quedan todos vivos del otro lado, defendiendo con la ventaja de la base. Tenés tempo para un objetivo, no para dos.",
     "weight": 5,
@@ -1305,6 +1325,7 @@
   {
     "id": "el_2v2_en_el_rio",
     "category": "partido_dentro_del_mapa",
+    "categoria": "partido",
     "title": "Escaramuza en el scuttle",
     "description": "Vas por el cangrejo y aparece alguien de {rivalDeLaFecha} con su jungla. Se arma un 2v2 sucio en el río con las dos vidas al filo.",
     "weight": 5,
@@ -1367,6 +1388,7 @@
   {
     "id": "la_ejecucion_del_plan",
     "category": "partido_dentro_del_mapa",
+    "categoria": "partido",
     "title": "La ventana del plan es ahora",
     "description": "Toda la semana practicaron una jugada para este matchup contra {rivalDeLaFecha}, y el mapa acaba de dártela: la composición está donde tiene que estar, los cooldowns también. Es ahora o nunca.",
     "weight": 5,
@@ -1432,6 +1454,7 @@
   {
     "id": "el_momento_de_heroe",
     "category": "partido_dentro_del_mapa",
+    "categoria": "partido",
     "title": "El partido te ofrece la jugada",
     "description": "El mapa se alinea para una de esas jugadas que se recuerdan: solo, sin visión, con los cinco de {rivalDeLaFecha} a tiro si entrás perfecto. Salir bien es el clip del año. Salir mal es el meme del año.",
     "weight": 4,

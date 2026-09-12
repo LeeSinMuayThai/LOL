@@ -2,6 +2,7 @@
   {
     "id": "adc_sin_peel",
     "category": "rol_adc",
+    "categoria": "rutina",
     "title": "Nadie te cubrió la espalda",
     "description": "En la pelea clave, {support} se va al frente a buscar la jugada y te deja completamente solo contra el engage rival.",
     "weight": 6,
@@ -64,6 +65,7 @@
   {
     "id": "adc_si_perdemos_es_por_vos",
     "category": "rol_adc",
+    "categoria": "rutina",
     "title": "La lupa está sobre vos",
     "description": "En el chat y en cualquier lado donde se comente tus partidas se instaló que, si tu equipo pierde, es porque el adc no está a la altura. Cada partida se juega con eso encima.",
     "weight": 5,
@@ -127,6 +129,7 @@
   {
     "id": "adc_el_2v2_perdido",
     "category": "rol_adc",
+    "categoria": "rutina",
     "title": "El 2v2 lo perdés en el draft",
     "description": "El matchup de {support} contra el support rival es de los que no se juegan. Vas a pasar la fase de líneas bajo torre haciendo nada, sin que sea culpa tuya.",
     "weight": 6,
@@ -193,6 +196,7 @@
   {
     "id": "adc_el_pick_del_meta",
     "category": "rol_adc",
+    "categoria": "rutina",
     "title": "El ADC del meta es uno que odiás",
     "description": "El parche dejó como mejor tirador de la liga a un campeón con el que nunca te sentiste cómodo. El coach de {org} lo quiere en tu ficha; vos preferís tu confort aunque esté un escalón abajo.",
     "weight": 5,
@@ -259,6 +263,7 @@
   {
     "id": "adc_farm_o_pelea",
     "category": "rol_adc",
+    "categoria": "rutina",
     "title": "Se arma la pelea y tenés tres olas encima",
     "description": "El equipo hace una llamada de pelea en mid y vos tenés tres olas chocando en la línea de al lado. Ir es dejar sesenta de oro tirados; no ir es un 4v5.",
     "weight": 6,
@@ -325,6 +330,7 @@
   {
     "id": "adc_el_frontline_sos_vos",
     "category": "rol_adc",
+    "categoria": "rutina",
     "title": "La composición no tiene quién vaya al frente",
     "description": "El draft de {org} salió sin un solo iniciador. Para que las peleas pasen, alguien tiene que caminar primero al rango de daño, y ese alguien vas a tener que ser vos.",
     "weight": 5,
@@ -390,6 +396,7 @@
   {
     "id": "adc_la_soloq_a_las_cuatro",
     "category": "rol_adc",
+    "categoria": "rutina",
     "title": "Ladder a las cuatro de la mañana",
     "description": "Estás a un par de partidas del corte que te propusiste y son las cuatro. La próxima decide si cerrás la noche arriba o tirando lo que ganaste.",
     "weight": 6,
@@ -454,6 +461,7 @@
   {
     "id": "adc_el_support_nuevo",
     "category": "rol_adc",
+    "categoria": "rutina",
     "title": "Te cambian el support a mitad de split",
     "description": "El equipo mueve fichas y te ponés a jugar con un {support} nuevo con el que nunca compartiste una scrim. La sincronía de bot, que tardó un año en cuajar, vuelve a foja cero.",
     "weight": 5,
@@ -520,6 +528,7 @@
   {
     "id": "adc_los_numeros_publicos",
     "category": "rol_adc",
+    "categoria": "rutina",
     "title": "Publican tu reparto de daño todas las semanas",
     "description": "Una cuenta de estadísticas postea cada lunes el DPM y el porcentaje de daño de cada tirador de la liga. El tuyo está siempre a la vista, y jugar para el número no siempre es jugar para ganar.",
     "weight": 5,

@@ -2,6 +2,7 @@
   {
     "id": "balance_fin_de_ano",
     "category": "cierre_edad",
+    "categoria": "rutina",
     "title": "Se terminó el año",
     "description": "Cerró la temporada y tenés el receso por delante. Es la única ventana del año en la que podés elegir qué clase de jugador querés ser en el que viene.",
     "weight": 5,
@@ -66,6 +67,7 @@
   {
     "id": "revision_familiar",
     "category": "cierre_edad",
+    "categoria": "familia",
     "title": "La charla de fin de año",
     "description": "Cerró el año escolar y el de ranked. En casa se sientan a hacer las cuentas de los dos y quieren saber qué pensás hacer.",
     "weight": 5,
@@ -127,6 +129,7 @@
   {
     "id": "balance_de_temporada",
     "category": "cierre_edad",
+    "categoria": "rutina",
     "title": "El review del año",
     "description": "Última reunión del año en {org}. Sale el VOD de las jornadas malas, se habla de lo que no funcionó, y en algún momento la mesa se queda callada esperando que hables vos.",
     "weight": 6,
@@ -214,6 +217,7 @@
   {
     "id": "cuentas_de_la_carrera",
     "category": "cierre_edad",
+    "categoria": "rutina",
     "title": "Las cuentas",
     "description": "Terminó otro año. A esta edad ya no se cuenta lo que falta: se cuenta lo que hay. Un rato antes de dormir hacés el balance que no le hacés a nadie.",
     "weight": 6,
@@ -305,6 +309,7 @@
   {
     "id": "tier3_el_cierre_de_un_armado_chico",
     "category": "cierre_edad",
+    "categoria": "rutina",
     "title": "El cierre en un equipo de paso",
     "description": "No hay reunión formal ni VOD: en tier 3 el año se cierra con un audio de grupo y cada uno yéndose para su casa. Igual hay que sacar algo en limpio antes del año que viene.",
     "weight": 6,
@@ -368,6 +373,7 @@
   {
     "id": "joven_el_primer_balance",
     "category": "cierre_edad",
+    "categoria": "rutina",
     "title": "El primer balance en serio",
     "description": "Todavía sos de los más jóvenes del vestuario, pero ya jugaste una temporada entera como profesional. Es tu primer cierre de año que no es de colegio.",
     "weight": 5,
@@ -432,6 +438,7 @@
   {
     "id": "el_year_review_publico",
     "category": "cierre_edad",
+    "categoria": "prensa",
     "title": "El resumen del año que hace la prensa",
     "description": "Un medio grande de la escena publica su repaso del año de {org}, con vos incluido. Se puede leer, o se puede dejar pasar.",
     "weight": 4,
@@ -493,6 +500,7 @@
   {
     "id": "el_vestuario_que_se_arma_de_nuevo",
     "category": "cierre_edad",
+    "categoria": "vestuario",
     "title": "El vestuario que viene se arma distinto",
     "description": "Terminó la temporada y ya se sabe que el roster no va a ser el mismo el año que viene. Con {jungla} te tocó compartir todo este año; con el resto del roster que viene, hay que empezar de cero.",
     "weight": 5,
@@ -554,6 +562,7 @@
   {
     "id": "el_ano_sin_llamado",
     "category": "cierre_edad",
+    "categoria": "golpe_duro",
     "title": "Otro año y el teléfono no sonó",
     "description": "Cerraste la temporada con buen rango y ni un scout te escribió. En los foros a la gente de tu elo la fichan a los 16; vos ya casi no lo sos.",
     "weight": 5,
@@ -625,6 +634,7 @@
   {
     "id": "la_cuenta_de_los_anos",
     "category": "cierre_edad",
+    "categoria": "rutina",
     "title": "Las cuentas del año, a solas",
     "description": "Sin equipo con quien hacer el balance, lo hacés vos: cuánto subiste, cuánto dormiste, qué dejaste por el camino y qué te queda por probar antes de que la edad juegue en contra.",
     "weight": 5,

@@ -2,6 +2,7 @@
   {
     "id": "academy_offer",
     "category": "debut_academy",
+    "categoria": "oportunidad",
     "title": "Te tantea un proyecto juvenil",
     "description": "Una estructura chica de {region} está armando roster sub-18 y alguien pasó tu cuenta. Todavía no hay contrato: hay una charla y unas scrims de prueba.",
     "weight": 8,
@@ -67,6 +68,7 @@
   {
     "id": "redemption_game",
     "category": "debut_academy",
+    "categoria": "oportunidad",
     "title": "El coach te banca una más",
     "description": "Venís de un tramo feo y el staff podría sentarte. En vez de eso, {org} te pone de titular en la jornada que define la clasificación.",
     "weight": 8,
@@ -132,6 +134,7 @@
   {
     "id": "coach_demands_role",
     "category": "debut_academy",
+    "categoria": "oportunidad",
     "title": "El coach te pide otro jugador",
     "description": "En el review te dice que lo que hacés bien no es lo que el equipo necesita. Quiere que juegues más para el grupo y menos para tu línea, aunque eso te saque de lo que sabés hacer.",
     "weight": 7,

@@ -2,6 +2,7 @@
   {
     "id": "pool_estrechez",
     "category": "pool",
+    "categoria": "parche",
     "title": "Un cuchillo de un solo filo",
     "description": "Con tres campeones a mano alcanza con que te baneen o te counter-pickeen uno para dejarte sin margen. Cualquiera que te vea jugar seguido te lo va a marcar sin vueltas.",
     "weight": 6,
@@ -62,6 +63,7 @@
   {
     "id": "pool_identidad_diluida",
     "category": "pool",
+    "categoria": "parche",
     "title": "Sabés de todo un poco",
     "description": "Tenés tantos campeones a mano que nadie sabría decir cuál es tu signature. Un scout comenta que le gustaría verte especializado en uno solo.",
     "weight": 5,
@@ -122,6 +124,7 @@
   {
     "id": "pool_viento_a_favor",
     "category": "pool",
+    "categoria": "parche",
     "title": "El parche te queda como anillo al dedo",
     "description": "Tu pool es justo lo que este meta pide. Es el momento de sacarle el jugo antes de que cambie de nuevo.",
     "weight": 6,
@@ -182,6 +185,7 @@
   {
     "id": "pool_contra_la_corriente",
     "category": "pool",
+    "categoria": "parche",
     "title": "El meta no te quiere",
     "description": "Nada de lo que sabés jugar está de moda. Cada partida arranca cuesta arriba, antes incluso de que empiece.",
     "weight": 6,
@@ -242,6 +246,7 @@
   {
     "id": "pool_main_muerto",
     "category": "pool",
+    "categoria": "parche",
     "title": [
       "Tu {main} quedó a contramano",
       "El parche dejó a {main} sin lugar",
@@ -311,6 +316,7 @@
   {
     "id": "pool_main_muerto_soloq",
     "category": "pool",
+    "categoria": "parche",
     "title": [
       "Tu {main} quedó a contramano",
       "El parche dejó a {main} sin lugar",
@@ -380,6 +386,7 @@
   {
     "id": "pool_campeon_nuevo",
     "category": "pool",
+    "categoria": "parche",
     "title": [
       "Salió {campeonNuevo}",
       "{campeonNuevo} llegó con el parche",
@@ -448,6 +455,7 @@
   {
     "id": "pool_campeon_nuevo_soloq",
     "category": "pool",
+    "categoria": "parche",
     "title": [
       "Salió {campeonNuevo}",
       "{campeonNuevo} llegó con el parche",
@@ -516,6 +524,7 @@
   {
     "id": "pool_cuota_coreana",
     "category": "pool",
+    "categoria": "parche",
     "title": "La exigencia coreana",
     "description": "En los servidores surcoreanos subir de rango no alcanza: las academias piden partidas Y amplitud de pool, y la exigencia sube con el rango — Diamante pide cinco campeones, Máster ocho, Gran Máster quince.",
     "weight": 5,
@@ -579,6 +588,7 @@
   {
     "id": "pool_a_cual_le_metes",
     "category": "pool",
+    "categoria": "parche",
     "title": [
       "¿A cuál le metés estas semanas?",
       "¿Dónde ponés las horas de práctica?",
@@ -642,6 +652,7 @@
   {
     "id": "pool_el_flex_pick",
     "category": "pool",
+    "categoria": "parche",
     "title": "Un pick que se juega en dos roles",
     "description": "Sale a la luz un campeón que tu equipo puede dibujear como tuyo o como el de otra línea sin que el rival sepa hasta el último pick. Aprenderlo no suma un campeón: suma ambigüedad al draft entero.",
     "weight": 5,
@@ -704,6 +715,7 @@
   {
     "id": "pool_el_one_trick",
     "category": "pool",
+    "categoria": "parche",
     "title": "La tentación de hacerte one-trick",
     "description": "Hay un campeón de tu línea tan por encima del resto que la gente que solo lo juega a él está subiendo como si nada. La idea de tirar todo lo demás por la borda y volverte especialista te da vueltas.",
     "weight": 5,
@@ -770,6 +782,7 @@
   {
     "id": "pool_pick_de_escenario",
     "category": "pool",
+    "categoria": "parche",
     "title": "Un pick que solo funciona con equipo",
     "description": "Hay un campeón que en soloQ es una lotería, pero con cinco personas coordinadas y comunicación por voz se vuelve una máquina. El coach te lo pide para el plan de playoffs; tu ladder va a sufrir mientras lo practicás.",
     "weight": 4,

@@ -2,6 +2,7 @@
   {
     "id": "title_run",
     "category": "competicion",
+    "categoria": "oportunidad",
     "title": "{org} se prendió arriba",
     "description": "Cinco jornadas seguidas ganando y la tabla se dio vuelta. En el vestuario nadie lo dice para no romperlo, pero todos lo están pensando.",
     "weight": 5,
@@ -68,6 +69,7 @@
   {
     "id": "international_trip",
     "category": "competicion",
+    "categoria": "oportunidad",
     "title": "Se viaja",
     "description": "{org} clasificó y hay que hacer las valijas. Es la primera vez que vas a jugar contra gente que solo viste en VODs.",
     "weight": 6,
@@ -133,6 +135,7 @@
   {
     "id": "worlds_dream",
     "category": "competicion",
+    "categoria": "oportunidad",
     "title": "Esto es Worlds",
     "description": "Salís al escenario y el estadio no se parece a nada que hayas jugado. Toda la carrera apuntaba acá y ahora hay que jugar igual que siempre.",
     "weight": 4,
@@ -200,6 +203,7 @@
   {
     "id": "el_invicto_se_corta",
     "category": "competicion",
+    "categoria": "golpe_duro",
     "title": "Se cortó la racha",
     "description": "Perdieron. Nada más que eso, pero después de tantas jornadas ganando se siente distinto: el vestuario tiene que aprender de nuevo a perder sin que se le venga todo abajo.",
     "weight": 5,
@@ -263,6 +267,7 @@
   {
     "id": "el_equipo_ideal_del_split",
     "category": "competicion",
+    "categoria": "prensa",
     "title": "Te nombran en el equipo ideal del split",
     "description": "La liga publica el All-Pro Team de la temporada y tu nombre está ahí, votado entre medios y fanáticos. Es el tipo de reconocimiento que no depende de un título, pero que se siente como uno.",
     "weight": 4,
@@ -328,6 +333,7 @@
   {
     "id": "el_mapa_5_en_casa",
     "category": "competicion",
+    "categoria": "serie",
     "title": "Mapa 5, de local, con el estadio lleno",
     "description": "Se fue a la máxima y el quinto se juega en tu ciudad. El ruido no se parece a nada de las scrims: cada pelea la corea gente que pagó la entrada para verte a vos.",
     "weight": 5,
@@ -398,6 +404,7 @@
   {
     "id": "el_bye_a_semis",
     "category": "competicion",
+    "categoria": "rutina",
     "title": "Terminaron arriba y hay semana libre",
     "description": "Cerraron la fase regular en los dos primeros puestos y les toca bye a semifinales. Una semana entera sin partido oficial mientras el resto se saca chispas en cuartos.",
     "weight": 5,
@@ -464,6 +471,7 @@
   {
     "id": "la_serie_de_desempate",
     "category": "competicion",
+    "categoria": "serie",
     "title": "Un desempate por el último boleto",
     "description": "Terminaron la fase regular empatados en puntos con otro equipo por el último lugar de playoffs. Un solo partido, a muerte, para definir quién sigue y quién se va de vacaciones antes.",
     "weight": 5,
@@ -529,6 +537,7 @@
   {
     "id": "el_internacional_de_mitad_de_ano",
     "category": "competicion",
+    "categoria": "oportunidad",
     "title": "Clasificaron al torneo de mitad de año",
     "description": "Ganar el primer split del año tiene premio: dos semanas afuera midiéndose con los campeones de las otras regiones, antes de que la mayoría de la gente entienda cómo quedó el meta nuevo.",
     "weight": 5,

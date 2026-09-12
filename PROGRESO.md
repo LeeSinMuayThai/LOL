@@ -33,6 +33,41 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-12 — Fase 12b: la categoría (PLAN.md §12.1)
+
+Segunda subfase de la 12. Todo el catálogo (**220 eventos, 22 archivos**) declara ahora
+`categoria`: vocabulario fijo de 11 valores (`rutina`, `golpe_duro`, `oportunidad`, `mercado`,
+`parche`, `vestuario`, `prensa`, `familia`, `salud`, `partido`, `serie`), vive en el nuevo
+`src/data/categorias.js` (`CATEGORIAS_EVENTO`). Es un eje aditivo, distinto de `category` (19
+valores libres, tema fino) — `category` se queda: tiene un consumidor de juego real
+(`systems/temporada.js:224` filtra por `partido_postpartido`) y dos checks, borrarlo hubiera sido
+un cambio de juego silencioso, fuera de alcance.
+
+**Split de la asignación** (13 archivos con regla mecánica fija por `category` = 148 eventos, 9
+archivos donde había que leer cada evento para decidir entre `golpe_duro`/`oportunidad`/
+`vestuario`/`familia`/etc. = 72 eventos): **Gemini/agy** tomó los 13 mecánicos, **Grok** los 9 de
+criterio, cada uno con su spec propio, en paralelo (archivos disjuntos, mismo árbol). Un subagente
+Claude aparte auditó las 220 asignaciones evento por evento contra el mapa completo (no una
+muestra) antes de tocar el commit: 220/220 correctas, ningún otro campo movido, JSON válido,
+vocabulario respetado, cero commits de las CLIs.
+
+**Lado código, sin delegar** (`src/ui/formatoUi.js`): se borró `FAMILIA_POR_CATEGORIA`, la
+tabla-puente que la fase T4 dejó derivando de `category` a propósito hasta que existiera este
+campo. `familiaDeCategoria`/`rotuloDeDecision` leen `evento.categoria` directo contra la tabla
+nueva `BANNER_POR_CATEGORIA`. `serie` reusa el token `--cat-partido` y `golpe_duro` el token
+`--cat-golpe` — ningún token nuevo en `tokens.css`.
+
+**Check nuevo** en `validate.js`: "Todo evento del catálogo declara categoria válida (PLAN.md
+§12.1)". Verificado en rojo primero (regla de proceso 7): con los 220 campos `categoria`
+stasheados, `--solo="declara categoria"` falló (`scout_call: sin categoria`); restaurados,
+pasa. Suite completa después de todo el cambio: **174/174 OK, 0 FAIL** (173 + el check nuevo).
+`simulate.js 1500 60 todas`: **0 crashes** en las 4500 carreras (3 estrategias).
+
+**Prueba anti-T1**: sonda de 40 seeds (`finAnticipado:splitCount:soloqElo` tras correr
+`avanzarSplitAuto` hasta terminar o 60 splits) comparada entre el HEAD previo (`c9e9538`, sin
+`categoria`) y el árbol con 12b — **huella idéntica en las 40**. Esperable: todo lo que se tocó es
+JSON de datos y una capa de UI que no importa `systems/`; ningún camino nuevo consume `rng`.
+
 ### 2026-09-12 — Fase 12a: `validate.js --rapido/--completo` (cierra D32)
 
 Primera subfase de la 12 (`PLAN.md` "La jerarquía de la decisión"). `src/dev/validate.js` tardaba

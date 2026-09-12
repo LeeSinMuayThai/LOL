@@ -2,6 +2,7 @@
   {
     "id": "portada_del_ano",
     "category": "drama_prensa",
+    "categoria": "prensa",
     "title": "Te ponen en la lista",
     "description": "Sale la lista de los mejores del mundo del año y estás ahí, con foto y todo. El grupo de la organización explota, tu madre te manda una captura, y de golpe cada partido tuyo es 'a ver si lo mantiene'. La atención no es gratis.",
     "weight": 5,
@@ -61,6 +62,7 @@
   {
     "id": "el_pibe_que_te_quiere_el_puesto",
     "category": "identidad",
+    "categoria": "golpe_duro",
     "title": "El que viene por tu silla",
     "description": "En la liga de tu región hay un pibe de 17 al que ya le dicen 'el próximo vos'. Las cuentas de highlights lo comparan con tu año de debut. Te lo cruzás en un scrim y te mira como si el puesto ya fuera suyo.",
     "weight": 4,

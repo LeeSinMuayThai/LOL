@@ -2,6 +2,7 @@
   {
     "id": "sponsor_offer",
     "category": "negocios",
+    "categoria": "mercado",
     "title": "Te quiere una marca",
     "description": "Una marca de periféricos te ofrece contrato de imagen. La plata está bien; la letra chica pide cuatro publicaciones por mes y aparecer en lo que te digan.",
     "weight": 7,
@@ -63,6 +64,7 @@
   {
     "id": "streaming_paralelo",
     "category": "negocios",
+    "categoria": "mercado",
     "title": "El streaming te deja más que el sueldo base",
     "description": "Entre donaciones y suscriptores, el canal te está dejando una plata que hace un año ni soñabas. El problema es que las horas de stream y las horas de práctica compiten por el mismo espacio del día.",
     "weight": 5,
@@ -124,6 +126,7 @@
   {
     "id": "el_agente_te_llama",
     "category": "negocios",
+    "categoria": "mercado",
     "title": "Tu representante te propone adelantar la renegociación",
     "description": "Todavía te queda contrato, pero tu representante te llama con un plan: abrir la charla ahora, con el mercado a tu favor, en vez de esperar al último año como haría cualquiera.",
     "weight": 4,
@@ -186,6 +189,7 @@
   {
     "id": "el_regalo_del_sponsor",
     "category": "negocios",
+    "categoria": "mercado",
     "title": "Todo el setup gratis, con una condición",
     "description": "Una marca de periféricos te ofrece renovar todo tu equipo sin costo — mouse, teclado, silla — a cambio de exclusividad: nada de otras marcas en cámara, ni siquiera las que ya usabas por gusto.",
     "weight": 4,
@@ -246,6 +250,7 @@
   {
     "id": "la_marca_propia",
     "category": "negocios",
+    "categoria": "mercado",
     "title": "Te ofrecen sacar tu propia línea de merch",
     "description": "Una empresa de indumentaria te propone una cápsula con tu nombre y tu logo: remeras, buzos, una gorra. Vos ponés la cara y aprobás diseños; ellos ponen la fábrica y se llevan la mayor parte.",
     "weight": 4,
@@ -312,6 +317,7 @@
   {
     "id": "el_showmatch_de_exhibicion",
     "category": "negocios",
+    "categoria": "oportunidad",
     "title": "Te invitan a un showmatch",
     "description": "Un evento de una marca junta ex jugadores, streamers y un par de pros en activo para un show a beneficio. Pagan bien por un día, se transmite a mucha gente, y no cuenta para nada competitivo.",
     "weight": 5,
@@ -373,6 +379,7 @@
   {
     "id": "el_sponsor_de_cripto",
     "category": "negocios",
+    "categoria": "mercado",
     "title": "Una plataforma de cripto te ofrece una fortuna",
     "description": "El número que ponen sobre la mesa es más de lo que ganás en un año con el club. La plataforma tiene mala prensa, un par de influencers que la promocionaron quedaron escrachados, y a nadie le consta que sea del todo legal.",
     "weight": 4,
@@ -439,6 +446,7 @@
   {
     "id": "la_clausula_de_imagen_larga",
     "category": "negocios",
+    "categoria": "mercado",
     "title": "El contrato de imagen a cuatro años",
     "description": "Una marca grande te ofrece un acuerdo de imagen largo: cuatro años, plata muy buena, estabilidad. La letra chica te ata la cara a esa marca aunque cambies de club, de región o de rumbo.",
     "weight": 4,

@@ -2,6 +2,7 @@
   {
     "id": "el_rookie_que_no_opina",
     "category": "identidad",
+    "categoria": "vestuario",
     "title": "En la reunión táctica nadie te pregunta nada",
     "description": "El staff arma el plan de la próxima serie hablando entre ellos y con los titulares de siempre. Vos escuchás desde el costado, con una idea que quizás valga la pena decir en voz alta.",
     "weight": 5,
@@ -66,6 +67,7 @@
   {
     "id": "ya_no_sos_la_novedad",
     "category": "identidad",
+    "categoria": "vestuario",
     "title": "Dejaste de ser el nuevo",
     "description": "Nadie te felicita más por cosas básicas. El equipo espera de vos lo mismo que de cualquier titular — ni el crédito extra del debutante, ni la paciencia de los primeros meses.",
     "weight": 5,
@@ -128,6 +130,7 @@
   {
     "id": "te_vienen_a_preguntar_a_vos",
     "category": "identidad",
+    "categoria": "vestuario",
     "title": "Un pibe del roster te pide consejo",
     "description": "El más joven del equipo se acerca antes de una decisión importante y te pregunta a vos, no al coach. Sin darte cuenta, te volviste alguien a quien el vestuario le pide guía.",
     "weight": 5,
@@ -191,6 +194,7 @@
   {
     "id": "el_peso_de_ser_la_cara",
     "category": "identidad",
+    "categoria": "prensa",
     "title": "Todas las notas te buscan a vos primero",
     "description": "Ganen o pierdan, el club te pone a vos frente a la prensa. Sos la cara del equipo, y eso significa que también sos el primero al que le preguntan qué salió mal.",
     "weight": 4,
@@ -254,6 +258,7 @@
   {
     "id": "el_rookie_que_pidieron_de_arriba",
     "category": "identidad",
+    "categoria": "vestuario",
     "title": "Te subieron por encima de un veterano",
     "description": "La dirigencia decidió que jugás vos y no el titular de los últimos tres años. Nadie te preguntó, y el vestuario lo sabe: sos el pibe al que le hicieron lugar sacando a un querido.",
     "weight": 5,
@@ -319,6 +324,7 @@
   {
     "id": "el_titular_con_un_rookie_detras",
     "category": "identidad",
+    "categoria": "golpe_duro",
     "title": "El club fichó a una promesa para tu puesto",
     "description": "Anunciaron un rookie con mucho ruido, del mismo rol que vos. Oficialmente es \"para tener profundidad\". Vos entendés lo que significa: tu silla dejó de ser tuya sola.",
     "weight": 5,
@@ -389,6 +395,7 @@
   {
     "id": "el_referente_y_el_coach_nuevo",
     "category": "identidad",
+    "categoria": "vestuario",
     "title": "Llegó un coach que quiere refundar todo",
     "description": "El staff nuevo trae ideas fuertes y poca paciencia con \"como se hacían las cosas\". Te busca a vos primero: si el referente del vestuario lo respalda, el resto lo sigue.",
     "weight": 5,
@@ -456,6 +463,7 @@
   {
     "id": "la_franquicia_y_la_reconstruccion",
     "category": "identidad",
+    "categoria": "oportunidad",
     "title": "El club quiere refundar el proyecto sobre vos",
     "description": "La dirigencia te sienta y te lo dice sin vueltas: quieren rearmar el equipo entero alrededor tuyo para los próximos años. Eso incluye dejar ir a dos compañeros con los que ganaste todo.",
     "weight": 4,

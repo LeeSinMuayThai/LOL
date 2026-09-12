@@ -2,6 +2,7 @@
   {
     "id": "el_clasico_de_siempre",
     "category": "partido_clasico",
+    "categoria": "partido",
     "title": "El clásico de siempre",
     "description": "Contra {rivalDeLaFecha} no hace falta explicarle a nadie por qué este partido importa más que los otros ocho de la temporada.",
     "weight": 7,
@@ -67,6 +68,7 @@
   {
     "id": "la_revancha",
     "category": "partido_clasico",
+    "categoria": "partido",
     "title": "La revancha",
     "description": "{rivalDeLaFecha} fue el equipo que te sacó de la última serie que jugaste. Hoy es la primera vez que te los volvés a cruzar.",
     "weight": 7,
@@ -129,6 +131,7 @@
   {
     "id": "presentarse_ante_los_viejos",
     "category": "partido_clasico",
+    "categoria": "partido",
     "title": "Presentarte ante los que te dejaron ir",
     "description": "Del otro lado está {rivalDeLaFecha}, la organización que decidió no renovarte. {jungla} te dijo antes del partido que sabe lo que este cruce significa para vos.",
     "weight": 6,
@@ -192,6 +195,7 @@
   {
     "id": "el_cruce_de_generacion",
     "category": "partido_clasico",
+    "categoria": "partido",
     "title": "Cruce de generación",
     "description": "Del otro lado juega alguien que debutó el mismo año que vos. Todos los que siguen ambas carreras van a comparar esta noche.",
     "weight": 6,
@@ -253,6 +257,7 @@
   {
     "id": "les_prometiste_algo",
     "category": "partido_clasico",
+    "categoria": "partido",
     "title": "Les prometiste algo",
     "description": "Antes del partido le dijiste a {jungla} que hoy no perdían, así, en esos términos. Ahora hay que sostenerlo en la práctica.",
     "weight": 5,
@@ -316,6 +321,7 @@
   {
     "id": "ese_nombre_en_el_otro_lado",
     "category": "partido_clasico",
+    "categoria": "partido",
     "title": "Ese nombre en el otro lado",
     "description": "Alguien de tu propia generación juega hoy en las filas de {rivalDeLaFecha}, y encima es el equipo que ya te sacó una vez de playoffs.",
     "weight": 5,
@@ -378,6 +384,7 @@
   {
     "id": "el_historial_en_contra",
     "category": "partido_clasico",
+    "categoria": "partido",
     "title": "Nunca les ganaste",
     "description": "Contra {rivalDeLaFecha} tu récord es feo: los cruzaste varias veces y no ganaste ninguna. En la previa alguien lo saca en un gráfico y se hace tendencia.",
     "weight": 5,
@@ -445,6 +452,7 @@
   {
     "id": "el_pique_en_redes",
     "category": "partido_clasico",
+    "categoria": "partido",
     "title": "El ida y vuelta en redes",
     "description": "Alguien de {rivalDeLaFecha} tiró una chicana en la previa y te etiquetó. Todo el mundo espera tu respuesta antes del partido.",
     "weight": 5,
@@ -507,6 +515,7 @@
   {
     "id": "el_que_te_reemplazo",
     "category": "partido_clasico",
+    "categoria": "partido",
     "title": "El que ocupó tu silla",
     "description": "En {rivalDeLaFecha} juega el que trajeron para tu rol cuando a vos te soltaron. Toda la previa gira alrededor de esa comparación.",
     "weight": 5,
@@ -569,6 +578,7 @@
   {
     "id": "el_rival_en_su_pico",
     "category": "partido_clasico",
+    "categoria": "partido",
     "title": "Tu rival de camada, en su mejor momento",
     "description": "El que debutó tu mismo año viene de dos MVPs seguidos y toda la prensa lo pone por encima tuyo por primera vez. Hoy los cruzás.",
     "weight": 5,
@@ -633,6 +643,7 @@
   {
     "id": "el_clasico_sin_nada_en_juego",
     "category": "partido_clasico",
+    "categoria": "partido",
     "title": "Clásico, pero la tabla ya está resuelta",
     "description": "Contra {rivalDeLaFecha} es siempre especial, pero esta vez ninguno de los dos se juega nada en la tabla. Es orgullo puro, y el orgullo a veces distrae.",
     "weight": 4,
@@ -696,6 +707,7 @@
   {
     "id": "revancha_de_la_final",
     "category": "partido_clasico",
+    "categoria": "partido",
     "title": "Los de la final perdida",
     "description": "{rivalDeLaFecha} te ganó la última final que jugaste, en su casa, con el trofeo en la mesa. Hoy es un partido de fase regular, pero para vos nunca va a ser solo eso.",
     "weight": 5,
@@ -761,6 +773,7 @@
   {
     "id": "sin_calentar_el_clasico",
     "category": "partido_clasico",
+    "categoria": "partido",
     "title": "Bajarle el precio al clásico, de adentro",
     "description": "El vestuario ya está encendido con el cruce contra {rivalDeLaFecha} tres días antes. {jungla} habla de nada más. Vos sabés que llegar así de caliente al viernes cansa.",
     "weight": 4,

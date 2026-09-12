@@ -2,6 +2,7 @@
   {
     "id": "mid_la_cara_del_equipo",
     "category": "rol_mid",
+    "categoria": "rutina",
     "title": "Te toca hablar por todos",
     "description": "El equipo de prensa de {org} te elige a vos para la conferencia post-partido. Ganaron, pero un compañero jugó horrible y todos lo saben.",
     "weight": 5,
@@ -64,6 +65,7 @@
   {
     "id": "mid_roamear_o_no",
     "category": "rol_mid",
+    "categoria": "rutina",
     "title": "Tu línea está ganada",
     "description": "Le sacaste ventaja a tu rival de línea y tenés el mapa abierto para ir a ayudar a otro lado. Cada minuto que te vas, tu propia línea deja de crecer.",
     "weight": 6,
@@ -126,6 +128,7 @@
   {
     "id": "mid_el_priority_de_la_liga",
     "category": "rol_mid",
+    "categoria": "rutina",
     "title": "El early del equipo depende de tu prioridad",
     "description": "El plan de {org} arranca por la jungla, y para que funcione vos tenés que ganar el push de la línea todos los partidos. Si tu rival empuja primero, el jungla queda sin nada que hacer.",
     "weight": 6,
@@ -192,6 +195,7 @@
   {
     "id": "mid_el_confort_baneado",
     "category": "rol_mid",
+    "categoria": "rutina",
     "title": "Te banean el confort toda la serie",
     "description": "El rival de {org} dedicó dos baneos por partido a sacarte tus dos campeones de siempre. Toda la serie la vas a jugar con la tercera y la cuarta opción de tu pool.",
     "weight": 5,
@@ -258,6 +262,7 @@
   {
     "id": "mid_seguir_al_jungla",
     "category": "rol_mid",
+    "categoria": "rutina",
     "title": "Tu jungla te quiere siempre arriba",
     "description": "El jungla de {org} vive del lado de arriba del mapa y te pide que lo sigas partido tras partido. Mientras tanto tu bot se ahoga sin que nadie los mire.",
     "weight": 5,
@@ -325,6 +330,7 @@
   {
     "id": "mid_el_win_condition",
     "category": "rol_mid",
+    "categoria": "rutina",
     "title": "Vos sos la condición de victoria",
     "description": "El equipo de {org} armó la composición para diferir todo al minuto treinta y ponerte el partido en las manos. Si la pelea final la ganás, sos un héroe; si no, fue tu partido para perder.",
     "weight": 5,
@@ -391,6 +397,7 @@
   {
     "id": "mid_el_duelo_de_pantalla",
     "category": "rol_mid",
+    "categoria": "rutina",
     "title": "Cada mid es un 1v1 de ego",
     "description": "En soloQ el matchup de mid se siente personal: el otro te escribe en el chat, te hace emotes y el partido se convierte en quién le gana a quién, aunque haya otros ocho jugadores.",
     "weight": 6,
@@ -455,6 +462,7 @@
   {
     "id": "mid_el_prodigio_que_sube",
     "category": "rol_mid",
+    "categoria": "rutina",
     "title": "El pibe de la academia que te apuntan",
     "description": "Un mid de dieciséis de la academia de {org} está haciendo números absurdos en la liga de desarrollo y en la prensa ya lo ponen como tu reemplazo natural para el año que viene.",
     "weight": 5,
@@ -521,6 +529,7 @@
   {
     "id": "mid_el_flash_por_el_equipo",
     "category": "rol_mid",
+    "categoria": "rutina",
     "title": "Quemar el flash por una jugada ajena",
     "description": "El jungla y el top están por forzar arriba y necesitan que gastes tu flash en el combo para asegurarlo. Si lo hacés, quedás sin escape en tu línea diez minutos.",
     "weight": 6,

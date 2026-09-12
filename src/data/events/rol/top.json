@@ -2,6 +2,7 @@
   {
     "id": "top_splitpush_plan",
     "category": "rol_top",
+    "categoria": "rutina",
     "title": "El plan sos vos, solo",
     "description": "El coach de {org} arma la jornada alrededor tuyo: split push todo el partido mientras el resto sostiene un 4v5 en el resto del mapa.",
     "weight": 6,
@@ -66,6 +67,7 @@
   {
     "id": "top_recorte_sin_contexto",
     "category": "rol_top",
+    "categoria": "rutina",
     "title": "El streamer te sacó de contexto",
     "description": "Un streamer grande recorta tu peor teamfight de las últimas semanas y lo sube sin la jugada anterior que la explica. El clip se ve más que cualquier cosa buena que hiciste en el año.",
     "weight": 5,
@@ -129,6 +131,7 @@
   {
     "id": "top_weakside_de_por_vida",
     "category": "rol_top",
+    "categoria": "rutina",
     "title": "Siempre te toca el lado débil",
     "description": "El plan de {org} es el mismo todos los partidos: la jungla y los recursos van abajo, y vos aguantás arriba con lo justo. Sos bueno, pero nadie lo ve porque nunca te dejan jugar para ganar.",
     "weight": 6,
@@ -196,6 +199,7 @@
   {
     "id": "top_te_contrapickean_siempre",
     "category": "rol_top",
+    "categoria": "rutina",
     "title": "Te leen el pick antes de que lo bloquees",
     "description": "El rival de {org} de esta semana tiene lado azul y ya avisó en prensa que va a esperar tu campeón para contrapickearlo. Tu pool quedó a la vista.",
     "weight": 5,
@@ -261,6 +265,7 @@
   {
     "id": "top_el_tp_ahora",
     "category": "rol_top",
+    "categoria": "rutina",
     "title": "La llamada del teleport",
     "description": "Abajo se está por armar una pelea 2v2 y tenés el TP listo. Si bajás, tu ola choca en torre y perdés medio nivel; si te quedás, el equipo pelea en desventaja.",
     "weight": 6,
@@ -327,6 +332,7 @@
   {
     "id": "top_tanque_o_carry",
     "category": "rol_top",
+    "categoria": "rutina",
     "title": "El meta quiere que seas muro",
     "description": "El parche empujó a los tanques a la cima de la línea y el coach de {org} te quiere ahí. Vos sos carry top de toda la vida: la mitad de tu valor está en llevarte partidos al hombro.",
     "weight": 5,
@@ -394,6 +400,7 @@
   {
     "id": "top_solo_en_el_mapa",
     "category": "rol_top",
+    "categoria": "rutina",
     "title": "Media hora sin que nadie te nombre",
     "description": "Llevás treinta minutos jugando la línea más aislada del mapa. El comm habla de abajo, de la jungla, de los objetivos: de tu lado del mapa, nadie dice una palabra.",
     "weight": 5,
@@ -461,6 +468,7 @@
   {
     "id": "top_el_1v2_constante",
     "category": "rol_top",
+    "categoria": "rutina",
     "title": "El jungla rival vive en tu línea",
     "description": "Tres partidas seguidas de soloQ el jungla enemigo aparece arriba antes del minuto cuatro. Podés seguir jugando parado como si nada o cambiarte el estilo entero.",
     "weight": 6,
@@ -526,6 +534,7 @@
   {
     "id": "top_el_nombre_de_la_linea",
     "category": "rol_top",
+    "categoria": "rutina",
     "title": "Enfrente está el que reinó la línea diez años",
     "description": "El top de {org} rival esta semana es un nombre que fue el mejor del mundo en tu puesto durante media década. Ganarle es un titular; perder es lo que todos esperan.",
     "weight": 5,

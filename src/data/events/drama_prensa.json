@@ -2,6 +2,7 @@
   {
     "id": "team_drama",
     "category": "drama_prensa",
+    "categoria": "prensa",
     "title": "Se pudrió el vestuario",
     "description": "{jungla} se agarró con el staff en pleno review y se fue dando un portazo. El grupo de {org} lleva dos días sin que nadie escriba.",
     "weight": 8,
@@ -66,6 +67,7 @@
   {
     "id": "media_meme",
     "category": "drama_prensa",
+    "categoria": "prensa",
     "title": "Te hicieron un meme",
     "description": "Un emote tuyo después de una muerte tonta se recorta y se vuelve una plantilla. En dos días lo usa gente que no sabe quién sos.",
     "weight": 7,
@@ -129,6 +131,7 @@
   {
     "id": "old_rival",
     "category": "drama_prensa",
+    "categoria": "prensa",
     "title": [
       "Otra vez {rival} enfrente",
       "De nuevo cara a cara con {rival}",
@@ -198,6 +201,7 @@
   {
     "id": "transfer_rumor",
     "category": "drama_prensa",
+    "categoria": "prensa",
     "title": "Suena tu nombre en el mercado",
     "description": "Un periodista tira que {org} te escucharía ofertas. No sabés si es humo o si te lo están avisando por elevación.",
     "weight": 6,
@@ -263,6 +267,7 @@
   {
     "id": "el_tweet_borrado",
     "category": "drama_prensa",
+    "categoria": "prensa",
     "title": "El tweet que borraste tarde",
     "description": "Posteaste algo caliente sobre un arbitraje en pleno enojo post-derrota y lo borraste veinte minutos después. Veinte minutos alcanzan: ya hay captura y ya circula.",
     "weight": 6,
@@ -328,6 +333,7 @@
   {
     "id": "la_frase_fuera_de_contexto",
     "category": "drama_prensa",
+    "categoria": "prensa",
     "title": "Te recortaron una frase",
     "description": "Diste una nota larga y matizada sobre el nivel de la liga. El título que salió agarra seis palabras del medio y las convierte en un desprecio a media escena.",
     "weight": 6,
@@ -390,6 +396,7 @@
   {
     "id": "el_stream_del_companero",
     "category": "drama_prensa",
+    "categoria": "prensa",
     "title": "{adc} habló de más en su stream",
     "description": "En vivo, sin filtro, {adc} contó una interna de una scrim y te nombró en el medio de una anécdota que no te deja bien parado. Ya está clippeado.",
     "weight": 6,
@@ -454,6 +461,7 @@
   {
     "id": "el_documental_interno",
     "category": "drama_prensa",
+    "categoria": "prensa",
     "title": "Filman un detrás de escena del equipo",
     "description": "{org} arregló con una productora una serie de documentales del split: cámaras en la gaming house, en las reuniones tácticas, en los viajes. Sos uno de los que más pantalla van a tener.",
     "weight": 5,

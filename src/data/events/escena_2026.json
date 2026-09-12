@@ -2,6 +2,7 @@
   {
     "id": "first_selection",
     "category": "competicion",
+    "categoria": "serie",
     "title": "¿Lado, o quién dibujea primero?",
     "description": "Ganaron el sorteo. Con la regla nueva de este año no elegís las dos cosas: si te quedás con el lado, el rival decide el orden de pick; si pedís dibujear primero, ellos eligen de qué lado juegan. El capitán te pregunta qué priorizás.",
     "weight": 5,
@@ -68,6 +69,7 @@
   {
     "id": "el_burn_de_cuarenta",
     "category": "competicion",
+    "categoria": "serie",
     "title": "A partir del mapa 4 no queda casi nada",
     "description": "Con Fearless activo toda la serie, entre las dos series pueden quedar hasta cuarenta campeones quemados. El coach te avisa antes del mapa: lo que tenías pensado para cerrar la serie ya no está disponible.",
     "weight": 4,
@@ -137,6 +139,7 @@
   {
     "id": "la_camada_que_se_retira",
     "category": "declive",
+    "categoria": "golpe_duro",
     "title": "Se retira toda una generación",
     "description": "Tres veteranos de tu misma camada —de otros equipos, carreras de diez, doce años— anuncian el retiro la misma semana. Un periodista te pregunta, sin filtro, si vos también lo estás pensando.",
     "weight": 4,
@@ -198,6 +201,7 @@
   {
     "id": "el_sueldo_del_companero",
     "category": "negocios",
+    "categoria": "vestuario",
     "title": "Se filtró cuánto cobra tu compañero",
     "description": "Un leak de sueldos circula por Twitter y ahí aparece: uno de tu roster cobra bastante más que vos, con un rendimiento parecido al tuyo esta temporada. Nadie lo dijo en voz alta todavía, pero todos ya lo vieron.",
     "weight": 5,
@@ -261,6 +265,7 @@
   {
     "id": "el_servicio_que_se_viene",
     "category": "identidad",
+    "categoria": "salud",
     "title": "El servicio militar se acerca",
     "description": "Tenés que enlistarte antes de los 28 —hasta los 30 si sos figura de élite reconocida—, dieciocho a veintiún meses fuera del circuito. Nadie te obliga a decidir hoy, pero cuanto más lo pateás, menos margen te queda para elegir el momento.",
     "weight": 4,
@@ -323,6 +328,7 @@
   {
     "id": "el_all_star_del_ano",
     "category": "identidad",
+    "categoria": "prensa",
     "title": "Te votaron para el All-Star",
     "description": "Los fans de tu región te eligieron para el evento de fin de año: showmatches, modos raros, un 1v1 con micrófono abierto. Es un premio a la popularidad más que al nivel, y se transmite a todo el mundo.",
     "weight": 4,
@@ -392,6 +398,7 @@
   {
     "id": "el_superteam_que_se_rumorea",
     "category": "negocios",
+    "categoria": "mercado",
     "title": "Se rumorea un superequipo y aparece tu nombre",
     "description": "Un club con plata fresca está juntando figuras de varios equipos para el año que viene. En las listas que circulan, tu nombre aparece como uno de los apuntados para completar el proyecto.",
     "weight": 5,
@@ -455,6 +462,7 @@
   {
     "id": "la_regla_nueva_de_la_liga",
     "category": "identidad",
+    "categoria": "parche",
     "title": "La liga cambia el reglamento a mitad de año",
     "description": "Anuncian ajustes para el segundo split: más Bo activos con Fearless, un formato de playoffs distinto y una tuerca nueva en los cupos de import. Todos arrancan de cero a entender las implicancias.",
     "weight": 5,
@@ -520,6 +528,7 @@
   {
     "id": "el_pico_historico_de_audiencia",
     "category": "competicion",
+    "categoria": "prensa",
     "title": "Tu serie rompió el récord de audiencia de la región",
     "description": "El partido que jugaste anoche fue el más visto en la historia de la liga. Los números salen en todos lados y, de golpe, mucha gente que nunca te vio jugar sabe quién sos.",
     "weight": 4,

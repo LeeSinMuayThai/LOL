@@ -5,48 +5,42 @@
 import { hashCadena } from '../core/numeros.js';
 
 // --- La categoría del evento → familia de banner ---------------------------
-// Medido sobre `src/data/events/**/*.json` el 2026-09-04 (no asumido): 18
-// valores reales de `category` en 21 archivos — no los "21 valores" que
-// decía una versión vieja de PLAN.md, esa cifra confundía archivos con
-// valores distintos. Se agrupan acá a 11 familias sobre los tokens
-// `--cat-*` que T0 dejó escritos. La fase 12 reemplaza esta tabla-puente
-// por un campo `categoria` declarado en el JSON con su propio check
-// estático — hasta entonces, esto deriva.
-const FAMILIA_POR_CATEGORIA = {
-  rol_top: { label: 'Tu línea', token: 'rutina' },
-  rol_jungla: { label: 'Tu línea', token: 'rutina' },
-  rol_mid: { label: 'Tu línea', token: 'rutina' },
-  rol_adc: { label: 'Tu línea', token: 'rutina' },
-  rol_support: { label: 'Tu línea', token: 'rutina' },
-  partido_clasico: { label: 'Partido', token: 'partido' },
-  partido_dentro_del_mapa: { label: 'Partido', token: 'partido' },
-  partido_postpartido: { label: 'Partido', token: 'partido' },
-  partido_presion: { label: 'Partido', token: 'partido' },
-  identidad: { label: 'Identidad', token: 'rutina' },
-  soloq_precarrera: { label: 'SoloQ', token: 'oportunidad' },
-  debut_academy: { label: 'Academia', token: 'oportunidad' },
-  competicion: { label: 'Competencia', token: 'oportunidad' },
-  drama_prensa: { label: 'Prensa', token: 'prensa' },
-  negocios: { label: 'Negocios', token: 'mercado' },
-  pool: { label: 'Pool', token: 'parche' },
-  salud_vida: { label: 'Salud', token: 'salud' }
-  // `cierre_edad` no entra acá a propósito: `pesoDeDecision` la intercepta
-  // antes (es peso `cierre`, con su propio rótulo "Fin de año") — un evento
-  // de cierre no compite por atención con el resto de las categorías.
+// Fase 12 (PLAN.md §12.1): todo evento del catálogo declara `categoria`,
+// vocabulario fijo de 11 valores, con su propio check estático. Reemplaza
+// la tabla-puente que esta fase tenía (derivaba de `category`, 19 valores
+// libres — ese campo se queda en el JSON para su otro consumidor real,
+// `systems/temporada.js`, pero la UI ya no lo lee).
+//
+// `serie` reusa el token `partido` (mismo rojo LoL) y `golpe_duro` el token
+// `golpe`: son los 10 `--cat-*` que ya existían en `tokens.css` — un token
+// nuevo por un color repetido sería ruido (decisión de estructura de la
+// fase 12).
+const BANNER_POR_CATEGORIA = {
+  rutina: { label: 'La semana', token: 'rutina' },
+  golpe_duro: { label: 'Golpe duro', token: 'golpe' },
+  oportunidad: { label: 'Te llamaron', token: 'oportunidad' },
+  mercado: { label: 'Mercado de pases', token: 'mercado' },
+  parche: { label: 'Parche', token: 'parche' },
+  vestuario: { label: 'Vestuario', token: 'vestuario' },
+  prensa: { label: 'Sala de prensa', token: 'prensa' },
+  familia: { label: 'En tu casa', token: 'familia' },
+  salud: { label: 'El cuerpo', token: 'salud' },
+  partido: { label: 'Partido', token: 'partido' },
+  serie: { label: 'Serie', token: 'partido' }
 };
 
 const FAMILIA_DEFECTO = { label: 'Decisión', token: 'rutina' };
 
 // Decisiones que no vienen de `systems/events.js` (fecha marcada, por
 // ejemplo) no traen `datos.evento` — `decisionDesdeEvento` es la única que
-// arma `datos: { evento }`. Sin el evento no hay `category` que leer: cae
+// arma `datos: { evento }`. Sin el evento no hay `categoria` que leer: cae
 // al rótulo genérico, que es exactamente lo que tenía toda decisión antes
 // de esta fase. No es un bug — es el límite real de "T4 no toca motor".
-export function familiaDeCategoria(category) {
-  if (!category) {
+export function familiaDeCategoria(categoria) {
+  if (!categoria) {
     return FAMILIA_DEFECTO;
   }
-  return FAMILIA_POR_CATEGORIA[category] ?? FAMILIA_DEFECTO;
+  return BANNER_POR_CATEGORIA[categoria] ?? FAMILIA_DEFECTO;
 }
 
 // --- Fuerza relativa de un rival, en palabras (T5, reusada en T6) ----------
@@ -85,7 +79,7 @@ export function rotuloDeDecision(decision, state) {
   if (peso === 'cierre') {
     return { label: 'Fin de año', token: 'rutina' };
   }
-  const categoria = decision?.datos?.evento?.category ?? null;
+  const categoria = decision?.datos?.evento?.categoria ?? null;
   if (categoria) {
     return familiaDeCategoria(categoria);
   }

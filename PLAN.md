@@ -32,7 +32,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **9W** | **El mejor del mundo**: ranking vivo de los mejores del momento (Top 5 a la derecha siempre, Top 20 al cierre de temporada). Se entra y se sale por mérito, rota mucho, de cualquier edad; distinto de los rivales de generación. Cero RNG (determinista por `hashCadena`) | ✅ **cerrada** (9Wa→9Wd). Ranking en el estado (r(nivel,rank)=0,96, cero-stream) + 6 ganchos (valor de mercado, piso de franquicia, legado, ficha, marcas/momento/eventos, `rivales[].puntaje` vivo) + pantalla (panel Top 5 permanente + reveal del Top 20 en el feed, con "quedaste #23") + calibrado (§9W.6: entrás al Top 20 en el 51% de las carreras con éxito, ~1% de las lavadas; rival de generación ~37%). Ver §9W |
 | **10** | El final: retiro emergente + la tarjeta de legado | ✅ **10a** (el retiro real, ver §10.1) · **10b** ya estaba cerrada desde 9R5b · **10c** (lesiones + servicio militar, ver §10.4) — cierra la fase. **10d** (calibrar) no hizo falta como commit aparte: los números de 10a/10c ya caen en banda a la primera medición |
 | **11** | El año: calendario, la nota de la temporada, el archirrival | ✅ **cerrada** (§11.1+§11.2, cierra D8). El archirrival corre su carrera (contador en la ficha) y el cierre de edad tiene nota (0-10), titular por peso emocional (10 tipos + racha para condiciones sostenidas) y 6 viñetas fijas, reemplazando el diff plano de antes. Ver `PROGRESO.md` |
-| **12** | La jerarquía de la decisión: categorías, rareza, consecuencia previa, el dado | 🔶 **12a** (`validate.js --rapido/--completo`, cierra D32) · faltan 12b→12f |
+| **12** | La jerarquía de la decisión: categorías, rareza, consecuencia previa, el dado | 🔶 **12a** (`validate.js --rapido/--completo`, cierra D32) · **12b** (`categoria` en los 220 eventos + `formatoUi.js` + check) · faltan 12c→12f |
 | **13** | Contenido a escala (150+ opciones) | ⬜ |
 | **P** | Publicar: build, guardado en el navegador, seed en la URL, el repo y el host | 🔶 **build y pre-flight hechos** (P.7, P.10) · D28 cerrada · falta **P.2, el guardado**, que es el último bloqueante |
 
@@ -3925,7 +3925,7 @@ te dice qué se juega el año que viene.
 
 ## 12.1 — La categoría (dato, no código)
 
-Cada evento declara `categoria` en su JSON. La UI la pinta como banner con color y tono:
+✅ **Cerrada en 12b.** Cada evento declara `categoria` en su JSON. La UI la pinta como banner con color y tono:
 
 | id | Color | Ejemplo de banner |
 |---|---|---|
@@ -3941,7 +3941,22 @@ Cada evento declara `categoria` en su JSON. La UI la pinta como banner con color
 | `partido` | rojo LoL | `SE VIENE {rival}` |
 | `serie` | rojo LoL | `SEMIFINAL · MAPA 4` |
 
-Un check estático exige `categoria` en todo evento del catálogo.
+Un check estático exige `categoria` en todo evento del catálogo (verificado en rojo contra la
+data sin el campo, regla de proceso 7, antes de commitear).
+
+Vocabulario en `src/data/categorias.js` (`CATEGORIAS_EVENTO`), fuente única para el check y para el
+mapa de banner de `formatoUi.js`. `serie` reusa el token `--cat-partido` y `golpe_duro` el token
+`--cat-golpe` (decisión de estructura: un token nuevo por un color repetido sería ruido) — los 10
+`--cat-*` de `tokens.css` no crecieron. `formatoUi.js` dejó de derivar de `category` (19 valores
+libres, que se queda en el JSON por su otro consumidor real, `systems/temporada.js`) y lee
+`evento.categoria` directo; se borró la tabla-puente `FAMILIA_POR_CATEGORIA` de la fase T4.
+
+**220/220 eventos** con `categoria` correcta: 148 por regla mecánica fija (13 archivos, un
+`category` = una `categoria`, delegado a **Gemini/agy**) y 72 por mapa explícito id→categoria (9
+archivos donde había que leer cada evento, delegado a **Grok**) — ambos auditados por un subagente
+Claude aparte contra el mapa completo antes de este commit. Prueba anti-T1: huella
+`finAnticipado:splitCount:soloqElo` de 40 seeds, idéntica entre el HEAD previo y el árbol con 12b
+— nada de esto corrió el stream de RNG.
 
 ## 12.2 — El peso visual sale del motor (cero código nuevo)
 

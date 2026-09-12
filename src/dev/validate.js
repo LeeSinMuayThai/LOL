@@ -7,6 +7,7 @@ import {
 } from './guards.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
+import { CATEGORIAS_EVENTO } from '../data/categorias.js';
 import { mulberry32, sample } from '../core/rng.js';
 import { createInitialState } from '../core/state.js';
 import { avanzarSplit, avanzarSplitAuto, resolverDecision, ETAPAS_SPLIT } from '../core/pipeline.js';
@@ -319,6 +320,18 @@ check('Esquema de eventos válido', () => {
           }
         }
       }
+    }
+  }
+});
+
+check('Todo evento del catálogo declara categoria válida (PLAN.md §12.1)', () => {
+  const validas = new Set(CATEGORIAS_EVENTO);
+  for (const evento of TODOS_LOS_EVENTOS) {
+    if (!evento.categoria || typeof evento.categoria !== 'string') {
+      throw new Error(`${evento.id}: sin categoria`);
+    }
+    if (!validas.has(evento.categoria)) {
+      throw new Error(`${evento.id}: categoria "${evento.categoria}" fuera de vocabulario (${CATEGORIAS_EVENTO.join(', ')})`);
     }
   }
 });

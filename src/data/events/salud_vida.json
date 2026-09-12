@@ -2,6 +2,7 @@
   {
     "id": "visa_delay",
     "category": "salud_vida",
+    "categoria": "golpe_duro",
     "title": "La visa no sale",
     "description": "El trámite para viajar con {org} se trabó en el consulado. El calendario no espera y hay una fecha en la que tenés que estar del otro lado.",
     "weight": 6,
@@ -63,6 +64,7 @@
   {
     "id": "tendinitis",
     "category": "salud_vida",
+    "categoria": "salud",
     "title": "La muñeca",
     "description": "Empezó como una molestia y ya es un dolor con horario. Aparece siempre a la misma hora de la sesión, y no se va con hielo.",
     "weight": 6,
@@ -127,6 +129,7 @@
   {
     "id": "burnout",
     "category": "salud_vida",
+    "categoria": "salud",
     "title": "Se te hizo trabajo",
     "description": "Hace tres semanas que abrís el cliente y sentís lo mismo que abriendo un Excel. No estás jugando mal: no estás jugando.",
     "weight": 6,
@@ -193,6 +196,7 @@
   {
     "id": "psychologist",
     "category": "salud_vida",
+    "categoria": "salud",
     "title": "El psicólogo del club",
     "description": "{org} tiene una psicóloga deportiva y el staff te anotó una sesión sin preguntarte. Está en el calendario, martes a las cinco.",
     "weight": 5,
@@ -253,6 +257,7 @@
   {
     "id": "tunel_carpiano",
     "category": "salud_vida",
+    "categoria": "salud",
     "title": "El antebrazo",
     "description": "No es la muñeca esta vez: es un hormigueo que arranca en los dedos y sube por todo el antebrazo después de las sesiones largas. Un fisioterapeuta te dice la palabra que no querías escuchar: túnel carpiano.",
     "weight": 5,
@@ -317,6 +322,7 @@
   {
     "id": "hombro_cronico",
     "category": "salud_vida",
+    "categoria": "salud",
     "title": "Años de postura, todos juntos",
     "description": "No fue una noche ni un split: fueron años de la misma silla, el mismo ángulo, el mismo agarre del mouse. El médico del club lo dice sin vueltas — para tu edad, tenés el hombro de alguien que vivió el doble.",
     "weight": 4,
@@ -378,6 +384,7 @@
   {
     "id": "el_nutricionista_del_club",
     "category": "salud_vida",
+    "categoria": "salud",
     "title": "El club trae un nutricionista",
     "description": "{org} sumó a alguien que te arma un plan de comidas, te mide, y te pide cortar la Coca de las tres de la mañana. La ciencia dice que rendís mejor; tu costumbre dice otra cosa.",
     "weight": 5,
@@ -445,6 +452,7 @@
   {
     "id": "la_gaming_house",
     "category": "salud_vida",
+    "categoria": "vestuario",
     "title": "Te mudás a la casa del equipo",
     "description": "El club alquiló una casa y quiere a los cinco titulares viviendo ahí durante el split. Compartís cocina, baño y horarios con la gente con la que ya compartís diez horas de scrim.",
     "weight": 5,
@@ -509,6 +517,7 @@
   {
     "id": "el_pico_de_ansiedad",
     "category": "salud_vida",
+    "categoria": "salud",
     "title": "El pecho apretado antes de salir",
     "description": "Faltan veinte minutos para salir al escenario y no te entra el aire. Ya te había pasado en scrims, pero nunca así, nunca el día de un partido que importa.",
     "weight": 5,
@@ -575,6 +584,7 @@
   {
     "id": "la_vida_afuera_del_juego",
     "category": "salud_vida",
+    "categoria": "familia",
     "title": "Hay una vida esperándote afuera",
     "description": "Alguien con quien la cosa va en serio te plantea lo obvio: que hace meses que cancelás planes, que el calendario manda, que no sabe cuánto más quiere una relación a control remoto.",
     "weight": 4,

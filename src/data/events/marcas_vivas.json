@@ -2,6 +2,7 @@
   {
     "id": "sin_pc",
     "category": "identidad",
+    "categoria": "familia",
     "title": "La PC adentro del placard",
     "description": "Se acabó la discusión: te sacaron la PC y la guardaron. El próximo movimiento es tuyo — negociar el regreso o dejar pasar unos días para que se enfríe todo.",
     "weight": 6,
@@ -61,6 +62,7 @@
   {
     "id": "la_negociacion_que_ganaste",
     "category": "identidad",
+    "categoria": "familia",
     "title": "El permiso que conseguiste",
     "description": "Ganaste la negociación con tus viejos: te dejan seguir, por ahora. Es un permiso, no una rendición — y depende de que sigas sosteniendo lo que prometiste.",
     "weight": 5,
@@ -120,6 +122,7 @@
   {
     "id": "sin_titulo_secundario",
     "category": "identidad",
+    "categoria": "familia",
     "title": "El formulario que te pide un título que no tenés",
     "description": "Un trámite de visa te pide el secundario terminado y vos lo dejaste a mitad de camino. No es la primera vez que este papel te frena algo, y probablemente no sea la última.",
     "weight": 4,
@@ -180,6 +183,7 @@
   {
     "id": "el_secundario_que_sirvio",
     "category": "identidad",
+    "categoria": "familia",
     "title": "Lo que aprendiste en el colegio, ahora te sirve",
     "description": "Un problema con el contrato o con un sponsor aparece en una reunión y nadie en el vestuario le encuentra la vuelta. Vos sí — algo de lo que aprendiste antes de dejar todo por esto te resuelve el entuerto.",
     "weight": 4,
@@ -240,6 +244,7 @@
   {
     "id": "el_dia_que_tuviste_signature",
     "category": "identidad",
+    "categoria": "prensa",
     "title": "Ya sos \"el {signature}\" para todos",
     "description": "Un caster te presenta en la previa como \"el {signature} de la región\" y no lo dice como un chiste. Es la primera vez que un campeón queda pegado a tu nombre en vez de al revés.",
     "weight": 5,
@@ -301,6 +306,7 @@
   {
     "id": "el_ano_muerto",
     "category": "identidad",
+    "categoria": "rutina",
     "title": "Fichado, y todavía sin edad para debutar",
     "description": "El club ya te firmó y te reservó el lugar, pero la liga exige una edad que todavía no tenés. Falta menos de lo que parece, pero un año esperando se siente eterno cuando ya te sentís listo.",
     "weight": 5,
@@ -360,6 +366,7 @@
   {
     "id": "la_pc_del_amigo",
     "category": "identidad",
+    "categoria": "familia",
     "title": "Jugás desde lo de un amigo",
     "description": "Con tu PC guardada bajo llave, un amigo te presta la suya tres tardes por semana cuando él sale a laburar. Su setup es peor y el tiempo es prestado, pero es jugar.",
     "weight": 5,
@@ -427,6 +434,7 @@
   {
     "id": "el_pacto_por_la_pc",
     "category": "identidad",
+    "categoria": "familia",
     "title": "Tu vieja te ofrece un trato",
     "description": "Golpea la puerta con la torre de la PC en los brazos. \"Te la devuelvo. Pero aprobás todo este trimestre o esto se termina en serio.\" No es una amenaza vacía y los dos lo saben.",
     "weight": 5,
@@ -499,6 +507,7 @@
   {
     "id": "el_ultimatum_del_boletin",
     "category": "identidad",
+    "categoria": "familia",
     "title": "El boletín que define",
     "description": "Estás a una materia de que en casa se termine la discusión, y no a tu favor. Falta una semana para la prueba que la levanta o la hunde, y esa semana pinta la mejor de la temporada en la ladder.",
     "weight": 6,

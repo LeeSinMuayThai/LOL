@@ -2,6 +2,7 @@
   {
     "id": "otro_titulo_mas",
     "category": "identidad",
+    "categoria": "prensa",
     "title": "Otro título más",
     "description": "Ganaron. Hay confeti y la ceremonia de siempre, pero esta vez la sentís distinto: no es la primera, y tu cuerpo ya sabe cómo se festeja esto sin que se lo tengas que explicar.",
     "weight": 4,
@@ -62,6 +63,7 @@
   {
     "id": "de_donde_venis",
     "category": "identidad",
+    "categoria": "prensa",
     "title": "¿Cómo era jugar en tier 3?",
     "description": "Un streamer que arranca te entrevista y te pregunta, en serio, cómo era competir con un equipo inventado que se podía disolver cualquier semana. Te cuesta explicarlo sin sonar a otra vida.",
     "weight": 4,
@@ -123,6 +125,7 @@
   {
     "id": "el_que_ya_vio_de_todo",
     "category": "identidad",
+    "categoria": "prensa",
     "title": "¿Cómo hacés para no quemarte?",
     "description": "Un rookie del roster te para en el pasillo y te pregunta, casi en confianza, cómo hacés para llevar tantos splits sin romperte. No tiene una respuesta fácil, y vos tampoco la tenías a su edad.",
     "weight": 4,
@@ -182,6 +185,7 @@
   {
     "id": "tercer_club_ya",
     "category": "identidad",
+    "categoria": "prensa",
     "title": "Vas por tu tercera organización",
     "description": "Firmás con un club nuevo, otra vez. Un periodista lo nota en la nota de presentación: empieza a correr la idea de que sos \"difícil de retener\", aunque cada salida haya tenido su propia razón.",
     "weight": 4,
@@ -242,6 +246,7 @@
   {
     "id": "el_primer_titulo_que_contas",
     "category": "identidad",
+    "categoria": "prensa",
     "title": "Te preguntan por aquel primer título",
     "description": "Un pibe que no lo vio en vivo te pregunta cómo fue ganar por primera vez. Hace años de eso. Te sorprende cuánto de esa noche te acordás y cuánto se te borró.",
     "weight": 4,
@@ -303,6 +308,7 @@
   {
     "id": "la_linea_de_tiempo_de_tu_carrera",
     "category": "identidad",
+    "categoria": "prensa",
     "title": "Un analista armó la línea de tiempo de tu carrera",
     "description": "Para un video largo, alguien reconstruyó cada split que jugaste: los equipos, los picos, los pozos, los cambios de región. Verlo todo junto en una barra te pega distinto que vivirlo.",
     "weight": 4,
@@ -366,6 +372,7 @@
   {
     "id": "el_que_paso_por_todos_los_tiers",
     "category": "identidad",
+    "categoria": "prensa",
     "title": "Jugaste en cada escalón de la pirámide",
     "description": "Un periodista lo nota preparando una nota: sos de los poquísimos en actividad que jugó tier 3, tier 2 y tier 1. La mayoría entra directo arriba o se queda abajo para siempre.",
     "weight": 4,
