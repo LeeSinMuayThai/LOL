@@ -33,6 +33,35 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-12 — Fase 12a: `validate.js --rapido/--completo` (cierra D32)
+
+Primera subfase de la 12 (`PLAN.md` "La jerarquía de la decisión"). `src/dev/validate.js` tardaba
+6m47s en correr completo — la Definición de terminado lo exige en cada cambio, y la 12 va a sumar
+~6 checks más, varios estadísticos. D32 lo señalaba desde antes de esta fase.
+
+`check(nombre, fn)` se acompaña de `checkLento(nombre, fn)`: mismo cuerpo (mismo try/catch, mismo
+push a `errores`, mismo log), pero con `--rapido` salta la ejecución e imprime
+`SKIP  ${nombre} (lento, correr sin --rapido)`. `--solo=` sigue ganando siempre — pedir un check
+puntual lo corre aunque venga con `--rapido` (regla de proceso 7 intacta: cada check nuevo tiene
+que poder verse en rojo contra el HEAD previo).
+
+Criterio de clasificación, mecánico y sin excepciones: es lento todo check cuyo cuerpo llame
+`correrCarrera`, `avanzarSplit`/`avanzarSplitAuto`, directo o a través de un helper de módulo que a
+su vez las llame dentro de un loop. Aplicado a las 173 llamadas existentes: **109 lentas, 64
+rápidas**. `package.json` suma `"validate:rapido": "node src/dev/validate.js --rapido"`.
+
+**Medido**: `--rapido` corre en **13,7s** (antes 6m47s el mismo alcance completo). La suite sin
+flags — el modo que sigue siendo la Definición de terminado — corrió completa después del cambio:
+**173/173 OK, 0 FAIL**. Ninguna lógica de ningún check se tocó: solo la agrupación en dos funciones
+gemelas.
+
+**Delegado a Grok** (`grok -p`, spec en el scratchpad de la sesión) bajo supervisión: yo escribí el
+criterio de clasificación y el spec, Grok recorrió las 173 llamadas y aplicó el split, y un
+subagente Claude aparte auditó el diff completo (clasificación de las 173, no una muestra; diff
+carácter a carácter de las 109 renombradas contra el `check` original) antes del commit. Primer uso
+de este modelo de trabajo en el proyecto — el resto de la fase 12 lo sigue usando, con Gemini/agy
+sumándose en 12b.
+
 ### 2026-09-11 — Fase 11: el año (PLAN.md §11.1+§11.2, cierra D8)
 
 9W cerró el ranking mundial y 10 el retiro; esta fase ataca lo último que le

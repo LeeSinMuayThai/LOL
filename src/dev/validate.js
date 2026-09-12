@@ -70,9 +70,27 @@ const ACCIONES_DE_POOL = ['aprender', 'maestria', 'olvidar'];
 const SOLO = process.argv.slice(2)
   .filter((arg) => arg.startsWith("--solo="))
   .map((arg) => arg.slice("--solo=".length).toLowerCase());
+const RAPIDO = process.argv.slice(2).includes('--rapido');
 
 function check(nombre, fn) {
   if (SOLO.length > 0 && !SOLO.some((texto) => nombre.toLowerCase().includes(texto))) {
+    return;
+  }
+  try {
+    fn();
+    console.log(`OK   ${nombre}`);
+  } catch (error) {
+    errores.push(`${nombre}: ${error.message}`);
+    console.log(`FAIL ${nombre}: ${error.message}`);
+  }
+}
+
+function checkLento(nombre, fn) {
+  if (SOLO.length > 0 && !SOLO.some((texto) => nombre.toLowerCase().includes(texto))) {
+    return;
+  }
+  if (SOLO.length === 0 && RAPIDO) {
+    console.log(`SKIP  ${nombre} (lento, correr sin --rapido)`);
     return;
   }
   try {
@@ -474,7 +492,7 @@ check('career.contrato arranca completo y en cero (trampa T4)', () => {
   }
 });
 
-check('El mercado lee tu nivel: el silencio es para los que están por debajo, no para una franquicia (fase 9R0e)', () => {
+checkLento('El mercado lee tu nivel: el silencio es para los que están por debajo, no para una franquicia (fase 9R0e)', () => {
   // El bug del feedback del usuario: 85 de media, franquicia, clasificado a
   // Worlds, y "me quedé sin equipo" porque `generarOfertasParaLiga` tiraba
   // `roll(0, techo)` sin mirar el nivel. En HEAD, ~21 pretemporadas de un
@@ -635,7 +653,7 @@ check('El mundo se genera desde la seed y varía entre seeds', () => {
 
 // --- Fase 9M.2: el mundo tiene gente (planteles NPC) ---
 
-check('Todo plantel NPC tiene 5 jugadores, uno por rol, sin repetir', () => {
+checkLento('Todo plantel NPC tiene 5 jugadores, uno por rol, sin repetir', () => {
   // Check 1 de §9M.10: verificado sobre la generación y sobre 60 splits (el
   // offseason de `systems/plantel.js` sube canteranos y no puede dejar un
   // asiento vacío ni duplicar un rol).
@@ -737,7 +755,7 @@ check('Los 5 rivales de generación viven en un plantel real (D8 parcial)', () =
   }
 });
 
-check('El mundo NPC envejece: en una carrera larga, la edad media de los planteles sube', () => {
+checkLento('El mundo NPC envejece: en una carrera larga, la edad media de los planteles sube', () => {
   // `systems/plantel.js` corre solo en offseason. Sin esto, el mundo quedaría
   // congelado en la foto de la seed.
   const rng = mulberry32(7);
@@ -758,7 +776,7 @@ check('El mundo NPC envejece: en una carrera larga, la edad media de los plantel
   }
 });
 
-check('Determinismo: misma seed → mismo mundo, planteles y traspasos incluidos (check 13 de §9M.10)', () => {
+checkLento('Determinismo: misma seed → mismo mundo, planteles y traspasos incluidos (check 13 de §9M.10)', () => {
   const correr = () => {
     const rng = mulberry32(99);
     let state = createInitialState(99, rng);
@@ -808,7 +826,7 @@ check('El eje residencia se calcula, no está hardcodeado (D29)', () => {
   }
 });
 
-check('Ninguna oferta del mercado viola edad mínima, cupo de imports ni margen (check 2 de §9M.10)', () => {
+checkLento('Ninguna oferta del mercado viola edad mínima, cupo de imports ni margen (check 2 de §9M.10)', () => {
   for (let seed = 1; seed <= 120; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
@@ -878,7 +896,7 @@ check('core/demanda.js es puro: orgsQueTeFicharian no toca el RNG ni muta el est
 
 // --- Fase 9Mc: alguien más quiere tu asiento (el mercado del mundo) ---
 
-check('El mercado del mundo se resuelve cada offseason pro: la decisión trae traspasos y no pasan del tope', () => {
+checkLento('El mercado del mundo se resuelve cada offseason pro: la decisión trae traspasos y no pasan del tope', () => {
   // Regla 16 (§9M.8): "el dado trajo…" — toda decisión de mercado lleva los
   // traspasos del mundo, como array y sin pasar de `traspasosEnPantalla`.
   for (let seed = 1; seed <= 60; seed += 1) {
@@ -907,7 +925,7 @@ check('El mercado del mundo se resuelve cada offseason pro: la decisión trae tr
   }
 });
 
-check('Oferta lateral rechazada: el asiento se cierra con un NPC y el log lo dice con nombre (check 10 de §9M.10)', () => {
+checkLento('Oferta lateral rechazada: el asiento se cierra con un NPC y el log lo dice con nombre (check 10 de §9M.10)', () => {
   // Cuando el jugador firma una oferta, TODA otra org de la que tenía oferta
   // lateral tiene que cerrar su asiento con un fichaje NPC nombrado ese mismo
   // split ("X firmó a Y … para el puesto que te ofrecían"). Cero asientos
@@ -957,7 +975,7 @@ check('Oferta lateral rechazada: el asiento se cierra con un NPC y el log lo dic
   }
 });
 
-check('Fase 9Mf: registro.dineroTotalUSD se acumula (>0 y monótono) en toda carrera con contrato (check 11 de §9M.10)', () => {
+checkLento('Fase 9Mf: registro.dineroTotalUSD se acumula (>0 y monótono) en toda carrera con contrato (check 11 de §9M.10)', () => {
   // Antes de 9Mf `dineroTotalUSD` NUNCA se incrementaba: el check de monotonía
   // pasaba trivialmente sobre un 0, y `PROGRESO.md` afirmaba —falsamente— que
   // `roster.js` lo cobraba. Ahora `roster.js` acumula `salarioAnualUSD /
@@ -995,7 +1013,7 @@ check('Fase 9Mf: registro.dineroTotalUSD se acumula (>0 y monótono) en toda car
   }
 });
 
-check('Fase 9Mf: ≥24% de las carreras ven un traspaso a mitad de contrato, y "pedir salir" hace una de sus dos cosas (check 6 de §9M.10)', () => {
+checkLento('Fase 9Mf: ≥24% de las carreras ven un traspaso a mitad de contrato, y "pedir salir" hace una de sus dos cosas (check 6 de §9M.10)', () => {
   // (1) frecuencia: con el auto-resolver (toma el paso arriba salvo recorte de
   // sueldo real) al menos 1 de cada 4 carreras cierra un traspaso a mitad de
   // contrato. (2) "pedir salir" nunca es un no-op: o te vas, o te lo niegan y
@@ -1083,7 +1101,7 @@ check('Fase 9Mf: ≥24% de las carreras ven un traspaso a mitad de contrato, y "
   }
 });
 
-check('Fase 9Mg: toda pantalla de mercado (oferta y traspaso) lleva el bloque "vos" y los asientos abiertos, sin pasar el tope (§9M.8)', () => {
+checkLento('Fase 9Mg: toda pantalla de mercado (oferta y traspaso) lleva el bloque "vos" y los asientos abiertos, sin pasar el tope (§9M.8)', () => {
   // Regla de proceso 12: la fase no cierra sin su pantalla. El test honesto de
   // una pantalla acá es que la decisión cargue lo que los tres bloques pintan —
   // (1) `datos.vos` con valor y contrato espejo del motor (regla 15), (3)
@@ -1157,7 +1175,7 @@ check('Fase 9Mg: toda pantalla de mercado (oferta y traspaso) lleva el bloque "v
   }
 });
 
-check('El mercado del mundo renueva contratos NPC: no decaen todos a 0 para siempre', () => {
+checkLento('El mercado del mundo renueva contratos NPC: no decaen todos a 0 para siempre', () => {
   // Sin renovación NPC (el estado pre-9Mc), con contratos de 1-3 años todo
   // `plantel[rol].contrato.anios` vale 0 tras 3 offseasons. Con la resolución
   // de 9Mc, la mayoría de los asientos se renuevan y una fracción sana del
@@ -1247,7 +1265,7 @@ function barrido9Mi() {
   return carreras;
 }
 
-check('Fase 9Mi: no todas las carreras terminan arriba — cierre en liga mayor acotado (check 7 de §9M.10)', () => {
+checkLento('Fase 9Mi: no todas las carreras terminan arriba — cierre en liga mayor acotado (check 7 de §9M.10)', () => {
   // §9M.12.4: redefinido. El check original ("tierCierre === 1 ≤ 65%") es
   // inalcanzable por estructura — CBLOL/LCP son tier 1 y el retiro cae a los
   // ~28 con el jugador todavía empleado en primera, antes de que el
@@ -1262,7 +1280,7 @@ check('Fase 9Mi: no todas las carreras terminan arriba — cierre en liga mayor 
   }
 });
 
-check('Fase 9Mi: el nivel del jugador correlaciona con la mejor liga que alcanzó (check 9 de §9M.10: r > 0,5)', () => {
+checkLento('Fase 9Mi: el nivel del jugador correlaciona con la mejor liga que alcanzó (check 9 de §9M.10: r > 0,5)', () => {
   const c = barrido9Mi().filter((x) => x.nivelPico > 0 && x.mejorLigaPrestigio > 0);
   if (c.length < 100) {
     throw new Error(`sólo ${c.length} carreras con nivel y liga: muestra insuficiente`);
@@ -1273,7 +1291,7 @@ check('Fase 9Mi: el nivel del jugador correlaciona con la mejor liga que alcanz�
   }
 });
 
-check('Fase 9Mi: subir a una liga MAYOR cuesta, y las que no llegan son peores (check 9Mi-1: ≤ 90% de las que fichan)', () => {
+checkLento('Fase 9Mi: subir a una liga MAYOR cuesta, y las que no llegan son peores (check 9Mi-1: ≤ 90% de las que fichan)', () => {
   // §9M.12.4: la vara ya no es `career.tier === 1` (CBLOL/LCP son tier 1 y
   // cualquier pro competente los alcanza — 100% estructural). Es llegar a una
   // liga mayor (prestigio ≥ 70): LCK/LPL/LEC/LCS. Eso sí se gana.
@@ -1293,7 +1311,7 @@ check('Fase 9Mi: subir a una liga MAYOR cuesta, y las que no llegan son peores (
   }
 });
 
-check('Fase 9Mi: el mercado se enfría — nadie sostiene oferta de liga mayor pasada la edad si su nivel cayó (check 9Mi-2)', () => {
+checkLento('Fase 9Mi: el mercado se enfría — nadie sostiene oferta de liga mayor pasada la edad si su nivel cayó (check 9Mi-2)', () => {
   // §9M.12.4: ninguna carrera recibe una oferta FRESCA (no renovación) de una
   // liga mayor pasada `edadRetiroForzoso − 3` con el nivel claramente bajo la
   // banda de esa liga. Es la invariante "el mercado deja de llamar" — el
@@ -1413,7 +1431,7 @@ function barrido9W() {
   return carreras;
 }
 
-check('Fase 9W: el Top 20 está bien formado (largo tamano, sin repetidos, ordenado por puntaje desc)', () => {
+checkLento('Fase 9W: el Top 20 está bien formado (largo tamano, sin repetidos, ordenado por puntaje desc)', () => {
   const revisar = (top, dónde) => {
     if (top.length !== BALANCE.topMundial.tamano) {
       throw new Error(`${dónde}: topMundial tiene ${top.length} entradas, no ${BALANCE.topMundial.tamano}`);
@@ -1440,7 +1458,7 @@ check('Fase 9W: el Top 20 está bien formado (largo tamano, sin repetidos, orden
   revisar(state.mundo.topMundial, 'tras 40 splits');
 });
 
-check('Fase 9W: el ranking es determinista y no consume RNG (regla de oro de §9W)', () => {
+checkLento('Fase 9W: el ranking es determinista y no consume RNG (regla de oro de §9W)', () => {
   // No RNG: el sistema `topMundial` recibe un rng que revienta si se lo toca.
   const sistema = sistemaPorId('topMundial');
   const rngQueRevienta = () => { throw new Error('topMundial.aplicar tocó el rng'); };
@@ -1467,7 +1485,7 @@ check('Fase 9W: el ranking es determinista y no consume RNG (regla de oro de §9
   }
 });
 
-check('Fase 9W: el ranking premia el nivel, no la lotería (r(nivel, rank) > 0,6 sobre la población)', () => {
+checkLento('Fase 9W: el ranking premia el nivel, no la lotería (r(nivel, rank) > 0,6 sobre la población)', () => {
   // Dentro del Top 20 el nivel está comprimido y el ruido manda —eso es el
   // churn buscado—; la correlación se mide sobre `rankearPoblacion` entera.
   const nivel = [];
@@ -1489,7 +1507,7 @@ check('Fase 9W: el ranking premia el nivel, no la lotería (r(nivel, rank) > 0,6
   }
 });
 
-check('Fase 9W: picos.rankMundial es monótono (no crece nunca) y se escribe cuando entrás', () => {
+checkLento('Fase 9W: picos.rankMundial es monótono (no crece nunca) y se escribe cuando entrás', () => {
   const c = barrido9W();
   const rotos = c.filter((x) => !x.monotonoOk);
   if (rotos.length > 0) {
@@ -1505,7 +1523,7 @@ check('Fase 9W: picos.rankMundial es monótono (no crece nunca) y se escribe cua
   }
 });
 
-check('Fase 9W: el Top 20 mezcla edades — sin término de edad, la diversidad es emergente (§9W.3)', () => {
+checkLento('Fase 9W: el Top 20 mezcla edades — sin término de edad, la diversidad es emergente (§9W.3)', () => {
   // La edad NO es un término del puntaje: la mezcla etaria sale de que
   // `nivelNpc` sigue la curva de carrera (trepadores de 18-20, pico 21-26,
   // algún veterano). Se verifica que a lo largo de una carrera aparecen tanto
@@ -1537,7 +1555,7 @@ check('Fase 9W: el Top 20 mezcla edades — sin término de edad, la diversidad 
 // tu generación asoma sin garantía. Verificados en rojo con las constantes por
 // criterio de 9Wa (bonusCampeonLiga 6 → entran/éxito 12%; ver PROGRESO 9Wd).
 
-check('Fase 9Wd: entrar al Top 20 cuesta pero tiene sentido — la mitad de las carreras con éxito lo tocan (§9W.6)', () => {
+checkLento('Fase 9Wd: entrar al Top 20 cuesta pero tiene sentido — la mitad de las carreras con éxito lo tocan (§9W.6)', () => {
   const c = barrido9W();
   const exitosas = c.filter((x) => x.exito);
   const lavadas = c.filter((x) => !x.exito);
@@ -1558,7 +1576,7 @@ check('Fase 9Wd: entrar al Top 20 cuesta pero tiene sentido — la mitad de las 
   }
 });
 
-check('Fase 9Wd: el Top 20 rota — muchos handles distintos y el corte #20 se mueve seguido (§9W-3)', () => {
+checkLento('Fase 9Wd: el Top 20 rota — muchos handles distintos y el corte #20 se mueve seguido (§9W-3)', () => {
   const c = barrido9W().filter((x) => x.distintos > 0);
   if (c.length < 50) {
     throw new Error(`sólo ${c.length} carreras con fotos del Top 20: muestra insuficiente`);
@@ -1577,7 +1595,7 @@ check('Fase 9Wd: el Top 20 rota — muchos handles distintos y el corte #20 se m
   }
 });
 
-check('Fase 9Wd: un rival de generación asoma al Top 20, pero no siempre (§9W-8)', () => {
+checkLento('Fase 9Wd: un rival de generación asoma al Top 20, pero no siempre (§9W-8)', () => {
   const c = barrido9W();
   const frac = c.filter((x) => x.rivalEnTop20).length / c.length;
   // §9W-8 lo estimó "~15-40%" (raro por diseño: `rivalPotencialMedia` 66, muy
@@ -1932,7 +1950,7 @@ check('Ningún token puede quedar sin resolver donde el contenido aparece', () =
   }
 });
 
-check('Ningún número llega al jugador con decimales', () => {
+checkLento('Ningún número llega al jugador con decimales', () => {
   // Los stats viven como float a proposito (redondear en cada split moveria el
   // balance), pero un float crudo en pantalla —`mecánica 62.12317247563275`—
   // tapa media pantalla y no significa nada. Se redondea al producir texto.
@@ -2044,7 +2062,7 @@ check('Nadie escribe el espejo de la escalera', () => {
   }
 });
 
-check('La escalera produce una distribución realista al cerrar la etapa amateur', () => {
+checkLento('La escalera produce una distribución realista al cerrar la etapa amateur', () => {
   let challenger = 0;
   let top50 = 0;
   const total = 400;
@@ -2078,7 +2096,7 @@ check('La escalera produce una distribución realista al cerrar la etapa amateur
   }
 });
 
-check('Toda decisión de rutina ofrece una salida segura y la trampa', () => {
+checkLento('Toda decisión de rutina ofrece una salida segura y la trampa', () => {
   // La forma de la decisión importa tanto como su contenido: nunca se acorrala
   // al jugador en una mala elección, y la trampa de CONCEPTO §4 siempre está
   // disponible aunque convenga no tomarla.
@@ -2114,7 +2132,7 @@ check('Toda decisión de rutina ofrece una salida segura y la trampa', () => {
   }
 });
 
-check('El contexto de carrera nombra siempre dónde estás parado', () => {
+checkLento('El contexto de carrera nombra siempre dónde estás parado', () => {
   const vistos = new Set();
 
   for (let seed = 1; seed <= 300; seed += 1) {
@@ -2163,7 +2181,7 @@ check('El contexto de carrera nombra siempre dónde estás parado', () => {
   }
 });
 
-check('El Ajuste al Meta se mueve de verdad', () => {
+checkLento('El Ajuste al Meta se mueve de verdad', () => {
   // Este check existe por un bug real: el pool tenía tags que el meta no
   // conocía, así que el ajuste habría sido siempre neutro sin que nadie lo
   // notara. Si el cruce se desconecta otra vez, esto falla.
@@ -2188,7 +2206,7 @@ check('El Ajuste al Meta se mueve de verdad', () => {
   }
 });
 
-check('El ciclo profesional produce carreras distintas', () => {
+checkLento('El ciclo profesional produce carreras distintas', () => {
   const carreras = [];
 
   for (let seed = 1; seed <= 120; seed += 1) {
@@ -2231,7 +2249,7 @@ check('El ciclo profesional produce carreras distintas', () => {
   }
 });
 
-check('El split cierra siempre: no queda ninguna decisión colgada', () => {
+checkLento('El split cierra siempre: no queda ninguna decisión colgada', () => {
   for (let seed = 1; seed <= 50; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
@@ -2245,7 +2263,7 @@ check('El split cierra siempre: no queda ninguna decisión colgada', () => {
   }
 });
 
-check('Pipeline corre y es determinista (misma seed, dos corridas)', () => {
+checkLento('Pipeline corre y es determinista (misma seed, dos corridas)', () => {
   const seed = 123;
   const splits = 12;
   const estadoA = correrCarrera(seed, splits);
@@ -2256,7 +2274,7 @@ check('Pipeline corre y es determinista (misma seed, dos corridas)', () => {
   }
 });
 
-check('Seeds distintas producen carreras distintas', () => {
+checkLento('Seeds distintas producen carreras distintas', () => {
   const a = JSON.stringify(correrCarrera(1, 12));
   const b = JSON.stringify(correrCarrera(2, 12));
 
@@ -2287,7 +2305,7 @@ check('Cada rol tiene eventos propios que ningún otro rol ve', () => {
   }
 });
 
-check('El pool nunca queda vacío ni por debajo del mínimo', () => {
+checkLento('El pool nunca queda vacío ni por debajo del mínimo', () => {
   // `olvidarPeor` y el efecto `pool` corren en cada carrera masiva; si alguno
   // rompiera el piso, `campeonDelSplit` (campeones.js) explotaría eligiendo
   // sobre un array vacío. Se corre la simulación completa, no solo la función,
@@ -2328,7 +2346,7 @@ check('El meta se puede nombrar por campeón, y el nombre cambia con el parche',
   }
 });
 
-check('main_muerto se observa cuando el meta te da vuelta el main', () => {
+checkLento('main_muerto se observa cuando el meta te da vuelta el main', () => {
   // Si el meta nunca mata un main en la práctica, las seis marcas de pool son
   // decorativas: el jugador elige sus mains al empezar y nunca vuelve a
   // importar. Se mide sobre carreras que llegan a jugar de verdad (>20 splits),
@@ -2437,7 +2455,7 @@ check('tipoDeSplit distingue denso de comprimido', () => {
   }
 });
 
-check('El chaining de un segundo evento de verdad usa tipoDeSplit', () => {
+checkLento('El chaining de un segundo evento de verdad usa tipoDeSplit', () => {
   // El check anterior prueba que `tipoDeSplit` clasifica bien; este prueba que
   // `events.js` USA esa clasificación para decidir si amontona una segunda
   // decisión, y no que alguien sacó el `chance(...)` de en medio y lo dejó
@@ -2498,7 +2516,7 @@ check('El chaining de un segundo evento de verdad usa tipoDeSplit', () => {
   }
 });
 
-check('La densidad de decisiones es emergente, no pareja ni descontrolada', () => {
+checkLento('La densidad de decisiones es emergente, no pareja ni descontrolada', () => {
   // Mide la regla de la fase 2 ("novedad = densidad") sobre el camino headless
   // real, contando cuántas decisiones pide CADA split, no un promedio ciego.
   const N = 400;
@@ -2581,7 +2599,7 @@ check('La densidad de decisiones es emergente, no pareja ni descontrolada', () =
 
 // --- Fase 3: la escalera competitiva (tier 3 -> tier 2 -> tier 1) ---
 
-check('El tier 3 es breve: mediana de permanencia ≤ 2 splits, p90 ≤ 5', () => {
+checkLento('El tier 3 es breve: mediana de permanencia ≤ 2 splits, p90 ≤ 5', () => {
   // Pedido explícito: nadie debuta en primera y nadie se queda mucho en un
   // equipo inventado. Se mide en splits CONSECUTIVOS en tier 3 por stint (una
   // carrera puede pasar por tier 3 más de una vez si el equipo se disuelve).
@@ -2668,7 +2686,7 @@ check('El tier 3 es breve: mediana de permanencia ≤ 2 splits, p90 ≤ 5', () =
   }
 });
 
-check('El año muerto: nivel de tier 1 pero sin edad para debutar (marca espera_edad_minima)', () => {
+checkLento('El año muerto: nivel de tier 1 pero sin edad para debutar (marca espera_edad_minima)', () => {
   // Fase 9Md: ya no hay "ascenso ganado" que congelar. El año muerto ahora es:
   // sos nivel de tier 1 (`competitivo.nivelParaTier1`) pero te falta la edad
   // que exigen LEC/LPL (18) — seguís en tier 2 con la marca `espera_edad_minima`
@@ -2711,7 +2729,7 @@ check('El año muerto: nivel de tier 1 pero sin edad para debutar (marca espera_
 
 // --- Fase 9b: el mercado decide, competitivo.js deja de sortear la org ---
 
-check('Ningún cambio de org en tier 1/2 pasa sin una decisión de mercado.js de por medio', () => {
+checkLento('Ningún cambio de org en tier 1/2 pasa sin una decisión de mercado.js de por medio', () => {
   for (let seed = 1; seed <= 300; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
@@ -2737,7 +2755,7 @@ check('Ningún cambio de org en tier 1/2 pasa sin una decisión de mercado.js de
   }
 });
 
-check('proyeccionJerarquia predice la jerarquía real con error acotado (regla de proceso 15, PLAN.md §9.8)', () => {
+checkLento('proyeccionJerarquia predice la jerarquía real con error acotado (regla de proceso 15, PLAN.md §9.8)', () => {
   // roster.js asigna EXACTO lo que la tarjeta mostró — sin volver a tirar el
   // dado. Lo que puede correrlo es el propio rendimiento de ESE split
   // (rendimiento.js corre después, en el mismo split, y mueve la jerarquía por
@@ -2856,7 +2874,7 @@ check('El sesgo etario reduce cuántas ofertas llegan: 28 recibe ≤50% del prom
   }
 });
 
-check('Nadie firma un ascenso a una liga sin cumplir su edadMinima', () => {
+checkLento('Nadie firma un ascenso a una liga sin cumplir su edadMinima', () => {
   for (let seed = 1; seed <= 400; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
@@ -2875,7 +2893,7 @@ check('Nadie firma un ascenso a una liga sin cumplir su edadMinima', () => {
   }
 });
 
-check('El representante informa (no rebaraja) y se usa exactamente una vez por carrera', () => {
+checkLento('El representante informa (no rebaraja) y se usa exactamente una vez por carrera', () => {
   // Fase 9Me (§9M.6): el representante dejó de ser un reroll de ofertas — ahora
   // te dice qué clubes te miran sin haber ofertado (`datos.clubesInteresados`).
   // La mano de ofertas NO cambia, y una segunda llamada es un no-op.
@@ -2932,7 +2950,7 @@ check('El representante informa (no rebaraja) y se usa exactamente una vez por c
   }
 });
 
-check('Fase 9Me: negociar es determinista, termina, y la cláusula negociada llega al contrato', () => {
+checkLento('Fase 9Me: negociar es determinista, termina, y la cláusula negociada llega al contrato', () => {
   // Tres cosas: (1) `pedir más` corta la charla en `escalonesNegociacionMax` y
   // no encadena decisiones sin fin; (2) dos corridas con la misma seed dan el
   // mismo resultado; (3) si negociás la cláusula y firmás, `contrato.clausula`
@@ -3017,7 +3035,7 @@ check('Fase 9Me: negociar es determinista, termina, y la cláusula negociada lle
   }
 });
 
-check('Ninguna oferta de mercado.js muestra progresoHito si no es una renovación', () => {
+checkLento('Ninguna oferta de mercado.js muestra progresoHito si no es una renovación', () => {
   for (let seed = 1; seed <= 300; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
@@ -3043,7 +3061,7 @@ check('Ninguna oferta de mercado.js muestra progresoHito si no es una renovació
   }
 });
 
-check('Fase 9d: una renovación no se desploma por ruido puro (menos de 40% cae por debajo de la mitad del contrato anterior)', () => {
+checkLento('Fase 9d: una renovación no se desploma por ruido puro (menos de 40% cae por debajo de la mitad del contrato anterior)', () => {
   // Medido antes de `renovacionSigmaFactor` (PLAN.md §9d): 34.8% de las
   // renovaciones pagaban menos de la mitad del contrato anterior, hasta 4.5x
   // para arriba — ruido de una oferta nueva, no la lectura de un club que ya
@@ -3103,7 +3121,7 @@ check('Fase 9d: una renovación no se desploma por ruido puro (menos de 40% cae 
   }
 });
 
-check('Nadie clasifica a un internacional por encima del cupo real de su liga', () => {
+checkLento('Nadie clasifica a un internacional por encima del cupo real de su liga', () => {
   // `posicionParaInternacional` hardcodeado a 1 quedó atrás (fase 3): ahora es
   // `liga.cuposInternacionales`, que no existe para tier 2 ni tier 3. Si algo
   // volviera a hardcodear un cupo, tier 2/3 empezarían a viajar a Worlds.
@@ -3139,7 +3157,7 @@ check('El sistema de presupuesto no consume RNG (regla de proceso 10)', () => {
   }
 });
 
-check('El evento de ambiente respeta el cupo de interrupciones del split (fase 9Rf)', () => {
+checkLento('El evento de ambiente respeta el cupo de interrupciones del split (fase 9Rf)', () => {
   // En un split profesional, `eventos` no puede aportar más decisiones que el
   // cupo `eventful` — es el único sistema que consulta `hayPresupuesto` antes
   // de frenar, y como mucho encadena un segundo evento.
@@ -3170,7 +3188,7 @@ check('El evento de ambiente respeta el cupo de interrupciones del split (fase 9
   }
 });
 
-check('El volumen de decisiones de la carrera bajó de la cinta transportadora (fase 9R)', () => {
+checkLento('El volumen de decisiones de la carrera bajó de la cinta transportadora (fase 9R)', () => {
   // El objetivo de la fase 9R no es "mínimo de decisiones" —el usuario quiere
   // la carrera larga con el Bo5 como sistema central— sino cortar el relleno.
   // Antes de 9R: 248 decisiones por carrera de 45 splits (mediana), ~5,5 por
@@ -3251,7 +3269,7 @@ check('El volumen de decisiones de la carrera bajó de la cinta transportadora (
   }
 });
 
-check('Ningún split cierra sin dejar una línea en el feed', () => {
+checkLento('Ningún split cierra sin dejar una línea en el feed', () => {
   // Un split sin ninguna decisión no puede ser un split mudo: el parche, el
   // rendimiento y la progresión de atributos loguean siempre. Si esto fallara,
   // un split "comprimido" (fase 2) se leería como que no pasó nada.
@@ -3437,7 +3455,7 @@ check('El veredicto y la apuesta salen del mismo dato que consume el motor (9R4a
   }
 });
 
-check('El impacto de los minijuegos está acotado (ni decorativo ni gambling)', () => {
+checkLento('El impacto de los minijuegos está acotado (ni decorativo ni gambling)', () => {
   // Dos poblaciones que SIEMPRE fallan o SIEMPRE aciertan cada minijuego
   // (de la serie y de la_prueba en amateur.js: ambos comparten motivo
   // 'minijuego'). Si la diferencia es chica, los minijuegos son decorativos;
@@ -3488,7 +3506,7 @@ check('El impacto de los minijuegos está acotado (ni decorativo ni gambling)', 
   }
 });
 
-check('Ningún minijuego llega a la pantalla sin decir qué se juega (9R4d)', () => {
+checkLento('Ningún minijuego llega a la pantalla sin decir qué se juega (9R4d)', () => {
   // Principio rector 3 y regla de proceso 13: hasta 9R4d entrabas al minijuego
   // sin saber qué te estabas jugando y lo descubrías al terminar. La apuesta
   // viaja en la decisión, así que se puede verificar sin DOM.
@@ -3534,7 +3552,7 @@ check('Ningún minijuego llega a la pantalla sin decir qué se juega (9R4d)', ()
   }
 });
 
-check('El banco de mecánicas se reparte: ninguna se lleva la carrera (9R4c)', () => {
+checkLento('El banco de mecánicas se reparte: ninguna se lleva la carrera (9R4c)', () => {
   // Antes de 9R.4 el reparto era: cuatro de los cinco roles jugaban SIEMPRE
   // `la_llamada` (33% de todos los minijuegos) y el jungla SIEMPRE el Barón.
   // Con once mecánicas en el catálogo y el cooldown de 9R4a, ninguna debería
@@ -3624,7 +3642,7 @@ check('Toda mecánica se puede terminar sin mouse y sin animación (9R4c)', () =
   }
 });
 
-check('El internacional tiene su jugada, no sólo el bootcamp (9R4b)', () => {
+checkLento('El internacional tiene su jugada, no sólo el bootcamp (9R4b)', () => {
   // Medido antes de 9R4b: 643 de 643 internacionales se resolvían con el
   // bootcamp y nada más. El bootcamp pasa ANTES del primer mapa y gastaba el
   // cupo entero de la serie, así que la serie más grande del juego no tenía ni
@@ -3673,7 +3691,7 @@ check('El internacional tiene su jugada, no sólo el bootcamp (9R4b)', () => {
   }
 });
 
-check('El mapa 5 es el mapa 5: el cupo del desempate no se gasta en otro lado (9R4b)', () => {
+checkLento('El mapa 5 es el mapa 5: el cupo del desempate no se gasta en otro lado (9R4b)', () => {
   // Las dos mitades de "el Barón de un mapa 5" (PLAN.md §9R.4):
   //   (a) el desempate es el ÚLTIMO mapa posible, no cualquier match point —
   //       el 2-0 de un barrido no lo merece (regla 4 de §4.6);
@@ -3721,7 +3739,7 @@ check('El mapa 5 es el mapa 5: el cupo del desempate no se gasta en otro lado (9
   }
 });
 
-check('Mediana de decisiones de draft por serie ∈ [0, 1] y ≥28% de series sin ningún draft', () => {
+checkLento('Mediana de decisiones de draft por serie ∈ [0, 1] y ≥28% de series sin ningún draft', () => {
   const porSerie = [];
 
   for (let seed = 1; seed <= 1200; seed += 1) {
@@ -4059,7 +4077,7 @@ check('Nadie te frena en el draft por un pick que no mueve el partido', () => {
   }
 });
 
-check('Toda opción de draft trae su lectura y va ordenada por factorDeCampeon', () => {
+checkLento('Toda opción de draft trae su lectura y va ordenada por factorDeCampeon', () => {
   // Smoke test directo de la matriz: dos ejes extremos dan frases distintas.
   const weightsBase = createInitialState(3, mulberry32(3)).meta.weights;
   const poolMix = [
@@ -4145,7 +4163,7 @@ check('Elegir el mismo campeón del split en una fecha marcada da factorDraftFec
   }
 });
 
-check('Ninguna serie deja el pipeline con una decisión colgada', () => {
+checkLento('Ninguna serie deja el pipeline con una decisión colgada', () => {
   for (let seed = 1; seed <= 600; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
@@ -4162,7 +4180,7 @@ check('Ninguna serie deja el pipeline con una decisión colgada', () => {
   }
 });
 
-check('Ningún minijuego puede setear terminado', () => {
+checkLento('Ningún minijuego puede setear terminado', () => {
   for (let seed = 1; seed <= 800; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
@@ -4194,7 +4212,7 @@ check('Ningún minijuego puede setear terminado', () => {
 
 // --- Fase 5: la temporada regular (calendario, tabla, fechas marcadas) ---
 
-check('La tabla de temporada cierra y respeta el calendario', () => {
+checkLento('La tabla de temporada cierra y respeta el calendario', () => {
   for (let seed = 1; seed <= 300; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
@@ -4343,7 +4361,7 @@ check('La tabla no miente a mitad de temporada: el jugador no arranca clavado ú
   }
 });
 
-check('Toda fila de la tabla, en cualquier fecha marcada, jugó tantas fechas como el jugador', () => {
+checkLento('Toda fila de la tabla, en cualquier fecha marcada, jugó tantas fechas como el jugador', () => {
   let muestras = 0;
 
   for (let seed = 1; seed <= 200; seed += 1) {
@@ -4378,7 +4396,7 @@ check('Toda fila de la tabla, en cualquier fecha marcada, jugó tantas fechas co
   }
 });
 
-check('El jugador ve como mucho una fecha marcada por split, y la ve en una fracción sana de los splits (fase 9Re)', () => {
+checkLento('El jugador ve como mucho una fecha marcada por split, y la ve en una fracción sana de los splits (fase 9Re)', () => {
   let splitsMedidos = 0;
   const conteos = {};
 
@@ -4441,7 +4459,7 @@ check('Cada motivo de fecha marcada tiene varias frases y etiquetas (fase 9R0a, 
   }
 });
 
-check('La fecha marcada no se repite palabra por palabra (fase 9R0a)', () => {
+checkLento('La fecha marcada no se repite palabra por palabra (fase 9R0a)', () => {
   // El bug: `career.ultimoEliminadoPor` no se limpiaba nunca y `career.orgs`
   // sólo crece, así que "la revancha contra tal" o "el clásico contra tal"
   // salían idénticos split tras split — medido: mediana 9, hasta 33 veces la
@@ -4488,7 +4506,7 @@ check('La fecha marcada no se repite palabra por palabra (fase 9R0a)', () => {
   }
 });
 
-check('Todo split competitivo cierra con lo que significa su posición, no sólo el recibo (fase 9R0d)', () => {
+checkLento('Todo split competitivo cierra con lo que significa su posición, no sólo el recibo (fase 9R0d)', () => {
   // 2 de cada 3 splits no son de playoffs y cerraban en una línea `[rendimiento]`
   // "terminó 4º de 10" — "los 3 splits no sirven para nada". Ahora cada split
   // competitivo deja una línea `temporada` de qué hay en juego. La excepción:
@@ -4608,7 +4626,7 @@ check('Cobertura: toda combinación de stakes × rol tiene al menos un evento', 
 
 // --- Fase 6: el meta con nombre ---
 
-check('El régimen cambia entre seasons en la banda declarada (50-65%)', () => {
+checkLento('El régimen cambia entre seasons en la banda declarada (50-65%)', () => {
   let aperturas = 0;
   let cambiosEnApertura = 0;
   let correctivos = 0;
@@ -4655,7 +4673,7 @@ check('El régimen cambia entre seasons en la banda declarada (50-65%)', () => {
   }
 });
 
-check('Toda carrera de más de 15 splits ve al menos tres regímenes distintos', () => {
+checkLento('Toda carrera de más de 15 splits ve al menos tres regímenes distintos', () => {
   for (let seed = 1; seed <= 300; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
@@ -4672,7 +4690,7 @@ check('Toda carrera de más de 15 splits ve al menos tres regímenes distintos',
   }
 });
 
-check('La tier list cubre todos los campeones del rol, sin repetidos ni faltantes', () => {
+checkLento('La tier list cubre todos los campeones del rol, sin repetidos ni faltantes', () => {
   for (let seed = 1; seed <= 100; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
@@ -4706,7 +4724,7 @@ check('La tier list cubre todos los campeones del rol, sin repetidos ni faltante
   }
 });
 
-check('El boost del pool no se clava en el centro (CONCEPTO §6: 0.75x-1.25x)', () => {
+checkLento('El boost del pool no se clava en el centro (CONCEPTO §6: 0.75x-1.25x)', () => {
   // El defecto que reemplaza esta fase: el viejo ajuste-por-afinidad-promedio
   // orbitaba siempre 50. Se mide el MULTIPLICADOR real (lo que multiplica el
   // rendimiento), no el ajuste crudo, para probar la promesa de CONCEPTO §6
@@ -4735,7 +4753,7 @@ check('El boost del pool no se clava en el centro (CONCEPTO §6: 0.75x-1.25x)', 
   }
 });
 
-check('pool_a_cual_le_metes sale unas pocas veces por carrera, no nunca y no siempre', () => {
+checkLento('pool_a_cual_le_metes sale unas pocas veces por carrera, no nunca y no siempre', () => {
   const evento = TODOS_LOS_EVENTOS.find((candidato) => candidato.id === 'pool_a_cual_le_metes');
   if (!evento) {
     throw new Error('no se encontró el evento pool_a_cual_le_metes: el check apunta a contenido que ya no existe');
@@ -4785,7 +4803,7 @@ check('pool_a_cual_le_metes sale unas pocas veces por carrera, no nunca y no sie
 
 // --- Fase 7: el prólogo se comprime y la repetición se rompe ---
 
-check('La repetición de eventos está acotada (memoria anti-repetición)', () => {
+checkLento('La repetición de eventos está acotada (memoria anti-repetición)', () => {
   // Corrección post-medición: el plan original pedía "mediana ≤ 4, máximo ≤
   // 8" repeticiones absolutas del evento más visto. Con la fase 7a
   // comprimiendo el prólogo, llegaronAPro subió de ~40% a ~72% y las carreras
@@ -4837,7 +4855,7 @@ check('La repetición de eventos está acotada (memoria anti-repetición)', () =
   }
 });
 
-check('Una carrera larga ve una amplia variedad de eventos distintos', () => {
+checkLento('Una carrera larga ve una amplia variedad de eventos distintos', () => {
   const distintos = [];
 
   for (let seed = 1; seed <= 200; seed += 1) {
@@ -4904,7 +4922,7 @@ check('El cooldown de un evento se mide en splits y vence exactamente en splitCo
   }
 });
 
-check('Ningún evento reaparece antes de que expire su cooldown declarado (0 violaciones en 200 carreras)', () => {
+checkLento('Ningún evento reaparece antes de que expire su cooldown declarado (0 violaciones en 200 carreras)', () => {
   const cooldownEnSplits = (id) => {
     const e = TODOS_LOS_EVENTOS.find((x) => x.id === id);
     return e ? Math.max(BALANCE.eventos.cooldownMinimoSplits, e.cooldown ?? 0) : BALANCE.eventos.cooldownMinimoSplits;
@@ -4965,7 +4983,7 @@ check('career.registro, career.arraigo y calendario arrancan completos (trampa T
   }
 });
 
-check('registro.splitsJugados coincide con player.splitCount en toda carrera', () => {
+checkLento('registro.splitsJugados coincide con player.splitCount en toda carrera', () => {
   for (let seed = 1; seed <= 60; seed += 1) {
     const state = correrCarrera(seed, 40);
     if (state.career.registro.splitsJugados !== state.player.splitCount) {
@@ -4977,7 +4995,7 @@ check('registro.splitsJugados coincide con player.splitCount en toda carrera', (
   }
 });
 
-check('La suma de splits por org coincide con registro.splitsConEquipo', () => {
+checkLento('La suma de splits por org coincide con registro.splitsConEquipo', () => {
   for (let seed = 1; seed <= 60; seed += 1) {
     const state = correrCarrera(seed, 40);
     const suma = state.career.registro.porOrg.reduce((acc, fila) => acc + fila.splits, 0);
@@ -4987,7 +5005,7 @@ check('La suma de splits por org coincide con registro.splitsConEquipo', () => {
   }
 });
 
-check('El registro solo crece: ningún campo decrece nunca en una carrera (regla de proceso 14)', () => {
+checkLento('El registro solo crece: ningún campo decrece nunca en una carrera (regla de proceso 14)', () => {
   const camposEscalares = [
     'splitsJugados', 'splitsConEquipo', 'fechasGanadas', 'fechasPerdidas',
     'mapasGanados', 'mapasPerdidos', 'seriesGanadas', 'seriesPerdidas', 'dineroTotalUSD'
@@ -5025,7 +5043,7 @@ check('El registro solo crece: ningún campo decrece nunca en una carrera (regla
   }
 });
 
-check('nivelDelJugador() coincide con la fórmula ponderada por rol (extracción de rendimiento.js)', () => {
+checkLento('nivelDelJugador() coincide con la fórmula ponderada por rol (extracción de rendimiento.js)', () => {
   for (let seed = 1; seed <= 15; seed += 1) {
     const state = correrCarrera(seed, 20);
     const { pesos } = ROLES[state.player.role];
@@ -5046,7 +5064,7 @@ check('nivelDelJugador() coincide con la fórmula ponderada por rol (extracción
 // 60 splits (ver PROGRESO.md), la fracción sube a 90,7%: el mecanismo de
 // declive funciona, lo que estaba mal calibrado era la ventana del check, no
 // el motor. 60 splits, no 30 (regla de proceso 4: reportar lo medido).
-check('picos.nivel se alcanza antes del último split en las carreras que llegan al declive', () => {
+checkLento('picos.nivel se alcanza antes del último split en las carreras que llegan al declive', () => {
   // Fase 9R5a: antes esto miraba toda carrera de >20 splits jugados y exigía
   // ≥70% con el pico de nivel ANTES del final — cierto solo porque las
   // carreras corrían hasta los ~35 años, bien entrado el declive. Con el
@@ -5087,7 +5105,7 @@ check('picos.nivel se alcanza antes del último split en las carreras que llegan
   }
 });
 
-check('calendario.anio avanza exactamente 1 cada splitsPorEdad splits', () => {
+checkLento('calendario.anio avanza exactamente 1 cada splitsPorEdad splits', () => {
   const rng = mulberry32(7);
   let state = createInitialState(7, rng);
 
@@ -5108,7 +5126,7 @@ check('calendario.anio avanza exactamente 1 cada splitsPorEdad splits', () => {
 
 // --- 9M-lite / 9ML.a: el mundo tiene escena (digest anual, PLAN.md) ---
 
-check('El digest anual de otras ligas se ve en toda carrera de ≥2 años, y el campeón no es siempre el mismo', () => {
+checkLento('El digest anual de otras ligas se ve en toda carrera de ≥2 años, y el campeón no es siempre el mismo', () => {
   const campeonesVistos = new Set();
   let carrerasConDigest = 0;
   let carrerasDeDosAnios = 0;
@@ -5165,7 +5183,7 @@ check('Ningún archivo fuera de src/ui/ referencia document (regla invariable 2)
   }
 });
 
-check('deltasDeStats devuelve al menos un delta en la mayoría de los cierres de edad', () => {
+checkLento('deltasDeStats devuelve al menos un delta en la mayoría de los cierres de edad', () => {
   let cierres = 0;
   let conDelta = 0;
 
@@ -5202,7 +5220,7 @@ check('deltasDeStats devuelve al menos un delta en la mayoría de los cierres de
 
 // --- Fase 8c: calibrar arraigo contra la distribución real (PLAN.md §8.4) ---
 
-check('El arraigo llega a Ídolo+ en una fracción sana de las carreras estables en una org', () => {
+checkLento('El arraigo llega a Ídolo+ en una fracción sana de las carreras estables en una org', () => {
   let elegibles = 0;
   let llegaron = 0;
 
@@ -5265,7 +5283,7 @@ check('El catálogo alcanza el objetivo de opciones declarado', () => {
   }
 });
 
-check('En carreras largas, una fracción sana ve al menos un evento que escribe un momento', () => {
+checkLento('En carreras largas, una fracción sana ve al menos un evento que escribe un momento', () => {
   let elegibles = 0;
   let conMomento = 0;
 
@@ -5330,7 +5348,7 @@ function trazaDeEquipo(seed, splits) {
   return { splitsPro, splitsProConEquipo, maxRachaSinEquipo, state };
 }
 
-check('Nadie se queda varado: sin equipo es una transición, no un destino', () => {
+checkLento('Nadie se queda varado: sin equipo es una transición, no un destino', () => {
   // Cota generosa a propósito: tier 3 te levanta en ~`splitsLibrePromedioTier3`
   // y el mercado te da `splitsSinOfertaParaLibre` pretemporadas antes de
   // soltarte. Una racha larga de verdad es un bug de estado, no mala suerte.
@@ -5360,7 +5378,7 @@ check('Nadie se queda varado: sin equipo es una transición, no un destino', () 
   }
 });
 
-check('La carrera profesional se juega mayormente con equipo', () => {
+checkLento('La carrera profesional se juega mayormente con equipo', () => {
   let splitsPro = 0;
   let splitsProConEquipo = 0;
   let varadas = 0;
@@ -5402,7 +5420,7 @@ check('La carrera profesional se juega mayormente con equipo', () => {
 // pasar es que `campeones.js`/`serie.js`/`temporada.js` —los sistemas que
 // resuelven un draft de verdad— logueen uno sin equipo, ni que un evento hable
 // del "manager" del club (salvo el community manager, que es otra cosa).
-check('Ningún split sin equipo narra un draft mecánico ni al manager del club (D27)', () => {
+checkLento('Ningún split sin equipo narra un draft mecánico ni al manager del club (D27)', () => {
   const DRAFT_DE_SISTEMA = new Set(['campeones', 'serie', 'temporada']);
   const infracciones = [];
 
@@ -5439,7 +5457,7 @@ check('Ningún split sin equipo narra un draft mecánico ni al manager del club 
 
 // --- Fase 9R5a → 10a: el retiro emergente (real, PLAN.md §10.1) ---
 
-check('Ninguna carrera queda sin terminar: el retiro cierra la run', () => {
+checkLento('Ninguna carrera queda sin terminar: el retiro cierra la run', () => {
   // Antes de 9R5a el 69% de las carreras seguía "en carrera" a los 60 splits —
   // no había ningún final exitoso, `terminado` solo lo seteaban tres fracasos
   // de la etapa amateur y el burnout.
@@ -5486,7 +5504,7 @@ check('Ninguna carrera queda sin terminar: el retiro cierra la run', () => {
   }
 });
 
-check('El retiro tiene variación real: no todos aguantan hasta la línea Faker', () => {
+checkLento('El retiro tiene variación real: no todos aguantan hasta la línea Faker', () => {
   // El pedido explícito del usuario: "si llegás a tier 1 y la hacés mal, que
   // te puedas retirar mucho antes". Sin esto, el check de arriba (mediana
   // pegada a 34) sería indistinguible de "todos llegan a la línea Faker
@@ -5515,7 +5533,7 @@ check('El retiro tiene variación real: no todos aguantan hasta la línea Faker'
   }
 });
 
-check('La ventana de vuelta (retiro reversible) es alcanzable y respeta vueltasMaximas', () => {
+checkLento('La ventana de vuelta (retiro reversible) es alcanzable y respeta vueltasMaximas', () => {
   // PLAN.md §10.1: el retiro por decisión o por mercado abre una ventana de
   // vuelta (Bjergsen/Doublelift, `CONCEPTO` §12.4). Se verifica que se use de
   // verdad (no una estructura muerta) y que nadie la exceda.
@@ -5546,7 +5564,7 @@ check('La ventana de vuelta (retiro reversible) es alcanzable y respeta vueltasM
   }
 });
 
-check('La duración de la carrera correlaciona con el potencial oculto (r > 0.32)', () => {
+checkLento('La duración de la carrera correlaciona con el potencial oculto (r > 0.32)', () => {
   // El coeficiente crece con la muestra (medido: r ≈ 0,35 a N=1000, ≈ 0,40 a
   // N=2000) y es sensible al corrimiento del stream de RNG (familia D37): a
   // N=500 rozaba el 0,35 y 9R0e lo empujó a 0,348. Lo que el check protege —"un
@@ -5588,7 +5606,7 @@ check('La duración de la carrera correlaciona con el potencial oculto (r > 0.32
 
 // --- Fase 9R.2: Mentalidad y Hype se dibujan ---
 
-check('La ficha profesional expone Mentalidad y Hype con banda y flecha', () => {
+checkLento('La ficha profesional expone Mentalidad y Hype con banda y flecha', () => {
   // No se ancla a una seed fija: cualquier cambio que corra el stream de RNG
   // (fase 9R0a/9R0c y toda la familia D37) cambia qué carrera reproduce una
   // seed dada, y "la seed 7 llega a profesional" dejó de ser cierto. Se toma
@@ -5619,7 +5637,7 @@ check('La ficha profesional expone Mentalidad y Hype con banda y flecha', () => 
   }
 });
 
-check('El burnout no llega sin aviso: la Mentalidad estuvo en zona roja varios splits antes', () => {
+checkLento('El burnout no llega sin aviso: la Mentalidad estuvo en zona roja varios splits antes', () => {
   // El burnout mata ~5-6% de las carreras. Con la barra ahora visible, el
   // jugador tiene que poder VERLO venir: el `burnoutSplitsMinimos` de
   // `atributos.js` obliga a que la mentalidad haya estado bajo
@@ -5674,7 +5692,7 @@ function correrHastaTerminar(seed) {
   return state;
 }
 
-check('Toda carrera terminada compone una tarjeta de legado bien formada', () => {
+checkLento('Toda carrera terminada compone una tarjeta de legado bien formada', () => {
   let terminadas = 0;
   for (let seed = 1; seed <= 400; seed += 1) {
     const state = correrHastaTerminar(seed);
@@ -5698,7 +5716,7 @@ check('Toda carrera terminada compone una tarjeta de legado bien formada', () =>
   }
 });
 
-check('Ningún arquetipo de veredicto se lleva a toda la población (tope 25%, CONCEPTO §11)', () => {
+checkLento('Ningún arquetipo de veredicto se lleva a toda la población (tope 25%, CONCEPTO §11)', () => {
   const stems = {};
   let total = 0;
   for (let seed = 1; seed <= 800; seed += 1) {
@@ -5732,7 +5750,7 @@ check('Ningún arquetipo de veredicto se lleva a toda la población (tope 25%, C
   }
 });
 
-check('El veredicto cita al menos un hecho real del registro de esa carrera', () => {
+checkLento('El veredicto cita al menos un hecho real del registro de esa carrera', () => {
   let revisados = 0;
   for (let seed = 1; seed <= 300; seed += 1) {
     const state = correrHastaTerminar(seed);
@@ -5757,7 +5775,7 @@ check('El veredicto cita al menos un hecho real del registro de esa carrera', ()
   }
 });
 
-check('componerLegado es puro: no toca el RNG ni muta el estado que recibe', () => {
+checkLento('componerLegado es puro: no toca el RNG ni muta el estado que recibe', () => {
   const rngQueRevienta = () => { throw new Error('componerLegado tocó el rng'); };
   const state = correrHastaTerminar(2);
   if (!state.terminado) {
@@ -5771,7 +5789,7 @@ check('componerLegado es puro: no toca el RNG ni muta el estado que recibe', () 
   }
 });
 
-check('retiro.js no consume RNG fuera de fase profesional / pretemporada', () => {
+checkLento('retiro.js no consume RNG fuera de fase profesional / pretemporada', () => {
   const rngQueRevienta = () => { throw new Error('retiro.aplicar tocó el rng cuando no debía'); };
   const retiro = sistemaPorId('retiro');
 
@@ -5810,7 +5828,7 @@ check('El estado nuevo de la fase 10c arranca completo (trampa T4)', () => {
   }
 });
 
-check('Ninguna carrera coreana profesional llega a la edad límite sin resolver el servicio', () => {
+checkLento('Ninguna carrera coreana profesional llega a la edad límite sin resolver el servicio', () => {
   // CONCEPTO §12.4: "determinista, no probabilístico" — `servicioMilitar.js`
   // dispara sin dado en cuanto se cumple la edad; este check confirma que el
   // disparo nunca falla en llegar (a diferencia de una lesión, que sí es
@@ -5843,7 +5861,7 @@ check('Ninguna carrera coreana profesional llega a la edad límite sin resolver 
   }
 });
 
-check('La exención por Asian Games (ganar un internacional siendo coreano) es alcanzable', () => {
+checkLento('La exención por Asian Games (ganar un internacional siendo coreano) es alcanzable', () => {
   let coreanosProResueltos = 0;
   let exentos = 0;
 
@@ -5867,7 +5885,7 @@ check('La exención por Asian Games (ganar un internacional siendo coreano) es a
   }
 });
 
-check('La cadena de servicio militar no deja flags.enServicioMilitar prendido entre splits', () => {
+checkLento('La cadena de servicio militar no deja flags.enServicioMilitar prendido entre splits', () => {
   // Las 3 decisiones resuelven dentro del mismo split (no se modela tiempo
   // que pasa): si esto quedara prendido después de `avanzarSplitAuto`, algún
   // sistema más abajo en `ETAPAS_SPLIT` se habría cortado a mitad de cadena.
@@ -5879,7 +5897,7 @@ check('La cadena de servicio militar no deja flags.enServicioMilitar prendido en
   }
 });
 
-check('lesion_cronica y retiro_por_lesion son alcanzables (raros, no cero)', () => {
+checkLento('lesion_cronica y retiro_por_lesion son alcanzables (raros, no cero)', () => {
   let lesionCronica = 0;
   let retiroPorLesion = 0;
   const N = 1200;
@@ -5906,7 +5924,7 @@ check('lesion_cronica y retiro_por_lesion son alcanzables (raros, no cero)', () 
   }
 });
 
-check('player.stats.mecanica nunca cruza player.techoLesionMecanica una vez fijado', () => {
+checkLento('player.stats.mecanica nunca cruza player.techoLesionMecanica una vez fijado', () => {
   for (let seed = 1; seed <= 250; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
@@ -5919,7 +5937,7 @@ check('player.stats.mecanica nunca cruza player.techoLesionMecanica una vez fija
   }
 });
 
-check('flags.fechasBajaLesion nunca queda negativo', () => {
+checkLento('flags.fechasBajaLesion nunca queda negativo', () => {
   for (let seed = 1; seed <= 250; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
@@ -5932,7 +5950,7 @@ check('flags.fechasBajaLesion nunca queda negativo', () => {
   }
 });
 
-check('servicioMilitar.js y salud.js no consumen RNG fuera de cuando corresponde', () => {
+checkLento('servicioMilitar.js y salud.js no consumen RNG fuera de cuando corresponde', () => {
   const rngQueRevienta = () => { throw new Error('tocó el rng sin que el sistema aplicara'); };
   const servicio = sistemaPorId('servicioMilitar');
   const salud = sistemaPorId('salud');
@@ -5962,7 +5980,7 @@ check('servicioMilitar.js y salud.js no consumen RNG fuera de cuando corresponde
 
 // --- Fase 11: el año (checks de §11.3) --------------------------------
 
-check('Fase 11: toda carrera de 6+ splits ve al menos 2 resúmenes con titular y nota (§11.3)', () => {
+checkLento('Fase 11: toda carrera de 6+ splits ve al menos 2 resúmenes con titular y nota (§11.3)', () => {
   let elegibles = 0;
   let conflictivos = 0;
   const N = 250;
@@ -5985,7 +6003,7 @@ check('Fase 11: toda carrera de 6+ splits ve al menos 2 resúmenes con titular y
   }
 });
 
-check('Fase 11: los titulares de una carrera de 30 splits no repiten tipo más de 3 veces (§11.3)', () => {
+checkLento('Fase 11: los titulares de una carrera de 30 splits no repiten tipo más de 3 veces (§11.3)', () => {
   const N = 150;
   for (let seed = 1; seed <= N; seed += 1) {
     const state = correrCarrera(seed, 60);
@@ -6007,7 +6025,7 @@ check('Fase 11: los titulares de una carrera de 30 splits no repiten tipo más d
   }
 });
 
-check('Fase 11: la nota correlaciona con la posición en liga sin determinarla (0.6 < r < 0.9, §11.3)', () => {
+checkLento('Fase 11: la nota correlaciona con la posición en liga sin determinarla (0.6 < r < 0.9, §11.3)', () => {
   const pares = [];
   for (let seed = 1; seed <= 120; seed += 1) {
     const rng = mulberry32(seed);
@@ -6037,7 +6055,7 @@ check('Fase 11: la nota correlaciona con la posición en liga sin determinarla (
   }
 });
 
-check('Fase 11: la viñeta 6 del resumen siempre nombra algo del año que viene (§11.3)', () => {
+checkLento('Fase 11: la viñeta 6 del resumen siempre nombra algo del año que viene (§11.3)', () => {
   const N = 150;
   for (let seed = 1; seed <= N; seed += 1) {
     const state = correrCarrera(seed, 60);
@@ -6051,7 +6069,7 @@ check('Fase 11: la viñeta 6 del resumen siempre nombra algo del año que viene 
   }
 });
 
-check('Fase 11: `ausencia` titula en al menos 30% de las carreras que pasan de 15 splits (§11.3)', () => {
+checkLento('Fase 11: `ausencia` titula en al menos 30% de las carreras que pasan de 15 splits (§11.3)', () => {
   let elegibles = 0;
   let conAusencia = 0;
   const N = 400;
@@ -6078,7 +6096,7 @@ check('Fase 11: `ausencia` titula en al menos 30% de las carreras que pasan de 1
   }
 });
 
-check('Fase 11: el duelo con el archirrival cambia de signo en al menos 40% de las carreras (§11.3)', () => {
+checkLento('Fase 11: el duelo con el archirrival cambia de signo en al menos 40% de las carreras (§11.3)', () => {
   let elegibles = 0;
   let cambianDeSigno = 0;
   // n=800, no 300: medido en 41,1% (n=400) — a un solo punto del piso, así
@@ -6113,7 +6131,7 @@ check('Fase 11: el duelo con el archirrival cambia de signo en al menos 40% de l
   }
 });
 
-check('Fase 11: el archirrival nunca consume RNG, sea cual sea la fase del jugador (§11.3, T1)', () => {
+checkLento('Fase 11: el archirrival nunca consume RNG, sea cual sea la fase del jugador (§11.3, T1)', () => {
   const rngQueRevienta = () => { throw new Error('tocó el rng sin que el sistema aplicara'); };
   const rivales = sistemaPorId('rivales');
   const resumenAnio = sistemaPorId('resumenAnio');
