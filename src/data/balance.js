@@ -48,7 +48,33 @@ export const BALANCE = {
     // `cooldown: 0` o lo omiten — sin él podían repetir en el mismo split.
     // 1 = "nunca dos veces en el mismo split". No se retunea acá (regla 2): el
     // ajuste fino de los cooldown del catálogo es 9Rg.
-    cooldownMinimoSplits: 1
+    cooldownMinimoSplits: 1,
+
+    // Fase 12d (PLAN.md §12.3, `core/previa.js`): terciles medidos con una
+    // sonda de una sola vez sobre los 1416 efectos reales del catálogo,
+    // agrupados por familia — no se inventan (regla de proceso 2). Cada
+    // familia vive en su propia escala (stat = puntos sobre 100, ladder = LP,
+    // pool = campeones/maestría, partido = fracción del resultado): una
+    // banda única hubiera dado "alta" a todo LP y "baja" a todo pool.
+    // `pool_aprender` da p33 === p66 (1.5) porque los 21 efectos reales de
+    // "aprender" del catálogo usan todos el mismo rango [1,2] — no es un
+    // error de la sonda, es que esa familia hoy no tiene variación real.
+    magnitudBandas: {
+      stat: { p33: 2, p66: 3 },
+      ladder: { p33: 13, p66: 22.5 },
+      pool_aprender: { p33: 1.5, p66: 1.5 },
+      pool_maestria: { p33: 4.5, p66: 6 },
+      partido: { p33: 0.075, p66: 0.105 }
+    },
+    // Terciles de la dispersión normalizada (desvío estándar del payoff de
+    // cada outcome, ponderado por peso, con cada efecto dividido por el
+    // corte "alta" de `magnitudBandas` de su propia familia para que outcomes
+    // de escalas distintas sean comparables) sobre las 442 opciones reales.
+    // `core/previa.js` la deriva de la DISPERSIÓN de los outcomes, nunca de
+    // sus pesos: dos outcomes 50/50 con efectos idénticos dan desvío 0
+    // ("seguro"), no "ruleta" — esa es la corrección a la fórmula que traía
+    // PLAN.md §12.3 antes de esta fase (ver la nota ahí).
+    riesgoBandas: { p33: 0.653, p66: 1.143 }
   },
 
   // Valores de arranque del jugador. Son las bases sobre las que el mundo

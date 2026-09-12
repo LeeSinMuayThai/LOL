@@ -22,7 +22,8 @@ import { TOKENS, tokensUsados, resolverTexto } from '../core/plantillas.js';
 import { RUTINAS } from '../core/rutinas.js';
 import { campeonesEnMeta, multiplicadorDeMeta, factorDeCampeon, pesoDePick, lecturaDePick } from '../core/ajusteMeta.js';
 import { campeonesDisponibles, entradaDePool } from '../core/pool.js';
-import { elegirOutcome, elegirEvento, decisionDesdeEvento, resolver as resolverEventos, resolverOpcion, cooldownActivo } from '../systems/events.js';
+import { elegirOutcome, elegirEvento, decisionDesdeEvento, resolver as resolverEventos, resolverOpcion, cooldownActivo, pesoEfectivo } from '../systems/events.js';
+import { previaDeOpcion, riesgoDeOpcion } from '../core/previa.js';
 import { tipoDeSplit, hayPresupuesto } from '../core/presupuesto.js';
 import { aplicar as aplicarPresupuesto } from '../systems/presupuesto.js';
 import { elegirCampeonRival, disponiblesDelPool, decisionDeDraft } from '../core/serie.js';
@@ -350,6 +351,61 @@ check('Una bisagra y una de ambiente producen peso distinto en el 100% de los ca
       }
     } else if (decision.peso !== 'normal') {
       throw new Error(`${evento.id}: esperaba peso "normal", dio "${decision.peso}"`);
+    }
+  }
+});
+
+check('Toda opción manda previa (≥1 campo o [] explícito) y un riesgo válido (PLAN.md §12.3)', () => {
+  const estadoBase = createInitialState(1, mulberry32(1));
+  const RIESGOS_VALIDOS = new Set(['seguro', 'incierto', 'ruleta']);
+  for (const evento of TODOS_LOS_EVENTOS) {
+    for (const opcion of evento.options) {
+      const pesos = opcion.outcomes.map((outcome) => pesoEfectivo(estadoBase, outcome));
+      const previa = previaDeOpcion(opcion, pesos);
+      if (!Array.isArray(previa)) {
+        throw new Error(`${evento.id}/${opcion.id}: previa no es un array`);
+      }
+      const riesgo = riesgoDeOpcion(opcion, pesos);
+      if (!RIESGOS_VALIDOS.has(riesgo)) {
+        throw new Error(`${evento.id}/${opcion.id}: riesgo "${riesgo}" fuera de vocabulario`);
+      }
+    }
+  }
+});
+
+check('El riesgo declarado coincide con la dispersión medida de outcomes (2000 resoluciones/opción, PLAN.md §12.3/§12.6)', () => {
+  const estadoBase = createInitialState(1, mulberry32(1));
+  const rng = mulberry32(2024);
+  const N = 2000;
+
+  for (const evento of TODOS_LOS_EVENTOS) {
+    for (const opcion of evento.options) {
+      const pesos = opcion.outcomes.map((outcome) => pesoEfectivo(estadoBase, outcome));
+      const pesoTotal = pesos.reduce((suma, peso) => suma + peso, 0);
+      const esperado = pesos.map((peso) => (peso / pesoTotal) * N);
+
+      // 2000 resoluciones REALES vía elegirOutcome (el mismo weightedPick que
+      // ve un jugador) — cuántas veces cayó cada outcome, no una
+      // reconstrucción teórica de nuevo.
+      const observado = new Array(opcion.outcomes.length).fill(0);
+      for (let i = 0; i < N; i += 1) {
+        const outcome = elegirOutcome(estadoBase, opcion, rng);
+        observado[opcion.outcomes.indexOf(outcome)] += 1;
+      }
+
+      // Chi-cuadrado de bondad de ajuste: la frecuencia observada tiene que
+      // coincidir con la que implica `pesoEfectivo` (lo que declaran
+      // `previaDeOpcion`/`riesgoDeOpcion`). Umbral generoso (6x los grados de
+      // libertad, muy por encima del percentil 99 de la distribución nula)
+      // para no fallar por ruido puro de muestreo — sí para detectar un
+      // desacople real como el de D-check-12d (`pesoEfectivo` ignorado y se
+      // usa el peso crudo de catálogo).
+      const chiCuadrado = esperado.reduce((suma, e, i) => suma + (observado[i] - e) ** 2 / e, 0);
+      const gradosDeLibertad = opcion.outcomes.length - 1;
+      const umbral = Math.max(6 * gradosDeLibertad, 20);
+      if (chiCuadrado > umbral) {
+        throw new Error(`${evento.id}/${opcion.id}: la frecuencia de 2000 resoluciones reales (χ²=${chiCuadrado.toFixed(1)}) no coincide con la que declara pesoEfectivo (observado=${observado.join('/')}, esperado=${esperado.map((e) => e.toFixed(0)).join('/')})`);
+      }
     }
   }
 });

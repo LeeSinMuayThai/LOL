@@ -495,6 +495,67 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   color: var(--ink-dim);
 }
 
+/* --- La consecuencia, antes de elegir (fase 12d, PLAN.md §12.3) -----------
+   Reusa el idioma visual que ya existía: el kicker de `.minijuego-apuesta-
+   kicker` para "+ MECÁNICA" y el pill de `.ficha-badge` para el riesgo — no
+   se inventan componentes nuevos. `--up`/`--danger` ya significan
+   "sube"/"riesgo" en el resto de la UI (ver tokens.css). */
+.option-previa {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1) var(--s-3);
+  margin-top: var(--s-2);
+}
+.option-previa-kicker {
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 700;
+  letter-spacing: var(--track-cartel);
+  text-transform: uppercase;
+}
+.option-previa-kicker--sube { color: var(--up); }
+.option-previa-kicker--baja { color: var(--danger); }
+/* La magnitud pesa en opacidad, no en un color nuevo: "alta" se lee firme,
+   "baja" apenas se insinúa — el signo ya dice para qué lado se mueve. */
+.option-previa-kicker--magnitud-baja { opacity: 0.55; }
+.option-previa-kicker--magnitud-media { opacity: 0.8; }
+.option-previa-kicker--magnitud-alta { opacity: 1; }
+
+.option-riesgo {
+  display: inline-block;
+  margin-top: var(--s-2);
+  padding: var(--s-1) var(--s-3);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  color: var(--ink-dim);
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  font-weight: 600;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
+.option-riesgo--seguro { border-color: var(--up); color: var(--up); }
+.option-riesgo--incierto { border-color: var(--warn); color: var(--warn); }
+.option-riesgo--ruleta { border-color: var(--danger); color: var(--danger); }
+
+/* Una opción bloqueada se ve, no desaparece (decisión de estructura de la
+   fase 12: `opcionesBloqueadas` no la ve `elegirOpcionAutomatica`, cero
+   consumo de rng). Inerte de verdad: `disabled`, no solo gris. */
+.option-btn--bloqueada {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.option-btn--bloqueada:hover {
+  border-color: var(--line);
+  background: var(--bg-raised);
+}
+.option-gate {
+  margin-top: var(--s-1);
+  color: var(--ink-mute);
+  font-size: var(--fs-1);
+  font-style: italic;
+}
+
 /* ==========================================================================
    3. EL MERCADO (fase 9c)
    ========================================================================== */

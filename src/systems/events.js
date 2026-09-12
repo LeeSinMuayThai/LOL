@@ -8,6 +8,7 @@ import { registrarMomento } from '../core/registro.js';
 import { crearLog } from '../core/log.js';
 import { deltaCorto, lista } from '../core/formato.js';
 import { tipoDeSplit, hayPresupuesto } from '../core/presupuesto.js';
+import { previaDeOpcion, riesgoDeOpcion, gateDeOpcion } from '../core/previa.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 
@@ -248,7 +249,11 @@ export function elegirEventoCierre(state, rng) {
 // mantiene su peso de siempre; uno con `modificadores` lo corre según qué tan
 // lejos estás del valor de referencia declarado. El piso evita que un stat muy
 // malo lleve un outcome a probabilidad cero — CORRE los pesos, no los borra.
-function pesoEfectivo(state, outcome) {
+//
+// Exportada desde la fase 12d: `core/previa.js` la necesita para que la
+// consecuencia previa y el riesgo respeten los mismos pesos que de verdad
+// va a usar `elegirOutcome`, no el peso crudo de catálogo.
+export function pesoEfectivo(state, outcome) {
   if (!outcome.modificadores) {
     return outcome.weight;
   }
@@ -307,6 +312,7 @@ export function resolverOpcion(state, evento, opcionId, rng) {
 // tiene nada que ver con el contexto de carrera.
 export function decisionDesdeEvento(state, evento, { franja, slot }) {
   const titulo = resolverTexto(evento.title, state);
+  const contexto = calcularContexto(state);
 
   return {
     tipo: 'opciones',
@@ -315,11 +321,26 @@ export function decisionDesdeEvento(state, evento, { franja, slot }) {
     // `descripcion` es la mitad de la decision: sin ella, elegir "Subirse a la
     // ola" no dice que estas arriesgando. Las rutinas ya la mandaban y la UI ya
     // sabe pintarla; los eventos la descartaban en este map.
-    opciones: opcionesVivas(state, evento).map((option) => ({
-      id: option.id,
-      label: resolverTexto(option.label, state),
-      descripcion: resolverTexto(option.descripcion, state)
-    })),
+    opciones: opcionesVivas(state, evento, contexto).map((option) => {
+      // Fase 12d (PLAN.md §12.3): los pesos EFECTIVOS de esta opción, en ESTE
+      // estado — la previa y el riesgo tienen que respetar `modificadores`,
+      // no el peso crudo de catálogo (CONCEPTO §8).
+      const pesos = option.outcomes.map((outcome) => pesoEfectivo(state, outcome));
+      return {
+        id: option.id,
+        label: resolverTexto(option.label, state),
+        descripcion: resolverTexto(option.descripcion, state),
+        previa: previaDeOpcion(option, pesos),
+        riesgo: riesgoDeOpcion(option, pesos)
+      };
+    }),
+    // Las que no pasaron `disponibleEn` se muestran cerradas con su motivo,
+    // no se resucitan: no entran a `opcionesVivas`, no las ve
+    // `elegirOpcionAutomatica`, cero consumo de `rng` (trampa T1) — es lo que
+    // hace barata esta subfase entera.
+    opcionesBloqueadas: evento.options
+      .filter((option) => !disponibleEn(state, option, contexto))
+      .map((option) => ({ label: resolverTexto(option.label, state), gate: gateDeOpcion(option) })),
     // Fase 12c (PLAN.md §12.2): el peso visual, calculado acá una sola vez en
     // vez de que la UI lo adivine. `ambiente` es la rutina sin bisagra — antes
     // de que `categoria` existiera (fase 12b) no había de dónde sacarlo sin

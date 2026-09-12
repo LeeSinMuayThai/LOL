@@ -32,7 +32,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **9W** | **El mejor del mundo**: ranking vivo de los mejores del momento (Top 5 a la derecha siempre, Top 20 al cierre de temporada). Se entra y se sale por mérito, rota mucho, de cualquier edad; distinto de los rivales de generación. Cero RNG (determinista por `hashCadena`) | ✅ **cerrada** (9Wa→9Wd). Ranking en el estado (r(nivel,rank)=0,96, cero-stream) + 6 ganchos (valor de mercado, piso de franquicia, legado, ficha, marcas/momento/eventos, `rivales[].puntaje` vivo) + pantalla (panel Top 5 permanente + reveal del Top 20 en el feed, con "quedaste #23") + calibrado (§9W.6: entrás al Top 20 en el 51% de las carreras con éxito, ~1% de las lavadas; rival de generación ~37%). Ver §9W |
 | **10** | El final: retiro emergente + la tarjeta de legado | ✅ **10a** (el retiro real, ver §10.1) · **10b** ya estaba cerrada desde 9R5b · **10c** (lesiones + servicio militar, ver §10.4) — cierra la fase. **10d** (calibrar) no hizo falta como commit aparte: los números de 10a/10c ya caen en banda a la primera medición |
 | **11** | El año: calendario, la nota de la temporada, el archirrival | ✅ **cerrada** (§11.1+§11.2, cierra D8). El archirrival corre su carrera (contador en la ficha) y el cierre de edad tiene nota (0-10), titular por peso emocional (10 tipos + racha para condiciones sostenidas) y 6 viñetas fijas, reemplazando el diff plano de antes. Ver `PROGRESO.md` |
-| **12** | La jerarquía de la decisión: categorías, rareza, consecuencia previa, el dado | 🔶 **12a** (`validate.js --rapido/--completo`, cierra D32) · **12b** (`categoria` en los 220 eventos + `formatoUi.js` + check) · **12c** (`peso: 'ambiente'` + tarjeta compacta) · faltan 12d→12f |
+| **12** | La jerarquía de la decisión: categorías, rareza, consecuencia previa, el dado | 🔶 **12a** (`validate.js --rapido/--completo`, cierra D32) · **12b** (`categoria` en los 220 eventos + `formatoUi.js` + check) · **12c** (`peso: 'ambiente'` + tarjeta compacta) · **12d** (`core/previa.js`: previa, riesgo, gate + corrección de §12.3) · faltan 12e→12f |
 | **13** | Contenido a escala (150+ opciones) | ⬜ |
 | **P** | Publicar: build, guardado en el navegador, seed en la URL, el repo y el host | 🔶 **build y pre-flight hechos** (P.7, P.10) · D28 cerrada · falta **P.2, el guardado**, que es el último bloqueante |
 
@@ -3981,24 +3981,49 @@ verde, regla de proceso 7.
 
 ## 12.3 — La consecuencia, antes de elegir
 
-`decisionDesdeEvento` ([events.js:262](src/systems/events.js#L262)) pasa a mandar, por opción:
+✅ **Cerrada en 12d.** `decisionDesdeEvento` ([events.js](src/systems/events.js)) manda, por opción:
 
 ```js
 {
   id, label, descripcion,
   // Dirección y magnitud CUALITATIVA, nunca el número: la regla invariable 7
   // exige rangos, y mostrar "+7" sería mentir sobre un [4,11].
-  previa: [{ campo: 'mecanica', signo: '+', magnitud: 'alta' }],   // -> "+ MECÁNICA"
+  previa: [{ campo: 'player.stats.mecanica', etiqueta: 'Mecánica', signo: '+', magnitud: 'alta' }],
   // Derivado de la dispersión REAL de outcomes de esta opción. Se calcula,
   // no se escribe a mano, así nunca miente. (Imagen 4: "un abrazo o un incendio".)
   riesgo: 'seguro'|'incierto'|'ruleta',
-  // Ya existe como option.contexto; solo hay que mostrarlo.
-  gate: 'Solo con jerarquía ≥60'
+  peso: 'bisagra'|'normal'|'ambiente'   // 12c
 }
 ```
 
-`magnitud` se deriva de `(min+max)/2` contra bandas en `BALANCE.eventos.magnitudBandas`.
-`riesgo` se deriva del coeficiente de variación de los `weight` de los outcomes.
+`magnitud` se deriva de `(min+max)/2` (valor absoluto) contra bandas en
+`BALANCE.eventos.magnitudBandas`, **una banda por familia de efecto** (`stat`, `ladder`,
+`pool_aprender`, `pool_maestria`, `partido` — una sola tabla hubiera dado "alta" a todo LP y "baja"
+a todo pool, escalas que no son comparables). `previa` se calcula en `core/previa.js`
+(`previaDeOpcion`, puro, nuevo) con el peso **efectivo** de cada outcome (`pesoEfectivo`, exportada
+desde `systems/events.js` en esta fase) para respetar `modificadores` — la previa no puede mostrar
+lo mismo sin importar tus stats (CONCEPTO §8).
+
+**Corrección a este documento (2026-09-12, fase 12d).** Este párrafo decía antes: *"`riesgo` se
+deriva del coeficiente de variación de los `weight` de los outcomes"*. Eso estaba mal: dos outcomes
+50/50 con efectos idénticos darían "ruleta" siendo perfectamente seguros (la tirada es pareja, pero
+el resultado es previsible), y el propio check de §12.6 ("el riesgo declarado coincide con la
+dispersión medida") fallaría por construcción apenas se implementara. `riesgoDeOpcion` deriva el
+riesgo del **desvío estándar del PAYOFF normalizado entre los outcomes** (cada efecto dividido por
+el corte "alta" de su familia en `magnitudBandas`, para que un efecto de `ladder` y uno de `stat` —
+escalas distintas — aporten en términos comparables), ponderado por peso efectivo, contra
+`BALANCE.eventos.riesgoBandas` (terciles medidos sobre las 442 opciones reales, no inventados). Un
+50/50 de efectos idénticos da desvío 0 → "seguro", correcto. Confirmado sobre contenido real: las
+opciones de mayor desvío medido son narrativamente apuestas (*"tirarte a la jugada"*, *"agarrar la
+plata"* del sponsor cripto); las de menor desvío son las conservadoras (*"cerrar la app"*, *"seguir
+grindeando"*).
+
+`gateDeOpcion` (`core/previa.js`) traduce `opcion.conditions` (mismo esquema que
+`evento.conditions`) a texto — *"Solo con Jerarquía ≥ 60"*. Hoy ningún evento del catálogo gatea
+una opción propia (0/442): el cable queda tendido, sin contenido que lo ejercite todavía.
+`decisionDesdeEvento` agrega además `opcionesBloqueadas: [{ label, gate }]` con las opciones que no
+pasaron `disponibleEn` — no entran a `opcionesVivas`, no las ve `elegirOpcionAutomatica`, cero
+consumo de `rng` (trampa T1).
 
 ## 12.4 — Rareza y el dado
 
@@ -4023,12 +4048,12 @@ verde, regla de proceso 7.
 ## 12.6 — Checks de la fase 12
 
 ```
-Todo evento del catálogo declara `categoria` (check estático)
-Toda opción manda `previa` con ≥1 campo, o declara `previa: []` explícitamente
-El `riesgo` declarado coincide con la dispersión medida de outcomes (2000 resoluciones/opción)
-Una bisagra y una de ambiente producen `peso` distinto en el 100% de los casos
-Toda serie internacional deja su camino guardado en registro.internacionales
-Ningún minijuego puede setear `terminado` (ya existe, no puede regresionar)
+✅ Todo evento del catálogo declara `categoria` (check estático) — 12b
+✅ Toda opción manda `previa` con ≥1 campo, o declara `previa: []` explícitamente — 12d
+✅ El `riesgo` declarado coincide con la dispersión medida de outcomes (2000 resoluciones/opción) — 12d
+✅ Una bisagra y una de ambiente producen `peso` distinto en el 100% de los casos — 12c
+   Toda serie internacional deja su camino guardado en registro.internacionales — 12f
+   Ningún minijuego puede setear `terminado` (ya existe, no puede regresionar) — 12f
 ```
 
 ---

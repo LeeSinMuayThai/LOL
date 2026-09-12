@@ -33,6 +33,64 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-12 — Fase 12d: la consecuencia, antes de elegir (PLAN.md §12.3)
+
+Cuarta subfase de la 12 — la única que el modelo de trabajo de esta fase reserva sin delegar
+("donde hay que hilar fino"): un módulo nuevo, dos constantes medidas y una corrección al propio
+plan. `core/previa.js` (puro, cero RNG, cero import de `systems/`) exporta tres funciones:
+`previaDeOpcion`, `riesgoDeOpcion`, `gateDeOpcion`.
+
+**La corrección real de esta subfase**: PLAN.md §12.3 decía que `riesgo` salía del coeficiente de
+variación de los `weight` de los outcomes. Eso estaba mal — un 50/50 de efectos idénticos daría
+"ruleta" siendo perfectamente seguro — y se corrigió en el propio documento (con fecha) antes de
+implementar: `riesgoDeOpcion` deriva el riesgo del desvío estándar del **payoff normalizado por
+familia** entre outcomes, ponderado por peso efectivo. Verificado sobre contenido real, no solo en
+abstracto: las opciones de mayor dispersión medida son apuestas narrativas de verdad ("tirarte a la
+jugada", "agarrar la plata" del sponsor cripto → `ruleta`); las de menor dispersión son las
+conservadoras ("cerrar la app", "seguir grindeando" → `seguro`).
+
+**Los números no se inventaron** (regla de proceso 2): una sonda de una sola vez midió, sobre los
+1416 efectos y 442 opciones reales del catálogo, los terciles de magnitud por familia (`stat`,
+`ladder`, `pool_aprender`, `pool_maestria`, `partido` — una banda por familia, porque una sola
+tabla daría "alta" a todo LP y "baja" a todo pool) y de dispersión de riesgo, y quedaron en
+`BALANCE.eventos.magnitudBandas`/`riesgoBandas`. Nota real de la medición: `pool_aprender` da
+p33 === p66 (1.5) porque los 21 efectos de "aprender" del catálogo usan todos el mismo rango
+[1,2] — no es un error, es que esa familia hoy no tiene variación.
+
+`pesoEfectivo` (antes privada en `systems/events.js`) se exporta para que la previa respete
+`modificadores` — no puede mostrar lo mismo sin importar los stats del jugador (CONCEPTO §8).
+`decisionDesdeEvento` agrega, por opción, `previa`/`riesgo`; y a nivel decisión,
+`opcionesBloqueadas: [{ label, gate }]` con las opciones que no pasaron `disponibleEn` — no entran
+a `opcionesVivas`, no las ve `elegirOpcionAutomatica`, cero consumo de `rng` (trampa T1: es lo que
+hace segura y barata toda la subfase). Hoy el catálogo no gatea ninguna opción propia (0/442 con
+`conditions`/`contexto` a nivel opción): el cable queda tendido, sin contenido que lo ejercite
+todavía — análogo a `ultimo_ano`/`sin_renovacion` (D30) antes de tener contenido real.
+
+**UI** (`decision.js`): la previa se pinta reusando el idioma visual que ya existía —
+`.option-previa-kicker` calca a `.minijuego-apuesta-kicker` ("+ MECÁNICA"), con el signo en color
+(`--up`/`--danger`, ya significan "sube"/"riesgo" en el resto de la UI) y la magnitud en opacidad,
+no en un color nuevo. El riesgo se pinta como pill, calcado de `.ficha-badge`. Las opciones
+bloqueadas se ven inertes (`disabled`, opacidad, el motivo en cursiva), no desaparecen — cero
+componentes nuevos inventados.
+
+**Checks nuevos** (`validate.js`, ambos verificados en rojo antes de existir la implementación,
+regla de proceso 7):
+- "Toda opción manda previa... y un riesgo válido": falló contra un `riesgoDeOpcion` roto a
+  propósito (devolviendo un valor fuera de vocabulario).
+- "El riesgo declarado coincide con la dispersión medida de outcomes (2000 resoluciones/opción)":
+  **la primera versión usaba el desvío del payoff como métrica de comparación, y no detectó un bug
+  deliberado** (pesos rotos a `outcome.weight` crudo en vez de `pesoEfectivo`) porque para
+  opciones de 2 outcomes el desvío es matemáticamente insensible cerca de p≈0,5 (el máximo de la
+  parábola de varianza es plano ahí) — un hallazgo real sobre la propia métrica, no un bug del
+  check. Se cambió a un chi-cuadrado de bondad de ajuste sobre la FRECUENCIA de outcomes en 2000
+  resoluciones reales (`elegirOutcome`) contra la que implica `pesoEfectivo`: con el mismo bug
+  deliberado, detecta la divergencia (χ²=36,9 contra un umbral de 20); restaurado, pasa limpio y
+  corre en 0,7s.
+
+Suite completa: **177/177 OK, 0 FAIL** (175 + los 2 checks nuevos). `simulate.js 1500 60 todas`:
+0 crashes. Prueba anti-T1 (40 seeds): huella idéntica — `decisionDesdeEvento` solo agrega campos
+derivados de datos que ya existían, ningún camino nuevo toca `rng`.
+
 ### 2026-09-12 — Fase 12c: el peso `ambiente` (PLAN.md §12.2)
 
 Tercera subfase de la 12. Con `categoria` declarada (12b), T4 dejó de faltarle el dato que
