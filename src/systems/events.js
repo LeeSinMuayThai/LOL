@@ -320,6 +320,11 @@ export function decisionDesdeEvento(state, evento, { franja, slot }) {
       label: resolverTexto(option.label, state),
       descripcion: resolverTexto(option.descripcion, state)
     })),
+    // Fase 12c (PLAN.md §12.2): el peso visual, calculado acá una sola vez en
+    // vez de que la UI lo adivine. `ambiente` es la rutina sin bisagra — antes
+    // de que `categoria` existiera (fase 12b) no había de dónde sacarlo sin
+    // inventar un campo (T4 lo dejó afuera a propósito por eso mismo).
+    peso: evento.bisagra ? 'bisagra' : (evento.categoria === 'rutina' ? 'ambiente' : 'normal'),
     franja,
     slot,
     datos: { evento }

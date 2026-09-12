@@ -381,6 +381,12 @@ details.avanzado summary:hover { color: var(--ink-dim); }
 }
 .decision[data-peso="cierre"]::before { background: var(--gold); }
 
+.decision[data-peso="ambiente"] {
+  padding: var(--s-3);
+  border-left-color: var(--line);
+}
+.decision[data-peso="ambiente"]::before { display: none; }
+
 /* La pestaña de lower-third (T0b): dice qué es el panel antes de que el
    jugador lea una sola palabra del contenido. `.decision` la arma en JS
    (`decision.js`, T4) con `data-tab-label`/`--tab-color`; `.mercado`/

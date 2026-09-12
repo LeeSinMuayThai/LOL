@@ -336,6 +336,24 @@ check('Todo evento del catálogo declara categoria válida (PLAN.md §12.1)', ()
   }
 });
 
+check('Una bisagra y una de ambiente producen peso distinto en el 100% de los casos (PLAN.md §12.2)', () => {
+  const estadoBase = createInitialState(1, mulberry32(1));
+  for (const evento of TODOS_LOS_EVENTOS) {
+    const decision = decisionDesdeEvento(estadoBase, evento, {});
+    if (evento.bisagra) {
+      if (decision.peso !== 'bisagra') {
+        throw new Error(`${evento.id}: bisagra:true pero peso="${decision.peso}"`);
+      }
+    } else if (evento.categoria === 'rutina') {
+      if (decision.peso !== 'ambiente') {
+        throw new Error(`${evento.id}: categoria rutina sin bisagra pero peso="${decision.peso}"`);
+      }
+    } else if (decision.peso !== 'normal') {
+      throw new Error(`${evento.id}: esperaba peso "normal", dio "${decision.peso}"`);
+    }
+  }
+});
+
 check('Campeones, roles y ligas coherentes', () => {
   const arquetipos = new Set(ARQUETIPOS);
   const nombres = new Set();

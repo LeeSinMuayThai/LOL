@@ -33,6 +33,40 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-12 — Fase 12c: el peso `ambiente` (PLAN.md §12.2)
+
+Tercera subfase de la 12. Con `categoria` declarada (12b), T4 dejó de faltarle el dato que
+necesitaba para el tercer peso visual que había sacado del alcance en su momento por no tener
+respaldo: `decisionDesdeEvento` (`systems/events.js`) ahora manda `peso: 'bisagra' | 'normal' |
+'ambiente'`, con `ambiente = !bisagra && categoria === 'rutina'`.
+
+`formatoUi.js`'s `pesoDeDecision` pasa a leer `decision.peso` cuando viene, con esta precedencia:
+`franja === 'cierre'` gana siempre (un evento de cierre de edad no compite por atención con su
+categoría de catálogo, aunque esta diga `rutina`), después `decision.peso`, después el
+`decision.bisagra` directo que ya cubría retiro/salida de la etapa amateur (decisiones que no
+pasan por `systems/events.js` y por lo tanto no traen `peso`).
+
+**CSS delegado a Gemini/agy**, spec propio contra el patrón ya existente de
+`[data-peso="bisagra"/"cierre"]` en `pantallas.css`: entrega de 4 líneas — `padding: var(--s-3)`
+(más compacto que el `var(--s-5)` de una tarjeta normal), `border-left-color: var(--line)` (sin
+color de categoría, más liviana) y `::before { display: none }` (sin pestaña). Verificado a mano
+contra el diff real (no delegado a un subagente aparte por ser un cambio de 4 líneas trivialmente
+auditable): solo toca `pantallas.css`, ningún token nuevo, los 5 checks de CSS de `validate.js`
+siguen en verde.
+
+**Check nuevo**: "Una bisagra y una de ambiente producen peso distinto en el 100% de los casos
+(PLAN.md §12.2)" — corre `decisionDesdeEvento` sobre los 220 eventos del catálogo contra un estado
+base y verifica el `peso` resultante contra la fórmula. Verificado en rojo primero (regla de
+proceso 7): con el wiring de `events.js` stasheado, falló contra el primer evento
+(`scout_call: esperaba peso "normal", dio "undefined"`); restaurado, pasa.
+
+**Prueba anti-T1**: misma sonda de 40 seeds que 12b, comparada entre el HEAD previo (`fab7fde`) y
+el árbol con 12c — huella idéntica. `decisionDesdeEvento` solo agrega un campo derivado, no toca
+`rng`.
+
+Suite completa: **175/175 OK, 0 FAIL** (174 + el check nuevo). `simulate.js 1500 60 todas`: 0
+crashes en las 3 estrategias.
+
 ### 2026-09-12 — Fase 12b: la categoría (PLAN.md §12.1)
 
 Segunda subfase de la 12. Todo el catálogo (**220 eventos, 22 archivos**) declara ahora

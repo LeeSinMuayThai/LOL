@@ -51,22 +51,26 @@ export function etiquetaDeFuerza(fuerzaRival, fuerzaPropia) {
   return 'parejo';
 }
 
-// --- El peso visual: bisagra > cierre > normal ------------------------------
-// Dos campos reales, no tres inventados: `evento.bisagra` (boolean, ya
-// existe en varios eventos de `pool.json`) y `franja` ('normal' | 'cierre',
-// puesto por `systems/edadCierre.js`). Una versión anterior de PLAN.md
-// hablaba de un tercer peso "ambiente" que no correspondía a ningún campo
-// real — se sacó al escribir esta fase.
+// --- El peso visual: cierre > (lo que traiga decision.peso) > bisagra > normal
+// Fase 12c (PLAN.md §12.2): `decisionDesdeEvento` calcula `peso` una sola vez
+// (`'bisagra' | 'normal' | 'ambiente'`, este último = `!bisagra && categoria
+// === 'rutina'` — antes T4 no tenía de dónde sacarlo sin inventar un campo).
+// Acá solo se lee. `franja === 'cierre'` sigue ganándole a todo: un evento de
+// cierre no compite por atención con el resto de las categorías, aunque su
+// `categoria` de catálogo diga `rutina`.
 //
-// Fase 10a: `decision.bisagra` directo (sin pasar por `datos.evento`) cubre
-// las decisiones que no vienen de `systems/events.js` pero cambian el
-// resultado igual — retiro y salida de la etapa amateur, las dos primeras.
+// Fase 10a: `decision.bisagra` directo (sin pasar por `datos.evento`) sigue
+// cubriendo las decisiones que no vienen de `systems/events.js` y por lo
+// tanto no traen `peso` — retiro y salida de la etapa amateur.
 export function pesoDeDecision(decision) {
-  if (decision?.bisagra || decision?.datos?.evento?.bisagra) {
-    return 'bisagra';
-  }
   if (decision?.franja === 'cierre') {
     return 'cierre';
+  }
+  if (decision?.peso) {
+    return decision.peso;
+  }
+  if (decision?.bisagra) {
+    return 'bisagra';
   }
   return 'normal';
 }

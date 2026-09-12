@@ -32,7 +32,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **9W** | **El mejor del mundo**: ranking vivo de los mejores del momento (Top 5 a la derecha siempre, Top 20 al cierre de temporada). Se entra y se sale por mérito, rota mucho, de cualquier edad; distinto de los rivales de generación. Cero RNG (determinista por `hashCadena`) | ✅ **cerrada** (9Wa→9Wd). Ranking en el estado (r(nivel,rank)=0,96, cero-stream) + 6 ganchos (valor de mercado, piso de franquicia, legado, ficha, marcas/momento/eventos, `rivales[].puntaje` vivo) + pantalla (panel Top 5 permanente + reveal del Top 20 en el feed, con "quedaste #23") + calibrado (§9W.6: entrás al Top 20 en el 51% de las carreras con éxito, ~1% de las lavadas; rival de generación ~37%). Ver §9W |
 | **10** | El final: retiro emergente + la tarjeta de legado | ✅ **10a** (el retiro real, ver §10.1) · **10b** ya estaba cerrada desde 9R5b · **10c** (lesiones + servicio militar, ver §10.4) — cierra la fase. **10d** (calibrar) no hizo falta como commit aparte: los números de 10a/10c ya caen en banda a la primera medición |
 | **11** | El año: calendario, la nota de la temporada, el archirrival | ✅ **cerrada** (§11.1+§11.2, cierra D8). El archirrival corre su carrera (contador en la ficha) y el cierre de edad tiene nota (0-10), titular por peso emocional (10 tipos + racha para condiciones sostenidas) y 6 viñetas fijas, reemplazando el diff plano de antes. Ver `PROGRESO.md` |
-| **12** | La jerarquía de la decisión: categorías, rareza, consecuencia previa, el dado | 🔶 **12a** (`validate.js --rapido/--completo`, cierra D32) · **12b** (`categoria` en los 220 eventos + `formatoUi.js` + check) · faltan 12c→12f |
+| **12** | La jerarquía de la decisión: categorías, rareza, consecuencia previa, el dado | 🔶 **12a** (`validate.js --rapido/--completo`, cierra D32) · **12b** (`categoria` en los 220 eventos + `formatoUi.js` + check) · **12c** (`peso: 'ambiente'` + tarjeta compacta) · faltan 12d→12f |
 | **13** | Contenido a escala (150+ opciones) | ⬜ |
 | **P** | Publicar: build, guardado en el navegador, seed en la URL, el repo y el host | 🔶 **build y pre-flight hechos** (P.7, P.10) · D28 cerrada · falta **P.2, el guardado**, que es el último bloqueante |
 
@@ -3960,17 +3960,24 @@ Claude aparte contra el mapa completo antes de este commit. Prueba anti-T1: huel
 
 ## 12.2 — El peso visual sale del motor (cero código nuevo)
 
-`core/presupuesto.js` ya clasifica `denso/normal/comprimido`; el contenido ya declara
-`bisagra: true`; [`events.js:173`](src/systems/events.js#L173) ya le da prioridad absoluta.
+✅ **Cerrada en 12c.** `core/presupuesto.js` ya clasifica `denso/normal/comprimido`; el contenido ya
+declara `bisagra: true`; [`events.js:173`](src/systems/events.js#L173) ya le da prioridad absoluta.
 
-`decisionDesdeEvento` agrega **un campo**: `peso: 'bisagra'|'normal'|'ambiente'`. La UI lo lee:
+`decisionDesdeEvento` agrega **un campo**: `peso: 'bisagra'|'normal'|'ambiente'`
+(`evento.bisagra ? 'bisagra' : (evento.categoria === 'rutina' ? 'ambiente' : 'normal')`). La UI lo
+lee (`formatoUi.js`'s `pesoDeDecision`, que ahora prioriza `franja === 'cierre'` sobre todo lo
+demás — un cierre no compite por atención con la categoría — y después `decision.peso` si vino):
 
 - `bisagra` → ocupa la pantalla, marca de agua, banner grande, animación de entrada.
 - `normal` → tarjeta estándar.
-- `ambiente` → tarjeta compacta, sin banner.
+- `ambiente` → tarjeta compacta, sin banner: `padding: var(--s-3)`, `border-left-color:
+  var(--line)`, `::before { display: none }` — CSS delegado a Gemini/agy contra el patrón ya
+  existente de `[data-peso="bisagra"/"cierre"]`, verificado a mano (diff de 4 líneas, sin tokens
+  nuevos) antes de commitear.
 
 **Es conectar un cable que ya está tendido.** Y es la respuesta directa a *"las preguntas se
-repiten todo el tiempo"* (H5).
+repiten todo el tiempo"* (H5). Check nuevo (§12.6) verificado en rojo (sin el campo `peso`) y en
+verde, regla de proceso 7.
 
 ## 12.3 — La consecuencia, antes de elegir
 
