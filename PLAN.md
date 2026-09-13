@@ -33,8 +33,9 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **10** | El final: retiro emergente + la tarjeta de legado | ✅ **10a** (el retiro real, ver §10.1) · **10b** ya estaba cerrada desde 9R5b · **10c** (lesiones + servicio militar, ver §10.4) — cierra la fase. **10d** (calibrar) no hizo falta como commit aparte: los números de 10a/10c ya caen en banda a la primera medición |
 | **11** | El año: calendario, la nota de la temporada, el archirrival | ✅ **cerrada** (§11.1+§11.2, cierra D8). El archirrival corre su carrera (contador en la ficha) y el cierre de edad tiene nota (0-10), titular por peso emocional (10 tipos + racha para condiciones sostenidas) y 6 viñetas fijas, reemplazando el diff plano de antes. Ver `PROGRESO.md` |
 | **12** | La jerarquía de la decisión: categorías, rareza, consecuencia previa, el dado | ✅ **cerrada** (12a→12f). **12a** (`validate.js --rapido/--completo`, cierra D32) · **12b** (`categoria` en los 220 eventos + `formatoUi.js` + check) · **12c** (`peso: 'ambiente'` + tarjeta compacta) · **12d** (`core/previa.js`: previa, riesgo, gate + corrección de §12.3) · **12e** (`core/rareza.js`: rareza común/rara en las decisiones de mejora + el dado nombra el eje) · **12f** (bracket siempre visible, minijuego con identidad por competición + dificultad por ronda, camino de serie persistido en `registro.internacionales`) |
-| **13** | Contenido a escala (150+ opciones) | ⬜ |
-| **P** | Publicar: build, guardado en el navegador, seed en la URL, el repo y el host | 🔶 **build y pre-flight hechos** (P.7, P.10) · D28 cerrada · falta **P.2, el guardado**, que es el último bloqueante |
+| **P** | Publicar: build, guardado en el navegador, seed en la URL, el repo y el host | 🔶 **P.2/P.3/P.5 ✅ (fase T8, 2026-09-04)** — el guardado, la seed en la URL y el repo (remote, `README.md`, `LICENSE`, descargo de fan) ya existen · **P.7/P.10 ✅**. **Queda, y es la fase activa**: **P.6** (el host — pushear los 70 commits que `origin/master` no tiene), **P.8** (verificación en la URL publicada, no en `localhost`), el `og:image` propio y el `<title>` real del juego (P.4, diferido en T.2). Auditado en detalle el 2026-09-13, ver P.0 |
+| **D** | Los campos que la ficha promete y el motor no escribe: `ultimo_ano`/`sin_renovacion` (D30), `registro.picos.rankedPuntos` (D40) y `career.liga` sin limpiar al quedar libre (D42) | ⬜ nueva, agrupa D30+D40+D42 (auditoría 2026-09-13). Va después de P y antes de 13: D30 es prerrequisito del momento `sin_renovacion` de la 13 |
+| **13** | Contenido a escala | 🔶 **el objetivo numérico ya se superó 3×** (442 opciones vs. objetivo 150) y `cobertura.js --huecos` tiene un solo hueco. Lo que queda es más chico que lo que el documento describía — ver §13, reescrita el 2026-09-13 |
 
 > **Por qué estas tres fases se insertaron antes del mercado.** Jugando el juego con las cuatro
 > fases hechas aparecieron cuatro defectos medibles: la temporada regular se resuelve con una
@@ -2898,13 +2899,14 @@ de un `:hover`/`:active`/`:focus` usa un token de tinta (`guards.js`, candado de
 Toda la UI corre con `prefers-reduced-motion: reduce` sin perder información
 Una carrera completa se termina solo con teclado
 Contraste ≥4.5:1 en todo par (texto, fondo) de los tokens
-`dist/` ≤ **1200 KB**. Historial de la trampa T6 en esta sola línea, porque cada vez
-que se citó un número viejo estaba mal: 576 KB (fase P) → 725 KB (T0) → 950 KB
-(re-medido en T0b, otra sesión había sumado 9R3c/9R3d) → 1041 KB (T2) → 1080 KB (T5)
-→ **1092 KB medido en T6**. El techo subió de 1100 a 1200 acá mismo: quedaban 8 KB de
-margen y todavía faltan T7 (canvas de exportación) y T8 (guardado + `almacenamiento.js`
-+ meta/OG), que van a sumar código aunque sea liviano. Re-medir en T7/T8, no citar 1200
-como si fuera el número final
+~~`dist/` ≤ **1200 KB**~~ — **roto, medido en la auditoría del 2026-09-13: 1561 KB.** Historial de
+la trampa T6 en esta sola línea, porque cada vez que se citó un número viejo estaba mal: 576 KB
+(fase P) → 725 KB (T0) → 950 KB (re-medido en T0b, otra sesión había sumado 9R3c/9R3d) → 1041 KB
+(T2) → 1080 KB (T5) → 1092 KB (T6) → **1561 KB (2026-09-13, sobre un build del 9/9 anterior a
+10c/11/12 — un build de hoy pesa más)**. `build.js:301` solo reporta el peso, nunca lo hizo fallar:
+por eso subió sin que ningún check lo marcara. Re-medir con un build actual y fijar el techo nuevo
+en **P.6**, antes de conectar un host — no volver a citar un número de este historial como si
+fuera el vigente
 T8: la misma seed con N llamadas restauradas produce la misma secuencia que correrla de corrido
 T8: las seeds anteriores a T8 siguen reproduciendo su carrera (huella idéntica)
 ```
@@ -4068,101 +4070,45 @@ consumo de `rng` (trampa T1).
 
 ---
 
-# FASE 13 — CONTENIDO A ESCALA
-
-## 13.0 — El catálogo, por archivo
-
-`roster.js` enriquece a cada compañero: `edad`, `nacionalidad`, `esImport`, `personalidad`
-(`veterano_cinico | rookie_ansioso | estrella_egocentrica | soldado_callado | carismatico`) y
-**`relacion` 0-100**, que deriva con los splits juntos y se mueve con los eventos. Es la variable
-más barata del juego: el mismo evento de vestuario se lee distinto con el jungla que te banca que
-con el que te odia — **y habilita la opción D del draft** (ver 4.4 en las fases ya cerradas).
-
-| archivo | contexto principal | ~eventos |
-|---|---|---|
-| `equipo.json` | `nivel: tier1/tier2` | 12 |
-| `vestuario.json` | por `relacion` y `personalidad` | 10 |
-| `mercado.json` | eventos narrativos alrededor del mercado (fase 9), `ventana: offseason` | 10 |
-| `region.json` | `residencia: import` | 8 |
-| `soloq_pro.json` | la cuota coreana, `nivel: tier2/tier3` | 6 |
-| `pool.json` | marcas de pool (1.4, ampliado en fase 6) | 10 |
-| `serie.json` | `ventana: playoffs/internacional` | 10 |
-| `declive.json` | `etapa: declive`, `edadBanda: tardia/veterana` | 10 |
-| `retiro.json` / `vuelta.json` | `etapa: retirado` (fase 10) | 8 |
-| `salud.json` | amplía el actual | +6 |
-| `rol/*.json` | eje `rol`, lo que no es específico de un partido puntual | 15 |
-
-> `rol/*.json` ya perdió las quince situaciones que la fase 5 mudó a
-> `data/events/partido/dentro_del_mapa.json` reescritas con marcador y rival. Lo que queda acá (y
-> lo que se agrega) es contenido de rol que no depende de una fecha concreta: entrenamiento,
-> comparaciones con otros del rol, la vida fuera del mapa.
-
-**Flujo de autoría:** `cobertura.js --huecos` → escribir gateado exactamente a esas celdas →
-repetir hasta vacío. **El check de cobertura pasa de reporte a check duro acá**, cuando el
-contenido existe.
-
-**Usar 3 y 4 opciones.** Al cierre de la fase 0 el catálogo tiene 22 eventos / 46 opciones, y solo
-2 eventos usan 3 opciones. `CONCEPTO` §3 dice "2 a 4" (D14).
-
-**Objetivo de escala:** ≥150 opciones en el catálogo total, `cobertura.js --huecos` vacío.
-
-**Con tres agregados obligatorios** que salen del diagnóstico y no estaban en la especificación
-original de esta fase:
-
-1. Todo evento nuevo declara `categoria` (12.1) y `previa` (12.3). El check los exige desde acá.
-2. **Contenido que cita el registro.** Es lo que la fase 8 hace posible y **lo único que produce la
-   sensación de que la carrera se acuerda de vos**:
-   - *"Volvés a jugar contra {org que te dejó libre} — la que te soltó a los 19."*
-   - *"El {rol} rival es {handle}, al que le ganaste la final de {anio}."*
-   - *"Hace {n} splits que no levantás un trofeo. En {org} se empieza a notar."*
-   - *"Cumplís {n} años en {org}. Del vestuario que te recibió no queda nadie."*
-3. Se cierra D11: las 6 rutinas de offseason se diferencian por tier (un bootcamp en Corea no lo
-   paga un tier 3), **cuidando** que siempre quede al menos una `segura` y una `agresiva` por nivel
-   o el check de rutinas falla.
-
-## Checks de la fase 13
-
-```
-cobertura.js --huecos vacío
-≥150 opciones en el catálogo
-Fracción de splits sin evento < 25% EN TODOS los contextos alcanzables, no en promedio (T10)
-Todo evento nuevo declara categoria y previa (regla de proceso 12/13)
-≥10% de las carreras de ≥25 splits ven al menos un evento que cita el registro (13.0, punto 2)
-```
-
----
-
 # FASE P — PUBLICAR
 
 > No es una fase de juego: es la fase que convierte el repo en algo que otra persona puede abrir.
 > Va acá porque `CLAUDE.md` no admite planear en el momento, y porque publicar destapa tres cosas
 > que jugando en `localhost` no molestan y en público rompen el juego.
 
+**Reordenada antes de la fase 13 el 2026-09-13.** La tabla de Estado la tenía como *"falta P.2, el
+guardado, que es el último bloqueante"*. Auditado contra el código: P.2/P.3/P.5 los cerró la fase
+T8 hace nueve commits (2026-09-04) y nadie vino a tacharlos acá — el documento seguía describiendo
+un guardado y un repo que ya existían. Lo que de verdad falta es deploy y verificación (P.6, P.8),
+no motor: por eso pasa a ser la fase activa, antes que el contenido de la 13.
+
 ## P.0 — El estado, medido
 
-Auditado el 2026-09-02, antes de escribir nada:
+**Auditoría original del 2026-09-02.** Tres de sus filas quedaron falsas después de T8; se dejan
+tachadas en vez de borrarlas, porque el resto del razonamiento de la fase (P.1, P.6) se apoya en
+ellas y una auditoría vieja que se borra es una auditoría que se puede repetir de cero (trampa T6):
 
-| Qué | Estado |
-|---|---|
-| Base de datos | **No hay ninguna.** Cero `localStorage`, `fetch`, `IndexedDB`, SQL o servicio externo |
-| "Los datos" | Archivos estáticos: `src/data/*.json` + `balance.js`, importados en tiempo de módulo |
-| Dependencias | **0.** `package.json` no tiene un solo `dependencies` |
-| Build | **Ninguno.** ES modules nativos, sin bundler ni transpilación |
-| Peso a servir | **850 KB** (`index.html` + `src/core` + `src/data` + `src/systems` + `src/ui`) |
-| `server.js` | 60 líneas de servidor estático **solo para desarrollo**. No hace falta en producción |
-| Imports relativos | **274, todos resuelven en un filesystem case-sensitive** (verificado; Windows no distingue mayúsculas, el host sí) |
-| Archivos con `_` inicial | Ninguno → no hace falta `.nojekyll` para GitHub Pages |
-| Remote de git | **No hay.** El repo es local, rama `master` |
-| Persistencia de la partida | **Ninguna.** Un refresh borra la carrera |
+| Qué | Estado al 2026-09-02 | Re-medido 2026-09-13 |
+|---|---|---|
+| Base de datos | No hay ninguna | Sigue sin haber — `guardado.js`/`almacenamiento.js` usan `localStorage`, no una base |
+| "Los datos" | Archivos estáticos | Sin cambios |
+| Dependencias | 0 | Sin cambios |
+| Build | Ninguno | Lo agregó **P.10**, dentro de esta misma fase |
+| Peso a servir | 850 KB | `dist/` pesa **1561 KB** hoy (build del 2026-09-09, anterior a 10c/11/12 — ver P.6) |
+| `server.js` | 60 líneas, solo dev | Sin cambios |
+| Imports relativos | 274, case-sensitive | Sin cambios |
+| Archivos con `_` inicial | Ninguno | Sin cambios |
+| ~~Remote de git~~ | ~~No hay~~ | **Existe**: `origin → github.com/LeeSinMuayThai/LOL.git` (P.5) — pero desactualizado, ver P.5 |
+| ~~Persistencia de la partida~~ | ~~Ninguna~~ | **Existe** desde T8: `core/guardado.js` + `ui/almacenamiento.js` (P.2) |
 
-**Conclusión**: subirlo es arrastrar una carpeta a cualquier host estático. Lo que hay que arreglar
-no es el hosting, son las tres cosas de P.1.
+**Conclusión, vigente**: subirlo sigue siendo arrastrar una carpeta a un host estático. De las tres
+cosas de P.1, dos quedaron cerradas del todo y la tercera (el guardado) también — lo que resta es
+P.6/P.8, que nunca se habían intentado.
 
 ## P.1 — Los tres bloqueantes, por gravedad
 
-1. **No se guarda nada, y la sesión objetivo son 25-40 minutos.** Es el bloqueante real: en
-   `localhost` uno no recarga; un desconocido sí, y pierde dos horas de carrera. Se resuelve en P.2
-   **sin backend**.
+1. ~~**No se guarda nada, y la sesión objetivo son 25-40 minutos.**~~ — **cerrado en P.2** (fase
+   T8, 2026-09-04).
 2. ~~**Los 5 `Math.random()` de `index.html`**~~ (D28) — **cerrado.** Pasaron a `rngUi`, un stream
    propio sembrado con `mulberry32((seed ^ 0x9E3779B9) >>> 0)`. Se le dio stream **separado** del
    `rng` del motor a propósito: si comieran del principal, el navegador (que juega los minijuegos)
@@ -4177,60 +4123,52 @@ no es el hosting, son las tres cosas de P.1.
 `file://` ya está cubierto: `index.html` detecta `location.protocol` y muestra un mensaje que
 explica que hay que servirlo. No hace falta tocarlo.
 
-## P.2 — El guardado, sin base de datos (`src/core/guardado.js`, nuevo)
+## P.2 — El guardado, sin base de datos ✅ (fase T8, 2026-09-04)
 
-La arquitectura ya está preparada y nadie la usó: `state.pendiente` guarda
-`{ sistemaId, decision }` **justamente para que la partida sea serializable a mitad de split**, y
-`state` es todo objetos planos. Falta una sola pieza.
+`src/core/guardado.js` (puro: `serializar`/`deserializar`, clave `version`, guarda también
+`rngUiEstado` para que los minijuegos no repitan la misma tirada al continuar) +
+`src/ui/almacenamiento.js` (el `localStorage` real, mejor esfuerzo: si falla, la carrera sigue
+jugándose igual, solo que sin red de seguridad). `core/rng.js:18-19` expone `.estado()` /
+`.restaurar(n)`, que era la única pieza de motor que faltaba. Se guarda al cerrar cada split; se
+borra si la carrera termina o si se arranca una nueva a propósito. La pantalla de inicio ofrece
+**Continuar**, visible solo si `hayCarreraGuardada()` es real.
 
-`mulberry32` guarda su contador en una variable de clausura (`core/rng.js:2`) y no lo expone, así
-que hoy no se puede restaurar el punto del stream. El estado interno es un uint32 que avanza por
-una constante fija por llamada: exponerlo son ~5 líneas y no cambia una tirada.
+Verificado con dos chequeos, no uno (regla 15): `.restaurar()` reproduce exacto sobre 5 seeds
+(corrida interrumpida vs. de corrido) **y** 12 seeds viejas siguen dando la misma huella
+`finAnticipado:splits:soloqElo` contra el motor pre-T8 vía `git archive HEAD`. Cero divergencias en
+los dos. Detalle completo en §T8 y `PROGRESO.md`.
 
-- `mulberry32` devuelve la función con un `.estado()` / `.restaurar(n)` (o se agrega
-  `mulberry32Desde(seed, llamadas)`). **Check obligatorio**: la misma seed con `n` llamadas
-  restauradas produce exactamente la misma secuencia que correrla de corrido — si no, el guardado
-  miente y es peor que no tenerlo (regla 15).
-- `guardar(state, rng)` → `localStorage` al cerrar cada split y en cada `pausar()`.
-- `cargar()` → si hay partida, la pantalla de inicio ofrece **Continuar** además de **Empezar**.
-- Versionado del guardado: una clave `version` que se compara contra la del build. Si no coincide,
-  se avisa y se descarta en vez de cargar un estado que ningún sistema actual entiende (los
-  cambios de forma del `state` son constantes en este proyecto).
+## P.3 — La seed en la URL ✅ (fase T8, 2026-09-04)
 
-Esto no necesita servidor, cuenta ni base de datos. Todo vive en el navegador del jugador.
+`leerSeedDeUrl()` precarga el input desde `?seed=N`, sin arrancar la carrera sola. Destapó un bug
+real y preexistente en `server.js`: `req.url === '/'` se comparaba contra el querystring todavía
+pegado, así que `/?seed=N` nunca calzaba con `'/'` y cada visita con seed caía derecho al 404 — el
+link que arma T7 nunca había funcionado. Corregido de paso. Detalle en §T8.
 
-## P.3 — La seed en la URL
+## P.4 — La página como página 🔶
 
-`leerSeed()` (`index.html:1103`) solo lee el input; no mira la URL. Con determinismo real (P.1.2):
+Lo que T8 cerró: `<meta name="description">`, Open Graph + Twitter card (`og:title`,
+`og:description`), favicon (SVG inline, el monograma cyan del topbar — cero archivo binario nuevo).
 
-- `?seed=42` precarga la seed.
-- Botón **copiar link de esta carrera** en la tarjeta final.
+**Sigue faltando, declarado y no silenciado en T8:**
+- **`og:image` propia** — no hay forma en este entorno de generar un archivo de imagen real sin
+  tocar el controlador de producción solo para exponerle `estado`/`modulos` a una captura
+  automatizada, y el plan pide autoría a mano, no un headless en el build.
+- **El `<title>`** sigue siendo el placeholder `LOL Career Simulator` — nombrar el juego se difirió
+  explícitamente en T.2 y sigue sin decidirse.
 
-Es barato y es la función social que el juego pide: `CONCEPTO` §1 dice que *"el objetivo del
-jugador no es ganar Worlds, es descubrir qué carrera le tocó"* — poder pasarle esa carrera a otro
-es la consecuencia natural.
+## P.5 — El repo ✅ (fase T8, 2026-09-04) — con un hallazgo nuevo
 
-## P.4 — La página como página
+Cerrado lo del alcance original: `.gitignore`, `README.md` (qué es, cómo correrlo, cómo correr los
+checks), `LICENSE` (MIT) y la línea de descargo de proyecto de fan sobre las ligas y organizaciones
+reales. El remote existe: `origin → github.com/LeeSinMuayThai/LOL.git`.
 
-Hoy `index.html` tiene `lang`, `charset`, `viewport` y `<title>`, y **nada más**. Compartir el link
-muestra una tarjeta vacía. Falta:
-
-- `<meta name="description">`.
-- Open Graph + Twitter card (`og:title`, `og:description`, `og:image`) con una imagen propia.
-- Favicon.
-- Un `<title>` con el nombre real del juego, no `LOL Career Simulator`.
-
-## P.5 — El repo
-
-- Crear el remote y pushear (`master` no tiene ninguno hoy).
-- `.gitignore` — no existe. Mínimo: `node_modules/` y `package-lock.json` (un lockfile sin una sola
-  dependencia es ruido; hoy está sin trackear).
-- `README.md` — no existe. Qué es, cómo correrlo (`npm start`), cómo correr los checks.
-- `LICENSE` — decisión del usuario, pendiente.
-- **Marcas**: `CLAUDE.md` habilita ligas y organizaciones reales, y `leagues.json` tiene 58 orgs
-  reales con nombre. Local es una cosa y público es otra: conviene una línea de descargo de
-  proyecto de fan y revisar la política de contenido de fans de Riot antes de difundirlo. No es un
-  bloqueante técnico; es una decisión a tomar a ojos abiertos.
+**Hallazgo de la auditoría 2026-09-13, sin fase que lo cubra**: `master` y `origin/master` están
+clavados en `db3c82e` ("fase P parcial") — el commit con el que T8 arrancó. La rama de trabajo
+`fase-9r-que-el-juego-se-juegue` está **70 commits adelante y sin pushear**: todo 9Ec, 9M, 9W, 10,
+11 y 12 existe solo en este disco. Con P.6 desplegando desde el repo privado, pushear (y decidir si
+se mergea a `master` o el host apunta a esta rama) es un prerrequisito real del deploy — se agrega
+a P.6.
 
 ## P.6 — El host
 
@@ -4254,6 +4192,15 @@ y el build es Node puro.
 **Sin conectar el repo**: `npm run build` y arrastrar `dist/` a Netlify Drop o a Cloudflare Pages
 ("Direct Upload"). Es el camino de un minuto para que lo pruebe alguien.
 
+**Pendiente real, agregado en la auditoría 2026-09-13:**
+1. Pushear la rama actual (o mergearla a `master` — ver P.5) antes de conectar un host a un repo
+   que hoy solo tiene la fase P parcial.
+2. **El techo de `dist/` de §T.7 (`≤ 1200 KB`) ya está roto**: medido hoy, **1561 KB**, sobre un
+   build del 9 de septiembre anterior a 10c/11/12 — un build de hoy pesa más todavía.
+   `build.js:301` solo reporta el peso, no lo hace fallar. Re-medir con un build actual y subir el
+   techo a un número medido antes de conectar un host (regla de proceso 4: reportar lo medido, no
+   lo esperado), o convertir el reporte en check duro.
+
 ## P.7 — El pre-flight ✅
 
 Hecho, y no como script aparte: **vive dentro de `src/dev/build.js`** y corre en cada build, sobre
@@ -4271,16 +4218,25 @@ guard cubre el repo.
 
 ## P.8 — Verificación end-to-end
 
+**Sigue pendiente — es lo próximo a hacer, junto con P.6.** No se puede completar hasta que el
+sitio esté desplegado en una URL real:
+
 1. Abrir la **URL publicada** (no `localhost`) en Chrome, Firefox y Safari, y en un móvil.
 2. Jugar hasta mitad de carrera, **recargar la pestaña** y confirmar que continúa donde estaba.
 3. Abrir el mismo `?seed=N` en dos navegadores distintos y confirmar que la carrera es idéntica.
 4. Consola sin errores en toda la partida (ya se hizo así en la fase 8b, con Chrome headless
    vía CDP).
 
+## P.9 — Qué queda explícitamente afuera
+
+Backend, cuentas de usuario, tabla de récords global, guardado en la nube y analytics. Todo eso
+deja de ser un sitio estático y trae servidor, base de datos y datos personales. Si alguna vez se
+quiere, es una decisión de producto nueva — **no un requisito para publicar**.
+
 ## P.10 — El build ✅ (`src/dev/build.js`)
 
-`npm run build` → `dist/`, **576 KB**. Sin bundler y sin una sola dependencia: el proyecto no tiene
-ninguna y esta fase no es excusa para agregar la primera.
+`npm run build` → `dist/`. Sin bundler y sin una sola dependencia: el proyecto no tiene ninguna y
+esta fase no es excusa para agregar la primera.
 
 1. **Copia** `index.html` + `src/core`, `src/data`, `src/systems`, `src/ui`. Deja afuera
    `src/dev/` (148 KB), `server.js` y los cinco `.md`.
@@ -4294,15 +4250,161 @@ ninguna y esta fase no es excusa para agregar la primera.
    salió bien: se comprueba. Si una sola carrera difiere, el build falla.
 
 **Verificación real hecha** (2026-09-02): `dist/` servido y cargado en Chrome headless. **87
-peticiones, 87 con 200**; el único 404 es `/favicon.ico` (P.4). Los 5 roles y el grid de campeones
-renderizan, y los 27 módulos JSON inlineados cargan. El módulo de errores de `index.html` no se
-disparó.
+peticiones, 87 con 200**; el único 404 es `/favicon.ico` (P.4, cerrado desde). Los 5 roles y el
+grid de campeones renderizan, y los 27 módulos JSON inlineados cargan. El módulo de errores de
+`index.html` no se disparó.
 
-## P.9 — Qué queda explícitamente afuera
+**Peso histórico** (trampa T6: no citar un número viejo sin re-medir): 576 KB (esta fase, parcial,
+2026-09-02) → serie completa hasta 1092 KB en §T.7 → **1561 KB** medido el 2026-09-13, sobre un
+`dist/` que todavía no incluye 10c/11/12. Re-medir con un build actual antes de fijar cualquier
+techo nuevo (P.6, punto 2).
 
-Backend, cuentas de usuario, tabla de récords global, guardado en la nube y analytics. Todo eso
-deja de ser un sitio estático y trae servidor, base de datos y datos personales. Si alguna vez se
-quiere, es una decisión de producto nueva — **no un requisito para publicar**.
+## Checks de la fase P
+
+```
+✅ mulberry32.restaurar() reproduce exacto: 5 seeds interrumpidas == corridas de corrido (P.2)
+✅ 12 seeds pre-T8 dan la misma huella finAnticipado:splits:soloqElo tras el guardado (P.2, T1)
+✅ npm run build compara 12 seeds × 30 splits entre src/ y dist/, 0 divergencias (P.10)
+⬜ dist/ vuelve a estar ≤ techo declarado, re-medido sobre un build de hoy (P.6)
+⬜ P.8 completo sobre la URL publicada (no localhost), en 4 navegadores
+```
+
+---
+
+# FASE D — LOS CAMPOS QUE NADIE ESCRIBE
+
+> Agrupa D30, D40 y D42 (auditoría 2026-09-13): tres campos que el motor declara y que el mercado,
+> el registro o la ficha necesitan, y que ningún sistema llega a escribir nunca. Comparten síntoma
+> (regla 15: lo que la tarjeta promete, el motor lo cumple) y tamaño — cada uno son pocas líneas —
+> así que se cierran juntos, en un commit, **antes** que el contenido de la 13 dependa de ellos
+> (el momento `sin_renovacion` no puede escribirse sin D.1). **Corre el stream de RNG** (T1, misma
+> familia que D21/D22/D35): se declara de antemano, no se descubre después.
+
+## D.1 — `ultimo_ano` y `sin_renovacion` (D30)
+
+`calcularMercado` (`core/contexto.js:137-139`) hoy solo distingue `contrato_firme`/`sin_contrato`.
+`contextos.js:17` ya declara los cuatro valores del eje completo, y `contrato.aniosRestantes` ya
+existe en el estado — la información está, falta leerla:
+
+- `ultimo_ano`: `currentOrg` existe y `contrato.aniosRestantes` es el último año antes del vencimiento.
+- `sin_renovacion`: el club ya avisó que no renueva — el gancho narrativo que el momento
+  `sin_renovacion` (`contextos.js:146`) necesita para dejar de estar `pendiente: 'paso11'`.
+
+Desbloquea ese momento y dos de los `pendiente` de §13.1 punto 2.
+
+## D.2 — `registro.picos.rankedPuntos` (D40)
+
+Declarado en `state.js:211`, **0 escrituras** en todo `/src` (verificado por grep). Es la mitad de
+D40 que sigue abierta — la otra mitad (`mundo.archirrival`) la cerró la fase 11. Escribir el pico
+donde ya se registran los demás (`core/registro.js`, junto a `registrarPico`), o borrar el campo si
+no hay pantalla que lo vaya a mostrar todavía — cualquiera de las dos cierra el bug de confianza;
+dejarlo declarado y en cero es lo único que no vale.
+
+## D.3 — `career.liga` no se limpia al quedar libre (D42)
+
+`quedarLibre` (`systems/mercado.js:363-379`) limpia `currentOrg`/`rosterDeOrg`/`companeros`/
+`sinergia` pero no `liga`. Un free agent sigue "perteneciendo" a su última liga mientras entrena y
+sube de nivel. `career.liga` se lee en 12+ lugares (`ficha.js`, `competitivo.js`, `escena.js`,
+`topMundial.js`...) — auditar cada call site antes de limpiarlo, no es un fix de una línea. Impacto
+ya medido: infla el check "el silencio del mercado es para los que están por debajo" (72% contra un
+piso que ya se bajó 90%→60% para absorber el ruido en vez de tocar la causa).
+
+## Checks de la fase D
+
+```
+calcularMercado() devuelve los 4 valores del eje mercado en carreras reales, no solo 2
+El momento sin_renovacion deja de estar pendiente en cobertura.js
+registro.picos.rankedPuntos > 0 en toda carrera que pisó ranked (o el campo se borra, regla 15)
+career.liga es null en todo split con career.currentOrg null (regla 15)
+Huella finAnticipado:splits:soloqElo comparada contra HEAD previo (T1), reportada en PROGRESO.md
+```
+
+---
+
+# FASE 13 — CONTENIDO A ESCALA
+
+> **Reescrita el 2026-09-13.** Se escribió cuando el catálogo tenía 22 eventos / 46 opciones; hoy
+> tiene **220 / 442**, y `cobertura.js --huecos` reporta un solo hueco. La mitad de esta fase ya
+> pasó sola, empujada por el contenido que fue entrando fase a fase (8D, 9R.3, 12b). Lo que sigue
+> es más chico que "escala": son las puntas sueltas reales, medidas hoy.
+
+## 13.0 — Lo que ya se cumplió (fuera del alcance que queda)
+
+- **Objetivo de escala**: `cobertura.js` lo confirma solo —
+  `opciones totales del catálogo: 442 / objetivo 150 ✔`. No hace falta escribir más por volumen.
+- **`categoria` en todo evento nuevo**: 220/220 desde 12b, con check estático (`validate.js:329`,
+  "Todo evento del catálogo declara categoria válida").
+- **Contenido que cita el registro** (punto 2 de la especificación original): ya existe
+  `data/events/registro_cita.json` (7 eventos, fase 8D) con su propio check
+  ("una fracción sana ve al menos un evento que escribe un momento").
+
+**Corrección a la especificación original**: decía *"todo evento nuevo declara `categoria` (12.1)
+y `previa` (12.3)"*. Eso ya no es así ni debería serlo — 12d hizo `previa` **derivada**
+(`core/previa.js`, `previaDeOpcion`) justamente para que no pueda mentir sobre el rango real de un
+outcome; ningún evento la trae en el JSON (0/220, correcto). El check vigente (`validate.js:359`,
+"Toda opción manda previa…") verifica la derivada, no una declaración.
+
+**La tabla de archivos por escribir** (`equipo.json`, `vestuario.json`, `mercado.json`,
+`region.json`, `soloq_pro.json`, `serie.json`, `declive.json`, `retiro.json`/`vuelta.json`)
+describía un plan que no es el que se siguió: **ninguno de esos ocho archivos existe.** El
+contenido equivalente se escribió en otros archivos a medida que cada fase lo necesitó
+(`estatus.json`, `marcas_vivas.json`, `negocios.json`, `competicion.json`, `escena_2026.json`,
+`drama_prensa.json`, `partido/*`). No hay una tabla de archivos que escribir: hay huecos puntuales
+(13.1).
+
+**El roster enriquecido** de la apertura original quedó medio hecho: desde 9Ma, un compañero que
+sale de un plantel NPC ya trae `edad` y `aniosContrato` (`systems/roster.js:30-37`). Faltan
+`nacionalidad`, `esImport`, `personalidad` (`veterano_cinico | rookie_ansioso |
+estrella_egocentrica | soldado_callado | carismatico`) y `relacion` 0-100 — sigue siendo la
+variable más barata del juego para dar variedad al mismo evento de vestuario, y sigue habilitando
+la opción D del draft (4.4).
+
+## 13.1 — Lo que queda de verdad
+
+1. **El único hueco de cobertura**: `retirado_reciente / pretemporada` tiene 2 eventos, el mínimo
+   es 6. Escribir 4 más.
+2. **Los 5 momentos `pendiente` que citan fases ya cerradas** (regla de proceso 6 incumplida por
+   las fases 11 y 12):
+   - `import_recien_llegado`: **alcanzable, 222 eventos de cobertura ya la ejercitan.** Solo hay
+     que borrar el flag `pendiente: 'paso11'` — es exactamente lo que el comentario de
+     `contextos.js:138-141` advierte que no hay que dejar pasar.
+   - `veterano_util` / `veterano_al_margen`: **nunca observados** en 300×45. Medir si es un hueco
+     real de contenido (`etapa: 'declive'` existe desde 10a) antes de escribir nada.
+   - `sin_renovacion`: bloqueado por motor, no por contenido — lo desbloquea la **FASE D** (D.1).
+     No escribir contenido para este momento hasta que esa fase cierre.
+   - `retirado`: superado por `retirado_reciente` (10a, prioridad 95). Con el retiro final la
+     carrera termina, así que `etapa: ['retirado']` a secas no se muestrea nunca — borrarlo o
+     repurposarlo, no dejarlo `pendiente`.
+3. **D11** — las 7 rutinas de `data/rutinas/offseason.json` se gatean solo por `etapa` (verificado:
+   0 de 7 declaran `nivel`/tier). Diferenciar por tier (un bootcamp en Corea no lo paga un tier 3),
+   **cuidando** que siempre quede al menos una `segura` y una `agresiva` por nivel o el check de
+   rutinas falla.
+4. **D14** — 2 eventos con 3 opciones, 0 con 4, sobre 220. `CONCEPTO` §3 dice "2 a 4"; usar el
+   rango completo en el contenido nuevo de este punto.
+5. **El gateo de `sin_equipo`** (residuo de D26(c)): `cobertura.js` lo reporta con mayoría sin
+   gatear en playoffs (7 anclados / 10 sin gatear) y en regular (6 / 11). Anclar el contenido
+   apropiado a la celda en vez de dejarlo caer ahí por omisión.
+6. **D17** — LRN/LRS (los circuitos tier 2 de LATAM) siguen sin modelar: un jugador de la región
+   nace directo en NA o BR. Simplificación ya prevista en la investigación original; si se ataca
+   acá, es contenido narrativo, no un `leagues.json` nuevo.
+7. **Oportunidad sin explotar**: ningún evento del catálogo declara `servicio_militar` (verificado
+   por grep), pese a que el sistema existe desde 10c. Un coreano yéndose a cumplir el servicio es
+   una bisagra sin escribir.
+8. **D34** — el tiempo total en el nivel tier 3 tiene p90 = 12 splits (4 años), verificado sin
+   cambios desde la fase 10. Regla de proceso 3: agregar contenido de tier 3 primero (hace que esos
+   12 splits se sientan una historia y no un trámite) y recién si el p90 sigue leyéndose largo,
+   evaluar tocar `probAscensoBaseDesdeTier3` (`balance.js:782`) en un commit aparte.
+
+## Checks de la fase 13
+
+```
+cobertura.js --huecos vacío (hoy: 1 hueco — retirado_reciente/pretemporada)
+0 momentos alcanzables marcados pendiente citando una fase ya cerrada (regla de proceso 6)
+Fracción de splits sin evento < 25% EN TODOS los contextos alcanzables, no en promedio (T10)
+  — check nuevo, no existe hoy en validate.js
+Las 7 rutinas de offseason declaran nivel/tier, con segura+agresiva por nivel (D11)
+sin_equipo/playoffs y sin_equipo/regular dejan de tener mayoría "sin gatear" en cobertura.js
+```
 
 ---
 
@@ -4332,7 +4434,7 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D5 | ~~`regionOrigen` se sorteaba uniforme entre 8 ligas~~ — resuelto: pesado por prestigio, solo tier 1 | ✅ 3 |
 | D6 | ~~El meta se describía por arquetipo, no por campeón~~ — resuelto: `campeonesEnMeta` | ✅ 1 |
 | D7 | `src/ui/` está vacía; los 1.090 renglones de UI viven en `index.html` (creció de 416 a 1.090 entre la fase 0 y la fase 4, sobre todo por los 5 minijuegos) | 8 |
-| D8 | Los 5 rivales de generación se generan y no corren su carrera. La fase 5 les da su primer uso real (aparecen con nombre como `stakes: rival_de_generacion` en una fecha marcada). **9Ma**: ahora ocupan una casilla de plantel real (la que `orgDelRival` les asigna por hash) y `systems/plantel.js` los envejece como NPCs de carrera larga. **9Mc**: `core/mercadoMundial.js` los mueve/renueva con el resto del mundo (no se van al mercado ni se retiran antes de tiempo — `seVaDelMundo` los protege). **9Wb** ✅: `mundo.rivales[].puntaje` es su mejor rank en el Top 20 mundial, vivo (`systems/topMundial.js` lo mantiene cada split); `dueloDeGeneracion` (`core/ficha.js`) devuelve `{rivalHandle,rivalRol,rivalRank,tuRank,vasGanando}`. Falta la ficha de archirrival con `desenlace` (fase 11) | 🔶 **9Ma+9Mc (viven y se mueven) · 9Wb (rank en vivo)** · falta la ficha (11) |
+| D8 | ✅ **Cerrada (11), reconfirmado 2026-09-13.** Los 5 rivales de generación se generan y corren su carrera: **9Ma** los puso en una casilla de plantel real (la que `orgDelRival` les asigna por hash) y los envejece como NPCs de carrera larga; **9Mc** los mueve/renueva con el resto del mundo (`seVaDelMundo` los protege de irse antes de tiempo); **9Wb** les da `mundo.rivales[].puntaje` vivo (mejor rank en el Top 20) y `dueloDeGeneracion` en `core/ficha.js`. **11** cerró lo que faltaba: `mundo.archirrival` se escribe de verdad (`core/mundo.js:358`, `elegirArchirrival`) y trae la ficha con `desenlace` | ✅ 9Ma + 9Mc + 9Wb + 11 |
 | D9 | ✅ **Cerrada (10c).** `player.deudaSueno` no se resetea al pasar a profesional; `systems/salud.js` es el consumidor que le faltaba — el riesgo de lesión escala con la deuda arrastrada de la etapa amateur (medido: `retiro_por_lesion` va de 1,2% con juego prudente a 8,8% con grindeo agresivo de soloQ) | ✅ 10c |
 | D10 | ✅ **Cerrada (10a), distinto de lo previsto.** `secundario.js` usa `amateur.edadLimite` para congelar el flag. No hizo falta darle un umbral propio: `edadLimite` no se borró (10a lo convirtió en la red anti-loop, 20→24) — el significado que `secundario.js` necesita no cambió, solo el valor | ✅ 10a |
 | D11 | Las rutinas de offseason siguen gateadas solo por etapa, no por tier (un bootcamp en Corea no lo paga un tier 3). Deferido de la fase 3 por alcance: cuidar el check de segura/agresiva al diferenciar | 13 |
@@ -4341,7 +4443,7 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D14 | Solo 2 eventos del catálogo usan 3 opciones; ninguno usa 4 | 13 |
 | D15 | LCP no tiene un circuito de desarrollo real investigado (`CONCEPTO` §12.3 no lo cubre). Se modeló como `LCP_CHALLENGERS`, generado igual que el resto de tier 2 — nombre plausible, no verificado como real. Si aparece la investigación real, reemplazar el id | 3 (abierto) |
 | D16 | ✅ **Cerrada (9Md)** para el jugador. El último de una liga tier 1 con `desciendeA` desciende y su contrato viaja; la org tier-2 más fuerte de la región promociona a taparla (swap en `mundo.ligas`). Caídas tier 1 → tier 2: **21,8% (9Md)** → **13,5% (9Mi**, el stream shift; 9Mj lo devuelve a ≥15%). La **pirámide completa** (todas las ligas relegan cada año) se **evaluó y difirió en 9Mi** (§9M.12.2 punto 3): no arregla el check 7 (el jugador bueno rebota a tier 1) y metería ~90 orgs sin plantel a tier 1 en 15 años. Los checks 7/9Mi-1 se redefinieron a "liga mayor" en su lugar. Pirámide = texture de mundo futura, fuera de 9M | 🔶 9Md · 9Mj devuelve check 8 a banda · pirámide diferida |
-| D17 | LRN/LRS (los circuitos tier 2 de LATAM que alimentan LCS/CBLOL) y la doble residencia LATAM 2026-2027 no están modelados: un jugador de la región nace directamente en NA o BR. Es la simplificación explícita que ya preveía la investigación ("la doble residencia... vale un evento dedicado") | **9M** |
+| D17 | LRN/LRS (los circuitos tier 2 de LATAM que alimentan LCS/CBLOL) y la doble residencia LATAM 2026-2027 no están modelados: un jugador de la región nace directamente en NA o BR. Es la simplificación explícita que ya preveía la investigación ("la doble residencia... vale un evento dedicado"). Re-apuntada el 2026-09-13: `leagues.json` cerró con 12 ligas (9M) y ninguna es LATAM tier 2, así que la 9M terminó sin tocar esto — sigue siendo contenido narrativo, no motor | 13 (§13.1 punto 6) |
 | D18 | ~~La ventana `internacional` era un único evento agregado (`chance()`)~~ — resuelto a medias en la fase 4: ahora es una serie Bo5 real de verdad contra un rival de otra región, con Fearless y minijuegos. Sigue **sin distinguir** First Stand/MSI/Worlds ni modelar un bracket Swiss+knockout: es una sola serie representativa, no el torneo real completo | ✅ 4 (parcial) |
 | D19 | El bracket de playoffs de tier 1 es de **eliminación simple** (6 clasificados, bye para los 2 mejores sembrados, Bo5 parejo). Las 6 ligas 2026 investigadas usan doble eliminación real (hay bracket de perdedores). Simplificación deliberada: el motor solo simula TU camino por el bracket, nunca el resto — una derrota ya cuenta una historia completa ("eliminado en cuartos") sin necesitar una corrida paralela por el lado de perdedores | 4 (abierto) |
 | D20 | ~~Los 5 minijuegos comparten dos parámetros de balance genéricos (`impactoMinijuego`, `impactoDirecto`) en vez de tener cada uno el suyo~~ — **cerrada en 9R4a**: cada entrada de `data/minijuegos.json` trae su `impacto` y su `spread`, y `balance.js` se queda solo con lo que es del reparto (`minijuegoCooldownSplits`, los cortes del veredicto). El diagnóstico viejo decía que la estructura del juego satura el efecto de cualquiera de los dos parámetros mucho antes de que su valor importe; sigue siendo cierto y por eso el calibrado fino es 9R4e | ✅ 9R4a |
@@ -4354,16 +4456,17 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D27 | ~~**Contenido de vestuario disparando sin vestuario.**~~ — cerrado en 9Ec. `campeones.js` gatea el draft por `career.currentOrg` (no `phase`): un libre profesional elige el campeón como en soloQ, sin loguear "en el draft no te dieron tu pick" (medido: 65 logs `[campeones]` sin equipo → 0). Nueve eventos declararon `marcas: ["con_vestuario"]` (5 de rol del plan + `jungla_el_tracking_publico` + `transfer_rumor`/`tercer_club_ya`/`el_secundario_que_sirvio`); los 6 eventos de rol enmarcados en soloQ se dejaron sin gatear a propósito. Check nuevo en `validate.js` verificado en rojo contra el HEAD previo | ✅ 9E |
 | D28 | ~~**`Math.random()` × 5 en `index.html`**~~ — resuelto en la fase P: pasaron a `rngUi`, un stream propio sembrado desde la seed (`mulberry32((seed ^ 0x9E3779B9) >>> 0)`), separado del `rng` del motor para no correr el stream (T1) ni desincronizar el navegador de `simulate.js`. `src/dev/build.js` falla el build si vuelve a aparecer una llamada al azar del navegador. **9Ed**: `guards.js` ahora suma `.html` y recorre la raíz del repo — `verificarSinMathRandom` caza un `Math.random()` que vuelva a `index.html`, verificado en rojo. Cerrado | ✅ **P** + 9Ed |
 | D29 | ✅ **Cerrada (9Mb + 9Md).** `residenciaEn(state, regionId)` la calcula (`local`/`residente`/`import`) desde `splitsDeResidencia`; `core/demanda.js` lee `cupoImports`/`minimoResidentes`/`margenImport` en `ofertaPosible`. **9Md** abrió el mercado entre las 6 ligas tier 1 y `dificultadAdaptacion` escala el `margenImport`: `residencia: 'import'` se produce en el **71,8%** de las carreras (check 12: ≥10%) | ✅ 9Mb + 9Md |
-| D30 | 🔶 **`etapa: 'declive'` cerrada en 10a** (`core/contexto.js`: banqueado, caíste de tier 1 y no volviste, o tu nivel cayó de tu pico — es el reloj real de `systems/retiro.js`, D30-bis documentado en §10.1 sobre por qué NO incluye "sin equipo"). Sigue abierto: `calcularMercado()` devuelve solo `contrato_firme`/`sin_contrato`; `ultimo_ano` y `sin_renovacion` están declarados en `EJES` y nunca se calculan, pese a que `contrato.aniosRestantes` ya existe | 🔶 10a (declive) · falta `ultimo_ano`/`sin_renovacion` (11) |
+| D30 | 🔶 **`etapa: 'declive'` cerrada en 10a** (`core/contexto.js`: banqueado, caíste de tier 1 y no volviste, o tu nivel cayó de tu pico — es el reloj real de `systems/retiro.js`, D30-bis documentado en §10.1 sobre por qué NO incluye "sin equipo"). Sigue abierto, verificado sin cambios el 2026-09-13: `calcularMercado()` (`core/contexto.js:137-139`) devuelve solo `contrato_firme`/`sin_contrato`; `ultimo_ano` y `sin_renovacion` están declarados en `contextos.js:17` y nunca se calculan, pese a que `contrato.aniosRestantes` ya existe | 🔶 10a (declive) · falta `ultimo_ano`/`sin_renovacion` (**FASE D**, D.1) |
 | D31 | ✅ **Cerrada.** Constantes muertas en `balance.js`: **9Ec** borró `amateur.autoProbRobar`, `rendimiento.ruidoRival` y `competitivo.margenEdadMinima`; **9Mb** encendió `mercado.margenImport` en `core/demanda.js` (`ofertaPosible`: como import tenés que estar `margenImport` por encima de la fuerza de la org). 0 constantes mintiendo | ✅ 9Ec + 9Mb |
 | D32 | ~~**`node src/dev/validate.js` tarda 6m47s** y la Definición de terminado lo exige en cada cambio.~~ — **cerrada en 12a**: `check(nombre, fn)` se acompaña de `checkLento(nombre, fn)` (mismo cuerpo, misma lógica); criterio mecánico de clasificación (llama `correrCarrera`/`avanzarSplit`/`avanzarSplitAuto`, directo o vía helper de módulo) aplicado a las 173 llamadas existentes: **109 lentas, 64 rápidas**. `--rapido` salta las lentas (`SKIP ... (lento, correr sin --rapido)`); `--solo=` sigue forzando cualquier check puntual sin importar `--rapido` (regla 7 intacta). Medido: `--rapido` **13,7s** (antes 6m47s corriendo todo), suite completa sin flags **173/173 OK, 0 FAIL** — ninguna lógica de check cambió, solo la agrupación. Script nuevo en `package.json`: `validate:rapido` | ✅ 12a |
-| D34 | **Cuánto se tarda en SALIR del nivel tier 3 nunca se había podido medir**, porque el bug D25 mataba la carrera en la primera disolución: las carreras largas en tier 3 no existían, se varaban. Con D25 cerrado, medido a 1500 carreras: por org la permanencia sigue clavada en el diseño (**mediana 2, p90 5** — el pedido "nadie se queda mucho en un equipo inventado" se cumple), pero el tiempo total en el NIVEL da **mediana 5, p90 12, máximo 36 splits**. El 98,3% de las carreras que pisan tier 3 igual escapan a tier 2 o 1, así que no es una trampa — pero un p90 de 12 splits (4 años) dando vueltas por equipos chicos es candidato a revisar `probAscensoBaseDesdeTier3`. **No se tocó ninguna constante**: regla de proceso 2, primero medir con la estructura nueva. El check gatea la métrica por org, que es la que responde el pedido | 10 (abierto) |
+| D34 | **Cuánto se tarda en SALIR del nivel tier 3 nunca se había podido medir**, porque el bug D25 mataba la carrera en la primera disolución: las carreras largas en tier 3 no existían, se varaban. Con D25 cerrado, medido a 1500 carreras: por org la permanencia sigue clavada en el diseño (**mediana 2, p90 5** — el pedido "nadie se queda mucho en un equipo inventado" se cumple), pero el tiempo total en el NIVEL da **mediana 5, p90 12, máximo 36 splits**. El 98,3% de las carreras que pisan tier 3 igual escapan a tier 2 o 1, así que no es una trampa — pero un p90 de 12 splits (4 años) dando vueltas por equipos chicos es candidato a revisar `probAscensoBaseDesdeTier3`. **No se tocó ninguna constante**: regla de proceso 2, primero medir con la estructura nueva. El check gatea la métrica por org, que es la que responde el pedido. Re-apuntada el 2026-09-13: la fase 10 cerró sin tocar `probAscensoBaseDesdeTier3` (sigue en `0.4`, `balance.js:782`) — sigue siendo deuda real, no resuelta de rebote | 13 (abierto) |
 | D33 | ✅ **Cerrada (2026-09-04).** 13 comentarios de `/src` citaban `TRASPASO.md §4` — redirigidos a `CONCEPTO.md §12`, con sub-número (`§12.N`) donde el tema calza con una subsección real (Calix/scouting → 12.2, edad mínima de liga → 12.3, declive → 12.4, lognormal de salarios → 12.6) y bare `§12` donde no había un mapeo 1:1 verificable. Se soltaron los artefactos propios de TRASPASO que no viajan (rangos de línea, "imagen N"). 0 archivos con `TRASPASO` restantes en `/src` | 9E |
 | D35 | **La fase 9M corre el stream de RNG y mueve el balance agregado entero**: los planteles NPC consumen `rng` en `generarMundo` y en cada offseason, y la escalera deja de sortearse. Ninguna seed anterior a 9M reproduce su carrera. Misma familia y mismo criterio que D21/D22. **9Ma**: `org.fuerza` día 1 `mean 77,5→76,9`; 2 checks al borde. **9Mc**: `mercadoMundial` cada offseason; "La dinastía" 25→28% y "series sin draft" 28→26% (parches). **9Md**: el mercado escanea 6 ligas + descenso; **checks 7 (tier1 al cierre 77,8%, tope 65%) y 9 (correlación nivel↔liga r=0,22, piso 0,5) fuera de banda** — el retune de banda de nivel / presupuesto / `dificultadAdaptacion` es 9Mh. **9Mf**: `chance` del traspaso a mitad de contrato (+ `construirOferta` cuando salta) cada pretemporada con contrato corriendo, y `chance` del banquillo en splits de fracaso — shift **casi invisible en agregado** (equilibrado: tier1 al cierre 77,5→77,4%, mentalidad 88,6→89,1, mecánica 75,2→75,1; 0 crashes en 4500 carreras; ningún check parcheado se movió). **9Mh**: `derivaPrimerSplit` 6→3 (cosmético, no corre stream) y `renovacionSigmaFactor` 0,35→0,27 (sólo escala el valor, no corre stream) — despincha *proyección jerarquía* (±3) y *renovación* (40%). **9Mi** vuelve a correr el stream (el asiento se disputa contra el calibre de la liga + la renovación se enfría con la edad): **check 9 `r=0,815`** (baseline 0,40), checks 7/9Mi-1 redefinidos a "liga mayor", `validate.js` 148/148 en verde. **9Mj** (remedición completa, trampa T6): "dinastía" (22,8%) y "series sin draft" (29,8%) **volvieron solos** — topes devueltos a 25%/28%; check 5 = 5,26; check 8 quedó en ~14% (residual, §9M.12.3). `validate.js` 148/148, `simulate.js 1500 60 todas` sin crash | ✅ **9Ma-9Mj (shift aceptado, medido y recalibrado)** |
-| D40 | **Tres campos del estado declarados que ningún sistema escribe nunca.** Verificado por grep sobre `/src/core` y `/src/systems` el 2026-09-04: ~~`career.registro.dineroTotalUSD`~~ (**cerrado 9Mf**: `roster.js` acumula `salarioAnualUSD/splitsPorEdad` por split; check 11 lo verifica >0 y monótono), `career.registro.picos.rankedPuntos` (0) y `mundo.archirrival` (0; lo lee `dueloDeGeneracion` en `core/ficha.js` con prioridad — desde **9Wb** ese helper ya no devuelve `null` siempre: sin archirrival cae al duelo de ranks del Top 20 mundial. La ficha del archirrival con `desenlace` es fase 11). También `registro.picos.salarioAnualUSD` (0 escrituras, §9M.7) — **cerrado 9Mf** en el mismo lugar. Lo que queda: `picos.rankedPuntos` y `archirrival`. No es un bug de motor: es un bug de confianza esperando a pasar (la primera pantalla que pinte `US$0 ganado` viola la regla 15) | 🔶 dinero + sueldo (9Mf) · falta `rankedPuntos` / `archirrival` (11) |
+| D40 | **Tres campos del estado declarados que ningún sistema escribe nunca.** Verificado por grep sobre `/src/core` y `/src/systems` el 2026-09-04: ~~`career.registro.dineroTotalUSD`~~ (**cerrado 9Mf**: `roster.js` acumula `salarioAnualUSD/splitsPorEdad` por split; check 11 lo verifica >0 y monótono), `career.registro.picos.rankedPuntos` (0) y `mundo.archirrival` (0). También `registro.picos.salarioAnualUSD` (0 escrituras, §9M.7) — **cerrado 9Mf** en el mismo lugar. **`archirrival` cerrado en 11** (ver D8: `core/mundo.js:358` lo escribe de verdad). Re-verificado el 2026-09-13: **`picos.rankedPuntos` sigue en 0 escrituras** (`state.js:211` solo lo inicializa) — es lo único que queda de esta fila. No es un bug de motor: es un bug de confianza esperando a pasar (la primera pantalla que lo muestre miente, regla 15) | 🔶 dinero + sueldo (9Mf) · archirrival (11) · falta `rankedPuntos` (**FASE D**, D.2) |
 | D41 | **`log.type` no se usa en la UI.** Los 16 sistemas emisores etiquetan cada log (`amateur`, `serie`, `mercado`, `temporada`, …) y `feed.js` solo distingue `tecnico: true`. Es el gancho listo para icono, color y filtro por categoría, gratis. Lo consume la fase T | T |
-| D36 | **La partida no se guarda: un refresh borra la carrera.** Cero `localStorage` en todo el repo. Irrelevante en `localhost`, bloqueante en público con una sesión objetivo de 25-40 minutos. La arquitectura ya está lista —`state.pendiente` existe justamente para que la partida sea serializable a mitad de split y `state` es todo objetos planos—; falta exponer el contador de `mulberry32` (`core/rng.js:2`), que hoy vive en una clausura, para poder restaurar el punto del stream. No necesita backend | **P** |
-| D42 | **`career.liga` no se limpia al quedar libre** (`systems/mercado.js` `quedarLibre`, de 9M: limpia `currentOrg`/`rosterDeOrg`/`companeros`/`sinergia` pero no `liga`). Un free agent sigue "perteneciendo" a su última liga mientras entrena y sube de nivel, así que el check de `validate.js` "el silencio del mercado es para los que están por debajo" mide una brecha inflada contra una liga vieja. Pre-existente de 9M; **10a** lo hizo más frecuente (la ventana de vuelta multiplica los tramos de free agency) y bajó el piso del check 90%→60% en vez de tocar `mercado.js`, que es de otra fase (medido 72% a n=1500). `career.liga` se lee en 12+ lugares (`ficha.js`, `competitivo.js`, `escena.js`, `topMundial.js`...) — limpiarlo pide auditar todos esos call sites, no es un fix de una línea | 11 (abierto) |
+| D36 | ✅ **Cerrada (fase T8, 2026-09-04).** *"La partida no se guarda: un refresh borra la carrera"* — resuelto exactamente como preveía esta fila: `core/rng.js:18-19` expone `.estado()`/`.restaurar(n)`, `src/core/guardado.js` serializa (`state.pendiente` cumplió su función: la partida era serializable a mitad de split desde antes), y `src/ui/almacenamiento.js` hace el `localStorage`. Verificado sin `localStorage` desde ninguna otra parte del repo. Ver P.2 | ✅ P (T8) |
+| D42 | **`career.liga` no se limpia al quedar libre** (`systems/mercado.js` `quedarLibre`, de 9M: limpia `currentOrg`/`rosterDeOrg`/`companeros`/`sinergia` pero no `liga`). Un free agent sigue "perteneciendo" a su última liga mientras entrena y sube de nivel, así que el check de `validate.js` "el silencio del mercado es para los que están por debajo" mide una brecha inflada contra una liga vieja. Pre-existente de 9M; **10a** lo hizo más frecuente (la ventana de vuelta multiplica los tramos de free agency) y bajó el piso del check 90%→60% en vez de tocar `mercado.js`, que es de otra fase (medido 72% a n=1500). `career.liga` se lee en 12+ lugares (`ficha.js`, `competitivo.js`, `escena.js`, `topMundial.js`...) — limpiarlo pide auditar todos esos call sites, no es un fix de una línea. Re-verificado sin cambios el 2026-09-13 (`systems/mercado.js:363-379`) | **FASE D** (D.3) |
+| D43 | **Auditoría 2026-09-13**: la regla de proceso 5 acumula pendientes de actualizar `CONCEPTO.md` para las fases 3, 4, 5, 6, 8, 9 y 10, y ninguna fase futura los reclama — `CONCEPTO.md` no se toca desde `03b6e3f` (fase 9R5d). Contradicción concreta verificada: §2 sigue describiendo "27-34 años DECLIVE Y RETIRO" como una etapa con reloj de edad fijo, cuando 10a lo reemplazó por el retiro emergente del mercado (§10.1); y sigue presupuestando la partida en ~7 minutos cuando la decisión del usuario (línea 81 de este documento) fija "la larga: 25-40 min" | 13 (documental — no bloquea sus checks de contenido) |
 
 ---
 
@@ -4542,7 +4645,9 @@ End-to-end por fase:
 - **12** — jugar una serie completa a mano viendo la categoría de cada decisión con su color, la
   consecuencia previa (dirección y magnitud, nunca el número exacto) antes de elegir, y un menú
   sorteado que se declara como tal ("el dado trajo...").
-- **13** — `--huecos` vacío, ≥150 opciones, ningún contexto alcanzable con >25% de splits mudos.
+- **13** — el objetivo de opciones ya se superó 3× (442 vs. 150); lo que queda a jugar a mano es el
+  hueco real (`retirado_reciente/pretemporada`) y los momentos que dejan de estar `pendiente`.
+  `--huecos` vacío, ningún contexto alcanzable con >25% de splits mudos.
 
 **La prueba final, la que importa y la que hoy falla:** jugar una carrera completa de la pantalla
 de inicio a la tarjeta final, y poder contarla como una historia — dónde empezaste, qué elegiste,

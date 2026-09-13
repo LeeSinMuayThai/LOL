@@ -15,14 +15,15 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 > cuando la fase 8b la había llenado. Mantener dos tablas de estado garantizaba que una mintiera;
 > ahora hay una sola. `DISENO.md` §6 se cortó en el mismo movimiento.
 
-**Lo que falta para cerrar el arco de `CONCEPTO`**: el contenido que se cuela sin vestuario y los
-`Math.random()` de los minijuegos (`PLAN.md` fases 9Ec y 9Ed — el varado de tier 3 ya está cerrado
-en 9Ea+b), retiro y
-tarjeta de legado (§9), movilidad entre regiones e imports (§6), rivales de generación corriendo
-en paralelo (§6), las etapas DEBUT y DECLIVE (§2). El objetivo de contenido de §8 (150 opciones)
-ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catálogo completo de §8
-(~200 eventos, con `equipo.json`/`vestuario.json`/`region.json`/etc.) sigue pendiente de la fase
-13 real, que depende del mercado (9) y el retiro (10).
+> **Párrafo reemplazado el 2026-09-13** — describía el estado a la altura de la fase 9E (9Ec/9Ed
+> como pendientes, retiro y tarjeta de legado sin cerrar, movilidad e imports sin modelar) y para
+> esa fecha ya estaba en la misma situación que llevó a cortar la tabla vieja de `DISENO.md` §6
+> (nota de arriba): describía un estado nueve fases atrás del real. Todo lo que listaba está
+> cerrado (9Ec+9Ed, 9 y 10 completas, D29 vía 9Mb+9Md, D8 vía 9Ma+9Mc+9Wb+11, `etapa: 'declive'`
+> desde 10a). **Lo que falta hoy es exactamente lo que dice la tabla de Estado de `PLAN.md`**, que
+> es —y sigue siendo— la única que se mantiene al día: hoy, la fase P (deploy y verificación en la
+> URL publicada), la fase D (tres campos que el motor declara y no escribe) y la fase 13
+> (contenido puntual — el objetivo de opciones ya se superó 3×, 442 sobre un piso de 150).
 
 > **Nota documental (2026-09-02).** `AUDITORIA.md` y `TRASPASO.md` se borraron del repo: describían
 > el estado del proyecto 28 commits atrás y ya se contradecían con el código. Lo que seguía vivo se
