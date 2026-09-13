@@ -75,6 +75,22 @@ export function crearApuesta(decision, state) {
     caja.appendChild(texto);
   }
 
+  if (decision.datos.regla) {
+    const reglaEl = document.createElement('div');
+    reglaEl.className = 'minijuego-apuesta-regla';
+    reglaEl.textContent = decision.datos.regla;
+    caja.appendChild(reglaEl);
+  }
+
+  if (decision.datos.ronda) {
+    const rondaTag = document.createElement('div');
+    rondaTag.className = 'minijuego-apuesta-ronda';
+    const rondaLabel = decision.datos.ronda === 'internacional' ? 'INTERNACIONAL' : (decision.datos.ronda === 'final' ? 'FINAL' : 'SEMIS');
+    const difLabel = decision.datos.ronda === 'internacional' ? 'DIFICULTAD MÁXIMA' : (decision.datos.ronda === 'final' ? 'DIFICULTAD ELEVADA' : 'DIFICULTAD ESTÁNDAR');
+    rondaTag.textContent = `${rondaLabel} · ${difLabel}`;
+    caja.appendChild(rondaTag);
+  }
+
   if (lectura) {
     const linea = document.createElement('span');
     linea.className = 'minijuego-apuesta-stat';

@@ -1148,6 +1148,49 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   color: var(--ice);
 }
 
+.tarjeta-internacionales {
+  margin-top: var(--s-4);
+  text-align: left;
+}
+
+.tarjeta-intl-bloque {
+  margin-top: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  background: var(--bg-sunken);
+  border: 1px solid var(--line-faint);
+  border-radius: var(--r-sharp);
+}
+
+.tarjeta-intl-encabezado {
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: var(--s-1);
+}
+
+.tarjeta-intl-camino {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+.tarjeta-intl-mapa {
+  font-size: var(--fs-0);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-dim);
+}
+
+.tarjeta-intl-mapa--ganado {
+  color: var(--up);
+}
+
+.tarjeta-intl-mapa--perdido {
+  color: var(--ink-dim);
+}
+
 /* --- Las tres acciones de cierre (T7): PNG + link ------------------------- */
 .tarjeta-acciones {
   display: flex;
@@ -1530,6 +1573,38 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   text-decoration-color: var(--line-strong);
 }
 
+.serie-cierres-lista {
+  margin-top: var(--s-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+.serie-cierre-item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  font-size: var(--fs-0);
+}
+
+.serie-cierre-tag {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.serie-cierre-item--ganado .serie-cierre-tag {
+  color: var(--up);
+}
+
+.serie-cierre-item--perdido .serie-cierre-tag {
+  color: var(--down);
+}
+
+.serie-cierre-texto {
+  color: var(--ink-dim);
+}
+
 /* --- El banco de mecánicas (fase 9R4c) -------------------------------------
    Seis mecánicas nuevas sobre los mismos tokens y las mismas clases base que
    las cinco de la fase 4. Nada de color literal acá (guards.js): todo sale de
@@ -1720,6 +1795,20 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   font-size: var(--fs-1);
   letter-spacing: var(--track-label);
   text-transform: uppercase;
+}
+
+.minijuego-apuesta-regla {
+  margin-top: var(--s-2);
+  padding-top: var(--s-2);
+  border-top: 1px dashed var(--line);
+  font-size: var(--fs-1);
+  color: var(--ink-dim);
+  font-style: italic;
+}
+
+.minijuego-apuesta-ronda {
+  color: var(--gold);
+  font-weight: 700;
 }
 
 .minijuego-mover .minijuego-btn,

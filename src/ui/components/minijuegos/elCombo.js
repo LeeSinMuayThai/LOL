@@ -1,4 +1,4 @@
-import { unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeRondas, relojDeMinijuego } from './comun.js';
+import { unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeRondas, relojDeMinijuego, factorDificultadRonda } from './comun.js';
 
 // "El combo" (fase 9R4c). La secuencia aparece un momento y hay que repetirla
 // de memoria con el teclado (o con los botones, que son los mismos). `mecanica`
@@ -12,7 +12,8 @@ const LARGO = 5;
 
 export function montar(container, state, onDone, rngUi) {
   const terminar = unaSolaVez(onDone);
-  const msVisible = ventanaPorStat(state.player.stats.mecanica, 900, 2200);
+  const dificultad = factorDificultadRonda(state.serie?.ronda);
+  const msVisible = ventanaPorStat(state.player.stats.mecanica, 900, 2200, dificultad);
 
   const secuencia = Array.from({ length: LARGO }, () => TECLAS[Math.floor(rngUi() * TECLAS.length)]);
 

@@ -1,4 +1,4 @@
-import { motionReducido, unaSolaVez, ventanaPorStat } from './comun.js';
+import { motionReducido, unaSolaVez, ventanaPorStat, factorDificultadRonda, AMORTIGUACION_DIFICULTAD } from './comun.js';
 
 // Robar Baron (fase 4). Migrado de index.html en la fase T6 —
 // PLAN.md §8.5 lo dejó sin mover a propósito "porque la fase 12 le cambia
@@ -20,9 +20,11 @@ const PASOS = 20;
 
 export function montar(container, state, onDone, rngUi) {
   const terminar = unaSolaVez(onDone);
-  const anchoZona = ventanaPorStat(state.player.stats.mecanica, 14, 32);
+  const dificultad = factorDificultadRonda(state.serie?.ronda);
+  const anchoZona = ventanaPorStat(state.player.stats.mecanica, 14, 32, dificultad);
   const centroZona = 25 + rngUi() * 50;
   const reducido = motionReducido();
+  const velocidadPaso = 1.7 * (1 + (dificultad - 1) * AMORTIGUACION_DIFICULTAD);
 
   container.innerHTML =
     '<div class="minijuego-barra"><div class="minijuego-zona"></div><div class="minijuego-marcador"></div></div>' +
@@ -61,7 +63,7 @@ export function montar(container, state, onDone, rngUi) {
 
   function frame() {
     if (!activo) return;
-    avanzar(1.7);
+    avanzar(velocidadPaso);
     requestAnimationFrame(frame);
   }
   if (!reducido) {

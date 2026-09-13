@@ -1,4 +1,4 @@
-import { unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeRondas, motionReducido } from './comun.js';
+import { unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeRondas, motionReducido, factorDificultadRonda } from './comun.js';
 
 // "Dodge" (fase 9R4c). Cuatro skillshots, uno por vez: el carril peligroso se
 // telegrafía y tenés lo que dura el telegrafiado para moverte a otro. `mecanica`
@@ -13,7 +13,8 @@ const RONDAS = 4;
 
 export function montar(container, state, onDone, rngUi) {
   const terminar = unaSolaVez(onDone);
-  const msAviso = ventanaPorStat(state.player.stats.mecanica, 700, 1600);
+  const dificultad = factorDificultadRonda(state.serie?.ronda);
+  const msAviso = ventanaPorStat(state.player.stats.mecanica, 700, 1600, dificultad);
 
   container.innerHTML =
     '<div class="minijuego-aviso">Salí del carril marcado</div>'

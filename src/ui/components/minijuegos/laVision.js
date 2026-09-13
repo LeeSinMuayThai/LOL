@@ -1,4 +1,4 @@
-import { unaSolaVez, ventanaPorStat, marcadorDeRondas, relojDeMinijuego } from './comun.js';
+import { unaSolaVez, ventanaPorStat, marcadorDeRondas, relojDeMinijuego, factorDificultadRonda } from './comun.js';
 
 // "La visión" (fase 9R4c). Se apagan tres zonas del mapa por un momento y hay
 // que decir cuáles quedaron a oscuras para wardearlas. No es puntería ni
@@ -14,7 +14,8 @@ const A_OSCURAS = 3;
 
 export function montar(container, state, onDone, rngUi) {
   const terminar = unaSolaVez(onDone);
-  const msVisible = ventanaPorStat(state.player.stats.macro, 900, 2000);
+  const dificultad = factorDificultadRonda(state.serie?.ronda);
+  const msVisible = ventanaPorStat(state.player.stats.macro, 900, 2000, dificultad);
 
   // Barajado determinista con `rngUi` (Fisher-Yates): las tres zonas oscuras
   // salen del stream de la UI, nunca de `Math.random`.

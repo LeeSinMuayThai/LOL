@@ -32,7 +32,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **9W** | **El mejor del mundo**: ranking vivo de los mejores del momento (Top 5 a la derecha siempre, Top 20 al cierre de temporada). Se entra y se sale por mérito, rota mucho, de cualquier edad; distinto de los rivales de generación. Cero RNG (determinista por `hashCadena`) | ✅ **cerrada** (9Wa→9Wd). Ranking en el estado (r(nivel,rank)=0,96, cero-stream) + 6 ganchos (valor de mercado, piso de franquicia, legado, ficha, marcas/momento/eventos, `rivales[].puntaje` vivo) + pantalla (panel Top 5 permanente + reveal del Top 20 en el feed, con "quedaste #23") + calibrado (§9W.6: entrás al Top 20 en el 51% de las carreras con éxito, ~1% de las lavadas; rival de generación ~37%). Ver §9W |
 | **10** | El final: retiro emergente + la tarjeta de legado | ✅ **10a** (el retiro real, ver §10.1) · **10b** ya estaba cerrada desde 9R5b · **10c** (lesiones + servicio militar, ver §10.4) — cierra la fase. **10d** (calibrar) no hizo falta como commit aparte: los números de 10a/10c ya caen en banda a la primera medición |
 | **11** | El año: calendario, la nota de la temporada, el archirrival | ✅ **cerrada** (§11.1+§11.2, cierra D8). El archirrival corre su carrera (contador en la ficha) y el cierre de edad tiene nota (0-10), titular por peso emocional (10 tipos + racha para condiciones sostenidas) y 6 viñetas fijas, reemplazando el diff plano de antes. Ver `PROGRESO.md` |
-| **12** | La jerarquía de la decisión: categorías, rareza, consecuencia previa, el dado | 🔶 **12a** (`validate.js --rapido/--completo`, cierra D32) · **12b** (`categoria` en los 220 eventos + `formatoUi.js` + check) · **12c** (`peso: 'ambiente'` + tarjeta compacta) · **12d** (`core/previa.js`: previa, riesgo, gate + corrección de §12.3) · faltan 12e→12f |
+| **12** | La jerarquía de la decisión: categorías, rareza, consecuencia previa, el dado | ✅ **cerrada** (12a→12f). **12a** (`validate.js --rapido/--completo`, cierra D32) · **12b** (`categoria` en los 220 eventos + `formatoUi.js` + check) · **12c** (`peso: 'ambiente'` + tarjeta compacta) · **12d** (`core/previa.js`: previa, riesgo, gate + corrección de §12.3) · **12e** (`core/rareza.js`: rareza común/rara en las decisiones de mejora + el dado nombra el eje) · **12f** (bracket siempre visible, minijuego con identidad por competición + dificultad por ronda, camino de serie persistido en `registro.internacionales`) |
 | **13** | Contenido a escala (150+ opciones) | ⬜ |
 | **P** | Publicar: build, guardado en el navegador, seed en la URL, el repo y el host | 🔶 **build y pre-flight hechos** (P.7, P.10) · D28 cerrada · falta **P.2, el guardado**, que es el último bloqueante |
 
@@ -4036,14 +4036,23 @@ consumo de `rng` (trampa T1).
 
 ## 12.5 — Los torneos, con identidad
 
-- Barra de progreso del bracket siempre visible (`CUARTOS · SEMI · FINAL`), etapas superadas en
-  verde. Imágenes 11-14.
-- Un minijuego con identidad y nombre **por competición**, con intro narrativa que explica la regla
-  en ficción, y dificultad que escala por ronda. Los 5 minijuegos existentes se migran a
-  `src/ui/components/minijuegos/` y se les da tema.
+✅ **Cerrada en 12f.**
+
+- Barra de progreso del bracket siempre visible (`CUARTOS · SEMI · FINAL` + `INTERNACIONAL` cuando
+  corresponde), etapas superadas en verde (`crearBarraBracket`, `ui/components/serie.js`) — la ronda
+  post-serie recién concluida también pinta según `gano`, no solo la ronda "actual".
+- Un minijuego con identidad y nombre **por competición** (`nombresPorCompeticion` en
+  `data/minijuegos.json`, con `internacional` y una entrada por liga tier 1, y `default` de resto),
+  con intro narrativa que explica la regla en ficción (`reglaEnFiccion`) y dificultad que escala por
+  ronda (`BALANCE.serie.dificultadMinijuegoPorRonda`: 1.0 en cuartos/semis, 1.2 en la final, 1.4 en
+  el internacional — amortiguada por `amortiguacionDificultadMinijuego` en las dos mecánicas de
+  velocidad, con un piso `pisoVentanaMinijuego` para que la ventana nunca sea injugable). Los 5
+  minijuegos originales ya estaban migrados a `src/ui/components/minijuegos/` desde la fase T6; 12f
+  les dio el tema.
 - **El camino se guarda**: post-serie, la pantalla muestra cada mapa con su marcador y su cierre
-  narrativo, y se persiste en `registro.internacionales[].camino` (imagen 12) para que la tarjeta
-  final lo pueda citar.
+  narrativo (`generarCierreMapa`, determinista por `hashCadena`, cero RNG), y se persiste en
+  `registro.internacionales[].camino` para que la tarjeta final lo pueda citar
+  (`ui/screens/tarjeta.js`).
 
 ## 12.6 — Checks de la fase 12
 
@@ -4053,8 +4062,8 @@ consumo de `rng` (trampa T1).
 ✅ El `riesgo` declarado coincide con la dispersión medida de outcomes (2000 resoluciones/opción) — 12d
 ✅ Una bisagra y una de ambiente producen `peso` distinto en el 100% de los casos — 12c
 ✅ Las decisiones de mejora (pretemporada, práctica, pool_a_cual_le_metes) declaran rareza con payoff acorde — 12e
-   Toda serie internacional deja su camino guardado en registro.internacionales — 12f
-   Ningún minijuego puede setear `terminado` (ya existe, no puede regresionar) — 12f
+✅ Toda serie internacional deja su camino guardado en registro.internacionales — 12f
+✅ Ningún minijuego puede setear `terminado` (ya existe, no puede regresionar) — 12f
 ```
 
 ---

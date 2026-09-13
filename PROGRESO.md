@@ -33,6 +33,73 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-13 — Fase 12f: los torneos, con identidad (PLAN.md §12.5) — cierra la fase 12
+
+Sexta y última subfase de la 12. Misma mecánica que 12e: la implementación la hizo un agente
+(modelo sin especificar) sin supervisión línea a línea, trabajando solo en un `git worktree`
+aislado a partir de un spec del supervisor. Diferencia real esta vez: el worktree se había creado
+sobre `93631e7` (fase 12d), y para cuando terminó, `master` ya tenía encima el commit de 12e —
+el merge no fue un simple `git diff | git apply`, hubo que reconciliar a mano el único archivo que
+las dos subfases tocan en el mismo punto (`validate.js`: 12e y 12f insertan cada una un check nuevo
+justo después de "El riesgo declarado coincide..."; el resto — `balance.js`, `pantallas.css` — cayó
+en zonas distintas del archivo y aplicó limpio).
+
+**Lo que entrega la subfase** (`ui/components/serie.js`, `core/minijuegos.js`,
+`ui/components/minijuegos/*.js`, `data/minijuegos.json`, `data/series.json` nuevo):
+
+- **Bracket siempre visible** (`crearBarraBracket`): `CUARTOS · SEMI · FINAL` (+ `INTERNACIONAL`
+  cuando corresponde), con la ronda recién concluida pintando según `gano`, no solo la ronda
+  "actual" — antes el internacional no tenía bracket porque "es un cruce único, no tiene sentido
+  en una barra de 3 pasos" (cita vieja de este documento); ahora sí, como cuarto paso condicional.
+- **Identidad por competición**: `data/minijuegos.json` suma `nombresPorCompeticion` (una entrada
+  por liga tier 1 + `internacional` + `default`) y `reglaEnFiccion` a los 9 minijuegos del catálogo.
+  `textoDeMinijuego` (`core/minijuegos.js`) resuelve el nombre contra `state.career.liga`/la ronda
+  antes que contra el título genérico.
+- **Dificultad que escala por ronda**: `BALANCE.serie.dificultadMinijuegoPorRonda` (1.0 en
+  cuartos/semis, 1.2 en la final, 1.4 en el internacional) entra a `ventanaPorStat` en las 9
+  mecánicas y a la caída/velocidad de `last_hit`/`robar_baron` — estas dos últimas amortiguadas por
+  `BALANCE.serie.amortiguacionDificultadMinijuego` (aplicar el factor entero a una velocidad se
+  sentía desproporcionado contra el mismo factor sobre una ventana de tiempo) y con un piso
+  (`BALANCE.serie.pisoVentanaMinijuego`) para que "internacional" nunca deje la ventana injugable.
+- **El camino se guarda**: `finalizarMapa` (`systems/serie.js`) anota `marcador` y un cierre
+  narrativo determinista (`generarCierreMapa`, `core/minijuegos.js` — hash de campeón/ronda/mapa
+  contra `data/series.json`, cero RNG, igual que el ranking de 9W) en cada mapa jugado;
+  `aplicarConsecuenciaInternacional` persiste ese camino completo en
+  `registro.internacionales[].camino`. Post-serie, el feed (`crearTarjetaResultadoSerie`, vía el
+  flag `postSerie` que viaja en el log) y la tarjeta final (`ui/screens/tarjeta.js`) lo citan mapa
+  por mapa.
+
+**Corrección propia sobre este mismo documento, antes de commitear.** El worktree agregó un check
+nuevo a `validate.js` para el segundo ítem de §12.6 ("Ningún minijuego puede setear `terminado`"),
+interpretando la línea como un check que faltaba escribir. Está mal leída: el paréntesis de PLAN.md
+dice *"ya existe, no puede regresionar"* — es un check de la fase 4 (`3ef8b52`, checkLento con 800
+seeds que sigue cada resolución real de minijuego y verifica que `terminado` no se prenda por esa
+vía, salvo la coincidencia legítima de burnout), y lo único que le tocaba a 12f era confirmar que
+seguía en verde. El check agregado por el worktree era una versión estática y más débil del mismo
+invariante (verificaba el esquema de `efecto.targets`, ya cubierto por el check genérico de forma
+válida) — se borró antes de este commit para no dejar dos checks casi homónimos compitiendo por el
+mismo invariante.
+
+**Otras dos correcciones de esta revisión** (regla invariable 3: números mágicos van a
+`data/balance.js`, no inline): el worktree traía `0.35` (amortiguación) y `0.7` (piso de
+`ventanaPorStat`) escritos dos veces cada uno como literales — una en `core/minijuegos.js`, otra en
+`ui/components/minijuegos/comun.js`, cada par con su propio objeto de fallback duplicado de
+`dificultadMinijuegoPorRonda` "por si `BALANCE` no lo trae", que nunca puede pasar (es un import
+estático). Se movieron `amortiguacionDificultadMinijuego` y `pisoVentanaMinijuego` a
+`BALANCE.serie` y se simplificaron `factorDificultadPorRonda`/`factorDificultadRonda` a una sola
+línea cada una, sin el fallback muerto.
+
+**Verificación** (corrida por el revisor, no por el agente, sobre el árbol ya mergeado a
+`master`): `validate.js` completo, exit 0, **180 OK / 0 FAIL** (incluye el check nuevo de 12f
+"Toda serie internacional deja su camino guardado en registro.internacionales", 300 seeds × 60
+splits, y confirma en verde el check heredado de la fase 4 sobre `terminado`). `simulate.js 1500
+60 todas`: 0 crashes en las 4500 carreras (3 estrategias). Anti-T1 (40 seeds, árbol de `3c85a77`
+contra el árbol con 12f + las tres correcciones de arriba): **huella idéntica** —
+`generarCierreMapa` usa `hashCadena` (determinista, no toca el stream) y el resto son constantes de
+UI/timing, ningún camino nuevo llama a `rng()`.
+
+**Cierra la fase 12** (PLAN.md §12.6: los 7 checks de la fase en verde, 12a→12f).
+
 ### 2026-09-13 — Fase 12e: rareza y el dado (PLAN.md §12.4)
 
 Quinta subfase de la 12. Primer uso de verdad, en este proyecto, del modelo supervisor/worker:

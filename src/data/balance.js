@@ -1417,6 +1417,22 @@ export const BALANCE = {
     ruidoRivalSerie: 12,
     // Maestria del campeon "fuera del pool" cuando el Fearless te quema todo (4.5).
     maestriaComodin: 20,
+    // Fase 12f (§12.5): dificultad del minijuego que escala por ronda.
+    dificultadMinijuegoPorRonda: {
+      cuartos: 1.0,
+      semis: 1.0,
+      final: 1.2,
+      internacional: 1.4
+    },
+    // Fase 12f: cuánto de `dificultadMinijuegoPorRonda` pasa a mecánicas que
+    // escalan una VELOCIDAD en vez de una ventana (last_hit, robar_baron) —
+    // aplicar el factor entero ahí se sentía desproporcionado contra el mismo
+    // 1.4x en una ventana de tiempo.
+    amortiguacionDificultadMinijuego: 0.35,
+    // Fase 12f: piso de `ventanaPorStat` como fracción del mínimo declarado,
+    // para que la dificultad de "internacional" nunca deje una ventana
+    // injugable.
+    pisoVentanaMinijuego: 0.7,
     // 9R4a: `impactoLaPrueba` e `impactoDirecto` se mudaron al dato
     // (`impacto` de cada entrada de minijuegos.json), igual que impactoMinijuego
   },

@@ -1,4 +1,4 @@
-import { unaSolaVez, ventanaPorStat, escuchaTeclado, motionReducido } from './comun.js';
+import { unaSolaVez, ventanaPorStat, escuchaTeclado, motionReducido, factorDificultadRonda } from './comun.js';
 
 // "El teleport" (fase 9R4c). Es de timing como el Barón, pero al revés: el TP
 // tarda en canalizar, así que hay que apretar ANTES de que la pelea esté en la
@@ -12,7 +12,8 @@ const PASOS = 20;
 
 export function montar(container, state, onDone, rngUi) {
   const terminar = unaSolaVez(onDone);
-  const ancho = ventanaPorStat(state.player.stats.macro, 12, 26);
+  const dificultad = factorDificultadRonda(state.serie?.ronda);
+  const ancho = ventanaPorStat(state.player.stats.macro, 12, 26, dificultad);
   const reducido = motionReducido();
   const canalizacion = 18; // lo que el TP tarda, en la misma escala 0-100
   const centro = 30 + rngUi() * 45;

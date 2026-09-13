@@ -15,7 +15,8 @@ import {
   registrarMapa, registrarSerie, registrarTitulo, registrarInternacional, registrarPico, registrarArraigoEnFila
 } from '../core/registro.js';
 import {
-  elegirMinijuego, minijuegoPorId, textoDeMinijuego, registrarMinijuegoVisto, veredictoDeMinijuego
+  elegirMinijuego, minijuegoPorId, textoDeMinijuego, registrarMinijuegoVisto, veredictoDeMinijuego,
+  generarCierreMapa, factorDificultadPorRonda
 } from '../core/minijuegos.js';
 import { BALANCE } from '../data/balance.js';
 
@@ -82,6 +83,9 @@ function pausaDeMinijuego(state, momento, logsAcum, datosExtra = {}) {
     return null;
   }
   const textos = textoDeMinijuego(entrada, state);
+  const ronda = state.serie?.ronda ?? null;
+  const dificultad = factorDificultadPorRonda(ronda);
+
   return {
     state: { ...state, flags: { ...state.flags, minijuegosRecientes: registrarMinijuegoVisto(state, entrada.id) } },
     logs: logsAcum,
@@ -95,8 +99,11 @@ function pausaDeMinijuego(state, momento, logsAcum, datosExtra = {}) {
         motivo: 'minijuego',
         minijuego: entrada.id,
         momento,
+        ronda,
+        dificultad,
         statRelevante: entrada.statRelevante,
         apuesta: textos.apuesta,
+        regla: textos.regla,
         ...datosExtra
       }
     }
@@ -140,7 +147,8 @@ function iniciarRonda(state, ronda, rng) {
       quemados: [],
       minijuegoUsado: false,
       decisivoUsado: false,
-      preSerieUsado: false
+      preSerieUsado: false,
+      postSerie: false
     }
   };
 }
@@ -222,6 +230,9 @@ function finalizarMapa(state, campeonElegido, fuerzaPropia, ajusteMinijuego, rng
 
   const marcador = [...state.serie.marcador];
   marcador[gano ? 0 : 1] += 1;
+  const marcadorStr = `${marcador[0]}-${marcador[1]}`;
+  const numeroMapa = state.serie.mapaActual + 1;
+  const cierre = generarCierreMapa(campeonElegido, gano, marcadorStr, state);
 
   const nextState = {
     ...state,
@@ -230,14 +241,21 @@ function finalizarMapa(state, campeonElegido, fuerzaPropia, ajusteMinijuego, rng
       ...state.serie,
       marcador,
       quemados: [...state.serie.quemados, campeonElegido],
-      mapas: [...state.serie.mapas, { campeon: campeonElegido, resultado: gano ? 'W' : 'L' }],
-      mapaActual: state.serie.mapaActual + 1
+      mapas: [...state.serie.mapas, {
+        mapa: numeroMapa,
+        campeon: campeonElegido,
+        resultado: gano ? 'W' : 'L',
+        marcador: marcadorStr,
+        cierre
+      }],
+      mapaActual: numeroMapa
     }
   };
 
   const logs = [...logsAcum, crearLog(
     'serie',
-    `Mapa ${state.serie.mapaActual + 1} — jugás ${campeonElegido}: ${gano ? 'ganan' : 'pierden'}. Marcador ${marcador[0]}-${marcador[1]}.`
+    `Mapa ${numeroMapa} — jugás ${campeonElegido}: ${gano ? 'ganan' : 'pierden'}. Marcador ${marcadorStr}.`,
+    { mapa: numeroMapa, campeon: campeonElegido, resultado: gano ? 'W' : 'L', marcador: marcadorStr, cierre }
   )];
 
   return serieTerminada(marcador, state.serie.formato)
@@ -304,7 +322,13 @@ function aplicarConsecuenciaInternacional(state, gano, rng) {
         anio: state.calendario.anio,
         org: state.career.currentOrg,
         resultado: gano ? 'buen_papel' : 'eliminado',
-        camino: state.serie.mapas.map((mapa, i) => ({ mapa: i + 1, campeon: mapa.campeon, resultado: mapa.resultado }))
+        camino: state.serie.mapas.map((mapa, i) => ({
+          mapa: mapa.mapa ?? (i + 1),
+          campeon: mapa.campeon,
+          resultado: mapa.resultado,
+          marcador: mapa.marcador,
+          cierre: mapa.cierre
+        }))
       }
     ),
     Math.round(arraigo)
@@ -342,23 +366,33 @@ function concluirRonda(state, rng, logsAcum) {
     }
   };
   const logs = [...logsAcum];
+  const datosPost = {
+    postSerie: true,
+    ronda,
+    rival: state.serie.rival.org,
+    marcador: [...marcador],
+    gano,
+    mapas: [...st.serie.mapas]
+  };
 
   if (ronda === 'internacional') {
     logs.push(crearLog('serie', gano
       ? 'Ganaste tu serie en el internacional: se habló de vos afuera de tu región.'
-      : 'Perdiste tu serie en el internacional: vuelta temprano a casa.'));
+      : 'Perdiste tu serie en el internacional: vuelta temprano a casa.',
+      datosPost));
     st = aplicarConsecuenciaInternacional(st, gano, rng);
   } else if (gano && ronda === 'final') {
-    logs.push(crearLog('serie', `¡Campeones de ${nombreLigaDe(liga)}! Cerraste la serie ${marcador[0]}-${marcador[1]}.`));
+    logs.push(crearLog('serie', `¡Campeones de ${nombreLigaDe(liga)}! Cerraste la serie ${marcador[0]}-${marcador[1]}.`, datosPost));
     st = aplicarTitulo(st, liga, rng);
   } else if (!gano) {
     logs.push(crearLog(
       'serie',
-      `Se termina en ${etiquetaDeRonda(ronda).toLowerCase()}: perdiste la serie ${marcador[1]}-${marcador[0]} contra ${state.serie.rival.org}.`
+      `Se termina en ${etiquetaDeRonda(ronda).toLowerCase()}: perdiste la serie ${marcador[1]}-${marcador[0]} contra ${state.serie.rival.org}.`,
+      datosPost
     ));
     st = aplicarEliminacionDomestica(st, ronda, liga);
   } else {
-    logs.push(crearLog('serie', `Ganaste la serie ${marcador[0]}-${marcador[1]} contra ${state.serie.rival.org}. Avanzás de ronda.`));
+    logs.push(crearLog('serie', `Ganaste la serie ${marcador[0]}-${marcador[1]} contra ${state.serie.rival.org}. Avanzás de ronda.`, datosPost));
   }
 
   if (['final', 'internacional'].includes(ronda) && !st.serie.minijuegoUsado) {
@@ -373,7 +407,7 @@ function concluirRonda(state, rng, logsAcum) {
 
 function continuarTrasRonda(state, ronda, gano, rng, logsAcum) {
   if (ronda === 'internacional') {
-    return { state: { ...state, serie: { ...state.serie, activa: false } }, logs: logsAcum };
+    return { state: { ...state, serie: { ...state.serie, activa: false, postSerie: true } }, logs: logsAcum };
   }
 
   if (gano) {
@@ -390,7 +424,7 @@ function continuarTrasRonda(state, ronda, gano, rng, logsAcum) {
 function intentarInternacional(state, rng, logsAcum) {
   const liga = ligaDeCarrera(state);
   if (!calificaAInternacional(liga, state.career.posicion)) {
-    return { state: { ...state, serie: { ...state.serie, activa: false } }, logs: logsAcum };
+    return { state: { ...state, serie: { ...state.serie, activa: false, postSerie: true } }, logs: logsAcum };
   }
 
   const st = iniciarRonda(state, 'internacional', rng);
@@ -405,20 +439,21 @@ function intentarInternacional(state, rng, logsAcum) {
 // --- Contrato del sistema ---
 
 export function aplicar(state, rng) {
-  if (state.phase !== 'profesional' || !state.career.currentOrg || state.career.companeros.length === 0) {
-    return { state, logs: [] };
+  const base = state.serie?.postSerie ? { ...state, serie: { ...state.serie, postSerie: false } } : state;
+  if (base.phase !== 'profesional' || !base.career.currentOrg || base.career.companeros.length === 0) {
+    return { state: base, logs: [] };
   }
-  if (!esCierreDeTemporada(state.player.splitCount)) {
-    return { state, logs: [] };
-  }
-
-  const liga = ligaDeCarrera(state);
-  if (!liga || !calificaAPlayoffs(liga, state.career.posicion)) {
-    return { state, logs: [] };
+  if (!esCierreDeTemporada(base.player.splitCount)) {
+    return { state: base, logs: [] };
   }
 
-  const ronda = rondaInicial(state.career.posicion, liga.formatoPlayoffs);
-  const st = iniciarRonda(state, ronda, rng);
+  const liga = ligaDeCarrera(base);
+  if (!liga || !calificaAPlayoffs(liga, base.career.posicion)) {
+    return { state: base, logs: [] };
+  }
+
+  const ronda = rondaInicial(base.career.posicion, liga.formatoPlayoffs);
+  const st = iniciarRonda(base, ronda, rng);
   const logs = [crearLog(
     'serie',
     `Clasificaste a playoffs de ${nombreLigaDe(liga)} como ${state.career.posicion}º sembrado: arrancás en `

@@ -2,6 +2,7 @@ import { hashCadena } from './numeros.js';
 import { resolverTexto } from './plantillas.js';
 import { BALANCE } from '../data/balance.js';
 import MINIJUEGOS from '../data/minijuegos.json' with { type: 'json' };
+import SERIES_DATA from '../data/series.json' with { type: 'json' };
 
 // Fase 9R4a: el minijuego es un DATO, no cinco ramas de `if` repartidas entre
 // `systems/serie.js`, `systems/amateur.js` y la UI. Hasta acá `minijuegos.json`
@@ -70,12 +71,53 @@ export function registrarMinijuegoVisto(state, id) {
 // (`resolverTexto` acepta arrays desde 9R3a). `apuesta` es lo que 9R4d pinta
 // ANTES de jugarlo: hasta 9R.4 el jugador se enteraba de qué se jugaba recién
 // cuando terminaba (principio rector 3, regla de proceso 13).
+// Fase 12f (§12.5): identidad y nombre por competición + intro con regla en ficción.
 export function textoDeMinijuego(entrada, state) {
+  const competicion = state.serie?.ronda === 'internacional'
+    ? 'internacional'
+    : (state.career?.liga ?? 'default');
+
+  let titulos = entrada.titulos;
+  if (entrada.nombresPorCompeticion) {
+    const especial = entrada.nombresPorCompeticion[competicion]
+      ?? entrada.nombresPorCompeticion[state.career?.liga]
+      ?? entrada.nombresPorCompeticion.default;
+    if (especial) {
+      titulos = [especial];
+    }
+  }
+
+  const titulo = resolverTexto(titulos, state);
+  const descripcionBase = resolverTexto(entrada.descripciones, state);
+  const regla = entrada.reglaEnFiccion ? resolverTexto(entrada.reglaEnFiccion, state) : '';
+  const descripcion = regla ? `${descripcionBase} ${regla}` : descripcionBase;
+
   return {
-    titulo: resolverTexto(entrada.titulos, state),
-    descripcion: resolverTexto(entrada.descripciones, state),
-    apuesta: resolverTexto(entrada.apuesta, state)
+    titulo,
+    descripcion,
+    apuesta: resolverTexto(entrada.apuesta, state),
+    regla
   };
+}
+
+// Fase 12f (§12.5): dificultad que escala por ronda (semis -> final -> internacional).
+export function factorDificultadPorRonda(ronda) {
+  return BALANCE.serie.dificultadMinijuegoPorRonda[ronda] ?? 1.0;
+}
+
+// Fase 12f (§12.5): cierre narrativo determinista por mapa.
+export function generarCierreMapa(campeon, gano, marcador, state) {
+  const lista = SERIES_DATA.cierresMapa[gano ? 'W' : 'L'];
+  const semilla = [
+    state.calendario?.anio ?? 0,
+    state.player?.splitCount ?? 0,
+    state.serie?.ronda ?? '',
+    state.serie?.mapaActual ?? 0,
+    campeon
+  ].join('|');
+  const index = Math.abs(hashCadena(semilla)) % lista.length;
+  const plantilla = lista[index];
+  return plantilla.replace('{campeon}', campeon).replace('{marcador}', marcador);
 }
 
 // El veredicto 0-1 → nivel + frase. Vivía duplicado en la UI (9R0b) con su

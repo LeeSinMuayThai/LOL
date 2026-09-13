@@ -1,0 +1,18 @@
+{
+  "cierresMapa": {
+    "W": [
+      "Victoria limpia con {campeon} dominando la grieta.",
+      "Control de objetivos y cierre contundente con {campeon}.",
+      "Superioridad en peleas de equipo: ganan el mapa con {campeon}.",
+      "Punto de mapa para tu equipo tras una gran actuación con {campeon}.",
+      "Cierran la partida castigando cada error rival con {campeon}."
+    ],
+    "L": [
+      "Se escapa el mapa tras una mala pelea con {campeon}.",
+      "Caen en el mapa ante el empuje y la presión del rival.",
+      "Derrota en el mapa: el rival castiga los descuidos con {campeon}.",
+      "Pelea desordenada en el foso y mapa que se va para el otro lado.",
+      "El rival toma la ventaja y no perdona: mapa perdido."
+    ]
+  }
+}

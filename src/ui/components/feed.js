@@ -14,7 +14,7 @@ import METAS from '../../data/metas.json' with { type: 'json' };
 import { acentoDeLog, rotuloDeDecision } from '../formatoUi.js';
 import { crearOrgChip } from './orgChip.js';
 import { etiquetaRol } from '../../data/roles.js';
-import { crearTarjetaResultado } from './serie.js';
+import { crearTarjetaResultado, crearTarjetaResultadoSerie } from './serie.js';
 
 // El reveal del Top 20 al cierre de temporada (fase 9Wc). El log `top_mundial`
 // que trae la lista entera (`entry.top20`) deja de ser una línea: se abre en
@@ -203,9 +203,13 @@ export function agruparBeats(entradas) {
 export function nodoDeBeat(beat, state) {
   let nodo;
   if (beat.narrativa) {
-    nodo = beat.narrativa.type === 'temporada' && state
-      ? crearTarjetaResultado(beat.narrativa, state)
-      : crearLogItem(beat.narrativa);
+    if (beat.narrativa.type === 'temporada' && state) {
+      nodo = crearTarjetaResultado(beat.narrativa, state);
+    } else if (beat.narrativa.type === 'serie' && beat.narrativa.postSerie) {
+      nodo = crearTarjetaResultadoSerie(beat.narrativa, state);
+    } else {
+      nodo = crearLogItem(beat.narrativa);
+    }
   } else {
     nodo = document.createElement('div');
     nodo.className = 'log-item log-item--tecnico';

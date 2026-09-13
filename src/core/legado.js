@@ -186,6 +186,7 @@ export function componerLegado(state) {
       splitsEnTopMundial: r.splitsEnTopMundial ?? 0
     },
     // La UI reusa `filaHistoria` de `ui/components/ficha.js` sobre esto.
-    historia: r.porOrg
+    historia: r.porOrg,
+    internacionales: r.internacionales
   };
 }

@@ -95,12 +95,135 @@ export function crearTarjetaResultado(entry, state) {
 // que el Fearless draft ya gastó: es la mecánica más distintiva del juego
 // y hoy es una línea de texto plana.
 const RONDAS_BRACKET = ['cuartos', 'semis', 'final'];
+const ETIQUETAS_BRACKET = {
+  cuartos: 'CUARTOS',
+  semis: 'SEMI',
+  final: 'FINAL'
+};
 let seriePrevia = { a: 0, b: 0 };
+
+export function crearBarraBracket(rondaActual, { esPostSerie = false, gano = false } = {}) {
+  const bracket = document.createElement('div');
+  bracket.className = 'serie-bracket';
+
+  const esIntl = rondaActual === 'internacional';
+  const indiceActual = RONDAS_BRACKET.indexOf(rondaActual);
+
+  RONDAS_BRACKET.forEach((ronda, indice) => {
+    const paso = document.createElement('span');
+    let mod = '';
+    if (esIntl) {
+      mod = ' serie-bracket-paso--superada';
+    } else if (indiceActual >= 0) {
+      if (indice < indiceActual) {
+        mod = ' serie-bracket-paso--superada';
+      } else if (indice === indiceActual) {
+        if (esPostSerie) {
+          mod = gano ? ' serie-bracket-paso--superada' : '';
+        } else {
+          mod = ' serie-bracket-paso--actual';
+        }
+      }
+    }
+    paso.className = 'serie-bracket-paso' + mod;
+    paso.textContent = ETIQUETAS_BRACKET[ronda] ?? etiquetaDeRonda(ronda);
+    bracket.appendChild(paso);
+  });
+
+  if (esIntl) {
+    const pasoIntl = document.createElement('span');
+    const modIntl = esPostSerie
+      ? (gano ? ' serie-bracket-paso--superada' : '')
+      : ' serie-bracket-paso--actual';
+    pasoIntl.className = 'serie-bracket-paso' + modIntl;
+    pasoIntl.textContent = 'INTERNACIONAL';
+    bracket.appendChild(pasoIntl);
+  }
+
+  return bracket;
+}
+
+export function crearTarjetaResultadoSerie(entry, state) {
+  const item = document.createElement('div');
+  item.className = 'log-item log-item--resultado log-item--resultado-serie '
+    + (entry.gano ? 'log-item--resultado-victoria' : 'log-item--resultado-derrota');
+  item.dataset.type = 'serie';
+  item.dataset.acento = entry.gano ? 'up' : 'down';
+
+  const cabecera = document.createElement('div');
+  cabecera.className = 'resultado-cabecera';
+
+  const marcador = document.createElement('span');
+  marcador.className = 'resultado-marcador';
+  marcador.textContent = entry.gano ? 'GANARON LA SERIE' : 'PERDIERON LA SERIE';
+
+  const scoreEl = document.createElement('span');
+  scoreEl.className = 'resultado-score';
+  scoreEl.textContent = entry.marcador ? ` (${entry.marcador[0]}–${entry.marcador[1]})` : '';
+
+  const rivalEl = document.createElement('span');
+  rivalEl.className = 'resultado-rival';
+  if (entry.rival) {
+    rivalEl.append(
+      document.createTextNode('vs '),
+      crearOrgChip(entry.rival, { size: 16 }),
+      document.createTextNode(entry.rival)
+    );
+  }
+
+  const rondaEl = document.createElement('span');
+  rondaEl.className = 'resultado-fuerza';
+  rondaEl.textContent = etiquetaDeRonda(entry.ronda ?? state?.serie?.ronda);
+
+  cabecera.append(marcador, scoreEl, rivalEl, rondaEl);
+  item.appendChild(cabecera);
+
+  const bracket = crearBarraBracket(entry.ronda ?? state?.serie?.ronda, {
+    esPostSerie: true,
+    gano: entry.gano
+  });
+  item.appendChild(bracket);
+
+  const cuerpo = document.createElement('div');
+  cuerpo.className = 'resultado-cuerpo';
+  cuerpo.textContent = entry.message;
+  item.appendChild(cuerpo);
+
+  const mapas = entry.mapas ?? state?.serie?.mapas ?? [];
+  if (mapas.length > 0) {
+    const camino = document.createElement('div');
+    camino.className = 'resultado-camino';
+    for (const m of mapas) {
+      const fila = document.createElement('div');
+      fila.className = 'resultado-mapa-fila';
+
+      const tag = document.createElement('span');
+      tag.className = 'resultado-mapa-tag ' + (m.resultado === 'W' ? 'resultado-mapa-tag--ganado' : 'resultado-mapa-tag--perdido');
+      tag.textContent = `M${m.mapa} [${m.resultado} ${m.marcador}]`;
+
+      const camp = document.createElement('span');
+      camp.className = 'resultado-mapa-campeon';
+      camp.textContent = m.campeon;
+
+      const cierre = document.createElement('span');
+      cierre.className = 'resultado-mapa-cierre';
+      cierre.textContent = m.cierre ? `— ${m.cierre}` : '';
+
+      fila.append(tag, camp, cierre);
+      camino.appendChild(fila);
+    }
+    item.appendChild(camino);
+  }
+
+  return item;
+}
 
 export function renderSerieContexto(container, state) {
   const { serie } = state;
+  const ultimoLog = state?.logs?.[state.logs.length - 1];
+  const esPostSerie = Boolean(serie?.postSerie) || Boolean(ultimoLog?.postSerie);
 
-  if (!serie.activa) {
+  if (!serie || (!serie.activa && !esPostSerie)) {
     container.hidden = true;
     seriePrevia = { a: 0, b: 0 };
     return;
@@ -109,27 +232,9 @@ export function renderSerieContexto(container, state) {
   container.hidden = false;
   container.replaceChildren();
 
-  // El bracket, solo para las rondas domésticas — el internacional es un
-  // cruce único, no tiene sentido en una barra de 3 pasos.
-  if (RONDAS_BRACKET.includes(serie.ronda)) {
-    const bracket = document.createElement('div');
-    bracket.className = 'serie-bracket';
-    const indiceActual = RONDAS_BRACKET.indexOf(serie.ronda);
-    RONDAS_BRACKET.forEach((ronda, indice) => {
-      const paso = document.createElement('span');
-      paso.className = 'serie-bracket-paso'
-        + (indice < indiceActual ? ' serie-bracket-paso--superada' : '')
-        + (indice === indiceActual ? ' serie-bracket-paso--actual' : '');
-      paso.textContent = etiquetaDeRonda(ronda);
-      bracket.appendChild(paso);
-    });
-    container.appendChild(bracket);
-  } else {
-    const titulo = document.createElement('div');
-    titulo.className = 'serie-bracket-titulo-solo';
-    titulo.textContent = etiquetaDeRonda(serie.ronda);
-    container.appendChild(titulo);
-  }
+  const ganoSerie = (serie.marcador?.[0] ?? 0) > (serie.marcador?.[1] ?? 0);
+  const bracket = crearBarraBracket(serie.ronda, { esPostSerie, gano: ganoSerie });
+  container.appendChild(bracket);
 
   const propia = state.career.currentOrg ?? state.player.name;
   const rivalNombre = serie.rival?.org ?? 'Rival';
@@ -181,11 +286,32 @@ export function renderSerieContexto(container, state) {
     n.textContent = `M${i + 1}`;
     const c = document.createElement('span');
     c.className = 'serie-mapa-c';
-    c.textContent = mapa ? mapa.campeon : '—';
+    c.textContent = mapa ? (mapa.marcador ? `${mapa.campeon} (${mapa.marcador})` : mapa.campeon) : '—';
     paso.append(n, c);
+    if (mapa?.cierre) {
+      paso.title = mapa.cierre;
+    }
     camino.appendChild(paso);
   }
   container.appendChild(camino);
+
+  if (esPostSerie && serie.mapas.length > 0) {
+    const cierres = document.createElement('div');
+    cierres.className = 'serie-cierres-lista';
+    for (const m of serie.mapas) {
+      const fila = document.createElement('div');
+      fila.className = `serie-cierre-item serie-cierre-item--${m.resultado === 'W' ? 'ganado' : 'perdido'}`;
+      const tag = document.createElement('span');
+      tag.className = 'serie-cierre-tag';
+      tag.textContent = `M${m.mapa} [${m.resultado} ${m.marcador}] ${m.campeon}`;
+      const texto = document.createElement('span');
+      texto.className = 'serie-cierre-texto';
+      texto.textContent = m.cierre ? ` — ${m.cierre}` : '';
+      fila.append(tag, texto);
+      cierres.appendChild(fila);
+    }
+    container.appendChild(cierres);
+  }
 
   const quemados = serie.quemados ?? [];
   const pool = state.player.championPool ?? [];

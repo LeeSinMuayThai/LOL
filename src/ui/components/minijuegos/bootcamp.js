@@ -1,4 +1,4 @@
-import { unaSolaVez, relojDeMinijuego } from './comun.js';
+import { unaSolaVez, relojDeMinijuego, factorDificultadRonda } from './comun.js';
 
 // Bootcamp (fase 4). Migrado de index.html en la fase T6 — ver `robarBaron.js`
 // para el porqué del `rngUi` como parámetro (acá no se usa: el sorteo lo hace
@@ -14,6 +14,8 @@ const DURACION = 6000;
 
 export function montar(container, state, onDone) {
   const terminar = unaSolaVez(onDone);
+  const dificultad = factorDificultadRonda('internacional');
+  const duracion = Math.round(DURACION / dificultad);
   let puntos = 0;
 
   container.innerHTML =
@@ -44,5 +46,5 @@ export function montar(container, state, onDone) {
     });
   });
 
-  pararReloj = relojDeMinijuego(container, DURACION, cerrar);
+  pararReloj = relojDeMinijuego(container, duracion, cerrar);
 }

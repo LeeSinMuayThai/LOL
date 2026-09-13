@@ -16,4 +16,4 @@ export { renderPlantilla } from './paneles/plantilla.js';
 export { renderMeta } from './paneles/meta.js';
 export { renderGeneracion } from './paneles/generacion.js';
 export { renderTopMundial } from './paneles/topMundial.js';
-export { crearTarjetaResultado, renderSerieContexto } from './components/serie.js';
+export { crearTarjetaResultado, crearTarjetaResultadoSerie, crearBarraBracket, renderSerieContexto } from './components/serie.js';

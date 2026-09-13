@@ -77,6 +77,37 @@ export function renderTarjeta(container, state, modulos) {
     container.appendChild(historia);
   }
 
+  const internacionales = state.career?.registro?.internacionales ?? t.internacionales ?? [];
+  if (internacionales.length > 0) {
+    const intlSec = document.createElement('div');
+    intlSec.className = 'tarjeta-internacionales';
+    intlSec.appendChild(linea('tarjeta-historia-titulo', 'TORNEOS INTERNACIONALES'));
+    for (const intl of internacionales) {
+      const bloque = document.createElement('div');
+      bloque.className = 'tarjeta-intl-bloque';
+
+      const enc = document.createElement('div');
+      enc.className = 'tarjeta-intl-encabezado';
+      const res = intl.resultado === 'buen_papel' ? 'Buen papel' : 'Eliminado';
+      enc.textContent = `${intl.torneo} (${intl.anio}) · ${intl.org} · ${res}`;
+      bloque.appendChild(enc);
+
+      if (Array.isArray(intl.camino) && intl.camino.length > 0) {
+        const caminoEl = document.createElement('div');
+        caminoEl.className = 'tarjeta-intl-camino';
+        for (const m of intl.camino) {
+          const lineaM = document.createElement('div');
+          lineaM.className = `tarjeta-intl-mapa tarjeta-intl-mapa--${m.resultado === 'W' ? 'ganado' : 'perdido'}`;
+          lineaM.textContent = `M${m.mapa} [${m.resultado} ${m.marcador}] ${m.campeon}${m.cierre ? ` — ${m.cierre}` : ''}`;
+          caminoEl.appendChild(lineaM);
+        }
+        bloque.appendChild(caminoEl);
+      }
+      intlSec.appendChild(bloque);
+    }
+    container.appendChild(intlSec);
+  }
+
   container.appendChild(crearAcciones(state, modulos));
 }
 

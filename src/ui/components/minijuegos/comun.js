@@ -12,6 +12,8 @@
 //   · `prefers-reduced-motion: reduce` no las rompe (`motionReducido`)
 //   · el stat que declara el catálogo abre la ventana (`ventanaPorStat`)
 
+import { BALANCE } from '../../../data/balance.js';
+
 // La misma preferencia que apaga las animaciones en CSS (base.css). Acá se
 // respeta para el TIMING de JS: sin esto el CSS no animaría nada pero el
 // minijuego seguiría pidiendo puntería sobre algo que se mueve.
@@ -19,12 +21,29 @@ export function motionReducido() {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 }
 
+// Fase 12f (§12.5): factor de dificultad que escala por ronda (semis -> final
+// -> internacional). Los valores viven en `BALANCE.serie.dificultadMinijuegoPorRonda`
+// (regla invariable 3); acá no se repiten.
+export function factorDificultadRonda(ronda) {
+  return BALANCE.serie.dificultadMinijuegoPorRonda[ronda] ?? 1.0;
+}
+
+// Cuánto amortigua `factorDificultadRonda` el efecto final sobre un timing
+// (caída de last hit, velocidad de robarBaron): sin esto, el salto de 1.4x
+// en el internacional se sentiría desproporcionado contra el 1.2x de la final.
+export const AMORTIGUACION_DIFICULTAD = BALANCE.serie.amortiguacionDificultadMinijuego;
+
 // Regla 2 de PLAN.md §4.6: "los stats corren sus odds, el minijuego decide qué
 // hacés con lo que entrenaste". Un stat de 100 nunca regala el acierto y uno de
 // 0 nunca lo hace imposible: mueve el ancho de la ventana entre dos topes.
-export function ventanaPorStat(valor, minimo, maximo) {
+// En fase 12f (§12.5), la dificultad escala por ronda, con un piso (regla
+// invariable 3: `BALANCE.serie.pisoVentanaMinijuego`) para que "internacional"
+// nunca deje la ventana injugable.
+export function ventanaPorStat(valor, minimo, maximo, dificultad = 1.0) {
   const t = Math.max(0, Math.min(100, valor ?? 50)) / 100;
-  return minimo + (maximo - minimo) * t;
+  const base = minimo + (maximo - minimo) * t;
+  const piso = minimo * BALANCE.serie.pisoVentanaMinijuego;
+  return Math.max(piso, base / (dificultad > 0 ? dificultad : 1.0));
 }
 
 export function unaSolaVez(onDone) {

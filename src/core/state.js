@@ -252,7 +252,8 @@ export function createInitialState(seed, rng, eleccion = null) {
       // `preSerieUsado` es el del bootcamp, que pasa ANTES del primer mapa y
       // hasta acá se comía el cupo entero del internacional (medido: 643 de 643).
       decisivoUsado: false,
-      preSerieUsado: false
+      preSerieUsado: false,
+      postSerie: false
     },
     meta: {
       patch: 1,

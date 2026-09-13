@@ -500,6 +500,43 @@ check('Las decisiones de mejora declaran rareza con el payoff correcto (PLAN.md 
   }
 });
 
+check('Toda serie internacional deja su camino guardado en registro.internacionales (PLAN.md §12.5/§12.6)', () => {
+  let totalInternacionales = 0;
+  for (let seed = 1; seed <= 300; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+    }
+    for (const intl of state.career.registro.internacionales) {
+      totalInternacionales += 1;
+      if (!Array.isArray(intl.camino) || intl.camino.length === 0) {
+        throw new Error(`seed ${seed}: internacional en ${intl.org} (${intl.anio}) sin camino guardado`);
+      }
+      for (const mapa of intl.camino) {
+        if (typeof mapa.mapa !== 'number' || mapa.mapa < 1) {
+          throw new Error(`seed ${seed}: mapa inválido en camino: ${JSON.stringify(mapa)}`);
+        }
+        if (!mapa.campeon || typeof mapa.campeon !== 'string') {
+          throw new Error(`seed ${seed}: mapa sin campeon en camino`);
+        }
+        if (mapa.resultado !== 'W' && mapa.resultado !== 'L') {
+          throw new Error(`seed ${seed}: mapa con resultado inválido ("${mapa.resultado}")`);
+        }
+        if (!mapa.marcador || typeof mapa.marcador !== 'string' || !/^\d+-\d+$/.test(mapa.marcador)) {
+          throw new Error(`seed ${seed}: mapa sin marcador válido ("${mapa.marcador}")`);
+        }
+        if (!mapa.cierre || typeof mapa.cierre !== 'string' || mapa.cierre.trim().length === 0) {
+          throw new Error(`seed ${seed}: mapa sin cierre narrativo`);
+        }
+      }
+    }
+  }
+  if (totalInternacionales === 0) {
+    throw new Error('no se registraron internacionales en 300 seeds');
+  }
+});
+
 check('Campeones, roles y ligas coherentes', () => {
   const arquetipos = new Set(ARQUETIPOS);
   const nombres = new Set();

@@ -1,4 +1,4 @@
-import { unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeRondas } from './comun.js';
+import { unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeRondas, factorDificultadRonda } from './comun.js';
 
 // "El kite" (fase 9R4c). Atacar, moverse, atacar, moverse: ocho tiempos
 // alternados contra un metrónomo. Si repetís la misma acción dos veces seguidas
@@ -11,7 +11,8 @@ const TIEMPOS = 8;
 
 export function montar(container, state, onDone) {
   const terminar = unaSolaVez(onDone);
-  const msTiempo = ventanaPorStat(state.player.stats.mecanica, 520, 1000);
+  const dificultad = factorDificultadRonda(state.serie?.ronda);
+  const msTiempo = ventanaPorStat(state.player.stats.mecanica, 520, 1000, dificultad);
 
   container.innerHTML =
     '<div class="minijuego-aviso">Atacá (A)</div>'

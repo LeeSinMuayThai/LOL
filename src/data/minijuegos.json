@@ -14,6 +14,17 @@
     },
     "impacto": 0.16,
     "spread": 0.22,
+    "reglaEnFiccion": "Calculá el daño y clavá el smite en la ventana justa para asegurar el objetivo antes que el rival.",
+    "nombresPorCompeticion": {
+      "internacional": "El Barón de Worlds",
+      "LCK": "El Barón del LoL Park",
+      "LPL": "El Barón de la LPL",
+      "LEC": "El Barón de la LEC",
+      "LCS": "El Barón del Riot Games Arena",
+      "CBLOL": "O Barão do CBLOL",
+      "LCP": "El Barón del LCP",
+      "default": "El Barón de {liga}"
+    },
     "titulos": [
       "El Barón está bajo",
       "El Barón, a un smite",
@@ -54,6 +65,17 @@
     },
     "impacto": 0.14,
     "spread": 0.2,
+    "reglaEnFiccion": "Leé el posicionamiento y cantá la orden adecuada por voz antes de que la ventana de la jugada se cierre.",
+    "nombresPorCompeticion": {
+      "internacional": "La llamada en el escenario mundial",
+      "LCK": "La llamada de la LCK",
+      "LPL": "La llamada de la LPL",
+      "LEC": "La llamada europea",
+      "LCS": "La llamada de la LCS",
+      "CBLOL": "A call do CBLOL",
+      "LCP": "La llamada del Pacífico",
+      "default": "La llamada de {liga}"
+    },
     "titulos": [
       "La llamada",
       "Hay que llamarla ya",
@@ -95,6 +117,11 @@
     },
     "impacto": 6,
     "spread": 0.2,
+    "reglaEnFiccion": "Repartí las horas de scrim entre práctica individual y macro antes de viajar al torneo.",
+    "nombresPorCompeticion": {
+      "internacional": "Bootcamp antes del internacional",
+      "default": "Bootcamp de preparación"
+    },
     "titulos": [
       "Bootcamp antes de viajar",
       "Última semana de scrims",
@@ -137,6 +164,17 @@
     },
     "impacto": 6,
     "spread": 0.2,
+    "reglaEnFiccion": "Elegí la declaración que equilibre el impacto mediático con la tranquilidad del vestuario.",
+    "nombresPorCompeticion": {
+      "internacional": "Conferencia de prensa internacional",
+      "LCK": "Rueda de prensa en el LoL Park",
+      "LPL": "Rueda de prensa de la LPL",
+      "LEC": "Rueda de prensa de la LEC",
+      "LCS": "Rueda de prensa de la LCS",
+      "CBLOL": "Entrevista coletiva do CBLOL",
+      "LCP": "Rueda de prensa del LCP",
+      "default": "Rueda de prensa de {liga}"
+    },
     "titulos": [
       "Rueda de prensa",
       "Micrófonos abiertos",
@@ -175,6 +213,10 @@
     },
     "impacto": 6,
     "spread": 0.2,
+    "reglaEnFiccion": "Mostrá consistencia y sangre fría en cada intento bajo la mirada evaluadora del cuerpo técnico.",
+    "nombresPorCompeticion": {
+      "default": "La prueba de ingreso"
+    },
     "titulos": [
       "La prueba",
       "El tryout",
@@ -217,6 +259,17 @@
     },
     "impacto": 0.09,
     "spread": 0.14,
+    "reglaEnFiccion": "Rematá a cada súbdito justo cuando su vida entra en rango de ejecución bajo la torre para asegurar la ventaja en línea.",
+    "nombresPorCompeticion": {
+      "internacional": "La línea en el internacional",
+      "LCK": "El farm de la LCK",
+      "LPL": "La ola decisiva de la LPL",
+      "LEC": "El control de oleadas de la LEC",
+      "LCS": "El CS del Riot Games Arena",
+      "CBLOL": "O farm do CBLOL",
+      "LCP": "La línea del LCP",
+      "default": "La ola de {liga}"
+    },
     "titulos": [
       "La ola que define",
       "Cinco minions y una torre",
@@ -256,6 +309,17 @@
     },
     "impacto": 0.12,
     "spread": 0.18,
+    "reglaEnFiccion": "Ejecutá la secuencia completa de habilidades en el orden exacto antes de que expire el control sobre el rival.",
+    "nombresPorCompeticion": {
+      "internacional": "El combo en el escenario mundial",
+      "LCK": "La secuencia mecánica de la LCK",
+      "LPL": "El combo letal de la LPL",
+      "LEC": "La ejecución de la LEC",
+      "LCS": "El combo de la LCS",
+      "CBLOL": "O combo do CBLOL",
+      "LCP": "El combo del LCP",
+      "default": "El combo de {liga}"
+    },
     "titulos": [
       "El combo completo",
       "Todo el kit, en orden",
@@ -295,6 +359,17 @@
     },
     "impacto": 0.11,
     "spread": 0.16,
+    "reglaEnFiccion": "Leé la trayectoria enemiga y salí del carril telegrafiado a tiempo para esquivar el impacto.",
+    "nombresPorCompeticion": {
+      "internacional": "Dodge en el internacional",
+      "LCK": "El esquive de la LCK",
+      "LPL": "Dodge bajo fuego en la LPL",
+      "LEC": "El paso al costado en la LEC",
+      "LCS": "Dodge en la LCS",
+      "CBLOL": "O drible do CBLOL",
+      "LCP": "El esquive del LCP",
+      "default": "Esquivar en {liga}"
+    },
     "titulos": [
       "Esquivar o morir",
       "Todo lo que te tiran",
@@ -336,6 +411,17 @@
     },
     "impacto": 0.1,
     "spread": 0.16,
+    "reglaEnFiccion": "Colocá los centinelas de visión en los arbustos clave antes de que la zona quede a oscuras.",
+    "nombresPorCompeticion": {
+      "internacional": "Visión en el internacional",
+      "LCK": "El mapa de visión de la LCK",
+      "LPL": "Guerra de visión en la LPL",
+      "LEC": "Control de visión de la LEC",
+      "LCS": "La visión de la LCS",
+      "CBLOL": "A visão do CBLOL",
+      "LCP": "Visión en el LCP",
+      "default": "La visión en {liga}"
+    },
     "titulos": [
       "Dónde no ves",
       "La visión antes del objetivo",
@@ -376,6 +462,17 @@
     },
     "impacto": 0.11,
     "spread": 0.16,
+    "reglaEnFiccion": "Intercalá ataques y pasos hacia atrás al compás para desgastar al rival sin permitir que te alcance.",
+    "nombresPorCompeticion": {
+      "internacional": "El kite del internacional",
+      "LCK": "El espaciado de la LCK",
+      "LPL": "Kite agresivo en la LPL",
+      "LEC": "El kite de la LEC",
+      "LCS": "Kite en la LCS",
+      "CBLOL": "O kite do CBLOL",
+      "LCP": "El kite del LCP",
+      "default": "El kite en {liga}"
+    },
     "titulos": [
       "Kitear al bruiser",
       "Atacar y moverse",
@@ -417,6 +514,17 @@
     },
     "impacto": 0.15,
     "spread": 0.22,
+    "reglaEnFiccion": "Canalizá el teleport con la anticipación exacta para caer a espaldas del rival y definir la pelea.",
+    "nombresPorCompeticion": {
+      "internacional": "El TP del internacional",
+      "LCK": "El flanco con TP de la LCK",
+      "LPL": "El teleport decisivo de la LPL",
+      "LEC": "El TP de la LEC",
+      "LCS": "El teleport de la LCS",
+      "CBLOL": "O teleporte do CBLOL",
+      "LCP": "El TP del LCP",
+      "default": "El teleport en {liga}"
+    },
     "titulos": [
       "El TP que define",
       "Bajar o no bajar",

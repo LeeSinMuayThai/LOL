@@ -421,6 +421,61 @@ h1::before {
   font-variant-numeric: tabular-nums;
 }
 
+.resultado-cuerpo {
+  margin: var(--s-1) 0 var(--s-2);
+  color: var(--ink);
+  font-size: var(--fs-1);
+}
+
+.resultado-score {
+  font-size: var(--fs-2);
+  font-weight: 700;
+  color: var(--ink-dim);
+}
+
+.resultado-camino {
+  margin-top: var(--s-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+.resultado-mapa-fila {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  font-size: var(--fs-1);
+  color: var(--ink-dim);
+}
+
+.resultado-mapa-tag {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 1px var(--s-1);
+  border-radius: var(--r-sharp);
+}
+
+.resultado-mapa-tag--ganado {
+  background: var(--up-fill);
+  color: var(--up);
+}
+
+.resultado-mapa-tag--perdido {
+  background: var(--down-fill);
+  color: var(--down);
+}
+
+.resultado-mapa-campeon {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.resultado-mapa-cierre {
+  color: var(--ink-mute);
+  font-size: var(--fs-0);
+}
+
 /* ==========================================================================
    3. LA FICHA (PLAN.md §8.6)
    ========================================================================== */

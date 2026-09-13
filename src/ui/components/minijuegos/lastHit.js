@@ -1,4 +1,4 @@
-import { motionReducido, unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeRondas } from './comun.js';
+import { motionReducido, unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeRondas, factorDificultadRonda, AMORTIGUACION_DIFICULTAD } from './comun.js';
 
 // "Last hit" (fase 9R4c). El minion baja de vida solo; el remate entra si le
 // pegás cuando ya está en zona de ejecución. Muy temprano no lo matás, muy
@@ -12,7 +12,8 @@ const TECLAS = ['1', '2', '3', '4', '5'];
 
 export function montar(container, state, onDone, rngUi) {
   const terminar = unaSolaVez(onDone);
-  const ventana = ventanaPorStat(state.player.stats.laneo, 14, 34);
+  const dificultad = factorDificultadRonda(state.serie?.ronda);
+  const ventana = ventanaPorStat(state.player.stats.laneo, 14, 34, dificultad);
   const reducido = motionReducido();
 
   container.innerHTML =
@@ -38,7 +39,7 @@ export function montar(container, state, onDone, rngUi) {
   let indice = -1;
   let aciertos = 0;
   let vida = 100;
-  let caida = 2.2;
+  let caida = 2.2 * (1 + (dificultad - 1) * AMORTIGUACION_DIFICULTAD);
   let reloj = null;
   let soltarTeclado = () => {};
 

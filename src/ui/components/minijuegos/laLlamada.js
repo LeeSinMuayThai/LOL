@@ -1,6 +1,11 @@
+import { factorDificultadRonda } from './comun.js';
+
 // La Llamada (fase 4). Migrado de index.html en la fase T6 — ver
 // `robarBaron.js` para el porqué del `rngUi` como parámetro.
 export function montar(container, state, onDone, rngUi) {
+  const dificultad = factorDificultadRonda(state.serie?.ronda);
+  const ventanaMs = 700 / dificultad;
+
   container.innerHTML =
     '<div class="minijuego-aviso">Esperá la señal del equipo...</div>' +
     '<button type="button" class="minijuego-btn">¡Ahora!</button>';
@@ -22,6 +27,6 @@ export function montar(container, state, onDone, rngUi) {
       return;
     }
     const latencia = performance.now() - inicio;
-    onDone(Math.max(0, 1 - latencia / 700));
+    onDone(Math.max(0, 1 - latencia / ventanaMs));
   }, { once: true });
 }
