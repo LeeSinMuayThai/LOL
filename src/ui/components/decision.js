@@ -3,9 +3,9 @@ import { pesoDeDecision, rotuloDeDecision } from '../formatoUi.js';
 // La tarjeta de decisión: título, descripción y una opción por botón.
 // Extraído de index.html (fase 8, §8.5). Fase 12d (PLAN.md §12.3) sumó la
 // consecuencia previa (`opcion.previa`/`opcion.riesgo`) y las opciones
-// bloqueadas (`decision.opcionesBloqueadas`); la rareza (12e) es lo que
-// falta — el contrato de `decision` ya viene de `systems/events.js` con esa
-// forma, así que este componente no cambió de raíz, solo pintó más campos.
+// bloqueadas (`decision.opcionesBloqueadas`). Fase 12e (PLAN.md §12.4)
+// pinta `opcion.rareza` (`comun` / `rara`) en las decisiones de mejora
+// — el contrato ya venía preparado, este componente no se reescribió.
 //
 // Los minijuegos NO pasan por acá (`decision.presentacion === 'minijuego'`
 // los desvía antes de llegar): index.html los sigue montando directo, la
@@ -79,6 +79,16 @@ export function renderDecision(elements, decision, onElegir, state) {
       riesgo.className = `option-riesgo option-riesgo--${opcion.riesgo}`;
       riesgo.textContent = opcion.riesgo;
       opcionBtn.appendChild(riesgo);
+    }
+
+    // Fase 12e (PLAN.md §12.4): rareza de las decisiones de mejora. Misma
+    // píldora que el riesgo — no un componente nuevo. Solo viene en
+    // pretemporada, práctica y `pool_a_cual_le_metes`.
+    if (opcion.rareza) {
+      const rareza = document.createElement('span');
+      rareza.className = `option-rareza option-rareza--${opcion.rareza}`;
+      rareza.textContent = opcion.rareza === 'rara' ? 'rara' : 'común';
+      opcionBtn.appendChild(rareza);
     }
 
     opcionBtn.addEventListener('click', () => onElegir({ opcionId: opcion.id }));

@@ -39,7 +39,7 @@ function magnitudDe(valorAbsoluto, familia) {
 // Payoff normalizado de UN outcome: cada efecto se divide por el corte
 // "alta" de su propia familia antes de sumar, así un efecto de ladder (LP) y
 // uno de stat (puntos) aportan en la misma escala relativa a la dispersión.
-function payoffNormalizado(outcome) {
+export function payoffNormalizado(outcome) {
   let total = 0;
   for (const effect of outcome.effects) {
     const familia = familiaDeEfecto(effect);

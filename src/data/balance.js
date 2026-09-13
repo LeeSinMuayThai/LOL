@@ -522,6 +522,22 @@ export const BALANCE = {
     penalRoboEnAuto: 0.06
   },
 
+  // Fase 12e (PLAN.md §12.4): corte común/rara de las decisiones de mejora.
+  // Medido sobre el catálogo real, no inventado (regla de proceso 2).
+  // Offseason: max(pulir, nuevo, mecanica, macro) — 7 rutinas dan
+  // [0,1,2,3,3,4,4]; el corte en 4 es el +4 contra +3 de la imagen 3 y
+  // ya existía en los repartos. Amateur: bloques de ranked
+  // [1,2,2,3,4,4,5,5,6,6,6,6,7,8,9]; p80 = 7, hueco natural antes del
+  // terceto 7/8/9 (3/15 = 20% rara). Eventos de mejora: se deriva de
+  // magnitud `alta` de 12d, sin umbral propio.
+  rareza: {
+    eventosDeMejora: ['pool_a_cual_le_metes'],
+    umbral: {
+      offseason: 4,
+      amateur: 7
+    }
+  },
+
   roster: {
     // Al entrar a un equipo sos el rookie: la jerarquia arranca abajo y hay que
     // ganarsela split a split. Cambiar de equipo la resetea parcialmente.

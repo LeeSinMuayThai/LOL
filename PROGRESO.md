@@ -33,6 +33,60 @@ ya se superó — 97 eventos / 196 opciones tras la fase 8D —, aunque el catá
 
 ## Changelog
 
+### 2026-09-13 — Fase 12e: rareza y el dado (PLAN.md §12.4)
+
+Quinta subfase de la 12. Primer uso de verdad, en este proyecto, del modelo supervisor/worker:
+la implementación completa la hizo **Grok** (`grok --reasoning-effort high`), sin supervisión
+línea a línea, trabajando solo en un `git worktree` aislado a partir de un spec escrito por el
+supervisor (criterio de dónde va `rareza`, qué archivos tocar, qué reglas de `CLAUDE.md` respetar
+— no el código). El resultado se auditó completo con un subagente Claude aparte, que releyó el
+diff entero y **corrió de cero** — no repitió lo que decían las notas de Grok — `validate.js`
+completo, `simulate.js 1500 60 todas`, la sonda anti-T1 de 40 seeds, y recalculó a mano los dos
+catálogos de rutinas contra los cortes declarados antes de aceptar el resultado.
+
+`src/core/rareza.js` (puro, cero RNG, cero import de `systems/`) exporta `rarezaDeRutina` /
+`rarezaDeOpcionEvento` / `descripcionDeSorteo`. **La rareza no es un sistema de loot nuevo: se
+DERIVA del payoff que el catálogo ya tenía**, contra un corte medido (regla de proceso 2 y 4, nunca
+inventado):
+
+- **Offseason** (`pretemporada`): `max(pulir, nuevo, mecánica, macro)` de las 7 rutinas de
+  `data/rutinas/offseason.json` da `[0,1,2,3,3,4,4]` — el corte en 4 (`BALANCE.rareza.umbral.offseason`)
+  es exactamente el "RARA da +4 contra +3" que citaba la imagen 3, y ya estaba en los repartos: 2/7
+  rutinas caen en rara.
+- **Amateur** (`práctica`): los bloques de `ranked` de las 15 rutinas de `data/rutinas/amateur.json`
+  ordenan `[1,2,2,3,4,4,5,5,6,6,6,6,7,8,9]` — el corte en 7 (`BALANCE.rareza.umbral.amateur`) cae en
+  el hueco natural antes del tramo 7/8/9: 3/15 rara (20%).
+- **`pool_a_cual_le_metes`**: reusa las bandas de magnitud de 12d (`magnitudBandas`) en vez de un
+  umbral propio — `rara` si alguna consecuencia positiva de la opción llega a magnitud `alta`.
+  Medido: "pulir tu bandera" da 4,8 de maestría media (banda `media`) contra "meterle horas a uno
+  nuevo" que cae en `alta` (la familia `pool_aprender` no tiene variación: su `[1,2]` entero es
+  `alta`) — la opción de pool nuevo es la "rara" de las dos, consistente con que cambiar de campeón
+  a mitad de régimen es la apuesta.
+
+**H10 y el eje del dilema**: `descripcionDeSorteo(cantidad, eje, extra)` encabeza todo menú
+generado por sorteo ("El dado trajo cuatro caminos. Elegí: ¿entrenar o parar?"), reusando el tono
+que `mercado.js` ya tenía ("El dado trajo estas ofertas. Elegí: ¿la guita o el proyecto?", sin
+tocar). Tres ejes nuevos, uno por sistema: `¿entrenar o parar?` (offseason), `¿el ranked o la
+casa?` (amateur), `¿el main o el meta?` (pool). `descripcionDeSorteo` cuenta el tamaño real del
+menú en vez de asumir "tres caminos" fijo como decía la cita textual del plan — un menú de 4 no
+debía mentir diciendo 3.
+
+**Check nuevo** en `validate.js` (regla de proceso 7, verificado en rojo primero contra
+`rareza: undefined`): toda decisión de mejora declara `rareza` ∈ {`comun`,`rara`} con el payoff que
+el corte implica. `PLAN.md` §12.6 suma la línea `✅ ... — 12e`.
+
+**Verificación** (corrida por el subagente de revisión, no por Grok): `validate.js` completo,
+exit 0, 0 FAIL. `simulate.js 1500 60 todas`: 0 crashes en las 4500 carreras (3 estrategias).
+Anti-T1 (40 seeds, `git archive 93631e7` contra el árbol modificado): **huella idéntica** — ningún
+campo nuevo consume `rng`, es derivado de datos que ya existían (`reparto`, `magnitudBandas` de
+12d, `pesoEfectivo`).
+
+**Alcance del review**: releído el diff completo (10 archivos + `src/core/rareza.js` nuevo, 157
+inserciones/12 borrados), confirmado sin commits propios de Grok, sin tocar `PROGRESO.md` ni nada
+de la subfase 12f (minijuegos/serie/registro), sin `Math.random()` nuevo, motor sin importar
+`src/ui`, cero números mágicos fuera de `BALANCE.rareza`, tono narrativo revisado a mano
+(`¿el ranked o la casa?`, `¿entrenar o parar?`, `¿el main o el meta?`).
+
 ### 2026-09-12 — Fase 12d: la consecuencia, antes de elegir (PLAN.md §12.3)
 
 Cuarta subfase de la 12 — la única que el modelo de trabajo de esta fase reserva sin delegar

@@ -9,6 +9,7 @@ import { crearLog } from '../core/log.js';
 import { deltaCorto, lista } from '../core/formato.js';
 import { tipoDeSplit, hayPresupuesto } from '../core/presupuesto.js';
 import { previaDeOpcion, riesgoDeOpcion, gateDeOpcion } from '../core/previa.js';
+import { rarezaDeOpcionEvento } from '../core/rareza.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 
@@ -331,7 +332,10 @@ export function decisionDesdeEvento(state, evento, { franja, slot }) {
         label: resolverTexto(option.label, state),
         descripcion: resolverTexto(option.descripcion, state),
         previa: previaDeOpcion(option, pesos),
-        riesgo: riesgoDeOpcion(option, pesos)
+        riesgo: riesgoDeOpcion(option, pesos),
+        ...(BALANCE.rareza.eventosDeMejora.includes(evento.id)
+          ? { rareza: rarezaDeOpcionEvento(option, pesos) }
+          : {})
       };
     }),
     // Las que no pasaron `disponibleEn` se muestran cerradas con su motivo,

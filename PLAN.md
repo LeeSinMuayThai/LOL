@@ -4052,6 +4052,7 @@ consumo de `rng` (trampa T1).
 ✅ Toda opción manda `previa` con ≥1 campo, o declara `previa: []` explícitamente — 12d
 ✅ El `riesgo` declarado coincide con la dispersión medida de outcomes (2000 resoluciones/opción) — 12d
 ✅ Una bisagra y una de ambiente producen `peso` distinto en el 100% de los casos — 12c
+✅ Las decisiones de mejora (pretemporada, práctica, pool_a_cual_le_metes) declaran rareza con payoff acorde — 12e
    Toda serie internacional deja su camino guardado en registro.internacionales — 12f
    Ningún minijuego puede setear `terminado` (ya existe, no puede regresionar) — 12f
 ```

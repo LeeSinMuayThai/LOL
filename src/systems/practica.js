@@ -4,6 +4,7 @@ import { clamp, clampStat } from '../core/numeros.js';
 import { campeonesAprendibles, pulirCampeon, aprenderCampeones } from '../core/pool.js';
 import { BALANCE } from '../data/balance.js';
 import { ofrecerRutinas, rutinaPorId, elegirRutinaAutomatica } from '../core/rutinas.js';
+import { opcionDesdeRutina, descripcionDeSorteo, EJE_OFFSEASON } from '../core/rareza.js';
 
 export const id = 'practica';
 
@@ -52,12 +53,14 @@ function decisionDePractica(state, rng) {
   const hayCupo = state.player.championPool.length < BALANCE.practica.poolMaximo && aprendibles > 0;
   const rutinas = ofrecerRutinas(state, rng, { pool: 'offseason' });
 
+  const extra = 'Lo que hagas en el receso es lo que llevás al año que viene.'
+    + (hayCupo ? '' : ' Tu pool ya está lleno: no entra ningún campeón nuevo.');
+
   return {
     tipo: 'opciones',
     titulo: 'Se terminó la temporada',
-    descripcion: 'Lo que hagas en el receso es lo que llevás al año que viene.'
-      + (hayCupo ? '' : ' Tu pool ya está lleno: no entra ningún campeón nuevo.'),
-    opciones: rutinas.map((rutina) => ({ id: rutina.id, label: rutina.titulo, descripcion: rutina.texto })),
+    descripcion: descripcionDeSorteo(rutinas.length, EJE_OFFSEASON, extra),
+    opciones: rutinas.map((rutina) => opcionDesdeRutina(rutina, 'offseason')),
     datos: { motivo: 'practica', rutinas }
   };
 }

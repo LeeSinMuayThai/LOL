@@ -23,7 +23,8 @@ import { RUTINAS } from '../core/rutinas.js';
 import { campeonesEnMeta, multiplicadorDeMeta, factorDeCampeon, pesoDePick, lecturaDePick } from '../core/ajusteMeta.js';
 import { campeonesDisponibles, entradaDePool } from '../core/pool.js';
 import { elegirOutcome, elegirEvento, decisionDesdeEvento, resolver as resolverEventos, resolverOpcion, cooldownActivo, pesoEfectivo } from '../systems/events.js';
-import { previaDeOpcion, riesgoDeOpcion } from '../core/previa.js';
+import { previaDeOpcion, riesgoDeOpcion, payoffNormalizado } from '../core/previa.js';
+import { rarezaDeRutina, payoffDeRutina } from '../core/rareza.js';
 import { tipoDeSplit, hayPresupuesto } from '../core/presupuesto.js';
 import { aplicar as aplicarPresupuesto } from '../systems/presupuesto.js';
 import { elegirCampeonRival, disponiblesDelPool, decisionDeDraft } from '../core/serie.js';
@@ -407,6 +408,95 @@ check('El riesgo declarado coincide con la dispersión medida de outcomes (2000 
         throw new Error(`${evento.id}/${opcion.id}: la frecuencia de 2000 resoluciones reales (χ²=${chiCuadrado.toFixed(1)}) no coincide con la que declara pesoEfectivo (observado=${observado.join('/')}, esperado=${esperado.map((e) => e.toFixed(0)).join('/')})`);
       }
     }
+  }
+});
+
+check('Las decisiones de mejora declaran rareza con el payoff correcto (PLAN.md §12.4)', () => {
+  const RAREZAS = new Set(['comun', 'rara']);
+  const estadoBase = createInitialState(1, mulberry32(1));
+
+  // 1. El catálogo de rutinas se parte en común/rara y rara paga más.
+  for (const pool of ['amateur', 'offseason']) {
+    const porRareza = { comun: [], rara: [] };
+    for (const rutina of RUTINAS[pool]) {
+      const rareza = rarezaDeRutina(rutina, pool);
+      if (!RAREZAS.has(rareza)) {
+        throw new Error(`${pool}/${rutina.id}: rareza "${rareza}" fuera de vocabulario`);
+      }
+      porRareza[rareza].push(payoffDeRutina(rutina, pool));
+    }
+    if (porRareza.comun.length === 0 || porRareza.rara.length === 0) {
+      throw new Error(`${pool}: el umbral no parte el catálogo en común y rara`);
+    }
+    const minRara = Math.min(...porRareza.rara);
+    const maxComun = Math.max(...porRareza.comun);
+    if (minRara <= maxComun) {
+      throw new Error(`${pool}: una rara (min ${minRara}) no paga más que una común (max ${maxComun})`);
+    }
+  }
+
+  function payoffEvento(opcion, state) {
+    const pesos = opcion.outcomes.map((outcome) => pesoEfectivo(state, outcome));
+    const total = pesos.reduce((suma, peso) => suma + peso, 0);
+    return opcion.outcomes.reduce((suma, outcome, i) => suma + payoffNormalizado(outcome) * pesos[i], 0) / total;
+  }
+
+  function verificarDecisionDeMejora(decision, origen, { sorteo }) {
+    if (!decision?.opciones?.length) {
+      throw new Error(`${origen}: sin opciones`);
+    }
+    const porRareza = { comun: [], rara: [] };
+    for (const opcion of decision.opciones) {
+      if (!RAREZAS.has(opcion.rareza)) {
+        throw new Error(`${origen}/${opcion.id}: esperaba rareza común/rara, dio "${opcion.rareza}"`);
+      }
+      porRareza[opcion.rareza].push(opcion.id);
+    }
+    if (sorteo) {
+      if (!String(decision.descripcion).startsWith('El dado trajo')) {
+        throw new Error(`${origen}: menú de sorteo sin encabezado del dado (H10)`);
+      }
+      if (!String(decision.descripcion).includes('¿')) {
+        throw new Error(`${origen}: no nombra el eje del dilema`);
+      }
+    }
+    return porRareza;
+  }
+
+  // 2. Pretemporada amateur (la semana) y práctica de offseason: el menú
+  //    que ve el jugador trae rareza, el dado y el eje.
+  const amateur = sistemaPorId('amateur').aplicar(estadoBase, mulberry32(2));
+  verificarDecisionDeMejora(amateur.decision, 'amateur', { sorteo: true });
+
+  const offseason = {
+    ...estadoBase,
+    phase: 'profesional',
+    player: { ...estadoBase.player, splitCount: 3 }
+  };
+  const practica = sistemaPorId('practica').aplicar(offseason, mulberry32(2));
+  verificarDecisionDeMejora(practica.decision, 'practica', { sorteo: true });
+
+  // 3. pool_a_cual_le_metes: rareza en cada opción y rara paga más.
+  const evento = TODOS_LOS_EVENTOS.find((candidato) => candidato.id === 'pool_a_cual_le_metes');
+  if (!evento) {
+    throw new Error('no se encontró pool_a_cual_le_metes');
+  }
+  const decisionPool = decisionDesdeEvento(estadoBase, evento, {});
+  verificarDecisionDeMejora(decisionPool, 'pool_a_cual_le_metes', { sorteo: false });
+  if (!String(decisionPool.titulo).includes('¿') && !String(decisionPool.descripcion).includes('¿')) {
+    throw new Error('pool_a_cual_le_metes: no nombra el eje del dilema');
+  }
+
+  const porPayoff = { comun: [], rara: [] };
+  for (const opcion of evento.options) {
+    const vista = decisionPool.opciones.find((o) => o.id === opcion.id);
+    porPayoff[vista.rareza].push(payoffEvento(opcion, estadoBase));
+  }
+  if (porPayoff.comun.length === 0 || porPayoff.rara.length === 0) {
+    throw new Error('pool_a_cual_le_metes: las dos opciones no se parten en común/rara');
+  }
+  if (Math.min(...porPayoff.rara) <= Math.max(...porPayoff.comun)) {
+    throw new Error(`pool_a_cual_le_metes: una rara no paga más que una común (rara ${porPayoff.rara.join('/')} vs común ${porPayoff.comun.join('/')})`);
   }
 });
 

@@ -8,6 +8,7 @@ import { multiplicadorDeMeta } from '../core/ajusteMeta.js';
 import { registrarEnHistorial } from '../core/contexto.js';
 import { resolverTexto } from '../core/plantillas.js';
 import { ofrecerRutinas, rutinaPorId, elegirRutinaAutomatica } from '../core/rutinas.js';
+import { opcionDesdeRutina, descripcionDeSorteo, EJE_AMATEUR } from '../core/rareza.js';
 import { elegirOrgTier3, asignarOrgTier3 } from '../core/tier3.js';
 import { elegirMinijuego, minijuegoPorId, textoDeMinijuego, registrarMinijuegoVisto } from '../core/minijuegos.js';
 import { esCierreDeEdad } from './edadCierre.js';
@@ -105,8 +106,8 @@ function decisionDeRutina(state, rng) {
   return {
     tipo: 'opciones',
     titulo: `Cómo vivís la semana — ${etiquetaDeRanked(state.player.ranked, servidorDeLaPartida(state))}`,
-    descripcion: textoDeSituacion(state),
-    opciones: rutinas.map((rutina) => ({ id: rutina.id, label: rutina.titulo, descripcion: rutina.texto })),
+    descripcion: descripcionDeSorteo(rutinas.length, EJE_AMATEUR, textoDeSituacion(state)),
+    opciones: rutinas.map((rutina) => opcionDesdeRutina(rutina, 'amateur')),
     datos: { motivo: 'reparto', rutinas }
   };
 }

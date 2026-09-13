@@ -594,7 +594,7 @@
       "¿Dónde ponés las horas de práctica?",
       "El hueco entre partidos: ¿a cuál?"
     ],
-    "description": "Tenés un hueco entre partidos para practicar en serio. Podés pulir al que ya es tu bandera, o meterle horas a uno nuevo que el régimen actual está pidiendo.",
+    "description": "¿El main o el meta? Tenés un hueco entre partidos para practicar en serio. Podés pulir al que ya es tu bandera, o meterle horas a uno nuevo que el régimen actual está pidiendo.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
