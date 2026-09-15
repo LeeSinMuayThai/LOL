@@ -71,6 +71,17 @@ export function generarRival(state, ronda, rng) {
   }
 
   const liga = state.mundo.ligas.find((candidata) => candidata.id === state.career.liga);
+  // Guarda defensiva, no alcanzada hoy (medido: 0/300 seeds × 60 splits).
+  // D.3 hace que `career.liga` pueda ser null en caminos adyacentes
+  // (free agency); un rival doméstico sin liga no debería existir. Si este
+  // camino se alcanza, el invariante está roto — ruidoso, no un rival fantasma.
+  if (!liga) {
+    throw new Error(
+      `generarRival: no hay liga doméstica para ronda=${ronda} `
+      + `(career.liga=${JSON.stringify(state.career.liga)}, `
+      + `currentOrg=${JSON.stringify(state.career.currentOrg)})`
+    );
+  }
   const rivales = liga.orgs.filter((org) => org.nombre !== state.career.currentOrg);
   const org = weightedPick(rivales, (candidata) => candidata.fuerza, rng);
   return { org: org.nombre, fuerza: org.fuerza };

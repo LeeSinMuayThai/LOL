@@ -159,7 +159,11 @@ export function createInitialState(seed, rng, eleccion = null) {
         anios: 0, aniosRestantes: 0,
         clausula: null,      // 'salida'|'rescision'|null
         tipo: 'ninguno',     // 'rookie'|'renovacion'|'transferencia'|'import'
-        firmadoAEdad: 0, firmadoEnAnio: 0
+        firmadoAEdad: 0, firmadoEnAnio: 0,
+        // Fase D (D.1): el club ya avisó que no renueva. `false` al arrancar
+        // (trampa T4); lo prende `systems/mercado.js` cuando la renovación
+        // no sale, y se apaga al firmar un contrato nuevo.
+        avisoNoRenovacion: false
       },
       // La temporada regular del split en curso (fase 5). Objeto completo de
       // ceros, nunca null (trampa T4): se llena al arrancar cada split

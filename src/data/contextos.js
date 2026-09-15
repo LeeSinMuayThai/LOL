@@ -143,7 +143,7 @@ export const MOMENTOS = [
     label: 'Sin equipo',
     patron: { nivel: ['libre'] } },
 
-  { id: 'sin_renovacion', prioridad: 82, pendiente: 'paso11',
+  { id: 'sin_renovacion', prioridad: 82,
     label: 'No te renovaron',
     patron: { mercado: ['sin_renovacion'] } },
 

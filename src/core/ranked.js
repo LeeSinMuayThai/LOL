@@ -2,6 +2,7 @@ import { BALANCE } from '../data/balance.js';
 import { TIERS, TIERS_CON_DIVISION, tierPorId, romano } from '../data/ranked.js';
 import { servidorPorId } from '../data/servidores.js';
 import { pick } from './rng.js';
+import { registrarPico } from './registro.js';
 
 // La escalera de soloQ, en puntos absolutos.
 //
@@ -173,10 +174,21 @@ export function servidorDeLaPartida(state, servidorId = state.player.ranked.serv
 // `player.soloqElo` sobrevive como ESPEJO derivado de solo lectura: todo lo que
 // lo lee (el resumen de edad, los umbrales, la UI) sigue funcionando sin tocar
 // una linea, y nadie mas que esta funcion lo escribe.
+// Fase D.2: mantiene además `career.registro.picos.rankedPuntos` monótono con
+// cada movimiento de la escalera.
 export function conRanked(state, ranked) {
+  const puntos = puntosAbsolutos(ranked);
+  const player = { ...state.player, ranked, soloqElo: puntos };
+  if (!state.career?.registro) {
+    return { ...state, player };
+  }
   return {
     ...state,
-    player: { ...state.player, ranked, soloqElo: puntosAbsolutos(ranked) }
+    player,
+    career: {
+      ...state.career,
+      registro: registrarPico(state.career.registro, 'rankedPuntos', puntos)
+    }
   };
 }
 

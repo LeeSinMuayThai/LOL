@@ -370,7 +370,9 @@ function quedarLibre(state, racha, rng) {
       ...cerrado.state,
       flags: { ...cerrado.state.flags, splitsSinOfertaConsecutivos: 0 },
       career: {
-        ...cerrado.state.career, currentOrg: null, rosterDeOrg: null, companeros: [], sinergia: 0,
+        ...cerrado.state.career,
+        currentOrg: null, liga: null, rosterDeOrg: null, companeros: [], sinergia: 0,
+        contrato: { ...cerrado.state.career.contrato, avisoNoRenovacion: false },
         registro: conFilaCerrada(cerrado.state, 'libre')
       }
     },
@@ -432,25 +434,46 @@ export function aplicar(state, rng) {
   }
 
   const { ofertas, fichadores } = generarOfertas(stConValor, rng);
+  // D.1: la decisión de renovar YA se tiró adentro de `generarOfertas`
+  // (`chance(probRenovacion)`). Acá sólo se registra el resultado — no hay
+  // tirada nueva (trampa T1). El flag se escribe en los dos sentidos cada
+  // pretemporada con club: prendido si no hay renovación, apagado si sí
+  // hay. El log (`avisoNuevo`) dispara sólo en el flanco de subida.
+  const clubNoRenueva = Boolean(stConValor.career.currentOrg)
+    && !ofertas.some((oferta) => oferta.tag === 'renovacion');
+  const avisoNuevo = clubNoRenueva && !stConValor.career.contrato.avisoNoRenovacion;
+  const stMercado = stConValor.career.currentOrg
+    ? {
+      ...stConValor,
+      career: {
+        ...stConValor.career,
+        contrato: { ...stConValor.career.contrato, avisoNoRenovacion: clubNoRenueva }
+      }
+    }
+    : stConValor;
+  const logsAviso = avisoNuevo
+    ? [crearLog('mercado', `${stConValor.career.currentOrg} te avisó: no van a renovarte.`)]
+    : [];
+
   if (ofertas.length === 0) {
-    const racha = stConValor.flags.splitsSinOfertaConsecutivos + 1;
+    const racha = stMercado.flags.splitsSinOfertaConsecutivos + 1;
     if (racha >= BALANCE.mercado.splitsSinOfertaParaLibre) {
-      const libre = quedarLibre(stConValor, racha, rng);
-      return { state: libre.state, logs: [...logsMundo, ...libre.logs] };
+      const libre = quedarLibre(stMercado, racha, rng);
+      return { state: libre.state, logs: [...logsMundo, ...logsAviso, ...libre.logs] };
     }
     // El teléfono no suena: si algún asiento se había congelado para vos, el
     // mundo igual lo llena.
-    const cerrado = cerrarAsientosCongelados(stConValor, null, rng);
+    const cerrado = cerrarAsientosCongelados(stMercado, null, rng);
     return {
       state: { ...cerrado.state, flags: { ...cerrado.state.flags, splitsSinOfertaConsecutivos: racha } },
-      logs: [...logsMundo, ...cerrado.logs, crearLog('mercado', 'Nadie te llama esta pretemporada. El teléfono no suena.')]
+      logs: [...logsMundo, ...logsAviso, ...cerrado.logs, crearLog('mercado', 'Nadie te llama esta pretemporada. El teléfono no suena.')]
     };
   }
 
-  const asientosAbiertos = asientosAbiertosParaPantalla(stConValor, ofertas, fichadores);
+  const asientosAbiertos = asientosAbiertosParaPantalla(stMercado, ofertas, fichadores);
   return {
-    state: stConValor, logs: logsMundo,
-    decision: construirDecisionOfertas(stConValor, ofertas, { asientosAbiertos })
+    state: stMercado, logs: [...logsMundo, ...logsAviso],
+    decision: construirDecisionOfertas(stMercado, ofertas, { asientosAbiertos })
   };
 }
 
@@ -470,7 +493,8 @@ function aceptarOferta(state, oferta, { motivoFila } = {}) {
     // cumple). La consume 9Mf (traspasos a mitad de contrato).
     clausula: oferta.datos.clausula ?? null,
     tipo: oferta.datos.tipo,
-    firmadoAEdad: state.age, firmadoEnAnio: state.calendario.anio
+    firmadoAEdad: state.age, firmadoEnAnio: state.calendario.anio,
+    avisoNoRenovacion: false
   };
   const conClausula = contrato.clausula === 'salida' ? ' Con cláusula de salida.' : '';
 
@@ -696,7 +720,8 @@ function resolverBanquillo(state, logsPrevios, rng) {
           splitsSinOfertaConsecutivos: state.flags.splitsSinOfertaConsecutivos + 1
         },
         career: {
-          ...state.career, currentOrg: null, rosterDeOrg: null, companeros: [], sinergia: 0,
+          ...state.career, currentOrg: null, liga: null, rosterDeOrg: null, companeros: [], sinergia: 0,
+          contrato: { ...state.career.contrato, avisoNoRenovacion: false },
           registro: conFilaCerrada(state, 'banquillo')
         }
       },

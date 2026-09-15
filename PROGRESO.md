@@ -34,6 +34,77 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-09-15 — Fase D cerrada: D.1+D.3 por Grok, D.2 por Gemini, revisados por un tercer agente
+
+Cierra la fase D (`PLAN.md`): los tres campos que el motor declaraba y ningún sistema escribía
+nunca (D30, D40, D42). **Primera fase de este proyecto ejecutada íntegramente con el workflow de
+delegación** que el usuario venía pidiendo: el supervisor (esta sesión) escribió dos specs y
+despachó el trabajo a dos procesos CLI reales, cada uno en su propio `git worktree` a partir del
+mismo commit (`a99d985`), sin supervisión línea a línea. Nunca implementó el código él mismo.
+
+- **Ticket A → Grok** (`grok-4.6`, `--reasoning-effort high`, worktree `faseD-grok`): D.1
+  (`calcularMercado` pasa de 2 a 4 valores del eje mercado) + D.3 (`career.liga` se limpia al
+  quedar libre).
+- **Ticket B → Gemini vía `agy`** (`gemini-3.8-flash-high`, worktree `faseD-agy`): D.2
+  (`registro.picos.rankedPuntos` nunca se escribía).
+- **Revisión**: un tercer agente (Opus, sin implementar nada) auditó los dos diffs de cero —sin
+  creerle a los reportes de los workers— corriendo él mismo `validate.js` completo, `simulate.js
+  1500 60 todas` y una sonda anti-T1 de 40 seeds contra `git archive a99d985`. Encontró 3 defectos
+  en el **reporte** de Grok (no en su código): (1) una atribución causal falsa — Grok había
+  escrito que el check de "silencio del mercado" bajó de 72% a 61.3% por su fix, cuando el 72% era
+  un comentario obsoleto de la fase 10c/11 nunca vuelto a medir y el baseline real remedido contra
+  `a99d985` es 61.111%, que **subió** a 61.290% con el fix (trampa T6: no comparar contra una
+  línea de base vieja); (2) un comentario que afirmaba que una guarda nueva en `core/serie.js`
+  "antes tiraba" sin haberlo medido — instrumentada, esa guarda tiene 0 alcances en 300 seeds × 60
+  splits, es defensiva, no un camino real; (3) el flag `avisoNoRenovacion` se prendía pero nunca se
+  apagaba si el club volvía a ofrecer renovación (medido: 1 caso pegado sobre 938 pretemporadas con
+  `clubNoRenueva`). Grok corrigió los 3 en una ronda (verificado por el supervisor, no solo por el
+  worker). Gemini pasó sin corrección: su propio proceso hizo timeout a los 45 minutos corriendo
+  `validate.js` completo y no llegó a reportar evidencia, así que el supervisor reconstruyó los
+  números él mismo antes de aceptar el trabajo.
+
+**D.1** (`core/contexto.js`, `data/contextos.js`, `systems/mercado.js`, `core/state.js`):
+`calcularMercado` distingue `sin_contrato`/`contrato_firme`/`ultimo_ano`
+(`aniosRestantes <= 1`, mismo criterio que ya usaba `temporadaResumen.js`) /`sin_renovacion`. Esta
+última necesitó una señal que no existía: `career.contrato.avisoNoRenovacion` (inicializado en
+`false`, trampa T4), que `systems/mercado.js` prende o apaga cada pretemporada según si
+`generarOfertas` trajo una oferta con `tag: 'renovacion'` — **sin tirada de RNG nueva**, esa
+decisión ya se sorteaba adentro de `generarOfertas` (`chance(probRenovacion)`). Se le sacó
+`pendiente: 'paso11'` al momento `sin_renovacion` en `contextos.js` (regla de proceso 6). Medido
+(400 seeds × 60 splits, split-starts): `sin_contrato` 24.3%, `contrato_firme` 35.6%, `ultimo_ano`
+39.7% (alto porque un contrato de 1 año entra directo a último año), `sin_renovacion` 0.36% (74
+splits; el momento en sí se ve en 41 de esos — el resto lo tapa algo de mayor prioridad).
+
+**D.2** (`core/ranked.js`, reusa `registrarPico` de `core/registro.js`): `conRanked` ahora escribe
+`registro.picos.rankedPuntos` en el mismo punto donde ya actualiza el espejo derivado
+`player.soloqElo`, sin escribir un máximo a mano y sin tocar `soloqElo` (`validate.js` sigue
+prohibiendo que algo externo lo escriba). Medido (300×60): **300/300 carreras con ranked terminan
+con el pico > 0**, máximo **6082**, **0 violaciones de monotonía**.
+
+**D.3** (`systems/mercado.js`, `core/serie.js`): `quedarLibre` y `resolverBanquillo` limpian
+`career.liga` a `null`. De 13 lectores en `/src`, 12 ya toleraban `null`; el único que no
+(`core/serie.js`, rival doméstico) ahora tira un error explícito con contexto en vez de devolver un
+rival fantasma de fuerza 0 (medido: 0/300×60 lo alcanzan — guarda defensiva, no un bug vivo).
+
+**El T1 declarado de antemano en `PLAN.md` no ocurrió.** La sospecha era que D.3 iba a correr el
+stream de RNG en el camino de queda-libre. Medido dos veces —por el revisor y, después, por el
+supervisor con su propia sonda de 40 seeds (`fingerprint_faseD.mjs`, estrategia `equilibrado`,
+60 splits, contra `git archive a99d985`)—: la huella `finAnticipado:splits:soloqElo` es **idéntica
+en las 40 seeds**, sin una sola divergencia. La única diferencia observable es el propio dato que
+D.3 corrige (`career.liga` pasa de `CBLOL` a `-` en la seed 8, que atraviesa free agency). D.3
+cambia un campo del estado, no una decisión del motor, así que no había ninguna tirada nueva.
+
+**Verificación final** (corrida por el supervisor sobre el árbol ya mergeado, no por los workers):
+`node src/dev/validate.js` completo, **183/183 OK, 0 FAIL, 0 SKIP**. `node src/dev/simulate.js 1500
+60 todas`: **0 crashes** en las 4500 carreras (3 estrategias). Determinismo confirmado (`simulate.js
+1 40 2026` corrido dos veces, salida idéntica). `cobertura.js --huecos`: sin regresión, sigue 1 solo
+hueco (`retirado_reciente/pretemporada`, deuda de la fase 13).
+
+**Merge**: los dos diffs (patches exportados de cada worktree) aplicaron limpio sobre `a99d985`, sin
+conflicto — tocan archivos disjuntos salvo `validate.js`, donde Grok inserta cerca de la línea ~712
+y Gemini cerca de la ~1227 (a ~500 líneas de distancia, como se planeó). Un solo commit para la fase
+D completa, como pide la regla de proceso 1.
+
 ### 2026-09-15 — Fase P.6 (punto 2): el techo de `dist/` pasa de reporte a check duro
 
 `PLAN.md` §P.6 dejaba dos pendientes tras la auditoría del 2026-09-13: pushear la rama (71 commits

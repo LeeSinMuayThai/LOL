@@ -704,6 +704,9 @@ check('career.contrato arranca completo y en cero (trampa T4)', () => {
   if (c.tipo !== 'ninguno') {
     throw new Error(`career.contrato.tipo tiene que arrancar 'ninguno', llegó "${c.tipo}"`);
   }
+  if (c.avisoNoRenovacion !== false) {
+    throw new Error('career.contrato.avisoNoRenovacion tiene que arrancar false (trampa T4)');
+  }
 });
 
 checkLento('El mercado lee tu nivel: el silencio es para los que están por debajo, no para una franquicia (fase 9R0e)', () => {
@@ -718,13 +721,19 @@ checkLento('El mercado lee tu nivel: el silencio es para los que están por deba
   let silencioTotal = 0;
   let silencioMerecido = 0;
 
-  // n=1500, no 300 (fase 10c): `silencioTotal` es un evento raro (~80 en
-  // 1500 seeds), así que a n=300 la proporción tiene demasiado ruido para
-  // ser una señal confiable — y 10c, al insertar dos sistemas nuevos que
+  // n=1500, no 300 (fase 10c): `silencioTotal` es un evento raro (decenas
+  // en 1500 seeds), así que a n=300 la proporción tiene demasiado ruido
+  // para ser una señal confiable. 10c, al insertar dos sistemas nuevos que
   // consumen RNG en pretemporada/profesional, corre la cinta de RNG de cada
-  // carrera y cambia qué seeds puntuales caen de cada lado sin cambiar la
-  // tasa real (medida en ambos casos ~70-72%). Subir la muestra ataca la
-  // causa (ruido), no el síntoma — bajar el piso otra vez no lo haría.
+  // carrera y cambia qué seeds puntuales caen de cada lado. Remedido en
+  // D.3 contra a99d985 (n=1500, mismo loop, `git stash`/`git stash pop`):
+  // baseline 61.111% (44/72), con D.3 61.290% (38/62). El ~70-72% que
+  // vivía acá era un comentario de 10c/11, ya obsoleto antes de D.3
+  // (trampa T6: no comparar contra una línea de base vieja). El
+  // denominador bajó 72→62 porque D.3 deja `career.liga` null en free
+  // agency y este check ya excluía esos splits: cambia qué mide el
+  // check, no el comportamiento del mercado. Subir la muestra ataca el
+  // ruido; bajar el piso otra vez no lo haría.
   // Fase 11: trampa encontrada al medir (D8/mercado.js, no de esta fase —
   // el fix de `splitAscensoTier1` que corrigió `candidatoDebut` cambió la
   // trayectoria de RNG de varias seeds y una cayó acá). El piso de
@@ -792,15 +801,90 @@ checkLento('El mercado lee tu nivel: el silencio es para los que están por deba
   // Piso bajado 90% → 60% en 10a (mismo criterio que 9Ma/9Mc/9Md/9Wd: una
   // fase posterior corre el agregado de una anterior sin tocarla). La
   // invariante dura de arriba (`silencioArriba`, tope 0) sigue intacta — este
-  // piso es la tolerancia media, y la retiró el retiro reversible: un
-  // free agent que ya jugó una vez conserva `career.liga` de su ÚLTIMO club
-  // (pre-existente de 9M, `mercado.js` `quedarLibre` no lo limpia) mientras
-  // sigue entrenando y subiendo de nivel — la ventana de vuelta multiplica
-  // esos tramos. Medido a n=1500: 72%. Arreglar `career.liga` durante la
-  // free agency es un cambio de otra fase (9M lo tocó por última vez), no de
-  // ésta — anotado como deuda, no se toca acá.
+  // piso es la tolerancia media. D.3 limpia `career.liga` en `quedarLibre`,
+  // así que los splits de free agency ya no entran al denominador (el
+  // `!state.career.liga` de arriba). Remedido n=1500: 61.290% (38/62);
+  // baseline pre-D.3: 61.111% (44/72).
   if (silencioTotal > 0 && silencioMerecido / silencioTotal < 0.6) {
     throw new Error(`sólo el ${((silencioMerecido / silencioTotal) * 100).toFixed(0)}% del silencio de mercado le tocó a un jugador a nivel de su liga o por debajo (mínimo 60%)`);
+  }
+});
+
+checkLento('calcularMercado() devuelve los 4 valores del eje mercado en carreras reales, no solo 2', () => {
+  const esperados = EJES.mercado;
+  const vistos = new Set();
+  const conteo = Object.fromEntries(esperados.map((valor) => [valor, 0]));
+
+  for (let seed = 1; seed <= 400; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      const mercado = calcularContexto(state).mercado;
+      vistos.add(mercado);
+      if (conteo[mercado] !== undefined) {
+        conteo[mercado] += 1;
+      }
+      state = avanzarSplitAuto(state, rng).state;
+    }
+  }
+
+  const faltan = esperados.filter((valor) => !vistos.has(valor));
+  if (faltan.length > 0) {
+    throw new Error(
+      `en carreras reales no aparecieron: ${faltan.join(', ')} `
+      + `(vistos: ${[...vistos].join(', ') || 'ninguno'}; conteo ${JSON.stringify(conteo)})`
+    );
+  }
+});
+
+check('El momento sin_renovacion deja de estar pendiente en cobertura.js', () => {
+  const momento = momentoPorId('sin_renovacion');
+  if (!momento) {
+    throw new Error('el momento sin_renovacion no está declarado en data/contextos.js');
+  }
+  // cobertura.js saltea `momento.pendiente` (líneas ~126-127): si sigue
+  // marcado, la matriz miente y el gancho narrativo nunca se cubre.
+  if (momento.pendiente) {
+    throw new Error(`cobertura.js lo saltea: sin_renovacion sigue con pendiente: '${momento.pendiente}'`);
+  }
+  if (!MOMENTOS_ACTIVOS.some((activo) => activo.id === 'sin_renovacion')) {
+    throw new Error('sin_renovacion no está en MOMENTOS_ACTIVOS (cobertura.js filtra por pendiente)');
+  }
+});
+
+checkLento('career.liga es null en todo split con career.currentOrg null (regla 15)', () => {
+  const violaciones = [];
+
+  for (let seed = 1; seed <= 300; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      if (state.career.currentOrg !== null || state.career.liga === null) {
+        continue;
+      }
+      // Excepción legítima: `saltarATier2` (competitivo.js) te deja agente
+      // libre de la liga de desarrollo, todavía sin firmar (`contrato.org`
+      // null). Vale también si te retirás en esa ventana. `quedarLibre` deja
+      // `contrato.org` del club anterior — esa NO es esta excepción.
+      if (state.career.contrato.org === null) {
+        continue;
+      }
+      violaciones.push(`seed ${seed} split ${state.player.splitCount}: liga=${state.career.liga} tier=${state.career.tier}`);
+      if (violaciones.length >= 8) {
+        break;
+      }
+    }
+    if (violaciones.length >= 8) {
+      break;
+    }
+  }
+
+  if (violaciones.length > 0) {
+    throw new Error(
+      `currentOrg null con liga persistida (regla 15): ${violaciones.slice(0, 5).join('; ')}`
+      + (violaciones.length > 5 ? `, … (${violaciones.length}+)` : '')
+    );
   }
 });
 
@@ -1224,6 +1308,41 @@ checkLento('Fase 9Mf: registro.dineroTotalUSD se acumula (>0 y monótono) en tod
   }
   if (conContrato < 80) {
     throw new Error(`sólo ${conContrato} carreras con contrato en 140 seeds: muestra insuficiente para el check`);
+  }
+});
+
+checkLento('Fase D.2: registro.picos.rankedPuntos > 0 en toda carrera que pisó ranked', () => {
+  // Antes de D.2 `rankedPuntos` nunca se escribía: permanecía en 0 toda la
+  // carrera pese a estar declarado en el estado inicial. Ahora se registra
+  // monótonamente cada vez que se aplica LP a la escalera.
+  let conRanked = 0;
+  for (let seed = 1; seed <= 140; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    let prevPico = 0;
+    let pisoRanked = false;
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      const partidasAntes = state.player.ranked.partidas;
+      state = avanzarSplitAuto(state, rng).state;
+      const pico = state.career.registro.picos.rankedPuntos;
+      if (pico < prevPico) {
+        throw new Error(`seed ${seed} split ${i}: picos.rankedPuntos bajó de ${prevPico} a ${pico}`);
+      }
+      prevPico = pico;
+      if (state.player.ranked.partidas > partidasAntes) {
+        pisoRanked = true;
+      }
+    }
+    if (!pisoRanked) {
+      continue;
+    }
+    conRanked += 1;
+    if (state.career.registro.picos.rankedPuntos <= 0) {
+      throw new Error(`seed ${seed}: carrera pisó ranked y picos.rankedPuntos = ${state.career.registro.picos.rankedPuntos}`);
+    }
+  }
+  if (conRanked < 80) {
+    throw new Error(`sólo ${conRanked} carreras con ranked en 140 seeds: muestra insuficiente para el check`);
   }
 });
 

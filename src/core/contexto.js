@@ -135,7 +135,19 @@ function calcularMomentum(state) {
 }
 
 function calcularMercado(state) {
-  return state.career.currentOrg ? 'contrato_firme' : 'sin_contrato';
+  if (!state.career.currentOrg) {
+    return 'sin_contrato';
+  }
+  // `sin_renovacion` gana sobre `ultimo_ano`: el aviso del club es más
+  // específico que "se te vence el contrato".
+  if (state.career.contrato.avisoNoRenovacion) {
+    return 'sin_renovacion';
+  }
+  // Mismo criterio que `temporadaResumen.js` (`aniosRestantes <= 1`).
+  if (state.career.contrato.aniosRestantes <= 1) {
+    return 'ultimo_ano';
+  }
+  return 'contrato_firme';
 }
 
 function calcularVentana(state) {
