@@ -2899,14 +2899,14 @@ de un `:hover`/`:active`/`:focus` usa un token de tinta (`guards.js`, candado de
 Toda la UI corre con `prefers-reduced-motion: reduce` sin perder información
 Una carrera completa se termina solo con teclado
 Contraste ≥4.5:1 en todo par (texto, fondo) de los tokens
-~~`dist/` ≤ **1200 KB**~~ — **roto, medido en la auditoría del 2026-09-13: 1561 KB.** Historial de
-la trampa T6 en esta sola línea, porque cada vez que se citó un número viejo estaba mal: 576 KB
-(fase P) → 725 KB (T0) → 950 KB (re-medido en T0b, otra sesión había sumado 9R3c/9R3d) → 1041 KB
-(T2) → 1080 KB (T5) → 1092 KB (T6) → **1561 KB (2026-09-13, sobre un build del 9/9 anterior a
-10c/11/12 — un build de hoy pesa más)**. `build.js:301` solo reporta el peso, nunca lo hizo fallar:
-por eso subió sin que ningún check lo marcara. Re-medir con un build actual y fijar el techo nuevo
-en **P.6**, antes de conectar un host — no volver a citar un número de este historial como si
-fuera el vigente
+~~`dist/` ≤ **1200 KB**~~ — **techo re-fijado en P.6 (2026-09-15).** Historial de la trampa T6 en
+esta sola línea, porque cada vez que se citó un número viejo estaba mal: 576 KB (fase P) → 725 KB
+(T0) → 950 KB (re-medido en T0b, otra sesión había sumado 9R3c/9R3d) → 1041 KB (T2) → 1080 KB (T5)
+→ 1092 KB (T6) → 1561 KB (2026-09-13, sobre un build del 9/9 anterior a 10c/11/12) → **1482 KB
+(2026-09-15, build de hoy, con 10c/11/12 completas)**. La causa de fondo ya no existe:
+`build.js:301` solo reportaba el peso y nunca lo hacía fallar, así que subía sin que ningún check
+lo marcara; ahora `PESO_MAXIMO_KB = 1700` en `build.js` hace fallar el build si `dist/` lo supera —
+no vuelve a hacer falta re-medir a mano para saber si se rompió el techo
 T8: la misma seed con N llamadas restauradas produce la misma secuencia que correrla de corrido
 T8: las seeds anteriores a T8 siguen reproduciendo su carrera (huella idéntica)
 ```
@@ -4194,12 +4194,15 @@ y el build es Node puro.
 
 **Pendiente real, agregado en la auditoría 2026-09-13:**
 1. Pushear la rama actual (o mergearla a `master` — ver P.5) antes de conectar un host a un repo
-   que hoy solo tiene la fase P parcial.
-2. **El techo de `dist/` de §T.7 (`≤ 1200 KB`) ya está roto**: medido hoy, **1561 KB**, sobre un
-   build del 9 de septiembre anterior a 10c/11/12 — un build de hoy pesa más todavía.
-   `build.js:301` solo reporta el peso, no lo hace fallar. Re-medir con un build actual y subir el
-   techo a un número medido antes de conectar un host (regla de proceso 4: reportar lo medido, no
-   lo esperado), o convertir el reporte en check duro.
+   que hoy solo tiene la fase P parcial. **Sigue pendiente**: es una decisión del usuario (merge vs.
+   apuntar el host a la rama), no algo para resolver de oficio.
+2. ~~**El techo de `dist/` de §T.7 (`≤ 1200 KB`) ya está roto**~~ — **cerrado 2026-09-15**.
+   Re-medido con un build de hoy (incluye 10c/11/12 completas): **1482 KB**, menos que los 1561 KB
+   del 9-13 pese a tener más contenido — el build de esa fecha corría sobre commits del 9/9, antes
+   de que el paso 12f simplificara los fallbacks duplicados de `dificultadMinijuegoPorRonda`. En vez
+   de solo subir el número (que era exactamente el bug: nadie lo hacía fallar), `build.js` ahora
+   declara `PESO_MAXIMO_KB = 1700` y **hace fallar el build si `dist/` lo supera** — el reporte pasó
+   a ser un check duro, para que este agujero no se vuelva a abrir en silencio.
 
 ## P.7 — El pre-flight ✅
 
@@ -4255,9 +4258,9 @@ grid de campeones renderizan, y los 27 módulos JSON inlineados cargan. El módu
 `index.html` no se disparó.
 
 **Peso histórico** (trampa T6: no citar un número viejo sin re-medir): 576 KB (esta fase, parcial,
-2026-09-02) → serie completa hasta 1092 KB en §T.7 → **1561 KB** medido el 2026-09-13, sobre un
-`dist/` que todavía no incluye 10c/11/12. Re-medir con un build actual antes de fijar cualquier
-techo nuevo (P.6, punto 2).
+2026-09-02) → serie completa hasta 1092 KB en §T.7 → 1561 KB medido el 2026-09-13 (build anterior a
+10c/11/12) → **1482 KB** medido el 2026-09-15 sobre un build de hoy, con techo duro de 1700 KB
+fijado en `build.js` (P.6).
 
 ## Checks de la fase P
 
@@ -4265,7 +4268,8 @@ techo nuevo (P.6, punto 2).
 ✅ mulberry32.restaurar() reproduce exacto: 5 seeds interrumpidas == corridas de corrido (P.2)
 ✅ 12 seeds pre-T8 dan la misma huella finAnticipado:splits:soloqElo tras el guardado (P.2, T1)
 ✅ npm run build compara 12 seeds × 30 splits entre src/ y dist/, 0 divergencias (P.10)
-⬜ dist/ vuelve a estar ≤ techo declarado, re-medido sobre un build de hoy (P.6)
+✅ dist/ ≤ techo declarado (1700 KB), y el build falla si lo supera — 1482 KB medidos hoy (P.6)
+⬜ Pushear/mergear la rama a origin (decisión del usuario, ver P.5/P.6 punto 1)
 ⬜ P.8 completo sobre la URL publicada (no localhost), en 4 navegadores
 ```
 

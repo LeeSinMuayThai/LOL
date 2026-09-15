@@ -34,6 +34,32 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-09-15 — Fase P.6 (punto 2): el techo de `dist/` pasa de reporte a check duro
+
+`PLAN.md` §P.6 dejaba dos pendientes tras la auditoría del 2026-09-13: pushear la rama (71 commits
+sin subir) y re-medir el peso de `dist/`, roto contra el techo de 1200 KB de §T.7. Este cambio
+cierra el segundo punto.
+
+- **Re-medido con un build de hoy** (incluye 10c/11/12 completas, que el build del 9-13 no tenía):
+  **1482 KB**, menos que los 1561 KB citados el 9-13 pese a tener más contenido — ese build corría
+  sobre commits del 9/9, antes de que 12f simplificara los fallbacks duplicados de
+  `dificultadMinijuegoPorRonda`.
+- **`src/dev/build.js`**: la causa de fondo de que el techo se rompiera en silencio era que
+  `pesoDe(DIST)` solo se imprimía (línea 301), nunca entraba a la lista de `errores`. Se agregó
+  `PESO_MAXIMO_KB = 1700` (constante del módulo, junto a `SEEDS_DE_VERIFICACION`/
+  `SPLITS_DE_VERIFICACION` — no es un número de balance de juego, es un límite de la herramienta de
+  build, así que no va a `data/balance.js`) y el build ahora falla si `dist/` lo supera. El margen
+  sobre los 1482 KB medidos es deliberado (fase 13 y fase D todavía agregan contenido chico), no un
+  redondeo cómodo.
+- `PLAN.md`: §P.6 punto 2, §P.7 (checks de la fase), §T.7 y §P.10 actualizados con la cifra vigente
+  y la nota de que el check ya es duro — la trampa T6 (citar un número viejo sin re-medir) queda
+  cerrada en esa línea de una vez, porque ahora el propio build es la fuente de verdad.
+- **Pendiente de P.6**: el punto 1 (pushear/mergear a `origin`) y toda la fase P.8 (verificación en
+  la URL publicada) — deploy real todavía no ocurrió.
+- Verificado: `node src/dev/validate.js` completo, exit 0, todos los checks OK. `node
+  src/dev/simulate.js 1000`: 0 crashes (77.2% llega a pro, 0% varada). Determinismo confirmado:
+  `simulate.js 1 40 2026` corrido dos veces da salida idéntica byte a byte.
+
 ### 2026-09-13 — Fase 12f: los torneos, con identidad (PLAN.md §12.5) — cierra la fase 12
 
 Sexta y última subfase de la 12. Misma mecánica que 12e: la implementación la hizo un agente

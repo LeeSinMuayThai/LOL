@@ -39,6 +39,13 @@ const A_COPIAR = ['index.html', 'src/core', 'src/data', 'src/systems', 'src/ui']
 const SEEDS_DE_VERIFICACION = 12;
 const SPLITS_DE_VERIFICACION = 30;
 
+// PLAN.md §P.6: hasta el 2026-09-13 este número solo se reportaba (nunca hacía
+// fallar el build), y por eso subió sin que nadie lo notara — 576 KB en la fase
+// P original hasta 1561 KB nueve meses de contenido después. Techo fijado sobre
+// el peso medido ese mismo día (1482 KB) con margen para lo que falta de la
+// fase 13 y la fase D, no sobre una expectativa.
+const PESO_MAXIMO_KB = 1700;
+
 function copiar(desde, hacia) {
   const stat = fs.statSync(desde);
   if (stat.isDirectory()) {
@@ -290,15 +297,20 @@ console.log(`  imports        ${imports} relativos, todos verificados con capita
 const { carreras, distintas } = await verificarQueElJuegoNoCambio();
 console.log(`  determinismo   ${carreras} carreras × ${SPLITS_DE_VERIFICACION} splits, src vs dist`);
 
+const pesoKB = pesoDe(DIST) / 1024;
+
 const errores = [
   ...problemas,
   ...conGuionBajo.map((f) => `${f}: empieza con "_" y Jekyll lo ignora (hace falta .nojekyll)`),
   ...(distintas.length > 0
     ? [`el build cambió el juego en ${distintas.length} de ${carreras} carreras:\n${distintas.join('\n')}`]
+    : []),
+  ...(pesoKB > PESO_MAXIMO_KB
+    ? [`dist/ pesa ${pesoKB.toFixed(0)} KB, por encima del techo declarado de ${PESO_MAXIMO_KB} KB (PLAN.md §P.6)`]
     : [])
 ];
 
-console.log(`\n  peso           ${(pesoDe(DIST) / 1024).toFixed(0)} KB\n`);
+console.log(`\n  peso           ${pesoKB.toFixed(0)} KB (techo ${PESO_MAXIMO_KB} KB)\n`);
 
 if (errores.length > 0) {
   console.error(`FALLÓ el build (${errores.length}):`);
