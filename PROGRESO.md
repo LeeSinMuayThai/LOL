@@ -54,8 +54,12 @@ cierra el segundo punto.
 - `PLAN.md`: §P.6 punto 2, §P.7 (checks de la fase), §T.7 y §P.10 actualizados con la cifra vigente
   y la nota de que el check ya es duro — la trampa T6 (citar un número viejo sin re-medir) queda
   cerrada en esa línea de una vez, porque ahora el propio build es la fuente de verdad.
-- **Pendiente de P.6**: el punto 1 (pushear/mergear a `origin`) y toda la fase P.8 (verificación en
-  la URL publicada) — deploy real todavía no ocurrió.
+- **Punto 1 de P.6, cerrado en el mismo commit**: la rama `fase-9r-que-el-juego-se-juegue` (72
+  commits sobre `origin/master`) se mergeó a `master` por fast-forward (era ancestro directo, sin
+  merge commit) y se pusheó `master` + la rama de trabajo a `origin`. `origin/master` pasa de
+  `db3c82e` (fase P parcial, 2026-09-04) a `84923c1`.
+- **Pendiente de P.6**: conectar el host de verdad (Cloudflare Pages o Netlify — la cuenta es del
+  usuario, no algo para decidir de oficio) y toda la fase P.8 (verificación en la URL publicada).
 - Verificado: `node src/dev/validate.js` completo, exit 0, todos los checks OK. `node
   src/dev/simulate.js 1000`: 0 crashes (77.2% llega a pro, 0% varada). Determinismo confirmado:
   `simulate.js 1 40 2026` corrido dos veces da salida idéntica byte a byte.

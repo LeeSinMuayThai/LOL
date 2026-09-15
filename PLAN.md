@@ -33,7 +33,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **10** | El final: retiro emergente + la tarjeta de legado | ✅ **10a** (el retiro real, ver §10.1) · **10b** ya estaba cerrada desde 9R5b · **10c** (lesiones + servicio militar, ver §10.4) — cierra la fase. **10d** (calibrar) no hizo falta como commit aparte: los números de 10a/10c ya caen en banda a la primera medición |
 | **11** | El año: calendario, la nota de la temporada, el archirrival | ✅ **cerrada** (§11.1+§11.2, cierra D8). El archirrival corre su carrera (contador en la ficha) y el cierre de edad tiene nota (0-10), titular por peso emocional (10 tipos + racha para condiciones sostenidas) y 6 viñetas fijas, reemplazando el diff plano de antes. Ver `PROGRESO.md` |
 | **12** | La jerarquía de la decisión: categorías, rareza, consecuencia previa, el dado | ✅ **cerrada** (12a→12f). **12a** (`validate.js --rapido/--completo`, cierra D32) · **12b** (`categoria` en los 220 eventos + `formatoUi.js` + check) · **12c** (`peso: 'ambiente'` + tarjeta compacta) · **12d** (`core/previa.js`: previa, riesgo, gate + corrección de §12.3) · **12e** (`core/rareza.js`: rareza común/rara en las decisiones de mejora + el dado nombra el eje) · **12f** (bracket siempre visible, minijuego con identidad por competición + dificultad por ronda, camino de serie persistido en `registro.internacionales`) |
-| **P** | Publicar: build, guardado en el navegador, seed en la URL, el repo y el host | 🔶 **P.2/P.3/P.5 ✅ (fase T8, 2026-09-04)** — el guardado, la seed en la URL y el repo (remote, `README.md`, `LICENSE`, descargo de fan) ya existen · **P.7/P.10 ✅**. **Queda, y es la fase activa**: **P.6** (el host — pushear los 70 commits que `origin/master` no tiene), **P.8** (verificación en la URL publicada, no en `localhost`), el `og:image` propio y el `<title>` real del juego (P.4, diferido en T.2). Auditado en detalle el 2026-09-13, ver P.0 |
+| **P** | Publicar: build, guardado en el navegador, seed en la URL, el repo y el host | 🔶 **P.2/P.3/P.5 ✅ (fase T8, 2026-09-04)** — el guardado, la seed en la URL y el repo (remote, `README.md`, `LICENSE`, descargo de fan) ya existen · **P.7/P.10 ✅**. **P.6 ✅ (2026-09-15)**: `origin/master` mergeado y al día (`84923c1`), techo de `dist/` re-medido (1482 KB) y convertido en check duro (1700 KB) — falta solo conectar el host de verdad (Cloudflare Pages/Netlify, ver P.6). **Queda**: **P.8** (verificación en la URL publicada, no en `localhost`, requiere el host conectado), el `og:image` propio y el `<title>` real del juego (P.4, diferido en T.2) |
 | **D** | Los campos que la ficha promete y el motor no escribe: `ultimo_ano`/`sin_renovacion` (D30), `registro.picos.rankedPuntos` (D40) y `career.liga` sin limpiar al quedar libre (D42) | ⬜ nueva, agrupa D30+D40+D42 (auditoría 2026-09-13). Va después de P y antes de 13: D30 es prerrequisito del momento `sin_renovacion` de la 13 |
 | **13** | Contenido a escala | 🔶 **el objetivo numérico ya se superó 3×** (442 opciones vs. objetivo 150) y `cobertura.js --huecos` tiene un solo hueco. Lo que queda es más chico que lo que el documento describía — ver §13, reescrita el 2026-09-13 |
 
@@ -4163,12 +4163,13 @@ Cerrado lo del alcance original: `.gitignore`, `README.md` (qué es, cómo corre
 checks), `LICENSE` (MIT) y la línea de descargo de proyecto de fan sobre las ligas y organizaciones
 reales. El remote existe: `origin → github.com/LeeSinMuayThai/LOL.git`.
 
-**Hallazgo de la auditoría 2026-09-13, sin fase que lo cubra**: `master` y `origin/master` están
-clavados en `db3c82e` ("fase P parcial") — el commit con el que T8 arrancó. La rama de trabajo
-`fase-9r-que-el-juego-se-juegue` está **70 commits adelante y sin pushear**: todo 9Ec, 9M, 9W, 10,
-11 y 12 existe solo en este disco. Con P.6 desplegando desde el repo privado, pushear (y decidir si
-se mergea a `master` o el host apunta a esta rama) es un prerrequisito real del deploy — se agrega
-a P.6.
+~~**Hallazgo de la auditoría 2026-09-13**~~ — **cerrado 2026-09-15**: `master` estaba clavado en
+`db3c82e` ("fase P parcial", el commit con el que T8 arrancó) mientras la rama de trabajo llevaba 72
+commits sin subir (9Ec, 9M, 9W, 10, 11, 12 y P.6 punto 2 existían solo en este disco). Se optó por
+mergear a `master` (fast-forward limpio, sin merge commit — `master` era ancestro directo de la
+rama) en vez de apuntar el host a la rama de trabajo, porque es lo que un host sirve por default sin
+configuración extra. `origin/master` y `origin/fase-9r-que-el-juego-se-juegue` ya tienen el estado
+real del juego.
 
 ## P.6 — El host
 
@@ -4193,9 +4194,8 @@ y el build es Node puro.
 ("Direct Upload"). Es el camino de un minuto para que lo pruebe alguien.
 
 **Pendiente real, agregado en la auditoría 2026-09-13:**
-1. Pushear la rama actual (o mergearla a `master` — ver P.5) antes de conectar un host a un repo
-   que hoy solo tiene la fase P parcial. **Sigue pendiente**: es una decisión del usuario (merge vs.
-   apuntar el host a la rama), no algo para resolver de oficio.
+1. ~~Pushear la rama actual (o mergearla a `master` — ver P.5)~~ — **cerrado 2026-09-15**: mergeado
+   (fast-forward) y pusheado. `origin/master` en `84923c1`.
 2. ~~**El techo de `dist/` de §T.7 (`≤ 1200 KB`) ya está roto**~~ — **cerrado 2026-09-15**.
    Re-medido con un build de hoy (incluye 10c/11/12 completas): **1482 KB**, menos que los 1561 KB
    del 9-13 pese a tener más contenido — el build de esa fecha corría sobre commits del 9/9, antes
@@ -4269,7 +4269,7 @@ fijado en `build.js` (P.6).
 ✅ 12 seeds pre-T8 dan la misma huella finAnticipado:splits:soloqElo tras el guardado (P.2, T1)
 ✅ npm run build compara 12 seeds × 30 splits entre src/ y dist/, 0 divergencias (P.10)
 ✅ dist/ ≤ techo declarado (1700 KB), y el build falla si lo supera — 1482 KB medidos hoy (P.6)
-⬜ Pushear/mergear la rama a origin (decisión del usuario, ver P.5/P.6 punto 1)
+✅ Rama mergeada (fast-forward) y pusheada a origin/master (P.6 punto 1)
 ⬜ P.8 completo sobre la URL publicada (no localhost), en 4 navegadores
 ```
 
