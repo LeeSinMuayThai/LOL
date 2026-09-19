@@ -14,9 +14,14 @@ import { renderTopMundial } from '../paneles/topMundial.js';
 // pinta aparte: index.html decide primero si es un minijuego (que esta fase
 // no mueve), una oferta de mercado (fase 9c) o una decisión de opciones
 // genérica antes de llamar al renderer que corresponde.
+//
+// Devuelve la `ficha` que calculó `renderFicha` (fase V, PLAN.md "V0 — El
+// kernel"): `app.js` la necesita para `aplicarEstudio(state, ficha)` sin
+// que `ficha.js` tenga que importar `shell.js` para empujársela ella misma.
 export function renderCarrera(elements, state, modulos) {
-  renderFicha(elements.fichaContainer, state, modulos);
+  const ficha = renderFicha(elements.fichaContainer, state, modulos);
   renderFeed(elements.logList, state);
+  return ficha;
 }
 
 // El riel derecho (fase T5): paneles de contexto, todos con datos que el

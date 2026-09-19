@@ -3,8 +3,11 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import {
   verificarSinMathRandom, verificarDocumentSoloEnUi,
-  verificarSinFondoDeTinta, verificarSinColorLiteral, verificarTokensDefinidos
+  verificarSinFondoDeTinta, verificarSinColorLiteral, verificarTokensDefinidos,
+  verificarSinLogicaEnIndexHtml
 } from './guards.js';
+import { reconciliar } from '../ui/core/reconciliar.js';
+import { crearDelta } from '../ui/core/delta.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 import { CATEGORIAS_EVENTO } from '../data/categorias.js';
@@ -6683,6 +6686,111 @@ checkLento('Fase 11: el archirrival nunca consume RNG, sea cual sea la fase del 
   }
   rivales.aplicar(s, rngQueRevienta);
   resumenAnio.aplicar(s, rngQueRevienta);
+});
+
+// --- Fase V (V0): el kernel — el store, el reconciliador y el delta -------
+const indexHtmlPath = path.join(srcDir, '..', 'index.html');
+
+check('index.html: el controlador vive en src/ui/app.js (fase V, V0)', () => {
+  const hallazgos = verificarSinLogicaEnIndexHtml(indexHtmlPath);
+  if (hallazgos.length > 0) {
+    throw new Error(hallazgos.join('; '));
+  }
+});
+
+// Doble mínimo de `Element`/`Node`: solo el subset que `reconciliar` toca
+// (`firstChild`, `nextSibling`, `insertBefore`, `remove`) — sin jsdom, para
+// que el check corra en la misma corrida rápida que el resto de `validate.js`.
+class NodoFalso {
+  constructor(id) {
+    this.id = id;
+    this.parentNode = null;
+  }
+  get nextSibling() {
+    if (!this.parentNode) return null;
+    const hermanos = this.parentNode.hijos;
+    const i = hermanos.indexOf(this);
+    return i === -1 ? null : (hermanos[i + 1] ?? null);
+  }
+  remove() {
+    this.parentNode?._quitar(this);
+  }
+}
+
+class ContenedorFalso {
+  constructor() {
+    this.hijos = [];
+  }
+  get firstChild() {
+    return this.hijos[0] ?? null;
+  }
+  insertBefore(nodo, referencia) {
+    this._quitar(nodo);
+    const i = referencia == null ? -1 : this.hijos.indexOf(referencia);
+    if (i === -1) {
+      this.hijos.push(nodo);
+    } else {
+      this.hijos.splice(i, 0, nodo);
+    }
+    nodo.parentNode = this;
+  }
+  _quitar(nodo) {
+    const i = this.hijos.indexOf(nodo);
+    if (i !== -1) this.hijos.splice(i, 1);
+  }
+}
+
+check('reconciliar preserva identidad de nodo por clave (fase V, V0)', () => {
+  const contenedor = new ContenedorFalso();
+  let creados = 0;
+  const claveDe = (item) => item.id;
+  const crear = (item) => {
+    creados += 1;
+    const nodo = new NodoFalso(item.id);
+    nodo.valor = item.valor;
+    return nodo;
+  };
+  const actualizar = (nodo, item) => {
+    nodo.valor = item.valor;
+  };
+
+  const nodos1 = reconciliar(contenedor, [{ id: 'a', valor: 1 }, { id: 'b', valor: 2 }], claveDe, crear, actualizar);
+  const nodos2 = reconciliar(contenedor, [{ id: 'a', valor: 9 }, { id: 'b', valor: 8 }, { id: 'c', valor: 3 }], claveDe, crear, actualizar);
+
+  if (nodos2[0] !== nodos1[0] || nodos2[1] !== nodos1[1]) {
+    throw new Error('mismo claveDe en dos pasadas debería devolver el mismo nodo (nodo === nodo)');
+  }
+  if (nodos2[0].valor !== 9 || nodos2[1].valor !== 8) {
+    throw new Error('actualizar() no se aplicó sobre el nodo reusado');
+  }
+  if (creados !== 3) {
+    throw new Error(`se esperaban 3 nodos creados en total (2 iniciales + 1 nuevo), se crearon ${creados}`);
+  }
+  if (contenedor.hijos.length !== 3 || contenedor.hijos[2].id !== 'c') {
+    throw new Error('el item nuevo no quedó insertado en el contenedor, en su posición');
+  }
+
+  reconciliar(contenedor, [{ id: 'b', valor: 8 }], claveDe, crear, actualizar);
+  if (contenedor.hijos.length !== 1 || contenedor.hijos[0].id !== 'b') {
+    throw new Error('un item que sale de la lista debería salir del contenedor (remove())');
+  }
+});
+
+check('crearDelta mide [antes, despues] contra la lectura previa (fase V, V0)', () => {
+  const delta = crearDelta(['player.nivel', 'career.jerarquia']);
+
+  const m1 = delta.medir({ player: { nivel: 10 }, career: { jerarquia: 50 } });
+  if (m1['player.nivel'][0] !== 10 || m1['player.nivel'][1] !== 10) {
+    throw new Error('la primera medición no tiene "antes" real: debería devolver [valor, valor]');
+  }
+
+  const m2 = delta.medir({ player: { nivel: 13 }, career: { jerarquia: 50 } });
+  if (m2['player.nivel'][0] !== 10 || m2['player.nivel'][1] !== 13) {
+    throw new Error(`esperaba player.nivel = [10, 13], dio [${m2['player.nivel']}]`);
+  }
+  if (m2['career.jerarquia'][0] !== 50 || m2['career.jerarquia'][1] !== 50) {
+    throw new Error('un path sin cambios entre mediciones debería dar [x, x]');
+  }
 });
 
 if (errores.length > 0) {

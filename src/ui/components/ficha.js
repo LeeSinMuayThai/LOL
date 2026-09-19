@@ -8,7 +8,6 @@ import { marcaRol } from './iconos.js';
 import { countUp } from './countUp.js';
 import { BALANCE } from '../../data/balance.js';
 import { romano, tierPorId } from '../../data/ranked.js';
-import { actualizarTopbar, aplicarEstudio } from '../shell.js';
 
 // LA TARJETA (fase 8, PLAN.md §8.6): vive en todas las pantallas de carrera.
 // Es la respuesta directa a H7 del diagnóstico — "los números que ves no
@@ -300,9 +299,6 @@ export function renderFicha(container, state, modulos) {
     fichaPrevia = { seed: state.seed, nivel: null, lp: null };
   }
 
-  actualizarTopbar(state);
-  aplicarEstudio(state, ficha);
-
   container.replaceChildren();
   container.className = 'ficha-card' + (enHitoMaximo ? ' ficha-card--dorada' : '');
 
@@ -372,7 +368,7 @@ export function renderFicha(container, state, modulos) {
         marcas.length > 0 ? crearMarcas(marcas) : null
       ]
     ));
-    return;
+    return ficha;
   }
 
   const totales = document.createElement('div');
@@ -403,4 +399,5 @@ export function renderFicha(container, state, modulos) {
       crearDetalleMomentos(registro)
     ]
   ));
+  return ficha;
 }

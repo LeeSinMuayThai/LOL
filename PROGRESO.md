@@ -34,6 +34,64 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-09-19 — FASE V, V0: el kernel — el store, el reconciliador y el delta
+
+Arranca la fase V ("Que la carrera se vea"), escrita completa (V0→V10) en `PLAN.md` tras confirmar
+con el usuario alcance ("pegar todo el plan y avanzar fase por fase") y modo de ejecución (Claude
+implementa directamente esta vez, no delegado — excepción puntual, misma decisión que la fase 13).
+
+V0 es un refactor puro: **cero cambio visual**, el desbloqueo del que dependen V2/V3/V5 para poder
+animar algo. El controlador — ~520 líneas de `<script type="module">` dentro de `index.html` desde
+la fase 8 — se movió a `src/ui/app.js` (exporta `iniciar()`), y con `estado` disponible fuera del
+closure inline se pudo resolver la inversión de dependencia que arrastraba desde T2: `ficha.js`
+importaba `shell.js` para empujarle `state` al chrome global (topbar, luz de estudio), porque era
+el único sitio fuera del closure que lo tenía a mano. Ahora `renderFicha`/`renderCarrera` devuelven
+la `ficha` que ya calcularon y `app.js` llama `actualizarTopbar`/`aplicarEstudio` en el mismo punto
+donde pinta la ficha — `ficha.js` dejó de importar `shell.js`.
+
+**Tres módulos nuevos** en `src/ui/core/` (sin consumidores todavía fuera de sus propios checks —
+V1/V3/V5 los adoptan):
+- `store.js`: `crearStore(inicial)` → `{ leer(), escribir(next), suscribir(fn) }`. Reemplaza el
+  `let estado` del closure; es la única vía por la que una pantalla nueva ve `state`.
+- `reconciliar.js` (~90 líneas): `reconciliar(contenedor, items, claveDe, crear, actualizar,
+  { flip })`. Parchea una lista por clave en vez de reemplazarla con `replaceChildren` — con salida
+  FLIP opcional (respeta `prefers-reduced-motion`) para V1/V5. No se adoptó en ningún render real
+  todavía a propósito: la plan dice "en un commit aparte del de la mudanza" (V0b, pendiente).
+- `delta.js`: `crearDelta(paths)` → `{ medir(state) }`, devuelve `{ path: [antes, despues] }` sobre
+  el set de paths declarado al crearlo, reusando `getPath` de `core/selectors.js`. Sin wiring
+  todavía — V3 lo usa para que la regla de proceso 13 se cumpla con movimiento, no solo con texto.
+
+**De paso, D45 (bug real, no buscado, encontrado mapeando este mismo camino de código):**
+`continuarCarrera()` nunca llamaba a `renderFeed`, así que retomar una carrera guardada dejaba
+`#logList` vacío — indefinidamente si además había una decisión pendiente. Se resolvió solo:
+"retomar" pasa a usar `ui.renderCarrera` (ficha + feed juntas), el mismo camino que ya usa
+`correrSplits`. D46 (atajos 1-4 inertes en mercado, `div` sin listener propio) se dejó anotada para
+V7 a propósito, para no tocar `shell.js` dos veces.
+
+**Checks nuevos en `validate.js`** (los 3 verificados en rojo primero, regla de proceso 7):
+- `index.html: el controlador vive en src/ui/app.js` — `verificarSinLogicaEnIndexHtml` (guard
+  nuevo en `guards.js`): ≤200 líneas y cero `function`/`const` en un `<script type="module">`
+  inline. Verificado en rojo inyectando una función de prueba en `index.html` y confirmando que
+  el check la caza; restaurado, pasa. `index.html`: **710 → 194 líneas**.
+- `reconciliar preserva identidad de nodo por clave` — doble mínimo de `Element`/`Node`
+  (`NodoFalso`/`ContenedorFalso`, sin jsdom) que confirma `nodo === nodo` entre dos pasadas con la
+  misma clave, que `actualizar()` se aplica sobre el nodo reusado, y que un item que sale de la
+  lista sale del contenedor.
+- `crearDelta mide [antes, despues]` — confirma que la primera medición no inventa un "antes" y
+  que un path sin cambios da `[x, x]`.
+
+**Verificación.** `validate.js` completo: exit 0, **189/189 OK, 0 FAIL** (186 + los 3 nuevos).
+`simulate.js 1500 60 todas`: **0 crashes** en las 4500 carreras (3 estrategias) — esperable, esta
+subfase no tocó `/core` ni `/systems`. `build.js`: **1653 KB** (techo 1700 KB, margen 47 KB — D49
+sigue abierta para V9). Determinismo verificado dos veces: misma seed corrida dos veces da el mismo
+`state` serializado bit a bit, y **anti-T1 (40 seeds, `git archive HEAD` contra el árbol con V0)**:
+**huella idéntica** — `finAnticipado:splitCount:soloqElo` igual en las 40, como exige la restricción
+dura de la fase ("esta subfase tiene que mover cero").
+
+**Cierra V0** (`PLAN.md` §V0, checks en verde). Sigue V0b (adoptar `reconciliar` en feed/tabla/
+plantilla/Top 5/mercado, commit aparte por diseño) o V1 (la capa de gráficos), a decidir con el
+usuario.
+
 ### 2026-09-19 — 13f: el catálogo de la cima que la fase 9Wb dejó prometido, sin reclamar
 
 Con la fase 13 y P.4 cerradas, y una auditoría completa de la tabla de deuda técnica y de

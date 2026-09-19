@@ -36,6 +36,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **P** | Publicar: build, guardado en el navegador, seed en la URL, el repo y el host | 🔶 **P.2/P.3/P.4/P.5 ✅** — el guardado, la seed en la URL, el repo y la página como página (nombre del juego + `og:image` propia, cerrado 2026-09-19) ya existen · **P.7/P.10 ✅**. **P.6 casi ✅ (2026-09-15)**: `origin/master` mergeado y al día, techo de `dist/` re-medido (1636 KB con el `og:image` nuevo) y convertido en check duro (1700 KB). **Conectar la cuenta del host** (Cloudflare Pages/Netlify) es del usuario, no algo para hacer de oficio — queda como el único paso manual de todo el proyecto. **Queda**: ese paso manual y **P.8** (verificación en la URL publicada una vez conectado) |
 | **D** | Los campos que la ficha promete y el motor no escribe: `ultimo_ano`/`sin_renovacion` (D30), `registro.picos.rankedPuntos` (D40) y `career.liga` sin limpiar al quedar libre (D42) | ✅ **cerrada (2026-09-15)**: D.1+D.3 por Grok, D.2 por Gemini, en worktrees paralelos, auditados por un tercer agente antes del merge — ver nota de la fase para el detalle del proceso. Los 5 checks en verde; el T1 declarado no llegó a ocurrir (huella idéntica en 40 seeds) |
 | **13** | Contenido a escala | ✅ **cerrada (2026-09-18, 13a→13e)**. Los 8 puntos de §13.1 resueltos: el hueco de cobertura, los 3 momentos `pendiente` obsoletos activados (+ `MOMENTOS` reordenada con check nuevo), D11 (rutinas por tier), servicio militar como bisagra alcanzable, declive con contenido propio (`declive.json`), D34 (`tier3.json`, 9 eventos), D17 (`latam.json`, narrativo), D14 (rango 2-4 opciones) y el check T10 que faltaba. Catálogo: 226→246 eventos, 442→**508 opciones**. `cobertura.js --huecos` vacío. Ejecutada por esta sesión sin delegar (excepción puntual, decisión del usuario) |
+| **V** | **Que la carrera se vea**: cero gráficos en todo el juego, la UI solo habla en presente, nada puede animarse entre estados. Sucede a la fase T y construye sobre su sistema de diseño (V0→V10, ver detalle abajo) | 🔶 **en curso**. **V0 ✅ (2026-09-19)**: el controlador vive en `src/ui/app.js` (710→194 líneas de `index.html`), `store.js`/`reconciliar.js`/`delta.js` nuevos (sin adoptar aún fuera de sus checks), la inversión `ficha.js → shell.js` resuelta, D45 cerrado de paso. `validate.js` 189/189, `simulate.js` 0 crashes, huella anti-T1 idéntica en 40 seeds, `dist/` 1653 KB. Ejecución directa por esta sesión sin delegar (decisión del usuario). **Queda**: V0b (adoptar `reconciliar`, commit aparte) y V1→V10 |
 
 > **Por qué estas tres fases se insertaron antes del mercado.** Jugando el juego con las cuatro
 > fases hechas aparecieron cuatro defectos medibles: la temporada regular se resuelve con una
@@ -4509,6 +4510,398 @@ D14: ≥6 eventos de 3 opciones y ≥3 de 4 (CONCEPTO §3, "2 a 4")            �
 
 ---
 
+# FASE V — Que la carrera se vea
+
+> Sucede a la fase T ("La transmisión") y es su escalón siguiente: T dio al juego un sistema de
+> diseño serio; V lo usa para mostrar lo que el motor ya calcula y hoy nunca se ve.
+
+## V.0 — Contexto
+
+**El juego está terminado. La carrera no se ve.**
+
+Con las fases 0→13 cerradas el motor simula una carrera completa de los 15 años al retiro:
+`career.registro` acumula 10-25 años de historia real (`porOrg`, `temporadas`, `titulos`,
+`internacionales`, `momentos`, `picos`), y `state` tiene ~40 sub-objetos vivos. La fase T le dio
+al juego un sistema de diseño serio: `tokens.css` con **102 custom properties** (contadas
+2026-09-19, `grep -oE '^\s*--[a-z0-9_-]+:' tokens.css | sort -u | wc -l`), 4 candados estáticos en
+`validate.js` (cero color literal, cero token sin definir, cero tinta de fondo en hover, contraste
+WCAG ≥ 4.5:1), fuentes auto-hospedadas, `prefers-reduced-motion` respetado en CSS y en JS, foco
+visible, shell de transmisión con topbar/ticker/dos rieles, y un reproductor de beats que revela
+el log con pulso.
+
+Tres hechos medidos sobre el repo en `HEAD` (`400f6b6`, 2026-09-19):
+
+1. **No hay un solo gráfico en todo el juego.** `grep -rn "createElementNS" src/ui/` devuelve
+   **cero**. Los únicos SVG son los 4 iconos de [iconos.js](src/ui/components/iconos.js) y el
+   grano de fondo; el único canvas es el PNG de [exportar.js](src/ui/exportar.js). Un simulador
+   cuyo tema **es una trayectoria de 25 años** no dibuja la trayectoria en ningún lado.
+2. **La UI solo sabe hablar en presente.** Todo lo que se ve es el valor de ahora: el LP de ahora,
+   el nivel de ahora, la tabla de ahora. `registro.porOrg` — que es literalmente un dataset de
+   cinta temporal (`org, liga, tier, desdeAnio, hastaAnio, splits, fechasG/P, jerarquiaMaxima,
+   arraigoMaximo/Final, titulos[], salarioAnualUSD, motivoDeSalida`, [registro.js:20-34](src/core/registro.js#L20-L34))
+   y `registro.temporadas` — una nota 0-10 por año ([resumenAnio.js:32](src/systems/resumenAnio.js#L32))
+   — se muestran **una sola vez, al final, como texto**.
+3. **Nada puede animarse entre estados.** Cada tick repinta con `replaceChildren`: los nodos se
+   destruyen, así que no hay identidad que animar. `countUp.js` existe pero solo sirve donde el
+   nodo sobrevive. La consecuencia es que **la regla de proceso 13** (*"todo número en pantalla
+   lleva referente"*) hoy se cumple con texto (`▲3`) y nunca con movimiento — el delta se cuenta,
+   no se ve.
+
+Hay además un hilo visual **sin cerrar** (D48): cuatro commits `wip: pasada de HUD y chrome`
+(`059b6c6`, `b56cfe8`, `53881c2`, `9b83478`) que se commitearon a medias para no bloquear otras
+fases, con sus propios rótulos internos **F0/F1** que no corresponden a ninguna fase de este
+documento (`tokens.css:24` *"F0 saca el navy"*, [material.css:2](src/ui/estilos/material.css#L2)
+*"MATERIAL — primitivos de HUD (F1)"*). El último de los cuatro dice el diagnóstico solo: *"el
+corte de 10px y el hielo al 7 por ciento no se leían a un metro"*. `material.css` quedó con la
+clase `.ticks` declarada y **nunca usada** (D47) — sus reglas están copiadas a mano sobre una
+lista de 11 selectores ([material.css:15-82](src/ui/estilos/material.css#L15-L82)).
+
+**Esta fase adopta ese track como línea de base**, no lo reabre ni lo deshace: es el estado real
+de `tokens.css`/`material.css`/`hud.css`/`overlay.css` en `HEAD`, ya mergeado a `master`, y todo lo
+que sigue construye encima (paleta grafito/obsidiana, `--ice`, `--chamfer: 40px`, `.corte`/`.bisel`).
+Lo único que hereda como deuda explícita es cerrarlo con una regla medible en vez de "a ojo" — eso
+es **V8** (D47+D48).
+
+**Resultado buscado.** Que la prueba final de este documento (*"si al final la carrera se puede
+narrar en cinco frases sin mirar el log, el juego está"*) se pueda pasar **mirando la pantalla**,
+no reconstruyendo la historia de memoria. Y que la UI deje de ser "una página oscura muy bien
+hecha" para ser un producto que se lee como una transmisión de esports de verdad: con telemetría
+viva, gráficos propios, escenografía entre escenas y una vitrina de la carrera.
+
+## V.1 — Restricciones duras (esta fase no las negocia)
+
+| Restricción | De dónde sale | Qué implica para esta fase |
+|---|---|---|
+| **Cero dependencias** | `package.json` no tiene `dependencies`; [base.css:10-12](src/ui/estilos/base.css#L10-L12) es explícito | Sin React, sin D3, sin librería de charts. Todo SVG a mano con `createElementNS` |
+| **Cero color literal** | `verificarSinColorLiteral`, [guards.js:99](src/dev/guards.js#L99) | Hoy solo escanea `estilos/*.css`. **Un `fill="#2ee8ff"` en JS hoy pasa el candado** (D44) → esta fase extiende el guard a `src/ui/**/*.js` |
+| **El motor no toca el DOM** | regla invariable 2; `verificarDocumentSoloEnUi`, [guards.js:41](src/dev/guards.js#L41) | Los gráficos leen `state`, nunca lo escriben. Ningún selector nuevo en `/core` que necesite el DOM |
+| **Cero `Math.random()`** | regla invariable 1; el guard cubre `.js` y `.html` | Toda animación es por tiempo/`performance.now()`, nunca por azar. Si algo necesita variación, sale de `rngUi` |
+| **Determinismo intacto** | trampa T1 | Esta fase **no debe mover un byte del motor**. Se verifica con huella de N seeds antes/después |
+| **El shell no se monta desde JS** | [shell.js:1-13](src/ui/shell.js#L1-L13) | *"si algo de acá explota, el juego de abajo sigue jugable"*. El DOM base sigue declarado en `index.html`; lo nuevo se monta **dentro** de contenedores que ya existen |
+| **Techo de `dist/`** | `PESO_MAXIMO_KB = 1700`, [build.js:51](src/dev/build.js#L51); medido 2026-09-19: **1647 KB** (D49) | **Margen real: 53 KB.** Esta fase lo va a superar → se re-mide y se sube el techo **con número**, en su propio commit (regla 2) |
+| **Ninguna fase cierra sin su pantalla** | regla de proceso 12 | Cada subfase de acá entrega pantalla **y** su check en `validate.js`, verificado en rojo (regla 7) |
+| **`prefers-reduced-motion`** | [base.css:202-215](src/ui/estilos/base.css#L202-L215) + [reproductor.js:77](src/ui/reproductor.js#L77) | Todo lo nuevo que se mueva tiene que tener su camino quieto, en CSS **y** en JS |
+
+**Fuera de alcance, ya decidido** (ver "Fuera de alcance" más abajo): tienda/activos/staff,
+selección nacional como track propio, escudos reales de las orgs (monograma + color), simular el
+resto del bracket, doble eliminación. **Esta fase no los reabre** — y en particular no propone
+ningún gráfico que necesite datos que el motor decidió no simular.
+
+### Campos que parecen serie y no lo son (verificado leyendo el motor, no asumido)
+
+| Campo | Qué parece | Qué es de verdad |
+|---|---|---|
+| `career.historial` | Historial de carrera | **Ventana móvil de 3** (`BALANCE.contexto.historialMaximo`, recortada en [contexto.js:411](src/core/contexto.js#L411)). Sirve para "cómo venís" del HUD, no para una curva |
+| `career.temporada.tabla` | Tabla de posiciones ya lista | **Vacía toda la temporada**, se llena solo al cerrar. La fuente viva es `tablaDePosiciones(registrosOtros, filaPropia)` — ya la usa [paneles/tabla.js](src/ui/paneles/tabla.js) |
+| `career.contracts` | Historial de contratos | **Campo muerto**: se inicializa y nadie lo escribe nunca. No usar |
+| `mundo.rivales[].desenlace` | Cómo terminó cada rival de generación | **Siempre `null`**, ya documentado como tal en [paneles/generacion.js:33-36](src/ui/paneles/generacion.js#L33-L36) |
+| Curva de nivel/LP/jerarquía por split | Un array `porSplit` | **No existe.** El único rastro fino vive desperdigado en `state.logs` (`type:'split'` trae mecánica/macro/mentalidad, `type:'amateur'` trae LP/rango) |
+
+**La consecuencia para V2/V3.** Las capas centrales de LA TRAYECTORIA (`registro.porOrg`,
+`registro.temporadas`, `registro.momentos`, `registro.picos`, `mundo.archirrival.historial`) son
+arrays completos, reales, que nunca se recortan — no dependen de nada de esta tabla. Una curva
+*fina* (nivel en cada uno de los ~50 splits, no solo el resumen anual) es deseable pero
+**secundaria**, y solo se puede construir parseando `state.logs` en la capa de UI — nunca agregando
+un array nuevo a `career.registro` (eso sería tocar el motor, exactamente lo que la tabla de
+restricciones de arriba prohíbe). Queda marcada como técnica disponible para V2, no como bloqueo:
+la pantalla insignia se entrega completa con los arrays que ya existen.
+
+## V.2 — El principio de esta fase
+
+Tres reglas propias, del mismo tipo que el "principio rector" de este documento. Cualquier
+pantalla que las rompa se rechaza aunque se vea bien.
+
+1. **Un gráfico solo existe si responde una pregunta que el jugador se hace.** "¿Estoy mejorando?"
+   "¿Fue este mi mejor año?" "¿Cuánto me queda?" "¿Este equipo me sirvió?" Un gráfico decorativo
+   es peor que ninguno: enseña que los gráficos de esta pantalla no significan nada.
+2. **El delta se ve, no se lee.** La regla 13 pide referente; esta fase pide que el referente sea
+   visual. Si el nivel subió 3, el número se mueve y la barra crece desde donde estaba. El texto
+   `▲3` queda como refuerzo, no como el único portador.
+3. **Todo gráfico se puede leer sin ver.** `role="img"` + `aria-label` con los números reales, y
+   tabla `.solo-lectores` donde haya serie. Un SVG sin nombre accesible es un sistema que el
+   jugador no puede ver — regla 12, aplicada a sí misma.
+
+## V.3 — Commits
+
+> Orden por dependencia dura, igual que las fases 8-11. **V0 va primero y no cambia un pixel**:
+> es el desbloqueo sin el cual V3/V5 no pueden animar nada (regla de proceso 2 — no se
+> reestructura y se ajusta en el mismo commit).
+
+| # | Commit | Qué entrega |
+|---|---|---|
+| **V0** | el kernel | El store, el reconciliador y el delta — refactor puro, cero cambio visual |
+| **V1** | la capa de gráficos | `src/ui/graficos/`, seis primitivos SVG inline, cero deps, el guard de color literal en JS |
+| **V2** | LA TRAYECTORIA | La pantalla insignia: la carrera entera en una vista, sobre datos que ya existen |
+| **V3** | la ficha viva | El HUD deja de repintarse y empieza a moverse |
+| **V4** | la previa y la serie | Tale of the tape, el Fearless como tablero, el marcador de transmisión |
+| **V5** | el mundo | Los rieles apretados se vuelven pantallas completas |
+| **V6** | la escenografía | El director de escena: transiciones, lower-thirds, title cards |
+| **V7** | navegación | La app tiene cuartos: modelo de navegación teclado-primero, cierra D46 |
+| **V8** | el metro y el teléfono | Cierra el hilo WIP (D47+D48) + responsive real hasta 360px |
+| **V9** | el candado | Los checks estáticos nuevos + el techo de `dist/` re-medido (D49) |
+| **V10** | calibrar | Duraciones, curvas, escalonados y densidades — solo constantes |
+
+## V0 — El kernel: el store, el reconciliador y el delta *(refactor puro, cero cambio visual)* ✅ (2026-09-19)
+
+**El problema.** El controlador son ~520 líneas de `<script type="module">` dentro de
+`index.html:184-708`, con `estado`/`rng`/`rngUi` en un closure que no se expone a propósito. Eso
+estuvo bien hasta acá, pero tiene un costo ya medido: **la dependencia se invirtió**.
+[components/ficha.js:11](src/ui/components/ficha.js#L11) importa `../shell.js` y en cada render
+llama `actualizarTopbar(state)` + `aplicarEstudio(state, ficha)`
+([ficha.js:303-304](src/ui/components/ficha.js#L303-L304)) — el chrome global (topbar, luz de
+estudio) se actualiza **desde un componente hoja**, porque es el único sitio fuera del closure que
+tiene `state` a mano. Ninguna pantalla nueva puede suscribirse a nada, y cada tick repinta por
+`replaceChildren` (nodo destruido = animación imposible).
+
+**Qué entra.**
+
+| Archivo | Qué es |
+|---|---|
+| `src/ui/app.js` (nuevo) | El controlador, movido tal cual desde `index.html`. Exporta `iniciar()`. `index.html` queda en markup + `<script type="module">import {iniciar} from './src/ui/app.js'; iniciar();</script>` |
+| `src/ui/core/store.js` (nuevo) | `crearStore(inicial)` → `{ leer(), escribir(next), suscribir(fn) }`. Sin globals: `app.js` lo crea y lo pasa. Es la única vía por la que una pantalla nueva ve `state` |
+| `src/ui/core/reconciliar.js` (nuevo, ~90 líneas) | `reconciliar(contenedor, items, claveDe, crear, actualizar)`. Parchea en el lugar por clave en vez de reemplazar. Con salida FLIP opcional para reordenamientos (tabla de posiciones, Top 20) |
+| `src/ui/core/delta.js` (nuevo) | `crearDelta(paths)` → `{ medir(state) }` devuelve `{ path: [antes, despues] }` para el set de paths declarado al crearlo. Es lo que vuelve visual la regla 13 |
+
+**Lo que NO cambia.** Ni un selector, ni un token, ni un texto. Las funciones de
+[render.js](src/ui/render.js) mantienen su firma exacta; `reconciliar` se adopta **solo** en las
+listas con clave natural (feed, tabla, plantilla, Top 5, mercado) y en un commit aparte del de la
+mudanza (**V0b**, no incluido en el commit de V0 — ver Estado). La inversión `ficha.js → shell.js`
+se resuelve de paso: con `state` disponible en el closure de `app.js`, `actualizarTopbar`/
+`aplicarEstudio` pasan a llamarse desde `app.js` en el mismo punto donde hoy se llama
+`renderFicha`/`renderCarrera`, no desde adentro de la ficha — `renderFicha` devuelve la `ficha` ya
+calculada (antes devolvía `undefined`, sin consumidores) para que `app.js` no tenga que recalcularla.
+
+**De paso, dos bugs reales que aparecieron al mapear este mismo camino de código (no se buscaban,
+se encontraron mirando lo que V0 tiene que tocar de todos modos):**
+- **D45.** `continuarCarrera()` (`index.html:604-644`) nunca llama a `renderFeed`: al retomar una
+  carrera guardada, `#logList` arranca vacío aunque `estado.logs` tenga la historia completa, y si
+  además hay una decisión pendiente se queda vacío indefinidamente. Se resuelve solo: con el store
+  centralizado, "retomar" y "avanzar" convergen en el mismo camino de pintado (`ui.renderCarrera`).
+- **D46.** Los atajos de teclado 1-4 en el mercado son inertes
+  ([shell.js:184-192](src/ui/shell.js#L184-L192) espera `mercadoGrid.children[i]` como botón, pero
+  [mercado.js:50](src/ui/components/mercado.js#L50) pinta un `div.mercado-card`). Se anota para
+  **V7** (navegación), que es donde el modelo de teclado se revisa entero.
+
+**Checks (verificados en rojo antes de arreglar, regla 7).**
+- ✅ `index.html` ≤ 200 líneas y **cero** `function`/`const` de lógica de juego (710 → **194
+  líneas**). Guard nuevo `verificarSinLogicaEnIndexHtml`, verificado en rojo inyectando una función
+  de prueba y confirmando que el check la caza.
+- ✅ `reconciliar` preserva identidad de nodo: mismo `claveDe` en dos pasadas ⇒ `nodo === nodo` (test
+  unitario en `validate.js`, sin DOM real — con un doble mínimo de `Element`/`Node`).
+- ✅ **Huella de determinismo idéntica** en 40 seeds antes/después (`git archive HEAD | tar -x`,
+  `finAnticipado:splitCount:soloqElo`). Confirmado además con la misma seed corrida dos veces
+  (`state` serializado idéntico bit a bit).
+- ✅ `verificarDocumentSoloEnUi` sigue en verde (nada de esto se filtró a `/core`).
+- ✅ Suite completa: `validate.js` **189/189 OK, 0 FAIL**. `simulate.js 1500 60 todas`: **0
+  crashes** (4500 carreras, 3 estrategias). `build.js`: **1653 KB** (techo 1700, margen 47 KB).
+
+## V1 — La capa de gráficos *(`src/ui/graficos/`, inline SVG, cero deps)*
+
+**Qué entra.** Seis primitivos, cada uno una función que devuelve un `<svg>` ya accesible. Todos
+toman su color por `var(--token)` desde CSS, nunca por literal en JS.
+
+| Primitivo | Para qué, con el dato que ya existe |
+|---|---|
+| `linea.js` | Serie temporal: sparkline / escalón / área. `registro.temporadas[].nota` (una fila por año, ~19 en una carrera mediana), `mundo.archirrival.historial[]` (misma forma, en paralelo) |
+| `hexa.js` | Radar de 6 ejes para los atributos, con el frame anterior **fantasma** detrás |
+| `cinta.js` | Cinta temporal (Gantt) para `registro.porOrg` — una banda por org, color de org, alto por tier |
+| `barras.js` | Columnas comparables: fechas G/P por año, dinero por año |
+| `escalera.js` | La escalera ranked y el Top 20: posición como peldaño, con FLIP al moverse |
+| `bala.js` | Bullet chart: valor vs. objetivo vs. banda — es la forma correcta de "29/100 con referente" |
+
+**El candado nuevo (importante, D44).** `verificarSinColorLiteral` hoy solo mira `estilos/*.css`
+([guards.js:99-114](src/dev/guards.js#L99-L114)). Con gráficos construidos en JS, un
+`fill="#2ee8ff"` entra sin que nada chille. Esta subfase agrega `verificarSinColorLiteralEnJs(uiDir)`
+— mismo patrón de color literal sobre `src/ui/**/*.js` — pero con **dos excepciones reales que ya
+existen en el repo y que el guard tiene que conocer o rompe en su propio primer commit**:
+
+1. **`components/orgChip.js:14-16`** usa `hsl(${hue} ...)` a propósito — el comentario del archivo
+   lo dice: *"Los hsl van INLINE — `validate.js` caza `hsl(` en cualquier CSS fuera de
+   tokens.css"*. Es hue **calculado en runtime** (`hashCadena` del nombre de la org), no un color
+   fijo: no hay forma de tokenizarlo sin perder el propósito (un color por org). El guard nuevo
+   permite `hsl(` con una expresión de template (backtick + `${`) e igual prohíbe un `hsl(` con
+   los tres números literales.
+2. **`exportar.js:22-24`** (`leerToken`) lee colores por `getComputedStyle(...).getPropertyValue`
+   — cero literal, ya es el patrón correcto; el guard no debe tocarlo.
+
+**Se verifica en rojo** metiendo un hex fijo (no una expresión) a propósito, y confirmando que los
+dos casos de arriba siguen pasando.
+
+**Al implementar: cargar la skill `dataviz` antes de escribir la primera línea de gráfico** —
+forma, paleta categórica accesible, especificación de marcas y reglas de interacción. La paleta
+ya existe (`--cat-*`, `--rank-*`, `--nivel-*`); lo que aporta es el método para no romperla.
+
+**Checks.**
+- Todo factory de `graficos/` devuelve un nodo con `role="img"` y `aria-label` **no vacío** que
+  contiene al menos un dígito (recorrido por archivo, no por lista blanca).
+- Cero color literal en `src/ui/**/*.js` (guard nuevo, en rojo primero).
+- **Contraste de marca gráfica, medido sobre `tokens.css` (mismo método que el check de contraste
+  WCAG existente, extendido a las 29 familias que el check actual no toca — `--cat-*`, `--rank-*`,
+  `--nivel-*`, `--up`/`--down`/`--warn`/`--danger`/`--ice` contra `--bg-surface`/`--bg-sunken`/
+  `--bg-raised`, 87 pares):** las 29 familias pasan el piso gráfico de **3:1** (WCAG 1.4.11, el que
+  aplica a una marca no textual, no el 4.5:1 de texto) — **cero pares por debajo de 3:1**. 5 de los
+  87 pares caen entre 3:1 y 4.5:1, los cinco de una sola familia (`--cat-salud` contra `--bg-raised`
+  3,07:1 / `--bg-surface` 3,33:1 / `--bg-sunken` 3,47:1; `--cat-rutina` contra `--bg-raised` 4,16:1;
+  `--cat-partido` contra `--bg-raised` 4,44:1). Hoy `--cat-salud` solo se usa como `border-color`
+  ([pantallas.css:1086](src/ui/estilos/pantallas.css#L1086)), nunca como texto — el check nuevo se
+  escribe con **dos pisos, no uno**: 3:1 para toda marca gráfica (relleno de barra, trazo de línea,
+  celda), 4.5:1 solo si esa familia se usa para pintar un label o un número encima. Verificado en
+  rojo bajando el piso a mano antes de fijarlo.
+- Con `prefers-reduced-motion`, ningún primitivo programa `requestAnimationFrame`.
+
+## V2 — LA TRAYECTORIA *(la pantalla insignia)*
+
+**La pregunta que responde.** *"¿Cómo fue mi carrera?"* — y por primera vez se puede contestar
+mirando, en cualquier momento de la partida, no solo al final.
+
+Una pantalla a todo el ancho, construida **enteramente sobre datos que ya existen** — los cinco
+arrays de la tabla de §V.1 que nunca se recortan:
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│ LA TRAYECTORIA                                          THONOR26 · JUNGLA │
+├──────────────────────────────────────────────────────────────────────────┤
+│ 2026   2027    2028      2029       2030   2031      2032    2033   2034 │
+│ ├───────┼───────┼──────────┼──────────┼───────┼──────────┼───────┼──────┤ │
+│ │ SOLOQ │ REVEN │   REVENANT (tier 2)  │ DRAKKEN (tier 1)      │ DRAKK. ││ vos
+│ └───────┴───────┴──────────┴──────────┴───────┴──────────┴───────┴──────┘ │
+│                              ▲lesión            ★título        ★título   │
+│   4.2    5.8      6.1        3.9        7.4      8.1★titular    8.4      │ nota/año
+│ ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈ │
+│ ╌╌╌╌╌╌╌╌╲___╱‾╲___╱‾‾‾╲___________________╱‾‾╲______╱‾‾‾‾‾‾╲____________  │ archirrival
+├──────────────────────────────────────────────────────────────────────────┤
+│ PICO: nivel 88 a los 24 años · #4 del mundo · US$1,2M/año                │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+- **La cinta de clubes** (`registro.porOrg`): una banda por org sobre un eje de años, con el color
+  y el monograma de la org (`hueDeOrg`/`inicialesDeOrg` de
+  [formatoUi.js:114-134](src/ui/formatoUi.js#L114-L134) — ya existen, se reusan), alto o carril
+  según `tier`, y una muesca de salida con su `motivoDeSalida` (los 6 valores reales:
+  `disolucion`/`ascenso`/`descenso`/`transferencia`/`banquillo`/`libre`).
+- **La nota del año** (`registro.temporadas[].nota`, 0-10, ~19 filas en una carrera mediana):
+  columnas bajo la cinta, con la banda de nombre de `bandaDeNota`
+  ([temporadaResumen.js:148](src/core/temporadaResumen.js#L148)).
+- **Los hitos**: `titulos` (`{nombre, anio, org}`) como marcas oro, `internacionales` con su
+  `resultado`, `momentos` (`{tipo, anio, edad, org, texto}`, confirmado en
+  [salud.js:63-69](src/systems/salud.js#L63-L69)) como muescas citables — la lesión y el servicio
+  militar quedan ahí adentro por `tipo`, sin necesitar un carril propio.
+- **Los picos** (`registro.picos`): líneas de referencia — el nivel máximo y a qué edad
+  (`edadDelPicoDeNivel`), el mejor rank mundial, el salario más alto, y `registro.dineroTotalUSD`
+  como el acumulado de por vida.
+- **El archirrival** (`mundo.archirrival.historial[]`, confirmado: una fila `{anio, org, nivel,
+  titulos}` por año, el mismo largo que `registro.temporadas`): su línea en paralelo a la tuya, en
+  el mismo eje de años. El duelo de generación que hoy es un contador en la ficha
+  (`dueloDeGeneracion`, [ficha.js:181](src/core/ficha.js#L181)), como trayectoria comparada de
+  verdad — dos carreras, un eje, la misma escala.
+
+**Reuso, no reinvención.** [core/legado.js:141-168](src/core/legado.js#L141-L168)
+(`componerLegado`) ya lee exactamente estos cinco campos para componer el veredicto de la tarjeta
+final. LA TRAYECTORIA no es una pantalla nueva con datos nuevos: es el **mismo insumo que ya arma
+el veredicto**, dibujado en vez de resumido en una frase — así que si el gráfico y la tarjeta
+alguna vez dijeran cosas distintas, sería la misma clase de bug que la regla 15 ya nombra.
+
+**Checks.**
+- Sobre 1500 carreras de `simulate.js`: toda carrera con ≥1 fichaje produce ≥1 banda, **cero**
+  geometría `NaN`/negativa, y cero solapamiento de bandas en el mismo carril.
+- **Regla 15 aplicada al gráfico**: la suma de `splits` de las bandas dibujadas ==
+  `registro.splitsConEquipo`, y los títulos dibujados == `registro.titulos.length`. Si la pantalla
+  miente, es bug de confianza.
+- Carrera corta (`no_llego` a los 19) y carrera larga (30+) dibujan las dos sin desbordar ni
+  colapsar: se verifica el rango de años usado contra el ancho disponible.
+
+## V3 — La ficha viva *(el HUD deja de repintarse y empieza a moverse)*
+
+Con V0 y V1 listos, [ficha.js](src/ui/components/ficha.js) (406 líneas, el componente más visto
+del juego) pasa de repintado a telemetría:
+
+- Los 6 atributos como `hexa` con el frame anterior fantasma: **se ve** qué cambió este split.
+- Todo valor que cambió entra por `delta.js` y se mueve: `countUp` en el número, la barra crece
+  desde el valor viejo, con escalonado (stagger) para que se lean de a uno y no como un parpadeo.
+- El ranked como `escalera` con tu peldaño deslizándose.
+- Todo `n/100` pasa a `bala` con su banda con nombre — regla 13, cumplida por forma y no por texto.
+
+**Checks.** Ningún `n/100` sin banda/objetivo en el DOM de la ficha (recorrido del árbol
+renderizado); con motion reducido la ficha llega al valor final en un frame; la ficha no repinta
+nodos con clave estable entre dos ticks con el mismo `state`.
+
+## V4 — La previa y la serie, como transmisión de verdad
+
+- **Tale of the tape** antes de la serie: vos vs. la org rival, cara a cara, con `serie.rival.fuerza`,
+  la tabla, el head-to-head y la revancha (`career.ultimoEliminadoPor`). Es el gráfico más
+  reconocible del género y hoy no existe.
+- **El Fearless como tablero**: `serie.quemados` + `serie.mapas` como grilla visual de campeones
+  quemados mapa a mapa, en vez de una lista.
+- **El marcador** como marcador de transmisión, con el camino de la serie ya persistido en
+  `registro.internacionales[].camino`.
+
+## V5 — El mundo *(los rieles apretados se vuelven pantallas)*
+
+Los 6 paneles del riel derecho (`paneles/*.js`, 43-92 líneas cada uno) son buenos pero viven en
+320px. Esta subfase les da una pantalla completa a los que la merecen: la tabla de posiciones con
+reordenamiento FLIP real, el Top 20 como escalera, los rivales de generación, y el mercado como
+tablero de asientos. Los paneles del riel quedan como su **resumen**, linkeando a la pantalla.
+
+## V6 — La escenografía *(el director de escena)*
+
+Hoy las pantallas se prenden y apagan con `hidden`. Entra `src/ui/escenografia.js`: transición
+entre ventanas (pretemporada → regular → playoffs → internacional → offseason) con stinger corto,
+lower-third que entra y sale en vez de aparecer, y **title card** a pantalla en los momentos
+bisagra (`evento.bisagra` ya existe y ya dispara `sonido.swellBisagra()`,
+[reproductor.js:128](src/ui/reproductor.js#L128) — la parte visual es la que falta). Todo con su
+camino quieto bajo motion reducido.
+
+## V7 — Navegación *(la app tiene cuartos)*
+
+Con V2/V5 hay pantallas de verdad y hace falta cómo moverse: modelo de navegación teclado-primero
+(el juego ya usa 1-4/Espacio/Esc, [shell.js:194-231](src/ui/shell.js#L194-L231)), sin romper
+ninguno de esos atajos, y sin que navegar pueda perder una decisión pendiente. Cierra acá D46: los
+atajos 1-4 no responden en la pantalla de mercado porque `opcionVisible()` espera un botón y recibe
+un `div.mercado-card` — se arregla junto con el resto del modelo de teclado, no antes, para no
+tocar `shell.js` dos veces.
+
+## V8 — El metro y el teléfono *(cierra el hilo WIP + responsive real)*
+
+- **El metro**: cierra el hilo de los 4 commits `wip: pasada de HUD y chrome` (D48) con una regla
+  escrita y medible en vez de "subir el volumen" a ojo. Incluye limpiar la duplicación de
+  `.ticks` en [material.css](src/ui/estilos/material.css) (D47, declarada y nunca usada).
+- **El teléfono**: hasta 360px. Los dos rieles pasan a hojas invocables; el escenario manda.
+
+## V9 — El candado *(los checks estáticos nuevos + el presupuesto)*
+
+Cierra la fase convirtiendo en error de build lo que esta fase aprendió, mismo criterio que T0b:
+nombre accesible en todo SVG, contraste de toda la paleta realmente usada, cobertura de motion
+reducido, el guard de color literal en JS, y **el techo de `dist/` re-medido y subido con número**
+en su propio commit (D49). De paso, evaluar D50 (`pantallas.css`, 1815 líneas): dividir solo si el
+criterio de corte es claro.
+
+## V10 — Calibrar *(solo constantes)*
+
+Duraciones, curvas, escalonados y densidades, después de jugarlo. Regla de proceso 2: nunca en el
+mismo commit que la estructura.
+
+## V.4 — Verificación
+
+Cada subfase cierra con la Definición de terminado de `CLAUDE.md`:
+
+```bash
+node src/dev/validate.js                 # los checks viejos + los nuevos de la subfase
+node src/dev/simulate.js 1500 60 todas   # 0 crashes
+node src/dev/build.js                    # guards + techo de dist/
+node server.js                            # jugar a mano, cero errores de consola
+```
+
+Y, por ser una fase de UI, dos verificaciones que el resto del proyecto no necesitaba:
+
+- **Huella de determinismo** antes/después de V0 y de cada subfase que toque el orquestador:
+  `git archive HEAD | tar -x -C <dir>` + comparar `finAnticipado:splitCount:soloqElo` en 40 seeds.
+  Una fase de UI que mueva el motor es un bug, no un efecto secundario.
+- **End-to-end de la fase V**: jugar una carrera completa y, **sin abrir el log**, contar la
+  historia leyendo solo LA TRAYECTORIA. Si las cinco frases de la prueba final de este documento
+  salen de mirar esa pantalla, la fase está.
+
+---
+
 # Fuera de alcance (visto en las imágenes, decidido que no)
 
 | Qué | Dónde se ve | Por qué no |
@@ -4568,6 +4961,13 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D36 | ✅ **Cerrada (fase T8, 2026-09-04).** *"La partida no se guarda: un refresh borra la carrera"* — resuelto exactamente como preveía esta fila: `core/rng.js:18-19` expone `.estado()`/`.restaurar(n)`, `src/core/guardado.js` serializa (`state.pendiente` cumplió su función: la partida era serializable a mitad de split desde antes), y `src/ui/almacenamiento.js` hace el `localStorage`. Verificado sin `localStorage` desde ninguna otra parte del repo. Ver P.2 | ✅ P (T8) |
 | D42 | ✅ **Cerrada (D.3, 2026-09-15).** `quedarLibre` y `resolverBanquillo` (`systems/mercado.js`) limpian `career.liga` a `null` junto con lo demás. Los 12 lectores que ya toleraban `null` no se tocaron; el único que no toleraba (`core/serie.js`, rival doméstico) ahora tira un error explícito (medido: guarda no alcanzada, 0/300×60). El check de silencio no empeoró: baseline real remedido 61.111% (no el 72% viejo, ya obsoleto) → 61.290% con el fix, piso 60% sin tocar | ✅ D.3 |
 | D43 | ✅ **Las dos contradicciones concretas cerradas (13e, 2026-09-18).** §2 describía "27-34 años DECLIVE Y RETIRO" como etapa con reloj de edad fijo y sumaba duraciones parciales (~7 min) que contradecían la decisión del usuario ("la larga: 25-40 min", línea 81). Reescrito: el tramo de declive/retiro ahora dice "EMERGENTE, NUNCA UN RELOJ FIJO" citando el mecanismo real de 10a (mercado, no edad) y §12.4 (el declive es percepción, no biología); se sacaron las duraciones parciales que no sumaban. **Residual, fuera de esta fase**: la regla de proceso 5 sigue acumulando otros pendientes de `CONCEPTO.md` sin reclamar (§5/§11 fase 4, §5 fase 5, §6 fases 6 y 9, §8 fase 1, §1/§11 fase 8, §6-ARRAIGO fase 8) — no eran la contradicción que bloqueaba el diagnóstico de esta fase, quedan para cuando alguna fase futura los reclame de verdad | ✅ 13 (13e) — residual sin fase asignada |
+| D44 | `verificarSinColorLiteral` (`guards.js:99`) solo escanea `estilos/*.css`: un `fill="#2ee8ff"` en un gráfico SVG construido en JS evade el candado del sistema de diseño por completo. Encontrado al diagnosticar la fase V (medido: `grep -rn "createElementNS" src/ui/` → cero, así que hoy el guard nunca se ejerció contra JS) | V1 (`verificarSinColorLiteralEnJs`, con las 2 excepciones reales ya en el repo: `orgChip.js` hsl calculado, `exportar.js` `getComputedStyle`) |
+| D45 | `continuarCarrera()` (`index.html:604-644`) nunca llama a `renderFeed`/`renderCarrera`: al retomar una carrera guardada, `#logList` arranca vacío aunque `estado.logs` tenga la historia completa — indefinidamente si además hay una decisión pendiente, porque nada vuelve a pintar el feed después | ✅ **V0**, se resuelve solo con el store centralizado: "retomar" y "avanzar" convergen en el mismo camino de pintado (`ui.renderCarrera`) |
+| D46 | Atajos de teclado 1-4 inertes en la pantalla de mercado: `shell.js:184-192` (`opcionVisible`) espera `mercadoGrid.children[i]` como el elemento clickeable, pero `mercado.js:50` pinta un `div.mercado-card` sin listener propio — los botones reales (`Firmar`/`Pedir más`) viven anidados adentro | V7 (se arregla junto con el resto del modelo de teclado, no antes, para no tocar `shell.js` dos veces) |
+| D47 | `.ticks` de `material.css` (líneas 15-82) declarada y **nunca usada**: sus reglas quedaron copiadas a mano sobre una lista de 11 selectores en vez de aplicarse por la clase | V8 |
+| D48 | Hilo `wip: pasada de HUD y chrome` (4 commits: `059b6c6`, `b56cfe8`, `53881c2`, `9b83478`) sin cerrar con una regla medible — quedó a medio commitear para no bloquear otras fases, con rótulos internos F0/F1 que no corresponden a ninguna fase de este documento. El último de los cuatro deja el diagnóstico sin resolver: *"el corte de 10px y el hielo al 7 por ciento no se leían a un metro"* | V8 (con una regla escrita y medible, no "a ojo") |
+| D49 | Techo de `dist/` con **53 KB de margen** sobre 1700 KB (medido 2026-09-19, `node src/dev/build.js` → 1647 KB). La fase V va a superarlo con la capa de gráficos + las pantallas nuevas | V9 (re-medido y subido con número, en su propio commit — regla de proceso 2) |
+| D50 | `pantallas.css` son **1815 líneas** en un solo archivo — no es un bug, pero la fase V le va a sumar CSS nuevo encima | V9 (a evaluar: dividir solo si el criterio de corte es claro, no dividir por dividir) |
 
 ---
 

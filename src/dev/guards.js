@@ -121,6 +121,35 @@ export function verificarSinColorLiteral(estilosDir) {
 // justamente lo que la vuelve segura si algún día no se fija. Un var()
 // SIN fallback que apunte a un nombre inexistente, en cambio, se rompe en
 // silencio — eso es lo que este check sigue cazando.
+// ============================================================================
+// Fase V (V0) — el kernel: el controlador vive en `src/ui/app.js`, no en un
+// `<script type="module">` inline de `index.html`. Sin este candado, la
+// mudanza se podría deshacer sola (alguien agrega una función "rapidito"
+// adentro del HTML) sin que nada lo note.
+// ============================================================================
+
+const MAX_LINEAS_INDEX_HTML = 200;
+const PATRON_SCRIPT_INLINE = /<script type="module">([\s\S]*?)<\/script>/g;
+const PATRON_LOGICA_DE_JUEGO = /\b(function|const)\b/;
+
+export function verificarSinLogicaEnIndexHtml(indexHtmlPath) {
+  const texto = fs.readFileSync(indexHtmlPath, 'utf8');
+  const hallazgos = [];
+
+  const lineas = texto.split('\n').length;
+  if (lineas > MAX_LINEAS_INDEX_HTML) {
+    hallazgos.push(`index.html tiene ${lineas} líneas (máximo ${MAX_LINEAS_INDEX_HTML})`);
+  }
+
+  for (const match of texto.matchAll(PATRON_SCRIPT_INLINE)) {
+    if (PATRON_LOGICA_DE_JUEGO.test(match[1])) {
+      hallazgos.push('un <script type="module"> inline de index.html declara function/const — la lógica va en src/ui/app.js');
+    }
+  }
+
+  return hallazgos;
+}
+
 export function verificarTokensDefinidos(estilosDir) {
   const archivos = listarArchivosCss(estilosDir);
   const archivoTokens = archivos.find((archivo) => path.basename(archivo) === 'tokens.css');
