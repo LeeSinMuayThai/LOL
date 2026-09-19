@@ -361,14 +361,14 @@
     "contexto": {
       "etapa": ["debut", "profesional"],
       "nivel": ["tier3"],
-      "ventana": ["playoffs", "internacional"]
+      "ventana": ["playoffs"]
     },
     "conditions": [],
     "options": [
       {
         "id": "jugar_a_lo_seguro",
         "label": "Jugar a lo seguro, sin arriesgar tu imagen",
-        "descripcion": "Elegís las jugadas más conservadoras. Prefer­ís no arruinarte frente a los scouts con un error visible antes que ir por un lucimiento arriesgado.",
+        "descripcion": "Elegís las jugadas más conservadoras. Preferís no arruinarte frente a los scouts con un error visible antes que ir por un lucimiento arriesgado.",
         "weight": 2,
         "outcomes": [
           {
