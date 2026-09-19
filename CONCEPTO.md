@@ -44,11 +44,17 @@ llegaste contra hasta dónde podías llegar.
 
 ## 2. La forma de una partida
 
+> **Corregido en la fase 13** (2026-09-18): este diagrama traía dos residuos de antes de las fases
+> 4/5/9/10 — duraciones parciales que sumaban ~7 minutos (contradiciendo la línea 21, "25-40
+> minutos", vigente desde la fase 8) y un tramo final con edad de corte fija ("27-34 años DECLIVE Y
+> RETIRO"), que 10a reemplazó por el retiro emergente ("te retirás cuando el mercado deja de
+> llamarte", nunca por cumplir años — regla de proceso 5, pendiente desde la fase 10 y saldada acá).
+
     15-17 años    ETAPA AMATEUR
                   SoloQ, colegio, familia. Podés perder acá.
-                  6 periodos. Duración: ~90 segundos.
+                  6 periodos.
 
-    17-19 años    DEBUT — TIER 3 → TIER 2 → TIER 1
+    17-19+ años   DEBUT — TIER 3 → TIER 2 → TIER 1
                   Nadie pisa una liga real de entrada. Fichás con un equipo
                   chico e inventado (tier 3) donde no dura casi nadie —
                   sube a una liga de desarrollo real (NACL, LDL, LCK CL...)
@@ -57,15 +63,20 @@ llegaste contra hasta dónde podías llegar.
                   La única salida directa es el caso Calix: estar en el
                   top absoluto de Challenger y todavía joven te salta el
                   tramo de tier 3. Sos el rookie, no decidís casi nada.
-                  Duración: ~60 segundos.
 
-    19-27 años    CARRERA PROFESIONAL
-                  El grueso del juego. Splits, metas, fichajes, torneos.
-                  Duración: ~4 minutos.
+    19+ años      CARRERA PROFESIONAL
+                  El grueso del juego. Splits, metas, fichajes, torneos,
+                  el mercado de pases (fase 9M) y el ranking mundial (9W).
 
-    27-34 años    DECLIVE Y RETIRO
-                  La mecánica baja, el macro no. Última decisión: cómo salís.
-                  Duración: ~40 segundos.
+    Edad variable DECLIVE Y RETIRO — EMERGENTE, NUNCA UN RELOJ FIJO (fase 10a)
+                  No hay corte por edad: entrás en declive cuando el
+                  MERCADO deja de preferirte —te banquean, caíste de tier 1
+                  y no volviste, tu nivel se alejó de tu propio pico
+                  (`CONCEPTO` §12.4: "el declive casi no es biológico")—, no
+                  cuando cumplís años. El retiro es reversible (10a): la
+                  decisión real es cómo salís, o si volvés. Una carrera
+                  corta puede cerrarse a los 20; una larga llega a los
+                  29-30, como la de Faker.
 
     FIN           TARJETA DE LEGADO
                   Veredicto compuesto, métricas, tu puesto en tu generación.

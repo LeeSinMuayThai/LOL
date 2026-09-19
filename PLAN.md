@@ -4549,7 +4549,7 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D41 | **`log.type` no se usa en la UI.** Los 16 sistemas emisores etiquetan cada log (`amateur`, `serie`, `mercado`, `temporada`, …) y `feed.js` solo distingue `tecnico: true`. Es el gancho listo para icono, color y filtro por categoría, gratis. Lo consume la fase T | T |
 | D36 | ✅ **Cerrada (fase T8, 2026-09-04).** *"La partida no se guarda: un refresh borra la carrera"* — resuelto exactamente como preveía esta fila: `core/rng.js:18-19` expone `.estado()`/`.restaurar(n)`, `src/core/guardado.js` serializa (`state.pendiente` cumplió su función: la partida era serializable a mitad de split desde antes), y `src/ui/almacenamiento.js` hace el `localStorage`. Verificado sin `localStorage` desde ninguna otra parte del repo. Ver P.2 | ✅ P (T8) |
 | D42 | ✅ **Cerrada (D.3, 2026-09-15).** `quedarLibre` y `resolverBanquillo` (`systems/mercado.js`) limpian `career.liga` a `null` junto con lo demás. Los 12 lectores que ya toleraban `null` no se tocaron; el único que no toleraba (`core/serie.js`, rival doméstico) ahora tira un error explícito (medido: guarda no alcanzada, 0/300×60). El check de silencio no empeoró: baseline real remedido 61.111% (no el 72% viejo, ya obsoleto) → 61.290% con el fix, piso 60% sin tocar | ✅ D.3 |
-| D43 | **Auditoría 2026-09-13**: la regla de proceso 5 acumula pendientes de actualizar `CONCEPTO.md` para las fases 3, 4, 5, 6, 8, 9 y 10, y ninguna fase futura los reclama — `CONCEPTO.md` no se toca desde `03b6e3f` (fase 9R5d). Contradicción concreta verificada: §2 sigue describiendo "27-34 años DECLIVE Y RETIRO" como una etapa con reloj de edad fijo, cuando 10a lo reemplazó por el retiro emergente del mercado (§10.1); y sigue presupuestando la partida en ~7 minutos cuando la decisión del usuario (línea 81 de este documento) fija "la larga: 25-40 min" | 13 (documental — no bloquea sus checks de contenido) |
+| D43 | ✅ **Las dos contradicciones concretas cerradas (13e, 2026-09-18).** §2 describía "27-34 años DECLIVE Y RETIRO" como etapa con reloj de edad fijo y sumaba duraciones parciales (~7 min) que contradecían la decisión del usuario ("la larga: 25-40 min", línea 81). Reescrito: el tramo de declive/retiro ahora dice "EMERGENTE, NUNCA UN RELOJ FIJO" citando el mecanismo real de 10a (mercado, no edad) y §12.4 (el declive es percepción, no biología); se sacaron las duraciones parciales que no sumaban. **Residual, fuera de esta fase**: la regla de proceso 5 sigue acumulando otros pendientes de `CONCEPTO.md` sin reclamar (§5/§11 fase 4, §5 fase 5, §6 fases 6 y 9, §8 fase 1, §1/§11 fase 8, §6-ARRAIGO fase 8) — no eran la contradicción que bloqueaba el diagnóstico de esta fase, quedan para cuando alguna fase futura los reclame de verdad | ✅ 13 (13e) — residual sin fase asignada |
 
 ---
 
@@ -4641,9 +4641,10 @@ de splits sin evento < 25% en todos los contextos alcanzables.
 4. **Reportar los números medidos, no los esperados.** Incluidos los que empeoran.
 5. **Actualizar `CONCEPTO.md` cuando el código lo contradiga.** Pendientes: §2 y §10 (fase 3) ·
    §5 y §11 (fase 4) · §5 otra vez, el loop de split cambia de forma (fase 5) · §6, el meta cambia
-   de definición (fase 6) · §6 otra vez, contratos (fase 9) · §8 (fase 1) · §2 otra vez, se borran
-   los relojes (fase 10) · §1 y §11, duración de la partida (fase 8) · §6 otra vez, se agrega
-   ARRAIGO (fase 8).
+   de definición (fase 6) · §6 otra vez, contratos (fase 9) · §8 (fase 1) · §1 y §11, duración de
+   la partida (fase 8) · §6 otra vez, se agrega ARRAIGO (fase 8). ~~§2 otra vez, se borran los
+   relojes (fase 10)~~ — **cerrado en 13e** (D43): el diagrama de §2 ya no describe un reloj de
+   edad fijo para declive/retiro.
 6. Cada fase **activa sus momentos pendientes** en `data/contextos.js` y lo verifica con
    `cobertura.js`.
 7. **Al escribir un check nuevo, verificar que falla cuando debe** (trampa T5: un check que

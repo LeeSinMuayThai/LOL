@@ -15,6 +15,13 @@ import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 
 export const id = 'eventos';
 
+// Fase 13e (T10, PLAN.md): el mensaje exacto que loguea `aplicar` cuando
+// `elegirEvento` no encuentra ningún candidato — el pool se vació por gating
+// fino. Exportado para que validate.js mida su frecuencia real por celda
+// momento×ventana sin duplicar el string ni volver a correr `elegirEvento`
+// (que consumiría una tirada de más y desincronizaría el stream, T1).
+export const SPLIT_SIN_EVENTO_MSG = 'Un split tranquilo, sin eventos destacados.';
+
 // Fase 9Ra: el cooldown se cuenta en splits. `cooldownHasta[id]` es el
 // `splitCount` en el que el evento vuelve a estar libre; sigue bloqueado
 // mientras ese número sea mayor al split actual.
@@ -379,7 +386,7 @@ export function aplicar(state, rng) {
   if (!evento) {
     return {
       state,
-      logs: [crearLog('event', 'Un split tranquilo, sin eventos destacados.')]
+      logs: [crearLog('event', SPLIT_SIN_EVENTO_MSG)]
     };
   }
 

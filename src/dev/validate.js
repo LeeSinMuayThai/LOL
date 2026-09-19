@@ -22,7 +22,7 @@ import { TOKENS, tokensUsados, resolverTexto } from '../core/plantillas.js';
 import { RUTINAS } from '../core/rutinas.js';
 import { campeonesEnMeta, multiplicadorDeMeta, factorDeCampeon, pesoDePick, lecturaDePick } from '../core/ajusteMeta.js';
 import { campeonesDisponibles, entradaDePool } from '../core/pool.js';
-import { elegirOutcome, elegirEvento, decisionDesdeEvento, resolver as resolverEventos, resolverOpcion, cooldownActivo, pesoEfectivo } from '../systems/events.js';
+import { elegirOutcome, elegirEvento, decisionDesdeEvento, resolver as resolverEventos, resolverOpcion, cooldownActivo, pesoEfectivo, SPLIT_SIN_EVENTO_MSG } from '../systems/events.js';
 import { previaDeOpcion, riesgoDeOpcion, payoffNormalizado } from '../core/previa.js';
 import { rarezaDeRutina, payoffDeRutina } from '../core/rareza.js';
 import { tipoDeSplit, hayPresupuesto } from '../core/presupuesto.js';
@@ -2657,6 +2657,60 @@ checkLento('MOMENTOS: el array manda, pero nunca en contra de lo que dice priori
 
       state = avanzarSplitAuto(state, rng).state;
     }
+  }
+});
+
+checkLento('T10: ninguna celda alcanzable pasa el 25% de splits sin evento', () => {
+  // `PLAN.md` — trampa T10: `events.js` loguea SPLIT_SIN_EVENTO_MSG cuando
+  // `elegirEvento` no encuentra ningún candidato — el pool se vació por
+  // gating fino en esa celda momento×ventana en particular. Medir la fracción
+  // real, no confiar en que "hay 508 opciones en el catálogo" alcance: un
+  // catálogo grande en total puede seguir teniendo una celda específica seca.
+  //
+  // Se mide sobre los LOGS reales de `avanzarSplitAuto` (el camino que juega
+  // `simulate.js`/el navegador), no llamando a `elegirEvento` de nuevo — eso
+  // consumiría una tirada extra y correría el stream de RNG del resto del
+  // split (T1). El silencio por presupuesto agotado (`hayPresupuesto`, fase
+  // 9Rf) es un mecanismo DISTINTO y deliberado —no imprime este mensaje, así
+  // que no contamina la medición.
+  const MUESTRA_MINIMA = 30;
+  const UMBRAL = 0.25;
+  const N = 400;
+  const SPLITS = 45;
+  const celdas = new Map();
+
+  for (let seed = 1; seed <= N; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+
+    for (let i = 0; i < SPLITS && !state.terminado; i += 1) {
+      const contexto = calcularContexto(state);
+      const clave = `${contexto.momento}|${contexto.ventana}`;
+      const fila = celdas.get(clave) ?? { total: 0, sinEvento: 0 };
+      fila.total += 1;
+
+      const resultado = avanzarSplitAuto(state, rng);
+      if (resultado.logs.some((log) => log.type === 'event' && log.message === SPLIT_SIN_EVENTO_MSG)) {
+        fila.sinEvento += 1;
+      }
+      celdas.set(clave, fila);
+      state = resultado.state;
+    }
+  }
+
+  const huecos = [];
+  for (const [clave, { total, sinEvento }] of celdas) {
+    if (total < MUESTRA_MINIMA) {
+      continue;
+    }
+    const fraccion = sinEvento / total;
+    if (fraccion >= UMBRAL) {
+      huecos.push(`${clave} (${(fraccion * 100).toFixed(1)}%, ${sinEvento}/${total})`);
+    }
+  }
+
+  if (huecos.length > 0) {
+    throw new Error(`celdas con ≥25% de splits sin evento, muestra suficiente: ${huecos.join('; ')}`);
   }
 });
 
