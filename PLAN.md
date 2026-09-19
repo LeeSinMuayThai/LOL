@@ -35,7 +35,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **12** | La jerarquía de la decisión: categorías, rareza, consecuencia previa, el dado | ✅ **cerrada** (12a→12f). **12a** (`validate.js --rapido/--completo`, cierra D32) · **12b** (`categoria` en los 220 eventos + `formatoUi.js` + check) · **12c** (`peso: 'ambiente'` + tarjeta compacta) · **12d** (`core/previa.js`: previa, riesgo, gate + corrección de §12.3) · **12e** (`core/rareza.js`: rareza común/rara en las decisiones de mejora + el dado nombra el eje) · **12f** (bracket siempre visible, minijuego con identidad por competición + dificultad por ronda, camino de serie persistido en `registro.internacionales`) |
 | **P** | Publicar: build, guardado en el navegador, seed en la URL, el repo y el host | 🔶 **P.2/P.3/P.5 ✅ (fase T8, 2026-09-04)** — el guardado, la seed en la URL y el repo (remote, `README.md`, `LICENSE`, descargo de fan) ya existen · **P.7/P.10 ✅**. **P.6 casi ✅ (2026-09-15)**: `origin/master` mergeado y al día (`45fb5d6`), techo de `dist/` re-medido (1482 KB) y convertido en check duro (1700 KB); `dist/` de hoy entregado listo para arrastrar. **Conectar la cuenta del host** (Cloudflare Pages/Netlify) es del usuario, no algo para hacer de oficio — queda como el único paso manual de P.6. **Queda**: ese paso manual, **P.8** (verificación en la URL publicada una vez conectado), el `og:image` propio y el `<title>` real del juego (P.4, diferido en T.2) |
 | **D** | Los campos que la ficha promete y el motor no escribe: `ultimo_ano`/`sin_renovacion` (D30), `registro.picos.rankedPuntos` (D40) y `career.liga` sin limpiar al quedar libre (D42) | ✅ **cerrada (2026-09-15)**: D.1+D.3 por Grok, D.2 por Gemini, en worktrees paralelos, auditados por un tercer agente antes del merge — ver nota de la fase para el detalle del proceso. Los 5 checks en verde; el T1 declarado no llegó a ocurrir (huella idéntica en 40 seeds) |
-| **13** | Contenido a escala | 🔶 **el objetivo numérico ya se superó 3×** (442 opciones vs. objetivo 150) y `cobertura.js --huecos` tiene un solo hueco. Lo que queda es más chico que lo que el documento describía — ver §13, reescrita el 2026-09-13 |
+| **13** | Contenido a escala | ✅ **cerrada (2026-09-18, 13a→13e)**. Los 8 puntos de §13.1 resueltos: el hueco de cobertura, los 3 momentos `pendiente` obsoletos activados (+ `MOMENTOS` reordenada con check nuevo), D11 (rutinas por tier), servicio militar como bisagra alcanzable, declive con contenido propio (`declive.json`), D34 (`tier3.json`, 9 eventos), D17 (`latam.json`, narrativo), D14 (rango 2-4 opciones) y el check T10 que faltaba. Catálogo: 226→246 eventos, 442→**508 opciones**. `cobertura.js --huecos` vacío. Ejecutada por esta sesión sin delegar (excepción puntual, decisión del usuario) |
 
 > **Por qué estas tres fases se insertaron antes del mercado.** Jugando el juego con las cuatro
 > fases hechas aparecieron cuatro defectos medibles: la temporada regular se resuelve con una
@@ -4478,15 +4478,19 @@ la opción D del draft (4.4).
 ## Checks de la fase 13
 
 ```
-cobertura.js --huecos vacío                                              ✅ (13a)
+cobertura.js --huecos vacío                                              ✅ (13a) — 508 opciones
 0 momentos alcanzables marcados pendiente citando una fase ya cerrada     ✅ (13a)
   (regla de proceso 6)
-MOMENTOS ordenada por prioridad decreciente — check nuevo                 ✅ (13a)
-Las 7 rutinas de offseason declaran nivel/tier, con segura+agresiva       ✅ (13b)
-  por tier en corrida real (D11)
-sin_equipo/playoffs y sin_equipo/regular sin mayoría "sin gatear"         ✅ (13a)
-Fracción de splits sin evento < 25% en toda celda con muestra             ✅ (13e)
-  suficiente (T10) — check nuevo
+"MOMENTOS: el array manda, pero nunca en contra de lo que dice           ✅ (13a) — check nuevo
+  prioridad" (verificado en rojo: seed 1 lo agarra en split 34
+  con la prioridad vieja de veterano_al_margen)
+"Las rutinas de offseason declaran nivel y cada tier mantiene su         ✅ (13b) — check
+  segura+agresiva propias (D11, 13b)" — las 8 declaran nivel,             ampliado, en rojo 2x
+  cada tier ofrece agresiva propia en corrida real
+sin_equipo/playoffs, /pretemporada y /regular: 0 sin gatear (D26c)        ✅ (13a)
+"T10: ninguna celda alcanzable pasa el 25% de splits sin evento"          ✅ (13e) — check nuevo,
+  — peor celda real medida: 3,7% (sin_equipo/playoffs)                    verificado en rojo al 2%
+D14: ≥6 eventos de 3 opciones y ≥3 de 4 (CONCEPTO §3, "2 a 4")            ✅ (13d) — 10 y 3
 ```
 
 ---

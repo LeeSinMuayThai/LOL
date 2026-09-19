@@ -34,6 +34,93 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-09-18 — Fase 13 cerrada: los 8 puntos de §13.1 + el check T10 que faltaba
+
+Cierra `PLAN.md` fase 13 (contenido a escala), la última fase de contenido que quedaba abierta.
+**Ejecutada íntegramente por esta sesión (Sonnet), sin delegar a grok/agy** — excepción puntual al
+workflow de delegación habitual del proyecto (ver `PROGRESO.md` 2026-09-15), decidida por el
+usuario para esta tanda.
+
+**Punto de partida**: al abrir el repo había trabajo de fase 13 en el árbol sin commitear ni
+documentar en `PLAN.md` (regla de proceso 1 incumplida por quien lo dejó ahí). Auditado antes de
+tocar nada: resolvía de verdad los puntos 1, 2 y 5 de §13.1, pero dejaba dos defectos —2 eventos de
+servicio militar gateados a una marca que `contextos.js` ya advertía como inalcanzable
+(`marcas: ['servicio_militar']` vive y muere dentro de un split), y `MOMENTOS` con `prioridad`
+desordenada tras mover `veterano_util`/`veterano_al_margen` (funcional porque `momentoDe()`
+resuelve por posición del array, no por el número, pero silenciosamente inconsistente).
+
+**13a** (`data/events/retiro_y_vuelta.json` nuevo, `contextos.js`, `salud_vida.json`,
+`validate.js`): cierra el hueco de cobertura (`retirado_reciente/pretemporada`), activa los 3
+momentos `pendiente` obsoletos, ancla `sin_equipo` a 0% sin gatear en las 3 ventanas. Los dos
+eventos de servicio militar se reescribieron como contenido de VUELTA (`region: KR` +
+`flags.servicioCumplido`, sin tocar el motor) en vez de la marca inalcanzable. Check nuevo
+("MOMENTOS: el array manda, pero nunca en contra de lo que dice prioridad") verificado en rojo
+primero (revirtiendo el número a mano: seed 1 lo agarra en el split 34) y en verde con el fix
+(`veterano_util`/`veterano_al_margen`: 20/18 → 33/32).
+
+**13b** (D11, `rutinas/offseason.json`): las 7 rutinas declaran `nivel` (antes 0/7).
+`bootcamp_corea` (la única agresiva) queda reservada a tier1/tier2 — un equipo inventado de tier 3
+no paga un viaje a Corea. Rutina nueva, `grindeo_de_madrugada`, le da a tier 3 su propia agresiva
+(CONCEPTO §4: la trampa tiene que estar siempre disponible). Check ampliado: antes solo exigía
+agresiva en tier1/tier2, ahora la exige pareja en los tres tiers, verificado en rojo dos veces
+(sin declarar `nivel`; declarando tier3+tier2 a la vez) antes del contenido final.
+
+**13c** (servicio militar + declive, `salud_vida.json`, `data/events/declive.json` nuevo): 2
+eventos más de la bisagra del servicio militar (la competencia por el puesto al volver, la
+exención por la medalla que nunca tenía voz en el catálogo). `veterano_util`/`veterano_al_margen`
+(recién activados en 13a) solo tenían contenido heredado de celdas genéricas — declive.json (6
+eventos) les da voz propia, apoyado en CONCEPTO §12.4 ("el declive casi no es biológico" — es
+sesgo del mercado por juventud, no decadencia real). Los 6 declaran `nivel` junto a `etapa:
+['declive']`: sin eso colaban por omisión en `vuelta_del_retiro` (medido en rojo: 6/6/5 sin gatear
+al probarlos sin `nivel`, porque volver del retiro y estar en declive pueden coincidir) — D26c.
+
+**13d** (D34/D17/D14, `data/events/tier3.json` y `latam.json` nuevos): tier 3 tenía un p90 de 12
+splits (4 años) en el nivel con un solo evento exclusivo — `tier3.json` (9 eventos) le da historia
+propia (el sueldo que llega tarde, el coach-dueño, la gaming house real, el lineup que se
+tambalea, la scrim contra una academia grande, el torneo regional como vidriera, el setup
+prestado, el stream que financia al equipo, la promesa de ascenso que no llega). No se tocó
+`probAscensoBaseDesdeTier3` — regla de proceso 3, contenido primero. LATAM sigue sin
+`leagues.json` propio (D17, decisión ya tomada): `latam.json` (3 eventos) le da identidad
+narrativa a un origen NA/BR. D14: el catálogo tenía 223 eventos de 2 opciones / 3 de 3 / 0 de 4
+sobre 220; ahora **10 de 3 y 3 de 4** sobre 246, usando el rango completo que pide `CONCEPTO` §3.
+Los 12 eventos nuevos de 13d/13c(latam) declaran `nivel` explícito por el mismo motivo D26c.
+
+**13e** (T10, D43): `PLAN.md` tenía a T10 como trampa conocida sin check ("el pool de eventos se
+vacía con gating fino") desde antes de la fase 9. `systems/events.js` exporta
+`SPLIT_SIN_EVENTO_MSG` (el log exacto que emite `aplicar` cuando `elegirEvento` no encuentra
+candidatos) para que `validate.js` mida su frecuencia real por celda momento×ventana sobre los
+logs reales de `avanzarSplitAuto`, sin volver a llamar `elegirEvento` (correría el stream, T1) y
+sin confundir el silencio por presupuesto agotado (9Rf, mecanismo distinto) con un hueco de
+contenido. Medido sobre 400×45: peor celda real **3,7%** (`sin_equipo/playoffs`), muy por debajo
+del piso del 25%. Verificado en rojo bajando el umbral a 2% (marca 5 celdas reales) y devuelto a
+25%. De paso, D43 (deuda documental): `CONCEPTO.md` §2 describía "27-34 años DECLIVE Y RETIRO"
+con un reloj de edad fijo —10a lo había reemplazado por el retiro emergente del mercado hace tres
+fases sin que el documento se actualizara (regla de proceso 5, ítem pendiente desde la fase 10)— y
+sumaba duraciones parciales (~7 min) que contradecían "la larga: 25-40 min" (decisión del usuario,
+línea 81). Reescrito.
+
+**Efecto colateral de agregar contenido (trampa T1, aceptado)**: el check "El contexto de carrera
+nombra siempre dónde estás parado" dejó de observar `sin_renovacion` en 300 seeds × 45 splits (0
+hits) al remedir con el catálogo ya en 508 opciones — el stream se corrió. Instrumentado antes de
+tocar nada (regla de proceso 2): no es un hueco de contenido, el momento sigue vivo (5 hits en
+300×90, 2 en 1500×45) — necesita una combinación tardía en la carrera (contrato a un año +
+no-renovación) que 45 splits no alcanzan a cubrir con regularidad. Mismo patrón que D24: la vara
+del check era más corta que la carrera real. Subida 45 → 90 splits, ninguna constante tocada.
+
+**Verificación final** (Definición de terminado, `CLAUDE.md`):
+- `node src/dev/validate.js` completo: **185/185 OK, 0 FAIL, 0 SKIP** al cierre de 13d (antes de
+  agregar el check T10 de 13e); T10 verificado por separado en rojo (umbral bajado a 2%, marca 5
+  celdas reales) y en verde al 25%. **Reconfirmado con la suite completa una segunda vez sobre el
+  HEAD final (13e con T10 ya adentro): 186/186 OK, 0 FAIL, 0 SKIP.**
+- `node src/dev/simulate.js 1000`: **0 crashes**.
+- Determinismo: `simulate.js 1 60 4242` corrido dos veces, salida **idéntica**.
+- `node src/dev/cobertura.js --huecos`: **sin huecos**, catálogo **226→246 eventos, 442→508
+  opciones** (objetivo 150, superado 3,4×).
+- `npm start` levantado y verificado por HTTP (200, `<title>` correcto) — la extensión de
+  Chrome no estaba disponible en esta sesión para un playthrough visual propio, así que la
+  verificación de pantalla real (regla de proceso 12) queda para el usuario, con el servidor ya
+  corriendo en `localhost:8000`.
+
 ### 2026-09-15 — Fase D cerrada: D.1+D.3 por Grok, D.2 por Gemini, revisados por un tercer agente
 
 Cierra la fase D (`PLAN.md`): los tres campos que el motor declaraba y ningún sistema escribía
