@@ -426,7 +426,16 @@ entero.
 
 ## 9. Cómo termina
 
-El retiro llega por edad, por burnout, por lesión, o porque lo elegís vos.
+> **Corregido en la fase 13** (2026-09-19): esta línea listaba "por edad" primero, como si
+> compitiera en pie de igualdad con las demás causas — pero §12.4 documenta que **"el declive casi
+> no es biológico"** y que la causa modal real es que no te renuevan (10a: "te retirás cuando el
+> mercado deja de llamarte"). Esta sección nunca lo decía. La edad sigue existiendo como un límite
+> duro (la "línea Faker", antiloop), pero es el último recurso, no el motivo típico.
+
+El retiro llega, sobre todo, porque el mercado deja de llamarte: te quedás sin equipo y sin
+ofertas, o te avisan que no te renuevan. Se suma que lo elijas vos, el burnout o una lesión. Hay
+una edad límite dura como red de seguridad —nadie juega para siempre— pero rara vez es la que
+dispara la salida de una carrera real.
 
 La tarjeta final no elige un veredicto de una lista: lo **compone**. Arquetipo
 base, más un modificador, más un detalle único de esa partida. "El eterno

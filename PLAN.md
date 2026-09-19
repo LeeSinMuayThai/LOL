@@ -4658,12 +4658,20 @@ de splits sin evento < 25% en todos los contextos alcanzables.
 3. **Si el balance se sale de banda tras un cambio estructural, primero agregar contenido**, no
    tocar constantes. Y decir en `PROGRESO.md` cuándo se tunea y por qué.
 4. **Reportar los números medidos, no los esperados.** Incluidos los que empeoran.
-5. **Actualizar `CONCEPTO.md` cuando el código lo contradiga.** Pendientes: §2 y §10 (fase 3) ·
-   §5 y §11 (fase 4) · §5 otra vez, el loop de split cambia de forma (fase 5) · §6, el meta cambia
-   de definición (fase 6) · §6 otra vez, contratos (fase 9) · §8 (fase 1) · §1 y §11, duración de
-   la partida (fase 8) · §6 otra vez, se agrega ARRAIGO (fase 8). ~~§2 otra vez, se borran los
-   relojes (fase 10)~~ — **cerrado en 13e** (D43): el diagrama de §2 ya no describe un reloj de
-   edad fijo para declive/retiro.
+5. **Actualizar `CONCEPTO.md` cuando el código lo contradiga.**
+   ~~Pendientes: §2 y §10 (fase 3) · §5 y §11 (fase 4) · §5 otra vez, el loop de split cambia de
+   forma (fase 5) · §6, el meta cambia de definición (fase 6) · §6 otra vez, contratos (fase 9) ·
+   §8 (fase 1) · §1 y §11, duración de la partida (fase 8) · §6 otra vez, se agrega ARRAIGO
+   (fase 8) · §2 otra vez, se borran los relojes (fase 10)~~ — **auditados todos el 2026-09-19
+   (13e): ya estaban resueltos.** `CONCEPTO.md` sí se había venido actualizando en el camino (la
+   última edición databa de la fase 9R5d, posterior a las fases 3-9 que esta lista cita) — lo que
+   nunca pasó fue tachar la lista. Verificado línea por línea contra el documento real: §5/§6 ya
+   describen Fearless/temporada regular/meta con nombre/ARRAIGO/contratos tal como están
+   implementados hoy, §10 ya usa CBLOL (no LAS/LLA), §1/§11 ya dicen "25-40 min". El reloj de
+   declive/retiro de §2 se cerró en la primera pasada de 13e (D43, más arriba). Único hallazgo
+   nuevo en esta auditoría, corregido en el mismo commit: **§9** ("Cómo termina") seguía listando
+   "por edad" como causa de retiro en pie de igualdad con las demás, sin mencionar la causa modal
+   real (el mercado deja de llamarte, §12.4) — reescrito.
 6. Cada fase **activa sus momentos pendientes** en `data/contextos.js` y lo verifica con
    `cobertura.js`.
 7. **Al escribir un check nuevo, verificar que falla cuando debe** (trampa T5: un check que
