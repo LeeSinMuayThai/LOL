@@ -3,27 +3,34 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LOL Career Simulator</title>
-    <meta name="description" content="Simulá la carrera de un jugador profesional de League of Legends, de los 15 años al retiro: elegís tu línea y tus mains, y cada decisión — soloQ, el mercado, el draft Fearless — deja una marca real en cómo termina la historia." />
+    <title>Un Split Más</title>
+    <meta name="description" content="Un Split Más: simulá la carrera de un jugador profesional de League of Legends, de los 15 años al retiro. Elegís tu línea y tus mains, y cada decisión — soloQ, el mercado, el draft Fearless — deja una marca real en cómo termina la historia." />
 
-    <!-- Fase T8 (P.4): Open Graph + Twitter Card. Sin imagen propia
-         todavía — generarla a mano (1200×630, la misma medida que el
-         canvas de `exportar.js`) queda pendiente; no hay forma de
-         producir un archivo de imagen real en este entorno sin tocar el
-         controlador de producción solo para exponer estado a una captura
-         automatizada, y el plan pide autoría a mano, no un headless en
-         el build. Documentado en PLAN.md/PROGRESO.md, no silenciado. -->
+    <!-- Fase 13e (P.4): el nombre del juego, decidido (venía diferido desde
+         T.2). "Un Split Más" sale del vocabulario del juego mismo — el
+         split es la unidad de tiempo de toda la partida (PLAN.md, "El
+         compás") — y de la sensación central que persigue todo el diseño
+         (CLAUDE.md: "breve, profunda y rejugable"). Open Graph + Twitter
+         Card con imagen propia: `assets/og-image.svg` (fuente, autoría a
+         mano) rasterizado a `assets/og-image.png` (1200×630, la misma
+         medida que el canvas de `exportar.js`) con ImageMagick/librsvg —
+         no un headless en el build, como pedía el plan. -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="LOL Career Simulator" />
-    <meta property="og:description" content="Simulá la carrera de un jugador profesional de League of Legends, de los 15 años al retiro." />
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="LOL Career Simulator" />
-    <meta name="twitter:description" content="Simulá la carrera de un jugador profesional de League of Legends, de los 15 años al retiro." />
+    <meta property="og:title" content="Un Split Más — simulador de carrera de League of Legends" />
+    <meta property="og:description" content="De los 15 años al retiro. Cada decisión deja una marca real en cómo termina tu historia." />
+    <meta property="og:image" content="./assets/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Un Split Más — simulador de carrera de League of Legends" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Un Split Más — simulador de carrera de League of Legends" />
+    <meta name="twitter:description" content="De los 15 años al retiro. Cada decisión deja una marca real en cómo termina tu historia." />
+    <meta name="twitter:image" content="./assets/og-image.png" />
 
     <!-- El favicon: el mismo monograma cyan-sobre-negro del topbar, como
          SVG inline — cero archivo binario nuevo, coherente con "cero
          dependencias" del proyecto. -->
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='2' fill='%23030407'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='15' font-weight='700' fill='%232ee8ff' text-anchor='middle'%3ELC%3C/text%3E%3C/svg%3E" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='2' fill='%23030407'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='14' font-weight='700' fill='%232ee8ff' text-anchor='middle'%3ES%2B%3C/text%3E%3C/svg%3E" />
 
     <!-- El sistema de diseño (fase T / T0). Hasta acá las 773 líneas de CSS
          vivían en un <style> acá adentro, sin una sola custom property. -->
@@ -50,8 +57,8 @@
       <header class="topbar">
         <div class="topbar-live"><span class="topbar-live-punto"></span>LIVE</div>
         <div class="topbar-lockup">
-          <span class="topbar-monograma">LC</span>
-          <span class="topbar-nombre">LoL Career Simulator</span>
+          <span class="topbar-monograma">S+</span>
+          <span class="topbar-nombre">Un Split Más</span>
         </div>
         <div class="topbar-estado" id="topbarEstado"></div>
         <div class="topbar-pips" id="topbarPips" hidden></div>
@@ -71,7 +78,7 @@
 
         <div class="escenario" id="escenario">
           <div id="setup" class="panel">
-            <h1 class="solo-lectores">LoL Career Simulator</h1>
+            <h1 class="solo-lectores">Un Split Más</h1>
             <p class="subtitle">Elegís tu línea y tus mains. El resto de la carrera sale de ahí.</p>
 
             <div class="paso">

@@ -34,6 +34,45 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-09-19 — Fase P.4 cerrada: el juego se llama "Un Split Más", y tiene og:image propia
+
+Con la fase 13 cerrada, `PLAN.md` solo tenía un pendiente no-manual: P.4 ("La página como página"),
+diferido desde T.2. Dos decisiones que venían dando vueltas desde entonces, resueltas:
+
+**El nombre.** "Un Split Más" — sale del vocabulario del juego mismo (el split es la unidad de
+tiempo de toda la partida) y de la sensación central que persigue el diseño entero (`CLAUDE.md`:
+"breve, profunda y rejugable", el impulso de "uno más"). Propagado a los 6 lugares donde vivía el
+placeholder `LOL Career Simulator`/`LC`: `<title>`, `og:title`/`twitter:title`, el lockup del
+topbar, el `<h1>` de accesibilidad, el label de la tarjeta final (`exportar.js`, "● LIVE · ...") y
+`README.md`. Monograma nuevo: `S+` (Split, "uno más") en vez de `LC`, favicon incluido.
+
+**La imagen de Open Graph.** Autoría a mano, sin headless en el build (como pedía el plan):
+`assets/og-image.svg`, en el mismo lenguaje visual que la tarjeta de fin de carrera de
+`exportar.js` (banda superior cyan, marco, monograma, grilla de fondo, los mismos tokens de color)
+— rasterizada a `assets/og-image.png` (1200×630) con `magick -background none og-image.svg -resize
+1200x630 og-image.png` (ImageMagick + librsvg, ya instalado en la máquina). El texto usa las
+fuentes del sistema que ya eran el fallback declarado de `--font-display`
+(`Bahnschrift SemiBold Condensed`) y `Segoe UI`, así que el render sale fiel a la identidad sin
+necesitar las webfonts del juego. Único ajuste tras la primera pasada: el glifo "∞" (para "splits
+por carrera") no existía en la fuente y rasterizaba como tofu — reemplazado por el dato real
+("3 splits/año", que sí es una constante del juego) en vez de forzar el símbolo.
+
+**`src/dev/build.js`**: `A_COPIAR` suma `assets/og-image.png` puntual (no el `.svg` de autoría, que
+no es algo que el navegador necesite). Check nuevo, `META_IMAGEN`: `<meta
+property="og:image"|name="twitter:image" content="...">` resuelve con capitalización exacta en un
+filesystem case-sensitive, mismo criterio que ya existía para `<link href>` (P.7) — el mismo
+agujero de siempre (Windows no distingue mayúsculas, el host Linux sí) pero para la imagen social,
+que hasta ahora ningún check cubría. Verificado en rojo (renombrando la ruta a mayúsculas, el build
+lo cazó) y en verde con la ruta real. Peso de `dist/`: 1482 → **1636 KB** (techo 1700 KB).
+
+`PLAN.md` §P.4 y la tabla de Estado (fase P) actualizadas: de la fase P solo queda el paso manual
+del usuario (conectar la cuenta del host) y P.8 (verificación en la URL publicada, que depende de
+ese paso).
+
+**Verificación**: `validate.js --rapido` 0 FAIL · `npm run build` OK (1636 KB, determinismo
+12×30 confirmado src vs dist) · servidor local reiniciado y confirmado sirviendo el `<title>`
+nuevo por HTTP.
+
 ### 2026-09-18 — Fase 13 cerrada: los 8 puntos de §13.1 + el check T10 que faltaba
 
 Cierra `PLAN.md` fase 13 (contenido a escala), la última fase de contenido que quedaba abierta.

@@ -33,7 +33,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **10** | El final: retiro emergente + la tarjeta de legado | ✅ **10a** (el retiro real, ver §10.1) · **10b** ya estaba cerrada desde 9R5b · **10c** (lesiones + servicio militar, ver §10.4) — cierra la fase. **10d** (calibrar) no hizo falta como commit aparte: los números de 10a/10c ya caen en banda a la primera medición |
 | **11** | El año: calendario, la nota de la temporada, el archirrival | ✅ **cerrada** (§11.1+§11.2, cierra D8). El archirrival corre su carrera (contador en la ficha) y el cierre de edad tiene nota (0-10), titular por peso emocional (10 tipos + racha para condiciones sostenidas) y 6 viñetas fijas, reemplazando el diff plano de antes. Ver `PROGRESO.md` |
 | **12** | La jerarquía de la decisión: categorías, rareza, consecuencia previa, el dado | ✅ **cerrada** (12a→12f). **12a** (`validate.js --rapido/--completo`, cierra D32) · **12b** (`categoria` en los 220 eventos + `formatoUi.js` + check) · **12c** (`peso: 'ambiente'` + tarjeta compacta) · **12d** (`core/previa.js`: previa, riesgo, gate + corrección de §12.3) · **12e** (`core/rareza.js`: rareza común/rara en las decisiones de mejora + el dado nombra el eje) · **12f** (bracket siempre visible, minijuego con identidad por competición + dificultad por ronda, camino de serie persistido en `registro.internacionales`) |
-| **P** | Publicar: build, guardado en el navegador, seed en la URL, el repo y el host | 🔶 **P.2/P.3/P.5 ✅ (fase T8, 2026-09-04)** — el guardado, la seed en la URL y el repo (remote, `README.md`, `LICENSE`, descargo de fan) ya existen · **P.7/P.10 ✅**. **P.6 casi ✅ (2026-09-15)**: `origin/master` mergeado y al día (`45fb5d6`), techo de `dist/` re-medido (1482 KB) y convertido en check duro (1700 KB); `dist/` de hoy entregado listo para arrastrar. **Conectar la cuenta del host** (Cloudflare Pages/Netlify) es del usuario, no algo para hacer de oficio — queda como el único paso manual de P.6. **Queda**: ese paso manual, **P.8** (verificación en la URL publicada una vez conectado), el `og:image` propio y el `<title>` real del juego (P.4, diferido en T.2) |
+| **P** | Publicar: build, guardado en el navegador, seed en la URL, el repo y el host | 🔶 **P.2/P.3/P.4/P.5 ✅** — el guardado, la seed en la URL, el repo y la página como página (nombre del juego + `og:image` propia, cerrado 2026-09-19) ya existen · **P.7/P.10 ✅**. **P.6 casi ✅ (2026-09-15)**: `origin/master` mergeado y al día, techo de `dist/` re-medido (1636 KB con el `og:image` nuevo) y convertido en check duro (1700 KB). **Conectar la cuenta del host** (Cloudflare Pages/Netlify) es del usuario, no algo para hacer de oficio — queda como el único paso manual de todo el proyecto. **Queda**: ese paso manual y **P.8** (verificación en la URL publicada una vez conectado) |
 | **D** | Los campos que la ficha promete y el motor no escribe: `ultimo_ano`/`sin_renovacion` (D30), `registro.picos.rankedPuntos` (D40) y `career.liga` sin limpiar al quedar libre (D42) | ✅ **cerrada (2026-09-15)**: D.1+D.3 por Grok, D.2 por Gemini, en worktrees paralelos, auditados por un tercer agente antes del merge — ver nota de la fase para el detalle del proceso. Los 5 checks en verde; el T1 declarado no llegó a ocurrir (huella idéntica en 40 seeds) |
 | **13** | Contenido a escala | ✅ **cerrada (2026-09-18, 13a→13e)**. Los 8 puntos de §13.1 resueltos: el hueco de cobertura, los 3 momentos `pendiente` obsoletos activados (+ `MOMENTOS` reordenada con check nuevo), D11 (rutinas por tier), servicio militar como bisagra alcanzable, declive con contenido propio (`declive.json`), D34 (`tier3.json`, 9 eventos), D17 (`latam.json`, narrativo), D14 (rango 2-4 opciones) y el check T10 que faltaba. Catálogo: 226→246 eventos, 442→**508 opciones**. `cobertura.js --huecos` vacío. Ejecutada por esta sesión sin delegar (excepción puntual, decisión del usuario) |
 
@@ -4145,17 +4145,30 @@ real y preexistente en `server.js`: `req.url === '/'` se comparaba contra el que
 pegado, así que `/?seed=N` nunca calzaba con `'/'` y cada visita con seed caía derecho al 404 — el
 link que arma T7 nunca había funcionado. Corregido de paso. Detalle en §T8.
 
-## P.4 — La página como página 🔶
+## P.4 — La página como página ✅ (2026-09-19)
 
 Lo que T8 cerró: `<meta name="description">`, Open Graph + Twitter card (`og:title`,
 `og:description`), favicon (SVG inline, el monograma cyan del topbar — cero archivo binario nuevo).
 
-**Sigue faltando, declarado y no silenciado en T8:**
-- **`og:image` propia** — no hay forma en este entorno de generar un archivo de imagen real sin
-  tocar el controlador de producción solo para exponerle `estado`/`modulos` a una captura
-  automatizada, y el plan pide autoría a mano, no un headless en el build.
-- **El `<title>`** sigue siendo el placeholder `LOL Career Simulator` — nombrar el juego se difirió
-  explícitamente en T.2 y sigue sin decidirse.
+**Los dos pendientes de T8, cerrados:**
+- **El nombre: "Un Split Más".** Diferido explícitamente desde T.2. Sale del vocabulario del
+  juego mismo (el split es la unidad de tiempo de toda la partida, "El compás", más arriba) y de la
+  sensación central que persigue todo el diseño (`CLAUDE.md`: "breve, profunda y rejugable" — el
+  impulso de jugar "uno más"). Propagado a los 6 lugares donde vivía el placeholder: `<title>`,
+  `og:title`/`twitter:title`, el lockup del topbar (`index.html`), el `<h1>` de accesibilidad, el
+  label de la tarjeta final (`exportar.js`) y `README.md`. Monograma nuevo, `S+` (Split, "uno más")
+  en vez de `LC` (`LoL Career`) — mismo tratamiento visual, favicon incluido.
+- **`og:image` propia.** Autoría a mano, como pedía el plan (nada de headless en el build):
+  `assets/og-image.svg` (fuente, mismo lenguaje visual que la tarjeta de fin de carrera de
+  `exportar.js` — banda superior, marco, monograma, grilla) rasterizado a `assets/og-image.png`
+  (1200×630) con ImageMagick + librsvg (`magick -background none og-image.svg -resize 1200x630
+  og-image.png`, ya instalado en esta máquina), usando las fuentes del sistema que ya son el
+  fallback declarado de `--font-display` (Bahnschrift SemiBold Condensed) — así que el render sin
+  las webfonts del juego igual sale fiel a la identidad. `src/dev/build.js` copia el PNG puntual
+  (no el `.svg` de autoría) a `dist/assets/`, y un check nuevo (`META_IMAGEN`) verifica que
+  `og:image`/`twitter:image` resuelvan con capitalización exacta, igual que ya hacía con `<link
+  href>` — verificado en rojo primero (renombrando la ruta a mayúsculas) y en verde después. Peso
+  de `dist/`: 1482 → **1636 KB** (techo 1700 KB, con margen).
 
 ## P.5 — El repo ✅ (fase T8, 2026-09-04) — con un hallazgo nuevo
 
@@ -4212,7 +4225,9 @@ no da.
 
 Verifica: cada import relativo resuelve con la capitalización exacta (Windows no distingue, el host
 Linux sí) · no quedó ningún import attribute sin reescribir · no hay llamadas al azar del navegador
-· ningún archivo empieza con `_` (Jekyll los ignora) · todo `.json` parsea.
+· ningún archivo empieza con `_` (Jekyll los ignora) · todo `.json` parsea · (13e/P.4) `<meta
+og:image|twitter:image content>` resuelve con la misma capitalización exacta, mismo criterio que
+`<link href>`.
 
 ~~Queda pendiente de 9Ed extender `guards.js` a `.html`~~ — hecho (commit `fase 9Ec+9Ed`): el
 guard suma `.html` y recorre el primer nivel de la raíz del repo, así que `verificarSinMathRandom`

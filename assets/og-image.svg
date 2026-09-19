@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!--
+    Fuente de la imagen de Open Graph (P.4, PLAN.md). Autoría a mano, no un
+    headless en el build: los mismos tokens de color que src/ui/estilos/
+    tokens.css, y el mismo lenguaje visual que src/ui/exportar.js (la
+    tarjeta de fin de carrera) — banda superior + marco + monograma + grilla
+    de fondo. Rasterizada a og-image.png (1200x630) con ImageMagick/librsvg.
+    Ver src/dev/build.js: si esta fuente cambia, correr el mismo comando
+    documentado ahí para regenerar el PNG.
+  -->
+  <defs>
+    <radialGradient id="vineta" cx="50%" cy="-8%" r="85%">
+      <stop offset="0%" stop-color="#030407" stop-opacity="0" />
+      <stop offset="100%" stop-color="#030407" stop-opacity="1" />
+    </radialGradient>
+    <radialGradient id="horizonte" cx="20%" cy="38%" r="55%">
+      <stop offset="0%" stop-color="#2ee8ff" stop-opacity="0.16" />
+      <stop offset="100%" stop-color="#2ee8ff" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Fondo -->
+  <rect width="1200" height="630" fill="#030407" />
+
+  <!-- Grilla, igual que exportar.js (cada 64px, casi invisible) -->
+  <g stroke="rgba(210,222,236,0.05)" stroke-width="1">
+    <path d="M64,0 V630 M128,0 V630 M192,0 V630 M256,0 V630 M320,0 V630 M384,0 V630 M448,0 V630 M512,0 V630 M576,0 V630 M640,0 V630 M704,0 V630 M768,0 V630 M832,0 V630 M896,0 V630 M960,0 V630 M1024,0 V630 M1088,0 V630 M1152,0 V630" />
+    <path d="M0,64 H1200 M0,128 H1200 M0,192 H1200 M0,256 H1200 M0,320 H1200 M0,384 H1200 M0,448 H1200 M0,512 H1200 M0,576 H1200" />
+  </g>
+
+  <rect width="1200" height="630" fill="url(#horizonte)" />
+  <rect width="1200" height="630" fill="url(#vineta)" />
+
+  <!-- La banda superior + el marco, como en la tarjeta final -->
+  <rect x="0" y="0" width="1200" height="6" fill="#2ee8ff" />
+  <rect x="24" y="24" width="1152" height="582" fill="none" stroke="#2ee8ff" stroke-width="2" />
+
+  <!-- El monograma: mismo corte de esquina que .topbar-monograma, a escala -->
+  <polygon points="60,56 110,56 124,70 124,120 74,120 60,106"
+           fill="#05060a" stroke="#d5e4f4" stroke-opacity="0.7" stroke-width="1.5" />
+  <text x="92" y="98" font-family="Bahnschrift SemiBold Condensed, Bahnschrift, Arial Narrow, sans-serif"
+        font-size="30" font-weight="700" fill="#2ee8ff" text-anchor="middle">S+</text>
+
+  <!-- El eyebrow, mismo formato que el label "LIVE" de exportar.js -->
+  <circle cx="146" cy="80" r="5" fill="#2ee8ff" />
+  <text x="160" y="88" font-family="Bahnschrift SemiBold Condensed, Bahnschrift, Arial Narrow, sans-serif"
+        font-size="22" font-weight="700" letter-spacing="1" fill="#2ee8ff">LIVE · SIMULADOR DE CARRERA LOL</text>
+
+  <!-- El título -->
+  <text x="58" y="290" font-family="Bahnschrift SemiBold Condensed, Bahnschrift, Arial Narrow, sans-serif"
+        font-size="112" font-weight="700" letter-spacing="1">
+    <tspan fill="#eef3f8">UN SPLIT </tspan><tspan fill="#2ee8ff">MÁS</tspan>
+  </text>
+
+  <!-- El subtítulo -->
+  <text x="60" y="342" font-family="Segoe UI, Inter, sans-serif" font-size="27" fill="#9aa8b8">
+    De los 15 años al retiro. Cada decisión —soloQ, el mercado, el draft
+  </text>
+  <text x="60" y="378" font-family="Segoe UI, Inter, sans-serif" font-size="27" fill="#9aa8b8">
+    Fearless— deja una marca real en cómo termina tu historia.
+  </text>
+
+  <!-- Las celdas, mismo formato que los totales de la tarjeta final -->
+  <g font-family="Bahnschrift SemiBold Condensed, Bahnschrift, Arial Narrow, sans-serif">
+    <text x="60"  y="470" font-size="13" font-weight="600" letter-spacing="1" fill="#5e6a78">AÑOS</text>
+    <text x="60"  y="506" font-size="34" font-weight="700" fill="#eef3f8">15—40</text>
+
+    <text x="230" y="470" font-size="13" font-weight="600" letter-spacing="1" fill="#5e6a78">SPLITS/AÑO</text>
+    <text x="230" y="506" font-size="34" font-weight="700" fill="#eef3f8">3</text>
+
+    <text x="400" y="470" font-size="13" font-weight="600" letter-spacing="1" fill="#5e6a78">LIGAS 2026</text>
+    <text x="400" y="506" font-size="34" font-weight="700" fill="#eef3f8">6</text>
+
+    <text x="570" y="470" font-size="13" font-weight="600" letter-spacing="1" fill="#5e6a78">ROLES</text>
+    <text x="570" y="506" font-size="34" font-weight="700" fill="#eef3f8">5</text>
+
+    <text x="740" y="470" font-size="13" font-weight="600" letter-spacing="1" fill="#5e6a78">DECISIONES</text>
+    <text x="740" y="506" font-size="34" font-weight="700" fill="#eef3f8">500+</text>
+  </g>
+
+  <!-- El pie: el descargo, chico y honesto -->
+  <text x="60" y="580" font-family="Segoe UI, Inter, sans-serif" font-size="16" fill="#5e6a78">
+    Proyecto de fan, sin vínculo con Riot Games — League of Legends es una marca registrada de Riot Games, Inc.
+  </text>
+</svg>

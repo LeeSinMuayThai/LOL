@@ -34,7 +34,11 @@ const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 const DIST = path.join(RAIZ, 'dist');
 
 // Lo que el navegador carga. `src/dev` y `server.js` quedan afuera a propósito.
-const A_COPIAR = ['index.html', 'src/core', 'src/data', 'src/systems', 'src/ui'];
+// `assets/og-image.png` es el único archivo binario del bundle (la imagen de
+// Open Graph, P.4) — se copia el PNG puntual, no el directorio `assets/`
+// entero: la fuente `og-image.svg` es material de autoría, no algo que el
+// navegador necesite servido.
+const A_COPIAR = ['index.html', 'src/core', 'src/data', 'src/systems', 'src/ui', 'assets/og-image.png'];
 
 const SEEDS_DE_VERIFICACION = 12;
 const SPLITS_DE_VERIFICACION = 30;
@@ -153,6 +157,11 @@ const ESPECIFICADOR_RELATIVO = /(?:^|\n)\s*(?:import|export)[^'"\n]*from\s*['"](
 // capitalización que sea en Windows y romper 404 en un host case-sensitive.
 const URL_CSS = /url\(\s*(['"]?)([^'")]+)\1\s*\)/g;
 const LINK_HREF = /<link\b[^>]*\bhref\s*=\s*(['"])([^'"]+)\1/gi;
+// Fase 13e (P.4): `og:image`/`twitter:image` referencian un archivo por
+// `<meta content="...">`, no por `<link href>` — el mismo agujero de P.7
+// pero para la imagen social. Acotado a esos dos `property`/`name` (no
+// cualquier `<meta content>`: `theme-color`, `viewport`, etc. no son rutas).
+const META_IMAGEN = /<meta\b[^>]*\b(?:property|name)\s*=\s*['"](?:og:image|twitter:image)['"][^>]*\bcontent\s*=\s*(['"])([^'"]+)\1/gi;
 
 function esRutaLocal(especificador) {
   // `#`/`%23` es un fragmento SVG (`url(#n)` de un filtro), no un archivo
@@ -203,6 +212,18 @@ function comprobarDist() {
       const destino = path.resolve(path.dirname(archivo), especificador);
       if (!existeConCapitalizacionExacta(destino)) {
         problemas.push(`${relativo}: <link href="${especificador}"> no resuelve en un filesystem case-sensitive`);
+      }
+    }
+
+    // `<meta property="og:image"|"twitter:image" content="...">` — la imagen
+    // social (P.4). Mismo chequeo: sin esto, un typo en la ruta no rompe el
+    // juego pero sí deja el link compartido sin preview, en silencio.
+    for (const [, , especificador] of texto.matchAll(META_IMAGEN)) {
+      if (!esRutaLocal(especificador)) continue;
+      imports += 1;
+      const destino = path.resolve(path.dirname(archivo), especificador);
+      if (!existeConCapitalizacionExacta(destino)) {
+        problemas.push(`${relativo}: <meta ... content="${especificador}"> (imagen social) no resuelve en un filesystem case-sensitive`);
       }
     }
   }

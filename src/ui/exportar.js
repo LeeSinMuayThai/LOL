@@ -94,7 +94,7 @@ export async function dibujarTarjeta(state, modulos) {
   ctx.fillStyle = leerToken('--live');
   ctx.font = '700 22px "Barlow Condensed", sans-serif';
   ctx.textBaseline = 'alphabetic';
-  ctx.fillText('● LIVE · LOL CAREER SIMULATOR', 60, 76);
+  ctx.fillText('● LIVE · UN SPLIT MÁS', 60, 76);
 
   // --- Identidad ---
   ctx.fillStyle = leerToken('--ink');
@@ -179,7 +179,7 @@ export async function descargarTarjeta(state, modulos) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `lolcs-${(state.player.name || 'carrera').replace(/\s+/g, '_')}.png`;
+  a.download = `un-split-mas-${(state.player.name || 'carrera').replace(/\s+/g, '_')}.png`;
   a.click();
   URL.revokeObjectURL(url);
 }
