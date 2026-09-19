@@ -4647,6 +4647,11 @@ de offseason deberían ser la misma decisión cuando ambas caen, o alternarse.
 `contexto` estrechando, eso va a pasar más hasta que exista el contenido. **Medirlo**: fracción
 de splits sin evento < 25% en todos los contextos alcanzables.
 
+**Cerrada como check real en 13e** (`validate.js`, "T10: ninguna celda alcanzable pasa el 25% de
+splits sin evento"): `events.js` exporta `SPLIT_SIN_EVENTO_MSG` y el check mide su frecuencia real
+sobre los logs de `avanzarSplitAuto`, por celda momento×ventana, con muestra mínima de 30. Medido
+con el catálogo de 517 opciones: peor celda real 3,7%.
+
 ---
 
 # Reglas de proceso (no negociables)
