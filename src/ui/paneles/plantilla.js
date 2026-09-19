@@ -1,5 +1,6 @@
 import { marcaRol } from '../components/iconos.js';
 import { fichaCompleta } from '../../core/ficha.js';
+import { reconciliar, reemplazarEnElLugar } from '../core/reconciliar.js';
 
 // El panel de Plantilla (fase T5). Fuente: `career.companeros` (4 nombres
 // con rol y nivel, generados al fichar — `systems/roster.js`) y
@@ -29,6 +30,9 @@ function filaDePlantilla({ handle, role, detalle, nivel, propio }) {
   return fila;
 }
 
+// Fase V, V0b: esqueleto (título + lista + barra de sinergia) armado una
+// sola vez y cacheado en el propio nodo, para que `lista` sobreviva entre
+// renders y `reconciliar` tenga algo real que preservar.
 export function renderPlantilla(container, state, modulos) {
   const { companeros, sinergia } = state.career;
 
@@ -38,27 +42,50 @@ export function renderPlantilla(container, state, modulos) {
   }
 
   container.hidden = false;
-  container.replaceChildren();
 
-  const titulo = document.createElement('div');
-  titulo.className = 'panel-contexto-titulo';
-  titulo.textContent = 'Plantilla';
-  container.appendChild(titulo);
+  let refs = container.__plantillaRefs;
+  if (!refs) {
+    container.replaceChildren();
+    const titulo = document.createElement('div');
+    titulo.className = 'panel-contexto-titulo';
+    titulo.textContent = 'Plantilla';
 
-  const lista = document.createElement('div');
-  lista.className = 'plantilla-lista';
+    const lista = document.createElement('div');
+    lista.className = 'plantilla-lista';
+
+    const sinergiaWrap = document.createElement('div');
+    sinergiaWrap.className = 'panel-contexto-barra-wrap';
+    const sinergiaCabecera = document.createElement('div');
+    sinergiaCabecera.className = 'panel-contexto-barra-cabecera';
+    const sinergiaNombre = document.createElement('span');
+    sinergiaNombre.textContent = 'SINERGIA';
+    const sinergiaValor = document.createElement('span');
+    sinergiaCabecera.append(sinergiaNombre, sinergiaValor);
+
+    const pista = document.createElement('div');
+    pista.className = 'panel-contexto-barra-pista';
+    const relleno = document.createElement('div');
+    relleno.className = 'panel-contexto-barra-relleno';
+    pista.appendChild(relleno);
+    sinergiaWrap.append(sinergiaCabecera, pista);
+
+    container.append(titulo, lista, sinergiaWrap);
+    refs = { lista, sinergiaValor, relleno };
+    container.__plantillaRefs = refs;
+  }
 
   const ficha = fichaCompleta(state);
-  lista.appendChild(filaDePlantilla({
+  const items = [{
+    clave: state.player.name,
     handle: state.player.name,
     role: state.player.role,
     detalle: modulos.etiquetaRol(state.player.role),
     nivel: ficha.nivel,
     propio: true
-  }));
-
+  }];
   for (const companero of companeros) {
-    lista.appendChild(filaDePlantilla({
+    items.push({
+      clave: companero.handle,
       handle: companero.handle,
       role: companero.role,
       detalle: companero.edad != null
@@ -66,27 +93,17 @@ export function renderPlantilla(container, state, modulos) {
         : modulos.etiquetaRol(companero.role),
       nivel: companero.nivel,
       propio: false
-    }));
+    });
   }
-  container.appendChild(lista);
 
-  const sinergiaWrap = document.createElement('div');
-  sinergiaWrap.className = 'panel-contexto-barra-wrap';
-  const sinergiaCabecera = document.createElement('div');
-  sinergiaCabecera.className = 'panel-contexto-barra-cabecera';
-  const sinergiaNombre = document.createElement('span');
-  sinergiaNombre.textContent = 'SINERGIA';
-  const sinergiaValor = document.createElement('span');
-  sinergiaValor.textContent = String(Math.round(sinergia));
-  sinergiaCabecera.append(sinergiaNombre, sinergiaValor);
+  reconciliar(
+    refs.lista,
+    items,
+    (item) => item.clave,
+    filaDePlantilla,
+    (nodo, item) => reemplazarEnElLugar(nodo, filaDePlantilla(item))
+  );
 
-  const pista = document.createElement('div');
-  pista.className = 'panel-contexto-barra-pista';
-  const relleno = document.createElement('div');
-  relleno.className = 'panel-contexto-barra-relleno';
-  relleno.style.width = `${Math.max(0, Math.min(100, sinergia))}%`;
-  pista.appendChild(relleno);
-
-  sinergiaWrap.append(sinergiaCabecera, pista);
-  container.appendChild(sinergiaWrap);
+  refs.sinergiaValor.textContent = String(Math.round(sinergia));
+  refs.relleno.style.width = `${Math.max(0, Math.min(100, sinergia))}%`;
 }

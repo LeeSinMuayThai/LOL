@@ -92,6 +92,54 @@ dura de la fase ("esta subfase tiene que mover cero").
 plantilla/Top 5/mercado, commit aparte por diseño) o V1 (la capa de gráficos), a decidir con el
 usuario.
 
+### 2026-09-19 — FASE V, V0b: `reconciliar` conectado a las cinco listas de clave natural
+
+El commit aparte que V0 dejó anotado (`store`/`reconciliar`/`delta` existían pero nadie los llamaba
+fuera de sus propios checks). Sesión continuada tras el mismo par de decisiones del usuario (Claude
+implementa directamente, sin delegar); no hizo falta repreguntar alcance porque V0b ya estaba
+completamente especificada dentro de §V0 como su propio commit, no como una subfase nueva.
+
+Las cinco listas con clave natural del juego adoptaron `reconciliar`: `feed.js` (índice absoluto en
+`state.logs` — el array solo crece, `core/pipeline.js` lo confirma, así que el índice es una clave
+estable), `paneles/tabla.js` (`fila.org`), `paneles/plantilla.js` (`handle`), `paneles/topMundial.js`
+(`handle`) y `components/mercado.js` (`oferta.id`, la misma clave que ya resuelve `onElegir`).
+
+**El patrón que evitó reescribir cada `crear` a mano.** Vez de un `actualizar(nodo, item)` distinto
+por lista (riesgo de divergir del render de siempre, regla de proceso 2), `core/reconciliar.js` ganó
+`reemplazarEnElLugar(nodo, nodoFresco)`: arma el nodo con la misma función `crear` de siempre y lo
+injerta (clase, dataset, hijos) sobre el nodo cacheado, que es el que persiste. Las cinco listas
+comparten este único helper — cero diffing campo por campo escrito a mano.
+
+**El esqueleto necesitaba sobrevivir.** `tabla.js`/`plantilla.js`/`topMundial.js` reconstruían todo
+el panel (`container.replaceChildren()`) en cada render, título incluido — no había ningún nodo lista
+que `reconciliar` pudiera preservar. Ahora el esqueleto se arma una vez y se cachea en el propio nodo
+(`container.__xRefs`); de ahí en más solo se actualiza texto y se llama `reconciliar`. `feed.js` y
+`mercadoGrid` no lo necesitaron: ya eran contenedores persistentes pasados desde `app.js`/`screens`.
+
+**Un caso conocido, documentado en vez de forzado.** En `feed.js` la clave de un beat sigue al índice
+del último log incorporado. Cuando una narrativa suelta gana su primer técnico, la clave cambia (de
+"índice de la narrativa" a "índice del técnico") y el nodo se recrea — visualmente idéntico a lo de
+siempre, solo pierde identidad en esa transición puntual. No hay ninguna animación colgando de esa
+identidad todavía (V3 es quien le da uso real), así que se dejó anotado en el código en vez de
+complicar la clave para un caso sin consumidor.
+
+**Verificación.** `validate.js` completo: **189/189 OK, 0 FAIL** (sin checks nuevos — esta subfase no
+agrega guards, se apoya en los 3 que V0 ya dejó). `simulate.js 1500 60 todas`: **0 crashes** (motor
+no tocado, esperable). `build.js`: **1657 KB** (techo 1700 KB, margen 43 KB — D49 sigue abierta para
+V9). Determinismo: misma seed corrida dos veces da el mismo `state` serializado bit a bit, y anti-T1
+(40 seeds, `git archive HEAD` contra el árbol de V0 antes de este commit): **huella idéntica** — el
+motor no se tocó. Verificación real en navegador (Playwright + Chromium cacheado): llamadas directas
+a las 5 funciones de render con datos sintéticos/reales confirmando `nodo === nodo` tras un segundo
+render con datos distintos (incluida la fila propia de plantilla, para la que se tomó un `state` real
+recién guardado en `localStorage` por una carrera arrancada en el mismo script, en vez de adivinar a
+mano todos los campos que toca `fichaCompleta`); y una carrera real jugada un split con nodos
+marcados por una propiedad JS arbitraria, confirmando que sobreviven tras resolver una decisión
+(5/5 en Top Mundial; tabla/plantilla no aplicables en split 1, amateur sin equipo todavía). Cero
+errores de consola en ambas corridas.
+
+**Cierra V0b** (`PLAN.md` §V0b, checks en verde). Sigue V1 (la capa de gráficos SVG en
+`src/ui/graficos/`), a decidir con el usuario — necesita cargar la skill `dataviz` primero.
+
 ### 2026-09-19 — 13f: el catálogo de la cima que la fase 9Wb dejó prometido, sin reclamar
 
 Con la fase 13 y P.4 cerradas, y una auditoría completa de la tabla de deuda técnica y de

@@ -1,4 +1,5 @@
 import { crearOrgChip } from '../components/orgChip.js';
+import { reconciliar, reemplazarEnElLugar } from '../core/reconciliar.js';
 
 // El panel del Top 5 mundial (fase 9Wc, regla de proceso 12: un sistema que
 // el jugador no puede ver no está terminado). Fuente: `mundo.topMundial`, que
@@ -12,6 +13,11 @@ import { crearOrgChip } from '../components/orgChip.js';
 // (`components/feed.js`).
 const VISIBLES = 5;
 
+// Fase V, V0b: esqueleto cacheado igual que tabla.js/plantilla.js. La fila
+// "vos" (fuera del Top 5) y la leyenda del pico son mutuamente excluyentes y
+// singulares, así que no pasan por `reconciliar` — se manejan como un único
+// nodo `extra` que se injerta con `reemplazarEnElLugar` sin importar cuál de
+// las dos formas tenía antes.
 export function renderTopMundial(container, state, modulos) {
   const top = state.mundo?.topMundial ?? [];
 
@@ -24,40 +30,57 @@ export function renderTopMundial(container, state, modulos) {
   const rankPico = state.career?.registro?.picos?.rankMundial ?? 0;
 
   container.hidden = false;
-  container.replaceChildren();
 
-  const titulo = document.createElement('div');
-  titulo.className = 'panel-contexto-titulo';
-  titulo.textContent = 'El mundo';
-  container.appendChild(titulo);
+  let refs = container.__topMundialRefs;
+  if (!refs) {
+    container.replaceChildren();
+    const titulo = document.createElement('div');
+    titulo.className = 'panel-contexto-titulo';
+    titulo.textContent = 'El mundo';
+    const lista = document.createElement('div');
+    lista.className = 'topmundial-lista';
+    container.append(titulo, lista);
+    refs = { lista, extra: null };
+    container.__topMundialRefs = refs;
+  }
 
-  const lista = document.createElement('div');
-  lista.className = 'topmundial-lista';
+  const visibles = top.slice(0, VISIBLES).map((fila, indice) => ({ ...fila, puesto: indice + 1 }));
+  reconciliar(
+    refs.lista,
+    visibles,
+    (item) => item.handle,
+    (item) => filaEl(item, item.puesto, modulos),
+    (nodo, item) => reemplazarEnElLugar(nodo, filaEl(item, item.puesto, modulos))
+  );
 
-  top.slice(0, VISIBLES).forEach((fila, indice) => {
-    lista.appendChild(filaEl(fila, indice + 1, modulos));
-  });
-  container.appendChild(lista);
-
-  // Estás rankeado pero fuera del Top 5 que se muestra: una fila al pie con
-  // tu puesto exacto, para no perderte de vista.
+  let nodoExtra = null;
   if (rankActual !== null && rankActual > VISIBLES) {
-    const vos = filaEl(
+    // Estás rankeado pero fuera del Top 5 que se muestra: una fila al pie
+    // con tu puesto exacto, para no perderte de vista.
+    nodoExtra = filaEl(
       { handle: state.player.name, org: state.career.currentOrg, rol: state.player.role, liga: state.career.liga, esJugador: true },
       rankActual,
       modulos
     );
-    vos.classList.add('topmundial-fila--pie');
-    container.appendChild(vos);
+    nodoExtra.classList.add('topmundial-fila--pie');
+  } else if (rankActual === null && rankPico > 0) {
+    // No estás en la lista ahora, pero alguna vez la tocaste: el pico se
+    // recuerda (es el gancho del que la fase 10 cuelga el retiro).
+    nodoExtra = document.createElement('div');
+    nodoExtra.className = 'panel-contexto-leyenda';
+    nodoExtra.textContent = `Tu pico: #${rankPico}`;
   }
 
-  // No estás en la lista ahora, pero alguna vez la tocaste: el pico se
-  // recuerda (es el gancho del que la fase 10 cuelga el retiro).
-  if (rankActual === null && rankPico > 0) {
-    const leyenda = document.createElement('div');
-    leyenda.className = 'panel-contexto-leyenda';
-    leyenda.textContent = `Tu pico: #${rankPico}`;
-    container.appendChild(leyenda);
+  if (nodoExtra) {
+    if (!refs.extra) {
+      refs.extra = nodoExtra;
+      container.appendChild(refs.extra);
+    } else {
+      reemplazarEnElLugar(refs.extra, nodoExtra);
+    }
+  } else if (refs.extra) {
+    refs.extra.remove();
+    refs.extra = null;
   }
 }
 

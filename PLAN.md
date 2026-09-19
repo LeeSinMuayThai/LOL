@@ -36,7 +36,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **P** | Publicar: build, guardado en el navegador, seed en la URL, el repo y el host | 🔶 **P.2/P.3/P.4/P.5 ✅** — el guardado, la seed en la URL, el repo y la página como página (nombre del juego + `og:image` propia, cerrado 2026-09-19) ya existen · **P.7/P.10 ✅**. **P.6 casi ✅ (2026-09-15)**: `origin/master` mergeado y al día, techo de `dist/` re-medido (1636 KB con el `og:image` nuevo) y convertido en check duro (1700 KB). **Conectar la cuenta del host** (Cloudflare Pages/Netlify) es del usuario, no algo para hacer de oficio — queda como el único paso manual de todo el proyecto. **Queda**: ese paso manual y **P.8** (verificación en la URL publicada una vez conectado) |
 | **D** | Los campos que la ficha promete y el motor no escribe: `ultimo_ano`/`sin_renovacion` (D30), `registro.picos.rankedPuntos` (D40) y `career.liga` sin limpiar al quedar libre (D42) | ✅ **cerrada (2026-09-15)**: D.1+D.3 por Grok, D.2 por Gemini, en worktrees paralelos, auditados por un tercer agente antes del merge — ver nota de la fase para el detalle del proceso. Los 5 checks en verde; el T1 declarado no llegó a ocurrir (huella idéntica en 40 seeds) |
 | **13** | Contenido a escala | ✅ **cerrada (2026-09-18, 13a→13e)**. Los 8 puntos de §13.1 resueltos: el hueco de cobertura, los 3 momentos `pendiente` obsoletos activados (+ `MOMENTOS` reordenada con check nuevo), D11 (rutinas por tier), servicio militar como bisagra alcanzable, declive con contenido propio (`declive.json`), D34 (`tier3.json`, 9 eventos), D17 (`latam.json`, narrativo), D14 (rango 2-4 opciones) y el check T10 que faltaba. Catálogo: 226→246 eventos, 442→**508 opciones**. `cobertura.js --huecos` vacío. Ejecutada por esta sesión sin delegar (excepción puntual, decisión del usuario) |
-| **V** | **Que la carrera se vea**: cero gráficos en todo el juego, la UI solo habla en presente, nada puede animarse entre estados. Sucede a la fase T y construye sobre su sistema de diseño (V0→V10, ver detalle abajo) | 🔶 **en curso**. **V0 ✅ (2026-09-19)**: el controlador vive en `src/ui/app.js` (710→194 líneas de `index.html`), `store.js`/`reconciliar.js`/`delta.js` nuevos (sin adoptar aún fuera de sus checks), la inversión `ficha.js → shell.js` resuelta, D45 cerrado de paso. `validate.js` 189/189, `simulate.js` 0 crashes, huella anti-T1 idéntica en 40 seeds, `dist/` 1653 KB. Ejecución directa por esta sesión sin delegar (decisión del usuario). **Queda**: V0b (adoptar `reconciliar`, commit aparte) y V1→V10 |
+| **V** | **Que la carrera se vea**: cero gráficos en todo el juego, la UI solo habla en presente, nada puede animarse entre estados. Sucede a la fase T y construye sobre su sistema de diseño (V0→V10, ver detalle abajo) | 🔶 **en curso**. **V0 ✅ (2026-09-19)**: el controlador vive en `src/ui/app.js` (710→194 líneas de `index.html`), `store.js`/`reconciliar.js`/`delta.js` nuevos, la inversión `ficha.js → shell.js` resuelta, D45 cerrado de paso. **V0b ✅ (2026-09-19)**: `reconciliar` adoptado en las 5 listas de clave natural (feed, tabla, plantilla, Top 5, mercado) vía el helper nuevo `reemplazarEnElLugar`. `validate.js` 189/189, `simulate.js` 0 crashes, huella anti-T1 idéntica en 40 seeds, `dist/` 1657 KB, verificado en navegador real (identidad de nodo confirmada en las 5 listas). Ejecución directa por esta sesión sin delegar (decisión del usuario). **Queda**: V1→V10 |
 
 > **Por qué estas tres fases se insertaron antes del mercado.** Jugando el juego con las cuatro
 > fases hechas aparecieron cuatro defectos medibles: la temporada regular se resuelve con una
@@ -4694,6 +4694,47 @@ se encontraron mirando lo que V0 tiene que tocar de todos modos):**
 - ✅ `verificarDocumentSoloEnUi` sigue en verde (nada de esto se filtró a `/core`).
 - ✅ Suite completa: `validate.js` **189/189 OK, 0 FAIL**. `simulate.js 1500 60 todas`: **0
   crashes** (4500 carreras, 3 estrategias). `build.js`: **1653 KB** (techo 1700, margen 47 KB).
+
+### V0b — Adoptar `reconciliar` en las cinco listas de clave natural ✅ (2026-09-19)
+
+El commit aparte que V0 dejó pendiente. `reconciliar`/`delta` existían pero no los llamaba nadie
+fuera de sus propios checks; V0b los conecta a las únicas cinco listas del juego con clave natural:
+`feed.js` (índice absoluto en `state.logs`, que solo crece — nunca se recorta ni reordena, así que
+es una clave estable), `paneles/tabla.js` (`fila.org`), `paneles/plantilla.js` (`handle`),
+`paneles/topMundial.js` (`handle`) y `components/mercado.js` (`oferta.id`, la misma clave que ya usa
+`onElegir`).
+
+**Cómo se evitó reescribir cada `crear` a mano.** En vez de escribir un `actualizar(nodo, item)`
+distinto por lista que mute cada campo (riesgo real de divergir del render de siempre — regla de
+proceso 2), `core/reconciliar.js` ganó un segundo export, `reemplazarEnElLugar(nodo, nodoFresco)`:
+arma el nodo con la MISMA función `crear` de siempre y lo injerta (clase, dataset, hijos) sobre el
+nodo cacheado. El nodo fresco es descartable; el cacheado es el que persiste. Las cinco listas
+comparten este único patrón.
+
+**El esqueleto tiene que sobrevivir para que haya algo que reconciliar.** `tabla.js`/`plantilla.js`/
+`topMundial.js` hacían `container.replaceChildren()` en cada render — el título y el `div.xxx-lista`
+se destruían junto con las filas. Ahora el esqueleto (título + lista, cacheados en el propio nodo
+vía `container.__xRefs`) se arma una sola vez; de ahí en más solo se actualiza texto y se llama
+`reconciliar` sobre la lista. `feed.js` y `mercadoGrid` no necesitaron esto: ya eran contenedores
+persistentes pasados desde afuera.
+
+**El caso conocido que no se fuerza.** En `feed.js`, la clave de un beat es el índice del último log
+que incorpora (narrativa o su técnico más reciente). Cuando una narrativa suelta gana su primer
+técnico, esa clave cambia (de "índice de la narrativa" a "índice del técnico") y el nodo se recrea
+en vez de mutarse — visualmente idéntico, pero sin identidad en esa transición puntual. Es la única
+excepción; se documentó en el código en vez de forzar una clave más compleja para un caso que hoy no
+tiene ninguna animación colgando (V3 es la que le va a dar uso real a esta identidad).
+
+**Verificación.** `validate.js` **189/189 OK, 0 FAIL**. `simulate.js 1500 60 todas`: **0 crashes**
+(motor no tocado). `build.js`: **1657 KB** (margen 43 KB, D49 sigue abierta para V9). Huella
+anti-T1 idéntica en 40 seeds + misma seed corrida dos veces (`state` bit a bit idéntico) — el motor
+no se tocó, esto era esperable. Verificación real en navegador (Playwright + Chromium cacheado,
+sin `chromium-cli`): (1) llamadas aisladas a las 5 funciones de render con datos sintéticos/reales
+confirmando `nodo === nodo` tras un segundo render con datos distintos, en las 5 listas; (2) una
+carrera real jugada un split, marcando nodos con una propiedad JS arbitraria (no un atributo DOM) y
+confirmando que sobrevive tras resolver una decisión — 5/5 en Top Mundial, feed acorde al caso
+conocido de arriba; tabla/plantilla no aplicables en split 1 (amateur, sin equipo todavía). Cero
+errores de consola en ambas corridas.
 
 ## V1 — La capa de gráficos *(`src/ui/graficos/`, inline SVG, cero deps)*
 

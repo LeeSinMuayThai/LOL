@@ -1,5 +1,6 @@
 import { tablaDePosiciones } from '../../core/temporada.js';
 import { crearOrgChip } from '../components/orgChip.js';
+import { reconciliar, reemplazarEnElLugar } from '../core/reconciliar.js';
 
 // El panel de Tabla (fase T5, PLAN.md "T5 — El riel de contexto").
 //
@@ -16,6 +17,34 @@ import { crearOrgChip } from '../components/orgChip.js';
 // actualizan cada fecha. Se deriva acá, en vivo, en vez de leer el campo
 // muerto. Cero motor: es la misma función que `systems/temporada.js` ya
 // usa para armar el texto del log de cada fecha.
+// Fase V, V0b: `reconciliar` solo tiene sentido si `lista` sobrevive entre
+// renders — antes `container.replaceChildren()` la destruía cada vez junto
+// con todo lo demás. El esqueleto (título + `lista`) se arma una sola vez y
+// se cachea en el propio nodo; de ahí en más solo se actualiza texto y filas.
+function crearFilaTabla(item) {
+  const filaEl = document.createElement('div');
+  filaEl.className = ['tabla-fila',
+    item.propia && 'tabla-fila--propia',
+    item.esCortePlayoffs && 'tabla-fila--corte-playoffs',
+    item.esCorteInternacional && 'tabla-fila--corte-internacional'
+  ].filter(Boolean).join(' ');
+
+  const puestoEl = document.createElement('span');
+  puestoEl.className = 'tabla-puesto';
+  puestoEl.textContent = String(item.puesto);
+
+  const orgEl = document.createElement('span');
+  orgEl.className = 'tabla-org';
+  orgEl.append(crearOrgChip(item.org, { size: 16 }), document.createTextNode(item.org));
+
+  const recordEl = document.createElement('span');
+  recordEl.className = 'tabla-record';
+  recordEl.textContent = `${item.ganados}-${item.perdidos}`;
+
+  filaEl.append(puestoEl, orgEl, recordEl);
+  return filaEl;
+}
+
 export function renderTabla(container, state) {
   const { temporada, currentOrg, liga } = state.career;
 
@@ -34,55 +63,55 @@ export function renderTabla(container, state) {
   const internacionales = ligaObj?.cuposInternacionales ?? 0;
 
   container.hidden = false;
-  container.replaceChildren();
 
-  const titulo = document.createElement('div');
-  titulo.className = 'panel-contexto-titulo';
+  let refs = container.__tablaRefs;
+  if (!refs) {
+    container.replaceChildren();
+    const titulo = document.createElement('div');
+    titulo.className = 'panel-contexto-titulo';
+    const lista = document.createElement('div');
+    lista.className = 'tabla-lista';
+    container.append(titulo, lista);
+    refs = { titulo, lista, leyenda: null };
+    container.__tablaRefs = refs;
+  }
+
   const jornada = temporada.calendario?.[temporada.indice]?.jornada;
   const ligaId = ligaObj?.id ?? liga;
-  titulo.textContent = Number.isFinite(jornada) ? `${ligaId} · J${jornada}` : (ligaId || 'Tabla');
-  container.appendChild(titulo);
+  refs.titulo.textContent = Number.isFinite(jornada) ? `${ligaId} · J${jornada}` : (ligaId || 'Tabla');
 
-  const lista = document.createElement('div');
-  lista.className = 'tabla-lista';
-
-  tabla.forEach((fila, indice) => {
+  const items = tabla.map((fila, indice) => {
     const puesto = indice + 1;
     const esCortePlayoffs = clasifican !== null && puesto === clasifican + 1;
-    const esCorteInternacional = internacionales > 0 && puesto === internacionales + 1 && !esCortePlayoffs;
-
-    const filaEl = document.createElement('div');
-    filaEl.className = ['tabla-fila',
-      fila.org === currentOrg && 'tabla-fila--propia',
-      esCortePlayoffs && 'tabla-fila--corte-playoffs',
-      esCorteInternacional && 'tabla-fila--corte-internacional'
-    ].filter(Boolean).join(' ');
-
-    const puestoEl = document.createElement('span');
-    puestoEl.className = 'tabla-puesto';
-    puestoEl.textContent = String(puesto);
-
-    const orgEl = document.createElement('span');
-    orgEl.className = 'tabla-org';
-    orgEl.append(crearOrgChip(fila.org, { size: 16 }), document.createTextNode(fila.org));
-
-    const recordEl = document.createElement('span');
-    recordEl.className = 'tabla-record';
-    recordEl.textContent = `${fila.ganados}-${fila.perdidos}`;
-
-    filaEl.append(puestoEl, orgEl, recordEl);
-    lista.appendChild(filaEl);
+    return {
+      ...fila,
+      puesto,
+      propia: fila.org === currentOrg,
+      esCortePlayoffs,
+      esCorteInternacional: internacionales > 0 && puesto === internacionales + 1 && !esCortePlayoffs
+    };
   });
 
-  container.appendChild(lista);
+  reconciliar(
+    refs.lista,
+    items,
+    (item) => item.org,
+    crearFilaTabla,
+    (nodo, item) => reemplazarEnElLugar(nodo, crearFilaTabla(item))
+  );
 
   if (clasifican !== null || internacionales > 0) {
-    const leyenda = document.createElement('div');
-    leyenda.className = 'panel-contexto-leyenda';
     const partes = [];
     if (clasifican !== null) partes.push(`Top ${clasifican} → playoffs`);
     if (internacionales > 0) partes.push(`Top ${internacionales} → internacional`);
-    leyenda.textContent = partes.join(' · ');
-    container.appendChild(leyenda);
+    if (!refs.leyenda) {
+      refs.leyenda = document.createElement('div');
+      refs.leyenda.className = 'panel-contexto-leyenda';
+      container.appendChild(refs.leyenda);
+    }
+    refs.leyenda.textContent = partes.join(' · ');
+  } else if (refs.leyenda) {
+    refs.leyenda.remove();
+    refs.leyenda = null;
   }
 }

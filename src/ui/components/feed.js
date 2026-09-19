@@ -15,6 +15,7 @@ import { acentoDeLog, rotuloDeDecision } from '../formatoUi.js';
 import { crearOrgChip } from './orgChip.js';
 import { etiquetaRol } from '../../data/roles.js';
 import { crearTarjetaResultado, crearTarjetaResultadoSerie } from './serie.js';
+import { reconciliar, reemplazarEnElLugar } from '../core/reconciliar.js';
 
 // El reveal del Top 20 al cierre de temporada (fase 9Wc). El log `top_mundial`
 // que trae la lista entera (`entry.top20`) deja de ser una línea: se abre en
@@ -184,18 +185,25 @@ export function crearTiraTecnica(entradas) {
   return tira;
 }
 
-export function agruparBeats(entradas) {
+// `offset` (fase V, V0b): índice absoluto en `state.logs` de `entradas[0]`.
+// `logs` solo crece (`core/pipeline.js` nunca lo recorta ni reordena), así
+// que el índice absoluto del último elemento incorporado a un beat es una
+// clave natural estable para `reconciliar` — el mismo beat, si no cambió,
+// vuelve a calcular la misma `clave` en el próximo render.
+export function agruparBeats(entradas, offset = 0) {
   const beats = [];
   let actual = null;
-  for (const entrada of entradas) {
+  entradas.forEach((entrada, i) => {
+    const indice = offset + i;
     if (entrada.tecnico) {
-      if (!actual) actual = { narrativa: null, tecnicos: [] };
+      if (!actual) actual = { narrativa: null, tecnicos: [], clave: indice };
       actual.tecnicos.push(entrada);
+      actual.clave = indice;
     } else {
       if (actual) beats.push(actual);
-      actual = { narrativa: entrada, tecnicos: [] };
+      actual = { narrativa: entrada, tecnicos: [], clave: indice };
     }
-  }
+  });
   if (actual) beats.push(actual);
   return beats;
 }
@@ -221,9 +229,16 @@ export function nodoDeBeat(beat, state) {
 }
 
 export function renderFeed(logList, state, { limite = 8 } = {}) {
-  const recientes = state.logs.slice(-limite);
-  const beats = agruparBeats(recientes).reverse();
-  logList.replaceChildren(...beats.map((beat) => nodoDeBeat(beat, state)));
+  const desde = Math.max(0, state.logs.length - limite);
+  const recientes = state.logs.slice(desde);
+  const beats = agruparBeats(recientes, desde).reverse();
+  reconciliar(
+    logList,
+    beats,
+    (beat) => beat.clave,
+    (beat) => nodoDeBeat(beat, state),
+    (nodo, beat) => reemplazarEnElLugar(nodo, nodoDeBeat(beat, state))
+  );
 }
 
 export function renderLowerThird(summary, metaPill, state, { modo, decision } = {}) {

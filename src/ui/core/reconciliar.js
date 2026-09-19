@@ -104,3 +104,19 @@ export function reconciliar(contenedor, items, claveDe, crear, actualizar, { fli
 
   return nodosEnOrden;
 }
+
+// reemplazarEnElLugar(nodo, nodoFresco): el `actualizar` de V0b para las
+// cinco listas de clave natural (feed, tabla, plantilla, Top 5, mercado).
+// Ninguna reescribe su función `crear` para diffear campo por campo —
+// arriesgaría divergir del render de siempre (regla de proceso 2). En cambio
+// construyen el nodo fresco de cero con la MISMA función `crear` de antes y
+// lo injertan sobre el nodo cacheado: clase, dataset e hijos se reemplazan,
+// la identidad del nodo (y con ella cualquier listener de un hijo, que viaja
+// con el propio nodo movido) se preserva.
+export function reemplazarEnElLugar(nodo, nodoFresco) {
+  nodo.className = nodoFresco.className;
+  for (const clave of Object.keys(nodo.dataset)) delete nodo.dataset[clave];
+  for (const [clave, valor] of Object.entries(nodoFresco.dataset)) nodo.dataset[clave] = valor;
+  nodo.replaceChildren(...nodoFresco.childNodes);
+  return nodo;
+}

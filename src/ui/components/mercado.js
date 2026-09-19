@@ -1,6 +1,7 @@
 import { plata } from '../../core/formato.js';
 import { crearOrgChip } from './orgChip.js';
 import { countUp } from './countUp.js';
+import { reconciliar, reemplazarEnElLugar } from '../core/reconciliar.js';
 
 // La pantalla de ofertas (fase 9c, PLAN.md §9.5-9.6): "la trampa del equipo
 // grande visible" hecha tarjeta. Cada campo que se pinta acá ya viene resuelto
@@ -300,13 +301,21 @@ export function renderMercado(elements, decision, onElegir, onRepresentante, onN
     }
   }
 
-  // Bloque 2: las ofertas.
-  mercadoGrid.innerHTML = '';
-  for (const oferta of decision.opciones) {
-    mercadoGrid.appendChild(esTraspaso
-      ? construirTarjetaTraspaso(oferta, onElegir)
-      : construirTarjeta(oferta, onElegir, onNegociar));
-  }
+  // Bloque 2: las ofertas. Fase V, V0b: `reconciliar` en vez de
+  // `innerHTML = ''` — la clave es `oferta.id`, la misma que ya se usa para
+  // resolver la decisión (`opcionId`), así que una ronda de negociación
+  // (`neg.escalones`/`neg.clausula` cambian, el id no) actualiza la tarjeta
+  // existente en vez de destruirla y rehacerla.
+  const construirCard = esTraspaso
+    ? (oferta) => construirTarjetaTraspaso(oferta, onElegir)
+    : (oferta) => construirTarjeta(oferta, onElegir, onNegociar);
+  reconciliar(
+    mercadoGrid,
+    decision.opciones,
+    (oferta) => oferta.id,
+    construirCard,
+    (nodo, oferta) => reemplazarEnElLugar(nodo, construirCard(oferta))
+  );
 
   // Bloque 3: el mercado del mundo. Los clubes que el bloque 1 ya nombró
   // ("te siguen") no se repiten en "asientos abiertos".
