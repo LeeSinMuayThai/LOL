@@ -33,6 +33,8 @@ import partidoPostpartido from './partido/postpartido.json' with { type: 'json' 
 // El catálogo real de la cima (sponsor bomba, "defendé el #1", la prensa que
 // te destrona, el archirrival que te pasa) es fase 13.
 import topMundial from './top_mundial.json' with { type: 'json' };
+// Fase 13: contenido para retirado_reciente en pretemporada (ventana de vuelta).
+import retiroYVuelta from './retiro_y_vuelta.json' with { type: 'json' };
 
 export const TODOS_LOS_EVENTOS = [
   ...soloqPrecarrera,
@@ -56,5 +58,6 @@ export const TODOS_LOS_EVENTOS = [
   ...partidoClasico,
   ...partidoDentroDelMapa,
   ...partidoPostpartido,
-  ...topMundial
+  ...topMundial,
+  ...retiroYVuelta
 ];

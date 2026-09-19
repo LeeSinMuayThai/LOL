@@ -147,10 +147,6 @@ export const MOMENTOS = [
     label: 'No te renovaron',
     patron: { mercado: ['sin_renovacion'] } },
 
-  { id: 'retirado', prioridad: 80, pendiente: 'paso12',
-    label: 'Retirado',
-    patron: { etapa: ['retirado'] } },
-
   // --- Fase 9Wb (§9W.4): la cima ---
   // `top_del_mundo` aparece en ~24 de 300 carreras (medido) — cobertura de
   // sobra. `el_mejor_del_mundo` (ser el #1) estaba `pendiente` desde 9Wb
@@ -214,9 +210,25 @@ export const MOMENTOS = [
     label: 'En crisis de resultados',
     patron: { nivel: ['tier1'], momentum: ['crisis'] } },
 
-  { id: 'import_recien_llegado', prioridad: 38, pendiente: 'paso11',
+  { id: 'import_recien_llegado', prioridad: 38,
     label: 'Import recién llegado a una región nueva',
     patron: { residencia: ['import'], estatus: ['rookie', 'titular'] } },
+
+  // --- Declive ---
+  // Antes de los catch-all de tier 1: esos no filtran etapa, así que un
+  // franquicia en declive matcheaba `tier1_franquicia` y estos no se evaluaban.
+  // La prioridad numérica importa (fase 13a): `MOMENTOS.find()`
+  // (`core/contexto.js`) resuelve por orden del array, pero un check nuevo
+  // exige que la tabla completa sea monótona decreciente en `prioridad`, así
+  // que el número tiene que quedar consistente con la posición, no solo
+  // "por debajo de import_recien_llegado y por encima de tier1_franquicia".
+  { id: 'veterano_util', prioridad: 33,
+    label: 'Veterano que todavía rinde',
+    patron: { etapa: ['declive'], estatus: ['referente', 'franquicia'] } },
+
+  { id: 'veterano_al_margen', prioridad: 32,
+    label: 'Veterano al que ya casi no llaman',
+    patron: { etapa: ['declive'] } },
 
   { id: 'tier1_franquicia', prioridad: 30,
     label: 'La franquicia del equipo',
@@ -232,16 +244,7 @@ export const MOMENTOS = [
 
   { id: 'tier1_rookie', prioridad: 22,
     label: 'Uno más del roster',
-    patron: { nivel: ['tier1'], estatus: ['rookie'] } },
-
-  // --- Declive ---
-  { id: 'veterano_util', prioridad: 20, pendiente: 'paso11',
-    label: 'Veterano que todavía rinde',
-    patron: { etapa: ['declive'], estatus: ['referente', 'franquicia'] } },
-
-  { id: 'veterano_al_margen', prioridad: 18, pendiente: 'paso11',
-    label: 'Veterano al que ya casi no llaman',
-    patron: { etapa: ['declive'] } }
+    patron: { nivel: ['tier1'], estatus: ['rookie'] } }
 ];
 
 export function momentoPorId(id) {

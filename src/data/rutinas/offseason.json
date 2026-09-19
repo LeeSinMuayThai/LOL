@@ -4,7 +4,7 @@
     "titulo": "Bootcamp: dos meses afuera",
     "texto": "Te vas a entrenar donde la soloQ duele. Volvés mejor y volvés cansado.",
     "etiquetas": ["agresiva"],
-    "contexto": { "etapa": ["debut", "profesional", "declive"] },
+    "contexto": { "etapa": ["debut", "profesional", "declive"], "nivel": ["tier1", "tier2"] },
     "reparto": { "pulir": 2, "nuevo": 1, "mecanica": 3, "macro": 0, "descansar": 0 },
     "extra": 0,
     "peso": 9,

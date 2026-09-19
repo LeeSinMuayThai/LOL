@@ -135,6 +135,7 @@
     "cooldown": 4,
     "contexto": {
       "ventana": ["regular", "playoffs"],
+      "nivel": ["soloq", "tier3", "tier2", "tier1", "libre"],
       "rol": ["jungla"]
     },
     "conditions": [],
@@ -396,6 +397,7 @@
     "cooldown": 4,
     "contexto": {
       "ventana": ["regular", "playoffs"],
+      "nivel": ["soloq", "tier3", "tier2", "tier1", "libre"],
       "rol": ["jungla"]
     },
     "conditions": [],

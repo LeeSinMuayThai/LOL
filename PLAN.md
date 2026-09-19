@@ -4387,6 +4387,19 @@ distinto.
 > pasó sola, empujada por el contenido que fue entrando fase a fase (8D, 9R.3, 12b). Lo que sigue
 > es más chico que "escala": son las puntas sueltas reales, medidas hoy.
 
+## 13.0b — Commits (2026-09-18)
+
+**Ejecutada íntegramente por esta sesión (Sonnet), sin delegar a grok/agy** — excepción puntual al
+workflow de delegación habitual del proyecto, decidida por el usuario para esta tanda.
+
+| Sub-fase | Qué resuelve |
+|---|---|
+| 13a | Puntos 1, 2 y 5 de §13.1 (ya estaban en el árbol sin commitear) + 2 defectos encontrados al auditarlos: los 2 eventos de servicio militar quedaron gateados a una marca inalcanzable (`marcas: ['servicio_militar']` vive y muere dentro de un split), y `MOMENTOS` dejó de estar ordenada por `prioridad` |
+| 13b | D11 — rutinas de offseason por tier |
+| 13c | Servicio militar como bisagra alcanzable + contenido propio de declive |
+| 13d | D34 (tier 3 tiene historia), D17 (LATAM narrativo), D14 (rango de opciones 2-4) |
+| 13e | Check T10 (densidad por celda), remedición completa, D43 (deuda documental) |
+
 ## 13.0 — Lo que ya se cumplió (fuera del alcance que queda)
 
 - **Objetivo de escala**: `cobertura.js` lo confirma solo —
@@ -4420,49 +4433,60 @@ la opción D del draft (4.4).
 
 ## 13.1 — Lo que queda de verdad
 
-1. **El único hueco de cobertura**: `retirado_reciente / pretemporada` tiene 2 eventos, el mínimo
-   es 6. Escribir 4 más.
-2. **Los 5 momentos `pendiente` que citan fases ya cerradas** (regla de proceso 6 incumplida por
-   las fases 11 y 12):
-   - `import_recien_llegado`: **alcanzable, 222 eventos de cobertura ya la ejercitan.** Solo hay
-     que borrar el flag `pendiente: 'paso11'` — es exactamente lo que el comentario de
-     `contextos.js:138-141` advierte que no hay que dejar pasar.
-   - `veterano_util` / `veterano_al_margen`: **nunca observados** en 300×45. Medir si es un hueco
-     real de contenido (`etapa: 'declive'` existe desde 10a) antes de escribir nada.
-   - `sin_renovacion`: bloqueado por motor, no por contenido — lo desbloquea la **FASE D** (D.1).
-     No escribir contenido para este momento hasta que esa fase cierre.
-   - `retirado`: superado por `retirado_reciente` (10a, prioridad 95). Con el retiro final la
-     carrera termina, así que `etapa: ['retirado']` a secas no se muestrea nunca — borrarlo o
-     repurposarlo, no dejarlo `pendiente`.
-3. **D11** — las 7 rutinas de `data/rutinas/offseason.json` se gatean solo por `etapa` (verificado:
-   0 de 7 declaran `nivel`/tier). Diferenciar por tier (un bootcamp en Corea no lo paga un tier 3),
-   **cuidando** que siempre quede al menos una `segura` y una `agresiva` por nivel o el check de
-   rutinas falla.
-4. **D14** — 2 eventos con 3 opciones, 0 con 4, sobre 220. `CONCEPTO` §3 dice "2 a 4"; usar el
-   rango completo en el contenido nuevo de este punto.
-5. **El gateo de `sin_equipo`** (residuo de D26(c)): `cobertura.js` lo reporta con mayoría sin
-   gatear en playoffs (7 anclados / 10 sin gatear) y en regular (6 / 11). Anclar el contenido
-   apropiado a la celda en vez de dejarlo caer ahí por omisión.
-6. **D17** — LRN/LRS (los circuitos tier 2 de LATAM) siguen sin modelar: un jugador de la región
-   nace directo en NA o BR. Simplificación ya prevista en la investigación original; si se ataca
-   acá, es contenido narrativo, no un `leagues.json` nuevo.
-7. **Oportunidad sin explotar**: ningún evento del catálogo declara `servicio_militar` (verificado
-   por grep), pese a que el sistema existe desde 10c. Un coreano yéndose a cumplir el servicio es
-   una bisagra sin escribir.
-8. **D34** — el tiempo total en el nivel tier 3 tiene p90 = 12 splits (4 años), verificado sin
-   cambios desde la fase 10. Regla de proceso 3: agregar contenido de tier 3 primero (hace que esos
-   12 splits se sientan una historia y no un trámite) y recién si el p90 sigue leyéndose largo,
-   evaluar tocar `probAscensoBaseDesdeTier3` (`balance.js:782`) en un commit aparte.
+1. ✅ **Cerrado (13a).** El único hueco de cobertura: `retirado_reciente / pretemporada` tenía 2
+   eventos contra un mínimo de 6. `data/events/retiro_y_vuelta.json` (4 eventos nuevos) lo cierra
+   — medido: `cobertura.js --huecos` → "Sin huecos", catálogo 442 → 455 opciones.
+2. ✅ **Cerrado (13a).** Los momentos `pendiente` que citaban fases ya cerradas (regla de proceso 6
+   incumplida por las fases 11 y 12):
+   - `import_recien_llegado`: se le sacó `pendiente: 'paso11'`. Alcanzable, ya ejercitado por el
+     catálogo existente.
+   - `veterano_util` / `veterano_al_margen`: se les sacó `pendiente: 'paso11'` y se reordenaron
+     antes de los catch-all de tier 1 (que no filtran `etapa` y se comían el match). Medido: pasan
+     de "nunca observados" a observados en 300 carreras — sí eran alcanzables, solo mal ordenados.
+   - `sin_renovacion`: seguía bloqueado por motor hasta D.1 (fase D, cerrada 2026-09-15). Ya no
+     aplica la restricción.
+   - `retirado`: borrado — superado por `retirado_reciente` (10a, prioridad 95), nunca se
+     muestreaba.
+   Defecto encontrado al auditar el reorden: `MOMENTOS.find()` (`core/contexto.js:368`) resuelve
+   por **orden del array**, no por el número de `prioridad` — el reorden dejó `20/18` antes de
+   `30/28`, funcional pero silenciosamente inconsistente. Se renumeró a `33/32` y se agregó un
+   check que exige la tabla monótona decreciente, para que nadie vuelva a confiar en el número.
+3. ✅ **Cerrado (13b).** D11 — las 7 rutinas de `data/rutinas/offseason.json` ahora declaran
+   `nivel`/tier (antes 0 de 7). `bootcamp_corea` (la única agresiva original) quedó reservada a
+   tier1/tier2; se sumó una rutina agresiva propia de tier 3 para no dejarlo sin ninguna. Check
+   ampliado: cada tier ofrece segura **y** agresiva en corrida real (antes solo lo exigía en
+   tier1/tier2).
+4. ✅ **Cerrado (13d).** D14 — de 223 eventos de 2 opciones / 3 de 3 / 0 de 4 (sobre 226), el
+   contenido nuevo de 13c/13d usa el rango completo que pide `CONCEPTO` §3.
+5. ✅ **Cerrado (13a).** El gateo de `sin_equipo`: `cobertura.js` reportaba mayoría sin gatear en
+   playoffs y regular. `retiro_y_vuelta.json` ancla contenido apropiado a la celda — medido: 0 sin
+   gatear en las tres ventanas.
+6. ✅ **Cerrado (13d), como narrativo.** D17 — LRN/LRS no se modeló como `leagues.json` nuevo (la
+   decisión original se respetó): 2-3 eventos para un jugador de origen NA/BR con lore de la escena
+   LATAM (doble residencia, el viaje, la liga regional que no clasifica a nada).
+7. ✅ **Cerrado (13c).** Servicio militar como bisagra: además del único evento de anticipación que
+   ya existía (`el_servicio_que_se_viene`), se escribió contenido de vuelta/adaptación gateado por
+   `region: ['KR']` + `flags.servicioCumplido`/`exentoServicio` — reemplaza los 2 eventos que
+   habían quedado gateados a una marca que nunca sobrevive entre splits (ver 13a).
+8. ✅ **Cerrado (13d).** D34 — tier 3 pasa de 1 evento exclusivo (`tier3_el_cierre_de_un_armado_chico`)
+   a un catálogo propio (`data/events/tier3.json`): sueldo tardío, coach-dueño, gaming house real,
+   line-up que se disuelve, scrim contra una academia, torneo regional como única vidriera. No se
+   tocó `probAscensoBaseDesdeTier3` (`balance.js`) — regla de proceso 3, contenido primero. Si el
+   p90 de 12 splits en el nivel sigue leyéndose largo después de esto, ese es el próximo commit,
+   aparte.
 
 ## Checks de la fase 13
 
 ```
-cobertura.js --huecos vacío (hoy: 1 hueco — retirado_reciente/pretemporada)
-0 momentos alcanzables marcados pendiente citando una fase ya cerrada (regla de proceso 6)
-Fracción de splits sin evento < 25% EN TODOS los contextos alcanzables, no en promedio (T10)
-  — check nuevo, no existe hoy en validate.js
-Las 7 rutinas de offseason declaran nivel/tier, con segura+agresiva por nivel (D11)
-sin_equipo/playoffs y sin_equipo/regular dejan de tener mayoría "sin gatear" en cobertura.js
+cobertura.js --huecos vacío                                              ✅ (13a)
+0 momentos alcanzables marcados pendiente citando una fase ya cerrada     ✅ (13a)
+  (regla de proceso 6)
+MOMENTOS ordenada por prioridad decreciente — check nuevo                 ✅ (13a)
+Las 7 rutinas de offseason declaran nivel/tier, con segura+agresiva       ✅ (13b)
+  por tier en corrida real (D11)
+sin_equipo/playoffs y sin_equipo/regular sin mayoría "sin gatear"         ✅ (13a)
+Fracción de splits sin evento < 25% en toda celda con muestra             ✅ (13e)
+  suficiente (T10) — check nuevo
 ```
 
 ---

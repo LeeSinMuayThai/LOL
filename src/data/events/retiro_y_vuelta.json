@@ -1,0 +1,277 @@
+[
+  {
+    "id": "la_llamada_del_manager",
+    "category": "mercado",
+    "categoria": "mercado",
+    "title": "El teléfono suena en plena offseason",
+    "description": "Diciembre, la pretemporada está que arde y un GM de la liga te escribe por privado. Se les cayó el titular a último momento y necesitan un veterano con temple que no le tiemble el pulso en el stage. No prometen un proyecto a dos años: es un split, plata digna y la chance de volver a pisar la grieta oficial.",
+    "weight": 6,
+    "cooldown": 3,
+    "contexto": {
+      "etapa": ["retirado"],
+      "marcas": ["ventana_de_vuelta"],
+      "ventana": ["pretemporada"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "escuchar_la_propuesta",
+        "label": "Pedir reunión y tantear el proyecto",
+        "descripcion": "Te sentás a escuchar el roster que tienen armado y qué esperan de vos. Reabre la cabeza competitiva, aunque después decidas no firmar.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La charla te reactiva el fuego que creías apagado. Salís de la reunión abriendo el cliente con ganas de grindear como no tenías hace dos años.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El proyecto está atado con alambres y te das cuenta de que solo buscan un salvavidas de emergencia. La reunión te recuerda por qué te habías alejado.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pedir_tiempo_y_evaluar",
+        "label": "Pedir unos días para pensarlo en frío",
+        "descripcion": "No cerrás la puerta pero tampoco te tirás de cabeza. Charlás con tu entorno antes de volver a hipotecar tus fines de semana.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La pausa te da claridad. Tu gente te apoya y entendés exactamente bajo qué condiciones valdría la pena el sacrificio.",
+            "effects": [
+              { "type": "stat", "path": "player.familyTrust", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La duda se estira y el club firma a otro mientras deshojás la margarita. Queda una leve espina de lo que pudo haber sido.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cortar_de_raiz",
+        "label": "Agradecer y reafirmar el retiro",
+        "descripcion": "Le decís que no con educación pero sin dejar margen a réplica. La decisión está tomada y tu paz mental vale más que otro split de presión.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Cortar en seco te saca un peso enorme de encima. Reafirmar tu retiro por elección propia te da una serenidad que ningún trofeo te dio.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 4, "max": 8, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Decís que no y cuando cortás la llamada la casa se siente demasiado silenciosa. El alivio tarda en llegar.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_cola_a_medianoche",
+    "category": "identidad",
+    "categoria": "rutina",
+    "title": "El cliente sigue instalado",
+    "description": "Ya no hay scrims programadas a las dos de la tarde ni reviews con el cuerpo técnico, pero a las once de la noche abrís soloQ por pura inercia. Metés tres partidas en el elo más alto y sentís que la velocidad de reacción todavía responde. Tu nombre en la tabla sigue pesando.",
+    "weight": 6,
+    "cooldown": 3,
+    "contexto": {
+      "etapa": ["retirado"],
+      "marcas": ["ventana_de_vuelta"],
+      "ventana": ["pretemporada"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "mantener_la_mano",
+        "label": "Meter volumen para no oxidarte",
+        "descripcion": "Jugás como si todavía tuvieras contrato al día siguiente. No cobrás sueldo, pero tus mecánicas se niegan a caer en el olvido.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Encadenás victorias contra los titulares que están de pretemporada y les ganás los duelos individuales. En el ladder nadie te habla como a un retirado.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "ladder", "path": "player.ranked", "min": 10, "max": 25 }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te quedás hasta las cuatro de la mañana tilteado por una derrota como si dependiera tu carrera de eso. Te levantás al mediodía preguntándote qué estás haciendo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -1, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.sleep", "min": -8, "max": -4, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cerrar_y_desconectar",
+        "label": "Cerrar el juego y disfrutar el descanso",
+        "descripcion": "Desinstalás las ganas de competir por esta noche. Ya no tenés nada que demostrarle a cuatro desconocidos en un servidor.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Dormís ocho horas de corrido sin alarmas ni pesadillas con el draft. La vida sin la presión diaria del ranking empieza a sentirse como un premio merecido.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.sleep", "min": 6, "max": 12, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Apagás la pantalla, pero en la cama te descubrís mirando streams de otros jugadores analizando parches nuevos. Desenchufar del todo no es tan fácil.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_podcast_de_la_offseason",
+    "category": "drama_prensa",
+    "categoria": "prensa",
+    "title": "Especulan con tu regreso en vivo",
+    "description": "En el podcast más escuchado de la escena dedican un bloque entero a analizar los rosters de cara al split que viene. Uno de los analistas tira tu nombre: sostiene que tu retiro fue prematuro y que hay dos equipos grandes negociando por abajo de la mesa para repatriarte. El chat explota de clips.",
+    "weight": 5,
+    "cooldown": 3,
+    "contexto": {
+      "etapa": ["retirado"],
+      "marcas": ["ventana_de_vuelta"],
+      "ventana": ["pretemporada"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "alimentar_el_misterio",
+        "label": "Tirar un tweet críptico con un emoji",
+        "descripcion": "Dejás que la escena hable y especule. Genera conversación, te pone en el centro de los rumores y te mide el termómetro de la hinchada.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El tweet se llena de interacciones pidiéndote que vuelvas para salvar el split. Tu nombre vuelve a ser tendencia sin haber jugado un solo minuto.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 4, "max": 8, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Varios periodistas te aprietan en privado para tener la primicia y la atención se vuelve densa. Te cansa tener que esquivar preguntas sobre algo que no decidiste.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "desmentir_en_seco",
+        "label": "Aclarar que estás retirado y pedir calma",
+        "descripcion": "Ponés los puntos sobre las íes en redes. Menos novela mediática, pero le bajás la espuma a cualquier club que estuviera pensando en tantearte.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "La gente respeta tu honestidad. La comunidad te despide con cariño en los comentarios y el ruido mediático se apaga de golpe.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Al desmentir tan tajante, los analistas pasan a debatir sobre el fin de tu ciclo y si tu última temporada ya había mostrado desgaste. La crítica ajena nunca es gratis.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_costo_de_la_rutina_nueva",
+    "category": "negocios",
+    "categoria": "oportunidad",
+    "title": "Las cuentas sin el sueldo de pro",
+    "description": "Llega fin de mes y la cuenta del banco no recibe el depósito automático de la organización al que te acostumbraste durante años. Tenés ahorros, pero el ritmo de vida y las opciones de laburo afuera del juego te exigen replantear el presupuesto. Volver a jugar es una opción económica real; quedarse afuera requiere reinventarse.",
+    "weight": 5,
+    "cooldown": 3,
+    "contexto": {
+      "etapa": ["retirado"],
+      "marcas": ["ventana_de_vuelta"],
+      "ventana": ["pretemporada"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "ajustar_y_crear_contenido",
+        "label": "Ajustar gastos y volcarte a tu marca personal",
+        "descripcion": "Invertís tiempo en stream y colaboraciones. Menos ingreso fijo inmediato, pero empezás a construir el camino que te va a sostener los próximos diez años.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La comunidad te banca la transición y tus números en stream se estabilizan rápido. Comprobás que tu nombre vale por sí mismo, no solo por la camiseta que vestías.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.familyTrust", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El algoritmo es ingrato: pasar horas frente a la cámara sin el respaldo de una competición te desgasta más que una semana de scrims y deja poco dinero.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "abrir_la_puerta_por_necesidad",
+        "label": "Avisar a tu entorno que estás abierto a ofertas",
+        "descripcion": "Reconocés que la plata de pro se extraña. Le avisás a un par de scouts de confianza que si hay una oferta seria sobre la mesa, estás dispuesto a escucharla.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El rumor corre rápido en el mercado de pases y dos organizaciones medianas se anotan para consultar tus pretensiones. La puerta vuelve a crujir sobre sus bisagras.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Las ofertas que te llegan son bajas y en equipos sin aspiraciones que quieren tu nombre para vender camisetas. La realidad del mercado te golpea el orgullo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -45,7 +45,7 @@ import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
 import { orgsQueTeFicharian, ofertaPosible, residenciaEn } from '../core/demanda.js';
 import { aplicar as aplicarMercado } from '../systems/mercado.js';
 import { FRASES_MOTIVO, ETIQUETAS_MOTIVO } from '../systems/temporada.js';
-import { EJES, MARCAS, MOMENTOS_ACTIVOS, momentoPorId } from '../data/contextos.js';
+import { EJES, MARCAS, MOMENTOS, MOMENTOS_ACTIVOS, momentoPorId } from '../data/contextos.js';
 import { ARQUETIPOS } from '../data/meta-tags.js';
 import { ROLES, IDS_ROL } from '../data/roles.js';
 import LIGAS from '../data/leagues.json' with { type: 'json' };
@@ -2465,6 +2465,75 @@ checkLento('Toda decisión de rutina ofrece una salida segura y la trampa', () =
   }
 });
 
+checkLento('Las rutinas de offseason declaran nivel donde corresponde y cada tier mantiene su segura+agresiva (D11)', () => {
+  // D11: un bootcamp en Corea no lo paga un equipo inventado de tier 3. El
+  // catálogo tiene que decirlo, y una corrida real no puede ofrecerlo ahí.
+  // tier 1 y 2 siguen teniendo la agresiva; los tres tiers, una segura.
+  const bootcamp = RUTINAS.offseason.find((rutina) => rutina.id === 'bootcamp_corea');
+  if (!bootcamp) {
+    throw new Error('no está bootcamp_corea');
+  }
+  const nivelesBootcamp = bootcamp.contexto?.nivel ?? [];
+  if (!nivelesBootcamp.includes('tier1') || !nivelesBootcamp.includes('tier2')) {
+    throw new Error('bootcamp_corea debe declarar nivel tier1 y tier2');
+  }
+  if (nivelesBootcamp.includes('tier3')) {
+    throw new Error('bootcamp_corea no debe declararse para tier 3');
+  }
+
+  const seguraUniversal = RUTINAS.offseason.find((rutina) => rutina.id === 'dos_semanas_sin_tocar_el_juego');
+  if (!seguraUniversal || !seguraUniversal.etiquetas.includes('segura')) {
+    throw new Error('dos_semanas_sin_tocar_el_juego dejó de ser la salida segura universal');
+  }
+  const nivelesSegura = seguraUniversal.contexto?.nivel;
+  if (Array.isArray(nivelesSegura) && ['tier3', 'tier2', 'tier1'].some((nivel) => !nivelesSegura.includes(nivel))) {
+    throw new Error('dos_semanas_sin_tocar_el_juego no cubre todos los tiers');
+  }
+
+  const vistos = { tier1: false, tier2: false, tier3: false };
+
+  for (let seed = 1; seed <= 120; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+
+    for (let i = 0; i < 20 && !state.terminado; i += 1) {
+      const resultado = avanzarSplit(state, rng);
+      state = resultado.state;
+
+      while (state.pendiente) {
+        const { decision } = state.pendiente;
+        const rutinas = decision.datos?.rutinas;
+
+        if (decision.datos?.motivo === 'practica' && rutinas) {
+          const nivel = calcularContexto(state).nivel;
+          if (nivel === 'tier1' || nivel === 'tier2' || nivel === 'tier3') {
+            vistos[nivel] = true;
+            const etiquetas = new Set(rutinas.flatMap((rutina) => rutina.etiquetas));
+            if (!etiquetas.has('segura')) {
+              throw new Error(`seed ${seed}: offseason en ${nivel} sin salida segura`);
+            }
+            if ((nivel === 'tier1' || nivel === 'tier2') && !etiquetas.has('agresiva')) {
+              throw new Error(`seed ${seed}: offseason en ${nivel} sin rutina agresiva`);
+            }
+            if (nivel === 'tier3' && rutinas.some((rutina) => rutina.id === 'bootcamp_corea')) {
+              throw new Error(`seed ${seed}: bootcamp_corea ofrecido en tier 3`);
+            }
+          }
+        }
+
+        const sistema = sistemaPorId(state.pendiente.sistemaId);
+        state = resolverDecision(state, sistema.resolverAuto(state, decision, rng), rng).state;
+      }
+    }
+  }
+
+  for (const nivel of ['tier1', 'tier2', 'tier3']) {
+    if (!vistos[nivel]) {
+      throw new Error(`ningún offseason observado en ${nivel}: muestra insuficiente`);
+    }
+  }
+});
+
 checkLento('El contexto de carrera nombra siempre dónde estás parado', () => {
   const vistos = new Set();
 
@@ -2510,6 +2579,52 @@ checkLento('El contexto de carrera nombra siempre dónde estás parado', () => {
     }
     if (!vistos.has(momento.id)) {
       throw new Error(`el momento "${momento.id}" no está marcado como pendiente y no apareció en 300 carreras`);
+    }
+  }
+});
+
+checkLento('MOMENTOS: el array manda, pero nunca en contra de lo que dice prioridad (fase 13a)', () => {
+  // `momentoDe` (core/contexto.js) resuelve con `MOMENTOS.find(...)`: gana el
+  // PRIMERO del array, el número `prioridad` es solo documentación (y lo que
+  // usa `cobertura.js` para separar "estado excepcional" de contenido normal).
+  // Si alguna vez dos entradas cuyo patrón puede matchear al mismo tiempo
+  // quedan en el orden equivocado, el array gana en silencio y el número
+  // pasa a mentir — exactamente lo que encontró la auditoría de esta fase con
+  // `veterano_util`/`veterano_al_margen` (20/18 coladas antes de
+  // `tier1_franquicia`/28, aunque la posición en el array ya las evaluaba
+  // primero y el comportamiento era correcto).
+  //
+  // El check no exige que la tabla esté ordenada de punta a punta —bloques
+  // con patrones mutuamente excluyentes (ninguna carrera puede tener
+  // `etapa: 'amateur'` y `nivel: 'tier3'` a la vez, ver `calcularNivel`) no
+  // necesitan estar en un orden numérico particular entre sí, y forzarlo
+  // sería reordenar contenido que nunca tuvo un bug real. Lo que sí exige:
+  // cuando DOS patrones matchean el MISMO contexto observado de verdad, el
+  // que gana por posición tiene que ser el de mayor prioridad numérica.
+  const coincide = (contexto, patron) => Object.entries(patron).every(([eje, esperados]) => {
+    if (eje === 'marcas') {
+      return esperados.every((marca) => contexto.marcas.includes(marca));
+    }
+    return esperados.includes(contexto[eje]);
+  });
+
+  for (let seed = 1; seed <= 200; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+
+    for (let i = 0; i < 40 && !state.terminado; i += 1) {
+      const contexto = calcularContexto(state);
+      const coinciden = MOMENTOS.filter((momento) => coincide(contexto, momento.patron));
+
+      if (coinciden.length > 1) {
+        const elegido = coinciden[0];
+        const masAlto = coinciden.reduce((mejor, m) => (m.prioridad > mejor.prioridad ? m : mejor));
+        if (elegido.id !== masAlto.id) {
+          throw new Error(`seed ${seed}, split ${state.player.splitCount}: matchean ${coinciden.map((m) => `${m.id}(${m.prioridad})`).join(', ')} — gana "${elegido.id}" por posición en el array, pero "${masAlto.id}" declara prioridad más alta`);
+        }
+      }
+
+      state = avanzarSplitAuto(state, rng).state;
     }
   }
 });

@@ -223,6 +223,7 @@
     "weight": 6,
     "contexto": {
       "etapa": ["debut", "profesional"],
+      "nivel": ["tier3", "tier2", "tier1", "libre"],
       "edadBanda": ["pico", "tardia", "veterana"]
     },
     "conditions": [
@@ -380,6 +381,7 @@
     "cooldown": 0,
     "contexto": {
       "etapa": ["debut", "profesional"],
+      "nivel": ["tier3", "tier2", "tier1", "libre"],
       "edadBanda": ["temprana", "joven"]
     },
     "conditions": [

@@ -598,7 +598,8 @@
     "weight": 5,
     "cooldown": 6,
     "contexto": {
-      "etapa": ["debut", "profesional"]
+      "etapa": ["debut", "profesional"],
+      "nivel": ["tier3", "tier2", "tier1", "libre"]
     },
     "conditions": [],
     "options": [
@@ -658,7 +659,8 @@
     "weight": 5,
     "cooldown": 6,
     "contexto": {
-      "etapa": ["debut", "profesional"]
+      "etapa": ["debut", "profesional"],
+      "nivel": ["tier3", "tier2", "tier1"]
     },
     "conditions": [
       { "field": "player.splitCount", "op": "gt", "value": 3 }

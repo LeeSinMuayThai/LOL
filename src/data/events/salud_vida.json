@@ -591,6 +591,7 @@
     "cooldown": 10,
     "contexto": {
       "etapa": ["profesional"],
+      "nivel": ["tier3", "tier2", "tier1", "libre"],
       "edadBanda": ["pico", "tardia", "veterana"]
     },
     "conditions": [
@@ -645,6 +646,135 @@
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -8, "max": -4, "clamp": [0, 100] },
               { "type": "stat", "path": "player.familyTrust", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "lo_que_te_perdiste_en_el_cuartel",
+    "category": "salud_vida",
+    "categoria": "familia",
+    "title": "Lo que te perdiste en el cuartel",
+    "description": "Con la baja recién en el bolsillo, prendés el teléfono y te caen dieciocho meses de notificaciones de golpe: tu antigua organización se sostuvo sin vos, y el novato que cubrió tu puesto sacó un MVP que ahora es un clip viral. Leer el resumen entero de una sentada pesa más de lo que imaginabas.",
+    "weight": 7,
+    "cooldown": 8,
+    "contexto": {
+      "region": ["KR"],
+      "etapa": ["profesional"],
+      "nivel": ["tier3", "tier2", "tier1"]
+    },
+    "conditions": [
+      { "field": "flags.servicioCumplido", "op": "eq", "value": true }
+    ],
+    "options": [
+      {
+        "id": "responder_y_mantener_el_lazo",
+        "label": "Mandarles un mensaje de aliento y felicitar al novato",
+        "descripcion": "Te tragás el ego y festejás el triunfo de tu gente. Cuidás los vínculos para el día en que te toque volver al vestuario.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tus ex-compañeros valoran el gesto y en la entrevista post-partido te mandan un saludo al aire en la transmisión oficial. La hinchada te hace tendencia y el club deja en claro que no te olvidó.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te responden con cariño, pero la charla se apaga rápido: ellos están concentrados en el scrim de mañana y vos todavía te estás sacudiendo el uniforme de encima. La desconexión es inevitable.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cerrar_la_pagina",
+        "label": "Cerrar la pestaña y mirar para adelante",
+        "descripcion": "No sirve de nada masticar dieciocho meses de resultados ajenos. Lo que importa es el split que arranca ahora, no el que te perdiste.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Cortar con el feed viejo te da una claridad rara: el pasado ya pasó, y quemarte la cabeza con lo que no jugaste no te devuelve nada.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Cerrás la app, pero en la primera práctica seguís pensando en los parches que te perdiste y en si tus decisiones de mapa siguen vigentes.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "las_manos_que_hay_que_reconstruir",
+    "category": "salud_vida",
+    "categoria": "oportunidad",
+    "title": "Las manos que hay que reconstruir",
+    "description": "Primera semana libre y ya sentís el teclado raro: dieciocho meses sin tocar un cliente competitivo dejan la muñeca dura y el mapa mental oxidado. La vuelta no es apretar play, es rearmarte desde cero mientras el resto del roster ya está en scrim.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "region": ["KR"],
+      "etapa": ["profesional"],
+      "nivel": ["tier3", "tier2", "tier1"]
+    },
+    "conditions": [
+      { "field": "flags.servicioCumplido", "op": "eq", "value": true }
+    ],
+    "options": [
+      {
+        "id": "hacer_ejercicios_de_dedos",
+        "label": "Entrenar agarre y micro desde cero, sin apuro",
+        "descripcion": "Volvés a lo básico: calentamiento de muñeca, aim trainer, partidas cortas. Reconstruir la mano lleva más tiempo del que te gustaría admitir.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La constancia paga: en un par de semanas la sensación de control vuelve, más rápido de lo que temías después de tanto tiempo afuera.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Forzar el ritmo antes de tiempo te deja la muñeca resentida y un par de partidas de scrim jugadas por debajo de tu nivel real.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "nutrir_la_cabeza_tactica",
+        "label": "Empezar por VODs y teoría del meta actual",
+        "descripcion": "Antes de tocar el mouse en serio, te ponés al día con dieciocho meses de parches: qué cambió, quién juega qué, por dónde viene el juego ahora.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Estudiar el meta con la cabeza fría, sin la presión de estar rindiendo en vivo, te da una lectura más ordenada de lo que cambió que la que tenías planeada.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.adaptabilidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Sin poder probar nada en la práctica todavía, la teoría se vuelve abstracta. Terminás dudando de si el meta actual se parece en algo a lo que estudiaste.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": 0, "clamp": [0, 100] }
             ]
           }
         ]
