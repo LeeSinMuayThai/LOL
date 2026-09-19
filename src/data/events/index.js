@@ -39,6 +39,14 @@ import retiroYVuelta from './retiro_y_vuelta.json' with { type: 'json' };
 // heredado de otras celdas, pero nada escrito para ELLOS — la presión de
 // mercado que CONCEPTO §12.4 describe (el declive es percepción, no biología).
 import declive from './declive.json' with { type: 'json' };
+// Fase 13d (D34): tier 3 tenía un solo evento exclusivo pese a un p90 de 12
+// splits (4 años) en el nivel — el contenido que hace que ese tiempo se
+// sienta una historia, no un trámite.
+import tier3 from './tier3.json' with { type: 'json' };
+// Fase 13d (D17): LATAM sigue sin modelarse como leagues.json — un jugador de
+// la región nace directo en NA o BR (simplificación ya prevista). Esto es el
+// contenido narrativo que le da identidad a ese origen, no un circuito nuevo.
+import latam from './latam.json' with { type: 'json' };
 
 export const TODOS_LOS_EVENTOS = [
   ...soloqPrecarrera,
@@ -64,5 +72,7 @@ export const TODOS_LOS_EVENTOS = [
   ...partidoPostpartido,
   ...topMundial,
   ...retiroYVuelta,
-  ...declive
+  ...declive,
+  ...tier3,
+  ...latam
 ];

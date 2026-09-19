@@ -1,0 +1,255 @@
+[
+  {
+    "id": "el_pasaporte_de_la_doble_residencia",
+    "category": "identidad",
+    "categoria": "mercado",
+    "title": "El trámite de la doble residencia",
+    "description": "Para poder jugar sin ocupar un cupo de import, tenés que acreditar residencia en la región — papeles, tiempos mínimos, una planilla que nadie del roster entiende del todo. El club te asignó a alguien de la oficina para que te ayude, pero al final el trámite lo tenés que empujar vos.",
+    "weight": 5,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": ["debut", "profesional"],
+      "region": ["NA", "BR"],
+      "nivel": ["tier3", "tier2", "tier1"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "encargarte_vos_mismo",
+        "label": "Meterte de lleno en el papeleo vos mismo",
+        "descripcion": "En vez de delegarlo del todo, seguís de cerca cada paso: llamadas, formularios, la cola en la oficina que corresponda.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El trámite sale más rápido de lo esperado por estar encima de cada paso, y quedás acreditado sin sobresaltos para el resto de la temporada.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "career.arraigo", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Entre formularios y esperas, el trámite te come horas que hubieras preferido usar en preparación.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": -1, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "confiar_en_la_oficina",
+        "label": "Dejarlo en manos de la persona que te asignaron",
+        "descripcion": "Confiás en que la oficina del club sabe manejar esto mejor que vos y te concentrás en jugar mientras se resuelve solo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "La persona asignada resuelve todo sin que tengas que meterte demasiado — un dolor de cabeza menos.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El trámite se demora más de lo prometido y por un par de semanas tu situación queda en un limbo administrativo incómodo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pedir_ayuda_a_otro_jugador_en_la_misma",
+        "label": "Buscar a otro jugador que ya pasó por esto",
+        "descripcion": "Preguntás en tu círculo si hay alguien de tu misma situación que ya hizo el trámite antes, para ahorrarte errores que ya conocen.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El consejo de alguien que ya lo vivió te ahorra varios pasos en falso, y el trámite avanza más ordenado de lo que hubiera ido solo.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Los casos no son tan iguales como pensabas, y algunos de los consejos no aplican del todo a tu situación particular.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_final_regional_que_no_clasifica_a_nada",
+    "category": "identidad",
+    "categoria": "golpe_duro",
+    "title": "Ganás la final regional que no clasifica a ningún lado",
+    "description": "Volviste a tu país por un torneo exhibición y terminaste ganando la final, con la gente de tu ciudad llenando el lugar. Es una alegría real — y también un recordatorio de que este circuito no conecta con nada: no hay cupo, no hay puntos, no hay ninguna puerta que este título abra en LCS o CBLOL.",
+    "weight": 4,
+    "cooldown": 14,
+    "contexto": {
+      "etapa": ["debut", "profesional"],
+      "region": ["NA", "BR"],
+      "nivel": ["tier3", "tier2", "tier1"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "disfrutarlo_sin_condiciones",
+        "label": "Disfrutarlo por lo que es, sin pedirle más",
+        "descripcion": "No necesitás que abra ninguna puerta para que valga la pena. Jugar frente a tu gente, en tu país, ya es suficiente esta vez.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El cariño de la gente de tu ciudad te llena de una manera que ningún resultado de la liga grande te había dado en un tiempo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.familyTrust", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El festejo real se mezcla, de fondo, con la sensación de que este título no te acerca ni un paso a lo que de verdad estás persiguiendo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "usarlo_como_contenido",
+        "label": "Usar el momento para reforzar tu marca personal en la región",
+        "descripcion": "Le sacás el jugo en redes: la vuelta a casa, la final, la conexión con la escena que te vio empezar. Es capital simbólico que no todos tienen.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El contenido conecta fuerte con tu público de origen y termina siendo, sin buscarlo, la mejor semana de redes que tuviste en el año.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Algunos en la escena grande lo leen como que le das más importancia a un torneo exhibición que a competir donde de verdad se juega tu carrera.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_viaje_que_te_cambio_la_carrera",
+    "category": "identidad",
+    "categoria": "familia",
+    "title": "El viaje que te cambió la carrera",
+    "description": "Una nota te pregunta por el día que dejaste tu país para probar suerte en una escena más grande. No fue una decisión fácil ni barata, y todavía tenés sentimientos encontrados sobre cuánto de tu identidad de origen se quedó en el camino.",
+    "weight": 4,
+    "cooldown": 16,
+    "contexto": {
+      "etapa": ["debut", "profesional"],
+      "region": ["NA", "BR"],
+      "nivel": ["tier3", "tier2", "tier1"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "aceptar_la_mudanza_a_fondo",
+        "label": "Decir que hoy te sentís de acá, sin conflicto",
+        "descripcion": "Contás que adoptaste la escena nueva como propia, sin nostalgia de por medio. Es tu casa ahora, tanto como lo fue la de origen.",
+        "weight": 3,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La honestidad conecta bien con tu comunidad actual, que te siente parte de acá sin reservas.",
+            "effects": [
+              { "type": "stat", "path": "career.arraigo", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Algunos de tu escena de origen leen la respuesta como que te olvidaste de dónde saliste, y te lo hacen saber en los comentarios.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "mantener_el_vinculo_activo",
+        "label": "Contar que seguís siguiendo de cerca la escena de origen",
+        "descripcion": "Explicás que aunque estés lejos, seguís los resultados de tu región, hablás con jugadores de allá, volvés cuando el calendario te lo permite.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El vínculo sostenido con tu escena de origen te da una base emocional que muchos imports no tienen, lejos de casa.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.familyTrust", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Mirar tanto para atrás te deja, por momentos, con la cabeza dividida entre dos escenas en vez de enfocado en la que estás jugando hoy.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejar_el_tema_atras",
+        "label": "Cortar el tema: preferís hablar solo del presente",
+        "descripcion": "No tenés ganas de convertir tu historia de origen en un relato para consumo público. Preferís que hablen de tu juego, no de tu pasaporte.",
+        "weight": 2,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Cortar el tema de raíz te saca una presión que no elegiste cargar — no todo tiene que ser parte de tu narrativa pública.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "La prensa interpreta la evasiva como que hay algo incómodo detrás, y la pregunta vuelve a aparecer, distinta, en la próxima entrevista.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": -1, "max": 1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "convertirlo_en_tu_marca",
+        "label": "Convertir tu origen en parte central de tu marca personal",
+        "descripcion": "Decidís construir tu imagen pública alrededor de esa historia: el que vino de lejos y se hizo un lugar. Sponsors y prensa suelen premiar ese relato.",
+        "weight": 3,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El relato de superación conecta fuerte con el público y hasta te acerca a un sponsor que busca exactamente esa historia para su campaña.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Repetir la misma historia de origen en cada nota empieza a sentirse impostado, incluso para vos mismo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

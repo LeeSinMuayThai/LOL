@@ -2559,11 +2559,20 @@ checkLento('Las rutinas de offseason declaran nivel y cada tier mantiene su segu
 checkLento('El contexto de carrera nombra siempre dónde estás parado', () => {
   const vistos = new Set();
 
+  // 45 splits (fase 8D) se quedó corto para "todo momento activo aparece
+  // alguna vez": `sin_renovacion` (D.1) necesita un contrato de un año
+  // corriendo a último año Y el flag de no-renovación prendido — una
+  // combinación tardía en la carrera. Medido al agregar el contenido de
+  // 13d (que corre el stream, T1): 0 hits en 300 seeds × 45 splits, 5 en
+  // 300 seeds × 90 (una carrera completa). No es un hueco de contenido —
+  // el momento existe y se observa con la duración real de carrera — es
+  // el mismo patrón que D24: el check medía con una vara más corta que la
+  // carrera que dice cubrir. Subido 45 → 90, sin tocar ninguna constante.
   for (let seed = 1; seed <= 300; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
 
-    for (let i = 0; i < 45 && !state.terminado; i += 1) {
+    for (let i = 0; i < 90 && !state.terminado; i += 1) {
       const contexto = calcularContexto(state);
 
       // Si el motor puede llegar a un estado que ningún momento declara, el
