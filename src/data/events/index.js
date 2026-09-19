@@ -35,6 +35,10 @@ import partidoPostpartido from './partido/postpartido.json' with { type: 'json' 
 import topMundial from './top_mundial.json' with { type: 'json' };
 // Fase 13: contenido para retirado_reciente en pretemporada (ventana de vuelta).
 import retiroYVuelta from './retiro_y_vuelta.json' with { type: 'json' };
+// Fase 13c: veterano_util/veterano_al_margen tenían contenido genérico
+// heredado de otras celdas, pero nada escrito para ELLOS — la presión de
+// mercado que CONCEPTO §12.4 describe (el declive es percepción, no biología).
+import declive from './declive.json' with { type: 'json' };
 
 export const TODOS_LOS_EVENTOS = [
   ...soloqPrecarrera,
@@ -59,5 +63,6 @@ export const TODOS_LOS_EVENTOS = [
   ...partidoDentroDelMapa,
   ...partidoPostpartido,
   ...topMundial,
-  ...retiroYVuelta
+  ...retiroYVuelta,
+  ...declive
 ];

@@ -1,0 +1,462 @@
+[
+  {
+    "id": "el_sesgo_por_la_edad",
+    "category": "declive",
+    "categoria": "mercado",
+    "title": "El sesgo por la edad",
+    "description": "Tus números del split no son peores que hace dos años —en algunas métricas son mejores—, pero las notas que circulan por la prensa especializada ya no hablan de tu nivel: hablan de tu edad. El scouting sigue mirando, pero la etiqueta que te ponen cambió sin que cambiara tu juego.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": ["declive"],
+      "nivel": ["tier3", "tier2", "tier1"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "plantarte_con_los_numeros",
+        "label": "Responder en la próxima entrevista con las estadísticas en la mano",
+        "descripcion": "No dejás pasar el relato: mostrás el CS, el kill participation, lo que sea que demuestre que el bajón es de percepción, no de nivel.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Los números hablan solos y algún analista te da la razón en público. No cambia el mercado de un día para el otro, pero corta el relato más flojo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "career.jerarquia", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Sonás a la defensiva, y defenderte con planillas nunca convenció a nadie que ya decidió que estás de salida.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejar_que_hable_la_cancha",
+        "label": "No responder nada, dejar que la próxima serie hable",
+        "descripcion": "Ignorás el relato por completo. Si el nivel está, va a notarse en la única superficie que te importa de verdad.",
+        "weight": 3,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Jugar en silencio te saca presión de encima, y cuando rendís bien la próxima serie el contraste con el relato de la prensa se nota solo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El relato no se corta con silencio: sin una respuesta pública, la narrativa de que estás de salida sigue circulando sin que nadie la discuta.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "reposicionarte_como_shotcaller",
+        "label": "Empezar a venderte como el cerebro del equipo, no el mecánico",
+        "descripcion": "Si el mercado premia juventud en reflejos, corrés el eje: tu valor pasa a ser la lectura de partida y la experiencia, no quién tiene la mano más rápida.",
+        "weight": 3,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El cambio de relato prende: empezás a aparecer en notas como 'el cerebro detrás del resultado', y esa etiqueta envejece mucho mejor que la de mecánica pura.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.shotcalling", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "career.jerarquia", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El equipo sigue esperando la mecánica de siempre y el cambio de rol no convence a nadie del staff todavía.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_pibe_que_te_mira_como_referente",
+    "category": "declive",
+    "categoria": "vestuario",
+    "title": "El pibe que te mira como referente",
+    "description": "El más joven del roster te busca antes de cada scrim para que le revises el replay. No te lo pidió el coach: decidió solo que sos la persona con la que quiere aprender, justo cuando vos todavía estás discutiendo con vos mismo cuánto te queda.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": ["declive"],
+      "nivel": ["tier3", "tier2", "tier1"],
+      "estatus": ["referente", "franquicia"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "invertir_tiempo_de_verdad",
+        "label": "Darle el tiempo en serio, aunque sea a costa del tuyo",
+        "descripcion": "Le dedicás horas de tu propia preparación a revisar sus partidas. Es tiempo que no usás en vos, pero el vestuario lo nota.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El rookie mejora rápido y te lo hace saber en cada entrevista. La sinergia del equipo sube, y quedás como la razón por la que el proyecto joven funciona.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "career.arraigo", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Le das horas al rookie que no le diste a tu propia preparación, y en la próxima serie se nota quién llegó más afilado.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "mantener_distancia_profesional",
+        "label": "Ayudarlo lo justo, sin volverte su niñera",
+        "descripcion": "Le contestás lo que pregunta, nada más. Tu prioridad sigue siendo sostener tu propio nivel el tiempo que te quede arriba.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Cuidás tu propia preparación y el rookie igual aprende a su ritmo, sin que dependa de vos. Nadie te reprocha nada.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El rookie interpreta la distancia como desinterés, y algo de la buena onda inicial del vestuario se enfría.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_etiqueta_de_veterano",
+    "category": "declive",
+    "categoria": "prensa",
+    "title": "La etiqueta de \"veterano\"",
+    "description": "Un canal grande te presenta en la previa como \"el veterano del roster\", con un cortito de tus mejores años. Jugás bien esa serie, y en la nota de después de todos modos te describen como alguien que \"todavía puede dar pelea\" — no como alguien que ganó.",
+    "weight": 5,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": ["declive"],
+      "nivel": ["tier3", "tier2", "tier1"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "hacerle_un_chiste_al_relato",
+        "label": "Reírte de la etiqueta en redes, sin pelearla en serio",
+        "descripcion": "Le sacás el peso al asunto con humor. No te vas a gastar energía discutiendo cómo te describe un canal.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El chiste prende y los fans lo toman con cariño — te ganás algo de simpatía extra por no tomártelo tan en serio.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El chiste no despega y algunos lo leen como que estás incómodo con la etiqueta, aunque digas lo contrario.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "guardartelo_para_el_proximo_partido",
+        "label": "No decir nada y guardarte la bronca para la cancha",
+        "descripcion": "No le das el gusto de una respuesta pública. La próxima serie es donde de verdad se responde algo así.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Jugás con una rabia bien canalizada y el rendimiento sube — el silencio funciona como combustible, no como resignación.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "career.jerarquia", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Te lo guardás, pero el comentario te queda dando vueltas más de lo que te gustaría admitir en voz alta.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_streamer_que_fuiste_evitando_ser",
+    "category": "declive",
+    "categoria": "oportunidad",
+    "title": "El streamer que fuiste evitando ser",
+    "description": "Una agencia de contenido te ofrece un contrato de streaming que paga bien y no depende de que un club te siga queriendo. Es la clase de red de contención que evitaste armar mientras estabas en tu mejor momento, y ahora aparece justo cuando más sentido tendría empezar.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": ["declive"],
+      "nivel": ["tier3", "tier2", "tier1"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "aceptar_y_repartir_el_tiempo",
+        "label": "Aceptar y repartir las horas entre stream y preparación",
+        "descripcion": "Sumás el stream a tu rutina sin resignar los entrenamientos. Vas a tener menos horas para las dos cosas, pero ninguna se cae del todo.",
+        "weight": 3,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El público responde bien y la plata extra te saca presión de encima — jugás más liviano sabiendo que no todo depende de renovar.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Repartir el tiempo termina restándole horas a la preparación real, y en la próxima scrim se nota.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rechazar_de_plano",
+        "label": "Rechazarlo: mientras compitas, compite es lo único",
+        "descripcion": "Decís que no. Todavía te sentís jugador antes que personaje, y no querés que nadie —ni vos mismo— confunda las prioridades.",
+        "weight": 3,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El foco total en competir se nota: sin ninguna otra obligación, le metés todo a la preparación del split.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La agencia no vuelve a ofrecer lo mismo — la puerta que dejaste cerrada se cierra un poco más para cuando de verdad la necesites.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "delegarlo_a_alguien_del_staff",
+        "label": "Prestar el nombre y delegar la ejecución en un editor",
+        "descripcion": "Aparecés lo mínimo indispensable —un clip por semana, una aparición mensual— y dejás que alguien de confianza maneje el resto.",
+        "weight": 2,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El acuerdo funciona sin robarte casi tiempo: entra algo de plata extra y tu rutina de entrenamiento no se toca.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Delegado así, el contenido sale genérico y no conecta con nadie — la agencia se queja de que no rinde lo esperado.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "probar_un_formato_liviano",
+        "label": "Probar algo chico, sin comprometerte a nada fijo",
+        "descripcion": "Ni sí ni no de lleno: aceptás un formato liviano (un stream ocasional, sin calendario fijo) para ver cómo se siente sin firmar nada a largo plazo.",
+        "weight": 2,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El formato liviano te da una idea clara de cómo sería sin comprometerte del todo, y te deja tranquilo para decidir más adelante con información real.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "La indefinición no convence a la agencia, que esperaba un compromiso mayor, y la oferta se enfría sola.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": -1, "max": 1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_gaming_house_mas_joven_cada_ano",
+    "category": "declive",
+    "categoria": "familia",
+    "title": "La gaming house cada año más joven",
+    "description": "Hacés la cuenta sin querer: sos el mayor del roster por casi seis años. Los chistes que hacen tus compañeros en el grupo, la música que ponen, hasta la hora a la que se acuestan sin que nadie se lo pida —todo te recuerda que estás jugando en una generación que ya no es la tuya.",
+    "weight": 5,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": ["declive"],
+      "nivel": ["tier3", "tier2", "tier1"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "acortar_la_distancia",
+        "label": "Meterte de lleno en la dinámica del grupo, aunque no sea la tuya",
+        "descripcion": "Te sumás a lo que hacen, aunque el humor o la música no te cierren del todo. Preferís sentirte parte antes que distante.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El esfuerzo se nota y se agradece: el grupo te empieza a incluir de verdad, no por compromiso.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": 3, "max": 5, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Por más que lo intentás, la brecha generacional no se cierra fácil y terminás sintiéndote un poco de más.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hacer_vida_afuera",
+        "label": "Construir tu vida social afuera de la gaming house",
+        "descripcion": "Aceptás que esta no es tu generación y buscás a tu gente en otro lado: amigos de antes, pareja, familia. El vestuario queda para el juego, nada más.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tener una vida armada afuera del juego te da un piso emocional que el vestuario solo no te daba, y llegás a las scrims con la cabeza más liviana.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.familyTrust", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El vestuario nota la distancia y algo de la coordinación fina que da la confianza de grupo se resiente.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_final_que_ya_jugaste_antes",
+    "category": "declive",
+    "categoria": "prensa",
+    "title": "La final que ya jugaste antes",
+    "description": "La previa te muestra al lado de un highlight de una final de hace varios años, la mejor jugada de tu carrera. La comparación es un elogio y una condena al mismo tiempo: todos quieren saber si el de esta noche puede ser, aunque sea por una serie, el mismo jugador de esa foto.",
+    "weight": 5,
+    "cooldown": 14,
+    "contexto": {
+      "etapa": ["declive"],
+      "nivel": ["tier3", "tier2", "tier1"],
+      "ventana": ["playoffs", "internacional"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "abrazar_la_comparacion",
+        "label": "Decir que sí, que vas por esa misma versión tuya",
+        "descripcion": "Te ponés la vara vos mismo, en público, antes de que te la pongan. Si sale bien, es la historia perfecta; si sale mal, la caída es más visible.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Jugar con la propia vara puesta te saca el miedo a fallar por partes — o llegás a esa versión, o no, pero jugás entero.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "La comparación pesa más de lo que pensabas apenas el partido se complica, y jugás pendiente de la foto en vez de pendiente del mapa.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "separar_las_dos_versiones",
+        "label": "Decir que esta noche jugás vos, no la foto",
+        "descripcion": "Cortás la comparación de raíz: ese jugador existió, este es otro, y la única final que importa es la de hoy.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Separar las dos versiones te libera de un peso que no elegiste cargar. Jugás la serie por lo que es, no por lo que representa.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Algunos leen la respuesta como que ya bajaste los brazos con esa versión tuya, en vez de como una forma sana de manejar la presión.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "usarla_de_motivacion_privada",
+        "label": "No contestarle a la prensa, pero mirar el clip antes de entrar a jugar",
+        "descripcion": "En público esquivás la comparación con una respuesta genérica. En privado, sí mirás la jugada una vez más antes de salir a la cancha.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El ritual privado funciona: te reconectás con la sensación de esa jugada sin la presión de tener que explicarla en público.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "career.arraigo", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Mirar el clip antes de jugar te deja con más nostalgia que impulso, y entrás al mapa pensando en el pasado en vez del presente.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

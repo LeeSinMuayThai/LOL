@@ -780,5 +780,157 @@
         ]
       }
     ]
+  },
+  {
+    "id": "el_rookie_que_te_ocupo_el_asiento",
+    "category": "salud_vida",
+    "categoria": "vestuario",
+    "title": "El rookie que te ocupó el asiento",
+    "description": "Volviste, pero el titular de tu rol ahora es el chico de dieciocho años que te cubrió mientras estabas afuera. El coach no lo dice en voz alta, pero la scrim de hoy es, en los hechos, una audición.",
+    "weight": 6,
+    "cooldown": 6,
+    "contexto": {
+      "region": ["KR"],
+      "etapa": ["profesional"],
+      "nivel": ["tier3", "tier2", "tier1"],
+      "marcas": ["con_vestuario"]
+    },
+    "conditions": [
+      { "field": "flags.servicioCumplido", "op": "eq", "value": true }
+    ],
+    "options": [
+      {
+        "id": "retarlo_en_soloq",
+        "label": "Retarlo a partidas de soloQ, ganártelo en su terreno",
+        "descripcion": "Nada de esperar a la próxima scrim: lo buscás en el cliente y jugás contra él las veces que haga falta hasta que quede claro quién manda.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Le ganás la mayoría de las partidas y el mensaje llega sin que nadie tenga que decir nada en la sala de prácticas. El rookie te empieza a tratar distinto.",
+            "effects": [
+              { "type": "stat", "path": "career.jerarquia", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El resultado es parejo, y eso no es la afirmación que buscabas: dieciocho meses afuera te dejaron más cerca de un rookie de lo que te gustaría admitir.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ganartelo_en_scrim",
+        "label": "Dejar que lo decidan las scrims, partido a partido",
+        "descripcion": "Sin duelos personales: te enfocás en rendir en cada práctica del equipo y confiás en que el coach vea la diferencia con el tiempo.",
+        "weight": 3,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu experiencia en decisiones de mapa termina pesando más que la mecánica cruda del rookie. El coach te devuelve el puesto sin que hiciera falta un enfrentamiento directo.",
+            "effects": [
+              { "type": "stat", "path": "career.jerarquia", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El proceso es lento y frustrante: cada scrim que juega bien el rookie es una scrim menos donde te toca demostrar algo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "aceptar_el_rol_de_sexto",
+        "label": "Aceptar el banco por ahora, sin resignar la carrera",
+        "descripcion": "No forzás nada. Le das tiempo al cuerpo y a la mano, entrenás como sexto hombre, y esperás el momento en que el equipo te necesite de verdad.",
+        "weight": 3,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "La paciencia rinde: entrenás sin la presión de rendir en vivo y llegás a la titularidad de nuevo con menos desgaste que si hubieras forzado la vuelta.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El banco se siente más largo de lo que pensabas, y el rookie no da señales de querer soltar el puesto.",
+            "effects": [
+              { "type": "stat", "path": "career.jerarquia", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_medalla_que_te_saco_del_cuartel",
+    "category": "salud_vida",
+    "categoria": "prensa",
+    "title": "La medalla que te sacó del cuartel",
+    "description": "El oro de los Asian Games te eximió del servicio: mientras tus compañeros de generación van a tener que parar dos años en algún momento, vos seguís de largo. En una entrevista te preguntan directamente cómo se siente esa ventaja.",
+    "weight": 5,
+    "cooldown": 14,
+    "contexto": {
+      "region": ["KR"],
+      "etapa": ["debut", "profesional"],
+      "nivel": ["tier2", "tier1"]
+    },
+    "conditions": [
+      { "field": "flags.exentoServicio", "op": "eq", "value": true }
+    ],
+    "options": [
+      {
+        "id": "usarlo_como_impulso",
+        "label": "Decir que ahora te toca demostrar que valió la pena",
+        "descripcion": "Convertís la pregunta incómoda en una declaración de intenciones: la exención no es un regalo, es tiempo que pensás usar para pelear todo lo que se pueda.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La frase queda bien en los titulares y la hinchada la toma como una promesa. Ahora hay una vara puesta en público que vas a tener que sostener.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Sonás convincente y nadie te toma en falso: la ventaja te la ganaste, y decirlo así corta cualquier murmullo sobre privilegios.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "reconocer_el_peso",
+        "label": "Reconocer que la excepción también pesa",
+        "descripcion": "No la vendés como un triunfo sin costo: decís en voz alta que ver a tus compañeros de generación irse, mientras vos seguís jugando, no es tan simple como parece desde afuera.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "La honestidad cae bien: la nota se vuelve una de las más compartidas de la semana, y varios ex-compañeros te escriben agradeciendo que lo hayas dicho así.",
+            "effects": [
+              { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Te queda dando vueltas más de lo que esperabas: cada vez que un compañero de tu generación anuncia la baja, la pregunta de la entrevista te vuelve a la cabeza.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]
