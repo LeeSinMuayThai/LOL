@@ -118,5 +118,269 @@
         ]
       }
     ]
+  },
+  {
+    "id": "el_sponsor_bomba",
+    "category": "negocios",
+    "categoria": "mercado",
+    "title": "La marca que solo llama a los de la lista",
+    "description": "Una marca global de consumo masivo —de las que patrocinan Worlds, no solo equipos— te propone ser el rostro de una campaña mundial. Es el tipo de cifra que no entra por tu nivel de juego solo: entra porque estás en el radar de gente que ni sigue la escena.",
+    "weight": 4,
+    "cooldown": 12,
+    "contexto": {
+      "marcas": ["top_mundial"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "firmar_el_paquete_completo",
+        "label": "Firmar el paquete completo, imagen a largo plazo",
+        "descripcion": "Vas por la cifra grande: años de exclusividad, viajes de prensa, tu cara en la vía pública de medio continente. La plata cambia tu vida; el calendario deja de ser solo tuyo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El contrato entra y no se discute más: es la clase de plata que reordena una carrera entera. La marca te trata como a una estrella de verdad, no como a un gamer con suerte.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 5, "max": 9, "clamp": [0, 100] },
+              { "type": "stat", "path": "career.arraigo", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Entre rodajes y viajes de prensa, las semanas de preparación se achican más de lo que calculaste. El sponsor está feliz; tu coach, no tanto.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mecanica", "min": -2, "max": 0, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "negociar_salida_corta",
+        "label": "Negociar una cláusula de salida corta",
+        "descripcion": "Aceptás la campaña, pero con un contrato de un año y letra chica que te deja libre rápido. Menos plata sobre la mesa, pero el calendario sigue siendo tuyo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La marca acepta tus términos sin pelear demasiado —les interesás más a vos de lo que pensabas—, y terminás con la plata y el control al mismo tiempo.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Con la cláusula corta, la marca invierte menos en promocionarte a vos puntual y más en la campaña genérica. Cobrás bien, pero el envión mediático es menor al que esperabas.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "defender_el_trono",
+    "category": "identidad",
+    "categoria": "golpe_duro",
+    "title": "Todos vienen por el #1",
+    "description": "Ser el mejor del mundo dura hasta que alguien te saca, y lo sabés. Cada organización rival arma su temporada pensando en cómo pasarte a vos puntual. Pelear por llegar arriba y jugar para no bajarte son dos presiones completamente distintas.",
+    "weight": 4,
+    "cooldown": 10,
+    "contexto": {
+      "marcas": ["mejor_del_mundo"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "jugar_sin_nada_que_perder",
+        "label": "Jugar como si no tuvieras nada que perder",
+        "descripcion": "Le das la vuelta a la presión: ya llegaste arriba, así que jugás picks arriesgados y apuestas fuertes, total lo peor que puede pasar es dejar de ser #1 por un rato.",
+        "weight": 3,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Jugar sin el miedo a caer te devuelve la libertad con la que llegaste hasta acá — el nivel sube cuando dejás de jugar para no perder el puesto.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "La libertad se traduce en errores evitables, y en un ranking tan parejo arriba, un error evitable te cuesta el puesto en serio.",
+            "effects": [
+              { "type": "stat", "path": "career.jerarquia", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugar_a_no_perder",
+        "label": "Jugar conservador para no arriesgar el puesto",
+        "descripcion": "Cambiás el enfoque: ya no jugás para ganar más, jugás para no dar ninguna ventaja gratis. El #1 se sostiene tanto por lo que hacés bien como por lo que no regalás.",
+        "weight": 3,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El enfoque conservador funciona exactamente como lo pensaste: sostenés el puesto sin sobresaltos, aunque el juego se sienta menos vistoso que antes.",
+            "effects": [
+              { "type": "stat", "path": "career.jerarquia", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Jugar con miedo a perder es, funcionalmente, jugar peor: la prudencia se empieza a sentir como estancamiento, y el resto de arriba no se queda quieto esperándote.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ignorar_el_ranking",
+        "label": "Dejar de mirar el ranking del todo",
+        "descripcion": "Le pedís a tu entorno que no te comente la posición. Tu foco pasa a ser exclusivamente el próximo partido, no el número al lado de tu nombre.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Sacarte el ranking de la cabeza te devuelve el juego a su forma más simple: un partido a la vez. Es, sin buscarlo, la mejor manera de sostenerte arriba.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 4, "max": 7, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Por más que no lo mires, el número sigue ahí y la organización sí lo comenta en cada reunión. Ignorarlo del todo no es tan fácil como suena.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "la_prensa_te_destrona",
+    "category": "drama_prensa",
+    "categoria": "prensa",
+    "title": "La misma prensa que te subió, te baja",
+    "description": "Hace un mes eras la portada de la lista de los mejores del mundo. Dos semanas de resultados flojos después, el mismo medio publica una nota preguntándose si \"ya se te acabó el momento\". El ciclo de la fama es así de corto cuando el rendimiento afloja.",
+    "weight": 5,
+    "cooldown": 8,
+    "contexto": {
+      "marcas": ["top_mundial"],
+      "momentum": ["crisis", "slump"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "responderle_a_la_nota",
+        "label": "Responder la narrativa en una entrevista",
+        "descripcion": "No dejás pasar el titular: salís a decir que dos semanas flojas no borran el año que veniste haciendo, y que la próxima serie va a hablar por vos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "La respuesta firme corta el ciclo antes de que crezca — algunos medios hasta la citan como ejemplo de que todavía tenés la cabeza puesta donde hay que tenerla.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Responder le da más vida a la nota de la que tenía sola: ahora el titular de mañana es tu respuesta, no la racha floja en sí.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "no_leer_nada",
+        "label": "No leer nada y dejar que el próximo resultado hable",
+        "descripcion": "Le pedís a tu entorno que te filtre las notas por un tiempo. El ciclo de la fama se acelera o se apaga solo; vos preferís no mirarlo de cerca.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Cortar el ruido te deja jugar sin la presión extra del relato ajeno, y cuando el resultado mejora, el mismo medio da vuelta la nota sin que hiciera falta nada de tu parte.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El silencio no frena nada: sin una voz propia en el medio, la narrativa de que 'se te acabó' circula un buen rato más de lo que te gustaría.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "el_rival_que_te_pasa",
+    "category": "identidad",
+    "categoria": "golpe_duro",
+    "title": "{rival} te pasó en el ranking",
+    "description": "Chequeás la actualización del ranking mundial y ahí está: {rival} subió justo el puesto que vos bajaste esta semana. Llevan años cruzándose en la misma conversación; esta vez, el que quedó arriba en la lista no fuiste vos.",
+    "weight": 4,
+    "cooldown": 10,
+    "contexto": {
+      "marcas": ["top_mundial"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "buscar_el_cruce_directo",
+        "label": "Buscar el cruce directo cuanto antes",
+        "descripcion": "No esperás a que el calendario los junte solo: movés fichas —soloQ, un showmatch, lo que sea— para medirte contra {rival} lo antes posible.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El cruce llega y jugás con una intensidad que hacía rato no sentías. Ganes o pierdas esta vez, la rivalidad con {rival} vuelve a ser el motor que era.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Buscar el cruce a la fuerza te sale caro: llegás con más ansiedad que preparación real, pensando en {rival} en vez de en tu propio juego.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejar_que_el_calendario_decida",
+        "label": "Dejar que el calendario decida cuándo se crucen",
+        "descripcion": "No forzás nada. Si el destino los tiene que juntar de nuevo, va a ser en una serie real, no en un cruce armado para la ocasión.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La paciencia te deja seguir enfocado en lo tuyo, sin gastar energía en algo que todavía no está en tus manos resolver.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El puesto perdido te queda dando vueltas más de lo que esperabas cada vez que revisás el ranking y ves a {rival} un lugar más arriba.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

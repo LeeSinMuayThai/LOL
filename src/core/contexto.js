@@ -227,9 +227,9 @@ function calcularMarcas(state) {
 
   // Fase 9Wb (§9W.4): estás en el Top 20 del mundo AHORA / sos el #1. Estado
   // vivo (`flags.rankMundialActual`), no un pico — el contenido de "defendé el
-  // #1" / "el rookie que va por tu lugar" (catálogo en fase 13) le habla a
-  // quien está ahí ahora. El "eras top y te caíste" es de la fase 10, contra
-  // `picos.rankMundial`.
+  // #1" / "el rookie que va por tu lugar" (catálogo en `top_mundial.json`,
+  // completado en fase 13) le habla a quien está ahí ahora. El "eras top y te
+  // caíste" es de la fase 10, contra `picos.rankMundial`.
   const rankMundial = state.flags.rankMundialActual;
   if (rankMundial != null && rankMundial <= BALANCE.topMundial.tamano) {
     marcas.push('top_mundial');

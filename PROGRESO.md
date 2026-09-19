@@ -34,6 +34,40 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-09-19 — 13f: el catálogo de la cima que la fase 9Wb dejó prometido, sin reclamar
+
+Con la fase 13 y P.4 cerradas, y una auditoría completa de la tabla de deuda técnica y de
+`CONCEPTO.md` ya hecha, un último barrido por comentarios de código que citan "fase 13" encontró
+uno que ninguna versión de §13.1 había capturado: `data/events/index.js` y `core/contexto.js`
+traían, desde 9Wb, la nota *"El catálogo real de la cima (sponsor bomba, 'defendé el #1', la
+prensa que te destrona, el archirrival que te pasa) es fase 13"* — y `top_mundial.json` se quedó
+con los 2 eventos "semilla" que 9Wb escribió para probar el enganche, nunca con el catálogo real.
+Medido: la celda `el_mejor_del_mundo` tenía 172 eventos pasando el contexto, pero los 170 que no
+eran los 2 semilla eran genéricos de tier1/franquicia (sponsors, vestuario, prensa) — ninguno
+hablaba de ser específicamente el #1 del mundo. Mismo patrón que D26c: cantidad alta, pertinencia
+real baja, disfrazada por volumen.
+
+4 eventos nuevos en `top_mundial.json`:
+- **`el_sponsor_bomba`**: una marca global, del calibre que solo entra al radar cuando estás en la
+  lista mundial, no en la de tu liga.
+- **`defender_el_trono`** (marca `mejor_del_mundo`, no `top_mundial` — específicamente el #1, no el
+  Top 20 en general): la presión de sostener el puesto es distinta de la de pelear por llegar.
+- **`la_prensa_te_destrona`** (combina `marcas: ['top_mundial']` + `momentum: ['crisis','slump']` —
+  el primer evento del catálogo que cruza estos dos ejes a propósito): el mismo medio que te subió
+  especula con que se te acabó, apenas aflojás dos semanas.
+- **`el_rival_que_te_pasa`**: usa el token `{rival}` ya existente (`plantillas.js`, el primero de
+  `mundo.rivales`) para una rivalidad directa por el puesto en el ranking — sin depender de
+  `mundo.archirrival`, que no existe en el estado inicial y hubiera violado la trampa T4.
+
+Un typo real encontrado por el propio parser de JSON al escribir el contenido: una comilla sin
+escapar dentro de una descripción (`si "ya se te acabó el momento"`) rompía el archivo — corregido
+antes de commitear, no llegó a tocar `main`.
+
+**Verificación**: `validate.js --rapido` + los checks puntuales (esquema, vocabulario, categoria,
+tokens, previa/riesgo, repetición, T10, MOMENTOS, momento-coverage, los 8 de fase 9W) — 0 FAIL.
+`cobertura.js --huecos`: sin huecos, catálogo 246→250 eventos, 517 opciones. Suite completa
+(`validate.js` sin flags) corrida una vez más al cierre.
+
 ### 2026-09-19 — Fase P.4 cerrada: el juego se llama "Un Split Más", y tiene og:image propia
 
 Con la fase 13 cerrada, `PLAN.md` solo tenía un pendiente no-manual: P.4 ("La página como página"),

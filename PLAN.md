@@ -4414,8 +4414,7 @@ workflow de delegación habitual del proyecto, decidida por el usuario para esta
 | 13c | Servicio militar como bisagra alcanzable + contenido propio de declive |
 | 13d | D34 (tier 3 tiene historia), D17 (LATAM narrativo), D14 (rango de opciones 2-4) |
 | 13e | Check T10 (densidad por celda), remedición completa, D43 (deuda documental) |
-
-## 13.0 — Lo que ya se cumplió (fuera del alcance que queda)
+| 13f (2026-09-19) | El catálogo de la cima que la fase 9Wb dejó prometido y ninguna versión de §13.1 llegó a listar: `top_mundial.json` tenía 2 eventos "semilla" con un comentario explícito ("el catálogo real... es fase 13") que nadie reclamó. 4 eventos nuevos: `el_sponsor_bomba`, `defender_el_trono` (marca `mejor_del_mundo`, la más específica — ser el #1, no solo top 20), `la_prensa_te_destrona` (combina `marcas: top_mundial` + `momentum: crisis/slump`) y `el_rival_que_te_pasa` (usa el token `{rival}` ya existente). Encontrado auditando comentarios de código que citaban "fase 13" después de cerrar 13a-13e — la misma clase de deuda no reclamada que D43/D7/D41, pero en un comentario de código en vez de una tabla |
 
 - **Objetivo de escala**: `cobertura.js` lo confirma solo —
   `opciones totales del catálogo: 442 / objetivo 150 ✔`. No hace falta escribir más por volumen.

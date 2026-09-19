@@ -30,8 +30,8 @@ import partidoClasico from './partido/clasico.json' with { type: 'json' };
 import partidoDentroDelMapa from './partido/dentro_del_mapa.json' with { type: 'json' };
 import partidoPostpartido from './partido/postpartido.json' with { type: 'json' };
 // Fase 9Wb (§9W.4 gancho 3): 2 eventos semilla para la marca `top_mundial`.
-// El catálogo real de la cima (sponsor bomba, "defendé el #1", la prensa que
-// te destrona, el archirrival que te pasa) es fase 13.
+// El catálogo real de la cima (sponsor bomba, defender el #1, la prensa que
+// te destrona, el rival que te pasa) se completó en fase 13 (13f).
 import topMundial from './top_mundial.json' with { type: 'json' };
 // Fase 13: contenido para retirado_reciente en pretemporada (ventana de vuelta).
 import retiroYVuelta from './retiro_y_vuelta.json' with { type: 'json' };
