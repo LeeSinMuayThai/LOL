@@ -2465,15 +2465,25 @@ checkLento('Toda decisión de rutina ofrece una salida segura y la trampa', () =
   }
 });
 
-checkLento('Las rutinas de offseason declaran nivel donde corresponde y cada tier mantiene su segura+agresiva (D11)', () => {
+checkLento('Las rutinas de offseason declaran nivel y cada tier mantiene su segura+agresiva propias (D11, 13b)', () => {
   // D11: un bootcamp en Corea no lo paga un equipo inventado de tier 3. El
-  // catálogo tiene que decirlo, y una corrida real no puede ofrecerlo ahí.
-  // tier 1 y 2 siguen teniendo la agresiva; los tres tiers, una segura.
+  // catálogo tiene que decirlo, y una corrida real no puede ofrecerlo ahí — pero
+  // tier 3 necesita SU PROPIA agresiva (13b: grindeo_de_madrugada) o se queda
+  // sin trampa disponible, violando CONCEPTO §4 ("la trampa está disponible
+  // aunque convenga no tomarla"). Las 7 rutinas originales + la nueva, las 8
+  // declaran nivel: ninguna cae en una celda por omisión (mismo criterio D26c
+  // que cobertura.js usa para eventos).
+  for (const rutina of RUTINAS.offseason) {
+    if (!Array.isArray(rutina.contexto?.nivel) || rutina.contexto.nivel.length === 0) {
+      throw new Error(`${rutina.id}: no declara nivel en su contexto`);
+    }
+  }
+
   const bootcamp = RUTINAS.offseason.find((rutina) => rutina.id === 'bootcamp_corea');
   if (!bootcamp) {
     throw new Error('no está bootcamp_corea');
   }
-  const nivelesBootcamp = bootcamp.contexto?.nivel ?? [];
+  const nivelesBootcamp = bootcamp.contexto.nivel;
   if (!nivelesBootcamp.includes('tier1') || !nivelesBootcamp.includes('tier2')) {
     throw new Error('bootcamp_corea debe declarar nivel tier1 y tier2');
   }
@@ -2481,12 +2491,19 @@ checkLento('Las rutinas de offseason declaran nivel donde corresponde y cada tie
     throw new Error('bootcamp_corea no debe declararse para tier 3');
   }
 
+  const grindeoCasero = RUTINAS.offseason.find((rutina) => rutina.id === 'grindeo_de_madrugada');
+  if (!grindeoCasero || !grindeoCasero.etiquetas.includes('agresiva')) {
+    throw new Error('grindeo_de_madrugada no existe o dejó de ser la agresiva propia de tier 3');
+  }
+  if (!grindeoCasero.contexto.nivel.includes('tier3') || grindeoCasero.contexto.nivel.some((n) => n !== 'tier3')) {
+    throw new Error('grindeo_de_madrugada debe declararse EXCLUSIVAMENTE para tier 3 (si tier1/tier2 la vieran, bootcamp_corea dejaría de ser su única agresiva a propósito)');
+  }
+
   const seguraUniversal = RUTINAS.offseason.find((rutina) => rutina.id === 'dos_semanas_sin_tocar_el_juego');
   if (!seguraUniversal || !seguraUniversal.etiquetas.includes('segura')) {
     throw new Error('dos_semanas_sin_tocar_el_juego dejó de ser la salida segura universal');
   }
-  const nivelesSegura = seguraUniversal.contexto?.nivel;
-  if (Array.isArray(nivelesSegura) && ['tier3', 'tier2', 'tier1'].some((nivel) => !nivelesSegura.includes(nivel))) {
+  if (['tier3', 'tier2', 'tier1'].some((nivel) => !seguraUniversal.contexto.nivel.includes(nivel))) {
     throw new Error('dos_semanas_sin_tocar_el_juego no cubre todos los tiers');
   }
 
@@ -2512,11 +2529,16 @@ checkLento('Las rutinas de offseason declaran nivel donde corresponde y cada tie
             if (!etiquetas.has('segura')) {
               throw new Error(`seed ${seed}: offseason en ${nivel} sin salida segura`);
             }
-            if ((nivel === 'tier1' || nivel === 'tier2') && !etiquetas.has('agresiva')) {
+            // 13b: la exigencia de agresiva se pareja a los tres tiers — antes
+            // solo se pedía en tier1/tier2 porque tier3 no tenía ninguna.
+            if (!etiquetas.has('agresiva')) {
               throw new Error(`seed ${seed}: offseason en ${nivel} sin rutina agresiva`);
             }
             if (nivel === 'tier3' && rutinas.some((rutina) => rutina.id === 'bootcamp_corea')) {
               throw new Error(`seed ${seed}: bootcamp_corea ofrecido en tier 3`);
+            }
+            if (nivel !== 'tier3' && rutinas.some((rutina) => rutina.id === 'grindeo_de_madrugada')) {
+              throw new Error(`seed ${seed}: grindeo_de_madrugada (agresiva propia de tier 3) ofrecida en ${nivel}`);
             }
           }
         }
