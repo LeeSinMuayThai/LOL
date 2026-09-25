@@ -36,7 +36,8 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **P** | Publicar: build, guardado en el navegador, seed en la URL, el repo y el host | 🔶 **P.2/P.3/P.4/P.5 ✅** — el guardado, la seed en la URL, el repo y la página como página (nombre del juego + `og:image` propia, cerrado 2026-09-19) ya existen · **P.7/P.10 ✅**. **P.6 casi ✅ (2026-09-15)**: `origin/master` mergeado y al día, techo de `dist/` re-medido (1636 KB con el `og:image` nuevo) y convertido en check duro (1700 KB). **Conectar la cuenta del host** (Cloudflare Pages/Netlify) es del usuario, no algo para hacer de oficio — queda como el único paso manual de todo el proyecto. **Queda**: ese paso manual y **P.8** (verificación en la URL publicada una vez conectado) |
 | **D** | Los campos que la ficha promete y el motor no escribe: `ultimo_ano`/`sin_renovacion` (D30), `registro.picos.rankedPuntos` (D40) y `career.liga` sin limpiar al quedar libre (D42) | ✅ **cerrada (2026-09-15)**: D.1+D.3 por Grok, D.2 por Gemini, en worktrees paralelos, auditados por un tercer agente antes del merge — ver nota de la fase para el detalle del proceso. Los 5 checks en verde; el T1 declarado no llegó a ocurrir (huella idéntica en 40 seeds) |
 | **13** | Contenido a escala | ✅ **cerrada (2026-09-18, 13a→13e)**. Los 8 puntos de §13.1 resueltos: el hueco de cobertura, los 3 momentos `pendiente` obsoletos activados (+ `MOMENTOS` reordenada con check nuevo), D11 (rutinas por tier), servicio militar como bisagra alcanzable, declive con contenido propio (`declive.json`), D34 (`tier3.json`, 9 eventos), D17 (`latam.json`, narrativo), D14 (rango 2-4 opciones) y el check T10 que faltaba. Catálogo: 226→246 eventos, 442→**508 opciones**. `cobertura.js --huecos` vacío. Ejecutada por esta sesión sin delegar (excepción puntual, decisión del usuario) |
-| **V** | **Que la carrera se vea**: cero gráficos en todo el juego, la UI solo habla en presente, nada puede animarse entre estados. Sucede a la fase T y construye sobre su sistema de diseño (V0→V10, ver detalle abajo) | 🔶 **en curso**. **V0 ✅ (2026-09-19)**: el controlador vive en `src/ui/app.js` (710→194 líneas de `index.html`), `store.js`/`reconciliar.js`/`delta.js` nuevos, la inversión `ficha.js → shell.js` resuelta, D45 cerrado de paso. **V0b ✅ (2026-09-19)**: `reconciliar` adoptado en las 5 listas de clave natural (feed, tabla, plantilla, Top 5, mercado) vía el helper nuevo `reemplazarEnElLugar`. `validate.js` 189/189, `simulate.js` 0 crashes, huella anti-T1 idéntica en 40 seeds, `dist/` 1657 KB, verificado en navegador real (identidad de nodo confirmada en las 5 listas). Ejecución directa por esta sesión sin delegar (decisión del usuario). **Queda**: V1→V10 |
+| **V** | **Que la carrera se vea**: cero gráficos en todo el juego, la UI solo habla en presente, nada puede animarse entre estados. Sucede a la fase T y construye sobre su sistema de diseño (V0→V10, ver detalle abajo) | 🔶 **congelada en V0b (2026-09-20)**. **V0 ✅**: el controlador vive en `src/ui/app.js` (710→194 líneas de `index.html`), `store.js`/`reconciliar.js`/`delta.js` nuevos, la inversión `ficha.js → shell.js` resuelta, D45 cerrado de paso. **V0b ✅**: `reconciliar` adoptado en las 5 listas de clave natural (feed, tabla, plantilla, Top 5, mercado) vía el helper nuevo `reemplazarEnElLugar`. `validate.js` 189/189, `simulate.js` 0 crashes, huella anti-T1 idéntica en 40 seeds, `dist/` 1657 KB, verificado en navegador real. 🔶 **V1: librería completa, sin consumidor en la UI (auditoría 2026-09-25) — la pantalla es V2.** La capa de gráficos (`src/ui/graficos/`, 6 primitivos SVG) + el guard de color literal en JS existen y validan solas, pero ningún archivo de `src/ui/` fuera de `graficos/` la importa todavía. **Se congela acá a propósito**: jugando la carrera completa apareció un diagnóstico más urgente que "verse" — casi todo lo que rompe la experiencia es motor, no UI, y V se prohíbe tocarlo. Entra **FASE J** antes de V2. Ver su nota de apertura · V2→V10 después de J |
+| **J** | **Que la partida se juegue**: agencia real, la selección de eventos deja de forzar, te dejan draftear y jugar minijuegos, el internacional es un torneo de verdad, y elegís de dónde sos. Motivada por una carrera jugada de punta a punta el 2026-09-20 con diagnóstico medido, no de gusto (ver la nota de apertura de la fase) | 🔶 **planificada, sin empezar**. Primer tramo (J0, J3, J4, J5, J6, J-previa, J9) y segundo tramo (J1, J2, J7, J8, J10) — ver detalle abajo. Workflow de delegación: grok/agy implementan en worktrees, un Claude fresco revisa, Sonnet arregla si hace falta |
 
 > **Por qué estas tres fases se insertaron antes del mercado.** Jugando el juego con las cuatro
 > fases hechas aparecieron cuatro defectos medibles: la temporada regular se resuelve con una
@@ -4943,6 +4944,335 @@ Y, por ser una fase de UI, dos verificaciones que el resto del proyecto no neces
 
 ---
 
+# FASE J — QUE LA PARTIDA SE JUEGUE
+
+> Se inserta antes de V2 (2026-09-20). Motivo: el usuario jugó una carrera completa de punta a
+> punta y el veredicto fue *"esto es un simulador de clics de mierda"*. No es una queja de gusto —
+> las nueve cosas que señaló tienen, cada una, una causa medible en el código. Investigación
+> completa contra HEAD (`400f6b6`), no impresiones.
+
+## J.0 — El diagnóstico, medido
+
+Nueve quejas citadas (corregido 2026-09-25, auditoría: este documento decía "diez" en dos lugares
+— acá y en la verificación de cierre de la fase — y la tabla siempre tuvo nueve filas con queja no
+vacía; las filas sin queja son evidencia adicional de la de arriba, no quejas nuevas).
+
+| Queja | Causa medida |
+|---|---|
+| "es todo RNG, mi skill no importa" | r(nivel, posición final) = **0,18**. Los compañeros son el 50% de la fuerza (`pesoJugadorEnEquipo: 0.5`, `core/fuerza.js:45`) y su `nivel` es una **foto congelada al fichar** (`systems/roster.js:29-36`) que nunca se refresca mientras seguís en la org |
+| "las opciones no afectan nada" | **47,2%** de los efectos del catálogo (758/1606) van a `mentalidad`/`hype`, que **no se leen** en `core/fuerza.js` ni en `systems/rendimiento.js`. Un efecto típico mueve 0,58 puntos de nivel contra `ruidoRendimiento: 7` → **0,083σ**, invisible por construcción |
+| | **130 de 280** efectos sobre stats de rol caen en stats de curva (mecánica/laneo/teamfight) que `systems/atributos.js:20-46` regresa al objetivo biológico: vida media **1,9 splits** |
+| | Solo **23 de 1034** outcomes (2,2%) declaran `modificadores`. La promesa de `CONCEPTO §8` ("tus stats corren esos pesos") se cumple en el 2,2% del catálogo |
+| "siempre salen los mismos" | `systems/events.js:228-231` (`conPrioridadDeBisagra`) es un filtro **exclusivo**: el **16,4%** de los splits tiene ≥1 bisagra elegible y en el **96,4%** de esos casos queda UNA sola opción — se descartan **42 eventos elegibles** de media. Solo 4 de 250 eventos son bisagra y los 4 son `categoria: "parche"`. Esa categoría se lleva **14,2%** de la pantalla con **5,6%** del catálogo |
+| | La marca `main_muerto` está activa el **52,2% de los splits por construcción**: `core/ajusteMeta.js:116-122` la prende si tu main está en tier B o C, y `corteB: 0.75` (`balance.js:408`) hace que B+C sea el 55% inferior del rol, **siempre** |
+| | **Ninguna** de las 2 opciones de `pool_main_muerto` (`data/events/pool.json:246-315`) apaga la marca: `buscar_reemplazo` mete el reemplazo con maestría 30, por debajo del main muerto; `apostar_que_vuelve` **sube** la maestría del main muerto. El evento (top 1 del juego, 2,8/carrera) se re-dispara indefinidamente cada 6 splits |
+| "dos veces seguidas lo del meta" | `evento.categoria` (11 valores) existe desde 12b y **la selección nunca la lee**. Medido: **31,9%** de los pares de eventos consecutivos comparten categoría |
+| "hacés un clic y perdiste" | `puntosEnJuegoParaPreguntar: 0.26` (`balance.js:1377`) → **32,5% de las series sin un solo draft**, mediana 1 por Bo5. `systems/serie.js:205` excluye a `cuartos` de las rondas con minijuego: los seeds 3-6 arrancan su bracket 100% automático. El bracket completo (hasta 20 mapas) puede resolverse dentro de un único `avanzarSplit`, cero clics |
+| "Worlds es una basofia" | El internacional es **UNA Bo5 contra UNA org sorteada** (`systems/serie.js:424-437` + `core/serie.js:65-71`) de otra liga tier 1 — ni siquiera es la campeona de su liga. Sin Swiss, sin grupos, sin bracket. Worlds/MSI/First Stand no se distinguen (D18). `systems/escena.js:45` sortea el campeón del mundo con un `weightedPick` **independiente que nunca mira tu serie**: se puede ganar tu Bo5 y el log decir que ganó otra org |
+| "Maestría 5, antes tenía más" | `systems/campeones.js:44-66`: todo campeón no jugado pierde `gauss(1.5, 1)` por split contra piso `maestriaMinima: 5`. Con un pool de 6 y 1 jugado por split, los otros 5 se pudren hasta el piso |
+| "no podés elegir región ni dificultad" | `core/mundo.js:310`: `weightedPick(ligasTier1, prestigio)`, sin input del jugador. El concepto de dificultad no existe en el motor |
+| "¿qué me importa el parche?" | `state.meta.patch` es un contador `+1` por split (`systems/meta.js:93`) que **nadie lee** salvo para imprimirlo |
+
+## J.1 — Por qué se insertó acá (y por qué FASE V se congela)
+
+`FASE V` se prohíbe explícitamente tocar el motor (*"esta fase no debe mover un byte del motor"*,
+§V.1) — y el 70% de lo medido arriba **es motor**. Terminar V1→V10 tal cual producía un simulador
+de clics más lindo, no un juego. Se congela en **V0b + V1** (el kernel de render y la capa de
+gráficos SVG, que J reusa para la previa de serie y el bracket de Worlds) y se retoma en **V2** una
+vez que la partida de abajo valga la pena mirar.
+
+## J.2 — Decisiones del usuario (textuales — respetarlas, no volver a preguntar)
+
+| Tema | Decisión |
+|---|---|
+| **Orden** | FASE V se congela en V0b/V1. FASE J (motor) va primero. V2→V10 después |
+| **Arte de campeones** | **Data Dragon de Riot** (CDN). Íconos en draft/pool + splash difuminado con transición en el inicio. Se acepta perder el offline puro, con fallback al tile geométrico actual |
+| **Internacional** | **Torneo real**: Worlds/MSI/First Stand con nombre, clasificados reales de cada liga, Swiss + knockout, rivales nombrados. El campeón del mundo sale de ESE torneo. Revisa **D19 solo para el internacional** — los playoffs domésticos siguen siendo solo tu camino |
+| **Dificultad** | **La región ES la dificultad.** Sin selector aparte |
+| **LATAM** (textual) | *"elegís la región pero te sirve hasta tier2, tier1 tenés que tener ofertas de otras"* → tu región de origen te da su escena hasta tier 2; para tier 1 necesitás que te fichen desde otra liga. LATAM (sin tier 1 en 2026) es, por construcción, el modo difícil. **Reabre D17 como estructural** (venía cerrada "como narrativo" en 13d) |
+| **El parche** | Deja de ser un contador y pasa a ser un **diff**: qué campeón subió, cuál cayó, qué le hizo a tu pool |
+| **Primer tramo** | Lo barato y visible primero: sentir la diferencia jugando antes de tocar la fórmula de fuerza |
+| **Workflow** | Delegación real: grok/agy implementan cada subfase en su propio worktree; un subagente Claude fresco revisa contra `CLAUDE.md` y el spec; Sonnet aplica el fix si hace falta; el supervisor mergea y actualiza `PROGRESO.md` |
+
+## J.3 — El principio de esta fase
+
+1. **Una decisión que no cambia el resultado no es una decisión.** Si lo que el motor pregunta no
+   mueve la probabilidad del partido más que `ruidoRendimiento`, la resuelve él y lo cuenta en una
+   línea.
+2. **Ningún evento entra sin tirada.** El filtro exclusivo está prohibido. La prioridad se expresa
+   como peso, nunca como descarte.
+3. **El motor no te miente sobre el mundo.** Si ganás tu serie, el campeón del mundo sos vos
+   (regla de proceso 15 aplicada al mundo, no solo a la tarjeta de oferta).
+
+## J.4 — Los tres bloques de corrimiento (trampa T1)
+
+Toda subfase de motor corre el stream de RNG. Lo acotable es cuántas veces se paga re-medir la
+tabla de KPIs y re-basear los ~190 checks — mismo patrón que 9Ma→9Mj.
+
+| Bloque | Subfases | Cierra con |
+|---|---|---|
+| **A — agencia** | J1, J2 | **J2c** (recalibración completa) |
+| **B — densidad** | J4, J5, J6 | J5 y J6 **son** la calibración |
+| **C — el mundo** | J7, J8 | **J8c** |
+| **sin corrimiento** | J0, J3, J9, J10 | — |
+
+Dentro de un bloque, un check fuera de banda se anota con su número medido y se re-basea en el
+commit de calibración, no en el acto (regla 2 + T6). Un check que *crashea* se arregla en el acto.
+
+**D52** (tabla de deuda, abajo): declarada una sola vez — *ninguna seed anterior a FASE J
+reproduce su carrera* — y no se vuelve a discutir por commit, misma familia que D21/D22/D35.
+
+## Primer tramo — lo barato y visible
+
+Siete commits (corregido 2026-09-25, auditoría: decía "seis" y siempre listó siete — J0, J3, J4,
+J5, J6, J-previa, J9). Cero sistemas nuevos, cero recalibración de bloque A. Que se sienta la
+diferencia jugando antes de tocar la fórmula de fuerza.
+
+### J0 — El instrumento *(cero motor)*
+
+Lección de D26: tres herramientas mirando para otro lado dejaron pasar una carrera varada el 30,7%
+de las veces. No se abre una fase de jugabilidad sin poder medir jugabilidad. Toca `src/dev/simulate.js`
+(bloque `jugabilidad` nuevo) y `src/dev/cobertura.js` (partición por `categoria`, no solo por celda
+`momento × ventana` — hoy cuenta por **unión** de 12 muestras y por eso dijo "sin huecos" mientras
+1 de cada 6 splits forzaba el mismo evento de parche).
+
+Mide la línea de base completa de J.0 (T6: medida ahora, no citada de `PROGRESO.md`). Check: los
+KPIs devuelven finitos sobre 200 carreras × 3 estrategias, 0 crashes. *Excepción declarada a la
+regla 12: la "pantalla" de J0 es la tabla de `PROGRESO.md`.*
+
+### J3 — El pool deja de pudrirse *(2 constantes y una condición)*
+
+`systems/campeones.js:44-66` (`moverMaestrias`). El óxido gana gracia (`splitsSinJugarParaOxido`
+splits antes de empezar a decaer, con `campeon.ultimoSplitJugado` nuevo, T4: inicializado en
+`entradaDePool`, nunca `null`); `maestriaMinima: 5 → 18` ("lo sabés jugar aunque no lo toques"); el
+óxido escala inverso al tamaño del pool, para que `pool_ancho` signifique algo. Pantalla: el panel
+de pool muestra el pronóstico de óxido. Checks: pool de 6 con juego normal no cae bajo 18 en 10
+splits (hoy cae a 5); maestría mínima del pool al retiro ≥ 18.
+
+### J4 — La selección deja de forzar · la de mayor valor por unidad de trabajo
+
+Tres cambios, ~60 líneas de motor:
+
+**(a)** La bisagra deja de ser filtro: `conPrioridadDeBisagra` (`events.js:228-231`) pasa a ser un
+multiplicador dentro de `pesoConMemoria` (`evento.bisagra ? factorBisagra : 1`) — los 42 eventos
+descartados vuelven al sorteo, la bisagra sigue ganando casi siempre, pero **con tirada**.
+**(b)** `categoria` entra en la selección: `flags.categoriasRecientes` (ventana de 2), mismo patrón
+que `flags.minijuegosRecientes` en `core/minijuegos.js`. **(c)** `main_muerto` pasa de ESTADO a
+TRANSICIÓN: se prende cuando un campeón **cae** de S/A a B/C respecto del parche anterior (no
+mientras *está* en B/C), y dura `ventanaMainMuerto` splits — mismo patrón que `descenso`/
+`ventanaDescenso` (`core/contexto.js:212`). Necesita `flags.tierListPrevia` (T4: `[]` inicial), que
+de paso alimenta el parche-como-diff de J.2. **(d)** Al menos una opción de `pool_main_muerto` deja
+el pool sin campeón caído al split siguiente.
+
+Constantes: `eventos.factorBisagra`, `eventos.factorCategoriaReciente`,
+`eventos.categoriasRecientesMax`, `contexto.ventanaMainMuerto`. Checks (los cinco en rojo hoy): p95
+de descartados por bisagra ≤ 3 (hoy 42); < 15% de pares consecutivos comparten categoría (hoy
+31,9%); `main_muerto` activa en < 25% de los splits (hoy 52,2%); `pool_main_muerto` ≤ 1,2/carrera
+(hoy 2,8); existe ≥1 opción que apaga la marca (hoy ninguna).
+
+> Efecto lateral esperado y bueno: `core/temporadaResumen.js:173` puntúa `main_muerto: 70` para el
+> titular del año — redefinirla mueve los titulares (hoy los domina). Re-medir en J5.
+
+### J5 — El presupuesto se reparte · libera lo que J6 y J7 gastan
+
+Que se te muera el main deja de marcar el split `'denso'` (`core/presupuesto.js:27,54`) — con
+`probSegundaDecisionPorTipo.denso: 0.85` eso era un bucle de realimentación con el 52% de J4.
+`denso: 0.85 → 0.35`, `normal: 0.4 → 0.30`. `interrupcionesPorSplit` gana buckets por ventana
+(`{ rutina: 1, eventful: 2, playoffs: 5, internacional: 14 }`).
+
+El presupuesto es de suma cero (por carrera, sobre la base de J0): se recorta ≈50 de eventos de
+ambiente, segunda decisión y `parche`; se gasta ≈48 en draft doméstico, minijuego en cuartos,
+fechas de playoffs y Worlds. Neto ~0, **redistribuido**: sale de los splits de rutina, donde era
+ruido, entra en los de competición, donde es el juego.
+
+Checks: decisiones por carrera en banda [150, 280]; `categoria: parche` < 8% de las tarjetas (hoy
+14,2%); ningún split de rutina gasta más de 1 interrupción.
+
+### J6 — Te dejan jugar *(casi todo constantes)*
+
+`puntosEnJuegoParaPreguntar: 0.26 → 0.10`, `Decisivo: 0.13 → 0.05` — el 0,26 se puso para cumplir
+un presupuesto que J5 acaba de rehacer. `rondasConMinijuego` sale del código a `balance.js`, con
+**`cuartos` adentro** (`systems/serie.js:205`). `fechasMarcadasPorSplit` pasa a
+`{ regular: 1, playoffs: 2 }`. La tarjeta de draft (`systems/serie.js:43-61`) **muestra la
+probabilidad** que el motor ya calculó (regla 13: *"62% con Sejuani · 54% con Maokai"*, nunca
+`29/100` sin referente). `generarRival` doméstico (`core/serie.js:85-87`) excluye orgs ya
+enfrentadas en el bracket y pesa por la tabla real, no solo `org.fuerza`.
+
+Checks (rojos hoy): series sin draft < 10% (32,5%); mediana drafts/Bo5 ≥ 2 (1); estático
+`rondasConMinijuego ⊇ ORDEN_RONDAS`; ningún bracket repite rival; la tarjeta declara la misma
+probabilidad que el motor usó (regla 15).
+
+### J-previa — LA PREVIA *(la mitad de UI de J1, adelantada)*
+
+`core/previa.js` gana `previaDeSerie(state)` (pura, sin `rng` — hoy el archivo es solo para
+opciones de eventos); `src/ui/screens/previa.js` + `src/ui/paneles/previa.js` nuevos, consumiendo
+los primitivos de V1. Antes del primer mapa de cada ronda: tale of the tape — tu fuerza desglosada,
+la del rival, el head-to-head, la revancha (`career.ultimoEliminadoPor`) y **la probabilidad de
+ganar la serie** que el motor ya calcula y hoy tira a la basura. Check: la previa declara la misma
+probabilidad que usa `finalizarMapa` (regla 15, exacto).
+
+### J9 — Los campeones tienen cara *(cero motor, cero corrimiento)*
+
+`ui/components/campeonTile.js:6-8` (el comentario "sin splash, Riot IP" se reemplaza por Data
+Dragon); `data/champions.json` gana un campo `ddragon` **explícito por campeón** (la key no es el
+`name`: `Wukong→MonkeyKing`, `Nunu & Willump→Nunu`, `Renata Glasc→Renata`…), no un heurístico de
+string. Íconos 48×48 en draft/pool; splash difuminado con transición en `ui/screens/inicio.js`.
+**Fallback obligatorio**: `img.onerror` → el tile geométrico actual — el juego sigue jugable con la
+red caída, y `dist/` no sube un byte (las imágenes son CDN). La versión del CDN va en dato
+(`data/ddragon.js`), nunca hardcodeada. De paso: `ui/app.js:508` no le pasa `handleInput` ni
+`seedInput` a `inicio.js` — el handle **sí** se puede elegir (`index.html:86`) y el jugador no lo
+vio; se sube al primer paso con jerarquía visual real.
+
+Checks: estático — toda entrada de `champions.json` declara `ddragon`; `crearCampeonTile` con
+`onerror` devuelve el tile geométrico; `build.js` ≤ 1800 KB (techo re-medido en AUD-1, 2026-09-25);
+`verificarSinColorLiteralEnJs` verde.
+
+## Segundo tramo — lo caro
+
+Se planifica ahora, se ejecuta después de volver a jugar el primer tramo.
+
+### J1 — La fuerza te incluye · bloque A · el commit más peligroso
+
+`core/fuerza.js:20-34` (`rendimientoBase`) suma `factorMentalidad`, misma forma que
+`factorSinergia`/`factorJerarquia`. `core/fuerza.js:40-47` (`fuerzaDelEquipo`) suma `factorHype` y
+**lee el nivel de los compañeros en vivo** de `state.mundo.planteles[org.nombre]`, con fallback al
+snapshot para tier 3 / tier 2 no modelada — cero `rng`, cero estado nuevo (`systems/roster.js:29-36`
+ya sabe leer de ahí). `pesoJugadorEnEquipo: 0.5` no se toca acá (regla 2 — es J2c).
+
+Checks: mentalidad 20 vs 80 ⇒ `fuerzaDelEquipo` difiere ≥ 8% (hoy 0%); r(nivel, posición) ≥ 0,45
+sobre 600 carreras (hoy 0,18); en ≥8 splits en la misma org el nivel medio de compañeros cambia al
+menos una vez (hoy constante por construcción).
+
+> Esperar 20-40 de los ~190 checks fuera de banda: `fuerzaDelEquipo` alimenta posición → playoffs →
+> títulos → mercado → retiro → `topMundial`. No parchear en el acto (T5): anotar y re-basear en J2c.
+
+### J2 — El efecto sobrevive al split · bloque A
+
+Problema estructural, no de magnitud: subir los `[min,max]` no sirve porque la curva se los come
+igual. `systems/atributos.js:20-46` converge hacia `objetivo + player.bonusPermanente[stat]` en vez
+de hacia `objetivo` — un punto único. `player.bonusPermanente` a `createInitialState` completo con
+ceros (T4). Pasada de contenido sobre `events/rol/*.json` y los efectos de `mentalidad`/`hype`
+(ahora que J1 los lee, valen), y `modificadores` sobre outcomes de eventos bisagra y de mejora.
+
+Checks: un efecto sobre stat de curva conserva ≥40% de su delta a 4 splits (hoy ~10%); estático —
+ningún efecto `type:'stat'` sobre curva evita `bonusPermanente`; ≥25% de outcomes de eventos
+bisagra declaran `modificadores` (hoy 2,2% global).
+
+### J2c — Calibrar agencia · solo constantes
+
+Re-medición completa (T6) de J0 + los ~190 checks. Acá entra `pesoJugadorEnEquipo` si J1 lo dejó
+torcido. `simulate.js 1500 60 todas`.
+
+### J7 — El internacional existe · bloque C · el commit más caro (3-4× cualquier otro)
+
+Revisa D19 **solo para el internacional**; los playoffs domésticos siguen siendo solo tu camino.
+
+Vive en `core/internacional.js` (nuevo, puro: clasificados, siembra, emparejamiento Swiss, bracket,
+resolución determinista de ajenos) + `systems/internacional.js` (nuevo: `aplicar(state, rng) ->
+{state, logs, decision?}`, regla invariable 5) + una línea nueva en `systems/registro.js`, entre
+`serie` (`:63`) y `events` (`:64`) — necesita `career.posicion` fresco de `serie.js` y tiene que
+correr antes de `escena.js` (`:71`), que hoy inventa el campeón del mundo y ahora lo va a leer.
+`intentarInternacional` (`systems/serie.js:424-437`) y la rama `'internacional'` de `generarRival`
+se borran; `serie.js` termina en la final doméstica.
+
+**Los clasificados, sin tocar `rng`.** `liga.cuposInternacionales` ya existe (3/3/3/3/2/2) = 16
+participantes, el tamaño exacto del Swiss real. Tu liga sale de `tablaDePosiciones`; las otras 5 por
+`clasificadosDeterministas(orgs, n, clave)` — extensión de `campeonDeterminista`
+(`core/escena.js:41-58`), que **ya existe y ya pondera por `org.fuerza` con `hashCadena`**. El
+número de participantes no corre el stream.
+
+**El Swiss sin volverlo caro.** 16 × 5 rondas ≈ 40 partidos/torneo × ~15 años ≈ 600 partidos; con
+`gauss` serían 1200+ tiradas. Los partidos **ajenos** se resuelven con
+`hashCadena(seed, torneo, año, ronda, orgA, orgB)` ponderado por fuerza — determinista, nombrado,
+mostrable, cero `rng`. Solo **tus** partidos consumen `rng` (los únicos con draft/Fearless/
+minijuego) — la filosofía de D19, pero con el bracket real y completo. Formato: Swiss 16, 5
+rondas, 3-0 clasifica / 0-3 elimina, 8 al bracket; tus Swiss son Bo1 salvo avance/eliminación
+(récord 2-2, Bo3); bracket Bo5 reusando `systems/serie.js` entero. Emparejamiento: mismo récord,
+sin revancha, sin cruce de misma liga mientras haya alternativa. Fearless dentro de cada serie (no
+del torneo entero, o un pool de 6 se agota en 3 mapas); persiste `penalizacionCampeonVisto`.
+
+**El campeón del mundo sale del torneo:** `systems/escena.js:45` borra su `weightedPick` y lee
+`state.internacional.campeon`. **Enciende una puerta muerta**: `ventana: 'internacional'` existe en
+`data/contextos.js:23` y `calcularVentana` nunca la devuelve — el torneo la enciende gratis vía
+`overrides`.
+
+Checks (rojos hoy): el campeón del mundo del log **es** el campeón del torneo (hoy falla el 100% —
+dos sorteos independientes); 16 participantes distintos, ≥1 por liga tier 1; el Swiss siempre
+termina (8 y 8); ningún emparejamiento repite cruce; `registro.internacionales[]` guarda
+`torneo + record + camino` en el 100%; un split de internacional nunca encadena más de
+`maxDecisionesPorSplit` (T9, vivo); si no clasificás, cero tiradas consumidas.
+
+### J8 — Worlds, MSI y First Stand · bloque C · primera candidata a cortar
+
+Cierra D18. `splitsPorEdad: 3` da una sola regular y unos solos playoffs por año, así que solo
+Worlds cabe como torneo completo; **First Stand** (pretemporada, bracket de 6 Bo3, campeones del
+año anterior) y **MSI** (regular, bracket de 8 Bo5, los 1-2 de cada liga) son cortos. Usa
+`nombresPorCompeticion` de `data/minijuegos.json`, que 12f ya escribió y hoy casi no se dispara.
+Check: `ventana: 'internacional'` alcanzable (hoy inalcanzable en `cobertura.js`); los tres
+torneos aparecen ≥1 vez en 300 carreras.
+
+### J8c — Calibrar el mundo
+
+Ojo con la distribución de campeones del mundo por liga a 15 años: el Swiss determinista por hash
+podría colapsar en una org si dos comparten `fuerza`. Check: ninguna org > 25%.
+
+### J10 — Elegís de dónde sos *(cero corrimiento si se hace bien)*
+
+Textual del usuario: *"elegís la región pero te sirve hasta tier2, tier1 tenés que tener ofertas de
+otras"*. Reabre **D17 como estructural** (venía "como narrativo" en 13d): `data/events/latam.json`
+ya tiene 3 eventos esperando `region: ['NA','BR']`, y la maquinaria de imports ya existe desde
+9Mb/9Md (`residenciaEn`, `cupoImports`, `minimoResidentes`, `margenImport`, `dificultadAdaptacion`).
+
+`data/leagues.json` gana **LRN y LRS** como tier 2 (servidores LAN/LAS), sin tier 1 encima — los
+circuitos que D17 ya nombraba. Campo `dificultad` por liga tier 1, con check de que su orden
+coincide con `prestigio`. `core/mundo.js:310` (`weightedPick(ligasTier1, prestigio)`) **se sigue
+llamando siempre**, y su resultado se descarta si el jugador eligió — regla de oro del archivo
+(`mundo.js:199-203`): cada tirada se consume igual haya elección o no, o `simulate.js`/`validate.js`
+headless dejan de reproducir. El contrato `eleccion` (`core/state.js:13-15` + `mundo.js:294-300`)
+gana `regionOrigen?`.
+
+Checks: elegir región no corre el stream (huella de 40 seeds idéntica entre `eleccion: null` y
+`eleccion: { regionOrigen: <la que el sorteo habría dado> }` — protege la regla de oro); cada
+región produce una dificultad distinta y monótona (% que llega a tier 1 ordenado igual que
+`prestigio`, 300 carreras por región); desde LATAM se llega a tier 1 **solo por oferta de import**,
+y se llega en > 0% de las carreras (si es 0%, el modo difícil es un callejón sin salida).
+
+### J11 — Calibrar · solo constantes
+
+Re-medición completa de la tabla de J0.
+
+## Riesgos
+
+| # | Riesgo | Mitigación |
+|---|---|---|
+| 1 | Guardados viejos: `state.internacional`, `player.bonusPermanente`, `flags.tierListPrevia`, `campeon.ultimoSplitJugado` no existen en un save pre-J | T4 cubre `createInitialState`, **no los saves**. `core/guardado.js`/`ui/almacenamiento.js` necesitan defaulting explícito — eje que el repo nunca tocó |
+| 2 | T9 vivo en J7: un split de Worlds son 15-22 decisiones; `maxDecisionesPorSplit: 60` es la única red | Check del máximo real en 1500 carreras. Si pasa de 35, el Swiss auto-resuelve las rondas donde ya estás 2-0 o 0-2 |
+| 3 | Leer el plantel en vivo (J1) puede regalar/robar dificultad de golpe si `plantel.js` sube el nivel medio con los años | Medir `org.fuerza` medio por año antes/después. Si driftea, el fix es en `plantel.js`, no en `fuerza.js` |
+| 4 | Data Dragon envejece: versión del CDN, keys que cambian, se pierde el offline puro | Versión en dato. `onerror` → tile geométrico siempre. Check estático de keys declaradas |
+| 5 | Regla 3: si el balance se sale de banda tras J1/J4, primero contenido, no constantes | Por eso J2 (que es contenido) va pegada a J1, y J5/J6 pegadas a J4 |
+| 6 | J4 mueve los titulares del año (`core/temporadaResumen.js:173`) | Esperado y deseable — hoy `main_muerto` los domina. Re-medir en J5 |
+
+## Verificación
+
+```bash
+node src/dev/validate.js                 # los checks viejos + los nuevos, en rojo primero (regla 7)
+node src/dev/simulate.js 1500 60 todas   # 0 crashes
+node src/dev/build.js                    # guards + techo de dist/
+node src/dev/cobertura.js --huecos       # vacío
+node server.js                            # jugar a mano, cero errores de consola
+```
+
+Más, por mover el motor: huella de determinismo en 40 seeds antes/después de cada subfase (el
+corrimiento se espera y se declara en A/B/C; en J0/J3/J9/J10 la huella tiene que ser idéntica y es
+un check); end-to-end: volver a jugar la carrera que disparó todo esto — ninguna de las nueve quejas
+de J.0 se puede repetir textualmente.
+
+**El corte mínimo:** J0 + J3 + J4 + J5 + J6 + J-previa + J9 ya arregla la partida que se jugó. Sin
+sistemas nuevos, sin recalibración de bloque A. El internacional (J7/J8) y la agencia real (J1/J2)
+quedan para el segundo tramo. **J8 es la primera que se corta** de todo el plan.
+
+---
+
 # Fuera de alcance (visto en las imágenes, decidido que no)
 
 | Qué | Dónde se ve | Por qué no |
@@ -5010,6 +5340,16 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D49 | Techo de `dist/` con **53 KB de margen** sobre 1700 KB (medido 2026-09-19, `node src/dev/build.js` → 1647 KB). La fase V va a superarlo con la capa de gráficos + las pantallas nuevas | V9 (re-medido y subido con número, en su propio commit — regla de proceso 2) |
 | D50 | `pantallas.css` son **1815 líneas** en un solo archivo — no es un bug, pero la fase V le va a sumar CSS nuevo encima | V9 (a evaluar: dividir solo si el criterio de corte es claro, no dividir por dividir) |
 | D51 | El validador de accesibilidad de color de la skill `dataviz` (`scripts/validate_palette.js`) falla sobre las dos paletas categóricas que ya existen en `tokens.css`: `--cat-*` (10 familias) y `--rank-*` (10 tiers) — banda de luminosidad, piso de croma y separación CVD, las tres en rojo. El peor par de cada una queda debajo del piso de visión normal (ΔE 9,3, piso 15 para pasar): `--cat-partido` ↔ `--cat-salud` y `--rank-bronze` ↔ `--rank-iron`. Medido 2026-09-19 corriendo el validador contra los hex reales de `tokens.css` (modo dark, superficie `--bg-surface`). No es un bug — ambas paletas ya se usan hoy sin depender de que un lector distinga dos vecinos sin apoyo de texto — pero cualquier primitivo de V1 que codifique identidad SOLO por uno de estos dos hues, sin etiqueta de texto al lado, hereda el problema | V1 (mitigación, no rediseño: todo primitivo que use `--cat-*`/`--rank-*` para identidad lleva etiqueta de texto junto al color, nunca el hue solo — regla que la skill `dataviz` ya exige y que la UI de ranked cumple hoy por accidente, `crearRankedHero` siempre muestra el nombre del tier. Retonar los hex de la paleta en sí queda fuera de alcance de V1: no está en su checklist) |
+| D52 | La FASE J corre el stream de RNG en tres bloques (agencia: J1/J2 · densidad: J4/J5/J6 · el mundo: J7/J8): planteles leídos en vivo, selección de eventos reponderada, el internacional como sistema nuevo en `ETAPAS_SPLIT`. **Ninguna seed anterior a FASE J reproduce su carrera después.** Misma familia y mismo criterio que D21/D22/D35 — declarado una sola vez acá, no se vuelve a discutir por commit | J (aceptado) |
+| D53 | ✅ **Cerrada (auditoría de código, 2026-09-22).** 5 constantes muertas en `BALANCE.mercado`, sobrantes de la fórmula original de 9R0e (`demanda = clamp(...)`, un piso/techo de CANTIDAD de ofertas, afinidad por fuerza) que 9M reemplazó del todo por el mecanismo de asiento de `core/demanda.js` sin borrarlas: `brechaNivelRango`, `ofertasPisoPorDemanda`, `techoDemandaBase`, `techoDemandaPeso`, `afinidadOfertaRango`. Mismo criterio que D31. `nivelLigaPorDefecto`/`brechaFranquicia` (mismo bloque) sobrevivieron porque 9M las reusa con otro sentido — no se tocaron | ✅ auditoría |
+| D54 | ✅ **Cerrada (`AUDITORIA.md` H8, 2026-09-25).** `reproductor.js:101` insertaba/borraba nodos directo en `#logList` (`insertBefore`/`removeChild`), invisible al `WeakMap` de `reconciliar.js` — que nunca mira `contenedor.children`, solo su propio mapa. Al reanudar una carrera guardada (`renderFeed` puebla el mapa) el feed podía terminar con hasta el doble de filas, y una carrera nueva (`logList.innerHTML = ''`) podía reenganchar nodos desprendidos de la anterior (mismas claves absolutas, reindexadas desde 0). Corregido: `reproducirBeats` pasa por la misma `renderFeed` que el resto de la UI (con un `hasta` que crece de a un beat) y `reconciliar.js` gana `olvidarContenedor` para el caso de carrera nueva. 3 checks nuevos, verificados en rojo primero | ✅ auditoría |
+| D55 | ✅ **Cerrada (`AUDITORIA.md` H10, 2026-09-25).** `validate.js:78` decía "la corrida completa tarda ~7 minutos (D32)" — la trampa T6 que el propio archivo advierte, dentro del archivo que la advierte. La propia auditoría lo había medido en ~55 minutos; remedido acá **dos veces en la misma sesión da 31:01 y 31:04** — T6 aplica incluso a re-medir un número que otro ya midió, no solo a los que quedaron viejos | ✅ auditoría |
+| D56 | `AUDITORIA.md` H4: un `checkLento` de banda agregada es un trinquete — convierte "lo que el juego hace hoy" en "lo que debe seguir haciendo". El de `validate.js:4313` (*"Mediana de decisiones de draft por serie ∈ [0, 1] y ≥28% de series sin ningún draft"*) exige hoy, textualmente, lo contrario de lo que J6 va a escribir (*"series sin draft < 10%"*) | J6 (lo reemplaza — dejar en el commit o en `validate.js` el comentario de "reemplaza al check de tal fecha, que exigía lo contrario") |
+| D57 | `AUDITORIA.md` H7: `store.suscribir` (`core/store.js`) y `crearDelta` (`core/delta.js`) tienen cero consumidores en producción fuera de sus propios checks — groundwork de V0 correctamente construido pero sin usar todavía. La rama `{ flip: true }` de `reconciliar.js` tampoco tiene consumidor en producción (su único caller, `graficos/escalera.js`, no está montado — ver D57 mismo, `graficos/` en general) | V2/V3 |
+| D58 | `AUDITORIA.md`, hallazgos bajos H14/H15/H16: `src/dev/_probe_9m_baseline.mjs` (181 líneas) autodeclarado *"TEMPORAL, se borra tras 9Ma"* y nunca se borró · `index.html` a 194/200 líneas contra su propio candado (mismo patrón de margen que se cierra en silencio que ya le pasó a `dist/`, D49) · `README.md` dice "Node 18+" pero `with { type: 'json' }` pide Node 20.10+/22+ | higiene, cuando se toque cada archivo por otro motivo |
+| D59 | `AUDITORIA.md`, hallazgos bajos H17/H18/H19/H20: ciclo de import real `core/plantel.js:5 ↔ core/mundo.js:11` (por `generarHandle`, único ciclo en todo `core/`+`systems/`) · 6 campos de estado vestigiales (`career.contracts` muerto del todo, `career.hitos` escribe-y-nadie-lee, `player.titles`/`player.worlds` duplican `career.titulos`/`internacionales`) · 84 números mágicos residuales en `systems/*.js`, concentrados en `servicioMilitar.js` · `systems/mercado.js` a 945 líneas, el archivo más grande del proyecto | la próxima fase que toque cada archivo |
+| D60 | `AUDITORIA.md`, hallazgos bajos H11/H12/H13: `--rapido` cubre 41% de los checks (79/194) y salta todo lo estadístico/conductual · cero CI (no existe `.github/`, los 194 checks dependen de correrlos a mano) · cero tests unitarios (`validate.js` es el único arnés, un solo archivo) | sin fase — decisión pendiente del usuario, no deuda de código |
+| D61 | `AUDITORIA.md` H22: `reemplazarEnElLugar` (`reconciliar.js`) solo copia `className`+`dataset`, no `title`/`aria-*`/`style` — correcto hoy por accidente (ningún consumidor de V0b los usa), no por diseño | V3 |
 
 ---
 
@@ -5142,6 +5482,13 @@ con el catálogo de 517 opciones: peor celda real 3,7%.
     va a sentir (una mano de ofertas, tres mejoras, un parche), la pantalla lo dice: *"el dado
     trajo…"*. Si sortea ruido (±2 de sinergia), no. El azar visible se siente justo; el invisible se
     siente roto.
+17. **Un `checkLento` de banda agregada es un trinquete.** Convierte "lo que el juego hace hoy" en
+    "lo que debe seguir haciendo" — protege contra regresión accidental y, en el mismo movimiento,
+    encarece cualquier cambio deliberado de diseño. Al escribirlo, dejar en una línea junto al check
+    qué comportamiento específico protege y desde cuándo — para que el día que ese comportamiento
+    deba cambiar a propósito, el check que hay que tocar se encuentre en 10 segundos, no en una
+    auditoría externa (nace de `AUDITORIA.md` H4/D56: un check de 12b exigía textualmente lo
+    contrario de lo que J6 iba a escribir, y nada lo señalaba).
 
 ---
 

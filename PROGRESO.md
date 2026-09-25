@@ -34,6 +34,169 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-09-25 — Auditoría externa: higiene (AUD-1) y H8, el bypass del reproductor
+
+Una auditoría externa (`AUDITORIA.md`, pedida por el usuario, medida contra el commit `3fc6ea5`
+más el árbol de trabajo sucio de ese día) encontró que V1, el saneamiento post-V1 del 22-09 y la
+fase J entera llevaban tres días terminados y verdes sin commitear — el único riesgo del proyecto
+sin red (H2, ni siquiera esta entrada existía todavía). Esta sesión cierra AUD-1, en varios
+commits pequeños en vez de uno grande (regla de proceso 2: estructura y constantes por separado):
+se commitea todo lo verde, se corrige `PLAN.md` para que no afirme lo que el árbol no sostiene, se
+arregla H8 (el único hallazgo con causa raíz real que la auditoría encontró) y se sube el techo de
+`dist/` (D49 otra vez: 1699,7 KB medidos contra un techo de 1700 apenas se sumó `graficos/` — a
+0,3 KB, el mismo patrón de margen-que-se-cierra-en-silencio de siempre; subido a 1800).
+
+**H8 — el reproductor de beats escribía DOM a mano, invisible al reconciliador.**
+`reproductor.js:101` insertaba/borraba nodos directo en `#logList` con `insertBefore`/
+`removeChild`. `reconciliar.js` nunca mira `contenedor.children` — su única fuente de verdad es un
+`WeakMap` propio — así que esos nodos quedaban fuera de su alcance: su pasada de recorte no los
+veía, y su pasada de orden asumía que los hijos del contenedor eran exactamente su propio set.
+Dos caminos vivos lo disparaban: **reanudar** una carrera guardada (`renderFeed` puebla el mapa
+con las últimas 8 líneas, y desde ahí el reproductor apilaba nodos sueltos encima hasta que el
+próximo `renderFeed` duplicaba todo) y **empezar una carrera nueva** (`logList.innerHTML = ''`
+vacía el DOM pero no el mapa, que quedaba apuntando a nodos desprendidos — y como las claves son
+índices absolutos de `state.logs` que una carrera nueva vuelve a numerar desde 0, el próximo
+`renderFeed` reenganchaba nodos muertos de la carrera anterior).
+
+Arreglado sin agregar mecanismo nuevo: `reproducirBeats` ahora llama a la misma `renderFeed` que
+usa el resto de la UI, una vez por beat, con un `hasta` que crece de a uno — es el reconciliador,
+no el llamador, quien decide qué crear/actualizar/sacar, y el recorte al límite de siempre
+(`LIMITE_FEED`, ahora un único export de `feed.js` en vez de duplicado a mano en dos archivos) es
+un efecto de eso. `reconciliar.js` gana `olvidarContenedor(contenedor)`, que `app.js` llama junto
+al `logList.innerHTML = ''` de `comenzarCarrera` para el caso de carrera nueva.
+
+3 checks nuevos (194 → 197), verificados en rojo primero (regla de proceso 7): un estático
+(`reproductor.js` no llama `insertBefore`/`removeChild`), uno sobre el contrato de `agruparBeats`
+con `offset` (clave = índice absoluto, no relativo al slice), y uno que llama al `reproducirBeats`
+real —no una reimplementación— sobre un doble mínimo de `document` (sin jsdom, mismo criterio que
+el resto de `validate.js`), simulando reanudar y después revelar 3 líneas nuevas. Los tres
+confirmados en rojo reintroduciendo el bug original antes de dejarlos en verde.
+
+**Documentos.** `PLAN.md` línea 39: `V1 ✅` pasó a 🔶 — es una librería completa (`src/ui/graficos/`,
+6 primitivos SVG) sin un solo consumidor fuera de `validate.js`; la pantalla es V2. §J.0: la tabla
+siempre tuvo 9 quejas citadas, no 10 — corregido en los dos lugares que decían "diez" (el criterio
+de cierre de la fase incluido). El primer tramo de J: "seis commits" corregido a "siete" (siempre
+listó siete). Deuda técnica: D54-D61, una fila por cada hallazgo de la auditoría que sobrevive con
+fase asignada (D54 y D55 nacen ya cerradas, por este mismo commit). Regla de proceso 17 nueva: un
+`checkLento` de banda agregada es un trinquete, declarar junto a él qué protege y desde cuándo —
+nace de H4 (un check de 12b exigía textualmente lo contrario de lo que J6 va a escribir, y nada lo
+señalaba hasta que una auditoría externa lo encontró). `AUDITORIA.md` se commitea como lo que es:
+una foto fechada, no una sección viva — mismo criterio que `PLAN.md` ya documenta para el
+`AUDITORIA.md`/`TRASPASO.md` que se borraron el 2026-09-02.
+
+**H10, con una vuelta de tuerca.** La propia auditoría había re-medido la corrida completa de
+`validate.js` en ~55 minutos, contra el "~7 minutos (D32)" que decía el comentario. Re-medida acá,
+**dos veces en la misma sesión: 31:01 y 31:04** — ni 7 ni 55. T6 no es "medir una vez al empezar":
+es medir cada vez, incluso el número que ya trae otra medición encima.
+
+**Worktrees.** Tres huérfanos fuera del árbol principal. `AUDITORIA.md` H2 decía que `faseV-V1-agy`
+tenía "el mismo diff sin commitear duplicado... mismo hash de archivo, verificado con md5sum" — no
+es así, verificado de nuevo acá: el worktree solo tiene 3 de los 6 primitivos (`bala.js`,
+`barras.js`, `escalera.js`; sin `cinta.js`/`hexa.js`/`linea.js`/`comun.js`) y su `validate.js` tiene
+193 checks, la foto de V1 ANTES del saneamiento del 22-09 — los 3 archivos que sí tiene difieren
+byte a byte de los del árbol principal, que ya pasaron por la extracción a `comun.js`. Es del todo
+superado igual, solo que por evolución, no por ser un duplicado exacto. `faseV-V1-grok` (rama
+propia `d543149`, committeada pero nunca mergeada) entregó los otros 3 primitivos (`linea.js`,
+`hexa.js`, `cinta.js`) en el mismo estado pre-dedup — mismo caso. `frigatebird` (huérfano de Orca
+desde la fase P, 2026-09-02) no tiene relación con el trabajo actual. Los tres worktrees se
+remueven; las ramas se conservan.
+
+**Verificación.** `validate.js` completo: **197/197 OK, 0 FAIL**, 31:04 de reloj. `simulate.js
+1000`: 0 crashes. `cobertura.js --huecos`: vacío (517 opciones sobre un objetivo de 150).
+`build.js`: `dist/` en 1699,7 KB contra el techo nuevo de 1800 KB. Determinismo: ninguno de los
+cinco commits de esta sesión toca `core/`/`systems/` (los tres primeros son UI + herramientas de
+`src/dev/`; los dos últimos son documentación pura), así que no corre el stream — no aplica
+huella de 40 seeds.
+
+### 2026-09-20 — FASE V, V1: los primitivos SVG y el guard de color literal en JS
+
+*(Entrada escrita en retrospectiva el 2026-09-25, durante la higiene de AUD-1: el trabajo se hizo
+esta fecha pero se quedó sin su changelog — exactamente el patrón que señaló H2 de la auditoría.
+`PLAN.md` línea 39 ya decía "V1 ✅ (2026-09-20)" sin que esta entrada existiera.)*
+
+6 primitivos SVG (`src/ui/graficos/`: `bala.js`, `barras.js`, `cinta.js`, `escalera.js`, `hexa.js`,
+`linea.js`), cada uno un factory `crear*(datos, opciones) -> nodo SVG`. Ninguno tiene consumidor
+todavía en `src/ui/` fuera de `validate.js` — es librería, no pantalla; la pantalla es V2.
+
+**El guard de color literal se extendía a JS (D44).** `verificarSinColorLiteral` (`guards.js`) solo
+escaneaba `estilos/*.css` — un `fill="#2ee8ff"` puesto a mano en un factory SVG evadía el candado
+del sistema de diseño por completo, porque estos primitivos pintan con `setAttribute`/`style` desde
+JS, no desde CSS. `verificarSinColorLiteralEnJs(uiDir)` nueva en `guards.js`, mismo criterio sobre
+`src/ui/**/*.js`: caza hex literal (`#2ee8ff`) y `rgb`/`hsl` fuera de un template literal —
+`orgChip.js` calcula sus 3 `hsl(${hue} ...)` con `hashCadena`, así que ya pasa por ser calculado, no
+por una excepción con nombre. La única excepción real, con nombre de archivo, es `exportar.js`
+(el fallback de `leerToken` cuando `getComputedStyle` no está disponible).
+
+**`reconciliar.js` necesitó un guard de `requestAnimationFrame`.** `escalera.js` es el único
+consumidor de `{ flip: true }` en todo el repo, y el check de aria-label/reduced-motion de
+`validate.js` importa y ejecuta los 6 factories en Node vía `await import(...)` — donde
+`requestAnimationFrame` no existe. `debeAnimar` ganó `&& typeof requestAnimationFrame ===
+'function'` para que la corrida en Node no explote sin cambiar el comportamiento en el navegador
+(ahí siempre existe).
+
+**4 checks nuevos en `validate.js`** (189 → 193; el quinto, la whitelist de tonos contra
+`tokens.css`, se agregó el 22-09 junto con `comun.js`, ver esa entrada): color literal en JS,
+contraste WCAG de las 29 familias de tokens gráficos, `role="img"` + `aria-label` con dígito en
+todo factory, y cero `requestAnimationFrame` cuando `prefers-reduced-motion` está activo.
+
+**Verificación.** `validate.js` 193/193, `simulate.js 1000` 0 crashes. Determinismo no aplica:
+`graficos/` es UI pura, ningún archivo de `core/`/`systems/` se tocó.
+
+### 2026-09-22 — Saneamiento: `graficos/comun.js`, el chrome de `app.js`, y D53
+
+Una auditoría de código general (pedida sin apuntar a una fase — "analiza el código y decime qué
+opinás") sobre el estado del repo con V0/V0b/V1 hechos pero sin commitear. Cuatro hallazgos
+concretos, medidos, resueltos en la misma sesión.
+
+**`src/ui/graficos/` había nacido duplicada.** `reducirMovimiento()` estaba definida 6 veces —en
+`cinta.js`/`hexa.js`/`linea.js` se llamaba como sentencia suelta descartando el resultado, en
+`bala.js`/`barras.js`/`escalera.js` no se llamaba nunca— y `svg`/`attr`/`pintar` estaban copiadas 3
+veces. Peor: **dos contratos incompatibles para el mismo problema**, escritos en la misma fase —
+`TONOS_CONOCIDOS` (whitelist estricta contra `tokens.css`, tira en tono desconocido) en `hexa.js` y
+`linea.js`, contra `resolverTono()` con regex laxa (`/^[a-z0-9_-]+$/`) en `bala.js`/`barras.js`/
+`escalera.js`, que dejaba pasar un token inexistente y lo pintaba transparente en vez de avisar. Se
+extrajo `src/ui/graficos/comun.js` (mismo rol que `components/minijuegos/comun.js` para los 11
+minijuegos) con `svg`/`attr`/`nodoSvg`/`pintar`/`clamp01`/`resolverTono`/`reducirMovimiento` — un
+único criterio, la whitelist, para los 6 primitivos. `nodoSvg` (no `crearSvgElemento`) a propósito:
+el check de gráficos trata cualquier export `crear*` como factory. `comun.js` se excluyó del
+recorrido de `archivosGraficos` en `validate.js`, mismo criterio que ya usaba `comun.js` de
+minijuegos con `index.js`. Verificado en rojo: un tono inventado ahora **tira** en los 5 factories
+que antes lo aceptaban, en vez de pintar transparente.
+
+**La whitelist de tonos podía divergir de `tokens.css` en silencio.** Check nuevo en `validate.js`
+("Gráficos: la whitelist de tonos de comun.js no diverge de tokens.css"): compara `TONOS_CONOCIDOS`
+contra los `--*` reales de `tokens.css`. Verificado en rojo inyectando un tono inexistente en la
+whitelist y confirmando que el check lo caza; en verde al sacarlo.
+
+**El chrome global de `app.js` estaba triplicado.** El mismo bloque de 5 líneas
+(`actualizarTopbar`/`aplicarEstudio`/`renderRielContexto`/`renderSerieContexto`) copiado en
+`revelarYVerDecision`, al final de `correrSplits` y en `continuarCarrera` — la misma clase de copia
+que dejó pasar D45. Se extrajo `pintarChrome(ficha, estado)`, un helper local, no un suscriptor del
+store: se investigó cablear `store.suscribir(pintarChrome)` (la lectura obvia del contrato que V0
+declaró) y se encontró que un suscriptor único no puede servir a la vez el camino de
+`revelarYVerDecision` (`renderFicha` solo — el feed lo revela `reproductor.reproducirBeats` línea a
+línea) y el de cierre/resume (`renderCarrera`, ficha+feed de una) sin duplicar pintado o
+adelantarse a la animación del feed. `store.suscribir` se deja como está: groundwork declarado por
+V0 para V2/V3, mismo estado que `crearDelta` (tampoco tiene consumidor todavía).
+
+**D53 — 5 constantes muertas en `BALANCE.mercado`.** `brechaNivelRango`, `ofertasPisoPorDemanda`,
+`techoDemandaBase`, `techoDemandaPeso`, `afinidadOfertaRango`: sobrantes de la fórmula original de
+9R0e (`demanda = clamp(...)`, un piso/techo de CANTIDAD de ofertas) que 9M reemplazó del todo por el
+mecanismo de asiento de `core/demanda.js` (`asientoAbierto`/`ofertaPosible`/`orgsQueTeFicharian`)
+sin borrarlas — 9M y 9R0e nunca coexistieron en el mismo código, la fórmula vieja simplemente dejó
+de tener quien la llamara. Mismo criterio que D31. Se borraron; `nivelLigaPorDefecto` y
+`brechaFranquicia` (mismo bloque de comentario) sobrevivieron porque 9M las reusa con otro sentido.
+
+**Verificación.** `validate.js` completo: **194/194 OK, 0 FAIL** (194 = 193 previos + el check nuevo
+de whitelist-vs-tokens.css). `simulate.js 1000`: 0 crashes. Determinismo no aplica (nada de esto
+toca `core/`/`systems/` salvo el comentario en `balance.js`, y `simulate.js` corrido después
+confirma que las 5 constantes borradas no eran leídas por ningún camino). Verificación real en
+navegador (Playwright + Chromium cacheado): carrera arrancada con seed fija, pausada en una
+decisión real (no un minijuego — esos se auto-resuelven solos con `relojDeMinijuego`, invalidarían
+la comparación), recargada la página, "Continuar" — ficha, feed, topbar y riel idénticos
+(incluida la animación `countUp` de la ficha, de 420ms, esperada a asentar antes de comparar).
+Cero errores de consola.
+
 ### 2026-09-19 — FASE V, V0: el kernel — el store, el reconciliador y el delta
 
 Arranca la fase V ("Que la carrera se vea"), escrita completa (V0→V10) en `PLAN.md` tras confirmar

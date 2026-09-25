@@ -75,11 +75,13 @@ const ACCIONES_DE_POOL = ['aprender', 'maestria', 'olvidar'];
 
 // `--solo=<texto>` corre unicamente los checks cuyo nombre contiene ese texto.
 // Es lo que hace practicable la regla de proceso 7 ("al escribir un check nuevo,
-// verificar que falla cuando debe"): la corrida completa tarda ~55 minutos medidos
+// verificar que falla cuando debe"): la corrida completa tarda ~31 minutos medidos
 // (H10, auditoria 2026-09-25 — el "~7 minutos (D32)" que decia esto antes ya no
 // era cierto, la propia trampa T6 que este archivo advierte, adentro del archivo
-// que la advierte), asi que verificar un check en rojo sin esto costaria casi
-// una hora por intento.
+// que la advierte; medido DOS veces en la misma sesion, 31:01 y 31:04, asi que
+// tambien el "~55 min" que la auditoria misma habia citado quedo corregido —
+// T6 aplica incluso a re-medir lo que otro ya midio), asi que verificar un
+// check en rojo sin esto costaria media hora por intento.
 const SOLO = process.argv.slice(2)
   .filter((arg) => arg.startsWith("--solo="))
   .map((arg) => arg.slice("--solo=".length).toLowerCase());

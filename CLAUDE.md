@@ -57,11 +57,14 @@ Orden de lectura al abrir el proyecto:
 | **`PLAN.md`** | **el plan vigente, fase por fase, hasta el juego terminado.** Incluye la tabla de deuda técnica, las trampas conocidas (T1-T10) y las reglas de proceso |
 | `PROGRESO.md` | changelog: qué se hizo, por qué, y con qué números medidos |
 | `DISENO.md` | arquitectura de archivos |
+| `AUDITORIA.md` | auditoría externa fechada (2026-09-25, contra el commit `3fc6ea5`) — una foto, no se actualiza sola. Lo accionable ya se plegó a la tabla de deuda técnica de `PLAN.md` (D54-D61) y a sus reglas de proceso; el documento en sí queda como registro del diagnóstico completo |
 
-> `TRASPASO.md` y `AUDITORIA.md` se borraron el 2026-09-02: describían un repo de 28 commits
-> atrás y ya se contradecían con el código. Lo que seguía vivo se mudó — la investigación a
+> `TRASPASO.md` y un `AUDITORIA.md` anterior se borraron el 2026-09-02: describían un repo de 28
+> commits atrás y ya se contradecían con el código. Lo que seguía vivo se mudó — la investigación a
 > `CONCEPTO.md` §12 (conservando la numeración: `TRASPASO §4.N` → `§12.N`) y las trampas a
-> `PLAN.md`. Los originales siguen en git: `git show 3d6ee90:TRASPASO.md`.
+> `PLAN.md`. Los originales siguen en git: `git show 3d6ee90:TRASPASO.md`. El `AUDITORIA.md` actual
+> nace con la misma vida útil corta y la misma regla: si en algún momento contradice a `PLAN.md`,
+> gana `PLAN.md` y este archivo se borra o se vuelve a escribir, igual que la vez pasada.
 
 ## Workflow recomendado
 
