@@ -113,6 +113,58 @@ export function verificarSinColorLiteral(estilosDir) {
   return hallazgos;
 }
 
+// Fase V (V1, D44) — candado de color literal en JS.
+// Mismo criterio que verificarSinColorLiteral pero sobre src/ui/**/*.js.
+export function verificarSinColorLiteralEnJs(uiDir) {
+  const hallazgos = [];
+  const archivos = listarArchivos(uiDir).filter((archivo) => path.extname(archivo) === '.js');
+
+  for (const archivo of archivos) {
+    const lineas = fs.readFileSync(archivo, 'utf8').split('\n');
+    lineas.forEach((linea, i) => {
+      // Excepción conocida: exportar.js fallback de leerToken (PLAN.md D44)
+      if (path.basename(archivo) === 'exportar.js' && linea.includes("valor || '#2ee8ff'")) {
+        return;
+      }
+      if (/#[0-9a-fA-F]{3,8}\b/.test(linea)) {
+        hallazgos.push(`${path.basename(archivo)}:${i + 1}`);
+        return;
+      }
+      const matchColorFn = linea.match(/\b(?:rgb|rgba|hsl|hsla)\(/);
+      if (matchColorFn) {
+        const antes = linea.slice(0, matchColorFn.index);
+        if (!antes.includes('`')) {
+          hallazgos.push(`${path.basename(archivo)}:${i + 1}`);
+        }
+      }
+    });
+  }
+  return hallazgos;
+}
+
+// ============================================================================
+// Fase V (V1) — cálculo de contraste WCAG y lectura de tokens.
+// Extraídas de validate.js para reutilización entre el check de texto existente
+// y el check nuevo de contraste de marca gráfica (WCAG 1.4.11).
+// ============================================================================
+
+export function luminanciaRelativa(hex) {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+    .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+export function contrasteRatio(hexA, hexB) {
+  const [l1, l2] = [luminanciaRelativa(hexA), luminanciaRelativa(hexB)].sort((x, y) => y - x);
+  return (l1 + 0.05) / (l2 + 0.05);
+}
+
+export function hexDeToken(nombreToken, cssTexto) {
+  const m = cssTexto.match(new RegExp(`--${nombreToken}:\\s*(#[0-9a-fA-F]{6})`));
+  if (!m) throw new Error(`token --${nombreToken} no encontrado para medir contraste`);
+  return m[1];
+}
+
 // Todo var(--x) SIN fallback que se usa tiene que estar definido en
 // tokens.css. `var(--x, algo)` CON fallback queda afuera a propósito (T4):
 // `--tab-color` es una custom property que `decision.js` fija por JS

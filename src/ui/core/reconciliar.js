@@ -59,7 +59,7 @@ export function reconciliar(contenedor, items, claveDe, crear, actualizar, { fli
     mapaPorContenedor.set(contenedor, mapa);
   }
 
-  const debeAnimar = flip && !reducirMovimiento();
+  const debeAnimar = flip && !reducirMovimiento() && typeof requestAnimationFrame === 'function';
   const posicionesAntes = debeAnimar ? medirPosiciones(mapa.values()) : null;
 
   const clavesVistas = new Set();

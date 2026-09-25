@@ -216,6 +216,25 @@ export function iniciar() {
     }
   }
 
+  // Saneamiento post-V1: el chrome global (topbar, luz de estudio, riel,
+  // contexto de serie) se pintaba con el mismo bloque de 5 líneas copiado en
+  // `revelarYVerDecision`, al final de `correrSplits` y en `continuarCarrera`
+  // — exactamente la clase de copia que dejó pasar D45. No se resuelve
+  // cableando `store.suscribir` (V0 lo declaró para V2/V3, mismo criterio
+  // que `crearDelta`, todavía sin consumidor): un suscriptor único no puede
+  // servir a la vez el camino de acá (`renderFicha` solo, el feed lo revela
+  // `reproductor.reproducirBeats` línea a línea) y el de cierre/resume
+  // (`renderCarrera`, ficha+feed de una) sin duplicar pintado o adelantarse
+  // a la animación del feed. `ficha` es el valor que devuelve `renderFicha`
+  // (directo o vía `renderCarrera`, que lo reexporta) — ninguna de las dos
+  // llamadas necesita recalcularlo.
+  function pintarChrome(ficha, estado) {
+    actualizarTopbar(estado);
+    aplicarEstudio(estado, ficha);
+    ui.renderRielContexto(rielElements, estado, modulos);
+    ui.renderSerieContexto(serieContextoEl, estado);
+  }
+
   // Fase T3: antes, `pintar()` volcaba `state.logs` entero de un saque
   // (`renderCarrera` → `renderFeed` → `replaceChildren`). Ahora la ficha
   // sigue siendo instantánea (es un HUD, no un beat) pero el feed se
@@ -223,15 +242,10 @@ export function iniciar() {
   // `estado`, mismo motor, solo cambia CUÁNDO entra cada línea al DOM.
   async function revelarYVerDecision(logsAntes, registroAntes) {
     const estadoActual = store.leer();
-    // V0: el chrome global (topbar, luz de estudio) se actualiza desde acá,
-    // no desde adentro de `renderFicha` — es la inversión que arregla esta
-    // subfase. `renderFicha` devuelve la `ficha` que ya calculó, así que no
-    // hace falta recalcularla.
+    // V0: el chrome global se actualiza desde acá, no desde adentro de
+    // `renderFicha` — es la inversión que arregla esa subfase.
     const ficha = ui.renderFicha(fichaContainer, estadoActual, modulos);
-    actualizarTopbar(estadoActual);
-    aplicarEstudio(estadoActual, ficha);
-    ui.renderRielContexto(rielElements, estadoActual, modulos);
-    ui.renderSerieContexto(serieContextoEl, estadoActual);
+    pintarChrome(ficha, estadoActual);
     const bisagra = estadoActual.pendiente?.decision?.datos?.evento?.bisagra ?? false;
     await reproductor.reproducirBeats(logList, estadoActual.logs.slice(logsAntes), {
       registroAntes, registroDespues: estadoActual.career.registro, bisagra, state: estadoActual
@@ -278,10 +292,7 @@ export function iniciar() {
 
     const estadoFinal = store.leer();
     const ficha = ui.renderCarrera(carreraElements, estadoFinal, modulos);
-    actualizarTopbar(estadoFinal);
-    aplicarEstudio(estadoFinal, ficha);
-    ui.renderRielContexto(rielElements, estadoFinal, modulos);
-    ui.renderSerieContexto(serieContextoEl, estadoFinal);
+    pintarChrome(ficha, estadoFinal);
     renderResumenFinal(estadoFinal);
     nuevaCarreraBtn.hidden = false;
   }
@@ -480,10 +491,7 @@ export function iniciar() {
       // pendiente, porque nada más lo iba a pintar. `renderCarrera` pinta
       // ficha + feed juntas, el mismo camino que ya usa `correrSplits`.
       const ficha = ui.renderCarrera(carreraElements, estadoRetomado, modulos);
-      actualizarTopbar(estadoRetomado);
-      aplicarEstudio(estadoRetomado, ficha);
-      ui.renderRielContexto(rielElements, estadoRetomado, modulos);
-      ui.renderSerieContexto(serieContextoEl, estadoRetomado);
+      pintarChrome(ficha, estadoRetomado);
       ui.renderLowerThird(summary, metaPill, estadoRetomado);
 
       if (estadoRetomado.pendiente) {

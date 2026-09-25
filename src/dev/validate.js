@@ -1,13 +1,15 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import {
   verificarSinMathRandom, verificarDocumentSoloEnUi,
   verificarSinFondoDeTinta, verificarSinColorLiteral, verificarTokensDefinidos,
-  verificarSinLogicaEnIndexHtml
+  verificarSinLogicaEnIndexHtml,
+  verificarSinColorLiteralEnJs, luminanciaRelativa, contrasteRatio, hexDeToken
 } from './guards.js';
 import { reconciliar } from '../ui/core/reconciliar.js';
 import { crearDelta } from '../ui/core/delta.js';
+import { TONOS_CONOCIDOS as TONOS_DE_GRAFICOS } from '../ui/graficos/comun.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 import { CATEGORIAS_EVENTO } from '../data/categorias.js';
@@ -153,20 +155,6 @@ check('CSS: todo var(--token) usado está definido en tokens.css', () => {
 
 check('CSS: contraste WCAG ≥ 4.5:1 en los pares tinta/superficie que se leen', () => {
   const tokensTexto = fs.readFileSync(path.join(estilosDir, 'tokens.css'), 'utf8');
-  const hex = (nombre) => {
-    const m = tokensTexto.match(new RegExp(`--${nombre}:\\s*(#[0-9a-fA-F]{6})`));
-    if (!m) throw new Error(`token --${nombre} no encontrado para medir contraste`);
-    return m[1];
-  };
-  const luminancia = (h) => {
-    const [r, g, b] = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255)
-      .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  };
-  const ratio = (a, b) => {
-    const [l1, l2] = [luminancia(hex(a)), luminancia(hex(b))].sort((x, y) => y - x);
-    return (l1 + 0.05) / (l2 + 0.05);
-  };
   // Los pares que el CSS realmente usa para texto que hay que leer, más el
   // botón principal (texto bg-void sobre --live sólido, el estado hover).
   const pares = [
@@ -176,10 +164,52 @@ check('CSS: contraste WCAG ≥ 4.5:1 en los pares tinta/superficie que se leen',
     ['bg-void', 'live']
   ];
   const fallas = pares
-    .map(([a, b]) => [a, b, ratio(a, b)])
+    .map(([a, b]) => [a, b, contrasteRatio(hexDeToken(a, tokensTexto), hexDeToken(b, tokensTexto))])
     .filter(([, , r]) => r < 4.5);
   if (fallas.length > 0) {
     throw new Error(fallas.map(([a, b, r]) => `${a}/${b} = ${r.toFixed(2)}:1`).join(', '));
+  }
+});
+
+const uiDir = path.join(srcDir, 'ui');
+
+check('JS: ningún color literal en src/ui/**/*.js fuera de excepciones de runtime (fase V, V1, D44)', () => {
+  const hallazgos = verificarSinColorLiteralEnJs(uiDir);
+  if (hallazgos.length > 0) {
+    throw new Error(`encontrado en: ${hallazgos.join(', ')}`);
+  }
+});
+
+check('CSS: contraste de marca gráfica WCAG ≥ 3:1 (y ≥ 4.5:1 texto) en las 29 familias de tokens', () => {
+  const tokensTexto = fs.readFileSync(path.join(estilosDir, 'tokens.css'), 'utf8');
+  const FAMILIAS_GRAFICAS = [
+    'cat-rutina', 'cat-golpe', 'cat-oportunidad', 'cat-mercado', 'cat-parche',
+    'cat-vestuario', 'cat-prensa', 'cat-familia', 'cat-salud', 'cat-partido',
+    'rank-iron', 'rank-bronze', 'rank-silver', 'rank-gold', 'rank-platinum',
+    'rank-emerald', 'rank-diamond', 'rank-master', 'rank-grandmaster', 'rank-challenger',
+    'nivel-prospecto', 'nivel-titular', 'nivel-elite', 'nivel-clase_mundial',
+    'up', 'down', 'warn', 'danger', 'ice'
+  ];
+  const SUPERFICIES = ['bg-surface', 'bg-raised', 'bg-sunken'];
+
+  // Familias usadas para texto/labels directamente sobre superficies (piso 4.5:1)
+  const FAMILIAS_TEXTO = new Set([
+    // Ninguna familia en uso directo como texto por los primitivos gráficos en este commit
+  ]);
+
+  const fallas = [];
+  for (const fam of FAMILIAS_GRAFICAS) {
+    const piso = FAMILIAS_TEXTO.has(fam) ? 4.5 : 3.0;
+    for (const sup of SUPERFICIES) {
+      const r = contrasteRatio(hexDeToken(fam, tokensTexto), hexDeToken(sup, tokensTexto));
+      if (r < piso) {
+        fallas.push(`${fam}/${sup} = ${r.toFixed(2)}:1 (piso ${piso}:1)`);
+      }
+    }
+  }
+
+  if (fallas.length > 0) {
+    throw new Error(`pares que no alcanzan el piso requerido: ${fallas.join(', ')}`);
   }
 });
 
@@ -6790,6 +6820,243 @@ check('crearDelta mide [antes, despues] contra la lectura previa (fase V, V0)', 
   }
   if (m2['career.jerarquia'][0] !== 50 || m2['career.jerarquia'][1] !== 50) {
     throw new Error('un path sin cambios entre mediciones debería dar [x, x]');
+  }
+});
+
+// ============================================================================
+// Fase V (V1) — primitivos de gráficos SVG (src/ui/graficos/*.js)
+// ============================================================================
+const graficosDir = path.join(uiDir, 'graficos');
+// `comun.js` es lo compartido entre los 6 factories (mismo criterio que
+// `components/minijuegos/comun.js`, ya excluido más abajo junto a `index.js`
+// al listar ese directorio) — no es un factory de gráfico en sí.
+const archivosGraficos = fs.existsSync(graficosDir)
+  ? fs.readdirSync(graficosDir).filter((f) => f.endsWith('.js') && !f.endsWith('.test.js') && f !== 'comun.js')
+  : [];
+
+const modulosGraficos = [];
+for (const archivo of archivosGraficos) {
+  const rutaUrl = pathToFileURL(path.join(graficosDir, archivo)).href;
+  const mod = await import(rutaUrl);
+  modulosGraficos.push({ archivo, mod });
+}
+
+// Doble mínimo de Element/Node para SVG, para que los checks corran en Node sin jsdom
+class ElementoFalsoSvg {
+  constructor(tag) {
+    this.tagName = tag;
+    this.atributos = new Map();
+    this.children = [];
+    this.parentNode = null;
+    this.style = {
+      setProperty: (k, v) => { this.style[k] = v; },
+      getPropertyValue: (k) => this.style[k] ?? ''
+    };
+    this.textContent = '';
+  }
+  setAttribute(k, v) { this.atributos.set(k, String(v)); }
+  getAttribute(k) { return this.atributos.get(k) ?? null; }
+  removeAttribute(k) { this.atributos.delete(k); }
+  appendChild(hijo) {
+    hijo.parentNode = this;
+    this.children.push(hijo);
+    return hijo;
+  }
+  insertBefore(nuevo, ref) {
+    nuevo.parentNode = this;
+    const i = ref ? this.children.indexOf(ref) : -1;
+    if (i === -1) {
+      this.children.push(nuevo);
+    } else {
+      this.children.splice(i, 0, nuevo);
+    }
+    return nuevo;
+  }
+  removeChild(hijo) {
+    const i = this.children.indexOf(hijo);
+    if (i !== -1) {
+      this.children.splice(i, 1);
+      hijo.parentNode = null;
+    }
+    return hijo;
+  }
+  remove() {
+    this.parentNode?.removeChild(this);
+  }
+  get firstChild() { return this.children[0] ?? null; }
+  get nextSibling() {
+    if (!this.parentNode) return null;
+    const i = this.parentNode.children.indexOf(this);
+    return i !== -1 && i + 1 < this.parentNode.children.length ? this.parentNode.children[i + 1] : null;
+  }
+  addEventListener() {}
+  getBoundingClientRect() {
+    return { top: 0, left: 0, width: 100, height: 20, right: 100, bottom: 20 };
+  }
+}
+
+const DATOS_EJEMPLO_GRAFICOS = {
+  crearBarras: {
+    grupos: [{ id: 'g1', label: '2024', barras: [{ id: 'b1', label: 'G', valor: 10, tono: 'up' }] }]
+  },
+  crearEscalera: {
+    peldanos: [
+      { id: 'p1', label: 'Challenger', valorOrden: 100, tono: 'rank-challenger' },
+      { id: 'p2', label: 'Grandmaster', valorOrden: 90, tono: 'rank-grandmaster' }
+    ]
+  },
+  crearBala: {
+    valor: 75,
+    objetivo: 80,
+    banda: [20, 90]
+  },
+  crearLinea: {
+    series: [
+      {
+        id: 's1',
+        label: 'LP',
+        tono: 'up',
+        puntos: [
+          { x: 1, y: 10 },
+          { x: 2, y: 14 },
+          { x: 3, y: 12 },
+          { x: 4, y: 18 }
+        ]
+      }
+    ]
+  },
+  crearHexa: {
+    ejes: [
+      { id: 'e1', label: 'Mecánica', valor: 0.8 },
+      { id: 'e2', label: 'Visión', valor: 0.6 },
+      { id: 'e3', label: 'Farmeo', valor: 0.7 },
+      { id: 'e4', label: 'Teamfight', valor: 0.5 },
+      { id: 'e5', label: 'Laning', valor: 0.65 },
+      { id: 'e6', label: 'Macro', valor: 0.4 }
+    ]
+  },
+  crearCinta: {
+    bandas: [
+      { org: 'T1 Rogue', desde: 2024, hasta: 2026, tier: 1 },
+      { org: 'Riot Academy', desde: 2026, tier: 2, activa: true }
+    ]
+  }
+};
+
+// D-nueva (saneamiento post-V1): `graficos/comun.js` transcribe a mano las
+// familias de `tokens.css` en `TONOS_CONOCIDOS` — la whitelist que los 6
+// factories usan para no pintar un tono inexistente en transparente. Sin
+// este check, una familia que se renombra o se borra de `tokens.css` deja
+// la whitelist mintiendo en silencio: sigue "aceptando" un tono que ya no
+// existe hasta que alguien lo intenta y el `var(--x)` resuelto no pinta nada.
+check('Gráficos: la whitelist de tonos de comun.js no diverge de tokens.css', () => {
+  const tokensTexto = fs.readFileSync(path.join(estilosDir, 'tokens.css'), 'utf8');
+  const definidos = new Set();
+  for (const [, nombre] of tokensTexto.matchAll(/--([a-z0-9_-]+)\s*:/gi)) {
+    definidos.add(nombre);
+  }
+  const faltantes = [...TONOS_DE_GRAFICOS].filter((tono) => !definidos.has(tono));
+  if (faltantes.length > 0) {
+    throw new Error(`en TONOS_CONOCIDOS pero sin --token en tokens.css: ${faltantes.join(', ')}`);
+  }
+});
+
+check('Gráficos: todo factory de graficos/ devuelve un nodo con role="img" y aria-label con dígito (fase V, V1)', () => {
+  const global = globalThis;
+  const docOriginal = global['document'];
+  global['document'] = {
+    createElementNS(ns, tag) {
+      return new ElementoFalsoSvg(tag);
+    }
+  };
+
+  try {
+    if (modulosGraficos.length === 0) {
+      throw new Error('no se encontraron módulos en src/ui/graficos/');
+    }
+    for (const { archivo, mod } of modulosGraficos) {
+      const funcionesFactory = Object.entries(mod).filter(
+        ([nombre, fn]) => typeof fn === 'function' && nombre.startsWith('crear')
+      );
+      if (funcionesFactory.length === 0) {
+        throw new Error(`${archivo}: no exporta ninguna factory crear*`);
+      }
+      for (const [nombre, fn] of funcionesFactory) {
+        const datos = DATOS_EJEMPLO_GRAFICOS[nombre] || {};
+        const res = fn(datos);
+        if (!res || !res.nodo) {
+          throw new Error(`${archivo}: ${nombre} no devolvió { nodo }`);
+        }
+        const role = res.nodo.getAttribute('role');
+        const ariaLabel = res.nodo.getAttribute('aria-label');
+        if (role !== 'img') {
+          throw new Error(`${archivo}: ${nombre} role="${role}" no es "img"`);
+        }
+        if (!ariaLabel || typeof ariaLabel !== 'string' || !/\d/.test(ariaLabel)) {
+          throw new Error(`${archivo}: ${nombre} aria-label debe contener al menos un dígito: "${ariaLabel}"`);
+        }
+        if (!Array.isArray(res.series)) {
+          throw new Error(`${archivo}: ${nombre} no devolvió array series`);
+        }
+      }
+    }
+  } finally {
+    if (docOriginal !== undefined) {
+      global['document'] = docOriginal;
+    } else {
+      delete global['document'];
+    }
+  }
+});
+
+check('Gráficos: cero requestAnimationFrame con prefers-reduced-motion en graficos/ (fase V, V1)', () => {
+  const global = globalThis;
+  const docOriginal = global['document'];
+  const mmOriginal = global['matchMedia'];
+  const rafOriginal = global['requestAnimationFrame'];
+
+  let rAfLlamado = false;
+  global['document'] = {
+    createElementNS(ns, tag) {
+      return new ElementoFalsoSvg(tag);
+    }
+  };
+  global['matchMedia'] = (q) => ({ matches: q.includes('prefers-reduced-motion: reduce') });
+  global['requestAnimationFrame'] = () => { rAfLlamado = true; };
+
+  try {
+    for (const { archivo, mod } of modulosGraficos) {
+      for (const [nombre, fn] of Object.entries(mod)) {
+        if (typeof fn === 'function' && nombre.startsWith('crear')) {
+          const datos = DATOS_EJEMPLO_GRAFICOS[nombre] || {};
+          const cont = {};
+          fn(datos, cont);
+          // Segunda y tercera llamada para ejercitar FLIP / reordenamientos si aplica
+          if (nombre === 'crearEscalera') {
+            fn({
+              peldanos: [
+                { id: 'p1', label: 'A', valorOrden: 10, tono: 'up' },
+                { id: 'p2', label: 'B', valorOrden: 20, tono: 'down' }
+              ]
+            }, cont);
+            fn({
+              peldanos: [
+                { id: 'p1', label: 'A', valorOrden: 30, tono: 'up' },
+                { id: 'p2', label: 'B', valorOrden: 10, tono: 'down' }
+              ]
+            }, cont);
+          }
+        }
+      }
+    }
+
+    if (rAfLlamado) {
+      throw new Error('requestAnimationFrame fue programado a pesar de prefers-reduced-motion: reduce');
+    }
+  } finally {
+    if (docOriginal !== undefined) global['document'] = docOriginal; else delete global['document'];
+    if (mmOriginal !== undefined) global['matchMedia'] = mmOriginal; else delete global['matchMedia'];
+    if (rafOriginal !== undefined) global['requestAnimationFrame'] = rafOriginal; else delete global['requestAnimationFrame'];
   }
 });
 
