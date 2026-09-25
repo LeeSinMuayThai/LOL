@@ -9,6 +9,8 @@ import {
 } from './guards.js';
 import { reconciliar } from '../ui/core/reconciliar.js';
 import { crearDelta } from '../ui/core/delta.js';
+import { agruparBeats, renderFeed, LIMITE_FEED } from '../ui/components/feed.js';
+import * as reproductorModulo from '../ui/reproductor.js';
 import { TONOS_CONOCIDOS as TONOS_DE_GRAFICOS } from '../ui/graficos/comun.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
@@ -73,8 +75,11 @@ const ACCIONES_DE_POOL = ['aprender', 'maestria', 'olvidar'];
 
 // `--solo=<texto>` corre unicamente los checks cuyo nombre contiene ese texto.
 // Es lo que hace practicable la regla de proceso 7 ("al escribir un check nuevo,
-// verificar que falla cuando debe"): la corrida completa tarda ~7 minutos (D32),
-// asi que verificar un check en rojo costaba siete minutos por intento.
+// verificar que falla cuando debe"): la corrida completa tarda ~55 minutos medidos
+// (H10, auditoria 2026-09-25 — el "~7 minutos (D32)" que decia esto antes ya no
+// era cierto, la propia trampa T6 que este archivo advierte, adentro del archivo
+// que la advierte), asi que verificar un check en rojo sin esto costaria casi
+// una hora por intento.
 const SOLO = process.argv.slice(2)
   .filter((arg) => arg.startsWith("--solo="))
   .map((arg) => arg.slice("--solo=".length).toLowerCase());
@@ -6821,6 +6826,154 @@ check('crearDelta mide [antes, despues] contra la lectura previa (fase V, V0)', 
   if (m2['career.jerarquia'][0] !== 50 || m2['career.jerarquia'][1] !== 50) {
     throw new Error('un path sin cambios entre mediciones debería dar [x, x]');
   }
+});
+
+// ============================================================================
+// H8 (saneamiento post-V1) — reproductor.js dejó de escribir DOM a mano.
+// Antes insertaba/borraba nodos directo en `#logList`, invisibles al
+// `WeakMap` que `reconciliar.js` usa como única fuente de verdad: al
+// reanudar una carrera guardada (`renderFeed` puebla el mapa) el feed podía
+// terminar con hasta el doble de filas. Corregido pasándolo por la misma
+// `renderFeed` que usa el resto de la UI, con un `hasta` que crece de a un
+// beat. Los tres checks de abajo verifican, en este orden, que no vuelva:
+// que la fuente no reintroduzca el bypass, que las claves que calcula
+// coincidan con las de `renderFeed` para las mismas líneas, y que el
+// mecanismo (agruparBeats + reconciliar) de verdad no duplique ni se pase
+// del límite cuando se lo usa como `reproducirBeats` lo usa hoy.
+// ============================================================================
+
+check('H8: reproductor.js no escribe DOM a mano — todo pasa por reconciliar (fase J-higiene)', () => {
+  const contenido = fs.readFileSync(path.join(uiDir, 'reproductor.js'), 'utf8');
+  if (/\.insertBefore\(|\.removeChild\(/.test(contenido)) {
+    throw new Error('reproductor.js llama insertBefore/removeChild directo sobre el DOM — es el bypass de H8, invisible al WeakMap de reconciliar.js');
+  }
+});
+
+check('H8: agruparBeats respeta el offset — las claves son índices absolutos de state.logs (fase J-higiene)', () => {
+  const logs = Array.from({ length: 25 }, (_, i) => ({ type: 'x', message: `log ${i}`, tecnico: false }));
+
+  // Lo que `reproducirBeats` le pasa hoy a `agruparBeats`: la cola nueva
+  // del split (logs[20..25)) con offset = logsAntes = 20.
+  const conOffset = agruparBeats(logs.slice(20), 20).map((b) => b.clave);
+  // Debe coincidir con agrupar el log COMPLETO y quedarse con las claves de
+  // esa misma cola — es la prueba de que "clave" es un índice absoluto de
+  // `state.logs`, no uno relativo al slice que le llegó.
+  const deReferencia = agruparBeats(logs, 0).map((b) => b.clave).filter((c) => c >= 20);
+  if (JSON.stringify(conOffset) !== JSON.stringify(deReferencia)) {
+    throw new Error(`las claves con offset deberían ser índices absolutos: esperado ${deReferencia}, dio ${conOffset}`);
+  }
+
+  // Sin offset (el bug original: reproductor.js llamaba
+  // `agruparBeats(nuevasEntradas)` sin segundo argumento) las claves
+  // arrancan de 0 y chocan con las que `renderFeed` ya puso en el mapa
+  // para las líneas 0..4.
+  const sinOffset = agruparBeats(logs.slice(20)).map((b) => b.clave);
+  if (JSON.stringify(sinOffset) === JSON.stringify(conOffset)) {
+    throw new Error('el check no distingue con/sin offset — revisar la muestra (acá el offset debería importar)');
+  }
+});
+
+// Doble mínimo de `document`: no jsdom, solo lo que `crearLogItem` toca
+// para una entrada de log simple (sin `cuerpo`, sin tarjeta de serie ni
+// campeón) — alcanza para llamar al `reproducirBeats` REAL en vez de
+// reimplementar su forma, que es donde T5 advierte que un check puede
+// mentir. Junta en una sola clase lo que en el DOM real son dos roles
+// (nodo-hijo insertable + elemento con `dataset`/`className`/hijos)
+// porque acá un `<div class="log-item">` cumple los dos a la vez.
+class ElementoFalso {
+  constructor(tag) {
+    this.tagName = tag;
+    this.className = '';
+    this.dataset = {};
+    this.childNodes = [];
+    this.parentNode = null;
+    this._texto = '';
+    this.classList = { add() {}, remove() {} };
+  }
+  set textContent(valor) { this._texto = valor; this.childNodes = []; }
+  get textContent() { return this._texto; }
+  appendChild(nodo) { this.childNodes.push(nodo); nodo.parentNode = this; return nodo; }
+  replaceChildren(...nodos) {
+    this.childNodes = [...nodos];
+    for (const nodo of nodos) nodo.parentNode = this;
+  }
+  get firstChild() { return this.childNodes[0] ?? null; }
+  get nextSibling() {
+    if (!this.parentNode) return null;
+    const hermanos = this.parentNode.childNodes;
+    const i = hermanos.indexOf(this);
+    return i === -1 ? null : (hermanos[i + 1] ?? null);
+  }
+  insertBefore(nodo, referencia) {
+    this._quitar(nodo);
+    const i = referencia == null ? -1 : this.childNodes.indexOf(referencia);
+    if (i === -1) this.childNodes.push(nodo);
+    else this.childNodes.splice(i, 0, nodo);
+    nodo.parentNode = this;
+  }
+  _quitar(nodo) {
+    const i = this.childNodes.indexOf(nodo);
+    if (i !== -1) this.childNodes.splice(i, 1);
+  }
+  remove() { this.parentNode?._quitar(this); }
+}
+
+// El check en sí es async (`reproducirBeats` lo es — `await dormir(...)`
+// entre beats) pero `check()` llama a `fn()` sin esperar la promesa, así
+// que el trabajo real corre acá, a nivel de módulo (mismo patrón que la
+// carga de `graficos/` más abajo), y el resultado se guarda para que el
+// `check()` de siempre solo tenga que reportarlo.
+const NOMBRE_CHECK_REPRODUCIR_BEATS = 'H8: reproducirBeats real, revelando sobre un feed ya renderizado, no duplica filas (fase J-higiene)';
+let errorReproducirBeatsReal = null;
+// Mismo filtro que `check()`: sin esto, `--solo=<otra cosa>` igual pagaría
+// el costo (chico, pero real) de este bloque en cada corrida.
+if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_REPRODUCIR_BEATS.toLowerCase().includes(texto))) {
+  try {
+    const documentPrevio = globalThis.document;
+    globalThis.document = { createElement: (tag) => new ElementoFalso(tag) };
+    try {
+      // Velocidad instantánea a propósito: con 'x1'/'x2', `reproducirBeats`
+      // evalúa `motionReducido()` → `window.matchMedia`, y `window` no
+      // existe en Node. `espera = 0` además evita cualquier `setTimeout` real.
+      while (reproductorModulo.velocidadActual() !== 'instantaneo') {
+        reproductorModulo.ciclarVelocidad();
+      }
+
+      const logList = new ElementoFalso('div');
+      const logsResumidos = Array.from({ length: 20 }, (_, i) => ({ type: 'x', message: `log ${i}`, tecnico: false }));
+      // Simula el resume: `renderFeed` puebla el mapa de `reconciliar.js`
+      // con una carrera guardada de 20 líneas — el estado que reanudar deja.
+      renderFeed(logList, { logs: logsResumidos });
+      if (logList.childNodes.length !== LIMITE_FEED) {
+        throw new Error(`el resume debería dejar ${LIMITE_FEED} filas, dejó ${logList.childNodes.length}`);
+      }
+
+      // Simula `avanzar()` revelando 3 líneas nuevas con el `reproducirBeats`
+      // real, `offset = logsAntes = 20` — el mismo llamado que `app.js` hace.
+      const nuevas = [
+        { type: 'x', message: 'nueva 1', tecnico: false },
+        { type: 'x', message: 'nueva 2', tecnico: false },
+        { type: 'x', message: 'nueva 3', tecnico: false }
+      ];
+      const estadoFinal = { logs: [...logsResumidos, ...nuevas] };
+      await reproductorModulo.reproducirBeats(logList, nuevas, { state: estadoFinal, offset: logsResumidos.length });
+
+      if (logList.childNodes.length !== LIMITE_FEED) {
+        throw new Error(`tras revelar 3 líneas nuevas sobre un feed ya renderizado se esperaban ${LIMITE_FEED} filas, quedaron ${logList.childNodes.length} — es el síntoma de H8 (filas duplicadas)`);
+      }
+      if (new Set(logList.childNodes).size !== logList.childNodes.length) {
+        throw new Error('hay nodos repetidos en logList tras revelar');
+      }
+    } finally {
+      globalThis.document = documentPrevio;
+    }
+  } catch (error) {
+    errorReproducirBeatsReal = error;
+  }
+}
+
+check(NOMBRE_CHECK_REPRODUCIR_BEATS, () => {
+  if (errorReproducirBeatsReal) throw errorReproducirBeatsReal;
 });
 
 // ============================================================================

@@ -8,6 +8,7 @@ export { renderCarrera, renderRielContexto, mostrarDecisionEnPantalla, mostrarMe
 export { renderTarjeta } from './screens/tarjeta.js';
 export { renderFicha } from './components/ficha.js';
 export { renderFeed } from './components/feed.js';
+export { olvidarContenedor } from './core/reconciliar.js';
 export { renderDecision } from './components/decision.js';
 export { renderMercado } from './components/mercado.js';
 export { renderTabla } from './paneles/tabla.js';

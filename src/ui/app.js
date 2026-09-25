@@ -248,7 +248,7 @@ export function iniciar() {
     pintarChrome(ficha, estadoActual);
     const bisagra = estadoActual.pendiente?.decision?.datos?.evento?.bisagra ?? false;
     await reproductor.reproducirBeats(logList, estadoActual.logs.slice(logsAntes), {
-      registroAntes, registroDespues: estadoActual.career.registro, bisagra, state: estadoActual
+      registroAntes, registroDespues: estadoActual.career.registro, bisagra, state: estadoActual, offset: logsAntes
     });
 
     // Fase T8 (P.2): se guarda al cerrar cada split, siga de largo o
@@ -384,6 +384,13 @@ export function iniciar() {
 
     try {
       const { mulberry32, createInitialState } = await cargarModulos();
+
+      // H8 (saneamiento post-V1): `logList.innerHTML = ''` (más arriba)
+      // vacía el DOM pero no el mapa de `reconciliar.js` — sin este olvido,
+      // sus claves (índices absolutos de `state.logs`, que una carrera
+      // nueva vuelve a numerar desde 0) reengancharían nodos desprendidos
+      // de la carrera anterior en el primer `renderFeed` de esta.
+      ui.olvidarContenedor(logList);
 
       const seed = leerSeed();
       seedInput.value = String(seed);

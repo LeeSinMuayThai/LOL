@@ -113,6 +113,17 @@ export function reconciliar(contenedor, items, claveDe, crear, actualizar, { fli
 // lo injertan sobre el nodo cacheado: clase, dataset e hijos se reemplazan,
 // la identidad del nodo (y con ella cualquier listener de un hijo, que viaja
 // con el propio nodo movido) se preserva.
+// olvidarContenedor(contenedor): borra el mapa de claves de un contenedor
+// (fase J-higiene, H8). `reconciliar` nunca mira `contenedor.children` — su
+// única fuente de verdad es `mapaPorContenedor`, así que un `innerHTML = ''`
+// hecho por fuera (p. ej. `app.js` al arrancar una carrera nueva) vacía el
+// DOM pero no el mapa: las claves siguientes (índices absolutos de
+// `state.logs`, que una carrera nueva vuelve a numerar desde 0) reenganchan
+// nodos desprendidos de la carrera anterior. Esto lo evita.
+export function olvidarContenedor(contenedor) {
+  mapaPorContenedor.delete(contenedor);
+}
+
 export function reemplazarEnElLugar(nodo, nodoFresco) {
   nodo.className = nodoFresco.className;
   for (const clave of Object.keys(nodo.dataset)) delete nodo.dataset[clave];

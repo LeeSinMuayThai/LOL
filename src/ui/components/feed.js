@@ -228,9 +228,22 @@ export function nodoDeBeat(beat, state) {
   return nodo;
 }
 
-export function renderFeed(logList, state, { limite = 8 } = {}) {
-  const desde = Math.max(0, state.logs.length - limite);
-  const recientes = state.logs.slice(desde);
+// Único lugar donde se declara este número (H8, saneamiento post-V1):
+// `reproductor.js` tenía su propia copia a mano, sincronizada solo por
+// comentario ("mismo número que renderFeed"), y era la puerta por la que se
+// coló el bypass del reconciliador — recortaba nodos de un `logList` que
+// `reconciliar` no sabía que había perdido.
+export const LIMITE_FEED = 8;
+
+// `hasta` (fase J-higiene, H8): índice absoluto de corte, exclusive —
+// por defecto el final real de `state.logs`. Es lo que le permite a
+// `reproductor.reproducirBeats` revelar el feed de a un beat por vez SIN
+// escribir DOM a mano: cada paso llama a esta misma función con un `hasta`
+// que crece de a uno, y es `reconciliar` — no el llamador — quien decide
+// qué nodo crear, cuál actualizar y cuál sacar.
+export function renderFeed(logList, state, { limite = LIMITE_FEED, hasta = state.logs.length } = {}) {
+  const desde = Math.max(0, hasta - limite);
+  const recientes = state.logs.slice(desde, hasta);
   const beats = agruparBeats(recientes, desde).reverse();
   reconciliar(
     logList,

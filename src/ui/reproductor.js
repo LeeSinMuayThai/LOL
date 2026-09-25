@@ -4,7 +4,7 @@
 // un salto con ocho líneas de log ya escritas, en un juego cuyo compás es
 // "cada split trae 1 o 2 decisiones, nunca más" (`CONCEPTO` §2). Esto no
 // cambia qué calcula el motor — solo cuándo y cómo entra cada línea al DOM.
-import { agruparBeats, nodoDeBeat } from './components/feed.js';
+import { agruparBeats, renderFeed } from './components/feed.js';
 import * as sonido from './sonido.js';
 
 const CLAVE_VELOCIDAD = 'lolcs-velocidad-reproductor';
@@ -78,19 +78,28 @@ function motionReducido() {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 }
 
-const LIMITE_FEED = 8; // mismo número que `renderFeed` (components/feed.js)
-
-// Revela `nuevasEntradas` en `logList`, una por una. `logList` ya trae lo
-// que quedó de renders anteriores — esto NO lo reemplaza (a diferencia de
-// `renderFeed`): inserta arriba (más reciente primero, mismo orden que
-// siempre) y recorta abajo al límite de siempre cuando termina.
+// Revela `nuevasEntradas` en `logList`, una por una — por `renderFeed`
+// (fase J-higiene, H8), no a mano. Antes esto insertaba/borraba nodos
+// directo con `insertBefore`/`removeChild`, invisibles al `WeakMap` que
+// `reconciliar.js` usa como única fuente de verdad sobre lo que hay en el
+// contenedor: al reanudar una carrera guardada (`renderFeed` puebla el
+// mapa) y, más raro, al salir por `maxSplitsDeSeguridad`, el feed podía
+// terminar con hasta el doble de filas. Ahora cada paso llama a la MISMA
+// `renderFeed` que usa el resto de la UI con un `hasta` que crece de a un
+// beat — el reconciliador es quien decide qué crear, actualizar o sacar, y
+// el recorte al límite de siempre es un efecto de eso, no un paso aparte.
+//
+// `offset` (mismo contrato que `agruparBeats`, fase V, V0b): índice
+// absoluto en `state.logs` de `nuevasEntradas[0]` — es el `logsAntes` que
+// `app.js` ya tiene. Sin esto las claves arrancarían de 0 y no
+// coincidirían con las que `renderFeed` calculó para las mismas líneas.
 //
 // `registroAntes`/`registroDespues` (opcionales, `career.registro`) son
 // para el stinger de victoria/derrota: no hay un campo booleano en el log
 // — el resultado vive en la prosa del `message` — así que se lee la
 // diferencia en los contadores que el registro ya lleva, en vez de
 // adivinar por texto.
-export async function reproducirBeats(logList, nuevasEntradas, { registroAntes, registroDespues, bisagra, state } = {}) {
+export async function reproducirBeats(logList, nuevasEntradas, { registroAntes, registroDespues, bisagra, state, offset = 0 } = {}) {
   if (!logList || nuevasEntradas.length === 0) {
     return;
   }
@@ -98,10 +107,9 @@ export async function reproducirBeats(logList, nuevasEntradas, { registroAntes, 
   const instantaneo = velocidad === 'instantaneo' || motionReducido();
   const espera = instantaneo ? 0 : ESPERA_MS[velocidad];
 
-  const beats = agruparBeats(nuevasEntradas);
+  const beats = agruparBeats(nuevasEntradas, offset);
   for (const beat of beats) {
-    const nodo = nodoDeBeat(beat, state);
-    logList.insertBefore(nodo, logList.firstChild);
+    renderFeed(logList, state, { hasta: beat.clave + 1 });
     if (beat.narrativa && !beat.narrativa.tecnico) {
       sonido.tick();
     }
@@ -110,9 +118,6 @@ export async function reproducirBeats(logList, nuevasEntradas, { registroAntes, 
     }
   }
 
-  while (logList.children.length > LIMITE_FEED) {
-    logList.removeChild(logList.lastChild);
-  }
   skipActual = null;
 
   if (registroAntes && registroDespues) {
