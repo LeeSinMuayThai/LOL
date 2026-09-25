@@ -1,3 +1,4 @@
+import { pathToFileURL } from 'url';
 import { mulberry32 } from '../core/rng.js';
 import { createInitialState } from '../core/state.js';
 import { avanzarSplitAuto } from '../core/pipeline.js';
@@ -5,6 +6,7 @@ import { calcularContexto, coincideContexto } from '../core/contexto.js';
 import { cumpleCondiciones } from '../core/selectors.js';
 import { MOMENTOS } from '../data/contextos.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
+import { CATEGORIAS_EVENTO } from '../data/categorias.js';
 import { BALANCE } from '../data/balance.js';
 
 // La matriz de cobertura de contenido.
@@ -15,8 +17,21 @@ import { BALANCE } from '../data/balance.js';
 //
 //   node src/dev/cobertura.js                        matriz momento x ventana
 //   node src/dev/cobertura.js --huecos               solo las celdas flojas
+//   node src/dev/cobertura.js --categorias           huecos, partido por categoria
+//   node src/dev/cobertura.js --categorias --detalle   + cada celda floja
 //   node src/dev/cobertura.js --momento tier1_debut  que contenido cae ahi
 //   node src/dev/cobertura.js --evento team_drama    donde puede aparecer
+//
+// Fase J0 (AUDITORIA.md H1, "el instrumento" — PLAN.md §J0): la matriz
+// cuenta por UNIÓN de las `MUESTRAS_POR_CELDA` (12) muestras de una celda —
+// un evento "está" si pasa el contexto en AL MENOS UNA. Eso escondía que,
+// dentro de una celda "sana" (40 eventos que pasan el contexto), una sola
+// categoría podía cubrir casi todo el peso real y las otras diez quedar de
+// adorno: la matriz decía "sin huecos" mientras 1 de cada 6 splits forzaba
+// el mismo evento de `parche`. `--categorias` repite el mismo algoritmo de
+// huecos, una vez por cada una de las 11 categorías del catálogo — si una
+// categoría específica no llega al mínimo en una celda aunque el TOTAL de
+// la celda sí, ahí está el hueco que la unión tapaba.
 
 const SEEDS = 300;
 const SPLITS = 45;
@@ -29,7 +44,7 @@ function clave(momento, ventana) {
 // Recorre carreras reales y junta estados representativos por celda. Se guardan
 // estados y no solo contextos porque las `conditions` numericas necesitan el
 // estado para evaluarse.
-function observar() {
+export function observar() {
   const celdas = new Map();
   const momentosVistos = new Set();
 
@@ -204,6 +219,65 @@ function imprimirMatriz(celdas, momentosVistos, { soloHuecos }) {
   console.log(`\nopciones totales del catálogo: ${totalOpciones} / objetivo ${objetivo}  ${totalOpciones >= objetivo ? '✔' : '✗'}`);
 }
 
+// Fase J0: la misma detección de huecos de `imprimirMatriz`, una vez por
+// categoría — filtra el catálogo a una sola `categoria` y reusa
+// `contarEnCelda` tal cual, así que no hay una segunda cuenta que pueda
+// divergir de la que ya valida la matriz general. Separada de su impresión
+// (abajo) para que `validate.js` pueda importarla y afirmar sobre los datos
+// en vez de scrapear la salida de consola.
+export function calcularHuecosPorCategoria(celdas) {
+  const minimo = BALANCE.contenido.minimoEventosPorCelda;
+  const filas = [];
+
+  for (const categoria of CATEGORIAS_EVENTO) {
+    const eventosDeCategoria = TODOS_LOS_EVENTOS.filter((evento) => evento.categoria === categoria);
+    const huecos = [];
+
+    for (const momento of MOMENTOS) {
+      for (const ventana of ventanasDe(celdas, momento.id)) {
+        const muestras = celdas.get(clave(momento.id, ventana));
+        const { porContexto } = contarEnCelda(muestras, eventosDeCategoria);
+        if (porContexto < minimo) {
+          huecos.push({ momento: momento.id, ventana, eventos: porContexto });
+        }
+      }
+    }
+
+    filas.push({ categoria, catalogo: eventosDeCategoria.length, huecos });
+  }
+
+  return filas.sort((a, b) => b.huecos.length - a.huecos.length);
+}
+
+// Resumen, no línea por celda: con 11 categorías × hasta 66 celdas cada una,
+// el detalle completo es ruido para un vistazo — `--categorias --detalle`
+// lo destapa.
+function imprimirCoberturaPorCategoria(celdas, { detalle } = {}) {
+  const minimo = BALANCE.contenido.minimoEventosPorCelda;
+  const celdasObservadas = [...celdas.keys()].length;
+  console.log(`COBERTURA POR CATEGORÍA — partición de la matriz por las 11 categorías del catálogo (${celdasObservadas} celdas observadas)\n`);
+
+  const filas = calcularHuecosPorCategoria(celdas);
+  const anchoCategoria = Math.max(...filas.map((f) => f.categoria.length));
+  for (const fila of filas) {
+    const marca = fila.huecos.length === 0 ? '✔' : '✗';
+    console.log(`  ${marca} ${fila.categoria.padEnd(anchoCategoria)}  ${String(fila.catalogo).padStart(3)} en el catálogo  ${String(fila.huecos.length).padStart(3)}/${celdasObservadas} celdas por debajo del mínimo (${minimo})`);
+    if (detalle) {
+      for (const hueco of fila.huecos) {
+        console.log(`      ${hueco.momento} / ${hueco.ventana}: ${hueco.eventos}`);
+      }
+    }
+  }
+
+  const totalHuecos = filas.reduce((s, f) => s + f.huecos.length, 0);
+  console.log(`\n${totalHuecos} hueco(s) de categoría — celdas donde el TOTAL de la matriz general llega al`);
+  console.log(`mínimo pero una categoría puntual no. Es lo que la unión de ${MUESTRAS_POR_CELDA} muestras tapaba:`);
+  console.log('una celda con 40 eventos "disponibles" puede tener 39 de una categoría y 0 del resto.');
+  if (!detalle) {
+    console.log('(--categorias --detalle lista cada celda)');
+  }
+}
+
 function imprimirMomento(celdas, momentoId) {
   const ventanas = ventanasDe(celdas, momentoId);
   if (ventanas.length === 0) {
@@ -254,16 +328,23 @@ function imprimirEvento(celdas, eventoId) {
   }
 }
 
-const args = process.argv.slice(2);
-const { celdas, momentosVistos } = observar();
+// Fase J0 (AUDITORIA.md AUD-2): mismo criterio que `simulate.js` — guardado
+// para que `validate.js` pueda importar `observar`/`calcularHuecosPorCategoria`
+// sin que el import por sí solo dispare las 300 carreras de `observar()`.
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+  const args = process.argv.slice(2);
+  const { celdas, momentosVistos } = observar();
 
-const indiceMomento = args.indexOf('--momento');
-const indiceEvento = args.indexOf('--evento');
+  const indiceMomento = args.indexOf('--momento');
+  const indiceEvento = args.indexOf('--evento');
 
-if (indiceMomento >= 0) {
-  imprimirMomento(celdas, args[indiceMomento + 1]);
-} else if (indiceEvento >= 0) {
-  imprimirEvento(celdas, args[indiceEvento + 1]);
-} else {
-  imprimirMatriz(celdas, momentosVistos, { soloHuecos: args.includes('--huecos') });
+  if (indiceMomento >= 0) {
+    imprimirMomento(celdas, args[indiceMomento + 1]);
+  } else if (indiceEvento >= 0) {
+    imprimirEvento(celdas, args[indiceEvento + 1]);
+  } else if (args.includes('--categorias')) {
+    imprimirCoberturaPorCategoria(celdas, { detalle: args.includes('--detalle') });
+  } else {
+    imprimirMatriz(celdas, momentosVistos, { soloHuecos: args.includes('--huecos') });
+  }
 }

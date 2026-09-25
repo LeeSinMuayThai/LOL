@@ -48,7 +48,12 @@ export function opcionesVivas(state, evento, contexto = calcularContexto(state))
   return evento.options.filter((opcion) => disponibleEn(state, opcion, contexto));
 }
 
-function candidatos(state) {
+// Exportada desde J0 (AUDITORIA.md, fase J-higiene): `simulate.js` la llama
+// tal cual, en vivo, para medir cuántos candidatos quedan afuera del sorteo
+// cuando `conPrioridadDeBisagra` corta el pool a solo bisagras — sin
+// reimplementar el filtro gordo acá y arriesgar que las dos copias diverjan
+// (la misma lección que `disponibleEn`/`opcionesVivas` ya dejan escrita).
+export function candidatos(state) {
   const contexto = calcularContexto(state);
   return TODOS_LOS_EVENTOS.filter(
     (event) => !event.cierreDeEdad

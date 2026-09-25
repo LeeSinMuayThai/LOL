@@ -4973,6 +4973,34 @@ vacía; las filas sin queja son evidencia adicional de la de arriba, no quejas n
 | "no podés elegir región ni dificultad" | `core/mundo.js:310`: `weightedPick(ligasTier1, prestigio)`, sin input del jugador. El concepto de dificultad no existe en el motor |
 | "¿qué me importa el parche?" | `state.meta.patch` es un contador `+1` por split (`systems/meta.js:93`) que **nadie lee** salvo para imprimirlo |
 
+### J.0b — remedido con el instrumento (AUD-2, 2026-09-25)
+
+T6: la tabla de arriba se cita tal cual quedó escrita — es historia, y es lo que disparó la fase.
+Estos números son la primera corrida real del instrumento que J0 instaló (`simulate.js` bloque
+`jugabilidad`, 200 carreras × 3 estrategias, 60 splits; `cobertura.js --categorias`), no una
+repetición de los de arriba citada de memoria. Donde coinciden, es señal de que el instrumento mide
+lo mismo que midió el diagnóstico original. Donde no, gana este número — es J3-J6 quienes van a
+leerlo para saber si su fix movió algo.
+
+| Causa de §J.0 | Cita original | Remedido ahora (equilibrado / ranked / prudente) |
+|---|---|---|
+| r(nivel, jerarquía) | 0,18 | **0,02 / 0,40 / -0,07** (equilibrado / ranked / prudente) — no es un número solo: depende muchísimo de cómo se juega, y ninguna de las tres estrategias por separado reproduce la cita original. La dispersión en sí es el hallazgo nuevo, no cuál de las tres "es" el 0,18 |
+| % efectos → mentalidad/hype | 47,2% | **47,2%** — exacto |
+| outcomes con `modificadores` | 2,2% | **2,2%** — exacto |
+| vida media efecto de curva (mecánica) | 1,9 splits | **1,94** — coincide. Analítico, no simulado: sale directo de `velocidad: 0.3` de `mecanica` en `BALANCE.atributos.curvas`, así que no hace falta volver a medirlo con ruido — laneo 2,79, teamfight 3,11 |
+| retención a 4 splits | "hoy ~10%" (cita de J2, no de J.0) | **24% mecánica / 37% laneo / 41% teamfight** — bien arriba del ~10% citado. Mismo cálculo analítico; la cita original puede haber sido una medición empírica que además capturaba el objetivo biológico moviéndose en esos 4 splits, no solo la convergencia — a revisar cuando J2 lo toque, no antes |
+| % splits con `main_muerto` | 52,2% | **54,4% / 52,5% / 52,8%** — coincide |
+| `pool_main_muerto` por carrera | 2,8 | **3,32 / 1,71 / 2,76** — el rango lo contiene |
+| p95 descartados por bisagra | "hoy 42" (J4 lo llama p95; J.0 lo llama media — los dos textos del plan no coinciden entre sí) | **60** en las tres estrategias. El número de J4 puede haber sido la media, no el p95 — anotado, no resuelto: J4 va a medir de nuevo al escribir el fix |
+| % pares consecutivos misma categoría | 31,9% | **29,1% / 27,0% / 34,6%** — el rango lo contiene |
+| % pantalla `categoria: parche` | 14,2% | **28,7% / 30,1% / 27,7%** — cerca del doble. Definición distinta, no error: acá es "% de las decisiones del sistema `eventos` reveladas que son parche"; el 14,2% original probablemente incluía todo el feed (series, mercado, resúmenes), no solo eventos — J4/J5 deberían fijar UNA definición antes de calibrar contra este número |
+| % series sin draft | 32,5% | **31,0% / 28,8% / 31,2%** — coincide |
+| mediana drafts/Bo5 | 1 | **1** en las tres — exacto |
+
+**Terminado cuando** (criterio propio de J0, `PLAN.md:5068`): los KPIs devuelven finitos sobre
+200×3, 0 crashes — cumplido, son los tres checks nuevos de `validate.js` ("J0: ..."). El resto de
+esta tabla es lectura para J3-J6, no un gate de J0.
+
 ## J.1 — Por qué se insertó acá (y por qué FASE V se congela)
 
 `FASE V` se prohíbe explícitamente tocar el motor (*"esta fase no debe mover un byte del motor"*,

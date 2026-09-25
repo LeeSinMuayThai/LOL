@@ -12,6 +12,9 @@ import { crearDelta } from '../ui/core/delta.js';
 import { agruparBeats, renderFeed, LIMITE_FEED } from '../ui/components/feed.js';
 import * as reproductorModulo from '../ui/reproductor.js';
 import { TONOS_CONOCIDOS as TONOS_DE_GRAFICOS } from '../ui/graficos/comun.js';
+import { correrLote as correrLoteJugabilidad, analizarCatalogo } from './simulate.js';
+import { observar as observarCobertura, calcularHuecosPorCategoria } from './cobertura.js';
+import { NOMBRES_ESTRATEGIA } from './estrategias.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 import { CATEGORIAS_EVENTO } from '../data/categorias.js';
@@ -6976,6 +6979,87 @@ if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_REPRODUCIR_BEATS.toLo
 
 check(NOMBRE_CHECK_REPRODUCIR_BEATS, () => {
   if (errorReproducirBeatsReal) throw errorReproducirBeatsReal;
+});
+
+// ============================================================================
+// Fase J0 — el instrumento (AUDITORIA.md AUD-2, H1; PLAN.md §J0).
+// Antes de esta fase nada medía si una carrera se JUEGA distinto para un
+// humano mirando la pantalla — los 194 checks de `validate.js` estaban en
+// verde el día que se jugó la carrera que abrió FASE J. `simulate.js` gana
+// el bloque `jugabilidad`; `cobertura.js` gana `--categorias`. Los checks de
+// acá no exigen que los números caigan en tal o cual banda (eso es J3-J6,
+// contra la línea de base que queda anotada en `PROGRESO.md`) — exigen que
+// el instrumento en sí funcione: números finitos, cero crashes, y que
+// encuentre huecos reales cuando los hay.
+// ============================================================================
+
+checkLento('J0: los KPIs de jugabilidad (simulate.js) devuelven finitos sobre 200 carreras × 3 estrategias, 0 crashes (AUDITORIA.md AUD-2)', () => {
+  function verificarFinito(valor, ruta) {
+    if (valor === null) {
+      return; // "muestra insuficiente" es una respuesta válida, no un fallo.
+    }
+    if (typeof valor === 'number') {
+      if (!Number.isFinite(valor)) {
+        throw new Error(`${ruta} no es finito: ${valor}`);
+      }
+      return;
+    }
+    if (typeof valor === 'object') {
+      for (const [clave, sub] of Object.entries(valor)) {
+        verificarFinito(sub, `${ruta}.${clave}`);
+      }
+      return;
+    }
+    throw new Error(`${ruta} no es número, objeto ni null: ${JSON.stringify(valor)}`);
+  }
+
+  for (const nombre of NOMBRES_ESTRATEGIA) {
+    const reporte = correrLoteJugabilidad(200, 60, nombre);
+    if (reporte.crashes > 0) {
+      throw new Error(`${nombre}: ${reporte.crashes} crashes en 200 carreras`);
+    }
+    verificarFinito(reporte.jugabilidad, `jugabilidad[${nombre}]`);
+  }
+});
+
+check('J0: el análisis estático del catálogo (mentalidad/hype, modificadores, vida media) es coherente (AUDITORIA.md AUD-2)', () => {
+  const c = analizarCatalogo();
+  // Sin exigir un total exacto (regla de proceso 17 — un piso de cordura,
+  // no un trinquete: este catálogo crece con cada fase de contenido, y un
+  // check que falla cada vez que alguien agrega un evento es el mismo error
+  // que H4, un nivel más abajo).
+  if (!(c.efectosTotal > 500)) {
+    throw new Error(`efectosTotal sospechosamente bajo: ${c.efectosTotal}`);
+  }
+  if (!(c.pctEfectosMentalidadHype > 0 && c.pctEfectosMentalidadHype < 1)) {
+    throw new Error(`pctEfectosMentalidadHype fuera de (0,1): ${c.pctEfectosMentalidadHype}`);
+  }
+  if (!(c.pctOutcomesConModificadores >= 0 && c.pctOutcomesConModificadores < 1)) {
+    throw new Error(`pctOutcomesConModificadores fuera de [0,1): ${c.pctOutcomesConModificadores}`);
+  }
+  for (const [stat, vida] of Object.entries(c.vidaMediaPorCurva)) {
+    if (!(vida > 0)) {
+      throw new Error(`vidaMediaPorCurva.${stat} debería ser positiva, dio ${vida}`);
+    }
+  }
+});
+
+checkLento('J0: cobertura.js --categorias encuentra huecos que la matriz general no ve (AUDITORIA.md AUD-2, H1)', () => {
+  const { celdas } = observarCobertura();
+  const filas = calcularHuecosPorCategoria(celdas);
+  if (filas.length !== 11) {
+    throw new Error(`se esperaban 11 categorías (CATEGORIAS_EVENTO), calcularHuecosPorCategoria devolvió ${filas.length}`);
+  }
+  const totalHuecos = filas.reduce((s, f) => s + f.huecos.length, 0);
+  // El punto entero de esta partición es que EXISTAN huecos de categoría
+  // aunque la matriz general (imprimirMatriz, sin partir) diga "sin huecos"
+  // — es la brecha que tapaba la unión de 12 muestras (H1). Si algún día da
+  // 0, o el catálogo maduró de verdad pareja por categoría en cada celda, o
+  // el check dejó de medir lo que dice medir — cualquiera de las dos vale
+  // una mirada, no un ajuste silencioso del umbral.
+  if (totalHuecos === 0) {
+    throw new Error('cero huecos de categoría: o el catálogo ya está parejo por categoría en cada celda, o el check no está midiendo bien — revisar antes de bajar la vara');
+  }
 });
 
 // ============================================================================

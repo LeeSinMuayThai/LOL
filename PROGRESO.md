@@ -34,6 +34,84 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-09-25 — FASE J, J0: el instrumento (AUDITORIA.md AUD-2)
+
+Segunda parte de la sesión de auditoría (después de AUD-1, ver la entrada de abajo). J0 es la
+primera subfase de FASE J, y el propio `PLAN.md` la describe como *"no se abre una fase de
+jugabilidad sin poder medir jugabilidad"* — hasta acá, nada en `src/dev/` podía responder si una
+decisión cambia el resultado para alguien mirando la pantalla, que es exactamente lo que 194 checks
+en verde no vieron el día que se jugó la carrera que abrió esta fase.
+
+**`simulate.js` gana el bloque `jugabilidad`.** `correrCarrera` ya observaba la carrera split a
+split desde 9E (el objeto `carrera`, por el bug D25); `jugabilidad` es la misma jugada un nivel más
+arriba, envolviendo la estrategia real con un `responderInstrumentado` que mira cada decisión de
+pasada sin cambiar una sola respuesta ni el consumo de `rng`. Mide: `r(nivel, jerarquía)`, % de
+splits con `main_muerto`, p95 de candidatos descartados por el filtro de bisagra (`candidatos`,
+nueva exportada de `systems/events.js` — una función, no una reimplementación que pueda divergir),
+categorías de evento reveladas (para "dos veces seguidas lo del meta" y "% pantalla parche"),
+decisiones totales y drafts por serie ("hacés un clic y perdiste"), disparos de `pool_main_muerto`,
+y la maestría mínima del pool al final. Más un análisis estático del catálogo (`analizarCatalogo`,
+cero `rng`): % de efectos que van a mentalidad/hype, % de outcomes con `modificadores`, y la vida
+media de un efecto sobre un stat de curva — esta última analítica, no simulada: sale directo de
+`velocidad` en `BALANCE.atributos.curvas` (la curva converge una fracción fija del camino a
+`objetivo` cada split, así que la vida media de cualquier bulto que no toque `objetivo` es
+`ln(0.5)/ln(1-velocidad)`, sin necesitar ruido de simulación para calcularla).
+
+**Un bug real, encontrado escribiendo el instrumento, no en el motor.** El primer intento de medir
+"drafts por serie" comparaba `state.serie.activa` antes y después de cada split — y daba
+`seriesMedidas: 0` en 600 carreras. Causa: un bracket entero (varias rondas, hasta 20 mapas) puede
+abrirse y cerrarse DENTRO de un único `avanzarSplitAuto` cuando se auto-resuelve sin pausas — el
+mismo fenómeno que J.0 ya había nombrado ("hacés un clic y perdiste") pero que el instrumento no
+esperaba tener que ver por sí mismo. Arreglado leyendo `career.registro.seriesGanadas +
+seriesPerdidas` (el contador que sí se mueve una vez por serie, tenga o no drafts) en cada decisión
+resuelta y al final de cada split — no solo una vez por split — así ninguna serie que cierre sin
+pausa alguna, ni dos que cierren en el mismo split, se pierden o se funden en un solo dato. Antes
+del fix: `medianaDraftsPorSerie` no medía nada (`null`, 0 series). Después: coincide con lo que
+J.0 ya había citado ("mediana 1 por Bo5").
+
+**`cobertura.js` gana `--categorias`.** La matriz existente cuenta por UNIÓN de las 12 muestras por
+celda — un evento "está" si pasa el contexto en AL MENOS UNA. Eso escondía que una celda "sana" (40
+eventos que pasan) podía tener casi todo su peso real en una sola categoría. `--categorias` repite
+el mismo algoritmo de huecos (`contarEnCelda`, sin una segunda cuenta que pueda divergir) una vez
+por cada una de las 11 categorías del catálogo. Resultado, corrido de verdad: **553 huecos de
+categoría** en las 72 celdas observadas — la matriz general dice "sin huecos" (`cobertura.js
+--huecos` sigue vacío) mientras `partido` y `serie` no llegan al mínimo en NINGUNA celda (72/72), y
+`familia`/`salud`/`golpe_duro`/`vestuario` fallan en más del 80%. Exactamente la brecha que H1
+describía, ahora con un número.
+
+**Ambos scripts pasan a ser importables.** Ni `simulate.js` ni `cobertura.js` tenían un export:
+eran CLI puro, con código de tope de archivo que corría apenas se los importaba (300 carreras de
+`cobertura.js` `observar()`, en el caso más caro). `validate.js` necesitaba llamarlos en proceso
+para poder afirmar sobre los datos en vez de scrapear texto de consola — mismo criterio que
+`estrategias.js` ya usa. Los dos ganaron un guard `import.meta.url === pathToFileURL(process.argv[1])`
+alrededor de su cola de CLI: `node src/dev/simulate.js ...` sigue andando idéntico, pero
+`import { correrLote } from './simulate.js'` ya no dispara nada por sí solo.
+
+**3 checks nuevos (197 → 200), verificados en rojo primero (regla de proceso 7):** que los KPIs de
+`jugabilidad` sean finitos sobre 200 carreras × 3 estrategias con 0 crashes (`checkLento`, ~28s);
+que el análisis estático del catálogo caiga en rangos sensatos, sin exigir un total exacto (regla
+de proceso 17 — un piso de cordura, no un trinquete: este catálogo crece con cada fase de
+contenido); y que `--categorias` encuentre huecos reales (si algún día da cero, es señal de mirar,
+no de bajar la vara en silencio). Los tres confirmados en rojo inyectando `NaN`, un valor fuera de
+rango, y huecos forzados a `[]`, antes de dejarlos en verde.
+
+**Línea de base medida de nuevo (T6), no citada de memoria.** Ver `PLAN.md` §J.0b: de las diez
+causas con número, seis coinciden de cerca con lo que §J.0 ya citaba (efectos a mentalidad/hype
+47,2% exacto; outcomes con modificadores 2,2% exacto; vida media de mecánica 1,94 ≈ 1,9; mediana de
+drafts 1 exacto; main_muerto ~53% ≈ 52,2%; series sin draft ~30% ≈ 32,5%) — confirmando que el
+instrumento mide lo mismo que midió el diagnóstico original. Dos no coinciden y quedan anotadas para
+cuando J4/J5 las calibren: el % de pantalla en categoría `parche` da ~29% contra el 14,2% citado
+(definición distinta — "eventos" vs "todo el feed" — no error, pero hay que fijar UNA antes de
+calibrar contra el número); y r(nivel, jerarquía) resultó depender muchísimo de la estrategia de
+juego (0,02 a 0,40) en vez de ser un número solo — la dispersión es el hallazgo, no una de las tres
+lecturas.
+
+**Verificación.** `validate.js` completo: **200/200 OK, 0 FAIL** (197 de AUD-1 + los 3 de J0).
+`simulate.js 1000`: 0 crashes. `cobertura.js --huecos`: sigue vacío (la matriz general no cambió;
+`--categorias` es una lectura nueva sobre los mismos datos). Determinismo: `candidatos` (export
+nuevo en `events.js`) y los guards `import.meta.url` de `simulate.js`/`cobertura.js` no cambian
+ninguna rama de ejecución existente — no aplica huella de 40 seeds.
+
 ### 2026-09-25 — Auditoría externa: higiene (AUD-1) y H8, el bypass del reproductor
 
 Una auditoría externa (`AUDITORIA.md`, pedida por el usuario, medida contra el commit `3fc6ea5`
