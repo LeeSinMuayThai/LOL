@@ -48,7 +48,14 @@ const SPLITS_DE_VERIFICACION = 30;
 // P original hasta 1561 KB nueve meses de contenido después. Techo fijado sobre
 // el peso medido ese mismo día (1482 KB) con margen para lo que falta de la
 // fase 13 y la fase D, no sobre una expectativa.
-const PESO_MAXIMO_KB = 1700;
+//
+// Re-medido en la higiene de AUD-1 (2026-09-25, `AUDITORIA.md` H6): con
+// `src/ui/graficos/` commiteada el peso real dio 1699,7 KB — a 0,3 KB del
+// techo de 1700, el mismo patrón de margen-que-se-cierra-en-silencio que este
+// número ya tuvo una vez (nota de arriba). Subido con margen para los
+// consumidores de `graficos/` que vienen en V2/J-previa, sobre el peso medido
+// ese día, no una expectativa.
+const PESO_MAXIMO_KB = 1800;
 
 function copiar(desde, hacia) {
   const stat = fs.statSync(desde);
