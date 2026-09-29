@@ -31,7 +31,9 @@ import {
 import { TOKENS, tokensUsados, resolverTexto } from '../core/plantillas.js';
 import { RUTINAS } from '../core/rutinas.js';
 import { campeonesEnMeta, multiplicadorDeMeta, factorDeCampeon, pesoDePick, lecturaDePick } from '../core/ajusteMeta.js';
+import * as poolMod from '../core/pool.js';
 import { campeonesDisponibles, entradaDePool } from '../core/pool.js';
+import { aplicar as aplicarCampeones } from '../systems/campeones.js';
 import { elegirOutcome, elegirEvento, decisionDesdeEvento, resolver as resolverEventos, resolverOpcion, cooldownActivo, pesoEfectivo, SPLIT_SIN_EVENTO_MSG } from '../systems/events.js';
 import { previaDeOpcion, riesgoDeOpcion, payoffNormalizado } from '../core/previa.js';
 import { rarezaDeRutina, payoffDeRutina } from '../core/rareza.js';
@@ -4397,7 +4399,7 @@ check('El pool ancho llega al mapa 5 con opciones más seguido que el angosto', 
     for (let i = 0; i < repeticiones; i += 1) {
       const rng = mulberry32(90000 + i);
       const weights = createInitialState(i + 1, mulberry32(i + 1)).meta.weights;
-      const pool = sample(delRol, ancho, rng).map((campeon) => entradaDePool(campeon, 60));
+      const pool = sample(delRol, ancho, rng).map((campeon) => entradaDePool(campeon, 60, 0));
       const stateFalso = { player: { role: rol, championPool: pool }, meta: { weights }, mundo: { campeonesDebutados: [] } };
 
       let quemados = [];
@@ -4447,16 +4449,16 @@ check('El pool ancho llega al mapa 5 con opciones más seguido que el angosto', 
 check('factorDeCampeon sube con la maestría y con la afinidad al meta', () => {
   const weights = createInitialState(3, mulberry32(3)).meta.weights;
   // A igual afinidad (mismos tags), más maestría vale más.
-  const flojo = entradaDePool({ name: 'A', tags: ['tanque'] }, 30);
-  const fino = entradaDePool({ name: 'A', tags: ['tanque'] }, 80);
+  const flojo = entradaDePool({ name: 'A', tags: ['tanque'] }, 30, 0);
+  const fino = entradaDePool({ name: 'A', tags: ['tanque'] }, 80, 0);
   if (!(factorDeCampeon(fino, weights) > factorDeCampeon(flojo, weights))) {
     throw new Error('más maestría no dio más factorDeCampeon');
   }
   // A igual maestría, el que el meta pide (tag con peso alto) vale más que el
   // que quedó a contramano (tag con peso bajo). En la seed 3: enchanter 1.508,
   // splitpush 0.669.
-  const enMeta = entradaDePool({ name: 'B', tags: ['enchanter'] }, 60);
-  const contraMeta = entradaDePool({ name: 'C', tags: ['splitpush'] }, 60);
+  const enMeta = entradaDePool({ name: 'B', tags: ['enchanter'] }, 60, 0);
+  const contraMeta = entradaDePool({ name: 'C', tags: ['splitpush'] }, 60, 0);
   if (!(factorDeCampeon(enMeta, weights) > factorDeCampeon(contraMeta, weights))) {
     throw new Error('la afinidad al meta no movió factorDeCampeon');
   }
@@ -4501,8 +4503,8 @@ check('La afinidad al meta mueve el rendimiento base (no solo la maestría)', ()
     player: {
       ...semilla.player,
       championPool: [
-        entradaDePool({ name: 'Meta', tags: ['enchanter'] }, 60),
-        entradaDePool({ name: 'Anti', tags: ['splitpush'] }, 60)
+        entradaDePool({ name: 'Meta', tags: ['enchanter'] }, 60, 0),
+        entradaDePool({ name: 'Anti', tags: ['splitpush'] }, 60, 0)
       ]
     }
   };
@@ -4558,7 +4560,7 @@ check('El motor nunca elige por vos un campeón peor que otro disponible', () =>
     const rng = mulberry32(50000 + i);
     const weights = createInitialState(i + 1, mulberry32(i + 1)).meta.weights;
     const ancho = 3 + (i % 4);
-    const entradas = sample(pool, ancho, rng).map((c) => entradaDePool(c, 20 + Math.floor(rng() * 70)));
+    const entradas = sample(pool, ancho, rng).map((c) => entradaDePool(c, 20 + Math.floor(rng() * 70), 0));
     const state = {
       ...estadoDraftFalso(50000 + i, entradas, 45 + Math.floor(rng() * 30)),
       meta: { weights, ajuste: 50 }
@@ -4620,7 +4622,7 @@ check('Nadie te frena en el draft por un pick que no mueve el partido', () => {
     const rng = mulberry32(70000 + i);
     const weights = createInitialState(i + 1, mulberry32(i + 1)).meta.weights;
     const ancho = 3 + (i % 4);
-    const entradas = sample(pool, ancho, rng).map((c) => entradaDePool(c, 20 + Math.floor(rng() * 70)));
+    const entradas = sample(pool, ancho, rng).map((c) => entradaDePool(c, 20 + Math.floor(rng() * 70), 0));
     const state = {
       ...estadoDraftFalso(70000 + i, entradas, 45 + Math.floor(rng() * 30)),
       meta: { weights, ajuste: 50 }
@@ -4657,8 +4659,8 @@ checkLento('Toda opción de draft trae su lectura y va ordenada por factorDeCamp
   // Smoke test directo de la matriz: dos ejes extremos dan frases distintas.
   const weightsBase = createInitialState(3, mulberry32(3)).meta.weights;
   const poolMix = [
-    entradaDePool({ name: 'Fuerte', tags: ['enchanter'] }, 90),
-    entradaDePool({ name: 'Flojo', tags: ['splitpush'] }, 20)
+    entradaDePool({ name: 'Fuerte', tags: ['enchanter'] }, 90, 0),
+    entradaDePool({ name: 'Flojo', tags: ['splitpush'] }, 20, 0)
   ];
   if (lecturaDePick(poolMix[0], weightsBase, poolMix) === lecturaDePick(poolMix[1], weightsBase, poolMix)) {
     throw new Error('lecturaDePick devolvió la misma frase para dos picks opuestos');
@@ -4717,7 +4719,7 @@ check('Elegir el mismo campeón del split en una fecha marcada da factorDraftFec
   const weights = createInitialState(3, mulberry32(3)).meta.weights;
   for (const tags of [['enchanter'], ['splitpush'], ['tanque', 'engage'], ['asesino']]) {
     for (const mastery of [15, 45, 80]) {
-      const campeon = entradaDePool({ name: 'X', tags }, mastery);
+      const campeon = entradaDePool({ name: 'X', tags }, mastery, 0);
       const factor = factorDraftFecha(campeon, campeon, weights);
       if (factor !== 0) {
         throw new Error(`factorDraftFecha(c, c) = ${factor} (tags ${tags}, m${mastery})`);
@@ -4725,9 +4727,9 @@ check('Elegir el mismo campeón del split en una fecha marcada da factorDraftFec
     }
   }
   // Y elegir uno MEJOR que el del split da > 0, uno peor da < 0, ambos topeados.
-  const delSplit = entradaDePool({ name: 'Base', tags: ['splitpush'] }, 40);
-  const mejor = entradaDePool({ name: 'Mejor', tags: ['enchanter'] }, 80);
-  const peor = entradaDePool({ name: 'Peor', tags: ['splitpush'] }, 15);
+  const delSplit = entradaDePool({ name: 'Base', tags: ['splitpush'] }, 40, 0);
+  const mejor = entradaDePool({ name: 'Mejor', tags: ['enchanter'] }, 80, 0);
+  const peor = entradaDePool({ name: 'Peor', tags: ['splitpush'] }, 15, 0);
   const tope = BALANCE.temporada.impactoDraftFecha;
   const fMejor = factorDraftFecha(mejor, delSplit, weights);
   const fPeor = factorDraftFecha(peor, delSplit, weights);
@@ -7296,6 +7298,101 @@ check('Gráficos: cero requestAnimationFrame con prefers-reduced-motion en grafi
     if (docOriginal !== undefined) global['document'] = docOriginal; else delete global['document'];
     if (mmOriginal !== undefined) global['matchMedia'] = mmOriginal; else delete global['matchMedia'];
     if (rafOriginal !== undefined) global['requestAnimationFrame'] = rafOriginal; else delete global['requestAnimationFrame'];
+  }
+});
+
+// ============================================================================
+// Fase J3 — El pool deja de pudrirse (PLAN.md §J3)
+// ============================================================================
+
+check('J3 gracia: un campeón con ultimoSplitJugado === splitCount no pierde maestría en aplicar de campeones', () => {
+  const seed = 42;
+  const rng = mulberry32(seed);
+  let state = createInitialState(seed, rng);
+  state.player.splitCount = 5;
+  state.player.championPool = [
+    { name: 'C1', tags: ['tanque'], mastery: 50, partidas: 0, ultimoSplitJugado: 5 },
+    { name: 'C2', tags: ['tanque'], mastery: 50, partidas: 0, ultimoSplitJugado: 5 }
+  ];
+  const resultado = aplicarCampeones(state, rng);
+  const jugado = resultado.state.player.campeonDelSplit;
+  const noJugado = resultado.state.player.championPool.find((c) => c.name !== jugado);
+  if (noJugado.mastery !== 50) {
+    throw new Error(`el campeón no jugado en gracia perdió maestría: ${noJugado.mastery} !== 50`);
+  }
+});
+
+check('J3 óxido: con ultimoSplitJugado ya vencido la maestría del no jugado baja en varias semillas', () => {
+  let vecesBajo = 0;
+  const total = 10;
+  for (let s = 1; s <= total; s++) {
+    const rng = mulberry32(s);
+    let state = createInitialState(s, rng);
+    state.player.splitCount = 5;
+    state.player.championPool = [
+      { name: 'C1', tags: ['tanque'], mastery: 50, partidas: 0, ultimoSplitJugado: 2 },
+      { name: 'C2', tags: ['tanque'], mastery: 50, partidas: 0, ultimoSplitJugado: 2 }
+    ];
+    const res = aplicarCampeones(state, rng);
+    const jugado = res.state.player.campeonDelSplit;
+    const noJugado = res.state.player.championPool.find((c) => c.name !== jugado);
+    if (noJugado.mastery < 50) {
+      vecesBajo++;
+    }
+  }
+  if (vecesBajo === 0) {
+    throw new Error('en 10 semillas ninguna redujo la maestría con gracia vencida');
+  }
+});
+
+check('J3 piso: pool de 6, maestría inicial 40, aplicar avanzando splitCount no baja de 18', () => {
+  const rng = mulberry32(123);
+  let state = createInitialState(123, rng);
+  state.player.splitCount = 0;
+  state.player.championPool = [
+    { name: 'C1', tags: ['tanque'], mastery: 40, partidas: 0, ultimoSplitJugado: 0 },
+    { name: 'C2', tags: ['bruiser'], mastery: 40, partidas: 0, ultimoSplitJugado: 0 },
+    { name: 'C3', tags: ['asesino'], mastery: 40, partidas: 0, ultimoSplitJugado: 0 },
+    { name: 'C4', tags: ['mago'], mastery: 40, partidas: 0, ultimoSplitJugado: 0 },
+    { name: 'C5', tags: ['enchanter'], mastery: 40, partidas: 0, ultimoSplitJugado: 0 },
+    { name: 'C6', tags: ['splitpush'], mastery: 40, partidas: 0, ultimoSplitJugado: 0 }
+  ];
+  for (let i = 0; i < 30; i++) {
+    state = aplicarCampeones(state, rng).state;
+    state.player.splitCount += 1;
+  }
+  const minima = Math.min(...state.player.championPool.map((c) => c.mastery));
+  if (minima < 18) {
+    throw new Error(`la maestría mínima del pool cayó a ${minima.toFixed(1)}, debajo de 18`);
+  }
+});
+
+check('J3 factor: factorOxido escala inverso al tamaño del pool leyendo poolAngosto', () => {
+  const fn = poolMod.factorOxido;
+  if (typeof fn !== 'function') {
+    throw new Error('factorOxido no es una función exportada de core/pool.js');
+  }
+  const angosto = BALANCE.campeones.poolAngosto;
+  const f3 = fn(angosto);
+  const f6 = fn(angosto * 2);
+  if (f3 !== 1) {
+    throw new Error(`factorOxido(${angosto}) dio ${f3}, se esperaba 1`);
+  }
+  if (f6 !== 0.5) {
+    throw new Error(`factorOxido(${angosto * 2}) dio ${f6}, se esperaba 0.5`);
+  }
+});
+
+checkLento('J3 retiro: en 40 carreras la maestría mínima del pool es >= 18', () => {
+  for (let seed = 1; seed <= 40; seed++) {
+    const state = correrCarrera(seed, 40);
+    const pool = state.player.championPool;
+    if (pool && pool.length > 0) {
+      const minima = Math.min(...pool.map((c) => c.mastery));
+      if (minima < 18) {
+        throw new Error(`seed ${seed}: la maestría mínima del pool es ${minima.toFixed(1)} < 18`);
+      }
+    }
   }
 });
 

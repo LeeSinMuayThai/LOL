@@ -72,8 +72,34 @@ export function peorDelPool(pool) {
   return pool.reduce((peor, campeon) => (campeon.mastery < peor.mastery ? campeon : peor));
 }
 
-export function entradaDePool(campeon, mastery) {
-  return { name: campeon.name, tags: [...campeon.tags], mastery, partidas: 0 };
+export function entradaDePool(campeon, mastery, split) {
+  if (typeof split !== 'number') {
+    throw new TypeError(`entradaDePool: split debe ser un número, recibido ${typeof split}`);
+  }
+  return {
+    name: campeon.name,
+    tags: [...campeon.tags],
+    mastery,
+    partidas: 0,
+    ultimoSplitJugado: split
+  };
+}
+
+// El óxido escala inverso al tamaño del pool (fase J3): pool de 3 oxida 1x;
+// pool de 6 oxida a la mitad (0.5x).
+export function factorOxido(tamanoPool) {
+  return BALANCE.campeones.poolAngosto / tamanoPool;
+}
+
+// Pronóstico de óxido para la UI (fase J3): calcula si el campeón está en
+// gracia y cuántos splits le quedan antes de empezar a perder maestría.
+export function pronosticoDeOxido(campeon, splitCount) {
+  const c = BALANCE.campeones;
+  // Guardado anterior a J3: gracia entera (PLAN.md §Riesgos riesgo 1).
+  const ultimo = typeof campeon.ultimoSplitJugado === 'number' ? campeon.ultimoSplitJugado : splitCount;
+  const enGracia = splitCount - ultimo < c.splitsSinJugarParaOxido;
+  const splitsParaOxido = Math.max(0, c.splitsSinJugarParaOxido - (splitCount - ultimo));
+  return { enGracia, splitsParaOxido };
 }
 
 // --- Mover el pool ---
@@ -149,7 +175,8 @@ export function aprenderCampeones(state, pool, cantidad, rng, { criterio = 'meta
       gauss(p.maestriaCampeonNuevo, p.maestriaCampeonNuevoSpread, rng),
       BALANCE.campeones.maestriaMinima,
       BALANCE.stats.max
-    ))
+    )),
+    state.player.splitCount
   ));
 
   return {

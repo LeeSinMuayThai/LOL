@@ -61,7 +61,8 @@
 }
 .campeon-tile--setup .campeon-tile-ini { font-size: var(--fs-3); }
 .campeon-tile--mini .campeon-tile-ini { font-size: 9px; }
-.campeon-tile--mini .campeon-tile-mae { display: none; }
+.campeon-tile--mini .campeon-tile-mae,
+.campeon-tile--mini .campeon-tile-oxido { display: none; }
 
 .campeon-tile-mae {
   position: absolute;
@@ -71,6 +72,16 @@
   font-size: 9px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  color: var(--ink-dim);
+  line-height: 1;
+}
+.campeon-tile-oxido {
+  position: absolute;
+  left: 2px;
+  bottom: 2px;
+  font-family: var(--font-display);
+  font-size: 8px;
+  font-weight: 700;
   color: var(--ink-dim);
   line-height: 1;
 }

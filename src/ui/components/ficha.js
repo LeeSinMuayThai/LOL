@@ -1,5 +1,6 @@
 import { fichaCompleta } from '../../core/ficha.js';
 import { valorDeMercado } from '../../core/valorMercado.js';
+import { pronosticoDeOxido } from '../../core/pool.js';
 import { crearBarra, crearInstrumento } from './barra.js';
 import { crearStatRow } from './statRow.js';
 import { crearOrgChip } from './orgChip.js';
@@ -186,7 +187,8 @@ function crearPoolTiles(state) {
   const mostrar = pool.slice(0, POOL_TILES);
   for (const campeon of mostrar) {
     const tier = tierList.find((entrada) => entrada.name === campeon.name)?.tier ?? null;
-    row.appendChild(crearCampeonTile(campeon, { tier, size: 'ficha' }));
+    const pronostico = pronosticoDeOxido(campeon, state.player.splitCount);
+    row.appendChild(crearCampeonTile(campeon, { tier, size: 'ficha', pronostico }));
   }
   if (pool.length > POOL_TILES) {
     const mas = document.createElement('span');

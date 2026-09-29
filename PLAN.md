@@ -5042,7 +5042,7 @@ tabla de KPIs y re-basear los ~190 checks — mismo patrón que 9Ma→9Mj.
 | **A — agencia** | J1, J2 | **J2c** (recalibración completa) |
 | **B — densidad** | J4, J5, J6 | J5 y J6 **son** la calibración |
 | **C — el mundo** | J7, J8 | **J8c** |
-| **sin corrimiento** | J0, J3, J9, J10 | — |
+| **sin corrimiento** | J0, J9, J10 | J3 se midió aparte (D62): 35/40 seeds mueven la huella. No es bloque A/B/C y no se falsea el RNG |
 
 Dentro de un bloque, un check fuera de banda se anota con su número medido y se re-basea en el
 commit de calibración, no en el acto (regla 2 + T6). Un check que *crashea* se arregla en el acto.
@@ -5291,8 +5291,9 @@ node server.js                            # jugar a mano, cero errores de consol
 ```
 
 Más, por mover el motor: huella de determinismo en 40 seeds antes/después de cada subfase (el
-corrimiento se espera y se declara en A/B/C; en J0/J3/J9/J10 la huella tiene que ser idéntica y es
-un check); end-to-end: volver a jugar la carrera que disparó todo esto — ninguna de las nueve quejas
+corrimiento se espera y se declara en A/B/C; en J0/J9/J10 la huella tiene que ser idéntica y es
+un check; J3 se midió el 2026-09-27, 35/40 seeds cambian, D62, porque la maestría entra a
+`fuerza.js`); end-to-end: volver a jugar la carrera que disparó todo esto — ninguna de las nueve quejas
 de J.0 se puede repetir textualmente.
 
 **El corte mínimo:** J0 + J3 + J4 + J5 + J6 + J-previa + J9 ya arregla la partida que se jugó. Sin
@@ -5378,6 +5379,7 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D59 | `AUDITORIA.md`, hallazgos bajos H17/H18/H19/H20: ciclo de import real `core/plantel.js:5 ↔ core/mundo.js:11` (por `generarHandle`, único ciclo en todo `core/`+`systems/`) · 6 campos de estado vestigiales (`career.contracts` muerto del todo, `career.hitos` escribe-y-nadie-lee, `player.titles`/`player.worlds` duplican `career.titulos`/`internacionales`) · 84 números mágicos residuales en `systems/*.js`, concentrados en `servicioMilitar.js` · `systems/mercado.js` a 945 líneas, el archivo más grande del proyecto | la próxima fase que toque cada archivo |
 | D60 | `AUDITORIA.md`, hallazgos bajos H11/H12/H13: `--rapido` cubre 41% de los checks (79/194) y salta todo lo estadístico/conductual · cero CI (no existe `.github/`, los 194 checks dependen de correrlos a mano) · cero tests unitarios (`validate.js` es el único arnés, un solo archivo) | sin fase — decisión pendiente del usuario, no deuda de código |
 | D61 | `AUDITORIA.md` H22: `reemplazarEnElLugar` (`reconciliar.js`) solo copia `className`+`dataset`, no `title`/`aria-*`/`style` — correcto hoy por accidente (ningún consumidor de V0b los usa), no por diseño | V3 |
+| D62 | J3 estaba en la fila "sin corrimiento". Medido el 2026-09-27, 40 seeds × 30 splits, `createInitialState` + `avanzarSplitAuto`, tupla `finAnticipado:splitCount:soloqElo` redondeado: **35/40 distintas** (seed 1: `1:en_carrera:30:4139` → `1:en_carrera:30:4156`; seeds 4 y 5 idénticas). La maestría entra a `rendimientoBase` en `core/fuerza.js`, así que el piso 5→18 mueve partidos y elo. No se agregan tiradas para clavar la huella vieja. Determinismo intra-versión intacto | J (aceptado, misma familia que D52) |
 
 ---
 

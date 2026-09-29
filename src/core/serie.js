@@ -116,8 +116,8 @@ export function elegirCampeonRival(state, quemados, rng) {
 export function campeonComodin(state, quemados, rng) {
   const delRol = campeonesDisponibles(state, state.player.role);
   const usables = delRol.filter((campeon) => !quemados.includes(campeon.name));
-  const elegido = weightedPick(usables, (campeon) => deseoPorCampeon(entradaDePool(campeon, BALANCE.serie.maestriaComodin), state.meta.weights), rng);
-  return entradaDePool(elegido, BALANCE.serie.maestriaComodin);
+  const elegido = weightedPick(usables, (campeon) => deseoPorCampeon(entradaDePool(campeon, BALANCE.serie.maestriaComodin, state.player.splitCount), state.meta.weights), rng);
+  return entradaDePool(elegido, BALANCE.serie.maestriaComodin, state.player.splitCount);
 }
 
 export function necesitaGanarPara(formato) {

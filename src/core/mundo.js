@@ -209,7 +209,7 @@ function generarPoolInicial(rol, rng, elegidos) {
 
   const base = pedidos.length >= BALANCE.campeones.poolMinimo ? pedidos : sorteados;
 
-  return base.map((campeon, i) => entradaDePool(campeon, maestrias[i]));
+  return base.map((campeon, i) => entradaDePool(campeon, maestrias[i], 0));
 }
 
 // Los rivales de generación debutan y corren una carrera de primera en
