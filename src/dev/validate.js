@@ -1,6 +1,9 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
+import { execFileSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
+import { VERSION as VERSION_GUARDADO } from '../core/guardado.js';
 import {
   verificarSinMathRandom, verificarDocumentSoloEnUi,
   verificarSinFondoDeTinta, verificarSinColorLiteral, verificarTokensDefinidos,
@@ -55,7 +58,7 @@ import { rankearMundo, rankearPoblacion, puntajeRanking } from '../core/topMundi
 import { salarioDeOferta } from '../core/salarios.js';
 import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
 import { orgsQueTeFicharian, ofertaPosible, residenciaEn } from '../core/demanda.js';
-import { aplicar as aplicarMercado } from '../systems/mercado.js';
+import { aplicar as aplicarMercado, construirOferta } from '../systems/mercado.js';
 import { FRASES_MOTIVO, ETIQUETAS_MOTIVO } from '../systems/temporada.js';
 import { EJES, MARCAS, MOMENTOS, MOMENTOS_ACTIVOS, momentoPorId } from '../data/contextos.js';
 import { ARQUETIPOS } from '../data/meta-tags.js';
@@ -580,6 +583,118 @@ check('Toda serie internacional deja su camino guardado en registro.internaciona
   }
   if (totalInternacionales === 0) {
     throw new Error('no se registraron internacionales en 300 seeds');
+  }
+});
+
+// ============================================================================
+// Higiene K0-B (Punto 1): check estático de forma de createInitialState (D71)
+// ============================================================================
+
+const FORMAS_CONOCIDAS = {
+  2: '9d4e5d9a3ea1'
+};
+
+function obtenerFormaEstado(valor, ruta = '') {
+  const rutas = [];
+
+  function recorrer(val, p) {
+    if (val === null) {
+      rutas.push(`${p}:null`);
+      return;
+    }
+    if (typeof val === 'number') {
+      rutas.push(`${p}:number`);
+      return;
+    }
+    if (typeof val === 'string') {
+      rutas.push(`${p}:string`);
+      return;
+    }
+    if (typeof val === 'boolean') {
+      rutas.push(`${p}:boolean`);
+      return;
+    }
+    if (Array.isArray(val)) {
+      if (val.length === 0) {
+        rutas.push(`${p}:array`);
+        return;
+      }
+      const elementosSonObjetos = val.every((item) => item !== null && typeof item === 'object' && !Array.isArray(item));
+      if (elementosSonObjetos) {
+        const todasLasClaves = Array.from(new Set(val.flatMap((item) => Object.keys(item)))).sort();
+        for (const clave of todasLasClaves) {
+          const valoresDefinidos = val.map((item) => item[clave]).filter((v) => v !== undefined);
+          if (valoresDefinidos.length > 0) {
+            recorrer(valoresDefinidos[0], `${p}[].${clave}`);
+          }
+        }
+        return;
+      }
+      const primerElem = val[0];
+      if (typeof primerElem === 'object' && primerElem !== null) {
+        rutas.push(`${p}:array`);
+      } else {
+        rutas.push(`${p}:array<${typeof primerElem}>`);
+      }
+      return;
+    }
+    if (typeof val === 'object') {
+      if (p === 'mundo.planteles') {
+        const equipos = Object.values(val);
+        const roles = Array.from(new Set(equipos.flatMap((e) => Object.keys(e)))).sort();
+        for (const rol of roles) {
+          const jugadores = equipos.map((e) => e[rol]).filter(Boolean);
+          if (jugadores.length > 0) {
+            const campos = Array.from(new Set(jugadores.flatMap((j) => Object.keys(j)))).sort();
+            for (const campo of campos) {
+              if (campo === 'splitsEnRegion') {
+                rutas.push(`mundo.planteles[].${rol}.splitsEnRegion.*:number`);
+              } else {
+                const valores = jugadores.map((j) => j[campo]).filter((v) => v !== undefined);
+                recorrer(valores[0], `mundo.planteles[].${rol}.${campo}`);
+              }
+            }
+          }
+        }
+        return;
+      }
+
+      const claves = Object.keys(val).sort();
+      if (claves.length === 0) {
+        rutas.push(`${p}:object`);
+        return;
+      }
+      for (const clave of claves) {
+        const subRuta = p ? `${p}.${clave}` : clave;
+        recorrer(val[clave], subRuta);
+      }
+      return;
+    }
+    rutas.push(`${p}:${typeof val}`);
+  }
+
+  recorrer(valor, ruta);
+  rutas.sort();
+  return rutas;
+}
+
+function hashForma(rutas) {
+  const contenido = Array.isArray(rutas) ? rutas.join('\n') : String(rutas);
+  return crypto.createHash('sha256').update(contenido).digest('hex').slice(0, 12);
+}
+
+check('K0-B guardado: la forma de createInitialState coincide con la registrada para VERSION (D71)', () => {
+  // Trampa T5 / D71: sube VERSION cuando cambia la forma de createInitialState.
+  // Protege contra incompatibilidad silenciosa al cargar estados viejos (PLAN.md §K.5).
+  // La forma normaliza planteles y campos de elementos para ser independiente de la semilla.
+  for (const seed of [1, 2, 3, 42, 777]) {
+    const rng = mulberry32(seed);
+    const estado = createInitialState(seed, rng);
+    const forma = obtenerFormaEstado(estado);
+    const hash = hashForma(forma);
+    if (!(VERSION_GUARDADO in FORMAS_CONOCIDAS) || FORMAS_CONOCIDAS[VERSION_GUARDADO] !== hash) {
+      throw new Error('cambió la forma del estado: subí VERSION en core/guardado.js y registrá el hash nuevo en FORMAS_CONOCIDAS');
+    }
   }
 });
 
@@ -7687,6 +7802,118 @@ check('J3 piso: un campeón en maestriaMinima nunca muestra "oxida" ni promete p
   }
   if (enElPiso === 0 || oxidando === 0) {
     throw new Error(`check vacío: ${enElPiso} campeones en el piso y ${oxidando} oxidando en las carreras muestreadas`);
+  }
+});
+
+// ============================================================================
+// K0-B — Higiene de motor y de servidor (PLAN.md §K.5 K0, D67, D68)
+// ============================================================================
+
+check('K0-B mercado: siendo agente libre no todas las ofertas salen bombazo y respeta mediana (D67)', () => {
+  // D67: el salario de referencia para un agente libre (sueldo 0) es la mediana salarial
+  // de la liga de la oferta (liga.salario.medianaUSD), no 0. Una oferta por debajo de
+  // bombazoMultiplo * medianaUSD debe ser 'lateral'.
+  const mercado = sistemaPorId('mercado');
+  let totalOfertas = 0;
+  let bombazos = 0;
+  let laterales = 0;
+
+  for (let seed = 1; seed <= 100; seed += 1) {
+    const rng = mulberry32(seed);
+    const state = createInitialState(seed, rng);
+    state.phase = 'profesional';
+    state.career.tier = 2;
+    state.career.currentOrg = null;
+    state.career.contrato.salarioAnualUSD = 0;
+
+    const res = mercado.aplicar(state, rng);
+    if (res.decision?.opciones) {
+      for (const op of res.decision.opciones) {
+        totalOfertas += 1;
+        if (op.tag === 'bombazo') bombazos += 1;
+        if (op.tag === 'lateral') laterales += 1;
+      }
+    }
+  }
+
+  if (totalOfertas === 0) {
+    throw new Error('no se generaron ofertas de mercado para agente libre en 100 seeds');
+  }
+  if (bombazos === totalOfertas) {
+    throw new Error(`todas las ofertas (${bombazos}/${totalOfertas}) salieron "bombazo" siendo agente libre`);
+  }
+  if (laterales === 0) {
+    throw new Error('ninguna oferta salió "lateral" para agente libre');
+  }
+
+  // Verificación específica: una oferta construida con salario < mediana * 1.4 tiene que ser 'lateral'
+  const rngTest = mulberry32(42);
+  const stTest = createInitialState(42, rngTest);
+  stTest.career.contrato.salarioAnualUSD = 0;
+  const ligaTest = stTest.mundo.ligas.find((l) => l.tier === 2);
+  const orgTest = ligaTest.orgs[0];
+  const oferta = construirOferta(stTest, ligaTest, orgTest, null, rngTest);
+  const corteBombazo = (ligaTest.salario?.medianaUSD ?? 0) * BALANCE.mercado.bombazoMultiplo;
+  if (oferta.salarioAnualUSD <= corteBombazo && oferta.tag !== 'lateral') {
+    throw new Error(`oferta con salario ${oferta.salarioAnualUSD} <= corte ${corteBombazo} no se etiquetó como lateral: tag=${oferta.tag}`);
+  }
+});
+
+check('K0-B server: escucha en 127.0.0.1 y rechaza traversal fuera de la raiz (D68)', () => {
+  // D68: escuchar en 127.0.0.1, rechazar path traversal y bloquear .git / node_modules
+  const serverPath = path.resolve(__dirname, '../../server.js').replace(/\\/g, '/');
+  const scriptSync = `
+import http from 'http';
+import { pathToFileURL } from 'url';
+
+const { createServer } = await import(pathToFileURL('${serverPath}').href);
+const server = createServer();
+await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+const addr = server.address();
+if (addr.address !== '127.0.0.1') {
+  console.error('Dirección no es 127.0.0.1:', addr.address);
+  process.exit(1);
+}
+
+const pedir = (ruta) => new Promise((resolve, reject) => {
+  const req = http.request({
+    hostname: '127.0.0.1',
+    port: addr.port,
+    path: ruta,
+    method: 'GET'
+  }, (res) => {
+    let d = '';
+    res.on('data', chunk => d += chunk);
+    res.on('end', () => resolve({ status: res.statusCode, body: d }));
+  });
+  req.on('error', reject);
+  req.end();
+});
+
+for (const p of ['/', '/index.html', '/src/core/rng.js']) {
+  const r = await pedir(p);
+  if (r.status !== 200) {
+    console.error('Status no 200 para ' + p + ':', r.status);
+    process.exit(1);
+  }
+}
+
+for (const p of ['/..%2fpackage.json', '/%2e%2e/server.js', '/src/../../etc/passwd', '/.git/config']) {
+  const r = await pedir(p);
+  if (r.status === 200) {
+    console.error('Status 200 inesperado para ' + p);
+    process.exit(1);
+  }
+}
+
+await new Promise((resolve) => server.close(resolve));
+`;
+
+  try {
+    execFileSync(process.execPath, ['--input-type=module', '-e', scriptSync], { stdio: 'pipe' });
+  } catch (err) {
+    const detalle = err.stderr ? err.stderr.toString().trim() : err.message;
+    throw new Error(`Fallo en check de servidor: ${detalle}`);
   }
 });
 

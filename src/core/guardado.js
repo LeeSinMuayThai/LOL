@@ -10,7 +10,7 @@
 // ningún sistema actual entiende es peor que no guardar nada (la carrera
 // simplemente arranca de cero, con un aviso, en vez de romper en un lugar
 // impredecible tres splits después).
-const VERSION = 1;
+export const VERSION = 2;
 
 export function serializar(state, rng, rngUi) {
   return JSON.stringify({

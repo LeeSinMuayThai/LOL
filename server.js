@@ -1,11 +1,12 @@
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const host = '0.0.0.0';
+const raiz = path.resolve(__dirname);
+const host = '127.0.0.1';
 const preferredPort = Number(process.env.PORT || 8000);
 
 const mimeTypes = {
@@ -22,19 +23,50 @@ const mimeTypes = {
   '.ico': 'image/x-icon'
 };
 
-function createServer() {
+export function createServer() {
   return http.createServer((req, res) => {
-    // Fase T8: `?seed=N` (P.3, el link de T7) es la primera vez que alguien
-    // visita la página con un querystring de verdad. El `req.url === '/'`
-    // de antes se comparaba CONTRA el querystring todavía pegado — `/`
-    // nunca es igual a `/?seed=424242`, así que la raíz con seed caía
-    // derecho al 404. Cortar el `?` primero, y recién ahí decidir si es
-    // la raíz.
-    let requestPath = req.url.split('?')[0];
-    if (requestPath === '/') {
-      requestPath = '/index.html';
+    // Fase T8: cortar el querystring antes de resolver la ruta.
+    const rawPath = (req.url || '/').split('?')[0];
+
+    // D68: decodificar con decodeURIComponent, validar caracteres nulos,
+    // exigir que quede dentro de la raíz y bloquear directorios sensibles (.git, node_modules).
+    let decodedPath;
+    try {
+      decodedPath = decodeURIComponent(rawPath);
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Ruta inválida');
+      return;
     }
-    const filePath = path.join(__dirname, requestPath);
+
+    if (decodedPath.includes('\0')) {
+      res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Ruta inválida');
+      return;
+    }
+
+    if (decodedPath === '/') {
+      decodedPath = '/index.html';
+    }
+
+    if (!decodedPath.startsWith('/') && !decodedPath.startsWith('\\')) {
+      decodedPath = '/' + decodedPath;
+    }
+
+    const filePath = path.resolve(raiz, '.' + decodedPath);
+    const dentroDeRaiz = filePath === raiz || filePath.startsWith(raiz + path.sep);
+    if (!dentroDeRaiz) {
+      res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Acceso denegado');
+      return;
+    }
+
+    const relPartes = path.relative(raiz, filePath).split(path.sep);
+    if (relPartes.includes('.git') || relPartes.includes('node_modules')) {
+      res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Acceso denegado');
+      return;
+    }
 
     fs.readFile(filePath, (error, content) => {
       if (error) {
@@ -70,4 +102,6 @@ function start(port) {
   });
 }
 
-start(preferredPort);
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+  start(preferredPort);
+}

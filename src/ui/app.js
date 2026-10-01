@@ -475,6 +475,7 @@ export function iniciar() {
       const { mulberry32 } = await cargarModulos();
       const datos = almacenamiento.cargarCarreraGuardada();
       if (!datos) {
+        almacenamiento.borrarCarreraGuardada();
         continuarBtn.hidden = true;
         return;
       }
@@ -531,9 +532,25 @@ export function iniciar() {
 
       // P.2: el botón "Continuar" solo aparece si hay de verdad algo
       // que continuar. La card muestra handle · rol · edad · org.
-      const guardada = almacenamiento.hayCarreraGuardada()
-        ? almacenamiento.cargarCarreraGuardada()
-        : null;
+      let guardada = null;
+      if (almacenamiento.hayCarreraGuardada()) {
+        guardada = almacenamiento.cargarCarreraGuardada();
+        if (!guardada) {
+          almacenamiento.borrarCarreraGuardada();
+          const avisoExistente = setupPanel.querySelector('.setup-aviso');
+          if (!avisoExistente) {
+            const aviso = document.createElement('p');
+            aviso.className = 'setup-aviso';
+            aviso.textContent = 'Tu partida guardada era de una versión anterior del juego y no se pudo recuperar.';
+            const footer = setupPanel.querySelector('.setup-footer');
+            if (footer) {
+              footer.before(aviso);
+            } else {
+              setupPanel.appendChild(aviso);
+            }
+          }
+        }
+      }
       continuarBtn.hidden = !guardada?.state;
       if (guardada?.state && continuarDetalle) {
         const s = guardada.state;

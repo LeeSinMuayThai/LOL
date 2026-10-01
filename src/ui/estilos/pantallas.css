@@ -259,6 +259,17 @@
 
 .pool-contador { margin-top: var(--s-2); font-size: var(--fs-2); color: var(--ink-dim); }
 
+.setup-aviso {
+  margin-top: var(--s-6);
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--warn);
+  background: var(--warn-fill);
+  color: var(--ink);
+  font-size: var(--fs-1);
+  border-radius: var(--r);
+  line-height: 1.4;
+}
+
 .setup-footer {
   display: flex;
   flex-direction: column;

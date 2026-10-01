@@ -69,7 +69,7 @@ function tipoDeContrato(state, liga, esRenovacion) {
   return 'transferencia';
 }
 
-function construirOferta(state, liga, org, tagForzado, rng) {
+export function construirOferta(state, liga, org, tagForzado, rng) {
   const m = BALANCE.mercado;
   const jerarquiaActual = state.career.jerarquia;
   const esRenovacion = tagForzado === 'renovacion';
@@ -87,8 +87,12 @@ function construirOferta(state, liga, org, tagForzado, rng) {
   }, rng);
   const anios = roll(m.aniosContratoMin, m.aniosContratoMax, rng);
 
+  // D67: el salario de referencia es el contrato vigente si lo hay; si es 0
+  // (agente libre), es la mediana salarial de la liga de la oferta.
+  const sueldoVigente = state.career?.contrato?.salarioAnualUSD ?? 0;
+  const salarioReferencia = sueldoVigente > 0 ? sueldoVigente : (liga.salario?.medianaUSD ?? 0);
   const tag = tagForzado ?? (
-    salarioAnualUSD > state.career.contrato.salarioAnualUSD * m.bombazoMultiplo ? 'bombazo' : 'lateral'
+    salarioAnualUSD > salarioReferencia * m.bombazoMultiplo ? 'bombazo' : 'lateral'
   );
 
   // Regla de proceso 15: la jerarquía que se muestra tiene que ser LA MISMA
