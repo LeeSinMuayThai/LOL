@@ -91,15 +91,30 @@ export function factorOxido(tamanoPool) {
   return BALANCE.campeones.poolAngosto / tamanoPool;
 }
 
-// Pronóstico de óxido para la UI (fase J3): calcula si el campeón está en
-// gracia y cuántos splits le quedan antes de empezar a perder maestría.
+// Guardado anterior a J3: el campeón no trae `ultimoSplitJugado`, así que se lo
+// trata como recién jugado (gracia entera, PLAN.md §Riesgos riesgo 1).
+export function ultimoSplitJugadoDe(campeon, splitCount) {
+  return typeof campeon.ultimoSplitJugado === 'number' ? campeon.ultimoSplitJugado : splitCount;
+}
+
+// La regla del óxido (fase J3), UNA sola vez: `systems/campeones.js` la usa para
+// oxidar y la ficha para prometer, así que no pueden divergir (regla 15).
+// `splitCount` es el contador que va a ver la corrida de `campeones` que se
+// pregunta — no siempre el de `state.player.splitCount`: ver
+// `core/pipeline.js#splitCountDeLaProximaCorrida`.
+//   - enGracia: esa corrida NO le saca maestría.
+//   - splitsParaOxido: cuántas corridas seguidas aguanta sin jugarlo antes de
+//     que una sí le saque (0 = la próxima oxida).
+//   - enPiso: ya está en `maestriaMinima`; oxidar no puede bajarlo más, así que
+//     la pantalla no debe prometerle una pérdida (regla 15).
 export function pronosticoDeOxido(campeon, splitCount) {
   const c = BALANCE.campeones;
-  // Guardado anterior a J3: gracia entera (PLAN.md §Riesgos riesgo 1).
-  const ultimo = typeof campeon.ultimoSplitJugado === 'number' ? campeon.ultimoSplitJugado : splitCount;
-  const enGracia = splitCount - ultimo < c.splitsSinJugarParaOxido;
-  const splitsParaOxido = Math.max(0, c.splitsSinJugarParaOxido - (splitCount - ultimo));
-  return { enGracia, splitsParaOxido };
+  const sinJugar = splitCount - ultimoSplitJugadoDe(campeon, splitCount);
+  return {
+    enGracia: sinJugar < c.splitsSinJugarParaOxido,
+    splitsParaOxido: Math.max(0, c.splitsSinJugarParaOxido - sinJugar),
+    enPiso: campeon.mastery <= c.maestriaMinima
+  };
 }
 
 // --- Mover el pool ---

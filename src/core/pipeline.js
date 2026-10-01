@@ -1,6 +1,7 @@
 import { BALANCE } from '../data/balance.js';
 import { ETAPAS_SPLIT, sistemaPorId } from '../systems/registro.js';
 import { componerLegado } from './legado.js';
+import { pronosticoDeOxido } from './pool.js';
 
 export { ETAPAS_SPLIT };
 
@@ -56,6 +57,35 @@ function etapaDe(sistemaId) {
     throw new Error(`Sistema desconocido en el registro: ${sistemaId}`);
   }
   return etapa;
+}
+
+// Fase J3: la ficha promete "aguanta N" / "oxida" mirando CUÁNDO volverá a
+// correr `campeones.aplicar`, y ese `splitCount` no siempre es el de
+// `state.player.splitCount`: `atributos` es quien lo sube, DESPUÉS de
+// `campeones`. Entre esos dos sistemas una pausa (un evento, una fecha) deja
+// `campeones` ya corrido en este split con el contador todavía sin subir — la
+// próxima corrida va a ver `splitCount + 1`. Fuera de esa ventana (entre splits,
+// o en una pausa de un sistema anterior a `campeones` o posterior a `atributos`)
+// la próxima corrida ve `splitCount` tal cual. Puro, sin rng; el cursor se lee
+// por `sistemaId` (trampa T3). Lo vigila el check "J3 pronóstico".
+const SISTEMA_QUE_OXIDA = 'campeones';
+const SISTEMA_QUE_SUBE_EL_SPLIT = 'atributos';
+
+export function splitCountDeLaProximaCorrida(state) {
+  const { splitCount } = state.player;
+  if (!state.pendiente) {
+    return splitCount;
+  }
+  const etapaPausada = etapaDe(state.pendiente.sistemaId);
+  const yaOxido = etapaPausada >= etapaDe(SISTEMA_QUE_OXIDA);
+  const yaSubioElSplit = etapaPausada >= etapaDe(SISTEMA_QUE_SUBE_EL_SPLIT);
+  return yaOxido && !yaSubioElSplit ? splitCount + 1 : splitCount;
+}
+
+// Lo que la ficha le promete a un campeón del pool, medido contra la próxima
+// corrida real del motor (regla 15).
+export function pronosticoDeOxidoEnVivo(state, campeon) {
+  return pronosticoDeOxido(campeon, splitCountDeLaProximaCorrida(state));
 }
 
 // Corre las etapas del split desde `desdeEtapa`. Si un sistema devuelve una

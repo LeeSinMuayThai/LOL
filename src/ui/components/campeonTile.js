@@ -1,11 +1,42 @@
 import CAMPEONES from '../../data/champions.json' with { type: 'json' };
 import { arquetipoDeTags, inicialesDeCampeon } from '../formatoUi.js';
+import { BALANCE } from '../../data/balance.js';
 
 const POR_NOMBRE = new Map(CAMPEONES.map((c) => [c.name, c]));
 
 // Identidad geométrica de un campeón: sin splash (Riot IP). El color sale
 // del primer tag de arquetipo, mapeado a tokens. Misma pieza en setup, ficha,
 // meta y Fearless.
+
+// Lo que el tile `ficha` le dice al jugador sobre el óxido de un campeón del
+// pool (fase J3). Puro y sin DOM para poder probarlo en Node. El texto es corto
+// a propósito (un tile mide 40 px y la maestría ocupa la otra mitad de la fila
+// de abajo); el referente va en el `titulo` (regla 13).
+//   - en el piso no se promete pérdida: no hay nada que perder (regla 15);
+//   - en gracia, cuántos splits sin jugarlo aguanta;
+//   - fuera de gracia, que oxida.
+export function etiquetaDeOxido(pronostico) {
+  if (pronostico.enPiso) {
+    return {
+      estado: 'piso',
+      texto: 'piso',
+      titulo: `Ya está en el piso de maestría (${BALANCE.campeones.maestriaMinima}): no baja más aunque no lo juegues.`
+    };
+  }
+  const n = pronostico.splitsParaOxido;
+  if (n > 0) {
+    return {
+      estado: 'gracia',
+      texto: `${n} spl`,
+      titulo: `${n} ${n === 1 ? 'split' : 'splits'} sin jugarlo antes de que empiece a oxidar.`
+    };
+  }
+  return {
+    estado: 'oxida',
+    texto: 'oxida',
+    titulo: 'Si no lo jugás en el próximo split, pierde maestría.'
+  };
+}
 
 export function crearCampeonTile(campeon, {
   tier = null,
@@ -27,18 +58,13 @@ export function crearCampeonTile(campeon, {
     elegido && 'campeon-tile--elegido'
   ].filter(Boolean).join(' ');
 
-  const splitsParaOxido = pronostico?.splitsParaOxido ?? 0;
-  const fraseOxido = size === 'ficha' && pronostico
-    ? (splitsParaOxido > 0
-      ? `Si no lo jugás, el óxido empieza en ${splitsParaOxido} ${splitsParaOxido === 1 ? 'split' : 'splits'}.`
-      : 'Si no lo jugás este split, pierde maestría.')
-    : null;
+  const oxido = size === 'ficha' && pronostico ? etiquetaDeOxido(pronostico) : null;
 
   tile.title = [
     campeon.name,
     Number.isFinite(campeon.mastery) ? `maestría ${Math.round(campeon.mastery)}` : null,
     tier ? `tier ${tier}` : null,
-    fraseOxido
+    oxido?.titulo
   ].filter(Boolean).join(' · ');
 
   const iniciales = document.createElement('span');
@@ -53,13 +79,11 @@ export function crearCampeonTile(campeon, {
     tile.appendChild(mae);
   }
 
-  if (size === 'ficha' && pronostico) {
+  if (oxido) {
     const ox = document.createElement('span');
-    ox.className = 'campeon-tile-oxido';
-    ox.textContent = pronostico.splitsParaOxido > 0
-      ? `aguanta ${pronostico.splitsParaOxido}`
-      : 'oxida';
-    ox.title = fraseOxido;
+    ox.className = `campeon-tile-oxido campeon-tile-oxido--${oxido.estado}`;
+    ox.textContent = oxido.texto;
+    ox.title = oxido.titulo;
     tile.appendChild(ox);
   }
 

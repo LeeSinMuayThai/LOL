@@ -20,7 +20,7 @@ import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 import { CATEGORIAS_EVENTO } from '../data/categorias.js';
 import { mulberry32, sample } from '../core/rng.js';
 import { createInitialState } from '../core/state.js';
-import { avanzarSplit, avanzarSplitAuto, resolverDecision, ETAPAS_SPLIT } from '../core/pipeline.js';
+import { avanzarSplit, avanzarSplitAuto, resolverDecision, ETAPAS_SPLIT, pronosticoDeOxidoEnVivo } from '../core/pipeline.js';
 import { sistemaPorId } from '../systems/registro.js';
 import { getPath, etiquetaCampo } from '../core/selectors.js';
 import { calcularContexto } from '../core/contexto.js';
@@ -68,6 +68,7 @@ import {
 } from '../core/minijuegos.js';
 import { esMapaDeDesempate, esMapaCerrado } from '../core/serie.js';
 import { MONTAR_MINIJUEGO } from '../ui/components/minijuegos/index.js';
+import { crearCampeonTile } from '../ui/components/campeonTile.js';
 import METAS from '../data/metas.json' with { type: 'json' };
 
 const __filename = fileURLToPath(import.meta.url);
@@ -7393,6 +7394,299 @@ checkLento('J3 retiro: en 40 carreras la maestría mínima del pool es >= 18', (
         throw new Error(`seed ${seed}: la maestría mínima del pool es ${minima.toFixed(1)} < 18`);
       }
     }
+  }
+});
+
+// ----------------------------------------------------------------------------
+// J3 — arreglos de la revisión independiente (PLAN.md §J3). Cada check de abajo
+// mata un mutante que los cinco de arriba dejaban vivo; la tabla mutante ->
+// check está en PROGRESO.md. Los de arriba no se tocan.
+// ----------------------------------------------------------------------------
+
+// Un estado cualquiera con un pool a medida, listo para el `aplicar` REAL de
+// `systems/campeones.js`. Sin equipo (`currentOrg` null): elige el campeón del
+// split por `weightedPick`, no por draft.
+function estadoConPool(seed, splitCount, entradas) {
+  const state = createInitialState(seed, mulberry32(seed));
+  state.player.splitCount = splitCount;
+  state.player.championPool = entradas;
+  return state;
+}
+
+function entradaDeOxido(name, mastery, ultimoSplitJugado) {
+  return { name, tags: ['tanque'], mastery, partidas: 0, ultimoSplitJugado };
+}
+
+check('J3 borde: la gracia dura exactamente splitsSinJugarParaOxido splits (sin jugarlo N-1 no oxida, N sí)', () => {
+  const gracia = BALANCE.campeones.splitsSinJugarParaOxido;
+  const splitCount = gracia + 10;
+  const maestria = 60;
+  const medir = (splitsSinJugar) => {
+    let muestras = 0;
+    let bajas = 0;
+    for (let seed = 1; seed <= 40; seed += 1) {
+      const state = estadoConPool(seed, splitCount, [
+        entradaDeOxido('Jugado', 90, splitCount),
+        entradaDeOxido('Sonda', maestria, splitCount - splitsSinJugar)
+      ]);
+      const res = aplicarCampeones(state, mulberry32(seed));
+      if (res.state.player.campeonDelSplit === 'Sonda') {
+        continue; // lo jugaron: no sirve de sonda
+      }
+      muestras += 1;
+      if (res.state.player.championPool.find((c) => c.name === 'Sonda').mastery < maestria) {
+        bajas += 1;
+      }
+    }
+    return { muestras, bajas };
+  };
+
+  const enGracia = medir(gracia - 1);
+  const vencido = medir(gracia);
+  if (enGracia.muestras < 10 || vencido.muestras < 10) {
+    throw new Error(`muestra vacía: ${enGracia.muestras} / ${vencido.muestras} sondas sin jugar de 40`);
+  }
+  if (enGracia.bajas !== 0) {
+    throw new Error(`con ${gracia - 1} split(s) sin jugarlo el motor ya oxida (${enGracia.bajas}/${enGracia.muestras}): la gracia es más corta que ${gracia}`);
+  }
+  // El óxido es max(0, gauss(1,5; 1)): ~7% de las tiradas dan 0, no todas bajan.
+  if (vencido.bajas < vencido.muestras * 0.8) {
+    throw new Error(`con ${gracia} splits sin jugarlo el motor casi no oxida (${vencido.bajas}/${vencido.muestras}): la gracia dura más de ${gracia}`);
+  }
+});
+
+check('J3 factor en el sistema: con el mismo óxido, un no jugado pierde ~la mitad en un pool de 6 que en uno de 3', () => {
+  const angosto = BALANCE.campeones.poolAngosto;
+  const gracia = BALANCE.campeones.splitsSinJugarParaOxido;
+  const splitCount = gracia + 10;
+  const maestria = 70;
+  const perdidaMedia = (tamano) => {
+    let suma = 0;
+    let n = 0;
+    for (let seed = 1; seed <= 400; seed += 1) {
+      const pool = Array.from({ length: tamano }, (_, i) => entradaDeOxido(`P${i}`, maestria, splitCount - gracia - 5));
+      const res = aplicarCampeones(estadoConPool(seed, splitCount, pool), mulberry32(seed));
+      for (const c of res.state.player.championPool) {
+        if (c.name !== res.state.player.campeonDelSplit) {
+          suma += maestria - c.mastery;
+          n += 1;
+        }
+      }
+    }
+    return suma / n;
+  };
+
+  const enAngosto = perdidaMedia(angosto);
+  const enAncho = perdidaMedia(angosto * 2);
+  if (!(enAngosto > 0.5)) {
+    throw new Error(`check vacío: el pool de ${angosto} perdió ${enAngosto.toFixed(3)} de media`);
+  }
+  // "Un pool de 6 oxida a la mitad" (pool de 3 = 1x): la razón esperada es angosto / (2 * angosto).
+  const esperada = angosto / (angosto * 2);
+  const razon = enAncho / enAngosto;
+  if (Math.abs(razon - esperada) > 0.1) {
+    throw new Error(`pierde ${enAngosto.toFixed(3)} en un pool de ${angosto} y ${enAncho.toFixed(3)} en uno de ${angosto * 2}: razón ${razon.toFixed(3)}, se esperaba ~${esperada} (campeones.js no aplica factorOxido?)`);
+  }
+});
+
+check('J3 sello: el campeón jugado queda con ultimoSplitJugado === splitCount y los demás conservan el suyo', () => {
+  const splitCount = 7;
+  for (let seed = 1; seed <= 30; seed += 1) {
+    const pool = ['A', 'B', 'C', 'D'].map((nombre, i) => entradaDeOxido(nombre, 50, i));
+    const res = aplicarCampeones(estadoConPool(seed, splitCount, pool), mulberry32(seed));
+    for (const c of res.state.player.championPool) {
+      const antes = pool.find((p) => p.name === c.name).ultimoSplitJugado;
+      const esperado = c.name === res.state.player.campeonDelSplit ? splitCount : antes;
+      if (c.ultimoSplitJugado !== esperado) {
+        throw new Error(`seed ${seed}: ${c.name} quedó con ultimoSplitJugado ${c.ultimoSplitJugado}, se esperaba ${esperado}`);
+      }
+    }
+  }
+});
+
+// Un llamado del pipeline: arranca el split, o resuelve la pausa pendiente como
+// lo hace `avanzarSplitAuto`. Una pausa por llamado: así se ve cada estado que la
+// pantalla puede mostrar (entre splits y en cada pausa).
+function pasoDelPipeline(state, rng) {
+  if (!state.pendiente) {
+    return avanzarSplit(state, rng);
+  }
+  const sistema = sistemaPorId(state.pendiente.sistemaId);
+  return resolverDecision(state, sistema.resolverAuto(state, state.pendiente.decision, rng), rng);
+}
+
+// Cada estado que un jugador puede estar mirando, de carreras reales (se salta
+// el arranque: los primeros splits tienen todo el pool con el mismo sello).
+function estadosObservables(seeds, splits) {
+  const vistos = [];
+  for (const seed of seeds) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    let hechos = 0;
+    while (!state.terminado && state.phase !== 'retirado' && hechos < splits) {
+      state = pasoDelPipeline(state, rng).state;
+      if (state.terminado || state.phase === 'retirado') {
+        break;
+      }
+      if (hechos >= 3) {
+        vistos.push({ seed, hechos, state, momento: state.pendiente ? state.pendiente.sistemaId : 'entre splits' });
+      }
+      if (!state.pendiente) {
+        hechos += 1;
+      }
+    }
+  }
+  return vistos;
+}
+
+// Se queda con hasta `porMomento` estados de cada tipo de pausa (y de "entre
+// splits"), parejos a lo largo de las carreras: ningún tipo de pausa queda sin
+// mirar y el costo no depende de cuántas pausas tiene cada carrera.
+function muestrearPorMomento(vistos, porMomento) {
+  const grupos = new Map();
+  for (const visto of vistos) {
+    grupos.set(visto.momento, [...(grupos.get(visto.momento) ?? []), visto]);
+  }
+  const elegidos = [];
+  for (const grupo of grupos.values()) {
+    const paso = Math.max(1, Math.floor(grupo.length / porMomento));
+    for (let i = 0, tomados = 0; i < grupo.length && tomados < porMomento; i += paso, tomados += 1) {
+      elegidos.push(grupo[i]);
+    }
+  }
+  return elegidos;
+}
+
+// Lo que el MOTOR hace con un pool a partir de un estado observable: avanza un
+// clon por el pipeline real y anota, corrida a corrida de `campeones.aplicar`,
+// qué campeón se jugó y qué campeones perdieron maestría. Las maestrías arrancan
+// en `sonda` (lejos del piso) para que oxidar se note.
+function corridasDeCampeonesHaciaAdelante(estado, seed, corridas, sonda) {
+  let state = structuredClone(estado);
+  state.player.championPool = state.player.championPool.map((c) => ({ ...c, mastery: sonda }));
+  const rng = mulberry32(seed);
+  const resultado = [];
+  for (let llamados = 0; resultado.length < corridas && !state.terminado && llamados < 60; llamados += 1) {
+    const paso = pasoDelPipeline(state, rng);
+    if (paso.logs.some((log) => log.type === 'campeones')) {
+      const antes = new Map(state.player.championPool.map((c) => [c.name, c.mastery]));
+      resultado.push({
+        jugado: paso.state.player.campeonDelSplit,
+        bajo: new Map(paso.state.player.championPool.map((c) => [c.name, c.mastery < (antes.get(c.name) ?? -Infinity) - 1e-9]))
+      });
+    }
+    state = paso.state;
+  }
+  return resultado;
+}
+
+check('J3 pronóstico: el "aguanta N" de la ficha coincide con el motor en cada estado observable (entre splits y en cada pausa)', () => {
+  const gracia = BALANCE.campeones.splitsSinJugarParaOxido;
+  const sonda = BALANCE.stats.max - 30;
+  const observables = muestrearPorMomento(estadosObservables([1, 2, 5, 7, 9, 11], 14), 6);
+  const momentos = new Set(observables.map((o) => o.momento));
+  for (const [esperado, razon] of [
+    ['entre splits', 'un estado entre splits'],
+    ['mercado', 'una pausa ANTES de campeones'],
+    ['eventos', 'una pausa DESPUÉS de campeones'],
+    ['practica', 'una pausa DESPUÉS de atributos']
+  ]) {
+    if (!momentos.has(esperado)) {
+      throw new Error(`check vacío: ninguna carrera dio ${razon} (${esperado}); se vieron ${[...momentos].join(', ')}`);
+    }
+  }
+
+  let conclusivos = 0;
+  for (const { seed, hechos, state, momento } of observables) {
+    const sondado = { ...state, player: { ...state.player, championPool: state.player.championPool.map((c) => ({ ...c, mastery: sonda })) } };
+    const futuros = [101, 102, 103, 104, 105, 106].map((s) => corridasDeCampeonesHaciaAdelante(state, seed * 1000 + s, gracia + 1, sonda));
+    for (const campeon of sondado.player.championPool) {
+      const prometido = pronosticoDeOxidoEnVivo(sondado, campeon).splitsParaOxido;
+      const donde = `seed ${seed}, split ${hechos}, ${momento}: la ficha promete "aguanta ${prometido}" para ${campeon.name} (sello ${campeon.ultimoSplitJugado}, splitCount ${state.player.splitCount})`;
+      let oxidoEnLaPrometida = false;
+      let llegoALaPrometida = false;
+      for (const futuro of futuros) {
+        for (let r = 0; r <= prometido && r < futuro.length; r += 1) {
+          if (futuro[r].jugado === campeon.name) {
+            break; // lo jugaron: desde acá este futuro ya no dice nada
+          }
+          if (r < prometido && futuro[r].bajo.get(campeon.name)) {
+            throw new Error(`${donde} pero el motor lo oxida en la corrida ${r}`);
+          }
+          if (r === prometido) {
+            llegoALaPrometida = true;
+            oxidoEnLaPrometida = oxidoEnLaPrometida || futuro[r].bajo.get(campeon.name);
+          }
+        }
+      }
+      if (llegoALaPrometida) {
+        conclusivos += 1;
+        if (!oxidoEnLaPrometida) {
+          throw new Error(`${donde} pero el motor NO lo oxida en la corrida ${prometido}: aguanta más de lo que dice`);
+        }
+      }
+    }
+  }
+  if (conclusivos < 100) {
+    throw new Error(`check vacío: solo ${conclusivos} pronósticos se pudieron contrastar con el motor`);
+  }
+});
+
+// Un `document` mínimo para armar un tile REAL en Node (el mismo doble que usa
+// el check de `reproducirBeats`, más arriba).
+function tileDeFicha(campeon, pronostico) {
+  const previo = globalThis.document;
+  globalThis.document = { createElement: (tag) => new ElementoFalso(tag) };
+  try {
+    const tile = crearCampeonTile(campeon, { size: 'ficha', pronostico });
+    return {
+      tile,
+      oxido: tile.childNodes.find((nodo) => nodo.className.includes('campeon-tile-oxido')) ?? null
+    };
+  } finally {
+    globalThis.document = previo;
+  }
+}
+
+check('J3 piso: un campeón en maestriaMinima nunca muestra "oxida" ni promete pérdida (el tile real)', () => {
+  const piso = BALANCE.campeones.maestriaMinima;
+  const gracia = BALANCE.campeones.splitsSinJugarParaOxido;
+  // Una maestría en el piso y otra apenas arriba, con y sin gracia: solo la de
+  // arriba y ya vencida puede decir "oxida".
+  for (const [mastery, sinJugar, dice] of [
+    [piso, gracia + 3, 'piso'], [piso, 0, 'piso'], [piso + 0.5, gracia + 3, 'oxida'], [piso + 0.5, 1, 'spl']
+  ]) {
+    const campeon = { name: 'Jinx', tags: ['escalado'], mastery, partidas: 0, ultimoSplitJugado: 10 - sinJugar };
+    const { tile, oxido } = tileDeFicha(campeon, poolMod.pronosticoDeOxido(campeon, 10));
+    if (!oxido || !oxido.textContent.includes(dice)) {
+      throw new Error(`maestría ${mastery}, ${sinJugar} splits sin jugar: el tile dice "${oxido?.textContent}", se esperaba "${dice}"`);
+    }
+    if (mastery <= piso && /oxida|pierde/.test(`${oxido.textContent} ${oxido.title} ${tile.title}`)) {
+      throw new Error(`un campeón en el piso (${mastery}) promete pérdida: "${oxido.textContent}" / "${oxido.title}"`);
+    }
+    if (mastery <= piso && !oxido.title.includes(String(piso))) {
+      throw new Error(`el tooltip del piso no trae el referente (${piso}): "${oxido.title}"`);
+    }
+  }
+
+  // Y en carreras reales, estado por estado: ninguna etiqueta "oxida" sobre un campeón en el piso.
+  let enElPiso = 0;
+  let oxidando = 0;
+  for (const { seed, hechos, state, momento } of muestrearPorMomento(estadosObservables([1, 2, 5, 7, 9, 11], 14), 12)) {
+    for (const campeon of state.player.championPool) {
+      const { oxido } = tileDeFicha(campeon, pronosticoDeOxidoEnVivo(state, campeon));
+      if (campeon.mastery <= piso) {
+        enElPiso += 1;
+        if (oxido.textContent === 'oxida') {
+          throw new Error(`seed ${seed}, split ${hechos}, ${momento}: ${campeon.name} está en el piso (${campeon.mastery}) y el tile dice "oxida"`);
+        }
+      } else if (oxido.textContent === 'oxida') {
+        oxidando += 1;
+      }
+    }
+  }
+  if (enElPiso === 0 || oxidando === 0) {
+    throw new Error(`check vacío: ${enElPiso} campeones en el piso y ${oxidando} oxidando en las carreras muestreadas`);
   }
 });
 

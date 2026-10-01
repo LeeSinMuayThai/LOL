@@ -84,7 +84,12 @@
   font-weight: 700;
   color: var(--ink-dim);
   line-height: 1;
+  white-space: nowrap;
 }
+/* Corto a propósito ("2 spl", "oxida", "piso"): en un tile de 40 px, "aguanta 2"
+   (~29 px) pisaba la maestría de la otra punta de la fila. El referente va en el
+   `title` (regla 13). */
+.campeon-tile-oxido--oxida { color: var(--warn); }
 .campeon-tile-tier {
   position: absolute;
   top: 2px;

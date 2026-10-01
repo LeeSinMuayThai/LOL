@@ -1,6 +1,5 @@
 import { fichaCompleta } from '../../core/ficha.js';
 import { valorDeMercado } from '../../core/valorMercado.js';
-import { pronosticoDeOxido } from '../../core/pool.js';
 import { crearBarra, crearInstrumento } from './barra.js';
 import { crearStatRow } from './statRow.js';
 import { crearOrgChip } from './orgChip.js';
@@ -178,7 +177,7 @@ function crearMarcas(marcas) {
   return row;
 }
 
-function crearPoolTiles(state) {
+function crearPoolTiles(state, modulos) {
   const pool = state.player.championPool ?? [];
   if (pool.length === 0) return null;
   const row = document.createElement('div');
@@ -187,7 +186,9 @@ function crearPoolTiles(state) {
   const mostrar = pool.slice(0, POOL_TILES);
   for (const campeon of mostrar) {
     const tier = tierList.find((entrada) => entrada.name === campeon.name)?.tier ?? null;
-    const pronostico = pronosticoDeOxido(campeon, state.player.splitCount);
+    // Medido contra la próxima corrida real de `campeones`, no contra `splitCount`
+    // a secas: durante una pausa del split va desfasado en 1 (J3).
+    const pronostico = modulos.pipeline.pronosticoDeOxidoEnVivo(state, campeon);
     row.appendChild(crearCampeonTile(campeon, { tier, size: 'ficha', pronostico }));
   }
   if (pool.length > POOL_TILES) {
@@ -396,7 +397,7 @@ export function renderFicha(container, state, modulos) {
       crearContratoFranja(state, modulos),
       crearBadgeInternacional(ficha),
       crearBadgeDuelo(ficha),
-      crearPoolTiles(state),
+      crearPoolTiles(state, modulos),
       crearDetalleHistoria(registro),
       crearDetalleMomentos(registro)
     ]
