@@ -34,6 +34,42 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-01 — FASE K escrita en `PLAN.md`: el nivel manda
+
+El plan que sale de `AUDITORIA.md` y de las cuatro decisiones del usuario sobre ella. Solo
+documentos: cero cambios en `src/`.
+
+**Las decisiones** (textuales en `PLAN.md` §K.1):
+- **D-A**: *"no"* al modo corto. Queda un solo modo, el largo.
+- **D-B**: el juego frena en playoffs, partidos importantes, tryouts, internacionales y eventos
+  importantes, con "draft no sí o sí". Se aprobó la propuesta: plan de Fearless por serie, minijuegos
+  solo en el clímax, la prueba en cada salto, eventos chicos resueltos por perfil y la charla del
+  coach como comodín.
+- **D-C**: *"dale"* al puntaje final + desafío diario.
+- **D-D**: buenas carreras accesibles; el nuevo Faker difícil pero no imposible; no llegar a pro
+  ~20% (el 10% extra, de malas decisiones en tier 2); Mundial ≥ 7% según la región (más fácil desde
+  Corea, más puntos desde NA).
+
+**La corrección central del usuario**: *"no es tanto de probabilidades a veces sino de nivel, por
+eso te digo que a veces el juego se siente un rng clicker"*. Pasó a ser el principio de la fase: las
+metas de población salen de cuánta gente llega a cada nivel, nunca de agregar dado. Por eso las metas
+de §K.3 empiezan por nivel → resultado: r(nivel, posición) ≥ 0,5 (hoy 0,05), el favorito claro de un
+Bo5 gana ~80%, y P(2 o más Mundiales | ganó 1) ≥ 35-40%. El embudo de población viene después.
+
+**Orden**: K0 (higiene + el instrumento) → K1 (el número) → K2/K3/K3c (bloque A: el nivel decide y
+tus decisiones lo construyen) → K4/K4c (bloque B: te frena solo lo importante) → K5/K5c (bloque C: el
+Mundial de verdad, la región, el final por mercado) → K6 (jugarlo).
+
+**Lo que hace con la FASE J** (§K.6): J4, J-previa, J1/J2, J7 (comprimida), J10 y J11 se absorben;
+J3 se mergea en K0; J9 sigue en paralelo; J8 sale de alcance. J5/J6 se reemplazan, porque sus metas
+(150-280 decisiones, más drafts) contradicen D-B. La FASE V sigue congelada hasta después de K.
+
+**Deuda nueva**: D62-D73 (los hallazgos de la auditoría que no tenían fila), entre ellos D62: el
+partido que define la clasificación sale 0,1 veces por carrera, medido en esta sesión sobre 300
+carreras.
+
+**Verificación**: `node src/dev/validate.js --rapido` en verde. No se tocó `src/`.
+
 ### 2026-10-01 — Auditoría completa: por qué no se siente como El Ídolo/Copero (`AUDITORIA.md`)
 
 A pedido del usuario: auditar el proyecto entero, ver cómo vamos contra lo que se quiere, investigar

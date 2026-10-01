@@ -36,8 +36,9 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **P** | Publicar: build, guardado en el navegador, seed en la URL, el repo y el host | 🔶 **P.2/P.3/P.4/P.5 ✅** — el guardado, la seed en la URL, el repo y la página como página (nombre del juego + `og:image` propia, cerrado 2026-09-19) ya existen · **P.7/P.10 ✅**. **P.6 casi ✅ (2026-09-15)**: `origin/master` mergeado y al día, techo de `dist/` re-medido (1636 KB con el `og:image` nuevo) y convertido en check duro (1700 KB). **Conectar la cuenta del host** (Cloudflare Pages/Netlify) es del usuario, no algo para hacer de oficio — queda como el único paso manual de todo el proyecto. **Queda**: ese paso manual y **P.8** (verificación en la URL publicada una vez conectado) |
 | **D** | Los campos que la ficha promete y el motor no escribe: `ultimo_ano`/`sin_renovacion` (D30), `registro.picos.rankedPuntos` (D40) y `career.liga` sin limpiar al quedar libre (D42) | ✅ **cerrada (2026-09-15)**: D.1+D.3 por Grok, D.2 por Gemini, en worktrees paralelos, auditados por un tercer agente antes del merge — ver nota de la fase para el detalle del proceso. Los 5 checks en verde; el T1 declarado no llegó a ocurrir (huella idéntica en 40 seeds) |
 | **13** | Contenido a escala | ✅ **cerrada (2026-09-18, 13a→13e)**. Los 8 puntos de §13.1 resueltos: el hueco de cobertura, los 3 momentos `pendiente` obsoletos activados (+ `MOMENTOS` reordenada con check nuevo), D11 (rutinas por tier), servicio militar como bisagra alcanzable, declive con contenido propio (`declive.json`), D34 (`tier3.json`, 9 eventos), D17 (`latam.json`, narrativo), D14 (rango 2-4 opciones) y el check T10 que faltaba. Catálogo: 226→246 eventos, 442→**508 opciones**. `cobertura.js --huecos` vacío. Ejecutada por esta sesión sin delegar (excepción puntual, decisión del usuario) |
-| **V** | **Que la carrera se vea**: cero gráficos en todo el juego, la UI solo habla en presente, nada puede animarse entre estados. Sucede a la fase T y construye sobre su sistema de diseño (V0→V10, ver detalle abajo) | 🔶 **congelada en V0b (2026-09-20)**. **V0 ✅**: el controlador vive en `src/ui/app.js` (710→194 líneas de `index.html`), `store.js`/`reconciliar.js`/`delta.js` nuevos, la inversión `ficha.js → shell.js` resuelta, D45 cerrado de paso. **V0b ✅**: `reconciliar` adoptado en las 5 listas de clave natural (feed, tabla, plantilla, Top 5, mercado) vía el helper nuevo `reemplazarEnElLugar`. `validate.js` 189/189, `simulate.js` 0 crashes, huella anti-T1 idéntica en 40 seeds, `dist/` 1657 KB, verificado en navegador real. 🔶 **V1: librería completa, sin consumidor en la UI (auditoría 2026-09-25) — la pantalla es V2.** La capa de gráficos (`src/ui/graficos/`, 6 primitivos SVG) + el guard de color literal en JS existen y validan solas, pero ningún archivo de `src/ui/` fuera de `graficos/` la importa todavía. **Se congela acá a propósito**: jugando la carrera completa apareció un diagnóstico más urgente que "verse" — casi todo lo que rompe la experiencia es motor, no UI, y V se prohíbe tocarlo. Entra **FASE J** antes de V2. Ver su nota de apertura · V2→V10 después de J |
-| **J** | **Que la partida se juegue**: agencia real, la selección de eventos deja de forzar, te dejan draftear y jugar minijuegos, el internacional es un torneo de verdad, y elegís de dónde sos. Motivada por una carrera jugada de punta a punta el 2026-09-20 con diagnóstico medido, no de gusto (ver la nota de apertura de la fase) | 🔶 **J0 ✅ (2026-09-25, AUDITORIA.md AUD-2)**: el instrumento — `simulate.js` bloque `jugabilidad` + `cobertura.js --categorias`, línea de base remedida en §J.0b. Resto del primer tramo (J3, J4, J5, J6, J-previa, J9) y segundo tramo (J1, J2, J7, J8, J10) sin empezar — ver detalle abajo. Workflow de delegación: grok/agy implementan en worktrees, un Claude fresco revisa, Sonnet arregla si hace falta |
+| **V** | **Que la carrera se vea**: cero gráficos en todo el juego, la UI solo habla en presente, nada puede animarse entre estados. Sucede a la fase T y construye sobre su sistema de diseño (V0→V10, ver detalle abajo) | 🔶 **congelada en V0b (2026-09-20)**. **V0 ✅**: el controlador vive en `src/ui/app.js` (710→194 líneas de `index.html`), `store.js`/`reconciliar.js`/`delta.js` nuevos, la inversión `ficha.js → shell.js` resuelta, D45 cerrado de paso. **V0b ✅**: `reconciliar` adoptado en las 5 listas de clave natural (feed, tabla, plantilla, Top 5, mercado) vía el helper nuevo `reemplazarEnElLugar`. `validate.js` 189/189, `simulate.js` 0 crashes, huella anti-T1 idéntica en 40 seeds, `dist/` 1657 KB, verificado en navegador real. 🔶 **V1: librería completa, sin consumidor en la UI (auditoría 2026-09-25) — la pantalla es V2.** La capa de gráficos (`src/ui/graficos/`, 6 primitivos SVG) + el guard de color literal en JS existen y validan solas, pero ningún archivo de `src/ui/` fuera de `graficos/` la importa todavía. **Se congela acá a propósito**: jugando la carrera completa apareció un diagnóstico más urgente que "verse" — casi todo lo que rompe la experiencia es motor, no UI, y V se prohíbe tocarlo. Entra **FASE J** antes de V2. Ver su nota de apertura · V2→V10 después de J. **2026-10-01**: J se reorganiza en FASE K, y V se retoma después de K, re-escrita con "una cosa por vez en pantalla" (`AUDITORIA.md` B7) |
+| **J** | **Que la partida se juegue**: agencia real, la selección de eventos deja de forzar, te dejan draftear y jugar minijuegos, el internacional es un torneo de verdad, y elegís de dónde sos. Motivada por una carrera jugada de punta a punta el 2026-09-20 con diagnóstico medido, no de gusto (ver la nota de apertura de la fase) | 🔶 **Reorganizada en FASE K (2026-10-01)**: lo que quedaba se reparte en K0-K5 o se reemplaza (§K.6). **J0 ✅ (2026-09-25, AUDITORIA.md AUD-2)**: el instrumento — `simulate.js` bloque `jugabilidad` + `cobertura.js --categorias`, línea de base remedida en §J.0b. Resto del primer tramo (J3, J4, J5, J6, J-previa, J9) y segundo tramo (J1, J2, J7, J8, J10) sin empezar — ver detalle abajo. Workflow de delegación: grok/agy implementan en worktrees, un Claude fresco revisa, Sonnet arregla si hace falta |
+| **K** | **El nivel manda**: que el resultado lo decida tu nivel, que tu nivel lo construyan tus decisiones, que el juego te frene solo cuando algo grande está en juego, y que todo termine en un número. Sale de `AUDITORIA.md` (2026-10-01) y de las decisiones D-A..D-D del usuario (§K.1) | ⬜ **planificada (2026-10-01), sin empezar**. Orden: K0 (higiene + instrumento) → K1 (el número) → K2/K3/K3c (bloque A, el nivel) → K4/K4c (bloque B, el ritmo) → K5/K5c (bloque C, el Mundial, la región, el final) → K6 (jugarlo). Ver §K.5 |
 
 > **Por qué estas tres fases se insertaron antes del mercado.** Jugando el juego con las cuatro
 > fases hechas aparecieron cuatro defectos medibles: la temporada regular se resuelve con una
@@ -81,10 +82,10 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 
 | Tema | Decisión |
 |---|---|
-| **Duración / profundidad** | **La larga: 25-40 min.** El Bo5 mapa a mapa es sistema central, no opcional |
+| **Duración / profundidad** | **La larga: 25-40 min.** El Bo5 mapa a mapa es sistema central, no opcional · *(2026-10-01, D-A: sigue un solo modo, el largo. D-B: el Bo5 sigue, pero ya no se decide mapa a mapa — plan de Fearless por serie, §K4)* |
 | **Duración de la carrera** | *"para mí los splits no tienen que estar fixed, si no sos bueno no tenés ofertas, si sos muy bueno tu carrera dura como la de Peanut o Faker"* → **emergente del mercado, nunca de un reloj** |
-| **Minijuegos** | *"tiene que haber minijuegos, porque si está solo determinado por las stats es muy predecible, pero que tampoco todo sea un gambling a los minijuegos"* → varianza controlada por el jugador, dentro de las competiciones |
-| **Draft** | *"yo jamás dije que sí o sí tenés que draftear cada partida"* → el motor elige solo; te para cuando la elección deja de ser obvia |
+| **Minijuegos** | *"tiene que haber minijuegos, porque si está solo determinado por las stats es muy predecible, pero que tampoco todo sea un gambling a los minijuegos"* → varianza controlada por el jugador, dentro de las competiciones · *(2026-10-01, D-B: solo en el clímax — mapa decisivo, la prueba en cada salto, la rueda de prensa tras una final o un escándalo — con tope de 4-8 por carrera, §K4)* |
+| **Draft** | *"yo jamás dije que sí o sí tenés que draftear cada partida"* → el motor elige solo; te para cuando la elección deja de ser obvia · *(2026-10-01, D-B: "draft no sí o sí" en playoffs, partidos importantes, tryouts e internacionales → un plan de Fearless por serie, y el motor te frena solo si se rompe el plan o en el mapa decisivo, §K4)* |
 | **Champion pool** | *"elegías tu champion pool, POR EJEMPLO, si elegías jg, Lee Sin, Wukong, Elise eran tus mejores champs elegidos por vos, y que quizás el meta en la season ficticia era Sejuani, Nidalee y Jarvan y que te salían eventos o preguntas de si practicar más, o eventos tipo: salió un nuevo champ y jugás en 2 semanas — practicarlo a full para ir con más pool, o pulir los de ahora y aprenderlo después del match"* |
 | **Alcance** | Agresivo donde haga falta: esquema de eventos, ejes de contexto, `leagues.json` y UI se reescriben. Los checks se mantienen y se agregan; el balance se re-mide desde cero |
 | **Ligas** | *"ligas 2026 exactas, y que puedas arrancar en equipos ficticios de tier3 pero máximo que eso dure muy poco usualmente, y recordá que haya eventos del equipo"* |
@@ -94,6 +95,8 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **El mundo del mercado** (2026-09-02) | **Rosters NPC reales**, no un modelo de demanda liviano. Cada org de tier 1 y de tu tier 2 tiene 5 jugadores con edad, nivel, contrato y carrera propia: envejecen, se retiran, se mueven. Es lo que hace real al mercado, al vestuario y al retiro de una sola vez |
 | **Orden mercado / retiro** (2026-09-02) | **El mercado primero.** La fase 10 define el retiro como emergente ("te retirás cuando el mercado deja de llamarte"); con el mercado de hoy eso vuelve a ser un dado. Se hace bien a la primera o se hace dos veces |
 | **La escalera** (2026-09-02) | **Sí a reescribirla.** El ascenso deja de sortearse: subís porque un club tiene un hueco en tu rol y te puede pagar. Aparece el descenso de tier 1 (D16) y los cupos de import y la residencia empiezan a existir (D29). Se asume el corrimiento del stream de RNG (D35) |
+| **El nivel manda** (2026-10-01) | *"no es tanto de probabilidades a veces sino de nivel, por eso te digo que a veces el juego se siente un rng clicker"* · *"más de dos mundiales que no sea tan imposible porque si ya ganaste uno es porque sos muy bueno"* → **el resultado lo decide tu nivel; las metas de población salen de cuánta gente llega a cada nivel, nunca de agregar dado** (FASE K) |
+| **Ritmo, partido, puntaje y dificultad** (2026-10-01) | D-A (*"no"* al modo corto) · D-B (dónde te frena el juego) · D-C (*"dale"* al puntaje + desafío diario) · D-D (buenas carreras accesibles, el nuevo Faker difícil pero no imposible, Mundial ≥ 7% según la región, no llegar a pro ~20%) — textuales en §K.1 |
 
 ---
 
@@ -4946,6 +4949,11 @@ Y, por ser una fase de UI, dos verificaciones que el resto del proyecto no neces
 
 # FASE J — QUE LA PARTIDA SE JUEGUE
 
+> **Reorganizada en FASE K (2026-10-01).** J0 queda hecha. Lo que seguía se repartió en K0-K5 o
+> se reemplazó (tabla en §K.6). J5/J6 en particular se reemplazan: sus metas (150-280 decisiones por
+> carrera, más drafts) contradicen la decisión D-B del usuario. Esta sección queda como registro del
+> diagnóstico (§J.0 sigue siendo correcto) y de lo que K reusa.
+
 > Se inserta antes de V2 (2026-09-20). Motivo: el usuario jugó una carrera completa de punta a
 > punta y el veredicto fue *"esto es un simulador de clics de mierda"*. No es una queja de gusto —
 > las nueve cosas que señaló tienen, cada una, una causa medible en el código. Investigación
@@ -5301,6 +5309,357 @@ quedan para el segundo tramo. **J8 es la primera que se corta** de todo el plan.
 
 ---
 
+# FASE K — EL NIVEL MANDA
+
+> Escrita el 2026-10-01 a partir de `AUDITORIA.md` (medida contra `2c63c4f`) y de las cuatro
+> decisiones que el usuario tomó sobre ella (§K.1). **Reorganiza lo que quedaba de la FASE J** (§K.6)
+> y va antes de que se retome la FASE V.
+
+## K.0 — Por qué esta fase existe
+
+El usuario lo dijo así: *"no es tanto de probabilidades a veces sino de nivel, por eso te digo que a
+veces el juego se siente un rng clicker"*. La auditoría encontró un número detrás de cada parte de
+esa frase:
+
+| Lo que se siente | Lo que se midió (`AUDITORIA.md` §4) |
+|---|---|
+| "mi nivel no decide" | r(nivel, posición en la tabla) por split = **0,05**. Los compañeros pesan el 50% y su nivel queda congelado al fichar. La temporada se juega con **una sola tirada** de tu rendimiento (`systems/temporada.js:163`). El meta solo ya mueve ±25% (`campeones.multiplicadorMin/Max: 0,75/1,25`) |
+| "elijo y no pasa nada" | ~**80%** de las interrupciones no tiene efecto detectable en el final (contrafáctico, 1.444 decisiones). Ni una estrategia consistente en todos los eventos cambia el puntaje. Desde cualquier decisión, el azar posterior pesa **4-10×** más que lo elegido |
+| "la moneda no existe" | mentalidad y hype en pro: mediana **97 / 100**. El 47% de los efectos del catálogo cae sobre esas barras llenas |
+| "todo es largo y todo es éxito" | ~**190** interrupciones por carrera, ~45-60 min. **79,5%** llega a tier 1. **72,6%** de las carreras pro termina en la línea forzosa de los 34 |
+| "no sé qué tan bien jugué" | no hay puntaje final ni nada con qué comparar una seed |
+
+La FASE J atacaba los síntomas uno por uno. Esta fase ataca la causa: **que el resultado lo decida
+tu nivel, que tu nivel lo construyan tus decisiones y que el juego te frene solo cuando algo grande
+está en juego.**
+
+### K.0b — Línea de base *(la escribe K0)*
+
+Pendiente: los KPIs de §K.3 medidos con el instrumento de K0 sobre el árbol de ese momento (T6: no
+se copian los números de `AUDITORIA.md`, se vuelven a medir).
+
+## K.1 — Decisiones del usuario (2026-10-01, textuales — respetarlas, no volver a preguntar)
+
+| Tema | Decisión |
+|---|---|
+| **D-A — Modo corto** | *"no"* → **un solo modo, el largo.** La sesión se achica como consecuencia (menos interrupciones con K4, carreras realistas con K5), no por un modo aparte |
+| **D-B — Dónde te frena el juego** | *"en playoffs, partidos importantes, tryouts, internacionales, draft no sí o sí en todos estos, y también en eventos importantes no relacionados tanto a los partidos quizás, no sé, pensalo y decime qué opinás"*. Se aprobó (*"dale escribilo"*) la propuesta: plan de Fearless por serie en vez de pick mapa a mapa, minijuegos solo en el clímax, la prueba en cada salto grande, eventos chicos resueltos por tu perfil y la charla del coach como comodín (§K4) |
+| **D-C — El número** | *"dale"* → puntaje final, desafío diario (misma seed para todos) y comparación, sin backend (§K1) |
+| **D-D — Dificultad** | *"que tener buenas carreras no sea muy muy difícil pero que ser el nuevo Faker sí, pero tampoco muy imposible"*. Precisado: *"menos lo de 20-30 no llega a pro, ese 10% extra quizás si toman malas decisiones en tier 2"* · *"gana un mundial mínimo 7%, pero depende la región, si sos coreano más fácil, si sos de NA que te dé más puntos ganar un mundial"* · *"el de el nuevo Faker fijate que ese 1% no termine siendo imposible, más de dos mundiales que no sea tan imposible porque si ya ganaste uno es porque sos muy bueno"* · *"no es tanto de probabilidades a veces sino de nivel"* |
+| **Pendiente** | El nombre visible del nivel máximo. *"El nuevo Faker"* usa el nombre de una persona real (`CLAUDE.md` / README). Si el usuario no lo confirma literal, va un nombre inventado. Internamente se llama "el nuevo Faker" |
+
+## K.2 — El principio
+
+1. **El nivel manda, el azar condimenta.** El mejor equipo gana casi siempre, pero no siempre: hay
+   batacazos. Las metas de población (§K.3b) **no se calibran agregando dado**: salen de cuánta gente
+   llega a cada nivel (potencial, decisiones, mercado).
+2. **Tus decisiones construyen tu nivel.** Lo que elegís deja marca que dura y se ve en la ficha, con
+   su porqué.
+3. **El juego te frena solo cuando algo grande está en juego.** Lo demás se resuelve solo y se cuenta
+   en una línea.
+4. **Todo termina en un número.** Un puntaje que se puede comparar y que premia la dificultad.
+
+## K.3 — Las metas (propuestas; K0 mide la línea de base y cada calibración las fija)
+
+### K.3a — Nivel → resultado (el corazón de la fase)
+
+| Métrica | Hoy | Objetivo |
+|---|---|---|
+| r(tu nivel relativo a la liga, posición final) en la misma liga | 0,05 | **≥ 0,5** |
+| El favorito claro de un Bo5 (Δ fuerza ≈ 10) gana la serie | a medir (K0) | **~80%** (75-85) |
+| Tu equipo es claramente el más fuerte del Mundial y lo gana | — | **~50%** |
+| Ganaste un Mundial y ganás otro: P(2 o más \| 1) | — | **≥ 35-40%** |
+| Varianza del resultado de temporada explicada por tu nivel + el de tu equipo (por ablación) | a medir (K0) | **mayoría (≥ 50%)**; ruido puro ≤ 25% |
+
+### K.3b — El embudo de carrera (jugando "normal", bot `criterio`)
+
+| Nivel | Hoy | Objetivo |
+|---|---|---|
+| No llega a pro | ~20% | **~20% (como hoy)** — el amateur sigue siendo el filtro |
+| Se estanca en tier 2/3 | ~0,7% | **~10% más, y lo producen las malas decisiones** (con `criterio` bastante menos, con `malas` bastante más) |
+| Llega a tier 1 | 79,5% | ~55-65% |
+| Gana al menos un título doméstico | 79% | ~30% |
+| Top 20 del mundo alguna vez | ~51% de las exitosas | ~15% |
+| Gana al menos un **Mundial** (el torneo real de K5) | no existe | **≥ 7%** en promedio. **Depende de la región**: desde Corea, más fácil (~12-15%); desde NA, más difícil (~3-5%). El puntaje compensa (§K1) |
+| **"El nuevo Faker"** (2 o más Mundiales, o #1 del mundo en 3 o más temporadas) | ~25% de veredictos de cima, regalados | **~2-3% en promedio, pero ≥ 30% entre los de nivel pico de élite** (top 3% de nivel): si llegás a ese nivel, llegás a la cima. No es una lotería |
+| Carrera pro mediana | 16,7 años | ~4-6 años; las buenas 7-10; las leyendas 12 o más |
+| Llega a la línea forzosa de los 34 | 72,6% | < 5% |
+
+### K.3c — Ritmo y agencia
+
+| Métrica | Hoy | Objetivo |
+|---|---|---|
+| Interrupciones por carrera (mediana) | 191 | **≤ 80** |
+| Interrupciones por split pro | p90 9, máx 23 | ≤ 2; ≤ 4 en splits de playoffs o internacional |
+| Minijuegos por carrera | 26 | 4-8 |
+| Tiempo-máquina a 1× sin leer (mediana) | 17,4 min | ≤ 8 min (sesión real ~20-35 min: corta si fracasás, ~40 si sos leyenda) |
+| Interrupciones con palanca medible (contrafáctico) | ~17% | **≥ 60%** |
+| Sensibilidad a la habilidad: `criterio` contra `azar` | a medir (K0) | P(Mundial) ≥ 2× · P(nuevo Faker) ≥ 3× |
+| Mentalidad en pro: mediana · % de splits ≥ 90 | 97 · 75% | 45-75 · < 20% |
+| Hype en pro: % de splits ≥ 90 | 77% | < 25% |
+
+## K.4 — Bloques de corrimiento (trampa T1)
+
+| Bloque | Subfases | Cierra con |
+|---|---|---|
+| **sin corrimiento** | K0, K1 | huella de 40 seeds idéntica (salvo lo que declare J3 al mergearse) |
+| **A — el nivel** | K2, K3 | **K3c** |
+| **B — el ritmo** | K4 | **K4c** |
+| **C — el mundo** | K5 | **K5c** |
+
+Igual que en J: dentro de un bloque, un check fuera de banda se anota con su número y se re-basea en
+la calibración, no en el acto (regla 2 + T6). Cada check de banda que se reemplace lleva su línea de
+"reemplaza a X, que exigía lo contrario" (regla 17; D56 es el primero). **D52 sigue vigente**:
+ninguna seed anterior reproduce su carrera.
+
+## K.5 — Subfases
+
+### K0 — Higiene y el instrumento *(sin corrimiento)*
+
+**Higiene** (D62-D73, todo lo que no consume `rng`):
+- Mergear J3 (rama `j3-pool-oxido`, `76338ae`) después de la revisión del workflow, y medir su huella.
+- Borrar la rama `faseV-V1-grok` y pushear la rama de trabajo, **con confirmación del usuario** (es
+  destructivo / sale de la máquina).
+- Guardado: check estático que obliga a subir `VERSION` (`core/guardado.js:13`) cuando cambia la
+  forma de `createInitialState`. Un guardado de otra versión ya se descarta solo.
+- `mercado.js:91`: siendo agente libre (sueldo 0), toda oferta sale "bombazo". Se compara contra la
+  mediana salarial de la liga, no contra 0.
+- `server.js`: escuchar en `127.0.0.1` y rechazar paths fuera de la raíz.
+- Desborde en celular (documento de 455 px a 390 px): arreglarlo y verificarlo con la receta de navegador.
+- Pase de vocabulario LoL (B9; solo texto, grepear después — T8): "colgás los botines", "cancha",
+  "hinchas", "camiseta", "filial" → academia, "Selección: …" → "Internacional: …", y bajar "vestuario"
+  donde suene a fútbol.
+- "Titular" significa dos cosas en la ficha: renombrar las bandas de NIVEL para que no choquen con
+  las de jerarquía.
+
+**El instrumento** (lo que va a decir si K2-K5 funcionaron):
+- `src/dev/agencia.js`: el contrafáctico de `AUDITORIA.md` §4.3 como herramienta permanente.
+  Reporta palanca y % significativo por tipo de decisión, y % de interrupciones con palanca.
+- `src/dev/estrategias.js` suma tres bots. `criterio` elige con la previa y la probabilidad del
+  propio motor, y juega bien los minijuegos. `azar` elige uniforme. `malas` elige lo peor por la
+  misma previa.
+- `simulate.js` suma bloques:
+  - `embudo`: los niveles de §K.3b, con P(2 o más | 1).
+  - `nivel`: la r de la misma liga, la tasa de victoria del favorito por Δ y la atribución de
+    varianza por ablación (se apaga un factor por vez con overrides de `BALANCE` en el proceso de la
+    sonda, nunca en el motor).
+  - `economia`: percentiles de mentalidad y hype en pro.
+  - `longevidad`: años de carrera pro y % que llega a los 34.
+  - `ritmo`: interrupciones por carrera y por split, y tiempo-máquina estimado como beats × 700 ms.
+  - Todo, también por región de origen.
+- La línea de base completa se mide y se escribe en §K.0b (T6).
+
+Checks: los KPIs dan valores finitos sobre 200 carreras × 3 bots, con 0 crashes · huella de 40 seeds
+idéntica · el check de `VERSION` falla en rojo si se agrega un campo sin subirla (regla 7).
+
+### K1 — El número *(sin corrimiento: puro, cero `rng`)*
+
+- `core/puntaje.js` (nuevo, puro). El puntaje de carrera suma:
+  - logros ponderados por rol (`CONCEPTO` §9);
+  - un multiplicador por la **dificultad de la liga** donde los conseguiste (dato `dificultad` en
+    `leagues.json`, el mismo que usa K5): ganar un Mundial con una org de NA vale más que con una de
+    Corea, tal como lo pidió el usuario;
+  - **potencial contra logro** ("hasta dónde llegaste contra hasta dónde podías", `oculto.potencial`);
+  - tu **puesto en la generación**.
+- **Niveles con nombre**, desde "El que no llegó" hasta el nuevo Faker. Los cortes son provisorios y
+  se fijan en K5c con las distribuciones medidas.
+- **Leyendas inventadas para compararte** (`data/leyendas.json`), elegidas por cercanía de perfil y
+  sin `rng`: la "figura histórica" de El Ídolo, respetando `CLAUDE.md`.
+- **Tarjeta final**: el número arriba, compacta (los mapas de cada internacional pasan a un
+  desplegable), el PNG con el puntaje y un texto para compartir.
+- **Desafío diario**: la seed sale de la fecha, y la seed fija **también** el rol, la región y el pool
+  (`eleccion: null`, el camino que ya usa `simulate.js`), así todos arrancan igual. Se comparte con
+  fecha, puntaje, nivel y versión del juego. Historial local de puntajes (`localStorage`, conveniencia).
+
+Pantalla: la tarjeta final nueva y el botón del desafío en el inicio. Checks: el puntaje es puro y
+determinista · es monótono (más logros, más puntaje) · el mismo Mundial vale más desde una liga de
+menor `dificultad` · dos desafíos con la misma fecha arrancan idénticos · huella de 40 seeds idéntica.
+
+### K2 — El nivel manda *(bloque A — estructura; los valores se fijan en K3c)*
+
+- **Compañeros en vivo**: `core/fuerza.js` lee el nivel actual de `state.mundo.planteles` (la mitad
+  de J1), con fallback al snapshot de `systems/roster.js` para tier 3 o tier 2 no modelada.
+- **La temporada deja de ser una sola tirada**: la forma se sortea por fecha con un desvío chico, en
+  vez de un `gauss` por split que decide las 7-9 fechas juntas.
+- **Presupuesto de ruido en un solo lugar**: `ruidoEfectivo(state)` reemplaza los σ sueltos
+  (`ruidoRendimiento`, `ruidoFecha`/`ruidoRivalFecha`, `ruidoMapa`/`ruidoRivalSerie`). Hoy el rival
+  tiene casi el doble de ruido que vos (12 contra 7): se simetriza. K3 lo conecta a la mentalidad.
+- **El meta empuja, no tira la moneda**: se acotan `multiplicadorDeMeta` y `factorDeCampeon`
+  (propuesta: rango ~0,9-1,1, se mide).
+- **Tu peso en el equipo** puede escalar con la jerarquía (la franquicia pesa más). Se decide midiendo.
+- **Pantalla — la previa** (absorbe J-previa): antes de cada partido importante o serie, tu fuerza
+  desglosada (vos / tus compañeros / el meta) contra la del rival, y **la probabilidad de ganar**. "Se
+  ve que tu nivel decide."
+
+Checks (rojos hoy): r(nivel relativo, posición) misma liga ≥ 0,5 · favorito con Δ ≈ 10 gana el Bo5
+75-85% · por ablación, nivel más equipo explican ≥ 50% de la varianza · la previa declara la misma
+probabilidad que usa el motor (regla 15, exacto).
+
+### K3 — Tus decisiones construyen tu nivel *(bloque A — estructura)*
+
+- **La mentalidad es lo que hace que tu nivel se note**: gobierna la consistencia. Con la cabeza
+  bien, jugás a tu nivel; tilteado, el resultado se vuelve moneda (el σ de `ruidoEfectivo` crece al
+  bajar la mentalidad). Es "el precio de todo" (`CONCEPTO` §7) cerrado de punta a punta y atado a la
+  queja del azar. Para que valga, **tiene que poder bajar**: costos reales por exigirte, retorno a
+  una base, y que el descanso no la llene gratis.
+- **Hype que no se satura**: decae hacia una base que fijan tus resultados y tu visibilidad. Mueve
+  ofertas, sueldo y presión.
+- **Efectos que duran** (J2): `player.bonusPermanente` (completo con ceros, T4). Las curvas de edad
+  convergen a `objetivo + bonus`, así el bootcamp o la decisión grande dejan marca; hoy la vida media
+  sobre mecánica es de 1,9 splits.
+- Pantalla: la ficha cuenta lo que construiste ("▲ +3 mecánica — bootcamp 2028") y la barra de
+  mentalidad se lee como **consistencia**.
+
+Checks: mentalidad en pro con mediana 45-75 y < 20% de splits ≥ 90 · hype ≥ 90 en < 25% de los
+splits pro · un efecto sobre stat de curva conserva ≥ 40% a 4 splits · con mentalidad 20 contra 80,
+el desvío del resultado del mapa difiere de forma medible (con la cabeza mal, más varianza).
+
+### K3c — Calibrar bloque A *(solo constantes)*
+
+Re-medición completa (T6) de K0 y de los ~200 checks. Se fijan los valores de ruido, meta, peso y
+economía contra §K.3a y §K.3c. `simulate.js 1500 60 todas`.
+
+### K4 — Te frena solo lo importante *(bloque B — D-B)*
+
+- **Partidos importantes** (`systems/temporada.js`): se marca la fecha **que decide algo**, no la
+  primera con cualquier motivo. Hoy el cupo se gasta en "contra el puntero" o "venís de dos derrotas",
+  y el partido que define la clasificación sale **0,1 veces por carrera** (D62). Cuentan: define la
+  clasificación, la revancha, el clásico contra tu ex equipo, el cruce con tu archirrival.
+  `puntero`/`presion` dejan de marcar. Como máximo uno por split, sin draft y con la probabilidad a la vista.
+- **Series** (playoffs e internacional) — reemplaza a J6:
+  - El pick mapa a mapa se reemplaza por el **plan de Fearless** al empezar la serie: guardar tu mejor
+    campeón para el mapa decisivo, salir con todo, la sorpresa, o "lo que diga el coach". Cada camino
+    muestra su probabilidad por mapa.
+  - El motor juega el plan y te frena solo si el rival te quema el campeón que guardabas, o en el
+    mapa decisivo.
+  - Una serie sin nada en juego (por ejemplo, contra un rival muy inferior) no pregunta.
+  - El umbral actual pregunta justo cuando la respuesta es obvia (D63); esto lo reemplaza.
+- **Minijuegos solo en el clímax**: el mapa decisivo de semis, final e internacional; **la prueba en
+  cada salto grande** (el tryout de tier 3 → 2 → 1 y el de import); la rueda de prensa solo tras una
+  final o un escándalo. Tope de 4-8 por carrera. Como idea a medir, el "clip viral" en soloQ (el
+  outplay contra un pro que te hace conocido, la vía Calix de `CONCEPTO` §12.2).
+- **La charla del coach entre mapas**: un comodín por temporada que empuja un mapa. El dilema es
+  gastarlo en semis o guardarlo para la final (la "arenga" de El Ídolo, en versión LoL).
+- **Eventos**: solo frenan las **bifurcaciones de carrera**, marcadas en el dato: cambio de región,
+  jugar lesionado o parar, oferta de streaming, escándalo, conflicto que te puede banquear, retiro o
+  vuelta, servicio militar.
+  - El resto se resuelve según tu **perfil** (el profesional / el hambriento / el showman / el
+    leal). Se elige al arrancar y se corre con tus decisiones grandes. Mapeo automático por la previa
+    de cada opción (familia de efecto + riesgo), con override opcional por opción. Se cuenta en una
+    línea de crónica: los textos no se pierden, pasan a ser la historia.
+  - J4 se aplica a las que siguen frenando: la bisagra como peso y no como filtro, la categoría
+    reciente y `main_muerto` como transición.
+  - Pase de contenido sobre las bifurcaciones: efectos que duran (K3) y caminos que se abren y cierran.
+- **La pretemporada en una sola parada** por año (T9): mercado (si abre) + preparación (las rutinas
+  de offseason como cartas de mejora) en la misma pantalla.
+- **El fin de año** sigue siendo la decisión grande, pero tiene que tener palanca medida (hoy 4%
+  significativo, igual que el ruido).
+- Pantallas: la tarjeta del plan de Fearless · el partido importante con su probabilidad · el clímax ·
+  la línea de crónica de los eventos resueltos por perfil · el perfil en el inicio · la pretemporada
+  unificada.
+
+Checks (rojos hoy): interrupciones por carrera con mediana ≤ 80 · por split pro ≤ 2 (≤ 4 en playoffs
+o internacional) · `define_clasificacion` alcanzable (≥ 1 cada 3 temporadas de tier 1 con playoffs) ·
+minijuegos por carrera en [4, 8] · ≥ 60% de las interrupciones con palanca medible (`agencia.js`) ·
+tiempo-máquina a 1× ≤ 8 min de mediana · el plan de Fearless declara las probabilidades que el motor
+usa (regla 15).
+
+### K4c — Calibrar bloque B *(solo constantes)*
+
+Contra §K.3c. **Reemplaza a las bandas de J5/J6** (150-280 decisiones por carrera, "más drafts"): se
+borran con su línea de "reemplaza a…" (regla 17).
+
+### K5 — El Mundial de verdad, la región y el final por mercado *(bloque C — D-D)*
+
+- **El Mundial** (J7 comprimido):
+  - `core/internacional.js` (puro: clasificados reales por `cuposInternacionales`, Swiss de 16,
+    bracket de 8, ajenos por `hashCadena`, cero `rng`) + `systems/internacional.js` + una línea en
+    `ETAPAS_SPLIT` entre `serie` y `events`.
+  - **El Swiss se resuelve solo** salvo que llegues 2-2 (partido de vida o muerte). El knockout se
+    juega como serie, con las reglas de K4.
+  - **El campeón del mundo sale de ese torneo**: hoy `systems/escena.js:45` lo sortea aparte y puede
+    contradecir tu serie.
+  - MSI y First Stand (J8) quedan afuera.
+- **La región se elige en el inicio** (J10), salvo en el desafío diario. Decisión textual de J.2: *"la
+  región ES la dificultad"* y LATAM llega hasta tier 2 (LRN/LRS). `leagues.json` gana `dificultad`
+  (el dato que también usa el puntaje de K1). Desde Corea es más fácil ganar el Mundial y desde NA más
+  difícil; el puntaje lo compensa.
+- **El final lo decide el mercado**: con K2 el nivel se nota, y el retiro llega cuando tu nivel ya no
+  alcanza para tu liga. La línea de los 34 vuelve a ser excepción.
+- **Tier 2 castiga las malas decisiones**: el ~10% que se estanca tiene que salir de mercados mal
+  elegidos, pretemporadas malas o la mentalidad rota, no del dado. Se mide con `criterio` contra `malas`.
+- Pantallas: el Mundial (el Swiss resumido + el bracket, con tu camino) · la región en el inicio con
+  su dificultad dicha · el retiro con su motivo.
+
+Checks (rojos hoy): el campeón del mundo del log es el del torneo · el Swiss siempre termina 8 y 8 ·
+ningún cruce se repite · un split de Mundial no pasa de 4 interrupciones · si no clasificás, cero
+tiradas · elegir región no corre el stream (huella con la elección igual al sorteo) · la dificultad de
+cada región es monótona con su `dificultad`.
+
+### K5c — Calibrar bloque C y los niveles del puntaje *(solo constantes)*
+
+Contra §K.3a y §K.3b: el embudo, el Mundial por región, P(2 o más | 1), el nuevo Faker por nivel,
+la longevidad, `criterio` contra `azar` y contra `malas`. Acá se fijan los cortes definitivos de los
+niveles de K1.
+
+### K6 — Jugarlo *(la prueba que importa)*
+
+Tres carreras completas en el navegador: una que se estanca en tier 2 por malas decisiones, una buena
+y una de leyenda. Se leen como historias y se mide su duración. Ninguna de las quejas del usuario se
+puede repetir textualmente: *"rng clicker"*, *"las opciones no afectan nada"*, *"hacés un clic y
+perdiste"*, *"Worlds es una basofia"*.
+
+## K.6 — Qué pasa con FASE J y FASE V
+
+| Pieza | Destino |
+|---|---|
+| J0 | ✅ hecha; K0 la extiende |
+| J3 | hecha en la rama `j3-pool-oxido` → se mergea en K0 |
+| J4 | → K4 (para los eventos que siguen frenando) |
+| J-previa | → K2 (la previa con la probabilidad) |
+| J1 / J2 | → K2 / K3 |
+| J5 / J6 | **reemplazadas por K4**: sus metas (150-280 decisiones, más drafts) contradicen D-B |
+| J7 | → K5, comprimida |
+| J8 | fuera de alcance |
+| J9 (caras de campeón, Data Dragon) | se mantiene, sin motor ni corrimiento: se puede hacer en paralelo en cualquier momento |
+| J10 / J11 | → K5 / K5c |
+| FASE V | sigue congelada. Se retoma después de K, re-escrita con el principio "una cosa por vez en pantalla" (`AUDITORIA.md` B7). Reescribirla no es parte de esta fase |
+
+Workflow (sin cambios): grok/agy implementan cada subfase en su propio worktree, un Claude fresco
+revisa contra `CLAUDE.md` y este documento, Sonnet aplica los arreglos y el supervisor mergea y
+escribe `PROGRESO.md`.
+
+## K.7 — Riesgos
+
+| # | Riesgo | Mitigación |
+|---|---|---|
+| 1 | El nivel manda tanto que el juego se vuelve previsible | El favorito gana ~80%, no 100%. La varianza que importa la controla el jugador (mentalidad, minijuegos, charla del coach) |
+| 2 | 20-40 checks de banda fuera de banda por bloque | Esperado. Se anotan y se re-basean en K3c/K4c/K5c, con la línea de la regla 17 |
+| 3 | Guardados viejos | El check de `VERSION` de K0. Se descartan con aviso, no se cargan a medias |
+| 4 | Los cortes del puntaje dependen del balance final | Son provisorios en K1 y definitivos en K5c |
+| 5 | Resolver eventos por perfil "esconde" contenido | Pasa a crónica, no se borra. Las bifurcaciones siguen frenando |
+| 6 | El Mundial suma interrupciones | El Swiss se resuelve solo y el tope es de 4 por split de Mundial |
+
+## K.8 — Fuera de alcance
+
+Un modo corto o selector de ritmo (D-A: no) · MSI / First Stand (J8) · un ranking global online
+(necesita backend: la comparación es por texto y link) · el rediseño completo de UI (FASE V).
+
+## K.9 — Verificación
+
+```bash
+node src/dev/validate.js                  # en rojo primero cada check nuevo (regla 7)
+node src/dev/simulate.js 1500 60 todas    # 0 crashes + los bloques nuevos de K0
+node src/dev/agencia.js                   # la palanca por tipo de decisión
+node src/dev/build.js                     # guards + techo de dist/
+node server.js                            # jugar a mano (receta de navegador), cero errores de consola
+```
+
+Más la huella de 40 seeds antes y después de cada subfase: idéntica en K0/K1, y corrimiento
+declarado en los bloques A/B/C.
+
+---
+
 # Fuera de alcance (visto en las imágenes, decidido que no)
 
 | Qué | Dónde se ve | Por qué no |
@@ -5378,6 +5737,18 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D59 | `AUDITORIA.md`, hallazgos bajos H17/H18/H19/H20: ciclo de import real `core/plantel.js:5 ↔ core/mundo.js:11` (por `generarHandle`, único ciclo en todo `core/`+`systems/`) · 6 campos de estado vestigiales (`career.contracts` muerto del todo, `career.hitos` escribe-y-nadie-lee, `player.titles`/`player.worlds` duplican `career.titulos`/`internacionales`) · 84 números mágicos residuales en `systems/*.js`, concentrados en `servicioMilitar.js` · `systems/mercado.js` a 945 líneas, el archivo más grande del proyecto | la próxima fase que toque cada archivo |
 | D60 | `AUDITORIA.md`, hallazgos bajos H11/H12/H13: `--rapido` cubre 41% de los checks (79/194) y salta todo lo estadístico/conductual · cero CI (no existe `.github/`, los 194 checks dependen de correrlos a mano) · cero tests unitarios (`validate.js` es el único arnés, un solo archivo) | sin fase — decisión pendiente del usuario, no deuda de código |
 | D61 | `AUDITORIA.md` H22: `reemplazarEnElLugar` (`reconciliar.js`) solo copia `className`+`dataset`, no `title`/`aria-*`/`style` — correcto hoy por accidente (ningún consumidor de V0b los usa), no por diseño | V3 |
+| D62 | `AUDITORIA.md` (2026-10-01): el partido que **define la clasificación** sale 0,1 veces por carrera. `motivosDeFecha` solo lo detecta en la última fecha (`core/temporada.js:178`), pero `continuarTemporada` gasta el único cupo (`fechasMarcadasPorSplit: 1`) en la primera fecha con cualquier motivo: puntero 23%, presión 22%, clásico 21% | K4 |
+| D63 | El draft frena solo si el mejor campeón da ≥ 26 puntos de probabilidad más que el segundo (`core/serie.js:157-175`): pregunta justo cuando la respuesta es obvia. El umbral se calibró contra una meta interna ("≥ 30% de series sin draft", `balance.js:1361-1372`). Contrafáctico: draft de serie en ruido (5% significativo), draft de fecha en 0 | K4 (plan de Fearless por serie) |
+| D64 | Mentalidad y hype saturadas en pro (mediana 97 / 100; 75% / 77% de los splits ≥ 90): el 47% de los efectos del catálogo cae sobre barras llenas, y meter mentalidad en la fuerza (J1) sería inerte | K3 |
+| D65 | El retiro "emergente" casi no ocurre: el 72,6% de las carreras pro termina en `edadRetiroForzoso: 34`. Mediana de carrera pro: 16,7 años (la real es ~2,1, `CONCEPTO` §12.4) | K5 |
+| D66 | No hay puntaje final ni métrica para comparar una seed (`core/legado.js` no lee `oculto.potencial`, ni la generación, ni la signature), contra lo que promete `CONCEPTO` §1/§9 | K1 |
+| D67 | Siendo agente libre (sueldo 0), toda oferta sale "bombazo" (`systems/mercado.js:91`: sueldo > 0 × `bombazoMultiplo`) | K0 |
+| D68 | `server.js` escucha en `0.0.0.0` y no normaliza el path: mientras corre, se pueden leer archivos fuera del repo desde la red local (solo dev) | K0 |
+| D69 | En celular (390 px) el documento mide 455 px de ancho: scroll horizontal y topbar cortado | K0 |
+| D70 | Vocabulario de fútbol en texto visible: "colgás los botines" (`systems/retiro.js:55`), "cancha" ×10, "hinchas" ×3, "camiseta" ×3, "filial" ×3, "Selección: …" en la ficha, "vestuario" ×168 | K0 |
+| D71 | `VERSION` del guardado nunca subió (`core/guardado.js:13`): un cambio de forma del estado cargaría guardados incompatibles | K0 (check estático) |
+| D72 | Higiene de ramas: la rama de trabajo con commits sin pushear, J3 commiteada en `j3-pool-oxido` (`76338ae`) sin mergear, `faseV-V1-grok` todavía existe | K0 (push y borrado con confirmación del usuario) |
+| D73 | "Titular" nombra dos bandas distintas en la ficha (la de NIVEL y la de JERARQUÍA) | K0 |
 
 ---
 
