@@ -7690,6 +7690,201 @@ check('J3 piso: un campeón en maestriaMinima nunca muestra "oxida" ni promete p
   }
 });
 
+// ============================================================================
+// Fase K0 — El instrumento (PLAN.md §K.5)
+// ============================================================================
+const { calcularHuella } = await import('./huella.js');
+const { medirAgencia, analizarDatosAgencia } = await import('./agencia.js');
+const { correrLote, correrCarrera: correrCarreraSimulate } = await import('./simulate.js');
+const { ESTRATEGIAS: ESTRATEGIAS_K0 } = await import('./estrategias.js');
+
+checkLento('K0 bloques de simulate: embudo, nivel, economia, longevidad y ritmo devuelven valores finitos sin crashes', () => {
+  // Trinquete: protege la integridad de los bloques de medición del instrumento introducido en K0 (§K.5).
+  // Se evalúan 100 carreras x 60 splits para criterio, azar y malas.
+  for (const estrategia of ['criterio', 'azar', 'malas']) {
+    const lote = correrLote(100, 60, estrategia);
+    if (lote.crashes !== 0) {
+      throw new Error(`${estrategia}: hubo ${lote.crashes} crashes`);
+    }
+
+    const { embudo, nivel, economia, longevidad, ritmo } = lote;
+
+    // Embudo
+    const kpisEmbudo = ['noLlegaAPro', 'estancadoT2T3', 'llegaATier1', 'ganaTituloDomestico', 'top20', 'top20DeTier1', 'ganaMundial', 'nuevoFaker'];
+    for (const kpi of kpisEmbudo) {
+      if (typeof embudo[kpi] !== 'number' || !Number.isFinite(embudo[kpi])) {
+        throw new Error(`${estrategia} embudo.${kpi} no es un número finito: ${embudo[kpi]}`);
+      }
+    }
+    if (embudo.proxyAntesDeK5 !== true) {
+      throw new Error(`${estrategia} embudo.proxyAntesDeK5 debe ser true`);
+    }
+    if (embudo.pOtroMundialDadoUno !== null && !Number.isFinite(embudo.pOtroMundialDadoUno)) {
+      throw new Error(`${estrategia} embudo.pOtroMundialDadoUno debe ser número o null: ${embudo.pOtroMundialDadoUno}`);
+    }
+
+    // Nivel
+    if (nivel.rNivelPosicionMismaLiga !== null && !Number.isFinite(nivel.rNivelPosicionMismaLiga)) {
+      throw new Error(`${estrategia} nivel.rNivelPosicionMismaLiga no es finito: ${nivel.rNivelPosicionMismaLiga}`);
+    }
+    if (nivel.rNivelPosicionBruto !== null && !Number.isFinite(nivel.rNivelPosicionBruto)) {
+      throw new Error(`${estrategia} nivel.rNivelPosicionBruto no es finito: ${nivel.rNivelPosicionBruto}`);
+    }
+    if (!Array.isArray(nivel.favoritoBo5) || nivel.favoritoBo5.length !== 8) {
+      throw new Error(`${estrategia} nivel.favoritoBo5 debe tener 8 entradas`);
+    }
+    for (const entrada of nivel.favoritoBo5) {
+      if (!Number.isFinite(entrada.pMapa) || !Number.isFinite(entrada.pSerieBo5)) {
+        throw new Error(`${estrategia} nivel.favoritoBo5 valores no finitos: ${JSON.stringify(entrada)}`);
+      }
+    }
+    if (!Number.isFinite(nivel.varianzaExplicada.varBase) || !Number.isFinite(nivel.varianzaExplicada.varSinRuido)) {
+      throw new Error(`${estrategia} varianzaExplicada no contiene varianzas finitas`);
+    }
+
+    // Economía
+    for (const stat of ['mentalidad', 'hype']) {
+      for (const p of ['p10', 'p25', 'p50', 'p75', 'p90', 'pctMayorIgual90']) {
+        const val = economia[stat][p];
+        if (typeof val !== 'number' || !Number.isFinite(val)) {
+          throw new Error(`${estrategia} economia.${stat}.${p} no es finito: ${val}`);
+        }
+      }
+    }
+
+    // Longevidad
+    for (const p of ['mediana', 'p10', 'p90', 'pctMenosDe4Anios']) {
+      const val = longevidad.aniosCarreraPro[p];
+      if (val !== null && !Number.isFinite(val)) {
+        throw new Error(`${estrategia} longevidad.aniosCarreraPro.${p} no es finito: ${val}`);
+      }
+    }
+    if (!Number.isFinite(longevidad.pctTerminaEnLineaForzosa34)) {
+      throw new Error(`${estrategia} longevidad.pctTerminaEnLineaForzosa34 no es finito`);
+    }
+
+    // Ritmo
+    if (!Number.isFinite(ritmo.interrupcionesPorCarrera.mediana) || !Number.isFinite(ritmo.interrupcionesPorCarrera.p90)) {
+      throw new Error(`${estrategia} ritmo.interrupcionesPorCarrera no contiene percentiles finitos`);
+    }
+    if (!Number.isFinite(ritmo.interrupcionesPorSplitPro.p50) || !Number.isFinite(ritmo.interrupcionesPorSplitPro.p90)) {
+      throw new Error(`${estrategia} ritmo.interrupcionesPorSplitPro no contiene percentiles finitos`);
+    }
+    if (!Number.isFinite(ritmo.minijuegosPorCarrera.mediana)) {
+      throw new Error(`${estrategia} ritmo.minijuegosPorCarrera.mediana no es finito`);
+    }
+    if (!Number.isFinite(ritmo.tiempoMaquinaMin.mediana) || !Number.isFinite(ritmo.tiempoMaquinaMin.p90)) {
+      throw new Error(`${estrategia} ritmo.tiempoMaquinaMin no es finito`);
+    }
+  }
+});
+
+checkLento('K0 bots deterministas: misma seed y mismo bot producen estado final idéntico', () => {
+  // Trinquete: protege el determinismo estricto de los tres bots (criterio, azar, malas) de K0.
+  const semillas = [12, 45, 99];
+  for (const bot of ['criterio', 'azar', 'malas']) {
+    for (const seed of semillas) {
+      const r1 = correrCarreraSimulate(seed, 45, ESTRATEGIAS_K0[bot]);
+      const r2 = correrCarreraSimulate(seed, 45, ESTRATEGIAS_K0[bot]);
+
+      if (r1.state.finAnticipado !== r2.state.finAnticipado) {
+        throw new Error(`${bot} seed ${seed}: finAnticipado difiere (${r1.state.finAnticipado} vs ${r2.state.finAnticipado})`);
+      }
+      if (r1.state.player.splitCount !== r2.state.player.splitCount) {
+        throw new Error(`${bot} seed ${seed}: splitCount difiere (${r1.state.player.splitCount} vs ${r2.state.player.splitCount})`);
+      }
+      if (r1.state.player.soloqElo !== r2.state.player.soloqElo) {
+        throw new Error(`${bot} seed ${seed}: soloqElo difiere (${r1.state.player.soloqElo} vs ${r2.state.player.soloqElo})`);
+      }
+      if (r1.state.career.registro.titulos.length !== r2.state.career.registro.titulos.length) {
+        throw new Error(`${bot} seed ${seed}: titulos difiere (${r1.state.career.registro.titulos.length} vs ${r2.state.career.registro.titulos.length})`);
+      }
+    }
+  }
+});
+
+checkLento('K0 equilibrado intacto: el instrumento no altera el stream de RNG del motor', () => {
+  // Trinquete: garantiza que correrCarrera con equilibrado no consuma RNG extra comparado con avanzarSplitAuto directo.
+  for (let seed = 1; seed <= 5; seed += 1) {
+    const { state: stInstrumentado } = correrCarreraSimulate(seed, 30, ESTRATEGIAS_K0['equilibrado']);
+
+    const rngMotor = mulberry32(seed);
+    let stMotor = createInitialState(seed, rngMotor);
+    for (let split = 0; split < 30 && !stMotor.terminado; split += 1) {
+      stMotor = avanzarSplitAuto(stMotor, rngMotor).state;
+    }
+
+    if (stInstrumentado.finAnticipado !== stMotor.finAnticipado) {
+      throw new Error(`seed ${seed}: finAnticipado diverge (${stInstrumentado.finAnticipado} vs ${stMotor.finAnticipado})`);
+    }
+    if (stInstrumentado.player.splitCount !== stMotor.player.splitCount) {
+      throw new Error(`seed ${seed}: splitCount diverge (${stInstrumentado.player.splitCount} vs ${stMotor.player.splitCount})`);
+    }
+    if (stInstrumentado.player.soloqElo !== stMotor.player.soloqElo) {
+      throw new Error(`seed ${seed}: soloqElo diverge (${stInstrumentado.player.soloqElo} vs ${stMotor.player.soloqElo})`);
+    }
+    if (stInstrumentado.career.registro.titulos.length !== stMotor.career.registro.titulos.length) {
+      throw new Error(`seed ${seed}: titulos diverge (${stInstrumentado.career.registro.titulos.length} vs ${stMotor.career.registro.titulos.length})`);
+    }
+  }
+});
+
+checkLento('K0 huella: huella.js dos veces produce exactamente la misma huella', () => {
+  // Trinquete: protege la reproducibilidad de calcularHuella (40 seeds x 30 splits).
+  const h1 = calcularHuella(40, 30);
+  const h2 = calcularHuella(40, 30);
+  if (h1.hash !== h2.hash) {
+    throw new Error(`hash de huella diverge: ${h1.hash} vs ${h2.hash}`);
+  }
+  for (let i = 0; i < h1.lineas.length; i += 1) {
+    if (h1.lineas[i] !== h2.lineas[i]) {
+      throw new Error(`línea ${i + 1} de huella diverge: ${h1.lineas[i]} vs ${h2.lineas[i]}`);
+    }
+  }
+});
+
+checkLento('K0 agencia: la corrida mínima termina con tabla finita y pctInterrupcionesConPalanca válido', () => {
+  // Trinquete: protege el funcionamiento del contrafáctico de agencia (medirAgencia y analizarDatosAgencia).
+  const datos = medirAgencia({ carreras: 2, reps: 2, cuota: 1, splits: 20, desde: 1 });
+  const analisis = analizarDatosAgencia(datos, 10);
+
+  if (!Array.isArray(analisis.filas) || analisis.filas.length === 0) {
+    throw new Error('agencia no produjo filas de análisis');
+  }
+  if (typeof analisis.pctInterrupcionesConPalanca !== 'number' || !Number.isFinite(analisis.pctInterrupcionesConPalanca)) {
+    throw new Error(`pctInterrupcionesConPalanca inválido: ${analisis.pctInterrupcionesConPalanca}`);
+  }
+  if (analisis.pctInterrupcionesConPalanca < 0 || analisis.pctInterrupcionesConPalanca > 100) {
+    throw new Error(`pctInterrupcionesConPalanca fuera de rango [0, 100]: ${analisis.pctInterrupcionesConPalanca}`);
+  }
+  for (const fila of analisis.filas) {
+    if (!Number.isFinite(fila.palancaMediana) || !Number.isFinite(fila.pctSignificativo) || !Number.isFinite(fila.ruidoDentro)) {
+      throw new Error(`fila de agencia contiene valores no finitos: ${JSON.stringify(fila)}`);
+    }
+  }
+});
+
+checkLento('K0 ablación restaura BALANCE: después de correrLote las constantes de ruido quedan intactas', () => {
+  // Trinquete: asegura que la ablación en correrLote nunca contamine el objeto BALANCE global.
+  const r0 = BALANCE.rendimiento.ruidoRendimiento;
+  const f0 = BALANCE.temporada.ruidoFecha;
+  const rf0 = BALANCE.temporada.ruidoRivalFecha;
+  const m0 = BALANCE.serie.ruidoMapa;
+  const rs0 = BALANCE.serie.ruidoRivalSerie;
+
+  correrLote(5, 15, 'criterio');
+
+  if (
+    BALANCE.rendimiento.ruidoRendimiento !== r0
+    || BALANCE.temporada.ruidoFecha !== f0
+    || BALANCE.temporada.ruidoRivalFecha !== rf0
+    || BALANCE.serie.ruidoMapa !== m0
+    || BALANCE.serie.ruidoRivalSerie !== rs0
+  ) {
+    throw new Error('BALANCE no fue restaurado correctamente tras correrLote');
+  }
+});
+
 if (errores.length > 0) {
   console.error(`\n${errores.length} check(s) fallaron.`);
   process.exit(1);

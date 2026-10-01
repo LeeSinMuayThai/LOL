@@ -5,28 +5,20 @@ import { avanzarSplitAuto } from '../core/pipeline.js';
 import { calcularContexto } from '../core/contexto.js';
 import { nivelDelJugador } from '../core/ficha.js';
 import { candidatos } from '../systems/events.js';
+import { esCierreDeEdad } from '../systems/edadCierre.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 import { BALANCE } from '../data/balance.js';
+import { probabilidadDeGanar } from '../core/numeros.js';
 import { ESTRATEGIAS, NOMBRES_ESTRATEGIA } from './estrategias.js';
 
-// Fase 9E: además del estado final, la carrera se observa SPLIT A SPLIT.
-//
-// Hasta acá simulate.js solo miraba el estado final, y por eso 1.500 carreras
-// no vieron nunca el bug D25: una racha de 57 splits sin equipo es invisible
-// desde el final, que solo dice "sin equipo" una vez. `carrera` es lo que
-// pasó en el medio — es la mitad de la partida que el reporte no miraba.
-//
-// Fase J0 (AUDITORIA.md, "el instrumento" — PLAN.md §J0): un nivel más
-// arriba todavía. `carrera` mide si el motor te dejó jugar; `jugabilidad`
-// mide si lo que te dejó jugar fue una decisión real — exactamente lo que
-// 194 checks en verde no vieron el día que se jugó la carrera que abrió la
-// FASE J. Cada campo corresponde a una causa medida en §J.0: `splitsPro`/
-// `splitsConMainMuerto` a "siempre sale lo mismo"; `descartadosPorBisagra` al
-// filtro exclusivo de `conPrioridadDeBisagra`; `categoriasReveladas` a "dos
-// veces seguidas lo del meta"; `decisiones`/`draftsPorSerie` a "hacés un clic
-// y perdiste"; `poolMainMuerto` a "maestría 5, antes tenía más"; `nivelFinal`/
-// `jerarquiaFinal` a "es todo RNG, mi skill no importa".
-function correrCarrera(seed, splits, responder) {
+// Constante del reproductor (src/ui/reproductor.js, ESPERA_MS.x1): 700 ms por beat no técnico.
+export const DURACION_BEAT_MS = 700;
+
+// Máximo de carreras para el cálculo de varianza explicada por ablación.
+export const MAX_CORRIDAS_ABLACION = 200;
+
+// Fase 9E & J0 & K0: además del estado final, la carrera se observa SPLIT A SPLIT.
+export function correrCarrera(seed, splits, responder) {
   const rng = mulberry32(seed);
   let state = createInitialState(seed, rng);
 
@@ -44,14 +36,6 @@ function correrCarrera(seed, splits, responder) {
     jerarquiaFinal: null
   };
   let draftsSerieActual = 0;
-  // `seriesGanadas + seriesPerdidas` es el contador que de verdad se mueve
-  // una vez por serie cerrada, tenga o no drafts — no `state.serie.activa`
-  // antes/después del split: un bracket entero (hasta 20 mapas, varias
-  // rondas) puede abrirse y cerrarse DENTRO de un único `avanzarSplitAuto`
-  // (§J.0, "hacés un clic y perdiste"), así que revisar el contador solo una
-  // vez por split fusionaría todas esas series en un solo dato inflado. Se
-  // revisa en cada decisión resuelta (abajo) y al final de cada split, así
-  // que ninguna serie que cierre entre dos decisiones se pierde.
   let seriesVistas = state.career.registro.seriesGanadas + state.career.registro.seriesPerdidas;
 
   function marcarSeriesCerradas(st) {
@@ -59,10 +43,6 @@ function correrCarrera(seed, splits, responder) {
     if (seriesAhora <= seriesVistas) {
       return;
     }
-    // Si cerraron 2+ series sin una decisión en el medio (el caso de arriba),
-    // no hay cómo repartirles los drafts acumulados: se le asignan todos a
-    // la última y el resto quedan en 0 — nunca inventa drafts que no se
-    // vieron, y sigue contando cada serie por separado.
     for (let k = 1; k < seriesAhora - seriesVistas; k += 1) {
       jugabilidad.draftsPorSerie.push(0);
     }
@@ -71,13 +51,29 @@ function correrCarrera(seed, splits, responder) {
     seriesVistas = seriesAhora;
   }
 
-  // Envuelve la estrategia real (o `resolverAuto` si `responder` es null,
-  // el mismo default que ya usa `avanzarSplitAuto`) sin cambiar una sola
-  // respuesta: solo mira la decisión de pasada antes de contestarla, así
-  // el comportamiento y el consumo de `rng` quedan idénticos a hoy.
+  // Métricas del instrumento de Fase K0.
+  const observacion = {
+    decisionesPorTipo: {},
+    minijuegosCount: 0,
+    decisionesPorSplitPro: [],
+    splitsProData: [],
+    temporadasNumero1: 0
+  };
+
+  let decisionesEnSplitActual = 0;
+
   const responderInstrumentado = (sistema, st, decision, rngLocal) => {
     marcarSeriesCerradas(st);
     jugabilidad.decisiones += 1;
+    decisionesEnSplitActual += 1;
+
+    const tipo = `${sistema.id}:${decision.datos?.motivo ?? decision.presentacion ?? 'x'}`;
+    observacion.decisionesPorTipo[tipo] = (observacion.decisionesPorTipo[tipo] ?? 0) + 1;
+
+    if (decision.presentacion === 'minijuego' || decision.datos?.motivo === 'minijuego') {
+      observacion.minijuegosCount += 1;
+    }
+
     if (sistema.id === 'eventos' && decision.datos?.evento) {
       jugabilidad.categoriasReveladas.push(decision.datos.evento.categoria);
     }
@@ -90,10 +86,8 @@ function correrCarrera(seed, splits, responder) {
   };
 
   for (let i = 0; i < splits && !state.terminado; i += 1) {
-    // `candidatos`/`calcularContexto` son puros (T2: contexto siempre en
-    // vivo) — llamarlos acá no consume `rng` ni duplica lo que
-    // `elegirEvento` calcula adentro, así que mirar antes de avanzar no
-    // desincroniza el stream (T1) ni arriesga que las dos cuentas diverjan.
+    decisionesEnSplitActual = 0;
+
     if (state.phase === 'profesional') {
       const contexto = calcularContexto(state);
       jugabilidad.splitsPro += 1;
@@ -116,6 +110,33 @@ function correrCarrera(seed, splits, responder) {
       continue;
     }
     carrera.splitsPro += 1;
+    observacion.decisionesPorSplitPro.push(decisionesEnSplitActual);
+
+    // Registro de split pro para K0 (economía y nivel).
+    const mediaLiga = calcularMediaNivelLiga(state);
+    const nivel = nivelDelJugador(state);
+    const companeros = state.career.companeros ?? [];
+    const companerosNivel = companeros.length > 0
+      ? companeros.reduce((acc, c) => acc + c.nivel, 0) / companeros.length
+      : mediaLiga;
+
+    let posNorm = null;
+    if (state.career.posicion && state.career.temporada?.tabla?.length > 1) {
+      posNorm = 1 - (state.career.posicion - 1) / (state.career.temporada.tabla.length - 1);
+    }
+
+    observacion.splitsProData.push({
+      mentalidad: state.player.stats.mentalidad,
+      hype: state.player.stats.hype,
+      posNorm,
+      nivel,
+      nivelRelativoJugador: nivel - mediaLiga,
+      nivelRelativoCompaneros: companerosNivel - mediaLiga
+    });
+
+    if (esCierreDeEdad(state) && state.flags.rankMundialActual === 1) {
+      observacion.temporadasNumero1 += 1;
+    }
 
     if (state.career.currentOrg) {
       carrera.splitsConEquipo += 1;
@@ -125,15 +146,11 @@ function correrCarrera(seed, splits, responder) {
       carrera.maxRachaSinEquipo = Math.max(carrera.maxRachaSinEquipo, rachaSinEquipo);
     }
 
-    // El tier es 1 arriba y 3 abajo: el máximo alcanzado es el MENOR número.
     if (state.career.tier !== null && (carrera.tierMaximo === null || state.career.tier < carrera.tierMaximo)) {
       carrera.tierMaximo = state.career.tier;
     }
   }
 
-  // Varada: profesional, sin org y sin tier. Ningún sistema la puede rescatar
-  // —`competitivo` se guarda detrás del tier, `mercado` detrás de la liga—,
-  // así que no es "estar libre": es no tener juego.
   carrera.varada = state.phase === 'profesional' && !state.career.currentOrg && state.career.tier === null;
 
   jugabilidad.poolMainMuerto = state.flags.eventosVistos?.pool_main_muerto ?? 0;
@@ -141,7 +158,166 @@ function correrCarrera(seed, splits, responder) {
     ? Math.min(...state.player.championPool.map((campeon) => campeon.mastery))
     : null;
 
-  return { state, carrera, jugabilidad };
+  const logsNoTecnicos = state.logs.filter((log) => !log.tecnico).length;
+  observacion.tiempoMaquinaMin = (logsNoTecnicos * DURACION_BEAT_MS) / (1000 * 60);
+
+  return { state, carrera, jugabilidad, observacion };
+}
+
+// Calcula la media de nivel de los jugadores de la liga actual del jugador.
+export function calcularMediaNivelLiga(state) {
+  const orgActual = state.career.currentOrg;
+  const ligaId = state.career.liga;
+  const ligas = state.mundo.ligas ?? [];
+  const liga = ligas.find((l) => l.id === ligaId)
+    ?? ligas.find((l) => l.orgs?.some((o) => o.nombre === orgActual));
+
+  if (!liga) {
+    return BALANCE.mercado.nivelLigaPorDefecto;
+  }
+
+  const planteles = state.mundo.planteles ?? {};
+  const niveles = [];
+  for (const org of liga.orgs ?? []) {
+    const plantel = planteles[org.nombre];
+    if (plantel) {
+      for (const jugador of Object.values(plantel)) {
+        if (typeof jugador?.nivel === 'number') {
+          niveles.push(jugador.nivel);
+        }
+      }
+    }
+  }
+
+  if (niveles.length > 0) {
+    return niveles.reduce((s, v) => s + v, 0) / niveles.length;
+  }
+
+  return BALANCE.mercado.nivelLigaPorDefecto;
+}
+
+// Fase K0 (PLAN.md §K.3a): cálculo analítico cerrado de Bo5 para Δ de fuerza.
+// Nota: K2 va a reemplazar estos sigmas fijos por `ruidoEfectivo(state)`.
+// El 80% objetivo de K.3a es para Δ ≈ 10.
+export function calcularFavoritoBo5(
+  deltas = [0, 2, 4, 6, 8, 10, 12, 15],
+  sigmaPropio = BALANCE.serie.ruidoMapa,
+  sigmaRival = BALANCE.serie.ruidoRivalSerie
+) {
+  return deltas.map((delta) => {
+    const pMapa = probabilidadDeGanar(delta, 0, sigmaPropio, sigmaRival);
+    const q = 1 - pMapa;
+    // Fórmula binomial/negativa para mejor de 5 (primero a 3):
+    // 3-0: p^3
+    // 3-1: 3 * p^3 * q
+    // 3-2: 6 * p^3 * q^2
+    const pSerieBo5 = (pMapa ** 3) * (1 + 3 * q + 6 * (q ** 2));
+    return {
+      delta,
+      pMapa: Number(pMapa.toFixed(4)),
+      pSerieBo5: Number(pSerieBo5.toFixed(4))
+    };
+  });
+}
+
+export function varianza(valores) {
+  if (!valores || valores.length < 2) return 0;
+  const m = promedio(valores);
+  let sumaCuadrados = 0;
+  for (const v of valores) {
+    sumaCuadrados += (v - m) ** 2;
+  }
+  return sumaCuadrados / valores.length;
+}
+
+// Regresión lineal multivariada con 2 regresores a mano (OLS sin librerías).
+// Y = b0 + b1*X1 + b2*X2
+export function regresionLineal2Regresores(ys, xs1, xs2) {
+  const n = ys.length;
+  if (n < 30) {
+    return { r2NivelYEquipo: null, r2SoloNivel: null, r2SoloEquipo: null };
+  }
+  const my = promedio(ys);
+  const mx1 = promedio(xs1);
+  const mx2 = promedio(xs2);
+
+  let s11 = 0;
+  let s22 = 0;
+  let s12 = 0;
+  let s1y = 0;
+  let s2y = 0;
+  let sstot = 0;
+
+  for (let i = 0; i < n; i += 1) {
+    const y = ys[i] - my;
+    const x1 = xs1[i] - mx1;
+    const x2 = xs2[i] - mx2;
+
+    sstot += y * y;
+    s11 += x1 * x1;
+    s22 += x2 * x2;
+    s12 += x1 * x2;
+    s1y += x1 * y;
+    s2y += x2 * y;
+  }
+
+  if (sstot <= 0) {
+    return { r2NivelYEquipo: 0, r2SoloNivel: 0, r2SoloEquipo: 0 };
+  }
+
+  const det = s11 * s22 - s12 * s12;
+  let r2NivelYEquipo = null;
+  if (Math.abs(det) > 1e-12) {
+    const b1 = (s22 * s1y - s12 * s2y) / det;
+    const b2 = (s11 * s2y - s12 * s1y) / det;
+    const ssreg = b1 * s1y + b2 * s2y;
+    r2NivelYEquipo = Number(Math.max(0, Math.min(1, ssreg / sstot)).toFixed(3));
+  }
+
+  const r2SoloNivel = s11 > 0 ? Number(Math.max(0, Math.min(1, (s1y * s1y) / (s11 * sstot))).toFixed(3)) : null;
+  const r2SoloEquipo = s22 > 0 ? Number(Math.max(0, Math.min(1, (s2y * s2y) / (s22 * sstot))).toFixed(3)) : null;
+
+  return { r2NivelYEquipo, r2SoloNivel, r2SoloEquipo };
+}
+
+function correrSplitsSinRuido(corridasAblacion, splits, responder) {
+  const overrides = {
+    rendimiento: BALANCE.rendimiento.ruidoRendimiento,
+    fecha: BALANCE.temporada.ruidoFecha,
+    rivalFecha: BALANCE.temporada.ruidoRivalFecha,
+    mapa: BALANCE.serie.ruidoMapa,
+    rivalSerie: BALANCE.serie.ruidoRivalSerie
+  };
+
+  const ysSinRuido = [];
+
+  try {
+    BALANCE.rendimiento.ruidoRendimiento = 0;
+    BALANCE.temporada.ruidoFecha = 0;
+    BALANCE.temporada.ruidoRivalFecha = 0;
+    BALANCE.serie.ruidoMapa = 0;
+    BALANCE.serie.ruidoRivalSerie = 0;
+
+    for (let seed = 1; seed <= corridasAblacion; seed += 1) {
+      const rng = mulberry32(seed);
+      let state = createInitialState(seed, rng);
+      for (let split = 0; split < splits && !state.terminado; split += 1) {
+        state = avanzarSplitAuto(state, rng, responder ?? undefined).state;
+        if (state.phase === 'profesional' && state.career.posicion && state.career.temporada?.tabla?.length > 1) {
+          const posNorm = 1 - (state.career.posicion - 1) / (state.career.temporada.tabla.length - 1);
+          ysSinRuido.push(posNorm);
+        }
+      }
+    }
+  } finally {
+    BALANCE.rendimiento.ruidoRendimiento = overrides.rendimiento;
+    BALANCE.temporada.ruidoFecha = overrides.fecha;
+    BALANCE.temporada.ruidoRivalFecha = overrides.rivalFecha;
+    BALANCE.serie.ruidoMapa = overrides.mapa;
+    BALANCE.serie.ruidoRivalSerie = overrides.rivalSerie;
+  }
+
+  return ysSinRuido;
 }
 
 function reporteDetallado(state, seed) {
@@ -214,9 +390,6 @@ function percentil(valores, p) {
   return ordenados[indice];
 }
 
-// Mismo cálculo que `pearson9Mi` de `validate.js` (fase 9Mi): coeficiente de
-// Pearson simple, sin librería. `null` con menos de 30 pares — con menos, el
-// coeficiente es puro ruido de muestra.
 function pearson(xs, ys) {
   const n = xs.length;
   if (n < 30) return null;
@@ -231,12 +404,9 @@ function pearson(xs, ys) {
     syy += (ys[i] - my) ** 2;
   }
   const denominador = Math.sqrt(sxx * syy);
-  return denominador > 0 ? sxy / denominador : null;
+  return denominador > 0 ? Number((sxy / denominador).toFixed(3)) : null;
 }
 
-// Fracción de pares consecutivos que repiten valor — usado para "dos veces
-// seguidas lo del meta" (§J.0): cuántos eventos revelados seguidos comparten
-// `categoria` con el anterior.
 function pctParesConsecutivosIguales(lista) {
   if (lista.length < 2) return null;
   let iguales = 0;
@@ -246,17 +416,6 @@ function pctParesConsecutivosIguales(lista) {
   return iguales / (lista.length - 1);
 }
 
-// Análisis estático del catálogo (fase J0): cero simulación, cero `rng` — es
-// la mitad de §J.0 que ya está en los datos, no en el comportamiento. Cada
-// campo corresponde a una causa medida: `pctEfectosMentalidadHype`/
-// `sigmaEfectoTipico` a "las opciones no afectan nada" (mentalidad/hype no se
-// leen en `fuerza.js`, así que un efecto típico se pierde contra
-// `ruidoRendimiento`); `pctEfectosDeRolQueSonDeCurva`/`vidaMediaPorCurva` a
-// que la curva de `atributos.js` converge al objetivo biológico y se come
-// cualquier bulto que no sea permanente; `pctOutcomesConModificadores` a que
-// la promesa de CONCEPTO §8 ("tus stats corren esos pesos") hoy se cumple en
-// una fracción chica del catálogo. Memoizado: el catálogo no cambia entre
-// llamadas de la misma corrida.
 let _catalogo = null;
 export function analizarCatalogo() {
   if (_catalogo) return _catalogo;
@@ -316,11 +475,6 @@ export function analizarCatalogo() {
     pctEfectosDeRolQueSonDeCurva: efectosDeRol > 0 ? efectosDeCurva / efectosDeRol : null,
     outcomesTotal,
     pctOutcomesConModificadores: outcomesTotal > 0 ? outcomesConModificadores / outcomesTotal : null,
-    // Analítico, no medido: el objetivo biológico (`nivelDeCurva`) es una
-    // función pura de edad/oculto/splitsJugados, y `moverStatsDeCurva`
-    // converge hacia él con una fracción fija (`velocidad`) por split — la
-    // vida media de CUALQUIER bulto que no toque `objetivo` sale directo de
-    // esa fracción, sin necesidad (ni ruido de) simular.
     vidaMediaPorCurva,
     retencion4SplitsPorCurva
   };
@@ -332,14 +486,16 @@ export function correrLote(corridas, splits, estrategia) {
   const resultados = [];
   const carreras = [];
   const jugabilidades = [];
+  const observaciones = [];
   let crashes = 0;
 
   for (let seed = 1; seed <= corridas; seed += 1) {
     try {
-      const { state, carrera, jugabilidad } = correrCarrera(seed, splits, responder);
+      const { state, carrera, jugabilidad, observacion } = correrCarrera(seed, splits, responder);
       resultados.push(state);
       carreras.push(carrera);
       jugabilidades.push(jugabilidad);
+      observaciones.push(observacion);
     } catch (error) {
       crashes += 1;
       console.error(`Crash en seed ${seed} (${estrategia}): ${error.message}`);
@@ -349,6 +505,273 @@ export function correrLote(corridas, splits, estrategia) {
   const total = resultados.length;
   const llegaronAPro = resultados.filter((r) => r.splitFichaje !== null);
 
+  // --- Bloque EMBUDO (§K.3b) ---
+  const noLlegaAProCount = resultados.filter((r) => r.splitFichaje === null).length;
+  const estancadoT2T3Count = resultados.filter((r, idx) => r.splitFichaje !== null && (carreras[idx].tierMaximo === null || carreras[idx].tierMaximo >= 2)).length;
+  const llegaATier1Count = resultados.filter((r, idx) => carreras[idx].tierMaximo === 1).length;
+
+  // En el motor actual, registro.titulos acumula campeonatos domésticos de liga (systems/rendimiento.js, systems/serie.js).
+  // Los torneos internacionales se registran por separado en registro.internacionales.
+  const ganaTituloDomesticoCount = resultados.filter((r) => r.career.registro.titulos.length >= 1).length;
+  const top20Count = resultados.filter((r) => (r.career.registro.picos.rankMundial ?? 0) > 0).length;
+
+  // Proxy de Mundial antes de K5: haber participado de un torneo internacional con resultado === 'buen_papel'.
+  const ganaMundialProxyCount = resultados.filter((r) => (
+    r.career.registro.internacionales.some((intl) => intl.resultado === 'buen_papel')
+  )).length;
+
+  const carrerasConAlMenosUnMundial = resultados.filter((r) => (
+    r.career.registro.internacionales.some((intl) => intl.resultado === 'buen_papel')
+  ));
+  const carrerasConDosOMasMundiales = carrerasConAlMenosUnMundial.filter((r) => (
+    r.career.registro.internacionales.filter((intl) => intl.resultado === 'buen_papel').length >= 2
+  ));
+
+  const pOtroMundialDadoUno = carrerasConAlMenosUnMundial.length >= 30
+    ? {
+        p: Number((carrerasConDosOMasMundiales.length / carrerasConAlMenosUnMundial.length).toFixed(3)),
+        n: carrerasConAlMenosUnMundial.length
+      }
+    : null;
+
+  // nuevoFaker = >= 2 mundiales (proxy) o #1 del mundo en >= 3 temporadas.
+  const nuevoFakerCount = resultados.filter((r, idx) => {
+    const mundiales = r.career.registro.internacionales.filter((intl) => intl.resultado === 'buen_papel').length;
+    const temporadas1 = observaciones[idx].temporadasNumero1;
+    return mundiales >= 2 || temporadas1 >= 3;
+  }).length;
+
+  const embudo = {
+    noLlegaAPro: Number(((noLlegaAProCount / total) * 100).toFixed(1)),
+    estancadoT2T3: Number(((estancadoT2T3Count / total) * 100).toFixed(1)),
+    llegaATier1: Number(((llegaATier1Count / total) * 100).toFixed(1)),
+    ganaTituloDomestico: Number(((ganaTituloDomesticoCount / total) * 100).toFixed(1)),
+    top20: Number(((top20Count / total) * 100).toFixed(1)),
+    top20DeTier1: llegaATier1Count > 0 ? Number(((top20Count / llegaATier1Count) * 100).toFixed(1)) : 0,
+    ganaMundial: Number(((ganaMundialProxyCount / total) * 100).toFixed(1)),
+    proxyAntesDeK5: true,
+    nuevoFaker: Number(((nuevoFakerCount / total) * 100).toFixed(1)),
+    pOtroMundialDadoUno: pOtroMundialDadoUno ? pOtroMundialDadoUno.p : null,
+    pOtroMundialN: carrerasConAlMenosUnMundial.length
+  };
+
+  // --- Bloque NIVEL (§K.3a) ---
+  const splitsProValidos = observaciones.flatMap((o) => o.splitsProData).filter((d) => d.posNorm !== null);
+  const rNivelPosicionMismaLiga = pearson(
+    splitsProValidos.map((d) => d.nivelRelativoJugador),
+    splitsProValidos.map((d) => d.posNorm)
+  );
+  const rNivelPosicionBruto = pearson(
+    splitsProValidos.map((d) => d.nivel),
+    splitsProValidos.map((d) => d.posNorm)
+  );
+
+  const favoritoBo5 = calcularFavoritoBo5();
+
+  // Varianza explicada por ablación sobre las primeras corridasAblacion carreras.
+  const corridasAblacion = Math.min(total, MAX_CORRIDAS_ABLACION);
+  const splitsProAblacionBase = observaciones.slice(0, corridasAblacion).flatMap((o) => o.splitsProData).filter((d) => d.posNorm !== null);
+  const ysBase = splitsProAblacionBase.map((d) => d.posNorm);
+  const xs1Base = splitsProAblacionBase.map((d) => d.nivelRelativoJugador);
+  const xs2Base = splitsProAblacionBase.map((d) => d.nivelRelativoCompaneros);
+
+  const varBase = varianza(ysBase);
+  const ysSinRuido = correrSplitsSinRuido(corridasAblacion, splits, responder);
+  const varSinRuido = varianza(ysSinRuido);
+  const ruidoPuro = varBase > 0 ? Number((1 - varSinRuido / varBase).toFixed(3)) : null;
+
+  const { r2NivelYEquipo, r2SoloNivel, r2SoloEquipo } = regresionLineal2Regresores(ysBase, xs1Base, xs2Base);
+
+  const varianzaExplicada = {
+    ruidoPuro,
+    r2NivelYEquipo,
+    r2SoloNivel,
+    r2SoloEquipo,
+    varBase: Number(varBase.toFixed(4)),
+    varSinRuido: Number(varSinRuido.toFixed(4)),
+    corridasAblacion,
+    nSplitsBase: ysBase.length,
+    nSplitsSinRuido: ysSinRuido.length
+  };
+
+  const nivel = {
+    rNivelPosicionMismaLiga,
+    rNivelPosicionBruto,
+    favoritoBo5,
+    varianzaExplicada
+  };
+
+  // --- Bloque ECONOMÍA (§K.3c) ---
+  const todosSplitsPro = observaciones.flatMap((o) => o.splitsProData);
+  const mentalidadesPro = todosSplitsPro.map((d) => d.mentalidad);
+  const hypesPro = todosSplitsPro.map((d) => d.hype);
+
+  const economia = {
+    mentalidad: {
+      p10: percentil(mentalidadesPro, 0.1),
+      p25: percentil(mentalidadesPro, 0.25),
+      p50: percentil(mentalidadesPro, 0.5),
+      p75: percentil(mentalidadesPro, 0.75),
+      p90: percentil(mentalidadesPro, 0.9),
+      pctMayorIgual90: mentalidadesPro.length > 0
+        ? Number(((mentalidadesPro.filter((m) => m >= 90).length / mentalidadesPro.length) * 100).toFixed(1))
+        : null
+    },
+    hype: {
+      p10: percentil(hypesPro, 0.1),
+      p25: percentil(hypesPro, 0.25),
+      p50: percentil(hypesPro, 0.5),
+      p75: percentil(hypesPro, 0.75),
+      p90: percentil(hypesPro, 0.9),
+      pctMayorIgual90: hypesPro.length > 0
+        ? Number(((hypesPro.filter((h) => h >= 90).length / hypesPro.length) * 100).toFixed(1))
+        : null
+    }
+  };
+
+  // --- Bloque LONGEVIDAD (§K.3b) ---
+  const aniosPro = llegaronAPro.map((r) => (r.player.splitCount - r.splitFichaje) / 3);
+  const forzoso34Count = llegaronAPro.filter((r) => r.age >= BALANCE.retiro.edadRetiroForzoso).length;
+
+  const longevidad = {
+    aniosCarreraPro: {
+      mediana: mediana(aniosPro),
+      p10: percentil(aniosPro, 0.1),
+      p90: percentil(aniosPro, 0.9),
+      pctMenosDe4Anios: aniosPro.length > 0
+        ? Number(((aniosPro.filter((a) => a < 4).length / aniosPro.length) * 100).toFixed(1))
+        : null
+    },
+    pctTerminaEnLineaForzosa34: llegaronAPro.length > 0
+      ? Number(((forzoso34Count / llegaronAPro.length) * 100).toFixed(1))
+      : 0,
+    desgloseFinAnticipado: porcentajes(
+      conteo(llegaronAPro, (r) => r.finAnticipado ?? 'retiro_normal'),
+      llegaronAPro.length || 1
+    )
+  };
+
+  // --- Bloque RITMO (§K.3c) ---
+  const decisionesPorCarrera = jugabilidades.map((j) => j.decisiones);
+  const todasDecisionesPorSplitPro = observaciones.flatMap((o) => o.decisionesPorSplitPro);
+  const minijuegosPorCarrera = observaciones.map((o) => o.minijuegosCount);
+  const tiemposMaquinaMin = observaciones.map((o) => o.tiempoMaquinaMin);
+
+  const decisionesPorTipoAcum = {};
+  for (const o of observaciones) {
+    for (const [k, v] of Object.entries(o.decisionesPorTipo)) {
+      decisionesPorTipoAcum[k] = (decisionesPorTipoAcum[k] ?? 0) + v;
+    }
+  }
+  const totalDecisionesTodas = Object.values(decisionesPorTipoAcum).reduce((a, b) => a + b, 0);
+
+  const ritmo = {
+    interrupcionesPorCarrera: {
+      min: estadisticas(decisionesPorCarrera).min,
+      max: estadisticas(decisionesPorCarrera).max,
+      promedio: estadisticas(decisionesPorCarrera).promedio,
+      mediana: mediana(decisionesPorCarrera),
+      p90: percentil(decisionesPorCarrera, 0.9)
+    },
+    interrupcionesPorSplitPro: {
+      p50: mediana(todasDecisionesPorSplitPro),
+      p90: percentil(todasDecisionesPorSplitPro, 0.9),
+      max: todasDecisionesPorSplitPro.length > 0 ? Math.max(...todasDecisionesPorSplitPro) : 0,
+      pctSplitsConMasDe2: todasDecisionesPorSplitPro.length > 0
+        ? Number(((todasDecisionesPorSplitPro.filter((d) => d > 2).length / todasDecisionesPorSplitPro.length) * 100).toFixed(1))
+        : 0,
+      // Nota metodológica: en el motor actual, los playoffs e internacionales se resuelven
+      // dentro de los mismos splits regulares o de cierre, sin un estado de split dedicado.
+      splitsPlayoffsInternacionalSeparados: null
+    },
+    desglosePorTipo: Object.entries(decisionesPorTipoAcum)
+      .sort((a, b) => b[1] - a[1])
+      .map(([tipo, cant]) => ({
+        tipo,
+        cantidadPorCarrera: Number((cant / total).toFixed(1)),
+        pctDelTotal: totalDecisionesTodas > 0 ? Number(((cant / totalDecisionesTodas) * 100).toFixed(1)) : 0
+      })),
+    minijuegosPorCarrera: {
+      promedio: promedio(minijuegosPorCarrera) !== null ? Number(promedio(minijuegosPorCarrera).toFixed(2)) : null,
+      mediana: mediana(minijuegosPorCarrera)
+    },
+    // Beats * 700ms (src/ui/reproductor.js): tiempo en minutos que el reproductor web toma
+    // para emitir cada log no técnico a velocidad 1x (DURACION_BEAT_MS = 700).
+    tiempoMaquinaMin: {
+      mediana: mediana(tiemposMaquinaMin) !== null ? Number(mediana(tiemposMaquinaMin).toFixed(2)) : null,
+      p90: percentil(tiemposMaquinaMin, 0.9) !== null ? Number(percentil(tiemposMaquinaMin, 0.9).toFixed(2)) : null
+    }
+  };
+
+  // --- Bloque POR REGIÓN ---
+  const indicesPorRegion = {};
+  resultados.forEach((r, idx) => {
+    const reg = r.mundo.regionOrigen ?? 'Desconocida';
+    indicesPorRegion[reg] = indicesPorRegion[reg] ?? [];
+    indicesPorRegion[reg].push(idx);
+  });
+
+  const porRegion = {};
+  for (const [region, indices] of Object.entries(indicesPorRegion)) {
+    const nReg = indices.length;
+    const resReg = indices.map((i) => resultados[i]);
+    const carReg = indices.map((i) => carreras[i]);
+    const obsReg = indices.map((i) => observaciones[i]);
+    const proReg = resReg.filter((r) => r.splitFichaje !== null);
+
+    const noProCount = resReg.filter((r) => r.splitFichaje === null).length;
+    const estCount = resReg.filter((r, i) => r.splitFichaje !== null && (carReg[i].tierMaximo === null || carReg[i].tierMaximo >= 2)).length;
+    const t1Count = resReg.filter((r, i) => carReg[i].tierMaximo === 1).length;
+    const titCount = resReg.filter((r) => r.career.registro.titulos.length >= 1).length;
+    const top20RCount = resReg.filter((r) => (r.career.registro.picos.rankMundial ?? 0) > 0).length;
+    const mundRCount = resReg.filter((r) => (
+      r.career.registro.internacionales.some((intl) => intl.resultado === 'buen_papel')
+    )).length;
+    const fakerRCount = resReg.filter((r, i) => {
+      const mund = r.career.registro.internacionales.filter((intl) => intl.resultado === 'buen_papel').length;
+      return mund >= 2 || obsReg[i].temporadasNumero1 >= 3;
+    }).length;
+
+    const aniosR = proReg.map((r) => (r.player.splitCount - r.splitFichaje) / 3);
+    const forz34R = proReg.filter((r) => r.age >= BALANCE.retiro.edadRetiroForzoso).length;
+
+    const splitsValReg = obsReg.flatMap((o) => o.splitsProData).filter((d) => d.posNorm !== null);
+
+    const decsCarreraReg = indices.map((i) => jugabilidades[i].decisiones);
+    const decsSplitProReg = obsReg.flatMap((o) => o.decisionesPorSplitPro);
+    const minisReg = obsReg.map((o) => o.minijuegosCount);
+    const tiempoReg = obsReg.map((o) => o.tiempoMaquinaMin);
+
+    porRegion[region] = {
+      totalCarreras: nReg,
+      embudo: {
+        noLlegaAPro: Number(((noProCount / nReg) * 100).toFixed(1)),
+        estancadoT2T3: Number(((estCount / nReg) * 100).toFixed(1)),
+        llegaATier1: Number(((t1Count / nReg) * 100).toFixed(1)),
+        ganaTituloDomestico: Number(((titCount / nReg) * 100).toFixed(1)),
+        top20: Number(((top20RCount / nReg) * 100).toFixed(1)),
+        ganaMundial: Number(((mundRCount / nReg) * 100).toFixed(1)),
+        nuevoFaker: Number(((fakerRCount / nReg) * 100).toFixed(1))
+      },
+      longevidad: {
+        aniosCarreraProMediana: mediana(aniosR),
+        p10: percentil(aniosR, 0.1),
+        p90: percentil(aniosR, 0.9),
+        pctTerminaEnLineaForzosa34: proReg.length > 0 ? Number(((forz34R / proReg.length) * 100).toFixed(1)) : 0
+      },
+      nivel: {
+        rNivelPosicionMismaLiga: pearson(splitsValReg.map((d) => d.nivelRelativoJugador), splitsValReg.map((d) => d.posNorm)),
+        rNivelPosicionBruto: pearson(splitsValReg.map((d) => d.nivel), splitsValReg.map((d) => d.posNorm))
+      },
+      ritmo: {
+        interrupcionesPorCarreraMediana: mediana(decsCarreraReg),
+        interrupcionesPorSplitProMediana: mediana(decsSplitProReg),
+        minijuegosPorCarreraMediana: mediana(minisReg),
+        tiempoMaquinaMinMediana: mediana(tiempoReg) !== null ? Number(mediana(tiempoReg).toFixed(2)) : null
+      }
+    };
+  }
+
   return {
     estrategia,
     corridas,
@@ -357,9 +780,6 @@ export function correrLote(corridas, splits, estrategia) {
     finales: porcentajes(conteo(resultados, (r) => r.finAnticipado ?? (r.phase === 'amateur' ? 'sigue_amateur' : 'en_carrera')), total),
     llegaronAPro: `${llegaronAPro.length} (${((llegaronAPro.length / total) * 100).toFixed(1)}%)`,
     splitFichaje: estadisticas(llegaronAPro.map((r) => r.splitFichaje)),
-    // Fase 9E: la mitad de la partida que este reporte no miraba. Sin esto,
-    // 1.500 carreras podían salir "sanas" con el 47,5% de los splits
-    // profesionales jugándose sin equipo (bug D25).
     carrera: (() => {
       const conPro = carreras.filter((c) => c.splitsPro > 0);
       const splitsPro = conPro.reduce((s, c) => s + c.splitsPro, 0);
@@ -385,10 +805,6 @@ export function correrLote(corridas, splits, estrategia) {
     mecanica: estadisticas(resultados.map((r) => r.player.stats.mecanica)),
     mentalidad: estadisticas(resultados.map((r) => r.player.stats.mentalidad)),
     hype: estadisticas(resultados.map((r) => r.player.stats.hype)),
-    // Fase J0: el instrumento que 194 checks en verde no tenían — ver el
-    // comentario de `correrCarrera`. `catalogo` es estático (no depende de
-    // `estrategia` ni de las carreras corridas, pero viaja en cada reporte
-    // para que quien lea un solo bloque `todas` no tenga que cruzar con otro).
     jugabilidad: (() => {
       const catalogo = analizarCatalogo();
       const conSplitsPro = jugabilidades.filter((j) => j.splitsPro > 0);
@@ -424,14 +840,18 @@ export function correrLote(corridas, splits, estrategia) {
         decisionesPorCarrera: estadisticas(jugabilidades.map((j) => j.decisiones)),
         maestriaMinimaPoolAlFinal: estadisticas(jugabilidades.map((j) => j.maestriaMinimaPool).filter((v) => v !== null))
       };
-    })()
+    })(),
+
+    // Nuevos bloques instrumentados de la Fase K0
+    embudo,
+    nivel,
+    economia,
+    longevidad,
+    ritmo,
+    porRegion
   };
 }
 
-// Fase J0 (AUDITORIA.md AUD-2): guardado detrás de `import.meta.url` para
-// que `validate.js` pueda importar `correrLote`/`analizarCatalogo` en
-// proceso (mismo criterio que `estrategias.js`) sin que el sólo hecho de
-// importar dispare una corrida completa por `process.argv`.
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const corridas = Number(process.argv[2] || 1);
   const splits = Number(process.argv[3] || 15);
@@ -444,8 +864,8 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
 
   if (corridas <= 1) {
     const seed = 42;
-    const { state, carrera, jugabilidad } = correrCarrera(seed, splits, ESTRATEGIAS[estrategia]);
-    console.log(JSON.stringify({ ...reporteDetallado(state, seed), carrera, jugabilidad }, null, 2));
+    const { state, carrera, jugabilidad, observacion } = correrCarrera(seed, splits, ESTRATEGIAS[estrategia]);
+    console.log(JSON.stringify({ ...reporteDetallado(state, seed), carrera, jugabilidad, observacion }, null, 2));
   } else if (estrategia === 'todas') {
     console.log(JSON.stringify(NOMBRES_ESTRATEGIA.map((nombre) => correrLote(corridas, splits, nombre)), null, 2));
   } else {
