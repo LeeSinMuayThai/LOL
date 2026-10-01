@@ -3,6 +3,7 @@ import { crearLog } from '../core/log.js';
 import { clamp } from '../core/numeros.js';
 import { deseoPorCampeon } from '../core/ajusteMeta.js';
 import { boostDelPool } from '../core/regimen.js';
+import { factorOxido, pronosticoDeOxido, ultimoSplitJugadoDe } from '../core/pool.js';
 import { BALANCE } from '../data/balance.js';
 
 export const id = 'campeones';
@@ -43,6 +44,7 @@ function campeonDelSplit(state, rng) {
 
 function moverMaestrias(state, jugado, rng) {
   const c = BALANCE.campeones;
+  const factor = factorOxido(state.player.championPool.length);
 
   return state.player.championPool.map((campeon) => {
     if (campeon.name === jugado.name) {
@@ -52,14 +54,23 @@ function moverMaestrias(state, jugado, rng) {
       return {
         ...campeon,
         mastery: clamp(campeon.mastery + ganancia, c.maestriaMinima, BALANCE.stats.max),
-        partidas: campeon.partidas + 1
+        partidas: campeon.partidas + 1,
+        ultimoSplitJugado: state.player.splitCount
       };
     }
 
-    // Los campeones que no jugas pierden maestria. Sin esto se podrian mantener
-    // diez a punto y el pool dejaria de ser una eleccion.
-    const oxido = Math.max(0, gauss(c.maestriaDecaimiento, c.maestriaDecaimientoSpread, rng));
-    return { ...campeon, mastery: clamp(campeon.mastery - oxido, c.maestriaMinima, BALANCE.stats.max) };
+    // Los campeones que no jugas tiran siempre su gauss para no correr el
+    // stream de RNG (T1); en gracia el óxido aplicado es 0. La regla de la
+    // gracia vive en `core/pool.js`, la misma que la ficha usa para prometer.
+    const tiradaOxido = Math.max(0, gauss(c.maestriaDecaimiento, c.maestriaDecaimientoSpread, rng));
+    const { enGracia } = pronosticoDeOxido(campeon, state.player.splitCount);
+    const oxido = enGracia ? 0 : tiradaOxido * factor;
+
+    return {
+      ...campeon,
+      mastery: clamp(campeon.mastery - oxido, c.maestriaMinima, BALANCE.stats.max),
+      ultimoSplitJugado: ultimoSplitJugadoDe(campeon, state.player.splitCount)
+    };
   });
 }
 

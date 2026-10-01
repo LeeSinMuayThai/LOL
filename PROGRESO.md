@@ -117,6 +117,89 @@ guardado nunca subió, todas las ofertas salen "BOMBAZO" siendo agente libre (`m
 de determinismo y `simulate.js` no cambian. `CLAUDE.md` actualiza la fila de `AUDITORIA.md`. `PLAN.md`
 no se tocó: el plan sale de las respuestas a D-A..D-D.
 
+### 2026-09-27 — FASE J, J3: el pool deja de pudrirse (PLAN.md §J3)
+
+Primera subfase de motor de FASE J (tras el instrumento J0). Resuelve que los campeones no jugados
+se pudran de inmediato hasta el piso de 5: introduce gracia antes del decaimiento, escala el óxido
+inverso al tamaño del pool y sube el piso general de maestría de 5 a 18 ("lo sabés jugar aunque no
+lo toques").
+
+**Motor y gracia:**
+- `campeon.ultimoSplitJugado`: campo número obligatorio en cada entrada de pool (T4: nunca `null`),
+  inicializado por `entradaDePool(campeon, mastery, split)` que ahora exige `typeof split === 'number'`.
+  Actualizados call sites: `core/mundo.js` (`generarPoolInicial`: pasa `0`), `core/pool.js`
+  (`aprenderCampeones`: pasa `state.player.splitCount`), `core/serie.js` (`campeonComodin` y pick
+  efímero: pasa `state.player.splitCount`), y `src/dev/validate.js` (todos pasan `0`).
+- En cada split, el campeón jugado actualiza `ultimoSplitJugado: state.player.splitCount`.
+- Gracia: `BALANCE.campeones.splitsSinJugarParaOxido: 2`. Un split sin tocarlo no es óxido; al segundo
+  split seguido sin jugarlo empieza (`splitCount - ultimoSplitJugado < splitsSinJugarParaOxido`). En gracia
+  el óxido aplicado es 0.
+- Stream de RNG intacto (T1): cada campeón no jugado tira su `gauss` reglamentario en orden de pool
+  para no desfasar el consumo de RNG; si está en gracia se aplica 0.
+- Escala de pool: `factorOxido(tamanoPool) = BALANCE.campeones.poolAngosto / pool.length` exportada
+  desde `core/pool.js`. Pool de 3 oxida 1x; pool de 6 oxida a la mitad (0.5x).
+- Piso de maestría: `maestriaMinima` sube de 5 a 18.
+- Compatibilidad retroactiva (Riesgo 1 de FASE J): en guardados anteriores a J3 donde
+  `ultimoSplitJugado` no exista, se trata como `splitCount` (gracia entera) sin alterar `VERSION` de
+  `core/guardado.js`.
+
+**Pantalla (regla 12):**
+- Función pura `pronosticoDeOxido(campeon, splitCount)` en `core/pool.js`, devolviendo
+  `{ enGracia, splitsParaOxido }`.
+- Integrada en `src/ui/components/ficha.js` y expuesta en `crearCampeonTile` exclusivamente para tiles
+  de tamaño `ficha`: texto visible `aguanta N` (si `splitsParaOxido > 0`) u `oxida` (si no), con
+  tooltip `title` completo descriptivo con referente ("Si no lo jugás, el óxido empieza en N splits." /
+  "Si no lo jugás este split, pierde maestría.").
+- Estilado CSS en `src/ui/estilos/iconos.css` con clase `.campeon-tile-oxido` reusando `var(--ink-dim)`
+  y tipografía de `.campeon-tile-mae`.
+
+**Checks y mediciones (regla 7):**
+- 5 checks nuevos en `src/dev/validate.js` con etiqueta `J3` (`--solo=J3`):
+  1. *J3 gracia*: un campeón con `ultimoSplitJugado === splitCount` no pierde maestría en un `aplicar`.
+  2. *J3 óxido*: con gracia vencida, la maestría del no jugado baja en varias semillas.
+  3. *J3 piso*: pool de 6 con maestría inicial 40 tras avanzar splits no baja de 18.
+  4. *J3 factor*: `factorOxido(3) === 1` y `factorOxido(6) === 0.5`.
+  5. *J3 retiro* (`checkLento`): 40 carreras verificando maestría mínima del pool >= 18.
+- **Rojo inicial**: 4 de los 5 checks fallaron contra el código viejo:
+  - `J3 gracia` FAIL (decayó con maestría 47.9 !== 50).
+  - `J3 piso` FAIL (la mínima cayó a 5.0 < 18).
+  - `J3 factor` FAIL (`factorOxido` no estaba exportada).
+  - `J3 retiro` FAIL (seed 1 tuvo maestría mínima 5.0 < 18).
+- **Verde post-implementación**: los 5 checks en verde con `--solo=J3`.
+- `validate.js --rapido`: OK (todos los checks pasaron).
+- `simulate.js 1000`: 0 crashes. `maestriaMinimaPoolAlFinal` con min: 18, max: 42, promedio: 22.2
+  (frente al 5.0 anterior).
+- **Huella de 40 semillas**: 35 de 40 cambiaron su tupla `finAnticipado:splitCount:soloqElo`
+  redondeado (la maestría más alta entra a `core/fuerza.js` y mueve levemente
+  los resultados de partida/elo). Ejemplo seed 1: `1:en_carrera:30:4139` → `1:en_carrera:30:4156`.
+  Re-medido en la revisión, mismas seeds y el mismo conteo: 35/40. Queda en `PLAN.md` como D74 (la rama lo llamó D62; en la integración chocó con el D62 de la auditoría y se renumeró):
+  J3 no puede figurar en "sin corrimiento". El tooltip del pronóstico distingue "1 split" de "N splits".
+
+**Revisión independiente y arreglos (2026-10-01, al integrarla en K0)**. Un Claude revisor fresco
+(cero contexto del autor) aprobó el motor con observaciones; un agente Sonnet aplicó los arreglos en la
+rama (`17f0b29`). Lo que encontró el revisor, verificado por mutación y en Chromium:
+- **Tres mutantes que ningún check mataba** (la gracia de `<` a `<=`, el sistema que no multiplica por
+  `factorOxido`, el campeón jugado que no sella `ultimoSplitJugado`); `J3 piso` y `J3 retiro` eran
+  tautológicos por el clamp. Se agregaron `J3 borde`, `J3 factor en el sistema` y `J3 sello`, cada uno
+  demostrado en rojo contra su mutante (10 checks `J3`, 10 OK).
+- **El pronóstico iba desfasado en 1 durante las pausas del split** (el `splitCount` sube en `atributos`,
+  después de `campeones`): 16,3% de las 16.152 etiquetas medidas (40 seeds × 30 splits, fase pro) prometían
+  un número que el motor no cumplía, todas en pausas de `eventos`/`serie`/`temporada`. Regla 15.
+  `splitCountDeLaProximaCorrida` (`core/pipeline.js`) lo corrige; el check `J3 pronóstico` contrasta 220
+  pronósticos contra el motor real. Chromium: 21 violaciones en 54 observaciones antes, 0 después.
+- **"oxida" en campeones ya en el piso (18)**: 14,5% de las etiquetas "oxida" (1.742 de 12.046), con un
+  tooltip ("pierde maestría") falso. Ahora el tile dice "piso".
+- **El texto del tile pisaba la maestría** (hasta 8,3 px con "100"). Ahora "2 spl" / "oxida" / "piso",
+  holgura mínima medida 4,77 px; el referente va en el `title`.
+- Huella de 40 seeds × 30 splits de los arreglos contra `76338ae`: **idéntica** (los arreglos son de
+  pantalla y de un helper puro, no tocan el `rng`).
+- Hallazgos que quedan: `J3 piso (pool de 6…)` y `J3 retiro` siguen siendo tautológicos (no se tocaron);
+  el helper nuevo fija a mano los ids `campeones`/`atributos` (si alguien reordena el registro, `J3
+  pronóstico` se pone rojo). El fallback de J3 para guardados sin `ultimoSplitJugado` convive con un
+  `VERSION` que nunca subió: K0 lo resuelve subiéndola a 2 (K0-B).
+- La validación completa de la rama (`validate.js` sin flags) la corrió el revisor: **205 OK, 0 FAIL** sobre
+  `76338ae`, antes de los arreglos.
+
 ### 2026-09-25 — FASE J, J0: el instrumento (AUDITORIA.md AUD-2)
 
 Segunda parte de la sesión de auditoría (después de AUD-1, ver la entrada de abajo). J0 es la

@@ -72,8 +72,49 @@ export function peorDelPool(pool) {
   return pool.reduce((peor, campeon) => (campeon.mastery < peor.mastery ? campeon : peor));
 }
 
-export function entradaDePool(campeon, mastery) {
-  return { name: campeon.name, tags: [...campeon.tags], mastery, partidas: 0 };
+export function entradaDePool(campeon, mastery, split) {
+  if (typeof split !== 'number') {
+    throw new TypeError(`entradaDePool: split debe ser un número, recibido ${typeof split}`);
+  }
+  return {
+    name: campeon.name,
+    tags: [...campeon.tags],
+    mastery,
+    partidas: 0,
+    ultimoSplitJugado: split
+  };
+}
+
+// El óxido escala inverso al tamaño del pool (fase J3): pool de 3 oxida 1x;
+// pool de 6 oxida a la mitad (0.5x).
+export function factorOxido(tamanoPool) {
+  return BALANCE.campeones.poolAngosto / tamanoPool;
+}
+
+// Guardado anterior a J3: el campeón no trae `ultimoSplitJugado`, así que se lo
+// trata como recién jugado (gracia entera, PLAN.md §Riesgos riesgo 1).
+export function ultimoSplitJugadoDe(campeon, splitCount) {
+  return typeof campeon.ultimoSplitJugado === 'number' ? campeon.ultimoSplitJugado : splitCount;
+}
+
+// La regla del óxido (fase J3), UNA sola vez: `systems/campeones.js` la usa para
+// oxidar y la ficha para prometer, así que no pueden divergir (regla 15).
+// `splitCount` es el contador que va a ver la corrida de `campeones` que se
+// pregunta — no siempre el de `state.player.splitCount`: ver
+// `core/pipeline.js#splitCountDeLaProximaCorrida`.
+//   - enGracia: esa corrida NO le saca maestría.
+//   - splitsParaOxido: cuántas corridas seguidas aguanta sin jugarlo antes de
+//     que una sí le saque (0 = la próxima oxida).
+//   - enPiso: ya está en `maestriaMinima`; oxidar no puede bajarlo más, así que
+//     la pantalla no debe prometerle una pérdida (regla 15).
+export function pronosticoDeOxido(campeon, splitCount) {
+  const c = BALANCE.campeones;
+  const sinJugar = splitCount - ultimoSplitJugadoDe(campeon, splitCount);
+  return {
+    enGracia: sinJugar < c.splitsSinJugarParaOxido,
+    splitsParaOxido: Math.max(0, c.splitsSinJugarParaOxido - sinJugar),
+    enPiso: campeon.mastery <= c.maestriaMinima
+  };
 }
 
 // --- Mover el pool ---
@@ -149,7 +190,8 @@ export function aprenderCampeones(state, pool, cantidad, rng, { criterio = 'meta
       gauss(p.maestriaCampeonNuevo, p.maestriaCampeonNuevoSpread, rng),
       BALANCE.campeones.maestriaMinima,
       BALANCE.stats.max
-    ))
+    )),
+    state.player.splitCount
   ));
 
   return {

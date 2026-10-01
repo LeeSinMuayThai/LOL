@@ -5050,7 +5050,7 @@ tabla de KPIs y re-basear los ~190 checks — mismo patrón que 9Ma→9Mj.
 | **A — agencia** | J1, J2 | **J2c** (recalibración completa) |
 | **B — densidad** | J4, J5, J6 | J5 y J6 **son** la calibración |
 | **C — el mundo** | J7, J8 | **J8c** |
-| **sin corrimiento** | J0, J3, J9, J10 | — |
+| **sin corrimiento** | J0, J9, J10 | J3 se midió aparte (D74): 35/40 seeds mueven la huella. No es bloque A/B/C y no se falsea el RNG |
 
 Dentro de un bloque, un check fuera de banda se anota con su número medido y se re-basea en el
 commit de calibración, no en el acto (regla 2 + T6). Un check que *crashea* se arregla en el acto.
@@ -5299,8 +5299,9 @@ node server.js                            # jugar a mano, cero errores de consol
 ```
 
 Más, por mover el motor: huella de determinismo en 40 seeds antes/después de cada subfase (el
-corrimiento se espera y se declara en A/B/C; en J0/J3/J9/J10 la huella tiene que ser idéntica y es
-un check); end-to-end: volver a jugar la carrera que disparó todo esto — ninguna de las nueve quejas
+corrimiento se espera y se declara en A/B/C; en J0/J9/J10 la huella tiene que ser idéntica y es
+un check; J3 se midió el 2026-09-27, 35/40 seeds cambian, D74, porque la maestría entra a
+`fuerza.js`); end-to-end: volver a jugar la carrera que disparó todo esto — ninguna de las nueve quejas
 de J.0 se puede repetir textualmente.
 
 **El corte mínimo:** J0 + J3 + J4 + J5 + J6 + J-previa + J9 ya arregla la partida que se jugó. Sin
@@ -5749,6 +5750,7 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D71 | `VERSION` del guardado nunca subió (`core/guardado.js:13`): un cambio de forma del estado cargaría guardados incompatibles | K0 (check estático) |
 | D72 | Higiene de ramas: la rama de trabajo con commits sin pushear, J3 commiteada en `j3-pool-oxido` (`76338ae`) sin mergear, `faseV-V1-grok` todavía existe | K0 (push y borrado con confirmación del usuario) |
 | D73 | "Titular" nombra dos bandas distintas en la ficha (la de NIVEL y la de JERARQUÍA) | K0 |
+| D74 | J3 estaba en la fila "sin corrimiento". Medido el 2026-09-27, 40 seeds × 30 splits, `createInitialState` + `avanzarSplitAuto`, tupla `finAnticipado:splitCount:soloqElo` redondeado: **35/40 distintas** (seed 1: `1:en_carrera:30:4139` → `1:en_carrera:30:4156`; seeds 4 y 5 idénticas). La maestría entra a `rendimientoBase` en `core/fuerza.js`, así que el piso 5→18 mueve partidos y elo. No se agregan tiradas para clavar la huella vieja. Determinismo intra-versión intacto | J (aceptado, misma familia que D52) |
 
 ---
 

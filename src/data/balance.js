@@ -421,7 +421,9 @@ export const BALANCE = {
     maestriaGananciaSpread: 2.2,
     maestriaDecaimiento: 1.5,
     maestriaDecaimientoSpread: 1,
-    maestriaMinima: 5,
+    // un split sin tocarlo no es óxido; al segundo split seguido sin jugarlo empieza.
+    splitsSinJugarParaOxido: 2,
+    maestriaMinima: 18,
     // Cuanto sesga la maestria la eleccion del campeon: con sesgo alto te
     // especializas y aparece la signature; con sesgo bajo rotas y no domina ninguno.
     sesgoMaestriaEnPick: 2,
