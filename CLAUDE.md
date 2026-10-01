@@ -57,7 +57,7 @@ Orden de lectura al abrir el proyecto:
 | **`PLAN.md`** | **el plan vigente, fase por fase, hasta el juego terminado.** Incluye la tabla de deuda técnica, las trampas conocidas (T1-T10) y las reglas de proceso |
 | `PROGRESO.md` | changelog: qué se hizo, por qué, y con qué números medidos |
 | `DISENO.md` | arquitectura de archivos |
-| `AUDITORIA.md` | auditoría externa fechada (2026-09-25, contra el commit `3fc6ea5`) — una foto, no se actualiza sola. Lo accionable ya se plegó a la tabla de deuda técnica de `PLAN.md` (D54-D61) y a sus reglas de proceso; el documento en sí queda como registro del diagnóstico completo |
+| `AUDITORIA.md` | auditoría completa fechada (2026-10-01, contra el commit `2c63c4f`): cómo vamos contra lo que se quiere, por qué no se siente como El Ídolo/Copero (medido, con un experimento contrafáctico de agencia), qué se hizo bien y mal, y salud del código — una foto, no se actualiza sola. Es la base del próximo plan: lo accionable se pliega a `PLAN.md` cuando ese plan se escriba. La anterior (2026-09-25, contra `3fc6ea5`) sigue en git: `git show 2c63c4f:AUDITORIA.md` |
 
 > `TRASPASO.md` y un `AUDITORIA.md` anterior se borraron el 2026-09-02: describían un repo de 28
 > commits atrás y ya se contradecían con el código. Lo que seguía vivo se mudó — la investigación a

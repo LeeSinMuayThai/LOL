@@ -34,6 +34,53 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-01 — Auditoría completa: por qué no se siente como El Ídolo/Copero (`AUDITORIA.md`)
+
+A pedido del usuario: auditar el proyecto entero, ver cómo vamos contra lo que se quiere, investigar
+los juegos de referencia y explicar por qué este no se siente así — como base para generar el
+próximo plan. `AUDITORIA.md` se reescribió entero (la del 2026-09-25 sigue en git:
+`git show 2c63c4f:AUDITORIA.md`). Solo documentos: cero cambios en `src/`. Medido contra `2c63c4f`.
+
+**Lo nuevo de esta auditoría es el método**: además de leer el código y correr las herramientas del
+repo, se midió la experiencia, no solo la simulación. Hay un **experimento contrafáctico de agencia**
+(1.444 decisiones de 40 carreras: se clona el estado en cada decisión, se prueba cada opción con 8
+réplicas y números aleatorios comunes hasta el final de la carrera), una carrera completa jugada en
+Chromium a velocidad 1× y la vista de celular a 390 px. Los scripts están en el apéndice A de
+`AUDITORIA.md`.
+
+**Números medidos** (no citados de este changelog, trampa T6):
+
+| Medición | Resultado |
+|---|---|
+| Interrupciones por carrera | media 169, mediana 191, p90 221 (400 carreras); 223 y 241 jugadas en el navegador |
+| Interrupciones por split pro | media 3,6, p90 9, máx 23; 41% de los splits pro con más de 2 (`CONCEPTO` §2 dice "1 o 2, nunca más") |
+| Tiempo-máquina a 1×, sin leer nada | 17,4 min → ~45-60 min con lectura real (techo de `CONCEPTO` §11: 40) |
+| Interrupciones sin efecto detectable en el final | ~80% (eventos 3% significativo, fin de año 4%, draft de serie 5%, minijuego mal vs. bien 0%, draft de fecha 0); el mercado decide (42%) |
+| Estrategia consistente en todos los eventos/fines de año/momentos | puntaje 146-155 contra 151 de base: sin efecto |
+| Mentalidad / hype en pro | mediana 97 / 100; 75% / 77% de los splits ≥ 90 |
+| Llega a tier 1 · títulos | 79,5% · 5 por carrera de media; ~61% de veredictos de élite |
+| Carreras pro que terminan en la línea de los 34 | 72,6%; mediana de carrera pro 16,7 años; < 4 años: 0,3% |
+| r(nivel, posición en la tabla) por split | 0,05 |
+| Vista de celular 390 px | documento de 455 px de ancho (scroll horizontal) |
+| `validate.js --rapido` · `simulate.js 300 60 todas` | 83 OK / 117 SKIP / 0 FAIL · 0 crashes |
+
+**El diagnóstico, en una línea**: el motor es de nivel profesional, pero el juego es otro formato que
+el de su referencia. Es una sesión de ~50 min con ~190 interrupciones, la mayoría sin efecto, con la
+economía saturada, sin puntaje final y con el éxito como norma. La auditoría deja cuatro decisiones
+para el usuario antes de planificar (D-A duración, D-B el partido, D-C meta social, D-D dificultad
+objetivo). D-A y D-B reabren decisiones textuales de `PLAN.md`, y la auditoría las expone sin
+cambiarlas. También deja nueve frentes candidatos y una lectura crítica de la FASE J: J5 fija 150-280
+decisiones por carrera, J1 es inerte con la mentalidad saturada y J6 pide cantidad sin dilema.
+
+**Higiene encontrada, sin tocar** (es del próximo plan): 9 commits sin pushear, J3 commiteado en la
+rama `j3-pool-oxido` (`76338ae`) sin mergear, la rama `faseV-V1-grok` todavía existe, `VERSION` del
+guardado nunca subió, todas las ofertas salen "BOMBAZO" siendo agente libre (`mercado.js:91`) y
+`server.js` no normaliza el path.
+
+**Verificación**: `node src/dev/validate.js --rapido` en verde. No se tocó `src/`, así que la huella
+de determinismo y `simulate.js` no cambian. `CLAUDE.md` actualiza la fila de `AUDITORIA.md`. `PLAN.md`
+no se tocó: el plan sale de las respuestas a D-A..D-D.
+
 ### 2026-09-25 — FASE J, J0: el instrumento (AUDITORIA.md AUD-2)
 
 Segunda parte de la sesión de auditoría (después de AUD-1, ver la entrada de abajo). J0 es la
