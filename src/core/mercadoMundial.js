@@ -169,7 +169,7 @@ function resolverRondas(state, rng, { planteles, pool, abiertos }) {
       plantel[rol] = npcFinal;
 
       if (desde !== 'renueva') {
-        const verbo = desde === 'cantera' ? 'sube al canterano' : 'firma a';
+        const verbo = desde === 'cantera' ? 'sube de la academia a' : 'firma a';
         traspasos.push({
           org: orgNombre, liga: info.ligaId, rol,
           handle: npcFinal.handle, edad: npcFinal.edad, desde,

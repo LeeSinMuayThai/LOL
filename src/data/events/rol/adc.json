@@ -18,7 +18,7 @@
       {
         "id": "reclamarselo",
         "label": "Planteárselo después del partido",
-        "descripcion": "Se lo decís de frente. Puede mejorar la coordinación, o puede tensar el vestuario.",
+        "descripcion": "Se lo decís de frente. Puede mejorar la coordinación, o puede tensar la convivencia.",
         "weight": 5,
         "outcomes": [
           {
@@ -104,7 +104,7 @@
       {
         "id": "responder_jugando",
         "label": "Buscar la partida que calle todo",
-        "descripcion": "Te la jugás a demostrarlo en la cancha. Si sale, cambia la narrativa entera; si no, la confirma.",
+        "descripcion": "Te la jugás a demostrarlo en la Grieta. Si sale, cambia la narrativa entera; si no, la confirma.",
         "weight": 5,
         "outcomes": [
           {

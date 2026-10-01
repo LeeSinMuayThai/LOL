@@ -75,7 +75,7 @@ export const FRASES_MOTIVO = {
     (r) => `Contra ${r}, veniendo de racha negativa.`,
     (r) => `${r} enfrente, y no podés permitirte otra derrota.`,
     (r) => `Contra ${r}, con la cabeza cargada de las últimas caídas.`,
-    (r) => `${r}, y el vestuario necesita ganar ya.`,
+    (r) => `${r}, y el equipo necesita ganar ya.`,
     (r) => `Contra ${r}, obligados a cortar la mala racha.`
   ],
   rival_de_generacion: [

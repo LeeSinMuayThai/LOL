@@ -49,10 +49,10 @@ function decisionDeclive(state) {
     tipo: 'opciones',
     bisagra: true,
     titulo: 'Fin de temporada: ¿la seguís?',
-    descripcion: `A los ${state.age} el mercado te está diciendo que no. ¿Seguís peleándola o colgás los botines?`,
+    descripcion: `A los ${state.age} el mercado te está diciendo que no. ¿Seguís peleándola o colgás el mouse?`,
     opciones: [
       { id: 'seguir', label: 'La seguís peleando', descripcion: 'Un año más contra la corriente. Esto no se resetea solo.' },
-      { id: 'retirarse', label: 'Colgás los botines', descripcion: 'Cerrás la carrera. Con la puerta entreabierta, si el cuerpo y las ganas dan.' }
+      { id: 'retirarse', label: 'Colgás el mouse', descripcion: 'Cerrás la carrera. Con la puerta entreabierta, si el cuerpo y las ganas dan.' }
     ],
     datos: { motivo: 'retiro_declive' }
   };

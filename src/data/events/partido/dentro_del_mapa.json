@@ -785,7 +785,7 @@
           },
           {
             "weight": 4,
-            "texto": "El vestuario lo lee como que lo abandonaste, aunque la decisión fuera la correcta en el mapa.",
+            "texto": "El equipo lo lee como que lo abandonaste, aunque la decisión fuera la correcta en el mapa.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.05, "max": 0.05 },
               { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] }

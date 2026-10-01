@@ -69,7 +69,7 @@ function envejecerEnSitio(state, rng) {
 
   const totalBajas = [...cambiosPorOrg.values()].reduce((suma, n) => suma + n, 0);
   const logs = totalBajas > 0
-    ? [crearLog('mercado', `Movimiento de pretemporada en el mundo: ${totalBajas} relevo(s) de cantera en ${cambiosPorOrg.size} organización(es).`, { tecnico: true })]
+    ? [crearLog('mercado', `Movimiento de pretemporada en el mundo: ${totalBajas} relevo(s) de la academia en ${cambiosPorOrg.size} organización(es).`, { tecnico: true })]
     : [];
 
   return { state: { ...state, mundo: { ...state.mundo, planteles, ligas } }, logs };

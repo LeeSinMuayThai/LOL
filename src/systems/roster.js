@@ -122,7 +122,7 @@ function armarRoster(state, rng) {
     },
     logs: [crearLog(
       'roster',
-      `Vestuario de ${org.nombre}: ${companeros.map((c) => `${c.handle} (${etiquetaRol(c.role)})`).join(', ')}. `
+      `Roster de ${org.nombre}: ${companeros.map((c) => `${c.handle} (${etiquetaRol(c.role)})`).join(', ')}. `
       + `Entrás como uno más: jerarquía ${jerarquiaRedondeada}.`
     )]
   };

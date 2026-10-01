@@ -38,7 +38,7 @@
       {
         "id": "cabeza_abajo",
         "label": "Cabeza abajo y a entrenar",
-        "descripcion": "Agradecés la lista en una línea y desaparecés del ruido. La prensa se aburre, pero el vestuario ve que no se te subió.",
+        "descripcion": "Agradecés la lista en una línea y desaparecés del ruido. La prensa se aburre, pero el equipo ve que no se te subió.",
         "weight": 5,
         "outcomes": [
           {

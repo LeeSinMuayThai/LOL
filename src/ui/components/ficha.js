@@ -14,10 +14,10 @@ import { romano, tierPorId } from '../../data/ranked.js';
 // tienen referente" — así que ningún número sale acá sin banda, sin flecha,
 // o sin comparación (regla de proceso 13).
 
-const LABEL_NIVEL = { prospecto: 'Prospecto', titular: 'Titular', elite: 'Élite', clase_mundial: 'Clase mundial' };
+const LABEL_NIVEL = { prospecto: 'Prospecto', titular: 'Competitivo', elite: 'Élite', clase_mundial: 'Clase mundial' };
 const LABEL_INTERNACIONAL = {
-  sin_chance: 'Selección: sin chance',
-  en_carpeta: 'Selección: en carpeta',
+  sin_chance: 'Internacional: sin chance',
+  en_carpeta: 'Internacional: en carpeta',
   clasificado: 'Clasificado a internacional',
   jugando: 'Jugando el internacional'
 };
@@ -34,7 +34,7 @@ const LABEL_MARCA = {
   secundario_terminado: 'Secundario terminado',
   signature: 'Tiene signature',
   mentalidad_al_limite: 'Mentalidad al límite',
-  con_vestuario: 'Con vestuario',
+  con_vestuario: 'Con compañeros',
   pool_angosto: 'Pool angosto',
   pool_ancho: 'Pool ancho',
   pool_en_meta: 'Pool en meta',

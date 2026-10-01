@@ -164,7 +164,7 @@
     },
     "impacto": 6,
     "spread": 0.2,
-    "reglaEnFiccion": "Elegí la declaración que equilibre el impacto mediático con la tranquilidad del vestuario.",
+    "reglaEnFiccion": "Elegí la declaración que equilibre el impacto mediático con la tranquilidad del equipo.",
     "nombresPorCompeticion": {
       "internacional": "Conferencia de prensa internacional",
       "LCK": "Rueda de prensa en el LoL Park",
@@ -185,10 +185,10 @@
       "Tres preguntas y una cámara en vivo: lo que digas se recorta mañana.",
       "El periodista busca el titular y vos elegís si se lo das."
     ],
-    "apuesta": "El tono que elijas se te devuelve en Hype y en cómo te mira el vestuario.",
+    "apuesta": "El tono que elijas se te devuelve en Hype y en cómo te mira el grupo.",
     "veredictos": {
       "bien": [
-        "El tono cae justo: el vestuario y la prensa lo toman bien.",
+        "El tono cae justo: la casa y la prensa lo toman bien.",
         "Decís lo que había que decir y queda como frase de la semana."
       ],
       "parejo": [

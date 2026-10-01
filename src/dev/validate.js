@@ -7690,6 +7690,43 @@ check('J3 piso: un campeón en maestriaMinima nunca muestra "oxida" ni promete p
   }
 });
 
+// --- K0-C ---
+// Protege el vocabulario de dominio LoL frente al léxico de fútbol (B9 de AUDITORIA.md) desde K0.
+// Sin lexer: filtro por línea sobre el texto sin comentarios (`.js` de `src/` salvo `dev/`, e `index.html`) y
+// recorrido de TODOS los strings de los `.json` de `src/` (cualquier campo, menos las claves `id`).
+check('K0-C vocabulario: ningún texto visible usa vocabulario de fútbol', () => {
+  const PATRON_FUTBOL = /botines|cancha|hincha|camiseta|filial|Selecci[oó]n:|\bcanteran[oa]s?\b|dirigencia|pelota/i;
+  const raiz = path.join(srcDir, '..');
+  const rel = (p) => path.relative(raiz, p).replace(/\\/g, '/');
+  const archivos = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) return e.name === 'dev' ? [] : archivos(p);
+    return /\.(js|json)$/.test(p) ? [p] : [];
+  });
+  // Bloques y comentarios `//` se vacían conservando los saltos de línea; `//` y `/*` solo cuentan si los
+  // precede un espacio o el inicio de línea, así `http://…` dentro de un string no se corta.
+  const sinComentarios = (txt) => txt
+    .replace(/(^|\s)\/\*[\s\S]*?\*\/|<!--[\s\S]*?-->/g, (bloque) => bloque.replace(/[^\n]/g, ''))
+    .split(/\r?\n/).map((l) => l.replace(/(^|\s)\/\/.*$/, '$1'));
+  const fallas = [];
+  const revisar = (donde, texto) => {
+    const m = PATRON_FUTBOL.exec(texto);
+    if (m) fallas.push(`  ${donde}: "${m[0]}"`);
+  };
+  const recorrer = (nodo, ruta, archivo) => {
+    if (typeof nodo === 'string') revisar(`${archivo} ${ruta}`, nodo);
+    else if (nodo && typeof nodo === 'object') {
+      for (const [k, v] of Object.entries(nodo)) if (k !== 'id') recorrer(v, Array.isArray(nodo) ? `${ruta}[${k}]` : `${ruta}.${k}`, archivo);
+    }
+  };
+  for (const f of [...archivos(srcDir), path.join(raiz, 'index.html')]) {
+    const txt = fs.readFileSync(f, 'utf8');
+    if (f.endsWith('.json')) recorrer(JSON.parse(txt), '', rel(f));
+    else sinComentarios(txt).forEach((linea, i) => revisar(`${rel(f)}:${i + 1}`, linea));
+  }
+  if (fallas.length > 0) throw new Error(`Vocabulario de fútbol en texto visible (${fallas.length}):\n${fallas.join('\n')}`);
+});
+
 if (errores.length > 0) {
   console.error(`\n${errores.length} check(s) fallaron.`);
   process.exit(1);

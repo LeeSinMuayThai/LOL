@@ -163,7 +163,7 @@
           },
           {
             "weight": 3,
-            "texto": "Te tirás de cabeza al cambio y por un tiempo no sos ni el jugador de antes ni el nuevo. El coach te banca; el resto del vestuario no tanto.",
+            "texto": "Te tirás de cabeza al cambio y por un tiempo no sos ni el jugador de antes ni el nuevo. El coach te banca; el resto del equipo no tanto.",
             "effects": [
               { "type": "stat", "path": "player.stats.adaptabilidad", "min": 4, "max": 7, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mecanica", "min": -6, "max": -3, "clamp": [0, 100] }

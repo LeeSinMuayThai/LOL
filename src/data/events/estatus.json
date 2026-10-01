@@ -26,7 +26,7 @@
             "modificadores": [
               { "field": "career.jerarquia", "referencia": 40, "factor": 0.02 }
             ],
-            "texto": "La idea sirve y el coach la anota sin decir nada más. Es la primera vez que el vestuario te escucha de verdad.",
+            "texto": "La idea sirve y el coach la anota sin decir nada más. Es la primera vez que el equipo te escucha de verdad.",
             "effects": [
               { "type": "stat", "path": "career.jerarquia", "min": 2, "max": 5, "clamp": [0, 100] }
             ]
@@ -132,7 +132,7 @@
     "category": "identidad",
     "categoria": "vestuario",
     "title": "Un pibe del roster te pide consejo",
-    "description": "El más joven del equipo se acerca antes de una decisión importante y te pregunta a vos, no al coach. Sin darte cuenta, te volviste alguien a quien el vestuario le pide guía.",
+    "description": "El más joven del equipo se acerca antes de una decisión importante y te pregunta a vos, no al coach. Sin darte cuenta, te volviste alguien a quien el grupo le pide guía.",
     "weight": 5,
     "cooldown": 10,
     "contexto": {
@@ -210,12 +210,12 @@
       {
         "id": "asumir_la_responsabilidad_publica",
         "label": "Asumir la responsabilidad en público",
-        "descripcion": "Cuando algo sale mal, hablás vos y no dejás que caiga sobre un compañero. Te expone más a la crítica, pero te gana el vestuario.",
+        "descripcion": "Cuando algo sale mal, hablás vos y no dejás que caiga sobre un compañero. Te expone más a la crítica, pero te gana el respeto del grupo.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Te ponés al frente cuando nadie más quiere, y el vestuario lo registra: sos vos el que banca la cara fea también.",
+            "texto": "Te ponés al frente cuando nadie más quiere, y el equipo lo registra: sos vos el que banca la cara fea también.",
             "effects": [
               { "type": "stat", "path": "career.arraigo", "min": 3, "max": 6, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] },
@@ -260,7 +260,7 @@
     "category": "identidad",
     "categoria": "vestuario",
     "title": "Te subieron por encima de un veterano",
-    "description": "La dirigencia decidió que jugás vos y no el titular de los últimos tres años. Nadie te preguntó, y el vestuario lo sabe: sos el pibe al que le hicieron lugar sacando a un querido.",
+    "description": "La directiva decidió que jugás vos y no el titular de los últimos tres años. Nadie te preguntó, y el grupo lo sabe: sos el pibe al que le hicieron lugar sacando a un querido.",
     "weight": 5,
     "cooldown": 8,
     "contexto": {
@@ -304,7 +304,7 @@
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Lo aprecia. Termina pasándote lecturas y detalles del vestuario que te habrían llevado un año descubrir solo. El grupo ve que lo bancaste.",
+            "texto": "Lo aprecia. Termina pasándote lecturas y detalles de la interna que te habrían llevado un año descubrir solo. El grupo ve que lo bancaste.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "career.jerarquia", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -374,7 +374,7 @@
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Lo tomás bajo tu ala y el vestuario te reubica: dejaste de ser \"el titular en riesgo\" para ser \"el que sostiene el rol del club\".",
+            "texto": "Lo tomás bajo tu ala y el equipo te reubica: dejaste de ser \"el titular en riesgo\" para ser \"el que sostiene el rol del club\".",
             "effects": [
               { "type": "stat", "path": "career.jerarquia", "min": 3, "max": 6, "clamp": [0, 100] },
               { "type": "stat", "path": "career.arraigo", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -397,7 +397,7 @@
     "category": "identidad",
     "categoria": "vestuario",
     "title": "Llegó un coach que quiere refundar todo",
-    "description": "El staff nuevo trae ideas fuertes y poca paciencia con \"como se hacían las cosas\". Te busca a vos primero: si el referente del vestuario lo respalda, el resto lo sigue.",
+    "description": "El staff nuevo trae ideas fuertes y poca paciencia con \"como se hacían las cosas\". Te busca a vos primero: si el referente del equipo lo respalda, el resto lo sigue.",
     "weight": 5,
     "cooldown": 10,
     "contexto": {
@@ -418,7 +418,7 @@
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Con vos adentro, el vestuario se sube. Dos meses incómodos y el equipo juega mejor de lo que jugaba: apostaste bien tu capital.",
+            "texto": "Con vos adentro, el grupo se sube. Dos meses incómodos y el equipo juega mejor de lo que jugaba: apostaste bien tu capital.",
             "effects": [
               { "type": "stat", "path": "career.jerarquia", "min": 2, "max": 5, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.adaptabilidad", "min": 2, "max": 4, "clamp": [0, 100] }
@@ -442,7 +442,7 @@
         "outcomes": [
           {
             "weight": 6,
-            "texto": "El coach valora que le hables claro y negocian un punto medio. El vestuario ve que hay alguien filtrando por ellos, y eso te suma.",
+            "texto": "El coach valora que le hables claro y negocian un punto medio. El equipo ve que hay alguien filtrando por ellos, y eso te suma.",
             "effects": [
               { "type": "stat", "path": "career.jerarquia", "min": 2, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -450,7 +450,7 @@
           },
           {
             "weight": 4,
-            "texto": "El coach lo lee como que le estás marcando la cancha y arranca una pulseada silenciosa por quién manda en el grupo.",
+            "texto": "El coach lo lee como que le estás marcando territorio y arranca una pulseada silenciosa por quién manda en el grupo.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -465,7 +465,7 @@
     "category": "identidad",
     "categoria": "oportunidad",
     "title": "El club quiere refundar el proyecto sobre vos",
-    "description": "La dirigencia te sienta y te lo dice sin vueltas: quieren rearmar el equipo entero alrededor tuyo para los próximos años. Eso incluye dejar ir a dos compañeros con los que ganaste todo.",
+    "description": "La org te sienta y te lo dice sin vueltas: quieren rearmar el equipo entero alrededor tuyo para los próximos años. Eso incluye dejar ir a dos compañeros con los que ganaste todo.",
     "weight": 4,
     "cooldown": 12,
     "contexto": {
@@ -511,7 +511,7 @@
         "outcomes": [
           {
             "weight": 6,
-            "texto": "La dirigencia cede y el grupo sigue. El vestuario se entera de que los bancaste y eso construye algo que ningún título construye.",
+            "texto": "La org cede y el grupo sigue. El team se entera de que los bancaste y eso construye algo que ningún título construye.",
             "effects": [
               { "type": "stat", "path": "career.arraigo", "min": 3, "max": 6, "clamp": [0, 100] },
               { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] }
