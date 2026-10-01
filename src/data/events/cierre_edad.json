@@ -376,7 +376,7 @@
     "category": "cierre_edad",
     "categoria": "rutina",
     "title": "El primer balance en serio",
-    "description": "Todavía sos de los más jóvenes del vestuario, pero ya jugaste una temporada entera como profesional. Es tu primer cierre de año que no es de colegio.",
+    "description": "Todavía sos de los más jóvenes de la casa, pero ya jugaste una temporada entera como profesional. Es tu primer cierre de año que no es de colegio.",
     "weight": 5,
     "cooldown": 0,
     "contexto": {
@@ -392,7 +392,7 @@
       {
         "id": "compararte_con_los_veteranos",
         "label": "Medirte contra los que llevan más años",
-        "descripcion": "Mirás tu año al lado del de los veteranos del vestuario. Puede motivarte, o puede pesarte más de lo que esperabas.",
+        "descripcion": "Mirás tu año al lado del de los veteranos del equipo. Puede motivarte, o puede pesarte más de lo que esperabas.",
         "weight": 5,
         "outcomes": [
           {
@@ -503,7 +503,7 @@
     "id": "el_vestuario_que_se_arma_de_nuevo",
     "category": "cierre_edad",
     "categoria": "vestuario",
-    "title": "El vestuario que viene se arma distinto",
+    "title": "El roster que viene se arma distinto",
     "description": "Terminó la temporada y ya se sabe que el roster no va a ser el mismo el año que viene. Con {jungla} te tocó compartir todo este año; con el resto del roster que viene, hay que empezar de cero.",
     "weight": 5,
     "cooldown": 0,
@@ -517,7 +517,7 @@
       {
         "id": "despedirte_como_corresponde",
         "label": "Hacer algo para despedir a los que se van",
-        "descripcion": "Un asado, un mensaje, lo que sea. Marcar que este año existió antes de que el vestuario cambie de cara.",
+        "descripcion": "Un asado, un mensaje, lo que sea. Marcar que este año existió antes de que el roster cambie de cara.",
         "weight": 5,
         "outcomes": [
           {

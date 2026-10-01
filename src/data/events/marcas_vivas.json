@@ -185,7 +185,7 @@
     "category": "identidad",
     "categoria": "familia",
     "title": "Lo que aprendiste en el colegio, ahora te sirve",
-    "description": "Un problema con el contrato o con un sponsor aparece en una reunión y nadie en el vestuario le encuentra la vuelta. Vos sí — algo de lo que aprendiste antes de dejar todo por esto te resuelve el entuerto.",
+    "description": "Un problema con el contrato o con un sponsor aparece en una reunión y nadie en el equipo le encuentra la vuelta. Vos sí — algo de lo que aprendiste antes de dejar todo por esto te resuelve el entuerto.",
     "weight": 4,
     "cooldown": 10,
     "contexto": {
@@ -220,7 +220,7 @@
       {
         "id": "avisarle_al_manager",
         "label": "Avisarle al manager en privado",
-        "descripcion": "Se lo comentás aparte, sin exponerte delante del vestuario. Menos protagonismo, y la solución igual llega.",
+        "descripcion": "Se lo comentás aparte, sin exponerte delante del grupo. Menos protagonismo, y la solución igual llega.",
         "weight": 5,
         "outcomes": [
           {

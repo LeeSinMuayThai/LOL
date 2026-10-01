@@ -40,7 +40,7 @@
       {
         "id": "bancar_al_companero",
         "label": "Salir a bancar al que jugó mal",
-        "descripcion": "Public y explícitamente. Te la jugás por alguien del vestuario aunque te quede pegado si vuelve a pasar.",
+        "descripcion": "Public y explícitamente. Te la jugás por alguien del equipo aunque te quede pegado si vuelve a pasar.",
         "weight": 4,
         "outcomes": [
           {
@@ -510,7 +510,7 @@
         "outcomes": [
           {
             "weight": 6,
-            "texto": "El pibe mejora rápido y el vestuario ve que fuiste vos quien lo formó. Tu lugar en el equipo deja de medirse solo en stats.",
+            "texto": "El pibe mejora rápido y el grupo ve que fuiste vos quien lo formó. Tu lugar en el equipo deja de medirse solo en stats.",
             "effects": [
               { "type": "stat", "path": "career.jerarquia", "min": 2, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }

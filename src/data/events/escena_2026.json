@@ -443,7 +443,7 @@
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Tu club valora el gesto y se relaja el clima de pretemporada. Apostaste a lo conocido y el vestuario lo registra.",
+            "texto": "Tu club valora el gesto y se relaja el clima de pretemporada. Apostaste a lo conocido y el grupo lo registra.",
             "effects": [
               { "type": "stat", "path": "career.arraigo", "min": 2, "max": 4, "clamp": [0, 100] }
             ]

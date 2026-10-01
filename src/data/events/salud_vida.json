@@ -468,7 +468,7 @@
       {
         "id": "hacer_vida_en_comun",
         "label": "Hacer vida en común con el equipo",
-        "descripcion": "Cenás con ellos, mirás VODs en el living, te quedás charlando. El vestuario se hace más fuerte y tu tiempo a solas desaparece.",
+        "descripcion": "Cenás con ellos, mirás VODs en el living, te quedás charlando. La convivencia se hace más fuerte y tu tiempo a solas desaparece.",
         "weight": 5,
         "outcomes": [
           {
@@ -672,12 +672,12 @@
       {
         "id": "responder_y_mantener_el_lazo",
         "label": "Mandarles un mensaje de aliento y felicitar al novato",
-        "descripcion": "Te tragás el ego y festejás el triunfo de tu gente. Cuidás los vínculos para el día en que te toque volver al vestuario.",
+        "descripcion": "Te tragás el ego y festejás el triunfo de tu gente. Cuidás los vínculos para el día en que te toque volver al equipo.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Tus ex-compañeros valoran el gesto y en la entrevista post-partido te mandan un saludo al aire en la transmisión oficial. La hinchada te hace tendencia y el club deja en claro que no te olvidó.",
+            "texto": "Tus ex-compañeros valoran el gesto y en la entrevista post-partido te mandan un saludo al aire en la transmisión oficial. La comunidad te hace tendencia y el club deja en claro que no te olvidó.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
@@ -894,7 +894,7 @@
         "outcomes": [
           {
             "weight": 6,
-            "texto": "La frase queda bien en los titulares y la hinchada la toma como una promesa. Ahora hay una vara puesta en público que vas a tener que sostener.",
+            "texto": "La frase queda bien en los titulares y los fans la toman como una promesa. Ahora hay una vara puesta en público que vas a tener que sostener.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }

@@ -166,7 +166,7 @@
       {
         "id": "alimentar_el_misterio",
         "label": "Tirar un tweet críptico con un emoji",
-        "descripcion": "Dejás que la escena hable y especule. Genera conversación, te pone en el centro de los rumores y te mide el termómetro de la hinchada.",
+        "descripcion": "Dejás que la escena hable y especule. Genera conversación, te pone en el centro de los rumores y te mide el termómetro de la comunidad.",
         "weight": 5,
         "outcomes": [
           {
@@ -234,7 +234,7 @@
         "outcomes": [
           {
             "weight": 6,
-            "texto": "La comunidad te banca la transición y tus números en stream se estabilizan rápido. Comprobás que tu nombre vale por sí mismo, no solo por la camiseta que vestías.",
+            "texto": "La comunidad te banca la transición y tus números en stream se estabilizan rápido. Comprobás que tu nombre vale por sí mismo, no solo por el jersey que vestías.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] },
               { "type": "stat", "path": "player.familyTrust", "min": 2, "max": 4, "clamp": [0, 100] }
@@ -265,7 +265,7 @@
           },
           {
             "weight": 4,
-            "texto": "Las ofertas que te llegan son bajas y en equipos sin aspiraciones que quieren tu nombre para vender camisetas. La realidad del mercado te golpea el orgullo.",
+            "texto": "Las ofertas que te llegan son bajas y en equipos sin aspiraciones que quieren tu nombre para vender jerseys. La realidad del mercado te golpea el orgullo.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
             ]

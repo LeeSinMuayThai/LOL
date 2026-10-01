@@ -378,7 +378,7 @@
           },
           {
             "weight": 4,
-            "texto": "{top} termina injugable y el partido con él. En el vestuario queda la versión de que no subiste nunca, aunque tu farm haya sido perfecto.",
+            "texto": "{top} termina injugable y el partido con él. En la sala de scrims queda la versión de que no subiste nunca, aunque tu farm haya sido perfecto.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": -4, "max": -2, "clamp": [0, 100] }
             ]

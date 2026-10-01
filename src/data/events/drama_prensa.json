@@ -3,7 +3,7 @@
     "id": "team_drama",
     "category": "drama_prensa",
     "categoria": "prensa",
-    "title": "Se pudrió el vestuario",
+    "title": "Se pudrió todo en la gaming house",
     "description": "{jungla} se agarró con el staff en pleno review y se fue dando un portazo. El grupo de {org} lleva dos días sin que nadie escriba.",
     "weight": 8,
     "cooldown": 3,
@@ -231,7 +231,7 @@
           },
           {
             "weight": 4,
-            "texto": "Se te va de las manos: para el viernes te dan por vendido y hasta te ponen equipo. Jugás la jornada con medio vestuario mirándote de reojo.",
+            "texto": "Se te va de las manos: para el viernes te dan por vendido y hasta te ponen equipo. Jugás la jornada con medio team mirándote de reojo.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 7, "max": 10, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -4, "clamp": [0, 100] }
@@ -242,7 +242,7 @@
       {
         "id": "desmentirlo_rapido",
         "label": "Cortarlo de una",
-        "descripcion": "Salís a decir que estás bien donde estás. Ordena el vestuario y cierra una puerta que quizás querías abierta.",
+        "descripcion": "Salís a decir que estás bien donde estás. Ordena la interna y cierra una puerta que quizás querías abierta.",
         "weight": 5,
         "outcomes": [
           {
@@ -254,7 +254,7 @@
           },
           {
             "weight": 3,
-            "texto": "Lo desmentís y quedás como el que se pone la camiseta. Sirve para la imagen; el que iba a llamar no llamó.",
+            "texto": "Lo desmentís y quedás como el que se pone el jersey. Sirve para la imagen; el que iba a llamar no llamó.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 2, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -383,7 +383,7 @@
           },
           {
             "weight": 3,
-            "texto": "Un rival lo usa de combustible y te gana el cruce de la jornada con eso de bandera. La frase recortada te siguió hasta la cancha.",
+            "texto": "Un rival lo usa de combustible y te gana el cruce de la jornada con eso de bandera. La frase recortada te siguió hasta la Grieta.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -417,7 +417,7 @@
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Se disculpa en serio y al día siguiente aclara en su stream sin que se lo pidas. El vestuario registra que lo manejaste puertas adentro.",
+            "texto": "Se disculpa en serio y al día siguiente aclara en su stream sin que se lo pidas. El grupo registra que lo manejaste puertas adentro.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
             ]

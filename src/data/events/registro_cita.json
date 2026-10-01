@@ -220,7 +220,7 @@
       },
       {
         "id": "dejar_que_hablen",
-        "label": "Dejar que hablen y demostrarlo adentro de la cancha",
+        "label": "Dejar que hablen y demostrarlo adentro de la Grieta",
         "descripcion": "No respondés la etiqueta con palabras. Si este club te dura, la va a desmentir sola; si no, la va a confirmar.",
         "weight": 5,
         "outcomes": [

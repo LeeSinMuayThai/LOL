@@ -775,7 +775,7 @@
     "category": "partido_clasico",
     "categoria": "partido",
     "title": "Bajarle el precio al clásico, de adentro",
-    "description": "El vestuario ya está encendido con el cruce contra {rivalDeLaFecha} tres días antes. {jungla} habla de nada más. Vos sabés que llegar así de caliente al viernes cansa.",
+    "description": "La gaming house ya está encendida con el cruce contra {rivalDeLaFecha} tres días antes. {jungla} habla de nada más. Vos sabés que llegar así de caliente al viernes cansa.",
     "weight": 4,
     "cooldown": 6,
     "contexto": {
@@ -787,7 +787,7 @@
     "options": [
       {
         "id": "enfriar_el_vestuario",
-        "label": "Enfriar el vestuario a propósito",
+        "label": "Bajar los humos en la casa a propósito",
         "descripcion": "Cortás la charla de clásico en la semana. Rutina normal, foco en el juego, la épica se guarda para el viernes.",
         "weight": 5,
         "outcomes": [
@@ -810,7 +810,7 @@
       },
       {
         "id": "dejar_que_se_encienda",
-        "label": "Dejar que el vestuario se encienda",
+        "label": "Dejar que la casa se encienda",
         "descripcion": "Si el equipo quiere vivir el clásico toda la semana, lo vivís con ellos. La energía compartida también une.",
         "weight": 5,
         "outcomes": [

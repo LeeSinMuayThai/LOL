@@ -138,7 +138,7 @@ function construirOferta(state, liga, org, tagForzado, rng) {
   const riesgo = esOrgActual
     ? null
     : (org.fuerza >= liga.prestigio + m.margenBombazoFuerza
-      ? 'Vas a competir por un lugar en un vestuario cargado de estrellas.'
+      ? 'Vas a competir por un lugar en un roster cargado de estrellas.'
       : 'Acá vas a tener margen para mandar vos.');
 
   // Fase 9Me: cuánto te quieren, para el texto de riesgo de "pedir más". La
@@ -614,7 +614,7 @@ function ofertaDeTraspaso(state, rng) {
     : [aceptar, {
       ...oferta, id: 'pedirSalir', tipo: 'pedirSalir',
       label: 'Pedir salir',
-      descripcion: 'Apretás para irte. Si te lo niegan, se resiente el vestuario: perdés arraigo y jerarquía.'
+      descripcion: 'Apretás para irte. Si te lo niegan, se resiente la convivencia: perdés arraigo y jerarquía.'
     }, quedarse];
 
   return {
@@ -680,7 +680,7 @@ function resolverTraspaso(state, decision, respuesta, rng) {
             registro: registrarArraigoEnFila(state.career.registro, arraigoNuevo)
           }
         },
-        logs: [crearLog('mercado', `${state.career.currentOrg} te niega la salida y el pedido no cayó bien: perdés peso en el vestuario.`)]
+        logs: [crearLog('mercado', `${state.career.currentOrg} te niega la salida y el pedido no cayó bien: perdés peso en el equipo.`)]
       };
     }
     return { state, logs: [crearLog('mercado', `${decision.datos.comprador} preguntó, pero ${state.career.currentOrg} no te suelta. Seguís.`)] };
@@ -725,7 +725,7 @@ function resolverBanquillo(state, logsPrevios, rng) {
           registro: conFilaCerrada(state, 'banquillo')
         }
       },
-      logs: [...logsPrevios, crearLog('mercado', `${origen} te deja fuera del equipo y no hay filial donde jugar. Te quedás sin lugar.`)]
+      logs: [...logsPrevios, crearLog('mercado', `${origen} te deja fuera del equipo y no hay academia donde jugar. Te quedás sin lugar.`)]
     };
   }
 
@@ -736,7 +736,7 @@ function resolverBanquillo(state, logsPrevios, rng) {
     state: { ...firmado.state, flags: { ...firmado.state.flags, banquilloPendiente: false } },
     logs: [
       ...logsPrevios,
-      crearLog('mercado', `${origen} te manda a la filial: bajás a ${dev.id} con ${orgDestino.nombre}. Desde abajo se vuelve.`),
+      crearLog('mercado', `${origen} te manda a la academia: bajás a ${dev.id} con ${orgDestino.nombre}. Desde abajo se vuelve.`),
       ...firmado.logs
     ]
   };

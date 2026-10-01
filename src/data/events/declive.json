@@ -102,7 +102,7 @@
       {
         "id": "invertir_tiempo_de_verdad",
         "label": "Darle el tiempo en serio, aunque sea a costa del tuyo",
-        "descripcion": "Le dedicás horas de tu propia preparación a revisar sus partidas. Es tiempo que no usás en vos, pero el vestuario lo nota.",
+        "descripcion": "Le dedicás horas de tu propia preparación a revisar sus partidas. Es tiempo que no usás en vos, pero el team lo nota.",
         "weight": 5,
         "outcomes": [
           {
@@ -137,7 +137,7 @@
           },
           {
             "weight": 5,
-            "texto": "El rookie interpreta la distancia como desinterés, y algo de la buena onda inicial del vestuario se enfría.",
+            "texto": "El rookie interpreta la distancia como desinterés, y algo de la buena onda inicial del grupo se enfría.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -184,7 +184,7 @@
       },
       {
         "id": "guardartelo_para_el_proximo_partido",
-        "label": "No decir nada y guardarte la bronca para la cancha",
+        "label": "No decir nada y guardarte la bronca para la Grieta",
         "descripcion": "No le das el gusto de una respuesta pública. La próxima serie es donde de verdad se responde algo así.",
         "weight": 5,
         "outcomes": [
@@ -352,12 +352,12 @@
       {
         "id": "hacer_vida_afuera",
         "label": "Construir tu vida social afuera de la gaming house",
-        "descripcion": "Aceptás que esta no es tu generación y buscás a tu gente en otro lado: amigos de antes, pareja, familia. El vestuario queda para el juego, nada más.",
+        "descripcion": "Aceptás que esta no es tu generación y buscás a tu gente en otro lado: amigos de antes, pareja, familia. El equipo queda para el juego, nada más.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Tener una vida armada afuera del juego te da un piso emocional que el vestuario solo no te daba, y llegás a las scrims con la cabeza más liviana.",
+            "texto": "Tener una vida armada afuera del juego te da un piso emocional que la gaming house sola no te daba, y llegás a las scrims con la cabeza más liviana.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] },
               { "type": "stat", "path": "player.familyTrust", "min": 2, "max": 4, "clamp": [0, 100] }
@@ -365,7 +365,7 @@
           },
           {
             "weight": 4,
-            "texto": "El vestuario nota la distancia y algo de la coordinación fina que da la confianza de grupo se resiente.",
+            "texto": "El grupo nota la distancia y algo de la coordinación fina que da la confianza interna se resiente.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -437,7 +437,7 @@
       {
         "id": "usarla_de_motivacion_privada",
         "label": "No contestarle a la prensa, pero mirar el clip antes de entrar a jugar",
-        "descripcion": "En público esquivás la comparación con una respuesta genérica. En privado, sí mirás la jugada una vez más antes de salir a la cancha.",
+        "descripcion": "En público esquivás la comparación con una respuesta genérica. En privado, sí mirás la jugada una vez más antes de salir al escenario.",
         "weight": 4,
         "outcomes": [
           {

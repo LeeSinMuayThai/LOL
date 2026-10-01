@@ -153,7 +153,7 @@
       {
         "id": "respaldar_al_coach",
         "label": "Respaldar el mensaje frente a todos",
-        "descripcion": "Sumás tu voz a la del coach. Si el partido sale bien, el vestuario lo va a recordar como el día que remaron juntos.",
+        "descripcion": "Sumás tu voz a la del coach. Si el partido sale bien, el grupo lo va a recordar como el día que remaron juntos.",
         "weight": 5,
         "outcomes": [
           {
@@ -189,7 +189,7 @@
           },
           {
             "weight": 5,
-            "texto": "El coach lo lee como que no te importó, y eso también entra a la cancha.",
+            "texto": "El coach lo lee como que no te importó, y eso también entra a la serie.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.12, "max": 0.02 },
               { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] }
@@ -564,7 +564,7 @@
       {
         "id": "jugar_con_la_bronca",
         "label": "Usar la bronca del split como combustible",
-        "descripcion": "Todo lo que salió mal este split entra a la cancha como energía. Vas a incomodar a {rivalDeLaFecha} desde el minuto uno.",
+        "descripcion": "Todo lo que salió mal este split entra al mapa como energía. Vas a incomodar a {rivalDeLaFecha} desde el minuto uno.",
         "weight": 5,
         "outcomes": [
           {

@@ -4,7 +4,7 @@
     "category": "competicion",
     "categoria": "oportunidad",
     "title": "{org} se prendió arriba",
-    "description": "Cinco jornadas seguidas ganando y la tabla se dio vuelta. En el vestuario nadie lo dice para no romperlo, pero todos lo están pensando.",
+    "description": "Cinco jornadas seguidas ganando y la tabla se dio vuelta. En la gaming house nadie lo dice para no romperlo, pero todos lo están pensando.",
     "weight": 5,
     "cooldown": 4,
     "contexto": {
@@ -205,7 +205,7 @@
     "category": "competicion",
     "categoria": "golpe_duro",
     "title": "Se cortó la racha",
-    "description": "Perdieron. Nada más que eso, pero después de tantas jornadas ganando se siente distinto: el vestuario tiene que aprender de nuevo a perder sin que se le venga todo abajo.",
+    "description": "Perdieron. Nada más que eso, pero después de tantas jornadas ganando se siente distinto: el grupo tiene que aprender de nuevo a perder sin que se le venga todo abajo.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -226,7 +226,7 @@
         "outcomes": [
           {
             "weight": 6,
-            "texto": "El mensaje calma al vestuario justo a tiempo. La racha se cortó, pero el clima de laburo no.",
+            "texto": "El mensaje calma al equipo justo a tiempo. La racha se cortó, pero el clima de laburo no.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
@@ -314,7 +314,7 @@
         "outcomes": [
           {
             "weight": 6,
-            "texto": "El gesto no pasa desapercibido en el vestuario. Compartir el mérito individual construye algo que un trofeo solo no construye.",
+            "texto": "El gesto no pasa desapercibido en el team. Compartir el mérito individual construye algo que un trofeo solo no construye.",
             "effects": [
               { "type": "stat", "path": "career.arraigo", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
@@ -494,7 +494,7 @@
         "outcomes": [
           {
             "weight": 5,
-            "texto": "La jugada del partido pasa por tus manos y la resolvés. Entran a playoffs por vos, y eso el vestuario no lo olvida.",
+            "texto": "La jugada del partido pasa por tus manos y la resolvés. Entran a playoffs por vos, y eso el equipo no lo olvida.",
             "effects": [
               { "type": "push", "path": "career.hitos", "values": ["El desempate que cerraste vos", "La jugada que los metió en playoffs sobre la hora"] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] }
