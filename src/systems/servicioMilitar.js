@@ -72,7 +72,7 @@ function decisionVolver() {
     tipo: 'opciones',
     bisagra: true,
     titulo: 'Volver',
-    descripcion: 'Estás de vuelta. Tu lugar en el vestuario se sintió ocupado todo este tiempo — un rookie viene ganando terreno.',
+    descripcion: 'Estás de vuelta. Tu lugar en el roster se sintió ocupado todo este tiempo — un rookie viene ganando terreno.',
     opciones: [
       { id: 'insistis_con_tu_lugar', label: 'Insistís con tu lugar', descripcion: 'Volvés a pelearlo desde el día uno, sin dar nada por perdido.' },
       { id: 'dejas_que_se_acomode', label: 'Dejás que se acomode solo', descripcion: 'Le bajás el volumen a la pelea de entrada. Menos fricción, menos terreno recuperado.' }

@@ -21,7 +21,7 @@ const BANNER_POR_CATEGORIA = {
   oportunidad: { label: 'Te llamaron', token: 'oportunidad' },
   mercado: { label: 'Mercado de pases', token: 'mercado' },
   parche: { label: 'Parche', token: 'parche' },
-  vestuario: { label: 'Vestuario', token: 'vestuario' },
+  vestuario: { label: 'El equipo', token: 'vestuario' },
   prensa: { label: 'Sala de prensa', token: 'prensa' },
   familia: { label: 'En tu casa', token: 'familia' },
   salud: { label: 'El cuerpo', token: 'salud' },

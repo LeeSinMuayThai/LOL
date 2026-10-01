@@ -178,7 +178,7 @@ function consecuencias(state, rendimiento, resultado, esCierre, rng) {
     jerarquia = clampStat(jerarquia * mkt.banquilloJerarquiaFactor);
     arraigo = clampStat(arraigo * mkt.banquilloArraigoFactor);
     logs.push(crearLog('mercado',
-      `Te sientan en el banquillo: tu nivel quedó por debajo del suplente. `
+      `Te mandan al banco: tu nivel quedó por debajo del suplente. `
       + `En la próxima ventana ${state.career.currentOrg} te cede a su academia.`));
   }
 

@@ -18,7 +18,7 @@
       {
         "id": "meterse_en_el_conflicto",
         "label": "Meterte y poner la cara",
-        "descripcion": "Alguien tiene que hablar. Ganás peso en el vestuario si sale bien, y quedás pegado si sale mal.",
+        "descripcion": "Alguien tiene que hablar. Ganás peso en la casa si sale bien, y quedás pegado si sale mal.",
         "weight": 5,
         "outcomes": [
           {
@@ -231,7 +231,7 @@
           },
           {
             "weight": 4,
-            "texto": "Se te va de las manos: para el viernes te dan por vendido y hasta te ponen equipo. Jugás la jornada con medio team mirándote de reojo.",
+            "texto": "Se te va de las manos: para el viernes te dan por vendido y hasta te ponen equipo. Jugás la jornada con medio equipo mirándote de reojo.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 7, "max": 10, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -4, "clamp": [0, 100] }

@@ -7692,250 +7692,39 @@ check('J3 piso: un campeón en maestriaMinima nunca muestra "oxida" ni promete p
 
 // --- K0-C ---
 // Protege el vocabulario de dominio LoL frente al léxico de fútbol (B9 de AUDITORIA.md) desde K0.
+// Sin lexer: filtro por línea sobre el texto sin comentarios (`.js` de `src/` salvo `dev/`, e `index.html`) y
+// recorrido de TODOS los strings de los `.json` de `src/` (cualquier campo, menos las claves `id`).
 check('K0-C vocabulario: ningún texto visible usa vocabulario de fútbol', () => {
-  const PATRON_FUTBOL = /(botines|cancha|hincha|camiseta|filial|Selecci[oó]n:)/i;
-
-  function listarArchivosJs(dir, recursivo = false) {
-    const res = [];
-    if (!fs.existsSync(dir)) return res;
-    for (const item of fs.readdirSync(dir)) {
-      const p = path.join(dir, item);
-      const stat = fs.statSync(p);
-      if (stat.isDirectory()) {
-        if (recursivo) res.push(...listarArchivosJs(p, true));
-      } else if (p.endsWith('.js')) {
-        res.push(p);
-      }
-    }
-    return res;
-  }
-
-  function listarArchivosJson(dir) {
-    const res = [];
-    if (!fs.existsSync(dir)) return res;
-    for (const item of fs.readdirSync(dir)) {
-      const p = path.join(dir, item);
-      const stat = fs.statSync(p);
-      if (stat.isDirectory()) {
-        res.push(...listarArchivosJson(p));
-      } else if (p.endsWith('.json')) {
-        res.push(p);
-      }
-    }
-    return res;
-  }
-
-  function extraerStringsDeJs(codigo) {
-    const literales = [];
-    let i = 0;
-    let linea = 1;
-    const n = codigo.length;
-
-    while (i < n) {
-      const c = codigo[i];
-
-      if (c === '\n') {
-        linea += 1;
-        i += 1;
-        continue;
-      }
-
-      if (c === '/' && codigo[i + 1] === '/') {
-        i += 2;
-        while (i < n && codigo[i] !== '\n') i += 1;
-        continue;
-      }
-
-      if (c === '/' && codigo[i + 1] === '*') {
-        i += 2;
-        while (i < n && !(codigo[i] === '*' && codigo[i + 1] === '/')) {
-          if (codigo[i] === '\n') linea += 1;
-          i += 1;
-        }
-        i += 2;
-        continue;
-      }
-
-      if (c === "'" || c === '"') {
-        const quote = c;
-        const lineaInicio = linea;
-        let str = '';
-        i += 1;
-        while (i < n && codigo[i] !== quote) {
-          if (codigo[i] === '\\') {
-            str += codigo[i + 1] ?? '';
-            i += 2;
-          } else {
-            if (codigo[i] === '\n') linea += 1;
-            str += codigo[i];
-            i += 1;
-          }
-        }
-        i += 1;
-        literales.push({ texto: str, linea: lineaInicio });
-        continue;
-      }
-
-      if (c === '`') {
-        const lineaInicio = linea;
-        let str = '';
-        i += 1;
-        while (i < n && codigo[i] !== '`') {
-          if (codigo[i] === '\\') {
-            str += codigo[i + 1] ?? '';
-            i += 2;
-          } else if (codigo[i] === '$' && codigo[i + 1] === '{') {
-            literales.push({ texto: str, linea: lineaInicio });
-            str = '';
-            i += 2;
-            let braceDepth = 1;
-            while (i < n && braceDepth > 0) {
-              const innerC = codigo[i];
-              if (innerC === '\n') {
-                linea += 1;
-                i += 1;
-                continue;
-              }
-              if (innerC === '/' && codigo[i + 1] === '/') {
-                i += 2;
-                while (i < n && codigo[i] !== '\n') i += 1;
-                continue;
-              }
-              if (innerC === '/' && codigo[i + 1] === '*') {
-                i += 2;
-                while (i < n && !(codigo[i] === '*' && codigo[i + 1] === '/')) {
-                  if (codigo[i] === '\n') linea += 1;
-                  i += 1;
-                }
-                i += 2;
-                continue;
-              }
-              if (innerC === "'" || innerC === '"') {
-                const q = innerC;
-                const subL = linea;
-                let subStr = '';
-                i += 1;
-                while (i < n && codigo[i] !== q) {
-                  if (codigo[i] === '\\') {
-                    subStr += codigo[i + 1] ?? '';
-                    i += 2;
-                  } else {
-                    if (codigo[i] === '\n') linea += 1;
-                    subStr += codigo[i];
-                    i += 1;
-                  }
-                }
-                i += 1;
-                literales.push({ texto: subStr, linea: subL });
-                continue;
-              }
-              if (innerC === '{') braceDepth += 1;
-              else if (innerC === '}') braceDepth -= 1;
-              i += 1;
-            }
-          } else {
-            if (codigo[i] === '\n') linea += 1;
-            str += codigo[i];
-            i += 1;
-          }
-        }
-        i += 1;
-        literales.push({ texto: str, linea: lineaInicio });
-        continue;
-      }
-
-      i += 1;
-    }
-
-    return literales;
-  }
-
+  const PATRON_FUTBOL = /botines|cancha|hincha|camiseta|filial|Selecci[oó]n:|\bcanteran[oa]s?\b|dirigencia|pelota/i;
+  const raiz = path.join(srcDir, '..');
+  const rel = (p) => path.relative(raiz, p).replace(/\\/g, '/');
+  const archivos = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) return e.name === 'dev' ? [] : archivos(p);
+    return /\.(js|json)$/.test(p) ? [p] : [];
+  });
+  // Bloques y comentarios `//` se vacían conservando los saltos de línea; `//` y `/*` solo cuentan si los
+  // precede un espacio o el inicio de línea, así `http://…` dentro de un string no se corta.
+  const sinComentarios = (txt) => txt
+    .replace(/(^|\s)\/\*[\s\S]*?\*\/|<!--[\s\S]*?-->/g, (bloque) => bloque.replace(/[^\n]/g, ''))
+    .split(/\r?\n/).map((l) => l.replace(/(^|\s)\/\/.*$/, '$1'));
   const fallas = [];
-  const root = path.join(srcDir, '..');
-  const jsonFiles = listarArchivosJson(path.join(srcDir, 'data', 'events'));
-
-  function ubicarTextoEnJson(textoBuscado) {
-    for (const jf of jsonFiles) {
-      const lineas = fs.readFileSync(jf, 'utf8').split('\n');
-      for (let i = 0; i < lineas.length; i += 1) {
-        if (lineas[i].includes(textoBuscado)) {
-          return {
-            archivo: path.relative(root, jf).replace(/\\/g, '/'),
-            linea: i + 1
-          };
-        }
-      }
+  const revisar = (donde, texto) => {
+    const m = PATRON_FUTBOL.exec(texto);
+    if (m) fallas.push(`  ${donde}: "${m[0]}"`);
+  };
+  const recorrer = (nodo, ruta, archivo) => {
+    if (typeof nodo === 'string') revisar(`${archivo} ${ruta}`, nodo);
+    else if (nodo && typeof nodo === 'object') {
+      for (const [k, v] of Object.entries(nodo)) if (k !== 'id') recorrer(v, Array.isArray(nodo) ? `${ruta}[${k}]` : `${ruta}.${k}`, archivo);
     }
-    return null;
+  };
+  for (const f of [...archivos(srcDir), path.join(raiz, 'index.html')]) {
+    const txt = fs.readFileSync(f, 'utf8');
+    if (f.endsWith('.json')) recorrer(JSON.parse(txt), '', rel(f));
+    else sinComentarios(txt).forEach((linea, i) => revisar(`${rel(f)}:${i + 1}`, linea));
   }
-
-  function revisarCadenaEvento(texto, eventoId) {
-    if (typeof texto !== 'string') return;
-    const m = texto.match(PATRON_FUTBOL);
-    if (m) {
-      const ubicacion = ubicarTextoEnJson(texto);
-      fallas.push({
-        archivo: ubicacion?.archivo ?? `evento:${eventoId}`,
-        linea: ubicacion?.linea ?? 1,
-        palabra: m[0]
-      });
-    }
-  }
-
-  // 1. Campos de texto de TODOS_LOS_EVENTOS
-  for (const evento of TODOS_LOS_EVENTOS) {
-    revisarCadenaEvento(evento.title, evento.id);
-    revisarCadenaEvento(evento.description, evento.id);
-    if (Array.isArray(evento.options)) {
-      for (const opcion of evento.options) {
-        revisarCadenaEvento(opcion.label, evento.id);
-        revisarCadenaEvento(opcion.descripcion, evento.id);
-        if (Array.isArray(opcion.outcomes)) {
-          for (const outcome of opcion.outcomes) {
-            if (typeof outcome.texto === 'string') {
-              revisarCadenaEvento(outcome.texto, evento.id);
-            } else if (Array.isArray(outcome.texto)) {
-              for (const t of outcome.texto) {
-                revisarCadenaEvento(t, evento.id);
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // 2. Literales de string en src/systems/*.js, src/core/*.js, src/ui/**/*.js
-  const directoriosJs = [
-    { dir: path.join(srcDir, 'systems'), recursivo: false },
-    { dir: path.join(srcDir, 'core'), recursivo: false },
-    { dir: path.join(srcDir, 'ui'), recursivo: true }
-  ];
-
-  for (const { dir, recursivo } of directoriosJs) {
-    const archivos = listarArchivosJs(dir, recursivo);
-    for (const archivo of archivos) {
-      const codigo = fs.readFileSync(archivo, 'utf8');
-      const strings = extraerStringsDeJs(codigo);
-      for (const { texto, linea } of strings) {
-        const m = texto.match(PATRON_FUTBOL);
-        if (m) {
-          fallas.push({
-            archivo: path.relative(root, archivo).replace(/\\/g, '/'),
-            linea,
-            palabra: m[0]
-          });
-        }
-      }
-    }
-  }
-
-  if (fallas.length > 0) {
-    throw new Error(
-      `Vocabulario de fútbol encontrado en texto visible (${fallas.length}):\n`
-      + fallas.map((f) => `  ${f.archivo}:${f.linea}: "${f.palabra}"`).join('\n')
-    );
-  }
+  if (fallas.length > 0) throw new Error(`Vocabulario de fútbol en texto visible (${fallas.length}):\n${fallas.join('\n')}`);
 });
 
 if (errores.length > 0) {

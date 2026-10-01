@@ -326,7 +326,7 @@
     "category": "rol_jungla",
     "categoria": "rutina",
     "title": "Un carril te llena de pings",
-    "description": "{top} viene perdiendo desde el minuto tres y te spamea pings para que subas. Ir es tirar tempo a la línea que menos rinde; no ir es prender fuego el vestuario.",
+    "description": "{top} viene perdiendo desde el minuto tres y te spamea pings para que subas. Ir es tirar tempo a la línea que menos rinde; no ir es prenderle fuego al chat de voz.",
     "weight": 6,
     "cooldown": 4,
     "contexto": {

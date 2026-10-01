@@ -614,7 +614,7 @@ function ofertaDeTraspaso(state, rng) {
     : [aceptar, {
       ...oferta, id: 'pedirSalir', tipo: 'pedirSalir',
       label: 'Pedir salir',
-      descripcion: 'Apretás para irte. Si te lo niegan, se resiente la convivencia: perdés arraigo y jerarquía.'
+      descripcion: 'Apretás para irte. Si te lo niegan, se resiente el clima del equipo: perdés arraigo y jerarquía.'
     }, quedarse];
 
   return {

@@ -296,7 +296,7 @@
       {
         "id": "olvidarse_de_la_frase",
         "label": "Olvidarte de la frase y jugar normal",
-        "descripcion": "Fue una frase de vestuario, no un contrato. Jugás como jugarías cualquier otro día.",
+        "descripcion": "Fue una frase en caliente, no un contrato. Jugás como jugarías cualquier otro día.",
         "weight": 5,
         "outcomes": [
           {
@@ -787,7 +787,7 @@
     "options": [
       {
         "id": "enfriar_el_vestuario",
-        "label": "Bajar los humos en la casa a propósito",
+        "label": "Enfriar la casa a propósito",
         "descripcion": "Cortás la charla de clásico en la semana. Rutina normal, foco en el juego, la épica se guarda para el viernes.",
         "weight": 5,
         "outcomes": [

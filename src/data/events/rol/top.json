@@ -54,7 +54,7 @@
           },
           {
             "weight": 3,
-            "texto": "Se ajusta el plan, pero queda flotando en el vestuario la sensación de que te achicaste.",
+            "texto": "Se ajusta el plan, pero queda flotando en el grupo la sensación de que te achicaste.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }

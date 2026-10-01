@@ -235,7 +235,7 @@ export const MOMENTOS = [
     patron: { nivel: ['tier1'], estatus: ['franquicia'] } },
 
   { id: 'tier1_referente', prioridad: 28,
-    label: 'Referente del vestuario',
+    label: 'Referente del team',
     patron: { nivel: ['tier1'], estatus: ['referente'] } },
 
   { id: 'tier1_titular', prioridad: 25,

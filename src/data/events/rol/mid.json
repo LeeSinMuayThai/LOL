@@ -40,7 +40,7 @@
       {
         "id": "bancar_al_companero",
         "label": "Salir a bancar al que jugó mal",
-        "descripcion": "Public y explícitamente. Te la jugás por alguien del equipo aunque te quede pegado si vuelve a pasar.",
+        "descripcion": "Una defensa pública y explícita. Te la jugás por alguien del equipo aunque te quede pegado si vuelve a pasar.",
         "weight": 4,
         "outcomes": [
           {
@@ -384,7 +384,7 @@
           },
           {
             "weight": 5,
-            "texto": "Sin una condición de victoria clara, los partidos parejos se les escapan por no tener a quién darle la pelota. El coach lo anota.",
+            "texto": "Sin una condición de victoria clara, los partidos parejos se les escapan por no tener a quién darle los recursos. El coach lo anota.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": -2, "max": 0, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }

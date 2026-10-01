@@ -34,7 +34,7 @@ const LABEL_MARCA = {
   secundario_terminado: 'Secundario terminado',
   signature: 'Tiene signature',
   mentalidad_al_limite: 'Mentalidad al límite',
-  con_vestuario: 'Con vestuario',
+  con_vestuario: 'Con compañeros',
   pool_angosto: 'Pool angosto',
   pool_ancho: 'Pool ancho',
   pool_en_meta: 'Pool en meta',

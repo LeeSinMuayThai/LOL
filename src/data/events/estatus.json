@@ -210,7 +210,7 @@
       {
         "id": "asumir_la_responsabilidad_publica",
         "label": "Asumir la responsabilidad en público",
-        "descripcion": "Cuando algo sale mal, hablás vos y no dejás que caiga sobre un compañero. Te expone más a la crítica, pero te gana al grupo.",
+        "descripcion": "Cuando algo sale mal, hablás vos y no dejás que caiga sobre un compañero. Te expone más a la crítica, pero te gana el respeto del grupo.",
         "weight": 5,
         "outcomes": [
           {
@@ -260,7 +260,7 @@
     "category": "identidad",
     "categoria": "vestuario",
     "title": "Te subieron por encima de un veterano",
-    "description": "La dirigencia decidió que jugás vos y no el titular de los últimos tres años. Nadie te preguntó, y el grupo lo sabe: sos el pibe al que le hicieron lugar sacando a un querido.",
+    "description": "La directiva decidió que jugás vos y no el titular de los últimos tres años. Nadie te preguntó, y el grupo lo sabe: sos el pibe al que le hicieron lugar sacando a un querido.",
     "weight": 5,
     "cooldown": 8,
     "contexto": {
@@ -397,7 +397,7 @@
     "category": "identidad",
     "categoria": "vestuario",
     "title": "Llegó un coach que quiere refundar todo",
-    "description": "El staff nuevo trae ideas fuertes y poca paciencia con \"como se hacían las cosas\". Te busca a vos primero: si el referente del vestuario lo respalda, el resto lo sigue.",
+    "description": "El staff nuevo trae ideas fuertes y poca paciencia con \"como se hacían las cosas\". Te busca a vos primero: si el referente del equipo lo respalda, el resto lo sigue.",
     "weight": 5,
     "cooldown": 10,
     "contexto": {
@@ -465,7 +465,7 @@
     "category": "identidad",
     "categoria": "oportunidad",
     "title": "El club quiere refundar el proyecto sobre vos",
-    "description": "La dirigencia te sienta y te lo dice sin vueltas: quieren rearmar el equipo entero alrededor tuyo para los próximos años. Eso incluye dejar ir a dos compañeros con los que ganaste todo.",
+    "description": "La org te sienta y te lo dice sin vueltas: quieren rearmar el equipo entero alrededor tuyo para los próximos años. Eso incluye dejar ir a dos compañeros con los que ganaste todo.",
     "weight": 4,
     "cooldown": 12,
     "contexto": {
@@ -511,7 +511,7 @@
         "outcomes": [
           {
             "weight": 6,
-            "texto": "La dirigencia cede y el grupo sigue. El team se entera de que los bancaste y eso construye algo que ningún título construye.",
+            "texto": "La org cede y el grupo sigue. El team se entera de que los bancaste y eso construye algo que ningún título construye.",
             "effects": [
               { "type": "stat", "path": "career.arraigo", "min": 3, "max": 6, "clamp": [0, 100] },
               { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] }
