@@ -57,6 +57,13 @@ export const DELTAS_FAVORITO_BO5 = [0, 2, 4, 6, 8, 10, 12, 15];
 // Mejor de 5: gana el primero en llevarse este número de mapas.
 const MAPAS_PARA_GANAR_BO5 = 3;
 
+// Cero numérico del determinante de la regresión de 2 regresores (`regresionLineal2Regresores`): por debajo de
+// esto el nivel del jugador y el de sus compañeros son colineales y el R² conjunto no está definido (se
+// devuelve `null`). Medido en 40 carreras de `equilibrado` x 60 splits (seeds 1-40): el determinante vale
+// 1,8e10 con los 1.532 splits con tabla y 5,9e6 con solo 30 filas, así que 1e-12 atrapa la colinealidad
+// exacta (x2 = a*x1 + b) y no una correlación alta.
+export const EPSILON_DETERMINANTE = 1e-12;
+
 // Los tres tipos de split pro que distingue `ritmo` (ver `clasificarSplit`).
 export const TIPOS_DE_SPLIT = ['regular', 'playoffs', 'internacional'];
 
@@ -358,11 +365,6 @@ export function nivelMedioDeLiga(state) {
   return { media: BALANCE.mercado.nivelLigaPorDefecto, modelada: false };
 }
 
-// Calcula la media de nivel de los jugadores de la liga actual del jugador.
-export function calcularMediaNivelLiga(state) {
-  return nivelMedioDeLiga(state).media;
-}
-
 // Fase K0 (PLAN.md §K.3a): cálculo analítico cerrado de Bo5 para Δ de fuerza.
 // Nota: K2 va a reemplazar estos sigmas fijos por `ruidoEfectivo(state)`.
 // El 80% objetivo de K.3a es para Δ ≈ 10.
@@ -444,7 +446,7 @@ export function regresionLineal2Regresores(ys, xs1, xs2) {
   const acotar = (r2) => Math.max(0, Math.min(1, r2));
   const det = s11 * s22 - s12 * s12;
   let r2NivelYEquipo = null;
-  if (Math.abs(det) > 1e-12) {
+  if (Math.abs(det) > EPSILON_DETERMINANTE) {
     const b1 = (s22 * s1y - s12 * s2y) / det;
     const b2 = (s11 * s2y - s12 * s1y) / det;
     const ssreg = b1 * s1y + b2 * s2y;
@@ -561,6 +563,9 @@ export function medianaInferior(valores) {
   return ordenados[Math.floor((ordenados.length - 1) / 2)];
 }
 
+// Percentil "por piso": con los valores ordenados de menor a mayor, el de la posición min(n - 1, floor(p * n)).
+// No interpola (devuelve siempre un valor que está en la lista) y con n par el p50 es el central SUPERIOR; por eso
+// la mediana de los reportes (`mediana`) es otra función. `validate.js` recuenta los KPIs con esta misma definición.
 export function percentil(valores, p) {
   if (valores.length === 0) return null;
   const ordenados = [...valores].sort((a, b) => a - b);
@@ -885,6 +890,15 @@ function estadisticasDeAblacion(filasBasePorCarrera, filasSinPorCarrera) {
   };
 }
 
+// ¿`ruidoPuro` es interpretable? Solo si el techo estructural (R² de nivel + equipo con el ruido de resultados
+// en cero) llega a `UMBRAL_R2_ESTRUCTURAL`; con `null` (regresores colineales) tampoco. Devuelve
+// `{ interpretable, ruidoPuro }`: `ruidoPuro` es el crudo redondeado a 3 decimales, o `null` si no sirve de gate.
+// Pura (sin lote ni ablación) para que `validate.js` la pruebe con entradas sintéticas.
+export function decidirRuidoPuro(r2NivelYEquipoSinRuido, ruidoPuroCrudo) {
+  const interpretable = r2NivelYEquipoSinRuido !== null && r2NivelYEquipoSinRuido >= UMBRAL_R2_ESTRUCTURAL;
+  return { interpretable, ruidoPuro: interpretable ? redondear(ruidoPuroCrudo, 3) : null };
+}
+
 function bloqueVarianza(observaciones, splits, responder) {
   const corridasAblacion = Math.min(observaciones.length, MAX_CORRIDAS_ABLACION);
   const observacionesBase = observaciones.slice(0, corridasAblacion);
@@ -900,7 +914,8 @@ function bloqueVarianza(observaciones, splits, responder) {
     sinRuido.filasPorCarrera.map(soloModeladas)
   );
 
-  const estructuralInsuficiente = titular.r2NivelYEquipoSinRuido === null || titular.r2NivelYEquipoSinRuido < UMBRAL_R2_ESTRUCTURAL;
+  const { interpretable, ruidoPuro } = decidirRuidoPuro(titular.r2NivelYEquipoSinRuido, titular.ruidoPuroCrudo);
+  const estructuralInsuficiente = !interpretable;
   return {
     r2NivelYEquipo: redondear(titular.r2NivelYEquipo, 3),
     r2NivelYEquipoEE: redondear(titular.r2NivelYEquipoEE, 3),
@@ -908,7 +923,7 @@ function bloqueVarianza(observaciones, splits, responder) {
     r2SoloEquipo: redondear(titular.r2SoloEquipo, 3),
     r2NivelYEquipoSinRuido: redondear(titular.r2NivelYEquipoSinRuido, 3),
     r2NivelYEquipoSinRuidoEE: redondear(titular.r2NivelYEquipoSinRuidoEE, 3),
-    ruidoPuro: estructuralInsuficiente ? null : redondear(titular.ruidoPuroCrudo, 3),
+    ruidoPuro,
     ruidoPuroCrudo: redondear(titular.ruidoPuroCrudo, 3),
     ruidoPuroEE: redondear(titular.ruidoPuroEE, 3),
     umbralR2Estructural: UMBRAL_R2_ESTRUCTURAL,
@@ -1180,7 +1195,7 @@ export function correrLote(corridas, splits, estrategia) {
   const total = resultados.length;
   const llegaronAPro = resultados.filter((r) => r.splitFichaje !== null);
 
-  return {
+  const reporte = {
     estrategia,
     corridas,
     splits,
@@ -1218,6 +1233,14 @@ export function correrLote(corridas, splits, estrategia) {
     ritmo: bloqueRitmo(observaciones),
     porRegion: bloquePorRegion(resultados, carreras, observaciones)
   };
+  // Los datos crudos de las carreras del lote (estados finales y observaciones, en el orden de las seeds 1..n),
+  // para que `validate.js` recuente los KPIs desde ellos sin simular de nuevo. NO enumerable: no sale en el
+  // JSON del reporte, ni en `Object.entries`, ni en el spread.
+  Object.defineProperty(reporte, 'crudos', {
+    value: { resultados, carreras, jugabilidades, observaciones },
+    enumerable: false
+  });
+  return reporte;
 }
 
 // Fase J0 (AUDITORIA.md AUD-2): guardado detrás de `import.meta.url` para

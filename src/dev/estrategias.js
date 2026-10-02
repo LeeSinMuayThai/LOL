@@ -57,6 +57,25 @@ export function puntuarPrevia(opcion) {
 // del bot, no el motor. La tensión de CONCEPTO §7 (el "cuarto nombre de un gigante" contra ser titular en
 // un club más chico) sigue viva, pero ahora ADENTRO de cada tier, que es donde un jugador que sabe de LoL
 // la resolvería con la jerarquía.
+//
+// Lo que `criterio` hace HOY con esta regla, y lo que NO hace (medido en 400 carreras x 60 splits, seeds 1-400, con
+// `correrCarrera` y el espía de `resolverAuto` de validate.js; K0-A, 2ª revisión. Es una foto: si cambia el motor hay
+// que volver a medir, trampa T6):
+//  - Sigue renovando casi siempre: elige la renovación en el 88,5% de las decisiones de mercado que traen una (1.220 de
+//    1.378), contra el 26,1% de `equilibrado` (331 de 1.270). Sale de la regla y no es un bug: la renovación trae `hasta` =
+//    tu jerarquía actual y las demás ofertas del mismo tier arrancan en ~20-38. El bot es "quedate donde estás salvo que
+//    haya un tier mejor".
+//  - Con ofertas nunca elige un tier peor que el mejor disponible (0 de 2.383 decisiones; `equilibrado` lo hace en 114 de
+//    2.428, el 4,7%).
+//  - En los traspasos a mitad de contrato (`mercado:traspaso`) nunca elige "quedarse": 0 de 488 decisiones, las 488 aceptan.
+//    La opción `quedarse` no trae `tier` (TIER_SIN_DATO, peor que cualquier liga), así que siempre pierde contra `aceptar`.
+//  - NO usa "la probabilidad del propio motor" que pide la spec de K0 (§K.5): en el mercado compara tier, jerarquía y
+//    salario; en el resto usa solo el signo y la magnitud de la previa y una penalización fija a la ruleta.
+//  - Le delega a `resolverAuto` el 29,4% de sus decisiones (19.098 de 65.022): el momento del partido (`temporada:momento`,
+//    el 12,0%, sin previa en las opciones: decisión de diseño conocida), las rutinas (`practica` y `amateur:reparto`, el
+//    14,0%: usa la que elige el sistema) y algunos tipos sin previa del amateur, del retiro, de la salud y del servicio
+//    militar (el 3,4%). La lista cerrada de lo que delega está en el check "K0 criterio y malas: solo delegan en
+//    resolverAuto..." de validate.js.
 export function compararOfertasMercado(ofertaA, ofertaB) {
   const tierA = ofertaA.tier ?? TIER_SIN_DATO;
   const tierB = ofertaB.tier ?? TIER_SIN_DATO;
@@ -124,7 +143,9 @@ export function hashParaDecision(state, sistema, decision) {
   return hashCadena(clave);
 }
 
-// Bot `criterio`: proxy de un jugador que lee la pantalla y elige con criterio.
+// Bot `criterio`: proxy de un jugador que lee la pantalla y elige con criterio. Sus límites medidos (renueva ~89%, nunca
+// se queda en un traspaso, no usa la probabilidad del motor, delega el ~29% de las decisiones) están documentados arriba,
+// junto a `compararOfertasMercado`.
 function responderCriterio(sistema, state, decision, rng) {
   if (esDecisionDeRutina(decision)) {
     return sistema.resolverAuto(state, decision, rng);

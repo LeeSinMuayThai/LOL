@@ -7702,11 +7702,13 @@ check('J3 piso: un campeón en maestriaMinima nunca muestra "oxida" ni promete p
 // mutante -> check que lo mata está en el reporte de K0-A.
 const { calcularHuella } = await import('./huella.js');
 const {
-  medirAgencia, analizarDatosAgencia, tCritico, UMBRAL_SIGNIFICATIVO, MIN_REPLICAS_VALIDAS
+  medirAgencia, analizarDatosAgencia, tCritico, tCriticoBilateral, testMaximoT, significativaTestViejo,
+  replicasDeDecision, puntajeProvisorio, UMBRAL_SIGNIFICATIVO, MIN_REPLICAS_VALIDAS
 } = await import('./agencia.js');
 const {
   correrLote, correrCarrera: correrCarreraSimulate, correrSinRuido, calcularFavoritoBo5, contarBeats,
   clasificarSplit, PARAMETROS_RUIDO, DURACION_BEAT_MS, ESPERA_MINIJUEGO_MS, DELTAS_FAVORITO_BO5,
+  UMBRAL_R2_ESTRUCTURAL, decidirRuidoPuro,
   promedio, mediana: medianaSim, medianaInferior, percentil, desvioMuestral, pearson, varianza, regresionLineal2Regresores
 } = await import('./simulate.js');
 const {
@@ -7714,6 +7716,7 @@ const {
   esDecisionDeMercado, esDecisionDeRutina, esDecisionDeMinijuego
 } = await import('./estrategias.js');
 const { spawnSync } = await import('child_process');
+const osK0 = await import('os');
 
 // Carreras por bot en los lotes de los checks lentos (PLAN.md §K.5 pide 200).
 const CARRERAS_LOTE_K0 = 200;
@@ -7807,6 +7810,384 @@ function sistemaEspiaK0(sistema, alDelegar) {
 const rngProhibidoK0 = () => {
   throw new Error('el bot consumió rng en una decisión que debía resolver sin rng');
 };
+
+// ---------------------------------------------------------------------------------------------------------------
+// Recuentos independientes (K0-A, 2ª revisión). Los checks de K0 solo detectaban crashes y NaN: 21 de 29 mutantes
+// que dejaban un KPI en un valor equivocado pero finito, con los totales cerrando, pasaban. Lo que sigue es una
+// SEGUNDA implementación de los KPIs de `simulate.js`, escrita acá desde los datos crudos de las carreras
+// (estados finales y observaciones por split, que `correrLote` expone en `crudos`): no importa `percentil`,
+// `mediana`, `pearson`, `regresionLineal2Regresores` ni los bloques que verifica, así que un bug en cualquiera de
+// ellos no se replica acá. Las constantes `...K0` son literales propios, con la fuente de cada una: si K1-K5
+// cambian una a propósito, este check es el que hay que tocar (regla de proceso 17).
+// ---------------------------------------------------------------------------------------------------------------
+
+// Spec de K0 (PLAN.md §K.5): con menos de 30 pares no se devuelve coeficiente, ni una probabilidad condicional.
+const MUESTRA_MINIMA_K0 = 30;
+// §K.3b: una carrera pro "corta" dura menos de 4 años.
+const UMBRAL_CARRERA_CORTA_K0 = 4;
+// §K.3c: mentalidad y hype "saturados" = en el techo, >= 90.
+const UMBRAL_SATURACION_K0 = 90;
+// §K.3c: "<= 2 interrupciones por split pro; <= 4 en playoffs o internacional".
+const UMBRAL_SPLIT_K0 = 2;
+const UMBRAL_SPLIT_LARGO_K0 = 4;
+// El error estándar de la ablación sale de 200 remuestreos por carrera con `mulberry32(7777)`, sobre las primeras
+// 200 carreras del lote; el R² sin ruido tiene que llegar a 0,3 para que `ruidoPuro` sea interpretable.
+const REMUESTREOS_BOOTSTRAP_K0 = 200;
+// Umbrales de los checks que recuentan KPIs. Diferencia mínima entre una r (o una probabilidad) y la que daría un mutante
+// para que el recuento pueda distinguirlos; hojas mínimas que tiene que comparar el check de KPIs para no pasar vacío;
+// y carreras y decisiones propias mínimas del check de delegación.
+const DIFERENCIA_MINIMA_R_K0 = 0.01;
+const DIFERENCIA_MINIMA_PROBABILIDAD_K0 = 0.05;
+const HOJAS_MINIMAS_K0 = 800;
+const CARRERAS_DELEGACION_K0 = 12;
+const DECISIONES_PROPIAS_MINIMAS_K0 = 200;
+const SEMILLA_BOOTSTRAP_K0 = 7777;
+const MAX_CORRIDAS_ABLACION_K0 = 200;
+const UMBRAL_R2_ESTRUCTURAL_K0 = 0.3;
+// 1 − r12² por debajo de esto: los dos regresores (nivel del jugador y de sus compañeros) son colineales y el R²
+// conjunto no está definido. La correlación real entre ellos es ~0,5 (r12² ~ 0,2), así que solo atrapa lo exacto.
+const EPSILON_COLINEAL_K0 = 1e-12;
+// Los 5 ruidos de resultados que apaga la ablación (§K.3a): ruido de cada partido de la temporada, de cada mapa y
+// del rival en la serie, y el del rendimiento del jugador. Es una lista literal, NO la de `PARAMETROS_RUIDO`: si
+// esa se acorta, la ablación recontada acá la sigue apagando completa y el KPI no coincide.
+const RUIDOS_ABLACION_K0 = [
+  ['rendimiento', 'ruidoRendimiento'],
+  ['temporada', 'ruidoFecha'],
+  ['temporada', 'ruidoRivalFecha'],
+  ['serie', 'ruidoMapa'],
+  ['serie', 'ruidoRivalSerie']
+];
+// Los tres bots de K0 con los que se comparan los lotes de 200 carreras, y los cuatro de la ablación.
+const BOTS_K0 = ['criterio', 'azar', 'malas'];
+const BOTS_ABLACION_K0 = ['equilibrado', 'criterio', 'azar', 'malas'];
+
+const cuentaK0 = (lista, condicion) => lista.filter(condicion).length;
+const mediaK0 = (valores) => (valores.length > 0 ? valores.reduce((s, v) => s + v, 0) / valores.length : null);
+const redondeoK0 = (valor, decimales) => (valor === null ? null : Number(valor.toFixed(decimales)));
+// Porcentaje con un decimal; null sin base.
+const pctK0 = (parte, total) => (total > 0 ? Number(((parte / total) * 100).toFixed(1)) : null);
+
+// Mediana: con n par, el promedio de los dos centrales.
+function medianaK0(valores) {
+  if (valores.length === 0) return null;
+  const ordenados = [...valores].sort((a, b) => a - b);
+  const mitad = Math.floor(ordenados.length / 2);
+  return ordenados.length % 2 === 0 ? (ordenados[mitad - 1] + ordenados[mitad]) / 2 : ordenados[mitad];
+}
+
+// Percentil "por piso" (la definición que documenta `percentil` de simulate.js): con los valores ordenados de
+// menor a mayor, el de la posición min(n - 1, floor(p * n)). No interpola.
+function percentilK0(valores, p) {
+  if (valores.length === 0) return null;
+  const ordenados = [...valores].sort((a, b) => a - b);
+  return ordenados[Math.min(ordenados.length - 1, Math.floor(p * ordenados.length))];
+}
+
+const varianzaPoblacionalK0 = (valores) => {
+  const media = mediaK0(valores);
+  return valores.reduce((s, v) => s + (v - media) ** 2, 0) / valores.length;
+};
+
+// Desvío muestral (n - 1).
+const desvioK0 = (valores) => (valores.length < 2 ? 0 : Math.sqrt(valores.reduce((s, v) => s + (v - mediaK0(valores)) ** 2, 0) / (valores.length - 1)));
+
+// Correlación de Pearson en dos pasadas; null si alguna de las dos series es constante.
+function correlacionK0(xs, ys) {
+  const mx = mediaK0(xs);
+  const my = mediaK0(ys);
+  let sxy = 0;
+  let sxx = 0;
+  let syy = 0;
+  xs.forEach((x, i) => {
+    sxy += (x - mx) * (ys[i] - my);
+    sxx += (x - mx) ** 2;
+    syy += (ys[i] - my) ** 2;
+  });
+  return sxx > 0 && syy > 0 ? sxy / Math.sqrt(sxx * syy) : null;
+}
+const cuadradoK0 = (valor) => (valor === null ? null : valor * valor);
+const pearsonK0 = (xs, ys) => (xs.length < MUESTRA_MINIMA_K0 ? null : correlacionK0(xs, ys));
+
+// R² de la regresión de y contra DOS regresores, por la fórmula de las correlaciones (otra ruta que la matriz de
+// covarianzas de `regresionLineal2Regresores`): R² = (r1² + r2² − 2·r1·r2·r12) / (1 − r12²), acotado a [0, 1].
+// null con menos de 30 filas, con una serie constante o con los regresores colineales.
+function r2DosRegresoresK0(ys, xs1, xs2) {
+  if (ys.length < MUESTRA_MINIMA_K0) return null;
+  const r1 = correlacionK0(xs1, ys);
+  const r2 = correlacionK0(xs2, ys);
+  const r12 = correlacionK0(xs1, xs2);
+  if (r1 === null || r2 === null || r12 === null || 1 - r12 * r12 < EPSILON_COLINEAL_K0) return null;
+  return Math.max(0, Math.min(1, (r1 * r1 + r2 * r2 - 2 * r1 * r2 * r12) / (1 - r12 * r12)));
+}
+
+// Los KPIs de `embudo` (§K.3b) de un conjunto de carreras: `resultados` = estados finales, `carreras` = lo que
+// observó `correrCarrera` por carrera (`tierMaximo`), `observaciones` = ídem (`temporadasNumero1`).
+function recuentoEmbudoK0(resultados, carreras) {
+  const total = resultados.length;
+  const indices = resultados.map((_, i) => i);
+  const tier = carreras.map((c) => c.tierMaximo);
+  const buenPapel = resultados.map((r) => cuentaK0(r.career.registro.internacionales, (i) => i.resultado === 'buen_papel'));
+  // "#1 del mundo en una temporada" = el reveal del Top 20 de fin de año dice que sos el #1 (los logs `top_mundial`).
+  const temporadasNumeroUno = resultados.map((r) => cuentaK0(r.logs, (l) => l.type === 'top_mundial' && l.rankJugador === 1));
+  const llegaAPro = (i) => resultados[i].splitFichaje !== null;
+  const nTier1 = cuentaK0(indices, (i) => tier[i] === 1);
+  const nTop20 = cuentaK0(resultados, (r) => (r.career.registro.picos.rankMundial ?? 0) > 0);
+  const conBuenPapel = cuentaK0(buenPapel, (n) => n >= 1);
+  const conDosBuenPapel = cuentaK0(buenPapel, (n) => n >= 2);
+  return {
+    noLlegaAPro: pctK0(cuentaK0(indices, (i) => !llegaAPro(i)), total),
+    llegaAPro: pctK0(cuentaK0(indices, llegaAPro), total),
+    estancadoT2T3: pctK0(cuentaK0(indices, (i) => llegaAPro(i) && tier[i] !== null && tier[i] >= 2), total),
+    proSinTierNunca: pctK0(cuentaK0(indices, (i) => llegaAPro(i) && tier[i] === null), total),
+    llegaATier1: pctK0(nTier1, total),
+    ganaTituloDomestico: pctK0(cuentaK0(resultados, (r) => r.career.registro.titulos.length >= 1), total),
+    top20: pctK0(nTop20, total),
+    top20DeTier1: nTier1 > 0 ? pctK0(nTop20, nTier1) : 0,
+    numeroUnoAlgunaVez: pctK0(cuentaK0(resultados, (r) => r.career.registro.picos.rankMundial === 1), total),
+    numeroUnoDelMundo3Temporadas: pctK0(cuentaK0(temporadasNumeroUno, (n) => n >= 3), total),
+    ganaMundial: pctK0(conBuenPapel, total),
+    proxyAntesDeK5: true,
+    nuevoFaker: pctK0(cuentaK0(indices, (i) => buenPapel[i] >= 2 || temporadasNumeroUno[i] >= 3), total),
+    pOtroMundialDadoUno: conBuenPapel >= MUESTRA_MINIMA_K0 ? redondeoK0(conDosBuenPapel / conBuenPapel, 3) : null,
+    pOtroMundialN: conBuenPapel,
+    buenPapelPorCarrera: { media: redondeoK0(mediaK0(buenPapel), 2), mediana: medianaK0(buenPapel) }
+  };
+}
+
+// §K.3b — longevidad de los que llegaron a pro.
+function recuentoLongevidadK0(resultados) {
+  const pro = resultados.filter((r) => r.splitFichaje !== null);
+  const anios = pro.map((r) => (r.player.splitCount - r.splitFichaje) / BALANCE.edad.splitsPorEdad);
+  const finales = {};
+  for (const r of pro) {
+    const clave = r.finAnticipado ?? 'retiro_normal';
+    finales[clave] = (finales[clave] ?? 0) + 1;
+  }
+  return {
+    aniosCarreraPro: {
+      mediana: medianaK0(anios),
+      p10: percentilK0(anios, 0.1),
+      p90: percentilK0(anios, 0.9),
+      pctMenosDe4Anios: pctK0(cuentaK0(anios, (a) => a < UMBRAL_CARRERA_CORTA_K0), anios.length)
+    },
+    pctTerminaEnLineaForzosa34: pro.length > 0 ? pctK0(cuentaK0(pro, (r) => r.age >= BALANCE.retiro.edadRetiroForzoso), pro.length) : 0,
+    desgloseFinAnticipado: Object.fromEntries(Object.entries(finales).map(([clave, cantidad]) => [clave, `${cantidad} (${((cantidad / (pro.length || 1)) * 100).toFixed(1)}%)`]))
+  };
+}
+
+// §K.3c — distribución de `mentalidad` y `hype` sobre todos los splits pro.
+function recuentoEconomiaK0(observaciones) {
+  const filas = observaciones.flatMap((o) => o.splitsProData);
+  const distribucion = (valores) => ({
+    p10: redondeoK0(percentilK0(valores, 0.1), 1),
+    p25: redondeoK0(percentilK0(valores, 0.25), 1),
+    p50: redondeoK0(percentilK0(valores, 0.5), 1),
+    p75: redondeoK0(percentilK0(valores, 0.75), 1),
+    p90: redondeoK0(percentilK0(valores, 0.9), 1),
+    pctMayorIgual90: pctK0(cuentaK0(valores, (v) => v >= UMBRAL_SATURACION_K0), valores.length)
+  });
+  return { mentalidad: distribucion(filas.map((d) => d.mentalidad)), hype: distribucion(filas.map((d) => d.hype)) };
+}
+
+// §K.3c — el ritmo. `desglosePorTipo` va como mapa tipo -> hojas (el reporte lo da como lista ordenada).
+function recuentoRitmoK0(observaciones) {
+  const total = observaciones.length;
+  const suma = (mapa) => Object.values(mapa).reduce((a, b) => a + b, 0);
+  const decisionesPorCarrera = observaciones.map((o) => suma(o.decisionesPorTipo));
+  const splitsPro = observaciones.flatMap((o) => o.splitsProRitmo);
+  const resumen = (valores) => ({
+    n: valores.length,
+    p50: medianaK0(valores),
+    p90: percentilK0(valores, 0.9),
+    max: valores.length > 0 ? Math.max(...valores) : null,
+    pctMasDe2: pctK0(cuentaK0(valores, (v) => v > UMBRAL_SPLIT_K0), valores.length),
+    pctMasDe4: pctK0(cuentaK0(valores, (v) => v > UMBRAL_SPLIT_LARGO_K0), valores.length)
+  });
+  const acumulado = {};
+  for (const o of observaciones) {
+    for (const [tipo, cantidad] of Object.entries(o.decisionesPorTipo)) {
+      acumulado[tipo] = (acumulado[tipo] ?? 0) + cantidad;
+    }
+  }
+  const totalDecisiones = suma(acumulado);
+  const enMinutos = (valores) => ({ mediana: redondeoK0(medianaK0(valores), 2), p90: redondeoK0(percentilK0(valores, 0.9), 2) });
+  const minijuegos = observaciones.map((o) => o.minijuegosCount);
+  return {
+    interrupcionesPorCarrera: {
+      min: Math.round(Math.min(...decisionesPorCarrera)),
+      max: Math.round(Math.max(...decisionesPorCarrera)),
+      promedio: Number((suma(decisionesPorCarrera) / total).toFixed(2)),
+      mediana: medianaK0(decisionesPorCarrera),
+      p90: percentilK0(decisionesPorCarrera, 0.9)
+    },
+    interrupcionesPorSplitPro: {
+      todos: resumen(splitsPro.map((s) => s.decisiones)),
+      regular: resumen(splitsPro.filter((s) => s.tipo === 'regular').map((s) => s.decisiones)),
+      playoffs: resumen(splitsPro.filter((s) => s.tipo === 'playoffs').map((s) => s.decisiones)),
+      internacional: resumen(splitsPro.filter((s) => s.tipo === 'internacional').map((s) => s.decisiones))
+    },
+    desglosePorTipo: Object.fromEntries(Object.entries(acumulado).map(([tipo, cantidad]) => [tipo, {
+      cantidadPorCarrera: redondeoK0(cantidad / total, 1),
+      pctDelTotal: pctK0(cantidad, totalDecisiones) ?? 0
+    }])),
+    minijuegosPorCarrera: { promedio: redondeoK0(mediaK0(minijuegos), 2), mediana: medianaK0(minijuegos) },
+    tiempoMaquinaMin: enMinutos(observaciones.map((o) => o.tiempoMaquinaMin)),
+    tiempoReproductorMin: enMinutos(observaciones.map((o) => o.tiempoReproductorMin))
+  };
+}
+
+// §K.3a — la correlación nivel/posición. La "misma liga" va SOLO sobre los splits con la liga modelada (tier ≠ 3):
+// en los demás el "nivel de la liga" es una constante y centrar por ella no centra nada. Los r van SIN redondear.
+function recuentoPosicionK0(observaciones) {
+  const conTabla = observaciones.flatMap((o) => o.splitsProData).filter((d) => d.posNorm !== null);
+  const modelados = conTabla.filter((d) => d.ligaModelada);
+  return {
+    rNivelPosicionMismaLiga: pearsonK0(modelados.map((d) => d.nivelRelativoJugador), modelados.map((d) => d.posNorm)),
+    rNivelPosicionBruto: pearsonK0(conTabla.map((d) => d.nivel), conTabla.map((d) => d.posNorm)),
+    splitsConTabla: conTabla.length,
+    splitsExcluidosLigaNoModelada: conTabla.length - modelados.length
+  };
+}
+
+// El reporte de un conjunto de carreras (el lote entero o las de una región), todo recontado desde `crudos`.
+function recuentoKPIsK0({ resultados, carreras, observaciones }) {
+  return {
+    embudo: recuentoEmbudoK0(resultados, carreras),
+    longevidad: recuentoLongevidadK0(resultados),
+    economia: recuentoEconomiaK0(observaciones),
+    ritmo: recuentoRitmoK0(observaciones),
+    nivel: recuentoPosicionK0(observaciones)
+  };
+}
+
+// `porRegion` (`state.mundo.regionOrigen`): los mismos KPIs sobre las carreras de cada región.
+function recuentoPorRegionK0({ resultados, carreras, observaciones }) {
+  const indicesPorRegion = {};
+  resultados.forEach((r, i) => {
+    const region = r.mundo.regionOrigen ?? 'Desconocida';
+    indicesPorRegion[region] = indicesPorRegion[region] ?? [];
+    indicesPorRegion[region].push(i);
+  });
+  return Object.fromEntries(Object.entries(indicesPorRegion).map(([region, indices]) => {
+    const parcial = recuentoKPIsK0({
+      resultados: indices.map((i) => resultados[i]),
+      carreras: indices.map((i) => carreras[i]),
+      observaciones: indices.map((i) => observaciones[i])
+    });
+    return [region, {
+      totalCarreras: indices.length,
+      embudo: parcial.embudo,
+      longevidad: parcial.longevidad,
+      nivel: parcial.nivel,
+      ritmo: {
+        interrupcionesPorCarreraMediana: parcial.ritmo.interrupcionesPorCarrera.mediana,
+        interrupcionesPorSplitProMediana: parcial.ritmo.interrupcionesPorSplitPro.todos.p50,
+        minijuegosPorCarreraMediana: parcial.ritmo.minijuegosPorCarrera.mediana,
+        tiempoMaquinaMinMediana: parcial.ritmo.tiempoMaquinaMin.mediana,
+        tiempoReproductorMinMediana: parcial.ritmo.tiempoReproductorMin.mediana
+      }
+    }];
+  }));
+}
+
+// Tolerancia de las hojas: los r vienen redondeados a 3 decimales en el reporte y acá SIN redondear (la media
+// unidad del último decimal, más un resto de coma flotante); el resto de las hojas se recuenta con la misma
+// aritmética de enteros y tiene que dar igual.
+const TOLERANCIA_R_K0 = 5e-4 + 1e-9;
+const TOLERANCIA_EXACTA_K0 = 1e-9;
+
+// Compara `medido` contra `esperado` hoja por hoja (solo las claves del recuento); cuenta las hojas comparadas y
+// acumula los problemas. `ignorar` = claves del reporte que el recuento no cubre a propósito.
+function compararHojasK0(medido, esperado, ruta, problemas, cuenta, ignorar = []) {
+  if (esperado !== null && typeof esperado === 'object') {
+    if (medido === null || typeof medido !== 'object') {
+      problemas.push(`${ruta}: el reporte no trae un objeto (${JSON.stringify(medido)})`);
+      return;
+    }
+    for (const clave of Object.keys(esperado)) {
+      compararHojasK0(medido[clave], esperado[clave], `${ruta}.${clave}`, problemas, cuenta, ignorar);
+    }
+    for (const clave of Object.keys(medido)) {
+      if (!(clave in esperado) && !ignorar.includes(clave)) {
+        problemas.push(`${ruta}.${clave}: hoja del reporte que el recuento independiente no cubre`);
+      }
+    }
+    return;
+  }
+  cuenta.hojas += 1;
+  const tolerancia = /\.rNivelPosicion(MismaLiga|Bruto)$/.test(ruta) ? TOLERANCIA_R_K0 : TOLERANCIA_EXACTA_K0;
+  const coincide = typeof esperado === 'number'
+    ? typeof medido === 'number' && Math.abs(medido - esperado) <= tolerancia
+    : medido === esperado;
+  if (!coincide) {
+    problemas.push(`${ruta}: el reporte dice ${JSON.stringify(medido)}, el recuento independiente ${JSON.stringify(esperado)}`);
+  }
+}
+
+// La ablación (§K.3a), recontada acá: los 5 ruidos de `RUIDOS_ABLACION_K0` en cero, las carreras de las seeds
+// dadas con el bot dado, las filas de `splitsProData` de cada una. Restaura SIEMPRE los ruidos (`finally`).
+// No usa `correrSinRuido` ni `PARAMETROS_RUIDO`: son los que se verifican.
+function ablacionIndependienteK0(semillas, splits, responder) {
+  const originales = RUIDOS_ABLACION_K0.map(([grupo, clave]) => BALANCE[grupo][clave]);
+  try {
+    for (const [grupo, clave] of RUIDOS_ABLACION_K0) {
+      BALANCE[grupo][clave] = 0;
+    }
+    return semillas.map((seed) => correrCarreraSimulate(seed, splits, responder).observacion.splitsProData);
+  } finally {
+    RUIDOS_ABLACION_K0.forEach(([grupo, clave], i) => {
+      BALANCE[grupo][clave] = originales[i];
+    });
+  }
+}
+
+// Los estadísticos de la ablación sobre filas planas: varianza poblacional de la posición y R² de nivel + equipo.
+function estadisticosAblacionK0(filas) {
+  return {
+    varianza: filas.length < 2 ? 0 : varianzaPoblacionalK0(filas.map((d) => d.posNorm)),
+    r2: r2DosRegresoresK0(filas.map((d) => d.posNorm), filas.map((d) => d.nivelRelativoJugador), filas.map((d) => d.nivelRelativoCompaneros))
+  };
+}
+
+// La varianza explicada de un conjunto de filas por carrera (lote normal y lote sin ruido), recontada: los R²
+// y las varianzas del titular, y el bootstrap por carrera (200 remuestreos de carreras enteras con la semilla
+// 7777: primero las del lote normal y después las del lote sin ruido, en cada remuestreo, con UN solo rng).
+function recuentoVarianzaK0(filasBasePorCarrera, filasSinPorCarrera) {
+  const base = estadisticosAblacionK0(filasBasePorCarrera.flat());
+  const sin = estadisticosAblacionK0(filasSinPorCarrera.flat());
+  const baseFlat = filasBasePorCarrera.flat();
+  const ys = baseFlat.map((d) => d.posNorm);
+  const rng = mulberry32(SEMILLA_BOOTSTRAP_K0);
+  const remuestrear = (porCarrera) => {
+    const elegidas = [];
+    for (let i = 0; i < porCarrera.length; i += 1) {
+      elegidas.push(porCarrera[Math.floor(rng() * porCarrera.length)]);
+    }
+    return elegidas.flat();
+  };
+  const muestras = { ruidoPuro: [], r2Base: [], r2Sin: [] };
+  for (let b = 0; b < REMUESTREOS_BOOTSTRAP_K0; b += 1) {
+    const remBase = estadisticosAblacionK0(remuestrear(filasBasePorCarrera));
+    const remSin = estadisticosAblacionK0(remuestrear(filasSinPorCarrera));
+    if (remBase.varianza > 0) muestras.ruidoPuro.push(1 - remSin.varianza / remBase.varianza);
+    if (remBase.r2 !== null) muestras.r2Base.push(remBase.r2);
+    if (remSin.r2 !== null) muestras.r2Sin.push(remSin.r2);
+  }
+  return {
+    r2: base.r2,
+    r2SoloNivel: cuadradoK0(baseFlat.length < MUESTRA_MINIMA_K0 ? null : correlacionK0(baseFlat.map((d) => d.nivelRelativoJugador), ys)),
+    r2SoloEquipo: cuadradoK0(baseFlat.length < MUESTRA_MINIMA_K0 ? null : correlacionK0(baseFlat.map((d) => d.nivelRelativoCompaneros), ys)),
+    r2Sin: sin.r2,
+    varBase: base.varianza,
+    varSin: sin.varianza,
+    ruidoPuroCrudo: base.varianza > 0 ? 1 - sin.varianza / base.varianza : null,
+    eeR2: desvioK0(muestras.r2Base),
+    eeR2Sin: desvioK0(muestras.r2Sin),
+    eeRuidoPuro: desvioK0(muestras.ruidoPuro),
+    nBase: baseFlat.length,
+    nSin: filasSinPorCarrera.flat().length
+  };
+}
 
 check('K0 foto de ruido: BALANCE arranca con los 5 ruidos > 0 y igual a una copia virgen de balance.js', () => {
   // Trinquete (K0-A, revisión): sin esta foto "ablación restaura BALANCE" comparaba contra una foto ya contaminada.
@@ -8045,12 +8426,76 @@ check('K0 favoritoBo5: coincide con una Bo5 binomial explícita, Δ=0 da 0,5, es
   }
 });
 
+// Una réplica sintética de agencia: solo `fin.score` importa para el test; el resto son los campos que
+// `analizarDatosAgencia` lee.
+const repSinteticaK0 = (score) => ({ fin: { score, titulos: 0, t1: 0, splits: 10, rank: 0 }, c1: { pos: 1, nivel: 50, jer: 50, ment: 50, hype: 50, elo: 1000 } });
+
+// Referencia estándar: valor crítico de la t de Student bilateral al 95% (α = 0,05) para df 1 a 30.
+const T_REFERENCIA_95_K0 = [
+  12.706, 4.303, 3.182, 2.776, 2.571, 2.447, 2.365, 2.306, 2.262, 2.228,
+  2.201, 2.179, 2.160, 2.145, 2.131, 2.120, 2.110, 2.101, 2.093, 2.086,
+  2.080, 2.074, 2.069, 2.064, 2.060, 2.056, 2.052, 2.048, 2.045, 2.042
+];
+// La referencia viene redondeada a 3 decimales: el error máximo de un valor correcto es media milésima.
+const TOLERANCIA_TABLA_T_K0 = 5e-4 + 1e-9;
+
+check('K0 tabla t: la tabla df 1 a 30 coincide con la referencia estándar y tCriticoBilateral la reproduce (también α = 0,01 y las formas cerradas de df 1 y 2)', () => {
+  // Trinquete (K0-A, 2ª revisión): el check anclaba 9 de los 30 valores; df 3 = 2,9 y df 15 = 2,130 pasaban. Ahora
+  // se ancla la tabla ENTERA contra la referencia estándar, y el cálculo numérico contra la tabla y contra valores
+  // independientes (α = 0,01 de tablas publicadas y la forma cerrada de df 1 y df 2, que sirve para cualquier α).
+  T_REFERENCIA_95_K0.forEach((referencia, i) => {
+    const df = i + 1;
+    if (Math.abs(tCritico(df) - referencia) > TOLERANCIA_TABLA_T_K0) {
+      throw new Error(`tCritico(${df}) = ${tCritico(df)}, la referencia estándar dice ${referencia}`);
+    }
+    if (Math.abs(tCriticoBilateral(df, 0.05) - referencia) > TOLERANCIA_TABLA_T_K0) {
+      throw new Error(`tCriticoBilateral(${df}, 0,05) = ${tCriticoBilateral(df, 0.05)}, la referencia estándar dice ${referencia}`);
+    }
+  });
+  // Más allá de df 30 la tabla usa el límite normal.
+  for (const df of [31, 200]) {
+    if (tCritico(df) !== 1.96) {
+      throw new Error(`tCritico(${df}) tenía que ser el límite normal 1,96, dio ${tCritico(df)}`);
+    }
+  }
+  for (const [df, esperado] of [[5, 4.032], [10, 3.169], [30, 2.750]]) {
+    if (Math.abs(tCriticoBilateral(df, 0.01) - esperado) > 5e-3) {
+      throw new Error(`tCriticoBilateral(${df}, 0,01) = ${tCriticoBilateral(df, 0.01)}, las tablas dicen ${esperado}`);
+    }
+  }
+  // Formas cerradas, válidas para cualquier α: df 1 (Cauchy) t = tan(π(1 − α)/2); df 2 t = √2·(1 − α) / √(1 − (1 − α)²).
+  for (const alfa of [0.05, 0.05 / 3, 0.05 / 6, 0.05 / 15, 0.05 / 21]) {
+    const cauchy = Math.tan((Math.PI * (1 - alfa)) / 2);
+    const dos = (Math.SQRT2 * (1 - alfa)) / Math.sqrt(1 - (1 - alfa) ** 2);
+    if (Math.abs(tCriticoBilateral(1, alfa) / cauchy - 1) > 1e-9 || Math.abs(tCriticoBilateral(2, alfa) / dos - 1) > 1e-9) {
+      throw new Error(`α = ${alfa}: df 1 da ${tCriticoBilateral(1, alfa)} (exacto ${cauchy}), df 2 da ${tCriticoBilateral(2, alfa)} (exacto ${dos})`);
+    }
+  }
+  // Más grados de libertad o más α: el crítico baja; menos α: sube.
+  if (!(tCriticoBilateral(5, 0.05) > tCriticoBilateral(6, 0.05) && tCriticoBilateral(5, 0.01) > tCriticoBilateral(5, 0.05))) {
+    throw new Error('tCriticoBilateral tiene que bajar con df y subir al achicar α');
+  }
+  for (const [df, alfa] of [[0, 0.05], [5, 0], [5, 1]]) {
+    let lanzo = false;
+    try {
+      tCriticoBilateral(df, alfa);
+    } catch {
+      lanzo = true;
+    }
+    if (!lanzo) {
+      throw new Error(`tCriticoBilateral(${df}, ${alfa}) tenía que rechazar los argumentos fuera de dominio`);
+    }
+  }
+});
+
 // Conjunto sintético de agencia con respuesta conocida (no simula nada: pasa la referencia de σ a mano).
 // 4 tipos "claramente significativos", uno justo por encima del umbral (12,5%), uno justo por debajo (9,1%),
 // y varios sin efecto, más un tipo que nunca se midió (una interrupción sin elección real).
-check('K0 agencia sintética: pctInterrupcionesConPalanca exacto, umbral, réplicas mínimas y tabla t', () => {
+check('K0 agencia sintética: las tres definiciones de pctInterrupcionesConPalanca con números calculados a mano, umbral y réplicas mínimas', () => {
   // Trinquete (K0-A, revisión): con el umbral en 0, o el porcentaje x10, la corrida real seguía "finita y en rango".
-  const rep = (score) => ({ fin: { score, titulos: 0, t1: 0, splits: 10, rank: 0 }, c1: { pos: 1, nivel: 50, jer: 50, ment: 50, hype: 50, elo: 1000 } });
+  // K0-A, 2ª revisión: `pctInterrupcionesConPalanca` pasó a ser el PONDERADO sin umbral y el todo-o-nada de la auditoría
+  // se llama `...Auditoria` (con el test corregido por comparaciones múltiples); la tabla t tiene su propio check.
+  const rep = repSinteticaK0;
   const decision = (tipo, a, b) => ({ seed: 1, split: 1, tipo, labels: ['a', 'b'], porOpcion: [a.map(rep), b.map(rep)] });
   const SIG = [[100, 103, 98, 101], [10, 12, 9, 11]]; // diferencias 90, 91, 89, 90: t enorme
   const NO = [[10, 12, 11, 13], [11, 12, 12, 12]]; // diferencias 1, 0, 1, -1: t = 0,52 (crítico con df 3: 3,182)
@@ -8083,12 +8528,22 @@ check('K0 agencia sintética: pctInterrupcionesConPalanca exacto, umbral, répli
   }
 
   const analisis = analizarDatosAgencia({ resultados, frecuenciasTipo, totalInterrupciones }, 1, { sPop: 10, sPopT: 1 });
-  // Con palanca (>= UMBRAL_SIGNIFICATIVO = 10%): serie:draft 30 + mercado:oferta 20 + amateur:reparto 10 + eventos 50 = 110 de 200.
+  // TODO-O-NADA (la auditoría), con >= UMBRAL_SIGNIFICATIVO = 10%: serie:draft 30 + mercado:oferta 20 + amateur:reparto 10
+  // + eventos 50 (12,5% de sus decisiones) = 110 de 200 = 55 %. serie:minijuego (9,1%) no llega y no suma.
+  // Con el test viejo da lo mismo: con 2 opciones el único par es el mejor contra el peor.
+  // PONDERADO (el KPI): Σ frecuencia × fracción significativa = 30×1 + 20×1 + 10×1 + 50×(1/8) + 25×(1/11) = 66,25 + 25/11
+  // = 68,5227; sobre 200 interrupciones: 34,2614 → 34,3 %.
   if (UMBRAL_SIGNIFICATIVO !== 10) {
     throw new Error(`UMBRAL_SIGNIFICATIVO tenía que ser 10 (la lectura de AUDITORIA.md §4.3), es ${UMBRAL_SIGNIFICATIVO}`);
   }
-  if (analisis.pctInterrupcionesConPalanca !== 55) {
-    throw new Error(`pctInterrupcionesConPalanca tenía que ser 55 (110 de 200), dio ${analisis.pctInterrupcionesConPalanca}`);
+  if (analisis.pctInterrupcionesConPalancaAuditoria !== 55) {
+    throw new Error(`pctInterrupcionesConPalancaAuditoria tenía que ser 55 (110 de 200), dio ${analisis.pctInterrupcionesConPalancaAuditoria}`);
+  }
+  if (analisis.pctInterrupcionesConPalancaAuditoriaTestViejo !== 55) {
+    throw new Error(`pctInterrupcionesConPalancaAuditoriaTestViejo tenía que ser 55 (con 2 opciones el test viejo y el nuevo coinciden), dio ${analisis.pctInterrupcionesConPalancaAuditoriaTestViejo}`);
+  }
+  if (analisis.pctInterrupcionesConPalanca !== 34.3) {
+    throw new Error(`pctInterrupcionesConPalanca (ponderado) tenía que ser 34,3 (68,52 de 200), dio ${analisis.pctInterrupcionesConPalanca}`);
   }
   if (analisis.totalDecisionesMedidas !== resultados.length) {
     throw new Error(`totalDecisionesMedidas ${analisis.totalDecisionesMedidas} != ${resultados.length}`);
@@ -8113,18 +8568,414 @@ check('K0 agencia sintética: pctInterrupcionesConPalanca exacto, umbral, répli
   if (MIN_REPLICAS_VALIDAS !== 4) {
     throw new Error(`MIN_REPLICAS_VALIDAS tenía que ser 4 (la auditoría), es ${MIN_REPLICAS_VALIDAS}`);
   }
+});
 
-  // Valores críticos de t bilateral p<0,05: anclas conocidas, estrictamente decrecientes hasta df 30, 1,96 más allá.
-  const anclas = [[1, 12.706], [2, 4.303], [5, 2.571], [7, 2.365], [10, 2.228], [12, 2.179], [20, 2.086], [25, 2.06], [30, 2.042], [31, 1.96], [200, 1.96]];
-  for (const [df, esperado] of anclas) {
-    if (tCritico(df) !== esperado) {
-      throw new Error(`tCritico(${df}) tenía que ser ${esperado}, dio ${tCritico(df)}`);
+check('K0 puntajeProvisorio: la fórmula de la auditoría (§4.3 y Apéndice A) con un registro armado a mano', () => {
+  // Trinquete (K0-A, 2ª revisión): los pesos 10, 15, 5, 21, 2 y 10 eran literales sueltos y pasaron a constantes con nombre; ningún check
+  // calculaba el puntaje, así que cambiar un peso (o el tope del ranking) no lo veía nadie.
+  const registro = (extra = {}) => ({
+    splitFichaje: 4,
+    career: {
+      registro: {
+        titulos: [{}, {}], // 2 títulos domésticos = 20
+        internacionales: [{ resultado: 'buen_papel' }, { resultado: 'buen_papel' }, { resultado: 'buen_papel' }, { resultado: 'mal_papel' }], // 3 x 15 + 1 x 5 = 50
+        picos: { rankMundial: 3 }, // (21 - 3) x 2 = 36
+        porOrg: [{ tier: 1, splits: 5 }, { tier: 2, splits: 7 }, { tier: 1, splits: 2 }], // 7 splits en tier 1 = 7
+        ...extra
+      }
+    }
+  });
+  // Llegó a pro (+10): 20 + 50 + 36 + 7 + 10 = 123.
+  if (puntajeProvisorio(registro()) !== 123) {
+    throw new Error(`puntajeProvisorio tenía que dar 123 (20 + 50 + 36 + 7 + 10), dio ${puntajeProvisorio(registro())}`);
+  }
+  // Sin pico en el Top 20 (rankMundial null): sin los 36 del ranking.
+  if (puntajeProvisorio(registro({ picos: { rankMundial: null } })) !== 87) {
+    throw new Error(`sin ranking tenía que dar 87, dio ${puntajeProvisorio(registro({ picos: { rankMundial: null } }))}`);
+  }
+  // #1 del mundo vale (21 - 1) x 2 = 40; el #20, 2.
+  if (puntajeProvisorio(registro({ picos: { rankMundial: 1 } })) !== 127 || puntajeProvisorio(registro({ picos: { rankMundial: 20 } })) !== 89) {
+    throw new Error('el #1 del mundo tenía que sumar 40 (127 en total) y el #20 sumar 2 (89)');
+  }
+  // Sin haber llegado a pro (splitFichaje null) no suma los 10 de "llegó a pro".
+  const noLlego = registro();
+  noLlego.splitFichaje = null;
+  if (puntajeProvisorio(noLlego) !== 113) {
+    throw new Error(`sin llegar a pro tenía que dar 113, dio ${puntajeProvisorio(noLlego)}`);
+  }
+});
+
+// n = 6 réplicas (df = 5), diferencias entre dos opciones = c + E, con E de media 0 y suma de cuadrados 6: su desvío
+// muestral es √(6/5) y la t pareada es EXACTAMENTE c·√6 / √(6/5) = c·√5. Así la t de cada caso es conocida a mano,
+// sin pasar por ninguna función bajo prueba. La base común de las réplicas es arbitraria (se cancela en la diferencia).
+const BASE_REPLICAS_K0 = [100, 140, 90, 120, 105, 130];
+const E1_K0 = [-1, 1, -1, 1, -1, 1];
+const E2_K0 = [1, 1, -1, -1, 1, -1];
+const RAIZ_5_K0 = Math.sqrt(5);
+
+// Crítico de t bilateral con df = 5 para α = 0,05 / (pares de opciones), de una integración numérica de la densidad
+// de t (Simpson, independiente de la beta incompleta de agencia.js): K = 2 (1 par), 3 (3 pares), 4 (6), 5 (10), 6 (15).
+const T_CRITICO_DF5_POR_K_K0 = { 2: 2.5706, 3: 3.5341, 4: 4.2193, 5: 4.7733, 6: 5.2474 };
+
+// Las puntuaciones de K opciones con la t entre la 1ª y la 2ª igual a `t` (A − B = c + E1) y las demás diferencias
+// con una t chica (A − C = 0,2 + E2: t = 0,45; A − D = 0,1 − E1: t = 0,22; B − C: 0,61·t; B − D: 0,5·t; C − D: 0,19),
+// de modo que el máximo |t| de la decisión es `t` y sale del par A-B.
+function puntuacionesConTK0(k, t) {
+  const c = t / RAIZ_5_K0;
+  const A = BASE_REPLICAS_K0;
+  const opciones = [A, A.map((a, r) => a - (c + E1_K0[r]))];
+  if (k >= 3) opciones.push(A.map((a, r) => a - (0.2 + E2_K0[r])));
+  if (k >= 4) opciones.push(A.map((a, r) => a - (0.1 - E1_K0[r])));
+  // La 5ª y la 6ª son copias exactas de la 1ª y la 3ª: t = 0 contra su original y las mismas t que ellas contra las demás.
+  if (k >= 5) opciones.push([...opciones[0]]);
+  if (k >= 6) opciones.push([...opciones[2]]);
+  return opciones;
+}
+
+check('K0 agencia: la t pareada está en su escala (√n) y se compara con el crítico de df = n − 1, justo arriba y justo abajo del crítico con n = 6', () => {
+  // Trinquete (K0-A, 2ª revisión): sin dividir por √n el mutante cambiaba 151 hojas del crudo y el check solo pedía
+  // finitud; el conjunto sintético tenía t enormes o 0,5, ninguna celda cerca del crítico. Acá la t es conocida
+  // (c·√5) y está a ±1,1% del crítico de df 5 (2,5706 / 2,571 en la tabla): una t sin √n, un crítico de df 4 (2,776) o
+  // de df 6 (2,447), o el límite normal (1,96) dan el veredicto contrario en uno de los dos lados.
+  const TOPE_ARRIBA = 2.6;
+  const TOPE_ABAJO = 2.54;
+  for (const [t, significativa] of [[TOPE_ARRIBA, true], [TOPE_ABAJO, false]]) {
+    const scores = puntuacionesConTK0(2, t);
+    const test = testMaximoT(scores);
+    if (Math.abs(test.tMax - t) > 1e-9) {
+      throw new Error(`t = ${t} por construcción, testMaximoT calculó ${test.tMax}: la escala de la t está mal`);
+    }
+    if (test.n !== 6 || test.pares !== 1 || Math.abs(test.tCritico - T_CRITICO_DF5_POR_K_K0[2]) > 1e-3) {
+      throw new Error(`n = 6 y 1 par con df 5: crítico esperado ${T_CRITICO_DF5_POR_K_K0[2]}, testMaximoT dio n=${test.n}, pares=${test.pares}, crítico ${test.tCritico}`);
+    }
+    if (test.sig !== significativa) {
+      throw new Error(`t = ${t} (crítico ${test.tCritico}) tenía que ${significativa ? '' : 'NO '}ser significativa`);
+    }
+    // Con 2 opciones el test viejo y el nuevo son el mismo.
+    const vals = scores.map((v) => v.map(repSinteticaK0));
+    if (significativaTestViejo(vals) !== significativa) {
+      throw new Error(`el test viejo con t = ${t} tenía que dar ${significativa}`);
+    }
+    // De punta a punta por `analizarDatosAgencia`: la fila dice 100% o 0%.
+    const analisis = analizarDatosAgencia(
+      { resultados: [{ seed: 1, split: 1, tipo: 'serie:draft', labels: ['a', 'b'], porOpcion: vals }], frecuenciasTipo: { 'serie:draft': 1 }, totalInterrupciones: 1 },
+      1,
+      { sPop: 10, sPopT: 1 }
+    );
+    if (analisis.filas[0].pctSignificativo !== (significativa ? 100 : 0)) {
+      throw new Error(`analizarDatosAgencia con t = ${t}: pctSignificativo ${analisis.filas[0].pctSignificativo}`);
     }
   }
-  for (let df = 1; df < 30; df += 1) {
-    if (!(tCritico(df) > tCritico(df + 1))) {
-      throw new Error(`tCritico no decrece entre df ${df} (${tCritico(df)}) y ${df + 1} (${tCritico(df + 1)})`);
+  // Réplicas que reventaron: se parea solo con las válidas en TODAS las opciones (aquí 6 de 8 → df 5).
+  const conNulos = puntuacionesConTK0(2, TOPE_ARRIBA).map((v, i) => (i === 0 ? [...v.slice(0, 3), null, ...v.slice(3), 999] : [...v.slice(0, 3), 1, ...v.slice(3), null]));
+  const emparejado = testMaximoT(conNulos);
+  if (emparejado.n !== 6 || Math.abs(emparejado.tMax - TOPE_ARRIBA) > 1e-9) {
+    throw new Error(`con réplicas nulas en réplicas distintas de cada opción hay que parear por réplica: n = ${emparejado.n}, t = ${emparejado.tMax}`);
+  }
+});
+
+check('K0 agencia: con K opciones el crítico es el de Bonferroni sobre K·(K−1)/2 pares, y las tres definiciones de pctInterrupcionesConPalanca se separan', () => {
+  // Trinquete (K0-A, 2ª revisión, B.1): el test viejo (mejor contra peor por las medias de la misma muestra, al 5%)
+  // tenía 11% de falsos positivos con 3 opciones y 26% con 6. Con 3 opciones el crítico del par es el de
+  // α = 0,05/3 (3,5341 con df 5), con 4 el de α = 0,05/6 (4,2193): un t de 3,45 con K = 3 o de 4,12 con K = 4
+  // ya NO es significativo (el test viejo lo declaraba), y un 3,62 / 4,32 sí lo es.
+  const casos = [[3, 3.45, false], [3, 3.62, true], [4, 4.12, false], [4, 4.32, true], [5, 4.67, false], [5, 4.88, true], [6, 5.12, false], [6, 5.37, true]];
+  for (const [k, t, significativa] of casos) {
+    const pares = (k * (k - 1)) / 2;
+    const scores = puntuacionesConTK0(k, t);
+    const test = testMaximoT(scores);
+    if (test.pares !== pares || Math.abs(test.tCritico - T_CRITICO_DF5_POR_K_K0[k]) > 1e-3) {
+      throw new Error(`K = ${k}: ${pares} pares y crítico ${T_CRITICO_DF5_POR_K_K0[k]} esperados, testMaximoT dio ${test.pares} pares y ${test.tCritico}`);
     }
+    if (Math.abs(test.tMax - t) > 1e-9) {
+      throw new Error(`K = ${k}: el máximo |t| tenía que ser ${t} (el par A-B), dio ${test.tMax}`);
+    }
+    if (test.sig !== significativa) {
+      throw new Error(`K = ${k}, t = ${t} (crítico ${test.tCritico}): tenía que ${significativa ? '' : 'NO '}ser significativa`);
+    }
+  }
+  // Un solo par de las K opciones con un efecto grande basta (el máximo), aunque las demás no tengan nada.
+  if (testMaximoT(puntuacionesConTK0(6, 20)).sig !== true) {
+    throw new Error('K = 6 con un par de t = 20 tenía que ser significativa');
+  }
+
+  // Las tres definiciones sobre 200 interrupciones, con 3 opciones por decisión:
+  //  - mercado:oferta: 10 decisiones, todas con t = 3,45 (NO significativas con Bonferroni; el test viejo las declara
+  //    significativas: su mejor contra peor es el par A-B), 100 interrupciones.
+  //  - serie:draft: 10 decisiones, 2 con t = 3,62 (significativas) y 8 con t = 3,45, 50 interrupciones.
+  //  - amateur:salida_amateur: nunca se midió, 50 interrupciones.
+  // PONDERADO: (100×0 + 50×0,2) / 200 = 5,0 %. TODO-O-NADA con test corregido: serie:draft llega al 20% (>= 10) y suma sus
+  // 50, mercado:oferta no (0%): 50/200 = 25,0 %. TODO-O-NADA con el test viejo: los dos tipos tienen 100% de significativas:
+  // (100 + 50)/200 = 75,0 %.
+  const decisionDe = (tipo, t) => ({ seed: 1, split: 1, tipo, labels: ['a', 'b', 'c'], porOpcion: puntuacionesConTK0(3, t).map((v) => v.map(repSinteticaK0)) });
+  const resultados = [
+    ...Array.from({ length: 10 }, () => decisionDe('mercado:oferta', 3.45)),
+    ...Array.from({ length: 2 }, () => decisionDe('serie:draft', 3.62)),
+    ...Array.from({ length: 8 }, () => decisionDe('serie:draft', 3.45))
+  ];
+  const analisis = analizarDatosAgencia(
+    { resultados, frecuenciasTipo: { 'mercado:oferta': 100, 'serie:draft': 50, 'amateur:salida_amateur': 50 }, totalInterrupciones: 200 },
+    1,
+    { sPop: 10, sPopT: 1 }
+  );
+  const obtenido = [analisis.pctInterrupcionesConPalanca, analisis.pctInterrupcionesConPalancaAuditoria, analisis.pctInterrupcionesConPalancaAuditoriaTestViejo];
+  if (JSON.stringify(obtenido) !== JSON.stringify([5, 25, 75])) {
+    throw new Error(`ponderado / auditoría / auditoría con test viejo tenían que dar [5, 25, 75] (calculado a mano), dieron ${JSON.stringify(obtenido)}`);
+  }
+});
+
+// Bajo la nula (B.2): K opciones que son réplicas del mismo proceso, sin efecto. Cada puntaje = un efecto común de
+// la réplica (lo que comparten las opciones por los números aleatorios comunes) + ruido propio de la opción.
+const DECISIONES_NULA_K0 = 10000;
+const REPLICAS_NULA_K0 = 6;
+const SEMILLA_NULA_K0 = 20261001;
+const EFECTO_COMUN_SD_K0 = 3;
+// El tope y el piso del % significativo bajo la nula. Con esta semilla y 10.000 decisiones por K el test de Bonferroni mide
+// 5,0 / 4,6 / 4,6 / 4,6 / 4,5% para K = 2..6 (5% nominal con un par, y conservador con más): el error estándar de cada celda
+// es 0,22 pp, así que el tope de 6% queda a ~1 pp (4σ) del peor caso y el piso de 3% a 1,5 pp (7σ) del valor medido (el piso
+// atrapa un test que nunca declara nada). El test viejo mide 5,0 / 11,0 / 16,3 / 20,7 / 25,8%: para que esta medición pueda ver
+// la inflación (y no pase vacía), el viejo tiene que pasar de 8% con 3 opciones y de 15% con 6.
+const TOPE_FALSOS_POSITIVOS_K0 = 6;
+const PISO_FALSOS_POSITIVOS_K0 = 3;
+const INFLACION_VIEJO_K3_K0 = 8;
+const INFLACION_VIEJO_K6_K0 = 15;
+
+check('K0 agencia bajo la nula: sin ningún efecto, el % significativo queda <= 6% con 2 a 6 opciones (el test viejo llegaba al 26%)', () => {
+  // Trinquete (K0-A, 2ª revisión, B.2): el test elegía la mejor y la peor opción por sus medias en la misma muestra y
+  // los falsos positivos subían con cada opción (5 / 11 / 16 / 21 / 26% con K = 2..6). Un `analizarDatosAgencia` que
+  // vuelva a ese test, o que corrija mal (sin Bonferroni, o con K en vez de K·(K−1)/2 pares), pasa de 6% acá.
+  const rng = mulberry32(SEMILLA_NULA_K0);
+  const normal = () => Math.sqrt(-2 * Math.log(1 - rng())) * Math.cos(2 * Math.PI * rng());
+  const medido = {};
+  for (let k = 2; k <= 6; k += 1) {
+    const resultados = [];
+    let significativasViejo = 0;
+    let discrepancias = 0;
+    for (let d = 0; d < DECISIONES_NULA_K0; d += 1) {
+      const comun = Array.from({ length: REPLICAS_NULA_K0 }, () => EFECTO_COMUN_SD_K0 * normal());
+      const porOpcion = Array.from({ length: k }, () => comun.map((c) => repSinteticaK0(c + normal())));
+      resultados.push({ seed: 1, split: d, tipo: 'x:nula', labels: [], porOpcion });
+      const viejo = significativaTestViejo(porOpcion);
+      significativasViejo += viejo ? 1 : 0;
+      if (k === 2 && testMaximoT(porOpcion.map((v) => v.map((x) => x.fin.score))).sig !== viejo) {
+        discrepancias += 1;
+      }
+    }
+    const analisis = analizarDatosAgencia({ resultados, frecuenciasTipo: { 'x:nula': DECISIONES_NULA_K0 }, totalInterrupciones: DECISIONES_NULA_K0 }, 1, { sPop: 1, sPopT: 1 });
+    const nuevo = analisis.filas[0].pctSignificativo;
+    const viejo = (100 * significativasViejo) / DECISIONES_NULA_K0;
+    medido[k] = { nuevo, viejo };
+    if (analisis.filas[0].n !== DECISIONES_NULA_K0) {
+      throw new Error(`K = ${k}: se analizaron ${analisis.filas[0].n} de ${DECISIONES_NULA_K0} decisiones`);
+    }
+    if (!(nuevo <= TOPE_FALSOS_POSITIVOS_K0) || !(nuevo >= PISO_FALSOS_POSITIVOS_K0)) {
+      throw new Error(`K = ${k}: bajo la nula el % significativo es ${nuevo}% (tiene que estar entre ${PISO_FALSOS_POSITIVOS_K0}% y ${TOPE_FALSOS_POSITIVOS_K0}%; el test viejo daba ${viejo}%)`);
+    }
+    // Con 2 opciones (un solo par) el test nuevo es el de siempre: a lo sumo un par de decisiones en el borde de la tabla (2,571 vs 2,5706).
+    if (k === 2 && discrepancias > 2) {
+      throw new Error(`con 2 opciones el test nuevo y el viejo discrepan en ${discrepancias} de ${DECISIONES_NULA_K0} decisiones`);
+    }
+  }
+  if (!(medido[3].viejo > INFLACION_VIEJO_K3_K0) || !(medido[6].viejo > INFLACION_VIEJO_K6_K0)) {
+    throw new Error(`la nula no ve la inflación del test viejo (K = 3: ${medido[3].viejo}%, K = 6: ${medido[6].viejo}%): la medición no discrimina`);
+  }
+});
+
+check('K0 agencia: las opciones de una decisión comparten los números aleatorios (CRN): dos opciones idénticas dan exactamente lo mismo en cada réplica', () => {
+  // Trinquete (K0-A, 2ª revisión): con seeds distintas por opción (sin números aleatorios comunes) cambiaban 151 hojas del
+  // crudo y el check solo pedía finitud. El pareo por réplica es lo que hace válido el contrafáctico: con CRN, dos
+  // opciones iguales dan la misma carrera réplica por réplica; sin CRN, cada una arrastra su propio azar.
+  const SEED = 4242;
+  // Hasta cuántos splits se busca una decisión con opciones, y cuántos splits sigue cada réplica después de ella.
+  const SPLITS_BUSQUEDA = 12;
+  const SPLITS_DE_CADA_REPLICA = 15;
+  const rng = mulberry32(SEED);
+  let st = createInitialState(SEED, rng);
+  let splitCount = 0;
+  let elegida = null;
+  buscar:
+  while (!st.terminado && splitCount < SPLITS_BUSQUEDA) {
+    st = avanzarSplit(st, rng).state;
+    while (st.pendiente) {
+      const { sistemaId, decision } = st.pendiente;
+      if ((decision.opciones ?? []).length >= 1 && !esDecisionDeMinijuego(decision) && !esDecisionDeMercado(decision)) {
+        elegida = decision;
+        break buscar;
+      }
+      st = resolverDecision(st, sistemaPorId(sistemaId).resolverAuto(st, decision, rng), rng).state;
+    }
+    splitCount += 1;
+  }
+  if (elegida === null) {
+    throw new Error(`check vacío: no apareció ninguna decisión con opciones en los primeros ${SPLITS_BUSQUEDA} splits`);
+  }
+  const opcion = { opcionId: elegida.opciones[0].id };
+  const REPLICAS = 4;
+  const porOpcion = replicasDeDecision(st, [opcion, opcion], { seed: SEED, splitCount, tipo: 'crn:prueba', reps: REPLICAS, splits: splitCount + SPLITS_DE_CADA_REPLICA });
+  const distintas = new Set();
+  for (let r = 0; r < REPLICAS; r += 1) {
+    if (porOpcion[0][r] === null || porOpcion[1][r] === null) {
+      throw new Error(`la réplica ${r} reventó: el check no mide nada`);
+    }
+    if (JSON.stringify(porOpcion[0][r]) !== JSON.stringify(porOpcion[1][r])) {
+      throw new Error(`réplica ${r}: dos opciones idénticas dieron resultados distintos (${JSON.stringify(porOpcion[0][r].fin)} vs ${JSON.stringify(porOpcion[1][r].fin)}): las opciones no comparten el rng`);
+    }
+    distintas.add(JSON.stringify(porOpcion[0][r]));
+  }
+  // Y las réplicas sí difieren entre sí (el azar importa): si no, "idénticas" no probaría nada.
+  if (distintas.size < 2) {
+    throw new Error('las réplicas dan todas lo mismo: el check no distingue números aleatorios comunes de distintos');
+  }
+});
+
+check('K0 agencia: --reps < 2, --carreras < 1 y un --analizar con un archivo de formato viejo fallan con mensaje claro y salida 1', () => {
+  // Trinquete (K0-A, 2ª revisión, B.4): con --reps=1 la t pareada daba Infinity y todo salía "100% significativo"; con
+  // --carreras=0 salía "0 decisiones, 0%" y exit 0 (la misma clase de falla que H7); con --analizar de varios archivos,
+  // uno sin `totalInterrupciones` subestimaba el denominador y el porcentaje podía pasar de 100.
+  const agencia = path.join(__dirname, 'agencia.js');
+  const correr = (...args) => spawnSync(process.execPath, [agencia, ...args], { encoding: 'utf8' });
+  for (const [args, patron] of [[['--reps=1'], /--reps=1/], [['--reps=abc'], /--reps=NaN/], [['--carreras=0'], /--carreras=0/]]) {
+    const corrida = correr(...args);
+    if (corrida.status !== 1 || !patron.test(corrida.stderr)) {
+      throw new Error(`${args.join(' ')}: se esperaba salida 1 y un mensaje con ${patron}; salió ${corrida.status} con stderr ${JSON.stringify(corrida.stderr)}`);
+    }
+  }
+  const directorio = fs.mkdtempSync(path.join(osK0.tmpdir(), 'k0-agencia-'));
+  try {
+    const repeticiones = (valores) => valores.map(repSinteticaK0);
+    const resultados = [{ seed: 1, split: 1, tipo: 'serie:draft', labels: ['a', 'b'], porOpcion: [repeticiones([100, 103, 98, 101]), repeticiones([10, 12, 9, 11])] }];
+    const escribir = (nombre, contenido) => {
+      const archivo = path.join(directorio, nombre);
+      fs.writeFileSync(archivo, JSON.stringify(contenido), 'utf8');
+      return archivo;
+    };
+    const nuevoA = escribir('nuevo_a.json', { resultados, frecuenciasTipo: { 'serie:draft': 4 }, totalInterrupciones: 20 });
+    const nuevoB = escribir('nuevo_b.json', { resultados, frecuenciasTipo: { 'serie:draft': 4 }, totalInterrupciones: 20 });
+    const viejo = escribir('viejo.json', { resultados, frecuenciasTipo: { 'serie:draft': 4 } });
+    // Control positivo: dos archivos del formato nuevo se analizan (si no, el exit 1 de abajo podría ser por otra cosa).
+    const bien = correr(`--analizar=${nuevoA},${nuevoB}`, '--sigmaCarreras=1');
+    if (bien.status !== 0 || !/pctInterrupcionesConPalanca/.test(bien.stdout)) {
+      throw new Error(`dos archivos del formato nuevo tenían que analizarse: salida ${bien.status}, stderr ${JSON.stringify(bien.stderr)}`);
+    }
+    const mixto = correr(`--analizar=${nuevoA},${viejo}`, '--sigmaCarreras=1');
+    if (mixto.status !== 1 || !/totalInterrupciones/.test(mixto.stderr)) {
+      throw new Error(`un archivo de formato viejo entre varios tenía que fallar con salida 1 y un mensaje sobre totalInterrupciones; salió ${mixto.status} con stderr ${JSON.stringify(mixto.stderr)}`);
+    }
+  } finally {
+    fs.rmSync(directorio, { recursive: true, force: true });
+  }
+});
+
+// Los ruidos de resultados que apaga la ablación (§K.3a), por su ruta en `BALANCE`. Lista literal e independiente de
+// `PARAMETROS_RUIDO` (que es lo que se verifica).
+const RUIDOS_DE_RESULTADOS_K0 = [
+  'rendimiento.ruidoRendimiento', 'temporada.ruidoFecha', 'temporada.ruidoRivalFecha', 'serie.ruidoMapa', 'serie.ruidoRivalSerie'
+];
+// El resto de las constantes de `BALANCE` con "ruido" en el nombre, clasificadas A MANO como fuera de la ablación: no son
+// el ruido del resultado de un partido o una serie, sino el de otros procesos del motor. Una constante de ruido nueva
+// que no esté en una de las dos listas rompe `K0 ruidos de la ablación`: hay que decidir a qué lista va (y, si es del
+// resultado de un partido, sumarla a `PARAMETROS_RUIDO`).
+const RUIDOS_FUERA_DE_LA_ABLACION_K0 = {
+  'amateur.autoRuido': 'dispersión del reparto del jugador automático en el amateur',
+  'atributos.curvas.mecanica.ruido': 'ruido de la curva de atributos (cómo evoluciona la mecánica por split)',
+  'atributos.curvas.laneo.ruido': 'ruido de la curva de atributos (cómo evoluciona el laneo por split)',
+  'atributos.curvas.teamfight.ruido': 'ruido de la curva de atributos (cómo evoluciona el teamfight por split)',
+  'atributos.suenoRuidoPro': 'ruido del sueño del jugador en la etapa pro',
+  'regimen.ruidoPorSplit': 'ruido de la tier list del meta entre splits del mismo régimen',
+  'roster.jerarquiaRuido': 'ruido de la dinámica de la jerarquía entre splits',
+  'roster.sinergiaRuido': 'ruido de la dinámica de la sinergia del roster entre splits',
+  'practica.ruidoPractica': 'ruido de la ganancia de práctica',
+  'plantel.ruidoNivelAnual': 'ruido anual del nivel de los jugadores del mundo (rachas)',
+  'topMundial.ruidoSpread': 'ruido determinista del corte del Top 20 mundial'
+};
+
+check('K0 ruidos de la ablación: PARAMETROS_RUIDO son exactamente los 5 ruidos de resultados, y toda constante "ruido" de BALANCE está clasificada', () => {
+  // Trinquete (K0-A, 2ª revisión): todos los checks iteraban la misma lista exportada, y con 4 de los 5 ruidos (R² sin ruido
+  // 0,083 → 0,065) pasaban. Ahora la lista se ancla a una literal propia, y por reflexión sobre `BALANCE` cada constante de
+  // ruido (hay 16 con "ruido" en el nombre, solo 5 son del resultado) tiene que estar clasificada: una nueva obliga a
+  // decidir si la ablación tiene que apagarla.
+  const enLista = PARAMETROS_RUIDO.map(([grupo, clave]) => `${grupo}.${clave}`);
+  if (enLista.length !== RUIDOS_DE_RESULTADOS_K0.length || RUIDOS_DE_RESULTADOS_K0.some((ruta) => !enLista.includes(ruta))) {
+    throw new Error(`PARAMETROS_RUIDO = [${enLista.join(', ')}], tienen que ser exactamente [${RUIDOS_DE_RESULTADOS_K0.join(', ')}]`);
+  }
+  const encontradas = [];
+  const recorrer = (objeto, ruta) => {
+    for (const [clave, valor] of Object.entries(objeto)) {
+      const rutaClave = ruta ? `${ruta}.${clave}` : clave;
+      if (valor !== null && typeof valor === 'object') {
+        recorrer(valor, rutaClave);
+      } else if (/ruido/i.test(clave)) {
+        encontradas.push(rutaClave);
+      }
+    }
+  };
+  recorrer(BALANCE_VIRGEN_K0, '');
+  const clasificadas = [...RUIDOS_DE_RESULTADOS_K0, ...Object.keys(RUIDOS_FUERA_DE_LA_ABLACION_K0)];
+  const sinClasificar = encontradas.filter((ruta) => !clasificadas.includes(ruta));
+  if (sinClasificar.length > 0) {
+    throw new Error(`constante(s) de ruido sin clasificar en BALANCE: ${sinClasificar.join(', ')}. Sumala a PARAMETROS_RUIDO (si es del resultado de un partido o una serie) y a RUIDOS_DE_RESULTADOS_K0, o a RUIDOS_FUERA_DE_LA_ABLACION_K0`);
+  }
+  const rancias = clasificadas.filter((ruta) => !encontradas.includes(ruta));
+  if (rancias.length > 0) {
+    throw new Error(`clasificadas pero ya no existen en BALANCE: ${rancias.join(', ')}`);
+  }
+  for (const ruta of RUIDOS_DE_RESULTADOS_K0) {
+    const [grupo, clave] = ruta.split('.');
+    if (!(BALANCE_VIRGEN_K0[grupo][clave] > 0)) {
+      throw new Error(`${ruta} tiene que ser > 0 para que apagarlo cambie algo (vale ${BALANCE_VIRGEN_K0[grupo][clave]})`);
+    }
+  }
+});
+
+check('K0 ruidoPuro: UMBRAL_R2_ESTRUCTURAL vale 0,3 y la decisión de si ruidoPuro es interpretable se prueba con entradas sintéticas', () => {
+  // Trinquete (K0-A, 2ª revisión): el check de coherencia comparaba contra el umbral que leía del propio reporte, así que con
+  // el umbral en 0 `ruidoPuro` volvía a dar 0,016 sobre un R² sin ruido de 0,083 (la mentira que H6 quería evitar) y con el umbral
+  // en 1 nunca era interpretable, y ambos pasaban. 0,3 es la elección de H6 (un R² sin ruido de 0,07 con ruido cero no deja ver
+  // al nivel: el gate `ruidoPuro <= 25%` "se cumplía" con un R² de 0,06) y es arbitraria: cambiarla es una decisión de diseño.
+  if (UMBRAL_R2_ESTRUCTURAL !== 0.3) {
+    throw new Error(`UMBRAL_R2_ESTRUCTURAL tenía que ser 0,3 (la decisión de H6), es ${UMBRAL_R2_ESTRUCTURAL}`);
+  }
+  const RUIDO_PURO_CRUDO = 0.15432;
+  const esperado = Number(RUIDO_PURO_CRUDO.toFixed(3));
+  const casos = [
+    [0.07, { interpretable: false, ruidoPuro: null }],
+    [0.083, { interpretable: false, ruidoPuro: null }],
+    [0.2999, { interpretable: false, ruidoPuro: null }],
+    [0.3, { interpretable: true, ruidoPuro: esperado }],
+    [0.5, { interpretable: true, ruidoPuro: esperado }],
+    [1, { interpretable: true, ruidoPuro: esperado }],
+    [null, { interpretable: false, ruidoPuro: null }]
+  ];
+  for (const [r2SinRuido, esperada] of casos) {
+    const obtenida = decidirRuidoPuro(r2SinRuido, RUIDO_PURO_CRUDO);
+    if (obtenida.interpretable !== esperada.interpretable || obtenida.ruidoPuro !== esperada.ruidoPuro) {
+      throw new Error(`decidirRuidoPuro(${r2SinRuido}, ${RUIDO_PURO_CRUDO}) = ${JSON.stringify(obtenida)}, tenía que dar ${JSON.stringify(esperada)}`);
+    }
+  }
+});
+
+check('K0 espejos de la UI: DURACION_BEAT_MS y ESPERA_MINIJUEGO_MS son los literales de reproductor.js y de app.js', () => {
+  // Trinquete (K0-A, 2ª revisión): el check de "observación" recalculaba con las mismas constantes importadas, y con 700 → 350
+  // o 1600 → 0 pasaba. El instrumento espeja dos números de la UI (el comentario de simulate.js admite que "se desactualiza
+  // en silencio"): acá se leen del código fuente que los define. Es válido que este check falle el día que alguien cambie el
+  // reproductor o el tiempo de espera del minijuego: el instrumento tiene que seguirlo.
+  const leer = (relativa) => fs.readFileSync(path.join(srcDir, relativa), 'utf8');
+  const extraer = (texto, patron, descripcion) => {
+    const coincidencias = [...texto.matchAll(patron)];
+    if (coincidencias.length !== 1) {
+      throw new Error(`no pude extraer ${descripcion} (${coincidencias.length} coincidencias): la UI cambió de forma, actualizá la expresión de este check y el espejo de simulate.js`);
+    }
+    return Number(coincidencias[0][1]);
+  };
+  // reproductor.js: `const ESPERA_MS = { x1: 700, x2: 350, instantaneo: 0 }`
+  const beat = extraer(leer('ui/reproductor.js'), /const\s+ESPERA_MS\s*=\s*\{[^}]*\bx1\s*:\s*(\d+)/g, 'ESPERA_MS.x1 de reproductor.js');
+  // app.js: `setTimeout(() => responder({ resultado }), 1600)`
+  const minijuego = extraer(leer('ui/app.js'), /setTimeout\(\s*\(\)\s*=>\s*responder\(\s*\{\s*resultado\s*\}\s*\)\s*,\s*(\d+)\s*\)/g, 'la espera tras el minijuego de app.js');
+  if (beat !== DURACION_BEAT_MS) {
+    throw new Error(`DURACION_BEAT_MS = ${DURACION_BEAT_MS} en simulate.js, reproductor.js espera ${beat} ms por beat`);
+  }
+  if (minijuego !== ESPERA_MINIJUEGO_MS) {
+    throw new Error(`ESPERA_MINIJUEGO_MS = ${ESPERA_MINIJUEGO_MS} en simulate.js, app.js espera ${minijuego} ms tras el minijuego`);
   }
 });
 
@@ -8379,9 +9230,21 @@ checkLento('K0 observación: beats del reproductor, minijuegos y tipo de split c
           Object.values(st.mundo.planteles?.[org.nombre] ?? {}).some((j) => typeof j?.nivel === 'number')
         ));
         const tabla = st.career.temporada?.tabla;
+        // Y los regresores del nivel, a mano: la media de nivel de los planteles de la liga (o la constante si no está
+        // modelada), el nivel del jugador y el promedio de sus compañeros. `economia` (mentalidad, hype) sale de acá también.
+        const nivelesLiga = (liga?.orgs ?? []).flatMap((org) => Object.values(st.mundo.planteles?.[org.nombre] ?? {}))
+          .filter((j) => typeof j?.nivel === 'number').map((j) => j.nivel);
+        const mediaLiga = nivelesLiga.length > 0 ? nivelesLiga.reduce((s, v) => s + v, 0) / nivelesLiga.length : BALANCE.mercado.nivelLigaPorDefecto;
+        const companeros = st.career.companeros ?? [];
+        const nivelCompaneros = companeros.length > 0 ? companeros.reduce((s, c) => s + c.nivel, 0) / companeros.length : mediaLiga;
         filasIndependientes.push({
           ligaModelada: hayPlantel,
-          posNorm: st.career.posicion && tabla?.length > 1 ? 1 - (st.career.posicion - 1) / (tabla.length - 1) : null
+          posNorm: st.career.posicion && tabla?.length > 1 ? 1 - (st.career.posicion - 1) / (tabla.length - 1) : null,
+          mentalidad: st.player.stats.mentalidad,
+          hype: st.player.stats.hype,
+          nivel: nivelDelJugador(st),
+          nivelRelativoJugador: nivelDelJugador(st) - mediaLiga,
+          nivelRelativoCompaneros: nivelCompaneros - mediaLiga
         });
         const r1 = st.career.registro;
         let tipo = 'regular';
@@ -8401,10 +9264,23 @@ checkLento('K0 observación: beats del reproductor, minijuegos y tipo de split c
     if (observacion.minijuegosCount !== minijuegos) {
       throw new Error(`seed ${seed}: minijuegosCount ${observacion.minijuegosCount}, la emulación cuenta ${minijuegos}`);
     }
-    const filasObservadas = observacion.splitsProData.map(({ ligaModelada, posNorm }) => ({ ligaModelada, posNorm }));
-    if (JSON.stringify(filasObservadas) !== JSON.stringify(filasIndependientes)) {
-      throw new Error(`seed ${seed}: ligaModelada/posNorm de splitsProData no coinciden con el cálculo a mano`);
+    // K0-A, 2ª revisión: las filas con las que `correrLote` calcula R², r y `economia` se comparan COLUMNA POR COLUMNA con
+    // el cálculo a mano (antes solo `ligaModelada` y `posNorm`): un regresor con el signo cambiado o un nivel de liga mal
+    // centrado no lo veía ningún check, porque todos los recuentos parten de estas mismas filas.
+    if (observacion.splitsProData.length !== filasIndependientes.length) {
+      throw new Error(`seed ${seed}: splitsProData tiene ${observacion.splitsProData.length} filas, el cálculo a mano ${filasIndependientes.length}`);
     }
+    observacion.splitsProData.forEach((fila, i) => {
+      const aMano = filasIndependientes[i];
+      for (const columna of Object.keys(aMano)) {
+        const igual = typeof aMano[columna] === 'number' && typeof fila[columna] === 'number'
+          ? Math.abs(fila[columna] - aMano[columna]) <= 1e-9
+          : fila[columna] === aMano[columna];
+        if (!igual) {
+          throw new Error(`seed ${seed}, split pro ${i}: ${columna} de splitsProData es ${fila[columna]}, el cálculo a mano ${aMano[columna]}`);
+        }
+      }
+    });
     if (JSON.stringify(observacion.splitsProRitmo) !== JSON.stringify(splitsPro)) {
       throw new Error(`seed ${seed}: splitsProRitmo no coincide con la emulación (${observacion.splitsProRitmo.length} vs ${splitsPro.length} splits pro)`);
     }
@@ -8483,65 +9359,101 @@ checkLento('K0 cruce: el lote (nivel y ritmo) coincide con las mismas carreras c
   afirmarRuidoIntactoK0('después de correrLote(8, 60, equilibrado)');
 });
 
-checkLento('K0 varianzaExplicada: el lote coincide con el recuento independiente de las mismas carreras, y es determinista', () => {
-  // Trinquete (K0-A, revisión H6): la ablación corre con las seeds de las carreras del lote y la varianza/R² salen de las mismas filas que
-  // `splitsProData`; acá se recalculan a mano (varianza poblacional, correlación al cuadrado) sobre carreras sueltas.
-  const N = 40;
-  const SPLITS = 30;
-  const semillas = Array.from({ length: N }, (_, i) => i + 1);
-  const lote = correrLote(N, SPLITS, 'equilibrado');
-  const v = lote.nivel.varianzaExplicada;
-  if (JSON.stringify(correrLote(N, SPLITS, 'equilibrado').nivel) !== JSON.stringify(lote.nivel)) {
-    throw new Error('el bloque nivel (con el bootstrap) no es determinista: dos lotes iguales dieron distinto');
-  }
+// Cuántas carreras y splits tienen los lotes chicos de la ablación recontada (4 bots): el R² de nivel + equipo y el
+// bootstrap necesitan miles de filas, y 40 carreras x 40 splits dan ~600-900 splits pro con tabla por bot.
+const CARRERAS_VARIANZA_K0 = 40;
+const SPLITS_VARIANZA_K0 = 40;
+// Una diferencia entre el R² sin ruido de todos los splits y el de los splits con la liga modelada (X04) o entre dos
+// valores que un mutante confundiría: menor que esto, el recuento no podría distinguirlos.
+const DIFERENCIA_MINIMA_R2_K0 = 0.005;
 
+checkLento('K0 varianzaExplicada: la ablación, los R², las varianzas y el bootstrap de los 4 bots coinciden con un recuento independiente que apaga el ruido por su cuenta', () => {
+  // Trinquete (K0-A, revisión H6; 2ª revisión X04, X06, N05, N11): el recuento corría solo con `equilibrado` y usaba
+  // `correrSinRuido` (la función bajo prueba) con la misma lista de ruidos, así que una ablación que ignoraba al bot
+  // (R² sin ruido de `criterio` calculado con las decisiones de `equilibrado`), el titular puesto en `soloLigaModelada`, un
+  // bootstrap que reiniciaba la semilla en cada remuestreo (EE = 0) o una ablación con 4 de los 5 ruidos pasaban. Acá
+  // cada bot recorre sus carreras sin ruido con `ablacionIndependienteK0` (lista literal de 5 ruidos, el bot de verdad) y
+  // se recalculan R², varianzas y los tres errores estándar, del titular y de `soloLigaModelada`.
+  const semillas = Array.from({ length: CARRERAS_VARIANZA_K0 }, (_, i) => i + 1);
   const conTabla = (filas) => filas.filter((d) => d.posNorm !== null);
-  const filasBase = semillas.flatMap((seed) => conTabla(correrCarreraSimulate(seed, SPLITS, null).observacion.splitsProData));
-  const filasSin = correrSinRuido(semillas, SPLITS, null).filasPorCarrera.flatMap(conTabla);
-  const varPoblacional = (ys) => {
-    const m = ys.reduce((a, b) => a + b, 0) / ys.length;
-    return ys.reduce((s, y) => s + (y - m) ** 2, 0) / ys.length;
+  const soloModeladas = (filas) => conTabla(filas).filter((d) => d.ligaModelada);
+  const problemas = [];
+  const cerca = (donde, hoja, medido, esperado, tolerancia) => {
+    const bien = esperado === null || medido === null
+      ? medido === esperado
+      : typeof medido === 'number' && Math.abs(medido - esperado) <= tolerancia;
+    if (!bien) {
+      problemas.push(`${donde}.${hoja}: el reporte dice ${medido}, el recuento independiente ${esperado}`);
+    }
   };
-  const redondear = (x, d) => Number(x.toFixed(d));
-  if (v.nSplitsBase !== filasBase.length || v.nSplitsSinRuido !== filasSin.length) {
-    throw new Error(`varianzaExplicada cuenta ${v.nSplitsBase}/${v.nSplitsSinRuido} splits, el recuento independiente ${filasBase.length}/${filasSin.length}`);
+  const R3 = 5e-4 + 1e-9; // redondeo a 3 decimales
+  const R4 = 5e-5 + 1e-9; // redondeo a 4 decimales
+  let separaModeladaDelTitular = false;
+
+  for (const bot of BOTS_ABLACION_K0) {
+    const lote = correrLote(CARRERAS_VARIANZA_K0, SPLITS_VARIANZA_K0, bot);
+    const v = lote.nivel.varianzaExplicada;
+    const base = lote.crudos.observaciones.map((o) => o.splitsProData);
+    const sin = ablacionIndependienteK0(semillas, SPLITS_VARIANZA_K0, ESTRATEGIAS_K0[bot]);
+    const titular = recuentoVarianzaK0(base.map(conTabla), sin.map(conTabla));
+    const modelada = recuentoVarianzaK0(base.map(soloModeladas), sin.map(soloModeladas));
+    const donde = bot;
+
+    cerca(donde, 'r2NivelYEquipo', v.r2NivelYEquipo, titular.r2, R3);
+    cerca(donde, 'r2NivelYEquipoEE', v.r2NivelYEquipoEE, titular.eeR2, R3);
+    cerca(donde, 'r2SoloNivel', v.r2SoloNivel, titular.r2SoloNivel, R3);
+    cerca(donde, 'r2SoloEquipo', v.r2SoloEquipo, titular.r2SoloEquipo, R3);
+    cerca(donde, 'r2NivelYEquipoSinRuido', v.r2NivelYEquipoSinRuido, titular.r2Sin, R3);
+    cerca(donde, 'r2NivelYEquipoSinRuidoEE', v.r2NivelYEquipoSinRuidoEE, titular.eeR2Sin, R3);
+    cerca(donde, 'ruidoPuroCrudo', v.ruidoPuroCrudo, titular.ruidoPuroCrudo, R3);
+    cerca(donde, 'ruidoPuroEE', v.ruidoPuroEE, titular.eeRuidoPuro, R3);
+    cerca(donde, 'varBase', v.varBase, titular.varBase, R4);
+    cerca(donde, 'varSinRuido', v.varSinRuido, titular.varSin, R4);
+    cerca(donde, 'nSplitsBase', v.nSplitsBase, titular.nBase, 0);
+    cerca(donde, 'nSplitsSinRuido', v.nSplitsSinRuido, titular.nSin, 0);
+    // `ruidoPuro` solo es interpretable si el techo estructural llega a 0,3; si no, null (y el crudo viaja aparte).
+    const interpretable = titular.r2Sin !== null && titular.r2Sin >= UMBRAL_R2_ESTRUCTURAL_K0;
+    cerca(donde, 'ruidoPuro', v.ruidoPuro, interpretable ? titular.ruidoPuroCrudo : null, R3);
+    cerca(donde, 'corridasAblacion', v.corridasAblacion, Math.min(CARRERAS_VARIANZA_K0, MAX_CORRIDAS_ABLACION_K0), 0);
+    cerca(donde, 'remuestreos', v.remuestreos, REMUESTREOS_BOOTSTRAP_K0, 0);
+    cerca(donde, 'umbralR2Estructural', v.umbralR2Estructural, UMBRAL_R2_ESTRUCTURAL_K0, 0);
+    cerca(donde, 'crashesAblacion', v.crashesAblacion, 0, 0);
+
+    const m = v.soloLigaModelada;
+    cerca(donde, 'soloLigaModelada.r2NivelYEquipo', m.r2NivelYEquipo, modelada.r2, R3);
+    cerca(donde, 'soloLigaModelada.r2NivelYEquipoEE', m.r2NivelYEquipoEE, modelada.eeR2, R3);
+    cerca(donde, 'soloLigaModelada.r2NivelYEquipoSinRuido', m.r2NivelYEquipoSinRuido, modelada.r2Sin, R3);
+    cerca(donde, 'soloLigaModelada.r2NivelYEquipoSinRuidoEE', m.r2NivelYEquipoSinRuidoEE, modelada.eeR2Sin, R3);
+    cerca(donde, 'soloLigaModelada.ruidoPuroCrudo', m.ruidoPuroCrudo, modelada.ruidoPuroCrudo, R3);
+    cerca(donde, 'soloLigaModelada.ruidoPuroEE', m.ruidoPuroEE, modelada.eeRuidoPuro, R3);
+    cerca(donde, 'soloLigaModelada.nSplitsBase', m.nSplitsBase, modelada.nBase, 0);
+    cerca(donde, 'soloLigaModelada.nSplitsSinRuido', m.nSplitsSinRuido, modelada.nSin, 0);
+
+    // Propiedades que no dependen del recuento: con 40 carreras el bootstrap tiene que dar una dispersión > 0 (con la
+    // semilla reiniciada en cada remuestreo, o sin remuestrear, daba 0 exacto), y dos regresores explican al menos
+    // lo que explica cada uno por separado.
+    for (const [hoja, valor] of [
+      ['r2NivelYEquipoEE', v.r2NivelYEquipoEE], ['r2NivelYEquipoSinRuidoEE', v.r2NivelYEquipoSinRuidoEE], ['ruidoPuroEE', v.ruidoPuroEE],
+      ['soloLigaModelada.r2NivelYEquipoEE', m.r2NivelYEquipoEE], ['soloLigaModelada.r2NivelYEquipoSinRuidoEE', m.r2NivelYEquipoSinRuidoEE], ['soloLigaModelada.ruidoPuroEE', m.ruidoPuroEE]
+    ]) {
+      if (!(valor > 0)) {
+        problemas.push(`${donde}.${hoja} = ${valor}: con ${CARRERAS_VARIANZA_K0} carreras el error estándar del bootstrap tiene que ser > 0`);
+      }
+    }
+    if (!(v.r2NivelYEquipo >= Math.max(v.r2SoloNivel, v.r2SoloEquipo) - 0.0011)) {
+      problemas.push(`${donde}: el R² con los dos regresores (${v.r2NivelYEquipo}) no puede ser menor que el de cada uno (${v.r2SoloNivel}, ${v.r2SoloEquipo})`);
+    }
+    if (Math.abs(modelada.r2Sin - titular.r2Sin) > DIFERENCIA_MINIMA_R2_K0) {
+      separaModeladaDelTitular = true;
+    }
+    afirmarRuidoIntactoK0(`después de la ablación de ${bot} (40 carreras)`);
   }
-  const varBase = varPoblacional(filasBase.map((d) => d.posNorm));
-  const varSin = varPoblacional(filasSin.map((d) => d.posNorm));
-  if (v.varBase !== redondear(varBase, 4) || v.varSinRuido !== redondear(varSin, 4)) {
-    throw new Error(`varianzas: el lote dice ${v.varBase}/${v.varSinRuido}, el recuento ${redondear(varBase, 4)}/${redondear(varSin, 4)}`);
+  if (!separaModeladaDelTitular) {
+    problemas.push(`check vacío: el R² sin ruido de soloLigaModelada nunca difiere del titular en más de ${DIFERENCIA_MINIMA_R2_K0}: no distingue "toma el valor del titular"`);
   }
-  if (v.ruidoPuroCrudo !== redondear(1 - varSin / varBase, 3)) {
-    throw new Error(`ruidoPuroCrudo ${v.ruidoPuroCrudo}, el recuento ${redondear(1 - varSin / varBase, 3)}`);
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.slice(0, 6).join('; ')}${problemas.length > 6 ? ` (+${problemas.length - 6} más)` : ''}`);
   }
-  // R² de una regresión simple = correlación al cuadrado.
-  const correlacion = (xs, ys) => {
-    const mx = xs.reduce((a, b) => a + b, 0) / xs.length;
-    const my = ys.reduce((a, b) => a + b, 0) / ys.length;
-    let sxy = 0;
-    let sxx = 0;
-    let syy = 0;
-    xs.forEach((x, i) => {
-      sxy += (x - mx) * (ys[i] - my);
-      sxx += (x - mx) ** 2;
-      syy += (ys[i] - my) ** 2;
-    });
-    return sxy / Math.sqrt(sxx * syy);
-  };
-  const ys = filasBase.map((d) => d.posNorm);
-  const r2Nivel = redondear(correlacion(filasBase.map((d) => d.nivelRelativoJugador), ys) ** 2, 3);
-  const r2Equipo = redondear(correlacion(filasBase.map((d) => d.nivelRelativoCompaneros), ys) ** 2, 3);
-  if (v.r2SoloNivel !== r2Nivel || v.r2SoloEquipo !== r2Equipo) {
-    throw new Error(`R² simples: el lote dice ${v.r2SoloNivel}/${v.r2SoloEquipo}, el recuento ${r2Nivel}/${r2Equipo}`);
-  }
-  if (!(v.r2NivelYEquipo >= Math.max(v.r2SoloNivel, v.r2SoloEquipo) - 0.0011)) {
-    throw new Error(`el R² con los dos regresores (${v.r2NivelYEquipo}) no puede ser menor que el de cada uno (${v.r2SoloNivel}, ${v.r2SoloEquipo})`);
-  }
-  const modeladas = filasBase.filter((d) => d.ligaModelada).length;
-  if (v.soloLigaModelada.nSplitsBase !== modeladas) {
-    throw new Error(`soloLigaModelada.nSplitsBase ${v.soloLigaModelada.nSplitsBase}, el recuento ${modeladas}`);
-  }
-  afirmarRuidoIntactoK0('después de dos correrLote(40, 30, equilibrado)');
 });
 
 checkLento('K0 bloques de simulate: todas las hojas de todos los bloques son finitas, los totales cierran y coinciden con un recuento independiente', () => {
@@ -8680,6 +9592,184 @@ checkLento('K0 bloques de simulate: todas las hojas de todos los bloques son fin
   afirmarRuidoIntactoK0('después de correrLote(equilibrado)');
 });
 
+checkLento('K0 KPIs anclados: embudo, longevidad, economía, ritmo, nivel y porRegion de los 3 bots coinciden con un recuento independiente de sus carreras', () => {
+  // Trinquete (K0-A, 2ª revisión): los checks solo detectaban crashes y NaN, y 21 de 29 mutantes que dejaban un KPI en un valor
+  // equivocado pero finito pasaban: la r de misma liga con todos los splits (X01, la regresión H6), `porRegion` copiando
+  // el lote entero (X02), el denominador de `pOtroMundialDadoUno` (X03) y de `top20DeTier1` (X10), `economia.p50` calculando el
+  // p25 (X05), `interrupcionesPorCarrera.mediana` devolviendo el p90 (X07), `longevidad.p90` la mediana (X11). Acá los
+  // 3 lotes de 200 carreras x 60 splits (los mismos de los demás checks) se recuentan HOJA POR HOJA desde sus estados finales y
+  // observaciones, con la segunda implementación de `recuentoKPIsK0`; ver el comentario de ese bloque.
+  const lotes = lotesDeLosBotsK0();
+  const problemas = [];
+  const cuenta = { hojas: 0 };
+  // "Distingue": para cada KPI que un mutante confundía con otro, el recuento tiene que dar valores distintos para los dos, en
+  // algún bot; si no, el check no podría ver ese mutante aunque comparara todo.
+  const distingue = {
+    'X01 r de la misma liga (solo splits modelados) vs con todos los splits': false,
+    'X03 pOtroMundialDadoUno vs con el total de carreras como denominador': false,
+    'X05 economía p50 vs p25 (mentalidad)': false,
+    'X05 economía p50 vs p25 (hype)': false,
+    'X07 interrupciones por carrera: mediana vs p90': false,
+    'X10 top20DeTier1 vs top20 sobre el total': false,
+    'X11 años de carrera pro: p90 vs mediana': false
+  };
+  const claves = Object.keys(distingue);
+
+  for (const bot of BOTS_K0) {
+    const lote = lotes[bot];
+    const crudos = lote.crudos;
+    const total = crudos.resultados.length;
+    const esperado = recuentoKPIsK0(crudos);
+    const comparar = (medido, esperadoHojas, ruta, ignorar) => compararHojasK0(medido, esperadoHojas, `${bot}.${ruta}`, problemas, cuenta, ignorar);
+
+    comparar(lote.embudo, esperado.embudo, 'embudo', ['proxies']);
+    comparar(lote.longevidad, esperado.longevidad, 'longevidad');
+    comparar(lote.economia, esperado.economia, 'economia');
+    comparar(
+      { ...lote.ritmo, desglosePorTipo: Object.fromEntries(lote.ritmo.desglosePorTipo.map(({ tipo, ...hojas }) => [tipo, hojas])) },
+      esperado.ritmo,
+      'ritmo'
+    );
+    const { rNivelPosicionMismaLiga, rNivelPosicionBruto, splitsConTabla, splitsExcluidosLigaNoModelada } = lote.nivel;
+    comparar({ rNivelPosicionMismaLiga, rNivelPosicionBruto, splitsConTabla, splitsExcluidosLigaNoModelada }, esperado.nivel, 'nivel');
+    const porRegionEsperado = recuentoPorRegionK0(crudos);
+    comparar(lote.porRegion, porRegionEsperado, 'porRegion');
+
+    // X01: los splits usados en la r de la misma liga + los excluidos (tier ≠ 3) = los splits con tabla.
+    const conTabla = crudos.observaciones.flatMap((o) => o.splitsProData).filter((d) => d.posNorm !== null);
+    const usados = cuentaK0(conTabla, (d) => d.ligaModelada);
+    if (usados + splitsExcluidosLigaNoModelada !== splitsConTabla || usados === 0 || splitsExcluidosLigaNoModelada === 0) {
+      problemas.push(`${bot}.nivel: ${usados} usados + ${splitsExcluidosLigaNoModelada} excluidos tienen que sumar los ${splitsConTabla} splits con tabla (y ser > 0 los dos)`);
+    }
+    const rTodos = correlacionK0(conTabla.map((d) => d.nivelRelativoJugador), conTabla.map((d) => d.posNorm));
+    if (Math.abs(rTodos - esperado.nivel.rNivelPosicionMismaLiga) > DIFERENCIA_MINIMA_R_K0) {
+      distingue[claves[0]] = true;
+    }
+    // X02: al menos 2 regiones cuyo embudo o longevidad recontados difieran de los del lote entero (si no, "porRegion
+    // copia el lote entero" no se vería).
+    const regionesDistintas = cuentaK0(Object.values(porRegionEsperado), (region) => (
+      JSON.stringify([region.embudo, region.longevidad]) !== JSON.stringify([esperado.embudo, esperado.longevidad])
+    ));
+    if (regionesDistintas < 2) {
+      problemas.push(`check vacío: ${bot} solo tiene ${regionesDistintas} región(es) con embudo/longevidad distintos del lote entero: no distingue "porRegion copia el lote"`);
+    }
+    // X03: P(otro mundial | ya ganó uno) con el denominador correcto vs con el total de carreras.
+    const dosOMas = cuentaK0(crudos.resultados, (r) => cuentaK0(r.career.registro.internacionales, (i) => i.resultado === 'buen_papel') >= 2);
+    if (esperado.embudo.pOtroMundialDadoUno !== null && Math.abs(esperado.embudo.pOtroMundialDadoUno - dosOMas / total) > DIFERENCIA_MINIMA_PROBABILIDAD_K0) {
+      distingue[claves[1]] = true;
+    }
+    for (const [i, atributo] of [[2, 'mentalidad'], [3, 'hype']]) {
+      if (esperado.economia[atributo].p50 !== esperado.economia[atributo].p25) {
+        distingue[claves[i]] = true;
+      }
+    }
+    if (esperado.ritmo.interrupcionesPorCarrera.mediana !== esperado.ritmo.interrupcionesPorCarrera.p90) {
+      distingue[claves[4]] = true;
+    }
+    if (esperado.embudo.top20DeTier1 !== esperado.embudo.top20) {
+      distingue[claves[5]] = true;
+    }
+    if (esperado.longevidad.aniosCarreraPro.p90 !== esperado.longevidad.aniosCarreraPro.mediana) {
+      distingue[claves[6]] = true;
+    }
+    // Invariante entre dos contadores independientes del observador: las decisiones de la carrera.
+    crudos.observaciones.forEach((o, i) => {
+      const suma = Object.values(o.decisionesPorTipo).reduce((a, b) => a + b, 0);
+      if (suma !== crudos.jugabilidades[i].decisiones) {
+        problemas.push(`${bot} seed ${o.seed}: decisionesPorTipo suma ${suma}, jugabilidad.decisiones ${crudos.jugabilidades[i].decisiones}`);
+      }
+    });
+  }
+
+  for (const [descripcion, vale] of Object.entries(distingue)) {
+    if (!vale) {
+      problemas.push(`check vacío: no distingue ${descripcion}`);
+    }
+  }
+  if (cuenta.hojas < HOJAS_MINIMAS_K0) {
+    problemas.push(`check vacío: solo se compararon ${cuenta.hojas} hojas`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.slice(0, 6).join('; ')}${problemas.length > 6 ? ` (+${problemas.length - 6} más)` : ''}`);
+  }
+});
+
+// Los tipos de decisión que `criterio` y `malas` NO resuelven con su criterio y le delegan a `resolverAuto` del sistema.
+// Medido con 40 carreras x 60 splits (seeds 1-40): `criterio` delega el 29,7% de sus decisiones (1.794 de 6.041) y `malas` el
+// 16,9% (487 de 2.877). Es una lista CERRADA: un tipo que hoy usa la previa y llegue a `resolverAuto` (como `edadCierre`,
+// el 9,5% de las decisiones, cuando `criterio` solo la usaba en el sistema `eventos`) rompe el check; sumar un tipo acá
+// es admitir a propósito que un bot deja de decidir ese tipo.
+const DELEGACION_COMUN_K0 = {
+  // Decisión de diseño conocida de la spec K0 (K.5): `criterio` y `malas` no tienen criterio propio para el momento del
+  // partido (sin previa en las opciones) y el motor decide por ellos: ~12% de las decisiones de `criterio`.
+  'temporada:momento': 'el momento del partido no trae previa: lo decide `resolverAuto`',
+  // Decisiones de la etapa amateur y de cierre de carrera sin previa ni forma de elegir "mejor" o "peor":
+  'amateur:negociacion': 'negociación del amateur: sin previa',
+  'amateur:salida_amateur': 'la salida del amateur: sin previa',
+  'amateur:oferta': 'oferta de equipo del amateur: sin previa',
+  'amateur:nocturno': 'el modo nocturno: sin previa',
+  'retiro:retiro_declive': 'el retiro por declive: sin previa',
+  'retiro:retiro_vuelta': 'la vuelta del retiro: sin previa',
+  'salud:lesion_grave': 'la lesión grave: sin previa',
+  'servicioMilitar:servicio_te_vas': 'el servicio militar: sin previa',
+  'servicioMilitar:servicio_adentro': 'el servicio militar: sin previa',
+  'servicioMilitar:servicio_volver': 'el servicio militar: sin previa'
+};
+// Las rutinas (`practica`, `amateur:reparto`): `criterio` usa la que elige el propio sistema (`responderCriterio` delega
+// de entrada); `malas` sí elige una (la más agresiva), así que a ella no se le permite.
+const DELEGACION_RUTINAS_K0 = {
+  'practica:practica': 'rutina: `criterio` usa la que elige el sistema',
+  'amateur:reparto': 'rutina: `criterio` usa la que elige el sistema'
+};
+
+checkLento('K0 criterio y malas: solo delegan en resolverAuto los tipos de decisión declarados (criterio usa la previa en todos los demás)', () => {
+  // Trinquete (K0-A, 2ª revisión, N04): `criterio` usando la previa solo en `eventos` (y mandando `edadCierre` a `resolverAuto`)
+  // pasaba todo: el check de `puntuarPrevia` probaba un sistema `eventos`. Acá un espía sobre `resolverAuto` cuenta, por tipo
+  // de decisión y bot, cuántas veces se delega; cualquier tipo fuera de la lista declarada rompe el check.
+  const SEMILLAS = Array.from({ length: CARRERAS_DELEGACION_K0 }, (_, i) => i + 1);
+  for (const bot of ['criterio', 'malas']) {
+    const permitidos = bot === 'criterio' ? { ...DELEGACION_COMUN_K0, ...DELEGACION_RUTINAS_K0 } : DELEGACION_COMUN_K0;
+    const vistos = {};
+    const responder = (sistema, st, decision, rng) => {
+      let delegado = false;
+      const respuesta = ESTRATEGIAS_K0[bot](sistemaEspiaK0(sistema, () => { delegado = true; }), st, decision, rng);
+      const tipo = `${sistema.id}:${decision.datos?.motivo ?? decision.presentacion ?? 'x'}`;
+      vistos[tipo] = vistos[tipo] ?? { total: 0, delegadas: 0 };
+      vistos[tipo].total += 1;
+      vistos[tipo].delegadas += delegado ? 1 : 0;
+      return respuesta;
+    };
+    for (const seed of SEMILLAS) {
+      correrCarreraSimulate(seed, 60, responder);
+    }
+    const noDeclarados = Object.entries(vistos).filter(([tipo, v]) => v.delegadas > 0 && !(tipo in permitidos));
+    if (noDeclarados.length > 0) {
+      throw new Error(`${bot} delega en resolverAuto tipos de decisión que no están declarados: ${noDeclarados.map(([tipo, v]) => `${tipo} (${v.delegadas} de ${v.total})`).join(', ')}`);
+    }
+    const totales = Object.values(vistos).reduce((acc, v) => ({ total: acc.total + v.total, delegadas: acc.delegadas + v.delegadas }), { total: 0, delegadas: 0 });
+    if (totales.delegadas === 0 || totales.total - totales.delegadas < DECISIONES_PROPIAS_MINIMAS_K0) {
+      throw new Error(`check vacío: ${bot} delegó ${totales.delegadas} de ${totales.total} decisiones en ${SEMILLAS.length} carreras`);
+    }
+  }
+});
+
+checkLento('K0 reporte completo: todas las hojas de criterio, azar y malas (jugabilidad incluida) son finitas y no nulas', () => {
+  // Trinquete (K0-A, 2ª revisión): el check J0 quedó con las 3 estrategias clásicas, y el bloque `jugabilidad` de los bots
+  // nuevos no se miraba en ningún lado; el recorrido de "bloques de simulate" tampoco incluía `jugabilidad`. Se reusan los
+  // lotes de 200 carreras (los mismos de los demás checks: sin simular de nuevo) y se recorre el reporte ENTERO.
+  const lotes = lotesDeLosBotsK0();
+  for (const bot of BOTS_K0) {
+    const lote = lotes[bot];
+    const problemas = hojasProblematicasK0({ ...lote }, '', NULOS_PERMITIDOS_K0);
+    if (problemas.length > 0) {
+      throw new Error(`${bot}: ${problemas.slice(0, 5).join('; ')}${problemas.length > 5 ? ` (+${problemas.length - 5} más)` : ''}`);
+    }
+    if (lote.jugabilidad === undefined || lote.jugabilidad.decisionesPorCarrera?.promedio === undefined) {
+      throw new Error(`${bot}: el reporte no trae el bloque jugabilidad`);
+    }
+  }
+});
+
 checkLento('K0 los bots separan: criterio no queda estancado y malas es muy peor que azar', () => {
   // Trinquete (K0-A, revisión H1): con la regla de mercado vieja `criterio` quedaba estancado en tier 2/3 el 14,8% de las
   // carreras (800 carreras) y llegaba a tier 1 ~12 pp por debajo de `azar`; el instrumento no medía a un jugador con criterio.
@@ -8760,11 +9850,14 @@ checkLento('K0 agencia: la corrida mínima termina con tabla finita y pctInterru
   if (!Array.isArray(analisis.filas) || analisis.filas.length === 0) {
     throw new Error('agencia no produjo filas de análisis');
   }
-  if (typeof analisis.pctInterrupcionesConPalanca !== 'number' || !Number.isFinite(analisis.pctInterrupcionesConPalanca)) {
-    throw new Error(`pctInterrupcionesConPalanca inválido: ${analisis.pctInterrupcionesConPalanca}`);
-  }
-  if (analisis.pctInterrupcionesConPalanca < 0 || analisis.pctInterrupcionesConPalanca > 100) {
-    throw new Error(`pctInterrupcionesConPalanca fuera de rango [0, 100]: ${analisis.pctInterrupcionesConPalanca}`);
+  // Las tres definiciones (el ponderado y las dos del todo-o-nada de la auditoría): números en [0, 100].
+  for (const clave of ['pctInterrupcionesConPalanca', 'pctInterrupcionesConPalancaAuditoria', 'pctInterrupcionesConPalancaAuditoriaTestViejo']) {
+    if (typeof analisis[clave] !== 'number' || !Number.isFinite(analisis[clave])) {
+      throw new Error(`${clave} inválido: ${analisis[clave]}`);
+    }
+    if (analisis[clave] < 0 || analisis[clave] > 100) {
+      throw new Error(`${clave} fuera de rango [0, 100]: ${analisis[clave]}`);
+    }
   }
   for (const fila of analisis.filas) {
     if (!Number.isFinite(fila.palancaMediana) || !Number.isFinite(fila.pctSignificativo) || !Number.isFinite(fila.ruidoDentro)) {
