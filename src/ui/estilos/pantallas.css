@@ -260,7 +260,7 @@
 .pool-contador { margin-top: var(--s-2); font-size: var(--fs-2); color: var(--ink-dim); }
 
 .setup-aviso {
-  margin-top: var(--s-6);
+  margin-bottom: var(--s-5);
   padding: var(--s-3) var(--s-4);
   border: 1px solid var(--warn);
   background: var(--warn-fill);
@@ -1118,6 +1118,15 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   color: var(--ink);
 }
 .tarjeta--exito .tarjeta-veredicto { font-size: var(--fs-8); color: var(--gold); }
+/* El veredicto es una frase larga en mayúsculas condensadas ("…3 INTERNACIONALES…"):
+   una sola palabra a 48px mide 326px y no entra en un celular de 320-360px, así
+   que se achica el cartel del éxito en pantallas chicas y, por si otra palabra
+   igual de larga cae en cualquier ancho, se la deja cortar en vez de desbordar. */
+.tarjeta-veredicto { overflow-wrap: anywhere; }
+@media (max-width: 639px) {
+  .tarjeta { padding: var(--s-6) var(--s-4); }
+  .tarjeta--exito .tarjeta-veredicto { font-size: var(--fs-7); }
+}
 
 .tarjeta-totales {
   display: grid;

@@ -320,10 +320,23 @@ body[data-legado="on"] .tarjeta { margin-top: 0; }
     padding: var(--s-4);
     gap: var(--s-4);
   }
+  /* La tarjeta final (`data-legado="on"`) tiene su propia regla de columnas
+     más arriba (`var(--riel-izq) 1fr`, pensada para escritorio con la ficha al
+     costado) y por especificidad le ganaba a la de una columna de acá: en un
+     celular el escenario quedaba clavado en la primera columna — 260px, el
+     ancho de `--riel-izq` — con el resto de la pantalla vacío, y la tarjeta se
+     desbordaba a 320 y 360 px (H4 de la revisión de K0-B). Mismos selectores
+     que la regla de arriba, para empatar la especificidad; gana por orden. */
+  body[data-legado="on"] .shell-cuerpo,
+  body[data-legado="on"] .shell-cuerpo:has(.riel-der > .panel-contexto:not([hidden])) {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .riel {
     grid-column: 1;
     position: sticky;
-    top: var(--topbar-alto);
+    /* `--topbar-alto-real` la publica app.js (ResizeObserver sobre .topbar): en
+       ≤639px la topbar mide 56 (1 fila), 64 (2) u 86px (3, a 320px). */
+    top: var(--topbar-alto-real, var(--topbar-alto));
     z-index: 90;
     background: var(--bg-void);
     padding-bottom: var(--s-2);

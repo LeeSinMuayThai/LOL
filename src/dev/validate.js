@@ -587,114 +587,275 @@ check('Toda serie internacional deja su camino guardado en registro.internaciona
 });
 
 // ============================================================================
-// Higiene K0-B (Punto 1): check estático de forma de createInitialState (D71)
+// Higiene K0-B (Punto 1): check estático de la forma del estado guardado (D71)
 // ============================================================================
 
+// El guardado serializa `state` ENTERO, no solo `createInitialState`: la forma
+// que un guardado viejo le tiene que seguir cumpliendo al código nuevo es la de
+// cualquier estado a mitad de carrera. Hasta la revisión de K0-B este hash solo
+// miraba el estado inicial (369 rutas contra 812 de un estado tras 40 splits: la
+// mitad del estado — `registro.*`, `career.companeros`, `career.temporada.*`,
+// `meta.tierList`, `flags.eventosVistos`... — nacía vacía y nadie la vigilaba).
+// Ahora la forma es la UNIÓN de las formas de estados de carreras completas.
+//
+// `FORMAS_CONOCIDAS[VERSION]` es el hash de esa forma combinada. Si cambia la
+// forma sin subir `VERSION` (core/guardado.js), el check falla: un guardado de
+// la forma vieja se cargaría "a medias". Para ver qué rutas cambiaron, mirá el
+// `git diff` de lo que tocaste en `createInitialState` o en los sistemas.
 const FORMAS_CONOCIDAS = {
-  2: '9d4e5d9a3ea1'
+  2: '14b3c6b90382'
 };
 
-function obtenerFormaEstado(valor, ruta = '') {
-  const rutas = [];
+// La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
+// `simulate.js`) jugadas hasta el final, porque hay rutas que solo existen en
+// ciertos momentos: `registro.porOrg`/`titulos`/`internacionales` tras jugar,
+// `tarjeta` al terminar. Medido (K0-B, revisión): con 10 seeds por muestra,
+// 20 muestras disjuntas (seeds 1-240 de a 8 y 12, y 5001-5200 de a 10) dan el
+// MISMO hash; con 4 o 6 seeds algunas muestras se caían (rutas que solo
+// aparecen en una carrera de cada 3).
+const SEEDS_DE_LA_FORMA = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+// Cada cuántos splits se toma una foto del estado (además del inicial y el
+// final). Es barato (~1 ms por foto) y atrapa lo que aparece y se va a mitad de
+// carrera (`flags.*` de lesiones, cooldowns...).
+const SPLITS_ENTRE_FOTOS_DE_FORMA = 3;
+// Tope de seguridad: una carrera que no terminara nunca no puede colgar el check.
+const SPLITS_TOPE_DE_FORMA = 300;
 
-  function recorrer(val, p) {
-    if (val === null) {
-      rutas.push(`${p}:null`);
-      return;
-    }
-    if (typeof val === 'number') {
-      rutas.push(`${p}:number`);
-      return;
-    }
-    if (typeof val === 'string') {
-      rutas.push(`${p}:string`);
-      return;
-    }
-    if (typeof val === 'boolean') {
-      rutas.push(`${p}:boolean`);
-      return;
-    }
-    if (Array.isArray(val)) {
-      if (val.length === 0) {
-        rutas.push(`${p}:array`);
-        return;
-      }
-      const elementosSonObjetos = val.every((item) => item !== null && typeof item === 'object' && !Array.isArray(item));
-      if (elementosSonObjetos) {
-        const todasLasClaves = Array.from(new Set(val.flatMap((item) => Object.keys(item)))).sort();
-        for (const clave of todasLasClaves) {
-          const valoresDefinidos = val.map((item) => item[clave]).filter((v) => v !== undefined);
-          if (valoresDefinidos.length > 0) {
-            recorrer(valoresDefinidos[0], `${p}[].${clave}`);
-          }
-        }
-        return;
-      }
-      const primerElem = val[0];
-      if (typeof primerElem === 'object' && primerElem !== null) {
-        rutas.push(`${p}:array`);
-      } else {
-        rutas.push(`${p}:array<${typeof primerElem}>`);
-      }
-      return;
-    }
-    if (typeof val === 'object') {
-      if (p === 'mundo.planteles') {
-        const equipos = Object.values(val);
-        const roles = Array.from(new Set(equipos.flatMap((e) => Object.keys(e)))).sort();
-        for (const rol of roles) {
-          const jugadores = equipos.map((e) => e[rol]).filter(Boolean);
-          if (jugadores.length > 0) {
-            const campos = Array.from(new Set(jugadores.flatMap((j) => Object.keys(j)))).sort();
-            for (const campo of campos) {
-              if (campo === 'splitsEnRegion') {
-                rutas.push(`mundo.planteles[].${rol}.splitsEnRegion.*:number`);
-              } else {
-                const valores = jugadores.map((j) => j[campo]).filter((v) => v !== undefined);
-                recorrer(valores[0], `mundo.planteles[].${rol}.${campo}`);
-              }
-            }
-          }
-        }
-        return;
-      }
+// Objetos cuyas CLAVES son datos y no estructura: el nombre de una org inventada
+// (sale de la seed), el id de un evento, una región. Su forma es "un mapa de
+// <clave> a <valor>": las claves se normalizan a `*` y los valores se unen. Es lo
+// único que se normalizó para que el hash no dependa de la seed (el resto de la
+// dependencia —largos de array, rutas que aparecen solo en algunas carreras—
+// se resuelve con la unión). `*` en un patrón casa con cualquier tramo.
+const MAPAS_DE_CLAVES_DINAMICAS = [
+  'mundo.planteles',                     // nombre de org -> { rol -> jugador }
+  'mundo.planteles.*.*.splitsEnRegion',  // id de región -> splits que pasó ahí
+  'career.temporada.registrosOtros',     // nombre de org -> { org, ganados, perdidos }
+  'flags.cooldownHasta',                 // id de evento -> split hasta el que descansa
+  'flags.eventosVistos'                  // id de evento -> veces que salió
+];
 
-      const claves = Object.keys(val).sort();
-      if (claves.length === 0) {
-        rutas.push(`${p}:object`);
-        return;
-      }
-      for (const clave of claves) {
-        const subRuta = p ? `${p}.${clave}` : clave;
-        recorrer(val[clave], subRuta);
-      }
-      return;
-    }
-    rutas.push(`${p}:${typeof val}`);
+function tipoDeValorEnForma(valor) {
+  if (valor === null) return 'null';
+  if (Array.isArray(valor)) return 'array';
+  return typeof valor;
+}
+
+function nodoDeForma() {
+  return {
+    tipos: new Set(),       // tipos vistos en esta ruta (incluye 'null')
+    props: new Map(),       // clave (o `*`) -> nodo
+    items: null,            // nodo de los elementos si algún valor fue un array
+    nuloInicial: false,     // era null en el estado inicial
+    vistas: 0,              // cuántas veces se vio esta ruta (con cualquier valor)
+    vistasComoObjeto: 0,    // cuántas de esas veces el valor fue un objeto
+    esMapa: false           // sus claves son datos (MAPAS_DE_CLAVES_DINAMICAS)
+  };
+}
+
+function rutaCasaConPatron(patron, ruta) {
+  const tramosPatron = patron.split('.');
+  const tramosRuta = ruta.split('.');
+  return tramosPatron.length === tramosRuta.length
+    && tramosPatron.every((tramo, i) => tramo === '*' || tramo === tramosRuta[i]);
+}
+
+// Suma la forma de `valor` a `nodo` (mutando el nodo). La forma de un array es
+// la unión de la forma de TODOS sus elementos —no del primero—, y la de un
+// objeto es la unión de las formas que tomó en todos los estados vistos.
+function absorberEnForma(nodo, valor, ruta, esInicial) {
+  const tipo = tipoDeValorEnForma(valor);
+  nodo.vistas += 1;
+  nodo.tipos.add(tipo);
+  if (esInicial && tipo === 'null') {
+    nodo.nuloInicial = true;
   }
+  if (tipo === 'object') {
+    nodo.vistasComoObjeto += 1;
+    const esMapa = MAPAS_DE_CLAVES_DINAMICAS.some((patron) => rutaCasaConPatron(patron, ruta));
+    if (esMapa) {
+      nodo.esMapa = true;
+    }
+    for (const clave of Object.keys(valor)) {
+      const claveEnForma = esMapa ? '*' : clave;
+      let hijo = nodo.props.get(claveEnForma);
+      if (!hijo) {
+        hijo = nodoDeForma();
+        nodo.props.set(claveEnForma, hijo);
+      }
+      absorberEnForma(hijo, valor[clave], ruta === '' ? claveEnForma : `${ruta}.${claveEnForma}`, esInicial);
+    }
+  } else if (tipo === 'array') {
+    for (const elemento of valor) {
+      nodo.items ??= nodoDeForma();
+      absorberEnForma(nodo.items, elemento, `${ruta}[]`, esInicial);
+    }
+  }
+}
 
-  recorrer(valor, ruta);
-  rutas.sort();
-  return rutas;
+// Aplana el árbol a líneas `ruta:tipos`, ordenadas. Dos normalizaciones para
+// que la forma no dependa de qué carreras justo se jugaron:
+//  - `null` no es un tipo: se saca de la unión. Un campo que es null en el
+//    estado inicial (`player.techoLesionMecanica`, `flags.lesionGraveSplit`: se
+//    llenan con un evento de 1 carrera de cada 30) o que en la muestra solo fue
+//    null se anota como `?` (nullable, tipo no registrado) — si no, el hash
+//    cambiaría según una carrera tuvo o no ese evento.
+//  - un campo que falta en algún elemento/estado donde su padre es un objeto se
+//    anota `(opc)`: así borrar un campo de UN solo elemento del array cambia el
+//    hash (queda opcional) aunque los demás lo conserven. Los hijos de un mapa de
+//    claves dinámicas no se marcan (cuántos hay depende de la carrera).
+function aplanarForma(nodo, ruta = '', salida = [], opcional = false) {
+  const tipos = [...nodo.tipos].filter((tipo) => tipo !== 'null').sort();
+  const marca = (nodo.nuloInicial || tipos.length === 0) ? '?' : tipos.join('|');
+  salida.push(`${ruta}:${marca}${opcional ? '(opc)' : ''}`);
+  for (const clave of [...nodo.props.keys()].sort()) {
+    const hijo = nodo.props.get(clave);
+    const hijoOpcional = !nodo.esMapa && hijo.vistas < nodo.vistasComoObjeto;
+    aplanarForma(hijo, ruta === '' ? clave : `${ruta}.${clave}`, salida, hijoOpcional);
+  }
+  if (nodo.items) {
+    aplanarForma(nodo.items, `${ruta}[]`, salida, false);
+  }
+  return salida;
 }
 
 function hashForma(rutas) {
-  const contenido = Array.isArray(rutas) ? rutas.join('\n') : String(rutas);
-  return crypto.createHash('sha256').update(contenido).digest('hex').slice(0, 12);
+  return crypto.createHash('sha256').update(rutas.join('\n')).digest('hex').slice(0, 12);
 }
 
-check('K0-B guardado: la forma de createInitialState coincide con la registrada para VERSION (D71)', () => {
-  // Trampa T5 / D71: sube VERSION cuando cambia la forma de createInitialState.
-  // Protege contra incompatibilidad silenciosa al cargar estados viejos (PLAN.md §K.5).
-  // La forma normaliza planteles y campos de elementos para ser independiente de la semilla.
-  for (const seed of [1, 2, 3, 42, 777]) {
-    const rng = mulberry32(seed);
-    const estado = createInitialState(seed, rng);
-    const forma = obtenerFormaEstado(estado);
-    const hash = hashForma(forma);
-    if (!(VERSION_GUARDADO in FORMAS_CONOCIDAS) || FORMAS_CONOCIDAS[VERSION_GUARDADO] !== hash) {
-      throw new Error('cambió la forma del estado: subí VERSION en core/guardado.js y registrá el hash nuevo en FORMAS_CONOCIDAS');
+// Juega una carrera completa con la seed y le pasa a `alVer(estado, esInicial,
+// splits)` el estado inicial, uno de cada SPLITS_ENTRE_FOTOS_DE_FORMA splits y el
+// final (una sola vez aunque coincida con una de las fotos periódicas).
+function recorrerCarreraParaForma(seed, alVer) {
+  const rng = mulberry32(seed);
+  let estado = createInitialState(seed, rng);
+  alVer(estado, true, 0);
+  let splits = 0;
+  while (!estado.terminado && splits < SPLITS_TOPE_DE_FORMA) {
+    estado = avanzarSplitAuto(estado, rng).state;
+    splits += 1;
+    if (splits % SPLITS_ENTRE_FOTOS_DE_FORMA === 0) {
+      alVer(estado, false, splits);
     }
+  }
+  if (splits % SPLITS_ENTRE_FOTOS_DE_FORMA !== 0) {
+    alVer(estado, false, splits);
+  }
+}
+
+function formaDeLasCarreras(seeds) {
+  const raiz = nodoDeForma();
+  for (const seed of seeds) {
+    recorrerCarreraParaForma(seed, (estado, esInicial) => absorberEnForma(raiz, estado, '', esInicial));
+  }
+  return aplanarForma(raiz);
+}
+
+function formaDeFotos(fotos) {
+  const raiz = nodoDeForma();
+  for (const foto of fotos) {
+    absorberEnForma(raiz, foto.estado, '', foto.esInicial);
+  }
+  return aplanarForma(raiz);
+}
+
+check('K0-B guardado: la forma del estado coincide con la registrada para VERSION (D71)', () => {
+  // Protege desde K0-B (VERSION 2): que un cambio de forma del estado —un campo
+  // nuevo, uno que se borra, uno que cambia de tipo— no cargue guardados viejos
+  // a medias. Trampa T5 / D71.
+  const hash = hashForma(formaDeLasCarreras(SEEDS_DE_LA_FORMA));
+  const registrado = FORMAS_CONOCIDAS[VERSION_GUARDADO];
+  if (registrado === undefined) {
+    const versionIgual = Object.keys(FORMAS_CONOCIDAS).find((version) => FORMAS_CONOCIDAS[version] === hash);
+    throw new Error(`hash actual: ${hash}. VERSION ${VERSION_GUARDADO} no tiene forma registrada en FORMAS_CONOCIDAS: `
+      + (versionIgual !== undefined
+        ? `la forma es idéntica a la de la VERSION ${versionIgual}, o sea que subiste VERSION sin que cambie la forma (revertí la subida)`
+        : `si la forma cambió a propósito, registrá FORMAS_CONOCIDAS[${VERSION_GUARDADO}] = '${hash}'`));
+  }
+  if (registrado !== hash) {
+    throw new Error(`hash actual: ${hash} (registrado para VERSION ${VERSION_GUARDADO}: ${registrado}). `
+      + `cambió la forma del estado: subí VERSION en core/guardado.js y registrá FORMAS_CONOCIDAS[${VERSION_GUARDADO + 1}] = '${hash}'`);
+  }
+});
+
+// El check de arriba es tan bueno como la función que calcula la forma. Esto la
+// ataca con mutaciones sobre copias de estados reales — cada una un cambio de
+// forma de los que un commit podría hacer — y exige que el hash cambie en
+// TODAS. Antes la forma de un array de objetos se tomaba del primer elemento y
+// el hash solo miraba el estado inicial: una mutación en el último plantel, en
+// la última org de la última liga o en una fila de `registro.*` pasaba de largo
+// (revisión de K0-B, H3).
+const SEEDS_DE_LAS_FOTOS_DE_FORMA = [1, 2];
+// Múltiplo de SPLITS_ENTRE_FOTOS_DE_FORMA, para que `recorrerCarreraParaForma` pase por ahí.
+const SPLIT_DE_LA_FOTO_INTERMEDIA = 21;
+
+function ultimoDe(lista) {
+  return Array.isArray(lista) && lista.length > 0 ? lista[lista.length - 1] : undefined;
+}
+
+function ultimoJugadorDelUltimoEquipo(estado) {
+  const planteles = Object.values(estado.mundo.planteles);
+  const plantel = ultimoDe(planteles);
+  return plantel ? ultimoDe(Object.values(plantel)) : undefined;
+}
+
+function ultimaOrgDeLaUltimaLiga(estado) {
+  return ultimoDe(ultimoDe(estado.mundo.ligas)?.orgs);
+}
+
+// [nombre, aplicar(estado) -> true si había dónde aplicarla]. Cada una toca UN
+// solo elemento (el último), que es lo que la forma "del primer elemento" no veía.
+const MUTACIONES_DE_FORMA = [
+  ['campo nuevo en la raíz del estado', (s) => { s.campoNuevoDeLaRaiz = 1; return true; }],
+  ['championPool: campo nuevo en el último elemento', (s) => { const e = ultimoDe(s.player.championPool); if (e) e.campoNuevo = 1; return Boolean(e); }],
+  ['championPool: ultimoSplitJugado borrado de un solo elemento', (s) => { const e = ultimoDe(s.player.championPool); if (e) delete e.ultimoSplitJugado; return Boolean(e); }],
+  ['championPool: mastery number->string en un elemento', (s) => { const e = ultimoDe(s.player.championPool); if (e) e.mastery = 'x'; return Boolean(e); }],
+  ['plantel del último equipo: contrato.nuevo en un jugador', (s) => { const j = ultimoJugadorDelUltimoEquipo(s); if (j) j.contrato.nuevo = 1; return Boolean(j); }],
+  ['plantel del último equipo: nivel number->string en un jugador', (s) => { const j = ultimoJugadorDelUltimoEquipo(s); if (j) j.nivel = 'x'; return Boolean(j); }],
+  ['plantel del último equipo: potencial borrado de un jugador', (s) => { const j = ultimoJugadorDelUltimoEquipo(s); if (j) delete j.potencial; return Boolean(j); }],
+  ['última org de la última liga: campo nuevo', (s) => { const o = ultimaOrgDeLaUltimaLiga(s); if (o) o.campoNuevo = 1; return Boolean(o); }],
+  ['última org de la última liga: fuerza number->string', (s) => { const o = ultimaOrgDeLaUltimaLiga(s); if (o) o.fuerza = 'x'; return Boolean(o); }],
+  ['última org de la última liga: liga borrado', (s) => { const o = ultimaOrgDeLaUltimaLiga(s); if (o) delete o.liga; return Boolean(o); }],
+  ['registro.porOrg: campo nuevo en la última fila', (s) => { const f = ultimoDe(s.career.registro.porOrg); if (f) f.campoNuevo = 1; return Boolean(f); }],
+  ['registro.titulos: campo nuevo en la última fila', (s) => { const f = ultimoDe(s.career.registro.titulos); if (f) f.campoNuevo = 1; return Boolean(f); }],
+  ['registro.internacionales: campo nuevo en la última fila', (s) => { const f = ultimoDe(s.career.registro.internacionales); if (f) f.campoNuevo = 1; return Boolean(f); }],
+  ['registro.momentos: campo nuevo en la última fila', (s) => { const f = ultimoDe(s.career.registro.momentos); if (f) f.campoNuevo = 1; return Boolean(f); }],
+  ['career.temporada.tabla: campo nuevo en la última fila', (s) => { const f = ultimoDe(s.career.temporada.tabla); if (f) f.campoNuevo = 1; return Boolean(f); }],
+  ['career.companeros: campo nuevo en el último compañero', (s) => { const f = ultimoDe(s.career.companeros); if (f) f.campoNuevo = 1; return Boolean(f); }],
+  ['meta.tierList: campo nuevo en el último elemento', (s) => { const f = ultimoDe(s.meta.tierList); if (f) f.campoNuevo = 1; return Boolean(f); }],
+  ['career.hitos: un elemento string->number', (s) => { const h = s.career.hitos; if (h.length > 0) h[h.length - 1] = 1; return h.length > 0; }],
+  ['splitsEnRegion: un valor number->string', (s) => { const j = ultimoJugadorDelUltimoEquipo(s); const k = j ? Object.keys(j.splitsEnRegion)[0] : undefined; if (k !== undefined) j.splitsEnRegion[k] = 'x'; return k !== undefined; }],
+  ['flags.eventosVistos: un valor number->string', (s) => { const k = Object.keys(s.flags.eventosVistos)[0]; if (k !== undefined) s.flags.eventosVistos[k] = 'x'; return k !== undefined; }]
+];
+
+check('K0-B guardado: la forma detecta cambios en elementos que no son el primero y en rutas que solo existen tras jugar', () => {
+  const fotos = [];
+  for (const seed of SEEDS_DE_LAS_FOTOS_DE_FORMA) {
+    recorrerCarreraParaForma(seed, (estado, esInicial, splits) => {
+      // Solo se guardan 3 fotos por carrera: la inicial, una a mitad y la final.
+      if (esInicial || splits === SPLIT_DE_LA_FOTO_INTERMEDIA || estado.terminado) {
+        fotos.push({ estado: structuredClone(estado), esInicial });
+      }
+    });
+  }
+  const hashBase = hashForma(formaDeFotos(fotos));
+  const hashRepetido = hashForma(formaDeFotos(fotos.map((foto) => ({ ...foto, estado: structuredClone(foto.estado) }))));
+  if (hashRepetido !== hashBase) {
+    throw new Error('la misma muestra dio dos hashes distintos: la forma no es determinista');
+  }
+  const sinDetectar = [];
+  for (const [nombre, aplicar] of MUTACIONES_DE_FORMA) {
+    const mutadas = fotos.map((foto) => ({ ...foto, estado: structuredClone(foto.estado) }));
+    const aplicadas = mutadas.filter((foto) => aplicar(foto.estado)).length;
+    if (aplicadas === 0) {
+      throw new Error(`la mutación "${nombre}" no encontró dónde aplicarse en las fotos: el check no prueba nada`);
+    }
+    if (hashForma(formaDeFotos(mutadas)) === hashBase) {
+      sinDetectar.push(nombre);
+    }
+  }
+  if (sinDetectar.length > 0) {
+    throw new Error(`la forma no cambió con: ${sinDetectar.join(' | ')}`);
   }
 });
 
@@ -7809,111 +7970,347 @@ check('J3 piso: un campeón en maestriaMinima nunca muestra "oxida" ni promete p
 // K0-B — Higiene de motor y de servidor (PLAN.md §K.5 K0, D67, D68)
 // ============================================================================
 
-check('K0-B mercado: siendo agente libre no todas las ofertas salen bombazo y respeta mediana (D67)', () => {
-  // D67: el salario de referencia para un agente libre (sueldo 0) es la mediana salarial
-  // de la liga de la oferta (liga.salario.medianaUSD), no 0. Una oferta por debajo de
-  // bombazoMultiplo * medianaUSD debe ser 'lateral'.
+// D67: el tag 'bombazo' compara el sueldo de la oferta contra una REFERENCIA: el
+// contrato vigente si lo hay y, si el sueldo vigente es 0 (agente libre), la
+// mediana salarial de la liga de la oferta. Antes de K0-B la referencia era
+// `contrato.salarioAnualUSD * bombazoMultiplo` a secas: con 0, TODA oferta era
+// bombazo. El check mira los dos lados de la regla (que no sea siempre
+// 'bombazo' NI siempre 'lateral') y las dos referencias, con ofertas de sueldo
+// controlado — la revisión de K0-B encontró que la primera versión solo
+// detectaba "siempre bombazo".
+//
+// Cuántas seeds del barrido de ofertas reales (una oferta por liga y seed, con
+// tres sueldos vigentes distintos): las 100 que pedía la spec de K0-B.
+const SEEDS_DEL_BARRIDO_DE_BOMBAZO = 100;
+// Seed del estado sobre el que se arman las ofertas de sueldo controlado.
+const SEED_DE_LA_OFERTA_CONTROLADA = 42;
+// Un sueldo de oferta de "x veces el corte" (corte = referencia × bombazoMultiplo):
+// 1.15 queda claramente arriba del corte y 0.85 claramente abajo, para que el
+// test no dependa de un redondeo en el borde.
+const FACTOR_ARRIBA_DEL_CORTE = 1.15;
+const FACTOR_ABAJO_DEL_CORTE = 0.85;
+// Sueldos vigentes del barrido, como múltiplo de la mediana de la liga: uno muy
+// por debajo y otro muy por encima del corte de la mediana.
+const VIGENTE_BAJO_SOBRE_MEDIANA = 0.3;
+const VIGENTE_ALTO_SOBRE_MEDIANA = 3;
+
+check('K0-B mercado: el bombazo se mide contra el sueldo vigente o, siendo agente libre, contra la mediana de la liga (D67)', () => {
+  const multiplo = BALANCE.mercado.bombazoMultiplo;
+  const esperada = (salario, referencia) => (salario > referencia * multiplo ? 'bombazo' : 'lateral');
+
+  // 1. Ofertas de sueldo controlado: liga con sigma 0 y `minimoUSD` = el sueldo
+  //    que queremos, con el rol/jerarquía/hype de menor multiplicador para que el
+  //    piso sea lo que manda (se verifica abajo que la oferta salió con ese sueldo).
+  const rolBarato = IDS_ROL.reduce((a, b) => (ROLES[a].factorSalario <= ROLES[b].factorSalario ? a : b));
+  const medianaDeLaLigaDePrueba = createInitialState(SEED_DE_LA_OFERTA_CONTROLADA, mulberry32(SEED_DE_LA_OFERTA_CONTROLADA))
+    .mundo.ligas.find((l) => l.tier === 2).salario.medianaUSD;
+  function ofertaConSueldo({ sueldoVigente, salarioObjetivo }) {
+    const rng = mulberry32(SEED_DE_LA_OFERTA_CONTROLADA);
+    const state = createInitialState(SEED_DE_LA_OFERTA_CONTROLADA, rng);
+    state.player.role = rolBarato;
+    state.player.stats.hype = 0;
+    state.career.jerarquia = 0;
+    state.career.contrato.salarioAnualUSD = sueldoVigente;
+    const ligaReal = state.mundo.ligas.find((l) => l.tier === 2);
+    const liga = { ...ligaReal, salario: { ...ligaReal.salario, sigma: 0, minimoUSD: salarioObjetivo } };
+    const oferta = construirOferta(state, liga, liga.orgs[0], null, rng);
+    if (oferta.salarioAnualUSD !== salarioObjetivo) {
+      throw new Error(`caso mal armado: se pidió una oferta de ${salarioObjetivo} y salió de ${oferta.salarioAnualUSD}`);
+    }
+    return { tag: oferta.tag };
+  }
+  const mediana = medianaDeLaLigaDePrueba;
+  const sobreElCorte = Math.round(mediana * multiplo * FACTOR_ARRIBA_DEL_CORTE);
+  const bajoElCorte = Math.round(mediana * multiplo * FACTOR_ABAJO_DEL_CORTE);
+  const casos = [
+    // [descripción, sueldo vigente, sueldo de la oferta, tag esperado]
+    ['agente libre, oferta sobre el corte de la mediana', 0, sobreElCorte, 'bombazo'],
+    ['agente libre, oferta bajo el corte de la mediana (pero sobre la mediana)', 0, bajoElCorte, 'lateral'],
+    ['agente libre, oferta bajo la mediana', 0, Math.round(mediana / 2), 'lateral'],
+    // Con contrato vigente la referencia es ESE sueldo, no la mediana.
+    ['contrato vigente alto: la misma oferta que era bombazo siendo agente libre es lateral', sobreElCorte * 2, sobreElCorte, 'lateral'],
+    ['contrato vigente bajo: una oferta bajo la mediana es bombazo', Math.round(mediana / 2 / (multiplo * FACTOR_ARRIBA_DEL_CORTE)), Math.round(mediana / 2), 'bombazo'],
+    // Entre 1x y el múltiplo: sin el multiplicador (oferta > vigente) esto sería bombazo.
+    ['contrato vigente: oferta apenas por encima del vigente (menos que el múltiplo) es lateral', Math.round(bajoElCorte / ((1 + multiplo) / 2)), bajoElCorte, 'lateral']
+  ];
+  for (const [descripcion, sueldoVigente, salarioObjetivo, esperadoTag] of casos) {
+    const { tag } = ofertaConSueldo({ sueldoVigente, salarioObjetivo });
+    if (tag !== esperadoTag) {
+      throw new Error(`${descripcion}: salió "${tag}" y tenía que ser "${esperadoTag}" (vigente ${sueldoVigente}, oferta ${salarioObjetivo}, mediana ${mediana}, múltiplo ${multiplo})`);
+    }
+  }
+
+  // 2. Barrido de ofertas reales (salario con ruido lognormal): el tag tiene que
+  //    ser el que dice la regla para cada una, y con agente libre no pueden ser
+  //    todas bombazo ni todas laterales.
+  const vistos = { libre: { bombazo: 0, lateral: 0 }, bajo: { bombazo: 0, lateral: 0 }, alto: { bombazo: 0, lateral: 0 } };
+  for (let seed = 1; seed <= SEEDS_DEL_BARRIDO_DE_BOMBAZO; seed += 1) {
+    for (const [situacion, vigenteSobreMediana] of [['libre', 0], ['bajo', VIGENTE_BAJO_SOBRE_MEDIANA], ['alto', VIGENTE_ALTO_SOBRE_MEDIANA]]) {
+      const rng = mulberry32(seed);
+      const state = createInitialState(seed, rng);
+      for (const liga of state.mundo.ligas) {
+        const sueldoVigente = Math.round(liga.salario.medianaUSD * vigenteSobreMediana);
+        state.career.contrato.salarioAnualUSD = sueldoVigente;
+        const oferta = construirOferta(state, liga, liga.orgs[0], null, rng);
+        const referencia = sueldoVigente > 0 ? sueldoVigente : liga.salario.medianaUSD;
+        const tag = esperada(oferta.salarioAnualUSD, referencia);
+        if (oferta.tag !== tag) {
+          throw new Error(`seed ${seed}, ${liga.id ?? liga.nombre}, vigente ${sueldoVigente}: oferta de ${oferta.salarioAnualUSD} salió "${oferta.tag}" y la regla (referencia ${referencia} × ${multiplo}) dice "${tag}"`);
+        }
+        vistos[situacion][tag] += 1;
+      }
+    }
+  }
+  for (const situacion of ['libre', 'bajo', 'alto']) {
+    const { bombazo, lateral } = vistos[situacion];
+    if (bombazo === 0 || lateral === 0) {
+      throw new Error(`el barrido "${situacion}" no vio las dos etiquetas (bombazo ${bombazo}, lateral ${lateral}): no prueba nada`);
+    }
+  }
+
+  // 3. De punta a punta, por la decisión de mercado de verdad: un agente libre
+  //    no recibe una mano de ofertas toda bombazo.
   const mercado = sistemaPorId('mercado');
   let totalOfertas = 0;
   let bombazos = 0;
-  let laterales = 0;
-
-  for (let seed = 1; seed <= 100; seed += 1) {
+  for (let seed = 1; seed <= SEEDS_DEL_BARRIDO_DE_BOMBAZO; seed += 1) {
     const rng = mulberry32(seed);
     const state = createInitialState(seed, rng);
     state.phase = 'profesional';
     state.career.tier = 2;
     state.career.currentOrg = null;
     state.career.contrato.salarioAnualUSD = 0;
-
     const res = mercado.aplicar(state, rng);
-    if (res.decision?.opciones) {
-      for (const op of res.decision.opciones) {
-        totalOfertas += 1;
-        if (op.tag === 'bombazo') bombazos += 1;
-        if (op.tag === 'lateral') laterales += 1;
-      }
+    for (const op of res.decision?.opciones ?? []) {
+      totalOfertas += 1;
+      if (op.tag === 'bombazo') bombazos += 1;
     }
   }
-
   if (totalOfertas === 0) {
-    throw new Error('no se generaron ofertas de mercado para agente libre en 100 seeds');
+    throw new Error(`no se generaron ofertas de mercado para agente libre en ${SEEDS_DEL_BARRIDO_DE_BOMBAZO} seeds`);
   }
   if (bombazos === totalOfertas) {
     throw new Error(`todas las ofertas (${bombazos}/${totalOfertas}) salieron "bombazo" siendo agente libre`);
   }
-  if (laterales === 0) {
-    throw new Error('ninguna oferta salió "lateral" para agente libre');
-  }
-
-  // Verificación específica: una oferta construida con salario < mediana * 1.4 tiene que ser 'lateral'
-  const rngTest = mulberry32(42);
-  const stTest = createInitialState(42, rngTest);
-  stTest.career.contrato.salarioAnualUSD = 0;
-  const ligaTest = stTest.mundo.ligas.find((l) => l.tier === 2);
-  const orgTest = ligaTest.orgs[0];
-  const oferta = construirOferta(stTest, ligaTest, orgTest, null, rngTest);
-  const corteBombazo = (ligaTest.salario?.medianaUSD ?? 0) * BALANCE.mercado.bombazoMultiplo;
-  if (oferta.salarioAnualUSD <= corteBombazo && oferta.tag !== 'lateral') {
-    throw new Error(`oferta con salario ${oferta.salarioAnualUSD} <= corte ${corteBombazo} no se etiquetó como lateral: tag=${oferta.tag}`);
-  }
 });
 
-check('K0-B server: escucha en 127.0.0.1 y rechaza traversal fuera de la raiz (D68)', () => {
-  // D68: escuchar en 127.0.0.1, rechazar path traversal y bloquear .git / node_modules
-  const serverPath = path.resolve(__dirname, '../../server.js').replace(/\\/g, '/');
-  const scriptSync = `
-import http from 'http';
-import { pathToFileURL } from 'url';
+// El check de servidor corre en un proceso hijo (`node -e`) porque necesita
+// esperar sockets y este archivo es síncrono. Esta función se serializa con
+// `.toString()` y se ejecuta allá: NO puede cerrar sobre nada de validate.js
+// (por eso importa todo adentro y recibe el servidor a probar por `K0B_SERVER_JS`).
+//
+// Qué prueba, y por qué cada cosa distingue código viejo de código nuevo
+// (cada mutante real que lo hace rojo está en el reporte de la revisión de K0-B):
+//  1. Arma una raíz temporal con un secreto AFUERA y un `.git`, un `node_modules`
+//     y un `package.json` ADENTRO, y levanta `createServer({ raiz })` sobre ella.
+//     Un `.git/config` real es lo que hace que el bloqueo sea observable: contra
+//     una raíz sin `.git` el código viejo también daba 404.
+//  2. Traversal con puntos crudos y codificados, con `/` y con `\`, y las
+//     variantes de `.git`/`node_modules` que NTFS resuelve al mismo directorio
+//     (mayúsculas, nombre corto 8.3, flujo alternativo): nunca 200, nunca el secreto.
+//  3. `%00` y URI malformada: 400 exacto.
+//  4. `host` exportado es 127.0.0.1 y arrancar el archivo de verdad (`node
+//     server.js` y `node server`) no escucha fuera de loopback: se intenta
+//     conectar a 127.0.0.2 y a cada IP no-loopback de la máquina.
+//  5. Importar el módulo no levanta un servidor.
+async function sesionDelCheckDeServidor() {
+  const { default: fs } = await import('node:fs');
+  const { default: os } = await import('node:os');
+  const { default: rutaNode } = await import('node:path');
+  const { default: http } = await import('node:http');
+  const { default: net } = await import('node:net');
+  const { spawn } = await import('node:child_process');
+  const { pathToFileURL } = await import('node:url');
 
-const { createServer } = await import(pathToFileURL('${serverPath}').href);
-const server = createServer();
-await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-const addr = server.address();
-if (addr.address !== '127.0.0.1') {
-  console.error('Dirección no es 127.0.0.1:', addr.address);
-  process.exit(1);
-}
+  const MS_ESPERA_PEDIDO = 3000;
+  const MS_ESPERA_ARRANQUE = 8000;
+  const MS_ESPERA_CONEXION = 1500;
+  const MS_PARA_QUE_UN_IMPORT_ARRANQUE = 400;
+  const ESTADO_OK = 200;
+  const ESTADO_PEDIDO_INVALIDO = 400;
+  const ESTADO_FUERA_DE_LA_RAIZ = 403;
+  const BS = String.fromCharCode(92);
+  const SECRETO = 'SECRETO-';
 
-const pedir = (ruta) => new Promise((resolve, reject) => {
-  const req = http.request({
-    hostname: '127.0.0.1',
-    port: addr.port,
-    path: ruta,
-    method: 'GET'
-  }, (res) => {
-    let d = '';
-    res.on('data', chunk => d += chunk);
-    res.on('end', () => resolve({ status: res.statusCode, body: d }));
+  const fallas = [];
+  const falla = (texto) => fallas.push(texto);
+  process.on('uncaughtException', (error) => falla(`excepción sin atrapar en el servidor: ${error.message}`));
+
+  const servidorJs = process.env.K0B_SERVER_JS;
+  const carpetaDelServidor = rutaNode.dirname(servidorJs);
+  const tmp = fs.mkdtempSync(rutaNode.join(os.tmpdir(), 'k0b-server-'));
+  const hijos = [];
+
+  const pedir = (puerto, ruta) => new Promise((resolve) => {
+    const req = http.request({ hostname: '127.0.0.1', port: puerto, path: ruta, method: 'GET', timeout: MS_ESPERA_PEDIDO }, (res) => {
+      const trozos = [];
+      res.on('data', (trozo) => trozos.push(trozo));
+      res.on('end', () => resolve({ estado: res.statusCode, cuerpo: Buffer.concat(trozos).toString('utf8') }));
+    });
+    req.on('timeout', () => { req.destroy(); resolve({ estado: 'sin respuesta', cuerpo: '' }); });
+    req.on('error', (error) => resolve({ estado: `error ${error.message}`, cuerpo: '' }));
+    req.end();
   });
-  req.on('error', reject);
-  req.end();
-});
 
-for (const p of ['/', '/index.html', '/src/core/rng.js']) {
-  const r = await pedir(p);
-  if (r.status !== 200) {
-    console.error('Status no 200 para ' + p + ':', r.status);
-    process.exit(1);
-  }
-}
+  const puertoLibre = () => new Promise((resolve) => {
+    const s = net.createServer();
+    s.listen(0, '127.0.0.1', () => { const { port } = s.address(); s.close(() => resolve(port)); });
+  });
 
-for (const p of ['/..%2fpackage.json', '/%2e%2e/server.js', '/src/../../etc/passwd', '/.git/config']) {
-  const r = await pedir(p);
-  if (r.status === 200) {
-    console.error('Status 200 inesperado para ' + p);
-    process.exit(1);
-  }
-}
+  const conecta = (direccion, puerto) => new Promise((resolve) => {
+    const socket = net.connect({ host: direccion, port: puerto });
+    socket.setTimeout(MS_ESPERA_CONEXION);
+    socket.on('connect', () => { socket.destroy(); resolve(true); });
+    socket.on('timeout', () => { socket.destroy(); resolve(false); });
+    socket.on('error', () => resolve(false));
+  });
 
-await new Promise((resolve) => server.close(resolve));
-`;
+  // `node server.js` / `node server` como lo corre el jugador. Devuelve el puerto
+  // que el propio archivo dijo haber abierto (o null si no arrancó).
+  const arrancarDeVerdad = async (argumento) => {
+    const hijo = spawn(process.execPath, [argumento], {
+      cwd: carpetaDelServidor,
+      env: { ...process.env, PORT: String(await puertoLibre()) },
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+    hijos.push(hijo);
+    return new Promise((resolve) => {
+      let salida = '';
+      const plazo = setTimeout(() => resolve({ puerto: null, salida }), MS_ESPERA_ARRANQUE);
+      const alHablar = (trozo) => {
+        salida += trozo;
+        const dicho = /localhost:(\d+)/.exec(salida);
+        if (dicho) { clearTimeout(plazo); resolve({ puerto: Number(dicho[1]), salida }); }
+      };
+      hijo.stdout.on('data', alHablar);
+      hijo.stderr.on('data', alHablar);
+      hijo.on('exit', () => { clearTimeout(plazo); resolve({ puerto: null, salida }); });
+    });
+  };
 
   try {
-    execFileSync(process.execPath, ['--input-type=module', '-e', scriptSync], { stdio: 'pipe' });
+    const raiz = rutaNode.join(tmp, 'raiz');
+    for (const carpeta of ['.git', 'node_modules/x', 'src/.git', 'src/node_modules/y', 'assets']) {
+      fs.mkdirSync(rutaNode.join(raiz, carpeta), { recursive: true });
+    }
+    fs.writeFileSync(rutaNode.join(tmp, 'secreto.txt'), `${SECRETO}FUERA`);
+    fs.writeFileSync(rutaNode.join(raiz, '.git', 'config'), `${SECRETO}GIT`);
+    fs.writeFileSync(rutaNode.join(raiz, 'node_modules', 'x', 'index.js'), `${SECRETO}NODE_MODULES`);
+    fs.writeFileSync(rutaNode.join(raiz, 'src', '.git', 'config'), `${SECRETO}GIT_ANIDADO`);
+    fs.writeFileSync(rutaNode.join(raiz, 'src', 'node_modules', 'y', 'index.js'), `${SECRETO}NODE_MODULES_ANIDADO`);
+    fs.writeFileSync(rutaNode.join(raiz, 'package.json'), `${SECRETO}RAIZ`);
+    fs.writeFileSync(rutaNode.join(raiz, 'index.html'), '<!DOCTYPE html><title>ok</title>');
+    fs.writeFileSync(rutaNode.join(raiz, 'src', 'a.js'), 'export const a = 1;');
+    fs.writeFileSync(rutaNode.join(raiz, 'assets', 'og.png'), 'PNG');
+
+    // 5. importar no arranca nada (PORT=0: si arrancara, que sea en un puerto cualquiera).
+    process.env.PORT = '0';
+    let arrancoAlImportar = false;
+    const logOriginal = console.log;
+    console.log = (...partes) => { if (String(partes[0]).includes('Servidor corriendo')) arrancoAlImportar = true; };
+    const modulo = await import(pathToFileURL(servidorJs).href);
+    await new Promise((resolve) => setTimeout(resolve, MS_PARA_QUE_UN_IMPORT_ARRANQUE));
+    console.log = logOriginal;
+    if (arrancoAlImportar) falla('importar server.js levantó un servidor: solo tiene que arrancar si es el punto de entrada');
+
+    // 4a. el host que declara el archivo.
+    if (modulo.host !== '127.0.0.1') falla(`el host exportado es ${JSON.stringify(modulo.host)}, tiene que ser 127.0.0.1`);
+
+    const servidor = modulo.createServer({ raiz });
+    await new Promise((resolve) => servidor.listen(0, '127.0.0.1', resolve));
+    const { port } = servidor.address();
+
+    // 1. lo que el juego sí sirve.
+    for (const ruta of ['/', '/index.html', '/index.html?x=1', '/src/a.js', '/assets/og.png']) {
+      const r = await pedir(port, ruta);
+      if (r.estado !== ESTADO_OK) falla(`${ruta} tendría que dar 200 y dio ${r.estado}`);
+    }
+
+    // 2a. salirse de la raíz con puntos (crudos o codificados): 403 exacto. Es la
+    // capa de "la ruta resuelta tiene que quedar adentro de la raíz"; la lista
+    // blanca de más abajo también los pararía (con 404), así que sin pedir el
+    // código la capa de la raíz podría romperse sin que nadie se entere.
+    for (const ruta of ['/../secreto.txt', '/..%2fsecreto.txt', '/%2e%2e/secreto.txt', '/src/../../secreto.txt']) {
+      const r = await pedir(port, ruta);
+      if (r.estado !== ESTADO_FUERA_DE_LA_RAIZ || r.cuerpo.includes(SECRETO)) {
+        falla(`${ruta} tendría que dar 403 (fuera de la raíz) y dio ${r.estado}${r.cuerpo.includes(SECRETO) ? ` y devolvió "${r.cuerpo}"` : ''}`);
+      }
+    }
+
+    // 2b. lo demás que no se sirve: nunca 200 y nunca el contenido de un archivo secreto.
+    const prohibidas = [
+      // con barra invertida (en Windows también sale de la raíz; en otros SO es solo un nombre raro)
+      `/..${BS}secreto.txt`, `/src%5c..%5c..%5csecreto.txt`, '/..%5csecreto.txt',
+      // .git (mayúsculas, separador, 8.3, flujo alternativo NTFS, punto final, vía `..`)
+      '/.git/config', '/.GIT/config', '/.Git/config', `/.GIT${BS}config`, '/.GIT%2Fconfig', '/GIT~1/config',
+      '/.git::$INDEX_ALLOCATION/config', '/.git./config', '/src/../.git/config',
+      // node_modules, las mismas variantes
+      '/node_modules/x/index.js', '/NODE_MODULES/x/index.js', '/Node_Modules/x/index.js', '/NODE_M~1/x/index.js',
+      '/node_modules::$INDEX_ALLOCATION/x/index.js', '/node_modules./x/index.js',
+      // los mismos dentro de una carpeta pública (defensa en profundidad)
+      '/src/.git/config', '/src/.GIT/config', '/src/node_modules/y/index.js', '/src/Node_Modules/y/index.js',
+      // lo que está en la raíz pero el juego no necesita (lista blanca)
+      '/package.json', '/PACKAGE.JSON', '/src/a.js::$DATA'
+    ];
+    for (const ruta of prohibidas) {
+      const r = await pedir(port, ruta);
+      if (r.estado === ESTADO_OK || r.cuerpo.includes(SECRETO)) {
+        falla(`${ruta.split(BS).join('<barra invertida>')} dio ${r.estado}${r.cuerpo.includes(SECRETO) ? ` y devolvió "${r.cuerpo}"` : ''}`);
+      }
+    }
+
+    // 3. pedidos que ni se pueden interpretar.
+    for (const ruta of ['/%00', '/index.html%00.js', '/%E0%A4%A', '/%zz']) {
+      const r = await pedir(port, ruta);
+      if (r.estado !== ESTADO_PEDIDO_INVALIDO) falla(`${ruta} tendría que dar 400 y dio ${r.estado}`);
+    }
+    servidor.close();
+
+    // 4b. el archivo corriendo de verdad.
+    const direccionesAjenas = ['127.0.0.2', ...Object.values(os.networkInterfaces()).flat()
+      .filter((interfaz) => interfaz.family === 'IPv4' && !interfaz.internal).map((interfaz) => interfaz.address)];
+    for (const argumento of ['server.js', 'server']) {
+      const { puerto, salida } = await arrancarDeVerdad(argumento);
+      if (puerto === null) {
+        falla(`\`node ${argumento}\` no arrancó: ${salida.trim().slice(0, 200) || '(sin salida)'}`);
+        continue;
+      }
+      const r = await pedir(puerto, '/');
+      if (r.estado !== ESTADO_OK) falla(`\`node ${argumento}\`: / dio ${r.estado}`);
+      if (argumento === 'server.js') {
+        const alcanzables = (await Promise.all(direccionesAjenas.map(async (d) => (await conecta(d, puerto)) ? d : null))).filter(Boolean);
+        if (alcanzables.length > 0) falla(`el servidor real contesta en ${alcanzables.join(', ')}: no escucha solo en 127.0.0.1`);
+      }
+    }
+  } catch (error) {
+    falla(`el check no pudo correr hasta el final: ${error && error.message}`);
+  } finally {
+    for (const hijo of hijos) hijo.kill();
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+
+  if (fallas.length > 0) {
+    console.error(fallas.join('\n'));
+    process.exit(1);
+  }
+  process.exit(0);
+}
+
+// Cuánto del mensaje de error de `execFileSync` (que incluye el script entero) se muestra.
+const ERROR_MAXIMO_DEL_CHECK_DE_SERVIDOR = 300;
+
+check('K0-B server: solo localhost, solo la lista blanca y sin salir de la raiz (D68, H1)', () => {
+  // D68 + H1 de la revisión: ver `sesionDelCheckDeServidor`. El servidor bajo
+  // prueba es el `server.js` de la raíz del repo.
+  const servidorJs = path.resolve(__dirname, '../../server.js');
+  try {
+    execFileSync(process.execPath, ['--input-type=module', '-e', `(${sesionDelCheckDeServidor.toString()})()`], {
+      env: { ...process.env, K0B_SERVER_JS: servidorJs },
+      stdio: 'pipe'
+    });
   } catch (err) {
-    const detalle = err.stderr ? err.stderr.toString().trim() : err.message;
-    throw new Error(`Fallo en check de servidor: ${detalle}`);
+    const detalle = [err.stderr, err.stdout].map((s) => (s ? s.toString().trim() : '')).filter(Boolean).join(' | ') || err.message.slice(0, ERROR_MAXIMO_DEL_CHECK_DE_SERVIDOR);
+    throw new Error(detalle.split('\n').join(' ; '));
   }
 });
 

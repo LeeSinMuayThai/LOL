@@ -88,9 +88,12 @@ export function construirOferta(state, liga, org, tagForzado, rng) {
   const anios = roll(m.aniosContratoMin, m.aniosContratoMax, rng);
 
   // D67: el salario de referencia es el contrato vigente si lo hay; si es 0
-  // (agente libre), es la mediana salarial de la liga de la oferta.
-  const sueldoVigente = state.career?.contrato?.salarioAnualUSD ?? 0;
-  const salarioReferencia = sueldoVigente > 0 ? sueldoVigente : (liga.salario?.medianaUSD ?? 0);
+  // (agente libre), es la mediana salarial de la liga de la oferta. Sin `?.` ni
+  // `?? 0` a propósito: `salarioDeOferta` ya exige `liga.salario` y validate.js
+  // exige `minimoUSD < medianaUSD`; si algún día faltara la mediana, un `0` por
+  // defecto volvería a etiquetar TODA oferta como bombazo (D67) sin avisar.
+  const sueldoVigente = state.career.contrato.salarioAnualUSD;
+  const salarioReferencia = sueldoVigente > 0 ? sueldoVigente : liga.salario.medianaUSD;
   const tag = tagForzado ?? (
     salarioAnualUSD > salarioReferencia * m.bombazoMultiplo ? 'bombazo' : 'lateral'
   );
