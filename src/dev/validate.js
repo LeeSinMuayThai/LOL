@@ -11230,6 +11230,61 @@ checkLento('K1 D76: splitsPorTier está completo en cada fila, suma fila.splits,
   }
 });
 
+// D76 en el veredicto (`core/legado.js`): dos registros armados a mano sobre una carrera real terminada, con la
+// forma de dos carreras medidas en K1-A (equilibrado seed 56 y prudente seed 372) en las que una org descendió en
+// el lugar y siguió ganando en la liga de desarrollo. Con la lectura vieja (`fila.tier`) los títulos de tier 2
+// contaban como de primera y el veredicto decía "Campeón de CBLOL" y "Leyenda de LEC: un internacional y 6 títulos".
+check('K1 D76 en el veredicto: legado cuenta splits por splitsPorTier y títulos por su tier, no por fila.tier', () => {
+  const base = estadosDeReferenciaK1().find((estado) => estado.terminado && estado.splitFichaje !== null);
+  if (!base) {
+    throw new Error('check vacío: ninguna carrera de referencia pro terminó');
+  }
+  const conRegistro = (filas, titulos, internacionales) => {
+    const estado = structuredClone(base);
+    estado.finAnticipado = 'retiro_elegido';
+    estado.career.podios = 0;
+    const r = estado.career.registro;
+    r.porOrg = filas.map((fila) => ({
+      desdeSplit: 0, hastaSplit: null, fechasG: 0, fechasP: 0, jerarquiaMaxima: 0, arraigoFinal: null,
+      arraigoMaximo: 0, salarioAnualUSD: 0, motivoDeSalida: null, ...fila
+    }));
+    r.titulos = titulos;
+    r.internacionales = internacionales;
+    r.picos.rankMundial = 0;
+    r.momentos = [];
+    return estado;
+  };
+  const titulo = (liga, tier, anio, org) => ({ nombre: liga, anio, org, liga, tier });
+
+  // Firmó en CBLOL, jugó 3 splits en primera, descendió a CD y ganó CD: nunca fue campeón de primera.
+  const descendido = conRegistro(
+    [{ org: 'Leviatán', liga: 'CBLOL', tier: 1, splits: 9, splitsPorTier: { 1: 3, 2: 6, 3: 0 }, desdeAnio: 2030, hastaAnio: 2033, titulos: [{ nombre: 'CD', anio: 2031 }] }],
+    [titulo('CD', 2, 2031, 'Leviatán')],
+    []
+  );
+  const v1 = componerLegado(descendido).veredicto;
+  if (v1.startsWith('Campeón de') || !v1.startsWith('El pibe que pasó por primera')) {
+    throw new Error(`3 splits en primera y un título de CD tiene que ser "El pibe que pasó por primera…", dio "${v1}"`);
+  }
+
+  // Dos LCP y una LEC en primera, tres EMEA_MASTERS después de descender con la org de LEC, y un buen papel.
+  const insignia = conRegistro(
+    [
+      { org: 'MVK Esports', liga: 'LCP', tier: 1, splits: 6, splitsPorTier: { 1: 6, 2: 0, 3: 0 }, desdeAnio: 2030, hastaAnio: 2031, titulos: [{ nombre: 'LCP', anio: 2030 }, { nombre: 'LCP', anio: 2031 }] },
+      { org: 'Team Vitality', liga: 'LEC', tier: 1, splits: 12, splitsPorTier: { 1: 3, 2: 9, 3: 0 }, desdeAnio: 2032, hastaAnio: null, titulos: [{ nombre: 'LEC', anio: 2032 }, { nombre: 'EMEA_MASTERS', anio: 2035 }, { nombre: 'EMEA_MASTERS', anio: 2036 }, { nombre: 'EMEA_MASTERS', anio: 2037 }] }
+    ],
+    [
+      titulo('LCP', 1, 2030, 'MVK Esports'), titulo('LCP', 1, 2031, 'MVK Esports'), titulo('LEC', 1, 2032, 'Team Vitality'),
+      titulo('EMEA_MASTERS', 2, 2035, 'Team Vitality'), titulo('EMEA_MASTERS', 2, 2036, 'Team Vitality'), titulo('EMEA_MASTERS', 2, 2037, 'Team Vitality')
+    ],
+    [{ torneo: 'internacional — LCP', anio: 2031, org: 'MVK Esports', liga: 'LCP', resultado: 'buen_papel', camino: [] }]
+  );
+  const v2 = componerLegado(insignia).veredicto;
+  if (!v2.startsWith('Leyenda de LCP: un internacional y 3 títulos')) {
+    throw new Error(`3 títulos de primera (2 LCP, 1 LEC) y un buen papel tiene que ser "Leyenda de LCP: un internacional y 3 títulos", dio "${v2}"`);
+  }
+});
+
 check('K1 D75: "llegó a tier N" lee splitsPorTier (no fila.tier) y el embudo de simulate usa esa definición', () => {
   const registro = (filas) => ({ porOrg: filas });
   const fila = (tier, porTier) => ({ tier, splits: porTier[1] + porTier[2] + porTier[3], splitsPorTier: porTier });
