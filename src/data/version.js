@@ -13,4 +13,4 @@
 // versión al mergearse. (La huella de 30 splits de `calcularHuella`, la de la
 // trampa T1, es otra y no se registra acá.)
 export const VERSION_JUEGO = 'K1';
-export const HUELLA_JUEGO = 1330031145;
+export const HUELLA_JUEGO = 797088273;

@@ -74,7 +74,7 @@
     "titulos": 0,
     "internacionales": 0,
     "rankPico": 0,
-    "historia": "Tres splits en la academia esperando un llamado a la LCS que nunca llegó. Hoy es el coach que todos los supports de NA quieren tener."
+    "historia": "Tres años en la NACL esperando un llamado a la LCS que nunca llegó. Hoy es el coach que todos los supports de NA quieren tener."
   },
   {
     "id": "faro",
@@ -107,7 +107,7 @@
     "titulos": 5,
     "internacionales": 9,
     "rankPico": 4,
-    "historia": "Cinco títulos en la LCP y un pathing que ningún analista supo leer. Fue el primer jungla del Pacífico en meterse en una final internacional."
+    "historia": "Cinco títulos entre la LMS y la PCS con un pathing que ningún analista supo leer. Cuando el Pacífico se juntó en la LCP ya estaba retirado, comentando las finales."
   },
   {
     "id": "latigo",
@@ -178,13 +178,13 @@
   {
     "id": "relojero",
     "handle": "Relojero",
-    "rol": "adc",
+    "rol": "jungla",
     "region": "Norteamérica",
-    "anios": 13,
-    "titulos": 6,
-    "internacionales": 6,
-    "rankPico": 9,
-    "historia": "Seis LCS y trece años sin perderse un split. Todos los rookies de NA le pidieron una duoQ alguna vez, y a casi todos les dijo que sí."
+    "anios": 12,
+    "titulos": 3,
+    "internacionales": 5,
+    "rankPico": 11,
+    "historia": "Tres LCS con un pathing que se podía cronometrar: a los tres minutos y quince estaba en la línea de abajo, partida tras partida, y aun así nadie lo frenaba."
   },
   {
     "id": "tifon",
@@ -212,11 +212,11 @@
     "id": "vigilia",
     "handle": "Vigilia",
     "rol": "mid",
-    "region": "Corea",
-    "anios": 15,
-    "titulos": 11,
-    "internacionales": 14,
+    "region": "China",
+    "anios": 12,
+    "titulos": 8,
+    "internacionales": 12,
     "rankPico": 1,
-    "historia": "Once LCK y tres coronas mundiales. Los analistas dejaron de compararlo con otros mids y empezaron a compararlo con el juego mismo."
+    "historia": "Ocho LPL con un pool tan ancho que le gastaban tres bans y no alcanzaba. Llegó a #1 del mundo sin levantar nunca un Mundial, y lo sostuvo dos años."
   }
 ]
