@@ -131,6 +131,9 @@ function validarCarrera(state) {
       fallar(`registro.${campo} inválido (${JSON.stringify(valor)})`);
     }
   }
+  if (!Number.isInteger(r.picos.rankMundial) || r.picos.rankMundial > BALANCE.topMundial.tamano) {
+    fallar(`registro.picos.rankMundial ${r.picos.rankMundial} no es un puesto del Top ${BALANCE.topMundial.tamano} (ni 0)`);
+  }
   if (!Array.isArray(state.mundo?.rivales)) {
     fallar('falta mundo.rivales');
   }

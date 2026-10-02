@@ -11195,6 +11195,7 @@ check('K1 puntaje falla fuerte: liga desconocida, título sin tier, internaciona
     ['internacional de una liga de tier 2', internacional({ liga: 'LCK_CL' }), /no es una liga de primera/],
     ['fila sin splitsPorTier', (st) => { delete st.career.registro.porOrg[0].splitsPorTier; }, /splitsPorTier/],
     ['pico de rank sin número', (st) => { st.career.registro.picos.rankMundial = undefined; }, /rankMundial/],
+    ['pico de rank fuera del Top 20', (st) => { st.career.registro.picos.rankMundial = BALANCE.topMundial.tamano + 1; }, /rankMundial/],
     ['sin cierres como #1', (st) => { delete st.career.registro.cierresComoNumeroUno; }, /cierresComoNumeroUno/]
   ];
   for (const [nombre, mutar, patron] of casos) {
