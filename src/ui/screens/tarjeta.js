@@ -238,7 +238,7 @@ export function renderTarjeta(container, state, modulos, extras = {}) {
     const historia = document.createElement('div');
     historia.className = 'tarjeta-historia';
     historia.appendChild(linea('tarjeta-historia-titulo', 'TU HISTORIA, ORG POR ORG'));
-    historia.append(...t.historia.map(filaHistoria));
+    historia.append(...t.historia.map((fila) => filaHistoria(fila, state.calendario?.anio)));
     container.appendChild(historia);
   }
 

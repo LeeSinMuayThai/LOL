@@ -1510,12 +1510,15 @@ export const BALANCE = {
       porTitulo: { 1: 40, 2: 12, 3: 4 },
       prestigioReferencia: 70
     },
-    // 3. Internacional: por participar y, además, por cada buen papel; todo ×
-    // la `dificultad` de la liga que representaste (`leagues.json`: cuán
-    // difícil es ganar el Mundial saliendo de ahí — LCK 1, CBLOL 1,9).
+    // 3. Internacional: por participar y, además, por el resultado; todo × la
+    // `dificultad` de la liga que representaste (`leagues.json`: cuán difícil es
+    // ganar el Mundial saliendo de ahí — LCK 1, CBLOL 1,9). `porResultado` es
+    // también la lista de resultados que existen (`serie.js` escribe estos dos):
+    // un internacional con otro resultado hace fallar al puntaje en vez de
+    // valer "participar" en silencio.
     internacional: {
       participacion: 20,
-      buenPapel: 50
+      porResultado: { buen_papel: 50, eliminado: 0 }
     },
     // 4. El mundo: el pico de rank mundial por bandas (#1, hasta `corteTop5`, el
     // resto del Top 20) más cada temporada cerrada adentro del Top 20

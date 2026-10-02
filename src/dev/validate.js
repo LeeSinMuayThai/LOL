@@ -11196,8 +11196,22 @@ check('K1 puntaje falla fuerte: liga desconocida, título sin tier, internaciona
     ['fila sin splitsPorTier', (st) => { delete st.career.registro.porOrg[0].splitsPorTier; }, /splitsPorTier/],
     ['pico de rank sin número', (st) => { st.career.registro.picos.rankMundial = undefined; }, /rankMundial/],
     ['pico de rank fuera del Top 20', (st) => { st.career.registro.picos.rankMundial = BALANCE.topMundial.tamano + 1; }, /rankMundial/],
-    ['sin cierres como #1', (st) => { delete st.career.registro.cierresComoNumeroUno; }, /cierresComoNumeroUno/]
+    ['sin cierres como #1', (st) => { delete st.career.registro.cierresComoNumeroUno; }, /cierresComoNumeroUno/],
+    // Segunda revisión de K1: la validación es simétrica (los rivales como tu pico), los contadores son enteros y el
+    // mensaje imprime el valor malo tal cual (NaN, no "null").
+    ['rival con puntaje NaN', (st) => { st.mundo.rivales[0].puntaje = Number.NaN; }, /puntaje.*NaN/],
+    ['rival con puntaje fuera del Top 20', (st) => { st.mundo.rivales[0].puntaje = BALANCE.topMundial.tamano + 5; }, /puntaje.*25/],
+    ['rival con puntaje fraccionario', (st) => { st.mundo.rivales[0].puntaje = 2.5; }, /puntaje.*2\.5/],
+    ['rival con puntaje negativo', (st) => { st.mundo.rivales[0].puntaje = -1; }, /puntaje.*-1/],
+    ['contador fraccionario', (st) => { st.career.registro.splitsEnTopMundial = 1.5; }, /splitsEnTopMundial.*1\.5/],
+    ['cierres como #1 fraccionario', (st) => { st.career.registro.cierresComoNumeroUno = 0.5; }, /cierresComoNumeroUno.*0\.5/],
+    ['contador NaN se lee como NaN', (st) => { st.career.registro.splitsEnTopMundial = Number.NaN; }, /splitsEnTopMundial.*NaN/],
+    ['internacional con un resultado desconocido', internacional({ liga: 'LCK', resultado: 'semis' }), /resultado.*semis/],
+    ['internacional sin resultado', internacional({ liga: 'LCK', resultado: undefined }), /resultado/]
   ];
+  if (!(base.mundo.rivales.length > 0)) {
+    throw new Error('check vacío: la carrera de referencia no trae rivales de generación');
+  }
   for (const [nombre, mutar, patron] of casos) {
     const copia = structuredClone(base);
     mutar(copia);
@@ -11293,6 +11307,51 @@ check('K1 generación: los empates no te superan, el 0 va último y el bono de p
   // Sin Top 20 no hay bono de primero, aunque nadie te supere.
   if (generacion(0, [0, 0]) !== 0) {
     throw new Error(`sin entrar al Top 20 y con la generación empatada en 0, el componente tiene que ser 0 (dio ${generacion(0, [0, 0])})`);
+  }
+});
+
+// Segunda revisión de K1: dos textos de la tarjeta que sonaban a logro cuando el componente valía 0 o no había nada
+// que potenciar. Sin Top 20 no se lee "Quedaste 2º"; sin un split con contrato no se lee "cada cosa que lograste".
+check('K1 textos honestos: la generación sin Top 20 no suena a logro y el techo sin splits con contrato no potencia nada', () => {
+  const base = estadosDeReferenciaK1().find((estado) => estado.career.registro.porOrg.length > 0);
+  if (!base) {
+    throw new Error('check vacío: ninguna carrera de referencia jugó con contrato');
+  }
+  const conGeneracion = (tuRank, ranks) => {
+    const st = structuredClone(base);
+    st.career.registro.picos.rankMundial = tuRank;
+    st.mundo.rivales = ranks.map((rank, i) => ({ ...base.mundo.rivales[0], handle: `Rival${i}`, puntaje: rank }));
+    return puntajeDeCarrera(st).componentes.find((c) => c.id === 'generacion');
+  };
+  const sinTop = conGeneracion(0, [4, 0, 0]);
+  if (sinTop.puntos !== 0 || /Quedaste/.test(sinTop.detalle) || !/Rival0 llegó al #4 y vos nunca entraste al Top/.test(sinTop.detalle)) {
+    throw new Error(`sin Top 20 el componente vale 0 y no puede leerse como un puesto logrado (puntos ${sinTop.puntos}): "${sinTop.detalle}"`);
+  }
+  const conTop = conGeneracion(8, [3, 12, 0]);
+  if (conTop.puntos <= 0 || !conTop.detalle.startsWith('Quedaste 2º de 4 en tu generación: Rival0 llegó al #3 y vos al #8')) {
+    throw new Error(`con Top 20 el puesto sí se cuenta (puntos ${conTop.puntos}): "${conTop.detalle}"`);
+  }
+
+  const conTecho = (potencial, sinContrato) => {
+    const st = structuredClone(base);
+    st.player.oculto.potencial = potencial;
+    if (sinContrato) {
+      for (const fila of st.career.registro.porOrg) {
+        fila.splitsPorTier = { 1: 0, 2: 0, 3: 0 };
+      }
+    }
+    return puntajeDeCarrera(st).potencial;
+  };
+  const techoBajo = conTecho(BALANCE.mundo.potencialMin, false);
+  const techoBajoSinContrato = conTecho(BALANCE.mundo.potencialMin, true);
+  if (techoBajo.factor <= 1) {
+    throw new Error(`un techo bajo (el mínimo) tiene que potenciar lo logrado (factor ${techoBajo.factor})`);
+  }
+  if (!/cada cosa que lograste pesa un \d+% más/.test(techoBajo.detalle)) {
+    throw new Error(`con splits jugados el techo bajo sigue diciendo que potencia lo logrado: "${techoBajo.detalle}"`);
+  }
+  if (/lograste/.test(techoBajoSinContrato.detalle) || !/nunca llegaste a jugar un split con contrato/.test(techoBajoSinContrato.detalle)) {
+    throw new Error(`sin un split con contrato no hay logros que potenciar: "${techoBajoSinContrato.detalle}"`);
   }
 });
 

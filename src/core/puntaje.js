@@ -78,7 +78,7 @@ function fallar(mensaje) {
 }
 
 function ligaConocida(ligaId, donde) {
-  return LIGA_POR_ID[ligaId] ?? fallar(`${donde} trae una liga desconocida (${JSON.stringify(ligaId)})`);
+  return LIGA_POR_ID[ligaId] ?? fallar(`${donde} trae una liga desconocida (${String(ligaId)})`);
 }
 
 // El nombre que ve el jugador ("EMEA Masters", no "EMEA_MASTERS").
@@ -86,28 +86,45 @@ export function nombreDeLiga(ligaId) {
   return ligaConocida(ligaId, 'el texto').nombre;
 }
 
+// Los rivales de generación miden lo mismo que tu pico: un puesto del Top 20 del
+// mundo (entero, de 1 a `BALANCE.topMundial.tamano`) o `0` si nunca entraron. Un
+// `NaN` contaría en silencio como "no te ganó"; un 25 como un rank que no existe.
+function validarRivales(rivales) {
+  if (!Array.isArray(rivales)) {
+    fallar('falta mundo.rivales');
+  }
+  const { tamano } = BALANCE.topMundial;
+  rivales.forEach((rival, i) => {
+    const puntaje = rival?.puntaje;
+    if (!Number.isInteger(puntaje) || puntaje < 0 || puntaje > tamano) {
+      fallar(`mundo.rivales[${i}] (${String(rival?.handle)}) trae un puntaje ${String(puntaje)} que no es un puesto del Top ${tamano} (ni 0)`);
+    }
+  });
+}
+
 function validarCarrera(state) {
   const potencial = state.player?.oculto?.potencial;
   if (!Number.isFinite(potencial)) {
-    fallar(`falta el potencial oculto (player.oculto.potencial = ${JSON.stringify(potencial)})`);
+    fallar(`falta el potencial oculto (player.oculto.potencial = ${String(potencial)})`);
   }
   if (!Number.isFinite(P().pesoRol[state.player.role])) {
-    fallar(`el rol ${JSON.stringify(state.player.role)} no tiene pesoRol`);
+    fallar(`el rol ${String(state.player.role)} no tiene pesoRol`);
   }
   const r = state.career?.registro ?? fallar('falta career.registro');
   for (const fila of r.porOrg) {
     if (!TIERS_DE_SPLIT.every((tier) => Number.isInteger(fila.splitsPorTier?.[tier]) && fila.splitsPorTier[tier] >= 0)) {
+      // Es un objeto: `String` daría "[object Object]", así que este sí va con JSON.
       fallar(`la fila de ${fila.org} no trae splitsPorTier completo (${JSON.stringify(fila.splitsPorTier)})`);
     }
   }
   for (const t of r.titulos) {
     const donde = `el título ${t.nombre} ${t.anio}`;
     if (!TIERS_DE_SPLIT.includes(t.tier)) {
-      fallar(`${donde} no trae tier (${JSON.stringify(t.tier)})`);
+      fallar(`${donde} no trae tier (${String(t.tier)})`);
     }
     if (t.tier === 3 ? t.liga !== null : ligaConocida(t.liga, donde).tier !== t.tier) {
       fallar(t.tier === 3
-        ? `${donde} es de tier 3 y trae liga ${JSON.stringify(t.liga)}: en tier 3 va liga: null`
+        ? `${donde} es de tier 3 y trae liga ${String(t.liga)}: en tier 3 va liga: null`
         : `${donde} dice tier ${t.tier} y su liga ${t.liga} es de tier ${LIGA_POR_ID[t.liga].tier}`);
     }
   }
@@ -119,24 +136,29 @@ function validarCarrera(state) {
     if (ligaConocida(e.liga, donde).tier !== 1) {
       fallar(`${donde} representa a ${e.liga}, que no es una liga de primera`);
     }
+    // La tabla que puntúa es la lista de resultados que se conocen: uno que no está
+    // no puede valer "participar y nada más" en silencio.
+    const { porResultado } = P().internacional;
+    if (!Object.hasOwn(porResultado, e.resultado)) {
+      fallar(`${donde} trae un resultado ${String(e.resultado)} que no se puntúa (los conocidos: ${Object.keys(porResultado).join(', ')})`);
+    }
   }
-  const contadores = {
-    'picos.rankMundial': r.picos?.rankMundial,
-    'picos.rankedPuntos': r.picos?.rankedPuntos,
-    splitsEnTopMundial: r.splitsEnTopMundial,
-    cierresComoNumeroUno: r.cierresComoNumeroUno
-  };
-  for (const [campo, valor] of Object.entries(contadores)) {
-    if (!Number.isFinite(valor) || valor < 0) {
-      fallar(`registro.${campo} inválido (${JSON.stringify(valor)})`);
+  // [campo, valor, entero]: los conteos y los puestos son enteros; los puntos de soloQ, solo finitos.
+  const contadores = [
+    ['picos.rankMundial', r.picos?.rankMundial, true],
+    ['picos.rankedPuntos', r.picos?.rankedPuntos, false],
+    ['splitsEnTopMundial', r.splitsEnTopMundial, true],
+    ['cierresComoNumeroUno', r.cierresComoNumeroUno, true]
+  ];
+  for (const [campo, valor, entero] of contadores) {
+    if (!(entero ? Number.isInteger(valor) : Number.isFinite(valor)) || valor < 0) {
+      fallar(`registro.${campo} inválido (${String(valor)})`);
     }
   }
   if (!Number.isInteger(r.picos.rankMundial) || r.picos.rankMundial > BALANCE.topMundial.tamano) {
     fallar(`registro.picos.rankMundial ${r.picos.rankMundial} no es un puesto del Top ${BALANCE.topMundial.tamano} (ni 0)`);
   }
-  if (!Array.isArray(state.mundo?.rivales)) {
-    fallar('falta mundo.rivales');
-  }
+  validarRivales(state.mundo?.rivales);
 }
 
 // --- Los datos de la carrera que mira el puntaje ---
@@ -223,11 +245,10 @@ function ligaPrincipalInternacional(internacionales) {
 }
 
 function componenteInternacional(state) {
-  const { participacion, buenPapel } = P().internacional;
+  const { participacion, porResultado } = P().internacional;
   const internacionales = registroDe(state).internacionales;
   const crudo = internacionales.reduce(
-    (total, entrada) => total
-      + (participacion + (entrada.resultado === 'buen_papel' ? buenPapel : 0)) * LIGA_POR_ID[entrada.liga].dificultad,
+    (total, entrada) => total + (participacion + porResultado[entrada.resultado]) * LIGA_POR_ID[entrada.liga].dificultad,
     0
   );
 
@@ -298,6 +319,7 @@ function rankMejor(a, b) {
 export function puestoEnLaGeneracion(state) {
   const tuRank = rankPicoDe(state);
   const rivales = state.mundo.rivales;
+  validarRivales(rivales);
   const mejores = rivales.filter((rival) => rankMejor(rival.puntaje, tuRank));
   const superados = rivales.filter((rival) => rankMejor(tuRank, rival.puntaje));
   const mejorRival = rivales
@@ -328,8 +350,10 @@ function componenteGeneracion(state, pesoRol) {
       ? `Fuiste el mejor de tu generación: llegaste al #${tuRank} y de tu camada nadie pasó del #${mejorRival.rank} (${mejorRival.handle}).`
       : `Fuiste el mejor de tu generación: llegaste al #${tuRank} y nadie de tu camada tocó el Top ${tamano}.`;
   } else if (mejorRival && puesto > 1) {
-    detalle = `Quedaste ${puesto}º de ${de} en tu generación: ${mejorRival.handle} llegó al #${mejorRival.rank} y vos `
-      + (tuRank > 0 ? `al #${tuRank}.` : `nunca entraste al Top ${tamano}.`);
+    // Sin Top 20 el componente vale 0: no se lee como un logro ("quedaste 2º").
+    detalle = tuRank > 0
+      ? `Quedaste ${puesto}º de ${de} en tu generación: ${mejorRival.handle} llegó al #${mejorRival.rank} y vos al #${tuRank}.`
+      : `Nadie de tu generación te quedó atrás: ${mejorRival.handle} llegó al #${mejorRival.rank} y vos nunca entraste al Top ${tamano}.`;
   } else {
     detalle = `Nadie de tu generación tocó el Top ${tamano} del mundo, y vos tampoco.`;
   }
@@ -416,7 +440,7 @@ const REQUISITOS = {
 export const HECHOS_DE_REQUISITO = Object.keys(REQUISITOS);
 
 function requisitoDe(clave) {
-  return REQUISITOS[clave] ?? fallar(`BALANCE.puntaje.niveles pide un hecho que no existe: ${JSON.stringify(clave)}`);
+  return REQUISITOS[clave] ?? fallar(`BALANCE.puntaje.niveles pide un hecho que no existe: ${String(clave)}`);
 }
 
 // Gana el nivel más alto cuyo requisito se cumple entero (no son escalones
@@ -450,12 +474,15 @@ export function factorDePotencial(potencial) {
 
 // Habla según hasta dónde llegaste: a un techo alto que llegó lejos no se le
 // dice "se esperaba más" (`BALANCE.puntaje.potencial.nivelAprovechado`/`nivelAMedias`).
-function detalleDePotencial(potencial, factor, nivelId) {
+function detalleDePotencial(potencial, factor, nivelId, hechos) {
   const { nivelAprovechado, nivelAMedias } = P().potencial;
   const efecto = Math.round((factor - 1) * 100);
   const base = `Tu techo era ${potencial}, oculto hasta hoy`;
   if (efecto > 0) {
-    return `${base}: con ese techo, cada cosa que lograste pesa un ${efecto}% más.`;
+    // Sin un solo split con contrato no hay logros a los que sumarles ese peso.
+    return hechos.splitsJugados === 0
+      ? `${base}: con ese techo cada logro habría pesado un ${efecto}% más, pero nunca llegaste a jugar un split con contrato.`
+      : `${base}: con ese techo, cada cosa que lograste pesa un ${efecto}% más.`;
   }
   if (efecto === 0) {
     return `${base}: ni suma ni resta.`;
@@ -557,7 +584,7 @@ export function puntajeDeCarrera(state) {
     nivel,
     percentil: percentilDePuntaje(total),
     leyenda: leyendaMasCercana(perfil, state.player.role),
-    potencial: { valor, factor, puntos: total - subtotal, detalle: detalleDePotencial(valor, factor, nivel.id) },
+    potencial: { valor, factor, puntos: total - subtotal, detalle: detalleDePotencial(valor, factor, nivel.id, hechos) },
     perfil,
     hechos
   };
