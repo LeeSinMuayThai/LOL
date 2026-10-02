@@ -11123,29 +11123,51 @@ check('K1 puntaje: con el mismo registro, un potencial más bajo nunca puntúa m
   if (!seMovio) {
     throw new Error('check vacío: en ninguna carrera de referencia el potencial movió el total');
   }
-  // El texto del techo revelado (revisión de K1-A): con el techo más alto, a quien llegó a `nivelAprovechado` o más
-  // arriba no se le dice "se esperaba más"; a quien no llegó ni a `nivelAMedias`, sí.
-  let altos = 0;
-  let bajos = 0;
-  for (const base of estadosDeReferenciaK1()) {
-    const copia = structuredClone(base);
+  // El texto del techo revelado (revisión de K1-A): con el techo más alto hay un texto por banda de nivel. A quien
+  // llegó a `nivelAprovechado` o más arriba no se le dice que daba para más ni que se esperaba más; en la banda del
+  // medio (desde `nivelAMedias`) "daba para más", nunca "se esperaba más"; abajo, "se esperaba más". La banda del
+  // medio se arma sacándole a una carrera de primera todo lo que no sea jugar (títulos, Top 20, #1).
+  const banda = (nivelId) => {
+    if (INDICE_NIVEL_K1[nivelId] >= INDICE_NIVEL_K1[p.nivelAprovechado]) return 'alta';
+    return INDICE_NIVEL_K1[nivelId] >= INDICE_NIVEL_K1[p.nivelAMedias] ? 'media' : 'baja';
+  };
+  const textoPorBanda = { alta: new Set(), media: new Set(), baja: new Set() };
+  const conTechoMaximo = (estado) => {
+    const copia = structuredClone(estado);
     copia.player.oculto.potencial = potencialMax;
-    const { nivel, potencial } = puntajeDeCarrera(copia);
-    const esperabaMas = /se esperaba más/.test(potencial.detalle);
-    if (INDICE_NIVEL_K1[nivel.id] >= INDICE_NIVEL_K1[p.nivelAprovechado]) {
-      altos += 1;
-      if (esperabaMas) {
-        throw new Error(`seed ${base.seed}: ${nivel.nombre} con techo ${potencialMax} lee "${potencial.detalle}"`);
+    return copia;
+  };
+  for (const base of estadosDeReferenciaK1()) {
+    const estados = [conTechoMaximo(base)];
+    if (base.career.registro.porOrg.some((fila) => fila.splitsPorTier[1] > 0)) {
+      const soloJugo = conTechoMaximo(base);
+      const r = soloJugo.career.registro;
+      r.titulos = [];
+      r.picos.rankMundial = 0;
+      r.splitsEnTopMundial = 0;
+      r.cierresComoNumeroUno = 0;
+      estados.push(soloJugo);
+    }
+    for (const estado of estados) {
+      const { nivel, potencial } = puntajeDeCarrera(estado);
+      const cual = banda(nivel.id);
+      const dice = (patron) => patron.test(potencial.detalle);
+      const mal = (cual === 'alta' && (dice(/se esperaba más/) || dice(/daba para más/)))
+        || (cual === 'media' && (dice(/se esperaba más/) || !dice(/daba para más/)))
+        || (cual === 'baja' && !dice(/se esperaba más/));
+      if (mal) {
+        throw new Error(`seed ${base.seed}: ${nivel.nombre} (banda ${cual}) con techo ${potencialMax} lee "${potencial.detalle}"`);
       }
-    } else if (INDICE_NIVEL_K1[nivel.id] < INDICE_NIVEL_K1[p.nivelAMedias]) {
-      bajos += 1;
-      if (!esperabaMas) {
-        throw new Error(`seed ${base.seed}: ${nivel.nombre} con techo ${potencialMax} tendría que leer "se esperaba más": "${potencial.detalle}"`);
-      }
+      textoPorBanda[cual].add(potencial.detalle.replace(/\d+/g, '#'));
     }
   }
-  if (altos === 0 || bajos === 0) {
-    throw new Error(`check vacío: ${altos} carreras de referencia arriba de ${p.nivelAprovechado} y ${bajos} abajo de ${p.nivelAMedias}`);
+  const vacias = Object.entries(textoPorBanda).filter(([, textos]) => textos.size === 0).map(([cual]) => cual);
+  if (vacias.length > 0) {
+    throw new Error(`check vacío: ninguna carrera de referencia en la banda ${vacias.join(', ')}`);
+  }
+  const [alta, media, baja] = ['alta', 'media', 'baja'].map((cual) => [...textoPorBanda[cual]].join('|'));
+  if (alta === media || media === baja || alta === baja) {
+    throw new Error('las tres bandas de nivel tienen que leer textos distintos del techo revelado');
   }
 });
 
@@ -11948,6 +11970,24 @@ check('K1 niveles por hechos: en orden y con requisitos válidos, cada nivel se 
     const claves = Object.keys(nivel.requisito);
     if (claves.length === 0 || claves.some((clave) => !HECHOS_DE_REQUISITO.includes(clave) || !Number.isInteger(nivel.requisito[clave]) || nivel.requisito[clave] < 1)) {
       throw new Error(`${nivel.id}: requisito ${JSON.stringify(nivel.requisito)} (hechos válidos: ${HECHOS_DE_REQUISITO.join(', ')}, mínimos enteros >= 1)`);
+    }
+  }
+  // Los requisitos son los de la tabla de PLAN.md ("K1 — lo que cambió la revisión de K1-A"): el nombre de un nivel
+  // promete ese hecho. Lo único de balance es la N de "Fijo en primera" ("del orden de 3 años": entre 2 y 4 años).
+  const nFijo = niveles.find((n) => n.id === 'fijo')?.requisito.splitsTier1;
+  const { splitsPorEdad } = BALANCE.edad;
+  if (!(nFijo >= 2 * splitsPorEdad && nFijo <= 4 * splitsPorEdad)) {
+    throw new Error(`"Fijo en primera" pide ${nFijo} splits en primera: tiene que ser del orden de 3 años (${2 * splitsPorEdad}-${4 * splitsPorEdad})`);
+  }
+  const TABLA_DEL_PLAN_K1 = {
+    no_llego: {}, circuito: { splitsJugados: 1 }, profesional: { splitsTier1: 1 }, fijo: { splitsTier1: nFijo },
+    campeon: { titulosTier1: 1 }, figura: { cierresEnTop20: 1 }, leyenda: { titulosTier1: 3, rankPicoHasta: 5 },
+    goat: { cierresNumeroUno: 3 }
+  };
+  const ordenado = (objeto) => JSON.stringify(Object.keys(objeto).sort().map((clave) => [clave, objeto[clave]]));
+  for (const nivel of niveles) {
+    if (ordenado(nivel.requisito) !== ordenado(TABLA_DEL_PLAN_K1[nivel.id])) {
+      throw new Error(`${nivel.id} pide ${JSON.stringify(nivel.requisito)} y la tabla de PLAN.md dice ${JSON.stringify(TABLA_DEL_PLAN_K1[nivel.id])}`);
     }
   }
   // Bordes: los hechos mínimos de cada nivel dan ese nivel; un escalón menos en cualquiera de sus requisitos, uno
