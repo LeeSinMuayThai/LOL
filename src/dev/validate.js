@@ -23,7 +23,9 @@ import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 import { CATEGORIAS_EVENTO } from '../data/categorias.js';
 import { mulberry32, sample } from '../core/rng.js';
 import { createInitialState } from '../core/state.js';
-import { avanzarSplit, avanzarSplitAuto, resolverDecision, ETAPAS_SPLIT, pronosticoDeOxidoEnVivo } from '../core/pipeline.js';
+import {
+  avanzarSplit, avanzarSplitAuto, resolverDecision, ETAPAS_SPLIT, pronosticoDeOxidoEnVivo, splitCountDeLaProximaCorrida
+} from '../core/pipeline.js';
 import { sistemaPorId } from '../systems/registro.js';
 import { getPath, etiquetaCampo } from '../core/selectors.js';
 import { calcularContexto } from '../core/contexto.js';
@@ -7853,78 +7855,183 @@ function muestrearPorMomento(vistos, porMomento) {
   return elegidos;
 }
 
-// Lo que el MOTOR hace con un pool a partir de un estado observable: avanza un
-// clon por el pipeline real y anota, corrida a corrida de `campeones.aplicar`,
-// qué campeón se jugó y qué campeones perdieron maestría. Las maestrías arrancan
-// en `sonda` (lejos del piso) para que oxidar se note.
-function corridasDeCampeonesHaciaAdelante(estado, seed, corridas, sonda) {
-  let state = structuredClone(estado);
-  state.player.championPool = state.player.championPool.map((c) => ({ ...c, mastery: sonda }));
-  const rng = mulberry32(seed);
-  const resultado = [];
-  for (let llamados = 0; resultado.length < corridas && !state.terminado && llamados < 60; llamados += 1) {
-    const paso = pasoDelPipeline(state, rng);
-    if (paso.logs.some((log) => log.type === 'campeones')) {
-      const antes = new Map(state.player.championPool.map((c) => [c.name, c.mastery]));
-      resultado.push({
-        jugado: paso.state.player.campeonDelSplit,
-        bajo: new Map(paso.state.player.championPool.map((c) => [c.name, c.mastery < (antes.get(c.name) ?? -Infinity) - 1e-9]))
-      });
+// D79 (K2a): el check "J3 pronóstico" observaba el EFECTO (la maestría) en futuros sorteados desde estados reales, y el
+// óxido aplicado es `max(0, gauss(1,5; 1))`, que da 0 el 6,68% de las veces aunque la gracia haya vencido: con a veces un
+// solo futuro "conclusivo" por par, fallaba ~25-30% de las veces que cambiaba el stream (16 de 60 juegos de seeds en
+// `8e36105`, contra 16,9 esperados por ese modelo; 0 divergencias reales en ~648.000 pares ficha/motor). Ahora mira la
+// DECISIÓN, en dos partes que no dependen de ninguna tirada ni de ninguna trayectoria:
+//  (A) la regla, sobre pools armados a mano y el `aplicar` real de `systems/campeones.js`, corrida tras corrida (con el
+//      `splitCount` subiendo entre corridas, lo que hace `atributos`), con 64 semillas: ley G (lo que la ficha promete
+//      en gracia nunca baja), ley P (lo que está en el piso nunca baja) y ley O (lo que promete "oxida" baja en al menos
+//      una de sus muestras). La ley O solo se juzga en las claves con al menos `MUESTRAS_MINIMAS_LEY_O` muestras: la
+//      chance de que un campeón que oxida no baje en ninguna es 0,0668^n (1,8e-12 con 10). Sin ese piso, una clave con
+//      1 o 2 muestras (una maestría de piso + 0,5 que ya zafó dos tiradas en 0) fallaba en falso — el mismo defecto que
+//      tenía el check viejo, medido al escribir este;
+//  (B) el cursor: en estados reales (entre splits y en pausas antes de `campeones`, entre `campeones` y `atributos` y
+//      después de `atributos`), `splitCountDeLaProximaCorrida` es el `splitCount` que de verdad ve la próxima corrida de
+//      `campeones`. Eso es estructura del pipeline (orden de `ETAPAS_SPLIT`), no azar: si un corrimiento del stream
+//      cambia qué pausas aparecen, se buscan en más carreras.
+// Verificado en rojo (regla de proceso 7) con: el cursor sin el +1, `campeones` mirando `splitCount + 1` o `- 1`, la
+// gracia ignorada cuando `factorOxido` vale 1, el piso de maestría sacado y `enPiso` con `<` estricto.
+const SEMILLAS_LEYES_OXIDO = 64;
+const TAMANOS_POOL_LEYES_OXIDO = [BALANCE.campeones.poolAngosto, BALANCE.campeones.poolAngosto * 2];
+const SPLITS_LEYES_OXIDO = [3, 8, 20];
+// Muestra mínima por ley para que el check no pase vacío.
+const OBSERVACIONES_MINIMAS_LEY_OXIDO = 200;
+const MUESTRAS_MINIMAS_LEY_O = 10;
+const CLAVES_MINIMAS_LEY_O = 100;
+
+// Un pool de prueba: cada campeón con 0 a gracia+2 splits sin jugar (antes, en y después de la gracia), y el último sin
+// `ultimoSplitJugado` (un guardado anterior a J3: se lo trata como recién jugado).
+function poolDeLeyesDeOxido(tamano, splitCount, mastery) {
+  const gracia = BALANCE.campeones.splitsSinJugarParaOxido;
+  return Array.from({ length: tamano }, (_, i) => {
+    const campeon = entradaDeOxido(`P${i}`, mastery, splitCount - (i % (gracia + 3)));
+    if (i === tamano - 1) {
+      delete campeon.ultimoSplitJugado;
     }
-    state = paso.state;
-  }
-  return resultado;
+    return campeon;
+  });
 }
 
-check('J3 pronóstico: el "aguanta N" de la ficha coincide con el motor en cada estado observable (entre splits y en cada pausa)', () => {
+check('J3 pronóstico (A, D79): la regla de la ficha y la de campeones.aplicar coinciden sobre pools armados a mano (leyes G, P y O, sin trayectoria)', () => {
   const gracia = BALANCE.campeones.splitsSinJugarParaOxido;
+  const piso = BALANCE.campeones.maestriaMinima;
   const sonda = BALANCE.stats.max - 30;
-  const observables = muestrearPorMomento(estadosObservables([1, 2, 5, 7, 9, 11], 14), 6);
-  const momentos = new Set(observables.map((o) => o.momento));
-  for (const [esperado, razon] of [
-    ['entre splits', 'un estado entre splits'],
-    ['mercado', 'una pausa ANTES de campeones'],
-    ['eventos', 'una pausa DESPUÉS de campeones'],
-    ['practica', 'una pausa DESPUÉS de atributos']
-  ]) {
-    if (!momentos.has(esperado)) {
-      throw new Error(`check vacío: ninguna carrera dio ${razon} (${esperado}); se vieron ${[...momentos].join(', ')}`);
+  const conteo = { G: 0, P: 0, O: 0 };
+  const errores = [];
+  // Cada clave (configuración, campeón y corrida) que promete "oxida": cuántas muestras tuvo y si bajó en alguna.
+  const oxidoAlgunaVez = new Map();
+  for (const conOrg of [true, false]) {
+    for (const tamano of TAMANOS_POOL_LEYES_OXIDO) {
+      for (const splitCount of SPLITS_LEYES_OXIDO) {
+        for (const mastery of [sonda, piso + 0.5, piso]) {
+          for (let k = 1; k <= SEMILLAS_LEYES_OXIDO; k += 1) {
+            const semilla = k * 7919 + tamano;
+            let state = estadoConPool(semilla, splitCount, poolDeLeyesDeOxido(tamano, splitCount, mastery));
+            state.career.currentOrg = conOrg ? 'Org de prueba' : null;
+            const rng = mulberry32(semilla);
+            const jugados = new Set();
+            for (let corrida = 0; corrida <= gracia; corrida += 1) {
+              const antes = state.player.championPool;
+              const prometido = new Map(antes.map((c) => [c.name, pronosticoDeOxidoEnVivo(state, c)]));
+              const despues = aplicarCampeones(state, rng).state;
+              for (const campeon of antes) {
+                if (campeon.name === despues.player.campeonDelSplit || jugados.has(campeon.name)) {
+                  continue;
+                }
+                const bajo = despues.player.championPool.find((c) => c.name === campeon.name).mastery < campeon.mastery - 1e-9;
+                const { enGracia, enPiso, splitsParaOxido } = prometido.get(campeon.name);
+                const donde = `${conOrg ? 'con' : 'sin'} org, pool de ${tamano}, splitCount ${splitCount}, maestría ${mastery}, corrida ${corrida}: ${campeon.name} (sello ${campeon.ultimoSplitJugado}, splitCount ${state.player.splitCount})`;
+                if (enGracia) {
+                  conteo.G += 1;
+                  if (bajo) {
+                    errores.push(`ley G: ${donde} promete "aguanta ${splitsParaOxido}" y el motor lo oxida`);
+                  }
+                }
+                if (enPiso) {
+                  conteo.P += 1;
+                  if (bajo) {
+                    errores.push(`ley P: ${donde} está en el piso y el motor le saca maestría`);
+                  }
+                }
+                if (!enGracia && !enPiso) {
+                  conteo.O += 1;
+                  const clave = `${conOrg}|${tamano}|${splitCount}|${mastery}|${campeon.name}|${corrida}`;
+                  const previo = oxidoAlgunaVez.get(clave) ?? { muestras: 0, bajo: false };
+                  oxidoAlgunaVez.set(clave, { muestras: previo.muestras + 1, bajo: previo.bajo || bajo });
+                }
+              }
+              jugados.add(despues.player.campeonDelSplit);
+              // Lo que hace `atributos` entre dos corridas de `campeones`.
+              state = { ...despues, player: { ...despues.player, splitCount: despues.player.splitCount + 1 } };
+            }
+            if (errores.length > 0) {
+              throw new Error(errores[0]);
+            }
+          }
+        }
+      }
     }
   }
+  const juzgables = [...oxidoAlgunaVez.entries()].filter(([, { muestras }]) => muestras >= MUESTRAS_MINIMAS_LEY_O);
+  const nunca = juzgables.filter(([, { bajo }]) => !bajo).map(([clave, { muestras }]) => `${clave} (${muestras} muestras)`);
+  if (nunca.length > 0) {
+    throw new Error(`ley O: ${nunca.length} campeones prometen "oxida" y en todas sus muestras el motor no los oxidó (ej. ${nunca[0]})`);
+  }
+  if (conteo.G < OBSERVACIONES_MINIMAS_LEY_OXIDO || conteo.P < OBSERVACIONES_MINIMAS_LEY_OXIDO
+    || conteo.O < OBSERVACIONES_MINIMAS_LEY_OXIDO || juzgables.length < CLAVES_MINIMAS_LEY_O) {
+    throw new Error(`check vacío: ${JSON.stringify(conteo)} observaciones y ${juzgables.length} claves juzgables de la ley O`);
+  }
+});
 
-  let conclusivos = 0;
-  for (const { seed, hechos, state, momento } of observables) {
-    const sondado = { ...state, player: { ...state.player, championPool: state.player.championPool.map((c) => ({ ...c, mastery: sonda })) } };
-    const futuros = [101, 102, 103, 104, 105, 106].map((s) => corridasDeCampeonesHaciaAdelante(state, seed * 1000 + s, gracia + 1, sonda));
-    for (const campeon of sondado.player.championPool) {
-      const prometido = pronosticoDeOxidoEnVivo(sondado, campeon).splitsParaOxido;
-      const donde = `seed ${seed}, split ${hechos}, ${momento}: la ficha promete "aguanta ${prometido}" para ${campeon.name} (sello ${campeon.ultimoSplitJugado}, splitCount ${state.player.splitCount})`;
-      let oxidoEnLaPrometida = false;
-      let llegoALaPrometida = false;
-      for (const futuro of futuros) {
-        for (let r = 0; r <= prometido && r < futuro.length; r += 1) {
-          if (futuro[r].jugado === campeon.name) {
-            break; // lo jugaron: desde acá este futuro ya no dice nada
-          }
-          if (r < prometido && futuro[r].bajo.get(campeon.name)) {
-            throw new Error(`${donde} pero el motor lo oxida en la corrida ${r}`);
-          }
-          if (r === prometido) {
-            llegoALaPrometida = true;
-            oxidoEnLaPrometida = oxidoEnLaPrometida || futuro[r].bajo.get(campeon.name);
-          }
+// Dónde está parado un estado respecto de las dos etapas que importan para el óxido: la que oxida (`campeones`) y la que
+// sube el `splitCount` (`atributos`). Por posición en `ETAPAS_SPLIT`, no por nombre de sistema.
+function tramoDelCursor(state) {
+  if (!state.pendiente) {
+    return 'entre splits';
+  }
+  const etapa = ETAPAS_SPLIT.findIndex((sistema) => sistema.id === state.pendiente.sistemaId);
+  const oxida = ETAPAS_SPLIT.findIndex((sistema) => sistema.id === 'campeones');
+  const subeElSplit = ETAPAS_SPLIT.findIndex((sistema) => sistema.id === 'atributos');
+  if (etapa < oxida) {
+    return 'pausa antes de campeones';
+  }
+  return etapa < subeElSplit ? 'pausa entre campeones y atributos' : 'pausa después de atributos';
+}
+
+// Las carreras donde se buscan los estados (las del check viejo primero) y el tope de la búsqueda.
+const SEEDS_CURSOR_OXIDO = [1, 2, 5, 7, 9, 11, ...Array.from({ length: 54 }, (_, i) => i + 12)];
+const SPLITS_CURSOR_OXIDO = 14;
+const ESTADOS_POR_TRAMO_CURSOR = 6;
+const TRAMOS_DEL_CURSOR = ['entre splits', 'pausa antes de campeones', 'pausa entre campeones y atributos', 'pausa después de atributos'];
+
+check('J3 pronóstico (B, D79): el cursor de la ficha es el splitCount que ve la próxima corrida de campeones, en cada tramo del split', () => {
+  const porTramo = new Map(TRAMOS_DEL_CURSOR.map((tramo) => [tramo, []]));
+  const completo = () => TRAMOS_DEL_CURSOR.every((tramo) => porTramo.get(tramo).length >= ESTADOS_POR_TRAMO_CURSOR * 3);
+  for (const seed of SEEDS_CURSOR_OXIDO) {
+    if (completo()) {
+      break;
+    }
+    for (const visto of estadosObservables([seed], SPLITS_CURSOR_OXIDO)) {
+      porTramo.get(tramoDelCursor(visto.state))?.push(visto);
+    }
+  }
+  const faltan = TRAMOS_DEL_CURSOR.filter((tramo) => porTramo.get(tramo).length < ESTADOS_POR_TRAMO_CURSOR);
+  if (faltan.length > 0) {
+    throw new Error(`check vacío: en ${SEEDS_CURSOR_OXIDO.length} carreras no hubo ${ESTADOS_POR_TRAMO_CURSOR} estados en: ${faltan.join(', ')}`);
+  }
+  let contrastados = 0;
+  for (const tramo of TRAMOS_DEL_CURSOR) {
+    const grupo = porTramo.get(tramo);
+    const paso = Math.max(1, Math.floor(grupo.length / ESTADOS_POR_TRAMO_CURSOR));
+    for (let i = 0, tomados = 0; i < grupo.length && tomados < ESTADOS_POR_TRAMO_CURSOR; i += paso, tomados += 1) {
+      const { seed, hechos, state } = grupo[i];
+      const dice = splitCountDeLaProximaCorrida(state);
+      // El motor de verdad: un clon avanza por el pipeline hasta que corre `campeones`, y se anota el `splitCount` con
+      // el que entró a ese paso (ningún sistema lo toca entre el arranque del paso y `campeones`).
+      let clon = structuredClone(state);
+      const rng = mulberry32(seed * 31 + hechos);
+      let ve = null;
+      for (let llamados = 0; ve === null && !clon.terminado && llamados < 60; llamados += 1) {
+        const splitCountAlEntrar = clon.player.splitCount;
+        const paso = pasoDelPipeline(clon, rng);
+        if (paso.logs.some((log) => log.type === 'campeones')) {
+          ve = splitCountAlEntrar;
         }
+        clon = paso.state;
       }
-      if (llegoALaPrometida) {
-        conclusivos += 1;
-        if (!oxidoEnLaPrometida) {
-          throw new Error(`${donde} pero el motor NO lo oxida en la corrida ${prometido}: aguanta más de lo que dice`);
-        }
+      if (ve === null) {
+        continue;
+      }
+      contrastados += 1;
+      if (ve !== dice) {
+        throw new Error(`seed ${seed}, split ${hechos}, ${tramo} (${state.pendiente?.sistemaId ?? '-'}): la ficha mira splitCount ${dice} y la próxima corrida de campeones ve ${ve}`);
       }
     }
   }
-  if (conclusivos < 100) {
-    throw new Error(`check vacío: solo ${conclusivos} pronósticos se pudieron contrastar con el motor`);
+  if (contrastados < TRAMOS_DEL_CURSOR.length * ESTADOS_POR_TRAMO_CURSOR / 2) {
+    throw new Error(`check vacío: solo ${contrastados} estados se pudieron contrastar con la próxima corrida de campeones`);
   }
 });
 
