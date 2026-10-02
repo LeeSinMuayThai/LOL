@@ -142,7 +142,7 @@ function bloqueLeyenda(state, puntaje, modulos) {
   const tabla = document.createElement('div');
   tabla.className = 'tarjeta-leyenda-tabla';
   const filas = [
-    ['', 'Años', 'Títulos 1ª', 'Intl', 'Pico'],
+    ['', 'Años pro', 'Títulos 1ª', 'Intl', 'Pico'],
     [leyenda.handle, leyenda.anios, leyenda.titulos, leyenda.internacionales, rankTexto(leyenda.rankPico)],
     [state.player.name, perfil.anios, perfil.titulos, perfil.internacionales, rankTexto(perfil.rankPico)]
   ];

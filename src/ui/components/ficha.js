@@ -8,6 +8,12 @@ import { marcaRol } from './iconos.js';
 import { countUp } from './countUp.js';
 import { BALANCE } from '../../data/balance.js';
 import { romano, tierPorId } from '../../data/ranked.js';
+import LIGAS from '../../data/leagues.json' with { type: 'json' };
+
+// El nombre visible de una liga (K1: ningún texto muestra su id crudo). Los
+// títulos de la fila guardan el nombre con el que los anotó el motor, que en
+// las ligas de desarrollo es el id ("LCK_CL").
+const NOMBRE_DE_LIGA = Object.fromEntries(LIGAS.map((liga) => [liga.id, liga.nombre]));
 
 // LA TARJETA (fase 8, PLAN.md §8.6): vive en todas las pantallas de carrera.
 // Es la respuesta directa a H7 del diagnóstico — "los números que ves no
@@ -85,7 +91,7 @@ export function filaHistoria(fila) {
   const texto = document.createElement('span');
   const rango = fila.hastaAnio ? `${fila.desdeAnio}–${fila.hastaAnio}` : `${fila.desdeAnio}–`;
   const titulos = fila.titulos.length > 0
-    ? ` · ${fila.titulos.map((t) => `${t.nombre} ${t.anio}`).join(', ')}`
+    ? ` · ${fila.titulos.map((t) => `${NOMBRE_DE_LIGA[t.nombre] ?? t.nombre} ${t.anio}`).join(', ')}`
     : '';
   texto.textContent = `${fila.org} — ${fila.splits} splits · ${fila.fechasG}-${fila.fechasP} · ${rango}${titulos}`;
   item.appendChild(texto);
