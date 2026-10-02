@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import os from 'os';
 import { execFileSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { VERSION as VERSION_GUARDADO } from '../core/guardado.js';
@@ -597,6 +598,18 @@ check('Toda serie internacional deja su camino guardado en registro.internaciona
 // mitad del estado — `registro.*`, `career.companeros`, `career.temporada.*`,
 // `meta.tierList`, `flags.eventosVistos`... — nacía vacía y nadie la vigilaba).
 // Ahora la forma es la UNIÓN de las formas de estados de carreras completas.
+//
+// Dos puntos ciegos, por diseño (el hash anterior veía menos: no es una regresión):
+//  (a) un campo que es `null` en el estado INICIAL solo registra `?`, no su tipo
+//      (si no, el hash cambiaría según si la carrera tuvo o no el evento que lo
+//      llena). Entran campos que en el juego siempre se llenan — `career.tier`,
+//      `career.currentOrg`, `pendiente`, `finAnticipado`—: cambiarles el tipo
+//      (number -> string) NO cambia el hash.
+//  (b) un campo que aparece solo en un evento raro puede no verse en las 10 seeds.
+//      Ejemplo hipotético: un `flags.lesionGraveTipo` que solo se escribiera con
+//      una lesión grave (medido en la revisión de K0-B: ≈1 de cada 100 carreras,
+//      ninguna de las seeds 1-10) pasaría de largo.
+// Lo que sí atrapa está probado más abajo, con mutaciones del propio cálculo.
 //
 // `FORMAS_CONOCIDAS[VERSION]` es el hash de esa forma combinada. Si cambia la
 // forma sin subir `VERSION` (core/guardado.js), el check falla: un guardado de
@@ -8097,22 +8110,59 @@ check('K0-B mercado: el bombazo se mide contra el sueldo vigente o, siendo agent
 // El check de servidor corre en un proceso hijo (`node -e`) porque necesita
 // esperar sockets y este archivo es síncrono. Esta función se serializa con
 // `.toString()` y se ejecuta allá: NO puede cerrar sobre nada de validate.js
-// (por eso importa todo adentro y recibe el servidor a probar por `K0B_SERVER_JS`).
+// (por eso importa todo adentro y recibe por entorno el servidor a probar,
+// `K0B_SERVER_JS`, y la carpeta temporal donde armar la raíz, `K0B_TMP`: la crea
+// y la borra el que lo lanza, así que no queda basura si a esta sesión la matan
+// por colgada).
 //
-// Qué prueba, y por qué cada cosa distingue código viejo de código nuevo
-// (cada mutante real que lo hace rojo está en el reporte de la revisión de K0-B):
-//  1. Arma una raíz temporal con un secreto AFUERA y un `.git`, un `node_modules`
-//     y un `package.json` ADENTRO, y levanta `createServer({ raiz })` sobre ella.
-//     Un `.git/config` real es lo que hace que el bloqueo sea observable: contra
-//     una raíz sin `.git` el código viejo también daba 404.
-//  2. Traversal con puntos crudos y codificados, con `/` y con `\`, y las
-//     variantes de `.git`/`node_modules` que NTFS resuelve al mismo directorio
-//     (mayúsculas, nombre corto 8.3, flujo alternativo): nunca 200, nunca el secreto.
+// Qué prueba, y por qué cada cosa distingue código viejo de código nuevo:
+//  1. Arma una raíz temporal con archivos REALES para que cada bloqueo sea
+//     observable (contra una raíz sin ellos el código roto también daba 404):
+//     un secreto AFUERA y un hermano `raiz-evil/` (su ruta empieza igual que la
+//     de la raíz) con otro secreto; adentro `.git`, `node_modules`, `package.json`,
+//     `server.js`, `PLAN.md`, `dist/x.js`, las carpetas `srcx/` y `assets-x/`
+//     (nombre parecido a una pública) y, dentro de `src/`, un `.git` y un
+//     `node_modules` con secreto, más los directorios literales `.git.`, `.git `
+//     y `node_modules.` (punto o espacio final), que el SO de esta máquina deja
+//     crear y leer. Levanta `createServer({ raiz })` sobre ella.
+//  2. Qué sonda ejercita qué capa del servidor (el código de respuesta lo dice):
+//     - 403 exacto = la capa de la RAÍZ ("la ruta resuelta queda adentro"):
+//       traversal con puntos crudos y codificados, con `/` y con `\`, y hacia el
+//       hermano `raiz-evil/` (la comparación con prefijo sin separador lo deja pasar).
+//     - 404 exacto de las rutas de la RAÍZ (`/.GIT/config`, `/GIT~1/config`,
+//       `/package.json`, `/server.js`, `/dist/x.js`, `/srcx/a.js`...) = la LISTA
+//       BLANCA. Ojo: ahí la lista blanca tapa a la denylist (`.git`, `node_modules`)
+//       y a la regla de `~`/`:`, así que esas rutas NO prueban esas capas.
+//     - 404 exacto de las rutas dentro de `/src/...` (`/src/GIT~1/config`,
+//       `/src/.git./config`, `/src/.GIT/config`, `/src/NODE_M~1/...`): la lista
+//       blanca ya dejó pasar `src`, así que lo único que las frena es la DENYLIST
+//       (`.git`/`node_modules`, mayúsculas y punto/espacio final) y la regla de `~` y `:`.
+//       Ojo con el SO: la sonda de `~` solo delata a un mutante en un sistema de
+//       archivos con nombres cortos 8.3 (NTFS); en otro da 404 igual y el check
+//       pasa sin morder (no da falsos rojos, solo cubre menos).
+//     - lo que tiene que dar 200 (`/`, `/src/a.js`, `/assets/og.png`): que no
+//       se haya cerrado de más.
 //  3. `%00` y URI malformada: 400 exacto.
 //  4. `host` exportado es 127.0.0.1 y arrancar el archivo de verdad (`node
 //     server.js` y `node server`) no escucha fuera de loopback: se intenta
 //     conectar a 127.0.0.2 y a cada IP no-loopback de la máquina.
 //  5. Importar el módulo no levanta un servidor.
+//
+// Mutantes de `server.js` que lo ponen rojo (cada uno se armó sobre una copia y
+// se corrió con `--solo="K0-B server"`; entre paréntesis, qué sonda lo delata):
+//  - CARPETAS_PROHIBIDAS vacía (`/src/.git/config`)
+//  - sin normalizar punto/espacio final de la denylist (`/src/.git./config`)
+//  - sin rechazar `~` (`/src/GIT~1/config`) o sin rechazar `:` (`/src/a.js::$DATA`)
+//  - denylist solo en el primer tramo (`/src/.git/config`) o sin minúsculas (`/src/.GIT/config`)
+//  - `startsWith(raiz)` sin separador (`/../raiz-evil/secreto.txt` da 404 en vez de 403)
+//  - sin el 403 de la raíz (`/../secreto.txt` da 404)
+//  - lista blanca por prefijo (`/srcx/a.js`, `/assets-x/a.png`), con `package.json`,
+//    `server.js` o `plan.md` agregados (`/package.json`, `/server.js`, `/PLAN.md`),
+//    con `dist` como carpeta pública (`/dist/x.js`) o que sirve todo menos `.git` (`/server.js`)
+//  - sin cortar el querystring, sin el chequeo de NUL, host `0.0.0.0` o `listen`
+//    sin host, `node server` sin la extensión `.js`, o importar que levanta el servidor.
+//  - un `import` que no vuelve (`while (true) {}` en el módulo): salta el tope de
+//    `MS_TOPE_DE_LA_SESION_DEL_SERVIDOR` en vez de colgar a `validate.js`.
 async function sesionDelCheckDeServidor() {
   const { default: fs } = await import('node:fs');
   const { default: os } = await import('node:os');
@@ -8126,9 +8176,14 @@ async function sesionDelCheckDeServidor() {
   const MS_ESPERA_ARRANQUE = 8000;
   const MS_ESPERA_CONEXION = 1500;
   const MS_PARA_QUE_UN_IMPORT_ARRANQUE = 400;
+  // Cuánto puede vivir un `node server.js` que arranca el check. Menor que el
+  // tope de toda la sesión (`MS_TOPE_DE_LA_SESION_DEL_SERVIDOR`, afuera): si algo
+  // se cuelga, el hijo se baja solo antes de que se mate a la sesión.
+  const MS_VIDA_MAXIMA_DEL_SERVIDOR_HIJO = 30000;
   const ESTADO_OK = 200;
   const ESTADO_PEDIDO_INVALIDO = 400;
   const ESTADO_FUERA_DE_LA_RAIZ = 403;
+  const ESTADO_NO_ENCONTRADO = 404;
   const BS = String.fromCharCode(92);
   const SECRETO = 'SECRETO-';
 
@@ -8138,7 +8193,7 @@ async function sesionDelCheckDeServidor() {
 
   const servidorJs = process.env.K0B_SERVER_JS;
   const carpetaDelServidor = rutaNode.dirname(servidorJs);
-  const tmp = fs.mkdtempSync(rutaNode.join(os.tmpdir(), 'k0b-server-'));
+  const tmp = process.env.K0B_TMP;
   const hijos = [];
 
   const pedir = (puerto, ruta) => new Promise((resolve) => {
@@ -8171,7 +8226,8 @@ async function sesionDelCheckDeServidor() {
     const hijo = spawn(process.execPath, [argumento], {
       cwd: carpetaDelServidor,
       env: { ...process.env, PORT: String(await puertoLibre()) },
-      stdio: ['ignore', 'pipe', 'pipe']
+      stdio: ['ignore', 'pipe', 'pipe'],
+      timeout: MS_VIDA_MAXIMA_DEL_SERVIDOR_HIJO
     });
     hijos.push(hijo);
     return new Promise((resolve) => {
@@ -8190,18 +8246,46 @@ async function sesionDelCheckDeServidor() {
 
   try {
     const raiz = rutaNode.join(tmp, 'raiz');
-    for (const carpeta of ['.git', 'node_modules/x', 'src/.git', 'src/node_modules/y', 'assets']) {
-      fs.mkdirSync(rutaNode.join(raiz, carpeta), { recursive: true });
+    // Un hermano de la raíz cuyo nombre EMPIEZA igual que ella (`raiz-evil`): una
+    // comparación `startsWith(raiz)` sin separador lo toma por "adentro".
+    const hermano = `${rutaNode.basename(raiz)}-evil`;
+    const enRaiz = (...tramos) => rutaNode.join(raiz, ...tramos);
+    const escribir = (ruta, contenido) => {
+      fs.mkdirSync(rutaNode.dirname(ruta), { recursive: true });
+      fs.writeFileSync(ruta, contenido);
+    };
+    escribir(rutaNode.join(tmp, 'secreto.txt'), `${SECRETO}FUERA`);
+    escribir(rutaNode.join(tmp, hermano, 'secreto.txt'), `${SECRETO}HERMANO`);
+    // Lo que el servidor NO tiene que servir aunque exista: `.git`, `node_modules`
+    // y sus versiones dentro de `src/` (adonde la lista blanca ya no llega) y los
+    // archivos y carpetas de la raíz que no son del juego.
+    escribir(enRaiz('.git', 'config'), `${SECRETO}GIT`);
+    escribir(enRaiz('node_modules', 'x', 'index.js'), `${SECRETO}NODE_MODULES`);
+    escribir(enRaiz('src', '.git', 'config'), `${SECRETO}GIT_ANIDADO`);
+    escribir(enRaiz('src', 'node_modules', 'y', 'index.js'), `${SECRETO}NODE_MODULES_ANIDADO`);
+    escribir(enRaiz('package.json'), `${SECRETO}RAIZ`);
+    escribir(enRaiz('server.js'), `${SECRETO}SERVER`);
+    escribir(enRaiz('PLAN.md'), `${SECRETO}PLAN`);
+    escribir(enRaiz('dist', 'x.js'), `${SECRETO}DIST`);
+    escribir(enRaiz('srcx', 'a.js'), `${SECRETO}SRCX`);
+    escribir(enRaiz('assets-x', 'a.png'), `${SECRETO}ASSETS_X`);
+    // Directorios con punto o espacio final DENTRO de `src/`: el servidor los
+    // trata como `.git`/`node_modules`. Existen de verdad (el SO de esta máquina
+    // los deja crear y leer) para que la regla sea observable; si el SO no deja
+    // crearlos, esa sonda no se arma porque no puede delatar nada.
+    const nombresConFinalIgnorado = [];
+    for (const nombre of ['.git.', '.git ', 'node_modules.']) {
+      try {
+        escribir(enRaiz('src', nombre, 'config'), `${SECRETO}FINAL_IGNORADO`);
+        nombresConFinalIgnorado.push(nombre);
+      } catch {
+        // el SO no deja crear ese nombre.
+      }
     }
-    fs.writeFileSync(rutaNode.join(tmp, 'secreto.txt'), `${SECRETO}FUERA`);
-    fs.writeFileSync(rutaNode.join(raiz, '.git', 'config'), `${SECRETO}GIT`);
-    fs.writeFileSync(rutaNode.join(raiz, 'node_modules', 'x', 'index.js'), `${SECRETO}NODE_MODULES`);
-    fs.writeFileSync(rutaNode.join(raiz, 'src', '.git', 'config'), `${SECRETO}GIT_ANIDADO`);
-    fs.writeFileSync(rutaNode.join(raiz, 'src', 'node_modules', 'y', 'index.js'), `${SECRETO}NODE_MODULES_ANIDADO`);
-    fs.writeFileSync(rutaNode.join(raiz, 'package.json'), `${SECRETO}RAIZ`);
-    fs.writeFileSync(rutaNode.join(raiz, 'index.html'), '<!DOCTYPE html><title>ok</title>');
-    fs.writeFileSync(rutaNode.join(raiz, 'src', 'a.js'), 'export const a = 1;');
-    fs.writeFileSync(rutaNode.join(raiz, 'assets', 'og.png'), 'PNG');
+    // Lo que el juego sí sirve.
+    escribir(enRaiz('index.html'), '<!DOCTYPE html><title>ok</title>');
+    escribir(enRaiz('src', 'a.js'), 'export const a = 1;');
+    escribir(enRaiz('assets', 'og.png'), 'PNG');
 
     // 5. importar no arranca nada (PORT=0: si arrancara, que sea en un puerto cualquiera).
     process.env.PORT = '0';
@@ -8226,33 +8310,67 @@ async function sesionDelCheckDeServidor() {
       if (r.estado !== ESTADO_OK) falla(`${ruta} tendría que dar 200 y dio ${r.estado}`);
     }
 
-    // 2a. salirse de la raíz con puntos (crudos o codificados): 403 exacto. Es la
-    // capa de "la ruta resuelta tiene que quedar adentro de la raíz"; la lista
-    // blanca de más abajo también los pararía (con 404), así que sin pedir el
-    // código la capa de la raíz podría romperse sin que nadie se entere.
-    for (const ruta of ['/../secreto.txt', '/..%2fsecreto.txt', '/%2e%2e/secreto.txt', '/src/../../secreto.txt']) {
+    // Pide `ruta` y exige el código exacto. Un cuerpo con el secreto es una falla
+    // aunque el código fuera el esperado.
+    const exigir = async (ruta, esperado, queEs) => {
       const r = await pedir(port, ruta);
-      if (r.estado !== ESTADO_FUERA_DE_LA_RAIZ || r.cuerpo.includes(SECRETO)) {
-        falla(`${ruta} tendría que dar 403 (fuera de la raíz) y dio ${r.estado}${r.cuerpo.includes(SECRETO) ? ` y devolvió "${r.cuerpo}"` : ''}`);
+      const filtro = r.cuerpo.includes(SECRETO);
+      if (r.estado !== esperado || filtro) {
+        falla(`${ruta.split(BS).join('<barra invertida>')} tendría que dar ${esperado} (${queEs}) y dio ${r.estado}${filtro ? ` y devolvió "${r.cuerpo}"` : ''}`);
       }
+    };
+
+    // 2a. CAPA DE LA RAÍZ: salirse con puntos (crudos o codificados), hacia un
+    // secreto afuera o hacia el hermano `raiz-evil/`: 403 exacto. La lista blanca
+    // de más abajo también los pararía (con 404), así que sin pedir el código la
+    // capa de la raíz podría romperse sin que nadie se entere; y el hermano es
+    // justo lo que una comparación por prefijo sin separador deja pasar.
+    for (const ruta of [
+      '/../secreto.txt', '/..%2fsecreto.txt', '/%2e%2e/secreto.txt', '/src/../../secreto.txt',
+      `/../${hermano}/secreto.txt`, `/..%2f${hermano}%2fsecreto.txt`, `/%2e%2e/${hermano}/secreto.txt`,
+      `/src/../../${hermano}/secreto.txt`
+    ]) {
+      await exigir(ruta, ESTADO_FUERA_DE_LA_RAIZ, 'fuera de la raíz');
     }
 
-    // 2b. lo demás que no se sirve: nunca 200 y nunca el contenido de un archivo secreto.
-    const prohibidas = [
-      // con barra invertida (en Windows también sale de la raíz; en otros SO es solo un nombre raro)
-      `/..${BS}secreto.txt`, `/src%5c..%5c..%5csecreto.txt`, '/..%5csecreto.txt',
-      // .git (mayúsculas, separador, 8.3, flujo alternativo NTFS, punto final, vía `..`)
+    // 2b. LISTA BLANCA: rutas de la raíz que existen pero no son del juego: 404
+    // exacto. Ojo: acá la lista blanca tapa a la denylist y a la regla de `~`/`:`
+    // (las variantes de `.git` de este grupo NO prueban esas capas; las prueba 2c).
+    for (const ruta of [
+      // archivos y carpetas de la raíz que el juego no necesita
+      '/package.json', '/PACKAGE.JSON', '/server.js', '/PLAN.md', '/plan.md', '/dist/x.js',
+      // carpetas con nombre parecido a una pública (la lista blanca es exacta, no por prefijo)
+      '/srcx/a.js', '/assets-x/a.png',
+      // `.git` y `node_modules` en la raíz (mayúsculas, separador, 8.3, flujo alternativo NTFS, punto final, vía `..`)
       '/.git/config', '/.GIT/config', '/.Git/config', `/.GIT${BS}config`, '/.GIT%2Fconfig', '/GIT~1/config',
       '/.git::$INDEX_ALLOCATION/config', '/.git./config', '/src/../.git/config',
-      // node_modules, las mismas variantes
       '/node_modules/x/index.js', '/NODE_MODULES/x/index.js', '/Node_Modules/x/index.js', '/NODE_M~1/x/index.js',
-      '/node_modules::$INDEX_ALLOCATION/x/index.js', '/node_modules./x/index.js',
-      // los mismos dentro de una carpeta pública (defensa en profundidad)
-      '/src/.git/config', '/src/.GIT/config', '/src/node_modules/y/index.js', '/src/Node_Modules/y/index.js',
-      // lo que está en la raíz pero el juego no necesita (lista blanca)
-      '/package.json', '/PACKAGE.JSON', '/src/a.js::$DATA'
-    ];
-    for (const ruta of prohibidas) {
+      '/node_modules::$INDEX_ALLOCATION/x/index.js', '/node_modules./x/index.js'
+    ]) {
+      await exigir(ruta, ESTADO_NO_ENCONTRADO, 'fuera de la lista blanca');
+    }
+
+    // 2c. DENYLIST y regla de `~`/`:`: las mismas variantes pero DENTRO de `src/`,
+    // que la lista blanca deja pasar. Acá lo único que las frena es la denylist
+    // (`.git`/`node_modules` sin importar mayúsculas ni punto/espacio final) y el
+    // rechazo de `~` (nombre corto 8.3) y de `:` (flujo alternativo NTFS).
+    for (const ruta of [
+      '/src/.git/config', '/src/.GIT/config', '/src/.Git/config', '/src/GIT~1/config',
+      '/src/.git::$INDEX_ALLOCATION/config', '/src/.git../config', `/src/.GIT${BS}config`, '/src/.GIT%2Fconfig',
+      '/src/node_modules/y/index.js', '/src/NODE_MODULES/y/index.js', '/src/Node_Modules/y/index.js', '/src/NODE_M~1/y/index.js',
+      '/src/node_modules::$INDEX_ALLOCATION/y/index.js', '/src/node_modules./y/index.js',
+      '/src/a.js::$DATA',
+      ...nombresConFinalIgnorado.map((nombre) => `/src/${encodeURIComponent(nombre)}/config`)
+    ]) {
+      await exigir(ruta, ESTADO_NO_ENCONTRADO, 'denylist o `~`/`:` dentro de una carpeta pública');
+    }
+
+    // 2d. con barra invertida: en Windows también sale de la raíz (403); en otros
+    // SO es solo un nombre raro dentro de ella (404). Nunca 200 y nunca el secreto.
+    for (const ruta of [
+      `/..${BS}secreto.txt`, '/src%5c..%5c..%5csecreto.txt', '/..%5csecreto.txt',
+      `/..${BS}${hermano}${BS}secreto.txt`, `/..%5c${hermano}%5csecreto.txt`
+    ]) {
       const r = await pedir(port, ruta);
       if (r.estado === ESTADO_OK || r.cuerpo.includes(SECRETO)) {
         falla(`${ruta.split(BS).join('<barra invertida>')} dio ${r.estado}${r.cuerpo.includes(SECRETO) ? ` y devolvió "${r.cuerpo}"` : ''}`);
@@ -8286,7 +8404,6 @@ async function sesionDelCheckDeServidor() {
     falla(`el check no pudo correr hasta el final: ${error && error.message}`);
   } finally {
     for (const hijo of hijos) hijo.kill();
-    fs.rmSync(tmp, { recursive: true, force: true });
   }
 
   if (fallas.length > 0) {
@@ -8298,19 +8415,32 @@ async function sesionDelCheckDeServidor() {
 
 // Cuánto del mensaje de error de `execFileSync` (que incluye el script entero) se muestra.
 const ERROR_MAXIMO_DEL_CHECK_DE_SERVIDOR = 300;
+// Tope de toda la sesión: normalmente tarda ~3 s (cada pedido tiene 3 s y cada
+// arranque 8 s de plazo propio, adentro). Es para que un cuelgue del propio
+// servidor bajo prueba (un `import` que no vuelve) no cuelgue `validate.js`.
+const MS_TOPE_DE_LA_SESION_DEL_SERVIDOR = 60000;
 
 check('K0-B server: solo localhost, solo la lista blanca y sin salir de la raiz (D68, H1)', () => {
   // D68 + H1 de la revisión: ver `sesionDelCheckDeServidor`. El servidor bajo
   // prueba es el `server.js` de la raíz del repo.
   const servidorJs = path.resolve(__dirname, '../../server.js');
+  // La carpeta temporal la crea y la borra este lado: si a la sesión la matan por
+  // colgada, su `finally` no corre y quedaría basura (con nombres raros de borrar a mano).
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'k0b-server-'));
   try {
     execFileSync(process.execPath, ['--input-type=module', '-e', `(${sesionDelCheckDeServidor.toString()})()`], {
-      env: { ...process.env, K0B_SERVER_JS: servidorJs },
-      stdio: 'pipe'
+      env: { ...process.env, K0B_SERVER_JS: servidorJs, K0B_TMP: tmp },
+      stdio: 'pipe',
+      timeout: MS_TOPE_DE_LA_SESION_DEL_SERVIDOR
     });
   } catch (err) {
+    if (err.code === 'ETIMEDOUT') {
+      throw new Error(`la sesión del servidor no terminó en ${MS_TOPE_DE_LA_SESION_DEL_SERVIDOR / 1000} s: se cuelga (¿un import que no vuelve?)`);
+    }
     const detalle = [err.stderr, err.stdout].map((s) => (s ? s.toString().trim() : '')).filter(Boolean).join(' | ') || err.message.slice(0, ERROR_MAXIMO_DEL_CHECK_DE_SERVIDOR);
     throw new Error(detalle.split('\n').join(' ; '));
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
   }
 });
 

@@ -324,9 +324,15 @@ body[data-legado="on"] .tarjeta { margin-top: 0; }
      más arriba (`var(--riel-izq) 1fr`, pensada para escritorio con la ficha al
      costado) y por especificidad le ganaba a la de una columna de acá: en un
      celular el escenario quedaba clavado en la primera columna — 260px, el
-     ancho de `--riel-izq` — con el resto de la pantalla vacío, y la tarjeta se
-     desbordaba a 320 y 360 px (H4 de la revisión de K0-B). Mismos selectores
-     que la regla de arriba, para empatar la especificidad; gana por orden. */
+     ancho de `--riel-izq` — con el resto de la pantalla vacío. Medido en
+     Chromium a 360px: la tarjeta medía 226px de ancho contra 294px con este
+     override (unos 90px de pantalla sin usar); a 320px, 226px contra 254px.
+     Esto arregla SOLO eso. El desborde horizontal de la tarjeta (384px a
+     360px, H4 de la revisión de K0-B) no depende de este override: a 360px
+     `scrollWidth` queda igual al ancho de la pantalla con y sin él. Lo
+     evitan el `overflow-wrap` y el cartel más chico de `.tarjeta-veredicto`
+     en pantallas.css. Mismos selectores que la regla de arriba, para empatar
+     la especificidad; gana por orden. */
   body[data-legado="on"] .shell-cuerpo,
   body[data-legado="on"] .shell-cuerpo:has(.riel-der > .panel-contexto:not([hidden])) {
     grid-template-columns: minmax(0, 1fr);

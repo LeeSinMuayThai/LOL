@@ -1119,9 +1119,17 @@ details.avanzado summary:hover { color: var(--ink-dim); }
 }
 .tarjeta--exito .tarjeta-veredicto { font-size: var(--fs-8); color: var(--gold); }
 /* El veredicto es una frase larga en mayúsculas condensadas ("…3 INTERNACIONALES…"):
-   una sola palabra a 48px mide 326px y no entra en un celular de 320-360px, así
-   que se achica el cartel del éxito en pantallas chicas y, por si otra palabra
-   igual de larga cae en cualquier ancho, se la deja cortar en vez de desbordar. */
+   una sola palabra a 48px mide 326px y no entra en un celular de 320-360px.
+   Dos cosas lo atajan. Medido en Chromium a 320 y 360px con 4 tarjetas de éxito:
+   sin ninguna de las dos la página desborda (hasta 384px), y con cualquiera de
+   las dos sola no desborda.
+   - `overflow-wrap: anywhere` es la defensa general: una palabra más larga que
+     la columna se corta en vez de desbordar, en cualquier ancho.
+   - el bloque de ≤639px achica el cartel del éxito (`--fs-7`, para que esa
+     palabra entre entera) y el padding de la tarjeta. Es ajuste de tamaño: lo
+     que garantiza que no desborde es la línea de arriba, no este bloque.
+   La tarjeta que quedaba angosta en un celular es otro arreglo (el override de
+   columnas de `data-legado="on"` en shell.css), no este. */
 .tarjeta-veredicto { overflow-wrap: anywhere; }
 @media (max-width: 639px) {
   .tarjeta { padding: var(--s-6) var(--s-4); }

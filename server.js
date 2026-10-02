@@ -25,18 +25,26 @@ const mimeTypes = {
   '.ico': 'image/x-icon'
 };
 
-// H1 (D68): lo único que el juego sirve, igual que `A_COPIAR` de `build.js`
-// (index.html, src/, assets/). Es una LISTA BLANCA a propósito: bloquear `.git`
-// y `node_modules` por nombre no alcanza en Windows, donde NTFS no distingue
-// mayúsculas (`/.GIT/config`), tiene nombres cortos 8.3 (`/GIT~1/config`) y
-// flujos alternativos (`/.git::$INDEX_ALLOCATION/config`) — todos llegaban al
-// mismo directorio. Lo que no está en la lista (package.json, server.js, los
-// .md, .git, node_modules, dist/...) no sale nunca, exista o no (responde 404).
+// H1 (D68): lo único que el juego sirve: `index.html`, `src/` y `assets/`. No es
+// la misma lista que `A_COPIAR` de `src/dev/build.js`, que es más angosta
+// (`src/core`, `src/data`, `src/systems`, `src/ui` y solo `assets/og-image.png`):
+// este servidor de desarrollo además sirve `src/dev/*` y todo `assets/`. No es
+// un riesgo, todo eso es público en el repo.
+// Es una LISTA BLANCA a propósito: bloquear `.git` y `node_modules` por nombre
+// no alcanza en Windows, donde NTFS no distingue mayúsculas (`/.GIT/config`),
+// tiene nombres cortos 8.3 (`/GIT~1/config`) y flujos alternativos
+// (`/.git::$INDEX_ALLOCATION/config`) — todos llegaban al mismo directorio. Lo
+// que no está en la lista (package.json, server.js, los .md, .git,
+// node_modules, dist/...) no sale nunca, exista o no (responde 404).
 const ARCHIVOS_PUBLICOS = ['index.html'];
 const CARPETAS_PUBLICAS = ['src', 'assets'];
 // Defensa en profundidad: aunque algún día `src/` tuviera uno adentro.
 const CARPETAS_PROHIBIDAS = ['.git', 'node_modules'];
-// NTFS ignora los puntos y espacios del final de cada tramo (`.git.` == `.git`).
+// Windows puede ignorar los puntos y espacios del final de un nombre según por
+// dónde se acceda (`.git.` == `.git`). El `fs` de Node 24 en Windows 11 NO lo
+// hace (medido: se pueden crear y leer carpetas con el nombre literal `.git.`),
+// así que acá es defensa en profundidad; por eso `validate.js` crea esas
+// carpetas de verdad para probar que se rechazan.
 const FINAL_IGNORADO_POR_NTFS = /[. ]+$/;
 // `:` abre un flujo alternativo (`::$INDEX_ALLOCATION`, `::$DATA`) o una letra
 // de unidad; `~` es la marca de un nombre corto 8.3. El juego no usa ninguno.
@@ -103,8 +111,13 @@ export function createServer({ raiz: raizPedida = __dirname } = {}) {
 
     // Dentro de la raíz pero fuera de la lista blanca: 404, como si no
     // existiera (no se confirma qué hay en `.git` o `node_modules`). Es otro
-    // código que el 403 de arriba a propósito: así el check puede probar cada
-    // capa por separado en vez de que una tape a la otra.
+    // código que el 403 de arriba a propósito: el código dice QUÉ capa frenó el
+    // pedido. El check (`K0-B server`, `validate.js`) exige 403 a lo que sale de
+    // la raíz (esa capa) y 404 a lo demás. Ojo: las capas no se prueban todas por
+    // separado. A las rutas de la raíz (`/.GIT/config`, `/GIT~1/config`) las
+    // pararía también la lista blanca, así que romper la denylist o la regla de
+    // `~`/`:` no se nota con ellas; esas dos solo se ejercitan con rutas dentro
+    // de una carpeta pública (`/src/.GIT/config`).
     const partes = path.relative(raiz, filePath).split(path.sep);
     if (!esRutaPublica(partes)) {
       responder(res, 404, 'Archivo no encontrado');
