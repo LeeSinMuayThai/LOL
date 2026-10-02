@@ -8570,6 +8570,136 @@ check('K0 agencia sintética: las tres definiciones de pctInterrupcionesConPalan
   }
 });
 
+// Una réplica sintética con las tres columnas de `fin` que leen las filas de la tabla: puntaje, títulos y tier 1.
+const repColumnasK0 = (score, titulos, t1) => {
+  const rep = repSinteticaK0(score);
+  rep.fin.titulos = titulos;
+  rep.fin.t1 = t1;
+  return rep;
+};
+
+check('K0 agencia: cada columna de la tabla (n, palanca, % significativo, ruido, Δ títulos, Δ tier 1), el agrupamiento eventos:* / edadCierre:* y el orden, con números calculados a mano', () => {
+  // Trinquete (K0-A, 3ª revisión): el check de las tres definiciones solo ancla `pctInterrupcionesConPalanca` y su familia. Tres mutantes
+  // de las columnas de la tabla sobrevivían a `--solo=K0` entero: el ruido dentro de la opción sin dividir por σ poblacional (`dentroRel:
+  // dentro`), la palanca como promedio en vez de mediana, y Δ tier 1 sin restar el mínimo (`Math.max(...mT1)`). Acá cada columna de cada fila
+  // tiene un valor calculado a mano sobre un conjunto sintético chico, diseñado para que ninguna fórmula alternativa razonable dé el mismo
+  // número: σ poblacional = 4 (≠ 1) y σ de títulos = 2,5 (≠ 4, ≠ 1), mediana ≠ promedio en cada fila de 3 o 4 decisiones, mínimo de títulos y
+  // de tier 1 siempre > 0, todas las columnas de una fila con valores distintos, y la opción más alta cambia de lugar de una decisión a otra.
+  //
+  // CÓMO SE CALCULÓ. Cada decisión tiene 4 réplicas por opción. El puntaje de una opción es `media + j·(−3, 1, 1, 1)`: suma de desvíos 0, suma de
+  // cuadrados 12·j², desvío muestral (÷ 3) = 2·j, y las medias de las opciones son las que se declaran abajo. Dos opciones con el mismo patrón
+  // difieren en `(mA − mB) + (Δj)·(−3, 1, 1, 1)`: desvío de la diferencia 2·|Δj|, así que la t pareada (n = 4) es `|mA − mB| / |Δj|`. Crítico
+  // bilateral df 3: 3,182 con 1 par (α = 0,05) y 4,857 con 3 pares (α = 0,05/3; integración numérica de la densidad t, independiente de la tabla).
+  //
+  //   decisión (tipo)               opciones: media (j)           S (máx−mín de medias)  t máx (crítico)       dentro = media de los desvíos 2·j
+  //   D1 serie:draft                52 (2), 50 (1)                2                      2 (3,182) no sig      (4 + 2)/2 = 3
+  //   D2 serie:draft                60 (5), 63 (3)                3                      1,5 (3,182) no sig    (10 + 6)/2 = 8
+  //   D3 serie:draft                45 (3), 40 (2)                5                      5 (3,182) SIG         (6 + 4)/2 = 5
+  //   D4 serie:draft                30 (7), 42 (4)                12                     4 (3,182) SIG         (14 + 8)/2 = 11
+  //   B1 mercado:oferta (3 op.)     50 (3), 48 (4), 46 (2)        4                      4 (4,857) no sig      (6 + 8 + 4)/3 = 6
+  //   B2 mercado:oferta (3 op.)     20 (4), 30 (6), 50 (8)        30                     10 (4,857) SIG        (8 + 12 + 16)/3 = 12
+  //   B3 mercado:oferta (3 op.)     60 (2), 53 (4), 46 (6)        14                     3,5 (4,857) no sig    (4 + 8 + 12)/3 = 8
+  //   E1 eventos:foo:x:bar          70 (4), 54 (2)                16                     8 (3,182) SIG         (8 + 4)/2 = 6
+  //   E2 eventos:foo:x:bar          40 (7), 50 (2)                10                     2 (3,182) no sig      (14 + 4)/2 = 9
+  //   E3 eventos:baz                80 (5), 60 (6)                20                     20 (3,182) SIG        (10 + 12)/2 = 11
+  //   F1 edadCierre:algo            57 (1), 50 (5)                7                      1,75 (3,182) no sig   (2 + 10)/2 = 6
+  //   F2 edadCierre:x:otro          30 (10), 54 (1)               24                     2,667 (3,182) no sig  (20 + 2)/2 = 11
+  //   G1 amateur:x:reparto          44 (1,75), 42 (1,25)          2                      4 (3,182) SIG         (3,5 + 2,5)/2 = 3
+  //
+  // Palanca L = S / σ poblacional (4); ruido = dentro / 4; Δ títulos y Δ tier 1 = máx − mín de la media por opción (media = suma / 4; los
+  // arreglos de títulos y de tier 1 de cada opción están abajo, a la vista):
+  //
+  //                        L = S/4                  ruido = dentro/4                Δ títulos                      Δ tier 1
+  //   D1, D2, D3, D4       0,5  0,75  1,25  3       0,75  2  1,25  2,75             1,5−1=0,5  2,75−1=1,75  3−2=1  4−1,5=2,5   3,75−1,5=2,25  2,25−2=0,25  4,25−1=3,25  4−2,5=1,5
+  //   B1, B2, B3           1  7,5  3,5              1,5  3  2                       3,5−1,25=2,25  6−1,5=4,5  4−2,5=1,5         4,75−1=3,75  2,5−2=0,5  5,5−3=2,5
+  //   E1, E2, E3           4  2,5  5                1,5  2,25  2,75                 4,5−1=3,5  3−2,5=0,5  3,75−2,5=1,25       3−2,25=0,75  4−1,5=2,5  3−1,25=1,75
+  //   F1, F2               1,75  6                  1,5  2,75                       3−1=2  2,25−2=0,25                         4−1=3  2,75−2=0,75
+  //   G1                   0,5                      0,75                            3,75−1=2,75                                3,25−3=0,25
+  //
+  // La mediana es la INFERIOR (con n par, el central de abajo: es la que usaba la auditoría) y el % significativo se redondea a 1 decimal:
+  //   fila               decisiones   n   palancaMediana (mediana · promedio)    % sig        ruidoDentro (mediana · promedio)      Δ títulos med (mediana · promedio)    Δ tier 1 med (mediana · promedio)
+  //   eventos:baz        E3           1   5                                      1/1 = 100    2,75                                  1,25                                  1,75
+  //   eventos:*          E1, E2, E3   3   med(2,5 4 5) = 4 · 3,83                2/3 = 66,7   med(1,5 2,25 2,75) = 2,25 · 2,17      med(0,5 1,25 3,5) = 1,25 · 1,75       med(0,75 1,75 2,5) = 1,75 · 1,67
+  //   mercado:oferta     B1, B2, B3   3   med(1 3,5 7,5) = 3,5 · 4               1/3 = 33,3   med(1,5 2 3) = 2 · 2,17               med(1,5 2,25 4,5) = 2,25 · 2,75       med(0,5 2,5 3,75) = 2,5 · 2,25
+  //   eventos:foo:bar    E1, E2       2   med(2,5 4) = 2,5 · 3,25                1/2 = 50     med(1,5 2,25) = 1,5 · 1,88            med(0,5 3,5) = 0,5 · 2                med(0,75 2,5) = 0,75 · 1,63
+  //   edadCierre:*       F1, F2       2   med(1,75 6) = 1,75 · 3,88              0/2 = 0      med(1,5 2,75) = 1,5 · 2,13            med(0,25 2) = 0,25 · 1,13             med(0,75 3) = 0,75 · 1,88
+  //   serie:draft        D1..D4       4   med(0,5 0,75 1,25 3) = 0,75 · 1,38     2/4 = 50     med(0,75 1,25 2 2,75) = 1,25 · 1,69   med(0,5 1 1,75 2,5) = 1 · 1,44        med(0,25 1,5 2,25 3,25) = 1,5 · 1,81
+  //   amateur:reparto    G1           1   0,5                                    1/1 = 100    0,75                                  2,75                                  0,25
+  // (`eventos:foo:x:bar` y `eventos:baz` cuentan en `eventos:*` Y en su propia fila `eventos:foo:bar` / `eventos:baz`; `edadCierre:algo` y
+  // `edadCierre:x:otro` en la sola `edadCierre:*`; `amateur:x:reparto` pierde el `:x:`.) Las filas van por palanca mediana DESCENDENTE: 5, 4,
+  // 3,5, 2,5, 1,75, 0,75, 0,5 (sin empates). Los resultados entran mezclados a propósito: ni el orden de aparición de las claves ni su inverso
+  // coinciden con el orden esperado, y las decisiones de una misma fila tampoco entran ordenadas.
+  const opcion = ([scores, titulos, t1]) => scores.map((s, r) => repColumnasK0(s, titulos[r], t1[r]));
+  const decision = (tipo, ...opciones) => ({ seed: 1, split: 1, tipo, labels: opciones.map((_, i) => `o${i}`), porOpcion: opciones.map(opcion) });
+  const G1 = decision('amateur:x:reparto',
+    [[38.75, 45.75, 45.75, 45.75], [1, 1, 1, 1], [4, 3, 3, 3]], [[38.25, 43.25, 43.25, 43.25], [4, 4, 4, 3], [3, 3, 3, 3]]);
+  const D1 = decision('serie:draft',
+    [[46, 54, 54, 54], [1, 1, 2, 2], [3, 4, 4, 4]], [[47, 51, 51, 51], [1, 1, 1, 1], [1, 2, 2, 1]]);
+  const D2 = decision('serie:draft',
+    [[45, 65, 65, 65], [1, 1, 1, 1], [2, 2, 2, 2]], [[54, 66, 66, 66], [2, 3, 3, 3], [3, 2, 2, 2]]);
+  const D3 = decision('serie:draft',
+    [[36, 48, 48, 48], [3, 3, 2, 4], [1, 1, 1, 1]], [[34, 42, 42, 42], [2, 2, 2, 2], [4, 4, 4, 5]]);
+  const D4 = decision('serie:draft',
+    [[9, 37, 37, 37], [1, 1, 2, 2], [4, 4, 4, 4]], [[30, 46, 46, 46], [4, 4, 4, 4], [3, 3, 2, 2]]);
+  const B1 = decision('mercado:oferta',
+    [[41, 53, 53, 53], [2, 3, 3, 3], [1, 1, 1, 1]], [[36, 52, 52, 52], [1, 1, 1, 2], [5, 5, 5, 4]], [[40, 48, 48, 48], [3, 4, 4, 3], [3, 3, 2, 2]]);
+  const B2 = decision('mercado:oferta',
+    [[8, 24, 24, 24], [1, 2, 1, 2], [2, 2, 2, 2]], [[12, 36, 36, 36], [6, 6, 6, 6], [2, 2, 2, 3]], [[26, 58, 58, 58], [3, 3, 3, 4], [2, 3, 2, 3]]);
+  const B3 = decision('mercado:oferta',
+    [[54, 62, 62, 62], [4, 4, 4, 4], [3, 3, 3, 3]], [[41, 57, 57, 57], [2, 3, 2, 3], [5, 6, 5, 6]], [[28, 52, 52, 52], [3, 3, 3, 3], [4, 4, 4, 4]]);
+  const E1 = decision('eventos:foo:x:bar',
+    [[58, 74, 74, 74], [1, 1, 1, 1], [2, 2, 2, 3]], [[48, 56, 56, 56], [4, 5, 5, 4], [3, 3, 3, 3]]);
+  const E2 = decision('eventos:foo:x:bar',
+    [[19, 47, 47, 47], [3, 3, 3, 3], [4, 4, 4, 4]], [[44, 52, 52, 52], [3, 3, 2, 2], [1, 1, 2, 2]]);
+  const E3 = decision('eventos:baz',
+    [[65, 85, 85, 85], [4, 4, 4, 3], [3, 3, 3, 3]], [[42, 66, 66, 66], [2, 2, 3, 3], [1, 1, 1, 2]]);
+  const F1 = decision('edadCierre:algo',
+    [[54, 58, 58, 58], [1, 1, 1, 1], [4, 4, 4, 4]], [[35, 55, 55, 55], [3, 3, 3, 3], [1, 1, 1, 1]]);
+  const F2 = decision('edadCierre:x:otro',
+    [[0, 40, 40, 40], [2, 2, 2, 3], [2, 2, 2, 2]], [[51, 55, 55, 55], [2, 2, 2, 2], [2, 3, 3, 3]]);
+
+  const resultados = [G1, D2, E1, B3, F2, D1, E3, B1, D4, F1, E2, B2, D3];
+  const frecuenciasTipo = {
+    'serie:draft': 8, 'mercado:oferta': 6, 'eventos:foo:x:bar': 10, 'eventos:baz': 4,
+    'edadCierre:algo': 3, 'edadCierre:x:otro': 3, 'amateur:x:reparto': 2, 'amateur:salida_amateur': 4
+  };
+  const totalInterrupciones = Object.values(frecuenciasTipo).reduce((a, b) => a + b, 0);
+  const analisis = analizarDatosAgencia({ resultados, frecuenciasTipo, totalInterrupciones }, 1, { sPop: 4, sPopT: 2.5 });
+
+  if (analisis.sPop !== 4 || analisis.sPopT !== 2.5) {
+    throw new Error(`sPop y sPopT tenían que devolverse tal cual (4 y 2,5), dieron ${analisis.sPop} y ${analisis.sPopT}`);
+  }
+  if (analisis.totalDecisionesMedidas !== 13) {
+    throw new Error(`totalDecisionesMedidas tenía que ser 13, dio ${analisis.totalDecisionesMedidas}`);
+  }
+  const COLUMNAS = ['tipo', 'n', 'palancaMediana', 'pctSignificativo', 'ruidoDentro', 'dTitulosMed', 'dTier1Med'];
+  const esperadas = [
+    ['eventos:baz', 1, 5, 100, 2.75, 1.25, 1.75],
+    ['eventos:*', 3, 4, 66.7, 2.25, 1.25, 1.75],
+    ['mercado:oferta', 3, 3.5, 33.3, 2, 2.25, 2.5],
+    ['eventos:foo:bar', 2, 2.5, 50, 1.5, 0.5, 0.75],
+    ['edadCierre:*', 2, 1.75, 0, 1.5, 0.25, 0.75],
+    ['serie:draft', 4, 0.75, 50, 1.25, 1, 1.5],
+    ['amateur:reparto', 1, 0.5, 100, 0.75, 2.75, 0.25]
+  ];
+  const tiposDados = analisis.filas.map((f) => f.tipo);
+  const tiposEsperados = esperadas.map((e) => e[0]);
+  if (JSON.stringify(tiposDados) !== JSON.stringify(tiposEsperados)) {
+    throw new Error(`las filas tenían que ser ${JSON.stringify(tiposEsperados)} (por palanca mediana descendente, eventos y edadCierre agrupados), dieron ${JSON.stringify(tiposDados)}`);
+  }
+  esperadas.forEach((esperada, i) => {
+    const dada = analisis.filas[i];
+    if (JSON.stringify(Object.keys(dada)) !== JSON.stringify(COLUMNAS)) {
+      throw new Error(`${esperada[0]}: las columnas tenían que ser ${COLUMNAS.join(', ')}, son ${Object.keys(dada).join(', ')}`);
+    }
+    COLUMNAS.forEach((columna, c) => {
+      if (dada[columna] !== esperada[c]) {
+        throw new Error(`${esperada[0]}: ${columna} tenía que ser ${esperada[c]} (calculado a mano), dio ${dada[columna]}`);
+      }
+    });
+  });
+});
+
 check('K0 puntajeProvisorio: la fórmula de la auditoría (§4.3 y Apéndice A) con un registro armado a mano', () => {
   // Trinquete (K0-A, 2ª revisión): los pesos 10, 15, 5, 21, 2 y 10 eran literales sueltos y pasaron a constantes con nombre; ningún check
   // calculaba el puntaje, así que cambiar un peso (o el tope del ranking) no lo veía nadie.
