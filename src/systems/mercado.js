@@ -69,7 +69,7 @@ function tipoDeContrato(state, liga, esRenovacion) {
   return 'transferencia';
 }
 
-function construirOferta(state, liga, org, tagForzado, rng) {
+export function construirOferta(state, liga, org, tagForzado, rng) {
   const m = BALANCE.mercado;
   const jerarquiaActual = state.career.jerarquia;
   const esRenovacion = tagForzado === 'renovacion';
@@ -87,8 +87,15 @@ function construirOferta(state, liga, org, tagForzado, rng) {
   }, rng);
   const anios = roll(m.aniosContratoMin, m.aniosContratoMax, rng);
 
+  // D67: el salario de referencia es el contrato vigente si lo hay; si es 0
+  // (agente libre), es la mediana salarial de la liga de la oferta. Sin `?.` ni
+  // `?? 0` a propósito: `salarioDeOferta` ya exige `liga.salario` y validate.js
+  // exige `minimoUSD < medianaUSD`; si algún día faltara la mediana, un `0` por
+  // defecto volvería a etiquetar TODA oferta como bombazo (D67) sin avisar.
+  const sueldoVigente = state.career.contrato.salarioAnualUSD;
+  const salarioReferencia = sueldoVigente > 0 ? sueldoVigente : liga.salario.medianaUSD;
   const tag = tagForzado ?? (
-    salarioAnualUSD > state.career.contrato.salarioAnualUSD * m.bombazoMultiplo ? 'bombazo' : 'lateral'
+    salarioAnualUSD > salarioReferencia * m.bombazoMultiplo ? 'bombazo' : 'lateral'
   );
 
   // Regla de proceso 15: la jerarquía que se muestra tiene que ser LA MISMA

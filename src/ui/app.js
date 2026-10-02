@@ -69,6 +69,21 @@ export function iniciar() {
   const toggleVelocidad = document.getElementById('toggleVelocidad');
   const toggleSonido = document.getElementById('toggleSonido');
 
+  // H7 de la revisión de K0-B: en un celular la topbar se parte en 2 filas (o 3
+  // en 320px) según el ancho y el largo del texto de estado, así que su alto no
+  // es un número que el CSS pueda saber: la ficha pegajosa (`.riel`, ≤899px) se
+  // colgaba de 56px y la topbar le tapaba de 8 a 30px del borde al scrollear.
+  // Se publica el alto REAL como `--topbar-alto-real` y el CSS lo usa (con el
+  // token fijo de respaldo si esto no corre, p. ej. sin ResizeObserver).
+  const topbarEl = document.querySelector('.topbar');
+  if (topbarEl && typeof ResizeObserver !== 'undefined') {
+    const publicarAltoDeLaTopbar = () => {
+      document.documentElement.style.setProperty('--topbar-alto-real', `${topbarEl.getBoundingClientRect().height}px`);
+    };
+    new ResizeObserver(publicarAltoDeLaTopbar).observe(topbarEl);
+    publicarAltoDeLaTopbar();
+  }
+
   // El contrato de elementos que `src/ui/render.js` necesita para pintar
   // la pantalla de carrera y la de decisión (fase 8, §8.5; fase 9c suma
   // la pantalla de ofertas).
@@ -367,7 +382,37 @@ export function iniciar() {
     carreraPanel.classList.add('escenario-entrar');
   }
 
+  // El aviso de "tu guardado no se pudo recuperar" (K.7 riesgo 3: un guardado
+  // que no se puede cargar se descarta CON aviso, no se carga a medias ni se
+  // deja un "Continuar" que no hace nada). Vive arriba de todo en el setup:
+  // pegado al footer quedaba a más de dos pantallas de scroll en un celular
+  // (y debajo del pliegue en escritorio), o sea que el jugador no lo veía. Se
+  // saca apenas hay una carrera nueva: si no, reaparecía cada vez que se
+  // volvía al inicio aunque el guardado roto ya no existiera (H6).
+  const TEXTO_AVISO_DE_GUARDADO = 'Tu partida guardada no se pudo recuperar (era de una versión anterior del juego o estaba dañada).';
+
+  function quitarAvisoDeGuardado() {
+    setupPanel.querySelector('.setup-aviso')?.remove();
+  }
+
+  function mostrarAvisoDeGuardado() {
+    if (setupPanel.querySelector('.setup-aviso')) {
+      return;
+    }
+    const aviso = document.createElement('p');
+    aviso.className = 'setup-aviso';
+    aviso.setAttribute('role', 'status');
+    aviso.textContent = TEXTO_AVISO_DE_GUARDADO;
+    const subtitulo = setupPanel.querySelector('.subtitle');
+    if (subtitulo) {
+      subtitulo.before(aviso);
+    } else {
+      setupPanel.prepend(aviso);
+    }
+  }
+
   async function comenzarCarrera() {
+    quitarAvisoDeGuardado();
     runButton.disabled = true;
     decisionPanel.hidden = true;
     minijuegoPanel.hidden = true;
@@ -450,6 +495,7 @@ export function iniciar() {
     // tanto (debería estar oculto: no queda nada que continuar).
     almacenamiento.borrarCarreraGuardada();
     continuarBtn.hidden = true;
+    quitarAvisoDeGuardado();
     pantallaInicio.reset();
   }
 
@@ -475,7 +521,11 @@ export function iniciar() {
       const { mulberry32 } = await cargarModulos();
       const datos = almacenamiento.cargarCarreraGuardada();
       if (!datos) {
+        // El guardado cambió desde que se mostró el botón (otra pestaña, o ya
+        // no se puede leer): mismo trato que al cargar la página.
+        almacenamiento.borrarCarreraGuardada();
         continuarBtn.hidden = true;
+        mostrarAvisoDeGuardado();
         return;
       }
 
@@ -507,10 +557,16 @@ export function iniciar() {
         await avanzar();
       }
     } catch (error) {
+      // H6/H5 de la revisión de K0-B: un guardado con la versión correcta pero
+      // el estado roto (`{ version: 2, state: {} }`) pasa `deserializar` y
+      // explota recién al pintar. Antes el texto de error se escribía en
+      // `#summary`, dentro de `#carrera` (oculto): el jugador no veía nada, el
+      // guardado no se borraba y el botón "Continuar" volvía a fallar siempre.
+      // Ahora se vuelve al inicio, se descarta el guardado y se avisa en el setup.
       console.error(error);
-      summary.textContent = 'No se pudo continuar la carrera guardada.';
-      setupPanel.hidden = false;
-      carreraPanel.hidden = true;
+      volverAlInicio();
+      actualizarTopbar(null);
+      mostrarAvisoDeGuardado();
     } finally {
       continuarBtn.disabled = false;
     }
@@ -531,9 +587,14 @@ export function iniciar() {
 
       // P.2: el botón "Continuar" solo aparece si hay de verdad algo
       // que continuar. La card muestra handle · rol · edad · org.
-      const guardada = almacenamiento.hayCarreraGuardada()
-        ? almacenamiento.cargarCarreraGuardada()
-        : null;
+      let guardada = null;
+      if (almacenamiento.hayCarreraGuardada()) {
+        guardada = almacenamiento.cargarCarreraGuardada();
+        if (!guardada) {
+          almacenamiento.borrarCarreraGuardada();
+          mostrarAvisoDeGuardado();
+        }
+      }
       continuarBtn.hidden = !guardada?.state;
       if (guardada?.state && continuarDetalle) {
         const s = guardada.state;

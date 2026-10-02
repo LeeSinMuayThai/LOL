@@ -5,7 +5,10 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const host = '0.0.0.0';
+// D68: solo la propia máquina. En 0.0.0.0 cualquiera en la red local podía
+// pedirle archivos al servidor mientras estuviera corriendo. Se exporta para
+// que `validate.js` pueda verificar el valor real y no uno copiado.
+export const host = '127.0.0.1';
 const preferredPort = Number(process.env.PORT || 8000);
 
 const mimeTypes = {
@@ -22,28 +25,112 @@ const mimeTypes = {
   '.ico': 'image/x-icon'
 };
 
-function createServer() {
+// H1 (D68): lo único que el juego sirve: `index.html`, `src/` y `assets/`. No es
+// la misma lista que `A_COPIAR` de `src/dev/build.js`, que es más angosta
+// (`src/core`, `src/data`, `src/systems`, `src/ui` y solo `assets/og-image.png`):
+// este servidor de desarrollo además sirve `src/dev/*` y todo `assets/`. No es
+// un riesgo, todo eso es público en el repo.
+// Es una LISTA BLANCA a propósito: bloquear `.git` y `node_modules` por nombre
+// no alcanza en Windows, donde NTFS no distingue mayúsculas (`/.GIT/config`),
+// tiene nombres cortos 8.3 (`/GIT~1/config`) y flujos alternativos
+// (`/.git::$INDEX_ALLOCATION/config`) — todos llegaban al mismo directorio. Lo
+// que no está en la lista (package.json, server.js, los .md, .git,
+// node_modules, dist/...) no sale nunca, exista o no (responde 404).
+const ARCHIVOS_PUBLICOS = ['index.html'];
+const CARPETAS_PUBLICAS = ['src', 'assets'];
+// Defensa en profundidad: aunque algún día `src/` tuviera uno adentro.
+const CARPETAS_PROHIBIDAS = ['.git', 'node_modules'];
+// Windows puede ignorar los puntos y espacios del final de un nombre según por
+// dónde se acceda (`.git.` == `.git`). El `fs` de Node 24 en Windows 11 NO lo
+// hace (medido: se pueden crear y leer carpetas con el nombre literal `.git.`),
+// así que acá es defensa en profundidad; por eso `validate.js` crea esas
+// carpetas de verdad para probar que se rechazan.
+const FINAL_IGNORADO_POR_NTFS = /[. ]+$/;
+// `:` abre un flujo alternativo (`::$INDEX_ALLOCATION`, `::$DATA`) o una letra
+// de unidad; `~` es la marca de un nombre corto 8.3. El juego no usa ninguno.
+const CARACTERES_PROHIBIDOS_EN_TRAMO = /[:~]/;
+
+function esRutaPublica(partes) {
+  const tramos = partes.map((parte) => parte.toLowerCase());
+  if (partes.some((parte) => CARACTERES_PROHIBIDOS_EN_TRAMO.test(parte))) {
+    return false;
+  }
+  if (tramos.some((tramo) => CARPETAS_PROHIBIDAS.includes(tramo.replace(FINAL_IGNORADO_POR_NTFS, '')))) {
+    return false;
+  }
+  if (tramos.length === 1) {
+    return ARCHIVOS_PUBLICOS.includes(tramos[0]);
+  }
+  return CARPETAS_PUBLICAS.includes(tramos[0]);
+}
+
+function responder(res, estado, texto) {
+  res.writeHead(estado, { 'Content-Type': 'text/plain; charset=utf-8' });
+  res.end(texto);
+}
+
+// `raiz` es parametrizable para poder testear el servidor contra una carpeta
+// temporal con un secreto afuera y un `.git` adentro (el check `K0-B server`
+// de validate.js); por defecto es la carpeta del proyecto.
+export function createServer({ raiz: raizPedida = __dirname } = {}) {
+  const raiz = path.resolve(raizPedida);
+
   return http.createServer((req, res) => {
-    // Fase T8: `?seed=N` (P.3, el link de T7) es la primera vez que alguien
-    // visita la página con un querystring de verdad. El `req.url === '/'`
-    // de antes se comparaba CONTRA el querystring todavía pegado — `/`
-    // nunca es igual a `/?seed=424242`, así que la raíz con seed caía
-    // derecho al 404. Cortar el `?` primero, y recién ahí decidir si es
-    // la raíz.
-    let requestPath = req.url.split('?')[0];
-    if (requestPath === '/') {
-      requestPath = '/index.html';
+    // Fase T8: cortar el querystring antes de resolver la ruta.
+    const rawPath = (req.url || '/').split('?')[0];
+
+    // D68: decodificar, rechazar nulos, resolver, exigir que quede dentro de
+    // la raíz y que sea una ruta pública.
+    let decodedPath;
+    try {
+      decodedPath = decodeURIComponent(rawPath);
+    } catch {
+      responder(res, 400, 'Ruta inválida');
+      return;
     }
-    const filePath = path.join(__dirname, requestPath);
+
+    if (decodedPath.includes('\0')) {
+      responder(res, 400, 'Ruta inválida');
+      return;
+    }
+
+    if (decodedPath === '/') {
+      decodedPath = '/index.html';
+    }
+
+    if (!decodedPath.startsWith('/') && !decodedPath.startsWith('\\')) {
+      decodedPath = '/' + decodedPath;
+    }
+
+    const filePath = path.resolve(raiz, '.' + decodedPath);
+    const dentroDeRaiz = filePath === raiz || filePath.startsWith(raiz + path.sep);
+    if (!dentroDeRaiz) {
+      responder(res, 403, 'Acceso denegado');
+      return;
+    }
+
+    // Dentro de la raíz pero fuera de la lista blanca: 404, como si no
+    // existiera (no se confirma qué hay en `.git` o `node_modules`). Es otro
+    // código que el 403 de arriba a propósito: el código dice QUÉ capa frenó el
+    // pedido. El check (`K0-B server`, `validate.js`) exige 403 a lo que sale de
+    // la raíz (esa capa) y 404 a lo demás. Ojo: las capas no se prueban todas por
+    // separado. A las rutas de la raíz (`/.GIT/config`, `/GIT~1/config`) las
+    // pararía también la lista blanca, así que romper la denylist o la regla de
+    // `~`/`:` no se nota con ellas; esas dos solo se ejercitan con rutas dentro
+    // de una carpeta pública (`/src/.GIT/config`).
+    const partes = path.relative(raiz, filePath).split(path.sep);
+    if (!esRutaPublica(partes)) {
+      responder(res, 404, 'Archivo no encontrado');
+      return;
+    }
 
     fs.readFile(filePath, (error, content) => {
       if (error) {
-        res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-        res.end('Archivo no encontrado');
+        responder(res, 404, 'Archivo no encontrado');
         return;
       }
 
-      const ext = path.extname(filePath);
+      const ext = path.extname(filePath).toLowerCase();
       const contentType = mimeTypes[ext] || 'application/octet-stream';
       res.writeHead(200, { 'Content-Type': contentType });
       res.end(content);
@@ -70,4 +157,29 @@ function start(port) {
   });
 }
 
-start(preferredPort);
+// ¿Me ejecutaron a mí (`node server.js`, `node server`, `npm start`) o me
+// importaron (`validate.js` para testearme)? `node server` pasa
+// `process.argv[1]` SIN la extensión, así que comparar la URL a pelo no
+// alcanza: se resuelve cada candidato a su ruta real (también normaliza
+// mayúsculas y enlaces simbólicos) y se prueba con `.js` agregado.
+function esPuntoDeEntrada() {
+  const arg = process.argv[1];
+  if (!arg) {
+    return false;
+  }
+  const propia = fs.realpathSync.native(__filename);
+  for (const candidato of [arg, `${arg}.js`]) {
+    try {
+      if (fs.realpathSync.native(candidato) === propia) {
+        return true;
+      }
+    } catch {
+      // ese candidato no existe: se prueba el siguiente.
+    }
+  }
+  return false;
+}
+
+if (esPuntoDeEntrada()) {
+  start(preferredPort);
+}
