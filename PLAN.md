@@ -38,7 +38,7 @@ el juego, con los datos de la investigación en §12) → este documento → `PR
 | **13** | Contenido a escala | ✅ **cerrada (2026-09-18, 13a→13e)**. Los 8 puntos de §13.1 resueltos: el hueco de cobertura, los 3 momentos `pendiente` obsoletos activados (+ `MOMENTOS` reordenada con check nuevo), D11 (rutinas por tier), servicio militar como bisagra alcanzable, declive con contenido propio (`declive.json`), D34 (`tier3.json`, 9 eventos), D17 (`latam.json`, narrativo), D14 (rango 2-4 opciones) y el check T10 que faltaba. Catálogo: 226→246 eventos, 442→**508 opciones**. `cobertura.js --huecos` vacío. Ejecutada por esta sesión sin delegar (excepción puntual, decisión del usuario) |
 | **V** | **Que la carrera se vea**: cero gráficos en todo el juego, la UI solo habla en presente, nada puede animarse entre estados. Sucede a la fase T y construye sobre su sistema de diseño (V0→V10, ver detalle abajo) | 🔶 **congelada en V0b (2026-09-20)**. **V0 ✅**: el controlador vive en `src/ui/app.js` (710→194 líneas de `index.html`), `store.js`/`reconciliar.js`/`delta.js` nuevos, la inversión `ficha.js → shell.js` resuelta, D45 cerrado de paso. **V0b ✅**: `reconciliar` adoptado en las 5 listas de clave natural (feed, tabla, plantilla, Top 5, mercado) vía el helper nuevo `reemplazarEnElLugar`. `validate.js` 189/189, `simulate.js` 0 crashes, huella anti-T1 idéntica en 40 seeds, `dist/` 1657 KB, verificado en navegador real. 🔶 **V1: librería completa, sin consumidor en la UI (auditoría 2026-09-25) — la pantalla es V2.** La capa de gráficos (`src/ui/graficos/`, 6 primitivos SVG) + el guard de color literal en JS existen y validan solas, pero ningún archivo de `src/ui/` fuera de `graficos/` la importa todavía. **Se congela acá a propósito**: jugando la carrera completa apareció un diagnóstico más urgente que "verse" — casi todo lo que rompe la experiencia es motor, no UI, y V se prohíbe tocarlo. Entra **FASE J** antes de V2. Ver su nota de apertura · V2→V10 después de J. **2026-10-01**: J se reorganiza en FASE K, y V se retoma después de K, re-escrita con "una cosa por vez en pantalla" (`AUDITORIA.md` B7) |
 | **J** | **Que la partida se juegue**: agencia real, la selección de eventos deja de forzar, te dejan draftear y jugar minijuegos, el internacional es un torneo de verdad, y elegís de dónde sos. Motivada por una carrera jugada de punta a punta el 2026-09-20 con diagnóstico medido, no de gusto (ver la nota de apertura de la fase) | 🔶 **Reorganizada en FASE K (2026-10-01)**: lo que quedaba se reparte en K0-K5 o se reemplaza (§K.6). **J0 ✅ (2026-09-25, AUDITORIA.md AUD-2)**: el instrumento — `simulate.js` bloque `jugabilidad` + `cobertura.js --categorias`, línea de base remedida en §J.0b. Resto del primer tramo (J3, J4, J5, J6, J-previa, J9) y segundo tramo (J1, J2, J7, J8, J10) sin empezar — ver detalle abajo. Workflow de delegación: grok/agy implementan en worktrees, un Claude fresco revisa, Sonnet arregla si hace falta |
-| **K** | **El nivel manda**: que el resultado lo decida tu nivel, que tu nivel lo construyan tus decisiones, que el juego te frene solo cuando algo grande está en juego, y que todo termine en un número. Sale de `AUDITORIA.md` (2026-10-01) y de las decisiones D-A..D-D del usuario (§K.1) | ⬜ **planificada (2026-10-01), sin empezar**. Orden: K0 (higiene + instrumento) → K1 (el número) → K2/K3/K3c (bloque A, el nivel) → K4/K4c (bloque B, el ritmo) → K5/K5c (bloque C, el Mundial, la región, el final) → K6 (jugarlo). Ver §K.5 |
+| **K** | **El nivel manda**: que el resultado lo decida tu nivel, que tu nivel lo construyan tus decisiones, que el juego te frene solo cuando algo grande está en juego, y que todo termine en un número. Sale de `AUDITORIA.md` (2026-10-01) y de las decisiones D-A..D-D del usuario (§K.1) | 🔶 **K0 ✅ (2026-10-02, sin corrimiento)**: J3 integrada, el instrumento (`huella.js`, bots `criterio`/`azar`/`malas`, bloques de KPIs, `agencia.js` con test corregido), la higiene de motor y servidor y el pase de vocabulario LoL; la línea de base está medida en §K.0b y cambia cinco metas de §K.3. `validate.js` 251/251, `simulate.js` 0 crashes, huella de 40 seeds idéntica. **Pendiente de K0: D72 (push y borrado de `faseV-V1-grok`), con confirmación del usuario.** Siguiente: **K1**. Orden: K0 (higiene + instrumento) → K1 (el número) → K2/K3/K3c (bloque A, el nivel) → K4/K4c (bloque B, el ritmo) → K5/K5c (bloque C, el Mundial, la región, el final) → K6 (jugarlo). Ver §K.5 |
 
 > **Por qué estas tres fases se insertaron antes del mercado.** Jugando el juego con las cuatro
 > fases hechas aparecieron cuatro defectos medibles: la temporada regular se resuelve con una
@@ -5334,10 +5334,107 @@ La FASE J atacaba los síntomas uno por uno. Esta fase ataca la causa: **que el 
 tu nivel, que tu nivel lo construyan tus decisiones y que el juego te frene solo cuando algo grande
 está en juego.**
 
-### K.0b — Línea de base *(la escribe K0)*
+### K.0b — Línea de base *(medida en K0, 2026-10-02)*
 
-Pendiente: los KPIs de §K.3 medidos con el instrumento de K0 sobre el árbol de ese momento (T6: no
-se copian los números de `AUDITORIA.md`, se vuelven a medir).
+**Cómo se midió (T6: se volvió a medir, no se copió de `AUDITORIA.md`).** Instrumento de K0-A en `634b9e0`
+(`k0-instrumento`), sobre un motor idéntico al de `5548c00`: la huella de 40 seeds × 30 splits da la misma
+tupla `finAnticipado:splitCount:soloqElo` y el mismo estado con los strings enmascarados (K0-B y K0-C solo
+cambian textos y etiquetas de UI). Comando: `node src/dev/simulate.js 400 60 todas` (seeds 1-400, 60 splits,
+6 estrategias, 0 crashes, 206 s). Las cifras de las tablas son de `criterio` salvo que se diga otra cosa. Con
+n = 400 una tasa de ~77% tiene ±4 pp (95%) y una de ~1,5% tiene ±1,2 pp: las diferencias menores que eso no se
+leen. La palanca se midió aparte con `node src/dev/agencia.js` (seeds 1-40, 12 réplicas por opción, 2
+decisiones por tipo y carrera, 60 splits; 1.476 decisiones, σ_pob(puntaje) = 104,28; 1.051 s en 4 procesos).
+Todo corrió en una sola máquina (Windows 11, Node 24).
+
+| Métrica (§K.3) | "Hoy" que decía este plan | **Medido en K0** (`criterio`) | Objetivo | Qué cambia |
+|---|---|---|---|---|
+| r(nivel relativo a la liga, posición) en la misma liga | 0,05 | **0,37** en las ligas que el motor modela (14.377 splits con tabla; otros 943, de tier 3, no tienen liga modelada y se excluyen); **0,15** si se mezclan | ≥ 0,5 | La brecha es 0,37 → 0,5, no 0,05 → 0,5. El 0,05 era la r cruda con los splits de tier 3 |
+| Favorito claro de un Bo5 (Δ ≈ 10) gana la serie | a medir | **91,9%** analítico (91,1% por Monte Carlo de 400.000 series con `mulberry32`); a Δ = 4: 71,7%; Δ = 6: 80,4%; Δ = 8: 87,1%; Δ = 12: 95,2% | ~80% (75-85) | ⚠ La banda ya se cumple a Δ ≈ 6. Para 80% a Δ = 10 hace falta un σ combinado de ~22-24 contra 13,9 de hoy: es una decisión de K2 (qué Δ es "claro"), no un faltante de la serie |
+| Varianza de la posición explicada por tu nivel + el de tu equipo | a medir | R² = **0,079 ± 0,009** (todos los splits con tabla) y **0,175 ± 0,011** (solo ligas modeladas). **Con el ruido de resultados apagado:** 0,099 y 0,233 | mayoría (≥ 0,5); ruido puro ≤ 25% | ⚠ Ver "Lo que la línea de base cambia" (1) |
+| Llega a tier 1 | 79,5% | **76,8%** (`equilibrado` 80,5%) | ~55-65% | |
+| No llega a pro | ~20% | **23,0%** (`equilibrado` 18,8%; `azar` 23,5%) | ~20% | |
+| Se estanca en tier 2/3 | ~0,7% | **0,3%** (`azar` 2,0%; `malas` 22,8%) | ~10% más, por malas decisiones | `malas` ya lo produce; `criterio` y `azar` no |
+| Gana un título doméstico | 79% | **77,0%** | ~30% | |
+| Top 20 del mundo alguna vez | ~51% de las exitosas | **56,3%** de todas · **73,3%** de las que llegan a tier 1 | ~15% | El denominador de "exitosas" tiene que quedar escrito (K2): según cuál se use da 56% o 73% |
+| #1 del mundo alguna vez · en 3 o más temporadas | — | **7,0%** · **1,5%** (`azar` 9,5% · 0,5%) | (parte del "nuevo Faker") | |
+| Gana un Mundial · "nuevo Faker" · P(2 o más \| 1) | no existe | **proxies, no miden eso**: ≥ 1 buen papel internacional 71,0%; "nuevo Faker" 63,5%; P(otro \| uno) 0,894. Salen de `buen_papel` (3,2 por carrera, mediana 3), no de títulos mundiales | ≥ 7% · ~2-3% · ≥ 35-40% | Hasta K5 no hay Mundial real: estas tres filas no tienen línea de base. El instrumento las marca `proxyAntesDeK5` |
+| Carrera pro mediana | 16,7 años | **16,7** (p10 14,3 · p90 18; `malas` 11,7) | ~4-6 | |
+| Llega a la línea forzosa de los 34 | 72,6% | **76,0%** (`equilibrado` 73,5%) | < 5% | |
+| Interrupciones por carrera (mediana) | 191 | **185,5** (p90 210; `equilibrado` 187) | ≤ 80 | |
+| Interrupciones por split pro | p90 9, máx 23 | todos: p50 2 · p90 9 · máx 17. **Regular:** p50 2 · p90 4 (20,7% pasan de 2). **Playoffs:** p50 5 · p90 8 (100% pasan de 2; 62,8% de 4). **Internacional:** p50 8 · p90 11 (99,6% pasan de 4) | ≤ 2; ≤ 4 en playoffs/internacional | La meta no se cumple en ningún tipo de split; el peor es el internacional |
+| Minijuegos por carrera | 26 | **promedio 31,2 · mediana 38** (`equilibrado` 28,2 · 33) | 4-8 | |
+| Tiempo-máquina a 1×, sin leer (mediana) | 17,4 min (Chromium real) | **9,9 min** por la definición del instrumento (logs no técnicos × 700 ms; p90 11,7); **11,1 min** si se suman las esperas del reproductor (+1.600 ms por minijuego) | ≤ 8 min | ⚠ **No comparable** con los 17,4 de la auditoría (otro método). La meta se re-basea en K4c: en proporción, 8/17,4 ≈ 46% de lo de hoy ≈ **4,6 min** por esta definición |
+| Interrupciones con palanca medible | ~17% | Con la **definición y el test de la auditoría: 19,6%** (reproduce el ~17%). Con el **test corregido por comparaciones múltiples: 5,2%** (todo-o-nada) y **3,9%** (ponderado por la fracción significativa de cada tipo) | ≥ 60% | ⚠ Ver "Lo que la línea de base cambia" (3) |
+| Sensibilidad a la habilidad: `criterio` contra `azar` | a medir | tier 1: 76,8% contra 74,0% · título doméstico: 77,0% contra 75,3% · #1 alguna vez: 7,0% contra 9,5% · proxy ≥ 1 buen papel: 71,0% contra 65,0% (×1,09) · proxy "nuevo Faker": 63,5% contra 54,5% (×1,17) | P(Mundial) ≥ 2× · P(nuevo Faker) ≥ 3× | Hoy **no hay sensibilidad**: ver (2) |
+| Mentalidad en pro: mediana · % de splits ≥ 90 | 97 · 75% | **98,4 · 87,3%** (`equilibrado` 97,2 · 76,8%) | 45-75 · < 20% | |
+| Hype en pro: % de splits ≥ 90 | 77% | **77,8%** (`equilibrado` 78,2%) | < 25% | |
+
+**Las seis estrategias** (n = 400 cada una; `ranked` y `prudente` son las de J0):
+
+| | equilibrado | ranked | prudente | **criterio** | azar | malas |
+|---|---|---|---|---|---|---|
+| No llega a pro % | 18,8 | 45,3 | 28,5 | **23,0** | 23,5 | 49,8 |
+| Estancado T2/T3 % | 0,5 | 10,0 | 0,5 | **0,3** | 2,0 | 22,8 |
+| Llega a tier 1 % | 80,5 | 40,0 | 71,0 | **76,8** | 74,0 | 18,5 |
+| Título doméstico % | 80,8 | 42,8 | 71,3 | **77,0** | 75,3 | 33,3 |
+| #1 alguna vez % | 6,8 | 5,5 | 10,8 | **7,0** | 9,5 | 1,5 |
+| Interrup. por carrera (mediana) | 187 | 27 | 186 | **185,5** | 186 | 23 |
+| Minijuegos por carrera (mediana) | 33 | 1 | 34 | **38** | 31,5 | 0 |
+| Años pro (mediana) | 16,7 | 16,3 | 16,3 | **16,7** | 16,7 | 11,7 |
+
+**Por región de origen** (`criterio`; n = 48 a 85 por región, o sea ±9-12 pp al 95%: nada de esto se distingue
+del azar): llega a tier 1 — Brasil 79,2% · China 81,0% · Corea 71,8% · Norteamérica 76,5% · Europa 77,3% ·
+Asia-Pacífico 75,5%. **Hoy no hay una estructura regional en el resultado** (Corea no es más fácil que
+Norteamérica: 72% contra 77%); la que pide §K.3b la tiene que producir K5.
+
+**Palanca por tipo de decisión** (test corregido, % de las decisiones medidas con efecto significativo; 12
+réplicas). Por encima del 10%: `amateur:oferta` 28,6% (n = 42) · `mercado:oferta` 18,2% (66) ·
+`retiro:retiro_declive` 67,9% (28) · `retiro:retiro_vuelta` 52,2% (23) · `eventos:golpe_duro` 12,5% (24).
+**Todo lo demás está en 0-9%, que con este test es lo esperable por azar**: los eventos (513 decisiones,
+2,7%), el draft de serie (0%), el minijuego de serie (1,5%), la práctica (9,1%), el parche (5,1%), la
+elección de la rutina (0%), el cierre por edad (257 decisiones, 2,7%). Ruido dentro de la opción: 0,3-0,7 σ_pob
+(la misma decisión repetida da resultados que difieren más de lo que una buena opción mejora a una mala).
+
+#### Lo que la línea de base cambia del plan
+
+1. **El ruido no es el cuello de botella de §K.3a: lo es cómo el nivel entra en la tabla.** Con el ruido de
+   resultados en cero, tu nivel + el de tu equipo explican solo R² = 0,099 de la posición (0,233 en las ligas
+   modeladas): el 90% de la varianza no la produce el dado sino factores que esta ablación no apaga (cuáles
+   son no se midió todavía; K2 empieza por ahí). Por eso `ruidoPuro` (la fracción que el ruido agrega)
+   sale `null` y el instrumento no lo interpreta: con R² sin ruido < 0,3, "ruido ≤ 25%" **ya se cumple y no
+   informa nada**. La fila de §K.3a pasa a ser **R² con el ruido apagado, en ligas modeladas: 0,23 → ≥ 0,5**.
+   K2 tiene que reestructurar cómo el nivel entra en la tabla, no bajar σ.
+2. **El juego castiga jugar muy mal, pero no premia jugar bien.** `criterio` y `azar` dan lo mismo dentro del
+   error (tier 1: 76,8% y 74,0%; título: 77,0% y 75,3%); `malas` es lo único que se despega (18,5% y 33,3%).
+   Los proxies de Mundial dan ×1,09 y ×1,17 de `criterio` sobre `azar`, contra el ×2 y el ×3 que pide §K.3c.
+   Esta es la medición del "se siente un rng clicker": las decisiones buenas casi no mueven el resultado.
+3. **La meta de "≥ 60% de interrupciones con palanca" se escribió con un test que no controla el error.** El
+   test de la auditoría compara la mejor opción con la peor *de la misma muestra* al 5%: con 3 opciones acepta
+   ~11% de falsos positivos, con 4 ~16% y con 6 ~26% (medido bajo la hipótesis nula; `validate.js` lo fija con
+   un check). Con el test corregido (Bonferroni sobre todos los pares) el 19,6% que reproduce la auditoría
+   baja a **5,2%**, y la palanca real está en dos lugares: las ofertas (amateur y mercado) y el retiro. Es una
+   medición con 12 réplicas, así que el test tiene poca potencia (`amateur:reparto` tiene una palanca mediana de
+   0,36 σ_pob con un ruido dentro de la opción de 0,62 σ_pob y solo el 2,5% de sus decisiones sale
+   significativo): la cifra es una cota inferior, no "exactamente 4-5%". **K3c
+   re-especifica la meta con el test válido**; el ≥ 60% no se puede fijar sin decidir qué cuenta como palanca.
+4. **Dos metas de §K.3 estaban planteadas sobre una medición distinta de la que da el instrumento:** el
+   tiempo-máquina (17,4 min de Chromium contra 9,9 min por beats; se re-basea en K4c) y la r de la misma
+   liga (0,05 era la cruda; la que importa es 0,37).
+5. **Casi todo lo de §K.3b que depende del Mundial no tiene línea de base hasta K5.** `ganaMundial`,
+   `nuevoFaker` y `pOtroMundialDadoUno` son proxies triviales (≥ 1 o ≥ 2 `buen_papel`, que se reparte ~3 veces
+   por carrera): 63,5% de "nuevo Faker" no es un dato sino la definición. Lo único medible hoy en esa familia es
+   **#1 del mundo en 3 o más temporadas: 1,5%** (n = 400, ±1,2 pp al 95%).
+6. **Lo que sí mide el instrumento y no cambia:** carrera pro mediana 16,7 años y 76% llegando a la línea de
+   los 34 (el retiro emergente de K5); mentalidad e hype saturados (mediana 98; ~78% de los splits ≥ 90); las
+   interrupciones y los minijuegos por carrera (185 y 31-38).
+
+**Limitaciones de esta línea de base.** (a) Los tres proxies de Mundial no se pueden leer como Mundial. (b)
+`carrera.tierMaximo` del observador cuenta el estado "agente libre de tier 2" que sigue a un ascenso, mientras
+`registro.porOrg` solo tiene orgs en las que se fichó; discrepa en 5 de 400 carreras de `malas` y en 1 de 200
+de `ranked`, sin cambiar ninguna categoría del embudo (D75). (c) `agencia.js` usa 12 réplicas y 40 carreras: la
+potencia es baja (punto 3 de arriba). (d) Los números por región tienen n de 48-85. (e) Una sola máquina y una
+sola corrida por estrategia; la simulación es determinista, así que repetirla da lo mismo, pero otro conjunto de
+seeds daría tasas distintas dentro de los márgenes de arriba.
 
 ## K.1 — Decisiones del usuario (2026-10-01, textuales — respetarlas, no volver a preguntar)
 
@@ -5361,6 +5458,15 @@ se copian los números de `AUDITORIA.md`, se vuelven a medir).
 4. **Todo termina en un número.** Un puntaje que se puede comparar y que premia la dificultad.
 
 ## K.3 — Las metas (propuestas; K0 mide la línea de base y cada calibración las fija)
+
+> **K0 ya midió la línea de base (§K.0b).** La columna "Hoy" de estas tablas es la de la auditoría y se deja
+> como estaba; lo medido está en §K.0b. Cinco metas de esta sección cambian de forma al medirlas, y la
+> subfase que las calibra las re-escribe con su número: (1) la r de la misma liga parte de **0,37**, no de
+> 0,05; (2) la varianza explicada se mide **con el ruido apagado y en ligas modeladas (0,23 → ≥ 0,5)**:
+> "ruido puro ≤ 25%" ya se cumple y no informa; (3) el Bo5 de Δ ≈ 10 ya da **92%**, y el ~80% corresponde
+> a Δ ≈ 6: K2 decide qué Δ es "claro"; (4) el tiempo-máquina se re-basea en K4c por la definición del
+> instrumento (9,9 min hoy, no 17,4); (5) la palanca "≥ 60%" se re-especifica en K3c con el test corregido
+> (5,2% hoy, no 17%). Las filas de Mundial y "nuevo Faker" no tienen línea de base hasta K5.
 
 ### K.3a — Nivel → resultado (el corazón de la fase)
 
@@ -5743,14 +5849,17 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D64 | Mentalidad y hype saturadas en pro (mediana 97 / 100; 75% / 77% de los splits ≥ 90): el 47% de los efectos del catálogo cae sobre barras llenas, y meter mentalidad en la fuerza (J1) sería inerte | K3 |
 | D65 | El retiro "emergente" casi no ocurre: el 72,6% de las carreras pro termina en `edadRetiroForzoso: 34`. Mediana de carrera pro: 16,7 años (la real es ~2,1, `CONCEPTO` §12.4) | K5 |
 | D66 | No hay puntaje final ni métrica para comparar una seed (`core/legado.js` no lee `oculto.potencial`, ni la generación, ni la signature), contra lo que promete `CONCEPTO` §1/§9 | K1 |
-| D67 | Siendo agente libre (sueldo 0), toda oferta sale "bombazo" (`systems/mercado.js:91`: sueldo > 0 × `bombazoMultiplo`) | K0 |
-| D68 | `server.js` escucha en `0.0.0.0` y no normaliza el path: mientras corre, se pueden leer archivos fuera del repo desde la red local (solo dev) | K0 |
-| D69 | En celular (390 px) el documento mide 455 px de ancho: scroll horizontal y topbar cortado | K0 |
-| D70 | Vocabulario de fútbol en texto visible: "colgás los botines" (`systems/retiro.js:55`), "cancha" ×10, "hinchas" ×3, "camiseta" ×3, "filial" ×3, "Selección: …" en la ficha, "vestuario" ×168 | K0 |
-| D71 | `VERSION` del guardado nunca subió (`core/guardado.js:13`): un cambio de forma del estado cargaría guardados incompatibles | K0 (check estático) |
-| D72 | Higiene de ramas: la rama de trabajo con commits sin pushear, J3 commiteada en `j3-pool-oxido` (`76338ae`) sin mergear, `faseV-V1-grok` todavía existe | K0 (push y borrado con confirmación del usuario) |
-| D73 | "Titular" nombra dos bandas distintas en la ficha (la de NIVEL y la de JERARQUÍA) | K0 |
+| D67 | ✅ **Cerrada en K0-B (2026-10-02).** El tag compara contra el sueldo vigente y, si es 0 (agente libre), contra la mediana salarial de la liga de la oferta (`salarioReferencia` en `systems/mercado.js`; sin `?.` ni `?? 0` a propósito: si faltara la mediana el error tiene que verse). El check `K0-B mercado` es de dos lados (ofertas de sueldo controlado y un barrido de seeds × ligas × sueldos vigentes) y se probó contra mutantes del código. Era: siendo agente libre (sueldo 0), toda oferta salía "bombazo" (`systems/mercado.js:91`: sueldo > 0 × `bombazoMultiplo`) | K0 |
+| D68 | ✅ **Cerrada en K0-B (2026-10-02).** `server.js` escucha solo en `127.0.0.1`, decodifica y resuelve la ruta, exige quedar dentro de la raíz (403) y sirve únicamente `index.html`, `src/**` y `assets/**`; lo demás, y `.git`/`node_modules` a cualquier profundidad y en cualquier variante (mayúsculas, `\`, `%2F`, nombres 8.3, flujos `::$DATA`, punto o espacio final), da 404. `createServer({ raiz })` está exportado y `node server` arranca. El check `K0-B server` levanta el servidor contra una raíz temporal con un secreto afuera y se probó contra mutantes de cada capa; en Linux/macOS algunas sondas (8.3, flujos, mayúsculas) no muerden porque esas rutas no existen. Era: `server.js` escuchaba en `0.0.0.0` y no normalizaba el path: mientras corría, se podían leer archivos fuera del repo desde la red local (solo dev) | K0 |
+| D69 | ✅ **Cerrada en K0-B (2026-10-02).** Medido en Chromium real: `scrollWidth` igual al ancho del viewport (320, 360, 390, 414 y 1440 px) en setup, decisión, mercado, minijuego y fin. Causas: el panel central sin `minmax(0,1fr)`, el topbar sin `wrap` en ≤639 px, la tarjeta final clavada en una columna de 260 px por `body[data-legado="on"] .shell-cuerpo` y sin `overflow-wrap`, y el topbar sticky tapando la ficha (ahora `--topbar-alto-real`, que sigue su alto real). Solo Chromium: Firefox y Safari sin medir. Era: en celular (390 px) el documento medía 455 px de ancho: scroll horizontal y topbar cortado | K0 |
+| D70 | ✅ **Cerrada en K0-C (2026-10-01).** Pasaron a vocabulario de LoL 18 JSON de eventos, `minijuegos.json` y los `.js` de retiro, mercado, rendimiento, roster, temporada, servicioMilitar, plantel, mercadoMundial, contextos y ficha; "vestuario" en texto visible: 0 (los ids no se tocan); la ficha dice "Internacional: sin chance / en carpeta". El check `K0-C vocabulario` filtra `botines|cancha|hincha|camiseta|filial|Selección:|canterano|dirigencia|pelota` sobre el texto sin comentarios de `src/` e `index.html` y sobre todos los strings de los `.json` (salvo claves `id`); **"vestuario" no está en el patrón** (hay usos legítimos en ids y código). Solo texto: la huella de 40 seeds es idéntica a la base y el estado con los strings enmascarados también. Era — vocabulario de fútbol en texto visible: "colgás los botines" (`systems/retiro.js:55`), "cancha" ×10, "hinchas" ×3, "camiseta" ×3, "filial" ×3, "Selección: …" en la ficha, "vestuario" ×168 | K0 |
+| D71 | ✅ **Cerrada en K0-B (2026-10-02).** `VERSION = 2` (exportada) y el check `K0-B guardado` compara el hash de la FORMA del estado (unión recursiva de las formas de todos los elementos de cada array, sobre 10 seeds con carreras completas, independiente de la seed) contra `FORMAS_CONOCIDAS[VERSION]` en `validate.js`: cambiar la forma sin subir `VERSION` falla, y subirla sin que cambie la forma también. Puntos ciegos documentados: los campos `null` al inicio solo registran `?`, y los campos que solo aparecen en eventos raros pueden no verse en las 10 seeds. Un guardado viejo, roto o de versión futura muestra un aviso en la pantalla de inicio y se borra. Era: `VERSION` del guardado nunca subió (`core/guardado.js:13`): un cambio de forma del estado cargaría guardados incompatibles | K0 (check estático) |
+| D72 | 🔶 **Parcial (2026-10-02).** J3 está mergeada (`5548c00`) y la rama de trabajo integra K0-B y K0-C; **falta, y requiere la confirmación del usuario** (sale de la máquina / es destructivo): pushear la rama de trabajo y borrar `faseV-V1-grok`, más limpiar los worktrees y ramas `k0-*` y `j3-pool-oxido` ya mergeadas. Era: higiene de ramas: la rama de trabajo con commits sin pushear, J3 commiteada en `j3-pool-oxido` (`76338ae`) sin mergear, `faseV-V1-grok` todavía existe | K0 (push y borrado con confirmación del usuario) |
+| D73 | ✅ **Cerrada en K0-C (2026-10-01).** La banda de nivel dice "Competitivo" (`LABEL_NIVEL.titular` en `ui/components/ficha.js`) y la de jerarquía conserva "Titular". Era: "Titular" nombraba dos bandas distintas en la ficha (la de NIVEL y la de JERARQUÍA) | K0 |
 | D74 | J3 estaba en la fila "sin corrimiento". Medido el 2026-09-27, 40 seeds × 30 splits, `createInitialState` + `avanzarSplitAuto`, tupla `finAnticipado:splitCount:soloqElo` redondeado: **35/40 distintas** (seed 1: `1:en_carrera:30:4139` → `1:en_carrera:30:4156`; seeds 4 y 5 idénticas). La maestría entra a `rendimientoBase` en `core/fuerza.js`, así que el piso 5→18 mueve partidos y elo. No se agregan tiradas para clavar la huella vieja. Determinismo intra-versión intacto | J (aceptado, misma familia que D52) |
+| D75 | `carrera.tierMaximo` del observador de `simulate.js` cuenta el estado "agente libre de tier 2" que sigue a un ascenso (`competitivo.js:58-78`, `saltarATier2` deja `tier = 2` y `currentOrg = null`), pero `registro.porOrg` solo tiene orgs en las que se fichó. Medido en K0 (seeds 1-400 × 60 splits): discrepa en 5 de 400 carreras de `malas` y en 1 de 200 de `ranked`; en `equilibrado`, `prudente`, `criterio` y `azar` no discrepa. Ninguna categoría del embudo cambia (las 5 pasan de tier 2 a tier 3 y las dos caen en "estancado"). Hay que decidir qué es "llegó a tier N" (jugó en N, o ganó el salto) y alinear el observador o documentar la definición | K1 (antes de que el puntaje cuente tier) |
+| D76 | `registro.porOrg[].tier` queda desfasado tras un descenso en el lugar: `resolverDescenso` (`competitivo.js:135-181`) pasa `career.tier` y `liga` a 2 sin cerrar ni abrir fila, así que la fila sigue diciendo tier 1 y `core/legado.js` (`splitsDeTier`, `titulosDeTier`) y `agencia.js` cuentan splits de Challengers como tier 1. Medido en K0: 37 de 400 carreras de `equilibrado` (168 splits) y 5 de 400 de `malas` (33 splits); ejemplo, seed 70 de `malas`: la fila de MVK Esports dice `tier: 1, liga: LCP` aunque desde el split 24 juega en `LCP_CHALLENGERS`. No se sabe si es deliberado ("el contrato viaja"). El puntaje de K1 (`core/puntaje.js`) lee de esas filas: se decide antes | K1 |
+| D77 | `proSinTierNunca` no significa "pro sin tier": son carreras que fichan y se retiran por burnout en el mismo split (1 de 400 `equilibrado`, 36 de 400 `malas`; todas con `fin = burnout`, `splitCount = splitFichaje + 1` y `porOrg` vacío): el pipeline corta con `retirado` antes de `armarRoster`, y `career.tier` final sí es 3 (o 2). No se investigó por qué el burnout cae justo en el split del fichaje | K5 (retiro emergente) |
 
 ---
 

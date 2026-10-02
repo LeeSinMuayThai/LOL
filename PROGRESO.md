@@ -34,6 +34,100 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-02 — FASE K, K0: higiene y el instrumento (PLAN.md §K.5 K0)
+
+La primera subfase de FASE K, **sin corrimiento**: no cambia ningún resultado del motor. Verificado: la
+huella de 40 seeds × 30 splits (`createInitialState(seed, mulberry32(seed))` + `avanzarSplitAuto`, tupla
+`finAnticipado:splitCount:soloqElo`) es idéntica a la de `5548c00`; el estado final con todos los strings
+enmascarados también (el sha del estado completo difiere solo por los textos de K0-C); dos ejecuciones
+seguidas dan lo mismo. Tres piezas, cada una en su worktree y con su revisión independiente.
+
+**Cómo se trabajó.** Los dos workers que iban a implementar con `grok` murieron al arrancar con
+`402 usage balance exhausted` (no es algo que yo pueda arreglar); K0-A y K0-B pasaron a `agy` con
+`gemini-3.8-flash-high`, igual que K0-C, que ya iba por ahí. Cada diff lo revisó un Claude fresco (otro proceso, sin el
+contexto de quien lo escribió), un Sonnet aplicó los arreglos, y K0-A y K0-B tuvieron una segunda revisión
+independiente del arreglo. Rondas de arreglo: J3 1, K0-C 1, K0-B 3 (`ab7ea9a`, `271b71f`, `48334d6`), K0-A 3
+(`fa9ca18`, `634b9e0`, `a504075`). Yo verifiqué cada entrega por mi cuenta (huella, `validate --rapido`, los
+checks propios y mutantes míos distintos de los del autor y del revisor) antes de mergearla.
+
+**Errores del plan y de las specs que encontraron las revisiones** (el instrumento mide, así que sus
+errores se pagan caros): (1) la regla de mercado que yo le di a `criterio` ("mejor jerarquía proyectada,
+luego liga/salario") lo dejaba renovando el 97,4% de las veces; no era un hueco del motor, la causa era la
+spec; ahora ordena por tier, luego jerarquía proyectada, luego salario (llega a tier 1 en el 77,6% de 800
+carreras pareadas contra el 63,1% de la regla vieja). (2) La definición de `ruidoPuro` que yo escribí
+(1 − Var(Y sin ruido)/Var(Y)) es una fracción sin sentido cuando el R² estructural es bajo: ahora es `null`
+si el R² con el ruido apagado es menor que `UMBRAL_R2_ESTRUCTURAL` (0,3). (3) Los ejemplos de ruta del check
+del servidor en la spec de K0-B daban 404 también con el código viejo. (4) Los reportes de los propios
+workers traían afirmaciones que no se reprodujeron (83 checks en verde, σ = 5, la salida de un script) y no
+se copiaron a ningún documento: las cifras de PLAN §K.0b son todas de una corrida propia.
+
+**J3 (el pool deja de pudrirse), integrada primero (`5548c00`).** Mergeada con una revisión independiente y
+sus arreglos; su deuda D62 se renumeró D74 al chocar con la de la fase J.
+
+**K0-C — vocabulario LoL (D70, D73; `fdb8b6e`).** 18 JSON de eventos, `minijuegos.json` y los `.js` de
+retiro, mercado, rendimiento, roster, temporada, servicioMilitar, plantel, mercadoMundial, contextos y
+ficha pasaron del léxico de fútbol al de LoL ("vestuario" visible 15 → 0, ids intactos; "Selección" →
+"Internacional: sin chance / en carpeta"). La banda de nivel de la ficha dice "Competitivo" y la de
+jerarquía conserva "Titular". Check `K0-C vocabulario` sin lexer: filtro por línea sobre el texto sin
+comentarios y recorrido de todos los strings de los `.json`.
+
+**K0-B — higiene de motor y de servidor (D67, D68, D69, D71; `ddcb2da`).** La primera revisión lo
+rechazó: `server.js` dejaba pasar `.git`/`node_modules` por mayúsculas, `\`, `%2F`, nombres 8.3 y flujos
+`::$DATA`; el check del servidor no fallaba con el código viejo; el hash de la forma del estado solo miraba
+el estado inicial; la tarjeta final desbordaba a 320 y 360 px; un guardado roto no avisaba y el aviso no se
+iba. Quedó así:
+- `VERSION = 2` y un check que compara el hash de la FORMA del estado (unión de las formas de todos los
+  elementos de cada array, sobre 10 seeds con carreras completas, independiente de la seed) con
+  `FORMAS_CONOCIDAS[VERSION]`; los dos puntos ciegos (campos `null` al inicio y campos de eventos raros)
+  quedan escritos en el comentario. Un guardado viejo, roto o de otra versión muestra un aviso y se borra.
+- `server.js` solo en `127.0.0.1`, con lista blanca (`index.html`, `src/**`, `assets/**`), 403 fuera de la
+  raíz y 404 dentro de la raíz pero fuera de la lista; `createServer({ raiz })` exportado. El check levanta
+  el servidor contra una raíz temporal con un secreto afuera.
+- El tag "bombazo" compara contra el sueldo vigente o, si es 0, contra la mediana de la liga (sin `?.` ni
+  `?? 0` a propósito). Check de dos lados.
+- Móvil: `scrollWidth` igual al ancho del viewport a 320, 360, 390, 414 y 1440 px en setup, decisión,
+  mercado, minijuego y fin (Chromium). A 900 px el panel central ya no se sale del panel: la altura cambia
+  2538 → 2746, 4684 → 5509 y 1690 → 2444 px en decisión, mercado y minijuego (sin diferencia de píxeles a
+  1440 ni a 1180; los anchos intermedios no se barrieron). Firefox y Safari sin medir.
+- Lo que sigue sin cubrir y está escrito en el comentario del check: las sondas de `~` y `::` solo existen
+  pegadas a `src/` (no a profundidad ≥ 2) y dependen de que el SO tenga nombres 8.3; en Linux/macOS algunas
+  sondas dan 404 por inexistentes y no muerden.
+
+**K0-A — el instrumento (`1bfa0c5`).** `src/dev/huella.js` (`--seeds --splits --contra`); tres bots en
+`estrategias.js` (`criterio`, `azar`, `malas`, con `puntuarPrevia`); bloques `embudo`, `nivel`, `economia`,
+`longevidad`, `ritmo` y `porRegion` en `simulate.js`, con `nivel.varianzaExplicada` por ablación del ruido
+(overrides de `BALANCE` con `try/finally`, nunca en el motor) y bootstrap determinista (`mulberry32(7777)`);
+`src/dev/agencia.js` (contrafáctico) con el test corregido. La primera revisión dejó vivos 14 de 22 mutantes
+y la segunda 21 de 29: los KPIs daban valores equivocados pero finitos y con los totales cerrando. Los checks
+K0 anclan ahora casi un millar de hojas de los reportes contra un recuento independiente (otra implementación, con percentil y Pearson
+propios, sobre los estados finales), la ablación de los cuatro bots, las constantes de tiempo contra el
+código de la UI que dicen reflejar, la tabla t de 30 grados de libertad, los números de `agencia` calculados a
+mano y cada columna de su tabla. **Hallazgo que cambió el instrumento:** la t pareada de la auditoría
+comparaba la mejor y la peor opción de la misma muestra, lo que infla los falsos positivos con 3 o más
+opciones (medido bajo la hipótesis nula: ~5% con 2, 11% con 3, 16% con 4, 21% con 5, 26% con 6); ahora es el
+máximo |t| sobre todos los pares con Bonferroni (~4,5-5% con 2 a 6 opciones), y el 19,6% de interrupciones
+"con palanca" de la auditoría pasa a 5,2% (ver PLAN §K.0b).
+
+**Línea de base** (PLAN §K.0b; `simulate.js 400 60 todas`, 206 s, 0 crashes, y 1.476 decisiones de agencia).
+Lo que cambia del plan: (1) las decisiones buenas casi no mueven el resultado (`criterio` y `azar` dan 76,8%
+y 74,0% de llegar a tier 1; solo `malas` se despega); (2) con el ruido apagado nivel + equipo explican R² =
+0,10 de la posición (0,23 en ligas modeladas): K2 tiene que cambiar cómo entra el nivel, no bajar σ; (3) el
+Bo5 de Δ ≈ 10 ya da 92%; (4) la r de la misma liga parte de 0,37, no de 0,05; (5) el tiempo-máquina por la
+definición del instrumento es 9,9 min, no comparable con los 17,4 de la auditoría; (6) la meta de "≥ 60% de
+palanca" se re-especifica en K3c. Deuda nueva: D75 (el observador cuenta el "agente libre de tier 2"), D76
+(`porOrg[].tier` desfasado tras un descenso en el lugar: lo lee el puntaje de K1) y D77 (`proSinTierNunca`).
+
+**Verificación del árbol final** (`1bfa0c5`): `validate.js --rapido` 116 OK / 0 FAIL / 135 SKIP (la base de
+`5548c00` tenía 92); `validate.js --solo=K0` 41 OK en 116 s; `validate.js` completo 251 OK / 0 FAIL / 0 SKIP en 35 min (2.097 s);
+`simulate.js 1000 60 equilibrado` 1.000 corridas, 0 crashes, 103 s (79,2% llegan a pro); `build.js` OK, 1.715 KB (techo 1.800), 447 imports,
+determinismo src contra dist en 12 carreras × 30 splits; huella de 40 seeds idéntica a `5548c00` y dos
+ejecuciones idénticas.
+
+**Pendiente de K0 (D72).** Pushear la rama de trabajo y borrar `faseV-V1-grok`, más limpiar los worktrees y
+ramas `k0-*` y `j3-pool-oxido` ya mergeadas: sale de la máquina o es destructivo, así que espera la
+confirmación del usuario. **No se verificó:** Linux y macOS (varias sondas del servidor no muerden ahí),
+Firefox y Safari, ni una carrera jugada a mano de punta a punta en el navegador con el árbol final.
+
 ### 2026-10-01 — FASE K escrita en `PLAN.md`: el nivel manda
 
 El plan que sale de `AUDITORIA.md` y de las cuatro decisiones del usuario sobre ella. Solo
