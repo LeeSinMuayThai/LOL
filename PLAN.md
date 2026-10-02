@@ -5724,8 +5724,8 @@ atribución exacta (Shapley sobre re-simulación completa) de lo que se gana al 
   el centro (0,75-1,25)" falla por diseño al acotar el meta: necesita su línea de la regla 17. (2) "generarFixture
   produce un round-robin real" falla por diseño con la doble vuelta. (3) "Nadie te frena en el draft" da 0
   pausas: choca con K4, se re-basea en K4c. (4) Subir `VERSION`. (5) "Duración de la carrera ~ potencial (r >
-  0,32)" da 0,30: banda, se re-basea en K3c. (6) El pronóstico de J3 (seed 1, split 11, Akali: la ficha dice
-  "aguanta 0" y el motor no lo oxida) aparece solo con la combinación: **D79**, se investiga antes de K3c.
+  0,32)" da 0,30: banda, se re-basea en K3c. (6) "J3 pronóstico" (seed 1, split 11, Akali): resultó un falso positivo del check, no del motor (**D79**); se
+  reescribe en K2a.
 - **D78 (nuevo):** en 400 carreras de `criterio` hay **0 splits en LCK y en LPL**. El tier 1 se juega en CBLOL
   (5.734 splits), LCP (3.767), LCS (1.525) y LEC (345), salgas de la región que salgas, Corea incluida. Es un
   problema del mercado y de la región, no de K2: va a K5.
@@ -5735,7 +5735,9 @@ atribución exacta (Shapley sobre re-simulación completa) de lo que se gana al 
 - **K2a — el instrumento, sin corrimiento (cero `rng`, solo `src/dev/`).** El observador de `simulate.js`
   registra, en el split donde corre la temporada, el nivel y los compañeros que usó el motor, y descarta los splits
   pro sin temporada. La r de la misma liga y el R² sin ruido se reportan con la **definición corregida** y, al
-  lado, con la de K0 por continuidad. Los checks de K2 se escriben sobre la corregida. Huella idéntica.
+  lado, con la de K0 por continuidad. Los checks de K2 se escriben sobre la corregida. Huella idéntica. También
+  reescribe el check "J3 pronóstico" como propiedad sin trayectoria (D79), que si no se pone en rojo en falso con
+  cualquier corrimiento del bloque A.
 - **K2b — estructura** (corre el stream: bloque A, T1 aceptado; las constantes nuevas arrancan en el valor que
   reproduce el comportamiento de hoy, para que el commit mida la estructura sola):
   1. **Centrar los multiplicadores de tu rendimiento.** Cada factor vale 1,0 en el valor típico de un pro, no en
@@ -6037,7 +6039,7 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D76 | `registro.porOrg[].tier` queda desfasado tras un descenso en el lugar: `resolverDescenso` (`competitivo.js:135-181`) pasa `career.tier` y `liga` a 2 sin cerrar ni abrir fila, así que la fila sigue diciendo tier 1 y `core/legado.js` (`splitsDeTier`, `titulosDeTier`) y `agencia.js` cuentan splits de Challengers como tier 1. Medido en K0: 37 de 400 carreras de `equilibrado` (168 splits) y 5 de 400 de `malas` (33 splits); ejemplo, seed 70 de `malas`: la fila de MVK Esports dice `tier: 1, liga: LCP` aunque desde el split 24 juega en `LCP_CHALLENGERS`. No se sabe si es deliberado ("el contrato viaja"). El puntaje de K1 (`core/puntaje.js`) lee de esas filas: se decide antes | K1 |
 | D77 | `proSinTierNunca` no significa "pro sin tier": son carreras que fichan y se retiran por burnout en el mismo split (1 de 400 `equilibrado`, 36 de 400 `malas`; todas con `fin = burnout`, `splitCount = splitFichaje + 1` y `porOrg` vacío): el pipeline corta con `retirado` antes de `armarRoster`, y `career.tier` final sí es 3 (o 2). No se investigó por qué el burnout cae justo en el split del fichaje | K5 (retiro emergente) |
 | D78 | **El jugador nunca juega en LCK ni en LPL.** Medido en la investigación de K2 (2026-10-02, `8e36105`, 400 carreras de `criterio` × 60 splits): 0 splits en LCK y en LPL; el tier 1 se juega en CBLOL (5.734 splits), LCP (3.767), LCS (1.525) y LEC (345), salgas de la región que salgas, Corea incluida. Nivel contra la media de su liga: CBLOL 75 contra 55 · LCP 79 contra 61 · LCS 85 contra 70 · LEC 89 contra 76. Es el mercado (y la región de origen), no la fuerza: K5 tiene que hacer que salir de Corea sea jugar en Corea | K5 |
-| D79 | **Probable bug latente del pronóstico de óxido de J3**: con el candidato de K2 (seed 1, split 11, práctica, Akali) la ficha dice "aguanta 0" y el motor no lo oxida, y el check "J3 pronóstico" falla. No lo dispara ninguna palanca de K2 por separado, solo la combinación: la trayectoria nueva destapa un caso borde del pronóstico | antes de K3c |
+| D79 | **No es un bug del pronóstico: es un falso positivo del check "J3 pronóstico"** (investigado el 2026-10-02 sobre `8e36105` y el candidato de K2). El pronóstico (`core/pool.js:110-118`) es la misma regla que aplica el motor (`systems/campeones.js:66`); pero el óxido aplicado es `max(0, gauss(1,5, 1))`, que da 0 el 6,68% de las veces aunque la gracia haya vencido, y el check (`validate.js:7859-7938`) mira la maestría (el efecto) y no la decisión, con a veces un solo futuro "conclusivo" por par. Resultado: falla ~25-30% de las veces que cambia el stream (en `8e36105` con otras seeds, 16 fallos de 60 juegos contra 16,9 esperados por el modelo; en ~648.000 pares de verdad ficha/motor, 0 divergencias salvo re-entradas al pool). Arreglo, solo en `validate.js`: reemplazar la observación por **propiedades sobre pools armados a mano** (ley G: en gracia nunca baja; ley P: en el piso nunca baja; ley O: "oxida" baja en al menos una de 64 seeds) más el cursor `splitCountDeLaProximaCorrida` verificado sin tiradas. Prototipo y mutantes en el scratchpad de la sesión (`d79/prop.mjs`) | ✅ se arregla en K2a, antes de que K2b corra el stream |
 
 ---
 
