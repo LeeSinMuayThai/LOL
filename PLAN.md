@@ -5771,7 +5771,8 @@ atribución exacta (Shapley sobre re-simulación completa) de lo que se gana al 
   completa 54%, + la tirada del split 58%, ruido por fecha ~36-42%). La forma por fecha no mueve nada (r 0,375
   contra 0,369).
 - **Bo5.** El 91,9% de K0 era analítico y omitía el Fearless. En el motor, el favorito con Δ≈10 ya gana **76,7%**,
-  pero es asimétrico: el jugador favorito gana 67,5% y el rival favorito 98,3%. La causa es que el Fearless
+  pero es asimétrico: medido por el Δ del mapa 1 (Δ1), el jugador favorito gana 67,5% y el rival favorito
+  98,3%; por el Δ al empezar la serie (Δ0, la definición de las metas), 71,4% y 94,9% (K2a). La causa es que el Fearless
   degrada solo tu fuerza (−6,2 en el mapa 2, −10,1 en el 3, −12,9 en el 4: la amplitud de la maestría) y la del
   rival queda constante. Δ típico entre orgs de una liga tier 1: 1º−2º 5,4 · **1º−4º 11,8** · 1º−último ~25.
 - **Compañeros**: en el 91% de los cambios de liga, el primer split en la org nueva se juega con los compañeros
@@ -5841,6 +5842,20 @@ atribución exacta (Shapley sobre re-simulación completa) de lo que se gana al 
 - **K2d — la previa (pantalla).** Antes de la fecha marcada y antes de cada mapa de serie, tu fuerza desglosada
   (vos / tus compañeros / el meta / el campeón) contra la del rival, y **la probabilidad de ganar**, la misma p
   que el motor tira. La probabilidad de la serie completa espera a K4 (depende del plan de Fearless).
+
+- **K2a, tal como quedó** *(revisión independiente, 2026-10-02)*. Se aceptan dos desvíos de la viñeta de arriba:
+  (1) además de `src/dev/`, K2a **expone** datos del motor sin cambiar ningún cálculo (`career.temporada.nivelJugador`
+  y `nivelCompaneros`, `serie.fuerzaInicial`, y `formato`/`fuerzaInicial`/`fuerzaRival` en el log de cierre de
+  cada serie); verificado sin movimiento en 1.506 carreras (estado, `rng` por split y logs idénticos). Sube
+  `VERSION` y descarta los guardados en curso: aceptable antes de publicar. (2) "El tercer sesgo" de la
+  investigación (compañeros del snapshot) mide cero dentro del split: la r corregida sale de descartar los splits
+  sin temporada y de leer el nivel del arranque. Medido: r misma liga 0,398 (K0: 0,369) · R² sin ruido en ligas
+  modeladas 0,257 (K0: 0,233) · Bo5 con |Δ0| en [9, 11): jugador favorito 71,4%, rival favorito 94,9%, juntos
+  76,7%. **Cuando `nivel.metasK2` pase de reporte a check, se fija el bot `criterio`**: `malas` ya da r 0,51 (con
+  pocas decisiones buenas, el nivel relativo varía más y la r sube por eso, no porque el nivel mande).
+- **`VERSION` de guardado entre ramas paralelas**: la rama que se mergea segunda toma el siguiente número libre
+  (max + 1), recalcula el hash de la forma sobre el árbol mergeado y deja el número de la primera; un número nunca
+  tiene dos formas.
 
 **Checks de K2** (rojos hoy; las bandas finales se fijan en K3c): r(nivel relativo, posición) en la misma liga ≥
 0,5 y R² sin ruido ≥ 0,5, los dos con la definición corregida · favorito con Δ≈10 gana el Bo5 75-85%, medido en
