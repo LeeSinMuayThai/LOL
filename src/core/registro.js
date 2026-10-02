@@ -11,11 +11,9 @@ import { BALANCE } from '../data/balance.js';
 //
 // Puro, sin RNG: cualquier sistema puede llamarlas en cualquier orden.
 //
-// K1 (D75/D76, PLAN.md §K1 "decisiones de spec"): `fila.tier`/`fila.liga` son
-// los de la firma; lo jugado por tier vive en `fila.splitsPorTier` (lo llena
-// `registrarSplitEnFila(registro, tier)`), y cada título e internacional lleva
-// su `liga` (y el título su `tier`). "Llegó a tier N" se pregunta con
-// `tierMasAltoJugado`/`splitsJugadosEnTier`, que leen de ahí.
+// K1 (D75/D76): lo JUGADO por tier vive en `fila.splitsPorTier` (ver
+// `abrirFila`), y cada título e internacional lleva su `liga` (y el título su
+// `tier`). "Llegó a tier N": `tierMasAltoJugado`/`splitsJugadosEnTier`.
 
 // --- La fila abierta: la org en la que estás jugando ahora mismo ---
 
@@ -26,15 +24,20 @@ export function filaAbierta(registro) {
 // Los tiers que puede tener un split jugado con contrato (1 arriba, 3 abajo).
 export const TIERS_DE_SPLIT = [1, 2, 3];
 
-// K1 (D76): `fila.tier` y `fila.liga` son el tier y la liga AL FIRMAR. Un
-// descenso en el lugar (`systems/competitivo.js`, `resolverDescenso`) no cierra
-// la fila —el contrato viaja con la org—, así que desde ese split la fila sigue
-// diciendo `tier: 1` aunque se juegue en la liga de desarrollo. Lo que se jugó
-// de verdad en cada tier lo cuenta `splitsPorTier` (`{ 1, 2, 3 }`, completo
-// desde que se abre: trampa T4), que solo crece (regla 14) y suma `splits`.
-// Quien necesite "cuánto jugaste en tier N" (el puntaje, `core/legado.js`, el
-// embudo de `simulate.js`) lee `splitsPorTier`, nunca `fila.tier`.
-export function abrirFila(registro, { org, liga, tier, anio, split }) {
+// Dos conteos distintos por fila:
+// - `splits`: splits ARRANCADOS con contrato acá (`roster.js`, al arrancar el
+//   split). Es dato de juego —lo leen la residencia y el contexto, que además
+//   cuenta las filas—: contarlo donde se juega, o abrir antes la fila, corrió
+//   el stream en 12 de 160 carreras (revisión de K1). Queda como estaba.
+// - `splitsPorTier` (K1, D76): splits JUGADOS con esta org (los que corrieron
+//   su temporada), por el tier en que se jugaron (`registrarSplitJugado`).
+//   Difiere de `splits` en el split del pase, en el que no se llegó a jugar y
+//   en la vuelta de un retiro. Completo desde que se abre (T4), solo crece.
+// `fila.tier`/`fila.liga` son los de la firma (un descenso en el lugar no
+// cierra la fila): "cuánto jugaste en tier N" se lee de `splitsPorTier`.
+// `jugadoSinFila`: lo jugado con esta org antes de que existiera su fila
+// (`flags.splitJugadoSinFila`); la fila arranca con eso adentro.
+export function abrirFila(registro, { org, liga, tier, anio, split }, jugadoSinFila = null) {
   return {
     ...registro,
     porOrg: [...registro.porOrg, {
@@ -42,7 +45,7 @@ export function abrirFila(registro, { org, liga, tier, anio, split }) {
       desdeAnio: anio, hastaAnio: null,
       desdeSplit: split, hastaSplit: null,
       splits: 0,
-      splitsPorTier: Object.fromEntries(TIERS_DE_SPLIT.map((t) => [t, 0])),
+      splitsPorTier: Object.fromEntries(TIERS_DE_SPLIT.map((t) => [t, jugadoSinFila?.[t] ?? 0])),
       fechasG: 0, fechasP: 0,
       jerarquiaMaxima: 0, arraigoFinal: null, arraigoMaximo: 0,
       titulos: [],
@@ -67,17 +70,10 @@ export function cerrarFila(registro, { anio, split, arraigoActual, motivo }) {
   };
 }
 
-// Un split más jugado con equipo: se cuenta en el global Y en la fila de la
-// org (el check de la fase 8 exige que las dos cuentas cierren entre sí).
-//
-// K1 (D76): `tier` es el del split que se está contando —`career.tier` en el
-// momento en que `systems/roster.js` lo cuenta, al arrancar el split—, no el
-// de la fila: así un descenso en el lugar empieza a sumar en `splitsPorTier[2]`
-// aunque la fila diga `tier: 1`. Lo pasa quien llama; este módulo no lee
-// estado global. Convención heredada de `splits`: el split en que el contrato
-// cambia (descenso en pretemporada, fichaje del mercado) cuenta con el tier
-// con el que arrancó, igual que ya contaba en la fila con la que arrancó.
-export function registrarSplitEnFila(registro, tier) {
+// Un split más arrancado con equipo: se cuenta en el global Y en la fila de
+// la org (el check de la fase 8 exige que las dos cuentas cierren entre sí).
+// Es `fila.splits`, no lo jugado por tier (ver `abrirFila`).
+export function registrarSplitEnFila(registro) {
   const abierta = filaAbierta(registro);
   if (!abierta) {
     return registro;
@@ -85,14 +81,41 @@ export function registrarSplitEnFila(registro, tier) {
   return {
     ...registro,
     splitsConEquipo: registro.splitsConEquipo + 1,
-    porOrg: registro.porOrg.map((fila) => (fila === abierta
-      ? {
-        ...fila,
-        splits: fila.splits + 1,
-        splitsPorTier: { ...fila.splitsPorTier, [tier]: (fila.splitsPorTier?.[tier] ?? 0) + 1 }
-      }
-      : fila))
+    porOrg: registro.porOrg.map((fila) => (fila === abierta ? { ...fila, splits: fila.splits + 1 } : fila))
   };
+}
+
+// K1 (D76): un split JUGADO, en la org y el tier donde se juega. Lo llama
+// `systems/temporada.js` al arrancar la temporada, ya pasados el mercado, el
+// ascenso y el descenso. Devuelve `{ registro, sinFila }`: si la fila de esa
+// org todavía no existe (el split del pase: `roster.js` la abre el split que
+// viene), el split viaja en `sinFila` (`{ org, splitsPorTier }`, sumado a
+// `pendiente`), que quien llama guarda en `flags.splitJugadoSinFila` y
+// `abrirFila` asienta. Tira ante un pendiente que no le corresponde a esa fila.
+export function registrarSplitJugado(registro, { org, tier }, pendiente = null) {
+  if (!TIERS_DE_SPLIT.includes(tier) || !org) {
+    throw new Error(`Split jugado sin org o sin tier válido (org ${org}, tier ${tier})`);
+  }
+  if (pendiente && pendiente.org !== org) {
+    throw new Error(`Split jugado con ${org} y otro pendiente sin fila con ${pendiente.org}`);
+  }
+  const abierta = filaAbierta(registro);
+  if (abierta && abierta.org === org) {
+    if (pendiente) {
+      throw new Error(`La fila de ${org} ya está abierta y todavía hay un split jugado sin asentar`);
+    }
+    return {
+      registro: {
+        ...registro,
+        porOrg: registro.porOrg.map((fila) => (fila === abierta
+          ? { ...fila, splitsPorTier: { ...fila.splitsPorTier, [tier]: fila.splitsPorTier[tier] + 1 } }
+          : fila))
+      },
+      sinFila: null
+    };
+  }
+  const base = pendiente?.splitsPorTier ?? Object.fromEntries(TIERS_DE_SPLIT.map((t) => [t, 0]));
+  return { registro, sinFila: { org, splitsPorTier: { ...base, [tier]: base[tier] + 1 } } };
 }
 
 // K1 (D75): "llegó a tier N" = jugó al menos un split con contrato en tier N
@@ -101,7 +124,7 @@ export function registrarSplitEnFila(registro, tier) {
 // la única definición: la usan el puntaje (`core/puntaje.js`), el veredicto
 // (`core/legado.js`) y el embudo de `simulate.js`.
 export function splitsJugadosEnTier(registro, tier) {
-  return registro.porOrg.reduce((total, fila) => total + (fila.splitsPorTier?.[tier] ?? 0), 0);
+  return registro.porOrg.reduce((total, fila) => total + fila.splitsPorTier[tier], 0);
 }
 
 // El tier más alto (el número más chico) en el que jugaste al menos un split
@@ -257,6 +280,12 @@ export function registrarPicoRank(registro, rank) {
     return registro;
   }
   return { ...registro, picos: { ...registro.picos, rankMundial: rank } };
+}
+
+// K1: un cierre de temporada más como #1 del mundo (el requisito de "El GOAT").
+// Solo crece; lo escribe `systems/topMundial.js` junto al pico de rank.
+export function registrarCierreComoNumeroUno(registro) {
+  return { ...registro, cierresComoNumeroUno: registro.cierresComoNumeroUno + 1 };
 }
 
 // --- Arraigo (fase 8.4) ---

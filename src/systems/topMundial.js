@@ -9,10 +9,12 @@
 // Mid-season sólo se mueve el jugador según sube su nivel: el "sentís que
 // trepás". Al CIERRE DE EDAD difea contra la foto del cierre anterior y narra
 // los hitos (entrás / te caés / #1 / un rival de generación entra o sale) más
-// el reveal del Top 20, y persiste `picos.rankMundial` / `splitsEnTopMundial`.
+// el reveal del Top 20, y persiste `picos.rankMundial` / `splitsEnTopMundial`
+// / `cierresComoNumeroUno` y el mejor rank de cada rival de generación
+// (`mundo.rivales[].puntaje`): lo tuyo y lo de ellos, a la misma hora.
 
 import { crearLog } from '../core/log.js';
-import { registrarMomento, registrarPicoRank } from '../core/registro.js';
+import { registrarMomento, registrarPicoRank, registrarCierreComoNumeroUno } from '../core/registro.js';
 import { rankearPoblacion, diffDeRanking } from '../core/topMundial.js';
 import { esCierreDeEdad } from './edadCierre.js';
 import { BALANCE } from '../data/balance.js';
@@ -70,6 +72,22 @@ function lineaReveal(top20, rankActual, rankGlobal) {
   return `Top 20 del mundo: lo encabezan ${primeros}. No entraste este año.`;
 }
 
+// Fase 9Wb: `mundo.rivales[].puntaje` es el mejor (menor) rank que el rival
+// tocó en el Top 20 (`0` = nunca). K1: solo al CIERRE, igual que tu
+// `picos.rankMundial` (antes, un pico de mitad de año te ganaba "tu generación"
+// en falso). Lo lee `core/puntaje.js`.
+function rivalesAlCierre(rivales, topMundial) {
+  const rankTop20 = new Map(topMundial.map((entrada, i) => [entrada.handle, i + 1]));
+  return rivales.map((rival) => {
+    const rank = rankTop20.get(rival.handle);
+    if (!rank) {
+      return rival;
+    }
+    const mejor = (rival.puntaje ?? 0) > 0 ? Math.min(rival.puntaje, rank) : rank;
+    return mejor === rival.puntaje ? rival : { ...rival, puntaje: mejor };
+  });
+}
+
 // `rng` está en la firma por el contrato del registro (`aplicar(state, rng)`),
 // pero 9W NUNCA lo toca — es la regla de oro de la fase. El check
 // `Fase 9W: el ranking es determinista y no consume RNG` le pasa un rng que
@@ -79,7 +97,7 @@ export function aplicar(state, rng) { // eslint-disable-line no-unused-vars
   const anioActual = state.calendario.anio;
 
   // Una sola pasada: la población entera puntuada y ordenada. El Top 20 es el
-  // corte; los ranks globales alimentan `mundo.rivales[].puntaje`.
+  // corte; al cierre, los ranks del Top 20 alimentan `mundo.rivales[].puntaje`.
   const poblacion = rankearPoblacion(state);
   const previo = state.mundo.topMundial ?? [];
   const entroPorHandle = new Map(previo.map((entrada) => [entrada.handle, entrada.entroAnio]));
@@ -105,31 +123,12 @@ export function aplicar(state, rng) { // eslint-disable-line no-unused-vars
     }
   }
 
-  // Fase 9Wb (D8/D40): `mundo.rivales[].puntaje` deja de ser 0 muerto y pasa a
-  // ser el MEJOR (menor) rank que el rival tocó dentro del Top 20. `0` = nunca
-  // entró. Lo consume `dueloDeGeneracion` (core/ficha.js).
-  const rankTop20 = new Map(topMundial.map((entrada, i) => [entrada.handle, i + 1]));
-  let rivalesTocados = false;
-  const rivales = (state.mundo.rivales ?? []).map((rival) => {
-    const rank = rankTop20.get(rival.handle);
-    if (!rank) {
-      return rival;
-    }
-    const mejor = (rival.puntaje ?? 0) > 0 ? Math.min(rival.puntaje, rank) : rank;
-    if (mejor === rival.puntaje) {
-      return rival;
-    }
-    rivalesTocados = true;
-    return { ...rival, puntaje: mejor };
-  });
-
   let next = {
     ...state,
     mundo: {
       ...state.mundo,
       topMundial,
-      mejorDelMundo,
-      ...(rivalesTocados ? { rivales } : {})
+      mejorDelMundo
     },
     flags: { ...state.flags, rankMundialActual }
   };
@@ -196,12 +195,16 @@ export function aplicar(state, rng) { // eslint-disable-line no-unused-vars
     }
   }
   registro = { ...registro, splitsEnTopMundial };
+  // K1 (el GOAT): cada cierre como #1, no solo el de entrada.
+  if (rankMundialActual === 1) {
+    registro = registrarCierreComoNumeroUno(registro);
+  }
 
   next = {
     ...next,
     career: { ...next.career, registro },
     flags: { ...next.flags, rankMundialAnterior: rankMundialActual },
-    mundo: { ...next.mundo, topMundialPrevioAnual: topMundial }
+    mundo: { ...next.mundo, topMundialPrevioAnual: topMundial, rivales: rivalesAlCierre(state.mundo.rivales ?? [], topMundial) }
   };
 
   return { state: next, logs };

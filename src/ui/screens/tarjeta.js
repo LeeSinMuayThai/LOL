@@ -9,7 +9,8 @@ import { miles, textoParaCompartir, linkDeEstado } from '../resultado.js';
 // reusa `filaHistoria` de la ficha.
 //
 // K1-B: arriba va el número (`tarjeta.puntaje`) con su referente (regla 13:
-// nivel, percentil y lo que faltó para el siguiente), su desglose, el techo
+// el percentil), el nivel y el HECHO que faltó para el siguiente (los niveles
+// se ganan con hechos, no con puntos: revisión de K1-A), su desglose, el techo
 // revelado y la leyenda comparada. Los mapas de cada internacional pasan a un
 // desplegable cerrado.
 
@@ -49,47 +50,23 @@ function conSigno(puntos) {
 
 // --- El número ---
 
-function textoDelSiguiente(nivel) {
-  if (nivel.id === 'no_llego') {
-    return 'Sin contrato no hay escalera: el primer escalón era fichar.';
-  }
+// El escalón de arriba y el hecho que faltó para él ("Te faltó un título de
+// liga de primera."), tal como lo escribe `core/puntaje.js`. En el techo, lo dice.
+function bloqueSiguiente(nivel) {
+  const el = document.createElement('div');
+  el.className = 'tarjeta-siguiente';
   if (!nivel.siguiente) {
-    return 'El techo de la escala: no hay nivel más arriba.';
+    el.textContent = 'El techo de la escala: no hay nivel más arriba.';
+    return el;
   }
-  return `Te faltaron ${miles(nivel.siguiente.faltan)} pts para ${nivel.siguiente.nombre}.`;
+  const k = document.createElement('span');
+  k.className = 'tarjeta-siguiente-k';
+  k.textContent = `Siguiente escalón: ${nivel.siguiente.nombre}`;
+  el.append(k, nivel.siguiente.requisito);
+  return el;
 }
 
-// La barra entre el corte de tu nivel y el del siguiente: dónde quedaste
-// adentro del escalón. Solo si hay un escalón siguiente.
-function barraDeNivel(puntaje, BALANCE) {
-  const { nivel, total } = puntaje;
-  const corte = BALANCE.puntaje.niveles.find((n) => n.id === nivel.id);
-  if (!corte || !nivel.siguiente) {
-    return null;
-  }
-  const hasta = total + nivel.siguiente.faltan;
-  const avance = Math.max(0, Math.min(1, (total - corte.desde) / (hasta - corte.desde)));
-
-  const wrap = document.createElement('div');
-  wrap.className = 'tarjeta-escalon';
-  const pista = document.createElement('div');
-  pista.className = 'ficha-barra-pista';
-  const relleno = document.createElement('div');
-  relleno.className = 'ficha-barra-relleno';
-  relleno.style.width = `${Math.round(avance * 100)}%`;
-  pista.appendChild(relleno);
-  const extremos = document.createElement('div');
-  extremos.className = 'tarjeta-escalon-extremos';
-  const desde = document.createElement('span');
-  desde.textContent = `${nivel.nombre} · ${miles(corte.desde)}`;
-  const aHasta = document.createElement('span');
-  aHasta.textContent = `${nivel.siguiente.nombre} · ${miles(hasta)}`;
-  extremos.append(desde, aHasta);
-  wrap.append(pista, extremos);
-  return wrap;
-}
-
-function bloqueNumero(state, puntaje, modulos, lineaHistorial) {
+function bloqueNumero(state, puntaje, lineaHistorial) {
   const el = document.createElement('section');
   el.className = 'tarjeta-numero';
   el.dataset.nivel = puntaje.nivel.id;
@@ -99,13 +76,9 @@ function bloqueNumero(state, puntaje, modulos, lineaHistorial) {
     linea('tarjeta-numero-k', desafio ? `Desafío del ${desafio} · tu puntaje` : 'Tu puntaje'),
     linea('tarjeta-numero-v', miles(puntaje.total)),
     linea('tarjeta-numero-nivel', puntaje.nivel.nombre),
-    linea('tarjeta-numero-ref', `Mejor que el ${puntaje.percentil}% de las carreras.`)
+    linea('tarjeta-numero-ref', `Mejor que el ${puntaje.percentil}% de las carreras.`),
+    bloqueSiguiente(puntaje.nivel)
   );
-  const barra = barraDeNivel(puntaje, modulos.BALANCE);
-  if (barra) {
-    el.appendChild(barra);
-  }
-  el.appendChild(linea('tarjeta-numero-ref', textoDelSiguiente(puntaje.nivel)));
   if (lineaHistorial) {
     el.appendChild(linea('tarjeta-numero-historial', lineaHistorial));
   }
@@ -169,7 +142,7 @@ function bloqueLeyenda(state, puntaje, modulos) {
   const tabla = document.createElement('div');
   tabla.className = 'tarjeta-leyenda-tabla';
   const filas = [
-    ['', 'Años', 'Títulos', 'Intl', 'Pico'],
+    ['', 'Años', 'Títulos 1ª', 'Intl', 'Pico'],
     [leyenda.handle, leyenda.anios, leyenda.titulos, leyenda.internacionales, rankTexto(leyenda.rankPico)],
     [state.player.name, perfil.anios, perfil.titulos, perfil.internacionales, rankTexto(perfil.rankPico)]
   ];
@@ -239,7 +212,7 @@ export function renderTarjeta(container, state, modulos, extras = {}) {
     `${state.player.name} · ${modulos.etiquetaRol(state.player.role)} · se retiró a los ${t.edadRetiro}`));
 
   if (t.puntaje) {
-    container.appendChild(bloqueNumero(state, t.puntaje, modulos, extras.lineaHistorial ?? null));
+    container.appendChild(bloqueNumero(state, t.puntaje, extras.lineaHistorial ?? null));
     container.appendChild(bloqueDesglose(t.puntaje, modulos.BALANCE));
     container.appendChild(bloqueLeyenda(state, t.puntaje, modulos));
   }

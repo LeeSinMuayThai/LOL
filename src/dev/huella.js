@@ -4,6 +4,7 @@ import { mulberry32 as mulberry32Local } from '../core/rng.js';
 import { createInitialState as createInitialStateLocal } from '../core/state.js';
 import { avanzarSplitAuto as avanzarSplitAutoLocal } from '../core/pipeline.js';
 import { hashCadena } from '../core/numeros.js';
+import { puntajeDeCarrera as puntajeDeCarreraLocal } from '../core/puntaje.js';
 
 // Constantes de medición por defecto según la técnica de T1 (PLAN.md §K.5 / T1).
 // 40 semillas a 30 splits alcanzan para detectar corrimientos accidentales del stream de RNG.
@@ -36,6 +37,37 @@ export function calcularHuella(
 
   const hash = hashCadena(lineas.join('\n'));
   return { lineas, hash };
+}
+
+// La huella del JUEGO (K1, revisión de K1-A: PLAN.md "K1 — lo que cambió la revisión de K1-A"): la que respalda
+// `VERSION_JUEGO`/`HUELLA_JUEGO` de `src/data/version.js`. La de arriba (30 splits, T1) no ve la segunda mitad
+// de la carrera ni el puntaje: un `rng()` extra desde los 26 años o un cambio de `BALANCE.puntaje` pasaban sin
+// moverla. Esta corre las mismas 40 seeds hasta 60 splits (o el final) y suma el número, el nivel y la leyenda:
+// `seed:fin:splitCount:elo:total:nivel:leyenda`. `calcularHuella` y su formato quedan como estaban (T1).
+export const SPLITS_HUELLA_JUEGO = 60;
+
+export function calcularHuellaJuego(
+  totalSeeds = SEEDS_POR_DEFECTO,
+  totalSplits = SPLITS_HUELLA_JUEGO,
+  motor = {
+    mulberry32: mulberry32Local,
+    createInitialState: createInitialStateLocal,
+    avanzarSplitAuto: avanzarSplitAutoLocal,
+    puntajeDeCarrera: puntajeDeCarreraLocal
+  }
+) {
+  const lineas = [];
+  for (let seed = 1; seed <= totalSeeds; seed += 1) {
+    const rng = motor.mulberry32(seed);
+    let state = motor.createInitialState(seed, rng);
+    for (let split = 0; split < totalSplits && !state.terminado; split += 1) {
+      state = motor.avanzarSplitAuto(state, rng).state;
+    }
+    const { total, nivel, leyenda } = motor.puntajeDeCarrera(state);
+    const fin = state.finAnticipado ?? 'null';
+    lineas.push(`${seed}:${fin}:${state.player.splitCount}:${Math.round(state.player.soloqElo)}:${total}:${nivel.id}:${leyenda.id}`);
+  }
+  return { lineas, hash: hashCadena(lineas.join('\n')) };
 }
 
 // Carga el motor desde un directorio base externo (por ejemplo un árbol de git archive).

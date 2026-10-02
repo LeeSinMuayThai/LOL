@@ -1,6 +1,7 @@
 [
   {
     "id": "LCK",
+    "nombre": "LCK",
     "region": "Corea",
     "regionId": "KR",
     "tier": 1,
@@ -40,6 +41,7 @@
   },
   {
     "id": "LPL",
+    "nombre": "LPL",
     "region": "China",
     "regionId": "CN",
     "tier": 1,
@@ -83,6 +85,7 @@
   },
   {
     "id": "LEC",
+    "nombre": "LEC",
     "region": "Europa",
     "regionId": "EMEA",
     "tier": 1,
@@ -122,6 +125,7 @@
   },
   {
     "id": "LCS",
+    "nombre": "LCS",
     "region": "Norteamérica",
     "regionId": "NA",
     "tier": 1,
@@ -159,6 +163,7 @@
   },
   {
     "id": "CBLOL",
+    "nombre": "CBLOL",
     "region": "Brasil",
     "regionId": "BR",
     "tier": 1,
@@ -196,6 +201,7 @@
   },
   {
     "id": "LCP",
+    "nombre": "LCP",
     "region": "Asia-Pacífico",
     "regionId": "APAC",
     "tier": 1,
@@ -233,6 +239,7 @@
   },
   {
     "id": "LCK_CL",
+    "nombre": "LCK CL",
     "region": "Corea",
     "regionId": "KR",
     "tier": 2,
@@ -255,6 +262,7 @@
   },
   {
     "id": "LDL",
+    "nombre": "LDL",
     "region": "China",
     "regionId": "CN",
     "tier": 2,
@@ -277,6 +285,7 @@
   },
   {
     "id": "EMEA_MASTERS",
+    "nombre": "EMEA Masters",
     "region": "Europa",
     "regionId": "EMEA",
     "tier": 2,
@@ -299,6 +308,7 @@
   },
   {
     "id": "NACL",
+    "nombre": "NACL",
     "region": "Norteamérica",
     "regionId": "NA",
     "tier": 2,
@@ -321,6 +331,7 @@
   },
   {
     "id": "CD",
+    "nombre": "Circuito Desafiante",
     "region": "Brasil",
     "regionId": "BR",
     "tier": 2,
@@ -343,6 +354,7 @@
   },
   {
     "id": "LCP_CHALLENGERS",
+    "nombre": "LCP Challengers",
     "region": "Asia-Pacífico",
     "regionId": "APAC",
     "tier": 2,

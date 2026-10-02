@@ -251,6 +251,8 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
         // mundo. Contador monótono, para "14 splits en el Top 20" de la
         // tarjeta de legado.
         splitsEnTopMundial: 0,
+        // K1: cierres de edad como #1 del mundo ("El GOAT"). Solo crece.
+        cierresComoNumeroUno: 0,
         // Fase 11 (§11.1): una fila por cierre de edad — la nota y el titular
         // que `core/temporadaResumen.js` calculó ese año. Lo consume el año
         // siguiente para comparar ("otra vez") y `validate.js` para medir la
@@ -351,6 +353,9 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // tarjeta de oferta ANTES de aceptar. `roster.js` la usa tal cual en
       // vez de volver a tirar el dado (regla de proceso 15) y la resetea acá.
       jerarquiaProyectadaAlFichar: null,
+      // K1 (D76): el split del pase, jugado antes de que `roster.js` abra la
+      // fila (`{ org, splitsPorTier }`, de `temporada.js`). Si no, `null`.
+      splitJugadoSinFila: null,
       // Fase 9: splits de pretemporada consecutivos sin una sola oferta. Al
       // llegar a `BALANCE.mercado.splitsSinOfertaParaLibre` te quedás libre
       // — la puerta por la que se termina la carrera (fase 10, todavía no

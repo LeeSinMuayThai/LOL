@@ -83,18 +83,21 @@ function armarRoster(state, rng) {
   // Fase 8: se abre la fila de esta org en el registro (regla de proceso 14:
   // el registro solo crece — `competitivo.js`/`mercado.js` ya cerró la fila
   // anterior, si había una, antes de cambiar `currentOrg`). El split en que
-  // fichás cuenta como jugado ahí. Fase 9: el sueldo del contrato vigente
-  // (0 en tier 3, donde el mercado todavía no existe) queda registrado en la
-  // fila desde que se abre. K1 (D76): el split se cuenta también en
-  // `splitsPorTier` con el tier en que arranca (`career.tier`).
+  // arrancás acá cuenta en `fila.splits`. Fase 9: el sueldo del contrato
+  // vigente (0 en tier 3, donde el mercado todavía no existe) queda registrado
+  // en la fila desde que se abre. K1 (D76): lo jugado por tier lo suma
+  // `temporada.js`; el split del pase, ya jugado acá, entra con la fila.
+  const sinFila = state.flags.splitJugadoSinFila;
+  if (sinFila && sinFila.org !== org.nombre) {
+    throw new Error(`Se abre la fila de ${org.nombre} con un split jugado sin fila de ${sinFila.org}`);
+  }
   const registroConFila = registrarSalarioEnFila(
     registrarJerarquiaEnFila(
       registrarSplitEnFila(
         abrirFila(state.career.registro, {
           org: org.nombre, liga: state.career.liga, tier: state.career.tier,
           anio: state.calendario.anio, split: state.player.splitCount
-        }),
-        state.career.tier
+        }, sinFila?.splitsPorTier ?? null)
       ),
       jerarquiaRedondeada
     ),
@@ -116,7 +119,7 @@ function armarRoster(state, rng) {
   return {
     state: {
       ...state,
-      flags: { ...state.flags, bonusJerarquiaTryout: 0, jerarquiaProyectadaAlFichar: null },
+      flags: { ...state.flags, bonusJerarquiaTryout: 0, jerarquiaProyectadaAlFichar: null, splitJugadoSinFila: null },
       career: {
         ...state.career, companeros, jerarquia: jerarquiaRedondeada, sinergia: Math.round(sinergia),
         rosterDeOrg: org.nombre, arraigo: arraigoNuevo, registro: registroConPicos
@@ -168,16 +171,15 @@ export function aplicar(state, rng) {
     return armarRoster(state, rng);
   }
 
-  // Fase 8: mismo equipo que el split pasado — un split más jugado ahí (se
-  // suma al global Y a la fila de la org) y el goteo de arraigo de base. K1
-  // (D76): con el tier de ESTE split, que después de un descenso en el lugar
-  // ya no es el de la fila.
+  // Fase 8: mismo equipo que el split pasado — un split más arrancado ahí (se
+  // suma al global Y a la fila de la org) y el goteo de arraigo de base. Lo
+  // jugado por tier lo cuenta `systems/temporada.js` (K1, D76).
   const stConRegistro = {
     ...state,
     career: {
       ...state.career,
       registro: conPagaDelSplit(
-        registrarJerarquiaEnFila(registrarSplitEnFila(state.career.registro, state.career.tier), state.career.jerarquia),
+        registrarJerarquiaEnFila(registrarSplitEnFila(state.career.registro), state.career.jerarquia),
         state.career.contrato.salarioAnualUSD
       )
     }

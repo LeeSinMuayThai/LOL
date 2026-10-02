@@ -1490,14 +1490,10 @@ export const BALANCE = {
     margenReveal: 10
   },
 
-  // K1 — El número (PLAN.md §K1 y "K1 — decisiones de spec"): el puntaje de
-  // carrera de `core/puntaje.js`. Puro y sin `rng`: se compone cuando la carrera
-  // termina (`state.tarjeta.puntaje`, `core/pipeline.js`) y se puede pedir sobre
-  // cualquier estado. Los seis componentes son >= 0 y crecen con el logro: de
-  // ahí sale la monotonía que vigila `validate.js`. PROVISORIO entero: los cortes
-  // de los niveles y la tabla de cuantiles salen de la distribución medida con
-  // el bot `criterio` (400 seeds, 60 splits) y K5c los vuelve a medir con el
-  // Mundial real.
+  // K1 — El número (PLAN.md §K1): el puntaje de `core/puntaje.js`. Puro y sin
+  // `rng`. Los seis componentes son >= 0 y crecen con el logro (la monotonía
+  // que vigila `validate.js`). PROVISORIO: K5c lo vuelve a medir con el Mundial
+  // real.
   puntaje: {
     // 1. Trayectoria: puntos por split jugado con contrato, según el tier en
     // que se jugó (`registro.porOrg[].splitsPorTier`, D76): más pesado arriba.
@@ -1567,26 +1563,29 @@ export const BALANCE = {
     // menos techo vale más.
     potencial: {
       factorConPotencialMinimo: 1.25,
-      factorConPotencialMaximo: 0.85
+      factorConPotencialMaximo: 0.85,
+      // El texto del techo alto según hasta dónde llegaste: desde
+      // `nivelAprovechado`, "lo hiciste rendir"; desde `nivelAMedias`, "daba
+      // para más"; abajo, "se esperaba más".
+      nivelAprovechado: 'campeon',
+      nivelAMedias: 'profesional'
     },
-    // Niveles con nombre, de abajo hacia arriba (el nombre visible vive en
-    // `core/puntaje.js`): el puntaje mínimo de cada uno. "El que no llegó" no
-    // tiene corte: es por definición (nunca fichaste). PROVISORIOS (K1-A, los
-    // fija K5c): cada corte es el percentil indicado de la distribución medida
-    // con `criterio` (seeds 1-400, 60 splits; `percentil` "por piso" de
-    // `simulate.js`), elegido para que el embudo de nombres se parezca al de
-    // §K.3b — tantos por encima de cada nivel: profesional 65%, fijo 50%,
-    // campeón 30%, figura 15%, leyenda 7%, el GOAT 2,5%. Con el motor de hoy
-    // (77% llega a tier 1, 77% gana un título) los nombres quedan más exigentes
-    // que los hechos; K2-K5 corren los hechos y K5c vuelve a medir los cortes.
+    // Niveles, de abajo hacia arriba (nombres en `core/puntaje.js`, `NIVELES`).
+    // Se ganan con HECHOS, no con puntos (PLAN.md "K1 — lo que cambió la
+    // revisión de K1-A"): gana el más alto cuyo `requisito` se cumple entero.
+    // Cada clave es un hecho de `hechosDeCarrera` con su mínimo (`rankPicoHasta`:
+    // el mejor rank de la vida, este o mejor). "El que no llegó" es el piso;
+    // "Fijo en primera" son tres años en primera (3 × `edad.splitsPorEdad`);
+    // desde K5, "El GOAT" pide también 2 o más Mundiales.
     niveles: [
-      { id: 'circuito', desde: 0 },
-      { id: 'profesional', desde: 794 }, // p35
-      { id: 'fijo', desde: 1128 }, // p50
-      { id: 'campeon', desde: 1449 }, // p70
-      { id: 'figura', desde: 1683 }, // p85
-      { id: 'leyenda', desde: 1838 }, // p93
-      { id: 'goat', desde: 2051 } // p97,5
+      { id: 'no_llego', requisito: {} },
+      { id: 'circuito', requisito: { splitsJugados: 1 } },
+      { id: 'profesional', requisito: { splitsTier1: 1 } },
+      { id: 'fijo', requisito: { splitsTier1: 9 } },
+      { id: 'campeon', requisito: { titulosTier1: 1 } },
+      { id: 'figura', requisito: { cierresEnTop20: 1 } },
+      { id: 'leyenda', requisito: { titulosTier1: 3, rankPicoHasta: 5 } },
+      { id: 'goat', requisito: { cierresNumeroUno: 3 } }
     ],
     // El referente del número (regla 13): "mejor que el X% de las carreras".
     // Pares [percentil, puntaje] de la distribución medida con el bot

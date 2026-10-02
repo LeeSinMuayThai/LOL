@@ -618,7 +618,10 @@ const FORMAS_CONOCIDAS = {
   2: '14b3c6b90382',
   // K1-A (D76): `porOrg[].splitsPorTier`, `liga`/`tier` en los títulos, `liga` en los internacionales,
   // `dificultad` en las ligas, `state.desafio` y `tarjeta.puntaje`.
-  3: '28ade2576049'
+  3: '28ade2576049',
+  // Revisión de K1: `registro.cierresComoNumeroUno`, `flags.splitJugadoSinFila`, `nombre` en las ligas, y en
+  // `tarjeta.puntaje` los `hechos` y el `requisito` del nivel siguiente (en vez de los puntos que faltaban).
+  4: 'd2ac4cf09c9b'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -8527,7 +8530,7 @@ check('K0-B server: solo localhost, solo la lista blanca y sin salir de la raiz 
 // Estos checks cuidan al INSTRUMENTO (huella, bots, bloques de simulate.js, agencia.js), no al juego. Cada
 // uno se verificó en rojo contra un mutante real del código que protege (regla de proceso 7): la tabla
 // mutante -> check que lo mata está en el reporte de K0-A.
-const { calcularHuella } = await import('./huella.js');
+const { calcularHuella, calcularHuellaJuego } = await import('./huella.js');
 const {
   medirAgencia, analizarDatosAgencia, tCritico, tCriticoBilateral, testMaximoT, significativaTestViejo,
   replicasDeDecision, puntajeProvisorio, UMBRAL_SIGNIFICATIVO, MIN_REPLICAS_VALIDAS
@@ -10864,7 +10867,8 @@ checkLento('K0 ablación restaura BALANCE: después de todo el bloque K0 las con
 // completo, idéntico), no números del balance. Cada uno se verificó en rojo contra un mutante (regla de proceso 7):
 // la tabla mutante -> check está en el reporte de K1-A.
 const {
-  puntajeDeCarrera, NIVELES: NIVELES_K1, nivelDePuntaje, percentilDePuntaje, factorDePotencial, leyendaMasCercana
+  puntajeDeCarrera, NIVELES: NIVELES_K1, nivelDeCarrera, HECHOS_DE_REQUISITO, percentilDePuntaje, factorDePotencial,
+  leyendaMasCercana, distanciaDeLeyenda, puestoEnLaGeneracion
 } = await import('../core/puntaje.js');
 const { seedDelDia, esFechaDeDesafio, iniciarDesafio } = await import('../core/desafio.js');
 const { VERSION_JUEGO, HUELLA_JUEGO } = await import('../data/version.js');
@@ -10972,10 +10976,25 @@ check('K1 puntaje puro y determinista: mismo estado → mismo resultado, sin aza
   }
 });
 
-// Las mutaciones de "más logro" sobre una copia del estado: cada una dice qué componente tiene que subir.
+// Las mutaciones de "más logro" sobre una copia del estado: cada una dice qué componente tiene que subir (`null`:
+// solo cuenta para el nivel). Revisión de K1-A: entran los logros de tier 2 y el internacional eliminado — los
+// mutantes que hacían RESTAR un split o un título de tier 2 solo se veían en el check lento.
+function sumarSplitJugadoK1(st, tier) {
+  const filas = st.career.registro.porOrg;
+  if (filas.length === 0) {
+    filas.push({ org: 'X', liga: 'LCK', tier: 1, splits: 0, splitsPorTier: { 1: 0, 2: 0, 3: 0 }, titulos: [] });
+  }
+  const fila = filas[filas.length - 1];
+  fila.splits += 1;
+  fila.splitsPorTier[tier] += 1;
+}
+
 const MAS_LOGRO_K1 = [
   ['un título de tier 1', 'titulos', (st) => {
     st.career.registro.titulos.push({ nombre: 'LCK', anio: st.calendario.anio, org: 'X', liga: 'LCK', tier: 1 });
+  }],
+  ['un título de tier 2', 'titulos', (st) => {
+    st.career.registro.titulos.push({ nombre: 'LCK_CL', anio: st.calendario.anio, org: 'X', liga: 'LCK_CL', tier: 2 });
   }],
   ['un título de tier 3', 'titulos', (st) => {
     st.career.registro.titulos.push({ nombre: 'un torneo chico de la región', anio: st.calendario.anio, org: 'X', liga: null, tier: 3 });
@@ -10983,19 +11002,16 @@ const MAS_LOGRO_K1 = [
   ['un internacional con buen papel', 'internacional', (st) => {
     st.career.registro.internacionales.push({ torneo: 'internacional — LCS', anio: st.calendario.anio, org: 'X', liga: 'LCS', resultado: 'buen_papel', camino: [] });
   }],
-  ['un split en tier 1', 'trayectoria', (st) => {
-    const filas = st.career.registro.porOrg;
-    if (filas.length === 0) {
-      filas.push({ org: 'X', liga: 'LCK', tier: 1, splits: 0, splitsPorTier: { 1: 0, 2: 0, 3: 0 }, titulos: [] });
-    }
-    const fila = filas[filas.length - 1];
-    fila.splits += 1;
-    fila.splitsPorTier[1] += 1;
+  ['un internacional eliminado', 'internacional', (st) => {
+    st.career.registro.internacionales.push({ torneo: 'internacional — LCS', anio: st.calendario.anio, org: 'X', liga: 'LCS', resultado: 'eliminado', camino: [] });
   }],
+  ['un split jugado en tier 1', 'trayectoria', (st) => sumarSplitJugadoK1(st, 1)],
+  ['un split jugado en tier 2', 'trayectoria', (st) => sumarSplitJugadoK1(st, 2)],
+  ['un split jugado en tier 3', 'trayectoria', (st) => sumarSplitJugadoK1(st, 3)],
   // El pico sube a la banda siguiente (afuera -> #20 -> top 5 -> #1); si ya era el #1, suma una temporada en el Top.
   ['mejor pico de rank mundial', 'mundo', (st) => {
     const picos = st.career.registro.picos;
-    const actual = picos.rankMundial ?? 0;
+    const actual = picos.rankMundial;
     const { corteTop5 } = BALANCE.puntaje.mundo;
     if (actual === 1) {
       st.career.registro.splitsEnTopMundial += 1;
@@ -11005,11 +11021,17 @@ const MAS_LOGRO_K1 = [
   }],
   ['una temporada más en el Top 20', 'mundo', (st) => {
     st.career.registro.splitsEnTopMundial += 1;
+  }],
+  ['un cierre más como #1 del mundo', null, (st) => {
+    st.career.registro.cierresComoNumeroUno += 1;
   }]
 ];
 
-check('K1 puntaje monótono: un título, un buen papel internacional, un split en tier 1 o un mejor pico de rank nunca bajan el total ni un componente, y el suyo sube', () => {
+const INDICE_NIVEL_K1 = Object.fromEntries(NIVELES_K1.map((nivel, i) => [nivel.id, i]));
+
+check('K1 puntaje monótono: un título o un split de cualquier tier, un internacional (buen papel o eliminado), un mejor pico de rank o un cierre en el Top nunca bajan el total, un componente ni el nivel, y el suyo sube', () => {
   let totalesQueSubieron = 0;
+  let nivelesQueSubieron = 0;
   let casos = 0;
   for (const base of estadosDeReferenciaK1()) {
     const antes = puntajeDeCarrera(base);
@@ -11026,14 +11048,21 @@ check('K1 puntaje monótono: un título, un buen papel internacional, un split e
           throw new Error(`seed ${base.seed}, ${nombre}: el componente ${id} bajó de ${componenteK1(antes, id)} a ${componenteK1(despues, id)}`);
         }
       }
-      if (!(componenteK1(despues, componente) > componenteK1(antes, componente))) {
+      if (componente !== null && !(componenteK1(despues, componente) > componenteK1(antes, componente))) {
         throw new Error(`seed ${base.seed}, ${nombre}: el componente ${componente} no subió (${componenteK1(antes, componente)} -> ${componenteK1(despues, componente)})`);
       }
+      if (INDICE_NIVEL_K1[despues.nivel.id] < INDICE_NIVEL_K1[antes.nivel.id]) {
+        throw new Error(`seed ${base.seed}, ${nombre}: el nivel bajó de ${antes.nivel.id} a ${despues.nivel.id}`);
+      }
       totalesQueSubieron += despues.total > antes.total ? 1 : 0;
+      nivelesQueSubieron += despues.nivel.id !== antes.nivel.id ? 1 : 0;
     }
   }
   if (totalesQueSubieron < casos / 2) {
     throw new Error(`check vacío: el total subió solo en ${totalesQueSubieron} de ${casos} casos`);
+  }
+  if (nivelesQueSubieron === 0) {
+    throw new Error(`check vacío: en ${casos} casos ningún logro movió el nivel`);
   }
 });
 
@@ -11066,7 +11095,7 @@ check('K1 puntaje: el mismo buen papel internacional vale más desde una liga de
   }
 });
 
-check('K1 puntaje: con el mismo registro, un potencial más bajo nunca puntúa menos (y el potencial sí mueve el total)', () => {
+check('K1 puntaje: con el mismo registro, un potencial más bajo nunca puntúa menos (y el potencial sí mueve el total), y su texto habla según hasta dónde llegaste', () => {
   const { potencialMin, potencialMax } = BALANCE.mundo;
   const p = BALANCE.puntaje.potencial;
   if (factorDePotencial(potencialMin) !== p.factorConPotencialMinimo || factorDePotencial(potencialMax) !== p.factorConPotencialMaximo) {
@@ -11094,6 +11123,154 @@ check('K1 puntaje: con el mismo registro, un potencial más bajo nunca puntúa m
   if (!seMovio) {
     throw new Error('check vacío: en ninguna carrera de referencia el potencial movió el total');
   }
+  // El texto del techo revelado (revisión de K1-A): con el techo más alto, a quien llegó a `nivelAprovechado` o más
+  // arriba no se le dice "se esperaba más"; a quien no llegó ni a `nivelAMedias`, sí.
+  let altos = 0;
+  let bajos = 0;
+  for (const base of estadosDeReferenciaK1()) {
+    const copia = structuredClone(base);
+    copia.player.oculto.potencial = potencialMax;
+    const { nivel, potencial } = puntajeDeCarrera(copia);
+    const esperabaMas = /se esperaba más/.test(potencial.detalle);
+    if (INDICE_NIVEL_K1[nivel.id] >= INDICE_NIVEL_K1[p.nivelAprovechado]) {
+      altos += 1;
+      if (esperabaMas) {
+        throw new Error(`seed ${base.seed}: ${nivel.nombre} con techo ${potencialMax} lee "${potencial.detalle}"`);
+      }
+    } else if (INDICE_NIVEL_K1[nivel.id] < INDICE_NIVEL_K1[p.nivelAMedias]) {
+      bajos += 1;
+      if (!esperabaMas) {
+        throw new Error(`seed ${base.seed}: ${nivel.nombre} con techo ${potencialMax} tendría que leer "se esperaba más": "${potencial.detalle}"`);
+      }
+    }
+  }
+  if (altos === 0 || bajos === 0) {
+    throw new Error(`check vacío: ${altos} carreras de referencia arriba de ${p.nivelAprovechado} y ${bajos} abajo de ${p.nivelAMedias}`);
+  }
+});
+
+// Revisión de K1-A: el puntaje no puede dar NaN ni caer en silencio a un valor por defecto. Cada defecto tira un
+// `Error` que empieza con "puntajeDeCarrera:" y dice qué falta. Un título de tier 3 con `liga: null` es válido.
+check('K1 puntaje falla fuerte: liga desconocida, título sin tier, internacional sin liga, potencial o rol faltantes tiran un error claro; un título de tier 3 con liga null vale', () => {
+  const base = estadosDeReferenciaK1().find((estado) => estado.career.registro.porOrg.length > 0);
+  if (!base) {
+    throw new Error('check vacío: ninguna carrera de referencia jugó con contrato');
+  }
+  const anio = base.calendario.anio;
+  const titulo = (extra) => (st) => st.career.registro.titulos.push({ nombre: 'Copa', anio, org: 'X', ...extra });
+  const internacional = (extra) => (st) => st.career.registro.internacionales.push({ torneo: 'internacional', anio, org: 'X', resultado: 'buen_papel', camino: [], ...extra });
+  const casos = [
+    ['sin potencial', (st) => { delete st.player.oculto.potencial; }, /potencial/],
+    ['potencial NaN', (st) => { st.player.oculto.potencial = Number.NaN; }, /potencial/],
+    ['rol desconocido', (st) => { st.player.role = 'jungle'; }, /rol/],
+    ['título sin tier', titulo({ liga: 'LCK' }), /sin tier|no trae tier/],
+    ['título con liga desconocida', titulo({ liga: 'LTA', tier: 1 }), /liga desconocida/],
+    ['título de tier 1 sin liga', titulo({ liga: null, tier: 1 }), /liga desconocida/],
+    ['título de tier 1 con una liga de tier 2', titulo({ liga: 'LCK_CL', tier: 1 }), /tier 2/],
+    ['título de tier 3 con liga', titulo({ liga: 'LCK', tier: 3 }), /tier 3/],
+    ['internacional sin liga', internacional({}), /no trae la liga/],
+    ['internacional con liga desconocida', internacional({ liga: 'LTA' }), /liga desconocida/],
+    ['internacional de una liga de tier 2', internacional({ liga: 'LCK_CL' }), /no es una liga de primera/],
+    ['fila sin splitsPorTier', (st) => { delete st.career.registro.porOrg[0].splitsPorTier; }, /splitsPorTier/],
+    ['pico de rank sin número', (st) => { st.career.registro.picos.rankMundial = undefined; }, /rankMundial/],
+    ['sin cierres como #1', (st) => { delete st.career.registro.cierresComoNumeroUno; }, /cierresComoNumeroUno/]
+  ];
+  for (const [nombre, mutar, patron] of casos) {
+    const copia = structuredClone(base);
+    mutar(copia);
+    let mensaje = null;
+    try {
+      puntajeDeCarrera(copia);
+    } catch (error) {
+      mensaje = error.message;
+    }
+    if (mensaje === null) {
+      throw new Error(`${nombre}: puntajeDeCarrera no tiró`);
+    }
+    if (!mensaje.startsWith('puntajeDeCarrera:') || !patron.test(mensaje)) {
+      throw new Error(`${nombre}: tiró "${mensaje}", que no dice qué falta (${patron})`);
+    }
+  }
+  const conTier3 = structuredClone(base);
+  titulo({ nombre: 'un torneo chico de la región', liga: null, tier: 3 })(conTier3);
+  if (!Number.isInteger(puntajeDeCarrera(conTier3).total)) {
+    throw new Error('un título de tier 3 con liga null tiene que puntuar');
+  }
+});
+
+// Revisión de K1-A: ningún texto del puntaje ni del veredicto muestra el id crudo de una liga ("LCK_CL",
+// "EMEA_MASTERS"): sale el `nombre` de `leagues.json`.
+check('K1 textos: el puntaje y el veredicto nombran cada liga por su nombre visible, nunca por su id', () => {
+  if (LIGAS.some((liga) => typeof liga.nombre !== 'string' || liga.nombre.trim() === '')) {
+    throw new Error('hay una liga sin nombre visible en leagues.json');
+  }
+  const crudas = LIGAS.filter((liga) => liga.id !== liga.nombre);
+  if (crudas.length === 0) {
+    throw new Error('check vacío: ninguna liga tiene un id distinto de su nombre');
+  }
+  const idCrudo = new RegExp(`(^|[^A-Za-z_])(${crudas.map((liga) => liga.id).join('|')})(?![A-Za-z_])`);
+  let conNombre = 0;
+  for (const base of estadosDeReferenciaK1()) {
+    const estados = [base];
+    for (const liga of crudas) {
+      const unaSola = structuredClone(base);
+      unaSola.career.registro.titulos = [{ nombre: liga.id, anio: 2030, org: 'X', liga: liga.id, tier: liga.tier }];
+      const sumada = structuredClone(base);
+      sumada.career.registro.titulos.push({ nombre: liga.id, anio: 2030, org: 'X', liga: liga.id, tier: liga.tier });
+      estados.push(unaSola, sumada);
+    }
+    for (const estado of estados) {
+      const puntaje = puntajeDeCarrera(estado);
+      const textos = [
+        ...puntaje.componentes.map((c) => c.detalle), puntaje.nivel.siguiente?.requisito ?? '', puntaje.potencial.detalle,
+        componerLegado(estado).veredicto
+      ];
+      for (const texto of textos) {
+        if (idCrudo.test(texto)) {
+          throw new Error(`seed ${base.seed}: "${texto}" muestra el id crudo de una liga`);
+        }
+      }
+      conNombre += textos.some((texto) => crudas.some((liga) => texto.includes(liga.nombre))) ? 1 : 0;
+    }
+  }
+  if (conNombre === 0) {
+    throw new Error('check vacío: ningún texto nombró una liga de las que tienen id distinto del nombre');
+  }
+});
+
+// Revisión de K1-A (mutante r5): los empates no te superan ni los superás, y el `0` (nunca entró) va último.
+check('K1 generación: los empates no te superan, el 0 va último y el bono de primero pide haber entrado al Top 20', () => {
+  const base = estadosDeReferenciaK1()[0];
+  const con = (tuRank, ranks) => {
+    const st = structuredClone(base);
+    st.career.registro.picos.rankMundial = tuRank;
+    st.mundo.rivales = ranks.map((rank, i) => ({ ...base.mundo.rivales[0], handle: `Rival${i}`, puntaje: rank }));
+    return st;
+  };
+  const casos = [
+    // [tu rank, ranks de los rivales, puesto, superados]
+    [5, [5, 5, 0, 7, 3], 2, 2],
+    [5, [5, 5], 1, 0],
+    [0, [0, 0], 1, 0],
+    [1, [1, 2], 1, 1],
+    [3, [2, 0], 2, 1],
+    [0, [4, 0], 2, 0]
+  ];
+  for (const [tuRank, ranks, puesto, superados] of casos) {
+    const g = puestoEnLaGeneracion(con(tuRank, ranks));
+    if (g.puesto !== puesto || g.superados !== superados) {
+      throw new Error(`vos #${tuRank} contra [${ranks}]: puesto ${g.puesto} y ${g.superados} superados, se esperaba ${puesto} y ${superados}`);
+    }
+  }
+  // Un empate vale lo mismo que no tener a ese rival: ni suma ni resta.
+  const generacion = (tuRank, ranks) => componenteK1(puntajeDeCarrera(con(tuRank, ranks)), 'generacion');
+  if (generacion(5, [5, 7]) !== generacion(5, [7])) {
+    throw new Error(`un rival empatado con vos movió el componente (${generacion(5, [5, 7])} contra ${generacion(5, [7])})`);
+  }
+  // Sin Top 20 no hay bono de primero, aunque nadie te supere.
+  if (generacion(0, [0, 0]) !== 0) {
+    throw new Error(`sin entrar al Top 20 y con la generación empatada en 0, el componente tiene que ser 0 (dio ${generacion(0, [0, 0])})`);
+  }
 });
 
 // Segunda implementación (para cruzar el bloque `puntaje` de `simulate.js`): percentil "por piso".
@@ -11102,15 +11279,36 @@ const percentilPisoK1 = (valores, p) => {
   return ordenados[Math.min(ordenados.length - 1, Math.floor(p * ordenados.length))];
 };
 
-checkLento('K1 puntaje en carreras reales de criterio, azar y malas: componentes >= 0, enteros y finitos, y el bloque puntaje de simulate coincide con un recuento', () => {
+// El nivel recalculado a mano desde el registro, con la tabla de PLAN.md ("K1 — lo que cambió la revisión de
+// K1-A") escrita de nuevo acá: una segunda implementación contra la que se cruza `nivelDeCarrera`.
+function nivelAManoK1(registro) {
+  const req = Object.fromEntries(BALANCE.puntaje.niveles.map((nivel) => [nivel.id, nivel.requisito]));
+  const sumaTier = (tier) => registro.porOrg.reduce((total, fila) => total + fila.splitsPorTier[tier], 0);
+  const jugados = sumaTier(1) + sumaTier(2) + sumaTier(3);
+  const titulosT1 = registro.titulos.filter((titulo) => titulo.tier === 1).length;
+  const rank = registro.picos.rankMundial;
+  if (registro.cierresComoNumeroUno >= req.goat.cierresNumeroUno) return 'goat';
+  if (titulosT1 >= req.leyenda.titulosTier1 && rank > 0 && rank <= req.leyenda.rankPicoHasta) return 'leyenda';
+  if (registro.splitsEnTopMundial >= req.figura.cierresEnTop20) return 'figura';
+  if (titulosT1 >= req.campeon.titulosTier1) return 'campeon';
+  if (sumaTier(1) >= req.fijo.splitsTier1) return 'fijo';
+  if (sumaTier(1) >= req.profesional.splitsTier1) return 'profesional';
+  if (jugados >= req.circuito.splitsJugados) return 'circuito';
+  return 'no_llego';
+}
+
+checkLento('K1 puntaje en carreras reales de criterio, azar y malas: componentes >= 0, enteros y finitos, el nivel sale de los hechos, y el bloque puntaje de simulate coincide con un recuento', () => {
   const lotes = lotesDeLosBotsK0();
   const idsDeNivel = new Set(NIVELES_K1.map((nivel) => nivel.id));
   const conPuntos = {};
+  const nivelesVistos = new Set();
+  let cierresComoNumeroUno = 0;
   for (const bot of BOTS_K0) {
-    const { resultados } = lotes[bot].crudos;
+    const { resultados, observaciones } = lotes[bot].crudos;
     const puntajes = resultados.map((estado) => puntajeDeCarrera(estado));
     puntajes.forEach((puntaje, i) => {
       const donde = `${bot} seed ${resultados[i].seed}`;
+      const registro = resultados[i].career.registro;
       for (const { id, puntos, etiqueta, detalle } of puntaje.componentes) {
         if (!Number.isInteger(puntos) || puntos < 0) {
           throw new Error(`${donde}: el componente ${id} vale ${puntos}`);
@@ -11126,9 +11324,20 @@ checkLento('K1 puntaje en carreras reales de criterio, azar y malas: componentes
       if (!idsDeNivel.has(puntaje.nivel.id) || !(puntaje.percentil >= 0 && puntaje.percentil <= 100) || !puntaje.leyenda?.handle) {
         throw new Error(`${donde}: nivel ${puntaje.nivel.id}, percentil ${puntaje.percentil}, leyenda ${puntaje.leyenda?.handle}`);
       }
-      if ((resultados[i].splitFichaje === null) !== (puntaje.nivel.id === 'no_llego')) {
-        throw new Error(`${donde}: "El que no llegó" es exactamente nunca haber fichado (splitFichaje ${resultados[i].splitFichaje}, nivel ${puntaje.nivel.id})`);
+      // "El que no llegó" = nunca jugó un split con contrato (revisión de K1-A), no "nunca fichó".
+      const jugados = TIERS_DE_SPLIT.reduce((total, tier) => total + splitsJugadosEnTier(registro, tier), 0);
+      if ((jugados === 0) !== (puntaje.nivel.id === 'no_llego')) {
+        throw new Error(`${donde}: "El que no llegó" es exactamente no haber jugado nunca un split con contrato (jugó ${jugados}, nivel ${puntaje.nivel.id})`);
       }
+      if (puntaje.nivel.id !== nivelAManoK1(registro)) {
+        throw new Error(`${donde}: el nivel es ${puntaje.nivel.id} y los hechos del registro dicen ${nivelAManoK1(registro)}`);
+      }
+      // El contador del GOAT contra el observador de simulate (#1 al cierre de cada edad, leído del estado).
+      if (registro.cierresComoNumeroUno !== observaciones[i].temporadasNumero1) {
+        throw new Error(`${donde}: registro.cierresComoNumeroUno = ${registro.cierresComoNumeroUno}, simulate vio ${observaciones[i].temporadasNumero1} cierres como #1`);
+      }
+      cierresComoNumeroUno += registro.cierresComoNumeroUno;
+      nivelesVistos.add(puntaje.nivel.id);
     });
 
     // Recuento del bloque `puntaje` del lote.
@@ -11145,7 +11354,9 @@ checkLento('K1 puntaje en carreras reales de criterio, azar y malas: componentes
         throw new Error(`${bot}: puntaje.porNivel.${id} = ${bloque.porNivel[id]}, el recuento da ${esperado}`);
       }
     }
-    const medianaGeneral = medianaK0(totales);
+    // `pesoRol` se juzga entre los que llegaron a pro (revisión de K1-A).
+    const esPro = puntajes.map((p) => p.nivel.id !== 'no_llego');
+    const medianaPro = medianaK0(totales.filter((_, i) => esPro[i]));
     for (const rol of IDS_ROL) {
       const delRol = totales.filter((_, i) => resultados[i].player.role === rol);
       if (delRol.length === 0) {
@@ -11154,9 +11365,10 @@ checkLento('K1 puntaje en carreras reales de criterio, azar y malas: componentes
       if (bloque.porRol[rol]?.n !== delRol.length || bloque.porRol[rol].mediana !== medianaK0(delRol)) {
         throw new Error(`${bot}: puntaje.porRol.${rol} dice n ${bloque.porRol[rol]?.n} y mediana ${bloque.porRol[rol]?.mediana}, el recuento ${delRol.length} y ${medianaK0(delRol)}`);
       }
-      const desvio = redondeoK0((medianaK0(delRol) / medianaGeneral - 1) * 100, 1);
-      if (bloque.porRol[rol].desvioMedianaPct !== desvio) {
-        throw new Error(`${bot}: puntaje.porRol.${rol}.desvioMedianaPct = ${bloque.porRol[rol].desvioMedianaPct}, el recuento da ${desvio}`);
+      const prosDelRol = totales.filter((_, i) => esPro[i] && resultados[i].player.role === rol);
+      const desvio = prosDelRol.length > 0 ? redondeoK0((medianaK0(prosDelRol) / medianaPro - 1) * 100, 1) : 0;
+      if (bloque.porRol[rol].nPros !== prosDelRol.length || bloque.porRol[rol].desvioMedianaPct !== desvio) {
+        throw new Error(`${bot}: puntaje.porRol.${rol} dice ${bloque.porRol[rol].nPros} pros y desvío ${bloque.porRol[rol].desvioMedianaPct}%, el recuento ${prosDelRol.length} y ${desvio}%`);
       }
     }
     const regiones = new Set(resultados.map((r) => r.mundo.regionOrigen));
@@ -11171,62 +11383,166 @@ checkLento('K1 puntaje en carreras reales de criterio, azar y malas: componentes
   if (vacios.length > 0) {
     throw new Error(`check vacío: ningún puntaje real tiene puntos en ${vacios.join(', ')}`);
   }
+  if (nivelesVistos.size < 5 || cierresComoNumeroUno === 0) {
+    throw new Error(`check vacío: niveles vistos [${[...nivelesVistos]}], ${cierresComoNumeroUno} cierres como #1 en total`);
+  }
 });
 
-// D76: las carreras para el check del registro. Con el responder por defecto (`equilibrado`), 37 de 400 carreras de
-// 60 splits tienen un descenso en el lugar (medido en K1-A): 120 seeds alcanzan para ver varios.
-const SEEDS_D76_K1 = 120;
+// D76 contra el split REAL (revisión de K1-A). Un split se juega cuando corre su temporada; la prueba independiente
+// es el log de `rendimiento` "<org> terminó Nº de M en <liga>", que sale exactamente una vez por split jugado. Lo
+// jugado del registro (las `splitsPorTier` de cada fila, más el split del pase que espera su fila en
+// `flags.splitJugadoSinFila`) tiene que sumar exactamente 1 en (org actual, tier actual) cuando hubo temporada, y
+// nada cuando no la hubo. Y cada título nuevo lleva el `career.liga`/`career.tier` de ese split, y cada
+// internacional nuevo el `career.liga` (nada de lo que corre después de la temporada cambia la liga, el tier ni
+// la org). Las seeds se recorren desde la 1 hasta ver todos los casos que hacen que el check discrimine (un
+// descenso en el lugar con título en la liga de desarrollo, un split del pase, un internacional fuera de tu
+// región de origen); si no aparecen antes del tope, falla con lo que faltó, nunca pasa vacío.
+const SEEDS_D76_MINIMO_K1 = 120;
+const SEEDS_D76_TOPE_K1 = 400;
+const LOG_SPLIT_JUGADO_K1 = /terminó \d+º de \d+ en /;
 
-checkLento('K1 D76: splitsPorTier está completo en cada fila, suma fila.splits, solo crece, y los títulos e internacionales llevan su liga', () => {
+function jugadoPorOrgYTierK1(estado) {
+  const suma = new Map();
+  const sumar = (org, porTier) => {
+    for (const tier of TIERS_DE_SPLIT) {
+      const clave = `${org}|${tier}`;
+      suma.set(clave, (suma.get(clave) ?? 0) + porTier[tier]);
+    }
+  };
+  for (const fila of estado.career.registro.porOrg) {
+    sumar(fila.org, fila.splitsPorTier);
+  }
+  const sinFila = estado.flags.splitJugadoSinFila;
+  if (sinFila) {
+    sumar(sinFila.org, sinFila.splitsPorTier);
+  }
+  return suma;
+}
+
+checkLento('K1 D76: cada split jugado se cuenta una vez en la org y el tier donde se jugó, splitsPorTier solo crece, y los títulos e internacionales llevan la liga y el tier de ese split', () => {
   const ligaPorId = Object.fromEntries(LIGAS.map((liga) => [liga.id, liga]));
-  let filasConOtroTier = 0;
+  const vistos = { tituloEnDescenso: 0, pase: 0, jugadoEnOtroTierQueLaFila: 0, internacionalFueraDeOrigen: 0 };
   const titulosPorTier = { 1: 0, 2: 0, 3: 0 };
-  for (let seed = 1; seed <= SEEDS_D76_K1; seed += 1) {
+  let seeds = 0;
+  const completo = () => Object.values(vistos).every((n) => n > 0) && TIERS_DE_SPLIT.every((tier) => titulosPorTier[tier] > 0);
+  for (let seed = 1; seed <= SEEDS_D76_TOPE_K1 && (seed <= SEEDS_D76_MINIMO_K1 || !completo()); seed += 1) {
+    seeds = seed;
     const rng = mulberry32(seed);
     let estado = createInitialState(seed, rng);
-    let anterior = estado.career.registro;
+    const ligaDeOrigen = estado.mundo.ligas.find((liga) => liga.tier === 1 && liga.regionId === estado.mundo.regionIdOrigen)?.id;
     for (let split = 0; split < 60 && !estado.terminado; split += 1) {
-      estado = avanzarSplitAuto(estado, rng).state;
-      const registro = estado.career.registro;
+      const antes = estado;
+      const resultado = avanzarSplitAuto(estado, rng);
+      estado = resultado.state;
+      const donde = `seed ${seed}, split ${antes.player.splitCount}`;
+      const { career, flags } = estado;
+      const registro = career.registro;
+
+      // splitsPorTier completo y que solo crece (regla 14).
       registro.porOrg.forEach((fila, i) => {
         const claves = Object.keys(fila.splitsPorTier ?? {}).sort().join(',');
-        if (claves !== '1,2,3') {
-          throw new Error(`seed ${seed}, split ${split}: ${fila.org} trae splitsPorTier con claves [${claves}]`);
+        if (claves !== '1,2,3' || TIERS_DE_SPLIT.some((tier) => !Number.isInteger(fila.splitsPorTier[tier]) || fila.splitsPorTier[tier] < 0)) {
+          throw new Error(`${donde}: ${fila.org} trae splitsPorTier ${JSON.stringify(fila.splitsPorTier)}`);
         }
-        const suma = TIERS_DE_SPLIT.reduce((total, tier) => total + fila.splitsPorTier[tier], 0);
-        if (suma !== fila.splits || TIERS_DE_SPLIT.some((tier) => !Number.isInteger(fila.splitsPorTier[tier]) || fila.splitsPorTier[tier] < 0)) {
-          throw new Error(`seed ${seed}, split ${split}: ${fila.org} suma ${suma} en splitsPorTier y ${fila.splits} en splits`);
-        }
-        const previa = anterior.porOrg[i];
+        const previa = antes.career.registro.porOrg[i];
         if (previa && TIERS_DE_SPLIT.some((tier) => fila.splitsPorTier[tier] < previa.splitsPorTier[tier])) {
-          throw new Error(`seed ${seed}, split ${split}: splitsPorTier de ${fila.org} bajó (regla 14)`);
+          throw new Error(`${donde}: splitsPorTier de ${fila.org} bajó (regla 14)`);
         }
       });
-      anterior = registro;
+
+      // Exactamente un split jugado (o ninguno), en la org y el tier de ese split.
+      const jugados = resultado.logs.filter((log) => log.type === 'rendimiento' && LOG_SPLIT_JUGADO_K1.test(log.message ?? '')).length;
+      const previo = jugadoPorOrgYTierK1(antes);
+      const ahora = jugadoPorOrgYTierK1(estado);
+      const cambios = [...new Set([...previo.keys(), ...ahora.keys()])]
+        .map((clave) => [clave, (ahora.get(clave) ?? 0) - (previo.get(clave) ?? 0)])
+        .filter(([, delta]) => delta !== 0);
+      const esperado = jugados === 1 ? [[`${career.currentOrg}|${career.tier}`, 1]] : [];
+      if (jugados > 1 || JSON.stringify(cambios) !== JSON.stringify(esperado)) {
+        throw new Error(`${donde}: ${jugados} temporada(s) jugada(s) con ${career.currentOrg} en tier ${career.tier}, y lo jugado del registro cambió ${JSON.stringify(cambios)}`);
+      }
+      const abierta = registro.porOrg.find((fila) => fila.hastaSplit === null) ?? null;
+      if (flags.splitJugadoSinFila) {
+        vistos.pase += 1;
+        if (flags.splitJugadoSinFila.org !== career.currentOrg || abierta?.org === career.currentOrg) {
+          throw new Error(`${donde}: un split espera fila para ${flags.splitJugadoSinFila.org} jugando con ${career.currentOrg} (fila abierta: ${abierta?.org})`);
+        }
+      }
+      if (jugados === 1 && abierta?.org === career.currentOrg && abierta.tier !== career.tier) {
+        vistos.jugadoEnOtroTierQueLaFila += 1;
+      }
+
+      // Títulos e internacionales nuevos: la liga y el tier del split en que se ganaron.
+      for (const titulo of registro.titulos.slice(antes.career.registro.titulos.length)) {
+        if (titulo.liga !== career.liga || titulo.tier !== career.tier) {
+          throw new Error(`${donde}: título ${titulo.nombre} con liga ${titulo.liga} y tier ${titulo.tier}, jugando en ${career.liga} (tier ${career.tier})`);
+        }
+        if (titulo.tier === 3 ? titulo.liga !== null : ligaPorId[titulo.liga]?.tier !== titulo.tier) {
+          throw new Error(`${donde}: título ${titulo.nombre} con liga ${titulo.liga} y tier ${titulo.tier}`);
+        }
+        titulosPorTier[titulo.tier] += 1;
+        if (abierta && abierta.liga !== titulo.liga) {
+          vistos.tituloEnDescenso += 1;
+        }
+      }
+      for (const entrada of registro.internacionales.slice(antes.career.registro.internacionales.length)) {
+        if (entrada.liga !== career.liga || ligaPorId[entrada.liga]?.tier !== 1) {
+          throw new Error(`${donde}: internacional ${entrada.torneo} con liga ${entrada.liga}, jugando en ${career.liga}`);
+        }
+        if (entrada.liga !== ligaDeOrigen) {
+          vistos.internacionalFueraDeOrigen += 1;
+        }
+      }
     }
-    const registro = estado.career.registro;
-    filasConOtroTier += registro.porOrg.filter((fila) => TIERS_DE_SPLIT.some((tier) => tier !== fila.tier && fila.splitsPorTier[tier] > 0)).length;
-    for (const titulo of registro.titulos) {
-      if (!TIERS_DE_SPLIT.includes(titulo.tier)) {
-        throw new Error(`seed ${seed}: título ${titulo.nombre} ${titulo.anio} sin tier`);
-      }
-      const liga = titulo.liga === null ? null : ligaPorId[titulo.liga];
-      if (titulo.tier === 3 ? titulo.liga !== null : liga?.tier !== titulo.tier) {
-        throw new Error(`seed ${seed}: título ${titulo.nombre} ${titulo.anio} con liga ${titulo.liga} y tier ${titulo.tier}`);
-      }
-      titulosPorTier[titulo.tier] += 1;
-    }
-    for (const entrada of registro.internacionales) {
-      if (ligaPorId[entrada.liga]?.tier !== 1) {
-        throw new Error(`seed ${seed}: internacional ${entrada.torneo} ${entrada.anio} con liga ${entrada.liga}`);
-      }
+    if (estado.flags.splitJugadoSinFila) {
+      throw new Error(`seed ${seed}: la carrera terminó con un split jugado que nunca llegó a su fila (${JSON.stringify(estado.flags.splitJugadoSinFila)})`);
     }
   }
-  if (filasConOtroTier === 0) {
-    throw new Error(`check vacío: en ${SEEDS_D76_K1} carreras ninguna fila jugó en un tier distinto del de la firma (no se vio ningún descenso)`);
+  if (!completo()) {
+    throw new Error(`check vacío: en ${seeds} carreras (tope ${SEEDS_D76_TOPE_K1}) faltó ver alguno de los casos que hacen discriminar al check: `
+      + `${JSON.stringify(vistos)}, títulos por tier ${JSON.stringify(titulosPorTier)}`);
   }
-  if (TIERS_DE_SPLIT.some((tier) => titulosPorTier[tier] === 0)) {
-    throw new Error(`check vacío: títulos por tier ${JSON.stringify(titulosPorTier)}`);
+});
+
+// Revisión de K1-A ("Tu generación" se compara simétrico): el `puntaje` de cada rival es su mejor rank en el Top 20
+// de un CIERRE de temporada —igual que tu `picos.rankMundial`—, no el de cualquier split. Se recalcula acá desde
+// `mundo.topMundialPrevioAnual`, la foto que `topMundial.js` guarda en cada cierre, y se exige que en algún split
+// de mitad de año un rival haya estado mejor que en todos sus cierres (si no, el check no distinguiría nada).
+checkLento('K1 generación simétrica: el puntaje de cada rival es su mejor rank en el Top 20 de un cierre de temporada, igual que tu pico', () => {
+  let picosDeMitadDeAnio = 0;
+  let rivalesConRank = 0;
+  for (let seed = 1; seed <= 60; seed += 1) {
+    const rng = mulberry32(seed);
+    let estado = createInitialState(seed, rng);
+    const handles = new Set(estado.mundo.rivales.map((rival) => rival.handle));
+    const mejorAlCierre = new Map();
+    for (let split = 0; split < 60 && !estado.terminado; split += 1) {
+      const fotoAnterior = estado.mundo.topMundialPrevioAnual;
+      estado = avanzarSplitAuto(estado, rng).state;
+      const foto = estado.mundo.topMundialPrevioAnual;
+      if (foto !== fotoAnterior) {
+        (foto ?? []).forEach((entrada, i) => {
+          if (handles.has(entrada.handle) && (!mejorAlCierre.has(entrada.handle) || i + 1 < mejorAlCierre.get(entrada.handle))) {
+            mejorAlCierre.set(entrada.handle, i + 1);
+          }
+        });
+      } else {
+        (estado.mundo.topMundial ?? []).forEach((entrada, i) => {
+          if (handles.has(entrada.handle) && i + 1 < (mejorAlCierre.get(entrada.handle) ?? Infinity)) {
+            picosDeMitadDeAnio += 1;
+          }
+        });
+      }
+      for (const rival of estado.mundo.rivales) {
+        if (rival.puntaje !== (mejorAlCierre.get(rival.handle) ?? 0)) {
+          throw new Error(`seed ${seed}, split ${estado.player.splitCount}: ${rival.handle} tiene puntaje ${rival.puntaje} y su mejor rank al cierre es ${mejorAlCierre.get(rival.handle) ?? 0}`);
+        }
+      }
+    }
+    rivalesConRank += estado.mundo.rivales.filter((rival) => rival.puntaje > 0).length;
+  }
+  if (picosDeMitadDeAnio === 0 || rivalesConRank === 0) {
+    throw new Error(`check vacío: ${picosDeMitadDeAnio} picos de rivales a mitad de año y ${rivalesConRank} rivales con rank en 60 carreras`);
   }
 });
 
@@ -11285,6 +11601,10 @@ check('K1 D76 en el veredicto: legado cuenta splits por splitsPorTier y títulos
   }
 });
 
+// D75 en carreras reales: el "agente libre de tier 2" (saltó de tier 3 y nunca jugó en tier 2) no llegó a tier 2.
+// Se busca el caso en un rango de seeds de `malas` (en K1-A era la seed 18); si no aparece, falla con mensaje claro.
+const SEEDS_D75_TOPE_K1 = 120;
+
 check('K1 D75: "llegó a tier N" lee splitsPorTier (no fila.tier) y el embudo de simulate usa esa definición', () => {
   const registro = (filas) => ({ porOrg: filas });
   const fila = (tier, porTier) => ({ tier, splits: porTier[1] + porTier[2] + porTier[3], splitsPorTier: porTier });
@@ -11304,14 +11624,21 @@ check('K1 D75: "llegó a tier N" lee splitsPorTier (no fila.tier) y el embudo de
   if (splitsJugadosEnTier(casos[2][0], 2) !== 5 || splitsJugadosEnTier(casos[2][0], 1) !== 3) {
     throw new Error('splitsJugadosEnTier no lee splitsPorTier');
   }
-  // `malas`, seed 18: salta de tier 3 a tier 2 como agente libre y se retira (burnout) sin fichar nunca en tier 2.
-  // El observador viejo (el menor `career.tier` visto) decía tier 2; la definición D75 dice tier 3.
-  const { state, carrera } = correrCarreraSimulate(18, 60, ESTRATEGIAS_K0.malas);
-  if (state.career.registro.porOrg.at(-1)?.motivoDeSalida !== 'ascenso' || state.career.tier !== 2) {
-    throw new Error('la seed 18 de malas ya no es el caso del agente libre de tier 2: buscar otro (check vacío)');
+  // El observador viejo (el menor `career.tier` visto) decía tier 2 para el agente libre; D75 dice tier 3.
+  const encontradas = [];
+  for (let seed = 1; seed <= SEEDS_D75_TOPE_K1 && encontradas.length === 0; seed += 1) {
+    const { state, carrera } = correrCarreraSimulate(seed, 60, ESTRATEGIAS_K0.malas);
+    const r = state.career.registro;
+    if (r.porOrg.at(-1)?.motivoDeSalida === 'ascenso' && state.career.tier === 2 && splitsJugadosEnTier(r, 2) === 0
+      && splitsJugadosEnTier(r, 1) === 0) {
+      encontradas.push(seed);
+      if (carrera.tierMaximo !== tierMasAltoJugado(r) || carrera.tierMaximo === 2) {
+        throw new Error(`malas seed ${seed}: agente libre de tier 2 sin jugar ahí, carrera.tierMaximo = ${carrera.tierMaximo}, D75 dice ${tierMasAltoJugado(r)}`);
+      }
+    }
   }
-  if (carrera.tierMaximo !== 3 || carrera.tierMaximo !== tierMasAltoJugado(state.career.registro)) {
-    throw new Error(`seed 18 de malas: carrera.tierMaximo = ${carrera.tierMaximo}, D75 dice ${tierMasAltoJugado(state.career.registro)} (3)`);
+  if (encontradas.length === 0) {
+    throw new Error(`check vacío: en las seeds 1-${SEEDS_D75_TOPE_K1} de malas ninguna carrera terminó como agente libre de tier 2 sin jugar en tier 2`);
   }
 });
 
@@ -11499,7 +11826,7 @@ check('K1 leyendas: 16-24 inventadas, sin handles de pros reales ni generables p
   }
 });
 
-check('K1 leyenda comparada: la del perfil exacto de tu rol es esa misma, y el empate se rompe por id (no por el orden del archivo)', () => {
+check('K1 leyenda comparada: la del perfil exacto de tu rol es esa misma, el empate se rompe por id, el rank pesa, y el perfil cuenta solo títulos de primera', () => {
   for (const leyenda of LEYENDAS_K1) {
     const perfil = { anios: leyenda.anios, titulos: leyenda.titulos, internacionales: leyenda.internacionales, rankPico: leyenda.rankPico };
     const elegida = leyendaMasCercana(perfil, leyenda.rol);
@@ -11528,17 +11855,53 @@ check('K1 leyenda comparada: la del perfil exacto de tu rol es esa misma, y el e
   if (normal !== esperado || alReves !== esperado) {
     throw new Error(`el empate se rompe por id (${esperado}): dio ${normal}, y con el archivo dado vuelta ${alReves}`);
   }
+  // El eje del ranking pesa (mutante r17 de la revisión): con todo lo demás igual, alejarse del rank de una leyenda
+  // la aleja, y acercarse la acerca. Afuera del Top 20 (0) es el extremo de abajo.
+  const { tamano } = BALANCE.topMundial;
+  for (const leyenda of LEYENDAS_K1) {
+    const eje = (rank) => (rank > 0 ? tamano + 1 - rank : 0);
+    const distancias = [0, tamano, Math.ceil(tamano / 2), 5, 2, 1]
+      .map((rank) => ({ lejania: Math.abs(eje(rank) - eje(leyenda.rankPico)), d: distanciaDeLeyenda({ ...leyenda, rankPico: rank }, leyenda.rol, leyenda) }))
+      .sort((a, b) => a.lejania - b.lejania);
+    for (let i = 1; i < distancias.length; i += 1) {
+      const [a, b] = [distancias[i - 1], distancias[i]];
+      if (b.lejania > a.lejania && !(b.d > a.d)) {
+        throw new Error(`${leyenda.handle}: más lejos en el ranking (${b.lejania} contra ${a.lejania} puestos de eje) no aleja la leyenda (${b.d} contra ${a.d})`);
+      }
+    }
+  }
+  // El perfil cuenta solo títulos de primera, igual que el `titulos` de las leyendas.
+  const base = estadosDeReferenciaK1().find((estado) => estado.career.registro.porOrg.length > 0);
+  const titulosDelPerfil = (mutar) => {
+    const copia = structuredClone(base);
+    mutar(copia.career.registro.titulos);
+    return puntajeDeCarrera(copia).perfil.titulos;
+  };
+  const sinCambios = titulosDelPerfil(() => {});
+  if (titulosDelPerfil((t) => t.push({ nombre: 'LCK_CL', anio: 2030, org: 'X', liga: 'LCK_CL', tier: 2 })) !== sinCambios
+    || titulosDelPerfil((t) => t.push({ nombre: 'Copa', anio: 2030, org: 'X', liga: null, tier: 3 })) !== sinCambios
+    || titulosDelPerfil((t) => t.push({ nombre: 'LCK', anio: 2030, org: 'X', liga: 'LCK', tier: 1 })) !== sinCambios + 1) {
+    throw new Error('perfil.titulos tiene que contar solo los títulos de tier 1');
+  }
 });
 
-check('K1 versión: la huella de 40 seeds × 30 splits coincide con HUELLA_JUEGO de src/data/version.js', () => {
+check('K1 versión: la huella del juego (40 seeds × 60 splits, con puntaje, nivel y leyenda) coincide con HUELLA_JUEGO de src/data/version.js', () => {
   if (typeof VERSION_JUEGO !== 'string' || VERSION_JUEGO.trim() === '') {
     throw new Error(`VERSION_JUEGO inválida: ${JSON.stringify(VERSION_JUEGO)}`);
   }
-  const { hash } = calcularHuella();
+  const { hash, lineas } = calcularHuellaJuego();
+  if (lineas.length !== 40 || lineas.some((linea) => linea.split(':').length !== 7)) {
+    throw new Error(`la huella del juego tiene que tener 40 líneas seed:fin:splitCount:elo:total:nivel:leyenda (tiene ${lineas.length})`);
+  }
+  if (Math.max(...lineas.map((linea) => Number(linea.split(':')[2]))) <= 30) {
+    throw new Error('ninguna seed pasó de 30 splits: la huella del juego no ve la segunda mitad de la carrera');
+  }
   if (hash !== HUELLA_JUEGO) {
-    throw new Error(`la huella del motor cambió: actual ${hash}, registrada ${HUELLA_JUEGO} para la versión ${VERSION_JUEGO}. `
-      + 'Si el corrimiento es deliberado, subí VERSION_JUEGO y actualizá el hash en src/data/version.js; si no, '
-      + 'algo movió el stream del rng (trampa T1): comparalo con `node src/dev/huella.js --contra=<árbol anterior>`');
+    throw new Error(`la huella del juego cambió: actual ${hash}, registrada ${HUELLA_JUEGO} para la versión ${VERSION_JUEGO}. `
+      + 'Cubre las carreras enteras (60 splits) y su puntaje: si el cambio es deliberado (un corrimiento del rng, '
+      + 'balance que mueve las carreras, o BALANCE.puntaje/leyendas que mueven el número, el nivel o la leyenda), '
+      + 'subí VERSION_JUEGO y registrá el hash nuevo en src/data/version.js en el mismo commit; si no, algo cambió '
+      + 'sin querer (trampa T1: comparalo con `node src/dev/huella.js --contra=<árbol anterior>` y con la huella del juego del árbol anterior)');
   }
 });
 
@@ -11559,48 +11922,100 @@ check('K1 dificultad: toda liga la tiene (número > 0) y cada tier 2 hereda la d
   }
 });
 
-check('K1 niveles y cuantiles: cortes crecientes y con nombre, tabla de cuantiles creciente, nivel y percentil monótonos y con bordes exactos', () => {
-  const { niveles, cuantiles } = BALANCE.puntaje;
-  const idsConCorte = NIVELES_K1.filter((nivel) => nivel.id !== 'no_llego').map((nivel) => nivel.id);
-  if (JSON.stringify(niveles.map((n) => n.id)) !== JSON.stringify(idsConCorte)) {
-    throw new Error(`BALANCE.puntaje.niveles [${niveles.map((n) => n.id)}] no coincide con los niveles con nombre [${idsConCorte}]`);
+// Los hechos de una carrera vacía, y los mínimos que cumplen un requisito (cada clave de requisito es un hecho,
+// salvo `rankPicoHasta`, que se cumple con un pico de rank igual o mejor).
+const HECHOS_VACIOS_K1 = { splitsJugados: 0, splitsTier1: 0, titulosTier1: 0, cierresEnTop20: 0, rankPico: 0, cierresNumeroUno: 0 };
+function hechosQueCumplenK1(requisito) {
+  const hechos = { ...HECHOS_VACIOS_K1 };
+  for (const [clave, n] of Object.entries(requisito)) {
+    hechos[clave === 'rankPicoHasta' ? 'rankPico' : clave] = n;
   }
-  if (niveles[0].desde !== 0 || niveles.some((n, i) => i > 0 && !(n.desde > niveles[i - 1].desde))) {
-    throw new Error(`los cortes tienen que arrancar en 0 y crecer estrictamente: ${niveles.map((n) => n.desde)}`);
+  return hechos;
+}
+
+check('K1 niveles por hechos: en orden y con requisitos válidos, cada nivel se gana justo con su requisito, gana el más alto que se cumple, el siguiente dice el hecho que faltó, y los cuantiles son crecientes', () => {
+  const { niveles, cuantiles } = BALANCE.puntaje;
+  if (JSON.stringify(niveles.map((n) => n.id)) !== JSON.stringify(NIVELES_K1.map((n) => n.id))) {
+    throw new Error(`BALANCE.puntaje.niveles [${niveles.map((n) => n.id)}] no coincide con los niveles con nombre [${NIVELES_K1.map((n) => n.id)}]`);
   }
   if (NIVELES_K1.some((nivel) => typeof nivel.nombre !== 'string' || nivel.nombre.length === 0)) {
     throw new Error('un nivel no tiene nombre');
   }
+  if (Object.keys(niveles[0].requisito).length !== 0) {
+    throw new Error(`"${niveles[0].id}" es el piso: no puede pedir nada (pide ${JSON.stringify(niveles[0].requisito)})`);
+  }
+  for (const nivel of niveles.slice(1)) {
+    const claves = Object.keys(nivel.requisito);
+    if (claves.length === 0 || claves.some((clave) => !HECHOS_DE_REQUISITO.includes(clave) || !Number.isInteger(nivel.requisito[clave]) || nivel.requisito[clave] < 1)) {
+      throw new Error(`${nivel.id}: requisito ${JSON.stringify(nivel.requisito)} (hechos válidos: ${HECHOS_DE_REQUISITO.join(', ')}, mínimos enteros >= 1)`);
+    }
+  }
+  // Bordes: los hechos mínimos de cada nivel dan ese nivel; un escalón menos en cualquiera de sus requisitos, uno
+  // más bajo. El siguiente nombra lo que faltó, en palabras y sin puntos.
+  niveles.forEach((nivel, i) => {
+    const justo = hechosQueCumplenK1(nivel.requisito);
+    const dado = nivelDeCarrera(justo);
+    if (dado.id !== nivel.id) {
+      throw new Error(`con los hechos justos de ${nivel.id} (${JSON.stringify(justo)}) el nivel es ${dado.id}`);
+    }
+    for (const [clave, n] of Object.entries(nivel.requisito)) {
+      const peores = clave === 'rankPicoHasta' ? [{ ...justo, rankPico: n + 1 }, { ...justo, rankPico: 0 }] : [{ ...justo, [clave]: n - 1 }];
+      for (const peor of peores) {
+        if (INDICE_NIVEL_K1[nivelDeCarrera(peor).id] >= i) {
+          throw new Error(`a ${nivel.id} le falta ${clave} (${JSON.stringify(peor)}) y el nivel sigue siendo ${nivelDeCarrera(peor).id}`);
+        }
+      }
+    }
+    const siguiente = niveles[i + 1];
+    if (!siguiente) {
+      if (dado.siguiente !== null) {
+        throw new Error(`${nivel.id} es el techo: no tiene siguiente`);
+      }
+      return;
+    }
+    if (dado.siguiente?.id !== siguiente.id || dado.siguiente.nombre !== NIVELES_K1[i + 1].nombre) {
+      throw new Error(`el siguiente de ${nivel.id} tiene que ser ${siguiente.id}, dio ${JSON.stringify(dado.siguiente)}`);
+    }
+    const texto = dado.siguiente.requisito;
+    if (typeof texto !== 'string' || !/^Te falt(ó|aron) .+\.$/.test(texto) || /\bpts\b|puntos/.test(texto)) {
+      throw new Error(`lo que faltó para ${siguiente.id} tiene que decirse como hecho ("Te faltó …."), sin puntos: "${texto}"`);
+    }
+  });
+  // Gana el más alto que se cumple: no son escalones anidados.
+  const soloTop20 = nivelDeCarrera({ ...HECHOS_VACIOS_K1, cierresEnTop20: 1 }).id;
+  if (soloTop20 !== 'figura') {
+    throw new Error(`un cierre en el Top 20 sin nada más tiene que ser "figura" (gana el más alto que se cumple), dio ${soloTop20}`);
+  }
+  // Más de cualquier hecho nunca baja el nivel.
+  for (const base of niveles.map((nivel) => hechosQueCumplenK1(nivel.requisito))) {
+    for (const clave of Object.keys(HECHOS_VACIOS_K1)) {
+      const valores = clave === 'rankPico'
+        ? [0, BALANCE.topMundial.tamano, 10, 5, 3, 2, 1]
+        : Array.from({ length: 13 }, (_, v) => v);
+      let anterior = -1;
+      for (const valor of valores) {
+        const indice = INDICE_NIVEL_K1[nivelDeCarrera({ ...base, [clave]: valor }).id];
+        if (indice < anterior) {
+          throw new Error(`con más ${clave} (${valor}) el nivel bajó desde ${JSON.stringify(base)}`);
+        }
+        anterior = indice;
+      }
+    }
+  }
+  // Cuantiles: arrancan en el percentil 0, crecen, y el percentil es monótono e interpola.
   if (cuantiles[0][0] !== 0 || cuantiles.some(([p, x], i) => i > 0 && !(p > cuantiles[i - 1][0] && x >= cuantiles[i - 1][1]))) {
     throw new Error(`la tabla de cuantiles tiene que arrancar en el percentil 0 y crecer: ${JSON.stringify(cuantiles)}`);
   }
-  // Bordes: el corte exacto ya es ese nivel; un punto menos, el anterior. Sin fichar, siempre "El que no llegó".
-  niveles.forEach((corte, i) => {
-    if (nivelDePuntaje(corte.desde, true).id !== corte.id) {
-      throw new Error(`con ${corte.desde} puntos el nivel tiene que ser ${corte.id}, dio ${nivelDePuntaje(corte.desde, true).id}`);
-    }
-    if (i > 0 && nivelDePuntaje(corte.desde - 1, true).id !== niveles[i - 1].id) {
-      throw new Error(`con ${corte.desde - 1} puntos el nivel tiene que ser ${niveles[i - 1].id}`);
-    }
-    if (nivelDePuntaje(corte.desde, false).id !== 'no_llego') {
-      throw new Error('sin fichar, el nivel tiene que ser "El que no llegó" por definición');
-    }
-  });
-  const techo = niveles[niveles.length - 1].desde + cuantiles[cuantiles.length - 1][1];
-  let nivelAnterior = 0;
+  const techo = 2 * cuantiles[cuantiles.length - 1][1];
   let percentilAnterior = -1;
   for (let total = 0; total <= techo; total += 1) {
-    const indice = niveles.findIndex((n) => n.id === nivelDePuntaje(total, true).id);
     const percentilActual = percentilDePuntaje(total);
-    if (indice < nivelAnterior || percentilActual < percentilAnterior || !Number.isInteger(percentilActual)
+    if (percentilActual < percentilAnterior || !Number.isInteger(percentilActual)
       || percentilActual < cuantiles[0][0] || percentilActual > cuantiles[cuantiles.length - 1][0]) {
-      throw new Error(`con ${total} puntos: nivel ${nivelDePuntaje(total, true).id}, percentil ${percentilActual} (no monótono o fuera de rango)`);
+      throw new Error(`con ${total} puntos el percentil es ${percentilActual} (no monótono o fuera de rango)`);
     }
-    nivelAnterior = indice;
     percentilAnterior = percentilActual;
   }
-  // "Mejor que el X%": en el puntaje exacto de un par de la tabla cuenta solo lo que quedó por debajo, entre dos
-  // pares interpola, y fuera de la tabla devuelve sus extremos.
   for (let i = 1; i < cuantiles.length; i += 1) {
     const [pPrevio, xPrevio] = cuantiles[i - 1];
     const [p, x] = cuantiles[i];

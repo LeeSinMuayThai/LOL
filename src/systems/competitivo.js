@@ -171,8 +171,9 @@ function resolverDescenso(state, rng) {
 
   // K1 (D76): el descenso es "en el lugar" — la fila del registro NO se cierra
   // (el contrato viaja con la org), así que `fila.tier`/`fila.liga` siguen
-  // siendo los de la firma. Desde el split siguiente `systems/roster.js` cuenta
-  // cada split en `fila.splitsPorTier[2]`, y los títulos ganados acá llevan su
+  // siendo los de la firma. Desde ESTE split (el descenso corre en la
+  // pretemporada, antes de jugar) `systems/temporada.js` cuenta cada split
+  // jugado en `fila.splitsPorTier[2]`, y los títulos ganados acá llevan su
   // `liga`/`tier` reales: eso es lo que leen el puntaje y el veredicto.
   return {
     state: {

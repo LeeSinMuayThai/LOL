@@ -61,8 +61,9 @@ const MAPAS_PARA_GANAR_BO5 = 3;
 
 // K1 (bloque `puntaje`): los percentiles de la distribución del puntaje que se reportan por estrategia, rol y
 // región; los de la tabla fina con la que se escribe `BALANCE.puntaje.cuantiles`; y la tolerancia de la regla de
-// `pesoRol` (PLAN.md "K1 — decisiones de spec": compensar un rol solo si su mediana se aparta más de ±10% de la
-// mediana general, con `criterio`).
+// `pesoRol` (PLAN.md "K1 — decisiones de spec", corregida en "lo que cambió la revisión de K1-A": compensar un
+// rol solo si su mediana ENTRE LOS QUE LLEGARON A PRO se aparta más de ±10% de la de todos los pros, con
+// `criterio` y ≥ 800 seeds; la distribución completa es bimodal, con los no-pros cerca de 0).
 export const PERCENTILES_PUNTAJE = [0.1, 0.25, 0.5, 0.75, 0.9, 0.99];
 export const PERCENTILES_CUANTILES = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 97, 99];
 export const UMBRAL_DESVIO_ROL_PCT = 10;
@@ -1130,10 +1131,11 @@ function bloquePorRegion(resultados, carreras, observaciones) {
 }
 
 // K1 (PLAN.md §K1, "decisiones de spec") — el puntaje de carrera (`core/puntaje.js`) del lote: su distribución en
-// total, por rol y por región de origen, el % de carreras en cada nivel con nombre, lo que aporta cada componente,
-// y los cuantiles finos con los que se arma `BALANCE.puntaje.cuantiles`. Se mide sobre el estado final de cada
-// carrera (terminada o no: `puntajeDeCarrera` es puro y no necesita la tarjeta). Con `criterio`, 400 seeds y 60
-// splits fija los valores provisorios de `BALANCE.puntaje` (`pesoRol`, `niveles`, `cuantiles`); K5c los re-mide.
+// total, por rol y por región de origen, el % de carreras en cada nivel con nombre (los niveles se ganan con
+// hechos, no con puntos), lo que aporta cada componente, y los cuantiles finos con los que se arma
+// `BALANCE.puntaje.cuantiles`. Se mide sobre el estado final de cada carrera (terminada o no: `puntajeDeCarrera`
+// es puro y no necesita la tarjeta). Con `criterio`, 400 seeds y 60 splits fija los `cuantiles` provisorios;
+// K5c los re-mide. "Llegó a pro" = no es "El que no llegó" (jugó al menos un split con contrato).
 function distribucionDePuntaje(totales) {
   const fila = { n: totales.length };
   for (const p of PERCENTILES_PUNTAJE) {
@@ -1158,17 +1160,23 @@ export function bloquePuntaje(resultados) {
   const totales = puntajes.map((p) => p.total);
   const total = totales.length;
   const medianaGeneral = mediana(totales);
+  const esPro = puntajes.map((p) => p.nivel.id !== 'no_llego');
+  const totalesPro = totales.filter((_, i) => esPro[i]);
+  const medianaPro = totalesPro.length > 0 ? mediana(totalesPro) : 0;
 
-  // Por rol, con el desvío de su mediana contra la general: la regla de `BALANCE.puntaje.pesoRol` es compensar
-  // solo si un rol se aparta más de ±UMBRAL_DESVIO_ROL_PCT.
+  // Por rol, con el desvío de su mediana ENTRE LOS PROS contra la de todos los pros: la regla de
+  // `BALANCE.puntaje.pesoRol` es compensar solo si un rol se aparta más de ±UMBRAL_DESVIO_ROL_PCT.
   const porRol = {};
   for (const [rol, valores] of Object.entries(porGrupoDePuntaje(resultados, totales, (st) => st.player.role))) {
-    const medianaRol = mediana(valores);
+    const prosDelRol = totales.filter((_, i) => esPro[i] && resultados[i].player.role === rol);
+    const medianaRolPro = prosDelRol.length > 0 ? mediana(prosDelRol) : 0;
     porRol[rol] = {
       ...distribucionDePuntaje(valores),
-      mediana: medianaRol,
-      desvioMedianaPct: medianaGeneral > 0 ? redondear((medianaRol / medianaGeneral - 1) * 100, 1) : 0,
-      fueraDeTolerancia: medianaGeneral > 0 && Math.abs(medianaRol / medianaGeneral - 1) * 100 > UMBRAL_DESVIO_ROL_PCT
+      mediana: mediana(valores),
+      nPros: prosDelRol.length,
+      medianaPros: medianaRolPro,
+      desvioMedianaPct: medianaPro > 0 && prosDelRol.length > 0 ? redondear((medianaRolPro / medianaPro - 1) * 100, 1) : 0,
+      fueraDeTolerancia: medianaPro > 0 && prosDelRol.length > 0 && Math.abs(medianaRolPro / medianaPro - 1) * 100 > UMBRAL_DESVIO_ROL_PCT
     };
   }
 
@@ -1188,7 +1196,7 @@ export function bloquePuntaje(resultados) {
   }
 
   return {
-    total: { ...distribucionDePuntaje(totales), mediana: medianaGeneral },
+    total: { ...distribucionDePuntaje(totales), mediana: medianaGeneral, nPros: totalesPro.length, medianaPros: medianaPro },
     porRol,
     porRegion,
     porNivel,

@@ -12,6 +12,8 @@ import { splitsJugadosEnTier } from './registro.js';
 // testear sin mover el balance.
 
 const REGION_DE_LIGA = Object.fromEntries(LIGAS.map((liga) => [liga.id, liga.region]));
+// El nombre que ve el jugador (K1: ningún texto muestra el id crudo de una liga).
+const NOMBRE_DE_LIGA = Object.fromEntries(LIGAS.map((liga) => [liga.id, liga.nombre]));
 
 // K1 (D76): `fila.tier` es el tier AL FIRMAR, y un descenso en el lugar no
 // cierra la fila. Por eso lo jugado y lo ganado por tier se lee de lo que se
@@ -60,10 +62,11 @@ function ligaInsignia(registro) {
   }
   const ordenadas = Object.entries(porLiga).sort((a, b) => b[1] - a[1]);
   if (ordenadas.length === 0) {
-    return { liga: null, unaSolaRegion: false };
+    return { liga: null, nombre: null, unaSolaRegion: false };
   }
   const regiones = new Set(ligasTier1.map((id) => REGION_DE_LIGA[id]).filter(Boolean));
-  return { liga: ordenadas[0][0], unaSolaRegion: regiones.size === 1 };
+  const liga = ordenadas[0][0];
+  return { liga, nombre: NOMBRE_DE_LIGA[liga] ?? liga, unaSolaRegion: regiones.size === 1 };
 }
 
 // La plantilla de arquetipo. Primer match gana. `esExito` decide el marco de la
@@ -109,7 +112,7 @@ function elegirArquetipo(datos) {
     return { frase: `El bicampeón: dos internacionales con ${internacional.org}`, esExito: true };
   }
   if (intBuenos === 1 && titulosT1 >= 3) {
-    return { frase: `Leyenda de ${insignia.liga ?? 'primera'}: un internacional y ${titulosT1} títulos`, esExito: true };
+    return { frase: `Leyenda de ${insignia.nombre ?? 'primera'}: un internacional y ${titulosT1} títulos`, esExito: true };
   }
   if (intBuenos === 1) {
     return { frase: `El mundialista de ${internacional.org}`, esExito: true };
@@ -118,10 +121,10 @@ function elegirArquetipo(datos) {
     return { frase: `El que llegó al internacional con ${internacional.org}`, esExito: true };
   }
   if (titulosT1 >= 3 && insignia.liga && insignia.unaSolaRegion) {
-    return { frase: `Leyenda de ${insignia.liga}: ${titulosT1} títulos, nunca un internacional`, esExito: true };
+    return { frase: `Leyenda de ${insignia.nombre}: ${titulosT1} títulos, nunca un internacional`, esExito: true };
   }
   if (titulosT1 >= 1) {
-    return { frase: `Campeón de ${insignia.liga ?? 'primera'}`, esExito: true };
+    return { frase: `Campeón de ${insignia.nombre ?? 'primera'}`, esExito: true };
   }
   // Fase 9Wb: tocaste el Top 20 del mundo sin levantar un trofeo — igual
   // estuviste entre los 20 mejores del planeta.

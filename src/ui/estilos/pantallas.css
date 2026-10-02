@@ -1282,8 +1282,8 @@ details.tarjeta-internacionales > summary {
 .tarjeta-numero-nivel { font-size: var(--fs-5); color: var(--nivel-color, var(--ink)); }
 .tarjeta-numero-ref { margin-top: var(--s-1); font-size: var(--fs-2); color: var(--ink-dim); }
 .tarjeta-numero-historial { margin-top: var(--s-2); font-size: var(--fs-1); color: var(--gold); }
-.tarjeta-escalon { max-width: 420px; margin: var(--s-3) auto 0; }
-.tarjeta-escalon-extremos { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 var(--s-2); margin-top: var(--s-1); font-size: var(--fs-0); color: var(--ink-mute); }
+.tarjeta-siguiente { max-width: 460px; margin: var(--s-3) auto 0; padding: var(--s-2) var(--s-3); border: 1px solid var(--line-faint); font-size: var(--fs-1); line-height: var(--lh-snug); color: var(--ink-dim); }
+.tarjeta-siguiente-k { display: block; margin-bottom: var(--s-1); font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: var(--track-label); color: var(--ink-mute); }
 
 .tarjeta-desglose,
 .tarjeta-leyenda { margin-top: var(--s-5); text-align: left; }
