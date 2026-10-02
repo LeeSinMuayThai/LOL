@@ -5732,6 +5732,31 @@ aguantaban, y que siete de sus mutantes sobrevivían a la suite. Decisiones:
   a 2025, una academia de "tres splits" en una carrera de 3 años). Se agregan checks para los mutantes que
   sobrevivían: empates en la generación, eje de rank de la leyenda, logros de tier 2 en la monotonía.
 
+#### K1 — cierre de la segunda revisión *(supervisor, 2026-10-02)*
+
+Dos revisores independientes, uno del motor (mutantes) y otro de la pantalla (navegador real, 375 px), dieron
+"OK con observaciones". Todo lo que se arregla antes del merge:
+
+- **Validación simétrica.** El `puntaje` de cada rival se valida igual que tu pico: un entero entre 0 y
+  `BALANCE.topMundial.tamano`. Un NaN en un rival hoy cuenta como "no te superó".
+- **Contadores enteros.** Los contadores enteros (`splitsEnTopMundial`, `cierresComoNumeroUno`) piden
+  `Number.isInteger`.
+- **Mensajes de error.** Los mensajes imprimen el valor con `String()`, para que un NaN no aparezca como "null".
+- **Resultados de internacionales.** Un `resultado` de internacional fuera del conjunto conocido falla en vez de
+  puntuar como participación.
+- **Generación en una carrera sin fichar.** "Quedaste 2º de 6 en tu generación" no se dice como logro cuando el
+  componente vale 0: el texto nombra a quien llegó más lejos y dice que vos no entraste al Top 20.
+- **Potencial sin contrato.** El detalle del potencial no dice "cada cosa que lograste pesa un 7% más" cuando nunca
+  jugaste un split con contrato.
+- **Año de fin en la historia.** La fila de la historia de la ficha no deja un año de fin vacío (`2030–·`): el último
+  equipo cierra en el año del retiro.
+- **Techo de `dist/`.** Medido en 1799,81 KB contra un techo de 1800 KB, el mismo margen que se cerró en silencio
+  dos veces. Se re-mide después de estos arreglos y se sube a **1900 KB** en su propio commit (regla 2), con el
+  número medido en el comentario de `build.js`. El margen es para las pantallas que faltan en FASE K: la previa de
+  K2d y las de K4/K5.
+- **Huella en `huella.js`.** `calcularHuellaJuego` vive en `huella.js` junto a `calcularHuella`, que no se tocó: su
+  hash de 30 splits es el mismo en b0b544b y en 360f237 (2128736563). Se acepta así.
+
 ### K2 — El nivel manda *(bloque A — estructura; los valores se fijan en K3c)*
 
 - **Compañeros en vivo**: `core/fuerza.js` lee el nivel actual de `state.mundo.planteles` (la mitad
