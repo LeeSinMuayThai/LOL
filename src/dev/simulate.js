@@ -4,6 +4,8 @@ import { createInitialState } from '../core/state.js';
 import { avanzarSplitAuto } from '../core/pipeline.js';
 import { calcularContexto } from '../core/contexto.js';
 import { nivelDelJugador } from '../core/ficha.js';
+import { tierMasAltoJugado } from '../core/registro.js';
+import { puntajeDeCarrera, NIVELES } from '../core/puntaje.js';
 import { candidatos } from '../systems/events.js';
 import { esCierreDeEdad } from '../systems/edadCierre.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
@@ -56,6 +58,14 @@ export const DELTAS_FAVORITO_BO5 = [0, 2, 4, 6, 8, 10, 12, 15];
 
 // Mejor de 5: gana el primero en llevarse este número de mapas.
 const MAPAS_PARA_GANAR_BO5 = 3;
+
+// K1 (bloque `puntaje`): los percentiles de la distribución del puntaje que se reportan por estrategia, rol y
+// región; los de la tabla fina con la que se escribe `BALANCE.puntaje.cuantiles`; y la tolerancia de la regla de
+// `pesoRol` (PLAN.md "K1 — decisiones de spec": compensar un rol solo si su mediana se aparta más de ±10% de la
+// mediana general, con `criterio`).
+export const PERCENTILES_PUNTAJE = [0.1, 0.25, 0.5, 0.75, 0.9, 0.99];
+export const PERCENTILES_CUANTILES = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 97, 99];
+export const UMBRAL_DESVIO_ROL_PCT = 10;
 
 // Cero numérico del determinante de la regresión de 2 regresores (`regresionLineal2Regresores`): por debajo de
 // esto el nivel del jugador y el de sus compañeros son colineales y el R² conjunto no está definido (se
@@ -282,12 +292,13 @@ export function correrCarrera(seed, splits, responder) {
       rachaSinEquipo += 1;
       carrera.maxRachaSinEquipo = Math.max(carrera.maxRachaSinEquipo, rachaSinEquipo);
     }
-
-    // El tier es 1 arriba y 3 abajo: el máximo alcanzado es el MENOR número.
-    if (state.career.tier !== null && (carrera.tierMaximo === null || state.career.tier < carrera.tierMaximo)) {
-      carrera.tierMaximo = state.career.tier;
-    }
   }
+
+  // K1 (D75): "llegó a tier N" = jugó al menos un split con contrato en tier N (`splitsPorTier[N] > 0` en alguna
+  // fila del registro), la misma definición que usan el puntaje y el veredicto. Antes se tomaba el menor
+  // `career.tier` visto después de cada split pro, y eso contaba el "agente libre de tier 2" que sigue a un salto
+  // desde tier 3 sin haber fichado nunca en tier 2. El tier es 1 arriba y 3 abajo: el máximo es el MENOR número.
+  carrera.tierMaximo = tierMasAltoJugado(state.career.registro);
 
   // Varada: profesional, sin org y sin tier. Ningún sistema la puede rescatar
   // —`competitivo` se guarda detrás del tier, `mercado` detrás de la liga—,
@@ -739,8 +750,8 @@ function bloqueEmbudo(resultados, carreras, observaciones, { conNotas = false } 
 
   const noLlegaAPro = indices.filter((i) => resultados[i].splitFichaje === null).length;
   const llegaAPro = indices.filter((i) => resultados[i].splitFichaje !== null).length;
-  // Llegó a pro y nunca a tier 1 (`tierMaximo >= 2`). Los pros que no registraron NINGÚN tier en sus
-  // splits pro (`tierMaximo === null`) no son "estancados en T2/T3": se cuentan aparte.
+  // Llegó a pro y nunca a tier 1 (`tierMaximo >= 2`). Los pros que no jugaron NINGÚN split con contrato
+  // (`tierMaximo === null`, D75) no son "estancados en T2/T3": se cuentan aparte.
   const estancadoT2T3 = indices.filter((i) => resultados[i].splitFichaje !== null && tierMaximo(i) !== null && tierMaximo(i) >= 2).length;
   const proSinTierNunca = indices.filter((i) => resultados[i].splitFichaje !== null && tierMaximo(i) === null).length;
   const llegaATier1 = indices.filter((i) => tierMaximo(i) === 1).length;
@@ -1118,6 +1129,76 @@ function bloquePorRegion(resultados, carreras, observaciones) {
   return porRegion;
 }
 
+// K1 (PLAN.md §K1, "decisiones de spec") — el puntaje de carrera (`core/puntaje.js`) del lote: su distribución en
+// total, por rol y por región de origen, el % de carreras en cada nivel con nombre, lo que aporta cada componente,
+// y los cuantiles finos con los que se arma `BALANCE.puntaje.cuantiles`. Se mide sobre el estado final de cada
+// carrera (terminada o no: `puntajeDeCarrera` es puro y no necesita la tarjeta). Con `criterio`, 400 seeds y 60
+// splits fija los valores provisorios de `BALANCE.puntaje` (`pesoRol`, `niveles`, `cuantiles`); K5c los re-mide.
+function distribucionDePuntaje(totales) {
+  const fila = { n: totales.length };
+  for (const p of PERCENTILES_PUNTAJE) {
+    fila[`p${Math.round(p * 100)}`] = percentil(totales, p);
+  }
+  fila.promedio = redondear(promedio(totales), 1);
+  return fila;
+}
+
+function porGrupoDePuntaje(resultados, totales, grupoDe) {
+  const grupos = {};
+  resultados.forEach((estado, i) => {
+    const grupo = grupoDe(estado);
+    grupos[grupo] = grupos[grupo] ?? [];
+    grupos[grupo].push(totales[i]);
+  });
+  return grupos;
+}
+
+export function bloquePuntaje(resultados) {
+  const puntajes = resultados.map((estado) => puntajeDeCarrera(estado));
+  const totales = puntajes.map((p) => p.total);
+  const total = totales.length;
+  const medianaGeneral = mediana(totales);
+
+  // Por rol, con el desvío de su mediana contra la general: la regla de `BALANCE.puntaje.pesoRol` es compensar
+  // solo si un rol se aparta más de ±UMBRAL_DESVIO_ROL_PCT.
+  const porRol = {};
+  for (const [rol, valores] of Object.entries(porGrupoDePuntaje(resultados, totales, (st) => st.player.role))) {
+    const medianaRol = mediana(valores);
+    porRol[rol] = {
+      ...distribucionDePuntaje(valores),
+      mediana: medianaRol,
+      desvioMedianaPct: medianaGeneral > 0 ? redondear((medianaRol / medianaGeneral - 1) * 100, 1) : 0,
+      fueraDeTolerancia: medianaGeneral > 0 && Math.abs(medianaRol / medianaGeneral - 1) * 100 > UMBRAL_DESVIO_ROL_PCT
+    };
+  }
+
+  const porRegion = {};
+  for (const [region, valores] of Object.entries(porGrupoDePuntaje(resultados, totales, (st) => st.mundo.regionOrigen ?? 'Desconocida'))) {
+    porRegion[region] = distribucionDePuntaje(valores);
+  }
+
+  const porNivel = {};
+  for (const { id } of NIVELES) {
+    porNivel[id] = pct(puntajes.filter((p) => p.nivel.id === id).length, total);
+  }
+
+  const promedioPorComponente = {};
+  for (const { id } of puntajes[0]?.componentes ?? []) {
+    promedioPorComponente[id] = redondear(promedio(puntajes.map((p) => p.componentes.find((c) => c.id === id).puntos)), 1);
+  }
+
+  return {
+    total: { ...distribucionDePuntaje(totales), mediana: medianaGeneral },
+    porRol,
+    porRegion,
+    porNivel,
+    promedioPorComponente,
+    // [percentil, puntaje] con la misma definición de `percentil` (por piso): el formato de `BALANCE.puntaje.cuantiles`.
+    cuantiles: PERCENTILES_CUANTILES.map((p) => [p, percentil(totales, p / 100)]),
+    carrerasTerminadas: pct(resultados.filter((st) => st.terminado).length, total)
+  };
+}
+
 // El bloque `carrera` del reporte (ver el comentario en `correrLote`).
 function bloqueCarrera(carreras, total) {
   const conPro = carreras.filter((c) => c.splitsPro > 0);
@@ -1231,7 +1312,9 @@ export function correrLote(corridas, splits, estrategia) {
     economia: bloqueEconomia(observaciones),
     longevidad: bloqueLongevidad(resultados),
     ritmo: bloqueRitmo(observaciones),
-    porRegion: bloquePorRegion(resultados, carreras, observaciones)
+    porRegion: bloquePorRegion(resultados, carreras, observaciones),
+    // K1: el número de la carrera (`core/puntaje.js`), su distribución y los niveles.
+    puntaje: bloquePuntaje(resultados)
   };
   // Los datos crudos de las carreras del lote (estados finales y observaciones, en el orden de las seeds 1..n),
   // para que `validate.js` recuente los KPIs desde ellos sin simular de nuevo. NO enumerable: no sale en el
@@ -1248,22 +1331,37 @@ export function correrLote(corridas, splits, estrategia) {
 // proceso (mismo criterio que `estrategias.js`) sin que el sólo hecho de
 // importar dispare una corrida completa por `process.argv`.
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-  const corridas = Number(process.argv[2] || 1);
-  const splits = Number(process.argv[3] || 15);
-  const estrategia = process.argv[4] || 'equilibrado';
+  // Posicionales: corridas, splits, estrategia. K1: `--bloque=<nombre>` imprime solo ese bloque de cada lote (por
+  // ejemplo `--bloque=puntaje`), con la estrategia y el tamaño al lado; sin él, el reporte entero de siempre.
+  const posicionales = process.argv.slice(2).filter((arg) => !arg.startsWith('--'));
+  const bloque = process.argv.slice(2).find((arg) => arg.startsWith('--bloque='))?.slice('--bloque='.length) ?? null;
+  const corridas = Number(posicionales[0] || 1);
+  const splits = Number(posicionales[1] || 15);
+  const estrategia = posicionales[2] || 'equilibrado';
 
   if (!(estrategia in ESTRATEGIAS) && estrategia !== 'todas') {
     console.error(`Estrategia desconocida: ${estrategia}. Opciones: ${NOMBRES_ESTRATEGIA.join(', ')}, todas.`);
     process.exit(1);
   }
 
+  const recortar = (lote) => {
+    if (bloque === null) {
+      return lote;
+    }
+    if (!(bloque in lote)) {
+      console.error(`Bloque desconocido: ${bloque}. Opciones: ${Object.keys(lote).join(', ')}.`);
+      process.exit(1);
+    }
+    return { estrategia: lote.estrategia, corridas: lote.corridas, splits: lote.splits, crashes: lote.crashes, [bloque]: lote[bloque] };
+  };
+
   if (corridas <= 1) {
     const seed = 42;
     const { state, carrera, jugabilidad, observacion } = correrCarrera(seed, splits, ESTRATEGIAS[estrategia]);
     console.log(JSON.stringify({ ...reporteDetallado(state, seed), carrera, jugabilidad, observacion }, null, 2));
   } else if (estrategia === 'todas') {
-    console.log(JSON.stringify(NOMBRES_ESTRATEGIA.map((nombre) => correrLote(corridas, splits, nombre)), null, 2));
+    console.log(JSON.stringify(NOMBRES_ESTRATEGIA.map((nombre) => recortar(correrLote(corridas, splits, nombre))), null, 2));
   } else {
-    console.log(JSON.stringify(correrLote(corridas, splits, estrategia), null, 2));
+    console.log(JSON.stringify(recortar(correrLote(corridas, splits, estrategia)), null, 2));
   }
 }

@@ -1488,5 +1488,104 @@ export const BALANCE = {
     // entraste" — el "porque quizás estuviste cerca" del pedido de §9W. Es un
     // umbral de presentación: no toca el ranking ni ninguna distribución.
     margenReveal: 10
+  },
+
+  // K1 — El número (PLAN.md §K1 y "K1 — decisiones de spec"): el puntaje de
+  // carrera de `core/puntaje.js`. Puro y sin `rng`: se compone cuando la carrera
+  // termina (`state.tarjeta.puntaje`, `core/pipeline.js`) y se puede pedir sobre
+  // cualquier estado. Los seis componentes son >= 0 y crecen con el logro: de
+  // ahí sale la monotonía que vigila `validate.js`. PROVISORIO entero: los cortes
+  // de los niveles y la tabla de cuantiles salen de la distribución medida con
+  // el bot `criterio` (400 seeds, 60 splits) y K5c los vuelve a medir con el
+  // Mundial real.
+  puntaje: {
+    // 1. Trayectoria: puntos por split jugado con contrato, según el tier en
+    // que se jugó (`registro.porOrg[].splitsPorTier`, D76): más pesado arriba.
+    trayectoria: {
+      porSplit: { 1: 5, 2: 2, 3: 1 }
+    },
+    // 2. Títulos domésticos: puntos por título según el tier de su liga, ×
+    // `prestigio / prestigioReferencia` de esa liga (una LCK pesa más que una
+    // LCS, como en la realidad). La vara es la de `rendimiento.prestigioReferencia`:
+    // una liga de prestigio 70 (LCS) vale 1×. Tier 3 no es una liga: usa el
+    // prestigio sintético de su zona (`tier3.fuerzaMedia`, el mismo que le da
+    // `core/competicion.js`).
+    titulos: {
+      porTitulo: { 1: 40, 2: 12, 3: 4 },
+      prestigioReferencia: 70
+    },
+    // 3. Internacional: por participar y, además, por cada buen papel; todo ×
+    // la `dificultad` de la liga que representaste (`leagues.json`: cuán
+    // difícil es ganar el Mundial saliendo de ahí — LCK 1, CBLOL 1,9).
+    internacional: {
+      participacion: 20,
+      buenPapel: 50
+    },
+    // 4. El mundo: el pico de rank mundial por bandas (#1, hasta `corteTop5`, el
+    // resto del Top 20) más cada temporada cerrada adentro del Top 20
+    // (`registro.splitsEnTopMundial`). Individual: × `pesoRol`.
+    mundo: {
+      numeroUno: 150,
+      top5: 90,
+      corteTop5: 5,
+      top20: 40,
+      porTemporadaEnTop20: 6
+    },
+    // 5. La generación: el puesto entre vos y los rivales de `mundo.rivales` por
+    // el mejor rank mundial de cada uno (`0` = nunca entró, va último; los
+    // empates no te superan). Suma por cada rival que superaste, más un bono si
+    // nadie te superó y vos sí entraste al Top 20. Individual: × `pesoRol`.
+    generacion: {
+      porRivalSuperado: 12,
+      bonoPrimero: 20
+    },
+    // 6. El que no llegó también suma: el pico de soloQ (`registro.picos.rankedPuntos`,
+    // puntos absolutos de la escalera; Máster 0 LP = 2.800) reparte de 0 a
+    // `tope`, lineal entre `puntosDesde` y `puntosHasta`. Chico a propósito:
+    // alcanza para comparar dos desafíos sin fichaje, nunca para empatarle a
+    // una carrera pro.
+    soloQ: {
+      puntosDesde: 2800,
+      puntosHasta: 5400,
+      tope: 30
+    },
+    // Por rol (CONCEPTO §9): multiplica los componentes individuales (4 y 5).
+    // Arranca en 1; se compensa solo si la mediana del puntaje de un rol (bot
+    // `criterio`, 400 seeds) se aparta más de ±10% de la general (lo mide el
+    // bloque `puntaje` de `simulate.js`).
+    pesoRol: { top: 1, jungla: 1, mid: 1, adc: 1, support: 1 },
+    // Potencial contra logro: el subtotal se multiplica por un factor lineal en
+    // `oculto.potencial`, de `factorConPotencialMinimo` (con `mundo.potencialMin`)
+    // a `factorConPotencialMaximo` (con `mundo.potencialMax`): el mismo logro con
+    // menos techo vale más.
+    potencial: {
+      factorConPotencialMinimo: 1.25,
+      factorConPotencialMaximo: 0.85
+    },
+    // Niveles con nombre, de abajo hacia arriba (el nombre visible vive en
+    // `core/puntaje.js`): el puntaje mínimo de cada uno. "El que no llegó" no
+    // tiene corte: es por definición (nunca fichaste).
+    niveles: [
+      { id: 'circuito', desde: 0 },
+      { id: 'profesional', desde: 200 },
+      { id: 'fijo', desde: 500 },
+      { id: 'campeon', desde: 900 },
+      { id: 'figura', desde: 1400 },
+      { id: 'leyenda', desde: 2000 },
+      { id: 'goat', desde: 2800 }
+    ],
+    // El referente del número (regla 13): "mejor que el X% de las carreras".
+    // Pares [percentil, puntaje] de la distribución medida con el bot
+    // `criterio`; entre dos pares se interpola lineal, y el último percentil
+    // es el techo de lo que se dice.
+    cuantiles: [[0, 0], [10, 10], [25, 150], [50, 800], [75, 1400], [90, 2000], [99, 2800]],
+    // La leyenda comparada (`data/leyendas.json`): la más cercana por distancia
+    // euclídea sobre el perfil normalizado (cada eje dividido por su `escala`),
+    // más `penalizacionRolDistinto` si no es de tu rol. Empate: el `id` menor.
+    // El eje del ranking es `topMundial.tamano + 1 - rank` (0 si nunca entró).
+    leyendas: {
+      escala: { anios: 15, titulos: 10, internacionales: 12, rank: 20 },
+      penalizacionRolDistinto: 0.3
+    }
   }
 };

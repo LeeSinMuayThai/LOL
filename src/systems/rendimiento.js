@@ -203,7 +203,12 @@ function consecuencias(state, rendimiento, resultado, esCierre, rng) {
   if (campeon) {
     titulos += 1;
     arraigo = clampStat(arraigo + roll(a.porTituloMin, a.porTituloMax, rng));
-    registro = registrarTitulo(registro, { nombre: nombreLiga, anio: state.calendario.anio, org: state.career.currentOrg });
+    // K1 (D76): la liga real (`null` en tier 3, que es una zona y no una liga)
+    // y el tier donde se ganó, no el de la fila.
+    registro = registrarTitulo(registro, {
+      nombre: nombreLiga, anio: state.calendario.anio, org: state.career.currentOrg,
+      liga: liga.tier === 3 ? null : liga.id, tier: liga.tier
+    });
     hitos.push(`Campeón de ${nombreLiga} a los ${state.age}`);
     logs.push(crearLog('rendimiento', `Campeones de ${nombreLiga}. El título es tuyo también.`));
   }
@@ -220,6 +225,8 @@ function consecuencias(state, rendimiento, resultado, esCierre, rng) {
     arraigo = clampStat(arraigo + roll(a.porInternacionalMin, a.porInternacionalMax, rng));
     registro = registrarInternacional(registro, {
       torneo: `internacional — ${nombreLiga}`, anio: state.calendario.anio, org: state.career.currentOrg,
+      // K1 (D76): la liga que representaste (solo tier 1 tiene cupos).
+      liga: liga.id,
       resultado: rendiBien ? 'buen_papel' : 'eliminado', camino: []
     });
     hitos.push(rendiBien

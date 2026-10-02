@@ -2,6 +2,7 @@ import { BALANCE } from '../data/balance.js';
 import { generarMundo } from './mundo.js';
 import { puntosAbsolutos } from './ranked.js';
 import { rankearMundo } from './topMundial.js';
+import { esFechaDeDesafio, seedDelDia } from './desafio.js';
 
 // El mundo entero sale de la seed (CONCEPTO §8): rol, region, colegio, viejos,
 // potencial oculto, forma de carrera, pool inicial, meta y rivales. Por eso el
@@ -13,7 +14,25 @@ const EDAD_INICIAL = 15;
 // `eleccion` es lo que el jugador decidio en la pantalla de inicio:
 // `{ handle?, rol?, campeones? }`. Si no viene, todo se sortea de la seed — ese
 // es el camino que corren simulate.js y validate.js.
-export function createInitialState(seed, rng, eleccion = null) {
+//
+// K1: `desafio` es `{ fecha: 'YYYY-MM-DD' }` cuando la partida es el desafío
+// diario (`core/desafio.js`, `iniciarDesafio(fecha)` arma los argumentos) y
+// `null` en cualquier otra. No toca el `rng`: solo queda anotado en
+// `state.desafio`. Para que "misma fecha" garantice "mismo arranque", un
+// desafío exige la seed del día y `eleccion: null` (el handle también entra en
+// el mundo: el ruido del Top 20 lo hashea).
+export function createInitialState(seed, rng, eleccion = null, desafio = null) {
+  if (desafio !== null) {
+    if (!esFechaDeDesafio(desafio?.fecha)) {
+      throw new Error(`Desafío con fecha inválida: ${JSON.stringify(desafio?.fecha)}`);
+    }
+    if (seed !== seedDelDia(desafio.fecha)) {
+      throw new Error(`El desafío del ${desafio.fecha} arranca con la seed ${seedDelDia(desafio.fecha)}, no con ${seed}`);
+    }
+    if (eleccion !== null) {
+      throw new Error('El desafío diario arranca sin elección: rol, región y pool salen de la seed');
+    }
+  }
   const { inicial } = BALANCE;
   const { jugador, origen, mundo } = generarMundo(rng, EDAD_INICIAL, eleccion);
 
@@ -25,8 +44,11 @@ export function createInitialState(seed, rng, eleccion = null) {
     finAnticipado: null,
     // Fase 9R5b: la tarjeta de legado, compuesta una sola vez por
     // `core/pipeline.js` cuando `terminado` pasa a true. `null` mientras la
-    // carrera sigue viva.
+    // carrera sigue viva. K1: lleva también `puntaje` (`core/puntaje.js`).
     tarjeta: null,
+    // K1: `{ fecha }` si esta partida es el desafío diario, `null` si no
+    // (presente desde el arranque, trampa T4).
+    desafio: desafio === null ? null : { fecha: desafio.fecha },
     splitFichaje: null,
     // Decision a medio resolver. Vive adentro de state para que una partida en
     // curso sea serializable y reanudable (regla invariable 9).
