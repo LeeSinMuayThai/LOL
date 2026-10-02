@@ -1552,7 +1552,14 @@ export const BALANCE = {
     // Por rol (CONCEPTO §9): multiplica los componentes individuales (4 y 5).
     // Arranca en 1; se compensa solo si la mediana del puntaje de un rol (bot
     // `criterio`, 400 seeds) se aparta más de ±10% de la general (lo mide el
-    // bloque `puntaje` de `simulate.js`).
+    // bloque `puntaje` de `simulate.js`). Medido en K1-A (seeds 1-400, 60
+    // splits): top +9,2% · jungla +11,4% · mid −1,3% · adc −27,0% · support
+    // +4,3%. No se compensa: en las seeds 401-800 el adc da +13,4% y la jungla
+    // −7,0% (es ruido de muestra: ~65-98 carreras por rol, con un 20-30% que no
+    // llega a pro), y juntando las 800 todos los roles quedan entre −3,4% y
+    // +3,7%. Además el desvío del adc no venía de los componentes individuales
+    // (mundo 78 y generación 41 de promedio entre los pros, igual que el resto)
+    // sino de cuántos llegan a pro: corregirlo acá pedía ×3 sobre su ranking.
     pesoRol: { top: 1, jungla: 1, mid: 1, adc: 1, support: 1 },
     // Potencial contra logro: el subtotal se multiplica por un factor lineal en
     // `oculto.potencial`, de `factorConPotencialMinimo` (con `mundo.potencialMin`)
@@ -1564,21 +1571,35 @@ export const BALANCE = {
     },
     // Niveles con nombre, de abajo hacia arriba (el nombre visible vive en
     // `core/puntaje.js`): el puntaje mínimo de cada uno. "El que no llegó" no
-    // tiene corte: es por definición (nunca fichaste).
+    // tiene corte: es por definición (nunca fichaste). PROVISORIOS (K1-A, los
+    // fija K5c): cada corte es el percentil indicado de la distribución medida
+    // con `criterio` (seeds 1-400, 60 splits; `percentil` "por piso" de
+    // `simulate.js`), elegido para que el embudo de nombres se parezca al de
+    // §K.3b — tantos por encima de cada nivel: profesional 65%, fijo 50%,
+    // campeón 30%, figura 15%, leyenda 7%, el GOAT 2,5%. Con el motor de hoy
+    // (77% llega a tier 1, 77% gana un título) los nombres quedan más exigentes
+    // que los hechos; K2-K5 corren los hechos y K5c vuelve a medir los cortes.
     niveles: [
       { id: 'circuito', desde: 0 },
-      { id: 'profesional', desde: 200 },
-      { id: 'fijo', desde: 500 },
-      { id: 'campeon', desde: 900 },
-      { id: 'figura', desde: 1400 },
-      { id: 'leyenda', desde: 2000 },
-      { id: 'goat', desde: 2800 }
+      { id: 'profesional', desde: 794 }, // p35
+      { id: 'fijo', desde: 1128 }, // p50
+      { id: 'campeon', desde: 1449 }, // p70
+      { id: 'figura', desde: 1683 }, // p85
+      { id: 'leyenda', desde: 1838 }, // p93
+      { id: 'goat', desde: 2051 } // p97,5
     ],
     // El referente del número (regla 13): "mejor que el X% de las carreras".
     // Pares [percentil, puntaje] de la distribución medida con el bot
-    // `criterio`; entre dos pares se interpola lineal, y el último percentil
-    // es el techo de lo que se dice.
-    cuantiles: [[0, 0], [10, 10], [25, 150], [50, 800], [75, 1400], [90, 2000], [99, 2800]],
+    // `criterio` (K1-A: seeds 1-400, 60 splits, el bloque `puntaje` de
+    // `simulate.js`); entre dos pares se interpola lineal, y el último
+    // percentil es el techo de lo que se dice. El salto entre el p20 (23) y el
+    // p25 (313) es el borde entre los que no llegaron (23%) y los pros.
+    // Provisoria como los cortes: K5c la vuelve a medir.
+    cuantiles: [
+      [0, 0], [5, 7], [10, 14], [15, 19], [20, 23], [25, 313], [30, 637], [35, 794], [40, 921], [45, 1035],
+      [50, 1128], [55, 1227], [60, 1284], [65, 1368], [70, 1449], [75, 1510], [80, 1599], [85, 1683],
+      [90, 1790], [95, 1880], [97, 2029], [99, 2172]
+    ],
     // La leyenda comparada (`data/leyendas.json`): la más cercana por distancia
     // euclídea sobre el perfil normalizado (cada eje dividido por su `escala`),
     // más `penalizacionRolDistinto` si no es de tu rol. Empate: el `id` menor.
