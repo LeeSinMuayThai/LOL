@@ -5582,6 +5582,88 @@ Pantalla: la tarjeta final nueva y el botón del desafío en el inicio. Checks: 
 determinista · es monótono (más logros, más puntaje) · el mismo Mundial vale más desde una liga de
 menor `dificultad` · dos desafíos con la misma fecha arrancan idénticos · huella de 40 seeds idéntica.
 
+#### K1 — decisiones de spec *(supervisor, 2026-10-02; el usuario pidió no frenar con preguntas: se deciden acá y se pueden revisar)*
+
+**D75 y D76 se resuelven antes del puntaje, sin corrimiento (cero `rng`, huella idéntica).**
+- **D76 — aditivo, no se reescribe la fila.** `fila.tier`/`fila.liga` pasan a significar, documentado, *"tier y liga
+  al firmar"* (un descenso o ascenso en el lugar no cierra la fila: el contrato viaja, como hasta hoy). Lo que el
+  puntaje y `core/legado.js` necesitan sale de dos campos nuevos que solo crecen (regla 14): `fila.splitsPorTier`
+  (`{ 1: 0, 2: 0, 3: 0 }`, completo desde `abrirFila` — T4) que `registrarSplitEnFila` incrementa con el
+  `career.tier` **del split jugado**, y `liga` + `tier` en cada entrada de `registro.titulos` y `liga` en cada
+  `registro.internacionales` (los escriben `rendimiento.js` y `serie.js` al registrar). `splitsDeTier`,
+  `titulosDeTier` y `ligaInsignia` de `legado.js` leen de ahí. Sube `VERSION` de `core/guardado.js` (cambia la
+  forma de lo que se guarda: un guardado a mitad de carrera tendría títulos sin liga).
+- **D75 — "llegó a tier N" = jugó al menos un split con contrato en tier N** (`splitsPorTier[N] > 0` en alguna
+  fila), no "ganó el salto". El estado "agente libre de tier 2" que sigue a un ascenso no cuenta. El observador de
+  `simulate.js` (`carrera.tierMaximo`) se alinea a esa definición y el puntaje usa la misma.
+
+**`dificultad` (dato nuevo en `leagues.json`, ligas tier 1 y tier 2).** Significa **cuán difícil es ganar el
+Mundial saliendo de esa liga** (más alto = más difícil), que es como lo dijo el usuario (*"si sos coreano más
+fácil, si sos de NA que te dé más puntos ganar un mundial"*) y como lo usa K5 (*"la región ES la dificultad"*).
+Corrección de redacción: el check de K1 que decía *"el mismo Mundial vale más desde una liga de menor
+`dificultad`"* se lee **"de mayor `dificultad`"** (con este significado son la misma frase del usuario; la
+anterior suponía que `dificultad` medía la fuerza de la liga). En K5 el check *"la dificultad de cada región es
+monótona con su `dificultad`"* es: P(ganar el Mundial) **decrece** con `dificultad`. Valores provisorios
+(multiplicador directo de los logros internacionales; K5c los calibra con el Mundial real): LCK 1,0 · LPL 1,1 ·
+LEC 1,4 · LCP 1,6 · LCS 1,7 · CBLOL 1,9; cada tier 2 hereda el de la liga a la que asciende.
+- **Qué multiplica qué.** Los logros **internacionales** (participar, buen papel; el título mundial cuando K5 lo
+  cree) se multiplican por la `dificultad` de la liga que representaste. Los **títulos domésticos** se ponderan
+  por el `prestigio` de su liga, que ya existe (un título de LCK vale más que uno de LCS, como en la realidad). Así
+  el puntaje premia la dificultad en los dos sentidos sin contradecirse.
+
+**`core/puntaje.js` (puro: sin `rng`, sin DOM, sin `Date`; todas las constantes en `BALANCE.puntaje`).**
+`puntajeDeCarrera(state)` → `{ total, componentes: [{ id, etiqueta, puntos, detalle }], nivel, percentil,
+leyenda }`. Componentes, todos ≥ 0 y crecientes en el logro (eso da la monotonía):
+1. **Trayectoria**: splits jugados por tier (`splitsPorTier`), más pesados cuanto más alto.
+2. **Títulos domésticos**: por tier, × `prestigio / prestigioReferencia` de su liga.
+3. **Internacional**: participación y buen papel, × `dificultad`.
+4. **El mundo**: pico de rank mundial por bandas (#1, top 5, top 20) + splits en el Top 20.
+5. **La generación**: puesto entre vos y los rivales de `mundo.rivales` por el mismo dato que ya usa
+   `dueloDeGeneracion` (mejor rank mundial; `0` = nunca, va último; los empates no te superan).
+6. **El que no llegó también suma**: el pico de soloQ (`registro.picos.rankedPuntos`) da un piso chico, para que
+   dos desafíos diarios sin fichaje se puedan comparar.
+- **Por rol** (`CONCEPTO` §9): `BALANCE.puntaje.pesoRol` multiplica los componentes individuales (4 y 5). Arranca
+  en 1 para los cinco roles; el worker **mide** la mediana del puntaje por rol (bot `criterio`, 400 seeds) y, si
+  algún rol se aparta más de ±10% de la mediana general, lo compensa ahí. El número medido va a `PROGRESO.md`.
+- **Potencial contra logro**: el total se multiplica por un factor que crece cuanto **menor** era tu
+  `oculto.potencial` (acotado, p. ej. 0,85-1,25): el mismo logro con menos techo vale más. La tarjeta revela el
+  potencial ("tu techo era 64, oculto hasta hoy").
+- **Niveles con nombre** (cortes provisorios en `BALANCE.puntaje.niveles`, se fijan en K5c), de abajo hacia
+  arriba: *El que no llegó* (nunca fichó, por definición, no por puntaje) · *Pasó por el circuito* · *Un
+  profesional más* · *Fijo en primera* · *Campeón* · *Figura mundial* · *Leyenda* · **"El GOAT"**. Este último es
+  el nombre visible provisorio del nivel "el nuevo Faker" (§K.1: inventado mientras el usuario no confirme el
+  literal; "GOAT" es jerga de la escena, no el nombre de una persona). Los cortes intermedios se ponen sobre la
+  distribución medida (bot `criterio`, 400 seeds) y quedan escritos con su percentil.
+- **Referente del número** (regla 13): nivel con nombre + percentil contra una tabla provisoria de cuantiles
+  medida con `criterio` y guardada en `BALANCE.puntaje.cuantiles` ("mejor que el 72% de las carreras").
+  Provisoria como los cortes; K5c la vuelve a medir.
+
+**Leyendas (`data/leyendas.json`)**: 16-24 leyendas **inventadas** (handle, rol, región, años de carrera, títulos,
+internacionales, pico de rank, una línea de historia con tono de escena). Se elige la más cercana por distancia
+normalizada sobre el perfil de tu carrera, desempate por `id` (cero `rng`). Ningún handle puede ser el de un pro
+real (`validate.js` lo chequea contra una lista de handles reales conocidos, y contra los que genera el motor).
+
+**Desafío diario.** `core/desafio.js` (puro): `seedDelDia('YYYY-MM-DD')` por `hashCadena` (fecha **UTC**, la
+misma para todos); el desafío arranca con `eleccion: null` (rol, región y pool salen de la seed, como en
+`simulate.js`) y deja `state.desafio = { fecha }` (`null` fuera del desafío; completo desde
+`createInitialState`, T4). `?desafio=YYYY-MM-DD` en la URL lo reproduce. **Versión del juego**: constante
+`VERSION_JUEGO` en `src/data/version.js` junto con el hash de la huella de 40 seeds; un check de `validate.js`
+falla si la huella cambia y el hash no se actualiza, así "misma versión" garantiza "mismo juego" para comparar un
+desafío (el bloque A/B/C sube la versión al mergear su corrimiento). Historial local en `localStorage` (envuelto
+en try/catch; si falla, la tarjeta se ve igual).
+
+**Pantalla.** Tarjeta final: el número arriba, grande, con nivel y percentil; el desglose de los componentes con
+su porqué; la leyenda comparada; el potencial revelado; el veredicto de siempre; los mapas de cada internacional
+en un desplegable cerrado. El PNG (`exportar.js`) lleva puntaje, nivel y fecha del desafío si lo es. Botón
+"Copiar resultado" con el texto para compartir (juego, fecha si es desafío, puntaje, nivel, versión, link). En el
+inicio, el botón **"Desafío del día"** y el historial de tus últimos puntajes.
+
+**Orden de trabajo.** K1-A (motor: D75/D76, `dificultad`, `puntaje.js`, `leyendas.json`, `desafio.js`,
+`version.js`, bloque `puntaje` de `simulate.js` con la distribución por rol y por estrategia, checks) y K1-B
+(pantalla). Checks de §K1 más: `puntaje.js` no importa `rng.js` ni usa `Date`/`Math.random` (estático) · cada
+componente ≥ 0 · el potencial más bajo nunca puntúa menos con el mismo registro · `splitsPorTier` suma
+`fila.splits` en cada fila · la huella de 40 seeds idéntica a la de `ffdf648`.
+
 ### K2 — El nivel manda *(bloque A — estructura; los valores se fijan en K3c)*
 
 - **Compañeros en vivo**: `core/fuerza.js` lee el nivel actual de `state.mundo.planteles` (la mitad
