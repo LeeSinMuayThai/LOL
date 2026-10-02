@@ -123,9 +123,7 @@ palanca" se re-especifica en K3c. Deuda nueva: D75 (el observador cuenta el "age
 determinismo src contra dist en 12 carreras × 30 splits; huella de 40 seeds idéntica a `5548c00` y dos
 ejecuciones idénticas.
 
-**Pendiente de K0 (D72).** Pushear la rama de trabajo y borrar `faseV-V1-grok`, más limpiar los worktrees y
-ramas `k0-*` y `j3-pool-oxido` ya mergeadas: sale de la máquina o es destructivo, así que espera la
-confirmación del usuario. **No se verificó:** Linux y macOS (varias sondas del servidor no muerden ahí),
+**D72, cerrada con la confirmación del usuario.** La rama de trabajo se pusheó a `origin` (`400f6b6..b5088da`, fast-forward, sin force). `faseV-V1-grok` tenía un commit que la rama de trabajo no tiene (`d543149`, 2026-09-19: otra implementación de los primitivos SVG `linea`, `hexa` y `cinta`) y no estaba en el remoto: se archivó como el tag local `archivo/faseV-V1-grok` (no pusheado) y recién después se borró la rama. Los worktrees y ramas `j3-pool-oxido`, `k0-instrumento`, `k0-higiene-motor` y `k0-vocabulario` se quitaron: las cuatro estaban mergeadas y sin cambios sin commitear. **No se verificó:** Linux y macOS (varias sondas del servidor no muerden ahí),
 Firefox y Safari, ni una carrera jugada a mano de punta a punta en el navegador con el árbol final.
 
 ### 2026-10-01 — FASE K escrita en `PLAN.md`: el nivel manda
