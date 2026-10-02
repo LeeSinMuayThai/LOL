@@ -5881,6 +5881,41 @@ atribución exacta (Shapley sobre re-simulación completa) de lo que se gana al 
 - **`VERSION` de guardado entre ramas paralelas**: la rama que se mergea segunda toma el siguiente número libre
   (max + 1), recalcula el hash de la forma sobre el árbol mergeado y deja el número de la primera; un número nunca
   tiene dos formas.
+- **K2b, tal como quedó** *(revisión independiente, 2026-10-02: "OK con observaciones")*. La estructura cumple los
+  puntos 1-5. Las constantes nuevas (referencias 50, sinergia 0,27 en `fuerzaDelEquipo`, σ fecha 13,9 / mapa 14,2,
+  `base + 7·z`, `vueltas` 1) reproducen el comportamiento de antes, así que respetan la regla 2. El revisor
+  re-midió los números del worker y coinciden: r 0,398 → 0,407, R² 0,257 → ~0,31, Bo5 Δ0 jugador favorito
+  71,4 → 62,8 y rival favorito 94,9 → 96,7. La caída del favorito no esconde un bug: el contrafáctico con la
+  sinergia devuelta a tu rendimiento da 68,1. Unos 5 pp vienen de haber sacado la sinergia de tu rendimiento
+  (menos margen bajo el tope); el resto es ruido.
+
+  Se arregla antes del merge:
+  1. **Estado inicial completo (T4).** `career.temporada` nace con `rendimientoBase` y `resultadosPropios`.
+  2. **Sinergia en un traspaso.** El split del traspaso juega con el plantel nuevo **y** con la sinergia del
+     plantel nuevo. La sinergia se resetea al firmar, con la misma regla que `armarRoster` (regla 15: la previa va
+     a mostrar a esos compañeros).
+  3. **Checks para los mutantes que sobrevivían.**
+     - Una fecha de lesión no cuenta en `resultadosPropios`. Va con un caso sintético, porque en carreras reales
+       pasa en 7 de 13.759 temporadas.
+     - La p del draft (`probabilidadConCampeon`) es exactamente la p que tira el mapa.
+     - `ruidoEfectivo` por tipo coincide con `BALANCE.partido`.
+     - `rendimientoBase` no depende de `career.sinergia`.
+  4. **Código muerto.** `probabilidadDeGanar` (`core/numeros.js`) quedó muerto en el motor: se borra y su check
+     se porta a `probabilidadDePartido`.
+  5. **La PENDIENTE de `proyeccionJerarquia` tiene causa aislada.** Al sacar la sinergia de tu rendimiento, éste
+     sube justo en el primer split en una org nueva, donde la sinergia es mínima. La jerarquía crece más de lo
+     que proyecta `derivaPrimerSplit`. Se re-basea en K3c, como ya estaba anotado. La entrada de
+     `bandasPendientes.js` lleva esa causa y el valor re-medido después del arreglo 2.
+
+  Se anota para después:
+  - **K2d.** El minijuego de la serie (`systems/serie.js`, `gauss`) y el `ajustePartido` de la fecha mueven la p
+    **después** del draft. La previa muestra la p **antes** del minijuego y dice que el minijuego la mueve; la
+    pantalla del mapa muestra la p final. El check de K2d: la p de la previa es exactamente la que tira el motor
+    cuando el minijuego aporta 0, y la p final mostrada es exactamente la tirada.
+  - **K3c.** La z de tu rendimiento se mide contra la p **con** draft, así que un buen draft sube Σp y baja el
+    crédito por las mismas victorias. Se mide en K3c, comparando el hype entre los bots `criterio` y `azar`. Si
+    draftear bien castiga el hype, la z pasa a medirse contra la p antes del draft. Es solo una constante y una
+    elección de lectura; la estructura no cambia.
 
 **Checks de K2** (rojos hoy; las bandas finales se fijan en K3c): r(nivel relativo, posición) en la misma liga ≥
 0,5 y R² sin ruido ≥ 0,5, los dos con la definición corregida · favorito con Δ≈10 gana el Bo5 75-85%, medido en
