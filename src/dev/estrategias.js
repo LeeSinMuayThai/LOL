@@ -12,6 +12,18 @@ export const PESO_MAGNITUD = {
 // Penalización aplicada a opciones con riesgo 'ruleta' al calcular la previa para bots con criterio.
 export const PENALIZACION_RULETA = 0.5;
 
+// Qué le contestan los bots a un minijuego (`{ resultado }` en [0, 1]): `criterio` y el lado "bien" del
+// contrafáctico de agencia.js juegan con 0,85; `malas` y el lado "mal" con 0,15. Antes vivían duplicados
+// en estrategias.js y agencia.js: un solo lugar, para que los dos instrumentos no se desincronicen.
+export const RESULTADO_MINIJUEGO_BIEN = 0.85;
+export const RESULTADO_MINIJUEGO_MAL = 0.15;
+
+// Divisor del hash de `azar` para el minijuego: `hash % 10001 / 10000` cubre el [0, 1] cerrado.
+const PASOS_RESULTADO_AZAR = 10000;
+
+// Una oferta (o una opción como "quedarte" en un traspaso) sin `tier`: peor que cualquier liga real.
+const TIER_SIN_DATO = 99;
+
 // Valora el impacto neto proyectado por la previa de una opción.
 // Suma items con '+' y resta con '-', ponderando por magnitud ('baja'=1, 'media'=2, 'alta'=3),
 // y penaliza el riesgo 'ruleta'. Es puro y determinista.
@@ -29,22 +41,33 @@ export function puntuarPrevia(opcion) {
   return puntaje;
 }
 
-// Compara dos ofertas de mercado según:
-// 1. Mejor jerarquía proyectada (mayor es mejor).
-// 2. A igualdad, mejor liga (tier menor es mejor: tier 1 > tier 2 > tier 3).
-// 3. A igualdad, mejor salario anual en USD (mayor es mejor).
-// Devuelve positivo si ofertaA es mejor que ofertaB, negativo si es peor, 0 si empatan.
+// Compara dos ofertas de mercado. Orden: 1) mejor liga (tier MENOR primero: tier 1 > 2 > 3), 2) a igualdad
+// de tier, mayor `proyeccionJerarquia.hasta`, 3) a igualdad, mayor salario anual en USD.
+// Devuelve positivo si ofertaA es mejor que ofertaB, negativo si es peor, 0 si empatan. `malas` la usa al
+// revés (argmin): "la peor por el mismo criterio".
+//
+// Por qué el tier va primero y no la jerarquía proyectada (la regla original de K0-A era al revés): la
+// renovación siempre trae `hasta` = tu jerarquía actual, y cualquier mudanza la resetea a ~20-38
+// (`jerarquiaAlFichar`), así que ordenar por `hasta` primero hace que `criterio` renueve casi siempre y se
+// quede donde firmó primero. Medido en 100 carreras x 60 splits con la regla vieja: renovaba el 97,4% de
+// las veces que había renovación (`equilibrado`: 23,4%) y elegía un tier peor que el mejor disponible en el
+// 33% de las decisiones de mercado (`equilibrado`: 5,1%). Medido en 800 carreras x 60 splits, mismas seeds:
+// con la regla vieja `criterio` llegaba a tier 1 el 63,1% y quedaba estancado en tier 2/3 el 14,8%; con
+// tier primero, 77,6% y 0,3% (`equilibrado`: 78,8% y 0,8%) — o sea que ese hueco lo causaba la heurística
+// del bot, no el motor. La tensión de CONCEPTO §7 (el "cuarto nombre de un gigante" contra ser titular en
+// un club más chico) sigue viva, pero ahora ADENTRO de cada tier, que es donde un jugador que sabe de LoL
+// la resolvería con la jerarquía.
 export function compararOfertasMercado(ofertaA, ofertaB) {
+  const tierA = ofertaA.tier ?? TIER_SIN_DATO;
+  const tierB = ofertaB.tier ?? TIER_SIN_DATO;
+  if (tierA !== tierB) {
+    return tierB - tierA; // tier menor (ej 1) supera a tier mayor (ej 2)
+  }
+
   const jerA = ofertaA.proyeccionJerarquia?.hasta ?? 0;
   const jerB = ofertaB.proyeccionJerarquia?.hasta ?? 0;
   if (jerA !== jerB) {
     return jerA - jerB;
-  }
-
-  const tierA = ofertaA.tier ?? 99;
-  const tierB = ofertaB.tier ?? 99;
-  if (tierA !== tierB) {
-    return tierB - tierA; // tier menor (ej 1) supera a tier mayor (ej 2)
   }
 
   const salA = ofertaA.salarioAnualUSD ?? 0;
@@ -52,24 +75,24 @@ export function compararOfertasMercado(ofertaA, ofertaB) {
   return salA - salB;
 }
 
-function esDecisionDeRutina(decision) {
+export function esDecisionDeRutina(decision) {
   return decision.datos?.rutinas?.length > 0;
 }
 
-function esDecisionDeMinijuego(decision) {
+export function esDecisionDeMinijuego(decision) {
   return decision.presentacion === 'minijuego' || decision.datos?.motivo === 'minijuego';
 }
 
-function esDecisionDeDraft(decision) {
+export function esDecisionDeDraft(decision) {
   return decision.datos?.motivo === 'draft';
 }
 
-function esDecisionDeMercado(decision) {
+export function esDecisionDeMercado(decision) {
   return decision.presentacion === 'mercado'
     || (decision.opciones?.[0]?.salarioAnualUSD !== undefined && decision.datos?.motivo !== 'traspaso');
 }
 
-function esDecisionConPrevia(decision) {
+export function esDecisionConPrevia(decision) {
   return Array.isArray(decision.opciones)
     && decision.opciones.length > 0
     && decision.opciones.some((opcion) => opcion.previa !== undefined || opcion.riesgo !== undefined);
@@ -95,7 +118,7 @@ function deficits(state) {
 }
 
 // Genera un entero pseudoaleatorio puro para una decisión específica sin consumir el stream de RNG.
-function hashParaDecision(state, sistema, decision) {
+export function hashParaDecision(state, sistema, decision) {
   const idDec = decision.id ?? decision.datos?.motivo ?? decision.presentacion ?? decision.titulo ?? 'decision';
   const clave = `${state.seed}|${state.player.splitCount}|${sistema?.id ?? 'sis'}|${idDec}|${state.logs?.length ?? 0}`;
   return hashCadena(clave);
@@ -107,7 +130,7 @@ function responderCriterio(sistema, state, decision, rng) {
     return sistema.resolverAuto(state, decision, rng);
   }
   if (esDecisionDeMinijuego(decision)) {
-    return { resultado: 0.85 };
+    return { resultado: RESULTADO_MINIJUEGO_BIEN };
   }
   if (esDecisionDeDraft(decision)) {
     return { opcionId: decision.opciones[0].id };
@@ -136,7 +159,7 @@ function responderMalas(sistema, state, decision, rng) {
     return mejorRutina(decision, (rutina) => (rutina.reparto.ranked ?? 0) + rutina.extra * 2);
   }
   if (esDecisionDeMinijuego(decision)) {
-    return { resultado: 0.15 };
+    return { resultado: RESULTADO_MINIJUEGO_MAL };
   }
   if (esDecisionDeDraft(decision)) {
     return { opcionId: decision.opciones[decision.opciones.length - 1].id };
@@ -169,7 +192,7 @@ function responderAzar(sistema, state, decision, rng) {
     return { opcionId: rutinas[indice].id };
   }
   if (esDecisionDeMinijuego(decision)) {
-    const resultado = (hash % 10001) / 10000;
+    const resultado = (hash % (PASOS_RESULTADO_AZAR + 1)) / PASOS_RESULTADO_AZAR;
     return { resultado };
   }
   if (esDecisionDeDraft(decision)) {

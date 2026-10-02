@@ -1,5 +1,4 @@
 import fs from 'fs';
-import path from 'path';
 import { pathToFileURL } from 'url';
 import { mulberry32 } from '../core/rng.js';
 import { createInitialState } from '../core/state.js';
@@ -7,10 +6,25 @@ import { avanzarSplit, resolverDecision, avanzarSplitAuto } from '../core/pipeli
 import { sistemaPorId } from '../systems/registro.js';
 import { nivelDelJugador } from '../core/ficha.js';
 import { hashCadena } from '../core/numeros.js';
+import {
+  RESULTADO_MINIJUEGO_BIEN, RESULTADO_MINIJUEGO_MAL, esDecisionDeMinijuego, esDecisionDeMercado
+} from './estrategias.js';
+import { promedio, medianaInferior, desvioMuestral } from './simulate.js';
 
 // Umbral mínimo de porcentaje de decisiones con efecto estadísticamente significativo (t pareada p < 0.05)
 // para considerar que un tipo de decisión tiene "palanca" real en el final de carrera (PLAN.md §K.5 K0 / AUDITORIA.md §4.3).
 export const UMBRAL_SIGNIFICATIVO = 10;
+
+// Cuántas réplicas válidas por opción hacen falta para analizar una decisión: `min(MIN_REPLICAS_VALIDAS,
+// reps)`. La auditoría (AUDITORIA.md §4.3) exigía 4 con 8 réplicas por opción; con una corrida corta (como
+// la del check, `--reps=2`) pedir 4 descartaría todo, así que el piso baja a las réplicas que se pidieron.
+export const MIN_REPLICAS_VALIDAS = 4;
+
+// σ poblacional de referencia del puntaje: cuántas carreras simula, desde qué seed y hasta cuántos splits.
+// La seed arranca en 1001 para NO pisar las de la medición (que arrancan en 1 por defecto) y los 70 splits
+// son los de la auditoría (`--splits=70` por defecto).
+const SEMILLA_BASE_SIGMA = 1001;
+const SPLITS_SIGMA_POBLACION = 70;
 
 // Puntaje de carrera provisorio (AUDITORIA.md §4.3) usado como función objetivo
 // hasta que la subfase K1 implemente `core/puntaje.js`.
@@ -76,17 +90,13 @@ function terminarCarrera(st, rng, splitsHechos, maxSplits) {
 }
 
 function opcionesDe(decision) {
-  const esMini = decision.presentacion === 'minijuego' || decision.datos?.motivo === 'minijuego';
-  if (esMini) {
+  if (esDecisionDeMinijuego(decision)) {
     return [
-      { resultado: 0.15, _l: 'mal' },
-      { resultado: 0.85, _l: 'bien' }
+      { resultado: RESULTADO_MINIJUEGO_MAL, _l: 'mal' },
+      { resultado: RESULTADO_MINIJUEGO_BIEN, _l: 'bien' }
     ];
   }
-  if (
-    decision.presentacion === 'mercado'
-    || (decision.opciones?.[0]?.salarioAnualUSD !== undefined && decision.datos?.motivo !== 'traspaso')
-  ) {
+  if (esDecisionDeMercado(decision)) {
     const ops = (decision.opciones ?? []).map((o) => ({ opcionId: o.id, _l: o.org ?? o.id }));
     return [...ops, { negociar: 'esperar', _l: 'esperar' }];
   }
@@ -99,27 +109,26 @@ function tipoDe(sistemaId, decision) {
   return `${sistemaId}:${m}${cat ? ':' + cat : ''}`;
 }
 
-const mean = (a) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0);
-const sd = (a) => {
-  if (a.length < 2) return 0;
-  const m = mean(a);
-  return Math.sqrt(a.reduce((s, x) => s + (x - m) ** 2, 0) / (a.length - 1));
-};
-const med = (a) => {
-  if (!a.length) return null;
-  const s = [...a].sort((x, y) => x - y);
-  return s[Math.floor((s.length - 1) / 2)];
-};
+// Estadística compartida con simulate.js (`promedio`, `desvioMuestral`). `mean` devuelve 0 con una lista
+// vacía (`promedio` devuelve null); `med` es la mediana INFERIOR, la que usaba el análisis de la auditoría.
+const mean = (a) => promedio(a) ?? 0;
+const sd = desvioMuestral;
+const med = medianaInferior;
 
-function tCritico(df) {
-  const tabla = {
-    1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571,
-    6: 2.447, 7: 2.365, 8: 2.306, 9: 2.262, 10: 2.228,
-    15: 2.131, 20: 2.086, 30: 2.042
-  };
-  if (tabla[df]) return tabla[df];
-  if (df > 30) return 1.96;
-  return 2.365;
+// Valor crítico de t bilateral con p < 0,05, por grados de libertad (df 1 a 30); con más de 30 se usa el
+// límite normal, 1,96.
+const T_CRITICO_BILATERAL = {
+  1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571,
+  6: 2.447, 7: 2.365, 8: 2.306, 9: 2.262, 10: 2.228,
+  11: 2.201, 12: 2.179, 13: 2.160, 14: 2.145, 15: 2.131,
+  16: 2.120, 17: 2.110, 18: 2.101, 19: 2.093, 20: 2.086,
+  21: 2.080, 22: 2.074, 23: 2.069, 24: 2.064, 25: 2.060,
+  26: 2.056, 27: 2.052, 28: 2.048, 29: 2.045, 30: 2.042
+};
+const T_CRITICO_NORMAL = 1.96;
+
+export function tCritico(df) {
+  return T_CRITICO_BILATERAL[df] ?? T_CRITICO_NORMAL;
 }
 
 export function medirAgencia({
@@ -184,34 +193,42 @@ export function medirAgencia({
   return { baseline, resultados, frecuenciasTipo, totalInterrupciones };
 }
 
-export function analizarDatosAgencia(
-  datosCombinados,
-  sigmaCarreras = 60
-) {
-  const { resultados, frecuenciasTipo = {}, totalInterrupciones = 0 } = datosCombinados;
-
-  // Cálculo de sigma poblacional de referencia (determinista)
+// σ poblacional de referencia del puntaje y de los títulos (determinista): `sigmaCarreras` carreras con el
+// criterio por defecto del motor. Aparte para que `analizarDatosAgencia` pueda recibirlo ya calculado.
+export function sigmaPoblacional(sigmaCarreras = 60) {
   const pop = [];
   const popT = [];
-  for (let seed = 1001; seed < 1001 + Number(sigmaCarreras); seed += 1) {
+  for (let seed = SEMILLA_BASE_SIGMA; seed < SEMILLA_BASE_SIGMA + Number(sigmaCarreras); seed += 1) {
     const rng = mulberry32(seed);
     let st = createInitialState(seed, rng);
     let n = 0;
-    while (!st.terminado && n < 70) {
+    while (!st.terminado && n < SPLITS_SIGMA_POBLACION) {
       st = avanzarSplitAuto(st, rng).state;
       n += 1;
     }
     pop.push(puntajeProvisorio(st));
     popT.push(st.career.registro.titulos.length);
   }
-  const sPop = sd(pop) || 1;
-  const sPopT = sd(popT) || 1;
+  return { sPop: sd(pop) || 1, sPopT: sd(popT) || 1 };
+}
+
+// `referencia` (opcional) = `{ sPop, sPopT }` ya calculados: así el análisis se puede probar con un
+// conjunto sintético sin simular la población.
+export function analizarDatosAgencia(
+  datosCombinados,
+  sigmaCarreras = 60,
+  referencia = null
+) {
+  const { resultados, frecuenciasTipo = {}, totalInterrupciones = 0 } = datosCombinados;
+
+  const { sPop, sPopT } = referencia ?? sigmaPoblacional(sigmaCarreras);
 
   const porTipo = {};
 
   for (const d of resultados) {
     const vals = d.porOpcion.map((repsArr) => repsArr.filter(Boolean));
-    if (vals.some((v) => v.length < Math.min(2, d.porOpcion[0]?.length || 2))) {
+    const repsPedidas = d.porOpcion[0]?.length ?? MIN_REPLICAS_VALIDAS;
+    if (vals.some((v) => v.length < Math.min(MIN_REPLICAS_VALIDAS, repsPedidas))) {
       continue;
     }
 
@@ -283,7 +300,11 @@ export function analizarDatosAgencia(
     totalInterrupcionesContadas += freq;
   }
 
-  const divisor = totalInterrupcionesContadas || totalInterrupciones || 1;
+  // El denominador son TODAS las interrupciones de las carreras medidas, no solo las de los tipos que
+  // llegaron a medirse: una interrupción sin elección real (un solo camino) tiene palanca cero, y sacarla
+  // de la cuenta inflaría el porcentaje. Los archivos crudos viejos sin `totalInterrupciones` caen al total
+  // de las frecuencias contadas.
+  const divisor = totalInterrupciones || totalInterrupcionesContadas || 1;
   const pctInterrupcionesConPalanca = Number(((interrupcionesConPalanca / divisor) * 100).toFixed(1));
 
   return {
@@ -332,19 +353,34 @@ async function main() {
     const frecuenciasAcum = {};
     let totInt = 0;
 
+    // Un archivo que no existe, que no es JSON o que no trae `resultados` es un error, no "0 decisiones,
+    // 0%": un análisis vacío con salida 0 parece una medición válida.
+    const fallar = (mensaje) => {
+      console.error(`--analizar: ${mensaje}`);
+      process.exit(1);
+    };
+
     for (const arch of analizarArchivos) {
-      if (fs.existsSync(arch)) {
-        const contenido = JSON.parse(fs.readFileSync(arch, 'utf8'));
-        if (Array.isArray(contenido.resultados)) {
-          todosResultados.push(...contenido.resultados);
-        }
-        if (contenido.frecuenciasTipo) {
-          for (const [k, v] of Object.entries(contenido.frecuenciasTipo)) {
-            frecuenciasAcum[k] = (frecuenciasAcum[k] ?? 0) + v;
-          }
-        }
-        totInt += contenido.totalInterrupciones ?? 0;
+      if (!fs.existsSync(arch)) {
+        fallar(`no existe el archivo ${arch}`);
       }
+      let contenido;
+      try {
+        contenido = JSON.parse(fs.readFileSync(arch, 'utf8'));
+      } catch (error) {
+        fallar(`${arch} no es un JSON válido (${error.message})`);
+      }
+      if (!Array.isArray(contenido.resultados)) {
+        fallar(`${arch} no trae una lista \`resultados\` (¿es la salida de --salida?)`);
+      }
+      todosResultados.push(...contenido.resultados);
+      for (const [k, v] of Object.entries(contenido.frecuenciasTipo ?? {})) {
+        frecuenciasAcum[k] = (frecuenciasAcum[k] ?? 0) + v;
+      }
+      totInt += contenido.totalInterrupciones ?? 0;
+    }
+    if (todosResultados.length === 0) {
+      fallar('los archivos no traen ninguna decisión medida');
     }
     datosCrudos = { resultados: todosResultados, frecuenciasTipo: frecuenciasAcum, totalInterrupciones: totInt };
   } else {
