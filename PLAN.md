@@ -5664,6 +5664,64 @@ inicio, el botón **"Desafío del día"** y el historial de tus últimos puntaje
 componente ≥ 0 · el potencial más bajo nunca puntúa menos con el mismo registro · `splitsPorTier` suma
 `fila.splits` en cada fila · la huella de 40 seeds idéntica a la de `ffdf648`.
 
+#### K1 — lo que cambió la revisión de K1-A *(supervisor, 2026-10-02)*
+
+La revisión independiente de K1-A (`b0b544b`) no encontró corrimiento: estado, `rng` y logs idénticos en 610
+carreras contra `8e36105`, y `validate.js` completo en 266/266. Sí encontró que tres cosas de la spec no
+aguantaban, y que siete de sus mutantes sobrevivían a la suite. Decisiones:
+
+- **Los niveles se ganan con hechos, no con cortes de puntaje.** Con los cortes sobre la distribución de hoy, el
+  59% de las carreras con un título de primera quedaba debajo de "Campeón". Un #4 del mundo con 36 splits en tier
+  1 y dos títulos de LCP salía "Pasó por el circuito", con el veredicto de la misma tarjeta diciendo "De los
+  mejores del mundo": la tarjeta se contradecía (regla 15). Además, cualquier corte de puntaje se invalida con
+  cada calibración del bloque A/B/C. Cada nivel declara su **requisito de hecho** en `BALANCE.puntaje.niveles`;
+  gana el más alto que se cumple:
+
+  | Nivel | Requisito |
+  |---|---|
+  | *El que no llegó* | nunca jugó un split con contrato |
+  | *Pasó por el circuito* | jugó, pero nunca en tier 1 |
+  | *Un profesional más* | ≥ 1 split en tier 1 |
+  | *Fijo en primera* | ≥ N splits en tier 1 (N en `BALANCE`, del orden de 3 años) |
+  | *Campeón* | ≥ 1 título de liga de tier 1 |
+  | *Figura mundial* | cerró al menos una temporada en el Top 20 del mundo |
+  | *Leyenda* | ≥ 3 títulos de tier 1 y top 5 del mundo alguna vez |
+  | **El GOAT** | #1 del mundo en ≥ 3 cierres de temporada (desde K5, también 2 o más Mundiales) |
+
+  El **número** sigue siendo lo que se compara; su referente es el percentil (regla 13). El nivel siguiente dice
+  el **hecho** que faltó ("te faltó un título de primera"), no una cantidad de puntos. Con el motor generoso de hoy,
+  la distribución de niveles va a ser generosa: es la verdad del motor, y K2-K5 la cambian sin tocar los nombres.
+- **"Tu generación" se compara simétrico.** `mundo.rivales[].puntaje` se actualizaba en cada split y tu
+  `picos.rankMundial` solo en el cierre de temporada: un rival con un pico de mitad de año te ganaba en falso
+  (11 de 100 carreras, con texto falso en la tarjeta). Los dos se toman **al cierre de temporada**.
+- **La versión del juego cubre el juego entero.** La huella de 30 splits no ve la segunda mitad de la carrera (un
+  `rng()` extra desde los 26 años pasaba), y no incluía el puntaje (`porTitulo` ×2 pasaba la suite completa).
+  `HUELLA_JUEGO` pasa a ser el hash de 40 seeds × **60 splits** con
+  `seed:fin:splitCount:elo:total:nivel:leyenda`. La huella de `huella.js` (30 splits, T1) queda como estaba.
+- **D76 se verifica contra el split real.** El check lento exige que cada título nuevo lleve el `career.liga` y
+  el `career.tier` del split en que se ganó, y cada internacional el `career.liga` de ese momento. Antes alcanzaba
+  con que fuera coherente consigo mismo, y anotar el título con la liga de la fila pasaba la suite. **El split se
+  cuenta en el tier y la fila donde se juega** (después del mercado y del ascenso o descenso), no al arrancar: hoy
+  el 2% de los splits se contaba en el otro tier y el split de firma de un agente libre no se contaba en ninguna
+  fila.
+- **Decisiones del worker que se aceptan y quedan escritas:**
+  - `pesoRol` = 1 en los cinco roles. El desvío por rol de las seeds 1-400 se invierte con las 401-800 y con 800
+    queda en ±3,7%: es muestra. La regla de "±10% de la mediana" se corrige: se compara la mediana **entre los
+    que llegaron a pro** (la distribución completa es bimodal, con 23% de no-pros cerca de 0) y con ≥ 800 seeds.
+  - Los títulos de tier 3 van con `liga: null` y valen con la fuerza media de tier 3.
+  - El bono de "primero de tu generación" solo cuenta si entraste al Top 20.
+  - La leyenda se elige por distancia euclídea sobre (años pro, títulos de primera, internacionales, rank), con
+    penalización por otro rol; el perfil cuenta **solo títulos de tier 1**, igual que las leyendas.
+  - En el desafío no se elige ni el handle: el handle entra en el ruido del Top 20.
+- **`agencia.js` sigue midiendo contra `puntajeProvisorio`** hasta K3c. Ahí pasa a `puntajeDeCarrera` y su línea de
+  base se vuelve a medir (T6).
+- Además: el puntaje falla fuerte, con un error claro, ante una liga desconocida, un título sin tier o un potencial
+  faltante (no da NaN en silencio). Ningún texto muestra ids crudos de liga. El detalle del potencial habla según
+  hasta dónde llegaste. Las leyendas que calcaban a pros reales (una mid coreana de 15 años con tres Mundiales, un
+  ADC longevo de NA) se reescriben, y se corrigen dos incoherencias (títulos de LCP de una figura histórica previa
+  a 2025, una academia de "tres splits" en una carrera de 3 años). Se agregan checks para los mutantes que
+  sobrevivían: empates en la generación, eje de rank de la leyenda, logros de tier 2 en la monotonía.
+
 ### K2 — El nivel manda *(bloque A — estructura; los valores se fijan en K3c)*
 
 - **Compañeros en vivo**: `core/fuerza.js` lee el nivel actual de `state.mundo.planteles` (la mitad
