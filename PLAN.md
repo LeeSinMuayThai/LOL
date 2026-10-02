@@ -5519,6 +5519,16 @@ la calibración, no en el acto (regla 2 + T6). Cada check de banda que se reempl
 "reemplaza a X, que exigía lo contrario" (regla 17; D56 es el primero). **D52 sigue vigente**:
 ninguna seed anterior reproduce su carrera.
 
+**Cómo se anota un check fuera de banda dentro de un bloque** *(2026-10-02, antes de K2b, el primer commit de K
+con corrimiento)*. `validate.js` lee un registro único, `src/dev/bandasPendientes.js`: una entrada por check de
+banda que el bloque abierto sacó de banda, con el nombre exacto del check, el bloque (`A`, `B`, `C`), el valor
+medido y la banda, el commit que lo sacó y la subfase que lo re-basea (`K3c`, `K4c`, `K5c`). Un check registrado que
+falla se reporta **PENDIENTE**, no FAIL, y no rompe la corrida. Solo entran checks **de banda** (la regla 17: los
+que protegen "lo que el juego hace hoy"); un check estructural, de determinismo o de pureza nunca entra. Tres checks
+custodian el registro: (1) una entrada cuyo check pasa es un error (hay que borrarla: el registro no acumula
+basura); (2) una entrada de un bloque cerrado es un error (la calibración de K3c, K4c o K5c tiene que vaciar su
+bloque); (3) una entrada sin valor medido o sin subfase es un error.
+
 ## K.5 — Subfases
 
 ### K0 — Higiene y el instrumento *(sin corrimiento)*
