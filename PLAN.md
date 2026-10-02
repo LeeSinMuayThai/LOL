@@ -5684,6 +5684,100 @@ Checks (rojos hoy): r(nivel relativo, posición) misma liga ≥ 0,5 · favorito 
 75-85% · por ablación, nivel más equipo explican ≥ 50% de la varianza · la previa declara la misma
 probabilidad que usa el motor (regla 15, exacto).
 
+#### K2 — lo que midió la investigación y la spec que sale de ahí *(supervisor, 2026-10-02)*
+
+**La investigación** (solo lectura, copia aislada de `8e36105`, 400 seeds `criterio` × 60 splits, ligas modeladas;
+sondas en el scratchpad de la sesión, `k2inv/`) respondió la pregunta abierta de §K.0b punto 1. **El 77% que el
+nivel no explicaba no es azar: es una inflación de tu fuerza que los rivales no tienen.** Los multiplicadores que
+afectan tu rendimiento (meta × campeón × sinergia × jerarquía) promedian **×1,30**, sobre todo el de campeón, que
+vale 1,0 con maestría 50 cuando un pro anda en 85. Además, el rendimiento choca contra el tope de 100 en el 50% de
+los splits. Con eso tu equipo queda +15,5 sobre la media de los rivales (el desvío entre ellos es 7,7) y, con el
+ruido apagado, sale 1º en el **65%** de los splits: la posición se satura y ningún R² lineal puede subir. La
+atribución exacta (Shapley sobre re-simulación completa) de lo que se gana al poner cada multiplicador en 1 es:
+**campeón 57% · sinergia 28% · jerarquía 11% · meta 4%**. Con los cuatro en 1, el R² sin ruido pasa de 0,257 a
+0,717. Otros hallazgos:
+- **El instrumento de K0 subestima la meta en 0,04-0,19.** El 5,2% de sus filas son splits pro sin temporada que
+  arrastran la posición del split anterior. Además lee el nivel después del split y los compañeros del snapshot,
+  no los que usó el motor.
+- **La "una sola tirada" pesa 4 pp de la varianza** (con ruido: nivel + equipo lineal 19%, fuerza determinista
+  completa 54%, + la tirada del split 58%, ruido por fecha ~36-42%). La forma por fecha no mueve nada (r 0,375
+  contra 0,369).
+- **Bo5.** El 91,9% de K0 era analítico y omitía el Fearless. En el motor, el favorito con Δ≈10 ya gana **76,7%**,
+  pero es asimétrico: el jugador favorito gana 67,5% y el rival favorito 98,3%. La causa es que el Fearless
+  degrada solo tu fuerza (−6,2 en el mapa 2, −10,1 en el 3, −12,9 en el 4: la amplitud de la maestría) y la del
+  rival queda constante. Δ típico entre orgs de una liga tier 1: 1º−2º 5,4 · **1º−4º 11,8** · 1º−último ~25.
+- **Compañeros**: en el 91% de los cambios de liga, el primer split en la org nueva se juega con los compañeros
+  de la anterior (`roster` corre antes que `mercado` y el traspaso no limpia `career.companeros`). Fuera de eso,
+  el snapshot se desvía del plantel vivo en −1,2 ± 6,7: leerlos en vivo es neutro en las métricas, pero corrige
+  ese error.
+- **Peso por jerarquía** (tu peso en el equipo escalando con tu estatus): **empeora** el R² (0,210) y el Bo5
+  (65%). No se hace.
+- **Simetrizar los σ sin cambiar el σ combinado no hace nada** (7/12 → 9,83/9,83: idéntico, como dice la
+  matemática). Lo que importa es el σ combinado y separar el de la fecha del de la serie.
+- **Candidato medido** (centrar los cuatro multiplicadores + meta 0,9-1,1 + maestría 0,1 + doble vuelta + σ de
+  serie 12,5/12,5): R² sin ruido **0,502** con la definición corregida (0,530 fuera de muestra) · r **0,535**
+  (0,580 corregida; 0,563 con fecha 7/7) · favorito de un Bo5 con Δ0≈10: **82,1% ± 2,9** (jugador 80,7 · rival
+  84,4) · % de llegar a tier 1 sin cambio (78,3) · ≥ 1 título sin cambio (77,8), pero los títulos por carrera
+  bajan de 6,54 a 4,38 · jerarquía media 71,7 → 55,9 · mentalidad ≥ 90: 87% → 71%. El bot `azar` pasa de r
+  0,340 a 0,502.
+- **Riesgos medidos sobre el candidato** (`validate.js`): 245 OK / 6 FAIL. (1) "El boost del pool no se clava en
+  el centro (0,75-1,25)" falla por diseño al acotar el meta: necesita su línea de la regla 17. (2) "generarFixture
+  produce un round-robin real" falla por diseño con la doble vuelta. (3) "Nadie te frena en el draft" da 0
+  pausas: choca con K4, se re-basea en K4c. (4) Subir `VERSION`. (5) "Duración de la carrera ~ potencial (r >
+  0,32)" da 0,30: banda, se re-basea en K3c. (6) El pronóstico de J3 (seed 1, split 11, Akali: la ficha dice
+  "aguanta 0" y el motor no lo oxida) aparece solo con la combinación: **D79**, se investiga antes de K3c.
+- **D78 (nuevo):** en 400 carreras de `criterio` hay **0 splits en LCK y en LPL**. El tier 1 se juega en CBLOL
+  (5.734 splits), LCP (3.767), LCS (1.525) y LEC (345), salgas de la región que salgas, Corea incluida. Es un
+  problema del mercado y de la región, no de K2: va a K5.
+
+**Spec de K2 (bloque A).** Reemplaza las viñetas de §K2 donde las contradice. Va en tres commits, por la regla 2:
+
+- **K2a — el instrumento, sin corrimiento (cero `rng`, solo `src/dev/`).** El observador de `simulate.js`
+  registra, en el split donde corre la temporada, el nivel y los compañeros que usó el motor, y descarta los splits
+  pro sin temporada. La r de la misma liga y el R² sin ruido se reportan con la **definición corregida** y, al
+  lado, con la de K0 por continuidad. Los checks de K2 se escriben sobre la corregida. Huella idéntica.
+- **K2b — estructura** (corre el stream: bloque A, T1 aceptado; las constantes nuevas arrancan en el valor que
+  reproduce el comportamiento de hoy, para que el commit mida la estructura sola):
+  1. **Centrar los multiplicadores de tu rendimiento.** Cada factor vale 1,0 en el valor típico de un pro, no en
+     50: referencia de maestría en `factorDeCampeon`, de sinergia y de jerarquía, todas en `BALANCE` (hoy:
+     maestría 50, peso 0,3). La **sinergia deja de contarse dos veces** (`rendimientoBase` y `fuerzaDelEquipo`):
+     queda en un solo lugar. El tope de 100 del rendimiento no puede volver a saturar la fuerza de partido: se
+     mide cuántos splits tocan el tope antes y después.
+  2. **Compañeros en vivo**: `core/fuerza.js` lee el nivel actual de `state.mundo.planteles` en las ligas
+     modeladas (fallback al snapshot de `systems/roster.js` en tier 3 y en las tier 2 no modeladas).
+     `career.companeros` se refresca al cambiar de org en el mismo split (cierra el 91% de traspasos jugados con
+     el plantel viejo), y `probCambioDeRoster` deja de inventar compañeros en las ligas modeladas.
+  3. **El partido se decide con una tirada contra la probabilidad declarada.** Un solo módulo de ruido,
+     `ruidoEfectivo(state, tipo)` con `tipo` = `'fecha'` o `'mapa'`, reemplaza los σ sueltos (`ruidoRendimiento`
+     en la fuerza de partido, `ruidoFecha`/`ruidoRivalFecha`, `ruidoMapa`/`ruidoRivalSerie`). Su σ es el combinado
+     y queda separado por tipo; K3 lo conecta a la mentalidad. `p = probabilidadDeGanar(F, f, σ)` y el resultado
+     es `rng() < p`: **una tirada por partido o mapa** (hoy son cuatro), y lo que la previa muestra es
+     exactamente lo que el motor usa (regla 15). La fuerza de partido **no lleva tirada por split** (la "una sola
+     tirada" pesaba 4 pp): el azar del partido vive solo en p. No hay forma por fecha (medida: no mueve nada).
+  4. **`BALANCE.temporada.vueltas`** (1 = hoy, 2 = doble vuelta; real en LCK) y el check de fixture
+     generalizado a N vueltas. El valor se decide en K2c.
+  5. **El tope del meta y de la maestría** quedan como están (`multiplicadorMin/Max`,
+     `maestriaPesoEnRendimiento`); K2c los mueve.
+  - **No se hace**: peso por jerarquía (medido, empeora) ni forma por fecha (medida, neutra). El Fearless que solo
+    te degrada a vos (la asimetría del Bo5) se achica con la amplitud de la maestría en K2c y se resuelve de raíz
+    en K4, con el plan de Fearless (el rival también quema).
+- **K2c — solo constantes, valores iniciales del candidato medido** (K3c los recalibra con todo el bloque A):
+  referencias centradas en la media de un pro (los factores medios: meta 0,983 · campeón 1,075 · sinergia
+  1,050/1,025 · jerarquía 1,051), meta 0,9-1,1, peso de maestría 0,1, σ de mapa simétrico con combinado ~18
+  (12,5/12,5), σ de fecha y vueltas según lo que dé r ≥ 0,5 con la definición corregida. **"Favorito claro" = Δ
+  de fuerza ≈ 10 al empezar la serie (≈ 1º contra 4º de una liga, 11,8)**, medido **en el motor**, de los dos
+  lados, no con la tabla analítica. Cada check de banda que se rompa lleva su línea de la regla 17;
+  `CONCEPTO` §6 se reescribe si el meta se acota.
+- **K2d — la previa (pantalla).** Antes de la fecha marcada y antes de cada mapa de serie, tu fuerza desglosada
+  (vos / tus compañeros / el meta / el campeón) contra la del rival, y **la probabilidad de ganar**, la misma p
+  que el motor tira. La probabilidad de la serie completa espera a K4 (depende del plan de Fearless).
+
+**Checks de K2** (rojos hoy; las bandas finales se fijan en K3c): r(nivel relativo, posición) en la misma liga ≥
+0,5 y R² sin ruido ≥ 0,5, los dos con la definición corregida · favorito con Δ≈10 gana el Bo5 75-85%, medido en
+el motor y por lado · la p de la previa es la p que el motor tira (exacto, regla 15) · un traspaso juega su primer
+split con el plantel nuevo · una tirada de `rng` por partido y por mapa · `ruidoEfectivo` es el único lugar que
+lee σ de partido (estático).
+
 ### K3 — Tus decisiones construyen tu nivel *(bloque A — estructura)*
 
 - **La mentalidad es lo que hace que tu nivel se note**: gobierna la consistencia. Con la cabeza
@@ -5942,6 +6036,8 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D75 | `carrera.tierMaximo` del observador de `simulate.js` cuenta el estado "agente libre de tier 2" que sigue a un ascenso (`competitivo.js:58-78`, `saltarATier2` deja `tier = 2` y `currentOrg = null`), pero `registro.porOrg` solo tiene orgs en las que se fichó. Medido en K0 (seeds 1-400 × 60 splits): discrepa en 5 de 400 carreras de `malas` y en 1 de 200 de `ranked`; en `equilibrado`, `prudente`, `criterio` y `azar` no discrepa. Ninguna categoría del embudo cambia (las 5 pasan de tier 2 a tier 3 y las dos caen en "estancado"). Hay que decidir qué es "llegó a tier N" (jugó en N, o ganó el salto) y alinear el observador o documentar la definición | K1 (antes de que el puntaje cuente tier) |
 | D76 | `registro.porOrg[].tier` queda desfasado tras un descenso en el lugar: `resolverDescenso` (`competitivo.js:135-181`) pasa `career.tier` y `liga` a 2 sin cerrar ni abrir fila, así que la fila sigue diciendo tier 1 y `core/legado.js` (`splitsDeTier`, `titulosDeTier`) y `agencia.js` cuentan splits de Challengers como tier 1. Medido en K0: 37 de 400 carreras de `equilibrado` (168 splits) y 5 de 400 de `malas` (33 splits); ejemplo, seed 70 de `malas`: la fila de MVK Esports dice `tier: 1, liga: LCP` aunque desde el split 24 juega en `LCP_CHALLENGERS`. No se sabe si es deliberado ("el contrato viaja"). El puntaje de K1 (`core/puntaje.js`) lee de esas filas: se decide antes | K1 |
 | D77 | `proSinTierNunca` no significa "pro sin tier": son carreras que fichan y se retiran por burnout en el mismo split (1 de 400 `equilibrado`, 36 de 400 `malas`; todas con `fin = burnout`, `splitCount = splitFichaje + 1` y `porOrg` vacío): el pipeline corta con `retirado` antes de `armarRoster`, y `career.tier` final sí es 3 (o 2). No se investigó por qué el burnout cae justo en el split del fichaje | K5 (retiro emergente) |
+| D78 | **El jugador nunca juega en LCK ni en LPL.** Medido en la investigación de K2 (2026-10-02, `8e36105`, 400 carreras de `criterio` × 60 splits): 0 splits en LCK y en LPL; el tier 1 se juega en CBLOL (5.734 splits), LCP (3.767), LCS (1.525) y LEC (345), salgas de la región que salgas, Corea incluida. Nivel contra la media de su liga: CBLOL 75 contra 55 · LCP 79 contra 61 · LCS 85 contra 70 · LEC 89 contra 76. Es el mercado (y la región de origen), no la fuerza: K5 tiene que hacer que salir de Corea sea jugar en Corea | K5 |
+| D79 | **Probable bug latente del pronóstico de óxido de J3**: con el candidato de K2 (seed 1, split 11, práctica, Akali) la ficha dice "aguanta 0" y el motor no lo oxida, y el check "J3 pronóstico" falla. No lo dispara ninguna palanca de K2 por separado, solo la combinación: la trayectoria nueva destapa un caso borde del pronóstico | antes de K3c |
 
 ---
 
