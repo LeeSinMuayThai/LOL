@@ -7,6 +7,8 @@
     "build": "node src/dev/build.js",
     "validate": "node src/dev/validate.js",
     "validate:rapido": "node src/dev/validate.js --rapido",
-    "simulate": "node src/dev/simulate.js"
+    "simulate": "node src/dev/simulate.js",
+    "huella": "node src/dev/huella.js",
+    "agencia": "node src/dev/agencia.js"
   }
 }
