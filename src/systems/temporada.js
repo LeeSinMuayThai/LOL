@@ -6,11 +6,11 @@ import { resolverTexto } from '../core/plantillas.js';
 import { ligaOZonaDeCarrera } from '../core/competicion.js';
 import {
   generarFixture, aplicarCrucesDeJornada, tablaDePosiciones, posicionEnTabla,
-  resolverFecha, motivosDeFecha, motivoPrincipal, decisionDeDraftFecha, factorDraftFecha,
-  registrarEnFila, filaVacia
+  motivosDeFecha, motivoPrincipal, decisionDeDraftFecha, fuerzaDeFecha,
+  registrarEnFila, filaVacia, rendimientoDeLaTemporada, resultadosVacios, sumarResultado
 } from '../core/temporada.js';
-import { calcularRendimiento, fuerzaDelEquipo } from './rendimiento.js';
-import { nivelDeCompaneros } from '../core/fuerza.js';
+import { nivelDeCompaneros, rendimientoBase, rendimientoDePartido, fuerzaDelEquipo } from '../core/fuerza.js';
+import { jugarPartido } from '../core/partido.js';
 import { nivelDelJugador } from '../core/ficha.js';
 import { disponibleEn, opcionesVivas, resolverOpcion, cooldownActivo, pesoConMemoria } from './events.js';
 import { pesoDePick, factorDeCampeon, lecturaDePick } from '../core/ajusteMeta.js';
@@ -162,7 +162,10 @@ function iniciarTemporada(state, rng) {
   // tirada de acá — un `rng()` menos por split competitivo (D38).
   const objetivoMarcadas = Math.min(calendario.length, t.fechasMarcadasPorSplit);
 
-  const rendimiento = calcularRendimiento(state, rng);
+  // K2b: la fuerza del split es DETERMINISTA. Hasta K2a acá se tiraba un
+  // `gauss` (el rendimiento del split) que decidía las 7-9 fechas juntas; ahora
+  // cada fecha es una tirada contra su p y nada más (`jugarPartido`).
+  const rendimiento = rendimientoDePartido(state);
   const fuerzaPropia = fuerzaDelEquipo(state, rendimiento);
 
   return {
@@ -170,7 +173,14 @@ function iniciarTemporada(state, rng) {
     calendario,
     cruces,
     indice: 0,
+    // El rendimiento del split: hasta que cierre el calendario, el de los
+    // partidos (el base acotado); al cerrar, el que cuentan tus resultados
+    // (`rendimientoDeLaTemporada`), que es el que leen las consecuencias.
     rendimiento,
+    // K2b: el base sin acotar (con el que se lee el rendimiento del split) y lo
+    // que tus fechas dieron contra lo que su p prometía.
+    rendimientoBase: rendimientoBase(state),
+    resultadosPropios: resultadosVacios(),
     fuerzaPropia,
     // K2a (PLAN.md "K2 — lo que midió la investigación"): lo que el motor usó
     // para `rendimiento` y `fuerzaPropia`, expuesto para el instrumento de
@@ -197,8 +207,11 @@ function iniciarTemporada(state, rng) {
 // lados — tu fila y la del rival — y resuelve los cruces ajenos de ESA misma
 // jornada (`t.cruces[t.indice]`), para que todas las filas de la tabla
 // avancen juntas (fase 9Rb). Cada jornada suma exactamente un ganado y un
-// perdido por equipo.
-function avanzarFechaSilenciosa(state, gano, rng) {
+// perdido por equipo. K2b: `partido` es `{ gano, p }` de `jugarPartido`; si
+// `jugaste` (no estabas de baja), entra a los resultados con los que se lee tu
+// rendimiento del split.
+function avanzarFechaSilenciosa(state, partido, jugaste, rng) {
+  const { gano } = partido;
   const t = state.career.temporada;
   const fecha = t.calendario[t.indice];
   const registrosTrasOtros = aplicarCrucesDeJornada(t.registrosOtros, t.cruces?.[t.indice] ?? [], rng);
@@ -214,6 +227,7 @@ function avanzarFechaSilenciosa(state, gano, rng) {
         ...t,
         indice: t.indice + 1,
         filaPropia: registrarEnFila(t.filaPropia, gano),
+        resultadosPropios: jugaste ? sumarResultado(t.resultadosPropios, partido) : t.resultadosPropios,
         registrosOtros: { ...registrosTrasOtros, [fecha.rival]: registrarEnFila(registrosTrasOtros[fecha.rival], !gano) },
         racha: gano ? (t.racha > 0 ? t.racha + 1 : 1) : (t.racha < 0 ? t.racha - 1 : -1)
       }
@@ -310,9 +324,10 @@ function resolverFechaMarcada(state, rng, logsAcum) {
   // Fase 9Rc: el factor del draft es RELATIVO al campeón del split (el que ya
   // asumió `t.fuerzaPropia`). Elegir ese mismo campeón para la fecha da 0.
   const campeonDelSplit = state.player.championPool.find((c) => c.name === state.player.campeonDelSplit);
-  const factorDraft = factorDraftFecha(fecha.campeonElegido, campeonDelSplit, state.meta.weights);
-  const fuerzaFecha = t.fuerzaPropia * (1 + factorDraft + (t.ajustePartido ?? 0));
-  const gano = resolverFecha(fuerzaFecha, fecha.fuerzaRival, rng);
+  const fuerzaFecha = fuerzaDeFecha(t.fuerzaPropia, fecha.campeonElegido, campeonDelSplit, state.meta.weights, t.ajustePartido ?? 0);
+  // K2b: una sola tirada contra la p declarada (la misma que mira el draft).
+  const partido = jugarPartido(state, fuerzaFecha, fecha.fuerzaRival, 'fecha', rng);
+  const { gano } = partido;
 
   // Fase 9R0a: la revancha se juega UNA vez. Después, ese rival deja de ser
   // "el que te eliminó": si no se limpiaba, `ultimoEliminadoPor` quedaba
@@ -333,7 +348,8 @@ function resolverFechaMarcada(state, rng, logsAcum) {
         temporada: { ...t, ajustePartido: 0 }
       }
     },
-    gano,
+    partido,
+    true,
     rng
   );
   const tt = stConResultado.career.temporada;
@@ -387,8 +403,10 @@ function continuarTemporada(state, rng, logsAcum) {
       }
       const tablaFinal = tablaDePosiciones(t.registrosOtros, t.filaPropia);
       const posicion = posicionEnTabla(tablaFinal, st.career.currentOrg);
+      // K2b: el rendimiento del split lo cuentan los partidos que jugaste.
+      const rendimiento = rendimientoDeLaTemporada(t.rendimientoBase, t.resultadosPropios);
       return {
-        state: { ...st, career: { ...st.career, temporada: { ...t, activa: false, posicion, tabla: tablaFinal } } },
+        state: { ...st, career: { ...st.career, temporada: { ...t, activa: false, posicion, tabla: tablaFinal, rendimiento } } },
         logs
       };
     }
@@ -433,14 +451,17 @@ function continuarTemporada(state, rng, logsAcum) {
     }
 
     // Fuerza penalizada mientras dura la baja — no suma ni saca ninguna
-    // tirada de `rng` (trampa T1): sigue siendo una sola llamada a
-    // `resolverFecha`, cambia el valor que recibe, no la cantidad de tiradas.
+    // tirada de `rng` (trampa T1): sigue siendo una sola tirada por fecha,
+    // cambia la fuerza que recibe, no la cantidad de tiradas. Esa fecha no
+    // cuenta para tu rendimiento del split: el equipo jugó sin vos.
     const fuerzaEfectiva = enBajaPorLesion ? t.fuerzaPropia * BALANCE.salud.factorFuerzaLesionado : t.fuerzaPropia;
-    const gano = resolverFecha(fuerzaEfectiva, fecha.fuerzaRival, rng);
+    const partido = jugarPartido(st, fuerzaEfectiva, fecha.fuerzaRival, 'fecha', rng);
+    const { gano } = partido;
     silenciosas = { ...silenciosas, [gano ? 'ganados' : 'perdidos']: silenciosas[gano ? 'ganados' : 'perdidos'] + 1 };
     st = avanzarFechaSilenciosa(
       enBajaPorLesion ? { ...st, flags: { ...st.flags, fechasBajaLesion: st.flags.fechasBajaLesion - 1 } } : st,
-      gano,
+      partido,
+      !enBajaPorLesion,
       rng
     );
   }

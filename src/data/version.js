@@ -9,5 +9,9 @@
 // o un cambio de balance que mueva las carreras obliga a subir `VERSION_JUEGO`
 // y registrar el hash nuevo acá, a propósito y en el mismo commit. Cada bloque
 // de corrimiento de la FASE K (A, B, C) sube la versión al mergearse.
-export const VERSION_JUEGO = 'K1';
-export const HUELLA_JUEGO = 2128736563;
+//
+// K2b (bloque A, corrimiento declarado — trampa T1): el partido pasa a ser una
+// tirada contra la p declarada, la fuerza deja de tirar un dado por split y
+// los compañeros se leen en vivo. Ninguna seed de K1 reproduce su carrera.
+export const VERSION_JUEGO = 'K2b';
+export const HUELLA_JUEGO = 1112981938;

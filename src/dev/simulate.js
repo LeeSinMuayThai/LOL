@@ -10,7 +10,7 @@ import { candidatos } from '../systems/events.js';
 import { esCierreDeEdad } from '../systems/edadCierre.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 import { BALANCE } from '../data/balance.js';
-import { probabilidadDeGanar } from '../core/numeros.js';
+import { probabilidadDePartido } from '../core/partido.js';
 import { ESTRATEGIAS, NOMBRES_ESTRATEGIA, esDecisionDeMinijuego } from './estrategias.js';
 
 // --- Constantes de medición (PLAN.md §K.5 K0) ---
@@ -96,15 +96,14 @@ export const EPSILON_DETERMINANTE = 1e-12;
 // Los tres tipos de split pro que distingue `ritmo` (ver `clasificarSplit`).
 export const TIPOS_DE_SPLIT = ['regular', 'playoffs', 'internacional'];
 
-// Los cinco ruidos de resultados que apaga la ablación de `varianzaExplicada`: [grupo de BALANCE, clave].
+// Los ruidos de resultados que apaga la ablación de `varianzaExplicada`: [grupo de BALANCE, clave].
 // Exportado para que `validate.js` pueda fotografiarlos ANTES de cualquier corrida y comprobar que la
-// ablación los apaga adentro de su ventana y los restaura después.
+// ablación los apaga adentro de su ventana y los restaura después. K2b: eran cinco (el del rendimiento
+// del split y los dos σ por lado de la fecha y del mapa); desde que cada partido es una tirada contra su
+// p (`core/partido.js`) son los dos σ combinados que lee `ruidoEfectivo`.
 export const PARAMETROS_RUIDO = [
-  ['rendimiento', 'ruidoRendimiento'],
-  ['temporada', 'ruidoFecha'],
-  ['temporada', 'ruidoRivalFecha'],
-  ['serie', 'ruidoMapa'],
-  ['serie', 'ruidoRivalSerie']
+  ['partido', 'sigmaFecha'],
+  ['partido', 'sigmaMapa']
 ];
 
 // Cuántos beats cuenta el reproductor para un lote de logs nuevos (`agruparBeats`, src/ui/components/feed.js):
@@ -505,23 +504,19 @@ export function filaDeSerie(log, split) {
 }
 
 // Fase K0 (PLAN.md §K.3a): cálculo analítico cerrado de Bo5 para Δ de fuerza.
-// Nota: K2 va a reemplazar estos sigmas fijos por `ruidoEfectivo(state)`.
-// El 80% objetivo de K.3a es para Δ ≈ 10.
+// El 80% objetivo de K.3a es para Δ ≈ 10. K2b: la p de cada mapa es la del motor
+// (`probabilidadDePartido(null, Δ, 0, 'mapa')`, el σ combinado de `ruidoEfectivo`), así que la tabla
+// sigue sola a K2c y a K3; `pMapaDe` deja inyectar otra p (validate lo usa con σ = 0).
 //
-// Lo que esta tabla dice HOY (σ combinado = √(7² + 12²) ≈ 13,9): la aproximación logística de
-// `probabilidadDeGanar` sobreestima ~1 pp contra Monte Carlo (Bo5, 400.000 series por Δ: Δ=10 da 0,9192
-// contra 0,9109; Δ=4 da 0,7167 contra 0,7045) — es lo que pide la spec (usar `probabilidadDeGanar`), así
-// que se deja. Con Δ=10 el favorito ya gana ~92% de una Bo5: lo que no cumple K.3a es la distribución de
-// Δ entre equipos y el peso del nivel, no el σ del mapa. Para llevar la Bo5 a 80% con Δ=10 haría falta un
-// σ combinado de ≈ 22 (22,3 con la normal exacta, 23,5 con la logística del motor; hoy 13,9), lo que
-// chocaría de frente con `ruidoPuro <= 25%`.
+// Lo que decía esta tabla en K0 (σ combinado = √(7² + 12²) ≈ 13,9): la aproximación logística
+// sobreestima ~1 pp contra Monte Carlo (Bo5, 400.000 series por Δ: Δ=10 da 0,9192 contra 0,9109; Δ=4
+// da 0,7167 contra 0,7045). Es analítica y omite el Fearless: la medida en el motor es `bo5Motor`.
 export function calcularFavoritoBo5(
   deltas = DELTAS_FAVORITO_BO5,
-  sigmaPropio = BALANCE.serie.ruidoMapa,
-  sigmaRival = BALANCE.serie.ruidoRivalSerie
+  pMapaDe = (delta) => probabilidadDePartido(null, delta, 0, 'mapa')
 ) {
   return deltas.map((delta) => {
-    const pMapa = probabilidadDeGanar(delta, 0, sigmaPropio, sigmaRival);
+    const pMapa = pMapaDe(delta);
     const q = 1 - pMapa;
     // Fórmula binomial/negativa para mejor de 5 (primero a 3):
     // 3-0: p^3
@@ -769,8 +764,9 @@ function pctParesConsecutivosIguales(lista) {
 // la mitad de §J.0 que ya está en los datos, no en el comportamiento. Cada
 // campo corresponde a una causa medida: `pctEfectosMentalidadHype`/
 // `sigmaEfectoTipico` a "las opciones no afectan nada" (mentalidad/hype no se
-// leen en `fuerza.js`, así que un efecto típico se pierde contra
-// `ruidoRendimiento`); `pctEfectosDeRolQueSonDeCurva`/`vidaMediaPorCurva` a
+// leen en `fuerza.js`, así que un efecto típico se pierde contra la
+// dispersión del rendimiento del split — hasta K2a `ruidoRendimiento`, desde
+// K2b `puntosPorDesvioDeResultados`, el mismo 7); `pctEfectosDeRolQueSonDeCurva`/`vidaMediaPorCurva` a
 // que la curva de `atributos.js` converge al objetivo biológico y se come
 // cualquier bulto que no sea permanente; `pctOutcomesConModificadores` a que
 // la promesa de CONCEPTO §8 ("tus stats corren esos pesos") hoy se cumple en
@@ -831,7 +827,7 @@ export function analizarCatalogo() {
     efectosTotal,
     pctEfectosMentalidadHype: efectosTotal > 0 ? efectosMentalidadHype / efectosTotal : null,
     magnitudMediaEfectoMentalidadHype: Number(magnitudMediaMentalidadHype.toFixed(2)),
-    sigmaEfectoTipico: Number((magnitudMediaMentalidadHype / BALANCE.rendimiento.ruidoRendimiento).toFixed(3)),
+    sigmaEfectoTipico: Number((magnitudMediaMentalidadHype / BALANCE.rendimiento.puntosPorDesvioDeResultados).toFixed(3)),
     pctEfectosDeRolQueSonDeCurva: efectosDeRol > 0 ? efectosDeCurva / efectosDeRol : null,
     outcomesTotal,
     pctOutcomesConModificadores: outcomesTotal > 0 ? outcomesConModificadores / outcomesTotal : null,
@@ -1007,7 +1003,7 @@ function estadisticosDeVarianza(filas) {
 // negativo con `ranked`; el gate `<= 0,25` "se cumplía" con un R² de 0,06). En ese caso `ruidoPuro` es
 // `null` y el número crudo viaja en `ruidoPuroCrudo`.
 //
-// Ojo, la ablación no es "ruido puro": con σ=0, `probabilidadDeGanar` devuelve 0, 0,5 o 1, y eso también
+// Ojo, la ablación no es "ruido puro": con σ=0, `probabilidadDePartido` devuelve 0, 0,5 o 1, y eso también
 // cambia los frenos de draft y de minijuego (que deciden con esa probabilidad), no solo los resultados.
 //
 // `soloLigaModelada` repite todo sobre los splits cuya liga SÍ está en `mundo.ligas` (sin los de tier 3,

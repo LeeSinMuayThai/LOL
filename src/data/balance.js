@@ -24,8 +24,32 @@ export const BALANCE = {
   numeros: {
     // Aproximación logística de la CDF normal: Φ(x) ≈ 1/(1+e^(−1.702·x)). El
     // 1.702 minimiza el error máximo contra la normal. Lo usa
-    // `probabilidadDeGanar` (draft de 9Rd).
+    // `probabilidadPorSigma` (la p de cada partido y mapa desde K2b, y el
+    // draft de 9Rd).
     factorLogisticoNormal: 1.702
+  },
+
+  // K2b (PLAN.md "K2 — lo que midió la investigación", viñeta K2b.3): el
+  // presupuesto de ruido de un partido, en UN solo lugar. Cada partido (fecha
+  // de temporada regular, cruce ajeno de la tabla) y cada mapa de una serie se
+  // decide con UNA tirada contra p = Φ((F − f)/σ), y σ lo lee únicamente
+  // `ruidoEfectivo` (`core/partido.js`). Es el σ COMBINADO de los dos lados.
+  // Valores iniciales = el comportamiento de hoy (regla 2: la estructura se
+  // mide sola; K2c los mueve, K3 conecta σ a la mentalidad):
+  partido: {
+    // √(7² + 12²) = 13,89: el `ruidoFecha` (7) y el `ruidoRivalFecha` (12) que
+    // tiraban dos gauss por fecha. La tirada del rendimiento del split (σ 7,
+    // compartida por todas las fechas) desaparece: era la "una sola tirada"
+    // que pesaba 4 pp de la varianza de la posición.
+    sigmaFecha: 13.9,
+    // El σ efectivo de un mapa hasta K2a, medido mapa a mapa (35.649 mapas de
+    // `criterio`, 400 seeds × 60 splits, punta de K2a): √(σ_mapa² + σ_rival² +
+    // (peso·sinergia·σ_rend)²) con el tope de 100 aplicado al rendimiento de
+    // cada mapa = 14,22 (sin el tope serían 14,35; solo mapa y rival, 13,89).
+    // Cada mapa tiraba tres gauss: `ruidoMapa` 7, `ruidoRivalSerie` 12 y el
+    // `ruidoRendimiento` 7 del rendimiento de ese mapa, que entra a la fuerza
+    // por `pesoJugadorEnEquipo` × la sinergia del equipo.
+    sigmaMapa: 14.2
   },
 
   // Cuánto corren los stats la probabilidad de un outcome (CONCEPTO §8: "la
@@ -580,9 +604,13 @@ export const BALANCE = {
     sinergiaRuido: 3.5,
     sinergiaRetenidaAlCambiar: 0.55,
 
-    // Nivel de los companeros: orbita la fuerza de la org.
+    // Nivel de los companeros inventados (tier 3 y tier 2 sin plantel):
+    // orbita la fuerza de la org.
     nivelCompaneroSpread: 8,
-    // Cada tanto se va alguien y el roster se sacude.
+    // Cada tanto se va alguien y el roster se sacude. K2b: SOLO en las orgs
+    // sin plantel modelado (tier 3, tier 2 fuera de tu región); en las ligas
+    // modeladas los compañeros son los del plantel vivo (`mundo.planteles`) y
+    // el roster cambia cuando cambia el plantel, sin dado (`systems/roster.js`).
     probCambioDeRoster: 0.1
   },
 
@@ -643,17 +671,45 @@ export const BALANCE = {
     draftBase: 0.35,
     draftPorJerarquia: 0.55,
 
-    // Rendimiento = atributos ponderados por rol, corridos por meta, maestria,
-    // sinergia, jerarquia y ruido gaussiano.
+    // Rendimiento = atributos ponderados por rol, corridos por meta, maestria
+    // y jerarquia (`core/fuerza.js#rendimientoBase`). K2b: sin dado — el azar
+    // del partido vive solo en la p de `core/partido.js`.
     maestriaPesoEnRendimiento: 0.3,
+    // K2b (PLAN.md "K2 — lo que midió la investigación"): cada multiplicador de
+    // tu rendimiento vale 1,0 en una REFERENCIA declarada, no en un 50
+    // implícito. Hoy valen 50, el comportamiento de antes (bit a bit); K2c las
+    // lleva al valor típico de un pro (maestría ~85), que es lo que inflaba tu
+    // fuerza contra la de los rivales.
+    maestriaReferencia: 50,
+    jerarquiaReferencia: 50,
     // Fase 9Rc: la afinidad del campeon al meta pesa la MITAD que la maestria
     // (CONCEPTO §6). Antes `calcularRendimiento` la ignoraba (0 implicito) y el
     // meta solo tocaba el rendimiento via `multiplicadorDeMeta`; ahora tambien
     // via el campeon que terminas jugando (`factorDeCampeon`). Se calibra en 9Rg.
     afinidadPesoEnRendimiento: 0.15,
-    sinergiaPesoEnRendimiento: 0.2,
     jerarquiaPesoEnRendimiento: 0.12,
-    ruidoRendimiento: 7,
+    // K2b: la sinergia es química COLECTIVA (`roster`: "distinta del estatus
+    // personal") y se cuenta UNA vez, sobre la fuerza del equipo entero
+    // (`fuerzaDelEquipo`), no en tu rendimiento personal. Antes se contaba dos
+    // veces: ×(1+(s−0,5)·0,4) en tu rendimiento y ×(1+(s−0,5)·0,2) en el
+    // equipo. 0,27 es el peso que reproduce la fuerza de equipo de antes:
+    // mínimos cuadrados de la fuerza determinista vieja contra la nueva sobre
+    // 13.628 temporadas de `criterio` (400 seeds × 60 splits, punta de K2a),
+    // error medio +0,04 y RMSE 1,5 (con 0,4, la suma "ingenua" de los dos
+    // pesos, el RMSE daba 2,4 y el sesgo +1,2: con el tope de 100, la sinergia
+    // de tu rendimiento no pesaba en los splits que lo tocaban).
+    // Factor = 1 + (s − referencia)/100 · peso.
+    sinergiaPesoEnEquipo: 0.27,
+    sinergiaReferencia: 50,
+    // K2b: el rendimiento del split que leen las consecuencias (hype,
+    // jerarquía, arraigo, el "Tu rendimiento: N/100") ya no sale de un dado
+    // propio: lo cuentan los partidos. Rendimiento = base + este valor × z,
+    // con z = (ganados − esperados)/desvío de tus fechas de temporada regular
+    // contra la p declarada (`core/temporada.js#rendimientoDeLaTemporada`).
+    // 7 = el σ del `gauss` que hacía de rendimiento del split hasta K2a: la
+    // lectura conserva la dispersión de antes, pero ahora la explican tus
+    // resultados.
+    puntosPorDesvioDeResultados: 7,
 
     // Como se traduce a resultado del equipo. 0,35 → 0,5 en 9Rg: medido, un
     // jugador de nivel pico en el cuartil superior de tier1 apenas se
@@ -1287,12 +1343,13 @@ export const BALANCE = {
   // cada rival) escupiendo una posición sin fechas ni tabla. Ahora es un
   // calendario real, con 2-3 fechas por split que el jugador juega de verdad.
   temporada: {
-    // Ruido de cada fecha individual. Mismo orden de magnitud que
-    // `rendimiento.ruidoRendimiento` (7) y el `ruidoMapa`/`ruidoRivalSerie`
-    // de una serie de playoffs (7 y 12): una fecha de temporada regular es
-    // tan volátil como un mapa de playoffs, ni más ni menos.
-    ruidoFecha: 7,
-    ruidoRivalFecha: 12,
+    // K2b: el ruido de cada fecha se mudó a `partido.sigmaFecha` (lo lee solo
+    // `ruidoEfectivo`, `core/partido.js`).
+    //
+    // Cuántas vueltas tiene el fixture de la temporada regular: 1 = cada par
+    // de equipos se cruza una vez (hasta K2a), 2 = ida y vuelta (la LCK real).
+    // El valor lo decide K2c midiendo la r de la misma liga.
+    vueltas: 1,
     // Fase 9Re: cuántas fechas del split frenan al jugador. Bajó de "2 a 3"
     // (roll) a UNA: con 2-3 por split × ~23 splits competitivos la temporada
     // regular era ~108 de las 248 decisiones de la carrera, casi todas sacadas
@@ -1351,7 +1408,7 @@ export const BALANCE = {
   },
 
   // La serie de playoffs (fase 4): Bo5 con Fearless draft, jugada mapa a mapa
-  // reusando calcularRendimiento/fuerzaDelEquipo de rendimiento.js.
+  // reusando la fuerza de partido de `core/fuerza.js` (K2b: determinista).
   serie: {
     // Fase 9Rd: el motor sólo te frena en el draft si el mejor campeón
     // disponible te da bastante más probabilidad de ganar el mapa que el
@@ -1410,8 +1467,7 @@ export const BALANCE = {
     // impacto del minijuego se amortigua fuerte por debajo de este umbral.
     jerarquiaMinimaParaSeguirLlamada: 60,
     factorLlamadaSinJerarquia: 0.35,
-    ruidoMapa: 7,
-    ruidoRivalSerie: 12,
+    // K2b: `ruidoMapa`/`ruidoRivalSerie` se mudaron a `partido.sigmaMapa`.
     // Maestria del campeon "fuera del pool" cuando el Fearless te quema todo (4.5).
     maestriaComodin: 20,
     // Fase 12f (§12.5): dificultad del minijuego que escala por ronda.

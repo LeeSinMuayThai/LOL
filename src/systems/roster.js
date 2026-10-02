@@ -3,6 +3,7 @@ import { crearLog } from '../core/log.js';
 import { clampStat, clamp } from '../core/numeros.js';
 import { generarHandle } from '../core/mundo.js';
 import { orgDeCarrera } from '../core/competicion.js';
+import { companerosDelPlantel } from '../core/fuerza.js';
 import {
   abrirFila, registrarSplitEnFila, registrarJerarquiaEnFila, registrarArraigoEnFila,
   registrarPico, registrarSalarioEnFila, acumularDinero, arraigoInicial
@@ -21,27 +22,59 @@ const orgActual = orgDeCarrera;
 // 3, o una tier 2 fuera del set modelado) se siguen inventando como antes.
 //
 // Trampa T1: leer del plantel no consume `rng`; el fallback sí. Ninguna seed
-// anterior a 9M reproduce su carrera (D35, anticipado).
+// anterior a 9M reproduce su carrera (D35, anticipado). K2b: la lectura del
+// plantel es `companerosDelPlantel` (`core/fuerza.js`), la MISMA que usa la
+// fuerza del equipo en vivo.
 function generarCompaneros(state, org, rng) {
-  const plantel = state.mundo.planteles?.[org.nombre];
-  const otrosRoles = IDS_ROL.filter((rol) => rol !== state.player.role);
-
-  if (plantel) {
-    return otrosRoles.map((rol) => ({
-      handle: plantel[rol].handle,
-      role: rol,
-      nivel: plantel[rol].nivel,
-      edad: plantel[rol].edad,
-      aniosContrato: plantel[rol].contrato.anios
-    }));
+  const delPlantel = companerosDelPlantel(state, org.nombre);
+  if (delPlantel) {
+    return delPlantel;
   }
 
+  const otrosRoles = IDS_ROL.filter((rol) => rol !== state.player.role);
   const usados = new Set(state.career.companeros.map((companero) => companero.handle));
   return otrosRoles.map((rol) => ({
     handle: generarHandle(rng, usados),
     role: rol,
     nivel: Math.round(clampStat(gauss(org.fuerza, BALANCE.roster.nivelCompaneroSpread, rng)))
   }));
+}
+
+// K2b (PLAN.md "K2 — lo que midió la investigación", viñeta K2b.2): en una
+// liga modelada, `career.companeros` es el plantel VIVO de tu org. Si el mundo
+// cambió a alguien (el mercado del mundo de la pretemporada, un retiro, un
+// canterano), esto lo trae: la lista pasa a ser la del plantel, cada puesto que
+// cambió de jugador se cuenta en una línea y la química se resetea como cuando
+// se iba alguien (`sinergiaRetenidaAlCambiar`). Sin dado: lo que sacude el
+// roster es el mundo, no una tirada. No hace nada si la org no tiene plantel,
+// si el roster todavía no se armó para esta org (`rosterDeOrg`: eso es
+// `armarRoster`) o si no hay compañeros. Pura. La usan este sistema (cada split
+// en el mismo equipo) y `mercado.js` (después de que el mercado del mundo movió
+// los planteles, antes de que se juegue la temporada).
+export function conPlantillaDelPlantel(state) {
+  const { career } = state;
+  if (!career.currentOrg || career.rosterDeOrg !== career.currentOrg || career.companeros.length === 0) {
+    return { state, logs: [] };
+  }
+  const vivos = companerosDelPlantel(state, career.currentOrg);
+  if (!vivos) {
+    return { state, logs: [] };
+  }
+
+  const cambios = vivos
+    .map((vivo) => ({ entrante: vivo, saliente: career.companeros.find((c) => c.role === vivo.role) ?? null }))
+    .filter(({ entrante, saliente }) => saliente?.handle !== entrante.handle);
+  const sinergia = cambios.length > 0
+    ? Math.round(clampStat(career.sinergia * BALANCE.roster.sinergiaRetenidaAlCambiar))
+    : career.sinergia;
+  const logs = cambios.map(({ entrante, saliente }) => crearLog(
+    'roster',
+    saliente
+      ? `${saliente.handle} se va del equipo y entra ${entrante.handle}. Hay que volver a construir todo.`
+      : `Entra ${entrante.handle} (${etiquetaRol(entrante.role)}) al equipo. Hay que volver a construir todo.`
+  ));
+
+  return { state: { ...state, career: { ...career, companeros: vivos, sinergia } }, logs };
 }
 
 // Al cambiar de equipo la jerarquia se resetea parcialmente: lo que ganaste
@@ -188,8 +221,15 @@ export function aplicar(state, rng) {
   const logs = [];
   let { companeros, sinergia } = stConArraigo.career;
 
-  // Cada tanto se va alguien: entra uno nuevo y la quimica vuelve a cero.
-  if (chance(r.probCambioDeRoster, rng)) {
+  // K2b: en una liga modelada los compañeros son los del plantel vivo — el
+  // roster cambia cuando cambia el plantel, sin dado. Solo donde no hay
+  // plantel (tier 3, tier 2 fuera de tu región) cada tanto se va alguien: entra
+  // uno nuevo inventado y la quimica vuelve a cero.
+  const sincronizado = conPlantillaDelPlantel(stConArraigo);
+  if (companerosDelPlantel(stConArraigo, stConArraigo.career.currentOrg)) {
+    ({ companeros, sinergia } = sincronizado.state.career);
+    logs.push(...sincronizado.logs);
+  } else if (chance(r.probCambioDeRoster, rng)) {
     const org = orgActual(stConArraigo);
     const saliente = pick(companeros, rng);
     const usados = new Set(companeros.map((companero) => companero.handle));

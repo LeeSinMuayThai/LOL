@@ -17,8 +17,11 @@
 // mitad de carrera tendría títulos sin liga) · 4 (K2a: `nivelJugador` y
 // `nivelCompaneros` en `career.temporada`, `fuerzaInicial` en `serie`, y
 // `formato`/`fuerzaInicial`/`fuerzaRival` en el log de cierre de cada serie —
-// lo que el motor usó, expuesto para el instrumento de `src/dev/simulate.js`).
-export const VERSION = 4;
+// lo que el motor usó, expuesto para el instrumento de `src/dev/simulate.js`) ·
+// 5 (K2b: `rendimientoBase` y `resultadosPropios` en `career.temporada` — el
+// rendimiento del split lo cuentan los partidos — y los compañeros de una liga
+// modelada con la forma del plantel vivo).
+export const VERSION = 5;
 
 export function serializar(state, rng, rngUi) {
   return JSON.stringify({
