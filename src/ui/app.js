@@ -17,6 +17,12 @@ import { MONTAR_MINIJUEGO, veredictoDeMinijuego, crearApuesta, marcarHit, marcar
 import { iconoSonido } from './components/iconos.js';
 import { actualizarTopbar, aplicarEstudio, limpiarEstudio } from './shell.js';
 import { crearStore } from './core/store.js';
+import {
+  almacenamientoLocal, leerHistorial, guardarHistorial, agregarAlHistorial, entradaDeResultado,
+  lineaDeHistorial, mejorDelDesafio, fechaUTC, desafioDeBusqueda
+} from './resultado.js';
+import { VERSION_JUEGO } from '../data/version.js';
+import { iniciarDesafio } from '../core/desafio.js';
 
 export function iniciar() {
   const setupPanel = document.getElementById('setup');
@@ -54,6 +60,8 @@ export function iniciar() {
   const tarjetaPanel = document.getElementById('tarjeta');
   const seedInput = document.getElementById('seedInput');
   const continuarBtn = document.getElementById('continuarBtn');
+  const desafioDia = document.getElementById('desafioDia');
+  const historialEl = document.getElementById('historial');
   // El riel derecho (T5): un objeto solo, para pasarlo entero a
   // ui.renderRielContexto en cada tick — mismo patrón que
   // `carreraElements`.
@@ -218,6 +226,29 @@ export function iniciar() {
     ui.renderLowerThird(summary, metaPill, estadoActual, { modo: 'decision', decision });
   }
 
+  // K1-B: la carrera terminada entra al historial local UNA vez (el resumen se
+  // puede pintar dos veces con el mismo estado) y la tarjeta recibe la línea
+  // contra tu marca. Si el `localStorage` falla, la tarjeta sale sin esa línea.
+  let estadoEnHistorial = null;
+  let lineaDelHistorial = null;
+
+  function registrarEnHistorial(state) {
+    if (!state.tarjeta?.puntaje) {
+      return null;
+    }
+    if (estadoEnHistorial === state) {
+      return lineaDelHistorial;
+    }
+    estadoEnHistorial = state;
+    const almacen = almacenamientoLocal();
+    const previo = leerHistorial(almacen);
+    const entrada = entradaDeResultado(state, fechaUTC(new Date()));
+    // Sin historial que funcione no hay "tu mejor" que decir (ni "primer intento").
+    const guardado = guardarHistorial(almacen, agregarAlHistorial(previo, entrada));
+    lineaDelHistorial = guardado ? lineaDeHistorial(previo, entrada) : null;
+    return lineaDelHistorial;
+  }
+
   function renderResumenFinal(state) {
     ui.renderLowerThird(summary, metaPill, state);
 
@@ -227,8 +258,19 @@ export function iniciar() {
       mercadoPanel.hidden = true;
       logList.hidden = true;
       serieContextoEl.hidden = true;
-      ui.renderTarjeta(tarjetaPanel, state, modulos);
+      ui.renderTarjeta(tarjetaPanel, state, modulos, { lineaHistorial: registrarEnHistorial(state) });
     }
+  }
+
+  // K1-B: el desafío del día y tus últimos resultados. La fecha la lee la UI
+  // (el motor no toca el reloj); `?desafio=YYYY-MM-DD` válida precarga ese
+  // desafío y no arranca solo, igual que `?seed=`.
+  function renderInicioK1() {
+    const hoy = fechaUTC(new Date());
+    const fecha = desafioDeBusqueda(location.search) ?? hoy;
+    const historial = leerHistorial(almacenamientoLocal());
+    ui.renderDesafio(desafioDia, { fecha, hoy, mejor: mejorDelDesafio(historial, fecha) }, comenzarCarrera);
+    ui.renderHistorial(historialEl, historial, { etiquetaRol: modulos.etiquetaRol, version: VERSION_JUEGO });
   }
 
   // Saneamiento post-V1: el chrome global (topbar, luz de estudio, riel,
@@ -411,9 +453,15 @@ export function iniciar() {
     }
   }
 
-  async function comenzarCarrera() {
+  // `fechaDesafio` (K1-B): con una fecha, la carrera es el desafío de ese día —
+  // seed, rol, región y pool salen de la fecha (`iniciarDesafio`), sin handle
+  // ni draft. Sin fecha, la carrera de siempre con lo elegido en el inicio.
+  async function comenzarCarrera(fechaDesafio = null) {
     quitarAvisoDeGuardado();
     runButton.disabled = true;
+    for (const boton of desafioDia.querySelectorAll('button')) {
+      boton.disabled = true;
+    }
     decisionPanel.hidden = true;
     minijuegoPanel.hidden = true;
     mercadoPanel.hidden = true;
@@ -437,16 +485,23 @@ export function iniciar() {
       // de la carrera anterior en el primer `renderFeed` de esta.
       ui.olvidarContenedor(logList);
 
-      const seed = leerSeed();
-      seedInput.value = String(seed);
+      let seed;
+      let eleccion = null;
+      let desafio = null;
+      if (fechaDesafio) {
+        ({ seed, eleccion, desafio } = iniciarDesafio(fechaDesafio));
+      } else {
+        seed = leerSeed();
+        seedInput.value = String(seed);
+        // La elección de la pantalla de inicio entra como tercer argumento.
+        // Si el jugador no eligió nada (camino headless), `createInitialState`
+        // sortea todo de la seed exactamente como antes.
+        const { rol, campeones } = pantallaInicio.getSeleccion();
+        eleccion = { handle: handleInput.value, rol, campeones };
+      }
       rng = mulberry32(seed);
       rngUi = mulberry32((seed ^ 0x9E3779B9) >>> 0);
-      // La elección de la pantalla de inicio entra como tercer argumento.
-      // Si el jugador no eligió nada (camino headless), `createInitialState`
-      // sortea todo de la seed exactamente como antes.
-      const { rol, campeones } = pantallaInicio.getSeleccion();
-      const eleccion = { handle: handleInput.value, rol, campeones };
-      store.escribir(createInitialState(seed, rng, eleccion));
+      store.escribir(createInitialState(seed, rng, eleccion, desafio));
 
       // "Empezar carrera" es una carrera NUEVA — pisa cualquier
       // guardado anterior a propósito, mismo criterio que un jugador
@@ -473,6 +528,9 @@ export function iniciar() {
       setupPanel.hidden = false;
       carreraPanel.hidden = true;
       runButton.disabled = false;
+      for (const boton of desafioDia.querySelectorAll('button')) {
+        boton.disabled = false;
+      }
     }
   }
 
@@ -497,6 +555,7 @@ export function iniciar() {
     continuarBtn.hidden = true;
     quitarAvisoDeGuardado();
     pantallaInicio.reset();
+    renderInicioK1();
   }
 
   // Fase T3: refleja el estado de `reproductor`/`sonido` en los dos
@@ -599,6 +658,7 @@ export function iniciar() {
       if (guardada?.state && continuarDetalle) {
         const s = guardada.state;
         continuarDetalle.textContent = [
+          s.desafio?.fecha ? `Desafío ${s.desafio.fecha}` : null,
           s.player?.name,
           s.player?.role ? modulos.etiquetaRol(s.player.role) : null,
           s.age != null ? `${s.age} años` : null,
@@ -614,6 +674,7 @@ export function iniciar() {
       if (seedDeUrl !== null) {
         seedInput.value = String(seedDeUrl);
       }
+      renderInicioK1();
     } catch (error) {
       const esArchivoLocal = location.protocol === 'file:';
       rolGrid.textContent = esArchivoLocal
@@ -623,7 +684,7 @@ export function iniciar() {
     }
   }
 
-  runButton.addEventListener('click', comenzarCarrera);
+  runButton.addEventListener('click', () => comenzarCarrera());
   continuarBtn.addEventListener('click', continuarCarrera);
   nuevaCarreraBtn.addEventListener('click', volverAlInicio);
   toggleVelocidad.addEventListener('click', () => {

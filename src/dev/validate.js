@@ -11619,6 +11619,182 @@ check('K1 niveles y cuantiles: cortes crecientes y con nombre, tabla de cuantile
   }
 });
 
+// ============================================================================
+// K1-B — La pantalla del número (PLAN.md §K1, "K1 — decisiones de spec",
+// Pantalla). La tarjeta y el inicio son DOM y se miran en un navegador; lo que
+// se prueba acá es la lógica pura que comparten (`src/ui/resultado.js`): el
+// texto para compartir, el link, la fecha del desafío y el historial local,
+// que nunca puede romper la página aunque el `localStorage` falle.
+// ============================================================================
+
+const resultadoK1B = await import('../ui/resultado.js');
+
+// Un estado mínimo con lo único que leen el texto y el historial.
+function estadoK1B({ seed = 777, fecha = null, total = 1512, nivel = 'Campeón' } = {}) {
+  return {
+    seed,
+    desafio: fecha ? { fecha } : null,
+    player: { role: 'mid', name: 'Prueba' },
+    tarjeta: { puntaje: { total, nivel: { id: 'campeon', nombre: nivel } } }
+  };
+}
+
+check('K1-B compartir: el texto lleva juego, fecha del desafío, puntaje con miles, nivel, versión y el link del desafío; fuera del desafío, sin fecha y con el link de la seed', () => {
+  const { textoParaCompartir, miles, desafioDeBusqueda, linkDeEstado } = resultadoK1B;
+  const HREF = 'http://localhost:8000/?seed=9&otra=1#ancla';
+  const conDesafio = textoParaCompartir(estadoK1B({ seed: seedDelDia('2026-10-02'), fecha: '2026-10-02' }), HREF);
+  const esperadoDesafio = `Un Split Más · Desafío 2026-10-02 · 1.512 pts · Campeón · v ${VERSION_JUEGO} · http://localhost:8000/?desafio=2026-10-02`;
+  if (conDesafio !== esperadoDesafio) {
+    throw new Error(`desafío: esperaba\n  ${esperadoDesafio}\ndio\n  ${conDesafio}`);
+  }
+  const libre = textoParaCompartir(estadoK1B({ seed: 777 }), HREF);
+  const esperadoLibre = `Un Split Más · 1.512 pts · Campeón · v ${VERSION_JUEGO} · http://localhost:8000/?seed=777`;
+  if (libre !== esperadoLibre) {
+    throw new Error(`carrera libre: esperaba\n  ${esperadoLibre}\ndio\n  ${libre}`);
+  }
+  // El link del desafío lo reproduce: la URL vuelve a dar la fecha, y la fecha la seed.
+  const link = linkDeEstado(estadoK1B({ seed: seedDelDia('2024-02-29'), fecha: '2024-02-29' }), HREF);
+  if (desafioDeBusqueda(new URL(link).search) !== '2024-02-29') {
+    throw new Error(`el link del desafío no se lee de vuelta: ${link}`);
+  }
+  const casos = [[0, '0'], [999, '999'], [1000, '1.000'], [1512, '1.512'], [1234567, '1.234.567'], [-37, '−37'], [1647.6, '1.648']];
+  for (const [numero, texto] of casos) {
+    if (miles(numero) !== texto) {
+      throw new Error(`miles(${numero}) tiene que ser "${texto}", dio "${miles(numero)}"`);
+    }
+  }
+});
+
+check('K1-B historial: tolera un localStorage que tira, JSON roto y formas raras; guarda a lo sumo 10 (el récord sobrevive al recorte); un desafío repetido queda en una fila con el mejor puntaje y los intentos', () => {
+  const {
+    leerHistorial, guardarHistorial, agregarAlHistorial, entradaDeResultado, mejorDelDesafio,
+    lineaDeHistorial, historialVacio, almacenamientoLocal, CLAVE_HISTORIAL, MAX_HISTORIAL
+  } = resultadoK1B;
+  const enMemoria = (inicial = null) => {
+    let valor = inicial;
+    return { getItem: (clave) => (clave === CLAVE_HISTORIAL ? valor : null), setItem: (clave, v) => { valor = String(v); } };
+  };
+  const vacio = JSON.stringify(historialVacio());
+
+  // 1. Un almacenamiento que tira en cada acceso, o que no existe: nada tira.
+  const queTira = { getItem() { throw new Error('SecurityError'); }, setItem() { throw new Error('QuotaExceededError'); } };
+  for (const almacen of [queTira, null, undefined]) {
+    if (JSON.stringify(leerHistorial(almacen)) !== vacio) {
+      throw new Error('con un almacenamiento que falla, leer tiene que dar el historial vacío');
+    }
+    if (guardarHistorial(almacen, historialVacio()) !== false) {
+      throw new Error('con un almacenamiento que falla, guardar tiene que devolver false, no tirar');
+    }
+  }
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, get() { throw new Error('SecurityError'); } });
+  try {
+    if (almacenamientoLocal() !== null) {
+      throw new Error('si leer window.localStorage tira, almacenamientoLocal() tiene que dar null');
+    }
+  } finally {
+    if (descriptor) Object.defineProperty(globalThis, 'localStorage', descriptor);
+    else delete globalThis.localStorage;
+  }
+
+  // 2. JSON roto, otra forma, entradas con basura: vacío o filtrado, nunca a medias.
+  const entradaValida = entradaDeResultado(estadoK1B({ seed: 5, total: 300 }), '2026-10-01');
+  for (const crudo of ['{roto', '"texto"', 'null', '{"forma":1,"entradas":"x"}', '{"forma":99,"entradas":[]}', '[]']) {
+    if (JSON.stringify(leerHistorial(enMemoria(crudo))) !== vacio) {
+      throw new Error(`lo guardado ${crudo} tiene que leerse como historial vacío`);
+    }
+  }
+  const mezclado = leerHistorial(enMemoria(JSON.stringify({
+    forma: 1, entradas: [entradaValida, { total: 'mucho' }, null, { ...entradaValida, desafio: '2026-02-30' }], record: { total: 1 }
+  })));
+  if (mezclado.entradas.length !== 1 || mezclado.entradas[0].total !== 300 || mezclado.record !== null) {
+    throw new Error(`las entradas inválidas se descartan una por una: quedó ${JSON.stringify(mezclado)}`);
+  }
+
+  // 3. A lo sumo MAX_HISTORIAL, lo último primero, y el récord sobrevive al recorte.
+  let historial = historialVacio();
+  const totales = [2000, ...Array.from({ length: MAX_HISTORIAL + 1 }, (_, i) => 100 + i)];
+  totales.forEach((total, i) => {
+    historial = agregarAlHistorial(historial, entradaDeResultado(estadoK1B({ seed: 1000 + i, total }), '2026-10-02'));
+  });
+  if (historial.entradas.length !== MAX_HISTORIAL) {
+    throw new Error(`el historial tiene que guardar ${MAX_HISTORIAL}, guardó ${historial.entradas.length}`);
+  }
+  if (historial.entradas[0].seed !== 1000 + totales.length - 1) {
+    throw new Error('lo más reciente tiene que ir primero');
+  }
+  if (historial.entradas.some((e) => e.total === 2000) || historial.record?.total !== 2000) {
+    throw new Error(`el récord (2000) quedó afuera de los últimos ${MAX_HISTORIAL} y tiene que sobrevivir aparte: ${JSON.stringify(historial.record)}`);
+  }
+  const almacen = enMemoria();
+  if (!guardarHistorial(almacen, historial) || JSON.stringify(leerHistorial(almacen)) !== JSON.stringify(historial)) {
+    throw new Error('guardar y volver a leer tiene que dar el mismo historial');
+  }
+
+  // 4. El mismo desafío, tres veces: una sola fila, el mejor puntaje, 3 intentos.
+  const FECHA = '2026-10-02';
+  const intento = (total, jugadoEn) => entradaDeResultado(estadoK1B({ seed: seedDelDia(FECHA), fecha: FECHA, total }), jugadoEn);
+  let h = historialVacio();
+  const lineas = [];
+  for (const [total, dia] of [[800, '2026-10-02'], [1200, '2026-10-03'], [900, '2026-10-04']]) {
+    lineas.push(lineaDeHistorial(h, intento(total, dia)));
+    h = agregarAlHistorial(h, intento(total, dia));
+  }
+  const filas = h.entradas.filter((e) => e.desafio === FECHA);
+  if (filas.length !== 1 || filas[0].total !== 1200 || filas[0].intentos !== 3 || filas[0].jugadoEn !== '2026-10-04') {
+    throw new Error(`un desafío repetido tiene que quedar en una fila con el mejor (1200), 3 intentos y el último día: ${JSON.stringify(filas)}`);
+  }
+  if (mejorDelDesafio(h, FECHA)?.total !== 1200 || mejorDelDesafio(h, '2026-10-03') !== null) {
+    throw new Error('mejorDelDesafio tiene que devolver la fila de esa fecha, y null si no se jugó');
+  }
+  if (!/^Primer intento/.test(lineas[0]) || !/Mejoraste.*antes 800 pts\. Intento 2\./.test(lineas[1])
+    || !/sigue siendo 1\.200 pts \(Campeón\)\. Intento 3\./.test(lineas[2])) {
+    throw new Error(`las líneas de la tarjeta no comparan bien con tu marca: ${JSON.stringify(lineas)}`);
+  }
+  // Con otra versión es otro juego: fila aparte.
+  const otraVersion = agregarAlHistorial(h, { ...intento(50, '2026-10-05'), version: `${VERSION_JUEGO}-otra` });
+  if (otraVersion.entradas.filter((e) => e.desafio === FECHA).length !== 2) {
+    throw new Error('el mismo desafío con otra versión tiene que ir en una fila aparte');
+  }
+  // Carrera libre: sin récord no hay línea; contra el récord, sube o no.
+  const libre = (total) => entradaDeResultado(estadoK1B({ seed: 1, total }), '2026-10-02');
+  const conRecord = agregarAlHistorial(historialVacio(), libre(1000));
+  if (lineaDeHistorial(historialVacio(), libre(10)) !== null
+    || !/^Nuevo récord personal: superaste tus 1\.000 pts/.test(lineaDeHistorial(conRecord, libre(1001)))
+    || !/^Tu récord personal: 1\.000 pts/.test(lineaDeHistorial(conRecord, libre(1000)))) {
+    throw new Error('la línea del récord personal no compara bien');
+  }
+});
+
+check('K1-B URL y fecha: ?desafio= válido se lee e inválido se ignora; la fecha de hoy es la del día UTC aunque el huso local sea otro', () => {
+  const { desafioDeBusqueda, fechaUTC } = resultadoK1B;
+  const casos = [
+    ['?desafio=2026-10-02', '2026-10-02'], ['?seed=5&desafio=2024-02-29', '2024-02-29'], ['?desafio=2026-02-30', null],
+    ['?desafio=2025-02-29', null], ['?desafio=hoy', null], ['?desafio=2026-10-2', null], ['?seed=5', null], ['', null]
+  ];
+  for (const [busqueda, esperado] of casos) {
+    if (desafioDeBusqueda(busqueda) !== esperado) {
+      throw new Error(`desafioDeBusqueda(${JSON.stringify(busqueda)}) tiene que ser ${esperado}, dio ${desafioDeBusqueda(busqueda)}`);
+    }
+  }
+  // 01:30 UTC del 2 de octubre es todavía 1 de octubre en Buenos Aires: el
+  // desafío es el del 2 (la misma fecha para todos), no el del huso local.
+  const tzAntes = process.env.TZ;
+  process.env.TZ = 'America/Argentina/Buenos_Aires';
+  try {
+    const madrugada = new Date(Date.UTC(2026, 9, 2, 1, 30));
+    if (madrugada.getDate() !== 1) {
+      throw new Error('el huso de prueba no se aplicó: el check no estaría probando nada');
+    }
+    if (fechaUTC(madrugada) !== '2026-10-02') {
+      throw new Error(`fechaUTC tiene que dar el día UTC (2026-10-02), dio ${fechaUTC(madrugada)}`);
+    }
+  } finally {
+    if (tzAntes === undefined) delete process.env.TZ;
+    else process.env.TZ = tzAntes;
+  }
+});
+
 if (errores.length > 0) {
   console.error(`\n${errores.length} check(s) fallaron.`);
   process.exit(1);
