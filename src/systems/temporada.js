@@ -10,6 +10,8 @@ import {
   registrarEnFila, filaVacia
 } from '../core/temporada.js';
 import { calcularRendimiento, fuerzaDelEquipo } from './rendimiento.js';
+import { nivelDeCompaneros } from '../core/fuerza.js';
+import { nivelDelJugador } from '../core/ficha.js';
 import { disponibleEn, opcionesVivas, resolverOpcion, cooldownActivo, pesoConMemoria } from './events.js';
 import { pesoDePick, factorDeCampeon, lecturaDePick } from '../core/ajusteMeta.js';
 import { registrarFecha } from '../core/registro.js';
@@ -170,6 +172,14 @@ function iniciarTemporada(state, rng) {
     indice: 0,
     rendimiento,
     fuerzaPropia,
+    // K2a (PLAN.md "K2 — lo que midió la investigación"): lo que el motor usó
+    // para `rendimiento` y `fuerzaPropia`, expuesto para el instrumento de
+    // `src/dev/simulate.js`: el nivel del jugador (la base de
+    // `rendimientoBase`) y el nivel medio de los compañeros (el de
+    // `fuerzaDelEquipo`), leídos sobre el MISMO estado que esas dos llamadas.
+    // Lectura pura: no cambia ningún cálculo ni consume `rng`.
+    nivelJugador: nivelDelJugador(state),
+    nivelCompaneros: nivelDeCompaneros(state),
     registrosOtros,
     filaPropia: { org: state.career.currentOrg, ganados: 0, perdidos: 0 },
     racha: 0,

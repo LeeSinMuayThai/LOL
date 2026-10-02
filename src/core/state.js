@@ -200,6 +200,10 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
         indice: 0,
         rendimiento: 0,
         fuerzaPropia: 0,
+        // K2a: lo que el motor usó para la fuerza del split (nivel del jugador y
+        // nivel medio de los compañeros), expuesto para el instrumento.
+        nivelJugador: 0,
+        nivelCompaneros: 0,
         registrosOtros: {},
         filaPropia: { org: null, ganados: 0, perdidos: 0 },
         racha: 0,
@@ -268,6 +272,9 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       ronda: null,
       rival: { org: null, fuerza: 0 },
       formato: 0,
+      // K2a: tu fuerza al empezar la serie (campeón del split, sin ruido),
+      // expuesta para el instrumento del Bo5.
+      fuerzaInicial: 0,
       marcador: [0, 0],
       mapaActual: 0,
       mapas: [],

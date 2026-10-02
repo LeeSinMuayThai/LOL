@@ -620,7 +620,10 @@ const FORMAS_CONOCIDAS = {
   2: '14b3c6b90382',
   // K1-A (D76): `porOrg[].splitsPorTier`, `liga`/`tier` en los títulos, `liga` en los internacionales,
   // `dificultad` en las ligas, `state.desafio` y `tarjeta.puntaje`.
-  3: '28ade2576049'
+  3: '28ade2576049',
+  // K2a: `nivelJugador`/`nivelCompaneros` en `career.temporada`, `fuerzaInicial` en `serie` y
+  // `formato`/`fuerzaInicial`/`fuerzaRival` en el log de cierre de cada serie (lo que el motor usó, para el instrumento).
+  4: '7a7564911e7c'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -8709,7 +8712,12 @@ function hojasProblematicasK0(valor, ruta, nulosPermitidos, problemas = []) {
 const NULOS_PERMITIDOS_K0 = [
   /(^|\.)embudo\.pOtroMundialDadoUno$/,
   /^nivel\.varianzaExplicada\.ruidoPuro$/,
-  /^porRegion\.[^.]+\.nivel\.rNivelPosicion(MismaLiga|Bruto)$/
+  /^porRegion\.[^.]+\.nivel\.rNivelPosicion(MismaLiga|Bruto)$/,
+  // K2a: la r corregida de una región chica; las celdas del Bo5 del motor con menos de 30 series; y el valor de una
+  // meta de K2 que sale de una de esas celdas.
+  /^porRegion\.[^.]+\.nivel\.corregida\.rNivelPosicion(MismaLiga|Bruto)$/,
+  /^nivel\.bo5Motor\.(bandas\[\d+\]|favoritoClaro)\.(jugadorFavorito|rivalFavorito|ambos)\.(ganaFavoritoPct|eePct)$/,
+  /^nivel\.metasK2\.bo5FavoritoClaro(Jugador|Rival)\.valor$/
 ];
 
 let lotesK0 = null;
@@ -8982,11 +8990,59 @@ function recuentoRitmoK0(observaciones) {
 function recuentoPosicionK0(observaciones) {
   const conTabla = observaciones.flatMap((o) => o.splitsProData).filter((d) => d.posNorm !== null);
   const modelados = conTabla.filter((d) => d.ligaModelada);
+  // K2a: la definición corregida, desde las filas por temporada jugada (que el check "K2a observador" contrasta con un
+  // espía de `temporada.aplicar`).
+  const temporadas = observaciones.flatMap((o) => o.temporadasData).filter((d) => d.posNorm !== null);
+  const temporadasModeladas = temporadas.filter((d) => d.ligaModelada);
   return {
     rNivelPosicionMismaLiga: pearsonK0(modelados.map((d) => d.nivelRelativoJugador), modelados.map((d) => d.posNorm)),
     rNivelPosicionBruto: pearsonK0(conTabla.map((d) => d.nivel), conTabla.map((d) => d.posNorm)),
     splitsConTabla: conTabla.length,
-    splitsExcluidosLigaNoModelada: conTabla.length - modelados.length
+    splitsExcluidosLigaNoModelada: conTabla.length - modelados.length,
+    corregida: {
+      rNivelPosicionMismaLiga: pearsonK0(temporadasModeladas.map((d) => d.nivelRelativoJugador), temporadasModeladas.map((d) => d.posNorm)),
+      rNivelPosicionBruto: pearsonK0(temporadas.map((d) => d.nivel), temporadas.map((d) => d.posNorm)),
+      temporadasConTabla: temporadas.length,
+      temporadasExcluidasLigaNoModelada: temporadas.length - temporadasModeladas.length,
+      splitsProSinTemporada: cuentaK0(conTabla, (d) => d.temporadaJugada === false)
+    }
+  };
+}
+
+// K2a — la tabla del Bo5 medido en el motor (`nivel.bo5Motor`), recontada desde las filas de serie: solo las Bo5, por
+// banda [desde, hasta) de |Δ0| y por lado (jugador favorito si Δ0 >= 0, rival favorito si no), el % que ganó el
+// favorito con un decimal y el error estándar binomial en puntos, null con menos de 30 series. Las bandas son literales
+// propios (las de la investigación de K2, `k2inv/a_bo5b.mjs`, más [20, 30)); el favorito claro es Δ ≈ 10 (PLAN.md, K2c).
+const BANDAS_BO5_K2A = [[0, 3], [3, 5], [5, 7], [7, 9], [9, 11], [11, 13], [13, 16], [16, 20], [20, 30]];
+const FAVORITO_CLARO_K2A = [9, 11];
+function recuentoBo5K2a(observaciones) {
+  const series = observaciones.flatMap((o) => o.seriesData).filter((d) => d.formato === 5);
+  const celda = (filas) => {
+    const n = filas.length;
+    if (n < MUESTRA_MINIMA_K0) {
+      return { n, ganaFavoritoPct: null, eePct: null };
+    }
+    const gana = cuentaK0(filas, (d) => (d.delta >= 0 ? d.gano : !d.gano)) / n;
+    return { n, ganaFavoritoPct: redondeoK0(gana * 100, 1), eePct: redondeoK0(Math.sqrt(gana * (1 - gana) / n) * 100, 1) };
+  };
+  const fila = ([desde, hasta]) => {
+    const deLaBanda = series.filter((d) => Math.abs(d.delta) >= desde && Math.abs(d.delta) < hasta);
+    return {
+      desde,
+      hasta,
+      jugadorFavorito: celda(deLaBanda.filter((d) => d.delta >= 0)),
+      rivalFavorito: celda(deLaBanda.filter((d) => d.delta < 0)),
+      ambos: celda(deLaBanda)
+    };
+  };
+  const bandas = BANDAS_BO5_K2A.map(fila);
+  return {
+    seriesBo5: series.length,
+    pctJugadorFavorito: pctK0(cuentaK0(series, (d) => d.delta >= 0), series.length),
+    deltaMedio: redondeoK0(mediaK0(series.map((d) => d.delta)), 2),
+    fueraDeBandas: series.length - bandas.reduce((suma, b) => suma + b.ambos.n, 0),
+    bandas,
+    favoritoClaro: fila(FAVORITO_CLARO_K2A)
   };
 }
 
@@ -9066,15 +9122,16 @@ function compararHojasK0(medido, esperado, ruta, problemas, cuenta, ignorar = []
 }
 
 // La ablación (§K.3a), recontada acá: los 5 ruidos de `RUIDOS_ABLACION_K0` en cero, las carreras de las seeds
-// dadas con el bot dado, las filas de `splitsProData` de cada una. Restaura SIEMPRE los ruidos (`finally`).
-// No usa `correrSinRuido` ni `PARAMETROS_RUIDO`: son los que se verifican.
+// dadas con el bot dado, la observación de cada una (las filas de `splitsProData` y, desde K2a, las corregidas de
+// `temporadasData`). Restaura SIEMPRE los ruidos (`finally`). No usa `correrSinRuido` ni `PARAMETROS_RUIDO`: son los
+// que se verifican.
 function ablacionIndependienteK0(semillas, splits, responder) {
   const originales = RUIDOS_ABLACION_K0.map(([grupo, clave]) => BALANCE[grupo][clave]);
   try {
     for (const [grupo, clave] of RUIDOS_ABLACION_K0) {
       BALANCE[grupo][clave] = 0;
     }
-    return semillas.map((seed) => correrCarreraSimulate(seed, splits, responder).observacion.splitsProData);
+    return semillas.map((seed) => correrCarreraSimulate(seed, splits, responder).observacion);
   } finally {
     RUIDOS_ABLACION_K0.forEach(([grupo, clave], i) => {
       BALANCE[grupo][clave] = originales[i];
@@ -10466,12 +10523,14 @@ checkLento('K0 varianzaExplicada: la ablación, los R², las varianzas y el boot
   const R3 = 5e-4 + 1e-9; // redondeo a 3 decimales
   const R4 = 5e-5 + 1e-9; // redondeo a 4 decimales
   let separaModeladaDelTitular = false;
+  let separaCorregidaDeK0 = false;
 
   for (const bot of BOTS_ABLACION_K0) {
     const lote = correrLote(CARRERAS_VARIANZA_K0, SPLITS_VARIANZA_K0, bot);
     const v = lote.nivel.varianzaExplicada;
     const base = lote.crudos.observaciones.map((o) => o.splitsProData);
-    const sin = ablacionIndependienteK0(semillas, SPLITS_VARIANZA_K0, ESTRATEGIAS_K0[bot]);
+    const observacionesSin = ablacionIndependienteK0(semillas, SPLITS_VARIANZA_K0, ESTRATEGIAS_K0[bot]);
+    const sin = observacionesSin.map((o) => o.splitsProData);
     const titular = recuentoVarianzaK0(base.map(conTabla), sin.map(conTabla));
     const modelada = recuentoVarianzaK0(base.map(soloModeladas), sin.map(soloModeladas));
     const donde = bot;
@@ -10523,10 +10582,37 @@ checkLento('K0 varianzaExplicada: la ablación, los R², las varianzas y el boot
     if (Math.abs(modelada.r2Sin - titular.r2Sin) > DIFERENCIA_MINIMA_R2_K0) {
       separaModeladaDelTitular = true;
     }
+
+    // K2a: el R² de nivel + equipo con la definición corregida (una fila por temporada jugada), con y sin ruido, de
+    // todas las temporadas con tabla y de las de liga modelada, recontado desde las mismas carreras.
+    const baseT = lote.crudos.observaciones.map((o) => o.temporadasData);
+    const sinT = observacionesSin.map((o) => o.temporadasData);
+    const corregidas = [
+      ['corregida', v.corregida, recuentoVarianzaK0(baseT.map(conTabla), sinT.map(conTabla))],
+      ['corregida.soloLigaModelada', v.corregida?.soloLigaModelada, recuentoVarianzaK0(baseT.map(soloModeladas), sinT.map(soloModeladas))]
+    ];
+    for (const [ruta, medido, esperado] of corregidas) {
+      if (!medido) {
+        problemas.push(`${donde}.${ruta}: el reporte no trae el bloque`);
+        continue;
+      }
+      cerca(donde, `${ruta}.r2NivelYEquipo`, medido.r2NivelYEquipo, esperado.r2, R3);
+      cerca(donde, `${ruta}.r2NivelYEquipoEE`, medido.r2NivelYEquipoEE, esperado.eeR2, R3);
+      cerca(donde, `${ruta}.r2NivelYEquipoSinRuido`, medido.r2NivelYEquipoSinRuido, esperado.r2Sin, R3);
+      cerca(donde, `${ruta}.r2NivelYEquipoSinRuidoEE`, medido.r2NivelYEquipoSinRuidoEE, esperado.eeR2Sin, R3);
+      cerca(donde, `${ruta}.nTemporadasBase`, medido.nTemporadasBase, esperado.nBase, 0);
+      cerca(donde, `${ruta}.nTemporadasSinRuido`, medido.nTemporadasSinRuido, esperado.nSin, 0);
+    }
+    if (Math.abs(corregidas[1][2].r2Sin - modelada.r2Sin) > DIFERENCIA_MINIMA_R2_K0) {
+      separaCorregidaDeK0 = true;
+    }
     afirmarRuidoIntactoK0(`después de la ablación de ${bot} (40 carreras)`);
   }
   if (!separaModeladaDelTitular) {
     problemas.push(`check vacío: el R² sin ruido de soloLigaModelada nunca difiere del titular en más de ${DIFERENCIA_MINIMA_R2_K0}: no distingue "toma el valor del titular"`);
+  }
+  if (!separaCorregidaDeK0) {
+    problemas.push(`check vacío: el R² sin ruido corregido nunca difiere del de K0 en más de ${DIFERENCIA_MINIMA_R2_K0}: no distingue "la corregida copia la de K0"`);
   }
   if (problemas.length > 0) {
     throw new Error(`${problemas.slice(0, 6).join('; ')}${problemas.length > 6 ? ` (+${problemas.length - 6} más)` : ''}`);
@@ -10575,6 +10661,26 @@ checkLento('K0 bloques de simulate: todas las hojas de todos los bloques son fin
     }
     if (nivel.splitsExcluidosLigaNoModelada > nivel.splitsConTabla) {
       throw new Error(`${bot}: más splits excluidos (${nivel.splitsExcluidosLigaNoModelada}) que splits con tabla (${nivel.splitsConTabla})`);
+    }
+    // K2a: las bandas del Bo5 suman las series menos las de afuera, y cada banda es jugador + rival.
+    const bo5 = nivel.bo5Motor;
+    if (bo5.bandas.reduce((suma, b) => suma + b.ambos.n, 0) + bo5.fueraDeBandas !== bo5.seriesBo5
+      || bo5.bandas.some((b) => b.jugadorFavorito.n + b.rivalFavorito.n !== b.ambos.n)) {
+      throw new Error(`${bot}: las bandas de nivel.bo5Motor no cierran contra las ${bo5.seriesBo5} series`);
+    }
+    // K2a: cada meta de K2 lleva el valor de su fuente y `cumple` sale de la meta escrita acá (PLAN.md "Checks de K2").
+    const metas = nivel.metasK2;
+    const claro = bo5.favoritoClaro;
+    const fuentes = [
+      ['rNivelPosicionMismaLiga', nivel.corregida.rNivelPosicionMismaLiga, (x) => x >= 0.5],
+      ['r2NivelYEquipoSinRuidoLigaModelada', varianza.corregida.soloLigaModelada.r2NivelYEquipoSinRuido, (x) => x >= 0.5],
+      ['bo5FavoritoClaroJugador', claro.jugadorFavorito.ganaFavoritoPct, (x) => x >= 75 && x <= 85],
+      ['bo5FavoritoClaroRival', claro.rivalFavorito.ganaFavoritoPct, (x) => x >= 75 && x <= 85]
+    ];
+    for (const [clave, valor, cumple] of fuentes) {
+      if (metas[clave]?.valor !== valor || metas[clave].cumple !== (valor !== null && cumple(valor))) {
+        throw new Error(`${bot}: nivel.metasK2.${clave} = ${JSON.stringify(metas[clave])}, su fuente vale ${valor}`);
+      }
     }
 
     // Los totales cierran: no llegó + llegó = 100; y los cuatro destinos de un pro suman 100 con los que no llegaron.
@@ -10688,7 +10794,9 @@ checkLento('K0 KPIs anclados: embudo, longevidad, economía, ritmo, nivel y porR
     'X05 economía p50 vs p25 (hype)': false,
     'X07 interrupciones por carrera: mediana vs p90': false,
     'X10 top20DeTier1 vs top20 sobre el total': false,
-    'X11 años de carrera pro: p90 vs mediana': false
+    'X11 años de carrera pro: p90 vs mediana': false,
+    'K2a r de la misma liga corregida vs la de K0': false,
+    'K2a splits pro sin temporada (filas rancias de K0) presentes': false
   };
   const claves = Object.keys(distingue);
 
@@ -10707,8 +10815,16 @@ checkLento('K0 KPIs anclados: embudo, longevidad, economía, ritmo, nivel y porR
       esperado.ritmo,
       'ritmo'
     );
-    const { rNivelPosicionMismaLiga, rNivelPosicionBruto, splitsConTabla, splitsExcluidosLigaNoModelada } = lote.nivel;
-    comparar({ rNivelPosicionMismaLiga, rNivelPosicionBruto, splitsConTabla, splitsExcluidosLigaNoModelada }, esperado.nivel, 'nivel');
+    const { rNivelPosicionMismaLiga, rNivelPosicionBruto, splitsConTabla, splitsExcluidosLigaNoModelada, corregida } = lote.nivel;
+    comparar({ rNivelPosicionMismaLiga, rNivelPosicionBruto, splitsConTabla, splitsExcluidosLigaNoModelada, corregida }, esperado.nivel, 'nivel');
+    // K2a: el Bo5 medido en el motor, hoja por hoja.
+    comparar(lote.nivel.bo5Motor, recuentoBo5K2a(crudos.observaciones), 'nivel.bo5Motor');
+    if (Math.abs(esperado.nivel.corregida.rNivelPosicionMismaLiga - esperado.nivel.rNivelPosicionMismaLiga) > DIFERENCIA_MINIMA_R_K0) {
+      distingue[claves[7]] = true;
+    }
+    if (esperado.nivel.corregida.splitsProSinTemporada > 0) {
+      distingue[claves[8]] = true;
+    }
     const porRegionEsperado = recuentoPorRegionK0(crudos);
     comparar(lote.porRegion, porRegionEsperado, 'porRegion');
 
@@ -11723,6 +11839,259 @@ check('K1 niveles y cuantiles: cortes crecientes y con nombre, tabla de cuantile
   const [pUltimo, xUltimo] = cuantiles[cuantiles.length - 1];
   if (percentilDePuntaje(xPrimero) !== pPrimero || percentilDePuntaje(xUltimo + 1) !== pUltimo) {
     throw new Error(`los extremos de la tabla de cuantiles son ${pPrimero} y ${pUltimo}: dio ${percentilDePuntaje(xPrimero)} y ${percentilDePuntaje(xUltimo + 1)}`);
+  }
+});
+
+// ============================================================================
+// FASE K, K2a — El instrumento corregido (PLAN.md "K2 — lo que midió la investigación", viñeta K2a)
+// ============================================================================
+// Cuidan al INSTRUMENTO de K2, no al juego: que las filas corregidas de `simulate.js` (`temporadasData`, una por temporada
+// jugada) y las de serie (`seriesData`, el Bo5 medido en el motor) sean lo que el motor usó. La verdad sale de un ESPÍA
+// sobre el `aplicar` real de `temporada` y de `serie` (una envoltura puesta en `ETAPAS_SPLIT` solo mientras dura la
+// corrida: misma llamada, mismos argumentos, mismo `rng`), con cálculos escritos acá aparte de `simulate.js`. Cada uno se
+// verificó en rojo contra un mutante del observador o de lo que el motor expone (regla de proceso 7; la tabla está en el
+// reporte de K2a). Las metas de K2 NO son checks: van en `nivel.metasK2` (ver `simulate.js`).
+
+// Corre `correr()` con el `aplicar` del sistema `sistemaId` envuelto: `alAplicar(estadoDeEntrada, resultado)` ve cada
+// llamada. Restaura el sistema original SIEMPRE.
+function conEspiaDeSistemaK2a(sistemaId, alAplicar, correr) {
+  const indice = ETAPAS_SPLIT.findIndex((sistema) => sistema.id === sistemaId);
+  const original = ETAPAS_SPLIT[indice];
+  ETAPAS_SPLIT[indice] = {
+    ...original,
+    aplicar: (state, rng) => {
+      const resultado = original.aplicar(state, rng);
+      alAplicar(state, resultado);
+      return resultado;
+    }
+  };
+  try {
+    return correr();
+  } finally {
+    ETAPAS_SPLIT[indice] = original;
+  }
+}
+
+// La media de nivel de la liga de la temporada como la midió la investigación de K2 (`k2inv/probe.mjs`): en el ARRANQUE
+// de la temporada, la liga de `career.liga` (o la que tiene a tu org), sobre todos los jugadores de los planteles de sus
+// orgs; sin liga en `mundo.ligas` o sin planteles, la constante `nivelLigaPorDefecto` y "no modelada".
+function mediaDeLigaK2a(state, org) {
+  const ligas = state.mundo.ligas ?? [];
+  const liga = ligas.find((l) => l.id === state.career.liga) ?? ligas.find((l) => (l.orgs ?? []).some((o) => o.nombre === org));
+  const niveles = (liga?.orgs ?? [])
+    .flatMap((o) => Object.values(state.mundo.planteles?.[o.nombre] ?? {}))
+    .filter((jugador) => typeof jugador?.nivel === 'number')
+    .map((jugador) => jugador.nivel);
+  return niveles.length > 0
+    ? { media: mediaK0(niveles), modelada: true }
+    : { media: BALANCE.mercado.nivelLigaPorDefecto, modelada: false };
+}
+
+// La guarda con la que `systems/temporada.js` arranca una temporada (copiada acá a propósito: si el observador detecta
+// "corrió la temporada" por otro camino, los dos tienen que coincidir).
+const arrancaTemporadaK2a = (state) => state.phase === 'profesional' && Boolean(state.career.currentOrg) && state.career.companeros.length > 0;
+
+// Una carrera con el espía de `temporada` puesto: devuelve, por temporada, lo que vio `aplicar` al arrancarla y la posición
+// final de su tabla, y por cada split que cerró en la etapa profesional si corrió la temporada. Además cuenta los casos
+// que separan la definición corregida de una lectura al cierre del split (para que el check no pase vacío).
+function verdadDeTemporadasK2a(seed, responder, splits, casos) {
+  const temporadas = [];
+  const splitsPro = [];
+  conEspiaDeSistemaK2a('temporada', (entrada, resultado) => {
+    if (!arrancaTemporadaK2a(entrada)) {
+      return;
+    }
+    if (resultado.state.career.temporada === entrada.career.temporada) {
+      throw new Error(`seed ${seed}: la guarda de temporada pasó y no se armó una temporada nueva`);
+    }
+    const org = entrada.career.currentOrg;
+    const { media, modelada } = mediaDeLigaK2a(entrada, org);
+    const companeros = entrada.career.companeros;
+    temporadas.push({
+      split: entrada.player.splitCount,
+      org,
+      nivel: nivelDelJugador(entrada),
+      nivelCompaneros: companeros.reduce((suma, c) => suma + c.nivel, 0) / companeros.length,
+      mediaLiga: media,
+      ligaModelada: modelada
+    });
+  }, () => {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < splits && !state.terminado; i += 1) {
+      const antes = temporadas.length;
+      state = avanzarSplitAuto(state, rng, responder ?? undefined).state;
+      const jugo = temporadas.length > antes;
+      if (jugo) {
+        const fila = temporadas[temporadas.length - 1];
+        const t = state.career.temporada;
+        fila.posNorm = t.posicion && t.tabla.length > 1 ? 1 - (t.posicion - 1) / (t.tabla.length - 1) : null;
+        // Lo que daría leer todo al cierre del split (la definición de K0): ¿difiere de lo del arranque?
+        const alCierre = mediaDeLigaK2a(state, fila.org);
+        casos.temporadas += 1;
+        casos.noModeladas += fila.ligaModelada ? 0 : 1;
+        casos.mundoMovidoDespues += Math.abs(alCierre.media - fila.mediaLiga) > 1e-9 ? 1 : 0;
+        casos.nivelMovidoDespues += Math.abs(nivelDelJugador(state) - fila.nivel) > 1e-9 ? 1 : 0;
+        const cierre = state.career.companeros;
+        const companerosAlCierre = cierre.length > 0 ? cierre.reduce((suma, c) => suma + c.nivel, 0) / cierre.length : null;
+        casos.companerosMovidosDespues += companerosAlCierre !== null && Math.abs(companerosAlCierre - fila.nivelCompaneros) > 1e-9 ? 1 : 0;
+      }
+      if (state.phase === 'profesional') {
+        splitsPro.push({ jugo, conPosicion: Boolean(state.career.posicion) && state.career.temporada?.tabla?.length > 1 });
+        casos.rancias += !jugo && Boolean(state.career.posicion) && state.career.temporada?.tabla?.length > 1 ? 1 : 0;
+      }
+    }
+  });
+  return { temporadas, splitsPro };
+}
+
+// Las carreras del check: `criterio` hasta encontrar los casos que separan las definiciones (al menos 40 seeds, como mucho
+// 400), y 20 de cada uno de los otros tres bots.
+const SEEDS_MIN_OBSERVADOR_K2A = 40;
+const SEEDS_MAX_OBSERVADOR_K2A = 400;
+const SEEDS_OTROS_BOTS_OBSERVADOR_K2A = 20;
+const SPLITS_OBSERVADOR_K2A = 60;
+
+checkLento('K2a observador: las filas corregidas de simulate.js son lo que vio temporada.aplicar al arrancar cada temporada (nivel, compañeros, liga, posición), y las de K0 marcan los splits pro sin temporada', () => {
+  const casos = { temporadas: 0, noModeladas: 0, mundoMovidoDespues: 0, nivelMovidoDespues: 0, companerosMovidosDespues: 0, rancias: 0 };
+  const problemas = [];
+  const contrastar = (bot, seed) => {
+    const responder = ESTRATEGIAS_K0[bot];
+    const verdad = verdadDeTemporadasK2a(seed, responder, SPLITS_OBSERVADOR_K2A, casos);
+    const { observacion } = correrCarreraSimulate(seed, SPLITS_OBSERVADOR_K2A, responder);
+    const donde = `${bot} seed ${seed}`;
+    if (observacion.temporadasData.length !== verdad.temporadas.length) {
+      problemas.push(`${donde}: ${observacion.temporadasData.length} filas corregidas, el espía vio ${verdad.temporadas.length} temporadas`);
+      return;
+    }
+    observacion.temporadasData.forEach((fila, i) => {
+      const esperado = verdad.temporadas[i];
+      const columnas = {
+        split: esperado.split,
+        org: esperado.org,
+        nivel: esperado.nivel,
+        nivelCompaneros: esperado.nivelCompaneros,
+        mediaLiga: esperado.mediaLiga,
+        ligaModelada: esperado.ligaModelada,
+        posNorm: esperado.posNorm,
+        nivelRelativoJugador: esperado.nivel - esperado.mediaLiga,
+        nivelRelativoCompaneros: esperado.nivelCompaneros - esperado.mediaLiga
+      };
+      for (const [columna, valor] of Object.entries(columnas)) {
+        const igual = typeof valor === 'number' && typeof fila[columna] === 'number'
+          ? Math.abs(fila[columna] - valor) <= 1e-9
+          : fila[columna] === valor;
+        if (!igual) {
+          problemas.push(`${donde}, temporada del split ${esperado.split}: ${columna} es ${fila[columna]}, el espía dice ${valor}`);
+        }
+      }
+    });
+    // Las filas de K0 (`splitsProData`) son una por split que cierra en la etapa profesional, y `temporadaJugada` dice si
+    // en ese split corrió la temporada.
+    const marcas = observacion.splitsProData.map((d) => d.temporadaJugada);
+    const esperadas = verdad.splitsPro.map((d) => d.jugo);
+    if (JSON.stringify(marcas) !== JSON.stringify(esperadas)) {
+      problemas.push(`${donde}: splitsProData.temporadaJugada = ${JSON.stringify(marcas)}, el espía dice ${JSON.stringify(esperadas)}`);
+    }
+  };
+
+  const casosQueSeparan = () => casos.noModeladas > 0 && casos.mundoMovidoDespues > 0 && casos.nivelMovidoDespues > 0 && casos.rancias > 0;
+  let seedCriterio = 0;
+  for (let seed = 1; seed <= SEEDS_MAX_OBSERVADOR_K2A && (seed <= SEEDS_MIN_OBSERVADOR_K2A || !casosQueSeparan()); seed += 1) {
+    contrastar('criterio', seed);
+    seedCriterio = seed;
+    if (problemas.length > 0) {
+      break;
+    }
+  }
+  for (const bot of ['equilibrado', 'azar', 'malas']) {
+    for (let seed = 1; seed <= SEEDS_OTROS_BOTS_OBSERVADOR_K2A && problemas.length === 0; seed += 1) {
+      contrastar(bot, seed);
+    }
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.slice(0, 4).join('; ')}${problemas.length > 4 ? ` (+${problemas.length - 4} más)` : ''}`);
+  }
+  // No vacío: tiene que haber temporadas de liga no modelada (tier 3), splits pro sin temporada (las filas rancias de K0),
+  // temporadas en las que el nivel cambió después de arrancar, y alguna en la que el mundo se movió después (`plantel`
+  // envejeciendo el mundo en el cierre de edad: el caso por el que existe `mundoDeLaTemporada`).
+  if (!casosQueSeparan()) {
+    throw new Error(`check vacío: en ${seedCriterio} carreras de criterio y ${SEEDS_OTROS_BOTS_OBSERVADOR_K2A} de cada otro bot, casos ${JSON.stringify(casos)}`);
+  }
+});
+
+// Una carrera con los espías del Bo5: el `aplicar` de `serie` (la primera serie de cada split arranca ahí) y las
+// decisiones de draft del primer mapa (cualquier ronda). En los dos lugares la fuerza que el motor expone para el
+// arranque de la serie tiene que ser la de tu equipo con el campeón del split y el rendimiento determinista acotado, y la
+// del rival la de su org.
+const clampK2a = (valor) => Math.min(BALANCE.stats.max, Math.max(BALANCE.stats.min, valor));
+const fuerzaDeArranqueK2a = (state) => fuerzaDelEquipo(state, clampK2a(rendimientoBase(state)));
+const fuerzaDeOrgK2a = (state, nombre) => state.mundo.ligas.flatMap((liga) => liga.orgs).find((org) => org.nombre === nombre)?.fuerza;
+
+const SEEDS_BO5_K2A = 30;
+
+checkLento('K2a Bo5 del motor: cada serie cerrada deja una fila con la fuerza de tu equipo y la del rival al arrancar la serie, y las filas son los logs de cierre', () => {
+  const problemas = [];
+  const vistos = { primeraDelSplit: 0, draftDelPrimerMapa: 0, series: 0, bo5: 0 };
+  for (const bot of ['criterio', 'malas']) {
+    for (let seed = 1; seed <= SEEDS_BO5_K2A && problemas.length === 0; seed += 1) {
+      const donde = `${bot} seed ${seed}`;
+      const espiaDecisiones = (sistema, st, decision, rng) => {
+        if (sistema.id === 'serie' && decision.datos?.motivo === 'draft' && st.serie.mapaActual === 0 && !st.serie.preSerieUsado) {
+          vistos.draftDelPrimerMapa += 1;
+          if (Math.abs(st.serie.fuerzaInicial - fuerzaDeArranqueK2a(st)) > 1e-9) {
+            problemas.push(`${donde}, draft del mapa 1 (${st.serie.ronda}): serie.fuerzaInicial ${st.serie.fuerzaInicial}, el arranque da ${fuerzaDeArranqueK2a(st)}`);
+          }
+        }
+        const bot_ = ESTRATEGIAS_K0[bot];
+        return bot_ ? bot_(sistema, st, decision, rng) : sistema.resolverAuto(st, decision, rng);
+      };
+      const { observacion, state } = conEspiaDeSistemaK2a('serie', (entrada, resultado) => {
+        // La primera serie del split arranca en este `aplicar`: es el primer cierre de sus logs, o la que quedó en curso.
+        const cierre = resultado.logs.find((log) => log.type === 'serie' && log.postSerie === true);
+        const enCurso = !cierre && resultado.state.serie.activa ? resultado.state.serie : null;
+        if (!cierre && !enCurso) {
+          return;
+        }
+        vistos.primeraDelSplit += 1;
+        const fuerzaInicial = cierre ? cierre.fuerzaInicial : enCurso.fuerzaInicial;
+        const rival = cierre ? cierre.rival : enCurso.rival.org;
+        const fuerzaRival = cierre ? cierre.fuerzaRival : enCurso.rival.fuerza;
+        if (Math.abs(fuerzaInicial - fuerzaDeArranqueK2a(entrada)) > 1e-9) {
+          problemas.push(`${donde}: la primera serie del split arranca con fuerza ${fuerzaInicial}, el estado de entrada de serie da ${fuerzaDeArranqueK2a(entrada)}`);
+        }
+        if (fuerzaRival !== fuerzaDeOrgK2a(entrada, rival)) {
+          problemas.push(`${donde}: el rival ${rival} figura con fuerza ${fuerzaRival}, su org tiene ${fuerzaDeOrgK2a(entrada, rival)}`);
+        }
+      }, () => correrCarreraSimulate(seed, 60, espiaDecisiones));
+      // Las filas son exactamente los logs de cierre de serie, en orden, y cada serie cerrada tiene la suya.
+      const cierres = state.logs.filter((log) => log.type === 'serie' && log.postSerie === true);
+      const filas = observacion.seriesData;
+      const registro = state.career.registro;
+      if (filas.length !== cierres.length || filas.length !== registro.seriesGanadas + registro.seriesPerdidas
+        || cuentaK0(filas, (f) => f.gano) !== registro.seriesGanadas) {
+        problemas.push(`${donde}: ${filas.length} filas de serie, ${cierres.length} logs de cierre, registro ${registro.seriesGanadas}-${registro.seriesPerdidas}`);
+        continue;
+      }
+      filas.forEach((fila, i) => {
+        const log = cierres[i];
+        const ganadas = Math.ceil(log.formato / 2);
+        if (fila.ronda !== log.ronda || fila.formato !== log.formato || fila.fuerzaInicial !== log.fuerzaInicial
+          || fila.fuerzaRival !== log.fuerzaRival || fila.delta !== log.fuerzaInicial - log.fuerzaRival || fila.gano !== log.gano
+          || Math.max(...log.marcador) !== ganadas || log.gano !== (log.marcador[0] > log.marcador[1])
+          || typeof fila.fuerzaInicial !== 'number' || !Number.isFinite(fila.delta)) {
+          problemas.push(`${donde}, serie ${i}: fila ${JSON.stringify(fila)} contra el log ${JSON.stringify({ ronda: log.ronda, formato: log.formato, fuerzaInicial: log.fuerzaInicial, fuerzaRival: log.fuerzaRival, gano: log.gano, marcador: log.marcador })}`);
+        }
+      });
+      vistos.series += filas.length;
+      vistos.bo5 += cuentaK0(filas, (f) => f.formato === 5);
+    }
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.slice(0, 4).join('; ')}${problemas.length > 4 ? ` (+${problemas.length - 4} más)` : ''}`);
+  }
+  if (vistos.primeraDelSplit < 20 || vistos.draftDelPrimerMapa < 20 || vistos.bo5 < 50) {
+    throw new Error(`check vacío: ${JSON.stringify(vistos)}`);
   }
 });
 

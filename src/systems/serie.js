@@ -11,6 +11,7 @@ import {
   esMapaCerrado, factorJerarquiaEnLlamada
 } from '../core/serie.js';
 import { calcularRendimiento, fuerzaDelEquipo } from './rendimiento.js';
+import { rendimientoBase } from '../core/fuerza.js';
 import {
   registrarMapa, registrarSerie, registrarTitulo, registrarInternacional, registrarPico, registrarArraigoEnFila
 } from '../core/registro.js';
@@ -141,6 +142,13 @@ function iniciarRonda(state, ronda, rng) {
       ronda,
       rival,
       formato,
+      // K2a: la fuerza de tu equipo al empezar la serie, con el campeón del
+      // split y sin el ruido (el rendimiento determinista, acotado igual que el
+      // del mapa). Es el lado propio del Δ con el que el instrumento de
+      // `src/dev/simulate.js` mide "el favorito gana el Bo5" en el motor; viaja
+      // en el log de cierre de la serie. Lectura pura: no consume `rng` ni
+      // cambia cómo se juega ningún mapa.
+      fuerzaInicial: fuerzaDelEquipo(state, clampStat(rendimientoBase(state))),
       marcador: [0, 0],
       mapaActual: 0,
       mapas: [],
@@ -378,7 +386,14 @@ function concluirRonda(state, rng, logsAcum) {
     rival: state.serie.rival.org,
     marcador: [...marcador],
     gano,
-    mapas: [...st.serie.mapas]
+    mapas: [...st.serie.mapas],
+    // K2a: el formato y las dos fuerzas al empezar la serie (la tuya con el
+    // campeón del split, sin ruido, y la del rival): con esto el instrumento de
+    // `src/dev/simulate.js` mide en el motor cuánto gana el favorito de un Bo5
+    // según el Δ de fuerza. Lectura pura de `state.serie`.
+    formato: state.serie.formato,
+    fuerzaInicial: state.serie.fuerzaInicial,
+    fuerzaRival: state.serie.rival.fuerza
   };
 
   if (ronda === 'internacional') {

@@ -33,14 +33,24 @@ export function rendimientoBase(state) {
     * factorJerarquia;
 }
 
+// El nivel medio de los compañeros con el que se calcula la fuerza del equipo.
+// K2a: extraído de `fuerzaDelEquipo` (misma expresión y mismo orden de
+// operaciones, así que el valor es idéntico bit a bit) para que
+// `systems/temporada.js` lo deje expuesto en el estado de la temporada y el
+// instrumento de `src/dev/simulate.js` lea lo que el motor usó, no un snapshot
+// posterior. Puro y sin RNG.
+export function nivelDeCompaneros(state) {
+  return state.career.companeros.reduce((suma, c) => suma + c.nivel, 0)
+    / Math.max(1, state.career.companeros.length);
+}
+
 // El equipo es sus compañeros más vos. Cuanto más peso tenés en el resultado,
 // más te sube y te baja la jerarquía lo que pase. Se movió tal cual desde
 // `systems/rendimiento.js` (la fase 4 la reusaba mapa a mapa; ahora también la
 // mira el draft de 9Rd).
 export function fuerzaDelEquipo(state, rendimiento) {
   const r = BALANCE.rendimiento;
-  const nivelCompaneros = state.career.companeros.reduce((suma, c) => suma + c.nivel, 0)
-    / Math.max(1, state.career.companeros.length);
+  const nivelCompaneros = nivelDeCompaneros(state);
 
   const bruto = nivelCompaneros * (1 - r.pesoJugadorEnEquipo) + rendimiento * r.pesoJugadorEnEquipo;
   return bruto * (1 + (state.career.sinergia / BALANCE.stats.max - 0.5) * r.sinergiaPesoEnRendimiento);

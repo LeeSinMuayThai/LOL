@@ -56,6 +56,25 @@ export const UMBRAL_CARRERA_CORTA_ANIOS = 4;
 // Δ de fuerza (el equipo más fuerte contra el más débil) para la tabla analítica de favorito Bo5.
 export const DELTAS_FAVORITO_BO5 = [0, 2, 4, 6, 8, 10, 12, 15];
 
+// K2a (PLAN.md "K2 — lo que midió la investigación", viñeta K2a): el favorito de un Bo5 MEDIDO EN EL MOTOR, por bandas
+// de |Δ0| = |fuerza propia al empezar la serie (campeón del split, sin ruido) − fuerza del rival|, [desde, hasta). Son
+// las bandas de la investigación (`k2inv/a_bo5b.mjs`) más una de 20 a 30; lo que cae afuera se cuenta aparte.
+export const BANDAS_DELTA_BO5 = [[0, 3], [3, 5], [5, 7], [7, 9], [9, 11], [11, 13], [13, 16], [16, 20], [20, 30]];
+// "Favorito claro" = Δ de fuerza ≈ 10 al empezar la serie (≈ 1º contra 4º de una liga tier 1, que da 11,8): PLAN.md, K2c.
+export const BANDA_FAVORITO_CLARO = [9, 11];
+// Mejor de 5 = el formato de la serie (`serie.formato`).
+const FORMATO_BO5 = 5;
+// Para pasar una probabilidad a puntos porcentuales.
+const PUNTOS_PORCENTUALES = 100;
+
+// K2a: las metas de los checks de K2 (PLAN.md "Checks de K2"), sobre la definición corregida. Hoy están en rojo a
+// propósito: `validate.js` no tiene una convención para checks de una fase futura, así que NO son checks — se reportan
+// en `nivel.metasK2` con la meta al lado. Las bandas finales las fija K3c (regla de proceso 17: el día que se
+// conviertan en checks, se escriben con su línea de qué protegen).
+export const META_K2_R_MISMA_LIGA = 0.5;
+export const META_K2_R2_SIN_RUIDO = 0.5;
+export const META_K2_BO5_FAVORITO_CLARO_PCT = [75, 85];
+
 // Mejor de 5: gana el primero en llevarse este número de mapas.
 const MAPAS_PARA_GANAR_BO5 = 3;
 
@@ -170,15 +189,26 @@ export function correrCarrera(seed, splits, responder) {
   }
 
   // Métricas del instrumento de Fase K0.
+  //
+  // K2a: `temporadasData` es la observación CORREGIDA del nivel (PLAN.md "K2 — lo que midió la investigación"): una
+  // fila por split en el que corrió la temporada, con el nivel y los compañeros QUE USÓ EL MOTOR para la fuerza de esa
+  // temporada (`career.temporada.nivelJugador`/`nivelCompaneros`, expuestos por `systems/temporada.js`) y la posición
+  // final de ESA temporada. `splitsProData` (la de K0) queda igual por continuidad: lee el nivel después del split, los
+  // compañeros del snapshot y arrastra la posición del split anterior en los splits pro sin temporada (~5% de sus
+  // filas). `seriesData`: una fila por serie cerrada, con las dos fuerzas al empezar la serie (el Bo5 medido en el motor).
   const observacion = {
     seed,
     decisionesPorTipo: {},
     minijuegosCount: 0,
     splitsProRitmo: [],
     splitsProData: [],
+    temporadasData: [],
+    seriesData: [],
     temporadasNumero1: 0,
     beatsReproductor: 0
   };
+  // El `splitCount` al arrancar el split en curso: la clave de las filas de temporada y de serie de ese split.
+  let splitEnCurso = state.player.splitCount;
 
   let decisionesEnSplitActual = 0;
 
@@ -187,7 +217,15 @@ export function correrCarrera(seed, splits, responder) {
   // el final del split). Cada tanda se agrupa en beats por separado, como hace `reproducirBeats`.
   let logsContados = state.logs.length;
   function contarTanda(st) {
-    observacion.beatsReproductor += contarBeats(st.logs.slice(logsContados));
+    const nuevos = st.logs.slice(logsContados);
+    observacion.beatsReproductor += contarBeats(nuevos);
+    // K2a: cada serie cerrada deja UN log de cierre (`postSerie`) con su formato y las dos fuerzas al empezarla.
+    for (const log of nuevos) {
+      const fila = filaDeSerie(log, splitEnCurso);
+      if (fila) {
+        observacion.seriesData.push(fila);
+      }
+    }
     logsContados = st.logs.length;
   }
 
@@ -221,6 +259,13 @@ export function correrCarrera(seed, splits, responder) {
 
   for (let i = 0; i < splits && !state.terminado; i += 1) {
     decisionesEnSplitActual = 0;
+    splitEnCurso = state.player.splitCount;
+    // K2a: `systems/temporada.js` es el único que escribe `career.temporada` y la arma ENTERA de nuevo cada vez que
+    // corre (`iniciarTemporada`); los demás sistemas la copian por referencia. Si al cerrar el split el objeto es
+    // otro, la temporada corrió en ESTE split; si es el mismo, es la del split anterior.
+    const temporadaAntes = state.career.temporada;
+    // K2a: el mundo contra el que se centra el nivel de la temporada (ver `mundoDeLaTemporada`).
+    const mundoAntes = state.mundo;
 
     // `candidatos`/`calcularContexto` son puros (T2: contexto siempre en
     // vivo) — llamarlos acá no consume `rng` ni duplica lo que
@@ -245,6 +290,12 @@ export function correrCarrera(seed, splits, responder) {
     state = avanzarSplitAuto(state, rng, responderInstrumentado).state;
     marcarSeriesCerradas(state);
     contarTanda(state);
+
+    const temporadaJugada = state.career.temporada !== temporadaAntes;
+    if (temporadaJugada) {
+      const mundo = mundoDeLaTemporada(mundoAntes, state.mundo);
+      observacion.temporadasData.push(filaDeTemporada(mundo, state.career.temporada, splitEnCurso));
+    }
 
     if (state.phase !== 'profesional') {
       continue;
@@ -277,7 +328,10 @@ export function correrCarrera(seed, splits, responder) {
       nivelRelativoCompaneros: companerosNivel - mediaLiga,
       // false = la liga no está en `mundo.ligas` (los splits de tier 3): la "media de la liga" es la
       // constante `nivelLigaPorDefecto`, no un dato. Ver `bloquePosicion`.
-      ligaModelada
+      ligaModelada,
+      // K2a: si en este split corrió la temporada. Con `false` y `posNorm` no nulo, la fila arrastra la posición
+      // de la temporada anterior (las "filas rancias" de la definición de K0): `nivel.corregida.splitsProSinTemporada`.
+      temporadaJugada
     });
 
     // "#1 del mundo en una temporada" = estar #1 al cierre de la edad, que es cuando el juego revela el Top 20.
@@ -351,7 +405,17 @@ export function nivelMedioDeLiga(state) {
   const ligas = state.mundo.ligas ?? [];
   const liga = ligas.find((l) => l.id === ligaId)
     ?? ligas.find((l) => l.orgs?.some((o) => o.nombre === orgActual));
+  return nivelMedioDe(state, liga);
+}
 
+// K2a: la misma media, para la liga a la que pertenece una org (la de la temporada que se observa, no la de
+// `career.liga` al cerrar el split). Devuelve también la liga, o `null` si la org no está en `mundo.ligas` (tier 3).
+export function nivelMedioDeLigaDeOrg(state, orgNombre) {
+  const liga = (state.mundo.ligas ?? []).find((l) => l.orgs?.some((o) => o.nombre === orgNombre)) ?? null;
+  return { ...nivelMedioDe(state, liga), liga };
+}
+
+function nivelMedioDe(state, liga) {
   if (!liga) {
     return { media: BALANCE.mercado.nivelLigaPorDefecto, modelada: false };
   }
@@ -374,6 +438,70 @@ export function nivelMedioDeLiga(state) {
   }
 
   return { media: BALANCE.mercado.nivelLigaPorDefecto, modelada: false };
+}
+
+// K2a — los planteles tal como estaban al ARRANCAR la temporada del split, que es contra los que se centra el nivel. El
+// observador no ve adentro del split; lo resuelve quién mueve el mundo y cuándo (el orden de `ETAPAS_SPLIT`):
+//  - ANTES de `temporada`: `competitivo` (solo AGREGA planteles, para las orgs de la liga a la que ascendés) y `mercado`
+//    (el mercado del mundo y el cierre de los asientos congelados; cada vez que corre deja un `mercadoPretemporada`
+//    nuevo);
+//  - DESPUÉS de `temporada`: `plantel`, que envejece el mundo en el cierre de edad, y solo si el mercado del mundo no
+//    corrió ese año (el split del cierre de edad del año en que firmaste desde amateur, o en el que jugaste una tier 2
+//    que no es la de tu región).
+// Así que si `mercadoPretemporada` cambió en el split, todo lo que se movió fue antes de la temporada y valen los
+// planteles del cierre; si no, los que ya existían antes del split no los tocó nadie antes de la temporada (a lo sumo
+// `plantel` después) y valen los de antes, y los que aparecieron los agregó `competitivo` antes de la temporada. Medido
+// sobre 400 carreras de `criterio`: con solo los del cierre, 4 de 13.628 temporadas quedaban centradas contra el mundo
+// ya envejecido. `validate.js` lo verifica contra un espía de `temporada.aplicar` (check "K2a observador").
+export function mundoDeLaTemporada(mundoAntes, mundoDespues) {
+  if (mundoDespues.mercadoPretemporada !== mundoAntes.mercadoPretemporada) {
+    return mundoDespues;
+  }
+  return { ...mundoDespues, planteles: { ...(mundoDespues.planteles ?? {}), ...(mundoAntes.planteles ?? {}) } };
+}
+
+// K2a — la fila corregida de una temporada: el nivel y los compañeros QUE USÓ EL MOTOR (los expone `iniciarTemporada`
+// sobre el mismo estado con el que calcula `rendimiento` y `fuerzaPropia`), centrados por la media de la liga en la que
+// se jugó esa temporada (la de la org de `filaPropia`, con los planteles del arranque de la temporada: ver
+// `mundoDeLaTemporada`), y la posición final de esa misma tabla.
+export function filaDeTemporada(mundo, temporada, split) {
+  const { media, modelada, liga } = nivelMedioDeLigaDeOrg({ mundo }, temporada.filaPropia.org);
+  const equipos = temporada.tabla?.length ?? 0;
+  const posNorm = temporada.posicion && equipos > 1 ? 1 - (temporada.posicion - 1) / (equipos - 1) : null;
+  return {
+    split,
+    org: temporada.filaPropia.org,
+    liga: liga?.id ?? null,
+    tier: liga?.tier ?? null,
+    posicion: temporada.posicion,
+    equipos,
+    posNorm,
+    nivel: temporada.nivelJugador,
+    nivelCompaneros: temporada.nivelCompaneros,
+    mediaLiga: media,
+    nivelRelativoJugador: temporada.nivelJugador - media,
+    nivelRelativoCompaneros: temporada.nivelCompaneros - media,
+    ligaModelada: modelada
+  };
+}
+
+// K2a — la fila de una serie cerrada, desde su log de cierre (`systems/serie.js#concluirRonda`, `postSerie: true`):
+// `delta` = Δ0 = tu fuerza al empezar la serie (campeón del split, rendimiento determinista acotado a 0-100) − la del
+// rival. `null` si el log no es un cierre de serie.
+export function filaDeSerie(log, split) {
+  if (log.type !== 'serie' || log.postSerie !== true) {
+    return null;
+  }
+  return {
+    split,
+    ronda: log.ronda,
+    formato: log.formato,
+    fuerzaInicial: log.fuerzaInicial,
+    fuerzaRival: log.fuerzaRival,
+    delta: log.fuerzaInicial - log.fuerzaRival,
+    gano: log.gano,
+    marcador: [...log.marcador]
+  };
 }
 
 // Fase K0 (PLAN.md §K.3a): cálculo analítico cerrado de Bo5 para Δ de fuerza.
@@ -479,6 +607,8 @@ export function regresionLineal2Regresores(ys, xs1, xs2) {
 export function correrSinRuido(semillas, splits, responder) {
   const originales = PARAMETROS_RUIDO.map(([grupo, clave]) => BALANCE[grupo][clave]);
   const filasPorCarrera = [];
+  // K2a: las filas corregidas (una por temporada jugada) de las mismas carreras sin ruido.
+  const temporadasPorCarrera = [];
   let crashes = 0;
 
   try {
@@ -487,7 +617,9 @@ export function correrSinRuido(semillas, splits, responder) {
     }
     for (const seed of semillas) {
       try {
-        filasPorCarrera.push(correrCarrera(seed, splits, responder).observacion.splitsProData);
+        const { observacion } = correrCarrera(seed, splits, responder);
+        filasPorCarrera.push(observacion.splitsProData);
+        temporadasPorCarrera.push(observacion.temporadasData);
       } catch {
         crashes += 1;
       }
@@ -498,7 +630,7 @@ export function correrSinRuido(semillas, splits, responder) {
     });
   }
 
-  return { filasPorCarrera, crashes };
+  return { filasPorCarrera, temporadasPorCarrera, crashes };
 }
 
 function reporteDetallado(state, seed) {
@@ -803,9 +935,17 @@ function bloqueEmbudo(resultados, carreras, observaciones, { conNotas = false } 
 // SU liga, pero los splits cuya liga no está modelada (tier 3: no está en `mundo.ligas`) usan una constante
 // como "nivel de la liga": ahí no hay centración real, así que se EXCLUYEN (y se cuenta cuántos). El
 // `rNivelPosicionBruto` (sin centrar) va sobre todos, para continuidad con la auditoría (valía 0,05).
+//
+// K2a: `corregida` repite las dos r con la DEFINICIÓN CORREGIDA (PLAN.md "K2 — lo que midió la investigación"): una fila
+// por temporada jugada (`temporadasData`), con el nivel y los compañeros que usó el motor y la posición de esa misma
+// temporada. Los campos de arriba quedan con la definición de K0 por continuidad (§K.0b); los checks de K2 van sobre
+// `corregida`. `splitsProSinTemporada` cuenta las filas de K0 con posición que vienen de un split pro en el que no corrió
+// la temporada (arrastran la posición del split anterior).
 function bloquePosicion(observaciones) {
   const conTabla = observaciones.flatMap((o) => o.splitsProData).filter((d) => d.posNorm !== null);
   const modelados = conTabla.filter((d) => d.ligaModelada);
+  const temporadas = observaciones.flatMap((o) => o.temporadasData).filter((d) => d.posNorm !== null);
+  const temporadasModeladas = temporadas.filter((d) => d.ligaModelada);
   return {
     rNivelPosicionMismaLiga: redondear(pearson(
       modelados.map((d) => d.nivelRelativoJugador),
@@ -816,7 +956,20 @@ function bloquePosicion(observaciones) {
       conTabla.map((d) => d.posNorm)
     ), 3),
     splitsConTabla: conTabla.length,
-    splitsExcluidosLigaNoModelada: conTabla.length - modelados.length
+    splitsExcluidosLigaNoModelada: conTabla.length - modelados.length,
+    corregida: {
+      rNivelPosicionMismaLiga: redondear(pearson(
+        temporadasModeladas.map((d) => d.nivelRelativoJugador),
+        temporadasModeladas.map((d) => d.posNorm)
+      ), 3),
+      rNivelPosicionBruto: redondear(pearson(
+        temporadas.map((d) => d.nivel),
+        temporadas.map((d) => d.posNorm)
+      ), 3),
+      temporadasConTabla: temporadas.length,
+      temporadasExcluidasLigaNoModelada: temporadas.length - temporadasModeladas.length,
+      splitsProSinTemporada: conTabla.filter((d) => !d.temporadaJugada).length
+    }
   };
 }
 
@@ -910,8 +1063,8 @@ export function decidirRuidoPuro(r2NivelYEquipoSinRuido, ruidoPuroCrudo) {
   return { interpretable, ruidoPuro: interpretable ? redondear(ruidoPuroCrudo, 3) : null };
 }
 
-function bloqueVarianza(observaciones, splits, responder) {
-  const corridasAblacion = Math.min(observaciones.length, MAX_CORRIDAS_ABLACION);
+function bloqueVarianza(observaciones, splits, responder, maxCorridasAblacion = MAX_CORRIDAS_ABLACION) {
+  const corridasAblacion = Math.min(observaciones.length, maxCorridasAblacion);
   const observacionesBase = observaciones.slice(0, corridasAblacion);
   const conTabla = (filas) => filas.filter((d) => d.posNorm !== null);
   const soloModeladas = (filas) => conTabla(filas).filter((d) => d.ligaModelada);
@@ -924,6 +1077,23 @@ function bloqueVarianza(observaciones, splits, responder) {
     observacionesBase.map((o) => soloModeladas(o.splitsProData)),
     sinRuido.filasPorCarrera.map(soloModeladas)
   );
+  // K2a: lo mismo con la definición corregida (una fila por temporada jugada), sobre las MISMAS carreras sin ruido.
+  const corregidaTodas = estadisticasDeAblacion(
+    observacionesBase.map((o) => conTabla(o.temporadasData)),
+    sinRuido.temporadasPorCarrera.map(conTabla)
+  );
+  const corregidaModelada = estadisticasDeAblacion(
+    observacionesBase.map((o) => soloModeladas(o.temporadasData)),
+    sinRuido.temporadasPorCarrera.map(soloModeladas)
+  );
+  const r2Corregido = (e) => ({
+    r2NivelYEquipo: redondear(e.r2NivelYEquipo, 3),
+    r2NivelYEquipoEE: redondear(e.r2NivelYEquipoEE, 3),
+    r2NivelYEquipoSinRuido: redondear(e.r2NivelYEquipoSinRuido, 3),
+    r2NivelYEquipoSinRuidoEE: redondear(e.r2NivelYEquipoSinRuidoEE, 3),
+    nTemporadasBase: e.nSplitsBase,
+    nTemporadasSinRuido: e.nSplitsSinRuido
+  });
 
   const { interpretable, ruidoPuro } = decidirRuidoPuro(titular.r2NivelYEquipoSinRuido, titular.ruidoPuroCrudo);
   const estructuralInsuficiente = !interpretable;
@@ -957,7 +1127,10 @@ function bloqueVarianza(observaciones, splits, responder) {
       ruidoPuroEE: redondear(modelada.ruidoPuroEE, 3),
       nSplitsBase: modelada.nSplitsBase,
       nSplitsSinRuido: modelada.nSplitsSinRuido
-    }
+    },
+    // K2a: el R² de nivel + equipo con la definición corregida, con y sin el ruido de resultados, sobre todas las
+    // temporadas con tabla y solo sobre las de liga modelada (la meta de K2 va sobre `soloLigaModelada`).
+    corregida: { ...r2Corregido(corregidaTodas), soloLigaModelada: r2Corregido(corregidaModelada) }
   };
 }
 
@@ -965,18 +1138,112 @@ function bloqueVarianza(observaciones, splits, responder) {
 // 200 carreras, o sea que cuesta tanto como el lote entero, y quien solo mira otros bloques (el check J0 de
 // `validate.js` lee `jugabilidad` de 3 lotes de 200 carreras) no tiene por qué pagarlo. Es una propiedad
 // enumerable: `JSON.stringify`, `Object.entries` y el spread la evalúan como a cualquier otra.
-function bloqueNivel(observaciones, splits, responder) {
-  const nivel = { ...bloquePosicion(observaciones), favoritoBo5: calcularFavoritoBo5() };
+//
+// K2a: `bo5Motor` es el favorito de un Bo5 medido en el motor (ver `bloqueBo5Motor`), al lado de la tabla analítica de
+// K0 (`favoritoBo5`). `metasK2` (también al leerla: necesita la ablación) son los checks de K2 con la meta al lado.
+function bloqueNivel(observaciones, splits, responder, maxCorridasAblacion = MAX_CORRIDAS_ABLACION) {
+  const nivel = {
+    ...bloquePosicion(observaciones),
+    favoritoBo5: calcularFavoritoBo5(),
+    bo5Motor: bloqueBo5Motor(observaciones)
+  };
   let varianzaExplicada = null;
   Object.defineProperty(nivel, 'varianzaExplicada', {
     enumerable: true,
     configurable: true,
     get() {
-      varianzaExplicada ??= bloqueVarianza(observaciones, splits, responder);
+      varianzaExplicada ??= bloqueVarianza(observaciones, splits, responder, maxCorridasAblacion);
       return varianzaExplicada;
     }
   });
+  Object.defineProperty(nivel, 'metasK2', {
+    enumerable: true,
+    configurable: true,
+    get() {
+      return metasK2(nivel);
+    }
+  });
   return nivel;
+}
+
+// K2a — "el favorito gana el Bo5", MEDIDO EN EL MOTOR (PLAN.md "K2 — lo que midió la investigación": el 91,9% de K0
+// era analítico y omitía el Fearless). Sobre las series Bo5 cerradas (`seriesData`, el log de cierre de cada serie):
+// Δ0 = tu fuerza al empezar la serie (campeón del split, sin ruido) − la del rival. Por banda de |Δ0| y por lado: el
+// jugador favorito (Δ0 >= 0, como en la investigación) y el rival favorito (Δ0 < 0), y los dos juntos; en cada celda,
+// n, el % de series que ganó el favorito y su error estándar binomial en puntos (sqrt(p(1-p)/n); las series de una
+// misma carrera no son independientes, así que es una cota optimista). Con menos de `MUESTRA_MINIMA` series, el % y
+// el error son `null` (pero `n` va siempre).
+function celdaBo5(favoritoGana) {
+  const n = favoritoGana.length;
+  if (n < MUESTRA_MINIMA) {
+    return { n, ganaFavoritoPct: null, eePct: null };
+  }
+  const p = favoritoGana.filter(Boolean).length / n;
+  return {
+    n,
+    ganaFavoritoPct: redondear(p * PUNTOS_PORCENTUALES, 1),
+    eePct: redondear(Math.sqrt((p * (1 - p)) / n) * PUNTOS_PORCENTUALES, 1)
+  };
+}
+
+export function bloqueBo5Motor(observaciones) {
+  const series = observaciones.flatMap((o) => o.seriesData).filter((d) => d.formato === FORMATO_BO5);
+  const favoritoGana = (d) => (d.delta >= 0 ? d.gano : !d.gano);
+  const enBanda = ([desde, hasta]) => (d) => Math.abs(d.delta) >= desde && Math.abs(d.delta) < hasta;
+  const fila = (banda) => {
+    const deLaBanda = series.filter(enBanda(banda));
+    return {
+      desde: banda[0],
+      hasta: banda[1],
+      jugadorFavorito: celdaBo5(deLaBanda.filter((d) => d.delta >= 0).map(favoritoGana)),
+      rivalFavorito: celdaBo5(deLaBanda.filter((d) => d.delta < 0).map(favoritoGana)),
+      ambos: celdaBo5(deLaBanda.map(favoritoGana))
+    };
+  };
+  const enAlgunaBanda = (d) => BANDAS_DELTA_BO5.some((banda) => enBanda(banda)(d));
+  return {
+    seriesBo5: series.length,
+    pctJugadorFavorito: pct(series.filter((d) => d.delta >= 0).length, series.length),
+    deltaMedio: redondear(promedio(series.map((d) => d.delta)), 2),
+    fueraDeBandas: series.filter((d) => !enAlgunaBanda(d)).length,
+    bandas: BANDAS_DELTA_BO5.map(fila),
+    favoritoClaro: fila(BANDA_FAVORITO_CLARO)
+  };
+}
+
+// K2a — los checks de K2 (PLAN.md "Checks de K2"), sobre la definición corregida y con la meta al lado. Son REPORTE, no
+// checks: hoy están en rojo a propósito y `validate.js` no tiene una convención para checks de una fase futura. `cumple`
+// es false si el valor no existe (muestra chica). Las bandas finales las fija K3c. Los otros cuatro checks de K2 (la p
+// de la previa es la que tira el motor, el traspaso juega con el plantel nuevo, una tirada por partido y por mapa,
+// `ruidoEfectivo` único lector de σ) protegen estructura que recién crean K2b y K2d: se escriben ahí.
+function metasK2(nivel) {
+  const enRango = (valor, [min, max]) => valor !== null && valor >= min && valor <= max;
+  const alMenos = (valor, min) => valor !== null && valor >= min;
+  const r = nivel.corregida.rNivelPosicionMismaLiga;
+  const r2 = nivel.varianzaExplicada.corregida.soloLigaModelada.r2NivelYEquipoSinRuido;
+  const { jugadorFavorito, rivalFavorito } = nivel.bo5Motor.favoritoClaro;
+  const [bo5Min, bo5Max] = META_K2_BO5_FAVORITO_CLARO_PCT;
+  const bandaBo5 = `|Δ0| en [${BANDA_FAVORITO_CLARO[0]}, ${BANDA_FAVORITO_CLARO[1]})`;
+  return {
+    rNivelPosicionMismaLiga: {
+      valor: r, meta: `>= ${META_K2_R_MISMA_LIGA}`, cumple: alMenos(r, META_K2_R_MISMA_LIGA),
+      fuente: 'nivel.corregida.rNivelPosicionMismaLiga'
+    },
+    r2NivelYEquipoSinRuidoLigaModelada: {
+      valor: r2, meta: `>= ${META_K2_R2_SIN_RUIDO}`, cumple: alMenos(r2, META_K2_R2_SIN_RUIDO),
+      fuente: 'nivel.varianzaExplicada.corregida.soloLigaModelada.r2NivelYEquipoSinRuido'
+    },
+    bo5FavoritoClaroJugador: {
+      valor: jugadorFavorito.ganaFavoritoPct, n: jugadorFavorito.n, meta: `${bo5Min}-${bo5Max}% con ${bandaBo5}`,
+      cumple: enRango(jugadorFavorito.ganaFavoritoPct, META_K2_BO5_FAVORITO_CLARO_PCT),
+      fuente: 'nivel.bo5Motor.favoritoClaro.jugadorFavorito'
+    },
+    bo5FavoritoClaroRival: {
+      valor: rivalFavorito.ganaFavoritoPct, n: rivalFavorito.n, meta: `${bo5Min}-${bo5Max}% con ${bandaBo5}`,
+      cumple: enRango(rivalFavorito.ganaFavoritoPct, META_K2_BO5_FAVORITO_CLARO_PCT),
+      fuente: 'nivel.bo5Motor.favoritoClaro.rivalFavorito'
+    }
+  };
 }
 
 // §K.3c — economía: distribución de `mentalidad` y `hype` sobre todos los splits pro (el estado después
@@ -1252,7 +1519,9 @@ function bloqueJugabilidad(jugabilidades) {
   };
 }
 
-export function correrLote(corridas, splits, estrategia) {
+// `opciones.corridasAblacion` (K2a): cuántas carreras corre la ablación de `nivel.varianzaExplicada` (por defecto
+// `MAX_CORRIDAS_ABLACION`, las primeras 200). La investigación de K2 midió el R² sin ruido sobre 400.
+export function correrLote(corridas, splits, estrategia, { corridasAblacion = MAX_CORRIDAS_ABLACION } = {}) {
   const responder = ESTRATEGIAS[estrategia];
   const resultados = [];
   const carreras = [];
@@ -1308,7 +1577,7 @@ export function correrLote(corridas, splits, estrategia) {
 
     // Nuevos bloques instrumentados de la Fase K0
     embudo: bloqueEmbudo(resultados, carreras, observaciones, { conNotas: true }),
-    nivel: bloqueNivel(observaciones, splits, responder),
+    nivel: bloqueNivel(observaciones, splits, responder, corridasAblacion),
     economia: bloqueEconomia(observaciones),
     longevidad: bloqueLongevidad(resultados),
     ritmo: bloqueRitmo(observaciones),
@@ -1335,6 +1604,13 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   // ejemplo `--bloque=puntaje`), con la estrategia y el tamaño al lado; sin él, el reporte entero de siempre.
   const posicionales = process.argv.slice(2).filter((arg) => !arg.startsWith('--'));
   const bloque = process.argv.slice(2).find((arg) => arg.startsWith('--bloque='))?.slice('--bloque='.length) ?? null;
+  // K2a: `--ablacion=<n>` sube (o baja) el tope de carreras de la ablación de `nivel.varianzaExplicada`.
+  const ablacionArg = process.argv.slice(2).find((arg) => arg.startsWith('--ablacion='))?.slice('--ablacion='.length);
+  const corridasAblacion = ablacionArg === undefined ? MAX_CORRIDAS_ABLACION : Number(ablacionArg);
+  if (!(Number.isInteger(corridasAblacion) && corridasAblacion >= 1)) {
+    console.error(`--ablacion tiene que ser un entero >= 1 (vino ${ablacionArg}).`);
+    process.exit(1);
+  }
   const corridas = Number(posicionales[0] || 1);
   const splits = Number(posicionales[1] || 15);
   const estrategia = posicionales[2] || 'equilibrado';
@@ -1360,8 +1636,8 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
     const { state, carrera, jugabilidad, observacion } = correrCarrera(seed, splits, ESTRATEGIAS[estrategia]);
     console.log(JSON.stringify({ ...reporteDetallado(state, seed), carrera, jugabilidad, observacion }, null, 2));
   } else if (estrategia === 'todas') {
-    console.log(JSON.stringify(NOMBRES_ESTRATEGIA.map((nombre) => recortar(correrLote(corridas, splits, nombre))), null, 2));
+    console.log(JSON.stringify(NOMBRES_ESTRATEGIA.map((nombre) => recortar(correrLote(corridas, splits, nombre, { corridasAblacion }))), null, 2));
   } else {
-    console.log(JSON.stringify(recortar(correrLote(corridas, splits, estrategia)), null, 2));
+    console.log(JSON.stringify(recortar(correrLote(corridas, splits, estrategia, { corridasAblacion })), null, 2));
   }
 }
