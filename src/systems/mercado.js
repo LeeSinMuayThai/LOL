@@ -10,7 +10,7 @@ import { cerrarFila, registrarPico, registrarSalarioEnFila, registrarArraigoEnFi
 import { bandaDeJerarquia, bandaDeArraigoFicha, nivelDelJugador } from '../core/ficha.js';
 import { orgsQueTeFicharian, ofertaPosible, esResidenteDe, nivelAlternativaAsiento, factorRenovacionEtario } from '../core/demanda.js';
 import { resolverMercadoMundial, cerrarAsientosCongelados } from '../core/mercadoMundial.js';
-import { jerarquiaAlFichar, conPlantillaDelPlantel } from './roster.js';
+import { jerarquiaAlFichar, sinergiaAlFichar, conPlantillaDelPlantel } from './roster.js';
 import { companerosDelPlantel } from '../core/fuerza.js';
 import { BALANCE } from '../data/balance.js';
 
@@ -494,7 +494,7 @@ export function aplicar(state, rng) {
 // `motivoFila`: el motivo con el que se cierra la fila de la org anterior en el
 // registro. Por defecto se deriva del cambio de tier (ascenso/descenso/
 // transferencia); 9Mf lo pasa explícito para el banquillo.
-function aceptarOferta(state, oferta, { motivoFila } = {}) {
+function aceptarOferta(state, oferta, rng, { motivoFila } = {}) {
   const esRenovacion = oferta.tag === 'renovacion';
   const contrato = {
     org: oferta.org, liga: oferta.liga, tier: oferta.tier,
@@ -545,17 +545,25 @@ function aceptarOferta(state, oferta, { motivoFila } = {}) {
     ? (companerosDelPlantel(state, oferta.org) ?? [])
     : state.career.companeros;
 
+  // K2b (revisión): con el plantel nuevo viene la química del plantel nuevo
+  // — la regla de `armarRoster` (`sinergiaAlFichar`), tirada una sola vez acá y
+  // pasada a `armarRoster` por `flags.sinergiaProyectadaAlFichar`. Sin
+  // compañeros (venías sin equipo) no hay nada que resetear: lo arma el roster.
+  const sinergiaAlFirmar = state.career.companeros.length > 0 ? sinergiaAlFichar(state, rng) : null;
+
   return {
     state: {
       ...state,
       flags: {
         ...state.flags,
         splitsSinOfertaConsecutivos: 0,
-        jerarquiaProyectadaAlFichar: oferta.datos.jerarquiaProyectada
+        jerarquiaProyectadaAlFichar: oferta.datos.jerarquiaProyectada,
+        sinergiaProyectadaAlFichar: sinergiaAlFirmar
       },
       career: {
         ...state.career,
         companeros,
+        sinergia: sinergiaAlFirmar === null ? state.career.sinergia : Math.round(sinergiaAlFirmar),
         tier: oferta.tier, liga: oferta.liga, currentOrg: oferta.org,
         orgs: [...state.career.orgs, oferta.org],
         // "En qué split entraste a una liga real POR PRIMERA VEZ" (`core/state.js`,
@@ -714,7 +722,7 @@ function resolverTraspaso(state, decision, respuesta, rng) {
   }
 
   const origen = state.career.currentOrg;
-  const firmado = aceptarOferta(state, elegida, { motivoFila: 'transferencia' });
+  const firmado = aceptarOferta(state, elegida, rng, { motivoFila: 'transferencia' });
   const cerrado = cerrarAsientosCongelados(firmado.state, elegida.org, rng, new Set([elegida.org]));
   const clausulaTxt = decision.datos.conClausula ? ' Se ejecuta la cláusula.' : '';
   return {
@@ -758,7 +766,7 @@ function resolverBanquillo(state, logsPrevios, rng) {
 
   const orgDestino = [...dev.orgs].sort((a, b) => a.fuerza - b.fuerza)[0];
   const oferta = construirOferta(state, dev, orgDestino, null, rng);
-  const firmado = aceptarOferta(state, { ...oferta, id: oferta.org }, { motivoFila: 'banquillo' });
+  const firmado = aceptarOferta(state, { ...oferta, id: oferta.org }, rng, { motivoFila: 'banquillo' });
   return {
     state: { ...firmado.state, flags: { ...firmado.state.flags, banquilloPendiente: false } },
     logs: [
@@ -947,7 +955,7 @@ export function resolver(state, decision, respuesta, rng) {
 
   // Firmar.
   const elegida = decision.opciones.find((opcion) => opcion.id === respuesta.opcionId);
-  const firmado = aceptarOferta(state, elegida);
+  const firmado = aceptarOferta(state, elegida, rng);
   // Fase 9Mc: firmaste — los demás asientos que te habían ofrecido se cierran
   // con un NPC, y el log lo dice con nombre ("el mundo siguió sin vos"). Sólo
   // las orgs que aparecieron como tarjeta lateral (o se levantaron de la mesa

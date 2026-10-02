@@ -34,12 +34,12 @@ export const BANDAS_PENDIENTES = [
   {
     check: 'proyeccionJerarquia predice la jerarquía real con error acotado (regla de proceso 15, PLAN.md §9.8)',
     bloque: 'A',
-    medido: 'sesgo +3,2 puntos (400 carreras × 40 splits, primer fichaje de mercado de cada una)',
+    medido: 'sesgo +3,2 puntos (+3,164 re-medido tras la revisión de K2b; 400 carreras × 40 splits, primer fichaje de mercado de cada una)',
     banda: '|sesgo| ≤ 3 puntos',
     commit: 'K2b',
     rebasea: 'K3c',
-    porque: 'salió de banda con la estructura de K2b (no se aisló cuál de sus partes lo mueve); lo que la recentra es '
-      + '`roster.derivaPrimerSplit`, una deriva cosmética de la tarjeta (no corre el stream), y eso es calibración'
+    porque: 'sacar la sinergia del rendimiento propio lo sube en el primer split en una org nueva, donde la sinergia es '
+      + 'mínima; la jerarquía crece más de lo que proyecta derivaPrimerSplit; se re-basea en K3c'
   }
 ];
 

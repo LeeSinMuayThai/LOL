@@ -88,6 +88,19 @@ export function jerarquiaAlFichar(state, rng) {
   return Math.max(jerarquiaPrevia, gauss(r.jerarquiaInicial, r.jerarquiaInicialSpread, rng));
 }
 
+// K2b (revisión): la química con la que entrás a un plantel nuevo. Extraída
+// para que la regla viva en un solo lugar: `armarRoster` la usa al armar el
+// roster y `mercado.js` la usa al firmar un traspaso, porque ese primer split ya
+// se juega con los compañeros nuevos y no puede jugarse con la química del
+// vestuario anterior. El dado se tira UNA vez (al firmar) y viaja a
+// `armarRoster` por `flags.sinergiaProyectadaAlFichar`, igual que la jerarquía.
+export function sinergiaAlFichar(state, rng) {
+  const r = BALANCE.roster;
+  return clampStat(
+    Math.max(state.career.sinergia * r.sinergiaRetenidaAlCambiar, gauss(r.sinergiaInicial, r.sinergiaInicialSpread, rng))
+  );
+}
+
 function armarRoster(state, rng) {
   const r = BALANCE.roster;
   const org = orgActual(state);
@@ -106,9 +119,9 @@ function armarRoster(state, rng) {
   // mismo evento correrían el stream distinto a lo que se mostró).
   const jerarquiaCruda = state.flags.jerarquiaProyectadaAlFichar ?? jerarquiaAlFichar(state, rng);
   const jerarquia = clampStat(jerarquiaCruda + bonusTryout);
-  const sinergia = clampStat(
-    Math.max(state.career.sinergia * r.sinergiaRetenidaAlCambiar, gauss(r.sinergiaInicial, r.sinergiaInicialSpread, rng))
-  );
+  // Si el traspaso ya fijó la química al firmar (`mercado.js`), no se vuelve a
+  // tirar: es la misma con la que se jugó ese primer split.
+  const sinergia = state.flags.sinergiaProyectadaAlFichar ?? sinergiaAlFichar(state, rng);
 
   const companeros = generarCompaneros(state, org, rng);
   const jerarquiaRedondeada = Math.round(jerarquia);
@@ -149,7 +162,7 @@ function armarRoster(state, rng) {
   return {
     state: {
       ...state,
-      flags: { ...state.flags, bonusJerarquiaTryout: 0, jerarquiaProyectadaAlFichar: null },
+      flags: { ...state.flags, bonusJerarquiaTryout: 0, jerarquiaProyectadaAlFichar: null, sinergiaProyectadaAlFichar: null },
       career: {
         ...state.career, companeros, jerarquia: jerarquiaRedondeada, sinergia: Math.round(sinergia),
         rosterDeOrg: org.nombre, arraigo: arraigoNuevo, registro: registroConPicos

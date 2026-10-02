@@ -20,7 +20,8 @@
 // lo que el motor usó, expuesto para el instrumento de `src/dev/simulate.js`) ·
 // 5 (K2b: `rendimientoBase` y `resultadosPropios` en `career.temporada` — el
 // rendimiento del split lo cuentan los partidos — y los compañeros de una liga
-// modelada con la forma del plantel vivo).
+// modelada con la forma del plantel vivo; y, desde la revisión de K2b, el estado
+// inicial ya trae esos dos campos y `flags.sinergiaProyectadaAlFichar`).
 export const VERSION = 5;
 
 export function serializar(state, rng, rngUi) {

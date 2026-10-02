@@ -12,6 +12,7 @@
 //
 // K2b (bloque A, corrimiento declarado — trampa T1): el partido pasa a ser una
 // tirada contra la p declarada, la fuerza deja de tirar un dado por split y
-// los compañeros se leen en vivo. Ninguna seed de K1 reproduce su carrera.
+// los compañeros se leen en vivo, y un traspaso fija la sinergia del plantel nuevo al
+// firmar (una tirada más por traspaso). Ninguna seed de K1 reproduce su carrera.
 export const VERSION_JUEGO = 'K2b';
-export const HUELLA_JUEGO = 1112981938;
+export const HUELLA_JUEGO = 901891910;

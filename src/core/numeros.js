@@ -37,13 +37,3 @@ export function probabilidadPorSigma(fuerzaPropia, fuerzaRival, sigma) {
   const z = (fuerzaPropia - fuerzaRival) / sigma;
   return 1 / (1 + Math.exp(-BALANCE.numeros.factorLogisticoNormal * z));
 }
-
-// Fase 9Rd: la probabilidad de que gane un lado cuando cada uno tira alrededor
-// de su fuerza con su propio ruido gaussiano:
-// P(gauss(fp, σ₁) > gauss(fr, σ₂)) = Φ((fp−fr)/√(σ₁²+σ₂²)). Desde K2b el motor
-// ya no tira dos gauss por partido (tira una vez contra la p de
-// `core/partido.js`); esto queda como la versión de dos σ de
-// `probabilidadPorSigma`, para quien razone con los dos lados por separado.
-export function probabilidadDeGanar(fuerzaPropia, fuerzaRival, sigmaPropio, sigmaRival) {
-  return probabilidadPorSigma(fuerzaPropia, fuerzaRival, Math.sqrt(sigmaPropio * sigmaPropio + sigmaRival * sigmaRival));
-}

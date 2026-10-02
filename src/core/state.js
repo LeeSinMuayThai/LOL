@@ -199,6 +199,10 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
         cruces: [],
         indice: 0,
         rendimiento: 0,
+        // K2b: el rendimiento base sin acotar del split y lo que tus fechas
+        // dieron contra lo que su p prometía (la forma de `resultadosVacios()`).
+        rendimientoBase: 0,
+        resultadosPropios: { fechas: 0, ganados: 0, esperados: 0, varianza: 0 },
         fuerzaPropia: 0,
         // K2a: lo que el motor usó para la fuerza del split (nivel del jugador y
         // nivel medio de los compañeros), expuesto para el instrumento.
@@ -358,6 +362,11 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // tarjeta de oferta ANTES de aceptar. `roster.js` la usa tal cual en
       // vez de volver a tirar el dado (regla de proceso 15) y la resetea acá.
       jerarquiaProyectadaAlFichar: null,
+      // K2b (revisión): la química del plantel nuevo que `mercado.js` fija al
+      // firmar un traspaso (ese primer split ya se juega con los compañeros
+      // nuevos). `roster.js` la usa tal cual en vez de volver a tirar el dado y
+      // la resetea acá. `null` si no hay una pendiente.
+      sinergiaProyectadaAlFichar: null,
       // Fase 9: splits de pretemporada consecutivos sin una sola oferta. Al
       // llegar a `BALANCE.mercado.splitsSinOfertaParaLibre` te quedás libre
       // — la puerta por la que se termina la carrera (fase 10, todavía no

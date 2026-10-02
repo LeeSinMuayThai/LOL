@@ -1374,7 +1374,7 @@ export const BALANCE = {
     // ESA fecha puntual. Acotado a propósito: no reemplaza a `campeones.js`,
     // que ya elige el campeón del split entero antes de que esto corra.
     impactoDraftFecha: 0.08,
-    // Fase 9Rd: mismo criterio que la serie (`probabilidadDeGanar` sobre la
+    // Fase 9Rd: mismo criterio que la serie (`probabilidadDePartido` sobre la
     // fuerza de la fecha corrida por `factorDraftFecha`), un poco más bajo que
     // el 0,18 de la serie — una fecha de temporada regular se gana mucho menos
     // en el draft (`impactoDraftFecha` ya acota su efecto a ±0,08). El plan
@@ -1413,7 +1413,7 @@ export const BALANCE = {
     // Fase 9Rd: el motor sólo te frena en el draft si el mejor campeón
     // disponible te da bastante más probabilidad de ganar el mapa que el
     // segundo (`puntosEnJuego` = P(mejor) − P(segundo), vía
-    // `probabilidadDeGanar`). Por debajo de esto la elección no cambia el
+    // `probabilidadDePartido`). Por debajo de esto la elección no cambia el
     // partido y se resuelve sola. El mapa decisivo BAJA el umbral (la mitad),
     // no lo saltea.
     //

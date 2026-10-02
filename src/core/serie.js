@@ -184,7 +184,7 @@ function ordenarPorFactor(campeones, weights) {
 // la p contra la que `finalizarMapa` tira el mapa si lo elegís (sin minijuego):
 // la fuerza de partido con ese campeón (`fuerzaDePartido`, la misma, acotada)
 // contra la del rival, por `probabilidadDePartido` (regla 15).
-function probabilidadConCampeon(state, campeon) {
+export function probabilidadConCampeon(state, campeon) {
   const fp = fuerzaDePartido({ ...state, player: { ...state.player, campeonDelSplit: campeon.name } });
   return probabilidadDePartido(state, fp, state.serie.rival.fuerza, 'mapa');
 }
