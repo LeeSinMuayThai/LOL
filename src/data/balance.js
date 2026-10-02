@@ -1546,16 +1546,12 @@ export const BALANCE = {
       tope: 30
     },
     // Por rol (CONCEPTO §9): multiplica los componentes individuales (4 y 5).
-    // Arranca en 1; se compensa solo si la mediana del puntaje de un rol (bot
-    // `criterio`, 400 seeds) se aparta más de ±10% de la general (lo mide el
-    // bloque `puntaje` de `simulate.js`). Medido en K1-A (seeds 1-400, 60
-    // splits): top +9,2% · jungla +11,4% · mid −1,3% · adc −27,0% · support
-    // +4,3%. No se compensa: en las seeds 401-800 el adc da +13,4% y la jungla
-    // −7,0% (es ruido de muestra: ~65-98 carreras por rol, con un 20-30% que no
-    // llega a pro), y juntando las 800 todos los roles quedan entre −3,4% y
-    // +3,7%. Además el desvío del adc no venía de los componentes individuales
-    // (mundo 78 y generación 41 de promedio entre los pros, igual que el resto)
-    // sino de cuántos llegan a pro: corregirlo acá pedía ×3 sobre su ranking.
+    // Se compensa un rol solo si su mediana ENTRE LOS QUE LLEGARON A PRO se
+    // aparta más de ±10% de la de todos los pros, con `criterio` y >= 800 seeds
+    // (revisión de K1-A: la distribución completa es bimodal y 400 seeds son
+    // muestra). Medido en la revisión (seeds 1-800, 60 splits, 623 pros, el
+    // bloque `puntaje` de `simulate.js`): mid −5,8% · adc +1,6% · support +3,0%
+    // · jungla −1,0% · top +0,4%. Ninguno se compensa.
     pesoRol: { top: 1, jungla: 1, mid: 1, adc: 1, support: 1 },
     // Potencial contra logro: el subtotal se multiplica por un factor lineal en
     // `oculto.potencial`, de `factorConPotencialMinimo` (con `mundo.potencialMin`)
@@ -1588,16 +1584,15 @@ export const BALANCE = {
       { id: 'goat', requisito: { cierresNumeroUno: 3 } }
     ],
     // El referente del número (regla 13): "mejor que el X% de las carreras".
-    // Pares [percentil, puntaje] de la distribución medida con el bot
-    // `criterio` (K1-A: seeds 1-400, 60 splits, el bloque `puntaje` de
-    // `simulate.js`); entre dos pares se interpola lineal, y el último
-    // percentil es el techo de lo que se dice. El salto entre el p20 (23) y el
-    // p25 (313) es el borde entre los que no llegaron (23%) y los pros.
-    // Provisoria como los cortes: K5c la vuelve a medir.
+    // Pares [percentil, puntaje] medidos con `criterio` (revisión de K1: seeds
+    // 1-800, 60 splits, el bloque `puntaje` de `simulate.js`); entre dos pares
+    // se interpola y el último es el techo de lo que se dice. El salto entre el
+    // p20 (25) y el p25 (392) es el borde entre los que no llegaron (22%) y los
+    // pros. Provisoria: K5c la vuelve a medir.
     cuantiles: [
-      [0, 0], [5, 7], [10, 14], [15, 19], [20, 23], [25, 313], [30, 637], [35, 794], [40, 921], [45, 1035],
-      [50, 1128], [55, 1227], [60, 1284], [65, 1368], [70, 1449], [75, 1510], [80, 1599], [85, 1683],
-      [90, 1790], [95, 1880], [97, 2029], [99, 2172]
+      [0, 0], [5, 10], [10, 14], [15, 17], [20, 25], [25, 392], [30, 686], [35, 835], [40, 978], [45, 1105],
+      [50, 1172], [55, 1257], [60, 1339], [65, 1419], [70, 1474], [75, 1548], [80, 1610], [85, 1691],
+      [90, 1800], [95, 1894], [97, 2007], [99, 2169]
     ],
     // La leyenda comparada (`data/leyendas.json`): la más cercana por distancia
     // euclídea sobre el perfil normalizado (cada eje dividido por su `escala`),
