@@ -8124,7 +8124,9 @@ check('K0-B mercado: el bombazo se mide contra el sueldo vigente o, siendo agent
 //     (nombre parecido a una pública) y, dentro de `src/`, un `.git` y un
 //     `node_modules` con secreto, más los directorios literales `.git.`, `.git `
 //     y `node_modules.` (punto o espacio final), que el SO de esta máquina deja
-//     crear y leer. Levanta `createServer({ raiz })` sobre ella.
+//     crear y leer, y esas mismas carpetas prohibidas más adentro (`src/sub/.git`,
+//     `src/a/b/node_modules`, `assets/sub/.git`). Levanta `createServer({ raiz })`
+//     sobre ella.
 //  2. Qué sonda ejercita qué capa del servidor (el código de respuesta lo dice):
 //     - 403 exacto = la capa de la RAÍZ ("la ruta resuelta queda adentro"):
 //       traversal con puntos crudos y codificados, con `/` y con `\`, y hacia el
@@ -8140,6 +8142,11 @@ check('K0-B mercado: el bombazo se mide contra el sueldo vigente o, siendo agent
 //       Ojo con el SO: la sonda de `~` solo delata a un mutante en un sistema de
 //       archivos con nombres cortos 8.3 (NTFS); en otro da 404 igual y el check
 //       pasa sin morder (no da falsos rojos, solo cubre menos).
+//     - 404 exacto de la denylist ANIDADA (`/src/sub/.git/config`, `/src/sub/.GIT/config`,
+//       `/src/a/b/node_modules/z.js`, `/assets/sub/.git/config`): igual que la anterior,
+//       solo la frena la denylist, pero con la carpeta prohibida en el tercer o cuarto
+//       tramo; delata a una denylist que mira un tramo fijo en vez de todos. La regla
+//       de `~`/`:` NO tiene sonda anidada (queda sin cubrir a esa profundidad).
 //     - lo que tiene que dar 200 (`/`, `/src/a.js`, `/assets/og.png`): que no
 //       se haya cerrado de más.
 //  3. `%00` y URI malformada: 400 exacto.
@@ -8154,6 +8161,9 @@ check('K0-B mercado: el bombazo se mide contra el sueldo vigente o, siendo agent
 //  - sin normalizar punto/espacio final de la denylist (`/src/.git./config`)
 //  - sin rechazar `~` (`/src/GIT~1/config`) o sin rechazar `:` (`/src/a.js::$DATA`)
 //  - denylist solo en el primer tramo (`/src/.git/config`) o sin minúsculas (`/src/.GIT/config`)
+//  - denylist solo en el segundo tramo, o en los dos o tres primeros (`/src/sub/.git/config`;
+//    el de tres además `/src/a/b/node_modules/z.js`). Uno que mire los cuatro primeros
+//    sigue verde: ninguna sonda anida más hondo (un tope fijo siempre deja un fondo sin probar).
 //  - `startsWith(raiz)` sin separador (`/../raiz-evil/secreto.txt` da 404 en vez de 403)
 //  - sin el 403 de la raíz (`/../secreto.txt` da 404)
 //  - lista blanca por prefijo (`/srcx/a.js`, `/assets-x/a.png`), con `package.json`,
@@ -8263,6 +8273,14 @@ async function sesionDelCheckDeServidor() {
     escribir(enRaiz('node_modules', 'x', 'index.js'), `${SECRETO}NODE_MODULES`);
     escribir(enRaiz('src', '.git', 'config'), `${SECRETO}GIT_ANIDADO`);
     escribir(enRaiz('src', 'node_modules', 'y', 'index.js'), `${SECRETO}NODE_MODULES_ANIDADO`);
+    // Lo mismo pero MÁS ADENTRO: `.git` en el tercer tramo de la ruta y
+    // `node_modules` en el cuarto, y un `.git` bajo la otra carpeta pública.
+    // Sin esto, una denylist que solo mirara un tramo fijo (el segundo, o los
+    // dos o tres primeros) no se notaba: todo lo de arriba tiene la carpeta
+    // prohibida pegada a `src/` o a la raíz.
+    escribir(enRaiz('src', 'sub', '.git', 'config'), `${SECRETO}GIT_PROFUNDO`);
+    escribir(enRaiz('src', 'a', 'b', 'node_modules', 'z.js'), `${SECRETO}NODE_MODULES_PROFUNDO`);
+    escribir(enRaiz('assets', 'sub', '.git', 'config'), `${SECRETO}GIT_PROFUNDO_EN_ASSETS`);
     escribir(enRaiz('package.json'), `${SECRETO}RAIZ`);
     escribir(enRaiz('server.js'), `${SECRETO}SERVER`);
     escribir(enRaiz('PLAN.md'), `${SECRETO}PLAN`);
@@ -8363,6 +8381,21 @@ async function sesionDelCheckDeServidor() {
       ...nombresConFinalIgnorado.map((nombre) => `/src/${encodeURIComponent(nombre)}/config`)
     ]) {
       await exigir(ruta, ESTADO_NO_ENCONTRADO, 'denylist o `~`/`:` dentro de una carpeta pública');
+    }
+
+    // 2c-bis. DENYLIST ANIDADA: la carpeta prohibida a profundidad >= 2 dentro de
+    // una carpeta pública (`src/sub/.git`, `src/a/b/node_modules`, `assets/sub/.git`).
+    // La lista blanca ya dejó pasar `src`/`assets`, así que solo la frena la
+    // denylist, y tiene que mirar TODOS los tramos de la ruta, no uno fijo. Con
+    // mayúsculas (`.GIT`, `NODE_MODULES`) también: en NTFS son la misma carpeta que
+    // existe de verdad (en un SO con mayúsculas distintas dan 404 porque no existe,
+    // sin falso rojo).
+    for (const ruta of [
+      '/src/sub/.git/config', '/src/sub/.GIT/config',
+      '/src/a/b/node_modules/z.js', '/src/a/b/NODE_MODULES/z.js',
+      '/assets/sub/.git/config'
+    ]) {
+      await exigir(ruta, ESTADO_NO_ENCONTRADO, 'denylist en una carpeta anidada de una carpeta pública');
     }
 
     // 2d. con barra invertida: en Windows también sale de la raíz (403); en otros
