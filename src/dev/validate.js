@@ -727,7 +727,11 @@ const FORMAS_CONOCIDAS = {
   // Mundial, D78, la renovación NPC amateur), así que cambian las rutas opcionales que la muestra ve.
   // Re-registrada en K4c-F (el bloque B sigue sin mergear): los logs ganan el campo opcional `adjunto` (core/log.js). Un
   // guardado de antes es compatible tal cual: sin `adjunto`, cada línea forma su beat como antes; por eso no sube VERSION.
-  10: '84458be49efc'
+  10: '4d7fd115d1c0'
+  // K4c-M: el contenido de la fecha marcada (opciones, efectos y pesos de data/events/partido/*.json) corrió las carreras de
+  // muestra y cambiaron rutas opcionales que la muestra ve (el hash anterior, 84458be49efc): claves de org dentro de
+  // `internacional.swiss.record`, `flags.ofertaDeImport.clausula` (null o string según la carrera) y
+  // `internacional.bracket.final[].propio`. Ningún campo del estado nació ni murió: no sube VERSION (mismo criterio que K5 y K4c-F).
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -11275,7 +11279,7 @@ check('K4c observación (revisión): minijuegosPorMecanica, bifurcaciones, cambi
   // Trinquete: ningún check recontaba los campos nuevos de `correrCarrera`. El recuento a mano corre la misma carrera con
   // `avanzarSplitAuto` y un espía en la estrategia (mismas respuestas, mismo rng) y mira el estado después de cada split.
   const totales = { minijuegos: 0, bifurcaciones: 0, cambiosDeLinea: 0, cambiosDeRegion: 0, mudanzasFirmadas: 0, fueraDeSuRegion: 0 };
-  for (const [bot, seed] of [['criterio', 3], ['criterio', 5], ['malas', 6], ['malas', 12]]) {
+  for (const [bot, seed] of [['criterio', 3], ['criterio', 11], ['malas', 6], ['malas', 12]]) {
     const SPLITS = 60;
     const observacion = correrCarreraSimulate(seed, SPLITS, ESTRATEGIAS_K0[bot]).observacion;
     const rng = mulberry32(seed);
@@ -12504,9 +12508,10 @@ const { tierMasAltoJugado, splitsJugadosEnTier, TIERS_DE_SPLIT } = await import(
 const { PREFIJOS_HANDLE, SUFIJOS_HANDLE } = await import('../core/mundo.js');
 const LEYENDAS_K1 = (await import('../data/leyendas.json', { with: { type: 'json' } })).default;
 
-// Las carreras de referencia de los checks rápidos de K1 (seeds 1-8 a 60 splits, el responder por defecto): hay
+// Las carreras de referencia de los checks rápidos de K1 (seeds 1-7 y 10 a 60 splits, el responder por defecto; la 10 reemplazó
+// a la 8 en K4c-M: el contenido de la fecha marcada corrió el stream y ninguna de 1-8 quedaba en la banda baja del nivel): hay
 // carreras que no llegaron a pro, carreras de tier 1 con y sin Top 20, y la mayoría termina adentro de los 60 splits.
-const SEEDS_PUNTAJE_K1 = [1, 2, 3, 4, 5, 6, 7, 8];
+const SEEDS_PUNTAJE_K1 = [1, 2, 3, 4, 5, 6, 7, 10];
 const SPLITS_PUNTAJE_K1 = 60;
 
 let estadosPuntajeK1 = null;
