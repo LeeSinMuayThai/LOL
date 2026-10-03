@@ -1509,7 +1509,11 @@ export const BALANCE = {
     // otras perillas de cA (umbral 6, prensa [], las tres mecánicas en `mapa_decisivo`) la mediana llega a 89 (PLAN.md, "Paso 2 —
     // lo que midieron los barridos"). Con 4 la fecha marcada "define la clasificación" una de cada ~4,1 splits: la fecha
     // vuelve a ser una excepción, no el 37% de los splits.
-    ventanaDefineClasificacion: 4,
+    // K4c (paso 3a): 4 -> 6. Con las constantes del 3a, 4 daba 1 cada 3,6 splits de tier 1 con playoffs, debajo del piso de
+    // K4-A (1 cada 3). Medido con el check "K4-A define_clasificacion es alcanzable" (`criterio`, 100 carreras, con la prueba
+    // en 0,65 / 0,8 / 0,95): 5 da 998 de 3126 (1 cada 3,13, no llega), 6 da 1089 de 3068 (1 cada 2,82) y 7 da 1066 de 3040
+    // (1 cada 2,85: más ventana no da más margen). Se queda la más chica que cumple el piso: es la fecha con más en juego.
+    ventanaDefineClasificacion: 6,
     // Fase 9R0a: la fecha marcada dejaba de mentir pero se repetía sola.
     // `career.ultimoEliminadoPor` no se limpiaba nunca y `career.orgs` sólo
     // crece, así que "la revancha contra tal" o "el clásico contra tal"
@@ -1612,9 +1616,18 @@ export const BALANCE = {
     // K4c-S: la prueba decide el contrato (regla 15: lo que el minijuego del tryout promete es lo que el motor hace). La
     // probabilidad de firmar sube con el `resultado` 0-1 de la prueba, interpolada entre estos tres puntos: un resultado
     // malo (0) firma pocas veces, uno regular (0,5) a veces y uno bueno (1) casi siempre. Si no firmás, en el mercado se
-    // cae esa oferta y seguís con las otras o con tu contrato; en el amateur la firma se posterga y seguís en la escalera.
-    // Valores de arranque (bloque B, los calibra K4c). El crédito de jerarquía (`bonusJerarquiaTryout`) no cambia.
-    probFirmaTryout: { malo: 0.15, regular: 0.55, bueno: 0.95 },
+    // cae esa oferta y seguís con el respaldo que anuncia la prueba (tu club o la mejor sin prueba); en el amateur la firma
+    // se posterga y seguís en la escalera. El crédito de jerarquía (`bonusJerarquiaTryout`) no cambia.
+    // K4c (paso 3a): 0,15 / 0,55 / 0,95 -> 0,65 / 0,8 / 0,95. Con el arranque, "siempre acierta" sobre "siempre falla" daba
+    // +171% (el que falla todo casi nunca llegaba a pro) contra el tope de +35% de "El impacto de los minijuegos está
+    // acotado". Medido con la cuenta de ese check (1000 seeds), cuando la prueba fallida todavía re-abría el mercado:
+    // 0,35 / 0,65 / 0,95 da +64%, 0,5 / 0,75 / 0,95 da +31% y 0,65 / 0,8 / 0,95 da +21%; PLAN.md eligió 0,5. Pero el
+    // arreglo de K4-D (la prueba fallida sigue con el respaldo, no con otra prueba en otra oferta) le quita al que falla
+    // todo los reintentos: re-medido con la ventana de `define_clasificacion` en 4, 0,5 / 0,75 / 0,95 da +47% (falla 4640,
+    // acierta 6831) y 0,65 / 0,8 / 0,95 da +26% (falla 5411, acierta 6831); con la ventana en 6 (la de abajo), +31% (falla
+    // 5330, acierta 6984). Se queda el que cumple el tope con el mismo criterio: 30 pp de firma entre una prueba mala y una
+    // buena.
+    probFirmaTryout: { malo: 0.65, regular: 0.8, bueno: 0.95 },
     // 9R4d: los cortes con los que se le pone palabras al stat que corre el
     // minijuego ("tu mecanica, 71: te abre la ventana"). Sin esto el numero
     // se muestra sin referente, que es justo lo que prohibe la regla 13.

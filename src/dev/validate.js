@@ -16478,9 +16478,15 @@ check('K4c-S la prueba decide el contrato: P(firmar | resultado 1) > P(firmar | 
     }
     const p = (clave) => fs.filter((f) => f[clave].ficho).length / fs.length;
     const [pBajo, pAlto] = [p('bajo'), p('alto')];
-    if (!(pAlto >= pBajo + 0.3)) {
-      throw new Error(`${sistemaId}: P(firmar | 0) = ${pBajo.toFixed(3)} y P(firmar | 1) = ${pAlto.toFixed(3)} en ${fs.length} tryouts: la prueba no decide el contrato (hace falta una brecha de 0,3)`);
+    // K4c (paso 3a), regla 17: la brecha pedida era 0,3 fija, de cuando la prueba iba de 0,15 a 0,95 (0,8 declarada). Con
+    // 0,65 / 0,95 la declarada ES 0,3, y la medida (mismo rng: la fracción de sorteos que cae entre las dos p, sobre ~70
+    // tryouts) queda debajo la mitad de las veces (mercado: 0,681 contra 0,942). Se pide la mitad de la declarada: un motor
+    // que no lee el resultado da 0.
+    const brechaMinima = (BALANCE.serie.probFirmaTryout.bueno - BALANCE.serie.probFirmaTryout.malo) / 2;
+    if (!(pAlto >= pBajo + brechaMinima)) {
+      throw new Error(`${sistemaId}: P(firmar | 0) = ${pBajo.toFixed(3)} y P(firmar | 1) = ${pAlto.toFixed(3)} en ${fs.length} tryouts: la prueba no decide el contrato (hace falta una brecha de ${brechaMinima.toFixed(3)}, la mitad de la declarada en BALANCE.serie.probFirmaTryout)`);
     }
+    console.log(`     (informe) ${sistemaId}: P(firmar | 0) = ${pBajo.toFixed(3)}, P(firmar | 1) = ${pAlto.toFixed(3)} en ${fs.length} tryouts`);
   }
 });
 
