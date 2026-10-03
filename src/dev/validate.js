@@ -590,13 +590,8 @@ check('Las decisiones de mejora declaran rareza con el payoff correcto (PLAN.md 
   const amateur = sistemaPorId('amateur').aplicar(estadoBase, mulberry32(2));
   verificarDecisionDeMejora(amateur.decision, 'amateur', { sorteo: true });
 
-  const offseason = {
-    ...estadoBase,
-    phase: 'profesional',
-    player: { ...estadoBase.player, splitCount: 3 }
-  };
-  const practica = sistemaPorId('practica').aplicar(offseason, mulberry32(2));
-  verificarDecisionDeMejora(practica.decision, 'practica', { sorteo: true });
+  // K4c (plan anual), regla 17: se fue la práctica de offseason de este check (reemplaza a "verificarDecisionDeMejora de
+  // practica", que exigía su menú con sorteo): la práctica ya no frena, entrena sola según el plan del año.
 
   // 3. pool_a_cual_le_metes: rareza en cada opción y rara paga más.
   const evento = TODOS_LOS_EVENTOS.find((candidato) => candidato.id === 'pool_a_cual_le_metes');
@@ -3045,53 +3040,9 @@ checkLento('Las rutinas de offseason declaran nivel y cada tier mantiene su segu
     throw new Error('dos_semanas_sin_tocar_el_juego no cubre todos los tiers');
   }
 
-  const vistos = { tier1: false, tier2: false, tier3: false };
-
-  for (let seed = 1; seed <= 120; seed += 1) {
-    const rng = mulberry32(seed);
-    let state = createInitialState(seed, rng);
-
-    for (let i = 0; i < 20 && !state.terminado; i += 1) {
-      const resultado = avanzarSplit(state, rng);
-      state = resultado.state;
-
-      while (state.pendiente) {
-        const { decision } = state.pendiente;
-        const rutinas = decision.datos?.rutinas;
-
-        if (decision.datos?.motivo === 'practica' && rutinas) {
-          const nivel = calcularContexto(state).nivel;
-          if (nivel === 'tier1' || nivel === 'tier2' || nivel === 'tier3') {
-            vistos[nivel] = true;
-            const etiquetas = new Set(rutinas.flatMap((rutina) => rutina.etiquetas));
-            if (!etiquetas.has('segura')) {
-              throw new Error(`seed ${seed}: offseason en ${nivel} sin salida segura`);
-            }
-            // 13b: la exigencia de agresiva se pareja a los tres tiers — antes
-            // solo se pedía en tier1/tier2 porque tier3 no tenía ninguna.
-            if (!etiquetas.has('agresiva')) {
-              throw new Error(`seed ${seed}: offseason en ${nivel} sin rutina agresiva`);
-            }
-            if (nivel === 'tier3' && rutinas.some((rutina) => rutina.id === 'bootcamp_corea')) {
-              throw new Error(`seed ${seed}: bootcamp_corea ofrecido en tier 3`);
-            }
-            if (nivel !== 'tier3' && rutinas.some((rutina) => rutina.id === 'grindeo_de_madrugada')) {
-              throw new Error(`seed ${seed}: grindeo_de_madrugada (agresiva propia de tier 3) ofrecida en ${nivel}`);
-            }
-          }
-        }
-
-        const sistema = sistemaPorId(state.pendiente.sistemaId);
-        state = resolverDecision(state, sistema.resolverAuto(state, decision, rng), rng).state;
-      }
-    }
-  }
-
-  for (const nivel of ['tier1', 'tier2', 'tier3']) {
-    if (!vistos[nivel]) {
-      throw new Error(`ningún offseason observado en ${nivel}: muestra insuficiente`);
-    }
-  }
+  // K4c (plan anual), regla 17: se fue la corrida que miraba las ofertas de offseason en vivo (reemplaza a "ningún
+  // offseason observado en tierN", que exigía la parada de práctica): la pretemporada ya no ofrece rutinas. Queda el
+  // catálogo.
 });
 
 checkLento('El contexto de carrera nombra siempre dónde estás parado', () => {
@@ -9145,7 +9096,9 @@ check('K5-C: los bots contestan la bifurcación del mercado con una opción vál
     azar: null
   };
   for (const [bot, regla] of Object.entries(reglas)) {
-    const forks = buscarK5C(() => true, { responderBase: ESTRATEGIAS_K0[bot], minimo: 3 }).flatMap((c) => c.forks);
+    // K4c (plan anual): con el stream del plan, `malas` no llegaba a la bifurcación en las 150 seeds de siempre; la búsqueda
+    // se estira al doble (corta en cuanto junta 3).
+    const forks = buscarK5C(() => true, { responderBase: ESTRATEGIAS_K0[bot], minimo: 3, tope: 2 * SEEDS_BUSQUEDA_K5C }).flatMap((c) => c.forks);
     if (forks.length === 0) {
       problemas.push(`${bot}: ninguna bifurcación en la muestra`);
     }
@@ -15594,11 +15547,11 @@ check('K3-A descanso: con un topeDescanso bajo (en memoria) ningún camino de de
     const sueno = [...pro, ...amateur].map((st, i) => atributos.aplicar(
       conBarrasK3A(st, { player: { sleep: BALANCE.stats.max, deudaSueno: 0 }, stats: { mentalidad: TOPE - 2 } }), mulberry32(9400 + i)
     ).state.player.stats.mentalidad);
-    const receso = pro.map((st, i) => practica.resolver(
-      conBarrasK3A(st, { stats: { mentalidad: TOPE - 2 } }), decision, { opcionId: rutina.id }, mulberry32(9500 + i)
+    const receso = pro.map((st, i) => resolverPreparacion(
+      conBarrasK3A(st, { stats: { mentalidad: TOPE - 2 } }), [rutina], rutina.id, mulberry32(9500 + i)
     ).state.player.stats.mentalidad);
-    const arriba = pro.map((st, i) => practica.resolver(
-      conBarrasK3A(st, { stats: { mentalidad: TOPE + 20 } }), decision, { opcionId: rutina.id }, mulberry32(9600 + i)
+    const arriba = pro.map((st, i) => resolverPreparacion(
+      conBarrasK3A(st, { stats: { mentalidad: TOPE + 20 } }), [rutina], rutina.id, mulberry32(9600 + i)
     ).state.player.stats.mentalidad);
     return { sueno, receso, arriba };
   };
@@ -15963,8 +15916,10 @@ const ENTRADA_SINTETICA_K2B = {
 const TIPOS_DE_PAUSA_GUARDADO_K4 = [
   'amateur:reparto', 'amateur:negociacion', 'amateur:oferta', 'amateur:minijuego:tryout', 'amateur:salida_amateur',
   'amateur:nocturno', 'edadCierre:?', 'eventos:?', 'eventos:minijuego:post_escandalo', 'mercado:oferta',
-  'mercado:minijuego:tryout', 'mercado:traspaso', 'temporada:momento', 'practica:practica', 'serie:plan',
+  'mercado:minijuego:tryout', 'mercado:traspaso', 'temporada:momento', 'serie:plan',
   'serie:plan:replan', 'serie:decisivo', 'serie:minijuego:mapa_decisivo',
+  // K4c (plan anual), regla 17: se fue `practica:practica` (reemplaza a la pausa de la práctica, que este lote exigía
+  // cubrir): la práctica ya no frena.
   // K4c (paso 3a), regla 17: se fue `serie:minijuego:post_serie` (la prensa tras una serie): con `BALANCE.serie.rondasConPrensa: []` la
   // serie ya no la pide nunca; la prensa tras un escándalo (`eventos:minijuego:post_escandalo`, arriba) sigue cubierta.
   'retiro:retiro_declive', 'retiro:retiro_vuelta', 'servicioMilitar:servicio_te_vas',
@@ -17010,8 +16965,10 @@ function pretemporadasProK4c2(cantidad) {
       let state = createInitialState(seed, rng);
       for (let i = 0; i < 45 && !state.terminado; i += 1) {
         state = avanzarSplitAuto(state, rng).state;
+        // K4c (plan anual): la muestra pide equipo (`currentOrg`). Con el stream del plan, la seed 7101 caía en un agente
+        // libre de tier 2 (sin compañeros), donde el swap de línea no aplica.
         if (state.phase === 'profesional' && !state.pendiente && state.player.splitCount % BALANCE.edad.splitsPorEdad === 0
-          && [1, 2].includes(state.career.tier) && state.player.splitCount >= 24) {
+          && [1, 2].includes(state.career.tier) && state.career.currentOrg && state.player.splitCount >= 24) {
           estados.push({ seed, state });
           break;
         }
@@ -17228,7 +17185,7 @@ check('K3c fracciones calibradas: con fraccionPermanente y fraccionPermanentePra
     reparto: { pulir: 0, nuevo: 0, mecanica: BALANCE.practica.puntos / 2, macro: BALANCE.practica.puntos / 2, descansar: 0 }
   };
   const desde = { ...base, player: { ...base.player, techoLesionMecanica: null, stats: { ...base.player.stats, mecanica: 50 } } };
-  const despues = practica.resolver(desde, { datos: { rutinas: [rutina] } }, { opcionId: rutina.id }, mulberry32(77)).state;
+  const despues = resolverPreparacion(desde, [rutina], rutina.id, mulberry32(77)).state;
   const ganancia = despues.player.stats.mecanica - desde.player.stats.mecanica;
   if (!(ganancia > 0)) throw new Error(`sonda vacía: la rutina no movió mecánica (${ganancia})`);
   const esperadoPractica = fraccionPermanentePractica * ganancia;
@@ -17326,7 +17283,7 @@ check('K3-B 2b la práctica deja marca: con fraccionPermanentePractica > 0 (en m
   };
   const decision = { datos: { rutinas: [rutina] } };
   const conMecanica = (mecanica) => ({ ...base, player: { ...base.player, techoLesionMecanica: null, stats: { ...base.player.stats, mecanica } } });
-  const correr = (desde) => practica.resolver(desde, decision, { opcionId: rutina.id }, mulberry32(77)).state;
+  const correr = (desde) => resolverPreparacion(desde, [rutina], rutina.id, mulberry32(77)).state;
   if (base.career.registro.marcas.length !== 0) throw new Error('el estado base ya trae marcas');
   for (const desde of [conMecanica(50), conMecanica(BALANCE.stats.max - 1)]) {
     const neutro = conBalanceK3A([['atributos', 'fraccionPermanentePractica', 0]], () => correr(desde));
@@ -17729,149 +17686,196 @@ check('K4-A la previa de la fecha marcada dice por qué importa, sin ids crudos,
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-// K4-D — la pretemporada en una sola parada (T9). El mercado (si abre) y la preparación (las rutinas de offseason como
-// cartas de mejora) frenan UNA vez por año, en la misma decisión. Reemplaza al viejo "frena la práctica y, aparte, el
-// mercado" (regla 17): los checks que contaban dos pausas ya no existen.
+// K4c (plan anual, decisión del usuario 2026-10-03) — la práctica se decide en el cierre de año. Cada opción del cierre
+// fija el plan del año que viene (`player.planAnual`: el juego, la cabeza o la marca, de `data/rutinas/planes.json`) y
+// cada split pro entrena solo con su tramo del plan (`tramoDelPlan`); la pretemporada queda para el mercado.
+// Regla 17: este bloque reemplaza a los cinco checks de K4-D —"la pretemporada frena una sola vez por año: a lo sumo
+// una pausa de mercado o de práctica por split, con el mercado y la preparación en la misma, y la preparación del año
+// queda resuelta", que exigía la preparación del receso adentro de la parada del mercado o en una parada propia de
+// práctica; "la oferta elegida y la rutina elegida se aplican juntas, en una sola respuesta"; "los bots contestan la
+// parada unificada con la regla de siempre (oferta + rutina)"; "regla 15: lo que muestra la carta de la rutina es lo
+// que aplica el motor", que medía las rutinas de offseason; y "las cartas de la preparación hablan en cristiano", que
+// leía components/mercado.js—. La preparación ya no se elige en la pretemporada: sale del plan.
 // ---------------------------------------------------------------------------------------------------------------------
+const { tramoDelPlan, lineaDePlan, entrenar: entrenarK4cP } = await import('../systems/practica.js');
+const { IDS_PLAN: IDS_PLAN_K4cP, planPorId: planPorIdK4cP, planInicial: planInicialK4cP, textoDePlanInicial: textoDePlanInicialK4cP } =
+  await import('../core/rutinas.js');
 
-// Corre una carrera automática hasta la primera pausa que cumple `filtro(sistemaId, decision)` y devuelve el estado
-// pausado y el rng en ese punto. Es determinista: volver a llamarla con la misma seed da la misma pausa, así que cada
-// respuesta posible se prueba desde el mismo punto.
-function hastaLaParadaK4d(seed, filtro, maxSplits = 40) {
-  const rng = mulberry32(seed);
-  let state = createInitialState(seed, rng);
-  for (let i = 0; i < maxSplits && !state.terminado; i += 1) {
-    state = avanzarSplit(state, rng).state;
-    while (state.pendiente) {
-      const { sistemaId, decision } = state.pendiente;
-      if (filtro(sistemaId, decision)) {
-        return { state, rng };
-      }
-      state = resolverDecision(state, sistemaPorId(sistemaId).resolverAuto(state, decision, rng), rng).state;
-    }
-  }
-  return null;
-}
+// Los tramos de cada plan, escritos a mano desde el dato (6 puntos al año, 3 splits, de a uno por destino en ronda: el
+// de más puntos primero, en empate el orden pulir, nuevo, mecánica, macro, descansar). [posición 0, 1, 2].
+const TRAMOS_A_MANO_K4cP = {
+  juego: [{ mecanica: 1, macro: 1 }, { pulir: 1, nuevo: 1 }, { mecanica: 1, macro: 1 }],
+  cabeza: [{ descansar: 1, pulir: 1 }, { macro: 1, descansar: 1 }, { descansar: 2 }],
+  marca: [{ pulir: 1, nuevo: 1 }, { mecanica: 1, descansar: 1 }, { pulir: 2 }]
+};
+const DESTINOS_K4cP = ['pulir', 'nuevo', 'mecanica', 'macro', 'descansar'];
+const completoK4cP = (parcial) => Object.fromEntries(DESTINOS_K4cP.map((destino) => [destino, parcial[destino] ?? 0]));
 
-const ES_MERCADO_K4D = (sistemaId, decision) => sistemaId === 'mercado' && decision.datos?.motivo === 'oferta' && Boolean(decision.datos.preparacion);
-
-// K4 (integración): si la oferta elegida es un salto grande, la misma parada sigue con la prueba de K4-C (una pantalla
-// más, con la carta elegida en sus datos) y recién al contestarla se firma y se aplica la rutina. Contesta la parada y,
-// si vino la prueba, la prueba (con el resultado neutro); devuelve el estado y cuántas pruebas hubo.
-function contestarParadaK4d(parada, respuesta) {
-  let hecho = resolverDecision(parada.state, respuesta, parada.rng).state;
-  let pruebas = 0;
-  while (hecho.pendiente?.sistemaId === 'mercado' && hecho.pendiente.decision.datos?.motivo === 'minijuego') {
-    const { datos } = hecho.pendiente.decision;
-    if (datos.momento !== 'tryout' || !datos.preparacion) {
-      throw new Error('la prueba del salto no viaja con la preparación de la parada');
-    }
-    if (respuesta.rutinaId !== undefined && datos.preparacion.elegida !== respuesta.rutinaId) {
-      throw new Error(`la prueba del salto perdió la carta elegida (${datos.preparacion.elegida}, esperaba ${respuesta.rutinaId})`);
-    }
-    if (hecho.flags.preparacionDeSplit === parada.state.player.splitCount) {
-      throw new Error('la rutina se aplicó antes de la prueba: tiene que ir con la firma');
-    }
-    pruebas += 1;
-    hecho = resolverDecision(hecho, { resultado: 0.5 }, parada.rng).state;
-  }
-  if (pruebas > 1) {
-    throw new Error(`la parada trajo ${pruebas} pruebas: a lo sumo una pantalla más`);
-  }
-  return { hecho, pruebas };
-}
-
-checkLento('K4-D la pretemporada frena una sola vez por año: a lo sumo una pausa de mercado o de práctica por split, con el mercado y la preparación en la misma, y la preparación del año queda resuelta', () => {
-  let conMercado = 0;
-  let soloPreparacion = 0;
-  let traspasos = 0;
-  let pretemporadasPro = 0;
-  for (let seed = 1; seed <= 40; seed += 1) {
+// Carreras de `criterio`, paso por paso (una vez para los tres checks de abajo): cada avance y cada decisión resuelta
+// (`pasos`), y cada split cerrado con sus logs (`splits`).
+let corridasK4cPCache = null;
+function corridasK4cP() {
+  if (corridasK4cPCache) return corridasK4cPCache;
+  const pasos = [];
+  const splits = [];
+  for (let seed = 1; seed <= 10; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
     for (let i = 0; i < 60 && !state.terminado; i += 1) {
       const inicio = state;
-      const esPretemporadaPro = inicio.phase === 'profesional' && calcularContexto(inicio).ventana === 'pretemporada';
-      let paradas = 0;
       state = avanzarSplit(state, rng).state;
+      pasos.push({ seed, split: i, antes: inicio, despues: state, sistemaId: null });
       while (state.pendiente) {
         const { sistemaId, decision } = state.pendiente;
-        const motivo = decision.datos?.motivo;
-        const esMercado = sistemaId === 'mercado' && (motivo === 'oferta' || motivo === 'traspaso');
-        if (sistemaId === 'practica' || esMercado) {
-          paradas += 1;
-        }
-        if (esMercado) {
-          const preparacion = decision.datos.preparacion;
-          if (!preparacion || preparacion.rutinas.length === 0 || preparacion.cartas.length !== preparacion.rutinas.length) {
-            throw new Error(`seed ${seed}, split ${i}: la parada del mercado (${motivo}) no trae la preparación del receso`);
-          }
-          if (decision.opciones.length === 0) {
-            throw new Error(`seed ${seed}, split ${i}: la parada del mercado no trae ofertas`);
-          }
-          if (motivo === 'oferta') conMercado += 1; else traspasos += 1;
-        }
-        if (sistemaId === 'practica') {
-          if (decision.datos.rutinas.length === 0 || decision.presentacion !== 'pretemporada') {
-            throw new Error(`seed ${seed}, split ${i}: la parada de la preparación sola viene mal armada`);
-          }
-          soloPreparacion += 1;
-        }
-        state = resolverDecision(state, sistemaPorId(sistemaId).resolverAuto(state, decision, rng), rng).state;
+        const respuesta = ESTRATEGIAS_K0.criterio(sistemaPorId(sistemaId), state, decision, rng);
+        const antes = state;
+        state = resolverDecision(state, respuesta, rng).state;
+        pasos.push({ seed, split: i, antes, despues: state, sistemaId, decision, respuesta });
       }
-      if (paradas > 1) {
-        throw new Error(`seed ${seed}, split ${i}: la pretemporada frenó ${paradas} veces (mercado y práctica por separado)`);
-      }
-      if (esPretemporadaPro && !state.terminado && state.phase === 'profesional') {
-        pretemporadasPro += 1;
-        if (state.flags.preparacionDeSplit !== inicio.player.splitCount) {
-          throw new Error(`seed ${seed}, split ${i}: la pretemporada pasó sin resolver la preparación del año`);
-        }
-      }
+      splits.push({ seed, split: i, inicio, fin: state, logs: state.logs.slice(inicio.logs.length) });
     }
   }
-  if (conMercado < 20 || soloPreparacion < 20 || traspasos < 1 || pretemporadasPro < 100) {
-    throw new Error(`muestra insuficiente: ${conMercado} paradas con mercado, ${soloPreparacion} solo de preparación, ${traspasos} traspasos, ${pretemporadasPro} pretemporadas pro`);
+  corridasK4cPCache = { pasos, splits };
+  return corridasK4cPCache;
+}
+
+check('K4c-P (a) la pretemporada frena solo por el mercado: ningún split tiene una parada de práctica y ninguna decisión trae la preparación del receso', () => {
+  const { pasos, splits } = corridasK4cP();
+  let paradasDeMercado = 0;
+  for (const paso of pasos.filter((p) => p.sistemaId !== null)) {
+    if (paso.sistemaId === 'practica' || paso.decision.datos?.motivo === 'practica') {
+      throw new Error(`seed ${paso.seed}, split ${paso.split}: la práctica frenó (practica:practica)`);
+    }
+    if (paso.decision.datos?.preparacion || paso.respuesta?.rutinaId !== undefined) {
+      throw new Error(`seed ${paso.seed}, split ${paso.split}: la parada de ${paso.sistemaId} trae la preparación del receso`);
+    }
+    if (paso.sistemaId === 'mercado') paradasDeMercado += 1;
+  }
+  const pretemporadasPro = splits.filter((s) => s.inicio.phase === 'profesional' && calcularContexto(s.inicio).ventana === 'pretemporada').length;
+  if (pretemporadasPro < 40 || paradasDeMercado < 10) {
+    throw new Error(`muestra corta: ${pretemporadasPro} pretemporadas pro, ${paradasDeMercado} paradas de mercado`);
   }
 });
 
-checkLento('K4-D la oferta elegida y la rutina elegida se aplican juntas, en una sola respuesta', () => {
-  const sonda = [1, 2, 3, 4].map((seed) => hastaLaParadaK4d(seed, ES_MERCADO_K4D)).find(Boolean);
-  if (!sonda) throw new Error('sonda vacía: ninguna de las seeds 1-4 llega a una parada de mercado con preparación');
-  const { decision } = sonda.state.pendiente;
-  const { cartas } = decision.datos.preparacion;
-  if (cartas.length < 2) throw new Error('sonda vacía: la preparación trae una sola carta');
-  const oferta = decision.opciones[decision.opciones.length - 1];
-  const sellos = new Set();
-  for (const carta of cartas) {
-    const parada = hastaLaParadaK4d(sonda.state.seed, ES_MERCADO_K4D);
-    const { hecho } = contestarParadaK4d(parada, { opcionId: oferta.id, rutinaId: carta.id });
-    if (hecho.career.currentOrg !== oferta.org) {
-      throw new Error(`con la rutina "${carta.label}" la oferta no se firmó (org ${hecho.career.currentOrg}, esperaba ${oferta.org})`);
+check('K4c-P (b) cada split pro entrena según el plan del año vigente: una línea por split con el plan y el tramo del dato (recuento a mano)', () => {
+  // El tramo de cada plan y posición es el escrito a mano, y los tres tramos de un año suman el reparto del plan.
+  for (const planId of IDS_PLAN_K4cP) {
+    const plan = planPorIdK4cP(planId);
+    const suma = completoK4cP({});
+    for (let posicion = 0; posicion < BALANCE.edad.splitsPorEdad; posicion += 1) {
+      const tramo = tramoDelPlan(plan, posicion);
+      const esperado = completoK4cP(TRAMOS_A_MANO_K4cP[planId][posicion]);
+      if (JSON.stringify(tramo) !== JSON.stringify(esperado)) {
+        throw new Error(`${planId}, posición ${posicion}: el tramo es ${JSON.stringify(tramo)}, a mano ${JSON.stringify(esperado)}`);
+      }
+      for (const destino of DESTINOS_K4cP) suma[destino] += tramo[destino];
     }
-    const lineas = hecho.logs.filter((log) => log.type === 'practica' && log.message.startsWith('Offseason:'));
-    if (lineas.length < 1 || hecho.logs.slice(parada.state.logs.length).filter((log) => log.type === 'practica').length !== 1) {
-      throw new Error(`con la rutina "${carta.label}" no hay exactamente una línea de preparación en esta resolución`);
+    if (JSON.stringify(suma) !== JSON.stringify(completoK4cP(plan.reparto))) {
+      throw new Error(`${planId}: los tramos del año suman ${JSON.stringify(suma)}, el plan es ${JSON.stringify(plan.reparto)}`);
     }
-    if (hecho.flags.preparacionDeSplit !== parada.state.player.splitCount) {
-      throw new Error(`con la rutina "${carta.label}" la preparación del año no quedó marcada`);
-    }
-    if (carta.permanenteTotal > 0 && !hecho.career.registro.marcas.some((marca) => marca.origen === carta.label)) {
-      throw new Error(`la rutina "${carta.label}" promete algo que dura y no dejó marca a su nombre`);
-    }
-    sellos.add(JSON.stringify([hecho.player.stats, hecho.player.championPool, lineas[lineas.length - 1].message]));
   }
-  if (sellos.size < 2) throw new Error('elegir otra rutina no cambia nada: la respuesta no llega a la preparación');
-  // Sin `rutinaId` el motor no inventa nada raro: cae en la primera carta y aplica igual.
-  const parada = hastaLaParadaK4d(sonda.state.seed, ES_MERCADO_K4D);
-  const { hecho: sinRutina } = contestarParadaK4d(parada, { opcionId: oferta.id });
-  if (sinRutina.flags.preparacionDeSplit !== parada.state.player.splitCount || sinRutina.career.currentOrg !== oferta.org) {
-    throw new Error('sin rutinaId la parada no se resuelve entera');
+  // En las carreras: el plan del log es el vigente al empezar el split (el cierre, que lo cambia, corre después de la
+  // práctica), y la línea nombra lo que el tramo movió.
+  const MARCA_DE_DESTINO = { pulir: 'maestría', mecanica: 'mecánica +', macro: 'macro +', descansar: 'consistencia +' };
+  let contados = 0;
+  const planesVistos = new Set();
+  for (const s of corridasK4cP().splits) {
+    const lineas = s.logs.filter((log) => log.type === 'practica');
+    if (s.inicio.phase !== 'profesional' || s.fin.phase !== 'profesional') {
+      // Un amateur no entrena con el plan (el fichaje lo hace pro después de la práctica); la vuelta de un retiro sí.
+      if (s.inicio.phase === 'amateur' && lineas.length > 0) throw new Error(`seed ${s.seed}, split ${s.split}: entrenó siendo amateur`);
+      continue;
+    }
+    const planId = s.inicio.player.planAnual;
+    const plan = planPorIdK4cP(planId);
+    if (lineas.length !== 1 || !lineas[0].message.startsWith(`Entrenaste según el plan del año: ${plan.titulo} (`) || !lineas[0].adjunto) {
+      throw new Error(`seed ${s.seed}, split ${s.split}: esperaba UNA línea adjunta del plan "${plan.titulo}": ${JSON.stringify(lineas.map((l) => l.message))}`);
+    }
+    const tramo = TRAMOS_A_MANO_K4cP[planId][s.inicio.player.splitCount % BALANCE.edad.splitsPorEdad];
+    for (const [destino, marca] of Object.entries(MARCA_DE_DESTINO)) {
+      if ((tramo[destino] ?? 0) > 0 !== lineas[0].message.includes(marca)) {
+        throw new Error(`seed ${s.seed}, split ${s.split} (${planId}): el tramo ${JSON.stringify(tramo)} y la línea "${lineas[0].message}" no coinciden en ${destino}`);
+      }
+    }
+    contados += 1;
+    planesVistos.add(planId);
+  }
+  if (contados < 150 || planesVistos.size < 2) {
+    throw new Error(`muestra corta: ${contados} splits pro, planes vistos ${[...planesVistos].join(', ')}`);
   }
 });
 
-checkLento('K4-D regla 15: lo que muestra la carta de la rutina (efecto y cuánto dura) es lo que aplica el motor', () => {
+check('K4c-P (c) el plan del año cambia solo en el cierre: cada cierre fija el plan de la opción elegida y ningún otro paso lo toca', () => {
+  let cierres = 0;
+  let cambios = 0;
+  for (const paso of corridasK4cP().pasos) {
+    const antes = paso.antes.player.planAnual;
+    const despues = paso.despues.player.planAnual;
+    if (paso.sistemaId === 'edadCierre') {
+      cierres += 1;
+      const plan = paso.decision.datos.evento.options.find((opcion) => opcion.id === paso.respuesta.opcionId)?.plan;
+      if (despues !== plan) throw new Error(`seed ${paso.seed}, split ${paso.split}: el cierre eligió "${paso.respuesta.opcionId}" (plan ${plan}) y el plan quedó en ${despues}`);
+      if (despues !== antes) cambios += 1;
+    } else if (despues !== antes) {
+      throw new Error(`seed ${paso.seed}, split ${paso.split}: el plan cambió de ${antes} a ${despues} fuera del cierre (${paso.sistemaId ?? 'el avance del split'})`);
+    }
+  }
+  if (cierres < 50 || cambios < 10) throw new Error(`muestra corta: ${cierres} cierres, ${cambios} cambios de plan`);
+});
+
+check('K4c-P (d) el dato y el arranque: toda opción de cierre trae un plan válido, cada cierre ofrece al menos dos y los de la etapa pro los tres; el primer plan sale del perfil (T4) y el inicio lo dice', () => {
+  const eventos = TODOS_LOS_EVENTOS.filter((evento) => evento.cierreDeEdad);
+  if (eventos.length === 0) throw new Error('no hay eventos de cierre');
+  for (const evento of eventos) {
+    const planes = evento.options.map((opcion) => opcion.plan);
+    if (planes.some((plan) => !IDS_PLAN_K4cP.includes(plan))) throw new Error(`${evento.id}: una opción sin plan válido (${planes.join(', ')})`);
+    const distintos = new Set(planes).size;
+    const esPro = (evento.contexto?.etapa ?? []).some((etapa) => etapa !== 'amateur');
+    if (distintos < 2 || (esPro && distintos < IDS_PLAN_K4cP.length)) throw new Error(`${evento.id}: ofrece ${distintos} planes distintos`);
+  }
+  for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
+    const state = createInitialState(seed, mulberry32(seed));
+    if (state.player.planAnual !== planInicialK4cP(state.player.perfil.actual) || !IDS_PLAN_K4cP.includes(state.player.planAnual)) {
+      throw new Error(`seed ${seed}: el plan inicial es ${state.player.planAnual}, el perfil ${state.player.perfil.actual}`);
+    }
+  }
+  const showman = createInitialState(3, mulberry32(3), { perfil: 'showman' });
+  if (showman.player.planAnual !== 'marca') throw new Error(`showman arranca con ${showman.player.planAnual}, a mano "marca"`);
+  for (const perfil of ['profesional', 'hambriento', 'showman', 'leal']) {
+    const texto = textoDePlanInicialK4cP(perfil);
+    if (!texto.includes(planPorIdK4cP(planInicialK4cP(perfil)).titulo) || /undefined|NaN/.test(texto)) throw new Error(`inicio (${perfil}): "${texto}"`);
+  }
+  const inicio = fs.readFileSync(path.join(srcDir, 'ui', 'screens', 'inicio.js'), 'utf8');
+  if (!inicio.includes('textoDePlanInicial')) throw new Error('la pantalla de inicio no dice el primer plan');
+});
+
+check('K4c-P regla 15: cada opción del cierre dice el plan que fija, en cristiano y con la misma cuenta del motor, y components/decision.js la pinta sin calcular nada', () => {
+  let opciones = 0;
+  for (const paso of corridasK4cP().pasos.filter((p) => p.sistemaId === 'edadCierre')) {
+    for (const opcion of paso.decision.opciones) {
+      const planId = paso.decision.datos.evento.options.find((o) => o.id === opcion.id)?.plan;
+      const esperado = lineaDePlan(paso.antes, planId);
+      if (!opcion.plan || opcion.plan.texto !== esperado.texto || opcion.plan.id !== planId) {
+        throw new Error(`seed ${paso.seed}, split ${paso.split}: la opción "${opcion.label}" no dice su plan (${JSON.stringify(opcion.plan)})`);
+      }
+      if (!opcion.plan.texto.includes(planPorIdK4cP(planId).titulo) || /undefined|NaN|player\.|[a-z0-9]+_[a-z0-9_]+/.test(opcion.plan.texto)) {
+        throw new Error(`la línea del plan muestra "${opcion.plan.texto}"`);
+      }
+      opciones += 1;
+    }
+  }
+  if (opciones < 100) throw new Error(`muestra corta: ${opciones} opciones de cierre`);
+  const fuente = fs.readFileSync(path.join(srcDir, 'ui', 'components', 'decision.js'), 'utf8');
+  if (!fuente.includes('opcion.plan.texto') || /BALANCE|balance\.js|planes\.json/.test(fuente)) {
+    throw new Error('components/decision.js tiene que pintar opcion.plan.texto tal cual, sin leer BALANCE ni el dato');
+  }
+});
+
+checkLento('K4c-P regla 15: lo que la carta del plan promete (efecto y cuánto dura) es lo que aplica el motor, de una vez y sumando los tramos del año', () => {
+  // Reemplaza a "K4-D regla 15: lo que muestra la carta de la rutina (efecto y cuánto dura) es lo que aplica el motor"
+  // (regla 17), que medía las rutinas de offseason: ahora la carta es la del plan, y el motor la aplica de a tramos.
   const previo = BALANCE.practica.ruidoPractica;
+  const planes = IDS_PLAN_K4cP.map(planPorIdK4cP);
   try {
     // Sin ruido el motor aplica la media: la carta tiene que coincidir con el resultado, al decimal.
     BALANCE.practica.ruidoPractica = 0;
@@ -17880,25 +17884,31 @@ checkLento('K4-D regla 15: lo que muestra la carta de la rutina (efecto y cuánt
     for (const seed of [2, 5, 9]) {
       const base = correrCarrera(seed, 14);
       if (base.phase !== 'profesional') continue;
-      for (const rutina of RUTINAS.offseason) {
-        const carta = cartaDeRutina(base, rutina);
-        const despues = resolverPreparacion(base, [rutina], rutina.id, mulberry32(seed)).state;
-        for (const efecto of carta.efectos) {
-          const movido = despues.player.stats[efecto.stat] - base.player.stats[efecto.stat];
-          if (Math.abs(movido - efecto.esperado) > 1e-9) {
-            throw new Error(`${rutina.id} (${efecto.stat}): la carta dice +${efecto.esperado}, el motor movió ${movido}`);
-          }
+      for (const plan of planes) {
+        const carta = cartaDeRutina(base, plan);
+        const deUna = resolverPreparacion(base, [plan], plan.id, mulberry32(seed)).state;
+        let deATramos = base;
+        for (let posicion = 0; posicion < BALANCE.edad.splitsPorEdad; posicion += 1) {
+          deATramos = entrenarK4cP(deATramos, tramoDelPlan(plan, posicion), plan, mulberry32(seed + posicion)).state;
         }
-        for (const stat of deCurva) {
-          const dura = despues.player.bonusPermanente[stat] - base.player.bonusPermanente[stat];
-          const prometido = carta.efectos.filter((efecto) => efecto.stat === stat).reduce((suma, efecto) => suma + efecto.permanente, 0);
-          if (Math.abs(dura - prometido) > 1e-9) {
-            throw new Error(`${rutina.id} (${stat}): la carta promete que te queda ${prometido}, el motor dejó ${dura}`);
+        for (const [como, despues] of [['de una vez', deUna], ['a tramos', deATramos]]) {
+          for (const efecto of carta.efectos) {
+            const movido = despues.player.stats[efecto.stat] - base.player.stats[efecto.stat];
+            if (Math.abs(movido - efecto.esperado) > 1e-9) {
+              throw new Error(`${plan.id} ${como} (${efecto.stat}): la carta dice +${efecto.esperado}, el motor movió ${movido}`);
+            }
           }
-          if (prometido > 0) conPermanencia += 1;
+          for (const stat of deCurva) {
+            const dura = despues.player.bonusPermanente[stat] - base.player.bonusPermanente[stat];
+            const prometido = carta.efectos.filter((efecto) => efecto.stat === stat).reduce((suma, efecto) => suma + efecto.permanente, 0);
+            if (Math.abs(dura - prometido) > 1e-9) {
+              throw new Error(`${plan.id} ${como} (${stat}): la carta promete que te queda ${prometido}, el motor dejó ${dura}`);
+            }
+            if (prometido > 0) conPermanencia += 1;
+          }
         }
         const total = carta.efectos.reduce((suma, efecto) => suma + efecto.permanente, 0);
-        if (Math.abs(carta.permanenteTotal - total) > 1e-9) throw new Error(`${rutina.id}: permanenteTotal no suma lo de cada efecto`);
+        if (Math.abs(carta.permanenteTotal - total) > 1e-9) throw new Error(`${plan.id}: permanenteTotal no suma lo de cada efecto`);
       }
     }
     if (conPermanencia === 0) throw new Error('sonda vacía: ninguna carta promete algo que dura');
@@ -17906,9 +17916,7 @@ checkLento('K4-D regla 15: lo que muestra la carta de la rutina (efecto y cuánt
     const original = BALANCE.atributos.fraccionPermanentePractica;
     try {
       BALANCE.atributos.fraccionPermanentePractica = 0.5;
-      const base = correrCarrera(2, 14);
-      const bootcamp = RUTINAS.offseason.find((rutina) => rutina.id === 'bootcamp_corea');
-      const carta = cartaDeRutina(base, bootcamp);
+      const carta = cartaDeRutina(correrCarrera(2, 14), planPorIdK4cP('juego'));
       const efecto = carta.efectos.find((e) => e.stat === 'mecanica');
       if (!efecto || Math.abs(efecto.permanente - 0.5 * efecto.esperado) > 1e-9) {
         throw new Error('la carta no sigue a fraccionPermanentePractica');
@@ -17916,90 +17924,29 @@ checkLento('K4-D regla 15: lo que muestra la carta de la rutina (efecto y cuánt
     } finally {
       BALANCE.atributos.fraccionPermanentePractica = original;
     }
-    // K4 (revisión): con una lesión que dejó techo de mecánica (`player.techoLesionMecanica`), la carta promete lo que
-    // el techo deja y el motor mueve eso mismo. El techo va 1 punto arriba de la mecánica actual, así que corta toda
-    // carta que sin él prometería más de 1: una carta que ignora el techo promete de más y el === se rompe.
+    // Con una lesión que dejó techo de mecánica, la carta promete lo que el techo deja y el motor mueve eso mismo. El
+    // techo va 1 punto arriba de la mecánica actual: corta todo plan que sin él prometería más de 1.
     const sinTecho = correrCarrera(5, 14);
     const lesionado = { ...sinTecho, player: { ...sinTecho.player, techoLesionMecanica: sinTecho.player.stats.mecanica + 1 } };
     let cortadas = 0;
-    for (const rutina of RUTINAS.offseason) {
-      const libre = cartaDeRutina({ ...sinTecho, player: { ...sinTecho.player, techoLesionMecanica: null } }, rutina)
+    for (const plan of planes) {
+      const libre = cartaDeRutina({ ...sinTecho, player: { ...sinTecho.player, techoLesionMecanica: null } }, plan)
         .efectos.find((e) => e.stat === 'mecanica');
-      const efecto = cartaDeRutina(lesionado, rutina).efectos.find((e) => e.stat === 'mecanica');
+      const efecto = cartaDeRutina(lesionado, plan).efectos.find((e) => e.stat === 'mecanica');
       if (!efecto) continue;
-      const despues = resolverPreparacion(lesionado, [rutina], rutina.id, mulberry32(5)).state;
+      const despues = resolverPreparacion(lesionado, [plan], plan.id, mulberry32(5)).state;
       const movido = despues.player.stats.mecanica - lesionado.player.stats.mecanica;
       if (Math.abs(movido - efecto.esperado) > 1e-9) {
-        throw new Error(`${rutina.id} con techo de lesión: la carta dice +${efecto.esperado} de mecánica, el motor movió ${movido}`);
+        throw new Error(`${plan.id} con techo de lesión: la carta dice +${efecto.esperado} de mecánica, el motor movió ${movido}`);
       }
       if (efecto.esperado > 1 + 1e-9) {
-        throw new Error(`${rutina.id} con techo de lesión: la carta promete +${efecto.esperado}, por encima del techo (+1)`);
+        throw new Error(`${plan.id} con techo de lesión: la carta promete +${efecto.esperado}, por encima del techo (+1)`);
       }
       if (libre && libre.esperado > 1 + 1e-9) cortadas += 1;
     }
-    if (cortadas === 0) throw new Error('sonda vacía: el techo de lesión no cortó ninguna carta');
+    if (cortadas === 0) throw new Error('sonda vacía: el techo de lesión no cortó ningún plan');
   } finally {
     BALANCE.practica.ruidoPractica = previo;
-  }
-});
-
-checkLento('K4-D los bots contestan la parada unificada con la regla de siempre (oferta + rutina): ids válidos, malas y azar deterministas', () => {
-  const nombres = ['equilibrado', 'ranked', 'prudente', 'criterio', 'azar', 'malas'];
-  for (const nombre of nombres) {
-    const bot = ESTRATEGIAS_K0[nombre];
-    let contestadas = 0;
-    for (const seed of [1, 2, 3, 4]) {
-      const rng = mulberry32(seed);
-      let state = createInitialState(seed, rng);
-      const responder = (sistema, st, decision, rngLocal) => {
-        const respuesta = bot ? bot(sistema, st, decision, rngLocal) : sistema.resolverAuto(st, decision, rngLocal);
-        // K4 (integración): la prueba del salto (K4-C) también lleva la preparación, pero ya con la carta elegida: se
-        // contesta con el resultado del minijuego y sin volver a elegir rutina.
-        if (decision.datos?.preparacion && sistema.id === 'mercado' && decision.datos.motivo === 'minijuego') {
-          if (respuesta.rutinaId !== undefined || typeof respuesta.resultado !== 'number') {
-            throw new Error(`${nombre}: la prueba del salto se contestó como una parada (${JSON.stringify(respuesta)})`);
-          }
-          return respuesta;
-        }
-        if (decision.datos?.preparacion && sistema.id === 'mercado') {
-          contestadas += 1;
-          const rutinas = decision.datos.preparacion.rutinas;
-          if (!rutinas.some((rutina) => rutina.id === respuesta.rutinaId)) {
-            throw new Error(`${nombre}: la parada del mercado se contestó sin una rutina válida (${respuesta.rutinaId})`);
-          }
-          if (nombre === 'malas') {
-            const puntaje = (rutina) => (rutina.reparto.ranked ?? 0) + rutina.extra * 2;
-            const peor = rutinas.reduce((mejor, rutina) => (puntaje(rutina) > puntaje(mejor) ? rutina : mejor));
-            if (respuesta.rutinaId !== peor.id) throw new Error(`malas elige "${respuesta.rutinaId}", su regla da "${peor.id}"`);
-          }
-        }
-        return respuesta;
-      };
-      for (let i = 0; i < 40 && !state.terminado; i += 1) {
-        state = avanzarSplitAuto(state, rng, responder).state;
-      }
-    }
-    if (contestadas === 0) throw new Error(`${nombre}: ninguna parada de mercado con preparación en la muestra`);
-  }
-});
-
-check('K4-D las cartas de la preparación hablan en cristiano: ningún id crudo en lo que se muestra y la pantalla (components/mercado.js) las pinta sin calcular nada', () => {
-  const base = correrCarrera(2, 14);
-  for (const rutina of RUTINAS.offseason) {
-    const carta = cartaDeRutina(base, rutina);
-    const textos = [carta.label, carta.descripcion, ...carta.efectos.map((efecto) => efecto.etiqueta)];
-    for (const texto of textos) {
-      if (!texto || /player\.|[a-z0-9]+_[a-z0-9_]+/.test(texto)) {
-        throw new Error(`la carta de "${rutina.id}" muestra "${texto}"`);
-      }
-    }
-    if (!(carta.efectos.length > 0 || carta.pulir > 0 || carta.nuevo > 0)) {
-      throw new Error(`la carta de "${rutina.id}" no dice nada de lo que hace`);
-    }
-  }
-  const fuente = fs.readFileSync(path.join(srcDir, 'ui', 'components', 'mercado.js'), 'utf8');
-  if (!fuente.includes('Te queda para siempre') || /BALANCE|balance\.js/.test(fuente)) {
-    throw new Error('la pantalla tiene que decir cuánto dura la carta y leerlo de la carta, sin recalcularlo con BALANCE');
   }
 });
 
