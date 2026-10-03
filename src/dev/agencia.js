@@ -6,7 +6,8 @@ import { avanzarSplit, resolverDecision, avanzarSplitAuto } from '../core/pipeli
 import { sistemaPorId } from '../systems/registro.js';
 import { nivelDelJugador } from '../core/ficha.js';
 import { hashCadena } from '../core/numeros.js';
-import { splitsJugadosEnTier, tierMasAltoJugado } from '../core/registro.js';
+import { tierMasAltoJugado } from '../core/registro.js';
+import { puntajeDeCarrera } from '../core/puntaje.js';
 import {
   RESULTADO_MINIJUEGO_BIEN, RESULTADO_MINIJUEGO_MAL, esDecisionDeMinijuego, esDecisionDeMercado
 } from './estrategias.js';
@@ -49,49 +50,25 @@ export const ALFA_FAMILIA = 0.05;
 const SEMILLA_BASE_SIGMA = 1001;
 const SPLITS_SIGMA_POBLACION = 70;
 
-// Pesos del puntaje de carrera provisorio: la fórmula de AUDITORIA.md §4.3 (Apéndice A, `analisis.mjs`), la
-// función objetivo del contrafáctico hasta que la subfase K1 implemente `core/puntaje.js`. Cada título
-// doméstico suma 10; cada internacional con resultado `buen_papel` 15 y cada uno de los demás 5; el pico en el
-// Top 20 mundial suma `(PUNTAJE_TOPE_RANKING − puesto) × PUNTAJE_POR_PUESTO` (el #1 vale 40, el #20 vale 2);
-// cada split jugado en tier 1 suma 1 (`t1` en la fórmula, sin peso); y haber llegado a pro suma 10.
-const PUNTAJE_POR_TITULO = 10;
-const PUNTAJE_INTERNACIONAL_BUEN_PAPEL = 15;
-const PUNTAJE_INTERNACIONAL_OTRO = 5;
-const PUNTAJE_TOPE_RANKING = 21;
-const PUNTAJE_POR_PUESTO = 2;
-const PUNTAJE_POR_LLEGAR_A_PRO = 10;
-
 // Desvío estándar por debajo del cual las diferencias entre dos opciones se consideran todas iguales (la t
 // pareada se define aparte, ±Infinity o 0, en vez de dividir por ~0). Los puntajes son sumas de enteros y
 // medios, así que un desvío real de una decisión que sí tiene varianza es ≥ 0,1 (el paso más chico de
 // `fin.score` es 1): 1e-9 es un cero numérico, no un umbral de diseño.
 const EPSILON_DESVIO = 1e-9;
 
-// Puntaje de carrera provisorio (AUDITORIA.md §4.3) usado como función objetivo
-// hasta que la subfase K1 implemente `core/puntaje.js`. K1-A: `core/puntaje.js` ya existe, pero cambiar la
-// función objetivo del contrafáctico cambia la línea de base de §K.0b: es una decisión aparte (queda como
-// estaba). Lo que sí se alinea es D76: los splits de tier 1 salen de `splitsPorTier`, no de `fila.tier` (que es
-// el de la firma y, tras un descenso en el lugar, contaba splits de la liga de desarrollo como de primera).
-export function puntajeProvisorio(st) {
-  const r = st.career.registro;
-  const intBuenos = r.internacionales.filter((i) => i.resultado === 'buen_papel').length;
-  const intTot = r.internacionales.length;
-  const t1 = splitsJugadosEnTier(r, 1);
-  const rank = r.picos.rankMundial ?? 0;
-  return (
-    PUNTAJE_POR_TITULO * r.titulos.length
-    + PUNTAJE_INTERNACIONAL_BUEN_PAPEL * intBuenos
-    + PUNTAJE_INTERNACIONAL_OTRO * (intTot - intBuenos)
-    + (rank > 0 ? (PUNTAJE_TOPE_RANKING - rank) * PUNTAJE_POR_PUESTO : 0)
-    + t1
-    + (st.splitFichaje !== null ? PUNTAJE_POR_LLEGAR_A_PRO : 0)
-  );
+// La función objetivo del contrafáctico (K3c, trampa T6): el número de la carrera que ve el jugador,
+// `puntajeDeCarrera(state).total` (`core/puntaje.js`). Hasta K3c era el puntaje provisorio de AUDITORIA.md §4.3
+// (títulos, internacionales, ranking, splits en tier 1 y llegar a pro), que K1 dejó a propósito para no mover la
+// línea de base de §K.0b; K3c la re-mide con este. La comparten las réplicas (`metricas`) y la σ poblacional
+// (`sigmaPoblacional`): las dos tienen que medir con la misma vara.
+export function puntajeDeAgencia(st) {
+  return puntajeDeCarrera(st).total;
 }
 
 function metricas(st) {
   const r = st.career.registro;
   return {
-    score: puntajeProvisorio(st),
+    score: puntajeDeAgencia(st),
     titulos: r.titulos.length,
     // K1 (D75): "llegó a tier 1" = jugó al menos un split con contrato en tier 1.
     t1: tierMasAltoJugado(r) === 1 ? 1 : 0,
@@ -473,7 +450,7 @@ export function sigmaPoblacional(sigmaCarreras = DEFAULTS_AGENCIA.sigmaCarreras)
       st = avanzarSplitAuto(st, rng).state;
       n += 1;
     }
-    pop.push(puntajeProvisorio(st));
+    pop.push(puntajeDeAgencia(st));
     popT.push(st.career.registro.titulos.length);
   }
   return { sPop: sd(pop) || 1, sPopT: sd(popT) || 1 };

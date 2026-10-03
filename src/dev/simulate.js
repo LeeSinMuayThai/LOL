@@ -68,17 +68,16 @@ const FORMATO_BO5 = 5;
 // Para pasar una probabilidad a puntos porcentuales.
 const PUNTOS_PORCENTUALES = 100;
 
-// K2a: las metas de los checks de K2 (PLAN.md "Checks de K2"), sobre la definición corregida. Hoy están en rojo a
-// propósito: `validate.js` no tiene una convención para checks de una fase futura, así que NO son checks — se reportan
-// en `nivel.metasK2` con la meta al lado. Las bandas finales las fija K3c (regla de proceso 17: el día que se
-// conviertan en checks, se escriben con su línea de qué protegen).
+// K2a: las metas de los checks de K2 (PLAN.md "Checks de K2"), sobre la definición corregida. Se reportan en
+// `nivel.metasK2` con la meta al lado; desde K3c son también checks duros de `validate.js` ("K3c meta ..."), que leen
+// estas mismas constantes.
 export const META_K2_R_MISMA_LIGA = 0.5;
 export const META_K2_R2_SIN_RUIDO = 0.5;
 export const META_K2_BO5_FAVORITO_CLARO_PCT = [75, 85];
 
 // K3-A: las metas de K3 (PLAN.md "K3 — Tus decisiones construyen tu nivel", Checks), con el mismo criterio que las
-// de K2: se reportan en `metasK3` con la meta al lado y pasan a checks duros en K3c. Con las constantes neutras de
-// K3-A (k = 0, r = 0, rH = 0, topeDescanso = 100) se espera que estén en rojo: el juego todavía es el de hoy.
+// de K2: se reportan en `metasK3` con la meta al lado y, desde K3c, son checks duros de `validate.js` ("K3c meta ...").
+// Con las constantes neutras de K3-A (k = 0, r = 0, rH = 0, topeDescanso = 100) estaban en rojo: el juego era el de antes.
 export const META_K3_MENTALIDAD_MEDIANA = [45, 75];
 // "< 20% de splits pro con mentalidad ≥ 90" y "hype ≥ 90 en < 25% de los splits pro" (`UMBRAL_SATURACION`).
 export const META_K3_MENTALIDAD_SATURADA_PCT = 20;
@@ -91,10 +90,15 @@ export const META_K3_DIFERENCIA_BATACAZO_PP = 2;
 const MENTALIDADES_SONDA_K3 = [20, 80];
 
 // K3-B: lo que un efecto sobre un stat de curva conserva a 4 splits (PLAN.md "K3 — decisiones de spec": meta >= 40%).
-// `retencionDeUnEfecto` la mide; el bloque `metasK3` la reporta con esta meta al lado (`retencion4Splits`). K3c fija
-// `BALANCE.atributos.fraccionPermanente` para que se cumpla.
+// `retencionDeUnEfecto` la mide; el bloque `metasK3` la reporta con esta meta al lado (`retencion4Splits`). K3c fijó
+// `BALANCE.atributos.fraccionPermanente` (0,3) para que se cumpla.
 export const META_K3_RETENCION_4_SPLITS = 0.4;
-export const SONDA_RETENCION = { seeds: 40, splitsPrevios: 18, splitsDespues: 4, stat: 'mecanica', delta: 8 };
+// `seeds` es la muestra: cuántas carreras se prueban (con 40 el error estándar era ~0,07, más que el escalón de 0,05 que
+// separa dos fracciones vecinas: el barrido de K3c salía no monótono). De las `seeds` carreras no todas cuentan: las que
+// terminan antes de medir y las que tocan el clamp quedan afuera (con 400 quedaban 286; el PLAN pide >= 400 casos). Con 600
+// quedan ~414 y el error estándar es ~0,020 (con 286 era ~0,025); corre en ~18 s.
+// La exclusión por clamp significa que la sonda mide la retención de las carreras que no tocan los límites del stat.
+export const SONDA_RETENCION = { seeds: 600, splitsPrevios: 18, splitsDespues: 4, stat: 'mecanica', delta: 8 };
 
 // Mejor de 5: gana el primero en llevarse este número de mapas.
 const MAPAS_PARA_GANAR_BO5 = 3;
@@ -708,36 +712,69 @@ function porcentajes(mapa, total) {
 // splits después. Por seed: se juega la carrera hasta `splitsPrevios` (un punto fijo, ya profesional) y desde ahí se
 // corren dos futuros con el MISMO estado del rng, restaurado: uno tal cual y otro con el efecto aplicado — el stat
 // movido y, con `fraccionPermanente` > 0, el bonus y la marca (`conPermanencia`, la misma regla que usa el
-// aplicador de efectos de `systems/events.js`). Lo retenido es la diferencia de ese stat entre los dos futuros
-// dividida por `delta`; se promedia entre seeds (una sola es ruido: los dos futuros pueden bifurcarse). Las seeds
-// cuya carrera termina antes de medir no cuentan. `opciones` pisa `SONDA_RETENCION`.
+// aplicador de efectos de `systems/events.js`, que le pasa el delta REAL, ya con el clamp). Los dos futuros pueden
+// bifurcarse (el efecto cambia decisiones y partidos, y con eso cuánto rng consume cada uno): una carrera sola es
+// ruido (desvío ~0,3-0,5 de la retención), de ahí la muestra grande.
+//
+// La retención es un COCIENTE DE MEDIAS en carreras emparejadas: la media de lo retenido (el stat con efecto menos el
+// stat sin efecto, a `splitsDespues`) sobre la media de lo aplicado (el delta que de verdad entró, tras el clamp).
+// No es la media de los cocientes por seed. Quedan afuera, y se cuentan en `descartadas`: las carreras que terminan
+// antes de medir (`terminada`) y las censuradas por el clamp (`tope`) — el stat estaba a menos de `delta` del techo
+// (el efecto no entra entero) o algún futuro tocó 0 o 100 (la diferencia queda recortada y subestima lo retenido).
+// `errorEstandar` es el del cociente (linealización). `opciones` pisa `SONDA_RETENCION`.
 export function retencionDeUnEfecto(opciones = {}) {
   const { seeds, splitsPrevios, splitsDespues, stat, delta } = { ...SONDA_RETENCION, ...opciones };
-  const porSeed = [];
+  const { min, max } = BALANCE.stats;
+  const casos = [];
+  const descartadas = { terminada: 0, tope: 0 };
   for (let seed = 1; seed <= seeds; seed += 1) {
     const rng = mulberry32(seed);
     let base = createInitialState(seed, rng);
     for (let i = 0; i < splitsPrevios && !base.terminado; i += 1) {
       base = avanzarSplitAuto(base, rng).state;
     }
-    if (base.terminado) continue;
+    if (base.terminado) {
+      descartadas.terminada += 1;
+      continue;
+    }
+    const antes = base.player.stats[stat];
+    const aplicado = Math.min(max, antes + delta) - antes;
+    if (aplicado < delta) {
+      descartadas.tope += 1;
+      continue;
+    }
     const punto = rng.estado();
-    const movido = { ...base, player: { ...base.player, stats: { ...base.player.stats, [stat]: base.player.stats[stat] + delta } } };
-    const conEfecto = conPermanencia(movido, stat, delta, 'sonda de retención');
+    const movido = { ...base, player: { ...base.player, stats: { ...base.player.stats, [stat]: antes + aplicado } } };
+    const conEfecto = conPermanencia(movido, stat, aplicado, 'sonda de retención');
     const futuro = (estado) => {
       rng.restaurar(punto);
       let st = estado;
+      let tocoTope = false;
       for (let i = 0; i < splitsDespues && !st.terminado; i += 1) {
         st = avanzarSplitAuto(st, rng).state;
+        const valor = st.player.stats[stat];
+        tocoTope = tocoTope || valor <= min || valor >= max;
       }
-      return st;
+      return { st, tocoTope };
     };
     const sin = futuro(base);
     const con = futuro(conEfecto);
-    if (sin.terminado || con.terminado) continue;
-    porSeed.push((con.player.stats[stat] - sin.player.stats[stat]) / delta);
+    if (sin.st.terminado || con.st.terminado) {
+      descartadas.terminada += 1;
+      continue;
+    }
+    if (sin.tocoTope || con.tocoTope) {
+      descartadas.tope += 1;
+      continue;
+    }
+    casos.push({ seed, aplicado, retenido: con.st.player.stats[stat] - sin.st.player.stats[stat] });
   }
-  return { retenido: promedio(porSeed), muestras: porSeed.length, porSeed };
+  const retenido = promedio(casos.map((c) => c.retenido)) / (promedio(casos.map((c) => c.aplicado)) ?? NaN);
+  const n = casos.length;
+  const errorEstandar = n < 2 ? null
+    : Math.sqrt(casos.reduce((s, c) => s + (c.retenido - retenido * c.aplicado) ** 2, 0) / (n - 1))
+      / (Math.sqrt(n) * promedio(casos.map((c) => c.aplicado)));
+  return { retenido: Number.isNaN(retenido) ? null : retenido, errorEstandar, muestras: n, descartadas, casos };
 }
 
 // Helpers estadísticos: se exportan para que `agencia.js` los reuse en vez de tener su propia copia.
@@ -1344,7 +1381,9 @@ function metasK3(economia) {
     // `conPermanencia`, la regla del aplicador de efectos) y lo sigue `SONDA_RETENCION.splitsDespues` splits.
     retencion4Splits: {
       valor: retencion.retenido === null ? null : redondear(retencion.retenido, 3), muestras: retencion.muestras,
-      sonda: `${SONDA_RETENCION.stat} +${SONDA_RETENCION.delta}, ${SONDA_RETENCION.seeds} seeds`,
+      errorEstandar: retencion.errorEstandar === null ? null : redondear(retencion.errorEstandar, 3),
+      descartadas: retencion.descartadas,
+      sonda: `${SONDA_RETENCION.stat} +${SONDA_RETENCION.delta}, ${SONDA_RETENCION.seeds} seeds, cociente de medias`,
       meta: `>= ${META_K3_RETENCION_4_SPLITS} a ${SONDA_RETENCION.splitsDespues} splits`,
       cumple: retencion.retenido !== null && retencion.retenido >= META_K3_RETENCION_4_SPLITS,
       fuente: 'sonda: retencionDeUnEfecto()'

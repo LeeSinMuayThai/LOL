@@ -25,6 +25,10 @@
 // constantes del candidato (meta acotado a 0,9-1,1, maestría 0,1, σ de mapa ~18, referencias
 // medidas en el motor integrado) y `BALANCE.temporada.vueltas` en 2, elegido por barrido
 // (PLAN.md, K2c). El fixture de la temporada tiene el doble de fechas: ninguna seed de K2b
-// reproduce su carrera.
-export const VERSION_JUEGO = 'K2c';
-export const HUELLA_JUEGO = 345156314;
+// reproduce su carrera. · K3c (577913468; bloque A, el último paso): los valores medidos
+// del bloque A (PLAN.md, K3c) — la consistencia (k = 0,5), la mentalidad y el hype que vuelven
+// a su base (r = 0,2 con subida 0,05, tope de descanso 70, rH = 0,6), los efectos que duran
+// (fracción 0,3 para eventos y práctica) y el umbral de pausa del draft (0,0818 / 0,0409). Las
+// carreras cambian de cabo a rabo: ninguna seed de K2c reproduce la suya.
+export const VERSION_JUEGO = 'K3c';
+export const HUELLA_JUEGO = 577913468;
