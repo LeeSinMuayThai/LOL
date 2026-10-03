@@ -1846,16 +1846,21 @@ export const BALANCE = {
     // El referente del número (regla 13): "mejor que el X% de las carreras".
     // Pares [percentil, puntaje] medidos con `criterio` (seeds 1-800, 60 splits,
     // el bloque `puntaje` de `simulate.js`); entre dos pares se interpola y el
-    // último es el techo de lo que se dice. El salto entre el p20 (28) y el p25
-    // (328) es el borde entre los que no llegaron (21,6%) y los pros.
+    // último es el techo de lo que se dice. El salto entre el p20 y el p30 es el
+    // borde entre los que no llegaron (~23%) y los pros.
     // K3c re-midió con los valores del bloque A (la consistencia, la vuelta a la
     // base y los efectos que duran bajaron el número: p50 1172 → 989, p90 1800
-    // → 1622, p99 2169 → 1993). Los cortes de nivel no se tocan: son por hechos.
+    // → 1622, p99 2169 → 1993). K4c (paso 3b) re-midió con los del bloque B (el
+    // ritmo: la serie como plan, la prueba que decide el contrato, el plan anual;
+    // `criterio`, seeds 1-800, 60 splits, `node src/dev/simulate.js 800 60 criterio
+    // --bloque=puntaje`): p50 989 → 933, p90 1622 → 1663, p99 1993 → 2243. El borde
+    // entre los que no llegaron y los pros pasa a estar entre el p25 (124) y el p30
+    // (436). Los cortes de nivel no se tocan: son por hechos.
     // Provisoria: K5c la vuelve a medir.
     cuantiles: [
-      [0, 0], [5, 12], [10, 18], [15, 22], [20, 28], [25, 328], [30, 555], [35, 690], [40, 804], [45, 908],
-      [50, 989], [55, 1074], [60, 1138], [65, 1196], [70, 1273], [75, 1351], [80, 1443], [85, 1526],
-      [90, 1622], [95, 1744], [97, 1807], [99, 1993]
+      [0, 0], [5, 12], [10, 17], [15, 21], [20, 26], [25, 124], [30, 436], [35, 650], [40, 758], [45, 839],
+      [50, 933], [55, 1018], [60, 1106], [65, 1158], [70, 1237], [75, 1313], [80, 1426], [85, 1518],
+      [90, 1663], [95, 1841], [97, 1950], [99, 2243]
     ],
     // La leyenda comparada (`data/leyendas.json`): la más cercana por distancia
     // euclídea sobre el perfil normalizado (cada eje dividido por su `escala`),
