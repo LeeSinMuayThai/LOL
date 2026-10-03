@@ -6501,6 +6501,27 @@ Cuatro piezas en worktrees paralelas, con archivos mayormente disjuntos; las int
 - **Las interrupciones todavía no llegan a ≤ 80** sumando las piezas. Eso es de K4c: el umbral de "sin nada en
   juego", la ventana de `define_clasificacion` y lo que cuesta cada parada.
 
+**K4-C2 — el pase de contenido sobre las bifurcaciones** *(spec del supervisor, 2026-10-03)*. Hoy frenan ~2
+bifurcaciones por carrera y el cambio de región no tiene evento.
+- **Meta: ~5-7 bifurcaciones por carrera** con `criterio`. Lo que se suma tiene que ser decisión de carrera, no
+  relleno.
+- **Eventos nuevos con `bifurcacion: true`**, en el esquema de `data/events/*.json`: efectos como rangos,
+  resultados con pesos, condiciones de aparición, categoría y texto con tono de alguien que conoce LoL. Al menos:
+  - **Cambio de región:** una oferta de import a otra liga. Plata y techo contra idioma, familia y arraigo; el
+    caso de Corea hacia afuera y el de afuera hacia Corea o China.
+  - **Contenido a tiempo completo:** dejar de competir por el streaming.
+  - **El cambio de rol:** el coach te pide jugar otra línea.
+  - **Jugar los playoffs infiltrado o parar.**
+  - **El conflicto con el sponsor o la org** que te puede banquear.
+  - **El retiro con oferta de staff:** coach o analista.
+  - **El servicio militar** para los coreanos, si el existente no lo cubre.
+- **Los efectos que duran** salen solos por la fracción de K3: no hace falta escribirlos aparte.
+- **Caminos que se abren y se cierran.** Cada bifurcación deja un flag (en `state.flags`, completo desde el
+  inicio, T4) que habilita o cierra eventos futuros, y al menos dos eventos de seguimiento leen esos flags.
+- **Afinidad de perfil.** Cada opción tiene su afinidad (K4-C), para que el perfil derive con lo que decidís.
+- **Lo que no cambia:** ningún número del motor, solo dato y, si hace falta, una condición nueva en el
+  selector. `validate.js` cubre el esquema de eventos; los checks de K4-C siguen en verde.
+
 **Para las cuatro piezas.**
 - Regla 15 en cada pantalla nueva: lo que muestra es lo que el motor usa.
 - Sin ids crudos.
