@@ -18,6 +18,7 @@ import { crearTarjetaResultado, crearTarjetaResultadoSerie } from './serie.js';
 import { crearTarjetaMundial } from './mundial.js';
 import { textoDeProbabilidadJugada } from '../../core/previaDePartido.js';
 import { reconciliar, reemplazarEnElLugar } from '../core/reconciliar.js';
+import { formaBeat } from '../../core/log.js';
 
 // El reveal del Top 20 al cierre de temporada (fase 9Wc). El log `top_mundial`
 // que trae la lista entera (`entry.top20`) deja de ser una línea: se abre en
@@ -211,6 +212,21 @@ export function crearLogItem(entry) {
   return item;
 }
 
+// K4c-F: las líneas `adjunto` (core/log.js) van adentro del beat anterior, legibles, una por renglón — no compiten
+// por un beat del reproductor pero siguen a la vista en el feed.
+export function crearAdjuntos(entradas) {
+  const bloque = document.createElement('div');
+  bloque.className = 'log-adjuntos';
+  for (const entrada of entradas) {
+    const linea = document.createElement('div');
+    linea.className = 'log-adjunto';
+    linea.dataset.type = entrada.type ?? '';
+    linea.textContent = entrada.message ?? entrada.cuerpo ?? entrada.titulo ?? '';
+    bloque.appendChild(linea);
+  }
+  return bloque;
+}
+
 export function crearTiraTecnica(entradas) {
   const tira = document.createElement('div');
   tira.className = 'log-tira-tecnica';
@@ -226,18 +242,22 @@ export function crearTiraTecnica(entradas) {
 // que el índice absoluto del último elemento incorporado a un beat es una
 // clave natural estable para `reconciliar` — el mismo beat, si no cambió,
 // vuelve a calcular la misma `clave` en el próximo render.
+//
+// K4c-F: qué línea abre un beat lo dice `formaBeat` (core/log.js), la misma función que usa el instrumento de
+// simulate.js. Las que no lo abren se pegan al beat en curso: las `tecnico` a la tira atenuada, las `adjunto` a su
+// bloque legible.
 export function agruparBeats(entradas, offset = 0) {
   const beats = [];
   let actual = null;
   entradas.forEach((entrada, i) => {
     const indice = offset + i;
-    if (entrada.tecnico) {
-      if (!actual) actual = { narrativa: null, tecnicos: [], clave: indice };
-      actual.tecnicos.push(entrada);
+    if (!formaBeat(entrada)) {
+      if (!actual) actual = { narrativa: null, tecnicos: [], adjuntos: [], clave: indice };
+      (entrada.tecnico ? actual.tecnicos : actual.adjuntos).push(entrada);
       actual.clave = indice;
     } else {
       if (actual) beats.push(actual);
-      actual = { narrativa: entrada, tecnicos: [], clave: indice };
+      actual = { narrativa: entrada, tecnicos: [], adjuntos: [], clave: indice };
     }
   });
   if (actual) beats.push(actual);
@@ -256,7 +276,7 @@ export function nodoDeBeat(beat, state) {
     }
   } else {
     nodo = document.createElement('div');
-    nodo.className = 'log-item log-item--tecnico';
+    nodo.className = beat.adjuntos.length > 0 ? 'log-item' : 'log-item log-item--tecnico';
   }
   // K2d: el mapa y la fecha marcada dicen con qué probabilidad se jugaron (la
   // `p` que el motor tiró, en el log).
@@ -266,6 +286,9 @@ export function nodoDeBeat(beat, state) {
     prob.className = 'resultado-prob';
     prob.textContent = jugada;
     nodo.appendChild(prob);
+  }
+  if (beat.adjuntos.length > 0) {
+    nodo.appendChild(crearAdjuntos(beat.adjuntos));
   }
   if (beat.tecnicos.length > 0) {
     nodo.appendChild(crearTiraTecnica(beat.tecnicos));
@@ -335,6 +358,6 @@ export function renderLowerThird(summary, metaPill, state, { modo, decision } = 
     return;
   }
 
-  const ultimo = [...(state?.logs ?? [])].reverse().find((l) => !l.tecnico);
+  const ultimo = [...(state?.logs ?? [])].reverse().find(formaBeat);
   summary.textContent = ultimo?.cuerpo ?? ultimo?.message ?? 'Split en curso';
 }

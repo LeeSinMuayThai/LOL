@@ -9,13 +9,13 @@
 // edad (regla de proceso 10): el 2 de cada 3 splits que no cierran año no le
 // cuestan ni un `rng()` a este sistema.
 
-import { crearLog } from '../core/log.js';
+import { crearLog, adjuntar } from '../core/log.js';
 import { weightedPick, sample } from '../core/rng.js';
 import { mundialSinJugador } from '../core/internacional.js';
 import { BALANCE } from '../data/balance.js';
 import { esCierreDeEdad } from './edadCierre.js';
 import {
-  ligasParaDigest, todosLosOrgsTier1, lineaDeLiga, lineaDeInternacional, construirEscenaAnual
+  ligasParaDigest, todosLosOrgsTier1, lineaDeLiga, lineaDeInternacional, construirEscenaAnual, finalTeToca
 } from '../core/escena.js';
 
 export const id = 'escena';
@@ -40,8 +40,12 @@ export function aplicar(state, rng) {
   // Las finales que se narran: se resuelven con `rng` como siempre. Se guarda
   // el resultado por liga para que `construirEscenaAnual` no lo vuelva a tirar.
   const narradas = ligasElegidas.map((liga) => ({ liga, ...resolverFinal(liga.orgs, rng) }));
-  const logs = narradas.map(({ liga, campeon, subcampeon, marcador }) =>
-    crearLog('escena', lineaDeLiga(liga, campeon, subcampeon, marcador), { tecnico: false }));
+  // K4c-F: la final que no te toca (`finalTeToca`) se narra igual, pero adjunta al beat anterior: el mundo sigue en el
+  // feed y en `state.logs`, solo deja de costar un beat. El Mundial siempre es beat.
+  const logs = narradas.map(({ liga, campeon, subcampeon, marcador }) => {
+    const log = crearLog('escena', lineaDeLiga(liga, campeon, subcampeon, marcador), { tecnico: false });
+    return finalTeToca(state, liga, campeon, subcampeon) ? log : adjuntar(log);
+  });
 
   // K5-A: el campeón del mundo es el del torneo que se jugó este año (`systems/internacional.js`), no un sorteo
   // aparte que podía contradecir tu serie. Si el estado no trae el de este año (un guardado de antes), se juega acá

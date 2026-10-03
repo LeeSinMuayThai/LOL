@@ -7,7 +7,7 @@ import { aplicarLPAlEstado, etiquetaDeRanked, servidorDeLaPartida } from '../cor
 import { aprenderCampeones, subirMaestria, olvidarPeor, principalDelPool } from '../core/pool.js';
 import { registrarMomento } from '../core/registro.js';
 import { conPermanencia, conTechoDeLesion } from '../core/curvas.js';
-import { crearLog } from '../core/log.js';
+import { crearLog, adjuntar } from '../core/log.js';
 import { deltaCorto, lista } from '../core/formato.js';
 import { tipoDeSplit, hayPresupuesto } from '../core/presupuesto.js';
 import { previaDeOpcion, riesgoDeOpcion, gateDeOpcion } from '../core/previa.js';
@@ -392,7 +392,8 @@ export function resolverOpcion(state, evento, opcionId, rng, { cronica = null } 
     // K3-B: `nombre` (el título visible del evento, nunca su id) es el `origen` de lo que quede permanente.
     const { state: siguiente, descripcion, logs: extra = [] } = aplicarEfecto(acc, effect, rng, nombre);
     descripciones.push(descripcion);
-    logsDeEfectos.push(...extra);
+    // K4c-F: los renglones de efecto van adentro del beat del evento (un beat, no N); siguen en `state.logs`.
+    logsDeEfectos.push(...extra.map(adjuntar));
     return siguiente;
   }, state);
 

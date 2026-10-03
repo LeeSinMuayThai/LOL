@@ -4,7 +4,7 @@ import { gauss, chance, pick } from '../core/rng.js';
 import { clamp } from '../core/numeros.js';
 import { tierListDeRol, saltosDeTierPropios } from '../core/regimen.js';
 import { campeonesPorDebutar } from '../core/pool.js';
-import { crearLog } from '../core/log.js';
+import { crearLog, adjuntar } from '../core/log.js';
 import { ARQUETIPOS } from '../data/meta-tags.js';
 import METAS from '../data/metas.json' with { type: 'json' };
 
@@ -118,7 +118,8 @@ export function aplicar(state, rng) {
 
   const { state: nextState, log } = debutarCampeon(conTierList, rng);
   if (log) {
-    logs.push(log);
+    // K4c-F: un renglón por parche — el campeón que sale va adentro del beat del parche (sigue en `state.logs`).
+    logs.push(adjuntar(log));
   }
 
   return { state: nextState, logs };
