@@ -444,10 +444,11 @@ export const BALANCE = {
     // la vuelta no perdone gratis las malas decisiones ni borre el burnout.
     // Igual a la bajada = la vuelta simétrica. K3c: 0,05, medido con `malas`,
     // `azar` y `criterio` (200 × 60): simétrica (0,2) la brecha malas−azar en
-    // "no llega a pro" cae a 8,5 pp y borra el burnout con `malas` (170 cada
-    // 1000 carreras); con 0,05 la brecha es 16,5 pp (mínimo 10), el burnout
-    // vuelve (430 con `malas`, 0 con `criterio`) y la mentalidad de `criterio`
-    // sigue en 72,3 / 2,6% >= 90. 0,1 cumplía en el borde; 0 se pasa de duro.
+    // "no llega a pro" cae a 8,5 pp y baja el burnout de 565 a 170 cada 1000
+    // con `malas`, y deja sin muestra el check del burnout; con 0,05 la brecha
+    // es 16,5 pp (mínimo 10), el burnout vuelve (430 con `malas`, 0 con
+    // `criterio`) y la mentalidad de `criterio` sigue en 72,3 / 2,6% >= 90.
+    // 0,1 cumplía en el borde; 0 se pasa de duro.
     mentalidadRetornoBaseSubida: 0.05,
     // Toda recuperación de mentalidad por descanso (el sueño por encima del
     // confortable en `atributos.js`, el "descansar" del receso en

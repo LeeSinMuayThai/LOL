@@ -94,8 +94,11 @@ const MENTALIDADES_SONDA_K3 = [20, 80];
 // `BALANCE.atributos.fraccionPermanente` (0,3) para que se cumpla.
 export const META_K3_RETENCION_4_SPLITS = 0.4;
 // `seeds` es la muestra: cuántas carreras se prueban (con 40 el error estándar era ~0,07, más que el escalón de 0,05 que
-// separa dos fracciones vecinas: el barrido de K3c salía no monótono). 400 lo deja en ~0,02 y corre en ~20 s.
-export const SONDA_RETENCION = { seeds: 400, splitsPrevios: 18, splitsDespues: 4, stat: 'mecanica', delta: 8 };
+// separa dos fracciones vecinas: el barrido de K3c salía no monótono). De las `seeds` carreras no todas cuentan: las que
+// terminan antes de medir y las que tocan el clamp quedan afuera (con 400 quedaban 286; el PLAN pide >= 400 casos). Con 600
+// quedan ~414 y el error estándar es ~0,020 (con 286 era ~0,025); corre en ~18 s.
+// La exclusión por clamp significa que la sonda mide la retención de las carreras que no tocan los límites del stat.
+export const SONDA_RETENCION = { seeds: 600, splitsPrevios: 18, splitsDespues: 4, stat: 'mecanica', delta: 8 };
 
 // Mejor de 5: gana el primero en llevarse este número de mapas.
 const MAPAS_PARA_GANAR_BO5 = 3;

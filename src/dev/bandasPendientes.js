@@ -43,6 +43,17 @@ export const BANDAS_PENDIENTES = [
     commit: 'K3c',
     rebasea: 'K4c',
     porque: 'K3c re-fijó el umbral de pausa del draft (bloque A); K4 rediseña el draft (plan de Fearless) y K4c re-basea esta banda'
+  },
+  // El check duro del bloque A mide el Bo5 del lado del jugador (83,8%, dentro de banda). El conjunto, que suma el lado del
+  // rival, se va de banda por la asimetría del Fearless y es de K4: misma excepción que la del draft (commit K3c).
+  {
+    check: 'K3c meta Bo5 favorito claro (conjunto) ∈ [75, 85]',
+    bloque: 'B',
+    medido: '87,3% (criterio 400 × 60; jugador 83,8%, rival 93,9%)',
+    banda: '[75, 85]',
+    commit: 'K3c',
+    rebasea: 'K4c',
+    porque: 'asimetría del Fearless (solo te degrada a vos): la resuelve el plan de Fearless de K4'
   }
 ];
 

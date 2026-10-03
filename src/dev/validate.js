@@ -8805,7 +8805,8 @@ const {
   UMBRAL_R2_ESTRUCTURAL, decidirRuidoPuro,
   promedio, mediana: medianaSim, medianaInferior, percentil, desvioMuestral, pearson, varianza, regresionLineal2Regresores,
   META_K2_R_MISMA_LIGA, META_K2_R2_SIN_RUIDO, META_K2_BO5_FAVORITO_CLARO_PCT, META_K3_MENTALIDAD_MEDIANA,
-  META_K3_MENTALIDAD_SATURADA_PCT, META_K3_HYPE_SATURADO_PCT, META_K3_DIFERENCIA_BATACAZO_PP, META_K3_RETENCION_4_SPLITS
+  META_K3_MENTALIDAD_SATURADA_PCT, META_K3_HYPE_SATURADO_PCT, META_K3_DIFERENCIA_BATACAZO_PP, META_K3_RETENCION_4_SPLITS,
+  SONDA_RETENCION
 } = await import('./simulate.js');
 const {
   ESTRATEGIAS: ESTRATEGIAS_K0, puntuarPrevia, compararOfertasMercado,
@@ -14138,11 +14139,15 @@ check('K3c vuelta asimétrica: con bajada 0,3 y subida 0 (en memoria) una mental
 // mismas constantes `META_*` que el reporte. Regla de proceso 17, qué protege cada uno: "tus decisiones construyen tu
 // nivel" (K.2) — que el nivel se note en la posición (r, R²) y en la serie (el favorito gana), que la cabeza gobierne
 // la consistencia (el batacazo de mentalidad 20 contra 80), que las barras no se saturen (mentalidad, hype) y que un
-// efecto dure (retención). Se miden con `criterio` (el bot que juega bien), 400 seeds × 60 splits: la muestra del
-// barrido de K3c. NO se mide el Bo5 del lado del rival (≈ 92%: la asimetría de Fearless es de K4) ni "juntos" (≈ 87%,
-// pesa el lado del rival): los dos se reportan en el check del Bo5, y el que se mide es el del jugador (Δ0 >= 0),
-// el de la investigación de K2 y el que K2c calibró.
-const SEEDS_METAS_A = 400;
+// efecto dure (retención). Cada check dice en su nombre cuál es su muestra. Los de lote (r, R², Bo5, mentalidad, hype) se
+// miden con `criterio` (el bot que juega bien), 800 seeds × 60 splits: el barrido de K3c eligió los valores con 400 × 60,
+// pero con 400 el Bo5 del jugador (83,8% ±1,7) quedaba a 0,7 errores estándar del techo de 85; con 800 el error baja a
+// ±1,2. La retención es una sonda aparte (`SONDA_RETENCION`, con sus propios casos) y el batacazo es analítico (la p de
+// mapa del motor, sin muestra). El check duro del Bo5 es el del lado del JUGADOR (Δ0 >= 0): el de la investigación de K2
+// y el que K2c calibró, lo que el bloque A controla. El del rival (≈ 94%) y el conjunto (≈ 87%) pesan la asimetría de
+// Fearless, que es de K4: el conjunto tiene su check ("K3c meta Bo5 favorito claro (conjunto)") y está en
+// `bandasPendientes.js` como bloque B; el del rival solo se reporta.
+const SEEDS_METAS_A = 800;
 let loteMetasA = null;
 function loteDeLasMetasA() {
   if (loteMetasA === null) {
@@ -14182,7 +14187,9 @@ function juezDeLasMetasA(v) {
     r2SinRuido: juzgar(hay(v.r2SinRuido) && v.r2SinRuido >= META_K2_R2_SIN_RUIDO,
       `el R² sin ruido (corregido) es ${v.r2SinRuido}, la meta pide >= ${META_K2_R2_SIN_RUIDO}`),
     bo5Jugador: juzgar(hay(v.bo5Jugador) && v.bo5Jugador >= bo5Min && v.bo5Jugador <= bo5Max,
-      `el favorito claro (Δ0 ≈ 10, el jugador favorito) gana el Bo5 el ${v.bo5Jugador}%, la meta es ${bo5Min}-${bo5Max}% (del lado del rival ${v.bo5Rival}%, juntos ${v.bo5Juntos}%: solo se reportan)`),
+      `el favorito claro (Δ0 ≈ 10, el jugador favorito) gana el Bo5 el ${v.bo5Jugador}%, la meta es ${bo5Min}-${bo5Max}% (del lado del rival ${v.bo5Rival}%, juntos ${v.bo5Juntos}%: el conjunto lo juzga su propio check)`),
+    bo5Juntos: juzgar(hay(v.bo5Juntos) && v.bo5Juntos >= bo5Min && v.bo5Juntos <= bo5Max,
+      `el favorito claro (Δ0 ≈ 10, conjunto: los dos lados) gana el Bo5 el ${v.bo5Juntos}%, la meta es ${bo5Min}-${bo5Max}% (jugador ${v.bo5Jugador}%, rival ${v.bo5Rival}%)`),
     mentalidadMediana: juzgar(hay(v.mentalidadMediana) && v.mentalidadMediana >= medMin && v.mentalidadMediana <= medMax,
       `la mentalidad mediana de los splits pro es ${v.mentalidadMediana}, la meta es ${medMin}-${medMax}`),
     mentalidadSaturada: juzgar(hay(v.mentalidadSaturada) && v.mentalidadSaturada < META_K3_MENTALIDAD_SATURADA_PCT,
@@ -14196,8 +14203,9 @@ function juezDeLasMetasA(v) {
   };
 }
 
+// `bo5Juntos` va dentro de banda (84): son valores que CUMPLEN. El Bo5 conjunto real da ≈ 87% y por eso está pendiente.
 const VALORES_DE_LAS_METAS_A_OK = {
-  rMismaLiga: 0.6, r2SinRuido: 0.52, bo5Jugador: 83, bo5Rival: 93, bo5Juntos: 87, mentalidadMediana: 72, mentalidadSaturada: 2.7,
+  rMismaLiga: 0.6, r2SinRuido: 0.52, bo5Jugador: 83, bo5Rival: 93, bo5Juntos: 84, mentalidadMediana: 72, mentalidadSaturada: 2.7,
   hypeSaturado: 20, retencion: 0.49, batacazo: 4.3
 };
 
@@ -14210,7 +14218,7 @@ check('K3c metas del bloque A: el juez acepta los valores del bloque A y rechaza
   const sano = Object.values(juezDeLasMetasA(VALORES_DE_LAS_METAS_A_OK)).filter((motivo) => motivo !== null);
   if (sano.length > 0) throw new Error(`el juez rechaza valores que cumplen: ${sano.join('; ')}`);
   const malos = {
-    rMismaLiga: [0.3, null], r2SinRuido: [0.3, null], bo5Jugador: [90, 70, null], mentalidadMediana: [97.8, 30, null],
+    rMismaLiga: [0.3, null], r2SinRuido: [0.3, null], bo5Jugador: [90, 70, null], bo5Juntos: [87.3, 70, null], mentalidadMediana: [97.8, 30, null],
     mentalidadSaturada: [77.7, 20, null], hypeSaturado: [40, 25, null], retencion: [0.28, null], batacazo: [0, 1.9, null]
   };
   for (const [clave, valores] of Object.entries(malos)) {
@@ -14224,34 +14232,45 @@ check('K3c metas del bloque A: el juez acepta los valores del bloque A y rechaza
   }
 });
 
-checkLento('K3c meta de K2 (criterio, 400 × 60): r nivel–posición en la misma liga >= 0,5 y R² sin ruido >= 0,5, ambos corregidos', () => {
+checkLento(`K3c meta de K2 (criterio, ${SEEDS_METAS_A} × ${SPLITS_LOTE_K0}): r nivel–posición en la misma liga >= 0,5 y R² sin ruido >= 0,5, ambos corregidos`, () => {
   const problemas = problemasDeLasMetasA(['rMismaLiga', 'r2SinRuido']);
   if (problemas.length > 0) throw new Error(problemas.join('; '));
 });
 
-checkLento('K3c meta de K2 (criterio, 400 × 60): el favorito claro (Δ0 ≈ 10) gana el Bo5 entre 75% y 85% (lado del jugador; el del rival y "juntos" solo se reportan)', () => {
+checkLento(`K3c meta de K2 (criterio, ${SEEDS_METAS_A} × ${SPLITS_LOTE_K0}): el favorito claro (Δ0 ≈ 10) gana el Bo5 entre 75% y 85% (lado del jugador; el rival solo se reporta, el conjunto tiene su check)`, () => {
   const v = valoresDeLasMetasA(loteDeLasMetasA());
-  console.log(`     (informe, no se mide) Bo5 con |Δ0| ≈ 10: jugador favorito ${v.bo5Jugador}%, rival favorito ${v.bo5Rival}%, juntos ${v.bo5Juntos}%`);
+  console.log(`     (informe) Bo5 con |Δ0| ≈ 10: jugador favorito ${v.bo5Jugador}% (se mide), rival favorito ${v.bo5Rival}% (solo se reporta), juntos ${v.bo5Juntos}% (su propio check)`);
   const problemas = problemasDeLasMetasA(['bo5Jugador']);
   if (problemas.length > 0) throw new Error(problemas.join('; '));
 });
 
-checkLento('K3c meta de K3 (criterio, 400 × 60): mentalidad pro con mediana en [45, 75] y < 20% de los splits pro con mentalidad >= 90', () => {
+// El conjunto (los dos lados) es un check de BANDA fuera de banda dentro del bloque B: la asimetría del Fearless (solo
+// te degrada a vos) lo lleva a ≈ 87% y la resuelve el plan de Fearless de K4. Vive en `bandasPendientes.js` (bloque B,
+// re-basea K4c): mientras falle se reporta PENDIENTE; si vuelve a [75, 85], el custodio 1 pide borrar la entrada.
+// La muestra es la de las demás metas de lote (`criterio`, ${SEEDS_METAS_A} × ${SPLITS_LOTE_K0}).
+checkLento('K3c meta Bo5 favorito claro (conjunto) ∈ [75, 85]', () => {
+  const v = valoresDeLasMetasA(loteDeLasMetasA());
+  console.log(`     (muestra: criterio, ${SEEDS_METAS_A} × ${SPLITS_LOTE_K0}) Bo5 conjunto ${v.bo5Juntos}% (jugador ${v.bo5Jugador}%, rival ${v.bo5Rival}%)`);
+  const problemas = problemasDeLasMetasA(['bo5Juntos']);
+  if (problemas.length > 0) throw new Error(problemas.join('; '));
+});
+
+checkLento(`K3c meta de K3 (criterio, ${SEEDS_METAS_A} × ${SPLITS_LOTE_K0}): mentalidad pro con mediana en [45, 75] y < 20% de los splits pro con mentalidad >= 90`, () => {
   const problemas = problemasDeLasMetasA(['mentalidadMediana', 'mentalidadSaturada']);
   if (problemas.length > 0) throw new Error(problemas.join('; '));
 });
 
-checkLento('K3c meta de K3 (criterio, 400 × 60): < 25% de los splits pro con hype >= 90', () => {
+checkLento(`K3c meta de K3 (criterio, ${SEEDS_METAS_A} × ${SPLITS_LOTE_K0}): < 25% de los splits pro con hype >= 90`, () => {
   const problemas = problemasDeLasMetasA(['hypeSaturado']);
   if (problemas.length > 0) throw new Error(problemas.join('; '));
 });
 
-checkLento('K3c meta de K3 (criterio, 400 × 60): un efecto sobre un stat de curva conserva >= 40% a 4 splits (sonda de retención)', () => {
+checkLento(`K3c meta de K3 (sonda de retención, ${SONDA_RETENCION.seeds} seeds sin los casos que tocan el clamp): un efecto sobre un stat de curva conserva >= 40% a ${SONDA_RETENCION.splitsDespues} splits`, () => {
   const problemas = problemasDeLasMetasA(['retencion']);
   if (problemas.length > 0) throw new Error(problemas.join('; '));
 });
 
-checkLento('K3c meta de K3 (criterio, 400 × 60): la brecha de sorpresas entre mentalidad 20 y 80 es >= 2 pp', () => {
+checkLento('K3c meta de K3 (analítico, sin muestra: p de mapa del motor): la brecha de sorpresas entre mentalidad 20 y 80 es >= 2 pp', () => {
   const problemas = problemasDeLasMetasA(['batacazo']);
   if (problemas.length > 0) throw new Error(problemas.join('; '));
 });
