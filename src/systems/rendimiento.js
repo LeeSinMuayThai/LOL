@@ -4,7 +4,7 @@ import { clamp, clampStat, hashCadena } from '../core/numeros.js';
 import { registrarEnHistorial } from '../core/contexto.js';
 import { ligaOZonaDeCarrera } from '../core/competicion.js';
 import { esCierreDeTemporada } from '../core/serie.js';
-import { rendimientoBase, fuerzaDelEquipo } from '../core/fuerza.js';
+import { fuerzaDelEquipo, nivelDeCompaneros } from '../core/fuerza.js';
 import { registrarTitulo, registrarInternacional, registrarPico, registrarArraigoEnFila } from '../core/registro.js';
 import { nivelDelJugador } from '../core/ficha.js';
 import { BALANCE } from '../data/balance.js';
@@ -17,22 +17,11 @@ export const id = 'rendimiento';
 // cuando la fórmula se mudó a `core/fuerza.js` (9Rc).
 export { fuerzaDelEquipo };
 
-// Rendimiento personal del split: la hoja de atributos ponderada por rol,
-// corrida por el ajuste al meta, la maestria del campeon que TERMINASTE
-// jugando, la sinergia del roster, la jerarquia y ruido gaussiano.
-//
-// Se exporta: la fase 4 (systems/serie.js) reusa exactamente esta formula para
-// resolver cada mapa de una serie, sobreescribiendo campeonDelSplit con el
-// campeon elegido en el draft de la serie, y la fase 5 (systems/temporada.js)
-// la llama una vez por split para fijar la fuerza con la que se juega el
-// calendario entero. No se reescribe la formula.
-export function calcularRendimiento(state, rng) {
-  // Fase 9Rc: la parte determinista se calcula en `core/fuerza.js`
-  // (`rendimientoBase`, la MISMA fórmula extraída para que el draft la mire sin
-  // el ruido). Acá solo se le suma el gaussiano y se clampea una vez — un solo
-  // `gauss`, en el mismo orden que antes: el stream de RNG no se corre.
-  return clampStat(rendimientoBase(state) + gauss(0, BALANCE.rendimiento.ruidoRendimiento, rng));
-}
+// K2b: `calcularRendimiento` (el rendimiento del split = base + un `gauss` de
+// σ 7) se borró. La fuerza de partido es determinista (`core/fuerza.js`,
+// `fuerzaDePartido`) y el rendimiento del split que leen estas consecuencias lo
+// cuentan tus partidos de temporada regular (`career.temporada.rendimiento`,
+// escrito por `systems/temporada.js` con `rendimientoDeLaTemporada`).
 
 // Fase 9R0d: 2 de cada 3 splits no son de playoffs, y cerraban con una sola
 // línea `[rendimiento]` — "terminó 4º de 10" sin decir qué significa ese 4º.
@@ -136,8 +125,9 @@ function consecuencias(state, rendimiento, resultado, esCierre, rng) {
   // esperaba de vos. Y lo que se espera crece con tu propia jerarquia: a la
   // franquicia del equipo no le alcanza con rendir como uno mas. Por eso el
   // bucle de CONCEPTO §7 empuja en las dos direcciones y no se clava arriba.
-  const nivelEquipo = state.career.companeros.reduce((suma, c) => suma + c.nivel, 0)
-    / Math.max(1, state.career.companeros.length);
+  // K2b: el nivel del equipo es el MISMO que usó la fuerza (`nivelDeCompaneros`,
+  // en vivo en las ligas modeladas).
+  const nivelEquipo = nivelDeCompaneros(state);
   const esperado = nivelEquipo * (BALANCE.roster.exigenciaBase
     + (state.career.jerarquia / BALANCE.stats.max) * BALANCE.roster.exigenciaPorJerarquia);
   const brecha = (rendimiento - esperado) / BALANCE.roster.jerarquiaReferenciaRendimiento;

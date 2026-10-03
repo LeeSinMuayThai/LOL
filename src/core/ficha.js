@@ -8,8 +8,8 @@ import { bandaDeArraigo as idDeBandaDeArraigo } from './registro.js';
 
 // --- El número único (H7 de PLAN.md) ---
 //
-// La MISMA suma ponderada por rol que ya usa `calcularRendimiento`
-// (systems/rendimiento.js) ANTES de aplicarle meta, maestría, sinergia,
+// La MISMA suma ponderada por rol que ya usa `rendimientoBase`
+// (core/fuerza.js; hasta K2a, `calcularRendimiento`) ANTES de aplicarle meta, maestría, sinergia,
 // jerarquía y ruido — el "cuánto rendís en limpio", sin el contexto del
 // split. Se extrae acá para que rendimiento.js la importe en vez de
 // mantener dos copias de la misma fórmula (regla de proceso 2: la fórmula

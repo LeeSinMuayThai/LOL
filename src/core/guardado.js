@@ -16,8 +16,18 @@
 // cada internacional, `state.desafio` y `tarjeta.puntaje` — un guardado a
 // mitad de carrera tendría títulos sin liga) · 4 (revisión de K1:
 // `registro.cierresComoNumeroUno`, `flags.splitJugadoSinFila`, `nombre` en las
-// ligas, y la forma nueva de `tarjeta.puntaje`: niveles por hechos).
-export const VERSION = 4;
+// ligas, y la forma nueva de `tarjeta.puntaje`: niveles por hechos) · 5 (K2,
+// mergeado sobre K1 — K2a y K2b se escribieron en ramas paralelas a K1 y
+// usaban 4 y 5 para formas sin los campos de K1; esos números no valen: regla
+// "VERSION de guardado entre ramas paralelas" de PLAN.md. K2a: `nivelJugador`
+// y `nivelCompaneros` en `career.temporada`, `fuerzaInicial` en `serie`, y
+// `formato`/`fuerzaInicial`/`fuerzaRival` en el log de cierre de cada serie —
+// lo que el motor usó, expuesto para el instrumento de `src/dev/simulate.js`.
+// K2b: `rendimientoBase` y `resultadosPropios` en `career.temporada` — el
+// rendimiento del split lo cuentan los partidos — y los compañeros de una liga
+// modelada con la forma del plantel vivo; el estado inicial ya trae esos dos
+// campos y `flags.sinergiaProyectadaAlFichar`).
+export const VERSION = 5;
 
 export function serializar(state, rng, rngUi) {
   return JSON.stringify({

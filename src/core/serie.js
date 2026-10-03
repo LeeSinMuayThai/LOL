@@ -1,8 +1,8 @@
 import { weightedPick } from './rng.js';
 import { campeonesEnMeta, deseoPorCampeon, factorDeCampeon } from './ajusteMeta.js';
 import { campeonesDisponibles, entradaDePool } from './pool.js';
-import { rendimientoBase, fuerzaDelEquipo } from './fuerza.js';
-import { probabilidadDeGanar } from './numeros.js';
+import { fuerzaDePartido } from './fuerza.js';
+import { probabilidadDePartido } from './partido.js';
 import { BALANCE } from '../data/balance.js';
 
 // La mecánica de la serie de playoffs (fase 4): Bo5 con Fearless draft, jugada
@@ -180,17 +180,18 @@ function ordenarPorFactor(campeones, weights) {
   );
 }
 
-// Cuánta probabilidad de ganar ESTE mapa te da un campeón: `rendimientoBase`
-// con ese campeón (determinista, sin el gauss de ruido) → `fuerzaDelEquipo` →
-// logística contra la fuerza del rival, con los mismos σ que `finalizarMapa`.
-function probabilidadConCampeon(state, campeon) {
-  const rb = rendimientoBase({ ...state, player: { ...state.player, campeonDelSplit: campeon.name } });
-  const fp = fuerzaDelEquipo(state, rb);
-  return probabilidadDeGanar(fp, state.serie.rival.fuerza, BALANCE.serie.ruidoMapa, BALANCE.serie.ruidoRivalSerie);
+// Cuánta probabilidad de ganar ESTE mapa te da un campeón. K2b: es EXACTAMENTE
+// la p contra la que `finalizarMapa` tira el mapa si lo elegís (sin minijuego):
+// la fuerza de partido con ese campeón (`fuerzaDePartido`, la misma, acotada)
+// contra la del rival, por `probabilidadDePartido` (regla 15).
+export function probabilidadConCampeon(state, campeon) {
+  const fp = fuerzaDePartido({ ...state, player: { ...state.player, campeonDelSplit: campeon.name } });
+  return probabilidadDePartido(state, fp, state.serie.rival.fuerza, 'mapa');
 }
 
 // P(mejor) − P(segundo). ≥ 0 siempre: más `factorDeCampeon` ⇒ más
-// `rendimientoBase` ⇒ más fuerza propia ⇒ más probabilidad.
+// `rendimientoBase` ⇒ más fuerza propia (o la misma, si los dos tocan el tope
+// de 100) ⇒ más probabilidad.
 function puntosEnJuegoDeMapa(state, mejor, segundo) {
   return probabilidadConCampeon(state, mejor) - probabilidadConCampeon(state, segundo);
 }

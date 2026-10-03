@@ -1,7 +1,7 @@
-import { gauss } from './rng.js';
-import { clamp, probabilidadDeGanar } from './numeros.js';
+import { clamp, clampStat } from './numeros.js';
 import { factorDeCampeon } from './ajusteMeta.js';
 import { ligaOZonaDeCarrera } from './competicion.js';
+import { jugarPartido, probabilidadDePartido } from './partido.js';
 import { BALANCE } from '../data/balance.js';
 
 // La temporada regular (fase 5): antes se resolvía con UNA tirada
@@ -23,14 +23,17 @@ import { BALANCE } from '../data/balance.js';
 // ajenos de cada jornada se resuelven EN PASO con los tuyos: la tabla siempre
 // tiene a todos con la misma cantidad de fechas jugadas.
 
-// Round-robin de una sola vuelta por el método del círculo. Con N equipos
-// (siempre par en las ligas y zonas del juego) da N-1 jornadas, cada equipo
-// contra cada otro exactamente una vez y sin fechas libres. Puro y
-// determinista: NO consume `rng` — el fixture no depende de cuándo se lo mira,
-// igual que el calendario que reemplaza. Devuelve el calendario del jugador
-// (misma forma de siempre: `{ jornada, rival, fuerzaRival, local }`) y, por
-// jornada, los cruces que NO lo involucran.
-export function generarFixture(liga, propiaNombre) {
+// Round-robin por el método del círculo, repetido `vueltas` veces (K2b:
+// `BALANCE.temporada.vueltas`; 1 = una sola vuelta, como hasta K2a). Con N
+// equipos (siempre par en las ligas y zonas del juego) cada vuelta da N-1
+// jornadas, cada equipo contra cada otro exactamente una vez y sin fechas
+// libres; la vuelta siguiente repite los mismos cruces en el mismo orden con
+// la localía invertida (ida y vuelta). Puro y determinista: NO consume `rng` —
+// el fixture no depende de cuándo se lo mira, igual que el calendario que
+// reemplaza. Devuelve el calendario del jugador (misma forma de siempre:
+// `{ jornada, rival, fuerzaRival, local }`, con `jornada` corrida entre
+// vueltas) y, por jornada, los cruces que NO lo involucran.
+export function generarFixture(liga, propiaNombre, vueltas = BALANCE.temporada.vueltas) {
   if (!liga || !Array.isArray(liga.orgs) || liga.orgs.length < 2) {
     return { calendario: [], cruces: [] };
   }
@@ -41,32 +44,38 @@ export function generarFixture(liga, propiaNombre) {
   const calendario = [];
   const cruces = [];
 
-  // Posiciones 0..n-1: la 0 queda fija y el resto rota una posición por
-  // jornada. En cada jornada se enfrentan pos[i] y pos[n-1-i]. Con n impar
-  // (no debería pasar) el último "equipo" es un hueco y ese rival tiene fecha
-  // libre esa jornada.
-  const pos = equipos.map((_, i) => i);
+  for (let vuelta = 0; vuelta < vueltas; vuelta += 1) {
+    // La vuelta par es la de ida; la impar invierte la localía de cada cruce.
+    const invertida = vuelta % 2 === 1;
+    // Posiciones 0..n-1: la 0 queda fija y el resto rota una posición por
+    // jornada. En cada jornada se enfrentan pos[i] y pos[n-1-i]. Con n impar
+    // (no debería pasar) el último "equipo" es un hueco y ese rival tiene
+    // fecha libre esa jornada. Cada vuelta arranca de la misma rotación.
+    const pos = equipos.map((_, i) => i);
 
-  for (let r = 0; r < n - 1; r += 1) {
-    const crucesJornada = [];
-    for (let i = 0; i < mitad; i += 1) {
-      const a = equipos[pos[i]];
-      const b = equipos[pos[n - 1 - i]];
-      if (!a || !b) {
-        continue;
+    for (let r = 0; r < n - 1; r += 1) {
+      const crucesJornada = [];
+      for (let i = 0; i < mitad; i += 1) {
+        const primero = equipos[pos[i]];
+        const segundo = equipos[pos[n - 1 - i]];
+        if (!primero || !segundo) {
+          continue;
+        }
+        const a = invertida ? segundo : primero;
+        const b = invertida ? primero : segundo;
+        if (a.nombre === propiaNombre || b.nombre === propiaNombre) {
+          const rival = a.nombre === propiaNombre ? b : a;
+          // `local` = sos vos el primero del par. No cambia ninguna fórmula
+          // (no hay ventaja de localía en la p del partido), solo le da un
+          // valor coherente al campo que el calendario ya traía.
+          calendario.push({ jornada: vuelta * (n - 1) + r + 1, rival: rival.nombre, fuerzaRival: rival.fuerza, local: a.nombre === propiaNombre });
+        } else {
+          crucesJornada.push({ local: a.nombre, visitante: b.nombre, fuerzaLocal: a.fuerza, fuerzaVisitante: b.fuerza });
+        }
       }
-      if (a.nombre === propiaNombre || b.nombre === propiaNombre) {
-        const rival = a.nombre === propiaNombre ? b : a;
-        // `local` = sos vos el primero del par. No cambia ninguna fórmula (no
-        // hay ventaja de localía en resolverFecha), solo le da un valor
-        // coherente al campo que el calendario ya traía.
-        calendario.push({ jornada: r + 1, rival: rival.nombre, fuerzaRival: rival.fuerza, local: a.nombre === propiaNombre });
-      } else {
-        crucesJornada.push({ local: a.nombre, visitante: b.nombre, fuerzaLocal: a.fuerza, fuerzaVisitante: b.fuerza });
-      }
+      cruces.push(crucesJornada);
+      pos.splice(1, 0, pos.pop());
     }
-    cruces.push(crucesJornada);
-    pos.splice(1, 0, pos.pop());
   }
 
   return { calendario, cruces };
@@ -76,16 +85,6 @@ export function generarFixture(liga, propiaNombre) {
 // de retorno que antes: `systems/temporada.js` y los checks no cambian.
 export function generarCalendario(state) {
   return generarFixture(ligaOZonaDeCarrera(state), state.career.currentOrg).calendario;
-}
-
-// Misma forma que `finalizarMapa` en `systems/serie.js`: cada lado tira
-// alrededor de su fuerza y gana el que saca el número más alto. No se
-// reescribe la fórmula de rendimiento: `fuerzaPropia` ya sale de
-// `calcularRendimiento` + `fuerzaDelEquipo`, calculada una sola vez por split
-// en `systems/temporada.js`.
-export function resolverFecha(fuerzaPropia, fuerzaRival, rng) {
-  const t = BALANCE.temporada;
-  return gauss(fuerzaPropia, t.ruidoFecha, rng) > gauss(fuerzaRival, t.ruidoRivalFecha, rng);
 }
 
 export function filaVacia(org) {
@@ -100,13 +99,13 @@ export function registrarEnFila(fila, gano) {
 
 // Los cruces ajenos de UNA jornada (los que no involucran al jugador),
 // resueltos una tirada cada uno. Se llama en paso con cada fecha del jugador,
-// así todas las filas de la tabla avanzan juntas. El total de tiradas sobre la
-// temporada es idéntico al del viejo `simularResto` ((N-1)(N-2)/2): lo único
-// que cambia es EN QUÉ ORDEN caen (deuda D38, familia D21).
+// así todas las filas de la tabla avanzan juntas (deuda D38, familia D21).
+// K2b: cada cruce es UNA tirada contra su p (`jugarPartido`, tipo `fecha`, sin
+// jugador: `state` = null), igual que tus fechas.
 export function aplicarCrucesDeJornada(registrosOtros, crucesJornada, rng) {
   let registros = registrosOtros;
   for (const cruce of crucesJornada) {
-    const ganaLocal = resolverFecha(cruce.fuerzaLocal, cruce.fuerzaVisitante, rng);
+    const ganaLocal = jugarPartido(null, cruce.fuerzaLocal, cruce.fuerzaVisitante, 'fecha', rng).gano;
     registros = {
       ...registros,
       [cruce.local]: registrarEnFila(registros[cruce.local], ganaLocal),
@@ -256,8 +255,8 @@ export function decisionDeDraftFecha(state) {
   }
 
   const campeonDelSplit = pool.find((c) => c.name === state.player.campeonDelSplit) ?? mejor;
-  const puntos = probabilidadDeFecha(t, fecha, campeonDelSplit, mejor, state.meta.weights)
-    - probabilidadDeFecha(t, fecha, campeonDelSplit, segundo, state.meta.weights);
+  const puntos = probabilidadDeFecha(state, fecha, campeonDelSplit, mejor)
+    - probabilidadDeFecha(state, fecha, campeonDelSplit, segundo);
 
   return puntos >= BALANCE.temporada.puntosEnJuegoParaPreguntar
     ? { pausa: true }
@@ -266,10 +265,19 @@ export function decisionDeDraftFecha(state) {
 
 // La probabilidad de ganar la fecha con `elegido`, construida igual que
 // `resolverFechaMarcada`: `t.fuerzaPropia` corrida por `factorDraftFecha`
-// (relativo al campeón del split) → logística con los σ de `resolverFecha`.
-function probabilidadDeFecha(t, fecha, campeonDelSplit, elegido, weights) {
-  const fuerzaFecha = t.fuerzaPropia * (1 + factorDraftFecha(elegido, campeonDelSplit, weights));
-  return probabilidadDeGanar(fuerzaFecha, fecha.fuerzaRival, BALANCE.temporada.ruidoFecha, BALANCE.temporada.ruidoRivalFecha);
+// (relativo al campeón del split) → la misma p con la que el motor tira la
+// fecha (`probabilidadDePartido`, regla 15).
+function probabilidadDeFecha(state, fecha, campeonDelSplit, elegido) {
+  const fuerzaFecha = fuerzaDeFecha(state.career.temporada.fuerzaPropia, elegido, campeonDelSplit, state.meta.weights, 0);
+  return probabilidadDePartido(state, fuerzaFecha, fecha.fuerzaRival, 'fecha');
+}
+
+// La fuerza con la que se juega UNA fecha: la del split (`t.fuerzaPropia`,
+// determinista) corrida por el campeón del draft corto (relativo al del split)
+// y por el momento de la fecha marcada. Una sola expresión para el motor y
+// para el draft.
+export function fuerzaDeFecha(fuerzaPropia, elegido, campeonDelSplit, weights, ajustePartido) {
+  return fuerzaPropia * (1 + factorDraftFecha(elegido, campeonDelSplit, weights) + ajustePartido);
 }
 
 // Cuánto mueve la fuerza de ESTA fecha el campeón elegido en el draft corto,
@@ -290,4 +298,32 @@ export function factorDraftFecha(elegido, base, weights) {
 export function factorDelMomento(resultadoTirado) {
   const t = BALANCE.temporada;
   return clamp(resultadoTirado, t.partidoMin, t.partidoMax);
+}
+
+// K2b: el rendimiento del split que leen las consecuencias (hype, jerarquía,
+// arraigo, el "Tu rendimiento: N/100" de `systems/rendimiento.js`) lo cuentan
+// TUS partidos de temporada regular, sin dado propio. `resultados` acumula,
+// por cada fecha que jugaste (las de baja por lesión no: el equipo jugó sin
+// vos), la p declarada y el resultado: `{ fechas, ganados, esperados, varianza }`
+// con `esperados = Σp` y `varianza = Σp(1−p)`. z = (ganados − esperados)/√varianza
+// es cuánto mejor o peor te fue de lo que tu fuerza prometía; el rendimiento es
+// el base (sin acotar) más `puntosPorDesvioDeResultados` × z, acotado a 0-100.
+// Sin fechas (o con todas las p en 0 o 1), z = 0 y queda el base. Pura.
+export function rendimientoDeLaTemporada(rendimientoBaseDelSplit, resultados) {
+  const desvio = Math.sqrt(resultados.varianza);
+  const z = desvio > 0 ? (resultados.ganados - resultados.esperados) / desvio : 0;
+  return clampStat(rendimientoBaseDelSplit + BALANCE.rendimiento.puntosPorDesvioDeResultados * z);
+}
+
+export function resultadosVacios() {
+  return { fechas: 0, ganados: 0, esperados: 0, varianza: 0 };
+}
+
+export function sumarResultado(resultados, { gano, p }) {
+  return {
+    fechas: resultados.fechas + 1,
+    ganados: resultados.ganados + (gano ? 1 : 0),
+    esperados: resultados.esperados + p,
+    varianza: resultados.varianza + p * (1 - p)
+  };
 }

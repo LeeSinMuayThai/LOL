@@ -12,5 +12,15 @@
 // mismo commit. Cada bloque de corrimiento de la FASE K (A, B, C) sube la
 // versión al mergearse. (La huella de 30 splits de `calcularHuella`, la de la
 // trampa T1, es otra y no se registra acá.)
-export const VERSION_JUEGO = 'K1';
-export const HUELLA_JUEGO = 797088273;
+//
+// Historia: K1 (797088273, la primera) · K2b (1414810287; bloque A, corrimiento declarado
+// — trampa T1, mergeado sobre K1): el partido pasa a ser una tirada contra la
+// p declarada, la fuerza deja de tirar un dado por split y los compañeros se
+// leen en vivo, y un traspaso fija la sinergia del plantel nuevo al firmar
+// (una tirada más por traspaso). Ninguna seed de K1 reproduce su carrera. (Los
+// números que K2b registró en su rama, 1112981938 y 901891910, eran de la
+// definición vieja de 40 × 30 splits sin puntaje: no valen acá. 901891910
+// sigue siendo la huella de `calcularHuella`, la de la trampa T1, del motor
+// mergeado: la revisión de K1 no toca el `rng`.)
+export const VERSION_JUEGO = 'K2b';
+export const HUELLA_JUEGO = 1414810287;
