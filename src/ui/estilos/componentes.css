@@ -362,6 +362,12 @@ h1::before {
   line-height: var(--lh-snug);
   overflow-wrap: anywhere;
 }
+/* Una tanda que arranca con líneas adjuntas no tiene narrativa arriba: sin el separador, que ahí sería un hueco. */
+.log-adjuntos:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
 @keyframes entrar-breaking {
   from { opacity: 0; transform: translateY(-8px); }
   to   { opacity: 1; transform: none; }
