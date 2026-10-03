@@ -12,6 +12,7 @@ import { bandaDeJerarquia, bandaDeArraigoFicha, nivelDelJugador } from '../core/
 import { orgsQueTeFicharian, ofertaPosible, esResidenteDe, nivelAlternativaAsiento, factorRenovacionEtario } from '../core/demanda.js';
 import { resolverMercadoMundial, cerrarAsientosCongelados, congelarAsientosOfrecibles } from '../core/mercadoMundial.js';
 import { jerarquiaAlFichar, sinergiaAlFichar, conPlantillaDelPlantel } from './roster.js';
+import { conPlantelesDe } from '../core/plantel.js';
 import { companerosDelPlantel } from '../core/fuerza.js';
 import { BALANCE } from '../data/balance.js';
 import { ajusteBaseDeMinijuego } from '../core/serie.js';
@@ -322,6 +323,8 @@ function generarOfertas(state, rng) {
     // K5-C: solo las orgs con plantel (las mismas que escanea `orgsQueTeFicharian`). Un import cedido a la liga de
     // desarrollo de su club (KR en NACL, `resolverBanquillo`) cae en una liga sin planteles, y ahí `ofertaPosible`
     // reventaba en `noResidentesTrasFichar` (medido en HEAD c8a220d: seed 23 con el nivel roto, bot `malas`).
+    // Revisión de K5: desde que `resolverBanquillo` puebla esa liga (`conPlantelesDe`) el filtro ya no deja la
+    // liga vacía en una carrera nueva; queda por los guardados que cayeron ahí antes.
     const candidatas = ligaActual.orgs
       .filter((org) => org.nombre !== state.career.currentOrg && state.mundo.planteles?.[org.nombre])
       .sort((a, b) => a.fuerza - b.fuerza);
@@ -1006,9 +1009,16 @@ function resolverBanquillo(state, logsPrevios, rng) {
     };
   }
 
+  // Revisión de K5: la academia de un club EXTRANJERO (un import en la LCP te sienta y te cede a LCP Challengers) es
+  // una tier 2 que no es la de tu región, y esas no tienen planteles (`ligasConPlantel`). Sin planteles el mercado no
+  // la ve: ni `orgsQueTeFicharian` ni el piso de franquicia (que solo prueba orgs con plantel) encuentran a nadie, y
+  // al vencer el contrato una franquicia de esa liga se quedaba con "Nadie te llama" — medido: seed 1088, split 54,
+  // 59,7 de nivel en LCP Challengers (prestigio 38), ninguna de sus 10 orgs con plantel. Igual que el descenso, la
+  // liga de destino se puebla al vuelo (sin tirada si ya tenía).
   const { dev, org: orgDestino } = academia;
-  const oferta = construirOferta(state, dev, orgDestino, null, rng);
-  const firmado = aceptarOferta(state, { ...oferta, id: oferta.org }, rng, { motivoFila: 'banquillo' });
+  const conAcademia = { ...state, mundo: { ...state.mundo, planteles: conPlantelesDe(state, dev, rng) } };
+  const oferta = construirOferta(conAcademia, dev, orgDestino, null, rng);
+  const firmado = aceptarOferta(conAcademia, { ...oferta, id: oferta.org }, rng, { motivoFila: 'banquillo' });
   return {
     state: { ...firmado.state, flags: { ...firmado.state.flags, banquilloPendiente: false } },
     logs: [

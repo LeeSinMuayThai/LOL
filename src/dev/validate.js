@@ -1224,6 +1224,10 @@ checkLento('El mercado lee tu nivel: el silencio es para los que están por deba
   // y 10,48 al cerrar el split; seed 510 split 12, NACL, 8,78 → 11,16) eran jugadores que el mercado vio por DEBAJO de
   // la brecha de franquicia (`BALANCE.mercado.brechaFranquicia`). No era un bug del motor: el check medía en otro
   // momento que el mercado. Medido con el espía: 0 silencios por encima de la brecha en las 1500.
+  // Revisión de K5: el único silencio que volvió (seed 1088, split 54: 59,7 de nivel en LCP Challengers, prestigio
+  // 38, contrato vencido, Vórtice Circuit no renueva) SÍ era del motor: el banquillo de un club extranjero te cedía a
+  // una tier 2 sin planteles y el mercado no veía ninguna de sus orgs (ni el piso de franquicia). Se arregló en
+  // `resolverBanquillo` (puebla la liga con `conPlantelesDe`, como el descenso); el tope 0 no se tocó.
   const brechaFranquicia = BALANCE.mercado.brechaFranquicia;
   conEspiaDeSistemaK2a('mercado', (entrada, resultado) => {
     if (entrada.phase !== 'profesional' || !entrada.career.liga) {
