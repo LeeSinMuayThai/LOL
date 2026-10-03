@@ -14,10 +14,15 @@ export function revertirHaciaBase(valor, base, r) {
   return valor + r * (base - valor);
 }
 
-// K3-A.2: la mentalidad del split, un paso hacia `mentalidadBase`.
+// K3-A.2: la mentalidad del split, un paso hacia `mentalidadBase`. Asimétrica
+// (PLAN.md K3c, "Lo que rompen los valores elegidos", punto 1): por encima de la
+// base baja con `mentalidadRetornoBase`; por debajo sube con
+// `mentalidadRetornoBaseSubida`, más lento o nada. Una mentalidad hundida no se
+// levanta gratis: se sube descansando (topeado) o decidiendo.
 export function mentalidadHaciaSuBase(mentalidad) {
   const a = BALANCE.atributos;
-  return clampStat(revertirHaciaBase(mentalidad, a.mentalidadBase, a.mentalidadRetornoBase));
+  const r = mentalidad > a.mentalidadBase ? a.mentalidadRetornoBase : a.mentalidadRetornoBaseSubida;
+  return clampStat(revertirHaciaBase(mentalidad, a.mentalidadBase, r));
 }
 
 // K3-A.3: el ÚNICO camino por el que el descanso sube la mentalidad. La

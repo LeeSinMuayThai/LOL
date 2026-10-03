@@ -431,6 +431,12 @@ export const BALANCE = {
     // esta constante: la mediana pro que pide la meta de K3.
     mentalidadBase: 60,
     mentalidadRetornoBase: 0,
+    // K3c (PLAN.md "Lo que rompen los valores elegidos", punto 1): la vuelta es
+    // asimétrica. `mentalidadRetornoBase` baja una mentalidad que está por
+    // ENCIMA de la base; esta la sube desde ABAJO (más lento o nada), para que
+    // la vuelta no perdone gratis las malas decisiones ni borre el burnout.
+    // Igual a la bajada = la vuelta simétrica de antes.
+    mentalidadRetornoBaseSubida: 0,
     // Toda recuperación de mentalidad por descanso (el sueño por encima del
     // confortable en `atributos.js`, el "descansar" del receso en
     // `practica.js`) llega hasta acá y no más; si ya estabas arriba, descansar

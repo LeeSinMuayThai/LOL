@@ -13982,12 +13982,13 @@ check('K3-A descanso: con un topeDescanso bajo (en memoria) ningún camino de de
     return { sueno, receso, arriba };
   };
   // Sin tope (el de hoy), los dos caminos pasan el tope de la sonda: la sonda ve algo.
-  const SIN_RETORNO = ['atributos', 'mentalidadRetornoBase', 0]; // fija r = 0: el retorno a la base no debe levantar el sueño sobre el tope
-  const libre = conBalanceK3A([SIN_RETORNO], correr);
+  // Fija r = 0 en las dos ramas (bajada y subida): el retorno a la base no debe levantar el sueño sobre el tope.
+  const SIN_RETORNO = [['atributos', 'mentalidadRetornoBase', 0], ['atributos', 'mentalidadRetornoBaseSubida', 0]];
+  const libre = conBalanceK3A(SIN_RETORNO, correr);
   if (!libre.sueno.some((m) => m > TOPE) || !libre.receso.some((m) => m > TOPE)) {
     throw new Error(`sonda vacía: sin tope ningún descanso pasa ${TOPE} (sueño máx ${Math.max(...libre.sueno)}, receso máx ${Math.max(...libre.receso)})`);
   }
-  const topeado = conBalanceK3A([SIN_RETORNO, ['atributos', 'topeDescanso', TOPE]], correr);
+  const topeado = conBalanceK3A([...SIN_RETORNO, ['atributos', 'topeDescanso', TOPE]], correr);
   const pasados = [
     ...topeado.sueno.map((m, i) => [`sueño ${i}`, m]),
     ...topeado.receso.map((m, i) => [`receso ${i}`, m])
@@ -14008,7 +14009,9 @@ check('K3-A vuelta a la base: con r y rH > 0 (en memoria) un paso de atributos l
   const R = 0.5;
   const a = BALANCE.atributos;
   const r = BALANCE.rendimiento;
-  conBalanceK3A([['atributos', 'mentalidadRetornoBase', R]], () => {
+  // La vuelta simétrica (bajada = subida = R); la asimétrica la prueba el check que sigue.
+  const retornoM = (valor) => [['atributos', 'mentalidadRetornoBase', valor], ['atributos', 'mentalidadRetornoBaseSubida', valor]];
+  conBalanceK3A(retornoM(R), () => {
     for (const m of [0, 20, a.mentalidadBase, 90, 100]) {
       const dado = barrasK3A.mentalidadHaciaSuBase(m);
       if (dado !== m + R * (a.mentalidadBase - m)) throw new Error(`mentalidadHaciaSuBase(${m}) = ${dado}`);
@@ -14021,8 +14024,8 @@ check('K3-A vuelta a la base: con r y rH > 0 (en memoria) un paso de atributos l
   let comparadasH = 0;
   pro.forEach((base, i) => {
     const st = conBarrasK3A(base, { player: { sleep: a.suenoConfortable, deudaSueno: 0 }, stats: { mentalidad: 50, hype: 50 } });
-    const m0 = conBalanceK3A([['atributos', 'mentalidadRetornoBase', 0]], () => atributos.aplicar(st, mulberry32(9700 + i)).state.player.stats.mentalidad);
-    const m1 = conBalanceK3A([['atributos', 'mentalidadRetornoBase', R]], () => atributos.aplicar(st, mulberry32(9700 + i)).state.player.stats.mentalidad);
+    const m0 = conBalanceK3A(retornoM(0), () => atributos.aplicar(st, mulberry32(9700 + i)).state.player.stats.mentalidad);
+    const m1 = conBalanceK3A(retornoM(R), () => atributos.aplicar(st, mulberry32(9700 + i)).state.player.stats.mentalidad);
     // Lejos del piso de caída neta (50 − maxCaida) y de los bordes, el paso es exacto.
     if (m0 > 50 - a.maxCaidaMentalPorSplit + 1 && m0 < BALANCE.stats.max) {
       comparadasM += 1;
@@ -14057,6 +14060,48 @@ check('K3-A vuelta a la base: con r y rH > 0 (en memoria) un paso de atributos l
   if (Math.abs(con - sin - r.hypeVisibilidadPorInternacional) > 1e-12 || viejo !== sin) {
     throw new Error(`visibilidad: sin internacional ${sin}, con uno reciente ${con}, con uno viejo ${viejo}`);
   }
+});
+
+check('K3c vuelta asimétrica: con bajada 0,3 y subida 0 (en memoria) una mentalidad sobre la base va hacia ella y una debajo no se mueve — en el helper y en un paso de atributos', () => {
+  // PLAN.md K3c, "Lo que rompen los valores elegidos", punto 1: la vuelta simétrica subía gratis una mentalidad
+  // hundida (perdonaba las malas decisiones y borraba el burnout). Desde abajo se sube descansando o decidiendo.
+  const BAJADA = 0.3;
+  const a = BALANCE.atributos;
+  const asimetrica = [['atributos', 'mentalidadRetornoBase', BAJADA], ['atributos', 'mentalidadRetornoBaseSubida', 0]];
+  const sinRetorno = [['atributos', 'mentalidadRetornoBase', 0], ['atributos', 'mentalidadRetornoBaseSubida', 0]];
+  conBalanceK3A(asimetrica, () => {
+    for (const m of [a.mentalidadBase + 1, 75, 90, BALANCE.stats.max]) {
+      const dado = barrasK3A.mentalidadHaciaSuBase(m);
+      if (dado !== m + BAJADA * (a.mentalidadBase - m)) throw new Error(`sobre la base: mentalidadHaciaSuBase(${m}) = ${dado}, se esperaba ${m + BAJADA * (a.mentalidadBase - m)}`);
+    }
+    for (const m of [0, 20, 45, a.mentalidadBase - 1, a.mentalidadBase]) {
+      const dado = barrasK3A.mentalidadHaciaSuBase(m);
+      if (dado !== m) throw new Error(`debajo de la base (o en ella) la subida 0 la movió: mentalidadHaciaSuBase(${m}) = ${dado}`);
+    }
+  });
+  const { pro } = estadosDeCarreraK3A();
+  const atributos = sistemaPorId('atributos');
+  let arriba = 0;
+  let abajo = 0;
+  pro.forEach((base, i) => {
+    for (const inicial of [85, 35]) {
+      const st = conBarrasK3A(base, { player: { sleep: a.suenoConfortable, deudaSueno: 0 }, stats: { mentalidad: inicial } });
+      const m0 = conBalanceK3A(sinRetorno, () => atributos.aplicar(st, mulberry32(9900 + i)).state.player.stats.mentalidad);
+      const m1 = conBalanceK3A(asimetrica, () => atributos.aplicar(st, mulberry32(9900 + i)).state.player.stats.mentalidad);
+      if (m0 > a.mentalidadBase) {
+        const esperado = m0 + BAJADA * (a.mentalidadBase - m0);
+        // Lejos del piso de caída neta, el paso es exacto.
+        if (esperado > inicial - a.maxCaidaMentalPorSplit + 1) {
+          arriba += 1;
+          if (Math.abs(m1 - esperado) > 1e-9) throw new Error(`estado ${i} (desde ${inicial}): sin retorno ${m0}, asimétrica ${m1}; la bajada da ${esperado}`);
+        }
+      } else if (m0 < a.mentalidadBase) {
+        abajo += 1;
+        if (m1 !== m0) throw new Error(`estado ${i} (desde ${inicial}): debajo de la base, sin retorno ${m0} y asimétrica ${m1}: la subida 0 la movió`);
+      }
+    }
+  });
+  if (arriba < 3 || abajo < 3) throw new Error(`check vacío: ${arriba} pasos sobre la base y ${abajo} debajo comparados`);
 });
 
 // ============================================================================
