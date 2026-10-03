@@ -6090,6 +6090,12 @@ Va en dos piezas paralelas, cada una en su worktree.
   2. **Qué se vuelve permanente.** Una fracción `fraccionPermanente` de cada efecto de evento o decisión sobre un
      stat de curva va a `bonusPermanente`. Es una regla global, sin marcar contenido a mano. Arranca en 0 (neutro)
      y K3c la fija para que un efecto conserve ≥ 40% a 4 splits.
+  2b. *(2026-10-03, después de K3-B)* **La práctica y las rutinas también dejan marca.** El bootcamp del ejemplo
+     vive en las rutinas de offseason (`data/rutinas/`) y el entrenamiento semanal en `systems/practica.js`, no en
+     los eventos. Las dos son decisiones del jugador, y son el corazón de "tus decisiones construyen tu nivel".
+     Llevan su propia fracción, `fraccionPermanentePractica`, que arranca en 0 (neutra), porque su volumen es muy
+     distinto al de un evento. K3c calibra las dos fracciones. La marca de práctica tiene como origen el nombre
+     visible de la rutina o del foco de entrenamiento, y en la ficha se agrupa por año.
   3. **Cada marca queda en el registro.** Va a `registro.marcas`, que solo crece (regla 14), como
      `{ stat, delta, origen, anio }`. `origen` es el nombre visible del evento o de la decisión.
   4. **La ficha.** Muestra "Lo que construiste" (▲ +3 mecánica — bootcamp 2028), solo con las marcas cuyo bonus
