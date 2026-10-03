@@ -1240,11 +1240,12 @@ function resolverPrueba(state, decision, respuesta, rng) {
 // (`negociacionesRotas`): `cerrarAsientosCongelados` lo cierra con nombre cuando firmes otra o esperes. Si era la
 // última, se sigue por el camino de siempre de "no queda nada que firmar" (`resolverEspera`): el contrato no se toca.
 function caeLaOfertaPorLaPrueba(state, decision, rng) {
-  const { oferta, otras, carry } = decision.datos;
+  // Un guardado hecho antes de K4c-S con la prueba pendiente no trae `otras` ni `carry`: se cae la oferta y no queda otra.
+  const { oferta, otras = [], carry = {} } = decision.datos;
   const siguiente = construirDecisionOfertas(state, otras, {
-    negociacionesRotas: [...carry.negociacionesRotas, { org: oferta.org, rol: state.player.role }],
-    clubesInteresados: carry.clubesInteresados,
-    asientosAbiertos: carry.asientosAbiertos
+    negociacionesRotas: [...(carry.negociacionesRotas ?? []), { org: oferta.org, rol: state.player.role }],
+    clubesInteresados: carry.clubesInteresados ?? [],
+    asientosAbiertos: carry.asientosAbiertos ?? []
   });
   const aviso = `La prueba en ${oferta.org} no alcanza: se cae la oferta.`;
   if (otras.length === 0) {
