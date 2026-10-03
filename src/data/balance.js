@@ -91,6 +91,12 @@ export const BALANCE = {
     // el cooldown fijo del propio evento.
     fatigaPorVista: 0.8,
     bonusNovedad: 2.5,
+    // J4 (aplicado en K4-C): la bisagra deja de ser filtro y pasa a ser un multiplicador del peso — sigue ganando
+    // casi siempre, pero con tirada. Y la categoría reciente cuenta: un evento de una categoría que salió en los
+    // últimos `categoriasRecientesMax` eventos compite con su peso × `factorCategoriaReciente`.
+    factorBisagra: 6,
+    factorCategoriaReciente: 0.3,
+    categoriasRecientesMax: 2,
     // Fase 9Ra: el cooldown de un evento se cuenta en SPLITS, no en "próximos N
     // eventos resueltos". Este es el piso para los 8 eventos que declaran
     // `cooldown: 0` o lo omiten — sin él podían repetir en el mismo split.
@@ -127,6 +133,15 @@ export const BALANCE = {
 
   // Valores de arranque del jugador. Son las bases sobre las que el mundo
   // generado (paso siguiente del roadmap) aplica su dispersion.
+  // K4-C: el perfil que resuelve los eventos que no son bifurcación (`core/perfil.js`, tabla en
+  // `data/perfiles.json`). `pesoMagnitud` traduce la magnitud cualitativa de la previa a un número para el
+  // encaje; `derivaPorBifurcacion` es α en `pesos ← (1 − α)·pesos + α·[afinidad de la opción tomada]`: con 0,2
+  // hacen falta 4 bifurcaciones seguidas hacia otro perfil para que cambie la palabra de la ficha.
+  perfil: {
+    pesoInicialElegido: 1,
+    derivaPorBifurcacion: 0.2,
+    pesoMagnitud: { baja: 1, media: 2, alta: 3 }
+  },
   inicial: {
     stats: {
       mecanica: 55,
@@ -593,6 +608,9 @@ export const BALANCE = {
     // Fase 9Md: cuántos splits después de un descenso de tier 1 sigue prendida
     // la marca `descenso`.
     ventanaDescenso: 4,
+    // J4 (aplicado en K4-C): `main_muerto` es una TRANSICIÓN — se prende cuando tu main cae de S/A a B/C de un
+    // parche al otro (`systems/meta.js` estampa `flags.splitMainMuerto`) y dura estos splits mientras siga caído.
+    ventanaMainMuerto: 2,
     // Fase 10a (D30): cuántos puntos de NIVEL por debajo de tu propio pico
     // cuentan como declive biológico real (una de las tres puertas de
     // `etapa: 'declive'`, junto con estar libre o banqueado).
@@ -1544,6 +1562,9 @@ export const BALANCE = {
       maestriaRivalTope: 80,
       caidaMaestriaRivalPorMapa: 8
     },
+    // K4-C: después de qué rondas sale la rueda de prensa (`post_serie`). La otra mitad —tras un escándalo— la
+    // pone `systems/events.js` (`escandalo: true` en el dato).
+    rondasConPrensa: ['final'],
     // Fase 9R4a: cuanto mueve cada minijuego (`impacto`) y con cuanta
     // dispersion lo simula el camino headless (`spread`) ya NO viven aca: cada
     // entrada de `data/minijuegos.json` trae los suyos. Es el cierre de D20

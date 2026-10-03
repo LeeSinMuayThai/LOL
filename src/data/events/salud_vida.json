@@ -63,6 +63,7 @@
   },
   {
     "id": "tendinitis",
+    "bifurcacion": true,
     "category": "salud_vida",
     "categoria": "salud",
     "title": "La muñeca",
@@ -128,6 +129,7 @@
   },
   {
     "id": "burnout",
+    "bifurcacion": true,
     "category": "salud_vida",
     "categoria": "salud",
     "title": "Se te hizo trabajo",
@@ -256,6 +258,7 @@
   },
   {
     "id": "tunel_carpiano",
+    "bifurcacion": true,
     "category": "salud_vida",
     "categoria": "salud",
     "title": "El antebrazo",
@@ -321,6 +324,7 @@
   },
   {
     "id": "hombro_cronico",
+    "bifurcacion": true,
     "category": "salud_vida",
     "categoria": "salud",
     "title": "Años de postura, todos juntos",
@@ -516,6 +520,7 @@
   },
   {
     "id": "el_pico_de_ansiedad",
+    "bifurcacion": true,
     "category": "salud_vida",
     "categoria": "salud",
     "title": "El pecho apretado antes de salir",
@@ -783,6 +788,7 @@
   },
   {
     "id": "el_rookie_que_te_ocupo_el_asiento",
+    "bifurcacion": true,
     "category": "salud_vida",
     "categoria": "vestuario",
     "title": "El rookie que te ocupó el asiento",

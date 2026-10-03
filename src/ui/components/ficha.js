@@ -368,6 +368,15 @@ export function renderFicha(container, state, modulos) {
     ? modulos.describirContexto(state.contexto)
     : (FASE_LABEL[state.phase] ?? state.phase);
 
+  // K4-C: tu perfil en una palabra (el que hoy resuelve lo chico; las bifurcaciones lo van corriendo).
+  if (state.player.perfil) {
+    const perfil = document.createElement('span');
+    perfil.className = 'ficha-perfil';
+    perfil.textContent = modulos.nombreDePerfil?.(state.player.perfil.actual) ?? '';
+    perfil.title = 'Tu perfil: decide por vos los eventos que no son bifurcación';
+    nombreLinea.appendChild(perfil);
+  }
+
   identidad.append(nombreLinea, contextoLinea, estadoLinea);
   encabezado.append(nivelBox, identidad);
   container.appendChild(encabezado);

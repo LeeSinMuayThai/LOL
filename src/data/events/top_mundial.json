@@ -74,6 +74,7 @@
     "options": [
       {
         "id": "tirarle_la_soga",
+        "perfil": "leal",
         "label": "Darle un par de consejos",
         "descripcion": "Le hablás después del scrim, le marcás dos cosas de su lane. No te cuesta nada y algún día jugás en el mismo lado.",
         "weight": 5,

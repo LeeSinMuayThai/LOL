@@ -63,6 +63,7 @@
   },
   {
     "id": "streaming_paralelo",
+    "bifurcacion": true,
     "category": "negocios",
     "categoria": "mercado",
     "title": "El streaming te deja más que el sueldo base",
@@ -378,6 +379,7 @@
   },
   {
     "id": "el_sponsor_de_cripto",
+    "bifurcacion": true,
     "category": "negocios",
     "categoria": "mercado",
     "title": "Una plataforma de cripto te ofrece una fortuna",

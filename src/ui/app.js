@@ -32,6 +32,9 @@ export function iniciar() {
   const rolGrid = document.getElementById('rolGrid');
   const campeonGrid = document.getElementById('campeonGrid');
   const draftSlots = document.getElementById('draftSlots');
+  // K4-C: el perfil se elige en el inicio (un control compacto, `screens/inicio.js`).
+  const perfilGrid = document.getElementById('perfilGrid');
+  const perfilTexto = document.getElementById('perfilTexto');
   const poolContador = document.getElementById('poolContador');
   const continuarDetalle = document.getElementById('continuarDetalle');
 
@@ -134,7 +137,7 @@ export function iniciar() {
       const [
         { mulberry32 }, { createInitialState }, pipeline, { BALANCE },
         rolesModulo, ranked, { describirContexto }, formato, campeonesModulo, render,
-        reproductorModulo, sonidoModulo, almacenamientoModulo
+        reproductorModulo, sonidoModulo, almacenamientoModulo, perfilModulo
       ] = await Promise.all([
         import('../core/rng.js'),
         import('../core/state.js'),
@@ -148,14 +151,17 @@ export function iniciar() {
         import('./render.js'),
         import('./reproductor.js'),
         import('./sonido.js'),
-        import('./almacenamiento.js')
+        import('./almacenamiento.js'),
+        import('../core/perfil.js')
       ]);
       modulos = {
         mulberry32, createInitialState, pipeline, BALANCE, formato,
         etiquetaRol: rolesModulo.etiquetaRol, ROLES: rolesModulo.ROLES,
         atributosClave: rolesModulo.atributosClave, IDS_ROL: rolesModulo.IDS_ROL,
         ranked, describirContexto,
-        CAMPEONES: campeonesModulo.default
+        CAMPEONES: campeonesModulo.default,
+        IDS_PERFIL: perfilModulo.IDS_PERFIL, nombreDePerfil: perfilModulo.nombreDePerfil,
+        descripcionDePerfil: perfilModulo.descripcionDePerfil
       };
       ui = render;
       reproductor = reproductorModulo;
@@ -559,8 +565,8 @@ export function iniciar() {
         // La elección de la pantalla de inicio entra como tercer argumento.
         // Si el jugador no eligió nada (camino headless), `createInitialState`
         // sortea todo de la seed exactamente como antes.
-        const { rol, campeones } = pantallaInicio.getSeleccion();
-        eleccion = { handle: handleInput.value, rol, campeones };
+        const { rol, campeones, perfil } = pantallaInicio.getSeleccion();
+        eleccion = { handle: handleInput.value, rol, campeones, perfil };
       }
       rng = mulberry32(seed);
       rngUi = mulberry32((seed ^ 0x9E3779B9) >>> 0);
@@ -698,7 +704,7 @@ export function iniciar() {
     try {
       await cargarModulos();
       pantallaInicio = ui.crearPantallaInicio(
-        { rolGrid, campeonGrid, poolContador, runButton, draftSlots },
+        { rolGrid, campeonGrid, poolContador, runButton, draftSlots, perfilGrid, perfilTexto },
         modulos
       );
       pantallaInicio.render();

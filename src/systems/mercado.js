@@ -1,4 +1,5 @@
-import { chance, weightedPick, roll } from '../core/rng.js';
+import { chance, weightedPick, roll, gauss } from '../core/rng.js';
+import { elegirMinijuego, textoDeMinijuego, registrarMinijuegoVisto, minijuegoPorId, saltosDeFichaje } from '../core/minijuegos.js';
 import { clamp, clampStat } from '../core/numeros.js';
 import { crearLog } from '../core/log.js';
 import { plata } from '../core/formato.js';
@@ -900,7 +901,9 @@ function negociarClausula(ofertas, idx) {
 
 // K4-D: la respuesta trae la oferta (o el "esperar", o el "quedarme") y la rutina elegida (`rutinaId`). Mientras se
 // negocia, la decisión se re-presenta y la preparación viaja con ella, recordando la carta elegida; al cerrar, se
-// resuelve el mercado y después la rutina, en la misma resolución.
+// resuelve el mercado y después la rutina, en la misma resolución. K4 (integración): si la oferta elegida es un salto
+// grande, `resolverMercado` devuelve la prueba (K4-C) como la decisión re-presentada —con la preparación y la carta
+// elegida en sus datos—, y al contestar la prueba se firma y se resuelve la rutina: una pantalla más, no otra parada.
 export function resolver(state, decision, respuesta, rng) {
   const resultado = resolverMercado(state, decision, respuesta, rng);
   const preparacion = decision.datos.preparacion;
@@ -924,7 +927,63 @@ export function resolver(state, decision, respuesta, rng) {
   return { state: preparada.state, logs: [...resultado.logs, ...preparada.logs] };
 }
 
+// K4-C: la prueba del salto grande (tier 2, tier 1, import). Frena ANTES de firmar con el minijuego `tryout`
+// (el mismo de la prueba amateur); el resultado corre cuánto crédito llevás de entrada, igual que en amateur
+// (`flags.bonusJerarquiaTryout`, lo cobra `roster.js`). `null` si el catálogo no tiene minijuego de tryout.
+function pausaDePrueba(state, oferta, saltos, ofrecidas) {
+  const entrada = elegirMinijuego(state, 'tryout');
+  if (!entrada) {
+    return null;
+  }
+  const textos = textoDeMinijuego(entrada, state);
+  return {
+    state: { ...state, flags: { ...state.flags, minijuegosRecientes: registrarMinijuegoVisto(state, entrada.id) } },
+    logs: [],
+    decision: {
+      tipo: 'opciones',
+      presentacion: 'minijuego',
+      titulo: textos.titulo,
+      descripcion: textos.descripcion,
+      opciones: [],
+      datos: {
+        motivo: 'minijuego',
+        minijuego: entrada.id,
+        momento: 'tryout',
+        statRelevante: entrada.statRelevante,
+        apuesta: textos.apuesta,
+        oferta,
+        saltos,
+        ofrecidas
+      }
+    }
+  };
+}
+
+function resolverPrueba(state, decision, respuesta, rng) {
+  const { oferta, saltos, ofrecidas } = decision.datos;
+  const resultado = clamp(respuesta.resultado ?? 0.5, 0, 1);
+  const bonus = Math.round((resultado - 0.5) * 2 * minijuegoPorId(decision.datos.minijuego).impacto);
+  const conBonus = {
+    ...state,
+    flags: {
+      ...state.flags,
+      bonusJerarquiaTryout: bonus,
+      saltosConPrueba: [...(state.flags.saltosConPrueba ?? []), ...saltos]
+    }
+  };
+  const firmado = aceptarOferta(conBonus, oferta, rng);
+  const cerrado = cerrarAsientosCongelados(firmado.state, oferta.org, rng, ofrecidas);
+  const veredicto = crearLog('mercado', bonus >= 0
+    ? `La prueba en ${oferta.org} te sale bien: llegás con algo de crédito ganado de entrada.`
+    : `La prueba en ${oferta.org} es floja: firmás igual, pero sin nada ganado de entrada.`);
+  return { state: cerrado.state, logs: [veredicto, ...firmado.logs, ...cerrado.logs] };
+}
+
 function resolverMercado(state, decision, respuesta, rng) {
+  if (decision.datos.motivo === 'minijuego') {
+    return resolverPrueba(state, decision, respuesta, rng);
+  }
+
   // Fase 9Mf: traspaso a mitad de contrato — quedarse / aceptar / pedir salir.
   // No se re-presenta: se resuelve de una.
   if (decision.datos.motivo === 'traspaso') {
@@ -1001,6 +1060,14 @@ function resolverMercado(state, decision, respuesta, rng) {
 
   // Firmar.
   const elegida = decision.opciones.find((opcion) => opcion.id === respuesta.opcionId);
+  // K4-C: si este fichaje estrena un salto grande (tier 2, tier 1, import), antes va la prueba.
+  const saltos = saltosDeFichaje(state, elegida);
+  if (saltos.length > 0) {
+    const pausa = pausaDePrueba(state, elegida, saltos, orgsOfrecidasDe(decision));
+    if (pausa) {
+      return pausa;
+    }
+  }
   const firmado = aceptarOferta(state, elegida, rng);
   // Fase 9Mc: firmaste — los demás asientos que te habían ofrecido se cierran
   // con un NPC, y el log lo dice con nombre ("el mundo siguió sin vos"). Sólo
@@ -1011,6 +1078,14 @@ function resolverMercado(state, decision, respuesta, rng) {
 }
 
 export function resolverAuto(state, decision, rng) {
+  // K4-C: la prueba del salto. Va antes que la rutina: la carta ya se eligió con la oferta y viaja en los datos de la
+  // prueba, así que el bot no la vuelve a sortear.
+  if (decision.datos.motivo === 'minijuego') {
+    // Regla 5 de 4.6: Node simula el minijuego con gauss corrido por el stat relevante.
+    const entrada = minijuegoPorId(decision.datos.minijuego);
+    const valor = state.player.stats[decision.datos.statRelevante] ?? 50;
+    return { resultado: clamp(gauss(valor / 100, entrada.spread, rng), 0, 1) };
+  }
   const respuesta = resolverAutoMercado(state, decision, rng);
   const preparacion = decision.datos.preparacion;
   return preparacion

@@ -2027,3 +2027,31 @@ details.tarjeta-internacionales > summary { cursor: pointer; font-size: var(--fs
 .preparacion-chip--sube { border-color: var(--up); color: var(--up); }
 .preparacion-card-dura { font-size: var(--fs-1); color: var(--ink-mute); }
 .preparacion-card-dura--si { color: var(--gold); font-weight: 600; }
+
+/* --- K4-C: el perfil en el inicio — cuatro chips, dos por fila en 375 px --- */
+.perfil-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s-2);
+}
+@media (max-width: 480px) {
+  .perfil-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.perfil-chip {
+  min-height: 44px;
+  padding: var(--s-2) var(--s-3);
+  background: var(--bg-raised);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-1);
+}
+.perfil-chip.elegido {
+  border-color: var(--live);
+  color: var(--live);
+}
+.perfil-texto {
+  margin-top: var(--s-2);
+  font-size: var(--fs-1);
+  color: var(--ink-dim);
+}

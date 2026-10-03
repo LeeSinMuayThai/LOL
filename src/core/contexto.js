@@ -309,7 +309,13 @@ function marcasDePool(state) {
   // sobre TU main, que es lo único que se siente como una pérdida.
   if (pool.length > 0) {
     const principal = pool.reduce((mejor, campeon) => (campeon.mastery > mejor.mastery ? campeon : mejor));
-    if (campeonesMuertos([principal], state.meta.tierList).length > 0) {
+    // J4 (K4-C): una TRANSICIÓN, no un estado. Se prende cuando el main cae de S/A a B/C (`systems/meta.js`
+    // estampa `flags.splitMainMuerto` en ese parche) y dura `ventanaMainMuerto` splits mientras siga caído — antes
+    // valía todo el tiempo que estuviera en B/C y estaba activa en la mitad de los splits.
+    const desde = state.flags.splitMainMuerto;
+    if (desde != null
+      && state.player.splitCount - desde < BALANCE.contexto.ventanaMainMuerto
+      && campeonesMuertos([principal], state.meta.tierList).length > 0) {
       marcas.push('main_muerto');
     }
   }

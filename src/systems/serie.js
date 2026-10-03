@@ -508,10 +508,15 @@ function concluirRonda(state, rng, logsAcum) {
     logs.push(crearLog('serie', `Ganaste la serie ${marcador[0]}-${marcador[1]} contra ${state.serie.rival.org}. Avanzás de ronda.`, datosPost));
   }
 
-  // K4-B ("minijuegos solo en el clímax"): la serie ya no frena con la rueda de prensa de después de la final ni del
-  // internacional (antes, ~5 por carrera de `criterio`): el único minijuego de serie es el del mapa decisivo. La
-  // rueda de prensa "solo tras una final o un escándalo" es de K4-C; si vuelve acá, entra por `pausaDeMinijuego(st,
-  // 'post_serie', ...)` y `resolver` ya la sabe resolver (gasta `minijuegoUsado`).
+  // K4-B quitó la rueda de prensa de la serie (minijuegos solo en el clímax); K4-C la devuelve solo después de una final
+  // (`serie.rondasConPrensa`) —la otra mitad, tras un escándalo, la pone events.js—. Entra por `pausaDeMinijuego(st,
+  // 'post_serie', ...)` y la resuelve `resolver` (gasta `minijuegoUsado`; el mapa decisivo gasta `decisivoUsado`).
+  if (BALANCE.serie.rondasConPrensa.includes(ronda) && !st.serie.minijuegoUsado) {
+    const pausa = pausaDeMinijuego(st, 'post_serie', logs, { trasRonda: ronda, gano });
+    if (pausa) {
+      return pausa;
+    }
+  }
 
   return continuarTrasRonda(st, ronda, gano, rng, logs);
 }

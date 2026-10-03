@@ -162,6 +162,7 @@
     "options": [
       {
         "id": "hacerle_un_chiste_al_relato",
+        "perfil": "showman",
         "label": "Reírte de la etiqueta en redes, sin pelearla en serio",
         "descripcion": "Le sacás el peso al asunto con humor. No te vas a gastar energía discutiendo cómo te describe un canal.",
         "weight": 5,
@@ -209,6 +210,7 @@
   },
   {
     "id": "el_streamer_que_fuiste_evitando_ser",
+    "bifurcacion": true,
     "category": "declive",
     "categoria": "oportunidad",
     "title": "El streamer que fuiste evitando ser",

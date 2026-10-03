@@ -39,7 +39,8 @@ import { campeonesEnMeta, multiplicadorDeMeta, factorDeCampeon, pesoDePick, lect
 import * as poolMod from '../core/pool.js';
 import { campeonesDisponibles, entradaDePool } from '../core/pool.js';
 import { aplicar as aplicarCampeones } from '../systems/campeones.js';
-import { elegirOutcome, elegirEvento, decisionDesdeEvento, resolver as resolverEventos, resolverOpcion, cooldownActivo, pesoEfectivo, SPLIT_SIN_EVENTO_MSG } from '../systems/events.js';
+import { elegirOutcome, elegirEvento, decisionDesdeEvento, resolver as resolverEventos, resolverOpcion, cooldownActivo, pesoEfectivo, SPLIT_SIN_EVENTO_MSG, opcionDelPerfilPara } from '../systems/events.js';
+import PERFILES_K4C from '../data/perfiles.json' with { type: 'json' };
 import { previaDeOpcion, riesgoDeOpcion, payoffNormalizado } from '../core/previa.js';
 import { rarezaDeRutina, payoffDeRutina } from '../core/rareza.js';
 import { tipoDeSplit, hayPresupuesto } from '../core/presupuesto.js';
@@ -667,10 +668,11 @@ const FORMAS_CONOCIDAS = {
   // Re-registrada en la revisión de K3: la muestra suma carreras con las fracciones > 0 en memoria, así la forma de una
   // marca entra en el hash y K3c puede subir las fracciones sin subir VERSION. (Antes, 839743025b35: sin marcas.)
   7: '16d9c513b980',
-  // K4 (integración de K4-B y K4-D): K4-B, la serie como plan — `serie.plan`/`guardado`/`replanUsado`/`rivalJuega`/
+  // K4 (integración de K4-B, K4-C y K4-D): K4-B, la serie como plan — `serie.plan`/`guardado`/`replanUsado`/`rivalJuega`/
   // `rivalJuegaEnMapa`/`sinNadaEnJuego` (sin `preSerieUsado`), `career.charlaUsadaEn`, y `rivalJuega`/`plan`/`charla` en el
-  // log de cada mapa; K4-D, `flags.preparacionDeSplit` (el año cuya preparación ya se resolvió; -1 hasta la primera
-  // pretemporada pro).
+  // log de cada mapa; K4-C, `player.perfil` (actual + pesos), `flags.categoriasRecientes`, `flags.splitMainMuerto`,
+  // `flags.saltosConPrueba`; K4-D, `flags.preparacionDeSplit` (el año cuya preparación ya se resolvió; -1 hasta la
+  // primera pretemporada pro).
   8: 'PENDIENTE'
 };
 
@@ -3471,7 +3473,9 @@ checkLento('El chaining de un segundo evento de verdad usa tipoDeSplit', () => {
       const rng = mulberry32(50000 + i);
       const estadoForzado = { ...estadoPro, contexto: contextoAntes };
       const resultado = resolverEventos(estadoForzado, decision, respuesta, rng);
-      if (resultado.decision) {
+      // K4-C: el segundo evento puede frenar (bifurcación) o resolverse por perfil y dejar su línea de crónica:
+      // las dos cosas son "se amontonó un segundo evento".
+      if (resultado.decision || resultado.logs.some((log) => log.cronica)) {
         veces += 1;
       }
     }
@@ -4144,7 +4148,9 @@ checkLento('El evento de ambiente respeta el cupo de interrupciones del split (f
     for (let i = 0; i < 45 && !state.terminado; i += 1) {
       let eventosEsteSplit = 0;
       const responder = (sistema, st, decision, r) => {
-        if (sistema.id === 'eventos' && st.phase === 'profesional') {
+        // K4-C: la rueda de prensa tras un escándalo la pide `eventos` pero es un minijuego (su propio tope, K4): el
+        // cupo es de eventos que frenan.
+        if (sistema.id === 'eventos' && st.phase === 'profesional' && decision.datos?.motivo !== 'minijuego') {
           eventosEsteSplit += 1;
         }
         return sistema.resolverAuto(st, decision, r);
@@ -4267,7 +4273,8 @@ check('Los minijuegos tienen forma válida (esquema de 9R4a)', () => {
   // lo que importaba —a quién le toca, qué stat lo corre, cuánto mueve, qué se
   // lee al terminar— vivía hardcodeado en los sistemas. Ahora es dato, así que
   // el dato se valida entero.
-  const MOMENTOS = ['mapa_cerrado', 'mapa_decisivo', 'pre_internacional', 'post_serie', 'tryout'];
+  // K4-C: `post_escandalo` — la rueda de prensa también sale después de un escándalo (systems/events.js).
+  const MOMENTOS = ['mapa_cerrado', 'mapa_decisivo', 'pre_internacional', 'post_serie', 'post_escandalo', 'tryout'];
   const TIPOS_EFECTO = ['mapa', 'stat', 'roster'];
   const estadoDeMuestra = createInitialState(1, mulberry32(1));
   const ids = new Set();
@@ -14308,6 +14315,287 @@ const ENTRADA_SINTETICA_K2B = {
   check: 'Sin aleatoriedad nativa fuera del RNG inyectado (src/ + index.html)', bloque: 'A',
   medido: '0 usos', banda: '0 usos', commit: 'K2b', rebasea: 'K3c'
 };
+
+// --- K4-C: solo frenan las bifurcaciones; lo demás lo resuelve tu perfil (PLAN.md "K4 — decisiones de spec") ---
+
+// Una corrida instrumentada: cada pausa con su sistema, la respuesta del criterio por defecto y el estado al
+// pausar. Compartida por los checks de K4-C para no correr las mismas carreras cinco veces.
+function correrCarrerasK4c(seeds, splits) {
+  const carreras = [];
+  for (const seed of seeds) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    const pausas = [];
+    const responder = (sistema, st, decision, rngLocal) => {
+      const respuesta = sistema.resolverAuto(st, decision, rngLocal);
+      pausas.push({ sistema: sistema.id, decision, respuesta, st });
+      return respuesta;
+    };
+    for (let i = 0; i < splits && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng, responder).state;
+    }
+    carreras.push({ seed, pausas, final: state });
+  }
+  return carreras;
+}
+let carrerasK4cCache = null;
+function carrerasK4c() {
+  carrerasK4cCache ??= correrCarrerasK4c(Array.from({ length: 40 }, (_, i) => 4400 + i), 60);
+  return carrerasK4cCache;
+}
+
+// El encaje recalculado ACÁ, desde la previa que muestra la tarjeta y la tabla de `data/perfiles.json` — sin
+// llamar a `core/perfil.js`, para que un error en el motor no se tape con el mismo error en el check.
+function opcionEsperadaK4c(perfil, decision) {
+  const tabla = PERFILES_K4C;
+  const forzada = decision.opciones.find((opcion) => {
+    const original = decision.datos.evento.options.find((o) => o.id === opcion.id);
+    return original?.perfil === perfil.actual;
+  });
+  if (forzada) {
+    return forzada.id;
+  }
+  const mag = BALANCE.perfil.pesoMagnitud;
+  let mejor = null;
+  let mejorValor = -Infinity;
+  for (const opcion of decision.opciones) {
+    let valor = 0;
+    for (const id of tabla.orden) {
+      const p = tabla.perfiles[id];
+      let encaje = p.riesgo[opcion.riesgo] ?? 0;
+      for (const fila of opcion.previa) {
+        const familia = tabla.familiaDeCampo[fila.campo];
+        if (!familia) continue;
+        encaje += (p.familias[familia] ?? 0) * (fila.signo === '-' ? -1 : 1) * (mag[fila.magnitud] ?? 0);
+      }
+      valor += (perfil.pesos[id] ?? 0) * encaje;
+    }
+    if (valor > mejorValor) {
+      mejor = opcion.id;
+      mejorValor = valor;
+    }
+  }
+  return mejor;
+}
+
+check('K4-C solo frenan las bifurcaciones: toda pausa de eventos es un evento con bifurcacion: true (40 carreras × 60)', () => {
+  let pausasEvento = 0;
+  let cronicas = 0;
+  for (const { seed, pausas, final } of carrerasK4c()) {
+    for (const { sistema, decision } of pausas) {
+      if (sistema !== 'eventos' || decision.datos?.motivo === 'minijuego') continue;
+      pausasEvento += 1;
+      if (decision.datos?.evento?.bifurcacion !== true) {
+        throw new Error(`seed ${seed}: frenó un evento que no es bifurcación (${decision.titulo})`);
+      }
+    }
+    cronicas += final.logs.filter((log) => log.cronica).length;
+  }
+  if (cronicas === 0) {
+    throw new Error('ningún evento se resolvió por perfil: no hay líneas de crónica');
+  }
+  if (pausasEvento === 0) {
+    throw new Error('ninguna bifurcación frenó en 40 carreras: el marcado no llega al motor');
+  }
+});
+
+check('K4-C el perfil elige la opción de mejor encaje (recalculado desde la previa y la tabla perfil × familia)', () => {
+  // Estados reales de mitad de carrera, cada evento no-bifurcación con opciones vivas, y los cuatro perfiles puros
+  // más una mezcla (la deriva). La opción esperada sale de la previa que muestra la tarjeta (`decisionDesdeEvento`).
+  const estados = carrerasK4c().slice(0, 6).map(({ pausas }) => pausas[Math.floor(pausas.length / 2)]?.st).filter(Boolean);
+  const perfiles = [
+    ...PERFILES_K4C.orden.map((id) => ({ actual: id, pesos: Object.fromEntries(PERFILES_K4C.orden.map((q) => [q, q === id ? 1 : 0])) })),
+    { actual: 'hambriento', pesos: { profesional: 0.3, hambriento: 0.4, showman: 0.2, leal: 0.1 } }
+  ];
+  let comparadas = 0;
+  for (const base of estados) {
+    for (const perfil of perfiles) {
+      const st = { ...base, player: { ...base.player, perfil } };
+      for (const evento of TODOS_LOS_EVENTOS.filter((e) => !e.bifurcacion && !e.cierreDeEdad)) {
+        const decision = decisionDesdeEvento(st, evento, { franja: 'normal', slot: 1 });
+        if (decision.opciones.length < 2) continue;
+        const esperada = opcionEsperadaK4c(perfil, decision);
+        const motor = opcionDelPerfilPara(st, evento);
+        if (motor !== esperada) {
+          throw new Error(`${evento.id} con perfil ${JSON.stringify(perfil.pesos)}: el motor eligió ${motor}, el encaje da ${esperada}`);
+        }
+        comparadas += 1;
+      }
+    }
+  }
+  if (comparadas < 1000) {
+    throw new Error(`muy pocas comparaciones (${comparadas})`);
+  }
+});
+
+check('K4-C los overrides de perfil del dato ganan', () => {
+  const rng = mulberry32(17);
+  const base = createInitialState(17, rng);
+  let probados = 0;
+  for (const evento of TODOS_LOS_EVENTOS) {
+    for (const opcion of evento.options.filter((o) => o.perfil)) {
+      if (!PERFILES_K4C.orden.includes(opcion.perfil)) {
+        throw new Error(`${evento.id}/${opcion.id}: perfil desconocido "${opcion.perfil}"`);
+      }
+      const st = { ...base, player: { ...base.player, perfil: { actual: opcion.perfil, pesos: Object.fromEntries(PERFILES_K4C.orden.map((q) => [q, q === opcion.perfil ? 1 : 0])) } } };
+      const elegida = opcionDelPerfilPara(st, evento);
+      if (elegida !== opcion.id) {
+        throw new Error(`${evento.id}: el override perfil "${opcion.perfil}" pide ${opcion.id} y el motor eligió ${elegida}`);
+      }
+      probados += 1;
+    }
+  }
+  if (probados === 0) {
+    throw new Error('no hay ningún override de perfil en el dato');
+  }
+});
+
+check('K4-C la opción del perfil resuelve su outcome con la tirada con pesos (regla 8)', () => {
+  // Un evento no-bifurcación cuya opción del perfil tenga dos outcomes con textos distintos: 600 tiradas por el camino
+  // de crónica tienen que repartir los textos según los pesos efectivos (±0,06), no salir siempre el mismo.
+  const rng0 = mulberry32(23);
+  const base = createInitialState(23, rng0);
+  const evento = TODOS_LOS_EVENTOS.find((e) => !e.bifurcacion && !e.cierreDeEdad && e.options.length >= 2
+    && e.options.every((o) => o.outcomes.length >= 2 && !o.outcomes.some((x) => x.modificadores) && new Set(o.outcomes.map((x) => x.texto)).size === o.outcomes.length
+      && o.outcomes.every((x) => x.effects.every((ef) => ef.type === 'stat'))));
+  const opcionId = opcionDelPerfilPara(base, evento);
+  const opcion = evento.options.find((o) => o.id === opcionId);
+  const total = opcion.outcomes.reduce((s, x) => s + x.weight, 0);
+  const cuenta = new Map();
+  const N = 600;
+  for (let i = 0; i < N; i += 1) {
+    const { logs } = resolverOpcion(base, evento, opcionId, mulberry32(9000 + i), { cronica: base.player.perfil.actual });
+    cuenta.set(logs[0].cuerpo, (cuenta.get(logs[0].cuerpo) ?? 0) + 1);
+  }
+  for (const outcome of opcion.outcomes) {
+    const visto = (cuenta.get(resolverTexto(outcome.texto, base)) ?? 0) / N;
+    const esperado = outcome.weight / total;
+    if (Math.abs(visto - esperado) > 0.06) {
+      throw new Error(`${evento.id}/${opcionId}: un outcome de peso ${esperado.toFixed(2)} salió ${visto.toFixed(2)} (¿el rng no decide?)`);
+    }
+  }
+});
+
+check('K4-C el perfil está completo en el estado desde el arranque y se corre con las bifurcaciones', () => {
+  for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
+    const st = createInitialState(seed, mulberry32(seed));
+    const { perfil } = st.player;
+    if (!perfil || !PERFILES_K4C.orden.includes(perfil.actual)) {
+      throw new Error(`seed ${seed}: perfil inicial inválido ${JSON.stringify(perfil)}`);
+    }
+    if (PERFILES_K4C.orden.some((id) => typeof perfil.pesos[id] !== 'number') || Math.abs(Object.values(perfil.pesos).reduce((a, b) => a + b, 0) - 1) > 1e-9) {
+      throw new Error(`seed ${seed}: pesos incompletos o que no suman 1: ${JSON.stringify(perfil.pesos)}`);
+    }
+  }
+  const elegido = createInitialState(9, mulberry32(9), { perfil: 'leal' });
+  if (elegido.player.perfil.actual !== 'leal') {
+    throw new Error(`elegir "leal" en el inicio no llega al estado (${elegido.player.perfil.actual})`);
+  }
+  // Una bifurcación cuya opción tenga afinidad distinta de "leal": decidirla 4 veces corre los pesos hacia ella y
+  // cambia la palabra (α = derivaPorBifurcacion: 0,8^4 < 0,5).
+  const afinidadesDe = (evento) => decisionDesdeEvento(elegido, evento, { franja: 'normal', slot: 2 }).opciones.map((o) => {
+    let mejor = null;
+    let mejorValor = -Infinity;
+    for (const id of PERFILES_K4C.orden) {
+      const t = PERFILES_K4C.perfiles[id];
+      let v = t.riesgo[o.riesgo] ?? 0;
+      for (const f of o.previa) {
+        const fam = PERFILES_K4C.familiaDeCampo[f.campo];
+        if (fam) v += (t.familias[fam] ?? 0) * (f.signo === '-' ? -1 : 1) * BALANCE.perfil.pesoMagnitud[f.magnitud];
+      }
+      if (v > mejorValor) { mejor = id; mejorValor = v; }
+    }
+    return { id: o.id, afinidad: evento.options.find((x) => x.id === o.id).perfil ?? mejor };
+  });
+  const fork = TODOS_LOS_EVENTOS.find((e) => e.bifurcacion && !e.escandalo && afinidadesDe(e).some((a) => a.afinidad !== 'leal'));
+  if (!fork) {
+    throw new Error('ninguna bifurcación con una opción de afinidad distinta de leal para probar la deriva');
+  }
+  const afinidades = afinidadesDe(fork);
+  const otra = afinidades.find((a) => a.afinidad !== 'leal');
+  if (!otra) {
+    throw new Error(`${fork.id}: ninguna opción con afinidad distinta de leal para probar la deriva`);
+  }
+  let st = elegido;
+  for (let i = 0; i < 4; i += 1) {
+    const d = decisionDesdeEvento(st, fork, { franja: 'normal', slot: 2 });
+    st = resolverEventos(st, d, { opcionId: otra.id }, mulberry32(70 + i)).state;
+  }
+  if (!(st.player.perfil.pesos[otra.afinidad] > 0.5) || st.player.perfil.actual !== otra.afinidad) {
+    throw new Error(`cuatro bifurcaciones hacia ${otra.afinidad} no corrieron el perfil: ${JSON.stringify(st.player.perfil)}`);
+  }
+});
+
+check('K4-C cada evento resuelto por perfil deja una línea de crónica, sin ids crudos', () => {
+  const ids = new Set(TODOS_LOS_EVENTOS.flatMap((e) => [e.id, ...e.options.map((o) => o.id)]));
+  let vistas = 0;
+  for (const { seed, final } of carrerasK4c().slice(0, 15)) {
+    const cronicas = final.logs.filter((log) => log.cronica);
+    for (const log of cronicas) {
+      vistas += 1;
+      if (!log.titulo || !log.opcion || !log.cuerpo || typeof log.descripcion !== 'string' || !log.perfil) {
+        throw new Error(`seed ${seed}: línea de crónica incompleta: ${JSON.stringify(log).slice(0, 200)}`);
+      }
+      const crudo = log.message.match(/\b[a-z0-9]+(?:_[a-z0-9]+)+\b/g)?.find((t) => ids.has(t) || /_/.test(t));
+      if (crudo || /\{[a-zA-Z]+\}/.test(log.message)) {
+        throw new Error(`seed ${seed}: id o token crudo en la crónica ("${crudo ?? log.message}")`);
+      }
+    }
+  }
+  if (vistas === 0) {
+    throw new Error('ninguna línea de crónica en 15 carreras');
+  }
+});
+
+check('K4-C la rueda de prensa sale solo después de una final o de un escándalo', () => {
+  let prensas = 0;
+  for (const { seed, pausas } of carrerasK4c()) {
+    pausas.forEach(({ sistema, decision }, i) => {
+      if (decision.datos?.minijuego !== 'rueda_de_prensa') return;
+      prensas += 1;
+      const trasFinal = sistema === 'serie' && decision.datos.trasRonda === 'final';
+      const anterior = pausas[i - 1];
+      const trasEscandalo = sistema === 'eventos' && anterior?.sistema === 'eventos' && anterior.decision.datos?.evento?.escandalo === true;
+      if (!trasFinal && !trasEscandalo) {
+        throw new Error(`seed ${seed}: rueda de prensa fuera de una final o un escándalo (${sistema}, ${decision.datos.trasRonda ?? decision.datos.momento})`);
+      }
+    });
+  }
+  if (prensas === 0) {
+    throw new Error('ninguna rueda de prensa en 40 carreras');
+  }
+});
+
+check('K4-C la prueba en cada salto grande: primer fichaje en tier 2, en tier 1 y como import', () => {
+  // Recuento independiente: los tiers en los que ya tuviste club y si ya fuiste import, leídos del estado en cada
+  // pausa. Firmar por el mercado en un tier ≤ 2 que nunca tuviste (y que no está por debajo de uno que sí), o como
+  // import por primera vez, tiene que frenar con la prueba ANTES de firmar.
+  let saltos = 0;
+  for (const { seed, pausas } of carrerasK4c()) {
+    const tiers = new Set();
+    let fuiImport = false;
+    pausas.forEach(({ sistema, decision, respuesta, st }, i) => {
+      if (st.career.currentOrg) {
+        tiers.add(st.career.tier);
+        if (st.career.contrato?.tipo === 'import') fuiImport = true;
+      }
+      if (sistema !== 'mercado' || decision.datos?.motivo === 'minijuego' || decision.datos?.motivo === 'traspaso' || !respuesta.opcionId || respuesta.negociar) return;
+      const oferta = decision.opciones.find((o) => o.id === respuesta.opcionId);
+      if (!oferta || oferta.tag === 'renovacion') return;
+      const nuevoTier = oferta.tier <= 2 && !tiers.has(oferta.tier) && !(oferta.tier === 2 && tiers.has(1));
+      const nuevoImport = oferta.datos?.tipo === 'import' && !fuiImport;
+      if (!nuevoTier && !nuevoImport) return;
+      saltos += 1;
+      const siguiente = pausas[i + 1];
+      if (siguiente?.sistema !== 'mercado' || siguiente.decision.datos?.momento !== 'tryout') {
+        throw new Error(`seed ${seed}: firmó con ${oferta.org} (tier ${oferta.tier}${nuevoImport ? ', import' : ''}) sin la prueba del salto`);
+      }
+    });
+  }
+  if (saltos === 0) {
+    throw new Error('ningún salto grande por el mercado en 40 carreras');
+  }
+});
 
 check('bandasPendientes 1: ninguna entrada registrada pasa en esta corrida, y toda entrada nombra un check que existe', () => {
   const sintetico = entradasQuePasan([ENTRADA_SINTETICA_K2B, { ...ENTRADA_SINTETICA_K2B, check: 'un check que no existe K2b' }],

@@ -503,7 +503,11 @@ function resolverLaPrueba(state, decision, respuesta) {
   const resultado = clamp(respuesta.resultado ?? 0.5, 0, 1);
   const bonus = Math.round((resultado - 0.5) * 2 * minijuegoPorId(decision.datos.minijuego).impacto);
   const conBonus = { ...state, flags: { ...state.flags, bonusJerarquiaTryout: bonus } };
-  const { state: firmado, logs } = firmarConEquipo(conBonus, { datos: decision.datos.oferta });
+  const { state: firmadoSinMarca, logs } = firmarConEquipo(conBonus, { datos: decision.datos.oferta });
+  // K4-C: si esta prueba te firmó directo en tier 2, ese salto ya tuvo la suya (`flags.saltosConPrueba`).
+  const firmado = firmadoSinMarca.career.tier === 2
+    ? { ...firmadoSinMarca, flags: { ...firmadoSinMarca.flags, saltosConPrueba: [...(firmadoSinMarca.flags.saltosConPrueba ?? []), 'tier2'] } }
+    : firmadoSinMarca;
 
   return {
     state: firmado,

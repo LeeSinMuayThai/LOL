@@ -209,6 +209,7 @@
     "options": [
       {
         "id": "asumir_la_responsabilidad_publica",
+        "perfil": "showman",
         "label": "Asumir la responsabilidad en público",
         "descripcion": "Cuando algo sale mal, hablás vos y no dejás que caiga sobre un compañero. Te expone más a la crítica, pero te gana el respeto del grupo.",
         "weight": 5,
@@ -323,6 +324,7 @@
   },
   {
     "id": "el_titular_con_un_rookie_detras",
+    "bifurcacion": true,
     "category": "identidad",
     "categoria": "golpe_duro",
     "title": "El club fichó a una promesa para tu puesto",
@@ -394,6 +396,7 @@
   },
   {
     "id": "el_referente_y_el_coach_nuevo",
+    "bifurcacion": true,
     "category": "identidad",
     "categoria": "vestuario",
     "title": "Llegó un coach que quiere refundar todo",
