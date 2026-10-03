@@ -29,8 +29,10 @@
 // campos y `flags.sinergiaProyectadaAlFichar`) · 6 (K2d, la previa: la `p` con
 // la que se tiró cada mapa y la fecha marcada —con `pSinMomento` y
 // `ajustePartido`— en sus logs, y `entradaExtra` en los datos del minijuego de
-// un mapa, para que la previa lea el comodín).
-export const VERSION = 6;
+// un mapa, para que la previa lea el comodín) · 7 (K3-B, los efectos que duran: `player.bonusPermanente`, un campo
+// por stat de curva, y `registro.marcas`, lo que cada decisión dejó en las curvas de edad — K3-A puede subirla también:
+// la rama que se mergea segunda toma max + 1).
+export const VERSION = 7;
 
 export function serializar(state, rng, rngUi) {
   return JSON.stringify({

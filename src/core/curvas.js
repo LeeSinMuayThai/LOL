@@ -1,5 +1,6 @@
 import { BALANCE } from '../data/balance.js';
 import { clamp, clampStat } from './numeros.js';
+import { registrarMarca } from './registro.js';
 
 // La forma de carrera, en una funcion. La comparten la generacion del mundo
 // (para que los stats iniciales sean coherentes con la curva que te toco) y el
@@ -31,4 +32,41 @@ export function nivelDeCurva(edad, oculto, { declive = 1, splitsJugados = 0 } = 
     : clamp(1 - forma.caida * declive * ((edad - oculto.edadPico) / a.anchoBajada) ** 2, a.factorMinimo, 1);
 
   return techo * (a.pisoJuvenil + (1 - a.pisoJuvenil) * factor);
+}
+
+// --- K3-B: los efectos que duran ---
+//
+// `player.bonusPermanente[stat]` es lo que una decisión le suma al objetivo al que converge la curva de edad
+// (`systems/atributos.js`: `objetivo + bonus`). Un campo por stat de curva, completo con ceros desde el estado
+// inicial (T4). Con `BALANCE.atributos.fraccionPermanente` en 0 (el valor neutro: el juego queda como estaba) no
+// se escribe nada, ni el bonus ni la marca del registro.
+export function statsDeCurva() {
+  return Object.keys(BALANCE.atributos.curvas);
+}
+
+export function bonusPermanenteInicial() {
+  return Object.fromEntries(statsDeCurva().map((stat) => [stat, 0]));
+}
+
+export function bonusDeCurva(player, stat) {
+  return player.bonusPermanente?.[stat] ?? 0;
+}
+
+// El único punto donde un efecto se vuelve permanente: `delta` es lo que el efecto movió de verdad sobre `stat`.
+// Si `stat` es de curva, una fracción del delta va al bonus y la marca (`origen` es el nombre visible del evento o
+// de la decisión, nunca un id) se anota en el registro por su único punto de escritura. No consume `rng`.
+export function conPermanencia(state, stat, delta, origen) {
+  const parte = BALANCE.atributos.fraccionPermanente * delta;
+  if (parte === 0 || !statsDeCurva().includes(stat)) {
+    return state;
+  }
+  const marca = { stat, delta: parte, origen, anio: state.calendario.anio };
+  return {
+    ...state,
+    player: {
+      ...state.player,
+      bonusPermanente: { ...state.player.bonusPermanente, [stat]: bonusDeCurva(state.player, stat) + parte }
+    },
+    career: { ...state.career, registro: registrarMarca(state.career.registro, marca) }
+  };
 }

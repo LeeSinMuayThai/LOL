@@ -5,6 +5,7 @@ import { resolverTexto } from '../core/plantillas.js';
 import { aplicarLPAlEstado, etiquetaDeRanked, servidorDeLaPartida } from '../core/ranked.js';
 import { aprenderCampeones, subirMaestria, olvidarPeor, principalDelPool } from '../core/pool.js';
 import { registrarMomento } from '../core/registro.js';
+import { conPermanencia } from '../core/curvas.js';
 import { crearLog } from '../core/log.js';
 import { deltaCorto, lista } from '../core/formato.js';
 import { tipoDeSplit, hayPresupuesto } from '../core/presupuesto.js';
@@ -101,7 +102,7 @@ function aplicarAlPool(state, effect, rng) {
   return olvidarPeor(pool);
 }
 
-function aplicarEfecto(state, effect, rng) {
+function aplicarEfecto(state, effect, rng, origen) {
   // La escalera de soloQ no se escribe sumando a un entero: se aplica LP y ella
   // resuelve promoción, descenso y el rango que se muestra.
   if (effect.type === 'ladder') {
@@ -181,8 +182,14 @@ function aplicarEfecto(state, effect, rng) {
 
   // El estado guarda el float (el clamp puede dejar un decimal arrastrado desde
   // antes); el log muestra el cambio redondeado.
+  //
+  // K3-B: el único lugar donde un efecto de evento o decisión mueve un stat. Si es un stat de curva, una
+  // fracción de lo que movió se vuelve permanente (`conPermanencia`: bonus + marca en el registro). Con la
+  // fracción en 0 devuelve el mismo estado.
+  const stat = effect.path.startsWith('player.stats.') ? effect.path.slice('player.stats.'.length) : null;
+  const movido = setPath(state, effect.path, despues);
   return {
-    state: setPath(state, effect.path, despues),
+    state: stat === null ? movido : conPermanencia(movido, stat, despues - antes, origen),
     descripcion: `${etiquetaCampo(effect.path)} ${deltaCorto(despues - antes)}`
   };
 }
@@ -301,11 +308,13 @@ export function resolverOpcion(state, evento, opcionId, rng) {
   const opcion = vivas.find((option) => option.id === opcionId) ?? vivas[0] ?? evento.options[0];
   const outcome = elegirOutcome(state, opcion, rng);
 
-  const titulo = `${resolverTexto(evento.title, state)} · ${resolverTexto(opcion.label, state)}`;
+  const nombre = resolverTexto(evento.title, state);
+  const titulo = `${nombre} · ${resolverTexto(opcion.label, state)}`;
 
   const descripciones = [];
   const nextState = outcome.effects.reduce((acc, effect) => {
-    const { state: siguiente, descripcion } = aplicarEfecto(acc, effect, rng);
+    // K3-B: `nombre` (el título visible del evento, nunca su id) es el `origen` de lo que quede permanente.
+    const { state: siguiente, descripcion } = aplicarEfecto(acc, effect, rng, nombre);
     descripciones.push(descripcion);
     return siguiente;
   }, state);

@@ -10,6 +10,7 @@ import { candidatos } from '../systems/events.js';
 import { esCierreDeEdad } from '../systems/edadCierre.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 import { BALANCE } from '../data/balance.js';
+import { conPermanencia } from '../core/curvas.js';
 import { probabilidadDePartido } from '../core/partido.js';
 import { ESTRATEGIAS, NOMBRES_ESTRATEGIA, esDecisionDeMinijuego } from './estrategias.js';
 
@@ -74,6 +75,12 @@ const PUNTOS_PORCENTUALES = 100;
 export const META_K2_R_MISMA_LIGA = 0.5;
 export const META_K2_R2_SIN_RUIDO = 0.5;
 export const META_K2_BO5_FAVORITO_CLARO_PCT = [75, 85];
+
+// K3-B: lo que un efecto sobre un stat de curva conserva a 4 splits (PLAN.md "K3 — decisiones de spec": meta >= 40%).
+// `retencionDeUnEfecto` la mide; el bloque `metasK3` (K3-A) la reporta con esta meta al lado. K3c fija
+// `BALANCE.atributos.fraccionPermanente` para que se cumpla.
+export const META_K3_RETENCION_4_SPLITS = 0.4;
+export const SONDA_RETENCION = { seeds: 40, splitsPrevios: 18, splitsDespues: 4, stat: 'mecanica', delta: 8 };
 
 // Mejor de 5: gana el primero en llevarse este número de mapas.
 const MAPAS_PARA_GANAR_BO5 = 3;
@@ -681,6 +688,42 @@ function porcentajes(mapa, total) {
       .sort((a, b) => b[1] - a[1])
       .map(([clave, cantidad]) => [clave, `${cantidad} (${((cantidad / total) * 100).toFixed(1)}%)`])
   );
+}
+
+// K3-B, la sonda de retención: cuánto de un efecto de `delta` sobre un stat de curva sigue en pie `splitsDespues`
+// splits después. Por seed: se juega la carrera hasta `splitsPrevios` (un punto fijo, ya profesional) y desde ahí se
+// corren dos futuros con el MISMO estado del rng, restaurado: uno tal cual y otro con el efecto aplicado — el stat
+// movido y, con `fraccionPermanente` > 0, el bonus y la marca (`conPermanencia`, la misma regla que usa el
+// aplicador de efectos de `systems/events.js`). Lo retenido es la diferencia de ese stat entre los dos futuros
+// dividida por `delta`; se promedia entre seeds (una sola es ruido: los dos futuros pueden bifurcarse). Las seeds
+// cuya carrera termina antes de medir no cuentan. `opciones` pisa `SONDA_RETENCION`.
+export function retencionDeUnEfecto(opciones = {}) {
+  const { seeds, splitsPrevios, splitsDespues, stat, delta } = { ...SONDA_RETENCION, ...opciones };
+  const porSeed = [];
+  for (let seed = 1; seed <= seeds; seed += 1) {
+    const rng = mulberry32(seed);
+    let base = createInitialState(seed, rng);
+    for (let i = 0; i < splitsPrevios && !base.terminado; i += 1) {
+      base = avanzarSplitAuto(base, rng).state;
+    }
+    if (base.terminado) continue;
+    const punto = rng.estado();
+    const movido = { ...base, player: { ...base.player, stats: { ...base.player.stats, [stat]: base.player.stats[stat] + delta } } };
+    const conEfecto = conPermanencia(movido, stat, delta, 'sonda de retención');
+    const futuro = (estado) => {
+      rng.restaurar(punto);
+      let st = estado;
+      for (let i = 0; i < splitsDespues && !st.terminado; i += 1) {
+        st = avanzarSplitAuto(st, rng).state;
+      }
+      return st;
+    };
+    const sin = futuro(base);
+    const con = futuro(conEfecto);
+    if (sin.terminado || con.terminado) continue;
+    porSeed.push((con.player.stats[stat] - sin.player.stats[stat]) / delta);
+  }
+  return { retenido: promedio(porSeed), muestras: porSeed.length, porSeed };
 }
 
 // Helpers estadísticos: se exportan para que `agencia.js` los reuse en vez de tener su propia copia.

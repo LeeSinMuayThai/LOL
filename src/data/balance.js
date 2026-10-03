@@ -357,6 +357,10 @@ export const BALANCE = {
       laneo: { declive: 0.36, velocidad: 0.22, ruido: 1.5 },
       teamfight: { declive: 0.27, velocidad: 0.2, ruido: 1.5 }
     },
+    // K3-B (PLAN.md, "K3 — decisiones de spec"): la fracción de cada efecto de evento o decisión sobre un stat de
+    // curva que se vuelve permanente (`player.bonusPermanente`: la curva de edad converge a `objetivo + bonus`).
+    // 0 = neutro, el juego queda como estaba; la fija K3c para que un efecto conserve >= 40% a 4 splits.
+    fraccionPermanente: 0,
 
     // --- Stats que se acumulan (el macro no declina: sostiene a los veteranos) ---
     acumulativos: {
@@ -657,7 +661,11 @@ export const BALANCE = {
     nivelBandas: { prospecto: 45, titular: 62, elite: 78 },
     // Un delta de stat menor a esto no dibuja flecha en la ficha: una deriva
     // de 0,4 no es una noticia.
-    umbralFlecha: 1
+    umbralFlecha: 1,
+    // K3-B, "Lo que construiste": una marca (stat + origen + año, con lo acumulado) se muestra si su bonus
+    // redondea a esto o más en valor absoluto, y se muestran como mucho `marcasVisibles` (las más grandes).
+    marcaMinimaVisible: 1,
+    marcasVisibles: 6
   },
 
   // Marcas derivadas de `career.registro` (fase 8D, contenido vivo): leen
