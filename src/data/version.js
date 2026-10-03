@@ -57,5 +57,10 @@
 // K4c-S (misma versión: el bloque B no se mergeó; 276794090): la prueba (tryout) decide el contrato — una tirada nueva en el
 // tryout del mercado y en el del amateur, y la firma que no se da (la oferta se cae, la firma se posterga) cambia las carreras
 // enteras desde el primer tryout. El renglón de parche adjunto no mueve la huella. Reemplaza a 1197795265 (K5).
+// K4c-M (1053992261; bloque B, sigue en el corrimiento de K4): el pase de contenido sobre la fecha marcada. Las dos opciones de
+// cada evento de data/events/partido/ dejan de dar el mismo `partido`: una pesa en el resultado (media +0,08) y la otra cede
+// partido (media -0,05) a cambio de mentalidad, hype, sinergia o un stat de habilidad; las compensaciones suman una
+// tirada de rng por opcion. Misma versión (la rama no se mergeó): la huella de K4c-F/K5 (1197795265) queda reemplazada.
+// K4c-S + K4c-M juntos (integración del supervisor): reemplaza a 276794090 (S) y 1053992261 (M).
 export const VERSION_JUEGO = 'K5';
-export const HUELLA_JUEGO = 276794090;
+export const HUELLA_JUEGO = 1224074643;

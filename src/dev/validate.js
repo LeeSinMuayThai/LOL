@@ -731,7 +731,12 @@ const FORMAS_CONOCIDAS = {
   // que quedan si la prueba no alcanza) y las carreras de muestra se corrieron (la prueba decide el contrato), así que cambian las
   // rutas opcionales que la muestra ve. Un guardado de antes con la prueba pendiente no trae esas claves y se carga igual: si no
   // alcanza, se cae la oferta y no queda otra. Por eso no sube VERSION: el paso 3 de K4c la sube a 11.
-  10: 'f6cb5e5d2477'
+  // K4c-M: el contenido de la fecha marcada (opciones, efectos y pesos de data/events/partido/*.json) corrió las carreras de
+  // muestra y cambiaron rutas opcionales que la muestra ve (el hash anterior, 84458be49efc): claves de org dentro de
+  // `internacional.swiss.record`, `flags.ofertaDeImport.clausula` (null o string según la carrera) y
+  // `internacional.bracket.final[].propio`. Ningún campo del estado nació ni murió: no sube VERSION (mismo criterio que K5 y K4c-F).
+  // K4c-S + K4c-M juntos (integración del supervisor).
+  10: '6efe5c15f9a6'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -12508,7 +12513,8 @@ const { tierMasAltoJugado, splitsJugadosEnTier, TIERS_DE_SPLIT } = await import(
 const { PREFIJOS_HANDLE, SUFIJOS_HANDLE } = await import('../core/mundo.js');
 const LEYENDAS_K1 = (await import('../data/leyendas.json', { with: { type: 'json' } })).default;
 
-// Las carreras de referencia de los checks rápidos de K1 (seeds 1-8 a 60 splits, el responder por defecto): hay
+// Las carreras de referencia de los checks rápidos de K1 (seeds 1-7 y 10 a 60 splits, el responder por defecto; la 10 reemplazó
+// a la 8 en K4c-M: el contenido de la fecha marcada corrió el stream y ninguna de 1-8 quedaba en la banda baja del nivel): hay
 // carreras que no llegaron a pro, carreras de tier 1 con y sin Top 20, y la mayoría termina adentro de los 60 splits.
 const SEEDS_PUNTAJE_K1 = [1, 2, 3, 4, 5, 6, 7, 8, 10];
 const SPLITS_PUNTAJE_K1 = 60;
@@ -18624,6 +18630,105 @@ check('K4c-F c: el instrumento cuenta los mismos beats que el reproductor (conta
     if (state.logs.filter(coreLogK4cf.formaBeat).length !== conNarrativa) {
       throw new Error(`seed ${seed}: formaBeat y agruparBeats no cuentan lo mismo`);
     }
+  }
+});
+
+// --- K4c-M: la fecha marcada es una decisión (PLAN.md K4c, "La fecha marcada, por contenido") ---
+//
+// Antes, las dos opciones de cada evento de `data/events/partido/*.json` daban un `partido` parecido (+0,04 / +0,18):
+// elegir movía la p del partido 1,4 pp de mediana y solo el 15% de las fechas marcadas tenía una diferencia de 5 pp
+// entre la mejor y la peor opción. Ahora las opciones son intercambios, y este check lo exige sobre el catálogo:
+//   (a) el mayor y el menor punto medio de `partido` (promediando los outcomes por su peso de catálogo) difieren en
+//       al menos `DIFERENCIA_DE_PARTIDO_MINIMA` (0,10 de fuerza: la escala de `fuerzaDeFecha`);
+//   (b) toda opción con menos `partido` que la mejor trae una compensación real en OTRO eje: un efecto de stat cuyo
+//       punto medio ponderado llega a `COMPENSACION_MINIMA` — el corte "alta" de los stats (`magnitudBandas`, el
+//       mismo que le muestra la previa al jugador), no una migaja;
+//   (c) ninguna opción domina a otra en todos los ejes (el partido y cada eje que alguna de las dos mueva).
+// El conjunto es el de las categorías `partido_*` menos la reacción de después (`partido_postpartido`, que no mueve
+// el partido). No puede pasar vacío: si no revisa ningún evento, falla; y un evento con efecto `partido` fuera de
+// ese conjunto también falla (escaparía del check).
+check('K4c-M la fecha marcada es una decisión: la mejor y la peor opción difieren en el partido, la de menos partido compensa y ninguna domina', () => {
+  const DIFERENCIA_DE_PARTIDO_MINIMA = 0.10;
+  const COMPENSACION_MINIMA = BALANCE.eventos.magnitudBandas.stat.p66;
+  const TOLERANCIA = 1e-9;
+  const EJE_PARTIDO = 'partido';
+
+  const esDeFechaMarcada = (evento) => evento.category?.startsWith('partido_') && evento.category !== 'partido_postpartido';
+  const mueveElPartido = (evento) => evento.options.some((opcion) => opcion.outcomes.some((outcome) => (
+    outcome.effects.some((efecto) => efecto.type === 'partido')
+  )));
+
+  const fuera = TODOS_LOS_EVENTOS.filter((evento) => mueveElPartido(evento) && !esDeFechaMarcada(evento)).map((evento) => evento.id);
+  if (fuera.length > 0) {
+    throw new Error(`eventos con efecto 'partido' fuera de las categorías de la fecha marcada (el check no los miraría): ${fuera.join(', ')}`);
+  }
+
+  // El punto medio de cada eje de una opción, ponderado por el peso de catálogo de sus outcomes. Un outcome que no
+  // mueve un eje cuenta 0 en ese eje (así lo aplica el motor: `ajustePartido` arranca en 0 en cada momento).
+  function ejesDeOpcion(opcion) {
+    const pesoTotal = opcion.outcomes.reduce((suma, outcome) => suma + outcome.weight, 0);
+    const ejes = {};
+    for (const outcome of opcion.outcomes) {
+      for (const efecto of outcome.effects) {
+        const eje = efecto.type === 'partido' ? EJE_PARTIDO : efecto.path;
+        ejes[eje] = (ejes[eje] ?? 0) + (outcome.weight / pesoTotal) * ((efecto.min + efecto.max) / 2);
+      }
+    }
+    ejes[EJE_PARTIDO] = ejes[EJE_PARTIDO] ?? 0;
+    return ejes;
+  }
+
+  const domina = (a, b) => {
+    const ejes = new Set([...Object.keys(a), ...Object.keys(b)]);
+    let mejorEnAlguno = false;
+    for (const eje of ejes) {
+      const va = a[eje] ?? 0;
+      const vb = b[eje] ?? 0;
+      if (va < vb - TOLERANCIA) return false;
+      if (va > vb + TOLERANCIA) mejorEnAlguno = true;
+    }
+    return mejorEnAlguno;
+  };
+
+  const eventos = TODOS_LOS_EVENTOS.filter(esDeFechaMarcada);
+  const problemas = [];
+  let revisados = 0;
+
+  for (const evento of eventos) {
+    revisados += 1;
+    if (!mueveElPartido(evento)) {
+      problemas.push(`${evento.id}: es de la fecha marcada (${evento.category}) pero ninguna de sus opciones mueve el partido`);
+      continue;
+    }
+    const opciones = evento.options.map((opcion) => ({ id: opcion.id, ejes: ejesDeOpcion(opcion) }));
+    const partidos = opciones.map((opcion) => opcion.ejes[EJE_PARTIDO]);
+    const mejor = Math.max(...partidos);
+    const peor = Math.min(...partidos);
+
+    if (mejor - peor < DIFERENCIA_DE_PARTIDO_MINIMA - TOLERANCIA) {
+      problemas.push(`${evento.id}: la mejor y la peor opción difieren ${(mejor - peor).toFixed(3)} en el partido (mínimo ${DIFERENCIA_DE_PARTIDO_MINIMA})`);
+    }
+    for (const opcion of opciones) {
+      if (opcion.ejes[EJE_PARTIDO] >= mejor - TOLERANCIA) continue;
+      const compensacion = Math.max(0, ...Object.entries(opcion.ejes).filter(([eje]) => eje !== EJE_PARTIDO).map(([, valor]) => valor));
+      if (compensacion < COMPENSACION_MINIMA - TOLERANCIA) {
+        problemas.push(`${evento.id}/${opcion.id}: cede partido (${opcion.ejes[EJE_PARTIDO].toFixed(3)} contra ${mejor.toFixed(3)}) y su mejor compensación en otro eje es ${compensacion.toFixed(2)} (mínimo ${COMPENSACION_MINIMA})`);
+      }
+    }
+    for (const a of opciones) {
+      for (const b of opciones) {
+        if (a !== b && domina(a.ejes, b.ejes)) {
+          problemas.push(`${evento.id}: ${a.id} domina a ${b.id} en todos los ejes`);
+        }
+      }
+    }
+  }
+
+  if (revisados === 0) {
+    throw new Error('el check no revisó ningún evento de la fecha marcada (el catálogo cambió de categorías o de forma)');
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problema(s) en ${revisados} eventos revisados:\n  ${problemas.slice(0, 12).join('\n  ')}${problemas.length > 12 ? `\n  ... y ${problemas.length - 12} más` : ''}`);
   }
 });
 
