@@ -3,6 +3,9 @@ import { usaLaCharlaEnAuto } from '../systems/serie.js';
 import { hashCadena } from '../core/numeros.js';
 import { elegirRutinaAuto } from '../systems/practica.js';
 import { previaDeDecision } from '../core/previaDePartido.js';
+import { calibreDeLiga } from '../core/demanda.js';
+import { nivelDelJugador } from '../core/ficha.js';
+import { ofertaDeImportPosible } from '../systems/mercado.js';
 
 // Constantes de medición para la heurística de los bots (PLAN.md §K.5 K0).
 // Los pesos reflejan la magnitud declarada en la previa ('baja', 'media', 'alta').
@@ -141,6 +144,105 @@ function charlaEnMinijuego(state, decision, peor) {
   return decision.datos?.charla?.disponible ? { charla: !peor && usaLaCharlaEnAuto(state.serie?.ronda) } : {};
 }
 
+// K4c (paso 1): la regla de `criterio` en las bifurcaciones de carrera (los eventos con un efecto de carrera real,
+// K4-C2: `ofertaDeImport`, `cambiarRol`, `retirarse`). Antes puntuaba la previa de stats —que esos efectos no traen— y
+// aceptaba casi todo cambio de línea (52% de sus carreras) sin mudarse ni retirarse nunca. Ahora lee la carrera, como un
+// jugador, con lecturas puras del estado (cero `rng`: el stream del juego no se mueve distinto que antes):
+//  - import: lo acepta si la liga de destino tiene más `dificultad` (`leagues.json`: cuánto cuesta ganar el Mundial desde
+//    esa región, y lo que multiplica cada internacional en el puntaje) que la actual y su nivel alcanza el calibre de esa
+//    liga (`calibreDeLiga`, la misma vara del mercado). Ojo: LCK es la de `dificultad` mínima (1), así que nunca se va a
+//    Corea por esta regla y a la LPL (1,1) solo desde la LCK;
+//  - cambio de línea: solo si no queda peor. Mide la maestría media del pool: la línea nueva trae `roster.cambioDeRol
+//    .tamanoPool` campeones recién aprendidos (`practica.maestriaCampeonNuevo`), salvo la vuelta a la línea de origen,
+//    que restaura el pool guardado en `flags.rolDeOrigen`. Si el efecto no cambia nada (o no se sabe el pool), lo rechaza;
+//  - retirarse: no mientras el mercado le ofrezca su tier (`flags.splitsSinOfertaEnTier` en 0: esta pretemporada hubo
+//    una oferta de su tier o mejor). `malas` hace lo contrario de las tres.
+export const TIPOS_DE_EFECTO_DE_CARRERA = ['ofertaDeImport', 'cambiarRol', 'retirarse'];
+
+// Los efectos de carrera (únicos por tipo) que la opción `opcionId` de un evento puede traer en cualquiera de sus
+// resultados. Vacío si la decisión no es de un evento o la opción no tiene ninguno.
+export function efectosDeCarreraDeOpcion(decision, opcionId) {
+  const opcion = decision.datos?.evento?.options?.find((candidata) => candidata.id === opcionId);
+  if (!opcion) {
+    return [];
+  }
+  const porTipo = new Map();
+  for (const outcome of opcion.outcomes) {
+    for (const effect of outcome.effects) {
+      if (TIPOS_DE_EFECTO_DE_CARRERA.includes(effect.type) && !porTipo.has(effect.type)) {
+        porTipo.set(effect.type, effect);
+      }
+    }
+  }
+  return [...porTipo.values()];
+}
+
+function maestriaMediaDelPool(pool) {
+  return pool?.length > 0 ? pool.reduce((suma, campeon) => suma + campeon.mastery, 0) / pool.length : null;
+}
+
+function ligaDelEstado(state, ligaId) {
+  return state.mundo.ligas.find((liga) => liga.id === ligaId) ?? null;
+}
+
+export function aceptaImport(state, ligas) {
+  const posible = ofertaDeImportPosible(state, ligas);
+  if (!posible.posible) {
+    return false;
+  }
+  const actual = ligaDelEstado(state, state.career.liga);
+  return posible.liga.dificultad > (actual?.dificultad ?? 0) && nivelDelJugador(state) >= calibreDeLiga(posible.liga);
+}
+
+export function aceptaCambioDeLinea(state, rol) {
+  const rolViejo = state.player.role;
+  const origen = state.flags.rolDeOrigen;
+  const rolNuevo = rol === 'origen' ? origen?.rol : (typeof rol === 'string' ? rol : rol?.[rolViejo]);
+  if (!rolNuevo || rolNuevo === rolViejo) {
+    return false;
+  }
+  const actual = maestriaMediaDelPool(state.player.championPool);
+  const nueva = rol === 'origen' ? maestriaMediaDelPool(origen?.pool) : BALANCE.practica.maestriaCampeonNuevo;
+  return actual !== null && nueva !== null && nueva >= actual;
+}
+
+export function aceptaRetirarse(state) {
+  return state.flags.splitsSinOfertaEnTier > 0;
+}
+
+export function aceptaEfectoDeCarrera(state, efecto) {
+  if (efecto.type === 'ofertaDeImport') {
+    return aceptaImport(state, efecto.liga);
+  }
+  if (efecto.type === 'cambiarRol') {
+    return aceptaCambioDeLinea(state, efecto.rol);
+  }
+  return aceptaRetirarse(state);
+}
+
+// `null` si la decisión no es una bifurcación de carrera. Si lo es: las opciones de carrera que `criterio` acepta (o, con
+// `peor`, las que rechazaría: `malas` hace lo contrario) tienen prioridad; si no hay ninguna, se elige entre las que no
+// son de carrera; y dentro del grupo, la mejor (o la peor) por la previa, como siempre.
+function respuestaDeBifurcacion(state, decision, peor) {
+  const opciones = (decision.opciones ?? []).map((opcion) => {
+    const efectos = efectosDeCarreraDeOpcion(decision, opcion.id);
+    return { opcion, esDeCarrera: efectos.length > 0, acepta: efectos.every((efecto) => aceptaEfectoDeCarrera(state, efecto)) };
+  });
+  if (!opciones.some((entrada) => entrada.esDeCarrera)) {
+    return null;
+  }
+  const quiere = opciones.filter((entrada) => entrada.esDeCarrera && (peor ? !entrada.acepta : entrada.acepta));
+  const resto = opciones.filter((entrada) => !entrada.esDeCarrera);
+  const grupo = quiere.length > 0 ? quiere : (resto.length > 0 ? resto : opciones);
+  const elegida = grupo.reduce((acum, entrada) => {
+    const mejor = peor
+      ? puntuarPrevia(entrada.opcion) < puntuarPrevia(acum.opcion)
+      : puntuarPrevia(entrada.opcion) > puntuarPrevia(acum.opcion);
+    return mejor ? entrada : acum;
+  });
+  return { opcionId: elegida.opcion.id };
+}
+
 // K5-C: la bifurcación del final por mercado (`systems/mercado.js`): "bajás de tier" (o "seguís buscando", si nadie
 // ofrece) contra "colgás el mouse". Va antes que `esDecisionDeMercado` en cada bot.
 export function esDecisionDeFinPorMercado(decision) {
@@ -198,7 +300,9 @@ export function hashParaDecision(state, sistema, decision) {
 
 // Bot `criterio`: proxy de un jugador que lee la pantalla y elige con criterio. Sus límites medidos (renueva ~89%, nunca
 // se queda en un traspaso, no usa la probabilidad del motor, delega el ~29% de las decisiones) están documentados arriba,
-// junto a `compararOfertasMercado`.
+// junto a `compararOfertasMercado`. En las bifurcaciones de carrera (un evento con `ofertaDeImport`, `cambiarRol` o
+// `retirarse`) aplica la regla de K4c (ver `TIPOS_DE_EFECTO_DE_CARRERA`): antes las puntuaba por una previa que esos efectos
+// no traen y aceptaba el 47-52% de las veces un cambio de línea.
 function responderCriterio(sistema, state, decision, rng) {
   if (esDecisionDeRutina(decision)) {
     return sistema.resolverAuto(state, decision, rng);
@@ -225,6 +329,10 @@ function responderCriterio(sistema, state, decision, rng) {
       compararOfertasMercado(op, acum) > 0 ? op : acum
     ));
     return conRutina(decision, { opcionId: mejor.id }, rutinaDelBot);
+  }
+  const bifurcacion = respuestaDeBifurcacion(state, decision, false);
+  if (bifurcacion) {
+    return bifurcacion;
   }
   if (esDecisionConPrevia(decision)) {
     const mejor = decision.opciones.reduce((acum, op) => (
@@ -263,6 +371,10 @@ function responderMalas(sistema, state, decision, rng) {
       compararOfertasMercado(op, acum) < 0 ? op : acum
     ));
     return conRutina(decision, { opcionId: peor.id }, rutinaDelBot);
+  }
+  const bifurcacion = respuestaDeBifurcacion(state, decision, true);
+  if (bifurcacion) {
+    return bifurcacion;
   }
   if (esDecisionConPrevia(decision)) {
     const peor = decision.opciones.reduce((acum, op) => (
