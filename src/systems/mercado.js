@@ -497,7 +497,12 @@ function aplicarMercado(state, rng) {
   const contratoVencido = !state.career.currentOrg
     || Math.max(0, state.career.contrato.aniosRestantes - 1) <= 0;
 
-  const mundo = resolverMercadoMundial(state, rng, { vaAlMercado: contratoVencido });
+  // Revisión de K5: a la edad del retiro forzoso, `retiro.js` (la etapa siguiente) cierra la carrera en esta misma
+  // pretemporada sin pregunta. No hay mercado para vos: sin esto una prueba (`la_prueba`) o una firma se cerraban con
+  // "te retirás a los 34" en el mismo split, y el minijuego quedaba como el paso que terminó la carrera. El mundo
+  // igual se mueve (sin asientos congelados para vos).
+  const lineaDelRetiro = state.age >= BALANCE.retiro.edadRetiroForzoso;
+  const mundo = resolverMercadoMundial(state, rng, { vaAlMercado: contratoVencido && !lineaDelRetiro });
   // K2b: el mercado del mundo acaba de mover los planteles (envejecer, retirar,
   // fichar). Si tocó a tus compañeros, la plantilla los trae ya — la temporada
   // de este split se juega con ellos, no con la foto de `roster.js`.
@@ -508,7 +513,7 @@ function aplicarMercado(state, rng) {
   // Tier 3: a ese nivel no hay mercado, es automático (competitivo.js lo
   // resuelve). Un tier-2 LIBRE (recién ascendido de tier 3, o sin equipo) SÍ va
   // al mercado — abajo.
-  if (stMovido.career.tier === 3) {
+  if (stMovido.career.tier === 3 || lineaDelRetiro) {
     return { state: stMovido, logs: logsMundo };
   }
   // Revisión de K5: los asientos que recién son ofrecibles con el mundo ya movido también se congelan (sin rng).
