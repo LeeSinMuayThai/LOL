@@ -3000,6 +3000,25 @@ checkLento('Toda decisión de rutina ofrece una salida segura y la trampa', () =
 checkLento('El contexto de carrera nombra siempre dónde estás parado', () => {
   const vistos = new Set();
 
+  // Fase 10c: `servicio_militar` resuelve entero DENTRO de un split (la
+  // garantía de "La cadena de servicio militar no deja
+  // flags.enServicioMilitar prendido entre splits", más abajo) — así que
+  // este loop, que solo mira `calcularContexto` en el límite entre splits,
+  // nunca lo va a ver. Mismo criterio que el eje `stakes`
+  // (`data/contextos.js`): inalcanzable a propósito por esta vía genérica,
+  // verificado por un check propio en vez de forzar la cobertura acá.
+  const VERIFICADOS_POR_OTRO_CHECK = new Set(['servicio_militar']);
+  const faltantes = () => MOMENTOS_ACTIVOS.filter((momento) => !VERIFICADOS_POR_OTRO_CHECK.has(momento.id) && !vistos.has(momento.id));
+
+  // K4c (validación), regla 17: las 300 carreras son el piso del invariante ("nunca 'desconocido'"); la cobertura
+  // ("todo momento activo aparece alguna vez") sigue buscando seeds, en orden, mientras falte alguno, hasta 1200 (la misma
+  // muestra de "lesion_cronica y retiro_por_lesion son alcanzables (raros, no cero)"). Reemplaza a "todo momento aparece en
+  // las 300 primeras", que exigía que el más raro cayera en esa muestra: `lesionado` (la lesión grave) salía en 14 de 900
+  // carreras antes de K4c (la primera, la 44) y sale en 7 de 1200 con K4c (0 en las 300 primeras; la primera, la 326).
+  const SEEDS_PISO = 300;
+  const SEEDS_TOPE = 1200;
+  let corridas = 0;
+
   // 45 splits (fase 8D) se quedó corto para "todo momento activo aparece
   // alguna vez": `sin_renovacion` (D.1) necesita un contrato de un año
   // corriendo a último año Y el flag de no-renovación prendido — una
@@ -3009,7 +3028,8 @@ checkLento('El contexto de carrera nombra siempre dónde estás parado', () => {
   // el momento existe y se observa con la duración real de carrera — es
   // el mismo patrón que D24: el check medía con una vara más corta que la
   // carrera que dice cubrir. Subido 45 → 90, sin tocar ninguna constante.
-  for (let seed = 1; seed <= 300; seed += 1) {
+  for (let seed = 1; seed <= SEEDS_TOPE && (seed <= SEEDS_PISO || faltantes().length > 0); seed += 1) {
+    corridas = seed;
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
 
@@ -3035,23 +3055,10 @@ checkLento('El contexto de carrera nombra siempre dónde estás parado', () => {
     }
   }
 
-  // Fase 10c: `servicio_militar` resuelve entero DENTRO de un split (la
-  // garantía de "La cadena de servicio militar no deja
-  // flags.enServicioMilitar prendido entre splits", más abajo) — así que
-  // este loop, que solo mira `calcularContexto` en el límite entre splits,
-  // nunca lo va a ver. Mismo criterio que el eje `stakes`
-  // (`data/contextos.js`): inalcanzable a propósito por esta vía genérica,
-  // verificado por un check propio en vez de forzar la cobertura acá.
-  const VERIFICADOS_POR_OTRO_CHECK = new Set(['servicio_militar']);
-
   // Un momento activo que nunca aparece es contenido muerto esperando.
-  for (const momento of MOMENTOS_ACTIVOS) {
-    if (VERIFICADOS_POR_OTRO_CHECK.has(momento.id)) {
-      continue;
-    }
-    if (!vistos.has(momento.id)) {
-      throw new Error(`el momento "${momento.id}" no está marcado como pendiente y no apareció en 300 carreras`);
-    }
+  const muerto = faltantes()[0];
+  if (muerto) {
+    throw new Error(`el momento "${muerto.id}" no está marcado como pendiente y no apareció en ${corridas} carreras`);
   }
 });
 
