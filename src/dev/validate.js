@@ -9428,7 +9428,11 @@ function recuentoRitmoK0(observaciones) {
         minutosPorCarrera: redondeoK0((promedios[fuente] * DURACION_BEAT_MS) / 60000, 2),
         pctDelTotal: pctK0(promedios[fuente], totalPromedios) ?? 0
       }]));
-    })()
+    })(),
+    // K4c (validación): la etiqueta que `c55f381` puso junto a la tabla es una hoja más, no una métrica: dice sobre qué
+    // están `logsPorCarrera`, `minutosPorCarrera` y `pctDelTotal`. Arriba salen del promedio (`mediaK0`) y la mediana va
+    // en su fila, así que la etiqueta tiene que decir eso, tal cual (si la tabla cambia de base, cambian las dos).
+    tiempoMaquinaPorFuenteSobre: 'promedio de logs por carrera (la mediana de cada fuente va aparte, en su fila)'
   };
 }
 
