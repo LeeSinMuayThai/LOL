@@ -6241,6 +6241,43 @@ después a 600 seeds; 0 crashes en todas). Lo elegido:
   calibrar. Después se elige la fracción más chica de {0,3, 0,4, 0,5} que conserve ≥ 0,4. Es la misma para
   eventos y para práctica: una regla sola, y la práctica no infla.
 
+**Lo que rompen los valores elegidos** (corrida completa del supervisor con esos valores sobre `e2e84b4`, con
+fracción provisoria 0,4: 305 OK / 7 FAIL).
+
+**1. Dos FAIL con la misma causa, y es de diseño:**
+- **"K0 los bots separan".** Con `malas`, la brecha contra `azar` en "no llega a pro" cae de ≥ 10 pp a 8 pp
+  (29,5% contra 21,5%).
+- **"El burnout no llega sin aviso".** Queda sin muestra: 1 burnout en 1000 carreras.
+
+La vuelta a la base es simétrica: también **sube** gratis una mentalidad hundida. Eso perdona las malas decisiones
+y borra el burnout, contra K.2 punto 2 ("tus decisiones construyen tu nivel") y contra la spec de K3 ("costos
+reales por exigirte"). **Se decide:**
+- **La vuelta a la base es asimétrica.** `mentalidadRetornoBase` baja una mentalidad saturada hacia la base, y
+  `mentalidadRetornoBaseSubida` (nueva) la sube desde abajo, más lento o nada. Desde abajo se sube descansando
+  (topeado) o decidiendo.
+- **Va en dos commits** (regla 2). La estructura sale primero, con la subida igual a la bajada: comportamiento
+  idéntico al actual. Después las constantes.
+- **El valor de la subida** se elige midiendo `malas`, `azar` y `criterio`: la brecha de "no llega a pro" tiene
+  que volver a ≥ 10 pp, el burnout tiene que existir con `malas`, y las metas de mentalidad se tienen que
+  sostener con `criterio`.
+- **Los dos checks no se re-basean**, porque son la agencia que FASE K vino a construir. A lo sumo, el del burnout
+  muestrea `malas`, que es donde el burnout tiene que aparecer.
+
+**2. Fuera del bloque A — "≥ 28% de series sin ningún draft" da 27%.** El umbral re-fijado devolvió las pausas de
+draft. Es ritmo, y K4 rediseña el draft entero (plan de Fearless), así que entra en `bandasPendientes.js` como
+**bloque B** (re-basea K4c), con `commit` K3c y el porqué. Es el único caso de una entrada que saca de banda un
+check de otro bloque, y queda escrito acá.
+
+**3. "El mundo NPC envejece" depende de la trayectoria de una carrera:** 22,1 → 22,4 en 30 splits. Igual que los
+checks de fixture de K3, pasa a promediar varias seeds o a medir el mundo entero en vez de los planteles que tocó
+la carrera. Si la edad media del mundo sube, el check pasa; si no sube, es un bug.
+
+**4. Lo esperado:**
+- `HUELLA_JUEGO` pasa a 'K3c'.
+- La entrada del draft del bloque A se borra, porque volvió a su banda.
+- La guarda "K3-B neutro" se reemplaza por un check del valor calibrado: un efecto deja `fraccionPermanente`
+  del delta real, y no 0.
+
 **Después — el supervisor:**
 - Corre la validación completa y `simulate.js 1500 60 todas`, y escribe la tabla "después del bloque A" al lado
   de §K.0b.
