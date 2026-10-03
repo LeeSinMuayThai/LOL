@@ -65,5 +65,8 @@
 // K4c (integración, 2122951563): volver de un retiro hecho en el split del pase arma el roster de la org del contrato
 // antes de la temporada de la vuelta (`armarRosterAlVolver`: la fila abre con el split del pase adentro, y las tiradas del
 // roster nuevo corren en ese split). Misma versión: reemplaza a 1224074643.
+// K4c (paso 3a, 922534647): las constantes del ritmo (umbral de sin-nada-en-juego 6, prensa solo tras un escándalo, ventana de la
+// fecha que define 4, tres mecánicas con `mapa_decisivo`, el plan de serie ×3) y D76 al cerrar la carrera (el split del pase
+// sin fila se asienta: el puntaje lo cuenta). Misma versión (el paso 3b la pasa a 'K4c' y sube VERSION): reemplaza a 2122951563.
 export const VERSION_JUEGO = 'K5';
-export const HUELLA_JUEGO = 2122951563;
+export const HUELLA_JUEGO = 922534647;

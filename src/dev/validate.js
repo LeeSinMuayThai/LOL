@@ -736,7 +736,10 @@ const FORMAS_CONOCIDAS = {
   // `internacional.swiss.record`, `flags.ofertaDeImport.clausula` (null o string según la carrera) y
   // `internacional.bracket.final[].propio`. Ningún campo del estado nació ni murió: no sube VERSION (mismo criterio que K5 y K4c-F).
   // K4c-S + K4c-M juntos (integración del supervisor).
-  10: '6efe5c15f9a6'
+  // Re-registrada en K4c (paso 3a; mismo criterio, no sube VERSION: la sube el paso 3b): las constantes del ritmo (el plan de serie,
+  // la ventana de la fecha, las mecánicas del mapa decisivo) corrieron las carreras de muestra y cambiaron rutas opcionales que la
+  // muestra ve. Ningún campo del estado nació ni murió (el hash anterior, 6efe5c15f9a6).
+  10: 'dba93d63f79f'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
