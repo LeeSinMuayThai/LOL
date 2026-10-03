@@ -63,7 +63,7 @@ export const BANDAS_PENDIENTES = [
   {
     check: 'El mercado lee tu nivel: el silencio es para los que están por debajo, no para una franquicia (fase 9R0e)',
     bloque: 'B',
-    medido: '1 pretemporada de un jugador claramente por encima de su liga sin ofertas (1500 carreras, check)',
+    medido: '2 pretemporadas de un jugador claramente por encima de su liga sin ofertas (1500 carreras, check; K4-D sola daba 1)',
     banda: 'tope 0 pretemporadas sin ofertas por encima de la liga',
     commit: 'K4',
     rebasea: 'K4c',
