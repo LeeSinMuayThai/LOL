@@ -17,6 +17,7 @@ import { BALANCE } from '../data/balance.js';
 import { ajusteBaseDeMinijuego } from '../core/serie.js';
 import { esPreparacion, ofrecerPreparacion, resolverPreparacion, elegirRutinaAuto } from './practica.js';
 import { retirarsePorMercado, pretemporadasEnPalabras } from './retiro.js';
+import { nombreVisibleDeLiga } from '../core/ligas.js';
 
 export const id = 'mercado';
 
@@ -177,7 +178,7 @@ export function construirOferta(state, liga, org, tagForzado, rng) {
     // texto de riesgo. `salarioBase` es el ancla para calcular los escalones.
     negociacion: { escalones: 0, clausula: false, salarioBase: salarioAnualUSD },
     negociacionInfo,
-    label: `${org.nombre} · ${liga.id}`,
+    label: `${org.nombre} · ${nombreVisibleDeLiga(liga.id)}`,
     descripcion: esOrgActual
       ? 'Te renueva tu propia organización.'
       : (liga.tier < (state.career.tier ?? 9) ? 'El salto a una liga más grande.'
@@ -256,7 +257,7 @@ function firmarImportPendiente(state, rng) {
   const salida = origen ? `Dejás ${origen}: ` : '';
   return {
     state: { ...cerrado.state, flags: { ...cerrado.state.flags, banquilloPendiente: false } },
-    logs: [crearLog('mercado', `${salida}la mudanza se hace. ${oferta.org} te espera en la ${oferta.liga}.`), ...firmado.logs, ...cerrado.logs],
+    logs: [crearLog('mercado', `${salida}la mudanza se hace. ${oferta.org} te espera en la ${nombreVisibleDeLiga(oferta.liga)}.`), ...firmado.logs, ...cerrado.logs],
     firmado: true
   };
 }
@@ -737,6 +738,14 @@ function aceptarOferta(state, oferta, rng, { motivoFila } = {}) {
     };
   }
 
+  // Revisión de K5: firmar (sin ser renovación) cierra la fila de la org de hoy, y la nueva la abre `roster.js`
+  // cuando ve que cambió la org. Con la MISMA org esa fila no se abriría nunca: lo jugado quedaría sin fila para
+  // siempre. Ningún camino del mercado lo hace (las ofertas excluyen tu org, el banquillo también): si vuelve a
+  // pasar, que reviente acá, donde se rompe, y no splits más tarde en `registrarSplitJugado`.
+  if (oferta.org === state.career.currentOrg) {
+    throw new Error(`Firma con ${oferta.org} sin ser renovación estando ya en ${oferta.org}: la fila se cerraría y nadie abriría la nueva`);
+  }
+
   // El motivo de cierre de fila para el registro: subiste de tier ('ascenso'),
   // bajaste ('descenso') o te moviste al mismo nivel ('transferencia'). Tier 1
   // es el número más bajo. 9Mf lo puede forzar ('banquillo').
@@ -795,7 +804,7 @@ function aceptarOferta(state, oferta, rng, { motivoFila } = {}) {
         registro: conFilaCerrada(state, motivoFilaFinal)
       }
     },
-    logs: [crearLog('mercado', `Firmás con ${oferta.org} (${oferta.liga}): ${plata(contrato.salarioAnualUSD)}/año, ${contrato.anios} año(s).${conClausula}`)]
+    logs: [crearLog('mercado', `Firmás con ${oferta.org} (${nombreVisibleDeLiga(oferta.liga)}): ${plata(contrato.salarioAnualUSD)}/año, ${contrato.anios} año(s).${conClausula}`)]
   };
 }
 
@@ -854,7 +863,7 @@ function ofertaDeTraspaso(state, rng) {
   };
   const aceptar = {
     ...oferta, id: 'aceptar', tipo: 'aceptar',
-    label: `Aceptar: irte a ${org.nombre} (${liga.id})`,
+    label: `Aceptar: irte a ${org.nombre} (${nombreVisibleDeLiga(liga.id)})`,
     descripcion: conClausula
       ? `Tenés cláusula: te vas y ${state.career.currentOrg} cobra ${plata(traspasoUSD)}. No opina.`
       : `${org.nombre} pone ${plata(traspasoUSD)} de traspaso. ${state.career.currentOrg} decide si te suelta.`
@@ -956,12 +965,30 @@ function resolverTraspaso(state, decision, respuesta, rng) {
 // termina la carrera (fase 10). Sin liga de desarrollo en la región (import
 // relegado, raro) el banquillo te deja sin equipo. No es una decisión: te
 // sentaron.
-function resolverBanquillo(state, logsPrevios, rng) {
-  const origen = state.career.currentOrg;
+//
+// Revisión de K5: la org que te sienta nunca es la que te toma. Si tu club ya
+// juega la liga de desarrollo (bajó entero en este mismo receso, o el banco te
+// agarró en tier 2) y era la más débil, el `sort()[0]` te re-firmaba con tu
+// propio club: `aceptarOferta` cerraba su fila y `roster.js`, que abre la fila
+// cuando cambia la org, nunca abría la nueva. Cada split siguiente quedaba en
+// `flags.splitJugadoSinFila` y el próximo pase reventaba en
+// `registrarSplitJugado`. Devuelve `{ dev, org }`, o `null` si en la liga de
+// desarrollo de tu región no hay otra org que te tome.
+export function academiaDelBanquillo(state) {
   const regionId = ligaDeCarrera(state)?.regionId ?? state.mundo.regionIdOrigen;
   const dev = state.mundo.ligas.find((liga) => liga.tier === 2 && liga.regionId === regionId);
+  const candidatas = (dev?.orgs ?? []).filter((org) => org.nombre !== state.career.currentOrg);
+  if (candidatas.length === 0) {
+    return null;
+  }
+  return { dev, org: [...candidatas].sort((a, b) => a.fuerza - b.fuerza)[0] };
+}
 
-  if (!dev || dev.orgs.length === 0) {
+function resolverBanquillo(state, logsPrevios, rng) {
+  const origen = state.career.currentOrg;
+  const academia = academiaDelBanquillo(state);
+
+  if (!academia) {
     return {
       state: {
         ...state,
@@ -979,14 +1006,14 @@ function resolverBanquillo(state, logsPrevios, rng) {
     };
   }
 
-  const orgDestino = [...dev.orgs].sort((a, b) => a.fuerza - b.fuerza)[0];
+  const { dev, org: orgDestino } = academia;
   const oferta = construirOferta(state, dev, orgDestino, null, rng);
   const firmado = aceptarOferta(state, { ...oferta, id: oferta.org }, rng, { motivoFila: 'banquillo' });
   return {
     state: { ...firmado.state, flags: { ...firmado.state.flags, banquilloPendiente: false } },
     logs: [
       ...logsPrevios,
-      crearLog('mercado', `${origen} te manda a la academia: bajás a ${dev.id} con ${orgDestino.nombre}. Desde abajo se vuelve.`),
+      crearLog('mercado', `${origen} te manda a la academia: bajás a ${nombreVisibleDeLiga(dev.id)} con ${orgDestino.nombre}. Desde abajo se vuelve.`),
       ...firmado.logs
     ]
   };

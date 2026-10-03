@@ -4,6 +4,7 @@ import { nivelDelJugador } from './ficha.js';
 import { etiquetaRol } from '../data/roles.js';
 import { plata } from './formato.js';
 import { seVaDelMundo, nivelAnclaReemplazo } from './plantel.js';
+import { nombreVisibleDeLiga } from './ligas.js';
 
 // LA DEMANDA EXISTE (fase 9M, PLAN.md §9M.3): se acabó el `roll(0, techo)`.
 //
@@ -172,22 +173,22 @@ function noResidentesTrasFichar(state, orgNombre, rol, liga, jugadorEsResidente)
 // nadie —ni la demanda, ni el piso de franquicia (9R0e), ni un ascenso—.
 export function cumpleReglasDuras(state, org, liga, rol) {
   if (state.age < (liga.edadMinima ?? 0)) {
-    return { ok: false, motivo: `no llegás a la edad mínima de ${liga.id}` };
+    return { ok: false, motivo: `no llegás a la edad mínima de ${nombreVisibleDeLiga(liga.id)}` };
   }
   if (residenciaEn(state, liga.regionId) === 'import') {
     const noResidentes = noResidentesTrasFichar(state, org.nombre, rol, liga, false);
     if (noResidentes > (liga.cupoImports ?? 99)) {
-      return { ok: false, motivo: `${liga.id} ya tiene el cupo de imports lleno` };
+      return { ok: false, motivo: `${nombreVisibleDeLiga(liga.id)} ya tiene el cupo de imports lleno` };
     }
     if (BALANCE.plantel.tamano - noResidentes < (liga.minimoResidentes ?? 0)) {
-      return { ok: false, motivo: `${liga.id} necesita más residentes en el roster` };
+      return { ok: false, motivo: `${nombreVisibleDeLiga(liga.id)} necesita más residentes en el roster` };
     }
     // Fase 9Md: el listón para un import escala con `dificultadAdaptacion` — a
     // LCK/LPL hay que ser mucho mejor que el local; a CBLOL/LCS, apenas.
     const margenImport = BALANCE.mercado.margenImport
       * (1 + (liga.dificultadAdaptacion ?? 50) / 100 * BALANCE.mercado.factorDificultadImport);
     if (nivelDelJugador(state) < org.fuerza + margenImport) {
-      return { ok: false, motivo: `como import a ${liga.id} no alcanza con estar apenas mejor` };
+      return { ok: false, motivo: `como import a ${nombreVisibleDeLiga(liga.id)} no alcanza con estar apenas mejor` };
     }
   }
   return { ok: true };

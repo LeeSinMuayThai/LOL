@@ -6,6 +6,7 @@ import {
 import { probabilidadDeFechaMarcada, fuerzaDeFecha, textoPorQueImporta } from './temporada.js';
 import { minijuegoPorId } from './minijuegos.js';
 import { probabilidadDeCruceSwiss } from './internacional.js';
+import { nombreVisibleDeLiga } from './ligas.js';
 
 // K2d (PLAN.md "K2d — la previa (pantalla)" y "K2d — decisiones de spec"): la
 // previa de un partido — tu fuerza desglosada contra la del rival y la
@@ -65,7 +66,7 @@ function previaDeSwiss(state, opciones) {
     extras: { charla: base * ajusteCharla },
     fuerzaBase: base,
     fuerzaFinal: fuerzaFinalDeMapa(base, ajusteCharla),
-    rival: { nombre: `${e.rival} (${e.ligaRival})`, fuerza: e.fuerzaRival },
+    rival: { nombre: `${e.rival} (${nombreVisibleDeLiga(e.ligaRival)})`, fuerza: e.fuerzaRival },
     p: probabilidadDeCruceSwiss(state, base, e.fuerzaRival, ajusteCharla),
     campeon: desglose.campeon,
     nota: null

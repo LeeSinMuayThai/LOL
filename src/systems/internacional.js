@@ -13,6 +13,7 @@ import {
 } from '../core/internacional.js';
 import { arrancarSerieDelMundial, resolver as resolverSerie, resolverAuto as resolverAutoSerie } from './serie.js';
 import { BALANCE } from '../data/balance.js';
+import { nombreVisibleDeLiga, nombreVisibleDeLigaOZona } from '../core/ligas.js';
 
 export const id = 'internacional';
 
@@ -61,7 +62,7 @@ function clasificaste(state) {
 function construirDecisionSwiss(state) {
   const e = state.internacional.partidoEnCurso;
   const conCharla = charlaDisponible(state);
-  const base = `Ganás y estás en cuartos; perdés y te volvés a casa. Es al Bo1 contra ${e.rival} (${e.ligaRival}).`;
+  const base = `Ganás y estás en cuartos; perdés y te volvés a casa. Es al Bo1 contra ${e.rival} (${nombreVisibleDeLiga(e.ligaRival)}).`;
   return {
     tipo: 'opciones',
     titulo: `Swiss del Mundial · 2-2 vs ${e.rival}: vida o muerte`,
@@ -83,7 +84,7 @@ function logDePartidoSwiss(t, rival, gano, p) {
   const ronda = t.swiss.rondas.length;
   return crearLog(
     'internacional',
-    `Swiss, ronda ${ronda}: ${gano ? 'le ganaste a' : 'perdiste con'} ${rival.nombre} (${rival.liga}). Vas ${r.v}-${r.d}.`,
+    `Swiss, ronda ${ronda}: ${gano ? 'le ganaste a' : 'perdiste con'} ${rival.nombre} (${nombreVisibleDeLiga(rival.liga)}). Vas ${r.v}-${r.d}.`,
     { torneo: 'mundial', etapa: 'swiss', ronda, rival: rival.nombre, resultado: gano ? 'W' : 'L', p }
   );
 }
@@ -269,7 +270,7 @@ export function aplicar(state, rng) {
   const torneo = crearMundial(state, anio, jugador);
   const log = crearLog(
     'internacional',
-    `Clasificaste al Mundial ${anio} como ${jugador.cupo}º de ${liga.nombreLiga ?? liga.id}: Swiss de 16, `
+    `Clasificaste al Mundial ${anio} como ${jugador.cupo}º de ${nombreVisibleDeLigaOZona(liga)}: Swiss de 16, `
     + 'tres victorias y pasás, tres derrotas y te volvés.'
   );
   return seguir(avanzarSwiss({ ...state, internacional: torneo }, rng, [log]), rng);

@@ -2,6 +2,7 @@ import { etiquetaRol } from '../data/roles.js';
 import { hashCadena } from './numeros.js';
 import { campeonesEnMeta, campeonesMuertos } from './ajusteMeta.js';
 import { campeonesDisponibles, principalDelPool, campeonNuevoPendiente } from './pool.js';
+import { nombreVisibleDeLiga } from './ligas.js';
 
 // Tokens para que el contenido nombre TU carrera y no una genérica.
 // "{jungla} no camina más para vos" -> "Zenvex no camina más para vos".
@@ -17,7 +18,7 @@ export const TOKENS = {
   handle: (state) => state.player.name,
   rol: (state) => etiquetaRol(state.player.role),
   org: (state) => state.career.currentOrg,
-  liga: (state) => state.career.liga,
+  liga: (state) => nombreVisibleDeLiga(state.career.liga),
   region: (state) => state.mundo.regionOrigen,
   campeon: (state) => state.player.campeonDelSplit,
   signature: (state) => state.player.signatureChampion,

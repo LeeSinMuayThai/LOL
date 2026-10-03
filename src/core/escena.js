@@ -12,6 +12,7 @@
 // decidió (esa tirada consume `rng`; este módulo no lo toca).
 
 import { hashCadena } from './numeros.js';
+import { nombreVisibleDeLiga } from './ligas.js';
 
 // Las ligas de tier 1 que no son la del jugador — "otras ligas", el nombre
 // de la subfase. Si el jugador todavía no tiene liga (amateur, tier2/3), o
@@ -30,11 +31,11 @@ export function todosLosOrgsTier1(state) {
 }
 
 export function lineaDeLiga(liga, campeon, subcampeon, marcador) {
-  return `${liga.id}: ${campeon.nombre} campeón (${marcador} a ${subcampeon.nombre}).`;
+  return `${nombreVisibleDeLiga(liga.id)}: ${campeon.nombre} campeón (${marcador} a ${subcampeon.nombre}).`;
 }
 
 export function lineaDeInternacional(anio, campeon) {
-  return `Worlds ${anio}: se lo lleva ${campeon.nombre} (${campeon.ligaId}).`;
+  return `Worlds ${anio}: se lo lleva ${campeon.nombre} (${nombreVisibleDeLiga(campeon.ligaId)}).`;
 }
 
 // Fase 9W: un campeón "al azar pero sin azar" para las ligas que `escena.js`

@@ -10,6 +10,7 @@ import { nivelDelJugador } from '../core/ficha.js';
 import { hypeHaciaSuBase } from '../core/barras.js';
 import { BALANCE } from '../data/balance.js';
 import { ROLES } from '../data/roles.js';
+import { nombreVisibleDeLigaOZona } from '../core/ligas.js';
 
 export const id = 'rendimiento';
 
@@ -75,6 +76,8 @@ function variantePorSemilla(lista, semilla) {
 }
 
 function textoDeParadaEnLaTabla(nombreLiga, liga, posicion, equipos, esCierre, juegaSerie, splitCount) {
+  // La semilla de la variante sigue siendo el id de la liga (no su nombre visible): cambiar cómo se ve no cambia cuál se elige.
+  const claveDeLiga = liga.nombreLiga ?? liga.id;
   if (juegaSerie) {
     const corte = liga.formatoPlayoffs.clasifican;
     // El split de cierre que clasifica lo narra `serie.js` con su propia
@@ -88,13 +91,13 @@ function textoDeParadaEnLaTabla(nombreLiga, liga, posicion, equipos, esCierre, j
       return `Cerrás ${posicion}º de ${equipos} en ${nombreLiga}: afuera de los playoffs por ${faltan} puesto${faltan === 1 ? '' : 's'}.`;
     }
     if (posicion <= corte) {
-      return variantePorSemilla(PARADA_ZONA.dentro, `dentro|${nombreLiga}|${splitCount}`)(posicion, equipos, nombreLiga);
+      return variantePorSemilla(PARADA_ZONA.dentro, `dentro|${claveDeLiga}|${splitCount}`)(posicion, equipos, nombreLiga);
     }
-    return variantePorSemilla(PARADA_ZONA.fuera, `fuera|${nombreLiga}|${splitCount}`)(posicion, equipos, nombreLiga, posicion - corte);
+    return variantePorSemilla(PARADA_ZONA.fuera, `fuera|${claveDeLiga}|${splitCount}`)(posicion, equipos, nombreLiga, posicion - corte);
   }
 
   const banda = posicion <= 2 ? 'arriba' : posicion <= Math.ceil(equipos / 2) ? 'media' : 'abajo';
-  return variantePorSemilla(PARADA_TABLA[banda], `${banda}|${nombreLiga}|${splitCount}`)(posicion, equipos, nombreLiga);
+  return variantePorSemilla(PARADA_TABLA[banda], `${banda}|${claveDeLiga}|${splitCount}`)(posicion, equipos, nombreLiga);
 }
 
 function consecuencias(state, rendimiento, resultado, esCierre, rng) {
@@ -174,7 +177,7 @@ function consecuencias(state, rendimiento, resultado, esCierre, rng) {
   }
 
   // `nombreLiga` cubre el tier 3: ahí no hay una liga real que nombrar (fase 3).
-  const nombreLiga = liga.nombreLiga ?? liga.id;
+  const nombreLiga = nombreVisibleDeLigaOZona(liga);
 
   logs.push(crearLog(
     'rendimiento',
