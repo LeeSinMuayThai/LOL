@@ -6206,6 +6206,41 @@ valor más cercano a neutro. Si la z castiga el buen draft, se pasa a la p antes
 - `HUELLA_JUEGO` 'K3c'.
 - Lo que se rompe por diseño lleva su línea de la regla 17.
 
+**Paso 1, hecho** (`e2e84b4`). Tres resultados:
+- **El umbral del draft.** Está en unidades de p (P(mejor) − P(segundo)). Antes de K2c la sonda de su check daba
+  152 pausas sobre 4000, todas en mapas decisivos, y hoy da 0.
+- **La z.** Medirla contra la p con draft **no** castiga el buen draft: la z de `criterio` y la de `azar` quedan
+  cerca de 0 (−0,044 y +0,011), con el mismo Δp de draft por fecha (0,028). Pasarla a la p antes del draft solo
+  sumaría +0,013 a todos. **Se queda como está.**
+- **`agencia.js`.** Ahora mide contra `puntajeDeCarrera`.
+
+**Paso 2, el barrido** (supervisor, `criterio` 200 × 60, 26 corridas variando una perilla por vez; refinado
+después a 600 seeds; 0 crashes en todas). Lo elegido:
+
+| Perilla | Antes | Elegido | Resultado / por qué |
+|---|---|---|---|
+| `consistencia.k` | 0 | **0,5** | brecha de sorpresas 4,3 pp |
+| `atributos.mentalidadRetornoBase` | 0 | **0,2** | mediana pro 72, 2,3% de splits ≥ 90 |
+| `atributos.topeDescanso` | 100 | **70** | (va con la de arriba) |
+| `rendimiento.hypeRetornoBase` | 0 | **0,6** | hype ≥ 90 en el 20-22% de los splits pro |
+| `rendimiento.hypeDecaimiento` | 1,2 | 1,2, sin cambio | ver abajo |
+| `serie.puntosEnJuegoParaPreguntar` (normal) | 0,26 | **0,0818** | 152 pausas, las mismas que antes de K2c |
+| `serie.puntosEnJuegoParaPreguntarDecisivo` | 0,13 | **0,0409** | (va con la de arriba) |
+
+- **k = 0,25 cumplía en el borde** (brecha 2,2 pp). La meta pide una brecha *clara*, y un check duro en el borde
+  es frágil, así que se eligió 0,5.
+- **El hype.** Con `rH` 0,5 daba 27% y con 0,7, 15,8%. El decaimiento fijo no hace falta tocarlo.
+- **El umbral del draft** se re-escaló por el mismo factor (0,3145) que se achicó la dispersión de la p, y
+  mantiene la proporción 2:1 entre normal y decisivo.
+- **Con todo esto, las metas de K2 siguen en pie:** r misma liga ~0,60, R² sin ruido ~0,52, Bo5 favorito ~82.
+  Los títulos por carrera y la llegada a tier 1 casi no se mueven con las fracciones de permanencia: la práctica
+  que deja marca no infla el juego.
+- **La sonda de retención no sirve como está.** Con la fracción en 0,3, 0,4 y 0,5 dio 0,424, 0,286 y 0,475: no
+  es monótona, y no mejora al pasar de 200 a 600 seeds, porque su muestra es fija (~39 casos). El paso 3 la
+  agranda (≥ 400 casos) y verifica que crezca con la fracción. Si no crece, es un bug y se arregla antes de
+  calibrar. Después se elige la fracción más chica de {0,3, 0,4, 0,5} que conserve ≥ 0,4. Es la misma para
+  eventos y para práctica: una regla sola, y la práctica no infla.
+
 **Después — el supervisor:**
 - Corre la validación completa y `simulate.js 1500 60 todas`, y escribe la tabla "después del bloque A" al lado
   de §K.0b.
