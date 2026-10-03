@@ -6169,6 +6169,49 @@ Va en dos piezas paralelas, cada una en su worktree.
 Re-medición completa (T6) de K0 y de los ~200 checks. Se fijan los valores de ruido, meta, peso y
 economía contra §K.3a y §K.3c. `simulate.js 1500 60 todas`.
 
+#### K3c — cómo se hace *(supervisor, 2026-10-03)*
+
+Mismo patrón que K2c: ningún worker espera corridas largas.
+
+**Qué entra.** Lo de §K.3a y §K.3c que vive en el bloque A. Las interrupciones, los minijuegos y el tiempo son de
+K4c; el Mundial y el embudo, de K5c. Las perillas y sus metas:
+
+| Perilla | Meta |
+|---|---|
+| k (consistencia) | la brecha de sorpresas entre mentalidad 20 y 80 se mide y es clara (≥ 2 pp) |
+| r, base y `topeDescanso` (mentalidad) | mediana pro 45-75 · < 20% de splits ≥ 90 |
+| rH, h0, a, b y `hypeDecaimiento` (hype) | < 25% de splits pro con hype ≥ 90 |
+| `fraccionPermanente` y `fraccionPermanentePractica` | un efecto conserva ≥ 40% a 4 splits |
+| umbral de pausa del draft (la PENDIENTE de K2c) | el draft vuelve a frenarte cuando un pick mueve la p de verdad |
+
+El umbral del draft se re-deriva contra la dispersión nueva de la p, con la misma frecuencia de pausa que tenía
+antes de K2c en la sonda de su check. K4 rediseña igual el draft (plan de Fearless).
+
+**Paso 1 — un worker:**
+- Escribe un script de barrido, como `k2c/barrido.mjs`, que aplica overrides de esas perillas en memoria y
+  reporta `metasK2` y `metasK3` con `criterio`.
+- Re-deriva el umbral del draft con una sonda.
+- Pasa `agencia.js` a medir contra `puntajeDeCarrera` (T6).
+- Mide la duda de la z: con la z medida contra la p con draft, ¿draftear bien castiga el hype? Se compara el hype
+  de `criterio` contra el de `azar`.
+
+**Paso 2 — el supervisor** corre los barridos en background y elige. El criterio: cumplir cada meta con el
+valor más cercano a neutro. Si la z castiga el buen draft, se pasa a la p antes del draft.
+
+**Paso 3 — un worker:**
+- Fija los valores elegidos.
+- `metasK2` y `metasK3` pasan a **checks duros** con `criterio`.
+- Re-mide los cuantiles del percentil del puntaje (K1); los cortes de nivel son por hechos, no se tocan.
+- Vacía `bandasPendientes.js` del bloque A y marca `BLOQUES_DE_CORRIMIENTO.A.cerrado = true`.
+- `HUELLA_JUEGO` 'K3c'.
+- Lo que se rompe por diseño lleva su línea de la regla 17.
+
+**Después — el supervisor:**
+- Corre la validación completa y `simulate.js 1500 60 todas`, y escribe la tabla "después del bloque A" al lado
+  de §K.0b.
+- Re-especifica la meta de palanca con el test corregido (§K.0b, punto 3).
+- Lanza una revisión independiente.
+
 ### K4 — Te frena solo lo importante *(bloque B — D-B)*
 
 - **Partidos importantes** (`systems/temporada.js`): se marca la fecha **que decide algo**, no la
