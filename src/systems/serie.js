@@ -8,7 +8,7 @@ import {
   rondaInicial, siguienteRonda, etiquetaDeRonda, generarRival,
   disponiblesDelPool, elegirCampeonRival, campeonComodin,
   esMapaDecisivo, esMapaDeDesempate, serieTerminada, decisionDeDraft,
-  esMapaCerrado, estadoDelMapa, probabilidadDeMapa, ajusteDeMinijuegoDeMapa
+  esMapaCerrado, estadoDelMapa, probabilidadDeMapa, ajusteDeMinijuegoDeMapa, ajusteBaseDeMinijuego
 } from '../core/serie.js';
 import { fuerzaDePartido } from '../core/fuerza.js';
 import { tirarPartido } from '../core/partido.js';
@@ -495,7 +495,7 @@ export function resolver(state, decision, respuesta, rng) {
   // minijuego. Agregar una mecánica nueva al catálogo no toca este archivo.
   const entrada = minijuegoPorId(decision.datos.minijuego);
   const resultado = clamp(respuesta.resultado ?? 0.5, 0, 1);
-  const ajusteBase = (resultado - 0.5) * 2;
+  const ajusteBase = ajusteBaseDeMinijuego(resultado);
   const stConCupo = { ...state, serie: { ...state.serie, ...cupoGastado(decision.datos.momento) } };
 
   if (entrada.efecto.tipo === 'mapa') {

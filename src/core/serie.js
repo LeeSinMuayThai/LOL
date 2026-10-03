@@ -213,15 +213,17 @@ export function fuerzaFinalDeMapa(fuerzaPropia, ajusteMinijuego = 0) {
 // te salió (`resultado` 0-1; 0,5 no la mueve). La comparten `systems/serie.js`
 // (que la aplica antes de tirar) y la previa (que muestra la p final).
 export function ajusteDeMinijuegoDeMapa(state, entrada, resultado) {
-  const ajusteBase = (clampResultado(resultado) - 0.5) * 2;
+  const ajusteBase = ajusteBaseDeMinijuego(resultado);
   const amortiguado = entrada.efecto.amortiguador === 'jerarquia'
     ? factorJerarquiaEnLlamada(state.career.jerarquia)
     : 1;
   return ajusteBase * entrada.impacto * amortiguado;
 }
 
-function clampResultado(resultado) {
-  return Math.min(1, Math.max(0, resultado ?? 0.5));
+// K2d: el punto medio del minijuego, una sola vez: `resultado` 0-1 (acotado) pasa a un ajuste de -1 a 1, con 0 en el
+// 0,5 neutro. Lo usan el mapa (`ajusteDeMinijuegoDeMapa`) y los minijuegos de stats de `systems/serie.js`.
+export function ajusteBaseDeMinijuego(resultado) {
+  return (Math.min(1, Math.max(0, resultado ?? 0.5)) - 0.5) * 2;
 }
 
 // P(mejor) − P(segundo). ≥ 0 siempre: más `factorDeCampeon` ⇒ más
