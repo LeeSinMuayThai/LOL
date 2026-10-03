@@ -34,6 +34,29 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-03 — FASE K, K4c (paso 3b): el bloque B cerrado (PLAN.md §K4c, "Paso 3b")
+
+Rama `k4cal-instrumento`. Lo que cierra el bloque B del ritmo, con los números medidos de esta corrida.
+
+- **Limpieza del plan anual (regla 17).** Se fue la parada `practica:practica`: `data/rutinas/offseason.json` (solo lo leían checks del
+  dato), la preparación del render de la pretemporada (`ui/components/mercado.js`, su HTML y sus estilos), el motivo `practica` de
+  `ui/formatoUi.js` y su entrada de `HORIZONTE_POR_TIPO`. Se fueron con su línea "reemplaza a…" "Las rutinas de offseason declaran
+  nivel y cada tier mantiene su segura+agresiva propias (D11, 13b)" y el catálogo `offseason` del check de rareza.
+- **Metas del ritmo, checks duros** (`criterio`, 400 × 60, un solo lote; `validate.js`, "K4c meta del ritmo"). Medido: interrupciones por
+  carrera, mediana **84** (≤ 90) · por split pro, p90 **2 / 5 / 5** (regular / playoffs / internacional; ≤ 2 / 5 / 5) · minijuegos, mediana
+  **4** ([3, 8]) · tiempo-máquina, mediana **5,94 min** (≤ 6,5) · Δp de plan, mediana **6,81 pp** (≥ 5) · bifurcaciones por carrera,
+  promedio **7,93** ([5, 9]; reemplaza la banda [4,5, 7,5] de K4-C2). Mutantes en rojo: umbral sin nada en juego 15 (95,5 interrupciones,
+  p90 6 y 7), `rondasConPrensa: ['final']` (10 minijuegos, 91 interrupciones) y el plan ×1 (Δp 2,59 pp). Las bandas de J5/J6
+  ("150-280 decisiones por carrera", "más drafts") no existían como checks en `validate.js`: queda la nota de la regla 17.
+- **Bloque B cerrado.** `BLOQUES_DE_CORRIMIENTO.B.cerrado = true`; el banco de mecánicas (9R4c) pasa sin `la_prueba` y su entrada se borró.
+  Queda la de longevidad (bloque C).
+- **Guardado `VERSION` 11.** `FORMAS_CONOCIDAS[10]` vuelve a `7128c450fa6c` (la de main) y la `[11]` es la actual (`305af896ede9`). Un guardado de
+  la 10 carga: `migrarDe10` le pone `player.planAnual` (el plan del perfil) y le saca `flags.preparacionDeSplit`; uno parado en la pausa de
+  la práctica se reemplaza por un botón y `practica.resolver` lo cierra. Probado con 56 guardados reales de main (VERSION 10): cargan y juegan
+  3 splits, y con dos checks nuevos (con mutantes en rojo).
+- **Cuantiles del puntaje** (`criterio`, seeds 1-800, 60 splits): p50 989 → **933**, p90 1622 → **1663**, p99 1993 → **2243**.
+- **`VERSION_JUEGO` `'K4c'`**; `HUELLA_JUEGO` 1616394605 (el paso 3b no toca el rng). **`dist/`:** 2115,3 KB (antes 2124); techo 2100 → 2200.
+
 ### 2026-10-03 — FASE K, K3c: el bloque A calibrado y cerrado (PLAN.md §K3c, §K.0c)
 
 **Solo constantes, más el instrumento.** Se hizo con el patrón de K2c: los barridos los corrí yo en background y
