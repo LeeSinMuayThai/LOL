@@ -71,7 +71,11 @@
 // K4c (paso 3a, arreglos; 805410138): la prueba fallida del mercado firma el respaldo que anuncia en vez de re-abrir la
 // parada (K4-D), la prueba en 0,65 / 0,8 / 0,95 y la ventana de la fecha que define en 6. Misma versión (el paso 3b la pasa
 // a 'K4c'): reemplaza a 922534647.
-export const VERSION_JUEGO = 'K5';
+// K4c (bloque B cerrado, paso 3b): `VERSION_JUEGO` pasa a 'K4c', la versión del ritmo calibrado (la serie como plan, la prueba que decide
+// el contrato, el cierre de año como decisión, el plan anual y la pretemporada solo para el mercado). El paso 3b (la limpieza del plan
+// anual, los checks duros del ritmo, el guardado VERSION 11 y los cuantiles) no toca el rng: la huella es la del plan anual, 1616394605,
+// que reemplaza a todas las anteriores del bloque B (922534647, 805410138, 2044679379, 1157384592...) y a la de K5 (1401713881).
+export const VERSION_JUEGO = 'K4c';
 // K4c (cierre de año, 2044679379): los 10 eventos de cierre_edad.json pasan a ser decisiones con intercambio (tres opciones, efectos
 // del orden de las bifurcaciones, un pool que aprende, riesgos en los outcomes): cambian las tiradas del cierre y con ellas las carreras
 // enteras. Misma versión (el paso 3b la pasa a 'K4c'): reemplaza a 922534647.
