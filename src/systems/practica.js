@@ -3,7 +3,7 @@ import { crearLog } from '../core/log.js';
 import { clamp, clampStat } from '../core/numeros.js';
 import { campeonesAprendibles, pulirCampeon, aprenderCampeones } from '../core/pool.js';
 import { recuperarPorDescanso } from '../core/barras.js';
-import { conMarcasDeRutina } from '../core/curvas.js';
+import { conMarcasDeRutina, conTechoDeLesion } from '../core/curvas.js';
 import { BALANCE } from '../data/balance.js';
 import { ofrecerRutinas, rutinaPorId, elegirRutinaAutomatica } from '../core/rutinas.js';
 import { opcionDesdeRutina, descripcionDeSorteo, EJE_OFFSEASON } from '../core/rareza.js';
@@ -177,15 +177,9 @@ export function resolverPreparacion(state, rutinas, rutinaId, rng) {
   if (reparto.mecanica > 0) {
     const ganancia = Math.max(0, gauss(p.gananciaMecanica * reparto.mecanica, p.ruidoPractica * reparto.mecanica, rng));
     stats.mecanica = clampStat(stats.mecanica + ganancia);
-    // Fase 10c: `practica.js` es el único sistema que mueve mecánica DESPUÉS
-    // de `atributos.js` en `ETAPAS_SPLIT` (offseason) — sin este clamp, un
-    // receso de entrenamiento podía devolverte por encima del techo que dejó
-    // una lesión crónica hasta el split siguiente. El resto de los que
-    // tocan `player.stats.mecanica` (eventos, minijuegos) corren ANTES de
-    // `atributos.js` en el mismo split, así que ya quedan atrapados ahí.
-    if (state.player.techoLesionMecanica != null) {
-      stats.mecanica = Math.min(stats.mecanica, state.player.techoLesionMecanica);
-    }
+    // Fase 10c: el techo de lesión topea la ganancia (K4 revisión 2: por el mismo helper que eventos y minijuegos,
+    // `conTechoDeLesion` — `edadCierre.js` también mueve mecánica después de `atributos.js`).
+    stats.mecanica = conTechoDeLesion(state.player, 'mecanica', state.player.stats.mecanica, stats.mecanica);
     // El log dice lo que de verdad subió, ya con el clamp y el techo de lesión (no la ganancia nominal).
     partes.push(`mecánica +${Math.round(stats.mecanica - state.player.stats.mecanica)}`);
   }

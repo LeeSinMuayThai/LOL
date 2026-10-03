@@ -52,6 +52,18 @@ export function bonusDeCurva(player, stat) {
   return player.bonusPermanente?.[stat] ?? 0;
 }
 
+// Fase 10c / K4 (revisión 2): el techo que deja una lesión crónica (`systems/salud.js`) topea la mecánica en TODO
+// camino que la sube, no solo en `atributos.js`. `edadCierre.js` resuelve el evento del cierre del año DESPUÉS de
+// `atributos.js`, así que un "Mecánica +4" ahí cruzaba el techo hasta el split siguiente (y la marca permanente
+// contaba lo que el techo debía recortar). Un efecto que sube no cruza el techo; uno que baja baja igual; si el valor
+// ya estaba arriba (la lesión de este split, antes de que `atributos.js` la cobre) no lo sube más ni lo baja acá.
+export function conTechoDeLesion(player, stat, antes, despues) {
+  if (stat !== 'mecanica' || player.techoLesionMecanica == null) {
+    return despues;
+  }
+  return Math.min(despues, Math.max(antes, player.techoLesionMecanica));
+}
+
 // El único punto donde un efecto se vuelve permanente: `delta` es lo que el efecto movió de verdad sobre `stat`.
 // Si `stat` es de curva, una fracción del delta va al bonus y la marca (`origen` es el nombre visible del evento o
 // de la decisión, nunca un id) se anota en el registro por su único punto de escritura. No consume `rng`.

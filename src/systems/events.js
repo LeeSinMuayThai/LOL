@@ -6,7 +6,7 @@ import { resolverTexto } from '../core/plantillas.js';
 import { aplicarLPAlEstado, etiquetaDeRanked, servidorDeLaPartida } from '../core/ranked.js';
 import { aprenderCampeones, subirMaestria, olvidarPeor, principalDelPool } from '../core/pool.js';
 import { registrarMomento } from '../core/registro.js';
-import { conPermanencia } from '../core/curvas.js';
+import { conPermanencia, conTechoDeLesion } from '../core/curvas.js';
 import { crearLog } from '../core/log.js';
 import { deltaCorto, lista } from '../core/formato.js';
 import { tipoDeSplit, hayPresupuesto } from '../core/presupuesto.js';
@@ -216,6 +216,10 @@ function aplicarEfecto(state, effect, rng, origen) {
   // fracción de lo que movió se vuelve permanente (`conPermanencia`: bonus + marca en el registro). Con la
   // fracción en 0 devuelve el mismo estado.
   const stat = effect.path.startsWith('player.stats.') ? effect.path.slice('player.stats.'.length) : null;
+  // K4 (revisión 2): el techo de lesión vale también acá — el evento del cierre del año corre después de `atributos.js`.
+  if (stat !== null) {
+    despues = conTechoDeLesion(state.player, stat, antes, despues);
+  }
   const movido = setPath(state, effect.path, despues);
   return {
     state: stat === null ? movido : conPermanencia(movido, stat, despues - antes, origen),

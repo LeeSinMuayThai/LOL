@@ -1,7 +1,7 @@
 import { gauss, roll } from '../core/rng.js';
 import { crearLog } from '../core/log.js';
 import { clamp, clampStat } from '../core/numeros.js';
-import { conPermanencia } from '../core/curvas.js';
+import { conPermanencia, conTechoDeLesion } from '../core/curvas.js';
 import { ligaDeCarrera } from '../core/competicion.js';
 import {
   esCierreDeTemporada, calificaAPlayoffs, calificaAInternacional,
@@ -190,7 +190,7 @@ export function aplicarStatsDeMinijuego(state, targets, delta, origen) {
     if (target.startsWith('player.stats.')) {
       const stat = target.slice('player.stats.'.length);
       const antes = st.player.stats[stat];
-      const despues = clampStat(antes + delta);
+      const despues = conTechoDeLesion(st.player, stat, antes, clampStat(antes + delta));
       const movido = {
         ...st,
         player: { ...st.player, stats: { ...st.player.stats, [stat]: despues } }
