@@ -9068,12 +9068,17 @@ check('K5-C: con el umbral prendido, misma seed, misma carrera (bifurcaciones in
   }
 });
 
-// La búsqueda del lado raro: seeds en orden, hasta `SEEDS_BUSQUEDA_K5C`, con los dos factores bajos.
+// La búsqueda del lado raro: seeds en orden, hasta `tope` (`SEEDS_BUSQUEDA_K5C` por defecto), con los factores bajos.
+// Corta en cuanto junta `minimo` carreras: el tope solo se recorre entero cuando el caso no aparece.
 const SEEDS_BUSQUEDA_K5C = 150;
-function buscarK5C(condicion, { responderBase = responderPorDefectoK5C, factores = FACTORES_DEGRADADO_K5C, minimo = 1 } = {}) {
+// K4c (integración): el lado "bajás" (una bifurcación con ofertas más abajo, contestada por alguien joven) quedó más raro
+// con el stream de K4c: ninguno en las seeds 1-150, el primero en la 329 (factor 0,72) y 7 en las seeds 151-900 (2250
+// carreras degradadas). Su check busca hasta este tope, con margen sobre esa tasa (~1 cada 100 seeds).
+const SEEDS_BUSQUEDA_BAJAR_K5C = 700;
+function buscarK5C(condicion, { responderBase = responderPorDefectoK5C, factores = FACTORES_DEGRADADO_K5C, minimo = 1, tope = SEEDS_BUSQUEDA_K5C } = {}) {
   return conUmbralK5C(UMBRAL_K5C, () => {
     const halladas = [];
-    for (let seed = 1; seed <= SEEDS_BUSQUEDA_K5C && halladas.length < minimo; seed += 1) {
+    for (let seed = 1; seed <= tope && halladas.length < minimo; seed += 1) {
       for (const factor of factores) {
         const carrera = carreraDegradadaK5C(seed, responderBase, factor);
         if (carrera.forks.some(condicion)) {
@@ -9087,9 +9092,9 @@ function buscarK5C(condicion, { responderBase = responderPorDefectoK5C, factores
 }
 
 check('K5-C: "bajás" lleva a la mano de ofertas de más abajo, firmás un tier abajo y la cuenta vuelve a cero', () => {
-  const [carrera] = buscarK5C((fork) => fork.opciones[0] === 'bajar' && fork.respuesta === 'bajar');
+  const [carrera] = buscarK5C((fork) => fork.opciones[0] === 'bajar' && fork.respuesta === 'bajar', { tope: SEEDS_BUSQUEDA_BAJAR_K5C });
   if (!carrera) {
-    throw new Error(`ninguna bifurcación con "bajar" contestada en ${SEEDS_BUSQUEDA_K5C} seeds degradadas`);
+    throw new Error(`ninguna bifurcación con "bajar" contestada en ${SEEDS_BUSQUEDA_BAJAR_K5C} seeds degradadas`);
   }
   const fork = carrera.forks.find((f) => f.respuesta === 'bajar');
   const mano = carrera.manos.find((m) => m.split === fork.split);
@@ -11283,8 +11288,23 @@ check('K4c bots de carrera (revisión): import por calibre y nivel, cambio de l�
 check('K4c observación (revisión): minijuegosPorMecanica, bifurcaciones, cambios de línea y de región, mudanzas firmadas y fueraDeSuRegion coinciden con un recuento a mano', () => {
   // Trinquete: ningún check recontaba los campos nuevos de `correrCarrera`. El recuento a mano corre la misma carrera con
   // `avanzarSplitAuto` y un espía en la estrategia (mismas respuestas, mismo rng) y mira el estado después de cada split.
+  // K4c (integración): la muestra era una lista fija (criterio 3 y 6, malas 6 y 12) y el stream de K4c la dejó sin
+  // ninguna mudanza firmada. Ahora recorre las seeds desde la 1, cada una con los dos bots, hasta que todos los totales
+  // tocaron algo (y al menos SEEDS_MIN_OBSERVACION_K4C seeds); el tope es SEEDS_MAX_OBSERVACION_K4C. Medido al
+  // cambiarlo: `criterio` firma una mudanza en 10 de las seeds 1-40 (la primera, la 7); `malas` en ninguna.
   const totales = { minijuegos: 0, bifurcaciones: 0, cambiosDeLinea: 0, cambiosDeRegion: 0, mudanzasFirmadas: 0, fueraDeSuRegion: 0 };
-  for (const [bot, seed] of [['criterio', 3], ['criterio', 6], ['malas', 6], ['malas', 12]]) {
+  const SEEDS_MIN_OBSERVACION_K4C = 2;
+  const SEEDS_MAX_OBSERVACION_K4C = 30;
+  const muestra = [];
+  for (let s = 1; s <= SEEDS_MAX_OBSERVACION_K4C; s += 1) {
+    muestra.push(['criterio', s], ['malas', s]);
+  }
+  let carreras = 0;
+  for (const [bot, seed] of muestra) {
+    if (seed > SEEDS_MIN_OBSERVACION_K4C && Object.values(totales).every((n) => n > 0)) {
+      break;
+    }
+    carreras += 1;
     const SPLITS = 60;
     const observacion = correrCarreraSimulate(seed, SPLITS, ESTRATEGIAS_K0[bot]).observacion;
     const rng = mulberry32(seed);
@@ -11351,7 +11371,7 @@ check('K4c observación (revisión): minijuegosPorMecanica, bifurcaciones, cambi
   }
   const vacios = Object.entries(totales).filter(([, n]) => n === 0).map(([k]) => k);
   if (vacios.length > 0) {
-    throw new Error(`check vacío: las 4 carreras no tocaron ${vacios.join(', ')} (${JSON.stringify(totales)})`);
+    throw new Error(`check vacío: las ${carreras} carreras (seeds 1-${SEEDS_MAX_OBSERVACION_K4C}, criterio y malas) no tocaron ${vacios.join(', ')} (${JSON.stringify(totales)})`);
   }
 });
 
@@ -11383,6 +11403,75 @@ check('K4c guarda (revisión): flags.splitJugadoSinFila nunca acumula más de un
     throw new Error('simulate.js no llama a verificarSplitJugadoSinFila después de cada split');
   }
   correrCarreraSimulate(3, 20, null);
+});
+
+// K4c (integración): la secuencia de la seed 96 de `malas` (el FAIL de "K1 D75" con el stream de K4c, Movistar KOI). En
+// el split del pase (firmás con otra org y jugás ese split con ella: `flags.splitJugadoSinFila`), una bifurcación te
+// retira (`retirarse` → `retirarsePorCamino`) antes de que `roster.js` abra la fila. Mientras estás retirado `roster.js`
+// no hace nada, y el split en que volvés `roster` ya corrió cuando `retiro.js` te devuelve a `profesional`: la temporada
+// de la vuelta se sumaba al pendiente (`{1: 2}`) y la guarda reventaba. Sin depender de una seed: las carreras desde la 1
+// (hasta SEEDS_MAX_PASE_VUELTA_K4CAL) que llegan a un split del pase se retiran ahí mismo por el camino de la
+// bifurcación, se contesta "volver" en cuanto se pregunta, y el split de la vuelta tiene que abrir la fila de esa org
+// (con el roster) con el split del pase adentro y el suyo sumado, sin nada pendiente. Hacen falta
+// CASOS_PASE_VUELTA_K4CAL casos en los que la vuelta jugó su temporada (los que acumulaban sin el arreglo).
+const SEEDS_MAX_PASE_VUELTA_K4CAL = 60;
+const CASOS_PASE_VUELTA_K4CAL = 3;
+const { retirarsePorCamino: retirarsePorCaminoK4cal } = await import('../systems/retiro.js');
+check('K4c (integración): retirarte en el split del pase y volver abre la fila con ese split adentro (nunca dos splits esperando fila)', () => {
+  const sumaDeTiers = (porTier) => Object.values(porTier).reduce((total, n) => total + n, 0);
+  const volverSiempre = (sistema, st, decision, r) => (decision.datos?.motivo === 'retiro_vuelta'
+    ? { opcionId: 'volver' }
+    : sistema.resolverAuto(st, decision, r));
+  let casos = 0;
+  let seed = 0;
+  while (seed < SEEDS_MAX_PASE_VUELTA_K4CAL && casos < CASOS_PASE_VUELTA_K4CAL) {
+    seed += 1;
+    const rng = mulberry32(seed);
+    let estado = createInitialState(seed, rng);
+    for (let split = 0; split < 60 && !estado.terminado && !estado.flags.splitJugadoSinFila; split += 1) {
+      estado = avanzarSplitAuto(estado, rng).state;
+    }
+    const pase = estado.flags.splitJugadoSinFila;
+    if (!pase || estado.terminado || estado.phase !== 'profesional') {
+      continue;
+    }
+    const org = estado.career.currentOrg;
+    estado = retirarsePorCaminoK4cal(estado, Object.keys(MOTIVOS_DE_RETIRO)[0]).state;
+    if (estado.phase !== 'retirado' || estado.terminado) {
+      throw new Error(`seed ${seed}: retirarsePorCamino no abrió la ventana de vuelta (phase ${estado.phase}, terminado ${estado.terminado})`);
+    }
+    let vuelta = null;
+    for (let split = 0; split <= BALANCE.retiro.ventanaDeVueltaSplits && !vuelta && !estado.terminado; split += 1) {
+      const resultado = avanzarSplitAuto(estado, rng, volverSiempre);
+      estado = resultado.state;
+      if (estado.phase === 'profesional') {
+        vuelta = resultado;
+      } else if (JSON.stringify(estado.flags.splitJugadoSinFila) !== JSON.stringify(pase)) {
+        throw new Error(`seed ${seed}: retirado, el split del pase cambió (${JSON.stringify(estado.flags.splitJugadoSinFila)}, era ${JSON.stringify(pase)})`);
+      }
+    }
+    if (!vuelta) {
+      throw new Error(`seed ${seed}: retirado en el split del pase de ${org}, la ventana nunca preguntó la vuelta`);
+    }
+    const guarda = verificarSplitJugadoSinFila(estado);
+    const fila = filaAbiertaK5(estado.career.registro);
+    if (guarda || estado.flags.splitJugadoSinFila || estado.career.currentOrg !== org || estado.career.rosterDeOrg !== org || fila?.org !== org) {
+      throw new Error(`seed ${seed}: volviste a ${org} después de retirarte en el split del pase y quedó `
+        + `${guarda ?? `pendiente ${JSON.stringify(estado.flags.splitJugadoSinFila)}`}, roster de ${estado.career.rosterDeOrg}, fila abierta de ${fila?.org ?? 'ninguna'}`);
+    }
+    const jugoLaVuelta = vuelta.logs.some((log) => log.type === 'rendimiento' && /terminó \d+º de \d+ en /.test(log.message ?? ''));
+    const esperado = sumaDeTiers(pase.splitsPorTier) + (jugoLaVuelta ? 1 : 0);
+    if (sumaDeTiers(fila.splitsPorTier) !== esperado || Object.keys(pase.splitsPorTier).some((tier) => fila.splitsPorTier[tier] < pase.splitsPorTier[tier])) {
+      throw new Error(`seed ${seed}: la fila de ${org} abrió con ${JSON.stringify(fila.splitsPorTier)}; el pase era ${JSON.stringify(pase.splitsPorTier)} `
+        + `y la vuelta ${jugoLaVuelta ? 'jugó' : 'no jugó'} su temporada`);
+    }
+    if (jugoLaVuelta) {
+      casos += 1;
+    }
+  }
+  if (casos < CASOS_PASE_VUELTA_K4CAL) {
+    throw new Error(`check vacío: en las seeds 1-${seed} hubo ${casos} vuelta(s) con temporada después de retirarse en el split del pase (hacen falta ${CASOS_PASE_VUELTA_K4CAL})`);
+  }
 });
 
 check('K4c simulate (revisión): tiempoMaquinaPorFuente dice que va sobre el promedio de logs por carrera, no la mediana', () => {
@@ -16204,11 +16293,22 @@ function sondaDeLaPrueba() {
           };
           const bajo = contestar(0);
           const alto = contestar(1);
+          // K4c (integración): la misma pausa del mercado con club, como si la oferta de la prueba fuera la única de la
+          // mano (`datos.otras` vacío), con el mismo resultado y el mismo rng: el lado "sin nada" del check del tryout
+          // fallido del mercado (ver ese check).
+          let bajoSinOtras = null;
+          if (sistemaId === 'mercado' && st.career.currentOrg !== null) {
+            const sinOtras = structuredClone(st);
+            sinOtras.pendiente.decision.datos.otras = [];
+            const despues = resolverDecision(sinOtras, { resultado: 0 }, mulberry32(hashCadenaK4cs(`${seed}|${i}|prueba`))).state;
+            bajoSinOtras = { ficho: despues.career.currentOrg === oferta, estado: despues };
+          }
           filas.push({
             seed, sistemaId, oferta,
             antes: { currentOrg: st.career.currentOrg, contrato: structuredClone(st.career.contrato), bonus: st.flags.bonusJerarquiaTryout ?? 0, racha: st.flags.splitsSinOfertaConsecutivos },
             bajo: { ficho: bajo.despues.career.currentOrg === oferta, estado: bajo.despues, rr: bajo.rr },
-            alto: { ficho: alto.despues.career.currentOrg === oferta }
+            alto: { ficho: alto.despues.career.currentOrg === oferta },
+            bajoSinOtras
           });
         }
         st = resolverDecision(st, sistemaPorId(sistemaId).resolverAuto(st, decision, rng), rng).state;
@@ -16241,18 +16341,37 @@ check('K4c-S un tryout fallido del mercado se cae solo esa oferta: ni contrato r
   }
   let representadas = 0;
   let sinNada = 0;
-  for (const f of fallidos) {
-    const { estado } = f.bajo;
-    const donde = `seed ${f.seed} (${f.oferta})`;
-    // Con ofertas que quedan, la parada se re-presenta (mercado:oferta). Sin ninguna, `resolverEspera` cierra el mercado y el
-    // split sigue: lo que quede pendiente después es de otra etapa.
-    const representada = estado.pendiente?.sistemaId === 'mercado' && estado.pendiente.decision.datos?.motivo === 'oferta';
-    const librePorRacha = !representada && f.antes.racha + 1 >= BALANCE.mercado.splitsSinOfertaParaLibre;
+  // Con ofertas que quedan, la parada se re-presenta (mercado:oferta). Sin ninguna, `resolverEspera` cierra el mercado y el
+  // split sigue: lo que quede pendiente después es de otra etapa.
+  const esRepresentada = (estado) => estado.pendiente?.sistemaId === 'mercado' && estado.pendiente.decision.datos?.motivo === 'oferta';
+  const sinRomperNada = (f, estado, donde) => {
+    const librePorRacha = !esRepresentada(estado) && f.antes.racha + 1 >= BALANCE.mercado.splitsSinOfertaParaLibre;
     if (!librePorRacha && (estado.career.currentOrg !== f.antes.currentOrg || JSON.stringify(estado.career.contrato) !== JSON.stringify(f.antes.contrato))) {
       throw new Error(`${donde}: el tryout fallido dejó el club o el contrato distinto (${f.antes.currentOrg} → ${estado.career.currentOrg})`);
     }
     if ((estado.flags.bonusJerarquiaTryout ?? 0) !== f.antes.bonus) {
       throw new Error(`${donde}: el tryout fallido dejó crédito de jerarquía (${estado.flags.bonusJerarquiaTryout})`);
+    }
+  };
+  // K4c (integración): el lado "sin nada" con club (la oferta de la prueba era la única de la mano y tu club no te
+  // renovaba) era 1 caso en las seeds 1-60 antes del stream de K4c (seed 55) y quedó en 0 de las seeds 1-1000: los tryouts
+  // fallidos con club traen siempre otra oferta (la renovación, u otras de afuera cuando el club no renueva). El camino no
+  // está muerto —un free agent con una sola oferta lo toma, 11 veces en las seeds 1-1000— y la mano de una sola oferta sin
+  // renovación salía 1 en 200 seeds antes: es raro, no un bug. Se prueba con la pausa real de cada tryout fallido con club
+  // sin las otras ofertas (`bajoSinOtras` de la sonda: `datos.otras` vacío, mismo resultado, mismo rng), además de los que
+  // aparezcan solos.
+  let sinNadaArmadas = 0;
+  for (const f of fallidos) {
+    const { estado } = f.bajo;
+    const donde = `seed ${f.seed} (${f.oferta})`;
+    const representada = esRepresentada(estado);
+    sinRomperNada(f, estado, donde);
+    if (f.bajoSinOtras && !f.bajoSinOtras.ficho) {
+      if (esRepresentada(f.bajoSinOtras.estado)) {
+        throw new Error(`${donde}, sin otras ofertas: la parada se re-presentó sin nada que ofrecer`);
+      }
+      sinRomperNada(f, f.bajoSinOtras.estado, `${donde}, sin otras ofertas`);
+      sinNadaArmadas += 1;
     }
     if (representada) {
       representadas += 1;
@@ -16267,8 +16386,9 @@ check('K4c-S un tryout fallido del mercado se cae solo esa oferta: ni contrato r
       sinNada += 1;
     }
   }
-  if (representadas === 0 || sinNada === 0) {
-    throw new Error(`check vacío: ${representadas} paradas que siguieron con otras ofertas y ${sinNada} que se quedaron sin nada (hacen falta de las dos)`);
+  if (representadas === 0 || sinNada + sinNadaArmadas === 0) {
+    throw new Error(`check vacío: ${representadas} paradas que siguieron con otras ofertas y ${sinNada} que se quedaron sin nada `
+      + `(más ${sinNadaArmadas} armadas sin las otras ofertas; hacen falta de las dos)`);
   }
 });
 

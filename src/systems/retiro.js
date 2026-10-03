@@ -5,6 +5,7 @@ import {
   elegirEvento, decisionDesdeEvento, resolverOpcion, opcionDelPerfilPara,
   resolver as resolverEvento, resolverAuto as resolverAutoEvento
 } from './events.js';
+import { armarRosterAlVolver } from './roster.js';
 
 export const id = 'retiro';
 
@@ -256,19 +257,24 @@ export function resolver(state, decision, respuesta, rng) {
 
   // motivo === 'retiro_vuelta'
   if (respuesta.opcionId === 'volver') {
+    const vuelto = {
+      ...state,
+      phase: 'profesional',
+      motivoRetiro: null,
+      flags: {
+        ...state.flags,
+        splitsEnVentana: 0,
+        vueltasUsadas: state.flags.vueltasUsadas + 1,
+        splitVuelta: state.player.splitCount
+      }
+    };
+    // K4c (integración): `roster` ya corrió este split, con `phase: 'retirado'`. Si te habías retirado en el split del
+    // pase, la org del contrato no tiene fila todavía: se arma acá, antes de la temporada de la vuelta (ver
+    // `armarRosterAlVolver`).
+    const conRoster = armarRosterAlVolver(vuelto, rng);
     return {
-      state: {
-        ...state,
-        phase: 'profesional',
-        motivoRetiro: null,
-        flags: {
-          ...state.flags,
-          splitsEnVentana: 0,
-          vueltasUsadas: state.flags.vueltasUsadas + 1,
-          splitVuelta: state.player.splitCount
-        }
-      },
-      logs: [crearLog('retiro', 'Volvés a competir. De free agent, a ver quién te llama.')]
+      state: conRoster.state,
+      logs: [crearLog('retiro', 'Volvés a competir. De free agent, a ver quién te llama.'), ...conRoster.logs]
     };
   }
   return { state, logs: [crearLog('retiro', 'Por ahora, no. La puerta sigue entreabierta.')] };

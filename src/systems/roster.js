@@ -139,6 +139,21 @@ export function sinergiaAlFichar(state, rng) {
   );
 }
 
+// K4c (integración): la vuelta de un retiro. El split en que volvés, este sistema corre con `phase: 'retirado'` (no
+// hace nada) y recién después `retiro.js` te devuelve a `profesional`. Si te retiraste en el split del pase (firmaste,
+// jugaste ese split con la org nueva y una bifurcación te retiró antes de que este sistema le abriera la fila), la org
+// del contrato todavía no tiene roster ni fila: el split de la vuelta se jugaba sin fila y se sumaba al pendiente, dos
+// splits esperando fila (seed 96 de `malas`, `flags.splitJugadoSinFila` con `{1: 2}`). `retiro.js` llama a esto al
+// volver: se arma lo que este sistema no llegó a armar —la fila se abre con el split del pase adentro, D76— antes de
+// que corra la temporada de la vuelta. Si el roster de la org ya estaba armado (te retiraste con tu fila abierta, el
+// caso de siempre) no hace nada ni toca el `rng`.
+export function armarRosterAlVolver(state, rng) {
+  if (!state.career.currentOrg || state.career.rosterDeOrg === state.career.currentOrg) {
+    return { state, logs: [] };
+  }
+  return armarRoster(state, rng);
+}
+
 function armarRoster(state, rng) {
   const r = BALANCE.roster;
   const org = orgActual(state);
