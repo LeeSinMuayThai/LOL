@@ -11001,6 +11001,132 @@ check('K4c-H horizonte sobre el motor real: replicasDeDecision trae `hz` en el h
   }
 });
 
+// --- K4c-H (Δp): la palanca de serie y partido se mide por la p declarada, sin ruido (src/dev/agencia.js) ---
+// Con 30 réplicas ganada/perdida solo ve efectos de ~20 pp (no tiene potencia). Δp = p de la mejor opción − p de la peor, leída de la previa
+// (`previaDeDecision`) o, en la fecha marcada, de la p que el motor tiró en cada réplica; cuenta como palanca si Δp >= `UMBRAL_DELTA_P`.
+// Verificado en rojo contra tres mutantes: umbral ignorado (Δp >= 0), Δp = primera opción − última, y el análisis que sigue usando el binario.
+const { UMBRAL_DELTA_P, pPorOpcion, deltaPDeDecision } = await import('./agencia.js');
+
+check('K4c-H Δp: la palanca de serie y partido por p declarada (umbral 5 pp), el binario en columna aparte y el aviso de los crudos viejos, con números a mano', () => {
+  if (UMBRAL_DELTA_P !== 0.05) {
+    throw new Error(`el umbral de Δp es 5 pp (una de cada veinte series), es ${UMBRAL_DELTA_P}`);
+  }
+  // Δp directo: mejor − peor, sin importar el orden (la mejor en el medio: 0,62 − 0,50 = 0,12, no primera − última = 0,05).
+  const dosOpc = [[], []];
+  const dp = deltaPDeDecision([0.55, 0.62, 0.50], [[], [], []], 'serie');
+  if (Math.abs(dp - 0.12) > 1e-9 || deltaPDeDecision([0.55, 0.62, 0.50], [[], [], []], 'split') !== null || deltaPDeDecision(null, dosOpc, 'serie') !== null
+    || deltaPDeDecision([0.5, NaN], dosOpc, 'serie') !== null || deltaPDeDecision([0.5], dosOpc, 'serie') !== null) {
+    throw new Error(`deltaPDeDecision: [0,55 0,62 0,50] tenía que dar 0,12 en serie y null en split; dio ${dp}; sin p, con NaN o con una sola p tenía que dar null`);
+  }
+  // Cuatro tipos, 8 réplicas por opción, puntaje igual en todo (sin efecto en la carrera), sPop = 10:
+  //  - serie:plan (30 paradas): D1 pOp [0,55 0,62 0,50] Δp 12 pp; D2 [0,60 0,56] 4 pp; D3 [0,80 0,70] 10 pp. Palanca 2 de 3 (66,7%), Δp mediana (la
+  //    del medio de 4, 10, 12) = 10 pp. El binario (las opciones ganan lo mismo): 0%.
+  //  - serie:decisivo (10): pOp [0,5 0,4375] Δp 6,25 pp: 100%. Binario 0%.
+  //  - temporada:momento (20), sin p al decidir: la p tirada por réplica. D1: opción a 0,60 0,70 0,65 0,65 (x2) = media 0,65, opción b 0,50 0,60 0,55
+  //    0,55 (x2) = 0,55: Δp 10 pp. D2: a 0,52 en todas, b 0,50: 2 pp. 50%, mediana (la inferior de 2 y 10) = 2 pp.
+  //  - serie:minijuego (20): un crudo viejo, sin `pOp`, con el binario significativo (7 de 8 réplicas): usa el binario (100%) y se avisa.
+  // Fracción ponderada en el horizonte: (30 · 2/3 + 10 + 20 · 1/2 + 20 · 1) / 100 = 60%.
+  const A_GANA_7 = [1, 1, 1, 1, 1, 1, 1, 0];
+  const ALTERNADO = [1, 0, 1, 0, 1, 0, 1, 0];
+  const rep = (hz, pH) => ({ ...repSinteticaK0(100), hz, ...(pH === undefined ? {} : { pH }) });
+  const opcion = (pHs) => ALTERNADO.map((hz, r) => rep(hz, pHs?.[r]));
+  const fila = (tipo, hor, pOp, opciones) => ({
+    seed: 1, split: 1, tipo, hor, un: 'resultado', labels: opciones.map((_, i) => `o${i}`), ...(pOp === undefined ? {} : { pOp }), porOpcion: opciones
+  });
+  const resultados = [
+    fila('serie:plan', 'serie', [0.55, 0.62, 0.50], [opcion(), opcion(), opcion()]),
+    fila('serie:plan', 'serie', [0.60, 0.56], [opcion(), opcion()]),
+    fila('serie:plan', 'serie', [0.80, 0.70], [opcion(), opcion()]),
+    fila('serie:decisivo', 'serie', [0.5, 0.4375], [opcion(), opcion()]),
+    fila('temporada:momento', 'partido', null, [opcion([0.60, 0.70, 0.65, 0.65, 0.60, 0.70, 0.65, 0.65]), opcion([0.50, 0.60, 0.55, 0.55, 0.50, 0.60, 0.55, 0.55])]),
+    fila('temporada:momento', 'partido', null, [opcion(Array(8).fill(0.52)), opcion(Array(8).fill(0.50))]),
+    fila('serie:minijuego', 'serie', undefined, [A_GANA_7.map((hz) => rep(hz)), Array(8).fill(0).map((hz) => rep(hz))])
+  ];
+  const frecuenciasTipo = { 'serie:plan': 30, 'serie:decisivo': 10, 'temporada:momento': 20, 'serie:minijuego': 20 };
+  const analisis = analizarDatosAgencia({ resultados, frecuenciasTipo, totalInterrupciones: 100, carreras: 10 }, 1, { sPop: 10, sPopT: 1 });
+  const esperadas = {
+    'serie:plan': { n: 3, nDeltaP: 3, pctDeltaP: 66.7, deltaPMediano: 10, pctSignificativoH: 66.7, pctBinarioH: 0 },
+    'serie:decisivo': { n: 1, nDeltaP: 1, pctDeltaP: 100, deltaPMediano: 6.25, pctSignificativoH: 100, pctBinarioH: 0 },
+    'temporada:momento': { n: 2, nDeltaP: 2, pctDeltaP: 50, deltaPMediano: 2, pctSignificativoH: 50, pctBinarioH: 0 },
+    'serie:minijuego': { n: 1, nDeltaP: 0, pctDeltaP: 0, deltaPMediano: null, pctSignificativoH: 100, pctBinarioH: 100 }
+  };
+  for (const [tipo, campos] of Object.entries(esperadas)) {
+    const f = analisis.porTipoDeParada.find((candidata) => candidata.tipo === tipo);
+    if (!f) {
+      throw new Error(`falta el tipo ${tipo}`);
+    }
+    for (const [campo, valor] of Object.entries(campos)) {
+      if (f[campo] !== valor) {
+        throw new Error(`${tipo}.${campo}: se esperaba ${valor}, dio ${f[campo]}`);
+      }
+    }
+  }
+  if (analisis.pctPalancaEnHorizonte !== 60 || analisis.decisionesSinDeltaP !== 1 || analisis.decisionesSinHorizonteMedido !== 0) {
+    throw new Error(`fracción en el horizonte ${analisis.pctPalancaEnHorizonte} (60), sin Δp ${analisis.decisionesSinDeltaP} (1), sin horizonte ${analisis.decisionesSinHorizonteMedido} (0)`);
+  }
+});
+
+check('K4c-H Δp sobre el motor real: pPorOpcion lee la p de la previa (la misma que declaran las opciones del plan) y el `pH` de la fecha marcada es el `p` del log', () => {
+  // Seeds 1-2 hasta 45 splits: un serie:plan (su pSerie por opción es la lectura independiente), un serie:decisivo (la p del mapa, con y sin
+  // charla) y la fecha marcada (sin p por opción al decidir: null, y la p que tiró cada réplica es el `p` de su log).
+  const vistos = {};
+  for (const seed of [1, 2]) {
+    const rng = mulberry32(seed);
+    let st = createInitialState(seed, rng);
+    let splitCount = 0;
+    while (!st.terminado && splitCount < 45) {
+      st = avanzarSplit(st, rng).state;
+      while (st.pendiente) {
+        const { sistemaId, decision } = st.pendiente;
+        const tipo = `${sistemaId}:${decision.datos?.motivo ?? decision.presentacion ?? 'x'}`;
+        if (['serie:plan', 'serie:decisivo', 'temporada:momento'].includes(tipo) && !vistos[tipo] && (decision.opciones ?? []).length >= 2) {
+          vistos[tipo] = { seed, splitCount, st: structuredClone(st), decision };
+        }
+        st = resolverDecision(st, sistemaPorId(sistemaId).resolverAuto(st, decision, rng), rng).state;
+      }
+      splitCount += 1;
+    }
+  }
+  for (const tipo of ['serie:plan', 'serie:decisivo', 'temporada:momento']) {
+    if (!vistos[tipo]) {
+      throw new Error(`check vacío: en las seeds 1-2 no apareció ${tipo} en 45 splits`);
+    }
+  }
+  const opsDe = (decision) => decision.opciones.map((o) => ({ opcionId: o.id, _l: o.id }));
+  const plan = vistos['serie:plan'];
+  const pPlan = pPorOpcion(plan.st, plan.decision, opsDe(plan.decision));
+  if (!pPlan || pPlan.length !== plan.decision.opciones.length || pPlan.some((p, i) => p !== plan.decision.opciones[i].pSerie)) {
+    throw new Error(`serie:plan: la p por opción tenía que ser la pSerie declarada ${JSON.stringify(plan.decision.opciones.map((o) => o.pSerie))}, dio ${JSON.stringify(pPlan)}`);
+  }
+  const decisivo = vistos['serie:decisivo'];
+  const pDecisivo = pPorOpcion(decisivo.st, decisivo.decision, opsDe(decisivo.decision));
+  if (!pDecisivo || pDecisivo.some((p) => !(p > 0 && p < 1)) || new Set(pDecisivo).size < 2) {
+    throw new Error(`serie:decisivo: una p por opción, distintas, en (0, 1); dio ${JSON.stringify(pDecisivo)}`);
+  }
+  const momento = vistos['temporada:momento'];
+  if (pPorOpcion(momento.st, momento.decision, opsDe(momento.decision)) !== null) {
+    throw new Error('temporada:momento no declara p por opción al decidir: pPorOpcion tenía que dar null');
+  }
+  // La p de la réplica 0 / opción 0 de la fecha marcada contra el log del mismo split repetido a mano (mismos números aleatorios).
+  const { seed, splitCount, st } = momento;
+  const ops = opsDe(momento.decision);
+  const porOpcion = replicasDeDecision(st, ops, { seed, splitCount, tipo: 'temporada:momento', reps: 2, splits: splitCount + 2, horizonte: 'partido', unidad: UNIDAD_RESULTADO_H });
+  const rr = mulberry32(hashCadenaH(`${seed}|${splitCount}|temporada:momento|0`));
+  const { _l, ...respuesta } = ops[0];
+  let paso = resolverDecision(structuredClone(st), respuesta, rr);
+  const logs = [...paso.logs];
+  const esLaFecha = (l) => l.type === 'temporada' && typeof l.pSinMomento === 'number';
+  while (paso.state.pendiente && !logs.some(esLaFecha)) {
+    const { sistemaId, decision: siguiente } = paso.state.pendiente;
+    paso = resolverDecision(paso.state, sistemaPorId(sistemaId).resolverAuto(paso.state, siguiente, rr), rr);
+    logs.push(...paso.logs);
+  }
+  const log = logs.find(esLaFecha);
+  if (!log || porOpcion[0][0].pH !== log.p) {
+    throw new Error(`temporada:momento: pH de la réplica 0 / opción 0 es ${porOpcion[0][0]?.pH}; el log dice ${log?.p}`);
+  }
+});
+
 check('K4c bots de carrera (revisión): import por calibre y nivel, cambio de línea por maestría, retirarse por la oferta del mercado, `malas` al revés y cero rng', () => {
   // Trinquete: las reglas de `criterio` en las bifurcaciones solo estaban probadas por la medición (400 carreras). Acá van con
   // estados a mano. Un estado real con una oferta de import posible; el nivel y la liga actual se pisan a mano.

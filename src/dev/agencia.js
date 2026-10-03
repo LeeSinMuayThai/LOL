@@ -7,6 +7,7 @@
 // (cada carrera depende solo de su seed), pero tarda ~1/N. Con `--salida` guarda los crudos y `--analizar=a.json,b.json` los
 // vuelve a analizar sin simular. `--sin=tipo1,tipo2` dice cuánta palanca queda si esas paradas se resuelven solas.
 // K4c-H: la palanca se mide TAMBIÉN en el horizonte de cada parada (serie, partido, split o carrera; ver `HORIZONTE_POR_TIPO`).
+// En serie y partido esa palanca se mide SIN RUIDO por la p declarada de cada opción: Δp = mejor − peor, palanca si Δp >= `UMBRAL_DELTA_P` (5 pp).
 // El reporte trae, además de la tabla de siempre, la palanca POR TIPO DE PARADA (los mismos tipos que `desglosePorTipo` del
 // bloque `ritmo` de simulate.js) y la tabla de recorte: qué queda si se resuelven solas, de a una, las de menos palanca.
 import fs from 'fs';
@@ -23,6 +24,7 @@ import { hashCadena } from '../core/numeros.js';
 import { tierMasAltoJugado } from '../core/registro.js';
 import { puntosAbsolutos } from '../core/ranked.js';
 import { puntajeDeCarrera } from '../core/puntaje.js';
+import { previaDeDecision } from '../core/previaDePartido.js';
 import {
   RESULTADO_MINIJUEGO_BIEN, RESULTADO_MINIJUEGO_MAL, esDecisionDeMinijuego, esDecisionDeMercado
 } from './estrategias.js';
@@ -55,6 +57,10 @@ export const UMBRAL_SIGNIFICATIVO = 10;
 // (ponderado, mismo test corregido), y la fracción contra la carrera, que se sigue reportando, no puede bajar de 8,6%.
 export const META_PALANCA_HORIZONTE_PCT = 60;
 export const PISO_PALANCA_CARRERA_PCT = 8.6;
+// K4c-H (PLAN.md, K4c-H hecho): en los horizontes `serie` y `partido` la palanca se mide SIN RUIDO por la p declarada de cada opción
+// (Δp = p de la mejor − p de la peor). Cuenta como palanca si Δp >= 0,05: una elección que cambia una de cada veinte series/partidos.
+// Es una constante del instrumento, no del juego (no va en `data/balance.js`).
+export const UMBRAL_DELTA_P = 0.05;
 // Cuántas decisiones medidas hacen falta (en la carrera y en el horizonte) para proponer que una parada con 0% se resuelva sola.
 export const N_MINIMO_RESOLVER_SOLA = 20;
 
@@ -257,6 +263,9 @@ function metricaDeSplit(estado, unidad) {
 // `valor()` es `null` si nunca se cerró (la carrera se cortó antes) y la réplica queda fuera del test del horizonte.
 export function seguimientoDeHorizonte(horizonte, unidad = UNIDAD_PUNTAJE) {
   let valor;
+  // K4c-H: en el horizonte `partido`, la p con la que el motor tiró el partido de la fecha marcada (el `p` de su log, ya con lo que
+  // movió la opción elegida): la decisión no la declara por opción, así que se lee de las réplicas.
+  let pDelPartido = null;
   const cerrar = (v) => {
     if (valor === undefined) {
       valor = v;
@@ -282,6 +291,7 @@ export function seguimientoDeHorizonte(horizonte, unidad = UNIDAD_PUNTAJE) {
         for (const log of logs) {
           const resultado = resultadoDelPartidoMarcado(log);
           if (resultado !== null) {
+            pDelPartido = Number.isFinite(log.p) ? log.p : null;
             cerrar(resultado);
             return;
           }
@@ -293,8 +303,54 @@ export function seguimientoDeHorizonte(horizonte, unidad = UNIDAD_PUNTAJE) {
     },
     valor() {
       return valor ?? null;
+    },
+    p() {
+      return pDelPartido;
     }
   };
+}
+
+// K4c-H: la p con la que el motor tira cada opción de una parada de serie, leída del estado en que se decide (cero simulación, cero
+// `rng`): la de la previa de K2d (`previaDeDecision`, la misma que muestran las tarjetas y que leen los bots). Una por opción de `ops`,
+// en el mismo orden. `null` si el tipo no la declara por opción (`temporada:momento`, los minijuegos que no mueven un mapa) o no
+// se pudo leer: esa parada se queda con el binario.
+//  - plan / swiss: la p de ganar la SERIE (plan) o el Bo1 del 2-2 (swiss).
+//  - decisivo / minijuego: la p del MAPA que se juega (con charla o sin ella; con el resultado del minijuego). Los minijuegos de la
+//    serie son del `mapa_decisivo` (el de después de la rueda de prensa es `carrera`): la p de ese mapa ES la de la serie.
+export function pPorOpcion(estado, decision, ops) {
+  try {
+    const ps = esDecisionDeMinijuego(decision)
+      ? ops.map((op) => previaDeDecision(estado, decision, { resultadoMinijuego: op.resultado })?.p)
+      : (() => {
+        const previa = previaDeDecision(estado, decision);
+        return ops.map((op) => previa?.opciones?.find((o) => o.id === op.opcionId)?.p);
+      })();
+    return ps.length >= 2 && ps.every((p) => Number.isFinite(p)) ? ps : null;
+  } catch {
+    return null;
+  }
+}
+
+// Δp de UNA decisión: p de la mejor opción − p de la peor, o `null` si no hay p por opción. Para `serie` y `partido`.
+// `pOp` = la p por opción leída al decidir (`pPorOpcion`, la que guarda la fila). El `partido` no la tiene al decidir: se promedia
+// la p que el motor tiró en cada réplica (`pH`) por opción, sobre las réplicas válidas en TODAS las opciones.
+export function deltaPDeDecision(pOp, porOpcion, hor) {
+  if (hor !== 'serie' && hor !== 'partido') {
+    return null;
+  }
+  if (Array.isArray(pOp) && pOp.length === porOpcion.length && pOp.length >= 2 && pOp.every((p) => Number.isFinite(p))) {
+    return Math.max(...pOp) - Math.min(...pOp);
+  }
+  if (hor === 'partido') {
+    const pH = porOpcion.map((repsArr) => repsArr.map((x) => (x && Number.isFinite(x.pH) ? x.pH : null)));
+    const validas = pH[0]?.map((_, r) => pH.every((otra) => otra[r] !== null)) ?? [];
+    const cuantas = validas.filter(Boolean).length;
+    if (cuantas > 0 && pH.length >= 2) {
+      const medias = pH.map((p) => mean(p.filter((v, r) => validas[r])));
+      return Math.max(...medias) - Math.min(...medias);
+    }
+  }
+  return null;
 }
 
 function opcionesDe(decision) {
@@ -574,7 +630,9 @@ export function replicasDeDecision(st, ops, {
         const primero = resolverDecision(clon, resp, rr);
         seguimiento.observar(primero.state, primero.logs);
         const resultado = terminar(primero.state, rr, splitCount, Number(splits), seguimiento);
-        porOpcion[i].push(horizonte === 'carrera' ? resultado : { ...resultado, hz: seguimiento.valor() });
+        porOpcion[i].push(horizonte === 'carrera' ? resultado : {
+          ...resultado, hz: seguimiento.valor(), ...(horizonte === 'partido' && seguimiento.p() !== null ? { pH: seguimiento.p() } : {})
+        });
       } catch (error) {
         porOpcion[i].push(null);
         if (fallos) {
@@ -637,7 +695,12 @@ export function medirAgencia({
           const horizonte = horizonteDeDecision(tipo, decision);
           const unidad = unidadDeHorizonte(horizonte, st.phase);
           const porOpcion = replicasDeDecision(st, ops, { seed, splitCount, tipo, reps, splits, fallos, terminar, horizonte, unidad });
-          resultados.push({ seed, split: splitCount, tipo, hor: horizonte, un: unidad, labels: ops.map((o) => o._l), porOpcion });
+          const fila = { seed, split: splitCount, tipo, hor: horizonte, un: unidad, labels: ops.map((o) => o._l), porOpcion };
+          // K4c-H: la p declarada de cada opción (sin ruido) en los horizontes de serie y partido, leída del estado en que se decide.
+          if (horizonte === 'serie' || horizonte === 'partido') {
+            fila.pOp = pPorOpcion(st, decision, ops);
+          }
+          resultados.push(fila);
         }
 
         const sis = sistemaPorId(sistemaId);
@@ -694,8 +757,15 @@ export function palancaPorTipoDeParada(porParada, frecuenciasTipo, carreras, div
 
       // K4c-H: lo mismo en el HORIZONTE de la parada. Una decisión cuya métrica de horizonte no se pudo medir (`sigH` null: crudos
       // sin `hz`, o un horizonte que no se cerró) no entra en esta fracción; el tipo cuenta con las que sí.
-      const enHorizonte = decisiones.filter((x) => x.sigH !== null && x.sigH !== undefined);
-      const fraccionSignificativaH = enHorizonte.length > 0 ? mean(enHorizonte.map((x) => (x.sigH ? 1 : 0))) : 0;
+      // K4c-H (Δp): en serie y partido la palanca en el horizonte sale de la p declarada (`sigHor`: Δp >= `UMBRAL_DELTA_P`) y, si la
+      // decisión no la trae, del binario. El binario puro se reporta aparte (`fraccionBinariaH`).
+      const sigDeHorizonte = (x) => (x.sigHor !== undefined ? x.sigHor : x.sigH);
+      const enHorizonte = decisiones.filter((x) => sigDeHorizonte(x) !== null && sigDeHorizonte(x) !== undefined);
+      const fraccionSignificativaH = enHorizonte.length > 0 ? mean(enHorizonte.map((x) => (sigDeHorizonte(x) ? 1 : 0))) : 0;
+      const conBinario = decisiones.filter((x) => x.sigH !== null && x.sigH !== undefined);
+      const fraccionBinariaH = conBinario.length > 0 ? mean(conBinario.map((x) => (x.sigH ? 1 : 0))) : 0;
+      const conDeltaP = decisiones.filter((x) => Number.isFinite(x.dp));
+      const fraccionDeltaP = conDeltaP.length > 0 ? mean(conDeltaP.map((x) => (x.dp >= UMBRAL_DELTA_P ? 1 : 0))) : 0;
       const cuentaHorizontes = {};
       for (const x of decisiones) {
         const h = x.hor ?? horizonteDeTipo(tipo);
@@ -727,6 +797,13 @@ export function palancaPorTipoDeParada(porParada, frecuenciasTipo, carreras, div
         palancaMedianaH: enHorizonte.length > 0 ? Number((med(enHorizonte.map((x) => x.LH)) ?? 0).toFixed(2)) : null,
         unidadH,
         deltaMedianoH: enHorizonte.length > 0 && unidadH ? Number((factorUnidad * (med(enHorizonte.map((x) => x.spreadH)) ?? 0)).toFixed(2)) : null,
+        // K4c-H: la medición sin ruido de serie y partido (Δp, en puntos porcentuales) y el binario en columna aparte.
+        nDeltaP: conDeltaP.length,
+        fraccionDeltaP,
+        pctDeltaP: Number((100 * fraccionDeltaP).toFixed(1)),
+        deltaPMediano: conDeltaP.length > 0 ? Number((100 * (med(conDeltaP.map((x) => x.dp)) ?? 0)).toFixed(2)) : null,
+        nBinarioH: conBinario.length,
+        pctBinarioH: Number((100 * fraccionBinariaH).toFixed(1)),
         aporteHPct: Number(((veces * fraccionSignificativaH / divisor) * 100).toFixed(1)),
         // Candidata a resolverse sola (PLAN K4c, decisiones del paso 2): 0% de palanca en la carrera Y en su horizonte, con
         // al menos `N_MINIMO_RESOLVER_SOLA` decisiones medidas en cada uno.
@@ -819,6 +896,7 @@ export function analizarDatosAgencia(
 
   const porTipo = {};
   const porParada = {};
+  let decisionesSinDeltaP = 0;
 
   // K4c-H: el horizonte de cada decisión (los crudos nuevos lo traen en `hor` y `un`; a los viejos se les pone el del mapa, sin
   // `hz`: su horizonte queda sin medir) y la σ de la métrica de cada unidad, sobre todas las réplicas de esa unidad. Es la escala
@@ -880,10 +958,19 @@ export function analizarDatosAgencia(
       }
     }
 
+    // K4c-H: en serie y partido, la palanca en el horizonte es Δp >= `UMBRAL_DELTA_P` (sin ruido); el binario (`sigH`) queda aparte y
+    // es el que vale si la decisión no trae p por opción (crudos viejos, o un tipo que no la declara).
+    const dp = deltaPDeDecision(d.pOp, d.porOpcion, hor);
+    const sigP = dp === null ? null : dp >= UMBRAL_DELTA_P;
+    if ((hor === 'serie' || hor === 'partido') && dp === null) {
+      decisionesSinDeltaP += 1;
+    }
+
     const parada = tipoDeParada(d.tipo);
     porParada[parada] = porParada[parada] ?? [];
     porParada[parada].push({
-      sig, L: spread / sPop, hor, un, sigH, spreadH, LH: spreadH === null ? null : spreadH / sigmaDeUnidad(un)
+      sig, L: spread / sPop, hor, un, sigH, spreadH, LH: spreadH === null ? null : spreadH / sigmaDeUnidad(un),
+      dp, sigP, sigHor: sigP ?? sigH
     });
 
     const tipoNormalizado = d.tipo.replace(/:x:/, ':').replace(/^edadCierre:.*/, 'edadCierre:*');
@@ -965,6 +1052,8 @@ export function analizarDatosAgencia(
     // decisiones quedaron sin horizonte medido (crudos viejos, o un horizonte que no se cerró en las réplicas mínimas).
     pctPalancaEnHorizonte: Number(((porTipoDeParada.reduce((suma, fila) => suma + fila.frecuencia * fila.fraccionSignificativaH, 0) / divisor) * 100).toFixed(1)),
     decisionesSinHorizonteMedido: porTipoDeParada.reduce((suma, fila) => suma + (fila.n - fila.nH), 0),
+    // Decisiones de serie o partido sin Δp (crudos de antes de la medición por p, o un tipo sin p por opción): usan el binario.
+    decisionesSinDeltaP,
     filas: filas.map(([tipo, v]) => ({
       tipo,
       n: v.length,
@@ -1185,15 +1274,20 @@ AVISO: ${datosCrudos.fallos.length} fallo(s) en la medición (las réplicas rota
   if (analisis.decisionesSinHorizonteMedido > 0) {
     console.log(`AVISO: ${analisis.decisionesSinHorizonteMedido} decision(es) sin horizonte medido (crudos sin 'hz', o el horizonte no se cerró en las réplicas mínimas): no entran en la columna del horizonte.`);
   }
+  if (analisis.decisionesSinDeltaP > 0) {
+    console.log(`AVISO: ${analisis.decisionesSinDeltaP} decision(es) de serie o partido sin Δp (crudos de antes de la medición por p declarada, o un tipo que no declara p por opción): usan el binario ganada/perdida.`);
+  }
+  console.log(`En serie y partido la palanca en el horizonte es Δp (p de la mejor opción − p de la peor) >= ${100 * UMBRAL_DELTA_P} pp; el binario ganada/perdida va en su columna.`);
   console.log('');
-  console.log('tipo | horizonte | paradas por carrera | n | % sig. carrera | mediana carrera (σ) | nH | % sig. horizonte | mediana horizonte (σ) | Δ mediano (unidad) | aporte carrera / horizonte (pp) | a solas');
-  console.log('-----|-----------|---------------------|---|----------------|---------------------|----|------------------|-----------------------|--------------------|---------------------------------|--------');
+  console.log('tipo | horizonte | paradas por carrera | n | % sig. carrera | mediana carrera (σ) | nH | % con palanca en el horizonte | n Δp | % con Δp | Δp mediana (pp) | % sig. binario | mediana horizonte (σ) | Δ binario (unidad) | aporte carrera / horizonte (pp) | a solas');
+  console.log('-----|-----------|---------------------|---|----------------|---------------------|----|-------------------------------|------|----------|-----------------|----------------|-----------------------|--------------------|---------------------------------|--------');
   for (const f of analisis.porTipoDeParada) {
     const horizonte = f.horizontes ? `${f.horizonte} (${Object.entries(f.horizontes).map(([h, c]) => `${h} ${c}`).join(', ')})` : f.horizonte;
     const delta = f.deltaMedianoH === null ? '-' : `${f.deltaMedianoH} ${f.unidadH === UNIDAD_RESULTADO ? 'pp' : f.unidadH}`;
     console.log([
       f.tipo, horizonte, f.porCarrera ?? '?', f.n, f.n > 0 ? `${f.pctSignificativo}%` : 'sin medir', f.palancaMediana ?? '-',
-      f.nH, f.nH > 0 ? `${f.pctSignificativoH}%` : 'sin medir', f.palancaMedianaH ?? '-', delta, `${f.aportePct} / ${f.aporteHPct}`, f.aSolas ? 'SÍ' : ''
+      f.nH, f.nH > 0 ? `${f.pctSignificativoH}%` : 'sin medir', f.nDeltaP, f.nDeltaP > 0 ? `${f.pctDeltaP}%` : '-', f.deltaPMediano ?? '-',
+      f.nBinarioH > 0 ? `${f.pctBinarioH}%` : '-', f.palancaMedianaH ?? '-', delta, `${f.aportePct} / ${f.aporteHPct}`, f.aSolas ? 'SÍ' : ''
     ].join(' | '));
   }
   const candidatas = analisis.porTipoDeParada.filter((f) => f.aSolas).map((f) => f.tipo);
