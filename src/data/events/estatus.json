@@ -209,6 +209,7 @@
     "options": [
       {
         "id": "asumir_la_responsabilidad_publica",
+        "perfil": "showman",
         "label": "Asumir la responsabilidad en público",
         "descripcion": "Cuando algo sale mal, hablás vos y no dejás que caiga sobre un compañero. Te expone más a la crítica, pero te gana el respeto del grupo.",
         "weight": 5,

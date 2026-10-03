@@ -30,5 +30,5 @@
 // a su base (r = 0,2 con subida 0,05, tope de descanso 70, rH = 0,6), los efectos que duran
 // (fracción 0,3 para eventos y práctica) y el umbral de pausa del draft (0,0818 / 0,0409). Las
 // carreras cambian de cabo a rabo: ninguna seed de K2c reproduce la suya.
-export const VERSION_JUEGO = 'K3c';
-export const HUELLA_JUEGO = 577913468;
+export const VERSION_JUEGO = 'K4-C';
+export const HUELLA_JUEGO = 169293753;

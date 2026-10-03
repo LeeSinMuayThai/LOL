@@ -1,4 +1,5 @@
 import { BALANCE } from '../data/balance.js';
+import { perfilInicial } from './perfil.js';
 import { generarMundo } from './mundo.js';
 import { bonusPermanenteInicial } from './curvas.js';
 import { puntosAbsolutos } from './ranked.js';
@@ -128,7 +129,10 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       worlds: 0,
       signatureChampion: null,
       campeonDelSplit: null,
-      championPool: jugador.championPool
+      championPool: jugador.championPool,
+      // K4-C: el perfil que resuelve los eventos que no son bifurcación (`core/perfil.js`). `actual` es la palabra
+      // de la ficha; `pesos` los cuatro perfiles, que las bifurcaciones corren. Completo desde el arranque (T4).
+      perfil: perfilInicial(seed, eleccion?.perfil ?? null)
     },
     career: {
       orgs: [],
@@ -340,6 +344,15 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // repetir la misma mecanica dos series seguidas si hay otra elegible para
       // ese momento. Array vacio al arrancar, nunca null (trampa T4).
       minijuegosRecientes: [],
+      // J4 (K4-C): las categorías de los últimos eventos (ventana `eventos.categoriasRecientesMax`), para que la
+      // selección no repita categoría dos veces seguidas por peso. Array vacío al arrancar (T4).
+      categoriasRecientes: [],
+      // J4 (K4-C): el `splitCount` del parche en el que tu main cayó de S/A a B/C (`systems/meta.js`); `main_muerto`
+      // dura `contexto.ventanaMainMuerto` splits desde ahí. `null` = nunca cayó (T4).
+      splitMainMuerto: null,
+      // K4-C: los saltos grandes que ya tuvieron su prueba ('tier2', 'tier1', 'import'): la prueba sale una vez
+      // por salto (`systems/mercado.js`). Array vacío al arrancar (T4).
+      saltosConPrueba: [],
       // Rastro de un solo split: qué campeón(es) entró el último efecto `pool`
       // con `accion: 'aprender'` de ESTE outcome. Lo usa el siguiente efecto
       // del mismo outcome (`accion: 'maestria', objetivo: 'nuevo'`) para saber

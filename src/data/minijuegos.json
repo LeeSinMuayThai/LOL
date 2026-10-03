@@ -151,7 +151,7 @@
   {
     "id": "rueda_de_prensa",
     "momentos": [
-      "post_serie"
+      "post_serie", "post_escandalo"
     ],
     "roles": [],
     "statRelevante": "adaptabilidad",

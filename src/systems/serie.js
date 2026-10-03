@@ -424,7 +424,8 @@ function concluirRonda(state, rng, logsAcum) {
     logs.push(crearLog('serie', `Ganaste la serie ${marcador[0]}-${marcador[1]} contra ${state.serie.rival.org}. Avanzás de ronda.`, datosPost));
   }
 
-  if (['final', 'internacional'].includes(ronda) && !st.serie.minijuegoUsado) {
+  // K4-C: la rueda de prensa sale solo después de una final (`serie.rondasConPrensa`) o de un escándalo (events.js).
+  if (BALANCE.serie.rondasConPrensa.includes(ronda) && !st.serie.minijuegoUsado) {
     const pausa = pausaDeMinijuego(st, 'post_serie', logs, { trasRonda: ronda, gano });
     if (pausa) {
       return pausa;

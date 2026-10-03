@@ -1,0 +1,48 @@
+{
+  "orden": ["profesional", "hambriento", "showman", "leal"],
+  "perfiles": {
+    "profesional": {
+      "nombre": "Profesional",
+      "descripcion": "Review, horarios y cabeza fría. Elegís lo que te hace mejor jugador aunque no luzca.",
+      "familias": { "juego": 2, "lectura": 2, "cabeza": 2, "fama": 0, "ladder": 1, "partido": 2, "puesto": 1, "grupo": 1, "raiz": 0.5, "pool": 1.5, "estudio": 0.5 },
+      "riesgo": { "seguro": 1.5, "incierto": 0, "ruleta": -1.5 }
+    },
+    "hambriento": {
+      "nombre": "Hambriento",
+      "descripcion": "Querés el puesto, el LP y la copa, y los querés ya. Si hay que arriesgar, se arriesga.",
+      "familias": { "juego": 2, "lectura": 1, "cabeza": 0.5, "fama": 1, "ladder": 2.5, "partido": 2.5, "puesto": 2.5, "grupo": 0, "raiz": -0.5, "pool": 1, "estudio": 0 },
+      "riesgo": { "seguro": -1, "incierto": 0.5, "ruleta": 1.5 }
+    },
+    "showman": {
+      "nombre": "Showman",
+      "descripcion": "El clip, el stream y la frase que queda. Jugás para que te miren.",
+      "familias": { "juego": 1, "lectura": 0, "cabeza": 0.5, "fama": 3, "ladder": 1, "partido": 1, "puesto": 1, "grupo": 0, "raiz": 0, "pool": 0.5, "estudio": 0 },
+      "riesgo": { "seguro": -1.5, "incierto": 0, "ruleta": 2 }
+    },
+    "leal": {
+      "nombre": "Leal",
+      "descripcion": "El vestuario, el club y los tuyos primero. Bancás el proyecto aunque te cueste.",
+      "familias": { "juego": 0.5, "lectura": 1, "cabeza": 1, "fama": -0.5, "ladder": 0, "partido": 1.5, "puesto": 0.5, "grupo": 3, "raiz": 3, "pool": 0.5, "estudio": 1 },
+      "riesgo": { "seguro": 1, "incierto": 0, "ruleta": -1 }
+    }
+  },
+  "familiaDeCampo": {
+    "player.stats.mecanica": "juego",
+    "player.stats.laneo": "juego",
+    "player.stats.teamfight": "juego",
+    "player.stats.macro": "lectura",
+    "player.stats.shotcalling": "lectura",
+    "player.stats.adaptabilidad": "lectura",
+    "player.stats.mentalidad": "cabeza",
+    "player.sleep": "cabeza",
+    "player.stats.hype": "fama",
+    "player.ranked": "ladder",
+    "career.temporada.ajustePartido": "partido",
+    "career.jerarquia": "puesto",
+    "career.sinergia": "grupo",
+    "career.arraigo": "raiz",
+    "player.familyTrust": "raiz",
+    "player.championPool": "pool",
+    "player.studies": "estudio"
+  }
+}

@@ -1,3 +1,4 @@
+import { campeonesMuertos } from '../core/ajusteMeta.js';
 import { BALANCE } from '../data/balance.js';
 import { gauss, chance, pick } from '../core/rng.js';
 import { clamp } from '../core/numeros.js';
@@ -99,9 +100,20 @@ export function aplicar(state, rng) {
 
   const logs = [crearLog('meta', textoDelParche(patch, regimen, tipo, saltos))];
 
+  // J4 (K4-C): si tu main estaba en S/A y este parche lo tira a B/C, queda estampado el split de la caída —
+  // `core/contexto.js` prende `main_muerto` desde acá por `contexto.ventanaMainMuerto` splits. Mientras siga
+  // caído no se re-estampa: la marca es la noticia de la caída, no el estado.
+  const pool = state.player.championPool ?? [];
+  const principal = pool.length > 0 ? pool.reduce((mejor, c) => (c.mastery > mejor.mastery ? c : mejor)) : null;
+  const cayo = principal !== null
+    && state.meta.tierList.length > 0
+    && campeonesMuertos([principal], tierListNueva).length > 0
+    && campeonesMuertos([principal], state.meta.tierList).length === 0;
+
   const conTierList = {
     ...conPesos,
-    meta: { ...conPesos.meta, tierList: tierListNueva, tierListAnterior: state.meta.tierList }
+    meta: { ...conPesos.meta, tierList: tierListNueva, tierListAnterior: state.meta.tierList },
+    flags: cayo ? { ...conPesos.flags, splitMainMuerto: state.player.splitCount } : conPesos.flags
   };
 
   const { state: nextState, log } = debutarCampeon(conTierList, rng);
