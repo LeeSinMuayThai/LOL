@@ -36,7 +36,13 @@
 // sin `preSerieUsado`; `career.charlaUsadaEn`; y en el log de cada mapa `rivalJuega`, `plan` y `charla` — K4-C, el perfil:
 // `player.perfil`, `flags.categoriasRecientes`, `flags.splitMainMuerto` y `flags.saltosConPrueba` — K4-D, la pretemporada
 // en una sola parada: `flags.preparacionDeSplit`, el año cuya preparación ya se resolvió, y `preparacion` —las cartas de
-// las rutinas de offseason— en los datos de la decisión del mercado y de la prueba del salto).
+// las rutinas de offseason— en los datos de la decisión del mercado y de la prueba del salto) · 9 (K4-C2, las
+// bifurcaciones con efectos de carrera: `flags.ofertaDeImport` y `flags.rolDeOrigen`) · 10 (K5, la integración de K5-A,
+// K5-B y K5-C en un solo número — K5-A, el Mundial de verdad: `state.internacional` (Swiss + bracket), `torneo`/`etapa`
+// en `serie` y `record`/`campeon` en cada `registro.internacionales` — K5-B, la región se elige: las ligas del mundo
+// suman LRN y LRS, las tier 2 de LATAM sin primera arriba, con `sinPrimera` y `alimentaA` — K5-C, el final lo decide el
+// mercado: `flags.splitsSinOfertaEnTier`, `flags.forkMercadoSplit`, `tarjeta.motivo` y `state.motivoRetiro`, el único
+// lugar del motivo del retiro —K4-C2 lo había puesto en `flags.motivoRetiro`—).
 export const VERSION = 9;
 
 export function serializar(state, rng, rngUi) {

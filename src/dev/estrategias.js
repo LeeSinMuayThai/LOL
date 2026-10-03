@@ -127,6 +127,12 @@ function charlaEnMinijuego(state, decision, peor) {
   return decision.datos?.charla?.disponible ? { charla: !peor && usaLaCharlaEnAuto(state.serie?.ronda) } : {};
 }
 
+// K5-C: la bifurcación del final por mercado (`systems/mercado.js`): "bajás de tier" (o "seguís buscando", si nadie
+// ofrece) contra "colgás el mouse". Va antes que `esDecisionDeMercado` en cada bot.
+export function esDecisionDeFinPorMercado(decision) {
+  return decision.datos?.motivo === 'fin_mercado';
+}
+
 export function esDecisionDeMercado(decision) {
   return decision.presentacion === 'mercado'
     || (decision.opciones?.[0]?.salarioAnualUSD !== undefined && decision.datos?.motivo !== 'traspaso');
@@ -189,6 +195,10 @@ function responderCriterio(sistema, state, decision, rng) {
   if (esDecisionDePlanDeSerie(decision)) {
     return respuestaDePlanDeSerie(state, decision, false);
   }
+  if (esDecisionDeFinPorMercado(decision)) {
+    // La regla del headless: joven, baja (o espera); desde `edadAutoAceptaVeredicto`, acepta el veredicto.
+    return sistema.resolverAuto(state, decision, rng);
+  }
   if (esDecisionDeMercado(decision)) {
     const rutinaDelBot = (rutinas) => elegirRutinaAuto(state, rutinas, rng).id;
     if (decision.opciones.length === 0) {
@@ -218,6 +228,11 @@ function responderMalas(sistema, state, decision, rng) {
   }
   if (esDecisionDePlanDeSerie(decision)) {
     return respuestaDePlanDeSerie(state, decision, true);
+  }
+  if (esDecisionDeFinPorMercado(decision)) {
+    // Lo peor de los dos lados: joven, cuelga el mouse con una oferta en la mano; veterano, se aferra un año más.
+    const opcionId = state.age >= BALANCE.retiro.edadAutoAceptaVeredicto ? decision.opciones[0].id : 'retirarse';
+    return conRutina(decision, { opcionId }, (rutinas) => rutinaConMejorPuntaje(rutinas, puntajeAgresiva).id);
   }
   if (esDecisionDeMercado(decision)) {
     const rutinaDelBot = (rutinas) => rutinaConMejorPuntaje(rutinas, puntajeAgresiva).id;
@@ -250,6 +265,10 @@ function responderAzar(sistema, state, decision, rng) {
   if (esDecisionDeMinijuego(decision)) {
     const resultado = (hash % (PASOS_RESULTADO_AZAR + 1)) / PASOS_RESULTADO_AZAR;
     return { resultado };
+  }
+  if (esDecisionDeFinPorMercado(decision)) {
+    const indice = hash % decision.opciones.length;
+    return conRutina(decision, { opcionId: decision.opciones[indice].id }, (rutinas) => rutinas[hashCadena(`${hash}|rutina`) % rutinas.length].id);
   }
   if (esDecisionDeMercado(decision)) {
     const opcionesCandidatas = [

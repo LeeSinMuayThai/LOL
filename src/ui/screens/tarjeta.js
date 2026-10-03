@@ -208,6 +208,10 @@ export function renderTarjeta(container, state, modulos, extras = {}) {
   container.dataset.marco = t.finAnticipado ?? 'retiro_elegido';
 
   container.appendChild(linea('tarjeta-marco', TITULO_MARCO[t.finAnticipado] ?? 'FIN DE LA CARRERA'));
+  // K5-C: el motivo del retiro, dicho como lo dijo el mercado (o la edad, o vos).
+  if (t.motivo) {
+    container.appendChild(linea('tarjeta-motivo', t.motivo));
+  }
   container.appendChild(linea('tarjeta-identidad',
     `${state.player.name} · ${modulos.etiquetaRol(state.player.role)} · se retiró a los ${t.edadRetiro}`));
 

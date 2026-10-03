@@ -8778,6 +8778,324 @@ const {
   esDecisionDeMercado, esDecisionDeRutina, esDecisionDeMinijuego
 } = await import('./estrategias.js');
 const { spawnSync } = await import('child_process');
+
+// --- K5-C: el final lo decide el mercado ---
+//
+// La muestra: carreras reales (`avanzarSplitAuto`) en las que, al llegar a tier 1, el nivel del jugador se "rompe" (cada
+// stat queda topeada en una fracción de lo que valía, `FACTORES_DEGRADADO_K5C`): un jugador por debajo de su liga, que es justo el caso
+// que el mercado tiene que terminar. El umbral (`BALANCE.retiro.splitsSinOfertaEnTierParaBifurcar`) se prende en
+// memoria; el valor del repo (99) es el neutro, que reproduce hoy.
+const SEEDS_K5C = 30;
+const SPLITS_K5C = 90;
+const UMBRAL_K5C = 2;
+// Un factor por seed (`seed % 3`). Medido al escribir el check: con 0.85 o más una org floja de tier 1 de cualquier
+// región (fuerza ~37-43 en LCS/LCP/CBLOL) lo sigue llamando y nunca se bifurca; de 0.6 a 0.72 se bifurca, casi siempre
+// sin nadie que ofrezca más abajo ("seguís buscando"). El lado "bajás" es raro (2 de 240 carreras): lo busca su propio
+// check, seed por seed, en vez de exigirlo de esta muestra.
+const FACTORES_DEGRADADO_K5C = [0.6, 0.66, 0.72];
+
+function conUmbralK5C(valor, fn) {
+  const previo = BALANCE.retiro.splitsSinOfertaEnTierParaBifurcar;
+  BALANCE.retiro.splitsSinOfertaEnTierParaBifurcar = valor;
+  try {
+    return fn();
+  } finally {
+    BALANCE.retiro.splitsSinOfertaEnTierParaBifurcar = previo;
+  }
+}
+
+function topearStats(state, techo) {
+  const stats = { ...state.player.stats };
+  for (const [stat, valor] of Object.entries(techo)) {
+    stats[stat] = Math.min(stats[stat], valor);
+  }
+  return { ...state, player: { ...state.player, stats } };
+}
+
+// Corre una carrera degradada y anota cada mano de ofertas y cada bifurcación con lo que se respondió.
+const responderPorDefectoK5C = (sistema, st, decision, rng) => sistema.resolverAuto(st, decision, rng);
+function carreraDegradadaK5C(seed, responderBase = responderPorDefectoK5C, factor = FACTORES_DEGRADADO_K5C[seed % FACTORES_DEGRADADO_K5C.length]) {
+  const rng = mulberry32(seed);
+  let state = createInitialState(seed, rng);
+  let techo = null;
+  const manos = [];
+  const forks = [];
+  const pasos = [];
+  const responder = (sistema, st, decision, rngR) => {
+    const respuesta = responderBase(sistema, st, decision, rngR);
+    if (decision.datos?.motivo === 'fin_mercado') {
+      forks.push({
+        seed, split: st.player.splitCount, edad: st.age, tier: st.career.tier, cuenta: st.flags.splitsSinOfertaEnTier,
+        tiersOfertas: decision.datos.ofertas.map((oferta) => oferta.tier), opciones: decision.opciones.map((op) => op.id),
+        ofertas: decision.datos.ofertas.map((oferta) => oferta.org),
+        textos: [decision.titulo, decision.descripcion, decision.datos.motivoRetiro, ...decision.opciones.flatMap((op) => [op.label, op.descripcion])],
+        motivoRetiro: decision.datos.motivoRetiro, ligas: st.mundo.ligas, respuesta: respuesta.opcionId
+      });
+    } else if (decision.presentacion === 'mercado' && decision.datos?.motivo === 'oferta') {
+      manos.push({
+        split: st.player.splitCount, cuenta: st.flags.splitsSinOfertaEnTier, orgs: decision.opciones.map((oferta) => oferta.org),
+        enTier: decision.opciones.some((oferta) => oferta.tier <= st.career.tier)
+      });
+    }
+    return respuesta;
+  };
+  for (let i = 0; i < SPLITS_K5C && !state.terminado; i += 1) {
+    if (!techo && state.phase === 'profesional' && state.career.tier === 1) {
+      techo = Object.fromEntries(Object.entries(state.player.stats).map(([stat, valor]) => [stat, valor * factor]));
+    }
+    if (techo && state.phase === 'profesional') {
+      state = topearStats(state, techo);
+    }
+    const forksAntes = forks.length;
+    const paso = avanzarSplitAuto(state, rng, responder);
+    state = paso.state;
+    pasos.push({
+      forksNuevos: forks.slice(forksAntes), logs: paso.logs, phase: state.phase, edad: state.age, motivoRetiro: state.motivoRetiro,
+      tier: state.career.tier, cuenta: state.flags.splitsSinOfertaEnTier
+    });
+  }
+  return { state, manos, forks, pasos };
+}
+
+const muestrasK5C = new Map();
+function muestraK5C(umbral, nombre = 'auto', responderBase = undefined) {
+  const clave = `${umbral}|${nombre}`;
+  if (!muestrasK5C.has(clave)) {
+    muestrasK5C.set(clave, conUmbralK5C(umbral, () => {
+      const carreras = [];
+      for (let seed = 1; seed <= SEEDS_K5C; seed += 1) {
+        carreras.push(carreraDegradadaK5C(seed, responderBase));
+      }
+      return carreras;
+    }));
+  }
+  return muestrasK5C.get(clave);
+}
+
+// Un texto de pantalla sin ids crudos: nada de snake_case, ni `undefined`/`null`/`NaN`, ni el id de una liga cuyo
+// nombre visible es otro ("EMEA_MASTERS" en vez de "EMEA Masters").
+function idsCrudosK5C(texto, ligas) {
+  const problemas = [];
+  if (typeof texto !== 'string' || texto.trim() === '') {
+    return ['texto vacío'];
+  }
+  if (/\b[a-z]+_[a-z_]+\b/i.test(texto)) {
+    problemas.push('snake_case');
+  }
+  if (/\b(undefined|null|NaN)\b/.test(texto)) {
+    problemas.push('undefined/null/NaN');
+  }
+  for (const liga of ligas) {
+    if (liga.id !== liga.nombre && texto.includes(liga.id)) {
+      problemas.push(`id de liga ${liga.id}`);
+    }
+  }
+  return problemas;
+}
+
+check('K5-C: con el umbral prendido, un jugador por debajo de su liga pasa N pretemporadas sin oferta de su tier y recién ahí frena "bajás o te retirás"', () => {
+  const carreras = muestraK5C(UMBRAL_K5C);
+  const forks = carreras.flatMap((c) => c.forks);
+  const problemas = [];
+  for (const fork of forks) {
+    if (fork.cuenta < UMBRAL_K5C) {
+      problemas.push(`seed ${fork.seed} split ${fork.split}: frenó con ${fork.cuenta} pretemporadas sin oferta de su tier (umbral ${UMBRAL_K5C})`);
+    }
+    if (fork.tiersOfertas.some((tier) => tier <= fork.tier)) {
+      problemas.push(`seed ${fork.seed} split ${fork.split}: frenó con una oferta de su tier en la mano (${fork.tiersOfertas})`);
+    }
+    const seguir = fork.tiersOfertas.length > 0 ? 'bajar' : 'esperar';
+    if (fork.opciones.length !== 2 || fork.opciones[0] !== seguir || fork.opciones[1] !== 'retirarse') {
+      problemas.push(`seed ${fork.seed} split ${fork.split}: opciones ${fork.opciones} (se esperaba ${seguir} y retirarse)`);
+    }
+    if (fork.edad >= BALANCE.retiro.edadRetiroForzoso) {
+      problemas.push(`seed ${fork.seed}: frenó a los ${fork.edad}, pasada la línea`);
+    }
+  }
+  // La cuenta: una mano con una oferta de tu tier la deja en 0; una sin ninguna la tiene en 1 o más; y con la cuenta en
+  // el umbral nunca se ve la mano de siempre sin pasar antes por la bifurcación (salvo después de elegir bajar).
+  for (const carrera of carreras) {
+    for (const mano of carrera.manos) {
+      if (mano.enTier && mano.cuenta !== 0) {
+        problemas.push(`seed ${carrera.state.seed} split ${mano.split}: mano con oferta de su tier y cuenta ${mano.cuenta}`);
+      }
+      if (!mano.enTier && mano.cuenta < 1) {
+        problemas.push(`seed ${carrera.state.seed} split ${mano.split}: mano sin oferta de su tier y cuenta 0`);
+      }
+      if (mano.cuenta >= UMBRAL_K5C && !carrera.forks.some((f) => f.split === mano.split && f.respuesta === 'bajar')) {
+        problemas.push(`seed ${carrera.state.seed} split ${mano.split}: cuenta ${mano.cuenta} y la mano de siempre, sin bifurcación`);
+      }
+    }
+  }
+  if (forks.length === 0) {
+    problemas.push('ninguna bifurcación en la muestra degradada: el check no mide nada');
+  }
+  const neutras = muestraK5C(99).flatMap((c) => c.forks).length;
+  if (neutras !== 0) {
+    problemas.push(`con el umbral neutro (99) frenó ${neutras} veces: tiene que reproducir hoy`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problema(s) en ${forks.length} bifurcaciones: ${problemas.slice(0, 5).join(' · ')}`);
+  }
+});
+
+check('K5-C: el retiro por mercado deja su motivo (log, estado y tarjeta) y la bifurcación no muestra ids crudos', () => {
+  const retirarse = (sistema, st, decision, rng) => (decision.datos?.motivo === 'fin_mercado'
+    ? { opcionId: 'retirarse' }
+    : sistema.resolverAuto(st, decision, rng));
+  const carreras = muestraK5C(UMBRAL_K5C, 'retirarse', retirarse);
+  const problemas = [];
+  let retiros = 0;
+  for (const carrera of carreras) {
+    for (const paso of carrera.pasos) {
+      for (const fork of paso.forksNuevos) {
+        for (const texto of fork.textos) {
+          const crudos = idsCrudosK5C(texto, fork.ligas);
+          if (crudos.length > 0) {
+            problemas.push(`seed ${fork.seed}: "${texto}" (${crudos.join(', ')})`);
+          }
+        }
+        if (fork.respuesta !== 'retirarse') {
+          continue;
+        }
+        retiros += 1;
+        if (paso.phase !== 'retirado' || paso.motivoRetiro !== fork.motivoRetiro) {
+          problemas.push(`seed ${fork.seed}: eligió retirarse y quedó phase ${paso.phase}, motivo ${paso.motivoRetiro}`);
+        }
+        if (!paso.logs.some((log) => log.type === 'retiro' && log.message.includes(fork.motivoRetiro))) {
+          problemas.push(`seed ${fork.seed}: el log del retiro no dice el motivo`);
+        }
+      }
+    }
+    const { state } = carrera;
+    if (state.terminado && state.tarjeta && (state.tarjeta.motivo ?? null) !== (state.motivoRetiro ?? null)) {
+      problemas.push(`seed ${state.seed}: la tarjeta dice "${state.tarjeta.motivo}" y el estado "${state.motivoRetiro}"`);
+    }
+    if (state.motivoRetiro != null) {
+      const crudos = idsCrudosK5C(state.motivoRetiro, state.mundo.ligas);
+      if (crudos.length > 0) {
+        problemas.push(`seed ${state.seed}: motivo "${state.motivoRetiro}" (${crudos.join(', ')})`);
+      }
+    }
+  }
+  if (retiros === 0) {
+    problemas.push('ningún retiro por la bifurcación en la muestra: el check no mide nada');
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problema(s) en ${retiros} retiros por mercado: ${problemas.slice(0, 5).join(' · ')}`);
+  }
+});
+
+check('K5-C: la línea de los 34 sigue existiendo (con el umbral prendido y con el neutro) y deja su motivo', () => {
+  const problemas = [];
+  let enLaLinea = 0;
+  for (const umbral of [UMBRAL_K5C, 99]) {
+    for (const carrera of muestraK5C(umbral)) {
+      for (const paso of carrera.pasos) {
+        if (paso.phase === 'profesional' && paso.edad > BALANCE.retiro.edadRetiroForzoso) {
+          problemas.push(`umbral ${umbral}, seed ${carrera.state.seed}: profesional a los ${paso.edad}`);
+          break;
+        }
+      }
+    }
+  }
+  // Sin degradar (el responder por defecto, el umbral neutro): alguien llega a la línea y se va con su motivo.
+  for (let seed = 1; seed <= 12; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < SPLITS_K5C && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+    }
+    if (state.terminado && state.age >= BALANCE.retiro.edadRetiroForzoso && state.career.splitAscensoTier1 !== null) {
+      enLaLinea += 1;
+      if (!String(state.motivoRetiro).startsWith(`Llegaste a los ${state.age}`)) {
+        problemas.push(`seed ${seed}: se retiró en la línea con motivo "${state.motivoRetiro}"`);
+      }
+    }
+  }
+  if (enLaLinea === 0) {
+    problemas.push('nadie llegó a la línea de los 34 en 12 carreras sin degradar');
+  }
+  if (problemas.length > 0) {
+    throw new Error(problemas.slice(0, 5).join(' · '));
+  }
+});
+
+check('K5-C: con el umbral prendido, misma seed, misma carrera (bifurcaciones incluidas)', () => {
+  const unaVez = () => conUmbralK5C(UMBRAL_K5C, () => [3, 7, 11, 19].map((seed) => {
+    const { state, forks } = carreraDegradadaK5C(seed);
+    return JSON.stringify({ state, forks: forks.map(({ ligas, ...resto }) => resto) });
+  }));
+  const a = unaVez();
+  const b = unaVez();
+  const distintas = a.filter((texto, i) => texto !== b[i]).length;
+  if (distintas > 0) {
+    throw new Error(`${distintas} de ${a.length} carreras difieren entre dos corridas con la misma seed`);
+  }
+});
+
+// La búsqueda del lado raro: seeds en orden, hasta `SEEDS_BUSQUEDA_K5C`, con los dos factores bajos.
+const SEEDS_BUSQUEDA_K5C = 150;
+function buscarK5C(condicion, { responderBase = responderPorDefectoK5C, factores = FACTORES_DEGRADADO_K5C, minimo = 1 } = {}) {
+  return conUmbralK5C(UMBRAL_K5C, () => {
+    const halladas = [];
+    for (let seed = 1; seed <= SEEDS_BUSQUEDA_K5C && halladas.length < minimo; seed += 1) {
+      for (const factor of factores) {
+        const carrera = carreraDegradadaK5C(seed, responderBase, factor);
+        if (carrera.forks.some(condicion)) {
+          halladas.push(carrera);
+          break;
+        }
+      }
+    }
+    return halladas;
+  });
+}
+
+check('K5-C: "bajás" lleva a la mano de ofertas de más abajo, firmás un tier abajo y la cuenta vuelve a cero', () => {
+  const [carrera] = buscarK5C((fork) => fork.opciones[0] === 'bajar' && fork.respuesta === 'bajar');
+  if (!carrera) {
+    throw new Error(`ninguna bifurcación con "bajar" contestada en ${SEEDS_BUSQUEDA_K5C} seeds degradadas`);
+  }
+  const fork = carrera.forks.find((f) => f.respuesta === 'bajar');
+  const mano = carrera.manos.find((m) => m.split === fork.split);
+  const paso = carrera.pasos.find((p) => p.forksNuevos.includes(fork));
+  const problemas = [];
+  if (!mano || mano.orgs.join('|') !== fork.ofertas.join('|')) {
+    problemas.push(`después de "bajar" la mano no es la de la bifurcación (${mano?.orgs} contra ${fork.ofertas})`);
+  }
+  if (!paso || paso.tier <= fork.tier || paso.cuenta !== 0) {
+    problemas.push(`al cerrar el split: tier ${paso?.tier} (antes ${fork.tier}), cuenta ${paso?.cuenta}`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(`seed ${fork.seed}: ${problemas.join(' · ')}`);
+  }
+});
+
+check('K5-C: los bots contestan la bifurcación del mercado con una opción válida y su regla', () => {
+  const problemas = [];
+  const reglas = {
+    criterio: (fork) => (fork.edad >= BALANCE.retiro.edadAutoAceptaVeredicto ? 'retirarse' : fork.opciones[0]),
+    malas: (fork) => (fork.edad >= BALANCE.retiro.edadAutoAceptaVeredicto ? fork.opciones[0] : 'retirarse'),
+    azar: null
+  };
+  for (const [bot, regla] of Object.entries(reglas)) {
+    const forks = buscarK5C(() => true, { responderBase: ESTRATEGIAS_K0[bot], minimo: 3 }).flatMap((c) => c.forks);
+    if (forks.length === 0) {
+      problemas.push(`${bot}: ninguna bifurcación en la muestra`);
+    }
+    for (const fork of forks) {
+      if (!fork.opciones.includes(fork.respuesta)) {
+        problemas.push(`${bot}, seed ${fork.seed}: contestó "${fork.respuesta}" (opciones ${fork.opciones})`);
+      } else if (regla && regla(fork) !== fork.respuesta) {
+        problemas.push(`${bot}, seed ${fork.seed}: a los ${fork.edad} contestó "${fork.respuesta}", su regla dice "${regla(fork)}"`);
+      }
+    }
+  }
+  if (problemas.length > 0) {
+    throw new Error(problemas.slice(0, 5).join(' · '));
+  }
+});
 const osK0 = await import('os');
 
 // Carreras por bot en los lotes de los checks lentos (PLAN.md §K.5 pide 200).
@@ -15115,8 +15433,9 @@ check('K4-C2 regla 15: retirarse termina la carrera por el camino del retiro, co
   const { seed, state } = pretemporadasProK4c2(1)[0];
   const r = resolverOpcion(state, canal, 'vivir_del_canal', mulberry32(seed));
   const st = r.state;
-  if (st.phase !== 'retirado' || st.finAnticipado !== 'retiro_elegido' || st.flags.motivoRetiro !== 'streaming') {
-    throw new Error(`vivir del canal dejó phase=${st.phase}, fin=${st.finAnticipado}, motivo=${st.flags.motivoRetiro}`);
+  if (st.phase !== 'retirado' || st.finAnticipado !== 'retiro_elegido'
+    || !String(st.motivoRetiro).includes(MOTIVOS_DE_RETIRO.streaming) || st.flags.motivoRetiro !== undefined) {
+    throw new Error(`vivir del canal dejó phase=${st.phase}, fin=${st.finAnticipado}, motivo=${st.motivoRetiro}`);
   }
   const textos = r.logs.map(textoDeLogK4c2).join(' | ');
   if (!textos.includes(MOTIVOS_DE_RETIRO.streaming) || /\bstreaming\b|retirarse/.test(textos)) {
