@@ -19483,6 +19483,50 @@ check('K4c (revisión) textos: el titular del Mundial dice lo que pasó: campeó
   }
 });
 
+check('K4c (revisión) textos: ningún evento de cierre sale dos años seguidos, "el primer balance" sale una vez por carrera y el cierre casi nunca queda sin carta', () => {
+  const SEEDS_POR_ROL = 10;
+  const SPLITS = 80;
+  const MAXIMO_DE_ANIOS_SIN_CARTA = 0.15;
+  let anios = 0;
+  let cierres = 0;
+  const repetidos = [];
+  const primerBalanceDoble = [];
+  for (const rol of IDS_ROL) {
+    for (let seed = 1; seed <= SEEDS_POR_ROL; seed += 1) {
+      const rng = mulberry32(seed * 104729 + 7);
+      let state = createInitialState(seed, rng, { rol });
+      const ids = [];
+      const responder = (sistema, st, decision, r) => {
+        if (st.pendiente.sistemaId === 'edadCierre') ids.push({ split: st.player.splitCount, id: decision.datos.evento.id });
+        return sistema.resolverAuto(st, decision, r);
+      };
+      for (let i = 0; i < SPLITS && !state.terminado; i += 1) {
+        state = avanzarSplitAuto(state, rng, responder).state;
+      }
+      anios += Math.floor(state.player.splitCount / BALANCE.edad.splitsPorEdad);
+      cierres += ids.length;
+      // "Años seguidos": dos cierres a un año de distancia (un año sin carta en el medio no cuenta como seguido).
+      for (let i = 1; i < ids.length; i += 1) {
+        if (ids[i].id === ids[i - 1].id && ids[i].split - ids[i - 1].split === BALANCE.edad.splitsPorEdad) repetidos.push(`${rol}/${seed}: ${ids[i].id}`);
+      }
+      if (ids.filter((cierre) => cierre.id === 'joven_el_primer_balance').length > 1) primerBalanceDoble.push(`${rol}/${seed}`);
+    }
+  }
+  if (cierres < 300) {
+    throw new Error(`la muestra no alcanza: ${cierres} cierres (mínimo 300)`);
+  }
+  if (repetidos.length > 0) {
+    throw new Error(`${repetidos.length} cierre(s) repiten el evento del año anterior, sobre ${cierres}: ${repetidos.slice(0, 6).join(', ')}`);
+  }
+  if (primerBalanceDoble.length > 0) {
+    throw new Error(`"El primer balance en serio" salió más de una vez en ${primerBalanceDoble.length} carrera(s): ${primerBalanceDoble.slice(0, 6).join(', ')}`);
+  }
+  const sinCarta = (anios - cierres) / anios;
+  if (sinCarta > MAXIMO_DE_ANIOS_SIN_CARTA) {
+    throw new Error(`${anios - cierres} de ${anios} años quedan sin carta de cierre (${(sinCarta * 100).toFixed(1)}%, máximo ${MAXIMO_DE_ANIOS_SIN_CARTA * 100}%)`);
+  }
+});
+
 if (errores.length > 0) {
   console.error(`\n${errores.length} check(s) fallaron.`);
   process.exit(1);
