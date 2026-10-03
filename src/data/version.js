@@ -62,5 +62,8 @@
 // partido (media -0,05) a cambio de mentalidad, hype, sinergia o un stat de habilidad; las compensaciones suman una
 // tirada de rng por opcion. Misma versión (la rama no se mergeó): la huella de K4c-F/K5 (1197795265) queda reemplazada.
 // K4c-S + K4c-M juntos (integración del supervisor): reemplaza a 276794090 (S) y 1053992261 (M).
+// K4c (integración, 2122951563): volver de un retiro hecho en el split del pase arma el roster de la org del contrato
+// antes de la temporada de la vuelta (`armarRosterAlVolver`: la fila abre con el split del pase adentro, y las tiradas del
+// roster nuevo corren en ese split). Misma versión: reemplaza a 1224074643.
 export const VERSION_JUEGO = 'K5';
-export const HUELLA_JUEGO = 1224074643;
+export const HUELLA_JUEGO = 2122951563;
