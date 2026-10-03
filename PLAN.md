@@ -6773,6 +6773,34 @@ medición y una decisión de diseño:
   Es una decisión del supervisor con el usuario ausente, revisable. Mueve el embudo (llegar a pro), que calibra
   K5c.
 
+**K4c-F, hecho** (`k4c-feed`: `c632ca3`..`3cb88a4`).
+- **El mecanismo.** Un log con `adjunto: true` viaja dentro del beat anterior. Hay una sola regla,
+  `formaBeat` en `core/log.js`, y la leen el reproductor y el instrumento.
+- **La definición nueva de `tiempoMaquinaMin`** va con su línea de la regla 17.
+- **Qué bajó.** El tiempo-máquina pasó de **7,6 a 6,5 min** de mediana (`criterio` 30 × 60):
+  - `escena`: 80 → 25 beats por carrera;
+  - `serie:mapa`: 66 → 49;
+  - `meta` casi no se movió (ya iba uno por parche): 51 → 49;
+  - los efectos de evento ya eran un beat por evento.
+- **Lo que no cambió.**
+  - Los logs del estado siguen siendo 747 por carrera.
+  - La huella es idéntica.
+  - La forma del guardado cambió (`adjunto`). Se re-registró `FORMAS_CONOCIDAS[10]`, pero como K5 ya va a main
+    con `VERSION` 10, **el paso 3 sube `VERSION` a 11**.
+  - `dist/`: 2075 KB.
+- **Lo que queda por encima de ~5 min:**
+  - `meta`: 49;
+  - los mapas de las series en las que frenás: 49;
+  - los eventos: 47;
+  - `serie`: 40;
+  - `rendimiento`: 37;
+  - `mercado`: 34.
+
+  **Se decide** un corte más, en el worker de las paradas: el renglón de parche va como **adjunto salvo que toque
+  tu pool o tu main**. El tiempo real lo mide K6 en el navegador, y esa es la medida que manda.
+- **El bot de Playwright se trabó en las cartas de preparación de la pretemporada** (2030). Puede ser el bot o la
+  pantalla. Lo verifica la revisión de navegador de K4c.
+
 Después, un worker para las paradas sin nada en juego, con la lista confirmada por K4c-H. Luego el barrido final
 del supervisor y el paso 3.
 
