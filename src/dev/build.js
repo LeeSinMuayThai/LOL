@@ -73,7 +73,12 @@ const SPLITS_DE_VERIFICACION = 30;
 // dio 2063,3 KB contra el techo de 2000: el margen para K4 y K5 se gastó entero. Subido a 2100: 37 KB de margen sobre
 // el peso medido ese día, no una expectativa. No hay pantallas planeadas después de K5 (K5c calibra números, el resto
 // son arreglos), así que el margen es el de los arreglos y no uno para K6.
-const PESO_MAXIMO_KB = 2100;
+//
+// Re-medido al cerrar el bloque B (K4c, paso 3b, 2026-10-03): con el bloque B integrado (K4 y K4c) el peso medido dio 2124 KB contra el
+// techo de 2100. La limpieza del plan anual (la preparación de la pretemporada, sus estilos y el catálogo de offseason) lo bajó a 2115,3 KB:
+// todavía 15 KB arriba. Subido a 2200: ~85 KB (4%) de margen sobre el peso medido ese día, no una expectativa. Lo que queda de la FASE K
+// son números (K5c) y arreglos; K6 mide el tiempo real en el navegador, no suma pantallas.
+const PESO_MAXIMO_KB = 2200;
 
 function copiar(desde, hacia) {
   const stat = fs.statSync(desde);
