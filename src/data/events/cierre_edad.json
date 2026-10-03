@@ -19,6 +19,7 @@
         "id": "aprovechar_el_receso",
         "label": "Parar en serio: dormir y no tocar el cliente",
         "descripcion": "Dos semanas sin abrir el juego. Volvés con la cabeza limpia y en casa te lo agradecen; el ritmo de ranked se oxida y a veces el LP lo paga.",
+        "plan": "cabeza",
         "weight": 5,
         "outcomes": [
           {
@@ -95,6 +96,7 @@
         "id": "meter_el_acelerador",
         "label": "Usar el receso para despegarte",
         "descripcion": "Mientras el resto descansa, vos subís: la cola vacía es el mejor momento del año para ganar LP. Es la forma más rápida de sacar diferencia y la más rápida de llegar quemado a febrero.",
+        "plan": "juego",
         "weight": 5,
         "outcomes": [
           {
@@ -157,6 +159,7 @@
         "id": "estudiar_el_juego",
         "label": "Meter el receso en VODs y en un campeón nuevo",
         "descripcion": "En vez de ladder, repasás tus propias partidas y armás un pool más ancho. Lo que aprendés se queda, pero dormís poco y el LP no se mueve.",
+        "plan": "juego",
         "weight": 4,
         "outcomes": [
           {
@@ -253,6 +256,7 @@
         "id": "prometer_resultados",
         "label": "Poner una fecha y un objetivo concreto",
         "descripcion": "Te comprometés a llegar a algo antes de tal mes. Compra tiempo y confianza en casa, y si no llegás, el que queda pagando sos vos. El colegio pasa a segundo plano.",
+        "plan": "juego",
         "weight": 5,
         "outcomes": [
           {
@@ -335,6 +339,7 @@
         "id": "pedir_mas_margen",
         "label": "No prometer nada y ordenar el colegio",
         "descripcion": "Sin fechas ni objetivos: les mostrás notas. Baja la presión en casa y también las horas de juego: el ranked espera.",
+        "plan": "cabeza",
         "weight": 5,
         "outcomes": [
           {
@@ -421,6 +426,7 @@
         "id": "mostrarles_los_mensajes",
         "label": "Mostrarles el perfil y los mensajes de los scouts",
         "descripcion": "Les ponés sobre la mesa que hay gente grande mirándote. Puede convencerlos de que esto va en serio o asustarlos, y el colegio no sale ganando.",
+        "plan": "marca",
         "weight": 4,
         "outcomes": [
           {
@@ -523,6 +529,7 @@
         "id": "pedir_mas_peso",
         "label": "Pedir que el equipo juegue más para vos",
         "descripcion": "Decís en voz alta que podés cargar con más. Si el año que viene rendís, sos referente y te suben el nombre; si no, sos el que se creyó algo. Tus compañeros lo anotan.",
+        "plan": "marca",
         "weight": 5,
         "outcomes": [
           {
@@ -623,6 +630,7 @@
         "id": "hacerte_cargo",
         "label": "Hacerte cargo de lo que salió mal",
         "descripcion": "Ponés sobre la mesa tus propios errores antes de que los ponga otro. Cuesta, y compra crédito con el grupo y trabajo concreto con el staff; afuera puede leerse como que fallaste.",
+        "plan": "juego",
         "weight": 5,
         "outcomes": [
           {
@@ -723,6 +731,7 @@
         "id": "no_decir_nada",
         "label": "Escuchar, no abrir la boca y quedarte con lo tuyo",
         "descripcion": "Dejás pasar la reunión y usás el receso para vos. Te cuidás la cabeza, pero el que no habla en el review también le cede el lugar a otro.",
+        "plan": "cabeza",
         "weight": 4,
         "outcomes": [
           {
@@ -828,6 +837,7 @@
         "id": "ir_por_todo",
         "label": "Este es el año: apostar todo al resultado",
         "descripcion": "Reordenás el año entero alrededor de ganar algo. Es la única forma de que pase, y no deja nada de reserva: lo que sumás en el juego lo pagás con la cabeza.",
+        "plan": "juego",
         "weight": 5,
         "outcomes": [
           {
@@ -918,6 +928,7 @@
         "id": "cuidarse",
         "label": "Bajar las revoluciones y durar",
         "descripcion": "Menos horas, más descanso, menos exigencia propia. Vas a rendir un poco menos y vas a seguir estando el año que viene.",
+        "plan": "cabeza",
         "weight": 5,
         "outcomes": [
           {
@@ -998,6 +1009,7 @@
         "id": "empezar_a_construir_afuera",
         "label": "Empezar a construir algo para después",
         "descripcion": "Stream, contenido, contactos. Le sacás horas al juego para que el día que se termine no se termine todo. Es la plata y la marca, no el ranked.",
+        "plan": "marca",
         "weight": 4,
         "outcomes": [
           {
@@ -1090,6 +1102,7 @@
         "id": "quedarte_con_lo_bueno",
         "label": "Quedarte con lo que sí sirvió",
         "descripcion": "Un equipo chico no te deja mucho, pero la gente y lo que aprendiste con ella te lo llevás. No es el año de grindear: es el de no romperte.",
+        "plan": "cabeza",
         "weight": 5,
         "outcomes": [
           {
@@ -1170,6 +1183,7 @@
         "id": "prepararte_para_algo_mejor",
         "label": "Usar el receso para apuntar más alto",
         "descripcion": "En vez de mirar para atrás, le metés horas para que el año que viene no arranque en tier 3 de nuevo. Lo que mejorás se queda; lo que no dormís, se cobra.",
+        "plan": "juego",
         "weight": 5,
         "outcomes": [
           {
@@ -1250,6 +1264,7 @@
         "id": "mostrarte_y_buscar_equipo",
         "label": "Mostrarte: stream, clips y tryouts abiertos",
         "descripcion": "Si este equipo no te lleva a ningún lado, que te vean afuera. Más nombre y más puertas, y menos horas de práctica de verdad.",
+        "plan": "marca",
         "weight": 4,
         "outcomes": [
           {
@@ -1355,6 +1370,7 @@
         "id": "compararte_con_los_veteranos",
         "label": "Medirte contra los que llevan más años",
         "descripcion": "Mirás tu año al lado del de los veteranos del equipo y les pedís que te marquen lo que te falta. Se aprende rápido, pero a esa vara se llega a los golpes.",
+        "plan": "juego",
         "weight": 5,
         "outcomes": [
           {
@@ -1425,6 +1441,7 @@
         "id": "medirte_solo_contra_vos",
         "label": "Medirte solo contra el que eras hace un año",
         "descripcion": "Nada de comparar con nadie más: solo importa si mejoraste respecto al pibe que firmó el contrato. Cuidás la cabeza, pero te quedás sin la vara de los grandes.",
+        "plan": "cabeza",
         "weight": 5,
         "outcomes": [
           {
@@ -1495,6 +1512,7 @@
         "id": "contar_la_historia",
         "label": "Aprovechar que sos la promesa y salir en los medios",
         "descripcion": "Sos nuevo, joven y vendés. Una nota o dos te suben el nombre, aunque en el vestuario no todos lo ven con buenos ojos y se acortan las horas de entrenamiento.",
+        "plan": "marca",
         "weight": 4,
         "outcomes": [
           {
@@ -1597,6 +1615,7 @@
         "id": "leerlo_entero",
         "label": "Leerlo entero, párrafo por párrafo",
         "descripcion": "Ver cómo te lee la prensa después de un año completo, para bien o para mal. Si te agarra bien, te marca un camino; si no, te pega en la cabeza.",
+        "plan": "juego",
         "weight": 5,
         "outcomes": [
           {
@@ -1677,6 +1696,7 @@
         "id": "no_abrir_el_link",
         "label": "No abrir el link",
         "descripcion": "Cerrás el año con tu propia versión de cómo te fue, sin que nadie más te la escriba. Te cuidás la cabeza; lo que dicen igual circula.",
+        "plan": "cabeza",
         "weight": 5,
         "outcomes": [
           {
@@ -1737,6 +1757,7 @@
         "id": "responder_en_redes",
         "label": "Responder en redes y poner tu versión",
         "descripcion": "Tomás la palabra antes de que lo haga el título. Si pega, ganás nombre; si pega mal, el hilo lo arma otro.",
+        "plan": "marca",
         "weight": 4,
         "outcomes": [
           {
@@ -1839,6 +1860,7 @@
         "id": "despedirte_como_corresponde",
         "label": "Hacer algo para despedir a los que se van",
         "descripcion": "Un asado, un mensaje, lo que sea. Marcar que este año existió antes de que el roster cambie de cara. El grupo gana, y vos pasás el receso mirando para atrás.",
+        "plan": "cabeza",
         "weight": 5,
         "outcomes": [
           {
@@ -1929,6 +1951,7 @@
         "id": "ya_estar_en_otra_cosa",
         "label": "Ya tener la cabeza en el año que viene",
         "descripcion": "El roster que se va ya es historia. Preferís pensar en quién va a llegar antes que en quién se fue. Ganás ventaja con el sistema nuevo y perdés lo que construiste con los que se van.",
+        "plan": "juego",
         "weight": 5,
         "outcomes": [
           {
@@ -2019,6 +2042,7 @@
         "id": "pedir_voz_en_el_armado",
         "label": "Pedir que te escuchen en el armado del plantel",
         "descripcion": "Con los que se van, el plantel se arma de nuevo: decís qué perfil necesitás al lado. Si te escuchan, el equipo se arma a tu medida; si no, quedás como el que se cree dueño del vestuario.",
+        "plan": "marca",
         "weight": 4,
         "outcomes": [
           {
@@ -2117,6 +2141,7 @@
         "id": "redoblar_la_apuesta",
         "label": "Meter un año más, a fondo",
         "descripcion": "Le das doce meses más sin red. Si no pasa nada, va a ser difícil justificar el trece. Subís más rápido, a costa de casa, de dormir y de la cabeza.",
+        "plan": "juego",
         "weight": 5,
         "outcomes": [
           {
@@ -2231,6 +2256,7 @@
         "id": "abrir_un_plan_b",
         "label": "Empezar a mirar otra cosa en paralelo",
         "descripcion": "Anotarte en algo, retomar el estudio, buscar una changa. Le sacás dramatismo a que esto no funcione, y también horas de cola.",
+        "plan": "cabeza",
         "weight": 5,
         "outcomes": [
           {
@@ -2323,6 +2349,7 @@
         "id": "mostrarte_afuera",
         "label": "Salir del anonimato: stream y equipo amateur",
         "descripcion": "Si no te ven, no te fichan. Armás un canal y buscás un equipo amateur donde te pongan frente a gente de verdad. Ganás nombre y perdés el tiempo que no tenías.",
+        "plan": "marca",
         "weight": 4,
         "outcomes": [
           {
@@ -2428,6 +2455,7 @@
         "id": "mirar_lo_que_falta",
         "label": "Enfocarte en lo que te falta",
         "descripcion": "Hacés la lista de agujeros de tu juego y te la clavás en la pared. Motiva y también pesa: lo que aprendés se queda, la cabeza paga el precio.",
+        "plan": "juego",
         "weight": 5,
         "outcomes": [
           {
@@ -2508,6 +2536,7 @@
         "id": "contar_lo_ganado",
         "label": "Enfocarte en lo que ya lográs",
         "descripcion": "Repasás de dónde saliste. Menos plan de mejora, más combustible para no aflojar: la cabeza sube y el juego se queda donde estaba.",
+        "plan": "cabeza",
         "weight": 5,
         "outcomes": [
           {
@@ -2588,6 +2617,7 @@
         "id": "salir_a_los_tryouts",
         "label": "Dejar de contar y anotarte a los tryouts abiertos",
         "descripcion": "Si el reloj corre, que te vean ya. Los tryouts te suben el nombre y la vara, pero un rechazo seguido pesa.",
+        "plan": "marca",
         "weight": 4,
         "outcomes": [
           {

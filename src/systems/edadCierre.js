@@ -1,5 +1,7 @@
 import { BALANCE } from '../data/balance.js';
 import { elegirEventoCierre, resolverOpcion, elegirOpcionAutomatica, decisionDesdeEvento } from './events.js';
+import { lineaDePlan } from './practica.js';
+import { esPlanValido } from '../core/rutinas.js';
 
 export const id = 'edadCierre';
 
@@ -27,13 +29,33 @@ export function aplicar(state, rng) {
   return {
     state: nextState,
     logs: [],
-    decision: decisionDesdeEvento(nextState, evento, { franja: 'cierre', slot: 1 })
+    decision: conPlanEnCadaOpcion(nextState, evento, decisionDesdeEvento(nextState, evento, { franja: 'cierre', slot: 1 }))
+  };
+}
+
+// K4c (plan anual): cada opción del cierre dice el plan de práctica que fija para el año que viene (regla 15: la línea
+// sale de `lineaDePlan`, la misma cuenta que aplica `systems/practica.js`). La opción del dato trae `plan`.
+function conPlanEnCadaOpcion(state, evento, decision) {
+  const planDe = (opcionId) => evento.options.find((opcion) => opcion.id === opcionId)?.plan;
+  return {
+    ...decision,
+    opciones: decision.opciones.map((opcion) => {
+      const plan = lineaDePlan(state, planDe(opcion.id));
+      return plan ? { ...opcion, plan } : opcion;
+    })
   };
 }
 
 // La decision de cierre es LA decision de la edad: nunca encadena una segunda.
+// K4c (plan anual): la opción elegida fija el plan de práctica del año que viene (`player.planAnual`). Es el único
+// lugar donde el plan cambia.
 export function resolver(state, decision, respuesta, rng) {
-  return resolverOpcion(state, decision.datos.evento, respuesta.opcionId, rng);
+  const resultado = resolverOpcion(state, decision.datos.evento, respuesta.opcionId, rng);
+  const plan = decision.datos.evento.options.find((opcion) => opcion.id === respuesta.opcionId)?.plan;
+  if (!esPlanValido(plan)) {
+    return resultado;
+  }
+  return { ...resultado, state: { ...resultado.state, player: { ...resultado.state.player, planAnual: plan } } };
 }
 
 export function resolverAuto(state, decision, rng) {

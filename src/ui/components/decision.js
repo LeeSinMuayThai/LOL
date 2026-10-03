@@ -60,6 +60,15 @@ export function renderDecision(elements, decision, onElegir, state, probabilidad
       opcionBtn.appendChild(detalle);
     }
 
+    // K4c (plan anual): en el cierre de año, el plan de práctica que la opción fija para el año que viene. El texto
+    // viene armado del motor (`systems/edadCierre.js` -> `lineaDePlan`): la pantalla no calcula nada.
+    if (opcion.plan?.texto) {
+      const plan = document.createElement('div');
+      plan.className = 'option-plan';
+      plan.textContent = opcion.plan.texto;
+      opcionBtn.appendChild(plan);
+    }
+
     // Fase 12d (PLAN.md §12.3): la consecuencia, antes de elegir. `previa`
     // siempre viene (puede ser `[]` si la opción solo dispara push/momento);
     // `riesgo` siempre viene.

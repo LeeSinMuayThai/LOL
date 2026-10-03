@@ -1,5 +1,6 @@
 import { BALANCE } from '../data/balance.js';
 import { perfilInicial } from './perfil.js';
+import { planInicial } from './rutinas.js';
 import { generarMundo } from './mundo.js';
 
 // K5-B: la pantalla de inicio lista las regiones elegibles con su dificultad.
@@ -139,7 +140,10 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       championPool: jugador.championPool,
       // K4-C: el perfil que resuelve los eventos que no son bifurcación (`core/perfil.js`). `actual` es la palabra
       // de la ficha; `pesos` los cuatro perfiles, que las bifurcaciones corren. Completo desde el arranque (T4).
-      perfil: perfilInicial(seed, eleccion?.perfil ?? null)
+      perfil: perfilInicial(seed, eleccion?.perfil ?? null),
+      // K4c (plan anual): el foco de práctica del año (`data/rutinas/planes.json`). Lo fija cada cierre de año para el
+      // siguiente (`systems/edadCierre.js`); el primero sale del perfil (T4: presente desde el arranque).
+      planAnual: planInicial(perfilInicial(seed, eleccion?.perfil ?? null).actual)
     },
     career: {
       orgs: [],
@@ -433,9 +437,6 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // K5-C: el `splitCount` de la última vez que frenó esa bifurcación (-1 = nunca). `systems/retiro.js` lo lee para
       // no preguntar `retiro_declive` en la misma pretemporada: el mercado ya preguntó.
       forkMercadoSplit: -1,
-      // K4-D: el `splitCount` de la última pretemporada cuya preparación (las rutinas de offseason) ya se resolvió. -1 =
-      // ninguna todavía. Lo escribe `systems/practica.js` y evita que la pretemporada frene dos veces.
-      preparacionDeSplit: -1,
       // Fase 9: "llamar al representante" (PLAN.md §9.6) rebaraja la mano de
       // ofertas una única vez en toda la carrera.
       llamadaRepresentante: false,

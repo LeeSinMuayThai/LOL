@@ -141,7 +141,7 @@ export function iniciar() {
       const [
         { mulberry32 }, { createInitialState, regionesDeOrigen }, pipeline, { BALANCE },
         rolesModulo, ranked, { describirContexto }, formato, campeonesModulo, render,
-        reproductorModulo, sonidoModulo, almacenamientoModulo, perfilModulo
+        reproductorModulo, sonidoModulo, almacenamientoModulo, perfilModulo, { textoDePlanInicial }
       ] = await Promise.all([
         import('../core/rng.js'),
         import('../core/state.js'),
@@ -156,7 +156,8 @@ export function iniciar() {
         import('./reproductor.js'),
         import('./sonido.js'),
         import('./almacenamiento.js'),
-        import('../core/perfil.js')
+        import('../core/perfil.js'),
+        import('../core/rutinas.js')
       ]);
       modulos = {
         mulberry32, createInitialState, pipeline, BALANCE, formato,
@@ -166,6 +167,8 @@ export function iniciar() {
         CAMPEONES: campeonesModulo.default,
         IDS_PERFIL: perfilModulo.IDS_PERFIL, nombreDePerfil: perfilModulo.nombreDePerfil,
         descripcionDePerfil: perfilModulo.descripcionDePerfil,
+        // K4c (plan anual): la línea del plan de práctica del primer año (sale del perfil).
+        textoDePlanInicial,
         // K5-B: las regiones elegibles con su línea de dificultad (sale de `leagues.json`).
         REGIONES_DE_ORIGEN: regionesDeOrigen()
       };

@@ -1,0 +1,31 @@
+{
+  "orden": ["juego", "cabeza", "marca"],
+  "porDefecto": "juego",
+  "porPerfil": { "profesional": "juego", "hambriento": "juego", "showman": "marca", "leal": "cabeza" },
+  "planes": {
+    "juego": {
+      "id": "juego",
+      "titulo": "El juego primero",
+      "texto": "SoloQ, VODs y el pool al día. Llegás afilado; la cabeza no descansa.",
+      "etiquetas": ["agresiva"],
+      "reparto": { "pulir": 1, "nuevo": 1, "mecanica": 2, "macro": 2, "descansar": 0 },
+      "extra": 0
+    },
+    "cabeza": {
+      "id": "cabeza",
+      "titulo": "La cabeza primero",
+      "texto": "Horarios, descanso y lo justo de juego para no oxidarte.",
+      "etiquetas": ["segura"],
+      "reparto": { "pulir": 1, "nuevo": 0, "mecanica": 0, "macro": 1, "descansar": 4 },
+      "extra": 0
+    },
+    "marca": {
+      "id": "marca",
+      "titulo": "Jugar en stream",
+      "texto": "Tu main y lo que pide el chat, en vivo. La mano se mantiene; la macro no se estudia en stream.",
+      "etiquetas": ["equilibrada"],
+      "reparto": { "pulir": 3, "nuevo": 1, "mecanica": 1, "macro": 0, "descansar": 1 },
+      "extra": 0
+    }
+  }
+}

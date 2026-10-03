@@ -554,6 +554,14 @@ details.avanzado summary:hover { color: var(--ink-dim); }
 .option-previa-kicker--magnitud-media { opacity: 0.8; }
 .option-previa-kicker--magnitud-alta { opacity: 1; }
 
+/* K4c (plan anual): la línea del plan de práctica en cada opción del cierre de año. */
+.option-plan {
+  margin-top: 6px;
+  font-size: var(--fs-2);
+  line-height: var(--lh-snug);
+  color: var(--ice-dim);
+}
+
 .option-riesgo {
   display: inline-block;
   margin-top: var(--s-2);

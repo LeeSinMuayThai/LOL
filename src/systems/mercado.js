@@ -16,7 +16,6 @@ import { conPlantelesDe } from '../core/plantel.js';
 import { companerosDelPlantel } from '../core/fuerza.js';
 import { BALANCE } from '../data/balance.js';
 import { ajusteBaseDeMinijuego, probabilidadDeFirmarTrasPrueba } from '../core/serie.js';
-import { esPreparacion, ofrecerPreparacion, resolverPreparacion, elegirRutinaAuto } from './practica.js';
 import { retirarsePorMercado, pretemporadasEnPalabras } from './retiro.js';
 import { nombreVisibleDeLiga } from '../core/ligas.js';
 
@@ -467,23 +466,11 @@ function quedarLibre(state, racha, rng) {
   };
 }
 
-// K4-D: la pretemporada frena UNA vez por año (T9). Si el mercado tiene algo para decidir (ofertas o un traspaso), la
-// preparación del receso —las rutinas de offseason como cartas de mejora— viaja adentro de esa misma decisión
-// (`datos.preparacion`); si no, frena `practica.js` solo con la preparación. La lógica de cada sistema no cambia: lo
-// único unificado es la pausa. `resolver` aplica las dos elecciones juntas.
+// K4-D frenaba la pretemporada con el mercado y la preparación del receso en una sola parada. K4c (plan anual): la
+// práctica la fija el cierre de año y se entrena sola (`systems/practica.js`), así que la pretemporada queda para el
+// mercado: si frena, frena solo por el mercado.
 export function aplicar(state, rng) {
-  const resultado = aplicarMercado(state, rng);
-  if (!resultado.decision || !esPreparacion(resultado.state)) {
-    return resultado;
-  }
-  const preparacion = ofrecerPreparacion(resultado.state, rng);
-  if (!preparacion) {
-    return resultado;
-  }
-  return {
-    ...resultado,
-    decision: { ...resultado.decision, datos: { ...resultado.decision.datos, preparacion } }
-  };
+  return aplicarMercado(state, rng);
 }
 
 function aplicarMercado(state, rng) {
@@ -1130,38 +1117,10 @@ function negociarClausula(ofertas, idx) {
   };
 }
 
-// K4-D: la respuesta trae la oferta (o el "esperar", o el "quedarme") y la rutina elegida (`rutinaId`). Mientras se
-// negocia, la decisión se re-presenta y la preparación viaja con ella, recordando la carta elegida; al cerrar, se
-// resuelve el mercado y después la rutina, en la misma resolución. K4 (integración): si la oferta elegida es un salto
-// grande, `resolverMercado` devuelve la prueba (K4-C) como la decisión re-presentada —con la preparación y la carta
-// elegida en sus datos—, y al contestar la prueba se firma y se resuelve la rutina: una pantalla más, no otra parada.
+// K4 (integración): si la oferta elegida es un salto grande, `resolverMercado` devuelve la prueba (K4-C) como la
+// decisión re-presentada, y al contestarla se firma: una pantalla más, no otra parada.
 export function resolver(state, decision, respuesta, rng) {
-  const resultado = resolverMercado(state, decision, respuesta, rng);
-  const preparacion = decision.datos.preparacion;
-  if (!preparacion) {
-    return resultado;
-  }
-  const elegida = respuesta.rutinaId ?? preparacion.elegida;
-  // K4 (revisión 2): un no-op del mercado (el representante ya usado, una oferta que no existe) devuelve la MISMA
-  // decisión, que ya trae la preparación; si la carta tampoco cambió, se devuelve tal cual. Re-envolverla daba una
-  // decisión nueva igual a la anterior: el contrato del no-op (misma decisión, ningún log) se rompía.
-  if (resultado.decision === decision && elegida === preparacion.elegida) {
-    return resultado;
-  }
-  if (resultado.decision) {
-    return {
-      ...resultado,
-      decision: {
-        ...resultado.decision,
-        datos: { ...resultado.decision.datos, preparacion: { ...preparacion, elegida } }
-      }
-    };
-  }
-  if (resultado.state.terminado || resultado.state.phase === 'retirado') {
-    return resultado;
-  }
-  const preparada = resolverPreparacion(resultado.state, preparacion.rutinas, elegida, rng);
-  return { state: preparada.state, logs: [...resultado.logs, ...preparada.logs] };
+  return resolverMercado(state, decision, respuesta, rng);
 }
 
 // K4-C: la prueba del salto grande (tier 2, tier 1, import). Frena ANTES de firmar con el minijuego `tryout`
@@ -1390,19 +1349,14 @@ function resolverMercado(state, decision, respuesta, rng) {
 }
 
 export function resolverAuto(state, decision, rng) {
-  // K4-C: la prueba del salto. Va antes que la rutina: la carta ya se eligió con la oferta y viaja en los datos de la
-  // prueba, así que el bot no la vuelve a sortear.
+  // K4-C: la prueba del salto.
   if (decision.datos.motivo === 'minijuego') {
     // Regla 5 de 4.6: Node simula el minijuego con gauss corrido por el stat relevante.
     const entrada = minijuegoPorId(decision.datos.minijuego);
     const valor = state.player.stats[decision.datos.statRelevante] ?? 50;
     return { resultado: clamp(gauss(valor / 100, entrada.spread, rng), 0, 1) };
   }
-  const respuesta = resolverAutoMercado(state, decision, rng);
-  const preparacion = decision.datos.preparacion;
-  return preparacion
-    ? { ...respuesta, rutinaId: elegirRutinaAuto(state, preparacion.rutinas, rng).id }
-    : respuesta;
+  return resolverAutoMercado(state, decision, rng);
 }
 
 function resolverAutoMercado(state, decision, rng) {
