@@ -5951,6 +5951,32 @@ atribución exacta (Shapley sobre re-simulación completa) de lo que se gana al 
   (vos / tus compañeros / el meta / el campeón) contra la del rival, y **la probabilidad de ganar**, la misma p
   que el motor tira. La probabilidad de la serie completa espera a K4 (depende del plan de Fearless).
 
+  **K2d — decisiones de spec** *(supervisor, 2026-10-02)*.
+  - **Una sola fuente.** Un selector puro en `src/core/` arma la previa, sin `rng` y sin mutar el estado:
+    `previaDePartido(state, …)`, que devuelve el desglose y la p. El motor obtiene la p **llamando a esa misma
+    función**, o a la misma función interna que ella. Lo que la pantalla muestra y lo que el motor tira no pueden
+    divergir por construcción: la previa no lleva una segunda copia de la fórmula.
+  - **El desglose.** Tu lado muestra vos / tus compañeros / el meta / el campeón y el total que usa el motor. El
+    rival muestra su fuerza total, y su desglose solo si el motor lo tiene; no se inventan componentes que el motor
+    no calcula. La p va en porcentaje entero.
+  - **Antes de un mapa de serie**, la previa muestra la p **antes** del minijuego y dice en una línea que el
+    minijuego la mueve. Después del minijuego, la pantalla del mapa muestra la p final, que es la que se tira (ver
+    la nota de K2b).
+  - **Antes de una fecha marcada**, en la pausa que el juego ya hace por la fecha, la p de la fecha incluye
+    `ajustePartido` si se conoce antes de tirar. Si depende de una decisión de esa misma pausa, se muestra la p
+    antes de decidir, y la de después junto al resultado.
+  - **La previa solo muestra.** No agrega pausas nuevas ni `rng`: la huella del juego no cambia. Es una tarjeta
+    compacta, una cosa por vez en pantalla, legible a 375 px. `dist/` tiene que quedar por debajo del techo de
+    1900 KB.
+  - **Checks.**
+    1. La p de la previa es exactamente la que tira el motor (`===`), en fechas y en mapas, con el minijuego
+       neutro. Se prueba sobre los partidos reales de carreras simuladas, no con un caso armado a mano.
+    2. La p final mostrada en el mapa es la tirada.
+    3. El desglose reproduce el total de la fuerza que usa el motor.
+    4. La previa no toca el estado ni llama a `rng`.
+    5. La huella es idéntica.
+    6. Ningún texto muestra ids crudos.
+
 - **K2a, tal como quedó** *(revisión independiente, 2026-10-02)*. Se aceptan dos desvíos de la viñeta de arriba:
   (1) además de `src/dev/`, K2a **expone** datos del motor sin cambiar ningún cálculo (`career.temporada.nivelJugador`
   y `nivelCompaneros`, `serie.fuerzaInicial`, y `formato`/`fuerzaInicial`/`fuerzaRival` en el log de cierre de
