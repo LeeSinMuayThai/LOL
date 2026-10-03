@@ -8,10 +8,10 @@ import {
   rondaInicial, siguienteRonda, etiquetaDeRonda, generarRival,
   disponiblesDelPool, elegirCampeonRival, campeonComodin,
   esMapaDecisivo, esMapaDeDesempate, serieTerminada, decisionDeDraft,
-  esMapaCerrado, factorJerarquiaEnLlamada
+  esMapaCerrado, estadoDelMapa, probabilidadDeMapa, ajusteDeMinijuegoDeMapa
 } from '../core/serie.js';
 import { fuerzaDePartido } from '../core/fuerza.js';
-import { jugarPartido } from '../core/partido.js';
+import { tirarPartido } from '../core/partido.js';
 import {
   registrarMapa, registrarSerie, registrarTitulo, registrarInternacional, registrarPico, registrarArraigoEnFila
 } from '../core/registro.js';
@@ -201,10 +201,8 @@ function jugarMapaSiguiente(state, rng, logsAcum) {
 // K2b: la fuerza del mapa es DETERMINISTA (`fuerzaDePartido` con el campeón
 // elegido); el azar del mapa vive solo en la p de `finalizarMapa`.
 function jugarConCampeon(state, campeonElegido, rng, logsAcum, entradaExtra = null) {
-  const poolParaRendimiento = entradaExtra ? [...state.player.championPool, entradaExtra] : state.player.championPool;
-  const fuerzaPropia = fuerzaDePartido(
-    { ...state, player: { ...state.player, campeonDelSplit: campeonElegido, championPool: poolParaRendimiento } }
-  );
+  // K2d: la misma fuerza que muestra la previa del mapa (`core/previa.js`).
+  const fuerzaPropia = fuerzaDePartido(estadoDelMapa(state, campeonElegido, entradaExtra));
 
   // Fase 9R4b: el mapa que cierra la serie tiene su propio cupo y su propio
   // margen. El del mapa normal sigue siendo uno por serie (PLAN.md:80: "que
@@ -221,7 +219,7 @@ function jugarConCampeon(state, campeonElegido, rng, logsAcum, entradaExtra = nu
       : BALANCE.serie.margenMapaCerrado;
 
     if (momento && esMapaCerrado(fuerzaPropia, state.serie.rival.fuerza, margen)) {
-      const pausa = pausaDeMinijuego(state, momento, logsAcum, { campeonElegido, fuerzaPropia });
+      const pausa = pausaDeMinijuego(state, momento, logsAcum, { campeonElegido, fuerzaPropia, entradaExtra });
       if (pausa) {
         return pausa;
       }
@@ -234,8 +232,8 @@ function jugarConCampeon(state, campeonElegido, rng, logsAcum, entradaExtra = nu
 // K2b: el mapa es UNA tirada contra la p declarada (`jugarPartido`, tipo
 // `mapa`): la misma p que mira el draft para decidir si te frena.
 function finalizarMapa(state, campeonElegido, fuerzaPropia, ajusteMinijuego, rng, logsAcum) {
-  const fuerzaFinal = fuerzaPropia * (1 + ajusteMinijuego);
-  const { gano } = jugarPartido(state, fuerzaFinal, state.serie.rival.fuerza, 'mapa', rng);
+  // K2d: la p de la previa del mapa (`probabilidadDeMapa`, la misma función).
+  const { gano, p } = tirarPartido(probabilidadDeMapa(state, fuerzaPropia, ajusteMinijuego), rng);
 
   const marcador = [...state.serie.marcador];
   marcador[gano ? 0 : 1] += 1;
@@ -264,7 +262,8 @@ function finalizarMapa(state, campeonElegido, fuerzaPropia, ajusteMinijuego, rng
   const logs = [...logsAcum, crearLog(
     'serie',
     `Mapa ${numeroMapa} — jugás ${campeonElegido}: ${gano ? 'ganan' : 'pierden'}. Marcador ${marcadorStr}.`,
-    { mapa: numeroMapa, campeon: campeonElegido, resultado: gano ? 'W' : 'L', marcador: marcadorStr, cierre }
+    // K2d: `p` es la probabilidad con la que se tiró el mapa (la tarjeta del mapa la muestra).
+    { mapa: numeroMapa, campeon: campeonElegido, resultado: gano ? 'W' : 'L', marcador: marcadorStr, cierre, p }
   )];
 
   return serieTerminada(marcador, state.serie.formato)
@@ -501,10 +500,8 @@ export function resolver(state, decision, respuesta, rng) {
 
   if (entrada.efecto.tipo === 'mapa') {
     const { campeonElegido, fuerzaPropia } = decision.datos;
-    const amortiguado = entrada.efecto.amortiguador === 'jerarquia'
-      ? factorJerarquiaEnLlamada(state.career.jerarquia)
-      : 1;
-    return finalizarMapa(stConCupo, campeonElegido, fuerzaPropia, ajusteBase * entrada.impacto * amortiguado, rng, []);
+    // K2d: el mismo ajuste con el que la previa muestra la p final del mapa.
+    return finalizarMapa(stConCupo, campeonElegido, fuerzaPropia, ajusteDeMinijuegoDeMapa(state, entrada, resultado), rng, []);
   }
 
   const st = aplicarStatsDeMinijuego(stConCupo, entrada.efecto.targets, ajusteBase * entrada.impacto);

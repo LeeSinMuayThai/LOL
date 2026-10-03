@@ -29,17 +29,29 @@ function factorCentrado(valor, referencia, peso) {
 // salió de acá: es química del equipo y se cuenta una sola vez, en
 // `fuerzaDelEquipo`.
 export function rendimientoBase(state) {
+  return factoresDeRendimiento(state).rendimientoBase;
+}
+
+// K2d: los factores de `rendimientoBase`, uno por uno, para que la previa los
+// muestre sin una segunda copia de la fórmula: `rendimientoBase` ES el
+// producto de acá (mismo orden de las multiplicaciones, bit a bit).
+export function factoresDeRendimiento(state) {
   const r = BALANCE.rendimiento;
-  const base = nivelDelJugador(state);
+  const nivel = nivelDelJugador(state);
 
   const campeon = state.player.championPool.find((c) => c.name === state.player.campeonDelSplit);
+  const factorMeta = multiplicadorDeMeta(state.meta.ajuste);
   const factorCampeon = factorDeCampeon(campeon, state.meta.weights);
   const factorJerarquia = factorCentrado(state.career.jerarquia, r.jerarquiaReferencia, r.jerarquiaPesoEnRendimiento * 2);
 
-  return base
-    * multiplicadorDeMeta(state.meta.ajuste)
-    * factorCampeon
-    * factorJerarquia;
+  return {
+    nivel,
+    campeon: campeon?.name ?? null,
+    factorMeta,
+    factorCampeon,
+    factorJerarquia,
+    rendimientoBase: nivel * factorMeta * factorCampeon * factorJerarquia
+  };
 }
 
 // K2b: el rendimiento con el que jugás un partido (fecha o mapa): el base,
@@ -85,16 +97,36 @@ export function nivelDeCompaneros(state) {
 // mapa; ahora también la mira el draft de 9Rd). K2b: la sinergia se cuenta acá
 // y solo acá, sobre el equipo entero (`sinergiaPesoEnEquipo`).
 export function fuerzaDelEquipo(state, rendimiento) {
+  return factoresDelEquipo(state, rendimiento).total;
+}
+
+// K2d: los factores de `fuerzaDelEquipo` (el nivel de los compañeros, tu peso y
+// la química), con el total que usa el motor. `fuerzaDelEquipo` ES el `total`
+// de acá.
+export function factoresDelEquipo(state, rendimiento) {
   const r = BALANCE.rendimiento;
   const nivelCompaneros = nivelDeCompaneros(state);
+  const factorSinergia = factorCentrado(state.career.sinergia, r.sinergiaReferencia, r.sinergiaPesoEnEquipo);
 
   const bruto = nivelCompaneros * (1 - r.pesoJugadorEnEquipo) + rendimiento * r.pesoJugadorEnEquipo;
-  return bruto * factorCentrado(state.career.sinergia, r.sinergiaReferencia, r.sinergiaPesoEnEquipo);
+  return { nivelCompaneros, pesoJugador: r.pesoJugadorEnEquipo, factorSinergia, bruto, total: bruto * factorSinergia };
 }
 
 // K2b: la fuerza con la que tu equipo juega un partido, con el campeón de
 // `player.campeonDelSplit` (el de la fecha, o el elegido para el mapa).
 // Determinista: es la fuerza propia que entra a `probabilidadDePartido`.
+// K2d: es el `total` de `desgloseDeFuerza`, la misma cuenta que muestra la
+// previa (`core/previa.js`).
 export function fuerzaDePartido(state) {
-  return fuerzaDelEquipo(state, rendimientoDePartido(state));
+  return desgloseDeFuerza(state).total;
+}
+
+// K2d: la fuerza de partido con todas sus piezas — tu rendimiento (nivel ×
+// meta × campeón × jerarquía, acotado a 0-100) y el equipo (compañeros, tu
+// peso, la química) — y el total. Pura y sin RNG.
+export function desgloseDeFuerza(state) {
+  const rendimiento = factoresDeRendimiento(state);
+  const rendimientoAcotado = clampStat(rendimiento.rendimientoBase);
+  const equipo = factoresDelEquipo(state, rendimientoAcotado);
+  return { ...rendimiento, rendimiento: rendimientoAcotado, ...equipo };
 }
