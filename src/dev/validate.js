@@ -4005,6 +4005,21 @@ checkLento('Fase 9Me: negociar es determinista, termina, y la cláusula negociad
         }
         const mercado = sistemaPorId('mercado');
         firmado = resolverDecision(firmado.state, mercado.resolverAuto(firmado.state, prueba.decision, ctx.rng), ctx.rng);
+        // K4c (validación), regla 17: la prueba decide el contrato (K4c-S). Si no alcanza, esa oferta se cae y se firma
+        // el respaldo o nadie: no hay cláusula que llegue, y se busca otra seed. Reemplaza a "la oferta con la cláusula
+        // se firma siempre al contestar la prueba", que exigía lo contrario (la prueba de K4-C firmaba siempre); en
+        // b33ff0c la seed 1 caía ahí y el check tiraba "contrato.clausula = null" sobre un contrato que nunca se firmó.
+        // Lo que sí se exige: la cláusula negociada no se pega a lo que quedó (el respaldo firma con la suya, y sin
+        // respaldo el contrato no se toca).
+        if (firmado.state.career.contrato.org !== oferta.org) {
+          const { otras = [], respaldo: idRespaldo } = prueba.decision.datos;
+          const respaldo = otras.find((opcion) => opcion.id === idRespaldo);
+          const esperada = respaldo ? (respaldo.datos.clausula ?? null) : ctx.state.career.contrato.clausula;
+          if (firmado.state.career.contrato.clausula !== esperada) {
+            throw new Error(`seed ${seed}: la prueba en ${oferta.org} no alcanzó y el contrato que quedó (${firmado.state.career.contrato.org}) tiene clausula = ${firmado.state.career.contrato.clausula}, no ${esperada}`);
+          }
+          continue;
+        }
       }
       if (firmado.state.career.contrato.clausula !== 'salida') {
         throw new Error(`seed ${seed}: firmaste con cláusula negociada y contrato.clausula = ${firmado.state.career.contrato.clausula}`);
