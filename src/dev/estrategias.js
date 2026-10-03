@@ -148,10 +148,10 @@ function charlaEnMinijuego(state, decision, peor) {
 // K4-C2: `ofertaDeImport`, `cambiarRol`, `retirarse`). Antes puntuaba la previa de stats —que esos efectos no traen— y
 // aceptaba casi todo cambio de línea (52% de sus carreras) sin mudarse ni retirarse nunca. Ahora lee la carrera, como un
 // jugador, con lecturas puras del estado (cero `rng`: el stream del juego no se mueve distinto que antes):
-//  - import: lo acepta si la liga de destino tiene más `dificultad` (`leagues.json`: cuánto cuesta ganar el Mundial desde
-//    esa región, y lo que multiplica cada internacional en el puntaje) que la actual y su nivel alcanza el calibre de esa
-//    liga (`calibreDeLiga`, la misma vara del mercado). Ojo: LCK es la de `dificultad` mínima (1), así que nunca se va a
-//    Corea por esta regla y a la LPL (1,1) solo desde la LCK;
+//  - import: lo acepta si la liga de destino tiene más calibre (`calibreDeLiga`, la vara del mercado) que la actual y su
+//    nivel alcanza ese calibre: va a una liga más exigente solo si le da el nivel. (No sirve `dificultad` de `leagues.json`:
+//    mide cuánto cuesta ganar el Mundial desde esa región, y es inversa al calibre: LCK, la más fuerte, tiene la mínima.)
+//    Sin liga actual, el calibre de partida es 0;
 //  - cambio de línea: solo si no queda peor. Mide la maestría media del pool: la línea nueva trae `roster.cambioDeRol
 //    .tamanoPool` campeones recién aprendidos (`practica.maestriaCampeonNuevo`), salvo la vuelta a la línea de origen,
 //    que restaura el pool guardado en `flags.rolDeOrigen`. Si el efecto no cambia nada (o no se sabe el pool), lo rechaza;
@@ -191,7 +191,8 @@ export function aceptaImport(state, ligas) {
     return false;
   }
   const actual = ligaDelEstado(state, state.career.liga);
-  return posible.liga.dificultad > (actual?.dificultad ?? 0) && nivelDelJugador(state) >= calibreDeLiga(posible.liga);
+  const calibreDestino = calibreDeLiga(posible.liga);
+  return calibreDestino > (actual ? calibreDeLiga(actual) : 0) && nivelDelJugador(state) >= calibreDestino;
 }
 
 export function aceptaCambioDeLinea(state, rol) {
