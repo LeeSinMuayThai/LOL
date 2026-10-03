@@ -17754,7 +17754,10 @@ check('K4c-P (c) el plan del año cambia solo en el cierre: cada cierre fija el 
     const despues = paso.despues.player.planAnual;
     if (paso.sistemaId === 'edadCierre') {
       cierres += 1;
-      const plan = paso.decision.datos.evento.options.find((opcion) => opcion.id === paso.respuesta.opcionId)?.plan;
+      // K4c (revisión): el cierre amateur no fija plan (ver el check (d)): el plan sigue el que estaba.
+      const plan = paso.antes.phase === 'amateur'
+        ? antes
+        : paso.decision.datos.evento.options.find((opcion) => opcion.id === paso.respuesta.opcionId)?.plan;
       if (despues !== plan) throw new Error(`seed ${paso.seed}, split ${paso.split}: el cierre eligió "${paso.respuesta.opcionId}" (plan ${plan}) y el plan quedó en ${despues}`);
       if (despues !== antes) cambios += 1;
     } else if (despues !== antes) {
@@ -17764,16 +17767,45 @@ check('K4c-P (c) el plan del año cambia solo en el cierre: cada cierre fija el 
   if (cierres < 50 || cambios < 10) throw new Error(`muestra corta: ${cierres} cierres, ${cambios} cambios de plan`);
 });
 
-check('K4c-P (d) el dato y el arranque: toda opción de cierre trae un plan válido, cada cierre ofrece al menos dos y los de la etapa pro los tres; el primer plan sale del perfil (T4) y el inicio lo dice', () => {
+// K4c (revisión), regla 17 — reemplaza a "toda opción de cierre trae un plan válido, cada cierre ofrece al menos dos y los de la
+// etapa pro los tres", que exigía el plan también en los cierres amateur: ese plan no se aplicaba nunca (`practica.js` no entrena
+// fuera de `profesional`; con `criterio`, seeds 1-150, 520 cierres amateur con plan y el 79% sin un split pro el año siguiente).
+// Protege, desde la revisión de K4c, que el cierre amateur no fije ni muestre plan y que al debutar valga el del perfil.
+check('K4c-P (d) el dato y el arranque: los cierres pro traen un plan válido en cada opción y los tres planes; los amateur, ninguno (ni lo muestran ni lo fijan); el primer plan sale del perfil (T4), el inicio lo dice y vale hasta el primer cierre pro', () => {
   const eventos = TODOS_LOS_EVENTOS.filter((evento) => evento.cierreDeEdad);
   if (eventos.length === 0) throw new Error('no hay eventos de cierre');
+  let amateurDelDato = 0;
   for (const evento of eventos) {
     const planes = evento.options.map((opcion) => opcion.plan);
+    if ((evento.contexto?.etapa ?? []).includes('amateur')) {
+      if (planes.some((plan) => plan !== undefined)) throw new Error(`${evento.id}: un cierre amateur trae plan (${planes.join(', ')})`);
+      amateurDelDato += 1;
+      continue;
+    }
     if (planes.some((plan) => !IDS_PLAN_K4cP.includes(plan))) throw new Error(`${evento.id}: una opción sin plan válido (${planes.join(', ')})`);
     const distintos = new Set(planes).size;
-    const esPro = (evento.contexto?.etapa ?? []).some((etapa) => etapa !== 'amateur');
-    if (distintos < 2 || (esPro && distintos < IDS_PLAN_K4cP.length)) throw new Error(`${evento.id}: ofrece ${distintos} planes distintos`);
+    if (distintos < IDS_PLAN_K4cP.length) throw new Error(`${evento.id}: ofrece ${distintos} planes distintos`);
   }
+  if (amateurDelDato === 0) throw new Error('no hay cierres amateur en el dato');
+  // En las carreras: un cierre con la fase amateur no muestra plan en ninguna opción ni lo cambia, y el plan del primer split pro
+  // es el del arranque (el del perfil) hasta que un cierre pro fije otro.
+  let amateurJugados = 0;
+  const debutVisto = new Set();
+  for (const paso of corridasK4cP().pasos) {
+    if (paso.sistemaId === 'edadCierre' && paso.antes.phase === 'amateur') {
+      amateurJugados += 1;
+      const conPlan = paso.decision.opciones.filter((opcion) => opcion.plan);
+      if (conPlan.length > 0 || paso.despues.player.planAnual !== paso.antes.player.planAnual) {
+        throw new Error(`seed ${paso.seed}, split ${paso.split}: el cierre amateur muestra plan (${conPlan.map((o) => o.plan.texto).join(' | ')}) o lo cambia (${paso.antes.player.planAnual} → ${paso.despues.player.planAnual})`);
+      }
+    }
+    if (paso.antes.phase === 'amateur' && paso.despues.phase === 'profesional' && !debutVisto.has(paso.seed)) {
+      debutVisto.add(paso.seed);
+      const inicial = createInitialState(paso.seed, mulberry32(paso.seed)).player.planAnual;
+      if (paso.despues.player.planAnual !== inicial) throw new Error(`seed ${paso.seed}: debutó con el plan ${paso.despues.player.planAnual}, el del perfil es ${inicial}`);
+    }
+  }
+  if (amateurJugados < 5 || debutVisto.size < 5) throw new Error(`muestra corta: ${amateurJugados} cierres amateur, ${debutVisto.size} debuts`);
   for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
     const state = createInitialState(seed, mulberry32(seed));
     if (state.player.planAnual !== planInicialK4cP(state.player.perfil.actual) || !IDS_PLAN_K4cP.includes(state.player.planAnual)) {
@@ -17794,6 +17826,8 @@ check('K4c-P regla 15: cada opción del cierre dice el plan que fija, en cristia
   let opciones = 0;
   for (const paso of corridasK4cP().pasos.filter((p) => p.sistemaId === 'edadCierre')) {
     for (const opcion of paso.decision.opciones) {
+      // El cierre amateur no fija plan, y no lo dice (check (d)).
+      if (paso.antes.phase === 'amateur') continue;
       const planId = paso.decision.datos.evento.options.find((o) => o.id === opcion.id)?.plan;
       const esperado = lineaDePlan(paso.antes, planId);
       if (!opcion.plan || opcion.plan.texto !== esperado.texto || opcion.plan.id !== planId) {
