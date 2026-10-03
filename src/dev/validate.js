@@ -19527,6 +19527,47 @@ check('K4c (revisión) textos: ningún evento de cierre sale dos años seguidos,
   }
 });
 
+check('K4c (revisión) textos: la carta del plan no dice "~+0" para una stat topeada y el resumen del split dice que es un tramo del plan', () => {
+  const base = correrCarrera(2, 20);
+  const conStats = (valor) => ({ ...base, player: { ...base.player, techoLesionMecanica: null, stats: { ...base.player.stats, mecanica: valor, macro: valor, mentalidad: valor } } });
+  let lineas = 0;
+  for (const [descripcion, valor] of [['a 0,2 del tope', BALANCE.stats.max - 0.2], ['en el tope', BALANCE.stats.max]]) {
+    for (const planId of IDS_PLAN_K4cP) {
+      const linea = lineaDePlan(conStats(valor), planId);
+      lineas += 1;
+      if (/~\+0\b/.test(linea.texto)) {
+        throw new Error(`${planId} con las stats ${descripcion}: "${linea.texto}" dice ~+0`);
+      }
+      if (/\(\)/.test(linea.texto)) {
+        throw new Error(`${planId} con las stats ${descripcion}: "${linea.texto}" deja el paréntesis vacío`);
+      }
+    }
+  }
+  if (lineas < 6) {
+    throw new Error(`la muestra no alcanza: ${lineas} cartas`);
+  }
+  // El resumen del split: cada línea de práctica de una carrera dice en qué tramo del año va.
+  const tramo = new RegExp(`tramo [1-${BALANCE.edad.splitsPorEdad}] de ${BALANCE.edad.splitsPorEdad}`);
+  let practicas = 0;
+  for (let seed = 1; seed <= 4; seed += 1) {
+    const rng = mulberry32(seed * 6151 + 3);
+    let state = createInitialState(seed, rng, { rol: 'mid' });
+    for (let i = 0; i < 45 && !state.terminado; i += 1) {
+      const resultado = avanzarSplitAuto(state, rng);
+      state = resultado.state;
+      for (const log of resultado.logs.filter((linea) => linea.type === 'practica')) {
+        practicas += 1;
+        if (!tramo.test(log.message)) {
+          throw new Error(`seed ${seed}: la línea de práctica "${log.message}" no dice que es un tramo del plan del año`);
+        }
+      }
+    }
+  }
+  if (practicas < 10) {
+    throw new Error(`la muestra no alcanza: ${practicas} líneas de práctica (mínimo 10)`);
+  }
+});
+
 if (errores.length > 0) {
   console.error(`\n${errores.length} check(s) fallaron.`);
   process.exit(1);
