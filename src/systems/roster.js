@@ -11,6 +11,7 @@ import {
 import { BALANCE } from '../data/balance.js';
 import { ROLES, IDS_ROL, etiquetaRol } from '../data/roles.js';
 import { aprenderCampeones } from '../core/pool.js';
+import { tierListDeRol } from '../core/regimen.js';
 
 export const id = 'roster';
 
@@ -35,10 +36,14 @@ export function cambiarDeRol(state, rol, rng) {
     : aprenderCampeones(conRol, [], BALANCE.roster.cambioDeRol.tamanoPool, rng).pool;
   const companeros = companerosDelPlantel(conRol, state.career.currentOrg)
     ?? state.career.companeros.map((companero) => (companero.role === rolNuevo ? { ...companero, role: rolViejo } : companero));
+  const conPool = { ...conRol, player: { ...conRol.player, championPool: pool } };
+  // Revisión de K5: la tier list del meta es la de TU rol (`systems/meta.js` la arma con `tierListDeRol`). Al cambiar
+  // de línea se rearma acá, pura y sin rng, con los pesos del régimen vigente: si no, hasta el split siguiente quedaba
+  // la del rol viejo (19 entradas contra 16 campeones del rol nuevo). La anterior se vacía: era de otra línea.
   return {
     state: {
-      ...conRol,
-      player: { ...conRol.player, championPool: pool },
+      ...conPool,
+      meta: { ...state.meta, tierList: tierListDeRol(conPool), tierListAnterior: [] },
       career: { ...state.career, companeros },
       flags: { ...state.flags, rolDeOrigen: vuelve ? null : (origen ?? { rol: rolViejo, pool: state.player.championPool }) }
     },
