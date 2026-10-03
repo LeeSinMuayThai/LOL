@@ -13,6 +13,7 @@ import { BALANCE } from '../data/balance.js';
 import { conPermanencia } from '../core/curvas.js';
 import { probabilidadDePartido, ruidoEfectivo } from '../core/partido.js';
 import { ESTRATEGIAS, NOMBRES_ESTRATEGIA, esDecisionDeMinijuego, efectosDeCarreraDeOpcion } from './estrategias.js';
+import { verificarSplitJugadoSinFila } from './guards.js';
 
 // --- Constantes de medición (PLAN.md §K.5 K0) ---
 // Nada de esto es del juego (esas van en `data/balance.js`): son parámetros de las sondas.
@@ -331,6 +332,10 @@ export function correrCarrera(seed, splits, responder) {
     const importPendiente = state.flags.ofertaDeImport;
     state = avanzarSplitAuto(state, rng, responderInstrumentado).state;
     contarTanda(state);
+    const sinFila = verificarSplitJugadoSinFila(state);
+    if (sinFila) {
+      throw new Error(`seed ${seed}, split ${state.player.splitCount}: ${sinFila}`);
+    }
 
     // K4c (paso 1): lo que cambió de verdad en este split (lectura pura).
     if (state.player.role !== rolPrevio) {
@@ -1565,6 +1570,9 @@ export function bloqueRitmo(observaciones) {
     // forma), los logs no técnicos por carrera (promedio y mediana) y lo que pesan en minutos-máquina (promedio por carrera
     // × 700 ms). Una fuente que una carrera no usó cuenta 0 en esa carrera (así el promedio suma al total).
     tiempoMaquinaPorFuente: tiempoMaquinaPorFuente(observaciones),
+    // `logsPorCarrera`, `minutosPorCarrera` y `pctDelTotal` de arriba son sobre el PROMEDIO de logs por carrera; la mediana
+    // va aparte, en cada fila (`mediana`). Las columnas que suman al total son las del promedio, no esa.
+    tiempoMaquinaPorFuenteSobre: 'promedio de logs por carrera (la mediana de cada fuente va aparte, en su fila)',
     // Beats reales del reproductor × 700 ms + 1.600 ms por minijuego (`ESPERA_MINIJUEGO_MS`, src/ui/app.js).
     // NO es comparable con los 17,4 min de AUDITORIA.md (salieron de un Chromium real): ver `correrCarrera`.
     tiempoReproductorMin: enMinutos(tiemposReproductorMin)

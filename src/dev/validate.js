@@ -10541,6 +10541,381 @@ check('K0 agencia: --reps < 2, --carreras < 1 y un --analizar con un archivo de 
   }
 });
 
+// ---------------------------------------------------------------------------------------------------------------
+// K4c (paso 1, revisión del instrumento). Cada check de acá se probó en rojo contra su mutante (ver el commit).
+// ---------------------------------------------------------------------------------------------------------------
+const {
+  aceptaImport: aceptaImportK4c, aceptaCambioDeLinea: aceptaCambioDeLineaK4c, aceptaRetirarse: aceptaRetirarseK4c,
+  efectosDeCarreraDeOpcion: efectosDeCarreraDeOpcionK4c
+} = await import('./estrategias.js');
+const { verificarSplitJugadoSinFila } = await import('./guards.js');
+const { calibreDeLiga: calibreDeLigaK4c } = await import('../core/demanda.js');
+const { ofertaDeImportPosible: ofertaDeImportPosibleK4c } = await import('../systems/mercado.js');
+const { nivelDelJugador: nivelDelJugadorK4c } = await import('../core/ficha.js');
+const { DEFAULTS_AGENCIA: DEFAULTS_AGENCIA_K4C } = await import('./agencia.js');
+const { bloqueRitmo: bloqueRitmoK4c } = await import('./simulate.js');
+
+check('K4c agencia (revisión): una réplica que revienta en cualquier punto (también con la carrera siguiendo sola) queda null y se reporta; no tira la medición', () => {
+  // Trinquete: `terminarCarrera` estaba fuera del `try` de la réplica; una réplica rota tiraba abajo toda la medición. Se inyecta
+  // una carrera que lanza (`terminar`) en una réplica puntual, y otra que lanza siempre.
+  const SEED = 4242;
+  const rng = mulberry32(SEED);
+  let st = createInitialState(SEED, rng);
+  let splitCount = 0;
+  let elegida = null;
+  buscar:
+  while (!st.terminado && splitCount < 12) {
+    st = avanzarSplit(st, rng).state;
+    while (st.pendiente) {
+      const { sistemaId, decision } = st.pendiente;
+      if ((decision.opciones ?? []).length >= 1 && !esDecisionDeMinijuego(decision) && !esDecisionDeMercado(decision)) {
+        elegida = decision;
+        break buscar;
+      }
+      st = resolverDecision(st, sistemaPorId(sistemaId).resolverAuto(st, decision, rng), rng).state;
+    }
+    splitCount += 1;
+  }
+  if (elegida === null) {
+    throw new Error('check vacío: no apareció ninguna decisión con opciones en los primeros 12 splits');
+  }
+  const ops = [{ opcionId: elegida.opciones[0].id, _l: 'primera' }, { opcionId: elegida.opciones[0].id, _l: 'segunda' }];
+  // Las llamadas a `terminar` van réplica por réplica y, dentro, opción por opción: la 3 (de 0) es la réplica 1, opción 'segunda'.
+  let llamadas = 0;
+  const terminar = () => {
+    const k = llamadas;
+    llamadas += 1;
+    if (k === 3) {
+      throw new Error('terminar reventó a propósito\nsegunda línea del stack');
+    }
+    return { fin: { score: k }, c1: null };
+  };
+  const fallos = [];
+  const porOpcion = replicasDeDecision(st, ops, { seed: SEED, splitCount, tipo: 'k4c:rota', reps: 3, splits: splitCount + 5, fallos, terminar });
+  const nulos = porOpcion.flatMap((reps, i) => reps.map((x, r) => (x === null ? `${i}:${r}` : null)).filter(Boolean));
+  if (JSON.stringify(nulos) !== JSON.stringify(['1:1'])) {
+    throw new Error(`solo la réplica 1 de la opción 1 tenía que quedar null; quedaron ${JSON.stringify(nulos)}`);
+  }
+  const esperado = { seed: SEED, split: splitCount, tipo: 'k4c:rota', opcion: 'segunda', replica: 1, error: 'terminar reventó a propósito' };
+  if (fallos.length !== 1 || JSON.stringify(fallos[0]) !== JSON.stringify(esperado)) {
+    throw new Error(`el fallo se tenía que reportar como ${JSON.stringify(esperado)}; salió ${JSON.stringify(fallos)}`);
+  }
+  // La medición entera con una carrera que revienta siempre: no tira, todas las réplicas quedan null y todas se reportan.
+  const medido = medirAgencia({ carreras: 1, reps: 2, cuota: 1, splits: 12, terminar: () => { throw new Error('siempre'); } });
+  const replicas = medido.resultados.flatMap((r) => r.porOpcion.flat());
+  if (replicas.length === 0) {
+    throw new Error('check vacío: la medición no midió ninguna decisión');
+  }
+  if (replicas.some((x) => x !== null) || medido.fallos.length !== replicas.length || medido.fallos.some((f) => f.error !== 'siempre' || f.seed !== 1)) {
+    throw new Error(`con una carrera que siempre revienta, las ${replicas.length} réplicas tenían que quedar null y reportarse; fallos: ${medido.fallos.length}`);
+  }
+  if (combinarMediciones([medido, medido]).fallos.length !== 2 * medido.fallos.length) {
+    throw new Error('combinarMediciones tiene que juntar los fallos de todas las partes');
+  }
+});
+
+check('K4c agencia (revisión): con --procesos, un hijo que termina mal deja su seed reportada sin matar a las demás, y el directorio temporal se borra siempre', () => {
+  const directorio = fs.mkdtempSync(path.join(osK0.tmpdir(), 'k4c-procesos-'));
+  try {
+    const base = path.join(directorio, 'base');
+    fs.mkdirSync(base);
+    // El "hijo" de mentira: la seed 2 sale con código 3 y un Error en stderr; las demás guardan una medición mínima.
+    const hijo = path.join(directorio, 'hijo.mjs');
+    fs.writeFileSync(hijo, [
+      "import fs from 'fs';",
+      "const a = Object.fromEntries(process.argv.slice(2).map((x) => x.replace(/^--/, '').split('=')));",
+      "if (a.desde === '2') { console.error('Error: boom en la seed 2'); process.exit(3); }",
+      "fs.writeFileSync(a.soloMedir, JSON.stringify({ baseline: [{}], resultados: [], frecuenciasTipo: { x: 1 }, totalInterrupciones: 5, carreras: 1, fallos: [] }));"
+    ].join('\n'), 'utf8');
+    const driver = path.join(directorio, 'driver.mjs');
+    fs.writeFileSync(driver, [
+      `import { medirEnProcesos } from ${JSON.stringify(pathToFileURL(path.join(__dirname, 'agencia.js')).href)};`,
+      `const r = await medirEnProcesos({ carreras: 3, reps: 2, cuota: 1, splits: 1, desde: 1, procesos: 2, archivo: ${JSON.stringify(hijo)}, base: ${JSON.stringify(base)} });`,
+      'console.log(JSON.stringify(r));'
+    ].join('\n'), 'utf8');
+    const corrida = spawnSync(process.execPath, [driver], { encoding: 'utf8' });
+    if (corrida.status !== 0) {
+      throw new Error(`un hijo que falla no tenía que matar la medición: salida ${corrida.status}, stderr ${JSON.stringify(corrida.stderr.slice(-300))}`);
+    }
+    const r = JSON.parse(corrida.stdout);
+    if (r.carreras !== 2 || r.baseline.length !== 2 || r.totalInterrupciones !== 10 || r.frecuenciasTipo.x !== 2) {
+      throw new Error(`las seeds 1 y 3 tenían que juntarse igual (carreras 2, paradas 10); salió ${JSON.stringify(r)}`);
+    }
+    if (r.fallos.length !== 1 || r.fallos[0].seed !== 2 || r.fallos[0].proceso !== true || !/código 3.*boom/.test(r.fallos[0].error)) {
+      throw new Error(`la seed 2 tenía que quedar reportada con su código y su error: ${JSON.stringify(r.fallos)}`);
+    }
+    const sobras = fs.readdirSync(base);
+    if (sobras.length !== 0) {
+      throw new Error(`el directorio temporal no se borró: ${JSON.stringify(sobras)}`);
+    }
+  } finally {
+    fs.rmSync(directorio, { recursive: true, force: true });
+  }
+});
+
+check('K4c agencia (revisión): con --reps menor que 30 avisa que la meta de K4c pide 30 (sin cambiar el default)', () => {
+  const agencia = path.join(__dirname, 'agencia.js');
+  const corrida = spawnSync(process.execPath, [agencia, '--carreras=1', '--reps=2', '--cuota=1', '--splits=3'], { encoding: 'utf8' });
+  if (corrida.status !== 0 || !/--reps=2 \(< 30\).*meta de K4c/.test(corrida.stderr)) {
+    throw new Error(`con --reps=2 tenía que avisar de la meta de K4c (>= 30) y salir 0; salió ${corrida.status} con stderr ${JSON.stringify(corrida.stderr)}`);
+  }
+  if (DEFAULTS_AGENCIA_K4C.reps !== 6) {
+    throw new Error(`el default de --reps no se tocaba (6); es ${DEFAULTS_AGENCIA_K4C.reps}`);
+  }
+});
+
+check('K4c bots de carrera (revisión): import por calibre y nivel, cambio de línea por maestría, retirarse por la oferta del mercado, `malas` al revés y cero rng', () => {
+  // Trinquete: las reglas de `criterio` en las bifurcaciones solo estaban probadas por la medición (400 carreras). Acá van con
+  // estados a mano. Un estado real con una oferta de import posible; el nivel y la liga actual se pisan a mano.
+  let base = null;
+  buscarImport:
+  for (const seed of [1, 2, 3, 4, 5, 6]) {
+    const rng = mulberry32(seed);
+    let st = createInitialState(seed, rng);
+    for (let i = 0; i < 25 && !st.terminado; i += 1) {
+      st = avanzarSplitAuto(st, rng).state;
+      const posibles = st.mundo.ligas.filter((liga) => ofertaDeImportPosibleK4c(st, liga.id).posible);
+      if (posibles.length > 0) {
+        base = { st, destino: posibles.reduce((a, b) => (calibreDeLigaK4c(b) > calibreDeLigaK4c(a) ? b : a)) };
+        break buscarImport;
+      }
+    }
+  }
+  if (base === null) {
+    throw new Error('check vacío: ninguna seed 1-6 tuvo una oferta de import posible en 25 splits');
+  }
+  const { st: estadoBase, destino } = base;
+  const calibre = calibreDeLigaK4c(destino);
+  const conNivel = (nivel, ligaActual) => {
+    const unos = { ...estadoBase, player: { ...estadoBase.player, stats: Object.fromEntries(Object.keys(estadoBase.player.stats).map((k) => [k, 1])) } };
+    const factor = nivel / nivelDelJugadorK4c(unos);
+    const stats = Object.fromEntries(Object.keys(unos.player.stats).map((k) => [k, factor]));
+    return { ...estadoBase, player: { ...estadoBase.player, stats }, career: { ...estadoBase.career, liga: ligaActual } };
+  };
+  const ligas = estadoBase.mundo.ligas;
+  const masFuerte = ligas.reduce((a, b) => (calibreDeLigaK4c(b) > calibreDeLigaK4c(a) ? b : a));
+  const masDebil = ligas.reduce((a, b) => (calibreDeLigaK4c(b) < calibreDeLigaK4c(a) ? b : a));
+  if (!(calibreDeLigaK4c(masDebil) < calibre)) {
+    throw new Error('check vacío: la liga de destino no tiene más calibre que la más débil');
+  }
+  const acepta = (estado) => aceptaImportK4c(estado, destino.id);
+  // Control: que la oferta siga siendo posible con el nivel y la liga pisados (si no, un `false` no probaría el calibre).
+  for (const estado of [conNivel(calibre - 1, null), conNivel(calibre + 1, null)]) {
+    if (!ofertaDeImportPosibleK4c(estado, destino.id).posible) {
+      throw new Error('check vacío: pisar el nivel hizo imposible la oferta de import');
+    }
+  }
+  const casos = [
+    ['sin liga actual, nivel justo arriba del calibre', conNivel(calibre + 1, null), true],
+    ['sin liga actual, nivel justo abajo del calibre', conNivel(calibre - 1, null), false],
+    ['viene de una liga más débil, nivel arriba', conNivel(calibre + 1, masDebil.id), true],
+    ['viene de una liga más débil, nivel abajo', conNivel(calibre - 1, masDebil.id), false],
+    ['viene de la misma liga (no hay más calibre), nivel de sobra', conNivel(calibre + 20, destino.id), false]
+  ];
+  if (masFuerte.id !== destino.id) {
+    casos.push(['viene de una liga más fuerte, nivel de sobra', conNivel(calibre + 20, masFuerte.id), false]);
+  }
+  for (const [nombre, estado, esperada] of casos) {
+    if (acepta(estado) !== esperada) {
+      throw new Error(`aceptaImport (${nombre}): se esperaba ${esperada}`);
+    }
+  }
+  if (aceptaImportK4c(conNivel(calibre + 20, null), 'LIGA_QUE_NO_EXISTE') !== false) {
+    throw new Error('aceptaImport: una liga que no existe no se puede aceptar');
+  }
+
+  // Cambio de línea: por la maestría media del pool contra la de los campeones recién aprendidos.
+  const nuevaMaestria = BALANCE.practica.maestriaCampeonNuevo;
+  const conPool = (maestria, origen = null) => ({
+    player: { role: 'mid', championPool: maestria === null ? [] : [{ mastery: maestria }, { mastery: maestria }] },
+    flags: { rolDeOrigen: origen }
+  });
+  const lineas = [
+    ['pool peor que el de la línea nueva', aceptaCambioDeLineaK4c(conPool(nuevaMaestria - 10), 'top'), true],
+    ['pool mejor que el de la línea nueva', aceptaCambioDeLineaK4c(conPool(nuevaMaestria + 10), 'top'), false],
+    ['la misma línea', aceptaCambioDeLineaK4c(conPool(nuevaMaestria - 10), 'mid'), false],
+    ['mapa por línea con la actual', aceptaCambioDeLineaK4c(conPool(nuevaMaestria - 10), { mid: 'jungla' }), true],
+    ['mapa por línea sin la actual', aceptaCambioDeLineaK4c(conPool(nuevaMaestria - 10), { top: 'jungla' }), false],
+    ['pool vacío (no se sabe)', aceptaCambioDeLineaK4c(conPool(null), 'top'), false],
+    ['vuelta al origen con mejor pool guardado', aceptaCambioDeLineaK4c(conPool(60, { rol: 'top', pool: [{ mastery: 70 }] }), 'origen'), true],
+    ['vuelta al origen con peor pool guardado', aceptaCambioDeLineaK4c(conPool(60, { rol: 'top', pool: [{ mastery: 50 }] }), 'origen'), false],
+    ['vuelta al origen sin origen guardado', aceptaCambioDeLineaK4c(conPool(60), 'origen'), false]
+  ];
+  for (const [nombre, obtenida, esperada] of lineas) {
+    if (obtenida !== esperada) {
+      throw new Error(`aceptaCambioDeLinea (${nombre}): se esperaba ${esperada}`);
+    }
+  }
+
+  // Retirarse: no mientras el mercado te ofrece tu tier.
+  if (aceptaRetirarseK4c({ flags: { splitsSinOfertaEnTier: 0 } }) !== false
+    || aceptaRetirarseK4c({ flags: { splitsSinOfertaEnTier: 1 } }) !== true
+    || aceptaRetirarseK4c({ flags: { splitsSinOfertaEnTier: 4 } }) !== true) {
+    throw new Error('aceptaRetirarse: no con splitsSinOfertaEnTier = 0, sí con 1 y con 4');
+  }
+
+  // Los efectos de carrera de una opción: únicos por tipo, solo los de carrera, vacío sin evento o sin la opción.
+  const evento = {
+    options: [{ id: 'x', outcomes: [
+      { effects: [{ type: 'retirarse' }, { type: 'stat' }] },
+      { effects: [{ type: 'retirarse', otra: true }, { type: 'cambiarRol', rol: 'top' }] }
+    ] }, { id: 'y', outcomes: [{ effects: [{ type: 'stat' }] }] }]
+  };
+  const efectos = efectosDeCarreraDeOpcionK4c({ datos: { evento } }, 'x');
+  if (JSON.stringify(efectos.map((e) => e.type)) !== JSON.stringify(['retirarse', 'cambiarRol']) || efectos[0].otra) {
+    throw new Error(`efectosDeCarreraDeOpcion: únicos por tipo (el primero que aparece) y solo de carrera; salió ${JSON.stringify(efectos)}`);
+  }
+  if (efectosDeCarreraDeOpcionK4c({ datos: { evento } }, 'y').length !== 0 || efectosDeCarreraDeOpcionK4c({ datos: { evento } }, 'z').length !== 0
+    || efectosDeCarreraDeOpcionK4c({ datos: {} }, 'x').length !== 0) {
+    throw new Error('efectosDeCarreraDeOpcion: sin efectos de carrera, sin la opción o sin evento tiene que dar []');
+  }
+
+  // Los bots (cero rng: `rngProhibidoK0` lanza si se lo toca). La opción de carrera va SEGUNDA: con un empate de previas
+  // (lo que pasa si `respuestaDeBifurcacion` devolviera null) los dos bots se quedarían con la primera.
+  const sistemaSinAuto = { id: 'eventos', resolverAuto() { throw new Error('no debería delegar'); } };
+  const bifurcacion = (efectosDeIr) => ({
+    tipo: 'opciones', presentacion: 'evento',
+    datos: { evento: { id: 'k4c_prueba', bifurcacion: true, options: [
+      { id: 'quedarse', outcomes: [{ effects: [{ type: 'stat' }] }] },
+      { id: 'ir', outcomes: [{ effects: efectosDeIr }] }
+    ] } },
+    opciones: [{ id: 'quedarse', previa: [] }, { id: 'ir', previa: [] }]
+  });
+  const eligen = (estado, decision) => [
+    ESTRATEGIAS_K0.criterio(sistemaSinAuto, estado, decision, rngProhibidoK0).opcionId,
+    ESTRATEGIAS_K0.malas(sistemaSinAuto, estado, decision, rngProhibidoK0).opcionId
+  ];
+  const estadoRetiro = (n) => ({ seed: 1, player: { splitCount: 1 }, logs: [], flags: { splitsSinOfertaEnTier: n } });
+  const retiro = bifurcacion([{ type: 'retirarse' }]);
+  const importa = bifurcacion([{ type: 'ofertaDeImport', liga: destino.id }]);
+  const escenarios = [
+    ['retirarse con oferta en su tier (0)', estadoRetiro(0), retiro, ['quedarse', 'ir']],
+    ['retirarse sin oferta en su tier (2)', estadoRetiro(2), retiro, ['ir', 'quedarse']],
+    ['import con nivel de sobra', conNivel(calibre + 20, null), importa, ['ir', 'quedarse']],
+    ['import sin nivel', conNivel(calibre - 20, null), importa, ['quedarse', 'ir']]
+  ];
+  for (const [nombre, estado, decision, esperado] of escenarios) {
+    const elegidas = eligen(estado, decision);
+    if (JSON.stringify(elegidas) !== JSON.stringify(esperado)) {
+      throw new Error(`${nombre}: [criterio, malas] tenían que elegir ${JSON.stringify(esperado)}; eligieron ${JSON.stringify(elegidas)}`);
+    }
+  }
+});
+
+check('K4c observación (revisión): minijuegosPorMecanica, bifurcaciones, cambios de línea y de región, mudanzas firmadas y fueraDeSuRegion coinciden con un recuento a mano', () => {
+  // Trinquete: ningún check recontaba los campos nuevos de `correrCarrera`. El recuento a mano corre la misma carrera con
+  // `avanzarSplitAuto` y un espía en la estrategia (mismas respuestas, mismo rng) y mira el estado después de cada split.
+  const totales = { minijuegos: 0, bifurcaciones: 0, cambiosDeLinea: 0, cambiosDeRegion: 0, mudanzasFirmadas: 0, fueraDeSuRegion: 0 };
+  for (const [bot, seed] of [['criterio', 3], ['criterio', 5], ['malas', 6], ['malas', 12]]) {
+    const SPLITS = 60;
+    const observacion = correrCarreraSimulate(seed, SPLITS, ESTRATEGIAS_K0[bot]).observacion;
+    const rng = mulberry32(seed);
+    let st = createInitialState(seed, rng);
+    const aMano = { minijuegos: 0, porMecanica: {}, bifurcaciones: 0, porEvento: {}, linea: 0, region: 0, mudanzas: 0, fuera: false };
+    const espia = (sistema, estado, decision, rngLocal) => {
+      if (decision.presentacion === 'minijuego' || decision.datos?.motivo === 'minijuego') {
+        aMano.minijuegos += 1;
+        if (decision.datos?.minijuego) {
+          aMano.porMecanica[decision.datos.minijuego] = (aMano.porMecanica[decision.datos.minijuego] ?? 0) + 1;
+        }
+      }
+      if (decision.datos?.evento?.bifurcacion === true) {
+        aMano.bifurcaciones += 1;
+        aMano.porEvento[decision.datos.evento.id] = (aMano.porEvento[decision.datos.evento.id] ?? 0) + 1;
+      }
+      return ESTRATEGIAS_K0[bot](sistema, estado, decision, rngLocal);
+    };
+    let rol = st.player.role;
+    let region = null;
+    for (let i = 0; i < SPLITS && !st.terminado; i += 1) {
+      const promesa = st.flags.ofertaDeImport;
+      st = avanzarSplitAuto(st, rng, espia).state;
+      if (st.player.role !== rol) {
+        aMano.linea += 1;
+        rol = st.player.role;
+      }
+      const liga = st.mundo.ligas.find((l) => l.id === st.career.liga);
+      if (liga) {
+        if (region !== null && liga.regionId !== region) {
+          aMano.region += 1;
+        }
+        region = liga.regionId;
+        aMano.fuera = aMano.fuera || liga.region !== st.mundo.regionOrigen;
+      }
+      if (promesa && !st.flags.ofertaDeImport && liga && [].concat(promesa.ligas).includes(liga.id)) {
+        aMano.mudanzas += 1;
+      }
+    }
+    const donde = `seed ${seed} (${bot})`;
+    const igual = (nombre, obtenido, esperado) => {
+      if (JSON.stringify(obtenido) !== JSON.stringify(esperado)) {
+        throw new Error(`${donde}: ${nombre} es ${JSON.stringify(obtenido)}, el recuento a mano ${JSON.stringify(esperado)}`);
+      }
+    };
+    const ordenado = (mapa) => Object.entries(mapa).sort();
+    igual('minijuegosCount', observacion.minijuegosCount, aMano.minijuegos);
+    igual('minijuegosPorMecanica', ordenado(observacion.minijuegosPorMecanica), ordenado(aMano.porMecanica));
+    if (Object.values(observacion.minijuegosPorMecanica).reduce((a, b) => a + b, 0) !== observacion.minijuegosCount) {
+      throw new Error(`${donde}: minijuegosPorMecanica no suma minijuegosCount (${JSON.stringify(observacion.minijuegosPorMecanica)} vs ${observacion.minijuegosCount})`);
+    }
+    igual('bifurcaciones', observacion.bifurcaciones, aMano.bifurcaciones);
+    igual('bifurcacionesPorEvento', ordenado(observacion.bifurcacionesPorEvento), ordenado(aMano.porEvento));
+    igual('cambiosDeLinea', observacion.cambiosDeLinea, aMano.linea);
+    igual('cambiosDeRegion', observacion.cambiosDeRegion, aMano.region);
+    igual('mudanzasFirmadas', observacion.mudanzasFirmadas, aMano.mudanzas);
+    igual('fueraDeSuRegion', observacion.fueraDeSuRegion, aMano.fuera);
+    totales.minijuegos += aMano.minijuegos;
+    totales.bifurcaciones += aMano.bifurcaciones;
+    totales.cambiosDeLinea += aMano.linea;
+    totales.cambiosDeRegion += aMano.region;
+    totales.mudanzasFirmadas += aMano.mudanzas;
+    totales.fueraDeSuRegion += aMano.fuera ? 1 : 0;
+  }
+  const vacios = Object.entries(totales).filter(([, n]) => n === 0).map(([k]) => k);
+  if (vacios.length > 0) {
+    throw new Error(`check vacío: las 4 carreras no tocaron ${vacios.join(', ')} (${JSON.stringify(totales)})`);
+  }
+});
+
+check('K4c guarda (revisión): flags.splitJugadoSinFila nunca acumula más de un split', () => {
+  // Trinquete: un bug (ya arreglado) lo dejó en `{ 2: 9 }` a mitad de carrera sin que nada lo viera. `simulate.js` corre esta guarda
+  // después de cada split de cada carrera.
+  const conPendiente = (splitsPorTier) => ({ flags: { splitJugadoSinFila: splitsPorTier === null ? null : { org: 'Org de prueba', splitsPorTier } } });
+  for (const [nombre, estado] of [
+    ['sin split pendiente', conPendiente(null)],
+    ['un split pendiente', conPendiente({ 1: 0, 2: 1, 3: 0 })],
+    ['ninguno acumulado', conPendiente({ 1: 0, 2: 0, 3: 0 })]
+  ]) {
+    const mensaje = verificarSplitJugadoSinFila(estado);
+    if (mensaje !== null) {
+      throw new Error(`${nombre}: tenía que estar bien y dijo ${mensaje}`);
+    }
+  }
+  for (const [nombre, estado] of [
+    ['9 splits en un tier (el bug)', conPendiente({ 2: 9 })],
+    ['2 splits en dos tiers', conPendiente({ 1: 1, 2: 1, 3: 0 })]
+  ]) {
+    if (!/acumula \d+ splits/.test(verificarSplitJugadoSinFila(estado) ?? '')) {
+      throw new Error(`${nombre}: tenía que dar rojo`);
+    }
+  }
+  // Y de verdad corre en cada split: la guarda está cableada en `correrCarrera` y una carrera real sin el bug no lanza.
+  const fuente = fs.readFileSync(path.join(__dirname, 'simulate.js'), 'utf8');
+  if (!/verificarSplitJugadoSinFila\(state\)/.test(fuente)) {
+    throw new Error('simulate.js no llama a verificarSplitJugadoSinFila después de cada split');
+  }
+  correrCarreraSimulate(3, 20, null);
+});
+
+check('K4c simulate (revisión): tiempoMaquinaPorFuente dice que va sobre el promedio de logs por carrera, no la mediana', () => {
+  const observaciones = [1, 2].map((seed) => correrCarreraSimulate(seed, 10, null).observacion);
+  const bloque = bloqueRitmoK4c(observaciones);
+  if (typeof bloque.tiempoMaquinaPorFuenteSobre !== 'string' || !/promedio/.test(bloque.tiempoMaquinaPorFuenteSobre)
+    || !Array.isArray(bloque.tiempoMaquinaPorFuente) || bloque.tiempoMaquinaPorFuente.length === 0) {
+    throw new Error(`falta la clave tiempoMaquinaPorFuenteSobre junto a tiempoMaquinaPorFuente: ${JSON.stringify(Object.keys(bloque))}`);
+  }
+});
+
 // Los ruidos de resultados que apaga la ablación (§K.3a), por su ruta en `BALANCE`. Lista literal e independiente de
 // `PARAMETROS_RUIDO` (que es lo que se verifica).
 const RUIDOS_DE_RESULTADOS_K0 = ['partido.sigmaFecha', 'partido.sigmaMapa'];

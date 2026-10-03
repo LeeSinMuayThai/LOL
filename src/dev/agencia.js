@@ -42,6 +42,8 @@ export const DEFAULTS_AGENCIA = {
 // diferencias (la t pareada sale infinita con cualquier diferencia) y con 0 carreras no se mide nada.
 export const MIN_REPS_AGENCIA = 2;
 export const MIN_CARRERAS_AGENCIA = 1;
+// La meta de K4c (§K.0c): >= 30 réplicas por decisión. Con menos, `agencia.js` avisa (no cambia el default).
+export const META_REPS_K4C = 30;
 
 // Umbral mínimo de porcentaje de decisiones con efecto estadísticamente significativo (ver `ALFA_FAMILIA`)
 // para considerar que un tipo de decisión tiene "palanca" real en el final de carrera (PLAN.md §K.5 K0 / AUDITORIA.md §4.3).
@@ -379,25 +381,40 @@ export function validarParametrosAgencia({ carreras, reps, cuota, splits }) {
 // carrera sigue sola hasta `splits`. NÚMEROS ALEATORIOS COMUNES: la réplica r usa el MISMO rng (la misma seed)
 // para todas las opciones, así que dos opciones idénticas dan exactamente el mismo resultado réplica por
 // réplica y la diferencia entre opciones queda libre del azar compartido. Es lo que hace válida la t pareada.
-// Devuelve `porOpcion[i][r]` = `{ fin, c1 }` de la opción i en la réplica r, o `null` si esa réplica reventó.
-export function replicasDeDecision(st, ops, { seed, splitCount, tipo, reps, splits }) {
+// Devuelve `porOpcion[i][r]` = `{ fin, c1 }` de la opción i en la réplica r, o `null` si esa réplica reventó EN
+// CUALQUIER PUNTO (al responder la decisión o mientras la carrera seguía sola): una réplica rota no tira abajo la
+// medición. Si se pasa `fallos` (un arreglo), cada réplica rota se anota ahí con su seed, decisión, opción, réplica y
+// la primera línea del error. `terminar` es la carrera que sigue sola (inyectable para probar el manejo del error).
+export function replicasDeDecision(st, ops, { seed, splitCount, tipo, reps, splits, fallos = null, terminar = terminarCarrera }) {
   const porOpcion = ops.map(() => []);
   for (let r = 0; r < Number(reps); r += 1) {
     ops.forEach((op, i) => {
       const rr = mulberry32(hashCadena(`${seed}|${splitCount}|${tipo}|${r}`));
       const clon = structuredClone(st);
       const { _l, ...resp } = op;
-      let s2;
       try {
-        s2 = resolverDecision(clon, resp, rr).state;
-      } catch {
+        const s2 = resolverDecision(clon, resp, rr).state;
+        porOpcion[i].push(terminar(s2, rr, splitCount, Number(splits)));
+      } catch (error) {
         porOpcion[i].push(null);
-        return;
+        if (fallos) {
+          fallos.push({ seed, split: splitCount, tipo, opcion: _l ?? i, replica: r, error: primeraLinea(error) });
+        }
       }
-      porOpcion[i].push(terminarCarrera(s2, rr, splitCount, Number(splits)));
     });
   }
   return porOpcion;
+}
+
+function primeraLinea(error) {
+  return String(error?.message ?? error).split('\n')[0];
+}
+
+// Una línea por réplica rota (o por seed fallida): lo que sale en la salida de agencia.js cuando una medición tuvo fallos.
+export function describirFallos(fallos) {
+  return fallos.map((f) => (f.proceso
+    ? `seed ${f.seed}: la carrera entera falló (${f.error})`
+    : `seed ${f.seed}, split ${f.split}, decisión ${f.tipo}, opción ${f.opcion}, réplica ${f.replica}: ${f.error}`));
 }
 
 export function medirAgencia({
@@ -405,7 +422,8 @@ export function medirAgencia({
   reps = DEFAULTS_AGENCIA.reps,
   cuota = DEFAULTS_AGENCIA.cuota,
   splits = DEFAULTS_AGENCIA.splits,
-  desde = DEFAULTS_AGENCIA.desde
+  desde = DEFAULTS_AGENCIA.desde,
+  terminar = terminarCarrera
 } = {}) {
   const problema = validarParametrosAgencia({ carreras, reps, cuota, splits });
   if (problema) {
@@ -415,6 +433,7 @@ export function medirAgencia({
   const baseline = [];
   const frecuenciasTipo = {};
   let totalInterrupciones = 0;
+  const fallos = [];
 
   for (let seed = Number(desde); seed < Number(desde) + Number(carreras); seed += 1) {
     const rng = mulberry32(seed);
@@ -435,7 +454,7 @@ export function medirAgencia({
         const ops = opcionesDe(decision);
         if (ops.length >= 2 && (usados[tipo] ?? 0) < Number(cuota)) {
           usados[tipo] = (usados[tipo] ?? 0) + 1;
-          const porOpcion = replicasDeDecision(st, ops, { seed, splitCount, tipo, reps, splits });
+          const porOpcion = replicasDeDecision(st, ops, { seed, splitCount, tipo, reps, splits, fallos, terminar });
           resultados.push({ seed, split: splitCount, tipo, labels: ops.map((o) => o._l), porOpcion });
         }
 
@@ -447,13 +466,13 @@ export function medirAgencia({
     baseline.push(metricas(st));
   }
 
-  return { baseline, resultados, frecuenciasTipo, totalInterrupciones, carreras: baseline.length };
+  return { baseline, resultados, frecuenciasTipo, totalInterrupciones, carreras: baseline.length, fallos };
 }
 
 // K4c (paso 1): junta las mediciones de varios procesos (una por carrera o por tramo de seeds) en una sola, en el orden
 // dado. Puro: la medición de una carrera no depende de las demás, así que el resultado es el de correrlas en serie.
 export function combinarMediciones(partes) {
-  const combinada = { baseline: [], resultados: [], frecuenciasTipo: {}, totalInterrupciones: 0, carreras: 0 };
+  const combinada = { baseline: [], resultados: [], frecuenciasTipo: {}, totalInterrupciones: 0, carreras: 0, fallos: [] };
   for (const parte of partes) {
     combinada.baseline.push(...parte.baseline);
     combinada.resultados.push(...parte.resultados);
@@ -462,6 +481,7 @@ export function combinarMediciones(partes) {
     }
     combinada.totalInterrupciones += parte.totalInterrupciones;
     combinada.carreras += parte.carreras ?? parte.baseline.length;
+    combinada.fallos.push(...(parte.fallos ?? []));
   }
   return combinada;
 }
@@ -700,45 +720,75 @@ export function analizarDatosAgencia(
 // K4c (paso 1): `medirAgencia` repartido en procesos. Cada carrera es un proceso hijo (`--soloMedir`: mide y guarda los
 // crudos en un archivo temporal, sin analizar), de a `procesos` a la vez; al final se juntan en el orden de las seeds. Es lo
 // mismo que correrlas en serie (la medición de una carrera solo depende de su seed) en ~1/procesos del tiempo.
-export function medirEnProcesos({ carreras, reps, cuota, splits, desde, procesos }) {
-  const archivo = fileURLToPath(import.meta.url);
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'agencia-'));
-  const seeds = Array.from({ length: Number(carreras) }, (_, i) => Number(desde) + i);
-  const inicio = Date.now();
-  let siguiente = 0;
-  let terminadas = 0;
+// Un hijo que termina mal NO mata al resto: su seed queda como fallida (`fallos`, con `proceso: true`) y las demás se
+// juntan igual. El directorio temporal se borra siempre. `archivo` y `base` son inyectables (para probarlo sin simular).
+export async function medirEnProcesos({
+  carreras, reps, cuota, splits, desde, procesos, archivo = fileURLToPath(import.meta.url), base = os.tmpdir()
+}) {
+  const dir = fs.mkdtempSync(path.join(base, 'agencia-'));
+  try {
+    const seeds = Array.from({ length: Number(carreras) }, (_, i) => Number(desde) + i);
+    const inicio = Date.now();
+    let siguiente = 0;
+    let terminadas = 0;
+    const fallosDeProceso = new Map();
 
-  const correrUna = (seed) => new Promise((resolve, reject) => {
-    const parcial = path.join(dir, `seed-${seed}.json`);
-    const hijo = spawn(process.execPath, [
-      archivo, '--carreras=1', `--desde=${seed}`, `--reps=${reps}`, `--cuota=${cuota}`, `--splits=${splits}`, `--soloMedir=${parcial}`
-    ], { stdio: ['ignore', 'ignore', 'inherit'] });
-    hijo.on('error', reject);
-    hijo.on('exit', (codigo) => {
-      if (codigo !== 0) {
-        reject(new Error(`la carrera de la seed ${seed} terminó con código ${codigo}`));
-        return;
+    const correrUna = (seed) => new Promise((resolve) => {
+      const parcial = path.join(dir, `seed-${seed}.json`);
+      let stderr = '';
+      const fallar = (motivo) => {
+        fallosDeProceso.set(seed, { seed, proceso: true, error: motivo });
+        console.error(`  seed ${seed} FALLÓ: ${motivo}`);
+        resolve(null);
+      };
+      const hijo = spawn(process.execPath, [
+        archivo, '--carreras=1', `--desde=${seed}`, `--reps=${reps}`, `--cuota=${cuota}`, `--splits=${splits}`, `--soloMedir=${parcial}`
+      ], { stdio: ['ignore', 'ignore', 'pipe'] });
+      hijo.stderr.on('data', (trozo) => {
+        stderr += trozo;
+        process.stderr.write(trozo);
+      });
+      hijo.on('error', (error) => fallar(`no se pudo lanzar el proceso (${primeraLinea(error)})`));
+      hijo.on('close', (codigo) => {
+        if (fallosDeProceso.has(seed)) {
+          return;
+        }
+        if (codigo !== 0) {
+          const linea = stderr.split('\n').find((l) => /Error/.test(l));
+          fallar(`terminó con código ${codigo}${linea ? `: ${linea.trim()}` : ''}`);
+          return;
+        }
+        terminadas += 1;
+        console.error(`  seed ${seed} lista (${terminadas}/${seeds.length}, ${Math.round((Date.now() - inicio) / 1000)} s)`);
+        resolve(parcial);
+      });
+    });
+
+    const trabajador = async () => {
+      while (siguiente < seeds.length) {
+        const seed = seeds[siguiente];
+        siguiente += 1;
+        await correrUna(seed);
       }
-      terminadas += 1;
-      console.error(`  seed ${seed} lista (${terminadas}/${seeds.length}, ${Math.round((Date.now() - inicio) / 1000)} s)`);
-      resolve(parcial);
-    });
-  });
+    };
 
-  const trabajador = async () => {
-    while (siguiente < seeds.length) {
-      const seed = seeds[siguiente];
-      siguiente += 1;
-      await correrUna(seed);
+    await Promise.all(Array.from({ length: Math.max(1, Math.min(Number(procesos), seeds.length)) }, trabajador));
+    const partes = [];
+    for (const seed of seeds) {
+      if (fallosDeProceso.has(seed)) {
+        partes.push({ baseline: [], resultados: [], frecuenciasTipo: {}, totalInterrupciones: 0, carreras: 0, fallos: [fallosDeProceso.get(seed)] });
+        continue;
+      }
+      try {
+        partes.push(JSON.parse(fs.readFileSync(path.join(dir, `seed-${seed}.json`), 'utf8')));
+      } catch (error) {
+        partes.push({ baseline: [], resultados: [], frecuenciasTipo: {}, totalInterrupciones: 0, carreras: 0, fallos: [{ seed, proceso: true, error: `su archivo de crudos no se pudo leer (${primeraLinea(error)})` }] });
+      }
     }
-  };
-
-  return Promise.all(Array.from({ length: Math.max(1, Math.min(Number(procesos), seeds.length)) }, trabajador))
-    .then(() => {
-      const partes = seeds.map((seed) => JSON.parse(fs.readFileSync(path.join(dir, `seed-${seed}.json`), 'utf8')));
-      fs.rmSync(dir, { recursive: true, force: true });
-      return combinarMediciones(partes);
-    });
+    return combinarMediciones(partes);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 }
 
 async function main() {
@@ -822,9 +872,23 @@ async function main() {
       fs.writeFileSync(soloMedir, JSON.stringify(medirAgencia({ carreras, reps, cuota, splits, desde })), 'utf8');
       return;
     }
+    if (reps < META_REPS_K4C) {
+      console.error(`aviso: con --reps=${reps} (< ${META_REPS_K4C}) no se cumple la meta de K4c (>= ${META_REPS_K4C} réplicas por decisión, §K.0c): sirve para probar, no para decidir.`);
+    }
     datosCrudos = procesos > 1
       ? await medirEnProcesos({ carreras, reps, cuota, splits, desde, procesos })
       : medirAgencia({ carreras, reps, cuota, splits, desde });
+    if (datosCrudos.fallos?.length > 0) {
+      console.error(`
+AVISO: ${datosCrudos.fallos.length} fallo(s) en la medición (las réplicas rotas quedan fuera del análisis):`);
+      for (const linea of describirFallos(datosCrudos.fallos)) {
+        console.error(`  - ${linea}`);
+      }
+      if (!(datosCrudos.carreras > 0)) {
+        console.error('agencia: ninguna carrera se midió completa.');
+        process.exit(1);
+      }
+    }
     if (salida) {
       fs.writeFileSync(salida, JSON.stringify(datosCrudos, null, 2), 'utf8');
       console.log(`Datos crudos guardados en ${salida}`);

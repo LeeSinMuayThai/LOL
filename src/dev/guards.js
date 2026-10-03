@@ -227,3 +227,18 @@ export function verificarTokensDefinidos(estilosDir) {
   }
   return [...usados].filter((nombre) => !definidos.has(nombre));
 }
+
+// K4c (paso 1, revisión): `flags.splitJugadoSinFila` es el split del pase que espera a que `roster.js` le abra su fila
+// (`{ org, splitsPorTier }`): a lo sumo UNO. Un bug ya arreglado (el banco te cedía a tu propio club) lo dejó crecer a
+// `{ 2: 9 }` a mitad de una carrera sin que nada lo viera hasta el final. `simulate.js` lo mira después de cada split.
+// `null` si está bien; si no, el mensaje.
+export function verificarSplitJugadoSinFila(state) {
+  const pendiente = state?.flags?.splitJugadoSinFila;
+  if (!pendiente) {
+    return null;
+  }
+  const acumulados = Object.values(pendiente.splitsPorTier ?? {}).reduce((suma, n) => suma + n, 0);
+  return acumulados > 1
+    ? `flags.splitJugadoSinFila acumula ${acumulados} splits (${JSON.stringify(pendiente.splitsPorTier)}, org ${pendiente.org}): nunca puede haber más de uno esperando fila`
+    : null;
+}
