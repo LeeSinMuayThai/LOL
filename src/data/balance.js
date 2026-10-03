@@ -1696,6 +1696,10 @@ export const BALANCE = {
   // y después cuartos, semis y final al Bo5. Los 16 salen de `cuposInternacionales` de cada liga (3/3/3/3/2/2).
   mundial: {
     participantes: 16,
+    // Revisión de K5 (P4): el hype que te deja el Mundial según hasta dónde llegaste. Antes era binario (pasar el Swiss
+    // = `rendimiento.hypePorTitulo`, 9; quedar afuera = `hypePorPodio`, 4): un campeón del mundo y un cuartofinalista
+    // salían con el mismo hype. Escalonado alrededor del 9 de antes; el eliminado sigue en 4.
+    hypePorResultado: { eliminado: 4, cuartos: 7, semis: 9, final: 11, campeon: 14 },
     victoriasParaAvanzar: 3,
     derrotasParaQuedarAfuera: 3,
     clasificanAlBracket: 8,

@@ -16865,6 +16865,25 @@ check('K5-A regla 15: la previa del 2-2 del Swiss dice la p con la que se tira',
   }
 });
 
+// Revisión de K5 (P4): el cierre del Mundial daba el mismo hype a un campeón que a un cuartofinalista (binario: pasar
+// el Swiss o no). Ahora sale de `mundial.hypePorResultado`, estrictamente creciente con hasta dónde llegaste.
+check('Revisión K5: el hype del Mundial crece con el resultado (campeón > final > semis > cuartos > eliminado) y el cierre lo lee de esa tabla', () => {
+  const orden = ['eliminado', 'cuartos', 'semis', 'final', 'campeon'];
+  const tabla = BALANCE.mundial.hypePorResultado;
+  if (Object.keys(tabla).sort().join() !== [...orden].sort().join()) {
+    throw new Error(`hypePorResultado tiene ${Object.keys(tabla).join(', ')}; esperado ${orden.join(', ')}`);
+  }
+  for (let i = 1; i < orden.length; i += 1) {
+    if (!(tabla[orden[i]] > tabla[orden[i - 1]])) {
+      throw new Error(`hype de ${orden[i]} (${tabla[orden[i]]}) no supera al de ${orden[i - 1]} (${tabla[orden[i - 1]]})`);
+    }
+  }
+  const fuente = fs.readFileSync(path.join(srcDir, 'systems', 'internacional.js'), 'utf8');
+  if (!/hypePorResultado\[resultado\]/.test(fuente) || /hypePorTitulo|hypePorPodio/.test(fuente)) {
+    throw new Error('systems/internacional.js no toma el hype del Mundial de hypePorResultado[resultado]');
+  }
+});
+
 check('K5-A el puntaje de K1 maneja cada resultado del Mundial, en orden', () => {
   const { porResultado } = BALANCE.puntaje.internacional;
   const orden = ['eliminado', 'cuartos', 'semis', 'final', 'campeon'];

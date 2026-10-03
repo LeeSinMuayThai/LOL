@@ -167,7 +167,6 @@ function cerrarMundial(state, rng, logs) {
   const t = state.internacional;
   const resultado = resultadoDelJugador(t);
   const record = recordDelJugador(t);
-  const r = BALANCE.rendimiento;
   const a = BALANCE.arraigo;
   const liga = ligaDeCarrera(state);
   const arraigo = Math.round(clampStat(state.career.arraigo + roll(a.porInternacionalMin, a.porInternacionalMax, rng)));
@@ -185,7 +184,7 @@ function cerrarMundial(state, rng, logs) {
     }),
     arraigo
   );
-  const paso = resultado !== 'eliminado';
+  const hypeGanado = BALANCE.mundial.hypePorResultado[resultado];
   const jugoElBracket = state.serie?.torneo === 'mundial';
   return {
     state: {
@@ -194,7 +193,7 @@ function cerrarMundial(state, rng, logs) {
       player: {
         ...state.player,
         worlds: state.player.worlds + 1,
-        stats: { ...state.player.stats, hype: clampStat(state.player.stats.hype + (paso ? r.hypePorTitulo : r.hypePorPodio)) }
+        stats: { ...state.player.stats, hype: clampStat(state.player.stats.hype + hypeGanado) }
       },
       career: {
         ...state.career,
