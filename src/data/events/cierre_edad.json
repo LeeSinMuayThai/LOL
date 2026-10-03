@@ -19,7 +19,6 @@
         "id": "aprovechar_el_receso",
         "label": "Parar en serio: dormir y no tocar el cliente",
         "descripcion": "Dos semanas sin abrir el juego. Volvés con la cabeza limpia y en casa te lo agradecen; el ritmo de ranked se oxida y a veces el LP lo paga.",
-        "plan": "cabeza",
         "weight": 5,
         "outcomes": [
           {
@@ -96,7 +95,6 @@
         "id": "meter_el_acelerador",
         "label": "Usar el receso para despegarte",
         "descripcion": "Mientras el resto descansa, vos subís: la cola vacía es el mejor momento del año para ganar LP. Es la forma más rápida de sacar diferencia y la más rápida de llegar quemado a febrero.",
-        "plan": "juego",
         "weight": 5,
         "outcomes": [
           {
@@ -159,7 +157,6 @@
         "id": "estudiar_el_juego",
         "label": "Meter el receso en VODs y en un campeón nuevo",
         "descripcion": "En vez de ladder, repasás tus propias partidas y armás un pool más ancho. Lo que aprendés se queda, pero dormís poco y el LP no se mueve.",
-        "plan": "juego",
         "weight": 4,
         "outcomes": [
           {
@@ -256,7 +253,6 @@
         "id": "prometer_resultados",
         "label": "Poner una fecha y un objetivo concreto",
         "descripcion": "Te comprometés a llegar a algo antes de tal mes. Compra tiempo y confianza en casa, y si no llegás, el que queda pagando sos vos. El colegio pasa a segundo plano.",
-        "plan": "juego",
         "weight": 5,
         "outcomes": [
           {
@@ -339,7 +335,6 @@
         "id": "pedir_mas_margen",
         "label": "No prometer nada y ordenar el colegio",
         "descripcion": "Sin fechas ni objetivos: les mostrás notas. Baja la presión en casa y también las horas de juego: el ranked espera.",
-        "plan": "cabeza",
         "weight": 5,
         "outcomes": [
           {
@@ -426,7 +421,6 @@
         "id": "mostrarles_los_mensajes",
         "label": "Mostrarles el perfil y los mensajes de los scouts",
         "descripcion": "Les ponés sobre la mesa que hay gente grande mirándote. Puede convencerlos de que esto va en serio o asustarlos, y el colegio no sale ganando.",
-        "plan": "marca",
         "weight": 4,
         "outcomes": [
           {
@@ -2141,7 +2135,6 @@
         "id": "redoblar_la_apuesta",
         "label": "Meter un año más, a fondo",
         "descripcion": "Le das doce meses más sin red. Si no pasa nada, va a ser difícil justificar el trece. Subís más rápido, a costa de casa, de dormir y de la cabeza.",
-        "plan": "juego",
         "weight": 5,
         "outcomes": [
           {
@@ -2256,7 +2249,6 @@
         "id": "abrir_un_plan_b",
         "label": "Empezar a mirar otra cosa en paralelo",
         "descripcion": "Anotarte en algo, retomar el estudio, buscar una changa. Le sacás dramatismo a que esto no funcione, y también horas de cola.",
-        "plan": "cabeza",
         "weight": 5,
         "outcomes": [
           {
@@ -2349,7 +2341,6 @@
         "id": "mostrarte_afuera",
         "label": "Salir del anonimato: stream y equipo amateur",
         "descripcion": "Si no te ven, no te fichan. Armás un canal y buscás un equipo amateur donde te pongan frente a gente de verdad. Ganás nombre y perdés el tiempo que no tenías.",
-        "plan": "marca",
         "weight": 4,
         "outcomes": [
           {
@@ -2455,7 +2446,6 @@
         "id": "mirar_lo_que_falta",
         "label": "Enfocarte en lo que te falta",
         "descripcion": "Hacés la lista de agujeros de tu juego y te la clavás en la pared. Motiva y también pesa: lo que aprendés se queda, la cabeza paga el precio.",
-        "plan": "juego",
         "weight": 5,
         "outcomes": [
           {
@@ -2536,7 +2526,6 @@
         "id": "contar_lo_ganado",
         "label": "Enfocarte en lo que ya lográs",
         "descripcion": "Repasás de dónde saliste. Menos plan de mejora, más combustible para no aflojar: la cabeza sube y el juego se queda donde estaba.",
-        "plan": "cabeza",
         "weight": 5,
         "outcomes": [
           {
@@ -2617,7 +2606,6 @@
         "id": "salir_a_los_tryouts",
         "label": "Dejar de contar y anotarte a los tryouts abiertos",
         "descripcion": "Si el reloj corre, que te vean ya. Los tryouts te suben el nombre y la vara, pero un rechazo seguido pesa.",
-        "plan": "marca",
         "weight": 4,
         "outcomes": [
           {
