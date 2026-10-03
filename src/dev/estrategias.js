@@ -418,6 +418,20 @@ function responderAzar(sistema, state, decision, rng) {
   return sistema.resolverAuto(state, decision, rng);
 }
 
+// K4c (paso 3a): `criterio` con el plan de la serie NEUTRO, para el check del Bo5 del bloque A. `criterio` contesta cada
+// plan con la opción de mayor `pSerie` (la mejor): ese check sumaba la agencia del plan al nivel, y cualquier plan que pese
+// (el ×3 de K4c) lo saca de su banda por construcción. Este bot contesta cada plan (`serie:plan` e `internacional:plan`,
+// `datos.motivo === 'plan'`) con la opción de `pSerie` MEDIANA (con un número par de opciones, la mediana inferior) y
+// todo lo demás como `criterio`. NO está en `ESTRATEGIAS`: no es un bot de agencia, es una vara de medir, y `todas` lo
+// correría de más.
+export function criterioConPlanNeutro(sistema, state, decision, rng) {
+  if (decision.datos?.motivo === 'plan') {
+    const porPSerie = [...decision.opciones].sort((a, b) => a.pSerie - b.pSerie);
+    return { opcionId: porPSerie[Math.floor((porPSerie.length - 1) / 2)].id };
+  }
+  return responderCriterio(sistema, state, decision, rng);
+}
+
 export const ESTRATEGIAS = {
   // Reacciona a las barras que tiene en rojo. Es el criterio que vive en cada
   // sistema (`resolverAuto`) y el mas parecido a alguien jugando con cabeza.

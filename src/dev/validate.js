@@ -8799,7 +8799,7 @@ const {
 } = await import('./agencia.js');
 const { puntajeDeCarrera: puntajeDeCarreraAgencia } = await import('../core/puntaje.js');
 const {
-  correrLote, correrCarrera: correrCarreraSimulate, correrSinRuido, calcularFavoritoBo5, contarBeats,
+  correrLote, correrCarrera: correrCarreraSimulate, correrSinRuido, calcularFavoritoBo5, bloqueBo5Motor, contarBeats,
   clasificarSplit, PARAMETROS_RUIDO, DURACION_BEAT_MS, ESPERA_MINIJUEGO_MS, DELTAS_FAVORITO_BO5,
   UMBRAL_R2_ESTRUCTURAL, decidirRuidoPuro,
   promedio, mediana: medianaSim, medianaInferior, percentil, desvioMuestral, pearson, varianza, regresionLineal2Regresores,
@@ -8808,7 +8808,7 @@ const {
   SONDA_RETENCION
 } = await import('./simulate.js');
 const {
-  ESTRATEGIAS: ESTRATEGIAS_K0, puntuarPrevia, compararOfertasMercado,
+  ESTRATEGIAS: ESTRATEGIAS_K0, criterioConPlanNeutro, puntuarPrevia, compararOfertasMercado,
   esDecisionDeMercado, esDecisionDeRutina, esDecisionDeMinijuego
 } = await import('./estrategias.js');
 const { spawnSync } = await import('child_process');
@@ -15736,11 +15736,73 @@ checkLento(`K3c meta de K2 (criterio, ${SEEDS_METAS_A} × ${SPLITS_LOTE_K0}): r 
   if (problemas.length > 0) throw new Error(problemas.join('; '));
 });
 
-checkLento(`K3c meta de K2 (criterio, ${SEEDS_METAS_A} × ${SPLITS_LOTE_K0}): el favorito claro (Δ0 ≈ 10) gana el Bo5 entre 75% y 85% (lado del jugador; el rival solo se reporta, el conjunto tiene su check)`, () => {
-  const v = valoresDeLasMetasA(loteDeLasMetasA());
-  console.log(`     (informe) Bo5 con |Δ0| ≈ 10: jugador favorito ${v.bo5Jugador}% (se mide), rival favorito ${v.bo5Rival}% (solo se reporta), juntos ${v.bo5Juntos}% (su propio check)`);
-  const problemas = problemasDeLasMetasA(['bo5Jugador']);
-  if (problemas.length > 0) throw new Error(problemas.join('; '));
+// K4c (paso 3a) — regla 17: este check REEMPLAZA a la medición con `criterio` ("el favorito claro gana el Bo5 entre 75% y
+// 85%", lado del jugador, con el bot que contesta cada plan de serie con la mejor opción), que sumaba la agencia del plan
+// al nivel: con un plan que pesa (el ×3 de K4c) esa medición sale de 75-85 por construcción. El bloque A controla nivel →
+// resultado, así que ahora el bot contesta cada plan con la opción de p MEDIANA (`criterioConPlanNeutro`). La banda no
+// cambia: cambia lo que se le pide medir. La palanca del plan se mide como palanca (bloque B, Δp del instrumento) y
+// `criterio` contra `azar` en series ganadas la muestra. Mismas seeds y splits que el lote de las demás metas de A.
+let bo5PlanNeutroA = null;
+function bo5ConPlanNeutroDeLasMetasA() {
+  if (bo5PlanNeutroA === null) {
+    const observaciones = [];
+    for (let seed = 1; seed <= SEEDS_METAS_A; seed += 1) {
+      observaciones.push(correrCarreraSimulate(seed, SPLITS_LOTE_K0, criterioConPlanNeutro).observacion);
+    }
+    afirmarRuidoIntactoK0(`después de las ${SEEDS_METAS_A} carreras con el plan neutro`);
+    bo5PlanNeutroA = bloqueBo5Motor(observaciones).favoritoClaro;
+  }
+  return bo5PlanNeutroA;
+}
+
+checkLento(`K3c meta de K2 (criterio con plan neutro, ${SEEDS_METAS_A} × ${SPLITS_LOTE_K0}): el favorito claro (Δ0 ≈ 10) gana el Bo5 entre 75% y 85% (lado del jugador; el rival solo se reporta, el conjunto tiene su check)`, () => {
+  const claro = bo5ConPlanNeutroDeLasMetasA();
+  const v = {
+    ...valoresDeLasMetasA(loteDeLasMetasA()),
+    bo5Jugador: claro.jugadorFavorito.ganaFavoritoPct, bo5Rival: claro.rivalFavorito.ganaFavoritoPct, bo5Juntos: claro.ambos.ganaFavoritoPct
+  };
+  console.log(`     (informe, plan neutro) Bo5 con |Δ0| ≈ 10: jugador favorito ${v.bo5Jugador}% ± ${claro.jugadorFavorito.eePct} (se mide), rival favorito ${v.bo5Rival}% (solo se reporta), juntos ${v.bo5Juntos}% (su propio check, que mide con criterio)`);
+  const motivo = juezDeLasMetasA(v).bo5Jugador;
+  if (motivo !== null) throw new Error(motivo);
+});
+
+// K4c (paso 3a): el bot de la vara de medir. Estructural y rápido: en cada parada de plan responde con la opción de p mediana
+// y en todo lo demás es `criterio`, sobre carreras enteras (3 seeds, la observación entera tiene que coincidir con la regla
+// escrita a mano). Mutante: `criterio` en el plan (la mejor opción) o la mediana mal elegida lo ponen rojo.
+check('K4c el plan neutro del bloque A: criterioConPlanNeutro contesta cada plan con la opción de p mediana y todo lo demás como criterio', () => {
+  const opciones = (...ps) => ps.map((pSerie, i) => ({ id: `o${i}`, pSerie }));
+  const plan = (...ps) => ({ opciones: opciones(...ps), datos: { motivo: 'plan' } });
+  const sinSistema = {};
+  const respuesta = (decision) => criterioConPlanNeutro(sinSistema, {}, decision, null).opcionId;
+  // Tres opciones: la del medio (no la primera ni la última); cuatro: la mediana inferior; dos: la inferior; una sola: esa.
+  if (respuesta(plan(0.5, 0.9, 0.6)) !== 'o2' || respuesta(plan(0.9, 0.5, 0.6, 0.7)) !== 'o2' || respuesta(plan(0.8, 0.4)) !== 'o1' || respuesta(plan(0.7)) !== 'o0') {
+    throw new Error(`la mediana por pSerie: [0,5 0,9 0,6] → ${respuesta(plan(0.5, 0.9, 0.6))} (o2), [0,9 0,5 0,6 0,7] → ${respuesta(plan(0.9, 0.5, 0.6, 0.7))} (o2), [0,8 0,4] → ${respuesta(plan(0.8, 0.4))} (o1)`);
+  }
+  let planes = 0;
+  let planesDondeDifiere = 0;
+  for (const seed of [1, 2, 3]) {
+    // La misma regla escrita a mano: en el plan, la opción cuya pSerie es la mediana inferior; todo lo demás, criterio.
+    const aMano = (sistema, estado, decision, rngLocal) => {
+      if (decision.datos?.motivo === 'plan') {
+        const ps = decision.opciones.map((o) => o.pSerie).sort((x, y) => x - y);
+        const mediana = ps[Math.floor((ps.length - 1) / 2)];
+        planes += 1;
+        if (decision.opciones.find((o) => o.pSerie === mediana).id !== ESTRATEGIAS_K0.criterio(sistema, estado, decision, rngLocal).opcionId) {
+          planesDondeDifiere += 1;
+        }
+        return { opcionId: decision.opciones.find((o) => o.pSerie === mediana).id };
+      }
+      return ESTRATEGIAS_K0.criterio(sistema, estado, decision, rngLocal);
+    };
+    const neutro = JSON.stringify(correrCarreraSimulate(seed, 60, criterioConPlanNeutro).observacion);
+    const manual = JSON.stringify(correrCarreraSimulate(seed, 60, aMano).observacion);
+    if (neutro !== manual) {
+      throw new Error(`seed ${seed}: la carrera con criterioConPlanNeutro no es la de "mediana en el plan, criterio en lo demás" escrita a mano`);
+    }
+  }
+  if (planes < 10 || planesDondeDifiere < 3) {
+    throw new Error(`check vacío: ${planes} paradas de plan y ${planesDondeDifiere} donde la mediana difiere de la mejor opción (hacen falta 10 y 3)`);
+  }
 });
 
 // El conjunto (los dos lados) es un check de BANDA fuera de banda dentro del bloque B: la asimetría del Fearless (solo
