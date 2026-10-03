@@ -16346,7 +16346,7 @@ function sondaDeLaPrueba() {
   }
   const nombreDe = (org) => (typeof org === 'string' ? org : org?.nombre ?? null);
   const filas = [];
-  for (let seed = 1; seed <= 60; seed += 1) {
+  for (let seed = 1; seed <= 80; seed += 1) {
     const rng = mulberry32(seed);
     let st = createInitialState(seed, rng);
     for (let i = 0; i < 45 && !st.terminado; i += 1) {
