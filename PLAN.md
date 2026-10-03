@@ -6115,9 +6115,38 @@ Va en dos piezas paralelas, cada una en su worktree.
       esconder un check que se rompe con el valor real.
   - **El log dice lo que pasó.** La línea "mentalidad +N" del descanso muestra la ganancia real, ya con el tope,
     no la nominal. Los logs no entran en la huella.
+  - **La revisión independiente de K3** *("Requiere corrección", 2026-10-03)*.
+    - **El motor está bien con las perillas encendidas.** Se probó con k=1, r=0,3, tope 60, rH=0,3 y fracciones
+      0,3: 0 crashes, 0 NaN, 0 ids crudos, y la previa sigue siendo la tirada con k=1. En 578 pausas la p
+      guardada coincide, y la pausa sobrevive a guardar y cargar byte a byte.
+    - **Lo que falla son checks que solo pasan con las constantes neutras.** Una pieza neutra no puede esconder
+      eso, así que se arregla antes del merge. Los checks estructurales de K3, y el de σ de K2b, pasan también con
+      las perillas encendidas: o fijan en memoria lo que necesitan, o comparan contra la fórmula con la perilla
+      incluida.
+    - **La forma del guardado incluye una marca.** `FORMAS_CONOCIDAS[7]` se re-registra con un estado que trae al
+      menos una marca, para que K3c pueda subir las fracciones sin tocar `VERSION` (K3c es solo constantes).
+    - **Un solo nombre en pantalla.** Las líneas generadas que muestran el delta de la barra dicen
+      **Consistencia**, no "Mentalidad".
+    - **Las rutinas amateur también dejan marca** (`amateur.js`, por ejemplo `bootcamp_casero`), igual que las de
+      offseason.
+    - **Los logs de práctica muestran la ganancia real**, ya con el clamp y el techo de lesión.
+    - **Un solo aplicador de stats.** El aplicador de stats del minijuego (`serie.js`, `aplicarStatsDeMinijuego`)
+      pasa por el mismo helper de permanencia que los eventos.
+    - **Los checks de fixture que dependen de una seed fija** (el D75 de K1 con su seed, el de la p del draft
+      sobre el tope de K2b) buscan sus casos en un rango de seeds y fallan solo si no encuentran ninguno. Así no
+      se vacían cuando K3c cambie las carreras.
   - **Para K3c.**
     - Las opciones de los eventos que suben la mentalidad **no** se topean: son decisiones con su costo, no
       descanso.
+    - Pista de la revisión, con las perillas encendidas (60 × 40, `criterio`):
+
+      | Meta | Medido | Meta pedida |
+      |---|---|---|
+      | Mentalidad pro, mediana | 64,5 | 45-75 ✓ |
+      | Splits con mentalidad ≥ 90 | 0,1% | ✓ |
+      | Splits con hype ≥ 90 | 28,9% | < 25%: rH 0,3 no alcanza |
+      | Sorpresas, mentalidad 20 contra 80 | +8,2 pp | ✓ |
+      | Retención a 4 splits | 0,317 | ≥ 0,4: la fracción ronda 0,4 |
     - Al calibrar `hypeRetornoBase`, K3c decide si el decaimiento fijo `hypeDecaimiento` pasa a 0.
 - **Para las dos piezas.**
   - Sin `rng` nuevo.
