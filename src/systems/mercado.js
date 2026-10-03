@@ -1209,6 +1209,28 @@ function respaldoDePrueba(state, otras) {
     ?? sinPrueba.reduce((mejor, opcion) => (mejor === null || opcion.salarioAnualUSD > mejor.salarioAnualUSD ? opcion : mejor), null);
 }
 
+// K4c (revisión): una pausa del mercado que dejó parada un guardado de VERSION 10 (`core/guardado.js`, `migrarDe10`), rearmada
+// con lo de hoy. Sin `preparacion` (la práctica ya no se elige en la pretemporada); y la prueba, con su respaldo (por la misma
+// regla: si el guardado no trae `otras`, no hay con quién seguir) y la apuesta y los textos actuales, que dicen qué pasa si no
+// alcanza (regla 15: la prueba de VERSION 10 firmaba siempre). Pura, sin rng.
+export function pausaDeMercadoMigrada(state, decision) {
+  const { preparacion, ...datos } = decision.datos ?? {};
+  if (datos.motivo !== 'minijuego' || datos.momento !== 'tryout') {
+    return { ...decision, datos };
+  }
+  const otras = datos.otras ?? [];
+  const respaldo = datos.respaldo === undefined
+    ? respaldoDePrueba(state, otras)
+    : otras.find((opcion) => opcion.id === datos.respaldo) ?? null;
+  const textos = textoDeMinijuego(minijuegoPorId(datos.minijuego), state);
+  return {
+    ...decision,
+    titulo: textos.titulo,
+    descripcion: textos.descripcion,
+    datos: { ...datos, otras, carry: datos.carry ?? {}, respaldo: respaldo?.id ?? null, apuesta: `${textos.apuesta} ${textoDeRespaldo(respaldo)}` }
+  };
+}
+
 function textoDeRespaldo(respaldo) {
   if (!respaldo) {
     return 'Si no alcanza, esta ventana no firmás con nadie.';

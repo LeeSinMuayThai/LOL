@@ -18968,6 +18968,8 @@ function guardadoDeLaVersion10K4cG(state, rng) {
   datos.version = 10;
   delete datos.state.player.planAnual;
   datos.state.flags.preparacionDeSplit = PREPARACION_DE_SPLIT_VIEJA_K4cG;
+  // K4c (revisión): la 10 tampoco escribía `flags.pruebasFallidas` (la migración lo arranca vacío).
+  delete datos.state.flags.pruebasFallidas;
   for (const log of datos.state.logs) {
     delete log.adjunto;
   }
@@ -19001,8 +19003,9 @@ check('K4c guardado VERSION 11: la forma de la 10 sigue registrada, y un guardad
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
     for (let i = 0; i < SPLITS_GUARDADO_10_K4cG && !state.terminado; i += 1) {
-      // Mientras ningún cierre de año fijó otro plan, el que el guardado viejo no traía es exactamente el del perfil.
-      if (state.player.planAnual === planInicialK4cG(state.player.perfil.actual)) {
+      // Mientras ningún cierre de año fijó otro plan, el que el guardado viejo no traía es exactamente el del perfil (y mientras
+      // ninguna prueba falló sin respaldo, `pruebasFallidas` vacío).
+      if (state.player.planAnual === planInicialK4cG(state.player.perfil.actual) && state.flags.pruebasFallidas.length === 0) {
         const datos = deserializarGuardado(guardadoDeLaVersion10K4cG(state, rng));
         if (datos === null) {
           throw new Error(`seed ${seed}, split ${i}: el guardado de VERSION 10 no cargó`);
@@ -19033,6 +19036,66 @@ check('K4c guardado VERSION 11: la forma de la 10 sigue registrada, y un guardad
   if (!IDS_PLAN_K4cG.includes(sinPerfil.player.planAnual)) {
     throw new Error(`un guardado sin perfil debería caer al plan por defecto, dio ${sinPerfil.player.planAnual}`);
   }
+});
+
+// K4c (revisión): un guardado de la 10 parado en la prueba del mercado traía la apuesta vieja (sin "si no alcanza": la prueba de la 10
+// firmaba siempre), sin `respaldo` (y antes de K4c-S sin `otras`) y con la `preparacion`; uno parado en un cierre, las opciones sin la
+// línea del plan y el evento sin el plan de cada opción (no lo mostraba ni lo fijaba). `migrarDe10` los rearma con lo de hoy (regla 15).
+// Los guardados se hacen a mano desde las pausas reales de `criterio` (las carreras de K4c-P), quitándoles lo que la 10 no escribía.
+const { lineaDePlan: lineaDePlanK4cG } = await import('../systems/practica.js');
+check('K4c (revisión) guardado VERSION 10 parado en la prueba del mercado o en un cierre: la migración rearma la pausa con el respaldo, el plan y el texto de hoy', () => {
+  const aLa10 = (paso, tocar) => {
+    const datos = JSON.parse(serializarGuardado(paso.antes, mulberry32(paso.seed)));
+    datos.version = 10;
+    delete datos.state.player.planAnual;
+    delete datos.state.flags.pruebasFallidas;
+    datos.state.flags.preparacionDeSplit = -1;
+    tocar(datos.state.pendiente.decision);
+    const cargado = deserializarGuardado(JSON.stringify(datos));
+    if (cargado === null) throw new Error(`seed ${paso.seed}, split ${paso.split}: el guardado de la 10 no cargó`);
+    return cargado.state;
+  };
+  let cierres = 0;
+  let pruebas = 0;
+  for (const paso of corridasK4cP().pasos) {
+    const donde = `seed ${paso.seed}, split ${paso.split} (${paso.sistemaId})`;
+    if (paso.sistemaId === 'edadCierre' && paso.antes.phase === 'profesional' && paso.antes.player.planAnual === planInicialK4cG(paso.antes.player.perfil.actual)) {
+      const migrado = aLa10(paso, (decision) => {
+        for (const opcion of [...decision.opciones, ...decision.datos.evento.options]) delete opcion.plan;
+      });
+      const decision = migrado.pendiente.decision;
+      for (const opcion of decision.opciones) {
+        const planId = decision.datos.evento.options.find((o) => o.id === opcion.id)?.plan;
+        if (!IDS_PLAN_K4cG.includes(planId) || opcion.plan?.texto !== lineaDePlanK4cG(migrado, planId)?.texto) {
+          throw new Error(`${donde}: la opción "${opcion.label}" del cierre migrado no dice su plan (${JSON.stringify(opcion.plan)})`);
+        }
+      }
+      if (!sonIgualesK4cG(comoJsonK4cG(decision), comoJsonK4cG(paso.decision))) throw new Error(`${donde}: el cierre migrado no es el que arma la 11`);
+      const elegido = decision.datos.evento.options.find((o) => o.id === paso.respuesta.opcionId).plan;
+      const resuelto = resolverDecision(migrado, paso.respuesta, mulberry32(paso.seed)).state;
+      if (resuelto.player.planAnual !== elegido) throw new Error(`${donde}: el cierre migrado no fijó el plan elegido (${elegido} → ${resuelto.player.planAnual})`);
+      cierres += 1;
+    }
+    if (paso.sistemaId === 'mercado' && paso.decision.datos.momento === 'tryout') {
+      const vieja = (decision) => {
+        decision.datos.apuesta = decision.datos.apuesta.split(' Si no alcanza')[0];
+        decision.datos.preparacion = { rutinas: [], elegida: null };
+        delete decision.datos.respaldo;
+      };
+      // Con `otras` (de K4c-S, antes del paso 3a): la misma pausa que arma la 11.
+      const conOtras = aLa10(paso, vieja).pendiente.decision;
+      if (!sonIgualesK4cG(comoJsonK4cG(conOtras), comoJsonK4cG(paso.decision))) {
+        throw new Error(`${donde}: la prueba migrada no es la que arma la 11 (respaldo ${conOtras.datos.respaldo}, apuesta "${conOtras.datos.apuesta}")`);
+      }
+      // Sin `otras` (antes de K4c-S): no hay con quién seguir, y la apuesta lo dice.
+      const sinOtras = aLa10(paso, (decision) => { vieja(decision); delete decision.datos.otras; delete decision.datos.carry; }).pendiente.decision;
+      if (sinOtras.datos.respaldo !== null || !sinOtras.datos.apuesta.endsWith('Si no alcanza, esta ventana no firmás con nadie.') || 'preparacion' in sinOtras.datos) {
+        throw new Error(`${donde}: la prueba migrada sin otras ofertas (respaldo ${sinOtras.datos.respaldo}, apuesta "${sinOtras.datos.apuesta}")`);
+      }
+      pruebas += 1;
+    }
+  }
+  if (cierres < 3 || pruebas < 1) throw new Error(`check vacío: ${cierres} cierres pro y ${pruebas} pruebas del mercado`);
 });
 
 check('K4c guardado VERSION 11: un guardado de la 10 parado en la pausa de la práctica (que ya no existe) se reemplaza por un botón y sigue igual que un split sin pausa', () => {

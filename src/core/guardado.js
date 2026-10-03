@@ -1,4 +1,7 @@
 import { planInicial, planPorId } from './rutinas.js';
+import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
+import { decisionDeCierre } from '../systems/edadCierre.js';
+import { pausaDeMercadoMigrada } from '../systems/mercado.js';
 
 // El guardado de la carrera (fase T8, PLAN.md "T8 — La página como
 // página", P.2). Puro: serializa y deserializa, nada de `localStorage` acá
@@ -56,10 +59,28 @@ const VERSION_MIGRABLE = 10;
 // `flags.preparacionDeSplit`. Si el guardado quedó parado en la pausa de la práctica de la pretemporada (la parada que el
 // plan anual quitó), la decisión se reemplaza por un solo botón que lo dice: elegir una rutina ya no existe, y al seguir
 // `systems/practica.js` entrena el tramo del split según el plan. Puro: no toca el RNG ni el reloj.
+//
+// K4c (revisión): también se rearman con lo de hoy (regla 15) las otras dos pausas que la 11 cambió. La del mercado pierde la
+// `preparacion` y, si es la prueba, gana su respaldo y la apuesta que dice qué pasa si no alcanza (`pausaDeMercadoMigrada`). La
+// del cierre se vuelve a armar con el evento de hoy (`decisionDeCierre`): el de la 10 no traía el plan de cada opción, así que
+// ni lo mostraba ni lo fijaba. `flags.pruebasFallidas` arranca vacío (la 10 no lo escribía).
+//
+// Hueco conocido, sin cerrar: un guardado de la 10 hecho a mitad de año, con la preparación del receso de ese año ya aplicada
+// (el reparto entero, de una vez), entrena además los tramos del plan de los splits que le quedan a ese año (hasta 2 de 3).
 export function migrarDe10(state) {
-  const { preparacionDeSplit, ...flags } = state.flags ?? {};
+  const { preparacionDeSplit, ...flagsViejos } = state.flags ?? {};
+  const flags = { ...flagsViejos, pruebasFallidas: flagsViejos.pruebasFallidas ?? [] };
   const planAnual = state.player?.planAnual ?? planInicial(state.player?.perfil?.actual);
   const migrado = { ...state, flags, player: { ...state.player, planAnual } };
+  if (state.pendiente?.sistemaId === 'mercado' && state.pendiente.decision) {
+    return { ...migrado, pendiente: { ...state.pendiente, decision: pausaDeMercadoMigrada(migrado, state.pendiente.decision) } };
+  }
+  const eventoDelCierre = state.pendiente?.sistemaId === 'edadCierre'
+    ? TODOS_LOS_EVENTOS.find((evento) => evento.id === state.pendiente.decision?.datos?.evento?.id)
+    : null;
+  if (eventoDelCierre) {
+    return { ...migrado, pendiente: { ...state.pendiente, decision: decisionDeCierre(migrado, eventoDelCierre) } };
+  }
   if (state.pendiente?.sistemaId !== 'practica') {
     return migrado;
   }

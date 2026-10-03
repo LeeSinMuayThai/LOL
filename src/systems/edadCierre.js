@@ -26,11 +26,13 @@ export function aplicar(state, rng) {
     return { state: nextState, logs: [] };
   }
 
-  return {
-    state: nextState,
-    logs: [],
-    decision: conPlanEnCadaOpcion(nextState, evento, decisionDesdeEvento(nextState, evento, { franja: 'cierre', slot: 1 }))
-  };
+  return { state: nextState, logs: [], decision: decisionDeCierre(nextState, evento) };
+}
+
+// La pausa del cierre, con la línea del plan en cada opción (si el cierre fija plan). La usa también `core/guardado.js`
+// (`migrarDe10`) para rearmar con el texto de hoy un cierre que un guardado viejo dejó parado (regla 15).
+export function decisionDeCierre(state, evento) {
+  return conPlanEnCadaOpcion(state, evento, decisionDesdeEvento(state, evento, { franja: 'cierre', slot: 1 }));
 }
 
 // K4c (revisión): en la etapa amateur el cierre no fija ni muestra plan: `systems/practica.js` solo entrena en
