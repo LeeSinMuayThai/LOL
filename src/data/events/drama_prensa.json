@@ -266,6 +266,8 @@
   },
   {
     "id": "el_tweet_borrado",
+    "bifurcacion": true,
+    "escandalo": true,
     "category": "drama_prensa",
     "categoria": "prensa",
     "title": "El tweet que borraste tarde",

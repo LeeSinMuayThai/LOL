@@ -264,6 +264,7 @@
   },
   {
     "id": "el_servicio_que_se_viene",
+    "bifurcacion": true,
     "category": "identidad",
     "categoria": "salud",
     "title": "El servicio militar se acerca",

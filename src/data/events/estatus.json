@@ -323,6 +323,7 @@
   },
   {
     "id": "el_titular_con_un_rookie_detras",
+    "bifurcacion": true,
     "category": "identidad",
     "categoria": "golpe_duro",
     "title": "El club fichó a una promesa para tu puesto",
@@ -394,6 +395,7 @@
   },
   {
     "id": "el_referente_y_el_coach_nuevo",
+    "bifurcacion": true,
     "category": "identidad",
     "categoria": "vestuario",
     "title": "Llegó un coach que quiere refundar todo",

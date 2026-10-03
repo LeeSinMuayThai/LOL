@@ -133,6 +133,7 @@
   },
   {
     "id": "coach_demands_role",
+    "bifurcacion": true,
     "category": "debut_academy",
     "categoria": "oportunidad",
     "title": "El coach te pide otro jugador",
