@@ -1457,11 +1457,20 @@ export const BALANCE = {
     // Fase 9Re: cuántas fechas del split frenan al jugador. Bajó de "2 a 3"
     // (roll) a UNA: con 2-3 por split × ~23 splits competitivos la temporada
     // regular era ~108 de las 248 decisiones de la carrera, casi todas sacadas
-    // del mismo mazo de 24 cartas. Ahora se marca a lo sumo la primera fecha
-    // del split con un motivo real (nunca `parejo`); el resto pasa resumido.
+    // del mismo mazo de 24 cartas. K4-A: esa una es la que DECIDE algo (la
+    // clasificación, el archirrival, el clásico, la revancha), no la primera con
+    // cualquier motivo; el resto del split pasa resumido.
     fechasMarcadasPorSplit: 1,
-    // Racha de derrotas propias (dentro del split) que dispara `presion`.
-    derrotasParaPresion: 2,
+    // K4-A: en cuántas de las ÚLTIMAS fechas de un split se mira si la fecha
+    // define la clasificación (`core/temporada.js`, `defineClasificacion`). Antes
+    // de eso la proyección del resto del fixture es una cuenta de esperanzas muy
+    // abierta (la previa lo dice con "con la tabla como viene", no como un hecho).
+    // Medido (`criterio`, 100 × 60, tier 1 con playoffs, una liga de 10 equipos
+    // juega 18 fechas): con 4 sale 1 de cada 4,1 splits, con 8 uno de cada 3,0 (justo
+    // en el piso de PLAN.md K4, "≥ 1 cada 3"), con 10 uno de cada 2,7 (37%) y con 12
+    // uno de cada 2,3. Elegido 10: margen sobre el piso sin dejar que cualquier
+    // fecha del split diga "esto decide".
+    ventanaDefineClasificacion: 10,
     // Fase 9R0a: la fecha marcada dejaba de mentir pero se repetía sola.
     // `career.ultimoEliminadoPor` no se limpiaba nunca y `career.orgs` sólo
     // crece, así que "la revancha contra tal" o "el clásico contra tal"
@@ -1478,13 +1487,6 @@ export const BALANCE = {
     // ESA fecha puntual. Acotado a propósito: no reemplaza a `campeones.js`,
     // que ya elige el campeón del split entero antes de que esto corra.
     impactoDraftFecha: 0.08,
-    // Fase 9Rd: mismo criterio que la serie (`probabilidadDePartido` sobre la
-    // fuerza de la fecha corrida por `factorDraftFecha`), un poco más bajo que
-    // el 0,18 de la serie — una fecha de temporada regular se gana mucho menos
-    // en el draft (`impactoDraftFecha` ya acota su efecto a ±0,08). El plan
-    // escribió 0,07; al recalibrar la serie se subió en proporción. Ajuste
-    // fino en 9Rg (regla 2).
-    puntosEnJuegoParaPreguntar: 0.16,
     // Rango del efecto `type: 'partido'`: lo que el momento de la fecha
     // marcada le suma o resta a la fuerza propia de ESE partido puntual.
     partidoMin: -0.18,
