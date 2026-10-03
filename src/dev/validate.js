@@ -729,8 +729,10 @@ const FORMAS_CONOCIDAS = {
   // `flags.preparacionDeSplit` se va (la pretemporada ya no frena para elegir la práctica); los logs ganan `adjunto` y la pausa de la
   // prueba del mercado lleva `respaldo` y `otras`/`carry` (K4c-F, K4c-S, paso 3a). Las demás re-registraciones del bloque (el contenido
   // de la fecha marcada, la prueba, el cierre de año, la ventana) solo movieron rutas opcionales que la muestra ve: ningún otro campo
-  // nació ni murió. Un guardado de la 10 carga: ver `migrarDe10` y su check.
-  11: '305af896ede9'
+  // nació ni murió. Un guardado de la 10 carga: ver `migrarDe10` y su check. Revisión de K4c (305af896ede9 → 284e2f6bd4d5):
+  // `flags.pruebasFallidas` entra (las pruebas del mercado que no alcanzaron sin respaldo; `migrarDe10` lo arranca vacío). La 11 no
+  // salió de la rama, así que se re-registra en vez de subir VERSION.
+  11: '284e2f6bd4d5'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
