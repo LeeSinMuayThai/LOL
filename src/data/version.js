@@ -40,5 +40,13 @@
 // completo; el cambio de línea; los playoffs infiltrado; el sponsor contra la org; el coach que te baja del cinco; la
 // oferta de staff) y los eventos de seguimiento que leen los caminos que dejan en `flags.caminos`. Ninguna seed de K4
 // reproduce su carrera.
-export const VERSION_JUEGO = 'K4-C2';
-export const HUELLA_JUEGO = 400571845;
+//
+// K5 (1153610693; bloque C, corrimiento aceptado — T1): el mundo, la integración de K5-A, K5-B y K5-C. K5-A, el
+// Mundial de verdad: Swiss de 16 y bracket de 8 en core/internacional.js, sin rng para los ajenos; escena ya no sortea
+// al campeón del mundo y serie ya no sortea al rival internacional. K5-B, la región: LRN y LRS entran al mundo (más orgs
+// y tier 3 sorteados), el calibre de una liga en el mercado es el nivel real de sus clubes y no su prestigio (D78: LCK
+// y LPL se juegan) y dos rivales del mismo rol ya no se pisan en la misma org; elegir la región sorteada no corre el
+// stream. K5-C, el final lo decide el mercado: sin oferta en tu tier, la bifurcación `fin_mercado` (bajar, esperar o
+// colgar el mouse) y el motivo del retiro en la tarjeta. Ninguna seed de K4-C2 reproduce su carrera.
+export const VERSION_JUEGO = 'K5';
+export const HUELLA_JUEGO = 1153610693;

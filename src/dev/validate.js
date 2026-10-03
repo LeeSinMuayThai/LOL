@@ -716,7 +716,13 @@ const FORMAS_CONOCIDAS = {
   8: 'b8702103beff',
   // K4-C2: `flags.caminos` (una clave por bifurcación de carrera: región, contenido, rol, playoffs, conflicto, staff;
   // `null` hasta que la decidís) y los valores que escriben las bifurcaciones nuevas.
-  9: '5cf65294a5f8'
+  9: '5cf65294a5f8',
+  // K5 (integración de K5-A, K5-B y K5-C): K5-A, `state.internacional` (el último Mundial: participantes, Swiss,
+  // bracket, campeón, pausas, el 2-2 en curso), `torneo`/`etapa` en `serie` y `record`/`campeon` en las entradas de
+  // `registro.internacionales`; K5-B, las ligas LRN y LRS y las tier 2 de LATAM (`sinPrimera`, `alimentaA`); K5-C,
+  // `flags.splitsSinOfertaEnTier`, `flags.forkMercadoSplit`, `tarjeta.motivo` y `state.motivoRetiro` (el único lugar del
+  // motivo del retiro: `flags.motivoRetiro`, de K4-C2, se fue).
+  10: '0f9497c38271'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -14721,10 +14727,13 @@ const TIPOS_DE_PAUSA_GUARDADO_K4 = [
   'mercado:minijuego:tryout', 'mercado:traspaso', 'temporada:momento', 'practica:practica', 'serie:plan',
   'serie:plan:replan', 'serie:decisivo', 'serie:minijuego:mapa_decisivo', 'serie:minijuego:post_serie',
   'retiro:retiro_declive', 'retiro:retiro_vuelta', 'servicioMilitar:servicio_te_vas',
-  'servicioMilitar:servicio_adentro', 'servicioMilitar:servicio_volver'
+  'servicioMilitar:servicio_adentro', 'servicioMilitar:servicio_volver',
+  // K5: el 2-2 del Swiss del Mundial, el plan de una serie del bracket y la bifurcación del final por mercado.
+  'internacional:swiss', 'internacional:plan', 'mercado:fin_mercado'
 ];
 const SEEDS_GUARDADO_K4 = Array.from({ length: 30 }, (_, i) => 1 + i);
 const SPLITS_GUARDADO_K4 = 60;
+const SEEDS_FIN_MERCADO_GUARDADO_K5 = [10, 14];
 
 function tipoDePausaGuardadoK4(pendiente) {
   const datos = pendiente.decision.datos ?? {};
@@ -14770,53 +14779,69 @@ checkLento('K4 (revisión) guardado: en cada tipo de pausa, guardar y recargar (
   const vistos = new Map();
   const problemas = [];
   const noJson = new Set();
-  for (const seed of SEEDS_GUARDADO_K4) {
-    const rng = mulberry32(seed);
-    let state = createInitialState(seed, rng);
-    for (let i = 0; i < SPLITS_GUARDADO_K4 && !state.terminado; i += 1) {
-      let paso = avanzarSplit(state, rng);
-      let vueltas = 0;
-      while (paso.state.pendiente) {
-        const tipo = tipoDePausaGuardadoK4(paso.state.pendiente);
-        vistos.set(tipo, (vistos.get(tipo) ?? 0) + 1);
-        valoresNoJsonK4(paso.state, 'state', noJson);
-        const guardado = serializarGuardado(paso.state, rng);
-        // De corrido.
-        const { sistemaId, decision } = paso.state.pendiente;
-        const respuesta = ESTRATEGIAS_K0.criterio(sistemaPorId(sistemaId), paso.state, decision, rng);
-        const seguido = resolverDecision(paso.state, respuesta, rng);
-        // Recargado: el estado y el RNG salen del JSON, y el bot responde desde lo recargado, como la página.
-        let recargado;
-        let rngRecargado;
-        try {
-          const datos = deserializarGuardado(guardado);
-          if (!datos) {
-            throw new Error('deserializar devolvió null');
+  // `degradado`: la carrera de los checks de K5-C (stats topeados al llegar a primera, `carreraDegradadaK5C`), la que
+  // se queda sin ofertas en su tier y llega a la bifurcación del final por mercado.
+  const recorrer = (seeds, { degradado = false } = {}) => {
+    for (const seed of seeds) {
+      const rng = mulberry32(seed);
+      let state = createInitialState(seed, rng);
+      let techo = null;
+      for (let i = 0; i < SPLITS_GUARDADO_K4 && !state.terminado; i += 1) {
+        if (degradado && !techo && state.phase === 'profesional' && state.career.tier === 1) {
+          const factor = FACTORES_DEGRADADO_K5C[seed % FACTORES_DEGRADADO_K5C.length];
+          techo = Object.fromEntries(Object.entries(state.player.stats).map(([stat, valor]) => [stat, valor * factor]));
+        }
+        if (techo && state.phase === 'profesional') {
+          state = topearStats(state, techo);
+        }
+        let paso = avanzarSplit(state, rng);
+        let vueltas = 0;
+        while (paso.state.pendiente) {
+          const tipo = tipoDePausaGuardadoK4(paso.state.pendiente);
+          vistos.set(tipo, (vistos.get(tipo) ?? 0) + 1);
+          valoresNoJsonK4(paso.state, 'state', noJson);
+          const guardado = serializarGuardado(paso.state, rng);
+          // De corrido.
+          const { sistemaId, decision } = paso.state.pendiente;
+          const respuesta = ESTRATEGIAS_K0.criterio(sistemaPorId(sistemaId), paso.state, decision, rng);
+          const seguido = resolverDecision(paso.state, respuesta, rng);
+          // Recargado: el estado y el RNG salen del JSON, y el bot responde desde lo recargado, como la página.
+          let recargado;
+          let rngRecargado;
+          try {
+            const datos = deserializarGuardado(guardado);
+            if (!datos) {
+              throw new Error('deserializar devolvió null');
+            }
+            rngRecargado = mulberry32(datos.seed);
+            rngRecargado.restaurar(datos.rngEstado);
+            const pendiente = datos.state.pendiente;
+            const respuestaRecargada = ESTRATEGIAS_K0.criterio(sistemaPorId(pendiente.sistemaId), datos.state,
+              pendiente.decision, rngRecargado);
+            recargado = resolverDecision(datos.state, respuestaRecargada, rngRecargado);
+          } catch (error) {
+            problemas.push(`seed ${seed}, pausa ${tipo}: al recargar tira "${error.message}"`);
+            recargado = null;
           }
-          rngRecargado = mulberry32(datos.seed);
-          rngRecargado.restaurar(datos.rngEstado);
-          const pendiente = datos.state.pendiente;
-          const respuestaRecargada = ESTRATEGIAS_K0.criterio(sistemaPorId(pendiente.sistemaId), datos.state,
-            pendiente.decision, rngRecargado);
-          recargado = resolverDecision(datos.state, respuestaRecargada, rngRecargado);
-        } catch (error) {
-          problemas.push(`seed ${seed}, pausa ${tipo}: al recargar tira "${error.message}"`);
-          recargado = null;
+          // `estado()` del RNG vivo no está truncado a 32 bits (`restaurar` sí trunca); la secuencia es la misma.
+          if (recargado && (JSON.stringify([seguido.state, seguido.logs]) !== JSON.stringify([recargado.state, recargado.logs])
+            || (rng.estado() >>> 0) !== (rngRecargado.estado() >>> 0))) {
+            problemas.push(`seed ${seed}, pausa ${tipo}: recargado no da el mismo próximo estado/logs/RNG`);
+          }
+          paso = seguido;
+          vueltas += 1;
+          if (vueltas > 200) {
+            throw new Error(`seed ${seed}: más de 200 pausas seguidas en un split`);
+          }
         }
-        // `estado()` del RNG vivo no está truncado a 32 bits (`restaurar` sí trunca); la secuencia es la misma.
-        if (recargado && (JSON.stringify([seguido.state, seguido.logs]) !== JSON.stringify([recargado.state, recargado.logs])
-          || (rng.estado() >>> 0) !== (rngRecargado.estado() >>> 0))) {
-          problemas.push(`seed ${seed}, pausa ${tipo}: recargado no da el mismo próximo estado/logs/RNG`);
-        }
-        paso = seguido;
-        vueltas += 1;
-        if (vueltas > 200) {
-          throw new Error(`seed ${seed}: más de 200 pausas seguidas en un split`);
-        }
+        state = paso.state;
       }
-      state = paso.state;
     }
-  }
+  };
+  recorrer(SEEDS_GUARDADO_K4);
+  // K5-C: la bifurcación del final por mercado está apagada (N neutro en balance.js) hasta su calibración; su pausa se
+  // cubre con el umbral bajado y las carreras degradadas de los checks de K5-C.
+  conUmbralK5C(UMBRAL_K5C, () => recorrer(SEEDS_FIN_MERCADO_GUARDADO_K5, { degradado: true }));
   if (noJson.size > 0 || problemas.length > 0) {
     throw new Error(`${problemas.length} pausas rotas al recargar (${problemas.slice(0, 4).join(' | ')}); `
       + `valores que JSON no conserva en el estado al pausar: ${[...noJson].slice(0, 8).join('; ') || 'ninguno'}`);

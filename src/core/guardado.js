@@ -43,7 +43,7 @@
 // suman LRN y LRS, las tier 2 de LATAM sin primera arriba, con `sinPrimera` y `alimentaA` — K5-C, el final lo decide el
 // mercado: `flags.splitsSinOfertaEnTier`, `flags.forkMercadoSplit`, `tarjeta.motivo` y `state.motivoRetiro`, el único
 // lugar del motivo del retiro —K4-C2 lo había puesto en `flags.motivoRetiro`—).
-export const VERSION = 9;
+export const VERSION = 10;
 
 export function serializar(state, rng, rngUi) {
   return JSON.stringify({
