@@ -150,6 +150,36 @@ export function crearLogItem(entry) {
     item.appendChild(pestana);
   }
 
+  // K4-C: el evento que resolvió tu perfil, en una línea de crónica — el título, lo que planteaba, qué tomaste
+  // (como quién) y qué pasó. Un solo ítem del feed: el texto del evento no se pierde, pasa a ser la historia.
+  if (entry.cronica) {
+    item.classList.add('log-item--cronica');
+    const titulo = document.createElement('div');
+    titulo.className = 'log-titulo';
+    titulo.textContent = entry.titulo ?? '';
+    item.appendChild(titulo);
+    if (entry.descripcion) {
+      const planteo = document.createElement('div');
+      planteo.className = 'log-cronica-planteo';
+      planteo.textContent = entry.descripcion;
+      item.appendChild(planteo);
+    }
+    const decision = document.createElement('div');
+    decision.className = 'log-cronica-decision';
+    const como = document.createElement('span');
+    como.className = 'log-cronica-perfil';
+    como.textContent = `Como ${String(entry.perfil ?? '').toLowerCase()}: `;
+    decision.append(como, `${entry.opcion}. ${entry.cuerpo}`);
+    item.appendChild(decision);
+    if (entry.efectos) {
+      const efectos = document.createElement('div');
+      efectos.className = 'log-efectos';
+      efectos.textContent = entry.efectos;
+      item.appendChild(efectos);
+    }
+    return item;
+  }
+
   if (!entry.cuerpo) {
     const msg = document.createElement('div');
     msg.textContent = entry.message;

@@ -851,3 +851,25 @@ h1::before {
 .previa-nota { margin-top: var(--s-2); font-size: var(--fs-1); color: var(--ink-mute); }
 .option-prob { margin-top: var(--s-1); font-size: var(--fs-1); color: var(--live); font-variant-numeric: tabular-nums; }
 .resultado-prob { margin-top: var(--s-1); font-size: var(--fs-0); color: var(--ink-mute); }
+
+/* --- K4-C: la línea de crónica (un evento que resolvió tu perfil) y el perfil en la ficha --- */
+.log-cronica-planteo {
+  font-size: var(--fs-1);
+  color: var(--ink-dim);
+  margin-bottom: var(--s-1);
+}
+.log-cronica-perfil {
+  color: var(--ice-dim);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  font-size: var(--fs-1);
+}
+.ficha-perfil {
+  margin-left: var(--s-2);
+  padding: 0 var(--s-2);
+  border: 1px solid var(--line);
+  font-size: var(--fs-1);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--ice-dim);
+}
