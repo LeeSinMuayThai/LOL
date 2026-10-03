@@ -6,6 +6,7 @@ import { nivelDelJugador } from './ficha.js';
 import { ligaDeCarrera } from './competicion.js';
 import { calificaAPlayoffs, calificaAInternacional } from './serie.js';
 import { TOKENS } from './plantillas.js';
+import { esBuenPapel } from './registro.js';
 
 // El resumen anual (fase 11, PLAN.md §11.1): nota, titular y viñetas del año
 // que cierra. Puro y sin RNG — `systems/resumenAnio.js` es el único que lo
@@ -107,7 +108,7 @@ function scoreInternacional(state, anio) {
   if (!entrada) {
     return c.scoreInternacionalNeutro;
   }
-  return entrada.resultado === 'buen_papel' ? 1 : c.scoreInternacionalEliminado;
+  return esBuenPapel(entrada) ? 1 : c.scoreInternacionalEliminado;
 }
 
 function scoreJerarquiaArraigo(state) {
@@ -181,7 +182,7 @@ const PUNTAJES = {
 };
 
 function candidatoTituloInternacional(state, ctx) {
-  if (ctx.internacionalEsteAnio?.resultado !== 'buen_papel') {
+  if (!esBuenPapel(ctx.internacionalEsteAnio)) {
     return null;
   }
   return { titular: 'CAMPEONES DEL MUNDO', bajada: null };
@@ -374,7 +375,7 @@ function vinetaInternacional(ctx) {
   }
   return {
     icono: '🌍',
-    texto: ctx.internacionalEsteAnio.resultado === 'buen_papel'
+    texto: esBuenPapel(ctx.internacionalEsteAnio)
       ? 'Buen papel en el internacional: se habló de vos afuera de tu región.'
       : 'Eliminado temprano en el internacional.'
   };

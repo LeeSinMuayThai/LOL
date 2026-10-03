@@ -36,8 +36,9 @@
 // sin `preSerieUsado`; `career.charlaUsadaEn`; y en el log de cada mapa `rivalJuega`, `plan` y `charla` — K4-C, el perfil:
 // `player.perfil`, `flags.categoriasRecientes`, `flags.splitMainMuerto` y `flags.saltosConPrueba` — K4-D, la pretemporada
 // en una sola parada: `flags.preparacionDeSplit`, el año cuya preparación ya se resolvió, y `preparacion` —las cartas de
-// las rutinas de offseason— en los datos de la decisión del mercado y de la prueba del salto).
-export const VERSION = 8;
+// las rutinas de offseason— en los datos de la decisión del mercado y de la prueba del salto). K5-A (9): `state.internacional`,
+// el último Mundial (Swiss + bracket); `torneo`/`etapa` en `serie`; y `record`/`campeon` en cada `registro.internacionales`.
+export const VERSION = 9;
 
 export function serializar(state, rng, rngUi) {
   return JSON.stringify({

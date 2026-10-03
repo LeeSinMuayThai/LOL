@@ -2,7 +2,7 @@ import { gauss } from '../core/rng.js';
 import { crearLog } from '../core/log.js';
 import { clampStat } from '../core/numeros.js';
 import { calcularContexto } from '../core/contexto.js';
-import { registrarMomento } from '../core/registro.js';
+import { registrarMomento, esBuenPapel } from '../core/registro.js';
 import { BALANCE } from '../data/balance.js';
 
 export const id = 'servicioMilitar';
@@ -90,7 +90,7 @@ export function aplicar(state, rng) {
   // internacional puede pasar en cualquier ventana, y una vez exento no
   // tiene sentido seguir corriendo el resto de este sistema ningún split más.
   if (!state.flags.exentoServicio && !state.flags.servicioCumplido) {
-    const ganoInternacional = state.career.registro.internacionales.some((entrada) => entrada.resultado === 'buen_papel');
+    const ganoInternacional = state.career.registro.internacionales.some(esBuenPapel);
     if (ganoInternacional) {
       const registro = registrarMomento(state.career.registro, {
         tipo: 'exento_servicio',

@@ -286,6 +286,9 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
     // null (trampa T4): se activa al clasificar y se resetea al arrancar cada
     // ronda nueva (el Fearless no acumula entre rondas: cada rival es una serie
     // propia, con sus propios quemados).
+    // K5-A: el último Mundial del mundo (`core/internacional.js`), juegues o no. Lo escribe
+    // `systems/internacional.js` al cierre de cada temporada; lo leen `systems/escena.js` y la pantalla.
+    internacional: null,
     serie: {
       activa: false,
       ronda: null,

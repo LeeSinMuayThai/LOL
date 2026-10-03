@@ -4,7 +4,7 @@ import { clamp, clampStat } from '../core/numeros.js';
 import { conPermanencia } from '../core/curvas.js';
 import { ligaDeCarrera } from '../core/competicion.js';
 import {
-  esCierreDeTemporada, calificaAPlayoffs, calificaAInternacional,
+  esCierreDeTemporada, calificaAPlayoffs,
   rondaInicial, siguienteRonda, etiquetaDeRonda, generarRival,
   objetivoDelRival, conQuemaDelRival, esMapaDecisivoDeLaSerie, serieTerminada,
   PLANES_DE_SERIE, esSerieSinNadaEnJuego, charlaDisponible, conPlan, mapaDelPlan, proyeccionDelPlan,
@@ -13,7 +13,7 @@ import {
 import { fuerzaDePartido } from '../core/fuerza.js';
 import { tirarPartido } from '../core/partido.js';
 import {
-  registrarMapa, registrarSerie, registrarTitulo, registrarInternacional, registrarPico, registrarArraigoEnFila
+  registrarMapa, registrarSerie, registrarTitulo, registrarPico, registrarArraigoEnFila
 } from '../core/registro.js';
 import {
   elegirMinijuego, minijuegoPorId, textoDeMinijuego, registrarMinijuegoVisto, veredictoDeMinijuego,
@@ -89,7 +89,7 @@ function construirDecisionPlan(state, { replan = false, quemado = null } = {}) {
     tipo: 'opciones',
     titulo: replan
       ? `Te leyeron: ${rival.org} quemó a ${quemado}`
-      : `${etiquetaDeRonda(ronda)} vs ${rival.org} · Bo${formato}: el plan de Fearless`,
+      : `${etiquetaDeRonda(ronda, state.serie.etapa)} vs ${rival.org} · Bo${formato}: el plan de Fearless`,
     descripcion: replan
       ? `Era el que guardabas para el mapa decisivo. Van ${marcador[0]}-${marcador[1]}: ¿con qué plan seguís?`
       : 'Cada campeón que sale queda quemado para los dos el resto de la serie, y el rival también se va quedando sin '
@@ -204,10 +204,12 @@ export function aplicarStatsDeMinijuego(state, targets, delta, origen) {
 
 // --- Arrancar una ronda ---
 
-function iniciarRonda(state, ronda, rng) {
+// K5-A: `mundial` (`{ etapa, rival }`) arma una serie del bracket del Mundial: el rival lo pone el torneo
+// (`core/internacional.js`, sin `rng`) y el formato es el Bo5 del bracket. La serie se juega con las mismas reglas.
+function iniciarRonda(state, ronda, rng, mundial = null) {
   const liga = ligaDeCarrera(state);
-  const formato = ronda === 'internacional' ? 5 : liga.formatoPlayoffs.bo;
-  const rival = generarRival(state, ronda, rng);
+  const formato = mundial ? BALANCE.mundial.boBracket : liga.formatoPlayoffs.bo;
+  const rival = mundial ? mundial.rival : generarRival(state, ronda, rng);
   // K2a: la fuerza de tu equipo al empezar la serie, con el campeón del split (K2b: determinista). Es el lado propio
   // del Δ con el que `src/dev/simulate.js` mide "el favorito gana el Bo5" y, desde K4-B, el que decide si la serie
   // tiene algo en juego.
@@ -217,6 +219,9 @@ function iniciarRonda(state, ronda, rng) {
     ronda,
     rival,
     formato,
+    // K5-A: `torneo: 'mundial'` y su `etapa` (cuartos, semis, final); `null` en los playoffs domésticos.
+    torneo: mundial ? 'mundial' : null,
+    etapa: mundial ? mundial.etapa : null,
     fuerzaInicial,
     marcador: [0, 0],
     mapaActual: 0,
@@ -413,51 +418,6 @@ function aplicarEliminacionDomestica(state, ronda, liga) {
   };
 }
 
-function aplicarConsecuenciaInternacional(state, gano, rng) {
-  const r = BALANCE.rendimiento;
-  const a = BALANCE.arraigo;
-  const arraigo = clampStat(state.career.arraigo + roll(a.porInternacionalMin, a.porInternacionalMax, rng));
-  const registro = registrarArraigoEnFila(
-    registrarInternacional(
-      registrarPico(state.career.registro, 'arraigo', Math.round(arraigo)),
-      {
-        torneo: `internacional — ${nombreLigaDe(ligaDeCarrera(state))}`,
-        anio: state.calendario.anio,
-        org: state.career.currentOrg,
-        // K1 (D76): la liga que representaste.
-        liga: ligaDeCarrera(state).id,
-        resultado: gano ? 'buen_papel' : 'eliminado',
-        camino: state.serie.mapas.map((mapa, i) => ({
-          mapa: mapa.mapa ?? (i + 1),
-          campeon: mapa.campeon,
-          resultado: mapa.resultado,
-          marcador: mapa.marcador,
-          cierre: mapa.cierre
-        }))
-      }
-    ),
-    Math.round(arraigo)
-  );
-
-  return {
-    ...state,
-    player: {
-      ...state.player,
-      worlds: state.player.worlds + 1,
-      stats: { ...state.player.stats, hype: clampStat(state.player.stats.hype + (gano ? r.hypePorTitulo : r.hypePorPodio)) }
-    },
-    career: {
-      ...state.career,
-      internacionales: state.career.internacionales + 1,
-      arraigo: Math.round(arraigo),
-      registro,
-      hitos: [...state.career.hitos, gano
-        ? `Buen papel internacional con ${state.career.currentOrg} a los ${state.age}`
-        : `Eliminado en el internacional a los ${state.age}`]
-    }
-  };
-}
-
 function concluirRonda(state, rng, logsAcum) {
   const { ronda, marcador } = state.serie;
   const gano = marcador[0] > marcador[1];
@@ -488,13 +448,15 @@ function concluirRonda(state, rng, logsAcum) {
     sinNadaEnJuego: state.serie.sinNadaEnJuego
   };
 
-  if (ronda === 'internacional') {
+  if (state.serie.torneo === 'mundial') {
+    // K5-A: la serie del Mundial termina acá; el torneo sigue en `systems/internacional.js`, que es quien la arrancó.
     logs.push(crearLog('serie', gano
-      ? 'Ganaste tu serie en el internacional: se habló de vos afuera de tu región.'
-      : 'Perdiste tu serie en el internacional: vuelta temprano a casa.',
-      datosPost));
-    st = aplicarConsecuenciaInternacional(st, gano, rng);
-  } else if (gano && ronda === 'final') {
+      ? `${etiquetaDeRonda(ronda, state.serie.etapa)}: ganaste la serie ${marcador[0]}-${marcador[1]} contra ${state.serie.rival.org}.`
+      : `${etiquetaDeRonda(ronda, state.serie.etapa)}: perdiste la serie ${marcador[1]}-${marcador[0]} contra ${state.serie.rival.org}.`,
+      { ...datosPost, torneo: 'mundial', etapa: state.serie.etapa }));
+    return { state: { ...st, serie: { ...st.serie, activa: false } }, logs, finDeSerie: { gano, marcador: [...marcador] } };
+  }
+  if (gano && ronda === 'final') {
     logs.push(crearLog('serie', `¡Campeones de ${nombreLigaDe(liga)}! Cerraste la serie ${marcador[0]}-${marcador[1]}.`, datosPost));
     st = aplicarTitulo(st, liga, rng);
   } else if (!gano) {
@@ -522,10 +484,6 @@ function concluirRonda(state, rng, logsAcum) {
 }
 
 function continuarTrasRonda(state, ronda, gano, rng, logsAcum) {
-  if (ronda === 'internacional') {
-    return { state: { ...state, serie: { ...state.serie, activa: false, postSerie: true } }, logs: logsAcum };
-  }
-
   if (gano) {
     const siguiente = siguienteRonda(ronda);
     if (siguiente) {
@@ -534,18 +492,18 @@ function continuarTrasRonda(state, ronda, gano, rng, logsAcum) {
     }
   }
 
-  return intentarInternacional(state, rng, logsAcum);
+  // K5-A: los playoffs terminan en la final doméstica. El Mundial es otro sistema (`systems/internacional.js`).
+  return { state: { ...state, serie: { ...state.serie, activa: false, postSerie: true } }, logs: logsAcum };
 }
 
-function intentarInternacional(state, rng, logsAcum) {
-  const liga = ligaDeCarrera(state);
-  if (!calificaAInternacional(liga, state.career.posicion)) {
-    return { state: { ...state, serie: { ...state.serie, activa: false, postSerie: true } }, logs: logsAcum };
-  }
-
-  const st = iniciarRonda(state, 'internacional', rng);
-  // K4: el bootcamp de antes del internacional ya no frena (los minijuegos de serie van solo en el clímax).
-  return arrancarSerie(st, rng, [...logsAcum, crearLog('serie', `Clasificaste al internacional: rival, ${st.serie.rival.org}.`)]);
+// K5-A: una serie del bracket del Mundial, con las reglas de K4 (plan de Fearless, mapa decisivo, charla del coach).
+// La arranca `systems/internacional.js`; cuando termina, vuelve con `finDeSerie: { gano, marcador }` en vez de
+// seguir sola, y el torneo decide con quién se juega la próxima.
+export function arrancarSerieDelMundial(state, etapa, rival, rng, logsAcum) {
+  const st = iniciarRonda(state, 'internacional', rng, { etapa, rival });
+  return arrancarSerie(st, rng, [...logsAcum, crearLog(
+    'serie', `${etiquetaDeRonda('internacional', etapa)} vs ${rival.org} (${rival.liga}), al Bo${st.serie.formato}.`
+  )]);
 }
 
 // --- Contrato del sistema ---

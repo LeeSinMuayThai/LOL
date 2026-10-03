@@ -1,3 +1,4 @@
+import { esBuenPapel as esBuenPapelK5 } from '../core/registro.js';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
@@ -581,7 +582,7 @@ check('Las decisiones de mejora declaran rareza con el payoff correcto (PLAN.md 
   }
 });
 
-check('Toda serie internacional deja su camino guardado en registro.internacionales (PLAN.md §12.5/§12.6)', () => {
+check('Todo Mundial deja su camino guardado en registro.internacionales (PLAN.md §12.5/§12.6; K5-A: partido a partido y serie a serie)', () => {
   let totalInternacionales = 0;
   for (let seed = 1; seed <= 300; seed += 1) {
     const rng = mulberry32(seed);
@@ -594,21 +595,21 @@ check('Toda serie internacional deja su camino guardado en registro.internaciona
       if (!Array.isArray(intl.camino) || intl.camino.length === 0) {
         throw new Error(`seed ${seed}: internacional en ${intl.org} (${intl.anio}) sin camino guardado`);
       }
-      for (const mapa of intl.camino) {
-        if (typeof mapa.mapa !== 'number' || mapa.mapa < 1) {
-          throw new Error(`seed ${seed}: mapa inválido en camino: ${JSON.stringify(mapa)}`);
+      // K5-A: el camino del Mundial es partido a partido en el Swiss (con la p que se tiró) y serie a serie en el bracket.
+      const swiss = intl.camino.filter((paso) => paso.etapa === 'swiss');
+      const [v, d] = String(intl.record).split('-').map(Number);
+      if (swiss.length !== v + d || swiss.filter((paso) => paso.gano).length !== v) {
+        throw new Error(`seed ${seed}: el Swiss del camino no da el récord ${intl.record}`);
+      }
+      for (const paso of intl.camino) {
+        if (!['swiss', 'cuartos', 'semis', 'final'].includes(paso.etapa) || typeof paso.rival !== 'string' || !paso.rival || typeof paso.gano !== 'boolean') {
+          throw new Error(`seed ${seed}: paso inválido en camino: ${JSON.stringify(paso)}`);
         }
-        if (!mapa.campeon || typeof mapa.campeon !== 'string') {
-          throw new Error(`seed ${seed}: mapa sin campeon en camino`);
+        if (paso.etapa === 'swiss' && !(paso.p > 0 && paso.p < 1 && paso.ronda >= 1 && paso.ronda <= 5)) {
+          throw new Error(`seed ${seed}: partido del Swiss sin ronda o sin p: ${JSON.stringify(paso)}`);
         }
-        if (mapa.resultado !== 'W' && mapa.resultado !== 'L') {
-          throw new Error(`seed ${seed}: mapa con resultado inválido ("${mapa.resultado}")`);
-        }
-        if (!mapa.marcador || typeof mapa.marcador !== 'string' || !/^\d+-\d+$/.test(mapa.marcador)) {
-          throw new Error(`seed ${seed}: mapa sin marcador válido ("${mapa.marcador}")`);
-        }
-        if (!mapa.cierre || typeof mapa.cierre !== 'string' || mapa.cierre.trim().length === 0) {
-          throw new Error(`seed ${seed}: mapa sin cierre narrativo`);
+        if (paso.etapa !== 'swiss' && (Math.max(...paso.marcador) !== 3 || (paso.marcador[0] === 3) !== paso.gano)) {
+          throw new Error(`seed ${seed}: serie del bracket con marcador inválido: ${JSON.stringify(paso)}`);
         }
       }
     }
@@ -673,7 +674,10 @@ const FORMAS_CONOCIDAS = {
   // log de cada mapa; K4-C, `player.perfil` (actual + pesos), `flags.categoriasRecientes`, `flags.splitMainMuerto`,
   // `flags.saltosConPrueba`; K4-D, `flags.preparacionDeSplit` (el año cuya preparación ya se resolvió; -1 hasta la
   // primera pretemporada pro).
-  8: 'b8702103beff'
+  8: 'b8702103beff',
+  // K5-A: `state.internacional` (el último Mundial: participantes, Swiss, bracket, campeón, pausas, el 2-2 en curso),
+  // `torneo`/`etapa` en `serie` y `record`/`campeon` en las entradas de `registro.internacionales`.
+  9: '18d092bf6975'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -2185,7 +2189,7 @@ function barrido9W() {
     }
 
     const r = state.career.registro;
-    const exito = r.titulos.length > 0 || r.internacionales.some((e) => e.resultado === 'buen_papel');
+    const exito = r.titulos.length > 0 || r.internacionales.some(esBuenPapelK5);
     const llegoATier1 = state.career.splitAscensoTier1 !== null;
     carreras.push({
       distintos: handlesVistos.size,
@@ -8930,7 +8934,7 @@ function recuentoEmbudoK0(resultados, carreras) {
       throw new Error(`seed ${resultados[i].seed}: carrera.tierMaximo = ${carreras[i].tierMaximo}, el registro dice ${t} (D75)`);
     }
   });
-  const buenPapel = resultados.map((r) => cuentaK0(r.career.registro.internacionales, (i) => i.resultado === 'buen_papel'));
+  const buenPapel = resultados.map((r) => cuentaK0(r.career.registro.internacionales, (i) => i.resultado === 'campeon'));
   // "#1 del mundo en una temporada" = el reveal del Top 20 de fin de año dice que sos el #1 (los logs `top_mundial`).
   const temporadasNumeroUno = resultados.map((r) => cuentaK0(r.logs, (l) => l.type === 'top_mundial' && l.rankJugador === 1));
   const llegaAPro = (i) => resultados[i].splitFichaje !== null;
@@ -10050,6 +10054,7 @@ const RUIDOS_DE_RESULTADOS_K0 = ['partido.sigmaFecha', 'partido.sigmaMapa'];
 // resultado de un partido, sumarla a `PARAMETROS_RUIDO`).
 const RUIDOS_FUERA_DE_LA_ABLACION_K0 = {
   'amateur.autoRuido': 'dispersión del reparto del jugador automático en el amateur',
+  'mundial.ruidoDeTabla': 'ruido de la tabla de las ligas que no jugás, para elegir quién viaja al Mundial (por hash, no es el resultado de un partido)',
   'mercado.renovacionSigmaFactor': 'dispersión lognormal del sueldo de una renovación (mercado), no el resultado de un partido',
   'atributos.curvas.mecanica.ruido': 'ruido de la curva de atributos (cómo evoluciona la mecánica por split)',
   'atributos.curvas.laneo.ruido': 'ruido de la curva de atributos (cómo evoluciona el laneo por split)',
@@ -10768,7 +10773,7 @@ checkLento('K0 bloques de simulate: todas las hojas de todos los bloques son fin
       st = avanzarSplitAuto(st, rng).state;
     }
     const registro = st.career.registro;
-    const buenPapel = registro.internacionales.filter((i) => i.resultado === 'buen_papel').length;
+    const buenPapel = registro.internacionales.filter((i) => i.resultado === 'campeon').length;
     // #1 del mundo en una temporada = el reveal del Top 20 de fin de año dice que sos el #1.
     const temporadasNumeroUno = st.logs.filter((l) => l.type === 'top_mundial' && l.rankJugador === 1).length;
     buenPapelPorCarrera.push(buenPapel);
@@ -10888,7 +10893,7 @@ checkLento('K0 KPIs anclados: embudo, longevidad, economía, ritmo, nivel y porR
       problemas.push(`check vacío: ${bot} solo tiene ${regionesDistintas} región(es) con embudo/longevidad distintos del lote entero: no distingue "porRegion copia el lote"`);
     }
     // X03: P(otro mundial | ya ganó uno) con el denominador correcto vs con el total de carreras.
-    const dosOMas = cuentaK0(crudos.resultados, (r) => cuentaK0(r.career.registro.internacionales, (i) => i.resultado === 'buen_papel') >= 2);
+    const dosOMas = cuentaK0(crudos.resultados, (r) => cuentaK0(r.career.registro.internacionales, (i) => i.resultado === 'campeon') >= 2);
     if (esperado.embudo.pOtroMundialDadoUno !== null && Math.abs(esperado.embudo.pOtroMundialDadoUno - dosOMas / total) > DIFERENCIA_MINIMA_PROBABILIDAD_K0) {
       distingue[claves[1]] = true;
     }
@@ -11467,7 +11472,7 @@ check('K1 puntaje falla fuerte: liga desconocida, título sin tier, internaciona
     ['contador fraccionario', (st) => { st.career.registro.splitsEnTopMundial = 1.5; }, /splitsEnTopMundial.*1\.5/],
     ['cierres como #1 fraccionario', (st) => { st.career.registro.cierresComoNumeroUno = 0.5; }, /cierresComoNumeroUno.*0\.5/],
     ['contador NaN se lee como NaN', (st) => { st.career.registro.splitsEnTopMundial = Number.NaN; }, /splitsEnTopMundial.*NaN/],
-    ['internacional con un resultado desconocido', internacional({ liga: 'LCK', resultado: 'semis' }), /resultado.*semis/],
+    ['internacional con un resultado desconocido', internacional({ liga: 'LCK', resultado: 'octavos' }), /resultado.*octavos/],
     ['internacional sin resultado', internacional({ liga: 'LCK', resultado: undefined }), /resultado/]
   ];
   if (!(base.mundo.rivales.length > 0)) {
@@ -15462,6 +15467,284 @@ check('K4-D las cartas de la preparación hablan en cristiano: ningún id crudo 
   const fuente = fs.readFileSync(path.join(srcDir, 'ui', 'components', 'mercado.js'), 'utf8');
   if (!fuente.includes('Te queda para siempre') || /BALANCE|balance\.js/.test(fuente)) {
     throw new Error('la pantalla tiene que decir cuánto dura la carta y leerlo de la carta, sin recalcularlo con BALANCE');
+  }
+});
+
+// --- K5-A: el Mundial de verdad (PLAN.md "K5 — decisiones de spec", K5-A) ---
+// Las carreras de muestra corren el camino headless (el mismo pipeline del navegador) y anotan, split a split, la
+// línea del campeón del mundo que escribe `escena`, el torneo que dejó `systems/internacional.js` y cuántas veces
+// frenó el Mundial. Se corren una sola vez y las comparten los checks.
+const MUNDIAL_K5 = await import('../core/internacional.js');
+const { ETAPAS_SPLIT: ETAPAS_K5 } = await import('../systems/registro.js');
+const { puntajeDeCarrera: puntajeK5 } = await import('../core/puntaje.js');
+const { RESULTADOS_INTERNACIONALES: RESULTADOS_K5 } = await import('../core/registro.js');
+const { avanzarSplitAuto: avanzarSplitAutoK5 } = await import('../core/pipeline.js');
+const { previaDeDecision: previaDeDecisionK5 } = await import('../core/previaDePartido.js');
+const SEEDS_K5 = 30;
+const SPLITS_K5 = 60;
+// La spec: "un split de Mundial no pasa de 4 interrupciones" (el número de la spec, no el de BALANCE: si alguien sube
+// el tope en balance.js, este check lo ve).
+const TOPE_PAUSAS_MUNDIAL_K5 = 4;
+const LINEA_WORLDS_K5 = /^Worlds (\d+): se lo lleva (.+) \(([A-Z_]+)\)\.$/;
+
+function correrCarreraK5(seed, { splits = SPLITS_K5 } = {}) {
+  const rng = mulberry32(seed);
+  let state = createInitialState(seed, rng);
+  const porSplit = [];
+  for (let i = 0; i < splits && !state.terminado; i += 1) {
+    let pausasMundial = 0;
+    let pDeLaPrevia = null;
+    const antes = state.career.registro.internacionales.length;
+    const resultado = avanzarSplitAutoK5(state, rng, (sistema, st, decision, r) => {
+      if (sistema.id === 'internacional') {
+        pausasMundial += 1;
+      }
+      const respuesta = sistema.resolverAuto(st, decision, r);
+      if (decision.datos?.motivo === 'swiss') {
+        pDeLaPrevia = previaDeDecisionK5(st, decision).opciones.find((o) => o.id === respuesta.opcionId).p;
+      }
+      return respuesta;
+    });
+    const tirado = resultado.logs.find((log) => log.etapa === 'swiss' && log.ronda === 5 && pDeLaPrevia !== null);
+    state = resultado.state;
+    const linea = resultado.logs.map((log) => LINEA_WORLDS_K5.exec(log.message)).find(Boolean) ?? null;
+    porSplit.push({
+      linea: linea ? { anio: Number(linea[1]), campeon: linea[2], liga: linea[3] } : null,
+      torneo: state.internacional,
+      pausasMundial,
+      dosDos: pDeLaPrevia === null ? null : { previa: pDeLaPrevia, tirada: tirado?.p ?? null },
+      jugo: state.career.registro.internacionales.length > antes
+    });
+  }
+  return { seed, state, porSplit };
+}
+
+let carrerasK5 = null;
+function carrerasDelMundialK5() {
+  carrerasK5 ??= Array.from({ length: SEEDS_K5 }, (_, i) => correrCarreraK5(i + 1));
+  return carrerasK5;
+}
+
+// Los torneos a verificar: los que dejaron las carreras (con y sin vos) y 200 Mundiales sin jugador por hash puro.
+function torneosK5() {
+  const vistos = carrerasDelMundialK5().flatMap((c) => c.porSplit.filter((s) => s.linea).map((s) => s.torneo));
+  const puros = [];
+  for (let seed = 1; seed <= 20; seed += 1) {
+    const st = createInitialState(seed, mulberry32(seed));
+    for (let anio = 2026; anio < 2036; anio += 1) {
+      puros.push(MUNDIAL_K5.mundialSinJugador(st, anio));
+    }
+  }
+  return [...vistos, ...puros];
+}
+
+check('K5-A el campeón del mundo del log es el del torneo (systems/escena.js ya no lo sortea aparte)', () => {
+  let lineas = 0;
+  let conVos = 0;
+  for (const carrera of carrerasDelMundialK5()) {
+    for (const split of carrera.porSplit.filter((s) => s.linea)) {
+      const { linea, torneo } = split;
+      if (!torneo || torneo.anio !== linea.anio || torneo.campeon !== linea.campeon) {
+        throw new Error(`seed ${carrera.seed}: el log dice Worlds ${linea.anio} → ${linea.campeon}, el torneo `
+          + `${torneo?.anio} → ${torneo?.campeon}`);
+      }
+      const liga = torneo.participantes.find((p) => p.nombre === torneo.campeon)?.liga;
+      if (liga !== linea.liga) {
+        throw new Error(`seed ${carrera.seed}: ${linea.campeon} sale como ${linea.liga} y jugó el Mundial por ${liga}`);
+      }
+      lineas += 1;
+      conVos += split.jugo ? 1 : 0;
+    }
+    for (const entrada of carrera.state.career.registro.internacionales) {
+      if ((entrada.resultado === 'campeon') !== (entrada.campeon === entrada.org)) {
+        throw new Error(`seed ${carrera.seed}: tu registro dice ${entrada.resultado} y el campeón fue ${entrada.campeon}`);
+      }
+    }
+  }
+  if (lineas < SEEDS_K5 || conVos < 3) {
+    throw new Error(`muestra chica: ${lineas} líneas de Worlds, ${conVos} con tu equipo adentro`);
+  }
+});
+
+check('K5-A el Swiss del Mundial siempre termina 8 y 8, y el bracket sale de esos 8', () => {
+  const torneos = torneosK5();
+  for (const t of torneos) {
+    const nombres = new Set(t.participantes.map((p) => p.nombre));
+    if (t.participantes.length !== 16 || nombres.size !== 16) {
+      throw new Error(`Mundial ${t.anio}: ${nombres.size} participantes distintos`);
+    }
+    const records = Object.values(t.swiss.record);
+    const pasan = records.filter((r) => r.v === 3 && r.d < 3).length;
+    const afuera = records.filter((r) => r.d === 3 && r.v < 3).length;
+    if (pasan !== 8 || afuera !== 8) {
+      throw new Error(`Mundial ${t.anio}: el Swiss terminó ${pasan} y ${afuera}`);
+    }
+    const alBracket = new Set(t.bracket.crucesCuartos.flatMap((c) => [c.a, c.b]));
+    const conTres = new Set(t.participantes.filter((p) => t.swiss.record[p.nombre].v === 3).map((p) => p.nombre));
+    if (alBracket.size !== 8 || [...alBracket].some((n) => !conTres.has(n))) {
+      throw new Error(`Mundial ${t.anio}: al bracket fueron ${[...alBracket].join(', ')}`);
+    }
+    if (t.bracket.final?.[0]?.ganador !== t.campeon || t.fase !== 'terminado') {
+      throw new Error(`Mundial ${t.anio}: el campeón (${t.campeon}) no es el que ganó la final`);
+    }
+  }
+  if (torneos.length < 200) {
+    throw new Error(`solo ${torneos.length} torneos en la muestra`);
+  }
+});
+
+check('K5-A ningún cruce del Swiss se repite', () => {
+  for (const t of torneosK5()) {
+    const vistos = new Set();
+    for (const ronda of t.swiss.rondas) {
+      const enRonda = new Set();
+      for (const c of ronda) {
+        const clave = [c.a, c.b].sort().join(' vs ');
+        if (vistos.has(clave)) {
+          throw new Error(`Mundial ${t.anio}: ${clave} se cruzaron dos veces en el Swiss`);
+        }
+        if (enRonda.has(c.a) || enRonda.has(c.b) || c.a === c.b) {
+          throw new Error(`Mundial ${t.anio}: un equipo juega dos veces en la ronda ${c.ronda}`);
+        }
+        vistos.add(clave);
+        enRonda.add(c.a);
+        enRonda.add(c.b);
+      }
+    }
+  }
+});
+
+check('K5-A un split de Mundial no pasa de 4 interrupciones del Mundial (T9)', () => {
+  let splitsConVos = 0;
+  let conPausa = 0;
+  for (const carrera of carrerasDelMundialK5()) {
+    for (const split of carrera.porSplit.filter((s) => s.jugo)) {
+      splitsConVos += 1;
+      conPausa += split.pausasMundial > 0 ? 1 : 0;
+      if (split.pausasMundial > TOPE_PAUSAS_MUNDIAL_K5) {
+        throw new Error(`seed ${carrera.seed}, Mundial ${split.torneo.anio}: frenó ${split.pausasMundial} veces`);
+      }
+      if (split.torneo.interrupciones !== split.pausasMundial) {
+        throw new Error(`seed ${carrera.seed}: el torneo cuenta ${split.torneo.interrupciones} pausas y el pipeline ${split.pausasMundial}`);
+      }
+    }
+  }
+  if (splitsConVos < 3 || conPausa === 0) {
+    throw new Error(`muestra chica: ${splitsConVos} splits de Mundial con tu equipo, ${conPausa} con alguna pausa`);
+  }
+});
+
+check('K5-A si no clasificás, cero tiradas: la huella es la de un árbol sin Mundial', () => {
+  const sinMundial = [];
+  for (let seed = 1; seed <= 80 && sinMundial.length < 4; seed += 1) {
+    const carrera = seed <= SEEDS_K5 ? carrerasDelMundialK5()[seed - 1] : correrCarreraK5(seed);
+    if (carrera.state.career.registro.internacionales.length === 0) {
+      sinMundial.push(seed);
+    }
+  }
+  if (sinMundial.length < 4) {
+    throw new Error(`solo ${sinMundial.length} carreras sin Mundial en 80 seeds`);
+  }
+  const indice = ETAPAS_K5.findIndex((sistema) => sistema.id === 'internacional');
+  const original = ETAPAS_K5[indice];
+  const sinElMundial = (estado) => {
+    const { internacional, ...resto } = estado;
+    return JSON.stringify(resto);
+  };
+  for (const seed of sinMundial) {
+    let conTorneo;
+    let tiradas = 0;
+    try {
+      ETAPAS_K5[indice] = { ...original, aplicar: (st, rng) => original.aplicar(st, () => { tiradas += 1; return rng(); }) };
+      conTorneo = correrCarreraK5(seed);
+    } finally {
+      ETAPAS_K5[indice] = original;
+    }
+    let arbolSinMundial;
+    try {
+      ETAPAS_K5.splice(indice, 1);
+      arbolSinMundial = correrCarreraK5(seed);
+    } finally {
+      ETAPAS_K5.splice(indice, 0, original);
+    }
+    if (tiradas !== 0) {
+      throw new Error(`seed ${seed}: sin clasificar, el Mundial tiró ${tiradas} veces`);
+    }
+    if (sinElMundial(conTorneo.state) !== sinElMundial(arbolSinMundial.state)) {
+      throw new Error(`seed ${seed}: la carrera sin clasificar no es la del árbol sin Mundial`);
+    }
+  }
+});
+
+check('K5-A core/internacional.js es puro: mismo torneo dos veces, no toca el estado ni el rng', () => {
+  const fuente = fs.readFileSync(path.join(srcDir, 'core', 'internacional.js'), 'utf8');
+  if (/\brng\b|Math\.random/.test(fuente.replace(/\/\/.*$/gm, ''))) {
+    throw new Error('core/internacional.js nombra un rng');
+  }
+  for (let seed = 1; seed <= 10; seed += 1) {
+    const st = createInitialState(seed, mulberry32(seed));
+    const foto = JSON.stringify(st);
+    const lck = st.mundo.ligas.find((liga) => liga.id === 'LCK');
+    const jugador = { nombre: lck.orgs[0].nombre, liga: 'LCK', fuerza: lck.orgs[0].fuerza, cupo: 1 };
+    const jugarConVos = () => {
+      let t = MUNDIAL_K5.crearMundial(st, 2030 + seed, jugador);
+      let i = 0;
+      while (MUNDIAL_K5.sigueEnSwiss(t, t.jugador)) {
+        t = MUNDIAL_K5.jugarRondaSwiss(t, MUNDIAL_K5.emparejarRondaSwiss(t), { gano: i % 2 === 0 || i > 3, p: 0.5 });
+        i += 1;
+      }
+      while (!MUNDIAL_K5.swissTerminado(t)) {
+        t = MUNDIAL_K5.jugarRondaSwiss(t, MUNDIAL_K5.emparejarRondaSwiss(t));
+      }
+      t = t.bracket ? t : MUNDIAL_K5.sembrarBracket(t);
+      for (let etapa = MUNDIAL_K5.etapaPendiente(t); etapa; etapa = MUNDIAL_K5.etapaPendiente(t)) {
+        const tuyo = MUNDIAL_K5.cruceDe(MUNDIAL_K5.crucesDeEtapa(t, etapa), t.jugador);
+        t = MUNDIAL_K5.jugarEtapaBracket(t, etapa, tuyo ? { gano: etapa !== 'final', marcador: etapa === 'final' ? [1, 3] : [3, 2] } : null);
+      }
+      return t;
+    };
+    for (const correr of [() => MUNDIAL_K5.mundialSinJugador(st, 2030 + seed), jugarConVos]) {
+      if (JSON.stringify(correr()) !== JSON.stringify(correr())) {
+        throw new Error(`seed ${seed}: el mismo Mundial salió distinto dos veces`);
+      }
+    }
+    if (JSON.stringify(st) !== foto) {
+      throw new Error(`seed ${seed}: core/internacional.js modificó el estado`);
+    }
+  }
+});
+
+check('K5-A regla 15: la previa del 2-2 del Swiss dice la p con la que se tira', () => {
+  const dosDos = carrerasDelMundialK5().flatMap((c) => c.porSplit.map((s) => s.dosDos).filter(Boolean));
+  for (const { previa, tirada } of dosDos) {
+    if (tirada === null || Math.abs(previa - tirada) > 1e-12) {
+      throw new Error(`la previa del 2-2 dice ${previa} y se tiró ${tirada}`);
+    }
+  }
+  if (dosDos.length === 0) {
+    throw new Error('ningún 2-2 en la muestra');
+  }
+});
+
+check('K5-A el puntaje de K1 maneja cada resultado del Mundial, en orden', () => {
+  const { porResultado } = BALANCE.puntaje.internacional;
+  const orden = ['eliminado', 'cuartos', 'semis', 'final', 'campeon'];
+  for (let i = 1; i < orden.length; i += 1) {
+    if (!(porResultado[orden[i]] > porResultado[orden[i - 1]])) {
+      throw new Error(`porResultado.${orden[i]} (${porResultado[orden[i]]}) no supera a ${orden[i - 1]}`);
+    }
+  }
+  const base = carrerasDelMundialK5().find((c) => c.state.terminado)?.state ?? carrerasDelMundialK5()[0].state;
+  for (const resultado of RESULTADOS_K5) {
+    const st = structuredClone(base);
+    st.career.registro.internacionales.push({ torneo: 'Mundial', anio: st.calendario.anio, org: 'X', liga: 'LCK', resultado, camino: [] });
+    puntajeK5(st);
+  }
+  const escritos = new Set(carrerasDelMundialK5().flatMap((c) => c.state.career.registro.internacionales.map((e) => e.resultado)));
+  for (const resultado of escritos) {
+    if (!RESULTADOS_K5.includes(resultado)) {
+      throw new Error(`el Mundial escribió un resultado desconocido: ${resultado}`);
+    }
   }
 });
 

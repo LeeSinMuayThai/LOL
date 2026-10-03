@@ -34,5 +34,8 @@
 // la serie como plan de Fearless (el rival también quema, frena solo en el mapa decisivo, la charla del coach, la
 // prensa solo tras una final); K4-C, solo frenan las bifurcaciones y el perfil resuelve el resto (y la prueba de cada
 // salto); K4-D, la pretemporada en una sola parada. Ninguna seed de K3c reproduce su carrera.
-export const VERSION_JUEGO = 'K4';
-export const HUELLA_JUEGO = 297911861;
+// · K5-A (1271978484; bloque C, corrimiento aceptado): el Mundial de verdad. Swiss de 16 y bracket de 8 en
+// core/internacional.js, sin rng para los ajenos; escena ya no sortea al campeón del mundo y serie ya no sortea al rival
+// internacional. Ninguna seed de K4 reproduce su carrera.
+export const VERSION_JUEGO = 'K5-A';
+export const HUELLA_JUEGO = 1271978484;

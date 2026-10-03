@@ -2,7 +2,7 @@ import LIGAS from '../data/leagues.json' with { type: 'json' };
 import LEYENDAS from '../data/leyendas.json' with { type: 'json' };
 import { BALANCE } from '../data/balance.js';
 import { clamp } from './numeros.js';
-import { splitsJugadosEnTier, TIERS_DE_SPLIT } from './registro.js';
+import { splitsJugadosEnTier, TIERS_DE_SPLIT, esBuenPapel } from './registro.js';
 import { desdePuntos, etiquetaDeRanked, servidorDeLaPartida } from './ranked.js';
 
 // El número de la carrera (FASE K, K1 — PLAN.md §K1, "K1 — decisiones de spec"
@@ -252,7 +252,7 @@ function componenteInternacional(state) {
     0
   );
 
-  const buenos = internacionales.filter((entrada) => entrada.resultado === 'buen_papel').length;
+  const buenos = internacionales.filter(esBuenPapel).length;
   let detalle;
   if (internacionales.length === 0) {
     detalle = 'Nunca viajaste a un internacional.';

@@ -5,6 +5,7 @@ import {
 } from './serie.js';
 import { probabilidadDeFechaMarcada, fuerzaDeFecha, textoPorQueImporta } from './temporada.js';
 import { minijuegoPorId } from './minijuegos.js';
+import { probabilidadDeCruceSwiss } from './internacional.js';
 
 // K2d (PLAN.md "K2d — la previa (pantalla)" y "K2d — decisiones de spec"): la
 // previa de un partido — tu fuerza desglosada contra la del rival y la
@@ -42,7 +43,33 @@ export function previaDePartido(state, opciones) {
   if (opciones?.tipo === 'mapa') {
     return previaDeMapa(state, opciones);
   }
-  throw new Error(`previaDePartido: tipo de partido desconocido "${opciones?.tipo}" (válidos: fecha, mapa)`);
+  if (opciones?.tipo === 'swiss') {
+    return previaDeSwiss(state, opciones);
+  }
+  throw new Error(`previaDePartido: tipo de partido desconocido "${opciones?.tipo}" (válidos: fecha, mapa, swiss)`);
+}
+
+// K5-A: el 2-2 del Swiss del Mundial (`state.internacional.partidoEnCurso`), al Bo1 con la fuerza del split. La charla
+// del coach, si la usás, entra a la misma p: `probabilidadDeCruceSwiss`, la que tira `systems/internacional.js`.
+function previaDeSwiss(state, opciones) {
+  const e = state.internacional.partidoEnCurso;
+  const desglose = desgloseDeFuerza(state);
+  const base = e.fuerzaPropia;
+  const ajusteCharla = ajusteDeCharla(opciones.charla === true);
+  return armarPrevia({
+    tipo: 'swiss',
+    titulo: `La previa · 2-2 vs ${e.rival}`,
+    subtitulo: 'Swiss del Mundial · el de vida o muerte',
+    propio: state.career.currentOrg,
+    desglose,
+    extras: { charla: base * ajusteCharla },
+    fuerzaBase: base,
+    fuerzaFinal: fuerzaFinalDeMapa(base, ajusteCharla),
+    rival: { nombre: `${e.rival} (${e.ligaRival})`, fuerza: e.fuerzaRival },
+    p: probabilidadDeCruceSwiss(state, base, e.fuerzaRival, ajusteCharla),
+    campeon: desglose.campeon,
+    nota: null
+  });
 }
 
 function previaDeFecha(state, opciones) {
@@ -102,7 +129,7 @@ function previaDeMapa(state, opciones) {
   return armarPrevia({
     tipo: 'mapa',
     titulo: `La previa · Mapa ${serie.mapaActual + 1} vs ${serie.rival.org}`,
-    subtitulo: etiquetaDeRonda(serie.ronda),
+    subtitulo: etiquetaDeRonda(serie.ronda, serie.etapa),
     propio: state.career.currentOrg,
     desglose,
     extras: { minijuego: base * ajusteMini, plan: base * ajustePlan, charla: base * ajusteCharla },
@@ -187,6 +214,14 @@ function armarPrevia({ tipo, titulo, subtitulo = null, porQue = null, propio, de
 // minijuego que se acaba de jugar.
 export function previaDeDecision(state, decision, { resultadoMinijuego, charla = false } = {}) {
   const datos = decision?.datos ?? {};
+  if (datos.motivo === 'swiss' && state.internacional?.partidoEnCurso) {
+    const porOpcion = decision.opciones.map((opcion) => ({
+      id: opcion.id,
+      previa: previaDePartido(state, { tipo: 'swiss', charla: opcion.id === 'charla' })
+    }));
+    const base = porOpcion.find((o) => o.id === 'sinCharla') ?? porOpcion[0];
+    return conOpciones(base.previa, porOpcion, porOpcion.length > 1 ? 'La charla del coach la sube: es una sola por temporada.' : null);
+  }
   if (state.serie?.activa) {
     if (datos.motivo === 'plan' && decision.opciones?.length > 0) {
       return previaDelPlan(state, decision);

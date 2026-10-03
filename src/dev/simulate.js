@@ -946,16 +946,16 @@ export function analizarCatalogo() {
 // desincronice en silencio).
 // ---------------------------------------------------------------------------
 
-// Cuántos internacionales con resultado 'buen_papel' tiene la carrera.
+// Cuántos Mundiales ganó la carrera (K5-A: `resultado === 'campeon'`; antes de K5 era el proxy 'buen_papel').
 function buenPapelDe(estado) {
-  return estado.career.registro.internacionales.filter((intl) => intl.resultado === 'buen_papel').length;
+  return estado.career.registro.internacionales.filter((intl) => intl.resultado === 'campeon').length;
 }
 
 // Notas de lo que los KPIs de "Mundial" miden DE VERDAD antes de K5 (el torneo mundial no existe todavía).
 const NOTAS_PROXY = {
   ganaMundial: {
     proxyAntesDeK5: true,
-    nota: 'Mide haber tenido AL MENOS UN internacional con resultado buen_papel (una serie internacional ganada o una tirada de rendiBien), no un Mundial ganado.'
+    nota: 'Desde K5-A mide haber ganado AL MENOS UN Mundial (resultado campeon del torneo de core/internacional.js). Antes de K5 era el proxy buen_papel.'
   },
   nuevoFaker: {
     proxyAntesDeK5: true,
@@ -987,7 +987,7 @@ function bloqueEmbudo(resultados, carreras, observaciones, { conNotas = false } 
   const top20 = resultados.filter((r) => (r.career.registro.picos.rankMundial ?? 0) > 0).length;
   const numeroUnoAlgunaVez = resultados.filter((r) => r.career.registro.picos.rankMundial === 1).length;
 
-  // Proxy de Mundial antes de K5: haber participado de un torneo internacional con resultado === 'buen_papel'.
+  // K5-A: Mundiales ganados (resultado === 'campeon'). Antes de K5 era el proxy 'buen_papel'.
   const buenPapel = resultados.map(buenPapelDe);
   const conAlMenosUno = buenPapel.filter((n) => n >= 1).length;
   const conDosOMas = buenPapel.filter((n) => n >= 2).length;

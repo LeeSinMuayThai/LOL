@@ -11,6 +11,7 @@
 
 import { crearLog } from '../core/log.js';
 import { weightedPick, sample } from '../core/rng.js';
+import { mundialSinJugador } from '../core/internacional.js';
 import { BALANCE } from '../data/balance.js';
 import { esCierreDeEdad } from './edadCierre.js';
 import {
@@ -42,13 +43,20 @@ export function aplicar(state, rng) {
   const logs = narradas.map(({ liga, campeon, subcampeon, marcador }) =>
     crearLog('escena', lineaDeLiga(liga, campeon, subcampeon, marcador), { tecnico: false }));
 
-  const campeonMundial = weightedPick(todosLosOrgsTier1(state), (org) => org.fuerza, rng);
+  // K5-A: el campeón del mundo es el del torneo que se jugó este año (`systems/internacional.js`), no un sorteo
+  // aparte que podía contradecir tu serie. Si el estado no trae el de este año (un guardado de antes), se juega acá
+  // sin vos, por hash: cero rng igual.
+  const torneo = state.internacional?.anio === anio && state.internacional.campeon
+    ? state.internacional
+    : mundialSinJugador(state, anio);
+  const deTorneo = (nombre) => ({ nombre, ligaId: torneo.participantes.find((p) => p.nombre === nombre).liga });
+  const campeonMundial = deTorneo(torneo.campeon);
   logs.push(crearLog('escena', lineaDeInternacional(anio, campeonMundial), { tecnico: false }));
 
   // Fase 9W: persistir el resultado del año para el ranking mundial. El
   // digest sólo narra 4 ligas; el ranking necesita las 6 (más el internacional)
   // todos los años — `construirEscenaAnual` completa el hueco sin tocar `rng`.
-  const escenaAnual = construirEscenaAnual(state, anio, narradas, campeonMundial);
+  const escenaAnual = construirEscenaAnual(state, anio, narradas, campeonMundial, deTorneo(torneo.subcampeon));
 
   return {
     state: {
