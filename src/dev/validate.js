@@ -13714,9 +13714,10 @@ function congelarK2d(objeto) {
   return objeto;
 }
 
-check('K2d previa 4: la previa no toca el estado ni llama al azar (estado congelado, rng y Math.random que tiran)', () => {
+check('K2d previa 4: la previa no toca el estado ni llama al azar (estado congelado y Math.random que tira)', () => {
   const { fechas, drafts, minijuegos } = cosechaDePreviasK2d();
-  const rngQueTira = () => { throw new Error('la previa llamó al rng'); };
+  // La previa no recibe rng (su firma es (state, decision, opciones)): el azar que podría usar a escondidas es
+  // Math.random, que acá tira. Lo que hace morder el check es eso y el estado congelado (escribir en él tira).
   const randomOriginal = Math.random;
   const problemas = [];
   Math.random = () => { throw new Error('la previa llamó a Math.random'); };
@@ -13725,8 +13726,8 @@ check('K2d previa 4: la previa no toca el estado ni llama al azar (estado congel
       const antes = JSON.stringify(st);
       const congelado = congelarK2d(structuredClone(st));
       try {
-        previaDeDecision(congelado, decision, {}, rngQueTira);
-        if (decision.datos?.motivo === 'minijuego') previaDeDecision(congelado, decision, { resultadoMinijuego: 0.8 }, rngQueTira);
+        previaDeDecision(congelado, decision);
+        if (decision.datos?.motivo === 'minijuego') previaDeDecision(congelado, decision, { resultadoMinijuego: 0.8 });
       } catch (error) {
         problemas.push(`caso ${i}: ${error.message}`);
       }

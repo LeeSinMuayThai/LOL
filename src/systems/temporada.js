@@ -9,7 +9,7 @@ import {
   motivosDeFecha, motivoPrincipal, decisionDeDraftFecha, probabilidadDeFechaMarcada,
   registrarEnFila, filaVacia, rendimientoDeLaTemporada, resultadosVacios, sumarResultado
 } from '../core/temporada.js';
-import { nivelDeCompaneros, rendimientoBase, rendimientoDePartido, fuerzaDelEquipo } from '../core/fuerza.js';
+import { nivelDeCompaneros, rendimientoBase, rendimientoDePartido, fuerzaDePartido } from '../core/fuerza.js';
 import { jugarPartido, tirarPartido } from '../core/partido.js';
 import { nivelDelJugador } from '../core/ficha.js';
 import { disponibleEn, opcionesVivas, resolverOpcion, cooldownActivo, pesoConMemoria } from './events.js';
@@ -166,7 +166,7 @@ function iniciarTemporada(state, rng) {
   // `gauss` (el rendimiento del split) que decidía las 7-9 fechas juntas; ahora
   // cada fecha es una tirada contra su p y nada más (`jugarPartido`).
   const rendimiento = rendimientoDePartido(state);
-  const fuerzaPropia = fuerzaDelEquipo(state, rendimiento);
+  const fuerzaPropia = fuerzaDePartido(state);
 
   return {
     activa: true,
