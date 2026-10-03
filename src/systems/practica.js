@@ -3,11 +3,11 @@ import { crearLog } from '../core/log.js';
 import { clamp, clampStat } from '../core/numeros.js';
 import { campeonesAprendibles, pulirCampeon, aprenderCampeones } from '../core/pool.js';
 import { recuperarPorDescanso } from '../core/barras.js';
-import { conMarcasDeRutina, conTechoDeLesion } from '../core/curvas.js';
+import { conMarcasDeRutina } from '../core/curvas.js';
 import { BALANCE } from '../data/balance.js';
 import { ofrecerRutinas, rutinaPorId, elegirRutinaAutomatica } from '../core/rutinas.js';
 import { opcionDesdeRutina, descripcionDeSorteo, EJE_OFFSEASON } from '../core/rareza.js';
-import { statsDeCurva } from '../core/curvas.js';
+import { statsDeCurva, conTechoDeLesion } from '../core/curvas.js';
 import { calcularContexto } from '../core/contexto.js';
 
 export const id = 'practica';
