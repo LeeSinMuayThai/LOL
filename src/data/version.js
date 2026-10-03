@@ -54,5 +54,9 @@
 // tier list, y el banquillo de un club extranjero puebla la academia a la que te cede (`conPlantelesDe`: una tirada
 // nueva solo en ese camino). Misma versión (la rama no se mergeó): la huella de la integración (1153610693) queda
 // reemplazada.
+// K4c-M (1053992261; bloque B, sigue en el corrimiento de K4): el pase de contenido sobre la fecha marcada. Las dos opciones de
+// cada evento de data/events/partido/ dejan de dar el mismo `partido`: una pesa en el resultado (media +0,08) y la otra cede
+// partido (media -0,05) a cambio de mentalidad, hype, sinergia o un stat de habilidad; las compensaciones suman una
+// tirada de rng por opcion. Misma versión (la rama no se mergeó): la huella de K4c-F/K5 (1197795265) queda reemplazada.
 export const VERSION_JUEGO = 'K5';
-export const HUELLA_JUEGO = 1197795265;
+export const HUELLA_JUEGO = 1053992261;
