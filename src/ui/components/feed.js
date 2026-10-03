@@ -15,6 +15,7 @@ import { acentoDeLog, rotuloDeDecision } from '../formatoUi.js';
 import { crearOrgChip } from './orgChip.js';
 import { etiquetaRol } from '../../data/roles.js';
 import { crearTarjetaResultado, crearTarjetaResultadoSerie } from './serie.js';
+import { crearTarjetaMundial } from './mundial.js';
 import { textoDeProbabilidadJugada } from '../../core/previaDePartido.js';
 import { reconciliar, reemplazarEnElLugar } from '../core/reconciliar.js';
 
@@ -133,6 +134,10 @@ export function crearLogItem(entry) {
   }
   if (entry.type === 'edad' && typeof entry.nota === 'number') {
     return crearRevealResumenAnio(entry);
+  }
+  // K5-A: el cierre de tu Mundial es una tarjeta (el Swiss resumido y el bracket con tu camino).
+  if (entry.type === 'internacional' && entry.mundial) {
+    return crearTarjetaMundial(entry);
   }
 
   const item = document.createElement('div');
