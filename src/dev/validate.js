@@ -13226,9 +13226,10 @@ checkLento('K1 puntaje en carreras reales de criterio, azar y malas: componentes
 // región de origen); si no aparecen antes del tope, falla con lo que faltó, nunca pasa vacío.
 const SEEDS_D76_MINIMO_K1 = 120;
 const SEEDS_D76_TOPE_K1 = 400;
-// K4c (paso 3a): las carreras de `malas` que se recorren (desde la seed 1) hasta ver un cierre en el split del pase, con tope.
-const SEEDS_D76_TOPE_MALAS_K4CAL = 120;
-const SEEDS_D76_CIERRES_MALAS_K4CAL = 1;
+// K4c (paso 3a): las carreras de `malas` que se recorren (desde la seed 1), y los cierres en el split del pase que se arman (con tope).
+const SEEDS_D76_MALAS_K4CAL = 120;
+const SEEDS_D76_TOPE_ARMADOS_K4CAL = 80;
+const SEEDS_D76_CIERRES_ARMADOS_K4CAL = 3;
 const LOG_SPLIT_JUGADO_K1 = /terminó \d+º de \d+ en /;
 
 function jugadoPorOrgYTierK1(estado) {
@@ -13325,7 +13326,9 @@ checkLento('K1 D76: cada split jugado se cuenta una vez en la org y el tier dond
         }
       }
     }
-    if (estado.flags.splitJugadoSinFila) {
+    // Solo si la carrera terminó: una carrera cortada en los 60 splits del check puede estar, legítimamente, en el split del pase
+    // (la fila la abre el split que viene). Con las constantes de K4c, la seed 63 corta ahí.
+    if (estado.terminado && estado.flags.splitJugadoSinFila) {
       throw new Error(`seed ${seed}: la carrera terminó con un split jugado que nunca llegó a su fila (${JSON.stringify(estado.flags.splitJugadoSinFila)})`);
     }
     // K4c (paso 3a, D76): la carrera que cierra con un split del pase sin asentar (te retirás en el split del pase y no volvés:
@@ -13346,16 +13349,44 @@ checkLento('K1 D76: cada split jugado se cuenta una vez en la org y el tier dond
     seeds = seed;
     recorrerSeed(seed, undefined);
   }
-  // `malas` (la seed 28, Vórtice Rebels: te retirás en el split del pase y no volvés) es la que llega a ese cierre: se la recorre
-  // desde la seed 1 hasta ver SEEDS_D76_CIERRES_MALAS_K4CAL, con tope. Sin el asiento de `conTarjeta` (core/pipeline.js) el
-  // chequeo de arriba ("terminó con un split jugado que nunca llegó a su fila") salta en esa seed.
-  let seedsMalas = 0;
-  for (let seed = 1; seed <= SEEDS_D76_TOPE_MALAS_K4CAL && asentadasAlCerrar < SEEDS_D76_CIERRES_MALAS_K4CAL; seed += 1) {
-    seedsMalas = seed;
+  // `malas` (la seed 28 con las constantes de K5, Vórtice Rebels: te retirás en el split del pase y no volvés) llegaba a ese cierre
+  // sola; con las de K4c ninguna seed de malas hasta la 400 lo trae (el stream se corrió). Se recorren igual (los invariantes de
+  // cada split valen con cualquier bot) y el cierre se ARMA: no se espera a que una seed lo traiga.
+  for (let seed = 1; seed <= SEEDS_D76_MALAS_K4CAL; seed += 1) {
     recorrerSeed(seed, ESTRATEGIAS_K0.malas);
   }
-  if (asentadasAlCerrar < SEEDS_D76_CIERRES_MALAS_K4CAL) {
-    throw new Error(`check vacío: en ${seeds} carreras del bot por defecto y ${seedsMalas} de malas (tope ${SEEDS_D76_TOPE_MALAS_K4CAL}) hubo ${asentadasAlCerrar} cierre(s) en el split del pase (hacen falta ${SEEDS_D76_CIERRES_MALAS_K4CAL})`);
+  const quedarseRetirado = (sistema, st, decision, r) => (decision.datos?.motivo === 'retiro_vuelta'
+    ? { opcionId: 'quedarse' }
+    : sistema.resolverAuto(st, decision, r));
+  let armados = 0;
+  let seedArmada = 0;
+  while (seedArmada < SEEDS_D76_TOPE_ARMADOS_K4CAL && armados < SEEDS_D76_CIERRES_ARMADOS_K4CAL) {
+    seedArmada += 1;
+    const rng = mulberry32(seedArmada);
+    let estado = createInitialState(seedArmada, rng);
+    for (let split = 0; split < 60 && !estado.terminado && !estado.flags.splitJugadoSinFila; split += 1) {
+      estado = avanzarSplitAuto(estado, rng).state;
+    }
+    const pase = estado.flags.splitJugadoSinFila;
+    if (!pase || estado.terminado || estado.phase !== 'profesional') {
+      continue;
+    }
+    // El split del pase: te retirás ahí (la ventana de vuelta se abre) y no volvés: la ventana se cierra sola.
+    estado = retirarsePorCaminoK4cal(estado, Object.keys(MOTIVOS_DE_RETIRO)[0]).state;
+    for (let split = 0; split <= BALANCE.retiro.ventanaDeVueltaSplits + 1 && !estado.terminado; split += 1) {
+      estado = avanzarSplitAuto(estado, rng, quedarseRetirado).state;
+    }
+    const fila = estado.career.registro.porOrg.at(-1);
+    const jugados = fila ? TIERS_DE_SPLIT.reduce((total, tier) => total + fila.splitsPorTier[tier], 0) : 0;
+    if (!estado.terminado || estado.flags.splitJugadoSinFila || fila?.org !== pase.org || jugados !== 1 || JSON.stringify(fila.splitsPorTier) !== JSON.stringify(pase.splitsPorTier)
+      || fila.hastaSplit === null || !estado.tarjeta || estado.tarjeta.puntaje.hechos === undefined) {
+      throw new Error(`seed ${seedArmada}: te retiraste en el split del pase de ${pase.org} y no volviste: terminado ${estado.terminado}, pendiente ${JSON.stringify(estado.flags.splitJugadoSinFila)}, `
+        + `fila final ${fila?.org} con ${JSON.stringify(fila?.splitsPorTier)} (tenía que ser ${JSON.stringify(pase.splitsPorTier)}, cerrada y con tarjeta)`);
+    }
+    armados += 1;
+  }
+  if (armados < SEEDS_D76_CIERRES_ARMADOS_K4CAL) {
+    throw new Error(`check vacío: en las seeds 1-${seedArmada} (tope ${SEEDS_D76_TOPE_ARMADOS_K4CAL}) hubo ${armados} carrera(s) con un split del pase donde retirarse (hacen falta ${SEEDS_D76_CIERRES_ARMADOS_K4CAL})`);
   }
   if (!completo()) {
     throw new Error(`check vacío: en ${seeds} carreras (tope ${SEEDS_D76_TOPE_K1}) faltó ver alguno de los casos que hacen discriminar al check: `
@@ -15912,7 +15943,9 @@ const TIPOS_DE_PAUSA_GUARDADO_K4 = [
   'amateur:reparto', 'amateur:negociacion', 'amateur:oferta', 'amateur:minijuego:tryout', 'amateur:salida_amateur',
   'amateur:nocturno', 'edadCierre:?', 'eventos:?', 'eventos:minijuego:post_escandalo', 'mercado:oferta',
   'mercado:minijuego:tryout', 'mercado:traspaso', 'temporada:momento', 'practica:practica', 'serie:plan',
-  'serie:plan:replan', 'serie:decisivo', 'serie:minijuego:mapa_decisivo', 'serie:minijuego:post_serie',
+  'serie:plan:replan', 'serie:decisivo', 'serie:minijuego:mapa_decisivo',
+  // K4c (paso 3a), regla 17: se fue `serie:minijuego:post_serie` (la prensa tras una serie): con `BALANCE.serie.rondasConPrensa: []` la
+  // serie ya no la pide nunca; la prensa tras un escándalo (`eventos:minijuego:post_escandalo`, arriba) sigue cubierta.
   'retiro:retiro_declive', 'retiro:retiro_vuelta', 'servicioMilitar:servicio_te_vas',
   'servicioMilitar:servicio_adentro', 'servicioMilitar:servicio_volver',
   // K5: el 2-2 del Swiss del Mundial, el plan de una serie del bracket y la bifurcación del final por mercado.
