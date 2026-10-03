@@ -7038,6 +7038,27 @@ Además:
 | Palanca en su horizonte | ≥ 60% | **≥ 45%** (medido 48,8%) | Medida con `agencia.js`, que no entra en `validate.js` por tiempo. Re-medir en K5c y K6. Lo que falta para 60 es el cierre de año (6%), que mueve el nivel de a poco por diseño del bloque A |
 | Bifurcaciones por carrera | 4,5-7,5 | **5-9** (promedio 7,8) | — |
 
+**Revisión de K4c** (`b33ff0c`). Motor: "Requiere corrección". Navegador: "Requiere corrección". En el navegador hubo
+cero errores de consola, y los guardados VERSION 10 de main cargan y siguen. Los errores van en dos workers:
+- **Motor:**
+  - **El cierre amateur promete un plan que no se aplica.** El 79% no entrena nada porque sigue amateur.
+    **Se decide** que en la etapa amateur el cierre no fija ni muestra plan: al debutar vale el del perfil, igual
+    que el primer año.
+  - **Una prueba fallida sin respaldo se cuenta como "Nadie te ofrece nada".** Suma a los contadores de silencio y
+    de declive, y una bifurcación de retiro llegó a decir "el mercado te venía diciendo que no" con seis ofertas en
+    la mesa. **Se decide** que "probaste y no alcanzó" es un caso propio: no suma a `splitsSinOfertaConsecutivos`
+    y tiene su texto. El declive lo cuenta como lo que es.
+  - **El check del respaldo** recalcula la regla por su cuenta (rojo con el mutante "cualquier oferta").
+  - **Los guardados 10 parados en la prueba o en un cierre** se migran con el respaldo y el plan.
+  - **La prueba amateur fallida** decía "[object Object] no te firma", y además no anunciaba qué pasa si falla.
+- **Textos y datos** (casi todo ya estaba en main):
+  - el token `{jungla}` sin resolver;
+  - "CAMPEONES DEL MUNDO" con un papel de cuartos;
+  - "El primer balance en serio" dos años seguidos;
+  - "~+0" con la stat topeada;
+  - el resumen del split que no dice que es un tramo del plan;
+  - las colas de consuelo repetidas en la fecha marcada.
+
 **Paso 3b — un worker:**
 - los checks duros con lo medido;
 - vaciar el bloque B de `bandasPendientes.js` y cerrarlo;
