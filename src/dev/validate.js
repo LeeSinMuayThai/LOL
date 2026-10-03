@@ -725,7 +725,9 @@ const FORMAS_CONOCIDAS = {
   // motivo del retiro: `flags.motivoRetiro`, de K4-C2, se fue). Re-registrada en la revisión de K5 (la rama no se
   // mergeó): cambiar de línea deja `meta.tierListAnterior` vacía y las carreras de muestra se corrieron (el hash del
   // Mundial, D78, la renovación NPC amateur), así que cambian las rutas opcionales que la muestra ve.
-  10: '7128c450fa6c'
+  // Re-registrada en K4c-F (el bloque B sigue sin mergear): los logs ganan el campo opcional `adjunto` (core/log.js). Un
+  // guardado de antes es compatible tal cual: sin `adjunto`, cada línea forma su beat como antes; por eso no sube VERSION.
+  10: '84458be49efc'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
