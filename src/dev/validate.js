@@ -6638,11 +6638,19 @@ checkLento('El burnout no llega sin aviso: la Mentalidad estuvo en zona roja var
   // mentalidad en los splits sin equipo) la empujó de ~81% a 79,2%. A
   // n=2000/3000 vuelve a 85,7%/84,2% — el mecanismo de telegrafía
   // (`burnoutSplitsMinimos`) no cambió; era la muestra. Mismo remedio que D24.
+  // Revisión de K5: con K5 el burnout bajó a ~0,6% de las carreras (18 en 3000 seeds en la integración, debajo del
+  // piso de 20). La muestra ya no es un número fijo de seeds: se buscan seeds hasta juntar `BURNOUTS_MINIMOS`
+  // burnouts, con tope `SEEDS_TOPE_BURNOUT`. La propiedad (≥80% con aviso) no cambia. Medido tras la revisión: 20
+  // burnouts en 2764 seeds, 19 con aviso (95%).
+  const BURNOUTS_MINIMOS = 20;
+  const SEEDS_TOPE_BURNOUT = 3000;
   const umbral = BALANCE.atributos.burnoutMentalBajo;
   let burnouts = 0;
   let conAviso = 0;
+  let seedsCorridas = 0;
 
-  for (let seed = 1; seed <= 3000; seed += 1) {
+  for (let seed = 1; seed <= SEEDS_TOPE_BURNOUT && burnouts < BURNOUTS_MINIMOS; seed += 1) {
+    seedsCorridas = seed;
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
     const trayectoria = [];
@@ -6662,8 +6670,8 @@ checkLento('El burnout no llega sin aviso: la Mentalidad estuvo en zona roja var
     }
   }
 
-  if (burnouts < 20) {
-    throw new Error(`solo ${burnouts} burnouts en 1000 seeds: muestra insuficiente`);
+  if (burnouts < BURNOUTS_MINIMOS) {
+    throw new Error(`solo ${burnouts} burnouts en ${seedsCorridas} seeds: muestra insuficiente`);
   }
   const fraccion = conAviso / burnouts;
   if (fraccion < 0.8) {
