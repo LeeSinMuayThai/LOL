@@ -15842,7 +15842,7 @@ checkLento(`K3c meta de K2 (criterio con plan neutro, ${SEEDS_METAS_A} × ${SPLI
     ...valoresDeLasMetasA(loteDeLasMetasA()),
     bo5Jugador: claro.jugadorFavorito.ganaFavoritoPct, bo5Rival: claro.rivalFavorito.ganaFavoritoPct, bo5Juntos: claro.ambos.ganaFavoritoPct
   };
-  console.log(`     (informe, plan neutro) Bo5 con |Δ0| ≈ 10: jugador favorito ${v.bo5Jugador}% ± ${claro.jugadorFavorito.eePct} (se mide), rival favorito ${v.bo5Rival}% (solo se reporta), juntos ${v.bo5Juntos}% (su propio check, que mide con criterio)`);
+  console.log(`     (informe, plan neutro) Bo5 con |Δ0| ≈ 10: jugador favorito ${v.bo5Jugador}% ± ${claro.jugadorFavorito.eePct} (se mide), rival favorito ${v.bo5Rival}% (solo se reporta), juntos ${v.bo5Juntos}% (su propio check, sobre esta misma muestra)`);
   const motivo = juezDeLasMetasA(v).bo5Jugador;
   if (motivo !== null) throw new Error(motivo);
 });
@@ -15886,15 +15886,18 @@ check('K4c el plan neutro del bloque A: criterioConPlanNeutro contesta cada plan
   }
 });
 
-// El conjunto (los dos lados) es un check de BANDA fuera de banda dentro del bloque B: la asimetría del Fearless (solo
-// te degrada a vos) lo lleva a ≈ 87% y la resuelve el plan de Fearless de K4. Vive en `bandasPendientes.js` (bloque B,
-// re-basea K4c): mientras falle se reporta PENDIENTE; si vuelve a [75, 85], el custodio 1 pide borrar la entrada.
-// La muestra es la de las demás metas de lote (`criterio`, ${SEEDS_METAS_A} × ${SPLITS_LOTE_K0}).
+// El conjunto (los dos lados) es un check de BANDA. La asimetría del Fearless (solo te degradaba a vos) lo llevaba a ≈ 87%
+// y la resolvió el plan de Fearless de K4: volvió a su banda y su entrada de `bandasPendientes.js` se borró.
+// K4c (paso 3a) — regla 17, la misma línea que el del lado del jugador (af79e04): este check REEMPLAZA a la medición con
+// `criterio` (el bot que contesta cada plan de serie con la mejor opción), que sumaba la agencia del plan al nivel. Ahora
+// mide con el plan neutro (`criterioConPlanNeutro`, la opción de p mediana), sobre la misma muestra que el del lado del
+// jugador (`bo5ConPlanNeutroDeLasMetasA`, 800 × 60, se corre una vez para los dos). La banda no cambia.
 checkLento('K3c meta Bo5 favorito claro (conjunto) ∈ [75, 85]', () => {
-  const v = valoresDeLasMetasA(loteDeLasMetasA());
-  console.log(`     (muestra: criterio, ${SEEDS_METAS_A} × ${SPLITS_LOTE_K0}) Bo5 conjunto ${v.bo5Juntos}% (jugador ${v.bo5Jugador}%, rival ${v.bo5Rival}%)`);
-  const problemas = problemasDeLasMetasA(['bo5Juntos']);
-  if (problemas.length > 0) throw new Error(problemas.join('; '));
+  const claro = bo5ConPlanNeutroDeLasMetasA();
+  const v = { bo5Jugador: claro.jugadorFavorito.ganaFavoritoPct, bo5Rival: claro.rivalFavorito.ganaFavoritoPct, bo5Juntos: claro.ambos.ganaFavoritoPct };
+  console.log(`     (muestra: criterio con plan neutro, ${SEEDS_METAS_A} × ${SPLITS_LOTE_K0}) Bo5 conjunto ${v.bo5Juntos}% (jugador ${v.bo5Jugador}%, rival ${v.bo5Rival}%)`);
+  const motivo = juezDeLasMetasA(v).bo5Juntos;
+  if (motivo !== null) throw new Error(motivo);
 });
 
 checkLento(`K3c meta de K3 (criterio, ${SEEDS_METAS_A} × ${SPLITS_LOTE_K0}): mentalidad pro con mediana en [45, 75] y < 20% de los splits pro con mentalidad >= 90`, () => {
