@@ -91,7 +91,7 @@ export function rotuloDeDecision(decision, state) {
     return { label: 'Partido', token: 'partido' };
   }
   const motivo = decision?.datos?.motivo;
-  if (motivo === 'retiro_declive' || motivo === 'retiro_vuelta' || motivo === 'salida_amateur') {
+  if (motivo === 'retiro_declive' || motivo === 'retiro_vuelta' || motivo === 'salida_amateur' || motivo === 'fin_mercado') {
     return { label: 'Retiro', token: 'salud' };
   }
   // Fase 10c: mismas dos estructurales que no vienen de `events.js`.

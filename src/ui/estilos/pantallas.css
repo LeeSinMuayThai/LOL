@@ -1141,6 +1141,8 @@ details.avanzado summary:hover { color: var(--ink-dim); }
 }
 .tarjeta--exito .tarjeta-marco { color: var(--gold); }
 
+.tarjeta-motivo { margin-top: var(--s-2); font-size: var(--fs-2); color: var(--ink); overflow-wrap: anywhere; }
+
 .tarjeta-identidad { margin-top: var(--s-2); font-size: var(--fs-2); color: var(--ink-dim); }
 
 .tarjeta-veredicto {
