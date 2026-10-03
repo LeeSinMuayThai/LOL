@@ -10664,6 +10664,343 @@ check('K4c agencia (revisión): con --reps menor que 30 avisa que la meta de K4c
   }
 });
 
+// --- K4c-H: la palanca de cada parada en su horizonte (src/dev/agencia.js) ---
+// Trinquete: contra el puntaje de la carrera el 60% es inalcanzable por construcción (una decisión de serie mueve ~0,06 σ aunque decida
+// la serie). `agencia.js` mide además cada parada en su horizonte (serie, partido, split, carrera). Estos checks cuidan el mapa tipo ->
+// horizonte, la lectura de la métrica en el punto en que el horizonte se cierra, el cálculo y la lectura sobre el motor real. Cada uno
+// se verificó en rojo contra un mutante (horizonte siempre `carrera`, test sobre el puntaje en vez de la métrica, primer log vs último...).
+const {
+  HORIZONTE_POR_TIPO: HORIZONTE_POR_TIPO_H, HORIZONTES: HORIZONTES_H, HORIZONTE_POR_DEFECTO: HORIZONTE_POR_DEFECTO_H,
+  horizonteDeTipo, horizonteDeDecision, unidadDeHorizonte, seguimientoDeHorizonte, resultadoDelPartidoMarcado,
+  UNIDAD_RESULTADO: UNIDAD_RESULTADO_H, UNIDAD_POSICION: UNIDAD_POSICION_H, UNIDAD_ESCALERA: UNIDAD_ESCALERA_H
+} = await import('./agencia.js');
+const { hashCadena: hashCadenaH } = await import('../core/numeros.js');
+
+check('K4c-H horizonte: el mapa tipo -> horizonte es el de PLAN.md y cubre todos los tipos que existen (los de 8 carreras reales y todos los `motivo` de systems/)', () => {
+  // El mapa del PLAN (K4c, decisiones del paso 2, 1), escrito a mano: lo que NO esté acá tiene que ser `carrera`.
+  const ESPERADO = {
+    serie: ['serie:plan', 'serie:decisivo', 'serie:minijuego', 'internacional:swiss', 'internacional:plan', 'internacional:decisivo', 'internacional:minijuego'],
+    partido: ['temporada:momento'],
+    split: ['practica:practica', 'eventos:x', 'eventos:minijuego', 'amateur:reparto', 'amateur:nocturno']
+  };
+  const enElPlan = new Map(Object.entries(ESPERADO).flatMap(([horizonte, tipos]) => tipos.map((tipo) => [tipo, horizonte])));
+  for (const [tipo, horizonte] of enElPlan) {
+    if (HORIZONTE_POR_TIPO_H[tipo] !== horizonte || horizonteDeTipo(tipo) !== horizonte) {
+      throw new Error(`${tipo}: el horizonte tenía que ser ${horizonte}, es ${HORIZONTE_POR_TIPO_H[tipo]}`);
+    }
+  }
+  for (const [tipo, horizonte] of Object.entries(HORIZONTE_POR_TIPO_H)) {
+    if (!HORIZONTES_H.includes(horizonte)) {
+      throw new Error(`${tipo}: ${horizonte} no es un horizonte (${HORIZONTES_H.join(', ')})`);
+    }
+    if (!enElPlan.has(tipo) && horizonte !== 'carrera') {
+      throw new Error(`${tipo}: no está en la tabla del PLAN con horizonte ${horizonte}; lo que no está es carrera`);
+    }
+  }
+  // La categoría de los eventos no cambia el horizonte, y un tipo desconocido cae al default.
+  if (horizonteDeTipo('eventos:x:rutina') !== 'split' || horizonteDeTipo('algo:nuevo') !== HORIZONTE_POR_DEFECTO_H || HORIZONTE_POR_DEFECTO_H !== 'carrera') {
+    throw new Error('eventos:x:<categoría> es split y un tipo desconocido es carrera');
+  }
+
+  // Todos los tipos que existen: los de 8 carreras reales (70 splits, juego automático) y todos los `motivo: '...'` literales de
+  // los sistemas (con el id del sistema). Un tipo nuevo sin clasificar tiene que romper acá, no caer al default sin que nadie lo vea.
+  const existentes = new Set();
+  for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
+    for (const tipo of Object.keys(correrCarreraSimulate(seed, 70).observacion.decisionesPorTipo)) {
+      existentes.add(tipo);
+    }
+  }
+  const directorioSistemas = path.join(srcDir, 'systems');
+  for (const archivo of fs.readdirSync(directorioSistemas).filter((nombre) => nombre.endsWith('.js'))) {
+    const fuente = fs.readFileSync(path.join(directorioSistemas, archivo), 'utf8');
+    const id = /export const id = '([A-Za-z]+)'/.exec(fuente)?.[1];
+    if (!id) {
+      continue;
+    }
+    for (const coincidencia of fuente.matchAll(/\bmotivo: '([a-z_]+)'/g)) {
+      existentes.add(`${id}:${coincidencia[1]}`);
+      // Las pausas de la serie las emite `internacional` también (el bracket del Mundial las reusa).
+      if (id === 'serie') {
+        existentes.add(`internacional:${coincidencia[1]}`);
+      }
+    }
+  }
+  if (existentes.size < 20) {
+    throw new Error(`check vacío: solo se encontraron ${existentes.size} tipos de parada (${[...existentes].join(', ')})`);
+  }
+  const sinClasificar = [...existentes].filter((tipo) => !Object.hasOwn(HORIZONTE_POR_TIPO_H, tipo));
+  if (sinClasificar.length > 0) {
+    throw new Error(`tipos de parada que existen y no están en HORIZONTE_POR_TIPO: ${sinClasificar.join(', ')}`);
+  }
+
+  // Las excepciones por decisión: una bifurcación y la rueda de prensa después de la final son `carrera`; el mapa decisivo sigue siendo serie.
+  const minijuego = (momento) => ({ presentacion: 'minijuego', datos: { motivo: 'minijuego', momento } });
+  const casos = [
+    ['eventos:x:caminos', { datos: { evento: { bifurcacion: true } } }, 'carrera'],
+    ['eventos:x:rutina', { datos: { evento: { bifurcacion: false } } }, 'split'],
+    ['serie:minijuego', minijuego('mapa_decisivo'), 'serie'],
+    ['serie:minijuego', minijuego('post_serie'), 'carrera'],
+    ['serie:plan', { datos: { motivo: 'plan' } }, 'serie']
+  ];
+  for (const [tipo, decision, esperado] of casos) {
+    if (horizonteDeDecision(tipo, decision) !== esperado) {
+      throw new Error(`${tipo} ${JSON.stringify(decision)}: el horizonte tenía que ser ${esperado}, es ${horizonteDeDecision(tipo, decision)}`);
+    }
+  }
+  if (unidadDeHorizonte('serie', 'profesional') !== UNIDAD_RESULTADO_H || unidadDeHorizonte('partido', 'profesional') !== UNIDAD_RESULTADO_H
+    || unidadDeHorizonte('split', 'amateur') !== UNIDAD_ESCALERA_H || unidadDeHorizonte('split', 'profesional') !== UNIDAD_POSICION_H
+    || unidadDeHorizonte('carrera', 'amateur') !== 'puntaje') {
+    throw new Error('la unidad de la métrica: serie y partido son un resultado; split es la escalera en el amateur y la posición en pro; carrera es el puntaje');
+  }
+});
+
+check('K4c-H horizonte: el seguimiento lee la métrica en el punto en que el horizonte se cierra (el PRIMER cierre, no el último) con logs y estados a mano', () => {
+  const sinCierre = { pendiente: { sistemaId: 'serie' }, career: { posicion: 5 } };
+  const cerrado = (posicion) => ({ pendiente: null, career: { posicion } });
+  const log = (extra) => ({ type: 'serie', message: 'x', ...extra });
+
+  // serie: el primer log `postSerie` después de decidir (ganó = 1); los demás no cuentan, y antes del cierre el valor es null.
+  const serie = seguimientoDeHorizonte('serie', UNIDAD_RESULTADO_H);
+  serie.observar(sinCierre, [log({}), log({ etapa: 'swiss', resultado: undefined })]);
+  if (serie.valor() !== null) {
+    throw new Error('antes de que cierre la serie el valor tiene que ser null');
+  }
+  serie.observar(cerrado(1), [log({ postSerie: true, gano: false }), log({ postSerie: true, gano: true })]);
+  serie.observar(cerrado(1), [log({ postSerie: true, gano: true })]);
+  if (serie.valor() !== 0) {
+    throw new Error(`la serie la perdió la primera: el valor es 0, dio ${serie.valor()}`);
+  }
+  const ganada = seguimientoDeHorizonte('serie', UNIDAD_RESULTADO_H);
+  ganada.observar(sinCierre, [log({ postSerie: true, gano: true })]);
+  if (ganada.valor() !== 1) {
+    throw new Error(`serie ganada: el valor es 1, dio ${ganada.valor()}`);
+  }
+  // El 2-2 del Swiss: el partido con `etapa: 'swiss'` y `resultado` (L = quedás afuera = 0, W = avanzás = 1); el log de la charla no cuenta.
+  for (const [resultado, esperado] of [['L', 0], ['W', 1]]) {
+    const swiss = seguimientoDeHorizonte('serie', UNIDAD_RESULTADO_H);
+    swiss.observar(sinCierre, [log({ type: 'internacional' }), log({ type: 'internacional', torneo: 'mundial', etapa: 'swiss', resultado })]);
+    if (swiss.valor() !== esperado) {
+      throw new Error(`el 2-2 del Swiss con resultado ${resultado} tenía que dar ${esperado}, dio ${swiss.valor()}`);
+    }
+  }
+
+  // partido: el log de la fecha marcada (con `pSinMomento`) dice quién ganó; la frase "Ganan./Pierden. Quedan" es el único dato.
+  const fecha = (mensaje, extra = { pSinMomento: 0.4 }) => ({ type: 'temporada', message: mensaje, ...extra });
+  const casosPartido = [
+    [fecha('Revancha contra Zeta, que te sacó. Ganan. Quedan 2º de 10.'), 1],
+    [fecha('Clásico contra Zeta. Pierden. Quedan 7º de 10 jugando Ahri.'), 0],
+    [fecha('Clásico contra Zeta. Ganan. Quedan 2º de 10.', {}), null],
+    [fecha('Clásico contra Zeta, se juega.'), null],
+    [{ type: 'serie', message: 'Ganan. Quedan 2º', pSinMomento: 0.3 }, null]
+  ];
+  for (const [entrada, esperado] of casosPartido) {
+    if (resultadoDelPartidoMarcado(entrada) !== esperado) {
+      throw new Error(`resultadoDelPartidoMarcado(${JSON.stringify(entrada)}) tenía que dar ${esperado}, dio ${resultadoDelPartidoMarcado(entrada)}`);
+    }
+  }
+  const partido = seguimientoDeHorizonte('partido', UNIDAD_RESULTADO_H);
+  partido.observar(sinCierre, [fecha('Resumen de la temporada.', {}), fecha('Clásico. Pierden. Quedan 7º de 10.'), fecha('Otro. Ganan. Quedan 3º de 10.')]);
+  if (partido.valor() !== 0) {
+    throw new Error(`el primer partido marcado fue una derrota: el valor es 0, dio ${partido.valor()}`);
+  }
+
+  // split: no se cierra mientras haya una parada pendiente; al cerrar toma la posición (pro) y queda fijo.
+  const split = seguimientoDeHorizonte('split', UNIDAD_POSICION_H);
+  split.observar(sinCierre, []);
+  if (split.valor() !== null) {
+    throw new Error('el split no se cierra con una parada pendiente');
+  }
+  split.observar(cerrado(4), []);
+  split.observar(cerrado(2), []);
+  if (split.valor() !== 4) {
+    throw new Error(`el split cerró con posición 4: el valor es 4 y no cambia, dio ${split.valor()}`);
+  }
+  // Sin posición (el primer split pro, sin temporada): el horizonte cierra sin valor, la réplica queda fuera del test.
+  const sinTabla = seguimientoDeHorizonte('split', UNIDAD_POSICION_H);
+  sinTabla.observar(cerrado(null), []);
+  sinTabla.observar(cerrado(3), []);
+  if (sinTabla.valor() !== null) {
+    throw new Error('un split sin posición cierra con null y no se corrige después');
+  }
+  // La escalera del amateur: el LP absoluto del estado (`soloqElo` es `puntosAbsolutos(ranked)` en el estado inicial).
+  const inicial = createInitialState(1, mulberry32(1));
+  const escalera = seguimientoDeHorizonte('split', UNIDAD_ESCALERA_H);
+  escalera.observar({ ...inicial, pendiente: null }, []);
+  if (escalera.valor() !== inicial.player.soloqElo || !(escalera.valor() > 0)) {
+    throw new Error(`en el amateur el split mide el LP absoluto (${inicial.player.soloqElo}), dio ${escalera.valor()}`);
+  }
+  // carrera: el seguimiento no guarda nada (el valor es el puntaje, `fin.score`).
+  const carrera = seguimientoDeHorizonte('carrera');
+  carrera.observar(cerrado(1), [log({ postSerie: true, gano: true })]);
+  if (carrera.valor() !== null) {
+    throw new Error('el horizonte carrera no guarda métrica');
+  }
+});
+
+// Una réplica sintética con la métrica del horizonte (`hz`); sin `hz`, como los crudos viejos.
+const repHorizonteK4cH = (score, hz) => ({ ...repSinteticaK0(score), ...(hz === undefined ? {} : { hz }) });
+
+check('K4c-H horizonte: la palanca en el horizonte, la fracción ponderada, la tabla de recorte y las paradas sin nada en juego, con números calculados a mano', () => {
+  // Cinco tipos y un crudo viejo, 8 réplicas por opción, sPop = 10:
+  //  - serie:plan (40 paradas): D1 gana 7 de 8 réplicas la opción a y ninguna la b (hz a = 1111 1110, b = 0), sin efecto en el puntaje;
+  //    D2 sin efecto en ninguno. Diferencias 1,1,1,1,1,1,1,0: media 0,875, desvío 0,3536, t = 7,0 > 2,365 (df 7): significativa en el horizonte;
+  //    en la carrera, 0% (los puntajes son iguales). 1 de 2 = 50% en el horizonte.
+  //  - temporada:momento (20): el puntaje cambia 10 en todas las réplicas (desvío 0: t infinita, significativa) y el resultado del partido no
+  //    cambia: 100% contra la carrera, 0% en el horizonte. Es la dirección contraria de serie:plan.
+  //  - amateur:oferta (30, horizonte carrera): el mismo efecto de 10 en el puntaje: 100% en las dos.
+  //  - practica:practica (10, split, posición): a = 3,3,4,3,3,4,3,3 (media 3,25), b = 5,6,5,6,5,5,6,5 (5,375): spread 2,125; diferencias
+  //    media -2,125, desvío 0,8345, t = 7,2 > 2,365: 100% en el horizonte, 0% contra la carrera. σ de la posición con las 16 réplicas:
+  //    suma 69, suma de cuadrados 319, varianza (319 - 69²/16)/15 = 1,4292, σ = 1,1955: palanca 2,125 / 1,1955 = 1,78 σ.
+  //  - amateur:nocturno (25): 20 decisiones sin efecto en ninguno: la única parada sin nada en juego (n = 20).
+  //  - serie:minijuego: un crudo viejo, sin `hor` ni `hz`: su horizonte (serie) queda sin medir.
+  // σ del resultado (serie y partido, 48 réplicas, 23 unos): sqrt(48 · (23/48) · (25/48) / 47) = 0,5049: no se asserta en pp, solo la fracción.
+  const PLANO = Array(8).fill(100);
+  const GRANDE = Array(8).fill(110);
+  const A_GANA_7 = [1, 1, 1, 1, 1, 1, 1, 0];
+  const ALTERNADO = [1, 0, 1, 0, 1, 0, 1, 0];
+  const fila = (tipo, hor, un, [scoresA, hzA], [scoresB, hzB]) => ({
+    seed: 1, split: 1, tipo, ...(hor ? { hor, un } : {}), labels: ['a', 'b'],
+    porOpcion: [scoresA.map((s, r) => repHorizonteK4cH(s, hzA?.[r])), scoresB.map((s, r) => repHorizonteK4cH(s, hzB?.[r]))]
+  });
+  const resultados = [
+    fila('serie:plan', 'serie', 'resultado', [PLANO, A_GANA_7], [PLANO, Array(8).fill(0)]),
+    fila('serie:plan', 'serie', 'resultado', [PLANO, ALTERNADO], [PLANO, ALTERNADO]),
+    fila('temporada:momento', 'partido', 'resultado', [GRANDE, ALTERNADO], [PLANO, ALTERNADO]),
+    fila('amateur:oferta', 'carrera', 'puntaje', [GRANDE], [PLANO]),
+    fila('practica:practica', 'split', 'posicion', [PLANO, [3, 3, 4, 3, 3, 4, 3, 3]], [PLANO, [5, 6, 5, 6, 5, 5, 6, 5]]),
+    ...Array.from({ length: 20 }, () => fila('amateur:nocturno', 'split', 'escalera', [PLANO, Array(8).fill(2000)], [PLANO, Array(8).fill(2000)])),
+    fila('serie:minijuego', null, null, [PLANO], [PLANO])
+  ];
+  const frecuenciasTipo = { 'serie:plan': 40, 'temporada:momento': 20, 'amateur:oferta': 30, 'practica:practica': 10, 'amateur:nocturno': 25 };
+  const analisis = analizarDatosAgencia({ resultados, frecuenciasTipo, totalInterrupciones: 125, carreras: 10 }, 1, { sPop: 10, sPopT: 1 });
+
+  const esperadas = {
+    'serie:plan': { n: 2, nH: 2, pctSignificativo: 0, pctSignificativoH: 50, horizonte: 'serie', aSolas: false },
+    'temporada:momento': { n: 1, nH: 1, pctSignificativo: 100, pctSignificativoH: 0, horizonte: 'partido', aSolas: false },
+    'amateur:oferta': { n: 1, nH: 1, pctSignificativo: 100, pctSignificativoH: 100, horizonte: 'carrera', aSolas: false },
+    'practica:practica': { n: 1, nH: 1, pctSignificativo: 0, pctSignificativoH: 100, horizonte: 'split', unidadH: 'posicion', aSolas: false },
+    'amateur:nocturno': { n: 20, nH: 20, pctSignificativo: 0, pctSignificativoH: 0, horizonte: 'split', aSolas: true },
+    'serie:minijuego': { n: 1, nH: 0, pctSignificativo: 0, pctSignificativoH: 0, horizonte: 'serie', aSolas: false }
+  };
+  for (const [tipo, campos] of Object.entries(esperadas)) {
+    const f = analisis.porTipoDeParada.find((candidata) => candidata.tipo === tipo);
+    if (!f) {
+      throw new Error(`falta el tipo ${tipo}`);
+    }
+    for (const [campo, valor] of Object.entries(campos)) {
+      if (f[campo] !== valor) {
+        throw new Error(`${tipo}.${campo}: se esperaba ${valor}, dio ${f[campo]}`);
+      }
+    }
+  }
+  const practica = analisis.porTipoDeParada.find((f) => f.tipo === 'practica:practica');
+  if (Math.abs(practica.palancaMedianaH - 1.78) > 0.011 || Math.abs(practica.deltaMedianoH - 2.125) > 0.011) {
+    throw new Error(`practica: la palanca en el horizonte era 1,78 σ (2,125 puestos), dio ${practica.palancaMedianaH} σ (${practica.deltaMedianoH})`);
+  }
+  // La fracción ponderada: contra la carrera (20 + 30) / 125 = 40%; en el horizonte (40 · 0,5 + 0 + 30 + 10) / 125 = 48%. Una decisión sin horizonte medido.
+  if (analisis.pctPalancaPorTipoDeParada !== 40 || analisis.pctPalancaEnHorizonte !== 48 || analisis.decisionesSinHorizonteMedido !== 1) {
+    throw new Error(`fracciones: carrera ${analisis.pctPalancaPorTipoDeParada} (40), horizonte ${analisis.pctPalancaEnHorizonte} (48), sin horizonte ${analisis.decisionesSinHorizonteMedido} (1)`);
+  }
+  // La tabla de recorte en el horizonte: se quitan primero las de 0% (a igual palanca, la más frecuente: amateur:nocturno 25, temporada 20),
+  // luego serie:plan (50%), amateur:oferta y practica (100%, la más frecuente primero). Lo que queda: 100, 80, 40, 10, 0 paradas y 60, 75, 100, 100, null %.
+  const resumen = (tabla) => tabla.map((fila) => `${fila.quitando}|${fila.paradas}|${fila.pctPalanca}`).join(' ');
+  const esperadoH = 'amateur:nocturno|100|60 temporada:momento|80|75 serie:plan|40|100 amateur:oferta|10|100 practica:practica|0|null';
+  if (resumen(tablaDeRecorte(analisis.porTipoDeParada, 10, true)) !== esperadoH) {
+    throw new Error(`tablaDeRecorte en el horizonte: ${resumen(tablaDeRecorte(analisis.porTipoDeParada, 10, true))}`);
+  }
+  // Contra la carrera (el default, sin cambios): primero serie:plan (0%, 40) y queda (20 + 30) / 85 = 58,8%.
+  const filaCarrera = tablaDeRecorte(analisis.porTipoDeParada, 10)[0];
+  if (filaCarrera.quitando !== 'serie:plan' || filaCarrera.paradas !== 85 || filaCarrera.pctPalanca !== 58.8) {
+    throw new Error(`tablaDeRecorte contra la carrera: ${JSON.stringify(filaCarrera)}`);
+  }
+  const sinLasDos = palancaSobreLasQueQuedan(analisis.porTipoDeParada, ['amateur:nocturno', 'temporada:momento'], 10, true);
+  if (sinLasDos.paradas !== 80 || sinLasDos.paradasPorCarrera !== 8 || sinLasDos.pctPalanca !== 75) {
+    throw new Error(`sin las dos de 0%: ${JSON.stringify(sinLasDos)}`);
+  }
+  // Los crudos son lo que se guarda: partir las filas en dos mitades y unirlas da el mismo análisis (también con `hor`, `un` y `hz`).
+  const mitad = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, v / 2]));
+  const parte = (desde, hasta) => ({
+    baseline: Array.from({ length: 5 }, () => ({ score: 1 })), resultados: resultados.slice(desde, hasta),
+    frecuenciasTipo: mitad(frecuenciasTipo), totalInterrupciones: 62.5, carreras: 5
+  });
+  const unido = analizarDatosAgencia(combinarMediciones([parte(0, 10), parte(10, resultados.length)]), 1, { sPop: 10, sPopT: 1 });
+  if (JSON.stringify(unido) !== JSON.stringify(analisis)) {
+    throw new Error('el análisis de las mediciones unidas tenía que ser idéntico al del conjunto entero');
+  }
+});
+
+check('K4c-H horizonte sobre el motor real: replicasDeDecision trae `hz` en el horizonte de cada parada y coincide con una lectura independiente', () => {
+  // Una parada de cada horizonte en carreras reales (seeds 1 a 3, hasta 45 splits): amateur:reparto (split, escalera), temporada:momento
+  // (partido) y, si aparece, serie:plan (serie). Se responde con réplicas cortas (2 splits) y se compara el `hz` de la primera réplica de la
+  // primera opción con una lectura que no usa `seguimientoDeHorizonte`: se repite la misma carrera (mismos números aleatorios) y se lee a mano.
+  const objetivos = { 'amateur:reparto': 'split', 'temporada:momento': 'partido', 'serie:plan': 'serie' };
+  const vistos = {};
+  for (const seed of [1, 2, 3]) {
+    const rng = mulberry32(seed);
+    let st = createInitialState(seed, rng);
+    let splitCount = 0;
+    while (!st.terminado && splitCount < 45 && Object.keys(vistos).length < Object.keys(objetivos).length) {
+      st = avanzarSplit(st, rng).state;
+      while (st.pendiente) {
+        const { sistemaId, decision } = st.pendiente;
+        const tipo = `${sistemaId}:${decision.datos?.motivo ?? decision.presentacion ?? 'x'}`;
+        if (objetivos[tipo] && !vistos[tipo] && (decision.opciones ?? []).length >= 2) {
+          vistos[tipo] = { seed, splitCount, st: structuredClone(st), decision };
+        }
+        st = resolverDecision(st, sistemaPorId(sistemaId).resolverAuto(st, decision, rng), rng).state;
+      }
+      splitCount += 1;
+    }
+  }
+  if (!vistos['amateur:reparto'] || !vistos['temporada:momento']) {
+    throw new Error(`check vacío: en las seeds 1-3 no apareció ${['amateur:reparto', 'temporada:momento'].filter((t) => !vistos[t]).join(' ni ')} en 45 splits`);
+  }
+  for (const [tipo, { seed, splitCount, st, decision }] of Object.entries(vistos)) {
+    const esperado = objetivos[tipo];
+    const horizonte = horizonteDeDecision(tipo, decision);
+    if (horizonte !== esperado) {
+      throw new Error(`${tipo}: el horizonte tenía que ser ${esperado}, es ${horizonte}`);
+    }
+    const unidad = unidadDeHorizonte(horizonte, st.phase);
+    const ops = decision.opciones.map((opcion) => ({ opcionId: opcion.id, _l: opcion.id }));
+    const porOpcion = replicasDeDecision(st, ops, { seed, splitCount, tipo, reps: 2, splits: splitCount + 2, horizonte, unidad });
+    const replicas = porOpcion.flat();
+    if (replicas.some((x) => x === null || !('hz' in x))) {
+      throw new Error(`${tipo}: toda réplica tenía que traer \`hz\`; ${replicas.filter((x) => x === null || !('hz' in x)).length} de ${replicas.length} no`);
+    }
+    const valores = replicas.map((x) => x.hz).filter((v) => v !== null);
+    if (valores.length === 0) {
+      throw new Error(`${tipo}: ninguna réplica cerró su horizonte (hz null en las ${replicas.length}): la lectura del estado o de los logs no anda`);
+    }
+    if (horizonte !== 'split' && valores.some((v) => v !== 0 && v !== 1)) {
+      throw new Error(`${tipo}: la métrica de ${horizonte} es 0 o 1; salió ${JSON.stringify(valores)}`);
+    }
+    // La lectura independiente: el mismo split (CRN: la réplica 0 de la opción 0), a mano.
+    const rr = mulberry32(hashCadenaH(`${seed}|${splitCount}|${tipo}|0`));
+    const { _l, ...respuesta } = ops[0];
+    let paso = resolverDecision(structuredClone(st), respuesta, rr);
+    const logs = [...paso.logs];
+    while (paso.state.pendiente) {
+      const { sistemaId, decision: siguiente } = paso.state.pendiente;
+      paso = resolverDecision(paso.state, sistemaPorId(sistemaId).resolverAuto(paso.state, siguiente, rr), rr);
+      logs.push(...paso.logs);
+    }
+    let independiente;
+    if (horizonte === 'split') {
+      independiente = unidad === 'escalera' ? puntosAbsolutos(paso.state.player.ranked) : (paso.state.career.posicion ?? null);
+    } else if (horizonte === 'partido') {
+      const fechaMarcada = logs.find((l) => l.type === 'temporada' && typeof l.pSinMomento === 'number');
+      independiente = fechaMarcada ? (fechaMarcada.message.includes(' Ganan. ') ? 1 : 0) : null;
+    } else {
+      const cierre = logs.find((l) => l.postSerie === true);
+      independiente = cierre ? (cierre.gano ? 1 : 0) : null;
+    }
+    if (porOpcion[0][0].hz !== independiente) {
+      throw new Error(`${tipo}: hz de la réplica 0 / opción 0 es ${porOpcion[0][0].hz}; la lectura independiente da ${independiente}`);
+    }
+  }
+});
+
 check('K4c bots de carrera (revisión): import por calibre y nivel, cambio de línea por maestría, retirarse por la oferta del mercado, `malas` al revés y cero rng', () => {
   // Trinquete: las reglas de `criterio` en las bifurcaciones solo estaban probadas por la medición (400 carreras). Acá van con
   // estados a mano. Un estado real con una oferta de import posible; el nivel y la liga actual se pisan a mano.
