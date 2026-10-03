@@ -48,5 +48,9 @@
 // y LPL se juegan) y dos rivales del mismo rol ya no se pisan en la misma org; elegir la región sorteada no corre el
 // stream. K5-C, el final lo decide el mercado: sin oferta en tu tier, la bifurcación `fin_mercado` (bajar, esperar o
 // colgar el mouse) y el motivo del retiro en la tarjeta. Ninguna seed de K4-C2 reproduce su carrera.
+// K5 (revisión): el hash de los cruces ajenos vuelve a ser un uniforme en [0, 1) (el Mundial deja de tener dueño), el
+// calibre de liga es un cuantil bajo por org y los asientos ofrecibles post-mercado se congelan, el hype del Mundial
+// escala con el resultado, el mundo amateur renueva contratos NPC, a los 34 no hay mercado, cambiar de línea rearma la
+// tier list. Misma versión (la rama no se mergeó): la huella de la integración (1153610693) queda reemplazada.
 export const VERSION_JUEGO = 'K5';
-export const HUELLA_JUEGO = 1153610693;
+export const HUELLA_JUEGO = 885232865;

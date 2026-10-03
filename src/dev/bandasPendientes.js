@@ -52,6 +52,18 @@ export const BANDAS_PENDIENTES = [
   // K5 (integración) había sacado de banda el check de D78 de K5-B (LCK 0 splits en 60 carreras coreanas con criterio).
   // La revisión de K5 cambió el calibre de liga a un cuantil bajo por org y congeló los asientos ofrecibles post-mercado:
   // LCK 0 -> 12 splits (1 carrera), LPL 6 -> 33 (4 carreras), 60 × 60, región elegida. La entrada se borró (custodio 1).
+  // La longevidad es del bloque C (el mundo). En la integración de K5 dio r = 0,32 justo (el check pide > 0,32); en la
+  // revisión, el calibre de liga por cuantil (D78) la llevó a 0,27 y el mundo amateur que renueva contratos NPC a 0,21
+  // (medido commit a commit, 1200 carreras).
+  {
+    check: 'La duración de la carrera correlaciona con el potencial oculto (r > 0.32)',
+    bloque: 'C',
+    medido: 'r = 0,21 (1200 carreras; integración de K5: 0,32; tras el calibre por cuantil de D78: 0,27; tras la renovación NPC en el mundo amateur: 0,21)',
+    banda: 'r > 0,32',
+    commit: 'K5',
+    rebasea: 'K5c',
+    porque: 'K5 movió el mundo (mercado por cuantil de liga, asientos congelados post-mercado, contratos NPC renovados en la etapa amateur): más carreras de potencial medio encuentran asiento; K5c calibra la longevidad del mundo nuevo'
+  }
 ];
 
 // Custodio 1: las entradas cuyo check pasó en esta corrida. `resultados` es un Map nombre → 'ok' | 'fail' |

@@ -721,8 +721,10 @@ const FORMAS_CONOCIDAS = {
   // bracket, campeón, pausas, el 2-2 en curso), `torneo`/`etapa` en `serie` y `record`/`campeon` en las entradas de
   // `registro.internacionales`; K5-B, las ligas LRN y LRS y las tier 2 de LATAM (`sinPrimera`, `alimentaA`); K5-C,
   // `flags.splitsSinOfertaEnTier`, `flags.forkMercadoSplit`, `tarjeta.motivo` y `state.motivoRetiro` (el único lugar del
-  // motivo del retiro: `flags.motivoRetiro`, de K4-C2, se fue).
-  10: '0f9497c38271'
+  // motivo del retiro: `flags.motivoRetiro`, de K4-C2, se fue). Re-registrada en la revisión de K5 (la rama no se
+  // mergeó): cambiar de línea deja `meta.tierListAnterior` vacía y las carreras de muestra se corrieron (el hash del
+  // Mundial, D78, la renovación NPC amateur), así que cambian las rutas opcionales que la muestra ve.
+  10: '08f929de0f3e'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -14741,7 +14743,11 @@ const TIPOS_DE_PAUSA_GUARDADO_K4 = [
 ];
 const SEEDS_GUARDADO_K4 = Array.from({ length: 30 }, (_, i) => 1 + i);
 const SPLITS_GUARDADO_K4 = 60;
-const SEEDS_FIN_MERCADO_GUARDADO_K5 = [10, 14];
+// Revisión de K5: las seeds fijas [10, 14] dejaron de llegar a la bifurcación con el corrimiento de la revisión (el lote
+// no cubría `mercado:fin_mercado`). Ahora se buscan, en orden, hasta ver la pausa `FIN_MERCADO_GUARDADO_MINIMO` veces, con
+// tope `SEEDS_FIN_MERCADO_TOPE_K5` seeds.
+const SEEDS_FIN_MERCADO_TOPE_K5 = 40;
+const FIN_MERCADO_GUARDADO_MINIMO = 2;
 
 function tipoDePausaGuardadoK4(pendiente) {
   const datos = pendiente.decision.datos ?? {};
@@ -14849,7 +14855,11 @@ checkLento('K4 (revisión) guardado: en cada tipo de pausa, guardar y recargar (
   recorrer(SEEDS_GUARDADO_K4);
   // K5-C: la bifurcación del final por mercado está apagada (N neutro en balance.js) hasta su calibración; su pausa se
   // cubre con el umbral bajado y las carreras degradadas de los checks de K5-C.
-  conUmbralK5C(UMBRAL_K5C, () => recorrer(SEEDS_FIN_MERCADO_GUARDADO_K5, { degradado: true }));
+  conUmbralK5C(UMBRAL_K5C, () => {
+    for (let seed = 1; seed <= SEEDS_FIN_MERCADO_TOPE_K5 && (vistos.get('mercado:fin_mercado') ?? 0) < FIN_MERCADO_GUARDADO_MINIMO; seed += 1) {
+      recorrer([seed], { degradado: true });
+    }
+  });
   if (noJson.size > 0 || problemas.length > 0) {
     throw new Error(`${problemas.length} pausas rotas al recargar (${problemas.slice(0, 4).join(' | ')}); `
       + `valores que JSON no conserva en el estado al pausar: ${[...noJson].slice(0, 8).join('; ') || 'ninguno'}`);
