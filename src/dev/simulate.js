@@ -182,6 +182,15 @@ export function contarBeats(lote) {
 // `state` (nunca consume `rng` ni cambia una respuesta): una fila por split pro con los regresores del
 // nivel y la posición (`splitsProData`), las interrupciones de cada split pro con su tipo
 // (`splitsProRitmo`), los beats del reproductor y los minijuegos, y las temporadas como #1 del mundo.
+// K4c-S: el Δp de una parada de plan de serie (`serie:plan`, `internacional:plan`): p de la mejor opción − p de la peor,
+// leída de la `pSerie` que cada opción declara (la de la previa, la que el motor tira). `null` si no hay p por opción.
+// Lectura pura, cero `rng`: es la palanca de la parada medida sin ruido (la misma idea que `deltaPDeDecision` de
+// `agencia.js`, K4c-H, sobre las paradas que declaran `pSerie`).
+export function deltaPDePlan(opciones) {
+  const ps = (opciones ?? []).map((opcion) => opcion.pSerie);
+  return ps.length >= 2 && ps.every((p) => Number.isFinite(p)) ? Math.max(...ps) - Math.min(...ps) : null;
+}
+
 export function correrCarrera(seed, splits, responder) {
   const rng = mulberry32(seed);
   let state = createInitialState(seed, rng);
@@ -228,6 +237,8 @@ export function correrCarrera(seed, splits, responder) {
     // `career.liga`) y las mudanzas firmadas desde una oferta de bifurcación (`flags.ofertaDeImport` que se resuelve en
     // una liga de la promesa). `logsConBeatPorFuente` se llena al final (ver `fuenteDeLog`).
     minijuegosPorMecanica: {},
+    // K4c-S: una fila `{ tipo, deltaP }` por parada de plan de serie (`serie:plan`, `internacional:plan`), con su Δp.
+    planDeltaP: [],
     bifurcaciones: 0,
     bifurcacionesPorEvento: {},
     carreraElegida: {},
@@ -277,6 +288,12 @@ export function correrCarrera(seed, splits, responder) {
       const mecanica = decision.datos?.minijuego;
       if (mecanica) {
         observacion.minijuegosPorMecanica[mecanica] = (observacion.minijuegosPorMecanica[mecanica] ?? 0) + 1;
+      }
+    }
+    if (decision.datos?.motivo === 'plan') {
+      const deltaP = deltaPDePlan(decision.opciones);
+      if (deltaP !== null) {
+        observacion.planDeltaP.push({ tipo, deltaP });
       }
     }
     if (decision.datos?.evento?.bifurcacion) {
