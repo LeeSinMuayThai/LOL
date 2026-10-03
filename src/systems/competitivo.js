@@ -6,6 +6,7 @@ import { cerrarFila } from '../core/registro.js';
 import { calcularContexto } from '../core/contexto.js';
 import { usadosDePlanteles, generarPlantel, fuerzaDePlantel } from '../core/plantel.js';
 import { BALANCE } from '../data/balance.js';
+import { nombreVisibleDeLiga } from '../core/ligas.js';
 
 // El tránsito entre tiers.
 //
@@ -72,7 +73,7 @@ function saltarATier2(state, logsPrevios) {
         registro: conFilaCerrada(state, 'ascenso')
       }
     },
-    logs: [...logsPrevios, crearLog('competitivo', `Te ganás el salto a ${liga.id}. Sos agente libre de tier 2: en la pretemporada elegís club.`)]
+    logs: [...logsPrevios, crearLog('competitivo', `Te ganás el salto a ${nombreVisibleDeLiga(liga.id)}. Sos agente libre de tier 2: en la pretemporada elegís club.`)]
   };
 }
 
@@ -186,7 +187,7 @@ function resolverDescenso(state, rng) {
         contrato: { ...state.career.contrato, tier: 2, liga: ligaDestino.id }
       }
     },
-    logs: [crearLog('competitivo', `${orgQueBaja.nombre} termina último en ${ligaActual.id}: desciende a ${ligaDestino.id}. Bajás con ellos — el contrato viaja.`)]
+    logs: [crearLog('competitivo', `${orgQueBaja.nombre} termina último en ${nombreVisibleDeLiga(ligaActual.id)}: desciende a ${nombreVisibleDeLiga(ligaDestino.id)}. Bajás con ellos — el contrato viaja.`)]
   };
 }
 

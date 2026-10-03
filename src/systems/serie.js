@@ -20,6 +20,7 @@ import {
   generarCierreMapa, factorDificultadPorRonda
 } from '../core/minijuegos.js';
 import { BALANCE } from '../data/balance.js';
+import { nombreVisibleDeLiga, nombreVisibleDeLigaOZona } from '../core/ligas.js';
 
 export const id = 'serie';
 
@@ -34,7 +35,7 @@ export const id = 'serie';
 // internacional, y la charla del coach si te queda). Una serie sin nada en juego no pregunta.
 
 function nombreLigaDe(liga) {
-  return liga.nombreLiga ?? liga.id;
+  return nombreVisibleDeLigaOZona(liga);
 }
 
 // --- Construcción de decisiones ---
@@ -502,7 +503,7 @@ function continuarTrasRonda(state, ronda, gano, rng, logsAcum) {
 export function arrancarSerieDelMundial(state, etapa, rival, rng, logsAcum) {
   const st = iniciarRonda(state, 'internacional', rng, { etapa, rival });
   return arrancarSerie(st, rng, [...logsAcum, crearLog(
-    'serie', `${etiquetaDeRonda('internacional', etapa)} vs ${rival.org} (${rival.liga}), al Bo${st.serie.formato}.`
+    'serie', `${etiquetaDeRonda('internacional', etapa)} vs ${rival.org} (${nombreVisibleDeLiga(rival.liga)}), al Bo${st.serie.formato}.`
   )]);
 }
 

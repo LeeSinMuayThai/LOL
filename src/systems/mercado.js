@@ -17,6 +17,7 @@ import { BALANCE } from '../data/balance.js';
 import { ajusteBaseDeMinijuego } from '../core/serie.js';
 import { esPreparacion, ofrecerPreparacion, resolverPreparacion, elegirRutinaAuto } from './practica.js';
 import { retirarsePorMercado, pretemporadasEnPalabras } from './retiro.js';
+import { nombreVisibleDeLiga } from '../core/ligas.js';
 
 export const id = 'mercado';
 
@@ -177,7 +178,7 @@ export function construirOferta(state, liga, org, tagForzado, rng) {
     // texto de riesgo. `salarioBase` es el ancla para calcular los escalones.
     negociacion: { escalones: 0, clausula: false, salarioBase: salarioAnualUSD },
     negociacionInfo,
-    label: `${org.nombre} · ${liga.id}`,
+    label: `${org.nombre} · ${nombreVisibleDeLiga(liga.id)}`,
     descripcion: esOrgActual
       ? 'Te renueva tu propia organización.'
       : (liga.tier < (state.career.tier ?? 9) ? 'El salto a una liga más grande.'
@@ -256,7 +257,7 @@ function firmarImportPendiente(state, rng) {
   const salida = origen ? `Dejás ${origen}: ` : '';
   return {
     state: { ...cerrado.state, flags: { ...cerrado.state.flags, banquilloPendiente: false } },
-    logs: [crearLog('mercado', `${salida}la mudanza se hace. ${oferta.org} te espera en la ${oferta.liga}.`), ...firmado.logs, ...cerrado.logs],
+    logs: [crearLog('mercado', `${salida}la mudanza se hace. ${oferta.org} te espera en la ${nombreVisibleDeLiga(oferta.liga)}.`), ...firmado.logs, ...cerrado.logs],
     firmado: true
   };
 }
@@ -795,7 +796,7 @@ function aceptarOferta(state, oferta, rng, { motivoFila } = {}) {
         registro: conFilaCerrada(state, motivoFilaFinal)
       }
     },
-    logs: [crearLog('mercado', `Firmás con ${oferta.org} (${oferta.liga}): ${plata(contrato.salarioAnualUSD)}/año, ${contrato.anios} año(s).${conClausula}`)]
+    logs: [crearLog('mercado', `Firmás con ${oferta.org} (${nombreVisibleDeLiga(oferta.liga)}): ${plata(contrato.salarioAnualUSD)}/año, ${contrato.anios} año(s).${conClausula}`)]
   };
 }
 
@@ -854,7 +855,7 @@ function ofertaDeTraspaso(state, rng) {
   };
   const aceptar = {
     ...oferta, id: 'aceptar', tipo: 'aceptar',
-    label: `Aceptar: irte a ${org.nombre} (${liga.id})`,
+    label: `Aceptar: irte a ${org.nombre} (${nombreVisibleDeLiga(liga.id)})`,
     descripcion: conClausula
       ? `Tenés cláusula: te vas y ${state.career.currentOrg} cobra ${plata(traspasoUSD)}. No opina.`
       : `${org.nombre} pone ${plata(traspasoUSD)} de traspaso. ${state.career.currentOrg} decide si te suelta.`
@@ -986,7 +987,7 @@ function resolverBanquillo(state, logsPrevios, rng) {
     state: { ...firmado.state, flags: { ...firmado.state.flags, banquilloPendiente: false } },
     logs: [
       ...logsPrevios,
-      crearLog('mercado', `${origen} te manda a la academia: bajás a ${dev.id} con ${orgDestino.nombre}. Desde abajo se vuelve.`),
+      crearLog('mercado', `${origen} te manda a la academia: bajás a ${nombreVisibleDeLiga(dev.id)} con ${orgDestino.nombre}. Desde abajo se vuelve.`),
       ...firmado.logs
     ]
   };

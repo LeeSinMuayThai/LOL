@@ -13,6 +13,7 @@ import { elegirOrgTier3, asignarOrgTier3 } from '../core/tier3.js';
 import { elegirMinijuego, minijuegoPorId, textoDeMinijuego, registrarMinijuegoVisto } from '../core/minijuegos.js';
 import { conMarcasDeRutina } from '../core/curvas.js';
 import { esCierreDeEdad } from './edadCierre.js';
+import { nombreVisibleDeLiga } from '../core/ligas.js';
 
 export const id = 'amateur';
 
@@ -402,7 +403,7 @@ function buscarSalida(state, rng) {
   if (chance(probabilidadDeScouting(state), rng)) {
     const { org, tier, liga } = orgQueTeFicha(state, rng);
     const descripcion = tier === 2
-      ? `Te vieron en la ladder: ${etiquetaDeRanked(state.player.ranked, servidorDeLaPartida(state))}. Estás tan arriba que ${liga.id} te ofrece saltearte el tramo de probarte en un equipo chico.`
+      ? `Te vieron en la ladder: ${etiquetaDeRanked(state.player.ranked, servidorDeLaPartida(state))}. Estás tan arriba que ${nombreVisibleDeLiga(liga.id)} te ofrece saltearte el tramo de probarte en un equipo chico.`
       : `Te vieron en la ladder: ${etiquetaDeRanked(state.player.ranked, servidorDeLaPartida(state))}. Es un equipo de tier 3, chico y de paso: contrato mínimo, mudanza a la gaming house y dejar el colegio a mitad de camino.`;
 
     return decisionDeOpciones(
@@ -463,7 +464,7 @@ function firmarConEquipo(state, decision) {
     : asignarOrgTier3(base, org);
 
   const texto = tier === 2
-    ? `Firmaste con ${org.nombre}, directo en ${liga}. Te salteaste el tramo de probarte en un equipo chico: se terminó el soloQ de pieza.`
+    ? `Firmaste con ${org.nombre}, directo en ${nombreVisibleDeLiga(liga)}. Te salteaste el tramo de probarte en un equipo chico: se terminó el soloQ de pieza.`
     : `Firmaste con ${org.nombre}. Se terminó el soloQ de pieza: a partir de acá te pagan por jugar.`;
 
   return { state: conCareer, logs: [crearLog('amateur', texto)] };
