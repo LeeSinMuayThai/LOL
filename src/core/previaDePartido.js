@@ -1,6 +1,7 @@
 import { desgloseDeFuerza } from './fuerza.js';
 import {
-  estadoDelMapa, probabilidadDeMapa, fuerzaFinalDeMapa, ajusteDeMinijuegoDeMapa, etiquetaDeRonda
+  estadoDelMapa, probabilidadDeMapa, fuerzaFinalDeMapa, ajusteDeMinijuegoDeMapa, etiquetaDeRonda,
+  fuerzaRivalDeMapa, ajusteDeCharla, proyeccionDelPlan, conPlan, estadoDelProximoMapa
 } from './serie.js';
 import { probabilidadDeFechaMarcada, fuerzaDeFecha, factorDraftFecha, campeonDelSplitEnPool, textoPorQueImporta } from './temporada.js';
 import { minijuegoPorId } from './minijuegos.js';
@@ -31,7 +32,9 @@ import { minijuegoPorId } from './minijuegos.js';
 //    próximo mapa de la serie con ese campeón. Con `minijuego` (id) y
 //    `resultado` (0-1), la p ya corrida por el minijuego: la final, la que se
 //    tira. Con `minijuego` y sin `resultado`, la de antes del minijuego y la
-//    nota de que el minijuego la mueve.
+//    nota de que el minijuego la mueve. K4-B: `ajustePlan` (lo que el plan de Fearless mueve este mapa) y
+//    `charla` (true si se usa la charla del coach) entran a la misma p; el rival es el de ESE mapa
+//    (`fuerzaRivalDeMapa`: también quema campeones).
 export function previaDePartido(state, opciones) {
   if (opciones?.tipo === 'fecha') {
     return previaDeFecha(state, opciones);
@@ -85,14 +88,17 @@ function previaDeMapa(state, opciones) {
 
   const entrada = opciones.minijuego ? minijuegoPorId(opciones.minijuego) : null;
   const jugado = Boolean(entrada) && Number.isFinite(opciones.resultado);
-  const ajuste = jugado ? ajusteDeMinijuegoDeMapa(state, entrada, opciones.resultado) : 0;
+  const ajusteMini = jugado ? ajusteDeMinijuegoDeMapa(state, entrada, opciones.resultado) : 0;
+  const ajustePlan = opciones.ajustePlan ?? 0;
+  const ajusteCharla = ajusteDeCharla(opciones.charla === true);
+  const ajuste = ajustePlan + ajusteCharla + ajusteMini;
   const p = probabilidadDeMapa(state, base, ajuste);
 
   let nota = null;
   if (entrada && !jugado) {
     nota = 'El minijuego la mueve: si te sale bien, sube; si te sale mal, baja.';
   } else if (jugado) {
-    nota = `Antes del minijuego: ${porcentaje(probabilidadDeMapa(state, base, 0))}%. Con esta se juega el mapa.`;
+    nota = `Antes del minijuego: ${porcentaje(probabilidadDeMapa(state, base, ajuste - ajusteMini))}%. Con esta se juega el mapa.`;
   }
 
   return armarPrevia({
@@ -101,10 +107,10 @@ function previaDeMapa(state, opciones) {
     subtitulo: etiquetaDeRonda(serie.ronda),
     propio: state.career.currentOrg,
     desglose,
-    extras: { minijuego: base * ajuste },
+    extras: { minijuego: base * ajusteMini, plan: base * ajustePlan, charla: base * ajusteCharla },
     fuerzaBase: base,
     fuerzaFinal: fuerzaFinalDeMapa(base, ajuste),
-    rival: { nombre: serie.rival.org, fuerza: serie.rival.fuerza },
+    rival: { nombre: serie.rival.org, fuerza: fuerzaRivalDeMapa(state), campeon: serie.rivalJuega ?? null },
     p,
     campeon: opciones.campeon,
     nota
@@ -135,6 +141,8 @@ const FILAS = [
   { clave: 'campeon', etiqueta: 'El campeón', signo: true },
   { clave: 'quimica', etiqueta: 'La química', signo: true },
   { clave: 'momento', etiqueta: 'El momento', signo: true, opcional: true },
+  { clave: 'plan', etiqueta: 'El plan', signo: true, opcional: true },
+  { clave: 'charla', etiqueta: 'La charla del coach', signo: true, opcional: true },
   { clave: 'minijuego', etiqueta: 'El minijuego', signo: true, opcional: true }
 ];
 
@@ -143,6 +151,8 @@ function armarPrevia({ tipo, titulo, subtitulo = null, porQue = null, propio, de
   aportes.campeon += extras.campeon ?? 0;
   aportes.momento = extras.momento ?? 0;
   aportes.minijuego = extras.minijuego ?? 0;
+  aportes.plan = extras.plan ?? 0;
+  aportes.charla = extras.charla ?? 0;
 
   const filas = FILAS
     .filter((fila) => !fila.opcional || aportes[fila.clave] !== 0)
@@ -177,21 +187,30 @@ function armarPrevia({ tipo, titulo, subtitulo = null, porQue = null, propio, de
 // cada campeón (la tarjeta muestra la del primero de la lista, el mejor por el
 // criterio del motor). `resultadoMinijuego`: la previa ya corrida por el
 // minijuego que se acaba de jugar.
-export function previaDeDecision(state, decision, { resultadoMinijuego } = {}) {
+export function previaDeDecision(state, decision, { resultadoMinijuego, charla = false } = {}) {
   const datos = decision?.datos ?? {};
   if (state.serie?.activa) {
-    if (datos.motivo === 'draft' && decision.opciones?.length > 0) {
+    if (datos.motivo === 'plan' && decision.opciones?.length > 0) {
+      return previaDelPlan(state, decision);
+    }
+    const delMapa = {
+      tipo: 'mapa',
+      campeon: datos.campeonElegido,
+      entradaExtra: datos.entradaExtra ?? null,
+      ajustePlan: datos.ajustePlan ?? 0
+    };
+    if (datos.motivo === 'decisivo' && decision.opciones?.length > 0) {
       const porOpcion = decision.opciones.map((opcion) => ({
         id: opcion.id,
-        previa: previaDePartido(state, { tipo: 'mapa', campeon: opcion.id })
+        previa: previaDePartido(state, { ...delMapa, charla: opcion.id === 'charla' })
       }));
-      return conOpciones(porOpcion[0].previa, porOpcion);
+      const base = porOpcion.find((o) => o.id === 'sinCharla') ?? porOpcion[0];
+      return conOpciones(base.previa, porOpcion, porOpcion.length > 1 ? 'La charla del coach la sube: es una sola por temporada.' : null);
     }
     if (datos.motivo === 'minijuego' && minijuegoPorId(datos.minijuego)?.efecto?.tipo === 'mapa') {
       return previaDePartido(state, {
-        tipo: 'mapa',
-        campeon: datos.campeonElegido,
-        entradaExtra: datos.entradaExtra ?? null,
+        ...delMapa,
+        charla: charla === true && datos.charla?.disponible === true,
         minijuego: datos.minijuego,
         resultado: resultadoMinijuego
       });
@@ -209,10 +228,38 @@ export function previaDeDecision(state, decision, { resultadoMinijuego } = {}) {
   return datos.etiqueta ? { ...previa, subtitulo: datos.etiqueta } : previa;
 }
 
-function conOpciones(previa, porOpcion) {
+// K4-B: la tarjeta del plan de Fearless. Arriba, la previa del mapa que viene con el plan del coach; en cada
+// opción, la p de cada mapa que declara su proyección (`proyeccionDelPlan`, la misma secuencia que juega el motor)
+// y la de ganar la serie con esas p.
+function previaDelPlan(state, decision) {
+  const coach = proyeccionDelPlan(state, 'coach');
+  const proximo = estadoDelProximoMapa(conPlan(state, 'coach'));
+  const previa = previaDePartido(proximo, { tipo: 'mapa', campeon: coach.mapas[0].campeon });
+  const opciones = decision.opciones.map((opcion) => {
+    const proyeccion = proyeccionDelPlan(state, opcion.id);
+    const pMapas = proyeccion.mapas.map((m) => m.p);
+    const porMapa = proyeccion.mapas
+      .map((m) => `${m.decisivo ? 'el decisivo ' : ''}${porcentaje(m.p)}%`)
+      .join(' · ');
+    return {
+      id: opcion.id,
+      p: proyeccion.pSerie,
+      pMapas,
+      porcentaje: porcentaje(proyeccion.pSerie),
+      texto: `Mapa a mapa: ${porMapa}. La serie: ${porcentaje(proyeccion.pSerie)}%.`
+    };
+  });
   return {
     ...previa,
-    nota: 'Depende del pick: cada campeón dice con cuánto llegás.',
+    nota: 'Cada plan dice con cuánto llegás a cada mapa. El decisivo se juega solo si llegan 2-2 (1-1 en un Bo3).',
+    opciones
+  };
+}
+
+function conOpciones(previa, porOpcion, nota = 'Depende del pick: cada campeón dice con cuánto llegás.') {
+  return {
+    ...previa,
+    nota,
     opciones: porOpcion.map(({ id, previa: suya }) => ({
       id, p: suya.p, porcentaje: suya.porcentaje, texto: suya.textoProbabilidad
     }))

@@ -1516,41 +1516,34 @@ export const BALANCE = {
   // La serie de playoffs (fase 4): Bo5 con Fearless draft, jugada mapa a mapa
   // reusando la fuerza de partido de `core/fuerza.js` (K2b: determinista).
   serie: {
-    // Fase 9Rd: el motor sólo te frena en el draft si el mejor campeón
-    // disponible te da bastante más probabilidad de ganar el mapa que el
-    // segundo (`puntosEnJuego` = P(mejor) − P(segundo), vía
-    // `probabilidadDePartido`). Por debajo de esto la elección no cambia el
-    // partido y se resuelve sola. El mapa decisivo BAJA el umbral (la mitad),
-    // no lo saltea.
-    //
-    // El plan escribió 0,04 / 0,015, pero al medir daban mediana 3
-    // drafts/serie y sólo 7% de series sin ninguno — el objetivo del propio
-    // plan es mediana ≤1 y ≥30% de series sin draft. La distribución real de
-    // `puntosEnJuego` (top-1 vs top-2 del pool disponible) tiene su mediana en
-    // ~0,13, así que un umbral de 0,04 frenaba el 85% de los drafts. 0,18
-    // (≈4,5×) dejaba mediana 1 y 32% de series sin draft.
-    // 9Rg: subir `pesoJugadorEnEquipo` (0,35→0,5) amplificó cuánto mueve el
-    // campeón elegido a `fuerzaDelEquipo`, y con eso `puntosEnJuego` — a 0,18
-    // el sinDraft cayó a 23%. Re-medido (N=1200 series): 0,26 devuelve el
-    // margen original (32,5% sin draft, mediana 1). Misma proporción
-    // decisivo/base (~0,5) que antes.
-    // K3c (PLAN.md "Paso 2, el barrido"): K2c achicó la dispersión de la p a
-    // ~0,3145 de la de antes y con 0,26 la sonda del check de pausas dio 0 pausas
-    // sobre 4000 series (antes de K2c, 152). Se re-escala por el mismo factor
-    // (0,26 × 0,3145 = 0,0818) y se mantiene el 2:1 con el decisivo; la sonda
-    // vuelve a dar 152 pausas. K4 rediseña igual el draft (plan de Fearless).
-    puntosEnJuegoParaPreguntar: 0.0818,
-    puntosEnJuegoParaPreguntarDecisivo: 0.0409,
-    // |rendimiento base del jugador - fuerza del rival| <= esto: "mapa cerrado",
-    // condicion necesaria para que dispare un minijuego (regla 4 de 4.6).
-    margenMapaCerrado: 8,
-    // 9R4b: el mapa de DESEMPATE (2-2 en un Bo5) juega con un margen mucho mas
-    // ancho y con cupo propio. Antes el mapa 5 podia pasar sin una sola jugada
-    // tuya —el minijuego ya se habia gastado en el mapa 2, o el mapa no era
-    // "cerrado" por diez puntos— y es justo el momento que PLAN.md §9R.4 pide
-    // que exista ("el Baron de un mapa 5"). No aplica a cualquier match point:
-    // el 2-0 de un barrido no lo merece (regla 4 de §4.6).
-    margenMapaCerradoDecisivo: 22,
+    // K4-B (PLAN.md "K4 — decisiones de spec", K4-B): la serie como plan. Reemplaza al umbral de pausa del draft
+    // mapa a mapa (`puntosEnJuegoParaPreguntar`, D63: preguntaba justo cuando la respuesta era obvia) y a los márgenes
+    // de "mapa cerrado" de los minijuegos (`margenMapaCerrado` y su decisivo): ahora el minijuego de serie va solo en
+    // el mapa decisivo de semis, final e internacional, y una serie sin nada en juego no pregunta nada.
+    // Valores de arranque (bloque B, los calibra K4c). Los `empuje*`/`desgaste*` son fracciones de la fuerza propia
+    // del mapa, la misma escala que el ajuste de un minijuego (`impacto` 0,09-0,16).
+    plan: {
+      // |fuerzaInicial − fuerza del rival| por encima de esto: serie sin nada en juego (juega el coach, no frena).
+      // 15 puntos con σ de mapa 14,2: un mapa de ~0,85 y un Bo5 de ~0,97 para el favorito (sin el Fearless). Deja
+      // ~30% de las series sin nada en juego (criterio, 30 × 60).
+      umbralSinNadaEnJuego: 15,
+      // Salir con todo: tus mejores picks y más intensidad en los primeros `mapasConTodo` mapas; después lo pagás.
+      mapasConTodo: 2,
+      empujeConTodo: 0.05,
+      desgasteConTodo: 0.03,
+      // Guardar tu mejor campeón para el mapa decisivo: si llega, lo jugás con lo que no te vieron en toda la serie.
+      empujeGuardado: 0.03,
+      // Por mapa antes del decisivo, la chance de que el rival te lea el guardado y te lo queme (te frena una vez).
+      pLeenElGuardado: 0.12,
+      // La sorpresa: el mapa 1 con un pick que el rival no preparó.
+      empujeSorpresa: 0.05,
+      // La charla del coach: un comodín por temporada que empuja el mapa decisivo.
+      empujeCharla: 0.05,
+      // El rival también quema campeones: su campeón del mapa i (0 el primero) juega con maestría
+      // `maestriaRivalTope − i·caidaMaestriaRivalPorMapa` (piso `maestriaComodin`), con la misma regla que el tuyo.
+      maestriaRivalTope: 80,
+      caidaMaestriaRivalPorMapa: 8
+    },
     // Fase 9R4a: cuanto mueve cada minijuego (`impacto`) y con cuanta
     // dispersion lo simula el camino headless (`spread`) ya NO viven aca: cada
     // entrada de `data/minijuegos.json` trae los suyos. Es el cierre de D20

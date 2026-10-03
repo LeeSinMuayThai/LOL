@@ -172,6 +172,8 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // (fase 5, `stakes: 'revancha'`). `null` hasta la primera eliminación;
       // lo escribe `systems/serie.js`.
       ultimoEliminadoPor: null,
+      // K4-B: el año del calendario en que se usó la charla del coach (una por temporada); null si nunca.
+      charlaUsadaEn: null,
       // El contrato vigente (fase 9). Objeto completo de ceros, nunca null
       // (trampa T4): antes de la primera firma profesional no hay contrato,
       // pero el campo tiene que existir para que validate.js pueda verificar
@@ -292,13 +294,18 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       mapaActual: 0,
       mapas: [],
       quemados: [],
+      // K4-B: el plan de Fearless, el campeón guardado para el mapa decisivo, si ya te frenaron a re-planear, el
+      // campeón con el que el rival juega el mapa en curso (y el índice de ese mapa), y si la serie no tiene nada en juego.
+      plan: null,
+      guardado: null,
+      replanUsado: false,
+      rivalJuega: null,
+      rivalJuegaEnMapa: -1,
+      sinNadaEnJuego: false,
+      // Dos cupos de minijuego (9R4b; K4 sacó el del mapa normal y el bootcamp): `decisivoUsado` es el del mapa
+      // decisivo; `minijuegoUsado`, el de la rueda de prensa de después de la final.
       minijuegoUsado: false,
-      // Fase 9R4b: tres cupos, no uno. `minijuegoUsado` es el del mapa normal y
-      // la rueda de prensa; `decisivoUsado` es el del mapa que cierra la serie;
-      // `preSerieUsado` es el del bootcamp, que pasa ANTES del primer mapa y
-      // hasta acá se comía el cupo entero del internacional (medido: 643 de 643).
       decisivoUsado: false,
-      preSerieUsado: false,
       postSerie: false
     },
     meta: {

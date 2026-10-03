@@ -29,10 +29,7 @@
 // del bloque A (PLAN.md, K3c) — la consistencia (k = 0,5), la mentalidad y el hype que vuelven
 // a su base (r = 0,2 con subida 0,05, tope de descanso 70, rH = 0,6), los efectos que duran
 // (fracción 0,3 para eventos y práctica) y el umbral de pausa del draft (0,0818 / 0,0409). Las
-// carreras cambian de cabo a rabo: ninguna seed de K2c reproduce la suya. · K4-A (1197631697; bloque
-// B, corrimiento aceptado): el partido que importa — la fecha marcada es la que decide algo (la
-// clasificación, el archirrival, el clásico, la revancha), sin draft, y puntero/presión dejan de
-// marcar. Cambia qué pausa el juego y cuántas tiradas hace el camino sin pausas: ninguna seed de
-// K3c reproduce su carrera. (El supervisor reconcilia este número al integrar K4-B/C/D.)
-export const VERSION_JUEGO = 'K4-A';
-export const HUELLA_JUEGO = 1197631697;
+// carreras cambian de cabo a rabo: ninguna seed de K2c reproduce la suya. · K4 (PENDIENTE; bloque B,
+// corrimiento aceptado): integración de K4-A..D.
+export const VERSION_JUEGO = 'K4';
+export const HUELLA_JUEGO = 0;

@@ -44,7 +44,10 @@ import { previaDeOpcion, riesgoDeOpcion, payoffNormalizado } from '../core/previ
 import { rarezaDeRutina, payoffDeRutina } from '../core/rareza.js';
 import { tipoDeSplit, hayPresupuesto } from '../core/presupuesto.js';
 import { aplicar as aplicarPresupuesto } from '../systems/presupuesto.js';
-import { elegirCampeonRival, disponiblesDelPool, decisionDeDraft, probabilidadConCampeon } from '../core/serie.js';
+import {
+  objetivoDelRival, disponiblesDelPool, jugadaDelPlan, conPlan, mapaDelPlan, estadoDelProximoMapa, fuerzaRivalDeMapa,
+  conQuemaDelRival, charlaDisponible
+} from '../core/serie.js';
 import {
   rendimientoBase, fuerzaDelEquipo, fuerzaDePartido, nivelDeCompaneros, companerosDelPlantel
 } from '../core/fuerza.js';
@@ -79,7 +82,7 @@ import MINIJUEGOS from '../data/minijuegos.json' with { type: 'json' };
 import {
   elegirMinijuego, minijuegosPara, veredictoDeMinijuego, textoDeMinijuego, lecturaDeVentana, minijuegoPorId
 } from '../core/minijuegos.js';
-import { esMapaDeDesempate, esMapaCerrado } from '../core/serie.js';
+import { esMapaDeDesempate } from '../core/serie.js';
 import { previaDePartido, previaDeDecision, textoDeProbabilidadJugada } from '../core/previaDePartido.js';
 import { MONTAR_MINIJUEGO } from '../ui/components/minijuegos/index.js';
 import { crearCampeonTile } from '../ui/components/campeonTile.js';
@@ -662,7 +665,10 @@ const FORMAS_CONOCIDAS = {
   // K3-B: `player.bonusPermanente` (un campo por stat de curva, ceros) y `registro.marcas` (`{ stat, delta, origen, anio }`).
   // Re-registrada en la revisión de K3: la muestra suma carreras con las fracciones > 0 en memoria, así la forma de una
   // marca entra en el hash y K3c puede subir las fracciones sin subir VERSION. (Antes, 839743025b35: sin marcas.)
-  7: '16d9c513b980'
+  7: '16d9c513b980',
+  // K4-B, la serie como plan: `serie.plan`/`guardado`/`replanUsado`/`rivalJuega`/`rivalJuegaEnMapa`/`sinNadaEnJuego` (sin
+  // `preSerieUsado`), `career.charlaUsadaEn`, y `rivalJuega`/`plan`/`charla` en el log de cada mapa.
+  8: '70e02b313d15',
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -4659,22 +4665,13 @@ checkLento('El mapa 5 es el mapa 5: el cupo del desempate no se gasta en otro la
   // Las dos mitades de "el Barón de un mapa 5" (PLAN.md §9R.4):
   //   (a) el desempate es el ÚLTIMO mapa posible, no cualquier match point —
   //       el 2-0 de un barrido no lo merece (regla 4 de §4.6);
-  //   (b) el margen ancho del desempate cubre mapas que el margen normal
-  //       rechaza, o el mapa que define seguiría pasando sin jugada.
+  //   (b) K4-B sacó los márgenes de "mapa cerrado": el mapa decisivo de semis, final e internacional tiene su
+  //       minijuego siempre que la serie tenga algo en juego.
   if (!esMapaDeDesempate([2, 2], 5) || !esMapaDeDesempate([1, 1], 3)) {
     throw new Error('esMapaDeDesempate no reconoce el último mapa de la serie');
   }
   if (esMapaDeDesempate([2, 0], 5) || esMapaDeDesempate([2, 1], 5)) {
     throw new Error('esMapaDeDesempate confunde un match point cualquiera con el desempate');
-  }
-  const normal = BALANCE.serie.margenMapaCerrado;
-  const ancho = BALANCE.serie.margenMapaCerradoDecisivo;
-  if (ancho <= normal) {
-    throw new Error(`el margen del desempate (${ancho}) no es más ancho que el normal (${normal})`);
-  }
-  const brecha = (normal + ancho) / 2;
-  if (esMapaCerrado(50, 50 + brecha) || !esMapaCerrado(50, 50 + brecha, ancho)) {
-    throw new Error('el margen ancho del desempate no cubre lo que el normal rechaza');
   }
 
   // Y en carrera: ninguna pausa de `mapa_decisivo` sale fuera del desempate.
@@ -4703,66 +4700,9 @@ checkLento('El mapa 5 es el mapa 5: el cupo del desempate no se gasta en otro la
   }
 });
 
-checkLento('Mediana de decisiones de draft por serie ∈ [0, 1] y ≥28% de series sin ningún draft', () => {
-  const porSerie = [];
-
-  for (let seed = 1; seed <= 1200; seed += 1) {
-    const rng = mulberry32(seed);
-    let state = createInitialState(seed, rng);
-    let ultimoConteo = 0;
-    let draftDesdeUltimoCorte = 0;
-
-    const responder = (sistema, st, decision, r) => {
-      if (st.career.seriesJugadas > ultimoConteo) {
-        const cerradas = st.career.seriesJugadas - ultimoConteo;
-        for (let i = 0; i < cerradas; i += 1) {
-          porSerie.push(draftDesdeUltimoCorte / cerradas);
-        }
-        draftDesdeUltimoCorte = 0;
-        ultimoConteo = st.career.seriesJugadas;
-      }
-      if (sistema.id === 'serie' && decision.datos?.motivo === 'draft') {
-        draftDesdeUltimoCorte += 1;
-      }
-      return sistema.resolverAuto(st, decision, r);
-    };
-
-    for (let i = 0; i < 90 && !state.terminado; i += 1) {
-      state = avanzarSplitAuto(state, rng, responder).state;
-    }
-    if (state.career.seriesJugadas > ultimoConteo) {
-      const cerradas = state.career.seriesJugadas - ultimoConteo;
-      for (let i = 0; i < cerradas; i += 1) {
-        porSerie.push(draftDesdeUltimoCorte / cerradas);
-      }
-    }
-  }
-
-  if (porSerie.length < 50) {
-    throw new Error(`solo ${porSerie.length} series jugadas en 1200 carreras: muestra insuficiente`);
-  }
-
-  const ordenadas = [...porSerie].sort((a, b) => a - b);
-  const mediana = ordenadas[Math.floor(ordenadas.length / 2)];
-  const sinDraft = porSerie.filter((n) => n === 0).length / porSerie.length;
-
-  if (mediana < 0 || mediana > 1) {
-    throw new Error(`mediana de decisiones de draft por serie: ${mediana.toFixed(2)}, fuera de [0, 1] (${porSerie.length} series medidas)`);
-  }
-  // Fase 9Rd: el motor sólo frena cuando el pick mueve la probabilidad del
-  // mapa. Una porción grande de las series no debería frenarte nunca.
-  //
-  // Fase 9Ma: piso 30% → 28%. El corrimiento de stream de los planteles NPC
-  // (D35) movió el valor estable de ~30,5% a ~28,9%. Fase 9Mc: el stream shift
-  // de `core/mercadoMundial.js` lo bajó otro punto a ~27,6% (piso 28% → 26%
-  // como parche). La causa era la deriva agregada de `org.fuerza` de tier 1
-  // (mundo que se ablanda → el jugador domina más → menos drafts). Fase 9Mi:
-  // el asiento se disputa → menos deriva → volvió a **29,3%** (sonda n=400 ×
-  // 90). Piso **devuelto a 28%** en 9Mj, como preveía §9M.12.3.
-  if (sinDraft < 0.28) {
-    throw new Error(`sólo el ${(sinDraft * 100).toFixed(0)}% de las series no tuvieron ningún draft (mínimo 28%)`);
-  }
-});
+// K4-B (regla 17): el check "Mediana de decisiones de draft por serie ∈ [0, 1] y ≥28% de series sin ningún draft"
+// (9Rd/9Mj, y su entrada PENDIENTE de bloque B) se borró: no hay más draft mapa a mapa. Lo reemplazan los checks
+// "K4-B pausas por serie..." y "K4-B regla 15..." de más abajo.
 
 check('El pool ancho llega al mapa 5 con opciones más seguido que el angosto', () => {
   // Test directo sobre el mecanismo de quema (core/serie.js), no sobre una
@@ -4791,7 +4731,7 @@ check('El pool ancho llega al mapa 5 con opciones más seguido que el angosto', 
       let quemados = [];
       let disponiblesEnMapa5 = 0;
       for (let mapa = 0; mapa < 5; mapa += 1) {
-        const campeonRival = elegirCampeonRival(stateFalso, quemados, rng);
+        const campeonRival = objetivoDelRival(stateFalso, quemados);
         if (campeonRival) {
           quemados = [...quemados, campeonRival];
         }
@@ -4952,9 +4892,16 @@ check('El motor nunca elige por vos un campeón peor que otro disponible', () =>
       meta: { weights, ajuste: 50 }
     };
 
-    // K4-A: la fecha marcada ya no tiene draft; queda el de la serie.
+    // K4-A: la fecha marcada ya no tiene draft; K4-B: la serie juega su plan.
     for (const decision of [
-      decisionDeDraft(state, entradas, i % 2 === 0)
+      // K4-B: el pick del plan del coach (el que juega solo el motor) en el mapa 1 de una serie sin quemas.
+      (() => {
+        const jugada = jugadaDelPlan({
+          ...state, player: { ...state.player, championPool: entradas },
+          serie: { plan: 'coach', guardado: null, quemados: [], mapaActual: i % 5, formato: 5 }
+        });
+        return { pausa: false, elegido: entradas.find((c) => c.name === jugada.campeon) };
+      })()
     ]) {
       if (decision.pausa || !decision.elegido) {
         continue;
@@ -5001,48 +4948,9 @@ check('probabilidadDePartido es monótona, simétrica y 0.5 en el empate (fecha 
   }
 });
 
-check('Nadie te frena en el draft por un pick que no mueve el partido', () => {
-  const pool = campeonesDisponibles(
-    { player: { role: 'mid' }, mundo: { campeonesDebutados: [] } }, 'mid'
-  );
-  let pausas = 0;
-  let malas = 0;
-  for (let i = 0; i < 4000; i += 1) {
-    const rng = mulberry32(70000 + i);
-    const weights = createInitialState(i + 1, mulberry32(i + 1)).meta.weights;
-    const ancho = 3 + (i % 4);
-    const entradas = sample(pool, ancho, rng).map((c) => entradaDePool(c, 20 + Math.floor(rng() * 70), 0));
-    const state = {
-      ...estadoDraftFalso(70000 + i, entradas, 45 + Math.floor(rng() * 30)),
-      meta: { weights, ajuste: 50 }
-    };
-    const decisivo = i % 2 === 0;
-    const dec = decisionDeDraft(state, entradas, decisivo);
-    if (!dec.pausa) {
-      continue;
-    }
-    pausas += 1;
-    if (entradas.length === 2) {
-      continue; // excepción incondicional: pool exhausto
-    }
-    const [mejor, segundo] = [...entradas].sort(
-      (a, b) => factorDeCampeon(b, weights) - factorDeCampeon(a, weights)
-    );
-    const puntos = probMapaSonda(state, mejor) - probMapaSonda(state, segundo);
-    const umbral = decisivo
-      ? BALANCE.serie.puntosEnJuegoParaPreguntarDecisivo
-      : BALANCE.serie.puntosEnJuegoParaPreguntar;
-    if (puntos < umbral - 1e-9) {
-      malas += 1;
-    }
-  }
-  if (pausas < 30) {
-    throw new Error(`sólo ${pausas} pausas en 4000 sondas: muestra insuficiente`);
-  }
-  if (malas > 0) {
-    throw new Error(`${malas}/${pausas} pausas de draft con puntosEnJuego < umbral`);
-  }
-});
+// K4-B (regla 17): el check "Nadie te frena en el draft por un pick que no mueve el partido" (9Rd, el umbral de D63)
+// se borró: el draft de serie ya no frena. Lo reemplaza "K4-B pausas por serie...": te frena el plan, que te lean el
+// guardado o el mapa decisivo, y una serie sin nada en juego no frena.
 
 checkLento('Toda opción de draft trae su lectura y va ordenada por factorDeCampeon', () => {
   // Smoke test directo de la matriz: dos ejes extremos dan frases distintas.
@@ -10248,8 +10156,8 @@ check('K0 espejos de la UI: DURACION_BEAT_MS y ESPERA_MINIJUEGO_MS son los liter
   };
   // reproductor.js: `const ESPERA_MS = { x1: 700, x2: 350, instantaneo: 0 }`
   const beat = extraer(leer('ui/reproductor.js'), /const\s+ESPERA_MS\s*=\s*\{[^}]*\bx1\s*:\s*(\d+)/g, 'ESPERA_MS.x1 de reproductor.js');
-  // app.js: `setTimeout(() => responder({ resultado }), 1600)`
-  const minijuego = extraer(leer('ui/app.js'), /setTimeout\(\s*\(\)\s*=>\s*responder\(\s*\{\s*resultado\s*\}\s*\)\s*,\s*(\d+)\s*\)/g, 'la espera tras el minijuego de app.js');
+  // app.js: `setTimeout(() => responder(... { resultado }), 1600)` (K4-B: con la charla del coach, si se ofreció)
+  const minijuego = extraer(leer('ui/app.js'), /setTimeout\(\s*\(\)\s*=>\s*responder\([^;]*\{\s*resultado\s*\}\s*\)\s*,\s*(\d+)\s*\)/g, 'la espera tras el minijuego de app.js');
   if (beat !== DURACION_BEAT_MS) {
     throw new Error(`DURACION_BEAT_MS = ${DURACION_BEAT_MS} en simulate.js, reproductor.js espera ${beat} ms por beat`);
   }
@@ -12928,7 +12836,7 @@ checkLento('K2a Bo5 del motor: cada serie cerrada deja una fila con la fuerza de
       const arranques = new Map();
       const claveDeSerie = (split, ronda, rival) => `${split}|${ronda}|${rival}`;
       const espiaDecisiones = (sistema, st, decision, rng) => {
-        if (sistema.id === 'serie' && decision.datos?.motivo === 'draft' && st.serie.mapaActual === 0 && !st.serie.preSerieUsado) {
+        if (sistema.id === 'serie' && decision.datos?.motivo === 'plan' && !decision.datos.replan) {
           vistos.draftDelPrimerMapa += 1;
           const arranque = fuerzaDeArranqueK2a(st);
           arranques.set(claveDeSerie(st.player.splitCount, st.serie.ronda, st.serie.rival.org), arranque);
@@ -13136,11 +13044,12 @@ check('K2b una tirada por partido: temporada.aplicar tira exactamente un rng() p
 const SERIES_K2B = 60;
 const REPLICAS_MAPA_K2B = 20;
 
-// Estados reales con una serie en curso: las decisiones de draft de `criterio`, hasta `maximo`.
+// Estados reales con una serie en curso: las pausas del plan de Fearless al arrancar la serie (K4-B; antes, los drafts
+// de cada mapa), de `criterio`, hasta `maximo`.
 function draftsDeSerieK2b(maximo) {
   const casos = [];
   const espia = (sistema, st, decision, rng) => {
-    if (sistema.id === 'serie' && decision.datos?.motivo === 'draft' && casos.length < maximo) {
+    if (sistema.id === 'serie' && decision.datos?.motivo === 'plan' && !decision.datos.replan && casos.length < maximo) {
       casos.push({ st, decision });
     }
     return ESTRATEGIAS_K0.criterio(sistema, st, decision, rng);
@@ -13152,8 +13061,9 @@ function draftsDeSerieK2b(maximo) {
 }
 
 check('K2b una tirada por mapa: el mapa es rng() < p con la p de probabilidadDePartido sobre la fuerza de partido del campeón elegido, y un mapa que cierra una serie perdida sin internacional tira un solo rng()', () => {
-  // Cada draft se juega como el mapa de desempate de unos cuartos (sin minijuego) de un equipo que no clasifica al
-  // internacional: si se pierde, después del mapa no queda nada que sortear.
+  // Cada serie se juega con el plan del coach (sin tiradas de lectura) en el marcador del desempate de unos cuartos de
+  // un equipo que no clasifica al internacional, desde el mapa 1 (no es el mapa decisivo por índice: no frena): si se
+  // pierde, después del mapa no queda nada que sortear.
   const casos = draftsDeSerieK2b(SERIES_K2B);
   if (casos.length < SERIES_K2B) {
     throw new Error(`check vacío: solo ${casos.length} drafts de serie`);
@@ -13171,16 +13081,18 @@ check('K2b una tirada por mapa: el mapa es rng() < p con la p de probabilidadDeP
       career: { ...st.career, posicion: (liga?.cuposInternacionales ?? 0) + 1 },
       serie: { ...st.serie, ronda: 'cuartos', marcador: [necesarias - 1, necesarias - 1] }
     };
-    const elegido = decision.opciones[0].id;
+    // K4-B: el campeón que juega el plan del coach, y el rival de ESE mapa (también quema: `fuerzaRivalDeMapa`).
+    const proximo = estadoDelProximoMapa(conPlan(escenario, 'coach'));
+    const elegido = mapaDelPlan(proximo).campeon;
     const fuerza = fuerzaDesdeCamposK2b(
       nivelDeCompanerosIndependienteK2b(escenario),
       rendimientoBase({ ...escenario, player: { ...escenario.player, campeonDelSplit: elegido } }),
       escenario.career.sinergia
     );
-    const pMapa = probabilidadDePartido(escenario, fuerza, escenario.serie.rival.fuerza, 'mapa');
+    const pMapa = probabilidadDePartido(escenario, fuerza, fuerzaRivalDeMapa(proximo), 'mapa');
     for (let replica = 0; replica < REPLICAS_MAPA_K2B; replica += 1) {
       const { rng, valores } = rngEspiaK2b(7000 + i * REPLICAS_MAPA_K2B + replica);
-      const resultado = sistemaPorId('serie').resolver(escenario, decision, { opcionId: elegido }, rng);
+      const resultado = sistemaPorId('serie').resolver(escenario, decision, { opcionId: 'coach' }, rng);
       // El primer mapa que se jugó en esta llamada es el primer log de mapa (si la serie se ganó, `serie.mapas` ya es
       // el de la ronda siguiente).
       const mapa = resultado.logs.find((log) => log.type === 'serie' && (log.resultado === 'W' || log.resultado === 'L'));
@@ -13422,75 +13334,10 @@ const OPCIONES_POR_DRAFT_K2B = 3;
 const EPSILON_P_K2B = 1e-9;
 const SOBRE_EL_TOPE_MINIMO_K2B = 5;
 
-check('K2b la p del draft (probabilidadConCampeon) es exactamente la p que tira el mapa del campeón elegido, también cuando el rendimiento sin acotar pasa de 100', () => {
-  // Se miran los primeros DRAFTS_P_K2B drafts y, si entre ellos hay menos de SOBRE_EL_TOPE_MINIMO_K2B pasados de 100, se
-  // sigue con los siguientes (hasta DRAFTS_MAX_K2B): los casos sobre el tope dependen de cómo salgan las carreras, y el
-  // check falla solo si en todo el rango no aparecen.
-  const drafts = draftsDeSerieK2b(DRAFTS_MAX_K2B);
-  if (drafts.length < DRAFTS_P_K2B) {
-    throw new Error(`check vacío: solo ${drafts.length} drafts de serie`);
-  }
-  const problemas = [];
-  const vistos = { comparaciones: 0, sobreElTope: 0 };
-  for (const [i, { st, decision }] of drafts.entries()) {
-    if (i >= DRAFTS_P_K2B && vistos.sobreElTope >= SOBRE_EL_TOPE_MINIMO_K2B) {
-      break;
-    }
-    const liga = st.mundo.ligas.find((l) => l.id === st.career.liga);
-    const necesarias = Math.ceil(st.serie.formato / 2);
-    const real = {
-      ...st,
-      career: { ...st.career, posicion: (liga?.cuposInternacionales ?? 0) + 1 },
-      serie: { ...st.serie, ronda: 'cuartos', marcador: [necesarias - 1, necesarias - 1] }
-    };
-    // El mismo estado con la hoja de atributos y la jerarquía al máximo: el rendimiento sin acotar pasa de 100 y es
-    // ahí donde la p del draft (con la fuerza acotada) y una p calculada sin acotar se separan.
-    const potenciado = {
-      ...real,
-      player: { ...real.player, stats: Object.fromEntries(Object.entries(real.player.stats).map(([stat]) => [stat, BALANCE.stats.max])) },
-      career: { ...real.career, jerarquia: BALANCE.stats.max }
-    };
-    for (const [variante, escenario] of [['real', real], ['potenciado', potenciado]]) {
-      const opciones = decision.opciones.filter((o) => escenario.player.championPool.some((c) => c.name === o.id)).slice(0, OPCIONES_POR_DRAFT_K2B);
-      for (const opcion of opciones) {
-        const campeon = escenario.player.championPool.find((c) => c.name === opcion.id);
-        const conCampeon = { ...escenario, player: { ...escenario.player, campeonDelSplit: opcion.id } };
-        const sinAcotar = rendimientoBase(conCampeon);
-        if (sinAcotar > BALANCE.stats.max) {
-          vistos.sobreElTope += 1;
-        }
-        // La p del mapa, reconstruida con la fórmula de K2b y sin las funciones del motor para la fuerza.
-        const fuerza = fuerzaDesdeCamposK2b(nivelDeCompanerosIndependienteK2b(escenario), sinAcotar, escenario.career.sinergia);
-        const pMapa = probabilidadDePartido(escenario, fuerza, escenario.serie.rival.fuerza, 'mapa');
-        const pDraft = probabilidadConCampeon(escenario, campeon);
-        vistos.comparaciones += 1;
-        const donde = `draft ${i} (${variante}), ${opcion.id}`;
-        if (Math.abs(pDraft - pMapa) > 1e-12) {
-          problemas.push(`${donde}: la p del draft es ${pDraft}, la del mapa ${pMapa}`);
-          continue;
-        }
-        // Y la p que el motor tira de verdad: con el primer rng() apenas por debajo de la p del draft el mapa se gana, y
-        // apenas por encima se pierde.
-        for (const [u, gana] of [[pDraft - EPSILON_P_K2B, true], [pDraft + EPSILON_P_K2B, false]]) {
-          const resto = mulberry32(31000 + i);
-          let primera = true;
-          const rng = () => { if (primera) { primera = false; return u; } return resto(); };
-          const resultado = sistemaPorId('serie').resolver(escenario, decision, { opcionId: opcion.id }, rng);
-          const mapa = resultado.logs.find((log) => log.type === 'serie' && (log.resultado === 'W' || log.resultado === 'L'));
-          if (!mapa || (mapa.resultado === 'W') !== gana) {
-            problemas.push(`${donde}: con rng() = p ${gana ? '−' : '+'} ε el mapa salió ${mapa?.resultado}, p del draft = ${pDraft}`);
-          }
-        }
-      }
-    }
-  }
-  if (problemas.length > 0) {
-    throw new Error(`${problemas.slice(0, 4).join('; ')}${problemas.length > 4 ? ` (+${problemas.length - 4} más)` : ''}`);
-  }
-  if (vistos.comparaciones < DRAFTS_P_K2B * 2 || vistos.sobreElTope < SOBRE_EL_TOPE_MINIMO_K2B) {
-    throw new Error(`check vacío: ${JSON.stringify(vistos)}`);
-  }
-});
+// K4-B (regla 17): el check "K2b la p del draft (probabilidadConCampeon) es exactamente la p que tira el mapa del
+// campeón elegido..." se borró junto con el draft de serie. Lo reemplaza "K4-B regla 15: la p por mapa que declara
+// cada plan...", que compara contra la tirada sobre series reales; el tope de 100 lo sigue cuidando la fuerza de
+// partido (`fuerzaDePartido`, checks de K2b).
 
 check('K2b ruidoEfectivo por tipo coincide con BALANCE.partido (fecha → sigmaFecha, mapa → sigmaMapa), y la p de partido usa el σ de su tipo', () => {
   const sigmaDeTipo = { fecha: BALANCE.partido.sigmaFecha, mapa: BALANCE.partido.sigmaMapa };
@@ -13579,7 +13426,9 @@ function cosechaDePreviasK2d() {
     const datos = decision.datos ?? {};
     const caso = { sistema, st, decision, respuesta };
     if (st.serie?.activa) {
-      if (datos.motivo === 'draft' && c.drafts.length < CASOS_K2D) {
+      // K4-B: el draft de mapa ya no existe; su lugar lo toma la pausa del mapa decisivo sin minijuego (con o sin
+      // la charla del coach), que también trae la p de cada opción.
+      if (datos.motivo === 'decisivo' && c.drafts.length < CASOS_K2D) {
         c.drafts.push(caso);
       } else if (datos.motivo === 'minijuego' && minijuegoPorId(datos.minijuego)?.efecto?.tipo === 'mapa'
         && c.minijuegos.length < CASOS_K2D) {
@@ -13658,9 +13507,12 @@ checkK2d('K2d previa 1: la p de la previa es exactamente la que el motor tira (=
   drafts.forEach(({ sistema, st, decision }, i) => {
     const previa = previaDeDecision(st, decision);
     const elegido = decision.opciones[0].id;
-    const directa = previaDePartido(st, { tipo: 'mapa', campeon: elegido });
-    if (!previa || previa.opciones?.[0]?.p !== directa.p || previa.p !== directa.p) {
-      problemas.push(`draft ${i}: la previa del draft no es la del campeón de la primera opción`);
+    const directa = previaDePartido(st, {
+      tipo: 'mapa', campeon: decision.datos.campeonElegido, entradaExtra: decision.datos.entradaExtra ?? null,
+      ajustePlan: decision.datos.ajustePlan, charla: elegido === 'charla'
+    });
+    if (!previa || previa.opciones?.[0]?.p !== directa.p) {
+      problemas.push(`decisivo ${i}: la previa del mapa decisivo no es la de la primera opción`);
       return;
     }
     let res = sistema.resolver(st, decision, { opcionId: elegido }, mulberry32(32000 + i));
@@ -13749,8 +13601,9 @@ checkK2d('K2d previa 3: el desglose reproduce el total de la fuerza que usa el m
     // K2b reescrita acá (`fuerzaDesdeCamposK2b`), que agrupa la sinergia en otro orden y difiere en el último bit
     // en algunos estados (con `consistencia.k = 1` aparecieron dos). Que la fórmula del motor sea la de K2b lo
     // cuidan los checks de K2b.
-    const elegido = decision.opciones[0].id;
-    revisar(`draft ${i}`, previaDePartido(st, { tipo: 'mapa', campeon: elegido }), fuerzaDePartido(estadoDelMapa(st, elegido)));
+    const { campeonElegido, entradaExtra = null, ajustePlan } = decision.datos;
+    revisar(`decisivo ${i}`, previaDePartido(st, { tipo: 'mapa', campeon: campeonElegido, entradaExtra, ajustePlan, charla: true }),
+      fuerzaDePartido(estadoDelMapa(st, campeonElegido, entradaExtra)));
   });
   fallarSiK2d(problemas);
 });
@@ -13822,6 +13675,203 @@ checkK2d('K2d previa 6: ningún texto de la previa ni de la probabilidad jugada 
     revisar(`mapa ${i}`, previas.flatMap(textosDe), st, [decision.datos?.minijuego, decision.datos?.momento, st.serie.ronda]);
   });
   fallarSiK2d(problemas);
+});
+
+// ============================================================================
+// K4-B — la serie como plan (PLAN.md "K4 — decisiones de spec", K4-B; reemplaza a J6 y a D63): la tarjeta del plan
+// de Fearless declara la p de cada mapa y es la que el motor tira (regla 15); el rival también quema; el juego frena
+// solo en lo importante.
+// ============================================================================
+
+const CASOS_K4B = 24;
+const PLANES_K4B = ['guardar', 'conTodo', 'sorpresa', 'coach'];
+const SEEDS_MAX_K4B = 80;
+const cosechasK4b = new Map();
+
+// Las pausas reales del plan de Fearless (al arrancar y al re-planear), de `criterio`. Una cosecha por valor de
+// `consistencia.k`, como la de K2d.
+function cosechaDePlanesK4b() {
+  const clave = BALANCE.consistencia.k;
+  if (cosechasK4b.has(clave)) {
+    return cosechasK4b.get(clave);
+  }
+  const casos = [];
+  const espia = (sistema, st, decision, rng) => {
+    if (sistema.id === 'serie' && decision.datos?.motivo === 'plan' && casos.length < CASOS_K4B) {
+      casos.push({ st, decision });
+    }
+    return ESTRATEGIAS_K0.criterio(sistema, st, decision, rng);
+  };
+  for (let seed = 1; seed <= SEEDS_MAX_K4B && casos.length < CASOS_K4B; seed += 1) {
+    correrCarreraSimulate(seed, 60, espia);
+  }
+  if (casos.length < 10) {
+    throw new Error(`cosecha vacía: ${casos.length} pausas del plan`);
+  }
+  cosechasK4b.set(clave, casos);
+  return casos;
+}
+
+const esLogDeMapaK4b = (log) => log.type === 'serie' && (log.resultado === 'W' || log.resultado === 'L');
+
+// Juega la serie desde la pausa del plan con `opcionId` y devuelve los logs de los mapas tirados, hasta que la serie
+// cierra o vuelve a frenar a re-planear. El mapa decisivo va sin charla y con el minijuego neutro (0,5): lo que esos
+// dos mueven lo comparan los checks de K2d.
+function jugarPlanK4b(st, decision, opcionId, semilla) {
+  const serie = sistemaPorId('serie');
+  const rng = mulberry32(semilla);
+  let res = serie.resolver(st, decision, { opcionId }, rng);
+  const mapas = [];
+  for (let paso = 0; paso < 12; paso += 1) {
+    const cierre = res.logs.findIndex((log) => log.postSerie);
+    mapas.push(...(cierre < 0 ? res.logs : res.logs.slice(0, cierre)).filter(esLogDeMapaK4b));
+    const datos = res.decision?.datos;
+    if (cierre >= 0 || !res.decision || datos?.motivo === 'plan') {
+      return mapas;
+    }
+    const respuesta = datos.motivo === 'decisivo' ? { opcionId: 'sinCharla' } : { resultado: 0.5, charla: false };
+    res = serie.resolver(res.state, res.decision, respuesta, rng);
+  }
+  throw new Error('la serie no cerró en 12 pasos');
+}
+
+checkK2d('K4-B regla 15: la p por mapa que declara cada plan de Fearless es exactamente la que tira el motor (===), en todos los planes ofrecidos, sobre series de carreras reales', () => {
+  const casos = cosechaDePlanesK4b();
+  const problemas = [];
+  let comparados = 0;
+  let decisivos = 0;
+  const planesVistos = new Set();
+  casos.forEach(({ st, decision }, i) => {
+    const previa = previaDeDecision(st, decision);
+    decision.opciones.forEach((opcion, j) => {
+      const declarada = previa?.opciones?.find((o) => o.id === opcion.id);
+      if (!declarada?.pMapas) {
+        problemas.push(`plan ${i} (${opcion.id}): la tarjeta no declara su p por mapa`);
+        return;
+      }
+      if (declarada.pMapas.length !== opcion.pMapas.length || declarada.pMapas.some((p, k) => p !== opcion.pMapas[k])) {
+        problemas.push(`plan ${i} (${opcion.id}): la tarjeta muestra [${declarada.pMapas}] y la decisión del motor [${opcion.pMapas}]`);
+      }
+      const primero = st.serie.mapaActual + 1;
+      for (const log of jugarPlanK4b(st, decision, opcion.id, 41000 + i * 10 + j)) {
+        const k = log.mapa - primero;
+        comparados += 1;
+        if (k === declarada.pMapas.length - 1) {
+          decisivos += 1;
+        }
+        if (declarada.pMapas[k] !== log.p) {
+          problemas.push(`plan ${i} (${opcion.id}), mapa ${log.mapa}: la tarjeta dice ${declarada.pMapas[k]}, se tiró ${log.p}`);
+        }
+      }
+      planesVistos.add(opcion.id);
+    });
+  });
+  fallarSiK2d(problemas);
+  if (comparados < 100 || decisivos < 5 || planesVistos.size < PLANES_K4B.length) {
+    throw new Error(`check vacío: ${comparados} mapas comparados, ${decisivos} decisivos, planes vistos: ${[...planesVistos].join(', ')}`);
+  }
+});
+
+
+check('K4-B el rival también quema: con el Fearless su fuerza de mapa cae mapa a mapa (misma regla que la tuya), y en el mapa 1 es la de la serie', () => {
+  let caidas = 0;
+  for (let seed = 1; seed <= 40; seed += 1) {
+    const base = createInitialState(seed, mulberry32(seed));
+    let st = {
+      ...base,
+      serie: { ...base.serie, activa: true, rival: { org: 'Rival', fuerza: 60 }, formato: 5, quemados: [], mapaActual: 0, rivalJuega: null, rivalJuegaEnMapa: -1 }
+    };
+    const fuerzas = [];
+    for (let i = 0; i < 5; i += 1) {
+      st = conQuemaDelRival(st, objetivoDelRival(st, st.serie.quemados));
+      fuerzas.push(fuerzaRivalDeMapa(st));
+      st = { ...st, serie: { ...st.serie, mapaActual: i + 1 } };
+    }
+    if (Math.abs(fuerzas[0] - 60) > 1e-9) {
+      throw new Error(`seed ${seed}: en el mapa 1, con el mejor del meta, el rival juega con ${fuerzas[0]} y no con su fuerza de serie (60)`);
+    }
+    for (let k = 1; k < 5; k += 1) {
+      if (fuerzas[k] > fuerzas[k - 1] + 1e-12) {
+        throw new Error(`seed ${seed}: la fuerza del rival sube del mapa ${k} al ${k + 1} (${fuerzas.map((x) => x.toFixed(2)).join(' → ')})`);
+      }
+    }
+    if (fuerzas[4] < fuerzas[0] - 0.5) {
+      caidas += 1;
+    }
+  }
+  if (caidas < 40) {
+    throw new Error(`el Fearless degradó al rival en solo ${caidas} de 40 series`);
+  }
+});
+
+checkLento('K4-B pausas por serie: el plan al arrancar y después como mucho 2 (te leyeron el guardado, el mapa decisivo); una serie sin nada en juego no frena; minijuegos de serie solo en el mapa decisivo de semis, final e internacional; la charla del coach como mucho una por temporada', () => {
+  const series = new Map();
+  const problemas = [];
+  let sinNada = 0;
+  let charlas = 0;
+  let decisivas = 0;
+  for (let seed = 1; seed <= 60; seed += 1) {
+    const usadas = new Set();
+    // `resolverAuto`, salvo la charla: este bot la usa SIEMPRE que se la ofrecen (si se ofreciera dos veces en una
+    // temporada, se vería).
+    const responder = (sistema, st, decision, rng) => {
+      if (sistema.id !== 'serie') {
+        return sistema.resolverAuto(st, decision, rng);
+      }
+      const datos = decision.datos ?? {};
+      const clave = `${seed}|${st.player.splitCount}|${st.serie.ronda}|${st.career.seriesJugadas}`;
+      const tipo = datos.motivo === 'minijuego' ? datos.momento : (datos.replan ? 'replan' : datos.motivo);
+      if (!series.has(clave)) {
+        series.set(clave, []);
+      }
+      series.get(clave).push(tipo);
+      if (tipo !== 'post_serie' && st.serie.sinNadaEnJuego) {
+        problemas.push(`seed ${seed}: una serie sin nada en juego frenó (${tipo})`);
+      }
+      if (datos.motivo === 'minijuego' && tipo !== 'post_serie') {
+        if (tipo !== 'mapa_decisivo' || !esMapaDeDesempate(st.serie.marcador, st.serie.formato)
+          || !['semis', 'final', 'internacional'].includes(st.serie.ronda)) {
+          problemas.push(`seed ${seed}: minijuego ${tipo} en ${st.serie.ronda} con ${st.serie.marcador.join('-')}`);
+        }
+      }
+      if (tipo === 'mapa_decisivo' || tipo === 'decisivo') {
+        decisivas += 1;
+      }
+      const ofreceCharla = datos.charla?.disponible === true || (decision.opciones ?? []).some((o) => o.id === 'charla');
+      if (ofreceCharla) {
+        if (!charlaDisponible(st) || usadas.has(st.calendario.anio)) {
+          problemas.push(`seed ${seed}: la charla del coach se ofreció de nuevo en ${st.calendario.anio}`);
+        }
+        usadas.add(st.calendario.anio);
+        charlas += 1;
+        return datos.motivo === 'minijuego' ? { resultado: 0.5, charla: true } : { opcionId: 'charla' };
+      }
+      return sistema.resolverAuto(st, decision, rng);
+    };
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      const paso = avanzarSplitAuto(state, rng, responder);
+      sinNada += paso.logs.filter((log) => log.postSerie && log.sinNadaEnJuego).length;
+      state = paso.state;
+    }
+  }
+  for (const [clave, lista] of series) {
+    const enSerie = lista.filter((tipo) => tipo !== 'post_serie');
+    if (enSerie.length === 0) {
+      continue;
+    }
+    if (enSerie[0] !== 'plan' || enSerie.filter((tipo) => tipo === 'plan').length !== 1) {
+      problemas.push(`${clave}: la serie no arrancó por un solo plan (${enSerie.join(', ')})`);
+    }
+    if (enSerie.length - 1 > 2 || enSerie.filter((tipo) => tipo === 'replan').length > 1) {
+      problemas.push(`${clave}: ${enSerie.length - 1} pausas además del plan (${enSerie.join(', ')})`);
+    }
+  }
+  fallarSiK2d(problemas);
+  if (series.size < 100 || sinNada < 20 || charlas < 20 || decisivas < 40) {
+    throw new Error(`check vacío: ${series.size} series que frenaron, ${sinNada} sin nada en juego, ${charlas} charlas, ${decisivas} mapas decisivos`);
+  }
 });
 
 // ============================================================================
