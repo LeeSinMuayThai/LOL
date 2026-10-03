@@ -6950,6 +6950,21 @@ La frecuencia (una vez por año) no cambia: es "la decisión grande". **Si despu
 arriba de 80, la meta se fija en lo medido en 3b**, con la cuenta de qué paradas quedan y su palanca (§K.3: la
 calibración fija las metas).
 
+**Los arreglos y el cierre, hechos** (`bb13d1c` → `6ce46a0`, `--rapido` verde).
+- **K4-D.** Lo trajo `7bc2186`: una prueba fallida re-abría el mercado y encadenaba otra prueba (oferta → prueba →
+  oferta → prueba). **Se decide** que la prueba anuncie en su apuesta un **respaldo**: tu renovación, o la oferta
+  mejor pagada que no pide prueba. Si fallás, firmás el respaldo en la misma parada. Es la regla de K4 ("el
+  tryout se resuelve dentro de la parada única") y reemplaza al "seguís con las otras" de K4c-S, con su línea de
+  la regla 17.
+- **La prueba.** Con el respaldo, el que falla pierde los reintentos, y 0,5 / 0,75 / 0,95 subió a +47%. Queda en
+  **0,65 / 0,8 / 0,95**, que da +31%.
+- **La ventana.** Pasó a 6 y, con el cierre nuevo, a **7**: 6 daba 1 cada 3,1, sobre la línea del piso con
+  ±0,9 pp de error.
+- **El cierre de año.** Diez eventos con tres opciones cada uno: el juego, la cabeza y la familia, y la marca. Los
+  efectos van de 4 a 8 puntos de stat, o de 30 a 50 LP, con costo en otro eje y riesgos en los outcomes. El
+  check "K4c el cierre de año es una decisión" daba rojo con el dato viejo (19 problemas).
+- **El Bo5 conjunto** también mide con plan neutro.
+
 **Paso 3b — un worker:**
 - los checks duros con lo medido;
 - vaciar el bloque B de `bandasPendientes.js` y cerrarlo;
