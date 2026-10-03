@@ -16673,6 +16673,55 @@ check('K5-A ningún cruce del Swiss se repite', () => {
   }
 });
 
+// Revisión de K5: `uniformeDeClave` terminaba en `h ^= h >>> 16`, que en JS da un int32 CON signo, así que el
+// "uniforme" vivía en [-0,5; 0,5): el cruce ajeno le daba al primero del par alfabético P(mapa) = min(1, p + 0,5), el
+// mismo cruce coincidía el 100% de los años con p = 0,5 y una org ganaba 277 de 500 Mundiales (seed 1). Las tres
+// propiedades de abajo son las que ese bug rompía: medido antes del arreglo, media 0,002, acuerdo 1,000, 55% de títulos.
+const MUNDIALES_HASH_K5 = 300;
+const TOPE_TITULOS_DE_UNA_ORG_K5 = 0.35;
+check('K5-A el hash de los cruces ajenos es un uniforme en [0, 1): media ≈ 0,5, el mismo cruce no se repite año a año y el título sigue a la fuerza sin que una org se lleve el mundo', () => {
+  let suma = 0;
+  const N = 20000;
+  for (let i = 0; i < N; i += 1) {
+    const u = MUNDIAL_K5.uniformeDeClave(`validate|${i}|clave`);
+    if (!(u >= 0 && u < 1)) {
+      throw new Error(`uniformeDeClave dio ${u}, fuera de [0, 1)`);
+    }
+    suma += u;
+  }
+  if (Math.abs(suma / N - 0.5) > 0.02) {
+    throw new Error(`la media de uniformeDeClave sobre ${N} claves es ${(suma / N).toFixed(4)} (esperado ≈ 0,5)`);
+  }
+  let iguales = 0;
+  const ANIOS = 2000;
+  for (let a = 0; a < ANIOS; a += 1) {
+    const mapa = (anio) => MUNDIAL_K5.uniformeDeClave(`1|mundial|${anio}|cuartos|A|B|0`) < 0.5;
+    iguales += mapa(2026 + a) === mapa(2027 + a) ? 1 : 0;
+  }
+  if (Math.abs(iguales / ANIOS - 0.5) > 0.05) {
+    throw new Error(`el mismo cruce con p = 0,5 coincide el ${(100 * iguales / ANIOS).toFixed(1)}% de los años consecutivos (esperado ≈ 50%)`);
+  }
+  for (const seed of [1, 2, 3]) {
+    const st = createInitialState(seed, mulberry32(seed));
+    const titulos = new Map();
+    let fuerzaCampeon = 0;
+    let fuerzaCampo = 0;
+    for (let a = 0; a < MUNDIALES_HASH_K5; a += 1) {
+      const t = MUNDIAL_K5.mundialSinJugador(st, 2026 + a);
+      titulos.set(t.campeon, (titulos.get(t.campeon) ?? 0) + 1);
+      fuerzaCampeon += t.participantes.find((p) => p.nombre === t.campeon).fuerza;
+      fuerzaCampo += t.participantes.reduce((s, p) => s + p.fuerza, 0) / t.participantes.length;
+    }
+    const [org, n] = [...titulos.entries()].sort((x, y) => y[1] - x[1])[0];
+    if (n / MUNDIALES_HASH_K5 > TOPE_TITULOS_DE_UNA_ORG_K5) {
+      throw new Error(`seed ${seed}: ${org} ganó ${n} de ${MUNDIALES_HASH_K5} Mundiales (tope ${TOPE_TITULOS_DE_UNA_ORG_K5 * 100}%)`);
+    }
+    if (fuerzaCampeon <= fuerzaCampo) {
+      throw new Error(`seed ${seed}: la fuerza media del campeón (${(fuerzaCampeon / MUNDIALES_HASH_K5).toFixed(1)}) no supera la del campo (${(fuerzaCampo / MUNDIALES_HASH_K5).toFixed(1)})`);
+    }
+  }
+});
+
 check('K5-A un split de Mundial no pasa de 4 interrupciones del Mundial (T9)', () => {
   let splitsConVos = 0;
   let conPausa = 0;

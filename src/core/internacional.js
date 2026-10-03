@@ -31,7 +31,7 @@ export function uniformeDeClave(clave) {
   h ^= h >>> FMIX_SHIFT_2;
   h = Math.imul(h, FMIX_MULT_2) >>> 0;
   h ^= h >>> FMIX_SHIFT_1;
-  return h / DOS_A_LA_32;
+  return (h >>> 0) / DOS_A_LA_32;
 }
 
 export function claveDelMundial(seed, anio) {
