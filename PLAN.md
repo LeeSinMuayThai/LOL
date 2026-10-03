@@ -7172,6 +7172,69 @@ Contra §K.3a y §K.3b: el embudo, el Mundial por región, P(2 o más | 1), el n
 la longevidad, `criterio` contra `azar` y contra `malas`. Acá se fijan los cortes definitivos de los
 niveles de K1.
 
+#### K5c — cómo se hace *(supervisor, 2026-10-03)*
+
+**La línea de base** sale de la medición final de K4c (`criterio` 400 × 60, sobre `c6f098f`). El mundo es
+demasiado fácil y la carrera demasiado larga:
+
+| Métrica (§K.3b) | Hoy | Meta |
+|---|---|---|
+| No llega a pro | 24,8% | ~20% |
+| Se estanca en tier 2/3 | **0%** | ~10%, por malas decisiones (`malas` ≫ `criterio`) |
+| Llega a tier 1 | 75,3% | 55-65% |
+| Gana un título doméstico | **74,3%** | ~30% |
+| Top 20 alguna vez | **65,8%** | ~15% |
+| Gana un Mundial (real) | el instrumento todavía mide un proxy (pasar el Swiss: 64%) | ≥ 7%, por región: Corea ~12-15%, NA ~3-5% |
+| Nuevo Faker (2+ Mundiales o #1 en 3+ temporadas) | proxy (54%) | ~2-3%, pero ≥ 30% en el top 3% de nivel pico |
+| P(2 o más \| 1) | proxy | ≥ 35-40% |
+| Carrera pro mediana | **16,7 años** | ~4-6; las buenas 7-10; las leyendas 12+ |
+| Llega a la línea de los 34 | **79%** | < 5% |
+| r(potencial, duración) | 0,18 (PENDIENTE C) | > 0,32 |
+| Traspasos a mitad de contrato (9Mf) | 21% | el 25% de diseño de 9M, o su re-base |
+
+- **La causa principal es la longevidad.** El nivel mediano no cae con la edad (80-83 de los 24 a los 34), así
+  que el mercado nunca deja de ofrecerte y el final por mercado de K5-C no llega. En 17 años cualquiera gana todo:
+  títulos, top 20 y algún Mundial.
+- **Lo que hay que mover primero** es la curva de edad del nivel y el umbral del mercado que te retira. Con
+  carreras de 4-10 años, las tasas de títulos y de top 20 bajan solas. Lo que no baje se ajusta después:
+  - la fuerza de los clubes de tier 1 que te ofrecen;
+  - el calibre por cuantil de D78;
+  - la dificultad por región.
+
+**Paso 1 — un worker (instrumento):**
+- **Las métricas reales del Mundial** reemplazan a los proxies (`proxyAntesDeK5`):
+  - gana un Mundial (títulos reales en `registro.internacionales`);
+  - nuevo Faker real;
+  - P(2 o más | 1) real;
+  - "tu equipo es claramente el más fuerte del Mundial y lo gana" (§K.3a, ~50%).
+
+  Todas por región y por nivel pico (el top 3%).
+- **El embudo por estrategia y por región**, con el nivel mediano por edad (la curva que hoy es plana).
+- **Un barrido de bloque C** (`k5c/barrido.mjs`, sin trackear). Aplica overrides en memoria de:
+  - las curvas de edad;
+  - el umbral de splits sin oferta en tu tier;
+  - `cuantilCalibreDeLiga`;
+  - la oferta de los clubes de tier 1;
+  - la `dificultad` por región;
+  - la edad de retiro forzoso.
+
+  Reporta el embudo de §K.3b, la longevidad y el Mundial real para `criterio`, `azar` y `malas`.
+- **Los nombres reales de esas perillas en `balance.js`**, y cuáles son estructura.
+
+**Paso 2 — el supervisor.** Corre los barridos de a uno (la máquina anda justa de memoria) y elige. La longevidad
+va primero, después el resto, con el criterio de K3c: cumplir con el valor más cercano al actual.
+
+**Paso 3 — un worker:**
+- fija los valores;
+- las metas de §K.3a y §K.3b pasan a checks duros;
+- vacía la PENDIENTE C de longevidad y cierra `BLOQUES_DE_CORRIMIENTO.C`;
+- **fija los cortes definitivos de los niveles de K1** con la distribución nueva;
+- re-mide los cuantiles del percentil;
+- `HUELLA_JUEGO` 'K5c';
+- sube el guardado si cambia la forma.
+
+**Después, K6.** Tres carreras jugadas en el navegador.
+
 ### K6 — Jugarlo *(la prueba que importa)*
 
 Tres carreras completas en el navegador: una que se estanca en tier 2 por malas decisiones, una buena
