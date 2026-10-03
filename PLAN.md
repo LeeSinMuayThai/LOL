@@ -6625,6 +6625,8 @@ K5c. Son tres piezas en worktrees paralelas y una integración.
   ~4-6 años; las buenas 7-10; las leyendas 12 o más) los fija **K5c**.
 - **Pantalla:** el retiro con su motivo ("ninguna org de LCK te ofreció contrato en dos splits").
 
+**Orden decidido el 2026-10-03:** la estructura de K5 se integra sobre K4 **antes** de K4c. K4c calibra el ritmo sobre la estructura final, ya con el Mundial y sus pausas; calibrarlo antes obligaba a rehacerlo. Después va K5c, que calibra el mundo. Los bloques siguen separados en `bandasPendientes.js`.
+
 **Después de K5:** integración, revisión de motor y de navegador, y K5c, que fija con barridos del supervisor el
 embudo, el Mundial por región, P(2 o más | 1), el nuevo Faker por nivel, la longevidad y los cortes definitivos
 de los niveles de K1. Después, K6.
