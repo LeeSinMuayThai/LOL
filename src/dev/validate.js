@@ -5688,11 +5688,23 @@ checkLento('La tier list cubre todos los campeones del rol, sin repetidos ni fal
   }
 });
 
-checkLento('El boost del pool no se clava en el centro (CONCEPTO §6: 0.75x-1.25x)', () => {
+// K2c, regla 17 — reemplaza a "El boost del pool no se clava en el centro (CONCEPTO §6: 0.75x-1.25x)", que exigía una
+// separación p10-p90 de 0.2 y un rango [0.75, 1.25] escritos a mano para el meta viejo. Medido en K2c (300 seeds × 45
+// splits): p10 0.944, p90 1.026, separación 0.082. Banda vieja: separación >= 0.2 (el 40% del rango 0.5) dentro de
+// [0.75, 1.25]. Banda nueva: separación >= el mismo 40% del rango, calculado desde BALANCE.campeones.multiplicadorMin/Max
+// (0.9-1.1, rango 0.2: mínimo 0.08), dentro de [multiplicadorMin, multiplicadorMax]. Por qué: K2c acotó el meta a 0.9-1.1
+// porque sus factores quedaron centrados en un pro típico (PLAN.md, K2); lo que se protege es lo de siempre, que el boost
+// no orbite el centro, medido como fracción del rango y no como un número que supone el rango viejo (2026-10-02).
+// La fracción es la banda del check, no una constante del juego (por eso no vive en balance.js).
+const FRACCION_MINIMA_SEPARACION_BOOST_POOL = 0.4;
+
+checkLento('El boost del pool no se clava en el centro (CONCEPTO §6: el rango de BALANCE.campeones.multiplicadorMin/Max)', () => {
   // El defecto que reemplaza esta fase: el viejo ajuste-por-afinidad-promedio
   // orbitaba siempre 50. Se mide el MULTIPLICADOR real (lo que multiplica el
   // rendimiento), no el ajuste crudo, para probar la promesa de CONCEPTO §6
   // tal como está escrita.
+  const { multiplicadorMin, multiplicadorMax } = BALANCE.campeones;
+  const separacionMinima = (multiplicadorMax - multiplicadorMin) * FRACCION_MINIMA_SEPARACION_BOOST_POOL;
   const multiplicadores = [];
 
   for (let seed = 1; seed <= 300; seed += 1) {
@@ -5709,11 +5721,11 @@ checkLento('El boost del pool no se clava en el centro (CONCEPTO §6: 0.75x-1.25
   const p10 = ordenados[Math.floor(ordenados.length * 0.1)];
   const p90 = ordenados[Math.floor(ordenados.length * 0.9)];
 
-  if (p90 - p10 < 0.2) {
-    throw new Error(`p10=${p10.toFixed(3)} y p90=${p90.toFixed(3)} del multiplicador de meta están separados por solo ${(p90 - p10).toFixed(3)}; el mínimo es 0.2`);
+  if (p90 - p10 < separacionMinima - 1e-9) {
+    throw new Error(`p10=${p10.toFixed(3)} y p90=${p90.toFixed(3)} del multiplicador de meta están separados por solo ${(p90 - p10).toFixed(3)}; el mínimo es ${separacionMinima.toFixed(3)}`);
   }
-  if (ordenados[0] < 0.75 || ordenados[ordenados.length - 1] > 1.25) {
-    throw new Error('el multiplicador de meta se salió del rango [0.75, 1.25] que promete CONCEPTO §6');
+  if (ordenados[0] < multiplicadorMin - 1e-9 || ordenados[ordenados.length - 1] > multiplicadorMax + 1e-9) {
+    throw new Error(`el multiplicador de meta se salió del rango [${multiplicadorMin}, ${multiplicadorMax}] que promete CONCEPTO §6`);
   }
 });
 
@@ -12860,7 +12872,7 @@ const SEEDS_BO5_K2A = 30;
 
 checkLento('K2a Bo5 del motor: cada serie cerrada deja una fila con la fuerza de tu equipo y la del rival al arrancar la serie, y las filas son los logs de cierre', () => {
   const problemas = [];
-  const vistos = { primeraDelSplit: 0, draftDelPrimerMapa: 0, series: 0, bo5: 0, cierresTrasPausa: 0 };
+  const vistos = { primeraDelSplit: 0, rondasPosteriores: 0, draftDelPrimerMapa: 0, series: 0, bo5: 0, cierresTrasPausa: 0 };
   for (const bot of ['criterio', 'malas']) {
     for (let seed = 1; seed <= SEEDS_BO5_K2A && problemas.length === 0; seed += 1) {
       const donde = `${bot} seed ${seed}`;
@@ -12882,25 +12894,34 @@ checkLento('K2a Bo5 del motor: cada serie cerrada deja una fila con la fuerza de
         return bot_ ? bot_(sistema, st, decision, rng) : sistema.resolverAuto(st, decision, rng);
       };
       const { observacion, state } = conEspiaDeSistemaK2a('serie', (entrada, resultado) => {
-        // La primera serie del split arranca en este `aplicar`: es el primer cierre de sus logs, o la que quedó en curso.
-        const cierre = resultado.logs.find((log) => log.type === 'serie' && log.postSerie === true);
-        const enCurso = !cierre && resultado.state.serie.activa ? resultado.state.serie : null;
-        if (!cierre && !enCurso) {
-          return;
-        }
-        vistos.primeraDelSplit += 1;
-        const fuerzaInicial = cierre ? cierre.fuerzaInicial : enCurso.fuerzaInicial;
-        const rival = cierre ? cierre.rival : enCurso.rival.org;
-        const fuerzaRival = cierre ? cierre.fuerzaRival : enCurso.rival.fuerza;
-        if (enCurso) {
-          arranques.set(claveDeSerie(entrada.player.splitCount, enCurso.ronda, rival), fuerzaDeArranqueK2a(entrada));
-        }
-        if (Math.abs(fuerzaInicial - fuerzaDeArranqueK2a(entrada)) > 1e-9) {
-          problemas.push(`${donde}: la primera serie del split arranca con fuerza ${fuerzaInicial}, el estado de entrada de serie da ${fuerzaDeArranqueK2a(entrada)}`);
-        }
-        if (fuerzaRival !== fuerzaDeOrgK2a(entrada, rival)) {
-          problemas.push(`${donde}: el rival ${rival} figura con fuerza ${fuerzaRival}, su org tiene ${fuerzaDeOrgK2a(entrada, rival)}`);
-        }
+        // K2c: la fuente que existe SIEMPRE, con o sin pausas de draft (el meta en 0,9-1,1 y la maestría en 0,1 dejaron al
+        // draft sin pausar, y este check dependía de eso: 0 filas `draftDelPrimerMapa`). Es el estado de entrada de este
+        // `aplicar`: las series que arrancan dentro de la misma llamada, cierren o queden en curso, arrancan con la
+        // fuerza que ese estado da, porque entre una serie y la siguiente un mapa solo mueve el registro y ganar una ronda
+        // no mueve nada. Se excluye el internacional, que arranca después de `aplicarTitulo` / `aplicarEliminacionDomestica`.
+        const cierres = resultado.logs.filter((log) => log.type === 'serie' && log.postSerie === true);
+        const enCurso = resultado.state.serie.activa ? resultado.state.serie : null;
+        const series = [
+          ...cierres.map((log) => ({ ronda: log.ronda, rival: log.rival, fuerzaInicial: log.fuerzaInicial, fuerzaRival: log.fuerzaRival, enCurso: false })),
+          ...(enCurso ? [{ ronda: enCurso.ronda, rival: enCurso.rival.org, fuerzaInicial: enCurso.fuerzaInicial, fuerzaRival: enCurso.rival.fuerza, enCurso: true }] : [])
+        ];
+        const arranqueDeEntrada = fuerzaDeArranqueK2a(entrada);
+        series.filter((serie) => serie.ronda !== 'internacional').forEach((serie, indice) => {
+          if (indice === 0) {
+            vistos.primeraDelSplit += 1;
+          } else {
+            vistos.rondasPosteriores += 1;
+          }
+          if (serie.enCurso) {
+            arranques.set(claveDeSerie(entrada.player.splitCount, serie.ronda, serie.rival), arranqueDeEntrada);
+          }
+          if (Math.abs(serie.fuerzaInicial - arranqueDeEntrada) > 1e-9) {
+            problemas.push(`${donde}: la serie ${serie.ronda} vs ${serie.rival} (la ${indice + 1}ª de la llamada) arranca con fuerza ${serie.fuerzaInicial}, el estado de entrada de serie da ${arranqueDeEntrada}`);
+          }
+          if (serie.fuerzaRival !== fuerzaDeOrgK2a(entrada, serie.rival)) {
+            problemas.push(`${donde}: el rival ${serie.rival} figura con fuerza ${serie.fuerzaRival}, su org tiene ${fuerzaDeOrgK2a(entrada, serie.rival)}`);
+          }
+        });
       }, () => correrCarreraSimulate(seed, 60, espiaDecisiones));
       // Las filas son exactamente los logs de cierre de serie, en orden, y cada serie cerrada tiene la suya.
       const cierres = state.logs.filter((log) => log.type === 'serie' && log.postSerie === true);
@@ -12935,7 +12956,9 @@ checkLento('K2a Bo5 del motor: cada serie cerrada deja una fila con la fuerza de
   if (problemas.length > 0) {
     throw new Error(`${problemas.slice(0, 4).join('; ')}${problemas.length > 4 ? ` (+${problemas.length - 4} más)` : ''}`);
   }
-  if (vistos.primeraDelSplit < 20 || vistos.draftDelPrimerMapa < 20 || vistos.bo5 < 50 || vistos.cierresTrasPausa < 20) {
+  // `draftDelPrimerMapa` ya no entra en el piso: depende de que el draft pause, y esa frecuencia la re-fija K3c. Si el draft
+  // pausa, esa rama sigue comparando la fuerza del log contra la del arranque; si no, `rondasPosteriores` cubre el resto.
+  if (vistos.primeraDelSplit < 20 || vistos.rondasPosteriores < 20 || vistos.bo5 < 50 || vistos.cierresTrasPausa < 20) {
     throw new Error(`check vacío: ${JSON.stringify(vistos)}`);
   }
 });

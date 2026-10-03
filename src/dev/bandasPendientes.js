@@ -32,14 +32,14 @@ export const BLOQUES_DE_CORRIMIENTO = {
 //   porque  — opcional: por qué salió de banda.
 export const BANDAS_PENDIENTES = [
   {
-    check: 'proyeccionJerarquia predice la jerarquía real con error acotado (regla de proceso 15, PLAN.md §9.8)',
+    check: 'Nadie te frena en el draft por un pick que no mueve el partido',
     bloque: 'A',
-    medido: 'sesgo +3,2 puntos (+3,164 re-medido tras la revisión de K2b; 400 carreras × 40 splits, primer fichaje de mercado de cada una)',
-    banda: '|sesgo| ≤ 3 puntos',
-    commit: 'K2b',
+    medido: '0 pausas en 4000 sondas (sonda del check, K2c)',
+    banda: 'al menos 30 pausas en 4000 sondas (el piso de muestra del check) y ninguna con puntosEnJuego < umbral',
+    commit: 'K2c',
     rebasea: 'K3c',
-    porque: 'sacar la sinergia del rendimiento propio lo sube en el primer split en una org nueva, donde la sinergia es '
-      + 'mínima; la jerarquía crece más de lo que proyecta derivaPrimerSplit; se re-basea en K3c'
+    porque: 'con el meta en 0,9-1,1 y la maestría en 0,1 ningún pick mueve la p lo suficiente para el umbral de pausa '
+      + 'del draft; K3c re-fija ese umbral contra la dispersión nueva de la p'
   }
 ];
 

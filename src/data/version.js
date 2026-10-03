@@ -21,6 +21,10 @@
 // números que K2b registró en su rama, 1112981938 y 901891910, eran de la
 // definición vieja de 40 × 30 splits sin puntaje: no valen acá. 901891910
 // sigue siendo la huella de `calcularHuella`, la de la trampa T1, del motor
-// mergeado: la revisión de K1 no toca el `rng`.)
-export const VERSION_JUEGO = 'K2b';
-export const HUELLA_JUEGO = 1414810287;
+// mergeado: la revisión de K1 no toca el `rng`.) · K2c (345156314; bloque A, paso 2 de 2): las
+// constantes del candidato (meta acotado a 0,9-1,1, maestría 0,1, σ de mapa ~18, referencias
+// medidas en el motor integrado) y `BALANCE.temporada.vueltas` en 2, elegido por barrido
+// (PLAN.md, K2c). El fixture de la temporada tiene el doble de fechas: ninguna seed de K2b
+// reproduce su carrera.
+export const VERSION_JUEGO = 'K2c';
+export const HUELLA_JUEGO = 345156314;
