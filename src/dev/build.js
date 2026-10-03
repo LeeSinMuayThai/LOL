@@ -62,7 +62,12 @@ const SPLITS_DE_VERIFICACION = 30;
 // esa revisión (validación y textos del puntaje) el peso medido dio 1801,4 KB: ya
 // por encima. Subido a 1900 con margen para las pantallas que faltan de la fase K
 // (la previa de K2d, K4/K5), sobre el peso medido ese día, no una expectativa.
-const PESO_MAXIMO_KB = 1900;
+//
+// Re-medido al abrir K4 (2026-10-03): el peso medido ese día dio 1870 KB contra el
+// techo de 1900, el mismo margen-que-se-cierra-en-silencio por cuarta vez. Subido a
+// 2000 con margen para las pantallas de K4 y K5, sobre el peso medido ese día, no
+// una expectativa.
+const PESO_MAXIMO_KB = 2000;
 
 function copiar(desde, hacia) {
   const stat = fs.statSync(desde);
