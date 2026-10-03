@@ -4636,6 +4636,12 @@ checkLento('El banco de mecánicas se reparte: ninguna se lleva la carrera (9R4c
   // llevarse más de un tercio, y cada rol tiene que tener de dónde elegir.
   const TOPE = 0.35;
   const MINIMO_POR_ROL = 4;
+  // K4c (paso 3a) — regla 17: la proporción se mide solo entre las mecánicas que COMPITEN por un momento (las del mapa
+  // decisivo y la prensa); `la_prueba` (el tryout, único minijuego de su momento) queda afuera. Reemplaza a "ninguna se lleva
+  // más del 35% de TODOS los minijuegos", que contaba al tryout (20% del total en K4) y se lo quitaba a las que compiten:
+  // el reparto que importa es el que un jugador ve entre las mecánicas que se disputan cada pausa (PLAN.md, decisiones del
+  // paso 2, punto 4). La banda no cambia. El tryout sigue exigiendo salir (más abajo) y es elegible para el rol.
+  const MOMENTOS_SIN_COMPETENCIA = ['tryout'];
 
   for (const rol of IDS_ROL) {
     const elegibles = new Set();
@@ -4650,7 +4656,9 @@ checkLento('El banco de mecánicas se reparte: ninguna se lleva la carrera (9R4c
   }
 
   const porTipo = {};
+  const porTipoQueCompite = {};
   let total = 0;
+  let totalQueCompite = 0;
   for (let seed = 1; seed <= 300; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
@@ -4658,6 +4666,10 @@ checkLento('El banco de mecánicas se reparte: ninguna se lleva la carrera (9R4c
       if (decision.datos?.motivo === 'minijuego') {
         total += 1;
         porTipo[decision.datos.minijuego] = (porTipo[decision.datos.minijuego] ?? 0) + 1;
+        if (!MOMENTOS_SIN_COMPETENCIA.includes(decision.datos.momento)) {
+          totalQueCompite += 1;
+          porTipoQueCompite[decision.datos.minijuego] = (porTipoQueCompite[decision.datos.minijuego] ?? 0) + 1;
+        }
       }
       return sistema.resolverAuto(st, decision, r);
     };
@@ -4666,14 +4678,14 @@ checkLento('El banco de mecánicas se reparte: ninguna se lleva la carrera (9R4c
     }
   }
 
-  if (total < 500) {
-    throw new Error(`sólo ${total} minijuegos en 300 carreras: muestra insuficiente`);
+  if (total < 500 || totalQueCompite < 500) {
+    throw new Error(`sólo ${total} minijuegos (${totalQueCompite} entre los que compiten) en 300 carreras: muestra insuficiente`);
   }
-  const [idTop, vecesTop] = Object.entries(porTipo).sort((a, b) => b[1] - a[1])[0];
-  if (vecesTop / total > TOPE) {
+  const [idTop, vecesTop] = Object.entries(porTipoQueCompite).sort((a, b) => b[1] - a[1])[0];
+  if (vecesTop / totalQueCompite > TOPE) {
     throw new Error(
-      `"${idTop}" se lleva el ${((vecesTop / total) * 100).toFixed(0)}% de los minijuegos `
-      + `(tope ${TOPE * 100}%; antes de 9R.4, la_llamada: 33%)`
+      `"${idTop}" se lleva el ${((vecesTop / totalQueCompite) * 100).toFixed(0)}% de los minijuegos que compiten por un momento `
+      + `(tope ${TOPE * 100}%; ${total - totalQueCompite} del tryout, aparte, de ${total}; antes de 9R.4, la_llamada: 33%)`
     );
   }
   // Y que el catálogo no tenga mecánicas muertas: todas tienen que salir.
