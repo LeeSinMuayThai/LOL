@@ -5864,6 +5864,31 @@ atribución exacta (Shapley sobre re-simulación completa) de lo que se gana al 
   de fuerza ≈ 10 al empezar la serie (≈ 1º contra 4º de una liga, 11,8)**, medido **en el motor**, de los dos
   lados, no con la tabla analítica. Cada check de banda que se rompa lleva su línea de la regla 17;
   `CONCEPTO` §6 se reescribe si el meta se acota.
+
+  **Cómo se hace K2c** *(supervisor, 2026-10-02)*. Son dos pasos, para que ningún worker quede esperando corridas
+  largas.
+
+  **(1) Un worker** hace tres cosas:
+  - Mide en el motor integrado (K1 + K2b) las medias de los cuatro factores, en splits pro con `criterio`. La
+    sinergia ahora se cuenta una sola vez, con peso 0,27 en `fuerzaDelEquipo`, así que su referencia se re-deriva:
+    no se copia el 1,050/1,025 de la investigación.
+  - Fija las constantes que no dependen del barrido: referencias centradas, meta 0,9-1,1, peso de maestría 0,1, σ
+    de mapa con combinado ~18.
+  - Deja un script de barrido que aplica overrides de `BALANCE` en memoria y reporta, para cada combinación, el
+    mismo bloque `nivel` de `simulate.js`.
+
+  **(2) El supervisor** corre el barrido en background con el bot `criterio`, 400 seeds × 60 splits. La grilla es
+  σ de fecha × `vueltas` ∈ {1, 2}. El criterio de elección, en orden:
+  1. r misma liga corregida ≥ 0,5;
+  2. favorito con Δ0≈10 en el Bo5 lo más cerca posible de 75-85% de los dos lados;
+  3. a igualdad, `vueltas` 2 (es lo real en LCK);
+  4. a igualdad, el σ de fecha más cercano al de hoy.
+
+  Los títulos por carrera y la jerarquía media **no** entran en la elección: son bandas del bloque A y van a
+  `bandasPendientes.js` hasta K3c. Lo que se rompe por diseño se anota con su línea de la regla 17, no como
+  PENDIENTE: el boost del pool fuera de 0,75-1,25 al acotar el meta. Un segundo worker fija los valores elegidos y
+  registra esas líneas. `VERSION_JUEGO` pasa a 'K2c' y `HUELLA_JUEGO` se recalcula. Constantes solas no cambian la
+  forma del guardado.
 - **K2d — la previa (pantalla).** Antes de la fecha marcada y antes de cada mapa de serie, tu fuerza desglosada
   (vos / tus compañeros / el meta / el campeón) contra la del rival, y **la probabilidad de ganar**, la misma p
   que el motor tira. La probabilidad de la serie completa espera a K4 (depende del plan de Fearless).
