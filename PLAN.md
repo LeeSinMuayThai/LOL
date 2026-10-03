@@ -7059,6 +7059,20 @@ cero errores de consola, y los guardados VERSION 10 de main cargan y siguen. Los
   - el resumen del split que no dice que es un tramo del plan;
   - las colas de consuelo repetidas en la fecha marcada.
 
+  El supervisor sumó un ajuste. El titular del año pesa el papel internacional según hasta dónde llegaste: final
+  90, semis 82, cuartos 78. Así, una final del Mundial le gana a un título de liga (80) y unos cuartos no.
+
+**La validación completa de K4c** (`b33ff0c`: 405 OK + 1 PENDIENTE C + 4 FAIL; `simulate.js 1000` 0 crashes; build
+OK). Los cuatro FAIL eran checks que asumían algo que K4c cambió. Ninguno era un bug del juego. Se arreglaron en
+`c171155`..`10bbb52`.
+- **9Me.** Una prueba fallida deja el contrato viejo, sin la cláusula negociada.
+- **"lesionado".** Ahora sale en 7 de 1200 carreras, contra 14 de 900 antes. El check busca seeds hasta 1200.
+- **`tiempoMaquinaPorFuenteSobre`** entra al recuento independiente.
+- **9Mf, un corrimiento real.** Los traspasos a mitad de contrato bajaron de 26,3% a 21,1% (seeds 1-960), porque
+  hay menos carreras pro y más cortas: 693 contra 736 llegan a pro, y 31,9 contra 36,0 splits pro. Se re-basea el
+  piso de 0,24 a 0,16 (≈ 2σ debajo de lo medido), con su línea de la regla 17. Queda debajo del 25% de diseño de
+  9M: **lo vuelve a mirar K5c** cuando calibre el embudo.
+
 **Paso 3b — un worker:**
 - los checks duros con lo medido;
 - vaciar el bloque B de `bandasPendientes.js` y cerrarlo;
