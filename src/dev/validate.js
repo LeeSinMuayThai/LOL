@@ -11109,10 +11109,15 @@ check('K4c-H Δp: la palanca de serie y partido por p declarada (umbral 5 pp), e
 });
 
 check('K4c-H Δp sobre el motor real: pPorOpcion lee la p de la previa (la misma que declaran las opciones del plan) y el `pH` de la fecha marcada es el `p` del log', () => {
-  // Seeds 1-2 hasta 45 splits: un serie:plan (su pSerie por opción es la lectura independiente), un serie:decisivo (la p del mapa, con y sin
+  // Seeds 1-6 hasta 45 splits, cortando apenas aparecen los tres (K4c, paso 3a, arreglos: con el stream nuevo las seeds 1-2 ya no
+  // traían serie:decisivo): un serie:plan (su pSerie por opción es la lectura independiente), un serie:decisivo (la p del mapa, con y sin
   // charla) y la fecha marcada (sin p por opción al decidir: null, y la p que tiró cada réplica es el `p` de su log).
   const vistos = {};
-  for (const seed of [1, 2]) {
+  const TIPOS_K4CH = ['serie:plan', 'serie:decisivo', 'temporada:momento'];
+  for (const seed of [1, 2, 3, 4, 5, 6]) {
+    if (TIPOS_K4CH.every((tipo) => vistos[tipo])) {
+      break;
+    }
     const rng = mulberry32(seed);
     let st = createInitialState(seed, rng);
     let splitCount = 0;
@@ -11131,7 +11136,7 @@ check('K4c-H Δp sobre el motor real: pPorOpcion lee la p de la previa (la misma
   }
   for (const tipo of ['serie:plan', 'serie:decisivo', 'temporada:momento']) {
     if (!vistos[tipo]) {
-      throw new Error(`check vacío: en las seeds 1-2 no apareció ${tipo} en 45 splits`);
+      throw new Error(`check vacío: en las seeds 1-6 no apareció ${tipo} en 45 splits`);
     }
   }
   const opsDe = (decision) => decision.opciones.map((o) => ({ opcionId: o.id, _l: o.id }));
