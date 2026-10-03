@@ -1513,7 +1513,9 @@ export const BALANCE = {
     // K4-A (1 cada 3). Medido con el check "K4-A define_clasificacion es alcanzable" (`criterio`, 100 carreras, con la prueba
     // en 0,65 / 0,8 / 0,95): 5 da 998 de 3126 (1 cada 3,13, no llega), 6 da 1089 de 3068 (1 cada 2,82) y 7 da 1066 de 3040
     // (1 cada 2,85: más ventana no da más margen). Se queda la más chica que cumple el piso: es la fecha con más en juego.
-    ventanaDefineClasificacion: 6,
+    // K4c (integración con el cierre de año): 6 -> 7. Con el contenido nuevo del cierre, 6 dio 975 de 2999 (1 cada 3,1), justo
+    // debajo del piso: con ~3000 splits el error es ±0,9 pp y 6 queda sobre la línea. 7 lo pasa con margen.
+    ventanaDefineClasificacion: 7,
     // Fase 9R0a: la fecha marcada dejaba de mentir pero se repetía sola.
     // `career.ultimoEliminadoPor` no se limpiaba nunca y `career.orgs` sólo
     // crece, así que "la revancha contra tal" o "el clásico contra tal"

@@ -72,4 +72,8 @@
 // parada (K4-D), la prueba en 0,65 / 0,8 / 0,95 y la ventana de la fecha que define en 6. Misma versión (el paso 3b la pasa
 // a 'K4c'): reemplaza a 922534647.
 export const VERSION_JUEGO = 'K5';
-export const HUELLA_JUEGO = 805410138;
+// K4c (cierre de año, 2044679379): los 10 eventos de cierre_edad.json pasan a ser decisiones con intercambio (tres opciones, efectos
+// del orden de las bifurcaciones, un pool que aprende, riesgos en los outcomes): cambian las tiradas del cierre y con ellas las carreras
+// enteras. Misma versión (el paso 3b la pasa a 'K4c'): reemplaza a 922534647.
+// Integración de los arreglos del paso 3a y el cierre de año, con la ventana en 7 (supervisor): reemplaza a 805410138 y 2044679379.
+export const HUELLA_JUEGO = 1157384592;
