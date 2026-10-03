@@ -5889,6 +5889,44 @@ atribución exacta (Shapley sobre re-simulación completa) de lo que se gana al 
   PENDIENTE: el boost del pool fuera de 0,75-1,25 al acotar el meta. Un segundo worker fija los valores elegidos y
   registra esas líneas. `VERSION_JUEGO` pasa a 'K2c' y `HUELLA_JUEGO` se recalcula. Constantes solas no cambian la
   forma del guardado.
+
+  **Paso (1), hecho** (`3c5f359`). Las medias de los factores se midieron con `criterio`, 200 × 60, splits pro
+  con temporada:
+
+  | | M | C | J | S | producto | splits en el tope de 100 |
+  |---|---|---|---|---|---|---|
+  | antes | 0,958 | 1,216 | 1,052 | 1,014 | 1,251 | 43% |
+  | después | 0,984 | 1,003 | 1,013 | 1,002 | 1,005 | 7% |
+
+  Las referencias quedaron así:
+  - maestría 85: centra el factor de campeón entero, afinidad incluida, por eso no es la maestría media de 82,9;
+  - jerarquía 60, sinergia 55;
+  - meta 0,9-1,1, peso de maestría 0,1, `sigmaMapa` 14,2 → 17,7 (√(12,5² + 12,5²)).
+
+  La meta no tiene clave de referencia: queda en 0,984 sin tocar el motor y se acepta así.
+
+  **Paso (2), el barrido** (supervisor, `criterio` 400 × 60, sobre `3c5f359`, 0 crashes). Las columnas son r misma
+  liga corregida, R² sin ruido corregido, y el Bo5 con Δ0≈10 para el jugador favorito y para el rival favorito:
+
+  | vueltas | σ fecha | r | R² | jugador | rival |
+  |---|---|---|---|---|---|
+  | 1 | 10 | 0,573 | 0,539 | 79,7 | 90,2 |
+  | 1 | 13,9 | 0,524 | 0,539 | 81,1 | 94,4 |
+  | 1 | 17 | 0,495 | 0,539 | 82,4 | 87,5 |
+  | 1 | 20 | 0,477 | 0,539 | 80,0 | 92,3 |
+  | 2 | 10 | 0,600 | 0,549 | 80,0 | 89,3 |
+  | 2 | 13,9 | 0,582 | 0,549 | 81,0 | 88,4 |
+  | 2 | 17 | 0,568 | 0,549 | 78,4 | 85,9 |
+  | 2 | 20 | 0,525 | 0,549 | 81,3 | 89,0 |
+
+  El error estándar del Bo5 es ±1,8-2,2, y el σ de fecha no mueve el Bo5 de forma sistemática: es σ de mapa; lo
+  único que cambia es qué cruces se dan. Las diferencias del criterio 2 entre σ de fecha, con la misma `vueltas`,
+  están dentro del ruido, así que deciden los criterios 3 y 4.
+
+  **Elegido: `vueltas` 2 y σ de fecha 13,9 (sin cambio).** Da r 0,582 · R² 0,549 · Bo5 jugador 81,0 ± 1,8, rival
+  88,4 ± 2,0, juntos 83,5 · títulos por carrera 5,10 · 78% llega a tier 1. El rival favorito sigue por encima de
+  85: es la asimetría del Fearless, que se resuelve en K4, como ya estaba escrito.
+
 - **K2d — la previa (pantalla).** Antes de la fecha marcada y antes de cada mapa de serie, tu fuerza desglosada
   (vos / tus compañeros / el meta / el campeón) contra la del rival, y **la probabilidad de ganar**, la misma p
   que el motor tira. La probabilidad de la serie completa espera a K4 (depende del plan de Fearless).
