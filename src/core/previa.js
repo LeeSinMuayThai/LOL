@@ -13,7 +13,7 @@ function familiaDeEfecto(effect) {
   if (effect.type === 'pool') {
     return effect.accion === 'olvidar' ? null : `pool_${effect.accion}`;
   }
-  if (effect.type === 'push' || effect.type === 'momento') {
+  if (effect.type === 'push' || effect.type === 'momento' || effect.type === 'camino') {
     return null;
   }
   return effect.type; // 'stat' | 'ladder' | 'partido'

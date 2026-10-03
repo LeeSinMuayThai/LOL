@@ -1,0 +1,2411 @@
+[
+  {
+    "category": "caminos",
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 35
+      }
+    ],
+    "id": "el_pasaje_a_occidente",
+    "bifurcacion": true,
+    "categoria": "mercado",
+    "title": "Una org de occidente te quiere de import",
+    "description": "Tu agente te manda un mail con un número que en Corea no te ofrecen ni de casualidad: una org de occidente te quiere de import, con casa, visa y un cupo que no sobra. Del otro lado queda la liga más pesada del mundo, tu gente y un idioma que hablás a medias.",
+    "weight": 24,
+    "cooldown": 8,
+    "contexto": {
+      "region": [
+        "KR"
+      ],
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ],
+      "edadMin": 19
+    },
+    "options": [
+      {
+        "id": "aceptar_el_import",
+        "label": "Aceptar y armar la mudanza",
+        "descripcion": "Cambiás de liga, de idioma y de rutina. Ganás plata y vitrina; perdés el piso conocido.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Aterrizás con el pasaporte al día y el cliente en inglés. Los primeros scrims son raros y la plata se nota, pero sentís que el juego se te abrió: acá nadie te conoce y tenés que ganártelo de cero.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "abierto"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La mudanza te pega más de lo que pensabas: comés solo, dormís mal por el huso y en las reuniones del staff entendés la mitad. En los primeros partidos se te nota.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -7,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "abierto"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "quedarte_en_la_lck",
+        "label": "Quedarte en la LCK",
+        "descripcion": "Seguís en la liga más dura, con tu gente al lado.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Le decís que no al mail y el club lo agradece en voz baja. Te quedás donde se juega el nivel más alto del mundo, y el vestuario lo toma como una señal de que vas en serio con el proyecto.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "cerrado"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te quedás, pero un compatriota agarra el cupo y en las primeras semanas lo ves rendir bien. Te queda esa duda de a qué hora pasaba el tren.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "cerrado"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "negociar_con_el_club",
+        "label": "Usar la oferta para renegociar acá",
+        "descripcion": "Mostrás el número y esperás que el club se mueva. Si no se mueve, tenés la puerta abierta; si se ofende, también.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El club se mueve: mejora el contrato y te pone en el centro del proyecto. Te quedás con más peso en el vestuario y la cabeza tranquila.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "cerrado"
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "En la oficina no les gusta que anden mostrando ofertas. Te firman, pero el trato cambia: más frío, más distancia con el manager.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -4,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "cerrado"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "caminos",
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 35
+      }
+    ],
+    "id": "la_oferta_de_la_lpl",
+    "bifurcacion": true,
+    "categoria": "mercado",
+    "title": "La LPL te pone un cheque arriba de la mesa",
+    "description": "Un equipo de la LPL te hace una oferta un escalón por encima de todo lo que te llegó: un salario que no se ve en ninguna otra liga, calendario pesado y un staff que ya les ganó a los mejores. La plata es real. El idioma, los horarios de scrim y estar lejos de todo, también.",
+    "weight": 36,
+    "cooldown": 8,
+    "contexto": {
+      "region": [
+        "KR",
+        "EMEA",
+        "NA",
+        "BR",
+        "APAC"
+      ],
+      "etapa": [
+        "profesional"
+      ],
+      "nivel": [
+        "tier1"
+      ],
+      "edadMin": 20
+    },
+    "options": [
+      {
+        "id": "ir_por_la_plata",
+        "label": "Firmar con la LPL",
+        "descripcion": "Plata grande, mucho calendario y un mundo nuevo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Firmás y el primer mes sentís el cambio de escala: más partidos, más gente mirando y más guita en el banco. El techo de tu carrera se corre para arriba y vos te vas ajustando.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "abierto"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El calendario de la LPL te pasa por arriba: scrims de sol a sol, viajes, un staff que no habla tu idioma. Cobrás bien, pero llegás a la cama sin ganas de nada.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "abierto"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rechazar_y_quedarte",
+        "label": "Decir que no y seguir donde estás",
+        "descripcion": "Perdés el cheque, ganás tranquilidad y raíces.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Cerrás la puerta con un mensaje cordial. Te queda el arraigo y la cabeza liviana, que a esta altura también vale.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 1,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "cerrado"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Dos semanas después el equipo que te quería ficha a otro, y te cae encima la sensación de haber dejado pasar algo que no vuelve.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "cerrado"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pedir_un_ano_a_prueba",
+        "label": "Proponer un año a prueba, con cláusula de salida",
+        "descripcion": "No cerrás ni abrís del todo: entrás, pero con un pie afuera.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Aceptan la cláusula. Entrás sin quemar las naves y con un año para ver si el cambio te sirve.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "abierto"
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "No aceptan: quieren compromiso total o nada. Salís de la charla sin acuerdo y sin ganas de seguir negociando.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "cerrado"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "caminos",
+    "conditions": [
+      {
+        "field": "player.stats.mecanica",
+        "op": "gt",
+        "value": 55
+      }
+    ],
+    "id": "la_puerta_de_la_lck",
+    "bifurcacion": true,
+    "categoria": "mercado",
+    "title": "Un equipo coreano te quiere en su cupo de import",
+    "description": "Un equipo de la LCK te quiere de import. Es la liga donde se juega el nivel más alto y donde más duro se entrena: solo queue en el servidor coreano, scrims contra los mejores y un staff que no perdona. Pagan menos que en China y quedás a un océano de casa.",
+    "weight": 30,
+    "cooldown": 8,
+    "contexto": {
+      "region": [
+        "EMEA",
+        "NA",
+        "BR",
+        "APAC",
+        "CN"
+      ],
+      "etapa": [
+        "profesional"
+      ],
+      "nivel": [
+        "tier1"
+      ],
+      "edadMax": 29
+    },
+    "options": [
+      {
+        "id": "ir_a_corea",
+        "label": "Ir a Corea a jugártela",
+        "descripcion": "Techo altísimo de nivel; idioma, comida y distancia en contra.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Aterrizás en Seúl y la primera semana de scrims te muestra qué es ser mediocre en serio. Lo que aprendés en tres meses no lo aprendías en tres años en casa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "abierto"
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Corea te rompe: el ritmo, el idioma, un coach que no te explica nada. Te falta el equipo de siempre y entrenás con un nudo en el estómago. Algo del nivel se te pega igual.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.laneo",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -7,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "abierto"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "bootcamp_de_tres_meses",
+        "label": "Pedir primero un bootcamp de tres meses",
+        "descripcion": "Probás el sistema antes de mudarte.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Hacés el bootcamp y volvés con la cabeza abierta: ya sabés qué te espera y qué te falta. Aunque no cierres, la experiencia queda.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "abierto"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El bootcamp te deja claro que el salto es más grande de lo que creías. Volvés con humildad y con un par de lecciones que cuestan.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "cerrado"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "seguir_en_tu_liga",
+        "label": "Seguir en tu liga",
+        "descripcion": "Elegís lo conocido: tu idioma, tu equipo y tu gente.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te quedás y te vuelven a poner al centro del plan del club. Es menos épico y mucho más cómodo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "cerrado"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te quedás, pero en los reviews empezás a ver tus propios errores con ojos coreanos y no te gustan. La duda queda ahí, escondida.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 0,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "cerrado"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "caminos",
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 50
+      },
+      {
+        "field": "flags.caminos.contenido",
+        "op": "neq",
+        "value": "tiempo_completo"
+      }
+    ],
+    "id": "el_canal_de_tiempo_completo",
+    "bifurcacion": true,
+    "categoria": "oportunidad",
+    "title": "El canal ya paga más que el scrim",
+    "description": "Los números del canal no mienten: entre suscriptores, donaciones y la marca que te contactó, el stream paga más que tu sueldo en {org}. Hay un camino donde dejás de scrimear y vivís de esto, y otro donde seguís compitiendo con el canal de segundo plano. La ventana del streaming no dura para siempre. La competitiva, tampoco.",
+    "weight": 24,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ],
+      "edadMin": 20
+    },
+    "options": [
+      {
+        "id": "vivir_del_canal",
+        "label": "Dejar de competir y vivir del canal",
+        "descripcion": "Cortás con las scrims y el equipo. El stream pasa a ser tu trabajo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El primer mes es raro: sin horario fijo, sin review. Pero el canal explota: la gente quiere al ex pro que habla de todo sin filtro. Mirás para atrás y no extrañás el cliente a las ocho de la mañana.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 8,
+                "max": 14,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.teamfight",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "tiempo_completo"
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El canal se estanca a los dos meses: los números que parecían estructurales eran el pico de una racha. Sin equipo y sin el filtro de la competencia, te cuesta saber para qué estás jugando.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.laneo",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "tiempo_completo"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "contrato_de_streamer_jugador",
+        "label": "Negociar un contrato de jugador y streamer",
+        "descripcion": "La org te deja streamear con horarios pactados y vos seguís en el equipo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La org acepta: dos bloques de stream por semana, siempre fuera del horario de scrim. El canal crece sin que el equipo lo sienta y el coach hace la vista gorda con los clips.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "hibrido"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La org lo acepta con letra chica: cada hora de stream que le sacás a la práctica se cobra en el próximo review. Funciona, pero tenés al coach encima.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "hibrido"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "seguir_en_lo_tuyo",
+        "label": "Decir que no y seguir compitiendo",
+        "descripcion": "El canal queda de costado: primero el cliente, después el chat.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te quedás con lo competitivo y lo sentís: más foco en el review, más sueño ordenado y la cabeza donde tiene que estar.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "solo_competir"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Ves cómo otros pros con la mitad de tu nivel se llevan el público que era tuyo. No es solo la plata: es que la ventana se cierra.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "solo_competir"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "caminos",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 6
+      }
+    ],
+    "id": "la_linea_que_te_piden",
+    "bifurcacion": true,
+    "categoria": "oportunidad",
+    "title": "El coach te pide cubrir otra línea",
+    "description": "Se cayó un titular y el draft Fearless le queda corto de flex picks. El coach te pide que practiques otra línea en las scrims y, si hace falta, que la juegues en una serie. Es la chance de volverte indispensable y el riesgo de que tu línea se enfríe.",
+    "weight": 20,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "options": [
+      {
+        "id": "aceptar_el_swap",
+        "label": "Aceptar y meterte de lleno en la línea nueva",
+        "descripcion": "Te ofrecés al cien por ciento. Si sale bien, valés más; si sale mal, te desarmás.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te cuesta la primera semana, pero en la segunda empezás a ver los timings del otro lado del mapa. El coach te agradece y el draft del equipo se abre: ahora tiene un flex de verdad.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.rol",
+                "valor": "cubrio"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La línea nueva te desarma: pierdas o ganes, los fundamentos de la tuya se oxidan. Cuando volvés a tu puesto, algo de la mano quedó en otro lado.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.rol",
+                "valor": "cubrio"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "aceptar_solo_en_scrims",
+        "label": "Aceptar solo para scrims, nunca en oficial",
+        "descripcion": "Ayudás sin jugártela: sirve para el equipo, no te saca de tu puesto.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Acordás el límite y el coach lo respeta: cubrís en scrims, le das al equipo con qué practicar y tu línea no se resiente.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.rol",
+                "valor": "a_prueba"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El coach acepta, pero te quedás con la sensación de que le dijiste que sí a medias. En el review siguiente se nota cierta distancia.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.rol",
+                "valor": "a_prueba"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "negarte",
+        "label": "Decir que tu línea es tu línea",
+        "descripcion": "Te plantás: sos lo que sos y eso es lo que sabés hacer mejor.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El coach lo respeta: te necesita en tu puesto y encuentra otra salida. Te quedás con el lugar y la cabeza tranquila.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.rol",
+                "valor": "se_nego"
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El coach se guarda el desaire: no dice nada, pero en los próximos drafts dejás de ser el primero en su lista. Los chicos lo notan.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.rol",
+                "valor": "se_nego"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "caminos",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 8
+      }
+    ],
+    "id": "los_playoffs_infiltrado",
+    "bifurcacion": true,
+    "categoria": "salud",
+    "title": "La muñeca antes de la serie",
+    "description": "Dos días antes del primer Bo5 la muñeca te avisa que no viene gratis. El médico del club te ofrece una infiltración que te saca el dolor por 72 horas, el coach te mira esperando que digas que sí y el suplente ya está calentando en el cliente de al lado.",
+    "weight": 36,
+    "cooldown": 6,
+    "contexto": {
+      "ventana": [
+        "playoffs"
+      ],
+      "etapa": [
+        "profesional"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ]
+    },
+    "options": [
+      {
+        "id": "infiltrarte_y_jugar",
+        "label": "Infiltrarte y jugar la serie",
+        "descripcion": "Sin dolor por 72 horas. Después veremos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La infiltración funciona: jugás sin dolor y el equipo gana la serie con vos al frente. En el vestuario te miran con otros ojos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "infiltrado"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La infiltración te saca el dolor pero también la sensibilidad: el mouse te responde distinto y en los mapas decisivos pifiás timings que nunca pifiabas.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "infiltrado"
+              }
+            ]
+          }
+        ],
+        "perfil": "hambriento"
+      },
+      {
+        "id": "parar_y_bajarte_de_la_serie",
+        "label": "Bajarte de la serie y cuidarte",
+        "descripcion": "Dejás el lugar al suplente y te curás de verdad.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El suplente cumple y el equipo pasa de ronda. Vos mirás desde el staff y descansás la muñeca: sin heroísmos, con la cabeza fría para el resto del año.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "paro"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El suplente brilla y la gente lo nota. Vos estás entero, pero a la vuelta ya no hay un lugar tan cómodo esperándote.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "paro"
+              }
+            ]
+          }
+        ],
+        "perfil": "profesional"
+      },
+      {
+        "id": "jugar_con_vendaje_y_menos_scrims",
+        "label": "Jugar sin infiltrar, con vendaje y menos scrims",
+        "descripcion": "Un punto medio: jugás, pero cuidando la muñeca todo lo que se pueda.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El vendaje y los descansos alcanzan: aguantás la serie con la muñeca a media máquina, pero sin lastimarla más.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "sin_infiltrar"
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El dolor te limita en los mapas largos: tu rendimiento baja justo cuando el equipo más te necesita.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.laneo",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "sin_infiltrar"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "caminos",
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 30
+      }
+    ],
+    "id": "el_sponsor_que_choca_con_la_org",
+    "bifurcacion": true,
+    "categoria": "mercado",
+    "title": "Tu sponsor y tu org se pelean por vos",
+    "description": "Tu sponsor personal te pide aparecer en una campaña justo la semana de una serie, y {org} tiene un contrato de exclusividad con otra marca. Los dos te mandan abogados por mail. Ninguno quiere quedar de malo y los dos esperan que elijas.",
+    "weight": 30,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "profesional"
+      ],
+      "nivel": [
+        "tier1"
+      ],
+      "estatus": [
+        "titular",
+        "referente",
+        "franquicia"
+      ]
+    },
+    "options": [
+      {
+        "id": "del_lado_de_la_org",
+        "label": "Ponerte del lado de la org",
+        "descripcion": "Le bajás el cuaderno al sponsor y cuidás tu lugar en el equipo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Le decís que no al sponsor con buena letra. La org lo toma como una señal de lealtad y el vestuario también; la marca, en cambio, se enfría.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "con_la_org"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La marca se enoja de verdad y se lleva la plata a otro lado. La org te lo agradece con palabras, no con plata.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "con_la_org"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "del_lado_del_sponsor",
+        "label": "Ponerte del lado del sponsor",
+        "descripcion": "Hacés la campaña igual y asumís lo que venga con la org.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Hacés la campaña igual y la sacás barata: la marca te lo reconoce con una segunda campaña y los fans con likes. En la org, el manager te mira distinto.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "contra_la_org"
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "La org no lo deja pasar: te sacan del cinco inicial \"por una semana\" y la semana se vuelve un split. Tenés plata, tenés cámara y tenés banco.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "contra_la_org"
+              },
+              {
+                "type": "camino",
+                "path": "flags.banquilloPendiente",
+                "valor": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "poner_a_negociar_a_los_dos",
+        "label": "Poner a tu agente a negociar con los dos",
+        "descripcion": "No elegís: armás una mesa con fechas y exclusividades.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Tu agente arma un acuerdo con fechas y exclusividades: nadie queda contento del todo, pero nadie queda en contra. Aprendés cuánto vale tener quien te cubra las espaldas.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "en_el_medio"
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "La negociación se estira tanto que pasás dos semanas distraído con mails mientras el equipo trabaja. Se resuelve, pero te costó la cabeza.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "en_el_medio"
+              }
+            ]
+          }
+        ],
+        "perfil": "profesional"
+      }
+    ]
+  },
+  {
+    "category": "caminos",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 6
+      }
+    ],
+    "id": "el_coach_te_baja_del_cinco",
+    "bifurcacion": true,
+    "categoria": "vestuario",
+    "title": "El coach quiere probar con el suplente",
+    "description": "El coach te llama a la oficina: viene un mal momento del equipo y quiere probar al suplente en la próxima serie. No es un castigo, dice, pero tampoco te promete que vuelvas. Lo que respondas ahora marca el resto del split.",
+    "weight": 36,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "profesional"
+      ],
+      "nivel": [
+        "tier1"
+      ],
+      "momentum": [
+        "slump",
+        "crisis"
+      ]
+    },
+    "options": [
+      {
+        "id": "aceptar_el_banco",
+        "label": "Aceptarlo y trabajar desde afuera",
+        "descripcion": "Te sentás en el scrim a mirar y a anotar. Sin ruido.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Lo tomás con madurez: te sentás en el scrim a mirar y a anotar, y el coach lo valora. Volvés a tu lugar con la cabeza más clara.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "con_la_org"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te sentás, pero no es lo mismo: el suplente rinde, el equipo gana y a vos te cuesta mirar los VODs sin compararte.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "con_la_org"
+              }
+            ]
+          }
+        ],
+        "perfil": "profesional"
+      },
+      {
+        "id": "pedir_una_serie_mas",
+        "label": "Pedir una serie más para demostrarlo",
+        "descripcion": "Te jugás el puesto en una apuesta corta.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El coach te da la serie. La jugás con los dientes apretados y la sacás adelante: no era un problema de nivel, era de confianza.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "en_el_medio"
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Te dan la serie y sale mal. El coach cumple su palabra y te baja. Quedás con la sensación de que te jugaste todo y no alcanzó.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "en_el_medio"
+              },
+              {
+                "type": "camino",
+                "path": "flags.banquilloPendiente",
+                "valor": true
+              }
+            ]
+          }
+        ],
+        "perfil": "hambriento"
+      },
+      {
+        "id": "salir_a_hablar_en_redes",
+        "label": "Salir a decir en redes que es injusto",
+        "descripcion": "Ponés a la gente de tu lado, a costa de la org.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "El hilo se hace viral y el público te banca. La org no lo toma bien, pero ya no puede bajarte sin pagar el costo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "contra_la_org"
+              }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "El comunicado de la org te deja mal parado: quedás como el que tira al equipo abajo en la peor semana. El banco, ahora, es una consecuencia.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "contra_la_org"
+              },
+              {
+                "type": "camino",
+                "path": "flags.banquilloPendiente",
+                "valor": true
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "caminos",
+    "conditions": [
+      {
+        "field": "flags.caminos.staff",
+        "op": "neq",
+        "value": "puerta_abierta"
+      }
+    ],
+    "id": "la_oferta_del_staff",
+    "bifurcacion": true,
+    "categoria": "oportunidad",
+    "title": "Te ofrecen un lugar en el staff",
+    "description": "Ya sos de los veteranos del vestuario y el manager te pide una charla: el contrato se acerca al final y {org} te ofrece un lugar en el staff para cuando cuelgues el mouse, o antes, de a poco. Puede ser de coach asistente —el que se sienta en el scrim con los chicos— o de analista, el que se encierra con los datos y los VODs. Los dos te mantienen cerca del juego y los dos te sacan de la ladder.",
+    "weight": 30,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ],
+      "edadMin": 28
+    },
+    "options": [
+      {
+        "id": "entrar_de_coach_asistente",
+        "label": "Anotarte de coach asistente",
+        "descripcion": "Empezás a hacer horas en la silla del scrim: hablás con los chicos, armás el draft y bancás al plantel.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Primer scrim desde la silla y entendés lo que tu coach nunca te dijo: lo difícil no es ver el error, es decírselo a alguien que cree que no lo cometió. Te enganchás con el rol.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.staff",
+                "valor": "puerta_abierta"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El vestuario es más complicado de lo que se ve desde adentro del cliente: los egos, los horarios, las peleas que no son tuyas. Te agota, pero aprendés.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.staff",
+                "valor": "puerta_abierta"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "entrar_de_analista",
+        "label": "Anotarte de analista de datos y VODs",
+        "descripcion": "Te encerrás con los datos: el draft, las tendencias, el rival de la semana.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te metés en los VODs con el hambre del que siempre quiso entender el juego desde arriba. Tus reportes terminan en el draft del equipo y alguien se acuerda de pedirte la opinión.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.staff",
+                "valor": "puerta_abierta"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El trabajo es más solitario de lo que pensabas: horas frente a planillas sin la adrenalina de la serie. Cumplís, pero extrañás el escenario.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.staff",
+                "valor": "puerta_abierta"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cerrar_la_puerta",
+        "label": "Decir que todavía sos jugador y nada más",
+        "descripcion": "No querés mirar el final: querés jugar lo que te queda.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Le decís que todavía no, con cariño. Te quedás con la cabeza en lo que sabés hacer y tu gente respira: no hace falta pensar en el final todavía.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.staff",
+                "valor": "cerrada"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "A las pocas semanas ves a un excompañero cerrar su lugar en el staff de otra org y entendés que la puerta que dejaste pasar no vuelve a abrirse igual.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.staff",
+                "valor": "cerrada"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

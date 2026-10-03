@@ -179,6 +179,13 @@ function aplicarEfecto(state, effect, rng, origen) {
     };
   }
 
+  // K4-C2: un camino que se abre o se cierra. Escribe un valor en un flag (`flags.caminos.<bifurcación>`, o uno del motor
+  // que el dato pida a propósito, como `flags.banquilloPendiente`) para que los eventos de seguimiento lo lean con una
+  // `condition` común. No es una magnitud: no tiene rango ni entra en la previa, y no suma a la línea de efectos.
+  if (effect.type === 'camino') {
+    return { state: setPath(state, effect.path, effect.valor), descripcion: null };
+  }
+
   if (effect.type === 'push') {
     const lista = getPath(state, effect.path) ?? [];
     const valor = weightedPick(effect.values, () => 1, rng);

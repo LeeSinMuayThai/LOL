@@ -360,6 +360,18 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // K4-C: los saltos grandes que ya tuvieron su prueba ('tier2', 'tier1', 'import'): la prueba sale una vez
       // por salto (`systems/mercado.js`). Array vacío al arrancar (T4).
       saltosConPrueba: [],
+      // K4-C2: los caminos que dejaron las bifurcaciones de carrera (`data/events/caminos.json`). Una clave por
+      // bifurcación, `null` hasta que la decidís; el valor es lo que pasó ('abierto', 'cerrado', 'tiempo_completo'...).
+      // Los eventos de seguimiento y los gates de otros eventos la leen con una `condition` común. Completo desde el
+      // arranque (T4): una condición sobre un campo que no existe no pasa el esquema de eventos.
+      caminos: {
+        region: null,     // 'abierto' | 'cerrado' | 'asentado'
+        contenido: null,  // 'tiempo_completo' | 'hibrido' | 'solo_competir' | 'consolidado'
+        rol: null,        // 'cubrio' | 'a_prueba' | 'se_nego' | 'integrado'
+        playoffs: null,   // 'infiltrado' | 'paro' | 'sin_infiltrar' | 'recuperado' | 'cronico'
+        conflicto: null,  // 'con_la_org' | 'contra_la_org' | 'en_el_medio' | 'resuelto'
+        staff: null       // 'puerta_abierta' | 'en_transicion' | 'cerrada'
+      },
       // Rastro de un solo split: qué campeón(es) entró el último efecto `pool`
       // con `accion: 'aprender'` de ESTE outcome. Lo usa el siguiente efecto
       // del mismo outcome (`accion: 'maestria', objetivo: 'nuevo'`) para saber

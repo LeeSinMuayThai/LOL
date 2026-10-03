@@ -383,6 +383,14 @@ check('Esquema de eventos válido', () => {
             continue;
           }
 
+          // K4-C2: `camino` escribe un valor en un flag (no es una magnitud: sin rango). El path ya se validó arriba.
+          if (effect.type === 'camino') {
+            if (!['string', 'boolean'].includes(typeof effect.valor)) {
+              throw new Error(`${evento.id}/${opcion.id}: efecto camino en ${effect.path} sin "valor" (texto o booleano)`);
+            }
+            continue;
+          }
+
           if (effect.type === 'pool') {
             if (!ACCIONES_DE_POOL.includes(effect.accion)) {
               throw new Error(`${evento.id}/${opcion.id}: acción de pool desconocida "${effect.accion}" (válidas: ${ACCIONES_DE_POOL.join(', ')})`);
@@ -673,7 +681,10 @@ const FORMAS_CONOCIDAS = {
   // log de cada mapa; K4-C, `player.perfil` (actual + pesos), `flags.categoriasRecientes`, `flags.splitMainMuerto`,
   // `flags.saltosConPrueba`; K4-D, `flags.preparacionDeSplit` (el año cuya preparación ya se resolvió; -1 hasta la
   // primera pretemporada pro).
-  8: 'b8702103beff'
+  8: 'b8702103beff',
+  // K4-C2: `flags.caminos` (una clave por bifurcación de carrera: región, contenido, rol, playoffs, conflicto, staff;
+  // `null` hasta que la decidís) y los valores que escriben las bifurcaciones nuevas.
+  9: '3882bdb7a0fd'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
