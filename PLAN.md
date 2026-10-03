@@ -6480,6 +6480,27 @@ Cuatro piezas en worktrees paralelas, con archivos mayormente disjuntos; las int
   cartas de mejora, con el efecto que duran (K3) a la vista. La práctica deja de frenar por separado.
 - **El fin de año** sigue siendo la decisión grande, y su palanca se mide en K4c.
 
+**Las cuatro piezas, tal como quedaron** *(2026-10-03; cada una midió con `criterio`, 100 × 60)*.
+
+| Pieza | Qué bajó | Antes | Después | Además |
+|---|---|---|---|---|
+| K4-A | momentos por carrera | 27,9 | 18,3 | el draft de fecha desapareció; `define_clasificacion` sale en el 37% de los splits elegibles |
+| K4-B | pausas de serie | 51,2 | 24,9 | minijuegos por carrera: mediana 5; Bo5 favorito, jugador 82,7 y rival 75,0: la asimetría se resolvió y las dos PENDIENTE del bloque B se borraron |
+| K4-C | pausas de eventos | 35,8 | 2,0 | solo frenan 16 bifurcaciones |
+| K4-D | práctica + mercado | 21,3 | 13,0 | — |
+
+**Decisiones al integrar:**
+- **La rueda de prensa.** Va solo después de una final o de un escándalo (gana K4-C). K4-B la había sacado
+  después de cada serie. El bootcamp previo al internacional queda afuera.
+- **El tryout de un salto o de un import** se resuelve dentro de la parada única de la pretemporada (K4-D), como
+  mucho con una pantalla extra. No es una pausa aparte.
+- **El archirrival casi nunca marca fecha.** Su equipo está en tu liga en ~4% de los splits pro. Se acepta como
+  caso raro.
+- **El cambio de región no tiene evento en el dato** hoy, y las bifurcaciones frenan ~2 veces por carrera (se
+  estimaron ~7). Las dos cosas son de **K4-C2**, el pase de contenido.
+- **Las interrupciones todavía no llegan a ≤ 80** sumando las piezas. Eso es de K4c: el umbral de "sin nada en
+  juego", la ventana de `define_clasificacion` y lo que cuesta cada parada.
+
 **Para las cuatro piezas.**
 - Regla 15 en cada pantalla nueva: lo que muestra es lo que el motor usa.
 - Sin ids crudos.
