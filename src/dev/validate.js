@@ -735,7 +735,8 @@ const FORMAS_CONOCIDAS = {
   // salió de la rama, así que se re-registra en vez de subir VERSION.
   // K4c (revisión, textos): sin campos nuevos; el cierre de año ya no repite carta y la muestra ve otro mapa de eventos vistos.
   // Integración de las dos revisiones (supervisor).
-  11: '13dd79e086e2'
+  // K5c (motor): sin campos nuevos; la vuelta del retiro adelanta el reloj y la muestra juega otras carreras.
+  11: '1fe56a6523e4'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que

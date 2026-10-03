@@ -88,4 +88,6 @@ export const VERSION_JUEGO = 'K4c';
 // K4c (revisión, textos, 1625568496): el cierre de año no repite el evento del año anterior (cooldown de 4 splits, 99 el del primer balance),
 // así que cambia qué carta cae y con ella las tiradas del resto de la carrera. Misma versión: reemplaza a 1616394605.
 // Integración de las dos revisiones (supervisor): reemplaza a 348923166 y 1625568496.
-export const HUELLA_JUEGO = 2001539523;
+// K5c (motor, 992471283): la vuelta del retiro adelanta el reloj (calendario y edad) lo que pasó afuera, y con la edad de la vuelta
+// en la línea Faker la ventana se cierra sola. Misma versión: reemplaza a 2001539523.
+export const HUELLA_JUEGO = 992471283;
