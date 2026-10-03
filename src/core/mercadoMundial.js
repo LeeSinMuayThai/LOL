@@ -6,7 +6,7 @@ import {
   usadosDePlanteles, envejecerNpc, generarCanterano, fuerzaDePlantel, ligasConPlantel
 } from './plantel.js';
 import {
-  clasificarAsientoNpc, mejorCandidatoParaAsiento, ofertaPosible
+  clasificarAsientoNpc, mejorCandidatoParaAsiento, ofertaPosible, orgsQueTeFicharian
 } from './demanda.js';
 
 const PRESTIGIO_POR_DEFECTO = BALANCE.mercado.nivelLigaPorDefecto;
@@ -242,6 +242,30 @@ export function resolverMercadoMundial(state, rng, { vaAlMercado }) {
   return {
     state: { ...state, mundo: { ...state.mundo, planteles, ligas, mercadoPretemporada } },
     logs
+  };
+}
+
+// Revisión de K5: el `congelar` de `resolverMercadoMundial` decide ANTES de que el mundo se mueva (planteles sin
+// envejecer, fuerzas sin recalcular, sin agentes libres), pero la mano de ofertas se arma DESPUÉS, contra el estado
+// movido. Un asiento que recién ahí se vuelve ofrecible no estaba congelado y la mano lo descartaba. Esta pasada,
+// pura y sin `rng`, congela también todo asiento de tu rol que es ofrecible en el estado post-mercado: cuando el
+// jugador contesta, `cerrarAsientosCongelados` lo cierra con nombre igual que a los otros.
+export function congelarAsientosOfrecibles(state) {
+  const pre = state.mundo.mercadoPretemporada;
+  if (!pre || !state.mundo.planteles) {
+    return state;
+  }
+  const rol = state.player.role;
+  const ya = new Set(pre.congelados.filter((c) => c.rol === rol).map((c) => c.org));
+  const nuevos = orgsQueTeFicharian(state)
+    .filter((entrada) => !ya.has(entrada.org.nombre))
+    .map((entrada) => ({ org: entrada.org.nombre, liga: entrada.liga.id, rol }));
+  if (!nuevos.length) {
+    return state;
+  }
+  return {
+    ...state,
+    mundo: { ...state.mundo, mercadoPretemporada: { ...pre, congelados: [...pre.congelados, ...nuevos] } }
   };
 }
 

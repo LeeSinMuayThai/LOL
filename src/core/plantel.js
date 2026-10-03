@@ -175,6 +175,34 @@ export function generarPlantel(rng, { orgNombre, regionId, fuerzaOrg, medianaSal
   return plantel;
 }
 
+// ¿La liga de destino tiene planteles? La tier 2 de tu región siempre; una liga
+// extranjera (te relegaron siendo import, o tu club extranjero te mandó al banco
+// de su academia) puede no tenerlos — se generan al vuelo para que el mercado
+// tenga con qué trabajar. Devuelve los planteles del mundo (los mismos si no
+// faltaba ninguno: sin tirada). Subida acá desde `systems/competitivo.js` en la
+// revisión de K5 para que el descenso y el banquillo usen una sola.
+export function conPlantelesDe(state, liga, rng) {
+  if (liga.orgs.every((org) => state.mundo.planteles?.[org.nombre])) {
+    return state.mundo.planteles;
+  }
+  const usados = usadosDePlanteles(state);
+  const planteles = { ...state.mundo.planteles };
+  for (const org of liga.orgs) {
+    if (planteles[org.nombre]) {
+      continue;
+    }
+    planteles[org.nombre] = generarPlantel(rng, {
+      orgNombre: org.nombre,
+      regionId: liga.regionId,
+      fuerzaOrg: org.fuerza,
+      medianaSalarioUSD: liga.salario.medianaUSD,
+      usados,
+      edadMinima: liga.edadMinima ?? 0
+    });
+  }
+  return planteles;
+}
+
 // La fuerza de una org DERIVA de su plantel: el promedio de nivel de sus 5.
 // Al generar el mundo cada casilla orbita el `fuerza` sorteado de hoy, así que
 // el promedio ≈ ese valor y la distribución agregada no se mueve. Desde el año

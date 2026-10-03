@@ -11,10 +11,11 @@
 // MISMO nodo uno por uno, a su propio ritmo, en vez de todos juntos en un
 // `replaceChildren`.
 import METAS from '../../data/metas.json' with { type: 'json' };
-import { acentoDeLog, rotuloDeDecision } from '../formatoUi.js';
+import { acentoDeLog, nombreVisibleDeLiga, rotuloDeDecision } from '../formatoUi.js';
 import { crearOrgChip } from './orgChip.js';
 import { etiquetaRol } from '../../data/roles.js';
 import { crearTarjetaResultado, crearTarjetaResultadoSerie } from './serie.js';
+import { crearTarjetaMundial } from './mundial.js';
 import { textoDeProbabilidadJugada } from '../../core/previaDePartido.js';
 import { reconciliar, reemplazarEnElLugar } from '../core/reconciliar.js';
 
@@ -58,7 +59,7 @@ function crearRevealTop20(entry) {
 
     const detalle = document.createElement('span');
     detalle.className = 'reveal-top20-detalle';
-    detalle.textContent = [fila.rol ? etiquetaRol(fila.rol) : '', fila.liga].filter(Boolean).join(' · ');
+    detalle.textContent = [fila.rol ? etiquetaRol(fila.rol) : '', nombreVisibleDeLiga(fila.liga)].filter(Boolean).join(' · ');
 
     filaEl.append(puesto, handle, detalle);
     lista.appendChild(filaEl);
@@ -134,6 +135,10 @@ export function crearLogItem(entry) {
   if (entry.type === 'edad' && typeof entry.nota === 'number') {
     return crearRevealResumenAnio(entry);
   }
+  // K5-A: el cierre de tu Mundial es una tarjeta (el Swiss resumido y el bracket con tu camino).
+  if (entry.type === 'internacional' && entry.mundial) {
+    return crearTarjetaMundial(entry);
+  }
 
   const item = document.createElement('div');
   item.className = 'log-item' + (entry.tecnico ? ' log-item--tecnico' : '');
@@ -148,6 +153,36 @@ export function crearLogItem(entry) {
     pestana.className = 'log-pestana';
     pestana.textContent = 'PARCHE';
     item.appendChild(pestana);
+  }
+
+  // K4-C: el evento que resolvió tu perfil, en una línea de crónica — el título, lo que planteaba, qué tomaste
+  // (como quién) y qué pasó. Un solo ítem del feed: el texto del evento no se pierde, pasa a ser la historia.
+  if (entry.cronica) {
+    item.classList.add('log-item--cronica');
+    const titulo = document.createElement('div');
+    titulo.className = 'log-titulo';
+    titulo.textContent = entry.titulo ?? '';
+    item.appendChild(titulo);
+    if (entry.descripcion) {
+      const planteo = document.createElement('div');
+      planteo.className = 'log-cronica-planteo';
+      planteo.textContent = entry.descripcion;
+      item.appendChild(planteo);
+    }
+    const decision = document.createElement('div');
+    decision.className = 'log-cronica-decision';
+    const como = document.createElement('span');
+    como.className = 'log-cronica-perfil';
+    como.textContent = `Como ${String(entry.perfil ?? '').toLowerCase()}: `;
+    decision.append(como, `${entry.opcion}. ${entry.cuerpo}`);
+    item.appendChild(decision);
+    if (entry.efectos) {
+      const efectos = document.createElement('div');
+      efectos.className = 'log-efectos';
+      efectos.textContent = entry.efectos;
+      item.appendChild(efectos);
+    }
+    return item;
   }
 
   if (!entry.cuerpo) {

@@ -1,6 +1,10 @@
 import { crearLog } from '../core/log.js';
 import { calcularContexto } from '../core/contexto.js';
 import { BALANCE } from '../data/balance.js';
+import {
+  elegirEvento, decisionDesdeEvento, resolverOpcion, opcionDelPerfilPara,
+  resolver as resolverEvento, resolverAuto as resolverAutoEvento
+} from './events.js';
 
 export const id = 'retiro';
 
@@ -23,14 +27,17 @@ export const id = 'retiro';
 // uno); burnout, prohibición familiar y no_llego siguen siendo terminales
 // (los setea `atributos.js`/`amateur.js`, no este sistema).
 
-function terminar(state, finAnticipado, mensaje, { reversible } = { reversible: false }) {
+// K5-C: todo retiro que decide este sistema (o la bifurcación del mercado) deja su motivo en una línea
+// (`state.motivoRetiro`), que la tarjeta muestra debajo del marco.
+function terminar(state, finAnticipado, mensaje, { reversible = false, motivo = null } = {}) {
   return {
     state: {
       ...state,
       phase: 'retirado',
       terminado: !reversible,
       finAnticipado,
-      flags: { ...state.flags, splitsEnDeclive: 0, splitsEnVentana: 0 }
+      motivoRetiro: motivo,
+      flags: { ...state.flags, splitsEnDeclive: 0, splitsEnVentana: 0, splitsSinOfertaEnTier: 0 }
     },
     logs: [crearLog('retiro', mensaje)]
   };
@@ -42,6 +49,29 @@ function mensajeDeSalida(state, finAnticipado) {
   }
   return `Te retirás a los ${state.age}. ${state.career.titulos} título(s), `
     + `${state.career.internacionales} internacional(es). Se cierra una carrera.`;
+}
+
+const NUMERO_EN_PALABRAS = ['cero', 'una', 'dos', 'tres', 'cuatro', 'cinco', 'seis'];
+
+// "dos pretemporadas seguidas" (o "la última pretemporada"): cuántos mercados te dijeron que no, en palabras.
+export function pretemporadasEnPalabras(n) {
+  if (n <= 1) {
+    return 'la última pretemporada';
+  }
+  return `${NUMERO_EN_PALABRAS[n] ?? n} pretemporadas seguidas`;
+}
+
+function finDeSalida(state) {
+  return state.career.currentOrg ? 'retiro_elegido' : 'sin_equipo';
+}
+
+// K5-C: la bifurcación del mercado (`systems/mercado.js`, motivo `fin_mercado`) termina acá cuando elegís colgar el
+// mouse. Mismo retiro que `retiro_declive` —con la ventana de vuelta si te quedan vueltas—, pero con el motivo que
+// dio el mercado ("Ninguna org de LCK te ofreció contrato en dos pretemporadas seguidas.").
+export function retirarsePorMercado(state, motivo) {
+  const finAnticipado = finDeSalida(state);
+  const puedeVolver = state.flags.vueltasUsadas < BALANCE.retiro.vueltasMaximas;
+  return terminar(state, finAnticipado, `${motivo} ${mensajeDeSalida(state, finAnticipado)}`, { reversible: puedeVolver, motivo });
 }
 
 function decisionDeclive(state) {
@@ -56,6 +86,42 @@ function decisionDeclive(state) {
     ],
     datos: { motivo: 'retiro_declive' }
   };
+}
+
+// K4-C2 (regla 15): el retiro que elegís en una bifurcación (`retirarse` en `data/events/caminos.json`: dejar de
+// competir para vivir del canal, colgar el mouse para pasar al staff). Va por el MISMO camino que el retiro del
+// declive (`terminar`, reversible si te quedan vueltas): la ventana de vuelta, la tarjeta y el `finAnticipado`
+// ('retiro_elegido') son los de siempre. El motivo queda en `state.motivoRetiro` (K5: el único lugar; la tarjeta lo
+// muestra) y se dice en el log, en palabras.
+export const MOTIVOS_DE_RETIRO = {
+  streaming: 'para vivir del canal',
+  staff: 'para pasar al staff'
+};
+
+export function retirarsePorCamino(state, motivo) {
+  const puedeVolver = state.flags.vueltasUsadas < BALANCE.retiro.vueltasMaximas;
+  const { state: retirado, logs } = terminar(state, 'retiro_elegido',
+    `Dejás de competir a los ${state.age} ${MOTIVOS_DE_RETIRO[motivo]}. ${state.career.titulos} título(s), `
+    + `${state.career.internacionales} internacional(es).${puedeVolver ? ' La puerta queda entreabierta.' : ''}`,
+    { reversible: puedeVolver, motivo: `Dejaste de competir ${MOTIVOS_DE_RETIRO[motivo]}.` });
+  return { state: retirado, descripcion: `te retirás ${MOTIVOS_DE_RETIRO[motivo]}`, logs };
+}
+
+// K4-C2: la ventana de vuelta tiene su contenido (`data/events/retiro_y_vuelta.json`, etapa `retirado`), que el
+// pipeline no corría: `phase: 'retirado'` corta las etapas antes de `events`. Ahora sale acá, en la parada donde se
+// decide la vuelta: una bifurcación (`la_llamada_del_manager`) frena antes del "¿Volvés?"; el resto lo resuelve tu
+// perfil en una línea de crónica, como cualquier evento que no es bifurcación (K4-C).
+function eventoDeVentana(state, rng) {
+  const evento = elegirEvento(state, rng, { filtro: (candidato) => candidato.contexto?.etapa?.includes('retirado') });
+  if (!evento) {
+    return { state, logs: [], decision: decisionVuelta(state) };
+  }
+  if (evento.bifurcacion) {
+    const decision = decisionDesdeEvento(state, evento, { franja: 'normal', slot: 1 });
+    return { state, logs: [], decision: { ...decision, datos: { ...decision.datos, motivo: 'evento_ventana' } } };
+  }
+  const resuelto = resolverOpcion(state, evento, opcionDelPerfilPara(state, evento), rng, { cronica: state.player.perfil.actual });
+  return { state: resuelto.state, logs: resuelto.logs, decision: decisionVuelta(resuelto.state) };
 }
 
 function decisionVuelta(state) {
@@ -77,7 +143,7 @@ function decisionVuelta(state) {
 // `player.splitCount` queda congelado (lo mueve `atributos.js`, que no llega
 // a correr), así que el reloj de la ventana es propio: `flags.splitsEnVentana`,
 // que este mismo sistema es el único que toca.
-function aplicarVentanaDeVuelta(state) {
+function aplicarVentanaDeVuelta(state, rng) {
   const r = BALANCE.retiro;
   const splitsEnVentana = state.flags.splitsEnVentana + 1;
   const conCuenta = { ...state, flags: { ...state.flags, splitsEnVentana } };
@@ -98,7 +164,7 @@ function aplicarVentanaDeVuelta(state) {
     return { state: conCuenta, logs: [crearLog('retiro', 'Seguís retirado. Nada nuevo este split.', { tecnico: true })] };
   }
 
-  return { state: conCuenta, logs: [], decision: decisionVuelta(conCuenta) };
+  return eventoDeVentana(conCuenta, rng);
 }
 
 export function aplicar(state, rng) {
@@ -106,7 +172,7 @@ export function aplicar(state, rng) {
   // — un retiro terminal nunca vuelve a correr `ETAPAS_SPLIT`
   // (`core/pipeline.js` corta en `state.terminado` antes de llegar).
   if (state.phase === 'retirado') {
-    return aplicarVentanaDeVuelta(state);
+    return aplicarVentanaDeVuelta(state, rng);
   }
 
   if (state.phase !== 'profesional') {
@@ -127,8 +193,9 @@ export function aplicar(state, rng) {
   // `vueltasUsadas < vueltasMaximas` podía rebotar de vuelta contra la MISMA
   // edad una y otra vez, corriendo el retiro "de verdad" varios años de más.
   if (state.age >= r.edadRetiroForzoso) {
-    const finAnticipado = state.career.currentOrg ? 'retiro_elegido' : 'sin_equipo';
-    return terminar(state, finAnticipado, mensajeDeSalida(state, finAnticipado), { reversible: false });
+    const finAnticipado = finDeSalida(state);
+    const motivo = `Llegaste a los ${state.age}: la línea que casi nadie cruza en el competitivo.`;
+    return terminar(state, finAnticipado, mensajeDeSalida(state, finAnticipado), { reversible: false, motivo });
   }
 
   // `contexto.etapa === 'declive'` no incluye "sin equipo" (D30, `core/
@@ -155,7 +222,9 @@ export function aplicar(state, rng) {
   const splitsEnDeclive = state.flags.splitsEnDeclive + 1;
   const conCuenta = { ...state, flags: { ...state.flags, splitsEnDeclive } };
 
-  if (splitsEnDeclive < r.splitsDeclivePorAviso) {
+  // K5-C: si el mercado ya frenó esta misma pretemporada con "bajás o te retirás" (`forkMercadoSplit`), no se
+  // pregunta dos veces: la cuenta sigue, la pregunta queda para el año que viene.
+  if (splitsEnDeclive < r.splitsDeclivePorAviso || state.flags.forkMercadoSplit === state.player.splitCount) {
     return { state: conCuenta, logs: [] };
   }
 
@@ -164,6 +233,11 @@ export function aplicar(state, rng) {
 
 export function resolver(state, decision, respuesta, rng) {
   const { motivo } = decision.datos;
+
+  if (motivo === 'evento_ventana') {
+    const resuelto = resolverEvento(state, decision, respuesta, rng);
+    return { state: resuelto.state, logs: resuelto.logs, decision: decisionVuelta(resuelto.state) };
+  }
 
   if (motivo === 'retiro_declive') {
     const r = BALANCE.retiro;
@@ -174,9 +248,10 @@ export function resolver(state, decision, respuesta, rng) {
         logs: [crearLog('retiro', 'Decidís seguir. El mercado no va a esperar para siempre.')]
       };
     }
-    const finAnticipado = state.career.currentOrg ? 'retiro_elegido' : 'sin_equipo';
+    const finAnticipado = finDeSalida(state);
     const puedeVolver = state.flags.vueltasUsadas < r.vueltasMaximas;
-    return terminar(state, finAnticipado, mensajeDeSalida(state, finAnticipado), { reversible: puedeVolver });
+    const motivo = `El mercado te venía diciendo que no: ${pretemporadasEnPalabras(state.flags.splitsEnDeclive)} en baja.`;
+    return terminar(state, finAnticipado, mensajeDeSalida(state, finAnticipado), { reversible: puedeVolver, motivo });
   }
 
   // motivo === 'retiro_vuelta'
@@ -185,6 +260,7 @@ export function resolver(state, decision, respuesta, rng) {
       state: {
         ...state,
         phase: 'profesional',
+        motivoRetiro: null,
         flags: {
           ...state.flags,
           splitsEnVentana: 0,
@@ -200,6 +276,9 @@ export function resolver(state, decision, respuesta, rng) {
 
 export function resolverAuto(state, decision, rng) {
   const { motivo } = decision.datos;
+  if (motivo === 'evento_ventana') {
+    return resolverAutoEvento(state, decision, rng);
+  }
   if (motivo === 'retiro_declive') {
     // Alguien con criterio acepta el veredicto del mercado en vez de
     // insistir contra viento y marea (`CONCEPTO` §12.4: la causa modal de

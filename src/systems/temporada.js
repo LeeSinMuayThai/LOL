@@ -6,14 +6,14 @@ import { resolverTexto } from '../core/plantillas.js';
 import { ligaOZonaDeCarrera } from '../core/competicion.js';
 import {
   generarFixture, aplicarCrucesDeJornada, tablaDePosiciones, posicionEnTabla,
-  motivosDeFecha, motivoPrincipal, decisionDeDraftFecha, probabilidadDeFechaMarcada,
+  motivosDeFecha, motivoPrincipal, defineClasificacion, defineClasificacionMasAdelante,
+  campeonDelSplitEnPool, probabilidadDeFechaMarcada,
   registrarEnFila, filaVacia, rendimientoDeLaTemporada, resultadosVacios, sumarResultado
 } from '../core/temporada.js';
 import { nivelDeCompaneros, rendimientoBase, rendimientoDePartido, fuerzaDePartido } from '../core/fuerza.js';
 import { jugarPartido, tirarPartido } from '../core/partido.js';
 import { nivelDelJugador } from '../core/ficha.js';
 import { disponibleEn, opcionesVivas, resolverOpcion, cooldownActivo, pesoConMemoria } from './events.js';
-import { pesoDePick, factorDeCampeon, lecturaDePick } from '../core/ajusteMeta.js';
 import { registrarFecha, registrarSplitJugado } from '../core/registro.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
@@ -23,8 +23,9 @@ export const id = 'temporada';
 // La temporada regular (fase 5): antes de esto, `rendimiento.js` resolvía la
 // posición del split entero con una sola tirada. Ahora hay un calendario real
 // con nombre y tabla, y a lo sumo UNA fecha del split frena al jugador (fase
-// 9Re: era 2-3) — draft corto, un momento con 2 a 4 opciones que mueve el
-// resultado de ESE partido, y el resultado inmediato. El resto del calendario
+// 9Re: era 2-3) — la que decide algo (K4-A), sin draft: la previa y un momento
+// con 2 a 4 opciones que mueve el resultado de ESE partido, y el resultado
+// inmediato. El resto del calendario
 // se resuelve en silencio y pasa resumido en una línea `tecnico`.
 // `rendimiento.js` sigue aplicando las consecuencias (hype, mentalidad,
 // jerarquía, títulos): esto solo decide de dónde sale la posición que él lee.
@@ -35,30 +36,13 @@ export const id = 'temporada';
 // tiene varias variantes y se elige una de forma determinista según el rival y
 // el split — sin tocar el `rng`, para no correr el stream.
 export const ETIQUETAS_MOTIVO = {
-  clasico: ['Clásico', 'El clásico', 'Viejo conocido'],
-  puntero: ['Contra el puntero', 'El de arriba', 'Choque de arriba'],
   define_clasificacion: ['Se define la clasificación', 'Partido bisagra', 'Todo o nada'],
-  revancha: ['La revancha', 'Cuentas pendientes', 'El desquite'],
-  presion: ['Con la soga al cuello', 'Sin margen', 'Obligados'],
-  rival_de_generacion: ['Cruce de generación', 'El de tu camada', 'Mano a mano generacional'],
-  parejo: ['Partido parejo', 'Mano a mano', 'Se define por detalles']
+  archirrival: ['El archirrival', 'Duelo de archirrivales', 'Cara a cara'],
+  clasico: ['Clásico', 'El clásico', 'Viejo conocido'],
+  revancha: ['La revancha', 'Cuentas pendientes', 'El desquite']
 };
 
 export const FRASES_MOTIVO = {
-  clasico: [
-    (r) => `El clásico contra ${r}.`,
-    (r) => `Otra vez contra ${r}: siempre pesa distinto.`,
-    (r) => `${r} enfrente. Con estos ya hay historia.`,
-    (r) => `Toca ${r}, y no es un partido más.`,
-    (r) => `Contra ${r}, el rival de siempre.`
-  ],
-  puntero: [
-    (r) => `Contra el puntero, ${r}.`,
-    (r) => `${r} va primero: hoy se mide contra el mejor.`,
-    (r) => `Choque contra ${r}, que lidera la tabla.`,
-    (r) => `${r} arriba de todos. A ver de qué están hechos.`,
-    (r) => `Contra ${r}, el que manda la liga por ahora.`
-  ],
   define_clasificacion: [
     (r) => `Contra ${r}, con la clasificación en juego.`,
     (r) => `${r}, y de este partido depende entrar a playoffs.`,
@@ -66,33 +50,26 @@ export const FRASES_MOTIVO = {
     (r) => `${r} enfrente, con el boleto a playoffs sobre la mesa.`,
     (r) => `Contra ${r}, partido bisagra por la clasificación.`
   ],
+  archirrival: [
+    (r) => `Contra ${r}, el equipo de tu archirrival.`,
+    (r) => `${r} enfrente, y del otro lado juega tu archirrival.`,
+    (r) => `Toca ${r}: con el archirrival enfrente no se regala nada.`,
+    (r) => `Contra ${r}, con las cuentas pendientes de tu archirrival.`,
+    (r) => `${r}, y el que te viene peleando todo está del otro lado.`
+  ],
+  clasico: [
+    (r) => `El clásico contra ${r}.`,
+    (r) => `Otra vez contra ${r}: siempre pesa distinto.`,
+    (r) => `${r} enfrente. Con estos ya hay historia.`,
+    (r) => `Toca ${r}, y no es un partido más.`,
+    (r) => `Contra ${r}, el rival de siempre.`
+  ],
   revancha: [
     (r) => `La revancha contra ${r}, que te dejó afuera la última vez.`,
     (r) => `${r} otra vez: los mismos que te eliminaron.`,
     (r) => `Contra ${r}, con la eliminación todavía atragantada.`,
     (r) => `${r} enfrente. Hay cuentas pendientes de la última serie.`,
     (r) => `Toca ${r}, los que te sacaron de los playoffs pasados.`
-  ],
-  presion: [
-    (r) => `Contra ${r}, veniendo de racha negativa.`,
-    (r) => `${r} enfrente, y no podés permitirte otra derrota.`,
-    (r) => `Contra ${r}, con la cabeza cargada de las últimas caídas.`,
-    (r) => `${r}, y el equipo necesita ganar ya.`,
-    (r) => `Contra ${r}, obligados a cortar la mala racha.`
-  ],
-  rival_de_generacion: [
-    (r) => `Contra ${r}, con uno de tu generación del otro lado.`,
-    (r) => `${r} enfrente: del otro lado juega uno de tu camada.`,
-    (r) => `Contra ${r}, mano a mano con alguien que debutó con vos.`,
-    (r) => `${r}, y enfrente está uno con el que te comparan.`,
-    (r) => `Toca ${r}: cruce con un rival de tu propia generación.`
-  ],
-  parejo: [
-    (r) => `Contra ${r}, mano a mano.`,
-    (r) => `${r} enfrente, de los que se definen por detalles.`,
-    (r) => `Contra ${r}, parejo de arriba a abajo.`,
-    (r) => `${r}, y en el papel no hay favorito.`,
-    (r) => `Contra ${r}, uno de esos que salen 50 y 50.`
   ]
 };
 
@@ -106,7 +83,7 @@ function etiquetaDeMotivo(motivo, semilla = '') {
 }
 
 function fraseDeMotivo(motivo, rival, semilla = '') {
-  const opciones = FRASES_MOTIVO[motivo] ?? FRASES_MOTIVO.parejo;
+  const opciones = FRASES_MOTIVO[motivo] ?? FRASES_MOTIVO.clasico;
   return variante(opciones, `${motivo}|${rival}|${semilla}`)(rival);
 }
 
@@ -252,28 +229,6 @@ function candidatosDePartido(state, motivo, soloPostpartido) {
   ));
 }
 
-// Fase 9Rd: mismas reglas que el draft de una serie — opciones ordenadas
-// best-first por `factorDeCampeon` y cada una con su lectura en palabras.
-function construirDecisionDraft(state) {
-  const fecha = state.career.temporada.fechaEnCurso;
-  const weights = state.meta.weights;
-  const pool = state.player.championPool;
-  const ordenados = [...pool].sort(
-    (a, b) => factorDeCampeon(b, weights) - factorDeCampeon(a, weights)
-  );
-  return {
-    tipo: 'opciones',
-    titulo: `vs ${fecha.rival} · ${etiquetaDeMotivo(motivoPrincipal(fecha.motivos), state.player.splitCount)}`,
-    descripcion: 'Con qué campeón vas a este partido.',
-    opciones: ordenados.map((campeon) => ({
-      id: campeon.name,
-      label: campeon.name,
-      descripcion: `${lecturaDePick(campeon, weights, pool)} · maestría ${Math.round(campeon.mastery)}`
-    })),
-    datos: { motivo: 'draft' }
-  };
-}
-
 // K3 (PLAN.md "K3, tal como quedó y lo que se decide al integrar"): la pausa guarda la p de antes de decidir
 // (`pAntesDeDecidir`, la que muestra la previa). Decidir mueve el partido de verdad —el `ajustePartido` y, con
 // `consistencia.k` ≠ 0, la mentalidad—, así que la p tirada se calcula con el estado de después y esta es la que
@@ -288,7 +243,13 @@ function construirDecisionMomento(state, evento, contexto, fecha, tipoDecision) 
       label: resolverTexto(opcion.label, state),
       descripcion: resolverTexto(opcion.descripcion, state)
     })),
-    datos: { motivo: tipoDecision, eventoId: evento.id, pAntesDeDecidir: probabilidadDeFechaMarcada(state) }
+    datos: {
+      motivo: tipoDecision,
+      eventoId: evento.id,
+      pAntesDeDecidir: probabilidadDeFechaMarcada(state),
+      // K4-A: el rótulo del partido, para el subtítulo de la previa.
+      etiqueta: etiquetaDeMotivo(motivoPrincipal(fecha.motivos), state.player.splitCount)
+    }
   };
 }
 
@@ -311,12 +272,10 @@ function arrancarMomento(state, rng, logs, campeonElegido) {
   return { state: stConCampeon, logs, decision: construirDecisionMomento(stConCampeon, evento, contexto, fecha, 'momento') };
 }
 
+// K4-A: sin draft. La fecha marcada frena UNA vez —la previa y el momento— y se
+// juega con el campeón del split, el que ya asumió `t.fuerzaPropia`.
 function arrancarFechaMarcada(state, rng, logs) {
-  const draft = decisionDeDraftFecha(state);
-  if (draft.pausa) {
-    return { state, logs, decision: construirDecisionDraft(state) };
-  }
-  return arrancarMomento(state, rng, logs, draft.elegido);
+  return arrancarMomento(state, rng, logs, campeonDelSplitEnPool(state) ?? null);
 }
 
 // --- Resolver el resultado de la fecha marcada y seguir el calendario ---
@@ -423,25 +382,33 @@ function continuarTemporada(state, rng, logsAcum) {
 
     const fecha = t.calendario[t.indice];
     const liga = ligaOZonaDeCarrera(st);
-    const tablaAntes = tablaDePosiciones(t.registrosOtros, t.filaPropia);
-    const motivos = motivosDeFecha(st, liga, fecha, tablaAntes, t.racha, t.indice, t.calendario.length);
-    const principal = motivoPrincipal(motivos);
 
-    // Fase 9Re: se marca la PRIMERA fecha del split con un motivo real (nunca
-    // `parejo`), y como mucho una. Fase 9R0a: y sólo si el par (motivo, rival)
-    // no está en cooldown — sin esto la misma revancha/clásico contra el mismo
-    // rival se marcaba split tras split (el fixture es determinista y ese
-    // rival no cambiaba). Una temporada sin ningún motivo libre pasa entera
-    // resumida, y está bien.
     // Fase 10c: mientras haya baja por lesión pendiente (`systems/salud.js`),
-    // el equipo juega esta fecha sin vos — nunca se marca (no hay draft de
-    // fecha para un partido que no jugás).
+    // el equipo juega esta fecha sin vos — nunca se marca (no hay fecha
+    // marcada para un partido que no jugás).
     const enBajaPorLesion = st.flags.fechasBajaLesion > 0;
 
+    // K4-A: se marca la fecha que DECIDE algo, y como mucho una por split
+    // (`objetivoMarcadas`). Con el cupo libre se mira esta fecha: si define la
+    // clasificación (la de mayor prioridad) frena; si es de menor prioridad (el
+    // archirrival, el clásico, la revancha) frena solo si el split no tiene a la
+    // vista una que defina la clasificación más adelante, así gana la de mayor
+    // prioridad y, a igual prioridad, la primera. Fase 9R0a: y las de menor
+    // prioridad solo si el par (motivo, rival) no está en cooldown — sin esto la
+    // misma revancha/clásico contra el mismo rival se marcaba split tras split.
+    // Una temporada sin ningún motivo libre pasa entera resumida, y está bien.
     const marcadasQueFaltan = t.objetivoMarcadas - t.marcadasHechas;
-    const marcar = !enBajaPorLesion && marcadasQueFaltan > 0
-      && principal !== 'parejo'
-      && !parEnCooldown(st, principal, fecha.rival);
+    let motivos = ['parejo'];
+    let marcar = false;
+    if (!enBajaPorLesion && marcadasQueFaltan > 0) {
+      motivos = motivosDeFecha(st, liga, fecha, t);
+      const principal = motivoPrincipal(motivos);
+      marcar = principal === 'define_clasificacion'
+        || (principal !== 'parejo'
+          && !parEnCooldown(st, principal, fecha.rival)
+          && !defineClasificacionMasAdelante(st, liga, t));
+    }
+    const principal = motivoPrincipal(motivos);
 
     if (marcar) {
       const logs = [...logsAcum];
@@ -512,15 +479,9 @@ export function aplicar(state, rng) {
 }
 
 export function resolver(state, decision, respuesta, rng) {
-  const { motivo } = decision.datos;
-
-  if (motivo === 'draft') {
-    const elegido = state.player.championPool.find((campeon) => campeon.name === respuesta.opcionId) ?? null;
-    return arrancarMomento(state, rng, [], elegido);
-  }
-
-  // Solo queda el 'momento': la reacción postpartido dejó de ser una decisión
-  // (fase 9Re, se resuelve sola en `resolverFechaMarcada`).
+  // Solo hay 'momento': el draft de la fecha desapareció (K4-A) y la reacción
+  // postpartido dejó de ser una decisión (fase 9Re, se resuelve sola en
+  // `resolverFechaMarcada`).
   const evento = TODOS_LOS_EVENTOS.find((candidato) => candidato.id === decision.datos.eventoId);
   const { state: nextState, logs } = resolverOpcion(state, evento, respuesta.opcionId, rng);
 
@@ -528,16 +489,6 @@ export function resolver(state, decision, respuesta, rng) {
 }
 
 export function resolverAuto(state, decision, rng) {
-  const { motivo } = decision.datos;
-
-  if (motivo === 'draft') {
-    // Mismo criterio único que el draft de una serie de playoffs (fase 9Rc):
-    // `pesoDePick` (factorDeCampeon exagerado), no uniforme, para que el camino
-    // headless mida algo parecido a jugar con criterio.
-    const elegido = weightedPick(state.player.championPool, (campeon) => pesoDePick(campeon, state.meta.weights), rng);
-    return { opcionId: elegido.name };
-  }
-
   const evento = TODOS_LOS_EVENTOS.find((candidato) => candidato.id === decision.datos.eventoId);
   const opcion = weightedPick(opcionesVivas(state, evento), (candidata) => candidata.weight, rng);
   return { opcionId: opcion.id };

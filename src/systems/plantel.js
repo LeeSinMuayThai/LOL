@@ -1,4 +1,6 @@
 import { crearLog } from '../core/log.js';
+import { roll } from '../core/rng.js';
+import { BALANCE } from '../data/balance.js';
 import { esCierreDeEdad } from './edadCierre.js';
 import {
   usadosDePlanteles, envejecerNpc, seVaDelMundo, generarCanterano,
@@ -9,8 +11,8 @@ import { IDS_ROL } from '../data/roles.js';
 // EL MUNDO ENVEJECE — el offseason de la etapa amateur (fase 9M / 9Mc).
 //
 // Corre SOLO en el offseason (cierre de edad): envejece a cada NPC un año,
-// mueve su nivel por la curva, descuenta un año de contrato, retira al que
-// nadie quiere y sube un canterano a cubrir el asiento. Al final recalcula
+// mueve su nivel por la curva, descuenta un año de contrato (y renueva en su org
+// al que se le venció), retira al que nadie quiere y sube un canterano a cubrir el asiento. Al final recalcula
 // `org.fuerza` desde el plantel.
 //
 // Fase 9Mc: en la etapa PROFESIONAL este trabajo lo hace `core/mercadoMundial.js`
@@ -42,6 +44,11 @@ function envejecerEnSitio(state, rng) {
       if (!envejecido.esJugador && seVaDelMundo(envejecido, fuerzaOrg)) {
         nuevo[rol] = liga ? generarCanterano(rng, { rol, liga, fuerzaOrg, usados }) : envejecido;
         if (liga) bajas += 1;
+      } else if (!envejecido.esJugador && envejecido.contrato.anios <= 0) {
+        // Revisión de K5: el que se queda renueva en su org (contrato fresco, como en `mercadoMundial`). Sin esto, en
+        // una carrera que nunca llega a profesional (el mercado del mundo no corre) todos los contratos del mundo
+        // decaían a 0 y quedaban ahí: seed 8 terminó `no_llego` con el 19% de los NPC con contrato vigente.
+        nuevo[rol] = { ...envejecido, contrato: { ...envejecido.contrato, anios: roll(BALANCE.plantel.contratoAniosMin, BALANCE.plantel.contratoAniosMax, rng) } };
       } else {
         nuevo[rol] = envejecido;
       }

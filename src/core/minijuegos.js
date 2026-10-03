@@ -148,3 +148,19 @@ export function lecturaDeVentana(entrada, state) {
       : 'te deja la ventana angosta';
   return { stat: entrada.statRelevante, valor, frase };
 }
+
+// K4-C: la prueba en cada salto grande — el primer fichaje en tier 2, el primero en tier 1 y el primero como
+// import (PLAN.md K4: "la prueba, en cada salto grande"). Devuelve las claves de salto que este fichaje estrena
+// (`[]` si no estrena ninguno); `flags.saltosConPrueba` guarda las que ya tuvieron su prueba. Puro, sin `rng`.
+export function saltosDeFichaje(state, oferta) {
+  if (!oferta || oferta.tag === 'renovacion') {
+    return [];
+  }
+  const hechos = state.flags.saltosConPrueba ?? [];
+  const claves = [];
+  // Tier 2 no es salto si ya jugaste en tier 1 (bajar y volver a subir no es estrenar nada).
+  if (oferta.tier === 2 && !hechos.includes('tier1')) claves.push('tier2');
+  if (oferta.tier === 1) claves.push('tier1');
+  if (oferta.datos?.tipo === 'import') claves.push('import');
+  return claves.filter((clave) => !hechos.includes(clave));
+}

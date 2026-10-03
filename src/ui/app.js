@@ -32,6 +32,11 @@ export function iniciar() {
   const rolGrid = document.getElementById('rolGrid');
   const campeonGrid = document.getElementById('campeonGrid');
   const draftSlots = document.getElementById('draftSlots');
+  // K4-C: el perfil se elige en el inicio (un control compacto, `screens/inicio.js`).
+  const perfilGrid = document.getElementById('perfilGrid');
+  const perfilTexto = document.getElementById('perfilTexto');
+  const regionGrid = document.getElementById('regionGrid');
+  const regionTexto = document.getElementById('regionTexto');
   const poolContador = document.getElementById('poolContador');
   const continuarDetalle = document.getElementById('continuarDetalle');
 
@@ -59,6 +64,8 @@ export function iniciar() {
   const mercadoMundo = document.getElementById('mercadoMundo');
   const mercadoRepresentante = document.getElementById('mercadoRepresentante');
   const mercadoEsperar = document.getElementById('mercadoEsperar');
+  const mercadoCol = document.getElementById('mercadoCol');
+  const mercadoPrep = document.getElementById('mercadoPrep');
   const tarjetaPanel = document.getElementById('tarjeta');
   const seedInput = document.getElementById('seedInput');
   const continuarBtn = document.getElementById('continuarBtn');
@@ -99,7 +106,7 @@ export function iniciar() {
   // la pantalla de ofertas).
   const carreraElements = { fichaContainer, logList };
   const decisionElements = { decisionPanel, decisionTitle, decisionDesc, decisionOptions };
-  const mercadoElements = { mercadoPanel, mercadoTitle, mercadoDesc, mercadoVos, mercadoGrid, mercadoMundo, mercadoRepresentante, mercadoEsperar };
+  const mercadoElements = { mercadoPanel, mercadoTitle, mercadoDesc, mercadoVos, mercadoGrid, mercadoMundo, mercadoRepresentante, mercadoEsperar, mercadoCol, mercadoPrep };
 
   let modulos = null;
   let ui = null;
@@ -130,9 +137,9 @@ export function iniciar() {
   async function cargarModulos() {
     if (!modulos) {
       const [
-        { mulberry32 }, { createInitialState }, pipeline, { BALANCE },
+        { mulberry32 }, { createInitialState, regionesDeOrigen }, pipeline, { BALANCE },
         rolesModulo, ranked, { describirContexto }, formato, campeonesModulo, render,
-        reproductorModulo, sonidoModulo, almacenamientoModulo
+        reproductorModulo, sonidoModulo, almacenamientoModulo, perfilModulo
       ] = await Promise.all([
         import('../core/rng.js'),
         import('../core/state.js'),
@@ -146,14 +153,19 @@ export function iniciar() {
         import('./render.js'),
         import('./reproductor.js'),
         import('./sonido.js'),
-        import('./almacenamiento.js')
+        import('./almacenamiento.js'),
+        import('../core/perfil.js')
       ]);
       modulos = {
         mulberry32, createInitialState, pipeline, BALANCE, formato,
         etiquetaRol: rolesModulo.etiquetaRol, ROLES: rolesModulo.ROLES,
         atributosClave: rolesModulo.atributosClave, IDS_ROL: rolesModulo.IDS_ROL,
         ranked, describirContexto,
-        CAMPEONES: campeonesModulo.default
+        CAMPEONES: campeonesModulo.default,
+        IDS_PERFIL: perfilModulo.IDS_PERFIL, nombreDePerfil: perfilModulo.nombreDePerfil,
+        descripcionDePerfil: perfilModulo.descripcionDePerfil,
+        // K5-B: las regiones elegibles con su línea de dificultad (sale de `leagues.json`).
+        REGIONES_DE_ORIGEN: regionesDeOrigen()
       };
       ui = render;
       reproductor = reproductorModulo;
@@ -180,6 +192,40 @@ export function iniciar() {
     minijuegoApuesta.replaceChildren(crearApuesta(decision, estadoActual));
     minijuegoWidget.innerHTML = '';
 
+    // K4-B: en el mapa decisivo, si te queda la charla del coach de la temporada, se elige antes de jugar: cada botón
+    // dice con cuánto llegás (la previa de arriba cambia con la elección, y es la p que se tira).
+    if (decision.datos.charla?.disponible) {
+      const conCharla = previaDeDecision(estadoActual, decision, { charla: true });
+      const sinCharla = previaDeDecision(estadoActual, decision, { charla: false });
+      const eleccion = document.createElement('div');
+      eleccion.className = 'minijuego-charla';
+      const pregunta = document.createElement('p');
+      pregunta.className = 'minijuego-charla-pregunta';
+      pregunta.textContent = 'Te queda la charla del coach de esta temporada. ¿La usa antes de este mapa?';
+      eleccion.appendChild(pregunta);
+      [
+        { charla: true, label: 'Que hable el coach ahora', previa: conCharla },
+        { charla: false, label: 'Guardarla para después', previa: sinCharla }
+      ].forEach((opcion) => {
+        const boton = document.createElement('button');
+        boton.type = 'button';
+        boton.className = 'option-btn';
+        boton.textContent = opcion.previa ? `${opcion.label} · ${opcion.previa.porcentaje}% de ganar` : opcion.label;
+        boton.addEventListener('click', () => {
+          pintarPrevia(decision, estadoActual, { charla: opcion.charla });
+          minijuegoWidget.innerHTML = '';
+          montarMinijuego(decision, estadoActual, opcion.charla);
+        });
+        eleccion.appendChild(boton);
+      });
+      minijuegoWidget.appendChild(eleccion);
+      ui.renderLowerThird(summary, metaPill, estadoActual, { modo: 'minijuego' });
+      return;
+    }
+    montarMinijuego(decision, estadoActual, false);
+  }
+
+  function montarMinijuego(decision, estadoActual, charla) {
     const montar = MONTAR_MINIJUEGO[decision.datos.minijuego];
     let resuelto = false;
     montar(minijuegoWidget, estadoActual, (resultado) => {
@@ -188,7 +234,7 @@ export function iniciar() {
       }
       resuelto = true;
       // K2d: la p final del mapa, ya corrida por el minijuego: la que se tira.
-      const previaFinal = pintarPrevia(decision, estadoActual, { resultadoMinijuego: resultado });
+      const previaFinal = pintarPrevia(decision, estadoActual, { resultadoMinijuego: resultado, charla });
       const v = veredictoDeMinijuego(decision.datos.minijuego, resultado, estadoActual);
       if (resultado >= 0.67) marcarHit(minijuegoWidget);
       else if (resultado <= 0.33) marcarMiss(minijuegoWidget);
@@ -200,7 +246,7 @@ export function iniciar() {
         + (previaFinal ? '<div class="minijuego-resultado-p">Con esto: ' + previaFinal.porcentaje + '% de ganar</div>' : '')
         + '</div>';
       ui.renderLowerThird(summary, metaPill, estadoActual, { modo: 'minijuego' });
-      setTimeout(() => responder({ resultado }), 1600);
+      setTimeout(() => responder(decision.datos.charla?.disponible ? { resultado, charla } : { resultado }), 1600);
     }, rngUi);
 
     ui.renderLowerThird(summary, metaPill, estadoActual, { modo: 'minijuego' });
@@ -229,15 +275,19 @@ export function iniciar() {
 
     minijuegoPanel.hidden = true;
 
-    if (decision.presentacion === 'mercado') {
+    // K4-D: la pretemporada es una sola parada. Con mercado ('mercado') o solo con la preparación ('pretemporada'), va a
+    // la misma pantalla; `extra` es la rutina elegida, que viaja con cada respuesta.
+    if (decision.presentacion === 'mercado' || decision.presentacion === 'pretemporada') {
       decisionPanel.hidden = true;
       ui.mostrarMercadoEnPantalla(
         mercadoElements, decision, responder,
-        () => responder({ representante: true }),
+        (extra) => responder({ representante: true, ...extra }),
         responder,
-        () => responder({ negociar: 'esperar' })
+        (extra) => responder({ negociar: 'esperar', ...extra })
       );
-      ui.renderLowerThird(summary, metaPill, estadoActual, { modo: 'mercado', decision });
+      ui.renderLowerThird(summary, metaPill, estadoActual, {
+        modo: decision.presentacion === 'pretemporada' ? 'decision' : 'mercado', decision
+      });
       return;
     }
 
@@ -519,8 +569,9 @@ export function iniciar() {
         // La elección de la pantalla de inicio entra como tercer argumento.
         // Si el jugador no eligió nada (camino headless), `createInitialState`
         // sortea todo de la seed exactamente como antes.
-        const { rol, campeones } = pantallaInicio.getSeleccion();
-        eleccion = { handle: handleInput.value, rol, campeones };
+        // K5-B: la región también (`null` = la sortea la seed). El desafío diario no pasa por acá.
+        const { rol, campeones, perfil, region } = pantallaInicio.getSeleccion();
+        eleccion = { handle: handleInput.value, rol, campeones, perfil, regionOrigen: region };
       }
       rng = mulberry32(seed);
       rngUi = mulberry32((seed ^ 0x9E3779B9) >>> 0);
@@ -658,7 +709,7 @@ export function iniciar() {
     try {
       await cargarModulos();
       pantallaInicio = ui.crearPantallaInicio(
-        { rolGrid, campeonGrid, poolContador, runButton, draftSlots },
+        { rolGrid, campeonGrid, poolContador, runButton, draftSlots, perfilGrid, perfilTexto, regionGrid, regionTexto },
         modulos
       );
       pantallaInicio.render();

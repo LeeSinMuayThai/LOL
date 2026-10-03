@@ -103,55 +103,9 @@
     }
   },
   {
-    "id": "bootcamp",
-    "momentos": [
-      "pre_internacional"
-    ],
-    "roles": [],
-    "statRelevante": "macro",
-    "efecto": {
-      "tipo": "stat",
-      "targets": [
-        "player.stats.mentalidad"
-      ]
-    },
-    "impacto": 6,
-    "spread": 0.2,
-    "reglaEnFiccion": "Repartí las horas de scrim entre práctica individual y macro antes de viajar al torneo.",
-    "nombresPorCompeticion": {
-      "internacional": "Bootcamp antes del internacional",
-      "default": "Bootcamp de preparación"
-    },
-    "titulos": [
-      "Bootcamp antes de viajar",
-      "Última semana de scrims",
-      "Bootcamp: se viaja en seis días"
-    ],
-    "descripciones": [
-      "Días contados antes del internacional. Hay que decidir qué scrimear bajo presión.",
-      "El staff arma la agenda de la semana y te deja repartir el foco.",
-      "Seis días de scrims contra equipos que juegan otro juego."
-    ],
-    "apuesta": "Lo que saques del bootcamp llega como Mentalidad al internacional.",
-    "veredictos": {
-      "bien": [
-        "El bootcamp rindió: llegás mejor preparado.",
-        "La semana cierra fina: llegás enchufado."
-      ],
-      "parejo": [
-        "El bootcamp fue parejo, no alcanzó a pulir todo.",
-        "La semana pasa sin pena ni gloria."
-      ],
-      "mal": [
-        "El bootcamp se hizo cuesta arriba: llegás justo.",
-        "Se scrimeó mal toda la semana y se nota."
-      ]
-    }
-  },
-  {
     "id": "rueda_de_prensa",
     "momentos": [
-      "post_serie"
+      "post_serie", "post_escandalo"
     ],
     "roles": [],
     "statRelevante": "adaptabilidad",

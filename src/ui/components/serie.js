@@ -102,12 +102,20 @@ const ETIQUETAS_BRACKET = {
 };
 let seriePrevia = { a: 0, b: 0 };
 
-export function crearBarraBracket(rondaActual, { esPostSerie = false, gano = false } = {}) {
+// K5-A: una serie del Mundial (`ronda: 'internacional'` con su `etapa`) muestra el bracket del Mundial, no el doméstico.
+export function crearBarraBracket(rondaActual, { esPostSerie = false, gano = false, etapa = null } = {}) {
   const bracket = document.createElement('div');
   bracket.className = 'serie-bracket';
 
-  const esIntl = rondaActual === 'internacional';
-  const indiceActual = RONDAS_BRACKET.indexOf(rondaActual);
+  const delMundial = rondaActual === 'internacional' && Boolean(etapa);
+  if (delMundial) {
+    const rotulo = document.createElement('span');
+    rotulo.className = 'serie-bracket-paso serie-bracket-paso--superada';
+    rotulo.textContent = 'MUNDIAL';
+    bracket.appendChild(rotulo);
+  }
+  const esIntl = rondaActual === 'internacional' && !delMundial;
+  const indiceActual = RONDAS_BRACKET.indexOf(delMundial ? etapa : rondaActual);
 
   RONDAS_BRACKET.forEach((ronda, indice) => {
     const paso = document.createElement('span');
@@ -179,6 +187,7 @@ export function crearTarjetaResultadoSerie(entry, state) {
   item.appendChild(cabecera);
 
   const bracket = crearBarraBracket(entry.ronda ?? state?.serie?.ronda, {
+    etapa: entry.etapa ?? state?.serie?.etapa ?? null,
     esPostSerie: true,
     gano: entry.gano
   });
@@ -233,7 +242,7 @@ export function renderSerieContexto(container, state) {
   container.replaceChildren();
 
   const ganoSerie = (serie.marcador?.[0] ?? 0) > (serie.marcador?.[1] ?? 0);
-  const bracket = crearBarraBracket(serie.ronda, { esPostSerie, gano: ganoSerie });
+  const bracket = crearBarraBracket(serie.ronda, { esPostSerie, gano: ganoSerie, etapa: serie.etapa ?? null });
   container.appendChild(bracket);
 
   const propia = state.career.currentOrg ?? state.player.name;

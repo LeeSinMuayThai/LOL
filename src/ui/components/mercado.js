@@ -2,6 +2,7 @@ import { plata } from '../../core/formato.js';
 import { crearOrgChip } from './orgChip.js';
 import { countUp } from './countUp.js';
 import { reconciliar, reemplazarEnElLugar } from '../core/reconciliar.js';
+import { nombreVisibleDeLiga } from '../formatoUi.js';
 
 // La pantalla de ofertas (fase 9c, PLAN.md §9.5-9.6): "la trampa del equipo
 // grande visible" hecha tarjeta. Cada campo que se pinta acá ya viene resuelto
@@ -62,7 +63,7 @@ function construirTarjeta(oferta, onElegir, onNegociar) {
   header.append(org, tag);
   card.appendChild(header);
 
-  card.appendChild(fila('mercado-card-liga', `${oferta.liga} · ${oferta.anios} año${oferta.anios === 1 ? '' : 's'}`));
+  card.appendChild(fila('mercado-card-liga', `${nombreVisibleDeLiga(oferta.liga)} · ${oferta.anios} año${oferta.anios === 1 ? '' : 's'}`));
   const salarioEl = document.createElement('div');
   salarioEl.className = 'mercado-card-salario';
   countUp(salarioEl, 0, oferta.salarioAnualUSD, { format: (n) => `${plata(n)}/año` });
@@ -142,7 +143,7 @@ function construirTarjetaTraspaso(opcion, onElegir) {
   card.appendChild(header);
 
   if (opcion.tipo !== 'quedarse') {
-    card.appendChild(fila('mercado-card-liga', `${opcion.liga} · ${opcion.anios} año${opcion.anios === 1 ? '' : 's'}`));
+    card.appendChild(fila('mercado-card-liga', `${nombreVisibleDeLiga(opcion.liga)} · ${opcion.anios} año${opcion.anios === 1 ? '' : 's'}`));
     const salarioEl = document.createElement('div');
     salarioEl.className = 'mercado-card-salario';
     countUp(salarioEl, 0, opcion.salarioAnualUSD, { format: (n) => `${plata(n)}/año` });
@@ -216,7 +217,7 @@ function construirBloqueVos(vos, interesados) {
     contratoEl.append(
       crearOrgChip(c.org, { size: 18 }),
       document.createTextNode(
-        `${c.org}${c.liga ? ` · ${c.liga}` : ''} · ${plata(c.salarioUSD)}/año · ${restante}${clausula}`
+        `${c.org}${c.liga ? ` · ${nombreVisibleDeLiga(c.liga)}` : ''} · ${plata(c.salarioUSD)}/año · ${restante}${clausula}`
       )
     );
     box.appendChild(contratoEl);
@@ -273,22 +274,121 @@ function renderMundo(contenedor, traspasos, asientos, yaEnBloque1) {
     for (const a of asientosNuevos) {
       const item = document.createElement('div');
       item.className = 'mercado-mundo-item';
-      item.append(crearOrgChip(a.org, { size: 16 }), document.createTextNode(`${a.org} · ${a.liga}`));
+      item.append(crearOrgChip(a.org, { size: 16 }), document.createTextNode(`${a.org} · ${nombreVisibleDeLiga(a.liga)}`));
       contenedor.appendChild(item);
     }
   }
 }
 
+// K4-D: la parte de preparación de la parada de la pretemporada. Cada rutina de offseason es una carta de mejora con lo
+// que sube y cuánto de eso se queda para siempre; todo llega calculado en `decision.datos.preparacion.cartas` (el mismo
+// cálculo que aplica el motor, regla 15): este componente solo lo muestra.
+function numero(valor) {
+  const redondeado = valor >= 10 ? Math.round(valor) : Math.round(valor * 10) / 10;
+  return String(redondeado).replace('.', ',');
+}
+
+function construirCartaPreparacion(carta, elegida, onClick) {
+  const card = document.createElement('button');
+  card.type = 'button';
+  card.className = `preparacion-card${carta.id === elegida ? ' preparacion-card--elegida' : ''}`;
+  card.dataset.rutina = carta.id;
+  card.setAttribute('aria-pressed', carta.id === elegida ? 'true' : 'false');
+
+  const header = document.createElement('div');
+  header.className = 'preparacion-card-header';
+  header.appendChild(fila('preparacion-card-titulo', carta.label));
+  header.appendChild(fila(`preparacion-card-rareza preparacion-card-rareza--${carta.rareza}`, carta.rareza === 'rara' ? 'rara' : 'común'));
+  card.appendChild(header);
+
+  card.appendChild(fila('preparacion-card-texto', carta.descripcion));
+
+  const chips = document.createElement('div');
+  chips.className = 'preparacion-card-chips';
+  carta.efectos.forEach((efecto) => {
+    if (efecto.esperado > 0) {
+      chips.appendChild(fila('preparacion-chip preparacion-chip--sube', `${efecto.etiqueta} ~+${numero(efecto.esperado)}`));
+    }
+  });
+  if (carta.pulir > 0) {
+    chips.appendChild(fila('preparacion-chip', carta.pulir > 1 ? `pulir tu main ×${carta.pulir}` : 'pulir tu main'));
+  }
+  if (carta.nuevo > 0) {
+    chips.appendChild(fila('preparacion-chip', carta.nuevo > 1 ? `campeón nuevo ×${carta.nuevo}` : 'campeón nuevo'));
+  }
+  if (chips.childElementCount > 0) {
+    card.appendChild(chips);
+  }
+
+  // Lo que dura: la parte permanente de lo que sube en una curva de edad (`fraccionPermanentePractica`).
+  const duran = carta.efectos.filter((efecto) => efecto.permanente > 0);
+  card.appendChild(fila(
+    `preparacion-card-dura${duran.length > 0 ? ' preparacion-card-dura--si' : ''}`,
+    duran.length > 0
+      ? `Te queda para siempre ~${duran.map((efecto) => `${numero(efecto.permanente)} de ${efecto.etiqueta}`).join(' y ')}`
+      : 'No deja marca para siempre'
+  ));
+
+  card.addEventListener('click', onClick);
+  return card;
+}
+
+function renderPreparacion(contenedor, preparacion, elegida, onElegirCarta) {
+  contenedor.replaceChildren();
+  contenedor.appendChild(fila('preparacion-titulo', 'Tu preparación'));
+  contenedor.appendChild(fila('preparacion-desc', preparacion.descripcion));
+  const lista = document.createElement('div');
+  lista.className = 'preparacion-lista';
+  preparacion.cartas.forEach((carta) => {
+    lista.appendChild(construirCartaPreparacion(carta, elegida, () => onElegirCarta(carta.id)));
+  });
+  contenedor.appendChild(lista);
+  contenedor.hidden = false;
+}
+
 export function renderMercado(elements, decision, onElegir, onRepresentante, onNegociar, onEsperar) {
   const {
     mercadoPanel, mercadoTitle, mercadoDesc, mercadoVos, mercadoGrid, mercadoMundo,
-    mercadoRepresentante, mercadoEsperar
+    mercadoRepresentante, mercadoEsperar, mercadoCol, mercadoPrep
   } = elements;
 
   mercadoTitle.textContent = decision.titulo;
   mercadoDesc.textContent = decision.descripcion;
 
   const esTraspaso = decision.datos.motivo === 'traspaso';
+
+  // K4-D: la parada trae la preparación del receso. Con mercado, la carta se elige y viaja con la respuesta que cierra
+  // (firmar, esperar, quedarte) y con las de la negociación; sola (sin mercado), elegir la carta es la respuesta.
+  const preparacion = decision.datos.preparacion ?? null;
+  const soloPreparacion = decision.presentacion === 'pretemporada';
+  let rutinaElegida = preparacion ? (preparacion.elegida ?? preparacion.cartas[0]?.id ?? null) : null;
+  const conRutina = (respuesta) => (rutinaElegida ? { ...respuesta, rutinaId: rutinaElegida } : respuesta);
+  const elegirOferta = (respuesta) => onElegir(conRutina(respuesta));
+  const negociarOferta = (respuesta) => onNegociar(conRutina(respuesta));
+  if (preparacion && !soloPreparacion && !esTraspaso) {
+    mercadoTitle.textContent = 'Pretemporada: mercado y preparación';
+  }
+  if (mercadoCol) {
+    mercadoCol.hidden = soloPreparacion;
+  }
+  if (mercadoPrep) {
+    mercadoPrep.hidden = true;
+    mercadoPrep.parentElement?.classList.toggle('pretemporada-cols--con-prep', Boolean(preparacion) && !soloPreparacion);
+    if (preparacion) {
+      renderPreparacion(mercadoPrep, preparacion, rutinaElegida, (id) => {
+        if (soloPreparacion) {
+          onElegir({ opcionId: id });
+          return;
+        }
+        rutinaElegida = id;
+        mercadoPrep.querySelectorAll('.preparacion-card').forEach((nodo) => {
+          const activa = nodo.dataset.rutina === id;
+          nodo.classList.toggle('preparacion-card--elegida', activa);
+          nodo.setAttribute('aria-pressed', activa ? 'true' : 'false');
+        });
+      });
+    }
+  }
 
   // Bloque 1: vos en el mercado.
   if (mercadoVos) {
@@ -307,11 +407,11 @@ export function renderMercado(elements, decision, onElegir, onRepresentante, onN
   // (`neg.escalones`/`neg.clausula` cambian, el id no) actualiza la tarjeta
   // existente en vez de destruirla y rehacerla.
   const construirCard = esTraspaso
-    ? (oferta) => construirTarjetaTraspaso(oferta, onElegir)
-    : (oferta) => construirTarjeta(oferta, onElegir, onNegociar);
+    ? (oferta) => construirTarjetaTraspaso(oferta, elegirOferta)
+    : (oferta) => construirTarjeta(oferta, elegirOferta, negociarOferta);
   reconciliar(
     mercadoGrid,
-    decision.opciones,
+    soloPreparacion ? [] : decision.opciones,
     (oferta) => oferta.id,
     construirCard,
     (nodo, oferta) => reemplazarEnElLugar(nodo, construirCard(oferta))
@@ -325,12 +425,12 @@ export function renderMercado(elements, decision, onElegir, onRepresentante, onN
   }
 
   mercadoRepresentante.hidden = !decision.datos.representanteDisponible;
-  mercadoRepresentante.onclick = () => onRepresentante();
+  mercadoRepresentante.onclick = () => onRepresentante(conRutina({}));
 
   if (mercadoEsperar) {
     // En un traspaso no se "espera": quedarse ES la opción de rechazar.
     mercadoEsperar.hidden = esTraspaso;
-    mercadoEsperar.onclick = () => onEsperar();
+    mercadoEsperar.onclick = () => onEsperar(conRutina({}));
   }
 
   mercadoPanel.hidden = false;

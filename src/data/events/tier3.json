@@ -62,6 +62,7 @@
   },
   {
     "id": "el_coach_que_tambien_es_el_dueno",
+    "bifurcacion": true,
     "category": "tier3",
     "categoria": "vestuario",
     "title": "El coach que también es el dueño",

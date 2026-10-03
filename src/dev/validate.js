@@ -1,10 +1,11 @@
+import { esBuenPapel as esBuenPapelK5 } from '../core/registro.js';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import os from 'os';
 import { execFileSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
-import { VERSION as VERSION_GUARDADO } from '../core/guardado.js';
+import { VERSION as VERSION_GUARDADO, serializar as serializarGuardado, deserializar as deserializarGuardado } from '../core/guardado.js';
 import {
   verificarSinMathRandom, verificarDocumentSoloEnUi,
   verificarSinFondoDeTinta, verificarSinColorLiteral, verificarTokensDefinidos,
@@ -39,12 +40,16 @@ import { campeonesEnMeta, multiplicadorDeMeta, factorDeCampeon, pesoDePick, lect
 import * as poolMod from '../core/pool.js';
 import { campeonesDisponibles, entradaDePool } from '../core/pool.js';
 import { aplicar as aplicarCampeones } from '../systems/campeones.js';
-import { elegirOutcome, elegirEvento, decisionDesdeEvento, resolver as resolverEventos, resolverOpcion, cooldownActivo, pesoEfectivo, SPLIT_SIN_EVENTO_MSG } from '../systems/events.js';
+import { elegirOutcome, elegirEvento, decisionDesdeEvento, resolver as resolverEventos, resolverOpcion, cooldownActivo, pesoEfectivo, SPLIT_SIN_EVENTO_MSG, opcionDelPerfilPara, opcionesConPrevia } from '../systems/events.js';
+import PERFILES_K4C from '../data/perfiles.json' with { type: 'json' };
 import { previaDeOpcion, riesgoDeOpcion, payoffNormalizado } from '../core/previa.js';
 import { rarezaDeRutina, payoffDeRutina } from '../core/rareza.js';
 import { tipoDeSplit, hayPresupuesto } from '../core/presupuesto.js';
 import { aplicar as aplicarPresupuesto } from '../systems/presupuesto.js';
-import { elegirCampeonRival, disponiblesDelPool, decisionDeDraft, probabilidadConCampeon } from '../core/serie.js';
+import {
+  objetivoDelRival, disponiblesDelPool, jugadaDelPlan, conPlan, mapaDelPlan, estadoDelProximoMapa, fuerzaRivalDeMapa,
+  conQuemaDelRival, charlaDisponible, PLANES_DE_SERIE, proyeccionDelPlan
+} from '../core/serie.js';
 import {
   rendimientoBase, fuerzaDelEquipo, fuerzaDePartido, nivelDeCompaneros, companerosDelPlantel
 } from '../core/fuerza.js';
@@ -58,17 +63,19 @@ import {
 import {
   motivosDeFecha, generarFixture, aplicarCrucesDeJornada, rendimientoDeLaTemporada,
   tablaDePosiciones, posicionEnTabla, filaVacia, registrarEnFila,
-  decisionDeDraftFecha, factorDraftFecha
+  defineClasificacion, motivoPrincipal, PRIORIDAD_MOTIVOS
 } from '../core/temporada.js';
 import { tierListDeRol, boostDelPool } from '../core/regimen.js';
 import { nivelDelJugador, deltasDeStats, fichaCompleta, loQueConstruiste } from '../core/ficha.js';
 import { componerLegado } from '../core/legado.js';
-import { bandaDeArraigo } from '../core/registro.js';
+import { bandaDeArraigo, filaAbierta as filaAbiertaK5 } from '../core/registro.js';
 import { rankearMundo, rankearPoblacion, puntajeRanking } from '../core/topMundial.js';
 import { salarioDeOferta } from '../core/salarios.js';
 import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
 import { orgsQueTeFicharian, ofertaPosible, residenciaEn } from '../core/demanda.js';
-import { aplicar as aplicarMercado, construirOferta } from '../systems/mercado.js';
+import { aplicar as aplicarMercado, construirOferta, ofertaDeImportPosible, academiaDelBanquillo } from '../systems/mercado.js';
+import { aplicar as aplicarRetiroK4c2, MOTIVOS_DE_RETIRO } from '../systems/retiro.js';
+import { cartaDeRutina, resolverPreparacion } from '../systems/practica.js';
 import { FRASES_MOTIVO, ETIQUETAS_MOTIVO } from '../systems/temporada.js';
 import { EJES, MARCAS, MOMENTOS, MOMENTOS_ACTIVOS, momentoPorId } from '../data/contextos.js';
 import { ARQUETIPOS } from '../data/meta-tags.js';
@@ -79,9 +86,11 @@ import MINIJUEGOS from '../data/minijuegos.json' with { type: 'json' };
 import {
   elegirMinijuego, minijuegosPara, veredictoDeMinijuego, textoDeMinijuego, lecturaDeVentana, minijuegoPorId
 } from '../core/minijuegos.js';
-import { esMapaDeDesempate, esMapaCerrado } from '../core/serie.js';
+import { esMapaDeDesempate } from '../core/serie.js';
 import { previaDePartido, previaDeDecision, textoDeProbabilidadJugada } from '../core/previaDePartido.js';
 import { MONTAR_MINIJUEGO } from '../ui/components/minijuegos/index.js';
+import { LABEL_MARCA as LABEL_MARCA_FICHA, lineaDeContextoFicha } from '../ui/components/ficha.js';
+import { nombreVisibleDeLiga } from '../ui/formatoUi.js';
 import { crearCampeonTile } from '../ui/components/campeonTile.js';
 import METAS from '../data/metas.json' with { type: 'json' };
 
@@ -133,6 +142,10 @@ function correrUnCheck(nombre, fn) {
     console.log(`FAIL ${nombre}: ${error.message}`);
   }
 }
+
+// K4-C2: las ligas que un `ofertaDeImport` puede nombrar, y los efectos que escriben su propia descripción en el log.
+const LIGAS_K4C2 = new Set(JSON.parse(fs.readFileSync(path.join(srcDir, 'data', 'leagues.json'), 'utf8')).map((liga) => liga.id));
+const EFECTOS_SIN_ETIQUETA_K4C2 = new Set(['camino', 'ofertaDeImport', 'cambiarRol', 'retirarse']);
 
 function check(nombre, fn) {
   if (SOLO.length > 0 && !SOLO.some((texto) => nombre.toLowerCase().includes(texto))) {
@@ -378,6 +391,39 @@ check('Esquema de eventos válido', () => {
             continue;
           }
 
+          // K4-C2 (regla 15): los efectos de carrera no son magnitudes (sin rango): se valida que su dato exista.
+          if (effect.type === 'ofertaDeImport') {
+            const ids = [].concat(effect.liga);
+            if (ids.length === 0 || ids.some((id) => !LIGAS_K4C2.has(id))) {
+              throw new Error(`${evento.id}/${opcion.id}: ofertaDeImport con liga desconocida ${JSON.stringify(effect.liga)}`);
+            }
+            if (effect.clausula !== undefined && effect.clausula !== 'salida') {
+              throw new Error(`${evento.id}/${opcion.id}: ofertaDeImport con cláusula desconocida "${effect.clausula}"`);
+            }
+            continue;
+          }
+          if (effect.type === 'cambiarRol') {
+            const destinos = effect.rol === 'origen' ? [] : (typeof effect.rol === 'string' ? [effect.rol] : IDS_ROL.map((r) => effect.rol?.[r]));
+            if (destinos.some((rol) => !IDS_ROL.includes(rol)) || IDS_ROL.some((rol) => typeof effect.rol === 'object' && effect.rol[rol] === rol)) {
+              throw new Error(`${evento.id}/${opcion.id}: cambiarRol con una línea inválida o que no cambia: ${JSON.stringify(effect.rol)}`);
+            }
+            continue;
+          }
+          if (effect.type === 'retirarse') {
+            if (!MOTIVOS_DE_RETIRO[effect.motivo]) {
+              throw new Error(`${evento.id}/${opcion.id}: retirarse con motivo sin texto "${effect.motivo}" (MOTIVOS_DE_RETIRO)`);
+            }
+            continue;
+          }
+
+          // K4-C2: `camino` escribe un valor en un flag (no es una magnitud: sin rango). El path ya se validó arriba.
+          if (effect.type === 'camino') {
+            if (!['string', 'boolean'].includes(typeof effect.valor)) {
+              throw new Error(`${evento.id}/${opcion.id}: efecto camino en ${effect.path} sin "valor" (texto o booleano)`);
+            }
+            continue;
+          }
+
           if (effect.type === 'pool') {
             if (!ACCIONES_DE_POOL.includes(effect.accion)) {
               throw new Error(`${evento.id}/${opcion.id}: acción de pool desconocida "${effect.accion}" (válidas: ${ACCIONES_DE_POOL.join(', ')})`);
@@ -576,7 +622,7 @@ check('Las decisiones de mejora declaran rareza con el payoff correcto (PLAN.md 
   }
 });
 
-check('Toda serie internacional deja su camino guardado en registro.internacionales (PLAN.md §12.5/§12.6)', () => {
+check('Todo Mundial deja su camino guardado en registro.internacionales (PLAN.md §12.5/§12.6; K5-A: partido a partido y serie a serie)', () => {
   let totalInternacionales = 0;
   for (let seed = 1; seed <= 300; seed += 1) {
     const rng = mulberry32(seed);
@@ -589,21 +635,21 @@ check('Toda serie internacional deja su camino guardado en registro.internaciona
       if (!Array.isArray(intl.camino) || intl.camino.length === 0) {
         throw new Error(`seed ${seed}: internacional en ${intl.org} (${intl.anio}) sin camino guardado`);
       }
-      for (const mapa of intl.camino) {
-        if (typeof mapa.mapa !== 'number' || mapa.mapa < 1) {
-          throw new Error(`seed ${seed}: mapa inválido en camino: ${JSON.stringify(mapa)}`);
+      // K5-A: el camino del Mundial es partido a partido en el Swiss (con la p que se tiró) y serie a serie en el bracket.
+      const swiss = intl.camino.filter((paso) => paso.etapa === 'swiss');
+      const [v, d] = String(intl.record).split('-').map(Number);
+      if (swiss.length !== v + d || swiss.filter((paso) => paso.gano).length !== v) {
+        throw new Error(`seed ${seed}: el Swiss del camino no da el récord ${intl.record}`);
+      }
+      for (const paso of intl.camino) {
+        if (!['swiss', 'cuartos', 'semis', 'final'].includes(paso.etapa) || typeof paso.rival !== 'string' || !paso.rival || typeof paso.gano !== 'boolean') {
+          throw new Error(`seed ${seed}: paso inválido en camino: ${JSON.stringify(paso)}`);
         }
-        if (!mapa.campeon || typeof mapa.campeon !== 'string') {
-          throw new Error(`seed ${seed}: mapa sin campeon en camino`);
+        if (paso.etapa === 'swiss' && !(paso.p > 0 && paso.p < 1 && paso.ronda >= 1 && paso.ronda <= 5)) {
+          throw new Error(`seed ${seed}: partido del Swiss sin ronda o sin p: ${JSON.stringify(paso)}`);
         }
-        if (mapa.resultado !== 'W' && mapa.resultado !== 'L') {
-          throw new Error(`seed ${seed}: mapa con resultado inválido ("${mapa.resultado}")`);
-        }
-        if (!mapa.marcador || typeof mapa.marcador !== 'string' || !/^\d+-\d+$/.test(mapa.marcador)) {
-          throw new Error(`seed ${seed}: mapa sin marcador válido ("${mapa.marcador}")`);
-        }
-        if (!mapa.cierre || typeof mapa.cierre !== 'string' || mapa.cierre.trim().length === 0) {
-          throw new Error(`seed ${seed}: mapa sin cierre narrativo`);
+        if (paso.etapa !== 'swiss' && (Math.max(...paso.marcador) !== 3 || (paso.marcador[0] === 3) !== paso.gano)) {
+          throw new Error(`seed ${seed}: serie del bracket con marcador inválido: ${JSON.stringify(paso)}`);
         }
       }
     }
@@ -662,7 +708,24 @@ const FORMAS_CONOCIDAS = {
   // K3-B: `player.bonusPermanente` (un campo por stat de curva, ceros) y `registro.marcas` (`{ stat, delta, origen, anio }`).
   // Re-registrada en la revisión de K3: la muestra suma carreras con las fracciones > 0 en memoria, así la forma de una
   // marca entra en el hash y K3c puede subir las fracciones sin subir VERSION. (Antes, 839743025b35: sin marcas.)
-  7: '16d9c513b980'
+  7: '16d9c513b980',
+  // K4 (integración de K4-B, K4-C y K4-D): K4-B, la serie como plan — `serie.plan`/`guardado`/`replanUsado`/`rivalJuega`/
+  // `rivalJuegaEnMapa`/`sinNadaEnJuego` (sin `preSerieUsado`), `career.charlaUsadaEn`, y `rivalJuega`/`plan`/`charla` en el
+  // log de cada mapa; K4-C, `player.perfil` (actual + pesos), `flags.categoriasRecientes`, `flags.splitMainMuerto`,
+  // `flags.saltosConPrueba`; K4-D, `flags.preparacionDeSplit` (el año cuya preparación ya se resolvió; -1 hasta la
+  // primera pretemporada pro).
+  8: 'b8702103beff',
+  // K4-C2: `flags.caminos` (una clave por bifurcación de carrera: región, contenido, rol, playoffs, conflicto, staff;
+  // `null` hasta que la decidís) y los valores que escriben las bifurcaciones nuevas.
+  9: '5cf65294a5f8',
+  // K5 (integración de K5-A, K5-B y K5-C): K5-A, `state.internacional` (el último Mundial: participantes, Swiss,
+  // bracket, campeón, pausas, el 2-2 en curso), `torneo`/`etapa` en `serie` y `record`/`campeon` en las entradas de
+  // `registro.internacionales`; K5-B, las ligas LRN y LRS y las tier 2 de LATAM (`sinPrimera`, `alimentaA`); K5-C,
+  // `flags.splitsSinOfertaEnTier`, `flags.forkMercadoSplit`, `tarjeta.motivo` y `state.motivoRetiro` (el único lugar del
+  // motivo del retiro: `flags.motivoRetiro`, de K4-C2, se fue). Re-registrada en la revisión de K5 (la rama no se
+  // mergeó): cambiar de línea deja `meta.tierListAnterior` vacía y las carreras de muestra se corrieron (el hash del
+  // Mundial, D78, la renovación NPC amateur), así que cambian las rutas opcionales que la muestra ve.
+  10: '7128c450fa6c'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -1153,47 +1216,67 @@ checkLento('El mercado lee tu nivel: el silencio es para los que están por deba
   // negarle oferta a alguien elegible. Medido: seed 974, split 55 — CD
   // (Brasil, `cupoImports: 0`) contra un jugador de origen CN.
   let silencioSinCupoImport = 0;
-  for (let seed = 1; seed <= 1500; seed += 1) {
-    const rng = mulberry32(seed);
-    let state = createInitialState(seed, rng);
-
-    for (let i = 0; i < 80 && !state.terminado; i += 1) {
-      const antes = state.logs.length;
-      state = avanzarSplitAuto(state, rng).state;
-      if (state.phase !== 'profesional' || !state.career.liga) {
+  // Regla 17 — qué protege y desde cuándo (K4, revisión, 2026-10-03): la invariante "tope 0" es sobre lo que el
+  // MERCADO leyó, así que la brecha (y la liga, y la residencia) se miden en el estado con el que entra `mercado`, con
+  // un espía sobre su `aplicar` — no al final del split, como hasta K4. Lo que corre en el split DESPUÉS de la parada
+  // del mercado puede subir el nivel, y el desfase existía desde 9R0e; el stream nuevo de K4-D hizo caer 2 seeds justo
+  // ahí: las 2 pretemporadas que fallaban en 1500 carreras (seed 337 split 48, CBLOL, brecha 8,99 al entrar al mercado
+  // y 10,48 al cerrar el split; seed 510 split 12, NACL, 8,78 → 11,16) eran jugadores que el mercado vio por DEBAJO de
+  // la brecha de franquicia (`BALANCE.mercado.brechaFranquicia`). No era un bug del motor: el check medía en otro
+  // momento que el mercado. Medido con el espía: 0 silencios por encima de la brecha en las 1500.
+  // Revisión de K5: el único silencio que volvió (seed 1088, split 54: 59,7 de nivel en LCP Challengers, prestigio
+  // 38, contrato vencido, Vórtice Circuit no renueva) SÍ era del motor: el banquillo de un club extranjero te cedía a
+  // una tier 2 sin planteles y el mercado no veía ninguna de sus orgs (ni el piso de franquicia). Se arregló en
+  // `resolverBanquillo` (puebla la liga con `conPlantelesDe`, como el descenso); el tope 0 no se tocó.
+  const brechaFranquicia = BALANCE.mercado.brechaFranquicia;
+  conEspiaDeSistemaK2a('mercado', (entrada, resultado) => {
+    if (entrada.phase !== 'profesional' || !entrada.career.liga) {
+      return;
+    }
+    const liga = entrada.mundo.ligas.find((l) => l.id === entrada.career.liga);
+    if (!liga) {
+      return;
+    }
+    const brecha = nivelDelJugador(entrada) - liga.prestigio;
+    const sinCupoImport = residenciaEn(entrada, liga.regionId) === 'import' && (liga.cupoImports ?? 99) <= 0;
+    for (const log of resultado.logs) {
+      if (log.type !== 'mercado') {
         continue;
       }
-      const liga = state.mundo.ligas.find((l) => l.id === state.career.liga);
-      if (!liga) {
+      const esSilencio = log.message.startsWith('Nadie te llama') || log.message.startsWith('Nadie te ofrece');
+      if (!esSilencio) {
         continue;
       }
-      const brecha = nivelDelJugador(state) - liga.prestigio;
-      if (brecha >= 10) {
-        arriba += 1;
+      silencioTotal += 1;
+      if (brecha >= brechaFranquicia) {
+        if (sinCupoImport) {
+          silencioSinCupoImport += 1;
+        } else {
+          silencioArriba += 1;
+        }
       }
-      const sinCupoImport = residenciaEn(state, liga.regionId) === 'import' && (liga.cupoImports ?? 99) <= 0;
-      for (const log of state.logs.slice(antes)) {
-        if (log.type !== 'mercado') {
+      if (brecha <= 5) {
+        silencioMerecido += 1;
+      }
+    }
+  }, () => {
+    for (let seed = 1; seed <= 1500; seed += 1) {
+      const rng = mulberry32(seed);
+      let state = createInitialState(seed, rng);
+      for (let i = 0; i < 80 && !state.terminado; i += 1) {
+        state = avanzarSplitAuto(state, rng).state;
+        // El denominador (solo cuida el tamaño de la muestra) sigue siendo el de siempre: splits de un profesional
+        // claramente por encima de su liga al cerrar el split.
+        if (state.phase !== 'profesional' || !state.career.liga) {
           continue;
         }
-        const esSilencio = log.message.startsWith('Nadie te llama') || log.message.startsWith('Nadie te ofrece');
-        if (!esSilencio) {
-          continue;
-        }
-        silencioTotal += 1;
-        if (brecha >= 10) {
-          if (sinCupoImport) {
-            silencioSinCupoImport += 1;
-          } else {
-            silencioArriba += 1;
-          }
-        }
-        if (brecha <= 5) {
-          silencioMerecido += 1;
+        const liga = state.mundo.ligas.find((l) => l.id === state.career.liga);
+        if (liga && nivelDelJugador(state) - liga.prestigio >= brechaFranquicia) {
+          arriba += 1;
         }
       }
     }
-  }
+  });
 
   if (arriba < 500) {
     throw new Error(`sólo ${arriba} splits de un jugador por encima de su liga: muestra insuficiente`);
@@ -2174,7 +2257,7 @@ function barrido9W() {
     }
 
     const r = state.career.registro;
-    const exito = r.titulos.length > 0 || r.internacionales.some((e) => e.resultado === 'buen_papel');
+    const exito = r.titulos.length > 0 || r.internacionales.some(esBuenPapelK5);
     const llegoATier1 = state.career.splitAscensoTier1 !== null;
     carreras.push({
       distintos: handlesVistos.size,
@@ -2738,6 +2821,8 @@ check('Todo efecto tiene etiqueta legible para el log', () => {
     for (const opcion of evento.options) {
       for (const outcome of opcion.outcomes) {
         for (const effect of outcome.effects) {
+          // K4-C2: un efecto `camino` escribe un flag y no imprime nada en el log (`descripcion: null`): no necesita etiqueta.
+          if (EFECTOS_SIN_ETIQUETA_K4C2.has(effect.type)) continue;
           if (etiquetaCampo(effect.path) === effect.path) {
             throw new Error(`${evento.id}: el path ${effect.path} no tiene entrada en ETIQUETAS_CAMPO`);
           }
@@ -3462,7 +3547,9 @@ checkLento('El chaining de un segundo evento de verdad usa tipoDeSplit', () => {
       const rng = mulberry32(50000 + i);
       const estadoForzado = { ...estadoPro, contexto: contextoAntes };
       const resultado = resolverEventos(estadoForzado, decision, respuesta, rng);
-      if (resultado.decision) {
+      // K4-C: el segundo evento puede frenar (bifurcación) o resolverse por perfil y dejar su línea de crónica:
+      // las dos cosas son "se amontonó un segundo evento".
+      if (resultado.decision || resultado.logs.some((log) => log.cronica)) {
         veces += 1;
       }
     }
@@ -3983,7 +4070,17 @@ checkLento('Fase 9Me: negociar es determinista, termina, y la cláusula negociad
     const dec = conClausula.state.pendiente?.decision;
     const oferta = dec?.opciones.find((o) => o.id === objetivo);
     if (oferta?.negociacion.clausula) {
-      const firmado = resolverDecision(conClausula.state, { opcionId: objetivo }, ctx.rng);
+      let firmado = resolverDecision(conClausula.state, { opcionId: objetivo }, ctx.rng);
+      // K4-C: si la oferta estrena un salto grande, firmar frena primero en la prueba; la oferta (con su cláusula)
+      // viaja en sus datos y se firma al contestarla. Se contesta como el headless y recién ahí se mira el contrato.
+      const prueba = firmado.state.pendiente;
+      if (prueba?.sistemaId === 'mercado' && prueba.decision.datos.motivo === 'minijuego') {
+        if (prueba.decision.datos.oferta?.datos?.clausula !== 'salida') {
+          throw new Error(`seed ${seed}: la prueba del salto perdió la cláusula negociada de la oferta`);
+        }
+        const mercado = sistemaPorId('mercado');
+        firmado = resolverDecision(firmado.state, mercado.resolverAuto(firmado.state, prueba.decision, ctx.rng), ctx.rng);
+      }
       if (firmado.state.career.contrato.clausula !== 'salida') {
         throw new Error(`seed ${seed}: firmaste con cláusula negociada y contrato.clausula = ${firmado.state.career.contrato.clausula}`);
       }
@@ -4135,7 +4232,9 @@ checkLento('El evento de ambiente respeta el cupo de interrupciones del split (f
     for (let i = 0; i < 45 && !state.terminado; i += 1) {
       let eventosEsteSplit = 0;
       const responder = (sistema, st, decision, r) => {
-        if (sistema.id === 'eventos' && st.phase === 'profesional') {
+        // K4-C: la rueda de prensa tras un escándalo la pide `eventos` pero es un minijuego (su propio tope, K4): el
+        // cupo es de eventos que frenan.
+        if (sistema.id === 'eventos' && st.phase === 'profesional' && decision.datos?.motivo !== 'minijuego') {
           eventosEsteSplit += 1;
         }
         return sistema.resolverAuto(st, decision, r);
@@ -4258,7 +4357,9 @@ check('Los minijuegos tienen forma válida (esquema de 9R4a)', () => {
   // lo que importaba —a quién le toca, qué stat lo corre, cuánto mueve, qué se
   // lee al terminar— vivía hardcodeado en los sistemas. Ahora es dato, así que
   // el dato se valida entero.
-  const MOMENTOS = ['mapa_cerrado', 'mapa_decisivo', 'pre_internacional', 'post_serie', 'tryout'];
+  // K4-C: `post_escandalo` — la rueda de prensa también sale después de un escándalo (systems/events.js).
+  // K4 (revisión): sin `pre_internacional` — el bootcamp de antes del internacional ya no frena desde K4 y se sacó.
+  const MOMENTOS = ['mapa_cerrado', 'mapa_decisivo', 'post_serie', 'post_escandalo', 'tryout'];
   const TIPOS_EFECTO = ['mapa', 'stat', 'roster'];
   const estadoDeMuestra = createInitialState(1, mulberry32(1));
   const ids = new Set();
@@ -4331,7 +4432,8 @@ check('Los minijuegos tienen forma válida (esquema de 9R4a)', () => {
     }
   }
 
-  for (const esperado of ['robar_baron', 'la_llamada', 'bootcamp', 'rueda_de_prensa', 'la_prueba']) {
+  // El bootcamp (uno de los cinco de PLAN.md 4.6) se sacó en la revisión de K4: su momento ya no frenaba.
+  for (const esperado of ['robar_baron', 'la_llamada', 'rueda_de_prensa', 'la_prueba']) {
     if (!ids.has(esperado)) {
       throw new Error(`falta el minijuego "${esperado}" (PLAN.md 4.6)`);
     }
@@ -4387,7 +4489,7 @@ check('elegirMinijuego es determinista, respeta el rol y no consume RNG (9R4a)',
   }
 
   // Y todo momento declarado tiene al menos un minijuego para todo rol.
-  for (const momento of ['mapa_cerrado', 'mapa_decisivo', 'pre_internacional', 'post_serie', 'tryout']) {
+  for (const momento of ['mapa_cerrado', 'mapa_decisivo', 'post_serie', 'tryout']) {
     for (const rol of IDS_ROL) {
       const estadoRol = { ...estado, player: { ...estado.player, role: rol } };
       if (!elegirMinijuego(estadoRol, momento)) {
@@ -4526,7 +4628,7 @@ checkLento('El banco de mecánicas se reparte: ninguna se lleva la carrera (9R4c
 
   for (const rol of IDS_ROL) {
     const elegibles = new Set();
-    for (const momento of ['mapa_cerrado', 'mapa_decisivo', 'pre_internacional', 'post_serie', 'tryout']) {
+    for (const momento of ['mapa_cerrado', 'mapa_decisivo', 'post_serie', 'tryout']) {
       for (const entrada of minijuegosPara({ player: { role: rol } }, momento)) {
         elegibles.add(entrada.id);
       }
@@ -4606,75 +4708,21 @@ check('Toda mecánica se puede terminar sin mouse y sin animación (9R4c)', () =
   }
 });
 
-checkLento('El internacional tiene su jugada, no sólo el bootcamp (9R4b)', () => {
-  // Medido antes de 9R4b: 643 de 643 internacionales se resolvían con el
-  // bootcamp y nada más. El bootcamp pasa ANTES del primer mapa y gastaba el
-  // cupo entero de la serie, así que la serie más grande del juego no tenía ni
-  // una jugada dentro de un mapa ni rueda de prensa. Ahora tiene su cupo aparte.
-  const porInternacional = [];
-
-  for (let seed = 1; seed <= 300; seed += 1) {
-    const rng = mulberry32(seed);
-    let state = createInitialState(seed, rng);
-    let abierto = false;
-    let tuvoJugada = false;
-
-    const responder = (sistema, st, decision, r) => {
-      const datos = decision.datos ?? {};
-      if (datos.motivo === 'minijuego') {
-        if (datos.momento === 'pre_internacional') {
-          if (abierto) {
-            porInternacional.push(tuvoJugada);
-          }
-          abierto = true;
-          tuvoJugada = false;
-        } else if (abierto && st.serie?.ronda === 'internacional') {
-          tuvoJugada = true;
-        }
-      }
-      return sistema.resolverAuto(st, decision, r);
-    };
-
-    for (let i = 0; i < 60 && !state.terminado; i += 1) {
-      state = avanzarSplitAuto(state, rng, responder).state;
-    }
-    if (abierto) {
-      porInternacional.push(tuvoJugada);
-    }
-  }
-
-  if (porInternacional.length < 100) {
-    throw new Error(`sólo ${porInternacional.length} internacionales en 300 carreras: muestra insuficiente`);
-  }
-  const conJugada = porInternacional.filter(Boolean).length / porInternacional.length;
-  if (conJugada < 0.9) {
-    throw new Error(
-      `sólo el ${(conJugada * 100).toFixed(0)}% de los internacionales vio algo más que el bootcamp `
-      + `(mínimo 90%; antes de 9R4b: 0%, ${porInternacional.length} medidos)`
-    );
-  }
-});
+// "El internacional tiene su jugada, no sólo el bootcamp (9R4b)" se borró en la revisión de K4: medía cuántos
+// internacionales veían algo más que el bootcamp, y desde K4 el bootcamp no frena (se sacó del catálogo). Lo que el
+// internacional tiene hoy —el minijuego del mapa decisivo— lo cuida "K4-B pausas por serie".
 
 checkLento('El mapa 5 es el mapa 5: el cupo del desempate no se gasta en otro lado (9R4b)', () => {
   // Las dos mitades de "el Barón de un mapa 5" (PLAN.md §9R.4):
   //   (a) el desempate es el ÚLTIMO mapa posible, no cualquier match point —
   //       el 2-0 de un barrido no lo merece (regla 4 de §4.6);
-  //   (b) el margen ancho del desempate cubre mapas que el margen normal
-  //       rechaza, o el mapa que define seguiría pasando sin jugada.
+  //   (b) K4-B sacó los márgenes de "mapa cerrado": el mapa decisivo de semis, final e internacional tiene su
+  //       minijuego siempre que la serie tenga algo en juego.
   if (!esMapaDeDesempate([2, 2], 5) || !esMapaDeDesempate([1, 1], 3)) {
     throw new Error('esMapaDeDesempate no reconoce el último mapa de la serie');
   }
   if (esMapaDeDesempate([2, 0], 5) || esMapaDeDesempate([2, 1], 5)) {
     throw new Error('esMapaDeDesempate confunde un match point cualquiera con el desempate');
-  }
-  const normal = BALANCE.serie.margenMapaCerrado;
-  const ancho = BALANCE.serie.margenMapaCerradoDecisivo;
-  if (ancho <= normal) {
-    throw new Error(`el margen del desempate (${ancho}) no es más ancho que el normal (${normal})`);
-  }
-  const brecha = (normal + ancho) / 2;
-  if (esMapaCerrado(50, 50 + brecha) || !esMapaCerrado(50, 50 + brecha, ancho)) {
-    throw new Error('el margen ancho del desempate no cubre lo que el normal rechaza');
   }
 
   // Y en carrera: ninguna pausa de `mapa_decisivo` sale fuera del desempate.
@@ -4703,66 +4751,9 @@ checkLento('El mapa 5 es el mapa 5: el cupo del desempate no se gasta en otro la
   }
 });
 
-checkLento('Mediana de decisiones de draft por serie ∈ [0, 1] y ≥28% de series sin ningún draft', () => {
-  const porSerie = [];
-
-  for (let seed = 1; seed <= 1200; seed += 1) {
-    const rng = mulberry32(seed);
-    let state = createInitialState(seed, rng);
-    let ultimoConteo = 0;
-    let draftDesdeUltimoCorte = 0;
-
-    const responder = (sistema, st, decision, r) => {
-      if (st.career.seriesJugadas > ultimoConteo) {
-        const cerradas = st.career.seriesJugadas - ultimoConteo;
-        for (let i = 0; i < cerradas; i += 1) {
-          porSerie.push(draftDesdeUltimoCorte / cerradas);
-        }
-        draftDesdeUltimoCorte = 0;
-        ultimoConteo = st.career.seriesJugadas;
-      }
-      if (sistema.id === 'serie' && decision.datos?.motivo === 'draft') {
-        draftDesdeUltimoCorte += 1;
-      }
-      return sistema.resolverAuto(st, decision, r);
-    };
-
-    for (let i = 0; i < 90 && !state.terminado; i += 1) {
-      state = avanzarSplitAuto(state, rng, responder).state;
-    }
-    if (state.career.seriesJugadas > ultimoConteo) {
-      const cerradas = state.career.seriesJugadas - ultimoConteo;
-      for (let i = 0; i < cerradas; i += 1) {
-        porSerie.push(draftDesdeUltimoCorte / cerradas);
-      }
-    }
-  }
-
-  if (porSerie.length < 50) {
-    throw new Error(`solo ${porSerie.length} series jugadas en 1200 carreras: muestra insuficiente`);
-  }
-
-  const ordenadas = [...porSerie].sort((a, b) => a - b);
-  const mediana = ordenadas[Math.floor(ordenadas.length / 2)];
-  const sinDraft = porSerie.filter((n) => n === 0).length / porSerie.length;
-
-  if (mediana < 0 || mediana > 1) {
-    throw new Error(`mediana de decisiones de draft por serie: ${mediana.toFixed(2)}, fuera de [0, 1] (${porSerie.length} series medidas)`);
-  }
-  // Fase 9Rd: el motor sólo frena cuando el pick mueve la probabilidad del
-  // mapa. Una porción grande de las series no debería frenarte nunca.
-  //
-  // Fase 9Ma: piso 30% → 28%. El corrimiento de stream de los planteles NPC
-  // (D35) movió el valor estable de ~30,5% a ~28,9%. Fase 9Mc: el stream shift
-  // de `core/mercadoMundial.js` lo bajó otro punto a ~27,6% (piso 28% → 26%
-  // como parche). La causa era la deriva agregada de `org.fuerza` de tier 1
-  // (mundo que se ablanda → el jugador domina más → menos drafts). Fase 9Mi:
-  // el asiento se disputa → menos deriva → volvió a **29,3%** (sonda n=400 ×
-  // 90). Piso **devuelto a 28%** en 9Mj, como preveía §9M.12.3.
-  if (sinDraft < 0.28) {
-    throw new Error(`sólo el ${(sinDraft * 100).toFixed(0)}% de las series no tuvieron ningún draft (mínimo 28%)`);
-  }
-});
+// K4-B (regla 17): el check "Mediana de decisiones de draft por serie ∈ [0, 1] y ≥28% de series sin ningún draft"
+// (9Rd/9Mj, y su entrada PENDIENTE de bloque B) se borró: no hay más draft mapa a mapa. Lo reemplazan los checks
+// "K4-B pausas por serie..." y "K4-B regla 15..." de más abajo.
 
 check('El pool ancho llega al mapa 5 con opciones más seguido que el angosto', () => {
   // Test directo sobre el mecanismo de quema (core/serie.js), no sobre una
@@ -4791,7 +4782,7 @@ check('El pool ancho llega al mapa 5 con opciones más seguido que el angosto', 
       let quemados = [];
       let disponiblesEnMapa5 = 0;
       for (let mapa = 0; mapa < 5; mapa += 1) {
-        const campeonRival = elegirCampeonRival(stateFalso, quemados, rng);
+        const campeonRival = objetivoDelRival(stateFalso, quemados);
         if (campeonRival) {
           quemados = [...quemados, campeonRival];
         }
@@ -4952,9 +4943,16 @@ check('El motor nunca elige por vos un campeón peor que otro disponible', () =>
       meta: { weights, ajuste: 50 }
     };
 
+    // K4-A: la fecha marcada ya no tiene draft; K4-B: la serie juega su plan.
     for (const decision of [
-      decisionDeDraft(state, entradas, i % 2 === 0),
-      decisionDeDraftFecha({ ...state, player: { ...state.player, championPool: entradas } })
+      // K4-B: el pick del plan del coach (el que juega solo el motor) en el mapa 1 de una serie sin quemas.
+      (() => {
+        const jugada = jugadaDelPlan({
+          ...state, player: { ...state.player, championPool: entradas },
+          serie: { plan: 'coach', guardado: null, quemados: [], mapaActual: i % 5, formato: 5 }
+        });
+        return { pausa: false, elegido: entradas.find((c) => c.name === jugada.campeon) };
+      })()
     ]) {
       if (decision.pausa || !decision.elegido) {
         continue;
@@ -5001,90 +4999,83 @@ check('probabilidadDePartido es monótona, simétrica y 0.5 en el empate (fecha 
   }
 });
 
-check('Nadie te frena en el draft por un pick que no mueve el partido', () => {
-  const pool = campeonesDisponibles(
-    { player: { role: 'mid' }, mundo: { campeonesDebutados: [] } }, 'mid'
-  );
-  let pausas = 0;
-  let malas = 0;
-  for (let i = 0; i < 4000; i += 1) {
-    const rng = mulberry32(70000 + i);
-    const weights = createInitialState(i + 1, mulberry32(i + 1)).meta.weights;
-    const ancho = 3 + (i % 4);
-    const entradas = sample(pool, ancho, rng).map((c) => entradaDePool(c, 20 + Math.floor(rng() * 70), 0));
-    const state = {
-      ...estadoDraftFalso(70000 + i, entradas, 45 + Math.floor(rng() * 30)),
-      meta: { weights, ajuste: 50 }
-    };
-    const decisivo = i % 2 === 0;
-    const dec = decisionDeDraft(state, entradas, decisivo);
-    if (!dec.pausa) {
-      continue;
-    }
-    pausas += 1;
-    if (entradas.length === 2) {
-      continue; // excepción incondicional: pool exhausto
-    }
-    const [mejor, segundo] = [...entradas].sort(
-      (a, b) => factorDeCampeon(b, weights) - factorDeCampeon(a, weights)
-    );
-    const puntos = probMapaSonda(state, mejor) - probMapaSonda(state, segundo);
-    const umbral = decisivo
-      ? BALANCE.serie.puntosEnJuegoParaPreguntarDecisivo
-      : BALANCE.serie.puntosEnJuegoParaPreguntar;
-    if (puntos < umbral - 1e-9) {
-      malas += 1;
-    }
-  }
-  if (pausas < 30) {
-    throw new Error(`sólo ${pausas} pausas en 4000 sondas: muestra insuficiente`);
-  }
-  if (malas > 0) {
-    throw new Error(`${malas}/${pausas} pausas de draft con puntosEnJuego < umbral`);
-  }
-});
+// K4-B (regla 17): el check "Nadie te frena en el draft por un pick que no mueve el partido" (9Rd, el umbral de D63)
+// se borró: el draft de serie ya no frena. Lo reemplaza "K4-B pausas por serie...": te frena el plan, que te lean el
+// guardado o el mapa decisivo, y una serie sin nada en juego no frena.
 
-checkLento('Toda opción de draft trae su lectura y va ordenada por factorDeCampeon', () => {
-  // Smoke test directo de la matriz: dos ejes extremos dan frases distintas.
-  const weightsBase = createInitialState(3, mulberry32(3)).meta.weights;
-  const poolMix = [
-    entradaDePool({ name: 'Fuerte', tags: ['enchanter'] }, 90, 0),
-    entradaDePool({ name: 'Flojo', tags: ['splitpush'] }, 20, 0)
-  ];
-  if (lecturaDePick(poolMix[0], weightsBase, poolMix) === lecturaDePick(poolMix[1], weightsBase, poolMix)) {
-    throw new Error('lecturaDePick devolvió la misma frase para dos picks opuestos');
-  }
-
-  const lecturasConocidas = new Set();
-  let decisionesVistas = 0;
+// K4 (revisión 2, regla 17): este check reemplaza a "Toda opción de draft trae su lectura y va ordenada por
+// factorDeCampeon" (250 carreras). K4-B sacó el draft mapa a mapa: la serie frena en la tarjeta del plan de Fearless (y
+// en la del re-plan, cuando el rival te quema el guardado, que también ofrece planes, no picks) y daba 0 decisiones de
+// draft. Lo equivalente de hoy: cada opción del plan trae su lectura —la p de cada mapa que queda y la de la serie— y
+// la tarjeta va en el orden que la muestra la UI (el de `PLANES_DE_SERIE`, y la previa de la UI con las mismas opciones
+// en el mismo orden y las mismas p). Que esas p sean las que tira el motor lo cuida "K4-B regla 15...".
+checkLento('Toda opción del plan de Fearless trae su lectura (la p de cada mapa) y va en el orden de la tarjeta', () => {
+  let planesVistos = 0;
+  let replanesVistos = 0;
+  let conGuardar = 0;
+  let conLecturasDistintas = 0;
   for (let seed = 1; seed <= 250; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
 
     const responder = (sistema, st, decision, r) => {
-      if (decision.datos?.motivo === 'draft' && (sistema.id === 'serie' || sistema.id === 'temporada')) {
-        decisionesVistas += 1;
-        if (decision.opciones.length < 2) {
-          throw new Error(`seed ${seed}: draft con ${decision.opciones.length} opción(es)`);
+      if (sistema.id === 'serie' && decision.datos?.motivo === 'plan') {
+        planesVistos += 1;
+        replanesVistos += decision.datos.replan ? 1 : 0;
+        const { formato, mapaActual, quemados } = st.serie;
+        const ids = decision.opciones.map((o) => o.id);
+        if (ids.length < 2) {
+          throw new Error(`seed ${seed}: plan de Fearless con ${ids.length} opción(es)`);
         }
-        const weights = st.meta.weights;
-        const pool = st.player.championPool;
-        let factorPrevio = Infinity;
+        const posiciones = ids.map((id) => PLANES_DE_SERIE.indexOf(id));
+        if (posiciones.some((pos, i) => pos < 0 || (i > 0 && pos <= posiciones[i - 1]))) {
+          throw new Error(`seed ${seed}: opciones del plan fuera del orden de la tarjeta (${ids.join(', ')})`);
+        }
         for (const opcion of decision.opciones) {
-          if (typeof opcion.descripcion !== 'string' || !/ · maestría \d+$/.test(opcion.descripcion)) {
-            throw new Error(`seed ${seed}: opción de draft sin lectura ("${opcion.descripcion}")`);
+          if (typeof opcion.label !== 'string' || opcion.label.length < 8 || /^\d/.test(opcion.label)) {
+            throw new Error(`seed ${seed}: plan "${opcion.id}" sin rótulo legible ("${opcion.label}")`);
           }
-          const lectura = opcion.descripcion.replace(/ · maestría \d+$/, '');
-          if (lectura.length < 8 || /^\d/.test(lectura)) {
-            throw new Error(`seed ${seed}: lectura de pick vacía o numérica ("${lectura}")`);
+          if (typeof opcion.descripcion !== 'string' || opcion.descripcion.length < 8) {
+            throw new Error(`seed ${seed}: plan "${opcion.id}" sin descripción`);
           }
-          lecturasConocidas.add(lectura);
-          const campeon = pool.find((c) => c.name === opcion.id);
-          const factor = campeon ? factorDeCampeon(campeon, weights) : -Infinity;
-          if (factor > factorPrevio + 1e-9) {
-            throw new Error(`seed ${seed}: opciones de draft fuera de orden por factorDeCampeon`);
+          const pMapas = opcion.pMapas;
+          if (!Array.isArray(pMapas) || pMapas.length !== formato - mapaActual
+            || pMapas.some((p) => !Number.isFinite(p) || p < 0 || p > 1)) {
+            throw new Error(`seed ${seed}: plan "${opcion.id}" sin la p de cada mapa que queda (${JSON.stringify(pMapas)}, Bo${formato} desde el mapa ${mapaActual + 1})`);
           }
-          factorPrevio = factor;
+          if (!Number.isFinite(opcion.pSerie) || opcion.pSerie < 0 || opcion.pSerie > 1) {
+            throw new Error(`seed ${seed}: plan "${opcion.id}" sin la p de la serie (${opcion.pSerie})`);
+          }
+          const proyeccion = proyeccionDelPlan(st, opcion.id);
+          if (opcion.id === 'guardar') {
+            conGuardar += 1;
+            const guardado = proyeccion.guardado;
+            if (!guardado || !opcion.label.includes(guardado) || quemados.includes(guardado)
+              || !st.player.championPool.some((c) => c.name === guardado)) {
+              throw new Error(`seed ${seed}: "guardar" no nombra un campeón tuyo y libre ("${opcion.label}", guardado ${guardado})`);
+            }
+          }
+          if (opcion.id === 'sorpresa' && !opcion.label.includes(proyeccion.mapas[0].campeon)) {
+            throw new Error(`seed ${seed}: "la sorpresa" no nombra el pick del mapa 1 ("${opcion.label}")`);
+          }
+        }
+        // La UI lee la tarjeta por `previaDeDecision`: las mismas opciones, en el mismo orden, con las mismas p.
+        const previa = previaDeDecision(st, decision);
+        const idsPrevia = previa?.opciones?.map((o) => o.id) ?? [];
+        if (idsPrevia.join(',') !== ids.join(',')) {
+          throw new Error(`seed ${seed}: la previa de la UI muestra otro orden (${idsPrevia.join(', ')} vs ${ids.join(', ')})`);
+        }
+        decision.opciones.forEach((opcion, i) => {
+          const lectura = previa.opciones[i];
+          if (lectura.p !== opcion.pSerie || lectura.pMapas.join(',') !== opcion.pMapas.join(',')) {
+            throw new Error(`seed ${seed}: la previa de "${opcion.id}" no lee las p de la opción`);
+          }
+          if (!/^Mapa a mapa: .+\. La serie: \d+%\.$/.test(lectura.texto)) {
+            throw new Error(`seed ${seed}: lectura del plan "${opcion.id}" sin el mapa a mapa ("${lectura.texto}")`);
+          }
+        });
+        if (new Set(decision.opciones.map((o) => o.pMapas.join(','))).size > 1) {
+          conLecturasDistintas += 1;
         }
       }
       return sistema.resolverAuto(st, decision, r);
@@ -5094,41 +5085,16 @@ checkLento('Toda opción de draft trae su lectura y va ordenada por factorDeCamp
       state = avanzarSplitAuto(state, rng, responder).state;
     }
   }
-  if (decisionesVistas < 20) {
-    throw new Error(`sólo ${decisionesVistas} decisiones de draft en 250 carreras: muestra insuficiente`);
-  }
-  // La matriz 3×3 real tiene 9 frases; una carrera headless no las toca todas,
-  // pero sí varias — si sólo apareció una, algo quedó hardcodeado.
-  if (lecturasConocidas.size < 3) {
-    throw new Error(`sólo ${lecturasConocidas.size} lecturas de pick distintas en 250 carreras`);
+  // No vacío: la tarjeta salió, el re-plan también, "guardar" se ofreció y los planes se leen distinto entre sí.
+  if (planesVistos < 200 || replanesVistos < 5 || conGuardar < 50 || conLecturasDistintas < planesVistos / 2) {
+    throw new Error(`muestra insuficiente en 250 carreras: ${planesVistos} planes, ${replanesVistos} re-planes, `
+      + `${conGuardar} con "guardar", ${conLecturasDistintas} con lecturas distintas entre opciones`);
   }
 });
 
-check('Elegir el mismo campeón del split en una fecha marcada da factorDraftFecha == 0', () => {
-  const weights = createInitialState(3, mulberry32(3)).meta.weights;
-  for (const tags of [['enchanter'], ['splitpush'], ['tanque', 'engage'], ['asesino']]) {
-    for (const mastery of [15, 45, 80]) {
-      const campeon = entradaDePool({ name: 'X', tags }, mastery, 0);
-      const factor = factorDraftFecha(campeon, campeon, weights);
-      if (factor !== 0) {
-        throw new Error(`factorDraftFecha(c, c) = ${factor} (tags ${tags}, m${mastery})`);
-      }
-    }
-  }
-  // Y elegir uno MEJOR que el del split da > 0, uno peor da < 0, ambos topeados.
-  const delSplit = entradaDePool({ name: 'Base', tags: ['splitpush'] }, 40, 0);
-  const mejor = entradaDePool({ name: 'Mejor', tags: ['enchanter'] }, 80, 0);
-  const peor = entradaDePool({ name: 'Peor', tags: ['splitpush'] }, 15, 0);
-  const tope = BALANCE.temporada.impactoDraftFecha;
-  const fMejor = factorDraftFecha(mejor, delSplit, weights);
-  const fPeor = factorDraftFecha(peor, delSplit, weights);
-  if (!(fMejor > 0 && fMejor <= tope + 1e-9)) {
-    throw new Error(`campeón mejor dio ${fMejor}, esperaba (0, ${tope}]`);
-  }
-  if (!(fPeor < 0 && fPeor >= -tope - 1e-9)) {
-    throw new Error(`campeón peor dio ${fPeor}, esperaba [${-tope}, 0)`);
-  }
-});
+// K4 (integración) borró el check "Elegir el mismo campeón del split en una fecha marcada da factorDraftFecha == 0" (regla
+// 17): K4-A sacó el draft de la fecha marcada, `factorDraftFecha` daba siempre 0 y se borró con su tope. Lo reemplaza
+// "K4-A la fecha marcada no tiene draft: frena una sola vez, con el momento" y la exactitud de la previa de K2d.
 
 checkLento('Ninguna serie deja el pipeline con una decisión colgada', () => {
   for (let seed = 1; seed <= 600; seed += 1) {
@@ -5579,9 +5545,9 @@ check('Ninguna fecha marcada sale sin un stakes declarado', () => {
     mundo: { rivales: [] }
   };
   const fecha = { rival: 'Nadie Conocido', fuerzaRival: 50 };
-  const tablaPareja = [{ org: 'Equipo Propio', ganados: 3, perdidos: 3, diferencia: 0 }];
+  const t = { calendario: [fecha], cruces: [], registrosOtros: {}, filaPropia: { org: 'Equipo Propio', ganados: 3, perdidos: 3 }, indice: 0, fuerzaPropia: 50 };
 
-  const motivos = motivosDeFecha(estadoAburrido, null, fecha, tablaPareja, 0, 3, 9);
+  const motivos = motivosDeFecha(estadoAburrido, null, fecha, t);
   if (!Array.isArray(motivos) || motivos.length === 0) {
     throw new Error('motivosDeFecha devolvió una lista vacía en un escenario sin ningún motivo real');
   }
@@ -6679,11 +6645,19 @@ checkLento('El burnout no llega sin aviso: la Mentalidad estuvo en zona roja var
   // mentalidad en los splits sin equipo) la empujó de ~81% a 79,2%. A
   // n=2000/3000 vuelve a 85,7%/84,2% — el mecanismo de telegrafía
   // (`burnoutSplitsMinimos`) no cambió; era la muestra. Mismo remedio que D24.
+  // Revisión de K5: con K5 el burnout bajó a ~0,6% de las carreras (18 en 3000 seeds en la integración, debajo del
+  // piso de 20). La muestra ya no es un número fijo de seeds: se buscan seeds hasta juntar `BURNOUTS_MINIMOS`
+  // burnouts, con tope `SEEDS_TOPE_BURNOUT`. La propiedad (≥80% con aviso) no cambia. Medido tras la revisión: 20
+  // burnouts en 2764 seeds, 19 con aviso (95%).
+  const BURNOUTS_MINIMOS = 20;
+  const SEEDS_TOPE_BURNOUT = 3000;
   const umbral = BALANCE.atributos.burnoutMentalBajo;
   let burnouts = 0;
   let conAviso = 0;
+  let seedsCorridas = 0;
 
-  for (let seed = 1; seed <= 3000; seed += 1) {
+  for (let seed = 1; seed <= SEEDS_TOPE_BURNOUT && burnouts < BURNOUTS_MINIMOS; seed += 1) {
+    seedsCorridas = seed;
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
     const trayectoria = [];
@@ -6703,8 +6677,8 @@ checkLento('El burnout no llega sin aviso: la Mentalidad estuvo en zona roja var
     }
   }
 
-  if (burnouts < 20) {
-    throw new Error(`solo ${burnouts} burnouts en 1000 seeds: muestra insuficiente`);
+  if (burnouts < BURNOUTS_MINIMOS) {
+    throw new Error(`solo ${burnouts} burnouts en ${seedsCorridas} seeds: muestra insuficiente`);
   }
   const fraccion = conAviso / burnouts;
   if (fraccion < 0.8) {
@@ -6864,10 +6838,23 @@ checkLento('Ninguna carrera coreana profesional llega a la edad límite sin reso
   // dispara sin dado en cuanto se cumple la edad; este check confirma que el
   // disparo nunca falla en llegar (a diferencia de una lesión, que sí es
   // `chance()`).
+  //
+  // K4 (revisión 2): con el bloque A las carreras cambiaron y en las 600 seeds de antes llegaban 19 (el piso es 20). La
+  // región de origen sale del estado inicial (`mundo.regionIdOrigen`, fija toda la carrera): se filtra ahí, sin correr
+  // las no coreanas, y se buscan seeds hasta juntar `OBJETIVO` carreras (≈ 1 cada 30 seeds hoy) o agotar `SEEDS_MAX`.
+  // La propiedad y el piso no cambian.
+  const PISO = 20;
+  const OBJETIVO = 30;
+  const SEEDS_MAX = 3000;
   let coreanosProResueltos = 0;
   let sinResolver = 0;
+  let seedsMiradas = 0;
 
-  for (let seed = 1; seed <= 600; seed += 1) {
+  for (let seed = 1; seed <= SEEDS_MAX && coreanosProResueltos < OBJETIVO; seed += 1) {
+    seedsMiradas = seed;
+    if (createInitialState(seed, mulberry32(seed)).mundo.regionIdOrigen !== 'KR') {
+      continue;
+    }
     const state = correrCarrera(seed, 60);
     if (state.mundo.regionIdOrigen !== 'KR' || state.phase !== 'profesional') {
       continue;
@@ -6884,8 +6871,8 @@ checkLento('Ninguna carrera coreana profesional llega a la edad límite sin reso
     }
   }
 
-  if (coreanosProResueltos < 20) {
-    throw new Error(`solo ${coreanosProResueltos} carreras coreanas profesionales llegaron a la edad límite en 600 seeds: muestra insuficiente`);
+  if (coreanosProResueltos < PISO) {
+    throw new Error(`solo ${coreanosProResueltos} carreras coreanas profesionales llegaron a la edad límite en ${seedsMiradas} seeds: muestra insuficiente`);
   }
   if (sinResolver > 0) {
     throw new Error(`${sinResolver}/${coreanosProResueltos} carreras coreanas llegaron a la edad límite sin servicioCumplido ni exentoServicio`);
@@ -8813,6 +8800,324 @@ const {
   esDecisionDeMercado, esDecisionDeRutina, esDecisionDeMinijuego
 } = await import('./estrategias.js');
 const { spawnSync } = await import('child_process');
+
+// --- K5-C: el final lo decide el mercado ---
+//
+// La muestra: carreras reales (`avanzarSplitAuto`) en las que, al llegar a tier 1, el nivel del jugador se "rompe" (cada
+// stat queda topeada en una fracción de lo que valía, `FACTORES_DEGRADADO_K5C`): un jugador por debajo de su liga, que es justo el caso
+// que el mercado tiene que terminar. El umbral (`BALANCE.retiro.splitsSinOfertaEnTierParaBifurcar`) se prende en
+// memoria; el valor del repo (99) es el neutro, que reproduce hoy.
+const SEEDS_K5C = 30;
+const SPLITS_K5C = 90;
+const UMBRAL_K5C = 2;
+// Un factor por seed (`seed % 3`). Medido al escribir el check: con 0.85 o más una org floja de tier 1 de cualquier
+// región (fuerza ~37-43 en LCS/LCP/CBLOL) lo sigue llamando y nunca se bifurca; de 0.6 a 0.72 se bifurca, casi siempre
+// sin nadie que ofrezca más abajo ("seguís buscando"). El lado "bajás" es raro (2 de 240 carreras): lo busca su propio
+// check, seed por seed, en vez de exigirlo de esta muestra.
+const FACTORES_DEGRADADO_K5C = [0.6, 0.66, 0.72];
+
+function conUmbralK5C(valor, fn) {
+  const previo = BALANCE.retiro.splitsSinOfertaEnTierParaBifurcar;
+  BALANCE.retiro.splitsSinOfertaEnTierParaBifurcar = valor;
+  try {
+    return fn();
+  } finally {
+    BALANCE.retiro.splitsSinOfertaEnTierParaBifurcar = previo;
+  }
+}
+
+function topearStats(state, techo) {
+  const stats = { ...state.player.stats };
+  for (const [stat, valor] of Object.entries(techo)) {
+    stats[stat] = Math.min(stats[stat], valor);
+  }
+  return { ...state, player: { ...state.player, stats } };
+}
+
+// Corre una carrera degradada y anota cada mano de ofertas y cada bifurcación con lo que se respondió.
+const responderPorDefectoK5C = (sistema, st, decision, rng) => sistema.resolverAuto(st, decision, rng);
+function carreraDegradadaK5C(seed, responderBase = responderPorDefectoK5C, factor = FACTORES_DEGRADADO_K5C[seed % FACTORES_DEGRADADO_K5C.length]) {
+  const rng = mulberry32(seed);
+  let state = createInitialState(seed, rng);
+  let techo = null;
+  const manos = [];
+  const forks = [];
+  const pasos = [];
+  const responder = (sistema, st, decision, rngR) => {
+    const respuesta = responderBase(sistema, st, decision, rngR);
+    if (decision.datos?.motivo === 'fin_mercado') {
+      forks.push({
+        seed, split: st.player.splitCount, edad: st.age, tier: st.career.tier, cuenta: st.flags.splitsSinOfertaEnTier,
+        tiersOfertas: decision.datos.ofertas.map((oferta) => oferta.tier), opciones: decision.opciones.map((op) => op.id),
+        ofertas: decision.datos.ofertas.map((oferta) => oferta.org),
+        textos: [decision.titulo, decision.descripcion, decision.datos.motivoRetiro, ...decision.opciones.flatMap((op) => [op.label, op.descripcion])],
+        motivoRetiro: decision.datos.motivoRetiro, ligas: st.mundo.ligas, respuesta: respuesta.opcionId
+      });
+    } else if (decision.presentacion === 'mercado' && decision.datos?.motivo === 'oferta') {
+      manos.push({
+        split: st.player.splitCount, cuenta: st.flags.splitsSinOfertaEnTier, orgs: decision.opciones.map((oferta) => oferta.org),
+        enTier: decision.opciones.some((oferta) => oferta.tier <= st.career.tier)
+      });
+    }
+    return respuesta;
+  };
+  for (let i = 0; i < SPLITS_K5C && !state.terminado; i += 1) {
+    if (!techo && state.phase === 'profesional' && state.career.tier === 1) {
+      techo = Object.fromEntries(Object.entries(state.player.stats).map(([stat, valor]) => [stat, valor * factor]));
+    }
+    if (techo && state.phase === 'profesional') {
+      state = topearStats(state, techo);
+    }
+    const forksAntes = forks.length;
+    const paso = avanzarSplitAuto(state, rng, responder);
+    state = paso.state;
+    pasos.push({
+      forksNuevos: forks.slice(forksAntes), logs: paso.logs, phase: state.phase, edad: state.age, motivoRetiro: state.motivoRetiro,
+      tier: state.career.tier, cuenta: state.flags.splitsSinOfertaEnTier
+    });
+  }
+  return { state, manos, forks, pasos };
+}
+
+const muestrasK5C = new Map();
+function muestraK5C(umbral, nombre = 'auto', responderBase = undefined) {
+  const clave = `${umbral}|${nombre}`;
+  if (!muestrasK5C.has(clave)) {
+    muestrasK5C.set(clave, conUmbralK5C(umbral, () => {
+      const carreras = [];
+      for (let seed = 1; seed <= SEEDS_K5C; seed += 1) {
+        carreras.push(carreraDegradadaK5C(seed, responderBase));
+      }
+      return carreras;
+    }));
+  }
+  return muestrasK5C.get(clave);
+}
+
+// Un texto de pantalla sin ids crudos: nada de snake_case, ni `undefined`/`null`/`NaN`, ni el id de una liga cuyo
+// nombre visible es otro ("EMEA_MASTERS" en vez de "EMEA Masters").
+function idsCrudosK5C(texto, ligas) {
+  const problemas = [];
+  if (typeof texto !== 'string' || texto.trim() === '') {
+    return ['texto vacío'];
+  }
+  if (/\b[a-z]+_[a-z_]+\b/i.test(texto)) {
+    problemas.push('snake_case');
+  }
+  if (/\b(undefined|null|NaN)\b/.test(texto)) {
+    problemas.push('undefined/null/NaN');
+  }
+  for (const liga of ligas) {
+    if (liga.id !== liga.nombre && texto.includes(liga.id)) {
+      problemas.push(`id de liga ${liga.id}`);
+    }
+  }
+  return problemas;
+}
+
+check('K5-C: con el umbral prendido, un jugador por debajo de su liga pasa N pretemporadas sin oferta de su tier y recién ahí frena "bajás o te retirás"', () => {
+  const carreras = muestraK5C(UMBRAL_K5C);
+  const forks = carreras.flatMap((c) => c.forks);
+  const problemas = [];
+  for (const fork of forks) {
+    if (fork.cuenta < UMBRAL_K5C) {
+      problemas.push(`seed ${fork.seed} split ${fork.split}: frenó con ${fork.cuenta} pretemporadas sin oferta de su tier (umbral ${UMBRAL_K5C})`);
+    }
+    if (fork.tiersOfertas.some((tier) => tier <= fork.tier)) {
+      problemas.push(`seed ${fork.seed} split ${fork.split}: frenó con una oferta de su tier en la mano (${fork.tiersOfertas})`);
+    }
+    const seguir = fork.tiersOfertas.length > 0 ? 'bajar' : 'esperar';
+    if (fork.opciones.length !== 2 || fork.opciones[0] !== seguir || fork.opciones[1] !== 'retirarse') {
+      problemas.push(`seed ${fork.seed} split ${fork.split}: opciones ${fork.opciones} (se esperaba ${seguir} y retirarse)`);
+    }
+    if (fork.edad >= BALANCE.retiro.edadRetiroForzoso) {
+      problemas.push(`seed ${fork.seed}: frenó a los ${fork.edad}, pasada la línea`);
+    }
+  }
+  // La cuenta: una mano con una oferta de tu tier la deja en 0; una sin ninguna la tiene en 1 o más; y con la cuenta en
+  // el umbral nunca se ve la mano de siempre sin pasar antes por la bifurcación (salvo después de elegir bajar).
+  for (const carrera of carreras) {
+    for (const mano of carrera.manos) {
+      if (mano.enTier && mano.cuenta !== 0) {
+        problemas.push(`seed ${carrera.state.seed} split ${mano.split}: mano con oferta de su tier y cuenta ${mano.cuenta}`);
+      }
+      if (!mano.enTier && mano.cuenta < 1) {
+        problemas.push(`seed ${carrera.state.seed} split ${mano.split}: mano sin oferta de su tier y cuenta 0`);
+      }
+      if (mano.cuenta >= UMBRAL_K5C && !carrera.forks.some((f) => f.split === mano.split && f.respuesta === 'bajar')) {
+        problemas.push(`seed ${carrera.state.seed} split ${mano.split}: cuenta ${mano.cuenta} y la mano de siempre, sin bifurcación`);
+      }
+    }
+  }
+  if (forks.length === 0) {
+    problemas.push('ninguna bifurcación en la muestra degradada: el check no mide nada');
+  }
+  const neutras = muestraK5C(99).flatMap((c) => c.forks).length;
+  if (neutras !== 0) {
+    problemas.push(`con el umbral neutro (99) frenó ${neutras} veces: tiene que reproducir hoy`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problema(s) en ${forks.length} bifurcaciones: ${problemas.slice(0, 5).join(' · ')}`);
+  }
+});
+
+check('K5-C: el retiro por mercado deja su motivo (log, estado y tarjeta) y la bifurcación no muestra ids crudos', () => {
+  const retirarse = (sistema, st, decision, rng) => (decision.datos?.motivo === 'fin_mercado'
+    ? { opcionId: 'retirarse' }
+    : sistema.resolverAuto(st, decision, rng));
+  const carreras = muestraK5C(UMBRAL_K5C, 'retirarse', retirarse);
+  const problemas = [];
+  let retiros = 0;
+  for (const carrera of carreras) {
+    for (const paso of carrera.pasos) {
+      for (const fork of paso.forksNuevos) {
+        for (const texto of fork.textos) {
+          const crudos = idsCrudosK5C(texto, fork.ligas);
+          if (crudos.length > 0) {
+            problemas.push(`seed ${fork.seed}: "${texto}" (${crudos.join(', ')})`);
+          }
+        }
+        if (fork.respuesta !== 'retirarse') {
+          continue;
+        }
+        retiros += 1;
+        if (paso.phase !== 'retirado' || paso.motivoRetiro !== fork.motivoRetiro) {
+          problemas.push(`seed ${fork.seed}: eligió retirarse y quedó phase ${paso.phase}, motivo ${paso.motivoRetiro}`);
+        }
+        if (!paso.logs.some((log) => log.type === 'retiro' && log.message.includes(fork.motivoRetiro))) {
+          problemas.push(`seed ${fork.seed}: el log del retiro no dice el motivo`);
+        }
+      }
+    }
+    const { state } = carrera;
+    if (state.terminado && state.tarjeta && (state.tarjeta.motivo ?? null) !== (state.motivoRetiro ?? null)) {
+      problemas.push(`seed ${state.seed}: la tarjeta dice "${state.tarjeta.motivo}" y el estado "${state.motivoRetiro}"`);
+    }
+    if (state.motivoRetiro != null) {
+      const crudos = idsCrudosK5C(state.motivoRetiro, state.mundo.ligas);
+      if (crudos.length > 0) {
+        problemas.push(`seed ${state.seed}: motivo "${state.motivoRetiro}" (${crudos.join(', ')})`);
+      }
+    }
+  }
+  if (retiros === 0) {
+    problemas.push('ningún retiro por la bifurcación en la muestra: el check no mide nada');
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problema(s) en ${retiros} retiros por mercado: ${problemas.slice(0, 5).join(' · ')}`);
+  }
+});
+
+check('K5-C: la línea de los 34 sigue existiendo (con el umbral prendido y con el neutro) y deja su motivo', () => {
+  const problemas = [];
+  let enLaLinea = 0;
+  for (const umbral of [UMBRAL_K5C, 99]) {
+    for (const carrera of muestraK5C(umbral)) {
+      for (const paso of carrera.pasos) {
+        if (paso.phase === 'profesional' && paso.edad > BALANCE.retiro.edadRetiroForzoso) {
+          problemas.push(`umbral ${umbral}, seed ${carrera.state.seed}: profesional a los ${paso.edad}`);
+          break;
+        }
+      }
+    }
+  }
+  // Sin degradar (el responder por defecto, el umbral neutro): alguien llega a la línea y se va con su motivo.
+  for (let seed = 1; seed <= 12; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < SPLITS_K5C && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+    }
+    if (state.terminado && state.age >= BALANCE.retiro.edadRetiroForzoso && state.career.splitAscensoTier1 !== null) {
+      enLaLinea += 1;
+      if (!String(state.motivoRetiro).startsWith(`Llegaste a los ${state.age}`)) {
+        problemas.push(`seed ${seed}: se retiró en la línea con motivo "${state.motivoRetiro}"`);
+      }
+    }
+  }
+  if (enLaLinea === 0) {
+    problemas.push('nadie llegó a la línea de los 34 en 12 carreras sin degradar');
+  }
+  if (problemas.length > 0) {
+    throw new Error(problemas.slice(0, 5).join(' · '));
+  }
+});
+
+check('K5-C: con el umbral prendido, misma seed, misma carrera (bifurcaciones incluidas)', () => {
+  const unaVez = () => conUmbralK5C(UMBRAL_K5C, () => [3, 7, 11, 19].map((seed) => {
+    const { state, forks } = carreraDegradadaK5C(seed);
+    return JSON.stringify({ state, forks: forks.map(({ ligas, ...resto }) => resto) });
+  }));
+  const a = unaVez();
+  const b = unaVez();
+  const distintas = a.filter((texto, i) => texto !== b[i]).length;
+  if (distintas > 0) {
+    throw new Error(`${distintas} de ${a.length} carreras difieren entre dos corridas con la misma seed`);
+  }
+});
+
+// La búsqueda del lado raro: seeds en orden, hasta `SEEDS_BUSQUEDA_K5C`, con los dos factores bajos.
+const SEEDS_BUSQUEDA_K5C = 150;
+function buscarK5C(condicion, { responderBase = responderPorDefectoK5C, factores = FACTORES_DEGRADADO_K5C, minimo = 1 } = {}) {
+  return conUmbralK5C(UMBRAL_K5C, () => {
+    const halladas = [];
+    for (let seed = 1; seed <= SEEDS_BUSQUEDA_K5C && halladas.length < minimo; seed += 1) {
+      for (const factor of factores) {
+        const carrera = carreraDegradadaK5C(seed, responderBase, factor);
+        if (carrera.forks.some(condicion)) {
+          halladas.push(carrera);
+          break;
+        }
+      }
+    }
+    return halladas;
+  });
+}
+
+check('K5-C: "bajás" lleva a la mano de ofertas de más abajo, firmás un tier abajo y la cuenta vuelve a cero', () => {
+  const [carrera] = buscarK5C((fork) => fork.opciones[0] === 'bajar' && fork.respuesta === 'bajar');
+  if (!carrera) {
+    throw new Error(`ninguna bifurcación con "bajar" contestada en ${SEEDS_BUSQUEDA_K5C} seeds degradadas`);
+  }
+  const fork = carrera.forks.find((f) => f.respuesta === 'bajar');
+  const mano = carrera.manos.find((m) => m.split === fork.split);
+  const paso = carrera.pasos.find((p) => p.forksNuevos.includes(fork));
+  const problemas = [];
+  if (!mano || mano.orgs.join('|') !== fork.ofertas.join('|')) {
+    problemas.push(`después de "bajar" la mano no es la de la bifurcación (${mano?.orgs} contra ${fork.ofertas})`);
+  }
+  if (!paso || paso.tier <= fork.tier || paso.cuenta !== 0) {
+    problemas.push(`al cerrar el split: tier ${paso?.tier} (antes ${fork.tier}), cuenta ${paso?.cuenta}`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(`seed ${fork.seed}: ${problemas.join(' · ')}`);
+  }
+});
+
+check('K5-C: los bots contestan la bifurcación del mercado con una opción válida y su regla', () => {
+  const problemas = [];
+  const reglas = {
+    criterio: (fork) => (fork.edad >= BALANCE.retiro.edadAutoAceptaVeredicto ? 'retirarse' : fork.opciones[0]),
+    malas: (fork) => (fork.edad >= BALANCE.retiro.edadAutoAceptaVeredicto ? fork.opciones[0] : 'retirarse'),
+    azar: null
+  };
+  for (const [bot, regla] of Object.entries(reglas)) {
+    const forks = buscarK5C(() => true, { responderBase: ESTRATEGIAS_K0[bot], minimo: 3 }).flatMap((c) => c.forks);
+    if (forks.length === 0) {
+      problemas.push(`${bot}: ninguna bifurcación en la muestra`);
+    }
+    for (const fork of forks) {
+      if (!fork.opciones.includes(fork.respuesta)) {
+        problemas.push(`${bot}, seed ${fork.seed}: contestó "${fork.respuesta}" (opciones ${fork.opciones})`);
+      } else if (regla && regla(fork) !== fork.respuesta) {
+        problemas.push(`${bot}, seed ${fork.seed}: a los ${fork.edad} contestó "${fork.respuesta}", su regla dice "${regla(fork)}"`);
+      }
+    }
+  }
+  if (problemas.length > 0) {
+    throw new Error(problemas.slice(0, 5).join(' · '));
+  }
+});
 const osK0 = await import('os');
 
 // Carreras por bot en los lotes de los checks lentos (PLAN.md §K.5 pide 200).
@@ -9034,7 +9339,7 @@ function recuentoEmbudoK0(resultados, carreras) {
       throw new Error(`seed ${resultados[i].seed}: carrera.tierMaximo = ${carreras[i].tierMaximo}, el registro dice ${t} (D75)`);
     }
   });
-  const buenPapel = resultados.map((r) => cuentaK0(r.career.registro.internacionales, (i) => i.resultado === 'buen_papel'));
+  const buenPapel = resultados.map((r) => cuentaK0(r.career.registro.internacionales, esBuenPapelK5));
   // "#1 del mundo en una temporada" = el reveal del Top 20 de fin de año dice que sos el #1 (los logs `top_mundial`).
   const temporadasNumeroUno = resultados.map((r) => cuentaK0(r.logs, (l) => l.type === 'top_mundial' && l.rankJugador === 1));
   const llegaAPro = (i) => resultados[i].splitFichaje !== null;
@@ -9421,12 +9726,8 @@ check('K0 puntuarPrevia: más positivo/alto puntúa más, la ruleta penaliza, y 
     throw new Error(`malas tendría que elegir la -alta ('b'), eligió '${elegidaMalas}'`);
   }
 
-  // Draft (opciones best-first por `factorDeCampeon`): criterio la primera, malas la última. Minijuego: 0,85 y 0,15.
-  const draft = { tipo: 'opciones', presentacion: 'draft', datos: { motivo: 'draft' }, opciones: [{ id: 'mejor' }, { id: 'medio' }, { id: 'peor' }] };
-  if (ESTRATEGIAS_K0.criterio(sistemaSinAuto, estado, draft, rngProhibidoK0).opcionId !== 'mejor'
-    || ESTRATEGIAS_K0.malas(sistemaSinAuto, estado, draft, rngProhibidoK0).opcionId !== 'peor') {
-    throw new Error('en el draft criterio elige la primera opción y malas la última');
-  }
+  // Minijuego: 0,85 y 0,15. (El caso del draft se fue en la revisión de K4: la serie ya no frena por draft desde K4-B
+  // y las ramas de los bots que lo contestaban eran código muerto.)
   const minijuego = { tipo: 'minijuego', presentacion: 'minijuego', datos: { motivo: 'minijuego' }, opciones: [] };
   const juegoBien = ESTRATEGIAS_K0.criterio(sistemaSinAuto, estado, minijuego, rngProhibidoK0).resultado;
   const juegoMal = ESTRATEGIAS_K0.malas(sistemaSinAuto, estado, minijuego, rngProhibidoK0).resultado;
@@ -10154,6 +10455,7 @@ const RUIDOS_DE_RESULTADOS_K0 = ['partido.sigmaFecha', 'partido.sigmaMapa'];
 // resultado de un partido, sumarla a `PARAMETROS_RUIDO`).
 const RUIDOS_FUERA_DE_LA_ABLACION_K0 = {
   'amateur.autoRuido': 'dispersión del reparto del jugador automático en el amateur',
+  'mundial.ruidoDeTabla': 'ruido de la tabla de las ligas que no jugás, para elegir quién viaja al Mundial (por hash, no es el resultado de un partido)',
   'mercado.renovacionSigmaFactor': 'dispersión lognormal del sueldo de una renovación (mercado), no el resultado de un partido',
   'atributos.curvas.mecanica.ruido': 'ruido de la curva de atributos (cómo evoluciona la mecánica por split)',
   'atributos.curvas.laneo.ruido': 'ruido de la curva de atributos (cómo evoluciona el laneo por split)',
@@ -10248,8 +10550,8 @@ check('K0 espejos de la UI: DURACION_BEAT_MS y ESPERA_MINIJUEGO_MS son los liter
   };
   // reproductor.js: `const ESPERA_MS = { x1: 700, x2: 350, instantaneo: 0 }`
   const beat = extraer(leer('ui/reproductor.js'), /const\s+ESPERA_MS\s*=\s*\{[^}]*\bx1\s*:\s*(\d+)/g, 'ESPERA_MS.x1 de reproductor.js');
-  // app.js: `setTimeout(() => responder({ resultado }), 1600)`
-  const minijuego = extraer(leer('ui/app.js'), /setTimeout\(\s*\(\)\s*=>\s*responder\(\s*\{\s*resultado\s*\}\s*\)\s*,\s*(\d+)\s*\)/g, 'la espera tras el minijuego de app.js');
+  // app.js: `setTimeout(() => responder(... { resultado }), 1600)` (K4-B: con la charla del coach, si se ofreció)
+  const minijuego = extraer(leer('ui/app.js'), /setTimeout\(\s*\(\)\s*=>\s*responder\([^;]*\{\s*resultado\s*\}\s*\)\s*,\s*(\d+)\s*\)/g, 'la espera tras el minijuego de app.js');
   if (beat !== DURACION_BEAT_MS) {
     throw new Error(`DURACION_BEAT_MS = ${DURACION_BEAT_MS} en simulate.js, reproductor.js espera ${beat} ms por beat`);
   }
@@ -10872,7 +11174,7 @@ checkLento('K0 bloques de simulate: todas las hojas de todos los bloques son fin
       st = avanzarSplitAuto(st, rng).state;
     }
     const registro = st.career.registro;
-    const buenPapel = registro.internacionales.filter((i) => i.resultado === 'buen_papel').length;
+    const buenPapel = registro.internacionales.filter(esBuenPapelK5).length;
     // #1 del mundo en una temporada = el reveal del Top 20 de fin de año dice que sos el #1.
     const temporadasNumeroUno = st.logs.filter((l) => l.type === 'top_mundial' && l.rankJugador === 1).length;
     buenPapelPorCarrera.push(buenPapel);
@@ -10992,7 +11294,7 @@ checkLento('K0 KPIs anclados: embudo, longevidad, economía, ritmo, nivel y porR
       problemas.push(`check vacío: ${bot} solo tiene ${regionesDistintas} región(es) con embudo/longevidad distintos del lote entero: no distingue "porRegion copia el lote"`);
     }
     // X03: P(otro mundial | ya ganó uno) con el denominador correcto vs con el total de carreras.
-    const dosOMas = cuentaK0(crudos.resultados, (r) => cuentaK0(r.career.registro.internacionales, (i) => i.resultado === 'buen_papel') >= 2);
+    const dosOMas = cuentaK0(crudos.resultados, (r) => cuentaK0(r.career.registro.internacionales, esBuenPapelK5) >= 2);
     if (esperado.embudo.pOtroMundialDadoUno !== null && Math.abs(esperado.embudo.pOtroMundialDadoUno - dosOMas / total) > DIFERENCIA_MINIMA_PROBABILIDAD_K0) {
       distingue[claves[1]] = true;
     }
@@ -11571,7 +11873,7 @@ check('K1 puntaje falla fuerte: liga desconocida, título sin tier, internaciona
     ['contador fraccionario', (st) => { st.career.registro.splitsEnTopMundial = 1.5; }, /splitsEnTopMundial.*1\.5/],
     ['cierres como #1 fraccionario', (st) => { st.career.registro.cierresComoNumeroUno = 0.5; }, /cierresComoNumeroUno.*0\.5/],
     ['contador NaN se lee como NaN', (st) => { st.career.registro.splitsEnTopMundial = Number.NaN; }, /splitsEnTopMundial.*NaN/],
-    ['internacional con un resultado desconocido', internacional({ liga: 'LCK', resultado: 'semis' }), /resultado.*semis/],
+    ['internacional con un resultado desconocido', internacional({ liga: 'LCK', resultado: 'octavos' }), /resultado.*octavos/],
     ['internacional sin resultado', internacional({ liga: 'LCK', resultado: undefined }), /resultado/]
   ];
   if (!(base.mundo.rivales.length > 0)) {
@@ -12377,7 +12679,9 @@ check('K1 dificultad: toda liga la tiene (número > 0) y cada tier 2 hereda la d
     }
   }
   for (const tier2 of LIGAS.filter((liga) => liga.tier === 2)) {
-    const madre = LIGAS.find((liga) => liga.tier === 1 && liga.desciendeA === tier2.id);
+    // K5-B: LRN y LRS no tienen primera arriba (`sinPrimera`): heredan la de la primera que alimentan (`alimentaA`).
+    const madre = LIGAS.find((liga) => liga.tier === 1 && liga.desciendeA === tier2.id)
+      ?? (tier2.sinPrimera ? LIGAS.find((liga) => liga.tier === 1 && liga.id === tier2.alimentaA) : null);
     if (!madre) {
       throw new Error(`${tier2.id}: ninguna liga tier 1 desciende ahí, no hay de quién heredar la dificultad`);
     }
@@ -12928,7 +13232,7 @@ checkLento('K2a Bo5 del motor: cada serie cerrada deja una fila con la fuerza de
       const arranques = new Map();
       const claveDeSerie = (split, ronda, rival) => `${split}|${ronda}|${rival}`;
       const espiaDecisiones = (sistema, st, decision, rng) => {
-        if (sistema.id === 'serie' && decision.datos?.motivo === 'draft' && st.serie.mapaActual === 0 && !st.serie.preSerieUsado) {
+        if (sistema.id === 'serie' && decision.datos?.motivo === 'plan' && !decision.datos.replan) {
           vistos.draftDelPrimerMapa += 1;
           const arranque = fuerzaDeArranqueK2a(st);
           arranques.set(claveDeSerie(st.player.splitCount, st.serie.ronda, st.serie.rival.org), arranque);
@@ -13136,11 +13440,12 @@ check('K2b una tirada por partido: temporada.aplicar tira exactamente un rng() p
 const SERIES_K2B = 60;
 const REPLICAS_MAPA_K2B = 20;
 
-// Estados reales con una serie en curso: las decisiones de draft de `criterio`, hasta `maximo`.
+// Estados reales con una serie en curso: las pausas del plan de Fearless al arrancar la serie (K4-B; antes, los drafts
+// de cada mapa), de `criterio`, hasta `maximo`.
 function draftsDeSerieK2b(maximo) {
   const casos = [];
   const espia = (sistema, st, decision, rng) => {
-    if (sistema.id === 'serie' && decision.datos?.motivo === 'draft' && casos.length < maximo) {
+    if (sistema.id === 'serie' && decision.datos?.motivo === 'plan' && !decision.datos.replan && casos.length < maximo) {
       casos.push({ st, decision });
     }
     return ESTRATEGIAS_K0.criterio(sistema, st, decision, rng);
@@ -13152,8 +13457,9 @@ function draftsDeSerieK2b(maximo) {
 }
 
 check('K2b una tirada por mapa: el mapa es rng() < p con la p de probabilidadDePartido sobre la fuerza de partido del campeón elegido, y un mapa que cierra una serie perdida sin internacional tira un solo rng()', () => {
-  // Cada draft se juega como el mapa de desempate de unos cuartos (sin minijuego) de un equipo que no clasifica al
-  // internacional: si se pierde, después del mapa no queda nada que sortear.
+  // Cada serie se juega con el plan del coach (sin tiradas de lectura) en el marcador del desempate de unos cuartos de
+  // un equipo que no clasifica al internacional, desde el mapa 1 (no es el mapa decisivo por índice: no frena): si se
+  // pierde, después del mapa no queda nada que sortear.
   const casos = draftsDeSerieK2b(SERIES_K2B);
   if (casos.length < SERIES_K2B) {
     throw new Error(`check vacío: solo ${casos.length} drafts de serie`);
@@ -13171,16 +13477,18 @@ check('K2b una tirada por mapa: el mapa es rng() < p con la p de probabilidadDeP
       career: { ...st.career, posicion: (liga?.cuposInternacionales ?? 0) + 1 },
       serie: { ...st.serie, ronda: 'cuartos', marcador: [necesarias - 1, necesarias - 1] }
     };
-    const elegido = decision.opciones[0].id;
+    // K4-B: el campeón que juega el plan del coach, y el rival de ESE mapa (también quema: `fuerzaRivalDeMapa`).
+    const proximo = estadoDelProximoMapa(conPlan(escenario, 'coach'));
+    const elegido = mapaDelPlan(proximo).campeon;
     const fuerza = fuerzaDesdeCamposK2b(
       nivelDeCompanerosIndependienteK2b(escenario),
       rendimientoBase({ ...escenario, player: { ...escenario.player, campeonDelSplit: elegido } }),
       escenario.career.sinergia
     );
-    const pMapa = probabilidadDePartido(escenario, fuerza, escenario.serie.rival.fuerza, 'mapa');
+    const pMapa = probabilidadDePartido(escenario, fuerza, fuerzaRivalDeMapa(proximo), 'mapa');
     for (let replica = 0; replica < REPLICAS_MAPA_K2B; replica += 1) {
       const { rng, valores } = rngEspiaK2b(7000 + i * REPLICAS_MAPA_K2B + replica);
-      const resultado = sistemaPorId('serie').resolver(escenario, decision, { opcionId: elegido }, rng);
+      const resultado = sistemaPorId('serie').resolver(escenario, decision, { opcionId: 'coach' }, rng);
       // El primer mapa que se jugó en esta llamada es el primer log de mapa (si la serie se ganó, `serie.mapas` ya es
       // el de la ronda siguiente).
       const mapa = resultado.logs.find((log) => log.type === 'serie' && (log.resultado === 'W' || log.resultado === 'L'));
@@ -13422,75 +13730,10 @@ const OPCIONES_POR_DRAFT_K2B = 3;
 const EPSILON_P_K2B = 1e-9;
 const SOBRE_EL_TOPE_MINIMO_K2B = 5;
 
-check('K2b la p del draft (probabilidadConCampeon) es exactamente la p que tira el mapa del campeón elegido, también cuando el rendimiento sin acotar pasa de 100', () => {
-  // Se miran los primeros DRAFTS_P_K2B drafts y, si entre ellos hay menos de SOBRE_EL_TOPE_MINIMO_K2B pasados de 100, se
-  // sigue con los siguientes (hasta DRAFTS_MAX_K2B): los casos sobre el tope dependen de cómo salgan las carreras, y el
-  // check falla solo si en todo el rango no aparecen.
-  const drafts = draftsDeSerieK2b(DRAFTS_MAX_K2B);
-  if (drafts.length < DRAFTS_P_K2B) {
-    throw new Error(`check vacío: solo ${drafts.length} drafts de serie`);
-  }
-  const problemas = [];
-  const vistos = { comparaciones: 0, sobreElTope: 0 };
-  for (const [i, { st, decision }] of drafts.entries()) {
-    if (i >= DRAFTS_P_K2B && vistos.sobreElTope >= SOBRE_EL_TOPE_MINIMO_K2B) {
-      break;
-    }
-    const liga = st.mundo.ligas.find((l) => l.id === st.career.liga);
-    const necesarias = Math.ceil(st.serie.formato / 2);
-    const real = {
-      ...st,
-      career: { ...st.career, posicion: (liga?.cuposInternacionales ?? 0) + 1 },
-      serie: { ...st.serie, ronda: 'cuartos', marcador: [necesarias - 1, necesarias - 1] }
-    };
-    // El mismo estado con la hoja de atributos y la jerarquía al máximo: el rendimiento sin acotar pasa de 100 y es
-    // ahí donde la p del draft (con la fuerza acotada) y una p calculada sin acotar se separan.
-    const potenciado = {
-      ...real,
-      player: { ...real.player, stats: Object.fromEntries(Object.entries(real.player.stats).map(([stat]) => [stat, BALANCE.stats.max])) },
-      career: { ...real.career, jerarquia: BALANCE.stats.max }
-    };
-    for (const [variante, escenario] of [['real', real], ['potenciado', potenciado]]) {
-      const opciones = decision.opciones.filter((o) => escenario.player.championPool.some((c) => c.name === o.id)).slice(0, OPCIONES_POR_DRAFT_K2B);
-      for (const opcion of opciones) {
-        const campeon = escenario.player.championPool.find((c) => c.name === opcion.id);
-        const conCampeon = { ...escenario, player: { ...escenario.player, campeonDelSplit: opcion.id } };
-        const sinAcotar = rendimientoBase(conCampeon);
-        if (sinAcotar > BALANCE.stats.max) {
-          vistos.sobreElTope += 1;
-        }
-        // La p del mapa, reconstruida con la fórmula de K2b y sin las funciones del motor para la fuerza.
-        const fuerza = fuerzaDesdeCamposK2b(nivelDeCompanerosIndependienteK2b(escenario), sinAcotar, escenario.career.sinergia);
-        const pMapa = probabilidadDePartido(escenario, fuerza, escenario.serie.rival.fuerza, 'mapa');
-        const pDraft = probabilidadConCampeon(escenario, campeon);
-        vistos.comparaciones += 1;
-        const donde = `draft ${i} (${variante}), ${opcion.id}`;
-        if (Math.abs(pDraft - pMapa) > 1e-12) {
-          problemas.push(`${donde}: la p del draft es ${pDraft}, la del mapa ${pMapa}`);
-          continue;
-        }
-        // Y la p que el motor tira de verdad: con el primer rng() apenas por debajo de la p del draft el mapa se gana, y
-        // apenas por encima se pierde.
-        for (const [u, gana] of [[pDraft - EPSILON_P_K2B, true], [pDraft + EPSILON_P_K2B, false]]) {
-          const resto = mulberry32(31000 + i);
-          let primera = true;
-          const rng = () => { if (primera) { primera = false; return u; } return resto(); };
-          const resultado = sistemaPorId('serie').resolver(escenario, decision, { opcionId: opcion.id }, rng);
-          const mapa = resultado.logs.find((log) => log.type === 'serie' && (log.resultado === 'W' || log.resultado === 'L'));
-          if (!mapa || (mapa.resultado === 'W') !== gana) {
-            problemas.push(`${donde}: con rng() = p ${gana ? '−' : '+'} ε el mapa salió ${mapa?.resultado}, p del draft = ${pDraft}`);
-          }
-        }
-      }
-    }
-  }
-  if (problemas.length > 0) {
-    throw new Error(`${problemas.slice(0, 4).join('; ')}${problemas.length > 4 ? ` (+${problemas.length - 4} más)` : ''}`);
-  }
-  if (vistos.comparaciones < DRAFTS_P_K2B * 2 || vistos.sobreElTope < SOBRE_EL_TOPE_MINIMO_K2B) {
-    throw new Error(`check vacío: ${JSON.stringify(vistos)}`);
-  }
-});
+// K4-B (regla 17): el check "K2b la p del draft (probabilidadConCampeon) es exactamente la p que tira el mapa del
+// campeón elegido..." se borró junto con el draft de serie. Lo reemplaza "K4-B regla 15: la p por mapa que declara
+// cada plan...", que compara contra la tirada sobre series reales; el tope de 100 lo sigue cuidando la fuerza de
+// partido (`fuerzaDePartido`, checks de K2b).
 
 check('K2b ruidoEfectivo por tipo coincide con BALANCE.partido (fecha → sigmaFecha, mapa → sigmaMapa), y la p de partido usa el σ de su tipo', () => {
   const sigmaDeTipo = { fecha: BALANCE.partido.sigmaFecha, mapa: BALANCE.partido.sigmaMapa };
@@ -13573,13 +13816,15 @@ function cosechaDePreviasK2d() {
   if (cosechasK2d.has(clave)) {
     return cosechasK2d.get(clave);
   }
-  const c = { fechas: [], fechasDraft: [], drafts: [], minijuegos: [] };
+  const c = { fechas: [], drafts: [], minijuegos: [] };
   const espia = (sistema, st, decision, rng) => {
     const respuesta = ESTRATEGIAS_K0.criterio(sistema, st, decision, rng);
     const datos = decision.datos ?? {};
     const caso = { sistema, st, decision, respuesta };
     if (st.serie?.activa) {
-      if (datos.motivo === 'draft' && c.drafts.length < CASOS_K2D) {
+      // K4-B: el draft de mapa ya no existe; su lugar lo toma la pausa del mapa decisivo sin minijuego (con o sin
+      // la charla del coach), que también trae la p de cada opción.
+      if (datos.motivo === 'decisivo' && c.drafts.length < CASOS_K2D) {
         c.drafts.push(caso);
       } else if (datos.motivo === 'minijuego' && minijuegoPorId(datos.minijuego)?.efecto?.tipo === 'mapa'
         && c.minijuegos.length < CASOS_K2D) {
@@ -13587,22 +13832,20 @@ function cosechaDePreviasK2d() {
       }
     } else {
       const fecha = st.career.temporada?.activa ? st.career.temporada.fechaEnCurso : null;
+      // K4-A: la fecha marcada ya no tiene draft; su única pausa es el momento.
       if (fecha && 'campeonElegido' in fecha && c.fechas.length < CASOS_K2D * 2) {
         c.fechas.push(caso);
-      } else if (fecha && !('campeonElegido' in fecha) && datos.motivo === 'draft' && c.fechasDraft.length < CASOS_K2D) {
-        // El draft corto de la fecha marcada: todavía sin campeón elegido, la previa trae la p de cada opción.
-        c.fechasDraft.push(caso);
       }
     }
     return respuesta;
   };
-  const llena = () => c.fechas.length >= CASOS_K2D * 2 && c.fechasDraft.length >= CASOS_K2D
+  const llena = () => c.fechas.length >= CASOS_K2D * 2
     && c.drafts.length >= CASOS_K2D && c.minijuegos.length >= CASOS_K2D;
   for (let seed = 1; seed <= SEEDS_MAX_K2D && !llena(); seed += 1) {
     correrCarreraSimulate(seed, 60, espia);
   }
-  if (c.fechas.length < CASOS_K2D || c.fechasDraft.length < 10 || c.drafts.length < 10 || c.minijuegos.length < 10) {
-    throw new Error(`cosecha vacía: ${c.fechas.length} fechas marcadas, ${c.fechasDraft.length} drafts de fecha, ${c.drafts.length} drafts de mapa y ${c.minijuegos.length} minijuegos de mapa`);
+  if (c.fechas.length < CASOS_K2D || c.drafts.length < 10 || c.minijuegos.length < 10) {
+    throw new Error(`cosecha vacía: ${c.fechas.length} fechas marcadas, ${c.drafts.length} drafts de mapa y ${c.minijuegos.length} minijuegos de mapa`);
   }
   cosechasK2d.set(clave, c);
   return c;
@@ -13622,7 +13865,7 @@ function fallarSiK2d(problemas) {
 // de DESPUÉS del momento (su `ajustePartido` y, con `consistencia.k` ≠ 0, su mentalidad), y es exactamente la previa
 // de ese estado.
 checkK2d('K2d previa 1: la p de la previa es exactamente la que el motor tira (===), en fechas marcadas (y la de cada opción de su draft corto) y en mapas con el minijuego neutro, sobre partidos de carreras reales', () => {
-  const { fechas, fechasDraft, drafts, minijuegos } = cosechaDePreviasK2d();
+  const { fechas, drafts, minijuegos } = cosechaDePreviasK2d();
   const problemas = [];
   let fechasNeutras = 0;
   let fechasConMomento = 0;
@@ -13655,44 +13898,17 @@ checkK2d('K2d previa 1: la p de la previa es exactamente la que el motor tira (=
     }
   });
 
-  // El draft corto de la fecha: la p que la pausa muestra junto a CADA campeón es la que el motor tira si se elige
-  // ese campeón (el log de la fecha: `pSinMomento`, o `p` si el momento no movió nada).
-  let opcionesDeFecha = 0;
-  fechasDraft.forEach(({ sistema, st, decision }, i) => {
-    const previa = previaDeDecision(st, decision);
-    if (!previa?.opciones || previa.opciones.length !== decision.opciones.length) {
-      problemas.push(`draft de fecha ${i}: la previa no trae la p de cada opción`);
-      return;
-    }
-    decision.opciones.forEach((opcion, j) => {
-      const mostrada = previa.opciones.find((o) => o.id === opcion.id)?.p;
-      let res = sistema.resolver(st, decision, { opcionId: opcion.id }, mulberry32(37000 + i * 100 + j));
-      // Tras el draft viene el momento de la fecha (una pausa más): se resuelve con su primera opción y se sigue
-      // hasta el log de la fecha, con el campeón ya elegido en el estado.
-      if (!res.logs.some(esLogDeFechaK2d) && res.decision?.datos?.motivo === 'momento') {
-        res = sistema.resolver(res.state, res.decision, { opcionId: res.decision.opciones[0].id }, mulberry32(38000 + i * 100 + j));
-      }
-      const log = res.logs.find(esLogDeFechaK2d);
-      if (!log) {
-        problemas.push(`draft de fecha ${i} (${opcion.id}): no llegó al log de la fecha`);
-        return;
-      }
-      opcionesDeFecha += 1;
-      // Lo que el draft promete es la p de antes del momento (lo que el momento mueve sale con el resultado).
-      if (mostrada !== log.pSinMomento) {
-        problemas.push(`draft de fecha ${i} (${opcion.id}): la pausa muestra p = ${mostrada}, el motor la tenía en ${log.pSinMomento} antes del momento`);
-      }
-    });
-  });
-
   let mapasSinMinijuego = 0;
   let mapasConMinijuego = 0;
   drafts.forEach(({ sistema, st, decision }, i) => {
     const previa = previaDeDecision(st, decision);
     const elegido = decision.opciones[0].id;
-    const directa = previaDePartido(st, { tipo: 'mapa', campeon: elegido });
-    if (!previa || previa.opciones?.[0]?.p !== directa.p || previa.p !== directa.p) {
-      problemas.push(`draft ${i}: la previa del draft no es la del campeón de la primera opción`);
+    const directa = previaDePartido(st, {
+      tipo: 'mapa', campeon: decision.datos.campeonElegido, entradaExtra: decision.datos.entradaExtra ?? null,
+      ajustePlan: decision.datos.ajustePlan, charla: elegido === 'charla'
+    });
+    if (!previa || previa.opciones?.[0]?.p !== directa.p) {
+      problemas.push(`decisivo ${i}: la previa del mapa decisivo no es la de la primera opción`);
       return;
     }
     let res = sistema.resolver(st, decision, { opcionId: elegido }, mulberry32(32000 + i));
@@ -13719,8 +13935,8 @@ checkK2d('K2d previa 1: la p de la previa es exactamente la que el motor tira (=
   fallarSiK2d(problemas);
   // Todo momento del catálogo trae un efecto `partido`: en carreras reales casi ninguna fecha marcada llega sin
   // ajuste. La p de antes del momento (la que muestra la previa) se compara igual en todas, contra `pSinMomento`.
-  if (fechasNeutras + fechasConMomento < 20 || opcionesDeFecha < 20 || mapasSinMinijuego < 5 || mapasConMinijuego < 10) {
-    throw new Error(`check vacío: ${fechasNeutras} fechas sin ajuste, ${fechasConMomento} con ajuste, ${opcionesDeFecha} opciones de draft de fecha, ${mapasSinMinijuego} mapas sin minijuego, ${mapasConMinijuego} con minijuego`);
+  if (fechasNeutras + fechasConMomento < 20 || mapasSinMinijuego < 5 || mapasConMinijuego < 10) {
+    throw new Error(`check vacío: ${fechasNeutras} fechas sin ajuste, ${fechasConMomento} con ajuste, ${mapasSinMinijuego} mapas sin minijuego, ${mapasConMinijuego} con minijuego`);
   }
 });
 
@@ -13740,9 +13956,32 @@ checkK2d('K2d previa 2: la p final que muestra el mapa después del minijuego es
       if (final && antes && final.p !== antes.p) movidas += 1;
     }
   });
+  // K4 (revisión): con la charla del coach elegida en la misma pausa (K4-B) la pantalla muestra la p con la charla y el
+  // minijuego, y el motor tira con esa misma p — una charla aplicada dos veces (o ninguna) en cualquiera de los dos lados
+  // rompe el ===. Solo en las pausas que la ofrecen y con la charla todavía sin usar esta temporada.
+  let conCharla = 0;
+  minijuegos.forEach(({ sistema, st, decision }, i) => {
+    if (decision.datos.charla?.disponible !== true || !charlaDisponible(st)) return;
+    for (const resultado of [0.1, 0.85]) {
+      const sinElla = previaDeDecision(st, decision, { resultadoMinijuego: resultado });
+      const final = previaDeDecision(st, decision, { resultadoMinijuego: resultado, charla: true });
+      const res = sistema.resolver(st, decision, { resultado, charla: true }, mulberry32(35500 + i));
+      const log = res.logs.find(esLogDeMapaK2d);
+      if (!final || !log || log.p !== final.p) {
+        problemas.push(`minijuego ${i} con charla (resultado ${resultado}): la pantalla muestra ${final?.p}, se tiró ${log?.p}`);
+      }
+      if (!final || !sinElla || final.p === sinElla.p) {
+        problemas.push(`minijuego ${i} con charla (resultado ${resultado}): la charla no mueve la p que muestra la pantalla`);
+      }
+      conCharla += 1;
+    }
+  });
   fallarSiK2d(problemas);
   if (movidas < minijuegos.length) {
     throw new Error(`el minijuego movió la p en solo ${movidas} de ${minijuegos.length * 2} casos`);
+  }
+  if (conCharla < 4) {
+    throw new Error(`check vacío: solo ${conCharla} casos de minijuego decisivo con la charla disponible`);
   }
 });
 
@@ -13781,8 +14020,9 @@ checkK2d('K2d previa 3: el desglose reproduce el total de la fuerza que usa el m
     // K2b reescrita acá (`fuerzaDesdeCamposK2b`), que agrupa la sinergia en otro orden y difiere en el último bit
     // en algunos estados (con `consistencia.k = 1` aparecieron dos). Que la fórmula del motor sea la de K2b lo
     // cuidan los checks de K2b.
-    const elegido = decision.opciones[0].id;
-    revisar(`draft ${i}`, previaDePartido(st, { tipo: 'mapa', campeon: elegido }), fuerzaDePartido(estadoDelMapa(st, elegido)));
+    const { campeonElegido, entradaExtra = null, ajustePlan } = decision.datos;
+    revisar(`decisivo ${i}`, previaDePartido(st, { tipo: 'mapa', campeon: campeonElegido, entradaExtra, ajustePlan, charla: true }),
+      fuerzaDePartido(estadoDelMapa(st, campeonElegido, entradaExtra)));
   });
   fallarSiK2d(problemas);
 });
@@ -13828,7 +14068,7 @@ checkK2d('K2d previa 6: ningún texto de la previa ni de la probabilidad jugada 
   const enteros = new Set(['cuartos', 'semis', 'final', 'internacional']);
   const problemas = [];
   const textosDe = (previa) => [
-    previa.titulo, previa.subtitulo, previa.nota, previa.textoProbabilidad, previa.propio.nombre, previa.propio.texto,
+    previa.titulo, previa.subtitulo, previa.porQue, previa.nota, previa.textoProbabilidad, previa.propio.nombre, previa.propio.texto,
     previa.rival.nombre, previa.rival.texto,
     ...previa.filas.flatMap((fila) => [fila.etiqueta, fila.texto]),
     ...(previa.opciones ?? []).flatMap((opcion) => [opcion.id, opcion.texto])
@@ -13854,6 +14094,203 @@ checkK2d('K2d previa 6: ningún texto de la previa ni de la probabilidad jugada 
     revisar(`mapa ${i}`, previas.flatMap(textosDe), st, [decision.datos?.minijuego, decision.datos?.momento, st.serie.ronda]);
   });
   fallarSiK2d(problemas);
+});
+
+// ============================================================================
+// K4-B — la serie como plan (PLAN.md "K4 — decisiones de spec", K4-B; reemplaza a J6 y a D63): la tarjeta del plan
+// de Fearless declara la p de cada mapa y es la que el motor tira (regla 15); el rival también quema; el juego frena
+// solo en lo importante.
+// ============================================================================
+
+const CASOS_K4B = 24;
+const PLANES_K4B = ['guardar', 'conTodo', 'sorpresa', 'coach'];
+const SEEDS_MAX_K4B = 80;
+const cosechasK4b = new Map();
+
+// Las pausas reales del plan de Fearless (al arrancar y al re-planear), de `criterio`. Una cosecha por valor de
+// `consistencia.k`, como la de K2d.
+function cosechaDePlanesK4b() {
+  const clave = BALANCE.consistencia.k;
+  if (cosechasK4b.has(clave)) {
+    return cosechasK4b.get(clave);
+  }
+  const casos = [];
+  const espia = (sistema, st, decision, rng) => {
+    if (sistema.id === 'serie' && decision.datos?.motivo === 'plan' && casos.length < CASOS_K4B) {
+      casos.push({ st, decision });
+    }
+    return ESTRATEGIAS_K0.criterio(sistema, st, decision, rng);
+  };
+  for (let seed = 1; seed <= SEEDS_MAX_K4B && casos.length < CASOS_K4B; seed += 1) {
+    correrCarreraSimulate(seed, 60, espia);
+  }
+  if (casos.length < 10) {
+    throw new Error(`cosecha vacía: ${casos.length} pausas del plan`);
+  }
+  cosechasK4b.set(clave, casos);
+  return casos;
+}
+
+const esLogDeMapaK4b = (log) => log.type === 'serie' && (log.resultado === 'W' || log.resultado === 'L');
+
+// Juega la serie desde la pausa del plan con `opcionId` y devuelve los logs de los mapas tirados, hasta que la serie
+// cierra o vuelve a frenar a re-planear. El mapa decisivo va sin charla y con el minijuego neutro (0,5): lo que esos
+// dos mueven lo comparan los checks de K2d.
+function jugarPlanK4b(st, decision, opcionId, semilla) {
+  const serie = sistemaPorId('serie');
+  const rng = mulberry32(semilla);
+  let res = serie.resolver(st, decision, { opcionId }, rng);
+  const mapas = [];
+  for (let paso = 0; paso < 12; paso += 1) {
+    const cierre = res.logs.findIndex((log) => log.postSerie);
+    mapas.push(...(cierre < 0 ? res.logs : res.logs.slice(0, cierre)).filter(esLogDeMapaK4b));
+    const datos = res.decision?.datos;
+    if (cierre >= 0 || !res.decision || datos?.motivo === 'plan') {
+      return mapas;
+    }
+    const respuesta = datos.motivo === 'decisivo' ? { opcionId: 'sinCharla' } : { resultado: 0.5, charla: false };
+    res = serie.resolver(res.state, res.decision, respuesta, rng);
+  }
+  throw new Error('la serie no cerró en 12 pasos');
+}
+
+checkK2d('K4-B regla 15: la p por mapa que declara cada plan de Fearless es exactamente la que tira el motor (===), en todos los planes ofrecidos, sobre series de carreras reales', () => {
+  const casos = cosechaDePlanesK4b();
+  const problemas = [];
+  let comparados = 0;
+  let decisivos = 0;
+  const planesVistos = new Set();
+  casos.forEach(({ st, decision }, i) => {
+    const previa = previaDeDecision(st, decision);
+    decision.opciones.forEach((opcion, j) => {
+      const declarada = previa?.opciones?.find((o) => o.id === opcion.id);
+      if (!declarada?.pMapas) {
+        problemas.push(`plan ${i} (${opcion.id}): la tarjeta no declara su p por mapa`);
+        return;
+      }
+      if (declarada.pMapas.length !== opcion.pMapas.length || declarada.pMapas.some((p, k) => p !== opcion.pMapas[k])) {
+        problemas.push(`plan ${i} (${opcion.id}): la tarjeta muestra [${declarada.pMapas}] y la decisión del motor [${opcion.pMapas}]`);
+      }
+      const primero = st.serie.mapaActual + 1;
+      for (const log of jugarPlanK4b(st, decision, opcion.id, 41000 + i * 10 + j)) {
+        const k = log.mapa - primero;
+        comparados += 1;
+        if (k === declarada.pMapas.length - 1) {
+          decisivos += 1;
+        }
+        if (declarada.pMapas[k] !== log.p) {
+          problemas.push(`plan ${i} (${opcion.id}), mapa ${log.mapa}: la tarjeta dice ${declarada.pMapas[k]}, se tiró ${log.p}`);
+        }
+      }
+      planesVistos.add(opcion.id);
+    });
+  });
+  fallarSiK2d(problemas);
+  if (comparados < 100 || decisivos < 5 || planesVistos.size < PLANES_K4B.length) {
+    throw new Error(`check vacío: ${comparados} mapas comparados, ${decisivos} decisivos, planes vistos: ${[...planesVistos].join(', ')}`);
+  }
+});
+
+
+check('K4-B el rival también quema: con el Fearless su fuerza de mapa cae mapa a mapa (misma regla que la tuya), y en el mapa 1 es la de la serie', () => {
+  let caidas = 0;
+  for (let seed = 1; seed <= 40; seed += 1) {
+    const base = createInitialState(seed, mulberry32(seed));
+    let st = {
+      ...base,
+      serie: { ...base.serie, activa: true, rival: { org: 'Rival', fuerza: 60 }, formato: 5, quemados: [], mapaActual: 0, rivalJuega: null, rivalJuegaEnMapa: -1 }
+    };
+    const fuerzas = [];
+    for (let i = 0; i < 5; i += 1) {
+      st = conQuemaDelRival(st, objetivoDelRival(st, st.serie.quemados));
+      fuerzas.push(fuerzaRivalDeMapa(st));
+      st = { ...st, serie: { ...st.serie, mapaActual: i + 1 } };
+    }
+    if (Math.abs(fuerzas[0] - 60) > 1e-9) {
+      throw new Error(`seed ${seed}: en el mapa 1, con el mejor del meta, el rival juega con ${fuerzas[0]} y no con su fuerza de serie (60)`);
+    }
+    for (let k = 1; k < 5; k += 1) {
+      if (fuerzas[k] > fuerzas[k - 1] + 1e-12) {
+        throw new Error(`seed ${seed}: la fuerza del rival sube del mapa ${k} al ${k + 1} (${fuerzas.map((x) => x.toFixed(2)).join(' → ')})`);
+      }
+    }
+    if (fuerzas[4] < fuerzas[0] - 0.5) {
+      caidas += 1;
+    }
+  }
+  if (caidas < 40) {
+    throw new Error(`el Fearless degradó al rival en solo ${caidas} de 40 series`);
+  }
+});
+
+checkLento('K4-B pausas por serie: el plan al arrancar y después como mucho 2 (te leyeron el guardado, el mapa decisivo); una serie sin nada en juego no frena; minijuegos de serie solo en el mapa decisivo de semis, final e internacional; la charla del coach como mucho una por temporada', () => {
+  const series = new Map();
+  const problemas = [];
+  let sinNada = 0;
+  let charlas = 0;
+  let decisivas = 0;
+  for (let seed = 1; seed <= 60; seed += 1) {
+    const usadas = new Set();
+    // `resolverAuto`, salvo la charla: este bot la usa SIEMPRE que se la ofrecen (si se ofreciera dos veces en una
+    // temporada, se vería).
+    const responder = (sistema, st, decision, rng) => {
+      if (sistema.id !== 'serie') {
+        return sistema.resolverAuto(st, decision, rng);
+      }
+      const datos = decision.datos ?? {};
+      const clave = `${seed}|${st.player.splitCount}|${st.serie.ronda}|${st.career.seriesJugadas}`;
+      const tipo = datos.motivo === 'minijuego' ? datos.momento : (datos.replan ? 'replan' : datos.motivo);
+      if (!series.has(clave)) {
+        series.set(clave, []);
+      }
+      series.get(clave).push(tipo);
+      if (tipo !== 'post_serie' && st.serie.sinNadaEnJuego) {
+        problemas.push(`seed ${seed}: una serie sin nada en juego frenó (${tipo})`);
+      }
+      if (datos.motivo === 'minijuego' && tipo !== 'post_serie') {
+        if (tipo !== 'mapa_decisivo' || !esMapaDeDesempate(st.serie.marcador, st.serie.formato)
+          || !['semis', 'final', 'internacional'].includes(st.serie.ronda)) {
+          problemas.push(`seed ${seed}: minijuego ${tipo} en ${st.serie.ronda} con ${st.serie.marcador.join('-')}`);
+        }
+      }
+      if (tipo === 'mapa_decisivo' || tipo === 'decisivo') {
+        decisivas += 1;
+      }
+      const ofreceCharla = datos.charla?.disponible === true || (decision.opciones ?? []).some((o) => o.id === 'charla');
+      if (ofreceCharla) {
+        if (!charlaDisponible(st) || usadas.has(st.calendario.anio)) {
+          problemas.push(`seed ${seed}: la charla del coach se ofreció de nuevo en ${st.calendario.anio}`);
+        }
+        usadas.add(st.calendario.anio);
+        charlas += 1;
+        return datos.motivo === 'minijuego' ? { resultado: 0.5, charla: true } : { opcionId: 'charla' };
+      }
+      return sistema.resolverAuto(st, decision, rng);
+    };
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      const paso = avanzarSplitAuto(state, rng, responder);
+      sinNada += paso.logs.filter((log) => log.postSerie && log.sinNadaEnJuego).length;
+      state = paso.state;
+    }
+  }
+  for (const [clave, lista] of series) {
+    const enSerie = lista.filter((tipo) => tipo !== 'post_serie');
+    if (enSerie.length === 0) {
+      continue;
+    }
+    if (enSerie[0] !== 'plan' || enSerie.filter((tipo) => tipo === 'plan').length !== 1) {
+      problemas.push(`${clave}: la serie no arrancó por un solo plan (${enSerie.join(', ')})`);
+    }
+    if (enSerie.length - 1 > 2 || enSerie.filter((tipo) => tipo === 'replan').length > 1) {
+      problemas.push(`${clave}: ${enSerie.length - 1} pausas además del plan (${enSerie.join(', ')})`);
+    }
+  }
+  fallarSiK2d(problemas);
+  if (series.size < 100 || sinNada < 20 || charlas < 20 || decisivas < 40) {
+    throw new Error(`check vacío: ${series.size} series que frenaron, ${sinNada} sin nada en juego, ${charlas} charlas, ${decisivas} mapas decisivos`);
+  }
 });
 
 // ============================================================================
@@ -13990,6 +14427,8 @@ check('K3-A consistencia 2: g(mRef) = 1, g no crece con la mentalidad y respeta 
 });
 
 check('K3-A descanso: con un topeDescanso bajo (en memoria) ningún camino de descanso lo pasa — el sueño de atributos (amateur y pro) y el descansar del receso —, y descansar no baja a quien ya está arriba', () => {
+  // K4-D: la sonda parte de TOPE - 2 (antes TOPE - 5): con el corrimiento del stream la muestra de estados dejó de traer un
+  // sueño con ganancia > 5, y la sonda quedaba vacía por muestreo. Con 2 de margen sigue probando que el tope corta.
   const TOPE = 30;
   const { pro, amateur } = estadosDeCarreraK3A();
   if (pro.length < 3 || amateur.length < 3) throw new Error(`muestra corta: ${pro.length} pro, ${amateur.length} amateur`);
@@ -13999,10 +14438,10 @@ check('K3-A descanso: con un topeDescanso bajo (en memoria) ningún camino de de
   const decision = { datos: { rutinas: [rutina] } };
   const correr = () => {
     const sueno = [...pro, ...amateur].map((st, i) => atributos.aplicar(
-      conBarrasK3A(st, { player: { sleep: BALANCE.stats.max, deudaSueno: 0 }, stats: { mentalidad: TOPE - 5 } }), mulberry32(9400 + i)
+      conBarrasK3A(st, { player: { sleep: BALANCE.stats.max, deudaSueno: 0 }, stats: { mentalidad: TOPE - 2 } }), mulberry32(9400 + i)
     ).state.player.stats.mentalidad);
     const receso = pro.map((st, i) => practica.resolver(
-      conBarrasK3A(st, { stats: { mentalidad: TOPE - 5 } }), decision, { opcionId: rutina.id }, mulberry32(9500 + i)
+      conBarrasK3A(st, { stats: { mentalidad: TOPE - 2 } }), decision, { opcionId: rutina.id }, mulberry32(9500 + i)
     ).state.player.stats.mentalidad);
     const arriba = pro.map((st, i) => practica.resolver(
       conBarrasK3A(st, { stats: { mentalidad: TOPE + 20 } }), decision, { opcionId: rutina.id }, mulberry32(9600 + i)
@@ -14286,44 +14725,907 @@ const ENTRADA_SINTETICA_K2B = {
   medido: '0 usos', banda: '0 usos', commit: 'K2b', rebasea: 'K3c'
 };
 
-check('bandasPendientes 1: ninguna entrada registrada pasa en esta corrida, y toda entrada nombra un check que existe', () => {
-  const sintetico = entradasQuePasan([ENTRADA_SINTETICA_K2B, { ...ENTRADA_SINTETICA_K2B, check: 'un check que no existe K2b' }],
-    new Map([[ENTRADA_SINTETICA_K2B.check, 'ok']]), { completo: true });
-  if (sintetico.length !== 2) {
-    throw new Error(`el custodio no reconoce una entrada que pasa y una que no existe: ${JSON.stringify(sintetico)}`);
-  }
-  const problemas = entradasQuePasan(BANDAS_PENDIENTES, resultadosDeCheck, { completo: SOLO.length === 0 });
-  if (problemas.length > 0) {
-    throw new Error(problemas.join('; '));
-  }
-});
+// --- K4 (revisión): el guardado en CADA tipo de pausa ---
+// La pausa vive en `state.pendiente` y la página la guarda con JSON (`core/guardado.js`): todo lo que una pausa deja
+// en el estado tiene que sobrevivir `JSON.stringify`/`JSON.parse`. La prueba del salto (K4-C) guardaba un `Set` en
+// `decision.datos.ofrecidas`; JSON lo vuelve `{}` y al recargar `cerrarAsientosCongelados` tiraba "has is not a
+// function" — ningún check lo veía porque todos resuelven la pausa en memoria. Este la resuelve dos veces desde el
+// mismo punto: de corrido y tras serializar/deserializar (estado + RNG), y exige el mismo próximo estado, los mismos
+// logs y el mismo RNG. Además barre el estado en cada pausa buscando valores que JSON no conserva (`Set`, `Map`,
+// funciones, instancias de clase, `undefined` en arrays, números no finitos), aunque esa pausa no los lea al volver.
+// Los tipos de pausa que el lote TIENE que cubrir (sistema:motivo[:momento][:replan]); si un cambio de balance deja
+// alguno sin aparecer en estas seeds, el check lo dice en vez de pasar con la cobertura achicada. Un tipo nuevo que
+// aparece queda cubierto igual (se lo nombra en el mensaje de cobertura si falta otro).
+const TIPOS_DE_PAUSA_GUARDADO_K4 = [
+  'amateur:reparto', 'amateur:negociacion', 'amateur:oferta', 'amateur:minijuego:tryout', 'amateur:salida_amateur',
+  'amateur:nocturno', 'edadCierre:?', 'eventos:?', 'eventos:minijuego:post_escandalo', 'mercado:oferta',
+  'mercado:minijuego:tryout', 'mercado:traspaso', 'temporada:momento', 'practica:practica', 'serie:plan',
+  'serie:plan:replan', 'serie:decisivo', 'serie:minijuego:mapa_decisivo', 'serie:minijuego:post_serie',
+  'retiro:retiro_declive', 'retiro:retiro_vuelta', 'servicioMilitar:servicio_te_vas',
+  'servicioMilitar:servicio_adentro', 'servicioMilitar:servicio_volver',
+  // K5: el 2-2 del Swiss del Mundial, el plan de una serie del bracket y la bifurcación del final por mercado.
+  'internacional:swiss', 'internacional:plan', 'mercado:fin_mercado'
+];
+const SEEDS_GUARDADO_K4 = Array.from({ length: 30 }, (_, i) => 1 + i);
+const SPLITS_GUARDADO_K4 = 60;
+// Revisión de K5: las seeds fijas [10, 14] dejaron de llegar a la bifurcación con el corrimiento de la revisión (el lote
+// no cubría `mercado:fin_mercado`). Ahora se buscan, en orden, hasta ver la pausa `FIN_MERCADO_GUARDADO_MINIMO` veces, con
+// tope `SEEDS_FIN_MERCADO_TOPE_K5` seeds.
+const SEEDS_FIN_MERCADO_TOPE_K5 = 40;
+const FIN_MERCADO_GUARDADO_MINIMO = 2;
 
-check('bandasPendientes 2: ninguna entrada es de un bloque de corrimiento cerrado', () => {
-  const cerrados = { ...BLOQUES_DE_CORRIMIENTO, A: { ...BLOQUES_DE_CORRIMIENTO.A, cerrado: true } };
-  if (entradasDeBloquesCerrados([ENTRADA_SINTETICA_K2B], cerrados).length !== 1
-    || entradasDeBloquesCerrados([{ ...ENTRADA_SINTETICA_K2B, bloque: 'Z' }], BLOQUES_DE_CORRIMIENTO).length !== 1) {
-    throw new Error('el custodio no reconoce una entrada de un bloque cerrado o desconocido');
-  }
-  const problemas = entradasDeBloquesCerrados(BANDAS_PENDIENTES, BLOQUES_DE_CORRIMIENTO);
-  if (problemas.length > 0) {
-    throw new Error(problemas.join('; '));
-  }
-});
+function tipoDePausaGuardadoK4(pendiente) {
+  const datos = pendiente.decision.datos ?? {};
+  return `${pendiente.sistemaId}:${datos.motivo ?? pendiente.decision.presentacion ?? '?'}`
+    + `${datos.momento ? `:${datos.momento}` : ''}${datos.replan ? ':replan' : ''}`;
+}
 
-check('bandasPendientes 3: toda entrada tiene valor medido, banda, commit y la subfase que la re-basea (la calibración de su bloque)', () => {
-  const sinValor = { ...ENTRADA_SINTETICA_K2B, medido: '' };
-  const { rebasea, ...sinSubfase } = ENTRADA_SINTETICA_K2B;
-  const otraSubfase = { ...ENTRADA_SINTETICA_K2B, rebasea: 'K4c' };
-  for (const [nombre, entrada] of [['sin valor', sinValor], ['sin subfase', sinSubfase], ['con la subfase de otro bloque', otraSubfase]]) {
-    if (entradasIncompletas([entrada], BLOQUES_DE_CORRIMIENTO).length === 0) {
-      throw new Error(`el custodio no reconoce una entrada ${nombre} (${rebasea})`);
+// Rutas (con los índices colapsados a `[]`) de los valores que JSON no devuelve iguales.
+function valoresNoJsonK4(valor, ruta, encontrados) {
+  if (valor === undefined) {
+    encontrados.add(`${ruta} es undefined dentro de un array`);
+    return;
+  }
+  if (valor === null || typeof valor === 'string' || typeof valor === 'boolean') {
+    return;
+  }
+  if (typeof valor === 'number') {
+    if (!Number.isFinite(valor)) {
+      encontrados.add(`${ruta} = ${valor}`);
+    }
+    return;
+  }
+  if (typeof valor !== 'object') {
+    encontrados.add(`${ruta} es ${typeof valor}`);
+    return;
+  }
+  if (Array.isArray(valor)) {
+    valor.forEach((elemento) => valoresNoJsonK4(elemento, `${ruta}[]`, encontrados));
+    return;
+  }
+  if (Object.getPrototypeOf(valor) !== Object.prototype) {
+    encontrados.add(`${ruta} es un ${valor.constructor?.name ?? 'objeto sin prototipo'}`);
+    return;
+  }
+  for (const [clave, sub] of Object.entries(valor)) {
+    if (sub !== undefined) {
+      valoresNoJsonK4(sub, `${ruta}.${clave}`, encontrados);
     }
   }
-  const problemas = entradasIncompletas(BANDAS_PENDIENTES, BLOQUES_DE_CORRIMIENTO);
-  if (problemas.length > 0) {
-    throw new Error(problemas.join('; '));
+}
+
+checkLento('K4 (revisión) guardado: en cada tipo de pausa, guardar y recargar (JSON) y seguir da el mismo próximo estado, logs y RNG que seguir de corrido (criterio, 30 carreras × 60)', () => {
+  const vistos = new Map();
+  const problemas = [];
+  const noJson = new Set();
+  // `degradado`: la carrera de los checks de K5-C (stats topeados al llegar a primera, `carreraDegradadaK5C`), la que
+  // se queda sin ofertas en su tier y llega a la bifurcación del final por mercado.
+  const recorrer = (seeds, { degradado = false } = {}) => {
+    for (const seed of seeds) {
+      const rng = mulberry32(seed);
+      let state = createInitialState(seed, rng);
+      let techo = null;
+      for (let i = 0; i < SPLITS_GUARDADO_K4 && !state.terminado; i += 1) {
+        if (degradado && !techo && state.phase === 'profesional' && state.career.tier === 1) {
+          const factor = FACTORES_DEGRADADO_K5C[seed % FACTORES_DEGRADADO_K5C.length];
+          techo = Object.fromEntries(Object.entries(state.player.stats).map(([stat, valor]) => [stat, valor * factor]));
+        }
+        if (techo && state.phase === 'profesional') {
+          state = topearStats(state, techo);
+        }
+        let paso = avanzarSplit(state, rng);
+        let vueltas = 0;
+        while (paso.state.pendiente) {
+          const tipo = tipoDePausaGuardadoK4(paso.state.pendiente);
+          vistos.set(tipo, (vistos.get(tipo) ?? 0) + 1);
+          valoresNoJsonK4(paso.state, 'state', noJson);
+          const guardado = serializarGuardado(paso.state, rng);
+          // De corrido.
+          const { sistemaId, decision } = paso.state.pendiente;
+          const respuesta = ESTRATEGIAS_K0.criterio(sistemaPorId(sistemaId), paso.state, decision, rng);
+          const seguido = resolverDecision(paso.state, respuesta, rng);
+          // Recargado: el estado y el RNG salen del JSON, y el bot responde desde lo recargado, como la página.
+          let recargado;
+          let rngRecargado;
+          try {
+            const datos = deserializarGuardado(guardado);
+            if (!datos) {
+              throw new Error('deserializar devolvió null');
+            }
+            rngRecargado = mulberry32(datos.seed);
+            rngRecargado.restaurar(datos.rngEstado);
+            const pendiente = datos.state.pendiente;
+            const respuestaRecargada = ESTRATEGIAS_K0.criterio(sistemaPorId(pendiente.sistemaId), datos.state,
+              pendiente.decision, rngRecargado);
+            recargado = resolverDecision(datos.state, respuestaRecargada, rngRecargado);
+          } catch (error) {
+            problemas.push(`seed ${seed}, pausa ${tipo}: al recargar tira "${error.message}"`);
+            recargado = null;
+          }
+          // `estado()` del RNG vivo no está truncado a 32 bits (`restaurar` sí trunca); la secuencia es la misma.
+          if (recargado && (JSON.stringify([seguido.state, seguido.logs]) !== JSON.stringify([recargado.state, recargado.logs])
+            || (rng.estado() >>> 0) !== (rngRecargado.estado() >>> 0))) {
+            problemas.push(`seed ${seed}, pausa ${tipo}: recargado no da el mismo próximo estado/logs/RNG`);
+          }
+          paso = seguido;
+          vueltas += 1;
+          if (vueltas > 200) {
+            throw new Error(`seed ${seed}: más de 200 pausas seguidas en un split`);
+          }
+        }
+        state = paso.state;
+      }
+    }
+  };
+  recorrer(SEEDS_GUARDADO_K4);
+  // K5-C: la bifurcación del final por mercado está apagada (N neutro en balance.js) hasta su calibración; su pausa se
+  // cubre con el umbral bajado y las carreras degradadas de los checks de K5-C.
+  conUmbralK5C(UMBRAL_K5C, () => {
+    for (let seed = 1; seed <= SEEDS_FIN_MERCADO_TOPE_K5 && (vistos.get('mercado:fin_mercado') ?? 0) < FIN_MERCADO_GUARDADO_MINIMO; seed += 1) {
+      recorrer([seed], { degradado: true });
+    }
+  });
+  if (noJson.size > 0 || problemas.length > 0) {
+    throw new Error(`${problemas.length} pausas rotas al recargar (${problemas.slice(0, 4).join(' | ')}); `
+      + `valores que JSON no conserva en el estado al pausar: ${[...noJson].slice(0, 8).join('; ') || 'ninguno'}`);
+  }
+  const faltan = TIPOS_DE_PAUSA_GUARDADO_K4.filter((tipo) => !vistos.has(tipo));
+  if (faltan.length > 0) {
+    throw new Error(`el lote no cubrió ${faltan.join(', ')} (vistos: ${[...vistos.keys()].join(', ')}): cambiá las seeds, `
+      + 'no saques el tipo de la lista');
   }
 });
+
+// K4 (revisión, la del navegador): la ficha mostraba `top_mundial` como chip y `LCK_CL` en su línea de contexto. Toda
+// marca que `core/contexto.js` puede producir (leída del fuente, para cubrir las raras como `mejor_del_mundo`, y además
+// las vistas en carreras reales) tiene etiqueta en `LABEL_MARCA` de la ficha, y la línea de contexto nunca muestra el
+// id de una liga cuyo nombre visible es otro.
+check('K4 (revisión) ficha sin ids crudos: toda marca de contexto tiene etiqueta y la línea de contexto muestra el nombre visible de la liga', () => {
+  const fuente = fs.readFileSync(new URL('../core/contexto.js', import.meta.url), 'utf8');
+  const delFuente = [...fuente.matchAll(/marcas\.push\('([a-z0-9_]+)'\)/g)].map((m) => m[1]);
+  if (delFuente.length < 10) throw new Error(`solo ${delFuente.length} marcas leídas de core/contexto.js: cambió la forma de armarlas`);
+  const sinEtiqueta = new Set(delFuente.filter((id) => !LABEL_MARCA_FICHA[id]));
+  const idsCrudos = LIGAS.filter((liga) => liga.nombre !== liga.id).map((liga) => liga.id);
+  const problemas = [];
+  let lineas = 0;
+  for (const seed of [1, 2, 3, 4]) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 40 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      for (const id of state.contexto?.marcas ?? []) {
+        if (!LABEL_MARCA_FICHA[id]) sinEtiqueta.add(id);
+      }
+      const linea = lineaDeContextoFicha(state);
+      lineas += 1;
+      const crudo = idsCrudos.find((id) => new RegExp(`(^|[^A-Za-z0-9_])${id}([^A-Za-z0-9_]|$)`).test(linea));
+      if (crudo) problemas.push(`seed ${seed}, split ${i}: "${linea}" muestra el id ${crudo}`);
+    }
+  }
+  // Y en cada liga del mundo cuyo id no es su nombre (las carreras de arriba no pasan por todas): misma línea, puesta ahí.
+  const base = correrCarrera(1, 14);
+  let sinteticas = 0;
+  for (const liga of base.mundo.ligas.filter((l) => idsCrudos.includes(l.id))) {
+    const linea = lineaDeContextoFicha({ ...base, career: { ...base.career, liga: liga.id } });
+    const nombre = LIGAS.find((l) => l.id === liga.id).nombre;
+    if (!linea.includes(nombre) || new RegExp(`(^|[^A-Za-z0-9_])${liga.id}([^A-Za-z0-9_]|$)`).test(linea)) {
+      problemas.push(`en ${liga.id} la línea es "${linea}" (tiene que decir "${nombre}")`);
+    }
+    sinteticas += 1;
+  }
+  if (sinEtiqueta.size > 0) problemas.push(`marcas sin etiqueta en la ficha: ${[...sinEtiqueta].join(', ')}`);
+  if (problemas.length > 0) throw new Error(problemas.slice(0, 5).join(' | '));
+  if (lineas < 100 || sinteticas < 3) throw new Error(`check vacío: ${lineas} líneas de contexto, ${sinteticas} ligas con id distinto del nombre`);
+});
+
+// --- K4-C: solo frenan las bifurcaciones; lo demás lo resuelve tu perfil (PLAN.md "K4 — decisiones de spec") ---
+
+// Una corrida instrumentada: cada pausa con su sistema, la respuesta del criterio por defecto y el estado al
+// pausar. Compartida por los checks de K4-C para no correr las mismas carreras cinco veces.
+function correrCarrerasK4c(seeds, splits) {
+  const carreras = [];
+  for (const seed of seeds) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    const pausas = [];
+    const responder = (sistema, st, decision, rngLocal) => {
+      const respuesta = sistema.resolverAuto(st, decision, rngLocal);
+      pausas.push({ sistema: sistema.id, decision, respuesta, st });
+      return respuesta;
+    };
+    for (let i = 0; i < splits && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng, responder).state;
+    }
+    carreras.push({ seed, pausas, final: state });
+  }
+  return carreras;
+}
+let carrerasK4cCache = null;
+function carrerasK4c() {
+  carrerasK4cCache ??= correrCarrerasK4c(Array.from({ length: 40 }, (_, i) => 4400 + i), 60);
+  return carrerasK4cCache;
+}
+
+// El encaje recalculado ACÁ, desde la previa que muestra la tarjeta y la tabla de `data/perfiles.json` — sin
+// llamar a `core/perfil.js`, para que un error en el motor no se tape con el mismo error en el check.
+function opcionEsperadaK4c(perfil, decision) {
+  const tabla = PERFILES_K4C;
+  const forzada = decision.opciones.find((opcion) => {
+    const original = decision.datos.evento.options.find((o) => o.id === opcion.id);
+    return original?.perfil === perfil.actual;
+  });
+  if (forzada) {
+    return forzada.id;
+  }
+  const mag = BALANCE.perfil.pesoMagnitud;
+  let mejor = null;
+  let mejorValor = -Infinity;
+  for (const opcion of decision.opciones) {
+    let valor = 0;
+    for (const id of tabla.orden) {
+      const p = tabla.perfiles[id];
+      let encaje = p.riesgo[opcion.riesgo] ?? 0;
+      for (const fila of opcion.previa) {
+        const familia = tabla.familiaDeCampo[fila.campo];
+        if (!familia) continue;
+        encaje += (p.familias[familia] ?? 0) * (fila.signo === '-' ? -1 : 1) * (mag[fila.magnitud] ?? 0);
+      }
+      valor += (perfil.pesos[id] ?? 0) * encaje;
+    }
+    if (valor > mejorValor) {
+      mejor = opcion.id;
+      mejorValor = valor;
+    }
+  }
+  return mejor;
+}
+
+check('K4-C solo frenan las bifurcaciones: toda pausa de eventos es un evento con bifurcacion: true (40 carreras × 60)', () => {
+  let pausasEvento = 0;
+  let cronicas = 0;
+  for (const { seed, pausas, final } of carrerasK4c()) {
+    for (const { sistema, decision } of pausas) {
+      if (sistema !== 'eventos' || decision.datos?.motivo === 'minijuego') continue;
+      pausasEvento += 1;
+      if (decision.datos?.evento?.bifurcacion !== true) {
+        throw new Error(`seed ${seed}: frenó un evento que no es bifurcación (${decision.titulo})`);
+      }
+    }
+    cronicas += final.logs.filter((log) => log.cronica).length;
+  }
+  if (cronicas === 0) {
+    throw new Error('ningún evento se resolvió por perfil: no hay líneas de crónica');
+  }
+  if (pausasEvento === 0) {
+    throw new Error('ninguna bifurcación frenó en 40 carreras: el marcado no llega al motor');
+  }
+});
+
+check('K4-C el perfil elige la opción de mejor encaje (recalculado desde la previa y la tabla perfil × familia)', () => {
+  // Estados reales de mitad de carrera, cada evento no-bifurcación con opciones vivas, y los cuatro perfiles puros
+  // más una mezcla (la deriva). La opción esperada sale de la previa que muestra la tarjeta (`decisionDesdeEvento`).
+  const estados = carrerasK4c().slice(0, 6).map(({ pausas }) => pausas[Math.floor(pausas.length / 2)]?.st).filter(Boolean);
+  const perfiles = [
+    ...PERFILES_K4C.orden.map((id) => ({ actual: id, pesos: Object.fromEntries(PERFILES_K4C.orden.map((q) => [q, q === id ? 1 : 0])) })),
+    { actual: 'hambriento', pesos: { profesional: 0.3, hambriento: 0.4, showman: 0.2, leal: 0.1 } }
+  ];
+  let comparadas = 0;
+  for (const base of estados) {
+    for (const perfil of perfiles) {
+      const st = { ...base, player: { ...base.player, perfil } };
+      for (const evento of TODOS_LOS_EVENTOS.filter((e) => !e.bifurcacion && !e.cierreDeEdad)) {
+        const decision = decisionDesdeEvento(st, evento, { franja: 'normal', slot: 1 });
+        if (decision.opciones.length < 2) continue;
+        const esperada = opcionEsperadaK4c(perfil, decision);
+        const motor = opcionDelPerfilPara(st, evento);
+        if (motor !== esperada) {
+          throw new Error(`${evento.id} con perfil ${JSON.stringify(perfil.pesos)}: el motor eligió ${motor}, el encaje da ${esperada}`);
+        }
+        comparadas += 1;
+      }
+    }
+  }
+  if (comparadas < 1000) {
+    throw new Error(`muy pocas comparaciones (${comparadas})`);
+  }
+});
+
+check('K4-C los overrides de perfil del dato ganan', () => {
+  const rng = mulberry32(17);
+  const base = createInitialState(17, rng);
+  let probados = 0;
+  for (const evento of TODOS_LOS_EVENTOS) {
+    for (const opcion of evento.options.filter((o) => o.perfil)) {
+      if (!PERFILES_K4C.orden.includes(opcion.perfil)) {
+        throw new Error(`${evento.id}/${opcion.id}: perfil desconocido "${opcion.perfil}"`);
+      }
+      const st = { ...base, player: { ...base.player, perfil: { actual: opcion.perfil, pesos: Object.fromEntries(PERFILES_K4C.orden.map((q) => [q, q === opcion.perfil ? 1 : 0])) } } };
+      const elegida = opcionDelPerfilPara(st, evento);
+      if (elegida !== opcion.id) {
+        throw new Error(`${evento.id}: el override perfil "${opcion.perfil}" pide ${opcion.id} y el motor eligió ${elegida}`);
+      }
+      probados += 1;
+    }
+  }
+  if (probados === 0) {
+    throw new Error('no hay ningún override de perfil en el dato');
+  }
+});
+
+check('K4-C la opción del perfil resuelve su outcome con la tirada con pesos (regla 8)', () => {
+  // Un evento no-bifurcación cuya opción del perfil tenga dos outcomes con textos distintos: 600 tiradas por el camino
+  // de crónica tienen que repartir los textos según los pesos efectivos (±0,06), no salir siempre el mismo.
+  const rng0 = mulberry32(23);
+  const base = createInitialState(23, rng0);
+  const evento = TODOS_LOS_EVENTOS.find((e) => !e.bifurcacion && !e.cierreDeEdad && e.options.length >= 2
+    && e.options.every((o) => o.outcomes.length >= 2 && !o.outcomes.some((x) => x.modificadores) && new Set(o.outcomes.map((x) => x.texto)).size === o.outcomes.length
+      && o.outcomes.every((x) => x.effects.every((ef) => ef.type === 'stat'))));
+  const opcionId = opcionDelPerfilPara(base, evento);
+  const opcion = evento.options.find((o) => o.id === opcionId);
+  const total = opcion.outcomes.reduce((s, x) => s + x.weight, 0);
+  const cuenta = new Map();
+  const N = 600;
+  for (let i = 0; i < N; i += 1) {
+    const { logs } = resolverOpcion(base, evento, opcionId, mulberry32(9000 + i), { cronica: base.player.perfil.actual });
+    cuenta.set(logs[0].cuerpo, (cuenta.get(logs[0].cuerpo) ?? 0) + 1);
+  }
+  for (const outcome of opcion.outcomes) {
+    const visto = (cuenta.get(resolverTexto(outcome.texto, base)) ?? 0) / N;
+    const esperado = outcome.weight / total;
+    if (Math.abs(visto - esperado) > 0.06) {
+      throw new Error(`${evento.id}/${opcionId}: un outcome de peso ${esperado.toFixed(2)} salió ${visto.toFixed(2)} (¿el rng no decide?)`);
+    }
+  }
+});
+
+check('K4-C el perfil está completo en el estado desde el arranque y se corre con las bifurcaciones', () => {
+  for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
+    const st = createInitialState(seed, mulberry32(seed));
+    const { perfil } = st.player;
+    if (!perfil || !PERFILES_K4C.orden.includes(perfil.actual)) {
+      throw new Error(`seed ${seed}: perfil inicial inválido ${JSON.stringify(perfil)}`);
+    }
+    if (PERFILES_K4C.orden.some((id) => typeof perfil.pesos[id] !== 'number') || Math.abs(Object.values(perfil.pesos).reduce((a, b) => a + b, 0) - 1) > 1e-9) {
+      throw new Error(`seed ${seed}: pesos incompletos o que no suman 1: ${JSON.stringify(perfil.pesos)}`);
+    }
+  }
+  const elegido = createInitialState(9, mulberry32(9), { perfil: 'leal' });
+  if (elegido.player.perfil.actual !== 'leal') {
+    throw new Error(`elegir "leal" en el inicio no llega al estado (${elegido.player.perfil.actual})`);
+  }
+  // Una bifurcación cuya opción tenga afinidad distinta de "leal": decidirla 4 veces corre los pesos hacia ella y
+  // cambia la palabra (α = derivaPorBifurcacion: 0,8^4 < 0,5).
+  const afinidadesDe = (evento) => decisionDesdeEvento(elegido, evento, { franja: 'normal', slot: 2 }).opciones.map((o) => {
+    let mejor = null;
+    let mejorValor = -Infinity;
+    for (const id of PERFILES_K4C.orden) {
+      const t = PERFILES_K4C.perfiles[id];
+      let v = t.riesgo[o.riesgo] ?? 0;
+      for (const f of o.previa) {
+        const fam = PERFILES_K4C.familiaDeCampo[f.campo];
+        if (fam) v += (t.familias[fam] ?? 0) * (f.signo === '-' ? -1 : 1) * BALANCE.perfil.pesoMagnitud[f.magnitud];
+      }
+      if (v > mejorValor) { mejor = id; mejorValor = v; }
+    }
+    return { id: o.id, afinidad: evento.options.find((x) => x.id === o.id).perfil ?? mejor };
+  });
+  const fork = TODOS_LOS_EVENTOS.find((e) => e.bifurcacion && !e.escandalo && afinidadesDe(e).some((a) => a.afinidad !== 'leal'));
+  if (!fork) {
+    throw new Error('ninguna bifurcación con una opción de afinidad distinta de leal para probar la deriva');
+  }
+  const afinidades = afinidadesDe(fork);
+  const otra = afinidades.find((a) => a.afinidad !== 'leal');
+  if (!otra) {
+    throw new Error(`${fork.id}: ninguna opción con afinidad distinta de leal para probar la deriva`);
+  }
+  let st = elegido;
+  for (let i = 0; i < 4; i += 1) {
+    const d = decisionDesdeEvento(st, fork, { franja: 'normal', slot: 2 });
+    st = resolverEventos(st, d, { opcionId: otra.id }, mulberry32(70 + i)).state;
+  }
+  if (!(st.player.perfil.pesos[otra.afinidad] > 0.5) || st.player.perfil.actual !== otra.afinidad) {
+    throw new Error(`cuatro bifurcaciones hacia ${otra.afinidad} no corrieron el perfil: ${JSON.stringify(st.player.perfil)}`);
+  }
+});
+
+check('K4-C cada evento resuelto por perfil deja una línea de crónica, sin ids crudos', () => {
+  const ids = new Set(TODOS_LOS_EVENTOS.flatMap((e) => [e.id, ...e.options.map((o) => o.id)]));
+  let vistas = 0;
+  for (const { seed, final } of carrerasK4c().slice(0, 15)) {
+    const cronicas = final.logs.filter((log) => log.cronica);
+    for (const log of cronicas) {
+      vistas += 1;
+      if (!log.titulo || !log.opcion || !log.cuerpo || typeof log.descripcion !== 'string' || !log.perfil) {
+        throw new Error(`seed ${seed}: línea de crónica incompleta: ${JSON.stringify(log).slice(0, 200)}`);
+      }
+      const crudo = log.message.match(/\b[a-z0-9]+(?:_[a-z0-9]+)+\b/g)?.find((t) => ids.has(t) || /_/.test(t));
+      if (crudo || /\{[a-zA-Z]+\}/.test(log.message)) {
+        throw new Error(`seed ${seed}: id o token crudo en la crónica ("${crudo ?? log.message}")`);
+      }
+    }
+  }
+  if (vistas === 0) {
+    throw new Error('ninguna línea de crónica en 15 carreras');
+  }
+});
+
+check('K4-C la rueda de prensa sale solo después de una final o de un escándalo', () => {
+  let prensas = 0;
+  for (const { seed, pausas } of carrerasK4c()) {
+    pausas.forEach(({ sistema, decision }, i) => {
+      if (decision.datos?.minijuego !== 'rueda_de_prensa') return;
+      prensas += 1;
+      const trasFinal = sistema === 'serie' && decision.datos.trasRonda === 'final';
+      const anterior = pausas[i - 1];
+      const trasEscandalo = sistema === 'eventos' && anterior?.sistema === 'eventos' && anterior.decision.datos?.evento?.escandalo === true;
+      if (!trasFinal && !trasEscandalo) {
+        throw new Error(`seed ${seed}: rueda de prensa fuera de una final o un escándalo (${sistema}, ${decision.datos.trasRonda ?? decision.datos.momento})`);
+      }
+    });
+  }
+  if (prensas === 0) {
+    throw new Error('ninguna rueda de prensa en 40 carreras');
+  }
+});
+
+check('K4-C la prueba en cada salto grande: primer fichaje en tier 2, en tier 1 y como import', () => {
+  // Recuento independiente: los tiers en los que ya tuviste club y si ya fuiste import, leídos del estado en cada
+  // pausa. Firmar por el mercado en un tier ≤ 2 que nunca tuviste (y que no está por debajo de uno que sí), o como
+  // import por primera vez, tiene que frenar con la prueba ANTES de firmar.
+  let saltos = 0;
+  for (const { seed, pausas } of carrerasK4c()) {
+    const tiers = new Set();
+    let fuiImport = false;
+    pausas.forEach(({ sistema, decision, respuesta, st }, i) => {
+      if (st.career.currentOrg) {
+        tiers.add(st.career.tier);
+        if (st.career.contrato?.tipo === 'import') fuiImport = true;
+      }
+      if (sistema !== 'mercado' || decision.datos?.motivo === 'minijuego' || decision.datos?.motivo === 'traspaso' || !respuesta.opcionId || respuesta.negociar) return;
+      const oferta = decision.opciones.find((o) => o.id === respuesta.opcionId);
+      if (!oferta || oferta.tag === 'renovacion') return;
+      const nuevoTier = oferta.tier <= 2 && !tiers.has(oferta.tier) && !(oferta.tier === 2 && tiers.has(1));
+      const nuevoImport = oferta.datos?.tipo === 'import' && !fuiImport;
+      if (!nuevoTier && !nuevoImport) return;
+      saltos += 1;
+      const siguiente = pausas[i + 1];
+      if (siguiente?.sistema !== 'mercado' || siguiente.decision.datos?.momento !== 'tryout') {
+        throw new Error(`seed ${seed}: firmó con ${oferta.org} (tier ${oferta.tier}${nuevoImport ? ', import' : ''}) sin la prueba del salto`);
+      }
+    });
+  }
+  if (saltos === 0) {
+    throw new Error('ningún salto grande por el mercado en 40 carreras');
+  }
+});
+
+// --- K4-C2: el pase de contenido sobre las bifurcaciones (PLAN.md "K4-C2") ---
+// Las bifurcaciones nuevas viven en `data/events/caminos.json` (`category: 'caminos'`) y dejan su camino en
+// `flags.caminos.*`; los eventos de seguimiento (los que no son bifurcación) lo leen con una `condition` común.
+const caminosK4c2 = () => TODOS_LOS_EVENTOS.filter((e) => e.category === 'caminos');
+const esFlagDeCamino = (path) => /^flags\.caminos\./.test(path);
+
+// path -> Set de los valores que algún resultado de algún evento escribe.
+function escriturasDeCaminoK4c2() {
+  const escritas = new Map();
+  for (const e of caminosK4c2()) {
+    for (const o of e.options) {
+      for (const x of o.outcomes) {
+        for (const ef of x.effects) {
+          if (ef.type === 'camino' && esFlagDeCamino(ef.path)) {
+            if (!escritas.has(ef.path)) escritas.set(ef.path, new Set());
+            escritas.get(ef.path).add(ef.valor);
+          }
+        }
+      }
+    }
+  }
+  return escritas;
+}
+
+check('K4-C2 cada opción de las bifurcaciones nuevas tiene su afinidad de perfil, y cada bifurcación empuja a más de un perfil', () => {
+  const base = createInitialState(1, mulberry32(1));
+  const forks = caminosK4c2().filter((e) => e.bifurcacion);
+  if (forks.length < 7) {
+    throw new Error(`esperaba al menos 7 bifurcaciones nuevas (región, contenido, rol, playoffs, conflicto, staff), hay ${forks.length}`);
+  }
+  const mag = BALANCE.perfil.pesoMagnitud;
+  // K4-C2 (regla 15): la oferta de import se cierra si ninguna org de esa liga puede ficharte (en el estado inicial,
+  // nunca). Los efectos de carrera no entran en la previa, así que el encaje se mide sin ellos.
+  const deCarrera = new Set(['ofertaDeImport', 'cambiarRol', 'retirarse']);
+  const sinEfectosDeCarrera = (e) => ({ ...e, options: e.options.map((o) => ({ ...o, outcomes: o.outcomes.map((x) => ({ ...x, effects: x.effects.filter((ef) => !deCarrera.has(ef.type)) })) })) });
+  for (const evento of forks.map(sinEfectosDeCarrera)) {
+    const vivas = opcionesConPrevia(base, evento);
+    if (vivas.length !== evento.options.length) {
+      throw new Error(`${evento.id}: una opción con gating propio no entra en esta prueba`);
+    }
+    const afinidades = new Set();
+    for (const o of vivas) {
+      const original = evento.options.find((x) => x.id === o.id);
+      if (PERFILES_K4C.orden.includes(original.perfil)) {
+        afinidades.add(original.perfil);
+        continue;
+      }
+      if (o.previa.length === 0) {
+        throw new Error(`${evento.id}/${o.id}: sin previa y sin \`perfil\` en el dato: no tiene afinidad`);
+      }
+      const encajes = PERFILES_K4C.orden.map((id) => {
+        const p = PERFILES_K4C.perfiles[id];
+        let valor = p.riesgo[o.riesgo] ?? 0;
+        for (const fila of o.previa) {
+          const familia = PERFILES_K4C.familiaDeCampo[fila.campo];
+          if (familia) valor += (p.familias[familia] ?? 0) * (fila.signo === '-' ? -1 : 1) * (mag[fila.magnitud] ?? 0);
+        }
+        return { id, valor };
+      }).sort((a, b) => b.valor - a.valor);
+      if (!(encajes[0].valor > encajes[1].valor)) {
+        throw new Error(`${evento.id}/${o.id}: empate entre ${encajes[0].id} y ${encajes[1].id} (${encajes[0].valor}): la afinidad no está definida (usá \`perfil\` en la opción)`);
+      }
+      afinidades.add(encajes[0].id);
+    }
+    if (afinidades.size < 2) {
+      throw new Error(`${evento.id}: todas sus opciones tienen la misma afinidad (${[...afinidades][0]}): decidirla no corre el perfil`);
+    }
+  }
+});
+
+check('K4-C2 cada bifurcación nueva deja un flag en todos sus resultados, y algún evento lo lee con un valor que alguien escribe', () => {
+  const escritas = escriturasDeCaminoK4c2();
+  const forks = caminosK4c2().filter((e) => e.bifurcacion);
+  const lecturas = new Map(); // path -> [{ evento, op, value }]
+  for (const e of TODOS_LOS_EVENTOS) {
+    for (const c of e.conditions) {
+      if (esFlagDeCamino(c.field)) {
+        if (!lecturas.has(c.field)) lecturas.set(c.field, []);
+        lecturas.get(c.field).push({ evento: e, op: c.op, value: c.value });
+      }
+    }
+  }
+  for (const e of forks) {
+    const escribe = new Set();
+    for (const o of e.options) {
+      for (const x of o.outcomes) {
+        const caminos = x.effects.filter((ef) => ef.type === 'camino' && esFlagDeCamino(ef.path));
+        if (caminos.length === 0) {
+          throw new Error(`${e.id}/${o.id}: un resultado no deja su flag de camino`);
+        }
+        caminos.forEach((ef) => escribe.add(ef.path));
+      }
+    }
+    for (const path of escribe) {
+      const lectores = (lecturas.get(path) ?? []).filter((l) => l.evento.id !== e.id);
+      if (lectores.length === 0) {
+        throw new Error(`${e.id}: escribe ${path} y ningún otro evento lo lee`);
+      }
+    }
+  }
+  for (const [path, lista] of lecturas) {
+    for (const l of lista) {
+      if (l.op === 'eq' && !escritas.get(path)?.has(l.value)) {
+        throw new Error(`${l.evento.id}: lee ${path} == "${l.value}" y ningún resultado escribe ese valor`);
+      }
+    }
+  }
+  const seguimientos = new Set([...lecturas.values()].flat().filter((l) => !l.evento.bifurcacion).map((l) => l.evento.id));
+  if (seguimientos.size < 2) {
+    throw new Error(`hacen falta al menos 2 eventos de seguimiento (no bifurcaciones) que lean un camino: hay ${seguimientos.size}`);
+  }
+});
+
+check('K4-C2 los caminos se abren y los seguimientos se resuelven en carreras reales (40 carreras × 60)', () => {
+  const carreras = carrerasK4c();
+  const claves = Object.keys(createInitialState(1, mulberry32(1)).flags.caminos);
+  for (const clave of claves) {
+    if (!carreras.some((c) => c.final.flags.caminos[clave] !== null)) {
+      throw new Error(`ninguna de las ${carreras.length} carreras dejó el camino "${clave}"`);
+    }
+  }
+  const seguimientos = caminosK4c2().filter((e) => !e.bifurcacion);
+  const vistos = seguimientos.filter((e) => carreras.some((c) => c.final.logs.some((log) => log.cronica && log.titulo === e.title)));
+  if (vistos.length < 3) {
+    throw new Error(`solo ${vistos.length} de ${seguimientos.length} eventos de seguimiento se resolvieron en ${carreras.length} carreras (${vistos.map((e) => e.id).join(', ')})`);
+  }
+});
+
+check('K4-C2 las bifurcaciones frenan entre 4,5 y 7,5 veces por carrera (criterio, 40 carreras × 60; la meta es 5-7)', () => {
+  const carreras = carrerasK4c();
+  const total = carreras.reduce((suma, c) => suma + c.pausas.filter((p) => p.sistema === 'eventos' && p.decision.datos?.evento?.bifurcacion === true).length, 0);
+  const media = total / carreras.length;
+  if (media < 4.5 || media > 7.5) {
+    throw new Error(`${media.toFixed(2)} bifurcaciones por carrera, fuera de [4,5, 7,5] (${total} en ${carreras.length} carreras)`);
+  }
+});
+
+// --- K4-C2 (regla 15): las bifurcaciones cambian la carrera de verdad (PLAN.md "K4-C2, tal como quedó") ---
+// La promesa del texto y el efecto del dato tienen que coincidir. `promete` en la opción declara qué cambia; el patrón
+// de palabras atrapa la opción que lo promete sin declararlo.
+const PROMESAS_K4C2 = {
+  region: { efecto: 'ofertaDeImport', patron: /firmar con|mudanza|te mudás|ir a corea|cambiás de liga|aceptan la cláusula/i },
+  rol: { efecto: 'cambiarRol', patron: /línea nueva|volvés a tu línea|cambiás de línea/i },
+  retiro: { efecto: 'retirarse', patron: /dejar de competir|te retirás|colgar el mouse/i }
+};
+const EFECTO_A_PROMESA_K4C2 = Object.fromEntries(Object.entries(PROMESAS_K4C2).map(([tipo, p]) => [p.efecto, tipo]));
+const textoDeLogK4c2 = (log) => log.texto ?? log.mensaje ?? log.message ?? '';
+
+check('K4-C2 regla 15: toda opción que promete mudanza, cambio de línea o retiro declara el efecto que lo hace, y ninguno se esconde', () => {
+  let conPromesa = 0;
+  for (const evento of TODOS_LOS_EVENTOS.filter((e) => e.bifurcacion || e.category === 'caminos')) {
+    for (const opcion of evento.options) {
+      const texto = `${opcion.label} ${opcion.descripcion ?? ''}`;
+      for (const [tipo, { patron }] of Object.entries(PROMESAS_K4C2)) {
+        if (patron.test(texto) && opcion.promete !== tipo) {
+          throw new Error(`${evento.id}/${opcion.id}: el texto promete ${tipo} ("${texto}") pero la opción no declara promete: '${tipo}'`);
+        }
+      }
+      if (opcion.promete !== undefined) {
+        const promesa = PROMESAS_K4C2[opcion.promete];
+        if (!promesa) {
+          throw new Error(`${evento.id}/${opcion.id}: promete '${opcion.promete}' desconocido`);
+        }
+        if (!opcion.outcomes.some((x) => x.effects.some((ef) => ef.type === promesa.efecto))) {
+          throw new Error(`${evento.id}/${opcion.id}: promete ${opcion.promete} y ningún resultado declara ${promesa.efecto}`);
+        }
+        conPromesa += 1;
+      }
+    }
+  }
+  for (const evento of TODOS_LOS_EVENTOS) {
+    for (const opcion of evento.options) {
+      for (const x of opcion.outcomes) {
+        for (const ef of x.effects) {
+          if (EFECTO_A_PROMESA_K4C2[ef.type] && opcion.promete !== EFECTO_A_PROMESA_K4C2[ef.type]) {
+            throw new Error(`${evento.id}/${opcion.id}: declara ${ef.type} sin promete: '${EFECTO_A_PROMESA_K4C2[ef.type]}' (un efecto de carrera escondido)`);
+          }
+        }
+      }
+    }
+  }
+  if (conPromesa < 8) {
+    throw new Error(`solo ${conPromesa} opciones con promesa de carrera; esperaba al menos 8 (región ×4, línea ×2, retiro ×2)`);
+  }
+});
+
+// --- K5 (revisión): una bifurcación no pisa su propia promesa, los efectos de carrera solo viven en bifurcaciones y
+// ninguna pantalla muestra el id crudo de una liga ---
+// Una opción con efecto de carrera (`ofertaDeImport`, `cambiarRol`, `retirarse`) tiene que frenar: el perfil resuelve en
+// automático todo lo que no es `bifurcacion: true`, y una mudanza, un cambio de línea o un retiro no se resuelven solos.
+const EFECTOS_DE_CARRERA_K5R = ['ofertaDeImport', 'cambiarRol', 'retirarse'];
+function efectosDeCarreraFueraDeBifurcacionK5r(eventos) {
+  const problemas = [];
+  for (const e of eventos) {
+    if (e.bifurcacion === true) continue;
+    for (const o of e.options) {
+      const tipos = new Set(o.outcomes.flatMap((x) => x.effects.map((ef) => ef.type).filter((t) => EFECTOS_DE_CARRERA_K5R.includes(t))));
+      if (tipos.size > 0) problemas.push(`${e.id}/${o.id}: ${[...tipos].join(', ')} en un evento sin \`bifurcacion: true\``);
+    }
+  }
+  return problemas;
+}
+
+// Una segunda promesa de región mientras la primera sigue pendiente la pisa: `flags.ofertaDeImport` se escribe entera
+// (`prometerImport`). La pretemporada la limpia, se firme o se caiga, así que el guard no bloquea para siempre.
+function regionesSinGuardK5r(eventos) {
+  const guard = (c) => c.field === 'flags.ofertaDeImport' && c.op === 'eq' && c.value === null;
+  return eventos
+    .filter((e) => e.options.some((o) => o.promete === 'region') && !e.conditions.some(guard))
+    .map((e) => `${e.id}: promete una mudanza y no exige \`flags.ofertaDeImport == null\``);
+}
+
+check('K5 (revisión) los efectos de carrera solo viven en bifurcaciones, y una bifurcación de región no pisa una oferta de import pendiente', () => {
+  const real = efectosDeCarreraFueraDeBifurcacionK5r(TODOS_LOS_EVENTOS);
+  if (real.length > 0) {
+    throw new Error(real.join(' · '));
+  }
+  const sinGuard = regionesSinGuardK5r(TODOS_LOS_EVENTOS);
+  if (sinGuard.length > 0) {
+    throw new Error(sinGuard.join(' · '));
+  }
+  const regiones = TODOS_LOS_EVENTOS.filter((e) => e.options.some((o) => o.promete === 'region'));
+  if (regiones.length < 3) {
+    throw new Error(`esperaba las 3 bifurcaciones de región, hay ${regiones.length}`);
+  }
+  // Mutantes (sobre copias): una bifurcación que pierde el flag, y una región que pierde el guard.
+  const conCarrera = TODOS_LOS_EVENTOS.filter((e) => e.bifurcacion === true
+    && e.options.some((o) => o.outcomes.some((x) => x.effects.some((ef) => EFECTOS_DE_CARRERA_K5R.includes(ef.type)))));
+  for (const e of conCarrera) {
+    const mutante = TODOS_LOS_EVENTOS.map((x) => (x.id === e.id ? { ...x, bifurcacion: false } : x));
+    if (efectosDeCarreraFueraDeBifurcacionK5r(mutante).length === 0) {
+      throw new Error(`mutante: ${e.id} sin bifurcacion:true y el check no lo ve`);
+    }
+  }
+  for (const e of regiones) {
+    const mutante = TODOS_LOS_EVENTOS.map((x) => (x.id === e.id ? { ...x, conditions: x.conditions.filter((c) => c.field !== 'flags.ofertaDeImport') } : x));
+    if (regionesSinGuardK5r(mutante).length === 0) {
+      throw new Error(`mutante: ${e.id} sin su guard y el check no lo ve`);
+    }
+  }
+});
+
+// Las líneas de la UI que escriben una liga en pantalla (texto, title, template) tienen que pasar por `nombreVisibleDeLiga`.
+function usosDeLigaCrudaK5r(fuentes) {
+  const problemas = [];
+  for (const [archivo, texto] of Object.entries(fuentes)) {
+    texto.split('\n').forEach((linea, i) => {
+      if (/^\s*(\/\/|\*|\/\*)/.test(linea) || !/textContent|createTextNode|\.title\s*=|\$\{|\.join\(/.test(linea)) {
+        return;
+      }
+      // Lo que pasa por el helper, y la liga usada solo como condición (`c.liga ? ... : ...`), no es texto en pantalla.
+      const sinPermitidos = linea.replace(/nombreVisibleDeLiga\([^()]*\)/g, '').replace(/(\.liga\b|\bligaId\b)\s*\?(?![?.])/g, '');
+      if (/(\.liga\b|\.ligaCampeon\b|\bligaId\b)/.test(sinPermitidos)) {
+        problemas.push(`${archivo}:${i + 1}: ${linea.trim()}`);
+      }
+    });
+  }
+  return problemas;
+}
+
+check('K5 (revisión) ninguna pantalla muestra el id crudo de una liga ("EMEA_MASTERS", "LCK_CL"): el mercado, la tabla, el Mundial, el feed y los tops pasan por nombreVisibleDeLiga', () => {
+  for (const liga of JSON.parse(fs.readFileSync(path.join(srcDir, 'data', 'leagues.json'), 'utf8'))) {
+    if (nombreVisibleDeLiga(liga.id) !== liga.nombre) {
+      throw new Error(`nombreVisibleDeLiga("${liga.id}") = "${nombreVisibleDeLiga(liga.id)}", esperaba "${liga.nombre}"`);
+    }
+  }
+  if (nombreVisibleDeLiga('EMEA_MASTERS') !== 'EMEA Masters' || nombreVisibleDeLiga('LCK_CL') !== 'LCK CL') {
+    throw new Error('los ids de las ligas de desarrollo no se traducen');
+  }
+  if (nombreVisibleDeLiga('XYZ') !== 'XYZ') {
+    throw new Error('un id desconocido tiene que volver tal cual');
+  }
+  const fuentes = {};
+  const recorrer = (dir) => {
+    for (const entrada of fs.readdirSync(dir, { withFileTypes: true })) {
+      const ruta = path.join(dir, entrada.name);
+      if (entrada.isDirectory()) recorrer(ruta);
+      else if (entrada.name.endsWith('.js')) fuentes[path.relative(srcDir, ruta).replace(/\\/g, '/')] = fs.readFileSync(ruta, 'utf8').replace(/\r\n/g, '\n');
+    }
+  };
+  recorrer(uiDir);
+  const crudos = usosDeLigaCrudaK5r(fuentes);
+  if (crudos.length > 0) {
+    throw new Error(`${crudos.length} línea(s) de la UI muestran una liga sin nombreVisibleDeLiga: ${crudos.slice(0, 4).join(' · ')}`);
+  }
+  // Mutante: sin la llamada, cada archivo que la usa tiene que saltar.
+  const usan = Object.entries(fuentes).filter(([archivo, texto]) => archivo !== 'ui/formatoUi.js' && /nombreVisibleDeLiga\(/.test(texto));
+  if (usan.length < 6) {
+    throw new Error(`esperaba al menos 6 archivos de la UI que muestran ligas, hay ${usan.length}`);
+  }
+  for (const [archivo, texto] of usan) {
+    const mutante = { [archivo]: texto.replace(/nombreVisibleDeLiga\(([^()]*)\)/g, '$1') };
+    if (usosDeLigaCrudaK5r(mutante).length === 0) {
+      throw new Error(`mutante: ${archivo} sin nombreVisibleDeLiga y el check no lo ve`);
+    }
+  }
+});
+
+// Estados de carrera real en una pretemporada, profesional, tier 1 o 2 (los de las bifurcaciones de región).
+let pretemporadasProK4c2Cache = null;
+function pretemporadasProK4c2(cantidad) {
+  pretemporadasProK4c2Cache ??= (() => {
+    const estados = [];
+    for (let seed = 7100; estados.length < 25 && seed < 7400; seed += 1) {
+      const rng = mulberry32(seed);
+      let state = createInitialState(seed, rng);
+      for (let i = 0; i < 45 && !state.terminado; i += 1) {
+        state = avanzarSplitAuto(state, rng).state;
+        if (state.phase === 'profesional' && !state.pendiente && state.player.splitCount % BALANCE.edad.splitsPorEdad === 0
+          && [1, 2].includes(state.career.tier) && state.player.splitCount >= 24) {
+          estados.push({ seed, state });
+          break;
+        }
+      }
+    }
+    return estados;
+  })();
+  return pretemporadasProK4c2Cache.slice(0, cantidad);
+}
+
+check('K4-C2 regla 15: ofertaDeImport se firma por el mercado en la próxima pretemporada y terminás jugando en esa liga', () => {
+  let firmadas = 0;
+  let cerradas = 0;
+  const lpl = TODOS_LOS_EVENTOS.find((e) => e.id === 'la_oferta_de_la_lpl');
+  for (const { seed, state } of pretemporadasProK4c2(25)) {
+    for (const liga of ['LCK', 'LPL', 'LEC', 'LCS']) {
+      if (liga === state.career.liga) continue;
+      const posible = ofertaDeImportPosible(state, liga);
+      if (!posible.posible) {
+        // La opción que lo promete no se puede tomar: sale cerrada con el motivo del mercado (regla 15).
+        if (liga === 'LPL') {
+          const decision = decisionDesdeEvento(state, lpl, { franja: 'normal', slot: 1 });
+          const bloqueada = decision.opcionesBloqueadas.find((o) => o.gate === posible.motivo);
+          if (!bloqueada || decision.opciones.some((o) => o.id === 'ir_por_la_plata')) {
+            throw new Error(`seed ${seed}: la LPL no puede ficharte (${posible.motivo}) y "Firmar con la LPL" igual se ofrece`);
+          }
+          cerradas += 1;
+        }
+        continue;
+      }
+      const conOferta = { ...state, flags: { ...state.flags, ofertaDeImport: { ligas: [liga], clausula: 'salida' } } };
+      const r = aplicarMercado(conOferta, mulberry32(seed));
+      if (r.state.flags.ofertaDeImport !== null) {
+        throw new Error(`seed ${seed}: la oferta de ${liga} sigue pendiente después de la pretemporada`);
+      }
+      const seCayo = r.logs.some((l) => /La mudanza se cae/.test(textoDeLogK4c2(l)));
+      if (r.state.career.liga === liga) {
+        if (r.state.career.contrato.clausula !== 'salida' || r.decision) {
+          throw new Error(`seed ${seed}: firmó en ${liga} sin la cláusula de la oferta, o el mercado volvió a frenar`);
+        }
+        firmadas += 1;
+      } else if (!seCayo) {
+        throw new Error(`seed ${seed}: aceptó ir a ${liga} y sigue en ${r.state.career.liga} sin que se diga por qué`);
+      }
+    }
+  }
+  if (firmadas < 5 || cerradas < 1) {
+    throw new Error(`firmadas ${firmadas} (mín. 5), opciones cerradas con motivo ${cerradas} (mín. 1)`);
+  }
+});
+
+check('K4-C2 regla 15: cambiarRol te cambia de línea con pool y plantel coherentes, y volver a lo tuyo te devuelve', () => {
+  const swap = TODOS_LOS_EVENTOS.find((e) => e.id === 'la_linea_que_te_piden');
+  const vuelta = TODOS_LOS_EVENTOS.find((e) => e.id === 'la_linea_nueva_te_cambio');
+  const casos = pretemporadasProK4c2(8);
+  for (const { seed, state: crudo } of casos) {
+    // Si la carrera del bot ya había cambiado de línea, se parte de su línea de hoy como la de origen.
+    const state = { ...crudo, flags: { ...crudo.flags, rolDeOrigen: null } };
+    const rolViejo = state.player.role;
+    const poolViejo = state.player.championPool.map((c) => c.name).join(',');
+    const ida = resolverOpcion(state, swap, 'aceptar_el_swap', mulberry32(seed)).state;
+    const rolNuevo = ida.player.role;
+    if (rolNuevo === rolViejo || !IDS_ROL.includes(rolNuevo)) {
+      throw new Error(`seed ${seed}: aceptar el swap dejó la línea en ${rolNuevo}`);
+    }
+    const ajenos = ida.player.championPool.filter((c) => CAMPEONES.find((x) => x.name === c.name)?.role !== rolNuevo);
+    if (ajenos.length > 0 || ida.player.championPool.length < BALANCE.campeones.poolMinimo) {
+      throw new Error(`seed ${seed}: pool de ${rolNuevo} incoherente (${ida.player.championPool.map((c) => c.name).join(', ')})`);
+    }
+    const rolesCompaneros = ida.career.companeros.map((c) => c.role).sort().join(',');
+    if (rolesCompaneros !== IDS_ROL.filter((r) => r !== rolNuevo).sort().join(',')) {
+      throw new Error(`seed ${seed}: compañeros ${rolesCompaneros} con vos en ${rolNuevo}`);
+    }
+    const back = resolverOpcion(ida, vuelta, 'volver_a_lo_tuyo', mulberry32(seed)).state;
+    if (back.player.role !== rolViejo || back.player.championPool.map((c) => c.name).join(',') !== poolViejo || back.flags.rolDeOrigen !== null) {
+      throw new Error(`seed ${seed}: volver a lo tuyo no te devolvió a ${rolViejo} con tu pool`);
+    }
+  }
+  if (casos.length < 5) {
+    throw new Error(`solo ${casos.length} estados de prueba`);
+  }
+});
+
+check('K4-C2 regla 15: retirarse termina la carrera por el camino del retiro, con el motivo en palabras; la ventana tiene su contenido', () => {
+  const canal = TODOS_LOS_EVENTOS.find((e) => e.id === 'el_canal_de_tiempo_completo');
+  const { seed, state } = pretemporadasProK4c2(1)[0];
+  const r = resolverOpcion(state, canal, 'vivir_del_canal', mulberry32(seed));
+  const st = r.state;
+  if (st.phase !== 'retirado' || st.finAnticipado !== 'retiro_elegido'
+    || !String(st.motivoRetiro).includes(MOTIVOS_DE_RETIRO.streaming) || st.flags.motivoRetiro !== undefined) {
+    throw new Error(`vivir del canal dejó phase=${st.phase}, fin=${st.finAnticipado}, motivo=${st.motivoRetiro}`);
+  }
+  const textos = r.logs.map(textoDeLogK4c2).join(' | ');
+  if (!textos.includes(MOTIVOS_DE_RETIRO.streaming) || /\bstreaming\b|retirarse/.test(textos)) {
+    throw new Error(`el log no cuenta el motivo en palabras: ${textos}`);
+  }
+  const final = resolverOpcion({ ...state, flags: { ...state.flags, vueltasUsadas: BALANCE.retiro.vueltasMaximas } }, canal, 'vivir_del_canal', mulberry32(seed)).state;
+  if (!final.terminado) {
+    throw new Error('sin vueltas disponibles, retirarse no cerró la carrera');
+  }
+  // La ventana de vuelta: en la parada del "¿Volvés?", la bifurcación de la ventana (`la_llamada_del_manager`) sale.
+  let llamadas = 0;
+  for (let s = 1; s <= 40; s += 1) {
+    const enVentana = {
+      ...st,
+      player: { ...st.player, splitCount: st.player.splitCount + BALANCE.edad.splitsPorEdad },
+      flags: { ...st.flags, splitsEnVentana: BALANCE.edad.splitsPorEdad - 1, cooldownHasta: {} }
+    };
+    const v = aplicarRetiroK4c2(enVentana, mulberry32(s));
+    if (v.decision?.datos?.evento?.id === 'la_llamada_del_manager') llamadas += 1;
+  }
+  if (llamadas === 0) {
+    throw new Error('la_llamada_del_manager no sale nunca en la ventana de vuelta (40 tiradas)');
+  }
+});
+
+// (Los tres custodios se mudaron al final del archivo: van después del último check — K5.)
 
 // --- K3-B: los efectos que duran (PLAN.md "K3 — decisiones de spec") ---
 //
@@ -14610,7 +15912,7 @@ check('K3-B 2b un solo camino para las rutinas: la semana amateur (systems/amate
 
 check('K3-B la curva de edad converge a objetivo + bonus: con bonusPermanente b, cada stat de curva termina el split velocidad·b más arriba que sin él', () => {
   const base = correrCarrera(4, 18);
-  const lugar = { ...base, player: { ...base.player, techoLesionMecanica: null, stats: { ...base.player.stats, mecanica: 50, laneo: 50, teamfight: 50 } } };
+  const lugar = { ...base, player: { ...base.player, techoLesionMecanica: null, bonusPermanente: {}, stats: { ...base.player.stats, mecanica: 50, laneo: 50, teamfight: 50 } } };
   const b = 5;
   const conBonus = { ...lugar, player: { ...lugar.player, bonusPermanente: Object.fromEntries(STATS_DE_CURVA_K3B.map((stat) => [stat, b])) } };
   const sin = sistemaPorId('atributos').aplicar(lugar, mulberry32(9)).state;
@@ -14704,6 +16006,1253 @@ check('K3-B la ficha lista solo las marcas cuyo acumulado (por stat, origen y a�
   const fuenteFicha = fs.readFileSync(path.join(srcDir, 'ui', 'components', 'ficha.js'), 'utf8');
   if (!fuenteFicha.includes("nombre: 'CONSISTENCIA'") || /nombre: 'MENTALIDAD'/.test(fuenteFicha)) {
     throw new Error("la barra de la mentalidad tiene que rotularse 'CONSISTENCIA' en la ficha (el id interno sigue siendo mentalidad)");
+  }
+});
+
+// ============================================================================
+// K4-A (PLAN.md "K4 — decisiones de spec", K4-A): el partido que importa. Se marca la fecha que DECIDE algo (la
+// clasificación, tu archirrival, el clásico, la revancha), una por split, sin draft y con la previa a la vista.
+// `puntero` y `presion` dejaron de marcar. Bloque B: el corrimiento del stream está aceptado (la huella cambia); estos
+// checks son estructurales.
+// ============================================================================
+
+const MOTIVOS_K4A = ['define_clasificacion', 'archirrival', 'clasico', 'revancha'];
+
+// Una liga sintética de 10 equipos con el formato de tier 1 (6 clasifican, 2 con bye) y UNA fecha por jugar: la última,
+// contra R9. Las victorias de cada org son las de la tabla de hoy; los demás cruces de la jornada son parejos (p = 0,5).
+function temporadaSinteticaK4A(victorias, { fechasQueFaltan = 1, orgPropia = 'Propio' } = {}) {
+  const otros = ['R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9'];
+  const fila = (org, ganados) => ({ org, ganados, perdidos: 0 });
+  const cruce = (local, visitante) => ({ local, visitante, fuerzaLocal: 50, fuerzaVisitante: 50 });
+  return {
+    calendario: Array.from({ length: fechasQueFaltan }, () => ({ rival: 'R9', fuerzaRival: 50 })),
+    cruces: Array.from({ length: fechasQueFaltan }, () => [cruce('R1', 'R2'), cruce('R3', 'R4'), cruce('R5', 'R6'), cruce('R7', 'R8')]),
+    registrosOtros: Object.fromEntries(otros.map((org, i) => [org, fila(org, victorias[i + 1])])),
+    filaPropia: fila(orgPropia, victorias[0]),
+    indice: 0,
+    fuerzaPropia: 50
+  };
+}
+const LIGA_K4A = { tier: 1, formatoPlayoffs: { clasifican: 6, byes: 2, bo: 5 } };
+// [Propio, R1..R9]: Propio pelea el sexto puesto (8 victorias, R6 tiene 8,5 esperadas y R9 —su rival— 7).
+const TABLA_QUE_DEFINE_K4A = [8, 12, 12, 12, 12, 12, 8, 5, 5, 7];
+// Propio con 15 victorias: ganar o perder lo deja primero con bye.
+const TABLA_QUE_NO_DEFINE_K4A = [15, 12, 12, 12, 12, 12, 8, 5, 5, 7];
+// Propio lejos del corte, abajo: ganar o perder lo deja afuera.
+const TABLA_QUE_NO_DEFINE_ABAJO_K4A = [0, 12, 12, 12, 12, 12, 8, 5, 5, 7];
+// Propio con 12 victorias empatado con R1 y R2: ganar lo deja primero (bye a semis), perder tercero (cuartos).
+const TABLA_DEL_BYE_K4A = [12, 12, 12, 10, 10, 10, 9, 5, 5, 6];
+
+check('K4-A define_clasificacion: sale de la tabla y del fixture que falta (sin rng), tanto la entrada a playoffs como el bye', () => {
+  const estado = {};
+  const t = temporadaSinteticaK4A(TABLA_QUE_DEFINE_K4A);
+  const definicion = defineClasificacion(estado, LIGA_K4A, t);
+  if (definicion?.siGana !== 'cuartos' || definicion?.siPierde !== null) {
+    throw new Error(`con 8 victorias frente a un sexto de 8,5 esperadas, ganar es entrar por cuartos y perder es quedar afuera; devolvió ${JSON.stringify(definicion)}`);
+  }
+  const bye = defineClasificacion(estado, LIGA_K4A, temporadaSinteticaK4A(TABLA_DEL_BYE_K4A));
+  if (bye?.siGana !== 'semis' || bye?.siPierde !== 'cuartos') {
+    throw new Error(`ganar la fecha que da el bye es 'semis' y perderla 'cuartos'; devolvió ${JSON.stringify(bye)}`);
+  }
+  for (const [nombre, tabla] of [['arriba', TABLA_QUE_NO_DEFINE_K4A], ['abajo', TABLA_QUE_NO_DEFINE_ABAJO_K4A]]) {
+    const sinDefinir = defineClasificacion(estado, LIGA_K4A, temporadaSinteticaK4A(tabla));
+    if (sinDefinir !== null) {
+      throw new Error(`con la tabla de ${nombre} la fecha no decide nada, pero devolvió ${JSON.stringify(sinDefinir)}`);
+    }
+  }
+  // Una liga sin playoffs no tiene clasificación que definir.
+  if (defineClasificacion(estado, { tier: 2 }, t) !== null) {
+    throw new Error('una liga sin formatoPlayoffs no puede definir la clasificación');
+  }
+  // Lejos del final (falta más que la ventana) la proyección es una cuenta abierta: no se afirma.
+  const lejos = temporadaSinteticaK4A(TABLA_QUE_DEFINE_K4A, { fechasQueFaltan: 60 });
+  if (defineClasificacion(estado, LIGA_K4A, lejos) !== null) {
+    throw new Error('fuera de la ventana de las últimas fechas no se marca el partido que define la clasificación');
+  }
+  // Pura y determinista: dos llamadas dan lo mismo y no tocan lo que reciben.
+  const copia = JSON.stringify(t);
+  if (JSON.stringify(defineClasificacion(estado, LIGA_K4A, t)) !== JSON.stringify(definicion) || JSON.stringify(t) !== copia) {
+    throw new Error('defineClasificacion no es pura');
+  }
+});
+
+check('K4-A prioridad: define_clasificacion > archirrival > clásico > revancha, y puntero, presión y rival de generación no marcan', () => {
+  const estado = (extra = {}) => ({
+    career: { orgs: ['Propio'], currentOrg: 'Propio', ultimoEliminadoPor: null, ...extra.career },
+    mundo: { rivales: [], archirrival: extra.archirrival ?? null }
+  });
+  const fecha = { rival: 'R9', fuerzaRival: 50 };
+  const motivosDe = (st, tabla) => motivosDeFecha(st, LIGA_K4A, fecha, temporadaSinteticaK4A(tabla));
+  const esperar = (nombre, obtenido, esperado) => {
+    if (JSON.stringify(obtenido) !== JSON.stringify(esperado)) {
+      throw new Error(`${nombre}: se esperaba ${JSON.stringify(esperado)}, devolvió ${JSON.stringify(obtenido)}`);
+    }
+  };
+  const todo = estado({ archirrival: { org: 'R9', handle: 'Rival' }, career: { orgs: ['R9', 'Propio'], ultimoEliminadoPor: 'R9' } });
+  esperar('con todo junto', motivoPrincipal(motivosDe(todo, TABLA_QUE_DEFINE_K4A)), 'define_clasificacion');
+  esperar('sin definir la clasificación', motivoPrincipal(motivosDe(todo, TABLA_QUE_NO_DEFINE_K4A)), 'archirrival');
+  esperar('clásico y revancha', motivoPrincipal(motivosDe(estado({ career: { orgs: ['R9', 'Propio'], ultimoEliminadoPor: 'R9' } }), TABLA_QUE_NO_DEFINE_K4A)), 'clasico');
+  esperar('solo revancha', motivoPrincipal(motivosDe(estado({ career: { ultimoEliminadoPor: 'R9' } }), TABLA_QUE_NO_DEFINE_K4A)), 'revancha');
+  // El rival es el puntero de la tabla (20 victorias): antes marcaba, ahora la fecha pasa resumida.
+  esperar('contra el puntero', motivosDe(estado(), [15, 12, 12, 12, 12, 12, 8, 5, 5, 20]), ['parejo']);
+  esperar('sin nada en juego', motivosDe(estado(), TABLA_QUE_NO_DEFINE_K4A), ['parejo']);
+  esperar('la prioridad es la de la spec', PRIORIDAD_MOTIVOS, MOTIVOS_K4A);
+});
+
+// Carreras reales de `criterio` (seeds 1..100, 60 splits): por split, las fechas marcadas y por qué, las pausas de la
+// temporada y si fue un split de tier 1 con playoffs.
+const CARRERAS_K4A = 100;
+let cosechaK4A = null;
+function cosechaDeCarrerasK4A() {
+  if (cosechaK4A) {
+    return cosechaK4A;
+  }
+  const c = { splitsTier1: 0, splitsConDefine: 0, marcadasPorSplit: {}, motivosVistos: new Set(), principales: {}, pausas: {}, casos: [] };
+  for (let seed = 1; seed <= CARRERAS_K4A; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      const antes = state.career.temporada;
+      const principalesDelSplit = [];
+      const responder = (sistema, st, decision, r) => {
+        if (sistema.id === 'temporada') {
+          const tipo = decision.datos?.motivo ?? 'x';
+          c.pausas[tipo] = (c.pausas[tipo] ?? 0) + 1;
+          const motivos = st.career.temporada.fechaEnCurso?.motivos ?? [];
+          motivos.forEach((m) => c.motivosVistos.add(m));
+          if (tipo === 'momento') {
+            principalesDelSplit.push(motivoPrincipal(motivos));
+            if (c.casos.length < 60) {
+              c.casos.push({ st, decision });
+            }
+          }
+        }
+        return ESTRATEGIAS_K0.criterio(sistema, st, decision, r);
+      };
+      state = avanzarSplitAuto(state, rng, responder).state;
+      const t = state.career.temporada;
+      if (t === antes || !t) {
+        continue;
+      }
+      c.marcadasPorSplit[t.marcadasHechas] = (c.marcadasPorSplit[t.marcadasHechas] ?? 0) + 1;
+      principalesDelSplit.forEach((m) => { c.principales[m] = (c.principales[m] ?? 0) + 1; });
+      const liga = ligaDeCarreraK3A(state);
+      if (liga?.tier === 1 && liga.formatoPlayoffs) {
+        c.splitsTier1 += 1;
+        if (principalesDelSplit.includes('define_clasificacion')) {
+          c.splitsConDefine += 1;
+        }
+      }
+    }
+  }
+  cosechaK4A = c;
+  return c;
+}
+
+check(`K4-A define_clasificacion es alcanzable: al menos 1 de cada 3 splits de tier 1 con playoffs (criterio, ${CARRERAS_K4A} carreras)`, () => {
+  const { splitsTier1, splitsConDefine } = cosechaDeCarrerasK4A();
+  if (splitsTier1 < 300) {
+    throw new Error(`solo ${splitsTier1} splits de tier 1 con playoffs medidos: muestra insuficiente`);
+  }
+  if (splitsConDefine * 3 < splitsTier1) {
+    throw new Error(`define_clasificacion marcó ${splitsConDefine} de ${splitsTier1} splits de tier 1 con playoffs (1 cada ${(splitsTier1 / Math.max(1, splitsConDefine)).toFixed(1)}); la meta es 1 cada 3 o mejor`);
+  }
+});
+
+check('K4-A a lo sumo una fecha marcada por split', () => {
+  const { marcadasPorSplit } = cosechaDeCarrerasK4A();
+  const conMasDeUna = Object.entries(marcadasPorSplit).filter(([n]) => Number(n) > 1).reduce((suma, [, cantidad]) => suma + cantidad, 0);
+  if (conMasDeUna > 0) {
+    throw new Error(`${conMasDeUna} splits con más de una fecha marcada (conteos: ${JSON.stringify(marcadasPorSplit)})`);
+  }
+  if ((marcadasPorSplit[1] ?? 0) < 100) {
+    throw new Error(`solo ${marcadasPorSplit[1] ?? 0} splits con una fecha marcada: muestra insuficiente`);
+  }
+});
+
+check('K4-A puntero y presión nunca marcan: toda fecha marcada lo es por uno de los cuatro motivos', () => {
+  const { motivosVistos, principales } = cosechaDeCarrerasK4A();
+  const fuera = [...motivosVistos].filter((m) => !MOTIVOS_K4A.includes(m));
+  if (fuera.length > 0) {
+    throw new Error(`fechas marcadas con motivos fuera de los cuatro: ${fuera.join(', ')}`);
+  }
+  const marcadas = Object.values(principales).reduce((suma, n) => suma + n, 0);
+  if (marcadas < 200 || !principales.define_clasificacion || !principales.clasico || !principales.revancha) {
+    throw new Error(`la muestra no pasó por los motivos que se pueden alcanzar: ${JSON.stringify(principales)}`);
+  }
+});
+
+check('K4-A la fecha marcada no tiene draft: frena una sola vez, con el momento', () => {
+  const { pausas, marcadasPorSplit } = cosechaDeCarrerasK4A();
+  if (pausas.draft) {
+    throw new Error(`${pausas.draft} pausas de draft en una fecha marcada (temporada:draft debería haber desaparecido)`);
+  }
+  const marcadas = marcadasPorSplit[1] ?? 0;
+  if ((pausas.momento ?? 0) > marcadas) {
+    throw new Error(`${pausas.momento} momentos para ${marcadas} fechas marcadas: la fecha frena más de una vez`);
+  }
+  const otras = Object.keys(pausas).filter((m) => m !== 'momento');
+  if (otras.length > 0) {
+    throw new Error(`la temporada pausó con ${otras.join(', ')}: solo debería frenar con el momento`);
+  }
+});
+
+check('K4-A la previa de la fecha marcada dice por qué importa, sin ids crudos, y el "porQue" es el del motivo', () => {
+  const { casos } = cosechaDeCarrerasK4A();
+  if (casos.length < 30) {
+    throw new Error(`solo ${casos.length} fechas marcadas cosechadas`);
+  }
+  const problemas = [];
+  casos.forEach(({ st, decision }, i) => {
+    const previa = previaDeDecision(st, decision);
+    const texto = previa?.porQue;
+    if (typeof texto !== 'string' || texto.length < 10) {
+      problemas.push(`fecha ${i}: la previa no trae el porqué (${JSON.stringify(texto)})`);
+      return;
+    }
+    if (/[a-z0-9]+_[a-z0-9_]+|undefined|null|NaN/.test(texto)) {
+      problemas.push(`fecha ${i}: "${texto}" muestra un id crudo`);
+    }
+    const principal = motivoPrincipal(st.career.temporada.fechaEnCurso.motivos);
+    const esperado = { define_clasificacion: /ganás|playoffs/, archirrival: /archirrival/, clasico: /ex equipo/, revancha: /revancha/ }[principal];
+    if (!esperado.test(texto)) {
+      problemas.push(`fecha ${i}: "${texto}" no habla del motivo ${principal}`);
+    }
+    if (!previa.subtitulo) {
+      problemas.push(`fecha ${i}: la previa no trae el rótulo del partido`);
+    }
+  });
+  fallarSiK2d(problemas);
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// K4-D — la pretemporada en una sola parada (T9). El mercado (si abre) y la preparación (las rutinas de offseason como
+// cartas de mejora) frenan UNA vez por año, en la misma decisión. Reemplaza al viejo "frena la práctica y, aparte, el
+// mercado" (regla 17): los checks que contaban dos pausas ya no existen.
+// ---------------------------------------------------------------------------------------------------------------------
+
+// Corre una carrera automática hasta la primera pausa que cumple `filtro(sistemaId, decision)` y devuelve el estado
+// pausado y el rng en ese punto. Es determinista: volver a llamarla con la misma seed da la misma pausa, así que cada
+// respuesta posible se prueba desde el mismo punto.
+function hastaLaParadaK4d(seed, filtro, maxSplits = 40) {
+  const rng = mulberry32(seed);
+  let state = createInitialState(seed, rng);
+  for (let i = 0; i < maxSplits && !state.terminado; i += 1) {
+    state = avanzarSplit(state, rng).state;
+    while (state.pendiente) {
+      const { sistemaId, decision } = state.pendiente;
+      if (filtro(sistemaId, decision)) {
+        return { state, rng };
+      }
+      state = resolverDecision(state, sistemaPorId(sistemaId).resolverAuto(state, decision, rng), rng).state;
+    }
+  }
+  return null;
+}
+
+const ES_MERCADO_K4D = (sistemaId, decision) => sistemaId === 'mercado' && decision.datos?.motivo === 'oferta' && Boolean(decision.datos.preparacion);
+
+// K4 (integración): si la oferta elegida es un salto grande, la misma parada sigue con la prueba de K4-C (una pantalla
+// más, con la carta elegida en sus datos) y recién al contestarla se firma y se aplica la rutina. Contesta la parada y,
+// si vino la prueba, la prueba (con el resultado neutro); devuelve el estado y cuántas pruebas hubo.
+function contestarParadaK4d(parada, respuesta) {
+  let hecho = resolverDecision(parada.state, respuesta, parada.rng).state;
+  let pruebas = 0;
+  while (hecho.pendiente?.sistemaId === 'mercado' && hecho.pendiente.decision.datos?.motivo === 'minijuego') {
+    const { datos } = hecho.pendiente.decision;
+    if (datos.momento !== 'tryout' || !datos.preparacion) {
+      throw new Error('la prueba del salto no viaja con la preparación de la parada');
+    }
+    if (respuesta.rutinaId !== undefined && datos.preparacion.elegida !== respuesta.rutinaId) {
+      throw new Error(`la prueba del salto perdió la carta elegida (${datos.preparacion.elegida}, esperaba ${respuesta.rutinaId})`);
+    }
+    if (hecho.flags.preparacionDeSplit === parada.state.player.splitCount) {
+      throw new Error('la rutina se aplicó antes de la prueba: tiene que ir con la firma');
+    }
+    pruebas += 1;
+    hecho = resolverDecision(hecho, { resultado: 0.5 }, parada.rng).state;
+  }
+  if (pruebas > 1) {
+    throw new Error(`la parada trajo ${pruebas} pruebas: a lo sumo una pantalla más`);
+  }
+  return { hecho, pruebas };
+}
+
+checkLento('K4-D la pretemporada frena una sola vez por año: a lo sumo una pausa de mercado o de práctica por split, con el mercado y la preparación en la misma, y la preparación del año queda resuelta', () => {
+  let conMercado = 0;
+  let soloPreparacion = 0;
+  let traspasos = 0;
+  let pretemporadasPro = 0;
+  for (let seed = 1; seed <= 40; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      const inicio = state;
+      const esPretemporadaPro = inicio.phase === 'profesional' && calcularContexto(inicio).ventana === 'pretemporada';
+      let paradas = 0;
+      state = avanzarSplit(state, rng).state;
+      while (state.pendiente) {
+        const { sistemaId, decision } = state.pendiente;
+        const motivo = decision.datos?.motivo;
+        const esMercado = sistemaId === 'mercado' && (motivo === 'oferta' || motivo === 'traspaso');
+        if (sistemaId === 'practica' || esMercado) {
+          paradas += 1;
+        }
+        if (esMercado) {
+          const preparacion = decision.datos.preparacion;
+          if (!preparacion || preparacion.rutinas.length === 0 || preparacion.cartas.length !== preparacion.rutinas.length) {
+            throw new Error(`seed ${seed}, split ${i}: la parada del mercado (${motivo}) no trae la preparación del receso`);
+          }
+          if (decision.opciones.length === 0) {
+            throw new Error(`seed ${seed}, split ${i}: la parada del mercado no trae ofertas`);
+          }
+          if (motivo === 'oferta') conMercado += 1; else traspasos += 1;
+        }
+        if (sistemaId === 'practica') {
+          if (decision.datos.rutinas.length === 0 || decision.presentacion !== 'pretemporada') {
+            throw new Error(`seed ${seed}, split ${i}: la parada de la preparación sola viene mal armada`);
+          }
+          soloPreparacion += 1;
+        }
+        state = resolverDecision(state, sistemaPorId(sistemaId).resolverAuto(state, decision, rng), rng).state;
+      }
+      if (paradas > 1) {
+        throw new Error(`seed ${seed}, split ${i}: la pretemporada frenó ${paradas} veces (mercado y práctica por separado)`);
+      }
+      if (esPretemporadaPro && !state.terminado && state.phase === 'profesional') {
+        pretemporadasPro += 1;
+        if (state.flags.preparacionDeSplit !== inicio.player.splitCount) {
+          throw new Error(`seed ${seed}, split ${i}: la pretemporada pasó sin resolver la preparación del año`);
+        }
+      }
+    }
+  }
+  if (conMercado < 20 || soloPreparacion < 20 || traspasos < 1 || pretemporadasPro < 100) {
+    throw new Error(`muestra insuficiente: ${conMercado} paradas con mercado, ${soloPreparacion} solo de preparación, ${traspasos} traspasos, ${pretemporadasPro} pretemporadas pro`);
+  }
+});
+
+checkLento('K4-D la oferta elegida y la rutina elegida se aplican juntas, en una sola respuesta', () => {
+  const sonda = [1, 2, 3, 4].map((seed) => hastaLaParadaK4d(seed, ES_MERCADO_K4D)).find(Boolean);
+  if (!sonda) throw new Error('sonda vacía: ninguna de las seeds 1-4 llega a una parada de mercado con preparación');
+  const { decision } = sonda.state.pendiente;
+  const { cartas } = decision.datos.preparacion;
+  if (cartas.length < 2) throw new Error('sonda vacía: la preparación trae una sola carta');
+  const oferta = decision.opciones[decision.opciones.length - 1];
+  const sellos = new Set();
+  for (const carta of cartas) {
+    const parada = hastaLaParadaK4d(sonda.state.seed, ES_MERCADO_K4D);
+    const { hecho } = contestarParadaK4d(parada, { opcionId: oferta.id, rutinaId: carta.id });
+    if (hecho.career.currentOrg !== oferta.org) {
+      throw new Error(`con la rutina "${carta.label}" la oferta no se firmó (org ${hecho.career.currentOrg}, esperaba ${oferta.org})`);
+    }
+    const lineas = hecho.logs.filter((log) => log.type === 'practica' && log.message.startsWith('Offseason:'));
+    if (lineas.length < 1 || hecho.logs.slice(parada.state.logs.length).filter((log) => log.type === 'practica').length !== 1) {
+      throw new Error(`con la rutina "${carta.label}" no hay exactamente una línea de preparación en esta resolución`);
+    }
+    if (hecho.flags.preparacionDeSplit !== parada.state.player.splitCount) {
+      throw new Error(`con la rutina "${carta.label}" la preparación del año no quedó marcada`);
+    }
+    if (carta.permanenteTotal > 0 && !hecho.career.registro.marcas.some((marca) => marca.origen === carta.label)) {
+      throw new Error(`la rutina "${carta.label}" promete algo que dura y no dejó marca a su nombre`);
+    }
+    sellos.add(JSON.stringify([hecho.player.stats, hecho.player.championPool, lineas[lineas.length - 1].message]));
+  }
+  if (sellos.size < 2) throw new Error('elegir otra rutina no cambia nada: la respuesta no llega a la preparación');
+  // Sin `rutinaId` el motor no inventa nada raro: cae en la primera carta y aplica igual.
+  const parada = hastaLaParadaK4d(sonda.state.seed, ES_MERCADO_K4D);
+  const { hecho: sinRutina } = contestarParadaK4d(parada, { opcionId: oferta.id });
+  if (sinRutina.flags.preparacionDeSplit !== parada.state.player.splitCount || sinRutina.career.currentOrg !== oferta.org) {
+    throw new Error('sin rutinaId la parada no se resuelve entera');
+  }
+});
+
+checkLento('K4-D regla 15: lo que muestra la carta de la rutina (efecto y cuánto dura) es lo que aplica el motor', () => {
+  const previo = BALANCE.practica.ruidoPractica;
+  try {
+    // Sin ruido el motor aplica la media: la carta tiene que coincidir con el resultado, al decimal.
+    BALANCE.practica.ruidoPractica = 0;
+    const deCurva = Object.keys(BALANCE.atributos.curvas);
+    let conPermanencia = 0;
+    for (const seed of [2, 5, 9]) {
+      const base = correrCarrera(seed, 14);
+      if (base.phase !== 'profesional') continue;
+      for (const rutina of RUTINAS.offseason) {
+        const carta = cartaDeRutina(base, rutina);
+        const despues = resolverPreparacion(base, [rutina], rutina.id, mulberry32(seed)).state;
+        for (const efecto of carta.efectos) {
+          const movido = despues.player.stats[efecto.stat] - base.player.stats[efecto.stat];
+          if (Math.abs(movido - efecto.esperado) > 1e-9) {
+            throw new Error(`${rutina.id} (${efecto.stat}): la carta dice +${efecto.esperado}, el motor movió ${movido}`);
+          }
+        }
+        for (const stat of deCurva) {
+          const dura = despues.player.bonusPermanente[stat] - base.player.bonusPermanente[stat];
+          const prometido = carta.efectos.filter((efecto) => efecto.stat === stat).reduce((suma, efecto) => suma + efecto.permanente, 0);
+          if (Math.abs(dura - prometido) > 1e-9) {
+            throw new Error(`${rutina.id} (${stat}): la carta promete que te queda ${prometido}, el motor dejó ${dura}`);
+          }
+          if (prometido > 0) conPermanencia += 1;
+        }
+        const total = carta.efectos.reduce((suma, efecto) => suma + efecto.permanente, 0);
+        if (Math.abs(carta.permanenteTotal - total) > 1e-9) throw new Error(`${rutina.id}: permanenteTotal no suma lo de cada efecto`);
+      }
+    }
+    if (conPermanencia === 0) throw new Error('sonda vacía: ninguna carta promete algo que dura');
+    // Y la fracción es la de la práctica, no otra: con la fracción en memoria la carta la sigue.
+    const original = BALANCE.atributos.fraccionPermanentePractica;
+    try {
+      BALANCE.atributos.fraccionPermanentePractica = 0.5;
+      const base = correrCarrera(2, 14);
+      const bootcamp = RUTINAS.offseason.find((rutina) => rutina.id === 'bootcamp_corea');
+      const carta = cartaDeRutina(base, bootcamp);
+      const efecto = carta.efectos.find((e) => e.stat === 'mecanica');
+      if (!efecto || Math.abs(efecto.permanente - 0.5 * efecto.esperado) > 1e-9) {
+        throw new Error('la carta no sigue a fraccionPermanentePractica');
+      }
+    } finally {
+      BALANCE.atributos.fraccionPermanentePractica = original;
+    }
+    // K4 (revisión): con una lesión que dejó techo de mecánica (`player.techoLesionMecanica`), la carta promete lo que
+    // el techo deja y el motor mueve eso mismo. El techo va 1 punto arriba de la mecánica actual, así que corta toda
+    // carta que sin él prometería más de 1: una carta que ignora el techo promete de más y el === se rompe.
+    const sinTecho = correrCarrera(5, 14);
+    const lesionado = { ...sinTecho, player: { ...sinTecho.player, techoLesionMecanica: sinTecho.player.stats.mecanica + 1 } };
+    let cortadas = 0;
+    for (const rutina of RUTINAS.offseason) {
+      const libre = cartaDeRutina({ ...sinTecho, player: { ...sinTecho.player, techoLesionMecanica: null } }, rutina)
+        .efectos.find((e) => e.stat === 'mecanica');
+      const efecto = cartaDeRutina(lesionado, rutina).efectos.find((e) => e.stat === 'mecanica');
+      if (!efecto) continue;
+      const despues = resolverPreparacion(lesionado, [rutina], rutina.id, mulberry32(5)).state;
+      const movido = despues.player.stats.mecanica - lesionado.player.stats.mecanica;
+      if (Math.abs(movido - efecto.esperado) > 1e-9) {
+        throw new Error(`${rutina.id} con techo de lesión: la carta dice +${efecto.esperado} de mecánica, el motor movió ${movido}`);
+      }
+      if (efecto.esperado > 1 + 1e-9) {
+        throw new Error(`${rutina.id} con techo de lesión: la carta promete +${efecto.esperado}, por encima del techo (+1)`);
+      }
+      if (libre && libre.esperado > 1 + 1e-9) cortadas += 1;
+    }
+    if (cortadas === 0) throw new Error('sonda vacía: el techo de lesión no cortó ninguna carta');
+  } finally {
+    BALANCE.practica.ruidoPractica = previo;
+  }
+});
+
+checkLento('K4-D los bots contestan la parada unificada con la regla de siempre (oferta + rutina): ids válidos, malas y azar deterministas', () => {
+  const nombres = ['equilibrado', 'ranked', 'prudente', 'criterio', 'azar', 'malas'];
+  for (const nombre of nombres) {
+    const bot = ESTRATEGIAS_K0[nombre];
+    let contestadas = 0;
+    for (const seed of [1, 2, 3, 4]) {
+      const rng = mulberry32(seed);
+      let state = createInitialState(seed, rng);
+      const responder = (sistema, st, decision, rngLocal) => {
+        const respuesta = bot ? bot(sistema, st, decision, rngLocal) : sistema.resolverAuto(st, decision, rngLocal);
+        // K4 (integración): la prueba del salto (K4-C) también lleva la preparación, pero ya con la carta elegida: se
+        // contesta con el resultado del minijuego y sin volver a elegir rutina.
+        if (decision.datos?.preparacion && sistema.id === 'mercado' && decision.datos.motivo === 'minijuego') {
+          if (respuesta.rutinaId !== undefined || typeof respuesta.resultado !== 'number') {
+            throw new Error(`${nombre}: la prueba del salto se contestó como una parada (${JSON.stringify(respuesta)})`);
+          }
+          return respuesta;
+        }
+        if (decision.datos?.preparacion && sistema.id === 'mercado') {
+          contestadas += 1;
+          const rutinas = decision.datos.preparacion.rutinas;
+          if (!rutinas.some((rutina) => rutina.id === respuesta.rutinaId)) {
+            throw new Error(`${nombre}: la parada del mercado se contestó sin una rutina válida (${respuesta.rutinaId})`);
+          }
+          if (nombre === 'malas') {
+            const puntaje = (rutina) => (rutina.reparto.ranked ?? 0) + rutina.extra * 2;
+            const peor = rutinas.reduce((mejor, rutina) => (puntaje(rutina) > puntaje(mejor) ? rutina : mejor));
+            if (respuesta.rutinaId !== peor.id) throw new Error(`malas elige "${respuesta.rutinaId}", su regla da "${peor.id}"`);
+          }
+        }
+        return respuesta;
+      };
+      for (let i = 0; i < 40 && !state.terminado; i += 1) {
+        state = avanzarSplitAuto(state, rng, responder).state;
+      }
+    }
+    if (contestadas === 0) throw new Error(`${nombre}: ninguna parada de mercado con preparación en la muestra`);
+  }
+});
+
+check('K4-D las cartas de la preparación hablan en cristiano: ningún id crudo en lo que se muestra y la pantalla (components/mercado.js) las pinta sin calcular nada', () => {
+  const base = correrCarrera(2, 14);
+  for (const rutina of RUTINAS.offseason) {
+    const carta = cartaDeRutina(base, rutina);
+    const textos = [carta.label, carta.descripcion, ...carta.efectos.map((efecto) => efecto.etiqueta)];
+    for (const texto of textos) {
+      if (!texto || /player\.|[a-z0-9]+_[a-z0-9_]+/.test(texto)) {
+        throw new Error(`la carta de "${rutina.id}" muestra "${texto}"`);
+      }
+    }
+    if (!(carta.efectos.length > 0 || carta.pulir > 0 || carta.nuevo > 0)) {
+      throw new Error(`la carta de "${rutina.id}" no dice nada de lo que hace`);
+    }
+  }
+  const fuente = fs.readFileSync(path.join(srcDir, 'ui', 'components', 'mercado.js'), 'utf8');
+  if (!fuente.includes('Te queda para siempre') || /BALANCE|balance\.js/.test(fuente)) {
+    throw new Error('la pantalla tiene que decir cuánto dura la carta y leerlo de la carta, sin recalcularlo con BALANCE');
+  }
+});
+
+// --- K5-B: la región se elige y es la dificultad (PLAN.md "K5 — decisiones de spec", K5-B; J10; D78) ---
+const { regionesDeOrigen: regionesDeOrigenK5B, ligaDeOrigenElegible: ligaDeOrigenElegibleK5B } = await import('../core/mundo.js');
+
+// La región que la seed sortea, leída de un arranque sin elección (un rng aparte: no toca la corrida medida).
+function regionSorteadaK5B(seed) {
+  return createInitialState(seed, mulberry32(seed)).mundo.regionIdOrigen;
+}
+
+// Una carrera de `criterio` con la región elegida. Devuelve el estado final.
+function carreraConRegionK5B(seed, regionId, splits) {
+  const rng = mulberry32(seed);
+  let state = createInitialState(seed, rng, { regionOrigen: regionId });
+  for (let i = 0; i < splits && !state.terminado; i += 1) {
+    state = avanzarSplitAuto(state, rng, ESTRATEGIAS_K0.criterio).state;
+  }
+  return state;
+}
+
+check('K5-B región: elegir la región que la seed habría sorteado no corre el stream (huella de 40 seeds idéntica)', () => {
+  const sinEleccion = calcularHuella(40, 30);
+  const conEleccion = calcularHuella(40, 30, {
+    mulberry32,
+    createInitialState: (seed, rng) => createInitialState(seed, rng, { regionOrigen: regionSorteadaK5B(seed) }),
+    avanzarSplitAuto
+  });
+  if (sinEleccion.hash !== conEleccion.hash) {
+    const i = sinEleccion.lineas.findIndex((linea, k) => linea !== conEleccion.lineas[k]);
+    throw new Error(`la huella cambia al elegir la región sorteada: seed ${i + 1} [${sinEleccion.lineas[i]}] contra [${conEleccion.lineas[i]}]`);
+  }
+  // Y la elección de verdad elige: cualquier región (LATAM incluida, que el sorteo nunca da) queda como origen.
+  for (const opcion of regionesDeOrigenK5B()) {
+    const state = createInitialState(7, mulberry32(7), { regionOrigen: opcion.regionId });
+    if (state.mundo.regionIdOrigen !== opcion.regionId) {
+      throw new Error(`elegí ${opcion.regionId} y el origen quedó ${state.mundo.regionIdOrigen}`);
+    }
+  }
+  if (ligaDeOrigenElegibleK5B(LIGAS, 'XX') !== null || ligaDeOrigenElegibleK5B(LIGAS, null) !== null) {
+    throw new Error('una región desconocida o vacía tiene que dejar el sorteo');
+  }
+});
+
+check('K5-B región: el desafío diario ignora la elección (la región sale de la seed del día)', () => {
+  const { seed, eleccion, desafio } = iniciarDesafio('2026-10-03');
+  if (eleccion !== null) {
+    throw new Error(`iniciarDesafio tiene que arrancar sin elección, trae ${JSON.stringify(eleccion)}`);
+  }
+  const state = createInitialState(seed, mulberry32(seed), eleccion, desafio);
+  if (state.mundo.regionIdOrigen !== regionSorteadaK5B(seed)) {
+    throw new Error(`el desafío arrancó en ${state.mundo.regionIdOrigen}, la seed sortea ${regionSorteadaK5B(seed)}`);
+  }
+  let rechazo = false;
+  try {
+    createInitialState(seed, mulberry32(seed), { regionOrigen: 'LAS' }, desafio);
+  } catch {
+    rechazo = true;
+  }
+  if (!rechazo) {
+    throw new Error('el desafío con una región elegida tiene que rechazarse');
+  }
+  // La pantalla: la rama del desafío arma los argumentos con iniciarDesafio; la región elegida entra solo en el `else`.
+  const app = fs.readFileSync(path.join(srcDir, 'ui', 'app.js'), 'utf8');
+  const ramaDesafio = app.indexOf('iniciarDesafio(fechaDesafio)');
+  const lecturaRegion = app.indexOf('regionOrigen: region');
+  if (ramaDesafio < 0 || lecturaRegion < ramaDesafio || !/\} else \{/.test(app.slice(ramaDesafio, lecturaRegion))) {
+    throw new Error('app.js: la región elegida tiene que entrar solo en la rama que no es el desafío');
+  }
+});
+
+check('K5-B región: las líneas de dificultad no muestran ids crudos y dicen lo que dice el dato', () => {
+  const regiones = regionesDeOrigenK5B();
+  const ids = [...new Set(LIGAS.map((liga) => liga.regionId))];
+  for (const opcion of regiones) {
+    for (const texto of [opcion.region, opcion.texto]) {
+      if (!texto || /_/.test(texto) || ids.some((id) => new RegExp(`\\b${id}\\b`).test(texto))) {
+        throw new Error(`${opcion.regionId}: "${texto}" muestra un id crudo`);
+      }
+    }
+  }
+  const tier1 = regiones.filter((opcion) => !opcion.sinPrimera);
+  const porPrestigio = [...tier1].sort((a, b) => b.prestigio - a.prestigio);
+  const porDificultad = [...tier1].sort((a, b) => a.dificultad - b.dificultad);
+  const esperado = [
+    [porPrestigio[0], 'la más difícil para llegar a primera'],
+    [porPrestigio.at(-1), 'la más fácil para llegar a primera'],
+    [porDificultad[0], 'la más fácil para ganar el Mundial'],
+    [porDificultad.at(-1), 'la más difícil para ganar el Mundial']
+  ];
+  for (const [opcion, frase] of esperado) {
+    if (!opcion.texto.includes(frase)) {
+      throw new Error(`${opcion.region}: "${opcion.texto}" tendría que decir "${frase}"`);
+    }
+  }
+  const latam = regiones.filter((opcion) => opcion.sinPrimera);
+  if (latam.length === 0 || latam.some((opcion) => !opcion.texto.includes('emigrando'))) {
+    throw new Error('LATAM tiene que estar y decir que a primera se llega emigrando');
+  }
+  const inicio = fs.readFileSync(path.join(srcDir, 'ui', 'screens', 'inicio.js'), 'utf8');
+  if (!/textContent = opcion\.region/.test(inicio) || !/elegida\.texto/.test(inicio)) {
+    throw new Error('inicio.js tiene que pintar el nombre y la línea del dato, sin armar texto con el regionId');
+  }
+});
+
+// La dificultad medida: con `criterio`, % de carreras que llegan a la primera DE SU REGIÓN (sin emigrar), 40 seeds x
+// 40 splits por región elegida. Tiene que subir con la `dificultad` (Corea: la más difícil de llegar). Tolerancia: se
+// comparan los pares cuya dificultad difiere en más de 0,15 (KR-CN y APAC-NA quedan afuera; APAC-NA está invertido en
+// el dato: LCP tiene menos prestigio que LCS y también menos dificultad) y se acepta un empate de hasta 10 puntos.
+const SEEDS_K5B = 40;
+const SPLITS_K5B = 40;
+const DELTA_DIFICULTAD_K5B = 0.15;
+const TOLERANCIA_PP_K5B = 10;
+checkLento('K5-B región: la dificultad de cada región es monótona con su dificultad (y LATAM llega a primera solo emigrando)', () => {
+  const medidas = [];
+  for (const opcion of regionesDeOrigenK5B()) {
+    let llegaLocal = 0;
+    let llegaPrimera = 0;
+    for (let seed = 1; seed <= SEEDS_K5B; seed += 1) {
+      const state = carreraConRegionK5B(seed, opcion.regionId, SPLITS_K5B);
+      const filasTier1 = state.career.registro.porOrg.filter((fila) => fila.tier === 1 && fila.splits > 0);
+      const regionDe = (fila) => state.mundo.ligas.find((liga) => liga.id === fila.liga)?.regionId;
+      if (filasTier1.length > 0) {
+        llegaPrimera += 1;
+      }
+      if (filasTier1.some((fila) => regionDe(fila) === opcion.regionId)) {
+        llegaLocal += 1;
+      }
+    }
+    medidas.push({ ...opcion, local: (100 * llegaLocal) / SEEDS_K5B, primera: (100 * llegaPrimera) / SEEDS_K5B });
+  }
+  const tabla = medidas.map((m) => `${m.regionId} ${m.local.toFixed(0)}%/${m.primera.toFixed(0)}%`).join(' · ');
+  const tier1 = medidas.filter((m) => !m.sinPrimera);
+  for (const a of tier1) {
+    for (const b of tier1) {
+      if (b.dificultad - a.dificultad > DELTA_DIFICULTAD_K5B && !(a.local <= b.local + TOLERANCIA_PP_K5B)) {
+        throw new Error(`${a.regionId} (dificultad ${a.dificultad}) llega a su primera el ${a.local}%, más que ${b.regionId} (${b.dificultad}) con ${b.local}%: ${tabla}`);
+      }
+    }
+  }
+  const porDificultad = [...tier1].sort((x, y) => x.dificultad - y.dificultad);
+  if (!(porDificultad.at(-1).local - porDificultad[0].local >= 3 * TOLERANCIA_PP_K5B)) {
+    throw new Error(`entre la región más fácil del Mundial y la más difícil tiene que haber una diferencia clara de llegada: ${tabla}`);
+  }
+  for (const m of medidas.filter((x) => x.sinPrimera)) {
+    if (m.local !== 0 || !(m.primera > 0)) {
+      throw new Error(`${m.regionId}: a primera se llega solo emigrando y en más del 0%: ${tabla}`);
+    }
+  }
+  console.log(`      K5-B llegada a la primera propia / a cualquier primera: ${tabla}`);
+});
+
+// D78: con `criterio` hay splits de LCK y de LPL (antes de K5-B, 0 en 400 carreras, Corea incluida: el calibre de la
+// liga era su `prestigio`, 95/93, contra titulares de ~82/81). Coreanos y chinos elegidos, 60 seeds x 60 splits.
+checkLento('K5-B D78: hay splits de LCK y de LPL con criterio (coreanos y chinos con nivel juegan su liga)', () => {
+  for (const [regionId, ligaId] of [['KR', 'LCK'], ['CN', 'LPL']]) {
+    let splits = 0;
+    for (let seed = 1; seed <= 60; seed += 1) {
+      const state = carreraConRegionK5B(seed, regionId, 60);
+      splits += state.career.registro.porOrg.filter((fila) => fila.liga === ligaId).reduce((suma, fila) => suma + fila.splits, 0);
+    }
+    if (!(splits > 0)) {
+      throw new Error(`${ligaId}: 0 splits en 60 carreras de ${regionId} con criterio`);
+    }
+  }
+});
+
+// Revisión de K5: `congelar` decide antes de que el mundo se mueva y la mano de ofertas se arma después; un asiento
+// que recién era ofrecible con el mundo movido quedaba fuera de la mano (medido: 23,6% de los asientos ofrecibles en
+// 320 decisiones de oferta de 60 carreras coreanas). `congelarAsientosOfrecibles` los congela también.
+check('Revisión K5: en cada decisión de oferta, todo asiento ofrecible del estado post-mercado está congelado (y la mano sale de ahí)', () => {
+  let decisiones = 0;
+  for (let seed = 1; seed <= 12; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng, { regionOrigen: 'KR' });
+    for (let k = 0; k < 45 && !state.terminado; k += 1) {
+      let r = avanzarSplit(state, rng);
+      while (r.state.pendiente) {
+        const { sistemaId, decision } = r.state.pendiente;
+        const pre = r.state.mundo.mercadoPretemporada;
+        if (sistemaId === 'mercado' && decision.datos?.motivo === 'oferta' && pre) {
+          decisiones += 1;
+          const congelados = new Set(pre.congelados.filter((c) => c.rol === r.state.player.role).map((c) => c.org));
+          const fuera = orgsQueTeFicharian(r.state).map((e) => e.org.nombre).filter((org) => !congelados.has(org));
+          if (fuera.length) {
+            throw new Error(`seed ${seed}, split ${r.state.player.splitCount}: ${fuera.join(', ')} es ofrecible y no está congelado`);
+          }
+        }
+        r = resolverDecision(r.state, ESTRATEGIAS_K0.criterio(sistemaPorId(sistemaId), r.state, decision, rng), rng);
+      }
+      state = r.state;
+    }
+  }
+  if (decisiones < 20) {
+    throw new Error(`solo ${decisiones} decisiones de oferta en la muestra`);
+  }
+});
+
+// --- K5-A: el Mundial de verdad (PLAN.md "K5 — decisiones de spec", K5-A) ---
+// Las carreras de muestra corren el camino headless (el mismo pipeline del navegador) y anotan, split a split, la
+// línea del campeón del mundo que escribe `escena`, el torneo que dejó `systems/internacional.js` y cuántas veces
+// frenó el Mundial. Se corren una sola vez y las comparten los checks.
+const MUNDIAL_K5 = await import('../core/internacional.js');
+const { ETAPAS_SPLIT: ETAPAS_K5 } = await import('../systems/registro.js');
+const { puntajeDeCarrera: puntajeK5 } = await import('../core/puntaje.js');
+const { RESULTADOS_INTERNACIONALES: RESULTADOS_K5 } = await import('../core/registro.js');
+const { avanzarSplitAuto: avanzarSplitAutoK5 } = await import('../core/pipeline.js');
+const { previaDeDecision: previaDeDecisionK5 } = await import('../core/previaDePartido.js');
+const { lineaDeLiga: lineaDeLigaK5r, lineaDeInternacional: lineaDeInternacionalK5r } = await import('../core/escena.js');
+const SEEDS_K5 = 30;
+const SPLITS_K5 = 60;
+// La spec: "un split de Mundial no pasa de 4 interrupciones" (el número de la spec, no el de BALANCE: si alguien sube
+// el tope en balance.js, este check lo ve).
+const TOPE_PAUSAS_MUNDIAL_K5 = 4;
+const LINEA_WORLDS_K5 = /^Worlds (\d+): se lo lleva (.+) \(([A-Z_]+)\)\.$/;
+
+function correrCarreraK5(seed, { splits = SPLITS_K5 } = {}) {
+  const rng = mulberry32(seed);
+  let state = createInitialState(seed, rng);
+  const porSplit = [];
+  for (let i = 0; i < splits && !state.terminado; i += 1) {
+    let pausasMundial = 0;
+    let pDeLaPrevia = null;
+    const antes = state.career.registro.internacionales.length;
+    const resultado = avanzarSplitAutoK5(state, rng, (sistema, st, decision, r) => {
+      if (sistema.id === 'internacional') {
+        pausasMundial += 1;
+      }
+      const respuesta = sistema.resolverAuto(st, decision, r);
+      if (decision.datos?.motivo === 'swiss') {
+        pDeLaPrevia = previaDeDecisionK5(st, decision).opciones.find((o) => o.id === respuesta.opcionId).p;
+      }
+      return respuesta;
+    });
+    const tirado = resultado.logs.find((log) => log.etapa === 'swiss' && log.ronda === 5 && pDeLaPrevia !== null);
+    state = resultado.state;
+    const linea = resultado.logs.map((log) => LINEA_WORLDS_K5.exec(log.message)).find(Boolean) ?? null;
+    porSplit.push({
+      linea: linea ? { anio: Number(linea[1]), campeon: linea[2], liga: linea[3] } : null,
+      torneo: state.internacional,
+      pausasMundial,
+      dosDos: pDeLaPrevia === null ? null : { previa: pDeLaPrevia, tirada: tirado?.p ?? null },
+      jugo: state.career.registro.internacionales.length > antes
+    });
+  }
+  return { seed, state, porSplit };
+}
+
+let carrerasK5 = null;
+function carrerasDelMundialK5() {
+  carrerasK5 ??= Array.from({ length: SEEDS_K5 }, (_, i) => correrCarreraK5(i + 1));
+  return carrerasK5;
+}
+
+// Los torneos a verificar: los que dejaron las carreras (con y sin vos) y 200 Mundiales sin jugador por hash puro.
+function torneosK5() {
+  const vistos = carrerasDelMundialK5().flatMap((c) => c.porSplit.filter((s) => s.linea).map((s) => s.torneo));
+  const puros = [];
+  for (let seed = 1; seed <= 20; seed += 1) {
+    const st = createInitialState(seed, mulberry32(seed));
+    for (let anio = 2026; anio < 2036; anio += 1) {
+      puros.push(MUNDIAL_K5.mundialSinJugador(st, anio));
+    }
+  }
+  return [...vistos, ...puros];
+}
+
+check('K5-A el campeón del mundo del log es el del torneo (systems/escena.js ya no lo sortea aparte)', () => {
+  let lineas = 0;
+  let conVos = 0;
+  for (const carrera of carrerasDelMundialK5()) {
+    for (const split of carrera.porSplit.filter((s) => s.linea)) {
+      const { linea, torneo } = split;
+      if (!torneo || torneo.anio !== linea.anio || torneo.campeon !== linea.campeon) {
+        throw new Error(`seed ${carrera.seed}: el log dice Worlds ${linea.anio} → ${linea.campeon}, el torneo `
+          + `${torneo?.anio} → ${torneo?.campeon}`);
+      }
+      const liga = torneo.participantes.find((p) => p.nombre === torneo.campeon)?.liga;
+      if (liga !== linea.liga) {
+        throw new Error(`seed ${carrera.seed}: ${linea.campeon} sale como ${linea.liga} y jugó el Mundial por ${liga}`);
+      }
+      lineas += 1;
+      conVos += split.jugo ? 1 : 0;
+    }
+    for (const entrada of carrera.state.career.registro.internacionales) {
+      if ((entrada.resultado === 'campeon') !== (entrada.campeon === entrada.org)) {
+        throw new Error(`seed ${carrera.seed}: tu registro dice ${entrada.resultado} y el campeón fue ${entrada.campeon}`);
+      }
+    }
+  }
+  if (lineas < SEEDS_K5 || conVos < 3) {
+    throw new Error(`muestra chica: ${lineas} líneas de Worlds, ${conVos} con tu equipo adentro`);
+  }
+});
+
+check('K5-A el Swiss del Mundial siempre termina 8 y 8, y el bracket sale de esos 8', () => {
+  const torneos = torneosK5();
+  for (const t of torneos) {
+    const nombres = new Set(t.participantes.map((p) => p.nombre));
+    if (t.participantes.length !== 16 || nombres.size !== 16) {
+      throw new Error(`Mundial ${t.anio}: ${nombres.size} participantes distintos`);
+    }
+    const records = Object.values(t.swiss.record);
+    const pasan = records.filter((r) => r.v === 3 && r.d < 3).length;
+    const afuera = records.filter((r) => r.d === 3 && r.v < 3).length;
+    if (pasan !== 8 || afuera !== 8) {
+      throw new Error(`Mundial ${t.anio}: el Swiss terminó ${pasan} y ${afuera}`);
+    }
+    const alBracket = new Set(t.bracket.crucesCuartos.flatMap((c) => [c.a, c.b]));
+    const conTres = new Set(t.participantes.filter((p) => t.swiss.record[p.nombre].v === 3).map((p) => p.nombre));
+    if (alBracket.size !== 8 || [...alBracket].some((n) => !conTres.has(n))) {
+      throw new Error(`Mundial ${t.anio}: al bracket fueron ${[...alBracket].join(', ')}`);
+    }
+    if (t.bracket.final?.[0]?.ganador !== t.campeon || t.fase !== 'terminado') {
+      throw new Error(`Mundial ${t.anio}: el campeón (${t.campeon}) no es el que ganó la final`);
+    }
+  }
+  if (torneos.length < 200) {
+    throw new Error(`solo ${torneos.length} torneos en la muestra`);
+  }
+});
+
+check('K5-A ningún cruce del Swiss se repite', () => {
+  for (const t of torneosK5()) {
+    const vistos = new Set();
+    for (const ronda of t.swiss.rondas) {
+      const enRonda = new Set();
+      for (const c of ronda) {
+        const clave = [c.a, c.b].sort().join(' vs ');
+        if (vistos.has(clave)) {
+          throw new Error(`Mundial ${t.anio}: ${clave} se cruzaron dos veces en el Swiss`);
+        }
+        if (enRonda.has(c.a) || enRonda.has(c.b) || c.a === c.b) {
+          throw new Error(`Mundial ${t.anio}: un equipo juega dos veces en la ronda ${c.ronda}`);
+        }
+        vistos.add(clave);
+        enRonda.add(c.a);
+        enRonda.add(c.b);
+      }
+    }
+  }
+});
+
+// Revisión de K5: `uniformeDeClave` terminaba en `h ^= h >>> 16`, que en JS da un int32 CON signo, así que el
+// "uniforme" vivía en [-0,5; 0,5): el cruce ajeno le daba al primero del par alfabético P(mapa) = min(1, p + 0,5), el
+// mismo cruce coincidía el 100% de los años con p = 0,5 y una org ganaba 277 de 500 Mundiales (seed 1). Las tres
+// propiedades de abajo son las que ese bug rompía: medido antes del arreglo, media 0,002, acuerdo 1,000, 55% de títulos.
+const MUNDIALES_HASH_K5 = 300;
+const TOPE_TITULOS_DE_UNA_ORG_K5 = 0.35;
+check('K5-A el hash de los cruces ajenos es un uniforme en [0, 1): media ≈ 0,5, el mismo cruce no se repite año a año y el título sigue a la fuerza sin que una org se lleve el mundo', () => {
+  let suma = 0;
+  const N = 20000;
+  for (let i = 0; i < N; i += 1) {
+    const u = MUNDIAL_K5.uniformeDeClave(`validate|${i}|clave`);
+    if (!(u >= 0 && u < 1)) {
+      throw new Error(`uniformeDeClave dio ${u}, fuera de [0, 1)`);
+    }
+    suma += u;
+  }
+  if (Math.abs(suma / N - 0.5) > 0.02) {
+    throw new Error(`la media de uniformeDeClave sobre ${N} claves es ${(suma / N).toFixed(4)} (esperado ≈ 0,5)`);
+  }
+  let iguales = 0;
+  const ANIOS = 2000;
+  for (let a = 0; a < ANIOS; a += 1) {
+    const mapa = (anio) => MUNDIAL_K5.uniformeDeClave(`1|mundial|${anio}|cuartos|A|B|0`) < 0.5;
+    iguales += mapa(2026 + a) === mapa(2027 + a) ? 1 : 0;
+  }
+  if (Math.abs(iguales / ANIOS - 0.5) > 0.05) {
+    throw new Error(`el mismo cruce con p = 0,5 coincide el ${(100 * iguales / ANIOS).toFixed(1)}% de los años consecutivos (esperado ≈ 50%)`);
+  }
+  for (const seed of [1, 2, 3]) {
+    const st = createInitialState(seed, mulberry32(seed));
+    const titulos = new Map();
+    let fuerzaCampeon = 0;
+    let fuerzaCampo = 0;
+    for (let a = 0; a < MUNDIALES_HASH_K5; a += 1) {
+      const t = MUNDIAL_K5.mundialSinJugador(st, 2026 + a);
+      titulos.set(t.campeon, (titulos.get(t.campeon) ?? 0) + 1);
+      fuerzaCampeon += t.participantes.find((p) => p.nombre === t.campeon).fuerza;
+      fuerzaCampo += t.participantes.reduce((s, p) => s + p.fuerza, 0) / t.participantes.length;
+    }
+    const [org, n] = [...titulos.entries()].sort((x, y) => y[1] - x[1])[0];
+    if (n / MUNDIALES_HASH_K5 > TOPE_TITULOS_DE_UNA_ORG_K5) {
+      throw new Error(`seed ${seed}: ${org} ganó ${n} de ${MUNDIALES_HASH_K5} Mundiales (tope ${TOPE_TITULOS_DE_UNA_ORG_K5 * 100}%)`);
+    }
+    if (fuerzaCampeon <= fuerzaCampo) {
+      throw new Error(`seed ${seed}: la fuerza media del campeón (${(fuerzaCampeon / MUNDIALES_HASH_K5).toFixed(1)}) no supera la del campo (${(fuerzaCampo / MUNDIALES_HASH_K5).toFixed(1)})`);
+    }
+  }
+});
+
+check('K5-A un split de Mundial no pasa de 4 interrupciones del Mundial (T9)', () => {
+  let splitsConVos = 0;
+  let conPausa = 0;
+  for (const carrera of carrerasDelMundialK5()) {
+    for (const split of carrera.porSplit.filter((s) => s.jugo)) {
+      splitsConVos += 1;
+      conPausa += split.pausasMundial > 0 ? 1 : 0;
+      if (split.pausasMundial > TOPE_PAUSAS_MUNDIAL_K5) {
+        throw new Error(`seed ${carrera.seed}, Mundial ${split.torneo.anio}: frenó ${split.pausasMundial} veces`);
+      }
+      if (split.torneo.interrupciones !== split.pausasMundial) {
+        throw new Error(`seed ${carrera.seed}: el torneo cuenta ${split.torneo.interrupciones} pausas y el pipeline ${split.pausasMundial}`);
+      }
+    }
+  }
+  if (splitsConVos < 3 || conPausa === 0) {
+    throw new Error(`muestra chica: ${splitsConVos} splits de Mundial con tu equipo, ${conPausa} con alguna pausa`);
+  }
+});
+
+check('K5-A si no clasificás, cero tiradas: la huella es la de un árbol sin Mundial', () => {
+  const sinMundial = [];
+  for (let seed = 1; seed <= 80 && sinMundial.length < 4; seed += 1) {
+    const carrera = seed <= SEEDS_K5 ? carrerasDelMundialK5()[seed - 1] : correrCarreraK5(seed);
+    if (carrera.state.career.registro.internacionales.length === 0) {
+      sinMundial.push(seed);
+    }
+  }
+  if (sinMundial.length < 4) {
+    throw new Error(`solo ${sinMundial.length} carreras sin Mundial en 80 seeds`);
+  }
+  const indice = ETAPAS_K5.findIndex((sistema) => sistema.id === 'internacional');
+  const original = ETAPAS_K5[indice];
+  const sinElMundial = (estado) => {
+    const { internacional, ...resto } = estado;
+    return JSON.stringify(resto);
+  };
+  for (const seed of sinMundial) {
+    let conTorneo;
+    let tiradas = 0;
+    try {
+      ETAPAS_K5[indice] = { ...original, aplicar: (st, rng) => original.aplicar(st, () => { tiradas += 1; return rng(); }) };
+      conTorneo = correrCarreraK5(seed);
+    } finally {
+      ETAPAS_K5[indice] = original;
+    }
+    let arbolSinMundial;
+    try {
+      ETAPAS_K5.splice(indice, 1);
+      arbolSinMundial = correrCarreraK5(seed);
+    } finally {
+      ETAPAS_K5.splice(indice, 0, original);
+    }
+    if (tiradas !== 0) {
+      throw new Error(`seed ${seed}: sin clasificar, el Mundial tiró ${tiradas} veces`);
+    }
+    if (sinElMundial(conTorneo.state) !== sinElMundial(arbolSinMundial.state)) {
+      throw new Error(`seed ${seed}: la carrera sin clasificar no es la del árbol sin Mundial`);
+    }
+  }
+});
+
+check('K5-A core/internacional.js es puro: mismo torneo dos veces, no toca el estado ni el rng', () => {
+  const fuente = fs.readFileSync(path.join(srcDir, 'core', 'internacional.js'), 'utf8');
+  if (/\brng\b|Math\.random/.test(fuente.replace(/\/\/.*$/gm, ''))) {
+    throw new Error('core/internacional.js nombra un rng');
+  }
+  for (let seed = 1; seed <= 10; seed += 1) {
+    const st = createInitialState(seed, mulberry32(seed));
+    const foto = JSON.stringify(st);
+    const lck = st.mundo.ligas.find((liga) => liga.id === 'LCK');
+    const jugador = { nombre: lck.orgs[0].nombre, liga: 'LCK', fuerza: lck.orgs[0].fuerza, cupo: 1 };
+    const jugarConVos = () => {
+      let t = MUNDIAL_K5.crearMundial(st, 2030 + seed, jugador);
+      let i = 0;
+      while (MUNDIAL_K5.sigueEnSwiss(t, t.jugador)) {
+        t = MUNDIAL_K5.jugarRondaSwiss(t, MUNDIAL_K5.emparejarRondaSwiss(t), { gano: i % 2 === 0 || i > 3, p: 0.5 });
+        i += 1;
+      }
+      while (!MUNDIAL_K5.swissTerminado(t)) {
+        t = MUNDIAL_K5.jugarRondaSwiss(t, MUNDIAL_K5.emparejarRondaSwiss(t));
+      }
+      t = t.bracket ? t : MUNDIAL_K5.sembrarBracket(t);
+      for (let etapa = MUNDIAL_K5.etapaPendiente(t); etapa; etapa = MUNDIAL_K5.etapaPendiente(t)) {
+        const tuyo = MUNDIAL_K5.cruceDe(MUNDIAL_K5.crucesDeEtapa(t, etapa), t.jugador);
+        t = MUNDIAL_K5.jugarEtapaBracket(t, etapa, tuyo ? { gano: etapa !== 'final', marcador: etapa === 'final' ? [1, 3] : [3, 2] } : null);
+      }
+      return t;
+    };
+    for (const correr of [() => MUNDIAL_K5.mundialSinJugador(st, 2030 + seed), jugarConVos]) {
+      if (JSON.stringify(correr()) !== JSON.stringify(correr())) {
+        throw new Error(`seed ${seed}: el mismo Mundial salió distinto dos veces`);
+      }
+    }
+    if (JSON.stringify(st) !== foto) {
+      throw new Error(`seed ${seed}: core/internacional.js modificó el estado`);
+    }
+  }
+});
+
+check('K5-A regla 15: la previa del 2-2 del Swiss dice la p con la que se tira', () => {
+  const dosDos = carrerasDelMundialK5().flatMap((c) => c.porSplit.map((s) => s.dosDos).filter(Boolean));
+  for (const { previa, tirada } of dosDos) {
+    if (tirada === null || Math.abs(previa - tirada) > 1e-12) {
+      throw new Error(`la previa del 2-2 dice ${previa} y se tiró ${tirada}`);
+    }
+  }
+  if (dosDos.length === 0) {
+    throw new Error('ningún 2-2 en la muestra');
+  }
+});
+
+// Revisión de K5 (P4): el cierre del Mundial daba el mismo hype a un campeón que a un cuartofinalista (binario: pasar
+// el Swiss o no). Ahora sale de `mundial.hypePorResultado`, estrictamente creciente con hasta dónde llegaste.
+check('Revisión K5: el hype del Mundial crece con el resultado (campeón > final > semis > cuartos > eliminado) y el cierre lo lee de esa tabla', () => {
+  const orden = ['eliminado', 'cuartos', 'semis', 'final', 'campeon'];
+  const tabla = BALANCE.mundial.hypePorResultado;
+  if (Object.keys(tabla).sort().join() !== [...orden].sort().join()) {
+    throw new Error(`hypePorResultado tiene ${Object.keys(tabla).join(', ')}; esperado ${orden.join(', ')}`);
+  }
+  for (let i = 1; i < orden.length; i += 1) {
+    if (!(tabla[orden[i]] > tabla[orden[i - 1]])) {
+      throw new Error(`hype de ${orden[i]} (${tabla[orden[i]]}) no supera al de ${orden[i - 1]} (${tabla[orden[i - 1]]})`);
+    }
+  }
+  const fuente = fs.readFileSync(path.join(srcDir, 'systems', 'internacional.js'), 'utf8');
+  if (!/hypePorResultado\[resultado\]/.test(fuente) || /hypePorTitulo|hypePorPodio/.test(fuente)) {
+    throw new Error('systems/internacional.js no toma el hype del Mundial de hypePorResultado[resultado]');
+  }
+});
+
+check('K5-A el puntaje de K1 maneja cada resultado del Mundial, en orden', () => {
+  const { porResultado } = BALANCE.puntaje.internacional;
+  const orden = ['eliminado', 'cuartos', 'semis', 'final', 'campeon'];
+  for (let i = 1; i < orden.length; i += 1) {
+    if (!(porResultado[orden[i]] > porResultado[orden[i - 1]])) {
+      throw new Error(`porResultado.${orden[i]} (${porResultado[orden[i]]}) no supera a ${orden[i - 1]}`);
+    }
+  }
+  const base = carrerasDelMundialK5().find((c) => c.state.terminado)?.state ?? carrerasDelMundialK5()[0].state;
+  for (const resultado of RESULTADOS_K5) {
+    const st = structuredClone(base);
+    st.career.registro.internacionales.push({ torneo: 'Mundial', anio: st.calendario.anio, org: 'X', liga: 'LCK', resultado, camino: [] });
+    puntajeK5(st);
+  }
+  const escritos = new Set(carrerasDelMundialK5().flatMap((c) => c.state.career.registro.internacionales.map((e) => e.resultado)));
+  for (const resultado of escritos) {
+    if (!RESULTADOS_K5.includes(resultado)) {
+      throw new Error(`el Mundial escribió un resultado desconocido: ${resultado}`);
+    }
+  }
+});
+
+// K5 (revisión): el motor también habla de ligas (logs, titulares, descripciones y rótulos de decisión, hitos, nombre de
+// un título). Ninguno puede traer el id crudo ("EMEA_MASTERS", "LCK_CL", "CD", "LCP_CHALLENGERS"): se ve el nombre.
+const IDS_DE_LIGA_CON_OTRO_NOMBRE_K5r = LIGAS.filter((liga) => liga.id !== liga.nombre).map((liga) => liga.id);
+const PATRON_ID_CRUDO_K5r = new RegExp(`(?<![A-Za-z0-9_])(${IDS_DE_LIGA_CON_OTRO_NOMBRE_K5r.join('|')})(?![A-Za-z0-9_])`);
+
+// Los textos de la lista que traen un id de liga crudo (su nombre visible no cuenta: "LCK CL" no es "LCK_CL").
+function textosConIdCrudoK5r(textos) {
+  return textos.filter((texto) => typeof texto === 'string' && PATRON_ID_CRUDO_K5r.test(texto));
+}
+
+// Los textos que el motor le escribe al jugador en carreras de muestra: cada log, cada decisión (título, descripción,
+// rótulo y descripción de cada opción), los hitos y el nombre de cada título. Las carreras juegan solas (resolverAuto).
+function textosDelMotorK5r(seeds, splits) {
+  const textos = [];
+  for (let seed = 1; seed <= seeds; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < splits && !state.terminado; i += 1) {
+      const resultado = avanzarSplitAutoK5(state, rng, (sistema, st, decision, r) => {
+        textos.push(decision.titulo, decision.descripcion);
+        for (const opcion of decision.opciones ?? []) {
+          textos.push(opcion.label, opcion.descripcion);
+        }
+        return sistema.resolverAuto(st, decision, r);
+      });
+      state = resultado.state;
+      textos.push(...resultado.logs.map((log) => log.message));
+    }
+    textos.push(...state.career.hitos, ...state.career.registro.titulos.map((titulo) => titulo.nombre));
+  }
+  return textos.filter((texto) => typeof texto === 'string');
+}
+
+check('K5 (revisión) ningún texto del motor muestra el id crudo de una liga: logs, decisiones, hitos y titulares usan el nombre visible', () => {
+  if (IDS_DE_LIGA_CON_OTRO_NOMBRE_K5r.length < 3) {
+    throw new Error(`esperaba al menos 3 ligas con id distinto de su nombre, hay ${IDS_DE_LIGA_CON_OTRO_NOMBRE_K5r.length}`);
+  }
+  // El detector ve un id crudo y no confunde el nombre visible (mutante del propio check).
+  const nombresVisibles = LIGAS.filter((liga) => liga.id !== liga.nombre).map((liga) => `Firmás en ${liga.nombre}.`);
+  if (textosConIdCrudoK5r(nombresVisibles).length !== 0) {
+    throw new Error('el detector marca como crudo un nombre visible');
+  }
+  for (const id of IDS_DE_LIGA_CON_OTRO_NOMBRE_K5r) {
+    if (textosConIdCrudoK5r([`Te ganás el salto a ${id}. Sos agente libre.`, `Rueda de prensa de ${id}`]).length !== 2) {
+      throw new Error(`mutante: el detector no ve "${id}" crudo`);
+    }
+  }
+  // Los textos que arman las funciones puras, liga por liga.
+  const puros = [];
+  for (const liga of LIGAS) {
+    const equipo = { nombre: 'Equipo Uno' };
+    puros.push(lineaDeLigaK5r(liga, equipo, { nombre: 'Equipo Dos' }, '3-1'));
+    puros.push(lineaDeInternacionalK5r(2030, { nombre: 'Equipo Uno', ligaId: liga.id }));
+    puros.push(resolverTexto('Rueda de prensa de {liga}', { career: { liga: liga.id } }));
+  }
+  const crudosPuros = textosConIdCrudoK5r(puros);
+  if (crudosPuros.length > 0) {
+    throw new Error(`${crudosPuros.length} texto(s) de funciones puras con una liga cruda: ${crudosPuros.slice(0, 3).join(' · ')}`);
+  }
+  // Carreras de muestra: tienen que haber revisado textos, y entre ellos algunos de una liga con otro nombre (si no, el
+  // check daría verde sin haber visto jamás un id).
+  const textos = textosDelMotorK5r(12, 60);
+  if (textos.length < 1000) {
+    throw new Error(`el check revisó solo ${textos.length} textos: no corrió lo que dice`);
+  }
+  const crudos = textosConIdCrudoK5r(textos);
+  if (crudos.length > 0) {
+    throw new Error(`${crudos.length} texto(s) del motor con el id crudo de una liga (de ${textos.length} revisados): ${crudos.slice(0, 3).join(' · ')}`);
+  }
+  const nombresDeLigasConOtroId = LIGAS.filter((liga) => liga.id !== liga.nombre).map((liga) => liga.nombre);
+  const conLigaVisible = textos.filter((texto) => nombresDeLigasConOtroId.some((nombre) => texto.includes(nombre))).length;
+  if (conLigaVisible < 10) {
+    throw new Error(`solo ${conLigaVisible} textos de la muestra nombran una liga de desarrollo: la muestra no ejercita el caso`);
+  }
+});
+
+// Revisión de K5 (crash que encontró `agencia.js`, seed 4): "Split jugado con Rasgo Academy y otro pendiente sin fila
+// con paiN Gaming". La secuencia: un evento te manda al banco (`flags.banquilloPendiente`) y en la pretemporada
+// siguiente tu club ya juega la liga de desarrollo (bajó entero en `competitivo.js`, o el banco te agarró en tier 2)
+// y es su org más débil. `resolverBanquillo` te "cedía" a tu propio club: `aceptarOferta` cerraba su fila, la org no
+// cambiaba y `roster.js` (que abre la fila cuando cambia la org) no la abría nunca. Cada split jugado quedaba en
+// `flags.splitJugadoSinFila`, sin fila, y el primer pase siguiente reventaba en `registrarSplitJugado`.
+// El check, sin agencia: (1) sin dado, `academiaDelBanquillo` con tu club como el más débil de su liga; (2) en
+// pretemporadas reales de tier 2, el banco forzado con tu plantel hundido (nivel mínimo: tu club queda último de la
+// liga de desarrollo después del mercado del mundo) — el mercado no te cede a tu club y deja a `roster.js` la fila
+// de la org nueva, y por el pipeline, dos splits después lo jugado está en la fila abierta de la org donde jugás.
+// Cuenta los casos que discriminan (el banco se cobró y tu club era el más débil) y no pasa vacío.
+const SEEDS_BANQUILLO_K5 = 60;
+const MINIMO_DISCRIMINANTES_BANQUILLO_K5 = 3;
+const LOG_BANQUILLO_K5 = /te manda a la academia|no hay academia donde jugar/;
+
+function conPlantelHundidoK5(estado, org) {
+  const plantel = estado.mundo.planteles?.[org];
+  if (!plantel) {
+    return null;
+  }
+  const hundido = Object.fromEntries(Object.entries(plantel).map(([rol, npc]) => [rol, { ...npc, nivel: 0 }]));
+  return {
+    ...estado,
+    flags: { ...estado.flags, banquilloPendiente: true },
+    mundo: { ...estado.mundo, planteles: { ...estado.mundo.planteles, [org]: hundido } }
+  };
+}
+
+function esLaMasDebilK5(estado, org) {
+  const dev = estado.mundo.ligas.find((liga) => liga.tier === 2 && liga.orgs.some((o) => o.nombre === org));
+  return Boolean(dev) && [...dev.orgs].sort((a, b) => a.fuerza - b.fuerza)[0].nombre === org;
+}
+
+check('K5 (revisión) banquillo: la org que te sienta nunca es la que te toma en la liga de desarrollo, y el split siguiente se cuenta en una fila abierta de la org donde jugás', () => {
+  let casos = 0;
+  let discriminantes = 0;
+  let unitario = false;
+  for (let seed = 1; seed <= SEEDS_BANQUILLO_K5 && discriminantes < MINIMO_DISCRIMINANTES_BANQUILLO_K5; seed += 1) {
+    const rng = mulberry32(seed);
+    let estado = createInitialState(seed, rng);
+    for (let split = 0; split < 50 && !estado.terminado && discriminantes < MINIMO_DISCRIMINANTES_BANQUILLO_K5; split += 1) {
+      estado = avanzarSplitAuto(estado, rng).state;
+      if (estado.phase !== 'profesional' || estado.pendiente || !estado.career.currentOrg || estado.career.tier !== 2
+        || estado.player.splitCount % BALANCE.edad.splitsPorEdad !== 0) {
+        continue;
+      }
+      const origen = estado.career.currentOrg;
+      const donde = `seed ${seed}, split ${estado.player.splitCount} (${origen})`;
+
+      // (1) Sin dado: con tu club como el más débil de su liga, la academia es otra org (la más débil de las demás).
+      if (!unitario) {
+        unitario = true;
+        const ligas = estado.mundo.ligas.map((liga) => (liga.orgs.some((org) => org.nombre === origen)
+          ? { ...liga, orgs: liga.orgs.map((org) => (org.nombre === origen ? { ...org, fuerza: Math.min(...liga.orgs.map((o) => o.fuerza)) - 1 } : org)) }
+          : liga));
+        const academia = academiaDelBanquillo({ ...estado, mundo: { ...estado.mundo, ligas } });
+        const otras = ligas.find((liga) => liga.orgs.some((org) => org.nombre === origen)).orgs.filter((org) => org.nombre !== origen);
+        if (!academia || academia.org.nombre === origen || academia.org.fuerza !== Math.min(...otras.map((org) => org.fuerza))) {
+          throw new Error(`${donde}: con su club como el más débil, el banco lo manda a ${academia?.org.nombre ?? 'ningún lado'}`);
+        }
+      }
+
+      // (2) El banco forzado con tu plantel hundido.
+      const conBanco = conPlantelHundidoK5(estado, origen);
+      if (!conBanco) {
+        continue;
+      }
+      casos += 1;
+      const tras = aplicarMercado(conBanco, mulberry32(seed * 100 + split)).state;
+      if (tras.career.currentOrg === origen) {
+        throw new Error(`${donde}: el banco lo cedió a su propio club`);
+      }
+      if (tras.career.currentOrg && (filaAbiertaK5(tras.career.registro) || tras.career.rosterDeOrg === tras.career.currentOrg)) {
+        throw new Error(`${donde}: firmó con ${tras.career.currentOrg} y roster.js no va a abrir su fila (rosterDeOrg ${tras.career.rosterDeOrg})`);
+      }
+
+      // Por el pipeline: el split del banco y el siguiente.
+      const rngPipeline = mulberry32(seed * 100 + split);
+      const primero = avanzarSplitAuto(conBanco, rngPipeline);
+      if (primero.logs.some((log) => LOG_BANQUILLO_K5.test(log.message ?? '')) && esLaMasDebilK5(primero.state, origen)) {
+        discriminantes += 1;
+      }
+      const despues = primero.state.terminado ? primero.state : avanzarSplitAuto(primero.state, rngPipeline).state;
+      if (despues.phase === 'profesional' && despues.career.currentOrg
+        && (despues.flags.splitJugadoSinFila || filaAbiertaK5(despues.career.registro)?.org !== despues.career.currentOrg)) {
+        throw new Error(`${donde}: dos splits después juega con ${despues.career.currentOrg}, fila abierta `
+          + `${filaAbiertaK5(despues.career.registro)?.org ?? 'ninguna'}, sin fila ${JSON.stringify(despues.flags.splitJugadoSinFila)}`);
+      }
+    }
+  }
+  if (discriminantes < MINIMO_DISCRIMINANTES_BANQUILLO_K5 || !unitario) {
+    throw new Error(`check vacío: ${casos} bancos forzados en tier 2, ${discriminantes} cobrados con su club como el más débil `
+      + `(mín. ${MINIMO_DISCRIMINANTES_BANQUILLO_K5}) en ${SEEDS_BANQUILLO_K5} seeds`);
+  }
+});
+
+// PLAN.md §K.4 — los tres custodios del registro de bandas pendientes. Van DESPUÉS del último check: el primero mira cómo
+// terminó cada check de esta corrida, y una entrada cuyo check corre más abajo le aparece como "no existe" (pasó en la
+// integración de K5: los checks de K5-A y K5-B se agregaron después de los custodios). Un check nuevo va ARRIBA de esto.
+check('bandasPendientes 1: ninguna entrada registrada pasa en esta corrida, y toda entrada nombra un check que existe', () => {
+  const sintetico = entradasQuePasan([ENTRADA_SINTETICA_K2B, { ...ENTRADA_SINTETICA_K2B, check: 'un check que no existe K2b' }],
+    new Map([[ENTRADA_SINTETICA_K2B.check, 'ok']]), { completo: true });
+  if (sintetico.length !== 2) {
+    throw new Error(`el custodio no reconoce una entrada que pasa y una que no existe: ${JSON.stringify(sintetico)}`);
+  }
+  const problemas = entradasQuePasan(BANDAS_PENDIENTES, resultadosDeCheck, { completo: SOLO.length === 0 });
+  if (problemas.length > 0) {
+    throw new Error(problemas.join('; '));
+  }
+});
+
+check('bandasPendientes 2: ninguna entrada es de un bloque de corrimiento cerrado', () => {
+  const cerrados = { ...BLOQUES_DE_CORRIMIENTO, A: { ...BLOQUES_DE_CORRIMIENTO.A, cerrado: true } };
+  if (entradasDeBloquesCerrados([ENTRADA_SINTETICA_K2B], cerrados).length !== 1
+    || entradasDeBloquesCerrados([{ ...ENTRADA_SINTETICA_K2B, bloque: 'Z' }], BLOQUES_DE_CORRIMIENTO).length !== 1) {
+    throw new Error('el custodio no reconoce una entrada de un bloque cerrado o desconocido');
+  }
+  const problemas = entradasDeBloquesCerrados(BANDAS_PENDIENTES, BLOQUES_DE_CORRIMIENTO);
+  if (problemas.length > 0) {
+    throw new Error(problemas.join('; '));
+  }
+});
+
+check('bandasPendientes 3: toda entrada tiene valor medido, banda, commit y la subfase que la re-basea (la calibración de su bloque)', () => {
+  const sinValor = { ...ENTRADA_SINTETICA_K2B, medido: '' };
+  const { rebasea, ...sinSubfase } = ENTRADA_SINTETICA_K2B;
+  const otraSubfase = { ...ENTRADA_SINTETICA_K2B, rebasea: 'K4c' };
+  for (const [nombre, entrada] of [['sin valor', sinValor], ['sin subfase', sinSubfase], ['con la subfase de otro bloque', otraSubfase]]) {
+    if (entradasIncompletas([entrada], BLOQUES_DE_CORRIMIENTO).length === 0) {
+      throw new Error(`el custodio no reconoce una entrada ${nombre} (${rebasea})`);
+    }
+  }
+  const problemas = entradasIncompletas(BANDAS_PENDIENTES, BLOQUES_DE_CORRIMIENTO);
+  if (problemas.length > 0) {
+    throw new Error(problemas.join('; '));
   }
 });
 

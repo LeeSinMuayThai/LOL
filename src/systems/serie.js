@@ -1,72 +1,139 @@
-import { gauss, weightedPick, roll } from '../core/rng.js';
+import { gauss, roll } from '../core/rng.js';
 import { crearLog } from '../core/log.js';
 import { clamp, clampStat } from '../core/numeros.js';
-import { conPermanencia } from '../core/curvas.js';
+import { conPermanencia, conTechoDeLesion } from '../core/curvas.js';
 import { ligaDeCarrera } from '../core/competicion.js';
-import { pesoDePick, factorDeCampeon, lecturaDePick } from '../core/ajusteMeta.js';
 import {
-  esCierreDeTemporada, calificaAPlayoffs, calificaAInternacional,
+  esCierreDeTemporada, calificaAPlayoffs,
   rondaInicial, siguienteRonda, etiquetaDeRonda, generarRival,
-  disponiblesDelPool, elegirCampeonRival, campeonComodin,
-  esMapaDecisivo, esMapaDeDesempate, serieTerminada, decisionDeDraft,
-  esMapaCerrado, estadoDelMapa, probabilidadDeMapa, ajusteDeMinijuegoDeMapa, ajusteBaseDeMinijuego
+  objetivoDelRival, conQuemaDelRival, esMapaDecisivoDeLaSerie, serieTerminada,
+  PLANES_DE_SERIE, esSerieSinNadaEnJuego, charlaDisponible, conPlan, mapaDelPlan, proyeccionDelPlan,
+  probabilidadDeMapa, ajusteDeMinijuegoDeMapa, ajusteBaseDeMinijuego, ajusteDeCharla
 } from '../core/serie.js';
 import { fuerzaDePartido } from '../core/fuerza.js';
 import { tirarPartido } from '../core/partido.js';
 import {
-  registrarMapa, registrarSerie, registrarTitulo, registrarInternacional, registrarPico, registrarArraigoEnFila
+  registrarMapa, registrarSerie, registrarTitulo, registrarPico, registrarArraigoEnFila
 } from '../core/registro.js';
 import {
   elegirMinijuego, minijuegoPorId, textoDeMinijuego, registrarMinijuegoVisto, veredictoDeMinijuego,
   generarCierreMapa, factorDificultadPorRonda
 } from '../core/minijuegos.js';
 import { BALANCE } from '../data/balance.js';
+import { nombreVisibleDeLiga, nombreVisibleDeLigaOZona } from '../core/ligas.js';
 
 export const id = 'serie';
 
-// La serie de playoffs (fase 4): cuando tu equipo clasifica, tu camino por el
-// bracket se juega mapa a mapa con Fearless draft (cada campeón elegido queda
-// bloqueado el resto de la ronda) y hasta un minijuego por ronda en semis,
-// final e internacional. Va después de `rendimiento.js` en el registro
-// (CONCEPTO §5: temporada regular → playoffs), que ya dejó `career.posicion`
-// fresca este split y — para tier 1 con `formatoPlayoffs` — se abstuvo de
-// resolver título/internacional al instante: eso lo hace este sistema.
+// La serie de playoffs (fase 4): cuando tu equipo clasifica, tu camino por el bracket se juega mapa a mapa con
+// Fearless draft (cada campeón que sale queda quemado el resto de la serie, para los dos). Va después de
+// `rendimiento.js` en el registro (CONCEPTO §5: temporada regular → playoffs), que ya dejó `career.posicion` fresca
+// este split y —para tier 1 con `formatoPlayoffs`— se abstuvo de resolver título/internacional al instante.
+//
+// K4-B (PLAN.md "K4 — decisiones de spec", K4-B; reemplaza a J6 y a D63): la serie es un PLAN. Al arrancar elegís
+// el plan de Fearless (cada camino con su p por mapa, la que el motor tira); el motor lo juega y te frena solo si el
+// rival te quema el campeón que guardabas o cuando llega el mapa decisivo (con su minijuego en semis, final e
+// internacional, y la charla del coach si te queda). Una serie sin nada en juego no pregunta.
 
 function nombreLigaDe(liga) {
-  return liga.nombreLiga ?? liga.id;
+  return nombreVisibleDeLigaOZona(liga);
 }
 
 // --- Construcción de decisiones ---
 
-// Fase 9Rd: las opciones van ordenadas best-first por `factorDeCampeon` (el
-// mismo criterio con el que el motor auto-pickearía) y cada una trae su lectura
-// en palabras —afinidad al parche × maestría relativa a tu pool— en vez de un
-// número de maestría suelto.
-function construirDecisionDraft(state, disponibles) {
-  const { ronda, rival, formato, marcador, quemados } = state.serie;
-  const weights = state.meta.weights;
-  const pool = state.player.championPool;
-  const ordenados = [...disponibles].sort(
-    (a, b) => factorDeCampeon(b, weights) - factorDeCampeon(a, weights)
-  );
+const ETIQUETA_PLAN = {
+  guardar: (guardado) => `Guardar a ${guardado} para el mapa decisivo`,
+  conTodo: () => 'Salir con todo',
+  sorpresa: (_, sorpresa) => `La sorpresa: ${sorpresa} en el mapa 1`,
+  coach: () => 'Lo que diga el coach'
+};
+
+const DESCRIPCION_PLAN = {
+  guardar: (guardado) => `Sale todo lo demás primero y ${guardado} queda en el bolsillo para el mapa que define. `
+    + 'Si te lo leen y lo queman antes, frenás a cambiar el plan.',
+  conTodo: () => 'Tus mejores picks de entrada y a pegar fuerte los dos primeros mapas. Si la serie se estira, lo pagás.',
+  sorpresa: (_, sorpresa) => `Abrís con ${sorpresa}, que no lo prepararon. Después, lo mejor que te quede.`,
+  coach: () => 'El mejor pick que quede en cada mapa, sin inventar nada.'
+};
+
+export function textoDelPlan(plan, proyeccion) {
+  const guardado = proyeccion?.guardado ?? null;
+  const sorpresa = proyeccion?.mapas?.[0]?.campeon ?? null;
+  return ETIQUETA_PLAN[plan](guardado, sorpresa);
+}
+
+// Los planes que tienen sentido con este pool: guardar pide dos libres; la sorpresa, un pick fuera de lo que el
+// rival preparó (si no lo hay, la sorpresa sería el plan del coach con otro nombre).
+function planesOfrecidos(state) {
+  return PLANES_DE_SERIE
+    .map((plan) => ({ plan, proyeccion: proyeccionDelPlan(state, plan) }))
+    .filter(({ plan, proyeccion }) => {
+      if (plan === 'guardar') {
+        return proyeccion.guardado !== null;
+      }
+      if (plan === 'sorpresa') {
+        return state.serie.mapaActual === 0 && esSorpresa(state, proyeccion);
+      }
+      return true;
+    });
+}
+
+function esSorpresa(state, proyeccion) {
+  return proyeccion.mapas[0]?.campeon !== proyeccionDelPlan(state, 'coach').mapas[0]?.campeon;
+}
+
+// La tarjeta del plan de Fearless. Cada opción lleva su proyección (la p por mapa y la de la serie): la previa
+// (`core/previaDePartido.js`) la vuelve a pedir a `proyeccionDelPlan` para mostrarla, el motor la tira.
+function construirDecisionPlan(state, { replan = false, quemado = null } = {}) {
+  const { ronda, rival, formato, marcador } = state.serie;
+  const ofrecidos = planesOfrecidos(state);
   return {
     tipo: 'opciones',
-    titulo: `${etiquetaDeRonda(ronda)} vs ${rival.org} · Bo${formato} · ${marcador[0]}-${marcador[1]}`,
-    descripcion: `Quemados esta serie: ${quemados.length > 0 ? quemados.join(', ') : 'ninguno todavía'}.`,
-    opciones: ordenados.map((campeon) => ({
-      id: campeon.name,
-      label: campeon.name,
-      descripcion: `${lecturaDePick(campeon, weights, pool)} · maestría ${Math.round(campeon.mastery)}`
+    titulo: replan
+      ? `Te leyeron: ${rival.org} quemó a ${quemado}`
+      : `${etiquetaDeRonda(ronda, state.serie.etapa)} vs ${rival.org} · Bo${formato}: el plan de Fearless`,
+    descripcion: replan
+      ? `Era el que guardabas para el mapa decisivo. Van ${marcador[0]}-${marcador[1]}: ¿con qué plan seguís?`
+      : 'Cada campeón que sale queda quemado para los dos el resto de la serie, y el rival también se va quedando sin '
+        + 'picks. ¿Cómo la encarás?',
+    opciones: ofrecidos.map(({ plan, proyeccion }) => ({
+      id: plan,
+      label: textoDelPlan(plan, proyeccion),
+      descripcion: DESCRIPCION_PLAN[plan](proyeccion.guardado, proyeccion.mapas[0]?.campeon),
+      pSerie: proyeccion.pSerie,
+      pMapas: proyeccion.mapas.map((m) => m.p)
     })),
-    datos: { motivo: 'draft' }
+    datos: { motivo: 'plan', replan }
   };
 }
 
-// Cuál de los tres cupos de la serie gasta cada momento (9R4b).
+// La pausa del mapa decisivo cuando no hay minijuego (cuartos, o un rol sin minijuego para el momento): la previa
+// y la charla del coach, si te queda esta temporada.
+function construirDecisionDecisiva(state, jugada, conCharla) {
+  const { marcador, mapaActual } = state.serie;
+  return {
+    tipo: 'opciones',
+    titulo: `Mapa ${mapaActual + 1} · ${marcador[0]}-${marcador[1]}: el que define la serie`,
+    descripcion: conCharla
+      ? `El que gane este se lleva la serie. Salen con ${jugada.campeon}, y el coach tiene una charla guardada para toda la temporada: ¿la usa ahora?`
+      : `El que gane este se lleva la serie. Salen con ${jugada.campeon}.`,
+    opciones: conCharla
+      ? [
+        { id: 'charla', label: 'Que hable el coach ahora', descripcion: 'Es la única de la temporada: si la gastás acá, no la tenés después.' },
+        { id: 'sinCharla', label: 'Guardar la charla', descripcion: 'Salen así; la charla queda para más adelante.' }
+      ]
+      : [{ id: 'sinCharla', label: 'A jugarlo', descripcion: 'La charla del coach ya se usó esta temporada.' }],
+    datos: {
+      motivo: 'decisivo',
+      campeonElegido: jugada.campeon,
+      entradaExtra: jugada.entradaExtra,
+      fuerzaPropia: jugada.fuerzaPropia,
+      ajustePlan: jugada.ajustePlan
+    }
+  };
+}
+
+// Cuál de los cupos de la serie gasta cada momento (9R4b): el mapa decisivo, o la rueda de prensa de después.
 function cupoGastado(momento) {
-  if (momento === 'pre_internacional') {
-    return { preSerieUsado: true };
-  }
   if (momento === 'mapa_decisivo') {
     return { decisivoUsado: true };
   }
@@ -124,7 +191,7 @@ export function aplicarStatsDeMinijuego(state, targets, delta, origen) {
     if (target.startsWith('player.stats.')) {
       const stat = target.slice('player.stats.'.length);
       const antes = st.player.stats[stat];
-      const despues = clampStat(antes + delta);
+      const despues = conTechoDeLesion(st.player, stat, antes, clampStat(antes + delta));
       const movido = {
         ...st,
         player: { ...st.player, stats: { ...st.player.stats, [stat]: despues } }
@@ -138,116 +205,133 @@ export function aplicarStatsDeMinijuego(state, targets, delta, origen) {
 
 // --- Arrancar una ronda ---
 
-function iniciarRonda(state, ronda, rng) {
+// K5-A: `mundial` (`{ etapa, rival }`) arma una serie del bracket del Mundial: el rival lo pone el torneo
+// (`core/internacional.js`, sin `rng`) y el formato es el Bo5 del bracket. La serie se juega con las mismas reglas.
+function iniciarRonda(state, ronda, rng, mundial = null) {
   const liga = ligaDeCarrera(state);
-  const formato = ronda === 'internacional' ? 5 : liga.formatoPlayoffs.bo;
-  const rival = generarRival(state, ronda, rng);
+  const formato = mundial ? BALANCE.mundial.boBracket : liga.formatoPlayoffs.bo;
+  const rival = mundial ? mundial.rival : generarRival(state, ronda, rng);
+  // K2a: la fuerza de tu equipo al empezar la serie, con el campeón del split (K2b: determinista). Es el lado propio
+  // del Δ con el que `src/dev/simulate.js` mide "el favorito gana el Bo5" y, desde K4-B, el que decide si la serie
+  // tiene algo en juego.
+  const fuerzaInicial = fuerzaDePartido(state);
+  const serie = {
+    activa: true,
+    ronda,
+    rival,
+    formato,
+    // K5-A: `torneo: 'mundial'` y su `etapa` (cuartos, semis, final); `null` en los playoffs domésticos.
+    torneo: mundial ? 'mundial' : null,
+    etapa: mundial ? mundial.etapa : null,
+    fuerzaInicial,
+    marcador: [0, 0],
+    mapaActual: 0,
+    mapas: [],
+    quemados: [],
+    // K4-B: el plan de Fearless, el campeón guardado para el mapa decisivo, si ya te frenaron a re-planear, y el
+    // campeón con el que el rival juega el mapa en curso (`rivalJuegaEnMapa`: el índice del mapa de esa quema).
+    plan: null,
+    guardado: null,
+    replanUsado: false,
+    rivalJuega: null,
+    rivalJuegaEnMapa: -1,
+    sinNadaEnJuego: false,
+    minijuegoUsado: false,
+    decisivoUsado: false,
+    postSerie: false
+  };
+  return { ...state, serie: { ...serie, sinNadaEnJuego: esSerieSinNadaEnJuego(serie) } };
+}
 
-  return {
-    ...state,
-    serie: {
-      activa: true,
-      ronda,
-      rival,
-      formato,
-      // K2a: la fuerza de tu equipo al empezar la serie, con el campeón del
-      // split (K2b: la fuerza de partido, que ya es determinista). Es el lado
-      // propio del Δ con el que el instrumento de `src/dev/simulate.js` mide
-      // "el favorito gana el Bo5" en el motor; viaja en el log de cierre de la
-      // serie. Lectura pura: no consume `rng` ni cambia cómo se juega ningún
-      // mapa.
-      fuerzaInicial: fuerzaDePartido(state),
-      marcador: [0, 0],
-      mapaActual: 0,
-      mapas: [],
-      quemados: [],
-      minijuegoUsado: false,
-      decisivoUsado: false,
-      preSerieUsado: false,
-      postSerie: false
+// K4-B: la serie arranca por el plan. Sin nada en juego, juega el del coach y lo cuenta en una línea.
+function arrancarSerie(state, rng, logsAcum) {
+  if (state.serie.sinNadaEnJuego) {
+    const st = conPlan(state, 'coach');
+    const { fuerzaInicial, rival } = st.serie;
+    return jugarMapaSiguiente(st, rng, [...logsAcum, crearLog(
+      'serie',
+      `Serie sin nada en juego (${Math.round(fuerzaInicial)} contra ${Math.round(rival.fuerza)} de ${rival.org}): `
+      + 'juega lo que diga el coach, sin frenar.'
+    )]);
+  }
+  return { state, logs: logsAcum, decision: construirDecisionPlan(state) };
+}
+
+// --- Un mapa: la quema del rival, el pick del plan, el mapa decisivo, el resultado ---
+
+// El rival quema su campeón del mapa. Si el plan guarda uno y el rival te lee (`pLeenElGuardado`, una vez por
+// serie como mucho: después de re-planear ya no tira), quema ese y te frena a elegir el plan de nuevo.
+function jugarMapaSiguiente(state, rng, logsAcum) {
+  const { serie } = state;
+  const puedeLeerte = serie.plan === 'guardar' && serie.guardado && !serie.replanUsado
+    && !esMapaDecisivoDeLaSerie(serie) && !serie.quemados.includes(serie.guardado);
+  const teLeyo = puedeLeerte && rng() < BALANCE.serie.plan.pLeenElGuardado;
+
+  if (teLeyo) {
+    const quemado = serie.guardado;
+    const st = conQuemaDelRival(state, quemado);
+    const replan = { ...st, serie: { ...st.serie, plan: null, guardado: null, replanUsado: true } };
+    return {
+      state: replan,
+      logs: [...logsAcum, crearLog('serie', `${serie.rival.org} te leyó: quemó a ${quemado}, el que guardabas para el mapa decisivo.`)],
+      decision: construirDecisionPlan(replan, { replan: true, quemado })
+    };
+  }
+
+  return jugarMapa(conQuemaDelRival(state, objetivoDelRival(state, serie.quemados)), rng, logsAcum);
+}
+
+// El mapa con la quema del rival ya hecha: el plan elige (`mapaDelPlan`, la misma cuenta que la tarjeta). En el
+// mapa decisivo de una serie con algo en juego, te frena: con su minijuego en semis, final e internacional, o con
+// la previa y la charla en una pausa propia.
+function jugarMapa(state, rng, logsAcum) {
+  const jugada = mapaDelPlan(state);
+  if (esMapaDecisivoDeLaSerie(state.serie) && !state.serie.sinNadaEnJuego) {
+    return pausaDecisiva(state, jugada, logsAcum);
+  }
+  return finalizarMapa(state, jugada, { ajusteExtra: 0, charla: false }, rng, logsAcum);
+}
+
+function pausaDecisiva(state, jugada, logsAcum) {
+  const conCharla = charlaDisponible(state);
+  if (BALANCE.serie.rondasConMinijuegoDecisivo.includes(state.serie.ronda)) {
+    const pausa = pausaDeMinijuego(state, 'mapa_decisivo', logsAcum, {
+      campeonElegido: jugada.campeon,
+      fuerzaPropia: jugada.fuerzaPropia,
+      entradaExtra: jugada.entradaExtra,
+      ajustePlan: jugada.ajustePlan,
+      // K4-B: la charla del coach se elige en la misma pausa, antes del minijuego.
+      charla: { disponible: conCharla }
+    });
+    if (pausa) {
+      return pausa;
     }
+  }
+  return { state, logs: logsAcum, decision: construirDecisionDecisiva(state, jugada, conCharla) };
+}
+
+function gastarCharla(state, usada) {
+  if (!usada) {
+    return { state, logs: [] };
+  }
+  return {
+    state: { ...state, career: { ...state.career, charlaUsadaEn: state.calendario.anio } },
+    logs: [crearLog('serie', 'El coach junta a todos antes del mapa que define: la charla de la temporada se usa acá.')]
   };
 }
 
-// --- Un mapa: quema del rival, draft (auto o pausa), minijuego (si aplica), resultado ---
-
-function jugarMapaSiguiente(state, rng, logsAcum) {
-  const campeonRival = elegirCampeonRival(state, state.serie.quemados, rng);
-  const quemados = campeonRival ? [...state.serie.quemados, campeonRival] : state.serie.quemados;
-  const st = { ...state, serie: { ...state.serie, quemados } };
-  const logs = campeonRival
-    ? [...logsAcum, crearLog('serie', `${st.serie.rival.org} juega ${campeonRival}: queda quemado para el resto de la serie.`)]
-    : logsAcum;
-
-  const disponibles = disponiblesDelPool(st.player.championPool, quemados);
-
-  if (disponibles.length === 0) {
-    const comodin = campeonComodin(st, quemados, rng);
-    return jugarConCampeon(
-      st, comodin.name, rng,
-      [...logs, crearLog('serie', `Se te quemó todo el pool: te toca de comodín a ${comodin.name} (maestría ${comodin.mastery}).`)],
-      comodin
-    );
-  }
-
-  const decisivo = esMapaDecisivo(st.serie.marcador, st.serie.formato);
-  const draft = decisionDeDraft(st, disponibles, decisivo);
-
-  if (!draft.pausa) {
-    return jugarConCampeon(
-      st, draft.elegido.name, rng,
-      [...logs, crearLog('serie', `Elegís solo: ${draft.elegido.name} (maestría ${Math.round(draft.elegido.mastery)}).`)]
-    );
-  }
-
-  return { state: st, logs, decision: construirDecisionDraft(st, disponibles) };
-}
-
-// `entradaExtra` es el comodín fuera del pool (4.5): no vive en
-// `player.championPool`, así que se inyecta una copia temporal del pool solo
-// para que `rendimientoBase` encuentre su maestría real y no la neutra.
-// K2b: la fuerza del mapa es DETERMINISTA (`fuerzaDePartido` con el campeón
-// elegido); el azar del mapa vive solo en la p de `finalizarMapa`.
-function jugarConCampeon(state, campeonElegido, rng, logsAcum, entradaExtra = null) {
-  // K2d: la misma fuerza que muestra la previa del mapa (`core/previa.js`).
-  const fuerzaPropia = fuerzaDePartido(estadoDelMapa(state, campeonElegido, entradaExtra));
-
-  // Fase 9R4b: el mapa que cierra la serie tiene su propio cupo y su propio
-  // margen. El del mapa normal sigue siendo uno por serie (PLAN.md:80: "que
-  // tampoco todo sea un gambling a los minijuegos"), pero ya no se puede comer
-  // el del mapa que define.
-  const rondaConMinijuego = ['semis', 'final', 'internacional'].includes(state.serie.ronda);
-  if (rondaConMinijuego) {
-    const desempate = esMapaDeDesempate(state.serie.marcador, state.serie.formato);
-    const momento = desempate && !state.serie.decisivoUsado ? 'mapa_decisivo'
-      : !state.serie.minijuegoUsado ? 'mapa_cerrado'
-        : null;
-    const margen = momento === 'mapa_decisivo'
-      ? BALANCE.serie.margenMapaCerradoDecisivo
-      : BALANCE.serie.margenMapaCerrado;
-
-    if (momento && esMapaCerrado(fuerzaPropia, state.serie.rival.fuerza, margen)) {
-      const pausa = pausaDeMinijuego(state, momento, logsAcum, { campeonElegido, fuerzaPropia, entradaExtra });
-      if (pausa) {
-        return pausa;
-      }
-    }
-  }
-
-  return finalizarMapa(state, campeonElegido, fuerzaPropia, 0, rng, logsAcum);
-}
-
-// K2b: el mapa es UNA tirada contra la p declarada (`jugarPartido`, tipo
-// `mapa`): la misma p que mira el draft para decidir si te frena.
-function finalizarMapa(state, campeonElegido, fuerzaPropia, ajusteMinijuego, rng, logsAcum) {
-  // K2d: la p de la previa del mapa (`probabilidadDeMapa`, la misma función).
-  const { gano, p } = tirarPartido(probabilidadDeMapa(state, fuerzaPropia, ajusteMinijuego), rng);
+// K2b: el mapa es UNA tirada contra la p declarada. K4-B: el ajuste es el del plan más lo que lo mueve en el mapa
+// decisivo (la charla y el minijuego); sin eso, es la p que la tarjeta del plan mostró para este mapa.
+function finalizarMapa(state, jugada, { ajusteExtra, charla }, rng, logsAcum) {
+  const { campeon, fuerzaPropia, ajustePlan } = jugada;
+  const { gano, p } = tirarPartido(probabilidadDeMapa(state, fuerzaPropia, ajustePlan + ajusteExtra), rng);
 
   const marcador = [...state.serie.marcador];
   marcador[gano ? 0 : 1] += 1;
   const marcadorStr = `${marcador[0]}-${marcador[1]}`;
   const numeroMapa = state.serie.mapaActual + 1;
-  const cierre = generarCierreMapa(campeonElegido, gano, marcadorStr, state);
+  const cierre = generarCierreMapa(campeon, gano, marcadorStr, state);
+  const rivalJuega = state.serie.rivalJuega;
 
   const nextState = {
     ...state,
@@ -255,10 +339,10 @@ function finalizarMapa(state, campeonElegido, fuerzaPropia, ajusteMinijuego, rng
     serie: {
       ...state.serie,
       marcador,
-      quemados: [...state.serie.quemados, campeonElegido],
+      quemados: [...state.serie.quemados, campeon],
       mapas: [...state.serie.mapas, {
         mapa: numeroMapa,
-        campeon: campeonElegido,
+        campeon,
         resultado: gano ? 'W' : 'L',
         marcador: marcadorStr,
         cierre
@@ -267,11 +351,16 @@ function finalizarMapa(state, campeonElegido, fuerzaPropia, ajusteMinijuego, rng
     }
   };
 
+  const comodin = jugada.motivo === 'comodin' ? ` (de comodín: se te quemó todo el pool)` : '';
   const logs = [...logsAcum, crearLog(
     'serie',
-    `Mapa ${numeroMapa} — jugás ${campeonElegido}: ${gano ? 'ganan' : 'pierden'}. Marcador ${marcadorStr}.`,
+    `Mapa ${numeroMapa} — ${state.serie.rival.org} sale con ${rivalJuega ?? 'lo que le queda'}; vos, ${campeon}${comodin}: `
+    + `${gano ? 'ganan' : 'pierden'}. Marcador ${marcadorStr}.`,
     // K2d: `p` es la probabilidad con la que se tiró el mapa (la tarjeta del mapa la muestra).
-    { mapa: numeroMapa, campeon: campeonElegido, resultado: gano ? 'W' : 'L', marcador: marcadorStr, cierre, p }
+    {
+      mapa: numeroMapa, campeon, resultado: gano ? 'W' : 'L', marcador: marcadorStr, cierre, p,
+      rivalJuega, plan: state.serie.plan, charla
+    }
   )];
 
   return serieTerminada(marcador, state.serie.formato)
@@ -330,51 +419,6 @@ function aplicarEliminacionDomestica(state, ronda, liga) {
   };
 }
 
-function aplicarConsecuenciaInternacional(state, gano, rng) {
-  const r = BALANCE.rendimiento;
-  const a = BALANCE.arraigo;
-  const arraigo = clampStat(state.career.arraigo + roll(a.porInternacionalMin, a.porInternacionalMax, rng));
-  const registro = registrarArraigoEnFila(
-    registrarInternacional(
-      registrarPico(state.career.registro, 'arraigo', Math.round(arraigo)),
-      {
-        torneo: `internacional — ${nombreLigaDe(ligaDeCarrera(state))}`,
-        anio: state.calendario.anio,
-        org: state.career.currentOrg,
-        // K1 (D76): la liga que representaste.
-        liga: ligaDeCarrera(state).id,
-        resultado: gano ? 'buen_papel' : 'eliminado',
-        camino: state.serie.mapas.map((mapa, i) => ({
-          mapa: mapa.mapa ?? (i + 1),
-          campeon: mapa.campeon,
-          resultado: mapa.resultado,
-          marcador: mapa.marcador,
-          cierre: mapa.cierre
-        }))
-      }
-    ),
-    Math.round(arraigo)
-  );
-
-  return {
-    ...state,
-    player: {
-      ...state.player,
-      worlds: state.player.worlds + 1,
-      stats: { ...state.player.stats, hype: clampStat(state.player.stats.hype + (gano ? r.hypePorTitulo : r.hypePorPodio)) }
-    },
-    career: {
-      ...state.career,
-      internacionales: state.career.internacionales + 1,
-      arraigo: Math.round(arraigo),
-      registro,
-      hitos: [...state.career.hitos, gano
-        ? `Buen papel internacional con ${state.career.currentOrg} a los ${state.age}`
-        : `Eliminado en el internacional a los ${state.age}`]
-    }
-  };
-}
-
 function concluirRonda(state, rng, logsAcum) {
   const { ronda, marcador } = state.serie;
   const gano = marcador[0] > marcador[1];
@@ -395,22 +439,25 @@ function concluirRonda(state, rng, logsAcum) {
     marcador: [...marcador],
     gano,
     mapas: [...st.serie.mapas],
-    // K2a: el formato y las dos fuerzas al empezar la serie (la tuya con el
-    // campeón del split, sin ruido, y la del rival): con esto el instrumento de
-    // `src/dev/simulate.js` mide en el motor cuánto gana el favorito de un Bo5
-    // según el Δ de fuerza. Lectura pura de `state.serie`.
+    // K2a: el formato y las dos fuerzas al empezar la serie (la tuya con el campeón del split, sin ruido, y la del
+    // rival): con esto `src/dev/simulate.js` mide en el motor cuánto gana el favorito de un Bo5 según el Δ de
+    // fuerza. K4-B: y el plan con el que se cerró la serie. Lectura pura de `state.serie`.
     formato: state.serie.formato,
     fuerzaInicial: state.serie.fuerzaInicial,
-    fuerzaRival: state.serie.rival.fuerza
+    fuerzaRival: state.serie.rival.fuerza,
+    plan: state.serie.plan,
+    sinNadaEnJuego: state.serie.sinNadaEnJuego
   };
 
-  if (ronda === 'internacional') {
+  if (state.serie.torneo === 'mundial') {
+    // K5-A: la serie del Mundial termina acá; el torneo sigue en `systems/internacional.js`, que es quien la arrancó.
     logs.push(crearLog('serie', gano
-      ? 'Ganaste tu serie en el internacional: se habló de vos afuera de tu región.'
-      : 'Perdiste tu serie en el internacional: vuelta temprano a casa.',
-      datosPost));
-    st = aplicarConsecuenciaInternacional(st, gano, rng);
-  } else if (gano && ronda === 'final') {
+      ? `${etiquetaDeRonda(ronda, state.serie.etapa)}: ganaste la serie ${marcador[0]}-${marcador[1]} contra ${state.serie.rival.org}.`
+      : `${etiquetaDeRonda(ronda, state.serie.etapa)}: perdiste la serie ${marcador[1]}-${marcador[0]} contra ${state.serie.rival.org}.`,
+      { ...datosPost, torneo: 'mundial', etapa: state.serie.etapa }));
+    return { state: { ...st, serie: { ...st.serie, activa: false } }, logs, finDeSerie: { gano, marcador: [...marcador] } };
+  }
+  if (gano && ronda === 'final') {
     logs.push(crearLog('serie', `¡Campeones de ${nombreLigaDe(liga)}! Cerraste la serie ${marcador[0]}-${marcador[1]}.`, datosPost));
     st = aplicarTitulo(st, liga, rng);
   } else if (!gano) {
@@ -424,7 +471,10 @@ function concluirRonda(state, rng, logsAcum) {
     logs.push(crearLog('serie', `Ganaste la serie ${marcador[0]}-${marcador[1]} contra ${state.serie.rival.org}. Avanzás de ronda.`, datosPost));
   }
 
-  if (['final', 'internacional'].includes(ronda) && !st.serie.minijuegoUsado) {
+  // K4-B quitó la rueda de prensa de la serie (minijuegos solo en el clímax); K4-C la devuelve solo después de una final
+  // (`serie.rondasConPrensa`) —la otra mitad, tras un escándalo, la pone events.js—. Entra por `pausaDeMinijuego(st,
+  // 'post_serie', ...)` y la resuelve `resolver` (gasta `minijuegoUsado`; el mapa decisivo gasta `decisivoUsado`).
+  if (BALANCE.serie.rondasConPrensa.includes(ronda) && !st.serie.minijuegoUsado) {
     const pausa = pausaDeMinijuego(st, 'post_serie', logs, { trasRonda: ronda, gano });
     if (pausa) {
       return pausa;
@@ -435,34 +485,26 @@ function concluirRonda(state, rng, logsAcum) {
 }
 
 function continuarTrasRonda(state, ronda, gano, rng, logsAcum) {
-  if (ronda === 'internacional') {
-    return { state: { ...state, serie: { ...state.serie, activa: false, postSerie: true } }, logs: logsAcum };
-  }
-
   if (gano) {
     const siguiente = siguienteRonda(ronda);
     if (siguiente) {
       const st = iniciarRonda(state, siguiente, rng);
-      return jugarMapaSiguiente(st, rng, [...logsAcum, crearLog('serie', `${etiquetaDeRonda(siguiente)} vs ${st.serie.rival.org}.`)]);
+      return arrancarSerie(st, rng, [...logsAcum, crearLog('serie', `${etiquetaDeRonda(siguiente)} vs ${st.serie.rival.org}.`)]);
     }
   }
 
-  return intentarInternacional(state, rng, logsAcum);
+  // K5-A: los playoffs terminan en la final doméstica. El Mundial es otro sistema (`systems/internacional.js`).
+  return { state: { ...state, serie: { ...state.serie, activa: false, postSerie: true } }, logs: logsAcum };
 }
 
-function intentarInternacional(state, rng, logsAcum) {
-  const liga = ligaDeCarrera(state);
-  if (!calificaAInternacional(liga, state.career.posicion)) {
-    return { state: { ...state, serie: { ...state.serie, activa: false, postSerie: true } }, logs: logsAcum };
-  }
-
-  const st = iniciarRonda(state, 'internacional', rng);
-  const logs = [...logsAcum, crearLog('serie', `Clasificaste al internacional: rival, ${st.serie.rival.org}.`)];
-
-  // El bootcamp NO gasta el cupo de la serie (9R4b): pasa antes del primer
-  // mapa, y hasta acá dejaba al internacional —la serie más grande del juego—
-  // sin una sola jugada dentro de un mapa ni rueda de prensa.
-  return pausaDeMinijuego(st, 'pre_internacional', logs) ?? jugarMapaSiguiente(st, rng, logs);
+// K5-A: una serie del bracket del Mundial, con las reglas de K4 (plan de Fearless, mapa decisivo, charla del coach).
+// La arranca `systems/internacional.js`; cuando termina, vuelve con `finDeSerie: { gano, marcador }` en vez de
+// seguir sola, y el torneo decide con quién se juega la próxima.
+export function arrancarSerieDelMundial(state, etapa, rival, rng, logsAcum) {
+  const st = iniciarRonda(state, 'internacional', rng, { etapa, rival });
+  return arrancarSerie(st, rng, [...logsAcum, crearLog(
+    'serie', `${etiquetaDeRonda('internacional', etapa)} vs ${rival.org} (${nombreVisibleDeLiga(rival.liga)}), al Bo${st.serie.formato}.`
+  )]);
 }
 
 // --- Contrato del sistema ---
@@ -489,55 +531,82 @@ export function aplicar(state, rng) {
     + `${etiquetaDeRonda(ronda).toLowerCase()} vs ${st.serie.rival.org}.`
   )];
 
-  return jugarMapaSiguiente(st, rng, logs);
+  return arrancarSerie(st, rng, logs);
 }
 
 export function resolver(state, decision, respuesta, rng) {
   const { motivo } = decision.datos;
 
-  if (motivo === 'draft') {
-    return jugarConCampeon(state, respuesta.opcionId, rng, []);
+  if (motivo === 'plan') {
+    const plan = decision.opciones.some((opcion) => opcion.id === respuesta.opcionId) ? respuesta.opcionId : 'coach';
+    const st = conPlan(state, plan);
+    const logs = [crearLog('serie', `El plan: ${textoDelPlan(plan, proyeccionDelPlan(state, plan)).toLowerCase()}.`)];
+    // Al re-planear, la quema del rival de este mapa ya pasó (fue la que te frenó): se juega el mapa.
+    return decision.datos.replan ? jugarMapa(st, rng, logs) : jugarMapaSiguiente(st, rng, logs);
   }
 
-  // Fase 9R4a: la rama la decide el DATO (`efecto.tipo`), no el id del
-  // minijuego. Agregar una mecánica nueva al catálogo no toca este archivo.
+  const jugada = {
+    campeon: decision.datos.campeonElegido,
+    entradaExtra: decision.datos.entradaExtra ?? null,
+    fuerzaPropia: decision.datos.fuerzaPropia,
+    ajustePlan: decision.datos.ajustePlan ?? 0,
+    motivo: decision.datos.entradaExtra ? 'comodin' : 'plan'
+  };
+
+  if (motivo === 'decisivo') {
+    const usada = respuesta.opcionId === 'charla' && charlaDisponible(state);
+    const charla = gastarCharla(state, usada);
+    return finalizarMapa(charla.state, jugada, { ajusteExtra: ajusteDeCharla(usada), charla: usada }, rng, charla.logs);
+  }
+
+  // Fase 9R4a: la rama la decide el DATO (`efecto.tipo`), no el id del minijuego. Agregar una mecánica nueva al
+  // catálogo no toca este archivo.
   const entrada = minijuegoPorId(decision.datos.minijuego);
   const resultado = clamp(respuesta.resultado ?? 0.5, 0, 1);
   const ajusteBase = ajusteBaseDeMinijuego(resultado);
   const stConCupo = { ...state, serie: { ...state.serie, ...cupoGastado(decision.datos.momento) } };
 
   if (entrada.efecto.tipo === 'mapa') {
-    const { campeonElegido, fuerzaPropia } = decision.datos;
-    // K2d: el mismo ajuste con el que la previa muestra la p final del mapa.
-    return finalizarMapa(stConCupo, campeonElegido, fuerzaPropia, ajusteDeMinijuegoDeMapa(state, entrada, resultado), rng, []);
+    // K2d: el mismo ajuste con el que la previa muestra la p final del mapa. K4-B: más la charla, si la elegiste.
+    const usada = respuesta.charla === true && decision.datos.charla?.disponible === true && charlaDisponible(state);
+    const charla = gastarCharla(stConCupo, usada);
+    const ajusteExtra = ajusteDeCharla(usada) + ajusteDeMinijuegoDeMapa(state, entrada, resultado);
+    return finalizarMapa(charla.state, jugada, { ajusteExtra, charla: usada }, rng, charla.logs);
   }
 
   const nombreVisible = decision.titulo ?? textoDeMinijuego(entrada, state).titulo;
   const st = aplicarStatsDeMinijuego(stConCupo, entrada.efecto.targets, ajusteBase * entrada.impacto, nombreVisible);
   const logs = [crearLog('serie', veredictoDeMinijuego(entrada.id, resultado, state).detalle)];
 
-  return decision.datos.momento === 'pre_internacional'
-    ? jugarMapaSiguiente(st, rng, logs)
-    : continuarTrasRonda(st, decision.datos.trasRonda, decision.datos.gano, rng, logs);
+  return continuarTrasRonda(st, decision.datos.trasRonda, decision.datos.gano, rng, logs);
+}
+
+// K4-B: el camino headless gasta la charla del coach en la final o en el internacional, nunca antes (el dilema es
+// gastarla en semis o guardarla para la final).
+export function usaLaCharlaEnAuto(ronda) {
+  return ronda === 'final' || ronda === 'internacional';
 }
 
 export function resolverAuto(state, decision, rng) {
   const { motivo } = decision.datos;
 
-  if (motivo === 'draft') {
-    // Fase 9Rc: mismo criterio único que `decisionDeDraft` (factorDeCampeon,
-    // exagerado para que el headless no tire una moneda entre un pick bueno y
-    // uno apenas peor).
-    const elegido = weightedPick(decision.opciones, (opcion) => {
-      const campeon = state.player.championPool.find((candidato) => candidato.name === opcion.id);
-      return campeon ? pesoDePick(campeon, state.meta.weights) : 1;
-    }, rng);
-    return { opcionId: elegido.id };
+  if (motivo === 'plan') {
+    // El plan con más p de ganar la serie, según la misma proyección que muestra la tarjeta. Sin sorteo.
+    const mejor = decision.opciones.reduce((acum, opcion) => (opcion.pSerie > acum.pSerie ? opcion : acum));
+    return { opcionId: mejor.id };
   }
 
-  // Regla 5 de 4.6: Node simula el minijuego con gauss corrido por el stat
-  // relevante — el motor no lo implementa, solo lo consume.
+  if (motivo === 'decisivo') {
+    const charla = decision.opciones.some((opcion) => opcion.id === 'charla') && usaLaCharlaEnAuto(state.serie.ronda);
+    return { opcionId: charla ? 'charla' : 'sinCharla' };
+  }
+
+  // Regla 5 de 4.6: Node simula el minijuego con gauss corrido por el stat relevante — el motor no lo implementa,
+  // solo lo consume.
   const entrada = minijuegoPorId(decision.datos.minijuego);
   const valor = state.player.stats[decision.datos.statRelevante] ?? 50;
-  return { resultado: clamp(gauss(valor / 100, entrada.spread, rng), 0, 1) };
+  const resultado = clamp(gauss(valor / 100, entrada.spread, rng), 0, 1);
+  return decision.datos.charla?.disponible
+    ? { resultado, charla: usaLaCharlaEnAuto(state.serie.ronda) }
+    : { resultado };
 }

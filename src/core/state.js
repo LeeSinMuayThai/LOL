@@ -1,5 +1,9 @@
 import { BALANCE } from '../data/balance.js';
+import { perfilInicial } from './perfil.js';
 import { generarMundo } from './mundo.js';
+
+// K5-B: la pantalla de inicio lista las regiones elegibles con su dificultad.
+export { regionesDeOrigen } from './mundo.js';
 import { bonusPermanenteInicial } from './curvas.js';
 import { puntosAbsolutos } from './ranked.js';
 import { rankearMundo } from './topMundial.js';
@@ -13,7 +17,7 @@ import { esFechaDeDesafio, seedDelDia } from './desafio.js';
 const EDAD_INICIAL = 15;
 
 // `eleccion` es lo que el jugador decidio en la pantalla de inicio:
-// `{ handle?, rol?, campeones? }`. Si no viene, todo se sortea de la seed — ese
+// `{ handle?, rol?, campeones?, perfil?, regionOrigen? }` (K5-B: la región, un `regionId`). Si no viene, todo se sortea de la seed — ese
 // es el camino que corren simulate.js y validate.js.
 //
 // K1: `desafio` es `{ fecha: 'YYYY-MM-DD' }` cuando la partida es el desafío
@@ -43,6 +47,10 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
     phase: 'amateur',
     terminado: false,
     finAnticipado: null,
+    // K5-C: por qué se retiró, dicho en una línea para la tarjeta ("Ninguna org de LCK te ofreció contrato en dos
+    // pretemporadas seguidas."). Lo escribe `systems/retiro.js` en cada retiro que decide el mercado, la edad o vos;
+    // `null` mientras la carrera sigue viva y en los finales que ya se explican solos (burnout, familia, no_llego).
+    motivoRetiro: null,
     // Fase 9R5b: la tarjeta de legado, compuesta una sola vez por
     // `core/pipeline.js` cuando `terminado` pasa a true. `null` mientras la
     // carrera sigue viva. K1: lleva también `puntaje` (`core/puntaje.js`).
@@ -128,7 +136,10 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       worlds: 0,
       signatureChampion: null,
       campeonDelSplit: null,
-      championPool: jugador.championPool
+      championPool: jugador.championPool,
+      // K4-C: el perfil que resuelve los eventos que no son bifurcación (`core/perfil.js`). `actual` es la palabra
+      // de la ficha; `pesos` los cuatro perfiles, que las bifurcaciones corren. Completo desde el arranque (T4).
+      perfil: perfilInicial(seed, eleccion?.perfil ?? null)
     },
     career: {
       orgs: [],
@@ -172,6 +183,8 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // (fase 5, `stakes: 'revancha'`). `null` hasta la primera eliminación;
       // lo escribe `systems/serie.js`.
       ultimoEliminadoPor: null,
+      // K4-B: el año del calendario en que se usó la charla del coach (una por temporada); null si nunca.
+      charlaUsadaEn: null,
       // El contrato vigente (fase 9). Objeto completo de ceros, nunca null
       // (trampa T4): antes de la primera firma profesional no hay contrato,
       // pero el campo tiene que existir para que validate.js pueda verificar
@@ -280,6 +293,9 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
     // null (trampa T4): se activa al clasificar y se resetea al arrancar cada
     // ronda nueva (el Fearless no acumula entre rondas: cada rival es una serie
     // propia, con sus propios quemados).
+    // K5-A: el último Mundial del mundo (`core/internacional.js`), juegues o no. Lo escribe
+    // `systems/internacional.js` al cierre de cada temporada; lo leen `systems/escena.js` y la pantalla.
+    internacional: null,
     serie: {
       activa: false,
       ronda: null,
@@ -292,13 +308,18 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       mapaActual: 0,
       mapas: [],
       quemados: [],
+      // K4-B: el plan de Fearless, el campeón guardado para el mapa decisivo, si ya te frenaron a re-planear, el
+      // campeón con el que el rival juega el mapa en curso (y el índice de ese mapa), y si la serie no tiene nada en juego.
+      plan: null,
+      guardado: null,
+      replanUsado: false,
+      rivalJuega: null,
+      rivalJuegaEnMapa: -1,
+      sinNadaEnJuego: false,
+      // Dos cupos de minijuego (9R4b; K4 sacó el del mapa normal y el bootcamp): `decisivoUsado` es el del mapa
+      // decisivo; `minijuegoUsado`, el de la rueda de prensa de después de la final.
       minijuegoUsado: false,
-      // Fase 9R4b: tres cupos, no uno. `minijuegoUsado` es el del mapa normal y
-      // la rueda de prensa; `decisivoUsado` es el del mapa que cierra la serie;
-      // `preSerieUsado` es el del bootcamp, que pasa ANTES del primer mapa y
-      // hasta acá se comía el cupo entero del internacional (medido: 643 de 643).
       decisivoUsado: false,
-      preSerieUsado: false,
       postSerie: false
     },
     meta: {
@@ -340,6 +361,27 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // repetir la misma mecanica dos series seguidas si hay otra elegible para
       // ese momento. Array vacio al arrancar, nunca null (trampa T4).
       minijuegosRecientes: [],
+      // J4 (K4-C): las categorías de los últimos eventos (ventana `eventos.categoriasRecientesMax`), para que la
+      // selección no repita categoría dos veces seguidas por peso. Array vacío al arrancar (T4).
+      categoriasRecientes: [],
+      // J4 (K4-C): el `splitCount` del parche en el que tu main cayó de S/A a B/C (`systems/meta.js`); `main_muerto`
+      // dura `contexto.ventanaMainMuerto` splits desde ahí. `null` = nunca cayó (T4).
+      splitMainMuerto: null,
+      // K4-C: los saltos grandes que ya tuvieron su prueba ('tier2', 'tier1', 'import'): la prueba sale una vez
+      // por salto (`systems/mercado.js`). Array vacío al arrancar (T4).
+      saltosConPrueba: [],
+      // K4-C2: los caminos que dejaron las bifurcaciones de carrera (`data/events/caminos.json`). Una clave por
+      // bifurcación, `null` hasta que la decidís; el valor es lo que pasó ('abierto', 'cerrado', 'tiempo_completo'...).
+      // Los eventos de seguimiento y los gates de otros eventos la leen con una `condition` común. Completo desde el
+      // arranque (T4): una condición sobre un campo que no existe no pasa el esquema de eventos.
+      caminos: {
+        region: null,     // 'abierto' | 'cerrado' | 'asentado'
+        contenido: null,  // 'tiempo_completo' | 'hibrido' | 'solo_competir' | 'consolidado'
+        rol: null,        // 'cubrio' | 'a_prueba' | 'se_nego' | 'integrado'
+        playoffs: null,   // 'infiltrado' | 'paro' | 'sin_infiltrar' | 'recuperado' | 'cronico'
+        conflicto: null,  // 'con_la_org' | 'contra_la_org' | 'en_el_medio' | 'resuelto'
+        staff: null       // 'puerta_abierta' | 'en_transicion' | 'cerrada'
+      },
       // Rastro de un solo split: qué campeón(es) entró el último efecto `pool`
       // con `accion: 'aprender'` de ESTE outcome. Lo usa el siguiente efecto
       // del mismo outcome (`accion: 'maestria', objetivo: 'nuevo'`) para saber
@@ -384,6 +426,16 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // — la puerta por la que se termina la carrera (fase 10, todavía no
       // construida).
       splitsSinOfertaConsecutivos: 0,
+      // K5-C: pretemporadas seguidas con el mercado abierto sin una oferta de tu tier o mejor (`systems/mercado.js`).
+      // Al llegar a `BALANCE.retiro.splitsSinOfertaEnTierParaBifurcar` frena la bifurcación "bajás o te retirás". Se
+      // vuelve a 0 con una oferta de tu tier, al firmar y al retirarte.
+      splitsSinOfertaEnTier: 0,
+      // K5-C: el `splitCount` de la última vez que frenó esa bifurcación (-1 = nunca). `systems/retiro.js` lo lee para
+      // no preguntar `retiro_declive` en la misma pretemporada: el mercado ya preguntó.
+      forkMercadoSplit: -1,
+      // K4-D: el `splitCount` de la última pretemporada cuya preparación (las rutinas de offseason) ya se resolvió. -1 =
+      // ninguna todavía. Lo escribe `systems/practica.js` y evita que la pretemporada frene dos veces.
+      preparacionDeSplit: -1,
       // Fase 9: "llamar al representante" (PLAN.md §9.6) rebaraja la mano de
       // ofertas una única vez en toda la carrera.
       llamadaRepresentante: false,
@@ -414,6 +466,12 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // (Bjergsen/Doublelift: dos cada uno — `CONCEPTO` §12.4). Al llegar a
       // `BALANCE.retiro.vueltasMaximas` el próximo retiro ya no abre ventana.
       vueltasUsadas: 0,
+      // K4-C2 (regla 15): los efectos de carrera de las bifurcaciones (`systems/events.js`). `ofertaDeImport` es la
+      // oferta de import aceptada que el mercado firma en la próxima pretemporada (`{ ligas, clausula }`);
+      // `rolDeOrigen` la línea y el pool que dejaste al cambiar de línea (`{ rol, pool }`). `null` mientras no pasó (T4).
+      // El motivo de un retiro elegido no vive acá: va a `state.motivoRetiro`, como todo motivo de retiro (K5).
+      ofertaDeImport: null,
+      rolDeOrigen: null,
       // El `splitCount` de la última vuelta, para la marca transitoria
       // `vuelta_del_retiro` (mismo patrón que `splitDescenso`/`ventanaDescenso`).
       splitVuelta: null,

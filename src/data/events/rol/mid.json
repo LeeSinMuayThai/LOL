@@ -17,6 +17,7 @@
     "options": [
       {
         "id": "hablar_del_equipo",
+        "perfil": "leal",
         "label": "Hablar solo del equipo",
         "descripcion": "No nombrás a nadie en particular. Es diplomático, y también un poco vacío.",
         "weight": 6,

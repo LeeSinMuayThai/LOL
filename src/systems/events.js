@@ -1,18 +1,26 @@
-import { roll, weightedPick, chance } from '../core/rng.js';
+import { roll, weightedPick, chance, gauss } from '../core/rng.js';
+import { clamp } from '../core/numeros.js';
 import { getPath, setPath, cumpleCondiciones, etiquetaCampo } from '../core/selectors.js';
 import { calcularContexto, coincideContexto } from '../core/contexto.js';
 import { resolverTexto } from '../core/plantillas.js';
 import { aplicarLPAlEstado, etiquetaDeRanked, servidorDeLaPartida } from '../core/ranked.js';
 import { aprenderCampeones, subirMaestria, olvidarPeor, principalDelPool } from '../core/pool.js';
 import { registrarMomento } from '../core/registro.js';
-import { conPermanencia } from '../core/curvas.js';
+import { conPermanencia, conTechoDeLesion } from '../core/curvas.js';
 import { crearLog } from '../core/log.js';
 import { deltaCorto, lista } from '../core/formato.js';
 import { tipoDeSplit, hayPresupuesto } from '../core/presupuesto.js';
 import { previaDeOpcion, riesgoDeOpcion, gateDeOpcion } from '../core/previa.js';
 import { rarezaDeOpcionEvento } from '../core/rareza.js';
+import { opcionDelPerfil, afinidadDeOpcion, derivarPerfil, nombreDePerfil } from '../core/perfil.js';
+import { elegirMinijuego, minijuegoPorId, textoDeMinijuego, registrarMinijuegoVisto, veredictoDeMinijuego } from '../core/minijuegos.js';
+import { ajusteBaseDeMinijuego } from '../core/serie.js';
+import { aplicarStatsDeMinijuego } from './serie.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
+import { ofertaDeImportPosible, prometerImport } from './mercado.js';
+import { cambiarDeRol } from './roster.js';
+import { retirarsePorCamino } from './retiro.js';
 
 export const id = 'eventos';
 
@@ -46,7 +54,24 @@ export function disponibleEn(state, evento, contexto = calcularContexto(state)) 
 // Una opcion puede tener su propio gating: "esta salida solo existe si
 // terminaste el secundario".
 export function opcionesVivas(state, evento, contexto = calcularContexto(state)) {
-  return evento.options.filter((opcion) => disponibleEn(state, opcion, contexto));
+  return evento.options.filter((opcion) => disponibleEn(state, opcion, contexto) && motivoDePromesaRota(state, opcion) === null);
+}
+
+// K4-C2 (regla 15): una opción que promete una mudanza (`ofertaDeImport`) solo existe si alguna org de esa liga
+// puede ficharte HOY con las reglas duras del mercado (edad, cupo de imports, listón de import). Si no, se muestra
+// cerrada con el motivo del mercado. Puro y sin `rng`: lo decide `systems/mercado.js`, no una copia de sus reglas.
+export function motivoDePromesaRota(state, opcion) {
+  for (const outcome of opcion.outcomes) {
+    for (const effect of outcome.effects) {
+      if (effect.type === 'ofertaDeImport') {
+        const posible = ofertaDeImportPosible(state, effect.liga);
+        if (!posible.posible) {
+          return posible.motivo;
+        }
+      }
+    }
+  }
+  return null;
 }
 
 // Exportada desde J0 (AUDITORIA.md, fase J-higiene): `simulate.js` la llama
@@ -61,7 +86,17 @@ export function candidatos(state) {
       && !cooldownActivo(state, event.id)
       && disponibleEn(state, event, contexto)
       && opcionesVivas(state, event, contexto).length >= 2
+      && textoSinHuecos(state, event)
   );
+}
+
+// K4-C: un evento cuyo texto nombra a alguien que este estado no tiene (`{adc}` cuando el ADC sos vos, `{jungla}`
+// sin jungla en el plantel) no sale: antes se mostraba con el token crudo en la tarjeta, y ahora que la mayoría se
+// cuenta en una línea de crónica, también en el feed. Puro: `resolverTexto` no toca el `rng`.
+const HUECO_DE_PLANTILLA = /\{[a-zA-Z]+\}/;
+function textoSinHuecos(state, evento) {
+  return ![evento.title, evento.description, ...evento.options.map((option) => option.label)]
+    .some((texto) => HUECO_DE_PLANTILLA.test(resolverTexto(texto, state)));
 }
 
 // Las tres cosas que un evento puede hacerle al pool. Toda la mecánica vive en
@@ -96,6 +131,20 @@ function aplicarAlPool(state, effect, rng) {
     return {
       pool: subirMaestria(pool, objetivo.name, cantidad),
       texto: `${objetivo.name} ${deltaCorto(cantidad)} maestría`
+    };
+  }
+
+  // J4 (d): `objetivo: 'principal'` suelta a tu main (el de más maestría) — la salida de `pool_main_muerto` que
+  // deja el pool sin el campeón caído. Respeta el mismo piso de pool que `olvidarPeor`.
+  if (effect.objetivo === 'principal') {
+    if (pool.length <= BALANCE.campeones.poolMinimo) {
+      return { pool, texto: null };
+    }
+    const principal = principalDelPool(pool);
+    return {
+      pool: pool.filter((campeon) => campeon.name !== principal.name),
+      texto: `${principal.name} sale del pool`,
+      campeon: principal.name
     };
   }
 
@@ -150,6 +199,26 @@ function aplicarEfecto(state, effect, rng, origen) {
     };
   }
 
+  // K4-C2: un camino que se abre o se cierra. Escribe un valor en un flag (`flags.caminos.<bifurcación>`, o uno del motor
+  // que el dato pida a propósito, como `flags.banquilloPendiente`) para que los eventos de seguimiento lo lean con una
+  // `condition` común. No es una magnitud: no tiene rango ni entra en la previa, y no suma a la línea de efectos.
+  if (effect.type === 'camino') {
+    return { state: setPath(state, effect.path, effect.valor), descripcion: null };
+  }
+
+  // K4-C2 (regla 15): los efectos de carrera. El dato los declara; la lógica es de su sistema dueño, no se copia acá.
+  // `ofertaDeImport` deja una oferta real pendiente que el mercado firma en la próxima pretemporada (con sus reglas);
+  // `cambiarRol` te cambia de línea (pool, plantel); `retirarse` te retira por el camino del retiro, con su motivo.
+  if (effect.type === 'ofertaDeImport') {
+    return prometerImport(state, effect);
+  }
+  if (effect.type === 'cambiarRol') {
+    return cambiarDeRol(state, effect.rol, rng);
+  }
+  if (effect.type === 'retirarse') {
+    return retirarsePorCamino(state, effect.motivo);
+  }
+
   if (effect.type === 'push') {
     const lista = getPath(state, effect.path) ?? [];
     const valor = weightedPick(effect.values, () => 1, rng);
@@ -187,6 +256,10 @@ function aplicarEfecto(state, effect, rng, origen) {
   // fracción de lo que movió se vuelve permanente (`conPermanencia`: bonus + marca en el registro). Con la
   // fracción en 0 devuelve el mismo estado.
   const stat = effect.path.startsWith('player.stats.') ? effect.path.slice('player.stats.'.length) : null;
+  // K4 (revisión 2): el techo de lesión vale también acá — el evento del cierre del año corre después de `atributos.js`.
+  if (stat !== null) {
+    despues = conTechoDeLesion(state.player, stat, antes, despues);
+  }
   const movido = setPath(state, effect.path, despues);
   return {
     state: stat === null ? movido : conPermanencia(movido, stat, despues - antes, origen),
@@ -214,7 +287,11 @@ function registrarEventoVisto(state, eventoElegido) {
   const eventosVistos = state.flags.eventosVistos ?? {};
   const vistosActualizados = { ...eventosVistos, [eventoElegido.id]: (eventosVistos[eventoElegido.id] ?? 0) + 1 };
 
-  return { ...state, flags: { ...state.flags, cooldownHasta, eventosVistos: vistosActualizados } };
+  // J4 (b): la categoría entra en la ventana de las recientes (mismo patrón que `flags.minijuegosRecientes`).
+  const categoriasRecientes = [...(state.flags.categoriasRecientes ?? []), eventoElegido.categoria]
+    .slice(-BALANCE.eventos.categoriasRecientesMax);
+
+  return { ...state, flags: { ...state.flags, cooldownHasta, eventosVistos: vistosActualizados, categoriasRecientes } };
 }
 
 // Fase 7: memoria anti-repetición. Antes lo único que evitaba el repetido era
@@ -230,20 +307,15 @@ export function pesoConMemoria(state, evento) {
   const vistas = state.flags.eventosVistos?.[evento.id] ?? 0;
   const fatiga = 1 / (1 + vistas * e.fatigaPorVista);
   const bonus = vistas === 0 ? e.bonusNovedad : 1;
-  return evento.weight * fatiga * bonus;
+  // J4 (a): la bisagra ya no filtra el pool (antes, con una bisagra candidata el resto ni entraba al sorteo):
+  // multiplica su peso. Sigue ganando casi siempre, pero con tirada. (b): la categoría que salió hace poco pesa menos.
+  const bisagra = evento.bisagra ? e.factorBisagra : 1;
+  const reciente = (state.flags.categoriasRecientes ?? []).includes(evento.categoria) ? e.factorCategoriaReciente : 1;
+  return evento.weight * fatiga * bonus * bisagra * reciente;
 }
 
-// Una bisagra siempre pasa; una normal compite por el turno (fase 2, densidad
-// emergente). Si hay al menos un candidato bisagra este split, el resto del
-// pool ambiente ni siquiera entra al sorteo: "salió tu campeón nuevo" no puede
-// perder contra "racha de ranked" por una tirada de peso.
-function conPrioridadDeBisagra(eventos) {
-  const bisagras = eventos.filter((event) => event.bisagra);
-  return bisagras.length > 0 ? bisagras : eventos;
-}
-
-export function elegirEvento(state, rng, { excluirId } = {}) {
-  const disponibles = conPrioridadDeBisagra(candidatos(state).filter((event) => event.id !== excluirId));
+export function elegirEvento(state, rng, { excluirId, filtro = () => true } = {}) {
+  const disponibles = candidatos(state).filter((event) => event.id !== excluirId && filtro(event));
   if (disponibles.length === 0) {
     return null;
   }
@@ -303,7 +375,9 @@ export function elegirOutcome(state, opcion, rng) {
 // El titulo y la etiqueta se resuelven contra el estado PREVIO (es lo que decia
 // la tarjeta que el jugador acaba de leer) y el texto del resultado contra el
 // estado POSTERIOR (es lo que quedo despues de aplicar los efectos).
-export function resolverOpcion(state, evento, opcionId, rng) {
+// K4-C: con `cronica` (el id del perfil que decidió) el evento se cuenta en UNA línea de crónica: el texto del
+// evento, la opción que tomó tu perfil y lo que pasó. El texto no se pierde: pasa a ser la historia.
+export function resolverOpcion(state, evento, opcionId, rng, { cronica = null } = {}) {
   const vivas = opcionesVivas(state, evento);
   const opcion = vivas.find((option) => option.id === opcionId) ?? vivas[0] ?? evento.options[0];
   const outcome = elegirOutcome(state, opcion, rng);
@@ -312,20 +386,57 @@ export function resolverOpcion(state, evento, opcionId, rng) {
   const titulo = `${nombre} · ${resolverTexto(opcion.label, state)}`;
 
   const descripciones = [];
+  // K4-C2: un efecto de carrera puede traer su propia línea (el retiro dice su balance, como cualquier retiro).
+  const logsDeEfectos = [];
   const nextState = outcome.effects.reduce((acc, effect) => {
     // K3-B: `nombre` (el título visible del evento, nunca su id) es el `origen` de lo que quede permanente.
-    const { state: siguiente, descripcion } = aplicarEfecto(acc, effect, rng, nombre);
+    const { state: siguiente, descripcion, logs: extra = [] } = aplicarEfecto(acc, effect, rng, nombre);
     descripciones.push(descripcion);
+    logsDeEfectos.push(...extra);
     return siguiente;
   }, state);
 
   const cuerpo = resolverTexto(outcome.texto, nextState);
   const efectos = lista(descripciones);
 
+  if (cronica) {
+    const opcionTexto = resolverTexto(opcion.label, state);
+    // Si la descripción pide a alguien que este estado no tiene (un `{jungla}` sin jungla en el plantel), la crónica
+    // la saltea en vez de mostrar el token crudo: el título y lo que pasó alcanzan para contarlo.
+    const descripcionResuelta = resolverTexto(evento.description, state);
+    const descripcion = /\{[a-zA-Z]+\}/.test(descripcionResuelta) ? '' : descripcionResuelta;
+    const perfilNombre = nombreDePerfil(cronica);
+    return {
+      state: registrarEventoVisto(nextState, evento),
+      logs: [crearLog('event', `${nombre}: ${descripcion ? `${descripcion} ` : ''}Como ${perfilNombre.toLowerCase()}: ${opcionTexto}. ${cuerpo} (${efectos})`, {
+        cronica: true, titulo: nombre, descripcion, opcion: opcionTexto, perfil: perfilNombre, cuerpo, efectos
+      }), ...logsDeEfectos]
+    };
+  }
+
   return {
     state: registrarEventoVisto(nextState, evento),
-    logs: [crearLog('event', `${titulo} — ${cuerpo} (${efectos})`, { titulo, cuerpo, efectos })]
+    logs: [crearLog('event', `${titulo} — ${cuerpo} (${efectos})`, { titulo, cuerpo, efectos }), ...logsDeEfectos]
   };
+}
+
+// K4-C: la previa y el riesgo de cada opción viva, con los pesos EFECTIVOS de este estado — lo mismo que la
+// tarjeta le mostraría a una persona (`decisionDesdeEvento`). De acá sale el encaje con el perfil.
+export function opcionesConPrevia(state, evento, contexto = calcularContexto(state)) {
+  return opcionesVivas(state, evento, contexto).map((option) => {
+    const pesos = option.outcomes.map((outcome) => pesoEfectivo(state, outcome));
+    return {
+      id: option.id,
+      perfil: option.perfil ?? null,
+      previa: previaDeOpcion(option, pesos),
+      riesgo: riesgoDeOpcion(option, pesos)
+    };
+  });
+}
+
+// K4-C: la opción que elige tu perfil para un evento que no es bifurcación (`core/perfil.js`).
+export function opcionDelPerfilPara(state, evento) {
+  return opcionDelPerfil(state.player.perfil, opcionesConPrevia(state, evento)).id;
 }
 
 // Toda decision, venga de un evento o de un sistema, se presenta igual: titulo,
@@ -364,8 +475,8 @@ export function decisionDesdeEvento(state, evento, { franja, slot }) {
     // `elegirOpcionAutomatica`, cero consumo de `rng` (trampa T1) — es lo que
     // hace barata esta subfase entera.
     opcionesBloqueadas: evento.options
-      .filter((option) => !disponibleEn(state, option, contexto))
-      .map((option) => ({ label: resolverTexto(option.label, state), gate: gateDeOpcion(option) })),
+      .filter((option) => !disponibleEn(state, option, contexto) || motivoDePromesaRota(state, option) !== null)
+      .map((option) => ({ label: resolverTexto(option.label, state), gate: motivoDePromesaRota(state, option) ?? gateDeOpcion(option) })),
     // Fase 12c (PLAN.md §12.2): el peso visual, calculado acá una sola vez en
     // vez de que la UI lo adivine. `ambiente` es la rutina sin bisagra — antes
     // de que `categoria` existiera (fase 12b) no había de dónde sacarlo sin
@@ -404,18 +515,89 @@ export function aplicar(state, rng) {
     };
   }
 
+  return presentarOResolver(state, evento, 1, rng);
+}
+
+// K4-C: solo frena una bifurcación de carrera (`bifurcacion: true` en el dato). El resto lo resuelve tu perfil
+// en el momento —la opción de mejor encaje, y su outcome con la tirada de siempre (regla 8)— y queda una línea de
+// crónica en el feed. Después, igual que antes, puede amontonarse un segundo evento.
+function presentarOResolver(state, evento, slot, rng) {
+  if (evento.bifurcacion) {
+    return {
+      state,
+      logs: [],
+      decision: decisionDesdeEvento(state, evento, { franja: 'normal', slot })
+    };
+  }
+  const opcionId = opcionDelPerfilPara(state, evento);
+  const { state: nextState, logs } = resolverOpcion(state, evento, opcionId, rng, { cronica: state.player.perfil.actual });
+  return encadenar(nextState, logs, evento, slot, rng);
+}
+
+// La rueda de prensa después de un escándalo (K4-C: la prensa sale solo tras una final o un escándalo). `null` si
+// el catálogo no tiene minijuego para ese momento.
+function pausaDePrensa(state, logs) {
+  const entrada = elegirMinijuego(state, 'post_escandalo');
+  if (!entrada) {
+    return null;
+  }
+  const textos = textoDeMinijuego(entrada, state);
   return {
-    state,
-    logs: [],
-    decision: decisionDesdeEvento(state, evento, { franja: 'normal', slot: 1 })
+    state: { ...state, flags: { ...state.flags, minijuegosRecientes: registrarMinijuegoVisto(state, entrada.id) } },
+    logs,
+    decision: {
+      tipo: 'opciones',
+      presentacion: 'minijuego',
+      titulo: textos.titulo,
+      descripcion: textos.descripcion,
+      opciones: [],
+      datos: {
+        motivo: 'minijuego',
+        minijuego: entrada.id,
+        momento: 'post_escandalo',
+        statRelevante: entrada.statRelevante,
+        apuesta: textos.apuesta,
+        regla: textos.regla
+      }
+    }
   };
 }
 
 export function resolver(state, decision, respuesta, rng) {
-  const { evento } = decision.datos;
-  const { state: nextState, logs } = resolverOpcion(state, evento, respuesta.opcionId, rng);
+  if (decision.datos.motivo === 'minijuego') {
+    const entrada = minijuegoPorId(decision.datos.minijuego);
+    const resultado = clamp(respuesta.resultado ?? 0.5, 0, 1);
+    const nombreVisible = decision.titulo ?? textoDeMinijuego(entrada, state).titulo;
+    const st = aplicarStatsDeMinijuego(state, entrada.efecto.targets, ajusteBaseDeMinijuego(resultado) * entrada.impacto, nombreVisible);
+    return { state: st, logs: [crearLog('event', veredictoDeMinijuego(entrada.id, resultado, state).detalle)] };
+  }
 
-  if (nextState.terminado) {
+  const { evento } = decision.datos;
+  const { state: resuelto, logs } = resolverOpcion(state, evento, respuesta.opcionId, rng);
+
+  // K4-C: la bifurcación que decidiste corre tu perfil hacia la afinidad de la opción que tomaste.
+  const tomada = opcionesConPrevia(state, evento).find((opcion) => opcion.id === respuesta.opcionId);
+  const nextState = tomada
+    ? { ...resuelto, player: { ...resuelto.player, perfil: derivarPerfil(resuelto.player.perfil, afinidadDeOpcion(tomada)) } }
+    : resuelto;
+
+  if (nextState.terminado || nextState.phase === 'retirado') {
+    return { state: nextState, logs };
+  }
+
+  if (evento.escandalo) {
+    const prensa = pausaDePrensa(nextState, logs);
+    if (prensa) {
+      return prensa;
+    }
+  }
+
+  return encadenar(nextState, logs, evento, decision.slot, rng);
+}
+
+function encadenar(nextState, logs, evento, slot, rng) {
+  // K4-C2: un `retirarse` deja `phase: 'retirado'` sin `terminado` (la ventana de vuelta): tampoco se amontona nada.
+  if (nextState.terminado || nextState.phase === 'retirado') {
     return { state: nextState, logs };
   }
 
@@ -426,14 +608,11 @@ export function resolver(state, decision, respuesta, rng) {
   // pasó, este segundo lo sigue gobernando `probSegundaDecisionPorTipo` como
   // en la fase 2 — el presupuesto no lo pisa.
   const probabilidad = BALANCE.edad.probSegundaDecisionPorTipo[tipoDeSplit(nextState)];
-  if (decision.slot === 1 && chance(probabilidad, rng)) {
+  if (slot === 1 && chance(probabilidad, rng)) {
     const segundoEvento = elegirEvento(nextState, rng, { excluirId: evento.id });
     if (segundoEvento) {
-      return {
-        state: nextState,
-        logs,
-        decision: decisionDesdeEvento(nextState, segundoEvento, { franja: 'normal', slot: 2 })
-      };
+      const segundo = presentarOResolver(nextState, segundoEvento, 2, rng);
+      return { ...segundo, logs: [...logs, ...segundo.logs] };
     }
   }
 
@@ -441,5 +620,11 @@ export function resolver(state, decision, respuesta, rng) {
 }
 
 export function resolverAuto(state, decision, rng) {
+  if (decision.datos.motivo === 'minijuego') {
+    // Regla 5 de 4.6: Node simula el minijuego con gauss corrido por el stat relevante, como la serie.
+    const entrada = minijuegoPorId(decision.datos.minijuego);
+    const valor = state.player.stats[decision.datos.statRelevante] ?? 50;
+    return { resultado: clamp(gauss(valor / 100, entrada.spread, rng), 0, 1) };
+  }
   return elegirOpcionAutomatica(state, decision, rng);
 }

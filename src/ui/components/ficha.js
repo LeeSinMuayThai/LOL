@@ -29,7 +29,9 @@ const LABEL_INTERNACIONAL = {
 };
 const FASE_LABEL = { amateur: 'Amateur', profesional: 'Profesional', retirado: 'Retirado' };
 
-const LABEL_MARCA = {
+// Exportado para el check de ids crudos de `validate.js`: toda marca que `core/contexto.js` puede producir tiene que
+// estar acá, o la ficha muestra el id como chip.
+export const LABEL_MARCA = {
   deuda_sueno: 'Deuda de sueño',
   pc_confiscada: 'PC confiscada',
   riesgo_familiar: 'Riesgo familiar',
@@ -56,7 +58,10 @@ const LABEL_MARCA = {
   lesion_cronica: 'Lesión crónica',
   servicio_militar: 'Servicio militar',
   ventana_de_vuelta: 'Ventana de vuelta',
-  vuelta_del_retiro: 'Vuelta del retiro'
+  vuelta_del_retiro: 'Vuelta del retiro',
+  descenso: 'Descendiste',
+  top_mundial: 'Top 20 del mundo',
+  mejor_del_mundo: 'Mejor del mundo'
 };
 const MARCAS_DE_RIESGO = new Set(['deuda_sueno', 'pc_confiscada', 'riesgo_familiar', 'mentalidad_al_limite']);
 const MARCAS_VISIBLES = 6;
@@ -162,6 +167,15 @@ function crearRankedHero(state, modulos) {
   wrap.append(nombre, lpEl, pista);
   fichaPrevia.lp = ranked.lp;
   return wrap;
+}
+
+// La línea de contexto de la ficha (org · liga · fecha · edad), con el nombre visible de la liga ("LCK CL", no
+// "LCK_CL"). Pura: la usa el check de ids crudos de `validate.js`.
+export function lineaDeContextoFicha(state) {
+  const org = state.career.currentOrg ? `${state.career.currentOrg} · ` : '';
+  const ligaId = state.mundo.ligas?.find((l) => l.id === state.career.liga)?.id ?? state.mundo.ligaOrigen;
+  const liga = NOMBRE_DE_LIGA[ligaId] ?? ligaId;
+  return `${org}${liga} · ${state.calendario.etiqueta} · ${state.age} años`;
 }
 
 function crearMarcas(marcas) {
@@ -358,15 +372,22 @@ export function renderFicha(container, state, modulos) {
 
   const contextoLinea = document.createElement('div');
   contextoLinea.className = 'ficha-contexto-linea';
-  const org = state.career.currentOrg ? `${state.career.currentOrg} · ` : '';
-  const liga = state.mundo.ligas?.find((l) => l.id === state.career.liga)?.id ?? state.mundo.ligaOrigen;
-  contextoLinea.textContent = `${org}${liga} · ${state.calendario.etiqueta} · ${state.age} años`;
+  contextoLinea.textContent = lineaDeContextoFicha(state);
 
   const estadoLinea = document.createElement('div');
   estadoLinea.className = 'ficha-estado-linea';
   estadoLinea.textContent = state.contexto
     ? modulos.describirContexto(state.contexto)
     : (FASE_LABEL[state.phase] ?? state.phase);
+
+  // K4-C: tu perfil en una palabra (el que hoy resuelve lo chico; las bifurcaciones lo van corriendo).
+  if (state.player.perfil) {
+    const perfil = document.createElement('span');
+    perfil.className = 'ficha-perfil';
+    perfil.textContent = modulos.nombreDePerfil?.(state.player.perfil.actual) ?? '';
+    perfil.title = 'Tu perfil: decide por vos los eventos que no son bifurcación';
+    nombreLinea.appendChild(perfil);
+  }
 
   identidad.append(nombreLinea, contextoLinea, estadoLinea);
   encabezado.append(nivelBox, identidad);

@@ -31,8 +31,19 @@
 // `ajustePartido`— en sus logs, y `entradaExtra` en los datos del minijuego de
 // un mapa, para que la previa lea el comodín) · 7 (K3-B, los efectos que duran: `player.bonusPermanente`, un campo
 // por stat de curva, y `registro.marcas`, lo que cada decisión dejó en las curvas de edad — K3-A puede subirla también:
-// la rama que se mergea segunda toma max + 1).
-export const VERSION = 7;
+// la rama que se mergea segunda toma max + 1) · 8 (K4, la integración de K4-B, K4-C y K4-D en un solo número —
+// K4-B, la serie como plan: `serie.plan`, `guardado`, `replanUsado`, `rivalJuega`, `rivalJuegaEnMapa` y `sinNadaEnJuego`,
+// sin `preSerieUsado`; `career.charlaUsadaEn`; y en el log de cada mapa `rivalJuega`, `plan` y `charla` — K4-C, el perfil:
+// `player.perfil`, `flags.categoriasRecientes`, `flags.splitMainMuerto` y `flags.saltosConPrueba` — K4-D, la pretemporada
+// en una sola parada: `flags.preparacionDeSplit`, el año cuya preparación ya se resolvió, y `preparacion` —las cartas de
+// las rutinas de offseason— en los datos de la decisión del mercado y de la prueba del salto) · 9 (K4-C2, las
+// bifurcaciones con efectos de carrera: `flags.ofertaDeImport` y `flags.rolDeOrigen`) · 10 (K5, la integración de K5-A,
+// K5-B y K5-C en un solo número — K5-A, el Mundial de verdad: `state.internacional` (Swiss + bracket), `torneo`/`etapa`
+// en `serie` y `record`/`campeon` en cada `registro.internacionales` — K5-B, la región se elige: las ligas del mundo
+// suman LRN y LRS, las tier 2 de LATAM sin primera arriba, con `sinPrimera` y `alimentaA` — K5-C, el final lo decide el
+// mercado: `flags.splitsSinOfertaEnTier`, `flags.forkMercadoSplit`, `tarjeta.motivo` y `state.motivoRetiro`, el único
+// lugar del motivo del retiro —K4-C2 lo había puesto en `flags.motivoRetiro`—).
+export const VERSION = 10;
 
 export function serializar(state, rng, rngUi) {
   return JSON.stringify({

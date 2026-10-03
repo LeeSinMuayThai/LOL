@@ -4,6 +4,7 @@ import { nivelDelJugador } from './ficha.js';
 import { etiquetaRol } from '../data/roles.js';
 import { plata } from './formato.js';
 import { seVaDelMundo, nivelAnclaReemplazo } from './plantel.js';
+import { nombreVisibleDeLiga } from './ligas.js';
 
 // LA DEMANDA EXISTE (fase 9M, PLAN.md §9M.3): se acabó el `roll(0, techo)`.
 //
@@ -172,22 +173,22 @@ function noResidentesTrasFichar(state, orgNombre, rol, liga, jugadorEsResidente)
 // nadie —ni la demanda, ni el piso de franquicia (9R0e), ni un ascenso—.
 export function cumpleReglasDuras(state, org, liga, rol) {
   if (state.age < (liga.edadMinima ?? 0)) {
-    return { ok: false, motivo: `no llegás a la edad mínima de ${liga.id}` };
+    return { ok: false, motivo: `no llegás a la edad mínima de ${nombreVisibleDeLiga(liga.id)}` };
   }
   if (residenciaEn(state, liga.regionId) === 'import') {
     const noResidentes = noResidentesTrasFichar(state, org.nombre, rol, liga, false);
     if (noResidentes > (liga.cupoImports ?? 99)) {
-      return { ok: false, motivo: `${liga.id} ya tiene el cupo de imports lleno` };
+      return { ok: false, motivo: `${nombreVisibleDeLiga(liga.id)} ya tiene el cupo de imports lleno` };
     }
     if (BALANCE.plantel.tamano - noResidentes < (liga.minimoResidentes ?? 0)) {
-      return { ok: false, motivo: `${liga.id} necesita más residentes en el roster` };
+      return { ok: false, motivo: `${nombreVisibleDeLiga(liga.id)} necesita más residentes en el roster` };
     }
     // Fase 9Md: el listón para un import escala con `dificultadAdaptacion` — a
     // LCK/LPL hay que ser mucho mejor que el local; a CBLOL/LCS, apenas.
     const margenImport = BALANCE.mercado.margenImport
       * (1 + (liga.dificultadAdaptacion ?? 50) / 100 * BALANCE.mercado.factorDificultadImport);
     if (nivelDelJugador(state) < org.fuerza + margenImport) {
-      return { ok: false, motivo: `como import a ${liga.id} no alcanza con estar apenas mejor` };
+      return { ok: false, motivo: `como import a ${nombreVisibleDeLiga(liga.id)} no alcanza con estar apenas mejor` };
     }
   }
   return { ok: true };
@@ -196,7 +197,7 @@ export function cumpleReglasDuras(state, org, liga, rol) {
 // Fase 9Mi (PLAN.md §9M.12.2 punto 1): la mejor alternativa REAL de una org a
 // ficharte para `rol` — contra la que se disputa el asiento en `ofertaPosible`.
 // Es lo mejor de:
-//   - el calibre de la liga: `max(liga.prestigio, org.fuerza) −
+//   - el calibre de la liga: `max(calibreDeLiga, org.fuerza) −   (calibreDeLiga: un cuantil bajo, revisión K5)
 //     alternativaPisoFuerza`. Un asiento en LCK atrae talento de LCK aunque el
 //     club venga colapsado; un club fuerte en una liga chica pide su propia
 //     fuerza. Es el término que hace que el tier mida "¿le ganás a la
@@ -211,11 +212,33 @@ export function cumpleReglasDuras(state, org, liga, rol) {
 // Subida de `systems/mercado.js` a `core/` (lo pedía §9M.12.2). La heurística
 // de negociación de `mercado.js` (piso `org.fuerza − margenBombazoFuerza`)
 // quedó allá: no es una alternativa de fichaje, es cuánto te quieren.
+// K5-B (D78): el calibre de una liga es el nivel REAL de sus clubes —el promedio de `org.fuerza`, que
+// deriva del plantel—, no su `prestigio`. En LCK (95) y LPL (93) el prestigio está muy por encima de lo que
+// juegan sus titulares (~82 y ~81, medido), así que con el prestigio como calibre había que tener 97-99 de
+// nivel para ganar un asiento: con `criterio` hubo 0 splits de LCK y de LPL en 400 carreras, Corea incluida.
+// En el resto de las ligas las dos cosas casi coinciden. Una liga sin orgs cae al prestigio.
+// Revisión de K5: el calibre ya no es el PROMEDIO de la liga sino un cuantil bajo de sus clubes
+// (`demanda.cuantilCalibreDeLiga`), y el término de cada org es `max(org.fuerza, ese cuantil)`. Con el promedio,
+// la misma vara (~81 en LCK) valía para el campeón y para el colista, y quedaba por encima de donde pica una carrera
+// coreana con `criterio` (p50 ~82, con el castigo etario encima): 0 splits de LCK en 60 carreras. Con el cuantil, el
+// club fuerte sigue pidiendo su fuerza y el flojo pide la del fondo de su liga, que es contra quien compite el asiento.
+export function calibreDeLiga(liga) {
+  const orgs = liga?.orgs ?? [];
+  if (!orgs.length) {
+    return liga?.prestigio ?? 0;
+  }
+  const fuerzas = orgs.map((org) => org.fuerza ?? 0).sort((a, b) => a - b);
+  const posicion = BALANCE.demanda.cuantilCalibreDeLiga * (fuerzas.length - 1);
+  const abajo = Math.floor(posicion);
+  const arriba = Math.min(fuerzas.length - 1, abajo + 1);
+  return fuerzas[abajo] + (fuerzas[arriba] - fuerzas[abajo]) * (posicion - abajo);
+}
+
 export function nivelAlternativaAsiento(state, orgNombre, rol) {
   const org = orgDe(state, orgNombre);
   const liga = ligaDeOrg(state, orgNombre);
   const fuerzaOrg = org?.fuerza ?? 0;
-  const calibre = Math.max(liga?.prestigio ?? 0, fuerzaOrg);
+  const calibre = Math.max(calibreDeLiga(liga), fuerzaOrg);
 
   const titular = state.mundo.planteles?.[orgNombre]?.[rol];
   const nivelTitular = titular && !titular.esJugador && !seVaDelMundo(titular, fuerzaOrg)

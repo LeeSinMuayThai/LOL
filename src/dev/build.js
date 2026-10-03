@@ -62,7 +62,18 @@ const SPLITS_DE_VERIFICACION = 30;
 // esa revisión (validación y textos del puntaje) el peso medido dio 1801,4 KB: ya
 // por encima. Subido a 1900 con margen para las pantallas que faltan de la fase K
 // (la previa de K2d, K4/K5), sobre el peso medido ese día, no una expectativa.
-const PESO_MAXIMO_KB = 1900;
+//
+// Re-medido al abrir K4 (2026-10-03): el peso medido ese día dio 1870 KB contra el
+// techo de 1900, el mismo margen-que-se-cierra-en-silencio por cuarta vez. Subido a
+// 2000 con margen para las pantallas de K4 y K5, sobre el peso medido ese día, no
+// una expectativa.
+//
+// Re-medido en la integración de K5 (2026-10-03): con K5-A (el Mundial: core/internacional.js, systems/internacional.js
+// y su tarjeta), K5-B (las ligas LRN y LRS, los chips de región) y K5-C (el final por mercado) juntos, el peso medido
+// dio 2063,3 KB contra el techo de 2000: el margen para K4 y K5 se gastó entero. Subido a 2100: 37 KB de margen sobre
+// el peso medido ese día, no una expectativa. No hay pantallas planeadas después de K5 (K5c calibra números, el resto
+// son arreglos), así que el margen es el de los arreglos y no uno para K6.
+const PESO_MAXIMO_KB = 2100;
 
 function copiar(desde, hacia) {
   const stat = fs.statSync(desde);

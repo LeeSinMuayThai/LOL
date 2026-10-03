@@ -31,29 +31,38 @@ export const BLOQUES_DE_CORRIMIENTO = {
 //   rebasea — la calibración que lo re-basea (tiene que ser el `cierraCon` de su bloque);
 //   porque  — opcional: por qué salió de banda.
 export const BANDAS_PENDIENTES = [
-  // K3c re-fijó el umbral de pausa del draft (bloque A) y "Nadie te frena en el draft..." volvió a su banda: su entrada
-  // se borró. Pero devolver las pausas sacó de banda a OTRO check, de otro bloque: es el único caso de una entrada
-  // cuyo `commit` (K3c) no es una subfase de su bloque (PLAN.md, K3c, punto 2). El custodio 3 no lo prohíbe: solo
-  // pide que `rebasea` sea el cierre del bloque (K4c).
+  // K4-B borró el check "Mediana de decisiones de draft por serie ∈ [0, 1] y ≥28% de series sin ningún draft" (no hay
+  // más draft mapa a mapa; regla 17, ver validate.js) y con él su entrada de acá.
+  // K4-B: el rival también quema campeones con el Fearless (su fuerza de mapa se degrada como la tuya) y el Bo5 conjunto
+  // volvió a su banda (criterio 800 × 60): la entrada "K3c meta Bo5 favorito claro (conjunto) ∈ [75, 85]" se borró.
+  // K4 (integración) había sacado de banda por arriba el Bo5 del favorito claro, los dos checks (jugador 86,6%, conjunto
+  // 86,4%). Con K5 integrado volvieron a su banda (criterio 800 × 60: jugador 84%, rival 80,1%, conjunto 82,9%) y sus dos
+  // entradas se borraron (custodio 1).
+  // K4 (revisión 2): el reparto del banco de mecánicas es una banda del ritmo. Con K4 los minijuegos de mapa salen solo
+  // en el clímax (el mapa decisivo) y la prensa tras una final o un escándalo, así que la mezcla se corrió entera.
   {
-    check: 'Mediana de decisiones de draft por serie ∈ [0, 1] y ≥28% de series sin ningún draft',
+    check: 'El banco de mecánicas se reparte: ninguna se lleva la carrera (9R4c)',
     bloque: 'B',
-    medido: '27% de las series sin ningún draft (1200 series, check)',
-    banda: '≥ 28% de series sin draft',
-    commit: 'K3c',
+    medido: '51% rueda_de_prensa con K5 integrado (300 carreras × 60 splits; con K4, 48%: 1384 de 2874); la_prueba 20% en K4; last_hit, la_vision y el_kite (solo mapa_cerrado) no salen nunca',
+    banda: '≤ 35%',
+    commit: 'K4',
     rebasea: 'K4c',
-    porque: 'K3c re-fijó el umbral de pausa del draft (bloque A); K4 rediseña el draft (plan de Fearless) y K4c re-basea esta banda'
+    porque: 'K4 dejó los minijuegos solo en el clímax y la prensa tras finales/escándalos; K4c re-balancea el banco (incluidas las tres mecánicas que solo tenían momento mapa_cerrado)'
   },
-  // El check duro del bloque A mide el Bo5 del lado del jugador (83,8%, dentro de banda). El conjunto, que suma el lado del
-  // rival, se va de banda por la asimetría del Fearless y es de K4: misma excepción que la del draft (commit K3c).
+  // K5 (integración) había sacado de banda el check de D78 de K5-B (LCK 0 splits en 60 carreras coreanas con criterio).
+  // La revisión de K5 cambió el calibre de liga a un cuantil bajo por org y congeló los asientos ofrecibles post-mercado:
+  // LCK 0 -> 12 splits (1 carrera), LPL 6 -> 33 (4 carreras), 60 × 60, región elegida. La entrada se borró (custodio 1).
+  // La longevidad es del bloque C (el mundo). En la integración de K5 dio r = 0,32 justo (el check pide > 0,32); en la
+  // revisión, el calibre de liga por cuantil (D78) la llevó a 0,27 y el mundo amateur que renueva contratos NPC a 0,21
+  // (medido commit a commit, 1200 carreras).
   {
-    check: 'K3c meta Bo5 favorito claro (conjunto) ∈ [75, 85]',
-    bloque: 'B',
-    medido: '87,3% (criterio 400 × 60; jugador 83,8%, rival 93,9%)',
-    banda: '[75, 85]',
-    commit: 'K3c',
-    rebasea: 'K4c',
-    porque: 'asimetría del Fearless (solo te degrada a vos): la resuelve el plan de Fearless de K4'
+    check: 'La duración de la carrera correlaciona con el potencial oculto (r > 0.32)',
+    bloque: 'C',
+    medido: 'r = 0,21 (1200 carreras; integración de K5: 0,32; tras el calibre por cuantil de D78: 0,27; tras la renovación NPC en el mundo amateur: 0,21)',
+    banda: 'r > 0,32',
+    commit: 'K5',
+    rebasea: 'K5c',
+    porque: 'K5 movió el mundo (mercado por cuantil de liga, asientos congelados post-mercado, contratos NPC renovados en la etapa amateur): más carreras de potencial medio encuentran asiento; K5c calibra la longevidad del mundo nuevo'
   }
 ];
 

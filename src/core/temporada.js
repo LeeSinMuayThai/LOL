@@ -1,7 +1,7 @@
 import { clamp, clampStat } from './numeros.js';
-import { factorDeCampeon } from './ajusteMeta.js';
 import { ligaOZonaDeCarrera } from './competicion.js';
 import { jugarPartido, probabilidadDePartido } from './partido.js';
+import { rondaInicial } from './serie.js';
 import { BALANCE } from '../data/balance.js';
 
 // La temporada regular (fase 5): antes se resolvía con UNA tirada
@@ -130,33 +130,127 @@ export function posicionEnTabla(tabla, org) {
   return indice < 0 ? tabla.length : indice + 1;
 }
 
-// El hash determinista que le da un equipo "de local" a cada rival de
-// generación DENTRO de su liga tier 1. No consume `rng`: los rivales no
-// tienen una org asignada en `core/mundo.js` (se generan antes de que exista
-// ninguna carrera profesional), así que esto les da una sin tocar el stream
-// ni el módulo de generación del mundo. Solo importa cuando el jugador
-// compite en la MISMA liga tier 1 que el rival: es la única situación real en
-// la que se cruzarían.
-function orgDelRival(rival, liga) {
-  if (!liga || liga.tier !== 1 || rival.liga !== liga.id || liga.orgs.length === 0) {
+// K4-A (PLAN.md "K4 — decisiones de spec", K4-A): la fecha que frena es la que
+// DECIDE algo, no la primera con cualquier motivo. Son cuatro, en este orden de
+// prioridad, y a lo sumo una por split (la de mayor prioridad; a igual
+// prioridad, la primera). `puntero`, `presion` y el rival de generación dejaron
+// de marcar: medido, el cupo se gastaba en ellos y el partido que define la
+// clasificación salía 0,1 veces por carrera (D62).
+export const PRIORIDAD_MOTIVOS = ['define_clasificacion', 'archirrival', 'clasico', 'revancha'];
+
+// Las victorias reales de cada org al arrancar la fecha `t.indice`.
+function victoriasActuales(t) {
+  return Object.fromEntries([
+    [t.filaPropia.org, t.filaPropia.ganados],
+    ...Object.values(t.registrosOtros).map((fila) => [fila.org, fila.ganados])
+  ]);
+}
+
+// Las victorias ESPERADAS de cada org en cada jornada que falta (de `t.indice`
+// al final): la p de cada cruce, ajeno o tuyo, sumada en vez de tirada. Es una
+// proyección: pura, sin `rng`, la misma sobre el mismo estado.
+function victoriasEsperadasPorJornada(state, t) {
+  const jornadas = [];
+  for (let k = t.indice; k < t.calendario.length; k += 1) {
+    const fecha = t.calendario[k];
+    const pPropia = probabilidadDePartido(state, t.fuerzaPropia, fecha.fuerzaRival, 'fecha');
+    const esperadas = { [t.filaPropia.org]: pPropia, [fecha.rival]: 1 - pPropia };
+    for (const cruce of t.cruces?.[k] ?? []) {
+      const pLocal = probabilidadDePartido(null, cruce.fuerzaLocal, cruce.fuerzaVisitante, 'fecha');
+      esperadas[cruce.local] = pLocal;
+      esperadas[cruce.visitante] = 1 - pLocal;
+    }
+    jornadas.push(esperadas);
+  }
+  return jornadas;
+}
+
+// La ronda con la que arrancarías los playoffs (`rondaInicial`: 'semis' con
+// bye, 'cuartos', o `null` si no entrás) con estas victorias finales. Empate en
+// victorias: gana tu fila, como en `tablaDePosiciones` (tu fila va primero).
+function rondaConVictorias(victorias, orgPropia, formato) {
+  const propias = victorias[orgPropia];
+  const delante = Object.entries(victorias).filter(([org, v]) => org !== orgPropia && v > propias).length;
+  return rondaInicial(delante + 1, { byes: formato.byes ?? 0, clasifican: formato.clasifican });
+}
+
+// ¿Esta fecha decide algo? Con la tabla de hoy y el fixture que falta, se
+// proyecta el final del split dos veces —ganando la fecha y perdiéndola— y se
+// mira con qué ronda terminás en cada caso. Decide si las dos rondas difieren:
+// entrar o no a playoffs, o el bye a semis (el sembrado). Devuelve
+// `{ siGana, siPierde }` (rondas) o `null` si no decide nada, si la liga no
+// tiene playoffs o si falta más de `ventanaDefineClasificacion` fechas: antes de
+// eso la proyección es una sola cuenta de esperanzas y decir "de este partido
+// depende" sería mentirle al jugador.
+export function defineClasificacion(state, liga, t, indice = t.indice) {
+  const formato = liga?.formatoPlayoffs;
+  if (!formato || indice < t.calendario.length - BALANCE.temporada.ventanaDefineClasificacion) {
     return null;
   }
-  const hash = [...rival.handle].reduce((suma, caracter) => suma + caracter.charCodeAt(0), 0);
-  return liga.orgs[hash % liga.orgs.length].nombre;
+  return evaluarFecha(proyeccionDelSplit(state, t), indice - t.indice, t, formato);
 }
 
-export function esRivalDeGeneracion(state, liga, orgRival) {
-  return state.mundo.rivales.some((rival) => orgDelRival(rival, liga) === orgRival);
+// ¿Alguna fecha DESPUÉS de la de ahora decide algo, según la proyección de hoy?
+// Una fecha de menor prioridad (el archirrival, un clásico) no gasta el cupo del
+// split si una de mayor prioridad se ve venir. Si la proyección falla (los
+// resultados cambiaron la tabla), el cupo queda libre para las que sigan.
+export function defineClasificacionMasAdelante(state, liga, t) {
+  const formato = liga?.formatoPlayoffs;
+  if (!formato) {
+    return false;
+  }
+  const proyeccion = proyeccionDelSplit(state, t);
+  const desde = Math.max(t.indice + 1, t.calendario.length - BALANCE.temporada.ventanaDefineClasificacion);
+  for (let j = desde; j < t.calendario.length; j += 1) {
+    if (evaluarFecha(proyeccion, j - t.indice, t, formato)) {
+      return true;
+    }
+  }
+  return false;
 }
 
-// Los motivos por los que ESTA fecha, entre todas las del split, tiene algo
-// en juego. Puede haber varios a la vez (una revancha contra el puntero
-// también sería un clásico); `motivoPrincipal` abajo elige cuál manda para
-// filtrar contenido. `parejo` es el único que siempre está disponible como
-// red: sin él, una liga sin clásicos ni racha nunca completaría su cupo de
-// fechas marcadas.
-export function motivosDeFecha(state, liga, fecha, tablaAntes, rachaPropia, indice, totalFechas) {
+function proyeccionDelSplit(state, t) {
+  return { base: victoriasActuales(t), esperadas: victoriasEsperadasPorJornada(state, t) };
+}
+
+// El final proyectado con la jornada `offset` (relativa a `t.indice`) resuelta
+// por una rama —ganás o perdés—: tu fecha y la de tu rival pasan a ser un
+// resultado, el resto del fixture sigue en esperanza.
+function evaluarFecha({ base, esperadas }, offset, t, formato) {
+  const orgPropia = t.filaPropia.org;
+  const rival = t.calendario[t.indice + offset].rival;
+  const rondaSi = (gana) => {
+    const finales = { ...base };
+    esperadas.forEach((jornada, i) => {
+      for (const [org, valor] of Object.entries(jornada)) {
+        if (i !== offset || (org !== orgPropia && org !== rival)) {
+          finales[org] = (finales[org] ?? 0) + valor;
+        }
+      }
+    });
+    finales[orgPropia] += gana ? 1 : 0;
+    finales[rival] = (finales[rival] ?? 0) + (gana ? 0 : 1);
+    return rondaConVictorias(finales, orgPropia, formato);
+  };
+  const siGana = rondaSi(true);
+  const siPierde = rondaSi(false);
+  return siGana !== siPierde ? { siGana, siPierde } : null;
+}
+
+// Los motivos por los que ESTA fecha decide algo. Pueden ser varios a la vez;
+// `motivoPrincipal` elige el de mayor prioridad. `parejo` es el "no marca": una
+// fecha sin ninguno de los cuatro pasa resumida. `t` es la temporada en curso
+// (`career.temporada`) y `fecha` la que toca (`t.calendario[t.indice]`).
+export function motivosDeFecha(state, liga, fecha, t, definicion = defineClasificacion(state, liga, t)) {
   const motivos = [];
+
+  if (definicion) {
+    motivos.push('define_clasificacion');
+  }
+
+  if (state.mundo?.archirrival?.org === fecha.rival) {
+    motivos.push('archirrival');
+  }
 
   // Fase 9R0a: `career.orgs` sólo crece, así que sin este tope toda org por
   // la que pasaste alguna vez quedaba de "clásico" el resto de la carrera.
@@ -169,151 +263,90 @@ export function motivosDeFecha(state, liga, fecha, tablaAntes, rachaPropia, indi
     motivos.push('clasico');
   }
 
-  const puntero = tablaAntes[0];
-  if (puntero && puntero.org === fecha.rival && puntero.ganados > 0) {
-    motivos.push('puntero');
-  }
-
-  if (liga?.formatoPlayoffs && indice === totalFechas - 1) {
-    const clasifican = liga.formatoPlayoffs.clasifican;
-    const propia = tablaAntes.find((fila) => fila.org === state.career.currentOrg) ?? filaVacia(state.career.currentOrg);
-    const siGana = posicionEnTabla(
-      [...tablaAntes.filter((fila) => fila.org !== propia.org), { ...propia, ganados: propia.ganados + 1, diferencia: propia.diferencia + 1 }]
-        .sort((a, b) => b.ganados - a.ganados || (b.diferencia ?? 0) - (a.diferencia ?? 0)),
-      propia.org
-    );
-    const siPierde = posicionEnTabla(
-      [...tablaAntes.filter((fila) => fila.org !== propia.org), { ...propia, perdidos: propia.perdidos + 1, diferencia: propia.diferencia - 1 }]
-        .sort((a, b) => b.ganados - a.ganados || (b.diferencia ?? 0) - (a.diferencia ?? 0)),
-      propia.org
-    );
-    if ((siGana <= clasifican) !== (siPierde <= clasifican)) {
-      motivos.push('define_clasificacion');
-    }
-  }
-
   if (state.career.ultimoEliminadoPor && state.career.ultimoEliminadoPor === fecha.rival) {
     motivos.push('revancha');
-  }
-
-  if (rachaPropia <= -BALANCE.temporada.derrotasParaPresion) {
-    motivos.push('presion');
-  }
-
-  if (esRivalDeGeneracion(state, liga, fecha.rival)) {
-    motivos.push('rival_de_generacion');
   }
 
   return motivos.length > 0 ? motivos : ['parejo'];
 }
 
-// Orden de prioridad narrativa para cuando una fecha junta varios motivos a
-// la vez: el que manda es el que más se pueda nombrar en una línea de texto.
-const PRIORIDAD_MOTIVOS = ['define_clasificacion', 'revancha', 'clasico', 'puntero', 'presion', 'rival_de_generacion', 'parejo'];
-
 export function motivoPrincipal(motivos) {
   return PRIORIDAD_MOTIVOS.find((motivo) => motivos.includes(motivo)) ?? 'parejo';
 }
 
-// Cuánto pesa cada fecha para decidir si es una de las 2-3 que se juegan: una
-// fecha con un motivo "real" (no `parejo`) siempre pesa más que una pareja de
-// pura casualidad, y entre las parejas gana la de fuerza más cercana.
-export function puntajeDeFecha(motivos, fecha, fuerzaPropia) {
-  const tieneMotivoReal = motivos.some((motivo) => motivo !== 'parejo');
-  const cercania = 1 / (1 + Math.abs(fecha.fuerzaRival - fuerzaPropia));
-  return tieneMotivoReal ? 10 + motivos.length + cercania : cercania;
+// Qué pasa con tus playoffs según la ronda de cada rama de `defineClasificacion`.
+// Dos frases por rama: ganar y perder no dicen lo mismo con la misma ronda
+// (ganar y entrar sin más / perder y quedar afuera).
+function consecuenciaDeGanar(ronda, siPierde) {
+  if (ronda === 'semis') {
+    return 'pasás directo a semis';
+  }
+  return siPierde === null ? 'entrás a playoffs' : 'arrancás en cuartos';
 }
 
-// El draft corto de una fecha marcada (5.3): más liviano que el Fearless de
-// playoffs (no hay quema de campeones acá, es temporada regular). Fase 9Rd:
-// mismo criterio que la serie — frena sólo si el mejor campeón te mueve la
-// probabilidad de ganar la fecha más que `temporada.puntosEnJuegoParaPreguntar`
-// respecto del segundo. Sin contexto de temporada (sondas de validate) o con
-// 1-2 campeones, auto-elige el mejor por `factorDeCampeon` y no frena.
-export function decisionDeDraftFecha(state) {
-  const pool = state.player.championPool;
-  if (pool.length === 0) {
-    return { pausa: false, elegido: null };
+function consecuenciaDePerder(ronda) {
+  if (ronda === 'semis') {
+    return 'pasás directo a semis';
   }
+  return ronda === 'cuartos' ? 'arrancás en cuartos' : 'te quedás afuera';
+}
 
-  const [mejor, segundo] = [...pool].sort(
-    (a, b) => factorDeCampeon(b, state.meta.weights) - factorDeCampeon(a, state.meta.weights)
-  );
-  if (pool.length <= 2) {
-    return { pausa: false, elegido: mejor };
-  }
-
+// K4-A: la línea de por qué esta fecha frena, para la previa. Texto para
+// mostrar: sin ids, con los nombres de la fecha. `null` si no hay fecha marcada
+// en curso. Lee el estado de la pausa (nada avanza mientras dura), así que no
+// hace falta guardarlo.
+export function textoPorQueImporta(state) {
   const t = state.career?.temporada;
   const fecha = t?.fechaEnCurso;
-  if (!fecha || !Number.isFinite(t.fuerzaPropia)) {
-    return { pausa: false, elegido: mejor };
+  if (!fecha) {
+    return null;
   }
-  // Una fecha sólo se marca con un motivo real (`continuarTemporada` lo
-  // garantiza); si aun así llegara una pareja, nunca frena.
-  if (motivoPrincipal(fecha.motivos ?? []) === 'parejo') {
-    return { pausa: false, elegido: mejor };
+  const motivo = motivoPrincipal(fecha.motivos ?? []);
+  if (motivo === 'define_clasificacion') {
+    const definicion = defineClasificacion(state, ligaOZonaDeCarrera(state), t);
+    if (!definicion) {
+      return 'De este partido depende tu lugar en los playoffs.';
+    }
+    const ganar = consecuenciaDeGanar(definicion.siGana, definicion.siPierde);
+    const perder = consecuenciaDePerder(definicion.siPierde);
+    // En la última fecha es un hecho; antes, es lo que dice la tabla hoy.
+    return t.indice === t.calendario.length - 1
+      ? `Si ganás, ${ganar}. Si perdés, ${perder}.`
+      : `Con la tabla como viene: si ganás, ${ganar}; si perdés, ${perder}.`;
   }
-
-  // El mismo campeón del split contra el que se tira la fecha (`probabilidadDeFechaMarcada`): sin fallback al mejor, para
-  // que el umbral de la pausa mida la misma p que la tirada.
-  const campeonDelSplit = campeonDelSplitEnPool(state);
-  const puntos = probabilidadDeFecha(state, fecha, campeonDelSplit, mejor)
-    - probabilidadDeFecha(state, fecha, campeonDelSplit, segundo);
-
-  return puntos >= BALANCE.temporada.puntosEnJuegoParaPreguntar
-    ? { pausa: true }
-    : { pausa: false, elegido: mejor };
+  if (motivo === 'archirrival') {
+    return `Es contra el equipo de tu archirrival: ahí juega ${state.mundo.archirrival.handle}.`;
+  }
+  if (motivo === 'clasico') {
+    return `Es contra ${fecha.rival}, tu ex equipo: contra ellos siempre pesa distinto.`;
+  }
+  if (motivo === 'revancha') {
+    return `Es la revancha: ${fecha.rival} te eliminó la última vez que se cruzaron.`;
+  }
+  return null;
 }
 
-// La probabilidad de ganar la fecha con `elegido`, construida igual que
-// `resolverFechaMarcada`: `t.fuerzaPropia` corrida por `factorDraftFecha`
-// (relativo al campeón del split) → la misma p con la que el motor tira la
-// fecha (`probabilidadDePartido`, regla 15).
-// K2d: es la misma función con la que la fecha marcada se tira y con la que la
-// previa la muestra (`probabilidadDeFechaMarcada`).
-function probabilidadDeFecha(state, fecha, campeonDelSplit, elegido, ajustePartido = 0) {
-  const fuerzaFecha = fuerzaDeFecha(state.career.temporada.fuerzaPropia, elegido, campeonDelSplit, state.meta.weights, ajustePartido);
-  return probabilidadDePartido(state, fuerzaFecha, fecha.fuerzaRival, 'fecha');
-}
-
-// K2d: el campeón del split como entrada del pool (`null` si no está), contra
-// el que `factorDraftFecha` mide el campeón de la fecha.
+// K2d: el campeón del split como entrada del pool (`null` si no está): el
+// con el que se juega la fecha marcada (K4-A: sin draft).
 export function campeonDelSplitEnPool(state) {
   return state.player.championPool.find((c) => c.name === state.player.campeonDelSplit);
 }
 
 // K2d: la p de la fecha marcada en curso (`temporada.fechaEnCurso`), con el
-// campeón que eligió el draft corto y el `ajustePartido` del momento (por
-// defecto, los del estado). ES la p que tira `resolverFechaMarcada` y la que
-// muestra la previa (regla 15).
-export function probabilidadDeFechaMarcada(state, {
-  elegido = state.career.temporada.fechaEnCurso.campeonElegido ?? null,
-  ajustePartido = state.career.temporada.ajustePartido ?? 0
-} = {}) {
-  return probabilidadDeFecha(state, state.career.temporada.fechaEnCurso, campeonDelSplitEnPool(state), elegido, ajustePartido);
+// `ajustePartido` del momento (por defecto, el del estado). ES la p que tira
+// `resolverFechaMarcada` y la que muestra la previa (regla 15).
+// K4 (integración): K4-A sacó el draft de la fecha marcada —se juega con el campeón del split, el que ya asumió
+// `t.fuerzaPropia`—, así que el viejo `factorDraftFecha` (y su tope `impactoDraftFecha`) daba siempre 0 y se borró.
+export function probabilidadDeFechaMarcada(state, { ajustePartido = state.career.temporada.ajustePartido ?? 0 } = {}) {
+  const t = state.career.temporada;
+  return probabilidadDePartido(state, fuerzaDeFecha(t.fuerzaPropia, ajustePartido), t.fechaEnCurso.fuerzaRival, 'fecha');
 }
 
 // La fuerza con la que se juega UNA fecha: la del split (`t.fuerzaPropia`,
-// determinista) corrida por el campeón del draft corto (relativo al del split)
-// y por el momento de la fecha marcada. Una sola expresión para el motor y
-// para el draft.
-export function fuerzaDeFecha(fuerzaPropia, elegido, campeonDelSplit, weights, ajustePartido) {
-  return fuerzaPropia * (1 + factorDraftFecha(elegido, campeonDelSplit, weights) + ajustePartido);
-}
-
-// Cuánto mueve la fuerza de ESTA fecha el campeón elegido en el draft corto,
-// RELATIVO al que ya asumió `t.fuerzaPropia` (el campeón del split). Fase 9Rc:
-// antes usaba solo la afinidad absoluta del elegido, así que elegir el MISMO
-// campeón del split igual sumaba un factor ≠ 0 — doble conteo. Ahora es el ratio
-// de `factorDeCampeon` menos 1: mismo campeón → exactamente 0. Acotado a
-// `impactoDraftFecha`: una fecha de temporada regular no se gana en el draft.
-export function factorDraftFecha(elegido, base, weights) {
-  if (!elegido) {
-    return 0;
-  }
-  const t = BALANCE.temporada;
-  const ratio = factorDeCampeon(elegido, weights) / Math.max(0.001, factorDeCampeon(base, weights));
-  return clamp(ratio - 1, -t.impactoDraftFecha, t.impactoDraftFecha);
+// determinista) corrida por el momento de la fecha marcada. Una sola expresión
+// para el motor y para la previa.
+export function fuerzaDeFecha(fuerzaPropia, ajustePartido) {
+  return fuerzaPropia * (1 + ajustePartido);
 }
 
 export function factorDelMomento(resultadoTirado) {

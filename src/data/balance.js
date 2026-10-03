@@ -91,6 +91,12 @@ export const BALANCE = {
     // el cooldown fijo del propio evento.
     fatigaPorVista: 0.8,
     bonusNovedad: 2.5,
+    // J4 (aplicado en K4-C): la bisagra deja de ser filtro y pasa a ser un multiplicador del peso — sigue ganando
+    // casi siempre, pero con tirada. Y la categoría reciente cuenta: un evento de una categoría que salió en los
+    // últimos `categoriasRecientesMax` eventos compite con su peso × `factorCategoriaReciente`.
+    factorBisagra: 6,
+    factorCategoriaReciente: 0.3,
+    categoriasRecientesMax: 2,
     // Fase 9Ra: el cooldown de un evento se cuenta en SPLITS, no en "próximos N
     // eventos resueltos". Este es el piso para los 8 eventos que declaran
     // `cooldown: 0` o lo omiten — sin él podían repetir en el mismo split.
@@ -127,6 +133,15 @@ export const BALANCE = {
 
   // Valores de arranque del jugador. Son las bases sobre las que el mundo
   // generado (paso siguiente del roadmap) aplica su dispersion.
+  // K4-C: el perfil que resuelve los eventos que no son bifurcación (`core/perfil.js`, tabla en
+  // `data/perfiles.json`). `pesoMagnitud` traduce la magnitud cualitativa de la previa a un número para el
+  // encaje; `derivaPorBifurcacion` es α en `pesos ← (1 − α)·pesos + α·[afinidad de la opción tomada]`: con 0,2
+  // hacen falta 4 bifurcaciones seguidas hacia otro perfil para que cambie la palabra de la ficha.
+  perfil: {
+    pesoInicialElegido: 1,
+    derivaPorBifurcacion: 0.2,
+    pesoMagnitud: { baja: 1, media: 2, alta: 3 }
+  },
   inicial: {
     stats: {
       mecanica: 55,
@@ -593,6 +608,9 @@ export const BALANCE = {
     // Fase 9Md: cuántos splits después de un descenso de tier 1 sigue prendida
     // la marca `descenso`.
     ventanaDescenso: 4,
+    // J4 (aplicado en K4-C): `main_muerto` es una TRANSICIÓN — se prende cuando tu main cae de S/A a B/C de un
+    // parche al otro (`systems/meta.js` estampa `flags.splitMainMuerto`) y dura estos splits mientras siga caído.
+    ventanaMainMuerto: 2,
     // Fase 10a (D30): cuántos puntos de NIVEL por debajo de tu propio pico
     // cuentan como declive biológico real (una de las tres puertas de
     // `etapa: 'declive'`, junto con estar libre o banqueado).
@@ -634,6 +652,9 @@ export const BALANCE = {
   },
 
   roster: {
+    // K4-C2: el cambio de línea de una bifurcación (`systems/roster.js:cambiarDeRol`) rearma el pool con esta
+    // cantidad de campeones de la línea nueva, con la maestría de recién aprendidos.
+    cambioDeRol: { tamanoPool: 3 },
     // Al entrar a un equipo sos el rookie: la jerarquia arranca abajo y hay que
     // ganarsela split a split. Cambiar de equipo la resetea parcialmente.
     jerarquiaInicial: 22,
@@ -1047,6 +1068,10 @@ export const BALANCE = {
     // (`nivelAnclaReemplazo − canteraNivelBajoOrg`) es el último recurso, no lo
     // que la org apunta.
     alternativaPisoFuerza: 2,
+    // Revisión de K5 (D78): el calibre de una liga en la disputa del asiento es este cuantil de la fuerza de sus
+    // clubes (0 = el colista, 1 = el mejor), y cada org pide `max(org.fuerza, calibre)`. Punto de partida: el cuarto
+    // de abajo de la liga. K5c lo calibra contra cuántos coreanos y chinos con nivel llegan a su liga.
+    cuantilCalibreDeLiga: 0.25,
     // El enfriamiento etario, en puntos de nivel que se te descuentan en la
     // disputa (`core/valorMercado.js:castigoEtario`). 0 a los ≤22, ~10 a los 27,
     // ~16 a los 30 — un veterano en declive cae bajo la vara de su liga y el
@@ -1303,7 +1328,17 @@ export const BALANCE = {
     // §12.4). `ventanaDeVueltaSplits` son pretemporadas de gracia (2, a
     // splitsPorEdad=3) antes de que se cierre sola si no la usás.
     vueltasMaximas: 2,
-    ventanaDeVueltaSplits: 6
+    ventanaDeVueltaSplits: 6,
+    // K5-C (PLAN.md K5, "el final lo decide el mercado"): cuántas pretemporadas SEGUIDAS con el mercado abierto
+    // (contrato vencido o sin equipo) sin una sola oferta de tu tier o mejor antes de que `systems/mercado.js` frene
+    // con la bifurcación "bajás de tier o colgás el mouse". Se cuenta igual que `mercado.splitsSinOfertaParaLibre`
+    // (un split de mercado = una pretemporada). 99 = nunca dispara: la estructura sale con el valor que reproduce
+    // hoy; el valor de verdad (y con él la longevidad, §K.3b) lo fija K5c.
+    splitsSinOfertaEnTierParaBifurcar: 99,
+    // `resolverAuto` de esa bifurcación (el headless y el bot `criterio`): antes de esta edad bajás de tier (o
+    // seguís buscando, si nadie ofrece); desde esta edad aceptás el veredicto y te retirás — mismo criterio que
+    // `retiro_declive` ("no te renuevan" es la causa modal de retiro real, `CONCEPTO` §12.4).
+    edadAutoAceptaVeredicto: 27
   },
 
   // Fase 10c (PLAN.md §10.4.2): la cadena causal de D9. `player.deudaSueno`
@@ -1457,11 +1492,20 @@ export const BALANCE = {
     // Fase 9Re: cuántas fechas del split frenan al jugador. Bajó de "2 a 3"
     // (roll) a UNA: con 2-3 por split × ~23 splits competitivos la temporada
     // regular era ~108 de las 248 decisiones de la carrera, casi todas sacadas
-    // del mismo mazo de 24 cartas. Ahora se marca a lo sumo la primera fecha
-    // del split con un motivo real (nunca `parejo`); el resto pasa resumido.
+    // del mismo mazo de 24 cartas. K4-A: esa una es la que DECIDE algo (la
+    // clasificación, el archirrival, el clásico, la revancha), no la primera con
+    // cualquier motivo; el resto del split pasa resumido.
     fechasMarcadasPorSplit: 1,
-    // Racha de derrotas propias (dentro del split) que dispara `presion`.
-    derrotasParaPresion: 2,
+    // K4-A: en cuántas de las ÚLTIMAS fechas de un split se mira si la fecha
+    // define la clasificación (`core/temporada.js`, `defineClasificacion`). Antes
+    // de eso la proyección del resto del fixture es una cuenta de esperanzas muy
+    // abierta (la previa lo dice con "con la tabla como viene", no como un hecho).
+    // Medido (`criterio`, 100 × 60, tier 1 con playoffs, una liga de 10 equipos
+    // juega 18 fechas): con 4 sale 1 de cada 4,1 splits, con 8 uno de cada 3,0 (justo
+    // en el piso de PLAN.md K4, "≥ 1 cada 3"), con 10 uno de cada 2,7 (37%) y con 12
+    // uno de cada 2,3. Elegido 10: margen sobre el piso sin dejar que cualquier
+    // fecha del split diga "esto decide".
+    ventanaDefineClasificacion: 10,
     // Fase 9R0a: la fecha marcada dejaba de mentir pero se repetía sola.
     // `career.ultimoEliminadoPor` no se limpiaba nunca y `career.orgs` sólo
     // crece, así que "la revancha contra tal" o "el clásico contra tal"
@@ -1474,17 +1518,6 @@ export const BALANCE = {
     //     ningún motivo libre pasa resumido, y está bien.
     clasicoOrgsRecientes: 2,
     motivoRivalCooldownSplits: 4,
-    // Cuánto puede mover el draft corto de una fecha marcada la fuerza de
-    // ESA fecha puntual. Acotado a propósito: no reemplaza a `campeones.js`,
-    // que ya elige el campeón del split entero antes de que esto corra.
-    impactoDraftFecha: 0.08,
-    // Fase 9Rd: mismo criterio que la serie (`probabilidadDePartido` sobre la
-    // fuerza de la fecha corrida por `factorDraftFecha`), un poco más bajo que
-    // el 0,18 de la serie — una fecha de temporada regular se gana mucho menos
-    // en el draft (`impactoDraftFecha` ya acota su efecto a ±0,08). El plan
-    // escribió 0,07; al recalibrar la serie se subió en proporción. Ajuste
-    // fino en 9Rg (regla 2).
-    puntosEnJuegoParaPreguntar: 0.16,
     // Rango del efecto `type: 'partido'`: lo que el momento de la fecha
     // marcada le suma o resta a la fuerza propia de ESE partido puntual.
     partidoMin: -0.18,
@@ -1514,41 +1547,40 @@ export const BALANCE = {
   // La serie de playoffs (fase 4): Bo5 con Fearless draft, jugada mapa a mapa
   // reusando la fuerza de partido de `core/fuerza.js` (K2b: determinista).
   serie: {
-    // Fase 9Rd: el motor sólo te frena en el draft si el mejor campeón
-    // disponible te da bastante más probabilidad de ganar el mapa que el
-    // segundo (`puntosEnJuego` = P(mejor) − P(segundo), vía
-    // `probabilidadDePartido`). Por debajo de esto la elección no cambia el
-    // partido y se resuelve sola. El mapa decisivo BAJA el umbral (la mitad),
-    // no lo saltea.
-    //
-    // El plan escribió 0,04 / 0,015, pero al medir daban mediana 3
-    // drafts/serie y sólo 7% de series sin ninguno — el objetivo del propio
-    // plan es mediana ≤1 y ≥30% de series sin draft. La distribución real de
-    // `puntosEnJuego` (top-1 vs top-2 del pool disponible) tiene su mediana en
-    // ~0,13, así que un umbral de 0,04 frenaba el 85% de los drafts. 0,18
-    // (≈4,5×) dejaba mediana 1 y 32% de series sin draft.
-    // 9Rg: subir `pesoJugadorEnEquipo` (0,35→0,5) amplificó cuánto mueve el
-    // campeón elegido a `fuerzaDelEquipo`, y con eso `puntosEnJuego` — a 0,18
-    // el sinDraft cayó a 23%. Re-medido (N=1200 series): 0,26 devuelve el
-    // margen original (32,5% sin draft, mediana 1). Misma proporción
-    // decisivo/base (~0,5) que antes.
-    // K3c (PLAN.md "Paso 2, el barrido"): K2c achicó la dispersión de la p a
-    // ~0,3145 de la de antes y con 0,26 la sonda del check de pausas dio 0 pausas
-    // sobre 4000 series (antes de K2c, 152). Se re-escala por el mismo factor
-    // (0,26 × 0,3145 = 0,0818) y se mantiene el 2:1 con el decisivo; la sonda
-    // vuelve a dar 152 pausas. K4 rediseña igual el draft (plan de Fearless).
-    puntosEnJuegoParaPreguntar: 0.0818,
-    puntosEnJuegoParaPreguntarDecisivo: 0.0409,
-    // |rendimiento base del jugador - fuerza del rival| <= esto: "mapa cerrado",
-    // condicion necesaria para que dispare un minijuego (regla 4 de 4.6).
-    margenMapaCerrado: 8,
-    // 9R4b: el mapa de DESEMPATE (2-2 en un Bo5) juega con un margen mucho mas
-    // ancho y con cupo propio. Antes el mapa 5 podia pasar sin una sola jugada
-    // tuya —el minijuego ya se habia gastado en el mapa 2, o el mapa no era
-    // "cerrado" por diez puntos— y es justo el momento que PLAN.md §9R.4 pide
-    // que exista ("el Baron de un mapa 5"). No aplica a cualquier match point:
-    // el 2-0 de un barrido no lo merece (regla 4 de §4.6).
-    margenMapaCerradoDecisivo: 22,
+    // K4-B (PLAN.md "K4 — decisiones de spec", K4-B): la serie como plan. Reemplaza al umbral de pausa del draft
+    // mapa a mapa (`puntosEnJuegoParaPreguntar`, D63: preguntaba justo cuando la respuesta era obvia) y a los márgenes
+    // de "mapa cerrado" de los minijuegos (`margenMapaCerrado` y su decisivo): ahora el minijuego de serie va solo en
+    // el mapa decisivo de semis, final e internacional, y una serie sin nada en juego no pregunta nada.
+    // Valores de arranque (bloque B, los calibra K4c). Los `empuje*`/`desgaste*` son fracciones de la fuerza propia
+    // del mapa, la misma escala que el ajuste de un minijuego (`impacto` 0,09-0,16).
+    plan: {
+      // |fuerzaInicial − fuerza del rival| por encima de esto: serie sin nada en juego (juega el coach, no frena).
+      // 15 puntos con σ de mapa 14,2: un mapa de ~0,85 y un Bo5 de ~0,97 para el favorito (sin el Fearless). Deja
+      // ~30% de las series sin nada en juego (criterio, 30 × 60).
+      umbralSinNadaEnJuego: 15,
+      // Salir con todo: tus mejores picks y más intensidad en los primeros `mapasConTodo` mapas; después lo pagás.
+      mapasConTodo: 2,
+      empujeConTodo: 0.05,
+      desgasteConTodo: 0.03,
+      // Guardar tu mejor campeón para el mapa decisivo: si llega, lo jugás con lo que no te vieron en toda la serie.
+      empujeGuardado: 0.03,
+      // Por mapa antes del decisivo, la chance de que el rival te lea el guardado y te lo queme (te frena una vez).
+      pLeenElGuardado: 0.12,
+      // La sorpresa: el mapa 1 con un pick que el rival no preparó.
+      empujeSorpresa: 0.05,
+      // La charla del coach: un comodín por temporada que empuja el mapa decisivo.
+      empujeCharla: 0.05,
+      // El rival también quema campeones: su campeón del mapa i (0 el primero) juega con maestría
+      // `maestriaRivalTope − i·caidaMaestriaRivalPorMapa` (piso `maestriaComodin`), con la misma regla que el tuyo.
+      maestriaRivalTope: 80,
+      caidaMaestriaRivalPorMapa: 8
+    },
+    // K4-C: después de qué rondas sale la rueda de prensa (`post_serie`). La otra mitad —tras un escándalo— la
+    // pone `systems/events.js` (`escandalo: true` en el dato).
+    rondasConPrensa: ['final'],
+    // K4-B: en qué rondas el mapa decisivo trae su minijuego (con la charla del coach en la misma pausa). En las demás
+    // el mapa decisivo frena igual, pero solo con la charla (`motivo: 'decisivo'`).
+    rondasConMinijuegoDecisivo: ['semis', 'final', 'internacional'],
     // Fase 9R4a: cuanto mueve cada minijuego (`impacto`) y con cuanta
     // dispersion lo simula el camino headless (`spread`) ya NO viven aca: cada
     // entrada de `data/minijuegos.json` trae los suyos. Es el cierre de D20
@@ -1659,6 +1691,33 @@ export const BALANCE = {
   // `rng`. Los seis componentes son >= 0 y crecen con el logro (la monotonía
   // que vigila `validate.js`). PROVISORIO: K5c lo vuelve a medir con el Mundial
   // real.
+  // K5-A (PLAN.md "K5 — decisiones de spec", K5-A): el Mundial de verdad (`core/internacional.js`,
+  // `systems/internacional.js`). Formato del real: Swiss de 16 (3 victorias pasás, 3 derrotas quedás afuera: 8 y 8)
+  // y después cuartos, semis y final al Bo5. Los 16 salen de `cuposInternacionales` de cada liga (3/3/3/3/2/2).
+  mundial: {
+    participantes: 16,
+    // Revisión de K5 (P4): el hype que te deja el Mundial según hasta dónde llegaste. Antes era binario (pasar el Swiss
+    // = `rendimiento.hypePorTitulo`, 9; quedar afuera = `hypePorPodio`, 4): un campeón del mundo y un cuartofinalista
+    // salían con el mismo hype. Escalonado alrededor del 9 de antes; el eliminado sigue en 4.
+    hypePorResultado: { eliminado: 4, cuartos: 7, semis: 9, final: 11, campeon: 14 },
+    victoriasParaAvanzar: 3,
+    derrotasParaQuedarAfuera: 3,
+    clasificanAlBracket: 8,
+    // Los partidos del Swiss son Bo1 (una tirada, K2b); el bracket, Bo5 con las reglas de K4.
+    boSwiss: 1,
+    boBracket: 5,
+    // La siembra del bracket (índices 0-based de los 8, ordenados por récord y fuerza): 1-8, 4-5, 2-7, 3-6.
+    crucesDeCuartos: [[0, 7], [3, 4], [1, 6], [2, 5]],
+    // La tabla de una liga que no jugaste: fuerza de la org más un ruido uniforme de este ancho (puntos de fuerza),
+    // por hash. Con 0 viajarían siempre las mismas; con mucho, la tabla sería un sorteo.
+    ruidoDeTabla: 10,
+    // T9 (PLAN.md K5, riesgo 6): un split de Mundial no frena más de 4 veces por el Mundial. Las paradas que pasan el
+    // tope las resuelve el coach (el mismo criterio que el camino headless). Antes de la final se guardan 2 para la
+    // final (su plan de Fearless y su mapa decisivo): el 2-2, los cuartos y las semis frenan solo hasta 4 - 2.
+    maxInterrupciones: 4,
+    reservaParaLaFinal: 2
+  },
+
   puntaje: {
     // 1. Trayectoria: puntos por split jugado con contrato, según el tier en
     // que se jugó (`registro.porOrg[].splitsPorTier`, D76): más pesado arriba.
@@ -1683,7 +1742,10 @@ export const BALANCE = {
     // valer "participar" en silencio.
     internacional: {
       participacion: 20,
-      porResultado: { buen_papel: 50, eliminado: 0 }
+      // K5-A: el Mundial dice hasta dónde llegaste. `eliminado` = afuera en el Swiss (0, como antes); `cuartos`
+      // vale lo que valía `buen_papel` (pasar de fase); cada ronda más suma, y ser campeón del mundo vale más que
+      // cuatro títulos de liga tier 1 (40 c/u). `buen_papel` queda para registros anteriores a K5. Provisorios: K5c.
+      porResultado: { eliminado: 0, cuartos: 50, semis: 80, final: 120, campeon: 180, buen_papel: 50 }
     },
     // 4. El mundo: el pico de rank mundial por bandas (#1, hasta `corteTop5`, el
     // resto del Top 20) más cada temporada cerrada adentro del Top 20

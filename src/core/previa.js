@@ -13,7 +13,9 @@ function familiaDeEfecto(effect) {
   if (effect.type === 'pool') {
     return effect.accion === 'olvidar' ? null : `pool_${effect.accion}`;
   }
-  if (effect.type === 'push' || effect.type === 'momento') {
+  // K4-C2: los efectos de carrera (`ofertaDeImport`, `cambiarRol`, `retirarse`) tampoco son magnitudes: los dice el
+  // texto de la opción (`promete`), no una fila de previa.
+  if (['push', 'momento', 'camino', 'ofertaDeImport', 'cambiarRol', 'retirarse'].includes(effect.type)) {
     return null;
   }
   return effect.type; // 'stat' | 'ladder' | 'partido'

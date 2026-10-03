@@ -29,6 +29,30 @@
 // del bloque A (PLAN.md, K3c) — la consistencia (k = 0,5), la mentalidad y el hype que vuelven
 // a su base (r = 0,2 con subida 0,05, tope de descanso 70, rH = 0,6), los efectos que duran
 // (fracción 0,3 para eventos y práctica) y el umbral de pausa del draft (0,0818 / 0,0409). Las
-// carreras cambian de cabo a rabo: ninguna seed de K2c reproduce la suya.
-export const VERSION_JUEGO = 'K3c';
-export const HUELLA_JUEGO = 577913468;
+// carreras cambian de cabo a rabo: ninguna seed de K2c reproduce la suya. · K4 (297911861; bloque B,
+// corrimiento aceptado — T1): el ritmo. K4-A, la fecha marcada es la que decide algo (una por split, sin draft); K4-B,
+// la serie como plan de Fearless (el rival también quema, frena solo en el mapa decisivo, la charla del coach, la
+// prensa solo tras una final); K4-C, solo frenan las bifurcaciones y el perfil resuelve el resto (y la prueba de cada
+// salto); K4-D, la pretemporada en una sola parada. Ninguna seed de K3c reproduce su carrera.
+//
+// K4-C2 (398714982; bloque B, sigue en el corrimiento de K4): el pase de contenido sobre las bifurcaciones. Nueve
+// bifurcaciones nuevas (cambio de región hacia afuera de Corea, hacia la LPL y hacia la LCK; el canal de tiempo
+// completo; el cambio de línea; los playoffs infiltrado; el sponsor contra la org; el coach que te baja del cinco; la
+// oferta de staff) y los eventos de seguimiento que leen los caminos que dejan en `flags.caminos`. Ninguna seed de K4
+// reproduce su carrera.
+//
+// K5 (1153610693; bloque C, corrimiento aceptado — T1): el mundo, la integración de K5-A, K5-B y K5-C. K5-A, el
+// Mundial de verdad: Swiss de 16 y bracket de 8 en core/internacional.js, sin rng para los ajenos; escena ya no sortea
+// al campeón del mundo y serie ya no sortea al rival internacional. K5-B, la región: LRN y LRS entran al mundo (más orgs
+// y tier 3 sorteados), el calibre de una liga en el mercado es el nivel real de sus clubes y no su prestigio (D78: LCK
+// y LPL se juegan) y dos rivales del mismo rol ya no se pisan en la misma org; elegir la región sorteada no corre el
+// stream. K5-C, el final lo decide el mercado: sin oferta en tu tier, la bifurcación `fin_mercado` (bajar, esperar o
+// colgar el mouse) y el motivo del retiro en la tarjeta. Ninguna seed de K4-C2 reproduce su carrera.
+// K5 (revisión): el hash de los cruces ajenos vuelve a ser un uniforme en [0, 1) (el Mundial deja de tener dueño), el
+// calibre de liga es un cuantil bajo por org y los asientos ofrecibles post-mercado se congelan, el hype del Mundial
+// escala con el resultado, el mundo amateur renueva contratos NPC, a los 34 no hay mercado, cambiar de línea rearma la
+// tier list, y el banquillo de un club extranjero puebla la academia a la que te cede (`conPlantelesDe`: una tirada
+// nueva solo en ese camino). Misma versión (la rama no se mergeó): la huella de la integración (1153610693) queda
+// reemplazada.
+export const VERSION_JUEGO = 'K5';
+export const HUELLA_JUEGO = 1197795265;

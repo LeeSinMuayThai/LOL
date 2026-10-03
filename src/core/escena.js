@@ -12,6 +12,7 @@
 // decidió (esa tirada consume `rng`; este módulo no lo toca).
 
 import { hashCadena } from './numeros.js';
+import { nombreVisibleDeLiga } from './ligas.js';
 
 // Las ligas de tier 1 que no son la del jugador — "otras ligas", el nombre
 // de la subfase. Si el jugador todavía no tiene liga (amateur, tier2/3), o
@@ -30,11 +31,11 @@ export function todosLosOrgsTier1(state) {
 }
 
 export function lineaDeLiga(liga, campeon, subcampeon, marcador) {
-  return `${liga.id}: ${campeon.nombre} campeón (${marcador} a ${subcampeon.nombre}).`;
+  return `${nombreVisibleDeLiga(liga.id)}: ${campeon.nombre} campeón (${marcador} a ${subcampeon.nombre}).`;
 }
 
 export function lineaDeInternacional(anio, campeon) {
-  return `Worlds ${anio}: se lo lleva ${campeon.nombre} (${campeon.ligaId}).`;
+  return `Worlds ${anio}: se lo lleva ${campeon.nombre} (${nombreVisibleDeLiga(campeon.ligaId)}).`;
 }
 
 // Fase 9W: un campeón "al azar pero sin azar" para las ligas que `escena.js`
@@ -64,7 +65,7 @@ export function campeonDeterminista(orgs, clave) {
 //   - las demás (y la tuya, que `ligasParaDigest` siempre excluye) →
 //     `campeonDeterminista`;
 //   - tu liga, si ganaste un título doméstico este año → tu org.
-export function construirEscenaAnual(state, anio, narradas, campeonMundial) {
+export function construirEscenaAnual(state, anio, narradas, campeonMundial, subcampeonMundial = null) {
   const salt = (tipo, id) => `${state.seed}|escena9w|${tipo}|${id}|${anio}`;
   const ligasT1 = state.mundo.ligas.filter((liga) => liga.tier === 1);
   const narradaPorId = new Map(narradas.map((entrada) => [entrada.liga.id, entrada]));
@@ -95,8 +96,9 @@ export function construirEscenaAnual(state, anio, narradas, campeonMundial) {
     )?.nombre ?? null;
   }
 
+  // K5-A: el finalista es el subcampeón del Mundial que se jugó; sin torneo (llamadas viejas), uno por hash.
   const todos = todosLosOrgsTier1(state);
-  const finalista = campeonDeterminista(
+  const finalista = subcampeonMundial ?? campeonDeterminista(
     todos.filter((org) => org.nombre !== campeonMundial.nombre), salt('finalista', 'mundo')
   );
 

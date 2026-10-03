@@ -16,11 +16,12 @@
 
 import { rankearPoblacion } from '../core/topMundial.js';
 import { esCierreDeEdad } from './edadCierre.js';
+import { esBuenPapel } from '../core/registro.js';
 
 export const id = 'rivales';
 
 function tuyos(registro) {
-  return registro.titulos.length + registro.internacionales.filter((e) => e.resultado === 'buen_papel').length;
+  return registro.titulos.length + registro.internacionales.filter(esBuenPapel).length;
 }
 
 export function aplicar(state, rng) { // eslint-disable-line no-unused-vars

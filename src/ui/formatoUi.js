@@ -31,6 +31,9 @@ const BANNER_POR_CATEGORIA = {
 
 const FAMILIA_DEFECTO = { label: 'Decisión', token: 'rutina' };
 
+// El nombre que ve el jugador de una liga vive en `core/ligas.js` (una sola fuente de verdad, la usa también el motor).
+export { nombreVisibleDeLiga } from '../core/ligas.js';
+
 // Decisiones que no vienen de `systems/events.js` (fecha marcada, por
 // ejemplo) no traen `datos.evento` — `decisionDesdeEvento` es la única que
 // arma `datos: { evento }`. Sin el evento no hay `categoria` que leer: cae
@@ -91,7 +94,7 @@ export function rotuloDeDecision(decision, state) {
     return { label: 'Partido', token: 'partido' };
   }
   const motivo = decision?.datos?.motivo;
-  if (motivo === 'retiro_declive' || motivo === 'retiro_vuelta' || motivo === 'salida_amateur') {
+  if (motivo === 'retiro_declive' || motivo === 'retiro_vuelta' || motivo === 'salida_amateur' || motivo === 'fin_mercado') {
     return { label: 'Retiro', token: 'salud' };
   }
   // Fase 10c: mismas dos estructurales que no vienen de `events.js`.
@@ -101,7 +104,11 @@ export function rotuloDeDecision(decision, state) {
   if (motivo === 'servicio_te_vas' || motivo === 'servicio_adentro' || motivo === 'servicio_volver') {
     return { label: 'Servicio militar', token: 'salud' };
   }
-  if (motivo === 'reparto' || motivo === 'practica' || state?.phase === 'amateur') {
+  // K4-D: la preparación del receso ya no es "la semana": es la pretemporada, la misma parada que el mercado.
+  if (motivo === 'practica') {
+    return { label: 'Pretemporada', token: 'mercado' };
+  }
+  if (motivo === 'reparto' || state?.phase === 'amateur') {
     return { label: 'La semana', token: 'rutina' };
   }
   return FAMILIA_DEFECTO;

@@ -10,8 +10,12 @@ const ETIQUETA_STAT = {
 };
 
 export function crearPantallaInicio(elements, modulos) {
-  const { rolGrid, campeonGrid, poolContador, runButton, draftSlots } = elements;
+  const { rolGrid, campeonGrid, poolContador, runButton, draftSlots, perfilGrid, perfilTexto, regionGrid, regionTexto } = elements;
   let rolElegido = null;
+  // K4-C: el perfil que resuelve los eventos que no son bifurcación. `null` = lo decide la seed.
+  let perfilElegido = null;
+  // K5-B: la región de origen (`regionId`). `null` = la sortea la seed.
+  let regionElegida = null;
   let camposElegidos = [];
 
   function actualizarBoton() {
@@ -97,6 +101,61 @@ export function crearPantallaInicio(elements, modulos) {
         : '');
   }
 
+  // K4-C: cuatro botones chicos en una fila (dos en 375 px) y una línea que dice qué hace el elegido. Tocar el
+  // elegido lo suelta (vuelve a decidir la seed). Sin ids crudos: el nombre y la descripción salen del dato.
+  function renderPerfiles() {
+    if (!perfilGrid) {
+      return;
+    }
+    const { IDS_PERFIL, nombreDePerfil, descripcionDePerfil } = modulos;
+    perfilGrid.replaceChildren(...IDS_PERFIL.map((id) => {
+      const boton = document.createElement('button');
+      boton.type = 'button';
+      boton.className = 'perfil-chip' + (id === perfilElegido ? ' elegido' : '');
+      boton.setAttribute('role', 'radio');
+      boton.setAttribute('aria-checked', id === perfilElegido ? 'true' : 'false');
+      boton.textContent = nombreDePerfil(id);
+      boton.addEventListener('click', () => {
+        perfilElegido = perfilElegido === id ? null : id;
+        renderPerfiles();
+      });
+      return boton;
+    }));
+    if (perfilTexto) {
+      perfilTexto.textContent = perfilElegido
+        ? `${descripcionDePerfil(perfilElegido)} Decide por vos lo chico; lo grande lo decidís vos, y te va corriendo el perfil.`
+        : 'Si no elegís, lo decide la seed. El perfil decide por vos lo chico; lo grande lo decidís vos.';
+    }
+  }
+
+  // K5-B: la región, con los mismos chips del perfil. La línea de abajo es la dificultad de la elegida, tal
+  // como la escribe `core/mundo.js:regionesDeOrigen` desde `leagues.json` (sin ids crudos: nombre y texto).
+  function renderRegiones() {
+    if (!regionGrid) {
+      return;
+    }
+    const regiones = modulos.REGIONES_DE_ORIGEN ?? [];
+    regionGrid.replaceChildren(...regiones.map((opcion) => {
+      const boton = document.createElement('button');
+      boton.type = 'button';
+      boton.className = 'perfil-chip' + (opcion.regionId === regionElegida ? ' elegido' : '');
+      boton.setAttribute('role', 'radio');
+      boton.setAttribute('aria-checked', opcion.regionId === regionElegida ? 'true' : 'false');
+      boton.textContent = opcion.region;
+      boton.addEventListener('click', () => {
+        regionElegida = regionElegida === opcion.regionId ? null : opcion.regionId;
+        renderRegiones();
+      });
+      return boton;
+    }));
+    if (regionTexto) {
+      const elegida = regiones.find((opcion) => opcion.regionId === regionElegida);
+      regionTexto.textContent = elegida
+        ? elegida.texto
+        : 'Si no elegís, la región sale de la seed. La región es la dificultad: llegar a primera, ganar el Mundial.';
+    }
+  }
+
   function renderRoles() {
     const { IDS_ROL, ROLES, atributosClave } = modulos;
     rolGrid.replaceChildren(...IDS_ROL.map((rol) => {
@@ -146,19 +205,25 @@ export function crearPantallaInicio(elements, modulos) {
 
   return {
     render() {
+      renderRegiones();
+      renderPerfiles();
       renderRoles();
       renderCampeones();
       actualizarBoton();
     },
     reset() {
       rolElegido = null;
+      perfilElegido = null;
+      regionElegida = null;
+      renderRegiones();
+      renderPerfiles();
       camposElegidos = [];
       renderRoles();
       renderCampeones();
       actualizarBoton();
     },
     getSeleccion() {
-      return { rol: rolElegido, campeones: camposElegidos };
+      return { rol: rolElegido, campeones: camposElegidos, perfil: perfilElegido, region: regionElegida };
     }
   };
 }

@@ -829,6 +829,7 @@ h1::before {
 .previa-cabecera { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s-1) var(--s-2); }
 .previa-titulo { font-family: var(--font-display); font-size: var(--fs-3); color: var(--ink); text-transform: uppercase; letter-spacing: 0.04em; }
 .previa-sub { font-size: var(--fs-1); color: var(--ink-dim); }
+.previa-porque { margin-top: var(--s-2); font-size: var(--fs-2); color: var(--ink); overflow-wrap: anywhere; }
 .previa-duelo { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: var(--s-2); margin: var(--s-2) 0; }
 .previa-lado { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: var(--s-1); min-width: 0; }
 .previa-lado > :first-child { grid-row: span 2; align-self: center; }
@@ -851,3 +852,49 @@ h1::before {
 .previa-nota { margin-top: var(--s-2); font-size: var(--fs-1); color: var(--ink-mute); }
 .option-prob { margin-top: var(--s-1); font-size: var(--fs-1); color: var(--live); font-variant-numeric: tabular-nums; }
 .resultado-prob { margin-top: var(--s-1); font-size: var(--fs-0); color: var(--ink-mute); }
+
+/* --- K4-C: la línea de crónica (un evento que resolvió tu perfil) y el perfil en la ficha --- */
+.log-cronica-planteo {
+  font-size: var(--fs-1);
+  color: var(--ink-dim);
+  margin-bottom: var(--s-1);
+}
+.log-cronica-perfil {
+  color: var(--ice-dim);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  font-size: var(--fs-1);
+}
+.ficha-perfil {
+  margin-left: var(--s-2);
+  padding: 0 var(--s-2);
+  border: 1px solid var(--line);
+  font-size: var(--fs-1);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--ice-dim);
+}
+
+/* K5-A: el Mundial en una tarjeta del feed (components/mundial.js). Compacta: entra en 375 px. */
+.mundial { display: flex; flex-direction: column; gap: 6px; border-left: 3px solid var(--gold-deep); }
+.mundial--campeon { border-left-color: var(--gold); }
+.mundial-cabeza { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.mundial-titulo { font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.mundial-resultado { font-size: 0.85em; opacity: 0.85; }
+.mundial-texto { font-size: 0.9em; }
+.mundial-swiss { display: flex; flex-direction: column; gap: 4px; }
+.mundial-rotulo { font-size: 0.72em; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.7; }
+.mundial-cruces { display: flex; flex-wrap: wrap; gap: 4px; }
+.mundial-cruce { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 1px 6px; border-radius: 4px; font-size: 0.78em; background: var(--line-faint); }
+.mundial-cruce-res { font-weight: 700; }
+.mundial-cruce--w .mundial-cruce-res { color: var(--up); }
+.mundial-cruce--l .mundial-cruce-res { color: var(--down); }
+.mundial-cruce-rival { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 9em; }
+.mundial-bracket { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; align-items: center; }
+.mundial-etapa { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.mundial-serie { display: flex; flex-direction: column; padding: 2px 4px; border-radius: 4px; font-size: 0.72em; background: var(--bg-raised); min-width: 0; }
+.mundial-serie--tuya { outline: 1px solid var(--gold); background: var(--gold-fill); }
+.mundial-equipo { display: flex; justify-content: space-between; gap: 4px; opacity: 0.6; min-width: 0; }
+.mundial-equipo--gano { opacity: 1; font-weight: 600; }
+.mundial-equipo-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.mundial-campeon { font-size: 0.8em; opacity: 0.85; }

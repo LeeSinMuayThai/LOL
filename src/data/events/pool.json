@@ -264,6 +264,32 @@
     "conditions": [],
     "options": [
       {
+        "id": "soltar_al_main",
+        "label": "Soltar a {main} y rearmar el pool",
+        "descripcion": "Lo sacás de la rotación del todo y le metés esas horas a uno que el parche sí banca. Duele, pero el pool queda limpio.",
+        "weight": 3,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Lo guardás en el cajón y arrancás con uno que el meta sí quiere. Las primeras scrims se sienten raras, como jugar con la mano cambiada.",
+            "effects": [
+              { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
+              { "type": "pool", "path": "player.championPool", "accion": "olvidar", "objetivo": "principal" },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo soltás y el nuevo entra más rápido de lo que pensabas: a las dos semanas ya lo estás pidiendo en el draft.",
+            "effects": [
+              { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
+              { "type": "pool", "path": "player.championPool", "accion": "olvidar", "objetivo": "principal" },
+              { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "nuevo", "min": 4, "max": 8 }
+            ]
+          }
+        ]
+      },
+      {
         "id": "buscar_reemplazo",
         "label": "Buscar un reemplazo ahora",
         "descripcion": "Aceptás que el ciclo de tu main terminó, al menos por este parche, y arrancás de cero con otro.",

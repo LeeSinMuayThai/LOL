@@ -6,6 +6,8 @@ import { nivelDelJugador } from './ficha.js';
 import { ligaDeCarrera } from './competicion.js';
 import { calificaAPlayoffs, calificaAInternacional } from './serie.js';
 import { TOKENS } from './plantillas.js';
+import { esBuenPapel } from './registro.js';
+import { nombreVisibleDeLiga } from './ligas.js';
 
 // El resumen anual (fase 11, PLAN.md §11.1): nota, titular y viñetas del año
 // que cierra. Puro y sin RNG — `systems/resumenAnio.js` es el único que lo
@@ -107,7 +109,7 @@ function scoreInternacional(state, anio) {
   if (!entrada) {
     return c.scoreInternacionalNeutro;
   }
-  return entrada.resultado === 'buen_papel' ? 1 : c.scoreInternacionalEliminado;
+  return esBuenPapel(entrada) ? 1 : c.scoreInternacionalEliminado;
 }
 
 function scoreJerarquiaArraigo(state) {
@@ -181,7 +183,7 @@ const PUNTAJES = {
 };
 
 function candidatoTituloInternacional(state, ctx) {
-  if (ctx.internacionalEsteAnio?.resultado !== 'buen_papel') {
+  if (!esBuenPapel(ctx.internacionalEsteAnio)) {
     return null;
   }
   return { titular: 'CAMPEONES DEL MUNDO', bajada: null };
@@ -228,7 +230,7 @@ function candidatoDebut(state, ctx) {
   if (splitAscensoTier1 === null || splitAscensoTier1 < state.player.splitCount - BALANCE.edad.splitsPorEdad) {
     return null;
   }
-  return { titular: `EL PIBE DE LA ${ctx.liga?.id ?? 'LIGA'}`, bajada: null };
+  return { titular: `EL PIBE DE LA ${ctx.liga ? nombreVisibleDeLiga(ctx.liga.id).toUpperCase() : 'LIGA'}`, bajada: null };
 }
 
 function candidatoSequia(state, ctx) {
@@ -269,7 +271,7 @@ function candidatoEliminacion(state, ctx) {
     return null;
   }
   const otraVez = (ctx.anioAnterior?.tipoBase ?? ctx.anioAnterior?.tipo) === 'eliminacion' ? ', OTRA VEZ' : '';
-  return { titular: `AFUERA DE PLAYOFFS DE ${ctx.liga.id}${otraVez}`, bajada: null };
+  return { titular: `AFUERA DE PLAYOFFS DE ${nombreVisibleDeLiga(ctx.liga.id).toUpperCase()}${otraVez}`, bajada: null };
 }
 
 // Orden de desempate en caso de puntaje igual (`debut`/`main_muerto` y
@@ -364,7 +366,7 @@ function vinetaEquipo(state, ctx) {
   const campeon = ctx.tituloEsteAnio ? ' — campeones.' : '.';
   return {
     icono: '🏆',
-    texto: `${state.career.currentOrg} terminó ${state.career.posicion}º de ${equipos} en ${ctx.liga?.id ?? 'la liga'}${campeon}`
+    texto: `${state.career.currentOrg} terminó ${state.career.posicion}º de ${equipos} en ${ctx.liga ? nombreVisibleDeLiga(ctx.liga.id) : 'la liga'}${campeon}`
   };
 }
 
@@ -374,7 +376,7 @@ function vinetaInternacional(ctx) {
   }
   return {
     icono: '🌍',
-    texto: ctx.internacionalEsteAnio.resultado === 'buen_papel'
+    texto: esBuenPapel(ctx.internacionalEsteAnio)
       ? 'Buen papel en el internacional: se habló de vos afuera de tu región.'
       : 'Eliminado temprano en el internacional.'
   };

@@ -1,5 +1,5 @@
 import { weightedPick } from './rng.js';
-import { campeonesEnMeta, deseoPorCampeon, factorDeCampeon } from './ajusteMeta.js';
+import { campeonesEnMeta, factorDeCampeon } from './ajusteMeta.js';
 import { campeonesDisponibles, entradaDePool } from './pool.js';
 import { fuerzaDePartido } from './fuerza.js';
 import { probabilidadDePartido } from './partido.js';
@@ -51,25 +51,21 @@ export function siguienteRonda(ronda) {
   return ORDEN_RONDAS[indice + 1];
 }
 
-export function etiquetaDeRonda(ronda) {
-  const etiquetas = { cuartos: 'Cuartos de final', semis: 'Semifinal', final: 'La final', internacional: 'El internacional' };
+// K5-A: una serie del Mundial es `ronda: 'internacional'` con su `etapa` del bracket.
+const ETIQUETAS_DEL_MUNDIAL = { cuartos: 'Cuartos del Mundial', semis: 'Semifinal del Mundial', final: 'La final del Mundial' };
+
+export function etiquetaDeRonda(ronda, etapa = null) {
+  if (ronda === 'internacional' && etapa) {
+    return ETIQUETAS_DEL_MUNDIAL[etapa] ?? 'El Mundial';
+  }
+  const etiquetas = { cuartos: 'Cuartos de final', semis: 'Semifinal', final: 'La final', internacional: 'El Mundial' };
   return etiquetas[ronda] ?? ronda;
 }
 
-// El rival de la ronda. Doméstico: otra org de la misma liga, pesada por
-// fuerza (más fuerte, más probable que sea quien te toque en una fase alta).
-// Internacional: una org de OTRA liga tier 1, pesada por el prestigio de esa
-// liga y después por la fuerza de la org — nombra un rival real de otra
-// región, consistente con CLAUDE.md (ligas y orgs reales están permitidas).
+// El rival de la ronda: otra org de la misma liga, pesada por fuerza (más
+// fuerte, más probable que sea quien te toque en una fase alta).
+// K5-A: el rival del Mundial ya no se sortea acá: lo pone el torneo (`core/internacional.js`).
 export function generarRival(state, ronda, rng) {
-  if (ronda === 'internacional') {
-    const propia = state.career.liga;
-    const otrasLigas = state.mundo.ligas.filter((liga) => liga.tier === 1 && liga.id !== propia);
-    const liga = weightedPick(otrasLigas, (candidata) => candidata.prestigio, rng);
-    const org = weightedPick(liga.orgs, (candidata) => candidata.fuerza, rng);
-    return { org: org.nombre, fuerza: org.fuerza };
-  }
-
   const liga = state.mundo.ligas.find((candidata) => candidata.id === state.career.liga);
   // Guarda defensiva, no alcanzada hoy (medido: 0/300 seeds × 60 splits).
   // D.3 hace que `career.liga` pueda ser null en caminos adyacentes
@@ -93,85 +89,47 @@ export function disponiblesDelPool(pool, quemados) {
   return pool.filter((campeon) => !quemados.includes(campeon.name));
 }
 
-// El rival no sortea al azar: quema campeones tomados del meta (4.5). Si el
-// top del meta ya está todo quemado, extiende la búsqueda a todo el rol
-// ordenado por afinidad — siempre hay más campeones de un rol que mapas en
-// una serie, así que esto nunca se queda sin opciones.
-export function elegirCampeonRival(state, quemados, rng) {
+// K4-B: el rival no sortea. Quema (juega en tu línea) el campeón de tu rol que el meta más pide entre los que
+// siguen libres, igual que vos salís con el mejor que te queda: así su fuerza también se degrada con el Fearless
+// (`fuerzaRivalDeMapa`). Determinista: es lo que deja que el plan declare su p por mapa antes de jugarlo (regla 15).
+// Lo único que el rival hace fuera de este orden es leerte el campeón que guardás (`plan.pLeenElGuardado`, que tira
+// `systems/serie.js` y te frena). `null` si no queda ninguno.
+export function objetivoDelRival(state, quemados) {
   const delRol = campeonesDisponibles(state, state.player.role);
-  const top = campeonesEnMeta(state.meta.weights, delRol, delRol.length).filter(
-    (campeon) => !quemados.includes(campeon.name)
-  );
-
-  if (top.length === 0) {
-    return null;
-  }
-  // Entre los mejores no quemados, pesa hacia el tope del meta sin ser
-  // siempre el mismo: reusa el mismo criterio de deseo que el draft del motor.
-  return weightedPick(top.slice(0, 3), (campeon) => deseoPorCampeon(campeon, state.meta.weights), rng).name;
+  const libre = campeonesEnMeta(state.meta.weights, delRol, delRol.length)
+    .find((campeon) => !quemados.includes(campeon.name));
+  return libre?.name ?? null;
 }
 
-// Cuando el Fearless deja el pool en cero, te toca un comodín fuera del pool
-// con maestría mínima (4.5): "el castigo del pool angosto".
-export function campeonComodin(state, quemados, rng) {
+// Cuando el Fearless deja el pool en cero, te toca un comodín fuera del pool con maestría mínima (4.5): "el castigo
+// del pool angosto". K4-B: el que mejor rinde entre los libres, sin sortear (el plan lo declara antes de jugarlo).
+export function campeonComodin(state, quemados) {
   const delRol = campeonesDisponibles(state, state.player.role);
   const usables = delRol.filter((campeon) => !quemados.includes(campeon.name));
-  const elegido = weightedPick(usables, (campeon) => deseoPorCampeon(entradaDePool(campeon, BALANCE.serie.maestriaComodin, state.player.splitCount), state.meta.weights), rng);
-  return entradaDePool(elegido, BALANCE.serie.maestriaComodin, state.player.splitCount);
+  const entradas = usables.map((campeon) => entradaDePool(campeon, BALANCE.serie.maestriaComodin, state.player.splitCount));
+  return ordenarPorFactor(entradas, state.meta.weights)[0] ?? null;
 }
 
 export function necesitaGanarPara(formato) {
   return Math.ceil(formato / 2);
 }
 
-// El mapa que puede cerrar la serie para cualquiera de los dos lados. En un
-// Bo5 2-2 esto ya es cierto (necesitaGanarPara - 1 = 2), así que cubre "mapa 5"
-// sin necesitar un caso especial contando mapas.
-export function esMapaDecisivo(marcador, formato) {
-  const punto = necesitaGanarPara(formato) - 1;
-  return marcador[0] === punto || marcador[1] === punto;
-}
-
-// Fase 9R4b: el mapa de DESEMPATE — el último posible de la serie, con los dos
-// equipos en punto de partido (2-2 en un Bo5, 1-1 en un Bo3). Es "el mapa 5"
-// del que habla PLAN.md §9R.4, y no es lo mismo que `esMapaDecisivo`: ese es
-// cualquier mapa que PUEDE cerrar la serie, incluido el 2-0 de un barrido, que
-// según la regla 4 de §4.6 justamente no merece minijuego.
+// K4-B: EL MAPA DECISIVO es el que puede cerrar la serie para cualquiera de los dos: los dos equipos en punto de
+// partido, el 2-2 de un Bo5 o el 1-1 de un Bo3. Es siempre el último mapa posible de la serie, así que se lee por
+// índice (`esMapaDecisivoDeLaSerie`, lo que deja proyectar el plan sin resultados) o por marcador (esta, la de 9R4b),
+// y las dos coinciden siempre que el mapa se juega. Un 2-0 no es decisivo: lo puede cerrar uno solo.
 export function esMapaDeDesempate(marcador, formato) {
   const punto = necesitaGanarPara(formato) - 1;
   return marcador[0] === punto && marcador[1] === punto;
 }
 
+export function esMapaDecisivoDeLaSerie(serie, indice = serie.mapaActual) {
+  return indice === serie.formato - 1;
+}
+
 export function serieTerminada(marcador, formato) {
   const necesarias = necesitaGanarPara(formato);
   return marcador[0] >= necesarias || marcador[1] >= necesarias;
-}
-
-// La regla de 4.3, resuelta sin ambigüedad (ver PROGRESO): con 0 disponibles,
-// comodín automático (no llega acá); con 1, no hay elección; con exactamente 2,
-// siempre para (pool exhausto, cada pick pesa). Con 3 o más, el motor elige
-// solo salvo que el mejor campeón mueva la probabilidad de ganar el mapa más
-// que `puntosEnJuegoParaPreguntar` respecto del segundo; el mapa decisivo baja
-// ese umbral. Fase 9Rd: antes el criterio era un ratio de `deseoPorCampeon`
-// (maestría²) contra `dominanciaClara`, que no medía el resultado del mapa.
-export function decisionDeDraft(state, disponibles, esDecisivo) {
-  if (disponibles.length === 1) {
-    return { pausa: false, elegido: disponibles[0] };
-  }
-  if (disponibles.length === 2) {
-    return { pausa: true };
-  }
-
-  // Fase 9Rc/9Rd: "el mejor" se ordena con `factorDeCampeon` —el mismo criterio
-  // con el que el mapa se resuelve—, no con `deseoPorCampeon` (maestría²).
-  const [mejor, segundo] = ordenarPorFactor(disponibles, state.meta.weights);
-  const umbral = esDecisivo
-    ? BALANCE.serie.puntosEnJuegoParaPreguntarDecisivo
-    : BALANCE.serie.puntosEnJuegoParaPreguntar;
-
-  return puntosEnJuegoDeMapa(state, mejor, segundo) >= umbral
-    ? { pausa: true }
-    : { pausa: false, elegido: mejor };
 }
 
 function ordenarPorFactor(campeones, weights) {
@@ -180,38 +138,205 @@ function ordenarPorFactor(campeones, weights) {
   );
 }
 
-// Cuánta probabilidad de ganar ESTE mapa te da un campeón. K2b: es EXACTAMENTE
-// la p contra la que `finalizarMapa` tira el mapa si lo elegís (sin minijuego):
-// la fuerza de partido con ese campeón (`fuerzaDePartido`, la misma, acotada)
-// contra la del rival, por `probabilidadDePartido` (regla 15).
-export function probabilidadConCampeon(state, campeon) {
-  return probabilidadDeMapa(state, fuerzaDePartido(estadoDelMapa(state, campeon.name)));
+// --- K4-B: la serie como plan (PLAN.md "K4 — decisiones de spec", K4-B) ---
+
+export const PLANES_DE_SERIE = ['guardar', 'conTodo', 'sorpresa', 'coach'];
+
+// Una serie sin nada en juego: la diferencia de fuerza al arrancar supera el umbral. No pregunta: juega el plan del
+// coach y no frena en el mapa decisivo.
+export function esSerieSinNadaEnJuego(serie) {
+  return Math.abs(serie.fuerzaInicial - serie.rival.fuerza) > BALANCE.serie.plan.umbralSinNadaEnJuego;
 }
 
-// K2d: el estado con el que se calcula la fuerza de un mapa: el campeón
-// elegido como campeón del partido y, si es el comodín fuera del pool (4.5),
-// una copia del pool con su entrada, para que `rendimientoBase` encuentre su
-// maestría real y no la neutra. Lo usan el motor (`systems/serie.js`), el
-// draft y la previa (`core/previa.js`).
+// La charla del coach: un comodín por temporada (el año del calendario), que se ofrece en el mapa decisivo.
+export function charlaDisponible(state) {
+  return state.career.charlaUsadaEn !== state.calendario.anio;
+}
+
+// El rival quema el campeón de este mapa: entra a los quemados y es el que juega en tu línea en este mapa.
+export function conQuemaDelRival(state, campeonRival) {
+  const quemados = campeonRival ? [...state.serie.quemados, campeonRival] : state.serie.quemados;
+  return { ...state, serie: { ...state.serie, quemados, rivalJuega: campeonRival, rivalJuegaEnMapa: state.serie.mapaActual } };
+}
+
+// La fuerza del rival en el mapa que se juega, con la misma regla que la tuya: su campeón (`rivalJuega`) entra por
+// `factorDeCampeon` con una maestría que cae mapa a mapa (su pool también se acaba), y pesa en su equipo lo mismo
+// que tu campeón pesa en el tuyo (`pesoJugadorEnEquipo`). En el mapa 1, con el mejor del meta, es `rival.fuerza`.
+export function fuerzaRivalDeMapa(state) {
+  const { rival, rivalJuega, mapaActual } = state.serie;
+  const p = BALANCE.serie.plan;
+  const weights = state.meta.weights;
+  const delRol = campeonesDisponibles(state, state.player.role);
+  const referencia = campeonesEnMeta(weights, delRol, 1)[0];
+  if (!referencia) {
+    return rival.fuerza;
+  }
+  const juega = delRol.find((campeon) => campeon.name === rivalJuega);
+  const maestria = juega
+    ? Math.max(BALANCE.serie.maestriaComodin, p.maestriaRivalTope - mapaActual * p.caidaMaestriaRivalPorMapa)
+    : BALANCE.serie.maestriaComodin;
+  const split = state.player.splitCount;
+  const factor = factorDeCampeon(entradaDePool(juega ?? referencia, maestria, split), weights);
+  const factorReferencia = factorDeCampeon(entradaDePool(referencia, p.maestriaRivalTope, split), weights);
+  return rival.fuerza * (1 + BALANCE.rendimiento.pesoJugadorEnEquipo * (factor / factorReferencia - 1));
+}
+
+// La sorpresa: el campeón de tu pool que el rival no preparó (fuera de los `formato` que más pide el meta), el de
+// más maestría. `null` si todo tu pool está en lo que el rival preparó.
+function campeonSorpresa(state, disponibles) {
+  const delRol = campeonesDisponibles(state, state.player.role);
+  const preparados = new Set(campeonesEnMeta(state.meta.weights, delRol, state.serie.formato).map((c) => c.name));
+  const fuera = disponibles.filter((campeon) => !preparados.has(campeon.name));
+  return [...fuera].sort((a, b) => b.mastery - a.mastery)[0] ?? null;
+}
+
+// Qué juega el plan en el mapa que viene, con los quemados de ahora (el del rival en este mapa incluido): el
+// campeón, el comodín si hace falta, y cuánto mueve el plan la fuerza de ese mapa (`ajustePlan`, constantes en
+// `BALANCE.serie.plan`). Puro y sin `rng`: lo usan el motor (para jugar) y la tarjeta del plan (para declarar).
+export function jugadaDelPlan(state) {
+  const { serie } = state;
+  const p = BALANCE.serie.plan;
+  const i = serie.mapaActual;
+  const decisivo = esMapaDecisivoDeLaSerie(serie);
+  const disponibles = ordenarPorFactor(disponiblesDelPool(state.player.championPool, serie.quemados), state.meta.weights);
+
+  if (disponibles.length === 0) {
+    const comodin = campeonComodin(state, serie.quemados);
+    return { campeon: comodin.name, entradaExtra: comodin, ajustePlan: 0, motivo: 'comodin' };
+  }
+
+  if (serie.plan === 'guardar' && serie.guardado) {
+    const guardado = disponibles.find((campeon) => campeon.name === serie.guardado);
+    if (guardado && decisivo) {
+      return { campeon: guardado.name, entradaExtra: null, ajustePlan: p.empujeGuardado, motivo: 'guardado' };
+    }
+    const resto = disponibles.filter((campeon) => campeon.name !== serie.guardado);
+    return { campeon: (resto[0] ?? disponibles[0]).name, entradaExtra: null, ajustePlan: 0, motivo: 'plan' };
+  }
+
+  if (serie.plan === 'conTodo') {
+    const ajustePlan = i < p.mapasConTodo ? p.empujeConTodo : -p.desgasteConTodo;
+    return { campeon: disponibles[0].name, entradaExtra: null, ajustePlan, motivo: 'plan' };
+  }
+
+  if (serie.plan === 'sorpresa' && i === 0) {
+    const sorpresa = campeonSorpresa(state, disponibles);
+    if (sorpresa) {
+      return { campeon: sorpresa.name, entradaExtra: null, ajustePlan: p.empujeSorpresa, motivo: 'sorpresa' };
+    }
+  }
+
+  return { campeon: disponibles[0].name, entradaExtra: null, ajustePlan: 0, motivo: 'plan' };
+}
+
+// La fuerza propia y la p del mapa que viene según el plan (sin charla ni minijuego). ES la p que tira el motor si
+// nada lo frena (regla 15).
+export function mapaDelPlan(state) {
+  const jugada = jugadaDelPlan(state);
+  const fuerzaPropia = fuerzaDePartido(estadoDelMapa(state, jugada.campeon, jugada.entradaExtra));
+  return { ...jugada, fuerzaPropia, p: probabilidadDeMapa(state, fuerzaPropia, jugada.ajustePlan) };
+}
+
+// El guardado de un plan: tu mejor campeón disponible (por `factorDeCampeon`) que llega vivo al mapa decisivo con
+// el orden de quemas del rival (`objetivoDelRival`): guardar el que el rival se va a llevar igual no es un plan.
+// Sin al menos dos libres, o sin ninguno que llegue, no hay nada que guardar (`null`).
+export function guardadoDelPlan(state, plan) {
+  if (plan !== 'guardar') {
+    return null;
+  }
+  const disponibles = ordenarPorFactor(disponiblesDelPool(state.player.championPool, state.serie.quemados), state.meta.weights);
+  if (disponibles.length < 2) {
+    return null;
+  }
+  const llega = disponibles.find((campeon) => {
+    const mapas = proyectarMapas({ ...state, serie: { ...state.serie, plan, guardado: campeon.name } });
+    return mapas[mapas.length - 1]?.campeon === campeon.name;
+  });
+  return llega?.name ?? null;
+}
+
+// El estado de la serie con el plan elegido (y su guardado).
+export function conPlan(state, plan) {
+  return { ...state, serie: { ...state.serie, plan, guardado: guardadoDelPlan(state, plan) } };
+}
+
+// La proyección de un plan: mapa por mapa, desde el que viene hasta el decisivo, con la misma secuencia que juega
+// el motor (el rival quema, el plan elige, tu campeón queda quemado). Lo único que no proyecta es lo que te frena:
+// que el rival te lea el guardado, y la charla y el minijuego del mapa decisivo. `p` de cada mapa es la que tira
+// `systems/serie.js`; `pSerie`, la de ganar la serie desde el marcador de ahora con esas p.
+export function proyeccionDelPlan(state, plan) {
+  const st = conPlan(state, plan);
+  const mapas = proyectarMapas(st);
+  const ps = mapas.map((m) => m.p);
+  return { plan, guardado: st.serie.guardado, mapas, pSerie: probabilidadDeSerie(state.serie.marcador, state.serie.formato, ps) };
+}
+
+// El estado del mapa que viene con la quema del rival de ese mapa ya hecha (si todavía no pasó): el que miran la
+// previa del plan y la proyección.
+export function estadoDelProximoMapa(state) {
+  return state.serie.rivalJuegaEnMapa === state.serie.mapaActual
+    ? state
+    : conQuemaDelRival(state, objetivoDelRival(state, state.serie.quemados));
+}
+
+// Los mapas que quedan con el plan y el guardado que `state.serie` ya trae.
+function proyectarMapas(state) {
+  let st = state;
+  const mapas = [];
+  for (let i = st.serie.mapaActual; i < st.serie.formato; i += 1) {
+    st = estadoDelProximoMapa(st);
+    const mapa = mapaDelPlan(st);
+    mapas.push({
+      mapa: i + 1, campeon: mapa.campeon, rivalJuega: st.serie.rivalJuega, p: mapa.p,
+      decisivo: esMapaDecisivoDeLaSerie(st.serie, i)
+    });
+    st = { ...st, serie: { ...st.serie, quemados: [...st.serie.quemados, mapa.campeon], mapaActual: i + 1 } };
+  }
+  return mapas;
+}
+
+// P(ganar la serie) desde `marcador`, con la p de cada mapa que queda (en orden). Exacta: recorre los marcadores.
+export function probabilidadDeSerie(marcador, formato, ps) {
+  const necesarias = necesitaGanarPara(formato);
+  const desde = (a, b, k) => {
+    if (a >= necesarias) {
+      return 1;
+    }
+    if (b >= necesarias) {
+      return 0;
+    }
+    const p = ps[k];
+    return p * desde(a + 1, b, k + 1) + (1 - p) * desde(a, b + 1, k + 1);
+  };
+  return desde(marcador[0], marcador[1], 0);
+}
+
+// K2d: el estado con el que se calcula la fuerza de un mapa: el campeón elegido como campeón del partido y, si es el
+// comodín fuera del pool (4.5), una copia del pool con su entrada, para que `rendimientoBase` encuentre su maestría
+// real y no la neutra. Lo usan el motor (`systems/serie.js`), el plan y la previa.
 export function estadoDelMapa(state, campeonElegido, entradaExtra = null) {
   const championPool = entradaExtra ? [...state.player.championPool, entradaExtra] : state.player.championPool;
   return { ...state, player: { ...state.player, campeonDelSplit: campeonElegido, championPool } };
 }
 
-// K2d: la p de un mapa — la fuerza de partido del campeón elegido, corrida por
-// el minijuego (`ajusteMinijuego`, 0 si no hubo), contra la del rival. ES la p
-// que tira `finalizarMapa` y la que muestran el draft y la previa (regla 15).
-export function probabilidadDeMapa(state, fuerzaPropia, ajusteMinijuego = 0) {
-  return probabilidadDePartido(state, fuerzaFinalDeMapa(fuerzaPropia, ajusteMinijuego), state.serie.rival.fuerza, 'mapa');
+// K2d/K4-B: la p de un mapa: la fuerza de partido del campeón elegido, corrida por todo lo que la mueve (`ajuste`:
+// el del plan, la charla y el minijuego, sumados), contra la del rival EN ESE MAPA (`fuerzaRivalDeMapa`). ES la p
+// que tira `finalizarMapa` y la que muestran el plan y la previa (regla 15).
+export function probabilidadDeMapa(state, fuerzaPropia, ajuste = 0) {
+  return probabilidadDePartido(state, fuerzaFinalDeMapa(fuerzaPropia, ajuste), fuerzaRivalDeMapa(state), 'mapa');
 }
 
-export function fuerzaFinalDeMapa(fuerzaPropia, ajusteMinijuego = 0) {
-  return fuerzaPropia * (1 + ajusteMinijuego);
+export function fuerzaFinalDeMapa(fuerzaPropia, ajuste = 0) {
+  return fuerzaPropia * (1 + ajuste);
 }
 
-// K2d: cuánto mueve el minijuego de un mapa la fuerza de ese mapa, según cómo
-// te salió (`resultado` 0-1; 0,5 no la mueve). La comparten `systems/serie.js`
-// (que la aplica antes de tirar) y la previa (que muestra la p final).
+// K4-B: lo que la charla del coach le suma al ajuste del mapa decisivo.
+export function ajusteDeCharla(usada) {
+  return usada ? BALANCE.serie.plan.empujeCharla : 0;
+}
+
+// K2d: cuánto mueve el minijuego de un mapa la fuerza de ese mapa, según cómo te salió (`resultado` 0-1; 0,5 no la
+// mueve). La comparten `systems/serie.js` (que la aplica antes de tirar) y la previa (que muestra la p final).
 export function ajusteDeMinijuegoDeMapa(state, entrada, resultado) {
   const ajusteBase = ajusteBaseDeMinijuego(resultado);
   const amortiguado = entrada.efecto.amortiguador === 'jerarquia'
@@ -226,27 +351,8 @@ export function ajusteBaseDeMinijuego(resultado) {
   return (Math.min(1, Math.max(0, resultado ?? 0.5)) - 0.5) * 2;
 }
 
-// P(mejor) − P(segundo). ≥ 0 siempre: más `factorDeCampeon` ⇒ más
-// `rendimientoBase` ⇒ más fuerza propia (o la misma, si los dos tocan el tope
-// de 100) ⇒ más probabilidad.
-function puntosEnJuegoDeMapa(state, mejor, segundo) {
-  return probabilidadConCampeon(state, mejor) - probabilidadConCampeon(state, segundo);
-}
-
-// "Mapa cerrado" (regla 4 de 4.6): el rendimiento base del jugador y la fuerza
-// del rival quedaron a un margen chico. Condición necesaria para un minijuego.
-//
-// Fase 9R4b: el margen entra por parámetro porque el mapa que CIERRA la serie
-// usa uno mucho más ancho (`margenMapaCerradoDecisivo`). "El Barón de un mapa 5"
-// (PLAN.md §9R.4) no se puede quedar sin jugarse porque el mapa venía diez
-// puntos torcido: es el mapa que define, y ahí la jugada existe casi siempre.
-export function esMapaCerrado(rendimientoBase, fuerzaRival, margen = BALANCE.serie.margenMapaCerrado) {
-  return Math.abs(rendimientoBase - fuerzaRival) <= margen;
-}
-
-// El minijuego "la_llamada" depende de shotcalling, pero una buena llamada con
-// jerarquía baja no se ejecuta igual (regla textual de 4.6): el impacto sobre
-// el rendimiento se amortigua fuerte por debajo del umbral.
+// El minijuego "la_llamada" depende de shotcalling, pero una buena llamada con jerarquía baja no se ejecuta igual
+// (regla textual de 4.6): el impacto sobre el rendimiento se amortigua fuerte por debajo del umbral.
 export function factorJerarquiaEnLlamada(jerarquia) {
   return jerarquia >= BALANCE.serie.jerarquiaMinimaParaSeguirLlamada ? 1 : BALANCE.serie.factorLlamadaSinJerarquia;
 }
