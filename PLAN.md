@@ -6608,8 +6608,10 @@ múltiples y ≥ 30 réplicas por decisión.
 - **`criterio` en las bifurcaciones.** Hoy acepta casi todo cambio de línea (el 52% de sus carreras cambia de
   línea) y nunca se muda ni se retira, porque puntúa la previa de las stats. La regla nueva es la de un jugador que
   lee la carrera:
-  - acepta un **import** si la liga de destino tiene más `dificultad` que la actual y su nivel alcanza el calibre
-    de esa liga;
+  - acepta un **import** si la liga de destino tiene más **calibre** (`calibreDeLiga`) que la actual y su nivel
+    lo alcanza. *(Corregido en el paso 1: la spec decía "más `dificultad`", pero en `leagues.json` la `dificultad`
+    mide lo difícil que es ganar el Mundial **desde** esa región, y LCK es la mínima. Con esa regla `criterio`
+    nunca iba a LCK y no aceptaba ningún import.)*
   - acepta un **cambio de línea** solo si no queda peor (su pool y su maestría en la línea nueva contra la
     actual);
   - **no se retira** mientras el mercado le ofrezca su tier.
