@@ -45,7 +45,11 @@ export function renderPrevia(container, previa) {
     desglose.append(dt, dd);
   }
 
-  container.replaceChildren(cabecera, duelo, desglose);
+  // K4-A: por qué frena esta fecha, antes que los números.
+  const porQue = document.createElement('div');
+  porQue.className = 'previa-porque';
+  porQue.textContent = previa.porQue ?? '';
+  container.replaceChildren(cabecera, ...(previa.porQue ? [porQue] : []), duelo, desglose);
   if (previa.nota) {
     const nota = document.createElement('div');
     nota.className = 'previa-nota';

@@ -2,7 +2,7 @@ import { desgloseDeFuerza } from './fuerza.js';
 import {
   estadoDelMapa, probabilidadDeMapa, fuerzaFinalDeMapa, ajusteDeMinijuegoDeMapa, etiquetaDeRonda
 } from './serie.js';
-import { probabilidadDeFechaMarcada, fuerzaDeFecha, factorDraftFecha, campeonDelSplitEnPool } from './temporada.js';
+import { probabilidadDeFechaMarcada, fuerzaDeFecha, factorDraftFecha, campeonDelSplitEnPool, textoPorQueImporta } from './temporada.js';
 import { minijuegoPorId } from './minijuegos.js';
 
 // K2d (PLAN.md "K2d — la previa (pantalla)" y "K2d — decisiones de spec"): la
@@ -69,6 +69,8 @@ function previaDeFecha(state, opciones) {
     rival: { nombre: fecha.rival, fuerza: fecha.fuerzaRival },
     p,
     campeon: elegido?.name ?? desglose.campeon,
+    // K4-A: por qué frena esta fecha (la clasificación, el archirrival...).
+    porQue: textoPorQueImporta(state),
     nota: ajustePartido === 0
       ? 'Si lo que elegís ahora mueve el partido, la probabilidad final sale con el resultado.'
       : null
@@ -136,7 +138,7 @@ const FILAS = [
   { clave: 'minijuego', etiqueta: 'El minijuego', signo: true, opcional: true }
 ];
 
-function armarPrevia({ tipo, titulo, subtitulo = null, propio, desglose, extras, fuerzaBase, fuerzaFinal, rival, p, campeon, nota }) {
+function armarPrevia({ tipo, titulo, subtitulo = null, porQue = null, propio, desglose, extras, fuerzaBase, fuerzaFinal, rival, p, campeon, nota }) {
   const aportes = aportesDelDesglose(desglose);
   aportes.campeon += extras.campeon ?? 0;
   aportes.momento = extras.momento ?? 0;
@@ -155,6 +157,7 @@ function armarPrevia({ tipo, titulo, subtitulo = null, propio, desglose, extras,
     tipo,
     titulo,
     subtitulo,
+    porQue,
     desglose,
     aportes,
     filas,
@@ -169,8 +172,7 @@ function armarPrevia({ tipo, titulo, subtitulo = null, propio, desglose, extras,
   };
 }
 
-// La previa de la pausa que el juego ya hace: la fecha marcada (el draft corto
-// o el momento) y, en una serie, el draft o el minijuego de un mapa. `null` si
+// La previa de la pausa que el juego ya hace: la fecha marcada (el momento) y, en una serie, el draft o el minijuego de un mapa. `null` si
 // la decisión no es antes de un partido. En un draft, `opciones` trae la p de
 // cada campeón (la tarjeta muestra la del primero de la lista, el mejor por el
 // criterio del motor). `resultadoMinijuego`: la previa ya corrida por el
@@ -201,17 +203,10 @@ export function previaDeDecision(state, decision, { resultadoMinijuego } = {}) {
   if (!t?.activa || !t.fechaEnCurso) {
     return null;
   }
-  if (datos.motivo === 'draft' && !('campeonElegido' in t.fechaEnCurso)) {
-    const porOpcion = (decision.opciones ?? []).map((opcion) => ({
-      id: opcion.id,
-      previa: previaDePartido(state, {
-        tipo: 'fecha',
-        elegido: state.player.championPool.find((c) => c.name === opcion.id) ?? null
-      })
-    }));
-    return porOpcion.length > 0 ? conOpciones(porOpcion[0].previa, porOpcion) : previaDePartido(state, { tipo: 'fecha' });
-  }
-  return previaDePartido(state, { tipo: 'fecha' });
+  // K4-A: la fecha marcada ya no tiene draft; el subtítulo es el rótulo del
+  // partido ("Se define la clasificación", "El archirrival"...).
+  const previa = previaDePartido(state, { tipo: 'fecha' });
+  return datos.etiqueta ? { ...previa, subtitulo: datos.etiqueta } : previa;
 }
 
 function conOpciones(previa, porOpcion) {

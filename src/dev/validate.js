@@ -58,7 +58,7 @@ import {
 import {
   motivosDeFecha, generarFixture, aplicarCrucesDeJornada, rendimientoDeLaTemporada,
   tablaDePosiciones, posicionEnTabla, filaVacia, registrarEnFila,
-  decisionDeDraftFecha, factorDraftFecha
+  defineClasificacion, motivoPrincipal, PRIORIDAD_MOTIVOS, factorDraftFecha
 } from '../core/temporada.js';
 import { tierListDeRol, boostDelPool } from '../core/regimen.js';
 import { nivelDelJugador, deltasDeStats, fichaCompleta, loQueConstruiste } from '../core/ficha.js';
@@ -4952,9 +4952,9 @@ check('El motor nunca elige por vos un campeón peor que otro disponible', () =>
       meta: { weights, ajuste: 50 }
     };
 
+    // K4-A: la fecha marcada ya no tiene draft; queda el de la serie.
     for (const decision of [
-      decisionDeDraft(state, entradas, i % 2 === 0),
-      decisionDeDraftFecha({ ...state, player: { ...state.player, championPool: entradas } })
+      decisionDeDraft(state, entradas, i % 2 === 0)
     ]) {
       if (decision.pausa || !decision.elegido) {
         continue;
@@ -5579,9 +5579,9 @@ check('Ninguna fecha marcada sale sin un stakes declarado', () => {
     mundo: { rivales: [] }
   };
   const fecha = { rival: 'Nadie Conocido', fuerzaRival: 50 };
-  const tablaPareja = [{ org: 'Equipo Propio', ganados: 3, perdidos: 3, diferencia: 0 }];
+  const t = { calendario: [fecha], cruces: [], registrosOtros: {}, filaPropia: { org: 'Equipo Propio', ganados: 3, perdidos: 3 }, indice: 0, fuerzaPropia: 50 };
 
-  const motivos = motivosDeFecha(estadoAburrido, null, fecha, tablaPareja, 0, 3, 9);
+  const motivos = motivosDeFecha(estadoAburrido, null, fecha, t);
   if (!Array.isArray(motivos) || motivos.length === 0) {
     throw new Error('motivosDeFecha devolvió una lista vacía en un escenario sin ningún motivo real');
   }
@@ -13573,7 +13573,7 @@ function cosechaDePreviasK2d() {
   if (cosechasK2d.has(clave)) {
     return cosechasK2d.get(clave);
   }
-  const c = { fechas: [], fechasDraft: [], drafts: [], minijuegos: [] };
+  const c = { fechas: [], drafts: [], minijuegos: [] };
   const espia = (sistema, st, decision, rng) => {
     const respuesta = ESTRATEGIAS_K0.criterio(sistema, st, decision, rng);
     const datos = decision.datos ?? {};
@@ -13587,22 +13587,20 @@ function cosechaDePreviasK2d() {
       }
     } else {
       const fecha = st.career.temporada?.activa ? st.career.temporada.fechaEnCurso : null;
+      // K4-A: la fecha marcada ya no tiene draft; su única pausa es el momento.
       if (fecha && 'campeonElegido' in fecha && c.fechas.length < CASOS_K2D * 2) {
         c.fechas.push(caso);
-      } else if (fecha && !('campeonElegido' in fecha) && datos.motivo === 'draft' && c.fechasDraft.length < CASOS_K2D) {
-        // El draft corto de la fecha marcada: todavía sin campeón elegido, la previa trae la p de cada opción.
-        c.fechasDraft.push(caso);
       }
     }
     return respuesta;
   };
-  const llena = () => c.fechas.length >= CASOS_K2D * 2 && c.fechasDraft.length >= CASOS_K2D
+  const llena = () => c.fechas.length >= CASOS_K2D * 2
     && c.drafts.length >= CASOS_K2D && c.minijuegos.length >= CASOS_K2D;
   for (let seed = 1; seed <= SEEDS_MAX_K2D && !llena(); seed += 1) {
     correrCarreraSimulate(seed, 60, espia);
   }
-  if (c.fechas.length < CASOS_K2D || c.fechasDraft.length < 10 || c.drafts.length < 10 || c.minijuegos.length < 10) {
-    throw new Error(`cosecha vacía: ${c.fechas.length} fechas marcadas, ${c.fechasDraft.length} drafts de fecha, ${c.drafts.length} drafts de mapa y ${c.minijuegos.length} minijuegos de mapa`);
+  if (c.fechas.length < CASOS_K2D || c.drafts.length < 10 || c.minijuegos.length < 10) {
+    throw new Error(`cosecha vacía: ${c.fechas.length} fechas marcadas, ${c.drafts.length} drafts de mapa y ${c.minijuegos.length} minijuegos de mapa`);
   }
   cosechasK2d.set(clave, c);
   return c;
@@ -13622,7 +13620,7 @@ function fallarSiK2d(problemas) {
 // de DESPUÉS del momento (su `ajustePartido` y, con `consistencia.k` ≠ 0, su mentalidad), y es exactamente la previa
 // de ese estado.
 checkK2d('K2d previa 1: la p de la previa es exactamente la que el motor tira (===), en fechas marcadas (y la de cada opción de su draft corto) y en mapas con el minijuego neutro, sobre partidos de carreras reales', () => {
-  const { fechas, fechasDraft, drafts, minijuegos } = cosechaDePreviasK2d();
+  const { fechas, drafts, minijuegos } = cosechaDePreviasK2d();
   const problemas = [];
   let fechasNeutras = 0;
   let fechasConMomento = 0;
@@ -13653,36 +13651,6 @@ checkK2d('K2d previa 1: la p de la previa es exactamente la que el motor tira (=
     } else {
       fechasConMomento += 1;
     }
-  });
-
-  // El draft corto de la fecha: la p que la pausa muestra junto a CADA campeón es la que el motor tira si se elige
-  // ese campeón (el log de la fecha: `pSinMomento`, o `p` si el momento no movió nada).
-  let opcionesDeFecha = 0;
-  fechasDraft.forEach(({ sistema, st, decision }, i) => {
-    const previa = previaDeDecision(st, decision);
-    if (!previa?.opciones || previa.opciones.length !== decision.opciones.length) {
-      problemas.push(`draft de fecha ${i}: la previa no trae la p de cada opción`);
-      return;
-    }
-    decision.opciones.forEach((opcion, j) => {
-      const mostrada = previa.opciones.find((o) => o.id === opcion.id)?.p;
-      let res = sistema.resolver(st, decision, { opcionId: opcion.id }, mulberry32(37000 + i * 100 + j));
-      // Tras el draft viene el momento de la fecha (una pausa más): se resuelve con su primera opción y se sigue
-      // hasta el log de la fecha, con el campeón ya elegido en el estado.
-      if (!res.logs.some(esLogDeFechaK2d) && res.decision?.datos?.motivo === 'momento') {
-        res = sistema.resolver(res.state, res.decision, { opcionId: res.decision.opciones[0].id }, mulberry32(38000 + i * 100 + j));
-      }
-      const log = res.logs.find(esLogDeFechaK2d);
-      if (!log) {
-        problemas.push(`draft de fecha ${i} (${opcion.id}): no llegó al log de la fecha`);
-        return;
-      }
-      opcionesDeFecha += 1;
-      // Lo que el draft promete es la p de antes del momento (lo que el momento mueve sale con el resultado).
-      if (mostrada !== log.pSinMomento) {
-        problemas.push(`draft de fecha ${i} (${opcion.id}): la pausa muestra p = ${mostrada}, el motor la tenía en ${log.pSinMomento} antes del momento`);
-      }
-    });
   });
 
   let mapasSinMinijuego = 0;
@@ -13719,8 +13687,8 @@ checkK2d('K2d previa 1: la p de la previa es exactamente la que el motor tira (=
   fallarSiK2d(problemas);
   // Todo momento del catálogo trae un efecto `partido`: en carreras reales casi ninguna fecha marcada llega sin
   // ajuste. La p de antes del momento (la que muestra la previa) se compara igual en todas, contra `pSinMomento`.
-  if (fechasNeutras + fechasConMomento < 20 || opcionesDeFecha < 20 || mapasSinMinijuego < 5 || mapasConMinijuego < 10) {
-    throw new Error(`check vacío: ${fechasNeutras} fechas sin ajuste, ${fechasConMomento} con ajuste, ${opcionesDeFecha} opciones de draft de fecha, ${mapasSinMinijuego} mapas sin minijuego, ${mapasConMinijuego} con minijuego`);
+  if (fechasNeutras + fechasConMomento < 20 || mapasSinMinijuego < 5 || mapasConMinijuego < 10) {
+    throw new Error(`check vacío: ${fechasNeutras} fechas sin ajuste, ${fechasConMomento} con ajuste, ${mapasSinMinijuego} mapas sin minijuego, ${mapasConMinijuego} con minijuego`);
   }
 });
 
@@ -13828,7 +13796,7 @@ checkK2d('K2d previa 6: ningún texto de la previa ni de la probabilidad jugada 
   const enteros = new Set(['cuartos', 'semis', 'final', 'internacional']);
   const problemas = [];
   const textosDe = (previa) => [
-    previa.titulo, previa.subtitulo, previa.nota, previa.textoProbabilidad, previa.propio.nombre, previa.propio.texto,
+    previa.titulo, previa.subtitulo, previa.porQue, previa.nota, previa.textoProbabilidad, previa.propio.nombre, previa.propio.texto,
     previa.rival.nombre, previa.rival.texto,
     ...previa.filas.flatMap((fila) => [fila.etiqueta, fila.texto]),
     ...(previa.opciones ?? []).flatMap((opcion) => [opcion.id, opcion.texto])
@@ -14705,6 +14673,222 @@ check('K3-B la ficha lista solo las marcas cuyo acumulado (por stat, origen y a�
   if (!fuenteFicha.includes("nombre: 'CONSISTENCIA'") || /nombre: 'MENTALIDAD'/.test(fuenteFicha)) {
     throw new Error("la barra de la mentalidad tiene que rotularse 'CONSISTENCIA' en la ficha (el id interno sigue siendo mentalidad)");
   }
+});
+
+// ============================================================================
+// K4-A (PLAN.md "K4 — decisiones de spec", K4-A): el partido que importa. Se marca la fecha que DECIDE algo (la
+// clasificación, tu archirrival, el clásico, la revancha), una por split, sin draft y con la previa a la vista.
+// `puntero` y `presion` dejaron de marcar. Bloque B: el corrimiento del stream está aceptado (la huella cambia); estos
+// checks son estructurales.
+// ============================================================================
+
+const MOTIVOS_K4A = ['define_clasificacion', 'archirrival', 'clasico', 'revancha'];
+
+// Una liga sintética de 10 equipos con el formato de tier 1 (6 clasifican, 2 con bye) y UNA fecha por jugar: la última,
+// contra R9. Las victorias de cada org son las de la tabla de hoy; los demás cruces de la jornada son parejos (p = 0,5).
+function temporadaSinteticaK4A(victorias, { fechasQueFaltan = 1, orgPropia = 'Propio' } = {}) {
+  const otros = ['R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9'];
+  const fila = (org, ganados) => ({ org, ganados, perdidos: 0 });
+  const cruce = (local, visitante) => ({ local, visitante, fuerzaLocal: 50, fuerzaVisitante: 50 });
+  return {
+    calendario: Array.from({ length: fechasQueFaltan }, () => ({ rival: 'R9', fuerzaRival: 50 })),
+    cruces: Array.from({ length: fechasQueFaltan }, () => [cruce('R1', 'R2'), cruce('R3', 'R4'), cruce('R5', 'R6'), cruce('R7', 'R8')]),
+    registrosOtros: Object.fromEntries(otros.map((org, i) => [org, fila(org, victorias[i + 1])])),
+    filaPropia: fila(orgPropia, victorias[0]),
+    indice: 0,
+    fuerzaPropia: 50
+  };
+}
+const LIGA_K4A = { tier: 1, formatoPlayoffs: { clasifican: 6, byes: 2, bo: 5 } };
+// [Propio, R1..R9]: Propio pelea el sexto puesto (8 victorias, R6 tiene 8,5 esperadas y R9 —su rival— 7).
+const TABLA_QUE_DEFINE_K4A = [8, 12, 12, 12, 12, 12, 8, 5, 5, 7];
+// Propio con 15 victorias: ganar o perder lo deja primero con bye.
+const TABLA_QUE_NO_DEFINE_K4A = [15, 12, 12, 12, 12, 12, 8, 5, 5, 7];
+// Propio lejos del corte, abajo: ganar o perder lo deja afuera.
+const TABLA_QUE_NO_DEFINE_ABAJO_K4A = [0, 12, 12, 12, 12, 12, 8, 5, 5, 7];
+// Propio con 12 victorias empatado con R1 y R2: ganar lo deja primero (bye a semis), perder tercero (cuartos).
+const TABLA_DEL_BYE_K4A = [12, 12, 12, 10, 10, 10, 9, 5, 5, 6];
+
+check('K4-A define_clasificacion: sale de la tabla y del fixture que falta (sin rng), tanto la entrada a playoffs como el bye', () => {
+  const estado = {};
+  const t = temporadaSinteticaK4A(TABLA_QUE_DEFINE_K4A);
+  const definicion = defineClasificacion(estado, LIGA_K4A, t);
+  if (definicion?.siGana !== 'cuartos' || definicion?.siPierde !== null) {
+    throw new Error(`con 8 victorias frente a un sexto de 8,5 esperadas, ganar es entrar por cuartos y perder es quedar afuera; devolvió ${JSON.stringify(definicion)}`);
+  }
+  const bye = defineClasificacion(estado, LIGA_K4A, temporadaSinteticaK4A(TABLA_DEL_BYE_K4A));
+  if (bye?.siGana !== 'semis' || bye?.siPierde !== 'cuartos') {
+    throw new Error(`ganar la fecha que da el bye es 'semis' y perderla 'cuartos'; devolvió ${JSON.stringify(bye)}`);
+  }
+  for (const [nombre, tabla] of [['arriba', TABLA_QUE_NO_DEFINE_K4A], ['abajo', TABLA_QUE_NO_DEFINE_ABAJO_K4A]]) {
+    const sinDefinir = defineClasificacion(estado, LIGA_K4A, temporadaSinteticaK4A(tabla));
+    if (sinDefinir !== null) {
+      throw new Error(`con la tabla de ${nombre} la fecha no decide nada, pero devolvió ${JSON.stringify(sinDefinir)}`);
+    }
+  }
+  // Una liga sin playoffs no tiene clasificación que definir.
+  if (defineClasificacion(estado, { tier: 2 }, t) !== null) {
+    throw new Error('una liga sin formatoPlayoffs no puede definir la clasificación');
+  }
+  // Lejos del final (falta más que la ventana) la proyección es una cuenta abierta: no se afirma.
+  const lejos = temporadaSinteticaK4A(TABLA_QUE_DEFINE_K4A, { fechasQueFaltan: 60 });
+  if (defineClasificacion(estado, LIGA_K4A, lejos) !== null) {
+    throw new Error('fuera de la ventana de las últimas fechas no se marca el partido que define la clasificación');
+  }
+  // Pura y determinista: dos llamadas dan lo mismo y no tocan lo que reciben.
+  const copia = JSON.stringify(t);
+  if (JSON.stringify(defineClasificacion(estado, LIGA_K4A, t)) !== JSON.stringify(definicion) || JSON.stringify(t) !== copia) {
+    throw new Error('defineClasificacion no es pura');
+  }
+});
+
+check('K4-A prioridad: define_clasificacion > archirrival > clásico > revancha, y puntero, presión y rival de generación no marcan', () => {
+  const estado = (extra = {}) => ({
+    career: { orgs: ['Propio'], currentOrg: 'Propio', ultimoEliminadoPor: null, ...extra.career },
+    mundo: { rivales: [], archirrival: extra.archirrival ?? null }
+  });
+  const fecha = { rival: 'R9', fuerzaRival: 50 };
+  const motivosDe = (st, tabla) => motivosDeFecha(st, LIGA_K4A, fecha, temporadaSinteticaK4A(tabla));
+  const esperar = (nombre, obtenido, esperado) => {
+    if (JSON.stringify(obtenido) !== JSON.stringify(esperado)) {
+      throw new Error(`${nombre}: se esperaba ${JSON.stringify(esperado)}, devolvió ${JSON.stringify(obtenido)}`);
+    }
+  };
+  const todo = estado({ archirrival: { org: 'R9', handle: 'Rival' }, career: { orgs: ['R9', 'Propio'], ultimoEliminadoPor: 'R9' } });
+  esperar('con todo junto', motivoPrincipal(motivosDe(todo, TABLA_QUE_DEFINE_K4A)), 'define_clasificacion');
+  esperar('sin definir la clasificación', motivoPrincipal(motivosDe(todo, TABLA_QUE_NO_DEFINE_K4A)), 'archirrival');
+  esperar('clásico y revancha', motivoPrincipal(motivosDe(estado({ career: { orgs: ['R9', 'Propio'], ultimoEliminadoPor: 'R9' } }), TABLA_QUE_NO_DEFINE_K4A)), 'clasico');
+  esperar('solo revancha', motivoPrincipal(motivosDe(estado({ career: { ultimoEliminadoPor: 'R9' } }), TABLA_QUE_NO_DEFINE_K4A)), 'revancha');
+  // El rival es el puntero de la tabla (20 victorias): antes marcaba, ahora la fecha pasa resumida.
+  esperar('contra el puntero', motivosDe(estado(), [15, 12, 12, 12, 12, 12, 8, 5, 5, 20]), ['parejo']);
+  esperar('sin nada en juego', motivosDe(estado(), TABLA_QUE_NO_DEFINE_K4A), ['parejo']);
+  esperar('la prioridad es la de la spec', PRIORIDAD_MOTIVOS, MOTIVOS_K4A);
+});
+
+// Carreras reales de `criterio` (seeds 1..100, 60 splits): por split, las fechas marcadas y por qué, las pausas de la
+// temporada y si fue un split de tier 1 con playoffs.
+const CARRERAS_K4A = 100;
+let cosechaK4A = null;
+function cosechaDeCarrerasK4A() {
+  if (cosechaK4A) {
+    return cosechaK4A;
+  }
+  const c = { splitsTier1: 0, splitsConDefine: 0, marcadasPorSplit: {}, motivosVistos: new Set(), principales: {}, pausas: {}, casos: [] };
+  for (let seed = 1; seed <= CARRERAS_K4A; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      const antes = state.career.temporada;
+      const principalesDelSplit = [];
+      const responder = (sistema, st, decision, r) => {
+        if (sistema.id === 'temporada') {
+          const tipo = decision.datos?.motivo ?? 'x';
+          c.pausas[tipo] = (c.pausas[tipo] ?? 0) + 1;
+          const motivos = st.career.temporada.fechaEnCurso?.motivos ?? [];
+          motivos.forEach((m) => c.motivosVistos.add(m));
+          if (tipo === 'momento') {
+            principalesDelSplit.push(motivoPrincipal(motivos));
+            if (c.casos.length < 60) {
+              c.casos.push({ st, decision });
+            }
+          }
+        }
+        return ESTRATEGIAS_K0.criterio(sistema, st, decision, r);
+      };
+      state = avanzarSplitAuto(state, rng, responder).state;
+      const t = state.career.temporada;
+      if (t === antes || !t) {
+        continue;
+      }
+      c.marcadasPorSplit[t.marcadasHechas] = (c.marcadasPorSplit[t.marcadasHechas] ?? 0) + 1;
+      principalesDelSplit.forEach((m) => { c.principales[m] = (c.principales[m] ?? 0) + 1; });
+      const liga = ligaDeCarreraK3A(state);
+      if (liga?.tier === 1 && liga.formatoPlayoffs) {
+        c.splitsTier1 += 1;
+        if (principalesDelSplit.includes('define_clasificacion')) {
+          c.splitsConDefine += 1;
+        }
+      }
+    }
+  }
+  cosechaK4A = c;
+  return c;
+}
+
+check(`K4-A define_clasificacion es alcanzable: al menos 1 de cada 3 splits de tier 1 con playoffs (criterio, ${CARRERAS_K4A} carreras)`, () => {
+  const { splitsTier1, splitsConDefine } = cosechaDeCarrerasK4A();
+  if (splitsTier1 < 300) {
+    throw new Error(`solo ${splitsTier1} splits de tier 1 con playoffs medidos: muestra insuficiente`);
+  }
+  if (splitsConDefine * 3 < splitsTier1) {
+    throw new Error(`define_clasificacion marcó ${splitsConDefine} de ${splitsTier1} splits de tier 1 con playoffs (1 cada ${(splitsTier1 / Math.max(1, splitsConDefine)).toFixed(1)}); la meta es 1 cada 3 o mejor`);
+  }
+});
+
+check('K4-A a lo sumo una fecha marcada por split', () => {
+  const { marcadasPorSplit } = cosechaDeCarrerasK4A();
+  const conMasDeUna = Object.entries(marcadasPorSplit).filter(([n]) => Number(n) > 1).reduce((suma, [, cantidad]) => suma + cantidad, 0);
+  if (conMasDeUna > 0) {
+    throw new Error(`${conMasDeUna} splits con más de una fecha marcada (conteos: ${JSON.stringify(marcadasPorSplit)})`);
+  }
+  if ((marcadasPorSplit[1] ?? 0) < 100) {
+    throw new Error(`solo ${marcadasPorSplit[1] ?? 0} splits con una fecha marcada: muestra insuficiente`);
+  }
+});
+
+check('K4-A puntero y presión nunca marcan: toda fecha marcada lo es por uno de los cuatro motivos', () => {
+  const { motivosVistos, principales } = cosechaDeCarrerasK4A();
+  const fuera = [...motivosVistos].filter((m) => !MOTIVOS_K4A.includes(m));
+  if (fuera.length > 0) {
+    throw new Error(`fechas marcadas con motivos fuera de los cuatro: ${fuera.join(', ')}`);
+  }
+  const marcadas = Object.values(principales).reduce((suma, n) => suma + n, 0);
+  if (marcadas < 200 || !principales.define_clasificacion || !principales.clasico || !principales.revancha) {
+    throw new Error(`la muestra no pasó por los motivos que se pueden alcanzar: ${JSON.stringify(principales)}`);
+  }
+});
+
+check('K4-A la fecha marcada no tiene draft: frena una sola vez, con el momento', () => {
+  const { pausas, marcadasPorSplit } = cosechaDeCarrerasK4A();
+  if (pausas.draft) {
+    throw new Error(`${pausas.draft} pausas de draft en una fecha marcada (temporada:draft debería haber desaparecido)`);
+  }
+  const marcadas = marcadasPorSplit[1] ?? 0;
+  if ((pausas.momento ?? 0) > marcadas) {
+    throw new Error(`${pausas.momento} momentos para ${marcadas} fechas marcadas: la fecha frena más de una vez`);
+  }
+  const otras = Object.keys(pausas).filter((m) => m !== 'momento');
+  if (otras.length > 0) {
+    throw new Error(`la temporada pausó con ${otras.join(', ')}: solo debería frenar con el momento`);
+  }
+});
+
+check('K4-A la previa de la fecha marcada dice por qué importa, sin ids crudos, y el "porQue" es el del motivo', () => {
+  const { casos } = cosechaDeCarrerasK4A();
+  if (casos.length < 30) {
+    throw new Error(`solo ${casos.length} fechas marcadas cosechadas`);
+  }
+  const problemas = [];
+  casos.forEach(({ st, decision }, i) => {
+    const previa = previaDeDecision(st, decision);
+    const texto = previa?.porQue;
+    if (typeof texto !== 'string' || texto.length < 10) {
+      problemas.push(`fecha ${i}: la previa no trae el porqué (${JSON.stringify(texto)})`);
+      return;
+    }
+    if (/[a-z0-9]+_[a-z0-9_]+|undefined|null|NaN/.test(texto)) {
+      problemas.push(`fecha ${i}: "${texto}" muestra un id crudo`);
+    }
+    const principal = motivoPrincipal(st.career.temporada.fechaEnCurso.motivos);
+    const esperado = { define_clasificacion: /ganás|playoffs/, archirrival: /archirrival/, clasico: /ex equipo/, revancha: /revancha/ }[principal];
+    if (!esperado.test(texto)) {
+      problemas.push(`fecha ${i}: "${texto}" no habla del motivo ${principal}`);
+    }
+    if (!previa.subtitulo) {
+      problemas.push(`fecha ${i}: la previa no trae el rótulo del partido`);
+    }
+  });
+  fallarSiK2d(problemas);
 });
 
 if (errores.length > 0) {
