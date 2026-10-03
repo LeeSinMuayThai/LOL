@@ -58,11 +58,13 @@ export const BALANCE = {
   // K3-A (PLAN.md "K3 — decisiones de spec", K3-A.1): la mentalidad gobierna
   // la consistencia. `ruidoEfectivo` multiplica su σ por
   // g(m) = 1 + k·(mRef − m)/100, acotado a [gMin, gMax]
-  // (`core/partido.js#factorDeConsistencia`). Valores de estructura: con
-  // `k = 0` g vale 1 siempre y el juego es el de hoy (huella idéntica); K3c
-  // fija `k` medido.
+  // (`core/partido.js#factorDeConsistencia`). Con `k = 0` g vale 1 siempre y
+  // el juego era el de antes. K3c (PLAN.md "Paso 2, el barrido"): `k` = 0,5.
+  // k = 0,25 cumplía en el borde (brecha de sorpresas mentalidad 20 contra 80
+  // de 2,2 pp, la meta pide >= 2 pp *clara*, y un check duro en el borde es
+  // frágil); con 0,5 la brecha mide 4,3 pp.
   consistencia: {
-    k: 0,
+    k: 0.5,
     // La mentalidad a la que el σ es el de `partido`: la mediana pro que pide
     // la meta de K3 (45-75).
     mRef: 60,
@@ -378,12 +380,14 @@ export const BALANCE = {
     },
     // K3-B (PLAN.md, "K3 — decisiones de spec"): la fracción de cada efecto de evento o decisión sobre un stat de
     // curva que se vuelve permanente (`player.bonusPermanente`: la curva de edad converge a `objetivo + bonus`).
-    // 0 = neutro, el juego queda como estaba; la fija K3c para que un efecto conserve >= 40% a 4 splits.
-    fraccionPermanente: 0,
+    // 0 = neutro (el juego de antes). K3c: 0,3, la fracción más chica de {0,3, 0,4, 0,5} que conserva >= 40% de un
+    // efecto a 4 splits en la sonda de retención (PLAN.md "La sonda de retención"); una regla sola para eventos y
+    // práctica, y la práctica que deja marca no infla el juego (los títulos y la llegada a tier 1 casi no se mueven).
+    fraccionPermanente: 0.3,
     // K3-B 2b (PLAN.md, "K3 — decisiones de spec"): la misma regla para lo que mueve la práctica — las rutinas de
     // offseason de `systems/practica.js` (el bootcamp) —, con su propia fracción porque su volumen es muy distinto
-    // al de un evento. 0 = neutro; la calibra K3c junto con `fraccionPermanente`.
-    fraccionPermanentePractica: 0,
+    // al de un evento. 0 = neutro. K3c: 0,3, la misma que `fraccionPermanente` (una regla sola; ver arriba).
+    fraccionPermanentePractica: 0.3,
 
     // --- Stats que se acumulan (el macro no declina: sostiene a los veteranos) ---
     acumulativos: {
@@ -426,22 +430,32 @@ export const BALANCE = {
     // K3-A (PLAN.md "K3 — decisiones de spec", K3-A.2 y 3), en
     // `core/barras.js`. Cada split la mentalidad vuelve a una base:
     // m ← m + r·(base − m), con r = `mentalidadRetornoBase` (0 = el juego de
-    // hoy). No hay rasgo de personalidad en el motor que la module
+    // antes). No hay rasgo de personalidad en el motor que la module
     // (`player.oculto` trae potencial, edad pico y forma), así que la base es
     // esta constante: la mediana pro que pide la meta de K3.
+    // K3c (PLAN.md "Paso 2, el barrido"): r = 0,2 deja la mediana pro de
+    // `criterio` en 72 y el 2,3% de los splits con mentalidad >= 90 (metas:
+    // mediana 45-75 y < 20%); sin la vuelta eran 97,8 y 77,7%.
     mentalidadBase: 60,
-    mentalidadRetornoBase: 0,
+    mentalidadRetornoBase: 0.2,
     // K3c (PLAN.md "Lo que rompen los valores elegidos", punto 1): la vuelta es
     // asimétrica. `mentalidadRetornoBase` baja una mentalidad que está por
     // ENCIMA de la base; esta la sube desde ABAJO (más lento o nada), para que
     // la vuelta no perdone gratis las malas decisiones ni borre el burnout.
-    // Igual a la bajada = la vuelta simétrica de antes.
-    mentalidadRetornoBaseSubida: 0,
+    // Igual a la bajada = la vuelta simétrica. K3c: 0,05, medido con `malas`,
+    // `azar` y `criterio` (200 × 60): simétrica (0,2) la brecha malas−azar en
+    // "no llega a pro" cae a 8,5 pp y borra el burnout con `malas` (170 cada
+    // 1000 carreras); con 0,05 la brecha es 16,5 pp (mínimo 10), el burnout
+    // vuelve (430 con `malas`, 0 con `criterio`) y la mentalidad de `criterio`
+    // sigue en 72,3 / 2,6% >= 90. 0,1 cumplía en el borde; 0 se pasa de duro.
+    mentalidadRetornoBaseSubida: 0.05,
     // Toda recuperación de mentalidad por descanso (el sueño por encima del
     // confortable en `atributos.js`, el "descansar" del receso en
     // `practica.js`) llega hasta acá y no más; si ya estabas arriba, descansar
-    // no te baja. 100 = sin tope (el juego de hoy); K3c lo baja a la base.
-    topeDescanso: 100
+    // no te baja. 100 = sin tope (el juego de antes). K3c: 70, va con
+    // `mentalidadRetornoBase`: sin tope el descanso reponía una mentalidad
+    // saturada por encima de lo que la vuelta a la base deja (PLAN.md, barrido).
+    topeDescanso: 70
   },
 
   meta: {
@@ -800,8 +814,11 @@ export const BALANCE = {
     // si jugaste un internacional en los últimos `hypeAniosInternacional` años
     // calendario (el internacional se juega al cierre del año: te hace visible
     // el año siguiente). `hypeRetornoBase` = rH = 0 es el juego de hoy; h0, a
-    // y b son de estructura (rH = 0 los apaga) y los fija K3c.
-    hypeRetornoBase: 0,
+    // y b son de estructura (rH = 0 los apaga). K3c (PLAN.md "Paso 2, el
+    // barrido"): rH = 0,6 deja el 20-22% de los splits pro con hype >= 90
+    // (meta < 25%); con 0,5 daba 27% y con 0,7, 15,8%. Los demás (h0, a, b y
+    // `hypeDecaimiento`) no hizo falta tocarlos.
+    hypeRetornoBase: 0.6,
     hypeBaseInicial: 40,
     hypeBasePorDesvio: 6,
     hypeBasePorVisibilidad: 30,
@@ -1514,8 +1531,13 @@ export const BALANCE = {
     // el sinDraft cayó a 23%. Re-medido (N=1200 series): 0,26 devuelve el
     // margen original (32,5% sin draft, mediana 1). Misma proporción
     // decisivo/base (~0,5) que antes.
-    puntosEnJuegoParaPreguntar: 0.26,
-    puntosEnJuegoParaPreguntarDecisivo: 0.13,
+    // K3c (PLAN.md "Paso 2, el barrido"): K2c achicó la dispersión de la p a
+    // ~0,3145 de la de antes y con 0,26 la sonda del check de pausas dio 0 pausas
+    // sobre 4000 series (antes de K2c, 152). Se re-escala por el mismo factor
+    // (0,26 × 0,3145 = 0,0818) y se mantiene el 2:1 con el decisivo; la sonda
+    // vuelve a dar 152 pausas. K4 rediseña igual el draft (plan de Fearless).
+    puntosEnJuegoParaPreguntar: 0.0818,
+    puntosEnJuegoParaPreguntarDecisivo: 0.0409,
     // |rendimiento base del jugador - fuerza del rival| <= esto: "mapa cerrado",
     // condicion necesaria para que dispare un minijuego (regla 4 de 4.6).
     margenMapaCerrado: 8,
@@ -1729,15 +1751,18 @@ export const BALANCE = {
       { id: 'goat', requisito: { cierresNumeroUno: 3 } }
     ],
     // El referente del número (regla 13): "mejor que el X% de las carreras".
-    // Pares [percentil, puntaje] medidos con `criterio` (revisión de K1: seeds
-    // 1-800, 60 splits, el bloque `puntaje` de `simulate.js`); entre dos pares
-    // se interpola y el último es el techo de lo que se dice. El salto entre el
-    // p20 (25) y el p25 (392) es el borde entre los que no llegaron (22%) y los
-    // pros. Provisoria: K5c la vuelve a medir.
+    // Pares [percentil, puntaje] medidos con `criterio` (seeds 1-800, 60 splits,
+    // el bloque `puntaje` de `simulate.js`); entre dos pares se interpola y el
+    // último es el techo de lo que se dice. El salto entre el p20 (28) y el p25
+    // (328) es el borde entre los que no llegaron (21,6%) y los pros.
+    // K3c re-midió con los valores del bloque A (la consistencia, la vuelta a la
+    // base y los efectos que duran bajaron el número: p50 1172 → 989, p90 1800
+    // → 1622, p99 2169 → 1993). Los cortes de nivel no se tocan: son por hechos.
+    // Provisoria: K5c la vuelve a medir.
     cuantiles: [
-      [0, 0], [5, 10], [10, 14], [15, 17], [20, 25], [25, 392], [30, 686], [35, 835], [40, 978], [45, 1105],
-      [50, 1172], [55, 1257], [60, 1339], [65, 1419], [70, 1474], [75, 1548], [80, 1610], [85, 1691],
-      [90, 1800], [95, 1894], [97, 2007], [99, 2169]
+      [0, 0], [5, 12], [10, 18], [15, 22], [20, 28], [25, 328], [30, 555], [35, 690], [40, 804], [45, 908],
+      [50, 989], [55, 1074], [60, 1138], [65, 1196], [70, 1273], [75, 1351], [80, 1443], [85, 1526],
+      [90, 1622], [95, 1744], [97, 1807], [99, 1993]
     ],
     // La leyenda comparada (`data/leyendas.json`): la más cercana por distancia
     // euclídea sobre el perfil normalizado (cada eje dividido por su `escala`),
