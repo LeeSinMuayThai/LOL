@@ -49,7 +49,10 @@ export const BALANCE = {
     // Cada mapa tiraba tres gauss: `ruidoMapa` 7, `ruidoRivalSerie` 12 y el
     // `ruidoRendimiento` 7 del rendimiento de ese mapa, que entra a la fuerza
     // por `pesoJugadorEnEquipo` × la sinergia del equipo.
-    sigmaMapa: 14.2
+    // K2c (PLAN.md "Cómo se hace K2c", paso 1): el σ de mapa del candidato
+    // medido, simétrico y con combinado ~18: √(12,5² + 12,5²) = 17,68 (hasta
+    // K2b, 14,2 = el comportamiento de antes).
+    sigmaMapa: 17.7
   },
 
   // Cuánto corren los stats la probabilidad de un outcome (CONCEPTO §8: "la
@@ -456,8 +459,13 @@ export const BALANCE = {
     signaturePartidas: 12,
     // 50 = tu pool es exactamente promedio para este meta.
     ajusteNeutro: 50,
-    multiplicadorMin: 0.75,
-    multiplicadorMax: 1.25,
+    // K2c: el meta se acota a 0,9-1,1 (hasta K2b, 0,75-1,25). Medido en el
+    // motor integrado (200 seeds `criterio` × 60 splits, splits pro de ligas
+    // modeladas): el ajuste medio de un pro es ~41,5, así que el factor medio
+    // queda en ~0,983. No tiene referencia propia: 50 es el pool promedio
+    // para el parche (y el ajuste por defecto de `state`/`regimen`).
+    multiplicadorMin: 0.9,
+    multiplicadorMax: 1.1,
 
     // Nadie compite con menos de dos campeones, y un pool vacio rompe el draft.
     poolMinimo: 2,
@@ -674,14 +682,20 @@ export const BALANCE = {
     // Rendimiento = atributos ponderados por rol, corridos por meta, maestria
     // y jerarquia (`core/fuerza.js#rendimientoBase`). K2b: sin dado — el azar
     // del partido vive solo en la p de `core/partido.js`.
-    maestriaPesoEnRendimiento: 0.3,
+    // K2c: 0,3 → 0,1 (el candidato medido): la amplitud de la maestría era la
+    // que el Fearless te quemaba mapa a mapa (la asimetría del Bo5).
+    maestriaPesoEnRendimiento: 0.1,
     // K2b (PLAN.md "K2 — lo que midió la investigación"): cada multiplicador de
     // tu rendimiento vale 1,0 en una REFERENCIA declarada, no en un 50
-    // implícito. Hoy valen 50, el comportamiento de antes (bit a bit); K2c las
-    // lleva al valor típico de un pro (maestría ~85), que es lo que inflaba tu
-    // fuerza contra la de los rivales.
-    maestriaReferencia: 50,
-    jerarquiaReferencia: 50,
+    // implícito. K2b las dejó en 50 (el comportamiento de antes, bit a bit);
+    // K2c las lleva al valor típico de un pro, que es lo que inflaba tu fuerza
+    // contra la de los rivales. Medido en el motor integrado (K1 + K2b, 200
+    // seeds `criterio` × 60 splits, el split donde corre la temporada, ligas
+    // modeladas), con un paso de punto fijo porque centrar cambia el juego:
+    // maestría 85 (centra el factor de campeón ENTERO, afinidad incluida),
+    // jerarquía 60 (la media cae de 71,5 a ~60 al centrar).
+    maestriaReferencia: 85,
+    jerarquiaReferencia: 60,
     // Fase 9Rc: la afinidad del campeon al meta pesa la MITAD que la maestria
     // (CONCEPTO §6). Antes `calcularRendimiento` la ignoraba (0 implicito) y el
     // meta solo tocaba el rendimiento via `multiplicadorDeMeta`; ahora tambien
@@ -700,7 +714,8 @@ export const BALANCE = {
     // de tu rendimiento no pesaba en los splits que lo tocaban).
     // Factor = 1 + (s − referencia)/100 · peso.
     sinergiaPesoEnEquipo: 0.27,
-    sinergiaReferencia: 50,
+    // K2c: la sinergia media de un pro es ~55 (medida como las de arriba).
+    sinergiaReferencia: 55,
     // K2b: el rendimiento del split que leen las consecuencias (hype,
     // jerarquía, arraigo, el "Tu rendimiento: N/100") ya no sale de un dado
     // propio: lo cuentan los partidos. Rendimiento = base + este valor × z,

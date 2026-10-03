@@ -287,6 +287,8 @@ export function correrCarrera(seed, splits, responder) {
     }
 
     const registroAntes = state.career.registro;
+    // K2c: la jerarquía con la que arrancó el split (la de la temporada que corra en él), para `jerarquiaMedia`.
+    const jerarquiaAntes = state.career.jerarquia;
     state = avanzarSplitAuto(state, rng, responderInstrumentado).state;
     marcarSeriesCerradas(state);
     contarTanda(state);
@@ -294,7 +296,7 @@ export function correrCarrera(seed, splits, responder) {
     const temporadaJugada = state.career.temporada !== temporadaAntes;
     if (temporadaJugada) {
       const mundo = mundoDeLaTemporada(mundoAntes, state.mundo);
-      observacion.temporadasData.push(filaDeTemporada(mundo, state.career.temporada, splitEnCurso));
+      observacion.temporadasData.push({ ...filaDeTemporada(mundo, state.career.temporada, splitEnCurso), jerarquia: jerarquiaAntes });
     }
 
     if (state.phase !== 'profesional') {
@@ -1525,6 +1527,19 @@ function bloqueJugabilidad(jugabilidades) {
 
 // `opciones.corridasAblacion` (K2a): cuántas carreras corre la ablación de `nivel.varianzaExplicada` (por defecto
 // `MAX_CORRIDAS_ABLACION`, las primeras 200). La investigación de K2 midió el R² sin ruido sobre 400.
+// K2c (barrido de σ de fecha × vueltas): dos lecturas de las bandas del bloque A que el reporte no trae. Los
+// títulos domésticos por carrera (sobre todas las carreras del lote) y la jerarquía media al empezar los splits
+// en que corrió la temporada, en ligas modeladas. Ojo: es la de ANTES de las etapas del split, ~2 puntos arriba de
+// la que mide la temporada al arrancar (la de la investigación de K2, 71,7 → 55,9): sirve para comparar puntos del
+// barrido entre sí, no contra esos números.
+export function titulosPorCarrera(resultados) {
+  return promedio(resultados.map((r) => r.career.registro.titulos.length));
+}
+
+export function jerarquiaMedia(observaciones) {
+  return promedio(observaciones.flatMap((o) => o.temporadasData).filter((d) => d.ligaModelada).map((d) => d.jerarquia));
+}
+
 export function correrLote(corridas, splits, estrategia, { corridasAblacion = MAX_CORRIDAS_ABLACION } = {}) {
   const responder = ESTRATEGIAS[estrategia];
   const resultados = [];
