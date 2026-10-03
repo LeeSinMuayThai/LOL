@@ -13505,7 +13505,7 @@ function cosechaDePreviasK2d() {
   if (cosechaK2d) {
     return cosechaK2d;
   }
-  const c = { fechas: [], drafts: [], minijuegos: [] };
+  const c = { fechas: [], fechasDraft: [], drafts: [], minijuegos: [] };
   const espia = (sistema, st, decision, rng) => {
     const respuesta = ESTRATEGIAS_K0.criterio(sistema, st, decision, rng);
     const datos = decision.datos ?? {};
@@ -13521,16 +13521,20 @@ function cosechaDePreviasK2d() {
       const fecha = st.career.temporada?.activa ? st.career.temporada.fechaEnCurso : null;
       if (fecha && 'campeonElegido' in fecha && c.fechas.length < CASOS_K2D * 2) {
         c.fechas.push(caso);
+      } else if (fecha && !('campeonElegido' in fecha) && datos.motivo === 'draft' && c.fechasDraft.length < CASOS_K2D) {
+        // El draft corto de la fecha marcada: todavía sin campeón elegido, la previa trae la p de cada opción.
+        c.fechasDraft.push(caso);
       }
     }
     return respuesta;
   };
-  const llena = () => c.fechas.length >= CASOS_K2D * 2 && c.drafts.length >= CASOS_K2D && c.minijuegos.length >= CASOS_K2D;
+  const llena = () => c.fechas.length >= CASOS_K2D * 2 && c.fechasDraft.length >= CASOS_K2D
+    && c.drafts.length >= CASOS_K2D && c.minijuegos.length >= CASOS_K2D;
   for (let seed = 1; seed <= SEEDS_MAX_K2D && !llena(); seed += 1) {
     correrCarreraSimulate(seed, 60, espia);
   }
-  if (c.fechas.length < CASOS_K2D || c.drafts.length < 10 || c.minijuegos.length < 10) {
-    throw new Error(`cosecha vacía: ${c.fechas.length} fechas marcadas, ${c.drafts.length} drafts y ${c.minijuegos.length} minijuegos de mapa`);
+  if (c.fechas.length < CASOS_K2D || c.fechasDraft.length < 10 || c.drafts.length < 10 || c.minijuegos.length < 10) {
+    throw new Error(`cosecha vacía: ${c.fechas.length} fechas marcadas, ${c.fechasDraft.length} drafts de fecha, ${c.drafts.length} drafts de mapa y ${c.minijuegos.length} minijuegos de mapa`);
   }
   cosechaK2d = c;
   return c;
@@ -13545,8 +13549,8 @@ function fallarSiK2d(problemas) {
   }
 }
 
-check('K2d previa 1: la p de la previa es exactamente la que el motor tira (===), en fechas marcadas y en mapas con el minijuego neutro, sobre partidos de carreras reales', () => {
-  const { fechas, drafts, minijuegos } = cosechaDePreviasK2d();
+check('K2d previa 1: la p de la previa es exactamente la que el motor tira (===), en fechas marcadas (y la de cada opción de su draft corto) y en mapas con el minijuego neutro, sobre partidos de carreras reales', () => {
+  const { fechas, fechasDraft, drafts, minijuegos } = cosechaDePreviasK2d();
   const problemas = [];
   let fechasNeutras = 0;
   let fechasConMomento = 0;
@@ -13569,6 +13573,36 @@ check('K2d previa 1: la p de la previa es exactamente la que el motor tira (===)
       const despues = previaDePartido(st, { tipo: 'fecha', ajustePartido: log.ajustePartido });
       if (log.p !== despues.p) problemas.push(`fecha ${i} (ajuste ${log.ajustePartido}): previa de después ${despues.p}, tirada ${log.p}`);
     }
+  });
+
+  // El draft corto de la fecha: la p que la pausa muestra junto a CADA campeón es la que el motor tira si se elige
+  // ese campeón (el log de la fecha: `pSinMomento`, o `p` si el momento no movió nada).
+  let opcionesDeFecha = 0;
+  fechasDraft.forEach(({ sistema, st, decision }, i) => {
+    const previa = previaDeDecision(st, decision);
+    if (!previa?.opciones || previa.opciones.length !== decision.opciones.length) {
+      problemas.push(`draft de fecha ${i}: la previa no trae la p de cada opción`);
+      return;
+    }
+    decision.opciones.forEach((opcion, j) => {
+      const mostrada = previa.opciones.find((o) => o.id === opcion.id)?.p;
+      let res = sistema.resolver(st, decision, { opcionId: opcion.id }, mulberry32(37000 + i * 100 + j));
+      // Tras el draft viene el momento de la fecha (una pausa más): se resuelve con su primera opción y se sigue
+      // hasta el log de la fecha, con el campeón ya elegido en el estado.
+      if (!res.logs.some(esLogDeFechaK2d) && res.decision?.datos?.motivo === 'momento') {
+        res = sistema.resolver(res.state, res.decision, { opcionId: res.decision.opciones[0].id }, mulberry32(38000 + i * 100 + j));
+      }
+      const log = res.logs.find(esLogDeFechaK2d);
+      if (!log) {
+        problemas.push(`draft de fecha ${i} (${opcion.id}): no llegó al log de la fecha`);
+        return;
+      }
+      opcionesDeFecha += 1;
+      const tirada = log.ajustePartido === 0 ? log.p : log.pSinMomento;
+      if (mostrada !== tirada) {
+        problemas.push(`draft de fecha ${i} (${opcion.id}): la pausa muestra p = ${mostrada}, el motor tiró con ${tirada}`);
+      }
+    });
   });
 
   let mapasSinMinijuego = 0;
@@ -13605,8 +13639,8 @@ check('K2d previa 1: la p de la previa es exactamente la que el motor tira (===)
   fallarSiK2d(problemas);
   // Todo momento del catálogo trae un efecto `partido`: en carreras reales casi ninguna fecha marcada llega sin
   // ajuste. La p de antes del momento (la que muestra la previa) se compara igual en todas, contra `pSinMomento`.
-  if (fechasNeutras + fechasConMomento < 20 || mapasSinMinijuego < 5 || mapasConMinijuego < 10) {
-    throw new Error(`check vacío: ${fechasNeutras} fechas sin ajuste, ${fechasConMomento} con ajuste, ${mapasSinMinijuego} mapas sin minijuego, ${mapasConMinijuego} con minijuego`);
+  if (fechasNeutras + fechasConMomento < 20 || opcionesDeFecha < 20 || mapasSinMinijuego < 5 || mapasConMinijuego < 10) {
+    throw new Error(`check vacío: ${fechasNeutras} fechas sin ajuste, ${fechasConMomento} con ajuste, ${opcionesDeFecha} opciones de draft de fecha, ${mapasSinMinijuego} mapas sin minijuego, ${mapasConMinijuego} con minijuego`);
   }
 });
 
