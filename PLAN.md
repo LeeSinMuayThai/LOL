@@ -6061,6 +6061,57 @@ Checks: mentalidad en pro con mediana 45-75 y < 20% de splits ≥ 90 · hype ≥
 splits pro · un efecto sobre stat de curva conserva ≥ 40% a 4 splits · con mentalidad 20 contra 80,
 el desvío del resultado del mapa difiere de forma medible (con la cabeza mal, más varianza).
 
+#### K3 — decisiones de spec *(supervisor, 2026-10-03; sin preguntas, revisables)*
+
+**El patrón es el de K2.** K3 es **estructura con las constantes nuevas en el valor que reproduce el juego de
+hoy**: la huella del juego queda **idéntica**, y eso prueba que el commit es solo estructura. Los valores los fija
+K3c con todo el bloque A medido junto. Los checks de K3 se escriben como **reporte** en `simulate.js` (bloque
+`metasK3`, con la meta al lado, igual que `metasK2`) y pasan a checks duros en K3c.
+
+Va en dos piezas paralelas, cada una en su worktree.
+
+- **K3-A — las barras que no se saturan** (motor).
+  1. **La mentalidad gobierna la consistencia.** `ruidoEfectivo(state, tipo)` multiplica su σ por
+     `g(m) = 1 + k·(mRef − m)/100`, acotado a `[gMin, gMax]`. Las constantes van en `BALANCE`: `k` arranca en 0
+     (neutro), `mRef` en la mediana pro que pide la meta (60). Sigue siendo el único lugar que lee σ.
+  2. **La mentalidad vuelve a una base.** Cada split, `m ← m + r·(base − m)`. `r` arranca en 0 y `base` es una
+     constante; si el motor ya tiene un rasgo de personalidad que la module, se lee de ahí y no se inventa uno.
+  3. **El descanso no la llena gratis.** Toda recuperación por descanso u offseason queda topeada en
+     `topeDescanso` (que arranca en 100, neutro). K3c lo baja a la base. Los costos por exigirte son los que el
+     contenido ya trae (rangos negativos de mentalidad en eventos y rutinas). Con la vuelta a la base y el tope,
+     esos costos empiezan a pesar, sin escribir contenido nuevo.
+  4. **El hype decae hacia una base.** `h ← h + rH·(baseH − h)`, con
+     `baseH = h0 + a·(resultados) + b·(visibilidad)`. Resultados es la z de tu rendimiento de la temporada (K2b).
+     Visibilidad sale de lo que el motor ya tiene: el prestigio de la liga y si jugaste un internacional. `rH`
+     arranca en 0. Los consumidores de hype (ofertas, sueldo, presión) no se tocan.
+- **K3-B — los efectos que duran y la pantalla.**
+  1. **`player.bonusPermanente`.** Un campo por cada stat de curva, completo con ceros desde el estado inicial
+     (T4). Las curvas de edad convergen a `objetivo + bonus`.
+  2. **Qué se vuelve permanente.** Una fracción `fraccionPermanente` de cada efecto de evento o decisión sobre un
+     stat de curva va a `bonusPermanente`. Es una regla global, sin marcar contenido a mano. Arranca en 0 (neutro)
+     y K3c la fija para que un efecto conserve ≥ 40% a 4 splits.
+  3. **Cada marca queda en el registro.** Va a `registro.marcas`, que solo crece (regla 14), como
+     `{ stat, delta, origen, anio }`. `origen` es el nombre visible del evento o de la decisión.
+  4. **La ficha.** Muestra "Lo que construiste" (▲ +3 mecánica — bootcamp 2028), solo con las marcas cuyo bonus
+     acumulado redondea a ≥ 1. La barra de mentalidad se rotula **Consistencia**. En el bloque abierto eso promete
+     algo que `k = 0` todavía no hace: se acepta porque no se publica en medio de un bloque, y K3c cierra la
+     promesa con su check duro (regla 15).
+- **Para las dos piezas.**
+  - Sin `rng` nuevo.
+  - **Huella idéntica**: `node src/dev/huella.js --contra=` y el check "K1 versión".
+  - Si cambia la forma del guardado, sube `VERSION`: la rama que se mergea segunda toma max + 1.
+  - Mutantes rojos primero, con los mismos checks estructurales de siempre:
+    - `ruidoEfectivo` sigue siendo el único lector de σ;
+    - `g(mRef) = 1`;
+    - el descanso no supera el tope;
+    - `bonusPermanente` completo;
+    - `registro.marcas` solo crece.
+- **`metasK3` reporta:**
+  - la mediana de mentalidad pro y el % de splits ≥ 90;
+  - el % de splits pro con hype ≥ 90;
+  - cuánto conserva un efecto a 4 splits (sonda que aplica un delta conocido y lo sigue);
+  - el desvío del resultado de mapa con mentalidad 20 contra 80, a fuerza igual.
+
 ### K3c — Calibrar bloque A *(solo constantes)*
 
 Re-medición completa (T6) de K0 y de los ~200 checks. Se fijan los valores de ruido, meta, peso y
