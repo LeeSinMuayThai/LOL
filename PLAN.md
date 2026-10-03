@@ -7004,6 +7004,40 @@ sola parada por año con más peso.
 - **Lo esperado:** ~85 interrupciones y palanca de ~52-55%. Se mide, y las metas de §K.3c se fijan en 3b con lo
   medido.
 
+**El plan anual, hecho** (`7c440a9`, `96cc7bf`, `c6f098f`).
+- **Dónde vive.** `state.player.planAnual` vale `juego`, `cabeza` o `marca` (`data/rutinas/planes.json`, 6 puntos
+  por año). Cada split entrena 2 de los 6, rotando: el año suma justo el plan, sin triplicar la práctica.
+- **Lo que se reemplazó.** Los cinco checks de K4-D, con su línea de la regla 17.
+
+**La medición final de K4c** (`c6f098f`; `simulate.js 400 60 todas`, corridas de a una por memoria; 0 crashes):
+
+| | `criterio` | `azar` | `equilibrado` | `malas` |
+|---|---|---|---|---|
+| Interrupciones (mediana · p90) | **84** · 100 | 72,5 · 97 | 78 · 100 | 15 · 49 |
+| Split regular (p90) | 2 | 2 | 2 | 2 |
+| Playoffs (p90 · % > 4) | 5 · 12,6% | 5 · 14,1% | 5 · 13,6% | 4 · 9,3% |
+| Internacional (p90 · % > 4) | 5 · 15,6% | 5 · 21,7% | 5 · 20,6% | 5 · 10,8% |
+| Minijuegos (mediana) | 4 | 4 | 4 | 1 |
+| Tiempo-máquina (mediana) | 5,9 min | 4,7 | 5,2 | 0,5 |
+| Llega a pro | 75,3% | 72,5% | 72,3% | 48,0% |
+
+Además:
+- **Bifurcaciones:** mediana 9, promedio 7,8.
+- **Banco sin `la_prueba`:** la prensa queda en 23%.
+
+**Las metas de §K.3c, fijadas en lo medido** (§K.3: la calibración las fija). Cada una va con su línea de
+"reemplaza a…":
+
+| Meta | Propuesta | Fijada | Por qué |
+|---|---|---|---|
+| Interrupciones por carrera (`criterio`) | ≤ 80 | **≤ 90** (medido 84) | Lo que queda arriba de 80 es el cierre de año, que el usuario decidió conservar con más peso, y el reparto amateur, con 100% de palanca |
+| Por split | ≤ 2 regular · ≤ 4 playoffs e internacional | **≤ 2 · ≤ 5** (p90) | Una serie de playoffs con plan, mapa decisivo y minijuego son 4-5 paradas con palanca |
+| Minijuegos (mediana) | 4-8 | **3-8** (medido 4) | El piso en 3 es margen de muestra; que no sean decorativos lo cubre "El impacto de los minijuegos" |
+| Tiempo-máquina | ≤ ~4,6 | **≤ 6,5 min** (medido 5,9) | El tiempo real lo mide K6 en el navegador |
+| Δp de plan (mediana) | — | **≥ 5 pp** (medido ~6,5) | — |
+| Palanca en su horizonte | ≥ 60% | **≥ 45%** (medido 48,8%) | Medida con `agencia.js`, que no entra en `validate.js` por tiempo. Re-medir en K5c y K6. Lo que falta para 60 es el cierre de año (6%), que mueve el nivel de a poco por diseño del bloque A |
+| Bifurcaciones por carrera | 4,5-7,5 | **5-9** (promedio 7,8) | — |
+
 **Paso 3b — un worker:**
 - los checks duros con lo medido;
 - vaciar el bloque B de `bandasPendientes.js` y cerrarlo;
