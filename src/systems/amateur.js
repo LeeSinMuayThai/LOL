@@ -3,6 +3,7 @@ import { BALANCE } from '../data/balance.js';
 import { crearLog } from '../core/log.js';
 import { deltaCorto, entero, lista } from '../core/formato.js';
 import { clamp, clampStat } from '../core/numeros.js';
+import { probabilidadDeFirmarTrasPrueba } from '../core/serie.js';
 import { aplicarLPAlEstado, etiquetaDeRanked, servidorDeLaPartida, rangoAproximado, esApice, bandaDeLadder } from '../core/ranked.js';
 import { multiplicadorDeMeta } from '../core/ajusteMeta.js';
 import { registrarEnHistorial } from '../core/contexto.js';
@@ -471,9 +472,9 @@ function firmarConEquipo(state, decision) {
 }
 
 // "la_prueba" (fase 4): el único minijuego de la etapa amateur, la bisagra del
-// tryout con un tier 3. No decide si fichás (eso ya se resolvió al aceptar la
-// oferta) — corre cuánto crédito te llevás de entrada, vía el bonus que
-// `roster.js` suma una sola vez al armar el primer roster.
+// tryout con un tier 3. K4c-S: decide el contrato (`probabilidadDeFirmarTrasPrueba`: un resultado malo firma pocas
+// veces, uno bueno casi siempre) y, si firmás, cuánto crédito te llevás de entrada, vía el bonus que `roster.js` suma
+// una sola vez al armar el primer roster.
 // Fase 9R4a: sale del catálogo por momento (`tryout`), con su texto y su stat
 // en el dato — igual que los de la serie. Devuelve la pausa entera porque el id
 // elegido se anota en `flags.minijuegosRecientes`.
@@ -500,8 +501,17 @@ function pausaDeLaPrueba(state, datosOferta) {
   };
 }
 
-function resolverLaPrueba(state, decision, respuesta) {
+function resolverLaPrueba(state, decision, respuesta, rng) {
   const resultado = clamp(respuesta.resultado ?? 0.5, 0, 1);
+  // K4c-S: un solo sorteo, siempre (también con p = 0 o 1), para que el stream no dependa del resultado. Si no alcanza,
+  // la firma se posterga: seguís en la escalera (la fase no cambia, no queda crédito) y puede llegar otra oferta.
+  const alcanza = chance(probabilidadDeFirmarTrasPrueba(resultado), rng);
+  if (!alcanza) {
+    return {
+      state,
+      logs: [crearLog('amateur', `La prueba no convence y ${decision.datos.oferta.org} no te firma. Seguís en la escalera: puede llegar otra oferta.`)]
+    };
+  }
   const bonus = Math.round((resultado - 0.5) * 2 * minijuegoPorId(decision.datos.minijuego).impacto);
   const conBonus = { ...state, flags: { ...state.flags, bonusJerarquiaTryout: bonus } };
   const { state: firmadoSinMarca, logs } = firmarConEquipo(conBonus, { datos: decision.datos.oferta });
@@ -514,8 +524,8 @@ function resolverLaPrueba(state, decision, respuesta) {
     state: firmado,
     logs: [
       crearLog('amateur', bonus >= 0
-        ? 'La prueba te sale bien: llegás con algo de crédito ganado de entrada.'
-        : 'La prueba es floja: entrás igual, pero sin nada ganado de entrada.'),
+        ? 'La prueba te sale bien: te firman y llegás con algo de crédito ganado de entrada.'
+        : 'La prueba es floja, pero alcanza: te firman, sin nada ganado de entrada.'),
       ...logs
     ]
   };
@@ -671,7 +681,7 @@ export function resolver(state, decision, respuesta, rng) {
   const { motivo } = decision.datos;
 
   if (motivo === 'minijuego') {
-    return resolverLaPrueba(state, decision, respuesta);
+    return resolverLaPrueba(state, decision, respuesta, rng);
   }
 
   const { opcionId } = respuesta;

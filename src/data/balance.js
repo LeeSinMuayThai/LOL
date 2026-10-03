@@ -1586,6 +1586,12 @@ export const BALANCE = {
     // Los cortes del veredicto 0-1 que lee el jugador al terminar (9R0b): de
     // aca para arriba "Clavado", de aca para abajo "No salio".
     veredictoMinijuego: { bien: 0.72, parejo: 0.42 },
+    // K4c-S: la prueba decide el contrato (regla 15: lo que el minijuego del tryout promete es lo que el motor hace). La
+    // probabilidad de firmar sube con el `resultado` 0-1 de la prueba, interpolada entre estos tres puntos: un resultado
+    // malo (0) firma pocas veces, uno regular (0,5) a veces y uno bueno (1) casi siempre. Si no firmás, en el mercado se
+    // cae esa oferta y seguís con las otras o con tu contrato; en el amateur la firma se posterga y seguís en la escalera.
+    // Valores de arranque (bloque B, los calibra K4c). El crédito de jerarquía (`bonusJerarquiaTryout`) no cambia.
+    probFirmaTryout: { malo: 0.15, regular: 0.55, bueno: 0.95 },
     // 9R4d: los cortes con los que se le pone palabras al stat que corre el
     // minijuego ("tu mecanica, 71: te abre la ventana"). Sin esto el numero
     // se muestra sin referente, que es justo lo que prohibe la regla 13.

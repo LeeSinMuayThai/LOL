@@ -351,6 +351,16 @@ export function ajusteBaseDeMinijuego(resultado) {
   return (Math.min(1, Math.max(0, resultado ?? 0.5)) - 0.5) * 2;
 }
 
+// K4c-S: la probabilidad de firmar tras la prueba (tryout). `resultado` 0-1; se interpola entre los tres puntos de
+// `serie.probFirmaTryout` sobre el mismo eje que el ajuste del minijuego (-1 es el peor, 0 el regular, 1 el mejor).
+// Es una probabilidad, no un corte: un resultado bueno puede no firmar y uno malo puede firmar. La comparten el tryout
+// del mercado y el del amateur. Puro, sin `rng`.
+export function probabilidadDeFirmarTrasPrueba(resultado) {
+  const { malo, regular, bueno } = BALANCE.serie.probFirmaTryout;
+  const ajuste = ajusteBaseDeMinijuego(resultado);
+  return ajuste < 0 ? regular + (regular - malo) * ajuste : regular + (bueno - regular) * ajuste;
+}
+
 // El minijuego "la_llamada" depende de shotcalling, pero una buena llamada con jerarquía baja no se ejecuta igual
 // (regla textual de 4.6): el impacto sobre el rendimiento se amortigua fuerte por debajo del umbral.
 export function factorJerarquiaEnLlamada(jerarquia) {
