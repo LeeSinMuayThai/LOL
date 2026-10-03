@@ -43,6 +43,12 @@ export function probabilidadDePartido(state, fuerzaPropia, fuerzaRival, tipo) {
 // El partido se juega: una sola tirada contra la p declarada. Devuelve la p
 // junto con el resultado para que quien registra el partido no la recalcule.
 export function jugarPartido(state, fuerzaPropia, fuerzaRival, tipo, rng) {
-  const p = probabilidadDePartido(state, fuerzaPropia, fuerzaRival, tipo);
+  return tirarPartido(probabilidadDePartido(state, fuerzaPropia, fuerzaRival, tipo), rng);
+}
+
+// K2d: la tirada sola, contra una p ya calculada. La fecha marcada y el mapa
+// tiran contra la p de su previa (`core/previa.js`): la que la pantalla
+// muestra es, por construcción, la que se tira.
+export function tirarPartido(p, rng) {
   return { gano: rng() < p, p };
 }

@@ -6,11 +6,11 @@ import { resolverTexto } from '../core/plantillas.js';
 import { ligaOZonaDeCarrera } from '../core/competicion.js';
 import {
   generarFixture, aplicarCrucesDeJornada, tablaDePosiciones, posicionEnTabla,
-  motivosDeFecha, motivoPrincipal, decisionDeDraftFecha, fuerzaDeFecha,
+  motivosDeFecha, motivoPrincipal, decisionDeDraftFecha, probabilidadDeFechaMarcada,
   registrarEnFila, filaVacia, rendimientoDeLaTemporada, resultadosVacios, sumarResultado
 } from '../core/temporada.js';
-import { nivelDeCompaneros, rendimientoBase, rendimientoDePartido, fuerzaDelEquipo } from '../core/fuerza.js';
-import { jugarPartido } from '../core/partido.js';
+import { nivelDeCompaneros, rendimientoBase, rendimientoDePartido, fuerzaDePartido } from '../core/fuerza.js';
+import { jugarPartido, tirarPartido } from '../core/partido.js';
 import { nivelDelJugador } from '../core/ficha.js';
 import { disponibleEn, opcionesVivas, resolverOpcion, cooldownActivo, pesoConMemoria } from './events.js';
 import { pesoDePick, factorDeCampeon, lecturaDePick } from '../core/ajusteMeta.js';
@@ -166,7 +166,7 @@ function iniciarTemporada(state, rng) {
   // `gauss` (el rendimiento del split) que decidía las 7-9 fechas juntas; ahora
   // cada fecha es una tirada contra su p y nada más (`jugarPartido`).
   const rendimiento = rendimientoDePartido(state);
-  const fuerzaPropia = fuerzaDelEquipo(state, rendimiento);
+  const fuerzaPropia = fuerzaDePartido(state);
 
   return {
     activa: true,
@@ -323,11 +323,13 @@ function resolverFechaMarcada(state, rng, logsAcum) {
   const motivo = motivoPrincipal(fecha.motivos);
   // Fase 9Rc: el factor del draft es RELATIVO al campeón del split (el que ya
   // asumió `t.fuerzaPropia`). Elegir ese mismo campeón para la fecha da 0.
-  const campeonDelSplit = state.player.championPool.find((c) => c.name === state.player.campeonDelSplit);
-  const fuerzaFecha = fuerzaDeFecha(t.fuerzaPropia, fecha.campeonElegido, campeonDelSplit, state.meta.weights, t.ajustePartido ?? 0);
   // K2b: una sola tirada contra la p declarada (la misma que mira el draft).
-  const partido = jugarPartido(state, fuerzaFecha, fecha.fuerzaRival, 'fecha', rng);
+  // K2d: y la misma que muestra la previa (`probabilidadDeFechaMarcada`); el
+  // log lleva esa p y la de antes del momento, para mostrarlas con el resultado.
+  const partido = tirarPartido(probabilidadDeFechaMarcada(state), rng);
   const { gano } = partido;
+  const ajustePartido = t.ajustePartido ?? 0;
+  const pSinMomento = ajustePartido === 0 ? partido.p : probabilidadDeFechaMarcada(state, { ajustePartido: 0 });
 
   // Fase 9R0a: la revancha se juega UNA vez. Después, ese rival deja de ser
   // "el que te eliminó": si no se limpiaba, `ultimoEliminadoPor` quedaba
@@ -360,7 +362,8 @@ function resolverFechaMarcada(state, rng, logsAcum) {
     'temporada',
     `${fraseDeMotivo(motivo, fecha.rival, state.player.splitCount)} ${gano ? 'Ganan.' : 'Pierden.'} `
     + `Quedan ${posicion}º de ${tablaTrasFecha.length}`
-    + `${fecha.campeonElegido ? ` jugando ${fecha.campeonElegido.name}` : ''}.`
+    + `${fecha.campeonElegido ? ` jugando ${fecha.campeonElegido.name}` : ''}.`,
+    { p: partido.p, pSinMomento, ajustePartido }
   )];
 
   // Fase 9Re: la reacción postpartido dejó de ser una decisión. Es flavor —

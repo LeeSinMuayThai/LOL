@@ -254,7 +254,9 @@ export function decisionDeDraftFecha(state) {
     return { pausa: false, elegido: mejor };
   }
 
-  const campeonDelSplit = pool.find((c) => c.name === state.player.campeonDelSplit) ?? mejor;
+  // El mismo campeón del split contra el que se tira la fecha (`probabilidadDeFechaMarcada`): sin fallback al mejor, para
+  // que el umbral de la pausa mida la misma p que la tirada.
+  const campeonDelSplit = campeonDelSplitEnPool(state);
   const puntos = probabilidadDeFecha(state, fecha, campeonDelSplit, mejor)
     - probabilidadDeFecha(state, fecha, campeonDelSplit, segundo);
 
@@ -267,9 +269,28 @@ export function decisionDeDraftFecha(state) {
 // `resolverFechaMarcada`: `t.fuerzaPropia` corrida por `factorDraftFecha`
 // (relativo al campeón del split) → la misma p con la que el motor tira la
 // fecha (`probabilidadDePartido`, regla 15).
-function probabilidadDeFecha(state, fecha, campeonDelSplit, elegido) {
-  const fuerzaFecha = fuerzaDeFecha(state.career.temporada.fuerzaPropia, elegido, campeonDelSplit, state.meta.weights, 0);
+// K2d: es la misma función con la que la fecha marcada se tira y con la que la
+// previa la muestra (`probabilidadDeFechaMarcada`).
+function probabilidadDeFecha(state, fecha, campeonDelSplit, elegido, ajustePartido = 0) {
+  const fuerzaFecha = fuerzaDeFecha(state.career.temporada.fuerzaPropia, elegido, campeonDelSplit, state.meta.weights, ajustePartido);
   return probabilidadDePartido(state, fuerzaFecha, fecha.fuerzaRival, 'fecha');
+}
+
+// K2d: el campeón del split como entrada del pool (`null` si no está), contra
+// el que `factorDraftFecha` mide el campeón de la fecha.
+export function campeonDelSplitEnPool(state) {
+  return state.player.championPool.find((c) => c.name === state.player.campeonDelSplit);
+}
+
+// K2d: la p de la fecha marcada en curso (`temporada.fechaEnCurso`), con el
+// campeón que eligió el draft corto y el `ajustePartido` del momento (por
+// defecto, los del estado). ES la p que tira `resolverFechaMarcada` y la que
+// muestra la previa (regla 15).
+export function probabilidadDeFechaMarcada(state, {
+  elegido = state.career.temporada.fechaEnCurso.campeonElegido ?? null,
+  ajustePartido = state.career.temporada.ajustePartido ?? 0
+} = {}) {
+  return probabilidadDeFecha(state, state.career.temporada.fechaEnCurso, campeonDelSplitEnPool(state), elegido, ajustePartido);
 }
 
 // La fuerza con la que se juega UNA fecha: la del split (`t.fuerzaPropia`,

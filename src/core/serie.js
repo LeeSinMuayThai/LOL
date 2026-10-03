@@ -185,8 +185,45 @@ function ordenarPorFactor(campeones, weights) {
 // la fuerza de partido con ese campeón (`fuerzaDePartido`, la misma, acotada)
 // contra la del rival, por `probabilidadDePartido` (regla 15).
 export function probabilidadConCampeon(state, campeon) {
-  const fp = fuerzaDePartido({ ...state, player: { ...state.player, campeonDelSplit: campeon.name } });
-  return probabilidadDePartido(state, fp, state.serie.rival.fuerza, 'mapa');
+  return probabilidadDeMapa(state, fuerzaDePartido(estadoDelMapa(state, campeon.name)));
+}
+
+// K2d: el estado con el que se calcula la fuerza de un mapa: el campeón
+// elegido como campeón del partido y, si es el comodín fuera del pool (4.5),
+// una copia del pool con su entrada, para que `rendimientoBase` encuentre su
+// maestría real y no la neutra. Lo usan el motor (`systems/serie.js`), el
+// draft y la previa (`core/previa.js`).
+export function estadoDelMapa(state, campeonElegido, entradaExtra = null) {
+  const championPool = entradaExtra ? [...state.player.championPool, entradaExtra] : state.player.championPool;
+  return { ...state, player: { ...state.player, campeonDelSplit: campeonElegido, championPool } };
+}
+
+// K2d: la p de un mapa — la fuerza de partido del campeón elegido, corrida por
+// el minijuego (`ajusteMinijuego`, 0 si no hubo), contra la del rival. ES la p
+// que tira `finalizarMapa` y la que muestran el draft y la previa (regla 15).
+export function probabilidadDeMapa(state, fuerzaPropia, ajusteMinijuego = 0) {
+  return probabilidadDePartido(state, fuerzaFinalDeMapa(fuerzaPropia, ajusteMinijuego), state.serie.rival.fuerza, 'mapa');
+}
+
+export function fuerzaFinalDeMapa(fuerzaPropia, ajusteMinijuego = 0) {
+  return fuerzaPropia * (1 + ajusteMinijuego);
+}
+
+// K2d: cuánto mueve el minijuego de un mapa la fuerza de ese mapa, según cómo
+// te salió (`resultado` 0-1; 0,5 no la mueve). La comparten `systems/serie.js`
+// (que la aplica antes de tirar) y la previa (que muestra la p final).
+export function ajusteDeMinijuegoDeMapa(state, entrada, resultado) {
+  const ajusteBase = ajusteBaseDeMinijuego(resultado);
+  const amortiguado = entrada.efecto.amortiguador === 'jerarquia'
+    ? factorJerarquiaEnLlamada(state.career.jerarquia)
+    : 1;
+  return ajusteBase * entrada.impacto * amortiguado;
+}
+
+// K2d: el punto medio del minijuego, una sola vez: `resultado` 0-1 (acotado) pasa a un ajuste de -1 a 1, con 0 en el
+// 0,5 neutro. Lo usan el mapa (`ajusteDeMinijuegoDeMapa`) y los minijuegos de stats de `systems/serie.js`.
+export function ajusteBaseDeMinijuego(resultado) {
+  return (Math.min(1, Math.max(0, resultado ?? 0.5)) - 0.5) * 2;
 }
 
 // P(mejor) − P(segundo). ≥ 0 siempre: más `factorDeCampeon` ⇒ más

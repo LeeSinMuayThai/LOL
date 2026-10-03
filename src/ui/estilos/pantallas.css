@@ -966,6 +966,15 @@ details.avanzado summary:hover { color: var(--ink-dim); }
 .minijuego-resultado--mal    .minijuego-resultado-titulo { color: var(--down); }
 
 .minijuego-resultado-detalle { font-size: var(--fs-3); color: var(--ink-dim); }
+/* K2d: la p final del mapa a la vista en el mismo recuadro: la tarjeta de la
+   previa queda arriba del widget y su cambio pasaba fuera de pantalla. */
+.minijuego-resultado-p {
+  margin-top: var(--s-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-4);
+  color: var(--live);
+  font-variant-numeric: tabular-nums;
+}
 
 /* Mismo criterio "se arma, no se prende" que el botón base: reposo tenue,
    hover sólido. Antes el reposo ya era --warn sólido — el minijuego era el

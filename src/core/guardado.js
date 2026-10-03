@@ -26,8 +26,11 @@
 // K2b: `rendimientoBase` y `resultadosPropios` en `career.temporada` — el
 // rendimiento del split lo cuentan los partidos — y los compañeros de una liga
 // modelada con la forma del plantel vivo; el estado inicial ya trae esos dos
-// campos y `flags.sinergiaProyectadaAlFichar`).
-export const VERSION = 5;
+// campos y `flags.sinergiaProyectadaAlFichar`) · 6 (K2d, la previa: la `p` con
+// la que se tiró cada mapa y la fecha marcada —con `pSinMomento` y
+// `ajustePartido`— en sus logs, y `entradaExtra` en los datos del minijuego de
+// un mapa, para que la previa lea el comodín).
+export const VERSION = 6;
 
 export function serializar(state, rng, rngUi) {
   return JSON.stringify({

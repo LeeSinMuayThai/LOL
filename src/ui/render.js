@@ -18,3 +18,4 @@ export { renderMeta } from './paneles/meta.js';
 export { renderGeneracion } from './paneles/generacion.js';
 export { renderTopMundial } from './paneles/topMundial.js';
 export { crearTarjetaResultado, crearTarjetaResultadoSerie, crearBarraBracket, renderSerieContexto } from './components/serie.js';
+export { renderPrevia } from './components/previaPartido.js';

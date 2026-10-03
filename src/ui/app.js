@@ -23,6 +23,7 @@ import {
 } from './resultado.js';
 import { VERSION_JUEGO } from '../data/version.js';
 import { iniciarDesafio } from '../core/desafio.js';
+import { previaDeDecision } from '../core/previaDePartido.js';
 
 export function iniciar() {
   const setupPanel = document.getElementById('setup');
@@ -45,6 +46,7 @@ export function iniciar() {
   const decisionDesc = document.getElementById('decisionDesc');
   const decisionOptions = document.getElementById('decisionOptions');
   const minijuegoPanel = document.getElementById('minijuego');
+  const previaEl = document.getElementById('previa');
   const minijuegoTitle = document.getElementById('minijuegoTitle');
   const minijuegoDesc = document.getElementById('minijuegoDesc');
   const minijuegoApuesta = document.getElementById('minijuegoApuesta');
@@ -185,6 +187,8 @@ export function iniciar() {
         return;
       }
       resuelto = true;
+      // K2d: la p final del mapa, ya corrida por el minijuego: la que se tira.
+      const previaFinal = pintarPrevia(decision, estadoActual, { resultadoMinijuego: resultado });
       const v = veredictoDeMinijuego(decision.datos.minijuego, resultado, estadoActual);
       if (resultado >= 0.67) marcarHit(minijuegoWidget);
       else if (resultado <= 0.33) marcarMiss(minijuegoWidget);
@@ -192,6 +196,8 @@ export function iniciar() {
         '<div class="minijuego-resultado minijuego-resultado--' + v.nivel + '">'
         + '<div class="minijuego-resultado-titulo">' + v.titulo + '</div>'
         + '<div class="minijuego-resultado-detalle">' + v.detalle + '</div>'
+        // K2d: la misma p que muestra la tarjeta de la previa (que queda arriba del widget).
+        + (previaFinal ? '<div class="minijuego-resultado-p">Con esto: ' + previaFinal.porcentaje + '% de ganar</div>' : '')
         + '</div>';
       ui.renderLowerThird(summary, metaPill, estadoActual, { modo: 'minijuego' });
       setTimeout(() => responder({ resultado }), 1600);
@@ -200,8 +206,22 @@ export function iniciar() {
     ui.renderLowerThird(summary, metaPill, estadoActual, { modo: 'minijuego' });
   }
 
+  // K2d: la previa solo muestra (sin `rng`, sin tocar el estado). `null` si la
+  // pausa no es antes de un partido: la tarjeta se esconde.
+  function pintarPrevia(decision, estado, opciones = {}) {
+    let previa = null;
+    try {
+      previa = decision ? previaDeDecision(estado, decision, opciones) : null;
+    } catch (error) {
+      console.error('No se pudo armar la previa:', error);
+    }
+    ui.renderPrevia(previaEl, previa);
+    return previa;
+  }
+
   function mostrarDecision(decision) {
     const estadoActual = store.leer();
+    const previa = pintarPrevia(decision, estadoActual);
     if (decision.presentacion === 'minijuego') {
       mostrarMinijuego(decision);
       return;
@@ -222,7 +242,7 @@ export function iniciar() {
     }
 
     mercadoPanel.hidden = true;
-    ui.mostrarDecisionEnPantalla(decisionElements, decision, responder, estadoActual);
+    ui.mostrarDecisionEnPantalla(decisionElements, decision, responder, estadoActual, previa?.opciones);
     ui.renderLowerThird(summary, metaPill, estadoActual, { modo: 'decision', decision });
   }
 
@@ -256,6 +276,7 @@ export function iniciar() {
       decisionPanel.hidden = true;
       minijuegoPanel.hidden = true;
       mercadoPanel.hidden = true;
+      previaEl.hidden = true;
       logList.hidden = true;
       serieContextoEl.hidden = true;
       ui.renderTarjeta(tarjetaPanel, state, modulos, { lineaHistorial: registrarEnHistorial(state) });
@@ -372,6 +393,7 @@ export function iniciar() {
       decisionPanel.hidden = true;
       minijuegoPanel.hidden = true;
       mercadoPanel.hidden = true;
+      pintarPrevia(null);
 
       const antes = store.leer();
       const logsAntes = antes.logs.length;
@@ -465,6 +487,7 @@ export function iniciar() {
     decisionPanel.hidden = true;
     minijuegoPanel.hidden = true;
     mercadoPanel.hidden = true;
+    previaEl.hidden = true;
     tarjetaPanel.hidden = true;
     tarjetaPanel.replaceChildren();
     nuevaCarreraBtn.hidden = true;
