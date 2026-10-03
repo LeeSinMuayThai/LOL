@@ -2039,6 +2039,16 @@ details.tarjeta-internacionales > summary { cursor: pointer; font-size: var(--fs
 @media (max-width: 480px) {
   .perfil-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+/* K5-B: la región en el inicio — los chips del perfil, cuatro por fila (tres en 375 px) */
+.region-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s-2);
+}
+@media (max-width: 480px) {
+  .region-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .region-grid .perfil-chip { padding: var(--s-2) var(--s-1); }
+}
 .perfil-chip {
   min-height: 44px;
   padding: var(--s-2) var(--s-3);

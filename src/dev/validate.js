@@ -12656,7 +12656,9 @@ check('K1 dificultad: toda liga la tiene (número > 0) y cada tier 2 hereda la d
     }
   }
   for (const tier2 of LIGAS.filter((liga) => liga.tier === 2)) {
-    const madre = LIGAS.find((liga) => liga.tier === 1 && liga.desciendeA === tier2.id);
+    // K5-B: LRN y LRS no tienen primera arriba (`sinPrimera`): heredan la de la primera que alimentan (`alimentaA`).
+    const madre = LIGAS.find((liga) => liga.tier === 1 && liga.desciendeA === tier2.id)
+      ?? (tier2.sinPrimera ? LIGAS.find((liga) => liga.tier === 1 && liga.id === tier2.alimentaA) : null);
     if (!madre) {
       throw new Error(`${tier2.id}: ninguna liga tier 1 desciende ahí, no hay de quién heredar la dificultad`);
     }
@@ -15785,7 +15787,7 @@ check('K3-B 2b un solo camino para las rutinas: la semana amateur (systems/amate
 
 check('K3-B la curva de edad converge a objetivo + bonus: con bonusPermanente b, cada stat de curva termina el split velocidad·b más arriba que sin él', () => {
   const base = correrCarrera(4, 18);
-  const lugar = { ...base, player: { ...base.player, techoLesionMecanica: null, stats: { ...base.player.stats, mecanica: 50, laneo: 50, teamfight: 50 } } };
+  const lugar = { ...base, player: { ...base.player, techoLesionMecanica: null, bonusPermanente: {}, stats: { ...base.player.stats, mecanica: 50, laneo: 50, teamfight: 50 } } };
   const b = 5;
   const conBonus = { ...lugar, player: { ...lugar.player, bonusPermanente: Object.fromEntries(STATS_DE_CURVA_K3B.map((stat) => [stat, b])) } };
   const sin = sistemaPorId('atributos').aplicar(lugar, mulberry32(9)).state;
@@ -16370,6 +16372,170 @@ check('K4-D las cartas de la preparación hablan en cristiano: ningún id crudo 
   const fuente = fs.readFileSync(path.join(srcDir, 'ui', 'components', 'mercado.js'), 'utf8');
   if (!fuente.includes('Te queda para siempre') || /BALANCE|balance\.js/.test(fuente)) {
     throw new Error('la pantalla tiene que decir cuánto dura la carta y leerlo de la carta, sin recalcularlo con BALANCE');
+  }
+});
+
+// --- K5-B: la región se elige y es la dificultad (PLAN.md "K5 — decisiones de spec", K5-B; J10; D78) ---
+const { regionesDeOrigen: regionesDeOrigenK5B, ligaDeOrigenElegible: ligaDeOrigenElegibleK5B } = await import('../core/mundo.js');
+
+// La región que la seed sortea, leída de un arranque sin elección (un rng aparte: no toca la corrida medida).
+function regionSorteadaK5B(seed) {
+  return createInitialState(seed, mulberry32(seed)).mundo.regionIdOrigen;
+}
+
+// Una carrera de `criterio` con la región elegida. Devuelve el estado final.
+function carreraConRegionK5B(seed, regionId, splits) {
+  const rng = mulberry32(seed);
+  let state = createInitialState(seed, rng, { regionOrigen: regionId });
+  for (let i = 0; i < splits && !state.terminado; i += 1) {
+    state = avanzarSplitAuto(state, rng, ESTRATEGIAS_K0.criterio).state;
+  }
+  return state;
+}
+
+check('K5-B región: elegir la región que la seed habría sorteado no corre el stream (huella de 40 seeds idéntica)', () => {
+  const sinEleccion = calcularHuella(40, 30);
+  const conEleccion = calcularHuella(40, 30, {
+    mulberry32,
+    createInitialState: (seed, rng) => createInitialState(seed, rng, { regionOrigen: regionSorteadaK5B(seed) }),
+    avanzarSplitAuto
+  });
+  if (sinEleccion.hash !== conEleccion.hash) {
+    const i = sinEleccion.lineas.findIndex((linea, k) => linea !== conEleccion.lineas[k]);
+    throw new Error(`la huella cambia al elegir la región sorteada: seed ${i + 1} [${sinEleccion.lineas[i]}] contra [${conEleccion.lineas[i]}]`);
+  }
+  // Y la elección de verdad elige: cualquier región (LATAM incluida, que el sorteo nunca da) queda como origen.
+  for (const opcion of regionesDeOrigenK5B()) {
+    const state = createInitialState(7, mulberry32(7), { regionOrigen: opcion.regionId });
+    if (state.mundo.regionIdOrigen !== opcion.regionId) {
+      throw new Error(`elegí ${opcion.regionId} y el origen quedó ${state.mundo.regionIdOrigen}`);
+    }
+  }
+  if (ligaDeOrigenElegibleK5B(LIGAS, 'XX') !== null || ligaDeOrigenElegibleK5B(LIGAS, null) !== null) {
+    throw new Error('una región desconocida o vacía tiene que dejar el sorteo');
+  }
+});
+
+check('K5-B región: el desafío diario ignora la elección (la región sale de la seed del día)', () => {
+  const { seed, eleccion, desafio } = iniciarDesafio('2026-10-03');
+  if (eleccion !== null) {
+    throw new Error(`iniciarDesafio tiene que arrancar sin elección, trae ${JSON.stringify(eleccion)}`);
+  }
+  const state = createInitialState(seed, mulberry32(seed), eleccion, desafio);
+  if (state.mundo.regionIdOrigen !== regionSorteadaK5B(seed)) {
+    throw new Error(`el desafío arrancó en ${state.mundo.regionIdOrigen}, la seed sortea ${regionSorteadaK5B(seed)}`);
+  }
+  let rechazo = false;
+  try {
+    createInitialState(seed, mulberry32(seed), { regionOrigen: 'LAS' }, desafio);
+  } catch {
+    rechazo = true;
+  }
+  if (!rechazo) {
+    throw new Error('el desafío con una región elegida tiene que rechazarse');
+  }
+  // La pantalla: la rama del desafío arma los argumentos con iniciarDesafio; la región elegida entra solo en el `else`.
+  const app = fs.readFileSync(path.join(srcDir, 'ui', 'app.js'), 'utf8');
+  const ramaDesafio = app.indexOf('iniciarDesafio(fechaDesafio)');
+  const lecturaRegion = app.indexOf('regionOrigen: region');
+  if (ramaDesafio < 0 || lecturaRegion < ramaDesafio || !/\} else \{/.test(app.slice(ramaDesafio, lecturaRegion))) {
+    throw new Error('app.js: la región elegida tiene que entrar solo en la rama que no es el desafío');
+  }
+});
+
+check('K5-B región: las líneas de dificultad no muestran ids crudos y dicen lo que dice el dato', () => {
+  const regiones = regionesDeOrigenK5B();
+  const ids = [...new Set(LIGAS.map((liga) => liga.regionId))];
+  for (const opcion of regiones) {
+    for (const texto of [opcion.region, opcion.texto]) {
+      if (!texto || /_/.test(texto) || ids.some((id) => new RegExp(`\\b${id}\\b`).test(texto))) {
+        throw new Error(`${opcion.regionId}: "${texto}" muestra un id crudo`);
+      }
+    }
+  }
+  const tier1 = regiones.filter((opcion) => !opcion.sinPrimera);
+  const porPrestigio = [...tier1].sort((a, b) => b.prestigio - a.prestigio);
+  const porDificultad = [...tier1].sort((a, b) => a.dificultad - b.dificultad);
+  const esperado = [
+    [porPrestigio[0], 'la más difícil para llegar a primera'],
+    [porPrestigio.at(-1), 'la más fácil para llegar a primera'],
+    [porDificultad[0], 'la más fácil para ganar el Mundial'],
+    [porDificultad.at(-1), 'la más difícil para ganar el Mundial']
+  ];
+  for (const [opcion, frase] of esperado) {
+    if (!opcion.texto.includes(frase)) {
+      throw new Error(`${opcion.region}: "${opcion.texto}" tendría que decir "${frase}"`);
+    }
+  }
+  const latam = regiones.filter((opcion) => opcion.sinPrimera);
+  if (latam.length === 0 || latam.some((opcion) => !opcion.texto.includes('emigrando'))) {
+    throw new Error('LATAM tiene que estar y decir que a primera se llega emigrando');
+  }
+  const inicio = fs.readFileSync(path.join(srcDir, 'ui', 'screens', 'inicio.js'), 'utf8');
+  if (!/textContent = opcion\.region/.test(inicio) || !/elegida\.texto/.test(inicio)) {
+    throw new Error('inicio.js tiene que pintar el nombre y la línea del dato, sin armar texto con el regionId');
+  }
+});
+
+// La dificultad medida: con `criterio`, % de carreras que llegan a la primera DE SU REGIÓN (sin emigrar), 40 seeds x
+// 40 splits por región elegida. Tiene que subir con la `dificultad` (Corea: la más difícil de llegar). Tolerancia: se
+// comparan los pares cuya dificultad difiere en más de 0,15 (KR-CN y APAC-NA quedan afuera; APAC-NA está invertido en
+// el dato: LCP tiene menos prestigio que LCS y también menos dificultad) y se acepta un empate de hasta 10 puntos.
+const SEEDS_K5B = 40;
+const SPLITS_K5B = 40;
+const DELTA_DIFICULTAD_K5B = 0.15;
+const TOLERANCIA_PP_K5B = 10;
+checkLento('K5-B región: la dificultad de cada región es monótona con su dificultad (y LATAM llega a primera solo emigrando)', () => {
+  const medidas = [];
+  for (const opcion of regionesDeOrigenK5B()) {
+    let llegaLocal = 0;
+    let llegaPrimera = 0;
+    for (let seed = 1; seed <= SEEDS_K5B; seed += 1) {
+      const state = carreraConRegionK5B(seed, opcion.regionId, SPLITS_K5B);
+      const filasTier1 = state.career.registro.porOrg.filter((fila) => fila.tier === 1 && fila.splits > 0);
+      const regionDe = (fila) => state.mundo.ligas.find((liga) => liga.id === fila.liga)?.regionId;
+      if (filasTier1.length > 0) {
+        llegaPrimera += 1;
+      }
+      if (filasTier1.some((fila) => regionDe(fila) === opcion.regionId)) {
+        llegaLocal += 1;
+      }
+    }
+    medidas.push({ ...opcion, local: (100 * llegaLocal) / SEEDS_K5B, primera: (100 * llegaPrimera) / SEEDS_K5B });
+  }
+  const tabla = medidas.map((m) => `${m.regionId} ${m.local.toFixed(0)}%/${m.primera.toFixed(0)}%`).join(' · ');
+  const tier1 = medidas.filter((m) => !m.sinPrimera);
+  for (const a of tier1) {
+    for (const b of tier1) {
+      if (b.dificultad - a.dificultad > DELTA_DIFICULTAD_K5B && !(a.local <= b.local + TOLERANCIA_PP_K5B)) {
+        throw new Error(`${a.regionId} (dificultad ${a.dificultad}) llega a su primera el ${a.local}%, más que ${b.regionId} (${b.dificultad}) con ${b.local}%: ${tabla}`);
+      }
+    }
+  }
+  const porDificultad = [...tier1].sort((x, y) => x.dificultad - y.dificultad);
+  if (!(porDificultad.at(-1).local - porDificultad[0].local >= 3 * TOLERANCIA_PP_K5B)) {
+    throw new Error(`entre la región más fácil del Mundial y la más difícil tiene que haber una diferencia clara de llegada: ${tabla}`);
+  }
+  for (const m of medidas.filter((x) => x.sinPrimera)) {
+    if (m.local !== 0 || !(m.primera > 0)) {
+      throw new Error(`${m.regionId}: a primera se llega solo emigrando y en más del 0%: ${tabla}`);
+    }
+  }
+  console.log(`      K5-B llegada a la primera propia / a cualquier primera: ${tabla}`);
+});
+
+// D78: con `criterio` hay splits de LCK y de LPL (antes de K5-B, 0 en 400 carreras, Corea incluida: el calibre de la
+// liga era su `prestigio`, 95/93, contra titulares de ~82/81). Coreanos y chinos elegidos, 60 seeds x 60 splits.
+checkLento('K5-B D78: hay splits de LCK y de LPL con criterio (coreanos y chinos con nivel juegan su liga)', () => {
+  for (const [regionId, ligaId] of [['KR', 'LCK'], ['CN', 'LPL']]) {
+    let splits = 0;
+    for (let seed = 1; seed <= 60; seed += 1) {
+      const state = carreraConRegionK5B(seed, regionId, 60);
+      splits += state.career.registro.porOrg.filter((fila) => fila.liga === ligaId).reduce((suma, fila) => suma + fila.splits, 0);
+    }
+    if (!(splits > 0)) {
+      throw new Error(`${ligaId}: 0 splits en 60 carreras de ${regionId} con criterio`);
+    }
   }
 });
 

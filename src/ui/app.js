@@ -35,6 +35,8 @@ export function iniciar() {
   // K4-C: el perfil se elige en el inicio (un control compacto, `screens/inicio.js`).
   const perfilGrid = document.getElementById('perfilGrid');
   const perfilTexto = document.getElementById('perfilTexto');
+  const regionGrid = document.getElementById('regionGrid');
+  const regionTexto = document.getElementById('regionTexto');
   const poolContador = document.getElementById('poolContador');
   const continuarDetalle = document.getElementById('continuarDetalle');
 
@@ -135,7 +137,7 @@ export function iniciar() {
   async function cargarModulos() {
     if (!modulos) {
       const [
-        { mulberry32 }, { createInitialState }, pipeline, { BALANCE },
+        { mulberry32 }, { createInitialState, regionesDeOrigen }, pipeline, { BALANCE },
         rolesModulo, ranked, { describirContexto }, formato, campeonesModulo, render,
         reproductorModulo, sonidoModulo, almacenamientoModulo, perfilModulo
       ] = await Promise.all([
@@ -161,7 +163,9 @@ export function iniciar() {
         ranked, describirContexto,
         CAMPEONES: campeonesModulo.default,
         IDS_PERFIL: perfilModulo.IDS_PERFIL, nombreDePerfil: perfilModulo.nombreDePerfil,
-        descripcionDePerfil: perfilModulo.descripcionDePerfil
+        descripcionDePerfil: perfilModulo.descripcionDePerfil,
+        // K5-B: las regiones elegibles con su línea de dificultad (sale de `leagues.json`).
+        REGIONES_DE_ORIGEN: regionesDeOrigen()
       };
       ui = render;
       reproductor = reproductorModulo;
@@ -565,8 +569,9 @@ export function iniciar() {
         // La elección de la pantalla de inicio entra como tercer argumento.
         // Si el jugador no eligió nada (camino headless), `createInitialState`
         // sortea todo de la seed exactamente como antes.
-        const { rol, campeones, perfil } = pantallaInicio.getSeleccion();
-        eleccion = { handle: handleInput.value, rol, campeones, perfil };
+        // K5-B: la región también (`null` = la sortea la seed). El desafío diario no pasa por acá.
+        const { rol, campeones, perfil, region } = pantallaInicio.getSeleccion();
+        eleccion = { handle: handleInput.value, rol, campeones, perfil, regionOrigen: region };
       }
       rng = mulberry32(seed);
       rngUi = mulberry32((seed ^ 0x9E3779B9) >>> 0);
@@ -704,7 +709,7 @@ export function iniciar() {
     try {
       await cargarModulos();
       pantallaInicio = ui.crearPantallaInicio(
-        { rolGrid, campeonGrid, poolContador, runButton, draftSlots, perfilGrid, perfilTexto },
+        { rolGrid, campeonGrid, poolContador, runButton, draftSlots, perfilGrid, perfilTexto, regionGrid, regionTexto },
         modulos
       );
       pantallaInicio.render();
