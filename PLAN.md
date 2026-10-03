@@ -6906,6 +6906,50 @@ esperando fila. Los dos son D76.
 
 **Después, el supervisor mide** con `simulate.js 400 60 todas` y `agencia.js` (24 × 30).
 
+**Paso 3a, hecho** (`15c1b64`..`bb13d1c`). Barrido `criterio` 30 × 60:
+
+| Métrica | Medido | Meta |
+|---|---|---|
+| Interrupciones | **86,5** | ≤ 80 |
+| Playoffs | p90 4 | ≤ 4 ✅ |
+| Internacional | p90 5 (13,5% pasan de 4) | ≤ 4 |
+| Minijuegos | 3,8 | 4-8 |
+| Tiempo-máquina | 5,4 min | ~5 |
+| Δp de plan | mediana 6,4 pp (67% ≥ 5 pp) | ~5 pp ✅ |
+
+Quedan tres cosas:
+1. **"El impacto de los minijuegos está acotado (≤ +35%)" da +171%.** Lo causa la prueba que decide el contrato:
+   el que falla todos los minijuegos casi nunca llega a pro. Medido (siempre falla contra siempre acierta, 1000
+   seeds):
+
+   | `probFirmaTryout` (malo / regular / bueno) | Siempre acierta sobre siempre falla |
+   |---|---|
+   | 0,15 / 0,55 / 0,95 | +171% |
+   | 0,35 / 0,65 / 0,95 | +64% |
+   | **0,5 / 0,75 / 0,95** | **+31%** |
+   | 0,65 / 0,8 / 0,95 | +21% |
+
+   **Se decide 0,5 / 0,75 / 0,95.** La prueba sigue pesando (45 pp de firma entre una prueba mala y una buena),
+   pero no decide la carrera sola. El tope del +35% no se toca.
+2. **"K4-D: la pretemporada frena una sola vez" falla** (seed 5, split 18: el mercado y la práctica por separado).
+   Ya fallaba antes de las constantes del 3a. Es un bug de estructura: se busca el commit que lo trajo y se
+   arregla. La regla de K4-D no se relaja.
+3. **`define_clasificacion` sale en 1 de cada 3,6 splits** con `ventanaDefineClasificacion` 4, contra el piso de
+   K4-A de 1 cada 3. Es la fecha con más en juego (decide la clasificación). **Se decide** la ventana más chica
+   que cumpla el piso, midiendo 6 y 7.
+
+**El cierre de año, re-medido: 14 paradas por carrera con 5% de palanca.** Son 10 eventos de reflexión ("balance
+de fin de año", "revisión familiar"…) con efectos chicos. Es la parada sin palanca más grande que queda, y la que
+separa las 86,5 interrupciones de las 80. **Se decide rehacerlo por contenido**, igual que la fecha marcada:
+- cada evento de cierre es una decisión de carrera con intercambio, del tipo invertir en el juego, cuidar la
+  cabeza y la familia, o la plata y la marca;
+- los efectos se notan y duran (la fracción de K3 los vuelve permanentes);
+- ninguna opción domina a otra, con un check como el de K4c-M.
+
+La frecuencia (una vez por año) no cambia: es "la decisión grande". **Si después de eso las interrupciones siguen
+arriba de 80, la meta se fija en lo medido en 3b**, con la cuenta de qué paradas quedan y su palanca (§K.3: la
+calibración fija las metas).
+
 **Paso 3b — un worker:**
 - los checks duros con lo medido;
 - vaciar el bloque B de `bandasPendientes.js` y cerrarlo;
