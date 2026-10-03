@@ -374,8 +374,8 @@ export function correrCarrera(seed, splits, responder) {
     state = avanzarSplitAuto(state, rng, responderInstrumentado).state;
     contarTanda(state);
     // K5c (paso 1): el Mundial que cerró en este split, si tu equipo jugó uno: el registro crece UNA entrada y `state.internacional`
-    // es ese torneo. Se detecta por el registro y no por el año: tras un retiro y una vuelta el calendario no avanzó y el mundo
-    // juega dos Mundiales con el mismo año (`claveDelMundial`), y el segundo también cuenta (4 de 200 carreras de `azar`).
+    // es ese torneo. Se detecta por el registro y no por el año: antes de K5c (motor), tras un retiro y una vuelta el calendario
+    // no avanzaba y el mundo jugaba dos Mundiales con el mismo año (4 de 200 carreras de `azar`); por el registro no depende de eso.
     const mundialesRegistrados = state.career.registro.internacionales.length;
     if (mundialesRegistrados !== observacion.mundiales.length) {
       const fila = filaDeMundial(state.internacional);

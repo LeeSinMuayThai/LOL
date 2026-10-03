@@ -6,6 +6,7 @@ import {
   resolver as resolverEvento, resolverAuto as resolverAutoEvento
 } from './events.js';
 import { armarRosterAlVolver } from './roster.js';
+import { calcularCalendario } from './edadInicio.js';
 
 export const id = 'retiro';
 
@@ -181,6 +182,15 @@ function aplicarVentanaDeVuelta(state, rng) {
     return { state: conCuenta, logs: [crearLog('retiro', 'Seguís retirado. Nada nuevo este split.', { tecnico: true })] };
   }
 
+  // K5c (motor): la vuelta te devuelve con la edad que el mundo te puso (`relojAlVolver`). Si con esos años ya llegaste a
+  // la línea Faker, no hay vuelta que ofrecer: la misma línea que `aplicar` hace cumplir en la pretemporada, sin pregunta.
+  if (relojAlVolver(conCuenta).age >= r.edadRetiroForzoso) {
+    return {
+      state: { ...conCuenta, terminado: true },
+      logs: [crearLog('retiro', 'La ventana se cerró sola: con los años que pasaron afuera, ya no hay vuelta.')]
+    };
+  }
+
   return eventoDeVentana(conCuenta, rng);
 }
 
@@ -248,6 +258,24 @@ export function aplicar(state, rng) {
   return { state: conCuenta, logs: [], decision: decisionDeclive(conCuenta) };
 }
 
+// K5c (motor): el mundo no te espera. Mientras dura la ventana `player.splitCount` queda congelado (lo mueve
+// `atributos.js`, que no corre), y con él el calendario (`edadInicio.js`) y la edad (`edadCierre.js`): sin esto, la
+// vuelta retomaba el reloj donde lo habías dejado y el mundo repetía el año (dos Mundiales 2034 en la seed 4 de `azar`:
+// el retiro de una bifurcación llega en `events`, DESPUÉS del Mundial y antes de `atributos`, así que la vuelta volvía
+// a jugar ese mismo split). Al volver, el reloj adelanta los splits que pasaron afuera: el del retiro (jugado o no,
+// `atributos` no lo contó) más los de la ventana hasta este, que son `flags.splitsEnVentana` en total (la vuelta solo
+// se ofrece cuando ese contador es múltiplo de `splitsPorEdad`, así que volvés en el mismo punto del año). La edad
+// suma los cierres de año que cruzaste y el calendario se recalcula ya, en este split (`edadInicio` corrió antes con el
+// reloj viejo). Si la ventana se cierra sin vuelta no se toca nada: la tarjeta queda en el año y la edad del retiro.
+function relojAlVolver(state) {
+  const porAnio = BALANCE.edad.splitsPorEdad;
+  const antes = state.player.splitCount;
+  const splitCount = antes + state.flags.splitsEnVentana;
+  const aniosAfuera = Math.floor(splitCount / porAnio) - Math.floor(antes / porAnio);
+  const conReloj = { ...state, age: state.age + aniosAfuera, player: { ...state.player, splitCount } };
+  return { ...conReloj, calendario: calcularCalendario(conReloj) };
+}
+
 export function resolver(state, decision, respuesta, rng) {
   const { motivo } = decision.datos;
 
@@ -277,15 +305,16 @@ export function resolver(state, decision, respuesta, rng) {
 
   // motivo === 'retiro_vuelta'
   if (respuesta.opcionId === 'volver') {
+    const reloj = relojAlVolver(state);
     const vuelto = {
-      ...state,
+      ...reloj,
       phase: 'profesional',
       motivoRetiro: null,
       flags: {
-        ...state.flags,
+        ...reloj.flags,
         splitsEnVentana: 0,
-        vueltasUsadas: state.flags.vueltasUsadas + 1,
-        splitVuelta: state.player.splitCount
+        vueltasUsadas: reloj.flags.vueltasUsadas + 1,
+        splitVuelta: reloj.player.splitCount
       }
     };
     // K4c (integración): `roster` ya corrió este split, con `phase: 'retirado'`. Si te habías retirado en el split del

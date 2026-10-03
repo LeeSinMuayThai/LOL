@@ -12367,8 +12367,9 @@ checkLento('K0 KPIs anclados: embudo, longevidad, economía, ritmo, nivel y porR
 // K5c (paso 1): el instrumento del Mundial real y de la curva de nivel por edad. Rápido: pocas seeds, lo que observa
 // `correrCarrera` (`observacion.mundiales`, la `edad` de cada fila de `splitsProData`) contra el registro y el torneo.
 check('K5c instrumento: cada Mundial que jugó tu equipo queda en observacion.mundiales (mismo resultado que el registro) y cada fila pro trae su edad', () => {
-  // Seeds 1-6 con `resolverAuto`, y dos de `azar` (4 y 76) que se retiran, vuelven y juegan DOS Mundiales con el mismo año
-  // (el calendario no avanza retirado): la observación no puede deduplicar por año.
+  // Seeds 1-6 con `resolverAuto`, y dos de `azar` (4 y 76) que se retiran y vuelven. Antes de K5c (motor) esas dos jugaban
+  // DOS Mundiales con el mismo año (el calendario no avanzaba retirado); ahora el reloj adelanta al volver (`retiro.js`,
+  // `relojAlVolver`) y la observación tampoco puede traer dos Mundiales del mismo año.
   const CASOS = [...[1, 2, 3, 4, 5, 6].map((seed) => [seed, null]), [4, ESTRATEGIAS_K0.azar], [76, ESTRATEGIAS_K0.azar]];
   let mundialesVistos = 0;
   let filasVistas = 0;
@@ -12412,8 +12413,8 @@ check('K5c instrumento: cada Mundial que jugó tu equipo queda en observacion.mu
   if (mundialesVistos === 0 || filasVistas === 0) {
     throw new Error(`check vacío: ${CASOS.length} carreras dejaron ${mundialesVistos} Mundiales y ${filasVistas} filas pro`);
   }
-  if (aniosRepetidos === 0) {
-    throw new Error('check vacío: ninguna de las carreras jugó dos Mundiales con el mismo año (seeds 4 y 76 de azar lo hacían)');
+  if (aniosRepetidos > 0) {
+    throw new Error(`${aniosRepetidos} Mundial(es) repetido(s) en el mismo año: tras una vuelta del retiro el calendario no avanzó (K5c motor)`);
   }
 });
 
@@ -20030,6 +20031,109 @@ check('K4c (revisión) textos: ninguna frase de consuelo de la fecha marcada se 
   const repetidas = [...veces].filter(([, cantidad]) => cantidad > MAXIMO_DE_REPETICIONES);
   if (repetidas.length > 0) {
     throw new Error(`${repetidas.length} frase(s) final(es) repetida(s) más de ${MAXIMO_DE_REPETICIONES} veces: ${repetidas.map(([frase, cantidad]) => `${cantidad}× "${frase}"`).join(' | ')}`);
+  }
+});
+
+// --- K5c (motor): el mundo no te espera -------------------------------------------------------------------------------
+// El instrumento de K5c encontró dos Mundiales con el mismo año en 4 de 200 carreras de `azar` (seeds 4, 76, 155, 173;
+// 60 splits). La causa: mientras dura la ventana de vuelta `player.splitCount` no se mueve (`atributos` no corre), y la
+// vuelta retomaba el reloj donde lo habías dejado; si el retiro había llegado en `events` (después del Mundial), la vuelta
+// volvía a jugar ese mismo split. Ahora `retiro.js` (`relojAlVolver`) adelanta el reloj lo que pasó afuera. Este check
+// recorre carreras de los tres bots (seeds en ronda, con tope) hasta juntar `VUELTAS_K5CM` vueltas de cada bot y al
+// menos una cuyo retiro llegó con el split ya jugado (el caso que repetía el Mundial), y pide, split a split
+// (el índice `i` es el reloj de pared: una vuelta de `avanzarSplitAuto` es un split del mundo): (a) con la carrera en
+// juego, el año del calendario es el del reloj de pared y la edad también (la edad sigue al calendario), el calendario
+// nunca retrocede, y los años de `registro.temporadas` nunca se repiten ni retroceden; (b) ningún torneo del registro
+// (`registro.internacionales`) aparece dos veces con el mismo año, ni el mismo título (liga, año y org) en `registro.titulos`.
+const { ESTRATEGIAS: ESTRATEGIAS_K5CM } = await import('./estrategias.js');
+const BOTS_K5CM = ['azar', 'criterio', 'malas'];
+const SPLITS_K5CM = 60;
+const VUELTAS_K5CM = 3;
+const TOPE_SEEDS_K5CM = 120;
+
+function problemasDelRelojK5cm(seed, bot) {
+  const porAnio = BALANCE.edad.splitsPorEdad;
+  const rng = mulberry32(seed);
+  let st = createInitialState(seed, rng);
+  const edadInicial = st.age;
+  const anioBase = st.calendario.anioBase;
+  const problemas = [];
+  let vueltas = 0;
+  let vueltasTrasSplitJugado = 0;
+  let retiroTrasSplitJugado = false;
+  for (let i = 0; i < SPLITS_K5CM && !st.terminado; i += 1) {
+    const antes = st;
+    st = avanzarSplitAuto(st, rng, ESTRATEGIAS_K5CM[bot]).state;
+    const donde = `${bot} seed ${seed} split ${i}`;
+    if (antes.phase !== 'retirado' && st.phase === 'retirado') {
+      // `systems/temporada.js` arma `career.temporada` de nuevo cada vez que corre: si cambió, el split se jugó.
+      retiroTrasSplitJugado = st.career.temporada !== antes.career.temporada;
+    }
+    if (antes.phase === 'retirado' && st.phase !== 'retirado') {
+      vueltas += 1;
+      vueltasTrasSplitJugado += retiroTrasSplitJugado ? 1 : 0;
+    }
+    if (st.calendario.anio < antes.calendario.anio) {
+      problemas.push(`${donde}: el calendario retrocede ${antes.calendario.anio} -> ${st.calendario.anio}`);
+    }
+    if (st.phase !== 'retirado') {
+      const anioDelMundo = anioBase + Math.floor(i / porAnio);
+      if (st.calendario.anio !== anioDelMundo) {
+        problemas.push(`${donde}: calendario ${st.calendario.anio}, el mundo va por ${anioDelMundo}`);
+      }
+      const edadDelMundo = edadInicial + Math.floor((i + 1) / porAnio);
+      if (!st.terminado && st.age !== edadDelMundo) {
+        problemas.push(`${donde}: edad ${st.age}, con el calendario serían ${edadDelMundo}`);
+      }
+    }
+  }
+  const { temporadas, internacionales, titulos } = st.career.registro;
+  temporadas.forEach((fila, indice) => {
+    if (indice > 0 && fila.anio <= temporadas[indice - 1].anio) {
+      problemas.push(`${bot} seed ${seed}: registro.temporadas repite o retrocede el año (${temporadas[indice - 1].anio} -> ${fila.anio})`);
+    }
+  });
+  const torneos = new Set();
+  for (const entrada of internacionales) {
+    const clave = `${entrada.torneo} ${entrada.anio}`;
+    if (torneos.has(clave)) {
+      problemas.push(`${bot} seed ${seed}: dos veces "${clave}" en registro.internacionales`);
+    }
+    torneos.add(clave);
+  }
+  // El split repetido también repetía el título de la liga ese año (seeds 4 y 173 de `azar`: dos CBLOL 2034, dos 2038).
+  const ganados = new Set();
+  for (const titulo of titulos) {
+    const clave = `${titulo.nombre} ${titulo.anio} con ${titulo.org}`;
+    if (ganados.has(clave)) {
+      problemas.push(`${bot} seed ${seed}: dos veces el título "${clave}" en registro.titulos`);
+    }
+    ganados.add(clave);
+  }
+  return { problemas, vueltas, vueltasTrasSplitJugado };
+}
+
+check('K5c (motor): tras un retiro y una vuelta el mundo no rebobina (calendario y edad al reloj de pared, un Mundial por año)', () => {
+  const problemas = [];
+  const vueltas = Object.fromEntries(BOTS_K5CM.map((bot) => [bot, 0]));
+  let vueltasTrasSplitJugado = 0;
+  let carreras = 0;
+  const alcanza = () => vueltasTrasSplitJugado > 0 && BOTS_K5CM.every((bot) => vueltas[bot] >= VUELTAS_K5CM);
+  for (let seed = 1; seed <= TOPE_SEEDS_K5CM && !alcanza(); seed += 1) {
+    for (const bot of BOTS_K5CM.filter((candidato) => vueltas[candidato] < VUELTAS_K5CM || vueltasTrasSplitJugado === 0)) {
+      const carrera = problemasDelRelojK5cm(seed, bot);
+      problemas.push(...carrera.problemas);
+      vueltas[bot] += carrera.vueltas;
+      vueltasTrasSplitJugado += carrera.vueltasTrasSplitJugado;
+      carreras += 1;
+    }
+  }
+  const resumen = `${carreras} carreras, vueltas ${JSON.stringify(vueltas)}, ${vueltasTrasSplitJugado} tras un split jugado`;
+  if (!alcanza()) {
+    throw new Error(`la muestra no alcanza (${resumen}; mínimo ${VUELTAS_K5CM} por bot y 1 tras un split jugado)`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problema(s) (${resumen}): ${problemas.slice(0, 6).join(' | ')}`);
   }
 });
 
