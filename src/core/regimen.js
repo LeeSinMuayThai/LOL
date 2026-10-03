@@ -80,6 +80,20 @@ export function boostDelPool(pool, tierList) {
   return { valor, desglose };
 }
 
+// K4c-S: ¿el parche mueve de tier a algún campeón de TU pool (el main incluido)? Es la pregunta de "¿esta noticia te
+// toca?": si no, el renglón del parche no necesita su propio beat. Puro, sin `rng`. Distinta de `saltosDeTierPropios`,
+// que también cuenta los tres primeros del rol (información para el feed, no algo que te toque a vos).
+export function parcheTocaTuPool(tierListAnterior, tierListNueva, pool) {
+  if (!tierListAnterior || tierListAnterior.length === 0) {
+    return false;
+  }
+  return pool.some((campeon) => {
+    const antes = tierDe(tierListAnterior, campeon.name);
+    const despues = tierDe(tierListNueva, campeon.name);
+    return antes !== null && despues !== null && antes !== despues;
+  });
+}
+
 // Los saltos de tier que le tocan al jugador cuando cambia el régimen: solo
 // los campeones de SU pool más los tres primeros del rol nuevo — escupir la
 // tier list entera cada parche es ruido, no información (6.4).
