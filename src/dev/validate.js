@@ -8771,8 +8771,9 @@ check('K0-B server: solo localhost, solo la lista blanca y sin salir de la raiz 
 const { calcularHuella, calcularHuellaJuego } = await import('./huella.js');
 const {
   medirAgencia, analizarDatosAgencia, tCritico, tCriticoBilateral, testMaximoT, significativaTestViejo,
-  replicasDeDecision, puntajeProvisorio, UMBRAL_SIGNIFICATIVO, MIN_REPLICAS_VALIDAS
+  replicasDeDecision, puntajeDeAgencia, sigmaPoblacional, UMBRAL_SIGNIFICATIVO, MIN_REPLICAS_VALIDAS
 } = await import('./agencia.js');
+const { puntajeDeCarrera: puntajeDeCarreraAgencia } = await import('../core/puntaje.js');
 const {
   correrLote, correrCarrera: correrCarreraSimulate, correrSinRuido, calcularFavoritoBo5, contarBeats,
   clasificarSplit, PARAMETROS_RUIDO, DURACION_BEAT_MS, ESPERA_MINIJUEGO_MS, DELTAS_FAVORITO_BO5,
@@ -9829,44 +9830,29 @@ check('K0 agencia: cada columna de la tabla (n, palanca, % significativo, ruido,
   });
 });
 
-check('K0 puntajeProvisorio: la fórmula de la auditoría (§4.3 y Apéndice A) con un registro armado a mano', () => {
-  // Trinquete (K0-A, 2ª revisión): los pesos 10, 15, 5, 21, 2 y 10 eran literales sueltos y pasaron a constantes con nombre; ningún check
-  // calculaba el puntaje, así que cambiar un peso (o el tope del ranking) no lo veía nadie.
-  const registro = (extra = {}) => ({
-    splitFichaje: 4,
-    career: {
-      registro: {
-        titulos: [{}, {}], // 2 títulos domésticos = 20
-        internacionales: [{ resultado: 'buen_papel' }, { resultado: 'buen_papel' }, { resultado: 'buen_papel' }, { resultado: 'mal_papel' }], // 3 x 15 + 1 x 5 = 50
-        picos: { rankMundial: 3 }, // (21 - 3) x 2 = 36
-        // K1 (D76): los splits de tier 1 salen de `splitsPorTier`, no de `fila.tier` (el de la firma). La tercera fila
-        // firmó en tier 1 y descendió en el lugar: de sus 6 splits, solo 2 son de tier 1. 5 + 2 = 7 splits en tier 1 = 7.
-        porOrg: [
-          { tier: 1, splits: 5, splitsPorTier: { 1: 5, 2: 0, 3: 0 } },
-          { tier: 2, splits: 7, splitsPorTier: { 1: 0, 2: 7, 3: 0 } },
-          { tier: 1, splits: 6, splitsPorTier: { 1: 2, 2: 4, 3: 0 } }
-        ],
-        ...extra
-      }
+check('K3c agencia: la función objetivo del contrafáctico es el puntaje de carrera (core/puntaje.js), en las réplicas y en la σ poblacional', () => {
+  // Trinquete (K3c, trampa T6): reemplaza al check del puntaje provisorio (la fórmula de AUDITORIA.md §4.3), que fue
+  // la función objetivo hasta K3c. Si agencia midiera contra otro número que el de la ficha, la palanca de una
+  // decisión sería la de una vara que el jugador no ve. Mismas seeds y splits que `sigmaPoblacional` (desde 1001,
+  // 70 splits).
+  const carreras = 3;
+  const totales = [];
+  for (let seed = 1001; seed < 1001 + carreras; seed += 1) {
+    const rng = mulberry32(seed);
+    let st = createInitialState(seed, rng);
+    for (let n = 0; n < 70 && !st.terminado; n += 1) {
+      st = avanzarSplitAuto(st, rng).state;
     }
-  });
-  // Llegó a pro (+10): 20 + 50 + 36 + 7 + 10 = 123.
-  if (puntajeProvisorio(registro()) !== 123) {
-    throw new Error(`puntajeProvisorio tenía que dar 123 (20 + 50 + 36 + 7 + 10), dio ${puntajeProvisorio(registro())}`);
+    const esperado = puntajeDeCarreraAgencia(st).total;
+    if (puntajeDeAgencia(st) !== esperado) {
+      throw new Error(`seed ${seed}: puntajeDeAgencia dio ${puntajeDeAgencia(st)} y puntajeDeCarrera(st).total ${esperado}`);
+    }
+    totales.push(esperado);
   }
-  // Sin pico en el Top 20 (rankMundial null): sin los 36 del ranking.
-  if (puntajeProvisorio(registro({ picos: { rankMundial: null } })) !== 87) {
-    throw new Error(`sin ranking tenía que dar 87, dio ${puntajeProvisorio(registro({ picos: { rankMundial: null } }))}`);
-  }
-  // #1 del mundo vale (21 - 1) x 2 = 40; el #20, 2.
-  if (puntajeProvisorio(registro({ picos: { rankMundial: 1 } })) !== 127 || puntajeProvisorio(registro({ picos: { rankMundial: 20 } })) !== 89) {
-    throw new Error('el #1 del mundo tenía que sumar 40 (127 en total) y el #20 sumar 2 (89)');
-  }
-  // Sin haber llegado a pro (splitFichaje null) no suma los 10 de "llegó a pro".
-  const noLlego = registro();
-  noLlego.splitFichaje = null;
-  if (puntajeProvisorio(noLlego) !== 113) {
-    throw new Error(`sin llegar a pro tenía que dar 113, dio ${puntajeProvisorio(noLlego)}`);
+  const { sPop } = sigmaPoblacional(carreras);
+  const esperadoSigma = desvioMuestral(totales) || 1;
+  if (Math.abs(sPop - esperadoSigma) > 1e-9) {
+    throw new Error(`sigmaPoblacional(${carreras}) dio ${sPop}; con puntajeDeCarrera sobre las mismas carreras es ${esperadoSigma}`);
   }
 });
 
