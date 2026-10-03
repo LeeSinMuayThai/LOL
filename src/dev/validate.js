@@ -538,7 +538,9 @@ check('Las decisiones de mejora declaran rareza con el payoff correcto (PLAN.md 
   const estadoBase = createInitialState(1, mulberry32(1));
 
   // 1. El catálogo de rutinas se parte en común/rara y rara paga más.
-  for (const pool of ['amateur', 'offseason']) {
+  // K4c (paso 3b), regla 17: se fue el catálogo 'offseason' de este loop (reemplaza a "cada catálogo de rutinas se parte en común y
+  // rara y la rara paga más", que exigía `data/rutinas/offseason.json`, borrado con la parada de práctica).
+  for (const pool of ['amateur']) {
     const porRareza = { comun: [], rara: [] };
     for (const rutina of RUTINAS[pool]) {
       const rareza = rarezaDeRutina(rutina, pool);
@@ -2999,52 +3001,11 @@ checkLento('Toda decisión de rutina ofrece una salida segura y la trampa', () =
   }
 });
 
-checkLento('Las rutinas de offseason declaran nivel y cada tier mantiene su segura+agresiva propias (D11, 13b)', () => {
-  // D11: un bootcamp en Corea no lo paga un equipo inventado de tier 3. El
-  // catálogo tiene que decirlo, y una corrida real no puede ofrecerlo ahí — pero
-  // tier 3 necesita SU PROPIA agresiva (13b: grindeo_de_madrugada) o se queda
-  // sin trampa disponible, violando CONCEPTO §4 ("la trampa está disponible
-  // aunque convenga no tomarla"). Las 7 rutinas originales + la nueva, las 8
-  // declaran nivel: ninguna cae en una celda por omisión (mismo criterio D26c
-  // que cobertura.js usa para eventos).
-  for (const rutina of RUTINAS.offseason) {
-    if (!Array.isArray(rutina.contexto?.nivel) || rutina.contexto.nivel.length === 0) {
-      throw new Error(`${rutina.id}: no declara nivel en su contexto`);
-    }
-  }
-
-  const bootcamp = RUTINAS.offseason.find((rutina) => rutina.id === 'bootcamp_corea');
-  if (!bootcamp) {
-    throw new Error('no está bootcamp_corea');
-  }
-  const nivelesBootcamp = bootcamp.contexto.nivel;
-  if (!nivelesBootcamp.includes('tier1') || !nivelesBootcamp.includes('tier2')) {
-    throw new Error('bootcamp_corea debe declarar nivel tier1 y tier2');
-  }
-  if (nivelesBootcamp.includes('tier3')) {
-    throw new Error('bootcamp_corea no debe declararse para tier 3');
-  }
-
-  const grindeoCasero = RUTINAS.offseason.find((rutina) => rutina.id === 'grindeo_de_madrugada');
-  if (!grindeoCasero || !grindeoCasero.etiquetas.includes('agresiva')) {
-    throw new Error('grindeo_de_madrugada no existe o dejó de ser la agresiva propia de tier 3');
-  }
-  if (!grindeoCasero.contexto.nivel.includes('tier3') || grindeoCasero.contexto.nivel.some((n) => n !== 'tier3')) {
-    throw new Error('grindeo_de_madrugada debe declararse EXCLUSIVAMENTE para tier 3 (si tier1/tier2 la vieran, bootcamp_corea dejaría de ser su única agresiva a propósito)');
-  }
-
-  const seguraUniversal = RUTINAS.offseason.find((rutina) => rutina.id === 'dos_semanas_sin_tocar_el_juego');
-  if (!seguraUniversal || !seguraUniversal.etiquetas.includes('segura')) {
-    throw new Error('dos_semanas_sin_tocar_el_juego dejó de ser la salida segura universal');
-  }
-  if (['tier3', 'tier2', 'tier1'].some((nivel) => !seguraUniversal.contexto.nivel.includes(nivel))) {
-    throw new Error('dos_semanas_sin_tocar_el_juego no cubre todos los tiers');
-  }
-
-  // K4c (plan anual), regla 17: se fue la corrida que miraba las ofertas de offseason en vivo (reemplaza a "ningún
-  // offseason observado en tierN", que exigía la parada de práctica): la pretemporada ya no ofrece rutinas. Queda el
-  // catálogo.
-});
+// K4c (paso 3b), regla 17: se fue "Las rutinas de offseason declaran nivel y cada tier mantiene su segura+agresiva propias (D11,
+// 13b)" (reemplazado por la limpieza del plan anual, K4c: la pretemporada ya no ofrece rutinas de receso; el cierre de año fija uno de
+// los tres planes de `data/rutinas/planes.json`). Exigía el catálogo `data/rutinas/offseason.json`, que se borró con la parada
+// `practica:practica`: que bootcamp_corea fuera solo de tier 1-2, que grindeo_de_madrugada fuera la agresiva exclusiva de tier 3 y
+// que dos_semanas_sin_tocar_el_juego fuera la salida segura de todos los tiers.
 
 checkLento('El contexto de carrera nombra siempre dónde estás parado', () => {
   const vistos = new Set();
@@ -9980,14 +9941,14 @@ check('K0 agencia sintética: las tres definiciones de pctInterrupcionesConPalan
     ...veces(2, 'temporada:draft', NO),
     ...veces(2, 'edadCierre:x:rutina', NO),
     // Con 2 réplicas pedidas y 2 válidas se analiza (el piso es min(MIN_REPLICAS_VALIDAS, réplicas pedidas)).
-    { seed: 1, split: 1, tipo: 'practica:practica', labels: ['a', 'b'], porOpcion: [[rep(10), rep(12)], [rep(11), rep(12)]] },
+    { seed: 1, split: 1, tipo: 'amateur:nocturno', labels: ['a', 'b'], porOpcion: [[rep(10), rep(12)], [rep(11), rep(12)]] },
     // Con 6 pedidas y solo 3 válidas NO se analiza.
     { seed: 1, split: 2, tipo: 'serie:draft', labels: ['a', 'b'], porOpcion: [[rep(100), rep(101), rep(102), null, null, null], [rep(10), rep(11), rep(12), null, null, null]] }
   ];
   const frecuenciasTipo = {
     'serie:draft': 30, 'mercado:oferta': 20, 'amateur:reparto': 10,
     'eventos:x:rutina': 30, 'eventos:x:parche': 20,
-    'serie:minijuego': 25, 'temporada:momento': 15, 'temporada:draft': 10, 'practica:practica': 10,
+    'serie:minijuego': 25, 'temporada:momento': 15, 'temporada:draft': 10, 'amateur:nocturno': 10,
     'edadCierre:x:rutina': 15,
     'amateur:salida_amateur': 15 // nunca se midió: cuenta en el denominador
   };
@@ -10020,7 +9981,7 @@ check('K0 agencia sintética: las tres definiciones de pctInterrupcionesConPalan
   const fila = (tipo) => analisis.filas.find((f) => f.tipo === tipo);
   const esperadas = [
     ['serie:draft', 4, 100], ['mercado:oferta', 2, 100], ['amateur:reparto', 3, 100],
-    ['eventos:*', 8, 12.5], ['serie:minijuego', 11, 9.1], ['temporada:momento', 2, 0], ['edadCierre:*', 2, 0], ['practica:practica', 1, 0]
+    ['eventos:*', 8, 12.5], ['serie:minijuego', 11, 9.1], ['temporada:momento', 2, 0], ['edadCierre:*', 2, 0], ['amateur:nocturno', 1, 0]
   ];
   for (const [tipo, n, pctSig] of esperadas) {
     const f = fila(tipo);
@@ -10681,7 +10642,7 @@ check('K4c-H horizonte: el mapa tipo -> horizonte es el de PLAN.md y cubre todos
   const ESPERADO = {
     serie: ['serie:plan', 'serie:decisivo', 'serie:minijuego', 'internacional:swiss', 'internacional:plan', 'internacional:decisivo', 'internacional:minijuego'],
     partido: ['temporada:momento'],
-    split: ['practica:practica', 'eventos:x', 'eventos:minijuego', 'amateur:reparto', 'amateur:nocturno']
+    split: ['eventos:x', 'eventos:minijuego', 'amateur:reparto', 'amateur:nocturno']
   };
   const enElPlan = new Map(Object.entries(ESPERADO).flatMap(([horizonte, tipos]) => tipos.map((tipo) => [tipo, horizonte])));
   for (const [tipo, horizonte] of enElPlan) {
@@ -10848,7 +10809,7 @@ check('K4c-H horizonte: la palanca en el horizonte, la fracción ponderada, la t
   //  - temporada:momento (20): el puntaje cambia 10 en todas las réplicas (desvío 0: t infinita, significativa) y el resultado del partido no
   //    cambia: 100% contra la carrera, 0% en el horizonte. Es la dirección contraria de serie:plan.
   //  - amateur:oferta (30, horizonte carrera): el mismo efecto de 10 en el puntaje: 100% en las dos.
-  //  - practica:practica (10, split, posición): a = 3,3,4,3,3,4,3,3 (media 3,25), b = 5,6,5,6,5,5,6,5 (5,375): spread 2,125; diferencias
+  //  - eventos:minijuego (10, split, posición): a = 3,3,4,3,3,4,3,3 (media 3,25), b = 5,6,5,6,5,5,6,5 (5,375): spread 2,125; diferencias
   //    media -2,125, desvío 0,8345, t = 7,2 > 2,365: 100% en el horizonte, 0% contra la carrera. σ de la posición con las 16 réplicas:
   //    suma 69, suma de cuadrados 319, varianza (319 - 69²/16)/15 = 1,4292, σ = 1,1955: palanca 2,125 / 1,1955 = 1,78 σ.
   //  - amateur:nocturno (25): 20 decisiones sin efecto en ninguno: la única parada sin nada en juego (n = 20).
@@ -10867,18 +10828,18 @@ check('K4c-H horizonte: la palanca en el horizonte, la fracción ponderada, la t
     fila('serie:plan', 'serie', 'resultado', [PLANO, ALTERNADO], [PLANO, ALTERNADO]),
     fila('temporada:momento', 'partido', 'resultado', [GRANDE, ALTERNADO], [PLANO, ALTERNADO]),
     fila('amateur:oferta', 'carrera', 'puntaje', [GRANDE], [PLANO]),
-    fila('practica:practica', 'split', 'posicion', [PLANO, [3, 3, 4, 3, 3, 4, 3, 3]], [PLANO, [5, 6, 5, 6, 5, 5, 6, 5]]),
+    fila('eventos:minijuego', 'split', 'posicion', [PLANO, [3, 3, 4, 3, 3, 4, 3, 3]], [PLANO, [5, 6, 5, 6, 5, 5, 6, 5]]),
     ...Array.from({ length: 20 }, () => fila('amateur:nocturno', 'split', 'escalera', [PLANO, Array(8).fill(2000)], [PLANO, Array(8).fill(2000)])),
     fila('serie:minijuego', null, null, [PLANO], [PLANO])
   ];
-  const frecuenciasTipo = { 'serie:plan': 40, 'temporada:momento': 20, 'amateur:oferta': 30, 'practica:practica': 10, 'amateur:nocturno': 25 };
+  const frecuenciasTipo = { 'serie:plan': 40, 'temporada:momento': 20, 'amateur:oferta': 30, 'eventos:minijuego': 10, 'amateur:nocturno': 25 };
   const analisis = analizarDatosAgencia({ resultados, frecuenciasTipo, totalInterrupciones: 125, carreras: 10 }, 1, { sPop: 10, sPopT: 1 });
 
   const esperadas = {
     'serie:plan': { n: 2, nH: 2, pctSignificativo: 0, pctSignificativoH: 50, horizonte: 'serie', aSolas: false },
     'temporada:momento': { n: 1, nH: 1, pctSignificativo: 100, pctSignificativoH: 0, horizonte: 'partido', aSolas: false },
     'amateur:oferta': { n: 1, nH: 1, pctSignificativo: 100, pctSignificativoH: 100, horizonte: 'carrera', aSolas: false },
-    'practica:practica': { n: 1, nH: 1, pctSignificativo: 0, pctSignificativoH: 100, horizonte: 'split', unidadH: 'posicion', aSolas: false },
+    'eventos:minijuego': { n: 1, nH: 1, pctSignificativo: 0, pctSignificativoH: 100, horizonte: 'split', unidadH: 'posicion', aSolas: false },
     'amateur:nocturno': { n: 20, nH: 20, pctSignificativo: 0, pctSignificativoH: 0, horizonte: 'split', aSolas: true },
     'serie:minijuego': { n: 1, nH: 0, pctSignificativo: 0, pctSignificativoH: 0, horizonte: 'serie', aSolas: false }
   };
@@ -10893,7 +10854,7 @@ check('K4c-H horizonte: la palanca en el horizonte, la fracción ponderada, la t
       }
     }
   }
-  const practica = analisis.porTipoDeParada.find((f) => f.tipo === 'practica:practica');
+  const practica = analisis.porTipoDeParada.find((f) => f.tipo === 'eventos:minijuego');
   if (Math.abs(practica.palancaMedianaH - 1.78) > 0.011 || Math.abs(practica.deltaMedianoH - 2.125) > 0.011) {
     throw new Error(`practica: la palanca en el horizonte era 1,78 σ (2,125 puestos), dio ${practica.palancaMedianaH} σ (${practica.deltaMedianoH})`);
   }
@@ -10904,7 +10865,7 @@ check('K4c-H horizonte: la palanca en el horizonte, la fracción ponderada, la t
   // La tabla de recorte en el horizonte: se quitan primero las de 0% (a igual palanca, la más frecuente: amateur:nocturno 25, temporada 20),
   // luego serie:plan (50%), amateur:oferta y practica (100%, la más frecuente primero). Lo que queda: 100, 80, 40, 10, 0 paradas y 60, 75, 100, 100, null %.
   const resumen = (tabla) => tabla.map((fila) => `${fila.quitando}|${fila.paradas}|${fila.pctPalanca}`).join(' ');
-  const esperadoH = 'amateur:nocturno|100|60 temporada:momento|80|75 serie:plan|40|100 amateur:oferta|10|100 practica:practica|0|null';
+  const esperadoH = 'amateur:nocturno|100|60 temporada:momento|80|75 serie:plan|40|100 amateur:oferta|10|100 eventos:minijuego|0|null';
   if (resumen(tablaDeRecorte(analisis.porTipoDeParada, 10, true)) !== esperadoH) {
     throw new Error(`tablaDeRecorte en el horizonte: ${resumen(tablaDeRecorte(analisis.porTipoDeParada, 10, true))}`);
   }
@@ -12399,10 +12360,9 @@ const DELEGACION_COMUN_K0 = {
   'servicioMilitar:servicio_adentro': 'el servicio militar: sin previa',
   'servicioMilitar:servicio_volver': 'el servicio militar: sin previa'
 };
-// Las rutinas (`practica`, `amateur:reparto`): `criterio` usa la que elige el propio sistema (`responderCriterio` delega
+// Las rutinas (`amateur:reparto`; la práctica ya no frena desde K4c): `criterio` usa la que elige el propio sistema (`responderCriterio` delega
 // de entrada); `malas` sí elige una (la más agresiva), así que a ella no se le permite.
 const DELEGACION_RUTINAS_K0 = {
-  'practica:practica': 'rutina: `criterio` usa la que elige el sistema',
   'amateur:reparto': 'rutina: `criterio` usa la que elige el sistema'
 };
 

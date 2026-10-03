@@ -280,115 +280,16 @@ function renderMundo(contenedor, traspasos, asientos, yaEnBloque1) {
   }
 }
 
-// K4-D: la parte de preparación de la parada de la pretemporada. Cada rutina de offseason es una carta de mejora con lo
-// que sube y cuánto de eso se queda para siempre; todo llega calculado en `decision.datos.preparacion.cartas` (el mismo
-// cálculo que aplica el motor, regla 15): este componente solo lo muestra.
-function numero(valor) {
-  const redondeado = valor >= 10 ? Math.round(valor) : Math.round(valor * 10) / 10;
-  return String(redondeado).replace('.', ',');
-}
-
-function construirCartaPreparacion(carta, elegida, onClick) {
-  const card = document.createElement('button');
-  card.type = 'button';
-  card.className = `preparacion-card${carta.id === elegida ? ' preparacion-card--elegida' : ''}`;
-  card.dataset.rutina = carta.id;
-  card.setAttribute('aria-pressed', carta.id === elegida ? 'true' : 'false');
-
-  const header = document.createElement('div');
-  header.className = 'preparacion-card-header';
-  header.appendChild(fila('preparacion-card-titulo', carta.label));
-  header.appendChild(fila(`preparacion-card-rareza preparacion-card-rareza--${carta.rareza}`, carta.rareza === 'rara' ? 'rara' : 'común'));
-  card.appendChild(header);
-
-  card.appendChild(fila('preparacion-card-texto', carta.descripcion));
-
-  const chips = document.createElement('div');
-  chips.className = 'preparacion-card-chips';
-  carta.efectos.forEach((efecto) => {
-    if (efecto.esperado > 0) {
-      chips.appendChild(fila('preparacion-chip preparacion-chip--sube', `${efecto.etiqueta} ~+${numero(efecto.esperado)}`));
-    }
-  });
-  if (carta.pulir > 0) {
-    chips.appendChild(fila('preparacion-chip', carta.pulir > 1 ? `pulir tu main ×${carta.pulir}` : 'pulir tu main'));
-  }
-  if (carta.nuevo > 0) {
-    chips.appendChild(fila('preparacion-chip', carta.nuevo > 1 ? `campeón nuevo ×${carta.nuevo}` : 'campeón nuevo'));
-  }
-  if (chips.childElementCount > 0) {
-    card.appendChild(chips);
-  }
-
-  // Lo que dura: la parte permanente de lo que sube en una curva de edad (`fraccionPermanentePractica`).
-  const duran = carta.efectos.filter((efecto) => efecto.permanente > 0);
-  card.appendChild(fila(
-    `preparacion-card-dura${duran.length > 0 ? ' preparacion-card-dura--si' : ''}`,
-    duran.length > 0
-      ? `Te queda para siempre ~${duran.map((efecto) => `${numero(efecto.permanente)} de ${efecto.etiqueta}`).join(' y ')}`
-      : 'No deja marca para siempre'
-  ));
-
-  card.addEventListener('click', onClick);
-  return card;
-}
-
-function renderPreparacion(contenedor, preparacion, elegida, onElegirCarta) {
-  contenedor.replaceChildren();
-  contenedor.appendChild(fila('preparacion-titulo', 'Tu preparación'));
-  contenedor.appendChild(fila('preparacion-desc', preparacion.descripcion));
-  const lista = document.createElement('div');
-  lista.className = 'preparacion-lista';
-  preparacion.cartas.forEach((carta) => {
-    lista.appendChild(construirCartaPreparacion(carta, elegida, () => onElegirCarta(carta.id)));
-  });
-  contenedor.appendChild(lista);
-  contenedor.hidden = false;
-}
-
 export function renderMercado(elements, decision, onElegir, onRepresentante, onNegociar, onEsperar) {
   const {
     mercadoPanel, mercadoTitle, mercadoDesc, mercadoVos, mercadoGrid, mercadoMundo,
-    mercadoRepresentante, mercadoEsperar, mercadoCol, mercadoPrep
+    mercadoRepresentante, mercadoEsperar
   } = elements;
 
   mercadoTitle.textContent = decision.titulo;
   mercadoDesc.textContent = decision.descripcion;
 
   const esTraspaso = decision.datos.motivo === 'traspaso';
-
-  // K4-D: la parada trae la preparación del receso. Con mercado, la carta se elige y viaja con la respuesta que cierra
-  // (firmar, esperar, quedarte) y con las de la negociación; sola (sin mercado), elegir la carta es la respuesta.
-  const preparacion = decision.datos.preparacion ?? null;
-  const soloPreparacion = decision.presentacion === 'pretemporada';
-  let rutinaElegida = preparacion ? (preparacion.elegida ?? preparacion.cartas[0]?.id ?? null) : null;
-  const conRutina = (respuesta) => (rutinaElegida ? { ...respuesta, rutinaId: rutinaElegida } : respuesta);
-  const elegirOferta = (respuesta) => onElegir(conRutina(respuesta));
-  const negociarOferta = (respuesta) => onNegociar(conRutina(respuesta));
-  if (preparacion && !soloPreparacion && !esTraspaso) {
-    mercadoTitle.textContent = 'Pretemporada: mercado y preparación';
-  }
-  if (mercadoCol) {
-    mercadoCol.hidden = soloPreparacion;
-  }
-  if (mercadoPrep) {
-    mercadoPrep.hidden = true;
-    mercadoPrep.parentElement?.classList.toggle('pretemporada-cols--con-prep', Boolean(preparacion) && !soloPreparacion);
-    if (preparacion) {
-      renderPreparacion(mercadoPrep, preparacion, rutinaElegida, (id) => {
-        if (soloPreparacion) {
-          onElegir({ opcionId: id });
-          return;
-        }
-        rutinaElegida = id;
-        mercadoPrep.querySelectorAll('.preparacion-card').forEach((nodo) => {
-          const activa = nodo.dataset.rutina === id;
-          nodo.classList.toggle('preparacion-card--elegida', activa);
-          nodo.setAttribute('aria-pressed', activa ? 'true' : 'false');
-        });
-      });
-    }
-  }
 
   // Bloque 1: vos en el mercado.
   if (mercadoVos) {
@@ -407,11 +308,11 @@ export function renderMercado(elements, decision, onElegir, onRepresentante, onN
   // (`neg.escalones`/`neg.clausula` cambian, el id no) actualiza la tarjeta
   // existente en vez de destruirla y rehacerla.
   const construirCard = esTraspaso
-    ? (oferta) => construirTarjetaTraspaso(oferta, elegirOferta)
-    : (oferta) => construirTarjeta(oferta, elegirOferta, negociarOferta);
+    ? (oferta) => construirTarjetaTraspaso(oferta, onElegir)
+    : (oferta) => construirTarjeta(oferta, onElegir, onNegociar);
   reconciliar(
     mercadoGrid,
-    soloPreparacion ? [] : decision.opciones,
+    decision.opciones,
     (oferta) => oferta.id,
     construirCard,
     (nodo, oferta) => reemplazarEnElLugar(nodo, construirCard(oferta))
@@ -425,12 +326,12 @@ export function renderMercado(elements, decision, onElegir, onRepresentante, onN
   }
 
   mercadoRepresentante.hidden = !decision.datos.representanteDisponible;
-  mercadoRepresentante.onclick = () => onRepresentante(conRutina({}));
+  mercadoRepresentante.onclick = () => onRepresentante();
 
   if (mercadoEsperar) {
     // En un traspaso no se "espera": quedarse ES la opción de rechazar.
     mercadoEsperar.hidden = esTraspaso;
-    mercadoEsperar.onclick = () => onEsperar(conRutina({}));
+    mercadoEsperar.onclick = () => onEsperar();
   }
 
   mercadoPanel.hidden = false;

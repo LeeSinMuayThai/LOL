@@ -3,7 +3,6 @@ import { calcularContexto, coincideContexto } from './contexto.js';
 import { cumpleCondiciones } from './selectors.js';
 import { BALANCE } from '../data/balance.js';
 import RUTINAS_AMATEUR from '../data/rutinas/amateur.json' with { type: 'json' };
-import RUTINAS_OFFSEASON from '../data/rutinas/offseason.json' with { type: 'json' };
 import PLANES from '../data/rutinas/planes.json' with { type: 'json' };
 
 // Una rutina es un reparto de recursos con texto narrativo encima.
@@ -15,8 +14,7 @@ import PLANES from '../data/rutinas/planes.json' with { type: 'json' };
 // el reparto — antes un panel de botones +/-, ahora una decisión con voz.
 
 export const RUTINAS = {
-  amateur: RUTINAS_AMATEUR,
-  offseason: RUTINAS_OFFSEASON
+  amateur: RUTINAS_AMATEUR
 };
 
 // K4c (plan anual): los planes de práctica que fija el cierre de año (`player.planAnual`). Cada uno tiene la forma de

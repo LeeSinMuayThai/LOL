@@ -154,7 +154,7 @@ La carrera debe incluir contratos, sueldos, cláusulas, imports, residencia, ada
     /rol (top, jungla, mid, adc, support: lo que solo ve tu línea)
     /partido (fase 5 — presion.json, clasico.json, dentro_del_mapa.json,
     postpartido.json: el contenido de las fechas marcadas de la temporada)
-  /rutinas (amateur.json, offseason.json)
+  /rutinas (amateur.json, planes.json)
 
 /src/ui — dejó de estar vacía en la fase 8 (cierra D7). `index.html` queda como shell +
   `<style>` + los minijuegos (que la fase 8 no mueve, PLAN.md §8.5) + el control de flujo

@@ -77,7 +77,7 @@ export function puntuarPrevia(opcion) {
 //  - NO usa "la probabilidad del propio motor" que pide la spec de K0 (§K.5): en el mercado compara tier, jerarquía y
 //    salario; en el resto usa solo el signo y la magnitud de la previa y una penalización fija a la ruleta.
 //  - Le delega a `resolverAuto` el 29,4% de sus decisiones (19.098 de 65.022): el momento del partido (`temporada:momento`,
-//    el 12,0%, sin previa en las opciones: decisión de diseño conocida), las rutinas (`practica` y `amateur:reparto`, el
+//    el 12,0%, sin previa en las opciones: decisión de diseño conocida), las rutinas (`amateur:reparto`, y hasta K4c `practica`, el
 //    14,0%: usa la que elige el sistema) y algunos tipos sin previa del amateur, del retiro, de la salud y del servicio
 //    militar (el 3,4%). La lista cerrada de lo que delega está en el check "K0 criterio y malas: solo delegan en
 //    resolverAuto..." de validate.js.

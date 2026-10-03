@@ -186,7 +186,6 @@ export const HORIZONTE_POR_TIPO = {
   'internacional:decisivo': 'serie',
   'internacional:minijuego': 'serie',
   'temporada:momento': 'partido',
-  'practica:practica': 'split',
   'eventos:x': 'split',
   'eventos:minijuego': 'split',
   'amateur:reparto': 'split',
