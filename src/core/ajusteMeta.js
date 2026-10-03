@@ -36,11 +36,15 @@ export function deseoPorCampeon(campeon, weights) {
 // la afinidad al meta pesa la mitad que la maestría. Con un campeón exactamente
 // promedio para el parche (afinidad 1) devuelve el `factorMaestria` de siempre,
 // así que sin cambio de meta el balance agregado no se mueve.
+//
+// K2b: la maestría vale 1,0 en `maestriaReferencia` (hasta K2a, un 50
+// implícito; hoy la referencia sigue en 50, así que el factor es el mismo bit a
+// bit). Sin campeón conocido, el factor es neutro: la maestría de referencia.
 export function factorDeCampeon(campeon, weights) {
   const r = BALANCE.rendimiento;
-  const maestria = campeon?.mastery ?? BALANCE.stats.max / 2;
+  const maestria = campeon?.mastery ?? r.maestriaReferencia;
   const afinidad = campeon ? afinidadDeCampeon(campeon, weights) : 1;
-  return (1 + (maestria / BALANCE.stats.max - 0.5) * r.maestriaPesoEnRendimiento * 2)
+  return (1 + (maestria / BALANCE.stats.max - r.maestriaReferencia / BALANCE.stats.max) * r.maestriaPesoEnRendimiento * 2)
     * (1 + (afinidad - 1) * r.afinidadPesoEnRendimiento);
 }
 

@@ -10,7 +10,8 @@ import { cerrarFila, registrarPico, registrarSalarioEnFila, registrarArraigoEnFi
 import { bandaDeJerarquia, bandaDeArraigoFicha, nivelDelJugador } from '../core/ficha.js';
 import { orgsQueTeFicharian, ofertaPosible, esResidenteDe, nivelAlternativaAsiento, factorRenovacionEtario } from '../core/demanda.js';
 import { resolverMercadoMundial, cerrarAsientosCongelados } from '../core/mercadoMundial.js';
-import { jerarquiaAlFichar } from './roster.js';
+import { jerarquiaAlFichar, sinergiaAlFichar, conPlantillaDelPlantel } from './roster.js';
+import { companerosDelPlantel } from '../core/fuerza.js';
 import { BALANCE } from '../data/balance.js';
 
 export const id = 'mercado';
@@ -403,8 +404,12 @@ export function aplicar(state, rng) {
     || Math.max(0, state.career.contrato.aniosRestantes - 1) <= 0;
 
   const mundo = resolverMercadoMundial(state, rng, { vaAlMercado: contratoVencido });
-  const logsMundo = mundo.logs;
-  const stConValor = conValorDeMercadoActualizado(mundo.state);
+  // K2b: el mercado del mundo acaba de mover los planteles (envejecer, retirar,
+  // fichar). Si tocó a tus compañeros, la plantilla los trae ya — la temporada
+  // de este split se juega con ellos, no con la foto de `roster.js`.
+  const plantilla = conPlantillaDelPlantel(mundo.state);
+  const logsMundo = [...mundo.logs, ...plantilla.logs];
+  const stConValor = conValorDeMercadoActualizado(plantilla.state);
 
   // Tier 3: a ese nivel no hay mercado, es automático (competitivo.js lo
   // resuelve). Un tier-2 LIBRE (recién ascendido de tier 3, o sin equipo) SÍ va
@@ -489,7 +494,7 @@ export function aplicar(state, rng) {
 // `motivoFila`: el motivo con el que se cierra la fila de la org anterior en el
 // registro. Por defecto se deriva del cambio de tier (ascenso/descenso/
 // transferencia); 9Mf lo pasa explícito para el banquillo.
-function aceptarOferta(state, oferta, { motivoFila } = {}) {
+function aceptarOferta(state, oferta, rng, { motivoFila } = {}) {
   const esRenovacion = oferta.tag === 'renovacion';
   const contrato = {
     org: oferta.org, liga: oferta.liga, tier: oferta.tier,
@@ -526,16 +531,39 @@ function aceptarOferta(state, oferta, { motivoFila } = {}) {
   const motivoFilaFinal = motivoFila ?? (oferta.tier < tierPrevio ? 'ascenso'
     : (oferta.tier > tierPrevio ? 'descenso' : 'transferencia'));
 
+  // K2b (PLAN.md "K2 — lo que midió la investigación", viñeta K2b.2): un
+  // traspaso se juega con el plantel NUEVO desde este mismo split. `roster.js`
+  // corre antes que el mercado, así que hasta K2a el primer split en la org
+  // nueva se jugaba con los compañeros de la anterior (el 91% de los cambios de
+  // liga). Ahora la lista se refresca al firmar con el plantel de la org nueva
+  // (sin dado). Si venías sin equipo (sin compañeros), sigue vacía: el roster
+  // lo arma `roster.js` el split que viene, como siempre. Si la org nueva no
+  // tuviera plantel (no pasa: el mercado solo ofrece orgs con plantel, medido
+  // 0 de 2.892 traspasos en 1.200 carreras), queda vacía igual: nunca se juega
+  // con el plantel viejo.
+  const companeros = state.career.companeros.length > 0
+    ? (companerosDelPlantel(state, oferta.org) ?? [])
+    : state.career.companeros;
+
+  // K2b (revisión): con el plantel nuevo viene la química del plantel nuevo
+  // — la regla de `armarRoster` (`sinergiaAlFichar`), tirada una sola vez acá y
+  // pasada a `armarRoster` por `flags.sinergiaProyectadaAlFichar`. Sin
+  // compañeros (venías sin equipo) no hay nada que resetear: lo arma el roster.
+  const sinergiaAlFirmar = state.career.companeros.length > 0 ? sinergiaAlFichar(state, rng) : null;
+
   return {
     state: {
       ...state,
       flags: {
         ...state.flags,
         splitsSinOfertaConsecutivos: 0,
-        jerarquiaProyectadaAlFichar: oferta.datos.jerarquiaProyectada
+        jerarquiaProyectadaAlFichar: oferta.datos.jerarquiaProyectada,
+        sinergiaProyectadaAlFichar: sinergiaAlFirmar
       },
       career: {
         ...state.career,
+        companeros,
+        sinergia: sinergiaAlFirmar === null ? state.career.sinergia : Math.round(sinergiaAlFirmar),
         tier: oferta.tier, liga: oferta.liga, currentOrg: oferta.org,
         orgs: [...state.career.orgs, oferta.org],
         // "En qué split entraste a una liga real POR PRIMERA VEZ" (`core/state.js`,
@@ -694,7 +722,7 @@ function resolverTraspaso(state, decision, respuesta, rng) {
   }
 
   const origen = state.career.currentOrg;
-  const firmado = aceptarOferta(state, elegida, { motivoFila: 'transferencia' });
+  const firmado = aceptarOferta(state, elegida, rng, { motivoFila: 'transferencia' });
   const cerrado = cerrarAsientosCongelados(firmado.state, elegida.org, rng, new Set([elegida.org]));
   const clausulaTxt = decision.datos.conClausula ? ' Se ejecuta la cláusula.' : '';
   return {
@@ -738,7 +766,7 @@ function resolverBanquillo(state, logsPrevios, rng) {
 
   const orgDestino = [...dev.orgs].sort((a, b) => a.fuerza - b.fuerza)[0];
   const oferta = construirOferta(state, dev, orgDestino, null, rng);
-  const firmado = aceptarOferta(state, { ...oferta, id: oferta.org }, { motivoFila: 'banquillo' });
+  const firmado = aceptarOferta(state, { ...oferta, id: oferta.org }, rng, { motivoFila: 'banquillo' });
   return {
     state: { ...firmado.state, flags: { ...firmado.state.flags, banquilloPendiente: false } },
     logs: [
@@ -927,7 +955,7 @@ export function resolver(state, decision, respuesta, rng) {
 
   // Firmar.
   const elegida = decision.opciones.find((opcion) => opcion.id === respuesta.opcionId);
-  const firmado = aceptarOferta(state, elegida);
+  const firmado = aceptarOferta(state, elegida, rng);
   // Fase 9Mc: firmaste — los demás asientos que te habían ofrecido se cierran
   // con un NPC, y el log lo dice con nombre ("el mundo siguió sin vos"). Sólo
   // las orgs que aparecieron como tarjeta lateral (o se levantaron de la mesa

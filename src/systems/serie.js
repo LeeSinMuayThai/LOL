@@ -10,7 +10,8 @@ import {
   esMapaDecisivo, esMapaDeDesempate, serieTerminada, decisionDeDraft,
   esMapaCerrado, factorJerarquiaEnLlamada
 } from '../core/serie.js';
-import { calcularRendimiento, fuerzaDelEquipo } from './rendimiento.js';
+import { fuerzaDePartido } from '../core/fuerza.js';
+import { jugarPartido } from '../core/partido.js';
 import {
   registrarMapa, registrarSerie, registrarTitulo, registrarInternacional, registrarPico, registrarArraigoEnFila
 } from '../core/registro.js';
@@ -141,6 +142,13 @@ function iniciarRonda(state, ronda, rng) {
       ronda,
       rival,
       formato,
+      // K2a: la fuerza de tu equipo al empezar la serie, con el campeón del
+      // split (K2b: la fuerza de partido, que ya es determinista). Es el lado
+      // propio del Δ con el que el instrumento de `src/dev/simulate.js` mide
+      // "el favorito gana el Bo5" en el motor; viaja en el log de cierre de la
+      // serie. Lectura pura: no consume `rng` ni cambia cómo se juega ningún
+      // mapa.
+      fuerzaInicial: fuerzaDePartido(state),
       marcador: [0, 0],
       mapaActual: 0,
       mapas: [],
@@ -189,14 +197,14 @@ function jugarMapaSiguiente(state, rng, logsAcum) {
 
 // `entradaExtra` es el comodín fuera del pool (4.5): no vive en
 // `player.championPool`, así que se inyecta una copia temporal del pool solo
-// para que `calcularRendimiento` encuentre su maestría real y no la neutra.
+// para que `rendimientoBase` encuentre su maestría real y no la neutra.
+// K2b: la fuerza del mapa es DETERMINISTA (`fuerzaDePartido` con el campeón
+// elegido); el azar del mapa vive solo en la p de `finalizarMapa`.
 function jugarConCampeon(state, campeonElegido, rng, logsAcum, entradaExtra = null) {
   const poolParaRendimiento = entradaExtra ? [...state.player.championPool, entradaExtra] : state.player.championPool;
-  const rendimiento = calcularRendimiento(
-    { ...state, player: { ...state.player, campeonDelSplit: campeonElegido, championPool: poolParaRendimiento } },
-    rng
+  const fuerzaPropia = fuerzaDePartido(
+    { ...state, player: { ...state.player, campeonDelSplit: campeonElegido, championPool: poolParaRendimiento } }
   );
-  const fuerzaPropia = fuerzaDelEquipo(state, rendimiento);
 
   // Fase 9R4b: el mapa que cierra la serie tiene su propio cupo y su propio
   // margen. El del mapa normal sigue siendo uno por serie (PLAN.md:80: "que
@@ -223,10 +231,11 @@ function jugarConCampeon(state, campeonElegido, rng, logsAcum, entradaExtra = nu
   return finalizarMapa(state, campeonElegido, fuerzaPropia, 0, rng, logsAcum);
 }
 
+// K2b: el mapa es UNA tirada contra la p declarada (`jugarPartido`, tipo
+// `mapa`): la misma p que mira el draft para decidir si te frena.
 function finalizarMapa(state, campeonElegido, fuerzaPropia, ajusteMinijuego, rng, logsAcum) {
-  const s = BALANCE.serie;
   const fuerzaFinal = fuerzaPropia * (1 + ajusteMinijuego);
-  const gano = gauss(fuerzaFinal, s.ruidoMapa, rng) > gauss(state.serie.rival.fuerza, s.ruidoRivalSerie, rng);
+  const { gano } = jugarPartido(state, fuerzaFinal, state.serie.rival.fuerza, 'mapa', rng);
 
   const marcador = [...state.serie.marcador];
   marcador[gano ? 0 : 1] += 1;
@@ -378,7 +387,14 @@ function concluirRonda(state, rng, logsAcum) {
     rival: state.serie.rival.org,
     marcador: [...marcador],
     gano,
-    mapas: [...st.serie.mapas]
+    mapas: [...st.serie.mapas],
+    // K2a: el formato y las dos fuerzas al empezar la serie (la tuya con el
+    // campeón del split, sin ruido, y la del rival): con esto el instrumento de
+    // `src/dev/simulate.js` mide en el motor cuánto gana el favorito de un Bo5
+    // según el Δ de fuerza. Lectura pura de `state.serie`.
+    formato: state.serie.formato,
+    fuerzaInicial: state.serie.fuerzaInicial,
+    fuerzaRival: state.serie.rival.fuerza
   };
 
   if (ronda === 'internacional') {

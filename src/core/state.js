@@ -199,7 +199,15 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
         cruces: [],
         indice: 0,
         rendimiento: 0,
+        // K2b: el rendimiento base sin acotar del split y lo que tus fechas
+        // dieron contra lo que su p prometía (la forma de `resultadosVacios()`).
+        rendimientoBase: 0,
+        resultadosPropios: { fechas: 0, ganados: 0, esperados: 0, varianza: 0 },
         fuerzaPropia: 0,
+        // K2a: lo que el motor usó para la fuerza del split (nivel del jugador y
+        // nivel medio de los compañeros), expuesto para el instrumento.
+        nivelJugador: 0,
+        nivelCompaneros: 0,
         registrosOtros: {},
         filaPropia: { org: null, ganados: 0, perdidos: 0 },
         racha: 0,
@@ -270,6 +278,9 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       ronda: null,
       rival: { org: null, fuerza: 0 },
       formato: 0,
+      // K2a: tu fuerza al empezar la serie (campeón del split, sin ruido),
+      // expuesta para el instrumento del Bo5.
+      fuerzaInicial: 0,
       marcador: [0, 0],
       mapaActual: 0,
       mapas: [],
@@ -356,6 +367,11 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // K1 (D76): el split del pase, jugado antes de que `roster.js` abra la
       // fila (`{ org, splitsPorTier }`, de `temporada.js`). Si no, `null`.
       splitJugadoSinFila: null,
+      // K2b (revisión): la química del plantel nuevo que `mercado.js` fija al
+      // firmar un traspaso (ese primer split ya se juega con los compañeros
+      // nuevos). `roster.js` la usa tal cual en vez de volver a tirar el dado y
+      // la resetea acá. `null` si no hay una pendiente.
+      sinergiaProyectadaAlFichar: null,
       // Fase 9: splits de pretemporada consecutivos sin una sola oferta. Al
       // llegar a `BALANCE.mercado.splitsSinOfertaParaLibre` te quedás libre
       // — la puerta por la que se termina la carrera (fase 10, todavía no
