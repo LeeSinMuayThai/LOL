@@ -6846,6 +6846,43 @@ medición y una decisión de diseño:
 
 Después, el barrido del supervisor (plan y cA) y el paso 3.
 
+**K4c-S, hecho** (`k4c-s`: `7bc2186`..`3297f2b`).
+- **La prueba decide el contrato.** `BALANCE.serie.probFirmaTryout` vale malo 0,15 · regular 0,55 · bueno 0,95,
+  interpolado. Medido: P(firmar | 0) = 0,10-0,13 contra P(firmar | 1) = 0,94-0,95. Con eso `malas` llega a pro
+  en el 23% de las carreras (antes 60%) y `criterio` sigue en 83%.
+- **El parche como adjunto casi no recorta.** El 81% de los parches toca algún campeón de tu pool.
+- **La PENDIENTE B de las bifurcaciones (4,15 contra [4,5, 7,5])**, por los splits pro que se pierden en la
+  prueba. Se re-basea acá.
+
+**El barrido del plan de serie** (`criterio` 300 × 60, escalando todos los `empuje*` y `desgaste*` de
+`serie.plan`):
+
+| Escala | Δp de plan, mediana | % ≥ 5 pp | Bo5 favorito claro, lado del jugador |
+|---|---|---|---|
+| ×1 | 1,9 pp | 10% | 83,9 ± 2,2 |
+| ×2 | 3,5 | 30% | 89,0 ± 1,8 |
+| **×3** | **5,1** | **52%** | 86,9 ± 2,1 |
+| ×4 | 7,2 | 78% | 89,4 ± 1,8 |
+
+**Se decide:**
+- **Plan ×3.** Los valores quedan:
+
+  | Constante | Valor |
+  |---|---|
+  | `empujeConTodo` | 0,15 |
+  | `desgasteConTodo` | 0,09 |
+  | `empujeGuardado` | 0,09 |
+  | `empujeSorpresa` | 0,15 |
+  | `empujeCharla` | 0,15 |
+
+- **El check del Bo5 del bloque A mide con el plan neutro.** Contesta cada plan con la opción de p mediana. Hoy
+  `criterio` siempre elige el mejor plan, así que el check suma la agencia del plan al nivel: cualquier plan que
+  pese lo saca de 75-85 por construcción. El bloque A controla nivel → resultado. La palanca del plan se mide
+  como palanca (bloque B), y `criterio` contra `azar` en series ganadas lo muestra. No es re-abrir el bloque A:
+  la banda no cambia, cambia lo que se le pide medir. Va con su línea de la regla 17.
+- **El parche se angosta.** Va como adjunto salvo que **mueva a tu main de S/A a B/C o al revés**; eso deja el
+  ~26% como beat. Es lo que importa: el parche que te saca o te devuelve el main.
+
 Después, un worker para las paradas sin nada en juego, con la lista confirmada por K4c-H. Luego el barrido final
 del supervisor y el paso 3.
 
