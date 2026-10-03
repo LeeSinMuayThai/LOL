@@ -3,7 +3,7 @@ import { crearLog } from '../core/log.js';
 import { clamp, clampStat } from '../core/numeros.js';
 import { campeonesAprendibles, pulirCampeon, aprenderCampeones } from '../core/pool.js';
 import { recuperarPorDescanso } from '../core/barras.js';
-import { conPermanencia } from '../core/curvas.js';
+import { conMarcasDeRutina } from '../core/curvas.js';
 import { BALANCE } from '../data/balance.js';
 import { ofrecerRutinas, rutinaPorId, elegirRutinaAutomatica } from '../core/rutinas.js';
 import { opcionDesdeRutina, descripcionDeSorteo, EJE_OFFSEASON } from '../core/rareza.js';
@@ -104,14 +104,15 @@ export function resolver(state, decision, respuesta, rng) {
     if (state.player.techoLesionMecanica != null) {
       stats.mecanica = Math.min(stats.mecanica, state.player.techoLesionMecanica);
     }
-    partes.push(`mecánica +${Math.round(ganancia)}`);
+    // El log dice lo que de verdad subió, ya con el clamp y el techo de lesión (no la ganancia nominal).
+    partes.push(`mecánica +${Math.round(stats.mecanica - state.player.stats.mecanica)}`);
   }
 
   if (reparto.macro > 0) {
     const ganancia = Math.max(0, gauss(p.gananciaMacro * reparto.macro, p.ruidoPractica * reparto.macro, rng));
     stats.macro = clampStat(stats.macro + ganancia);
     stats.shotcalling = clampStat(stats.shotcalling + ganancia / 2);
-    partes.push(`macro +${Math.round(ganancia)}`);
+    partes.push(`macro +${Math.round(stats.macro - state.player.stats.macro)}`);
   }
 
   if (reparto.descansar > 0) {
@@ -120,7 +121,7 @@ export function resolver(state, decision, respuesta, rng) {
     // con el tope, no la ganancia nominal (PLAN.md "K3, tal como quedó": el log dice lo que pasó).
     const antes = stats.mentalidad;
     stats.mentalidad = recuperarPorDescanso(antes, ganancia);
-    partes.push(`mentalidad +${Math.round(stats.mentalidad - antes)}`);
+    partes.push(`consistencia +${Math.round(stats.mentalidad - antes)}`);
   }
 
   // K3-B 2b: la práctica también deja marca. Una fracción de lo que la rutina movió DE VERDAD sobre cada stat de
@@ -128,9 +129,7 @@ export function resolver(state, decision, respuesta, rng) {
   // permanente, con la marca a nombre de la rutina. Lo que un techo de lesión recorta no es una pérdida de la
   // práctica: solo cuentan las ganancias.
   const conStats = { ...state, player: { ...state.player, championPool: aprendido.pool, stats } };
-  const marcado = Object.keys(stats).reduce((st, stat) => conPermanencia(
-    st, stat, Math.max(0, stats[stat] - state.player.stats[stat]), rutina.titulo, BALANCE.atributos.fraccionPermanentePractica
-  ), conStats);
+  const marcado = conMarcasDeRutina(conStats, state.player.stats, rutina.titulo);
 
   return {
     state: marcado,

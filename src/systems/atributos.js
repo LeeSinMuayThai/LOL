@@ -163,7 +163,7 @@ export function aplicar(state, rng) {
   const logs = [crearLog(
     'split',
     `Split ${state.career.currentSplit}: mecánica ${deltaCorto(deltaMecanica)}, `
-    + `macro ${entero(stats.macro)}, mentalidad ${entero(mentalidad)}.`,
+    + `macro ${entero(stats.macro)}, consistencia ${entero(mentalidad)}.`,
     { tecnico: true }
   )];
 

@@ -72,3 +72,15 @@ export function conPermanencia(state, stat, delta, origen, fraccion = BALANCE.at
     career: { ...state.career, registro: registrarMarca(state.career.registro, marca) }
   };
 }
+
+// Las rutinas del jugador (el offseason de `systems/practica.js` y la semana amateur de `systems/amateur.js`)
+// dejan marca por el mismo camino: `state` ya trae los stats de después y `statsAntes` los de antes. Solo cuentan las
+// GANANCIAS reales (ya con el clamp y el techo de lesión): lo que un techo recorta no es una pérdida de la práctica.
+// La fracción es la propia de la práctica (`fraccionPermanentePractica`) y `origen` el título visible de la rutina.
+// `conPermanencia` ignora los stats que no son de curva.
+export function conMarcasDeRutina(state, statsAntes, origen) {
+  return Object.keys(state.player.stats).reduce((st, stat) => conPermanencia(
+    st, stat, Math.max(0, state.player.stats[stat] - (statsAntes[stat] ?? state.player.stats[stat])), origen,
+    BALANCE.atributos.fraccionPermanentePractica
+  ), state);
+}
