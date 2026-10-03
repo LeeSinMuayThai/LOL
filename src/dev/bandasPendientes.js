@@ -68,6 +68,18 @@ export const BANDAS_PENDIENTES = [
     commit: 'K4',
     rebasea: 'K4c',
     porque: 'K4 dejó los minijuegos solo en el clímax y la prensa tras finales/escándalos; K4c re-balancea el banco (incluidas las tres mecánicas que solo tenían momento mapa_cerrado)'
+  },
+  // K5 (integración): el check de D78 de K5-B pide al menos un split de LCK en 60 carreras coreanas con criterio. Es un
+  // evento raro (1 o 2 carreras de 60 llegan a LCK en k5b y en la integración sin K5-A) y el corrimiento de K5-A (el
+  // Mundial ya no tira el rng de los ajenos) lo dejó en 0 en las seeds 1-60 (en las 61-120, 1 carrera con 6 splits).
+  {
+    check: 'K5-B D78: hay splits de LCK y de LPL con criterio (coreanos y chinos con nivel juegan su liga)',
+    bloque: 'C',
+    medido: 'LCK 0 splits, LPL 6 (60 carreras × 60, región elegida; seeds 61-120: LCK 6 splits en 1 carrera, LPL 0)',
+    banda: '> 0 splits de LCK y > 0 de LPL',
+    commit: 'K5',
+    rebasea: 'K5c',
+    porque: 'integración de K5: el corrimiento de K5-A sobre un evento raro (k5b sola: LCK 15, LPL 12; k5c + k5b: LCK 9, LPL 39; las tres: LCK 0, LPL 6); K5c mide cuántos coreanos llegan a LCK y re-basea la banda con una muestra que la sostenga'
   }
 ];
 
