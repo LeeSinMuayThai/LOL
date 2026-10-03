@@ -6801,6 +6801,51 @@ medición y una decisión de diseño:
 - **El bot de Playwright se trabó en las cartas de preparación de la pretemporada** (2030). Puede ser el bot o la
   pantalla. Lo verifica la revisión de navegador de K4c.
 
+**La palanca en su horizonte, medida** (H + F integrados, 24 carreras × 30 réplicas, 747 decisiones). Da
+**22,4%** ponderado, contra el 60% de la meta; contra la carrera, 8,9%, que no baja del piso. Por tipo:
+
+| Parada | Por carrera | Palanca en su horizonte |
+|---|---|---|
+| minijuegos del mapa decisivo | — | 100% (Δp mediana 20 pp) |
+| `amateur:reparto` | — | 100% |
+| 2-2 del Swiss | — | 88% |
+| charla del decisivo | — | 64% |
+| `mercado:oferta` | — | 34% |
+| `temporada:momento` | 20,4 | **15%** (Δp mediana 1,4 pp) |
+| `serie:plan` | 14,2 | **2,7%** (Δp 1,4 pp) |
+| `edadCierre` | 13,9 | 5% |
+| `practica` | 6,4 | 0% |
+| tryouts | — | 0% (ya decidido arriba) |
+
+- **Lo que hunde el promedio** son las paradas frecuentes cuyas opciones casi no se distinguen.
+- **La regla de "sin nada en juego"** (0% en la carrera y en el horizonte, n ≥ 20) solo marca los dos tryouts.
+  Recortar hasta llegar al 60% obligaría a sacar la fecha marcada, el plan de serie y el cierre de año, que son
+  el corazón de K4.
+
+**Se decide que las paradas pesen, en vez de recortarlas:**
+- **El plan de serie**, por constantes. Los `empuje*` y los `desgaste*` de `serie.plan` se barren hasta que el Δp
+  mediano de las decisiones de plan llegue a ~5 pp, sin romper la banda del Bo5 del bloque A (jugador favorito
+  75-85). Para eso el barrido reporta el Δp de cada decisión de plan, desde la `pSerie` declarada por opción.
+- **La fecha marcada, por contenido.** Las opciones de `data/events/partido/*.json` dan todas un efecto `partido`
+  parecido, por ejemplo +0,04/+0,18. Pasan a ser **intercambios**:
+  - en cada evento, la mejor y la peor opción difieren en ≥ 0,10 en el punto medio de su efecto `partido`;
+  - la de menos partido trae una compensación real en otro eje (mentalidad, hype, sinergia o descanso).
+
+  Así es una decisión y no una trampa, y un check lo exige.
+- **`edadCierre` y la práctica** se re-miden después. Si siguen cerca de 0, la ronda siguiente decide si se
+  vuelven más raros o se rehacen.
+- **La meta de palanca se fija en el paso 3 con lo medido** (§K.3: "cada calibración las fija"). Lo que no se
+  logre queda escrito acá, con su número.
+
+**Cómo se ejecuta** (dos workers en paralelo sobre `k4cal-instrumento`):
+- **K4c-S** (motor):
+  - el tryout que decide el contrato;
+  - el parche como adjunto;
+  - el Δp de plan en el barrido.
+- **K4c-M** (dato): el pase de contenido de la fecha marcada, con su check.
+
+Después, el barrido del supervisor (plan y cA) y el paso 3.
+
 Después, un worker para las paradas sin nada en juego, con la lista confirmada por K4c-H. Luego el barrido final
 del supervisor y el paso 3.
 
