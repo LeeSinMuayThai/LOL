@@ -53,4 +53,4 @@
 // escala con el resultado, el mundo amateur renueva contratos NPC, a los 34 no hay mercado, cambiar de línea rearma la
 // tier list. Misma versión (la rama no se mergeó): la huella de la integración (1153610693) queda reemplazada.
 export const VERSION_JUEGO = 'K5';
-export const HUELLA_JUEGO = 885232865;
+export const HUELLA_JUEGO = 1401713881;

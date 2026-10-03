@@ -725,7 +725,7 @@ const FORMAS_CONOCIDAS = {
   // motivo del retiro: `flags.motivoRetiro`, de K4-C2, se fue). Re-registrada en la revisión de K5 (la rama no se
   // mergeó): cambiar de línea deja `meta.tierListAnterior` vacía y las carreras de muestra se corrieron (el hash del
   // Mundial, D78, la renovación NPC amateur), así que cambian las rutas opcionales que la muestra ve.
-  10: '08f929de0f3e'
+  10: '7128c450fa6c'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
