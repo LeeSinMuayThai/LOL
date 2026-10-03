@@ -6,6 +6,7 @@
 // Node (una carrera por proceso, de a N a la vez) y junta los crudos: da EXACTAMENTE los mismos datos que correrlas en serie
 // (cada carrera depende solo de su seed), pero tarda ~1/N. Con `--salida` guarda los crudos y `--analizar=a.json,b.json` los
 // vuelve a analizar sin simular. `--sin=tipo1,tipo2` dice cuánta palanca queda si esas paradas se resuelven solas.
+// K4c-H: la palanca se mide TAMBIÉN en el horizonte de cada parada (serie, partido, split o carrera; ver `HORIZONTE_POR_TIPO`).
 // El reporte trae, además de la tabla de siempre, la palanca POR TIPO DE PARADA (los mismos tipos que `desglosePorTipo` del
 // bloque `ritmo` de simulate.js) y la tabla de recorte: qué queda si se resuelven solas, de a una, las de menos palanca.
 import fs from 'fs';
@@ -20,6 +21,7 @@ import { sistemaPorId } from '../systems/registro.js';
 import { nivelDelJugador } from '../core/ficha.js';
 import { hashCadena } from '../core/numeros.js';
 import { tierMasAltoJugado } from '../core/registro.js';
+import { puntosAbsolutos } from '../core/ranked.js';
 import { puntajeDeCarrera } from '../core/puntaje.js';
 import {
   RESULTADO_MINIJUEGO_BIEN, RESULTADO_MINIJUEGO_MAL, esDecisionDeMinijuego, esDecisionDeMercado
@@ -48,6 +50,13 @@ export const META_REPS_K4C = 30;
 // Umbral mínimo de porcentaje de decisiones con efecto estadísticamente significativo (ver `ALFA_FAMILIA`)
 // para considerar que un tipo de decisión tiene "palanca" real en el final de carrera (PLAN.md §K.5 K0 / AUDITORIA.md §4.3).
 export const UMBRAL_SIGNIFICATIVO = 10;
+
+// K4c-H (PLAN.md "Decisiones del paso 2", 1): la meta nueva es >= 60% de las paradas que sobreviven con palanca EN SU HORIZONTE
+// (ponderado, mismo test corregido), y la fracción contra la carrera, que se sigue reportando, no puede bajar de 8,6%.
+export const META_PALANCA_HORIZONTE_PCT = 60;
+export const PISO_PALANCA_CARRERA_PCT = 8.6;
+// Cuántas decisiones medidas hacen falta (en la carrera y en el horizonte) para proponer que una parada con 0% se resuelva sola.
+export const N_MINIMO_RESOLVER_SOLA = 20;
 
 // Cuántas réplicas válidas por opción hacen falta para analizar una decisión: `min(MIN_REPLICAS_VALIDAS,
 // reps)`. La auditoría (AUDITORIA.md §4.3) exigía 4 con 8 réplicas por opción; con una corrida corta (como
@@ -103,7 +112,9 @@ function corto(st) {
   };
 }
 
-function terminarCarrera(st, rng, splitsHechos, maxSplits) {
+// `seguimiento` (opcional, ver `seguimientoDeHorizonte`) mira cada paso del primer split —el que sigue a la decisión medida—,
+// que es donde se cierran los horizontes de serie, partido y split; el resto de la carrera solo suma al puntaje.
+function terminarCarrera(st, rng, splitsHechos, maxSplits, seguimiento = null) {
   let s = st;
   let n = splitsHechos;
   let corto1 = null;
@@ -111,7 +122,9 @@ function terminarCarrera(st, rng, splitsHechos, maxSplits) {
   while (s.pendiente) {
     const { sistemaId, decision } = s.pendiente;
     const sis = sistemaPorId(sistemaId);
-    s = resolverDecision(s, sis.resolverAuto(s, decision, rng), rng).state;
+    const paso = resolverDecision(s, sis.resolverAuto(s, decision, rng), rng);
+    s = paso.state;
+    seguimiento?.observar(s, paso.logs);
   }
 
   const splitAlDecidir = st.player.splitCount;
@@ -124,6 +137,164 @@ function terminarCarrera(st, rng, splitsHechos, maxSplits) {
   }
 
   return { fin: metricas(s), c1: corto1 ?? corto(s) };
+}
+
+// --- K4c-H: el HORIZONTE de cada parada ---------------------------------------------------------------------------------
+// Contra el puntaje de la carrera una decisión de serie mueve ~0,06 σ aunque decida la serie: con ~80 paradas, cada una pesa
+// poco. Esa medición confunde "esta decisión no importa" con "importa para algo más chico que la carrera". El horizonte es ESE
+// algo más chico: lo que la parada dice que se juega. Cada réplica guarda, además del puntaje final (`fin.score`), la métrica de
+// su horizonte (`hz`), leída del estado en el punto en que el horizonte se cierra, y el test pareado corre sobre las dos.
+//
+//   serie    -> el resultado de ESA serie (ganada = 1, perdida = 0): el primer log `postSerie` después de decidir; en el Swiss,
+//               el partido del 2-2 (avanzás = 1): el primer log con `etapa: 'swiss'` y `resultado`.
+//   partido  -> el resultado del partido de la fecha marcada (ganado = 1).
+//   split    -> en pro, la posición final del split en la tabla (`career.posicion` cuando el pipeline del split termina);
+//               en el amateur, el LP absoluto de la escalera (`puntosAbsolutos(player.ranked)`) al cierre del periodo.
+//   carrera  -> el puntaje; es el único horizonte que no guarda `hz` (es `fin.score`).
+//
+// Las métricas binarias van con la MISMA t pareada sobre la lista de diferencias 0/±1 (`testMaximoT`). Es una buena aproximación
+// del test de McNemar (t² ≈ (b−c)²/(b+c), con b y c las réplicas en que gana una opción y la otra) y, a diferencia de un test
+// exacto, entra en el mismo Bonferroni de la familia y en el mismo "n mínimo de réplicas" que el puntaje. Con 30 réplicas la
+// aproximación es buena; con pocas es conservadora (b = 6, c = 0 en n = 30 da t = 2,69 contra 2,05; el exacto da p = 0,03).
+export const HORIZONTES = ['serie', 'partido', 'split', 'carrera'];
+export const HORIZONTE_POR_DEFECTO = 'carrera';
+// Las unidades de la métrica de cada réplica: de ellas depende la escala (σ) de la palanca en el horizonte.
+export const UNIDAD_PUNTAJE = 'puntaje';
+export const UNIDAD_RESULTADO = 'resultado';
+export const UNIDAD_POSICION = 'posicion';
+export const UNIDAD_ESCALERA = 'escalera';
+// El único momento de minijuego de la serie que ocurre DESPUÉS de cerrada la serie (la rueda de prensa tras una final): la
+// serie ya no se puede mover, así que su horizonte no es la serie.
+const MOMENTO_POST_SERIE = 'post_serie';
+
+// El horizonte de cada tipo de parada (los tipos de `desglosePorTipo`, ver `tipoDeParada`), en UN solo lugar. La lista es
+// explícita —`validate.js` exige que cubra todos los tipos que existen— y el default (`carrera`) es para lo que aparezca sin
+// clasificar. `carrera` son las paradas cuya palanca es el rumbo de la carrera: el mercado y la prueba del tryout, el cierre de
+// año, el retiro, las ofertas y la salida del amateur, la salud y el servicio.
+export const HORIZONTE_POR_TIPO = {
+  'serie:plan': 'serie',
+  'serie:decisivo': 'serie',
+  'serie:minijuego': 'serie',
+  'internacional:swiss': 'serie',
+  'internacional:plan': 'serie',
+  'internacional:decisivo': 'serie',
+  'internacional:minijuego': 'serie',
+  'temporada:momento': 'partido',
+  'practica:practica': 'split',
+  'eventos:x': 'split',
+  'eventos:minijuego': 'split',
+  'amateur:reparto': 'split',
+  'amateur:nocturno': 'split',
+  'amateur:oferta': 'carrera',
+  'amateur:negociacion': 'carrera',
+  'amateur:salida_amateur': 'carrera',
+  'amateur:minijuego': 'carrera',
+  'mercado:oferta': 'carrera',
+  'mercado:minijuego': 'carrera',
+  'mercado:fin_mercado': 'carrera',
+  'mercado:traspaso': 'carrera',
+  'edadCierre:x': 'carrera',
+  'retiro:retiro_declive': 'carrera',
+  'retiro:retiro_vuelta': 'carrera',
+  'retiro:evento_ventana': 'carrera',
+  'salud:lesion_grave': 'carrera',
+  'servicioMilitar:servicio_te_vas': 'carrera',
+  'servicioMilitar:servicio_adentro': 'carrera',
+  'servicioMilitar:servicio_volver': 'carrera'
+};
+
+// `tipo` puede venir con la categoría de los eventos (`eventos:x:rutina`): se normaliza como `desglosePorTipo`.
+export function horizonteDeTipo(tipo) {
+  return HORIZONTE_POR_TIPO[tipoDeParada(tipo)] ?? HORIZONTE_POR_DEFECTO;
+}
+
+// El horizonte de UNA decisión: el de su tipo, salvo dos excepciones que se ven en la decisión y no en el nombre del tipo.
+// Una bifurcación (un evento con `bifurcacion`) cambia el rumbo de la carrera, no el split. Y la rueda de prensa de después de una
+// final (`serie:minijuego` en `post_serie`) llega con la serie ya cerrada: lo que mueve son stats que se cobran más adelante.
+export function horizonteDeDecision(tipo, decision) {
+  if (decision?.datos?.evento?.bifurcacion) {
+    return 'carrera';
+  }
+  if (esDecisionDeMinijuego(decision) && decision.datos?.momento === MOMENTO_POST_SERIE) {
+    return 'carrera';
+  }
+  return horizonteDeTipo(tipo);
+}
+
+// La unidad de la métrica del horizonte. En `split` depende de la fase al decidir: el amateur no tiene tabla de posiciones.
+export function unidadDeHorizonte(horizonte, fase) {
+  if (horizonte === 'serie' || horizonte === 'partido') {
+    return UNIDAD_RESULTADO;
+  }
+  if (horizonte === 'split') {
+    return fase === 'amateur' ? UNIDAD_ESCALERA : UNIDAD_POSICION;
+  }
+  return UNIDAD_PUNTAJE;
+}
+
+// El resultado del partido de la fecha marcada, leído de su log (`systems/temporada.js`, `resolverFechaMarcada`): el log lleva
+// `pSinMomento` y la frase "… Ganan. Quedan Nº de M" o "… Pierden. Quedan …". El log NO trae el resultado como campo (la UI usa el
+// signo de `racha`, que acá no sirve: la carrera sigue y juega las fechas silenciosas antes de que lo leamos). `null` si el log no es ese.
+const RESULTADO_DE_PARTIDO_MARCADO = / (Ganan|Pierden)\. Quedan /;
+export function resultadoDelPartidoMarcado(log) {
+  if (log?.type !== 'temporada' || typeof log.pSinMomento !== 'number') {
+    return null;
+  }
+  const coincidencia = RESULTADO_DE_PARTIDO_MARCADO.exec(log.message ?? '');
+  return coincidencia ? (coincidencia[1] === 'Ganan' ? 1 : 0) : null;
+}
+
+// La métrica del horizonte `split`, leída del estado cuando el pipeline del split termina. `null` si no se puede leer.
+function metricaDeSplit(estado, unidad) {
+  if (unidad === UNIDAD_ESCALERA) {
+    return estado.player?.ranked ? puntosAbsolutos(estado.player.ranked) : null;
+  }
+  return estado.career?.posicion ?? null;
+}
+
+// El seguimiento del horizonte de UNA réplica: se lo alimenta con cada paso de la carrera (el estado y los logs que ese paso
+// emitió, en orden) y se queda con el valor del PRIMER momento en que el horizonte se cierra; después ya no cambia.
+// `valor()` es `null` si nunca se cerró (la carrera se cortó antes) y la réplica queda fuera del test del horizonte.
+export function seguimientoDeHorizonte(horizonte, unidad = UNIDAD_PUNTAJE) {
+  let valor;
+  const cerrar = (v) => {
+    if (valor === undefined) {
+      valor = v;
+    }
+  };
+  return {
+    observar(estado, logs = []) {
+      if (valor !== undefined || horizonte === 'carrera') {
+        return;
+      }
+      if (horizonte === 'serie') {
+        for (const log of logs) {
+          if (log.postSerie === true) {
+            cerrar(log.gano ? 1 : 0);
+            return;
+          }
+          if (log.etapa === 'swiss' && (log.resultado === 'W' || log.resultado === 'L')) {
+            cerrar(log.resultado === 'W' ? 1 : 0);
+            return;
+          }
+        }
+      } else if (horizonte === 'partido') {
+        for (const log of logs) {
+          const resultado = resultadoDelPartidoMarcado(log);
+          if (resultado !== null) {
+            cerrar(resultado);
+            return;
+          }
+        }
+      } else if (horizonte === 'split' && !estado.pendiente) {
+        // El split se cierra cuando el pipeline no deja ninguna parada pendiente.
+        cerrar(metricaDeSplit(estado, unidad));
+      }
+    },
+    valor() {
+      return valor ?? null;
+    }
+  };
 }
 
 function opcionesDe(decision) {
@@ -385,7 +556,13 @@ export function validarParametrosAgencia({ carreras, reps, cuota, splits }) {
 // CUALQUIER PUNTO (al responder la decisión o mientras la carrera seguía sola): una réplica rota no tira abajo la
 // medición. Si se pasa `fallos` (un arreglo), cada réplica rota se anota ahí con su seed, decisión, opción, réplica y
 // la primera línea del error. `terminar` es la carrera que sigue sola (inyectable para probar el manejo del error).
-export function replicasDeDecision(st, ops, { seed, splitCount, tipo, reps, splits, fallos = null, terminar = terminarCarrera }) {
+//
+// K4c-H: con un `horizonte` distinto de `carrera` cada réplica trae además `hz`, la métrica de ese horizonte (ver
+// `seguimientoDeHorizonte`; `null` si el horizonte no se cerró). El seguimiento ve el primer paso (la respuesta forzada) y,
+// pasado a `terminar` como 5º argumento, los pasos del resto del split.
+export function replicasDeDecision(st, ops, {
+  seed, splitCount, tipo, reps, splits, fallos = null, terminar = terminarCarrera, horizonte = HORIZONTE_POR_DEFECTO, unidad = UNIDAD_PUNTAJE
+}) {
   const porOpcion = ops.map(() => []);
   for (let r = 0; r < Number(reps); r += 1) {
     ops.forEach((op, i) => {
@@ -393,8 +570,11 @@ export function replicasDeDecision(st, ops, { seed, splitCount, tipo, reps, spli
       const clon = structuredClone(st);
       const { _l, ...resp } = op;
       try {
-        const s2 = resolverDecision(clon, resp, rr).state;
-        porOpcion[i].push(terminar(s2, rr, splitCount, Number(splits)));
+        const seguimiento = seguimientoDeHorizonte(horizonte, unidad);
+        const primero = resolverDecision(clon, resp, rr);
+        seguimiento.observar(primero.state, primero.logs);
+        const resultado = terminar(primero.state, rr, splitCount, Number(splits), seguimiento);
+        porOpcion[i].push(horizonte === 'carrera' ? resultado : { ...resultado, hz: seguimiento.valor() });
       } catch (error) {
         porOpcion[i].push(null);
         if (fallos) {
@@ -454,8 +634,10 @@ export function medirAgencia({
         const ops = opcionesDe(decision);
         if (ops.length >= 2 && (usados[tipo] ?? 0) < Number(cuota)) {
           usados[tipo] = (usados[tipo] ?? 0) + 1;
-          const porOpcion = replicasDeDecision(st, ops, { seed, splitCount, tipo, reps, splits, fallos, terminar });
-          resultados.push({ seed, split: splitCount, tipo, labels: ops.map((o) => o._l), porOpcion });
+          const horizonte = horizonteDeDecision(tipo, decision);
+          const unidad = unidadDeHorizonte(horizonte, st.phase);
+          const porOpcion = replicasDeDecision(st, ops, { seed, splitCount, tipo, reps, splits, fallos, terminar, horizonte, unidad });
+          resultados.push({ seed, split: splitCount, tipo, hor: horizonte, un: unidad, labels: ops.map((o) => o._l), porOpcion });
         }
 
         const sis = sistemaPorId(sistemaId);
@@ -509,6 +691,25 @@ export function palancaPorTipoDeParada(porParada, frecuenciasTipo, carreras, div
       const decisiones = porParada[tipo] ?? [];
       const veces = frecuencia[tipo] ?? 0;
       const fraccionSignificativa = decisiones.length > 0 ? mean(decisiones.map((x) => (x.sig ? 1 : 0))) : 0;
+
+      // K4c-H: lo mismo en el HORIZONTE de la parada. Una decisión cuya métrica de horizonte no se pudo medir (`sigH` null: crudos
+      // sin `hz`, o un horizonte que no se cerró) no entra en esta fracción; el tipo cuenta con las que sí.
+      const enHorizonte = decisiones.filter((x) => x.sigH !== null && x.sigH !== undefined);
+      const fraccionSignificativaH = enHorizonte.length > 0 ? mean(enHorizonte.map((x) => (x.sigH ? 1 : 0))) : 0;
+      const cuentaHorizontes = {};
+      for (const x of decisiones) {
+        const h = x.hor ?? horizonteDeTipo(tipo);
+        cuentaHorizontes[h] = (cuentaHorizontes[h] ?? 0) + 1;
+      }
+      // El horizonte del tipo es el más común entre sus decisiones (a igual cuenta, el más corto); sin decisiones, el del mapa.
+      const horizonte = decisiones.length > 0
+        ? HORIZONTES.reduce((mejor, h) => ((cuentaHorizontes[h] ?? 0) > (cuentaHorizontes[mejor] ?? 0) ? h : mejor), HORIZONTES[0])
+        : horizonteDeTipo(tipo);
+      // La diferencia mediana entre opciones en las unidades de la métrica (puntos porcentuales para un resultado) solo tiene
+      // sentido si todas las decisiones medidas comparten unidad.
+      const unidades = [...new Set(enHorizonte.map((x) => x.un))];
+      const unidadH = unidades.length === 1 ? unidades[0] : null;
+      const factorUnidad = unidadH === UNIDAD_RESULTADO ? 100 : 1;
       return {
         tipo,
         frecuencia: veces,
@@ -517,7 +718,21 @@ export function palancaPorTipoDeParada(porParada, frecuenciasTipo, carreras, div
         fraccionSignificativa,
         pctSignificativo: Number((100 * fraccionSignificativa).toFixed(1)),
         palancaMediana: decisiones.length > 0 ? Number((med(decisiones.map((x) => x.L)) ?? 0).toFixed(2)) : null,
-        aportePct: Number(((veces * fraccionSignificativa / divisor) * 100).toFixed(1))
+        aportePct: Number(((veces * fraccionSignificativa / divisor) * 100).toFixed(1)),
+        horizonte,
+        horizontes: Object.keys(cuentaHorizontes).length > 1 ? cuentaHorizontes : null,
+        nH: enHorizonte.length,
+        fraccionSignificativaH,
+        pctSignificativoH: Number((100 * fraccionSignificativaH).toFixed(1)),
+        palancaMedianaH: enHorizonte.length > 0 ? Number((med(enHorizonte.map((x) => x.LH)) ?? 0).toFixed(2)) : null,
+        unidadH,
+        deltaMedianoH: enHorizonte.length > 0 && unidadH ? Number((factorUnidad * (med(enHorizonte.map((x) => x.spreadH)) ?? 0)).toFixed(2)) : null,
+        aporteHPct: Number(((veces * fraccionSignificativaH / divisor) * 100).toFixed(1)),
+        // Candidata a resolverse sola (PLAN K4c, decisiones del paso 2): 0% de palanca en la carrera Y en su horizonte, con
+        // al menos `N_MINIMO_RESOLVER_SOLA` decisiones medidas en cada uno.
+        aSolas: veces > 0
+          && Math.min(decisiones.length, enHorizonte.length) >= N_MINIMO_RESOLVER_SOLA
+          && fraccionSignificativa === 0 && fraccionSignificativaH === 0
       };
     })
     .sort((a, b) => b.frecuencia - a.frecuencia);
@@ -525,11 +740,13 @@ export function palancaPorTipoDeParada(porParada, frecuenciasTipo, carreras, div
 
 // Qué queda si los tipos de `quitar` dejan de parar (se resuelven solos): las paradas que sobreviven y la fracción
 // ponderada de ellas que tiene palanca (la meta de §K.0c es >= 60%). `paradas` = `palancaPorTipoDeParada`. Puro.
-export function palancaSobreLasQueQuedan(paradas, quitar = [], carreras = null) {
+// K4c-H: con `enHorizonte` la palanca de cada tipo es la de su horizonte (`fraccionSignificativaH`), no la de la carrera.
+export function palancaSobreLasQueQuedan(paradas, quitar = [], carreras = null, enHorizonte = false) {
+  const campo = enHorizonte ? 'fraccionSignificativaH' : 'fraccionSignificativa';
   const fuera = new Set(quitar);
   const quedan = paradas.filter((parada) => !fuera.has(parada.tipo));
   const total = quedan.reduce((suma, parada) => suma + parada.frecuencia, 0);
-  const conPalanca = quedan.reduce((suma, parada) => suma + parada.frecuencia * parada.fraccionSignificativa, 0);
+  const conPalanca = quedan.reduce((suma, parada) => suma + parada.frecuencia * parada[campo], 0);
   return {
     paradas: total,
     paradasPorCarrera: carreras ? Number((total / carreras).toFixed(1)) : null,
@@ -539,18 +756,20 @@ export function palancaSobreLasQueQuedan(paradas, quitar = [], carreras = null) 
 
 // La tabla para decidir el recorte: se resuelven solos, de a uno, los tipos de MENOS palanca (a igual palanca, el más
 // frecuente primero), y cada fila dice qué queda. Los tipos con pocas decisiones medidas (`n`) tienen una fracción poco firme.
-export function tablaDeRecorte(paradas, carreras = null) {
+// K4c-H: con `enHorizonte` el orden y las columnas son los del horizonte de cada parada (`fraccionSignificativaH`, `nH`).
+export function tablaDeRecorte(paradas, carreras = null, enHorizonte = false) {
+  const campo = enHorizonte ? 'fraccionSignificativaH' : 'fraccionSignificativa';
   const orden = paradas
     .filter((parada) => parada.frecuencia > 0)
-    .sort((a, b) => a.fraccionSignificativa - b.fraccionSignificativa || b.frecuencia - a.frecuencia);
+    .sort((a, b) => a[campo] - b[campo] || b.frecuencia - a.frecuencia);
   const quitados = [];
   return orden.map((parada) => {
     quitados.push(parada.tipo);
     return {
       quitando: parada.tipo,
-      pctSignificativo: parada.pctSignificativo,
-      n: parada.n,
-      ...palancaSobreLasQueQuedan(paradas, quitados, carreras)
+      pctSignificativo: enHorizonte ? parada.pctSignificativoH : parada.pctSignificativo,
+      n: enHorizonte ? parada.nH : parada.n,
+      ...palancaSobreLasQueQuedan(paradas, quitados, carreras, enHorizonte)
     };
   });
 }
@@ -601,6 +820,25 @@ export function analizarDatosAgencia(
   const porTipo = {};
   const porParada = {};
 
+  // K4c-H: el horizonte de cada decisión (los crudos nuevos lo traen en `hor` y `un`; a los viejos se les pone el del mapa, sin
+  // `hz`: su horizonte queda sin medir) y la σ de la métrica de cada unidad, sobre todas las réplicas de esa unidad. Es la escala
+  // de la palanca en el horizonte, como `sPop` lo es para el puntaje.
+  const horizonteDeFila = (d) => d.hor ?? horizonteDeTipo(d.tipo);
+  const unidadDeFila = (d) => d.un ?? unidadDeHorizonte(horizonteDeFila(d), null);
+  const valoresPorUnidad = {};
+  for (const d of resultados) {
+    if (horizonteDeFila(d) === 'carrera') {
+      continue;
+    }
+    const un = unidadDeFila(d);
+    for (const x of d.porOpcion.flat()) {
+      if (x && typeof x.hz === 'number') {
+        (valoresPorUnidad[un] ??= []).push(x.hz);
+      }
+    }
+  }
+  const sigmaDeUnidad = (un) => (un === UNIDAD_PUNTAJE ? sPop : (sd(valoresPorUnidad[un] ?? []) || 1));
+
   for (const d of resultados) {
     const vals = d.porOpcion.map((repsArr) => repsArr.filter(Boolean));
     const repsPedidas = d.porOpcion[0]?.length ?? MIN_REPLICAS_VALIDAS;
@@ -623,9 +861,30 @@ export function analizarDatosAgencia(
       return Math.max(...m) - Math.min(...m);
     };
 
+    // K4c-H: el test pareado sobre la métrica del horizonte, con las mismas réplicas válidas y el mismo mínimo que el del puntaje.
+    // `carrera` es el puntaje. Si el horizonte no se cerró en suficientes réplicas (o los crudos no traen `hz`), `sigH` queda null.
+    const hor = horizonteDeFila(d);
+    const un = unidadDeFila(d);
+    let sigH = null;
+    let spreadH = null;
+    if (hor === 'carrera') {
+      sigH = sig;
+      spreadH = spread;
+    } else {
+      const hz = d.porOpcion.map((repsArr) => repsArr.map((x) => (x && typeof x.hz === 'number' ? x.hz : null)));
+      const testH = testMaximoT(hz);
+      if (testH.n >= Math.min(MIN_REPLICAS_VALIDAS, repsPedidas)) {
+        const mediasH = hz.map((h) => mean(h.filter((v, r) => hz.every((otra) => otra[r] !== null && otra[r] !== undefined))));
+        sigH = testH.sig;
+        spreadH = Math.max(...mediasH) - Math.min(...mediasH);
+      }
+    }
+
     const parada = tipoDeParada(d.tipo);
     porParada[parada] = porParada[parada] ?? [];
-    porParada[parada].push({ sig, L: spread / sPop });
+    porParada[parada].push({
+      sig, L: spread / sPop, hor, un, sigH, spreadH, LH: spreadH === null ? null : spreadH / sigmaDeUnidad(un)
+    });
 
     const tipoNormalizado = d.tipo.replace(/:x:/, ':').replace(/^edadCierre:.*/, 'edadCierre:*');
     const clave = tipoNormalizado.startsWith('eventos:') ? 'eventos:*' : tipoNormalizado;
@@ -702,6 +961,10 @@ export function analizarDatosAgencia(
     // de paradas, sumando los tipos (`pctInterrupcionesConPalanca` agrupa los eventos de otra forma: difiere en décimas).
     porTipoDeParada,
     pctPalancaPorTipoDeParada: Number(((porTipoDeParada.reduce((suma, fila) => suma + fila.frecuencia * fila.fraccionSignificativa, 0) / divisor) * 100).toFixed(1)),
+    // K4c-H: la misma suma con la palanca de cada tipo en SU horizonte (la meta nueva, `META_PALANCA_HORIZONTE_PCT`), y cuántas
+    // decisiones quedaron sin horizonte medido (crudos viejos, o un horizonte que no se cerró en las réplicas mínimas).
+    pctPalancaEnHorizonte: Number(((porTipoDeParada.reduce((suma, fila) => suma + fila.frecuencia * fila.fraccionSignificativaH, 0) / divisor) * 100).toFixed(1)),
+    decisionesSinHorizonteMedido: porTipoDeParada.reduce((suma, fila) => suma + (fila.n - fila.nH), 0),
     filas: filas.map(([tipo, v]) => ({
       tipo,
       n: v.length,
@@ -912,21 +1175,38 @@ AVISO: ${datosCrudos.fallos.length} fallo(s) en la medición (las réplicas rota
   // K4c (paso 1): por tipo de parada (los tipos de `desglosePorTipo`). Las frecuencias son las de las carreras medidas, que
   // juegan con el criterio de cada sistema (`resolverAuto`) y no con `criterio`: sirven para ponderar, no para reemplazar
   // el desglose de simulate.js.
+  // K4c-H: cada tipo se mide contra la carrera Y en su horizonte (ver `HORIZONTE_POR_TIPO`): serie, partido, split o carrera.
   const carrerasMedidas = analisis.carreras;
+  const metaH = analisis.pctPalancaEnHorizonte >= META_PALANCA_HORIZONTE_PCT ? 'cumple' : 'no llega';
+  const pisoC = analisis.pctPalancaPorTipoDeParada >= PISO_PALANCA_CARRERA_PCT ? 'no bajó' : 'BAJÓ';
   console.log(`\n=== PALANCA POR TIPO DE PARADA (${carrerasMedidas ?? '?'} carreras, ${analisis.totalDecisionesMedidas} decisiones medidas) ===`);
-  console.log(`Fracción ponderada con palanca, sumando los tipos: ${analisis.pctPalancaPorTipoDeParada}% de las paradas\n`);
-  console.log('tipo | paradas por carrera | n medidas | % significativo | palanca mediana (σ) | aporte (pp del total)');
-  console.log('-----|---------------------|-----------|-----------------|---------------------|----------------------');
-  for (const f of analisis.porTipoDeParada) {
-    console.log(`${f.tipo} | ${f.porCarrera ?? '?'} | ${f.n} | ${f.n > 0 ? `${f.pctSignificativo}%` : 'sin medir'} | ${f.palancaMediana ?? '-'} | ${f.aportePct}`);
+  console.log(`Fracción ponderada con palanca EN SU HORIZONTE: ${analisis.pctPalancaEnHorizonte}% de las paradas (meta >= ${META_PALANCA_HORIZONTE_PCT}%: ${metaH})`);
+  console.log(`Fracción ponderada con palanca contra la carrera: ${analisis.pctPalancaPorTipoDeParada}% (piso ${PISO_PALANCA_CARRERA_PCT}%: ${pisoC})`);
+  if (analisis.decisionesSinHorizonteMedido > 0) {
+    console.log(`AVISO: ${analisis.decisionesSinHorizonteMedido} decision(es) sin horizonte medido (crudos sin 'hz', o el horizonte no se cerró en las réplicas mínimas): no entran en la columna del horizonte.`);
   }
+  console.log('');
+  console.log('tipo | horizonte | paradas por carrera | n | % sig. carrera | mediana carrera (σ) | nH | % sig. horizonte | mediana horizonte (σ) | Δ mediano (unidad) | aporte carrera / horizonte (pp) | a solas');
+  console.log('-----|-----------|---------------------|---|----------------|---------------------|----|------------------|-----------------------|--------------------|---------------------------------|--------');
+  for (const f of analisis.porTipoDeParada) {
+    const horizonte = f.horizontes ? `${f.horizonte} (${Object.entries(f.horizontes).map(([h, c]) => `${h} ${c}`).join(', ')})` : f.horizonte;
+    const delta = f.deltaMedianoH === null ? '-' : `${f.deltaMedianoH} ${f.unidadH === UNIDAD_RESULTADO ? 'pp' : f.unidadH}`;
+    console.log([
+      f.tipo, horizonte, f.porCarrera ?? '?', f.n, f.n > 0 ? `${f.pctSignificativo}%` : 'sin medir', f.palancaMediana ?? '-',
+      f.nH, f.nH > 0 ? `${f.pctSignificativoH}%` : 'sin medir', f.palancaMedianaH ?? '-', delta, `${f.aportePct} / ${f.aporteHPct}`, f.aSolas ? 'SÍ' : ''
+    ].join(' | '));
+  }
+  const candidatas = analisis.porTipoDeParada.filter((f) => f.aSolas).map((f) => f.tipo);
+  console.log(`\nParadas sin nada en juego (0% en la carrera y en su horizonte, >= ${N_MINIMO_RESOLVER_SOLA} decisiones medidas): ${candidatas.length > 0 ? candidatas.join(', ') : 'ninguna'}`);
 
   const paradasPorCarrera = (analisis.porTipoDeParada.reduce((suma, f) => suma + f.frecuencia, 0) / (carrerasMedidas || 1)).toFixed(1);
-  console.log(`\n=== TABLA DE RECORTE: se resuelven solas, de a una, las paradas de menos palanca (hoy: ${paradasPorCarrera} paradas por carrera) ===`);
-  console.log('se quita | su % significativo | n | paradas por carrera que quedan | % con palanca de las que quedan');
-  console.log('---------|--------------------|---|--------------------------------|---------------------------------');
-  for (const fila of tablaDeRecorte(analisis.porTipoDeParada, carrerasMedidas)) {
-    console.log(`${fila.quitando} | ${fila.n > 0 ? `${fila.pctSignificativo}%` : 'sin medir'} | ${fila.n} | ${fila.paradasPorCarrera ?? '?'} | ${fila.pctPalanca ?? '-'}%`);
+  for (const enHorizonte of [true, false]) {
+    console.log(`\n=== TABLA DE RECORTE ${enHorizonte ? 'EN EL HORIZONTE' : 'CONTRA LA CARRERA'}: se resuelven solas, de a una, las paradas de menos palanca (hoy: ${paradasPorCarrera} paradas por carrera) ===`);
+    console.log('se quita | su % significativo | n | paradas por carrera que quedan | % con palanca de las que quedan');
+    console.log('---------|--------------------|---|--------------------------------|---------------------------------');
+    for (const fila of tablaDeRecorte(analisis.porTipoDeParada, carrerasMedidas, enHorizonte)) {
+      console.log(`${fila.quitando} | ${fila.n > 0 ? `${fila.pctSignificativo}%` : 'sin medir'} | ${fila.n} | ${fila.paradasPorCarrera ?? '?'} | ${fila.pctPalanca ?? '-'}%`);
+    }
   }
 
   if (sin.length > 0) {
@@ -935,7 +1215,8 @@ AVISO: ${datosCrudos.fallos.length} fallo(s) en la medición (las réplicas rota
       console.error(`--sin: tipos que no aparecen en la medición: ${desconocidos.join(', ')}`);
     }
     const queda = palancaSobreLasQueQuedan(analisis.porTipoDeParada, sin, carrerasMedidas);
-    console.log(`\nSin ${sin.join(', ')}: quedan ${queda.paradasPorCarrera ?? '?'} paradas por carrera y ${queda.pctPalanca ?? '-'}% tiene palanca.`);
+    const quedaH = palancaSobreLasQueQuedan(analisis.porTipoDeParada, sin, carrerasMedidas, true);
+    console.log(`\nSin ${sin.join(', ')}: quedan ${queda.paradasPorCarrera ?? '?'} paradas por carrera; ${quedaH.pctPalanca ?? '-'}% tiene palanca en su horizonte y ${queda.pctPalanca ?? '-'}% contra la carrera.`);
   }
 }
 
