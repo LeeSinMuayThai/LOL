@@ -391,6 +391,9 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // — la puerta por la que se termina la carrera (fase 10, todavía no
       // construida).
       splitsSinOfertaConsecutivos: 0,
+      // K4-D: el `splitCount` de la última pretemporada cuya preparación (las rutinas de offseason) ya se resolvió. -1 =
+      // ninguna todavía. Lo escribe `systems/practica.js` y evita que la pretemporada frene dos veces.
+      preparacionDeSplit: -1,
       // Fase 9: "llamar al representante" (PLAN.md §9.6) rebaraja la mano de
       // ofertas una única vez en toda la carrera.
       llamadaRepresentante: false,

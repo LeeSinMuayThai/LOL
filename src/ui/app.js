@@ -59,6 +59,8 @@ export function iniciar() {
   const mercadoMundo = document.getElementById('mercadoMundo');
   const mercadoRepresentante = document.getElementById('mercadoRepresentante');
   const mercadoEsperar = document.getElementById('mercadoEsperar');
+  const mercadoCol = document.getElementById('mercadoCol');
+  const mercadoPrep = document.getElementById('mercadoPrep');
   const tarjetaPanel = document.getElementById('tarjeta');
   const seedInput = document.getElementById('seedInput');
   const continuarBtn = document.getElementById('continuarBtn');
@@ -99,7 +101,7 @@ export function iniciar() {
   // la pantalla de ofertas).
   const carreraElements = { fichaContainer, logList };
   const decisionElements = { decisionPanel, decisionTitle, decisionDesc, decisionOptions };
-  const mercadoElements = { mercadoPanel, mercadoTitle, mercadoDesc, mercadoVos, mercadoGrid, mercadoMundo, mercadoRepresentante, mercadoEsperar };
+  const mercadoElements = { mercadoPanel, mercadoTitle, mercadoDesc, mercadoVos, mercadoGrid, mercadoMundo, mercadoRepresentante, mercadoEsperar, mercadoCol, mercadoPrep };
 
   let modulos = null;
   let ui = null;
@@ -263,15 +265,19 @@ export function iniciar() {
 
     minijuegoPanel.hidden = true;
 
-    if (decision.presentacion === 'mercado') {
+    // K4-D: la pretemporada es una sola parada. Con mercado ('mercado') o solo con la preparación ('pretemporada'), va a
+    // la misma pantalla; `extra` es la rutina elegida, que viaja con cada respuesta.
+    if (decision.presentacion === 'mercado' || decision.presentacion === 'pretemporada') {
       decisionPanel.hidden = true;
       ui.mostrarMercadoEnPantalla(
         mercadoElements, decision, responder,
-        () => responder({ representante: true }),
+        (extra) => responder({ representante: true, ...extra }),
         responder,
-        () => responder({ negociar: 'esperar' })
+        (extra) => responder({ negociar: 'esperar', ...extra })
       );
-      ui.renderLowerThird(summary, metaPill, estadoActual, { modo: 'mercado', decision });
+      ui.renderLowerThird(summary, metaPill, estadoActual, {
+        modo: decision.presentacion === 'pretemporada' ? 'decision' : 'mercado', decision
+      });
       return;
     }
 

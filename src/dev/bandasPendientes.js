@@ -35,6 +35,17 @@ export const BANDAS_PENDIENTES = [
   // más draft mapa a mapa; regla 17, ver validate.js) y con él su entrada de acá.
   // K4-B: el rival también quema campeones con el Fearless (su fuerza de mapa se degrada como la tuya) y el Bo5 conjunto
   // volvió a su banda (criterio 800 × 60): la entrada "K3c meta Bo5 favorito claro (conjunto) ∈ [75, 85]" se borró.
+  // K4-D movió el stream (la preparación del receso se sortea al empezar el año, en la parada del mercado): el silencio de
+  // una franquicia, un evento de ~1 en 1500 carreras, apareció una vez. La invariante no cambió; la muestra sí.
+  {
+    check: 'El mercado lee tu nivel: el silencio es para los que están por debajo, no para una franquicia (fase 9R0e)',
+    bloque: 'B',
+    medido: '1 pretemporada de un jugador claramente por encima de su liga sin ofertas (1500 carreras, check)',
+    banda: 'tope 0 pretemporadas sin ofertas por encima de la liga',
+    commit: 'K4',
+    rebasea: 'K4c',
+    porque: 'corrimiento del stream de K4-D (T1): evento raro, la muestra cambió; K4c lo re-mide con el stream final'
+  }
 ];
 
 // Custodio 1: las entradas cuyo check pasó en esta corrida. `resultados` es un Map nombre → 'ok' | 'fail' |

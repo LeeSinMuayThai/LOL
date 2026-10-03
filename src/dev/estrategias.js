@@ -1,6 +1,7 @@
 import { BALANCE } from '../data/balance.js';
 import { usaLaCharlaEnAuto } from '../systems/serie.js';
 import { hashCadena } from '../core/numeros.js';
+import { elegirRutinaAuto } from '../systems/practica.js';
 
 // Constantes de medición para la heurística de los bots (PLAN.md §K.5 K0).
 // Los pesos reflejan la magnitud declarada en la previa ('baja', 'media', 'alta').
@@ -141,12 +142,24 @@ export function esDecisionConPrevia(decision) {
     && decision.opciones.some((opcion) => opcion.previa !== undefined || opcion.riesgo !== undefined);
 }
 
-function mejorRutina(decision, puntuar) {
-  const elegida = decision.datos.rutinas.reduce((mejor, rutina) => (
-    puntuar(rutina) > puntuar(mejor) ? rutina : mejor
-  ));
-  return { opcionId: elegida.id };
+function rutinaConMejorPuntaje(rutinas, puntuar) {
+  return rutinas.reduce((mejor, rutina) => (puntuar(rutina) > puntuar(mejor) ? rutina : mejor));
 }
+
+function mejorRutina(decision, puntuar) {
+  return { opcionId: rutinaConMejorPuntaje(decision.datos.rutinas, puntuar).id };
+}
+
+// K4-D: la parada de la pretemporada trae, además de las ofertas, la preparación del receso (`datos.preparacion`) y se
+// contesta una sola vez: la oferta (o "esperar") con la regla del bot, y la rutina (`rutinaId`) con la regla de rutinas
+// del bot, la misma que usaba cuando la práctica frenaba aparte. Sin preparación, la respuesta queda como está.
+function conRutina(decision, respuesta, elegirRutina) {
+  const rutinas = decision.datos?.preparacion?.rutinas;
+  return rutinas?.length > 0 ? { ...respuesta, rutinaId: elegirRutina(rutinas) } : respuesta;
+}
+
+// Lo que ranked y malas puntúan de una rutina (la agresiva de siempre).
+const puntajeAgresiva = (rutina) => (rutina.reparto.ranked ?? 0) + rutina.extra * 2;
 
 // Cuanto le falta a cada barra para estar tranquila. Se usa para elegir la
 // rutina que mejor tapa los agujeros.
@@ -184,13 +197,14 @@ function responderCriterio(sistema, state, decision, rng) {
     return { opcionId: decision.opciones[0].id };
   }
   if (esDecisionDeMercado(decision)) {
+    const rutinaDelBot = (rutinas) => elegirRutinaAuto(state, rutinas, rng).id;
     if (decision.opciones.length === 0) {
-      return { negociar: 'esperar' };
+      return conRutina(decision, { negociar: 'esperar' }, rutinaDelBot);
     }
     const mejor = decision.opciones.reduce((acum, op) => (
       compararOfertasMercado(op, acum) > 0 ? op : acum
     ));
-    return { opcionId: mejor.id };
+    return conRutina(decision, { opcionId: mejor.id }, rutinaDelBot);
   }
   if (esDecisionConPrevia(decision)) {
     const mejor = decision.opciones.reduce((acum, op) => (
@@ -204,7 +218,7 @@ function responderCriterio(sistema, state, decision, rng) {
 // Bot `malas`: elige lo peor según la misma previa y juega mal los minijuegos.
 function responderMalas(sistema, state, decision, rng) {
   if (esDecisionDeRutina(decision)) {
-    return mejorRutina(decision, (rutina) => (rutina.reparto.ranked ?? 0) + rutina.extra * 2);
+    return mejorRutina(decision, puntajeAgresiva);
   }
   if (esDecisionDeMinijuego(decision)) {
     return { resultado: RESULTADO_MINIJUEGO_MAL, ...charlaEnMinijuego(state, decision, true) };
@@ -216,13 +230,14 @@ function responderMalas(sistema, state, decision, rng) {
     return { opcionId: decision.opciones[decision.opciones.length - 1].id };
   }
   if (esDecisionDeMercado(decision)) {
+    const rutinaDelBot = (rutinas) => rutinaConMejorPuntaje(rutinas, puntajeAgresiva).id;
     if (decision.opciones.length === 0) {
-      return { negociar: 'esperar' };
+      return conRutina(decision, { negociar: 'esperar' }, rutinaDelBot);
     }
     const peor = decision.opciones.reduce((acum, op) => (
       compararOfertasMercado(op, acum) < 0 ? op : acum
     ));
-    return { opcionId: peor.id };
+    return conRutina(decision, { opcionId: peor.id }, rutinaDelBot);
   }
   if (esDecisionConPrevia(decision)) {
     const peor = decision.opciones.reduce((acum, op) => (
@@ -256,7 +271,7 @@ function responderAzar(sistema, state, decision, rng) {
       { negociar: 'esperar' }
     ];
     const indice = hash % opcionesCandidatas.length;
-    return opcionesCandidatas[indice];
+    return conRutina(decision, opcionesCandidatas[indice], (rutinas) => rutinas[hashCadena(`${hash}|rutina`) % rutinas.length].id);
   }
   if (esDecisionConPrevia(decision)) {
     const indice = hash % decision.opciones.length;

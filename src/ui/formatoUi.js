@@ -101,7 +101,11 @@ export function rotuloDeDecision(decision, state) {
   if (motivo === 'servicio_te_vas' || motivo === 'servicio_adentro' || motivo === 'servicio_volver') {
     return { label: 'Servicio militar', token: 'salud' };
   }
-  if (motivo === 'reparto' || motivo === 'practica' || state?.phase === 'amateur') {
+  // K4-D: la preparación del receso ya no es "la semana": es la pretemporada, la misma parada que el mercado.
+  if (motivo === 'practica') {
+    return { label: 'Pretemporada', token: 'mercado' };
+  }
+  if (motivo === 'reparto' || state?.phase === 'amateur') {
     return { label: 'La semana', token: 'rutina' };
   }
   return FAMILIA_DEFECTO;
