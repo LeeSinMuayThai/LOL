@@ -374,5 +374,55 @@
       "minimoUSD": 12000,
       "modelado": true
     }
+  },
+  {
+    "id": "LRN",
+    "nombre": "LRN",
+    "region": "LATAM Norte",
+    "regionId": "LAN",
+    "tier": 2,
+    "prestigio": 34,
+    "dificultad": 1.7,
+    "cupoImports": 0,
+    "minimoResidentes": 5,
+    "dificultadAdaptacion": 30,
+    "edadMinima": 16,
+    "servidor": "LAN",
+    "orgsGeneradas": true,
+    "cantidadOrgs": 8,
+    "sinPrimera": true,
+    "alimentaA": "LCS",
+    "salario": {
+      "medianaUSD": 9000,
+      "mediaUSD": 13000,
+      "sigma": 0.86,
+      "minimoUSD": 5000,
+      "modelado": true
+    }
+  },
+  {
+    "id": "LRS",
+    "nombre": "LRS",
+    "region": "LATAM Sur",
+    "regionId": "LAS",
+    "tier": 2,
+    "prestigio": 32,
+    "dificultad": 1.9,
+    "cupoImports": 0,
+    "minimoResidentes": 5,
+    "dificultadAdaptacion": 30,
+    "edadMinima": 16,
+    "servidor": "LAS",
+    "orgsGeneradas": true,
+    "cantidadOrgs": 8,
+    "sinPrimera": true,
+    "alimentaA": "CBLOL",
+    "salario": {
+      "medianaUSD": 9000,
+      "mediaUSD": 13000,
+      "sigma": 0.86,
+      "minimoUSD": 5000,
+      "modelado": true
+    }
   }
 ]

@@ -9,7 +9,7 @@
     "cooldown": 10,
     "contexto": {
       "etapa": ["debut", "profesional"],
-      "region": ["NA", "BR"],
+      "region": ["NA", "BR", "LAN", "LAS"],
       "nivel": ["tier3", "tier2", "tier1"]
     },
     "conditions": [],
@@ -94,7 +94,7 @@
     "cooldown": 14,
     "contexto": {
       "etapa": ["debut", "profesional"],
-      "region": ["NA", "BR"],
+      "region": ["NA", "BR", "LAN", "LAS"],
       "nivel": ["tier3", "tier2", "tier1"]
     },
     "conditions": [],
@@ -156,7 +156,7 @@
     "cooldown": 16,
     "contexto": {
       "etapa": ["debut", "profesional"],
-      "region": ["NA", "BR"],
+      "region": ["NA", "BR", "LAN", "LAS"],
       "nivel": ["tier3", "tier2", "tier1"]
     },
     "conditions": [],

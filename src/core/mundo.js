@@ -232,12 +232,15 @@ function insertarRivalesEnPlanteles(rivales, planteles, ligas) {
       continue;
     }
     const hash = [...rival.handle].reduce((suma, caracter) => suma + caracter.charCodeAt(0), 0);
-    const orgNombre = liga.orgs[hash % liga.orgs.length].nombre;
-    const plantel = planteles[orgNombre];
-    if (!plantel) {
-      continue;
+    // K5-B: si dos rivales del mismo rol caen en la misma org, el segundo pisaba al primero (latente; lo destapó el
+    // corrimiento de K5 en la seed 39). Se prueba la org siguiente, sin rng: sin choque, es la misma org de siempre.
+    for (let intento = 0; intento < liga.orgs.length; intento += 1) {
+      const plantel = planteles[liga.orgs[(hash + intento) % liga.orgs.length].nombre];
+      if (plantel && !plantel[rival.role]?.rivalDeGeneracion) {
+        plantel[rival.role] = { ...plantel[rival.role], handle: rival.handle, rivalDeGeneracion: true };
+        break;
+      }
     }
-    plantel[rival.role] = { ...plantel[rival.role], handle: rival.handle, rivalDeGeneracion: true };
   }
 }
 
@@ -290,11 +293,75 @@ function generarRivales(rng, usados) {
   });
 }
 
+// --- K5-B: de dónde sos ---
+//
+// Las regiones que se pueden elegir en el inicio: una por cada liga tier 1 y las tier 2 que no tienen
+// primera arriba (`sinPrimera`: LRN y LRS, LATAM). La liga de origen es la primera de la región, o su
+// segunda si no tiene primera. Un `regionId` desconocido (o `null`) no elige nada: queda el sorteo.
+export function ligaDeOrigenElegible(ligas, regionId) {
+  if (!regionId) {
+    return null;
+  }
+  return ligas.find((liga) => liga.tier === 1 && liga.regionId === regionId)
+    ?? ligas.find((liga) => liga.tier === 2 && liga.sinPrimera && liga.regionId === regionId)
+    ?? null;
+}
+
+function rangoDe(valor, valores, ascendente) {
+  const orden = [...valores].sort((a, b) => (ascendente ? a - b : b - a));
+  return { rango: orden.indexOf(valor), total: orden.length };
+}
+
+// La línea de dificultad de cada región, derivada SOLO del dato (regla 15): llegar a primera es más
+// difícil cuanto más `prestigio` tiene la liga de tu región, y ganar el Mundial es más fácil cuanto
+// menor es su `dificultad` (la misma que multiplica el internacional en `core/puntaje.js`).
+export function regionesDeOrigen() {
+  const ligasTier1 = LIGAS.filter((liga) => liga.tier === 1);
+  const prestigios = ligasTier1.map((liga) => liga.prestigio);
+  const dificultades = ligasTier1.map((liga) => liga.dificultad);
+  const referencia = Math.min(...dificultades);
+  const opciones = ligasTier1.map((liga) => {
+    const llegar = rangoDe(liga.prestigio, prestigios, false);
+    const mundial = rangoDe(liga.dificultad, dificultades, true);
+    const textoLlegar = llegar.rango === 0 ? 'la más difícil para llegar a primera'
+      : llegar.rango === llegar.total - 1 ? 'la más fácil para llegar a primera'
+        : llegar.rango < llegar.total / 2 ? 'difícil para llegar a primera' : 'accesible para llegar a primera';
+    const textoMundial = mundial.rango === 0 ? 'la más fácil para ganar el Mundial'
+      : mundial.rango === mundial.total - 1 ? 'la más difícil para ganar el Mundial'
+        : mundial.rango < mundial.total / 2 ? 'con chances en el Mundial' : 'cuesta en el Mundial';
+    const multiplicador = liga.dificultad / referencia;
+    const textoPuntaje = multiplicador > 1 ? ` (en el puntaje, cada Mundial vale ×${multiplicador.toFixed(1).replace('.', ',')})` : '';
+    return {
+      regionId: liga.regionId,
+      region: liga.region,
+      liga: liga.nombre,
+      prestigio: liga.prestigio,
+      dificultad: liga.dificultad,
+      sinPrimera: false,
+      texto: `${liga.region}, ${liga.nombre}: ${textoLlegar}; ${textoMundial}${textoPuntaje}.`
+    };
+  }).sort((a, b) => b.prestigio - a.prestigio);
+  const sinPrimera = LIGAS.filter((liga) => liga.tier === 2 && liga.sinPrimera).map((liga) => {
+    const destino = LIGAS.find((otra) => otra.id === liga.alimentaA);
+    return {
+      regionId: liga.regionId,
+      region: liga.region,
+      liga: liga.nombre,
+      prestigio: liga.prestigio,
+      dificultad: liga.dificultad,
+      sinPrimera: true,
+      texto: `${liga.region}, ${liga.nombre}: llegás hasta segunda; a primera se llega emigrando`
+        + `${destino ? ` (la ${destino.nombre} ficha de acá como import)` : ''}.`
+    };
+  });
+  return [...opciones, ...sinPrimera];
+}
+
 // Sortea el mundo entero de una seed. Todo lo que devuelve es dato de estado:
 // ningun sistema puede volver a sortearlo despues.
 //
 // `eleccion` es lo que el jugador decidio en la pantalla de inicio:
-// `{ handle?, rol?, campeones? }`. Si no viene, se sortea todo como antes — ese
+// `{ handle?, rol?, campeones?, perfil?, regionOrigen? }`. Si no viene, se sortea todo como antes — ese
 // es el camino que corren simulate.js y validate.js, que no cambian una linea.
 //
 // El MUNDO sigue saliendo entero de la seed; lo que se elige es la identidad.
@@ -309,7 +376,12 @@ export function generarMundo(rng, edadInicial, eleccion = null) {
   // De dónde sos. Pesado por prestigio (tamaño de escena): nacer en Corea no
   // es 1 en 6 como nacer en Brasil (fase 3) — antes era un sorteo parejo entre
   // todas las ligas, tier 2 incluido.
-  const ligaOrigen = weightedPick(ligasTier1, (liga) => liga.prestigio, rng);
+  //
+  // K5-B: la región también se elige en el inicio (`eleccion.regionOrigen`, un `regionId`). El sorteo se
+  // tira SIEMPRE y la elección pisa el resultado, no el stream: elegir la región que la seed habría
+  // sorteado da la misma partida, tirada por tirada (check "K5-B región").
+  const ligaSorteada = weightedPick(ligasTier1, (liga) => liga.prestigio, rng);
+  const ligaOrigen = ligaDeOrigenElegible(ligasBase, eleccion?.regionOrigen) ?? ligaSorteada;
   const rolSorteado = pick(IDS_ROL, rng);
   const rol = IDS_ROL.includes(eleccion?.rol) ? eleccion.rol : rolSorteado;
   const oculto = generarOculto(rng);

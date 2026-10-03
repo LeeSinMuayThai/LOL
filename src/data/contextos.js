@@ -15,10 +15,11 @@ export const EJES = {
   estatus: ['ninguno', 'rookie', 'titular', 'referente', 'franquicia'],
   momentum: ['crisis', 'slump', 'estable', 'racha'],
   mercado: ['sin_contrato', 'contrato_firme', 'ultimo_ano', 'sin_renovacion'],
-  // LATAM ya no es una region de origen (fase 3, ligas 2026): LATAM Norte
-  // quedo absorbida por LCS y LATAM Sur por CBLOL. Los jugadores de esas
-  // zonas nacen hoy en la escena de NA o de BR.
-  region: ['KR', 'CN', 'EMEA', 'NA', 'BR', 'APAC'],
+  // LATAM no tiene primera desde 2026 (LATAM Norte quedo absorbida por LCS y
+  // LATAM Sur por CBLOL), pero K5-B la vuelve a abrir como region de origen
+  // ELEGIDA: LAN y LAS llegan hasta segunda (LRN y LRS) y a primera se llega
+  // emigrando. El sorteo de la seed nunca cae aca (solo sortea tier 1).
+  region: ['KR', 'CN', 'EMEA', 'NA', 'BR', 'APAC', 'LAN', 'LAS'],
   residencia: ['local', 'import', 'residente'],
   ventana: ['pretemporada', 'regular', 'playoffs', 'internacional', 'offseason'],
   // Altura en la escalera de soloQ. Sin este eje no se podia expresar "esto

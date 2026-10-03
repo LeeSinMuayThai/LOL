@@ -1,6 +1,9 @@
 import { BALANCE } from '../data/balance.js';
 import { perfilInicial } from './perfil.js';
 import { generarMundo } from './mundo.js';
+
+// K5-B: la pantalla de inicio lista las regiones elegibles con su dificultad.
+export { regionesDeOrigen } from './mundo.js';
 import { bonusPermanenteInicial } from './curvas.js';
 import { puntosAbsolutos } from './ranked.js';
 import { rankearMundo } from './topMundial.js';
@@ -14,7 +17,7 @@ import { esFechaDeDesafio, seedDelDia } from './desafio.js';
 const EDAD_INICIAL = 15;
 
 // `eleccion` es lo que el jugador decidio en la pantalla de inicio:
-// `{ handle?, rol?, campeones? }`. Si no viene, todo se sortea de la seed — ese
+// `{ handle?, rol?, campeones?, perfil?, regionOrigen? }` (K5-B: la región, un `regionId`). Si no viene, todo se sortea de la seed — ese
 // es el camino que corren simulate.js y validate.js.
 //
 // K1: `desafio` es `{ fecha: 'YYYY-MM-DD' }` cuando la partida es el desafío
