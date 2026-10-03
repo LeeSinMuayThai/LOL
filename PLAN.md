@@ -6965,6 +6965,45 @@ calibración fija las metas).
   check "K4c el cierre de año es una decisión" daba rojo con el dato viejo (19 problemas).
 - **El Bo5 conjunto** también mide con plan neutro.
 
+**Medición después de los arreglos** (`6ce46a0`; `simulate.js 400 60 todas`, 0 crashes en las seis estrategias;
+`criterio` 300 × 60; `agencia.js` 24 × 30):
+
+| Métrica | Antes de K4c | Ahora | Meta |
+|---|---|---|---|
+| Palanca en su horizonte (ponderada) | 22,4% | **48,8%** | ≥ 60% |
+| Palanca contra la carrera | 8,9% | 10,3% | no bajar de 8,6% ✅ |
+| `temporada:momento` | 15% | **94%** (Δp mediana 13,9 pp) | — |
+| `serie:plan` | 2,7% | **66%** (Δp mediana 6,6 pp) | — |
+| Interrupciones, mediana (`criterio`) | 111 | **91** | ≤ 80 |
+| Interrupciones, mediana (`azar`) | — | 78 | — |
+| Interrupciones, mediana (`equilibrado`) | — | 85 | — |
+| Playoffs e internacional | p90 7 | **p90 5** (14% pasan de 4) | ≤ 4 |
+| Minijuegos | 11 | **4** | 4-8 ✅ |
+| Tiempo-máquina | 8,1 min | **5,8 min** | ~5 |
+| Llega a pro | — | `criterio` 75% · `azar` 73% · `malas` 48% | — |
+
+**Lo que queda sin pesar:**
+- **`edadCierre`:** 6,2% en 12,6 paradas, aunque ya se rehízo.
+- **`practica`:** 3,3% en su horizonte, en 5,1 paradas.
+
+Son las paradas de "invertir en vos": mueven el nivel de a poco, y una sola decisión casi no se nota en el
+resultado (bloque A: el nivel se construye lento).
+
+**Decisión del usuario (2026-10-03): el plan anual.** La práctica se decide **dentro del cierre de año**, en una
+sola parada por año con más peso.
+- **El cierre de año fija el plan del año siguiente.** La opción que elegís (el juego, la cabeza y la familia, o
+  la marca) define el foco de práctica de los splits de ese año. Cada split se entrena solo según ese plan, y el
+  resumen del split lo dice ("Entrenaste según el plan del año: …").
+- **La pretemporada queda para el mercado.** Deja de existir la parada de práctica (`practica:practica`). Si el
+  mercado frena, frena por el mercado.
+- **El primer año**, antes de cualquier cierre, usa el plan del perfil (K4-C) o uno por defecto, que se ve en el
+  inicio.
+- **Lo que no cambia:** el reparto amateur (`amateur:reparto`, con 100% de palanca) sigue como está.
+- **Las reglas que cambian van con su línea de la regla 17:** "K4-D, la preparación del año queda resuelta" y
+  los checks de práctica.
+- **Lo esperado:** ~85 interrupciones y palanca de ~52-55%. Se mide, y las metas de §K.3c se fijan en 3b con lo
+  medido.
+
 **Paso 3b — un worker:**
 - los checks duros con lo medido;
 - vaciar el bloque B de `bandasPendientes.js` y cerrarlo;
