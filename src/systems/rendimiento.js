@@ -1,11 +1,11 @@
 import { gauss, chance, roll } from '../core/rng.js';
 import { crearLog } from '../core/log.js';
-import { clamp, clampStat, hashCadena } from '../core/numeros.js';
+import { clampStat, hashCadena } from '../core/numeros.js';
 import { registrarEnHistorial } from '../core/contexto.js';
 import { ligaOZonaDeCarrera } from '../core/competicion.js';
 import { esCierreDeTemporada } from '../core/serie.js';
 import { fuerzaDelEquipo, nivelDeCompaneros } from '../core/fuerza.js';
-import { registrarTitulo, registrarInternacional, registrarPico, registrarArraigoEnFila } from '../core/registro.js';
+import { registrarTitulo, registrarPico, registrarArraigoEnFila } from '../core/registro.js';
 import { nivelDelJugador } from '../core/ficha.js';
 import { hypeHaciaSuBase } from '../core/barras.js';
 import { BALANCE } from '../data/balance.js';
@@ -140,8 +140,6 @@ function consecuencias(state, rendimiento, resultado, esCierre, rng) {
   );
 
   let titulos = state.career.titulos;
-  let internacionales = state.career.internacionales;
-  let worlds = state.player.worlds;
   const hitos = [...state.career.hitos];
 
   // Arraigo (fase 8.4): rendir por encima de lo esperado suma via la MISMA
@@ -206,33 +204,6 @@ function consecuencias(state, rendimiento, resultado, esCierre, rng) {
     logs.push(crearLog('rendimiento', `Campeones de ${nombreLiga}. El título es tuyo también.`));
   }
 
-  // Al cierre de temporada, el campeon de la liga viaja al internacional. Solo
-  // las ligas tier 1 declaran cupos: tier 2 y tier 3 nunca clasifican (fase 3).
-  // Tier 1 con playoffs lo resuelve `serie.js` jugando la serie internacional.
-  const cuposInternacionales = liga.cuposInternacionales ?? 0;
-  if (!juegaSerieDePlayoffs && esCierre && posicion <= cuposInternacionales) {
-    internacionales += 1;
-    worlds += 1;
-    const rendiBien = chance(clamp(liga.prestigio / (r.prestigioReferencia * 2) + rendimiento / (BALANCE.stats.max * 3), 0, 0.9), rng);
-    hype += rendiBien ? r.hypePorTitulo : r.hypePorPodio;
-    arraigo = clampStat(arraigo + roll(a.porInternacionalMin, a.porInternacionalMax, rng));
-    registro = registrarInternacional(registro, {
-      torneo: `internacional — ${nombreLiga}`, anio: state.calendario.anio, org: state.career.currentOrg,
-      // K1 (D76): la liga que representaste (solo tier 1 tiene cupos).
-      liga: liga.id,
-      resultado: rendiBien ? 'buen_papel' : 'eliminado', camino: []
-    });
-    hitos.push(rendiBien
-      ? `Buen papel internacional con ${state.career.currentOrg} a los ${state.age}`
-      : `Eliminado en fase de grupos a los ${state.age}`);
-    logs.push(crearLog(
-      'rendimiento',
-      rendiBien
-        ? 'Viajaste al internacional y diste la cara: se habló de vos afuera de tu región.'
-        : 'Viajaste al internacional y volviste temprano. Pasa.'
-    ));
-  }
-
   registro = registrarPico(registrarPico(registro, 'jerarquia', Math.round(jerarquia)), 'arraigo', Math.round(arraigo));
   registro = registrarArraigoEnFila(registrarPico(registro, 'hype', Math.round(clampStat(hype))), Math.round(arraigo));
 
@@ -244,7 +215,6 @@ function consecuencias(state, rendimiento, resultado, esCierre, rng) {
       flags: { ...state.flags, banquilloPendiente },
       player: {
         ...state.player,
-        worlds,
         titles: titulos,
         stats: { ...state.player.stats, hype: clampStat(hype), mentalidad: clampStat(mentalidad) }
       },
@@ -256,7 +226,6 @@ function consecuencias(state, rendimiento, resultado, esCierre, rng) {
         posicion,
         titulos,
         podios: state.career.podios + (podio ? 1 : 0),
-        internacionales,
         hitos
       }
   }, puntajeDelSplit);
