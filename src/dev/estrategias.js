@@ -1,4 +1,5 @@
 import { BALANCE } from '../data/balance.js';
+import { usaLaCharlaEnAuto } from '../systems/serie.js';
 import { hashCadena } from '../core/numeros.js';
 
 // Constantes de medición para la heurística de los bots (PLAN.md §K.5 K0).
@@ -106,6 +107,29 @@ export function esDecisionDeDraft(decision) {
   return decision.datos?.motivo === 'draft';
 }
 
+// K4-B: las pausas de la serie como plan. El plan de Fearless trae en cada opción la p de ganar la serie que
+// declara (`pSerie`, la de su proyección): `criterio` elige la más alta (lee la tarjeta), `malas` la más baja. En
+// el mapa decisivo, `criterio` gasta la charla del coach solo en la final o el internacional (la regla del camino
+// headless, `usaLaCharlaEnAuto`); `malas` nunca.
+export function esDecisionDePlanDeSerie(decision) {
+  return decision.datos?.motivo === 'plan' || decision.datos?.motivo === 'decisivo';
+}
+
+function respuestaDePlanDeSerie(state, decision, peor) {
+  if (decision.datos.motivo === 'plan') {
+    const elegida = decision.opciones.reduce((acum, opcion) => (
+      (peor ? opcion.pSerie < acum.pSerie : opcion.pSerie > acum.pSerie) ? opcion : acum
+    ));
+    return { opcionId: elegida.id };
+  }
+  const charla = !peor && decision.opciones.some((opcion) => opcion.id === 'charla') && usaLaCharlaEnAuto(state.serie.ronda);
+  return { opcionId: charla ? 'charla' : 'sinCharla' };
+}
+
+function charlaEnMinijuego(state, decision, peor) {
+  return decision.datos?.charla?.disponible ? { charla: !peor && usaLaCharlaEnAuto(state.serie?.ronda) } : {};
+}
+
 export function esDecisionDeMercado(decision) {
   return decision.presentacion === 'mercado'
     || (decision.opciones?.[0]?.salarioAnualUSD !== undefined && decision.datos?.motivo !== 'traspaso');
@@ -151,7 +175,10 @@ function responderCriterio(sistema, state, decision, rng) {
     return sistema.resolverAuto(state, decision, rng);
   }
   if (esDecisionDeMinijuego(decision)) {
-    return { resultado: RESULTADO_MINIJUEGO_BIEN };
+    return { resultado: RESULTADO_MINIJUEGO_BIEN, ...charlaEnMinijuego(state, decision, false) };
+  }
+  if (esDecisionDePlanDeSerie(decision)) {
+    return respuestaDePlanDeSerie(state, decision, false);
   }
   if (esDecisionDeDraft(decision)) {
     return { opcionId: decision.opciones[0].id };
@@ -180,7 +207,10 @@ function responderMalas(sistema, state, decision, rng) {
     return mejorRutina(decision, (rutina) => (rutina.reparto.ranked ?? 0) + rutina.extra * 2);
   }
   if (esDecisionDeMinijuego(decision)) {
-    return { resultado: RESULTADO_MINIJUEGO_MAL };
+    return { resultado: RESULTADO_MINIJUEGO_MAL, ...charlaEnMinijuego(state, decision, true) };
+  }
+  if (esDecisionDePlanDeSerie(decision)) {
+    return respuestaDePlanDeSerie(state, decision, true);
   }
   if (esDecisionDeDraft(decision)) {
     return { opcionId: decision.opciones[decision.opciones.length - 1].id };

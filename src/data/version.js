@@ -29,6 +29,9 @@
 // del bloque A (PLAN.md, K3c) — la consistencia (k = 0,5), la mentalidad y el hype que vuelven
 // a su base (r = 0,2 con subida 0,05, tope de descanso 70, rH = 0,6), los efectos que duran
 // (fracción 0,3 para eventos y práctica) y el umbral de pausa del draft (0,0818 / 0,0409). Las
-// carreras cambian de cabo a rabo: ninguna seed de K2c reproduce la suya.
-export const VERSION_JUEGO = 'K3c';
-export const HUELLA_JUEGO = 577913468;
+// carreras cambian de cabo a rabo: ninguna seed de K2c reproduce la suya. · K4-B (209628012;
+// bloque B, corrimiento aceptado): la serie como plan — el rival quema por el orden del meta (sin sortear), el plan
+// de Fearless reemplaza al draft mapa a mapa, la tirada de "te leyeron el guardado", la charla del coach, y sin
+// minijuegos de mapa normal, bootcamp ni rueda de prensa en la serie. La integración de K4 la vuelve a fijar.
+export const VERSION_JUEGO = 'K4-B';
+export const HUELLA_JUEGO = 209628012;

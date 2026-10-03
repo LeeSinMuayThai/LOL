@@ -31,30 +31,10 @@ export const BLOQUES_DE_CORRIMIENTO = {
 //   rebasea — la calibración que lo re-basea (tiene que ser el `cierraCon` de su bloque);
 //   porque  — opcional: por qué salió de banda.
 export const BANDAS_PENDIENTES = [
-  // K3c re-fijó el umbral de pausa del draft (bloque A) y "Nadie te frena en el draft..." volvió a su banda: su entrada
-  // se borró. Pero devolver las pausas sacó de banda a OTRO check, de otro bloque: es el único caso de una entrada
-  // cuyo `commit` (K3c) no es una subfase de su bloque (PLAN.md, K3c, punto 2). El custodio 3 no lo prohíbe: solo
-  // pide que `rebasea` sea el cierre del bloque (K4c).
-  {
-    check: 'Mediana de decisiones de draft por serie ∈ [0, 1] y ≥28% de series sin ningún draft',
-    bloque: 'B',
-    medido: '27% de las series sin ningún draft (1200 series, check)',
-    banda: '≥ 28% de series sin draft',
-    commit: 'K3c',
-    rebasea: 'K4c',
-    porque: 'K3c re-fijó el umbral de pausa del draft (bloque A); K4 rediseña el draft (plan de Fearless) y K4c re-basea esta banda'
-  },
-  // El check duro del bloque A mide el Bo5 del lado del jugador (83,8%, dentro de banda). El conjunto, que suma el lado del
-  // rival, se va de banda por la asimetría del Fearless y es de K4: misma excepción que la del draft (commit K3c).
-  {
-    check: 'K3c meta Bo5 favorito claro (conjunto) ∈ [75, 85]',
-    bloque: 'B',
-    medido: '87,3% (criterio 400 × 60; jugador 83,8%, rival 93,9%)',
-    banda: '[75, 85]',
-    commit: 'K3c',
-    rebasea: 'K4c',
-    porque: 'asimetría del Fearless (solo te degrada a vos): la resuelve el plan de Fearless de K4'
-  }
+  // K4-B borró el check "Mediana de decisiones de draft por serie ∈ [0, 1] y ≥28% de series sin ningún draft" (no hay
+  // más draft mapa a mapa; regla 17, ver validate.js) y con él su entrada de acá.
+  // K4-B: el rival también quema campeones con el Fearless (su fuerza de mapa se degrada como la tuya) y el Bo5 conjunto
+  // volvió a su banda (criterio 800 × 60): la entrada "K3c meta Bo5 favorito claro (conjunto) ∈ [75, 85]" se borró.
 ];
 
 // Custodio 1: las entradas cuyo check pasó en esta corrida. `resultados` es un Map nombre → 'ok' | 'fail' |

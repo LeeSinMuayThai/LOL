@@ -31,8 +31,10 @@
 // `ajustePartido`— en sus logs, y `entradaExtra` en los datos del minijuego de
 // un mapa, para que la previa lea el comodín) · 7 (K3-B, los efectos que duran: `player.bonusPermanente`, un campo
 // por stat de curva, y `registro.marcas`, lo que cada decisión dejó en las curvas de edad — K3-A puede subirla también:
-// la rama que se mergea segunda toma max + 1).
-export const VERSION = 7;
+// la rama que se mergea segunda toma max + 1) · 8 (K4-B, la serie como plan: `serie.plan`, `guardado`, `replanUsado`,
+// `rivalJuega`, `rivalJuegaEnMapa` y `sinNadaEnJuego`, sin `preSerieUsado`; `career.charlaUsadaEn`; y en el log de cada mapa
+// `rivalJuega`, `plan` y `charla`).
+export const VERSION = 8;
 
 export function serializar(state, rng, rngUi) {
   return JSON.stringify({
