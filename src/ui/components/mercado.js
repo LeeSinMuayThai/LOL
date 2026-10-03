@@ -2,6 +2,7 @@ import { plata } from '../../core/formato.js';
 import { crearOrgChip } from './orgChip.js';
 import { countUp } from './countUp.js';
 import { reconciliar, reemplazarEnElLugar } from '../core/reconciliar.js';
+import { nombreVisibleDeLiga } from '../formatoUi.js';
 
 // La pantalla de ofertas (fase 9c, PLAN.md §9.5-9.6): "la trampa del equipo
 // grande visible" hecha tarjeta. Cada campo que se pinta acá ya viene resuelto
@@ -62,7 +63,7 @@ function construirTarjeta(oferta, onElegir, onNegociar) {
   header.append(org, tag);
   card.appendChild(header);
 
-  card.appendChild(fila('mercado-card-liga', `${oferta.liga} · ${oferta.anios} año${oferta.anios === 1 ? '' : 's'}`));
+  card.appendChild(fila('mercado-card-liga', `${nombreVisibleDeLiga(oferta.liga)} · ${oferta.anios} año${oferta.anios === 1 ? '' : 's'}`));
   const salarioEl = document.createElement('div');
   salarioEl.className = 'mercado-card-salario';
   countUp(salarioEl, 0, oferta.salarioAnualUSD, { format: (n) => `${plata(n)}/año` });
@@ -142,7 +143,7 @@ function construirTarjetaTraspaso(opcion, onElegir) {
   card.appendChild(header);
 
   if (opcion.tipo !== 'quedarse') {
-    card.appendChild(fila('mercado-card-liga', `${opcion.liga} · ${opcion.anios} año${opcion.anios === 1 ? '' : 's'}`));
+    card.appendChild(fila('mercado-card-liga', `${nombreVisibleDeLiga(opcion.liga)} · ${opcion.anios} año${opcion.anios === 1 ? '' : 's'}`));
     const salarioEl = document.createElement('div');
     salarioEl.className = 'mercado-card-salario';
     countUp(salarioEl, 0, opcion.salarioAnualUSD, { format: (n) => `${plata(n)}/año` });
@@ -216,7 +217,7 @@ function construirBloqueVos(vos, interesados) {
     contratoEl.append(
       crearOrgChip(c.org, { size: 18 }),
       document.createTextNode(
-        `${c.org}${c.liga ? ` · ${c.liga}` : ''} · ${plata(c.salarioUSD)}/año · ${restante}${clausula}`
+        `${c.org}${c.liga ? ` · ${nombreVisibleDeLiga(c.liga)}` : ''} · ${plata(c.salarioUSD)}/año · ${restante}${clausula}`
       )
     );
     box.appendChild(contratoEl);
@@ -273,7 +274,7 @@ function renderMundo(contenedor, traspasos, asientos, yaEnBloque1) {
     for (const a of asientosNuevos) {
       const item = document.createElement('div');
       item.className = 'mercado-mundo-item';
-      item.append(crearOrgChip(a.org, { size: 16 }), document.createTextNode(`${a.org} · ${a.liga}`));
+      item.append(crearOrgChip(a.org, { size: 16 }), document.createTextNode(`${a.org} · ${nombreVisibleDeLiga(a.liga)}`));
       contenedor.appendChild(item);
     }
   }

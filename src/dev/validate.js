@@ -90,6 +90,7 @@ import { esMapaDeDesempate } from '../core/serie.js';
 import { previaDePartido, previaDeDecision, textoDeProbabilidadJugada } from '../core/previaDePartido.js';
 import { MONTAR_MINIJUEGO } from '../ui/components/minijuegos/index.js';
 import { LABEL_MARCA as LABEL_MARCA_FICHA, lineaDeContextoFicha } from '../ui/components/ficha.js';
+import { nombreVisibleDeLiga } from '../ui/formatoUi.js';
 import { crearCampeonTile } from '../ui/components/campeonTile.js';
 import METAS from '../data/metas.json' with { type: 'json' };
 
@@ -15359,6 +15360,118 @@ check('K4-C2 regla 15: toda opción que promete mudanza, cambio de línea o reti
   }
   if (conPromesa < 8) {
     throw new Error(`solo ${conPromesa} opciones con promesa de carrera; esperaba al menos 8 (región ×4, línea ×2, retiro ×2)`);
+  }
+});
+
+// --- K5 (revisión): una bifurcación no pisa su propia promesa, los efectos de carrera solo viven en bifurcaciones y
+// ninguna pantalla muestra el id crudo de una liga ---
+// Una opción con efecto de carrera (`ofertaDeImport`, `cambiarRol`, `retirarse`) tiene que frenar: el perfil resuelve en
+// automático todo lo que no es `bifurcacion: true`, y una mudanza, un cambio de línea o un retiro no se resuelven solos.
+const EFECTOS_DE_CARRERA_K5R = ['ofertaDeImport', 'cambiarRol', 'retirarse'];
+function efectosDeCarreraFueraDeBifurcacionK5r(eventos) {
+  const problemas = [];
+  for (const e of eventos) {
+    if (e.bifurcacion === true) continue;
+    for (const o of e.options) {
+      const tipos = new Set(o.outcomes.flatMap((x) => x.effects.map((ef) => ef.type).filter((t) => EFECTOS_DE_CARRERA_K5R.includes(t))));
+      if (tipos.size > 0) problemas.push(`${e.id}/${o.id}: ${[...tipos].join(', ')} en un evento sin \`bifurcacion: true\``);
+    }
+  }
+  return problemas;
+}
+
+// Una segunda promesa de región mientras la primera sigue pendiente la pisa: `flags.ofertaDeImport` se escribe entera
+// (`prometerImport`). La pretemporada la limpia, se firme o se caiga, así que el guard no bloquea para siempre.
+function regionesSinGuardK5r(eventos) {
+  const guard = (c) => c.field === 'flags.ofertaDeImport' && c.op === 'eq' && c.value === null;
+  return eventos
+    .filter((e) => e.options.some((o) => o.promete === 'region') && !e.conditions.some(guard))
+    .map((e) => `${e.id}: promete una mudanza y no exige \`flags.ofertaDeImport == null\``);
+}
+
+check('K5 (revisión) los efectos de carrera solo viven en bifurcaciones, y una bifurcación de región no pisa una oferta de import pendiente', () => {
+  const real = efectosDeCarreraFueraDeBifurcacionK5r(TODOS_LOS_EVENTOS);
+  if (real.length > 0) {
+    throw new Error(real.join(' · '));
+  }
+  const sinGuard = regionesSinGuardK5r(TODOS_LOS_EVENTOS);
+  if (sinGuard.length > 0) {
+    throw new Error(sinGuard.join(' · '));
+  }
+  const regiones = TODOS_LOS_EVENTOS.filter((e) => e.options.some((o) => o.promete === 'region'));
+  if (regiones.length < 3) {
+    throw new Error(`esperaba las 3 bifurcaciones de región, hay ${regiones.length}`);
+  }
+  // Mutantes (sobre copias): una bifurcación que pierde el flag, y una región que pierde el guard.
+  const conCarrera = TODOS_LOS_EVENTOS.filter((e) => e.bifurcacion === true
+    && e.options.some((o) => o.outcomes.some((x) => x.effects.some((ef) => EFECTOS_DE_CARRERA_K5R.includes(ef.type)))));
+  for (const e of conCarrera) {
+    const mutante = TODOS_LOS_EVENTOS.map((x) => (x.id === e.id ? { ...x, bifurcacion: false } : x));
+    if (efectosDeCarreraFueraDeBifurcacionK5r(mutante).length === 0) {
+      throw new Error(`mutante: ${e.id} sin bifurcacion:true y el check no lo ve`);
+    }
+  }
+  for (const e of regiones) {
+    const mutante = TODOS_LOS_EVENTOS.map((x) => (x.id === e.id ? { ...x, conditions: x.conditions.filter((c) => c.field !== 'flags.ofertaDeImport') } : x));
+    if (regionesSinGuardK5r(mutante).length === 0) {
+      throw new Error(`mutante: ${e.id} sin su guard y el check no lo ve`);
+    }
+  }
+});
+
+// Las líneas de la UI que escriben una liga en pantalla (texto, title, template) tienen que pasar por `nombreVisibleDeLiga`.
+function usosDeLigaCrudaK5r(fuentes) {
+  const problemas = [];
+  for (const [archivo, texto] of Object.entries(fuentes)) {
+    texto.split('\n').forEach((linea, i) => {
+      if (/^\s*(\/\/|\*|\/\*)/.test(linea) || !/textContent|createTextNode|\.title\s*=|\$\{|\.join\(/.test(linea)) {
+        return;
+      }
+      // Lo que pasa por el helper, y la liga usada solo como condición (`c.liga ? ... : ...`), no es texto en pantalla.
+      const sinPermitidos = linea.replace(/nombreVisibleDeLiga\([^()]*\)/g, '').replace(/(\.liga\b|\bligaId\b)\s*\?(?![?.])/g, '');
+      if (/(\.liga\b|\.ligaCampeon\b|\bligaId\b)/.test(sinPermitidos)) {
+        problemas.push(`${archivo}:${i + 1}: ${linea.trim()}`);
+      }
+    });
+  }
+  return problemas;
+}
+
+check('K5 (revisión) ninguna pantalla muestra el id crudo de una liga ("EMEA_MASTERS", "LCK_CL"): el mercado, la tabla, el Mundial, el feed y los tops pasan por nombreVisibleDeLiga', () => {
+  for (const liga of JSON.parse(fs.readFileSync(path.join(srcDir, 'data', 'leagues.json'), 'utf8'))) {
+    if (nombreVisibleDeLiga(liga.id) !== liga.nombre) {
+      throw new Error(`nombreVisibleDeLiga("${liga.id}") = "${nombreVisibleDeLiga(liga.id)}", esperaba "${liga.nombre}"`);
+    }
+  }
+  if (nombreVisibleDeLiga('EMEA_MASTERS') !== 'EMEA Masters' || nombreVisibleDeLiga('LCK_CL') !== 'LCK CL') {
+    throw new Error('los ids de las ligas de desarrollo no se traducen');
+  }
+  if (nombreVisibleDeLiga('XYZ') !== 'XYZ') {
+    throw new Error('un id desconocido tiene que volver tal cual');
+  }
+  const fuentes = {};
+  const recorrer = (dir) => {
+    for (const entrada of fs.readdirSync(dir, { withFileTypes: true })) {
+      const ruta = path.join(dir, entrada.name);
+      if (entrada.isDirectory()) recorrer(ruta);
+      else if (entrada.name.endsWith('.js')) fuentes[path.relative(srcDir, ruta).replace(/\\/g, '/')] = fs.readFileSync(ruta, 'utf8').replace(/\r\n/g, '\n');
+    }
+  };
+  recorrer(uiDir);
+  const crudos = usosDeLigaCrudaK5r(fuentes);
+  if (crudos.length > 0) {
+    throw new Error(`${crudos.length} línea(s) de la UI muestran una liga sin nombreVisibleDeLiga: ${crudos.slice(0, 4).join(' · ')}`);
+  }
+  // Mutante: sin la llamada, cada archivo que la usa tiene que saltar.
+  const usan = Object.entries(fuentes).filter(([archivo, texto]) => archivo !== 'ui/formatoUi.js' && /nombreVisibleDeLiga\(/.test(texto));
+  if (usan.length < 6) {
+    throw new Error(`esperaba al menos 6 archivos de la UI que muestran ligas, hay ${usan.length}`);
+  }
+  for (const [archivo, texto] of usan) {
+    const mutante = { [archivo]: texto.replace(/nombreVisibleDeLiga\(([^()]*)\)/g, '$1') };
+    if (usosDeLigaCrudaK5r(mutante).length === 0) {
+      throw new Error(`mutante: ${archivo} sin nombreVisibleDeLiga y el check no lo ve`);
+    }
   }
 });
 

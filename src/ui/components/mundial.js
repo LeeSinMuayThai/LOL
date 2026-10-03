@@ -1,3 +1,4 @@
+import { nombreVisibleDeLiga } from '../formatoUi.js';
 // K5-A (PLAN.md "K5 — decisiones de spec", K5-A, pantalla): el Mundial en una tarjeta. Arriba, tu Swiss resumido
 // (tu récord y cada cruce, con su resultado); abajo, el bracket de 8 con tu camino marcado. Lee solo el resumen que
 // el motor dejó en el log de cierre del Mundial (`core/internacional.js:resumenDelMundial`): no calcula nada.
@@ -29,7 +30,7 @@ function filaSwiss(resumen) {
   const cruces = el('div', 'mundial-cruces');
   for (const cruce of resumen.swiss) {
     const chip = el('span', `mundial-cruce mundial-cruce--${cruce.gano ? 'w' : 'l'}`);
-    chip.title = `Ronda ${cruce.ronda}: ${cruce.gano ? 'ganaste' : 'perdiste'} contra ${cruce.rival} (${cruce.liga})`;
+    chip.title = `Ronda ${cruce.ronda}: ${cruce.gano ? 'ganaste' : 'perdiste'} contra ${cruce.rival} (${nombreVisibleDeLiga(cruce.liga)})`;
     chip.append(el('span', 'mundial-cruce-res', cruce.gano ? 'G' : 'P'), el('span', 'mundial-cruce-rival', cruce.rival));
     cruces.appendChild(chip);
   }
@@ -77,6 +78,6 @@ export function crearTarjetaMundial(entry) {
   if (resumen.bracket.length > 0) {
     item.appendChild(bloqueBracket(resumen));
   }
-  item.appendChild(el('div', 'mundial-campeon', `Campeón: ${resumen.campeon} (${resumen.ligaCampeon})`));
+  item.appendChild(el('div', 'mundial-campeon', `Campeón: ${resumen.campeon} (${nombreVisibleDeLiga(resumen.ligaCampeon)})`));
   return item;
 }

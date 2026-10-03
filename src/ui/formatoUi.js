@@ -3,6 +3,7 @@
 // esto es lógica de juego — la fase T separa exactamente esto: `src/ui/`
 // traduce, `src/core`/`src/systems` deciden.
 import { hashCadena } from '../core/numeros.js';
+import LIGAS from '../data/leagues.json' with { type: 'json' };
 
 // --- La categoría del evento → familia de banner ---------------------------
 // Fase 12 (PLAN.md §12.1): todo evento del catálogo declara `categoria`,
@@ -30,6 +31,13 @@ const BANNER_POR_CATEGORIA = {
 };
 
 const FAMILIA_DEFECTO = { label: 'Decisión', token: 'rutina' };
+
+// El nombre que ve el jugador de una liga ("LCK CL", "EMEA Masters"), no su id ("LCK_CL"). Todo texto de pantalla que
+// muestre una liga pasa por acá (K5, revisión). Si el id no es de una liga conocida, vuelve tal cual.
+const NOMBRE_VISIBLE_DE_LIGA = Object.fromEntries(LIGAS.map((liga) => [liga.id, liga.nombre]));
+export function nombreVisibleDeLiga(ligaId) {
+  return NOMBRE_VISIBLE_DE_LIGA[ligaId] ?? ligaId;
+}
 
 // Decisiones que no vienen de `systems/events.js` (fecha marcada, por
 // ejemplo) no traen `datos.evento` — `decisionDesdeEvento` es la única que

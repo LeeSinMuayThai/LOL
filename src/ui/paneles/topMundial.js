@@ -1,5 +1,6 @@
 import { crearOrgChip } from '../components/orgChip.js';
 import { reconciliar, reemplazarEnElLugar } from '../core/reconciliar.js';
+import { nombreVisibleDeLiga } from '../formatoUi.js';
 
 // El panel del Top 5 mundial (fase 9Wc, regla de proceso 12: un sistema que
 // el jugador no puede ver no está terminado). Fuente: `mundo.topMundial`, que
@@ -102,7 +103,7 @@ function filaEl(fila, puesto, modulos) {
   const detalleEl = document.createElement('span');
   detalleEl.className = 'topmundial-detalle';
   const rol = fila.rol ? modulos.etiquetaRol(fila.rol) : '';
-  detalleEl.textContent = [rol, fila.liga].filter(Boolean).join(' · ');
+  detalleEl.textContent = [rol, nombreVisibleDeLiga(fila.liga)].filter(Boolean).join(' · ');
 
   el.append(puestoEl, handleEl, detalleEl);
   return el;

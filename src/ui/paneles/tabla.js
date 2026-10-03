@@ -1,6 +1,7 @@
 import { tablaDePosiciones } from '../../core/temporada.js';
 import { crearOrgChip } from '../components/orgChip.js';
 import { reconciliar, reemplazarEnElLugar } from '../core/reconciliar.js';
+import { nombreVisibleDeLiga } from '../formatoUi.js';
 
 // El panel de Tabla (fase T5, PLAN.md "T5 — El riel de contexto").
 //
@@ -78,7 +79,7 @@ export function renderTabla(container, state) {
 
   const jornada = temporada.calendario?.[temporada.indice]?.jornada;
   const ligaId = ligaObj?.id ?? liga;
-  refs.titulo.textContent = Number.isFinite(jornada) ? `${ligaId} · J${jornada}` : (ligaId || 'Tabla');
+  refs.titulo.textContent = Number.isFinite(jornada) ? `${nombreVisibleDeLiga(ligaId)} · J${jornada}` : (ligaId ? nombreVisibleDeLiga(ligaId) : 'Tabla');
 
   const items = tabla.map((fila, indice) => {
     const puesto = indice + 1;

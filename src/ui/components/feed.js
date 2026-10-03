@@ -11,7 +11,7 @@
 // MISMO nodo uno por uno, a su propio ritmo, en vez de todos juntos en un
 // `replaceChildren`.
 import METAS from '../../data/metas.json' with { type: 'json' };
-import { acentoDeLog, rotuloDeDecision } from '../formatoUi.js';
+import { acentoDeLog, nombreVisibleDeLiga, rotuloDeDecision } from '../formatoUi.js';
 import { crearOrgChip } from './orgChip.js';
 import { etiquetaRol } from '../../data/roles.js';
 import { crearTarjetaResultado, crearTarjetaResultadoSerie } from './serie.js';
@@ -59,7 +59,7 @@ function crearRevealTop20(entry) {
 
     const detalle = document.createElement('span');
     detalle.className = 'reveal-top20-detalle';
-    detalle.textContent = [fila.rol ? etiquetaRol(fila.rol) : '', fila.liga].filter(Boolean).join(' · ');
+    detalle.textContent = [fila.rol ? etiquetaRol(fila.rol) : '', nombreVisibleDeLiga(fila.liga)].filter(Boolean).join(' · ');
 
     filaEl.append(puesto, handle, detalle);
     lista.appendChild(filaEl);
