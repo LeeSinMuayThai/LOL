@@ -55,8 +55,10 @@ export function bonusDeCurva(player, stat) {
 // El único punto donde un efecto se vuelve permanente: `delta` es lo que el efecto movió de verdad sobre `stat`.
 // Si `stat` es de curva, una fracción del delta va al bonus y la marca (`origen` es el nombre visible del evento o
 // de la decisión, nunca un id) se anota en el registro por su único punto de escritura. No consume `rng`.
-export function conPermanencia(state, stat, delta, origen) {
-  const parte = BALANCE.atributos.fraccionPermanente * delta;
+// `fraccion` es la de los eventos y decisiones por defecto; la práctica (`systems/practica.js`) pasa la suya,
+// `fraccionPermanentePractica` (K3-B 2b).
+export function conPermanencia(state, stat, delta, origen, fraccion = BALANCE.atributos.fraccionPermanente) {
+  const parte = fraccion * delta;
   if (parte === 0 || !statsDeCurva().includes(stat)) {
     return state;
   }

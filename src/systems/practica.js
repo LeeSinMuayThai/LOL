@@ -3,6 +3,7 @@ import { crearLog } from '../core/log.js';
 import { clamp, clampStat } from '../core/numeros.js';
 import { campeonesAprendibles, pulirCampeon, aprenderCampeones } from '../core/pool.js';
 import { recuperarPorDescanso } from '../core/barras.js';
+import { conPermanencia } from '../core/curvas.js';
 import { BALANCE } from '../data/balance.js';
 import { ofrecerRutinas, rutinaPorId, elegirRutinaAutomatica } from '../core/rutinas.js';
 import { opcionDesdeRutina, descripcionDeSorteo, EJE_OFFSEASON } from '../core/rareza.js';
@@ -120,8 +121,17 @@ export function resolver(state, decision, respuesta, rng) {
     partes.push(`mentalidad +${Math.round(ganancia)}`);
   }
 
+  // K3-B 2b: la práctica también deja marca. Una fracción de lo que la rutina movió DE VERDAD sobre cada stat de
+  // curva (ya con el clamp y el techo de lesión; `conPermanencia` ignora los que no son de curva) va al bonus
+  // permanente, con la marca a nombre de la rutina. Lo que un techo de lesión recorta no es una pérdida de la
+  // práctica: solo cuentan las ganancias.
+  const conStats = { ...state, player: { ...state.player, championPool: aprendido.pool, stats } };
+  const marcado = Object.keys(stats).reduce((st, stat) => conPermanencia(
+    st, stat, Math.max(0, stats[stat] - state.player.stats[stat]), rutina.titulo, BALANCE.atributos.fraccionPermanentePractica
+  ), conStats);
+
   return {
-    state: { ...state, player: { ...state.player, championPool: aprendido.pool, stats } },
+    state: marcado,
     logs: [crearLog(
       'practica',
       `Offseason: ${partes.length > 0 ? partes.join(', ') : 'no aprovechaste el receso'}.`,

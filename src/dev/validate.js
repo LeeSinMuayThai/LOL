@@ -14172,6 +14172,49 @@ check('K3-B efecto con fracción positiva: suma fracción·delta al bonus del st
   });
 });
 
+check('K3-B 2b la práctica deja marca: con fraccionPermanentePractica > 0 (en memoria) la rutina de offseason suma fracción·(ganancia real, ya con el clamp) al bonus de mecánica, con UNA marca a nombre de la rutina; usa su propia fracción y no consume rng', () => {
+  // Protege PLAN.md "K3-B 2b": la práctica y las rutinas también dejan marca, con su fracción propia y el nombre
+  // visible de la rutina como origen; la ganancia que cuenta es la que de verdad movió el stat.
+  const FRACCION = 0.5;
+  const base = correrCarrera(3, 18);
+  const practica = sistemaPorId('practica');
+  const rutina = {
+    id: 'k3b_bootcamp_sintetico', titulo: 'Bootcamp de prueba',
+    reparto: { pulir: 0, nuevo: 0, mecanica: BALANCE.practica.puntos / 2, macro: BALANCE.practica.puntos / 2, descansar: 0 }
+  };
+  const decision = { datos: { rutinas: [rutina] } };
+  const conMecanica = (mecanica) => ({ ...base, player: { ...base.player, techoLesionMecanica: null, stats: { ...base.player.stats, mecanica } } });
+  const correr = (desde) => practica.resolver(desde, decision, { opcionId: rutina.id }, mulberry32(77)).state;
+  if (base.career.registro.marcas.length !== 0) throw new Error('el estado base ya trae marcas');
+  for (const desde of [conMecanica(50), conMecanica(BALANCE.stats.max - 1)]) {
+    const neutro = correr(desde);
+    const conFraccion = conBalanceK3A([['atributos', 'fraccionPermanentePractica', FRACCION]], () => correr(desde));
+    const ganancia = conFraccion.player.stats.mecanica - desde.player.stats.mecanica;
+    if (!(ganancia > 0)) throw new Error(`sonda vacía: la rutina no movió mecánica (${ganancia})`);
+    if (JSON.stringify(neutro.player.stats) !== JSON.stringify(conFraccion.player.stats)) {
+      throw new Error('la fracción cambió los stats del receso (consumió rng o movió algo más que el bonus)');
+    }
+    if (neutro.career.registro.marcas.length !== 0 || STATS_DE_CURVA_K3B.some((stat) => neutro.player.bonusPermanente[stat] !== 0)) {
+      throw new Error('con fraccionPermanentePractica 0 la práctica dejó bonus o marca');
+    }
+    const esperado = FRACCION * ganancia;
+    if (Math.abs(conFraccion.player.bonusPermanente.mecanica - esperado) > 1e-9) {
+      throw new Error(`bonus de mecánica ${conFraccion.player.bonusPermanente.mecanica}, esperaba ${esperado} (${FRACCION} × ganancia real ${ganancia})`);
+    }
+    const otros = STATS_DE_CURVA_K3B.filter((stat) => stat !== 'mecanica' && conFraccion.player.bonusPermanente[stat] !== 0);
+    if (otros.length > 0) throw new Error(`la práctica movió el bonus de ${otros.join(', ')} (macro no es de curva)`);
+    const marcas = conFraccion.career.registro.marcas;
+    const [marca] = marcas;
+    if (marcas.length !== 1 || marca.stat !== 'mecanica' || Math.abs(marca.delta - esperado) > 1e-9
+        || marca.origen !== rutina.titulo || marca.anio !== desde.calendario.anio) {
+      throw new Error(`esperaba UNA marca { mecanica, ${esperado}, '${rutina.titulo}', ${desde.calendario.anio} }: ${JSON.stringify(marcas)}`);
+    }
+  }
+  // Su propia fracción: la de los eventos no la mueve.
+  const soloEventos = conBalanceK3A([['atributos', 'fraccionPermanente', FRACCION]], () => correr(conMecanica(50)));
+  if (soloEventos.career.registro.marcas.length !== 0) throw new Error('la práctica usó fraccionPermanente (la de los eventos) en vez de la suya');
+});
+
 check('K3-B la curva de edad converge a objetivo + bonus: con bonusPermanente b, cada stat de curva termina el split velocidad·b más arriba que sin él', () => {
   const base = correrCarrera(4, 18);
   const lugar = { ...base, player: { ...base.player, techoLesionMecanica: null, stats: { ...base.player.stats, mecanica: 50, laneo: 50, teamfight: 50 } } };

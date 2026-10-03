@@ -380,6 +380,10 @@ export const BALANCE = {
     // curva que se vuelve permanente (`player.bonusPermanente`: la curva de edad converge a `objetivo + bonus`).
     // 0 = neutro, el juego queda como estaba; la fija K3c para que un efecto conserve >= 40% a 4 splits.
     fraccionPermanente: 0,
+    // K3-B 2b (PLAN.md, "K3 — decisiones de spec"): la misma regla para lo que mueve la práctica — las rutinas de
+    // offseason de `systems/practica.js` (el bootcamp) —, con su propia fracción porque su volumen es muy distinto
+    // al de un evento. 0 = neutro; la calibra K3c junto con `fraccionPermanente`.
+    fraccionPermanentePractica: 0,
 
     // --- Stats que se acumulan (el macro no declina: sostiene a los veteranos) ---
     acumulativos: {
