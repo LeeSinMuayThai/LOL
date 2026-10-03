@@ -16529,6 +16529,37 @@ checkLento('K5-B D78: hay splits de LCK y de LPL con criterio (coreanos y chinos
   }
 });
 
+// Revisión de K5: `congelar` decide antes de que el mundo se mueva y la mano de ofertas se arma después; un asiento
+// que recién era ofrecible con el mundo movido quedaba fuera de la mano (medido: 23,6% de los asientos ofrecibles en
+// 320 decisiones de oferta de 60 carreras coreanas). `congelarAsientosOfrecibles` los congela también.
+check('Revisión K5: en cada decisión de oferta, todo asiento ofrecible del estado post-mercado está congelado (y la mano sale de ahí)', () => {
+  let decisiones = 0;
+  for (let seed = 1; seed <= 12; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng, { regionOrigen: 'KR' });
+    for (let k = 0; k < 45 && !state.terminado; k += 1) {
+      let r = avanzarSplit(state, rng);
+      while (r.state.pendiente) {
+        const { sistemaId, decision } = r.state.pendiente;
+        const pre = r.state.mundo.mercadoPretemporada;
+        if (sistemaId === 'mercado' && decision.datos?.motivo === 'oferta' && pre) {
+          decisiones += 1;
+          const congelados = new Set(pre.congelados.filter((c) => c.rol === r.state.player.role).map((c) => c.org));
+          const fuera = orgsQueTeFicharian(r.state).map((e) => e.org.nombre).filter((org) => !congelados.has(org));
+          if (fuera.length) {
+            throw new Error(`seed ${seed}, split ${r.state.player.splitCount}: ${fuera.join(', ')} es ofrecible y no está congelado`);
+          }
+        }
+        r = resolverDecision(r.state, ESTRATEGIAS_K0.criterio(sistemaPorId(sistemaId), r.state, decision, rng), rng);
+      }
+      state = r.state;
+    }
+  }
+  if (decisiones < 20) {
+    throw new Error(`solo ${decisiones} decisiones de oferta en la muestra`);
+  }
+});
+
 // --- K5-A: el Mundial de verdad (PLAN.md "K5 — decisiones de spec", K5-A) ---
 // Las carreras de muestra corren el camino headless (el mismo pipeline del navegador) y anotan, split a split, la
 // línea del campeón del mundo que escribe `escena`, el torneo que dejó `systems/internacional.js` y cuántas veces

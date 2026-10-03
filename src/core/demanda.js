@@ -196,7 +196,7 @@ export function cumpleReglasDuras(state, org, liga, rol) {
 // Fase 9Mi (PLAN.md §9M.12.2 punto 1): la mejor alternativa REAL de una org a
 // ficharte para `rol` — contra la que se disputa el asiento en `ofertaPosible`.
 // Es lo mejor de:
-//   - el calibre de la liga: `max(calibreDeLiga, org.fuerza) −
+//   - el calibre de la liga: `max(calibreDeLiga, org.fuerza) −   (calibreDeLiga: un cuantil bajo, revisión K5)
 //     alternativaPisoFuerza`. Un asiento en LCK atrae talento de LCK aunque el
 //     club venga colapsado; un club fuerte en una liga chica pide su propia
 //     fuerza. Es el término que hace que el tier mida "¿le ganás a la
@@ -216,12 +216,21 @@ export function cumpleReglasDuras(state, org, liga, rol) {
 // juegan sus titulares (~82 y ~81, medido), así que con el prestigio como calibre había que tener 97-99 de
 // nivel para ganar un asiento: con `criterio` hubo 0 splits de LCK y de LPL en 400 carreras, Corea incluida.
 // En el resto de las ligas las dos cosas casi coinciden. Una liga sin orgs cae al prestigio.
+// Revisión de K5: el calibre ya no es el PROMEDIO de la liga sino un cuantil bajo de sus clubes
+// (`demanda.cuantilCalibreDeLiga`), y el término de cada org es `max(org.fuerza, ese cuantil)`. Con el promedio,
+// la misma vara (~81 en LCK) valía para el campeón y para el colista, y quedaba por encima de donde pica una carrera
+// coreana con `criterio` (p50 ~82, con el castigo etario encima): 0 splits de LCK en 60 carreras. Con el cuantil, el
+// club fuerte sigue pidiendo su fuerza y el flojo pide la del fondo de su liga, que es contra quien compite el asiento.
 export function calibreDeLiga(liga) {
   const orgs = liga?.orgs ?? [];
   if (!orgs.length) {
     return liga?.prestigio ?? 0;
   }
-  return orgs.reduce((suma, org) => suma + (org.fuerza ?? 0), 0) / orgs.length;
+  const fuerzas = orgs.map((org) => org.fuerza ?? 0).sort((a, b) => a - b);
+  const posicion = BALANCE.demanda.cuantilCalibreDeLiga * (fuerzas.length - 1);
+  const abajo = Math.floor(posicion);
+  const arriba = Math.min(fuerzas.length - 1, abajo + 1);
+  return fuerzas[abajo] + (fuerzas[arriba] - fuerzas[abajo]) * (posicion - abajo);
 }
 
 export function nivelAlternativaAsiento(state, orgNombre, rol) {

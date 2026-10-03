@@ -1068,6 +1068,10 @@ export const BALANCE = {
     // (`nivelAnclaReemplazo − canteraNivelBajoOrg`) es el último recurso, no lo
     // que la org apunta.
     alternativaPisoFuerza: 2,
+    // Revisión de K5 (D78): el calibre de una liga en la disputa del asiento es este cuantil de la fuerza de sus
+    // clubes (0 = el colista, 1 = el mejor), y cada org pide `max(org.fuerza, calibre)`. Punto de partida: el cuarto
+    // de abajo de la liga. K5c lo calibra contra cuántos coreanos y chinos con nivel llegan a su liga.
+    cuantilCalibreDeLiga: 0.25,
     // El enfriamiento etario, en puntos de nivel que se te descuentan en la
     // disputa (`core/valorMercado.js:castigoEtario`). 0 a los ≤22, ~10 a los 27,
     // ~16 a los 30 — un veterano en declive cae bajo la vara de su liga y el

@@ -10,7 +10,7 @@ import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
 import { cerrarFila, registrarPico, registrarSalarioEnFila, registrarArraigoEnFila, arraigoInicial } from '../core/registro.js';
 import { bandaDeJerarquia, bandaDeArraigoFicha, nivelDelJugador } from '../core/ficha.js';
 import { orgsQueTeFicharian, ofertaPosible, esResidenteDe, nivelAlternativaAsiento, factorRenovacionEtario } from '../core/demanda.js';
-import { resolverMercadoMundial, cerrarAsientosCongelados } from '../core/mercadoMundial.js';
+import { resolverMercadoMundial, cerrarAsientosCongelados, congelarAsientosOfrecibles } from '../core/mercadoMundial.js';
 import { jerarquiaAlFichar, sinergiaAlFichar, conPlantillaDelPlantel } from './roster.js';
 import { companerosDelPlantel } from '../core/fuerza.js';
 import { BALANCE } from '../data/balance.js';
@@ -503,14 +503,16 @@ function aplicarMercado(state, rng) {
   // de este split se juega con ellos, no con la foto de `roster.js`.
   const plantilla = conPlantillaDelPlantel(mundo.state);
   const logsMundo = [...mundo.logs, ...plantilla.logs];
-  const stConValor = conValorDeMercadoActualizado(plantilla.state);
+  const stMovido = conValorDeMercadoActualizado(plantilla.state);
 
   // Tier 3: a ese nivel no hay mercado, es automático (competitivo.js lo
   // resuelve). Un tier-2 LIBRE (recién ascendido de tier 3, o sin equipo) SÍ va
   // al mercado — abajo.
-  if (stConValor.career.tier === 3) {
-    return { state: stConValor, logs: logsMundo };
+  if (stMovido.career.tier === 3) {
+    return { state: stMovido, logs: logsMundo };
   }
+  // Revisión de K5: los asientos que recién son ofrecibles con el mundo ya movido también se congelan (sin rng).
+  const stConValor = contratoVencido ? congelarAsientosOfrecibles(stMovido) : stMovido;
 
   // K4-C2: la oferta de import que aceptaste en una bifurcación se firma antes que nada (banquillo incluido: te fuiste).
   const importPendiente = firmarImportPendiente(stConValor, rng);
