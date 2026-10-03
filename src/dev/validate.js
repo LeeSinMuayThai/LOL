@@ -87,6 +87,7 @@ import {
 import { esMapaDeDesempate } from '../core/serie.js';
 import { previaDePartido, previaDeDecision, textoDeProbabilidadJugada } from '../core/previaDePartido.js';
 import { MONTAR_MINIJUEGO } from '../ui/components/minijuegos/index.js';
+import { LABEL_MARCA as LABEL_MARCA_FICHA, lineaDeContextoFicha } from '../ui/components/ficha.js';
 import { crearCampeonTile } from '../ui/components/campeonTile.js';
 import METAS from '../data/metas.json' with { type: 'json' };
 
@@ -14408,6 +14409,48 @@ checkLento('K4 (revisión) guardado: en cada tipo de pausa, guardar y recargar (
     throw new Error(`el lote no cubrió ${faltan.join(', ')} (vistos: ${[...vistos.keys()].join(', ')}): cambiá las seeds, `
       + 'no saques el tipo de la lista');
   }
+});
+
+// K4 (revisión, la del navegador): la ficha mostraba `top_mundial` como chip y `LCK_CL` en su línea de contexto. Toda
+// marca que `core/contexto.js` puede producir (leída del fuente, para cubrir las raras como `mejor_del_mundo`, y además
+// las vistas en carreras reales) tiene etiqueta en `LABEL_MARCA` de la ficha, y la línea de contexto nunca muestra el
+// id de una liga cuyo nombre visible es otro.
+check('K4 (revisión) ficha sin ids crudos: toda marca de contexto tiene etiqueta y la línea de contexto muestra el nombre visible de la liga', () => {
+  const fuente = fs.readFileSync(new URL('../core/contexto.js', import.meta.url), 'utf8');
+  const delFuente = [...fuente.matchAll(/marcas\.push\('([a-z0-9_]+)'\)/g)].map((m) => m[1]);
+  if (delFuente.length < 10) throw new Error(`solo ${delFuente.length} marcas leídas de core/contexto.js: cambió la forma de armarlas`);
+  const sinEtiqueta = new Set(delFuente.filter((id) => !LABEL_MARCA_FICHA[id]));
+  const idsCrudos = LIGAS.filter((liga) => liga.nombre !== liga.id).map((liga) => liga.id);
+  const problemas = [];
+  let lineas = 0;
+  for (const seed of [1, 2, 3, 4]) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 40 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      for (const id of state.contexto?.marcas ?? []) {
+        if (!LABEL_MARCA_FICHA[id]) sinEtiqueta.add(id);
+      }
+      const linea = lineaDeContextoFicha(state);
+      lineas += 1;
+      const crudo = idsCrudos.find((id) => new RegExp(`(^|[^A-Za-z0-9_])${id}([^A-Za-z0-9_]|$)`).test(linea));
+      if (crudo) problemas.push(`seed ${seed}, split ${i}: "${linea}" muestra el id ${crudo}`);
+    }
+  }
+  // Y en cada liga del mundo cuyo id no es su nombre (las carreras de arriba no pasan por todas): misma línea, puesta ahí.
+  const base = correrCarrera(1, 14);
+  let sinteticas = 0;
+  for (const liga of base.mundo.ligas.filter((l) => idsCrudos.includes(l.id))) {
+    const linea = lineaDeContextoFicha({ ...base, career: { ...base.career, liga: liga.id } });
+    const nombre = LIGAS.find((l) => l.id === liga.id).nombre;
+    if (!linea.includes(nombre) || new RegExp(`(^|[^A-Za-z0-9_])${liga.id}([^A-Za-z0-9_]|$)`).test(linea)) {
+      problemas.push(`en ${liga.id} la línea es "${linea}" (tiene que decir "${nombre}")`);
+    }
+    sinteticas += 1;
+  }
+  if (sinEtiqueta.size > 0) problemas.push(`marcas sin etiqueta en la ficha: ${[...sinEtiqueta].join(', ')}`);
+  if (problemas.length > 0) throw new Error(problemas.slice(0, 5).join(' | '));
+  if (lineas < 100 || sinteticas < 3) throw new Error(`check vacío: ${lineas} líneas de contexto, ${sinteticas} ligas con id distinto del nombre`);
 });
 
 // --- K4-C: solo frenan las bifurcaciones; lo demás lo resuelve tu perfil (PLAN.md "K4 — decisiones de spec") ---

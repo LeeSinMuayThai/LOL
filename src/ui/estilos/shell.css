@@ -384,3 +384,47 @@ body[data-legado="on"] .tarjeta { margin-top: 0; }
   .escenario .panel { padding: var(--s-5) var(--s-4); }
   .ticker { padding: 0 var(--s-3); }
 }
+
+/* K4 (revisión del navegador): a 375px la ficha pegada arriba (`.riel`, sticky desde 899px) ocupaba ~300 de 812px
+   mientras había una decisión o un minijuego en pantalla, y la pausa quedaba abajo del pliegue. Con una pausa
+   visible y pantalla angosta, la ficha se achica a UNA línea: el nivel chico y nombre · contexto con elipsis; el
+   resto (marcas, ranked, pool, contrato, historia) vuelve al cerrar la pausa. Solo CSS: escritorio no cambia. */
+@media (max-width: 639px) {
+  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-card {
+    padding: var(--s-1) var(--s-3);
+  }
+  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-card > :not(.ficha-encabezado),
+  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-encabezado > :not(.ficha-nivel):not(.ficha-identidad),
+  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-nivel-label,
+  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-estado-linea,
+  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-perfil {
+    display: none;
+  }
+  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-encabezado { gap: var(--s-2); }
+  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-nivel {
+    min-width: 0;
+    padding: var(--s-1) var(--s-2);
+  }
+  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-nivel-numero { font-size: var(--fs-3); }
+  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-identidad {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s-2);
+    white-space: nowrap;
+  }
+  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-nombre-linea {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: var(--fs-2);
+  }
+  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-contexto-linea {
+    flex: 1 1 0;
+    min-width: 0;
+    margin-top: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: var(--fs-1);
+  }
+}
