@@ -19010,6 +19010,128 @@ check('K4c-M la fecha marcada es una decisión: la mejor y la peor opción difie
   }
 });
 
+// --- K4c: el cierre de año es una decisión (PLAN.md K4c, "El cierre de año, re-medido") ---
+//
+// Antes, los 10 eventos de `data/events/cierre_edad.json` eran reflexiones con efectos chicos: el cierre frena ~14 veces por
+// carrera y solo el 5% de esas paradas movía la carrera (agencia.js). Ahora cada uno es una decisión de carrera con
+// intercambio (invertir en el juego, cuidar la cabeza y la familia, la plata y la marca), y este check lo exige sobre el
+// catálogo. La magnitud de un eje es el punto medio ponderado por los pesos de catálogo de los outcomes de la opción (un
+// outcome que no lo mueve cuenta 0), medido en cortes "alta" de su familia (`magnitudBandas`: la misma vara que la previa):
+//   (a) dos opciones del mismo evento no mueven los mismos ejes con los mismos signos (un eje "se mueve" desde el corte
+//       "media" de su familia: por debajo es "baja" en la previa y no cuenta);
+//   (b) al menos una opción de cada evento mueve un eje `UMBRAL_DE_MAGNITUD` cortes "alta" o más. 1,25 es el p75 de la mejor
+//       opción de cada una de las 26 bifurcaciones de K4-C2 (medido: p25 0,67 · mediana 1,0 · p75 1,27): "del orden de las
+//       bifurcaciones". Antes de este paso, 5 de los 10 cierres no llegaban;
+//   (c) ninguna opción domina a otra en todos los ejes (punto medio ponderado, cada eje que alguna de las dos mueva);
+//   (d) toda opción con un beneficio tiene un costo: un eje con punto medio ponderado de al menos la "media" en contra, o
+//       un outcome (cualquiera: es el riesgo) cuyo punto medio en algún eje llegue a ese mismo corte en contra;
+//   (e) y ninguna opción es una trampa: toda opción trae un beneficio (un eje a favor de al menos la "media").
+// No puede pasar vacío: sin eventos de cierre, o con uno de menos de dos opciones, falla.
+check('K4c el cierre de año es una decisión: las opciones mueven ejes distintos, alguna pesa como una bifurcación, ninguna domina y cada beneficio cuesta', () => {
+  const UMBRAL_DE_MAGNITUD = 1.25;
+  const TOLERANCIA = 1e-9;
+
+  const familiaDe = (efecto) => (efecto.type === 'pool' ? `pool_${efecto.accion}` : efecto.type);
+  const ejeDe = (efecto) => (efecto.type === 'pool' ? `${efecto.path}:${efecto.accion}` : efecto.path);
+  // Los efectos con rango numérico: `stat`, `ladder` y el pool que aprende o sube maestría ("olvidar" no tiene rango).
+  const tieneMagnitud = (efecto) => ['stat', 'ladder', 'pool'].includes(efecto.type) && typeof efecto.min === 'number';
+
+  function ejesDeOpcion(opcion) {
+    const pesoTotal = opcion.outcomes.reduce((suma, outcome) => suma + outcome.weight, 0);
+    const ejes = {};
+    const peorOutcome = {};
+    for (const outcome of opcion.outcomes) {
+      for (const efecto of outcome.effects.filter(tieneMagnitud)) {
+        const eje = ejeDe(efecto);
+        const medio = (efecto.min + efecto.max) / 2;
+        ejes[eje] = (ejes[eje] ?? 0) + (outcome.weight / pesoTotal) * medio;
+        peorOutcome[eje] = Math.min(peorOutcome[eje] ?? Infinity, medio);
+        ejes[`${eje}#familia`] = familiaDe(efecto);
+      }
+    }
+    return { ejes, peorOutcome };
+  }
+
+  const eventos = TODOS_LOS_EVENTOS.filter((evento) => evento.cierreDeEdad);
+  if (eventos.length === 0) {
+    throw new Error('el check no revisó ningún evento de cierre (no hay eventos con cierreDeEdad: true)');
+  }
+
+  const problemas = [];
+  for (const evento of eventos) {
+    if (evento.options.length < 2) {
+      problemas.push(`${evento.id}: una decisión necesita al menos dos opciones (tiene ${evento.options.length})`);
+      continue;
+    }
+    const opciones = evento.options.map((opcion) => ({ id: opcion.id, ...ejesDeOpcion(opcion) }));
+    const familias = {};
+    for (const opcion of opciones) {
+      for (const clave of Object.keys(opcion.ejes).filter((c) => c.endsWith('#familia'))) {
+        familias[clave.slice(0, -'#familia'.length)] = opcion.ejes[clave];
+        delete opcion.ejes[clave];
+      }
+    }
+    const banda = (eje) => BALANCE.eventos.magnitudBandas[familias[eje]];
+    const cortesDe = (eje, valor) => valor / banda(eje).p66;
+
+    // (a) los ejes y signos que cada opción mueve de verdad.
+    const firma = (opcion) => Object.keys(familias).sort().map((eje) => {
+      const valor = opcion.ejes[eje] ?? 0;
+      return Math.abs(valor) >= banda(eje).p33 ? `${eje}${valor > 0 ? '+' : '-'}` : null;
+    }).filter(Boolean).join(' ');
+    const firmas = opciones.map(firma);
+    for (let i = 0; i < opciones.length; i += 1) {
+      for (let j = i + 1; j < opciones.length; j += 1) {
+        if (firmas[i] === firmas[j]) {
+          problemas.push(`${evento.id}: ${opciones[i].id} y ${opciones[j].id} mueven los mismos ejes con los mismos signos (${firmas[i] || 'ninguno'})`);
+        }
+      }
+    }
+
+    // (b) la opción que más pesa.
+    const mayor = Math.max(...opciones.map((opcion) => Math.max(0, ...Object.entries(opcion.ejes).map(([eje, valor]) => Math.abs(cortesDe(eje, valor))))));
+    if (mayor < UMBRAL_DE_MAGNITUD - TOLERANCIA) {
+      problemas.push(`${evento.id}: su eje más fuerte mueve ${mayor.toFixed(2)} cortes "alta" (mínimo ${UMBRAL_DE_MAGNITUD}, la escala de las bifurcaciones)`);
+    }
+
+    // (c) ninguna domina.
+    const domina = (a, b) => {
+      let mejorEnAlguno = false;
+      for (const eje of Object.keys(familias)) {
+        const va = a.ejes[eje] ?? 0;
+        const vb = b.ejes[eje] ?? 0;
+        if (va < vb - TOLERANCIA) return false;
+        if (va > vb + TOLERANCIA) mejorEnAlguno = true;
+      }
+      return mejorEnAlguno;
+    };
+    for (const a of opciones) {
+      for (const b of opciones) {
+        if (a !== b && domina(a, b)) {
+          problemas.push(`${evento.id}: ${a.id} domina a ${b.id} en todos los ejes`);
+        }
+      }
+    }
+
+    // (d) cada beneficio cuesta y (e) ninguna es una trampa.
+    for (const opcion of opciones) {
+      const ejes = Object.keys(opcion.ejes);
+      const beneficio = ejes.some((eje) => opcion.ejes[eje] >= banda(eje).p33 - TOLERANCIA);
+      const costo = ejes.some((eje) => opcion.ejes[eje] <= -banda(eje).p33 + TOLERANCIA || opcion.peorOutcome[eje] <= -banda(eje).p33 + TOLERANCIA);
+      if (!beneficio) {
+        problemas.push(`${evento.id}/${opcion.id}: no trae ningún beneficio (ningún eje a favor de la "media"): es una trampa`);
+      }
+      if (beneficio && !costo) {
+        problemas.push(`${evento.id}/${opcion.id}: trae un beneficio y ningún costo (ni un eje en contra ni un outcome que lo pague)`);
+      }
+    }
+  }
+
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problema(s) en ${eventos.length} eventos de cierre:\n  ${problemas.slice(0, 40).join('\n  ')}${problemas.length > 40 ? `\n  ... y ${problemas.length - 40} más` : ''}`);
+  }
+});
+
 if (errores.length > 0) {
   console.error(`\n${errores.length} check(s) fallaron.`);
   process.exit(1);
