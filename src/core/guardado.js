@@ -1,3 +1,5 @@
+import { planInicial, planPorId } from './rutinas.js';
+
 // El guardado de la carrera (fase T8, PLAN.md "T8 — La página como
 // página", P.2). Puro: serializa y deserializa, nada de `localStorage` acá
 // — eso vive en `src/ui/almacenamiento.js`, para que este archivo (y
@@ -42,8 +44,39 @@
 // en `serie` y `record`/`campeon` en cada `registro.internacionales` — K5-B, la región se elige: las ligas del mundo
 // suman LRN y LRS, las tier 2 de LATAM sin primera arriba, con `sinPrimera` y `alimentaA` — K5-C, el final lo decide el
 // mercado: `flags.splitsSinOfertaEnTier`, `flags.forkMercadoSplit`, `tarjeta.motivo` y `state.motivoRetiro`, el único
-// lugar del motivo del retiro —K4-C2 lo había puesto en `flags.motivoRetiro`—).
-export const VERSION = 10;
+// lugar del motivo del retiro —K4-C2 lo había puesto en `flags.motivoRetiro`—) · 11 (K4c, el plan anual y el cierre del bloque
+// B: `player.planAnual` entra y `flags.preparacionDeSplit` se va, porque la pretemporada ya no frena para elegir la práctica;
+// además los logs ganan el campo opcional `adjunto` y la pausa de la prueba del mercado lleva `respaldo`, que un guardado de
+// antes no trae y se calcula con la misma regla). Un guardado de VERSION 10 SÍ carga: `migrarDe10` lo completa (T4).
+export const VERSION = 11;
+const VERSION_MIGRABLE = 10;
+
+// 10 -> 11. Le pone al estado lo que la versión nueva espera y la vieja no escribía: `player.planAnual` (el plan que le
+// cierra al perfil, el mismo del estado inicial: un guardado anterior nunca tuvo un cierre que lo fije) y fuera
+// `flags.preparacionDeSplit`. Si el guardado quedó parado en la pausa de la práctica de la pretemporada (la parada que el
+// plan anual quitó), la decisión se reemplaza por un solo botón que lo dice: elegir una rutina ya no existe, y al seguir
+// `systems/practica.js` entrena el tramo del split según el plan. Puro: no toca el RNG ni el reloj.
+export function migrarDe10(state) {
+  const { preparacionDeSplit, ...flags } = state.flags ?? {};
+  const planAnual = state.player?.planAnual ?? planInicial(state.player?.perfil?.actual);
+  const migrado = { ...state, flags, player: { ...state.player, planAnual } };
+  if (state.pendiente?.sistemaId !== 'practica') {
+    return migrado;
+  }
+  const plan = planPorId(planAnual);
+  return {
+    ...migrado,
+    pendiente: {
+      ...state.pendiente,
+      decision: {
+        titulo: 'La pretemporada',
+        descripcion: `Ya no elegís la preparación acá: el cierre de año fija tu plan de práctica y cada split entrena solo. Este año: ${plan.titulo}.`,
+        opciones: [{ id: 'seguir', label: 'Seguir', descripcion: `Entrenás según el plan del año: ${plan.titulo}.` }],
+        datos: { motivo: 'practica' }
+      }
+    }
+  };
+}
 
 export function serializar(state, rng, rngUi) {
   return JSON.stringify({
@@ -65,7 +98,7 @@ export function deserializar(json) {
   } catch {
     return null;
   }
-  if (!datos || typeof datos !== 'object' || datos.version !== VERSION) {
+  if (!datos || typeof datos !== 'object' || (datos.version !== VERSION && datos.version !== VERSION_MIGRABLE)) {
     return null;
   }
   if (typeof datos.rngEstado !== 'number' || !datos.state) {
@@ -75,7 +108,7 @@ export function deserializar(json) {
     seed: datos.seed,
     rngEstado: datos.rngEstado,
     rngUiEstado: typeof datos.rngUiEstado === 'number' ? datos.rngUiEstado : null,
-    state: datos.state,
+    state: datos.version === VERSION_MIGRABLE ? migrarDe10(datos.state) : datos.state,
     guardadoEn: datos.guardadoEn ?? null
   };
 }

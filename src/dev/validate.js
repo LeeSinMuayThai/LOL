@@ -722,30 +722,15 @@ const FORMAS_CONOCIDAS = {
   // motivo del retiro: `flags.motivoRetiro`, de K4-C2, se fue). Re-registrada en la revisión de K5 (la rama no se
   // mergeó): cambiar de línea deja `meta.tierListAnterior` vacía y las carreras de muestra se corrieron (el hash del
   // Mundial, D78, la renovación NPC amateur), así que cambian las rutas opcionales que la muestra ve.
-  // Re-registrada en K4c-F (el bloque B sigue sin mergear): los logs ganan el campo opcional `adjunto` (core/log.js). Un
-  // guardado de antes es compatible tal cual: sin `adjunto`, cada línea forma su beat como antes; por eso no sube VERSION.
-  // Re-registrada en K4c-S (el bloque B sigue sin mergear): la pausa de la prueba del mercado lleva `otras` y `carry` (las ofertas
-  // que quedan si la prueba no alcanza) y las carreras de muestra se corrieron (la prueba decide el contrato), así que cambian las
-  // rutas opcionales que la muestra ve. Un guardado de antes con la prueba pendiente no trae esas claves y se carga igual: si no
-  // alcanza, se cae la oferta y no queda otra. Por eso no sube VERSION: el paso 3 de K4c la sube a 11.
-  // K4c-M: el contenido de la fecha marcada (opciones, efectos y pesos de data/events/partido/*.json) corrió las carreras de
-  // muestra y cambiaron rutas opcionales que la muestra ve (el hash anterior, 84458be49efc): claves de org dentro de
-  // `internacional.swiss.record`, `flags.ofertaDeImport.clausula` (null o string según la carrera) y
-  // `internacional.bracket.final[].propio`. Ningún campo del estado nació ni murió: no sube VERSION (mismo criterio que K5 y K4c-F).
-  // K4c-S + K4c-M juntos (integración del supervisor).
-  // Re-registrada en K4c (paso 3a; mismo criterio, no sube VERSION: la sube el paso 3b): las constantes del ritmo (el plan de serie,
-  // la ventana de la fecha, las mecánicas del mapa decisivo) corrieron las carreras de muestra y cambiaron rutas opcionales que la
-  // muestra ve. Ningún campo del estado nació ni murió (el hash anterior, 6efe5c15f9a6).
-  // Re-registrada en K4c (paso 3a, arreglos; mismo criterio que K4c-S, no sube VERSION: la sube el paso 3b): la pausa de la
-  // prueba del mercado lleva `respaldo` (el id de la oferta que se firma si no alcanza, o null) y las carreras de muestra se
-  // corrieron (el respaldo, la prueba y la ventana nuevas). Un guardado de antes con la prueba pendiente no trae `respaldo`
-  // y se carga igual: se calcula con la misma regla (el hash anterior, dba93d63f79f).
-  // Re-registrada en K4c (cierre de año; mismo criterio, no sube VERSION: la sube el paso 3b): el contenido de data/events/cierre_edad.json
-  // (tres opciones por evento, un pool que aprende) corrió las carreras de muestra y cambiaron rutas opcionales que la muestra ve. Ningún
-  // campo del estado nació ni murió (el hash anterior, dba93d63f79f).
-  // Integración de las dos (supervisor).
-  // K4c (plan anual): `player.planAnual` entra y `flags.preparacionDeSplit` se va; misma VERSION (el paso 3b la sube a 11).
-  10: '305af896ede9'
+  // La de main (K5), tal como salió con VERSION 10 y la que lleva un guardado de esa versión. El bloque B (K4c) cambió la forma del
+  // estado —lo registra la 11— y un guardado de la 10 se migra al cargar (`migrarDe10`, core/guardado.js).
+  10: '7128c450fa6c',
+  // K4c (la integración del bloque B, el paso 3b): `player.planAnual` entra (el plan de práctica que fija el cierre de año) y
+  // `flags.preparacionDeSplit` se va (la pretemporada ya no frena para elegir la práctica); los logs ganan `adjunto` y la pausa de la
+  // prueba del mercado lleva `respaldo` y `otras`/`carry` (K4c-F, K4c-S, paso 3a). Las demás re-registraciones del bloque (el contenido
+  // de la fecha marcada, la prueba, el cierre de año, la ventana) solo movieron rutas opcionales que la muestra ve: ningún otro campo
+  // nació ni murió. Un guardado de la 10 carga: ver `migrarDe10` y su check.
+  11: '305af896ede9'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -18795,6 +18780,153 @@ checkLento(`K4c meta del ritmo (criterio, ${CARRERAS_METAS_B} × ${SPLITS_LOTE_K
 checkLento(`K4c meta del ritmo (criterio, ${CARRERAS_METAS_B} × ${SPLITS_LOTE_K0}): las bifurcaciones por carrera, en promedio, están en [${META_K4_BIFURCACIONES_PROMEDIO[0]}, ${META_K4_BIFURCACIONES_PROMEDIO[1]}]`, () => {
   const problemas = problemasDeLasMetasB(['bifurcaciones']);
   if (problemas.length > 0) throw new Error(problemas.join('; '));
+});
+
+// --- K4c (paso 3b): el guardado VERSION 11 y la migración desde la 10 (T4: el estado completo) ---
+//
+// VERSION 10 es la de main (K5, forma '7128c450fa6c'); la 11 es la del plan anual: `player.planAnual` entra, `flags.preparacionDeSplit`
+// se va, los logs ganan `adjunto` (opcional) y la pausa de la prueba del mercado lleva `respaldo` (el código lo calcula si falta). Un
+// guardado de la 10 TIENE que cargar: `migrarDe10` lo completa con el plan del perfil, el mismo que el estado inicial. Regla 17, qué
+// protege: "el guardado de la versión anterior no se pierde cuando cambia la forma del estado" (K.7 riesgo 3), desde K4c (paso 3b).
+const { migrarDe10 } = await import('../core/guardado.js');
+const { isDeepStrictEqual: sonIgualesK4cG } = await import('util');
+const { planInicial: planInicialK4cG, IDS_PLAN: IDS_PLAN_K4cG } = await import('../core/rutinas.js');
+const FORMA_DE_LA_VERSION_10_K4cG = '7128c450fa6c';
+const PREPARACION_DE_SPLIT_VIEJA_K4cG = 4;
+const SEEDS_GUARDADO_10_K4cG = [1, 2, 3, 4];
+const SPLITS_GUARDADO_10_K4cG = 14;
+
+// Lo que escribía el código de VERSION 10: sin `planAnual`, con `flags.preparacionDeSplit` y sin `adjunto` en los logs.
+function guardadoDeLaVersion10K4cG(state, rng) {
+  const datos = JSON.parse(serializarGuardado(state, rng));
+  datos.version = 10;
+  delete datos.state.player.planAnual;
+  datos.state.flags.preparacionDeSplit = PREPARACION_DE_SPLIT_VIEJA_K4cG;
+  for (const log of datos.state.logs) {
+    delete log.adjunto;
+  }
+  return JSON.stringify(datos);
+}
+
+// Lo que JSON conserva (el guardado pasa por JSON): sin `undefined`, y sin `adjunto` (que el código de VERSION 10 no escribía, y el
+// guardado de prueba lo borra), y sin importar el orden de las claves al comparar.
+const comoJsonK4cG = (valor) => JSON.parse(JSON.stringify(valor), (clave, hijo) => (clave === 'adjunto' ? undefined : hijo));
+
+function conElRngDeK4cG(seed, estado) {
+  const rng = mulberry32(seed);
+  rng.restaurar(estado);
+  return rng;
+}
+
+check('K4c guardado VERSION 11: la forma de la 10 sigue registrada, y un guardado de la 10 carga completo (plan del perfil, sin preparacionDeSplit) y sigue igual que el de la 11', () => {
+  if (VERSION_GUARDADO !== 11 || FORMAS_CONOCIDAS[10] !== FORMA_DE_LA_VERSION_10_K4cG || FORMAS_CONOCIDAS[11] === FORMAS_CONOCIDAS[10]) {
+    throw new Error(`VERSION ${VERSION_GUARDADO}, forma de la 10 ${FORMAS_CONOCIDAS[10]} (la de main es ${FORMA_DE_LA_VERSION_10_K4cG}), forma de la 11 ${FORMAS_CONOCIDAS[11]}`);
+  }
+  // Una versión que no es ni la 11 ni la 10 se sigue descartando entera.
+  const rngVacio = mulberry32(1);
+  const base = JSON.parse(serializarGuardado(createInitialState(1, rngVacio), rngVacio));
+  for (const version of [2, 9, 12]) {
+    if (deserializarGuardado(JSON.stringify({ ...base, version })) !== null) {
+      throw new Error(`un guardado de VERSION ${version} cargó: solo la 11 y la 10 (migrada) se cargan`);
+    }
+  }
+  let comparados = 0;
+  for (const seed of SEEDS_GUARDADO_10_K4cG) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < SPLITS_GUARDADO_10_K4cG && !state.terminado; i += 1) {
+      // Mientras ningún cierre de año fijó otro plan, el que el guardado viejo no traía es exactamente el del perfil.
+      if (state.player.planAnual === planInicialK4cG(state.player.perfil.actual)) {
+        const datos = deserializarGuardado(guardadoDeLaVersion10K4cG(state, rng));
+        if (datos === null) {
+          throw new Error(`seed ${seed}, split ${i}: el guardado de VERSION 10 no cargó`);
+        }
+        if ('preparacionDeSplit' in datos.state.flags || !IDS_PLAN_K4cG.includes(datos.state.player.planAnual)) {
+          throw new Error(`seed ${seed}, split ${i}: sin migrar (preparacionDeSplit ${'preparacionDeSplit' in datos.state.flags}, planAnual ${datos.state.player.planAnual})`);
+        }
+        if (!sonIgualesK4cG(datos.state, comoJsonK4cG(state))) {
+          throw new Error(`seed ${seed}, split ${i}: el estado migrado no es el del guardado de la 11`);
+        }
+        // Y sigue igual: el mismo próximo split (estado, logs y RNG) que el de la versión nueva.
+        const seguido = avanzarSplitAuto(state, conElRngDeK4cG(seed, rng.estado()));
+        const rngMigrado = conElRngDeK4cG(datos.seed, datos.rngEstado);
+        const recargado = avanzarSplitAuto(datos.state, rngMigrado);
+        if (!sonIgualesK4cG(comoJsonK4cG(seguido), comoJsonK4cG(recargado))) {
+          throw new Error(`seed ${seed}, split ${i}: el guardado migrado no juega el mismo split`);
+        }
+        comparados += 1;
+      }
+      state = avanzarSplitAuto(state, rng).state;
+    }
+  }
+  if (comparados < 20) {
+    throw new Error(`check vacío: ${comparados} guardados de la 10 comparados (hacen falta 20)`);
+  }
+  // Un guardado sin `planAnual` ni perfil conocido cae al plan por defecto en vez de tirar.
+  const sinPerfil = migrarDe10({ flags: {}, player: {} });
+  if (!IDS_PLAN_K4cG.includes(sinPerfil.player.planAnual)) {
+    throw new Error(`un guardado sin perfil debería caer al plan por defecto, dio ${sinPerfil.player.planAnual}`);
+  }
+});
+
+check('K4c guardado VERSION 11: un guardado de la 10 parado en la pausa de la práctica (que ya no existe) se reemplaza por un botón y sigue igual que un split sin pausa', () => {
+  const posicion = ETAPAS_SPLIT.findIndex((sistema) => sistema.id === 'practica');
+  const original = ETAPAS_SPLIT[posicion];
+  // La pausa que escribía VERSION 10, hecha a mano: en un split pro, la etapa de la práctica frena sin entrenar.
+  const pausaVieja = {
+    presentacion: 'pretemporada',
+    titulo: 'La pretemporada',
+    descripcion: 'Elegí tu preparación.',
+    opciones: [{ id: 'bootcamp_corea', label: 'Bootcamp' }, { id: 'descanso', label: 'Descanso' }],
+    datos: { motivo: 'practica', rutinas: [] }
+  };
+  let comparados = 0;
+  for (const seed of SEEDS_GUARDADO_10_K4cG) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < SPLITS_GUARDADO_10_K4cG && !state.terminado && comparados === 0; i += 1) {
+      if (state.phase === 'profesional' && state.player.planAnual === planInicialK4cG(state.player.perfil.actual)) {
+        const estadoAntes = rng.estado();
+        let guardado = null;
+        ETAPAS_SPLIT[posicion] = { ...original, aplicar: (st, r) => (st.phase === 'profesional' ? { state: st, logs: [], decision: pausaVieja } : original.aplicar(st, r)) };
+        try {
+          const paso = avanzarSplit(state, rng);
+          if (paso.state.pendiente?.sistemaId === 'practica') {
+            guardado = guardadoDeLaVersion10K4cG(paso.state, rng);
+          }
+        } finally {
+          ETAPAS_SPLIT[posicion] = original;
+        }
+        if (guardado === null) {
+          break;
+        }
+        const datos = deserializarGuardado(guardado);
+        const pendiente = datos?.state.pendiente;
+        if (!pendiente || pendiente.sistemaId !== 'practica' || pendiente.decision.opciones.length !== 1 || pendiente.decision.opciones[0].id !== 'seguir') {
+          throw new Error(`seed ${seed}: la pausa de la práctica no se reemplazó por el botón (${JSON.stringify(pendiente?.decision?.opciones)})`);
+        }
+        // Seguir (la respuesta del botón, y la del bot) cierra la pausa y termina el split como si nunca hubiera frenado.
+        const rngLegado = conElRngDeK4cG(datos.seed, datos.rngEstado);
+        let legado = { state: datos.state, logs: [] };
+        while (legado.state.pendiente) {
+          const { sistemaId, decision } = legado.state.pendiente;
+          const respuesta = sistemaId === 'practica' ? { opcionId: 'seguir' } : sistemaPorId(sistemaId).resolverAuto(legado.state, decision, rngLegado);
+          legado = resolverDecision(legado.state, respuesta, rngLegado);
+        }
+        const sinPausa = avanzarSplitAuto(state, conElRngDeK4cG(seed, estadoAntes));
+        // La pausa vieja gastó una interrupción del cupo del split (`presupuesto.gastadas`); lo demás es idéntico.
+        const sinCupo = (estado) => ({ ...estado, presupuesto: undefined });
+        if (!sonIgualesK4cG(comoJsonK4cG(sinCupo(legado.state)), comoJsonK4cG(sinCupo(sinPausa.state))) || !JSON.stringify(legado.state.logs).includes('Entrenaste según el plan del año')) {
+          throw new Error(`seed ${seed}: seguir desde la pausa vieja no dejó el estado de un split sin pausa`);
+        }
+        comparados += 1;
+      }
+      state = avanzarSplitAuto(state, rng).state;
+    }
+  }
+  if (comparados === 0) {
+    throw new Error('check vacío: ninguna carrera llegó a un split pro con el plan inicial para probar la pausa vieja');
+  }
 });
 
 // PLAN.md §K.4 — los tres custodios del registro de bandas pendientes. Van DESPUÉS del último check: el primero mira cómo

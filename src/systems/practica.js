@@ -160,6 +160,17 @@ export function aplicar(state, rng) {
   };
 }
 
+// Un guardado de VERSION 10 puede estar parado en la pausa de la pretemporada que el plan anual quitó (`core/guardado.js`,
+// `migrarDe10`, la reemplaza por un solo botón). Seguir cierra esa pausa entrenando el tramo de este split, que es lo que
+// la pausa dejaba pendiente. `aplicar` ya no devuelve nunca una decisión: esto solo contesta la que traía el guardado viejo.
+export function resolver(state, decision, respuesta, rng) {
+  return aplicar(state, rng);
+}
+
+export function resolverAuto() {
+  return { opcionId: 'seguir' };
+}
+
 // El reparto anual entero de una rutina (o de un plan), de una vez: la vara de la carta (regla 15) y de los checks de K3.
 // El motor aplica el plan de a tramos con `entrenar`; sin ruido, la suma de los tramos es esto mismo.
 export function resolverPreparacion(state, rutinas, rutinaId, rng) {
