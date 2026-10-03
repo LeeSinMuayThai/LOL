@@ -5927,6 +5927,26 @@ atribución exacta (Shapley sobre re-simulación completa) de lo que se gana al 
   88,4 ± 2,0, juntos 83,5 · títulos por carrera 5,10 · 78% llega a tier 1. El rival favorito sigue por encima de
   85: es la asimetría del Fearless, que se resuelve en K4, como ya estaba escrito.
 
+  **Lo que rompe K2c** (corrida completa del supervisor, `3c5f359` + `vueltas` 2: 284 OK / 5 FAIL). Qué se hace
+  con cada uno:
+  - **La huella del juego cambió** (esperado). `VERSION_JUEGO` pasa a 'K2c' y `HUELLA_JUEGO` se recalcula.
+  - **`proyeccionJerarquia` volvió a su banda.** Con las referencias centradas, la jerarquía ya no crece de más en
+    el primer split. Se borra su entrada de `bandasPendientes.js`.
+  - **"El boost del pool no se clava en el centro (0,75-1,25)" se rompe por diseño.** Mide p10 0,944 y p90 1,026:
+    una separación de 0,082 contra un mínimo de 0,2 que suponía el rango viejo. Va con su línea de la regla 17.
+    La separación mínima pasa a ser la misma fracción del rango que antes (0,2 / 0,5 = 40%), calculada desde
+    `BALANCE.campeones.multiplicadorMin/Max` y no escrita a mano: hoy da 0,08. `CONCEPTO` §6 se reescribe con el
+    meta acotado.
+  - **"Nadie te frena en el draft por un pick que no mueve el partido" da 0 pausas en 4000 sondas.** Con el meta
+    en 0,9-1,1 y la maestría en 0,1, ningún pick mueve la p lo suficiente para el umbral de pausa del draft. Es una
+    banda, la de cuánto te frena el draft, y la sacó un cambio del bloque A: entra en `bandasPendientes.js`
+    (bloque A, re-basea K3c). **K3c tiene que re-fijar el umbral de pausa del draft contra la dispersión nueva de
+    la p**, para que elegir campeón vuelva a frenarte cuando importa. K4 decide el ritmo del resto.
+  - **"K2a Bo5 del motor" queda vacío**: 0 filas `draftDelPrimerMapa`, porque sin pausas de draft no hay log de
+    draft. No es una banda: es un check que dependía de que el draft pausara. Se reescribe para que no dependa de
+    la frecuencia de pausas: la fuerza al arrancar la serie se compara con una fuente que existe siempre, o se
+    fuerza la pausa en la sonda.
+
 - **K2d — la previa (pantalla).** Antes de la fecha marcada y antes de cada mapa de serie, tu fuerza desglosada
   (vos / tus compañeros / el meta / el campeón) contra la del rival, y **la probabilidad de ganar**, la misma p
   que el motor tira. La probabilidad de la serie completa espera a K4 (depende del plan de Fearless).
