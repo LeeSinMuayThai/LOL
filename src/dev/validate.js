@@ -68,6 +68,7 @@ import {
 import { tierListDeRol, boostDelPool } from '../core/regimen.js';
 import { nivelDelJugador, deltasDeStats, fichaCompleta, loQueConstruiste } from '../core/ficha.js';
 import { componerLegado } from '../core/legado.js';
+import { titularDelAnio } from '../core/temporadaResumen.js';
 import { bandaDeArraigo, filaAbierta as filaAbiertaK5 } from '../core/registro.js';
 import { rankearMundo, rankearPoblacion, puntajeRanking } from '../core/topMundial.js';
 import { salarioDeOferta } from '../core/salarios.js';
@@ -732,7 +733,9 @@ const FORMAS_CONOCIDAS = {
   // nació ni murió. Un guardado de la 10 carga: ver `migrarDe10` y su check. Revisión de K4c (305af896ede9 → 284e2f6bd4d5):
   // `flags.pruebasFallidas` entra (las pruebas del mercado que no alcanzaron sin respaldo; `migrarDe10` lo arranca vacío). La 11 no
   // salió de la rama, así que se re-registra en vez de subir VERSION.
-  11: '284e2f6bd4d5'
+  // K4c (revisión, textos): sin campos nuevos; el cierre de año ya no repite carta y la muestra ve otro mapa de eventos vistos.
+  // Integración de las dos revisiones (supervisor).
+  11: '13dd79e086e2'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -2773,7 +2776,7 @@ check('Ningún token puede quedar sin resolver donde el contenido aparece', () =
   const CON_EQUIPO = ['debut', 'profesional', 'declive'];
   const CON_ORG = ['tier3', 'tier2', 'tier1'];
   const TOKENS_DE_ORG = ['org', 'liga'];
-  const TOKENS_DE_COMPANERO = ['top', 'jungla', 'mid', 'adc', 'support'];
+  const TOKENS_DE_COMPANERO = ['top', 'jungla', 'mid', 'adc', 'support', 'companero'];
 
   const garantizaOrg = (contexto) => {
     const etapas = contexto.etapa;
@@ -16357,7 +16360,7 @@ function sondaDeLaPrueba() {
   }
   const nombreDe = (org) => (typeof org === 'string' ? org : org?.nombre ?? null);
   const filas = [];
-  for (let seed = 1; seed <= 60; seed += 1) {
+  for (let seed = 1; seed <= 80; seed += 1) {
     const rng = mulberry32(seed);
     let st = createInitialState(seed, rng);
     for (let i = 0; i < 45 && !st.terminado; i += 1) {
@@ -19611,6 +19614,238 @@ check('K4c el cierre de año es una decisión: las opciones mueven ejes distinto
 
   if (problemas.length > 0) {
     throw new Error(`${problemas.length} problema(s) en ${eventos.length} eventos de cierre:\n  ${problemas.slice(0, 40).join('\n  ')}${problemas.length > 40 ? `\n  ... y ${problemas.length - 40} más` : ''}`);
+  }
+});
+
+// --- FASE K, K4c (revisión, textos) ----------------------------------------------------------------------------------
+// Lo que las revisiones de K4c encontraron en textos y datos: un token crudo en pantalla, un titular que miente, un cierre
+// que repite, un número que se lee mal y una frase de consuelo que se repite. Cada check cuenta lo que revisó (un tope
+// que no puede pasar vacío).
+
+const HUECO_K4C_T = /\{[a-zA-Z]+\}/;
+// Los textos que una persona ve de un valor del motor. `datos` no entra: es el evento crudo, con sus plantillas, que la
+// tarjeta no pinta (pinta `titulo`, `descripcion` y las opciones, ya resueltos).
+function textosVisiblesK4cT(valor, ruta, acumulado) {
+  if (typeof valor === 'string') {
+    acumulado.push([ruta, valor]);
+  } else if (Array.isArray(valor)) {
+    valor.forEach((elemento, i) => textosVisiblesK4cT(elemento, `${ruta}[${i}]`, acumulado));
+  } else if (valor && typeof valor === 'object') {
+    for (const [clave, elemento] of Object.entries(valor)) {
+      if (clave !== 'datos') textosVisiblesK4cT(elemento, `${ruta}.${clave}`, acumulado);
+    }
+  }
+  return acumulado;
+}
+
+check('K4c (revisión) textos: ningún texto del motor (log, decisión, opción, hito, tarjeta) trae un {token} sin resolver, en carreras de los cinco roles', () => {
+  const SEEDS_POR_ROL = 8;
+  const SPLITS = 60;
+  const MINIMO_DE_TEXTOS = 150000;
+  const MINIMO_DE_CIERRES = 200;
+  let revisados = 0;
+  let cierres = 0;
+  const huecos = new Map();
+  for (const rol of IDS_ROL) {
+    for (let seed = 1; seed <= SEEDS_POR_ROL; seed += 1) {
+      const rng = mulberry32(seed * 7919 + 13);
+      let state = createInitialState(seed, rng, { rol });
+      const revisar = (fuente, valor) => {
+        for (const [ruta, texto] of textosVisiblesK4cT(valor, fuente, [])) {
+          revisados += 1;
+          const hueco = texto.match(HUECO_K4C_T);
+          if (hueco) {
+            const clave = `${rol} ${ruta.replace(/\[\d+\]/g, '')} ${hueco[0]}: ${texto.slice(0, 80)}`;
+            huecos.set(clave, (huecos.get(clave) ?? 0) + 1);
+          }
+        }
+      };
+      const responder = (sistema, st, decision, r) => {
+        revisar(`decisión ${st.pendiente.sistemaId}`, decision);
+        if (st.pendiente.sistemaId === 'edadCierre') cierres += 1;
+        return sistema.resolverAuto(st, decision, r);
+      };
+      for (let i = 0; i < SPLITS && !state.terminado; i += 1) {
+        const resultado = avanzarSplitAuto(state, rng, responder);
+        state = resultado.state;
+        revisar('log', resultado.logs);
+      }
+      revisar('hitos', state.career.hitos);
+      revisar('tarjeta', state.tarjeta);
+    }
+  }
+  if (revisados < MINIMO_DE_TEXTOS || cierres < MINIMO_DE_CIERRES) {
+    throw new Error(`la muestra no alcanza: ${revisados} textos (mínimo ${MINIMO_DE_TEXTOS}) y ${cierres} cierres (mínimo ${MINIMO_DE_CIERRES})`);
+  }
+  if (huecos.size > 0) {
+    const total = [...huecos.values()].reduce((suma, veces) => suma + veces, 0);
+    throw new Error(`${total} texto(s) con un token sin resolver, ${huecos.size} distintos, sobre ${revisados} revisados:\n  ${[...huecos].slice(0, 12).map(([clave, veces]) => `${veces}× ${clave}`).join('\n  ')}`);
+  }
+});
+
+check('K4c (revisión) textos: el titular del Mundial dice lo que pasó: campeón solo si ganaste, y cuartos, semis y final no son el título ni heredan su racha', () => {
+  const base = correrCarrera(2, 20);
+  const anio = base.calendario.anio;
+  const conResultado = (resultado, previas = 0) => ({
+    ...base,
+    career: {
+      ...base.career,
+      registro: {
+        ...base.career.registro,
+        titulos: [],
+        internacionales: [{ anio, resultado }],
+        temporadas: Array.from({ length: previas }, () => ({ tipoBase: 'titulo_internacional', tipo: 'titulo_internacional' }))
+      }
+    }
+  });
+  const campeon = titularDelAnio(conResultado('campeon'));
+  if (campeon.tipoBase !== 'titulo_internacional' || !campeon.titular.includes('CAMPEONES DEL MUNDO')) {
+    throw new Error(`ganar el Mundial titula "${campeon.titular}" (${campeon.tipoBase}), esperaba CAMPEONES DEL MUNDO`);
+  }
+  const PALABRA = { cuartos: /CUARTOS/, semis: /SEMI/, final: /FINAL|SUBCAMPE/, buen_papel: /WORLDS|MUNDO/ };
+  for (const resultado of ['cuartos', 'semis', 'final', 'buen_papel']) {
+    for (const previas of [0, 3]) {
+      const titulo = titularDelAnio(conResultado(resultado, previas));
+      if (/CAMPEONES DEL MUNDO/.test(titulo.titular) || titulo.tipoBase === 'titulo_internacional') {
+        throw new Error(`un papel de ${resultado} (con ${previas} títulos del mundo antes) titula "${titulo.titular}" (${titulo.tipoBase}): no ganaste el Mundial`);
+      }
+      if (!PALABRA[resultado].test(titulo.titular)) {
+        throw new Error(`un papel de ${resultado} titula "${titulo.titular}": el titular no dice hasta dónde llegaste`);
+      }
+    }
+  }
+});
+
+check('K4c (revisión) el titular del año pesa el papel internacional por hasta dónde llegaste: una final del Mundial le gana a un título de liga, unos cuartos no', () => {
+  const base = correrCarrera(2, 20);
+  const anio = base.calendario.anio;
+  const conLigaYPapel = (resultado) => ({
+    ...base,
+    career: {
+      ...base.career,
+      registro: {
+        ...base.career.registro,
+        titulos: [{ anio, nombre: 'LCK' }],
+        internacionales: [{ anio, resultado }],
+        temporadas: []
+      }
+    }
+  });
+  const esperado = { final: 'papel_internacional', semis: 'papel_internacional', cuartos: 'titulo_liga', buen_papel: 'titulo_liga' };
+  for (const [resultado, tipo] of Object.entries(esperado)) {
+    const titulo = titularDelAnio(conLigaYPapel(resultado));
+    if (titulo.tipoBase !== tipo) {
+      throw new Error(`campeón de liga y ${resultado} en el Mundial el mismo año titula "${titulo.titular}" (${titulo.tipoBase}); esperaba ${tipo}`);
+    }
+  }
+});
+
+check('K4c (revisión) textos: ningún evento de cierre sale dos años seguidos, "el primer balance" sale una vez por carrera y el cierre casi nunca queda sin carta', () => {
+  const SEEDS_POR_ROL = 10;
+  const SPLITS = 80;
+  const MAXIMO_DE_ANIOS_SIN_CARTA = 0.15;
+  let anios = 0;
+  let cierres = 0;
+  const repetidos = [];
+  const primerBalanceDoble = [];
+  for (const rol of IDS_ROL) {
+    for (let seed = 1; seed <= SEEDS_POR_ROL; seed += 1) {
+      const rng = mulberry32(seed * 104729 + 7);
+      let state = createInitialState(seed, rng, { rol });
+      const ids = [];
+      const responder = (sistema, st, decision, r) => {
+        if (st.pendiente.sistemaId === 'edadCierre') ids.push({ split: st.player.splitCount, id: decision.datos.evento.id });
+        return sistema.resolverAuto(st, decision, r);
+      };
+      for (let i = 0; i < SPLITS && !state.terminado; i += 1) {
+        state = avanzarSplitAuto(state, rng, responder).state;
+      }
+      anios += Math.floor(state.player.splitCount / BALANCE.edad.splitsPorEdad);
+      cierres += ids.length;
+      // "Años seguidos": dos cierres a un año de distancia (un año sin carta en el medio no cuenta como seguido).
+      for (let i = 1; i < ids.length; i += 1) {
+        if (ids[i].id === ids[i - 1].id && ids[i].split - ids[i - 1].split === BALANCE.edad.splitsPorEdad) repetidos.push(`${rol}/${seed}: ${ids[i].id}`);
+      }
+      if (ids.filter((cierre) => cierre.id === 'joven_el_primer_balance').length > 1) primerBalanceDoble.push(`${rol}/${seed}`);
+    }
+  }
+  if (cierres < 300) {
+    throw new Error(`la muestra no alcanza: ${cierres} cierres (mínimo 300)`);
+  }
+  if (repetidos.length > 0) {
+    throw new Error(`${repetidos.length} cierre(s) repiten el evento del año anterior, sobre ${cierres}: ${repetidos.slice(0, 6).join(', ')}`);
+  }
+  if (primerBalanceDoble.length > 0) {
+    throw new Error(`"El primer balance en serio" salió más de una vez en ${primerBalanceDoble.length} carrera(s): ${primerBalanceDoble.slice(0, 6).join(', ')}`);
+  }
+  const sinCarta = (anios - cierres) / anios;
+  if (sinCarta > MAXIMO_DE_ANIOS_SIN_CARTA) {
+    throw new Error(`${anios - cierres} de ${anios} años quedan sin carta de cierre (${(sinCarta * 100).toFixed(1)}%, máximo ${MAXIMO_DE_ANIOS_SIN_CARTA * 100}%)`);
+  }
+});
+
+check('K4c (revisión) textos: la carta del plan no dice "~+0" para una stat topeada y el resumen del split dice que es un tramo del plan', () => {
+  const base = correrCarrera(2, 20);
+  const conStats = (valor) => ({ ...base, player: { ...base.player, techoLesionMecanica: null, stats: { ...base.player.stats, mecanica: valor, macro: valor, mentalidad: valor } } });
+  let lineas = 0;
+  for (const [descripcion, valor] of [['a 0,2 del tope', BALANCE.stats.max - 0.2], ['en el tope', BALANCE.stats.max]]) {
+    for (const planId of IDS_PLAN_K4cP) {
+      const linea = lineaDePlan(conStats(valor), planId);
+      lineas += 1;
+      if (/~\+0\b/.test(linea.texto)) {
+        throw new Error(`${planId} con las stats ${descripcion}: "${linea.texto}" dice ~+0`);
+      }
+      if (/\(\)/.test(linea.texto)) {
+        throw new Error(`${planId} con las stats ${descripcion}: "${linea.texto}" deja el paréntesis vacío`);
+      }
+    }
+  }
+  if (lineas < 6) {
+    throw new Error(`la muestra no alcanza: ${lineas} cartas`);
+  }
+  // El resumen del split: cada línea de práctica de una carrera dice en qué tramo del año va.
+  const tramo = new RegExp(`tramo [1-${BALANCE.edad.splitsPorEdad}] de ${BALANCE.edad.splitsPorEdad}`);
+  let practicas = 0;
+  for (let seed = 1; seed <= 4; seed += 1) {
+    const rng = mulberry32(seed * 6151 + 3);
+    let state = createInitialState(seed, rng, { rol: 'mid' });
+    for (let i = 0; i < 45 && !state.terminado; i += 1) {
+      const resultado = avanzarSplitAuto(state, rng);
+      state = resultado.state;
+      for (const log of resultado.logs.filter((linea) => linea.type === 'practica')) {
+        practicas += 1;
+        if (!tramo.test(log.message)) {
+          throw new Error(`seed ${seed}: la línea de práctica "${log.message}" no dice que es un tramo del plan del año`);
+        }
+      }
+    }
+  }
+  if (practicas < 10) {
+    throw new Error(`la muestra no alcanza: ${practicas} líneas de práctica (mínimo 10)`);
+  }
+});
+
+check('K4c (revisión) textos: ninguna frase de consuelo de la fecha marcada se repite más de dos veces', () => {
+  const MAXIMO_DE_REPETICIONES = 2;
+  const veces = new Map();
+  let revisados = 0;
+  for (const evento of TODOS_LOS_EVENTOS.filter((candidato) => Boolean(candidato.contexto?.stakes))) {
+    for (const opcion of evento.options) {
+      for (const outcome of opcion.outcomes) {
+        for (const texto of Array.isArray(outcome.texto) ? outcome.texto : [outcome.texto]) {
+          const ultima = texto.trim().split(/(?<=[.!?])\s+/).pop();
+          veces.set(ultima, (veces.get(ultima) ?? 0) + 1);
+          revisados += 1;
+        }
+      }
+    }
+  }
+  if (revisados < 250) {
+    throw new Error(`la muestra no alcanza: ${revisados} textos de outcome (mínimo 300)`);
+  }
+  const repetidas = [...veces].filter(([, cantidad]) => cantidad > MAXIMO_DE_REPETICIONES);
+  if (repetidas.length > 0) {
+    throw new Error(`${repetidas.length} frase(s) final(es) repetida(s) más de ${MAXIMO_DE_REPETICIONES} veces: ${repetidas.map(([frase, cantidad]) => `${cantidad}× "${frase}"`).join(' | ')}`);
   }
 });
 

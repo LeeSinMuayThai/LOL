@@ -85,4 +85,7 @@ export const VERSION_JUEGO = 'K4c';
 // K4c (revisión, 348923166): el cierre amateur no fija plan (al debutar vale el del perfil: cambian las carreras que antes debutaban
 // con el plan de un cierre amateur) y la prueba del mercado fallida sin respaldo no suma a la racha sin ofertas ni te deja libre por
 // silencio. Misma versión: reemplaza a 1616394605.
-export const HUELLA_JUEGO = 348923166;
+// K4c (revisión, textos, 1625568496): el cierre de año no repite el evento del año anterior (cooldown de 4 splits, 99 el del primer balance),
+// así que cambia qué carta cae y con ella las tiradas del resto de la carrera. Misma versión: reemplaza a 1616394605.
+// Integración de las dos revisiones (supervisor): reemplaza a 348923166 y 1625568496.
+export const HUELLA_JUEGO = 2001539523;

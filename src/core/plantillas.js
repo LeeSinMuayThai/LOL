@@ -27,6 +27,9 @@ export const TOKENS = {
   mid: (state) => companeroDeRol(state, 'mid')?.handle,
   adc: (state) => companeroDeRol(state, 'adc')?.handle,
   support: (state) => companeroDeRol(state, 'support')?.handle,
+  // Un compañero del plantel, el primero de la lista: para el texto que habla del grupo y no de una línea. `{jungla}` no
+  // resuelve cuando el jungla sos vos (tu línea no está entre tus compañeros); este sí, en cualquier rol con vestuario.
+  companero: (state) => state.career.companeros[0]?.handle,
   rival: (state) => state.mundo.rivales[0]?.handle,
   // El rival de ESTA fecha de temporada regular (fase 5) — no confundir con
   // {rival}, que es el rival de generación. Solo resuelve mientras hay una

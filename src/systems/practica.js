@@ -138,7 +138,8 @@ export function lineaDePlan(state, planId) {
     return null;
   }
   const carta = cartaDeRutina(state, plan);
-  const partes = carta.efectos.filter((efecto) => efecto.esperado > 0).map((efecto) => `${efecto.etiqueta} ~+${Math.round(efecto.esperado)}`);
+  // K4c (revisión): una stat que ya está en su tope (o a menos de medio punto) no promete "~+0": dice que no hay más para sumar.
+  const partes = carta.efectos.map((efecto) => (Math.round(efecto.esperado) >= 1 ? `${efecto.etiqueta} ~+${Math.round(efecto.esperado)}` : `${efecto.etiqueta} ya en su tope`));
   if (carta.pulir > 0) partes.push('pulir tu main');
   if (carta.nuevo > 0) partes.push(carta.nuevo > 1 ? `${carta.nuevo} campeones nuevos` : 'un campeón nuevo');
   return { id: plan.id, titulo: plan.titulo, texto: `Plan del año que viene: ${plan.titulo} (${partes.join(', ')}).` };
@@ -154,9 +155,11 @@ export function aplicar(state, rng) {
   const posicion = state.player.splitCount % BALANCE.edad.splitsPorEdad;
   const hecho = entrenar(state, tramoDelPlan(plan, posicion), plan, rng);
   const detalle = hecho.partes.length > 0 ? hecho.partes.join(', ') : 'nada que se note';
+  // K4c (revisión): el renglón dice que es un tramo del plan del año, no el plan entero ("tramo 1 de 3").
+  const tramo = `tramo ${posicion + 1} de ${BALANCE.edad.splitsPorEdad}`;
   return {
     state: hecho.state,
-    logs: [adjuntar(crearLog('practica', `Entrenaste según el plan del año: ${plan.titulo} (${detalle}).`))]
+    logs: [adjuntar(crearLog('practica', `Entrenaste según el plan del año: ${plan.titulo} (${tramo}: ${detalle}).`))]
   };
 }
 
