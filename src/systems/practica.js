@@ -2,6 +2,7 @@ import { gauss } from '../core/rng.js';
 import { crearLog } from '../core/log.js';
 import { clamp, clampStat } from '../core/numeros.js';
 import { campeonesAprendibles, pulirCampeon, aprenderCampeones } from '../core/pool.js';
+import { recuperarPorDescanso } from '../core/barras.js';
 import { BALANCE } from '../data/balance.js';
 import { ofrecerRutinas, rutinaPorId, elegirRutinaAutomatica } from '../core/rutinas.js';
 import { opcionDesdeRutina, descripcionDeSorteo, EJE_OFFSEASON } from '../core/rareza.js';
@@ -114,7 +115,8 @@ export function resolver(state, decision, respuesta, rng) {
 
   if (reparto.descansar > 0) {
     const ganancia = Math.max(0, gauss(p.gananciaDescanso * reparto.descansar, p.ruidoPractica * reparto.descansar, rng));
-    stats.mentalidad = clampStat(stats.mentalidad + ganancia);
+    // K3-A: el descanso del receso pasa por el tope (`core/barras.js`).
+    stats.mentalidad = recuperarPorDescanso(stats.mentalidad, ganancia);
     partes.push(`mentalidad +${Math.round(ganancia)}`);
   }
 

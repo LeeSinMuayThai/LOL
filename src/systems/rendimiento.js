@@ -7,6 +7,7 @@ import { esCierreDeTemporada } from '../core/serie.js';
 import { fuerzaDelEquipo, nivelDeCompaneros } from '../core/fuerza.js';
 import { registrarTitulo, registrarInternacional, registrarPico, registrarArraigoEnFila } from '../core/registro.js';
 import { nivelDelJugador } from '../core/ficha.js';
+import { hypeHaciaSuBase } from '../core/barras.js';
 import { BALANCE } from '../data/balance.js';
 import { ROLES } from '../data/roles.js';
 
@@ -114,7 +115,9 @@ function consecuencias(state, rendimiento, resultado, esCierre, rng) {
   const podio = posicion <= Math.max(2, Math.round(equipos * 0.34));
   const fracaso = posicion > equipos * r.posicionFracaso;
 
-  let hype = state.player.stats.hype - r.hypeDecaimiento;
+  // K3-A: el hype da un paso hacia su base (resultados + visibilidad,
+  // `core/barras.js#baseDeHype`) antes del decaimiento fijo de siempre.
+  let hype = hypeHaciaSuBase(state.player.stats.hype, state, liga) - r.hypeDecaimiento;
   hype += (campeon ? r.hypePorTitulo : podio ? r.hypePorPodio : 0) * ROLES[state.player.role].visibilidad;
   hype += (rendimiento - BALANCE.stats.max / 2) * r.hypePorRendimiento * ROLES[state.player.role].visibilidad;
 

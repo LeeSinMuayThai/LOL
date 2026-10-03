@@ -10,7 +10,7 @@ import { candidatos } from '../systems/events.js';
 import { esCierreDeEdad } from '../systems/edadCierre.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 import { BALANCE } from '../data/balance.js';
-import { probabilidadDePartido } from '../core/partido.js';
+import { probabilidadDePartido, ruidoEfectivo } from '../core/partido.js';
 import { ESTRATEGIAS, NOMBRES_ESTRATEGIA, esDecisionDeMinijuego } from './estrategias.js';
 
 // --- Constantes de medición (PLAN.md §K.5 K0) ---
@@ -74,6 +74,20 @@ const PUNTOS_PORCENTUALES = 100;
 export const META_K2_R_MISMA_LIGA = 0.5;
 export const META_K2_R2_SIN_RUIDO = 0.5;
 export const META_K2_BO5_FAVORITO_CLARO_PCT = [75, 85];
+
+// K3-A: las metas de K3 (PLAN.md "K3 — Tus decisiones construyen tu nivel", Checks), con el mismo criterio que las
+// de K2: se reportan en `metasK3` con la meta al lado y pasan a checks duros en K3c. Con las constantes neutras de
+// K3-A (k = 0, r = 0, rH = 0, topeDescanso = 100) se espera que estén en rojo: el juego todavía es el de hoy.
+export const META_K3_MENTALIDAD_MEDIANA = [45, 75];
+// "< 20% de splits pro con mentalidad ≥ 90" y "hype ≥ 90 en < 25% de los splits pro" (`UMBRAL_SATURACION`).
+export const META_K3_MENTALIDAD_SATURADA_PCT = 20;
+export const META_K3_HYPE_SATURADO_PCT = 25;
+// "Con mentalidad 20 contra 80, el desvío del resultado del mapa difiere de forma medible (con la cabeza mal, más
+// varianza)": la sonda pone la mentalidad en 20 y en 80 y, A FUERZA IGUAL (los mismos Δ de `DELTAS_FAVORITO_BO5`
+// mayores que 0), mide el desvío del resultado de un mapa contra lo que la fuerza promete. "Medible" = el batacazo
+// (que gane el de menos fuerza) sube al menos este número de puntos porcentuales con la cabeza en 20.
+export const META_K3_DIFERENCIA_BATACAZO_PP = 2;
+const MENTALIDADES_SONDA_K3 = [20, 80];
 
 // Mejor de 5: gana el primero en llevarse este número de mapas.
 const MAPAS_PARA_GANAR_BO5 = 3;
@@ -1245,6 +1259,48 @@ function metasK2(nivel) {
   };
 }
 
+// K3-A: las metas de K3 con la meta al lado (`META_K3_*`). Las dos de economía salen de `bloqueEconomia` (los
+// splits pro); la del desvío es una sonda analítica sobre la p de mapa del motor (`probabilidadDePartido`, que pasa
+// por `ruidoEfectivo` y su factor de consistencia): la misma fuerza, dos mentalidades.
+function metasK3(economia) {
+  const [medMin, medMax] = META_K3_MENTALIDAD_MEDIANA;
+  const deltas = DELTAS_FAVORITO_BO5.filter((delta) => delta > 0);
+  const sonda = Object.fromEntries(MENTALIDADES_SONDA_K3.map((mentalidad) => {
+    const conCabeza = { player: { stats: { mentalidad } } };
+    const ps = deltas.map((delta) => probabilidadDePartido(conCabeza, delta, 0, 'mapa'));
+    return [mentalidad, {
+      sigmaMapa: redondear(ruidoEfectivo(conCabeza, 'mapa'), 2),
+      // Que gane el de menos fuerza, promediado sobre los Δ.
+      batacazoPct: redondear(PUNTOS_PORCENTUALES * ps.reduce((suma, p) => suma + (1 - p), 0) / ps.length, 2),
+      // El desvío del resultado de un mapa (Bernoulli) contra su esperanza, √(p(1 − p)), promediado.
+      desvioResultado: redondear(ps.reduce((suma, p) => suma + Math.sqrt(p * (1 - p)), 0) / ps.length, 4)
+    }];
+  }));
+  const [bajo, alto] = MENTALIDADES_SONDA_K3;
+  const diferenciaPp = redondear(sonda[bajo].batacazoPct - sonda[alto].batacazoPct, 2);
+  return {
+    mentalidadMedianaPro: {
+      valor: economia.mentalidad.p50, meta: `${medMin}-${medMax}`,
+      cumple: economia.mentalidad.p50 >= medMin && economia.mentalidad.p50 <= medMax, fuente: 'economia.mentalidad.p50'
+    },
+    mentalidadSaturadaPro: {
+      valor: economia.mentalidad.pctMayorIgual90, meta: `< ${META_K3_MENTALIDAD_SATURADA_PCT}% de splits pro >= ${UMBRAL_SATURACION}`,
+      cumple: economia.mentalidad.pctMayorIgual90 < META_K3_MENTALIDAD_SATURADA_PCT, fuente: 'economia.mentalidad.pctMayorIgual90'
+    },
+    hypeSaturadoPro: {
+      valor: economia.hype.pctMayorIgual90, meta: `< ${META_K3_HYPE_SATURADO_PCT}% de splits pro >= ${UMBRAL_SATURACION}`,
+      cumple: economia.hype.pctMayorIgual90 < META_K3_HYPE_SATURADO_PCT, fuente: 'economia.hype.pctMayorIgual90'
+    },
+    desvioMapaMentalidad20vs80: {
+      valor: diferenciaPp, [`mentalidad${bajo}`]: sonda[bajo], [`mentalidad${alto}`]: sonda[alto], deltas,
+      meta: `batacazo con mentalidad ${bajo} >= ${META_K3_DIFERENCIA_BATACAZO_PP} pp más que con ${alto}, a fuerza igual`,
+      cumple: diferenciaPp >= META_K3_DIFERENCIA_BATACAZO_PP, fuente: 'sonda: probabilidadDePartido(mapa) con la mentalidad fija'
+    },
+    // TODO(K3-B): "un efecto sobre stat de curva conserva >= 40% a 4 splits" (la sonda que aplica un delta conocido
+    // y lo sigue) entra con `player.bonusPermanente`.
+  };
+}
+
 // §K.3c — economía: distribución de `mentalidad` y `hype` sobre todos los splits pro (el estado después
 // de cada split pro) y % de splits saturados.
 function bloqueEconomia(observaciones) {
@@ -1564,6 +1620,7 @@ export function correrLote(corridas, splits, estrategia, { corridasAblacion = MA
   const total = resultados.length;
   const llegaronAPro = resultados.filter((r) => r.splitFichaje !== null);
 
+  const economia = bloqueEconomia(observaciones);
   const reporte = {
     estrategia,
     corridas,
@@ -1597,7 +1654,9 @@ export function correrLote(corridas, splits, estrategia, { corridasAblacion = MA
     // Nuevos bloques instrumentados de la Fase K0
     embudo: bloqueEmbudo(resultados, carreras, observaciones, { conNotas: true }),
     nivel: bloqueNivel(observaciones, splits, responder, corridasAblacion),
-    economia: bloqueEconomia(observaciones),
+    economia,
+    // K3-A: las metas de K3 con la meta al lado (reporte, no check: pasan a duros en K3c).
+    metasK3: metasK3(economia),
     longevidad: bloqueLongevidad(resultados),
     ritmo: bloqueRitmo(observaciones),
     porRegion: bloquePorRegion(resultados, carreras, observaciones),

@@ -13776,6 +13776,235 @@ check('K2d previa 6: ningún texto de la previa ni de la probabilidad jugada mue
 });
 
 // ============================================================================
+// K3-A (PLAN.md "K3 — decisiones de spec", K3-A): las barras que no se saturan. Estructura con constantes neutras
+// (k = 0, r = 0, rH = 0, topeDescanso = 100): la huella no se mueve (check "K1 versión"). Estos checks prueban que la
+// estructura hace lo que dice CUANDO K3c mueva las constantes: cada uno mueve una constante EN MEMORIA, mide un paso y
+// la devuelve a su valor.
+// ============================================================================
+
+const barrasK3A = await import('../core/barras.js');
+const { factorDeConsistencia } = await import('../core/partido.js');
+const { ligaOZonaDeCarrera: ligaDeCarreraK3A } = await import('../core/competicion.js');
+const TIPOS_K3A = ['fecha', 'mapa'];
+
+// Mueve constantes de BALANCE en memoria mientras corre `fn`, y las devuelve siempre.
+function conBalanceK3A(cambios, fn) {
+  const previos = cambios.map(([bloque, clave]) => [bloque, clave, BALANCE[bloque][clave]]);
+  try {
+    for (const [bloque, clave, valor] of cambios) BALANCE[bloque][clave] = valor;
+    return fn();
+  } finally {
+    for (const [bloque, clave, valor] of previos) BALANCE[bloque][clave] = valor;
+  }
+}
+
+// Estados reales entre splits (carreras con `avanzarSplitAuto`): pro con equipo y temporada jugada, y amateurs.
+let estadosK3A = null;
+function estadosDeCarreraK3A() {
+  if (!estadosK3A) {
+    const pro = [];
+    const amateur = [];
+    for (let seed = 1; seed <= 8; seed += 1) {
+      const rng = mulberry32(9300 + seed);
+      let st = createInitialState(9300 + seed, rng);
+      for (let i = 0; i < 30 && !st.terminado; i += 1) {
+        st = avanzarSplitAuto(st, rng).state;
+        if (st.terminado || st.pendiente) continue;
+        if (st.phase === 'profesional' && st.career.currentOrg && st.career.companeros.length > 0
+          && (st.career.temporada?.tabla?.length ?? 0) > 0 && i % 3 === 0) pro.push(structuredClone(st));
+        if (st.phase === 'amateur' && i % 4 === 0) amateur.push(structuredClone(st));
+      }
+    }
+    estadosK3A = { pro, amateur };
+  }
+  return { pro: estadosK3A.pro.map((s) => structuredClone(s)), amateur: estadosK3A.amateur.map((s) => structuredClone(s)) };
+}
+
+const conBarrasK3A = (st, cambios) => ({ ...st, player: { ...st.player, ...cambios.player, stats: { ...st.player.stats, ...cambios.stats } } });
+
+check('K3-A consistencia 1: ruidoEfectivo pasa su σ por factorDeConsistencia, y BALANCE.consistencia se lee solo adentro de factorDeConsistencia (estático)', () => {
+  const raiz = path.join(srcDir, '..');
+  const rel = (p) => path.relative(raiz, p).replace(/\\/g, '/');
+  const archivos = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) return e.name === 'dev' ? [] : archivos(p);
+    return /\.js$/.test(p) && rel(p) !== 'src/data/balance.js' ? [p] : [];
+  });
+  const sinComentarios = (txt) => txt
+    .replace(/(^|\s)\/\*[\s\S]*?\*\//g, (bloque) => bloque.replace(/[^\n]/g, ''))
+    .split(/\r?\n/).map((l) => l.replace(/(^|\s)\/\/.*$/, '$1'));
+  const partidoJs = sinComentarios(fs.readFileSync(path.join(srcDir, 'core', 'partido.js'), 'utf8'));
+  const cuerpo = (nombre) => {
+    const inicio = partidoJs.findIndex((linea) => new RegExp(`^export function ${nombre}\\(`).test(linea));
+    const fin = inicio < 0 ? -1 : partidoJs.findIndex((linea, i) => i > inicio && /^}/.test(linea));
+    if (inicio < 0 || fin < 0) throw new Error(`no encontré \`export function ${nombre}(\` en src/core/partido.js`);
+    return [inicio, fin];
+  };
+  const [iRuido, fRuido] = cuerpo('ruidoEfectivo');
+  const [iFactor, fFactor] = cuerpo('factorDeConsistencia');
+  const ruido = partidoJs.slice(iRuido + 1, fRuido);
+  // El factor se calcula con la mentalidad del jugador y multiplica a los DOS σ que devuelve.
+  if (!ruido.some((l) => /\bg\s*=\s*factorDeConsistencia\(\s*state\?\.player\?\.stats\?\.mentalidad\s*\)/.test(l))) {
+    throw new Error('ruidoEfectivo no calcula g = factorDeConsistencia(state?.player?.stats?.mentalidad)');
+  }
+  const retornos = ruido.filter((l) => /^\s*return\b/.test(l));
+  const sinFactor = retornos.filter((l) => !/\*\s*g\s*;/.test(l));
+  if (retornos.length < 2 || sinFactor.length > 0) {
+    throw new Error(`un σ de ruidoEfectivo sale sin el factor de consistencia: ${sinFactor.map((l) => l.trim()).join(' | ') || `(${retornos.length} return)`}`);
+  }
+  const PATRON = /BALANCE\s*(\.\s*consistencia\b|\[\s*['"`]consistencia['"`]\s*\])|\{[^}]*\bconsistencia\b[^}]*\}\s*=\s*BALANCE\b/;
+  const afuera = [];
+  let dentro = 0;
+  for (const archivo of [...archivos(srcDir), path.join(raiz, 'index.html')]) {
+    sinComentarios(fs.readFileSync(archivo, 'utf8')).forEach((linea, i) => {
+      if (!PATRON.test(linea)) return;
+      if (rel(archivo) === 'src/core/partido.js' && i > iFactor && i < fFactor) {
+        dentro += 1;
+        return;
+      }
+      afuera.push(`${rel(archivo)}:${i + 1}: ${linea.trim()}`);
+    });
+  }
+  if (afuera.length > 0) throw new Error(`BALANCE.consistencia leído fuera de factorDeConsistencia: ${afuera.slice(0, 5).join(' | ')}`);
+  if (dentro < 1) throw new Error('factorDeConsistencia no lee BALANCE.consistencia: el patrón no está viendo nada');
+});
+
+check('K3-A consistencia 2: g(mRef) = 1, g no crece con la mentalidad y respeta [gMin, gMax]; con k = 0 el σ es el de hoy para toda mentalidad; con k > 0 (en memoria) σ = σ_tipo · g(m) y con 20 hay más ruido que con 80', () => {
+  const c = BALANCE.consistencia;
+  if (!(c.gMin <= 1 && 1 <= c.gMax)) throw new Error(`[gMin, gMax] = [${c.gMin}, ${c.gMax}] no contiene a 1`);
+  const sigma = { fecha: BALANCE.partido.sigmaFecha, mapa: BALANCE.partido.sigmaMapa };
+  const conM = (m) => ({ player: { stats: { mentalidad: m } } });
+  const inicial = createInitialState(1, mulberry32(1));
+  for (const k of [0, 0.5, 1, 3, 8]) {
+    conBalanceK3A([['consistencia', 'k', k]], () => {
+      if (factorDeConsistencia(c.mRef) !== 1) throw new Error(`k ${k}: g(mRef = ${c.mRef}) = ${factorDeConsistencia(c.mRef)}`);
+      for (const nada of [null, undefined, Number.NaN]) {
+        if (factorDeConsistencia(nada) !== 1) throw new Error(`k ${k}: g(${nada}) = ${factorDeConsistencia(nada)}, sin mentalidad tiene que ser 1`);
+      }
+      for (let m = 0; m <= BALANCE.stats.max; m += 1) {
+        const g = factorDeConsistencia(m);
+        const aMano = Math.min(c.gMax, Math.max(c.gMin, 1 + k * (c.mRef - m) / 100));
+        if (g !== aMano) throw new Error(`k ${k}: g(${m}) = ${g}, la fórmula da ${aMano}`);
+        if (m > 0 && g > factorDeConsistencia(m - 1)) throw new Error(`k ${k}: g crece de ${m - 1} a ${m}`);
+        for (const tipo of TIPOS_K3A) {
+          const s = ruidoEfectivo(conM(m), tipo);
+          if (s !== sigma[tipo] * g) throw new Error(`k ${k}: ruidoEfectivo(m ${m}, ${tipo}) = ${s}, σ·g = ${sigma[tipo] * g}`);
+          if (k === 0 && s !== sigma[tipo]) throw new Error(`con k = 0 el σ (${tipo}, m ${m}) cambió: ${s} ≠ ${sigma[tipo]}`);
+        }
+      }
+      for (const tipo of TIPOS_K3A) {
+        if (ruidoEfectivo(null, tipo) !== sigma[tipo]) throw new Error(`k ${k}: el cruce ajeno (null) no tiene el σ de su tipo`);
+        // El camino real: la mentalidad del estado del jugador.
+        const real = ruidoEfectivo(inicial, tipo);
+        if (real !== sigma[tipo] * factorDeConsistencia(inicial.player.stats.mentalidad)) {
+          throw new Error(`k ${k}: con un estado real, σ ${real} no es σ·g(${inicial.player.stats.mentalidad})`);
+        }
+        if (k > 0 && !(ruidoEfectivo(conM(20), tipo) > ruidoEfectivo(conM(80), tipo))) {
+          throw new Error(`k ${k}: con mentalidad 20 el σ (${ruidoEfectivo(conM(20), tipo)}) no supera al de 80 (${ruidoEfectivo(conM(80), tipo)})`);
+        }
+      }
+    });
+  }
+});
+
+check('K3-A descanso: con un topeDescanso bajo (en memoria) ningún camino de descanso lo pasa — el sueño de atributos (amateur y pro) y el descansar del receso —, y descansar no baja a quien ya está arriba', () => {
+  const TOPE = 30;
+  const { pro, amateur } = estadosDeCarreraK3A();
+  if (pro.length < 3 || amateur.length < 3) throw new Error(`muestra corta: ${pro.length} pro, ${amateur.length} amateur`);
+  const atributos = sistemaPorId('atributos');
+  const practica = sistemaPorId('practica');
+  const rutina = { id: 'k3a_descanso', reparto: { pulir: 0, nuevo: 0, mecanica: 0, macro: 0, descansar: BALANCE.practica.puntos } };
+  const decision = { datos: { rutinas: [rutina] } };
+  const correr = () => {
+    const sueno = [...pro, ...amateur].map((st, i) => atributos.aplicar(
+      conBarrasK3A(st, { player: { sleep: BALANCE.stats.max, deudaSueno: 0 }, stats: { mentalidad: TOPE - 5 } }), mulberry32(9400 + i)
+    ).state.player.stats.mentalidad);
+    const receso = pro.map((st, i) => practica.resolver(
+      conBarrasK3A(st, { stats: { mentalidad: TOPE - 5 } }), decision, { opcionId: rutina.id }, mulberry32(9500 + i)
+    ).state.player.stats.mentalidad);
+    const arriba = pro.map((st, i) => practica.resolver(
+      conBarrasK3A(st, { stats: { mentalidad: TOPE + 20 } }), decision, { opcionId: rutina.id }, mulberry32(9600 + i)
+    ).state.player.stats.mentalidad);
+    return { sueno, receso, arriba };
+  };
+  // Sin tope (el de hoy), los dos caminos pasan el tope de la sonda: la sonda ve algo.
+  const libre = correr();
+  if (!libre.sueno.some((m) => m > TOPE) || !libre.receso.some((m) => m > TOPE)) {
+    throw new Error(`sonda vacía: sin tope ningún descanso pasa ${TOPE} (sueño máx ${Math.max(...libre.sueno)}, receso máx ${Math.max(...libre.receso)})`);
+  }
+  const topeado = conBalanceK3A([['atributos', 'topeDescanso', TOPE]], correr);
+  const pasados = [
+    ...topeado.sueno.map((m, i) => [`sueño ${i}`, m]),
+    ...topeado.receso.map((m, i) => [`receso ${i}`, m])
+  ].filter(([, m]) => m > TOPE + 1e-9);
+  if (pasados.length > 0) throw new Error(`con topeDescanso ${TOPE} el descanso lo pasa: ${pasados.slice(0, 5).map(([d, m]) => `${d} → ${m}`).join(', ')}`);
+  const bajados = topeado.arriba.filter((m) => m !== TOPE + 20);
+  if (bajados.length > 0) throw new Error(`descansar con mentalidad ${TOPE + 20} sobre un tope de ${TOPE} la movió: ${bajados.slice(0, 5).join(', ')}`);
+  conBalanceK3A([['atributos', 'topeDescanso', TOPE]], () => {
+    const casos = [[20, 50, TOPE], [TOPE - 1, 0.5, TOPE - 0.5], [50, 10, 50], [10, 5, 15]];
+    for (const [actual, ganancia, esperado] of casos) {
+      const dado = barrasK3A.recuperarPorDescanso(actual, ganancia);
+      if (dado !== esperado) throw new Error(`recuperarPorDescanso(${actual}, +${ganancia}) con tope ${TOPE} = ${dado}, se esperaba ${esperado}`);
+    }
+  });
+});
+
+check('K3-A vuelta a la base: con r y rH > 0 (en memoria) un paso de atributos lleva la mentalidad a m + r·(base − m) y uno de rendimiento corre el hype en rH·(baseH − h), con baseH = h0 + a·z + b·(prestigio/100 + extra si hubo internacional)', () => {
+  const R = 0.5;
+  const a = BALANCE.atributos;
+  const r = BALANCE.rendimiento;
+  conBalanceK3A([['atributos', 'mentalidadRetornoBase', R]], () => {
+    for (const m of [0, 20, a.mentalidadBase, 90, 100]) {
+      const dado = barrasK3A.mentalidadHaciaSuBase(m);
+      if (dado !== m + R * (a.mentalidadBase - m)) throw new Error(`mentalidadHaciaSuBase(${m}) = ${dado}`);
+    }
+  });
+  const { pro } = estadosDeCarreraK3A();
+  const atributos = sistemaPorId('atributos');
+  const rendimiento = sistemaPorId('rendimiento');
+  let comparadasM = 0;
+  let comparadasH = 0;
+  pro.forEach((base, i) => {
+    const st = conBarrasK3A(base, { player: { sleep: a.suenoConfortable, deudaSueno: 0 }, stats: { mentalidad: 50, hype: 50 } });
+    const m0 = atributos.aplicar(st, mulberry32(9700 + i)).state.player.stats.mentalidad;
+    const m1 = conBalanceK3A([['atributos', 'mentalidadRetornoBase', R]], () => atributos.aplicar(st, mulberry32(9700 + i)).state.player.stats.mentalidad);
+    // Lejos del piso de caída neta (50 − maxCaida) y de los bordes, el paso es exacto.
+    if (m0 > 50 - a.maxCaidaMentalPorSplit + 1 && m0 < BALANCE.stats.max) {
+      comparadasM += 1;
+      if (Math.abs(m1 - (m0 + R * (a.mentalidadBase - m0))) > 1e-9) {
+        throw new Error(`estado ${i}: mentalidad con r 0 → ${m0}, con r ${R} → ${m1}; la fórmula da ${m0 + R * (a.mentalidadBase - m0)}`);
+      }
+    }
+    // La base del hype, a mano.
+    const res = st.career.temporada.resultadosPropios;
+    const z = res.varianza > 0 ? (res.ganados - res.esperados) / Math.sqrt(res.varianza) : 0;
+    const liga = ligaDeCarreraK3A(st);
+    const internacional = st.career.registro.internacionales.some((e) => e.anio >= st.calendario.anio - r.hypeAniosInternacional);
+    const visibilidad = (liga?.prestigio ?? 0) / 100 + (internacional ? r.hypeVisibilidadPorInternacional : 0);
+    const baseH = r.hypeBaseInicial + r.hypeBasePorDesvio * z + r.hypeBasePorVisibilidad * visibilidad;
+    if (Math.abs(barrasK3A.baseDeHype(st, liga) - baseH) > 1e-9) throw new Error(`estado ${i}: baseDeHype ${barrasK3A.baseDeHype(st, liga)}, a mano ${baseH}`);
+    const h0 = rendimiento.aplicar(st, mulberry32(9800 + i)).state.player.stats.hype;
+    const h1 = conBalanceK3A([['rendimiento', 'hypeRetornoBase', R]], () => rendimiento.aplicar(st, mulberry32(9800 + i)).state.player.stats.hype);
+    const esperado = h0 + R * (baseH - 50);
+    if (h0 > 0 && h0 < BALANCE.stats.max && esperado > 0 && esperado < BALANCE.stats.max) {
+      comparadasH += 1;
+      if (Math.abs(h1 - esperado) > 1e-9) throw new Error(`estado ${i}: hype con rH 0 → ${h0}, con rH ${R} → ${h1}; la fórmula da ${esperado} (baseH ${baseH})`);
+    }
+  });
+  if (comparadasM < 3 || comparadasH < 3) throw new Error(`check vacío: ${comparadasM} pasos de mentalidad y ${comparadasH} de hype comparados`);
+  // La rama del internacional, sobre un estado sintético (las carreras cortas casi no viajan).
+  const st = structuredClone(pro[0]);
+  const liga = ligaDeCarreraK3A(st);
+  const conInternacionales = (lista) => ({ ...st, career: { ...st.career, registro: { ...st.career.registro, internacionales: lista } } });
+  const sin = barrasK3A.visibilidadDeCarrera(conInternacionales([]), liga);
+  const con = barrasK3A.visibilidadDeCarrera(conInternacionales([{ anio: st.calendario.anio - r.hypeAniosInternacional }]), liga);
+  const viejo = barrasK3A.visibilidadDeCarrera(conInternacionales([{ anio: st.calendario.anio - r.hypeAniosInternacional - 1 }]), liga);
+  if (Math.abs(con - sin - r.hypeVisibilidadPorInternacional) > 1e-12 || viejo !== sin) {
+    throw new Error(`visibilidad: sin internacional ${sin}, con uno reciente ${con}, con uno viejo ${viejo}`);
+  }
+});
+
+// ============================================================================
 // PLAN.md §K.4 — los tres custodios del registro de bandas pendientes (`src/dev/bandasPendientes.js`). Van al FINAL:
 // el primero mira cómo terminó cada check de esta corrida. Cada uno se prueba primero contra un registro sintético
 // que tiene que rechazar (trampa T5: un custodio que no ve nada pasa siempre).

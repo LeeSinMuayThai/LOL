@@ -331,9 +331,15 @@ export function factorDelMomento(resultadoTirado) {
 // el base (sin acotar) más `puntosPorDesvioDeResultados` × z, acotado a 0-100.
 // Sin fechas (o con todas las p en 0 o 1), z = 0 y queda el base. Pura.
 export function rendimientoDeLaTemporada(rendimientoBaseDelSplit, resultados) {
+  return clampStat(rendimientoBaseDelSplit + BALANCE.rendimiento.puntosPorDesvioDeResultados * zDeResultados(resultados));
+}
+
+// La z de arriba, sola: cuántos desvíos mejor (o peor) te fue de lo que tu
+// fuerza prometía. K3-A la lee también para la base del hype
+// (`core/barras.js#baseDeHype`). Sin fechas, 0. Pura.
+export function zDeResultados(resultados) {
   const desvio = Math.sqrt(resultados.varianza);
-  const z = desvio > 0 ? (resultados.ganados - resultados.esperados) / desvio : 0;
-  return clampStat(rendimientoBaseDelSplit + BALANCE.rendimiento.puntosPorDesvioDeResultados * z);
+  return desvio > 0 ? (resultados.ganados - resultados.esperados) / desvio : 0;
 }
 
 export function resultadosVacios() {
