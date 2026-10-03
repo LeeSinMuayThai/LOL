@@ -16439,10 +16439,15 @@ check('K4c-S regla 15: el texto de la prueba dice lo que está en juego (el cont
   }
 });
 
-check('K4c-S el renglón de parche va adjunto salvo que toque tu pool o tu main (un campeón de tu pool cambia de tier)', () => {
+check('K4c el renglón de parche va adjunto salvo que mueva a tu main de S/A a B/C o al revés (K4c-S: salvo que toque tu pool)', () => {
+  // K4c (paso 3a) — regla 17: reemplaza a "salvo que un campeón de tu pool (el main incluido) cambie de tier" (K4c-S, 5caaa3c),
+  // que dejaba el 81% de los parches como beat propio: casi no recortaba. Ahora solo abre beat el parche que te saca o te
+  // devuelve el main (PLAN.md, "El parche se angosta").
   const tierDe = (lista, nombre) => lista.find((entrada) => entrada.name === nombre)?.tier ?? null;
+  const buena = (tier) => tier === 'S' || tier === 'A';
   let adjuntos = 0;
   let propios = 0;
+  let cambioDeTierQueNoEsElMain = 0;
   for (let seed = 1; seed <= 30; seed += 1) {
     const rng = mulberry32(seed);
     let st = createInitialState(seed, rng);
@@ -16454,22 +16459,30 @@ check('K4c-S el renglón de parche va adjunto salvo que toque tu pool o tu main 
         if (parche?.type !== 'meta') {
           throw new Error(`seed ${seed}, split ${i}: el primer log de meta tenía que ser el renglón del parche`);
         }
-        // A mano, sin `parcheTocaTuPool`: ¿algún campeón del pool cambió de tier entre la tier list vieja y la nueva?
-        const toca = st.player.championPool.some((campeon) => {
-          const antes = tierDe(st.meta.tierList, campeon.name);
-          const despues = tierDe(r.state.meta.tierList, campeon.name);
-          return antes !== null && despues !== null && antes !== despues;
-        });
-        if ((parche.adjunto === true) === toca) {
-          throw new Error(`seed ${seed}, split ${i}: el parche ${toca ? 'toca tu pool y tiene que abrir su beat' : 'no toca tu pool y tiene que ir adjunto'}, pero adjunto = ${parche.adjunto}`);
+        // A mano, sin `parcheMueveTuMain`: el main es el de mayor maestría; ¿cruzó la frontera S/A | B/C entre la tier list
+        // vieja y la nueva?
+        const main = st.player.championPool.reduce((mejor, campeon) => (campeon.mastery > mejor.mastery ? campeon : mejor));
+        const antes = tierDe(st.meta.tierList, main.name);
+        const despues = tierDe(r.state.meta.tierList, main.name);
+        const mueve = antes !== null && despues !== null && buena(antes) !== buena(despues);
+        if ((parche.adjunto === true) === mueve) {
+          throw new Error(`seed ${seed}, split ${i}: el parche ${mueve ? `mueve a tu main (${main.name}: ${antes} → ${despues}) y tiene que abrir su beat` : `no mueve a tu main (${main.name}: ${antes} → ${despues}) y tiene que ir adjunto`}, pero adjunto = ${parche.adjunto}`);
         }
-        if (toca) propios += 1; else adjuntos += 1;
+        if (mueve) propios += 1; else adjuntos += 1;
+        // La muestra que distingue la regla angosta de la vieja: un campeón del pool (no el main) que sí cambió de tier.
+        if (!mueve && st.player.championPool.some((campeon) => {
+          const a = tierDe(st.meta.tierList, campeon.name);
+          const d = tierDe(r.state.meta.tierList, campeon.name);
+          return a !== null && d !== null && a !== d;
+        })) {
+          cambioDeTierQueNoEsElMain += 1;
+        }
       }
       st = avanzarSplitAuto(st, rng).state;
     }
   }
-  if (propios < 3 || adjuntos < 20) {
-    throw new Error(`check vacío: ${propios} parches que tocan el pool y ${adjuntos} que no (hacen falta 3 y 20)`);
+  if (propios < 3 || adjuntos < 20 || cambioDeTierQueNoEsElMain < 5) {
+    throw new Error(`check vacío: ${propios} parches que mueven el main, ${adjuntos} que no y ${cambioDeTierQueNoEsElMain} que mueven un campeón del pool que no es el main (hacen falta 3, 20 y 5)`);
   }
 });
 
