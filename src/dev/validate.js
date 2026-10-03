@@ -13220,6 +13220,9 @@ checkLento('K1 puntaje en carreras reales de criterio, azar y malas: componentes
 // región de origen); si no aparecen antes del tope, falla con lo que faltó, nunca pasa vacío.
 const SEEDS_D76_MINIMO_K1 = 120;
 const SEEDS_D76_TOPE_K1 = 400;
+// K4c (paso 3a): las carreras de `malas` que se recorren (desde la seed 1) hasta ver un cierre en el split del pase, con tope.
+const SEEDS_D76_TOPE_MALAS_K4CAL = 120;
+const SEEDS_D76_CIERRES_MALAS_K4CAL = 1;
 const LOG_SPLIT_JUGADO_K1 = /terminó \d+º de \d+ en /;
 
 function jugadoPorOrgYTierK1(estado) {
@@ -13245,15 +13248,16 @@ checkLento('K1 D76: cada split jugado se cuenta una vez en la org y el tier dond
   const vistos = { tituloEnDescenso: 0, pase: 0, jugadoEnOtroTierQueLaFila: 0, internacionalFueraDeOrigen: 0 };
   const titulosPorTier = { 1: 0, 2: 0, 3: 0 };
   let seeds = 0;
+  let asentadasAlCerrar = 0;
   const completo = () => Object.values(vistos).every((n) => n > 0) && TIERS_DE_SPLIT.every((tier) => titulosPorTier[tier] > 0);
-  for (let seed = 1; seed <= SEEDS_D76_TOPE_K1 && (seed <= SEEDS_D76_MINIMO_K1 || !completo()); seed += 1) {
-    seeds = seed;
+  // K4c (paso 3a): lo que se verifica en cada split se verifica con cualquier bot (`responder` undefined = el de siempre).
+  const recorrerSeed = (seed, responder) => {
     const rng = mulberry32(seed);
     let estado = createInitialState(seed, rng);
     const ligaDeOrigen = estado.mundo.ligas.find((liga) => liga.tier === 1 && liga.regionId === estado.mundo.regionIdOrigen)?.id;
     for (let split = 0; split < 60 && !estado.terminado; split += 1) {
       const antes = estado;
-      const resultado = avanzarSplitAuto(estado, rng);
+      const resultado = avanzarSplitAuto(estado, rng, responder);
       estado = resultado.state;
       const donde = `seed ${seed}, split ${antes.player.splitCount}`;
       const { career, flags } = estado;
@@ -13318,6 +13322,34 @@ checkLento('K1 D76: cada split jugado se cuenta una vez en la org y el tier dond
     if (estado.flags.splitJugadoSinFila) {
       throw new Error(`seed ${seed}: la carrera terminó con un split jugado que nunca llegó a su fila (${JSON.stringify(estado.flags.splitJugadoSinFila)})`);
     }
+    // K4c (paso 3a, D76): la carrera que cierra con un split del pase sin asentar (te retirás en el split del pase y no volvés:
+    // la ventana de vuelta se cierra sola) lo asienta al cerrar: la fila de la org con la que lo jugaste está en el registro,
+    // cerrada, con ese split (uno) y sin `splits` (arrancar un split es de `roster.js`, que no volvió a correr). La firma del
+    // caso, sin mirar la bandera: terminó y la fila final de la org actual tiene splits JUGADOS pero ninguno arrancado (una fila
+    // que abre `roster.js` arranca con `splits` >= 1). El (org, tier) del split no se mueve: lo verifica la suma por split de arriba.
+    const ultima = estado.career.registro.porOrg.at(-1);
+    const jugadosDeLaUltima = ultima ? TIERS_DE_SPLIT.reduce((total, tier) => total + ultima.splitsPorTier[tier], 0) : 0;
+    if (estado.terminado && ultima && ultima.org === estado.career.currentOrg && ultima.splits === 0 && jugadosDeLaUltima >= 1) {
+      asentadasAlCerrar += 1;
+      if (jugadosDeLaUltima !== 1 || ultima.hastaSplit === null || ultima.motivoDeSalida === null) {
+        throw new Error(`seed ${seed}: la carrera cerró con el split del pase de ${ultima.org} sin asentar bien (splitsPorTier ${JSON.stringify(ultima.splitsPorTier)}, hastaSplit ${ultima.hastaSplit}, motivo ${ultima.motivoDeSalida})`);
+      }
+    }
+  };
+  for (let seed = 1; seed <= SEEDS_D76_TOPE_K1 && (seed <= SEEDS_D76_MINIMO_K1 || !completo()); seed += 1) {
+    seeds = seed;
+    recorrerSeed(seed, undefined);
+  }
+  // `malas` (la seed 28, Vórtice Rebels: te retirás en el split del pase y no volvés) es la que llega a ese cierre: se la recorre
+  // desde la seed 1 hasta ver SEEDS_D76_CIERRES_MALAS_K4CAL, con tope. Sin el asiento de `conTarjeta` (core/pipeline.js) el
+  // chequeo de arriba ("terminó con un split jugado que nunca llegó a su fila") salta en esa seed.
+  let seedsMalas = 0;
+  for (let seed = 1; seed <= SEEDS_D76_TOPE_MALAS_K4CAL && asentadasAlCerrar < SEEDS_D76_CIERRES_MALAS_K4CAL; seed += 1) {
+    seedsMalas = seed;
+    recorrerSeed(seed, ESTRATEGIAS_K0.malas);
+  }
+  if (asentadasAlCerrar < SEEDS_D76_CIERRES_MALAS_K4CAL) {
+    throw new Error(`check vacío: en ${seeds} carreras del bot por defecto y ${seedsMalas} de malas (tope ${SEEDS_D76_TOPE_MALAS_K4CAL}) hubo ${asentadasAlCerrar} cierre(s) en el split del pase (hacen falta ${SEEDS_D76_CIERRES_MALAS_K4CAL})`);
   }
   if (!completo()) {
     throw new Error(`check vacío: en ${seeds} carreras (tope ${SEEDS_D76_TOPE_K1}) faltó ver alguno de los casos que hacen discriminar al check: `

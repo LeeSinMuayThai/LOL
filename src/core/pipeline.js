@@ -3,6 +3,7 @@ import { ETAPAS_SPLIT, sistemaPorId } from '../systems/registro.js';
 import { componerLegado } from './legado.js';
 import { puntajeDeCarrera } from './puntaje.js';
 import { pronosticoDeOxido } from './pool.js';
+import { asentarSplitPendiente } from './registro.js';
 
 export { ETAPAS_SPLIT };
 
@@ -33,10 +34,29 @@ function splitTerminaAca(state) {
 // compuesto en el mismo momento y sobre el mismo estado. Puro, sin `rng`.
 function conTarjeta(resultado) {
   if (resultado.state.terminado && !resultado.state.tarjeta) {
-    const tarjeta = { ...componerLegado(resultado.state), puntaje: puntajeDeCarrera(resultado.state) };
-    return { ...resultado, state: { ...resultado.state, tarjeta } };
+    // K4c (paso 3a, D76): antes de componer la tarjeta (que lee el registro), el split jugado que esperaba su fila se
+    // asienta: si la carrera cierra en el split del pase, `roster.js` no vuelve a correr para abrírsela.
+    const cerrado = conSplitPendienteAsentado(resultado.state);
+    const tarjeta = { ...componerLegado(cerrado), puntaje: puntajeDeCarrera(cerrado) };
+    return { ...resultado, state: { ...cerrado, tarjeta } };
   }
   return resultado;
+}
+
+function conSplitPendienteAsentado(state) {
+  const pendiente = state.flags.splitJugadoSinFila;
+  if (!pendiente) {
+    return state;
+  }
+  const registro = asentarSplitPendiente(state.career.registro, pendiente, {
+    liga: state.career.liga, tier: state.career.tier, anio: state.calendario.anio,
+    split: state.player.splitCount, arraigoActual: state.career.arraigo
+  });
+  return {
+    ...state,
+    flags: { ...state.flags, splitJugadoSinFila: null },
+    career: { ...state.career, registro }
+  };
 }
 
 // Fase 9Rf: toda pausa —venga del sistema que venga— descuenta una
