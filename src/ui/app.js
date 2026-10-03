@@ -188,7 +188,7 @@ export function iniciar() {
       }
       resuelto = true;
       // K2d: la p final del mapa, ya corrida por el minijuego: la que se tira.
-      pintarPrevia(decision, estadoActual, { resultadoMinijuego: resultado });
+      const previaFinal = pintarPrevia(decision, estadoActual, { resultadoMinijuego: resultado });
       const v = veredictoDeMinijuego(decision.datos.minijuego, resultado, estadoActual);
       if (resultado >= 0.67) marcarHit(minijuegoWidget);
       else if (resultado <= 0.33) marcarMiss(minijuegoWidget);
@@ -196,6 +196,8 @@ export function iniciar() {
         '<div class="minijuego-resultado minijuego-resultado--' + v.nivel + '">'
         + '<div class="minijuego-resultado-titulo">' + v.titulo + '</div>'
         + '<div class="minijuego-resultado-detalle">' + v.detalle + '</div>'
+        // K2d: la misma p que muestra la tarjeta de la previa (que queda arriba del widget).
+        + (previaFinal ? '<div class="minijuego-resultado-p">Con esto: ' + previaFinal.porcentaje + '% de ganar</div>' : '')
         + '</div>';
       ui.renderLowerThird(summary, metaPill, estadoActual, { modo: 'minijuego' });
       setTimeout(() => responder({ resultado }), 1600);

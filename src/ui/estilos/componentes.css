@@ -835,6 +835,10 @@ h1::before {
 .previa-lado--rival { text-align: right; grid-template-columns: 1fr auto; }
 .previa-lado--rival > :first-child { grid-column: 2; grid-row: 1 / span 2; }
 .previa-nombre { font-size: var(--fs-1); color: var(--ink-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* A 375 px los nombres de org largos no se cortan ("Team Secre…"): bajan de renglón. */
+@media (max-width: 479px) {
+  .previa-nombre { white-space: normal; overflow-wrap: anywhere; }
+}
 .previa-fuerza { font-family: var(--font-display); font-size: var(--fs-5); color: var(--ink); font-variant-numeric: tabular-nums; }
 .previa-p { display: flex; flex-direction: column; align-items: center; }
 .previa-pct { font-family: var(--font-display); font-size: var(--fs-6); color: var(--live); line-height: 1; font-variant-numeric: tabular-nums; }
