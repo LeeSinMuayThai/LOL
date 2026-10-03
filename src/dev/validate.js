@@ -731,7 +731,8 @@ const FORMAS_CONOCIDAS = {
   // prueba del mercado lleva `respaldo` y `otras`/`carry` (K4c-F, K4c-S, paso 3a). Las demás re-registraciones del bloque (el contenido
   // de la fecha marcada, la prueba, el cierre de año, la ventana) solo movieron rutas opcionales que la muestra ve: ningún otro campo
   // nació ni murió. Un guardado de la 10 carga: ver `migrarDe10` y su check.
-  11: '305af896ede9'
+  // K4c (revisión, textos): sin campos nuevos; el cierre de año ya no repite carta y la muestra ve otro mapa de eventos vistos.
+  11: '026c4f0a1a4f'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que

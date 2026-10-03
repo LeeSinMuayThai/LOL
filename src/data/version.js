@@ -82,4 +82,6 @@ export const VERSION_JUEGO = 'K4c';
 // Integración de los arreglos del paso 3a y el cierre de año, con la ventana en 7 (supervisor): reemplaza a 805410138 y 2044679379.
 // K4c (plan anual, 1616394605): la práctica deja de frenar; el cierre de año fija el plan y cada split pro entrena solo su tramo
 // (otra cuenta de tiradas por año, y la preparación ya no la elige el bot en la pretemporada). Misma versión: reemplaza a 1157384592.
-export const HUELLA_JUEGO = 1616394605;
+// K4c (revisión, textos, 1625568496): el cierre de año no repite el evento del año anterior (cooldown de 4 splits, 99 el del primer balance),
+// así que cambia qué carta cae y con ella las tiradas del resto de la carrera. Misma versión: reemplaza a 1616394605.
+export const HUELLA_JUEGO = 1625568496;
