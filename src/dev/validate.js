@@ -727,7 +727,11 @@ const FORMAS_CONOCIDAS = {
   // Mundial, D78, la renovación NPC amateur), así que cambian las rutas opcionales que la muestra ve.
   // Re-registrada en K4c-F (el bloque B sigue sin mergear): los logs ganan el campo opcional `adjunto` (core/log.js). Un
   // guardado de antes es compatible tal cual: sin `adjunto`, cada línea forma su beat como antes; por eso no sube VERSION.
-  10: '84458be49efc'
+  // Re-registrada en K4c-S (el bloque B sigue sin mergear): la pausa de la prueba del mercado lleva `otras` y `carry` (las ofertas
+  // que quedan si la prueba no alcanza) y las carreras de muestra se corrieron (la prueba decide el contrato), así que cambian las
+  // rutas opcionales que la muestra ve. Un guardado de antes con la prueba pendiente no trae esas claves y se carga igual: si no
+  // alcanza, se cae la oferta y no queda otra. Por eso no sube VERSION: el paso 3 de K4c la sube a 11.
+  10: 'f6cb5e5d2477'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que

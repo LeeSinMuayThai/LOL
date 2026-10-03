@@ -54,5 +54,8 @@
 // tier list, y el banquillo de un club extranjero puebla la academia a la que te cede (`conPlantelesDe`: una tirada
 // nueva solo en ese camino). Misma versión (la rama no se mergeó): la huella de la integración (1153610693) queda
 // reemplazada.
+// K4c-S (misma versión: el bloque B no se mergeó; 276794090): la prueba (tryout) decide el contrato — una tirada nueva en el
+// tryout del mercado y en el del amateur, y la firma que no se da (la oferta se cae, la firma se posterga) cambia las carreras
+// enteras desde el primer tryout. El renglón de parche adjunto no mueve la huella. Reemplaza a 1197795265 (K5).
 export const VERSION_JUEGO = 'K5';
-export const HUELLA_JUEGO = 1197795265;
+export const HUELLA_JUEGO = 276794090;
