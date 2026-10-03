@@ -3,7 +3,7 @@
 // `DISENO.md` §4.1 pedía esta estructura desde el arranque del proyecto —
 // hasta la fase 8 `src/ui/` estaba vacía y los 1.090 renglones de interfaz
 // vivían enteros en `index.html` (deuda D7 de PLAN.md).
-export { crearPantallaInicio } from './screens/inicio.js';
+export { crearPantallaInicio, renderDesafio, renderHistorial } from './screens/inicio.js';
 export { renderCarrera, renderRielContexto, mostrarDecisionEnPantalla, mostrarMercadoEnPantalla, renderLowerThird } from './screens/carrera.js';
 export { renderTarjeta } from './screens/tarjeta.js';
 export { renderFicha } from './components/ficha.js';

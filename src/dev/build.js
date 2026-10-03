@@ -55,7 +55,14 @@ const SPLITS_DE_VERIFICACION = 30;
 // número ya tuvo una vez (nota de arriba). Subido con margen para los
 // consumidores de `graficos/` que vienen en V2/J-previa, sobre el peso medido
 // ese día, no una expectativa.
-const PESO_MAXIMO_KB = 1800;
+//
+// Re-medido en la segunda revisión de K1 (2026-10-02): la revisión leyó 0,19 KB de
+// margen sobre el techo de 1800 (en este checkout, 1799,2 KB antes de sus arreglos),
+// el mismo margen-que-se-cierra-en-silencio por tercera vez, y con los arreglos de
+// esa revisión (validación y textos del puntaje) el peso medido dio 1801,4 KB: ya
+// por encima. Subido a 1900 con margen para las pantallas que faltan de la fase K
+// (la previa de K2d, K4/K5), sobre el peso medido ese día, no una expectativa.
+const PESO_MAXIMO_KB = 1900;
 
 function copiar(desde, hacia) {
   const stat = fs.statSync(desde);

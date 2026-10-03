@@ -1,5 +1,6 @@
 import LIGAS from '../data/leagues.json' with { type: 'json' };
 import { BALANCE } from '../data/balance.js';
+import { splitsJugadosEnTier } from './registro.js';
 
 // El veredicto de la carrera (PLAN.md §10.2, CONCEPTO §9): NO se elige de una
 // lista, se COMPONE — una plantilla de arquetipo más un detalle real sacado del
@@ -11,17 +12,30 @@ import { BALANCE } from '../data/balance.js';
 // testear sin mover el balance.
 
 const REGION_DE_LIGA = Object.fromEntries(LIGAS.map((liga) => [liga.id, liga.region]));
+// El nombre que ve el jugador (K1: ningún texto muestra el id crudo de una liga).
+const NOMBRE_DE_LIGA = Object.fromEntries(LIGAS.map((liga) => [liga.id, liga.nombre]));
 
+// K1 (D76): `fila.tier` es el tier AL FIRMAR, y un descenso en el lugar no
+// cierra la fila. Por eso lo jugado y lo ganado por tier se lee de lo que se
+// registró en el momento: `fila.splitsPorTier` y el `tier` de cada título.
+// Antes se filtraba por `fila.tier` y los splits (y títulos) de Challengers de
+// una org descendida contaban como de primera.
 function titulosDeTier(registro, tier) {
-  return registro.porOrg
-    .filter((fila) => fila.tier === tier)
-    .reduce((total, fila) => total + fila.titulos.length, 0);
+  return registro.titulos.filter((titulo) => titulo.tier === tier).length;
 }
 
 function splitsDeTier(registro, tier) {
+  return splitsJugadosEnTier(registro, tier);
+}
+
+// Las ligas tier 1 donde jugaste al menos un split, en el orden de las filas.
+// Una fila suma splits de tier 1 solo mientras juega en la liga de la firma (el
+// descenso en el lugar la manda a tier 2 y no existe el ascenso en el lugar),
+// así que en esas filas `fila.liga` es la liga tier 1 que se jugó.
+function ligasTier1Jugadas(registro) {
   return registro.porOrg
-    .filter((fila) => fila.tier === tier)
-    .reduce((total, fila) => total + fila.splits, 0);
+    .filter((fila) => (fila.splitsPorTier?.[1] ?? 0) > 0 && fila.liga)
+    .map((fila) => fila.liga);
 }
 
 // La org donde más jugaste; desempata por títulos.
@@ -32,21 +46,27 @@ function orgMasImportante(registro) {
 }
 
 // La liga tier 1 donde levantaste más trofeos, y si toda tu carrera tier 1
-// transcurrió en una sola región.
+// transcurrió en una sola región. K1 (D76): las ligas son las que jugaste en
+// tier 1 (`ligasTier1Jugadas`) y los trofeos, los títulos de tier 1 por su
+// `liga`; empate: la primera liga que jugaste.
 function ligaInsignia(registro) {
+  const ligasTier1 = ligasTier1Jugadas(registro);
   const porLiga = {};
-  for (const fila of registro.porOrg) {
-    if (fila.tier === 1 && fila.liga) {
-      porLiga[fila.liga] = (porLiga[fila.liga] ?? 0) + fila.titulos.length;
+  for (const liga of ligasTier1) {
+    porLiga[liga] = porLiga[liga] ?? 0;
+  }
+  for (const titulo of registro.titulos) {
+    if (titulo.tier === 1 && titulo.liga) {
+      porLiga[titulo.liga] = (porLiga[titulo.liga] ?? 0) + 1;
     }
   }
   const ordenadas = Object.entries(porLiga).sort((a, b) => b[1] - a[1]);
   if (ordenadas.length === 0) {
-    return { liga: null, unaSolaRegion: false };
+    return { liga: null, nombre: null, unaSolaRegion: false };
   }
-  const ligasTier1 = registro.porOrg.filter((fila) => fila.tier === 1 && fila.liga).map((fila) => fila.liga);
   const regiones = new Set(ligasTier1.map((id) => REGION_DE_LIGA[id]).filter(Boolean));
-  return { liga: ordenadas[0][0], unaSolaRegion: regiones.size === 1 };
+  const liga = ordenadas[0][0];
+  return { liga, nombre: NOMBRE_DE_LIGA[liga] ?? liga, unaSolaRegion: regiones.size === 1 };
 }
 
 // La plantilla de arquetipo. Primer match gana. `esExito` decide el marco de la
@@ -92,7 +112,7 @@ function elegirArquetipo(datos) {
     return { frase: `El bicampeón: dos internacionales con ${internacional.org}`, esExito: true };
   }
   if (intBuenos === 1 && titulosT1 >= 3) {
-    return { frase: `Leyenda de ${insignia.liga ?? 'primera'}: un internacional y ${titulosT1} títulos`, esExito: true };
+    return { frase: `Leyenda de ${insignia.nombre ?? 'primera'}: un internacional y ${titulosT1} títulos`, esExito: true };
   }
   if (intBuenos === 1) {
     return { frase: `El mundialista de ${internacional.org}`, esExito: true };
@@ -101,10 +121,10 @@ function elegirArquetipo(datos) {
     return { frase: `El que llegó al internacional con ${internacional.org}`, esExito: true };
   }
   if (titulosT1 >= 3 && insignia.liga && insignia.unaSolaRegion) {
-    return { frase: `Leyenda de ${insignia.liga}: ${titulosT1} títulos, nunca un internacional`, esExito: true };
+    return { frase: `Leyenda de ${insignia.nombre}: ${titulosT1} títulos, nunca un internacional`, esExito: true };
   }
   if (titulosT1 >= 1) {
-    return { frase: `Campeón de ${insignia.liga ?? 'primera'}`, esExito: true };
+    return { frase: `Campeón de ${insignia.nombre ?? 'primera'}`, esExito: true };
   }
   // Fase 9Wb: tocaste el Top 20 del mundo sin levantar un trofeo — igual
   // estuviste entre los 20 mejores del planeta.

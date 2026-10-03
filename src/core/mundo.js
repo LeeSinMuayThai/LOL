@@ -13,13 +13,15 @@ import LIGAS from '../data/leagues.json' with { type: 'json' };
 
 // Los handles se arman por silabas para que cada seed invente los suyos. Los
 // companeros y rivales tienen que ser inventados (CLAUDE.md, precision de dominio).
-const PREFIJOS_HANDLE = [
+// Exportados (K1) para que `validate.js` compruebe que ninguna leyenda de
+// `data/leyendas.json` pueda confundirse con un handle que genera el motor.
+export const PREFIJOS_HANDLE = [
   'Ka', 'Zen', 'Ryu', 'Nox', 'Vel', 'Sil', 'Dra', 'Kor', 'Ash', 'Mir',
   'Tho', 'Gru', 'Lex', 'Vay', 'Nam', 'Ori', 'Kri', 'Sha', 'Ver', 'Ozz',
   'Bal', 'Cyn', 'Dae', 'Elu', 'Fen', 'Hal', 'Ith', 'Jor', 'Lum', 'Mal'
 ];
 
-const SUFIJOS_HANDLE = [
+export const SUFIJOS_HANDLE = [
   'ron', 'vex', 'ko', 'shi', 'dar', 'nis', 'zel', 'mir', 'tas', 'ken',
   'lux', 'rah', 'fin', 'sol', 'vik', 'nor', 'tep', 'jin', 'wen', 'bal',
   'que', 'rix', 'thy', 'ova', 'gal', 'hen', 'zor', 'nyx', 'ade', 'ith'

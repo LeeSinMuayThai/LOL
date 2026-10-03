@@ -272,7 +272,11 @@ function aplicarTitulo(state, liga, rng) {
   const registro = registrarArraigoEnFila(
     registrarTitulo(
       registrarPico(state.career.registro, 'arraigo', Math.round(arraigo)),
-      { nombre: nombreLigaDe(liga), anio: state.calendario.anio, org: state.career.currentOrg }
+      // K1 (D76): la liga y el tier donde se ganó (el bracket es siempre tier 1).
+      {
+        nombre: nombreLigaDe(liga), anio: state.calendario.anio, org: state.career.currentOrg,
+        liga: liga.id, tier: liga.tier
+      }
     ),
     Math.round(arraigo)
   );
@@ -321,6 +325,8 @@ function aplicarConsecuenciaInternacional(state, gano, rng) {
         torneo: `internacional — ${nombreLigaDe(ligaDeCarrera(state))}`,
         anio: state.calendario.anio,
         org: state.career.currentOrg,
+        // K1 (D76): la liga que representaste.
+        liga: ligaDeCarrera(state).id,
         resultado: gano ? 'buen_papel' : 'eliminado',
         camino: state.serie.mapas.map((mapa, i) => ({
           mapa: mapa.mapa ?? (i + 1),

@@ -1,0 +1,222 @@
+[
+  {
+    "id": "ancla",
+    "handle": "Ancla",
+    "rol": "support",
+    "region": "Brasil",
+    "anios": 9,
+    "titulos": 4,
+    "internacionales": 4,
+    "rankPico": 0,
+    "historia": "Cuatro CBLOL tirando hooks desde la niebla. En Brasil, decir \"hook de Ancla\" es decir que la pelea ya se terminó."
+  },
+  {
+    "id": "basalto",
+    "handle": "Basalto",
+    "rol": "top",
+    "region": "Brasil",
+    "anios": 11,
+    "titulos": 6,
+    "internacionales": 7,
+    "rankPico": 15,
+    "historia": "Seis CBLOL con tanques que nadie más pickeaba. Afuera lo conocían por una sola cosa: no perdía la fase de líneas ni contra los coreanos."
+  },
+  {
+    "id": "brujula",
+    "handle": "Brujula",
+    "rol": "support",
+    "region": "Europa",
+    "anios": 10,
+    "titulos": 5,
+    "internacionales": 7,
+    "rankPico": 5,
+    "historia": "Cinco LEC haciendo el shotcall desde el support. Si el equipo dudaba en el Barón, alcanzaba con escucharlo dos segundos."
+  },
+  {
+    "id": "centella",
+    "handle": "Centella",
+    "rol": "adc",
+    "region": "Corea",
+    "anios": 9,
+    "titulos": 5,
+    "internacionales": 8,
+    "rankPico": 3,
+    "historia": "Cinco LCK y un farmeo por minuto que parecía un bug del cliente. Se retiró en la cima, con veintiséis, y nunca quiso volver."
+  },
+  {
+    "id": "desvelo",
+    "handle": "Desvelo",
+    "rol": "mid",
+    "region": "Brasil",
+    "anios": 0,
+    "titulos": 0,
+    "internacionales": 0,
+    "rankPico": 0,
+    "historia": "Challenger a los catorce, streamer a los diecisiete. La leyenda de la soloQ brasileña nunca firmó un contrato, y nadie sabe bien por qué."
+  },
+  {
+    "id": "dolmen",
+    "handle": "Dolmen",
+    "rol": "top",
+    "region": "Corea",
+    "anios": 13,
+    "titulos": 10,
+    "internacionales": 12,
+    "rankPico": 1,
+    "historia": "Diez LCK sin regalar nunca la línea. Los junglas rivales dejaron de gankearlo y empezaron a rezar para que no llegara con el TP a la pelea."
+  },
+  {
+    "id": "ermitano",
+    "handle": "Ermitano",
+    "rol": "support",
+    "region": "Norteamérica",
+    "anios": 3,
+    "titulos": 0,
+    "internacionales": 0,
+    "rankPico": 0,
+    "historia": "Tres años en la NACL esperando un llamado a la LCS que nunca llegó. Hoy es el coach que todos los supports de NA quieren tener."
+  },
+  {
+    "id": "faro",
+    "handle": "Faro",
+    "rol": "support",
+    "region": "Corea",
+    "anios": 12,
+    "titulos": 8,
+    "internacionales": 12,
+    "rankPico": 2,
+    "historia": "Ocho LCK viendo el mapa antes que el resto. Los rivales juraban que tenía visión de toda la jungla aunque no hubiera un solo ward."
+  },
+  {
+    "id": "grimwald",
+    "handle": "Grimwald",
+    "rol": "top",
+    "region": "Europa",
+    "anios": 9,
+    "titulos": 4,
+    "internacionales": 8,
+    "rankPico": 3,
+    "historia": "Cuatro LEC y una semifinal mundial a puro splitpush: mientras los otros cuatro agrupaban en mid, él se llevaba dos inhibidores solo."
+  },
+  {
+    "id": "kuroame",
+    "handle": "Kuroame",
+    "rol": "jungla",
+    "region": "Asia-Pacífico",
+    "anios": 8,
+    "titulos": 5,
+    "internacionales": 9,
+    "rankPico": 4,
+    "historia": "Cinco títulos entre la LMS y la PCS con un pathing que ningún analista supo leer. Cuando el Pacífico se juntó en la LCP ya estaba retirado, comentando las finales."
+  },
+  {
+    "id": "latigo",
+    "handle": "Latigo",
+    "rol": "mid",
+    "region": "China",
+    "anios": 8,
+    "titulos": 4,
+    "internacionales": 9,
+    "rankPico": 2,
+    "historia": "Asesinos en pleno meta de magos de control, y aun así cuatro LPL. Cuando lockeaba LeBlanc, el otro mid ya jugaba con miedo."
+  },
+  {
+    "id": "mandragora",
+    "handle": "Mandragora",
+    "rol": "jungla",
+    "region": "China",
+    "anios": 11,
+    "titulos": 8,
+    "internacionales": 10,
+    "rankPico": 2,
+    "historia": "Ocho LPL invadiendo desde el nivel uno. Los equipos coreanos empezaron a wardear su propio buff azul por culpa suya."
+  },
+  {
+    "id": "noctambulo",
+    "handle": "Noctambulo",
+    "rol": "jungla",
+    "region": "Norteamérica",
+    "anios": 0,
+    "titulos": 0,
+    "internacionales": 0,
+    "rankPico": 0,
+    "historia": "Rank 1 del servidor tres seasons seguidas, siempre de madrugada. Rechazó cada tryout que le ofrecieron: decía que con equipo se jugaba peor."
+  },
+  {
+    "id": "orfebre",
+    "handle": "Orfebre",
+    "rol": "mid",
+    "region": "Europa",
+    "anios": 12,
+    "titulos": 5,
+    "internacionales": 8,
+    "rankPico": 6,
+    "historia": "Cinco LEC armando roams al milímetro, siempre a una serie de la final mundial. Nadie en Europa llegó tantas veces hasta la puerta."
+  },
+  {
+    "id": "pasajero",
+    "handle": "Pasajero",
+    "rol": "adc",
+    "region": "Asia-Pacífico",
+    "anios": 5,
+    "titulos": 1,
+    "internacionales": 1,
+    "rankPico": 0,
+    "historia": "Cinco años, cinco orgs del Pacífico, un título de rebote y una pentakill que todavía aparece en cada video de jugadas del año."
+  },
+  {
+    "id": "picapiedra",
+    "handle": "Picapiedra",
+    "rol": "top",
+    "region": "Norteamérica",
+    "anios": 7,
+    "titulos": 0,
+    "internacionales": 0,
+    "rankPico": 0,
+    "historia": "Siete años en LCS, cinco orgs y ni un trofeo: el top que todos querían en el roster y nadie quería pagar."
+  },
+  {
+    "id": "relojero",
+    "handle": "Relojero",
+    "rol": "jungla",
+    "region": "Norteamérica",
+    "anios": 12,
+    "titulos": 3,
+    "internacionales": 5,
+    "rankPico": 11,
+    "historia": "Tres LCS con un pathing que se podía cronometrar: a los tres minutos y quince estaba en la línea de abajo, partida tras partida, y aun así nadie lo frenaba."
+  },
+  {
+    "id": "tifon",
+    "handle": "Tifon",
+    "rol": "adc",
+    "region": "China",
+    "anios": 12,
+    "titulos": 7,
+    "internacionales": 11,
+    "rankPico": 1,
+    "historia": "Siete LPL y un Mundial con kiteos que todavía circulan en clips. Con él en la bot lane, el late game era una cuenta regresiva."
+  },
+  {
+    "id": "tordo",
+    "handle": "Tordo",
+    "rol": "jungla",
+    "region": "Brasil",
+    "anios": 10,
+    "titulos": 3,
+    "internacionales": 3,
+    "rankPico": 0,
+    "historia": "Tres CBLOL definidos con un smite robado en el último segundo. En Brasil todavía discuten si era suerte o si era él."
+  },
+  {
+    "id": "vigilia",
+    "handle": "Vigilia",
+    "rol": "mid",
+    "region": "China",
+    "anios": 12,
+    "titulos": 8,
+    "internacionales": 12,
+    "rankPico": 1,
+    "historia": "Ocho LPL con un pool tan ancho que le gastaban tres bans y no alcanzaba. Llegó a #1 del mundo sin levantar nunca un Mundial, y lo sostuvo dos años."
+  }
+]

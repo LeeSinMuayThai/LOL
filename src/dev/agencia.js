@@ -6,6 +6,7 @@ import { avanzarSplit, resolverDecision, avanzarSplitAuto } from '../core/pipeli
 import { sistemaPorId } from '../systems/registro.js';
 import { nivelDelJugador } from '../core/ficha.js';
 import { hashCadena } from '../core/numeros.js';
+import { splitsJugadosEnTier, tierMasAltoJugado } from '../core/registro.js';
 import {
   RESULTADO_MINIJUEGO_BIEN, RESULTADO_MINIJUEGO_MAL, esDecisionDeMinijuego, esDecisionDeMercado
 } from './estrategias.js';
@@ -67,12 +68,15 @@ const PUNTAJE_POR_LLEGAR_A_PRO = 10;
 const EPSILON_DESVIO = 1e-9;
 
 // Puntaje de carrera provisorio (AUDITORIA.md §4.3) usado como función objetivo
-// hasta que la subfase K1 implemente `core/puntaje.js`.
+// hasta que la subfase K1 implemente `core/puntaje.js`. K1-A: `core/puntaje.js` ya existe, pero cambiar la
+// función objetivo del contrafáctico cambia la línea de base de §K.0b: es una decisión aparte (queda como
+// estaba). Lo que sí se alinea es D76: los splits de tier 1 salen de `splitsPorTier`, no de `fila.tier` (que es
+// el de la firma y, tras un descenso en el lugar, contaba splits de la liga de desarrollo como de primera).
 export function puntajeProvisorio(st) {
   const r = st.career.registro;
   const intBuenos = r.internacionales.filter((i) => i.resultado === 'buen_papel').length;
   const intTot = r.internacionales.length;
-  const t1 = r.porOrg.filter((f) => f.tier === 1).reduce((s, f) => s + f.splits, 0);
+  const t1 = splitsJugadosEnTier(r, 1);
   const rank = r.picos.rankMundial ?? 0;
   return (
     PUNTAJE_POR_TITULO * r.titulos.length
@@ -89,7 +93,8 @@ function metricas(st) {
   return {
     score: puntajeProvisorio(st),
     titulos: r.titulos.length,
-    t1: r.porOrg.some((f) => f.tier === 1) ? 1 : 0,
+    // K1 (D75): "llegó a tier 1" = jugó al menos un split con contrato en tier 1.
+    t1: tierMasAltoJugado(r) === 1 ? 1 : 0,
     splits: r.splitsJugados,
     rank: r.picos.rankMundial ?? 0
   };

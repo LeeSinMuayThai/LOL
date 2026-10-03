@@ -10,7 +10,14 @@
 // ningún sistema actual entiende es peor que no guardar nada (la carrera
 // simplemente arranca de cero, con un aviso, en vez de romper en un lugar
 // impredecible tres splits después).
-export const VERSION = 2;
+//
+// Historia: 2 (K0-B, el check de forma de `validate.js`) · 3 (K1-A, D76:
+// `registro.porOrg[].splitsPorTier`, `liga`/`tier` en cada título, `liga` en
+// cada internacional, `state.desafio` y `tarjeta.puntaje` — un guardado a
+// mitad de carrera tendría títulos sin liga) · 4 (revisión de K1:
+// `registro.cierresComoNumeroUno`, `flags.splitJugadoSinFila`, `nombre` en las
+// ligas, y la forma nueva de `tarjeta.puntaje`: niveles por hechos).
+export const VERSION = 4;
 
 export function serializar(state, rng, rngUi) {
   return JSON.stringify({

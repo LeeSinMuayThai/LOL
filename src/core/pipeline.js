@@ -1,6 +1,7 @@
 import { BALANCE } from '../data/balance.js';
 import { ETAPAS_SPLIT, sistemaPorId } from '../systems/registro.js';
 import { componerLegado } from './legado.js';
+import { puntajeDeCarrera } from './puntaje.js';
 import { pronosticoDeOxido } from './pool.js';
 
 export { ETAPAS_SPLIT };
@@ -27,9 +28,13 @@ function splitTerminaAca(state) {
 // vez. `componerLegado` es puro; esto es el único lugar por el que pasa toda
 // carrera al cerrar (`correrEtapas` corta el bucle en `terminado`, así que un
 // "sistema final" nunca correría).
+//
+// K1: la tarjeta lleva además el número (`tarjeta.puntaje`, `core/puntaje.js`),
+// compuesto en el mismo momento y sobre el mismo estado. Puro, sin `rng`.
 function conTarjeta(resultado) {
   if (resultado.state.terminado && !resultado.state.tarjeta) {
-    return { ...resultado, state: { ...resultado.state, tarjeta: componerLegado(resultado.state) } };
+    const tarjeta = { ...componerLegado(resultado.state), puntaje: puntajeDeCarrera(resultado.state) };
+    return { ...resultado, state: { ...resultado.state, tarjeta } };
   }
   return resultado;
 }

@@ -2,6 +2,7 @@ import { BALANCE } from '../data/balance.js';
 import { generarMundo } from './mundo.js';
 import { puntosAbsolutos } from './ranked.js';
 import { rankearMundo } from './topMundial.js';
+import { esFechaDeDesafio, seedDelDia } from './desafio.js';
 
 // El mundo entero sale de la seed (CONCEPTO §8): rol, region, colegio, viejos,
 // potencial oculto, forma de carrera, pool inicial, meta y rivales. Por eso el
@@ -13,7 +14,25 @@ const EDAD_INICIAL = 15;
 // `eleccion` es lo que el jugador decidio en la pantalla de inicio:
 // `{ handle?, rol?, campeones? }`. Si no viene, todo se sortea de la seed — ese
 // es el camino que corren simulate.js y validate.js.
-export function createInitialState(seed, rng, eleccion = null) {
+//
+// K1: `desafio` es `{ fecha: 'YYYY-MM-DD' }` cuando la partida es el desafío
+// diario (`core/desafio.js`, `iniciarDesafio(fecha)` arma los argumentos) y
+// `null` en cualquier otra. No toca el `rng`: solo queda anotado en
+// `state.desafio`. Para que "misma fecha" garantice "mismo arranque", un
+// desafío exige la seed del día y `eleccion: null` (el handle también entra en
+// el mundo: el ruido del Top 20 lo hashea).
+export function createInitialState(seed, rng, eleccion = null, desafio = null) {
+  if (desafio !== null) {
+    if (!esFechaDeDesafio(desafio?.fecha)) {
+      throw new Error(`Desafío con fecha inválida: ${JSON.stringify(desafio?.fecha)}`);
+    }
+    if (seed !== seedDelDia(desafio.fecha)) {
+      throw new Error(`El desafío del ${desafio.fecha} arranca con la seed ${seedDelDia(desafio.fecha)}, no con ${seed}`);
+    }
+    if (eleccion !== null) {
+      throw new Error('El desafío diario arranca sin elección: rol, región y pool salen de la seed');
+    }
+  }
   const { inicial } = BALANCE;
   const { jugador, origen, mundo } = generarMundo(rng, EDAD_INICIAL, eleccion);
 
@@ -25,8 +44,11 @@ export function createInitialState(seed, rng, eleccion = null) {
     finAnticipado: null,
     // Fase 9R5b: la tarjeta de legado, compuesta una sola vez por
     // `core/pipeline.js` cuando `terminado` pasa a true. `null` mientras la
-    // carrera sigue viva.
+    // carrera sigue viva. K1: lleva también `puntaje` (`core/puntaje.js`).
     tarjeta: null,
+    // K1: `{ fecha }` si esta partida es el desafío diario, `null` si no
+    // (presente desde el arranque, trampa T4).
+    desafio: desafio === null ? null : { fecha: desafio.fecha },
     splitFichaje: null,
     // Decision a medio resolver. Vive adentro de state para que una partida en
     // curso sea serializable y reanudable (regla invariable 9).
@@ -229,6 +251,8 @@ export function createInitialState(seed, rng, eleccion = null) {
         // mundo. Contador monótono, para "14 splits en el Top 20" de la
         // tarjeta de legado.
         splitsEnTopMundial: 0,
+        // K1: cierres de edad como #1 del mundo ("El GOAT"). Solo crece.
+        cierresComoNumeroUno: 0,
         // Fase 11 (§11.1): una fila por cierre de edad — la nota y el titular
         // que `core/temporadaResumen.js` calculó ese año. Lo consume el año
         // siguiente para comparar ("otra vez") y `validate.js` para medir la
@@ -329,6 +353,9 @@ export function createInitialState(seed, rng, eleccion = null) {
       // tarjeta de oferta ANTES de aceptar. `roster.js` la usa tal cual en
       // vez de volver a tirar el dado (regla de proceso 15) y la resetea acá.
       jerarquiaProyectadaAlFichar: null,
+      // K1 (D76): el split del pase, jugado antes de que `roster.js` abra la
+      // fila (`{ org, splitsPorTier }`, de `temporada.js`). Si no, `null`.
+      splitJugadoSinFila: null,
       // Fase 9: splits de pretemporada consecutivos sin una sola oferta. Al
       // llegar a `BALANCE.mercado.splitsSinOfertaParaLibre` te quedás libre
       // — la puerta por la que se termina la carrera (fase 10, todavía no

@@ -6,6 +6,8 @@
 // Los colores se leen de los tokens en vez de duplicarlos en hex acá: una
 // sola fuente de verdad entre el CSS y el canvas.
 import { hueDeOrg, inicialesDeOrg } from './formatoUi.js';
+import { miles } from './resultado.js';
+import { VERSION_JUEGO } from '../data/version.js';
 
 const ANCHO = 1200;
 const ALTO = 630;
@@ -90,11 +92,13 @@ export async function dibujarTarjeta(state, modulos) {
   ctx.lineWidth = 2;
   ctx.strokeRect(24, 24, ANCHO - 48, ALTO - 48);
 
-  // --- El lockup: el mismo monograma del topbar ---
+  // --- El lockup: el mismo monograma del topbar (K1-B: con la fecha si es
+  // el desafío del día, que es lo que hace comparable el número) ---
+  const desafio = state.desafio?.fecha ?? null;
   ctx.fillStyle = leerToken('--live');
   ctx.font = '700 22px "Barlow Condensed", sans-serif';
   ctx.textBaseline = 'alphabetic';
-  ctx.fillText('● LIVE · UN SPLIT MÁS', 60, 76);
+  ctx.fillText(desafio ? `● DESAFÍO DEL ${desafio} · UN SPLIT MÁS` : '● LIVE · UN SPLIT MÁS', 60, 76);
 
   // --- Identidad ---
   ctx.fillStyle = leerToken('--ink');
@@ -104,10 +108,27 @@ export async function dibujarTarjeta(state, modulos) {
     60, 122
   );
 
+  // --- El número (K1-B), arriba a la derecha, con su referente (regla 13):
+  // el nivel y el percentil van pegados, nunca el puntaje solo ---
+  const puntaje = t.puntaje;
+  if (puntaje) {
+    ctx.textAlign = 'right';
+    ctx.fillStyle = leerToken('--ink');
+    ctx.font = '700 92px "Barlow Condensed", sans-serif';
+    ctx.fillText(miles(puntaje.total), ANCHO - 60, 140);
+    ctx.fillStyle = acento;
+    ctx.font = '700 26px "Barlow Condensed", sans-serif';
+    ctx.fillText(`PTS · ${puntaje.nivel.nombre.toUpperCase()}`, ANCHO - 60, 176);
+    ctx.fillStyle = leerToken('--ink-dim');
+    ctx.font = '400 17px Inter, sans-serif';
+    ctx.fillText(`mejor que el ${puntaje.percentil}% de las carreras`, ANCHO - 60, 204);
+    ctx.textAlign = 'left';
+  }
+
   // --- El veredicto, la pieza central ---
   ctx.fillStyle = acento;
   ctx.font = '700 46px "Barlow Condensed", sans-serif';
-  envolver(ctx, t.veredicto, 60, 200, ANCHO - 120, 56, 3);
+  envolver(ctx, t.veredicto, 60, puntaje ? 270 : 200, ANCHO - 120, 56, 3);
 
   // --- Totales como celdas ---
   const totales = t.totales;
@@ -136,10 +157,11 @@ export async function dibujarTarjeta(state, modulos) {
     dibujarOrgChip(ctx, fila.org, 60 + i * 44, 530, 32);
   });
 
-  // --- Pie: la seed, para que el link y la imagen cuenten la misma historia ---
+  // --- Pie: la seed (o la fecha del desafío) y la versión, para que el link
+  // y la imagen cuenten la misma historia ---
   ctx.fillStyle = leerToken('--ink-mute');
   ctx.font = '400 16px Inter, sans-serif';
-  ctx.fillText(`seed ${state.seed}`, 60, ALTO - 40);
+  ctx.fillText(`${desafio ? `desafío ${desafio}` : `seed ${state.seed}`} · v ${VERSION_JUEGO}`, 60, ALTO - 40);
 
   return canvas;
 }
@@ -202,20 +224,13 @@ export async function copiarTarjeta(state, modulos) {
   }
 }
 
-// El link de esta carrera (P.3, CONCEPTO §9: "todo el motor de difusión
-// del juego"). `?seed=N` sobre la URL actual, sin querystring vieja.
-export function linkDeCarrera(seed) {
-  const url = new URL(location.href);
-  url.search = '';
-  url.searchParams.set('seed', String(seed));
-  return url.toString();
-}
-
-export async function copiarLinkDeCarrera(seed) {
-  const link = linkDeCarrera(seed);
+// Copia texto al portapapeles: el link de esta carrera (P.3, CONCEPTO §9:
+// "todo el motor de difusión del juego") o el resultado para compartir (K1-B).
+// Los arma `resultado.js`, que es puro. `false` si el navegador no deja.
+export async function copiarTexto(texto) {
   if (navigator.clipboard?.writeText) {
     try {
-      await navigator.clipboard.writeText(link);
+      await navigator.clipboard.writeText(texto);
       return true;
     } catch {
       return false;

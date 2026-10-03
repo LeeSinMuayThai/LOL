@@ -2,6 +2,7 @@
 // slots), no un formulario. El estado de la elección sigue acá adentro.
 import { marcaRol } from '../components/iconos.js';
 import { crearCampeonTile } from '../components/campeonTile.js';
+import { miles, linkDeResultado } from '../resultado.js';
 
 const ETIQUETA_STAT = {
   mecanica: 'Mecánica', macro: 'Macro', teamfight: 'Teamfight', laneo: 'Laneo',
@@ -160,4 +161,76 @@ export function crearPantallaInicio(elements, modulos) {
       return { rol: rolElegido, campeones: camposElegidos };
     }
   };
+}
+
+// --- K1-B: el desafío del día y el historial local -------------------------
+
+function nodo(etiqueta, clase, texto) {
+  const el = document.createElement(etiqueta);
+  el.className = clase;
+  if (texto !== undefined) {
+    el.textContent = texto;
+  }
+  return el;
+}
+
+// La tarjeta del desafío, arriba del draft: es la otra puerta de entrada, sin
+// elegir nada. `fecha` es la de hoy (UTC) o la que trajo `?desafio=`; si la
+// del link no es la de hoy, se ofrece también la de hoy. `mejor` es tu mejor
+// resultado en ese desafío con esta versión (del historial), o `null`.
+export function renderDesafio(contenedor, { fecha, hoy, mejor }, alJugar) {
+  const esHoy = fecha === hoy;
+  const boton = nodo('button', 'desafio-btn', 'Jugar el desafío');
+  boton.type = 'button';
+  boton.addEventListener('click', () => alJugar(fecha));
+  const partes = [
+    nodo('div', 'desafio-kicker', esHoy ? `Desafío del día · ${fecha}` : `Desafío del link · ${fecha}`),
+    nodo('p', 'desafio-texto', esHoy
+      ? 'Misma carrera para todos hoy: rol, región y pool salen de la fecha. Vos ponés las decisiones.'
+      : 'Misma carrera para todos los que jueguen esta fecha: rol, región y pool salen de ahí.'),
+    boton
+  ];
+  if (mejor) {
+    const intentos = mejor.intentos > 1 ? ` · ${mejor.intentos} intentos` : '';
+    partes.push(nodo('div', 'desafio-mejor', `Tu mejor: ${miles(mejor.total)} pts · ${mejor.nivel}${intentos}`));
+  }
+  if (!esHoy) {
+    const deHoy = nodo('button', 'desafio-hoy', `O el de hoy (${hoy})`);
+    deHoy.type = 'button';
+    deHoy.addEventListener('click', () => alJugar(hoy));
+    partes.push(deHoy);
+  }
+  contenedor.replaceChildren(...partes);
+  contenedor.hidden = false;
+}
+
+// Tus últimos resultados (localStorage, `resultado.js`). Cada fila es un link
+// que vuelve a cargar esa carrera (la seed o la fecha del desafío).
+export function renderHistorial(contenedor, historial, { etiquetaRol, version }) {
+  if (historial.entradas.length === 0) {
+    contenedor.replaceChildren();
+    contenedor.hidden = true;
+    return;
+  }
+  const record = historial.record
+    ? ` · tu récord: ${miles(historial.record.total)} pts (${historial.record.nivel})`
+    : '';
+  const lista = nodo('ol', 'historial-lista');
+  for (const entrada of historial.entradas) {
+    const fila = nodo('li', 'historial-fila');
+    const que = nodo('a', 'historial-que', entrada.desafio ? `Desafío ${entrada.desafio}` : `Seed ${entrada.seed}`);
+    que.href = linkDeResultado(entrada, location.href);
+    const detalle = [
+      entrada.handle,
+      etiquetaRol(entrada.rol),
+      entrada.nivel,
+      entrada.jugadoEn === entrada.desafio ? null : entrada.jugadoEn,
+      entrada.intentos > 1 ? `${entrada.intentos} intentos` : null,
+      entrada.version !== version ? `v ${entrada.version}, otra versión` : null
+    ].filter(Boolean).join(' · ');
+    fila.append(que, nodo('span', 'historial-pts', `${miles(entrada.total)} pts`), nodo('span', 'historial-detalle', detalle));
+    lista.appendChild(fila);
+  }
+  contenedor.replaceChildren(nodo('div', 'historial-titulo', `Tus últimos resultados${record}`), lista);
+  contenedor.hidden = false;
 }

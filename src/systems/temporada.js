@@ -12,7 +12,7 @@ import {
 import { calcularRendimiento, fuerzaDelEquipo } from './rendimiento.js';
 import { disponibleEn, opcionesVivas, resolverOpcion, cooldownActivo, pesoConMemoria } from './events.js';
 import { pesoDePick, factorDeCampeon, lecturaDePick } from '../core/ajusteMeta.js';
-import { registrarFecha } from '../core/registro.js';
+import { registrarFecha, registrarSplitJugado } from '../core/registro.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 
@@ -438,6 +438,23 @@ function continuarTemporada(state, rng, logsAcum) {
 
 // --- Contrato del sistema ---
 
+// K1 (D76): el split se cuenta acá, donde se JUEGA (ya pasaron el mercado, el
+// ascenso y el descenso), con la org y el tier de ahora. Sin fila abierta para
+// esta org (el split del pase), espera en `flags.splitJugadoSinFila` a que
+// `roster.js` la abra. Nada del juego lo lee: cero `rng`.
+function conSplitJugado(state) {
+  const { registro, sinFila } = registrarSplitJugado(
+    state.career.registro,
+    { org: state.career.currentOrg, tier: state.career.tier },
+    state.flags.splitJugadoSinFila
+  );
+  return {
+    ...state,
+    flags: { ...state.flags, splitJugadoSinFila: sinFila },
+    career: { ...state.career, registro }
+  };
+}
+
 // El guard es EXACTAMENTE el de rendimiento.js (regla de proceso: dos
 // sistemas que se pasan un resultado entre sí no pueden tener guards
 // distintos, o uno corre y el otro lee un `career.temporada` de un split
@@ -448,7 +465,8 @@ export function aplicar(state, rng) {
     return { state, logs: [] };
   }
 
-  const st = { ...state, career: { ...state.career, temporada: iniciarTemporada(state, rng) } };
+  const jugado = conSplitJugado(state);
+  const st = { ...jugado, career: { ...jugado.career, temporada: iniciarTemporada(jugado, rng) } };
   return continuarTemporada(st, rng, []);
 }
 

@@ -325,6 +325,28 @@ details.avanzado summary {
 }
 details.avanzado summary:hover { color: var(--ink-dim); }
 
+/* --- K1-B: el desafío del día y tus últimos resultados ---------------------
+   `button` de base.css (padding 0, sin borde ni fondo, `font: inherit`) le
+   gana a `:where(button)`: un botón con clase propia se viste entero acá. */
+.desafio-dia { display: grid; gap: var(--s-2); justify-items: start; margin-top: var(--s-5); padding: var(--s-4); background: var(--bg-raised); border-left: 3px solid var(--live); }
+.desafio-kicker, .historial-titulo, .desafio-btn {
+  font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: var(--track-cartel);
+}
+.desafio-kicker, .historial-titulo { font-size: var(--fs-2); color: var(--live); }
+.desafio-texto { margin: 0; font-size: var(--fs-2); color: var(--ink-dim); line-height: var(--lh-snug); }
+.desafio-btn { padding: var(--s-3) var(--s-5); font-size: var(--fs-4); letter-spacing: var(--track-label); background: var(--live-fill); border: 1px solid var(--live); color: var(--live); }
+.desafio-btn:hover:not(:disabled) { background: var(--live); color: var(--bg-void); }
+.desafio-mejor { font-size: var(--fs-1); color: var(--gold); }
+.desafio-hoy { clip-path: none; font-size: var(--fs-1); text-transform: none; letter-spacing: normal; color: var(--ink-dim); text-decoration: underline; }
+.desafio-hoy:hover { color: var(--live); }
+.historial { margin-top: var(--s-6); }
+.historial-titulo { color: var(--ice); margin-bottom: var(--s-2); }
+.historial-lista { list-style: none; margin: 0; padding: 0; }
+.historial-fila { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--s-3); padding: var(--s-2) 0; border-bottom: 1px solid var(--line-faint); }
+.historial-que { color: var(--ice); font-weight: 600; font-size: var(--fs-2); }
+.historial-pts { font-family: var(--font-display); font-weight: 700; font-size: var(--fs-4); font-variant-numeric: tabular-nums; color: var(--ink); }
+.historial-detalle { grid-column: 1 / -1; font-size: var(--fs-0); color: var(--ink-dim); overflow-wrap: anywhere; }
+
 /* ==========================================================================
    2. LA DECISIÓN
    Barra de acento a la izquierda, título en condensada, opciones como
@@ -1234,6 +1256,59 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   font-size: var(--fs-1);
   padding: var(--s-2) var(--s-4);
 }
+.tarjeta-accion-btn--principal,
+.tarjeta-accion-btn--principal:hover:not(:disabled) { background: var(--live); border-color: var(--live); color: var(--bg-void); }
+.tarjeta-compartir-texto { display: block; margin-top: var(--s-3); padding: var(--s-2) var(--s-3); background: var(--bg-sunken); border: 1px solid var(--line); font-size: var(--fs-1); color: var(--ink); text-align: left; overflow-wrap: anywhere; user-select: all; }
+
+/* --- K1-B: el número, su desglose y la leyenda comparada ------------------ */
+.tarjeta-numero { margin: var(--s-5) 0 var(--s-2); padding: var(--s-4) 0 var(--s-5); border-top: 1px solid var(--line-faint); border-bottom: 1px solid var(--line-faint); }
+.tarjeta-numero[data-nivel="no_llego"],
+.tarjeta-numero[data-nivel="circuito"] { --nivel-color: var(--ink-dim); }
+.tarjeta-numero[data-nivel="profesional"] { --nivel-color: var(--ice); }
+.tarjeta-numero[data-nivel="fijo"] { --nivel-color: var(--up); }
+.tarjeta-numero[data-nivel="campeon"] { --nivel-color: var(--live); }
+.tarjeta-numero[data-nivel="figura"],
+.tarjeta-numero[data-nivel="leyenda"],
+.tarjeta-numero[data-nivel="goat"] { --nivel-color: var(--gold); }
+.tarjeta-numero-k, .tarjeta-numero-nivel, .tarjeta-comp-nombre, .tarjeta-leyenda-handle, .tarjeta-leyenda-k,
+details.tarjeta-internacionales > summary {
+  font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: var(--track-label);
+}
+.tarjeta-numero-v, .tarjeta-comp-puntos, .tarjeta-leyenda-v {
+  font-family: var(--font-display); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink);
+}
+.tarjeta-numero-k { font-size: var(--fs-1); letter-spacing: var(--track-cartel); color: var(--ink-dim); }
+.tarjeta-numero-v { font-size: var(--fs-9); line-height: 1; color: var(--nivel-color, var(--ink)); }
+.tarjeta-numero-nivel { font-size: var(--fs-5); color: var(--nivel-color, var(--ink)); }
+.tarjeta-numero-ref { margin-top: var(--s-1); font-size: var(--fs-2); color: var(--ink-dim); }
+.tarjeta-numero-historial { margin-top: var(--s-2); font-size: var(--fs-1); color: var(--gold); }
+.tarjeta-siguiente { max-width: 460px; margin: var(--s-3) auto 0; padding: var(--s-2) var(--s-3); border: 1px solid var(--line-faint); font-size: var(--fs-1); line-height: var(--lh-snug); color: var(--ink-dim); }
+.tarjeta-siguiente-k { display: block; margin-bottom: var(--s-1); font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: var(--track-label); color: var(--ink-mute); }
+
+.tarjeta-desglose,
+.tarjeta-leyenda { margin-top: var(--s-5); text-align: left; }
+.tarjeta-comp { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--s-3); align-items: baseline; padding: var(--s-2) 0; border-bottom: 1px solid var(--line-faint); }
+.tarjeta-comp-nombre { font-size: var(--fs-3); color: var(--ink); }
+.tarjeta-comp-puntos { font-size: var(--fs-4); white-space: nowrap; }
+.tarjeta-comp-detalle { grid-column: 1 / -1; font-size: var(--fs-1); line-height: var(--lh-snug); color: var(--ink-dim); }
+.tarjeta-comp--cero > * { color: var(--ink-mute); }
+.tarjeta-comp--subtotal .tarjeta-comp-puntos { color: var(--ink-dim); }
+.tarjeta-comp--techo .tarjeta-comp-nombre { color: var(--gold); }
+.tarjeta-comp--total { border-top: 2px solid var(--line-strong); border-bottom: none; }
+.tarjeta-comp--total > * { font-size: var(--fs-5); }
+/* Con el número arriba, el veredicto deja de ser el cartel principal: baja un
+   escalón para no competirle (también en el éxito y en el celular). */
+.tarjeta-numero ~ .tarjeta-veredicto,
+.tarjeta--exito .tarjeta-numero ~ .tarjeta-veredicto { font-size: var(--fs-6); }
+
+.tarjeta-leyenda-handle { font-size: var(--fs-6); line-height: var(--lh-tight); color: var(--gold); }
+.tarjeta-leyenda-meta { font-size: var(--fs-1); color: var(--ink-dim); text-transform: uppercase; letter-spacing: var(--track-label); }
+.tarjeta-leyenda-historia { margin: var(--s-2) 0 var(--s-3); font-size: var(--fs-2); font-style: italic; color: var(--ink); line-height: var(--lh-snug); }
+.tarjeta-leyenda-tabla { display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(4, minmax(0, 1fr)); gap: var(--s-1) var(--s-2); align-items: baseline; }
+.tarjeta-leyenda-k { font-size: var(--fs-0); color: var(--ink-mute); }
+.tarjeta-leyenda-quien { font-size: var(--fs-1); color: var(--ink-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tarjeta-leyenda-v { font-size: var(--fs-4); }
+details.tarjeta-internacionales > summary { cursor: pointer; font-size: var(--fs-1); letter-spacing: var(--track-cartel); color: var(--ice); }
 
 /* ==========================================================================
    6. EL RIEL DE CONTEXTO (fase T5)

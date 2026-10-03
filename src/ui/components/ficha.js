@@ -8,6 +8,12 @@ import { marcaRol } from './iconos.js';
 import { countUp } from './countUp.js';
 import { BALANCE } from '../../data/balance.js';
 import { romano, tierPorId } from '../../data/ranked.js';
+import LIGAS from '../../data/leagues.json' with { type: 'json' };
+
+// El nombre visible de una liga (K1: ningún texto muestra su id crudo). Los
+// títulos de la fila guardan el nombre con el que los anotó el motor, que en
+// las ligas de desarrollo es el id ("LCK_CL").
+const NOMBRE_DE_LIGA = Object.fromEntries(LIGAS.map((liga) => [liga.id, liga.nombre]));
 
 // LA TARJETA (fase 8, PLAN.md §8.6): vive en todas las pantallas de carrera.
 // Es la respuesta directa a H7 del diagnóstico — "los números que ves no
@@ -78,14 +84,17 @@ function hitosArraigo() {
   ];
 }
 
-export function filaHistoria(fila) {
+// La última org no tiene `hastaAnio` (no hubo salida): `anioDeCierre` es el año en que terminó la carrera
+// (la tarjeta final lo pasa; la ficha en curso no, y entonces solo se ve el año de llegada, sin guion colgado).
+export function filaHistoria(fila, anioDeCierre = null) {
   const item = document.createElement('div');
   item.className = 'ficha-historia-fila';
   item.appendChild(crearOrgChip(fila.org, { size: 16 }));
   const texto = document.createElement('span');
-  const rango = fila.hastaAnio ? `${fila.desdeAnio}–${fila.hastaAnio}` : `${fila.desdeAnio}–`;
+  const hasta = fila.hastaAnio ?? anioDeCierre;
+  const rango = hasta ? `${fila.desdeAnio}–${hasta}` : `${fila.desdeAnio}`;
   const titulos = fila.titulos.length > 0
-    ? ` · ${fila.titulos.map((t) => `${t.nombre} ${t.anio}`).join(', ')}`
+    ? ` · ${fila.titulos.map((t) => `${NOMBRE_DE_LIGA[t.nombre] ?? t.nombre} ${t.anio}`).join(', ')}`
     : '';
   texto.textContent = `${fila.org} — ${fila.splits} splits · ${fila.fechasG}-${fila.fechasP} · ${rango}${titulos}`;
   item.appendChild(texto);
@@ -277,7 +286,7 @@ function crearDetalleHistoria(registro) {
   const resumen = document.createElement('summary');
   resumen.textContent = 'Ver carrera';
   detalle.appendChild(resumen);
-  detalle.append(...registro.porOrg.map(filaHistoria));
+  detalle.append(...registro.porOrg.map((fila) => filaHistoria(fila)));
   return detalle;
 }
 
