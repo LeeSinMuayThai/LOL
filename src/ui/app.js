@@ -180,6 +180,40 @@ export function iniciar() {
     minijuegoApuesta.replaceChildren(crearApuesta(decision, estadoActual));
     minijuegoWidget.innerHTML = '';
 
+    // K4-B: en el mapa decisivo, si te queda la charla del coach de la temporada, se elige antes de jugar: cada botón
+    // dice con cuánto llegás (la previa de arriba cambia con la elección, y es la p que se tira).
+    if (decision.datos.charla?.disponible) {
+      const conCharla = previaDeDecision(estadoActual, decision, { charla: true });
+      const sinCharla = previaDeDecision(estadoActual, decision, { charla: false });
+      const eleccion = document.createElement('div');
+      eleccion.className = 'minijuego-charla';
+      const pregunta = document.createElement('p');
+      pregunta.className = 'minijuego-charla-pregunta';
+      pregunta.textContent = 'Te queda la charla del coach de esta temporada. ¿La usa antes de este mapa?';
+      eleccion.appendChild(pregunta);
+      [
+        { charla: true, label: 'Que hable el coach ahora', previa: conCharla },
+        { charla: false, label: 'Guardarla para después', previa: sinCharla }
+      ].forEach((opcion) => {
+        const boton = document.createElement('button');
+        boton.type = 'button';
+        boton.className = 'option-btn';
+        boton.textContent = opcion.previa ? `${opcion.label} · ${opcion.previa.porcentaje}% de ganar` : opcion.label;
+        boton.addEventListener('click', () => {
+          pintarPrevia(decision, estadoActual, { charla: opcion.charla });
+          minijuegoWidget.innerHTML = '';
+          montarMinijuego(decision, estadoActual, opcion.charla);
+        });
+        eleccion.appendChild(boton);
+      });
+      minijuegoWidget.appendChild(eleccion);
+      ui.renderLowerThird(summary, metaPill, estadoActual, { modo: 'minijuego' });
+      return;
+    }
+    montarMinijuego(decision, estadoActual, false);
+  }
+
+  function montarMinijuego(decision, estadoActual, charla) {
     const montar = MONTAR_MINIJUEGO[decision.datos.minijuego];
     let resuelto = false;
     montar(minijuegoWidget, estadoActual, (resultado) => {
@@ -188,7 +222,7 @@ export function iniciar() {
       }
       resuelto = true;
       // K2d: la p final del mapa, ya corrida por el minijuego: la que se tira.
-      const previaFinal = pintarPrevia(decision, estadoActual, { resultadoMinijuego: resultado });
+      const previaFinal = pintarPrevia(decision, estadoActual, { resultadoMinijuego: resultado, charla });
       const v = veredictoDeMinijuego(decision.datos.minijuego, resultado, estadoActual);
       if (resultado >= 0.67) marcarHit(minijuegoWidget);
       else if (resultado <= 0.33) marcarMiss(minijuegoWidget);
@@ -200,7 +234,7 @@ export function iniciar() {
         + (previaFinal ? '<div class="minijuego-resultado-p">Con esto: ' + previaFinal.porcentaje + '% de ganar</div>' : '')
         + '</div>';
       ui.renderLowerThird(summary, metaPill, estadoActual, { modo: 'minijuego' });
-      setTimeout(() => responder({ resultado }), 1600);
+      setTimeout(() => responder(decision.datos.charla?.disponible ? { resultado, charla } : { resultado }), 1600);
     }, rngUi);
 
     ui.renderLowerThird(summary, metaPill, estadoActual, { modo: 'minijuego' });

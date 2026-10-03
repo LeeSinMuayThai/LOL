@@ -968,6 +968,10 @@ details.avanzado summary:hover { color: var(--ink-dim); }
 .minijuego-resultado-detalle { font-size: var(--fs-3); color: var(--ink-dim); }
 /* K2d: la p final del mapa a la vista en el mismo recuadro: la tarjeta de la
    previa queda arriba del widget y su cambio pasaba fuera de pantalla. */
+/* K4-B: la charla del coach se elige antes del minijuego del mapa decisivo. */
+.minijuego-charla { display: flex; flex-direction: column; gap: var(--s-2); }
+.minijuego-charla-pregunta { margin: 0; font-size: var(--fs-3); color: var(--ink-dim); }
+
 .minijuego-resultado-p {
   margin-top: var(--s-3);
   font-family: var(--font-display);
