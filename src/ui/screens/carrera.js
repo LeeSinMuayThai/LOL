@@ -41,8 +41,8 @@ export function renderRielContexto(elements, state, modulos) {
 
 export { renderLowerThird };
 
-export function mostrarDecisionEnPantalla(elements, decision, onElegir, state) {
-  renderDecision(elements, decision, onElegir, state);
+export function mostrarDecisionEnPantalla(elements, decision, onElegir, state, probabilidades) {
+  renderDecision(elements, decision, onElegir, state, probabilidades);
 }
 
 export function mostrarMercadoEnPantalla(elements, decision, onElegir, onRepresentante, onNegociar, onEsperar) {

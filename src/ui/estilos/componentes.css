@@ -817,3 +817,33 @@ h1::before {
   border-top: 1px solid var(--line-faint);
   font-variant-numeric: tabular-nums;
 }
+
+/* K2d — la previa del partido: tu fuerza contra la del rival y la p que el motor tira. */
+.previa {
+  margin: var(--s-2) 0;
+  padding: var(--s-3);
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  clip-path: var(--clip-corte-sm);
+}
+.previa-cabecera { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s-1) var(--s-2); }
+.previa-titulo { font-family: var(--font-display); font-size: var(--fs-3); color: var(--ink); text-transform: uppercase; letter-spacing: 0.04em; }
+.previa-sub { font-size: var(--fs-1); color: var(--ink-dim); }
+.previa-duelo { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: var(--s-2); margin: var(--s-2) 0; }
+.previa-lado { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: var(--s-1); min-width: 0; }
+.previa-lado > :first-child { grid-row: span 2; align-self: center; }
+.previa-lado--rival { text-align: right; grid-template-columns: 1fr auto; }
+.previa-lado--rival > :first-child { grid-column: 2; grid-row: 1 / span 2; }
+.previa-nombre { font-size: var(--fs-1); color: var(--ink-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.previa-fuerza { font-family: var(--font-display); font-size: var(--fs-5); color: var(--ink); font-variant-numeric: tabular-nums; }
+.previa-p { display: flex; flex-direction: column; align-items: center; }
+.previa-pct { font-family: var(--font-display); font-size: var(--fs-6); color: var(--live); line-height: 1; font-variant-numeric: tabular-nums; }
+.previa-pct-label { font-size: var(--fs-0); color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.06em; }
+.previa-desglose { display: grid; grid-template-columns: 1fr auto; gap: 2px var(--s-3); margin: 0; font-size: var(--fs-1); }
+.previa-desglose dt { color: var(--ink-dim); }
+.previa-desglose dd { margin: 0; color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
+.previa-desglose dd[data-signo="up"] { color: var(--up); }
+.previa-desglose dd[data-signo="down"] { color: var(--down); }
+.previa-nota { margin-top: var(--s-2); font-size: var(--fs-1); color: var(--ink-mute); }
+.option-prob { margin-top: var(--s-1); font-size: var(--fs-1); color: var(--live); font-variant-numeric: tabular-nums; }
+.resultado-prob { margin-top: var(--s-1); font-size: var(--fs-0); color: var(--ink-mute); }

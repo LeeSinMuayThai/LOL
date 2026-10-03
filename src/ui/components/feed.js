@@ -15,6 +15,7 @@ import { acentoDeLog, rotuloDeDecision } from '../formatoUi.js';
 import { crearOrgChip } from './orgChip.js';
 import { etiquetaRol } from '../../data/roles.js';
 import { crearTarjetaResultado, crearTarjetaResultadoSerie } from './serie.js';
+import { textoDeProbabilidadJugada } from '../../core/previaDePartido.js';
 import { reconciliar, reemplazarEnElLugar } from '../core/reconciliar.js';
 
 // El reveal del Top 20 al cierre de temporada (fase 9Wc). El log `top_mundial`
@@ -221,6 +222,15 @@ export function nodoDeBeat(beat, state) {
   } else {
     nodo = document.createElement('div');
     nodo.className = 'log-item log-item--tecnico';
+  }
+  // K2d: el mapa y la fecha marcada dicen con qué probabilidad se jugaron (la
+  // `p` que el motor tiró, en el log).
+  const jugada = textoDeProbabilidadJugada(beat.narrativa);
+  if (jugada) {
+    const prob = document.createElement('div');
+    prob.className = 'resultado-prob';
+    prob.textContent = jugada;
+    nodo.appendChild(prob);
   }
   if (beat.tecnicos.length > 0) {
     nodo.appendChild(crearTiraTecnica(beat.tecnicos));

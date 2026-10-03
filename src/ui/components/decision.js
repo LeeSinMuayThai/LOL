@@ -15,7 +15,9 @@ import { pesoDeDecision, rotuloDeDecision } from '../formatoUi.js';
 // categoría real del evento, y el panel entero cambia de peso según
 // `pesoDeDecision` — ver `formatoUi.js` para las dos reglas reales detrás
 // (`evento.bisagra` y `franja === 'cierre'`), sin un tercer peso inventado.
-export function renderDecision(elements, decision, onElegir, state) {
+// K2d: `probabilidades` (opcional) es la p de ganar con cada opción de un
+// draft (`previaDeDecision(...).opciones`): va como una línea más del botón.
+export function renderDecision(elements, decision, onElegir, state, probabilidades = []) {
   const { decisionPanel, decisionTitle, decisionDesc, decisionOptions } = elements;
 
   const rotulo = rotuloDeDecision(decision, state);
@@ -72,6 +74,14 @@ export function renderDecision(elements, decision, onElegir, state) {
         previa.appendChild(kicker);
       });
       opcionBtn.appendChild(previa);
+    }
+
+    const probabilidad = probabilidades?.find((p) => p.id === opcion.id);
+    if (probabilidad) {
+      const prob = document.createElement('div');
+      prob.className = 'option-prob';
+      prob.textContent = probabilidad.texto;
+      opcionBtn.appendChild(prob);
     }
 
     if (opcion.riesgo) {
