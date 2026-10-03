@@ -16701,6 +16701,7 @@ const { puntajeDeCarrera: puntajeK5 } = await import('../core/puntaje.js');
 const { RESULTADOS_INTERNACIONALES: RESULTADOS_K5 } = await import('../core/registro.js');
 const { avanzarSplitAuto: avanzarSplitAutoK5 } = await import('../core/pipeline.js');
 const { previaDeDecision: previaDeDecisionK5 } = await import('../core/previaDePartido.js');
+const { lineaDeLiga: lineaDeLigaK5r, lineaDeInternacional: lineaDeInternacionalK5r } = await import('../core/escena.js');
 const SEEDS_K5 = 30;
 const SPLITS_K5 = 60;
 // La spec: "un split de Mundial no pasa de 4 interrupciones" (el número de la spec, no el de BALANCE: si alguien sube
@@ -17034,6 +17035,82 @@ check('K5-A el puntaje de K1 maneja cada resultado del Mundial, en orden', () =>
     if (!RESULTADOS_K5.includes(resultado)) {
       throw new Error(`el Mundial escribió un resultado desconocido: ${resultado}`);
     }
+  }
+});
+
+// K5 (revisión): el motor también habla de ligas (logs, titulares, descripciones y rótulos de decisión, hitos, nombre de
+// un título). Ninguno puede traer el id crudo ("EMEA_MASTERS", "LCK_CL", "CD", "LCP_CHALLENGERS"): se ve el nombre.
+const IDS_DE_LIGA_CON_OTRO_NOMBRE_K5r = LIGAS.filter((liga) => liga.id !== liga.nombre).map((liga) => liga.id);
+const PATRON_ID_CRUDO_K5r = new RegExp(`(?<![A-Za-z0-9_])(${IDS_DE_LIGA_CON_OTRO_NOMBRE_K5r.join('|')})(?![A-Za-z0-9_])`);
+
+// Los textos de la lista que traen un id de liga crudo (su nombre visible no cuenta: "LCK CL" no es "LCK_CL").
+function textosConIdCrudoK5r(textos) {
+  return textos.filter((texto) => typeof texto === 'string' && PATRON_ID_CRUDO_K5r.test(texto));
+}
+
+// Los textos que el motor le escribe al jugador en carreras de muestra: cada log, cada decisión (título, descripción,
+// rótulo y descripción de cada opción), los hitos y el nombre de cada título. Las carreras juegan solas (resolverAuto).
+function textosDelMotorK5r(seeds, splits) {
+  const textos = [];
+  for (let seed = 1; seed <= seeds; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < splits && !state.terminado; i += 1) {
+      const resultado = avanzarSplitAutoK5(state, rng, (sistema, st, decision, r) => {
+        textos.push(decision.titulo, decision.descripcion);
+        for (const opcion of decision.opciones ?? []) {
+          textos.push(opcion.label, opcion.descripcion);
+        }
+        return sistema.resolverAuto(st, decision, r);
+      });
+      state = resultado.state;
+      textos.push(...resultado.logs.map((log) => log.message));
+    }
+    textos.push(...state.career.hitos, ...state.career.registro.titulos.map((titulo) => titulo.nombre));
+  }
+  return textos.filter((texto) => typeof texto === 'string');
+}
+
+check('K5 (revisión) ningún texto del motor muestra el id crudo de una liga: logs, decisiones, hitos y titulares usan el nombre visible', () => {
+  if (IDS_DE_LIGA_CON_OTRO_NOMBRE_K5r.length < 3) {
+    throw new Error(`esperaba al menos 3 ligas con id distinto de su nombre, hay ${IDS_DE_LIGA_CON_OTRO_NOMBRE_K5r.length}`);
+  }
+  // El detector ve un id crudo y no confunde el nombre visible (mutante del propio check).
+  const nombresVisibles = LIGAS.filter((liga) => liga.id !== liga.nombre).map((liga) => `Firmás en ${liga.nombre}.`);
+  if (textosConIdCrudoK5r(nombresVisibles).length !== 0) {
+    throw new Error('el detector marca como crudo un nombre visible');
+  }
+  for (const id of IDS_DE_LIGA_CON_OTRO_NOMBRE_K5r) {
+    if (textosConIdCrudoK5r([`Te ganás el salto a ${id}. Sos agente libre.`, `Rueda de prensa de ${id}`]).length !== 2) {
+      throw new Error(`mutante: el detector no ve "${id}" crudo`);
+    }
+  }
+  // Los textos que arman las funciones puras, liga por liga.
+  const puros = [];
+  for (const liga of LIGAS) {
+    const equipo = { nombre: 'Equipo Uno' };
+    puros.push(lineaDeLigaK5r(liga, equipo, { nombre: 'Equipo Dos' }, '3-1'));
+    puros.push(lineaDeInternacionalK5r(2030, { nombre: 'Equipo Uno', ligaId: liga.id }));
+    puros.push(resolverTexto('Rueda de prensa de {liga}', { career: { liga: liga.id } }));
+  }
+  const crudosPuros = textosConIdCrudoK5r(puros);
+  if (crudosPuros.length > 0) {
+    throw new Error(`${crudosPuros.length} texto(s) de funciones puras con una liga cruda: ${crudosPuros.slice(0, 3).join(' · ')}`);
+  }
+  // Carreras de muestra: tienen que haber revisado textos, y entre ellos algunos de una liga con otro nombre (si no, el
+  // check daría verde sin haber visto jamás un id).
+  const textos = textosDelMotorK5r(12, 60);
+  if (textos.length < 1000) {
+    throw new Error(`el check revisó solo ${textos.length} textos: no corrió lo que dice`);
+  }
+  const crudos = textosConIdCrudoK5r(textos);
+  if (crudos.length > 0) {
+    throw new Error(`${crudos.length} texto(s) del motor con el id crudo de una liga (de ${textos.length} revisados): ${crudos.slice(0, 3).join(' · ')}`);
+  }
+  const nombresDeLigasConOtroId = LIGAS.filter((liga) => liga.id !== liga.nombre).map((liga) => liga.nombre);
+  const conLigaVisible = textos.filter((texto) => nombresDeLigasConOtroId.some((nombre) => texto.includes(nombre))).length;
+  if (conLigaVisible < 10) {
+    throw new Error(`solo ${conLigaVisible} textos de la muestra nombran una liga de desarrollo: la muestra no ejercita el caso`);
   }
 });
 
