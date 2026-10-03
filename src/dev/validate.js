@@ -15490,44 +15490,7 @@ check('K4-C2 regla 15: retirarse termina la carrera por el camino del retiro, co
   }
 });
 
-check('bandasPendientes 1: ninguna entrada registrada pasa en esta corrida, y toda entrada nombra un check que existe', () => {
-  const sintetico = entradasQuePasan([ENTRADA_SINTETICA_K2B, { ...ENTRADA_SINTETICA_K2B, check: 'un check que no existe K2b' }],
-    new Map([[ENTRADA_SINTETICA_K2B.check, 'ok']]), { completo: true });
-  if (sintetico.length !== 2) {
-    throw new Error(`el custodio no reconoce una entrada que pasa y una que no existe: ${JSON.stringify(sintetico)}`);
-  }
-  const problemas = entradasQuePasan(BANDAS_PENDIENTES, resultadosDeCheck, { completo: SOLO.length === 0 });
-  if (problemas.length > 0) {
-    throw new Error(problemas.join('; '));
-  }
-});
-
-check('bandasPendientes 2: ninguna entrada es de un bloque de corrimiento cerrado', () => {
-  const cerrados = { ...BLOQUES_DE_CORRIMIENTO, A: { ...BLOQUES_DE_CORRIMIENTO.A, cerrado: true } };
-  if (entradasDeBloquesCerrados([ENTRADA_SINTETICA_K2B], cerrados).length !== 1
-    || entradasDeBloquesCerrados([{ ...ENTRADA_SINTETICA_K2B, bloque: 'Z' }], BLOQUES_DE_CORRIMIENTO).length !== 1) {
-    throw new Error('el custodio no reconoce una entrada de un bloque cerrado o desconocido');
-  }
-  const problemas = entradasDeBloquesCerrados(BANDAS_PENDIENTES, BLOQUES_DE_CORRIMIENTO);
-  if (problemas.length > 0) {
-    throw new Error(problemas.join('; '));
-  }
-});
-
-check('bandasPendientes 3: toda entrada tiene valor medido, banda, commit y la subfase que la re-basea (la calibración de su bloque)', () => {
-  const sinValor = { ...ENTRADA_SINTETICA_K2B, medido: '' };
-  const { rebasea, ...sinSubfase } = ENTRADA_SINTETICA_K2B;
-  const otraSubfase = { ...ENTRADA_SINTETICA_K2B, rebasea: 'K4c' };
-  for (const [nombre, entrada] of [['sin valor', sinValor], ['sin subfase', sinSubfase], ['con la subfase de otro bloque', otraSubfase]]) {
-    if (entradasIncompletas([entrada], BLOQUES_DE_CORRIMIENTO).length === 0) {
-      throw new Error(`el custodio no reconoce una entrada ${nombre} (${rebasea})`);
-    }
-  }
-  const problemas = entradasIncompletas(BANDAS_PENDIENTES, BLOQUES_DE_CORRIMIENTO);
-  if (problemas.length > 0) {
-    throw new Error(problemas.join('; '));
-  }
-});
+// (Los tres custodios se mudaron al final del archivo: van después del último check — K5.)
 
 // --- K3-B: los efectos que duran (PLAN.md "K3 — decisiones de spec") ---
 //
@@ -16841,6 +16804,48 @@ check('K5-A el puntaje de K1 maneja cada resultado del Mundial, en orden', () =>
     if (!RESULTADOS_K5.includes(resultado)) {
       throw new Error(`el Mundial escribió un resultado desconocido: ${resultado}`);
     }
+  }
+});
+
+// PLAN.md §K.4 — los tres custodios del registro de bandas pendientes. Van DESPUÉS del último check: el primero mira cómo
+// terminó cada check de esta corrida, y una entrada cuyo check corre más abajo le aparece como "no existe" (pasó en la
+// integración de K5: los checks de K5-A y K5-B se agregaron después de los custodios). Un check nuevo va ARRIBA de esto.
+check('bandasPendientes 1: ninguna entrada registrada pasa en esta corrida, y toda entrada nombra un check que existe', () => {
+  const sintetico = entradasQuePasan([ENTRADA_SINTETICA_K2B, { ...ENTRADA_SINTETICA_K2B, check: 'un check que no existe K2b' }],
+    new Map([[ENTRADA_SINTETICA_K2B.check, 'ok']]), { completo: true });
+  if (sintetico.length !== 2) {
+    throw new Error(`el custodio no reconoce una entrada que pasa y una que no existe: ${JSON.stringify(sintetico)}`);
+  }
+  const problemas = entradasQuePasan(BANDAS_PENDIENTES, resultadosDeCheck, { completo: SOLO.length === 0 });
+  if (problemas.length > 0) {
+    throw new Error(problemas.join('; '));
+  }
+});
+
+check('bandasPendientes 2: ninguna entrada es de un bloque de corrimiento cerrado', () => {
+  const cerrados = { ...BLOQUES_DE_CORRIMIENTO, A: { ...BLOQUES_DE_CORRIMIENTO.A, cerrado: true } };
+  if (entradasDeBloquesCerrados([ENTRADA_SINTETICA_K2B], cerrados).length !== 1
+    || entradasDeBloquesCerrados([{ ...ENTRADA_SINTETICA_K2B, bloque: 'Z' }], BLOQUES_DE_CORRIMIENTO).length !== 1) {
+    throw new Error('el custodio no reconoce una entrada de un bloque cerrado o desconocido');
+  }
+  const problemas = entradasDeBloquesCerrados(BANDAS_PENDIENTES, BLOQUES_DE_CORRIMIENTO);
+  if (problemas.length > 0) {
+    throw new Error(problemas.join('; '));
+  }
+});
+
+check('bandasPendientes 3: toda entrada tiene valor medido, banda, commit y la subfase que la re-basea (la calibración de su bloque)', () => {
+  const sinValor = { ...ENTRADA_SINTETICA_K2B, medido: '' };
+  const { rebasea, ...sinSubfase } = ENTRADA_SINTETICA_K2B;
+  const otraSubfase = { ...ENTRADA_SINTETICA_K2B, rebasea: 'K4c' };
+  for (const [nombre, entrada] of [['sin valor', sinValor], ['sin subfase', sinSubfase], ['con la subfase de otro bloque', otraSubfase]]) {
+    if (entradasIncompletas([entrada], BLOQUES_DE_CORRIMIENTO).length === 0) {
+      throw new Error(`el custodio no reconoce una entrada ${nombre} (${rebasea})`);
+    }
+  }
+  const problemas = entradasIncompletas(BANDAS_PENDIENTES, BLOQUES_DE_CORRIMIENTO);
+  if (problemas.length > 0) {
+    throw new Error(problemas.join('; '));
   }
 });
 
