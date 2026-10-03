@@ -60,7 +60,7 @@ import {
   decisionDeDraftFecha, factorDraftFecha
 } from '../core/temporada.js';
 import { tierListDeRol, boostDelPool } from '../core/regimen.js';
-import { nivelDelJugador, deltasDeStats, fichaCompleta } from '../core/ficha.js';
+import { nivelDelJugador, deltasDeStats, fichaCompleta, loQueConstruiste } from '../core/ficha.js';
 import { componerLegado } from '../core/legado.js';
 import { bandaDeArraigo } from '../core/registro.js';
 import { rankearMundo, rankearPoblacion, puntajeRanking } from '../core/topMundial.js';
@@ -657,7 +657,9 @@ const FORMAS_CONOCIDAS = {
   5: '30ed804e36c7',
   // K2d: la `p` con la que se tiró cada mapa y la fecha marcada (con `pSinMomento` y `ajustePartido`) en sus
   // logs, y `entradaExtra` (el comodín, o `null`) en los datos del minijuego de un mapa.
-  6: 'a88cc98f33ef'
+  6: 'a88cc98f33ef',
+  // K3-B: `player.bonusPermanente` (un campo por stat de curva, ceros) y `registro.marcas` (`{ stat, delta, origen, anio }`).
+  7: '839743025b35'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -14051,6 +14053,221 @@ check('bandasPendientes 3: toda entrada tiene valor medido, banda, commit y la s
   const problemas = entradasIncompletas(BANDAS_PENDIENTES, BLOQUES_DE_CORRIMIENTO);
   if (problemas.length > 0) {
     throw new Error(problemas.join('; '));
+  }
+});
+
+// --- K3-B: los efectos que duran (PLAN.md "K3 — decisiones de spec") ---
+//
+// Estructura con la constante en 0: el juego queda idéntico, y eso lo prueba "K1 versión" (la huella del juego). Estos
+// checks son estructurales: la regla en el aplicador de efectos, la curva y la ficha, con la fracción en 0 y en memoria
+// con una positiva. Cada uno se probó en rojo contra su mutante sobre una copia (regla de proceso 7): el aplicador sin
+// el gancho, la curva sin el bonus, un stat de curva fuera del bonus inicial, la constante neutra rota, una marca que
+// pisa a las anteriores, el id crudo como origen y la ficha sin el umbral.
+const STATS_DE_CURVA_K3B = Object.keys(BALANCE.atributos.curvas);
+const FRACCION_K3B = 0.5;
+
+function conFraccionPermanenteK3b(fraccion, fn) {
+  const original = BALANCE.atributos.fraccionPermanente;
+  BALANCE.atributos.fraccionPermanente = fraccion;
+  try {
+    return fn();
+  } finally {
+    BALANCE.atributos.fraccionPermanente = original;
+  }
+}
+
+// Un evento a mano con un único efecto determinista sobre `path` (min === max), para no depender del contenido.
+function eventoSinteticoK3b(path, delta) {
+  return {
+    id: 'k3b_sintetico_bootcamp',
+    title: 'Bootcamp en Corea',
+    description: 'Evento sintético de K3-B.',
+    options: [
+      { id: 'ir', label: 'Ir', weight: 1, outcomes: [{ weight: 1, texto: 'Volvés distinto.', effects: [{ type: 'stat', path, min: delta, max: delta, clamp: [0, 100] }] }] },
+      { id: 'quedarse', label: 'Quedarte', weight: 1, outcomes: [{ weight: 1, texto: 'Te quedás.', effects: [] }] }
+    ]
+  };
+}
+
+function bonusCompletoK3b(player) {
+  const claves = Object.keys(player.bonusPermanente ?? {});
+  return claves.length === STATS_DE_CURVA_K3B.length
+    && STATS_DE_CURVA_K3B.every((stat) => Number.isFinite(player.bonusPermanente[stat]));
+}
+
+check('K3-B bonusPermanente: completo con ceros al arrancar y completo (un número por stat de curva, ni uno más) en cada split de una carrera', () => {
+  const inicial = createInitialState(1, mulberry32(1));
+  if (!bonusCompletoK3b(inicial.player) || STATS_DE_CURVA_K3B.some((stat) => inicial.player.bonusPermanente[stat] !== 0)) {
+    throw new Error(`el estado inicial no trae bonusPermanente completo con ceros: ${JSON.stringify(inicial.player.bonusPermanente)}`);
+  }
+  for (const [seed, fraccion] of [[1, 0], [2, FRACCION_K3B]]) {
+    conFraccionPermanenteK3b(fraccion, () => {
+      const rng = mulberry32(seed);
+      let state = createInitialState(seed, rng);
+      for (let split = 0; split < 40 && !state.terminado; split += 1) {
+        state = avanzarSplitAuto(state, rng).state;
+        if (!bonusCompletoK3b(state.player)) {
+          throw new Error(`seed ${seed} (fracción ${fraccion}), split ${split + 1}: bonusPermanente incompleto: ${JSON.stringify(state.player.bonusPermanente)}`);
+        }
+      }
+    });
+  }
+});
+
+check('K3-B neutro: con fraccionPermanente 0 un efecto sobre un stat de curva no deja bonus ni marca, y una carrera termina con el bonus en ceros y registro.marcas vacío', () => {
+  if (BALANCE.atributos.fraccionPermanente !== 0) {
+    throw new Error(`fraccionPermanente vale ${BALANCE.atributos.fraccionPermanente}: K3-B es estructura, la constante neutra es 0 (la fija K3c)`);
+  }
+  const base = correrCarrera(3, 18);
+  for (const stat of STATS_DE_CURVA_K3B) {
+    const { state } = resolverOpcion(base, eventoSinteticoK3b(`player.stats.${stat}`, 6), 'ir', mulberry32(5));
+    if (state.career.registro.marcas.length !== 0 || STATS_DE_CURVA_K3B.some((s) => state.player.bonusPermanente[s] !== 0)) {
+      throw new Error(`un efecto sobre ${stat} con la fracción en 0 dejó bonus o marca`);
+    }
+    if (state.player.stats[stat] === base.player.stats[stat]) {
+      throw new Error(`el efecto sintético no movió ${stat}: el check no probaría nada`);
+    }
+  }
+  for (const seed of [1, 2, 3]) {
+    const fin = correrCarrera(seed, 60);
+    if (fin.career.registro.marcas.length !== 0 || STATS_DE_CURVA_K3B.some((stat) => fin.player.bonusPermanente[stat] !== 0)) {
+      throw new Error(`seed ${seed}: con la fracción en 0 la carrera terminó con bonus o marcas`);
+    }
+  }
+});
+
+check('K3-B efecto con fracción positiva: suma fracción·delta al bonus del stat, anota UNA marca con el nombre visible del evento (no su id), y los stats que no son de curva no dejan nada', () => {
+  // El estado base sale con la fracción en 0 (bonus en ceros y sin marcas): lo que se mida después es del efecto.
+  const base = correrCarrera(3, 18);
+  conFraccionPermanenteK3b(FRACCION_K3B, () => {
+    for (const stat of STATS_DE_CURVA_K3B) {
+      const evento = eventoSinteticoK3b(`player.stats.${stat}`, 6);
+      const { state } = resolverOpcion(base, evento, 'ir', mulberry32(5));
+      const movido = state.player.stats[stat] - base.player.stats[stat];
+      const esperado = FRACCION_K3B * movido;
+      if (Math.abs(state.player.bonusPermanente[stat] - esperado) > 1e-9 || esperado === 0) {
+        throw new Error(`${stat}: el bonus es ${state.player.bonusPermanente[stat]}, esperaba ${esperado} (fracción ${FRACCION_K3B} × ${movido})`);
+      }
+      const otros = STATS_DE_CURVA_K3B.filter((s) => s !== stat && state.player.bonusPermanente[s] !== 0);
+      if (otros.length > 0) {
+        throw new Error(`${stat}: el efecto movió el bonus de ${otros.join(', ')}`);
+      }
+      const marcas = state.career.registro.marcas;
+      if (marcas.length !== 1) {
+        throw new Error(`${stat}: esperaba una marca, hay ${marcas.length}`);
+      }
+      const [marca] = marcas;
+      if (marca.stat !== stat || Math.abs(marca.delta - esperado) > 1e-9 || marca.origen !== 'Bootcamp en Corea'
+          || marca.anio !== base.calendario.anio || marca.origen === evento.id) {
+        throw new Error(`${stat}: la marca no es { stat, delta, origen visible, anio }: ${JSON.stringify(marca)}`);
+      }
+    }
+    // Un stat que no es de curva (macro, mentalidad) se mueve igual pero no deja nada permanente.
+    for (const stat of ['macro', 'mentalidad', 'hype']) {
+      const { state } = resolverOpcion(base, eventoSinteticoK3b(`player.stats.${stat}`, 6), 'ir', mulberry32(5));
+      if (state.career.registro.marcas.length !== 0 || STATS_DE_CURVA_K3B.some((s) => state.player.bonusPermanente[s] !== 0)) {
+        throw new Error(`${stat} no es un stat de curva y dejó bonus o marca`);
+      }
+    }
+  });
+});
+
+check('K3-B la curva de edad converge a objetivo + bonus: con bonusPermanente b, cada stat de curva termina el split velocidad·b más arriba que sin él', () => {
+  const base = correrCarrera(4, 18);
+  const lugar = { ...base, player: { ...base.player, techoLesionMecanica: null, stats: { ...base.player.stats, mecanica: 50, laneo: 50, teamfight: 50 } } };
+  const b = 5;
+  const conBonus = { ...lugar, player: { ...lugar.player, bonusPermanente: Object.fromEntries(STATS_DE_CURVA_K3B.map((stat) => [stat, b])) } };
+  const sin = sistemaPorId('atributos').aplicar(lugar, mulberry32(9)).state;
+  const con = sistemaPorId('atributos').aplicar(conBonus, mulberry32(9)).state;
+  for (const [stat, config] of Object.entries(BALANCE.atributos.curvas)) {
+    const diferencia = con.player.stats[stat] - sin.player.stats[stat];
+    if (Math.abs(diferencia - config.velocidad * b) > 1e-9) {
+      throw new Error(`${stat}: con bonus ${b} la diferencia es ${diferencia}, esperaba velocidad ${config.velocidad} × ${b} = ${config.velocidad * b}`);
+    }
+  }
+  // Y el bonus no toca lo que no es de curva (macro/shotcalling/adaptabilidad siguen su propia regla).
+  for (const stat of Object.keys(BALANCE.atributos.acumulativos)) {
+    if (con.player.stats[stat] !== sin.player.stats[stat]) {
+      throw new Error(`${stat} no es de curva y el bonus lo movió`);
+    }
+  }
+});
+
+check('K3-B registro.marcas solo crece a lo largo de una carrera (cada split conserva las anteriores tal cual), con marcas reales, y el bonus de cada stat es la suma de sus marcas', () => {
+  conFraccionPermanenteK3b(FRACCION_K3B, () => {
+    const idsDeEvento = new Set(TODOS_LOS_EVENTOS.map((evento) => evento.id));
+    let marcasTotales = 0;
+    for (const seed of [1, 2, 3, 4, 5]) {
+      const rng = mulberry32(seed);
+      let state = createInitialState(seed, rng);
+      let previas = [];
+      for (let split = 0; split < 60 && !state.terminado; split += 1) {
+        state = avanzarSplitAuto(state, rng).state;
+        const marcas = state.career.registro.marcas;
+        if (marcas.length < previas.length || previas.some((marca, i) => JSON.stringify(marca) !== JSON.stringify(marcas[i]))) {
+          throw new Error(`seed ${seed}, split ${split + 1}: registro.marcas no solo crece (${previas.length} → ${marcas.length}, o cambió una anterior)`);
+        }
+        previas = marcas;
+      }
+      for (const marca of previas) {
+        const crudo = idsDeEvento.has(marca.origen) || /^[a-z0-9]+(_[a-z0-9]+)+$/.test(marca.origen);
+        if (!STATS_DE_CURVA_K3B.includes(marca.stat) || !Number.isFinite(marca.delta) || marca.delta === 0
+            || typeof marca.origen !== 'string' || marca.origen.length === 0 || crudo || !Number.isInteger(marca.anio)) {
+          throw new Error(`seed ${seed}: marca inválida (o con id crudo como origen): ${JSON.stringify(marca)}`);
+        }
+      }
+      for (const stat of STATS_DE_CURVA_K3B) {
+        const suma = previas.filter((marca) => marca.stat === stat).reduce((total, marca) => total + marca.delta, 0);
+        if (Math.abs(state.player.bonusPermanente[stat] - suma) > 1e-6) {
+          throw new Error(`seed ${seed}: el bonus de ${stat} (${state.player.bonusPermanente[stat]}) no es la suma de sus marcas (${suma})`);
+        }
+      }
+      marcasTotales += previas.length;
+    }
+    if (marcasTotales === 0) {
+      throw new Error('ninguna carrera dejó una marca con la fracción positiva: el check no probaría nada');
+    }
+  });
+});
+
+check('K3-B la ficha lista solo las marcas cuyo acumulado (por stat, origen y año) redondea a >= 1 en valor absoluto, con ▲/▼, sin ids crudos, y nada cuando no hay', () => {
+  const marcas = [
+    { stat: 'mecanica', delta: 0.3, origen: 'Bootcamp en Corea', anio: 2028 },
+    { stat: 'mecanica', delta: 0.3, origen: 'Bootcamp en Corea', anio: 2028 },
+    { stat: 'laneo', delta: 0.4, origen: 'Scrims con el equipo grande', anio: 2029 },
+    { stat: 'teamfight', delta: -1.8, origen: 'Lesión de muñeca', anio: 2030 },
+    { stat: 'teamfight', delta: -0.9, origen: 'Lesión de muñeca', anio: 2030 },
+    { stat: 'mecanica', delta: 4.2, origen: 'Mudanza al gaming house', anio: 2031 }
+  ];
+  const lista = loQueConstruiste({ marcas });
+  const textos = lista.map((fila) => fila.texto);
+  const esperado = [
+    '▲ +4 mecánica — Mudanza al gaming house 2031',
+    '▼ -3 teamfight — Lesión de muñeca 2030',
+    '▲ +1 mecánica — Bootcamp en Corea 2028'
+  ];
+  if (JSON.stringify(textos) !== JSON.stringify(esperado)) {
+    throw new Error(`la ficha lista ${JSON.stringify(textos)}, esperaba ${JSON.stringify(esperado)} (el laneo de 0,4 no redondea a 1 y no va)`);
+  }
+  for (const texto of textos) {
+    if (/player\.|[a-z0-9]+_[a-z0-9_]+/.test(texto)) {
+      throw new Error(`"${texto}" muestra un id crudo`);
+    }
+  }
+  if (loQueConstruiste({ marcas: [] }).length !== 0 || loQueConstruiste({}).length !== 0) {
+    throw new Error('sin marcas la lista no está vacía');
+  }
+  if (fichaCompleta(createInitialState(1, mulberry32(1))).construido.length !== 0) {
+    throw new Error('el estado inicial trae marcas en la ficha');
+  }
+  const conMarcas = correrCarrera(2, 20);
+  const inyectado = { ...conMarcas, career: { ...conMarcas.career, registro: { ...conMarcas.career.registro, marcas } } };
+  if (fichaCompleta(inyectado).construido.length !== esperado.length) {
+    throw new Error('fichaCompleta no expone lo que construiste');
+  }
+  const fuenteFicha = fs.readFileSync(path.join(srcDir, 'ui', 'components', 'ficha.js'), 'utf8');
+  if (!fuenteFicha.includes("nombre: 'CONSISTENCIA'") || /nombre: 'MENTALIDAD'/.test(fuenteFicha)) {
+    throw new Error("la barra de la mentalidad tiene que rotularse 'CONSISTENCIA' en la ficha (el id interno sigue siendo mentalidad)");
   }
 });
 

@@ -2,7 +2,7 @@ import { gauss, chance } from '../core/rng.js';
 import { crearLog } from '../core/log.js';
 import { deltaCorto, entero } from '../core/formato.js';
 import { clamp, clampStat } from '../core/numeros.js';
-import { nivelDeCurva, techoDeCarrera } from '../core/curvas.js';
+import { nivelDeCurva, techoDeCarrera, bonusDeCurva } from '../core/curvas.js';
 import { nivelDelJugador } from '../core/ficha.js';
 import { registrarPicoNivel } from '../core/registro.js';
 import { mentalidadHaciaSuBase, recuperarPorDescanso } from '../core/barras.js';
@@ -25,8 +25,9 @@ function moverStatsDeCurva(stats, state, forma, rng) {
   const movidos = { ...stats };
 
   for (const [stat, config] of Object.entries(a.curvas)) {
+    // K3-B: la curva converge a `objetivo + bonusPermanente[stat]` (lo que las decisiones dejaron; 0 = como siempre).
     const objetivo = nivelDeCurva(state.age, oculto, { declive: config.declive, splitsJugados })
-      * (1 + forma * a.formaAmplitud);
+      * (1 + forma * a.formaAmplitud) + bonusDeCurva(state.player, stat);
 
     // Converge hacia el objetivo en vez de saltar: el declive nunca se anuncia,
     // se nota recien cuando ya lleva un par de splits pasando.

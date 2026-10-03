@@ -290,6 +290,24 @@ function crearDetalleHistoria(registro) {
   return detalle;
 }
 
+// K3-B: lo que tus decisiones le dejaron a las curvas de edad. Sin marcas visibles no hay sección.
+function crearDetalleConstruido(construido) {
+  if (construido.length === 0) return null;
+  const detalle = document.createElement('details');
+  detalle.className = 'ficha-historia';
+  detalle.open = true;
+  const resumen = document.createElement('summary');
+  resumen.textContent = 'Lo que construiste';
+  detalle.appendChild(resumen);
+  detalle.append(...construido.map((marca) => {
+    const item = document.createElement('div');
+    item.className = 'ficha-historia-fila';
+    item.textContent = marca.texto;
+    return item;
+  }));
+  return detalle;
+}
+
 function crearDetalleMomentos(registro) {
   if (registro.momentos.length === 0) return null;
   const detalleMomentos = document.createElement('details');
@@ -389,7 +407,8 @@ export function renderFicha(container, state, modulos) {
   totales.textContent = `${registro.splitsJugados} splits · ${partidos} partidos · ${registro.titulos.length} título(s)`;
 
   const mentalidad = crearBarra({
-    nombre: 'MENTALIDAD',
+    // K3: la barra se lee como consistencia (con la cabeza bien jugás a tu nivel); el id interno sigue siendo mentalidad.
+    nombre: 'CONSISTENCIA',
     banda: ficha.mentalidad,
     tono: ficha.mentalidad.peligro ? 'peligro' : null
   });
@@ -407,6 +426,7 @@ export function renderFicha(container, state, modulos) {
       crearBadgeInternacional(ficha),
       crearBadgeDuelo(ficha),
       crearPoolTiles(state, modulos),
+      crearDetalleConstruido(ficha.construido),
       crearDetalleHistoria(registro),
       crearDetalleMomentos(registro)
     ]

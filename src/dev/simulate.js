@@ -10,6 +10,7 @@ import { candidatos } from '../systems/events.js';
 import { esCierreDeEdad } from '../systems/edadCierre.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 import { BALANCE } from '../data/balance.js';
+import { conPermanencia } from '../core/curvas.js';
 import { probabilidadDePartido, ruidoEfectivo } from '../core/partido.js';
 import { ESTRATEGIAS, NOMBRES_ESTRATEGIA, esDecisionDeMinijuego } from './estrategias.js';
 
@@ -88,6 +89,12 @@ export const META_K3_HYPE_SATURADO_PCT = 25;
 // (que gane el de menos fuerza) sube al menos este número de puntos porcentuales con la cabeza en 20.
 export const META_K3_DIFERENCIA_BATACAZO_PP = 2;
 const MENTALIDADES_SONDA_K3 = [20, 80];
+
+// K3-B: lo que un efecto sobre un stat de curva conserva a 4 splits (PLAN.md "K3 — decisiones de spec": meta >= 40%).
+// `retencionDeUnEfecto` la mide; el bloque `metasK3` la reporta con esta meta al lado (`retencion4Splits`). K3c fija
+// `BALANCE.atributos.fraccionPermanente` para que se cumpla.
+export const META_K3_RETENCION_4_SPLITS = 0.4;
+export const SONDA_RETENCION = { seeds: 40, splitsPrevios: 18, splitsDespues: 4, stat: 'mecanica', delta: 8 };
 
 // Mejor de 5: gana el primero en llevarse este número de mapas.
 const MAPAS_PARA_GANAR_BO5 = 3;
@@ -697,6 +704,42 @@ function porcentajes(mapa, total) {
   );
 }
 
+// K3-B, la sonda de retención: cuánto de un efecto de `delta` sobre un stat de curva sigue en pie `splitsDespues`
+// splits después. Por seed: se juega la carrera hasta `splitsPrevios` (un punto fijo, ya profesional) y desde ahí se
+// corren dos futuros con el MISMO estado del rng, restaurado: uno tal cual y otro con el efecto aplicado — el stat
+// movido y, con `fraccionPermanente` > 0, el bonus y la marca (`conPermanencia`, la misma regla que usa el
+// aplicador de efectos de `systems/events.js`). Lo retenido es la diferencia de ese stat entre los dos futuros
+// dividida por `delta`; se promedia entre seeds (una sola es ruido: los dos futuros pueden bifurcarse). Las seeds
+// cuya carrera termina antes de medir no cuentan. `opciones` pisa `SONDA_RETENCION`.
+export function retencionDeUnEfecto(opciones = {}) {
+  const { seeds, splitsPrevios, splitsDespues, stat, delta } = { ...SONDA_RETENCION, ...opciones };
+  const porSeed = [];
+  for (let seed = 1; seed <= seeds; seed += 1) {
+    const rng = mulberry32(seed);
+    let base = createInitialState(seed, rng);
+    for (let i = 0; i < splitsPrevios && !base.terminado; i += 1) {
+      base = avanzarSplitAuto(base, rng).state;
+    }
+    if (base.terminado) continue;
+    const punto = rng.estado();
+    const movido = { ...base, player: { ...base.player, stats: { ...base.player.stats, [stat]: base.player.stats[stat] + delta } } };
+    const conEfecto = conPermanencia(movido, stat, delta, 'sonda de retención');
+    const futuro = (estado) => {
+      rng.restaurar(punto);
+      let st = estado;
+      for (let i = 0; i < splitsDespues && !st.terminado; i += 1) {
+        st = avanzarSplitAuto(st, rng).state;
+      }
+      return st;
+    };
+    const sin = futuro(base);
+    const con = futuro(conEfecto);
+    if (sin.terminado || con.terminado) continue;
+    porSeed.push((con.player.stats[stat] - sin.player.stats[stat]) / delta);
+  }
+  return { retenido: promedio(porSeed), muestras: porSeed.length, porSeed };
+}
+
 // Helpers estadísticos: se exportan para que `agencia.js` los reuse en vez de tener su propia copia.
 export function promedio(valores) {
   return valores.length > 0 ? valores.reduce((s, v) => s + v, 0) / valores.length : null;
@@ -1277,6 +1320,7 @@ function metasK3(economia) {
     }];
   }));
   const [bajo, alto] = MENTALIDADES_SONDA_K3;
+  const retencion = retencionDeUnEfecto();
   const diferenciaPp = redondear(sonda[bajo].batacazoPct - sonda[alto].batacazoPct, 2);
   return {
     mentalidadMedianaPro: {
@@ -1296,8 +1340,15 @@ function metasK3(economia) {
       meta: `batacazo con mentalidad ${bajo} >= ${META_K3_DIFERENCIA_BATACAZO_PP} pp más que con ${alto}, a fuerza igual`,
       cumple: diferenciaPp >= META_K3_DIFERENCIA_BATACAZO_PP, fuente: 'sonda: probabilidadDePartido(mapa) con la mentalidad fija'
     },
-    // TODO(K3-B): "un efecto sobre stat de curva conserva >= 40% a 4 splits" (la sonda que aplica un delta conocido
-    // y lo sigue) entra con `player.bonusPermanente`.
+    // "Un efecto sobre stat de curva conserva >= 40% a 4 splits": la sonda de K3-B aplica un delta conocido (con
+    // `conPermanencia`, la regla del aplicador de efectos) y lo sigue `SONDA_RETENCION.splitsDespues` splits.
+    retencion4Splits: {
+      valor: retencion.retenido === null ? null : redondear(retencion.retenido, 3), muestras: retencion.muestras,
+      sonda: `${SONDA_RETENCION.stat} +${SONDA_RETENCION.delta}, ${SONDA_RETENCION.seeds} seeds`,
+      meta: `>= ${META_K3_RETENCION_4_SPLITS} a ${SONDA_RETENCION.splitsDespues} splits`,
+      cumple: retencion.retenido !== null && retencion.retenido >= META_K3_RETENCION_4_SPLITS,
+      fuente: 'sonda: retencionDeUnEfecto()'
+    }
   };
 }
 

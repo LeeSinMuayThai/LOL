@@ -1,6 +1,8 @@
 import { BALANCE } from '../data/balance.js';
 import { ROLES } from '../data/roles.js';
 import { bandaDeArraigo as idDeBandaDeArraigo } from './registro.js';
+import { etiquetaCampo } from './selectors.js';
+import { deltaCorto } from './formato.js';
 
 // La ficha de carrera (fase 8, PLAN.md §8.3): lo que la UI pinta en la
 // tarjeta permanente (`src/ui/components/ficha.js`). Puro, sin RNG — se
@@ -193,9 +195,39 @@ export function dueloDeGeneracion(state) {
   };
 }
 
+// --- K3-B: "Lo que construiste" ---
+//
+// Las marcas del registro (`registro.marcas`: lo que una decisión le dejó a una curva de edad), agregadas por
+// stat, origen y año — el origen es el nombre visible del evento, nunca un id, y el año va en la línea
+// ("▲ +3 Mecánica — Bootcamp en Corea 2028"). Solo se cuentan las que acumulan un bonus que redondea a
+// `marcaMinimaVisible` o más en valor absoluto; una deriva de 0,2 no es una noticia (igual que las flechas).
+export function loQueConstruiste(registro) {
+  const { marcaMinimaVisible, marcasVisibles } = BALANCE.ficha;
+  const filas = new Map();
+  for (const marca of registro.marcas ?? []) {
+    const clave = `${marca.stat}|${marca.origen}|${marca.anio}`;
+    const previa = filas.get(clave);
+    filas.set(clave, previa ? { ...previa, acumulado: previa.acumulado + marca.delta } : { ...marca, acumulado: marca.delta });
+  }
+  return [...filas.values()]
+    .map((fila) => ({ ...fila, delta: Math.sign(fila.acumulado) * Math.round(Math.abs(fila.acumulado)) }))
+    .filter((fila) => Math.abs(fila.delta) >= marcaMinimaVisible)
+    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
+    .slice(0, marcasVisibles)
+    .map(({ stat, delta, origen, anio }) => ({
+      stat,
+      delta,
+      origen,
+      anio,
+      texto: `${delta > 0 ? '▲' : '▼'} ${deltaCorto(delta)} ${etiquetaCampo(`player.stats.${stat}`).toLowerCase()} — ${origen} ${anio}`
+    }));
+}
+
 // El objeto único que consume `src/ui/components/ficha.js`.
 export function fichaCompleta(state) {
   return {
+    // K3-B: lo que construiste (vacío mientras `fraccionPermanente` valga 0).
+    construido: loQueConstruiste(state.career.registro),
     nivel: Math.round(nivelDelJugador(state)),
     bandaNivel: bandaDeNivel(nivelDelJugador(state)),
     destacado: statDestacado(state),

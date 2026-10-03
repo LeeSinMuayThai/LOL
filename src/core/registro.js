@@ -245,6 +245,13 @@ export function registrarMomento(registro, momento) {
   return { ...registro, momentos: [...registro.momentos, momento] };
 }
 
+// K3-B: lo que una decisión dejó en una curva de edad (`player.bonusPermanente`). `marca` es
+// `{ stat, delta, origen, anio }`: `origen` es el nombre visible del evento o de la decisión, nunca un id. Solo
+// crece: las marcas no se borran ni se editan (regla 14); la ficha las agrega para "Lo que construiste".
+export function registrarMarca(registro, marca) {
+  return { ...registro, marcas: [...registro.marcas, marca] };
+}
+
 // Fase 11 (§11.1): una fila por cierre de edad (`core/temporadaResumen.js`
 // arma `entrada`). `titularDelAnio` la lee al año siguiente para no repetir
 // bajada de "otra vez" en falso.

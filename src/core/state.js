@@ -1,5 +1,6 @@
 import { BALANCE } from '../data/balance.js';
 import { generarMundo } from './mundo.js';
+import { bonusPermanenteInicial } from './curvas.js';
 import { puntosAbsolutos } from './ranked.js';
 import { rankearMundo } from './topMundial.js';
 import { esFechaDeDesafio, seedDelDia } from './desafio.js';
@@ -119,6 +120,9 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // convergencia de edad no puede volver a llevarte por encima (trampa T4:
       // nunca undefined).
       techoLesionMecanica: null,
+      // K3-B: lo que las decisiones le suman al objetivo de cada curva de edad (`core/curvas.js`). Un campo por
+      // stat de curva, completo con ceros desde el arranque (trampa T4); con `fraccionPermanente` en 0 no se mueve.
+      bonusPermanente: bonusPermanenteInicial(),
       splitCount: 0,
       titles: 0,
       worlds: 0,
@@ -255,6 +259,9 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
         internacionales: [],
         // Hitos narrativos con fecha, para que la fase 13 pueda citarlos.
         momentos: [],
+        // K3-B: las marcas que dejaron las decisiones en las curvas de edad, `{ stat, delta, origen, anio }`
+        // (`registrarMarca`). Solo crece. La ficha las muestra como "Lo que construiste".
+        marcas: [],
         // Fase 9W: cuántos cierres de edad terminaste dentro del Top 20 del
         // mundo. Contador monótono, para "14 splits en el Top 20" de la
         // tarjeta de legado.
