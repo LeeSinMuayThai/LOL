@@ -64,7 +64,7 @@ export function campeonDeterminista(orgs, clave) {
 //   - las demás (y la tuya, que `ligasParaDigest` siempre excluye) →
 //     `campeonDeterminista`;
 //   - tu liga, si ganaste un título doméstico este año → tu org.
-export function construirEscenaAnual(state, anio, narradas, campeonMundial) {
+export function construirEscenaAnual(state, anio, narradas, campeonMundial, subcampeonMundial = null) {
   const salt = (tipo, id) => `${state.seed}|escena9w|${tipo}|${id}|${anio}`;
   const ligasT1 = state.mundo.ligas.filter((liga) => liga.tier === 1);
   const narradaPorId = new Map(narradas.map((entrada) => [entrada.liga.id, entrada]));
@@ -95,8 +95,9 @@ export function construirEscenaAnual(state, anio, narradas, campeonMundial) {
     )?.nombre ?? null;
   }
 
+  // K5-A: el finalista es el subcampeón del Mundial que se jugó; sin torneo (llamadas viejas), uno por hash.
   const todos = todosLosOrgsTier1(state);
-  const finalista = campeonDeterminista(
+  const finalista = subcampeonMundial ?? campeonDeterminista(
     todos.filter((org) => org.nombre !== campeonMundial.nombre), salt('finalista', 'mundo')
   );
 

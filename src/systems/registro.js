@@ -65,6 +65,10 @@ export const ETAPAS_SPLIT = [
   // orden de CONCEPTO §5. Solo actua en tier 1 con formatoPlayoffs; ahi le
   // saca a rendimiento.js la resolucion instantanea de titulo/internacional.
   await import('./serie.js'),
+  // K5-A: el Mundial de verdad (Swiss de 16 + bracket de 8). Va después de `serie` (la final doméstica ya se jugó y
+  // `career.posicion` está fresca) y antes de `events` y de `escena`, que al cierre del año nombra a SU campeón.
+  // Corre todos los años: si no clasificaste, el torneo se juega entero por hash, sin tocar el rng.
+  await import('./internacional.js'),
   await import('./events.js'),
   await import('./atributos.js'),
   await import('./edadCierre.js'),

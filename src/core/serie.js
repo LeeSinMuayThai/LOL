@@ -51,25 +51,21 @@ export function siguienteRonda(ronda) {
   return ORDEN_RONDAS[indice + 1];
 }
 
-export function etiquetaDeRonda(ronda) {
-  const etiquetas = { cuartos: 'Cuartos de final', semis: 'Semifinal', final: 'La final', internacional: 'El internacional' };
+// K5-A: una serie del Mundial es `ronda: 'internacional'` con su `etapa` del bracket.
+const ETIQUETAS_DEL_MUNDIAL = { cuartos: 'Cuartos del Mundial', semis: 'Semifinal del Mundial', final: 'La final del Mundial' };
+
+export function etiquetaDeRonda(ronda, etapa = null) {
+  if (ronda === 'internacional' && etapa) {
+    return ETIQUETAS_DEL_MUNDIAL[etapa] ?? 'El Mundial';
+  }
+  const etiquetas = { cuartos: 'Cuartos de final', semis: 'Semifinal', final: 'La final', internacional: 'El Mundial' };
   return etiquetas[ronda] ?? ronda;
 }
 
-// El rival de la ronda. Doméstico: otra org de la misma liga, pesada por
-// fuerza (más fuerte, más probable que sea quien te toque en una fase alta).
-// Internacional: una org de OTRA liga tier 1, pesada por el prestigio de esa
-// liga y después por la fuerza de la org — nombra un rival real de otra
-// región, consistente con CLAUDE.md (ligas y orgs reales están permitidas).
+// El rival de la ronda: otra org de la misma liga, pesada por fuerza (más
+// fuerte, más probable que sea quien te toque en una fase alta).
+// K5-A: el rival del Mundial ya no se sortea acá: lo pone el torneo (`core/internacional.js`).
 export function generarRival(state, ronda, rng) {
-  if (ronda === 'internacional') {
-    const propia = state.career.liga;
-    const otrasLigas = state.mundo.ligas.filter((liga) => liga.tier === 1 && liga.id !== propia);
-    const liga = weightedPick(otrasLigas, (candidata) => candidata.prestigio, rng);
-    const org = weightedPick(liga.orgs, (candidata) => candidata.fuerza, rng);
-    return { org: org.nombre, fuerza: org.fuerza };
-  }
-
   const liga = state.mundo.ligas.find((candidata) => candidata.id === state.career.liga);
   // Guarda defensiva, no alcanzada hoy (medido: 0/300 seeds × 60 splits).
   // D.3 hace que `career.liga` pueda ser null en caminos adyacentes

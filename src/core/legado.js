@@ -1,6 +1,6 @@
 import LIGAS from '../data/leagues.json' with { type: 'json' };
 import { BALANCE } from '../data/balance.js';
-import { splitsJugadosEnTier } from './registro.js';
+import { splitsJugadosEnTier, esBuenPapel } from './registro.js';
 
 // El veredicto de la carrera (PLAN.md §10.2, CONCEPTO §9): NO se elige de una
 // lista, se COMPONE — una plantilla de arquetipo más un detalle real sacado del
@@ -162,7 +162,7 @@ export function componerLegado(state) {
   const r = state.career.registro;
   const fin = state.finAnticipado;
 
-  const internacional = r.internacionales.find((entrada) => entrada.resultado === 'buen_papel')
+  const internacional = r.internacionales.find(esBuenPapel)
     ?? r.internacionales[0]
     ?? null;
   const orgPrincipal = orgMasImportante(r);
@@ -174,7 +174,7 @@ export function componerLegado(state) {
     fin,
     edad: state.age,
     internacional,
-    intBuenos: r.internacionales.filter((entrada) => entrada.resultado === 'buen_papel').length,
+    intBuenos: r.internacionales.filter(esBuenPapel).length,
     intTotales: r.internacionales.length,
     titulosT1: titulosDeTier(r, 1),
     titulosTotales: r.titulos.length,

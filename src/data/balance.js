@@ -1687,6 +1687,29 @@ export const BALANCE = {
   // `rng`. Los seis componentes son >= 0 y crecen con el logro (la monotonía
   // que vigila `validate.js`). PROVISORIO: K5c lo vuelve a medir con el Mundial
   // real.
+  // K5-A (PLAN.md "K5 — decisiones de spec", K5-A): el Mundial de verdad (`core/internacional.js`,
+  // `systems/internacional.js`). Formato del real: Swiss de 16 (3 victorias pasás, 3 derrotas quedás afuera: 8 y 8)
+  // y después cuartos, semis y final al Bo5. Los 16 salen de `cuposInternacionales` de cada liga (3/3/3/3/2/2).
+  mundial: {
+    participantes: 16,
+    victoriasParaAvanzar: 3,
+    derrotasParaQuedarAfuera: 3,
+    clasificanAlBracket: 8,
+    // Los partidos del Swiss son Bo1 (una tirada, K2b); el bracket, Bo5 con las reglas de K4.
+    boSwiss: 1,
+    boBracket: 5,
+    // La siembra del bracket (índices 0-based de los 8, ordenados por récord y fuerza): 1-8, 4-5, 2-7, 3-6.
+    crucesDeCuartos: [[0, 7], [3, 4], [1, 6], [2, 5]],
+    // La tabla de una liga que no jugaste: fuerza de la org más un ruido uniforme de este ancho (puntos de fuerza),
+    // por hash. Con 0 viajarían siempre las mismas; con mucho, la tabla sería un sorteo.
+    ruidoDeTabla: 10,
+    // T9 (PLAN.md K5, riesgo 6): un split de Mundial no frena más de 4 veces por el Mundial. Las paradas que pasan el
+    // tope las resuelve el coach (el mismo criterio que el camino headless). Antes de la final se guardan 2 para la
+    // final (su plan de Fearless y su mapa decisivo): el 2-2, los cuartos y las semis frenan solo hasta 4 - 2.
+    maxInterrupciones: 4,
+    reservaParaLaFinal: 2
+  },
+
   puntaje: {
     // 1. Trayectoria: puntos por split jugado con contrato, según el tier en
     // que se jugó (`registro.porOrg[].splitsPorTier`, D76): más pesado arriba.
@@ -1711,7 +1734,10 @@ export const BALANCE = {
     // valer "participar" en silencio.
     internacional: {
       participacion: 20,
-      porResultado: { buen_papel: 50, eliminado: 0 }
+      // K5-A: el Mundial dice hasta dónde llegaste. `eliminado` = afuera en el Swiss (0, como antes); `cuartos`
+      // vale lo que valía `buen_papel` (pasar de fase); cada ronda más suma, y ser campeón del mundo vale más que
+      // cuatro títulos de liga tier 1 (40 c/u). `buen_papel` queda para registros anteriores a K5. Provisorios: K5c.
+      porResultado: { eliminado: 0, cuartos: 50, semis: 80, final: 120, campeon: 180, buen_papel: 50 }
     },
     // 4. El mundo: el pico de rank mundial por bandas (#1, hasta `corteTop5`, el
     // resto del Top 20) más cada temporada cerrada adentro del Top 20

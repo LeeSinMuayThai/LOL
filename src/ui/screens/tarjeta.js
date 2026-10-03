@@ -1,6 +1,7 @@
 import { filaHistoria } from '../components/ficha.js';
 import { descargarTarjeta, copiarTarjeta, copiarTexto } from '../exportar.js';
 import { miles, textoParaCompartir, linkDeEstado } from '../resultado.js';
+import { esBuenPapel } from '../../core/registro.js';
 
 // La tarjeta de legado (fase 9R5b, PLAN.md §10.2/§10.3): la pantalla final.
 // TODA salida termina acá — la del mundialista con confeti y la del pibe al que
@@ -160,12 +161,30 @@ function bloqueLeyenda(state, puntaje, modulos) {
 
 // --- Los internacionales, mapa por mapa (desplegable cerrado) ---
 
+// K5-A: cada Mundial dice hasta dónde llegaste y su camino es partido a partido (Swiss) y serie a serie (bracket).
+// Los registros de antes de K5 traen el camino mapa a mapa y `buen_papel`/`eliminado`.
+const RESULTADO_INTL = {
+  campeon: 'Campeón del mundo', final: 'Subcampeón', semis: 'Semifinal', cuartos: 'Cuartos',
+  eliminado: 'Afuera', buen_papel: 'Buen papel'
+};
+const ETAPA_INTL = { swiss: 'Swiss', cuartos: 'Cuartos', semis: 'Semis', final: 'Final' };
+
+function lineaDeCamino(m) {
+  if (m.etapa) {
+    const marcador = m.marcador ? ` ${m.marcador[0]}-${m.marcador[1]}` : '';
+    const ronda = m.etapa === 'swiss' ? ` R${m.ronda}` : '';
+    return { gano: m.gano, texto: `${ETAPA_INTL[m.etapa]}${ronda} [${m.gano ? 'G' : 'P'}${marcador}] vs ${m.rival}` };
+  }
+  return { gano: m.resultado === 'W', texto: `M${m.mapa} [${m.resultado} ${m.marcador}] ${m.campeon}${m.cierre ? ` — ${m.cierre}` : ''}` };
+}
+
 function bloqueInternacionales(internacionales) {
   const intlSec = document.createElement('details');
   intlSec.className = 'tarjeta-internacionales';
   const resumen = document.createElement('summary');
-  const buenos = internacionales.filter((intl) => intl.resultado === 'buen_papel').length;
-  resumen.textContent = `Torneos internacionales · ${internacionales.length} (${buenos} con buen papel) · mapa por mapa`;
+  const buenos = internacionales.filter(esBuenPapel).length;
+  const mundiales = internacionales.filter((intl) => intl.resultado === 'campeon').length;
+  resumen.textContent = `Mundiales · ${internacionales.length} (${buenos} pasando el Swiss${mundiales > 0 ? `, ${mundiales} ganado${mundiales > 1 ? 's' : ''}` : ''}) · partido a partido`;
   intlSec.appendChild(resumen);
   for (const intl of internacionales) {
     const bloque = document.createElement('div');
@@ -173,8 +192,9 @@ function bloqueInternacionales(internacionales) {
 
     const enc = document.createElement('div');
     enc.className = 'tarjeta-intl-encabezado';
-    const res = intl.resultado === 'buen_papel' ? 'Buen papel' : 'Eliminado';
-    enc.textContent = `${intl.torneo} (${intl.anio}) · ${intl.org} · ${res}`;
+    const res = RESULTADO_INTL[intl.resultado] ?? intl.resultado;
+    const record = intl.record ? ` (Swiss ${intl.record})` : '';
+    enc.textContent = `${intl.torneo} (${intl.anio}) · ${intl.org} · ${res}${record}`;
     bloque.appendChild(enc);
 
     if (Array.isArray(intl.camino) && intl.camino.length > 0) {
@@ -182,8 +202,9 @@ function bloqueInternacionales(internacionales) {
       caminoEl.className = 'tarjeta-intl-camino';
       for (const m of intl.camino) {
         const lineaM = document.createElement('div');
-        lineaM.className = `tarjeta-intl-mapa tarjeta-intl-mapa--${m.resultado === 'W' ? 'ganado' : 'perdido'}`;
-        lineaM.textContent = `M${m.mapa} [${m.resultado} ${m.marcador}] ${m.campeon}${m.cierre ? ` — ${m.cierre}` : ''}`;
+        const { gano, texto } = lineaDeCamino(m);
+        lineaM.className = `tarjeta-intl-mapa tarjeta-intl-mapa--${gano ? 'ganado' : 'perdido'}`;
+        lineaM.textContent = texto;
         caminoEl.appendChild(lineaM);
       }
       bloque.appendChild(caminoEl);

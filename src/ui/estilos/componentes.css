@@ -874,3 +874,27 @@ h1::before {
   letter-spacing: var(--track-label);
   color: var(--ice-dim);
 }
+
+/* K5-A: el Mundial en una tarjeta del feed (components/mundial.js). Compacta: entra en 375 px. */
+.mundial { display: flex; flex-direction: column; gap: 6px; border-left: 3px solid var(--color-acento, #c8aa6e); }
+.mundial--campeon { border-left-color: #f0c75e; }
+.mundial-cabeza { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.mundial-titulo { font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.mundial-resultado { font-size: 0.85em; opacity: 0.85; }
+.mundial-texto { font-size: 0.9em; }
+.mundial-swiss { display: flex; flex-direction: column; gap: 4px; }
+.mundial-rotulo { font-size: 0.72em; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.7; }
+.mundial-cruces { display: flex; flex-wrap: wrap; gap: 4px; }
+.mundial-cruce { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 1px 6px; border-radius: 4px; font-size: 0.78em; background: rgba(127, 127, 127, 0.12); }
+.mundial-cruce-res { font-weight: 700; }
+.mundial-cruce--w .mundial-cruce-res { color: #3fae6a; }
+.mundial-cruce--l .mundial-cruce-res { color: #d0545b; }
+.mundial-cruce-rival { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 9em; }
+.mundial-bracket { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; align-items: center; }
+.mundial-etapa { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.mundial-serie { display: flex; flex-direction: column; padding: 2px 4px; border-radius: 4px; font-size: 0.72em; background: rgba(127, 127, 127, 0.08); min-width: 0; }
+.mundial-serie--tuya { outline: 1px solid var(--color-acento, #c8aa6e); background: rgba(200, 170, 110, 0.14); }
+.mundial-equipo { display: flex; justify-content: space-between; gap: 4px; opacity: 0.6; min-width: 0; }
+.mundial-equipo--gano { opacity: 1; font-weight: 600; }
+.mundial-equipo-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.mundial-campeon { font-size: 0.8em; opacity: 0.85; }

@@ -237,6 +237,16 @@ export function registrarTitulo(registro, { nombre, anio, org, liga, tier }) {
 
 // K1 (D76): `entrada.liga` es el id de la liga que representaste (de ahí sale
 // la `dificultad` que multiplica el internacional en `core/puntaje.js`).
+// K5-A: lo que se registra de un Mundial es hasta dónde llegaste: `eliminado` (afuera en el Swiss), `cuartos`,
+// `semis`, `final` o `campeon`. `buen_papel` es el de los registros anteriores a K5 (una serie internacional ganada).
+// "Buen papel" es pasar de fase: cualquier resultado de bracket.
+export const RESULTADOS_INTERNACIONALES = ['eliminado', 'cuartos', 'semis', 'final', 'campeon', 'buen_papel'];
+const RESULTADOS_DE_BUEN_PAPEL = ['cuartos', 'semis', 'final', 'campeon', 'buen_papel'];
+
+export function esBuenPapel(entrada) {
+  return Boolean(entrada) && RESULTADOS_DE_BUEN_PAPEL.includes(entrada.resultado);
+}
+
 export function registrarInternacional(registro, entrada) {
   return { ...registro, internacionales: [...registro.internacionales, entrada] };
 }
