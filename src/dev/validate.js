@@ -9442,7 +9442,20 @@ function recuentoRitmoK0(observaciones) {
     }])),
     minijuegosPorCarrera: { promedio: redondeoK0(mediaK0(minijuegos), 2), mediana: medianaK0(minijuegos) },
     tiempoMaquinaMin: enMinutos(observaciones.map((o) => o.tiempoMaquinaMin)),
-    tiempoReproductorMin: enMinutos(observaciones.map((o) => o.tiempoReproductorMin))
+    tiempoReproductorMin: enMinutos(observaciones.map((o) => o.tiempoReproductorMin)),
+    // K4c (paso 1): el tiempo-máquina por fuente, como mapa fuente -> hojas (el reporte lo da como lista ordenada).
+    tiempoMaquinaPorFuente: (() => {
+      const fuentes = new Set(observaciones.flatMap((o) => Object.keys(o.logsNoTecnicosPorFuente)));
+      const logsPorCarrera = (fuente) => observaciones.map((o) => o.logsNoTecnicosPorFuente[fuente] ?? 0);
+      const promedios = Object.fromEntries([...fuentes].map((fuente) => [fuente, mediaK0(logsPorCarrera(fuente))]));
+      const totalPromedios = suma(promedios);
+      return Object.fromEntries([...fuentes].map((fuente) => [fuente, {
+        logsPorCarrera: redondeoK0(promedios[fuente], 1),
+        mediana: medianaK0(logsPorCarrera(fuente)),
+        minutosPorCarrera: redondeoK0((promedios[fuente] * DURACION_BEAT_MS) / 60000, 2),
+        pctDelTotal: pctK0(promedios[fuente], totalPromedios) ?? 0
+      }]));
+    })()
   };
 }
 
@@ -10955,6 +10968,22 @@ checkLento('K0 observación: beats del reproductor, minijuegos y tipo de split c
     if (Math.abs(observacion.tiempoMaquinaMin - tiempoMaquina) > 1e-9) {
       throw new Error(`seed ${seed}: tiempoMaquinaMin ${observacion.tiempoMaquinaMin} != ${tiempoMaquina}`);
     }
+    // K4c (paso 1): `logsNoTecnicosPorFuente` = los logs no técnicos del estado final por `type`, con la forma del log como
+    // sufijo (la primera clave que tenga de la lista de `CLAVES_DE_FORMA_DE_LOG`, recontada acá a mano), y suman los mismos
+    // logs que el tiempo-máquina.
+    const fuentesAMano = {};
+    for (const log of state.logs) {
+      if (log.tecnico) {
+        continue;
+      }
+      const forma = log.mapa !== undefined ? ':mapa' : log.postSerie !== undefined ? ':postSerie' : log.cronica !== undefined ? ':cronica'
+        : log.ajustePartido !== undefined ? ':ajustePartido' : log.etapa !== undefined ? ':etapa' : log.mundial !== undefined ? ':mundial'
+          : log.vinetas !== undefined ? ':vinetas' : log.top20 !== undefined ? ':top20' : log.efectos !== undefined ? ':efectos' : '';
+      fuentesAMano[log.type + forma] = (fuentesAMano[log.type + forma] ?? 0) + 1;
+    }
+    if (JSON.stringify(Object.entries(observacion.logsNoTecnicosPorFuente).sort()) !== JSON.stringify(Object.entries(fuentesAMano).sort())) {
+      throw new Error(`seed ${seed}: logsNoTecnicosPorFuente ${JSON.stringify(observacion.logsNoTecnicosPorFuente)} != el recuento a mano ${JSON.stringify(fuentesAMano)}`);
+    }
     splitsDeCadaTipo.regular += splitsPro.filter((s) => s.tipo === 'regular').length;
     splitsDeCadaTipo.playoffs += splitsPro.filter((s) => s.tipo === 'playoffs').length;
     splitsDeCadaTipo.internacional += splitsPro.filter((s) => s.tipo === 'internacional').length;
@@ -11340,7 +11369,11 @@ checkLento('K0 KPIs anclados: embudo, longevidad, economía, ritmo, nivel y porR
     comparar(lote.longevidad, esperado.longevidad, 'longevidad');
     comparar(lote.economia, esperado.economia, 'economia');
     comparar(
-      { ...lote.ritmo, desglosePorTipo: Object.fromEntries(lote.ritmo.desglosePorTipo.map(({ tipo, ...hojas }) => [tipo, hojas])) },
+      {
+        ...lote.ritmo,
+        desglosePorTipo: Object.fromEntries(lote.ritmo.desglosePorTipo.map(({ tipo, ...hojas }) => [tipo, hojas])),
+        tiempoMaquinaPorFuente: Object.fromEntries(lote.ritmo.tiempoMaquinaPorFuente.map(({ fuente, ...hojas }) => [fuente, hojas]))
+      },
       esperado.ritmo,
       'ritmo'
     );
