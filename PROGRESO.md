@@ -34,6 +34,50 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-03 — FASE K, K5c (paso 1): el instrumento del bloque C (PLAN.md §K5c, "Paso 1")
+
+Rama `k5c-instrumento` (sale de `k4cal-instrumento@a37cb56`). Solo instrumento: **ninguna constante ni lógica del motor** (el rng no se
+toca; `HUELLA_JUEGO` igual).
+
+- **`simulate.js`: el Mundial real y la curva de edad**, como bloques APARTE (`mundialReal`, `curvaDeEdad`): `validate.js` recuenta
+  `embudo` y `porRegion` hoja por hoja y no admite hojas que no cubra. Los tres proxies de `embudo` (`ganaMundial`, `nuevoFaker`,
+  `pOtroMundialDadoUno`, `proxyAntesDeK5`) **se mantienen marcados** y ahora dicen `reemplazadaPor`; ningún check que los lea cambia.
+  - `mundialReal` (total, `porRegion` de origen y `porNivelPico`: el top 3% de la corrida por `registro.picos.nivel` contra el resto):
+    clasifica, gana un Mundial (`registro.internacionales` con `resultado === 'campeon'`), nuevo Faker (2+ Mundiales o #1 al cierre de 3+
+    temporadas), P(2+ | 1) con su n, y "tu equipo es claramente el más fuerte del Mundial y lo gana" (tu fuerza ≥ la del mejor de los
+    otros 15 + `MARGEN_CLARAMENTE_EL_MAS_FUERTE` = 10, el Δ del favorito claro del Bo5), con n y %, más el margen (p10/p50/p90) y el %
+    que gana por banda de margen. Lo que el motor no deja en el registro (las fuerzas de los 16) sale de `observacion.mundiales`
+    (`filaDeMundial`, lectura de `state.internacional`, cero rng).
+  - `curvaDeEdad`: nivel p25/p50/p75 por edad (16 a 34, solo splits pro; `observacion.splitsProData[].edad` es la columna nueva), % de
+    carreras activas por edad (sobre las pro y sobre todas) y r(potencial oculto, duración de carrera).
+- **`validate.js`, dos checks nuevos:** "K5c instrumento" (rápido: el registro y `observacion.mundiales` coinciden Mundial a Mundial, la
+  fuerza rival máxima se recalcula desde el torneo, cada fila pro trae su edad; en rojo con dos mutantes) y "K5c mundialReal y
+  curvaDeEdad" (lento: recuento independiente de los 3 bots, hoja por hoja).
+- **Un hallazgo del motor (no se tocó):** tras un retiro y una vuelta el calendario no avanza mientras estás retirado, y el mundo juega
+  **dos Mundiales con el mismo año** (misma `claveDelMundial`): 4 de 200 carreras de `azar` (seeds 4, 76, 155 y 173) tienen dos entradas
+  `Mundial 2034` en el registro. El primer recuento (por año) los perdía y lo cazó el check lento; ahora la observación sigue al registro.
+- **`k5c/barrido.mjs`** (sin trackear): overrides en memoria de `BALANCE` y de `leagues.json` (`leagues.<ID>.<campo>`), `"*1.5"` multiplica;
+  `--perillas` lista las perillas de bloque C con su valor vivo. Hallazgo: `dificultad` (leagues.json) NO mueve la simulación (solo el
+  puntaje y el texto de la pantalla de inicio); lo que fija cuán fuertes son los clubes de una región es `prestigio`.
+- **Línea de base** (300 × 60, seeds 1-300; los tres bots; 0 crashes; dos corridas idénticas):
+
+| | `criterio` | `azar` | `malas` |
+|---|---|---|---|
+| No llega a pro / T2-T3 / tier 1 | 24,7 / 0 / 75,3 | 30 / 0,7 / 68,3 | 54,7 / 21 / 11,7 |
+| Título doméstico / top 20 | 74,7 / 65 | 67,7 / 44,3 | 25 / 4 |
+| Carrera pro: mediana / p10 / p90 (años) | 16,7 / 13,3 / 18 | 15,5 / 9,3 / 17,7 | 3,8 / 0,3 / 13,7 |
+| Llega a los 34 | 79,6% | 47,6% | 0,7% |
+| Clasifica a un Mundial · gana uno (n) | 73 · 11% (33) | 57,7 · 5% (15) | 7,7 · 0% (0) |
+| Nuevo Faker · P(2+ \| 1) (n) | 4% · 0,303 (33) | 0,7% · 0,133 (15) | 0 · — (0) |
+| Claramente el más fuerte (n) | 0 | 0 | 0 |
+| r(potencial, duración) | 0,214 | 0,139 | 0,193 |
+
+Curva de nivel mediano por edad (`criterio`, splits pro): 16 → 59 · 20 → 67,8 · 24 → 83,8 · 26 → 87,2 · 28 → 87,9 · 30 → 87,9 · 32 → 87,7 ·
+34 → 86,5: plana de los 26 a los 34. Cuando la fuerza no alcanza, ni lo "claramente más fuerte" existe: tu margen sobre el mejor rival del
+Mundial tiene mediana −16 (p90 −5), así que con +10 hay 0 Mundiales en los tres bots; gana el 47% de los que son más fuertes a secas (n = 38) y
+el 9% con margen de −10 a 0. Verificación: `--rapido` verde (270 OK, 0 FAIL, 156 lentos salteados); los dos checks nuevos pasan solos y
+fallan con mutantes (observación sin Mundiales, edad rota, deduplicar por año, P(2|1) con el total como denominador).
+
 ### 2026-10-03 — FASE K, K4c (paso 3b): el bloque B cerrado (PLAN.md §K4c, "Paso 3b")
 
 Rama `k4cal-instrumento`. Lo que cierra el bloque B del ritmo, con los números medidos de esta corrida.

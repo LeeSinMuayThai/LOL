@@ -12364,6 +12364,155 @@ checkLento('K0 KPIs anclados: embudo, longevidad, economía, ritmo, nivel y porR
   }
 });
 
+// K5c (paso 1): el instrumento del Mundial real y de la curva de nivel por edad. Rápido: pocas seeds, lo que observa
+// `correrCarrera` (`observacion.mundiales`, la `edad` de cada fila de `splitsProData`) contra el registro y el torneo.
+check('K5c instrumento: cada Mundial que jugó tu equipo queda en observacion.mundiales (mismo resultado que el registro) y cada fila pro trae su edad', () => {
+  // Seeds 1-6 con `resolverAuto`, y dos de `azar` (4 y 76) que se retiran, vuelven y juegan DOS Mundiales con el mismo año
+  // (el calendario no avanza retirado): la observación no puede deduplicar por año.
+  const CASOS = [...[1, 2, 3, 4, 5, 6].map((seed) => [seed, null]), [4, ESTRATEGIAS_K0.azar], [76, ESTRATEGIAS_K0.azar]];
+  let mundialesVistos = 0;
+  let filasVistas = 0;
+  let aniosRepetidos = 0;
+  for (const [seed, responder] of CASOS) {
+    const { observacion, state } = correrCarreraSimulate(seed, 60, responder);
+    aniosRepetidos += observacion.mundiales.length - new Set(observacion.mundiales.map((fila) => fila.anio)).size;
+    const registrados = state.career.registro.internacionales;
+    const resultadosRegistro = registrados.map((entrada) => entrada.resultado);
+    const resultadosObservados = observacion.mundiales.map((fila) => fila.resultado);
+    if (JSON.stringify(resultadosRegistro) !== JSON.stringify(resultadosObservados)) {
+      throw new Error(`seed ${seed}: el registro dice ${JSON.stringify(resultadosRegistro)}, observacion.mundiales ${JSON.stringify(resultadosObservados)}`);
+    }
+    observacion.mundiales.forEach((fila, i) => {
+      if (registrados[i].torneo !== `Mundial ${fila.anio}`) {
+        throw new Error(`seed ${seed}: el Mundial ${i} del registro es "${registrados[i].torneo}", la observación dice el año ${fila.anio}`);
+      }
+      if (!Number.isFinite(fila.fuerzaPropia) || !Number.isFinite(fila.fuerzaRivalMax)) {
+        throw new Error(`seed ${seed}: el Mundial ${fila.anio} trae fuerzas que no son números (${fila.fuerzaPropia}, ${fila.fuerzaRivalMax})`);
+      }
+    });
+    mundialesVistos += observacion.mundiales.length;
+    // La fuerza rival máxima del último Mundial, recalculada a mano desde el torneo que quedó en el estado.
+    const ultimo = observacion.mundiales[observacion.mundiales.length - 1];
+    const torneo = state.internacional;
+    if (ultimo && torneo?.jugador && torneo.anio === ultimo.anio) {
+      const ajenas = torneo.participantes.filter((p) => p.nombre !== torneo.jugador).map((p) => p.fuerza);
+      if (ajenas.length !== 15 || Math.max(...ajenas) !== ultimo.fuerzaRivalMax) {
+        throw new Error(`seed ${seed}: fuerzaRivalMax ${ultimo.fuerzaRivalMax}, el torneo tiene ${ajenas.length} rivales con máximo ${Math.max(...ajenas)}`);
+      }
+    }
+    let edadPrevia = 0;
+    for (const fila of observacion.splitsProData) {
+      if (!Number.isInteger(fila.edad) || fila.edad < edadPrevia || fila.edad > BALANCE.retiro.edadRetiroForzoso) {
+        throw new Error(`seed ${seed}: una fila pro trae edad ${fila.edad} (la anterior ${edadPrevia}, línea forzosa ${BALANCE.retiro.edadRetiroForzoso})`);
+      }
+      edadPrevia = fila.edad;
+    }
+    filasVistas += observacion.splitsProData.length;
+  }
+  if (mundialesVistos === 0 || filasVistas === 0) {
+    throw new Error(`check vacío: ${CASOS.length} carreras dejaron ${mundialesVistos} Mundiales y ${filasVistas} filas pro`);
+  }
+  if (aniosRepetidos === 0) {
+    throw new Error('check vacío: ninguna de las carreras jugó dos Mundiales con el mismo año (seeds 4 y 76 de azar lo hacían)');
+  }
+});
+
+checkLento('K5c mundialReal y curvaDeEdad: coinciden con un recuento independiente de los 3 bots (títulos, Faker, P(2|1), élite, el más fuerte, curva por edad, r)', () => {
+  const lotes = lotesDeLosBotsK0();
+  const problemas = [];
+  let hayTitulos = false;
+  for (const bot of BOTS_K0) {
+    const { resultados, observaciones } = lotes[bot].crudos;
+    const bloque = lotes[bot].mundialReal;
+    const N = resultados.length;
+    const total = bloque.total;
+    // Títulos y "nuevo Faker" a mano, desde el registro y los logs del Top 20 (no desde `observacion`).
+    const titulos = resultados.map((r) => cuentaK0(r.career.registro.internacionales, (e) => e.resultado === 'campeon'));
+    const temporadasNumeroUno = resultados.map((r) => cuentaK0(r.logs, (l) => l.type === 'top_mundial' && l.rankJugador === 1));
+    const conTitulo = cuentaK0(titulos, (n) => n >= 1);
+    const conDos = cuentaK0(titulos, (n) => n >= 2);
+    const fakers = cuentaK0(titulos, (n, i) => n >= 2 || temporadasNumeroUno[i] >= 3);
+    const igual = (nombre, medido, esperado) => {
+      if (JSON.stringify(medido) !== JSON.stringify(esperado)) {
+        problemas.push(`${bot} mundialReal.${nombre}: el reporte dice ${JSON.stringify(medido)}, el recuento ${JSON.stringify(esperado)}`);
+      }
+    };
+    igual('total.ganaMundialPct', total.ganaMundialPct, pctK0(conTitulo, N));
+    igual('total.ganaMundialN', total.ganaMundialN, conTitulo);
+    igual('total.nuevoFakerPct', total.nuevoFakerPct, pctK0(fakers, N));
+    igual('total.pDosOMasDadoUno', total.pDosOMasDadoUno, { p: conTitulo > 0 ? redondeoK0(conDos / conTitulo, 3) : null, n: conTitulo });
+    igual('total.clasificaAlMundialPct', total.clasificaAlMundialPct, pctK0(cuentaK0(resultados, (r) => r.career.registro.internacionales.length > 0), N));
+    hayTitulos = hayTitulos || conTitulo > 0;
+
+    // Los Mundiales jugados: el registro y la observación suman lo mismo, y los ganados también.
+    const jugadosRegistro = resultados.reduce((suma, r) => suma + r.career.registro.internacionales.length, 0);
+    const mundiales = observaciones.flatMap((o) => o.mundiales);
+    igual('total.mundialesJugadosPorCarrera', total.mundialesJugadosPorCarrera, redondeoK0(jugadosRegistro / N, 2));
+    if (mundiales.length !== jugadosRegistro || cuentaK0(mundiales, (m) => m.resultado === 'campeon') !== titulos.reduce((a, b) => a + b, 0)) {
+      problemas.push(`${bot}: observacion.mundiales (${mundiales.length}) no coincide con el registro (${jugadosRegistro})`);
+    }
+    const claros = mundiales.filter((m) => m.fuerzaPropia - m.fuerzaRivalMax >= 10);
+    const masFuertes = mundiales.filter((m) => m.fuerzaPropia - m.fuerzaRivalMax > 0);
+    igual('total.claramenteElMasFuerte', total.claramenteElMasFuerte, {
+      mundiales: claros.length,
+      pctDeLosMundiales: pctK0(claros.length, mundiales.length),
+      ganados: cuentaK0(claros, (m) => m.resultado === 'campeon'),
+      pctGana: pctK0(cuentaK0(claros, (m) => m.resultado === 'campeon'), claros.length)
+    });
+    igual('total.elMasFuerte.mundiales', total.elMasFuerte.mundiales, masFuertes.length);
+    igual('total.margenSobreElMejorRival.p50', total.margenSobreElMejorRival.p50, redondeoK0(medianaK0(mundiales.map((m) => m.fuerzaPropia - m.fuerzaRivalMax)), 1));
+
+    // Por región: las carreras suman el lote y cada región se recuenta sola.
+    const regiones = {};
+    resultados.forEach((r, i) => {
+      (regiones[r.mundo.regionOrigen ?? 'Desconocida'] = regiones[r.mundo.regionOrigen ?? 'Desconocida'] ?? []).push(i);
+    });
+    igual('porRegion (regiones)', Object.keys(bloque.porRegion).sort(), Object.keys(regiones).sort());
+    for (const [region, indices] of Object.entries(regiones)) {
+      igual(`porRegion.${region}.ganaMundialPct`, bloque.porRegion[region].ganaMundialPct, pctK0(cuentaK0(indices, (i) => titulos[i] >= 1), indices.length));
+      igual(`porRegion.${region}.carreras`, bloque.porRegion[region].carreras, indices.length);
+    }
+
+    // La élite: el top 3% por nivel pico, con el corte del que ocupa ese lugar.
+    const picos = resultados.map((r) => r.career.registro.picos.nivel ?? 0);
+    const corte = [...picos].sort((a, b) => b - a)[Math.max(1, Math.ceil(0.03 * N)) - 1];
+    const nElite = cuentaK0(picos, (p) => p >= corte);
+    igual('porNivelPico.elite.carreras', bloque.porNivelPico.elite.carreras, nElite);
+    igual('porNivelPico.resto.carreras', bloque.porNivelPico.resto.carreras, N - nElite);
+    igual('porNivelPico.corteNivelPico', bloque.porNivelPico.corteNivelPico, redondeoK0(corte, 1));
+    const indicesElite = resultados.map((_, i) => i).filter((i) => picos[i] >= corte);
+    igual('porNivelPico.elite.ganaMundialPct', bloque.porNivelPico.elite.ganaMundialPct, pctK0(cuentaK0(indicesElite, (i) => titulos[i] >= 1), indicesElite.length));
+    igual('porNivelPico.elite.nuevoFakerPct', bloque.porNivelPico.elite.nuevoFakerPct, pctK0(cuentaK0(indicesElite, (i) => titulos[i] >= 2 || temporadasNumeroUno[i] >= 3), indicesElite.length));
+
+    // La curva por edad: filas, carreras activas, mediana y la r de potencial y duración.
+    const curva = lotes[bot].curvaDeEdad;
+    const filas = observaciones.flatMap((o, carrera) => o.splitsProData.map((d) => ({ edad: d.edad, nivel: d.nivel, carrera })));
+    if (cuentaK0(filas, (f) => f.edad < 16 || f.edad > 34) > 0) {
+      problemas.push(`${bot}: hay filas pro con edad fuera de 16-34 (la curva no las cuenta)`);
+    }
+    const pros = resultados.filter((r) => r.splitFichaje !== null);
+    for (const fila of curva.porEdad) {
+      const deEdad = filas.filter((f) => f.edad === fila.edad);
+      const activas = new Set(deEdad.map((f) => f.carrera)).size;
+      igual(`curva.${fila.edad}.splits`, fila.splits, deEdad.length);
+      igual(`curva.${fila.edad}.carrerasActivas`, fila.carrerasActivas, activas);
+      igual(`curva.${fila.edad}.p50`, fila.nivel.p50, redondeoK0(medianaK0(deEdad.map((f) => f.nivel)), 1));
+      igual(`curva.${fila.edad}.pctDeLasPro`, fila.pctDeLasPro, pctK0(activas, pros.length));
+    }
+    igual('curva (edades)', curva.porEdad.map((f) => f.edad), Array.from({ length: 19 }, (_, i) => 16 + i));
+    const r = pros.length >= 30
+      ? correlacionK0(pros.map((p) => p.player.oculto.potencial), pros.map((p) => p.player.splitCount - p.splitFichaje))
+      : null;
+    igual('curva.rPotencialDuracion', curva.rPotencialDuracion, { r: redondeoK0(r, 3), n: pros.length });
+  }
+  if (!hayTitulos) {
+    problemas.push('check vacío: ningún bot ganó un Mundial en el lote (el recuento de títulos no distingue nada)');
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.slice(0, 6).join('; ')}${problemas.length > 6 ? ` (+${problemas.length - 6} más)` : ''}`);
+  }
+});
+
 // Los tipos de decisión que `criterio` y `malas` NO resuelven con su criterio y le delegan a `resolverAuto` del sistema.
 // Medido con 40 carreras x 60 splits (seeds 1-40): `criterio` delega el 29,7% de sus decisiones (1.794 de 6.041) y `malas` el
 // 16,9% (487 de 2.877). Es una lista CERRADA: un tipo que hoy usa la previa y llegue a `resolverAuto` (como `edadCierre`,

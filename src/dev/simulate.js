@@ -5,6 +5,7 @@ import { avanzarSplitAuto } from '../core/pipeline.js';
 import { calcularContexto } from '../core/contexto.js';
 import { nivelDelJugador } from '../core/ficha.js';
 import { tierMasAltoJugado, esBuenPapel } from '../core/registro.js';
+import { resultadoDelJugador } from '../core/internacional.js';
 import { puntajeDeCarrera, NIVELES } from '../core/puntaje.js';
 import { candidatos } from '../systems/events.js';
 import { esCierreDeEdad } from '../systems/edadCierre.js';
@@ -55,6 +56,24 @@ export const UMBRAL_INTERRUPCIONES_SPLIT_LARGO = 4;
 
 // Carrera pro "corta" para K.3b: menos de 4 años.
 export const UMBRAL_CARRERA_CORTA_ANIOS = 4;
+
+// K5c (paso 1): las sondas del Mundial real y de la curva de edad. Nada de esto es del juego (esas van en `balance.js`).
+// "Tu equipo es claramente el más fuerte del Mundial" (§K.3a): tu fuerza (`fuerzaDePartido` al abrir el torneo) le saca a la
+// del mejor de los otros 15 clasificados al menos este margen — el Δ de fuerza con el que el motor mide al "favorito claro
+// de un Bo5" (`BANDA_FAVORITO_CLARO`, 9-11, ~80% de serie): ganar tres series seguidas siendo ese favorito da ~50%.
+export const MARGEN_CLARAMENTE_EL_MAS_FUERTE = 10;
+// Los cortes del margen (fuerza propia menos la del mejor rival) con los que se abre "cuánto gana cada margen" del Mundial.
+export const CORTES_MARGEN_MUNDIAL = [-20, -10, 0, 10];
+// "Nuevo Faker" (§K.3b): 2 o más Mundiales ganados, o #1 del mundo al cierre de 3 o más temporadas.
+export const FAKER_MUNDIALES_GANADOS = 2;
+export const FAKER_TEMPORADAS_NUMERO_UNO = 3;
+// "Nivel pico de élite" (§K.3b): el top 3% de la corrida (todas las carreras del lote, las que no llegaron a pro incluidas)
+// por `registro.picos.nivel`, la "media máx" que muestra la ficha.
+export const FRACCION_NIVEL_PICO_ELITE = 0.03;
+// La curva de nivel por edad: de los 16 (la edad mínima de una liga) a la línea forzosa de los 34.
+export const EDAD_CURVA_MIN = 16;
+export const EDAD_CURVA_MAX = 34;
+const RESULTADO_CAMPEON = 'campeon';
 
 // Δ de fuerza (el equipo más fuerte contra el más débil) para la tabla analítica de favorito Bo5.
 export const DELTAS_FAVORITO_BO5 = [0, 2, 4, 6, 8, 10, 12, 15];
@@ -230,6 +249,9 @@ export function correrCarrera(seed, splits, responder) {
     temporadasData: [],
     seriesData: [],
     temporadasNumero1: 0,
+    // K5c (paso 1): una fila por Mundial en el que clasificó tu equipo (ver `filaDeMundial`): hasta dónde llegó y las
+    // fuerzas con las que arrancó el torneo. Lectura pura de `state.internacional`, cero `rng`.
+    mundiales: [],
     beatsReproductor: 0,
     // K4c (paso 1), solo lectura pura del state: los minijuegos por mecánica (`datos.minijuego`), las bifurcaciones
     // (eventos con `bifurcacion: true` que frenaron, en total y por evento), las que ELIGIÓ con un efecto de carrera
@@ -351,6 +373,17 @@ export function correrCarrera(seed, splits, responder) {
     const importPendiente = state.flags.ofertaDeImport;
     state = avanzarSplitAuto(state, rng, responderInstrumentado).state;
     contarTanda(state);
+    // K5c (paso 1): el Mundial que cerró en este split, si tu equipo jugó uno: el registro crece UNA entrada y `state.internacional`
+    // es ese torneo. Se detecta por el registro y no por el año: tras un retiro y una vuelta el calendario no avanzó y el mundo
+    // juega dos Mundiales con el mismo año (`claveDelMundial`), y el segundo también cuenta (4 de 200 carreras de `azar`).
+    const mundialesRegistrados = state.career.registro.internacionales.length;
+    if (mundialesRegistrados !== observacion.mundiales.length) {
+      const fila = filaDeMundial(state.internacional);
+      if (mundialesRegistrados !== observacion.mundiales.length + 1 || !fila) {
+        throw new Error(`seed ${seed}, split ${state.player.splitCount}: el registro tiene ${mundialesRegistrados} Mundiales y la observación ${observacion.mundiales.length}`);
+      }
+      observacion.mundiales.push(fila);
+    }
     const sinFila = verificarSplitJugadoSinFila(state);
     if (sinFila) {
       throw new Error(`seed ${seed}, split ${state.player.splitCount}: ${sinFila}`);
@@ -404,6 +437,8 @@ export function correrCarrera(seed, splits, responder) {
     }
 
     observacion.splitsProData.push({
+      // K5c (paso 1): la edad con la que cierra el split (la curva de nivel por edad).
+      edad: state.age,
       mentalidad: state.player.stats.mentalidad,
       hype: state.player.stats.hype,
       posNorm,
@@ -477,6 +512,22 @@ export function correrCarrera(seed, splits, responder) {
   ) / MS_POR_MINUTO;
 
   return { state, carrera, jugabilidad, observacion };
+}
+
+// K5c (paso 1): la fila de un Mundial para `observacion.mundiales`. `null` si tu equipo no clasificó (el torneo se
+// juega igual por hash, pero no es tuyo). `fuerzaRivalMax` es la del mejor de los otros 15 clasificados.
+export function filaDeMundial(torneo) {
+  if (!torneo?.jugador) {
+    return null;
+  }
+  const propia = torneo.participantes.find((p) => p.esJugador);
+  const fuerzasAjenas = torneo.participantes.filter((p) => !p.esJugador).map((p) => p.fuerza);
+  return {
+    anio: torneo.anio,
+    resultado: resultadoDelJugador(torneo),
+    fuerzaPropia: propia.fuerza,
+    fuerzaRivalMax: Math.max(...fuerzasAjenas)
+  };
 }
 
 // Qué clase de split pro fue, según los contadores del `registro` (el motor no tiene un estado de split
@@ -1025,20 +1076,23 @@ function buenPapelDe(estado) {
 const NOTAS_PROXY = {
   ganaMundial: {
     proxyAntesDeK5: true,
+    reemplazadaPor: 'mundialReal.total.ganaMundialPct',
     nota: 'Desde K5-A mide haber pasado AL MENOS UNA VEZ el Swiss del Mundial (cuartos o más, esBuenPapel), no un Mundial ganado: eso lo pasa a medir K5c.'
   },
   nuevoFaker: {
     proxyAntesDeK5: true,
+    reemplazadaPor: 'mundialReal.total.nuevoFakerPct',
     nota: 'Casi todo sale de ">= 2 buen_papel" (ver buenPapelPorCarrera: son varios por carrera) y casi nada de "#1 del mundo 3 temporadas"; no mide ganar dos Mundiales.'
   },
   pOtroMundialDadoUno: {
     proxyAntesDeK5: true,
+    reemplazadaPor: 'mundialReal.total.pDosOMasDadoUno',
     nota: 'P(>= 2 buen_papel | >= 1) es estructural, porque buen_papel se reparte varias veces por carrera; no es la probabilidad de repetir un Mundial.'
   }
 };
 
 // §K.3b — el embudo de la carrera, en % del total de carreras.
-function bloqueEmbudo(resultados, carreras, observaciones, { conNotas = false } = {}) {
+export function bloqueEmbudo(resultados, carreras, observaciones, { conNotas = false } = {}) {
   const total = resultados.length;
   const tierMaximo = (indice) => carreras[indice].tierMaximo;
   const indices = resultados.map((_, indice) => indice);
@@ -1481,7 +1535,7 @@ function bloqueEconomia(observaciones) {
 
 // §K.3b — longevidad: años de carrera pro de los que llegaron a pro (`BALANCE.edad.splitsPorEdad` splits
 // por año), % con carrera corta y % que termina en la línea forzosa.
-function bloqueLongevidad(resultados) {
+export function bloqueLongevidad(resultados) {
   const llegaronAPro = resultados.filter((r) => r.splitFichaje !== null);
   const aniosPro = llegaronAPro.map((r) => (r.player.splitCount - r.splitFichaje) / BALANCE.edad.splitsPorEdad);
   const forzoso = llegaronAPro.filter((r) => r.age >= BALANCE.retiro.edadRetiroForzoso).length;
@@ -1714,6 +1768,119 @@ export function bloquePuntaje(resultados) {
   };
 }
 
+// K5c (paso 1) — el Mundial REAL (§K.3a / §K.3b). Reemplaza a los tres proxies de `embudo` (`ganaMundial`,
+// `nuevoFaker`, `pOtroMundialDadoUno`, marcados `proxyAntesDeK5`, que se mantienen con su nota `reemplazadaPor`): acá un
+// Mundial ganado es una entrada de `career.registro.internacionales` con `resultado === 'campeon'` (el torneo de
+// `core/internacional.js`). Las fuerzas con las que arrancó cada Mundial salen de `observacion.mundiales`.
+// `indices` = las carreras del grupo (todas, una región, la élite de nivel pico o el resto).
+function metricasMundialReal(resultados, observaciones, indices) {
+  const registrosDe = (i) => resultados[i].career.registro.internacionales;
+  const titulos = indices.map((i) => registrosDe(i).filter((entrada) => entrada.resultado === RESULTADO_CAMPEON).length);
+  const total = indices.length;
+  const conTitulo = titulos.filter((n) => n >= 1).length;
+  const conDosOMas = titulos.filter((n) => n >= FAKER_MUNDIALES_GANADOS).length;
+  const nuevoFaker = indices.filter((i, k) => (
+    titulos[k] >= FAKER_MUNDIALES_GANADOS || observaciones[i].temporadasNumero1 >= FAKER_TEMPORADAS_NUMERO_UNO
+  )).length;
+  const clasifican = indices.filter((i) => registrosDe(i).length > 0).length;
+
+  const mundiales = indices.flatMap((i) => observaciones[i].mundiales);
+  const ganados = (lista) => lista.filter((m) => m.resultado === RESULTADO_CAMPEON).length;
+  const masFuertes = mundiales.filter((m) => m.fuerzaPropia > m.fuerzaRivalMax);
+  const claros = mundiales.filter((m) => m.fuerzaPropia >= m.fuerzaRivalMax + MARGEN_CLARAMENTE_EL_MAS_FUERTE);
+
+  return {
+    carreras: total,
+    clasificaAlMundialPct: pct(clasifican, total),
+    mundialesJugadosPorCarrera: redondear(mundiales.length / (total || 1), 2),
+    ganaMundialPct: pct(conTitulo, total),
+    ganaMundialN: conTitulo,
+    nuevoFakerPct: pct(nuevoFaker, total),
+    nuevoFakerN: nuevoFaker,
+    // P(2 o más | 1): sin el piso de `MUESTRA_MINIMA` (los grupos son chicos): `n` dice cuánto pesa.
+    pDosOMasDadoUno: { p: conTitulo > 0 ? redondear(conDosOMas / conTitulo, 3) : null, n: conTitulo },
+    // Cuánto le sacás (o te saca) al mejor de los otros 15 clasificados, en puntos de fuerza, entre todos tus Mundiales.
+    // [desde, hasta, Mundiales, % que lo ganó] por banda de margen: lo que dice "cuánto vale ser más fuerte" en este torneo.
+    ganaPorMargen: [-Infinity, ...CORTES_MARGEN_MUNDIAL].map((desde, k) => {
+      const hasta = CORTES_MARGEN_MUNDIAL[k] ?? Infinity;
+      const banda = mundiales.filter((m) => m.fuerzaPropia - m.fuerzaRivalMax >= desde && m.fuerzaPropia - m.fuerzaRivalMax < hasta);
+      return [Number.isFinite(desde) ? desde : null, Number.isFinite(hasta) ? hasta : null, banda.length, pct(ganados(banda), banda.length)];
+    }),
+    margenSobreElMejorRival: (() => {
+      const margenes = mundiales.map((m) => m.fuerzaPropia - m.fuerzaRivalMax);
+      return { p10: redondear(percentil(margenes, 0.1), 1), p50: redondear(mediana(margenes), 1), p90: redondear(percentil(margenes, 0.9), 1) };
+    })(),
+    // Por Mundial jugado (no por carrera): si tu fuerza era la mayor, y si era la mayor por el margen del favorito claro.
+    elMasFuerte: { mundiales: masFuertes.length, pctDeLosMundiales: pct(masFuertes.length, mundiales.length), ganados: ganados(masFuertes), pctGana: pct(ganados(masFuertes), masFuertes.length) },
+    claramenteElMasFuerte: { mundiales: claros.length, pctDeLosMundiales: pct(claros.length, mundiales.length), ganados: ganados(claros), pctGana: pct(ganados(claros), claros.length) }
+  };
+}
+
+export function bloqueMundialReal(resultados, observaciones) {
+  const todos = resultados.map((_, i) => i);
+  const porRegion = {};
+  resultados.forEach((r, i) => {
+    const region = r.mundo.regionOrigen ?? 'Desconocida';
+    porRegion[region] = porRegion[region] ?? [];
+    porRegion[region].push(i);
+  });
+
+  // La élite: el top `FRACCION_NIVEL_PICO_ELITE` de la corrida por nivel pico (las que no llegaron a pro cuentan con el suyo,
+  // que nunca está arriba). Con empates en el corte entran todas las del corte.
+  const picos = resultados.map((r) => r.career.registro.picos.nivel ?? 0);
+  const cantidadElite = Math.max(1, Math.ceil(FRACCION_NIVEL_PICO_ELITE * resultados.length));
+  const corte = [...picos].sort((a, b) => b - a)[cantidadElite - 1];
+  const elite = todos.filter((i) => picos[i] >= corte);
+  const resto = todos.filter((i) => picos[i] < corte);
+
+  return {
+    definiciones: {
+      real: 'ganar un Mundial = registro.internacionales con resultado campeon; reemplaza a embudo.ganaMundial / nuevoFaker / pOtroMundialDadoUno (proxies, proxyAntesDeK5)',
+      nuevoFaker: `${FAKER_MUNDIALES_GANADOS}+ Mundiales ganados o #1 del mundo al cierre de ${FAKER_TEMPORADAS_NUMERO_UNO}+ temporadas`,
+      claramenteElMasFuerte: `tu fuerza >= la del mejor de los otros 15 clasificados + ${MARGEN_CLARAMENTE_EL_MAS_FUERTE}`,
+      nivelPicoElite: `top ${FRACCION_NIVEL_PICO_ELITE * 100}% de la corrida por registro.picos.nivel`
+    },
+    total: metricasMundialReal(resultados, observaciones, todos),
+    porRegion: Object.fromEntries(Object.entries(porRegion).map(([region, indices]) => [region, metricasMundialReal(resultados, observaciones, indices)])),
+    porNivelPico: {
+      corteNivelPico: redondear(corte, 1),
+      elite: metricasMundialReal(resultados, observaciones, elite),
+      resto: metricasMundialReal(resultados, observaciones, resto)
+    }
+  };
+}
+
+// K5c (paso 1) — la curva de nivel por edad (la que hoy es plana, §K5c) y el % de carreras activas por edad. Una fila por
+// split pro (`splitsProData`), con la edad con la que cerró el split y el nivel de ese momento: es el nivel de los que
+// SIGUEN jugando a esa edad (los que ya se retiraron no están). `pctDeLasPro` y `pctDeTodas`: las carreras con al menos un
+// split pro a esa edad, sobre las que llegaron a pro y sobre todas las del lote. `rPotencialDuracion`: r(potencial oculto,
+// splits de carrera pro) entre las que llegaron a pro (el check largo "La duración de la carrera correlaciona con el
+// potencial": piso 0,32).
+export function bloqueCurvaDeEdad(resultados, observaciones) {
+  const llegaronAPro = resultados.filter((r) => r.splitFichaje !== null).length;
+  const filas = observaciones.flatMap((o, carrera) => o.splitsProData.map((d) => ({ edad: d.edad, nivel: d.nivel, carrera })));
+  const porEdad = [];
+  for (let edad = EDAD_CURVA_MIN; edad <= EDAD_CURVA_MAX; edad += 1) {
+    const deEstaEdad = filas.filter((fila) => fila.edad === edad);
+    const niveles = deEstaEdad.map((fila) => fila.nivel);
+    const activas = new Set(deEstaEdad.map((fila) => fila.carrera)).size;
+    porEdad.push({
+      edad,
+      splits: deEstaEdad.length,
+      nivel: { p25: redondear(percentil(niveles, 0.25), 1), p50: redondear(mediana(niveles), 1), p75: redondear(percentil(niveles, 0.75), 1) },
+      carrerasActivas: activas,
+      pctDeLasPro: pct(activas, llegaronAPro),
+      pctDeTodas: pct(activas, resultados.length)
+    });
+  }
+  const pros = resultados.filter((r) => r.splitFichaje !== null);
+  const r = pearson(
+    pros.map((estado) => estado.player.oculto.potencial),
+    pros.map((estado) => estado.player.splitCount - estado.splitFichaje)
+  );
+  return { porEdad, rPotencialDuracion: { r: redondear(r, 3), n: pros.length } };
+}
+
 // El bloque `carrera` del reporte (ver el comentario en `correrLote`).
 function bloqueCarrera(carreras, total) {
   const conPro = carreras.filter((c) => c.splitsPro > 0);
@@ -1841,6 +2008,10 @@ export function correrLote(corridas, splits, estrategia, { corridasAblacion = MA
     longevidad: bloqueLongevidad(resultados),
     ritmo: bloqueRitmo(observaciones),
     porRegion: bloquePorRegion(resultados, carreras, observaciones),
+    // K5c (paso 1): el Mundial real (por región y por nivel pico) y la curva de nivel por edad. Bloques APARTE de `embudo`
+    // y de `porRegion`: `validate.js` recuenta esas hojas una por una y no admite hojas que no cubra.
+    mundialReal: bloqueMundialReal(resultados, observaciones),
+    curvaDeEdad: bloqueCurvaDeEdad(resultados, observaciones),
     // K1: el número de la carrera (`core/puntaje.js`), su distribución y los niveles.
     puntaje: bloquePuntaje(resultados)
   };
