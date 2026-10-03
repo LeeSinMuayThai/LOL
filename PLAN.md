@@ -6883,6 +6883,37 @@ Después, el barrido del supervisor (plan y cA) y el paso 3.
 - **El parche se angosta.** Va como adjunto salvo que **mueva a tu main de S/A a B/C o al revés**; eso deja el
   ~26% como beat. Es lo que importa: el parche que te saca o te devuelve el main.
 
+**La integración de K4c-S y K4c-M** (`32dc66a` → `c1b4ddd`) destapó dos caminos del registro con un split
+esperando fila. Los dos son D76.
+- **El arreglado.** Te retirás por una bifurcación en el split del pase y volvés: la fila no se abría al volver.
+  Se arregló en `5183e93`, con un check que busca seeds.
+- **El que queda.** Te retirás en el split del pase y **no volvés**, así que la carrera cierra con ese split sin
+  asentar. **Se decide:** al cerrar la carrera, un split que espera fila se asienta abriendo y cerrando la fila de
+  esa org con ese split adentro. D76 dice que un split jugado cuenta siempre, en la org y el tier donde se jugó.
+  El check de D76 tiene que verlo también con `malas`.
+- **Los checks que dependían de seeds fijas** ahora buscan seeds con tope.
+
+**Paso 3a — un worker (estructura y constantes, regla 2: commits separados):**
+- **Estructura:**
+  - el parche angosto;
+  - el check del Bo5 del bloque A con plan neutro (regla 17);
+  - el check del banco de minijuegos sin `la_prueba` (regla 17);
+  - el split pendiente que se asienta al cerrar la carrera.
+- **Constantes:**
+  - cA: `umbralSinNadaEnJuego` 6, `rondasConPrensa` [] y `ventanaDefineClasificacion` 4;
+  - las tres mecánicas con `mapa_decisivo`;
+  - el plan ×3.
+
+**Después, el supervisor mide** con `simulate.js 400 60 todas` y `agencia.js` (24 × 30).
+
+**Paso 3b — un worker:**
+- los checks duros con lo medido;
+- vaciar el bloque B de `bandasPendientes.js` y cerrarlo;
+- guardado `VERSION` 11, con `FORMAS_CONOCIDAS[10]` igual al de main (`7128c450fa6c`) y `[11]` nuevo;
+- `HUELLA_JUEGO` 'K4c';
+- los cuantiles del percentil de K1;
+- borrar las bandas de J5/J6 (regla 17).
+
 Después, un worker para las paradas sin nada en juego, con la lista confirmada por K4c-H. Luego el barrido final
 del supervisor y el paso 3.
 
