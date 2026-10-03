@@ -34,6 +34,78 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-03 — FASE K, K3c: el bloque A calibrado y cerrado (PLAN.md §K3c, §K.0c)
+
+**Solo constantes, más el instrumento.** Se hizo con el patrón de K2c: los barridos los corrí yo en background y
+los workers solo escribieron herramientas, valores y checks.
+- **Los barridos**: 26 corridas de 200 × 60 y un refinado a 600 seeds.
+- **Las perillas**:
+
+  | Perilla | Valor |
+  |---|---|
+  | consistencia k | 0,5 |
+  | vuelta de la mentalidad a la base | 0,2 hacia abajo y **0,05 hacia arriba** |
+  | tope del descanso | 70 |
+  | vuelta del hype a su base | 0,6 |
+  | fracción de un efecto que queda para siempre | 0,3, eventos y práctica |
+  | umbral de pausa del draft | 0,0818 / 0,0409 |
+
+  El umbral del draft se re-escaló al achicarse la dispersión de la p. Devuelve las mismas 152 pausas de antes de
+  K2c.
+
+**La decisión más importante salió de una corrida completa con los valores elegidos.** La vuelta a la base
+simétrica levantaba gratis una mentalidad hundida, y con eso:
+- la brecha `malas`−`azar` en "no llega a pro" caía a 8,5 pp;
+- el burnout desaparecía (1 cada 1000).
+
+Es decir, **perdonaba las malas decisiones**. La vuelta se hizo asimétrica: estructura con comportamiento
+idéntico primero (`49e1bc6`), y la subida se eligió midiendo los tres bots:
+- a **0,05** la brecha vuelve a 16,5 pp;
+- el burnout reaparece con `malas` (430 cada 1000) y no con `criterio`;
+- las metas de mentalidad se sostienen.
+
+**Instrumento.**
+- `agencia.js` mide contra `puntajeDeCarrera`.
+- **La sonda de retención no servía.** Tenía una muestra fija de ~39 casos que ignoraba el tamaño pedido, y
+  usaba el delta nominal en vez del real. Ahora usa 600 seeds (414 casos), cociente de medias, y es monótona con
+  la fracción.
+- **`metasK2` y `metasK3` pasaron a checks duros** con `criterio` (800 × 60).
+- **Los cuantiles del percentil del puntaje se re-midieron:** p50 1172 → 989.
+- **"El mundo NPC envejece"** promedia 8 carreras, y ahora atrapa un mundo que no envejece; el check viejo no lo
+  atrapaba.
+
+**El bloque A queda cerrado**: `bandasPendientes` sin entradas del bloque A. Quedan dos en el **bloque B** (K4c),
+anotadas en el PLAN:
+- las series sin draft (27% contra 28%), porque el umbral devolvió las pausas;
+- el Bo5 conjunto (86%), por la asimetría del Fearless.
+
+El check duro del bloque A mide el lado del jugador: 82%.
+
+**Revisión independiente** (Opus): OK con observaciones.
+- **Regla 2 verificada**: la huella es idéntica en el commit de estructura.
+- **Mutantes**: su mutante de hype pone en rojo solo el check de hype, y los custodios atrapan entradas
+  sintéticas.
+- **Observaciones, corregidas en `390cce9`**: el Bo5 del jugador quedaba a 0,7 errores estándar del borde, y la
+  sonda de retención tenía menos de 400 casos. Las dos muestras se agrandaron. Además había etiquetas y un
+  comentario inexactos.
+
+**Lo que cambió, medido** (tabla completa en PLAN §K.0c, 1500 carreras por estrategia):
+- **El nivel decide el resultado**: r misma liga 0,37 (K0) → **0,59**, R² sin ruido 0,23 → **0,52**.
+- **Las barras ya no están saturadas**: mentalidad pro 98 → **72**, con 2,6% de splits ≥ 90; hype ≥ 90, 78% →
+  **19%**.
+- **Jugar bien se nota arriba**, `criterio` contra `azar`:
+  - #1 del mundo alguna vez, ×1,6;
+  - #1 en 3 o más temporadas, ×3,3;
+  - mediana del puntaje 994 contra 716.
+
+**Lo que no se movió** es de K4 (interrupciones, tiempo, palanca) y de K5 (tier 1, títulos, la carrera de 17
+años). La meta de palanca se re-especificó: se mide en K4c, sobre las interrupciones que queden, con el test
+corregido y ≥ 30 réplicas.
+
+Verificación: `validate.js` 319/319 con una PENDIENTE del bloque B (corrida completa del supervisor sobre
+`7735e74`; `390cce9` solo cambia checks y comentarios y pasó sus `--solo` y `--rapido`) · `simulate.js 1000`
+0 crashes · `dist/` 1870 KB (techo 1900) · `HUELLA_JUEGO` 577913468 ('K3c').
+
 ### 2026-10-03 — FASE K, K3: tus decisiones construyen tu nivel (estructura, PLAN.md §K3)
 
 **Estructura con las perillas en neutro**, el mismo patrón que K2. La huella del juego quedó **idéntica**
