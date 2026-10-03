@@ -15864,7 +15864,12 @@ check('K4c el plan neutro del bloque A: criterioConPlanNeutro contesta cada plan
   }
   let planes = 0;
   let planesDondeDifiere = 0;
-  for (const seed of [1, 2, 3]) {
+  // Las 3 primeras seeds siempre; si con ellas no alcanzan las paradas (el contenido que corre el stream de rng las mueve), se
+  // suman seeds, con tope, hasta tener las 10 paradas de plan y las 3 donde la mediana difiere. El tope no relaja la regla: si con
+  // `TOPE_DE_SEEDS` sigue vacío, falla igual.
+  const SEEDS_MINIMAS = 3;
+  const TOPE_DE_SEEDS = 12;
+  for (let seed = 1; seed <= TOPE_DE_SEEDS && (seed <= SEEDS_MINIMAS || planes < 10 || planesDondeDifiere < 3); seed += 1) {
     // La misma regla escrita a mano: en el plan, la opción cuya pSerie es la mediana inferior; todo lo demás, criterio.
     const aMano = (sistema, estado, decision, rngLocal) => {
       if (decision.datos?.motivo === 'plan') {
