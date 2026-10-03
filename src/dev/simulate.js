@@ -4,7 +4,7 @@ import { createInitialState } from '../core/state.js';
 import { avanzarSplitAuto } from '../core/pipeline.js';
 import { calcularContexto } from '../core/contexto.js';
 import { nivelDelJugador } from '../core/ficha.js';
-import { tierMasAltoJugado } from '../core/registro.js';
+import { tierMasAltoJugado, esBuenPapel } from '../core/registro.js';
 import { puntajeDeCarrera, NIVELES } from '../core/puntaje.js';
 import { candidatos } from '../systems/events.js';
 import { esCierreDeEdad } from '../systems/edadCierre.js';
@@ -946,16 +946,17 @@ export function analizarCatalogo() {
 // desincronice en silencio).
 // ---------------------------------------------------------------------------
 
-// Cuántos Mundiales ganó la carrera (K5-A: `resultado === 'campeon'`; antes de K5 era el proxy 'buen_papel').
+// Cuántos Mundiales con buen papel tiene la carrera. K5-A: buen papel es pasar el Swiss (`esBuenPapel`: cuartos o más);
+// sigue siendo un proxy — los Mundiales ganados (`resultado === 'campeon'`) los pasa a medir K5c.
 function buenPapelDe(estado) {
-  return estado.career.registro.internacionales.filter((intl) => intl.resultado === 'campeon').length;
+  return estado.career.registro.internacionales.filter(esBuenPapel).length;
 }
 
 // Notas de lo que los KPIs de "Mundial" miden DE VERDAD antes de K5 (el torneo mundial no existe todavía).
 const NOTAS_PROXY = {
   ganaMundial: {
     proxyAntesDeK5: true,
-    nota: 'Desde K5-A mide haber ganado AL MENOS UN Mundial (resultado campeon del torneo de core/internacional.js). Antes de K5 era el proxy buen_papel.'
+    nota: 'Desde K5-A mide haber pasado AL MENOS UNA VEZ el Swiss del Mundial (cuartos o más, esBuenPapel), no un Mundial ganado: eso lo pasa a medir K5c.'
   },
   nuevoFaker: {
     proxyAntesDeK5: true,
@@ -987,7 +988,7 @@ function bloqueEmbudo(resultados, carreras, observaciones, { conNotas = false } 
   const top20 = resultados.filter((r) => (r.career.registro.picos.rankMundial ?? 0) > 0).length;
   const numeroUnoAlgunaVez = resultados.filter((r) => r.career.registro.picos.rankMundial === 1).length;
 
-  // K5-A: Mundiales ganados (resultado === 'campeon'). Antes de K5 era el proxy 'buen_papel'.
+  // Proxy de Mundial (K5-A): pasar el Swiss (esBuenPapel). Los Mundiales ganados los pasa a medir K5c.
   const buenPapel = resultados.map(buenPapelDe);
   const conAlMenosUno = buenPapel.filter((n) => n >= 1).length;
   const conDosOMas = buenPapel.filter((n) => n >= 2).length;

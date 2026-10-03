@@ -8934,7 +8934,7 @@ function recuentoEmbudoK0(resultados, carreras) {
       throw new Error(`seed ${resultados[i].seed}: carrera.tierMaximo = ${carreras[i].tierMaximo}, el registro dice ${t} (D75)`);
     }
   });
-  const buenPapel = resultados.map((r) => cuentaK0(r.career.registro.internacionales, (i) => i.resultado === 'campeon'));
+  const buenPapel = resultados.map((r) => cuentaK0(r.career.registro.internacionales, esBuenPapelK5));
   // "#1 del mundo en una temporada" = el reveal del Top 20 de fin de año dice que sos el #1 (los logs `top_mundial`).
   const temporadasNumeroUno = resultados.map((r) => cuentaK0(r.logs, (l) => l.type === 'top_mundial' && l.rankJugador === 1));
   const llegaAPro = (i) => resultados[i].splitFichaje !== null;
@@ -10773,7 +10773,7 @@ checkLento('K0 bloques de simulate: todas las hojas de todos los bloques son fin
       st = avanzarSplitAuto(st, rng).state;
     }
     const registro = st.career.registro;
-    const buenPapel = registro.internacionales.filter((i) => i.resultado === 'campeon').length;
+    const buenPapel = registro.internacionales.filter(esBuenPapelK5).length;
     // #1 del mundo en una temporada = el reveal del Top 20 de fin de año dice que sos el #1.
     const temporadasNumeroUno = st.logs.filter((l) => l.type === 'top_mundial' && l.rankJugador === 1).length;
     buenPapelPorCarrera.push(buenPapel);
@@ -10893,7 +10893,7 @@ checkLento('K0 KPIs anclados: embudo, longevidad, economía, ritmo, nivel y porR
       problemas.push(`check vacío: ${bot} solo tiene ${regionesDistintas} región(es) con embudo/longevidad distintos del lote entero: no distingue "porRegion copia el lote"`);
     }
     // X03: P(otro mundial | ya ganó uno) con el denominador correcto vs con el total de carreras.
-    const dosOMas = cuentaK0(crudos.resultados, (r) => cuentaK0(r.career.registro.internacionales, (i) => i.resultado === 'campeon') >= 2);
+    const dosOMas = cuentaK0(crudos.resultados, (r) => cuentaK0(r.career.registro.internacionales, esBuenPapelK5) >= 2);
     if (esperado.embudo.pOtroMundialDadoUno !== null && Math.abs(esperado.embudo.pOtroMundialDadoUno - dosOMas / total) > DIFERENCIA_MINIMA_PROBABILIDAD_K0) {
       distingue[claves[1]] = true;
     }
