@@ -59,43 +59,6 @@ export function pesoDePick(campeon, weights) {
   return factorDeCampeon(campeon, weights) ** BALANCE.campeones.sesgoMaestriaEnPick;
 }
 
-// Fase 9Rd: la lectura en palabras de un pick, para la tarjeta de draft. Cruza
-// los DOS ejes que ya componen `factorDeCampeon` —afinidad al parche y maestría
-// del campeón relativa a tu propio pool— en una frase que suena a LoL. Pura, sin
-// números en pantalla: el jugador lee "la tenés verde y el parche la pide", no
-// "afinidad 1,12 · maestría 0,84".
-const LECTURA_DE_PICK = {
-  favor: {
-    top: 'tu mejor carta, y el parche la pide',
-    media: 'sólida, y encima está fuerte este parche',
-    floja: 'no la tenés fina, pero está rota este parche'
-  },
-  neutro: {
-    top: 'tu carta de siempre',
-    media: 'una opción más, sin nada que la empuje',
-    floja: 'la tenés de relleno'
-  },
-  contra: {
-    top: 'la dominás, pero quedó a contramano del parche',
-    media: 'ni la dominás ni la pide el parche',
-    floja: 'floja y a contramano: pick de necesidad'
-  }
-};
-
-export function lecturaDePick(campeon, weights, pool) {
-  const l = BALANCE.draft.lectura;
-  const afinidad = afinidadDeCampeon(campeon, weights);
-  const ejeAfinidad = afinidad >= l.afinidadAFavor ? 'favor' : afinidad <= l.afinidadEnContra ? 'contra' : 'neutro';
-
-  const maestrias = pool.map((c) => c.mastery);
-  const lo = Math.min(...maestrias);
-  const hi = Math.max(...maestrias);
-  const t = hi > lo ? (campeon.mastery - lo) / (hi - lo) : 0.5;
-  const ejeMaestria = t >= l.maestriaAlta ? 'top' : t <= l.maestriaFloja ? 'floja' : 'media';
-
-  return LECTURA_DE_PICK[ejeAfinidad][ejeMaestria];
-}
-
 // El meta con nombre y apellido.
 //
 // `meta.weights` es un vector sobre nueve arquetipos, y por eso el log decía

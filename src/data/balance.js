@@ -1530,20 +1530,6 @@ export const BALANCE = {
     probReaccion: 0.4
   },
 
-  // El draft, de la serie y de la fecha marcada (fase 9Rc/9Rd).
-  draft: {
-    // `lecturaDePick` (core/ajusteMeta.js) cruza dos ejes en una frase sin
-    // numeros para la tarjeta de draft (9Rd).
-    lectura: {
-      // Afinidad al meta (`afinidadDeCampeon`, 1 = campeon promedio del parche):
-      afinidadAFavor: 1.06,
-      afinidadEnContra: 0.95,
-      // Maestria del campeon normalizada al rango [peor, mejor] de TU pool:
-      maestriaAlta: 0.8,
-      maestriaFloja: 0.35
-    }
-  },
-
   // La serie de playoffs (fase 4): Bo5 con Fearless draft, jugada mapa a mapa
   // reusando la fuerza de partido de `core/fuerza.js` (K2b: determinista).
   serie: {

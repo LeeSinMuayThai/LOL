@@ -36,7 +36,7 @@ import {
 } from '../core/ranked.js';
 import { TOKENS, tokensUsados, resolverTexto } from '../core/plantillas.js';
 import { RUTINAS } from '../core/rutinas.js';
-import { campeonesEnMeta, multiplicadorDeMeta, factorDeCampeon, pesoDePick, lecturaDePick } from '../core/ajusteMeta.js';
+import { campeonesEnMeta, multiplicadorDeMeta, factorDeCampeon, pesoDePick } from '../core/ajusteMeta.js';
 import * as poolMod from '../core/pool.js';
 import { campeonesDisponibles, entradaDePool } from '../core/pool.js';
 import { aplicar as aplicarCampeones } from '../systems/campeones.js';
