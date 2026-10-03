@@ -29,6 +29,10 @@
 // del bloque A (PLAN.md, K3c) — la consistencia (k = 0,5), la mentalidad y el hype que vuelven
 // a su base (r = 0,2 con subida 0,05, tope de descanso 70, rH = 0,6), los efectos que duran
 // (fracción 0,3 para eventos y práctica) y el umbral de pausa del draft (0,0818 / 0,0409). Las
-// carreras cambian de cabo a rabo: ninguna seed de K2c reproduce la suya.
-export const VERSION_JUEGO = 'K3c';
-export const HUELLA_JUEGO = 577913468;
+// carreras cambian de cabo a rabo: ninguna seed de K2c reproduce la suya. · K4-D (792917337; bloque B, corrimiento
+// declarado — trampa T1): la pretemporada frena una sola vez. La preparación del receso (las rutinas de offseason) pasa del
+// final del año al principio del siguiente y, cuando el mercado abre, viaja en su misma decisión; el sorteo de las rutinas
+// corre en otro punto del stream y ninguna seed de K3c reproduce su carrera. K4-A, K4-B y K4-C suman su corrimiento; la
+// integración deja un solo número.
+export const VERSION_JUEGO = 'K4-D';
+export const HUELLA_JUEGO = 792917337;

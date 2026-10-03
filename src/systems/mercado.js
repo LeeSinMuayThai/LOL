@@ -13,6 +13,7 @@ import { resolverMercadoMundial, cerrarAsientosCongelados } from '../core/mercad
 import { jerarquiaAlFichar, sinergiaAlFichar, conPlantillaDelPlantel } from './roster.js';
 import { companerosDelPlantel } from '../core/fuerza.js';
 import { BALANCE } from '../data/balance.js';
+import { esPreparacion, ofrecerPreparacion, resolverPreparacion, elegirRutinaAuto } from './practica.js';
 
 export const id = 'mercado';
 
@@ -388,7 +389,26 @@ function quedarLibre(state, racha, rng) {
   };
 }
 
+// K4-D: la pretemporada frena UNA vez por año (T9). Si el mercado tiene algo para decidir (ofertas o un traspaso), la
+// preparación del receso —las rutinas de offseason como cartas de mejora— viaja adentro de esa misma decisión
+// (`datos.preparacion`); si no, frena `practica.js` solo con la preparación. La lógica de cada sistema no cambia: lo
+// único unificado es la pausa. `resolver` aplica las dos elecciones juntas.
 export function aplicar(state, rng) {
+  const resultado = aplicarMercado(state, rng);
+  if (!resultado.decision || !esPreparacion(resultado.state)) {
+    return resultado;
+  }
+  const preparacion = ofrecerPreparacion(resultado.state, rng);
+  if (!preparacion) {
+    return resultado;
+  }
+  return {
+    ...resultado,
+    decision: { ...resultado.decision, datos: { ...resultado.decision.datos, preparacion } }
+  };
+}
+
+function aplicarMercado(state, rng) {
   if (state.phase !== 'profesional') {
     return { state, logs: [] };
   }
@@ -878,7 +898,33 @@ function negociarClausula(ofertas, idx) {
   };
 }
 
+// K4-D: la respuesta trae la oferta (o el "esperar", o el "quedarme") y la rutina elegida (`rutinaId`). Mientras se
+// negocia, la decisión se re-presenta y la preparación viaja con ella, recordando la carta elegida; al cerrar, se
+// resuelve el mercado y después la rutina, en la misma resolución.
 export function resolver(state, decision, respuesta, rng) {
+  const resultado = resolverMercado(state, decision, respuesta, rng);
+  const preparacion = decision.datos.preparacion;
+  if (!preparacion) {
+    return resultado;
+  }
+  const elegida = respuesta.rutinaId ?? preparacion.elegida;
+  if (resultado.decision) {
+    return {
+      ...resultado,
+      decision: {
+        ...resultado.decision,
+        datos: { ...resultado.decision.datos, preparacion: { ...preparacion, elegida } }
+      }
+    };
+  }
+  if (resultado.state.terminado) {
+    return resultado;
+  }
+  const preparada = resolverPreparacion(resultado.state, preparacion.rutinas, elegida, rng);
+  return { state: preparada.state, logs: [...resultado.logs, ...preparada.logs] };
+}
+
+function resolverMercado(state, decision, respuesta, rng) {
   // Fase 9Mf: traspaso a mitad de contrato — quedarse / aceptar / pedir salir.
   // No se re-presenta: se resuelve de una.
   if (decision.datos.motivo === 'traspaso') {
@@ -965,6 +1011,14 @@ export function resolver(state, decision, respuesta, rng) {
 }
 
 export function resolverAuto(state, decision, rng) {
+  const respuesta = resolverAutoMercado(state, decision, rng);
+  const preparacion = decision.datos.preparacion;
+  return preparacion
+    ? { ...respuesta, rutinaId: elegirRutinaAuto(state, preparacion.rutinas, rng).id }
+    : respuesta;
+}
+
+function resolverAutoMercado(state, decision, rng) {
   // Fase 9Mf: el `aceptar` de un traspaso es, por construcción, un club bastante
   // más fuerte — un paso arriba en lo deportivo. El headless lo toma salvo que
   // sea un recorte de sueldo real (`traspasoAutoRecorteMax`). Determinista, sin

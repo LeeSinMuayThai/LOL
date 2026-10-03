@@ -69,6 +69,7 @@ import { salarioDeOferta } from '../core/salarios.js';
 import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
 import { orgsQueTeFicharian, ofertaPosible, residenciaEn } from '../core/demanda.js';
 import { aplicar as aplicarMercado, construirOferta } from '../systems/mercado.js';
+import { cartaDeRutina, resolverPreparacion } from '../systems/practica.js';
 import { FRASES_MOTIVO, ETIQUETAS_MOTIVO } from '../systems/temporada.js';
 import { EJES, MARCAS, MOMENTOS, MOMENTOS_ACTIVOS, momentoPorId } from '../data/contextos.js';
 import { ARQUETIPOS } from '../data/meta-tags.js';
@@ -662,7 +663,9 @@ const FORMAS_CONOCIDAS = {
   // K3-B: `player.bonusPermanente` (un campo por stat de curva, ceros) y `registro.marcas` (`{ stat, delta, origen, anio }`).
   // Re-registrada en la revisión de K3: la muestra suma carreras con las fracciones > 0 en memoria, así la forma de una
   // marca entra en el hash y K3c puede subir las fracciones sin subir VERSION. (Antes, 839743025b35: sin marcas.)
-  7: '16d9c513b980'
+  7: '16d9c513b980',
+  // K4-D: `flags.preparacionDeSplit` (el año cuya preparación ya se resolvió; -1 hasta la primera pretemporada pro).
+  8: 'b9f0ce1a39fd'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -13990,6 +13993,8 @@ check('K3-A consistencia 2: g(mRef) = 1, g no crece con la mentalidad y respeta 
 });
 
 check('K3-A descanso: con un topeDescanso bajo (en memoria) ningún camino de descanso lo pasa — el sueño de atributos (amateur y pro) y el descansar del receso —, y descansar no baja a quien ya está arriba', () => {
+  // K4-D: la sonda parte de TOPE - 2 (antes TOPE - 5): con el corrimiento del stream la muestra de estados dejó de traer un
+  // sueño con ganancia > 5, y la sonda quedaba vacía por muestreo. Con 2 de margen sigue probando que el tope corta.
   const TOPE = 30;
   const { pro, amateur } = estadosDeCarreraK3A();
   if (pro.length < 3 || amateur.length < 3) throw new Error(`muestra corta: ${pro.length} pro, ${amateur.length} amateur`);
@@ -13999,10 +14004,10 @@ check('K3-A descanso: con un topeDescanso bajo (en memoria) ningún camino de de
   const decision = { datos: { rutinas: [rutina] } };
   const correr = () => {
     const sueno = [...pro, ...amateur].map((st, i) => atributos.aplicar(
-      conBarrasK3A(st, { player: { sleep: BALANCE.stats.max, deudaSueno: 0 }, stats: { mentalidad: TOPE - 5 } }), mulberry32(9400 + i)
+      conBarrasK3A(st, { player: { sleep: BALANCE.stats.max, deudaSueno: 0 }, stats: { mentalidad: TOPE - 2 } }), mulberry32(9400 + i)
     ).state.player.stats.mentalidad);
     const receso = pro.map((st, i) => practica.resolver(
-      conBarrasK3A(st, { stats: { mentalidad: TOPE - 5 } }), decision, { opcionId: rutina.id }, mulberry32(9500 + i)
+      conBarrasK3A(st, { stats: { mentalidad: TOPE - 2 } }), decision, { opcionId: rutina.id }, mulberry32(9500 + i)
     ).state.player.stats.mentalidad);
     const arriba = pro.map((st, i) => practica.resolver(
       conBarrasK3A(st, { stats: { mentalidad: TOPE + 20 } }), decision, { opcionId: rutina.id }, mulberry32(9600 + i)
@@ -14704,6 +14709,225 @@ check('K3-B la ficha lista solo las marcas cuyo acumulado (por stat, origen y a�
   const fuenteFicha = fs.readFileSync(path.join(srcDir, 'ui', 'components', 'ficha.js'), 'utf8');
   if (!fuenteFicha.includes("nombre: 'CONSISTENCIA'") || /nombre: 'MENTALIDAD'/.test(fuenteFicha)) {
     throw new Error("la barra de la mentalidad tiene que rotularse 'CONSISTENCIA' en la ficha (el id interno sigue siendo mentalidad)");
+  }
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// K4-D — la pretemporada en una sola parada (T9). El mercado (si abre) y la preparación (las rutinas de offseason como
+// cartas de mejora) frenan UNA vez por año, en la misma decisión. Reemplaza al viejo "frena la práctica y, aparte, el
+// mercado" (regla 17): los checks que contaban dos pausas ya no existen.
+// ---------------------------------------------------------------------------------------------------------------------
+
+// Corre una carrera automática hasta la primera pausa que cumple `filtro(sistemaId, decision)` y devuelve el estado
+// pausado y el rng en ese punto. Es determinista: volver a llamarla con la misma seed da la misma pausa, así que cada
+// respuesta posible se prueba desde el mismo punto.
+function hastaLaParadaK4d(seed, filtro, maxSplits = 40) {
+  const rng = mulberry32(seed);
+  let state = createInitialState(seed, rng);
+  for (let i = 0; i < maxSplits && !state.terminado; i += 1) {
+    state = avanzarSplit(state, rng).state;
+    while (state.pendiente) {
+      const { sistemaId, decision } = state.pendiente;
+      if (filtro(sistemaId, decision)) {
+        return { state, rng };
+      }
+      state = resolverDecision(state, sistemaPorId(sistemaId).resolverAuto(state, decision, rng), rng).state;
+    }
+  }
+  return null;
+}
+
+const ES_MERCADO_K4D = (sistemaId, decision) => sistemaId === 'mercado' && decision.datos?.motivo === 'oferta' && Boolean(decision.datos.preparacion);
+
+checkLento('K4-D la pretemporada frena una sola vez por año: a lo sumo una pausa de mercado o de práctica por split, con el mercado y la preparación en la misma, y la preparación del año queda resuelta', () => {
+  let conMercado = 0;
+  let soloPreparacion = 0;
+  let traspasos = 0;
+  let pretemporadasPro = 0;
+  for (let seed = 1; seed <= 40; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      const inicio = state;
+      const esPretemporadaPro = inicio.phase === 'profesional' && calcularContexto(inicio).ventana === 'pretemporada';
+      let paradas = 0;
+      state = avanzarSplit(state, rng).state;
+      while (state.pendiente) {
+        const { sistemaId, decision } = state.pendiente;
+        const motivo = decision.datos?.motivo;
+        const esMercado = sistemaId === 'mercado' && (motivo === 'oferta' || motivo === 'traspaso');
+        if (sistemaId === 'practica' || esMercado) {
+          paradas += 1;
+        }
+        if (esMercado) {
+          const preparacion = decision.datos.preparacion;
+          if (!preparacion || preparacion.rutinas.length === 0 || preparacion.cartas.length !== preparacion.rutinas.length) {
+            throw new Error(`seed ${seed}, split ${i}: la parada del mercado (${motivo}) no trae la preparación del receso`);
+          }
+          if (decision.opciones.length === 0) {
+            throw new Error(`seed ${seed}, split ${i}: la parada del mercado no trae ofertas`);
+          }
+          if (motivo === 'oferta') conMercado += 1; else traspasos += 1;
+        }
+        if (sistemaId === 'practica') {
+          if (decision.datos.rutinas.length === 0 || decision.presentacion !== 'pretemporada') {
+            throw new Error(`seed ${seed}, split ${i}: la parada de la preparación sola viene mal armada`);
+          }
+          soloPreparacion += 1;
+        }
+        state = resolverDecision(state, sistemaPorId(sistemaId).resolverAuto(state, decision, rng), rng).state;
+      }
+      if (paradas > 1) {
+        throw new Error(`seed ${seed}, split ${i}: la pretemporada frenó ${paradas} veces (mercado y práctica por separado)`);
+      }
+      if (esPretemporadaPro && !state.terminado && state.phase === 'profesional') {
+        pretemporadasPro += 1;
+        if (state.flags.preparacionDeSplit !== inicio.player.splitCount) {
+          throw new Error(`seed ${seed}, split ${i}: la pretemporada pasó sin resolver la preparación del año`);
+        }
+      }
+    }
+  }
+  if (conMercado < 20 || soloPreparacion < 20 || traspasos < 1 || pretemporadasPro < 100) {
+    throw new Error(`muestra insuficiente: ${conMercado} paradas con mercado, ${soloPreparacion} solo de preparación, ${traspasos} traspasos, ${pretemporadasPro} pretemporadas pro`);
+  }
+});
+
+checkLento('K4-D la oferta elegida y la rutina elegida se aplican juntas, en una sola respuesta', () => {
+  const sonda = [1, 2, 3, 4].map((seed) => hastaLaParadaK4d(seed, ES_MERCADO_K4D)).find(Boolean);
+  if (!sonda) throw new Error('sonda vacía: ninguna de las seeds 1-4 llega a una parada de mercado con preparación');
+  const { decision } = sonda.state.pendiente;
+  const { cartas } = decision.datos.preparacion;
+  if (cartas.length < 2) throw new Error('sonda vacía: la preparación trae una sola carta');
+  const oferta = decision.opciones[decision.opciones.length - 1];
+  const sellos = new Set();
+  for (const carta of cartas) {
+    const parada = hastaLaParadaK4d(sonda.state.seed, ES_MERCADO_K4D);
+    const hecho = resolverDecision(parada.state, { opcionId: oferta.id, rutinaId: carta.id }, parada.rng).state;
+    if (hecho.career.currentOrg !== oferta.org) {
+      throw new Error(`con la rutina "${carta.label}" la oferta no se firmó (org ${hecho.career.currentOrg}, esperaba ${oferta.org})`);
+    }
+    const lineas = hecho.logs.filter((log) => log.type === 'practica' && log.message.startsWith('Offseason:'));
+    if (lineas.length < 1 || hecho.logs.slice(parada.state.logs.length).filter((log) => log.type === 'practica').length !== 1) {
+      throw new Error(`con la rutina "${carta.label}" no hay exactamente una línea de preparación en esta resolución`);
+    }
+    if (hecho.flags.preparacionDeSplit !== parada.state.player.splitCount) {
+      throw new Error(`con la rutina "${carta.label}" la preparación del año no quedó marcada`);
+    }
+    if (carta.permanenteTotal > 0 && !hecho.career.registro.marcas.some((marca) => marca.origen === carta.label)) {
+      throw new Error(`la rutina "${carta.label}" promete algo que dura y no dejó marca a su nombre`);
+    }
+    sellos.add(JSON.stringify([hecho.player.stats, hecho.player.championPool, lineas[lineas.length - 1].message]));
+  }
+  if (sellos.size < 2) throw new Error('elegir otra rutina no cambia nada: la respuesta no llega a la preparación');
+  // Sin `rutinaId` el motor no inventa nada raro: cae en la primera carta y aplica igual.
+  const parada = hastaLaParadaK4d(sonda.state.seed, ES_MERCADO_K4D);
+  const sinRutina = resolverDecision(parada.state, { opcionId: oferta.id }, parada.rng).state;
+  if (sinRutina.flags.preparacionDeSplit !== parada.state.player.splitCount || sinRutina.career.currentOrg !== oferta.org) {
+    throw new Error('sin rutinaId la parada no se resuelve entera');
+  }
+});
+
+checkLento('K4-D regla 15: lo que muestra la carta de la rutina (efecto y cuánto dura) es lo que aplica el motor', () => {
+  const previo = BALANCE.practica.ruidoPractica;
+  try {
+    // Sin ruido el motor aplica la media: la carta tiene que coincidir con el resultado, al decimal.
+    BALANCE.practica.ruidoPractica = 0;
+    const deCurva = Object.keys(BALANCE.atributos.curvas);
+    let conPermanencia = 0;
+    for (const seed of [2, 5, 9]) {
+      const base = correrCarrera(seed, 14);
+      if (base.phase !== 'profesional') continue;
+      for (const rutina of RUTINAS.offseason) {
+        const carta = cartaDeRutina(base, rutina);
+        const despues = resolverPreparacion(base, [rutina], rutina.id, mulberry32(seed)).state;
+        for (const efecto of carta.efectos) {
+          const movido = despues.player.stats[efecto.stat] - base.player.stats[efecto.stat];
+          if (Math.abs(movido - efecto.esperado) > 1e-9) {
+            throw new Error(`${rutina.id} (${efecto.stat}): la carta dice +${efecto.esperado}, el motor movió ${movido}`);
+          }
+        }
+        for (const stat of deCurva) {
+          const dura = despues.player.bonusPermanente[stat] - base.player.bonusPermanente[stat];
+          const prometido = carta.efectos.filter((efecto) => efecto.stat === stat).reduce((suma, efecto) => suma + efecto.permanente, 0);
+          if (Math.abs(dura - prometido) > 1e-9) {
+            throw new Error(`${rutina.id} (${stat}): la carta promete que te queda ${prometido}, el motor dejó ${dura}`);
+          }
+          if (prometido > 0) conPermanencia += 1;
+        }
+        const total = carta.efectos.reduce((suma, efecto) => suma + efecto.permanente, 0);
+        if (Math.abs(carta.permanenteTotal - total) > 1e-9) throw new Error(`${rutina.id}: permanenteTotal no suma lo de cada efecto`);
+      }
+    }
+    if (conPermanencia === 0) throw new Error('sonda vacía: ninguna carta promete algo que dura');
+    // Y la fracción es la de la práctica, no otra: con la fracción en memoria la carta la sigue.
+    const original = BALANCE.atributos.fraccionPermanentePractica;
+    try {
+      BALANCE.atributos.fraccionPermanentePractica = 0.5;
+      const base = correrCarrera(2, 14);
+      const bootcamp = RUTINAS.offseason.find((rutina) => rutina.id === 'bootcamp_corea');
+      const carta = cartaDeRutina(base, bootcamp);
+      const efecto = carta.efectos.find((e) => e.stat === 'mecanica');
+      if (!efecto || Math.abs(efecto.permanente - 0.5 * efecto.esperado) > 1e-9) {
+        throw new Error('la carta no sigue a fraccionPermanentePractica');
+      }
+    } finally {
+      BALANCE.atributos.fraccionPermanentePractica = original;
+    }
+  } finally {
+    BALANCE.practica.ruidoPractica = previo;
+  }
+});
+
+checkLento('K4-D los bots contestan la parada unificada con la regla de siempre (oferta + rutina): ids válidos, malas y azar deterministas', () => {
+  const nombres = ['equilibrado', 'ranked', 'prudente', 'criterio', 'azar', 'malas'];
+  for (const nombre of nombres) {
+    const bot = ESTRATEGIAS_K0[nombre];
+    let contestadas = 0;
+    for (const seed of [1, 2, 3, 4]) {
+      const rng = mulberry32(seed);
+      let state = createInitialState(seed, rng);
+      const responder = (sistema, st, decision, rngLocal) => {
+        const respuesta = bot ? bot(sistema, st, decision, rngLocal) : sistema.resolverAuto(st, decision, rngLocal);
+        if (decision.datos?.preparacion && sistema.id === 'mercado') {
+          contestadas += 1;
+          const rutinas = decision.datos.preparacion.rutinas;
+          if (!rutinas.some((rutina) => rutina.id === respuesta.rutinaId)) {
+            throw new Error(`${nombre}: la parada del mercado se contestó sin una rutina válida (${respuesta.rutinaId})`);
+          }
+          if (nombre === 'malas') {
+            const puntaje = (rutina) => (rutina.reparto.ranked ?? 0) + rutina.extra * 2;
+            const peor = rutinas.reduce((mejor, rutina) => (puntaje(rutina) > puntaje(mejor) ? rutina : mejor));
+            if (respuesta.rutinaId !== peor.id) throw new Error(`malas elige "${respuesta.rutinaId}", su regla da "${peor.id}"`);
+          }
+        }
+        return respuesta;
+      };
+      for (let i = 0; i < 40 && !state.terminado; i += 1) {
+        state = avanzarSplitAuto(state, rng, responder).state;
+      }
+    }
+    if (contestadas === 0) throw new Error(`${nombre}: ninguna parada de mercado con preparación en la muestra`);
+  }
+});
+
+check('K4-D las cartas de la preparación hablan en cristiano: ningún id crudo en lo que se muestra y la pantalla (components/mercado.js) las pinta sin calcular nada', () => {
+  const base = correrCarrera(2, 14);
+  for (const rutina of RUTINAS.offseason) {
+    const carta = cartaDeRutina(base, rutina);
+    const textos = [carta.label, carta.descripcion, ...carta.efectos.map((efecto) => efecto.etiqueta)];
+    for (const texto of textos) {
+      if (!texto || /player\.|[a-z0-9]+_[a-z0-9_]+/.test(texto)) {
+        throw new Error(`la carta de "${rutina.id}" muestra "${texto}"`);
+      }
+    }
+    if (!(carta.efectos.length > 0 || carta.pulir > 0 || carta.nuevo > 0)) {
+      throw new Error(`la carta de "${rutina.id}" no dice nada de lo que hace`);
+    }
+  }
+  const fuente = fs.readFileSync(path.join(srcDir, 'ui', 'components', 'mercado.js'), 'utf8');
+  if (!fuente.includes('Te queda para siempre') || /BALANCE|balance\.js/.test(fuente)) {
+    throw new Error('la pantalla tiene que decir cuánto dura la carta y leerlo de la carta, sin recalcularlo con BALANCE');
   }
 });
 

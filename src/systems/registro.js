@@ -39,6 +39,10 @@ export const ETAPAS_SPLIT = [
   // Fase 9R5a: la carrera termina cuando el mercado deja de llamarte. Va justo
   // despues de `mercado`, que este split ya actualizo splitsSinOfertaConsecutivos.
   await import('./retiro.js'),
+  // K4-D: la preparación del receso va en la pretemporada, en la misma parada que el mercado (T9). Si el mercado ya
+  // frenó este año, la preparación vino adentro de esa decisión y acá no pregunta nada; si no, frena sola. Va después de
+  // `retiro` (una carrera que se corta no se prepara) y antes de `campeones` y `temporada`: lo que entrenás ya cuenta.
+  await import('./practica.js'),
   // Fase 10c: el servicio militar coreano y las lesiones. Van despues de
   // `retiro` (si ya te retiraste este split, no tienen nada que hacer —
   // `splitTerminaAca` corta antes de llegar) y ANTES de `temporada`, que es
@@ -63,7 +67,6 @@ export const ETAPAS_SPLIT = [
   await import('./serie.js'),
   await import('./events.js'),
   await import('./atributos.js'),
-  await import('./practica.js'),
   await import('./edadCierre.js'),
   // 9M-lite: el mundo tiene escena. Va DESPUES de edadCierre a proposito: si
   // ese sistema pauso por un evento de cierre, resolverDecision retoma justo

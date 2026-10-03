@@ -54,6 +54,17 @@ export const BANDAS_PENDIENTES = [
     commit: 'K3c',
     rebasea: 'K4c',
     porque: 'asimetría del Fearless (solo te degrada a vos): la resuelve el plan de Fearless de K4'
+  },
+  // K4-D movió el stream (la preparación del receso se sortea al empezar el año, en la parada del mercado): el silencio de
+  // una franquicia, un evento de ~1 en 1500 carreras, apareció una vez. La invariante no cambió; la muestra sí.
+  {
+    check: 'El mercado lee tu nivel: el silencio es para los que están por debajo, no para una franquicia (fase 9R0e)',
+    bloque: 'B',
+    medido: '1 pretemporada de un jugador claramente por encima de su liga sin ofertas (1500 carreras, check)',
+    banda: 'tope 0 pretemporadas sin ofertas por encima de la liga',
+    commit: 'K4',
+    rebasea: 'K4c',
+    porque: 'corrimiento del stream de K4-D (T1): evento raro, la muestra cambió; K4c lo re-mide con el stream final'
   }
 ];
 
