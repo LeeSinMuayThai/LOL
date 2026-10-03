@@ -189,6 +189,8 @@ export function componerLegado(state) {
 
   return {
     finAnticipado: fin,
+    // K5-C: el porqué del retiro en una línea (`state.motivoRetiro`), o `null` si el marco ya lo dice.
+    motivo: state.motivoRetiro ?? null,
     esExito,
     edadRetiro: state.age,
     veredicto: `${frase}. ${detalleDeCarrera(r, orgPrincipal)}`,

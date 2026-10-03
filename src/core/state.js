@@ -44,6 +44,10 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
     phase: 'amateur',
     terminado: false,
     finAnticipado: null,
+    // K5-C: por qué se retiró, dicho en una línea para la tarjeta ("Ninguna org de LCK te ofreció contrato en dos
+    // pretemporadas seguidas."). Lo escribe `systems/retiro.js` en cada retiro que decide el mercado, la edad o vos;
+    // `null` mientras la carrera sigue viva y en los finales que ya se explican solos (burnout, familia, no_llego).
+    motivoRetiro: null,
     // Fase 9R5b: la tarjeta de legado, compuesta una sola vez por
     // `core/pipeline.js` cuando `terminado` pasa a true. `null` mientras la
     // carrera sigue viva. K1: lleva también `puntaje` (`core/puntaje.js`).
@@ -404,6 +408,13 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // — la puerta por la que se termina la carrera (fase 10, todavía no
       // construida).
       splitsSinOfertaConsecutivos: 0,
+      // K5-C: pretemporadas seguidas con el mercado abierto sin una oferta de tu tier o mejor (`systems/mercado.js`).
+      // Al llegar a `BALANCE.retiro.splitsSinOfertaEnTierParaBifurcar` frena la bifurcación "bajás o te retirás". Se
+      // vuelve a 0 con una oferta de tu tier, al firmar y al retirarte.
+      splitsSinOfertaEnTier: 0,
+      // K5-C: el `splitCount` de la última vez que frenó esa bifurcación (-1 = nunca). `systems/retiro.js` lo lee para
+      // no preguntar `retiro_declive` en la misma pretemporada: el mercado ya preguntó.
+      forkMercadoSplit: -1,
       // K4-D: el `splitCount` de la última pretemporada cuya preparación (las rutinas de offseason) ya se resolvió. -1 =
       // ninguna todavía. Lo escribe `systems/practica.js` y evita que la pretemporada frene dos veces.
       preparacionDeSplit: -1,

@@ -23,14 +23,17 @@ export const id = 'retiro';
 // uno); burnout, prohibición familiar y no_llego siguen siendo terminales
 // (los setea `atributos.js`/`amateur.js`, no este sistema).
 
-function terminar(state, finAnticipado, mensaje, { reversible } = { reversible: false }) {
+// K5-C: todo retiro que decide este sistema (o la bifurcación del mercado) deja su motivo en una línea
+// (`state.motivoRetiro`), que la tarjeta muestra debajo del marco.
+function terminar(state, finAnticipado, mensaje, { reversible = false, motivo = null } = {}) {
   return {
     state: {
       ...state,
       phase: 'retirado',
       terminado: !reversible,
       finAnticipado,
-      flags: { ...state.flags, splitsEnDeclive: 0, splitsEnVentana: 0 }
+      motivoRetiro: motivo,
+      flags: { ...state.flags, splitsEnDeclive: 0, splitsEnVentana: 0, splitsSinOfertaEnTier: 0 }
     },
     logs: [crearLog('retiro', mensaje)]
   };
@@ -42,6 +45,29 @@ function mensajeDeSalida(state, finAnticipado) {
   }
   return `Te retirás a los ${state.age}. ${state.career.titulos} título(s), `
     + `${state.career.internacionales} internacional(es). Se cierra una carrera.`;
+}
+
+const NUMERO_EN_PALABRAS = ['cero', 'una', 'dos', 'tres', 'cuatro', 'cinco', 'seis'];
+
+// "dos pretemporadas seguidas" (o "la última pretemporada"): cuántos mercados te dijeron que no, en palabras.
+export function pretemporadasEnPalabras(n) {
+  if (n <= 1) {
+    return 'la última pretemporada';
+  }
+  return `${NUMERO_EN_PALABRAS[n] ?? n} pretemporadas seguidas`;
+}
+
+function finDeSalida(state) {
+  return state.career.currentOrg ? 'retiro_elegido' : 'sin_equipo';
+}
+
+// K5-C: la bifurcación del mercado (`systems/mercado.js`, motivo `fin_mercado`) termina acá cuando elegís colgar el
+// mouse. Mismo retiro que `retiro_declive` —con la ventana de vuelta si te quedan vueltas—, pero con el motivo que
+// dio el mercado ("Ninguna org de LCK te ofreció contrato en dos pretemporadas seguidas.").
+export function retirarsePorMercado(state, motivo) {
+  const finAnticipado = finDeSalida(state);
+  const puedeVolver = state.flags.vueltasUsadas < BALANCE.retiro.vueltasMaximas;
+  return terminar(state, finAnticipado, `${motivo} ${mensajeDeSalida(state, finAnticipado)}`, { reversible: puedeVolver, motivo });
 }
 
 function decisionDeclive(state) {
@@ -127,8 +153,9 @@ export function aplicar(state, rng) {
   // `vueltasUsadas < vueltasMaximas` podía rebotar de vuelta contra la MISMA
   // edad una y otra vez, corriendo el retiro "de verdad" varios años de más.
   if (state.age >= r.edadRetiroForzoso) {
-    const finAnticipado = state.career.currentOrg ? 'retiro_elegido' : 'sin_equipo';
-    return terminar(state, finAnticipado, mensajeDeSalida(state, finAnticipado), { reversible: false });
+    const finAnticipado = finDeSalida(state);
+    const motivo = `Llegaste a los ${state.age}: la línea que casi nadie cruza en el competitivo.`;
+    return terminar(state, finAnticipado, mensajeDeSalida(state, finAnticipado), { reversible: false, motivo });
   }
 
   // `contexto.etapa === 'declive'` no incluye "sin equipo" (D30, `core/
@@ -155,7 +182,9 @@ export function aplicar(state, rng) {
   const splitsEnDeclive = state.flags.splitsEnDeclive + 1;
   const conCuenta = { ...state, flags: { ...state.flags, splitsEnDeclive } };
 
-  if (splitsEnDeclive < r.splitsDeclivePorAviso) {
+  // K5-C: si el mercado ya frenó esta misma pretemporada con "bajás o te retirás" (`forkMercadoSplit`), no se
+  // pregunta dos veces: la cuenta sigue, la pregunta queda para el año que viene.
+  if (splitsEnDeclive < r.splitsDeclivePorAviso || state.flags.forkMercadoSplit === state.player.splitCount) {
     return { state: conCuenta, logs: [] };
   }
 
@@ -174,9 +203,10 @@ export function resolver(state, decision, respuesta, rng) {
         logs: [crearLog('retiro', 'Decidís seguir. El mercado no va a esperar para siempre.')]
       };
     }
-    const finAnticipado = state.career.currentOrg ? 'retiro_elegido' : 'sin_equipo';
+    const finAnticipado = finDeSalida(state);
     const puedeVolver = state.flags.vueltasUsadas < r.vueltasMaximas;
-    return terminar(state, finAnticipado, mensajeDeSalida(state, finAnticipado), { reversible: puedeVolver });
+    const motivo = `El mercado te venía diciendo que no: ${pretemporadasEnPalabras(state.flags.splitsEnDeclive)} en baja.`;
+    return terminar(state, finAnticipado, mensajeDeSalida(state, finAnticipado), { reversible: puedeVolver, motivo });
   }
 
   // motivo === 'retiro_vuelta'
@@ -185,6 +215,7 @@ export function resolver(state, decision, respuesta, rng) {
       state: {
         ...state,
         phase: 'profesional',
+        motivoRetiro: null,
         flags: {
           ...state.flags,
           splitsEnVentana: 0,

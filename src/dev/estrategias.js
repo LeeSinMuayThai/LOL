@@ -131,6 +131,12 @@ function charlaEnMinijuego(state, decision, peor) {
   return decision.datos?.charla?.disponible ? { charla: !peor && usaLaCharlaEnAuto(state.serie?.ronda) } : {};
 }
 
+// K5-C: la bifurcación del final por mercado (`systems/mercado.js`): "bajás de tier" (o "seguís buscando", si nadie
+// ofrece) contra "colgás el mouse". Va antes que `esDecisionDeMercado` en cada bot.
+export function esDecisionDeFinPorMercado(decision) {
+  return decision.datos?.motivo === 'fin_mercado';
+}
+
 export function esDecisionDeMercado(decision) {
   return decision.presentacion === 'mercado'
     || (decision.opciones?.[0]?.salarioAnualUSD !== undefined && decision.datos?.motivo !== 'traspaso');
@@ -196,6 +202,10 @@ function responderCriterio(sistema, state, decision, rng) {
   if (esDecisionDeDraft(decision)) {
     return { opcionId: decision.opciones[0].id };
   }
+  if (esDecisionDeFinPorMercado(decision)) {
+    // La regla del headless: joven, baja (o espera); desde `edadAutoAceptaVeredicto`, acepta el veredicto.
+    return sistema.resolverAuto(state, decision, rng);
+  }
   if (esDecisionDeMercado(decision)) {
     const rutinaDelBot = (rutinas) => elegirRutinaAuto(state, rutinas, rng).id;
     if (decision.opciones.length === 0) {
@@ -228,6 +238,11 @@ function responderMalas(sistema, state, decision, rng) {
   }
   if (esDecisionDeDraft(decision)) {
     return { opcionId: decision.opciones[decision.opciones.length - 1].id };
+  }
+  if (esDecisionDeFinPorMercado(decision)) {
+    // Lo peor de los dos lados: joven, cuelga el mouse con una oferta en la mano; veterano, se aferra un año más.
+    const opcionId = state.age >= BALANCE.retiro.edadAutoAceptaVeredicto ? decision.opciones[0].id : 'retirarse';
+    return conRutina(decision, { opcionId }, (rutinas) => rutinaConMejorPuntaje(rutinas, puntajeAgresiva).id);
   }
   if (esDecisionDeMercado(decision)) {
     const rutinaDelBot = (rutinas) => rutinaConMejorPuntaje(rutinas, puntajeAgresiva).id;
@@ -264,6 +279,10 @@ function responderAzar(sistema, state, decision, rng) {
   if (esDecisionDeDraft(decision)) {
     const indice = hash % decision.opciones.length;
     return { opcionId: decision.opciones[indice].id };
+  }
+  if (esDecisionDeFinPorMercado(decision)) {
+    const indice = hash % decision.opciones.length;
+    return conRutina(decision, { opcionId: decision.opciones[indice].id }, (rutinas) => rutinas[hashCadena(`${hash}|rutina`) % rutinas.length].id);
   }
   if (esDecisionDeMercado(decision)) {
     const opcionesCandidatas = [

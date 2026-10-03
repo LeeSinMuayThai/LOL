@@ -1321,7 +1321,17 @@ export const BALANCE = {
     // §12.4). `ventanaDeVueltaSplits` son pretemporadas de gracia (2, a
     // splitsPorEdad=3) antes de que se cierre sola si no la usás.
     vueltasMaximas: 2,
-    ventanaDeVueltaSplits: 6
+    ventanaDeVueltaSplits: 6,
+    // K5-C (PLAN.md K5, "el final lo decide el mercado"): cuántas pretemporadas SEGUIDAS con el mercado abierto
+    // (contrato vencido o sin equipo) sin una sola oferta de tu tier o mejor antes de que `systems/mercado.js` frene
+    // con la bifurcación "bajás de tier o colgás el mouse". Se cuenta igual que `mercado.splitsSinOfertaParaLibre`
+    // (un split de mercado = una pretemporada). 99 = nunca dispara: la estructura sale con el valor que reproduce
+    // hoy; el valor de verdad (y con él la longevidad, §K.3b) lo fija K5c.
+    splitsSinOfertaEnTierParaBifurcar: 99,
+    // `resolverAuto` de esa bifurcación (el headless y el bot `criterio`): antes de esta edad bajás de tier (o
+    // seguís buscando, si nadie ofrece); desde esta edad aceptás el veredicto y te retirás — mismo criterio que
+    // `retiro_declive` ("no te renuevan" es la causa modal de retiro real, `CONCEPTO` §12.4).
+    edadAutoAceptaVeredicto: 27
   },
 
   // Fase 10c (PLAN.md §10.4.2): la cadena causal de D9. `player.deudaSueno`

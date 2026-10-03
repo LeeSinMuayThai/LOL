@@ -15,6 +15,7 @@ import { jerarquiaAlFichar, sinergiaAlFichar, conPlantillaDelPlantel } from './r
 import { companerosDelPlantel } from '../core/fuerza.js';
 import { BALANCE } from '../data/balance.js';
 import { esPreparacion, ofrecerPreparacion, resolverPreparacion, elegirRutinaAuto } from './practica.js';
+import { retirarsePorMercado, pretemporadasEnPalabras } from './retiro.js';
 
 export const id = 'mercado';
 
@@ -248,8 +249,11 @@ function generarOfertas(state, rng) {
   if (claramenteArriba && posibles.length === 0) {
     // El club más débil de tu liga que PUEDE ficharte (respeta las reglas duras
     // — cupo de imports incluido, 9Md). Se prueba de la más débil hacia arriba.
+    // K5-C: solo las orgs con plantel (las mismas que escanea `orgsQueTeFicharian`). Un import cedido a la liga de
+    // desarrollo de su club (KR en NACL, `resolverBanquillo`) cae en una liga sin planteles, y ahí `ofertaPosible`
+    // reventaba en `noResidentesTrasFichar` (medido en HEAD c8a220d: seed 23 con el nivel roto, bot `malas`).
     const candidatas = ligaActual.orgs
-      .filter((org) => org.nombre !== state.career.currentOrg)
+      .filter((org) => org.nombre !== state.career.currentOrg && state.mundo.planteles?.[org.nombre])
       .sort((a, b) => a.fuerza - b.fuerza);
     for (const org of candidatas) {
       const forzada = ofertaPosible(state, org.nombre, state.player.role, { forzada: true });
@@ -488,26 +492,126 @@ function aplicarMercado(state, rng) {
     ? [crearLog('mercado', `${stConValor.career.currentOrg} te avisó: no van a renovarte.`)]
     : [];
 
-  if (ofertas.length === 0) {
-    const racha = stMercado.flags.splitsSinOfertaConsecutivos + 1;
-    if (racha >= BALANCE.mercado.splitsSinOfertaParaLibre) {
-      const libre = quedarLibre(stMercado, racha, rng);
-      return { state: libre.state, logs: [...logsMundo, ...logsAviso, ...libre.logs] };
-    }
-    // El teléfono no suena: si algún asiento se había congelado para vos, el
-    // mundo igual lo llena.
-    const cerrado = cerrarAsientosCongelados(stMercado, null, rng);
+  // K5-C: el final lo decide el mercado. Cada pretemporada con el mercado abierto se cuenta si ninguna oferta es de
+  // tu tier o mejor; al llegar al umbral, en vez de la mano de siempre frena la bifurcación "bajás o te retirás".
+  const stTier = conCuentaSinOfertaEnTier(stMercado, ofertas);
+  if (correspondeBifurcar(stTier)) {
+    const stFork = { ...stTier, flags: { ...stTier.flags, forkMercadoSplit: stTier.player.splitCount } };
+    const asientosFork = ofertas.length > 0 ? asientosAbiertosParaPantalla(stFork, ofertas, fichadores) : [];
     return {
-      state: { ...cerrado.state, flags: { ...cerrado.state.flags, splitsSinOfertaConsecutivos: racha } },
-      logs: [...logsMundo, ...logsAviso, ...cerrado.logs, crearLog('mercado', 'Nadie te llama esta pretemporada. El teléfono no suena.')]
+      state: stFork, logs: [...logsMundo, ...logsAviso],
+      decision: decisionFinPorMercado(stFork, ofertas, asientosFork)
     };
   }
 
-  const asientosAbiertos = asientosAbiertosParaPantalla(stMercado, ofertas, fichadores);
+  if (ofertas.length === 0) {
+    const silencio = elTelefonoNoSuena(stTier, rng);
+    return { state: silencio.state, logs: [...logsMundo, ...logsAviso, ...silencio.logs] };
+  }
+
+  const asientosAbiertos = asientosAbiertosParaPantalla(stTier, ofertas, fichadores);
   return {
-    state: stMercado, logs: [...logsMundo, ...logsAviso],
-    decision: construirDecisionOfertas(stMercado, ofertas, { asientosAbiertos })
+    state: stTier, logs: [...logsMundo, ...logsAviso],
+    decision: construirDecisionOfertas(stTier, ofertas, { asientosAbiertos })
   };
+}
+
+// Pretemporada sin una sola oferta: la racha sube y, al llegar a `splitsSinOfertaParaLibre`, te quedás sin equipo.
+// Si no, el mundo igual llena los asientos que te había congelado. (Extraído tal cual para que la bifurcación de K5-C
+// lo reuse cuando elegís seguir buscando: mismo orden de tiradas.)
+function elTelefonoNoSuena(state, rng) {
+  const racha = state.flags.splitsSinOfertaConsecutivos + 1;
+  if (racha >= BALANCE.mercado.splitsSinOfertaParaLibre) {
+    return quedarLibre(state, racha, rng);
+  }
+  const cerrado = cerrarAsientosCongelados(state, null, rng);
+  return {
+    state: { ...cerrado.state, flags: { ...cerrado.state.flags, splitsSinOfertaConsecutivos: racha } },
+    logs: [...cerrado.logs, crearLog('mercado', 'Nadie te llama esta pretemporada. El teléfono no suena.')]
+  };
+}
+
+// --- K5-C: el final lo decide el mercado ---
+
+// La cuenta de pretemporadas sin una oferta de tu tier o mejor (la renovación de tu club cuenta: es tu liga). Cero
+// `rng`: se lee la mano que `generarOfertas` ya armó.
+function conCuentaSinOfertaEnTier(state, ofertas) {
+  const enTier = ofertas.some((oferta) => oferta.tier <= state.career.tier);
+  const splitsSinOfertaEnTier = enTier ? 0 : state.flags.splitsSinOfertaEnTier + 1;
+  return { ...state, flags: { ...state.flags, splitsSinOfertaEnTier } };
+}
+
+// Pasada la línea de los 34 no hay nada que bifurcar: `retiro.js` te retira igual en esta misma pretemporada.
+function correspondeBifurcar(state) {
+  return state.flags.splitsSinOfertaEnTier >= BALANCE.retiro.splitsSinOfertaEnTierParaBifurcar
+    && state.age < BALANCE.retiro.edadRetiroForzoso;
+}
+
+function nombreDeLigaEnMundo(state, ligaId) {
+  return state.mundo.ligas.find((liga) => liga.id === ligaId)?.nombre ?? null;
+}
+
+// Quién ya no te quiere, dicho como lo diría el mercado. En tier 1 el escaneo es el mundo entero (las 6 ligas de
+// primera, 9Md): no es solo tu liga la que no llamó. En tier 2 es la de tu región. Sin liga (free agent, D.3) se
+// nombra el tier.
+function quienYaNoTeQuiere(state) {
+  const nombre = state.career.liga ? nombreDeLigaEnMundo(state, state.career.liga) : null;
+  if (state.career.tier === 1) {
+    return nombre ? `primera, ni de la ${nombre} ni de afuera,` : 'primera';
+  }
+  return nombre ?? `tier ${state.career.tier}`;
+}
+
+function decisionFinPorMercado(state, ofertas, asientosAbiertos) {
+  const motivoRetiro = `Ninguna org de ${quienYaNoTeQuiere(state)} te ofreció contrato en `
+    + `${pretemporadasEnPalabras(state.flags.splitsSinOfertaEnTier)}.`;
+  const ligasAbajo = [...new Set(ofertas.map((oferta) => nombreDeLigaEnMundo(state, oferta.liga) ?? `tier ${oferta.tier}`))];
+  const abajo = ligasAbajo.join(' o ');
+  const seguir = ofertas.length > 0
+    ? { id: 'bajar', label: `Bajás a ${abajo}`, descripcion: `Jugar es jugar. Ves lo que te ofrecen en ${abajo} y elegís.` }
+    : { id: 'esperar', label: 'Seguís buscando', descripcion: 'De free agent, a esperar que suene el teléfono. La cuenta no se resetea sola.' };
+  const cierre = ofertas.length > 0
+    ? `Más abajo sí te quieren: ${abajo}. ¿Bajás o colgás el mouse?`
+    : 'Y nadie más te está llamando. ¿Seguís o colgás el mouse?';
+  return {
+    tipo: 'opciones',
+    bisagra: true,
+    titulo: 'El mercado ya habló',
+    descripcion: `${motivoRetiro} ${cierre}`,
+    opciones: [
+      seguir,
+      { id: 'retirarse', label: 'Colgás el mouse', descripcion: 'Cerrás la carrera acá. Con la puerta entreabierta, si el cuerpo y las ganas dan.' }
+    ],
+    datos: { motivo: 'fin_mercado', motivoRetiro, ofertas, asientosAbiertos }
+  };
+}
+
+function resolverFinPorMercado(state, decision, respuesta, rng) {
+  if (respuesta.opcionId === 'retirarse') {
+    // El mundo sigue sin vos: los asientos que te habían congelado se llenan con un NPC (mismo cierre que el
+    // silencio), y recién después te retirás.
+    const cerrado = cerrarAsientosCongelados(state, null, rng);
+    const retiro = retirarsePorMercado(cerrado.state, decision.datos.motivoRetiro);
+    return { state: retiro.state, logs: [...cerrado.logs, ...retiro.logs] };
+  }
+  if (respuesta.opcionId === 'bajar') {
+    return {
+      state,
+      logs: [crearLog('mercado', 'Bajás un escalón. Jugar es jugar: a ver qué hay.')],
+      decision: construirDecisionOfertas(state, decision.datos.ofertas, { asientosAbiertos: decision.datos.asientosAbiertos })
+    };
+  }
+  const silencio = elTelefonoNoSuena(state, rng);
+  return { state: silencio.state, logs: [crearLog('mercado', 'Seguís buscando. El mercado no va a esperar para siempre.'), ...silencio.logs] };
+}
+
+// La regla del headless (y del bot `criterio`): joven, seguís (bajás o esperás); desde
+// `edadAutoAceptaVeredicto`, aceptás el veredicto del mercado.
+export function opcionAutoFinPorMercado(state, decision) {
+  if (state.age >= BALANCE.retiro.edadAutoAceptaVeredicto) {
+    return 'retirarse';
+  }
+  return decision.opciones[0].id;
 }
 
 // --- Aceptar una oferta (o pedir una mano nueva) ---
@@ -578,6 +682,8 @@ function aceptarOferta(state, oferta, rng, { motivoFila } = {}) {
       flags: {
         ...state.flags,
         splitsSinOfertaConsecutivos: 0,
+        // K5-C: firmaste (en tu tier o más abajo): la cuenta de "sin oferta en tu tier" arranca de cero en el nuevo.
+        splitsSinOfertaEnTier: 0,
         jerarquiaProyectadaAlFichar: oferta.datos.jerarquiaProyectada,
         sinergiaProyectadaAlFichar: sinergiaAlFirmar
       },
@@ -920,7 +1026,7 @@ export function resolver(state, decision, respuesta, rng) {
       }
     };
   }
-  if (resultado.state.terminado) {
+  if (resultado.state.terminado || resultado.state.phase === 'retirado') {
     return resultado;
   }
   const preparada = resolverPreparacion(resultado.state, preparacion.rutinas, elegida, rng);
@@ -980,6 +1086,9 @@ function resolverPrueba(state, decision, respuesta, rng) {
 }
 
 function resolverMercado(state, decision, respuesta, rng) {
+  if (decision.datos.motivo === 'fin_mercado') {
+    return resolverFinPorMercado(state, decision, respuesta, rng);
+  }
   if (decision.datos.motivo === 'minijuego') {
     return resolverPrueba(state, decision, respuesta, rng);
   }
@@ -1094,6 +1203,9 @@ export function resolverAuto(state, decision, rng) {
 }
 
 function resolverAutoMercado(state, decision, rng) {
+  if (decision.datos.motivo === 'fin_mercado') {
+    return { opcionId: opcionAutoFinPorMercado(state, decision) };
+  }
   // Fase 9Mf: el `aceptar` de un traspaso es, por construcción, un club bastante
   // más fuerte — un paso arriba en lo deportivo. El headless lo toma salvo que
   // sea un recorte de sueldo real (`traspasoAutoRecorteMax`). Determinista, sin
