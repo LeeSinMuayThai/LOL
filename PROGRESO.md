@@ -34,6 +34,47 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-03 — FASE K, K3: tus decisiones construyen tu nivel (estructura, PLAN.md §K3)
+
+**Estructura con las perillas en neutro**, el mismo patrón que K2. La huella del juego quedó **idéntica**
+(451754381 la T1; `HUELLA_JUEGO` 345156314), y eso prueba que K3 es solo estructura. Los valores los fija K3c.
+
+**K3-A — las barras que no se saturan** (Opus).
+- **La mentalidad gobierna la consistencia.** `ruidoEfectivo` multiplica su σ por
+  `g(m) = 1 + k·(60 − m)/100`, acotado. Sigue siendo el único lector de σ.
+- **La mentalidad vuelve a una base** cada split (`core/barras.js`, desde `atributos.js`).
+- **Todo descanso queda topeado** (sueño y la rutina de descansar).
+- **El hype decae hacia una base.** La base sale de la z de tus resultados de la temporada y de tu visibilidad:
+  el prestigio de la liga y si jugaste un internacional.
+
+**K3-B — los efectos que duran** (Sonnet).
+- **`player.bonusPermanente`.** Está completo con ceros desde el inicio, y las curvas de edad convergen a
+  `objetivo + bonus`.
+- **Qué deja marca.** Una fracción de cada efecto de evento sobre mecánica, laneo o teamfight. En la integración se
+  sumaron la práctica, las rutinas de offseason y amateur (el bootcamp) y el minijuego, todos por un solo
+  helper.
+- **El registro.** Cada aporte queda en `registro.marcas`, que solo crece.
+- **La ficha.** Muestra "Lo que construiste" ("▲ +3 mecánica — Bootcamp: dos meses afuera 2036"), y la barra de
+  mentalidad se llama **Consistencia**, también en el feed.
+
+**La previa sigue diciendo la verdad.** Con `k ≠ 0`, el momento de una fecha marcada cambia la mentalidad entre la
+previa y la tirada. Se decidió que cuenta la mentalidad de después de decidir, y que el motor **guarda la p de
+antes en la pausa**: el feed dice "el momento la movió desde X%". Los checks de K2d corren dos veces, con k = 0 y
+con k = 1.
+
+**Revisión independiente** (Opus): "Requiere corrección", con un motor sano.
+- **Con las perillas encendidas** (k = 1, r = 0,3, tope 60, rH = 0,3, fracciones 0,3), en una copia: 0 crashes,
+  0 NaN, 0 ids crudos. En 578 pausas la p guardada coincide, y la pausa sobrevive a guardar y cargar byte a byte.
+- **Lo que fallaba eran checks.** Cinco pasaban solo con las constantes neutras, la forma del guardado no incluía
+  marcas (eso habría obligado a K3c a subir `VERSION`), y había un mutante sobreviviente: la marca con el delta
+  previo al clamp.
+- **Arreglos** (un Sonnet). Ahora, con las perillas encendidas, `--rapido` solo falla la huella y la guarda de
+  neutralidad. Lo verifiqué yo en una copia: 169 OK.
+
+Verificación: `validate.js` 311/311 con la PENDIENTE de K2c (corrida completa del supervisor sobre `a329d49`) ·
+`simulate.js 1000` 0 crashes · `dist/` 1867 KB (techo 1900: quedan 33 KB y K4/K5 traen pantallas, así que el techo
+se re-mide en K4) · guardado `VERSION` 7.
+
 ### 2026-10-03 — FASE K, K2d: la previa (PLAN.md §K2) — K2 cerrada
 
 Antes de cada fecha marcada y de cada mapa de serie, en las pausas que el juego ya hacía, aparece una tarjeta con
