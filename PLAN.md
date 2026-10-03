@@ -6522,6 +6522,20 @@ bifurcaciones por carrera y el cambio de región no tiene evento.
 - **Lo que no cambia:** ningún número del motor, solo dato y, si hace falta, una condición nueva en el
   selector. `validate.js` cubre el esquema de eventos; los checks de K4-C siguen en verde.
 
+**K4-C2, tal como quedó** (`1f2256f`, `5cebbd0`). Las bifurcaciones pasaron de 2,0 a 5,4 por carrera: 9
+eventos nuevos y 6 de seguimiento que leen `flags.caminos`. Pero **el cambio de región, el cambio de línea y
+"dejar de competir" eran narrativa más stats y flags**: ningún evento podía cambiarte de liga, de línea ni
+retirarte. Eso rompe la regla 15 (la tarjeta promete una mudanza que el motor no hace). **Se decide:**
+- **Los eventos pasan a tener efectos de carrera reales**, declarados en el dato:
+  - `ofertaDeImport`: crea una oferta real de esa liga, que pasa por el mercado con sus reglas: contrato,
+    residencia, idioma;
+  - `cambiarRol`: tu línea pasa a ser otra, con el pool y la maestría que eso implica;
+  - `retirarse`: con su motivo, por el camino del retiro.
+- **Cada opción de bifurcación que promete eso usa el efecto**, y un check verifica que la promesa del texto y el
+  efecto coincidan.
+- **`la_llamada_del_manager` quedó muerta**, porque el pipeline corta los eventos durante la ventana de vuelta. Se
+  revive o se borra con su línea.
+
 **Para las cuatro piezas.**
 - Regla 15 en cada pantalla nueva: lo que muestra es lo que el motor usa.
 - Sin ids crudos.
