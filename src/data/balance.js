@@ -1505,7 +1505,11 @@ export const BALANCE = {
     // en el piso de PLAN.md K4, "≥ 1 cada 3"), con 10 uno de cada 2,7 (37%) y con 12
     // uno de cada 2,3. Elegido 10: margen sobre el piso sin dejar que cualquier
     // fecha del split diga "esto decide".
-    ventanaDefineClasificacion: 10,
+    // K4c: 10 -> 4. Solo la ventana (con `criterio`, 300 × 60, de a una perilla) baja las interrupciones de 109 a 105; con las
+    // otras perillas de cA (umbral 6, prensa [], las tres mecánicas en `mapa_decisivo`) la mediana llega a 89 (PLAN.md, "Paso 2 —
+    // lo que midieron los barridos"). Con 4 la fecha marcada "define la clasificación" una de cada ~4,1 splits: la fecha
+    // vuelve a ser una excepción, no el 37% de los splits.
+    ventanaDefineClasificacion: 4,
     // Fase 9R0a: la fecha marcada dejaba de mentir pero se repetía sola.
     // `career.ultimoEliminadoPor` no se limpiaba nunca y `career.orgs` sólo
     // crece, así que "la revancha contra tal" o "el clásico contra tal"
@@ -1543,19 +1547,31 @@ export const BALANCE = {
       // |fuerzaInicial − fuerza del rival| por encima de esto: serie sin nada en juego (juega el coach, no frena).
       // 15 puntos con σ de mapa 14,2: un mapa de ~0,85 y un Bo5 de ~0,97 para el favorito (sin el Fearless). Deja
       // ~30% de las series sin nada en juego (criterio, 30 × 60).
-      umbralSinNadaEnJuego: 15,
+      // K4c: 15 -> 6. Medido (criterio, 300 × 60, de a una perilla): las interrupciones bajan de 109 a 98 y el p90 de las paradas de
+      // playoffs, de 7 (36% con más de 4) a 5 (17%); el del internacional, de 7 (49%) a 5 (22%). Con cA entera: 89 interrupciones,
+      // 5 (11%) y 5 (12%) (PLAN.md, "Paso 2 — lo que midieron los barridos").
+      umbralSinNadaEnJuego: 6,
       // Salir con todo: tus mejores picks y más intensidad en los primeros `mapasConTodo` mapas; después lo pagás.
       mapasConTodo: 2,
-      empujeConTodo: 0.05,
-      desgasteConTodo: 0.03,
+      // K4c, los cinco `empuje*`/`desgaste*` ×3 (barrido con `criterio`, 300 × 60, escalando todos juntos; PLAN.md, "El barrido del
+      // plan de serie"): el Δp de las decisiones de plan, mediana, sube de 1,9 pp (×1; 10% de las paradas con Δp ≥ 5 pp) a 5,1 pp
+      // (×3; 52%), contra 3,5 (×2) y 7,2 (×4). `criterio` contra `azar` en series ganadas mide la palanca del plan. Con `criterio` el
+      // Bo5 del bloque A da 86,9 ± 2,1 con el ×3 (banda 75-85, 83,9 con ×1): ese check se mide ahora con el plan neutro ("K3c meta
+      // de K2 (criterio con plan neutro ...)", regla 17).
+      // `empujeConTodo`: 0,05 -> 0,15; `desgasteConTodo`: 0,03 -> 0,09.
+      empujeConTodo: 0.15,
+      desgasteConTodo: 0.09,
       // Guardar tu mejor campeón para el mapa decisivo: si llega, lo jugás con lo que no te vieron en toda la serie.
-      empujeGuardado: 0.03,
+      // K4c: `empujeGuardado` 0,03 -> 0,09 (el ×3 de arriba).
+      empujeGuardado: 0.09,
       // Por mapa antes del decisivo, la chance de que el rival te lea el guardado y te lo queme (te frena una vez).
       pLeenElGuardado: 0.12,
       // La sorpresa: el mapa 1 con un pick que el rival no preparó.
-      empujeSorpresa: 0.05,
+      // K4c: `empujeSorpresa` 0,05 -> 0,15 (el ×3 de arriba).
+      empujeSorpresa: 0.15,
       // La charla del coach: un comodín por temporada que empuja el mapa decisivo.
-      empujeCharla: 0.05,
+      // K4c: `empujeCharla` 0,05 -> 0,15 (el ×3 de arriba).
+      empujeCharla: 0.15,
       // El rival también quema campeones: su campeón del mapa i (0 el primero) juega con maestría
       // `maestriaRivalTope − i·caidaMaestriaRivalPorMapa` (piso `maestriaComodin`), con la misma regla que el tuyo.
       maestriaRivalTope: 80,
@@ -1563,9 +1579,16 @@ export const BALANCE = {
     },
     // K4-C: después de qué rondas sale la rueda de prensa (`post_serie`). La otra mitad —tras un escándalo— la
     // pone `systems/events.js` (`escandalo: true` en el dato).
-    rondasConPrensa: ['final'],
+    // K4c: ['final'] -> []: la prensa sale solo tras un escándalo. Medido (criterio, 300 × 60, de a una perilla): la prensa era el
+    // 55% de los minijuegos (11 por carrera) y pasa a 5 por carrera; las interrupciones bajan de 109 a 102,5 y el p90 de playoffs
+    // y del internacional, de 7 a 6. Con cA entera la prensa es el 28% del banco que compite por un momento (banda ≤ 35%)
+    // (PLAN.md, "Paso 2 — lo que midieron los barridos" y decisiones del paso 2, punto 4).
+    rondasConPrensa: [],
     // K4-B: en qué rondas el mapa decisivo trae su minijuego (con la charla del coach en la misma pausa). En las demás
     // el mapa decisivo frena igual, pero solo con la charla (`motivo: 'decisivo'`).
+    // K4c: `last_hit`, `la_vision` y `el_kite` (`data/minijuegos.json`) solo tenían el momento `mapa_cerrado`, que K4-B apagó: no
+    // salían nunca. Suman `mapa_decisivo` a sus `momentos` (antes: solo `mapa_cerrado`) y con cA entera salen las 10 mecánicas del
+    // catálogo, 4 minijuegos por carrera en vez de 11 (criterio, 300 × 60; PLAN.md, "Paso 2 — lo que midieron los barridos").
     rondasConMinijuegoDecisivo: ['semis', 'final', 'internacional'],
     // Fase 9R4a: cuanto mueve cada minijuego (`impacto`) y con cuanta
     // dispersion lo simula el camino headless (`spread`) ya NO viven aca: cada

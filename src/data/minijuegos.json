@@ -200,7 +200,8 @@
   {
     "id": "last_hit",
     "momentos": [
-      "mapa_cerrado"
+      "mapa_cerrado",
+      "mapa_decisivo"
     ],
     "roles": [
       "top",
@@ -353,7 +354,8 @@
   {
     "id": "la_vision",
     "momentos": [
-      "mapa_cerrado"
+      "mapa_cerrado",
+      "mapa_decisivo"
     ],
     "roles": [
       "support",
@@ -405,7 +407,8 @@
   {
     "id": "el_kite",
     "momentos": [
-      "mapa_cerrado"
+      "mapa_cerrado",
+      "mapa_decisivo"
     ],
     "roles": [
       "adc"
