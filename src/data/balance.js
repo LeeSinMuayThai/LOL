@@ -652,6 +652,9 @@ export const BALANCE = {
   },
 
   roster: {
+    // K4-C2: el cambio de línea de una bifurcación (`systems/roster.js:cambiarDeRol`) rearma el pool con esta
+    // cantidad de campeones de la línea nueva, con la maestría de recién aprendidos.
+    cambioDeRol: { tamanoPool: 3 },
     // Al entrar a un equipo sos el rookie: la jerarquia arranca abajo y hay que
     // ganarsela split a split. Cambiar de equipo la resetea parcialmente.
     jerarquiaInicial: 22,

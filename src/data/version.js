@@ -41,4 +41,4 @@
 // oferta de staff) y los eventos de seguimiento que leen los caminos que dejan en `flags.caminos`. Ninguna seed de K4
 // reproduce su carrera.
 export const VERSION_JUEGO = 'K4-C2';
-export const HUELLA_JUEGO = 398714982;
+export const HUELLA_JUEGO = 400571845;

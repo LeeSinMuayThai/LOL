@@ -10,8 +10,41 @@ import {
 } from '../core/registro.js';
 import { BALANCE } from '../data/balance.js';
 import { ROLES, IDS_ROL, etiquetaRol } from '../data/roles.js';
+import { aprenderCampeones } from '../core/pool.js';
 
 export const id = 'roster';
+
+// K4-C2 (regla 15): el cambio de línea de una bifurcación (`cambiarRol` en `data/events/caminos.json`). Tu línea
+// pasa a ser otra de verdad: los pesos del rol (`data/roles.js`) los lee todo el motor desde `player.role`; el pool
+// se rearma con campeones de la línea nueva y maestría de recién aprendidos (`aprenderCampeones`, la misma regla que
+// el offseason); los compañeros pasan a ser los de las otras cuatro líneas (el plantel del mundo si tu org lo tiene;
+// si no, el que jugaba tu línea nueva pasa a la tuya). La línea y el pool que dejás quedan guardados en
+// `flags.rolDeOrigen`: `rol: 'origen'` te devuelve a ellos (con el óxido de los splits sin jugarlos).
+// `rol` es una línea o un mapa línea actual → línea nueva.
+export function cambiarDeRol(state, rol, rng) {
+  const rolViejo = state.player.role;
+  const origen = state.flags.rolDeOrigen;
+  const rolNuevo = rol === 'origen' ? origen?.rol : (typeof rol === 'string' ? rol : rol?.[rolViejo]);
+  if (!ROLES[rolNuevo] || rolNuevo === rolViejo) {
+    return { state, descripcion: `seguís de ${etiquetaRol(rolViejo)}` };
+  }
+  const vuelve = origen?.rol === rolNuevo;
+  const conRol = { ...state, player: { ...state.player, role: rolNuevo, championPool: [], campeonDelSplit: null } };
+  const pool = vuelve
+    ? origen.pool
+    : aprenderCampeones(conRol, [], BALANCE.roster.cambioDeRol.tamanoPool, rng).pool;
+  const companeros = companerosDelPlantel(conRol, state.career.currentOrg)
+    ?? state.career.companeros.map((companero) => (companero.role === rolNuevo ? { ...companero, role: rolViejo } : companero));
+  return {
+    state: {
+      ...conRol,
+      player: { ...conRol.player, championPool: pool },
+      career: { ...state.career, companeros },
+      flags: { ...state.flags, rolDeOrigen: vuelve ? null : (origen ?? { rol: rolViejo, pool: state.player.championPool }) }
+    },
+    descripcion: `pasás de ${etiquetaRol(rolViejo)} a ${etiquetaRol(rolNuevo)} (pool de ${pool.map((c) => c.name).join(', ')})`
+  };
+}
 
 // Sea tier 1, 2 o 3: `orgDeCarrera` sabe dónde buscar en cada caso (fase 3).
 const orgActual = orgDeCarrera;

@@ -449,6 +449,13 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // (Bjergsen/Doublelift: dos cada uno — `CONCEPTO` §12.4). Al llegar a
       // `BALANCE.retiro.vueltasMaximas` el próximo retiro ya no abre ventana.
       vueltasUsadas: 0,
+      // K4-C2 (regla 15): los efectos de carrera de las bifurcaciones (`systems/events.js`). `ofertaDeImport` es la
+      // oferta de import aceptada que el mercado firma en la próxima pretemporada (`{ ligas, clausula }`);
+      // `rolDeOrigen` la línea y el pool que dejaste al cambiar de línea (`{ rol, pool }`); `motivoRetiro` por qué
+      // dejaste de competir ('streaming' | 'staff'). `null` mientras no pasó (T4).
+      ofertaDeImport: null,
+      rolDeOrigen: null,
+      motivoRetiro: null,
       // El `splitCount` de la última vuelta, para la marca transitoria
       // `vuelta_del_retiro` (mismo patrón que `splitDescenso`/`ventanaDescenso`).
       splitVuelta: null,

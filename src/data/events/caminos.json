@@ -33,13 +33,21 @@
       {
         "id": "aceptar_el_import",
         "label": "Aceptar y armar la mudanza",
-        "descripcion": "Cambiás de liga, de idioma y de rutina. Ganás plata y vitrina; perdés el piso conocido.",
+        "descripcion": "Cambiás de liga, de idioma y de rutina: la mudanza se firma en la próxima pretemporada. Ganás plata y vitrina; perdés el piso conocido.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Aterrizás con el pasaporte al día y el cliente en inglés. Los primeros scrims son raros y la plata se nota, pero sentís que el juego se te abrió: acá nadie te conoce y tenés que ganártelo de cero.",
+            "texto": "Firmás el preacuerdo y la cabeza ya está allá: clases de inglés, el cliente en otro servidor, la plata que se va a notar. Sentís que el juego se te abrió: allá nadie te conoce y vas a tener que ganártelo de cero.",
             "effects": [
+              {
+                "type": "ofertaDeImport",
+                "path": "flags.ofertaDeImport",
+                "liga": [
+                  "LEC",
+                  "LCS"
+                ]
+              },
               {
                 "type": "stat",
                 "path": "career.jerarquia",
@@ -79,8 +87,16 @@
           },
           {
             "weight": 4,
-            "texto": "La mudanza te pega más de lo que pensabas: comés solo, dormís mal por el huso y en las reuniones del staff entendés la mitad. En los primeros partidos se te nota.",
+            "texto": "Firmar es fácil; lo que viene, no. Ya sabés que vas a comer solo, dormir mal por el huso y entender la mitad de las reuniones del staff, y las últimas semanas en casa se te nota la cabeza en otro lado.",
             "effects": [
+              {
+                "type": "ofertaDeImport",
+                "path": "flags.ofertaDeImport",
+                "liga": [
+                  "LEC",
+                  "LCS"
+                ]
+              },
               {
                 "type": "stat",
                 "path": "player.stats.mentalidad",
@@ -118,7 +134,8 @@
               }
             ]
           }
-        ]
+        ],
+        "promete": "region"
       },
       {
         "id": "quedarte_en_la_lck",
@@ -298,13 +315,18 @@
       {
         "id": "ir_por_la_plata",
         "label": "Firmar con la LPL",
-        "descripcion": "Plata grande, mucho calendario y un mundo nuevo.",
+        "descripcion": "Plata grande, mucho calendario y un mundo nuevo: firmás para la próxima pretemporada.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Firmás y el primer mes sentís el cambio de escala: más partidos, más gente mirando y más guita en el banco. El techo de tu carrera se corre para arriba y vos te vas ajustando.",
+            "texto": "Firmás para la próxima pretemporada y ya sentís el cambio de escala: el contrato, el calendario, la gente que va a estar mirando. El techo de tu carrera se corre para arriba y vos te vas ajustando.",
             "effects": [
+              {
+                "type": "ofertaDeImport",
+                "path": "flags.ofertaDeImport",
+                "liga": "LPL"
+              },
               {
                 "type": "stat",
                 "path": "career.jerarquia",
@@ -344,8 +366,13 @@
           },
           {
             "weight": 4,
-            "texto": "El calendario de la LPL te pasa por arriba: scrims de sol a sol, viajes, un staff que no habla tu idioma. Cobrás bien, pero llegás a la cama sin ganas de nada.",
+            "texto": "Antes de viajar ya ves lo que viene: scrims de sol a sol, viajes y un staff que no habla tu idioma. La plata es buena, pero la sola idea te deja sin ganas de nada.",
             "effects": [
+              {
+                "type": "ofertaDeImport",
+                "path": "flags.ofertaDeImport",
+                "liga": "LPL"
+              },
               {
                 "type": "stat",
                 "path": "player.stats.mentalidad",
@@ -393,7 +420,8 @@
               }
             ]
           }
-        ]
+        ],
+        "promete": "region"
       },
       {
         "id": "rechazar_y_quedarte",
@@ -463,8 +491,14 @@
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Aceptan la cláusula. Entrás sin quemar las naves y con un año para ver si el cambio te sirve.",
+            "texto": "Aceptan la cláusula: firmás para la próxima pretemporada sin quemar las naves, con una salida escrita si el cambio no te sirve.",
             "effects": [
+              {
+                "type": "ofertaDeImport",
+                "path": "flags.ofertaDeImport",
+                "liga": "LPL",
+                "clausula": "salida"
+              },
               {
                 "type": "stat",
                 "path": "player.stats.adaptabilidad",
@@ -513,7 +547,8 @@
               }
             ]
           }
-        ]
+        ],
+        "promete": "region"
       }
     ]
   },
@@ -553,13 +588,18 @@
       {
         "id": "ir_a_corea",
         "label": "Ir a Corea a jugártela",
-        "descripcion": "Techo altísimo de nivel; idioma, comida y distancia en contra.",
+        "descripcion": "Techo altísimo de nivel; idioma, comida y distancia en contra. Te mudás en la próxima pretemporada.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Aterrizás en Seúl y la primera semana de scrims te muestra qué es ser mediocre en serio. Lo que aprendés en tres meses no lo aprendías en tres años en casa.",
+            "texto": "Firmás y te ponés a jugar en el servidor coreano desde casa: la primera semana te muestra qué es ser mediocre en serio. Lo que vas a aprender allá no lo aprendías en tres años acá.",
             "effects": [
+              {
+                "type": "ofertaDeImport",
+                "path": "flags.ofertaDeImport",
+                "liga": "LCK"
+              },
               {
                 "type": "stat",
                 "path": "player.stats.mecanica",
@@ -609,8 +649,13 @@
           },
           {
             "weight": 5,
-            "texto": "Corea te rompe: el ritmo, el idioma, un coach que no te explica nada. Te falta el equipo de siempre y entrenás con un nudo en el estómago. Algo del nivel se te pega igual.",
+            "texto": "Firmás, y los preparativos solos ya te pesan: el idioma, la comida, los horarios de scrim que te pasan desde Seúl. Te va a faltar el equipo de siempre y entrenás con un nudo en el estómago. Algo del nivel se te pega igual.",
             "effects": [
+              {
+                "type": "ofertaDeImport",
+                "path": "flags.ofertaDeImport",
+                "liga": "LCK"
+              },
               {
                 "type": "stat",
                 "path": "player.stats.mentalidad",
@@ -658,7 +703,8 @@
               }
             ]
           }
-        ]
+        ],
+        "promete": "region"
       },
       {
         "id": "bootcamp_de_tres_meses",
@@ -837,13 +883,18 @@
       {
         "id": "vivir_del_canal",
         "label": "Dejar de competir y vivir del canal",
-        "descripcion": "Cortás con las scrims y el equipo. El stream pasa a ser tu trabajo.",
+        "descripcion": "Te retirás: cortás con las scrims y el equipo, y el stream pasa a ser tu trabajo.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
             "texto": "El primer mes es raro: sin horario fijo, sin review. Pero el canal explota: la gente quiere al ex pro que habla de todo sin filtro. Mirás para atrás y no extrañás el cliente a las ocho de la mañana.",
             "effects": [
+              {
+                "type": "retirarse",
+                "path": "phase",
+                "motivo": "streaming"
+              },
               {
                 "type": "stat",
                 "path": "player.stats.hype",
@@ -906,6 +957,11 @@
             "texto": "El canal se estanca a los dos meses: los números que parecían estructurales eran el pico de una racha. Sin equipo y sin el filtro de la competencia, te cuesta saber para qué estás jugando.",
             "effects": [
               {
+                "type": "retirarse",
+                "path": "phase",
+                "motivo": "streaming"
+              },
+              {
                 "type": "stat",
                 "path": "player.stats.hype",
                 "min": 1,
@@ -962,7 +1018,8 @@
               }
             ]
           }
-        ]
+        ],
+        "promete": "retiro"
       },
       {
         "id": "contrato_de_streamer_jugador",
@@ -1135,13 +1192,24 @@
       {
         "id": "aceptar_el_swap",
         "label": "Aceptar y meterte de lleno en la línea nueva",
-        "descripcion": "Te ofrecés al cien por ciento. Si sale bien, valés más; si sale mal, te desarmás.",
+        "descripcion": "Pasás a jugar la línea nueva de titular, con un pool que arranca de cero. Si sale bien, valés más; si sale mal, te desarmás.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
             "texto": "Te cuesta la primera semana, pero en la segunda empezás a ver los timings del otro lado del mapa. El coach te agradece y el draft del equipo se abre: ahora tiene un flex de verdad.",
             "effects": [
+              {
+                "type": "cambiarRol",
+                "path": "player.role",
+                "rol": {
+                  "top": "jungla",
+                  "jungla": "top",
+                  "mid": "adc",
+                  "adc": "mid",
+                  "support": "jungla"
+                }
+              },
               {
                 "type": "stat",
                 "path": "player.stats.adaptabilidad",
@@ -1181,8 +1249,19 @@
           },
           {
             "weight": 4,
-            "texto": "La línea nueva te desarma: pierdas o ganes, los fundamentos de la tuya se oxidan. Cuando volvés a tu puesto, algo de la mano quedó en otro lado.",
+            "texto": "La línea nueva te desarma: pierdas o ganes, te falta el instinto de quien la jugó toda la vida, y lo que sabías de la tuya se va oxidando.",
             "effects": [
+              {
+                "type": "cambiarRol",
+                "path": "player.role",
+                "rol": {
+                  "top": "jungla",
+                  "jungla": "top",
+                  "mid": "adc",
+                  "adc": "mid",
+                  "support": "jungla"
+                }
+              },
               {
                 "type": "stat",
                 "path": "player.stats.mecanica",
@@ -1220,7 +1299,8 @@
               }
             ]
           }
-        ]
+        ],
+        "promete": "rol"
       },
       {
         "id": "aceptar_solo_en_scrims",
@@ -2405,6 +2485,71 @@
             ]
           }
         ]
+      },
+      {
+        "id": "colgar_el_mouse_y_pasar_al_staff",
+        "label": "Colgar el mouse ya y pasar al staff",
+        "descripcion": "Te retirás ahora: el próximo split lo mirás desde la silla del scrim.",
+        "weight": 3,
+        "promete": "retiro",
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu última serie la jugás sabiendo que es la última. Al otro día ya estás en la silla del scrim, con la libreta en la mano y los chicos mirándote raro.",
+            "effects": [
+              {
+                "type": "retirarse",
+                "path": "phase",
+                "motivo": "staff"
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 5
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 2,
+                "max": 5
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.staff",
+                "valor": "en_el_staff"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Colgar el mouse es más difícil de lo que parecía: la primera semana en el staff mirás los scrims con las manos inquietas, pero la decisión está tomada.",
+            "effects": [
+              {
+                "type": "retirarse",
+                "path": "phase",
+                "motivo": "staff"
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 1,
+                "max": 4
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.staff",
+                "valor": "en_el_staff"
+              }
+            ]
+          }
+        ]
       }
     ]
   },
@@ -2691,7 +2836,7 @@
     "id": "el_canal_crecio",
     "categoria": "oportunidad",
     "title": "El canal creció",
-    "description": "Hace unos meses dejaste el equipo por el stream y hoy tu canal tiene más viewers que muchos partidos de liga. Las marcas te escriben, los fans te piden que vuelvas a competir y tu ex coach te manda un mensaje que no sabés cómo leer.",
+    "description": "Volviste a competir, pero el canal que armaste mientras estabas afuera no se apagó: tiene más viewers que muchos partidos de liga. Las marcas te escriben, el chat te pide más horas y el coach te manda un mensaje que no sabés cómo leer.",
     "weight": 40,
     "cooldown": 10,
     "contexto": {
@@ -2708,12 +2853,12 @@
       {
         "id": "escalar_el_negocio",
         "label": "Armar un equipo de producción y escalar",
-        "descripcion": "Dejás de ser el ex pro que streamea y te volvés una marca.",
+        "descripcion": "El canal deja de ser un hobby y se vuelve una marca, con equipo propio.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Contratás un editor y alguien que te lleve las redes, y el canal despega con formato propio. Ya no sos el ex pro que streamea: sos una marca.",
+            "texto": "Contratás un editor y alguien que te lleve las redes, y el canal despega con formato propio. Ya no sos el pro que streamea: sos una marca.",
             "effects": [
               {
                 "type": "stat",
@@ -2777,13 +2922,13 @@
       },
       {
         "id": "volver_a_competir",
-        "label": "Escuchar a los fans y volver a competir",
-        "descripcion": "Retomás la ladder con el canal prendido.",
+        "label": "Bajar el stream y meterte de lleno en la competencia",
+        "descripcion": "Retomás la ladder en serio; el canal queda para los ratos libres.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Volvés a rankear con el canal prendido y el chat te empuja. Te cuesta recuperar el ritmo, pero mostrás que el streamer todavía sabe jugar.",
+            "texto": "Bajás las horas de stream y el chat lo entiende. Te cuesta recuperar el ritmo, pero mostrás que el streamer todavía sabe jugar.",
             "effects": [
               {
                 "type": "stat",
@@ -3005,13 +3150,18 @@
       {
         "id": "volver_a_lo_tuyo",
         "label": "Volver a lo tuyo y dejar el swap como anécdota",
-        "descripcion": "Te concentrás de nuevo en tu línea.",
+        "descripcion": "Volvés a tu línea de siempre y a tu pool, con el óxido de los splits sin jugarlo.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
             "texto": "Volvés a tu línea con las manos más sueltas: lo del swap te sirvió para respirar y ordenarte.",
             "effects": [
+              {
+                "type": "cambiarRol",
+                "path": "player.role",
+                "rol": "origen"
+              },
               {
                 "type": "stat",
                 "path": "player.stats.mecanica",
@@ -3044,6 +3194,11 @@
             "texto": "Tu línea te recibe con frialdad: cuesta volver a agarrar el ritmo y el draft ya no te tiene tan en cuenta.",
             "effects": [
               {
+                "type": "cambiarRol",
+                "path": "player.role",
+                "rol": "origen"
+              },
+              {
                 "type": "stat",
                 "path": "player.stats.mecanica",
                 "min": -2,
@@ -3070,7 +3225,8 @@
               }
             ]
           }
-        ]
+        ],
+        "promete": "rol"
       }
     ]
   },
