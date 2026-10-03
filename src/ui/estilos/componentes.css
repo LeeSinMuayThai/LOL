@@ -349,6 +349,19 @@ h1::before {
   font-variant-numeric: tabular-nums;
   line-height: var(--lh-snug);
 }
+/* K4c-F: las líneas `adjunto` viajan adentro del beat anterior (no cuestan un beat del reproductor), legibles —
+   un renglón cada una, más chicas que lo narrativo y sin atenuar como la tira técnica. */
+.log-adjuntos {
+  margin-top: var(--s-2);
+  padding-top: var(--s-2);
+  border-top: 1px solid var(--line-faint);
+  display: grid;
+  gap: var(--s-1);
+  font-size: var(--fs-1);
+  color: var(--ink-dim);
+  line-height: var(--lh-snug);
+  overflow-wrap: anywhere;
+}
 @keyframes entrar-breaking {
   from { opacity: 0; transform: translateY(-8px); }
   to   { opacity: 1; transform: none; }

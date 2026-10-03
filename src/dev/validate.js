@@ -9445,8 +9445,8 @@ function recuentoRitmoK0(observaciones) {
     tiempoReproductorMin: enMinutos(observaciones.map((o) => o.tiempoReproductorMin)),
     // K4c (paso 1): el tiempo-máquina por fuente, como mapa fuente -> hojas (el reporte lo da como lista ordenada).
     tiempoMaquinaPorFuente: (() => {
-      const fuentes = new Set(observaciones.flatMap((o) => Object.keys(o.logsNoTecnicosPorFuente)));
-      const logsPorCarrera = (fuente) => observaciones.map((o) => o.logsNoTecnicosPorFuente[fuente] ?? 0);
+      const fuentes = new Set(observaciones.flatMap((o) => Object.keys(o.logsConBeatPorFuente)));
+      const logsPorCarrera = (fuente) => observaciones.map((o) => o.logsConBeatPorFuente[fuente] ?? 0);
       const promedios = Object.fromEntries([...fuentes].map((fuente) => [fuente, mediaK0(logsPorCarrera(fuente))]));
       const totalPromedios = suma(promedios);
       return Object.fromEntries([...fuentes].map((fuente) => [fuente, {
@@ -11339,16 +11339,18 @@ checkLento('K0 observación: beats del reproductor, minijuegos y tipo de split c
     if (Math.abs(observacion.tiempoReproductorMin - tiempoReproductor) > 1e-9) {
       throw new Error(`seed ${seed}: tiempoReproductorMin ${observacion.tiempoReproductorMin} != ${tiempoReproductor}`);
     }
-    const tiempoMaquina = (state.logs.filter((log) => !log.tecnico).length * DURACION_BEAT_MS) / 60000;
+    // K4c-F (regla 17): reemplaza a "cada log no técnico": cuenta los que forman beat (ni técnicos ni `adjunto`),
+    // escrito a mano acá para no depender de `formaBeat`.
+    const tiempoMaquina = (state.logs.filter((log) => !log.tecnico && !log.adjunto).length * DURACION_BEAT_MS) / 60000;
     if (Math.abs(observacion.tiempoMaquinaMin - tiempoMaquina) > 1e-9) {
       throw new Error(`seed ${seed}: tiempoMaquinaMin ${observacion.tiempoMaquinaMin} != ${tiempoMaquina}`);
     }
-    // K4c (paso 1): `logsNoTecnicosPorFuente` = los logs no técnicos del estado final por `type`, con la forma del log como
+    // K4c (paso 1), K4c-F: `logsConBeatPorFuente` = los logs que forman beat del estado final por `type`, con la forma del log como
     // sufijo (la primera clave que tenga de la lista de `CLAVES_DE_FORMA_DE_LOG`, recontada acá a mano), y suman los mismos
     // logs que el tiempo-máquina.
     const fuentesAMano = {};
     for (const log of state.logs) {
-      if (log.tecnico) {
+      if (log.tecnico || log.adjunto) {
         continue;
       }
       const forma = log.mapa !== undefined ? ':mapa' : log.postSerie !== undefined ? ':postSerie' : log.cronica !== undefined ? ':cronica'
@@ -11356,8 +11358,8 @@ checkLento('K0 observación: beats del reproductor, minijuegos y tipo de split c
           : log.vinetas !== undefined ? ':vinetas' : log.top20 !== undefined ? ':top20' : log.efectos !== undefined ? ':efectos' : '';
       fuentesAMano[log.type + forma] = (fuentesAMano[log.type + forma] ?? 0) + 1;
     }
-    if (JSON.stringify(Object.entries(observacion.logsNoTecnicosPorFuente).sort()) !== JSON.stringify(Object.entries(fuentesAMano).sort())) {
-      throw new Error(`seed ${seed}: logsNoTecnicosPorFuente ${JSON.stringify(observacion.logsNoTecnicosPorFuente)} != el recuento a mano ${JSON.stringify(fuentesAMano)}`);
+    if (JSON.stringify(Object.entries(observacion.logsConBeatPorFuente).sort()) !== JSON.stringify(Object.entries(fuentesAMano).sort())) {
+      throw new Error(`seed ${seed}: logsConBeatPorFuente ${JSON.stringify(observacion.logsConBeatPorFuente)} != el recuento a mano ${JSON.stringify(fuentesAMano)}`);
     }
     splitsDeCadaTipo.regular += splitsPro.filter((s) => s.tipo === 'regular').length;
     splitsDeCadaTipo.playoffs += splitsPro.filter((s) => s.tipo === 'playoffs').length;
@@ -17743,6 +17745,197 @@ check('bandasPendientes 3: toda entrada tiene valor medido, banda, commit y la s
   const problemas = entradasIncompletas(BANDAS_PENDIENTES, BLOQUES_DE_CORRIMIENTO);
   if (problemas.length > 0) {
     throw new Error(problemas.join('; '));
+  }
+});
+
+// --- K4c-F: el feed ---------------------------------------------------------------------------------------------------
+// Lo que se reproduce como beat baja; nada se borra del estado. El mecanismo: `adjunto: true` en el log (core/log.js)
+// = la línea viaja adentro del beat anterior. `formaBeat` es la única fuente de verdad, la leen el reproductor
+// (`agruparBeats`) y el instrumento (`contarBeats`, `tiempoMaquinaMin`).
+const { ESTRATEGIAS: ESTRATEGIAS_K4CF } = await import('./estrategias.js');
+const coreLogK4cf = await import('../core/log.js');
+const coreEscenaK4cf = await import('../core/escena.js');
+const SEEDS_K4CF = [1, 2, 3];
+const SPLITS_K4CF = 60;
+let carrerasK4cf = null;
+function carrerasDelFeed() {
+  if (!carrerasK4cf) {
+    carrerasK4cf = SEEDS_K4CF.map((seed) => ({ seed, ...correrCarreraSimulate(seed, SPLITS_K4CF, ESTRATEGIAS_K4CF.criterio) }));
+  }
+  return carrerasK4cf;
+}
+const formaBeatK4cf = (log) => !log.tecnico && !log.adjunto;
+
+check('K4c-F 1: los renglones de efecto de un evento van adentro del beat del evento (un beat, no N)', () => {
+  const evento = TODOS_LOS_EVENTOS.find((candidato) => candidato.id === 'el_canal_de_tiempo_completo');
+  if (!evento || !evento.options.some((opcion) => opcion.id === 'vivir_del_canal')) {
+    throw new Error('falta el evento de la sonda (el_canal_de_tiempo_completo / vivir_del_canal)');
+  }
+  let conRenglones = 0;
+  for (let seed = 1; seed <= 20; seed += 1) {
+    const rng = mulberry32(seed);
+    const st = createInitialState(seed, rng);
+    const { logs } = resolverOpcion(st, evento, 'vivir_del_canal', rng);
+    if (logs.length < 2) {
+      continue;
+    }
+    conRenglones += 1;
+    if (!formaBeatK4cf(logs[0])) {
+      throw new Error(`seed ${seed}: el log del evento no forma su beat`);
+    }
+    const sueltos = logs.slice(1).filter(formaBeatK4cf);
+    if (sueltos.length > 0) {
+      throw new Error(`seed ${seed}: ${sueltos.length} renglón(es) de efecto forman su propio beat: ${sueltos.map((l) => l.message).join(' | ')}`);
+    }
+    if (agruparBeats(logs).length !== 1) {
+      throw new Error(`seed ${seed}: el evento con sus efectos da ${agruparBeats(logs).length} beats, no 1`);
+    }
+  }
+  if (conRenglones === 0) {
+    throw new Error('la sonda no produjo ningún renglón de efecto (la opción ya no retira, o no está viva en el estado inicial)');
+  }
+});
+
+check('K4c-F 2: la escena reproduce como beat solo lo que te toca (tu liga, tus orgs, tus rivales) y el Mundial', () => {
+  if (typeof coreEscenaK4cf.finalTeToca !== 'function') {
+    throw new Error('core/escena.js no exporta finalTeToca');
+  }
+  // El predicado, a mano sobre un estado mínimo.
+  const estado = {
+    career: { liga: 'LCK', currentOrg: 'Actual', orgs: ['Vieja', 'Actual'] },
+    mundo: {
+      archirrival: { handle: 'Archi', org: 'DelArchi' },
+      planteles: { ConRival: { mid: { handle: 'Gen', rivalDeGeneracion: true } }, Ajena: { mid: { handle: 'X', rivalDeGeneracion: false } } }
+    }
+  };
+  const org = (nombre) => ({ nombre });
+  const casos = [
+    [{ id: 'LCK' }, 'Ajena', 'Otra', true],
+    [{ id: 'LEC' }, 'Vieja', 'Otra', true],
+    [{ id: 'LEC' }, 'Otra', 'Actual', true],
+    [{ id: 'LEC' }, 'ConRival', 'Otra', true],
+    [{ id: 'LEC' }, 'Otra', 'DelArchi', true],
+    [{ id: 'LEC' }, 'Ajena', 'Otra', false]
+  ];
+  for (const [liga, campeon, subcampeon, esperado] of casos) {
+    if (coreEscenaK4cf.finalTeToca(estado, liga, org(campeon), org(subcampeon)) !== esperado) {
+      throw new Error(`finalTeToca(${liga.id}, ${campeon} vs ${subcampeon}) debería dar ${esperado}`);
+    }
+  }
+  // En carreras reales: el Mundial siempre es beat; las finales ajenas viajan adjuntas.
+  let adjuntas = 0;
+  for (const { seed, state } of carrerasDelFeed()) {
+    for (const log of state.logs.filter((l) => l.type === 'escena')) {
+      if (log.message.startsWith('Worlds') && !formaBeatK4cf(log)) {
+        throw new Error(`seed ${seed}: la línea del Mundial no forma beat: ${log.message}`);
+      }
+      if (log.adjunto) {
+        adjuntas += 1;
+      }
+    }
+  }
+  if (adjuntas === 0) {
+    throw new Error(`ninguna final de otra liga viaja adjunta en las seeds ${SEEDS_K4CF.join(', ')}: la escena entera sigue costando beats`);
+  }
+});
+
+check('K4c-F 3: el meta es un renglón por parche (el campeón que sale va adentro del beat del parche)', () => {
+  let debuts = 0;
+  for (const { seed, state } of carrerasDelFeed()) {
+    state.logs.forEach((log, i) => {
+      if (log.type !== 'meta' || i === 0) {
+        return;
+      }
+      const previo = state.logs[i - 1];
+      if (log.message.startsWith('Sale ')) {
+        debuts += 1;
+      }
+      if (previo.type === 'meta' && formaBeatK4cf(previo) && formaBeatK4cf(log)) {
+        throw new Error(`seed ${seed}, log ${i}: dos beats de meta seguidos en el mismo parche: "${previo.message.slice(0, 40)}" y "${log.message.slice(0, 40)}"`);
+      }
+    });
+  }
+  if (debuts === 0) {
+    throw new Error('ningún campeón debutó en las seeds de la sonda: el check no prueba nada');
+  }
+});
+
+check('K4c-F 4: de las series en las que no frenaste, un renglón por serie (los mapas van adentro del beat)', () => {
+  let seriesSinFrenar = 0;
+  let seriesConPlan = 0;
+  for (const { seed, state } of carrerasDelFeed()) {
+    state.logs.forEach((log, i) => {
+      if (log.type !== 'serie' || !log.postSerie) {
+        return;
+      }
+      const mapas = [];
+      for (let j = i - 1; j >= 0 && mapas.length < log.mapas.length; j -= 1) {
+        if (state.logs[j].type === 'serie' && state.logs[j].mapa !== undefined) {
+          mapas.push(state.logs[j]);
+        }
+      }
+      if (log.sinNadaEnJuego) {
+        seriesSinFrenar += 1;
+        const sueltos = mapas.filter(formaBeatK4cf);
+        if (sueltos.length > 0) {
+          throw new Error(`seed ${seed}, log ${i}: serie sin nada en juego con ${sueltos.length} mapa(s) como beat propio`);
+        }
+      } else if (log.torneo !== 'mundial') {
+        seriesConPlan += 1;
+        if (mapas.some((mapa) => !formaBeatK4cf(mapa))) {
+          throw new Error(`seed ${seed}, log ${i}: una serie que te frenó tiene mapas adjuntos (tu serie no se comprime)`);
+        }
+      }
+    });
+  }
+  if (seriesSinFrenar === 0 || seriesConPlan === 0) {
+    throw new Error(`la sonda necesita series de los dos tipos (sin frenar: ${seriesSinFrenar}, con plan: ${seriesConPlan})`);
+  }
+});
+
+check('K4c-F b: nada se borra del estado — cada línea está en un beat del feed, y los mapas y los debuts siguen en state.logs', () => {
+  for (const { seed, state } of carrerasDelFeed()) {
+    const beats = agruparBeats(state.logs);
+    const cubiertas = beats.reduce((suma, beat) => suma + (beat.narrativa ? 1 : 0) + beat.tecnicos.length + (beat.adjuntos?.length ?? 0), 0);
+    if (cubiertas !== state.logs.length) {
+      throw new Error(`seed ${seed}: el feed agrupa ${cubiertas} líneas de ${state.logs.length}`);
+    }
+    const mapasLogueados = state.logs.filter((l) => l.type === 'serie' && l.mapa !== undefined).length;
+    const mapasJugados = state.logs.filter((l) => l.type === 'serie' && l.postSerie).reduce((suma, l) => suma + l.mapas.length, 0)
+      + (state.serie?.activa ? state.serie.mapas.length : 0);
+    if (mapasLogueados !== mapasJugados) {
+      throw new Error(`seed ${seed}: ${mapasLogueados} mapas en state.logs, ${mapasJugados} jugados`);
+    }
+    const debuts = state.logs.filter((l) => l.type === 'meta' && l.message.startsWith('Sale ')).length;
+    if (debuts !== state.mundo.campeonesDebutados.length) {
+      throw new Error(`seed ${seed}: ${debuts} debuts en state.logs, ${state.mundo.campeonesDebutados.length} en el mundo`);
+    }
+  }
+});
+
+check('K4c-F c: el instrumento cuenta los mismos beats que el reproductor (contarBeats = agruparBeats, tiempoMaquinaMin = formaBeat)', () => {
+  if (typeof coreLogK4cf.formaBeat !== 'function') {
+    throw new Error('core/log.js no exporta formaBeat');
+  }
+  const rng = mulberry32(4242);
+  const tipos = ['N', 'T', 'A'];
+  for (let intento = 0; intento < 400; intento += 1) {
+    const largo = Math.floor(rng() * 12);
+    const forma = Array.from({ length: largo }, () => tipos[Math.floor(rng() * tipos.length)]);
+    const lote = forma.map((t) => ({ type: 'x', message: '.', tecnico: t === 'T', ...(t === 'A' ? { adjunto: true } : {}) }));
+    if (contarBeats(lote) !== agruparBeats(lote).length) {
+      throw new Error(`contarBeats(${forma.join('')}) = ${contarBeats(lote)}, agruparBeats da ${agruparBeats(lote).length}`);
+    }
+  }
+  for (const { seed, state, observacion } of carrerasDelFeed()) {
+    const conNarrativa = agruparBeats(state.logs).filter((beat) => beat.narrativa).length;
+    const esperado = (conNarrativa * DURACION_BEAT_MS) / 60000;
+    if (Math.abs(observacion.tiempoMaquinaMin - esperado) > 1e-9) {
+      throw new Error(`seed ${seed}: tiempoMaquinaMin ${observacion.tiempoMaquinaMin} != ${esperado} (los beats con narrativa del reproductor)`);
+    }
+    if (state.logs.filter(coreLogK4cf.formaBeat).length !== conNarrativa) {
+      throw new Error(`seed ${seed}: formaBeat y agruparBeats no cuentan lo mismo`);
+    }
   }
 });
 
