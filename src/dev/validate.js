@@ -8779,7 +8779,8 @@ check('K0-B server: solo localhost, solo la lista blanca y sin salir de la raiz 
 const { calcularHuella, calcularHuellaJuego } = await import('./huella.js');
 const {
   medirAgencia, analizarDatosAgencia, tCritico, tCriticoBilateral, testMaximoT, significativaTestViejo,
-  replicasDeDecision, puntajeDeAgencia, sigmaPoblacional, UMBRAL_SIGNIFICATIVO, MIN_REPLICAS_VALIDAS
+  replicasDeDecision, puntajeDeAgencia, sigmaPoblacional, UMBRAL_SIGNIFICATIVO, MIN_REPLICAS_VALIDAS,
+  tipoDeParada, palancaSobreLasQueQuedan, tablaDeRecorte, combinarMediciones
 } = await import('./agencia.js');
 const { puntajeDeCarrera: puntajeDeCarreraAgencia } = await import('../core/puntaje.js');
 const {
@@ -10022,6 +10023,91 @@ check('K0 agencia sintética: las tres definiciones de pctInterrupcionesConPalan
   }
   if (MIN_REPLICAS_VALIDAS !== 4) {
     throw new Error(`MIN_REPLICAS_VALIDAS tenía que ser 4 (la auditoría), es ${MIN_REPLICAS_VALIDAS}`);
+  }
+});
+
+check('K4c agencia por tipo de parada: los tipos de desglosePorTipo, el aporte al KPI, lo que queda al recortar y la unión de procesos, con números calculados a mano', () => {
+  // K4c (paso 1): el paso 2 recorta paradas con este dato, así que cada columna tiene un valor calculado a mano sobre un
+  // conjunto sintético chico (no simula nada: la referencia de σ va a mano). Cuatro tipos: uno con palanca en las 4 decisiones
+  // medidas (serie:plan, 40 paradas), uno con 1 de 8 significativa y la categoría de los eventos para normalizar (eventos:x,
+  // 30 + 20 paradas), uno sin efecto (temporada:momento, 30) y uno que paró y nunca se midió (amateur:salida_amateur, 20):
+  // 140 paradas en 10 carreras. Aporte al KPI: serie:plan 40 / 140 = 28,6; eventos:x 50 × 0,125 / 140 = 4,5.
+  const rep = repSinteticaK0;
+  const decision = (tipo, a, b) => ({ seed: 1, split: 1, tipo, labels: ['a', 'b'], porOpcion: [a.map(rep), b.map(rep)] });
+  const SIG = [[100, 103, 98, 101], [10, 12, 9, 11]];
+  const NO = [[10, 12, 11, 13], [11, 12, 12, 12]];
+  const veces = (n, tipo, par) => Array.from({ length: n }, () => decision(tipo, ...par));
+  const resultados = [
+    ...veces(4, 'serie:plan', SIG),
+    decision('eventos:x:rutina', ...SIG), ...veces(3, 'eventos:x:rutina', NO), ...veces(4, 'eventos:x:parche', NO),
+    ...veces(2, 'temporada:momento', NO)
+  ];
+  const frecuenciasTipo = {
+    'serie:plan': 40, 'eventos:x:rutina': 30, 'eventos:x:parche': 20, 'temporada:momento': 30, 'amateur:salida_amateur': 20
+  };
+  const analisis = analizarDatosAgencia({ resultados, frecuenciasTipo, totalInterrupciones: 140, carreras: 10 }, 1, { sPop: 10, sPopT: 1 });
+
+  if (tipoDeParada('eventos:x:rutina') !== 'eventos:x' || tipoDeParada('edadCierre:x:parche') !== 'edadCierre:x' || tipoDeParada('serie:plan') !== 'serie:plan') {
+    throw new Error('tipoDeParada tiene que dar sistema:motivo, los tipos de desglosePorTipo, sin la categoría de los eventos');
+  }
+  const esperadas = {
+    'serie:plan': { frecuencia: 40, porCarrera: 4, n: 4, pctSignificativo: 100, palancaMediana: 9, aportePct: 28.6 },
+    'eventos:x': { frecuencia: 50, porCarrera: 5, n: 8, pctSignificativo: 12.5, aportePct: 4.5 },
+    'temporada:momento': { frecuencia: 30, porCarrera: 3, n: 2, pctSignificativo: 0, aportePct: 0 },
+    'amateur:salida_amateur': { frecuencia: 20, porCarrera: 2, n: 0, pctSignificativo: 0, palancaMediana: null, aportePct: 0 }
+  };
+  if (analisis.porTipoDeParada.length !== Object.keys(esperadas).length) {
+    throw new Error(`porTipoDeParada tenía que traer 4 tipos, trajo ${analisis.porTipoDeParada.map((f) => f.tipo).join(', ')}`);
+  }
+  for (const [tipo, campos] of Object.entries(esperadas)) {
+    const f = analisis.porTipoDeParada.find((candidata) => candidata.tipo === tipo);
+    if (!f) {
+      throw new Error(`falta el tipo de parada ${tipo}`);
+    }
+    for (const [campo, valor] of Object.entries(campos)) {
+      if (f[campo] !== valor) {
+        throw new Error(`${tipo}.${campo}: se esperaba ${valor}, dio ${f[campo]}`);
+      }
+    }
+  }
+  if (analisis.porTipoDeParada.map((f) => f.frecuencia).join() !== '50,40,30,20') {
+    throw new Error('porTipoDeParada tiene que ir de más a menos paradas');
+  }
+  // (40 + 6,25) / 140 = 33,04 % de las paradas.
+  if (analisis.pctPalancaPorTipoDeParada !== 33) {
+    throw new Error(`pctPalancaPorTipoDeParada tenía que ser 33 (46,25 de 140), dio ${analisis.pctPalancaPorTipoDeParada}`);
+  }
+
+  // Lo que queda al recortar: sin nada, las 140 paradas con 33% de palanca; sin los dos de palanca cero, 90 paradas (9 por
+  // carrera) y (40 + 6,25) / 90 = 51,4 %.
+  const sinNada = palancaSobreLasQueQuedan(analisis.porTipoDeParada, [], 10);
+  if (sinNada.paradas !== 140 || sinNada.paradasPorCarrera !== 14 || sinNada.pctPalanca !== 33) {
+    throw new Error(`sin recortar: ${JSON.stringify(sinNada)}`);
+  }
+  const recortado = palancaSobreLasQueQuedan(analisis.porTipoDeParada, ['temporada:momento', 'amateur:salida_amateur'], 10);
+  if (recortado.paradas !== 90 || recortado.paradasPorCarrera !== 9 || recortado.pctPalanca !== 51.4) {
+    throw new Error(`recortando los dos sin palanca: ${JSON.stringify(recortado)}`);
+  }
+  const tabla = tablaDeRecorte(analisis.porTipoDeParada, 10);
+  const resumen = tabla.map((fila) => `${fila.quitando}|${fila.paradasPorCarrera}|${fila.pctPalanca}`).join(' ');
+  const esperadoTabla = 'temporada:momento|11|42 amateur:salida_amateur|9|51.4 eventos:x|4|100 serie:plan|0|null';
+  if (resumen !== esperadoTabla) {
+    throw new Error(`tablaDeRecorte tenía que ir de menos a más palanca (a igual palanca, el más frecuente primero): ${resumen}`);
+  }
+
+  // La unión de procesos: partir las carreras en dos mitades y juntarlas da el mismo análisis que el conjunto entero.
+  const mitad = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, v / 2]));
+  const parte = (desde, hasta) => ({
+    baseline: Array.from({ length: 5 }, () => ({ score: 1 })), resultados: resultados.slice(desde, hasta),
+    frecuenciasTipo: mitad(frecuenciasTipo), totalInterrupciones: 70, carreras: 5
+  });
+  const unida = combinarMediciones([parte(0, 8), parte(8, resultados.length)]);
+  if (unida.carreras !== 10 || unida.totalInterrupciones !== 140 || unida.baseline.length !== 10 || unida.resultados.length !== resultados.length) {
+    throw new Error(`combinarMediciones: carreras ${unida.carreras}, paradas ${unida.totalInterrupciones}, resultados ${unida.resultados.length}`);
+  }
+  const analisisUnido = analizarDatosAgencia(unida, 1, { sPop: 10, sPopT: 1 });
+  if (JSON.stringify(analisisUnido) !== JSON.stringify(analisis)) {
+    throw new Error('el análisis de las mediciones unidas tenía que ser idéntico al del conjunto entero');
   }
 });
 

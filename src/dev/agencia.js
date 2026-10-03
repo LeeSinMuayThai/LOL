@@ -1,5 +1,18 @@
+// El contrafáctico de agencia: para cada parada del juego, ¿elegir distinto cambia el número de la carrera?
+//
+// K4c (paso 1): con potencia y por tipo de parada. Uso (desde la raíz del repo):
+//   node src/dev/agencia.js --carreras=12 --reps=30 --cuota=2 --splits=70 --procesos=12 --salida=agencia-k4c.json
+// `--reps=30` es lo que pide §K.0c (>= 30 réplicas por decisión); `--procesos=N` reparte las carreras entre N procesos de
+// Node (una carrera por proceso, de a N a la vez) y junta los crudos: da EXACTAMENTE los mismos datos que correrlas en serie
+// (cada carrera depende solo de su seed), pero tarda ~1/N. Con `--salida` guarda los crudos y `--analizar=a.json,b.json` los
+// vuelve a analizar sin simular. `--sin=tipo1,tipo2` dice cuánta palanca queda si esas paradas se resuelven solas.
+// El reporte trae, además de la tabla de siempre, la palanca POR TIPO DE PARADA (los mismos tipos que `desglosePorTipo` del
+// bloque `ritmo` de simulate.js) y la tabla de recorte: qué queda si se resuelven solas, de a una, las de menos palanca.
 import fs from 'fs';
-import { pathToFileURL } from 'url';
+import os from 'os';
+import path from 'path';
+import { spawn } from 'child_process';
+import { fileURLToPath, pathToFileURL } from 'url';
 import { mulberry32 } from '../core/rng.js';
 import { createInitialState } from '../core/state.js';
 import { avanzarSplit, resolverDecision, avanzarSplitAuto } from '../core/pipeline.js';
@@ -434,7 +447,92 @@ export function medirAgencia({
     baseline.push(metricas(st));
   }
 
-  return { baseline, resultados, frecuenciasTipo, totalInterrupciones };
+  return { baseline, resultados, frecuenciasTipo, totalInterrupciones, carreras: baseline.length };
+}
+
+// K4c (paso 1): junta las mediciones de varios procesos (una por carrera o por tramo de seeds) en una sola, en el orden
+// dado. Puro: la medición de una carrera no depende de las demás, así que el resultado es el de correrlas en serie.
+export function combinarMediciones(partes) {
+  const combinada = { baseline: [], resultados: [], frecuenciasTipo: {}, totalInterrupciones: 0, carreras: 0 };
+  for (const parte of partes) {
+    combinada.baseline.push(...parte.baseline);
+    combinada.resultados.push(...parte.resultados);
+    for (const [tipo, cantidad] of Object.entries(parte.frecuenciasTipo)) {
+      combinada.frecuenciasTipo[tipo] = (combinada.frecuenciasTipo[tipo] ?? 0) + cantidad;
+    }
+    combinada.totalInterrupciones += parte.totalInterrupciones;
+    combinada.carreras += parte.carreras ?? parte.baseline.length;
+  }
+  return combinada;
+}
+
+// El tipo de parada tal como lo cuenta `desglosePorTipo` (simulate.js): sistema:motivo, sin la categoría que agencia le
+// agrega a los eventos (`eventos:x:rutina` -> `eventos:x`).
+export function tipoDeParada(tipo) {
+  return tipo.split(':').slice(0, 2).join(':');
+}
+
+// La palanca por tipo de parada. `porParada[tipo]` = una fila `{ sig, L }` por decisión medida (si el test corregido la
+// declara significativa, y su palanca en σ). `frecuenciasTipo` = cuántas veces paró cada tipo en las carreras medidas
+// (con la categoría; se normaliza igual). Un tipo que paró pero nunca se midió (una parada con un solo camino) queda con
+// `n: 0` y fracción 0: palanca cero, como en el KPI. `divisor` = el total de paradas, el del KPI (`pctInterrupcionesConPalanca`).
+// `aportePct` = lo que ese tipo suma al KPI, en puntos porcentuales del total de paradas.
+export function palancaPorTipoDeParada(porParada, frecuenciasTipo, carreras, divisor) {
+  const frecuencia = {};
+  for (const [tipo, cantidad] of Object.entries(frecuenciasTipo)) {
+    const normalizado = tipoDeParada(tipo);
+    frecuencia[normalizado] = (frecuencia[normalizado] ?? 0) + cantidad;
+  }
+  const tipos = new Set([...Object.keys(frecuencia), ...Object.keys(porParada)]);
+  return [...tipos]
+    .map((tipo) => {
+      const decisiones = porParada[tipo] ?? [];
+      const veces = frecuencia[tipo] ?? 0;
+      const fraccionSignificativa = decisiones.length > 0 ? mean(decisiones.map((x) => (x.sig ? 1 : 0))) : 0;
+      return {
+        tipo,
+        frecuencia: veces,
+        porCarrera: carreras ? Number((veces / carreras).toFixed(2)) : null,
+        n: decisiones.length,
+        fraccionSignificativa,
+        pctSignificativo: Number((100 * fraccionSignificativa).toFixed(1)),
+        palancaMediana: decisiones.length > 0 ? Number((med(decisiones.map((x) => x.L)) ?? 0).toFixed(2)) : null,
+        aportePct: Number(((veces * fraccionSignificativa / divisor) * 100).toFixed(1))
+      };
+    })
+    .sort((a, b) => b.frecuencia - a.frecuencia);
+}
+
+// Qué queda si los tipos de `quitar` dejan de parar (se resuelven solos): las paradas que sobreviven y la fracción
+// ponderada de ellas que tiene palanca (la meta de §K.0c es >= 60%). `paradas` = `palancaPorTipoDeParada`. Puro.
+export function palancaSobreLasQueQuedan(paradas, quitar = [], carreras = null) {
+  const fuera = new Set(quitar);
+  const quedan = paradas.filter((parada) => !fuera.has(parada.tipo));
+  const total = quedan.reduce((suma, parada) => suma + parada.frecuencia, 0);
+  const conPalanca = quedan.reduce((suma, parada) => suma + parada.frecuencia * parada.fraccionSignificativa, 0);
+  return {
+    paradas: total,
+    paradasPorCarrera: carreras ? Number((total / carreras).toFixed(1)) : null,
+    pctPalanca: total > 0 ? Number(((conPalanca / total) * 100).toFixed(1)) : null
+  };
+}
+
+// La tabla para decidir el recorte: se resuelven solos, de a uno, los tipos de MENOS palanca (a igual palanca, el más
+// frecuente primero), y cada fila dice qué queda. Los tipos con pocas decisiones medidas (`n`) tienen una fracción poco firme.
+export function tablaDeRecorte(paradas, carreras = null) {
+  const orden = paradas
+    .filter((parada) => parada.frecuencia > 0)
+    .sort((a, b) => a.fraccionSignificativa - b.fraccionSignificativa || b.frecuencia - a.frecuencia);
+  const quitados = [];
+  return orden.map((parada) => {
+    quitados.push(parada.tipo);
+    return {
+      quitando: parada.tipo,
+      pctSignificativo: parada.pctSignificativo,
+      n: parada.n,
+      ...palancaSobreLasQueQuedan(paradas, quitados, carreras)
+    };
+  });
 }
 
 // σ poblacional de referencia del puntaje y de los títulos (determinista): `sigmaCarreras` carreras con el
@@ -476,11 +574,12 @@ export function analizarDatosAgencia(
   sigmaCarreras = DEFAULTS_AGENCIA.sigmaCarreras,
   referencia = null
 ) {
-  const { resultados, frecuenciasTipo = {}, totalInterrupciones = 0 } = datosCombinados;
+  const { resultados, frecuenciasTipo = {}, totalInterrupciones = 0, carreras = datosCombinados.baseline?.length ?? null } = datosCombinados;
 
   const { sPop, sPopT } = referencia ?? sigmaPoblacional(sigmaCarreras);
 
   const porTipo = {};
+  const porParada = {};
 
   for (const d of resultados) {
     const vals = d.porOpcion.map((repsArr) => repsArr.filter(Boolean));
@@ -503,6 +602,10 @@ export function analizarDatosAgencia(
       const m = vals.map((v) => mean(v.map((x) => x.c1[k] ?? 0)));
       return Math.max(...m) - Math.min(...m);
     };
+
+    const parada = tipoDeParada(d.tipo);
+    porParada[parada] = porParada[parada] ?? [];
+    porParada[parada].push({ sig, L: spread / sPop });
 
     const tipoNormalizado = d.tipo.replace(/:x:/, ':').replace(/^edadCierre:.*/, 'edadCierre:*');
     const clave = tipoNormalizado.startsWith('eventos:') ? 'eventos:*' : tipoNormalizado;
@@ -568,10 +671,17 @@ export function analizarDatosAgencia(
   const divisor = totalInterrupciones || totalInterrupcionesContadas || 1;
   const sobreElTotal = (cantidad) => Number(((cantidad / divisor) * 100).toFixed(1));
 
+  const porTipoDeParada = palancaPorTipoDeParada(porParada, frecuenciasTipo, carreras, divisor);
+
   return {
     sPop: Number(sPop.toFixed(2)),
     sPopT: Number(sPopT.toFixed(2)),
+    carreras,
     totalDecisionesMedidas: resultados.length,
+    // K4c (paso 1): la palanca por tipo de parada (los tipos de `desglosePorTipo`) y la fracción ponderada sobre el total
+    // de paradas, sumando los tipos (`pctInterrupcionesConPalanca` agrupa los eventos de otra forma: difiere en décimas).
+    porTipoDeParada,
+    pctPalancaPorTipoDeParada: Number(((porTipoDeParada.reduce((suma, fila) => suma + fila.frecuencia * fila.fraccionSignificativa, 0) / divisor) * 100).toFixed(1)),
     filas: filas.map(([tipo, v]) => ({
       tipo,
       n: v.length,
@@ -587,11 +697,58 @@ export function analizarDatosAgencia(
   };
 }
 
+// K4c (paso 1): `medirAgencia` repartido en procesos. Cada carrera es un proceso hijo (`--soloMedir`: mide y guarda los
+// crudos en un archivo temporal, sin analizar), de a `procesos` a la vez; al final se juntan en el orden de las seeds. Es lo
+// mismo que correrlas en serie (la medición de una carrera solo depende de su seed) en ~1/procesos del tiempo.
+export function medirEnProcesos({ carreras, reps, cuota, splits, desde, procesos }) {
+  const archivo = fileURLToPath(import.meta.url);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'agencia-'));
+  const seeds = Array.from({ length: Number(carreras) }, (_, i) => Number(desde) + i);
+  const inicio = Date.now();
+  let siguiente = 0;
+  let terminadas = 0;
+
+  const correrUna = (seed) => new Promise((resolve, reject) => {
+    const parcial = path.join(dir, `seed-${seed}.json`);
+    const hijo = spawn(process.execPath, [
+      archivo, '--carreras=1', `--desde=${seed}`, `--reps=${reps}`, `--cuota=${cuota}`, `--splits=${splits}`, `--soloMedir=${parcial}`
+    ], { stdio: ['ignore', 'ignore', 'inherit'] });
+    hijo.on('error', reject);
+    hijo.on('exit', (codigo) => {
+      if (codigo !== 0) {
+        reject(new Error(`la carrera de la seed ${seed} terminó con código ${codigo}`));
+        return;
+      }
+      terminadas += 1;
+      console.error(`  seed ${seed} lista (${terminadas}/${seeds.length}, ${Math.round((Date.now() - inicio) / 1000)} s)`);
+      resolve(parcial);
+    });
+  });
+
+  const trabajador = async () => {
+    while (siguiente < seeds.length) {
+      const seed = seeds[siguiente];
+      siguiente += 1;
+      await correrUna(seed);
+    }
+  };
+
+  return Promise.all(Array.from({ length: Math.max(1, Math.min(Number(procesos), seeds.length)) }, trabajador))
+    .then(() => {
+      const partes = seeds.map((seed) => JSON.parse(fs.readFileSync(path.join(dir, `seed-${seed}.json`), 'utf8')));
+      fs.rmSync(dir, { recursive: true, force: true });
+      return combinarMediciones(partes);
+    });
+}
+
 async function main() {
   const args = process.argv.slice(2);
   let { carreras, reps, cuota, splits, desde, sigmaCarreras } = DEFAULTS_AGENCIA;
   let salida = null;
   let analizarArchivos = null;
+  let procesos = 1;
+  let soloMedir = null;
+  let sin = [];
 
   for (const arg of args) {
     if (arg.startsWith('--carreras=')) carreras = Number(arg.slice('--carreras='.length));
@@ -602,6 +759,9 @@ async function main() {
     else if (arg.startsWith('--sigmaCarreras=')) sigmaCarreras = Number(arg.slice('--sigmaCarreras='.length));
     else if (arg.startsWith('--salida=')) salida = arg.slice('--salida='.length);
     else if (arg.startsWith('--analizar=')) analizarArchivos = arg.slice('--analizar='.length).split(',');
+    else if (arg.startsWith('--procesos=')) procesos = Number(arg.slice('--procesos='.length));
+    else if (arg.startsWith('--soloMedir=')) soloMedir = arg.slice('--soloMedir='.length);
+    else if (arg.startsWith('--sin=')) sin = arg.slice('--sin='.length).split(',').filter(Boolean);
   }
 
   let datosCrudos;
@@ -610,6 +770,7 @@ async function main() {
     const todosResultados = [];
     const frecuenciasAcum = {};
     let totInt = 0;
+    let totCarreras = 0;
 
     // Un archivo que no existe, que no es JSON o que no trae `resultados` es un error, no "0 decisiones,
     // 0%": un análisis vacío con salida 0 parece una medición válida.
@@ -641,11 +802,12 @@ async function main() {
         frecuenciasAcum[k] = (frecuenciasAcum[k] ?? 0) + v;
       }
       totInt += contenido.totalInterrupciones ?? 0;
+      totCarreras += contenido.carreras ?? contenido.baseline?.length ?? 0;
     }
     if (todosResultados.length === 0) {
       fallar('los archivos no traen ninguna decisión medida');
     }
-    datosCrudos = { resultados: todosResultados, frecuenciasTipo: frecuenciasAcum, totalInterrupciones: totInt };
+    datosCrudos = { resultados: todosResultados, frecuenciasTipo: frecuenciasAcum, totalInterrupciones: totInt, carreras: totCarreras || null };
   } else {
     const problema = validarParametrosAgencia({ carreras, reps, cuota, splits });
     if (problema) {
@@ -655,7 +817,14 @@ async function main() {
     if (reps < MIN_REPLICAS_VALIDAS) {
       console.error(`aviso: con --reps=${reps} (< ${MIN_REPLICAS_VALIDAS}) la t pareada tiene ${reps - 1} grado(s) de libertad y casi nunca declara un efecto significativo.`);
     }
-    datosCrudos = medirAgencia({ carreras, reps, cuota, splits, desde });
+    if (soloMedir) {
+      // Proceso hijo de `medirEnProcesos`: mide, guarda los crudos (compactos) y no analiza.
+      fs.writeFileSync(soloMedir, JSON.stringify(medirAgencia({ carreras, reps, cuota, splits, desde })), 'utf8');
+      return;
+    }
+    datosCrudos = procesos > 1
+      ? await medirEnProcesos({ carreras, reps, cuota, splits, desde, procesos })
+      : medirAgencia({ carreras, reps, cuota, splits, desde });
     if (salida) {
       fs.writeFileSync(salida, JSON.stringify(datosCrudos, null, 2), 'utf8');
       console.log(`Datos crudos guardados en ${salida}`);
@@ -674,6 +843,35 @@ async function main() {
   console.log('-----|---|----------------------------|----------------------------|-----------------------------------');
   for (const f of analisis.filas) {
     console.log(`${f.tipo} | ${f.n} | ${f.palancaMediana} σ | ${f.pctSignificativo}% | ${f.ruidoDentro}`);
+  }
+
+  // K4c (paso 1): por tipo de parada (los tipos de `desglosePorTipo`). Las frecuencias son las de las carreras medidas, que
+  // juegan con el criterio de cada sistema (`resolverAuto`) y no con `criterio`: sirven para ponderar, no para reemplazar
+  // el desglose de simulate.js.
+  const carrerasMedidas = analisis.carreras;
+  console.log(`\n=== PALANCA POR TIPO DE PARADA (${carrerasMedidas ?? '?'} carreras, ${analisis.totalDecisionesMedidas} decisiones medidas) ===`);
+  console.log(`Fracción ponderada con palanca, sumando los tipos: ${analisis.pctPalancaPorTipoDeParada}% de las paradas\n`);
+  console.log('tipo | paradas por carrera | n medidas | % significativo | palanca mediana (σ) | aporte (pp del total)');
+  console.log('-----|---------------------|-----------|-----------------|---------------------|----------------------');
+  for (const f of analisis.porTipoDeParada) {
+    console.log(`${f.tipo} | ${f.porCarrera ?? '?'} | ${f.n} | ${f.n > 0 ? `${f.pctSignificativo}%` : 'sin medir'} | ${f.palancaMediana ?? '-'} | ${f.aportePct}`);
+  }
+
+  const paradasPorCarrera = (analisis.porTipoDeParada.reduce((suma, f) => suma + f.frecuencia, 0) / (carrerasMedidas || 1)).toFixed(1);
+  console.log(`\n=== TABLA DE RECORTE: se resuelven solas, de a una, las paradas de menos palanca (hoy: ${paradasPorCarrera} paradas por carrera) ===`);
+  console.log('se quita | su % significativo | n | paradas por carrera que quedan | % con palanca de las que quedan');
+  console.log('---------|--------------------|---|--------------------------------|---------------------------------');
+  for (const fila of tablaDeRecorte(analisis.porTipoDeParada, carrerasMedidas)) {
+    console.log(`${fila.quitando} | ${fila.n > 0 ? `${fila.pctSignificativo}%` : 'sin medir'} | ${fila.n} | ${fila.paradasPorCarrera ?? '?'} | ${fila.pctPalanca ?? '-'}%`);
+  }
+
+  if (sin.length > 0) {
+    const desconocidos = sin.filter((tipo) => !analisis.porTipoDeParada.some((f) => f.tipo === tipo));
+    if (desconocidos.length > 0) {
+      console.error(`--sin: tipos que no aparecen en la medición: ${desconocidos.join(', ')}`);
+    }
+    const queda = palancaSobreLasQueQuedan(analisis.porTipoDeParada, sin, carrerasMedidas);
+    console.log(`\nSin ${sin.join(', ')}: quedan ${queda.paradasPorCarrera ?? '?'} paradas por carrera y ${queda.pctPalanca ?? '-'}% tiene palanca.`);
   }
 }
 
