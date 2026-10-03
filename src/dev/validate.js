@@ -1870,7 +1870,7 @@ checkLento('Fase D.2: registro.picos.rankedPuntos > 0 en toda carrera que pisó 
   }
 });
 
-checkLento('Fase 9Mf: ≥24% de las carreras ven un traspaso a mitad de contrato, y "pedir salir" hace una de sus dos cosas (check 6 de §9M.10)', () => {
+checkLento('Fase 9Mf: ≥16% de las carreras ven un traspaso a mitad de contrato, y "pedir salir" hace una de sus dos cosas (check 6 de §9M.10)', () => {
   // (1) frecuencia: con el auto-resolver (toma el paso arriba salvo recorte de
   // sueldo real) al menos 1 de cada 4 carreras cierra un traspaso a mitad de
   // contrato. (2) "pedir salir" nunca es un no-op: o te vas, o te lo niegan y
@@ -1909,8 +1909,17 @@ checkLento('Fase 9Mf: ≥24% de las carreras ven un traspaso a mitad de contrato
   // seeds). El comportamiento es correcto —una franquicia no vende a su
   // franquicia a media temporada—; si una fase más adelante lo baja más, se
   // mira de nuevo.
-  if (frac < 0.24) {
-    throw new Error(`sólo ${(frac * 100).toFixed(1)}% de las carreras cierran un traspaso a mitad de contrato (objetivo ≥24%)`);
+  // K4c (validación), regla 17: piso 0,24 → 0,16. Reemplaza a "≥24% de las carreras ven un traspaso a mitad de contrato",
+  // que exigía la tasa de antes de K4c. Medido con este mismo recuento (auto, 60 splits) sobre las seeds 1-960: antes de
+  // K4c (92ad371~1) 26,3% (σ 1,4 pp; bloques de 320: 25,0 / 26,3 / 27,5); con K4c (d91055d) 21,1% (σ 1,3 pp; 17,8 / 23,1 /
+  // 22,5). No es ruido (−5,2 pp, ~2,7 σ) ni el respaldo de la prueba (23 respaldos en 960 carreras, en la ventana, no a mitad
+  // de contrato): es menos carrera profesional donde pasar un traspaso. La prueba decide el contrato (bloque B): llegan a pro
+  // 693 en vez de 736, con 31,9 splits pro por carrera en vez de 36,0; los traspasos ofrecidos caen 856 → 721 y los
+  // cerrados 305 → 236 (de los ofrecidos se cierran 32,7% en vez de 35,6%). Las seeds 1-320 de este check dan 17,8%: el
+  // piso queda ~2 σ (n = 320) debajo del 21,1% medido, el mismo lugar relativo que tenía el 0,24 bajo el ~26%.
+  const PISO_TRASPASO = 0.16;
+  if (frac < PISO_TRASPASO) {
+    throw new Error(`sólo ${(frac * 100).toFixed(1)}% de las carreras cierran un traspaso a mitad de contrato (objetivo ≥${PISO_TRASPASO * 100}%)`);
   }
 
   let ejercido = 0;
