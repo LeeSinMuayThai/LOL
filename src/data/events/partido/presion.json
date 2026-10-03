@@ -187,7 +187,7 @@
           },
           {
             "weight": 4,
-            "texto": "El coach lo lee como que no te importó, y eso también entra a la serie. Al menos la cabeza te quedó en su lugar.",
+            "texto": "El coach lo lee como que no te importó, y eso también entra a la serie. De su charla te queda el mensaje, no el mal humor.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 3, "clamp": [0, 100] },
@@ -252,7 +252,7 @@
           },
           {
             "weight": 4,
-            "texto": "Jugás tranquilo, pero {rivalDeLaFecha} no te da ni un metro para relajarte. Por lo menos no te llevaste el tilt a casa.",
+            "texto": "Jugás tranquilo, pero {rivalDeLaFecha} no te da ni un metro para relajarte. El resultado no acompañó, pero el ruido de afuera ya no te mueve.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 3, "clamp": [0, 100] }
@@ -295,7 +295,7 @@
           },
           {
             "weight": 4,
-            "texto": "El comfort pick no alcanza cuando el equipo rival lo tiene estudiado hace dos años. Eso sí, la cabeza no se te rompió.",
+            "texto": "El comfort pick no alcanza cuando el equipo rival lo tiene estudiado hace dos años. Pero te vas sin dudar de vos: el pick era tuyo y lo defendiste.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 3, "clamp": [0, 100] }
@@ -381,7 +381,7 @@
           },
           {
             "weight": 7,
-            "texto": "Te lucís en algunas jugadas, pero el resultado igual se te escapa. Igual, de esa jugada se va a hablar.",
+            "texto": "Te lucís en algunas jugadas, pero el resultado igual se te escapa. Lo bueno es que las jugadas lucidas van a rodar por los clips toda la semana.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.2, "max": -0.06 },
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -451,7 +451,7 @@
           },
           {
             "weight": 4,
-            "texto": "Nadie toma el timón y el barco se hunde despacio. Jugaste bien tu parte de un naufragio. Por lo menos no te llevaste el tilt a casa.",
+            "texto": "Nadie toma el timón y el barco se hunde despacio. Jugaste bien tu parte de un naufragio. Al menos no le sumaste tu pánico al del resto.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 3, "clamp": [0, 100] }
@@ -491,7 +491,7 @@
           },
           {
             "weight": 7,
-            "texto": "Jugás para la cámara y no para el partido. El equipo lo nota, y tus números tampoco quedan tan bien. Aun así, hiciste ruido.",
+            "texto": "Jugás para la cámara y no para el partido. El equipo lo nota, y tus números tampoco quedan tan bien. Al menos el público vio que ibas a pelear por tu lugar.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.2, "max": -0.06 },
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] },
@@ -647,7 +647,7 @@
           },
           {
             "weight": 4,
-            "texto": "Bajarle el precio no cambia que lo era: a mitad de partido el peso aparece igual y ya es tarde para asumirlo. Por lo menos no te llevaste el tilt a casa.",
+            "texto": "Bajarle el precio no cambia que lo era: a mitad de partido el peso aparece igual y ya es tarde para asumirlo. Fue la fecha que era, y la dejás atrás sin cargar con ella.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 3, "clamp": [0, 100] }
@@ -687,7 +687,7 @@
           },
           {
             "weight": 4,
-            "texto": "Los problemas de la semana no eran de laboratorio: se repiten calcados en el oficial. Eso sí, el vestuario no te lo va a reprochar.",
+            "texto": "Los problemas de la semana no eran de laboratorio: se repiten calcados en el oficial. Al menos el grupo sabe que lo dijiste de frente.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
               { "type": "stat", "path": "career.sinergia", "min": 2, "max": 3, "clamp": [0, 100] },
@@ -781,7 +781,7 @@
           },
           {
             "weight": 4,
-            "texto": "Por más que lo archives, en cada error te acordás de la conferencia. Pesa igual. Al menos la cabeza te quedó en su lugar.",
+            "texto": "Por más que lo archives, en cada error te acordás de la conferencia. Pesa igual. Pero al menos aprendés a jugar con esa mochila puesta.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 3, "clamp": [0, 100] }
@@ -821,7 +821,7 @@
           },
           {
             "weight": 4,
-            "texto": "Jugar con tanto miedo a errar te vuelve pasivo, y la pasividad también es una forma de perder. Por lo menos no te llevaste el tilt a casa.",
+            "texto": "Jugar con tanto miedo a errar te vuelve pasivo, y la pasividad también es una forma de perder. Lo bueno: el miedo a errar se quedó en el mapa y no te lo llevás al próximo.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 3, "clamp": [0, 100] }

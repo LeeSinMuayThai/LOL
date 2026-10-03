@@ -55,7 +55,7 @@
           },
           {
             "weight": 7,
-            "texto": "Te calentás de más y el partido se te va de las manos por decisiones que no tomarías otro día. Igual, de esa jugada se va a hablar.",
+            "texto": "Te calentás de más y el partido se te va de las manos por decisiones que no tomarías otro día. Pero un clásico así se comenta toda la semana, y vos estuviste en el centro.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.2, "max": -0.06 },
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] },
@@ -120,7 +120,7 @@
           },
           {
             "weight": 4,
-            "texto": "Dejarlo atrás no te salva: {rivalDeLaFecha} viene con el mismo plan que la última vez, y funciona otra vez. Por lo menos no te llevaste el tilt a casa.",
+            "texto": "Dejarlo atrás no te salva: {rivalDeLaFecha} viene con el mismo plan que la última vez, y funciona otra vez. Perdés otra vez con el mismo plan, pero esa serie vieja ya no te quita el sueño.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 3, "clamp": [0, 100] }
@@ -313,7 +313,7 @@
           },
           {
             "weight": 4,
-            "texto": "{companero} se acuerda de la frase igual, aunque vos ya la hayas soltado. Por lo menos no te llevaste el tilt a casa.",
+            "texto": "{companero} se acuerda de la frase igual, aunque vos ya la hayas soltado. La frase no se cumplió, pero tampoco te la llevás atragantada a la gaming house.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 3, "clamp": [0, 100] },
@@ -421,7 +421,7 @@
           },
           {
             "weight": 7,
-            "texto": "Salís con el historial en la cabeza y {rivalDeLaFecha} lo huele. El fantasma pesa y el récord se estira. Igual, de esa jugada se va a hablar.",
+            "texto": "Salís con el historial en la cabeza y {rivalDeLaFecha} lo huele. El fantasma pesa y el récord se estira. Nadie te va a decir que no saliste a cortarlo.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.2, "max": -0.06 },
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] },
@@ -642,7 +642,7 @@
           },
           {
             "weight": 4,
-            "texto": "Decís que no te importa la comparación y cada vez que él aparece en pantalla se te nota que sí. Al menos la cabeza te quedó en su lugar.",
+            "texto": "Decís que no te importa la comparación y cada vez que él aparece en pantalla se te nota que sí. Igual, no te tiraste abajo por la comparación.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 3, "clamp": [0, 100] }
@@ -706,7 +706,7 @@
           },
           {
             "weight": 4,
-            "texto": "Experimentás tanto que perdés un clásico igual, y a la gente no le explicás con que era un ensayo. De todos modos, te llevás una lectura nueva.",
+            "texto": "Experimentás tanto que perdés un clásico igual, y a la gente no le explicás con que era un ensayo. Al menos probaste cosas que en playoffs se van a notar.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
               { "type": "stat", "path": "player.stats.adaptabilidad", "min": 2, "max": 3, "clamp": [0, 100] },
@@ -750,7 +750,7 @@
           },
           {
             "weight": 7,
-            "texto": "Jugás la final de nuevo en tu cabeza en vez de jugar el partido de hoy, y la historia se repite. Aun así, hiciste ruido.",
+            "texto": "Jugás la final de nuevo en tu cabeza en vez de jugar el partido de hoy, y la historia se repite. La revancha igual dio de qué hablar, aunque no era el tema que querías.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.2, "max": -0.06 },
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] },

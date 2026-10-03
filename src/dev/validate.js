@@ -19568,6 +19568,30 @@ check('K4c (revisión) textos: la carta del plan no dice "~+0" para una stat top
   }
 });
 
+check('K4c (revisión) textos: ninguna frase de consuelo de la fecha marcada se repite más de dos veces', () => {
+  const MAXIMO_DE_REPETICIONES = 2;
+  const veces = new Map();
+  let revisados = 0;
+  for (const evento of TODOS_LOS_EVENTOS.filter((candidato) => Boolean(candidato.contexto?.stakes))) {
+    for (const opcion of evento.options) {
+      for (const outcome of opcion.outcomes) {
+        for (const texto of Array.isArray(outcome.texto) ? outcome.texto : [outcome.texto]) {
+          const ultima = texto.trim().split(/(?<=[.!?])\s+/).pop();
+          veces.set(ultima, (veces.get(ultima) ?? 0) + 1);
+          revisados += 1;
+        }
+      }
+    }
+  }
+  if (revisados < 250) {
+    throw new Error(`la muestra no alcanza: ${revisados} textos de outcome (mínimo 300)`);
+  }
+  const repetidas = [...veces].filter(([, cantidad]) => cantidad > MAXIMO_DE_REPETICIONES);
+  if (repetidas.length > 0) {
+    throw new Error(`${repetidas.length} frase(s) final(es) repetida(s) más de ${MAXIMO_DE_REPETICIONES} veces: ${repetidas.map(([frase, cantidad]) => `${cantidad}× "${frase}"`).join(' | ')}`);
+  }
+});
+
 if (errores.length > 0) {
   console.error(`\n${errores.length} check(s) fallaron.`);
   process.exit(1);

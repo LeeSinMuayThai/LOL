@@ -234,7 +234,7 @@
           },
           {
             "weight": 4,
-            "texto": "Para cuando el TP canaliza, la pelea ya se decidió sin vos. Perdiste las oleadas y no cambiaste nada. De todos modos, te llevás una lectura nueva.",
+            "texto": "Para cuando el TP canaliza, la pelea ya se decidió sin vos. Perdiste las oleadas y no cambiaste nada. Ahora sabés cuándo canaliza de verdad el TP y cuándo ya es tarde.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
               { "type": "stat", "path": "player.stats.shotcalling", "min": 2, "max": 3, "clamp": [0, 100] }
@@ -391,7 +391,7 @@
           },
           {
             "weight": 4,
-            "texto": "Te quedás a farmear y el mid de {rivalDeLaFecha} sí rota, y abajo lo pagan los tuyos. Igual, queda la lección para la próxima.",
+            "texto": "Te quedás a farmear y el mid de {rivalDeLaFecha} sí rota, y abajo lo pagan los tuyos. Después de esto, sabés cuándo vale rotar y cuándo no.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
               { "type": "stat", "path": "player.stats.laneo", "min": 2, "max": 3, "clamp": [0, 100] },
@@ -461,7 +461,7 @@
           },
           {
             "weight": 4,
-            "texto": "Jugás tan atrás que tu daño llega cuando la pelea ya estaba decidida. Vivo, pero inútil. Al menos la cabeza te quedó en su lugar.",
+            "texto": "Jugás tan atrás que tu daño llega cuando la pelea ya estaba decidida. Vivo, pero inútil. Y aun así llegás entero de cabeza al próximo.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 3, "clamp": [0, 100] },
@@ -597,7 +597,7 @@
           },
           {
             "weight": 4,
-            "texto": "La falta de visión le cuesta al equipo una jugada evitable de {rivalDeLaFecha}. Igual, queda la lección para la próxima.",
+            "texto": "La falta de visión le cuesta al equipo una jugada evitable de {rivalDeLaFecha}. La próxima vez la ward va antes que el ítem.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
               { "type": "stat", "path": "player.stats.teamfight", "min": 2, "max": 3, "clamp": [0, 100] },
@@ -1007,7 +1007,7 @@
           },
           {
             "weight": 4,
-            "texto": "Jugás tan lento que {rivalDeLaFecha} llega a ítems clave, y la ventaja de oro deja de significar ventaja de mapa. De todos modos, te llevás una lectura nueva.",
+            "texto": "Jugás tan lento que {rivalDeLaFecha} llega a ítems clave, y la ventaja de oro deja de significar ventaja de mapa. Aprendiste cuánto dura una ventaja de oro si no la convertís en mapa.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
               { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 3, "clamp": [0, 100] }
@@ -1188,7 +1188,7 @@
           },
           {
             "weight": 4,
-            "texto": "Mandan uno solo a molestarte y agrupan los otros cuatro sobre tus cuatro. Pierden la pelea por tu ausencia. De todos modos, te llevás una lectura nueva.",
+            "texto": "Mandan uno solo a molestarte y agrupan los otros cuatro sobre tus cuatro. Pierden la pelea por tu ausencia. Entendiste que el lateral se presiona solo si el resto aguanta sin vos.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
               { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 3, "clamp": [0, 100] },
@@ -1252,7 +1252,7 @@
           },
           {
             "weight": 7,
-            "texto": "La pelea forzada la ganan ellos, y de golpe el partido que tenías controlado hace veinte minutos está perdido. Aun así, hiciste ruido.",
+            "texto": "La pelea forzada la ganan ellos, y de golpe el partido que tenías controlado hace veinte minutos está perdido. La apuesta, igual, se vio: nadie dice que no fuiste a buscarla.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.2, "max": -0.06 },
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] },
@@ -1318,7 +1318,7 @@
           },
           {
             "weight": 4,
-            "texto": "Te confiás del mapa y {rivalDeLaFecha} encuentra un flanco defendiendo. Un pick, y la presión se te da vuelta. Algo aprendiste igual.",
+            "texto": "Te confiás del mapa y {rivalDeLaFecha} encuentra un flanco defendiendo. Un pick, y la presión se te da vuelta. Aprendiste a no dejar de mirar el mapa con la inhibidora ya caída.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
               { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 3, "clamp": [0, 100] }
@@ -1405,7 +1405,7 @@
           },
           {
             "weight": 4,
-            "texto": "El cangrejo cedido le da a {rivalDeLaFecha} visión de todo tu cuadrante, y el próximo gank te cae a vos. De todos modos, te llevás una lectura nueva.",
+            "texto": "El cangrejo cedido le da a {rivalDeLaFecha} visión de todo tu cuadrante, y el próximo gank te cae a vos. Aprendiste a no ceder el río por un cangrejo.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
               { "type": "stat", "path": "player.stats.laneo", "min": 2, "max": 3, "clamp": [0, 100] }
