@@ -6396,6 +6396,98 @@ minijuegos por carrera en [4, 8] · ≥ 60% de las interrupciones con palanca me
 tiempo-máquina a 1× ≤ 8 min de mediana · el plan de Fearless declara las probabilidades que el motor
 usa (regla 15).
 
+#### K4 — decisiones de spec *(supervisor, 2026-10-03; sin preguntas, revisables)*
+
+**De dónde salen las interrupciones hoy** (`criterio`, 1500 carreras, §K.0c), en promedio por carrera, con su
+porcentaje del total:
+
+| Tipo | Por carrera | % | Lo ataca |
+|---|---|---|---|
+| eventos | 36,7 | 22% | K4-C |
+| momento de fecha marcada | 27,2 | 16% | K4-A |
+| minijuego de serie | 26,8 | 16% | K4-B |
+| draft de serie | 22 | 13% | K4-B |
+| fin de año | 15,4 | 9% | se queda |
+| práctica | 13,4 | 8% | K4-D |
+| amateur | ~13 | — | sin cambio |
+| ofertas de mercado | 6,2 | 4% | K4-D |
+
+Por split pro, el internacional da una mediana de 9. Sumando lo que se espera de cada pieza (eventos → ~7,
+momentos → ~8, minijuegos → ~6, plan de Fearless → ~10, fin de año 15, pretemporada ~13, amateur ~13, el resto
+~4) la cuenta da ~76: la meta de ≤ 80 pide **todas** las piezas.
+
+**Bloque B, corrimiento aceptado (T1).** A diferencia de K2b y K3, acá no hay "estructura neutra": dejar de
+frenar en un evento ya cambia quién decide. Las bandas que se rompan van a `bandasPendientes.js` (bloque B,
+re-basea K4c); las que ya están ahí (las series sin draft y el Bo5 conjunto) las resuelve esta fase. Los checks
+estructurales, de determinismo y de regla 15 no pueden quedar rojos. Lo primero, en su propio commit: el techo
+de `dist/` se re-mide (1870 KB contra 1900) y sube a **2000 KB**, con margen para las pantallas de K4 y K5.
+
+Cuatro piezas en worktrees paralelas, con archivos mayormente disjuntos; las integra un worker al final.
+
+**K4-A — el partido que importa** (`systems/temporada.js`, `core/temporada.js`).
+- **Qué marca.** Se marca la fecha que **decide algo**, en este orden de prioridad:
+  1. `define_clasificacion`: la tabla dice que el resultado cambia si entrás a playoffs o tu seed. Se calcula con
+     la tabla, no se sortea.
+  2. El cruce con el equipo de tu archirrival.
+  3. El clásico contra tu ex equipo.
+  4. La revancha contra quien te eliminó la última vez.
+
+  `puntero` y `presion` dejan de marcar.
+- **Cómo frena.** Como máximo una por split. Sin draft (desaparece el `temporada:draft` de la fecha marcada).
+  Frena una sola vez, con la previa y la p a la vista y el momento, si lo hay. La previa de K2d ya existe.
+- **Check.** `define_clasificacion` aparece ≥ 1 cada 3 temporadas de tier 1 con playoffs.
+
+**K4-B — la serie como plan** (`core/serie.js`, `systems/serie.js`, pantalla de serie). Reemplaza a J6 y a D63.
+- **El plan.** Al empezar una serie de playoffs o de internacional elegís **el plan de Fearless**: guardar tu
+  mejor campeón para el mapa decisivo / salir con todo / la sorpresa / lo que diga el coach.
+  - Cada plan muestra **su p por mapa**, y es la p que el motor usa (regla 15, con una sola fuente, como K2d).
+  - **El rival también quema campeones.** Su fuerza se degrada con el Fearless igual que la tuya: así se resuelve
+    de raíz la asimetría del Bo5, la PENDIENTE del conjunto.
+- **El motor juega el plan.** Te frena solo en dos casos:
+  - el rival te quema el campeón que guardabas;
+  - llega el **mapa decisivo**, el que puede cerrar la serie para cualquiera de los dos.
+- **Serie sin nada en juego.** Si |Δ fuerza| supera un umbral (constante en BALANCE), no pregunta: juega "lo que
+  diga el coach" y lo cuenta en una línea.
+- **Minijuegos de serie solo en el clímax**: el mapa decisivo de semis, de la final y del internacional. El tope
+  de 4-8 por carrera tiene que salir solo, no de un contador que corte.
+- **La charla del coach.** Un comodín por temporada: empuja la p de un mapa (constante en BALANCE), y se ofrece
+  en el mapa decisivo. El dilema es gastarlo en semis o guardarlo para la final.
+- **Pantallas.** La tarjeta del plan, con la p por mapa de cada camino, y el mapa decisivo con la previa.
+
+**K4-C — solo frenan las bifurcaciones; lo demás lo resuelve tu perfil** (`systems/events.js`,
+`data/events/*.json`, inicio, feed).
+- **Las bifurcaciones se marcan en el dato** con `bifurcacion: true`: cambio de región, jugar lesionado o parar,
+  oferta de streaming, escándalo, conflicto que te puede banquear, retiro o vuelta, servicio militar. Solo esas
+  frenan.
+- **El perfil.** Profesional / hambriento / showman / leal. Lo elegís en el inicio y se corre con tus decisiones
+  grandes, las bifurcaciones (la regla, en BALANCE).
+- **Cómo resuelve el perfil.** Un evento que no es bifurcación elige la opción que mejor encaja con tu perfil. El
+  encaje sale de la **previa de cada opción** (familia de efecto + riesgo), con una tabla perfil × familia en
+  `data/`, sin escribir a mano 220 eventos. Una opción puede traer `perfil: '<id>'` en el dato para forzar el
+  encaje. **Sigue habiendo `rng`**: la opción elegida resuelve su distribución con pesos (CLAUDE.md, regla 8).
+- **La crónica.** El evento resuelto se cuenta en **una línea de crónica** en el feed, con el texto del evento y
+  la opción tomada: los textos no se pierden.
+- **J4 en las que siguen frenando.** La bisagra pesa en vez de filtrar, la categoría reciente cuenta, y
+  `main_muerto` es una transición (ver J4).
+- **Los minijuegos de prensa y de tryout**:
+  - la rueda de prensa, solo después de una final o de un escándalo;
+  - la prueba, en cada salto grande (tryout de tier 3 → 2 → 1 y el de import).
+- **El pase de contenido** sobre las bifurcaciones (efectos que duran, caminos que se abren y se cierran) queda
+  para una subfase propia, **K4-C2**, después de integrar, para no mezclar estructura con contenido.
+
+**K4-D — la pretemporada en una sola parada** (T9; `systems/practica.js`, `systems/mercado.js`, su pantalla).
+- **Una parada por año.** Mercado (si abre) + preparación en la misma pantalla. Las rutinas de offseason son
+  cartas de mejora, con el efecto que duran (K3) a la vista. La práctica deja de frenar por separado.
+- **El fin de año** sigue siendo la decisión grande, y su palanca se mide en K4c.
+
+**Para las cuatro piezas.**
+- Regla 15 en cada pantalla nueva: lo que muestra es lo que el motor usa.
+- Sin ids crudos.
+- Una cosa por vez en pantalla, legible a 375 px.
+- Mutantes rojos primero.
+- El guardado sube de `VERSION` si cambia la forma: la integración deja un solo número.
+- El reporte de ritmo de `simulate.js` se mantiene comparable con §K.0c.
+
 ### K4c — Calibrar bloque B *(solo constantes)*
 
 Contra §K.3c. **Reemplaza a las bandas de J5/J6** (150-280 decisiones por carrera, "más drafts"): se
