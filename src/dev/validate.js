@@ -739,7 +739,10 @@ const FORMAS_CONOCIDAS = {
   // Re-registrada en K4c (paso 3a; mismo criterio, no sube VERSION: la sube el paso 3b): las constantes del ritmo (el plan de serie,
   // la ventana de la fecha, las mecánicas del mapa decisivo) corrieron las carreras de muestra y cambiaron rutas opcionales que la
   // muestra ve. Ningún campo del estado nació ni murió (el hash anterior, 6efe5c15f9a6).
-  10: 'dba93d63f79f'
+  // Re-registrada en K4c (cierre de año; mismo criterio, no sube VERSION: la sube el paso 3b): el contenido de data/events/cierre_edad.json
+  // (tres opciones por evento, un pool que aprende) corrió las carreras de muestra y cambiaron rutas opcionales que la muestra ve. Ningún
+  // campo del estado nació ni murió (el hash anterior, dba93d63f79f).
+  10: '0d3a217299b5'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que

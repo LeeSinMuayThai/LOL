@@ -69,4 +69,7 @@
 // fecha que define 4, tres mecánicas con `mapa_decisivo`, el plan de serie ×3) y D76 al cerrar la carrera (el split del pase
 // sin fila se asienta: el puntaje lo cuenta). Misma versión (el paso 3b la pasa a 'K4c' y sube VERSION): reemplaza a 2122951563.
 export const VERSION_JUEGO = 'K5';
-export const HUELLA_JUEGO = 922534647;
+// K4c (cierre de año, 2044679379): los 10 eventos de cierre_edad.json pasan a ser decisiones con intercambio (tres opciones, efectos
+// del orden de las bifurcaciones, un pool que aprende, riesgos en los outcomes): cambian las tiradas del cierre y con ellas las carreras
+// enteras. Misma versión (el paso 3b la pasa a 'K4c'): reemplaza a 922534647.
+export const HUELLA_JUEGO = 2044679379;
