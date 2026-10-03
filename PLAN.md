@@ -6635,6 +6635,118 @@ múltiples y ≥ 30 réplicas por decisión.
 - Fija `HUELLA_JUEGO` 'K4c'.
 - Lo que se rompe por diseño lleva su línea de la regla 17.
 
+**Paso 1, hecho** (`k4cal-instrumento`: `92ad371`..`c55f381`, revisado: "OK con observaciones menores", las
+observaciones cerradas en `c55f381`).
+- **El barrido** está en `k4c/barrido.mjs`.
+- **`agencia.js`** gana `--procesos`, la palanca por tipo y una tabla de recorte. Una réplica que revienta queda
+  registrada y no tira la corrida.
+- **El tiempo-máquina** sale ahora por fuente.
+- **`criterio`** ya no cambia de línea (antes lo hacía el 47%) y se muda por bifurcación en el 27% de las
+  carreras.
+- **`lecturaDePick`**, borrado.
+
+La primera corrida de agencia encontró un crash real: el banquillo te cedía a tu propio club. Se arregló en
+`c3945ac`, con un check y una guarda nueva de split pendiente.
+
+**Paso 2 — lo que midieron los barridos** (`criterio` 300 × 60, de a una perilla y combinadas):
+
+| Configuración | Interrupciones (mediana) | Playoffs · internacional (p90, % > 4) | Minijuegos | Tiempo |
+|---|---|---|---|---|
+| actual | 109 | 7 (36%) · 7 (49%) | 11; la prensa, 55% | 7,9 |
+| `umbralSinNadaEnJuego` 6 | 98 | 5 (17%) · 5 (22%) | 10 | 7,9 |
+| `rondasConPrensa` [] (prensa solo tras escándalo) | 102,5 | 6 · 6 | 5 | 7,7 |
+| `ventanaDefineClasificacion` 4 | 105 | 7 · 7 | 11 | 7,8 |
+| **cA** = umbral 6 + prensa [] + ventana 4 + las 3 mecánicas en `mapa_decisivo` | **89** | 5 (11%) · 5 (12%) | **4**, las 10 mecánicas salen | 7,7 |
+| cA sin fecha marcada | 73 | 4 · 4 | 4 | 7,2 |
+
+- **Las constantes solas no llegan a 80.**
+- **Sacar la fecha marcada no es la salida.** Sin ella, los eventos ocupan su lugar (bifurcaciones 6 → 12) y
+  se pierde el "una fecha que decide algo" de K4-A.
+- **Las dos paradas más grandes no tienen constante.** `edadCierre` (15) y `amateur:reparto` (10) son
+  estructura.
+- **El tiempo no se mueve con ninguna perilla.** Sale del feed:
+  - `escena`: 80 logs por carrera;
+  - `serie:mapa`: 66;
+  - `meta`: 51;
+  - los renglones de efecto de los eventos: 43.
+
+**La palanca, medida** (`agencia.js`, 24 carreras × 30 réplicas, 748 decisiones, contra el puntaje de la carrera).
+**El 8,6% de las paradas tiene palanca**, ponderado:
+
+| | Paradas por carrera | % significativo | Mediana |
+|---|---|---|---|
+| `mercado:oferta` | 5,3 | 37% | 0,34 σ |
+| `retiro` | 1,7 | 37-67% | — |
+| `eventos` | 5,4 | 14% | — |
+| `temporada:momento` | 20 | 7,5% | 0,06 σ |
+| `edadCierre` | 14 | 7,3% | 0,06 σ |
+| `practica` | 6 | 7,5% | — |
+| `serie:plan` | 14 | 2,7% | — |
+| `serie:minijuego` | 5 | 2,8% | — |
+| `amateur:reparto` | 7,8 | 0% | — |
+| `serie:decisivo` | 1,4 | 0% | — |
+| `mercado:minijuego` (la prueba) | 0,9 | 0% | — |
+
+En la tabla de recorte, resolver solas todas las paradas de 0% deja 77 por carrera, y de esas solo el 10% tiene
+palanca. Ni dejando únicamente los seis tipos de más palanca se llega al 60%: queda 54%, con 2,3 paradas por
+carrera.
+
+**Decisiones del paso 2** *(supervisor, 2026-10-03)*:
+
+1. **La meta de palanca se mide en el horizonte de cada parada.**
+   - **Por qué cambia.** Contra el puntaje de la carrera, el 60% es inalcanzable por construcción: con ~80
+     paradas, una decisión de serie mueve la carrera ~0,06 σ aunque decida la serie. Esa medición confunde "esta
+     decisión no importa" con "esta decisión importa para algo más chico que la carrera".
+   - **Qué se le pregunta a cada parada.** Si cambia lo que dice que se juega (la queja del usuario es "las
+     opciones no afectan nada"):
+
+     | Horizonte | Paradas | Qué se mide |
+     |---|---|---|
+     | **serie** | `serie:*`, `internacional:*` | el resultado de esa serie, o el avance en el 2-2 del Swiss |
+     | **partido** | `temporada:momento` | el resultado de ese partido |
+     | **split** | `practica`, `eventos`, `amateur:reparto`, `amateur:nocturno` | la posición final del split, o el LP del bloque en el amateur |
+     | **carrera** | `mercado`, `edadCierre`, bifurcaciones, `retiro`, `amateur:oferta`, `amateur:salida`, `amateur:negociacion` | el puntaje |
+
+   - **Las metas:**
+     - **≥ 60%** de las paradas que sobreviven con palanca **en su horizonte**, ponderado y con el mismo test
+       corregido;
+     - **la fracción contra la carrera** se sigue reportando y **no puede bajar** de 8,6%.
+
+   Lo reemplazado (la meta de §K.0c "≥ 60% contra la carrera") lleva su línea de la regla 17.
+2. **Estructura del bloque B, antes de las constantes** (regla 2). Cada punto va en su propio commit y con
+   comportamiento medido.
+   - **Paradas sin nada en juego.** Toda parada con 0% de palanca **también en su horizonte** (n ≥ 20) deja de
+     frenar: se resuelve sola con la elección anterior o con el perfil, y se ve en el resumen. Candidatas, según
+     la tabla:
+     - `amateur:reparto` (el reparto se mantiene hasta que lo cambiás en el cierre de año);
+     - `serie:decisivo` (la charla del coach pasa a la tarjeta del plan);
+     - `amateur:nocturno`.
+
+     Las confirma la medición por horizonte.
+   - **La prueba que no decide nada (regla 15).** `mercado:minijuego` (`la_prueba`) da 0% contra la carrera: se
+     verifica que el resultado del tryout mueva la probabilidad de fichar. Si no la mueve, la pantalla miente y se
+     arregla. No se recorta.
+   - **El feed.** Va por el tiempo; la meta es ≤ ~5 min por la definición del instrumento:
+     - los renglones de efecto de un evento van dentro del beat del evento;
+     - `escena` cuenta solo lo de tu liga, tus ex-orgs y rivales, y los internacionales;
+     - `meta`, un renglón por parche;
+     - `serie:mapa`, de las series en las que no frenaste, un renglón por serie.
+
+     El historial completo sigue en la pestaña de historia: nada se borra del estado, solo se deja de reproducir
+     como beat.
+3. **Las constantes.** El punto de partida es cA. Se re-mide después del punto 2 y se elige con el criterio de
+   K3c.
+4. **El check del banco de minijuegos (9R4c)** mide las mecánicas que compiten por un momento: las del mapa
+   decisivo y la prensa. `la_prueba` es el único minijuego del tryout y no compite con nadie, así que queda
+   afuera. Con cA, la prensa es el 28% de ese banco (banda ≤ 35%). Va con su línea de la regla 17.
+
+**Cómo se ejecuta.** Dos workers en paralelo:
+- **K4c-H.** El instrumento por horizonte en `agencia.js`, más la verificación de `la_prueba`.
+- **K4c-F.** El feed.
+
+Después, un worker para las paradas sin nada en juego, con la lista confirmada por K4c-H. Luego el barrido final
+del supervisor y el paso 3.
+
 ### K5 — El Mundial de verdad, la región y el final por mercado *(bloque C — D-D)*
 
 - **El Mundial** (J7 comprimido):
