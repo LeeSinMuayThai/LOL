@@ -274,6 +274,10 @@ function construirDecisionDraft(state) {
   };
 }
 
+// K3 (PLAN.md "K3, tal como quedó y lo que se decide al integrar"): la pausa guarda la p de antes de decidir
+// (`pAntesDeDecidir`, la que muestra la previa). Decidir mueve el partido de verdad —el `ajustePartido` y, con
+// `consistencia.k` ≠ 0, la mentalidad—, así que la p tirada se calcula con el estado de después y esta es la que
+// el log de la fecha reporta como `pSinMomento` ("el momento la movió desde X%").
 function construirDecisionMomento(state, evento, contexto, fecha, tipoDecision) {
   return {
     tipo: 'opciones',
@@ -284,7 +288,7 @@ function construirDecisionMomento(state, evento, contexto, fecha, tipoDecision) 
       label: resolverTexto(opcion.label, state),
       descripcion: resolverTexto(opcion.descripcion, state)
     })),
-    datos: { motivo: tipoDecision, eventoId: evento.id }
+    datos: { motivo: tipoDecision, eventoId: evento.id, pAntesDeDecidir: probabilidadDeFechaMarcada(state) }
   };
 }
 
@@ -317,7 +321,7 @@ function arrancarFechaMarcada(state, rng, logs) {
 
 // --- Resolver el resultado de la fecha marcada y seguir el calendario ---
 
-function resolverFechaMarcada(state, rng, logsAcum) {
+function resolverFechaMarcada(state, rng, logsAcum, pAntesDeDecidir = null) {
   const t = state.career.temporada;
   const fecha = t.fechaEnCurso;
   const motivo = motivoPrincipal(fecha.motivos);
@@ -326,10 +330,13 @@ function resolverFechaMarcada(state, rng, logsAcum) {
   // K2b: una sola tirada contra la p declarada (la misma que mira el draft).
   // K2d: y la misma que muestra la previa (`probabilidadDeFechaMarcada`); el
   // log lleva esa p y la de antes del momento, para mostrarlas con el resultado.
+  // K3: `state` es el de DESPUÉS del momento (con su `ajustePartido` y su
+  // mentalidad); la de antes es la que guardó la pausa. Sin momento (la red de
+  // seguridad de `arrancarMomento`) nada la movió: es la misma tirada.
   const partido = tirarPartido(probabilidadDeFechaMarcada(state), rng);
   const { gano } = partido;
   const ajustePartido = t.ajustePartido ?? 0;
-  const pSinMomento = ajustePartido === 0 ? partido.p : probabilidadDeFechaMarcada(state, { ajustePartido: 0 });
+  const pSinMomento = pAntesDeDecidir ?? partido.p;
 
   // Fase 9R0a: la revancha se juega UNA vez. Después, ese rival deja de ser
   // "el que te eliminó": si no se limpiaba, `ultimoEliminadoPor` quedaba
@@ -517,7 +524,7 @@ export function resolver(state, decision, respuesta, rng) {
   const evento = TODOS_LOS_EVENTOS.find((candidato) => candidato.id === decision.datos.eventoId);
   const { state: nextState, logs } = resolverOpcion(state, evento, respuesta.opcionId, rng);
 
-  return resolverFechaMarcada(nextState, rng, logs);
+  return resolverFechaMarcada(nextState, rng, logs, decision.datos.pAntesDeDecidir);
 }
 
 export function resolverAuto(state, decision, rng) {

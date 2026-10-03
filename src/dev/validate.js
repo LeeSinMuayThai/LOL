@@ -48,6 +48,7 @@ import { elegirCampeonRival, disponiblesDelPool, decisionDeDraft, probabilidadCo
 import {
   rendimientoBase, fuerzaDelEquipo, fuerzaDePartido, nivelDeCompaneros, companerosDelPlantel
 } from '../core/fuerza.js';
+import { estadoDelMapa } from '../core/serie.js';
 import { probabilidadPorSigma } from '../core/numeros.js';
 import { jugarPartido, probabilidadDePartido, ruidoEfectivo } from '../core/partido.js';
 import {
@@ -13498,14 +13499,26 @@ check('K2b la sinergia no entra a tu rendimiento: rendimientoBase no cambia cuan
 
 const SEEDS_MAX_K2D = 80;
 const CASOS_K2D = 30;
-let cosechaK2d = null;
+// La cosecha depende del balance con el que se juegan las carreras: una por valor de `consistencia.k`.
+const cosechasK2d = new Map();
+
+// PLAN.md "K3, tal como quedó y lo que se decide al integrar": cada check de K2d corre dos veces, con BALANCE tal
+// cual y con `consistencia.k = 1` en memoria (restaurado después). Una pieza neutra (k = 0) no puede esconder un
+// check que se rompe con el valor real: con k ≠ 0 el momento de una fecha marcada mueve la mentalidad entre la
+// previa y la tirada.
+const K_CONSISTENCIA_K2D = 1;
+function checkK2d(nombre, fn) {
+  check(nombre, fn);
+  check(`${nombre} — con consistencia.k = ${K_CONSISTENCIA_K2D} en memoria`, () => conBalanceK3A([['consistencia', 'k', K_CONSISTENCIA_K2D]], fn));
+}
 
 // Las pausas reales antes de un partido, de carreras de `criterio` (seeds 1 en adelante, 60 splits): el momento de
 // una fecha marcada (con el campeón ya elegido), el draft de un mapa y el minijuego de un mapa. Cada caso guarda el
 // estado de la pausa, la decisión, el sistema que la resuelve y la respuesta de `criterio`.
 function cosechaDePreviasK2d() {
-  if (cosechaK2d) {
-    return cosechaK2d;
+  const clave = BALANCE.consistencia.k;
+  if (cosechasK2d.has(clave)) {
+    return cosechasK2d.get(clave);
   }
   const c = { fechas: [], fechasDraft: [], drafts: [], minijuegos: [] };
   const espia = (sistema, st, decision, rng) => {
@@ -13538,7 +13551,7 @@ function cosechaDePreviasK2d() {
   if (c.fechas.length < CASOS_K2D || c.fechasDraft.length < 10 || c.drafts.length < 10 || c.minijuegos.length < 10) {
     throw new Error(`cosecha vacía: ${c.fechas.length} fechas marcadas, ${c.fechasDraft.length} drafts de fecha, ${c.drafts.length} drafts de mapa y ${c.minijuegos.length} minijuegos de mapa`);
   }
-  cosechaK2d = c;
+  cosechasK2d.set(clave, c);
   return c;
 }
 
@@ -13551,7 +13564,11 @@ function fallarSiK2d(problemas) {
   }
 }
 
-check('K2d previa 1: la p de la previa es exactamente la que el motor tira (===), en fechas marcadas (y la de cada opción de su draft corto) y en mapas con el minijuego neutro, sobre partidos de carreras reales', () => {
+// K3 (PLAN.md "K3, tal como quedó y lo que se decide al integrar"): en una fecha marcada la previa es la p de ANTES
+// de decidir, que la pausa guarda (`pAntesDeDecidir`) y el log reporta como `pSinMomento`; la tirada es la del estado
+// de DESPUÉS del momento (su `ajustePartido` y, con `consistencia.k` ≠ 0, su mentalidad), y es exactamente la previa
+// de ese estado.
+checkK2d('K2d previa 1: la p de la previa es exactamente la que el motor tira (===), en fechas marcadas (y la de cada opción de su draft corto) y en mapas con el minijuego neutro, sobre partidos de carreras reales', () => {
   const { fechas, fechasDraft, drafts, minijuegos } = cosechaDePreviasK2d();
   const problemas = [];
   let fechasNeutras = 0;
@@ -13564,16 +13581,24 @@ check('K2d previa 1: la p de la previa es exactamente la que el motor tira (===)
       problemas.push(`fecha ${i}: ${previa ? 'sin log de la fecha con su p' : 'sin previa en la pausa'}`);
       return;
     }
-    if (log.pSinMomento !== previa.p) {
-      problemas.push(`fecha ${i}: la previa dice p = ${previa.p}, el motor la tenía en ${log.pSinMomento} antes del momento`);
+    if (decision.datos.pAntesDeDecidir !== previa.p) {
+      problemas.push(`fecha ${i}: la previa dice p = ${previa.p}, la pausa guardó ${decision.datos.pAntesDeDecidir}`);
     }
+    if (log.pSinMomento !== previa.p) {
+      problemas.push(`fecha ${i}: la previa dice p = ${previa.p}, el log reporta ${log.pSinMomento} antes del momento`);
+    }
+    // El estado de después del momento, con el mismo azar que usó el motor (el momento tira antes que el partido).
+    const evento = TODOS_LOS_EVENTOS.find((candidato) => candidato.id === decision.datos.eventoId);
+    if (decision.datos.motivo !== 'momento' || !evento) {
+      problemas.push(`fecha ${i}: la pausa no es el momento de la fecha (${decision.datos.motivo})`);
+      return;
+    }
+    const despues = previaDePartido(resolverOpcion(st, evento, respuesta.opcionId, mulberry32(31000 + i)).state, { tipo: 'fecha' });
+    if (log.p !== despues.p) problemas.push(`fecha ${i} (ajuste ${log.ajustePartido}): previa de después ${despues.p}, tirada ${log.p}`);
     if (log.ajustePartido === 0) {
       fechasNeutras += 1;
-      if (log.p !== previa.p) problemas.push(`fecha ${i} (sin ajuste): previa ${previa.p}, tirada ${log.p}`);
     } else {
       fechasConMomento += 1;
-      const despues = previaDePartido(st, { tipo: 'fecha', ajustePartido: log.ajustePartido });
-      if (log.p !== despues.p) problemas.push(`fecha ${i} (ajuste ${log.ajustePartido}): previa de después ${despues.p}, tirada ${log.p}`);
     }
   });
 
@@ -13600,9 +13625,9 @@ check('K2d previa 1: la p de la previa es exactamente la que el motor tira (===)
         return;
       }
       opcionesDeFecha += 1;
-      const tirada = log.ajustePartido === 0 ? log.p : log.pSinMomento;
-      if (mostrada !== tirada) {
-        problemas.push(`draft de fecha ${i} (${opcion.id}): la pausa muestra p = ${mostrada}, el motor tiró con ${tirada}`);
+      // Lo que el draft promete es la p de antes del momento (lo que el momento mueve sale con el resultado).
+      if (mostrada !== log.pSinMomento) {
+        problemas.push(`draft de fecha ${i} (${opcion.id}): la pausa muestra p = ${mostrada}, el motor la tenía en ${log.pSinMomento} antes del momento`);
       }
     });
   });
@@ -13646,7 +13671,7 @@ check('K2d previa 1: la p de la previa es exactamente la que el motor tira (===)
   }
 });
 
-check('K2d previa 2: la p final que muestra el mapa después del minijuego es exactamente la tirada (===), y el minijuego la mueve', () => {
+checkK2d('K2d previa 2: la p final que muestra el mapa después del minijuego es exactamente la tirada (===), y el minijuego la mueve', () => {
   const { minijuegos } = cosechaDePreviasK2d();
   const problemas = [];
   let movidas = 0;
@@ -13668,7 +13693,7 @@ check('K2d previa 2: la p final que muestra el mapa después del minijuego es ex
   }
 });
 
-check('K2d previa 3: el desglose reproduce el total de la fuerza que usa el motor (fecha: la del split; mapa: la del minijuego) y sus partes suman el total', () => {
+checkK2d('K2d previa 3: el desglose reproduce el total de la fuerza que usa el motor (fecha: la del split; mapa: la del minijuego) y sus partes suman el total', () => {
   const { fechas, drafts, minijuegos } = cosechaDePreviasK2d();
   const problemas = [];
   const sumaDePartes = (previa) => Object.values(previa.aportes).reduce((s, v) => s + v, 0);
@@ -13698,12 +13723,13 @@ check('K2d previa 3: el desglose reproduce el total de la fuerza que usa el moto
     if (Math.abs(sumaDePartes(final) - final.fuerzaFinal) > 1e-9) problemas.push(`minijuego ${i}: con el minijuego jugado, las partes no suman el total`);
   });
   drafts.forEach(({ st, decision }, i) => {
-    // Fuera de la previa: la fuerza del mapa armada con los campos (compañeros independientes, el rendimiento sin
-    // acotar y la sinergia), igual que el check de la tirada del mapa de K2b.
+    // La fuerza con la que el motor juega el mapa: la misma cuenta que hace `systems/serie.js` al jugarlo
+    // (`fuerzaDePartido(estadoDelMapa(...))`), no una reconstrucción. Antes se comparaba (===) contra la fórmula de
+    // K2b reescrita acá (`fuerzaDesdeCamposK2b`), que agrupa la sinergia en otro orden y difiere en el último bit
+    // en algunos estados (con `consistencia.k = 1` aparecieron dos). Que la fórmula del motor sea la de K2b lo
+    // cuidan los checks de K2b.
     const elegido = decision.opciones[0].id;
-    const conCampeon = { ...st, player: { ...st.player, campeonDelSplit: elegido } };
-    const independiente = fuerzaDesdeCamposK2b(nivelDeCompanerosIndependienteK2b(conCampeon), rendimientoBase(conCampeon), st.career.sinergia);
-    revisar(`draft ${i}`, previaDePartido(st, { tipo: 'mapa', campeon: elegido }), independiente);
+    revisar(`draft ${i}`, previaDePartido(st, { tipo: 'mapa', campeon: elegido }), fuerzaDePartido(estadoDelMapa(st, elegido)));
   });
   fallarSiK2d(problemas);
 });
@@ -13716,7 +13742,7 @@ function congelarK2d(objeto) {
   return objeto;
 }
 
-check('K2d previa 4: la previa no toca el estado ni llama al azar (estado congelado y Math.random que tira)', () => {
+checkK2d('K2d previa 4: la previa no toca el estado ni llama al azar (estado congelado y Math.random que tira)', () => {
   const { fechas, drafts, minijuegos } = cosechaDePreviasK2d();
   // La previa no recibe rng (su firma es (state, decision, opciones)): el azar que podría usar a escondidas es
   // Math.random, que acá tira. Lo que hace morder el check es eso y el estado congelado (escribir en él tira).
@@ -13741,7 +13767,7 @@ check('K2d previa 4: la previa no toca el estado ni llama al azar (estado congel
   fallarSiK2d(problemas);
 });
 
-check('K2d previa 6: ningún texto de la previa ni de la probabilidad jugada muestra ids crudos (ligas, rondas, motivos, minijuegos, roles, snake_case)', () => {
+checkK2d('K2d previa 6: ningún texto de la previa ni de la probabilidad jugada muestra ids crudos (ligas, rondas, motivos, minijuegos, roles, snake_case)', () => {
   const { fechas, drafts, minijuegos } = cosechaDePreviasK2d();
   // Palabras que nunca son texto (roles, ids de liga, restos de un valor vacío) y, como texto ENTERO, los ids de
   // ronda, motivo y minijuego: "final" o "semis" son palabras de verdad, pero un campo que dice solo "semis" es el id.
