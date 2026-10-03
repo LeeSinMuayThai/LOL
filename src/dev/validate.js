@@ -16337,6 +16337,17 @@ const { deltaPDePlan } = await import('./simulate.js');
 // el peor resultado (0) y con el mejor (1), con los mismos números aleatorios (mismo rng sembrado por seed y split), y se mira si
 // la firma se dio (`career.currentOrg` es la org de la oferta) y qué quedó del estado. La carrera principal sigue con la
 // respuesta automática. Solo guarda lo que los checks necesitan (no el estado entero de antes).
+// K4c (revisión): el respaldo de la prueba del mercado, recalculado a mano con la regla de PLAN.md (paso 3a): tu renovación si la
+// hay; si no, la oferta mejor pagada que no pide prueba (`saltosDeFichaje` vacío); si no, ninguna. La org, o `null`.
+const { saltosDeFichaje: saltosDeFichajeK4cR } = await import('../core/minijuegos.js');
+function respaldoALaManoK4cR(state, otras) {
+  const renovacion = otras.find((opcion) => opcion.tag === 'renovacion');
+  if (renovacion) return renovacion.org;
+  const sinPrueba = otras.filter((opcion) => saltosDeFichajeK4cR(state, opcion).length === 0);
+  if (sinPrueba.length === 0) return null;
+  return sinPrueba.reduce((mejor, opcion) => (opcion.salarioAnualUSD > mejor.salarioAnualUSD ? opcion : mejor)).org;
+}
+
 let sondaDeLaPruebaK4cs = null;
 function sondaDeLaPrueba() {
   if (sondaDeLaPruebaK4cs !== null) {
@@ -16377,7 +16388,9 @@ function sondaDeLaPrueba() {
             : null;
           filas.push({
             seed, sistemaId, oferta, respaldo, apuesta: decision.datos.apuesta ?? '',
-            antes: { currentOrg: st.career.currentOrg, contrato: structuredClone(st.career.contrato), bonus: st.flags.bonusJerarquiaTryout ?? 0, racha: st.flags.splitsSinOfertaConsecutivos },
+            respaldoALaMano: sistemaId === 'mercado' ? respaldoALaManoK4cR(st, decision.datos.otras ?? []) : null,
+            hayOtras: (decision.datos.otras ?? []).length > 0,
+            antes: { currentOrg: st.career.currentOrg, contrato: structuredClone(st.career.contrato), bonus: st.flags.bonusJerarquiaTryout ?? 0, racha: st.flags.splitsSinOfertaConsecutivos, nLogs: st.logs.length },
             bajo: { ficho: bajo.despues.career.currentOrg === oferta, estado: bajo.despues, rr: bajo.rr },
             alto: { ficho: alto.despues.career.currentOrg === oferta },
             bajoSinOtras
@@ -16416,7 +16429,9 @@ check('K4c-S la prueba decide el contrato: P(firmar | resultado 1) > P(firmar | 
 // fallida). Eso era una segunda parada de mercado en la misma pretemporada, contra K4-D (seed 5, split 18 de "K4-D la
 // pretemporada frena una sola vez"). Ahora la parada cierra en la misma pantalla con el respaldo que anunció la prueba.
 check('K4c-S un tryout fallido del mercado se cae solo esa oferta: sin crédito, y la parada cierra ahí mismo con el respaldo que anunció la prueba (o por el camino de "sin ofertas"), sin re-abrir el mercado', () => {
-  const fallidos = sondaDeLaPrueba().filter((f) => f.sistemaId === 'mercado' && !f.bajo.ficho && f.antes.currentOrg !== null);
+  // K4c (revisión): con y sin club (antes solo con club; con el plan del amateur arreglado quedaban 3 en la muestra): lo que se
+  // mira vale igual para un free agent, y el lado "sin otras ofertas" armado sigue siendo solo con club.
+  const fallidos = sondaDeLaPrueba().filter((f) => f.sistemaId === 'mercado' && !f.bajo.ficho);
   if (fallidos.length < 5) {
     throw new Error(`check vacío: ${fallidos.length} tryouts fallidos del mercado con club (hacen falta 5)`);
   }
@@ -16476,6 +16491,96 @@ check('K4c-S un tryout fallido del mercado se cae solo esa oferta: sin crédito,
       + `(más ${sinNadaArmadas} armadas sin las otras ofertas; hacen falta de las dos)`);
   }
 });
+// K4c (revisión): el check de arriba tomaba el respaldo de `decision.datos.respaldo`, el mismo número que escribe el motor: con el
+// mutante "cualquier oferta sirve de respaldo" (`const sinPrueba = otras;` en `respaldoDePrueba`) seguía verde. Este recalcula la regla.
+check('K4c (revisión) el respaldo de la prueba del mercado es el de la regla, recalculado a mano: lo anuncia la apuesta y, si la prueba no alcanza, es con quien seguís', () => {
+  let conRespaldo = 0;
+  let sinRespaldo = 0;
+  let distintoDeLaMejorPagada = 0;
+  for (const f of sondaDeLaPrueba().filter((fila) => fila.sistemaId === 'mercado')) {
+    const donde = `seed ${f.seed} (${f.oferta})`;
+    if (f.respaldo !== f.respaldoALaMano) {
+      throw new Error(`${donde}: la prueba anuncia el respaldo ${f.respaldo}; con la regla (renovación, si no la mejor pagada sin prueba) es ${f.respaldoALaMano}`);
+    }
+    if (f.respaldoALaMano === null ? !f.apuesta.includes('Si no alcanza, esta ventana no firmás con nadie.') : !f.apuesta.includes(f.respaldoALaMano)) {
+      throw new Error(`${donde}: la apuesta no dice el respaldo de la regla (${f.respaldoALaMano}): "${f.apuesta}"`);
+    }
+    if (!f.bajo.ficho && f.respaldoALaMano !== null && f.bajo.estado.career.currentOrg !== f.respaldoALaMano) {
+      throw new Error(`${donde}: la prueba no alcanzó y seguís en ${f.bajo.estado.career.currentOrg}, no en el respaldo de la regla (${f.respaldoALaMano})`);
+    }
+    if (f.respaldoALaMano === null) sinRespaldo += 1; else conRespaldo += 1;
+    if (f.respaldoALaMano === null && f.hayOtras) distintoDeLaMejorPagada += 1;
+  }
+  if (conRespaldo === 0 || sinRespaldo === 0 || distintoDeLaMejorPagada === 0) {
+    throw new Error(`check vacío: ${conRespaldo} pruebas con respaldo, ${sinRespaldo} sin, ${distintoDeLaMejorPagada} sin respaldo aunque había otras ofertas (las que pedían prueba)`);
+  }
+});
+
+// K4c (revisión): "probaste y no alcanzó" es un caso propio. Antes la prueba fallida sin respaldo iba por `resolverEspera`: sumaba a
+// `splitsSinOfertaConsecutivos` (azar seed 11: con seis ofertas en la mesa, "Nadie te ofrece nada hace 3 pretemporadas seguidas. Te
+// quedás sin equipo.") y el declive la contaba como silencio (azar seed 16: "A los 18 el mercado te está diciendo que no", y el motivo
+// "El mercado te venía diciendo que no").
+const PRUEBA_FALLIDA_K4cR = 'Probaste y no alcanzó: esta ventana no firmás con nadie.';
+const SILENCIO_K4cR = /Nadie te ofrece nada|El teléfono no suena|No queda nada que firmar/;
+check('K4c (revisión) probaste y no alcanzó: la prueba del mercado fallida sin respaldo no suma a la racha sin ofertas, no te deja libre por silencio y lo dice', () => {
+  let reales = 0;
+  let armadas = 0;
+  for (const f of sondaDeLaPrueba().filter((fila) => fila.sistemaId === 'mercado')) {
+    const casos = [];
+    if (!f.bajo.ficho && !f.respaldo) casos.push(['real', f.bajo.estado]);
+    if (f.bajoSinOtras && !f.bajoSinOtras.ficho) casos.push(['sin otras ofertas', f.bajoSinOtras.estado]);
+    for (const [cual, estado] of casos) {
+      const donde = `seed ${f.seed} (${f.oferta}, ${cual})`;
+      const nuevos = estado.logs.slice(f.antes.nLogs).map((log) => log.message);
+      if (estado.flags.splitsSinOfertaConsecutivos !== f.antes.racha) {
+        throw new Error(`${donde}: la prueba fallida movió la racha sin ofertas (${f.antes.racha} → ${estado.flags.splitsSinOfertaConsecutivos})`);
+      }
+      if (estado.career.currentOrg !== f.antes.currentOrg || JSON.stringify(estado.career.contrato) !== JSON.stringify(f.antes.contrato)) {
+        throw new Error(`${donde}: la prueba fallida sin respaldo tocó el club o el contrato (${f.antes.currentOrg} → ${estado.career.currentOrg})`);
+      }
+      if (!nuevos.some((m) => m.includes(`La prueba en ${f.oferta} no alcanza`) && m.includes(PRUEBA_FALLIDA_K4cR)) || nuevos.some((m) => SILENCIO_K4cR.test(m))) {
+        throw new Error(`${donde}: el log no dice que probaste y no alcanzó, o lo cuenta como silencio: ${JSON.stringify(nuevos)}`);
+      }
+      if ((estado.flags.pruebasFallidas ?? []).at(-1) !== f.oferta) {
+        throw new Error(`${donde}: la prueba fallida no quedó anotada (${JSON.stringify(estado.flags.pruebasFallidas)})`);
+      }
+      if (cual === 'real') reales += 1; else armadas += 1;
+    }
+  }
+  // Los dos casos de la revisión, con `azar`: después de una prueba fallida sin respaldo ese split no dice "nadie te ofrece nada", y la
+  // pregunta del declive (y el motivo, si te retirás) dicen que probaste y no alcanzó.
+  let declives = 0;
+  for (const seed of [11, 16]) {
+    const rng = mulberry32(seed);
+    let st = createInitialState(seed, rng);
+    for (let i = 0; i < 45 && !st.terminado; i += 1) {
+      const nLogs = st.logs.length;
+      st = avanzarSplit(st, rng).state;
+      while (st.pendiente) {
+        const { sistemaId, decision } = st.pendiente;
+        if (sistemaId === 'retiro' && decision.datos.motivo === 'retiro_declive' && (st.flags.pruebasFallidas ?? []).length > 0) {
+          const ultima = st.flags.pruebasFallidas.at(-1);
+          const retirado = resolverDecision(structuredClone(st), { opcionId: 'retirarse' }, mulberry32(seed)).state;
+          if (!decision.descripcion.includes(`probaste con ${ultima}`) || !(retirado.motivoRetiro ?? '').includes(`Probaste con ${ultima}`)
+            || /te está diciendo que no|te venía diciendo que no|teléfono dejó de sonar/.test(`${decision.descripcion} ${retirado.motivoRetiro} ${retirado.logs.at(-1).message}`)) {
+            throw new Error(`azar seed ${seed}, split ${i}: el declive cuenta la prueba fallida como silencio: "${decision.descripcion}" / "${retirado.motivoRetiro}" / "${retirado.logs.at(-1).message}"`);
+          }
+          declives += 1;
+        }
+        st = resolverDecision(st, ESTRATEGIAS_K0.azar(sistemaPorId(sistemaId), st, decision, rng), rng).state;
+      }
+      const delSplit = st.logs.slice(nLogs).map((log) => log.message);
+      const fallo = delSplit.findIndex((m) => m.includes(PRUEBA_FALLIDA_K4cR) || /no alcanza: se cae la oferta\. No queda nada/.test(m));
+      if (fallo >= 0 && delSplit.slice(fallo).some((m) => SILENCIO_K4cR.test(m))) {
+        throw new Error(`azar seed ${seed}, split ${i}: la prueba fallida se cuenta como silencio: ${JSON.stringify(delSplit.slice(fallo))}`);
+      }
+    }
+  }
+  if (reales + armadas < 5 || declives === 0) {
+    throw new Error(`check vacío: ${reales} pruebas fallidas sin respaldo reales, ${armadas} armadas sin otras ofertas, ${declives} declives con pruebas fallidas`);
+  }
+});
+
 
 check('K4c-S un tryout fallido del amateur posterga la firma: seguís en la escalera, sin crédito, y después puede llegar otra oferta', () => {
   const fallidos = sondaDeLaPrueba().filter((f) => f.sistemaId === 'amateur' && !f.bajo.ficho);
