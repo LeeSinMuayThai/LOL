@@ -6102,6 +6102,23 @@ Va en dos piezas paralelas, cada una en su worktree.
      acumulado redondea a ≥ 1. La barra de mentalidad se rotula **Consistencia**. En el bloque abierto eso promete
      algo que `k = 0` todavía no hace: se acepta porque no se publica en medio de un bloque, y K3c cierra la
      promesa con su check duro (regla 15).
+- **K3, tal como quedó y lo que se decide al integrar** *(2026-10-03)*.
+  - **La previa con `k ≠ 0`.** K3-A midió que, con `k ≠ 0`, el momento de una fecha marcada cambia la mentalidad
+    entre la previa y la tirada, y la previa deja de ser la p tirada. Se decide así:
+    - **Cuenta la mentalidad de después del momento.** Decidir tiene consecuencias reales.
+    - **La previa muestra la p antes de decidir.** El motor **guarda esa p en la pausa**, y el log la reporta como
+      `pSinMomento`.
+    - **La p final es la tirada.** Incluye todo lo que movió la decisión (`ajustePartido` y mentalidad) y se
+      muestra con el resultado ("el momento la movió desde X%"). Es el mismo patrón que K2d ya usa para el
+      `ajustePartido`.
+    - **Los checks de K2d pasan también con `consistencia.k = 1`**, probado en memoria. Una pieza neutra no puede
+      esconder un check que se rompe con el valor real.
+  - **El log dice lo que pasó.** La línea "mentalidad +N" del descanso muestra la ganancia real, ya con el tope,
+    no la nominal. Los logs no entran en la huella.
+  - **Para K3c.**
+    - Las opciones de los eventos que suben la mentalidad **no** se topean: son decisiones con su costo, no
+      descanso.
+    - Al calibrar `hypeRetornoBase`, K3c decide si el decaimiento fijo `hypeDecaimiento` pasa a 0.
 - **Para las dos piezas.**
   - Sin `rng` nuevo.
   - **Huella idéntica**: `node src/dev/huella.js --contra=` y el check "K1 versión".
