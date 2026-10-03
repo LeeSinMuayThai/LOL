@@ -2,6 +2,8 @@ import { gauss } from '../core/rng.js';
 import { crearLog } from '../core/log.js';
 import { clamp, clampStat } from '../core/numeros.js';
 import { campeonesAprendibles, pulirCampeon, aprenderCampeones } from '../core/pool.js';
+import { recuperarPorDescanso } from '../core/barras.js';
+import { conMarcasDeRutina } from '../core/curvas.js';
 import { BALANCE } from '../data/balance.js';
 import { ofrecerRutinas, rutinaPorId, elegirRutinaAutomatica } from '../core/rutinas.js';
 import { opcionDesdeRutina, descripcionDeSorteo, EJE_OFFSEASON } from '../core/rareza.js';
@@ -102,24 +104,35 @@ export function resolver(state, decision, respuesta, rng) {
     if (state.player.techoLesionMecanica != null) {
       stats.mecanica = Math.min(stats.mecanica, state.player.techoLesionMecanica);
     }
-    partes.push(`mecánica +${Math.round(ganancia)}`);
+    // El log dice lo que de verdad subió, ya con el clamp y el techo de lesión (no la ganancia nominal).
+    partes.push(`mecánica +${Math.round(stats.mecanica - state.player.stats.mecanica)}`);
   }
 
   if (reparto.macro > 0) {
     const ganancia = Math.max(0, gauss(p.gananciaMacro * reparto.macro, p.ruidoPractica * reparto.macro, rng));
     stats.macro = clampStat(stats.macro + ganancia);
     stats.shotcalling = clampStat(stats.shotcalling + ganancia / 2);
-    partes.push(`macro +${Math.round(ganancia)}`);
+    partes.push(`macro +${Math.round(stats.macro - state.player.stats.macro)}`);
   }
 
   if (reparto.descansar > 0) {
     const ganancia = Math.max(0, gauss(p.gananciaDescanso * reparto.descansar, p.ruidoPractica * reparto.descansar, rng));
-    stats.mentalidad = clampStat(stats.mentalidad + ganancia);
-    partes.push(`mentalidad +${Math.round(ganancia)}`);
+    // K3-A: el descanso del receso pasa por el tope (`core/barras.js`). El log dice lo que de verdad subió, ya
+    // con el tope, no la ganancia nominal (PLAN.md "K3, tal como quedó": el log dice lo que pasó).
+    const antes = stats.mentalidad;
+    stats.mentalidad = recuperarPorDescanso(antes, ganancia);
+    partes.push(`consistencia +${Math.round(stats.mentalidad - antes)}`);
   }
 
+  // K3-B 2b: la práctica también deja marca. Una fracción de lo que la rutina movió DE VERDAD sobre cada stat de
+  // curva (ya con el clamp y el techo de lesión; `conPermanencia` ignora los que no son de curva) va al bonus
+  // permanente, con la marca a nombre de la rutina. Lo que un techo de lesión recorta no es una pérdida de la
+  // práctica: solo cuentan las ganancias.
+  const conStats = { ...state, player: { ...state.player, championPool: aprendido.pool, stats } };
+  const marcado = conMarcasDeRutina(conStats, state.player.stats, rutina.titulo);
+
   return {
-    state: { ...state, player: { ...state.player, championPool: aprendido.pool, stats } },
+    state: marcado,
     logs: [crearLog(
       'practica',
       `Offseason: ${partes.length > 0 ? partes.join(', ') : 'no aprovechaste el receso'}.`,

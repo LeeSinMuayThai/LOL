@@ -130,6 +130,8 @@ La carrera debe incluir contratos, sueldos, cláusulas, imports, residencia, ada
   **desafio.js** (K1 — la seed del desafío del día a partir de la fecha UTC)
   **partido.js** (K2b — `ruidoEfectivo`, `probabilidadDePartido`, `tirarPartido`: el único lugar que lee σ y
   tira un partido) · **previaDePartido.js** (K2d — la previa: desglose y p, pura, la misma fuente que la tirada)
+  **barras.js** (K3-A — las barras que no se saturan: la mentalidad y el hype vuelven a su base, el descanso
+  topeado en `topeDescanso`; puras, sin `rng`, las leen `atributos`, `practica` y `rendimiento`)
 
 /src/systems
   contexto.js · edadInicio.js · meta.js · roster.js · competitivo.js · campeones.js

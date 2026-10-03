@@ -53,7 +53,7 @@ const ETIQUETAS_CAMPO = {
   'player.stats.laneo': 'Laneo',
   'player.stats.shotcalling': 'Shotcalling',
   'player.stats.adaptabilidad': 'Adaptabilidad',
-  'player.stats.mentalidad': 'Mentalidad',
+  'player.stats.mentalidad': 'Consistencia', // la barra se rotula Consistencia en pantalla; el id interno sigue siendo mentalidad
   'player.stats.hype': 'Hype',
   'player.championPool': 'Pool',
   'player.titles': 'Títulos',

@@ -1,6 +1,7 @@
 import { gauss, weightedPick, roll } from '../core/rng.js';
 import { crearLog } from '../core/log.js';
 import { clamp, clampStat } from '../core/numeros.js';
+import { conPermanencia } from '../core/curvas.js';
 import { ligaDeCarrera } from '../core/competicion.js';
 import { pesoDePick, factorDeCampeon, lecturaDePick } from '../core/ajusteMeta.js';
 import {
@@ -114,14 +115,21 @@ function pausaDeMinijuego(state, momento, logsAcum, datosExtra = {}) {
 // Los efectos `tipo: 'stat'` declaran a qué apuntan en el propio dato
 // (`player.stats.mentalidad`, `career.sinergia`): el motor no sabe cuál es el
 // del bootcamp y cuál el de la rueda de prensa, los aplica.
-function aplicarStatsDeMinijuego(state, targets, delta) {
+//
+// K3-B: un stat de curva que mueve un minijuego se vuelve permanente por el mismo helper que los eventos
+// (`conPermanencia`, con la fracción de los eventos y el nombre visible del minijuego como origen), con el delta REAL
+// que movió el clamp. Hoy ningún minijuego apunta a un stat de curva: no cambia nada.
+export function aplicarStatsDeMinijuego(state, targets, delta, origen) {
   return targets.reduce((st, target) => {
     if (target.startsWith('player.stats.')) {
       const stat = target.slice('player.stats.'.length);
-      return {
+      const antes = st.player.stats[stat];
+      const despues = clampStat(antes + delta);
+      const movido = {
         ...st,
-        player: { ...st.player, stats: { ...st.player.stats, [stat]: clampStat(st.player.stats[stat] + delta) } }
+        player: { ...st.player, stats: { ...st.player.stats, [stat]: despues } }
       };
+      return conPermanencia(movido, stat, despues - antes, origen);
     }
     const campo = target.slice('career.'.length);
     return { ...st, career: { ...st.career, [campo]: clampStat(st.career[campo] + delta) } };
@@ -504,7 +512,8 @@ export function resolver(state, decision, respuesta, rng) {
     return finalizarMapa(stConCupo, campeonElegido, fuerzaPropia, ajusteDeMinijuegoDeMapa(state, entrada, resultado), rng, []);
   }
 
-  const st = aplicarStatsDeMinijuego(stConCupo, entrada.efecto.targets, ajusteBase * entrada.impacto);
+  const nombreVisible = decision.titulo ?? textoDeMinijuego(entrada, state).titulo;
+  const st = aplicarStatsDeMinijuego(stConCupo, entrada.efecto.targets, ajusteBase * entrada.impacto, nombreVisible);
   const logs = [crearLog('serie', veredictoDeMinijuego(entrada.id, resultado, state).detalle)];
 
   return decision.datos.momento === 'pre_internacional'

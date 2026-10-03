@@ -55,6 +55,25 @@ export const BALANCE = {
     sigmaMapa: 17.7
   },
 
+  // K3-A (PLAN.md "K3 — decisiones de spec", K3-A.1): la mentalidad gobierna
+  // la consistencia. `ruidoEfectivo` multiplica su σ por
+  // g(m) = 1 + k·(mRef − m)/100, acotado a [gMin, gMax]
+  // (`core/partido.js#factorDeConsistencia`). Valores de estructura: con
+  // `k = 0` g vale 1 siempre y el juego es el de hoy (huella idéntica); K3c
+  // fija `k` medido.
+  consistencia: {
+    k: 0,
+    // La mentalidad a la que el σ es el de `partido`: la mediana pro que pide
+    // la meta de K3 (45-75).
+    mRef: 60,
+    // Las cotas de g. Con la cabeza perfecta el σ no baja de la mitad (el
+    // azar de un mapa no desaparece nunca); tilteado no pasa del doble (tu
+    // fuerza todavía pesa). Con `k = 1` las cotas no muerden en 0-100
+    // (g va de 0,6 a 1,6); con `k` ≥ 2,5 empiezan a hacerlo.
+    gMin: 0.5,
+    gMax: 2
+  },
+
   // Cuánto corren los stats la probabilidad de un outcome (CONCEPTO §8: "la
   // opción obviamente correcta sale mal a veces; tus stats corren esos pesos,
   // no los eliminan"). Ver `modificadores` en el esquema de eventos.
@@ -357,6 +376,14 @@ export const BALANCE = {
       laneo: { declive: 0.36, velocidad: 0.22, ruido: 1.5 },
       teamfight: { declive: 0.27, velocidad: 0.2, ruido: 1.5 }
     },
+    // K3-B (PLAN.md, "K3 — decisiones de spec"): la fracción de cada efecto de evento o decisión sobre un stat de
+    // curva que se vuelve permanente (`player.bonusPermanente`: la curva de edad converge a `objetivo + bonus`).
+    // 0 = neutro, el juego queda como estaba; la fija K3c para que un efecto conserve >= 40% a 4 splits.
+    fraccionPermanente: 0,
+    // K3-B 2b (PLAN.md, "K3 — decisiones de spec"): la misma regla para lo que mueve la práctica — las rutinas de
+    // offseason de `systems/practica.js` (el bootcamp) —, con su propia fracción porque su volumen es muy distinto
+    // al de un evento. 0 = neutro; la calibra K3c junto con `fraccionPermanente`.
+    fraccionPermanentePractica: 0,
 
     // --- Stats que se acumulan (el macro no declina: sostiene a los veteranos) ---
     acumulativos: {
@@ -395,7 +422,20 @@ export const BALANCE = {
     // sueño se cobraba toda junta. Con el `burnoutSplitsMinimos` de arriba,
     // ~87% de los burnouts pasan ≥2 de los 3 splits previos en zona roja
     // visible.
-    maxCaidaMentalPorSplit: 12
+    maxCaidaMentalPorSplit: 12,
+    // K3-A (PLAN.md "K3 — decisiones de spec", K3-A.2 y 3), en
+    // `core/barras.js`. Cada split la mentalidad vuelve a una base:
+    // m ← m + r·(base − m), con r = `mentalidadRetornoBase` (0 = el juego de
+    // hoy). No hay rasgo de personalidad en el motor que la module
+    // (`player.oculto` trae potencial, edad pico y forma), así que la base es
+    // esta constante: la mediana pro que pide la meta de K3.
+    mentalidadBase: 60,
+    mentalidadRetornoBase: 0,
+    // Toda recuperación de mentalidad por descanso (el sueño por encima del
+    // confortable en `atributos.js`, el "descansar" del receso en
+    // `practica.js`) llega hasta acá y no más; si ya estabas arriba, descansar
+    // no te baja. 100 = sin tope (el juego de hoy); K3c lo baja a la base.
+    topeDescanso: 100
   },
 
   meta: {
@@ -657,7 +697,11 @@ export const BALANCE = {
     nivelBandas: { prospecto: 45, titular: 62, elite: 78 },
     // Un delta de stat menor a esto no dibuja flecha en la ficha: una deriva
     // de 0,4 no es una noticia.
-    umbralFlecha: 1
+    umbralFlecha: 1,
+    // K3-B, "Lo que construiste": una marca (stat + origen + año, con lo acumulado) se muestra si su bonus
+    // redondea a esto o más en valor absoluto, y se muestran como mucho `marcasVisibles` (las más grandes).
+    marcaMinimaVisible: 1,
+    marcasVisibles: 6
   },
 
   // Marcas derivadas de `career.registro` (fase 8D, contenido vivo): leen
@@ -741,6 +785,22 @@ export const BALANCE = {
     hypePorPodio: 4,
     hypePorRendimiento: 0.08,
     hypeDecaimiento: 1.2,
+    // K3-A (PLAN.md "K3 — decisiones de spec", K3-A.4), en
+    // `core/barras.js#baseDeHype`: el hype decae hacia una base,
+    // h ← h + rH·(baseH − h), con
+    // baseH = h0 + a·z + b·visibilidad. z es la de tus resultados de la
+    // temporada regular del split (K2b, `career.temporada.resultadosPropios`);
+    // visibilidad = prestigio de tu liga / 100 + `hypeVisibilidadPorInternacional`
+    // si jugaste un internacional en los últimos `hypeAniosInternacional` años
+    // calendario (el internacional se juega al cierre del año: te hace visible
+    // el año siguiente). `hypeRetornoBase` = rH = 0 es el juego de hoy; h0, a
+    // y b son de estructura (rH = 0 los apaga) y los fija K3c.
+    hypeRetornoBase: 0,
+    hypeBaseInicial: 40,
+    hypeBasePorDesvio: 6,
+    hypeBasePorVisibilidad: 30,
+    hypeVisibilidadPorInternacional: 0.5,
+    hypeAniosInternacional: 1,
     mentalidadPorTitulo: 7,
     mentalidadPorPodio: 3,
     mentalidadPorFracaso: -4,

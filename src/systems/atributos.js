@@ -2,9 +2,10 @@ import { gauss, chance } from '../core/rng.js';
 import { crearLog } from '../core/log.js';
 import { deltaCorto, entero } from '../core/formato.js';
 import { clamp, clampStat } from '../core/numeros.js';
-import { nivelDeCurva, techoDeCarrera } from '../core/curvas.js';
+import { nivelDeCurva, techoDeCarrera, bonusDeCurva } from '../core/curvas.js';
 import { nivelDelJugador } from '../core/ficha.js';
 import { registrarPicoNivel } from '../core/registro.js';
+import { mentalidadHaciaSuBase, recuperarPorDescanso } from '../core/barras.js';
 import { BALANCE } from '../data/balance.js';
 
 export const id = 'atributos';
@@ -24,8 +25,9 @@ function moverStatsDeCurva(stats, state, forma, rng) {
   const movidos = { ...stats };
 
   for (const [stat, config] of Object.entries(a.curvas)) {
+    // K3-B: la curva converge a `objetivo + bonusPermanente[stat]` (lo que las decisiones dejaron; 0 = como siempre).
     const objetivo = nivelDeCurva(state.age, oculto, { declive: config.declive, splitsJugados })
-      * (1 + forma * a.formaAmplitud);
+      * (1 + forma * a.formaAmplitud) + bonusDeCurva(state.player, stat);
 
     // Converge hacia el objetivo en vez de saltar: el declive nunca se anuncia,
     // se nota recien cuando ya lleva un par de splits pasando.
@@ -107,7 +109,15 @@ export function aplicar(state, rng) {
   // Fase 9R.2: la caída NETA de mentalidad de un split (lo que ya movieron los
   // eventos, en `conAcumulados`, + el desgaste de acá) se topea, para que la
   // barra roja siempre se vea venir. La subida no se topea.
-  const mentalidadSinTope = clampStat(conAcumulados.mentalidad - desgasteDeMentalidad({ ...state, player: { ...state.player, sleep } }, rng));
+  //
+  // K3-A: un desgaste negativo (dormir por encima del confortable) es
+  // descanso, y el descanso sube la mentalidad solo hasta `topeDescanso`
+  // (`core/barras.js#recuperarPorDescanso`). Después, la vuelta del split
+  // hacia la base (`mentalidadHaciaSuBase`), adentro del tope de caída neta.
+  const desgaste = desgasteDeMentalidad({ ...state, player: { ...state.player, sleep } }, rng);
+  const mentalidadSinTope = mentalidadHaciaSuBase(desgaste < 0
+    ? recuperarPorDescanso(conAcumulados.mentalidad, -desgaste)
+    : clampStat(conAcumulados.mentalidad - desgaste));
   const mentalidad = Math.max(mentalidadSinTope, state.player.stats.mentalidad - BALANCE.atributos.maxCaidaMentalPorSplit);
 
   const stats = { ...conAcumulados, mentalidad };
@@ -153,7 +163,7 @@ export function aplicar(state, rng) {
   const logs = [crearLog(
     'split',
     `Split ${state.career.currentSplit}: mecánica ${deltaCorto(deltaMecanica)}, `
-    + `macro ${entero(stats.macro)}, mentalidad ${entero(mentalidad)}.`,
+    + `macro ${entero(stats.macro)}, consistencia ${entero(mentalidad)}.`,
     { tecnico: true }
   )];
 

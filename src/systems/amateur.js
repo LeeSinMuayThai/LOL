@@ -11,6 +11,7 @@ import { ofrecerRutinas, rutinaPorId, elegirRutinaAutomatica } from '../core/rut
 import { opcionDesdeRutina, descripcionDeSorteo, EJE_AMATEUR } from '../core/rareza.js';
 import { elegirOrgTier3, asignarOrgTier3 } from '../core/tier3.js';
 import { elegirMinijuego, minijuegoPorId, textoDeMinijuego, registrarMinijuegoVisto } from '../core/minijuegos.js';
+import { conMarcasDeRutina } from '../core/curvas.js';
 import { esCierreDeEdad } from './edadCierre.js';
 
 export const id = 'amateur';
@@ -646,7 +647,11 @@ export function resolver(state, decision, respuesta, rng) {
     // rutina mal declarada no invente ni pierda bloques, y la que adapta un
     // reparto de 10 a los 12 bloques del nocturno.
     const { reparto, extra } = normalizarReparto(state, { reparto: rutina.reparto, extra: rutina.extra });
-    const rReparto = aplicarReparto(state, reparto, extra, rng);
+    const rRepartoCrudo = aplicarReparto(state, reparto, extra, rng);
+    // K3-B 2b: la semana amateur también deja marca, por el mismo camino que el receso (`conMarcasDeRutina`: la
+    // fracción de la práctica, el título visible de la rutina, la ganancia real). Hoy ningún reparto mueve un stat de
+    // curva, así que no anota nada; el día que uno lo mueva, la marca sale sola.
+    const rReparto = { ...rRepartoCrudo, state: conMarcasDeRutina(rRepartoCrudo.state, state.player.stats, rutina.titulo) };
     const rRiesgo = evaluarRiesgoFamiliar(rReparto.state, rng);
     const logs = [...rReparto.logs, ...rRiesgo.logs];
 

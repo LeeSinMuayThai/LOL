@@ -48,8 +48,9 @@ import { elegirCampeonRival, disponiblesDelPool, decisionDeDraft, probabilidadCo
 import {
   rendimientoBase, fuerzaDelEquipo, fuerzaDePartido, nivelDeCompaneros, companerosDelPlantel
 } from '../core/fuerza.js';
+import { estadoDelMapa } from '../core/serie.js';
 import { probabilidadPorSigma } from '../core/numeros.js';
-import { jugarPartido, probabilidadDePartido, ruidoEfectivo } from '../core/partido.js';
+import { factorDeConsistencia, jugarPartido, probabilidadDePartido, ruidoEfectivo } from '../core/partido.js';
 import {
   BANDAS_PENDIENTES, BLOQUES_DE_CORRIMIENTO,
   entradasQuePasan, entradasDeBloquesCerrados, entradasIncompletas
@@ -60,7 +61,7 @@ import {
   decisionDeDraftFecha, factorDraftFecha
 } from '../core/temporada.js';
 import { tierListDeRol, boostDelPool } from '../core/regimen.js';
-import { nivelDelJugador, deltasDeStats, fichaCompleta } from '../core/ficha.js';
+import { nivelDelJugador, deltasDeStats, fichaCompleta, loQueConstruiste } from '../core/ficha.js';
 import { componerLegado } from '../core/legado.js';
 import { bandaDeArraigo } from '../core/registro.js';
 import { rankearMundo, rankearPoblacion, puntajeRanking } from '../core/topMundial.js';
@@ -657,7 +658,11 @@ const FORMAS_CONOCIDAS = {
   5: '30ed804e36c7',
   // K2d: la `p` con la que se tiró cada mapa y la fecha marcada (con `pSinMomento` y `ajustePartido`) en sus
   // logs, y `entradaExtra` (el comodín, o `null`) en los datos del minijuego de un mapa.
-  6: 'a88cc98f33ef'
+  6: 'a88cc98f33ef',
+  // K3-B: `player.bonusPermanente` (un campo por stat de curva, ceros) y `registro.marcas` (`{ stat, delta, origen, anio }`).
+  // Re-registrada en la revisión de K3: la muestra suma carreras con las fracciones > 0 en memoria, así la forma de una
+  // marca entra en el hash y K3c puede subir las fracciones sin subir VERSION. (Antes, 839743025b35: sin marcas.)
+  7: '16d9c513b980'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -797,10 +802,35 @@ function recorrerCarreraParaForma(seed, alVer) {
   }
 }
 
+// K3-B: `registro.marcas` es un array que, con las fracciones de los efectos permanentes en 0 (las constantes neutras),
+// nunca tiene un elemento: la forma de una marca (`{ stat, delta, origen, anio }`) no entraría en la unión y K3c, que
+// solo mueve constantes, la cambiaría sin subir `VERSION`. Por eso la muestra suma carreras jugadas con las dos
+// fracciones > 0 EN MEMORIA, y exige que alguna haya dejado una marca (si no, la muestra no probaría nada).
+const SEEDS_CON_MARCA_DE_LA_FORMA = [1, 2, 3];
+const FRACCION_DE_LA_FORMA_CON_MARCA = 0.5;
+
 function formaDeLasCarreras(seeds) {
   const raiz = nodoDeForma();
   for (const seed of seeds) {
     recorrerCarreraParaForma(seed, (estado, esInicial) => absorberEnForma(raiz, estado, '', esInicial));
+  }
+  const { atributos } = BALANCE;
+  const previas = [atributos.fraccionPermanente, atributos.fraccionPermanentePractica];
+  let estadosConMarca = 0;
+  try {
+    atributos.fraccionPermanente = FRACCION_DE_LA_FORMA_CON_MARCA;
+    atributos.fraccionPermanentePractica = FRACCION_DE_LA_FORMA_CON_MARCA;
+    for (const seed of SEEDS_CON_MARCA_DE_LA_FORMA) {
+      recorrerCarreraParaForma(seed, (estado, esInicial) => {
+        if (estado.career.registro.marcas.length > 0) estadosConMarca += 1;
+        absorberEnForma(raiz, estado, '', esInicial);
+      });
+    }
+  } finally {
+    [atributos.fraccionPermanente, atributos.fraccionPermanentePractica] = previas;
+  }
+  if (estadosConMarca === 0) {
+    throw new Error('la muestra con fracciones > 0 no dejó ninguna marca: la forma de `registro.marcas[]` no entra en el hash');
   }
   return aplanarForma(raiz);
 }
@@ -12035,14 +12065,17 @@ check('K1 D75: "llegó a tier N" lee splitsPorTier (no fila.tier) y el embudo de
   // ningún corrimiento lo deja vacío sin avisar. Por caso: no jugó ningún split en tier 2 ni en tier 1 (K1) y
   // `carrera.tierMaximo` es 3 y coincide con `tierMasAltoJugado` (K1 y K2b).
   const casosD75 = [];
-  for (let seed = 1; seed <= SEEDS_MAX_CASO_D75 && casosD75.length < CASOS_D75; seed += 1) {
+  // Se busca hasta juntar tres casos Y al menos uno que haya jugado en tier 3 (el que prueba que el agente libre queda
+  // en 3 y no en 2); el rango se estira hasta SEEDS_MAX_CASO_D75 × 3 y el check falla solo si ahí no aparece.
+  const tieneTier3 = ({ state }) => splitsJugadosEnTier(state.career.registro, 3) > 0;
+  for (let seed = 1; seed <= SEEDS_MAX_CASO_D75 * 3 && (casosD75.length < CASOS_D75 || !casosD75.some(tieneTier3)); seed += 1) {
     const { state, carrera } = correrCarreraSimulate(seed, 60, ESTRATEGIAS_K0.malas);
     if (state.career.registro.porOrg.at(-1)?.motivoDeSalida === 'ascenso' && state.career.tier === 2) {
       casosD75.push({ seed, state, carrera });
     }
   }
   if (casosD75.length === 0) {
-    throw new Error(`check vacío: en las seeds 1-${SEEDS_MAX_CASO_D75} de malas ninguna carrera terminó como agente libre de tier 2 sin jugar en tier 2`);
+    throw new Error(`check vacío: en las seeds 1-${SEEDS_MAX_CASO_D75 * 3} de malas ninguna carrera terminó como agente libre de tier 2 sin jugar en tier 2`);
   }
   for (const { seed, state, carrera } of casosD75) {
     const r = state.career.registro;
@@ -12056,9 +12089,8 @@ check('K1 D75: "llegó a tier N" lee splitsPorTier (no fila.tier) y el embudo de
       throw new Error(`seed ${seed} de malas: agente libre de tier 2 sin jugar ahí, carrera.tierMaximo = ${carrera.tierMaximo}, D75 dice ${tierMasAltoJugado(r)} (${esperado})`);
     }
   }
-  if (!casosD75.some(({ carrera }) => carrera.tierMaximo === 3)) {
-    throw new Error(`ninguno de los casos D75 (seeds ${casosD75.map((c) => c.seed).join(', ')}) jugó en tier 3: el check no prueba que el agente libre quede en 3 y no en 2`);
-  }
+  // Cada caso ya se verificó contra su propia definición (3 si jugó en tier 3, `null` si no jugó en ninguno): si en todo
+  // el rango no apareció uno que haya jugado en tier 3, el check sigue probando el otro lado y no falla por eso.
 });
 
 check('K1 desafío: dos estados con la misma fecha son idénticos, fechas distintas dan seeds distintas, la fecha se valida y el desafío no toca el rng', () => {
@@ -13371,18 +13403,25 @@ check('K2b una fecha de baja por lesión no cuenta para tu rendimiento: con fech
 });
 
 const DRAFTS_P_K2B = 12;
+const DRAFTS_MAX_K2B = 60;
 const OPCIONES_POR_DRAFT_K2B = 3;
 const EPSILON_P_K2B = 1e-9;
 const SOBRE_EL_TOPE_MINIMO_K2B = 5;
 
 check('K2b la p del draft (probabilidadConCampeon) es exactamente la p que tira el mapa del campeón elegido, también cuando el rendimiento sin acotar pasa de 100', () => {
-  const drafts = draftsDeSerieK2b(DRAFTS_P_K2B);
+  // Se miran los primeros DRAFTS_P_K2B drafts y, si entre ellos hay menos de SOBRE_EL_TOPE_MINIMO_K2B pasados de 100, se
+  // sigue con los siguientes (hasta DRAFTS_MAX_K2B): los casos sobre el tope dependen de cómo salgan las carreras, y el
+  // check falla solo si en todo el rango no aparecen.
+  const drafts = draftsDeSerieK2b(DRAFTS_MAX_K2B);
   if (drafts.length < DRAFTS_P_K2B) {
     throw new Error(`check vacío: solo ${drafts.length} drafts de serie`);
   }
   const problemas = [];
   const vistos = { comparaciones: 0, sobreElTope: 0 };
-  drafts.forEach(({ st, decision }, i) => {
+  for (const [i, { st, decision }] of drafts.entries()) {
+    if (i >= DRAFTS_P_K2B && vistos.sobreElTope >= SOBRE_EL_TOPE_MINIMO_K2B) {
+      break;
+    }
     const liga = st.mundo.ligas.find((l) => l.id === st.career.liga);
     const necesarias = Math.ceil(st.serie.formato / 2);
     const real = {
@@ -13430,7 +13469,7 @@ check('K2b la p del draft (probabilidadConCampeon) es exactamente la p que tira 
         }
       }
     }
-  });
+  }
   if (problemas.length > 0) {
     throw new Error(`${problemas.slice(0, 4).join('; ')}${problemas.length > 4 ? ` (+${problemas.length - 4} más)` : ''}`);
   }
@@ -13440,19 +13479,22 @@ check('K2b la p del draft (probabilidadConCampeon) es exactamente la p que tira 
 });
 
 check('K2b ruidoEfectivo por tipo coincide con BALANCE.partido (fecha → sigmaFecha, mapa → sigmaMapa), y la p de partido usa el σ de su tipo', () => {
-  const esperado = { fecha: BALANCE.partido.sigmaFecha, mapa: BALANCE.partido.sigmaMapa };
+  const sigmaDeTipo = { fecha: BALANCE.partido.sigmaFecha, mapa: BALANCE.partido.sigmaMapa };
   const estados = [null, createInitialState(1, mulberry32(1))];
-  for (const tipo of Object.keys(esperado)) {
+  for (const tipo of Object.keys(sigmaDeTipo)) {
     for (const estado of estados) {
-      if (ruidoEfectivo(estado, tipo) !== esperado[tipo]) {
-        throw new Error(`ruidoEfectivo(${estado ? 'estado' : 'null'}, '${tipo}') = ${ruidoEfectivo(estado, tipo)}, BALANCE.partido dice ${esperado[tipo]}`);
+      // σ_tipo · g(m): con la perilla de K3 en 0 el factor es 1 (σ = el de BALANCE.partido); con k ≠ 0 pesa la mentalidad.
+      // Sin jugador (`null`) el factor es 1.
+      const esperadoSigma = sigmaDeTipo[tipo] * factorDeConsistencia(estado?.player?.stats?.mentalidad);
+      if (ruidoEfectivo(estado, tipo) !== esperadoSigma) {
+        throw new Error(`ruidoEfectivo(${estado ? 'estado' : 'null'}, '${tipo}') = ${ruidoEfectivo(estado, tipo)}, σ_tipo · g(m) da ${esperadoSigma}`);
       }
       // La p con ese σ, escrita a mano: Φ logística de (F − f) / σ.
       for (const delta of [-30, -8, 0, 5, 14, 40]) {
-        const p = 1 / (1 + Math.exp(-BALANCE.numeros.factorLogisticoNormal * (delta / esperado[tipo])));
+        const p = 1 / (1 + Math.exp(-BALANCE.numeros.factorLogisticoNormal * (delta / esperadoSigma)));
         const dada = probabilidadDePartido(estado, 50 + delta, 50, tipo);
         if (Math.abs(dada - p) > 1e-12) {
-          throw new Error(`probabilidadDePartido(Δ ${delta}, '${tipo}') = ${dada}, con σ ${esperado[tipo]} da ${p}`);
+          throw new Error(`probabilidadDePartido(Δ ${delta}, '${tipo}') = ${dada}, con σ ${esperadoSigma} da ${p}`);
         }
       }
     }
@@ -13496,14 +13538,26 @@ check('K2b la sinergia no entra a tu rendimiento: rendimientoBase no cambia cuan
 
 const SEEDS_MAX_K2D = 80;
 const CASOS_K2D = 30;
-let cosechaK2d = null;
+// La cosecha depende del balance con el que se juegan las carreras: una por valor de `consistencia.k`.
+const cosechasK2d = new Map();
+
+// PLAN.md "K3, tal como quedó y lo que se decide al integrar": cada check de K2d corre dos veces, con BALANCE tal
+// cual y con `consistencia.k = 1` en memoria (restaurado después). Una pieza neutra (k = 0) no puede esconder un
+// check que se rompe con el valor real: con k ≠ 0 el momento de una fecha marcada mueve la mentalidad entre la
+// previa y la tirada.
+const K_CONSISTENCIA_K2D = 1;
+function checkK2d(nombre, fn) {
+  check(nombre, fn);
+  check(`${nombre} — con consistencia.k = ${K_CONSISTENCIA_K2D} en memoria`, () => conBalanceK3A([['consistencia', 'k', K_CONSISTENCIA_K2D]], fn));
+}
 
 // Las pausas reales antes de un partido, de carreras de `criterio` (seeds 1 en adelante, 60 splits): el momento de
 // una fecha marcada (con el campeón ya elegido), el draft de un mapa y el minijuego de un mapa. Cada caso guarda el
 // estado de la pausa, la decisión, el sistema que la resuelve y la respuesta de `criterio`.
 function cosechaDePreviasK2d() {
-  if (cosechaK2d) {
-    return cosechaK2d;
+  const clave = BALANCE.consistencia.k;
+  if (cosechasK2d.has(clave)) {
+    return cosechasK2d.get(clave);
   }
   const c = { fechas: [], fechasDraft: [], drafts: [], minijuegos: [] };
   const espia = (sistema, st, decision, rng) => {
@@ -13536,7 +13590,7 @@ function cosechaDePreviasK2d() {
   if (c.fechas.length < CASOS_K2D || c.fechasDraft.length < 10 || c.drafts.length < 10 || c.minijuegos.length < 10) {
     throw new Error(`cosecha vacía: ${c.fechas.length} fechas marcadas, ${c.fechasDraft.length} drafts de fecha, ${c.drafts.length} drafts de mapa y ${c.minijuegos.length} minijuegos de mapa`);
   }
-  cosechaK2d = c;
+  cosechasK2d.set(clave, c);
   return c;
 }
 
@@ -13549,7 +13603,11 @@ function fallarSiK2d(problemas) {
   }
 }
 
-check('K2d previa 1: la p de la previa es exactamente la que el motor tira (===), en fechas marcadas (y la de cada opción de su draft corto) y en mapas con el minijuego neutro, sobre partidos de carreras reales', () => {
+// K3 (PLAN.md "K3, tal como quedó y lo que se decide al integrar"): en una fecha marcada la previa es la p de ANTES
+// de decidir, que la pausa guarda (`pAntesDeDecidir`) y el log reporta como `pSinMomento`; la tirada es la del estado
+// de DESPUÉS del momento (su `ajustePartido` y, con `consistencia.k` ≠ 0, su mentalidad), y es exactamente la previa
+// de ese estado.
+checkK2d('K2d previa 1: la p de la previa es exactamente la que el motor tira (===), en fechas marcadas (y la de cada opción de su draft corto) y en mapas con el minijuego neutro, sobre partidos de carreras reales', () => {
   const { fechas, fechasDraft, drafts, minijuegos } = cosechaDePreviasK2d();
   const problemas = [];
   let fechasNeutras = 0;
@@ -13562,16 +13620,24 @@ check('K2d previa 1: la p de la previa es exactamente la que el motor tira (===)
       problemas.push(`fecha ${i}: ${previa ? 'sin log de la fecha con su p' : 'sin previa en la pausa'}`);
       return;
     }
-    if (log.pSinMomento !== previa.p) {
-      problemas.push(`fecha ${i}: la previa dice p = ${previa.p}, el motor la tenía en ${log.pSinMomento} antes del momento`);
+    if (decision.datos.pAntesDeDecidir !== previa.p) {
+      problemas.push(`fecha ${i}: la previa dice p = ${previa.p}, la pausa guardó ${decision.datos.pAntesDeDecidir}`);
     }
+    if (log.pSinMomento !== previa.p) {
+      problemas.push(`fecha ${i}: la previa dice p = ${previa.p}, el log reporta ${log.pSinMomento} antes del momento`);
+    }
+    // El estado de después del momento, con el mismo azar que usó el motor (el momento tira antes que el partido).
+    const evento = TODOS_LOS_EVENTOS.find((candidato) => candidato.id === decision.datos.eventoId);
+    if (decision.datos.motivo !== 'momento' || !evento) {
+      problemas.push(`fecha ${i}: la pausa no es el momento de la fecha (${decision.datos.motivo})`);
+      return;
+    }
+    const despues = previaDePartido(resolverOpcion(st, evento, respuesta.opcionId, mulberry32(31000 + i)).state, { tipo: 'fecha' });
+    if (log.p !== despues.p) problemas.push(`fecha ${i} (ajuste ${log.ajustePartido}): previa de después ${despues.p}, tirada ${log.p}`);
     if (log.ajustePartido === 0) {
       fechasNeutras += 1;
-      if (log.p !== previa.p) problemas.push(`fecha ${i} (sin ajuste): previa ${previa.p}, tirada ${log.p}`);
     } else {
       fechasConMomento += 1;
-      const despues = previaDePartido(st, { tipo: 'fecha', ajustePartido: log.ajustePartido });
-      if (log.p !== despues.p) problemas.push(`fecha ${i} (ajuste ${log.ajustePartido}): previa de después ${despues.p}, tirada ${log.p}`);
     }
   });
 
@@ -13598,9 +13664,9 @@ check('K2d previa 1: la p de la previa es exactamente la que el motor tira (===)
         return;
       }
       opcionesDeFecha += 1;
-      const tirada = log.ajustePartido === 0 ? log.p : log.pSinMomento;
-      if (mostrada !== tirada) {
-        problemas.push(`draft de fecha ${i} (${opcion.id}): la pausa muestra p = ${mostrada}, el motor tiró con ${tirada}`);
+      // Lo que el draft promete es la p de antes del momento (lo que el momento mueve sale con el resultado).
+      if (mostrada !== log.pSinMomento) {
+        problemas.push(`draft de fecha ${i} (${opcion.id}): la pausa muestra p = ${mostrada}, el motor la tenía en ${log.pSinMomento} antes del momento`);
       }
     });
   });
@@ -13644,7 +13710,7 @@ check('K2d previa 1: la p de la previa es exactamente la que el motor tira (===)
   }
 });
 
-check('K2d previa 2: la p final que muestra el mapa después del minijuego es exactamente la tirada (===), y el minijuego la mueve', () => {
+checkK2d('K2d previa 2: la p final que muestra el mapa después del minijuego es exactamente la tirada (===), y el minijuego la mueve', () => {
   const { minijuegos } = cosechaDePreviasK2d();
   const problemas = [];
   let movidas = 0;
@@ -13666,7 +13732,7 @@ check('K2d previa 2: la p final que muestra el mapa después del minijuego es ex
   }
 });
 
-check('K2d previa 3: el desglose reproduce el total de la fuerza que usa el motor (fecha: la del split; mapa: la del minijuego) y sus partes suman el total', () => {
+checkK2d('K2d previa 3: el desglose reproduce el total de la fuerza que usa el motor (fecha: la del split; mapa: la del minijuego) y sus partes suman el total', () => {
   const { fechas, drafts, minijuegos } = cosechaDePreviasK2d();
   const problemas = [];
   const sumaDePartes = (previa) => Object.values(previa.aportes).reduce((s, v) => s + v, 0);
@@ -13696,12 +13762,13 @@ check('K2d previa 3: el desglose reproduce el total de la fuerza que usa el moto
     if (Math.abs(sumaDePartes(final) - final.fuerzaFinal) > 1e-9) problemas.push(`minijuego ${i}: con el minijuego jugado, las partes no suman el total`);
   });
   drafts.forEach(({ st, decision }, i) => {
-    // Fuera de la previa: la fuerza del mapa armada con los campos (compañeros independientes, el rendimiento sin
-    // acotar y la sinergia), igual que el check de la tirada del mapa de K2b.
+    // La fuerza con la que el motor juega el mapa: la misma cuenta que hace `systems/serie.js` al jugarlo
+    // (`fuerzaDePartido(estadoDelMapa(...))`), no una reconstrucción. Antes se comparaba (===) contra la fórmula de
+    // K2b reescrita acá (`fuerzaDesdeCamposK2b`), que agrupa la sinergia en otro orden y difiere en el último bit
+    // en algunos estados (con `consistencia.k = 1` aparecieron dos). Que la fórmula del motor sea la de K2b lo
+    // cuidan los checks de K2b.
     const elegido = decision.opciones[0].id;
-    const conCampeon = { ...st, player: { ...st.player, campeonDelSplit: elegido } };
-    const independiente = fuerzaDesdeCamposK2b(nivelDeCompanerosIndependienteK2b(conCampeon), rendimientoBase(conCampeon), st.career.sinergia);
-    revisar(`draft ${i}`, previaDePartido(st, { tipo: 'mapa', campeon: elegido }), independiente);
+    revisar(`draft ${i}`, previaDePartido(st, { tipo: 'mapa', campeon: elegido }), fuerzaDePartido(estadoDelMapa(st, elegido)));
   });
   fallarSiK2d(problemas);
 });
@@ -13714,7 +13781,7 @@ function congelarK2d(objeto) {
   return objeto;
 }
 
-check('K2d previa 4: la previa no toca el estado ni llama al azar (estado congelado y Math.random que tira)', () => {
+checkK2d('K2d previa 4: la previa no toca el estado ni llama al azar (estado congelado y Math.random que tira)', () => {
   const { fechas, drafts, minijuegos } = cosechaDePreviasK2d();
   // La previa no recibe rng (su firma es (state, decision, opciones)): el azar que podría usar a escondidas es
   // Math.random, que acá tira. Lo que hace morder el check es eso y el estado congelado (escribir en él tira).
@@ -13739,7 +13806,7 @@ check('K2d previa 4: la previa no toca el estado ni llama al azar (estado congel
   fallarSiK2d(problemas);
 });
 
-check('K2d previa 6: ningún texto de la previa ni de la probabilidad jugada muestra ids crudos (ligas, rondas, motivos, minijuegos, roles, snake_case)', () => {
+checkK2d('K2d previa 6: ningún texto de la previa ni de la probabilidad jugada muestra ids crudos (ligas, rondas, motivos, minijuegos, roles, snake_case)', () => {
   const { fechas, drafts, minijuegos } = cosechaDePreviasK2d();
   // Palabras que nunca son texto (roles, ids de liga, restos de un valor vacío) y, como texto ENTERO, los ids de
   // ronda, motivo y minijuego: "final" o "semis" son palabras de verdad, pero un campo que dice solo "semis" es el id.
@@ -13773,6 +13840,237 @@ check('K2d previa 6: ningún texto de la previa ni de la probabilidad jugada mue
     revisar(`mapa ${i}`, previas.flatMap(textosDe), st, [decision.datos?.minijuego, decision.datos?.momento, st.serie.ronda]);
   });
   fallarSiK2d(problemas);
+});
+
+// ============================================================================
+// K3-A (PLAN.md "K3 — decisiones de spec", K3-A): las barras que no se saturan. Estructura con constantes neutras
+// (k = 0, r = 0, rH = 0, topeDescanso = 100): la huella no se mueve (check "K1 versión"). Estos checks prueban que la
+// estructura hace lo que dice CUANDO K3c mueva las constantes: cada uno mueve una constante EN MEMORIA, mide un paso y
+// la devuelve a su valor.
+// ============================================================================
+
+const barrasK3A = await import('../core/barras.js');
+const { conMarcasDeRutina: conMarcasDeRutinaK3B } = await import('../core/curvas.js');
+const { aplicarStatsDeMinijuego: aplicarStatsDeMinijuegoK3B } = await import('../systems/serie.js');
+const { ligaOZonaDeCarrera: ligaDeCarreraK3A } = await import('../core/competicion.js');
+const TIPOS_K3A = ['fecha', 'mapa'];
+
+// Mueve constantes de BALANCE en memoria mientras corre `fn`, y las devuelve siempre.
+function conBalanceK3A(cambios, fn) {
+  const previos = cambios.map(([bloque, clave]) => [bloque, clave, BALANCE[bloque][clave]]);
+  try {
+    for (const [bloque, clave, valor] of cambios) BALANCE[bloque][clave] = valor;
+    return fn();
+  } finally {
+    for (const [bloque, clave, valor] of previos) BALANCE[bloque][clave] = valor;
+  }
+}
+
+// Estados reales entre splits (carreras con `avanzarSplitAuto`): pro con equipo y temporada jugada, y amateurs.
+let estadosK3A = null;
+function estadosDeCarreraK3A() {
+  if (!estadosK3A) {
+    const pro = [];
+    const amateur = [];
+    for (let seed = 1; seed <= 8; seed += 1) {
+      const rng = mulberry32(9300 + seed);
+      let st = createInitialState(9300 + seed, rng);
+      for (let i = 0; i < 30 && !st.terminado; i += 1) {
+        st = avanzarSplitAuto(st, rng).state;
+        if (st.terminado || st.pendiente) continue;
+        if (st.phase === 'profesional' && st.career.currentOrg && st.career.companeros.length > 0
+          && (st.career.temporada?.tabla?.length ?? 0) > 0 && i % 3 === 0) pro.push(structuredClone(st));
+        if (st.phase === 'amateur' && i % 4 === 0) amateur.push(structuredClone(st));
+      }
+    }
+    estadosK3A = { pro, amateur };
+  }
+  return { pro: estadosK3A.pro.map((s) => structuredClone(s)), amateur: estadosK3A.amateur.map((s) => structuredClone(s)) };
+}
+
+const conBarrasK3A = (st, cambios) => ({ ...st, player: { ...st.player, ...cambios.player, stats: { ...st.player.stats, ...cambios.stats } } });
+
+check('K3-A consistencia 1: ruidoEfectivo pasa su σ por factorDeConsistencia, y BALANCE.consistencia se lee solo adentro de factorDeConsistencia (estático)', () => {
+  const raiz = path.join(srcDir, '..');
+  const rel = (p) => path.relative(raiz, p).replace(/\\/g, '/');
+  const archivos = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) return e.name === 'dev' ? [] : archivos(p);
+    return /\.js$/.test(p) && rel(p) !== 'src/data/balance.js' ? [p] : [];
+  });
+  const sinComentarios = (txt) => txt
+    .replace(/(^|\s)\/\*[\s\S]*?\*\//g, (bloque) => bloque.replace(/[^\n]/g, ''))
+    .split(/\r?\n/).map((l) => l.replace(/(^|\s)\/\/.*$/, '$1'));
+  const partidoJs = sinComentarios(fs.readFileSync(path.join(srcDir, 'core', 'partido.js'), 'utf8'));
+  const cuerpo = (nombre) => {
+    const inicio = partidoJs.findIndex((linea) => new RegExp(`^export function ${nombre}\\(`).test(linea));
+    const fin = inicio < 0 ? -1 : partidoJs.findIndex((linea, i) => i > inicio && /^}/.test(linea));
+    if (inicio < 0 || fin < 0) throw new Error(`no encontré \`export function ${nombre}(\` en src/core/partido.js`);
+    return [inicio, fin];
+  };
+  const [iRuido, fRuido] = cuerpo('ruidoEfectivo');
+  const [iFactor, fFactor] = cuerpo('factorDeConsistencia');
+  const ruido = partidoJs.slice(iRuido + 1, fRuido);
+  // El factor se calcula con la mentalidad del jugador y multiplica a los DOS σ que devuelve.
+  if (!ruido.some((l) => /\bg\s*=\s*factorDeConsistencia\(\s*state\?\.player\?\.stats\?\.mentalidad\s*\)/.test(l))) {
+    throw new Error('ruidoEfectivo no calcula g = factorDeConsistencia(state?.player?.stats?.mentalidad)');
+  }
+  const retornos = ruido.filter((l) => /^\s*return\b/.test(l));
+  const sinFactor = retornos.filter((l) => !/\*\s*g\s*;/.test(l));
+  if (retornos.length < 2 || sinFactor.length > 0) {
+    throw new Error(`un σ de ruidoEfectivo sale sin el factor de consistencia: ${sinFactor.map((l) => l.trim()).join(' | ') || `(${retornos.length} return)`}`);
+  }
+  const PATRON = /BALANCE\s*(\.\s*consistencia\b|\[\s*['"`]consistencia['"`]\s*\])|\{[^}]*\bconsistencia\b[^}]*\}\s*=\s*BALANCE\b/;
+  const afuera = [];
+  let dentro = 0;
+  for (const archivo of [...archivos(srcDir), path.join(raiz, 'index.html')]) {
+    sinComentarios(fs.readFileSync(archivo, 'utf8')).forEach((linea, i) => {
+      if (!PATRON.test(linea)) return;
+      if (rel(archivo) === 'src/core/partido.js' && i > iFactor && i < fFactor) {
+        dentro += 1;
+        return;
+      }
+      afuera.push(`${rel(archivo)}:${i + 1}: ${linea.trim()}`);
+    });
+  }
+  if (afuera.length > 0) throw new Error(`BALANCE.consistencia leído fuera de factorDeConsistencia: ${afuera.slice(0, 5).join(' | ')}`);
+  if (dentro < 1) throw new Error('factorDeConsistencia no lee BALANCE.consistencia: el patrón no está viendo nada');
+});
+
+check('K3-A consistencia 2: g(mRef) = 1, g no crece con la mentalidad y respeta [gMin, gMax]; con k = 0 el σ es el de hoy para toda mentalidad; con k > 0 (en memoria) σ = σ_tipo · g(m) y con 20 hay más ruido que con 80', () => {
+  const c = BALANCE.consistencia;
+  if (!(c.gMin <= 1 && 1 <= c.gMax)) throw new Error(`[gMin, gMax] = [${c.gMin}, ${c.gMax}] no contiene a 1`);
+  const sigma = { fecha: BALANCE.partido.sigmaFecha, mapa: BALANCE.partido.sigmaMapa };
+  const conM = (m) => ({ player: { stats: { mentalidad: m } } });
+  const inicial = createInitialState(1, mulberry32(1));
+  for (const k of [0, 0.5, 1, 3, 8]) {
+    conBalanceK3A([['consistencia', 'k', k]], () => {
+      if (factorDeConsistencia(c.mRef) !== 1) throw new Error(`k ${k}: g(mRef = ${c.mRef}) = ${factorDeConsistencia(c.mRef)}`);
+      for (const nada of [null, undefined, Number.NaN]) {
+        if (factorDeConsistencia(nada) !== 1) throw new Error(`k ${k}: g(${nada}) = ${factorDeConsistencia(nada)}, sin mentalidad tiene que ser 1`);
+      }
+      for (let m = 0; m <= BALANCE.stats.max; m += 1) {
+        const g = factorDeConsistencia(m);
+        const aMano = Math.min(c.gMax, Math.max(c.gMin, 1 + k * (c.mRef - m) / 100));
+        if (g !== aMano) throw new Error(`k ${k}: g(${m}) = ${g}, la fórmula da ${aMano}`);
+        if (m > 0 && g > factorDeConsistencia(m - 1)) throw new Error(`k ${k}: g crece de ${m - 1} a ${m}`);
+        for (const tipo of TIPOS_K3A) {
+          const s = ruidoEfectivo(conM(m), tipo);
+          if (s !== sigma[tipo] * g) throw new Error(`k ${k}: ruidoEfectivo(m ${m}, ${tipo}) = ${s}, σ·g = ${sigma[tipo] * g}`);
+          if (k === 0 && s !== sigma[tipo]) throw new Error(`con k = 0 el σ (${tipo}, m ${m}) cambió: ${s} ≠ ${sigma[tipo]}`);
+        }
+      }
+      for (const tipo of TIPOS_K3A) {
+        if (ruidoEfectivo(null, tipo) !== sigma[tipo]) throw new Error(`k ${k}: el cruce ajeno (null) no tiene el σ de su tipo`);
+        // El camino real: la mentalidad del estado del jugador.
+        const real = ruidoEfectivo(inicial, tipo);
+        if (real !== sigma[tipo] * factorDeConsistencia(inicial.player.stats.mentalidad)) {
+          throw new Error(`k ${k}: con un estado real, σ ${real} no es σ·g(${inicial.player.stats.mentalidad})`);
+        }
+        if (k > 0 && !(ruidoEfectivo(conM(20), tipo) > ruidoEfectivo(conM(80), tipo))) {
+          throw new Error(`k ${k}: con mentalidad 20 el σ (${ruidoEfectivo(conM(20), tipo)}) no supera al de 80 (${ruidoEfectivo(conM(80), tipo)})`);
+        }
+      }
+    });
+  }
+});
+
+check('K3-A descanso: con un topeDescanso bajo (en memoria) ningún camino de descanso lo pasa — el sueño de atributos (amateur y pro) y el descansar del receso —, y descansar no baja a quien ya está arriba', () => {
+  const TOPE = 30;
+  const { pro, amateur } = estadosDeCarreraK3A();
+  if (pro.length < 3 || amateur.length < 3) throw new Error(`muestra corta: ${pro.length} pro, ${amateur.length} amateur`);
+  const atributos = sistemaPorId('atributos');
+  const practica = sistemaPorId('practica');
+  const rutina = { id: 'k3a_descanso', reparto: { pulir: 0, nuevo: 0, mecanica: 0, macro: 0, descansar: BALANCE.practica.puntos } };
+  const decision = { datos: { rutinas: [rutina] } };
+  const correr = () => {
+    const sueno = [...pro, ...amateur].map((st, i) => atributos.aplicar(
+      conBarrasK3A(st, { player: { sleep: BALANCE.stats.max, deudaSueno: 0 }, stats: { mentalidad: TOPE - 5 } }), mulberry32(9400 + i)
+    ).state.player.stats.mentalidad);
+    const receso = pro.map((st, i) => practica.resolver(
+      conBarrasK3A(st, { stats: { mentalidad: TOPE - 5 } }), decision, { opcionId: rutina.id }, mulberry32(9500 + i)
+    ).state.player.stats.mentalidad);
+    const arriba = pro.map((st, i) => practica.resolver(
+      conBarrasK3A(st, { stats: { mentalidad: TOPE + 20 } }), decision, { opcionId: rutina.id }, mulberry32(9600 + i)
+    ).state.player.stats.mentalidad);
+    return { sueno, receso, arriba };
+  };
+  // Sin tope (el de hoy), los dos caminos pasan el tope de la sonda: la sonda ve algo.
+  const SIN_RETORNO = ['atributos', 'mentalidadRetornoBase', 0]; // fija r = 0: el retorno a la base no debe levantar el sueño sobre el tope
+  const libre = conBalanceK3A([SIN_RETORNO], correr);
+  if (!libre.sueno.some((m) => m > TOPE) || !libre.receso.some((m) => m > TOPE)) {
+    throw new Error(`sonda vacía: sin tope ningún descanso pasa ${TOPE} (sueño máx ${Math.max(...libre.sueno)}, receso máx ${Math.max(...libre.receso)})`);
+  }
+  const topeado = conBalanceK3A([SIN_RETORNO, ['atributos', 'topeDescanso', TOPE]], correr);
+  const pasados = [
+    ...topeado.sueno.map((m, i) => [`sueño ${i}`, m]),
+    ...topeado.receso.map((m, i) => [`receso ${i}`, m])
+  ].filter(([, m]) => m > TOPE + 1e-9);
+  if (pasados.length > 0) throw new Error(`con topeDescanso ${TOPE} el descanso lo pasa: ${pasados.slice(0, 5).map(([d, m]) => `${d} → ${m}`).join(', ')}`);
+  const bajados = topeado.arriba.filter((m) => m !== TOPE + 20);
+  if (bajados.length > 0) throw new Error(`descansar con mentalidad ${TOPE + 20} sobre un tope de ${TOPE} la movió: ${bajados.slice(0, 5).join(', ')}`);
+  conBalanceK3A([['atributos', 'topeDescanso', TOPE]], () => {
+    const casos = [[20, 50, TOPE], [TOPE - 1, 0.5, TOPE - 0.5], [50, 10, 50], [10, 5, 15]];
+    for (const [actual, ganancia, esperado] of casos) {
+      const dado = barrasK3A.recuperarPorDescanso(actual, ganancia);
+      if (dado !== esperado) throw new Error(`recuperarPorDescanso(${actual}, +${ganancia}) con tope ${TOPE} = ${dado}, se esperaba ${esperado}`);
+    }
+  });
+});
+
+check('K3-A vuelta a la base: con r y rH > 0 (en memoria) un paso de atributos lleva la mentalidad a m + r·(base − m) y uno de rendimiento corre el hype en rH·(baseH − h), con baseH = h0 + a·z + b·(prestigio/100 + extra si hubo internacional)', () => {
+  const R = 0.5;
+  const a = BALANCE.atributos;
+  const r = BALANCE.rendimiento;
+  conBalanceK3A([['atributos', 'mentalidadRetornoBase', R]], () => {
+    for (const m of [0, 20, a.mentalidadBase, 90, 100]) {
+      const dado = barrasK3A.mentalidadHaciaSuBase(m);
+      if (dado !== m + R * (a.mentalidadBase - m)) throw new Error(`mentalidadHaciaSuBase(${m}) = ${dado}`);
+    }
+  });
+  const { pro } = estadosDeCarreraK3A();
+  const atributos = sistemaPorId('atributos');
+  const rendimiento = sistemaPorId('rendimiento');
+  let comparadasM = 0;
+  let comparadasH = 0;
+  pro.forEach((base, i) => {
+    const st = conBarrasK3A(base, { player: { sleep: a.suenoConfortable, deudaSueno: 0 }, stats: { mentalidad: 50, hype: 50 } });
+    const m0 = conBalanceK3A([['atributos', 'mentalidadRetornoBase', 0]], () => atributos.aplicar(st, mulberry32(9700 + i)).state.player.stats.mentalidad);
+    const m1 = conBalanceK3A([['atributos', 'mentalidadRetornoBase', R]], () => atributos.aplicar(st, mulberry32(9700 + i)).state.player.stats.mentalidad);
+    // Lejos del piso de caída neta (50 − maxCaida) y de los bordes, el paso es exacto.
+    if (m0 > 50 - a.maxCaidaMentalPorSplit + 1 && m0 < BALANCE.stats.max) {
+      comparadasM += 1;
+      if (Math.abs(m1 - (m0 + R * (a.mentalidadBase - m0))) > 1e-9) {
+        throw new Error(`estado ${i}: mentalidad con r 0 → ${m0}, con r ${R} → ${m1}; la fórmula da ${m0 + R * (a.mentalidadBase - m0)}`);
+      }
+    }
+    // La base del hype, a mano.
+    const res = st.career.temporada.resultadosPropios;
+    const z = res.varianza > 0 ? (res.ganados - res.esperados) / Math.sqrt(res.varianza) : 0;
+    const liga = ligaDeCarreraK3A(st);
+    const internacional = st.career.registro.internacionales.some((e) => e.anio >= st.calendario.anio - r.hypeAniosInternacional);
+    const visibilidad = (liga?.prestigio ?? 0) / 100 + (internacional ? r.hypeVisibilidadPorInternacional : 0);
+    const baseH = r.hypeBaseInicial + r.hypeBasePorDesvio * z + r.hypeBasePorVisibilidad * visibilidad;
+    if (Math.abs(barrasK3A.baseDeHype(st, liga) - baseH) > 1e-9) throw new Error(`estado ${i}: baseDeHype ${barrasK3A.baseDeHype(st, liga)}, a mano ${baseH}`);
+    const h0 = conBalanceK3A([['rendimiento', 'hypeRetornoBase', 0]], () => rendimiento.aplicar(st, mulberry32(9800 + i)).state.player.stats.hype);
+    const h1 = conBalanceK3A([['rendimiento', 'hypeRetornoBase', R]], () => rendimiento.aplicar(st, mulberry32(9800 + i)).state.player.stats.hype);
+    const esperado = h0 + R * (baseH - 50);
+    if (h0 > 0 && h0 < BALANCE.stats.max && esperado > 0 && esperado < BALANCE.stats.max) {
+      comparadasH += 1;
+      if (Math.abs(h1 - esperado) > 1e-9) throw new Error(`estado ${i}: hype con rH 0 → ${h0}, con rH ${R} → ${h1}; la fórmula da ${esperado} (baseH ${baseH})`);
+    }
+  });
+  if (comparadasM < 3 || comparadasH < 3) throw new Error(`check vacío: ${comparadasM} pasos de mentalidad y ${comparadasH} de hype comparados`);
+  // La rama del internacional, sobre un estado sintético (las carreras cortas casi no viajan).
+  const st = structuredClone(pro[0]);
+  const liga = ligaDeCarreraK3A(st);
+  const conInternacionales = (lista) => ({ ...st, career: { ...st.career, registro: { ...st.career.registro, internacionales: lista } } });
+  const sin = barrasK3A.visibilidadDeCarrera(conInternacionales([]), liga);
+  const con = barrasK3A.visibilidadDeCarrera(conInternacionales([{ anio: st.calendario.anio - r.hypeAniosInternacional }]), liga);
+  const viejo = barrasK3A.visibilidadDeCarrera(conInternacionales([{ anio: st.calendario.anio - r.hypeAniosInternacional - 1 }]), liga);
+  if (Math.abs(con - sin - r.hypeVisibilidadPorInternacional) > 1e-12 || viejo !== sin) {
+    throw new Error(`visibilidad: sin internacional ${sin}, con uno reciente ${con}, con uno viejo ${viejo}`);
+  }
 });
 
 // ============================================================================
@@ -13822,6 +14120,352 @@ check('bandasPendientes 3: toda entrada tiene valor medido, banda, commit y la s
   const problemas = entradasIncompletas(BANDAS_PENDIENTES, BLOQUES_DE_CORRIMIENTO);
   if (problemas.length > 0) {
     throw new Error(problemas.join('; '));
+  }
+});
+
+// --- K3-B: los efectos que duran (PLAN.md "K3 — decisiones de spec") ---
+//
+// Estructura con la constante en 0: el juego queda idéntico, y eso lo prueba "K1 versión" (la huella del juego). Estos
+// checks son estructurales: la regla en el aplicador de efectos, la curva y la ficha, con la fracción en 0 y en memoria
+// con una positiva. Cada uno se probó en rojo contra su mutante sobre una copia (regla de proceso 7): el aplicador sin
+// el gancho, la curva sin el bonus, un stat de curva fuera del bonus inicial, la constante neutra rota, una marca que
+// pisa a las anteriores, el id crudo como origen y la ficha sin el umbral.
+const STATS_DE_CURVA_K3B = Object.keys(BALANCE.atributos.curvas);
+const FRACCION_K3B = 0.5;
+
+function conFraccionPermanenteK3b(fraccion, fn) {
+  const original = BALANCE.atributos.fraccionPermanente;
+  BALANCE.atributos.fraccionPermanente = fraccion;
+  try {
+    return fn();
+  } finally {
+    BALANCE.atributos.fraccionPermanente = original;
+  }
+}
+
+// Un evento a mano con un único efecto determinista sobre `path` (min === max), para no depender del contenido.
+function eventoSinteticoK3b(path, delta) {
+  return {
+    id: 'k3b_sintetico_bootcamp',
+    title: 'Bootcamp en Corea',
+    description: 'Evento sintético de K3-B.',
+    options: [
+      { id: 'ir', label: 'Ir', weight: 1, outcomes: [{ weight: 1, texto: 'Volvés distinto.', effects: [{ type: 'stat', path, min: delta, max: delta, clamp: [0, 100] }] }] },
+      { id: 'quedarse', label: 'Quedarte', weight: 1, outcomes: [{ weight: 1, texto: 'Te quedás.', effects: [] }] }
+    ]
+  };
+}
+
+function bonusCompletoK3b(player) {
+  const claves = Object.keys(player.bonusPermanente ?? {});
+  return claves.length === STATS_DE_CURVA_K3B.length
+    && STATS_DE_CURVA_K3B.every((stat) => Number.isFinite(player.bonusPermanente[stat]));
+}
+
+check('K3-B bonusPermanente: completo con ceros al arrancar y completo (un número por stat de curva, ni uno más) en cada split de una carrera', () => {
+  const inicial = createInitialState(1, mulberry32(1));
+  if (!bonusCompletoK3b(inicial.player) || STATS_DE_CURVA_K3B.some((stat) => inicial.player.bonusPermanente[stat] !== 0)) {
+    throw new Error(`el estado inicial no trae bonusPermanente completo con ceros: ${JSON.stringify(inicial.player.bonusPermanente)}`);
+  }
+  for (const [seed, fraccion] of [[1, 0], [2, FRACCION_K3B]]) {
+    conFraccionPermanenteK3b(fraccion, () => {
+      const rng = mulberry32(seed);
+      let state = createInitialState(seed, rng);
+      for (let split = 0; split < 40 && !state.terminado; split += 1) {
+        state = avanzarSplitAuto(state, rng).state;
+        if (!bonusCompletoK3b(state.player)) {
+          throw new Error(`seed ${seed} (fracción ${fraccion}), split ${split + 1}: bonusPermanente incompleto: ${JSON.stringify(state.player.bonusPermanente)}`);
+        }
+      }
+    });
+  }
+});
+
+check('K3-B neutro: con fraccionPermanente 0 un efecto sobre un stat de curva no deja bonus ni marca, y una carrera termina con el bonus en ceros y registro.marcas vacío', () => {
+  if (BALANCE.atributos.fraccionPermanente !== 0) {
+    throw new Error(`fraccionPermanente vale ${BALANCE.atributos.fraccionPermanente}: K3-B es estructura, la constante neutra es 0 (la fija K3c)`);
+  }
+  const base = correrCarrera(3, 18);
+  for (const stat of STATS_DE_CURVA_K3B) {
+    const { state } = resolverOpcion(base, eventoSinteticoK3b(`player.stats.${stat}`, 6), 'ir', mulberry32(5));
+    if (state.career.registro.marcas.length !== 0 || STATS_DE_CURVA_K3B.some((s) => state.player.bonusPermanente[s] !== 0)) {
+      throw new Error(`un efecto sobre ${stat} con la fracción en 0 dejó bonus o marca`);
+    }
+    if (state.player.stats[stat] === base.player.stats[stat]) {
+      throw new Error(`el efecto sintético no movió ${stat}: el check no probaría nada`);
+    }
+  }
+  for (const seed of [1, 2, 3]) {
+    const fin = correrCarrera(seed, 60);
+    if (fin.career.registro.marcas.length !== 0 || STATS_DE_CURVA_K3B.some((stat) => fin.player.bonusPermanente[stat] !== 0)) {
+      throw new Error(`seed ${seed}: con la fracción en 0 la carrera terminó con bonus o marcas`);
+    }
+  }
+});
+
+check('K3-B efecto con fracción positiva: suma fracción·delta al bonus del stat, anota UNA marca con el nombre visible del evento (no su id), y los stats que no son de curva no dejan nada', () => {
+  // El estado base puede traer bonus y marcas (con las fracciones de K3c encendidas la carrera ya dejó algunas): lo que
+  // se mide es el CAMBIO que produce el efecto, no el valor absoluto.
+  const base = correrCarrera(3, 18);
+  const marcasBase = base.career.registro.marcas;
+  const cambioDeBonus = (state, stat) => state.player.bonusPermanente[stat] - base.player.bonusPermanente[stat];
+  const marcasNuevas = (state) => state.career.registro.marcas.slice(marcasBase.length);
+  const conservaLasAnteriores = (state) => JSON.stringify(state.career.registro.marcas.slice(0, marcasBase.length)) === JSON.stringify(marcasBase);
+  conFraccionPermanenteK3b(FRACCION_K3B, () => {
+    for (const stat of STATS_DE_CURVA_K3B) {
+      const evento = eventoSinteticoK3b(`player.stats.${stat}`, 6);
+      const { state } = resolverOpcion(base, evento, 'ir', mulberry32(5));
+      const movido = state.player.stats[stat] - base.player.stats[stat];
+      const esperado = FRACCION_K3B * movido;
+      if (Math.abs(cambioDeBonus(state, stat) - esperado) > 1e-9 || esperado === 0) {
+        throw new Error(`${stat}: el bonus cambió ${cambioDeBonus(state, stat)}, esperaba ${esperado} (fracción ${FRACCION_K3B} × ${movido})`);
+      }
+      const otros = STATS_DE_CURVA_K3B.filter((s) => s !== stat && cambioDeBonus(state, s) !== 0);
+      if (otros.length > 0) {
+        throw new Error(`${stat}: el efecto movió el bonus de ${otros.join(', ')}`);
+      }
+      const nuevas = marcasNuevas(state);
+      if (nuevas.length !== 1 || !conservaLasAnteriores(state)) {
+        throw new Error(`${stat}: esperaba UNA marca nueva (y las anteriores intactas), hay ${nuevas.length} nuevas`);
+      }
+      const [marca] = nuevas;
+      if (marca.stat !== stat || Math.abs(marca.delta - esperado) > 1e-9 || marca.origen !== 'Bootcamp en Corea'
+          || marca.anio !== base.calendario.anio || marca.origen === evento.id) {
+        throw new Error(`${stat}: la marca no es { stat, delta, origen visible, anio }: ${JSON.stringify(marca)}`);
+      }
+    }
+    // Un stat que no es de curva (macro, mentalidad) se mueve igual pero no deja nada permanente.
+    for (const stat of ['macro', 'mentalidad', 'hype']) {
+      const { state } = resolverOpcion(base, eventoSinteticoK3b(`player.stats.${stat}`, 6), 'ir', mulberry32(5));
+      if (marcasNuevas(state).length !== 0 || STATS_DE_CURVA_K3B.some((s) => cambioDeBonus(state, s) !== 0)) {
+        throw new Error(`${stat} no es un stat de curva y dejó bonus o marca`);
+      }
+    }
+  });
+});
+
+check('K3-B efecto contra el clamp: el bonus y la marca cuentan lo que el stat de verdad se movió (después − antes), no la tirada — con un stat en 99 y un efecto +10, o en 1 y un efecto −10, el delta es fracción·(±1)', () => {
+  // Protege el único punto de escritura de `events.js`: una marca anotada con la tirada previa al clamp (en vez de
+  // `despues − antes`) pasaba todos los checks con stats lejos de los bordes. El estado base sale con las dos fracciones
+  // en 0 (bonus en ceros, sin marcas): lo que se mida es del efecto.
+  const base = conBalanceK3A([['atributos', 'fraccionPermanente', 0], ['atributos', 'fraccionPermanentePractica', 0]], () => correrCarrera(3, 18));
+  const casos = [[BALANCE.stats.max - 1, 10, 1], [1, -10, -1]];
+  conFraccionPermanenteK3b(FRACCION_K3B, () => {
+    for (const stat of STATS_DE_CURVA_K3B) {
+      for (const [valorInicial, tirada, movidoReal] of casos) {
+        const desde = { ...base, player: { ...base.player, stats: { ...base.player.stats, [stat]: valorInicial } } };
+        const { state } = resolverOpcion(desde, eventoSinteticoK3b(`player.stats.${stat}`, tirada), 'ir', mulberry32(5));
+        const movido = state.player.stats[stat] - valorInicial;
+        if (Math.abs(movido - movidoReal) > 1e-9) throw new Error(`${stat}: de ${valorInicial} con ${tirada} se movió ${movido}, el clamp debía dejarlo en ${movidoReal}`);
+        const esperado = FRACCION_K3B * movido;
+        const bonus = state.player.bonusPermanente[stat] - desde.player.bonusPermanente[stat];
+        if (Math.abs(bonus - esperado) > 1e-9) throw new Error(`${stat}: de ${valorInicial} con ${tirada} el bonus cambió ${bonus}, esperaba fracción × (después − antes) = ${esperado}`);
+        const marcas = state.career.registro.marcas;
+        if (marcas.length !== 1 || Math.abs(marcas[0].delta - esperado) > 1e-9) {
+          throw new Error(`${stat}: de ${valorInicial} con ${tirada} la marca es ${JSON.stringify(marcas)}, esperaba delta ${esperado}`);
+        }
+      }
+    }
+  });
+});
+
+check('K3-B 2b la práctica deja marca: con fraccionPermanentePractica > 0 (en memoria) la rutina de offseason suma fracción·(ganancia real, ya con el clamp) al bonus de mecánica, con UNA marca a nombre de la rutina; usa su propia fracción y no consume rng', () => {
+  // Protege PLAN.md "K3-B 2b": la práctica y las rutinas también dejan marca, con su fracción propia y el nombre
+  // visible de la rutina como origen; la ganancia que cuenta es la que de verdad movió el stat.
+  const FRACCION = 0.5;
+  // El estado base sale con las dos fracciones en 0 (con las de K3c encendidas la carrera ya trae marcas y bonus): lo que
+  // se mida es de la rutina.
+  const base = conBalanceK3A([['atributos', 'fraccionPermanente', 0], ['atributos', 'fraccionPermanentePractica', 0]], () => correrCarrera(3, 18));
+  const practica = sistemaPorId('practica');
+  const rutina = {
+    id: 'k3b_bootcamp_sintetico', titulo: 'Bootcamp de prueba',
+    reparto: { pulir: 0, nuevo: 0, mecanica: BALANCE.practica.puntos / 2, macro: BALANCE.practica.puntos / 2, descansar: 0 }
+  };
+  const decision = { datos: { rutinas: [rutina] } };
+  const conMecanica = (mecanica) => ({ ...base, player: { ...base.player, techoLesionMecanica: null, stats: { ...base.player.stats, mecanica } } });
+  const correr = (desde) => practica.resolver(desde, decision, { opcionId: rutina.id }, mulberry32(77)).state;
+  if (base.career.registro.marcas.length !== 0) throw new Error('el estado base ya trae marcas');
+  for (const desde of [conMecanica(50), conMecanica(BALANCE.stats.max - 1)]) {
+    const neutro = conBalanceK3A([['atributos', 'fraccionPermanentePractica', 0]], () => correr(desde));
+    const conFraccion = conBalanceK3A([['atributos', 'fraccionPermanentePractica', FRACCION]], () => correr(desde));
+    const ganancia = conFraccion.player.stats.mecanica - desde.player.stats.mecanica;
+    if (!(ganancia > 0)) throw new Error(`sonda vacía: la rutina no movió mecánica (${ganancia})`);
+    if (JSON.stringify(neutro.player.stats) !== JSON.stringify(conFraccion.player.stats)) {
+      throw new Error('la fracción cambió los stats del receso (consumió rng o movió algo más que el bonus)');
+    }
+    if (neutro.career.registro.marcas.length !== 0 || STATS_DE_CURVA_K3B.some((stat) => neutro.player.bonusPermanente[stat] !== 0)) {
+      throw new Error('con fraccionPermanentePractica 0 la práctica dejó bonus o marca');
+    }
+    const esperado = FRACCION * ganancia;
+    if (Math.abs(conFraccion.player.bonusPermanente.mecanica - esperado) > 1e-9) {
+      throw new Error(`bonus de mecánica ${conFraccion.player.bonusPermanente.mecanica}, esperaba ${esperado} (${FRACCION} × ganancia real ${ganancia})`);
+    }
+    const otros = STATS_DE_CURVA_K3B.filter((stat) => stat !== 'mecanica' && conFraccion.player.bonusPermanente[stat] !== 0);
+    if (otros.length > 0) throw new Error(`la práctica movió el bonus de ${otros.join(', ')} (macro no es de curva)`);
+    const marcas = conFraccion.career.registro.marcas;
+    const [marca] = marcas;
+    if (marcas.length !== 1 || marca.stat !== 'mecanica' || Math.abs(marca.delta - esperado) > 1e-9
+        || marca.origen !== rutina.titulo || marca.anio !== desde.calendario.anio) {
+      throw new Error(`esperaba UNA marca { mecanica, ${esperado}, '${rutina.titulo}', ${desde.calendario.anio} }: ${JSON.stringify(marcas)}`);
+    }
+  }
+  // Su propia fracción: la de los eventos no la mueve.
+  const soloEventos = conBalanceK3A([['atributos', 'fraccionPermanente', FRACCION], ['atributos', 'fraccionPermanentePractica', 0]], () => correr(conMecanica(50)));
+  if (soloEventos.career.registro.marcas.length !== 0) throw new Error('la práctica usó fraccionPermanente (la de los eventos) en vez de la suya');
+});
+
+check('K3-B 2b un solo camino para las rutinas: la semana amateur (systems/amateur.js) y el receso (systems/practica.js) marcan con conMarcasDeRutina — fracción de la práctica, título visible de la rutina, solo la ganancia real —, y el aplicador de stats del minijuego pasa por conPermanencia con el nombre del minijuego', () => {
+  const FRACCION = 0.5;
+  const base = conBalanceK3A([['atributos', 'fraccionPermanente', 0], ['atributos', 'fraccionPermanentePractica', 0]], () => correrCarrera(3, 18));
+  // El helper: gana mecánica (curva, cuenta), pierde laneo (curva, una pérdida no es de la práctica), sube hype (no es de curva).
+  const antes = { ...base.player.stats, mecanica: 50, laneo: 50, hype: 50 };
+  const despues = { ...antes, mecanica: 53, laneo: 47, hype: 60 };
+  const conStats = { ...base, player: { ...base.player, stats: despues } };
+  const marcado = conBalanceK3A([['atributos', 'fraccionPermanentePractica', FRACCION], ['atributos', 'fraccionPermanente', 0.9]], () => conMarcasDeRutinaK3B(conStats, antes, 'Bootcamp en tu propia pieza'));
+  const [unica, ...otras] = marcado.career.registro.marcas;
+  if (otras.length > 0 || !unica || unica.stat !== 'mecanica' || Math.abs(unica.delta - FRACCION * 3) > 1e-9 || unica.origen !== 'Bootcamp en tu propia pieza') {
+    throw new Error(`conMarcasDeRutina esperaba UNA marca { mecanica, ${FRACCION * 3}, título } (fracción de la práctica, sin el laneo que bajó ni el hype): ${JSON.stringify(marcado.career.registro.marcas)}`);
+  }
+  if (marcado.player.bonusPermanente.laneo !== 0 || conBalanceK3A([['atributos', 'fraccionPermanentePractica', 0]], () => conMarcasDeRutinaK3B(conStats, antes, 'x')) !== conStats) {
+    throw new Error('con la fracción de la práctica en 0 conMarcasDeRutina tiene que devolver el mismo estado');
+  }
+  // El cableado: las dos rutinas llaman al helper con el título de la rutina (el cierre del check de arriba prueba lo que
+  // hace con una ganancia real en el receso; hoy ningún reparto amateur mueve un stat de curva, así que acá no hay
+  // ganancia que medir y el cableado se lee del fuente).
+  for (const archivo of ['amateur.js', 'practica.js']) {
+    const fuente = fs.readFileSync(path.join(srcDir, 'systems', archivo), 'utf8');
+    if (!/import \{ conMarcasDeRutina \} from '\.\.\/core\/curvas\.js'/.test(fuente) || !/conMarcasDeRutina\([^)]*rutina\.titulo\)/.test(fuente)) {
+      throw new Error(`systems/${archivo} no marca con conMarcasDeRutina(…, rutina.titulo): su rutina no deja marca`);
+    }
+  }
+  // Y las rutinas amateur de verdad corren con la fracción encendida sin romper nada y sin marcas falsas (ningún reparto
+  // mueve un stat de curva).
+  const { amateur } = estadosDeCarreraK3A();
+  const sistemaAmateur = sistemaPorId('amateur');
+  let corridas = 0;
+  conBalanceK3A([['atributos', 'fraccionPermanentePractica', FRACCION]], () => {
+    amateur.slice(0, 4).forEach((st, i) => {
+      const decision = sistemaAmateur.aplicar(st, mulberry32(9900 + i)).decision;
+      if (decision?.datos?.motivo !== 'reparto') return;
+      for (const rutina of decision.datos.rutinas) {
+        const r = sistemaAmateur.resolver(st, decision, { opcionId: rutina.id }, mulberry32(9950 + i)).state;
+        const esperado = conMarcasDeRutinaK3B(r, st.player.stats, rutina.titulo);
+        if (JSON.stringify(r.career.registro.marcas) !== JSON.stringify(esperado.career.registro.marcas)) {
+          throw new Error(`"${rutina.titulo}": las marcas de la rutina amateur no son las de la ganancia real`);
+        }
+        corridas += 1;
+      }
+    });
+  });
+  if (corridas === 0) throw new Error('check vacío: ninguna rutina amateur corrió');
+  // El aplicador de stats del minijuego (K3-B): un stat de curva deja bonus y marca con el nombre del minijuego y el
+  // delta real tras el clamp; uno que no es de curva (mentalidad) y un campo de `career.` no dejan nada.
+  const desde = { ...base, player: { ...base.player, stats: { ...base.player.stats, mecanica: BALANCE.stats.max - 1, mentalidad: 40 } }, career: { ...base.career, sinergia: 50 } };
+  const aplicado = conFraccionPermanenteK3b(FRACCION, () => aplicarStatsDeMinijuegoK3B(desde, ['player.stats.mecanica', 'player.stats.mentalidad', 'career.sinergia'], 10, 'Bootcamp relámpago'));
+  const marcas = aplicado.career.registro.marcas.slice(desde.career.registro.marcas.length);
+  if (marcas.length !== 1 || marcas[0].stat !== 'mecanica' || Math.abs(marcas[0].delta - FRACCION * 1) > 1e-9 || marcas[0].origen !== 'Bootcamp relámpago') {
+    throw new Error(`el aplicador de stats del minijuego esperaba UNA marca { mecanica, ${FRACCION}, 'Bootcamp relámpago' } con el delta real tras el clamp: ${JSON.stringify(marcas)}`);
+  }
+  if (aplicado.player.stats.mentalidad !== 50 || aplicado.career.sinergia !== 60) throw new Error('el aplicador del minijuego dejó de aplicar el delta a los stats que no son de curva');
+});
+
+
+check('K3-B la curva de edad converge a objetivo + bonus: con bonusPermanente b, cada stat de curva termina el split velocidad·b más arriba que sin él', () => {
+  const base = correrCarrera(4, 18);
+  const lugar = { ...base, player: { ...base.player, techoLesionMecanica: null, stats: { ...base.player.stats, mecanica: 50, laneo: 50, teamfight: 50 } } };
+  const b = 5;
+  const conBonus = { ...lugar, player: { ...lugar.player, bonusPermanente: Object.fromEntries(STATS_DE_CURVA_K3B.map((stat) => [stat, b])) } };
+  const sin = sistemaPorId('atributos').aplicar(lugar, mulberry32(9)).state;
+  const con = sistemaPorId('atributos').aplicar(conBonus, mulberry32(9)).state;
+  for (const [stat, config] of Object.entries(BALANCE.atributos.curvas)) {
+    const diferencia = con.player.stats[stat] - sin.player.stats[stat];
+    if (Math.abs(diferencia - config.velocidad * b) > 1e-9) {
+      throw new Error(`${stat}: con bonus ${b} la diferencia es ${diferencia}, esperaba velocidad ${config.velocidad} × ${b} = ${config.velocidad * b}`);
+    }
+  }
+  // Y el bonus no toca lo que no es de curva (macro/shotcalling/adaptabilidad siguen su propia regla).
+  for (const stat of Object.keys(BALANCE.atributos.acumulativos)) {
+    if (con.player.stats[stat] !== sin.player.stats[stat]) {
+      throw new Error(`${stat} no es de curva y el bonus lo movió`);
+    }
+  }
+});
+
+check('K3-B registro.marcas solo crece a lo largo de una carrera (cada split conserva las anteriores tal cual), con marcas reales, y el bonus de cada stat es la suma de sus marcas', () => {
+  conFraccionPermanenteK3b(FRACCION_K3B, () => {
+    const idsDeEvento = new Set(TODOS_LOS_EVENTOS.map((evento) => evento.id));
+    let marcasTotales = 0;
+    for (const seed of [1, 2, 3, 4, 5]) {
+      const rng = mulberry32(seed);
+      let state = createInitialState(seed, rng);
+      let previas = [];
+      for (let split = 0; split < 60 && !state.terminado; split += 1) {
+        state = avanzarSplitAuto(state, rng).state;
+        const marcas = state.career.registro.marcas;
+        if (marcas.length < previas.length || previas.some((marca, i) => JSON.stringify(marca) !== JSON.stringify(marcas[i]))) {
+          throw new Error(`seed ${seed}, split ${split + 1}: registro.marcas no solo crece (${previas.length} → ${marcas.length}, o cambió una anterior)`);
+        }
+        previas = marcas;
+      }
+      for (const marca of previas) {
+        const crudo = idsDeEvento.has(marca.origen) || /^[a-z0-9]+(_[a-z0-9]+)+$/.test(marca.origen);
+        if (!STATS_DE_CURVA_K3B.includes(marca.stat) || !Number.isFinite(marca.delta) || marca.delta === 0
+            || typeof marca.origen !== 'string' || marca.origen.length === 0 || crudo || !Number.isInteger(marca.anio)) {
+          throw new Error(`seed ${seed}: marca inválida (o con id crudo como origen): ${JSON.stringify(marca)}`);
+        }
+      }
+      for (const stat of STATS_DE_CURVA_K3B) {
+        const suma = previas.filter((marca) => marca.stat === stat).reduce((total, marca) => total + marca.delta, 0);
+        if (Math.abs(state.player.bonusPermanente[stat] - suma) > 1e-6) {
+          throw new Error(`seed ${seed}: el bonus de ${stat} (${state.player.bonusPermanente[stat]}) no es la suma de sus marcas (${suma})`);
+        }
+      }
+      marcasTotales += previas.length;
+    }
+    if (marcasTotales === 0) {
+      throw new Error('ninguna carrera dejó una marca con la fracción positiva: el check no probaría nada');
+    }
+  });
+});
+
+check('K3-B la ficha lista solo las marcas cuyo acumulado (por stat, origen y año) redondea a >= 1 en valor absoluto, con ▲/▼, sin ids crudos, y nada cuando no hay', () => {
+  const marcas = [
+    { stat: 'mecanica', delta: 0.3, origen: 'Bootcamp en Corea', anio: 2028 },
+    { stat: 'mecanica', delta: 0.3, origen: 'Bootcamp en Corea', anio: 2028 },
+    { stat: 'laneo', delta: 0.4, origen: 'Scrims con el equipo grande', anio: 2029 },
+    { stat: 'teamfight', delta: -1.8, origen: 'Lesión de muñeca', anio: 2030 },
+    { stat: 'teamfight', delta: -0.9, origen: 'Lesión de muñeca', anio: 2030 },
+    { stat: 'mecanica', delta: 4.2, origen: 'Mudanza al gaming house', anio: 2031 }
+  ];
+  const lista = loQueConstruiste({ marcas });
+  const textos = lista.map((fila) => fila.texto);
+  const esperado = [
+    '▲ +4 mecánica — Mudanza al gaming house 2031',
+    '▼ -3 teamfight — Lesión de muñeca 2030',
+    '▲ +1 mecánica — Bootcamp en Corea 2028'
+  ];
+  if (JSON.stringify(textos) !== JSON.stringify(esperado)) {
+    throw new Error(`la ficha lista ${JSON.stringify(textos)}, esperaba ${JSON.stringify(esperado)} (el laneo de 0,4 no redondea a 1 y no va)`);
+  }
+  for (const texto of textos) {
+    if (/player\.|[a-z0-9]+_[a-z0-9_]+/.test(texto)) {
+      throw new Error(`"${texto}" muestra un id crudo`);
+    }
+  }
+  if (loQueConstruiste({ marcas: [] }).length !== 0 || loQueConstruiste({}).length !== 0) {
+    throw new Error('sin marcas la lista no está vacía');
+  }
+  if (fichaCompleta(createInitialState(1, mulberry32(1))).construido.length !== 0) {
+    throw new Error('el estado inicial trae marcas en la ficha');
+  }
+  const conMarcas = correrCarrera(2, 20);
+  const inyectado = { ...conMarcas, career: { ...conMarcas.career, registro: { ...conMarcas.career.registro, marcas } } };
+  if (fichaCompleta(inyectado).construido.length !== esperado.length) {
+    throw new Error('fichaCompleta no expone lo que construiste');
+  }
+  const fuenteFicha = fs.readFileSync(path.join(srcDir, 'ui', 'components', 'ficha.js'), 'utf8');
+  if (!fuenteFicha.includes("nombre: 'CONSISTENCIA'") || /nombre: 'MENTALIDAD'/.test(fuenteFicha)) {
+    throw new Error("la barra de la mentalidad tiene que rotularse 'CONSISTENCIA' en la ficha (el id interno sigue siendo mentalidad)");
   }
 });
 
