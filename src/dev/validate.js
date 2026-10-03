@@ -4681,7 +4681,10 @@ checkLento('El banco de mecánicas se reparte: ninguna se lleva la carrera (9R4c
     }
   }
 
-  if (total < 500 || totalQueCompite < 500) {
+  // Con las constantes de K4c (los minijuegos van en el mapa decisivo y la prensa solo tras un escándalo) salen ~3,5 por carrera, de
+  // los que compiten ~1,4: la muestra mínima de los que compiten baja de 500 a 300 (la de todos sigue en 500).
+  const MUESTRA_MINIMA_QUE_COMPITE = 300;
+  if (total < 500 || totalQueCompite < MUESTRA_MINIMA_QUE_COMPITE) {
     throw new Error(`sólo ${total} minijuegos (${totalQueCompite} entre los que compiten) en 300 carreras: muestra insuficiente`);
   }
   const [idTop, vecesTop] = Object.entries(porTipoQueCompite).sort((a, b) => b[1] - a[1])[0];
