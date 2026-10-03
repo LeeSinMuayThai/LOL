@@ -34,6 +34,50 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-03 — FASE K, K2d: la previa (PLAN.md §K2) — K2 cerrada
+
+Antes de cada fecha marcada y de cada mapa de serie, en las pausas que el juego ya hacía, aparece una tarjeta con
+tu fuerza desglosada contra la del rival y **la probabilidad de ganar**, que es exactamente la p que el motor tira
+(regla 15).
+- **Tu lado:** vos / tus compañeros / el meta / el campeón / la química, más el total.
+- **Antes de un mapa** dice que el minijuego la mueve. Después del minijuego muestra la p final, también en el
+  resultado del minijuego.
+- **En el draft** cada campeón muestra su propia p.
+- **En el feed**, cada fecha y cada mapa dicen con qué p se jugaron ("el momento la movió desde 55%").
+- **Mapas sin pausa.** No muestran la previa en vivo: la previa no agrega pausas. Su p queda en el feed.
+
+**Una sola fuente.** `core/previaDePartido.js` es puro: sin `rng` y sin tocar el estado. El motor obtiene su p de
+las mismas funciones:
+- fecha: `probabilidadDeFechaMarcada`;
+- mapa: `estadoDelMapa`, `desgloseDeFuerza` y `probabilidadDeMapa`;
+- minijuego: `ajusteBaseDeMinijuego`;
+- la tirada: `tirarPartido(p, rng)`.
+
+No hay una segunda copia de la fórmula. La huella del juego quedó **idéntica** (345156314, 'K2c'): el refactor no
+cambió ningún resultado. Los logs ahora guardan la p tirada, así que el guardado pasa a `VERSION` 6.
+
+**Cómo se trabajó.**
+- **Implementación.** Un Opus hizo motor, checks y pantalla.
+- **Revisión del motor (Opus).** OK con observaciones. Confirmó la fuente única y la huella idéntica. De sus dos
+  mutantes, uno pasaba los checks: la p de cada opción del draft de fecha nunca se comparaba contra una tirada.
+- **Revisión en navegador real (Sonnet).** OK con observaciones, sobre 348 textos sin ids crudos:
+  - la p de la pausa de fecha coincide con el `pSinMomento` del log 29 de 29 veces;
+  - la p después del minijuego es la tirada 22 de 22 veces;
+  - a 375 px no hay scroll horizontal.
+- **Arreglos.** Los hizo un Sonnet:
+  - el check que faltaba, con el mutante en rojo;
+  - el umbral de pausa del draft de fecha, que ahora usa el mismo campeón que la tirada;
+  - la cuenta del minijuego, que ahora vive en un solo lugar;
+  - la p final en el resultado del minijuego;
+  - los nombres que se cortaban en el celular.
+
+Verificación: `validate.js` 293/293 con la PENDIENTE de K2c (corrida completa del supervisor sobre `003a1cb`; el
+commit siguiente es solo de UI y pasó `--rapido`) · `simulate.js 1000` 0 crashes · `dist/` 1847 KB (techo 1900).
+
+**K2 queda cerrada.** La r nivel–posición en la misma liga pasó de 0,369 (K0) a 0,582, y el favorito claro gana el
+Bo5 el 83,5% de las veces, con la asimetría del Fearless pendiente para K4. Un pick ya no mueve el partido lo
+bastante como para que el draft te frene; eso lo re-fija K3c.
+
 ### 2026-10-02 — FASE K, K2c: el nivel empieza a mandar (constantes del bloque A; PLAN.md §K2)
 
 **Solo constantes** (regla 2), en dos pasos para que ningún worker esperara corridas largas.

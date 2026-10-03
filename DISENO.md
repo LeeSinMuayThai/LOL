@@ -128,6 +128,8 @@ La carrera debe incluir contratos, sueldos, cláusulas, imports, residencia, ada
   **puntaje.js** (FASE K, K1 — `puntajeDeCarrera`: seis componentes, el techo revelado, el nivel por
   hechos y la leyenda más parecida; puro, cero `rng`, falla fuerte ante datos inválidos)
   **desafio.js** (K1 — la seed del desafío del día a partir de la fecha UTC)
+  **partido.js** (K2b — `ruidoEfectivo`, `probabilidadDePartido`, `tirarPartido`: el único lugar que lee σ y
+  tira un partido) · **previaDePartido.js** (K2d — la previa: desglose y p, pura, la misma fuente que la tirada)
 
 /src/systems
   contexto.js · edadInicio.js · meta.js · roster.js · competitivo.js · campeones.js
@@ -162,6 +164,7 @@ La carrera debe incluir contratos, sueldos, cláusulas, imports, residencia, ada
     barra.js — barra de progreso con hitos con nombre (arraigo, jerarquía)
     statRow.js — los 6 atributos de rol con flechas ▲▼ y el destacado en color
     decision.js — la tarjeta de decisión (opciones; los minijuegos se desvían antes)
+    previaPartido.js (K2d) — la tarjeta de la previa: tu fuerza desglosada contra el rival y la p
     feed.js — el log, con los logs `tecnico: true` atenuados
     **mercado.js** (fase 9) — la tarjeta de oferta: sueldo, jerarquía proyectada,
     coste de arraigo y el riesgo, todo antes de firmar
