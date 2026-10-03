@@ -35,10 +35,10 @@
 // prensa solo tras una final); K4-C, solo frenan las bifurcaciones y el perfil resuelve el resto (y la prueba de cada
 // salto); K4-D, la pretemporada en una sola parada. Ninguna seed de K3c reproduce su carrera.
 //
-// K4-C2 (1063725684; bloque B, sigue en el corrimiento de K4): el pase de contenido sobre las bifurcaciones. Nueve
+// K4-C2 (398714982; bloque B, sigue en el corrimiento de K4): el pase de contenido sobre las bifurcaciones. Nueve
 // bifurcaciones nuevas (cambio de región hacia afuera de Corea, hacia la LPL y hacia la LCK; el canal de tiempo
 // completo; el cambio de línea; los playoffs infiltrado; el sponsor contra la org; el coach que te baja del cinco; la
 // oferta de staff) y los eventos de seguimiento que leen los caminos que dejan en `flags.caminos`. Ninguna seed de K4
 // reproduce su carrera.
 export const VERSION_JUEGO = 'K4-C2';
-export const HUELLA_JUEGO = 1063725684;
+export const HUELLA_JUEGO = 398714982;

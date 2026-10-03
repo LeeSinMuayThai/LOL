@@ -2407,5 +2407,1254 @@
         ]
       }
     ]
+  },
+  {
+    "category": "caminos",
+    "conditions": [
+      {
+        "field": "flags.caminos.region",
+        "op": "eq",
+        "value": "abierto"
+      }
+    ],
+    "id": "la_nueva_liga",
+    "categoria": "vestuario",
+    "title": "Los primeros meses en la liga nueva",
+    "description": "Ya pasó el primer mes en {org}: el idioma de scrim es otro, los horarios son otros y el chat del equipo tiene chistes que no entendés. La liga nueva te cuesta, pero también te enseña. Es el momento de decidir cómo la vas a vivir.",
+    "weight": 40,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ],
+      "residencia": [
+        "import"
+      ]
+    },
+    "options": [
+      {
+        "id": "meterte_de_lleno",
+        "label": "Meterte de lleno: idioma, comida y salidas con el equipo",
+        "descripcion": "Te sacás los complejos y te integrás.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te sacás los complejos y empezás a hablar aunque la gramática te traicione. A los dos meses el equipo te trata como uno más y los scrims salen más fluidos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "asentado"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te cuesta más de lo que esperabas: dos meses de mensajes mal escritos y reuniones en las que se ríen de algo que vos no pescás. Aprendés, pero a un costo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "asentado"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "armar_tu_burbuja",
+        "label": "Armar tu burbuja con otros imports y la familia por videollamada",
+        "descripcion": "Cuidás tus costumbres y tu cabeza.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Con los otros imports armás un núcleo que te sostiene. No te integrás del todo, pero tampoco te rompés: rendís sin soltar tus costumbres.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "asentado"
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "La burbuja te protege, pero te aísla: el equipo lo nota y la comunicación en el servidor se resiente.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "asentado"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "contar_los_dias",
+        "label": "Contar los días para volver",
+        "descripcion": "Aguantás con una cuenta regresiva en la cabeza.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Te mantenés a flote con la fecha de vuelta en el calendario. Rendís lo justo, pero tu familia nota que estás distinto.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "asentado"
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El corte se vuelve evidente: el coach te pregunta si estás cómodo y la respuesta honesta es que no.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "asentado"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "caminos",
+    "conditions": [
+      {
+        "field": "flags.caminos.contenido",
+        "op": "eq",
+        "value": "tiempo_completo"
+      }
+    ],
+    "id": "el_canal_crecio",
+    "categoria": "oportunidad",
+    "title": "El canal creció",
+    "description": "Hace unos meses dejaste el equipo por el stream y hoy tu canal tiene más viewers que muchos partidos de liga. Las marcas te escriben, los fans te piden que vuelvas a competir y tu ex coach te manda un mensaje que no sabés cómo leer.",
+    "weight": 40,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "options": [
+      {
+        "id": "escalar_el_negocio",
+        "label": "Armar un equipo de producción y escalar",
+        "descripcion": "Dejás de ser el ex pro que streamea y te volvés una marca.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Contratás un editor y alguien que te lleve las redes, y el canal despega con formato propio. Ya no sos el ex pro que streamea: sos una marca.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 5,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "consolidado"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Crecés tan rápido que te comés el cansancio: transmitís diez horas, editás de madrugada y el cuerpo te pasa factura.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "consolidado"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "volver_a_competir",
+        "label": "Escuchar a los fans y volver a competir",
+        "descripcion": "Retomás la ladder con el canal prendido.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Volvés a rankear con el canal prendido y el chat te empuja. Te cuesta recuperar el ritmo, pero mostrás que el streamer todavía sabe jugar.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 1,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "solo_competir"
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El nivel que dejaste se te nota en cada clip: el chat se ríe y vos también, aunque por dentro duele.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "solo_competir"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "mantener_el_equilibrio",
+        "label": "Mantener el stream como está",
+        "descripcion": "Ni escalás ni volvés: seguís con lo que te funciona.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Mantenés el ritmo y el canal se sostiene. No explota, pero tampoco te quita el sueño.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "consolidado"
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El canal se queda en una meseta: ni sube ni baja, y empezás a preguntarte si no te estás quedando corto.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "consolidado"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "caminos",
+    "conditions": [
+      {
+        "field": "flags.caminos.rol",
+        "op": "eq",
+        "value": "cubrio"
+      }
+    ],
+    "id": "la_linea_nueva_te_cambio",
+    "categoria": "oportunidad",
+    "title": "Lo que te dejó la línea nueva",
+    "description": "Después del swap, tu forma de leer el draft cambió: ahora entendés qué le pasa al otro lado del mapa cuando tu línea hace lo que hace. El coach lo notó y el equipo también.",
+    "weight": 40,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "options": [
+      {
+        "id": "llevarlo_al_draft",
+        "label": "Llevar esa mirada al draft y al shotcalling",
+        "descripcion": "Usás lo aprendido para decidir mejor.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Empezás a opinar en el draft con otra autoridad: sabés cómo respira la línea de al lado y el equipo te escucha más.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.rol",
+                "valor": "integrado"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Querés aplicar todo lo aprendido y te pasás de rosca: el equipo se confunde con tanta idea nueva en la semana de una serie.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.rol",
+                "valor": "integrado"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "volver_a_lo_tuyo",
+        "label": "Volver a lo tuyo y dejar el swap como anécdota",
+        "descripcion": "Te concentrás de nuevo en tu línea.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Volvés a tu línea con las manos más sueltas: lo del swap te sirvió para respirar y ordenarte.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.rol",
+                "valor": "integrado"
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Tu línea te recibe con frialdad: cuesta volver a agarrar el ritmo y el draft ya no te tiene tan en cuenta.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.rol",
+                "valor": "integrado"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "caminos",
+    "conditions": [
+      {
+        "field": "flags.caminos.playoffs",
+        "op": "eq",
+        "value": "infiltrado"
+      }
+    ],
+    "id": "la_secuela_de_la_infiltracion",
+    "categoria": "salud",
+    "title": "La muñeca pasa factura",
+    "description": "La infiltración de los playoffs te dio esas 72 horas, pero la muñeca no se olvidó. Cada vez que apoyás el mouse te avisa. El médico del club te pide que decidas qué hacer antes de que sea tarde.",
+    "weight": 40,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "profesional"
+      ],
+      "ventana": [
+        "pretemporada",
+        "regular"
+      ]
+    },
+    "options": [
+      {
+        "id": "parar_y_rehabilitar",
+        "label": "Parar unas semanas y hacer la rehabilitación completa",
+        "descripcion": "Perdés ritmo ahora para no perder la mano después.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Frenás, hacés la rehabilitación completa y volvés con la muñeca de nuevo. Perdiste unas semanas, pero ganaste años.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "recuperado"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La rehabilitación te saca de ritmo: el equipo sigue sin vos y a la vuelta te toca recuperar el lugar.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "recuperado"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "seguir_con_infiltraciones",
+        "label": "Seguir infiltrando y jugando",
+        "descripcion": "Postergás el problema para seguir compitiendo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Aguantás una temporada más a fuerza de infiltraciones. El cuerpo no te dice nada por ahora y los resultados te acompañan.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "cronico"
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "La muñeca se agrava: lo que era una molestia se vuelve un dolor constante que te limita en cada partida.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.laneo",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "cronico"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cambiar_el_setup",
+        "label": "Cambiar el setup, la silla y los horarios",
+        "descripcion": "No parás, pero te ordenás.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Cambiás la silla, el mouse y la altura del escritorio y la muñeca lo agradece. Un ajuste chico que se nota en cada partida.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 0,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "recuperado"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El ajuste ayuda pero no alcanza: la muñeca mejora un poco y vos seguís con la duda de si no era momento de parar.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "recuperado"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "caminos",
+    "conditions": [
+      {
+        "field": "flags.caminos.conflicto",
+        "op": "eq",
+        "value": "contra_la_org"
+      }
+    ],
+    "id": "el_vestuario_despues_del_lio",
+    "categoria": "vestuario",
+    "title": "El vestuario después del lío",
+    "description": "Pasaron unas semanas del lío con {org} y el vestuario todavía lo recuerda. Algunos compañeros se acercan a decirte que hiciste bien; otros ni te miran al entrar al scrim. Hay que decidir cómo se sigue.",
+    "weight": 40,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "profesional"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ]
+    },
+    "options": [
+      {
+        "id": "dar_la_cara",
+        "label": "Dar la cara en el vestuario y pedir disculpas a quien corresponda",
+        "descripcion": "Bajás un cambio y reparás lo que se pueda.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Hablás con cada uno, sin excusas. El clima mejora: no se olvida, pero se entiende. Volvés a ser parte del grupo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "resuelto"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Pedís disculpas y alguno las acepta; otro te dice que ya es tarde. Cerrás el tema, pero queda una cicatriz.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "resuelto"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "no_ceder",
+        "label": "No ceder ni un centímetro",
+        "descripcion": "Sostenés lo que hiciste y que cada uno saque sus conclusiones.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Te plantás y la mitad del vestuario te respeta por eso. No te hacés amigo de nadie, pero queda claro que no te manejan.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "resuelto"
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El aislamiento se nota: en los scrims casi no te pasan info y la comunicación en el servidor se vuelve seca.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "resuelto"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "caminos",
+    "conditions": [
+      {
+        "field": "flags.caminos.staff",
+        "op": "eq",
+        "value": "puerta_abierta"
+      }
+    ],
+    "id": "el_plan_b_en_marcha",
+    "categoria": "vestuario",
+    "title": "El plan B ya está andando",
+    "description": "Hace un tiempo aceptaste hacer horas en el staff de {org}. Ahora los chicos te piden consejos en los scrims, el coach te pasa los VODs del rival para que los marques y el manager te pregunta cuántos años más pensás jugar. La transición ya no es un rumor.",
+    "weight": 40,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ],
+      "edadMin": 28
+    },
+    "options": [
+      {
+        "id": "apurar_la_transicion",
+        "label": "Apurar la transición: más horas de staff y menos de ladder",
+        "descripcion": "Te preparás para el día después.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Dedicás las tardes a los VODs y a los chicos. El plantel te respeta por eso y el coach te considera para el cargo cuando llegue el momento.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.staff",
+                "valor": "en_transicion"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Le sacás horas a la ladder y se nota: tu mecánica pierde un poco de filo justo cuando el equipo más te necesita sobre el mapa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.staff",
+                "valor": "en_transicion"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "postergar_el_staff",
+        "label": "Postergarlo: todavía te sentís jugador",
+        "descripcion": "Pospones la decisión hasta que el cuerpo avise.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Te concentrás en lo que sabés hacer: más ladder, más scrims y la cabeza lejos del día después. El rendimiento lo agradece.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.staff",
+                "valor": "en_transicion"
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El manager lo toma con frialdad: la oferta sigue en pie, pero te das cuenta de que cada año que pasa tiene menos peso.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.staff",
+                "valor": "en_transicion"
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

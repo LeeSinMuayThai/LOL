@@ -39,7 +39,7 @@ import { campeonesEnMeta, multiplicadorDeMeta, factorDeCampeon, pesoDePick, lect
 import * as poolMod from '../core/pool.js';
 import { campeonesDisponibles, entradaDePool } from '../core/pool.js';
 import { aplicar as aplicarCampeones } from '../systems/campeones.js';
-import { elegirOutcome, elegirEvento, decisionDesdeEvento, resolver as resolverEventos, resolverOpcion, cooldownActivo, pesoEfectivo, SPLIT_SIN_EVENTO_MSG, opcionDelPerfilPara } from '../systems/events.js';
+import { elegirOutcome, elegirEvento, decisionDesdeEvento, resolver as resolverEventos, resolverOpcion, cooldownActivo, pesoEfectivo, SPLIT_SIN_EVENTO_MSG, opcionDelPerfilPara, opcionesConPrevia } from '../systems/events.js';
 import PERFILES_K4C from '../data/perfiles.json' with { type: 'json' };
 import { previaDeOpcion, riesgoDeOpcion, payoffNormalizado } from '../core/previa.js';
 import { rarezaDeRutina, payoffDeRutina } from '../core/rareza.js';
@@ -2760,6 +2760,8 @@ check('Todo efecto tiene etiqueta legible para el log', () => {
     for (const opcion of evento.options) {
       for (const outcome of opcion.outcomes) {
         for (const effect of outcome.effects) {
+          // K4-C2: un efecto `camino` escribe un flag y no imprime nada en el log (`descripcion: null`): no necesita etiqueta.
+          if (effect.type === 'camino') continue;
           if (etiquetaCampo(effect.path) === effect.path) {
             throw new Error(`${evento.id}: el path ${effect.path} no tiene entrada en ETIQUETAS_CAMPO`);
           }
@@ -14583,6 +14585,139 @@ check('K4-C la prueba en cada salto grande: primer fichaje en tier 2, en tier 1 
   }
   if (saltos === 0) {
     throw new Error('ningún salto grande por el mercado en 40 carreras');
+  }
+});
+
+// --- K4-C2: el pase de contenido sobre las bifurcaciones (PLAN.md "K4-C2") ---
+// Las bifurcaciones nuevas viven en `data/events/caminos.json` (`category: 'caminos'`) y dejan su camino en
+// `flags.caminos.*`; los eventos de seguimiento (los que no son bifurcación) lo leen con una `condition` común.
+const caminosK4c2 = () => TODOS_LOS_EVENTOS.filter((e) => e.category === 'caminos');
+const esFlagDeCamino = (path) => /^flags\.caminos\./.test(path);
+
+// path -> Set de los valores que algún resultado de algún evento escribe.
+function escriturasDeCaminoK4c2() {
+  const escritas = new Map();
+  for (const e of caminosK4c2()) {
+    for (const o of e.options) {
+      for (const x of o.outcomes) {
+        for (const ef of x.effects) {
+          if (ef.type === 'camino' && esFlagDeCamino(ef.path)) {
+            if (!escritas.has(ef.path)) escritas.set(ef.path, new Set());
+            escritas.get(ef.path).add(ef.valor);
+          }
+        }
+      }
+    }
+  }
+  return escritas;
+}
+
+check('K4-C2 cada opción de las bifurcaciones nuevas tiene su afinidad de perfil, y cada bifurcación empuja a más de un perfil', () => {
+  const base = createInitialState(1, mulberry32(1));
+  const forks = caminosK4c2().filter((e) => e.bifurcacion);
+  if (forks.length < 7) {
+    throw new Error(`esperaba al menos 7 bifurcaciones nuevas (región, contenido, rol, playoffs, conflicto, staff), hay ${forks.length}`);
+  }
+  const mag = BALANCE.perfil.pesoMagnitud;
+  for (const evento of forks) {
+    const vivas = opcionesConPrevia(base, evento);
+    if (vivas.length !== evento.options.length) {
+      throw new Error(`${evento.id}: una opción con gating propio no entra en esta prueba`);
+    }
+    const afinidades = new Set();
+    for (const o of vivas) {
+      const original = evento.options.find((x) => x.id === o.id);
+      if (PERFILES_K4C.orden.includes(original.perfil)) {
+        afinidades.add(original.perfil);
+        continue;
+      }
+      if (o.previa.length === 0) {
+        throw new Error(`${evento.id}/${o.id}: sin previa y sin \`perfil\` en el dato: no tiene afinidad`);
+      }
+      const encajes = PERFILES_K4C.orden.map((id) => {
+        const p = PERFILES_K4C.perfiles[id];
+        let valor = p.riesgo[o.riesgo] ?? 0;
+        for (const fila of o.previa) {
+          const familia = PERFILES_K4C.familiaDeCampo[fila.campo];
+          if (familia) valor += (p.familias[familia] ?? 0) * (fila.signo === '-' ? -1 : 1) * (mag[fila.magnitud] ?? 0);
+        }
+        return { id, valor };
+      }).sort((a, b) => b.valor - a.valor);
+      if (!(encajes[0].valor > encajes[1].valor)) {
+        throw new Error(`${evento.id}/${o.id}: empate entre ${encajes[0].id} y ${encajes[1].id} (${encajes[0].valor}): la afinidad no está definida (usá \`perfil\` en la opción)`);
+      }
+      afinidades.add(encajes[0].id);
+    }
+    if (afinidades.size < 2) {
+      throw new Error(`${evento.id}: todas sus opciones tienen la misma afinidad (${[...afinidades][0]}): decidirla no corre el perfil`);
+    }
+  }
+});
+
+check('K4-C2 cada bifurcación nueva deja un flag en todos sus resultados, y algún evento lo lee con un valor que alguien escribe', () => {
+  const escritas = escriturasDeCaminoK4c2();
+  const forks = caminosK4c2().filter((e) => e.bifurcacion);
+  const lecturas = new Map(); // path -> [{ evento, op, value }]
+  for (const e of TODOS_LOS_EVENTOS) {
+    for (const c of e.conditions) {
+      if (esFlagDeCamino(c.field)) {
+        if (!lecturas.has(c.field)) lecturas.set(c.field, []);
+        lecturas.get(c.field).push({ evento: e, op: c.op, value: c.value });
+      }
+    }
+  }
+  for (const e of forks) {
+    const escribe = new Set();
+    for (const o of e.options) {
+      for (const x of o.outcomes) {
+        const caminos = x.effects.filter((ef) => ef.type === 'camino' && esFlagDeCamino(ef.path));
+        if (caminos.length === 0) {
+          throw new Error(`${e.id}/${o.id}: un resultado no deja su flag de camino`);
+        }
+        caminos.forEach((ef) => escribe.add(ef.path));
+      }
+    }
+    for (const path of escribe) {
+      const lectores = (lecturas.get(path) ?? []).filter((l) => l.evento.id !== e.id);
+      if (lectores.length === 0) {
+        throw new Error(`${e.id}: escribe ${path} y ningún otro evento lo lee`);
+      }
+    }
+  }
+  for (const [path, lista] of lecturas) {
+    for (const l of lista) {
+      if (l.op === 'eq' && !escritas.get(path)?.has(l.value)) {
+        throw new Error(`${l.evento.id}: lee ${path} == "${l.value}" y ningún resultado escribe ese valor`);
+      }
+    }
+  }
+  const seguimientos = new Set([...lecturas.values()].flat().filter((l) => !l.evento.bifurcacion).map((l) => l.evento.id));
+  if (seguimientos.size < 2) {
+    throw new Error(`hacen falta al menos 2 eventos de seguimiento (no bifurcaciones) que lean un camino: hay ${seguimientos.size}`);
+  }
+});
+
+check('K4-C2 los caminos se abren y los seguimientos se resuelven en carreras reales (40 carreras × 60)', () => {
+  const carreras = carrerasK4c();
+  const claves = Object.keys(createInitialState(1, mulberry32(1)).flags.caminos);
+  for (const clave of claves) {
+    if (!carreras.some((c) => c.final.flags.caminos[clave] !== null)) {
+      throw new Error(`ninguna de las ${carreras.length} carreras dejó el camino "${clave}"`);
+    }
+  }
+  const seguimientos = caminosK4c2().filter((e) => !e.bifurcacion);
+  const vistos = seguimientos.filter((e) => carreras.some((c) => c.final.logs.some((log) => log.cronica && log.titulo === e.title)));
+  if (vistos.length < 3) {
+    throw new Error(`solo ${vistos.length} de ${seguimientos.length} eventos de seguimiento se resolvieron en ${carreras.length} carreras (${vistos.map((e) => e.id).join(', ')})`);
+  }
+});
+
+check('K4-C2 las bifurcaciones frenan entre 4,5 y 7,5 veces por carrera (criterio, 40 carreras × 60; la meta es 5-7)', () => {
+  const carreras = carrerasK4c();
+  const total = carreras.reduce((suma, c) => suma + c.pausas.filter((p) => p.sistema === 'eventos' && p.decision.datos?.evento?.bifurcacion === true).length, 0);
+  const media = total / carreras.length;
+  if (media < 4.5 || media > 7.5) {
+    throw new Error(`${media.toFixed(2)} bifurcaciones por carrera, fuera de [4,5, 7,5] (${total} en ${carreras.length} carreras)`);
   }
 });
 
