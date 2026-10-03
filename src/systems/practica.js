@@ -116,9 +116,11 @@ export function resolver(state, decision, respuesta, rng) {
 
   if (reparto.descansar > 0) {
     const ganancia = Math.max(0, gauss(p.gananciaDescanso * reparto.descansar, p.ruidoPractica * reparto.descansar, rng));
-    // K3-A: el descanso del receso pasa por el tope (`core/barras.js`).
-    stats.mentalidad = recuperarPorDescanso(stats.mentalidad, ganancia);
-    partes.push(`mentalidad +${Math.round(ganancia)}`);
+    // K3-A: el descanso del receso pasa por el tope (`core/barras.js`). El log dice lo que de verdad subió, ya
+    // con el tope, no la ganancia nominal (PLAN.md "K3, tal como quedó": el log dice lo que pasó).
+    const antes = stats.mentalidad;
+    stats.mentalidad = recuperarPorDescanso(antes, ganancia);
+    partes.push(`mentalidad +${Math.round(stats.mentalidad - antes)}`);
   }
 
   // K3-B 2b: la práctica también deja marca. Una fracción de lo que la rutina movió DE VERDAD sobre cada stat de
