@@ -34,6 +34,91 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-02 — FASE K, K1: el número (PLAN.md §K1)
+
+**Sin corrimiento.** K1 no agrega ningún `rng`. La huella T1 (40 seeds × 30 splits) da 2128736563 tanto en
+`b0b544b` como en `f6c4870`. El estado final, el `rng` y los logs son idénticos en 160 carreras de cuatro bots:
+solo cambian el registro y la tarjeta.
+
+Cada carrera termina en **un puntaje** (`src/core/puntaje.js`, puro, cero `rng`). Se arma con seis componentes:
+
+| Componente | Qué cuenta |
+|---|---|
+| Trayectoria | splits contados en el tier donde se jugaron |
+| Títulos | por tier y por la dificultad de la liga |
+| Internacionales | participación, más el resultado, × la dificultad de la liga representada |
+| El mundo | Top 20 mundial |
+| Tu generación | puesto contra tus rivales, tomado al cierre de temporada igual que tu pico |
+| La soloQ | — |
+
+A esos seis se suma el **techo revelado** (el potencial, de 42 a 100) con su efecto.
+
+**Nivel con nombre.** Se gana por **hechos**, no por cortes de puntaje: gana el nivel más alto cuyo requisito
+cumpliste (`BALANCE.puntaje.niveles`).
+
+| Nivel | Requisito |
+|---|---|
+| El que no llegó | — |
+| Pasó por el circuito | 1 split |
+| Un profesional más | 1 split en primera |
+| Fijo en primera | 9 splits en primera |
+| Campeón | 1 título de primera |
+| Figura mundial | cerrar una temporada en el Top 20 |
+| Leyenda | 3 títulos de primera y pico Top 5 |
+| El GOAT | 3 cierres como #1 del mundo |
+
+La tarjeta dice el hecho que te faltó para el siguiente: "Te faltó cerrar 3 temporadas como #1 del mundo".
+También muestra el percentil ("mejor que el N%") contra una tabla de 22 cuantiles medida con el bot `criterio`
+(seeds 1-800, 60 splits: p50 1172, p90 1800, p99 2169) y la **leyenda** más parecida de `leyendas.json`
+(20 pros inventados).
+
+Sigue el **desafío del día**: misma seed para todos según la fecha UTC, sin elegir handle, rol ni pool, con
+`?desafio=YYYY-MM-DD`. Además: "Copiar resultado" (`Un Split Más · Desafío 2026-10-02 · 1.654 pts · Leyenda ·
+v K1 · <link>`), PNG de 1200×630 y un historial local que sobrevive a una recarga y no rompe nada si el
+storage tira.
+
+**D75 y D76 cerradas.**
+- **D75:** el check busca los casos en un rango de seeds y falla si no los ve; ya no hay seed fija.
+- **D76:** el legado cuenta `splitsPorTier` en el split **jugado**, después de mercado, ascenso y descenso, y
+  cada título con la liga y el tier de **su** split. Si se anota el título con la liga de la fila, el check se
+  pone rojo.
+
+**Cómo se trabajó.**
+- **Implementación.** K1-A (motor, Opus) y K1-B (pantalla, Sonnet) se hicieron en la misma rama.
+- **Primera revisión (K1-A).** La revisión independiente dejó 18 mutantes y cinco sobrevivían. Sus decisiones
+  se escribieron en PLAN "K1 — lo que cambió la revisión de K1-A":
+  - niveles por hechos;
+  - generación simétrica;
+  - D76 contra el split real;
+  - la huella del juego entero;
+  - leyendas que dejaron de calcar a pros reales.
+
+  Los arreglos los hizo un Opus en seis commits.
+- **Segunda revisión.** Hubo dos revisores nuevos.
+  - **Motor (Opus), con mutantes:** los cinco que sobrevivían ahora dan rojo, más cuatro nuevos (`rng()` extra a
+    los 26 años, `porTitulo` ×2, D76 en el tier de la fila, rivales actualizados cada split). En 1800 carreras
+    (300 seeds × 6 bots, 60 splits) el nivel del motor coincide con uno recalculado a mano desde la tabla del
+    PLAN 1800/1800, y no aparece ninguna carrera con un título de primera por debajo de Campeón.
+  - **Pantalla (Sonnet):** navegador real, tres carreras completas más una con el storage bloqueado; sin ids
+    crudos ni `undefined`/`NaN`; a 375 px, sin scroll horizontal.
+  - **Arreglos.** Las observaciones las arregló un Sonnet (`dbd4d09`, con checks rojos primero):
+    - el puntaje de los rivales se valida igual que tu pico;
+    - los contadores enteros piden enteros;
+    - un `resultado` de internacional desconocido falla en vez de valer participación;
+    - los textos de una carrera sin fichar ya no suenan a logro;
+    - la última fila de la historia cierra en el año del retiro.
+
+**HUELLA_JUEGO.** Es la huella del juego entero: 40 seeds × 60 splits con el puntaje, el nivel y la leyenda. Se
+fija con `VERSION_JUEGO` 'K1' en `src/data/version.js`. Guardado: `VERSION` 4.
+
+**Techo de `dist/`.** Medido en 1801,4 KB con los arreglos. Era la tercera vez que el margen se cerraba en
+silencio. Se subió a 1900 KB en su propio commit (`f6c4870`), con el número en el comentario de `build.js`.
+
+**Queda.** `agencia.js` sigue midiendo contra `puntajeProvisorio` hasta K3c (T6), y `pesoRol` sigue en 1: con
+la mediana entre quienes llegaron a pro (623 pros, ≥ 800 seeds), todos los roles quedan dentro de ±10%.
+
+Verificación: `validate.js` 274/274 (corrida completa del supervisor sobre `f6c4870`, 36 min) · `simulate.js 1000` 0 crashes · `dist/` 1802 KB (techo 1900).
+
 ### 2026-10-02 — FASE K, K0: higiene y el instrumento (PLAN.md §K.5 K0)
 
 La primera subfase de FASE K, **sin corrimiento**: no cambia ningún resultado del motor. Verificado: la

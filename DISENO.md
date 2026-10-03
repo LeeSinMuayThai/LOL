@@ -125,6 +125,9 @@ La carrera debe incluir contratos, sueldos, cláusulas, imports, residencia, ada
   stats, bandas de jerarquía/arraigo, estado internacional; puro, sin RNG)
   **salarios.js** (fase 9 — `salarioDeOferta`: lognormal por liga y rol, `CONCEPTO` §12.6)
   **valorMercado.js** (fase 9 — `valorDeMercado`, `sesgoEtario`, `splitsDeResidencia`; puro)
+  **puntaje.js** (FASE K, K1 — `puntajeDeCarrera`: seis componentes, el techo revelado, el nivel por
+  hechos y la leyenda más parecida; puro, cero `rng`, falla fuerte ante datos inválidos)
+  **desafio.js** (K1 — la seed del desafío del día a partir de la fecha UTC)
 
 /src/systems
   contexto.js · edadInicio.js · meta.js · roster.js · competitivo.js · campeones.js
@@ -137,6 +140,8 @@ La carrera debe incluir contratos, sueldos, cláusulas, imports, residencia, ada
 /src/data
   balance.js · champions.json · leagues.json · meta-tags.js · roles.js · ranked.js
   servidores.js · contextos.js · minijuegos.json
+  **version.js** (K1 — `VERSION_JUEGO` y `HUELLA_JUEGO`: la huella del juego entero, 40 seeds × 60 splits)
+  **leyendas.json** (K1 — 20 pros inventados contra los que se compara una carrera)
   metas.json (fase 6 — los nueve regímenes de meta)
   /events — index.js + un JSON por categoría:
     cierre_edad · competicion · debut_academy · drama_prensa · negocios ·
@@ -151,6 +156,7 @@ La carrera debe incluir contratos, sueldos, cláusulas, imports, residencia, ada
   `<style>` + los minijuegos (que la fase 8 no mueve, PLAN.md §8.5) + el control de flujo
   que llama al pipeline (`comenzarCarrera`/`avanzar`/`responder`).
   render.js — orquestador, único punto de entrada que importa `index.html`
+  resultado.js (K1 — copiar resultado, link del desafío e historial local; el storage puede tirar)
   /components
     ficha.js — LA TARJETA permanente (vive en todas las pantallas de carrera)
     barra.js — barra de progreso con hitos con nombre (arraigo, jerarquía)
@@ -165,6 +171,8 @@ La carrera debe incluir contratos, sueldos, cláusulas, imports, residencia, ada
 
 /src/dev
   simulate.js · validate.js · guards.js · cobertura.js · estrategias.js
+  huella.js (K0 — la huella T1 de 40 × 30 y, desde K1, la del juego entero) · agencia.js (K0)
+  build.js (P.6 — `dist/` con techo de peso duro)
 
 ### 4.2 Pipeline
 
