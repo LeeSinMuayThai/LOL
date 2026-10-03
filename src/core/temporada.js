@@ -254,7 +254,9 @@ export function decisionDeDraftFecha(state) {
     return { pausa: false, elegido: mejor };
   }
 
-  const campeonDelSplit = pool.find((c) => c.name === state.player.campeonDelSplit) ?? mejor;
+  // El mismo campeón del split contra el que se tira la fecha (`probabilidadDeFechaMarcada`): sin fallback al mejor, para
+  // que el umbral de la pausa mida la misma p que la tirada.
+  const campeonDelSplit = campeonDelSplitEnPool(state);
   const puntos = probabilidadDeFecha(state, fecha, campeonDelSplit, mejor)
     - probabilidadDeFecha(state, fecha, campeonDelSplit, segundo);
 
