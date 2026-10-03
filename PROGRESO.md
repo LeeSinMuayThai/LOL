@@ -34,6 +34,68 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-02 — FASE K, K2a + K2b: el instrumento corregido y la estructura del bloque A (PLAN.md §K2)
+
+**K2a: el instrumento, sin corrimiento** (`74e7e4d`, cero `rng`, solo `src/dev/`). El observador de `simulate.js`
+lee el nivel y los compañeros que usó el motor en el split donde corre la temporada, y descarta los splits pro sin
+temporada. Con la definición corregida, medido por la revisión independiente con `criterio`, 400 × 60:
+
+| | K2a | K0 |
+|---|---|---|
+| r misma liga | 0,398 | 0,369 |
+| R² sin ruido en las ligas modeladas | 0,257 | 0,233 |
+
+El Bo5 se mide en el motor y por lado: con |Δ0| en [9, 11), el jugador favorito gana el 71,4% y el rival favorito
+el 94,9%. El check "J3 pronóstico" se reescribió como propiedad (D79: era un falso positivo del check). K2a también
+expone datos del motor sin cambiar ningún cálculo; verificado en 1.506 carreras con estado, `rng` y logs idénticos.
+
+**K2b: la estructura** (`969e5f1` y los arreglos de su revisión, `6b942f2`). El bloque A corre el stream, T1
+aceptado.
+
+- **Una tirada por partido.** El partido se decide con **una sola tirada contra la p declarada**:
+  `probabilidadDePartido` y `rng() < p` por partido y por mapa, incluidos los de los otros equipos. Antes eran
+  cuatro.
+- **Un solo módulo de ruido.** `ruidoEfectivo(state, tipo)` en `core/partido.js` es el único que lee σ: fecha
+  13,9 = √(7² + 12²), mapa 14,2.
+- **Rendimiento por z.** Hype, jerarquía, arraigo, "Tu rendimiento" y `rendiBien` leen `base + 7·z`, con
+  z = (ganados − Σp) / √Σp(1−p) sobre las fechas jugadas, sin contar las de lesión.
+- **Sinergia una sola vez.** Se cuenta solo en `fuerzaDelEquipo`, con peso 0,27 (ajuste por mínimos cuadrados).
+- **Compañeros en vivo.** Se leen de `mundo.planteles` y se refrescan en el traspaso, que ahora juega su primer
+  split con el plantel nuevo y con **su** sinergia.
+- **`temporada.vueltas`.** Queda en 1.
+- **Código muerto.** `probabilidadDeGanar` se borró.
+
+**Cómo se trabajó.**
+- **Implementación.** Un Opus por subfase, cada uno en su worktree.
+- **Revisión.** Una revisión independiente por diff:
+  - K2a: OK.
+  - K2b: OK con observaciones. Re-midió los números del worker y coincidieron. Aisló la causa de la PENDIENTE de
+    `proyeccionJerarquia`: al sacar la sinergia de tu rendimiento, éste sube en el primer split en una org nueva y
+    la jerarquía crece más de lo proyectado; se re-basea en K3c. Encontró dos mutantes que pasaban todo: fechas
+    de lesión contadas y una p de draft distinta a la del mapa. Señaló también el estado inicial incompleto (T4)
+    y la sinergia vieja en el split del traspaso.
+- **Arreglos.** Un Sonnet los arregló en `6b942f2`. Cada mutante ahora pone en rojo su propio check.
+- **Integración.** Otro Opus integró K2 sobre K1 (`a50c2e1`): `VERSION` de guardado 5, `FORMAS_CONOCIDAS[5]`
+  `30ed804e36c7`, `HUELLA_JUEGO` 1414810287 (`VERSION_JUEGO` 'K2b', 40 × 60). Los dos D75 se unieron en un solo
+  check, al menos tan fuerte como los dos.
+
+**Medido por mí sobre el árbol integrado** (`criterio` 400 × 60):
+
+| | antes (K2a) | después |
+|---|---|---|
+| r misma liga corregida | 0,398 | 0,402 |
+| Bo5 Δ0 9-11, jugador favorito | 71,4 | 70,1 ± 2,0 |
+| Bo5 Δ0 9-11, rival favorito | 94,9 | 94,2 ± 1,8 |
+| temporadas con el rendimiento en el tope de 100 | 46% | 39,8% |
+
+El commit de K2b **antes** de los arreglos daba un Bo5 de 62,8 / 96,7 con la misma medición. El arreglo de la
+sinergia en el traspaso más la tirada extra al firmar lo llevan a 70,1, una diferencia de 2,5 errores estándar que
+no se separó. La estructura sola **no** sube la r: la r y el R² dependen de las constantes, que llegan en K2c. La
+inflación de tu fuerza (×1,25 de media) seguía intacta en K2b.
+
+Verificación: `validate.js` 288/288 con una PENDIENTE (corrida completa del supervisor sobre `a50c2e1`, 45 min) ·
+`simulate.js 1000` 0 crashes · `dist/` 1823 KB (techo 1900).
+
 ### 2026-10-02 — FASE K, K1: el número (PLAN.md §K1)
 
 **Sin corrimiento.** K1 no agrega ningún `rng`. La huella T1 (40 seeds × 30 splits) da 2128736563 tanto en
