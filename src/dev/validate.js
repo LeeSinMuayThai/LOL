@@ -16611,6 +16611,34 @@ const esFlagDeCamino = (path) => /^flags\.caminos\./.test(path);
 
 // path -> Set de los valores que algún resultado de algún evento escribe.
 function escriturasDeCaminoK4c2() {
+// K4c (revisión): la prueba amateur fallida decía "[object Object] no te firma" (`decision.datos.oferta.org` es la org entera de
+// `elegirOrgTier3`) y la apuesta no anunciaba qué pasa si no alcanza, como sí la del mercado (regla 15).
+check('K4c (revisión) la prueba amateur anuncia qué pasa si no alcanza y el veredicto nombra la org; ningún texto de las pruebas dice "[object Object]"', () => {
+  const filas = sondaDeLaPrueba();
+  let fallidos = 0;
+  for (const f of filas) {
+    const donde = `seed ${f.seed} (${f.sistemaId}, ${f.oferta})`;
+    const textos = [f.apuesta, ...f.bajo.estado.logs.map((log) => log.message)];
+    const pendiente = f.bajo.estado.pendiente?.decision;
+    if (pendiente) {
+      textos.push(pendiente.titulo, pendiente.descripcion, pendiente.datos?.apuesta, ...(pendiente.opciones ?? []).flatMap((o) => [o.label, o.descripcion]));
+    }
+    const roto = textos.find((texto) => typeof texto === 'string' && texto.includes('[object Object]'));
+    if (roto) throw new Error(`${donde}: "${roto}"`);
+    if (f.sistemaId !== 'amateur') continue;
+    if (typeof f.oferta !== 'string' || !f.apuesta.includes('Si no alcanza, seguís en la escalera')) {
+      throw new Error(`${donde}: la apuesta de la prueba amateur no anuncia qué pasa si no alcanza: "${f.apuesta}"`);
+    }
+    if (!f.bajo.ficho) {
+      fallidos += 1;
+      if (!f.bajo.estado.logs.some((log) => log.type === 'amateur' && log.message.includes(`${f.oferta} no te firma`))) {
+        throw new Error(`${donde}: el veredicto de la prueba fallida no nombra la org`);
+      }
+    }
+  }
+  if (fallidos < 10) throw new Error(`check vacío: ${fallidos} pruebas amateur fallidas`);
+});
+
   const escritas = new Map();
   for (const e of caminosK4c2()) {
     for (const o of e.options) {

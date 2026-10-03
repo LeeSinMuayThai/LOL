@@ -478,6 +478,8 @@ function firmarConEquipo(state, decision) {
 // Fase 9R4a: sale del catálogo por momento (`tryout`), con su texto y su stat
 // en el dato — igual que los de la serie. Devuelve la pausa entera porque el id
 // elegido se anota en `flags.minijuegosRecientes`.
+const TEXTO_SI_NO_ALCANZA = 'Si no alcanza, seguís en la escalera: puede llegar otra oferta.';
+
 function pausaDeLaPrueba(state, datosOferta) {
   const entrada = elegirMinijuego(state, 'tryout');
   const textos = textoDeMinijuego(entrada, state);
@@ -494,7 +496,9 @@ function pausaDeLaPrueba(state, datosOferta) {
         minijuego: entrada.id,
         momento: 'tryout',
         statRelevante: entrada.statRelevante,
-        apuesta: textos.apuesta,
+        // K4c (revisión), regla 15: la apuesta dice también qué pasa si no alcanza (lo que hace `resolverLaPrueba`), como la del
+        // mercado.
+        apuesta: `${textos.apuesta} ${TEXTO_SI_NO_ALCANZA}`,
         oferta: datosOferta
       }
     }
@@ -509,7 +513,8 @@ function resolverLaPrueba(state, decision, respuesta, rng) {
   if (!alcanza) {
     return {
       state,
-      logs: [crearLog('amateur', `La prueba no convence y ${decision.datos.oferta.org} no te firma. Seguís en la escalera: puede llegar otra oferta.`)]
+      // `oferta.org` es la org entera (`elegirOrgTier3`): el texto lleva su nombre.
+      logs: [crearLog('amateur', `La prueba no convence y ${decision.datos.oferta.org.nombre} no te firma. Seguís en la escalera: puede llegar otra oferta.`)]
     };
   }
   const bonus = Math.round((resultado - 0.5) * 2 * minijuegoPorId(decision.datos.minijuego).impacto);
