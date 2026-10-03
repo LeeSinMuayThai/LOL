@@ -6562,6 +6562,59 @@ ningún cruce se repite · un split de Mundial no pasa de 4 interrupciones · si
 tiradas · elegir región no corre el stream (huella con la elección igual al sorteo) · la dificultad de
 cada región es monótona con su `dificultad`.
 
+#### K5 — decisiones de spec *(supervisor, 2026-10-03; se ejecutan después de K4c)*
+
+Bloque C, con corrimiento aceptado. Las bandas que se rompan van a `bandasPendientes.js` como bloque C, re-basea
+K5c. Son tres piezas en worktrees paralelas y una integración.
+
+**K5-A — el Mundial de verdad** (`core/internacional.js` nuevo y puro, `systems/internacional.js`, una línea en
+`ETAPAS_SPLIT` entre `serie` y `events`).
+- **Clasificados.** Salen de `cuposInternacionales` de cada liga (dato).
+- **El formato.** Un Swiss de 16, que se gana con 3 victorias y se pierde con 3 derrotas, y del que salen 8 y 8.
+  Después cuartos, semis y final al Bo5.
+- **Los partidos ajenos se resuelven con `hashCadena`** (seed + equipos + ronda) contra la p de su cruce, sin
+  consumir `rng`: si no clasificás, el stream no se mueve.
+- **Tus partidos del Swiss** se tiran solos (una tirada contra la p declarada, K2b). Frena solo el **2-2**, el de
+  vida o muerte, con la previa.
+- **El knockout se juega como serie**, con las reglas de K4: plan de Fearless, mapa decisivo y charla del coach.
+- **El campeón del mundo del log es el del torneo.** Se borra el sorteo aparte de `systems/escena.js:45`.
+- **Afuera:** MSI y First Stand.
+- **Pantalla:** el Swiss resumido (tu récord y tus cruces) y el bracket con tu camino.
+- **Checks:**
+  - el campeón del log es el del torneo;
+  - el Swiss termina 8 y 8;
+  - ningún cruce se repite;
+  - un split de Mundial no pasa de 4 interrupciones;
+  - si no clasificás, cero tiradas, con la huella idéntica a "no hay Mundial".
+
+**K5-B — la región se elige y es la dificultad** (inicio, `leagues.json`, mercado).
+- **Se elige en el inicio.** Ahí elegís tu región de origen, salvo en el desafío diario. Cada región dice su
+  dificultad en una línea (la `dificultad` de K1 ya está en `leagues.json`). Elegir la misma región que la seed
+  habría sorteado da una huella **idéntica**: la elección no corre el stream.
+- **LATAM llega hasta tier 2** (LRN/LRS). Para llegar a primera hay que emigrar, y para eso está la bifurcación
+  de cambio de región de K4-C2.
+- **D78: con `criterio` nunca se juega LCK ni LPL.** Se busca la causa en el mercado (qué orgs ofrecen y a quién) y
+  se corrige: un coreano o un chino con nivel tiene que poder jugar su liga.
+- **Checks:**
+  - la elección igual al sorteo da la huella idéntica;
+  - la dificultad de cada región es monótona con su `dificultad` (en una corrida, % que llega a ganar algo
+    importante);
+  - hay splits de LCK y de LPL con `criterio`.
+
+**K5-C — el final lo decide el mercado** (`systems/mercado.js`, `systems/retiro.js`, curvas de edad).
+- **El retiro.** Llega cuando tu nivel ya no alcanza para tu liga: el mercado deja de ofrecerte contrato en tu
+  tier durante N splits (constante). Te queda bajar de tier o retirarte, y eso es una bifurcación. La línea de los
+  34 pasa a ser excepción, sin desaparecer.
+- **Tier 2 castiga las malas decisiones.** El ~10% que se estanca tiene que salir de mercados mal elegidos,
+  pretemporadas malas o la mentalidad rota, no del dado. Se mide con `criterio` contra `malas`.
+- **La estructura sale con constantes que reproducen hoy** donde se pueda. Los valores de longevidad (mediana pro
+  ~4-6 años; las buenas 7-10; las leyendas 12 o más) los fija **K5c**.
+- **Pantalla:** el retiro con su motivo ("ninguna org de LCK te ofreció contrato en dos splits").
+
+**Después de K5:** integración, revisión de motor y de navegador, y K5c, que fija con barridos del supervisor el
+embudo, el Mundial por región, P(2 o más | 1), el nuevo Faker por nivel, la longevidad y los cortes definitivos
+de los niveles de K1. Después, K6.
+
 ### K5c — Calibrar bloque C y los niveles del puntaje *(solo constantes)*
 
 Contra §K.3a y §K.3b: el embudo, el Mundial por región, P(2 o más | 1), el nuevo Faker por nivel,
