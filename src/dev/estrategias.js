@@ -104,10 +104,6 @@ export function esDecisionDeMinijuego(decision) {
   return decision.presentacion === 'minijuego' || decision.datos?.motivo === 'minijuego';
 }
 
-export function esDecisionDeDraft(decision) {
-  return decision.datos?.motivo === 'draft';
-}
-
 // K4-B: las pausas de la serie como plan. El plan de Fearless trae en cada opción la p de ganar la serie que
 // declara (`pSerie`, la de su proyección): `criterio` elige la más alta (lee la tarjeta), `malas` la más baja. En
 // el mapa decisivo, `criterio` gasta la charla del coach solo en la final o el internacional (la regla del camino
@@ -193,9 +189,6 @@ function responderCriterio(sistema, state, decision, rng) {
   if (esDecisionDePlanDeSerie(decision)) {
     return respuestaDePlanDeSerie(state, decision, false);
   }
-  if (esDecisionDeDraft(decision)) {
-    return { opcionId: decision.opciones[0].id };
-  }
   if (esDecisionDeMercado(decision)) {
     const rutinaDelBot = (rutinas) => elegirRutinaAuto(state, rutinas, rng).id;
     if (decision.opciones.length === 0) {
@@ -225,9 +218,6 @@ function responderMalas(sistema, state, decision, rng) {
   }
   if (esDecisionDePlanDeSerie(decision)) {
     return respuestaDePlanDeSerie(state, decision, true);
-  }
-  if (esDecisionDeDraft(decision)) {
-    return { opcionId: decision.opciones[decision.opciones.length - 1].id };
   }
   if (esDecisionDeMercado(decision)) {
     const rutinaDelBot = (rutinas) => rutinaConMejorPuntaje(rutinas, puntajeAgresiva).id;
@@ -260,10 +250,6 @@ function responderAzar(sistema, state, decision, rng) {
   if (esDecisionDeMinijuego(decision)) {
     const resultado = (hash % (PASOS_RESULTADO_AZAR + 1)) / PASOS_RESULTADO_AZAR;
     return { resultado };
-  }
-  if (esDecisionDeDraft(decision)) {
-    const indice = hash % decision.opciones.length;
-    return { opcionId: decision.opciones[indice].id };
   }
   if (esDecisionDeMercado(decision)) {
     const opcionesCandidatas = [

@@ -160,7 +160,7 @@ export function contarBeats(lote) {
 // FASE J. Cada campo corresponde a una causa medida en §J.0: `splitsPro`/
 // `splitsConMainMuerto` a "siempre sale lo mismo"; `descartadosPorBisagra` al
 // filtro exclusivo de `conPrioridadDeBisagra`; `categoriasReveladas` a "dos
-// veces seguidas lo del meta"; `decisiones`/`draftsPorSerie` a "hacés un clic
+// veces seguidas lo del meta"; `decisiones`/`seriesCerradas` a "hacés un clic
 // y perdiste"; `poolMainMuerto` a "maestría 5, antes tenía más"; `nivelFinal`/
 // `jerarquiaFinal` a "es todo RNG, mi skill no importa".
 //
@@ -181,37 +181,14 @@ export function correrCarrera(seed, splits, responder) {
     descartadosPorBisagra: [],
     categoriasReveladas: [],
     decisiones: 0,
-    draftsPorSerie: [],
+    seriesCerradas: 0,
     nivelFinal: null,
     jerarquiaFinal: null
   };
-  let draftsSerieActual = 0;
-  // `seriesGanadas + seriesPerdidas` es el contador que de verdad se mueve
-  // una vez por serie cerrada, tenga o no drafts — no `state.serie.activa`
-  // antes/después del split: un bracket entero (hasta 20 mapas, varias
-  // rondas) puede abrirse y cerrarse DENTRO de un único `avanzarSplitAuto`
-  // (§J.0, "hacés un clic y perdiste"), así que revisar el contador solo una
-  // vez por split fusionaría todas esas series en un solo dato inflado. Se
-  // revisa en cada decisión resuelta (abajo) y al final de cada split, así
-  // que ninguna serie que cierre entre dos decisiones se pierde.
-  let seriesVistas = state.career.registro.seriesGanadas + state.career.registro.seriesPerdidas;
-
-  function marcarSeriesCerradas(st) {
-    const seriesAhora = st.career.registro.seriesGanadas + st.career.registro.seriesPerdidas;
-    if (seriesAhora <= seriesVistas) {
-      return;
-    }
-    // Si cerraron 2+ series sin una decisión en el medio (el caso de arriba),
-    // no hay cómo repartirles los drafts acumulados: se le asignan todos a
-    // la última y el resto quedan en 0 — nunca inventa drafts que no se
-    // vieron, y sigue contando cada serie por separado.
-    for (let k = 1; k < seriesAhora - seriesVistas; k += 1) {
-      jugabilidad.draftsPorSerie.push(0);
-    }
-    jugabilidad.draftsPorSerie.push(draftsSerieActual);
-    draftsSerieActual = 0;
-    seriesVistas = seriesAhora;
-  }
+  // K4 (revisión): la serie ya no frena por draft (K4-B la pausa por plan), así que "drafts por serie" valía 0 siempre y
+  // se sacó. Queda el conteo de series cerradas (`seriesMedidas` del reporte), con el mismo valor que daba antes: el
+  // contador del registro al final menos el del arranque.
+  const seriesAlArrancar = state.career.registro.seriesGanadas + state.career.registro.seriesPerdidas;
 
   // Métricas del instrumento de Fase K0.
   //
@@ -259,7 +236,6 @@ export function correrCarrera(seed, splits, responder) {
   // respuesta: solo mira la decisión de pasada antes de contestarla, así
   // el comportamiento y el consumo de `rng` quedan idénticos a hoy.
   const responderInstrumentado = (sistema, st, decision, rngLocal) => {
-    marcarSeriesCerradas(st);
     contarTanda(st);
     jugabilidad.decisiones += 1;
     decisionesEnSplitActual += 1;
@@ -273,9 +249,6 @@ export function correrCarrera(seed, splits, responder) {
 
     if (sistema.id === 'eventos' && decision.datos?.evento) {
       jugabilidad.categoriasReveladas.push(decision.datos.evento.categoria);
-    }
-    if (sistema.id === 'serie' && decision.datos?.motivo === 'draft') {
-      draftsSerieActual += 1;
     }
     return responder
       ? responder(sistema, st, decision, rngLocal)
@@ -315,7 +288,6 @@ export function correrCarrera(seed, splits, responder) {
     // K2c: la jerarquía con la que arrancó el split (la de la temporada que corra en él), para `jerarquiaMedia`.
     const jerarquiaAntes = state.career.jerarquia;
     state = avanzarSplitAuto(state, rng, responderInstrumentado).state;
-    marcarSeriesCerradas(state);
     contarTanda(state);
 
     const temporadaJugada = state.career.temporada !== temporadaAntes;
@@ -386,6 +358,7 @@ export function correrCarrera(seed, splits, responder) {
   // así que no es "estar libre": es no tener juego.
   carrera.varada = state.phase === 'profesional' && !state.career.currentOrg && state.career.tier === null;
 
+  jugabilidad.seriesCerradas = state.career.registro.seriesGanadas + state.career.registro.seriesPerdidas - seriesAlArrancar;
   jugabilidad.poolMainMuerto = state.flags.eventosVistos?.pool_main_muerto ?? 0;
   jugabilidad.maestriaMinimaPool = state.player.championPool.length > 0
     ? Math.min(...state.player.championPool.map((campeon) => campeon.mastery))
@@ -1642,7 +1615,6 @@ function bloqueJugabilidad(jugabilidades) {
 
   const descartadosPorBisagra = jugabilidades.flatMap((j) => j.descartadosPorBisagra);
   const categorias = jugabilidades.flatMap((j) => j.categoriasReveladas);
-  const draftsPorSerie = jugabilidades.flatMap((j) => j.draftsPorSerie);
   const paresNivelJerarquia = jugabilidades.filter((j) => j.nivelFinal !== null && j.jerarquiaFinal !== null);
 
   return {
@@ -1657,11 +1629,7 @@ function bloqueJugabilidad(jugabilidades) {
     pctPantallaCategoriaParche: categorias.length > 0
       ? Number((categorias.filter((c) => c === 'parche').length / categorias.length).toFixed(3))
       : null,
-    pctSeriesSinDraft: draftsPorSerie.length > 0
-      ? Number((draftsPorSerie.filter((d) => d === 0).length / draftsPorSerie.length).toFixed(3))
-      : null,
-    medianaDraftsPorSerie: mediana(draftsPorSerie),
-    seriesMedidas: draftsPorSerie.length,
+    seriesMedidas: jugabilidades.reduce((suma, j) => suma + j.seriesCerradas, 0),
     poolMainMuertoPorCarrera: (() => {
       const v = promedio(jugabilidades.map((j) => j.poolMainMuerto));
       return v === null ? null : Number(v.toFixed(2));

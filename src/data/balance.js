@@ -1561,6 +1561,9 @@ export const BALANCE = {
     // K4-C: después de qué rondas sale la rueda de prensa (`post_serie`). La otra mitad —tras un escándalo— la
     // pone `systems/events.js` (`escandalo: true` en el dato).
     rondasConPrensa: ['final'],
+    // K4-B: en qué rondas el mapa decisivo trae su minijuego (con la charla del coach en la misma pausa). En las demás
+    // el mapa decisivo frena igual, pero solo con la charla (`motivo: 'decisivo'`).
+    rondasConMinijuegoDecisivo: ['semis', 'final', 'internacional'],
     // Fase 9R4a: cuanto mueve cada minijuego (`impacto`) y con cuanta
     // dispersion lo simula el camino headless (`spread`) ya NO viven aca: cada
     // entrada de `data/minijuegos.json` trae los suyos. Es el cierre de D20

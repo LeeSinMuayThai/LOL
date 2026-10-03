@@ -57,17 +57,6 @@ export const BANDAS_PENDIENTES = [
     commit: 'K4',
     rebasea: 'K4c',
     porque: 'mismo corrimiento que el lado del jugador: con el rival que también quema, los dos lados quedan parejos (86,6 / 85,9) y apenas arriba'
-  },
-  // K4-D movió el stream (la preparación del receso se sortea al empezar el año, en la parada del mercado): el silencio de
-  // una franquicia, un evento de ~1 en 1500 carreras, apareció una vez. La invariante no cambió; la muestra sí.
-  {
-    check: 'El mercado lee tu nivel: el silencio es para los que están por debajo, no para una franquicia (fase 9R0e)',
-    bloque: 'B',
-    medido: '2 pretemporadas de un jugador claramente por encima de su liga sin ofertas (1500 carreras, check; K4-D sola daba 1)',
-    banda: 'tope 0 pretemporadas sin ofertas por encima de la liga',
-    commit: 'K4',
-    rebasea: 'K4c',
-    porque: 'corrimiento del stream de K4-D (T1): evento raro, la muestra cambió; K4c lo re-mide con el stream final'
   }
 ];
 

@@ -1164,47 +1164,63 @@ checkLento('El mercado lee tu nivel: el silencio es para los que están por deba
   // negarle oferta a alguien elegible. Medido: seed 974, split 55 — CD
   // (Brasil, `cupoImports: 0`) contra un jugador de origen CN.
   let silencioSinCupoImport = 0;
-  for (let seed = 1; seed <= 1500; seed += 1) {
-    const rng = mulberry32(seed);
-    let state = createInitialState(seed, rng);
-
-    for (let i = 0; i < 80 && !state.terminado; i += 1) {
-      const antes = state.logs.length;
-      state = avanzarSplitAuto(state, rng).state;
-      if (state.phase !== 'profesional' || !state.career.liga) {
+  // Regla 17 — qué protege y desde cuándo (K4, revisión, 2026-10-03): la invariante "tope 0" es sobre lo que el
+  // MERCADO leyó, así que la brecha (y la liga, y la residencia) se miden en el estado con el que entra `mercado`, con
+  // un espía sobre su `aplicar` — no al final del split, como hasta K4. Lo que corre en el split DESPUÉS de la parada
+  // del mercado puede subir el nivel, y el desfase existía desde 9R0e; el stream nuevo de K4-D hizo caer 2 seeds justo
+  // ahí: las 2 pretemporadas que fallaban en 1500 carreras (seed 337 split 48, CBLOL, brecha 8,99 al entrar al mercado
+  // y 10,48 al cerrar el split; seed 510 split 12, NACL, 8,78 → 11,16) eran jugadores que el mercado vio por DEBAJO de
+  // la brecha de franquicia (`BALANCE.mercado.brechaFranquicia`). No era un bug del motor: el check medía en otro
+  // momento que el mercado. Medido con el espía: 0 silencios por encima de la brecha en las 1500.
+  const brechaFranquicia = BALANCE.mercado.brechaFranquicia;
+  conEspiaDeSistemaK2a('mercado', (entrada, resultado) => {
+    if (entrada.phase !== 'profesional' || !entrada.career.liga) {
+      return;
+    }
+    const liga = entrada.mundo.ligas.find((l) => l.id === entrada.career.liga);
+    if (!liga) {
+      return;
+    }
+    const brecha = nivelDelJugador(entrada) - liga.prestigio;
+    const sinCupoImport = residenciaEn(entrada, liga.regionId) === 'import' && (liga.cupoImports ?? 99) <= 0;
+    for (const log of resultado.logs) {
+      if (log.type !== 'mercado') {
         continue;
       }
-      const liga = state.mundo.ligas.find((l) => l.id === state.career.liga);
-      if (!liga) {
+      const esSilencio = log.message.startsWith('Nadie te llama') || log.message.startsWith('Nadie te ofrece');
+      if (!esSilencio) {
         continue;
       }
-      const brecha = nivelDelJugador(state) - liga.prestigio;
-      if (brecha >= 10) {
-        arriba += 1;
+      silencioTotal += 1;
+      if (brecha >= brechaFranquicia) {
+        if (sinCupoImport) {
+          silencioSinCupoImport += 1;
+        } else {
+          silencioArriba += 1;
+        }
       }
-      const sinCupoImport = residenciaEn(state, liga.regionId) === 'import' && (liga.cupoImports ?? 99) <= 0;
-      for (const log of state.logs.slice(antes)) {
-        if (log.type !== 'mercado') {
+      if (brecha <= 5) {
+        silencioMerecido += 1;
+      }
+    }
+  }, () => {
+    for (let seed = 1; seed <= 1500; seed += 1) {
+      const rng = mulberry32(seed);
+      let state = createInitialState(seed, rng);
+      for (let i = 0; i < 80 && !state.terminado; i += 1) {
+        state = avanzarSplitAuto(state, rng).state;
+        // El denominador (solo cuida el tamaño de la muestra) sigue siendo el de siempre: splits de un profesional
+        // claramente por encima de su liga al cerrar el split.
+        if (state.phase !== 'profesional' || !state.career.liga) {
           continue;
         }
-        const esSilencio = log.message.startsWith('Nadie te llama') || log.message.startsWith('Nadie te ofrece');
-        if (!esSilencio) {
-          continue;
-        }
-        silencioTotal += 1;
-        if (brecha >= 10) {
-          if (sinCupoImport) {
-            silencioSinCupoImport += 1;
-          } else {
-            silencioArriba += 1;
-          }
-        }
-        if (brecha <= 5) {
-          silencioMerecido += 1;
+        const liga = state.mundo.ligas.find((l) => l.id === state.career.liga);
+        if (liga && nivelDelJugador(state) - liga.prestigio >= brechaFranquicia) {
+          arriba += 1;
         }
       }
     }
-  }
+  });
 
   if (arriba < 500) {
     throw new Error(`sólo ${arriba} splits de un jugador por encima de su liga: muestra insuficiente`);
@@ -4274,7 +4290,8 @@ check('Los minijuegos tienen forma válida (esquema de 9R4a)', () => {
   // lee al terminar— vivía hardcodeado en los sistemas. Ahora es dato, así que
   // el dato se valida entero.
   // K4-C: `post_escandalo` — la rueda de prensa también sale después de un escándalo (systems/events.js).
-  const MOMENTOS = ['mapa_cerrado', 'mapa_decisivo', 'pre_internacional', 'post_serie', 'post_escandalo', 'tryout'];
+  // K4 (revisión): sin `pre_internacional` — el bootcamp de antes del internacional ya no frena desde K4 y se sacó.
+  const MOMENTOS = ['mapa_cerrado', 'mapa_decisivo', 'post_serie', 'post_escandalo', 'tryout'];
   const TIPOS_EFECTO = ['mapa', 'stat', 'roster'];
   const estadoDeMuestra = createInitialState(1, mulberry32(1));
   const ids = new Set();
@@ -4347,7 +4364,8 @@ check('Los minijuegos tienen forma válida (esquema de 9R4a)', () => {
     }
   }
 
-  for (const esperado of ['robar_baron', 'la_llamada', 'bootcamp', 'rueda_de_prensa', 'la_prueba']) {
+  // El bootcamp (uno de los cinco de PLAN.md 4.6) se sacó en la revisión de K4: su momento ya no frenaba.
+  for (const esperado of ['robar_baron', 'la_llamada', 'rueda_de_prensa', 'la_prueba']) {
     if (!ids.has(esperado)) {
       throw new Error(`falta el minijuego "${esperado}" (PLAN.md 4.6)`);
     }
@@ -4403,7 +4421,7 @@ check('elegirMinijuego es determinista, respeta el rol y no consume RNG (9R4a)',
   }
 
   // Y todo momento declarado tiene al menos un minijuego para todo rol.
-  for (const momento of ['mapa_cerrado', 'mapa_decisivo', 'pre_internacional', 'post_serie', 'tryout']) {
+  for (const momento of ['mapa_cerrado', 'mapa_decisivo', 'post_serie', 'tryout']) {
     for (const rol of IDS_ROL) {
       const estadoRol = { ...estado, player: { ...estado.player, role: rol } };
       if (!elegirMinijuego(estadoRol, momento)) {
@@ -4542,7 +4560,7 @@ checkLento('El banco de mecánicas se reparte: ninguna se lleva la carrera (9R4c
 
   for (const rol of IDS_ROL) {
     const elegibles = new Set();
-    for (const momento of ['mapa_cerrado', 'mapa_decisivo', 'pre_internacional', 'post_serie', 'tryout']) {
+    for (const momento of ['mapa_cerrado', 'mapa_decisivo', 'post_serie', 'tryout']) {
       for (const entrada of minijuegosPara({ player: { role: rol } }, momento)) {
         elegibles.add(entrada.id);
       }
@@ -4622,54 +4640,9 @@ check('Toda mecánica se puede terminar sin mouse y sin animación (9R4c)', () =
   }
 });
 
-checkLento('El internacional tiene su jugada, no sólo el bootcamp (9R4b)', () => {
-  // Medido antes de 9R4b: 643 de 643 internacionales se resolvían con el
-  // bootcamp y nada más. El bootcamp pasa ANTES del primer mapa y gastaba el
-  // cupo entero de la serie, así que la serie más grande del juego no tenía ni
-  // una jugada dentro de un mapa ni rueda de prensa. Ahora tiene su cupo aparte.
-  const porInternacional = [];
-
-  for (let seed = 1; seed <= 300; seed += 1) {
-    const rng = mulberry32(seed);
-    let state = createInitialState(seed, rng);
-    let abierto = false;
-    let tuvoJugada = false;
-
-    const responder = (sistema, st, decision, r) => {
-      const datos = decision.datos ?? {};
-      if (datos.motivo === 'minijuego') {
-        if (datos.momento === 'pre_internacional') {
-          if (abierto) {
-            porInternacional.push(tuvoJugada);
-          }
-          abierto = true;
-          tuvoJugada = false;
-        } else if (abierto && st.serie?.ronda === 'internacional') {
-          tuvoJugada = true;
-        }
-      }
-      return sistema.resolverAuto(st, decision, r);
-    };
-
-    for (let i = 0; i < 60 && !state.terminado; i += 1) {
-      state = avanzarSplitAuto(state, rng, responder).state;
-    }
-    if (abierto) {
-      porInternacional.push(tuvoJugada);
-    }
-  }
-
-  if (porInternacional.length < 100) {
-    throw new Error(`sólo ${porInternacional.length} internacionales en 300 carreras: muestra insuficiente`);
-  }
-  const conJugada = porInternacional.filter(Boolean).length / porInternacional.length;
-  if (conJugada < 0.9) {
-    throw new Error(
-      `sólo el ${(conJugada * 100).toFixed(0)}% de los internacionales vio algo más que el bootcamp `
-      + `(mínimo 90%; antes de 9R4b: 0%, ${porInternacional.length} medidos)`
-    );
-  }
-});
+// "El internacional tiene su jugada, no sólo el bootcamp (9R4b)" se borró en la revisión de K4: medía cuántos
+// internacionales veían algo más que el bootcamp, y desde K4 el bootcamp no frena (se sacó del catálogo). Lo que el
+// internacional tiene hoy —el minijuego del mapa decisivo— lo cuida "K4-B pausas por serie".
 
 checkLento('El mapa 5 es el mapa 5: el cupo del desempate no se gasta en otro lado (9R4b)', () => {
   // Las dos mitades de "el Barón de un mapa 5" (PLAN.md §9R.4):
@@ -9317,12 +9290,8 @@ check('K0 puntuarPrevia: más positivo/alto puntúa más, la ruleta penaliza, y 
     throw new Error(`malas tendría que elegir la -alta ('b'), eligió '${elegidaMalas}'`);
   }
 
-  // Draft (opciones best-first por `factorDeCampeon`): criterio la primera, malas la última. Minijuego: 0,85 y 0,15.
-  const draft = { tipo: 'opciones', presentacion: 'draft', datos: { motivo: 'draft' }, opciones: [{ id: 'mejor' }, { id: 'medio' }, { id: 'peor' }] };
-  if (ESTRATEGIAS_K0.criterio(sistemaSinAuto, estado, draft, rngProhibidoK0).opcionId !== 'mejor'
-    || ESTRATEGIAS_K0.malas(sistemaSinAuto, estado, draft, rngProhibidoK0).opcionId !== 'peor') {
-    throw new Error('en el draft criterio elige la primera opción y malas la última');
-  }
+  // Minijuego: 0,85 y 0,15. (El caso del draft se fue en la revisión de K4: la serie ya no frena por draft desde K4-B
+  // y las ramas de los bots que lo contestaban eran código muerto.)
   const minijuego = { tipo: 'minijuego', presentacion: 'minijuego', datos: { motivo: 'minijuego' }, opciones: [] };
   const juegoBien = ESTRATEGIAS_K0.criterio(sistemaSinAuto, estado, minijuego, rngProhibidoK0).resultado;
   const juegoMal = ESTRATEGIAS_K0.malas(sistemaSinAuto, estado, minijuego, rngProhibidoK0).resultado;
@@ -13548,9 +13517,32 @@ checkK2d('K2d previa 2: la p final que muestra el mapa después del minijuego es
       if (final && antes && final.p !== antes.p) movidas += 1;
     }
   });
+  // K4 (revisión): con la charla del coach elegida en la misma pausa (K4-B) la pantalla muestra la p con la charla y el
+  // minijuego, y el motor tira con esa misma p — una charla aplicada dos veces (o ninguna) en cualquiera de los dos lados
+  // rompe el ===. Solo en las pausas que la ofrecen y con la charla todavía sin usar esta temporada.
+  let conCharla = 0;
+  minijuegos.forEach(({ sistema, st, decision }, i) => {
+    if (decision.datos.charla?.disponible !== true || !charlaDisponible(st)) return;
+    for (const resultado of [0.1, 0.85]) {
+      const sinElla = previaDeDecision(st, decision, { resultadoMinijuego: resultado });
+      const final = previaDeDecision(st, decision, { resultadoMinijuego: resultado, charla: true });
+      const res = sistema.resolver(st, decision, { resultado, charla: true }, mulberry32(35500 + i));
+      const log = res.logs.find(esLogDeMapaK2d);
+      if (!final || !log || log.p !== final.p) {
+        problemas.push(`minijuego ${i} con charla (resultado ${resultado}): la pantalla muestra ${final?.p}, se tiró ${log?.p}`);
+      }
+      if (!final || !sinElla || final.p === sinElla.p) {
+        problemas.push(`minijuego ${i} con charla (resultado ${resultado}): la charla no mueve la p que muestra la pantalla`);
+      }
+      conCharla += 1;
+    }
+  });
   fallarSiK2d(problemas);
   if (movidas < minijuegos.length) {
     throw new Error(`el minijuego movió la p en solo ${movidas} de ${minijuegos.length * 2} casos`);
+  }
+  if (conCharla < 4) {
+    throw new Error(`check vacío: solo ${conCharla} casos de minijuego decisivo con la charla disponible`);
   }
 });
 
@@ -15524,6 +15516,28 @@ checkLento('K4-D regla 15: lo que muestra la carta de la rutina (efecto y cuánt
     } finally {
       BALANCE.atributos.fraccionPermanentePractica = original;
     }
+    // K4 (revisión): con una lesión que dejó techo de mecánica (`player.techoLesionMecanica`), la carta promete lo que
+    // el techo deja y el motor mueve eso mismo. El techo va 1 punto arriba de la mecánica actual, así que corta toda
+    // carta que sin él prometería más de 1: una carta que ignora el techo promete de más y el === se rompe.
+    const sinTecho = correrCarrera(5, 14);
+    const lesionado = { ...sinTecho, player: { ...sinTecho.player, techoLesionMecanica: sinTecho.player.stats.mecanica + 1 } };
+    let cortadas = 0;
+    for (const rutina of RUTINAS.offseason) {
+      const libre = cartaDeRutina({ ...sinTecho, player: { ...sinTecho.player, techoLesionMecanica: null } }, rutina)
+        .efectos.find((e) => e.stat === 'mecanica');
+      const efecto = cartaDeRutina(lesionado, rutina).efectos.find((e) => e.stat === 'mecanica');
+      if (!efecto) continue;
+      const despues = resolverPreparacion(lesionado, [rutina], rutina.id, mulberry32(5)).state;
+      const movido = despues.player.stats.mecanica - lesionado.player.stats.mecanica;
+      if (Math.abs(movido - efecto.esperado) > 1e-9) {
+        throw new Error(`${rutina.id} con techo de lesión: la carta dice +${efecto.esperado} de mecánica, el motor movió ${movido}`);
+      }
+      if (efecto.esperado > 1 + 1e-9) {
+        throw new Error(`${rutina.id} con techo de lesión: la carta promete +${efecto.esperado}, por encima del techo (+1)`);
+      }
+      if (libre && libre.esperado > 1 + 1e-9) cortadas += 1;
+    }
+    if (cortadas === 0) throw new Error('sonda vacía: el techo de lesión no cortó ninguna carta');
   } finally {
     BALANCE.practica.ruidoPractica = previo;
   }

@@ -1,6 +1,5 @@
 import { montar as montarRobarBaron } from './robarBaron.js';
 import { montar as montarLaLlamada } from './laLlamada.js';
-import { montar as montarBootcamp } from './bootcamp.js';
 import { montar as montarRuedaDePrensa } from './ruedaDePrensa.js';
 import { montar as montarLaPrueba } from './laPrueba.js';
 // El banco de la fase 9R4c: seis mecánicas más, para que la misma carrera no
@@ -13,15 +12,15 @@ import { montar as montarLaVision } from './laVision.js';
 import { montar as montarElKite } from './elKite.js';
 import { montar as montarElTeleport } from './elTeleport.js';
 
-// Los 11 minijuegos (5 de la fase 4, migrados de index.html en la fase T6; (PLAN.md §8.5 los
+// Los 10 minijuegos (5 de la fase 4, migrados de index.html en la fase T6; (PLAN.md §8.5 los
 // dejó sin mover a propósito "porque la fase 12 les cambia la
 // presentación" — es acá). Cada uno vive en su propio archivo; este barrel
 // es el único punto de entrada para el controlador, mismo patrón que
-// `render.js`.
+// `render.js`. (K4, revisión: el bootcamp de antes del internacional se fue con
+// su momento `pre_internacional`, que K4 dejó sin pausa.)
 export const MONTAR_MINIJUEGO = {
   robar_baron: montarRobarBaron,
   la_llamada: montarLaLlamada,
-  bootcamp: montarBootcamp,
   rueda_de_prensa: montarRuedaDePrensa,
   la_prueba: montarLaPrueba,
   last_hit: montarLastHit,

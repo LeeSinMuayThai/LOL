@@ -288,7 +288,7 @@ function jugarMapa(state, rng, logsAcum) {
 
 function pausaDecisiva(state, jugada, logsAcum) {
   const conCharla = charlaDisponible(state);
-  if (['semis', 'final', 'internacional'].includes(state.serie.ronda)) {
+  if (BALANCE.serie.rondasConMinijuegoDecisivo.includes(state.serie.ronda)) {
     const pausa = pausaDeMinijuego(state, 'mapa_decisivo', logsAcum, {
       campeonElegido: jugada.campeon,
       fuerzaPropia: jugada.fuerzaPropia,

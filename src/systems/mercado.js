@@ -14,6 +14,7 @@ import { resolverMercadoMundial, cerrarAsientosCongelados } from '../core/mercad
 import { jerarquiaAlFichar, sinergiaAlFichar, conPlantillaDelPlantel } from './roster.js';
 import { companerosDelPlantel } from '../core/fuerza.js';
 import { BALANCE } from '../data/balance.js';
+import { ajusteBaseDeMinijuego } from '../core/serie.js';
 import { esPreparacion, ofrecerPreparacion, resolverPreparacion, elegirRutinaAuto } from './practica.js';
 
 export const id = 'mercado';
@@ -964,7 +965,7 @@ function pausaDePrueba(state, oferta, saltos, ofrecidas) {
 function resolverPrueba(state, decision, respuesta, rng) {
   const { oferta, saltos, ofrecidas } = decision.datos;
   const resultado = clamp(respuesta.resultado ?? 0.5, 0, 1);
-  const bonus = Math.round((resultado - 0.5) * 2 * minijuegoPorId(decision.datos.minijuego).impacto);
+  const bonus = Math.round(ajusteBaseDeMinijuego(resultado) * minijuegoPorId(decision.datos.minijuego).impacto);
   const conBonus = {
     ...state,
     flags: {
