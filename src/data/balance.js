@@ -1362,9 +1362,14 @@ export const BALANCE = {
     // `ruidoEfectivo`, `core/partido.js`).
     //
     // Cuántas vueltas tiene el fixture de la temporada regular: 1 = cada par
-    // de equipos se cruza una vez (hasta K2a), 2 = ida y vuelta (la LCK real).
-    // El valor lo decide K2c midiendo la r de la misma liga.
-    vueltas: 1,
+    // de equipos se cruza una vez (hasta K2b), 2 = ida y vuelta (la LCK real).
+    // K2c: 2. Elegido por barrido (`criterio` 400 × 60, vueltas 1/2 × σ de
+    // fecha 10/13,9/17/20): con 2 vueltas la r de la misma liga sube de 0,524
+    // (1 vuelta, mismo σ de fecha) a 0,582, con R² sin ruido 0,549, y el Bo5
+    // con Δ0≈10 queda en 81,0 para el jugador favorito y 88,4 para el rival
+    // favorito. El σ de fecha no mueve el Bo5 de forma sistemática (es σ de
+    // mapa; solo cambia qué cruces se dan), así que no se toca. PLAN.md, K2c.
+    vueltas: 2,
     // Fase 9Re: cuántas fechas del split frenan al jugador. Bajó de "2 a 3"
     // (roll) a UNA: con 2-3 por split × ~23 splits competitivos la temporada
     // regular era ~108 de las 248 decisiones de la carrera, casi todas sacadas
