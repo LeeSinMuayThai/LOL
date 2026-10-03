@@ -34,6 +34,90 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-03 — FASE K, K4 + K4-C2 + K5: el ritmo y el mundo, en estructura (PLAN.md §K4, §K5)
+
+**Qué entra.** La estructura de los bloques B (el ritmo) y C (el mundo). Siguiendo el orden de `98034ff`, K5 se
+integró sobre K4 antes de calibrar, así K4c calibra el ritmo con el Mundial ya puesto. Las constantes son de
+arranque. Las bandas que se rompieron están en `bandasPendientes.js`, en el bloque B o el C:
+- B: el banco de minijuegos;
+- C: la longevidad, r(potencial, duración) = 0,21.
+
+**K4 — te frena solo lo importante.** Cuatro piezas en worktrees paralelas, medidas con `criterio`, 100 × 60:
+
+| Pieza | Qué bajó | Antes | Después |
+|---|---|---|---|
+| K4-A, el partido que importa | momentos por carrera | 27,9 | 18,3 |
+| K4-B, la serie como plan | pausas de serie | 51,2 | 24,9 |
+| K4-C, solo frenan las bifurcaciones | pausas de eventos | 35,8 | 2,0 |
+| K4-D, la pretemporada en una parada | práctica + mercado | 21,3 | 13,0 |
+
+Además:
+- **K4-A.** La fecha marcada es la que decide algo: la clasificación, el archirrival, el clásico o la revancha.
+- **K4-B.** La serie se juega como plan (Fearless, el mapa decisivo, la charla del coach) y resolvió la
+  asimetría del Bo5: jugador 82,7, rival 75,0.
+- **K4-C.** Los eventos que no son bifurcación los resuelve el perfil.
+- **Decisiones de la integración:**
+  - la rueda de prensa va solo después de una final o de un escándalo;
+  - el tryout se resuelve dentro de la pretemporada;
+  - el archirrival casi nunca marca fecha.
+
+**K4-C2 — las bifurcaciones** (`1f2256f`, `5cebbd0`, `444ee55`).
+- **Cuántas.** Pasaron de 2,0 a 5,4 por carrera: 9 eventos nuevos y 6 de seguimiento que leen `flags.caminos`.
+- **Qué hacen.** La primera versión era narrativa y rompía la regla 15. Por eso las opciones que prometen una
+  mudanza, un cambio de línea o el retiro usan efectos de carrera reales (`ofertaDeImport`, `cambiarRol`,
+  `retirarse`), y un check verifica que el texto y el efecto coincidan.
+
+**K5 — el Mundial, la región y el final.**
+- **K5-A, el Mundial de verdad.** `core/internacional.js` es puro: clasificados por `cuposInternacionales`, un
+  Swiss de 16 y un bracket de 8.
+  - Los partidos ajenos salen de `hashCadena`, sin `rng`: si no clasificás, el stream no se mueve.
+  - Solo frena el 2-2.
+  - El campeón del log es el del torneo; se borró el sorteo aparte de `escena.js`.
+- **K5-B, la región se elige.** Elegir la misma región que habría sorteado la seed da la huella idéntica. LATAM
+  llega hasta tier 2.
+- **D78.** El calibre de una org es `max(fuerza, cuantil 0,25 de su liga)`, y los asientos se congelan después
+  de la mudanza. Con `criterio`, LCK pasó de 0 a 12 splits y LPL de 6 a 33.
+- **K5-C, el final lo decide el mercado.** El retiro llega cuando ninguna org de tu tier te ofrece en N splits.
+  La estructura salió con constantes que reproducen el estado anterior: la longevidad la fija K5c.
+
+**Revisiones.** Hubo revisión de motor y de navegador sobre la integración. La corrida completa del supervisor
+dio 361 OK y 6 FAIL.
+- **Crítico, el hash de los partidos ajenos.** `uniformeDeClave` devolvía un int32 con signo, así que u caía en
+  [−0,5, 0,5): el equipo primero en el alfabeto ganaba casi todo, 277 de 500 Mundiales con la seed 1. Con el
+  arreglo gana 117, y los campeones distintos pasaron de 7 a 17.
+- **Arreglos del mismo pase:**
+  - el hype del Mundial depende del resultado;
+  - código muerto;
+  - la renovación de contratos NPC en la etapa amateur;
+  - el tryout ya no termina la carrera a los 34;
+  - la tier list después de `cambiarRol`;
+  - los bots contestan el 2-2;
+  - la muestra del burnout;
+  - promesas de región apiladas;
+  - el chip de región recortado.
+- **Ids crudos de liga.** Había 104 en 17.652 textos del motor, en 12 seeds. Se pasaron al nombre visible con una
+  sola fuente, `core/ligas.js`.
+- **Un crash real**, encontrado por `agencia.js` al forzar opciones. El banquillo te podía ceder a tu propio
+  club: la fila nunca se abría y el pase siguiente reventaba. Se arregló en `c3945ac`, con un check y una guarda
+  por split.
+- **9R0e:** era un bug real: el banquillo te cedía a la academia de un club extranjero, una liga sin planteles, y el mercado quedaba ciego. Se arregló en `79ccaa0`, poblando la liga antes de firmar.
+
+**Dónde quedó** (`criterio` 400 × 60, sobre `26450d5`):
+
+| Métrica | Valor | Meta |
+|---|---|---|
+| Interrupciones por carrera | mediana 111, p90 127 | ≤ 80 (K4c) |
+| Interrupciones en playoffs e internacional | p90 7 | ≤ 4 |
+| Minijuegos | 11 | 4-8 |
+| Tiempo-máquina | 8,1 min | — |
+| Llega a pro | 80% | — |
+| Carrera pro | 17 años | — |
+| Llega a los 34 | 84% | lo baja K5c |
+
+Guardado `VERSION` 10. `HUELLA_JUEGO` 1197795265 ('K5').
+
+Verificación: `validate.js` 374 OK + 2 PENDIENTE (B: el banco de minijuegos; C: la longevidad), sobre `b045893` · `simulate.js 1000` 0 crashes · `dist/` 2074 KB (techo 2100).
+
 ### 2026-10-03 — FASE K, K3c: el bloque A calibrado y cerrado (PLAN.md §K3c, §K.0c)
 
 **Solo constantes, más el instrumento.** Se hizo con el patrón de K2c: los barridos los corrí yo en background y

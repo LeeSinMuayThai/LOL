@@ -132,6 +132,12 @@ La carrera debe incluir contratos, sueldos, cláusulas, imports, residencia, ada
   tira un partido) · **previaDePartido.js** (K2d — la previa: desglose y p, pura, la misma fuente que la tirada)
   **barras.js** (K3-A — las barras que no se saturan: la mentalidad y el hype vuelven a su base, el descanso
   topeado en `topeDescanso`; puras, sin `rng`, las leen `atributos`, `practica` y `rendimiento`)
+  **perfil.js** (K4-C — el perfil que resuelve los eventos que no son bifurcación; deriva con tus decisiones,
+  tabla en `data/perfiles.json`)
+  **internacional.js** (K5-A — el Mundial puro: clasificados por `cuposInternacionales`, Swiss de 16 + bracket
+  de 8, partidos ajenos por `hashCadena` sin `rng`: si no clasificás, el stream no se mueve)
+  **ligas.js** (K5 — `nombreVisibleDeLiga`: la única fuente del nombre de una liga para todo texto del motor y
+  de la pantalla)
 
 /src/systems
   contexto.js · edadInicio.js · meta.js · roster.js · competitivo.js · campeones.js
@@ -140,6 +146,8 @@ La carrera debe incluir contratos, sueldos, cláusulas, imports, residencia, ada
   temporada.js (fase 5 — se inserta en el registro antes de `rendimiento`)
   **mercado.js** (fase 9 — contratos que vencen, ofertas, el año muerto; va justo
   después de `competitivo`: ese decide SI ascendés, este decide A QUÉ ORG vas)
+  **internacional.js** (K5-A — el Mundial en el split: entre `serie` y `events` en `ETAPAS_SPLIT`; tus partidos
+  del Swiss se tiran solos salvo el 2-2, el knockout se juega como serie con las reglas de K4)
 
 /src/data
   balance.js · champions.json · leagues.json · meta-tags.js · roles.js · ranked.js
@@ -147,9 +155,12 @@ La carrera debe incluir contratos, sueldos, cláusulas, imports, residencia, ada
   **version.js** (K1 — `VERSION_JUEGO` y `HUELLA_JUEGO`: la huella del juego entero, 40 seeds × 60 splits)
   **leyendas.json** (K1 — 20 pros inventados contra los que se compara una carrera)
   metas.json (fase 6 — los nueve regímenes de meta)
+  **perfiles.json** (K4-C — los perfiles y la afinidad de cada opción)
   /events — index.js + un JSON por categoría:
     cierre_edad · competicion · debut_academy · drama_prensa · negocios ·
     pool · salud_vida · soloq_precarrera
+    caminos (K4-C2 — las bifurcaciones: import, línea, retiro con staff, sponsor…; dejan `flags.caminos`
+    y usan efectos de carrera reales: `ofertaDeImport`, `cambiarRol`, `retirarse`)
     escena_2026 · estatus · marcas_vivas · registro_cita (fase 8D — contenido vivo)
     /rol (top, jungla, mid, adc, support: lo que solo ve tu línea)
     /partido (fase 5 — presion.json, clasico.json, dentro_del_mapa.json,
@@ -167,6 +178,7 @@ La carrera debe incluir contratos, sueldos, cláusulas, imports, residencia, ada
     statRow.js — los 6 atributos de rol con flechas ▲▼ y el destacado en color
     decision.js — la tarjeta de decisión (opciones; los minijuegos se desvían antes)
     previaPartido.js (K2d) — la tarjeta de la previa: tu fuerza desglosada contra el rival y la p
+    mundial.js (K5-A) — el Swiss resumido (tu récord y tus cruces) y el bracket con tu camino
     feed.js — el log, con los logs `tecnico: true` atenuados
     **mercado.js** (fase 9) — la tarjeta de oferta: sueldo, jerarquía proyectada,
     coste de arraigo y el riesgo, todo antes de firmar
