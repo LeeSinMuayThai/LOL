@@ -6773,10 +6773,23 @@ checkLento('Ninguna carrera coreana profesional llega a la edad límite sin reso
   // dispara sin dado en cuanto se cumple la edad; este check confirma que el
   // disparo nunca falla en llegar (a diferencia de una lesión, que sí es
   // `chance()`).
+  //
+  // K4 (revisión 2): con el bloque A las carreras cambiaron y en las 600 seeds de antes llegaban 19 (el piso es 20). La
+  // región de origen sale del estado inicial (`mundo.regionIdOrigen`, fija toda la carrera): se filtra ahí, sin correr
+  // las no coreanas, y se buscan seeds hasta juntar `OBJETIVO` carreras (≈ 1 cada 30 seeds hoy) o agotar `SEEDS_MAX`.
+  // La propiedad y el piso no cambian.
+  const PISO = 20;
+  const OBJETIVO = 30;
+  const SEEDS_MAX = 3000;
   let coreanosProResueltos = 0;
   let sinResolver = 0;
+  let seedsMiradas = 0;
 
-  for (let seed = 1; seed <= 600; seed += 1) {
+  for (let seed = 1; seed <= SEEDS_MAX && coreanosProResueltos < OBJETIVO; seed += 1) {
+    seedsMiradas = seed;
+    if (createInitialState(seed, mulberry32(seed)).mundo.regionIdOrigen !== 'KR') {
+      continue;
+    }
     const state = correrCarrera(seed, 60);
     if (state.mundo.regionIdOrigen !== 'KR' || state.phase !== 'profesional') {
       continue;
@@ -6793,8 +6806,8 @@ checkLento('Ninguna carrera coreana profesional llega a la edad límite sin reso
     }
   }
 
-  if (coreanosProResueltos < 20) {
-    throw new Error(`solo ${coreanosProResueltos} carreras coreanas profesionales llegaron a la edad límite en 600 seeds: muestra insuficiente`);
+  if (coreanosProResueltos < PISO) {
+    throw new Error(`solo ${coreanosProResueltos} carreras coreanas profesionales llegaron a la edad límite en ${seedsMiradas} seeds: muestra insuficiente`);
   }
   if (sinResolver > 0) {
     throw new Error(`${sinResolver}/${coreanosProResueltos} carreras coreanas llegaron a la edad límite sin servicioCumplido ni exentoServicio`);
