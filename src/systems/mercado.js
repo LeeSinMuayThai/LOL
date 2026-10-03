@@ -718,7 +718,7 @@ function aceptarOferta(state, oferta, rng, { motivoFila } = {}) {
     return {
       state: {
         ...state,
-        flags: { ...state.flags, splitsSinOfertaConsecutivos: 0 },
+        flags: { ...state.flags, splitsSinOfertaConsecutivos: 0, pruebasFallidas: [] },
         career: {
           ...state.career, contrato,
           registro: registrarSalarioEnFila(state.career.registro, contrato.salarioAnualUSD)
@@ -771,6 +771,7 @@ function aceptarOferta(state, oferta, rng, { motivoFila } = {}) {
         splitsSinOfertaConsecutivos: 0,
         // K5-C: firmaste (en tu tier o más abajo): la cuenta de "sin oferta en tu tier" arranca de cero en el nuevo.
         splitsSinOfertaEnTier: 0,
+        pruebasFallidas: [],
         jerarquiaProyectadaAlFichar: oferta.datos.jerarquiaProyectada,
         sinergiaProyectadaAlFichar: sinergiaAlFirmar
       },
@@ -1236,7 +1237,7 @@ function caeLaOfertaPorLaPrueba(state, decision, rng) {
       clubesInteresados: carry.clubesInteresados ?? [],
       asientosAbiertos: carry.asientosAbiertos ?? []
     });
-    return resolverEspera(state, sinNada, rng, `${aviso}. No queda nada que firmar esta ventana.`);
+    return probasteYNoAlcanzo(state, sinNada, oferta, otras.length > 0, aviso, rng);
   }
   const firmado = aceptarOferta(state, respaldo, rng);
   const ofrecidas = new Set([...(decision.datos.ofrecidas ?? []), oferta.org]);
@@ -1244,6 +1245,23 @@ function caeLaOfertaPorLaPrueba(state, decision, rng) {
   return {
     state: cerrado.state,
     logs: [crearLog('mercado', `${aviso} y seguís con ${respaldo.org}.`), ...firmado.logs, ...cerrado.logs]
+  };
+}
+
+// K4c (revisión): la prueba no alcanzó y no hay respaldo (las demás ofertas, si había, también pedían prueba). Es su propio
+// caso, no el silencio del mercado: no suma a `splitsSinOfertaConsecutivos` (antes iba por `resolverEspera`, y con seis
+// ofertas en la mesa podía decir "Nadie te ofrece nada" y dejarte libre), queda anotada en `flags.pruebasFallidas` para que
+// el declive diga lo que pasó (`systems/retiro.js`), y el contrato no se toca. Los asientos congelados se cierran como al
+// esperar (con nombre los que te ofrecían).
+function probasteYNoAlcanzo(state, sinNada, oferta, habiaOtras, aviso, rng) {
+  const cerrado = cerrarAsientosCongelados(state, null, rng, orgsOfrecidasDe(sinNada));
+  const lasDemas = habiaOtras ? ', y las demás también pedían prueba' : '';
+  return {
+    state: {
+      ...cerrado.state,
+      flags: { ...cerrado.state.flags, pruebasFallidas: [...(cerrado.state.flags.pruebasFallidas ?? []), oferta.org] }
+    },
+    logs: [crearLog('mercado', `${aviso}${lasDemas}. Probaste y no alcanzó: esta ventana no firmás con nadie.`), ...cerrado.logs]
   };
 }
 

@@ -434,6 +434,10 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // Al llegar a `BALANCE.retiro.splitsSinOfertaEnTierParaBifurcar` frena la bifurcación "bajás o te retirás". Se
       // vuelve a 0 con una oferta de tu tier, al firmar y al retirarte.
       splitsSinOfertaEnTier: 0,
+      // K4c (revisión): las orgs cuya prueba del mercado no alcanzó sin un respaldo que firmar ("probaste y no alcanzó"), en
+      // orden, desde la última firma. No es silencio: no suma a `splitsSinOfertaConsecutivos`, y `systems/retiro.js` lo lee
+      // para que el declive diga lo que pasó. Se vacía al firmar y al retirarte.
+      pruebasFallidas: [],
       // K5-C: el `splitCount` de la última vez que frenó esa bifurcación (-1 = nunca). `systems/retiro.js` lo lee para
       // no preguntar `retiro_declive` en la misma pretemporada: el mercado ya preguntó.
       forkMercadoSplit: -1,

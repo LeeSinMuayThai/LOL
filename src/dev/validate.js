@@ -16433,7 +16433,7 @@ check('K4c-S un tryout fallido del mercado se cae solo esa oferta: sin crédito,
   // mira vale igual para un free agent, y el lado "sin otras ofertas" armado sigue siendo solo con club.
   const fallidos = sondaDeLaPrueba().filter((f) => f.sistemaId === 'mercado' && !f.bajo.ficho);
   if (fallidos.length < 5) {
-    throw new Error(`check vacío: ${fallidos.length} tryouts fallidos del mercado con club (hacen falta 5)`);
+    throw new Error(`check vacío: ${fallidos.length} tryouts fallidos del mercado (hacen falta 5)`);
   }
   let conRespaldo = 0;
   let sinNada = 0;
@@ -16443,10 +16443,9 @@ check('K4c-S un tryout fallido del mercado se cae solo esa oferta: sin crédito,
       throw new Error(`${donde}: el tryout fallido dejó crédito de jerarquía (${estado.flags.bonusJerarquiaTryout})`);
     }
   };
-  // Sin respaldo, el contrato no se toca (salvo que la racha sin firmar te deje libre).
+  // Sin respaldo, el contrato no se toca (K4c, revisión: tampoco por la racha sin ofertas, que la prueba fallida ya no mueve).
   const sinRomperNada = (f, estado, donde) => {
-    const librePorRacha = f.antes.racha + 1 >= BALANCE.mercado.splitsSinOfertaParaLibre;
-    if (!librePorRacha && (estado.career.currentOrg !== f.antes.currentOrg || JSON.stringify(estado.career.contrato) !== JSON.stringify(f.antes.contrato))) {
+    if (estado.career.currentOrg !== f.antes.currentOrg || JSON.stringify(estado.career.contrato) !== JSON.stringify(f.antes.contrato)) {
       throw new Error(`${donde}: el tryout fallido sin respaldo dejó el club o el contrato distinto (${f.antes.currentOrg} → ${estado.career.currentOrg})`);
     }
   };
@@ -16491,6 +16490,7 @@ check('K4c-S un tryout fallido del mercado se cae solo esa oferta: sin crédito,
       + `(más ${sinNadaArmadas} armadas sin las otras ofertas; hacen falta de las dos)`);
   }
 });
+
 // K4c (revisión): el check de arriba tomaba el respaldo de `decision.datos.respaldo`, el mismo número que escribe el motor: con el
 // mutante "cualquier oferta sirve de respaldo" (`const sinPrueba = otras;` en `respaldoDePrueba`) seguía verde. Este recalcula la regla.
 check('K4c (revisión) el respaldo de la prueba del mercado es el de la regla, recalculado a mano: lo anuncia la apuesta y, si la prueba no alcanza, es con quien seguís', () => {
@@ -16581,7 +16581,6 @@ check('K4c (revisión) probaste y no alcanzó: la prueba del mercado fallida sin
   }
 });
 
-
 check('K4c-S un tryout fallido del amateur posterga la firma: seguís en la escalera, sin crédito, y después puede llegar otra oferta', () => {
   const fallidos = sondaDeLaPrueba().filter((f) => f.sistemaId === 'amateur' && !f.bajo.ficho);
   if (fallidos.length < 10) {
@@ -16610,6 +16609,34 @@ check('K4c-S un tryout fallido del amateur posterga la firma: seguís en la esca
   if (firmaDespues === 0) {
     throw new Error('ninguna de las primeras 12 carreras con tryout fallido recibió otra oferta en 10 splits: la firma no se posterga, se pierde');
   }
+});
+
+// K4c (revisión): la prueba amateur fallida decía "[object Object] no te firma" (`decision.datos.oferta.org` es la org entera de
+// `elegirOrgTier3`) y la apuesta no anunciaba qué pasa si no alcanza, como sí la del mercado (regla 15).
+check('K4c (revisión) la prueba amateur anuncia qué pasa si no alcanza y el veredicto nombra la org; ningún texto de las pruebas dice "[object Object]"', () => {
+  const filas = sondaDeLaPrueba();
+  let fallidos = 0;
+  for (const f of filas) {
+    const donde = `seed ${f.seed} (${f.sistemaId}, ${f.oferta})`;
+    const textos = [f.apuesta, ...f.bajo.estado.logs.map((log) => log.message)];
+    const pendiente = f.bajo.estado.pendiente?.decision;
+    if (pendiente) {
+      textos.push(pendiente.titulo, pendiente.descripcion, pendiente.datos?.apuesta, ...(pendiente.opciones ?? []).flatMap((o) => [o.label, o.descripcion]));
+    }
+    const roto = textos.find((texto) => typeof texto === 'string' && texto.includes('[object Object]'));
+    if (roto) throw new Error(`${donde}: "${roto}"`);
+    if (f.sistemaId !== 'amateur') continue;
+    if (typeof f.oferta !== 'string' || !f.apuesta.includes('Si no alcanza, seguís en la escalera')) {
+      throw new Error(`${donde}: la apuesta de la prueba amateur no anuncia qué pasa si no alcanza: "${f.apuesta}"`);
+    }
+    if (!f.bajo.ficho) {
+      fallidos += 1;
+      if (!f.bajo.estado.logs.some((log) => log.type === 'amateur' && log.message.includes(`${f.oferta} no te firma`))) {
+        throw new Error(`${donde}: el veredicto de la prueba fallida no nombra la org`);
+      }
+    }
+  }
+  if (fallidos < 10) throw new Error(`check vacío: ${fallidos} pruebas amateur fallidas`);
 });
 
 check('K4c-S regla 15: el texto de la prueba dice lo que está en juego (el contrato y el crédito) y ningún veredicto promete la firma', () => {
@@ -16716,34 +16743,6 @@ const esFlagDeCamino = (path) => /^flags\.caminos\./.test(path);
 
 // path -> Set de los valores que algún resultado de algún evento escribe.
 function escriturasDeCaminoK4c2() {
-// K4c (revisión): la prueba amateur fallida decía "[object Object] no te firma" (`decision.datos.oferta.org` es la org entera de
-// `elegirOrgTier3`) y la apuesta no anunciaba qué pasa si no alcanza, como sí la del mercado (regla 15).
-check('K4c (revisión) la prueba amateur anuncia qué pasa si no alcanza y el veredicto nombra la org; ningún texto de las pruebas dice "[object Object]"', () => {
-  const filas = sondaDeLaPrueba();
-  let fallidos = 0;
-  for (const f of filas) {
-    const donde = `seed ${f.seed} (${f.sistemaId}, ${f.oferta})`;
-    const textos = [f.apuesta, ...f.bajo.estado.logs.map((log) => log.message)];
-    const pendiente = f.bajo.estado.pendiente?.decision;
-    if (pendiente) {
-      textos.push(pendiente.titulo, pendiente.descripcion, pendiente.datos?.apuesta, ...(pendiente.opciones ?? []).flatMap((o) => [o.label, o.descripcion]));
-    }
-    const roto = textos.find((texto) => typeof texto === 'string' && texto.includes('[object Object]'));
-    if (roto) throw new Error(`${donde}: "${roto}"`);
-    if (f.sistemaId !== 'amateur') continue;
-    if (typeof f.oferta !== 'string' || !f.apuesta.includes('Si no alcanza, seguís en la escalera')) {
-      throw new Error(`${donde}: la apuesta de la prueba amateur no anuncia qué pasa si no alcanza: "${f.apuesta}"`);
-    }
-    if (!f.bajo.ficho) {
-      fallidos += 1;
-      if (!f.bajo.estado.logs.some((log) => log.type === 'amateur' && log.message.includes(`${f.oferta} no te firma`))) {
-        throw new Error(`${donde}: el veredicto de la prueba fallida no nombra la org`);
-      }
-    }
-  }
-  if (fallidos < 10) throw new Error(`check vacío: ${fallidos} pruebas amateur fallidas`);
-});
-
   const escritas = new Map();
   for (const e of caminosK4c2()) {
     for (const o of e.options) {
