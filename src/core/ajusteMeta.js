@@ -38,8 +38,8 @@ export function deseoPorCampeon(campeon, weights) {
 // así que sin cambio de meta el balance agregado no se mueve.
 //
 // K2b: la maestría vale 1,0 en `maestriaReferencia` (hasta K2a, un 50
-// implícito; hoy la referencia sigue en 50, así que el factor es el mismo bit a
-// bit). Sin campeón conocido, el factor es neutro: la maestría de referencia.
+// implícito; K2b la dejó en 50, bit a bit igual; K2c la centró en 85, la media de
+// un pro con la afinidad incluida). Sin campeón conocido, el factor es neutro: la maestría de referencia.
 export function factorDeCampeon(campeon, weights) {
   const r = BALANCE.rendimiento;
   const maestria = campeon?.mastery ?? r.maestriaReferencia;
@@ -125,7 +125,8 @@ export function campeonesMuertos(pool, tierList) {
   });
 }
 
-// Multiplica el rendimiento entre 0.75x y 1.25x (CONCEPTO §6).
+// Multiplica el rendimiento entre `multiplicadorMin` y `multiplicadorMax` de
+// BALANCE.campeones (0.9x-1.1x desde K2c; CONCEPTO §6).
 export function multiplicadorDeMeta(ajuste) {
   const { ajusteNeutro, multiplicadorMin, multiplicadorMax } = BALANCE.campeones;
   const rango = multiplicadorMax - multiplicadorMin;

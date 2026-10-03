@@ -276,7 +276,8 @@ noticia, no como una deriva: 60% de chance al abrir cada season, 25% de un
 parche correctivo a mitad de cualquier split. Contra ese régimen se arma la
 tier list de tu rol (S/A/B/C), y tu boost sale de cruzarla contra tu pool
 ponderando por maestría — cuantos más campeones tuyos caen en tier alta, más
-te favorece el parche. Multiplica tu rendimiento entre 0.75x y 1.25x.
+te favorece el parche. Multiplica tu rendimiento entre 0.9x y 1.1x (los factores del juego están centrados en un
+pro típico, así que el meta inclina el partido sin decidirlo; PLAN K2).
 
 **JERARQUÍA.** Tu lugar dentro del equipo, de "el rookie" a "la franquicia".
 No es cosmética: define si te dan el pick que querés, si el jungla camina para
