@@ -47,7 +47,7 @@ import { tipoDeSplit, hayPresupuesto } from '../core/presupuesto.js';
 import { aplicar as aplicarPresupuesto } from '../systems/presupuesto.js';
 import {
   objetivoDelRival, disponiblesDelPool, jugadaDelPlan, conPlan, mapaDelPlan, estadoDelProximoMapa, fuerzaRivalDeMapa,
-  conQuemaDelRival, charlaDisponible
+  conQuemaDelRival, charlaDisponible, PLANES_DE_SERIE, proyeccionDelPlan
 } from '../core/serie.js';
 import {
   rendimientoBase, fuerzaDelEquipo, fuerzaDePartido, nivelDeCompaneros, companerosDelPlantel
@@ -4946,47 +4946,79 @@ check('probabilidadDePartido es monótona, simétrica y 0.5 en el empate (fecha 
 // se borró: el draft de serie ya no frena. Lo reemplaza "K4-B pausas por serie...": te frena el plan, que te lean el
 // guardado o el mapa decisivo, y una serie sin nada en juego no frena.
 
-checkLento('Toda opción de draft trae su lectura y va ordenada por factorDeCampeon', () => {
-  // Smoke test directo de la matriz: dos ejes extremos dan frases distintas.
-  const weightsBase = createInitialState(3, mulberry32(3)).meta.weights;
-  const poolMix = [
-    entradaDePool({ name: 'Fuerte', tags: ['enchanter'] }, 90, 0),
-    entradaDePool({ name: 'Flojo', tags: ['splitpush'] }, 20, 0)
-  ];
-  if (lecturaDePick(poolMix[0], weightsBase, poolMix) === lecturaDePick(poolMix[1], weightsBase, poolMix)) {
-    throw new Error('lecturaDePick devolvió la misma frase para dos picks opuestos');
-  }
-
-  const lecturasConocidas = new Set();
-  let decisionesVistas = 0;
+// K4 (revisión 2, regla 17): este check reemplaza a "Toda opción de draft trae su lectura y va ordenada por
+// factorDeCampeon" (250 carreras). K4-B sacó el draft mapa a mapa: la serie frena en la tarjeta del plan de Fearless (y
+// en la del re-plan, cuando el rival te quema el guardado, que también ofrece planes, no picks) y daba 0 decisiones de
+// draft. Lo equivalente de hoy: cada opción del plan trae su lectura —la p de cada mapa que queda y la de la serie— y
+// la tarjeta va en el orden que la muestra la UI (el de `PLANES_DE_SERIE`, y la previa de la UI con las mismas opciones
+// en el mismo orden y las mismas p). Que esas p sean las que tira el motor lo cuida "K4-B regla 15...".
+checkLento('Toda opción del plan de Fearless trae su lectura (la p de cada mapa) y va en el orden de la tarjeta', () => {
+  let planesVistos = 0;
+  let replanesVistos = 0;
+  let conGuardar = 0;
+  let conLecturasDistintas = 0;
   for (let seed = 1; seed <= 250; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
 
     const responder = (sistema, st, decision, r) => {
-      if (decision.datos?.motivo === 'draft' && (sistema.id === 'serie' || sistema.id === 'temporada')) {
-        decisionesVistas += 1;
-        if (decision.opciones.length < 2) {
-          throw new Error(`seed ${seed}: draft con ${decision.opciones.length} opción(es)`);
+      if (sistema.id === 'serie' && decision.datos?.motivo === 'plan') {
+        planesVistos += 1;
+        replanesVistos += decision.datos.replan ? 1 : 0;
+        const { formato, mapaActual, quemados } = st.serie;
+        const ids = decision.opciones.map((o) => o.id);
+        if (ids.length < 2) {
+          throw new Error(`seed ${seed}: plan de Fearless con ${ids.length} opción(es)`);
         }
-        const weights = st.meta.weights;
-        const pool = st.player.championPool;
-        let factorPrevio = Infinity;
+        const posiciones = ids.map((id) => PLANES_DE_SERIE.indexOf(id));
+        if (posiciones.some((pos, i) => pos < 0 || (i > 0 && pos <= posiciones[i - 1]))) {
+          throw new Error(`seed ${seed}: opciones del plan fuera del orden de la tarjeta (${ids.join(', ')})`);
+        }
         for (const opcion of decision.opciones) {
-          if (typeof opcion.descripcion !== 'string' || !/ · maestría \d+$/.test(opcion.descripcion)) {
-            throw new Error(`seed ${seed}: opción de draft sin lectura ("${opcion.descripcion}")`);
+          if (typeof opcion.label !== 'string' || opcion.label.length < 8 || /^\d/.test(opcion.label)) {
+            throw new Error(`seed ${seed}: plan "${opcion.id}" sin rótulo legible ("${opcion.label}")`);
           }
-          const lectura = opcion.descripcion.replace(/ · maestría \d+$/, '');
-          if (lectura.length < 8 || /^\d/.test(lectura)) {
-            throw new Error(`seed ${seed}: lectura de pick vacía o numérica ("${lectura}")`);
+          if (typeof opcion.descripcion !== 'string' || opcion.descripcion.length < 8) {
+            throw new Error(`seed ${seed}: plan "${opcion.id}" sin descripción`);
           }
-          lecturasConocidas.add(lectura);
-          const campeon = pool.find((c) => c.name === opcion.id);
-          const factor = campeon ? factorDeCampeon(campeon, weights) : -Infinity;
-          if (factor > factorPrevio + 1e-9) {
-            throw new Error(`seed ${seed}: opciones de draft fuera de orden por factorDeCampeon`);
+          const pMapas = opcion.pMapas;
+          if (!Array.isArray(pMapas) || pMapas.length !== formato - mapaActual
+            || pMapas.some((p) => !Number.isFinite(p) || p < 0 || p > 1)) {
+            throw new Error(`seed ${seed}: plan "${opcion.id}" sin la p de cada mapa que queda (${JSON.stringify(pMapas)}, Bo${formato} desde el mapa ${mapaActual + 1})`);
           }
-          factorPrevio = factor;
+          if (!Number.isFinite(opcion.pSerie) || opcion.pSerie < 0 || opcion.pSerie > 1) {
+            throw new Error(`seed ${seed}: plan "${opcion.id}" sin la p de la serie (${opcion.pSerie})`);
+          }
+          const proyeccion = proyeccionDelPlan(st, opcion.id);
+          if (opcion.id === 'guardar') {
+            conGuardar += 1;
+            const guardado = proyeccion.guardado;
+            if (!guardado || !opcion.label.includes(guardado) || quemados.includes(guardado)
+              || !st.player.championPool.some((c) => c.name === guardado)) {
+              throw new Error(`seed ${seed}: "guardar" no nombra un campeón tuyo y libre ("${opcion.label}", guardado ${guardado})`);
+            }
+          }
+          if (opcion.id === 'sorpresa' && !opcion.label.includes(proyeccion.mapas[0].campeon)) {
+            throw new Error(`seed ${seed}: "la sorpresa" no nombra el pick del mapa 1 ("${opcion.label}")`);
+          }
+        }
+        // La UI lee la tarjeta por `previaDeDecision`: las mismas opciones, en el mismo orden, con las mismas p.
+        const previa = previaDeDecision(st, decision);
+        const idsPrevia = previa?.opciones?.map((o) => o.id) ?? [];
+        if (idsPrevia.join(',') !== ids.join(',')) {
+          throw new Error(`seed ${seed}: la previa de la UI muestra otro orden (${idsPrevia.join(', ')} vs ${ids.join(', ')})`);
+        }
+        decision.opciones.forEach((opcion, i) => {
+          const lectura = previa.opciones[i];
+          if (lectura.p !== opcion.pSerie || lectura.pMapas.join(',') !== opcion.pMapas.join(',')) {
+            throw new Error(`seed ${seed}: la previa de "${opcion.id}" no lee las p de la opción`);
+          }
+          if (!/^Mapa a mapa: .+\. La serie: \d+%\.$/.test(lectura.texto)) {
+            throw new Error(`seed ${seed}: lectura del plan "${opcion.id}" sin el mapa a mapa ("${lectura.texto}")`);
+          }
+        });
+        if (new Set(decision.opciones.map((o) => o.pMapas.join(','))).size > 1) {
+          conLecturasDistintas += 1;
         }
       }
       return sistema.resolverAuto(st, decision, r);
@@ -4996,13 +5028,10 @@ checkLento('Toda opción de draft trae su lectura y va ordenada por factorDeCamp
       state = avanzarSplitAuto(state, rng, responder).state;
     }
   }
-  if (decisionesVistas < 20) {
-    throw new Error(`sólo ${decisionesVistas} decisiones de draft en 250 carreras: muestra insuficiente`);
-  }
-  // La matriz 3×3 real tiene 9 frases; una carrera headless no las toca todas,
-  // pero sí varias — si sólo apareció una, algo quedó hardcodeado.
-  if (lecturasConocidas.size < 3) {
-    throw new Error(`sólo ${lecturasConocidas.size} lecturas de pick distintas en 250 carreras`);
+  // No vacío: la tarjeta salió, el re-plan también, "guardar" se ofreció y los planes se leen distinto entre sí.
+  if (planesVistos < 200 || replanesVistos < 5 || conGuardar < 50 || conLecturasDistintas < planesVistos / 2) {
+    throw new Error(`muestra insuficiente en 250 carreras: ${planesVistos} planes, ${replanesVistos} re-planes, `
+      + `${conGuardar} con "guardar", ${conLecturasDistintas} con lecturas distintas entre opciones`);
   }
 });
 
