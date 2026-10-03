@@ -6280,6 +6280,14 @@ burnouts cada 1000 carreras:
 - El check del burnout tendría ~39 casos en sus 3000 seeds, contra 20 pedidos, así que no hay que cambiarlo.
 - 0,1 cumplía en el borde y 0 se pasaba de duro.
 
+**El Bo5 con los valores finales** (400 × 60). El favorito claro gana el 87,3% en conjunto. El lado del jugador
+favorito da 83,8%, dentro de 75-85; el del rival favorito, 93,9%.
+- **Por qué el rival se va de banda.** Es la asimetría del Fearless (solo te degrada a vos), que ya estaba asignada
+  a K4.
+- **Se decide así:** el check duro del bloque A mide **el lado del jugador**, que es lo que el bloque A controla
+  (tu nivel → tu resultado). El check del conjunto ∈ [75, 85] existe con su nombre y entra en
+  `bandasPendientes.js` como **bloque B** (re-basea K4c), porque lo resuelve el plan de Fearless de K4.
+
 **2. Fuera del bloque A — "≥ 28% de series sin ningún draft" da 27%.** El umbral re-fijado devolvió las pausas de
 draft. Es ritmo, y K4 rediseña el draft entero (plan de Fearless), así que entra en `bandasPendientes.js` como
 **bloque B** (re-basea K4c), con `commit` K3c y el porqué. Es el único caso de una entrada que saca de banda un
