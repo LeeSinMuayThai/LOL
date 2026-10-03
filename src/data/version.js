@@ -76,4 +76,6 @@ export const VERSION_JUEGO = 'K5';
 // del orden de las bifurcaciones, un pool que aprende, riesgos en los outcomes): cambian las tiradas del cierre y con ellas las carreras
 // enteras. Misma versión (el paso 3b la pasa a 'K4c'): reemplaza a 922534647.
 // Integración de los arreglos del paso 3a y el cierre de año, con la ventana en 7 (supervisor): reemplaza a 805410138 y 2044679379.
-export const HUELLA_JUEGO = 1157384592;
+// K4c (plan anual, 1616394605): la práctica deja de frenar; el cierre de año fija el plan y cada split pro entrena solo su tramo
+// (otra cuenta de tiradas por año, y la preparación ya no la elige el bot en la pretemporada). Misma versión: reemplaza a 1157384592.
+export const HUELLA_JUEGO = 1616394605;

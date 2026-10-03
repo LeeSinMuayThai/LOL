@@ -742,7 +742,8 @@ const FORMAS_CONOCIDAS = {
   // (tres opciones por evento, un pool que aprende) corrió las carreras de muestra y cambiaron rutas opcionales que la muestra ve. Ningún
   // campo del estado nació ni murió (el hash anterior, dba93d63f79f).
   // Integración de las dos (supervisor).
-  10: '06f92e443a24'
+  // K4c (plan anual): `player.planAnual` entra y `flags.preparacionDeSplit` se va; misma VERSION (el paso 3b la sube a 11).
+  10: '305af896ede9'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
