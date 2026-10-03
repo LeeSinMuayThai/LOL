@@ -2,6 +2,7 @@ import { BALANCE } from '../data/balance.js';
 import { usaLaCharlaEnAuto } from '../systems/serie.js';
 import { hashCadena } from '../core/numeros.js';
 import { elegirRutinaAuto } from '../systems/practica.js';
+import { previaDeDecision } from '../core/previaDePartido.js';
 
 // Constantes de medición para la heurística de los bots (PLAN.md §K.5 K0).
 // Los pesos reflejan la magnitud declarada en la previa ('baja', 'media', 'alta').
@@ -123,6 +124,19 @@ function respuestaDePlanDeSerie(state, decision, peor) {
   return { opcionId: charla ? 'charla' : 'sinCharla' };
 }
 
+// Revisión de K5: la pausa del 2-2 del Swiss del Mundial (`internacional:swiss`): usar la charla del coach ahora o
+// guardarla. La previa de la tarjeta (`previaDeDecision`) trae por opción la p con la que se tira el Bo1: `criterio`
+// elige la más alta (lee la tarjeta), `malas` la más baja. La misma regla que el plan de la serie con su `pSerie`.
+export function esDecisionDeSwiss(decision) {
+  return decision.datos?.motivo === 'swiss';
+}
+
+function respuestaDeSwiss(state, decision, peor) {
+  const { opciones } = previaDeDecision(state, decision);
+  const elegida = opciones.reduce((acum, opcion) => ((peor ? opcion.p < acum.p : opcion.p > acum.p) ? opcion : acum));
+  return { opcionId: elegida.id };
+}
+
 function charlaEnMinijuego(state, decision, peor) {
   return decision.datos?.charla?.disponible ? { charla: !peor && usaLaCharlaEnAuto(state.serie?.ronda) } : {};
 }
@@ -195,6 +209,9 @@ function responderCriterio(sistema, state, decision, rng) {
   if (esDecisionDePlanDeSerie(decision)) {
     return respuestaDePlanDeSerie(state, decision, false);
   }
+  if (esDecisionDeSwiss(decision)) {
+    return respuestaDeSwiss(state, decision, false);
+  }
   if (esDecisionDeFinPorMercado(decision)) {
     // La regla del headless: joven, baja (o espera); desde `edadAutoAceptaVeredicto`, acepta el veredicto.
     return sistema.resolverAuto(state, decision, rng);
@@ -228,6 +245,9 @@ function responderMalas(sistema, state, decision, rng) {
   }
   if (esDecisionDePlanDeSerie(decision)) {
     return respuestaDePlanDeSerie(state, decision, true);
+  }
+  if (esDecisionDeSwiss(decision)) {
+    return respuestaDeSwiss(state, decision, true);
   }
   if (esDecisionDeFinPorMercado(decision)) {
     // Lo peor de los dos lados: joven, cuelga el mouse con una oferta en la mano; veterano, se aferra un año más.
