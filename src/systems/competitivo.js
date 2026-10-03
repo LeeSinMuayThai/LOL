@@ -4,7 +4,7 @@ import { crearLog } from '../core/log.js';
 import { elegirOrgTier3, asignarOrgTier3 } from '../core/tier3.js';
 import { cerrarFila } from '../core/registro.js';
 import { calcularContexto } from '../core/contexto.js';
-import { usadosDePlanteles, generarPlantel, fuerzaDePlantel } from '../core/plantel.js';
+import { conPlantelesDe, fuerzaDePlantel } from '../core/plantel.js';
 import { BALANCE } from '../data/balance.js';
 import { nombreVisibleDeLiga } from '../core/ligas.js';
 
@@ -108,31 +108,8 @@ function reFicharTier3(state, rng) {
 
 // --- Descenso de tier 1 (fase 9Md, cierra D16) ---
 
-// ¿La liga de destino tiene planteles? La tier 2 de tu región siempre; una liga
-// extranjera (te relegaron siendo import) puede no tenerlos — se generan al
-// vuelo para que el mercado tenga con qué trabajar.
-function conPlantelesDe(state, liga, rng) {
-  if (liga.orgs.every((org) => state.mundo.planteles?.[org.nombre])) {
-    return state.mundo.planteles;
-  }
-  const usados = usadosDePlanteles(state);
-  const planteles = { ...state.mundo.planteles };
-  for (const org of liga.orgs) {
-    if (planteles[org.nombre]) {
-      continue;
-    }
-    planteles[org.nombre] = generarPlantel(rng, {
-      orgNombre: org.nombre,
-      regionId: liga.regionId,
-      fuerzaOrg: org.fuerza,
-      medianaSalarioUSD: liga.salario.medianaUSD,
-      usados,
-      edadMinima: liga.edadMinima ?? 0
-    });
-  }
-  return planteles;
-}
-
+// `conPlantelesDe` (core/plantel.js): la liga de destino tiene planteles —una extranjera se genera al vuelo— para que
+// el mercado tenga con qué trabajar. La comparte el banquillo de `mercado.js` (revisión de K5).
 function resolverDescenso(state, rng) {
   if (state.career.tier !== 1 || !state.career.currentOrg) {
     return null;

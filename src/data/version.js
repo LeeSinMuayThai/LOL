@@ -51,6 +51,8 @@
 // K5 (revisión): el hash de los cruces ajenos vuelve a ser un uniforme en [0, 1) (el Mundial deja de tener dueño), el
 // calibre de liga es un cuantil bajo por org y los asientos ofrecibles post-mercado se congelan, el hype del Mundial
 // escala con el resultado, el mundo amateur renueva contratos NPC, a los 34 no hay mercado, cambiar de línea rearma la
-// tier list. Misma versión (la rama no se mergeó): la huella de la integración (1153610693) queda reemplazada.
+// tier list, y el banquillo de un club extranjero puebla la academia a la que te cede (`conPlantelesDe`: una tirada
+// nueva solo en ese camino). Misma versión (la rama no se mergeó): la huella de la integración (1153610693) queda
+// reemplazada.
 export const VERSION_JUEGO = 'K5';
-export const HUELLA_JUEGO = 1401713881;
+export const HUELLA_JUEGO = 1197795265;
