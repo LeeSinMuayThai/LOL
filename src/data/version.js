@@ -33,6 +33,9 @@
 // corrimiento aceptado — T1): el ritmo. K4-A, la fecha marcada es la que decide algo (una por split, sin draft); K4-B,
 // la serie como plan de Fearless (el rival también quema, frena solo en el mapa decisivo, la charla del coach, la
 // prensa solo tras una final); K4-C, solo frenan las bifurcaciones y el perfil resuelve el resto (y la prueba de cada
-// salto); K4-D, la pretemporada en una sola parada. Ninguna seed de K3c reproduce su carrera.
-export const VERSION_JUEGO = 'K4';
-export const HUELLA_JUEGO = 297911861;
+// salto); K4-D, la pretemporada en una sola parada. Ninguna seed de K3c reproduce su carrera. · K5-B (822023797;
+// bloque C, corrimiento aceptado — T1): la región. LRN y LRS entran al mundo (más orgs y tier 3 sorteados), el calibre
+// de una liga en el mercado es el nivel real de sus clubes y no su prestigio (D78: LCK y LPL se juegan) y dos rivales
+// del mismo rol ya no se pisan en la misma org. Elegir la región sorteada no corre el stream.
+export const VERSION_JUEGO = 'K5-B';
+export const HUELLA_JUEGO = 822023797;

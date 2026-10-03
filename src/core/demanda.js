@@ -196,7 +196,7 @@ export function cumpleReglasDuras(state, org, liga, rol) {
 // Fase 9Mi (PLAN.md §9M.12.2 punto 1): la mejor alternativa REAL de una org a
 // ficharte para `rol` — contra la que se disputa el asiento en `ofertaPosible`.
 // Es lo mejor de:
-//   - el calibre de la liga: `max(liga.prestigio, org.fuerza) −
+//   - el calibre de la liga: `max(calibreDeLiga, org.fuerza) −
 //     alternativaPisoFuerza`. Un asiento en LCK atrae talento de LCK aunque el
 //     club venga colapsado; un club fuerte en una liga chica pide su propia
 //     fuerza. Es el término que hace que el tier mida "¿le ganás a la
@@ -211,11 +211,24 @@ export function cumpleReglasDuras(state, org, liga, rol) {
 // Subida de `systems/mercado.js` a `core/` (lo pedía §9M.12.2). La heurística
 // de negociación de `mercado.js` (piso `org.fuerza − margenBombazoFuerza`)
 // quedó allá: no es una alternativa de fichaje, es cuánto te quieren.
+// K5-B (D78): el calibre de una liga es el nivel REAL de sus clubes —el promedio de `org.fuerza`, que
+// deriva del plantel—, no su `prestigio`. En LCK (95) y LPL (93) el prestigio está muy por encima de lo que
+// juegan sus titulares (~82 y ~81, medido), así que con el prestigio como calibre había que tener 97-99 de
+// nivel para ganar un asiento: con `criterio` hubo 0 splits de LCK y de LPL en 400 carreras, Corea incluida.
+// En el resto de las ligas las dos cosas casi coinciden. Una liga sin orgs cae al prestigio.
+export function calibreDeLiga(liga) {
+  const orgs = liga?.orgs ?? [];
+  if (!orgs.length) {
+    return liga?.prestigio ?? 0;
+  }
+  return orgs.reduce((suma, org) => suma + (org.fuerza ?? 0), 0) / orgs.length;
+}
+
 export function nivelAlternativaAsiento(state, orgNombre, rol) {
   const org = orgDe(state, orgNombre);
   const liga = ligaDeOrg(state, orgNombre);
   const fuerzaOrg = org?.fuerza ?? 0;
-  const calibre = Math.max(liga?.prestigio ?? 0, fuerzaOrg);
+  const calibre = Math.max(calibreDeLiga(liga), fuerzaOrg);
 
   const titular = state.mundo.planteles?.[orgNombre]?.[rol];
   const nivelTitular = titular && !titular.esJugador && !seVaDelMundo(titular, fuerzaOrg)
