@@ -1459,24 +1459,49 @@ check('Los 5 rivales de generación viven en un plantel real (D8 parcial)', () =
   }
 });
 
-checkLento('El mundo NPC envejece: en una carrera larga, la edad media de los planteles sube', () => {
-  // `systems/plantel.js` corre solo en offseason. Sin esto, el mundo quedaría
-  // congelado en la foto de la seed.
-  const rng = mulberry32(7);
-  let state = createInitialState(7, rng);
-  const edadMedia = (st) => {
-    const npcs = Object.values(st.mundo.planteles).flatMap((p) => Object.values(p));
-    return npcs.reduce((s, n) => s + n.edad, 0) / npcs.length;
-  };
-  const inicial = edadMedia(state);
-  for (let i = 0; i < 30 && !state.terminado; i += 1) {
-    state = avanzarSplitAuto(state, rng).state;
+checkLento('El mundo NPC envejece: en carreras largas, la edad media de los planteles del mundo entero sube (media de varias seeds) y los mismos NPC suman años', () => {
+  // `systems/plantel.js` corre solo en offseason. Sin esto, el mundo quedaría congelado en la foto de la seed.
+  // K3c: antes miraba UNA carrera (seed 7) y exigía que su edad media se moviera >= 0,3 (en cualquier sentido): con los
+  // valores del bloque A daba 22,1 → 22,4, en el borde, porque depende de la trayectoria de esa carrera. Una que
+  // termina al toque (la seed 4 cierra en 1 split) no vive ningún offseason, y el mundo no crece sin parar: entran
+  // canteranos de 17-19 y converge a una edad de régimen (~22,6). Ahora se mide el mundo ENTERO (`mundo.planteles`: todas
+  // las orgs modeladas, ~340-400 NPC) en 8 seeds, solo con las carreras largas (>= 20 splits), y la MEDIA del
+  // movimiento tiene que ser una SUBA. Medido: +0,57 años de media (de +0,23 a +0,88 por seed) y 3,2-6,5 años de
+  // envejecimiento en los NPC que siguen en su plantel.
+  const SEEDS = 8;
+  const SPLITS_LARGA = 20;
+  const MIN_CARRERAS_LARGAS = 5;
+  const SUBA_MEDIA_MINIMA = 0.3;
+  const ANIOS_MINIMOS_DE_LOS_QUE_QUEDAN = 2;
+  const npcsDe = (st) => Object.values(st.mundo.planteles).flatMap((p) => Object.values(p));
+  const media = (valores) => valores.reduce((s, x) => s + x, 0) / valores.length;
+  const subas = [];
+  const envejecimientos = [];
+  for (let seed = 1; seed <= SEEDS; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    const inicial = npcsDe(state);
+    const edadInicialPorHandle = new Map(inicial.map((n) => [n.handle, n.edad]));
+    for (let i = 0; i < 30 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+    }
+    if (state.player.splitCount < SPLITS_LARGA) continue;
+    const final = npcsDe(state);
+    subas.push(media(final.map((n) => n.edad)) - media(inicial.map((n) => n.edad)));
+    const quedan = final.filter((n) => edadInicialPorHandle.has(n.handle));
+    if (quedan.length > 0) envejecimientos.push(media(quedan.map((n) => n.edad - edadInicialPorHandle.get(n.handle))));
   }
-  const final = edadMedia(state);
-  // No tiene que crecer 1:1 con los años (entran canteranos de 17-19), pero
-  // tiene que MOVERSE: un mundo que no envejece es un bug.
-  if (Math.abs(final - inicial) < 0.3) {
-    throw new Error(`la edad media de los planteles casi no se movió en 30 splits (${inicial.toFixed(1)} → ${final.toFixed(1)})`);
+  if (subas.length < MIN_CARRERAS_LARGAS) {
+    throw new Error(`solo ${subas.length} de ${SEEDS} carreras duraron >= ${SPLITS_LARGA} splits: la muestra no ve envejecer al mundo`);
+  }
+  const subaMedia = media(subas);
+  const aniosDeLosQueQuedan = media(envejecimientos);
+  // Un mundo que no envejece es un bug del motor, no de la calibración.
+  if (!(subaMedia >= SUBA_MEDIA_MINIMA)) {
+    throw new Error(`la edad media de los planteles del mundo subió ${subaMedia.toFixed(2)} años de media en ${subas.length} carreras largas (mínimo ${SUBA_MEDIA_MINIMA}; por seed: ${subas.map((x) => x.toFixed(2)).join(', ')})`);
+  }
+  if (!(aniosDeLosQueQuedan >= ANIOS_MINIMOS_DE_LOS_QUE_QUEDAN)) {
+    throw new Error(`los NPC que siguen en su plantel sumaron ${aniosDeLosQueQuedan.toFixed(2)} años de media (mínimo ${ANIOS_MINIMOS_DE_LOS_QUE_QUEDAN}): el mundo no envejece a sus jugadores`);
   }
 });
 
@@ -8778,7 +8803,9 @@ const {
   correrLote, correrCarrera: correrCarreraSimulate, correrSinRuido, calcularFavoritoBo5, contarBeats,
   clasificarSplit, PARAMETROS_RUIDO, DURACION_BEAT_MS, ESPERA_MINIJUEGO_MS, DELTAS_FAVORITO_BO5,
   UMBRAL_R2_ESTRUCTURAL, decidirRuidoPuro,
-  promedio, mediana: medianaSim, medianaInferior, percentil, desvioMuestral, pearson, varianza, regresionLineal2Regresores
+  promedio, mediana: medianaSim, medianaInferior, percentil, desvioMuestral, pearson, varianza, regresionLineal2Regresores,
+  META_K2_R_MISMA_LIGA, META_K2_R2_SIN_RUIDO, META_K2_BO5_FAVORITO_CLARO_PCT, META_K3_MENTALIDAD_MEDIANA,
+  META_K3_MENTALIDAD_SATURADA_PCT, META_K3_HYPE_SATURADO_PCT, META_K3_DIFERENCIA_BATACAZO_PP, META_K3_RETENCION_4_SPLITS
 } = await import('./simulate.js');
 const {
   ESTRATEGIAS: ESTRATEGIAS_K0, puntuarPrevia, compararOfertasMercado,
@@ -14104,6 +14131,131 @@ check('K3c vuelta asimétrica: con bajada 0,3 y subida 0 (en memoria) una mental
   if (arriba < 3 || abajo < 3) throw new Error(`check vacío: ${arriba} pasos sobre la base y ${abajo} debajo comparados`);
 });
 
+// --- K3c: las metas del bloque A, como checks duros (PLAN.md "K3c — cómo se hace", paso 3) ---
+//
+// Hasta K3b eran REPORTE (`nivel.metasK2` y `metasK3` de simulate.js, con la meta al lado). K3c fijó las perillas
+// (consistencia, vuelta a la base de mentalidad y hype, efectos que duran) y las metas pasan a checks duros, con las
+// mismas constantes `META_*` que el reporte. Regla de proceso 17, qué protege cada uno: "tus decisiones construyen tu
+// nivel" (K.2) — que el nivel se note en la posición (r, R²) y en la serie (el favorito gana), que la cabeza gobierne
+// la consistencia (el batacazo de mentalidad 20 contra 80), que las barras no se saturen (mentalidad, hype) y que un
+// efecto dure (retención). Se miden con `criterio` (el bot que juega bien), 400 seeds × 60 splits: la muestra del
+// barrido de K3c. NO se mide el Bo5 del lado del rival (≈ 92%: la asimetría de Fearless es de K4) ni "juntos" (≈ 87%,
+// pesa el lado del rival): los dos se reportan en el check del Bo5, y el que se mide es el del jugador (Δ0 >= 0),
+// el de la investigación de K2 y el que K2c calibró.
+const SEEDS_METAS_A = 400;
+let loteMetasA = null;
+function loteDeLasMetasA() {
+  if (loteMetasA === null) {
+    loteMetasA = correrLote(SEEDS_METAS_A, SPLITS_LOTE_K0, 'criterio');
+    // La ablación (`varianzaExplicada`) se calcula al leerla: se fuerza acá para chequear el balance justo después.
+    void loteMetasA.nivel.varianzaExplicada;
+    afirmarRuidoIntactoK0(`después de correrLote(${SEEDS_METAS_A}, criterio)`);
+  }
+  return loteMetasA;
+}
+
+function valoresDeLasMetasA(lote) {
+  const claro = lote.nivel.bo5Motor.favoritoClaro;
+  return {
+    rMismaLiga: lote.nivel.corregida.rNivelPosicionMismaLiga,
+    r2SinRuido: lote.nivel.varianzaExplicada.corregida.soloLigaModelada.r2NivelYEquipoSinRuido,
+    bo5Jugador: claro.jugadorFavorito.ganaFavoritoPct,
+    bo5Rival: claro.rivalFavorito.ganaFavoritoPct,
+    bo5Juntos: claro.ambos.ganaFavoritoPct,
+    mentalidadMediana: lote.economia.mentalidad.p50,
+    mentalidadSaturada: lote.economia.mentalidad.pctMayorIgual90,
+    hypeSaturado: lote.economia.hype.pctMayorIgual90,
+    retencion: lote.metasK3.retencion4Splits.valor,
+    batacazo: lote.metasK3.desvioMapaMentalidad20vs80.valor
+  };
+}
+
+// El juez: null si la meta se cumple, el motivo si no. Un valor que no existe (muestra chica) no cumple.
+function juezDeLasMetasA(v) {
+  const hay = (x) => typeof x === 'number' && Number.isFinite(x);
+  const [medMin, medMax] = META_K3_MENTALIDAD_MEDIANA;
+  const [bo5Min, bo5Max] = META_K2_BO5_FAVORITO_CLARO_PCT;
+  const juzgar = (ok, motivo) => (ok ? null : motivo);
+  return {
+    rMismaLiga: juzgar(hay(v.rMismaLiga) && v.rMismaLiga >= META_K2_R_MISMA_LIGA,
+      `la r nivel–posición en la misma liga (corregida) es ${v.rMismaLiga}, la meta pide >= ${META_K2_R_MISMA_LIGA}`),
+    r2SinRuido: juzgar(hay(v.r2SinRuido) && v.r2SinRuido >= META_K2_R2_SIN_RUIDO,
+      `el R² sin ruido (corregido) es ${v.r2SinRuido}, la meta pide >= ${META_K2_R2_SIN_RUIDO}`),
+    bo5Jugador: juzgar(hay(v.bo5Jugador) && v.bo5Jugador >= bo5Min && v.bo5Jugador <= bo5Max,
+      `el favorito claro (Δ0 ≈ 10, el jugador favorito) gana el Bo5 el ${v.bo5Jugador}%, la meta es ${bo5Min}-${bo5Max}% (del lado del rival ${v.bo5Rival}%, juntos ${v.bo5Juntos}%: solo se reportan)`),
+    mentalidadMediana: juzgar(hay(v.mentalidadMediana) && v.mentalidadMediana >= medMin && v.mentalidadMediana <= medMax,
+      `la mentalidad mediana de los splits pro es ${v.mentalidadMediana}, la meta es ${medMin}-${medMax}`),
+    mentalidadSaturada: juzgar(hay(v.mentalidadSaturada) && v.mentalidadSaturada < META_K3_MENTALIDAD_SATURADA_PCT,
+      `el ${v.mentalidadSaturada}% de los splits pro tiene mentalidad >= 90, la meta es < ${META_K3_MENTALIDAD_SATURADA_PCT}%`),
+    hypeSaturado: juzgar(hay(v.hypeSaturado) && v.hypeSaturado < META_K3_HYPE_SATURADO_PCT,
+      `el ${v.hypeSaturado}% de los splits pro tiene hype >= 90, la meta es < ${META_K3_HYPE_SATURADO_PCT}%`),
+    retencion: juzgar(hay(v.retencion) && v.retencion >= META_K3_RETENCION_4_SPLITS,
+      `un efecto conserva ${v.retencion} a 4 splits, la meta pide >= ${META_K3_RETENCION_4_SPLITS}`),
+    batacazo: juzgar(hay(v.batacazo) && v.batacazo >= META_K3_DIFERENCIA_BATACAZO_PP,
+      `el batacazo con mentalidad 20 sube ${v.batacazo} pp contra mentalidad 80, la meta pide >= ${META_K3_DIFERENCIA_BATACAZO_PP} pp`)
+  };
+}
+
+const VALORES_DE_LAS_METAS_A_OK = {
+  rMismaLiga: 0.6, r2SinRuido: 0.52, bo5Jugador: 83, bo5Rival: 93, bo5Juntos: 87, mentalidadMediana: 72, mentalidadSaturada: 2.7,
+  hypeSaturado: 20, retencion: 0.49, batacazo: 4.3
+};
+
+function problemasDeLasMetasA(claves) {
+  const juicio = juezDeLasMetasA(valoresDeLasMetasA(loteDeLasMetasA()));
+  return claves.map((clave) => juicio[clave]).filter((motivo) => motivo !== null);
+}
+
+check('K3c metas del bloque A: el juez acepta los valores del bloque A y rechaza, uno por uno, cada valor fuera de meta o inexistente (regla 7)', () => {
+  const sano = Object.values(juezDeLasMetasA(VALORES_DE_LAS_METAS_A_OK)).filter((motivo) => motivo !== null);
+  if (sano.length > 0) throw new Error(`el juez rechaza valores que cumplen: ${sano.join('; ')}`);
+  const malos = {
+    rMismaLiga: [0.3, null], r2SinRuido: [0.3, null], bo5Jugador: [90, 70, null], mentalidadMediana: [97.8, 30, null],
+    mentalidadSaturada: [77.7, 20, null], hypeSaturado: [40, 25, null], retencion: [0.28, null], batacazo: [0, 1.9, null]
+  };
+  for (const [clave, valores] of Object.entries(malos)) {
+    for (const valor of valores) {
+      const juicio = juezDeLasMetasA({ ...VALORES_DE_LAS_METAS_A_OK, [clave]: valor });
+      const rechazados = Object.entries(juicio).filter(([, motivo]) => motivo !== null).map(([k]) => k);
+      if (rechazados.length !== 1 || rechazados[0] !== clave) {
+        throw new Error(`${clave} = ${valor}: el juez rechazó [${rechazados.join(', ')}], tenía que rechazar solo ${clave}`);
+      }
+    }
+  }
+});
+
+checkLento('K3c meta de K2 (criterio, 400 × 60): r nivel–posición en la misma liga >= 0,5 y R² sin ruido >= 0,5, ambos corregidos', () => {
+  const problemas = problemasDeLasMetasA(['rMismaLiga', 'r2SinRuido']);
+  if (problemas.length > 0) throw new Error(problemas.join('; '));
+});
+
+checkLento('K3c meta de K2 (criterio, 400 × 60): el favorito claro (Δ0 ≈ 10) gana el Bo5 entre 75% y 85% (lado del jugador; el del rival y "juntos" solo se reportan)', () => {
+  const v = valoresDeLasMetasA(loteDeLasMetasA());
+  console.log(`     (informe, no se mide) Bo5 con |Δ0| ≈ 10: jugador favorito ${v.bo5Jugador}%, rival favorito ${v.bo5Rival}%, juntos ${v.bo5Juntos}%`);
+  const problemas = problemasDeLasMetasA(['bo5Jugador']);
+  if (problemas.length > 0) throw new Error(problemas.join('; '));
+});
+
+checkLento('K3c meta de K3 (criterio, 400 × 60): mentalidad pro con mediana en [45, 75] y < 20% de los splits pro con mentalidad >= 90', () => {
+  const problemas = problemasDeLasMetasA(['mentalidadMediana', 'mentalidadSaturada']);
+  if (problemas.length > 0) throw new Error(problemas.join('; '));
+});
+
+checkLento('K3c meta de K3 (criterio, 400 × 60): < 25% de los splits pro con hype >= 90', () => {
+  const problemas = problemasDeLasMetasA(['hypeSaturado']);
+  if (problemas.length > 0) throw new Error(problemas.join('; '));
+});
+
+checkLento('K3c meta de K3 (criterio, 400 × 60): un efecto sobre un stat de curva conserva >= 40% a 4 splits (sonda de retención)', () => {
+  const problemas = problemasDeLasMetasA(['retencion']);
+  if (problemas.length > 0) throw new Error(problemas.join('; '));
+});
+
+checkLento('K3c meta de K3 (criterio, 400 × 60): la brecha de sorpresas entre mentalidad 20 y 80 es >= 2 pp', () => {
+  const problemas = problemasDeLasMetasA(['batacazo']);
+  if (problemas.length > 0) throw new Error(problemas.join('; '));
+});
+
 // ============================================================================
 // PLAN.md §K.4 — los tres custodios del registro de bandas pendientes (`src/dev/bandasPendientes.js`). Van al FINAL:
 // el primero mira cómo terminó cada check de esta corrida. Cada uno se prueba primero contra un registro sintético
@@ -14212,24 +14364,60 @@ check('K3-B bonusPermanente: completo con ceros al arrancar y completo (un núme
   }
 });
 
-check('K3-B neutro: con fraccionPermanente 0 un efecto sobre un stat de curva no deja bonus ni marca, y una carrera termina con el bonus en ceros y registro.marcas vacío', () => {
-  if (BALANCE.atributos.fraccionPermanente !== 0) {
-    throw new Error(`fraccionPermanente vale ${BALANCE.atributos.fraccionPermanente}: K3-B es estructura, la constante neutra es 0 (la fija K3c)`);
+check('K3c fracciones calibradas: con fraccionPermanente y fraccionPermanentePractica de BALANCE (sin override) un efecto de evento y una rutina de práctica sobre un stat de curva suman exactamente fracción·(movimiento real) al bonus, con UNA marca, y una carrera larga deja marcas', () => {
+  // Reemplaza a "K3-B neutro" (que exigía la fracción en 0: la constante neutra de la estructura de K3-B). K3c la calibró
+  // (PLAN.md "La sonda de retención": 0,3 conserva >= 40% a 4 splits), y lo que el juego promete ahora es que un efecto
+  // DURA: ni 0 (el efecto se evapora) ni un valor que no se vea en la marca. Va con el valor real de BALANCE, sin override
+  // (los checks de K3-B con la fracción en memoria prueban la mecánica; este prueba la constante).
+  const { fraccionPermanente, fraccionPermanentePractica } = BALANCE.atributos;
+  for (const [nombre, fraccion] of [['fraccionPermanente', fraccionPermanente], ['fraccionPermanentePractica', fraccionPermanentePractica]]) {
+    if (!(fraccion > 0 && fraccion <= 1)) {
+      throw new Error(`${nombre} vale ${fraccion}: K3c la calibró en (0, 1]; en 0 los efectos no duran`);
+    }
   }
-  const base = correrCarrera(3, 18);
+  // El estado base sale con las dos fracciones en 0 (bonus en ceros, sin marcas): lo que se mida es del efecto.
+  const base = conBalanceK3A([['atributos', 'fraccionPermanente', 0], ['atributos', 'fraccionPermanentePractica', 0]], () => correrCarrera(3, 18));
+  if (base.career.registro.marcas.length !== 0 || STATS_DE_CURVA_K3B.some((s) => base.player.bonusPermanente[s] !== 0)) {
+    throw new Error('el estado base ya trae bonus o marcas');
+  }
   for (const stat of STATS_DE_CURVA_K3B) {
-    const { state } = resolverOpcion(base, eventoSinteticoK3b(`player.stats.${stat}`, 6), 'ir', mulberry32(5));
-    if (state.career.registro.marcas.length !== 0 || STATS_DE_CURVA_K3B.some((s) => state.player.bonusPermanente[s] !== 0)) {
-      throw new Error(`un efecto sobre ${stat} con la fracción en 0 dejó bonus o marca`);
+    const evento = eventoSinteticoK3b(`player.stats.${stat}`, 6);
+    const { state } = resolverOpcion(base, evento, 'ir', mulberry32(5));
+    const movido = state.player.stats[stat] - base.player.stats[stat];
+    const esperado = fraccionPermanente * movido;
+    if (esperado === 0) throw new Error(`sonda vacía: el efecto sintético no movió ${stat}`);
+    if (Math.abs(state.player.bonusPermanente[stat] - esperado) > 1e-9) {
+      throw new Error(`${stat}: el bonus quedó en ${state.player.bonusPermanente[stat]}, esperaba ${esperado} (${fraccionPermanente} × ${movido})`);
     }
-    if (state.player.stats[stat] === base.player.stats[stat]) {
-      throw new Error(`el efecto sintético no movió ${stat}: el check no probaría nada`);
+    const otros = STATS_DE_CURVA_K3B.filter((s) => s !== stat && state.player.bonusPermanente[s] !== 0);
+    if (otros.length > 0) throw new Error(`${stat}: el efecto movió el bonus de ${otros.join(', ')}`);
+    const marcas = state.career.registro.marcas;
+    const [marca] = marcas;
+    if (marcas.length !== 1 || marca.stat !== stat || Math.abs(marca.delta - esperado) > 1e-9 || marca.origen !== 'Bootcamp en Corea') {
+      throw new Error(`${stat}: esperaba UNA marca { ${stat}, ${esperado}, 'Bootcamp en Corea' }: ${JSON.stringify(marcas)}`);
     }
   }
+  // La práctica, con su propia fracción.
+  const practica = sistemaPorId('practica');
+  const rutina = {
+    id: 'k3c_bootcamp_sintetico', titulo: 'Bootcamp de prueba',
+    reparto: { pulir: 0, nuevo: 0, mecanica: BALANCE.practica.puntos / 2, macro: BALANCE.practica.puntos / 2, descansar: 0 }
+  };
+  const desde = { ...base, player: { ...base.player, techoLesionMecanica: null, stats: { ...base.player.stats, mecanica: 50 } } };
+  const despues = practica.resolver(desde, { datos: { rutinas: [rutina] } }, { opcionId: rutina.id }, mulberry32(77)).state;
+  const ganancia = despues.player.stats.mecanica - desde.player.stats.mecanica;
+  if (!(ganancia > 0)) throw new Error(`sonda vacía: la rutina no movió mecánica (${ganancia})`);
+  const esperadoPractica = fraccionPermanentePractica * ganancia;
+  const [marcaPractica] = despues.career.registro.marcas;
+  if (Math.abs(despues.player.bonusPermanente.mecanica - esperadoPractica) > 1e-9 || despues.career.registro.marcas.length !== 1
+      || Math.abs(marcaPractica.delta - esperadoPractica) > 1e-9 || marcaPractica.origen !== rutina.titulo) {
+    throw new Error(`la práctica: bonus ${despues.player.bonusPermanente.mecanica}, esperaba ${esperadoPractica} (${fraccionPermanentePractica} × ${ganancia}) con UNA marca a nombre de la rutina: ${JSON.stringify(despues.career.registro.marcas)}`);
+  }
+  // Y una carrera larga, jugada sin overrides, deja marcas: la regla está enchufada a eventos y práctica reales.
   for (const seed of [1, 2, 3]) {
     const fin = correrCarrera(seed, 60);
-    if (fin.career.registro.marcas.length !== 0 || STATS_DE_CURVA_K3B.some((stat) => fin.player.bonusPermanente[stat] !== 0)) {
-      throw new Error(`seed ${seed}: con la fracción en 0 la carrera terminó con bonus o marcas`);
+    if (fin.career.registro.marcas.length === 0 || !STATS_DE_CURVA_K3B.some((stat) => fin.player.bonusPermanente[stat] > 0)) {
+      throw new Error(`seed ${seed}: con las fracciones calibradas la carrera terminó sin marcas ni bonus`);
     }
   }
 });

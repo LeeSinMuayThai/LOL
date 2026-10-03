@@ -68,17 +68,16 @@ const FORMATO_BO5 = 5;
 // Para pasar una probabilidad a puntos porcentuales.
 const PUNTOS_PORCENTUALES = 100;
 
-// K2a: las metas de los checks de K2 (PLAN.md "Checks de K2"), sobre la definición corregida. Hoy están en rojo a
-// propósito: `validate.js` no tiene una convención para checks de una fase futura, así que NO son checks — se reportan
-// en `nivel.metasK2` con la meta al lado. Las bandas finales las fija K3c (regla de proceso 17: el día que se
-// conviertan en checks, se escriben con su línea de qué protegen).
+// K2a: las metas de los checks de K2 (PLAN.md "Checks de K2"), sobre la definición corregida. Se reportan en
+// `nivel.metasK2` con la meta al lado; desde K3c son también checks duros de `validate.js` ("K3c meta ..."), que leen
+// estas mismas constantes.
 export const META_K2_R_MISMA_LIGA = 0.5;
 export const META_K2_R2_SIN_RUIDO = 0.5;
 export const META_K2_BO5_FAVORITO_CLARO_PCT = [75, 85];
 
 // K3-A: las metas de K3 (PLAN.md "K3 — Tus decisiones construyen tu nivel", Checks), con el mismo criterio que las
-// de K2: se reportan en `metasK3` con la meta al lado y pasan a checks duros en K3c. Con las constantes neutras de
-// K3-A (k = 0, r = 0, rH = 0, topeDescanso = 100) se espera que estén en rojo: el juego todavía es el de hoy.
+// de K2: se reportan en `metasK3` con la meta al lado y, desde K3c, son checks duros de `validate.js` ("K3c meta ...").
+// Con las constantes neutras de K3-A (k = 0, r = 0, rH = 0, topeDescanso = 100) estaban en rojo: el juego era el de antes.
 export const META_K3_MENTALIDAD_MEDIANA = [45, 75];
 // "< 20% de splits pro con mentalidad ≥ 90" y "hype ≥ 90 en < 25% de los splits pro" (`UMBRAL_SATURACION`).
 export const META_K3_MENTALIDAD_SATURADA_PCT = 20;
@@ -91,8 +90,8 @@ export const META_K3_DIFERENCIA_BATACAZO_PP = 2;
 const MENTALIDADES_SONDA_K3 = [20, 80];
 
 // K3-B: lo que un efecto sobre un stat de curva conserva a 4 splits (PLAN.md "K3 — decisiones de spec": meta >= 40%).
-// `retencionDeUnEfecto` la mide; el bloque `metasK3` la reporta con esta meta al lado (`retencion4Splits`). K3c fija
-// `BALANCE.atributos.fraccionPermanente` para que se cumpla.
+// `retencionDeUnEfecto` la mide; el bloque `metasK3` la reporta con esta meta al lado (`retencion4Splits`). K3c fijó
+// `BALANCE.atributos.fraccionPermanente` (0,3) para que se cumpla.
 export const META_K3_RETENCION_4_SPLITS = 0.4;
 // `seeds` es la muestra: cuántas carreras se prueban (con 40 el error estándar era ~0,07, más que el escalón de 0,05 que
 // separa dos fracciones vecinas: el barrido de K3c salía no monótono). 400 lo deja en ~0,02 y corre en ~20 s.
