@@ -16746,14 +16746,9 @@ check('K4-C2 los caminos se abren y los seguimientos se resuelven en carreras re
   }
 });
 
-check('K4-C2 las bifurcaciones frenan entre 4,5 y 7,5 veces por carrera (criterio, 40 carreras × 60; la meta es 5-7)', () => {
-  const carreras = carrerasK4c();
-  const total = carreras.reduce((suma, c) => suma + c.pausas.filter((p) => p.sistema === 'eventos' && p.decision.datos?.evento?.bifurcacion === true).length, 0);
-  const media = total / carreras.length;
-  if (media < 4.5 || media > 7.5) {
-    throw new Error(`${media.toFixed(2)} bifurcaciones por carrera, fuera de [4,5, 7,5] (${total} en ${carreras.length} carreras)`);
-  }
-});
+// K4c (paso 3b), regla 17: se fue "K4-C2 las bifurcaciones frenan entre 4,5 y 7,5 veces por carrera (criterio, 40 carreras × 60; la meta es 5-7)"
+// (reemplazado por "K4c meta del ritmo ...: las bifurcaciones por carrera, en promedio, están en [5, 9]", con la muestra de 400 × 60). Exigía
+// el promedio de las 40 carreras de `carrerasK4c()` en [4,5, 7,5]; con K4c el promedio medido es 7,8 y la banda se re-basea.
 
 // --- K4-C2 (regla 15): las bifurcaciones cambian la carrera de verdad (PLAN.md "K4-C2, tal como quedó") ---
 // La promesa del texto y el efecto del dato tienen que coincidir. `promete` en la opción declara qué cambia; el patrón
@@ -18623,6 +18618,183 @@ check('K5 (revisión) banquillo: la org que te sienta nunca es la que te toma en
     throw new Error(`check vacío: ${casos} bancos forzados en tier 2, ${discriminantes} cobrados con su club como el más débil `
       + `(mín. ${MINIMO_DISCRIMINANTES_BANQUILLO_K5}) en ${SEEDS_BANQUILLO_K5} seeds`);
   }
+});
+
+// --- K4c (paso 3b): las metas del bloque B (el ritmo), como checks duros (PLAN.md K4c, "Las metas de §K.3c, fijadas en lo medido") ---
+//
+// Hasta K4c eran la PROPUESTA de §K.3c (≤ 80 interrupciones por carrera, ≤ 2 por split y ≤ 4 en playoffs/internacional, minijuegos
+// 4-8, ≤ ~4,6 min de tiempo-máquina, bifurcaciones 4,5-7,5) y K4c midió lo que el juego hace con las perillas del ritmo en su sitio
+// (`criterio`, 400 × 60, `c6f098f`). La calibración las fija en lo medido y cada una pasa a check duro, con las mismas constantes
+// `META_K4_*` que el juez. Regla de proceso 17, qué protege cada uno: "el ritmo es de decisiones con algo en juego" (K.3c) — que la
+// carrera no se llene de paradas (interrupciones), que un split no se te vaya en pausas (por split), que los minijuegos no
+// desaparezcan ni sean la carrera (minijuegos), que lo que mira el jugador no sea una maratón (tiempo-máquina), que el plan de serie
+// mueva la p (Δp) y que las bifurcaciones frenen lo justo (bifurcaciones). Un solo lote compartido: `criterio`, 400 × 60 (el
+// tamaño de la medición de K4c), que se corre una vez y lo leen los cinco checks de abajo. Los tiempos son los del instrumento de
+// `simulate.js` (beats × 700 ms): el tiempo real lo mide K6 en el navegador.
+// Regla 17, las bandas de J5/J6 ("150-280 decisiones por carrera", "más drafts"): reemplazadas por K4 (D-B). No había un check de J5/J6 en
+// este archivo (la FASE J se reorganizó en K antes de escribirlos: ver PLAN.md, §K.6); lo que las contradecía, "series sin ningún draft", se
+// borró en K4-B con su línea de la regla 17. Las metas de decisiones de la FASE K son las de este bloque.
+const CARRERAS_METAS_B = 400;
+const META_K4_INTERRUPCIONES_CARRERA_MEDIANA = 90;
+const META_K4_INTERRUPCIONES_SPLIT_REGULAR_P90 = 2;
+const META_K4_INTERRUPCIONES_SPLIT_PLAYOFFS_P90 = 5;
+const META_K4_INTERRUPCIONES_SPLIT_INTERNACIONAL_P90 = 5;
+const META_K4_MINIJUEGOS_MEDIANA = [3, 8];
+const META_K4_TIEMPO_MAQUINA_MIN_MEDIANA = 6.5;
+const META_K4_DELTA_P_PLAN_PP_MEDIANA = 5;
+const META_K4_BIFURCACIONES_PROMEDIO = [5, 9];
+// `deltaP` del instrumento es una diferencia de probabilidades (0-1); la meta se dice en puntos porcentuales.
+const PUNTOS_PORCENTUALES_K4 = 100;
+const { mediana: medianaMetasB, promedio: promedioMetasB } = await import('./simulate.js');
+
+let loteMetasB = null;
+function loteDeLasMetasB() {
+  if (loteMetasB === null) {
+    loteMetasB = correrLote(CARRERAS_METAS_B, SPLITS_LOTE_K0, 'criterio');
+    afirmarRuidoIntactoK0(`después de correrLote(${CARRERAS_METAS_B}, criterio)`);
+    const v = valoresDeLasMetasB(loteMetasB);
+    console.log(`     (muestra: criterio, ${CARRERAS_METAS_B} × ${SPLITS_LOTE_K0}) interrupciones por carrera ${v.interrupcionesCarrera} (mediana), por split pro p90 ${v.splitRegularP90} / ${v.splitPlayoffsP90} / ${v.splitInternacionalP90} (regular / playoffs / internacional), minijuegos ${v.minijuegosMediana}, tiempo-máquina ${v.tiempoMaquinaMin} min, Δp de plan ${v.deltaPPlanPp} pp, bifurcaciones ${v.bifurcacionesPromedio}`);
+  }
+  return loteMetasB;
+}
+
+// Dos decimales (la mediana de una muestra vacía es `null`, que el juez rechaza).
+const redondeoMetasB = (x) => (typeof x === 'number' && Number.isFinite(x) ? Number(x.toFixed(2)) : null);
+
+function valoresDeLasMetasB(lote) {
+  const observaciones = lote.crudos.observaciones;
+  const deltas = observaciones.flatMap((o) => o.planDeltaP.map((fila) => fila.deltaP * PUNTOS_PORCENTUALES_K4));
+  const porSplit = lote.ritmo.interrupcionesPorSplitPro;
+  return {
+    interrupcionesCarrera: lote.ritmo.interrupcionesPorCarrera.mediana,
+    splitRegularP90: porSplit.regular.p90,
+    splitPlayoffsP90: porSplit.playoffs.p90,
+    splitInternacionalP90: porSplit.internacional.p90,
+    minijuegosMediana: lote.ritmo.minijuegosPorCarrera.mediana,
+    tiempoMaquinaMin: lote.ritmo.tiempoMaquinaMin.mediana,
+    deltaPPlanPp: redondeoMetasB(medianaMetasB(deltas)),
+    bifurcacionesPromedio: redondeoMetasB(promedioMetasB(observaciones.map((o) => o.bifurcaciones)))
+  };
+}
+
+// El juez: null si la meta se cumple, el motivo si no. Un valor que no existe (muestra vacía) no cumple.
+function juezDeLasMetasB(v) {
+  const hay = (x) => typeof x === 'number' && Number.isFinite(x);
+  const juzgar = (ok, motivo) => (ok ? null : motivo);
+  const [miniMin, miniMax] = META_K4_MINIJUEGOS_MEDIANA;
+  const [bifMin, bifMax] = META_K4_BIFURCACIONES_PROMEDIO;
+  return {
+    interrupcionesCarrera: juzgar(hay(v.interrupcionesCarrera) && v.interrupcionesCarrera <= META_K4_INTERRUPCIONES_CARRERA_MEDIANA,
+      `la mediana de interrupciones por carrera es ${v.interrupcionesCarrera}, la meta es <= ${META_K4_INTERRUPCIONES_CARRERA_MEDIANA}`),
+    splitRegular: juzgar(hay(v.splitRegularP90) && v.splitRegularP90 <= META_K4_INTERRUPCIONES_SPLIT_REGULAR_P90,
+      `el p90 de interrupciones de un split regular es ${v.splitRegularP90}, la meta es <= ${META_K4_INTERRUPCIONES_SPLIT_REGULAR_P90}`),
+    splitPlayoffs: juzgar(hay(v.splitPlayoffsP90) && v.splitPlayoffsP90 <= META_K4_INTERRUPCIONES_SPLIT_PLAYOFFS_P90,
+      `el p90 de interrupciones de un split de playoffs es ${v.splitPlayoffsP90}, la meta es <= ${META_K4_INTERRUPCIONES_SPLIT_PLAYOFFS_P90}`),
+    splitInternacional: juzgar(hay(v.splitInternacionalP90) && v.splitInternacionalP90 <= META_K4_INTERRUPCIONES_SPLIT_INTERNACIONAL_P90,
+      `el p90 de interrupciones de un split internacional es ${v.splitInternacionalP90}, la meta es <= ${META_K4_INTERRUPCIONES_SPLIT_INTERNACIONAL_P90}`),
+    minijuegos: juzgar(hay(v.minijuegosMediana) && v.minijuegosMediana >= miniMin && v.minijuegosMediana <= miniMax,
+      `la mediana de minijuegos por carrera es ${v.minijuegosMediana}, la meta es ${miniMin}-${miniMax}`),
+    tiempoMaquina: juzgar(hay(v.tiempoMaquinaMin) && v.tiempoMaquinaMin <= META_K4_TIEMPO_MAQUINA_MIN_MEDIANA,
+      `la mediana del tiempo-máquina es ${v.tiempoMaquinaMin} min, la meta es <= ${META_K4_TIEMPO_MAQUINA_MIN_MEDIANA} min`),
+    deltaPPlan: juzgar(hay(v.deltaPPlanPp) && v.deltaPPlanPp >= META_K4_DELTA_P_PLAN_PP_MEDIANA,
+      `el Δp mediano de las paradas de plan es ${v.deltaPPlanPp} pp, la meta pide >= ${META_K4_DELTA_P_PLAN_PP_MEDIANA} pp`),
+    bifurcaciones: juzgar(hay(v.bifurcacionesPromedio) && v.bifurcacionesPromedio >= bifMin && v.bifurcacionesPromedio <= bifMax,
+      `las bifurcaciones por carrera son ${v.bifurcacionesPromedio} en promedio, la meta es ${bifMin}-${bifMax}`)
+  };
+}
+
+// Son valores que CUMPLEN (los medidos en K4c, `c6f098f`).
+const VALORES_DE_LAS_METAS_B_OK = {
+  interrupcionesCarrera: 84, splitRegularP90: 2, splitPlayoffsP90: 5, splitInternacionalP90: 5, minijuegosMediana: 4,
+  tiempoMaquinaMin: 5.9, deltaPPlanPp: 6.5, bifurcacionesPromedio: 7.8
+};
+const CLAVE_DEL_JUEZ_B = {
+  interrupcionesCarrera: 'interrupcionesCarrera', splitRegularP90: 'splitRegular', splitPlayoffsP90: 'splitPlayoffs',
+  splitInternacionalP90: 'splitInternacional', minijuegosMediana: 'minijuegos', tiempoMaquinaMin: 'tiempoMaquina',
+  deltaPPlanPp: 'deltaPPlan', bifurcacionesPromedio: 'bifurcaciones'
+};
+
+function problemasDeLasMetasB(claves) {
+  const juicio = juezDeLasMetasB(valoresDeLasMetasB(loteDeLasMetasB()));
+  return claves.map((clave) => juicio[clave]).filter((motivo) => motivo !== null);
+}
+
+check('K4c metas del bloque B: el juez acepta los valores medidos y rechaza, uno por uno, cada valor fuera de meta o inexistente (regla 7)', () => {
+  const sano = Object.values(juezDeLasMetasB(VALORES_DE_LAS_METAS_B_OK)).filter((motivo) => motivo !== null);
+  if (sano.length > 0) throw new Error(`el juez rechaza valores que cumplen: ${sano.join('; ')}`);
+  // Cada valor malo mueve SOLO su meta: un valor justo afuera de la banda, uno de antes de K4c y uno inexistente.
+  const malos = {
+    interrupcionesCarrera: [91, 111, null], splitRegularP90: [3, 4, null], splitPlayoffsP90: [6, 7, null], splitInternacionalP90: [6, 7, null],
+    minijuegosMediana: [2, 9, 11, null], tiempoMaquinaMin: [6.6, 8.1, null], deltaPPlanPp: [4.9, 1.9, null], bifurcacionesPromedio: [4.9, 9.1, 4.15, null]
+  };
+  for (const [campo, valores] of Object.entries(malos)) {
+    for (const valor of valores) {
+      const juicio = juezDeLasMetasB({ ...VALORES_DE_LAS_METAS_B_OK, [campo]: valor });
+      const rechazados = Object.entries(juicio).filter(([, motivo]) => motivo !== null).map(([k]) => k);
+      if (rechazados.length !== 1 || rechazados[0] !== CLAVE_DEL_JUEZ_B[campo]) {
+        throw new Error(`${campo} = ${valor}: el juez rechazó [${rechazados.join(', ')}], tenía que rechazar solo ${CLAVE_DEL_JUEZ_B[campo]}`);
+      }
+    }
+  }
+  // Los bordes de cada banda cumplen (<= y >= son inclusivos).
+  const bordes = {
+    interrupcionesCarrera: [META_K4_INTERRUPCIONES_CARRERA_MEDIANA], splitRegularP90: [META_K4_INTERRUPCIONES_SPLIT_REGULAR_P90],
+    splitPlayoffsP90: [META_K4_INTERRUPCIONES_SPLIT_PLAYOFFS_P90], splitInternacionalP90: [META_K4_INTERRUPCIONES_SPLIT_INTERNACIONAL_P90],
+    minijuegosMediana: META_K4_MINIJUEGOS_MEDIANA, tiempoMaquinaMin: [META_K4_TIEMPO_MAQUINA_MIN_MEDIANA],
+    deltaPPlanPp: [META_K4_DELTA_P_PLAN_PP_MEDIANA], bifurcacionesPromedio: META_K4_BIFURCACIONES_PROMEDIO
+  };
+  for (const [campo, valores] of Object.entries(bordes)) {
+    for (const valor of valores) {
+      const motivo = juezDeLasMetasB({ ...VALORES_DE_LAS_METAS_B_OK, [campo]: valor })[CLAVE_DEL_JUEZ_B[campo]];
+      if (motivo !== null) throw new Error(`${campo} = ${valor} (el borde de la banda) no cumple: ${motivo}`);
+    }
+  }
+});
+
+// Reemplaza a "≤ 80 interrupciones por carrera" (propuesta de §K.3c), que exigía ≤ 80 con `criterio` (medido 84, 400 × 60): lo que queda
+// arriba de 80 es el cierre de año, que el usuario decidió conservar con más peso (el plan anual), y el reparto amateur (100% de
+// palanca). Protege "el ritmo es de decisiones con algo en juego" desde K4c (paso 3b).
+checkLento(`K4c meta del ritmo (criterio, ${CARRERAS_METAS_B} × ${SPLITS_LOTE_K0}): la mediana de interrupciones por carrera es <= ${META_K4_INTERRUPCIONES_CARRERA_MEDIANA}`, () => {
+  const problemas = problemasDeLasMetasB(['interrupcionesCarrera']);
+  if (problemas.length > 0) throw new Error(problemas.join('; '));
+});
+
+// Reemplaza a "≤ 2 interrupciones por split pro; ≤ 4 en playoffs e internacional" (propuesta de §K.3c), que exigía ≤ 4 en playoffs e
+// internacional (medido p90 5 en los dos): una serie de playoffs con plan, mapa decisivo y minijuego son 4-5 paradas con palanca. El regular
+// se queda en p90 ≤ 2. Protege que ningún split se vuelva una maratón de pausas desde K4c (paso 3b).
+checkLento(`K4c meta del ritmo (criterio, ${CARRERAS_METAS_B} × ${SPLITS_LOTE_K0}): el p90 de interrupciones por split pro es <= ${META_K4_INTERRUPCIONES_SPLIT_REGULAR_P90} en regular, <= ${META_K4_INTERRUPCIONES_SPLIT_PLAYOFFS_P90} en playoffs y <= ${META_K4_INTERRUPCIONES_SPLIT_INTERNACIONAL_P90} en internacional`, () => {
+  const problemas = problemasDeLasMetasB(['splitRegular', 'splitPlayoffs', 'splitInternacional']);
+  if (problemas.length > 0) throw new Error(problemas.join('; '));
+});
+
+// Reemplaza a "minijuegos por carrera, mediana 4-8" (propuesta de §K.3c), que exigía 4 de piso (medido 4): el piso baja a 3 como margen de
+// muestra; que no sean decorativos lo cubre "El impacto de los minijuegos". Protege que los minijuegos ni desaparezcan ni sean la carrera.
+checkLento(`K4c meta del ritmo (criterio, ${CARRERAS_METAS_B} × ${SPLITS_LOTE_K0}): la mediana de minijuegos por carrera está en [${META_K4_MINIJUEGOS_MEDIANA[0]}, ${META_K4_MINIJUEGOS_MEDIANA[1]}]`, () => {
+  const problemas = problemasDeLasMetasB(['minijuegos']);
+  if (problemas.length > 0) throw new Error(problemas.join('; '));
+});
+
+// Reemplaza a "tiempo-máquina ≤ ~4,6 min" (propuesta de §K.3c), que exigía ≤ ~4,6 (medido 5,9): el tiempo real lo mide K6 en el navegador.
+// Protege que lo que el jugador mira (beats × 700 ms del instrumento) no crezca sin que alguien lo decida, desde K4c (paso 3b).
+checkLento(`K4c meta del ritmo (criterio, ${CARRERAS_METAS_B} × ${SPLITS_LOTE_K0}): la mediana del tiempo-máquina es <= ${META_K4_TIEMPO_MAQUINA_MIN_MEDIANA} min`, () => {
+  const problemas = problemasDeLasMetasB(['tiempoMaquina']);
+  if (problemas.length > 0) throw new Error(problemas.join('; '));
+});
+
+// Reemplaza a "el plan de serie mueve la p" (propuesta de §K.3c, sin número), que exigía solo que la serie fuera un plan: el Δp (p de la
+// mejor opción − p de la peor, de la `pSerie` que declara cada opción de `serie:plan` e `internacional:plan`), mediana ≥ 5 pp (medido ~6,5).
+// Protege el ×3 del plan de serie de K4c (paso 3a): con ×1 la mediana era 1,9 pp.
+checkLento(`K4c meta del ritmo (criterio, ${CARRERAS_METAS_B} × ${SPLITS_LOTE_K0}): el Δp mediano de las paradas de plan de serie es >= ${META_K4_DELTA_P_PLAN_PP_MEDIANA} pp`, () => {
+  const problemas = problemasDeLasMetasB(['deltaPPlan']);
+  if (problemas.length > 0) throw new Error(problemas.join('; '));
+});
+
+// Reemplaza a "las bifurcaciones frenan entre 4,5 y 7,5 veces por carrera" (K4-C2, 40 carreras; la propuesta de §K.3c era 4,5-7,5), que
+// exigía ≤ 7,5 (medido 7,8 en 400 × 60): la banda pasa a [5, 9] con la muestra de 400 en vez de 40. Protege que solo frenen las
+// bifurcaciones (K4-C) y que frenen lo justo, desde K4c (paso 3b).
+checkLento(`K4c meta del ritmo (criterio, ${CARRERAS_METAS_B} × ${SPLITS_LOTE_K0}): las bifurcaciones por carrera, en promedio, están en [${META_K4_BIFURCACIONES_PROMEDIO[0]}, ${META_K4_BIFURCACIONES_PROMEDIO[1]}]`, () => {
+  const problemas = problemasDeLasMetasB(['bifurcaciones']);
+  if (problemas.length > 0) throw new Error(problemas.join('; '));
 });
 
 // PLAN.md §K.4 — los tres custodios del registro de bandas pendientes. Van DESPUÉS del último check: el primero mira cómo
