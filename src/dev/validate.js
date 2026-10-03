@@ -16445,11 +16445,16 @@ function sondaDeLaPrueba() {
           if (sistemaId === 'mercado' && st.career.currentOrg !== null) {
             const sinOtras = structuredClone(st);
             sinOtras.pendiente.decision.datos.otras = [];
+            sinOtras.pendiente.decision.datos.respaldo = null;
             const despues = resolverDecision(sinOtras, { resultado: 0 }, mulberry32(hashCadenaK4cs(`${seed}|${i}|prueba`))).state;
             bajoSinOtras = { ficho: despues.career.currentOrg === oferta, estado: despues };
           }
+          // K4c (paso 3a): el respaldo que anuncia la prueba del mercado (la org, no el id) y la apuesta que lo muestra.
+          const respaldo = sistemaId === 'mercado' && decision.datos.respaldo
+            ? nombreDe(decision.datos.otras.find((opcion) => opcion.id === decision.datos.respaldo)?.org)
+            : null;
           filas.push({
-            seed, sistemaId, oferta,
+            seed, sistemaId, oferta, respaldo, apuesta: decision.datos.apuesta ?? '',
             antes: { currentOrg: st.career.currentOrg, contrato: structuredClone(st.career.contrato), bonus: st.flags.bonusJerarquiaTryout ?? 0, racha: st.flags.splitsSinOfertaConsecutivos },
             bajo: { ficho: bajo.despues.career.currentOrg === oferta, estado: bajo.despues, rr: bajo.rr },
             alto: { ficho: alto.despues.career.currentOrg === oferta },
@@ -16479,60 +16484,67 @@ check('K4c-S la prueba decide el contrato: P(firmar | resultado 1) > P(firmar | 
   }
 });
 
-check('K4c-S un tryout fallido del mercado se cae solo esa oferta: ni contrato roto, ni crédito, y la parada sigue con las demás (o por el camino de "sin ofertas")', () => {
+// K4c (paso 3a), regla 17: este check decía "la parada sigue con las demás" (re-presentaba mercado:oferta tras la prueba
+// fallida). Eso era una segunda parada de mercado en la misma pretemporada, contra K4-D (seed 5, split 18 de "K4-D la
+// pretemporada frena una sola vez"). Ahora la parada cierra en la misma pantalla con el respaldo que anunció la prueba.
+check('K4c-S un tryout fallido del mercado se cae solo esa oferta: sin crédito, y la parada cierra ahí mismo con el respaldo que anunció la prueba (o por el camino de "sin ofertas"), sin re-abrir el mercado', () => {
   const fallidos = sondaDeLaPrueba().filter((f) => f.sistemaId === 'mercado' && !f.bajo.ficho && f.antes.currentOrg !== null);
   if (fallidos.length < 5) {
     throw new Error(`check vacío: ${fallidos.length} tryouts fallidos del mercado con club (hacen falta 5)`);
   }
-  let representadas = 0;
+  let conRespaldo = 0;
   let sinNada = 0;
-  // Con ofertas que quedan, la parada se re-presenta (mercado:oferta). Sin ninguna, `resolverEspera` cierra el mercado y el
-  // split sigue: lo que quede pendiente después es de otra etapa.
   const esRepresentada = (estado) => estado.pendiente?.sistemaId === 'mercado' && estado.pendiente.decision.datos?.motivo === 'oferta';
-  const sinRomperNada = (f, estado, donde) => {
-    const librePorRacha = !esRepresentada(estado) && f.antes.racha + 1 >= BALANCE.mercado.splitsSinOfertaParaLibre;
-    if (!librePorRacha && (estado.career.currentOrg !== f.antes.currentOrg || JSON.stringify(estado.career.contrato) !== JSON.stringify(f.antes.contrato))) {
-      throw new Error(`${donde}: el tryout fallido dejó el club o el contrato distinto (${f.antes.currentOrg} → ${estado.career.currentOrg})`);
-    }
+  const sinCredito = (f, estado, donde) => {
     if ((estado.flags.bonusJerarquiaTryout ?? 0) !== f.antes.bonus) {
       throw new Error(`${donde}: el tryout fallido dejó crédito de jerarquía (${estado.flags.bonusJerarquiaTryout})`);
     }
   };
-  // K4c (integración): el lado "sin nada" con club (la oferta de la prueba era la única de la mano y tu club no te
-  // renovaba) era 1 caso en las seeds 1-60 antes del stream de K4c (seed 55) y quedó en 0 de las seeds 1-1000: los tryouts
-  // fallidos con club traen siempre otra oferta (la renovación, u otras de afuera cuando el club no renueva). El camino no
-  // está muerto —un free agent con una sola oferta lo toma, 11 veces en las seeds 1-1000— y la mano de una sola oferta sin
-  // renovación salía 1 en 200 seeds antes: es raro, no un bug. Se prueba con la pausa real de cada tryout fallido con club
-  // sin las otras ofertas (`bajoSinOtras` de la sonda: `datos.otras` vacío, mismo resultado, mismo rng), además de los que
-  // aparezcan solos.
+  // Sin respaldo, el contrato no se toca (salvo que la racha sin firmar te deje libre).
+  const sinRomperNada = (f, estado, donde) => {
+    const librePorRacha = f.antes.racha + 1 >= BALANCE.mercado.splitsSinOfertaParaLibre;
+    if (!librePorRacha && (estado.career.currentOrg !== f.antes.currentOrg || JSON.stringify(estado.career.contrato) !== JSON.stringify(f.antes.contrato))) {
+      throw new Error(`${donde}: el tryout fallido sin respaldo dejó el club o el contrato distinto (${f.antes.currentOrg} → ${estado.career.currentOrg})`);
+    }
+  };
+  // El lado "sin nada" con club casi no sale solo (los tryouts fallidos con club traen siempre otra oferta: la renovación
+  // u otras de afuera), así que también se prueba con la pausa real de cada tryout fallido con club sin las otras ofertas
+  // (`bajoSinOtras` de la sonda: `datos.otras` vacío y sin respaldo, mismo resultado, mismo rng).
   let sinNadaArmadas = 0;
   for (const f of fallidos) {
     const { estado } = f.bajo;
     const donde = `seed ${f.seed} (${f.oferta})`;
-    const representada = esRepresentada(estado);
-    sinRomperNada(f, estado, donde);
+    if (esRepresentada(estado)) {
+      throw new Error(`${donde}: la prueba fallida re-abrió el mercado (una segunda parada en la misma pretemporada, contra K4-D)`);
+    }
+    sinCredito(f, estado, donde);
     if (f.bajoSinOtras && !f.bajoSinOtras.ficho) {
       if (esRepresentada(f.bajoSinOtras.estado)) {
         throw new Error(`${donde}, sin otras ofertas: la parada se re-presentó sin nada que ofrecer`);
       }
+      sinCredito(f, f.bajoSinOtras.estado, `${donde}, sin otras ofertas`);
       sinRomperNada(f, f.bajoSinOtras.estado, `${donde}, sin otras ofertas`);
       sinNadaArmadas += 1;
     }
-    if (representada) {
-      representadas += 1;
-      const re = estado.pendiente.decision;
-      if (re.opciones.some((o) => o.org === f.oferta) || !re.datos.negociacionesRotas.some((r) => r.org === f.oferta)) {
-        throw new Error(`${donde}: la oferta caída tenía que salir de las opciones y quedar anotada como asiento que se cayó`);
+    if (f.respaldo) {
+      conRespaldo += 1;
+      // Regla 15: lo que anuncia la apuesta es lo que aplica el motor.
+      if (!f.apuesta.includes(`Si no alcanza`) || !f.apuesta.includes(f.respaldo)) {
+        throw new Error(`${donde}: la apuesta no anuncia el respaldo (${f.respaldo}): "${f.apuesta}"`);
       }
-      if (re.opciones.length === 0) {
-        throw new Error(`${donde}: sin ofertas, la parada no se re-presenta`);
+      if (estado.career.currentOrg !== f.respaldo) {
+        throw new Error(`${donde}: la prueba anunció el respaldo ${f.respaldo} y el motor dejó ${estado.career.currentOrg}`);
       }
     } else {
+      if (!f.apuesta.includes('Si no alcanza, esta ventana no firmás con nadie.')) {
+        throw new Error(`${donde}: sin respaldo, la apuesta no dice que no firmás con nadie: "${f.apuesta}"`);
+      }
+      sinRomperNada(f, estado, donde);
       sinNada += 1;
     }
   }
-  if (representadas === 0 || sinNada + sinNadaArmadas === 0) {
-    throw new Error(`check vacío: ${representadas} paradas que siguieron con otras ofertas y ${sinNada} que se quedaron sin nada `
+  if (conRespaldo === 0 || sinNada + sinNadaArmadas === 0) {
+    throw new Error(`check vacío: ${conRespaldo} pruebas fallidas que siguieron con el respaldo y ${sinNada} que se quedaron sin nada `
       + `(más ${sinNadaArmadas} armadas sin las otras ofertas; hacen falta de las dos)`);
   }
 });

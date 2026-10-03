@@ -1167,9 +1167,9 @@ export function resolver(state, decision, respuesta, rng) {
 // K4-C: la prueba del salto grande (tier 2, tier 1, import). Frena ANTES de firmar con el minijuego `tryout`
 // (el mismo de la prueba amateur); el resultado corre cuánto crédito llevás de entrada, igual que en amateur
 // (`flags.bonusJerarquiaTryout`, lo cobra `roster.js`). `null` si el catálogo no tiene minijuego de tryout.
-// K4c-S: la prueba también decide el contrato (`probabilidadDeFirmarTrasPrueba`). Si no alcanza, se cae esa oferta y la
-// parada sigue con las demás: por eso la pausa lleva consigo las otras ofertas (`otras`) y lo que sobrevive a la
-// re-presentación de la decisión (`carry`, el mismo de la negociación).
+// K4c-S: la prueba también decide el contrato (`probabilidadDeFirmarTrasPrueba`). Si no alcanza, se cae esa oferta y
+// seguís con el respaldo (`respaldoDePrueba`): la pausa lleva consigo las otras ofertas (`otras`), cuál es el respaldo
+// (`respaldo`, el id) y lo que el camino de "sin ofertas" necesita (`carry`, el mismo de la negociación).
 function pausaDePrueba(state, oferta, saltos, decision) {
   const ofrecidas = orgsOfrecidasDe(decision);
   const entrada = elegirMinijuego(state, 'tryout');
@@ -1177,6 +1177,8 @@ function pausaDePrueba(state, oferta, saltos, decision) {
     return null;
   }
   const textos = textoDeMinijuego(entrada, state);
+  const otras = decision.opciones.filter((opcion) => opcion.id !== oferta.id);
+  const respaldo = respaldoDePrueba(state, otras);
   return {
     state: { ...state, flags: { ...state.flags, minijuegosRecientes: registrarMinijuegoVisto(state, entrada.id) } },
     logs: [],
@@ -1191,13 +1193,15 @@ function pausaDePrueba(state, oferta, saltos, decision) {
         minijuego: entrada.id,
         momento: 'tryout',
         statRelevante: entrada.statRelevante,
-        apuesta: textos.apuesta,
+        // Regla 15: la apuesta dice también qué pasa si no alcanza (el respaldo que aplica `caeLaOfertaPorLaPrueba`).
+        apuesta: `${textos.apuesta} ${textoDeRespaldo(respaldo)}`,
         oferta,
         saltos,
         // Array, no el `Set` de `orgsOfrecidasDe`: la pausa vive en `state.pendiente` y se guarda con
         // JSON, que convierte un `Set` en `{}` (al recargar, `cerrarAsientosCongelados` tiraba).
         ofrecidas: [...ofrecidas],
-        otras: decision.opciones.filter((opcion) => opcion.id !== oferta.id),
+        otras,
+        respaldo: respaldo?.id ?? null,
         carry: {
           negociacionesRotas: decision.datos.negociacionesRotas ?? [],
           clubesInteresados: decision.datos.clubesInteresados ?? [],
@@ -1234,24 +1238,54 @@ function resolverPrueba(state, decision, respuesta, rng) {
   return { state: cerrado.state, logs: [veredicto, ...firmado.logs, ...cerrado.logs] };
 }
 
-// K4c-S: la prueba no alcanzó. La oferta se cae (no se firma nada, no queda crédito, y el salto no cuenta como probado:
-// la próxima oferta que lo estrene vuelve a pedir su prueba) y la parada sigue con las demás ofertas —entre ellas la
-// renovación de tu club, si la había—. El asiento que se cae cuenta como los que se levantan de la mesa
-// (`negociacionesRotas`): `cerrarAsientosCongelados` lo cierra con nombre cuando firmes otra o esperes. Si era la
-// última, se sigue por el camino de siempre de "no queda nada que firmar" (`resolverEspera`): el contrato no se toca.
+// K4c (paso 3a): el respaldo de la prueba. Si la prueba no alcanza, la parada NO se re-abre con las demás ofertas: eso
+// era una segunda parada de mercado en la misma pretemporada (y, si la siguiente también estrenaba un salto, otra prueba
+// más), contra K4-D ("una parada por año; el tryout, como mucho una pantalla extra"). Seguís con tu club si te renovaba
+// o, si no, con la oferta de más sueldo de las que no piden otra prueba. `null` si no queda ninguna. Puro, sin rng: lo
+// anuncia la prueba antes de jugarla (regla 15).
+function respaldoDePrueba(state, otras) {
+  const sinPrueba = otras.filter((opcion) => saltosDeFichaje(state, opcion).length === 0);
+  return sinPrueba.find((opcion) => opcion.tag === 'renovacion')
+    ?? sinPrueba.reduce((mejor, opcion) => (mejor === null || opcion.salarioAnualUSD > mejor.salarioAnualUSD ? opcion : mejor), null);
+}
+
+function textoDeRespaldo(respaldo) {
+  if (!respaldo) {
+    return 'Si no alcanza, esta ventana no firmás con nadie.';
+  }
+  return respaldo.tag === 'renovacion'
+    ? `Si no alcanza, renovás con ${respaldo.org}.`
+    : `Si no alcanza, firmás con ${respaldo.org}, la mejor oferta que te queda sin prueba.`;
+}
+
+// K4c-S: la prueba no alcanzó. La oferta se cae (no queda crédito, y el salto no cuenta como probado: la próxima oferta
+// que lo estrene vuelve a pedir su prueba) y se firma el respaldo que anunció la prueba, en la misma parada (K4c, paso
+// 3a: antes la parada se re-presentaba con las demás ofertas). El asiento que se cae cuenta como los que se levantan de
+// la mesa: `cerrarAsientosCongelados` lo cierra con nombre. Sin respaldo, se sigue por el camino de siempre de "no queda
+// nada que firmar" (`resolverEspera`): el contrato no se toca.
 function caeLaOfertaPorLaPrueba(state, decision, rng) {
   // Un guardado hecho antes de K4c-S con la prueba pendiente no trae `otras` ni `carry`: se cae la oferta y no queda otra.
+  // Uno de K4c-S, antes del paso 3a, no trae `respaldo`: se calcula con la misma regla.
   const { oferta, otras = [], carry = {} } = decision.datos;
-  const siguiente = construirDecisionOfertas(state, otras, {
-    negociacionesRotas: [...(carry.negociacionesRotas ?? []), { org: oferta.org, rol: state.player.role }],
-    clubesInteresados: carry.clubesInteresados ?? [],
-    asientosAbiertos: carry.asientosAbiertos ?? []
-  });
-  const aviso = `La prueba en ${oferta.org} no alcanza: se cae la oferta.`;
-  if (otras.length === 0) {
-    return resolverEspera(state, siguiente, rng, `${aviso} No queda nada que firmar esta ventana.`);
+  const respaldo = decision.datos.respaldo === undefined
+    ? respaldoDePrueba(state, otras)
+    : otras.find((opcion) => opcion.id === decision.datos.respaldo) ?? null;
+  const aviso = `La prueba en ${oferta.org} no alcanza: se cae la oferta`;
+  if (!respaldo) {
+    const sinNada = construirDecisionOfertas(state, otras, {
+      negociacionesRotas: [...(carry.negociacionesRotas ?? []), { org: oferta.org, rol: state.player.role }],
+      clubesInteresados: carry.clubesInteresados ?? [],
+      asientosAbiertos: carry.asientosAbiertos ?? []
+    });
+    return resolverEspera(state, sinNada, rng, `${aviso}. No queda nada que firmar esta ventana.`);
   }
-  return { state, logs: [crearLog('mercado', aviso)], decision: siguiente };
+  const firmado = aceptarOferta(state, respaldo, rng);
+  const ofrecidas = new Set([...(decision.datos.ofrecidas ?? []), oferta.org]);
+  const cerrado = cerrarAsientosCongelados(firmado.state, respaldo.org, rng, ofrecidas);
+  return {
+    state: cerrado.state,
+    logs: [crearLog('mercado', `${aviso} y seguís con ${respaldo.org}.`), ...firmado.logs, ...cerrado.logs]
+  };
 }
 
 function resolverMercado(state, decision, respuesta, rng) {
