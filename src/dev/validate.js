@@ -68,6 +68,7 @@ import {
 import { tierListDeRol, boostDelPool } from '../core/regimen.js';
 import { nivelDelJugador, deltasDeStats, fichaCompleta, loQueConstruiste } from '../core/ficha.js';
 import { componerLegado } from '../core/legado.js';
+import { titularDelAnio } from '../core/temporadaResumen.js';
 import { bandaDeArraigo, filaAbierta as filaAbiertaK5 } from '../core/registro.js';
 import { rankearMundo, rankearPoblacion, puntajeRanking } from '../core/topMundial.js';
 import { salarioDeOferta } from '../core/salarios.js';
@@ -19446,6 +19447,39 @@ check('K4c (revisión) textos: ningún texto del motor (log, decisión, opción,
   if (huecos.size > 0) {
     const total = [...huecos.values()].reduce((suma, veces) => suma + veces, 0);
     throw new Error(`${total} texto(s) con un token sin resolver, ${huecos.size} distintos, sobre ${revisados} revisados:\n  ${[...huecos].slice(0, 12).map(([clave, veces]) => `${veces}× ${clave}`).join('\n  ')}`);
+  }
+});
+
+check('K4c (revisión) textos: el titular del Mundial dice lo que pasó: campeón solo si ganaste, y cuartos, semis y final no son el título ni heredan su racha', () => {
+  const base = correrCarrera(2, 20);
+  const anio = base.calendario.anio;
+  const conResultado = (resultado, previas = 0) => ({
+    ...base,
+    career: {
+      ...base.career,
+      registro: {
+        ...base.career.registro,
+        titulos: [],
+        internacionales: [{ anio, resultado }],
+        temporadas: Array.from({ length: previas }, () => ({ tipoBase: 'titulo_internacional', tipo: 'titulo_internacional' }))
+      }
+    }
+  });
+  const campeon = titularDelAnio(conResultado('campeon'));
+  if (campeon.tipoBase !== 'titulo_internacional' || !campeon.titular.includes('CAMPEONES DEL MUNDO')) {
+    throw new Error(`ganar el Mundial titula "${campeon.titular}" (${campeon.tipoBase}), esperaba CAMPEONES DEL MUNDO`);
+  }
+  const PALABRA = { cuartos: /CUARTOS/, semis: /SEMI/, final: /FINAL|SUBCAMPE/, buen_papel: /WORLDS|MUNDO/ };
+  for (const resultado of ['cuartos', 'semis', 'final', 'buen_papel']) {
+    for (const previas of [0, 3]) {
+      const titulo = titularDelAnio(conResultado(resultado, previas));
+      if (/CAMPEONES DEL MUNDO/.test(titulo.titular) || titulo.tipoBase === 'titulo_internacional') {
+        throw new Error(`un papel de ${resultado} (con ${previas} títulos del mundo antes) titula "${titulo.titular}" (${titulo.tipoBase}): no ganaste el Mundial`);
+      }
+      if (!PALABRA[resultado].test(titulo.titular)) {
+        throw new Error(`un papel de ${resultado} titula "${titulo.titular}": el titular no dice hasta dónde llegaste`);
+      }
+    }
   }
 });
 

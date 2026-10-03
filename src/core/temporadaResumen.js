@@ -170,6 +170,7 @@ export function bandaDeNota(nota) {
 
 const PUNTAJES = {
   titulo_internacional: 100,
+  papel_internacional: 100,
   titulo_liga: 80,
   ausencia: 75,
   main_muerto: 70,
@@ -182,11 +183,26 @@ const PUNTAJES = {
   estable: 10
 };
 
+// K4c (revisión): el titular dice lo que pasó. Campeón del mundo solo si ganaste; cuartos, semis y final (y el "buen
+// papel" de los registros viejos, que no guardó hasta dónde llegaste) son su propio tipo, con su propia racha: no es un
+// título del mundo que se repite.
+const TITULARES_DE_PAPEL_INTERNACIONAL = {
+  cuartos: 'CUARTOS DE FINAL EN WORLDS',
+  semis: 'SEMIFINALISTAS EN WORLDS',
+  final: 'SUBCAMPEONES DEL MUNDO',
+  buen_papel: 'BUEN PAPEL EN WORLDS'
+};
+
 function candidatoTituloInternacional(state, ctx) {
-  if (!esBuenPapel(ctx.internacionalEsteAnio)) {
+  if (ctx.internacionalEsteAnio?.resultado !== 'campeon') {
     return null;
   }
   return { titular: 'CAMPEONES DEL MUNDO', bajada: null };
+}
+
+function candidatoPapelInternacional(state, ctx) {
+  const titular = TITULARES_DE_PAPEL_INTERNACIONAL[ctx.internacionalEsteAnio?.resultado];
+  return titular ? { titular, bajada: null } : null;
 }
 
 function candidatoTituloLiga(state, ctx) {
@@ -279,6 +295,7 @@ function candidatoEliminacion(state, ctx) {
 // de la carrera, `main_muerto` puede volver a salir cualquier año.
 const CANDIDATOS = [
   ['titulo_internacional', candidatoTituloInternacional],
+  ['papel_internacional', candidatoPapelInternacional],
   ['titulo_liga', candidatoTituloLiga],
   ['ausencia', candidatoAusencia],
   ['debut', candidatoDebut],
