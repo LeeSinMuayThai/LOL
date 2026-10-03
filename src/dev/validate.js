@@ -2771,7 +2771,7 @@ check('Ningún token puede quedar sin resolver donde el contenido aparece', () =
   const CON_EQUIPO = ['debut', 'profesional', 'declive'];
   const CON_ORG = ['tier3', 'tier2', 'tier1'];
   const TOKENS_DE_ORG = ['org', 'liga'];
-  const TOKENS_DE_COMPANERO = ['top', 'jungla', 'mid', 'adc', 'support'];
+  const TOKENS_DE_COMPANERO = ['top', 'jungla', 'mid', 'adc', 'support', 'companero'];
 
   const garantizaOrg = (contexto) => {
     const etapas = contexto.etapa;
@@ -19380,6 +19380,72 @@ check('K4c el cierre de año es una decisión: las opciones mueven ejes distinto
 
   if (problemas.length > 0) {
     throw new Error(`${problemas.length} problema(s) en ${eventos.length} eventos de cierre:\n  ${problemas.slice(0, 40).join('\n  ')}${problemas.length > 40 ? `\n  ... y ${problemas.length - 40} más` : ''}`);
+  }
+});
+
+// --- FASE K, K4c (revisión, textos) ----------------------------------------------------------------------------------
+// Lo que las revisiones de K4c encontraron en textos y datos: un token crudo en pantalla, un titular que miente, un cierre
+// que repite, un número que se lee mal y una frase de consuelo que se repite. Cada check cuenta lo que revisó (un tope
+// que no puede pasar vacío).
+
+const HUECO_K4C_T = /\{[a-zA-Z]+\}/;
+// Los textos que una persona ve de un valor del motor. `datos` no entra: es el evento crudo, con sus plantillas, que la
+// tarjeta no pinta (pinta `titulo`, `descripcion` y las opciones, ya resueltos).
+function textosVisiblesK4cT(valor, ruta, acumulado) {
+  if (typeof valor === 'string') {
+    acumulado.push([ruta, valor]);
+  } else if (Array.isArray(valor)) {
+    valor.forEach((elemento, i) => textosVisiblesK4cT(elemento, `${ruta}[${i}]`, acumulado));
+  } else if (valor && typeof valor === 'object') {
+    for (const [clave, elemento] of Object.entries(valor)) {
+      if (clave !== 'datos') textosVisiblesK4cT(elemento, `${ruta}.${clave}`, acumulado);
+    }
+  }
+  return acumulado;
+}
+
+check('K4c (revisión) textos: ningún texto del motor (log, decisión, opción, hito, tarjeta) trae un {token} sin resolver, en carreras de los cinco roles', () => {
+  const SEEDS_POR_ROL = 8;
+  const SPLITS = 60;
+  const MINIMO_DE_TEXTOS = 150000;
+  const MINIMO_DE_CIERRES = 200;
+  let revisados = 0;
+  let cierres = 0;
+  const huecos = new Map();
+  for (const rol of IDS_ROL) {
+    for (let seed = 1; seed <= SEEDS_POR_ROL; seed += 1) {
+      const rng = mulberry32(seed * 7919 + 13);
+      let state = createInitialState(seed, rng, { rol });
+      const revisar = (fuente, valor) => {
+        for (const [ruta, texto] of textosVisiblesK4cT(valor, fuente, [])) {
+          revisados += 1;
+          const hueco = texto.match(HUECO_K4C_T);
+          if (hueco) {
+            const clave = `${rol} ${ruta.replace(/\[\d+\]/g, '')} ${hueco[0]}: ${texto.slice(0, 80)}`;
+            huecos.set(clave, (huecos.get(clave) ?? 0) + 1);
+          }
+        }
+      };
+      const responder = (sistema, st, decision, r) => {
+        revisar(`decisión ${st.pendiente.sistemaId}`, decision);
+        if (st.pendiente.sistemaId === 'edadCierre') cierres += 1;
+        return sistema.resolverAuto(st, decision, r);
+      };
+      for (let i = 0; i < SPLITS && !state.terminado; i += 1) {
+        const resultado = avanzarSplitAuto(state, rng, responder);
+        state = resultado.state;
+        revisar('log', resultado.logs);
+      }
+      revisar('hitos', state.career.hitos);
+      revisar('tarjeta', state.tarjeta);
+    }
+  }
+  if (revisados < MINIMO_DE_TEXTOS || cierres < MINIMO_DE_CIERRES) {
+    throw new Error(`la muestra no alcanza: ${revisados} textos (mínimo ${MINIMO_DE_TEXTOS}) y ${cierres} cierres (mínimo ${MINIMO_DE_CIERRES})`);
+  }
+  if (huecos.size > 0) {
+    const total = [...huecos.values()].reduce((suma, veces) => suma + veces, 0);
+    throw new Error(`${total} texto(s) con un token sin resolver, ${huecos.size} distintos, sobre ${revisados} revisados:\n  ${[...huecos].slice(0, 12).map(([clave, veces]) => `${veces}× ${clave}`).join('\n  ')}`);
   }
 });
 

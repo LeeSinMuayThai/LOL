@@ -135,7 +135,7 @@
     "category": "partido_clasico",
     "categoria": "partido",
     "title": "Presentarte ante los que te dejaron ir",
-    "description": "Del otro lado está {rivalDeLaFecha}, la organización que decidió no renovarte. {jungla} te dijo antes del partido que sabe lo que este cruce significa para vos.",
+    "description": "Del otro lado está {rivalDeLaFecha}, la organización que decidió no renovarte. {companero} te dijo antes del partido que sabe lo que este cruce significa para vos.",
     "weight": 6,
     "cooldown": 5,
     "contexto": {
@@ -263,7 +263,7 @@
     "category": "partido_clasico",
     "categoria": "partido",
     "title": "Les prometiste algo",
-    "description": "Antes del partido le dijiste a {jungla} que hoy no perdían, así, en esos términos. Ahora hay que sostenerlo en la práctica.",
+    "description": "Antes del partido le dijiste a {companero} que hoy no perdían, así, en esos términos. Ahora hay que sostenerlo en la práctica.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
@@ -305,7 +305,7 @@
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Soltás la frase y la cabeza te queda liviana. {jungla} no dice nada, pero al partido le falta esa chispa extra.",
+            "texto": "Soltás la frase y la cabeza te queda liviana. {companero} no dice nada, pero al partido le falta esa chispa extra.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.08, "max": 0.0 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 5, "clamp": [0, 100] }
@@ -313,7 +313,7 @@
           },
           {
             "weight": 4,
-            "texto": "{jungla} se acuerda de la frase igual, aunque vos ya la hayas soltado. Por lo menos no te llevaste el tilt a casa.",
+            "texto": "{companero} se acuerda de la frase igual, aunque vos ya la hayas soltado. Por lo menos no te llevaste el tilt a casa.",
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 3, "clamp": [0, 100] },
@@ -789,7 +789,7 @@
     "category": "partido_clasico",
     "categoria": "partido",
     "title": "Bajarle el precio al clásico, de adentro",
-    "description": "La gaming house ya está encendida con el cruce contra {rivalDeLaFecha} tres días antes. {jungla} habla de nada más. Vos sabés que llegar así de caliente al viernes cansa.",
+    "description": "La gaming house ya está encendida con el cruce contra {rivalDeLaFecha} tres días antes. {companero} habla de nada más. Vos sabés que llegar así de caliente al viernes cansa.",
     "weight": 4,
     "cooldown": 6,
     "contexto": {

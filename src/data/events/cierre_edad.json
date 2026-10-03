@@ -1841,7 +1841,7 @@
     "category": "cierre_edad",
     "categoria": "vestuario",
     "title": "El roster que viene se arma distinto",
-    "description": "Terminó la temporada y ya se sabe que el roster no va a ser el mismo el año que viene. Con {jungla} te tocó compartir todo este año; con el resto del roster que viene, hay que empezar de cero.",
+    "description": "Terminó la temporada y ya se sabe que el roster no va a ser el mismo el año que viene. Con {companero} te tocó compartir todo este año; con el resto del roster que viene, hay que empezar de cero.",
     "weight": 5,
     "cooldown": 0,
     "contexto": {

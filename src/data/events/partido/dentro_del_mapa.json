@@ -768,8 +768,8 @@
           {
             "weight": 6,
             "texto": [
-              "Llegás justo a tiempo: lo que iba a ser un desastre queda en una pelea pareja. {jungla} no se olvida de quién entró a buscarlo.",
-              "Entrás, {jungla} sale vivo por poco, y el equipo se acuerda de que fuiste."
+              "Llegás justo a tiempo: lo que iba a ser un desastre queda en una pelea pareja. {companero} no se olvida de quién entró a buscarlo.",
+              "Entrás, {companero} sale vivo por poco, y el equipo se acuerda de que fuiste."
             ],
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.08, "max": 0.0 },
@@ -1035,7 +1035,7 @@
       {
         "id": "ir_por_el_baron",
         "label": "Ir por el Barón 4v5",
-        "descripcion": "Le pedís a {jungla} el smite y todos entran a pegar. Diez segundos de riesgo total.",
+        "descripcion": "Se canta el smite y todos entran a pegar. Diez segundos de riesgo total.",
         "weight": 5,
         "outcomes": [
           {
@@ -1440,7 +1440,7 @@
             "weight": 6,
             "texto": [
               "Sale calcada de los scrims. {rivalDeLaFecha} nunca la vio venir y la pelea se define en cuatro segundos.",
-              "El plan funciona hasta el último detalle. {jungla} cierra la jugada y el partido pega un volantazo."
+              "El plan funciona hasta el último detalle. {companero} cierra la jugada y el partido pega un volantazo."
             ],
             "effects": [
               { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.12, "max": 0.22 },
