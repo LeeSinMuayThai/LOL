@@ -6744,6 +6744,35 @@ carrera.
 - **K4c-H.** El instrumento por horizonte en `agencia.js`, más la verificación de `la_prueba`.
 - **K4c-F.** El feed.
 
+**K4c-H, hecho** (`k4c-horizonte`: `df0a8ef`, `74ba17b`; 11 mutantes rojos). Dos hallazgos que cambian la
+medición y una decisión de diseño:
+- **Los horizontes binarios no tienen potencia.** Ganar o perder la serie o el partido, con 30 réplicas, solo da
+  significativo con efectos de ~20 pp. **Se decide** medirlos sin ruido:
+  - **Cómo.** Esas paradas ya declaran la p de cada opción, la de la previa de K2d, que es la que el motor tira.
+    Su palanca en horizonte es **Δp = p de la mejor opción − p de la peor**, sobre el estado en el que se
+    decide.
+  - **El umbral.** Cuenta como palanca si Δp ≥ **5 pp**: una elección que cambia una de cada veinte series. Es
+    una constante del instrumento (`agencia.js`), no del juego.
+  - **El binario** se sigue reportando.
+- **`amateur:reparto`** dio palanca en su horizonte (los LP) en corridas chicas. La medición grande decide si
+  sigue frenando: no se recorta por la tabla contra la carrera.
+- **`la_prueba` no decide nada.** P(fichar | resultado 0) = P(fichar | 1) = 1,000 en 294 tryouts: los dos tryouts
+  firman siempre (`mercado.js:~1198`, `amateur.js:~505`). El resultado solo mueve `bonusJerarquiaTryout` (±6),
+  que casi no llega al juego. Sin embargo dos textos (`minijuegos.json`: "mostrar que valés el contrato mínimo",
+  "con eso alcanza para firmar") prometen que el contrato está en juego.
+
+  **Se decide** que el motor cumpla la promesa (regla 15) y que el tryout tenga algo en juego:
+  - **La prueba decide el contrato**, como distribución con pesos y no con un corte. P(firmar) sube con el
+    resultado. Hay tres constantes de bloque B que calibra K4c: un resultado malo firma pocas veces, uno regular
+    a veces y uno bueno casi siempre.
+  - **Si fallás en el mercado**, la oferta se cae y seguís con las otras o con tu contrato. **En el amateur**, la
+    firma se posterga: seguís en la escalera y puede llegar otra oferta.
+  - **El crédito de jerarquía se queda** como está.
+  - **El texto** dice lo que está en juego: el contrato y el crédito.
+
+  Es una decisión del supervisor con el usuario ausente, revisable. Mueve el embudo (llegar a pro), que calibra
+  K5c.
+
 Después, un worker para las paradas sin nada en juego, con la lista confirmada por K4c-H. Luego el barrido final
 del supervisor y el paso 3.
 
