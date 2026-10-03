@@ -34,6 +34,53 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-02 — FASE K, K2c: el nivel empieza a mandar (constantes del bloque A; PLAN.md §K2)
+
+**Solo constantes** (regla 2), en dos pasos para que ningún worker esperara corridas largas.
+
+**Paso 1** (`3c5f359`, un Opus). Se midieron en el motor integrado las medias de los cuatro factores que inflaban
+tu fuerza y se centró cada uno en el valor de un pro típico. Referencias:
+- maestría 85: centra el factor de campeón entero, afinidad incluida;
+- jerarquía 60, sinergia 55.
+
+Además, el meta se acota a 0,9-1,1 (era 0,75-1,25), el peso de la maestría baja de 0,3 a 0,1 y el σ de mapa sube
+de 14,2 a 17,7 (√(12,5² + 12,5²)).
+
+**Paso 2.** El barrido del σ de fecha × `vueltas` lo corrí yo en background: `criterio`, 400 × 60, ocho
+combinaciones; la tabla está en PLAN §K2c. Con el criterio escrito antes de correrlo salió **`vueltas` 2 y el σ de
+fecha sin cambio**. El σ de fecha no mueve el Bo5 de forma sistemática, y las diferencias estaban dentro del ruido.
+Un Sonnet lo fijó (`29074e7`) y anotó lo que rompía, cada cosa por su vía:
+- **Huella.** `VERSION_JUEGO` 'K2c', `HUELLA_JUEGO` 345156314.
+- **`proyeccionJerarquia` volvió a su banda.** Con las referencias centradas, la jerarquía ya no crece de más en el
+  primer split, y su PENDIENTE de K2b se borró.
+- **El check del boost del pool se rompía por diseño.** Se re-basó por la regla 17: la misma fracción del rango
+  (40%), derivada de `BALANCE`. `CONCEPTO` §6 dice ahora 0,9x-1,1x.
+- **"Nadie te frena en el draft" queda PENDIENTE (bloque A, K3c).** Da 0 pausas en 4000 sondas: con el meta acotado,
+  ningún pick mueve la p lo suficiente para el umbral de pausa. **K3c tiene que re-fijar ese umbral** para que elegir
+  campeón vuelva a frenarte cuando importa.
+- **El check del Bo5 de K2a dependía de que el draft pausara.** Se reescribió contra la fuerza de arranque de cada
+  serie, y tres mutantes lo ponen en rojo.
+
+**Revisión independiente** (Sonnet): OK con observaciones. Re-midió las medias sobre el árbol final con su propio
+recorrido de la sonda: M 0,984 · C 1,001 · J 1,002 · S 0,999. Con dos mutantes propios puso en rojo los checks
+reescritos. Las dos observaciones eran comentarios viejos de `ajusteMeta.js` con valores pre-K2c y se corrigieron
+(`5da87e6`).
+
+**Medido por mí sobre el árbol final** (`29074e7`, `criterio` 400 × 60):
+
+| | antes (K2b integrada) | K2c |
+|---|---|---|
+| r nivel–posición, misma liga (corregida) | 0,402 | **0,582** (meta ≥ 0,5) |
+| Bo5 con Δ0≈10, jugador favorito | 70,1 | **81,0 ± 1,8** |
+| Bo5 con Δ0≈10, rival favorito | 94,2 | **88,4 ± 2,0** |
+| Bo5 con Δ0≈10, juntos | — | **83,5** (meta 75-85) |
+| temporadas con el rendimiento en el tope de 100 | 39,8% | **5,2%** |
+
+El rival favorito sigue por encima de 85: es la asimetría del Fearless, que resuelve K4.
+
+Verificación: `validate.js` 288/288 con una PENDIENTE (corrida completa del supervisor sobre `29074e7`) ·
+`simulate.js 1000` 0 crashes · `dist/` 1825 KB (techo 1900).
+
 ### 2026-10-02 — FASE K, K2a + K2b: el instrumento corregido y la estructura del bloque A (PLAN.md §K2)
 
 **K2a: el instrumento, sin corrimiento** (`74e7e4d`, cero `rng`, solo `src/dev/`). El observador de `simulate.js`
