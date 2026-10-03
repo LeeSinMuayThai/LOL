@@ -48,6 +48,10 @@ import tier3 from './tier3.json' with { type: 'json' };
 // contenido narrativo que le da identidad a ese origen, no un circuito nuevo.
 import latam from './latam.json' with { type: 'json' };
 
+// K4-C2: las bifurcaciones nuevas (cambio de región, streaming, cambio de línea, playoffs infiltrado, conflicto, staff) y
+// los eventos que leen los caminos que dejan.
+import caminos from './caminos.json' with { type: 'json' };
+
 export const TODOS_LOS_EVENTOS = [
   ...soloqPrecarrera,
   ...debutAcademy,
@@ -74,5 +78,6 @@ export const TODOS_LOS_EVENTOS = [
   ...retiroYVuelta,
   ...declive,
   ...tier3,
-  ...latam
+  ...latam,
+  ...caminos
 ];

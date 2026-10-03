@@ -360,6 +360,18 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // K4-C: los saltos grandes que ya tuvieron su prueba ('tier2', 'tier1', 'import'): la prueba sale una vez
       // por salto (`systems/mercado.js`). Array vacío al arrancar (T4).
       saltosConPrueba: [],
+      // K4-C2: los caminos que dejaron las bifurcaciones de carrera (`data/events/caminos.json`). Una clave por
+      // bifurcación, `null` hasta que la decidís; el valor es lo que pasó ('abierto', 'cerrado', 'tiempo_completo'...).
+      // Los eventos de seguimiento y los gates de otros eventos la leen con una `condition` común. Completo desde el
+      // arranque (T4): una condición sobre un campo que no existe no pasa el esquema de eventos.
+      caminos: {
+        region: null,     // 'abierto' | 'cerrado' | 'asentado'
+        contenido: null,  // 'tiempo_completo' | 'hibrido' | 'solo_competir' | 'consolidado'
+        rol: null,        // 'cubrio' | 'a_prueba' | 'se_nego' | 'integrado'
+        playoffs: null,   // 'infiltrado' | 'paro' | 'sin_infiltrar' | 'recuperado' | 'cronico'
+        conflicto: null,  // 'con_la_org' | 'contra_la_org' | 'en_el_medio' | 'resuelto'
+        staff: null       // 'puerta_abierta' | 'en_transicion' | 'cerrada'
+      },
       // Rastro de un solo split: qué campeón(es) entró el último efecto `pool`
       // con `accion: 'aprender'` de ESTE outcome. Lo usa el siguiente efecto
       // del mismo outcome (`accion: 'maestria', objetivo: 'nuevo'`) para saber
@@ -437,6 +449,13 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // (Bjergsen/Doublelift: dos cada uno — `CONCEPTO` §12.4). Al llegar a
       // `BALANCE.retiro.vueltasMaximas` el próximo retiro ya no abre ventana.
       vueltasUsadas: 0,
+      // K4-C2 (regla 15): los efectos de carrera de las bifurcaciones (`systems/events.js`). `ofertaDeImport` es la
+      // oferta de import aceptada que el mercado firma en la próxima pretemporada (`{ ligas, clausula }`);
+      // `rolDeOrigen` la línea y el pool que dejaste al cambiar de línea (`{ rol, pool }`); `motivoRetiro` por qué
+      // dejaste de competir ('streaming' | 'staff'). `null` mientras no pasó (T4).
+      ofertaDeImport: null,
+      rolDeOrigen: null,
+      motivoRetiro: null,
       // El `splitCount` de la última vuelta, para la marca transitoria
       // `vuelta_del_retiro` (mismo patrón que `splitDescenso`/`ventanaDescenso`).
       splitVuelta: null,

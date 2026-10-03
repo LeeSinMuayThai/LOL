@@ -18,6 +18,9 @@ import { ajusteBaseDeMinijuego } from '../core/serie.js';
 import { aplicarStatsDeMinijuego } from './serie.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
+import { ofertaDeImportPosible, prometerImport } from './mercado.js';
+import { cambiarDeRol } from './roster.js';
+import { retirarsePorCamino } from './retiro.js';
 
 export const id = 'eventos';
 
@@ -51,7 +54,24 @@ export function disponibleEn(state, evento, contexto = calcularContexto(state)) 
 // Una opcion puede tener su propio gating: "esta salida solo existe si
 // terminaste el secundario".
 export function opcionesVivas(state, evento, contexto = calcularContexto(state)) {
-  return evento.options.filter((opcion) => disponibleEn(state, opcion, contexto));
+  return evento.options.filter((opcion) => disponibleEn(state, opcion, contexto) && motivoDePromesaRota(state, opcion) === null);
+}
+
+// K4-C2 (regla 15): una opción que promete una mudanza (`ofertaDeImport`) solo existe si alguna org de esa liga
+// puede ficharte HOY con las reglas duras del mercado (edad, cupo de imports, listón de import). Si no, se muestra
+// cerrada con el motivo del mercado. Puro y sin `rng`: lo decide `systems/mercado.js`, no una copia de sus reglas.
+export function motivoDePromesaRota(state, opcion) {
+  for (const outcome of opcion.outcomes) {
+    for (const effect of outcome.effects) {
+      if (effect.type === 'ofertaDeImport') {
+        const posible = ofertaDeImportPosible(state, effect.liga);
+        if (!posible.posible) {
+          return posible.motivo;
+        }
+      }
+    }
+  }
+  return null;
 }
 
 // Exportada desde J0 (AUDITORIA.md, fase J-higiene): `simulate.js` la llama
@@ -179,6 +199,26 @@ function aplicarEfecto(state, effect, rng, origen) {
     };
   }
 
+  // K4-C2: un camino que se abre o se cierra. Escribe un valor en un flag (`flags.caminos.<bifurcación>`, o uno del motor
+  // que el dato pida a propósito, como `flags.banquilloPendiente`) para que los eventos de seguimiento lo lean con una
+  // `condition` común. No es una magnitud: no tiene rango ni entra en la previa, y no suma a la línea de efectos.
+  if (effect.type === 'camino') {
+    return { state: setPath(state, effect.path, effect.valor), descripcion: null };
+  }
+
+  // K4-C2 (regla 15): los efectos de carrera. El dato los declara; la lógica es de su sistema dueño, no se copia acá.
+  // `ofertaDeImport` deja una oferta real pendiente que el mercado firma en la próxima pretemporada (con sus reglas);
+  // `cambiarRol` te cambia de línea (pool, plantel); `retirarse` te retira por el camino del retiro, con su motivo.
+  if (effect.type === 'ofertaDeImport') {
+    return prometerImport(state, effect);
+  }
+  if (effect.type === 'cambiarRol') {
+    return cambiarDeRol(state, effect.rol, rng);
+  }
+  if (effect.type === 'retirarse') {
+    return retirarsePorCamino(state, effect.motivo);
+  }
+
   if (effect.type === 'push') {
     const lista = getPath(state, effect.path) ?? [];
     const valor = weightedPick(effect.values, () => 1, rng);
@@ -274,8 +314,8 @@ export function pesoConMemoria(state, evento) {
   return evento.weight * fatiga * bonus * bisagra * reciente;
 }
 
-export function elegirEvento(state, rng, { excluirId } = {}) {
-  const disponibles = candidatos(state).filter((event) => event.id !== excluirId);
+export function elegirEvento(state, rng, { excluirId, filtro = () => true } = {}) {
+  const disponibles = candidatos(state).filter((event) => event.id !== excluirId && filtro(event));
   if (disponibles.length === 0) {
     return null;
   }
@@ -346,10 +386,13 @@ export function resolverOpcion(state, evento, opcionId, rng, { cronica = null } 
   const titulo = `${nombre} · ${resolverTexto(opcion.label, state)}`;
 
   const descripciones = [];
+  // K4-C2: un efecto de carrera puede traer su propia línea (el retiro dice su balance, como cualquier retiro).
+  const logsDeEfectos = [];
   const nextState = outcome.effects.reduce((acc, effect) => {
     // K3-B: `nombre` (el título visible del evento, nunca su id) es el `origen` de lo que quede permanente.
-    const { state: siguiente, descripcion } = aplicarEfecto(acc, effect, rng, nombre);
+    const { state: siguiente, descripcion, logs: extra = [] } = aplicarEfecto(acc, effect, rng, nombre);
     descripciones.push(descripcion);
+    logsDeEfectos.push(...extra);
     return siguiente;
   }, state);
 
@@ -367,13 +410,13 @@ export function resolverOpcion(state, evento, opcionId, rng, { cronica = null } 
       state: registrarEventoVisto(nextState, evento),
       logs: [crearLog('event', `${nombre}: ${descripcion ? `${descripcion} ` : ''}Como ${perfilNombre.toLowerCase()}: ${opcionTexto}. ${cuerpo} (${efectos})`, {
         cronica: true, titulo: nombre, descripcion, opcion: opcionTexto, perfil: perfilNombre, cuerpo, efectos
-      })]
+      }), ...logsDeEfectos]
     };
   }
 
   return {
     state: registrarEventoVisto(nextState, evento),
-    logs: [crearLog('event', `${titulo} — ${cuerpo} (${efectos})`, { titulo, cuerpo, efectos })]
+    logs: [crearLog('event', `${titulo} — ${cuerpo} (${efectos})`, { titulo, cuerpo, efectos }), ...logsDeEfectos]
   };
 }
 
@@ -432,8 +475,8 @@ export function decisionDesdeEvento(state, evento, { franja, slot }) {
     // `elegirOpcionAutomatica`, cero consumo de `rng` (trampa T1) — es lo que
     // hace barata esta subfase entera.
     opcionesBloqueadas: evento.options
-      .filter((option) => !disponibleEn(state, option, contexto))
-      .map((option) => ({ label: resolverTexto(option.label, state), gate: gateDeOpcion(option) })),
+      .filter((option) => !disponibleEn(state, option, contexto) || motivoDePromesaRota(state, option) !== null)
+      .map((option) => ({ label: resolverTexto(option.label, state), gate: motivoDePromesaRota(state, option) ?? gateDeOpcion(option) })),
     // Fase 12c (PLAN.md §12.2): el peso visual, calculado acá una sola vez en
     // vez de que la UI lo adivine. `ambiente` es la rutina sin bisagra — antes
     // de que `categoria` existiera (fase 12b) no había de dónde sacarlo sin
@@ -538,7 +581,7 @@ export function resolver(state, decision, respuesta, rng) {
     ? { ...resuelto, player: { ...resuelto.player, perfil: derivarPerfil(resuelto.player.perfil, afinidadDeOpcion(tomada)) } }
     : resuelto;
 
-  if (nextState.terminado) {
+  if (nextState.terminado || nextState.phase === 'retirado') {
     return { state: nextState, logs };
   }
 
@@ -553,7 +596,8 @@ export function resolver(state, decision, respuesta, rng) {
 }
 
 function encadenar(nextState, logs, evento, slot, rng) {
-  if (nextState.terminado) {
+  // K4-C2: un `retirarse` deja `phase: 'retirado'` sin `terminado` (la ventana de vuelta): tampoco se amontona nada.
+  if (nextState.terminado || nextState.phase === 'retirado') {
     return { state: nextState, logs };
   }
 

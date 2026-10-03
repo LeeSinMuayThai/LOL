@@ -39,7 +39,7 @@ import { campeonesEnMeta, multiplicadorDeMeta, factorDeCampeon, pesoDePick, lect
 import * as poolMod from '../core/pool.js';
 import { campeonesDisponibles, entradaDePool } from '../core/pool.js';
 import { aplicar as aplicarCampeones } from '../systems/campeones.js';
-import { elegirOutcome, elegirEvento, decisionDesdeEvento, resolver as resolverEventos, resolverOpcion, cooldownActivo, pesoEfectivo, SPLIT_SIN_EVENTO_MSG, opcionDelPerfilPara } from '../systems/events.js';
+import { elegirOutcome, elegirEvento, decisionDesdeEvento, resolver as resolverEventos, resolverOpcion, cooldownActivo, pesoEfectivo, SPLIT_SIN_EVENTO_MSG, opcionDelPerfilPara, opcionesConPrevia } from '../systems/events.js';
 import PERFILES_K4C from '../data/perfiles.json' with { type: 'json' };
 import { previaDeOpcion, riesgoDeOpcion, payoffNormalizado } from '../core/previa.js';
 import { rarezaDeRutina, payoffDeRutina } from '../core/rareza.js';
@@ -72,7 +72,8 @@ import { rankearMundo, rankearPoblacion, puntajeRanking } from '../core/topMundi
 import { salarioDeOferta } from '../core/salarios.js';
 import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
 import { orgsQueTeFicharian, ofertaPosible, residenciaEn } from '../core/demanda.js';
-import { aplicar as aplicarMercado, construirOferta } from '../systems/mercado.js';
+import { aplicar as aplicarMercado, construirOferta, ofertaDeImportPosible } from '../systems/mercado.js';
+import { aplicar as aplicarRetiroK4c2, MOTIVOS_DE_RETIRO } from '../systems/retiro.js';
 import { cartaDeRutina, resolverPreparacion } from '../systems/practica.js';
 import { FRASES_MOTIVO, ETIQUETAS_MOTIVO } from '../systems/temporada.js';
 import { EJES, MARCAS, MOMENTOS, MOMENTOS_ACTIVOS, momentoPorId } from '../data/contextos.js';
@@ -139,6 +140,10 @@ function correrUnCheck(nombre, fn) {
     console.log(`FAIL ${nombre}: ${error.message}`);
   }
 }
+
+// K4-C2: las ligas que un `ofertaDeImport` puede nombrar, y los efectos que escriben su propia descripción en el log.
+const LIGAS_K4C2 = new Set(JSON.parse(fs.readFileSync(path.join(srcDir, 'data', 'leagues.json'), 'utf8')).map((liga) => liga.id));
+const EFECTOS_SIN_ETIQUETA_K4C2 = new Set(['camino', 'ofertaDeImport', 'cambiarRol', 'retirarse']);
 
 function check(nombre, fn) {
   if (SOLO.length > 0 && !SOLO.some((texto) => nombre.toLowerCase().includes(texto))) {
@@ -380,6 +385,39 @@ check('Esquema de eventos válido', () => {
             }
             if (!effect.tipo || typeof effect.tipo !== 'string') {
               throw new Error(`${evento.id}/${opcion.id}: efecto momento sin "tipo"`);
+            }
+            continue;
+          }
+
+          // K4-C2 (regla 15): los efectos de carrera no son magnitudes (sin rango): se valida que su dato exista.
+          if (effect.type === 'ofertaDeImport') {
+            const ids = [].concat(effect.liga);
+            if (ids.length === 0 || ids.some((id) => !LIGAS_K4C2.has(id))) {
+              throw new Error(`${evento.id}/${opcion.id}: ofertaDeImport con liga desconocida ${JSON.stringify(effect.liga)}`);
+            }
+            if (effect.clausula !== undefined && effect.clausula !== 'salida') {
+              throw new Error(`${evento.id}/${opcion.id}: ofertaDeImport con cláusula desconocida "${effect.clausula}"`);
+            }
+            continue;
+          }
+          if (effect.type === 'cambiarRol') {
+            const destinos = effect.rol === 'origen' ? [] : (typeof effect.rol === 'string' ? [effect.rol] : IDS_ROL.map((r) => effect.rol?.[r]));
+            if (destinos.some((rol) => !IDS_ROL.includes(rol)) || IDS_ROL.some((rol) => typeof effect.rol === 'object' && effect.rol[rol] === rol)) {
+              throw new Error(`${evento.id}/${opcion.id}: cambiarRol con una línea inválida o que no cambia: ${JSON.stringify(effect.rol)}`);
+            }
+            continue;
+          }
+          if (effect.type === 'retirarse') {
+            if (!MOTIVOS_DE_RETIRO[effect.motivo]) {
+              throw new Error(`${evento.id}/${opcion.id}: retirarse con motivo sin texto "${effect.motivo}" (MOTIVOS_DE_RETIRO)`);
+            }
+            continue;
+          }
+
+          // K4-C2: `camino` escribe un valor en un flag (no es una magnitud: sin rango). El path ya se validó arriba.
+          if (effect.type === 'camino') {
+            if (!['string', 'boolean'].includes(typeof effect.valor)) {
+              throw new Error(`${evento.id}/${opcion.id}: efecto camino en ${effect.path} sin "valor" (texto o booleano)`);
             }
             continue;
           }
@@ -674,7 +712,10 @@ const FORMAS_CONOCIDAS = {
   // log de cada mapa; K4-C, `player.perfil` (actual + pesos), `flags.categoriasRecientes`, `flags.splitMainMuerto`,
   // `flags.saltosConPrueba`; K4-D, `flags.preparacionDeSplit` (el año cuya preparación ya se resolvió; -1 hasta la
   // primera pretemporada pro).
-  8: 'b8702103beff'
+  8: 'b8702103beff',
+  // K4-C2: `flags.caminos` (una clave por bifurcación de carrera: región, contenido, rol, playoffs, conflicto, staff;
+  // `null` hasta que la decidís) y los valores que escriben las bifurcaciones nuevas.
+  9: '5cf65294a5f8'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -2766,6 +2807,8 @@ check('Todo efecto tiene etiqueta legible para el log', () => {
     for (const opcion of evento.options) {
       for (const outcome of opcion.outcomes) {
         for (const effect of outcome.effects) {
+          // K4-C2: un efecto `camino` escribe un flag y no imprime nada en el log (`descripcion: null`): no necesita etiqueta.
+          if (EFECTOS_SIN_ETIQUETA_K4C2.has(effect.type)) continue;
           if (etiquetaCampo(effect.path) === effect.path) {
             throw new Error(`${evento.id}: el path ${effect.path} no tiene entrada en ETIQUETAS_CAMPO`);
           }
@@ -14783,6 +14826,319 @@ check('K4-C la prueba en cada salto grande: primer fichaje en tier 2, en tier 1 
   }
   if (saltos === 0) {
     throw new Error('ningún salto grande por el mercado en 40 carreras');
+  }
+});
+
+// --- K4-C2: el pase de contenido sobre las bifurcaciones (PLAN.md "K4-C2") ---
+// Las bifurcaciones nuevas viven en `data/events/caminos.json` (`category: 'caminos'`) y dejan su camino en
+// `flags.caminos.*`; los eventos de seguimiento (los que no son bifurcación) lo leen con una `condition` común.
+const caminosK4c2 = () => TODOS_LOS_EVENTOS.filter((e) => e.category === 'caminos');
+const esFlagDeCamino = (path) => /^flags\.caminos\./.test(path);
+
+// path -> Set de los valores que algún resultado de algún evento escribe.
+function escriturasDeCaminoK4c2() {
+  const escritas = new Map();
+  for (const e of caminosK4c2()) {
+    for (const o of e.options) {
+      for (const x of o.outcomes) {
+        for (const ef of x.effects) {
+          if (ef.type === 'camino' && esFlagDeCamino(ef.path)) {
+            if (!escritas.has(ef.path)) escritas.set(ef.path, new Set());
+            escritas.get(ef.path).add(ef.valor);
+          }
+        }
+      }
+    }
+  }
+  return escritas;
+}
+
+check('K4-C2 cada opción de las bifurcaciones nuevas tiene su afinidad de perfil, y cada bifurcación empuja a más de un perfil', () => {
+  const base = createInitialState(1, mulberry32(1));
+  const forks = caminosK4c2().filter((e) => e.bifurcacion);
+  if (forks.length < 7) {
+    throw new Error(`esperaba al menos 7 bifurcaciones nuevas (región, contenido, rol, playoffs, conflicto, staff), hay ${forks.length}`);
+  }
+  const mag = BALANCE.perfil.pesoMagnitud;
+  // K4-C2 (regla 15): la oferta de import se cierra si ninguna org de esa liga puede ficharte (en el estado inicial,
+  // nunca). Los efectos de carrera no entran en la previa, así que el encaje se mide sin ellos.
+  const deCarrera = new Set(['ofertaDeImport', 'cambiarRol', 'retirarse']);
+  const sinEfectosDeCarrera = (e) => ({ ...e, options: e.options.map((o) => ({ ...o, outcomes: o.outcomes.map((x) => ({ ...x, effects: x.effects.filter((ef) => !deCarrera.has(ef.type)) })) })) });
+  for (const evento of forks.map(sinEfectosDeCarrera)) {
+    const vivas = opcionesConPrevia(base, evento);
+    if (vivas.length !== evento.options.length) {
+      throw new Error(`${evento.id}: una opción con gating propio no entra en esta prueba`);
+    }
+    const afinidades = new Set();
+    for (const o of vivas) {
+      const original = evento.options.find((x) => x.id === o.id);
+      if (PERFILES_K4C.orden.includes(original.perfil)) {
+        afinidades.add(original.perfil);
+        continue;
+      }
+      if (o.previa.length === 0) {
+        throw new Error(`${evento.id}/${o.id}: sin previa y sin \`perfil\` en el dato: no tiene afinidad`);
+      }
+      const encajes = PERFILES_K4C.orden.map((id) => {
+        const p = PERFILES_K4C.perfiles[id];
+        let valor = p.riesgo[o.riesgo] ?? 0;
+        for (const fila of o.previa) {
+          const familia = PERFILES_K4C.familiaDeCampo[fila.campo];
+          if (familia) valor += (p.familias[familia] ?? 0) * (fila.signo === '-' ? -1 : 1) * (mag[fila.magnitud] ?? 0);
+        }
+        return { id, valor };
+      }).sort((a, b) => b.valor - a.valor);
+      if (!(encajes[0].valor > encajes[1].valor)) {
+        throw new Error(`${evento.id}/${o.id}: empate entre ${encajes[0].id} y ${encajes[1].id} (${encajes[0].valor}): la afinidad no está definida (usá \`perfil\` en la opción)`);
+      }
+      afinidades.add(encajes[0].id);
+    }
+    if (afinidades.size < 2) {
+      throw new Error(`${evento.id}: todas sus opciones tienen la misma afinidad (${[...afinidades][0]}): decidirla no corre el perfil`);
+    }
+  }
+});
+
+check('K4-C2 cada bifurcación nueva deja un flag en todos sus resultados, y algún evento lo lee con un valor que alguien escribe', () => {
+  const escritas = escriturasDeCaminoK4c2();
+  const forks = caminosK4c2().filter((e) => e.bifurcacion);
+  const lecturas = new Map(); // path -> [{ evento, op, value }]
+  for (const e of TODOS_LOS_EVENTOS) {
+    for (const c of e.conditions) {
+      if (esFlagDeCamino(c.field)) {
+        if (!lecturas.has(c.field)) lecturas.set(c.field, []);
+        lecturas.get(c.field).push({ evento: e, op: c.op, value: c.value });
+      }
+    }
+  }
+  for (const e of forks) {
+    const escribe = new Set();
+    for (const o of e.options) {
+      for (const x of o.outcomes) {
+        const caminos = x.effects.filter((ef) => ef.type === 'camino' && esFlagDeCamino(ef.path));
+        if (caminos.length === 0) {
+          throw new Error(`${e.id}/${o.id}: un resultado no deja su flag de camino`);
+        }
+        caminos.forEach((ef) => escribe.add(ef.path));
+      }
+    }
+    for (const path of escribe) {
+      const lectores = (lecturas.get(path) ?? []).filter((l) => l.evento.id !== e.id);
+      if (lectores.length === 0) {
+        throw new Error(`${e.id}: escribe ${path} y ningún otro evento lo lee`);
+      }
+    }
+  }
+  for (const [path, lista] of lecturas) {
+    for (const l of lista) {
+      if (l.op === 'eq' && !escritas.get(path)?.has(l.value)) {
+        throw new Error(`${l.evento.id}: lee ${path} == "${l.value}" y ningún resultado escribe ese valor`);
+      }
+    }
+  }
+  const seguimientos = new Set([...lecturas.values()].flat().filter((l) => !l.evento.bifurcacion).map((l) => l.evento.id));
+  if (seguimientos.size < 2) {
+    throw new Error(`hacen falta al menos 2 eventos de seguimiento (no bifurcaciones) que lean un camino: hay ${seguimientos.size}`);
+  }
+});
+
+check('K4-C2 los caminos se abren y los seguimientos se resuelven en carreras reales (40 carreras × 60)', () => {
+  const carreras = carrerasK4c();
+  const claves = Object.keys(createInitialState(1, mulberry32(1)).flags.caminos);
+  for (const clave of claves) {
+    if (!carreras.some((c) => c.final.flags.caminos[clave] !== null)) {
+      throw new Error(`ninguna de las ${carreras.length} carreras dejó el camino "${clave}"`);
+    }
+  }
+  const seguimientos = caminosK4c2().filter((e) => !e.bifurcacion);
+  const vistos = seguimientos.filter((e) => carreras.some((c) => c.final.logs.some((log) => log.cronica && log.titulo === e.title)));
+  if (vistos.length < 3) {
+    throw new Error(`solo ${vistos.length} de ${seguimientos.length} eventos de seguimiento se resolvieron en ${carreras.length} carreras (${vistos.map((e) => e.id).join(', ')})`);
+  }
+});
+
+check('K4-C2 las bifurcaciones frenan entre 4,5 y 7,5 veces por carrera (criterio, 40 carreras × 60; la meta es 5-7)', () => {
+  const carreras = carrerasK4c();
+  const total = carreras.reduce((suma, c) => suma + c.pausas.filter((p) => p.sistema === 'eventos' && p.decision.datos?.evento?.bifurcacion === true).length, 0);
+  const media = total / carreras.length;
+  if (media < 4.5 || media > 7.5) {
+    throw new Error(`${media.toFixed(2)} bifurcaciones por carrera, fuera de [4,5, 7,5] (${total} en ${carreras.length} carreras)`);
+  }
+});
+
+// --- K4-C2 (regla 15): las bifurcaciones cambian la carrera de verdad (PLAN.md "K4-C2, tal como quedó") ---
+// La promesa del texto y el efecto del dato tienen que coincidir. `promete` en la opción declara qué cambia; el patrón
+// de palabras atrapa la opción que lo promete sin declararlo.
+const PROMESAS_K4C2 = {
+  region: { efecto: 'ofertaDeImport', patron: /firmar con|mudanza|te mudás|ir a corea|cambiás de liga|aceptan la cláusula/i },
+  rol: { efecto: 'cambiarRol', patron: /línea nueva|volvés a tu línea|cambiás de línea/i },
+  retiro: { efecto: 'retirarse', patron: /dejar de competir|te retirás|colgar el mouse/i }
+};
+const EFECTO_A_PROMESA_K4C2 = Object.fromEntries(Object.entries(PROMESAS_K4C2).map(([tipo, p]) => [p.efecto, tipo]));
+const textoDeLogK4c2 = (log) => log.texto ?? log.mensaje ?? log.message ?? '';
+
+check('K4-C2 regla 15: toda opción que promete mudanza, cambio de línea o retiro declara el efecto que lo hace, y ninguno se esconde', () => {
+  let conPromesa = 0;
+  for (const evento of TODOS_LOS_EVENTOS.filter((e) => e.bifurcacion || e.category === 'caminos')) {
+    for (const opcion of evento.options) {
+      const texto = `${opcion.label} ${opcion.descripcion ?? ''}`;
+      for (const [tipo, { patron }] of Object.entries(PROMESAS_K4C2)) {
+        if (patron.test(texto) && opcion.promete !== tipo) {
+          throw new Error(`${evento.id}/${opcion.id}: el texto promete ${tipo} ("${texto}") pero la opción no declara promete: '${tipo}'`);
+        }
+      }
+      if (opcion.promete !== undefined) {
+        const promesa = PROMESAS_K4C2[opcion.promete];
+        if (!promesa) {
+          throw new Error(`${evento.id}/${opcion.id}: promete '${opcion.promete}' desconocido`);
+        }
+        if (!opcion.outcomes.some((x) => x.effects.some((ef) => ef.type === promesa.efecto))) {
+          throw new Error(`${evento.id}/${opcion.id}: promete ${opcion.promete} y ningún resultado declara ${promesa.efecto}`);
+        }
+        conPromesa += 1;
+      }
+    }
+  }
+  for (const evento of TODOS_LOS_EVENTOS) {
+    for (const opcion of evento.options) {
+      for (const x of opcion.outcomes) {
+        for (const ef of x.effects) {
+          if (EFECTO_A_PROMESA_K4C2[ef.type] && opcion.promete !== EFECTO_A_PROMESA_K4C2[ef.type]) {
+            throw new Error(`${evento.id}/${opcion.id}: declara ${ef.type} sin promete: '${EFECTO_A_PROMESA_K4C2[ef.type]}' (un efecto de carrera escondido)`);
+          }
+        }
+      }
+    }
+  }
+  if (conPromesa < 8) {
+    throw new Error(`solo ${conPromesa} opciones con promesa de carrera; esperaba al menos 8 (región ×4, línea ×2, retiro ×2)`);
+  }
+});
+
+// Estados de carrera real en una pretemporada, profesional, tier 1 o 2 (los de las bifurcaciones de región).
+let pretemporadasProK4c2Cache = null;
+function pretemporadasProK4c2(cantidad) {
+  pretemporadasProK4c2Cache ??= (() => {
+    const estados = [];
+    for (let seed = 7100; estados.length < 25 && seed < 7400; seed += 1) {
+      const rng = mulberry32(seed);
+      let state = createInitialState(seed, rng);
+      for (let i = 0; i < 45 && !state.terminado; i += 1) {
+        state = avanzarSplitAuto(state, rng).state;
+        if (state.phase === 'profesional' && !state.pendiente && state.player.splitCount % BALANCE.edad.splitsPorEdad === 0
+          && [1, 2].includes(state.career.tier) && state.player.splitCount >= 24) {
+          estados.push({ seed, state });
+          break;
+        }
+      }
+    }
+    return estados;
+  })();
+  return pretemporadasProK4c2Cache.slice(0, cantidad);
+}
+
+check('K4-C2 regla 15: ofertaDeImport se firma por el mercado en la próxima pretemporada y terminás jugando en esa liga', () => {
+  let firmadas = 0;
+  let cerradas = 0;
+  const lpl = TODOS_LOS_EVENTOS.find((e) => e.id === 'la_oferta_de_la_lpl');
+  for (const { seed, state } of pretemporadasProK4c2(25)) {
+    for (const liga of ['LCK', 'LPL', 'LEC', 'LCS']) {
+      if (liga === state.career.liga) continue;
+      const posible = ofertaDeImportPosible(state, liga);
+      if (!posible.posible) {
+        // La opción que lo promete no se puede tomar: sale cerrada con el motivo del mercado (regla 15).
+        if (liga === 'LPL') {
+          const decision = decisionDesdeEvento(state, lpl, { franja: 'normal', slot: 1 });
+          const bloqueada = decision.opcionesBloqueadas.find((o) => o.gate === posible.motivo);
+          if (!bloqueada || decision.opciones.some((o) => o.id === 'ir_por_la_plata')) {
+            throw new Error(`seed ${seed}: la LPL no puede ficharte (${posible.motivo}) y "Firmar con la LPL" igual se ofrece`);
+          }
+          cerradas += 1;
+        }
+        continue;
+      }
+      const conOferta = { ...state, flags: { ...state.flags, ofertaDeImport: { ligas: [liga], clausula: 'salida' } } };
+      const r = aplicarMercado(conOferta, mulberry32(seed));
+      if (r.state.flags.ofertaDeImport !== null) {
+        throw new Error(`seed ${seed}: la oferta de ${liga} sigue pendiente después de la pretemporada`);
+      }
+      const seCayo = r.logs.some((l) => /La mudanza se cae/.test(textoDeLogK4c2(l)));
+      if (r.state.career.liga === liga) {
+        if (r.state.career.contrato.clausula !== 'salida' || r.decision) {
+          throw new Error(`seed ${seed}: firmó en ${liga} sin la cláusula de la oferta, o el mercado volvió a frenar`);
+        }
+        firmadas += 1;
+      } else if (!seCayo) {
+        throw new Error(`seed ${seed}: aceptó ir a ${liga} y sigue en ${r.state.career.liga} sin que se diga por qué`);
+      }
+    }
+  }
+  if (firmadas < 5 || cerradas < 1) {
+    throw new Error(`firmadas ${firmadas} (mín. 5), opciones cerradas con motivo ${cerradas} (mín. 1)`);
+  }
+});
+
+check('K4-C2 regla 15: cambiarRol te cambia de línea con pool y plantel coherentes, y volver a lo tuyo te devuelve', () => {
+  const swap = TODOS_LOS_EVENTOS.find((e) => e.id === 'la_linea_que_te_piden');
+  const vuelta = TODOS_LOS_EVENTOS.find((e) => e.id === 'la_linea_nueva_te_cambio');
+  const casos = pretemporadasProK4c2(8);
+  for (const { seed, state: crudo } of casos) {
+    // Si la carrera del bot ya había cambiado de línea, se parte de su línea de hoy como la de origen.
+    const state = { ...crudo, flags: { ...crudo.flags, rolDeOrigen: null } };
+    const rolViejo = state.player.role;
+    const poolViejo = state.player.championPool.map((c) => c.name).join(',');
+    const ida = resolverOpcion(state, swap, 'aceptar_el_swap', mulberry32(seed)).state;
+    const rolNuevo = ida.player.role;
+    if (rolNuevo === rolViejo || !IDS_ROL.includes(rolNuevo)) {
+      throw new Error(`seed ${seed}: aceptar el swap dejó la línea en ${rolNuevo}`);
+    }
+    const ajenos = ida.player.championPool.filter((c) => CAMPEONES.find((x) => x.name === c.name)?.role !== rolNuevo);
+    if (ajenos.length > 0 || ida.player.championPool.length < BALANCE.campeones.poolMinimo) {
+      throw new Error(`seed ${seed}: pool de ${rolNuevo} incoherente (${ida.player.championPool.map((c) => c.name).join(', ')})`);
+    }
+    const rolesCompaneros = ida.career.companeros.map((c) => c.role).sort().join(',');
+    if (rolesCompaneros !== IDS_ROL.filter((r) => r !== rolNuevo).sort().join(',')) {
+      throw new Error(`seed ${seed}: compañeros ${rolesCompaneros} con vos en ${rolNuevo}`);
+    }
+    const back = resolverOpcion(ida, vuelta, 'volver_a_lo_tuyo', mulberry32(seed)).state;
+    if (back.player.role !== rolViejo || back.player.championPool.map((c) => c.name).join(',') !== poolViejo || back.flags.rolDeOrigen !== null) {
+      throw new Error(`seed ${seed}: volver a lo tuyo no te devolvió a ${rolViejo} con tu pool`);
+    }
+  }
+  if (casos.length < 5) {
+    throw new Error(`solo ${casos.length} estados de prueba`);
+  }
+});
+
+check('K4-C2 regla 15: retirarse termina la carrera por el camino del retiro, con el motivo en palabras; la ventana tiene su contenido', () => {
+  const canal = TODOS_LOS_EVENTOS.find((e) => e.id === 'el_canal_de_tiempo_completo');
+  const { seed, state } = pretemporadasProK4c2(1)[0];
+  const r = resolverOpcion(state, canal, 'vivir_del_canal', mulberry32(seed));
+  const st = r.state;
+  if (st.phase !== 'retirado' || st.finAnticipado !== 'retiro_elegido' || st.flags.motivoRetiro !== 'streaming') {
+    throw new Error(`vivir del canal dejó phase=${st.phase}, fin=${st.finAnticipado}, motivo=${st.flags.motivoRetiro}`);
+  }
+  const textos = r.logs.map(textoDeLogK4c2).join(' | ');
+  if (!textos.includes(MOTIVOS_DE_RETIRO.streaming) || /\bstreaming\b|retirarse/.test(textos)) {
+    throw new Error(`el log no cuenta el motivo en palabras: ${textos}`);
+  }
+  const final = resolverOpcion({ ...state, flags: { ...state.flags, vueltasUsadas: BALANCE.retiro.vueltasMaximas } }, canal, 'vivir_del_canal', mulberry32(seed)).state;
+  if (!final.terminado) {
+    throw new Error('sin vueltas disponibles, retirarse no cerró la carrera');
+  }
+  // La ventana de vuelta: en la parada del "¿Volvés?", la bifurcación de la ventana (`la_llamada_del_manager`) sale.
+  let llamadas = 0;
+  for (let s = 1; s <= 40; s += 1) {
+    const enVentana = {
+      ...st,
+      player: { ...st.player, splitCount: st.player.splitCount + BALANCE.edad.splitsPorEdad },
+      flags: { ...st.flags, splitsEnVentana: BALANCE.edad.splitsPorEdad - 1, cooldownHasta: {} }
+    };
+    const v = aplicarRetiroK4c2(enVentana, mulberry32(s));
+    if (v.decision?.datos?.evento?.id === 'la_llamada_del_manager') llamadas += 1;
+  }
+  if (llamadas === 0) {
+    throw new Error('la_llamada_del_manager no sale nunca en la ventana de vuelta (40 tiradas)');
   }
 });
 

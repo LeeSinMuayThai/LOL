@@ -192,6 +192,74 @@ export function construirOferta(state, liga, org, tagForzado, rng) {
   };
 }
 
+// --- K4-C2: la oferta de import que trae una bifurcación (`ofertaDeImport` en `data/events/caminos.json`) ---
+//
+// Regla 15: la tarjeta que dice "una org de la LPL te quiere" tiene que poder cumplirse. La org que te vino a buscar
+// te hace lugar (como el piso de franquicia, `forzada`: salta asiento, presupuesto y banda) pero NUNCA las reglas
+// duras: edad mínima, cupo de imports, residentes y el listón de import de esa liga. Se elige la org más fuerte que
+// te puede fichar; `ligas` es una liga o una lista en orden de preferencia ("occidente": LEC, después LCS). Pura.
+export function ofertaDeImportPosible(state, ligas) {
+  const ids = [].concat(ligas);
+  let motivo = null;
+  for (const ligaId of ids) {
+    const liga = state.mundo.ligas.find((candidata) => candidata.id === ligaId);
+    if (!liga) {
+      continue;
+    }
+    const orgs = liga.orgs
+      .filter((org) => org.nombre !== state.career.currentOrg && state.mundo.planteles?.[org.nombre])
+      .sort((a, b) => b.fuerza - a.fuerza);
+    for (const org of orgs) {
+      const res = ofertaPosible(state, org.nombre, state.player.role, { forzada: true });
+      if (res.posible) {
+        return { posible: true, liga, org };
+      }
+      motivo = motivo ?? res.motivo ?? null;
+    }
+  }
+  return {
+    posible: false,
+    motivo: `Ninguna org de ${ids.join(' ni de ')} puede ficharte${motivo ? `: ${motivo}` : ''}.`
+  };
+}
+
+// El efecto del evento: deja la oferta pendiente (`flags.ofertaDeImport`) para la próxima pretemporada, que es
+// cuando abre el mercado. `clausula: 'salida'` viaja al contrato (el "año a prueba" de la LPL).
+export function prometerImport(state, effect) {
+  const ids = [].concat(effect.liga);
+  return {
+    state: { ...state, flags: { ...state.flags, ofertaDeImport: { ligas: ids, clausula: effect.clausula ?? null } } },
+    descripcion: `te vas a la ${ids.join(' o a la ')} en la próxima pretemporada`
+  };
+}
+
+// En la pretemporada, antes que el banquillo y el contrato: la oferta pendiente se vuelve a mirar contra el mundo de
+// HOY (el mercado del mundo acaba de moverse) y, si sigue en pie, se firma por `aceptarOferta`, como cualquier otra:
+// salario y años de `construirOferta`, tipo de contrato (import o no) por residencia. Si ya no hay org que pueda,
+// se dice por qué y el mercado sigue como siempre. `null` si no había oferta pendiente.
+function firmarImportPendiente(state, rng) {
+  const pendiente = state.flags.ofertaDeImport;
+  if (!pendiente) {
+    return null;
+  }
+  const limpio = { ...state, flags: { ...state.flags, ofertaDeImport: null } };
+  const posible = ofertaDeImportPosible(limpio, pendiente.ligas);
+  if (!posible.posible) {
+    return { state: limpio, logs: [crearLog('mercado', `La mudanza se cae en la pretemporada. ${posible.motivo}`)], firmado: false };
+  }
+  const cruda = construirOferta(limpio, posible.liga, posible.org, null, rng);
+  const oferta = { ...cruda, datos: { ...cruda.datos, clausula: pendiente.clausula } };
+  const origen = limpio.career.currentOrg;
+  const firmado = aceptarOferta(limpio, oferta, rng, { motivoFila: 'transferencia' });
+  const cerrado = cerrarAsientosCongelados(firmado.state, oferta.org, rng, new Set([oferta.org]));
+  const salida = origen ? `Dejás ${origen}: ` : '';
+  return {
+    state: { ...cerrado.state, flags: { ...cerrado.state.flags, banquilloPendiente: false } },
+    logs: [crearLog('mercado', `${salida}la mudanza se hace. ${oferta.org} te espera en la ${oferta.liga}.`), ...firmado.logs, ...cerrado.logs],
+    firmado: true
+  };
+}
+
 // La mano de ofertas: la renovación de tu club (si te quieren) + las orgs del
 // MUNDO con un asiento congelado para vos este offseason (`core/mercadoMundial.js`).
 // Fase 9Md: `orgsQueTeFicharian` ya no recibe una liga — escanea las 6 tier 1
@@ -440,6 +508,18 @@ function aplicarMercado(state, rng) {
     return { state: stConValor, logs: logsMundo };
   }
 
+  // K4-C2: la oferta de import que aceptaste en una bifurcación se firma antes que nada (banquillo incluido: te fuiste).
+  const importPendiente = firmarImportPendiente(stConValor, rng);
+  if (importPendiente?.firmado) {
+    return { state: importPendiente.state, logs: [...logsMundo, ...importPendiente.logs] };
+  }
+  if (importPendiente) {
+    return aplicarMercadoSinImport(importPendiente.state, [...logsMundo, ...importPendiente.logs], rng);
+  }
+  return aplicarMercadoSinImport(stConValor, logsMundo, rng);
+}
+
+function aplicarMercadoSinImport(stConValor, logsMundo, rng) {
   // Fase 9Mf: el banquillo se cobra ANTES que nada. `rendimiento.js` lo marcó
   // el split pasado; tu club te cede a la liga de desarrollo de su región.
   if (stConValor.career.currentOrg && stConValor.flags.banquilloPendiente) {
