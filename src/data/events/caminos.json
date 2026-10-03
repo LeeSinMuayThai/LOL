@@ -6,6 +6,11 @@
         "field": "player.stats.hype",
         "op": "gt",
         "value": 35
+      },
+      {
+        "field": "flags.ofertaDeImport",
+        "op": "eq",
+        "value": null
       }
     ],
     "id": "el_pasaje_a_occidente",
@@ -286,6 +291,11 @@
         "field": "player.stats.hype",
         "op": "gt",
         "value": 35
+      },
+      {
+        "field": "flags.ofertaDeImport",
+        "op": "eq",
+        "value": null
       }
     ],
     "id": "la_oferta_de_la_lpl",
@@ -559,6 +569,11 @@
         "field": "player.stats.mecanica",
         "op": "gt",
         "value": 55
+      },
+      {
+        "field": "flags.ofertaDeImport",
+        "op": "eq",
+        "value": null
       }
     ],
     "id": "la_puerta_de_la_lck",
@@ -1170,6 +1185,11 @@
         "field": "player.splitCount",
         "op": "gt",
         "value": 6
+      },
+      {
+        "field": "flags.caminos.rol",
+        "op": "neq",
+        "value": "cubrio"
       }
     ],
     "id": "la_linea_que_te_piden",
@@ -3062,6 +3082,7 @@
       }
     ],
     "id": "la_linea_nueva_te_cambio",
+    "bifurcacion": true,
     "categoria": "oportunidad",
     "title": "Lo que te dejó la línea nueva",
     "description": "Después del swap, tu forma de leer el draft cambió: ahora entendés qué le pasa al otro lado del mapa cuando tu línea hace lo que hace. El coach lo notó y el equipo también.",
@@ -3082,6 +3103,7 @@
         "label": "Llevar esa mirada al draft y al shotcalling",
         "descripcion": "Usás lo aprendido para decidir mejor.",
         "weight": 5,
+        "perfil": "profesional",
         "outcomes": [
           {
             "weight": 6,
@@ -3152,6 +3174,7 @@
         "label": "Volver a lo tuyo y dejar el swap como anécdota",
         "descripcion": "Volvés a tu línea de siempre y a tu pool, con el óxido de los splits sin jugarlo.",
         "weight": 5,
+        "perfil": "hambriento",
         "outcomes": [
           {
             "weight": 5,

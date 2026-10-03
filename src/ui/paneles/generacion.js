@@ -1,3 +1,4 @@
+import { nombreVisibleDeLiga } from '../formatoUi.js';
 // El panel de Generación (fase T5, cierra la deuda D8 de UI — el motor ya
 // generaba estos 5 rivales desde la fase 3 y nunca se veían en ningún
 // lado). Fuente: `mundo.rivales`, sorteado una vez en `generarMundo` y
@@ -34,7 +35,7 @@ export function renderGeneracion(container, state, modulos) {
     // fase 9M/11 en `PLAN.md`) — hasta que eso corra, siempre es `null` y
     // acá solo hay rol + liga: exactamente lo que el motor sabe hoy.
     detalleEl.textContent = rival.desenlace
-      ?? `${modulos.etiquetaRol(rival.role)} · ${rival.liga}`;
+      ?? `${modulos.etiquetaRol(rival.role)} · ${nombreVisibleDeLiga(rival.liga)}`;
 
     fila.append(handleEl, detalleEl);
     lista.appendChild(fila);
