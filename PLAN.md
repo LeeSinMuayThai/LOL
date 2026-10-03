@@ -6549,6 +6549,90 @@ retirarte. Eso rompe la regla 15 (la tarjeta promete una mudanza que el motor no
 Contra §K.3c. **Reemplaza a las bandas de J5/J6** (150-280 decisiones por carrera, "más drafts"): se
 borran con su línea de "reemplaza a…" (regla 17).
 
+#### K4c — cómo se hace *(supervisor, 2026-10-03)*
+
+Se calibra sobre la estructura final: K4 + K4-C2 + K5 integradas, con los arreglos de la revisión de K5
+(`26450d5`).
+
+**Línea de base** (`simulate.js 400 60 criterio` sobre `26450d5`, 0 crashes):
+
+| Métrica | Medido | Meta (§K.3c) |
+|---|---|---|
+| Interrupciones por carrera | mediana **111** · p90 127 | ≤ 80 |
+| Por split pro, regular | p50 1 · p90 2 (5,7% pasan de 2) | ≤ 2 ✅ |
+| Por split pro, playoffs | p50 4 · p90 7 (33,1% pasan de 4) | ≤ 4 |
+| Por split pro, internacional | p50 4 · p90 7 (47,1% pasan de 4) | ≤ 4 |
+| Minijuegos por carrera | mediana **11** | 4-8 |
+| Tiempo-máquina (definición del instrumento) | mediana **8,1 min** · p90 9,3 | ≤ ~4,6 (re-base de §K.0b) |
+
+**De dónde salen las 111.** Por carrera, en orden:
+
+| Tipo | Por carrera |
+|---|---|
+| `temporada:momento` | 19,2 |
+| `edadCierre` (el fin de año) | 15,5 |
+| `serie:plan` | 13,9 |
+| `amateur:reparto` | 9,9 |
+| `serie:minijuego` | 7,8 |
+| `eventos` | 6,0 |
+| `mercado:oferta` | 6,0 |
+| `practica` | 5,5 |
+| `internacional:swiss` + `internacional:plan` | 4,0 |
+| resto | < 1,2 cada uno |
+
+**El criterio para recortar es la palanca.** El juego te frena cuando algo grande está en juego (D-B). Un tipo de
+parada cuya palanca medida es ~0 es una parada sin nada en juego, así que se recorta primero: se vuelve más rara
+o se resuelve sola. Un tipo con palanca alta se conserva aunque sea frecuente. La meta de palanca es la
+re-especificada en §K.0c: ≥ 60% de las interrupciones que sobreviven, con el test corregido por comparaciones
+múltiples y ≥ 30 réplicas por decisión.
+
+**Las perillas** (bloque B; el paso 1 confirma los nombres en `balance.js`):
+
+| Perilla | Qué mueve |
+|---|---|
+| `serie.plan.umbralSinNadaEnJuego` | series en las que no te frena el plan |
+| `serie.rondasConMinijuegoDecisivo` · `serie.rondasConPrensa` | minijuegos y prensa de serie |
+| `temporada.ventanaDefineClasificacion` y cuándo la fecha marcada "tiene algo en juego" | `temporada:momento` |
+| frecuencia del reparto amateur y de la práctica | `amateur:reparto`, `practica` |
+| pesos del banco de minijuegos (`data/minijuegos.json`) | la PENDIENTE B del banco: ninguna mecánica > 35%, y las tres que no salen nunca (`last_hit`, `la_vision`, `el_kite`) vuelven a tener momento |
+| frecuencia de las bifurcaciones (K4-C2) | ~5-7 por carrera con la regla nueva de `criterio` |
+
+**Paso 1 — un worker (instrumento, sin tocar el motor):**
+- **Un script de barrido** (`k4c/barrido.mjs`, sin trackear, como el de K3c) que aplica overrides de esas
+  perillas en memoria y reporta, con `criterio`, el bloque `ritmo` (incluido el desglose por tipo), los
+  minijuegos por mecánica y las bifurcaciones por carrera.
+- **`agencia.js` con potencia.** ≥ 30 réplicas por decisión, la palanca **por tipo de parada** y la fracción
+  ponderada sobre las paradas que quedan, para que el paso 2 recorte con el dato.
+- **El tiempo-máquina por fuente.** Qué sistema escribe cuántos logs no técnicos por carrera. Si el tiempo no
+  baja con constantes, el paso 2 lo decide y lo escribe acá antes de tocar estructura.
+- **`criterio` en las bifurcaciones.** Hoy acepta casi todo cambio de línea (el 52% de sus carreras cambia de
+  línea) y nunca se muda ni se retira, porque puntúa la previa de las stats. La regla nueva es la de un jugador que
+  lee la carrera:
+  - acepta un **import** si la liga de destino tiene más `dificultad` que la actual y su nivel alcanza el calibre
+    de esa liga;
+  - acepta un **cambio de línea** solo si no queda peor (su pool y su maestría en la línea nueva contra la
+    actual);
+  - **no se retira** mientras el mercado le ofrezca su tier.
+
+  `malas` hace lo contrario y `azar` sigue al azar. Se mide antes y después: % de carreras que cambian de línea y
+  que se mudan, por estrategia.
+- **El código muerto del draft.** `lecturaDePick` ya no tiene quien lo llame fuera de `validate.js`. Se borran la
+  función, su check y `BALANCE.draft.lectura`, con la línea de la regla 17.
+
+**Paso 2 — el supervisor.**
+- Corre los barridos en background.
+- Elige, con el mismo criterio de K3c: cumplir cada meta con el valor más cercano al actual, y recortar
+  primero lo que tiene menos palanca.
+- Escribe acá la tabla de lo elegido.
+
+**Paso 3 — un worker.**
+- Fija los valores elegidos.
+- Las metas de ritmo pasan a **checks duros** con `criterio`.
+- Vacía `bandasPendientes.js` del bloque B y marca `BLOQUES_DE_CORRIMIENTO.B.cerrado = true`.
+- Re-mide los cuantiles del percentil del puntaje (K1).
+- Fija `HUELLA_JUEGO` 'K4c'.
+- Lo que se rompe por diseño lleva su línea de la regla 17.
+
 ### K5 — El Mundial de verdad, la región y el final por mercado *(bloque C — D-D)*
 
 - **El Mundial** (J7 comprimido):
