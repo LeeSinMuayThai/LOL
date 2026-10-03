@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import os from 'os';
 import { execFileSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
-import { VERSION as VERSION_GUARDADO } from '../core/guardado.js';
+import { VERSION as VERSION_GUARDADO, serializar as serializarGuardado, deserializar as deserializarGuardado } from '../core/guardado.js';
 import {
   verificarSinMathRandom, verificarDocumentSoloEnUi,
   verificarSinFondoDeTinta, verificarSinColorLiteral, verificarTokensDefinidos,
@@ -14293,6 +14293,130 @@ const ENTRADA_SINTETICA_K2B = {
   check: 'Sin aleatoriedad nativa fuera del RNG inyectado (src/ + index.html)', bloque: 'A',
   medido: '0 usos', banda: '0 usos', commit: 'K2b', rebasea: 'K3c'
 };
+
+// --- K4 (revisión): el guardado en CADA tipo de pausa ---
+// La pausa vive en `state.pendiente` y la página la guarda con JSON (`core/guardado.js`): todo lo que una pausa deja
+// en el estado tiene que sobrevivir `JSON.stringify`/`JSON.parse`. La prueba del salto (K4-C) guardaba un `Set` en
+// `decision.datos.ofrecidas`; JSON lo vuelve `{}` y al recargar `cerrarAsientosCongelados` tiraba "has is not a
+// function" — ningún check lo veía porque todos resuelven la pausa en memoria. Este la resuelve dos veces desde el
+// mismo punto: de corrido y tras serializar/deserializar (estado + RNG), y exige el mismo próximo estado, los mismos
+// logs y el mismo RNG. Además barre el estado en cada pausa buscando valores que JSON no conserva (`Set`, `Map`,
+// funciones, instancias de clase, `undefined` en arrays, números no finitos), aunque esa pausa no los lea al volver.
+// Los tipos de pausa que el lote TIENE que cubrir (sistema:motivo[:momento][:replan]); si un cambio de balance deja
+// alguno sin aparecer en estas seeds, el check lo dice en vez de pasar con la cobertura achicada. Un tipo nuevo que
+// aparece queda cubierto igual (se lo nombra en el mensaje de cobertura si falta otro).
+const TIPOS_DE_PAUSA_GUARDADO_K4 = [
+  'amateur:reparto', 'amateur:negociacion', 'amateur:oferta', 'amateur:minijuego:tryout', 'amateur:salida_amateur',
+  'amateur:nocturno', 'edadCierre:?', 'eventos:?', 'eventos:minijuego:post_escandalo', 'mercado:oferta',
+  'mercado:minijuego:tryout', 'mercado:traspaso', 'temporada:momento', 'practica:practica', 'serie:plan',
+  'serie:plan:replan', 'serie:decisivo', 'serie:minijuego:mapa_decisivo', 'serie:minijuego:post_serie',
+  'retiro:retiro_declive', 'retiro:retiro_vuelta', 'servicioMilitar:servicio_te_vas',
+  'servicioMilitar:servicio_adentro', 'servicioMilitar:servicio_volver'
+];
+const SEEDS_GUARDADO_K4 = Array.from({ length: 30 }, (_, i) => 1 + i);
+const SPLITS_GUARDADO_K4 = 60;
+
+function tipoDePausaGuardadoK4(pendiente) {
+  const datos = pendiente.decision.datos ?? {};
+  return `${pendiente.sistemaId}:${datos.motivo ?? pendiente.decision.presentacion ?? '?'}`
+    + `${datos.momento ? `:${datos.momento}` : ''}${datos.replan ? ':replan' : ''}`;
+}
+
+// Rutas (con los índices colapsados a `[]`) de los valores que JSON no devuelve iguales.
+function valoresNoJsonK4(valor, ruta, encontrados) {
+  if (valor === undefined) {
+    encontrados.add(`${ruta} es undefined dentro de un array`);
+    return;
+  }
+  if (valor === null || typeof valor === 'string' || typeof valor === 'boolean') {
+    return;
+  }
+  if (typeof valor === 'number') {
+    if (!Number.isFinite(valor)) {
+      encontrados.add(`${ruta} = ${valor}`);
+    }
+    return;
+  }
+  if (typeof valor !== 'object') {
+    encontrados.add(`${ruta} es ${typeof valor}`);
+    return;
+  }
+  if (Array.isArray(valor)) {
+    valor.forEach((elemento) => valoresNoJsonK4(elemento, `${ruta}[]`, encontrados));
+    return;
+  }
+  if (Object.getPrototypeOf(valor) !== Object.prototype) {
+    encontrados.add(`${ruta} es un ${valor.constructor?.name ?? 'objeto sin prototipo'}`);
+    return;
+  }
+  for (const [clave, sub] of Object.entries(valor)) {
+    if (sub !== undefined) {
+      valoresNoJsonK4(sub, `${ruta}.${clave}`, encontrados);
+    }
+  }
+}
+
+checkLento('K4 (revisión) guardado: en cada tipo de pausa, guardar y recargar (JSON) y seguir da el mismo próximo estado, logs y RNG que seguir de corrido (criterio, 30 carreras × 60)', () => {
+  const vistos = new Map();
+  const problemas = [];
+  const noJson = new Set();
+  for (const seed of SEEDS_GUARDADO_K4) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < SPLITS_GUARDADO_K4 && !state.terminado; i += 1) {
+      let paso = avanzarSplit(state, rng);
+      let vueltas = 0;
+      while (paso.state.pendiente) {
+        const tipo = tipoDePausaGuardadoK4(paso.state.pendiente);
+        vistos.set(tipo, (vistos.get(tipo) ?? 0) + 1);
+        valoresNoJsonK4(paso.state, 'state', noJson);
+        const guardado = serializarGuardado(paso.state, rng);
+        // De corrido.
+        const { sistemaId, decision } = paso.state.pendiente;
+        const respuesta = ESTRATEGIAS_K0.criterio(sistemaPorId(sistemaId), paso.state, decision, rng);
+        const seguido = resolverDecision(paso.state, respuesta, rng);
+        // Recargado: el estado y el RNG salen del JSON, y el bot responde desde lo recargado, como la página.
+        let recargado;
+        let rngRecargado;
+        try {
+          const datos = deserializarGuardado(guardado);
+          if (!datos) {
+            throw new Error('deserializar devolvió null');
+          }
+          rngRecargado = mulberry32(datos.seed);
+          rngRecargado.restaurar(datos.rngEstado);
+          const pendiente = datos.state.pendiente;
+          const respuestaRecargada = ESTRATEGIAS_K0.criterio(sistemaPorId(pendiente.sistemaId), datos.state,
+            pendiente.decision, rngRecargado);
+          recargado = resolverDecision(datos.state, respuestaRecargada, rngRecargado);
+        } catch (error) {
+          problemas.push(`seed ${seed}, pausa ${tipo}: al recargar tira "${error.message}"`);
+          recargado = null;
+        }
+        // `estado()` del RNG vivo no está truncado a 32 bits (`restaurar` sí trunca); la secuencia es la misma.
+        if (recargado && (JSON.stringify([seguido.state, seguido.logs]) !== JSON.stringify([recargado.state, recargado.logs])
+          || (rng.estado() >>> 0) !== (rngRecargado.estado() >>> 0))) {
+          problemas.push(`seed ${seed}, pausa ${tipo}: recargado no da el mismo próximo estado/logs/RNG`);
+        }
+        paso = seguido;
+        vueltas += 1;
+        if (vueltas > 200) {
+          throw new Error(`seed ${seed}: más de 200 pausas seguidas en un split`);
+        }
+      }
+      state = paso.state;
+    }
+  }
+  if (noJson.size > 0 || problemas.length > 0) {
+    throw new Error(`${problemas.length} pausas rotas al recargar (${problemas.slice(0, 4).join(' | ')}); `
+      + `valores que JSON no conserva en el estado al pausar: ${[...noJson].slice(0, 8).join('; ') || 'ninguno'}`);
+  }
+  const faltan = TIPOS_DE_PAUSA_GUARDADO_K4.filter((tipo) => !vistos.has(tipo));
+  if (faltan.length > 0) {
+    throw new Error(`el lote no cubrió ${faltan.join(', ')} (vistos: ${[...vistos.keys()].join(', ')}): cambiá las seeds, `
+      + 'no saques el tipo de la lista');
+  }
+});
 
 // --- K4-C: solo frenan las bifurcaciones; lo demás lo resuelve tu perfil (PLAN.md "K4 — decisiones de spec") ---
 

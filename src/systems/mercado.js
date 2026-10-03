@@ -953,7 +953,9 @@ function pausaDePrueba(state, oferta, saltos, ofrecidas) {
         apuesta: textos.apuesta,
         oferta,
         saltos,
-        ofrecidas
+        // Array, no el `Set` de `orgsOfrecidasDe`: la pausa vive en `state.pendiente` y se guarda con
+        // JSON, que convierte un `Set` en `{}` (al recargar, `cerrarAsientosCongelados` tiraba).
+        ofrecidas: [...ofrecidas]
       }
     }
   };
@@ -972,7 +974,7 @@ function resolverPrueba(state, decision, respuesta, rng) {
     }
   };
   const firmado = aceptarOferta(conBonus, oferta, rng);
-  const cerrado = cerrarAsientosCongelados(firmado.state, oferta.org, rng, ofrecidas);
+  const cerrado = cerrarAsientosCongelados(firmado.state, oferta.org, rng, new Set(ofrecidas));
   const veredicto = crearLog('mercado', bonus >= 0
     ? `La prueba en ${oferta.org} te sale bien: llegás con algo de crédito ganado de entrada.`
     : `La prueba en ${oferta.org} es floja: firmás igual, pero sin nada ganado de entrada.`);
