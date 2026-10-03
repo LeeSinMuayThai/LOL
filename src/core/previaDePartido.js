@@ -3,7 +3,7 @@ import {
   estadoDelMapa, probabilidadDeMapa, fuerzaFinalDeMapa, ajusteDeMinijuegoDeMapa, etiquetaDeRonda,
   fuerzaRivalDeMapa, ajusteDeCharla, proyeccionDelPlan, conPlan, estadoDelProximoMapa
 } from './serie.js';
-import { probabilidadDeFechaMarcada, fuerzaDeFecha, factorDraftFecha, campeonDelSplitEnPool, textoPorQueImporta } from './temporada.js';
+import { probabilidadDeFechaMarcada, fuerzaDeFecha, textoPorQueImporta } from './temporada.js';
 import { minijuegoPorId } from './minijuegos.js';
 
 // K2d (PLAN.md "K2d — la previa (pantalla)" y "K2d — decisiones de spec"): la
@@ -25,7 +25,7 @@ import { minijuegoPorId } from './minijuegos.js';
 // solo su fuerza total, porque el motor no le calcula partes.
 //
 // `opciones`:
-//  - `{ tipo: 'fecha', elegido?, ajustePartido? }`: la fecha marcada en curso
+//  - `{ tipo: 'fecha', ajustePartido? }`: la fecha marcada en curso
 //    (`career.temporada.fechaEnCurso`). Por defecto, el campeón que eligió el
 //    draft corto y el `ajustePartido` del estado.
 //  - `{ tipo: 'mapa', campeon, entradaExtra?, minijuego?, resultado? }`: el
@@ -48,30 +48,28 @@ export function previaDePartido(state, opciones) {
 function previaDeFecha(state, opciones) {
   const t = state.career.temporada;
   const fecha = t.fechaEnCurso;
-  const elegido = 'elegido' in opciones ? opciones.elegido : (fecha.campeonElegido ?? null);
   const ajustePartido = opciones.ajustePartido ?? t.ajustePartido ?? 0;
-  const campeonDelSplit = campeonDelSplitEnPool(state);
 
   // El motor juega la fecha con la fuerza del split (`t.fuerzaPropia`), no con
   // una recalculada: el desglose se lee del estado de hoy y su total tiene que
   // dar esa misma fuerza (lo verifica `validate.js`).
   const desglose = desgloseDeFuerza(state);
   const base = t.fuerzaPropia;
-  const draft = base * factorDraftFecha(elegido, campeonDelSplit, state.meta.weights);
   const momento = base * ajustePartido;
-  const p = probabilidadDeFechaMarcada(state, { elegido, ajustePartido });
+  const p = probabilidadDeFechaMarcada(state, { ajustePartido });
 
   return armarPrevia({
     tipo: 'fecha',
     titulo: `La previa · vs ${fecha.rival}`,
     propio: state.career.currentOrg,
     desglose,
-    extras: { campeon: draft, momento },
+    // K4-A: sin draft, la fecha se juega con el campeón del split (el que ya asumió la fuerza del split).
+    extras: { momento },
     fuerzaBase: base,
-    fuerzaFinal: fuerzaDeFecha(base, elegido, campeonDelSplit, state.meta.weights, ajustePartido),
+    fuerzaFinal: fuerzaDeFecha(base, ajustePartido),
     rival: { nombre: fecha.rival, fuerza: fecha.fuerzaRival },
     p,
-    campeon: elegido?.name ?? desglose.campeon,
+    campeon: fecha.campeonElegido?.name ?? desglose.campeon,
     // K4-A: por qué frena esta fecha (la clasificación, el archirrival...).
     porQue: textoPorQueImporta(state),
     nota: ajustePartido === 0

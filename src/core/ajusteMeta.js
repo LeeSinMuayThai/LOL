@@ -31,8 +31,8 @@ export function deseoPorCampeon(campeon, weights) {
 // Fase 9Rc: la ÚNICA respuesta a "cuánto vale este campeón para el resultado
 // del mapa". Antes había tres fórmulas que no se hablaban —`calcularRendimiento`
 // (solo maestría), `deseoPorCampeon` (maestría²×afinidad) y `factorDraftFecha`
-// (solo afinidad)—, y por eso el motor podía auto-pickear un campeón peor para
-// el resultado. Esta cruza los dos ejes con el peso que ya declara CONCEPTO §6:
+// (solo afinidad; K4 lo borró con el draft de la fecha marcada)—, y por eso el
+// motor podía auto-pickear un campeón peor para el resultado. Esta cruza los dos ejes con el peso que ya declara CONCEPTO §6:
 // la afinidad al meta pesa la mitad que la maestría. Con un campeón exactamente
 // promedio para el parche (afinidad 1) devuelve el `factorMaestria` de siempre,
 // así que sin cambio de meta el balance agregado no se mueve.

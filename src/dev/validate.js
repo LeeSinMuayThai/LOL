@@ -62,7 +62,7 @@ import {
 import {
   motivosDeFecha, generarFixture, aplicarCrucesDeJornada, rendimientoDeLaTemporada,
   tablaDePosiciones, posicionEnTabla, filaVacia, registrarEnFila,
-  defineClasificacion, motivoPrincipal, PRIORIDAD_MOTIVOS, factorDraftFecha
+  defineClasificacion, motivoPrincipal, PRIORIDAD_MOTIVOS
 } from '../core/temporada.js';
 import { tierListDeRol, boostDelPool } from '../core/regimen.js';
 import { nivelDelJugador, deltasDeStats, fichaCompleta, loQueConstruiste } from '../core/ficha.js';
@@ -673,7 +673,7 @@ const FORMAS_CONOCIDAS = {
   // log de cada mapa; K4-C, `player.perfil` (actual + pesos), `flags.categoriasRecientes`, `flags.splitMainMuerto`,
   // `flags.saltosConPrueba`; K4-D, `flags.preparacionDeSplit` (el año cuya preparación ya se resolvió; -1 hasta la
   // primera pretemporada pro).
-  8: 'PENDIENTE'
+  8: 'b8702103beff'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -5022,31 +5022,9 @@ checkLento('Toda opción de draft trae su lectura y va ordenada por factorDeCamp
   }
 });
 
-check('Elegir el mismo campeón del split en una fecha marcada da factorDraftFecha == 0', () => {
-  const weights = createInitialState(3, mulberry32(3)).meta.weights;
-  for (const tags of [['enchanter'], ['splitpush'], ['tanque', 'engage'], ['asesino']]) {
-    for (const mastery of [15, 45, 80]) {
-      const campeon = entradaDePool({ name: 'X', tags }, mastery, 0);
-      const factor = factorDraftFecha(campeon, campeon, weights);
-      if (factor !== 0) {
-        throw new Error(`factorDraftFecha(c, c) = ${factor} (tags ${tags}, m${mastery})`);
-      }
-    }
-  }
-  // Y elegir uno MEJOR que el del split da > 0, uno peor da < 0, ambos topeados.
-  const delSplit = entradaDePool({ name: 'Base', tags: ['splitpush'] }, 40, 0);
-  const mejor = entradaDePool({ name: 'Mejor', tags: ['enchanter'] }, 80, 0);
-  const peor = entradaDePool({ name: 'Peor', tags: ['splitpush'] }, 15, 0);
-  const tope = BALANCE.temporada.impactoDraftFecha;
-  const fMejor = factorDraftFecha(mejor, delSplit, weights);
-  const fPeor = factorDraftFecha(peor, delSplit, weights);
-  if (!(fMejor > 0 && fMejor <= tope + 1e-9)) {
-    throw new Error(`campeón mejor dio ${fMejor}, esperaba (0, ${tope}]`);
-  }
-  if (!(fPeor < 0 && fPeor >= -tope - 1e-9)) {
-    throw new Error(`campeón peor dio ${fPeor}, esperaba [${-tope}, 0)`);
-  }
-});
+// K4 (integración) borró el check "Elegir el mismo campeón del split en una fecha marcada da factorDraftFecha == 0" (regla
+// 17): K4-A sacó el draft de la fecha marcada, `factorDraftFecha` daba siempre 0 y se borró con su tope. Lo reemplaza
+// "K4-A la fecha marcada no tiene draft: frena una sola vez, con el momento" y la exactitud de la previa de K2d.
 
 checkLento('Ninguna serie deja el pipeline con una decisión colgada', () => {
   for (let seed = 1; seed <= 600; seed += 1) {
@@ -15261,6 +15239,32 @@ function hastaLaParadaK4d(seed, filtro, maxSplits = 40) {
 
 const ES_MERCADO_K4D = (sistemaId, decision) => sistemaId === 'mercado' && decision.datos?.motivo === 'oferta' && Boolean(decision.datos.preparacion);
 
+// K4 (integración): si la oferta elegida es un salto grande, la misma parada sigue con la prueba de K4-C (una pantalla
+// más, con la carta elegida en sus datos) y recién al contestarla se firma y se aplica la rutina. Contesta la parada y,
+// si vino la prueba, la prueba (con el resultado neutro); devuelve el estado y cuántas pruebas hubo.
+function contestarParadaK4d(parada, respuesta) {
+  let hecho = resolverDecision(parada.state, respuesta, parada.rng).state;
+  let pruebas = 0;
+  while (hecho.pendiente?.sistemaId === 'mercado' && hecho.pendiente.decision.datos?.motivo === 'minijuego') {
+    const { datos } = hecho.pendiente.decision;
+    if (datos.momento !== 'tryout' || !datos.preparacion) {
+      throw new Error('la prueba del salto no viaja con la preparación de la parada');
+    }
+    if (respuesta.rutinaId !== undefined && datos.preparacion.elegida !== respuesta.rutinaId) {
+      throw new Error(`la prueba del salto perdió la carta elegida (${datos.preparacion.elegida}, esperaba ${respuesta.rutinaId})`);
+    }
+    if (hecho.flags.preparacionDeSplit === parada.state.player.splitCount) {
+      throw new Error('la rutina se aplicó antes de la prueba: tiene que ir con la firma');
+    }
+    pruebas += 1;
+    hecho = resolverDecision(hecho, { resultado: 0.5 }, parada.rng).state;
+  }
+  if (pruebas > 1) {
+    throw new Error(`la parada trajo ${pruebas} pruebas: a lo sumo una pantalla más`);
+  }
+  return { hecho, pruebas };
+}
+
 checkLento('K4-D la pretemporada frena una sola vez por año: a lo sumo una pausa de mercado o de práctica por split, con el mercado y la preparación en la misma, y la preparación del año queda resuelta', () => {
   let conMercado = 0;
   let soloPreparacion = 0;
@@ -15325,7 +15329,7 @@ checkLento('K4-D la oferta elegida y la rutina elegida se aplican juntas, en una
   const sellos = new Set();
   for (const carta of cartas) {
     const parada = hastaLaParadaK4d(sonda.state.seed, ES_MERCADO_K4D);
-    const hecho = resolverDecision(parada.state, { opcionId: oferta.id, rutinaId: carta.id }, parada.rng).state;
+    const { hecho } = contestarParadaK4d(parada, { opcionId: oferta.id, rutinaId: carta.id });
     if (hecho.career.currentOrg !== oferta.org) {
       throw new Error(`con la rutina "${carta.label}" la oferta no se firmó (org ${hecho.career.currentOrg}, esperaba ${oferta.org})`);
     }
@@ -15344,7 +15348,7 @@ checkLento('K4-D la oferta elegida y la rutina elegida se aplican juntas, en una
   if (sellos.size < 2) throw new Error('elegir otra rutina no cambia nada: la respuesta no llega a la preparación');
   // Sin `rutinaId` el motor no inventa nada raro: cae en la primera carta y aplica igual.
   const parada = hastaLaParadaK4d(sonda.state.seed, ES_MERCADO_K4D);
-  const sinRutina = resolverDecision(parada.state, { opcionId: oferta.id }, parada.rng).state;
+  const { hecho: sinRutina } = contestarParadaK4d(parada, { opcionId: oferta.id });
   if (sinRutina.flags.preparacionDeSplit !== parada.state.player.splitCount || sinRutina.career.currentOrg !== oferta.org) {
     throw new Error('sin rutinaId la parada no se resuelve entera');
   }
@@ -15411,6 +15415,14 @@ checkLento('K4-D los bots contestan la parada unificada con la regla de siempre 
       let state = createInitialState(seed, rng);
       const responder = (sistema, st, decision, rngLocal) => {
         const respuesta = bot ? bot(sistema, st, decision, rngLocal) : sistema.resolverAuto(st, decision, rngLocal);
+        // K4 (integración): la prueba del salto (K4-C) también lleva la preparación, pero ya con la carta elegida: se
+        // contesta con el resultado del minijuego y sin volver a elegir rutina.
+        if (decision.datos?.preparacion && sistema.id === 'mercado' && decision.datos.motivo === 'minijuego') {
+          if (respuesta.rutinaId !== undefined || typeof respuesta.resultado !== 'number') {
+            throw new Error(`${nombre}: la prueba del salto se contestó como una parada (${JSON.stringify(respuesta)})`);
+          }
+          return respuesta;
+        }
         if (decision.datos?.preparacion && sistema.id === 'mercado') {
           contestadas += 1;
           const rutinas = decision.datos.preparacion.rutinas;

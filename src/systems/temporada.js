@@ -273,7 +273,7 @@ function arrancarMomento(state, rng, logs, campeonElegido) {
 }
 
 // K4-A: sin draft. La fecha marcada frena UNA vez —la previa y el momento— y se
-// juega con el campeón del split (`factorDraftFecha` de ese campeón es 0).
+// juega con el campeón del split, el que ya asumió `t.fuerzaPropia`.
 function arrancarFechaMarcada(state, rng, logs) {
   return arrancarMomento(state, rng, logs, campeonDelSplitEnPool(state) ?? null);
 }

@@ -1,5 +1,4 @@
 import { clamp, clampStat } from './numeros.js';
-import { factorDeCampeon } from './ajusteMeta.js';
 import { ligaOZonaDeCarrera } from './competicion.js';
 import { jugarPartido, probabilidadDePartido } from './partido.js';
 import { rondaInicial } from './serie.js';
@@ -327,55 +326,27 @@ export function textoPorQueImporta(state) {
   return null;
 }
 
-// La probabilidad de ganar la fecha con `elegido`, construida igual que
-// `resolverFechaMarcada`: `t.fuerzaPropia` corrida por `factorDraftFecha`
-// (relativo al campeón del split) → la misma p con la que el motor tira la
-// fecha (`probabilidadDePartido`, regla 15).
-// K2d: es la misma función con la que la fecha marcada se tira y con la que la
-// previa la muestra (`probabilidadDeFechaMarcada`).
-function probabilidadDeFecha(state, fecha, campeonDelSplit, elegido, ajustePartido = 0) {
-  const fuerzaFecha = fuerzaDeFecha(state.career.temporada.fuerzaPropia, elegido, campeonDelSplit, state.meta.weights, ajustePartido);
-  return probabilidadDePartido(state, fuerzaFecha, fecha.fuerzaRival, 'fecha');
-}
-
-// K2d: el campeón del split como entrada del pool (`null` si no está), contra
-// el que `factorDraftFecha` mide el campeón de la fecha.
+// K2d: el campeón del split como entrada del pool (`null` si no está): el
+// con el que se juega la fecha marcada (K4-A: sin draft).
 export function campeonDelSplitEnPool(state) {
   return state.player.championPool.find((c) => c.name === state.player.campeonDelSplit);
 }
 
 // K2d: la p de la fecha marcada en curso (`temporada.fechaEnCurso`), con el
-// campeón que eligió el draft corto y el `ajustePartido` del momento (por
-// defecto, los del estado). ES la p que tira `resolverFechaMarcada` y la que
-// muestra la previa (regla 15).
-export function probabilidadDeFechaMarcada(state, {
-  elegido = state.career.temporada.fechaEnCurso.campeonElegido ?? null,
-  ajustePartido = state.career.temporada.ajustePartido ?? 0
-} = {}) {
-  return probabilidadDeFecha(state, state.career.temporada.fechaEnCurso, campeonDelSplitEnPool(state), elegido, ajustePartido);
+// `ajustePartido` del momento (por defecto, el del estado). ES la p que tira
+// `resolverFechaMarcada` y la que muestra la previa (regla 15).
+// K4 (integración): K4-A sacó el draft de la fecha marcada —se juega con el campeón del split, el que ya asumió
+// `t.fuerzaPropia`—, así que el viejo `factorDraftFecha` (y su tope `impactoDraftFecha`) daba siempre 0 y se borró.
+export function probabilidadDeFechaMarcada(state, { ajustePartido = state.career.temporada.ajustePartido ?? 0 } = {}) {
+  const t = state.career.temporada;
+  return probabilidadDePartido(state, fuerzaDeFecha(t.fuerzaPropia, ajustePartido), t.fechaEnCurso.fuerzaRival, 'fecha');
 }
 
 // La fuerza con la que se juega UNA fecha: la del split (`t.fuerzaPropia`,
-// determinista) corrida por el campeón del draft corto (relativo al del split)
-// y por el momento de la fecha marcada. Una sola expresión para el motor y
-// para el draft.
-export function fuerzaDeFecha(fuerzaPropia, elegido, campeonDelSplit, weights, ajustePartido) {
-  return fuerzaPropia * (1 + factorDraftFecha(elegido, campeonDelSplit, weights) + ajustePartido);
-}
-
-// Cuánto mueve la fuerza de ESTA fecha el campeón elegido en el draft corto,
-// RELATIVO al que ya asumió `t.fuerzaPropia` (el campeón del split). Fase 9Rc:
-// antes usaba solo la afinidad absoluta del elegido, así que elegir el MISMO
-// campeón del split igual sumaba un factor ≠ 0 — doble conteo. Ahora es el ratio
-// de `factorDeCampeon` menos 1: mismo campeón → exactamente 0. Acotado a
-// `impactoDraftFecha`: una fecha de temporada regular no se gana en el draft.
-export function factorDraftFecha(elegido, base, weights) {
-  if (!elegido) {
-    return 0;
-  }
-  const t = BALANCE.temporada;
-  const ratio = factorDeCampeon(elegido, weights) / Math.max(0.001, factorDeCampeon(base, weights));
-  return clamp(ratio - 1, -t.impactoDraftFecha, t.impactoDraftFecha);
+// determinista) corrida por el momento de la fecha marcada. Una sola expresión
+// para el motor y para la previa.
+export function fuerzaDeFecha(fuerzaPropia, ajustePartido) {
+  return fuerzaPropia * (1 + ajustePartido);
 }
 
 export function factorDelMomento(resultadoTirado) {

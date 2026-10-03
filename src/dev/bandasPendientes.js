@@ -35,6 +35,29 @@ export const BANDAS_PENDIENTES = [
   // más draft mapa a mapa; regla 17, ver validate.js) y con él su entrada de acá.
   // K4-B: el rival también quema campeones con el Fearless (su fuerza de mapa se degrada como la tuya) y el Bo5 conjunto
   // volvió a su banda (criterio 800 × 60): la entrada "K3c meta Bo5 favorito claro (conjunto) ∈ [75, 85]" se borró.
+  // K4 (integración): con las cuatro piezas juntas el Bo5 del favorito claro vuelve a salir de banda por arriba (K4-B
+  // solo lo había dejado adentro). Es el dominio de K4 (el plan de Fearless, la charla, el rival que quema) y el
+  // corrimiento del bloque B (el perfil que resuelve los eventos, la pretemporada al principio del año): lo re-mide K4c.
+  // El lado del jugador era el check duro del bloque A (K3c, 83,8%); va al bloque B por el mismo criterio que la entrada
+  // del draft de K3c: `bloque` es quien lo re-basea.
+  {
+    check: 'K3c meta de K2 (criterio, 800 × 60): el favorito claro (Δ0 ≈ 10) gana el Bo5 entre 75% y 85% (lado del jugador; el rival solo se reporta, el conjunto tiene su check)',
+    bloque: 'B',
+    medido: '86,6% (criterio 800 × 60; rival 85,9%, conjunto 86,4%)',
+    banda: '[75, 85]',
+    commit: 'K4',
+    rebasea: 'K4c',
+    porque: 'integración de K4: la serie como plan (K4-B) más el corrimiento del perfil y la pretemporada (K4-C/D); K4-B sola daba 83,3% (criterio 800 × 60): lo saca la suma'
+  },
+  {
+    check: 'K3c meta Bo5 favorito claro (conjunto) ∈ [75, 85]',
+    bloque: 'B',
+    medido: '86,4% (criterio 800 × 60; jugador 86,6%, rival 85,9%)',
+    banda: '[75, 85]',
+    commit: 'K4',
+    rebasea: 'K4c',
+    porque: 'mismo corrimiento que el lado del jugador: con el rival que también quema, los dos lados quedan parejos (86,6 / 85,9) y apenas arriba'
+  },
   // K4-D movió el stream (la preparación del receso se sortea al empezar el año, en la parada del mercado): el silencio de
   // una franquicia, un evento de ~1 en 1500 carreras, apareció una vez. La invariante no cambió; la muestra sí.
   {

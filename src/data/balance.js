@@ -1501,10 +1501,6 @@ export const BALANCE = {
     //     ningún motivo libre pasa resumido, y está bien.
     clasicoOrgsRecientes: 2,
     motivoRivalCooldownSplits: 4,
-    // Cuánto puede mover el draft corto de una fecha marcada la fuerza de
-    // ESA fecha puntual. Acotado a propósito: no reemplaza a `campeones.js`,
-    // que ya elige el campeón del split entero antes de que esto corra.
-    impactoDraftFecha: 0.08,
     // Rango del efecto `type: 'partido'`: lo que el momento de la fecha
     // marcada le suma o resta a la fuerza propia de ESE partido puntual.
     partidoMin: -0.18,
