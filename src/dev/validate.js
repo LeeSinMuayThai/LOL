@@ -4013,7 +4013,17 @@ checkLento('Fase 9Me: negociar es determinista, termina, y la cláusula negociad
     const dec = conClausula.state.pendiente?.decision;
     const oferta = dec?.opciones.find((o) => o.id === objetivo);
     if (oferta?.negociacion.clausula) {
-      const firmado = resolverDecision(conClausula.state, { opcionId: objetivo }, ctx.rng);
+      let firmado = resolverDecision(conClausula.state, { opcionId: objetivo }, ctx.rng);
+      // K4-C: si la oferta estrena un salto grande, firmar frena primero en la prueba; la oferta (con su cláusula)
+      // viaja en sus datos y se firma al contestarla. Se contesta como el headless y recién ahí se mira el contrato.
+      const prueba = firmado.state.pendiente;
+      if (prueba?.sistemaId === 'mercado' && prueba.decision.datos.motivo === 'minijuego') {
+        if (prueba.decision.datos.oferta?.datos?.clausula !== 'salida') {
+          throw new Error(`seed ${seed}: la prueba del salto perdió la cláusula negociada de la oferta`);
+        }
+        const mercado = sistemaPorId('mercado');
+        firmado = resolverDecision(firmado.state, mercado.resolverAuto(firmado.state, prueba.decision, ctx.rng), ctx.rng);
+      }
       if (firmado.state.career.contrato.clausula !== 'salida') {
         throw new Error(`seed ${seed}: firmaste con cláusula negociada y contrato.clausula = ${firmado.state.career.contrato.clausula}`);
       }
