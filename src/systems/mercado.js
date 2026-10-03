@@ -912,6 +912,12 @@ export function resolver(state, decision, respuesta, rng) {
     return resultado;
   }
   const elegida = respuesta.rutinaId ?? preparacion.elegida;
+  // K4 (revisión 2): un no-op del mercado (el representante ya usado, una oferta que no existe) devuelve la MISMA
+  // decisión, que ya trae la preparación; si la carta tampoco cambió, se devuelve tal cual. Re-envolverla daba una
+  // decisión nueva igual a la anterior: el contrato del no-op (misma decisión, ningún log) se rompía.
+  if (resultado.decision === decision && elegida === preparacion.elegida) {
+    return resultado;
+  }
   if (resultado.decision) {
     return {
       ...resultado,
