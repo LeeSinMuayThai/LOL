@@ -11275,7 +11275,7 @@ check('K4c observación (revisión): minijuegosPorMecanica, bifurcaciones, cambi
   // Trinquete: ningún check recontaba los campos nuevos de `correrCarrera`. El recuento a mano corre la misma carrera con
   // `avanzarSplitAuto` y un espía en la estrategia (mismas respuestas, mismo rng) y mira el estado después de cada split.
   const totales = { minijuegos: 0, bifurcaciones: 0, cambiosDeLinea: 0, cambiosDeRegion: 0, mudanzasFirmadas: 0, fueraDeSuRegion: 0 };
-  for (const [bot, seed] of [['criterio', 3], ['criterio', 5], ['malas', 6], ['malas', 12]]) {
+  for (const [bot, seed] of [['criterio', 3], ['criterio', 6], ['malas', 6], ['malas', 12]]) {
     const SPLITS = 60;
     const observacion = correrCarreraSimulate(seed, SPLITS, ESTRATEGIAS_K0[bot]).observacion;
     const rng = mulberry32(seed);
@@ -12506,7 +12506,7 @@ const LEYENDAS_K1 = (await import('../data/leyendas.json', { with: { type: 'json
 
 // Las carreras de referencia de los checks rápidos de K1 (seeds 1-8 a 60 splits, el responder por defecto): hay
 // carreras que no llegaron a pro, carreras de tier 1 con y sin Top 20, y la mayoría termina adentro de los 60 splits.
-const SEEDS_PUNTAJE_K1 = [1, 2, 3, 4, 5, 6, 7, 8];
+const SEEDS_PUNTAJE_K1 = [1, 2, 3, 4, 5, 6, 7, 8, 10];
 const SPLITS_PUNTAJE_K1 = 60;
 
 let estadosPuntajeK1 = null;
@@ -16157,6 +16157,221 @@ check('K4-C la prueba en cada salto grande: primer fichaje en tier 2, en tier 1 
   }
   if (saltos === 0) {
     throw new Error('ningún salto grande por el mercado en 40 carreras');
+  }
+});
+
+// --- K4c-S: la prueba decide el contrato, el parche como adjunto y el Δp de plan en el instrumento (PLAN.md "K4c-H, hecho",
+// "K4c-F, hecho" y "La palanca en su horizonte, medida") ---
+const { esDecisionDeMinijuego: esMinijuegoK4cs } = await import('./estrategias.js');
+const { hashCadena: hashCadenaK4cs } = await import('../core/numeros.js');
+const { aplicar: aplicarMetaK4cs } = await import('../systems/meta.js');
+const { deltaPDePlan } = await import('./simulate.js');
+
+// La sonda de la prueba: en cada tryout REAL de carreras reales (el del amateur y el del mercado) se contesta el MISMO tryout con
+// el peor resultado (0) y con el mejor (1), con los mismos números aleatorios (mismo rng sembrado por seed y split), y se mira si
+// la firma se dio (`career.currentOrg` es la org de la oferta) y qué quedó del estado. La carrera principal sigue con la
+// respuesta automática. Solo guarda lo que los checks necesitan (no el estado entero de antes).
+let sondaDeLaPruebaK4cs = null;
+function sondaDeLaPrueba() {
+  if (sondaDeLaPruebaK4cs !== null) {
+    return sondaDeLaPruebaK4cs;
+  }
+  const nombreDe = (org) => (typeof org === 'string' ? org : org?.nombre ?? null);
+  const filas = [];
+  for (let seed = 1; seed <= 60; seed += 1) {
+    const rng = mulberry32(seed);
+    let st = createInitialState(seed, rng);
+    for (let i = 0; i < 45 && !st.terminado; i += 1) {
+      st = avanzarSplit(st, rng).state;
+      while (st.pendiente) {
+        const { sistemaId, decision } = st.pendiente;
+        if (esMinijuegoK4cs(decision) && decision.datos.momento === 'tryout') {
+          const oferta = nombreDe(decision.datos.oferta?.org);
+          const contestar = (resultado) => {
+            const rr = mulberry32(hashCadenaK4cs(`${seed}|${i}|prueba`));
+            const despues = resolverDecision(structuredClone(st), { resultado }, rr);
+            return { despues: despues.state, rr };
+          };
+          const bajo = contestar(0);
+          const alto = contestar(1);
+          filas.push({
+            seed, sistemaId, oferta,
+            antes: { currentOrg: st.career.currentOrg, contrato: structuredClone(st.career.contrato), bonus: st.flags.bonusJerarquiaTryout ?? 0, racha: st.flags.splitsSinOfertaConsecutivos },
+            bajo: { ficho: bajo.despues.career.currentOrg === oferta, estado: bajo.despues, rr: bajo.rr },
+            alto: { ficho: alto.despues.career.currentOrg === oferta }
+          });
+        }
+        st = resolverDecision(st, sistemaPorId(sistemaId).resolverAuto(st, decision, rng), rng).state;
+      }
+    }
+  }
+  sondaDeLaPruebaK4cs = filas;
+  return filas;
+}
+
+check('K4c-S la prueba decide el contrato: P(firmar | resultado 1) > P(firmar | resultado 0) en el tryout del mercado y en el del amateur (mismo rng, tryouts reales)', () => {
+  const filas = sondaDeLaPrueba();
+  for (const sistemaId of ['mercado', 'amateur']) {
+    const fs = filas.filter((f) => f.sistemaId === sistemaId);
+    if (fs.length < 20) {
+      throw new Error(`check vacío: ${fs.length} tryouts de ${sistemaId} en 60 carreras (hacen falta 20)`);
+    }
+    const p = (clave) => fs.filter((f) => f[clave].ficho).length / fs.length;
+    const [pBajo, pAlto] = [p('bajo'), p('alto')];
+    if (!(pAlto >= pBajo + 0.3)) {
+      throw new Error(`${sistemaId}: P(firmar | 0) = ${pBajo.toFixed(3)} y P(firmar | 1) = ${pAlto.toFixed(3)} en ${fs.length} tryouts: la prueba no decide el contrato (hace falta una brecha de 0,3)`);
+    }
+  }
+});
+
+check('K4c-S un tryout fallido del mercado se cae solo esa oferta: ni contrato roto, ni crédito, y la parada sigue con las demás (o por el camino de "sin ofertas")', () => {
+  const fallidos = sondaDeLaPrueba().filter((f) => f.sistemaId === 'mercado' && !f.bajo.ficho && f.antes.currentOrg !== null);
+  if (fallidos.length < 5) {
+    throw new Error(`check vacío: ${fallidos.length} tryouts fallidos del mercado con club (hacen falta 5)`);
+  }
+  let representadas = 0;
+  let sinNada = 0;
+  for (const f of fallidos) {
+    const { estado } = f.bajo;
+    const donde = `seed ${f.seed} (${f.oferta})`;
+    // Con ofertas que quedan, la parada se re-presenta (mercado:oferta). Sin ninguna, `resolverEspera` cierra el mercado y el
+    // split sigue: lo que quede pendiente después es de otra etapa.
+    const representada = estado.pendiente?.sistemaId === 'mercado' && estado.pendiente.decision.datos?.motivo === 'oferta';
+    const librePorRacha = !representada && f.antes.racha + 1 >= BALANCE.mercado.splitsSinOfertaParaLibre;
+    if (!librePorRacha && (estado.career.currentOrg !== f.antes.currentOrg || JSON.stringify(estado.career.contrato) !== JSON.stringify(f.antes.contrato))) {
+      throw new Error(`${donde}: el tryout fallido dejó el club o el contrato distinto (${f.antes.currentOrg} → ${estado.career.currentOrg})`);
+    }
+    if ((estado.flags.bonusJerarquiaTryout ?? 0) !== f.antes.bonus) {
+      throw new Error(`${donde}: el tryout fallido dejó crédito de jerarquía (${estado.flags.bonusJerarquiaTryout})`);
+    }
+    if (representada) {
+      representadas += 1;
+      const re = estado.pendiente.decision;
+      if (re.opciones.some((o) => o.org === f.oferta) || !re.datos.negociacionesRotas.some((r) => r.org === f.oferta)) {
+        throw new Error(`${donde}: la oferta caída tenía que salir de las opciones y quedar anotada como asiento que se cayó`);
+      }
+      if (re.opciones.length === 0) {
+        throw new Error(`${donde}: sin ofertas, la parada no se re-presenta`);
+      }
+    } else {
+      sinNada += 1;
+    }
+  }
+  if (representadas === 0 || sinNada === 0) {
+    throw new Error(`check vacío: ${representadas} paradas que siguieron con otras ofertas y ${sinNada} que se quedaron sin nada (hacen falta de las dos)`);
+  }
+});
+
+check('K4c-S un tryout fallido del amateur posterga la firma: seguís en la escalera, sin crédito, y después puede llegar otra oferta', () => {
+  const fallidos = sondaDeLaPrueba().filter((f) => f.sistemaId === 'amateur' && !f.bajo.ficho);
+  if (fallidos.length < 10) {
+    throw new Error(`check vacío: ${fallidos.length} tryouts fallidos del amateur (hacen falta 10)`);
+  }
+  let firmaDespues = 0;
+  fallidos.forEach((f, indice) => {
+    const { estado } = f.bajo;
+    // El split sigue después de la prueba: puede cortarse por otra causa (la familia, la edad), pero nunca por haber firmado.
+    if (estado.career.currentOrg !== null || (!estado.terminado && estado.phase !== 'amateur')) {
+      throw new Error(`seed ${f.seed}: el tryout fallido tenía que dejarte en la escalera (fase ${estado.phase}, club ${estado.career.currentOrg})`);
+    }
+    if ((estado.flags.bonusJerarquiaTryout ?? 0) !== f.antes.bonus) {
+      throw new Error(`seed ${f.seed}: el tryout fallido dejó crédito de jerarquía (${estado.flags.bonusJerarquiaTryout})`);
+    }
+    if (indice < 12 && !estado.terminado && !estado.pendiente) {
+      let s = estado;
+      for (let k = 0; k < 10 && !s.terminado && s.phase === 'amateur'; k += 1) {
+        s = avanzarSplitAuto(s, f.bajo.rr).state;
+      }
+      if (s.phase === 'profesional') {
+        firmaDespues += 1;
+      }
+    }
+  });
+  if (firmaDespues === 0) {
+    throw new Error('ninguna de las primeras 12 carreras con tryout fallido recibió otra oferta en 10 splits: la firma no se posterga, se pierde');
+  }
+});
+
+check('K4c-S regla 15: el texto de la prueba dice lo que está en juego (el contrato y el crédito) y ningún veredicto promete la firma', () => {
+  const entrada = MINIJUEGOS.find((m) => m.id === 'la_prueba');
+  if (!/firm|contrato/i.test(entrada.apuesta) || !/crédito/i.test(entrada.apuesta)) {
+    throw new Error(`la apuesta de la prueba tiene que nombrar el contrato (la firma) y el crédito: "${entrada.apuesta}"`);
+  }
+  for (const [nivel, frases] of Object.entries(entrada.veredictos)) {
+    for (const frase of frases) {
+      if (/alcanza para firmar|firmás igual|entrás igual|ya firmaste/i.test(frase)) {
+        throw new Error(`el veredicto "${nivel}" promete la firma antes de que el motor la decida: "${frase}"`);
+      }
+    }
+  }
+  if (!entrada.descripciones.some((d) => /contrato/i.test(d))) {
+    throw new Error('ninguna descripción de la prueba nombra el contrato que está en juego');
+  }
+});
+
+check('K4c-S el renglón de parche va adjunto salvo que toque tu pool o tu main (un campeón de tu pool cambia de tier)', () => {
+  const tierDe = (lista, nombre) => lista.find((entrada) => entrada.name === nombre)?.tier ?? null;
+  let adjuntos = 0;
+  let propios = 0;
+  for (let seed = 1; seed <= 30; seed += 1) {
+    const rng = mulberry32(seed);
+    let st = createInitialState(seed, rng);
+    for (let i = 0; i < 40 && !st.terminado; i += 1) {
+      if ((st.player.championPool ?? []).length > 0) {
+        // El sistema `meta` sobre el estado de antes del split, con un rng aparte: no toca la carrera.
+        const r = aplicarMetaK4cs(structuredClone(st), mulberry32(hashCadenaK4cs(`${seed}|${i}|meta`)));
+        const parche = r.logs[0];
+        if (parche?.type !== 'meta') {
+          throw new Error(`seed ${seed}, split ${i}: el primer log de meta tenía que ser el renglón del parche`);
+        }
+        // A mano, sin `parcheTocaTuPool`: ¿algún campeón del pool cambió de tier entre la tier list vieja y la nueva?
+        const toca = st.player.championPool.some((campeon) => {
+          const antes = tierDe(st.meta.tierList, campeon.name);
+          const despues = tierDe(r.state.meta.tierList, campeon.name);
+          return antes !== null && despues !== null && antes !== despues;
+        });
+        if ((parche.adjunto === true) === toca) {
+          throw new Error(`seed ${seed}, split ${i}: el parche ${toca ? 'toca tu pool y tiene que abrir su beat' : 'no toca tu pool y tiene que ir adjunto'}, pero adjunto = ${parche.adjunto}`);
+        }
+        if (toca) propios += 1; else adjuntos += 1;
+      }
+      st = avanzarSplitAuto(st, rng).state;
+    }
+  }
+  if (propios < 3 || adjuntos < 20) {
+    throw new Error(`check vacío: ${propios} parches que tocan el pool y ${adjuntos} que no (hacen falta 3 y 20)`);
+  }
+});
+
+check('K4c-S el instrumento expone el Δp de cada parada de plan (serie:plan e internacional:plan): mejor − peor pSerie declarada, recontado a mano', () => {
+  const opciones = (...ps) => ps.map((pSerie) => ({ pSerie }));
+  const dp = deltaPDePlan(opciones(0.55, 0.62, 0.50));
+  if (Math.abs(dp - 0.12) > 1e-9 || deltaPDePlan(opciones(0.5)) !== null || deltaPDePlan(opciones(0.5, NaN)) !== null
+    || deltaPDePlan([]) !== null || deltaPDePlan(undefined) !== null || deltaPDePlan([{ id: 'a' }, { id: 'b' }]) !== null) {
+    throw new Error(`deltaPDePlan: [0,55 0,62 0,50] tenía que dar 0,12 (mejor − peor, no primera − última); dio ${dp}; con una sola opción, con NaN o sin pSerie tenía que dar null`);
+  }
+  let paradas = 0;
+  for (const seed of [1, 2, 3]) {
+    const aMano = [];
+    const espia = (sistema, estado, decision, rngLocal) => {
+      if (decision.datos?.motivo === 'plan') {
+        const ps = decision.opciones.map((o) => o.pSerie);
+        aMano.push({ tipo: `${sistema.id}:plan`, deltaP: Math.max(...ps) - Math.min(...ps) });
+      }
+      return ESTRATEGIAS_K0.criterio(sistema, estado, decision, rngLocal);
+    };
+    const { observacion } = correrCarreraSimulate(seed, 60, espia);
+    if (JSON.stringify(observacion.planDeltaP) !== JSON.stringify(aMano)) {
+      throw new Error(`seed ${seed}: planDeltaP no coincide con el recuento a mano (${JSON.stringify(observacion.planDeltaP).slice(0, 160)} vs ${JSON.stringify(aMano).slice(0, 160)})`);
+    }
+    const porTipo = (observacion.decisionesPorTipo['serie:plan'] ?? 0) + (observacion.decisionesPorTipo['internacional:plan'] ?? 0);
+    if (porTipo !== observacion.planDeltaP.length) {
+      throw new Error(`seed ${seed}: ${porTipo} paradas de plan y ${observacion.planDeltaP.length} filas de Δp`);
+    }
+    paradas += aMano.length;
+  }
+  if (paradas < 10) {
+    throw new Error(`check vacío: ${paradas} paradas de plan en 3 carreras (hacen falta 10)`);
   }
 });
 

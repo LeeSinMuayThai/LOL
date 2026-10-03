@@ -49,6 +49,19 @@ export const BANDAS_PENDIENTES = [
     rebasea: 'K4c',
     porque: 'K4 dejó los minijuegos solo en el clímax y la prensa tras finales/escándalos; K4c re-balancea el banco (incluidas las tres mecánicas que solo tenían momento mapa_cerrado)'
   },
+  // K4c-S: la prueba decide el contrato. Con P(firmar) < 1 (criterio: ~0,83 con el resultado 0,85 de su respuesta) una parte de las
+  // carreras tarda más en llegar a pro (la firma amateur se posterga) o pierde una oferta del mercado: menos splits pro en 60, menos
+  // bifurcaciones. Medido con las mismas 40 carreras (seeds 4400-4439): 4,15 con la prueba y 5,28 sin ella (correrCarrera de
+  // simulate.js: 4,55 y 5,28); con las seeds 1-40, 5,75 contra 5,90. Es ruido de muestra y efecto real mezclados: lo decide K4c.
+  {
+    check: 'K4-C2 las bifurcaciones frenan entre 4,5 y 7,5 veces por carrera (criterio, 40 carreras × 60; la meta es 5-7)',
+    bloque: 'B',
+    medido: '4,15 bifurcaciones por carrera (166 en 40 carreras, seeds 4400-4439; sin K4c-S pasaba en banda: 5,28 con correrCarrera)',
+    banda: '[4,5, 7,5]',
+    commit: 'K4c-S',
+    rebasea: 'K4c',
+    porque: 'la prueba del tryout decide el contrato (P(firmar) 0,15 / 0,55 / 0,95 de arranque): más carreras postergan la firma o pierden una oferta y juegan menos splits pro; K4c calibra las tres constantes y re-mide'
+  },
   // K5 (integración) había sacado de banda el check de D78 de K5-B (LCK 0 splits en 60 carreras coreanas con criterio).
   // La revisión de K5 cambió el calibre de liga a un cuantil bajo por org y congeló los asientos ofrecibles post-mercado:
   // LCK 0 -> 12 splits (1 carrera), LPL 6 -> 33 (4 carreras), 60 × 60, región elegida. La entrada se borró (custodio 1).
