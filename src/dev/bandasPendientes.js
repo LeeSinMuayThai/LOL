@@ -57,6 +57,17 @@ export const BANDAS_PENDIENTES = [
     commit: 'K4',
     rebasea: 'K4c',
     porque: 'mismo corrimiento que el lado del jugador: con el rival que también quema, los dos lados quedan parejos (86,6 / 85,9) y apenas arriba'
+  },
+  // K4 (revisión 2): el reparto del banco de mecánicas es una banda del ritmo. Con K4 los minijuegos de mapa salen solo
+  // en el clímax (el mapa decisivo) y la prensa tras una final o un escándalo, así que la mezcla se corrió entera.
+  {
+    check: 'El banco de mecánicas se reparte: ninguna se lleva la carrera (9R4c)',
+    bloque: 'B',
+    medido: '48% rueda_de_prensa (1384 de 2874 minijuegos, 300 carreras × 60 splits); la_prueba 20%; last_hit, la_vision y el_kite (solo mapa_cerrado) no salen nunca',
+    banda: '≤ 35%',
+    commit: 'K4',
+    rebasea: 'K4c',
+    porque: 'K4 dejó los minijuegos solo en el clímax y la prensa tras finales/escándalos; K4c re-balancea el banco (incluidas las tres mecánicas que solo tenían momento mapa_cerrado)'
   }
 ];
 
