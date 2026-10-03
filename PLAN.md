@@ -5976,6 +5976,16 @@ atribución exacta (Shapley sobre re-simulación completa) de lo que se gana al 
     4. La previa no toca el estado ni llama a `rng`.
     5. La huella es idéntica.
     6. Ningún texto muestra ids crudos.
+  - **Tal como quedó** *(dos revisiones independientes: motor y navegador real, 2026-10-02)*.
+    - **Mapas sin pausa.** Un mapa que se juega sin pausa (pick automático, sin minijuego) **no muestra la previa
+      en vivo**, porque la previa no agrega pausas. Su p aparece en la línea del feed: "Salieron con N% de ganar".
+      Se acepta así; K4 decide cuándo te frena el juego.
+    - **Medido en el navegador.** La p de la pausa de fecha coincide con el `pSinMomento` del log 29 de 29 veces.
+      La p mostrada después del minijuego es la tirada 22 de 22 veces.
+    - **Arreglos de la revisión.** La p de cada opción del draft de fecha ahora se compara contra la tirada: un
+      mutante que la ignoraba pasaba. El umbral de pausa del draft de fecha usa el mismo campeón que la tirada. La
+      cuenta del minijuego vive en un solo lugar. La p final también se muestra en el resultado del minijuego. Los
+      nombres no se cortan a 375 px.
 
 - **K2a, tal como quedó** *(revisión independiente, 2026-10-02)*. Se aceptan dos desvíos de la viñeta de arriba:
   (1) además de `src/dev/`, K2a **expone** datos del motor sin cambiar ningún cálculo (`career.temporada.nivelJugador`
