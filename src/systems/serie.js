@@ -1,5 +1,5 @@
 import { gauss, roll } from '../core/rng.js';
-import { crearLog } from '../core/log.js';
+import { crearLog, adjuntar } from '../core/log.js';
 import { clamp, clampStat } from '../core/numeros.js';
 import { conPermanencia, conTechoDeLesion } from '../core/curvas.js';
 import { ligaDeCarrera } from '../core/competicion.js';
@@ -248,11 +248,13 @@ function arrancarSerie(state, rng, logsAcum) {
   if (state.serie.sinNadaEnJuego) {
     const st = conPlan(state, 'coach');
     const { fuerzaInicial, rival } = st.serie;
-    return jugarMapaSiguiente(st, rng, [...logsAcum, crearLog(
+    // K4c-F: una serie que no te frena es un renglón: esta línea y sus mapas van adjuntos al beat que la anuncia (la
+    // ronda), y el resultado es la tarjeta de post-serie (que ya trae los mapas). Todo sigue en `state.logs`.
+    return jugarMapaSiguiente(st, rng, [...logsAcum, adjuntar(crearLog(
       'serie',
       `Serie sin nada en juego (${Math.round(fuerzaInicial)} contra ${Math.round(rival.fuerza)} de ${rival.org}): `
       + 'juega lo que diga el coach, sin frenar.'
-    )]);
+    ))]);
   }
   return { state, logs: logsAcum, decision: construirDecisionPlan(state) };
 }
@@ -352,7 +354,9 @@ function finalizarMapa(state, jugada, { ajusteExtra, charla }, rng, logsAcum) {
   };
 
   const comodin = jugada.motivo === 'comodin' ? ` (de comodín: se te quemó todo el pool)` : '';
-  const logs = [...logsAcum, crearLog(
+  // K4c-F: en una serie sin nada en juego (no te frena), el mapa va adjunto: un renglón por serie, no uno por mapa.
+  const deMapa = state.serie.sinNadaEnJuego ? adjuntar : (log) => log;
+  const logs = [...logsAcum, deMapa(crearLog(
     'serie',
     `Mapa ${numeroMapa} — ${state.serie.rival.org} sale con ${rivalJuega ?? 'lo que le queda'}; vos, ${campeon}${comodin}: `
     + `${gano ? 'ganan' : 'pierden'}. Marcador ${marcadorStr}.`,
@@ -361,7 +365,7 @@ function finalizarMapa(state, jugada, { ajusteExtra, charla }, rng, logsAcum) {
       mapa: numeroMapa, campeon, resultado: gano ? 'W' : 'L', marcador: marcadorStr, cierre, p,
       rivalJuega, plan: state.serie.plan, charla
     }
-  )];
+  ))];
 
   return serieTerminada(marcador, state.serie.formato)
     ? concluirRonda(nextState, rng, logs)
