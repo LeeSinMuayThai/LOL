@@ -6263,6 +6263,23 @@ reales por exigirte"). **Se decide:**
 - **Los dos checks no se re-basean**, porque son la agencia que FASE K vino a construir. A lo sumo, el del burnout
   muestrea `malas`, que es donde el burnout tiene que aparecer.
 
+**La subida medida** (estructura en `49e1bc6`, comportamiento idéntico). Lote de "K0 los bots separan", 200 × 60;
+burnouts cada 1000 carreras:
+
+| subida | brecha malas−azar en "no llega a pro" | burnouts criterio / azar / malas | mentalidad de criterio (mediana / % ≥ 90) |
+|---|---|---|---|
+| 0,2 (simétrica) | 8,5 pp | 0 / 0 / 170 | 72,6 / 2,7% |
+| 0,1 | 12,5 pp | 0 / 10 / 355 | 72,3 / 2,7% |
+| **0,05** | **16,5 pp** | 0 / 25 / 430 | 72,3 / 2,6% |
+| 0 | 24,5 pp | 5 / 50 / 595 | 72,0 / 2,8% |
+| neutro (K3) | 22,5 pp | 0 / 40 / 565 | 97,8 / 77,7% |
+
+**Elegido: `mentalidadRetornoBaseSubida` = 0,05.**
+- Cumple todo con margen: la brecha queda 6,5 pp sobre el mínimo, el burnout vuelve con `malas` y no aparece con
+  `criterio`, y las metas de mentalidad se sostienen.
+- El check del burnout tendría ~39 casos en sus 3000 seeds, contra 20 pedidos, así que no hay que cambiarlo.
+- 0,1 cumplía en el borde y 0 se pasaba de duro.
+
 **2. Fuera del bloque A — "≥ 28% de series sin ningún draft" da 27%.** El umbral re-fijado devolvió las pausas de
 draft. Es ritmo, y K4 rediseña el draft entero (plan de Fearless), así que entra en `bandasPendientes.js` como
 **bloque B** (re-basea K4c), con `commit` K3c y el porqué. Es el único caso de una entrada que saca de banda un
