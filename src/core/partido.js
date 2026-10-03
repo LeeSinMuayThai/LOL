@@ -1,4 +1,4 @@
-import { probabilidadPorSigma } from './numeros.js';
+import { clamp, probabilidadPorSigma } from './numeros.js';
 import { BALANCE } from '../data/balance.js';
 
 // K2b (PLAN.md "K2 — lo que midió la investigación", viñeta K2b.3): cómo se
@@ -23,15 +23,32 @@ export const TIPOS_DE_PARTIDO = ['fecha', 'mapa'];
 // `state` es el del jugador. Un cruce ajeno de la tabla (dos orgs que no son la
 // tuya) pasa `null`: es un partido de tipo `fecha` sin jugador, y lo que K3 le
 // sume a tu σ por tu cabeza no le toca.
+//
+// K3-A: el σ se multiplica por `factorDeConsistencia` de la mentalidad del
+// jugador (la cabeza bien → jugás a tu nivel; tilteado → el resultado se vuelve
+// moneda). Sin jugador (`null`), o sin mentalidad legible, el factor es 1.
 export function ruidoEfectivo(state, tipo) {
   const p = BALANCE.partido;
+  const g = factorDeConsistencia(state?.player?.stats?.mentalidad);
   if (tipo === 'fecha') {
-    return p.sigmaFecha;
+    return p.sigmaFecha * g;
   }
   if (tipo === 'mapa') {
-    return p.sigmaMapa;
+    return p.sigmaMapa * g;
   }
   throw new Error(`ruidoEfectivo: tipo de partido desconocido "${tipo}" (válidos: ${TIPOS_DE_PARTIDO.join(', ')})`);
+}
+
+// K3-A (PLAN.md "K3 — decisiones de spec", K3-A.1): g(m) = 1 + k·(mRef − m)/100,
+// acotado a [gMin, gMax] (`BALANCE.consistencia`). g(mRef) = 1 y g no crece con
+// m: con más cabeza, menos ruido. Sin mentalidad (un cruce ajeno, `null`) es 1:
+// lo que tu cabeza le hace a tu σ no le toca a un partido que no jugás. Pura.
+export function factorDeConsistencia(mentalidad) {
+  if (!Number.isFinite(mentalidad)) {
+    return 1;
+  }
+  const c = BALANCE.consistencia;
+  return clamp(1 + c.k * (c.mRef - mentalidad) / BALANCE.stats.max, c.gMin, c.gMax);
 }
 
 // La probabilidad de que el lado propio gane este partido. Pura, sin RNG: la
