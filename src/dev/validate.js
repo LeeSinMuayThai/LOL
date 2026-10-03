@@ -739,7 +739,11 @@ const FORMAS_CONOCIDAS = {
   // Re-registrada en K4c (paso 3a; mismo criterio, no sube VERSION: la sube el paso 3b): las constantes del ritmo (el plan de serie,
   // la ventana de la fecha, las mecánicas del mapa decisivo) corrieron las carreras de muestra y cambiaron rutas opcionales que la
   // muestra ve. Ningún campo del estado nació ni murió (el hash anterior, 6efe5c15f9a6).
-  10: 'dba93d63f79f'
+  // Re-registrada en K4c (paso 3a, arreglos; mismo criterio que K4c-S, no sube VERSION: la sube el paso 3b): la pausa de la
+  // prueba del mercado lleva `respaldo` (el id de la oferta que se firma si no alcanza, o null) y las carreras de muestra se
+  // corrieron (el respaldo, la prueba y la ventana nuevas). Un guardado de antes con la prueba pendiente no trae `respaldo`
+  // y se carga igual: se calcula con la misma regla (el hash anterior, dba93d63f79f).
+  10: '422c552c6435'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
