@@ -9412,6 +9412,41 @@ check('K5c-R: los años pro no cuentan tier 3 (el marcador es el primer contrato
     throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 5).join(' · ')}`);
   }
 });
+
+// --- K5c-T: el título que cuenta ---
+//
+// Regla 17, qué protege: que "gana un título doméstico" del embudo (§K.3b, ~30%) cuente solo los títulos de tier 1 y que los de
+// tier 2 se reporten aparte (`ganaTituloTier2`). Desde K5c-T. Carreras sintéticas: lo único que el embudo lee de cada una.
+const { bloqueEmbudo: bloqueEmbudoK5CT } = await import('./simulate.js');
+
+check('K5c-T: un título de tier 2 no cuenta como título doméstico; se reporta aparte en ganaTituloTier2', () => {
+  const carrera = (tiers) => ({
+    splitFichaje: 0,
+    career: { registro: { titulos: tiers.map((tier, i) => ({ nombre: `Título ${i}`, anio: 2030 + i, org: 'Org', liga: 'LIGA', tier })), picos: { rankMundial: 0 }, internacionales: [] } }
+  });
+  const casos = [
+    { nombre: 'solo uno de tier 2', tiers: [2], domestico: false, tier2: true },
+    { nombre: 'solo uno de tier 1', tiers: [1], domestico: true, tier2: false },
+    { nombre: 'uno de cada', tiers: [2, 1], domestico: true, tier2: true },
+    { nombre: 'dos de tier 2', tiers: [2, 2], domestico: false, tier2: true },
+    { nombre: 'ninguno', tiers: [], domestico: false, tier2: false }
+  ];
+  const problemas = [];
+  for (const caso of casos) {
+    const embudo = bloqueEmbudoK5CT([carrera(caso.tiers)], [{ tierMaximo: 1 }], [{ temporadasNumero1: 0 }]);
+    if ((embudo.ganaTituloDomestico > 0) !== caso.domestico || (embudo.ganaTituloTier2 > 0) !== caso.tier2) {
+      problemas.push(`${caso.nombre}: doméstico ${embudo.ganaTituloDomestico}%, tier 2 ${embudo.ganaTituloTier2}%`);
+    }
+  }
+  // Juntas: 2 de 5 con un título de primera y 3 de 5 con uno de tier 2.
+  const juntas = bloqueEmbudoK5CT(casos.map((caso) => carrera(caso.tiers)), casos.map(() => ({ tierMaximo: 1 })), casos.map(() => ({ temporadasNumero1: 0 })));
+  if (juntas.ganaTituloDomestico !== 40 || juntas.ganaTituloTier2 !== 60) {
+    problemas.push(`las cinco juntas: doméstico ${juntas.ganaTituloDomestico}% (se esperaba 40), tier 2 ${juntas.ganaTituloTier2}% (se esperaba 60)`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(problemas.join(' · '));
+  }
+});
 const osK0 = await import('os');
 
 // Carreras por bot en los lotes de los checks lentos (PLAN.md §K.5 pide 200).
@@ -9647,7 +9682,9 @@ function recuentoEmbudoK0(resultados, carreras) {
     estancadoT2T3: pctK0(cuentaK0(indices, (i) => llegaAPro(i) && tier[i] !== null && tier[i] >= 2), total),
     proSinTierNunca: pctK0(cuentaK0(indices, (i) => llegaAPro(i) && tier[i] === null), total),
     llegaATier1: pctK0(nTier1, total),
-    ganaTituloDomestico: pctK0(cuentaK0(resultados, (r) => r.career.registro.titulos.length >= 1), total),
+    // K5c-T: solo los de tier 1 (reemplaza a `titulos.length >= 1`, que contaba los de tier 2); los de tier 2, aparte.
+    ganaTituloDomestico: pctK0(cuentaK0(resultados, (r) => r.career.registro.titulos.filter((t) => t.tier === 1).length > 0), total),
+    ganaTituloTier2: pctK0(cuentaK0(resultados, (r) => r.career.registro.titulos.filter((t) => t.tier === 2).length > 0), total),
     top20: pctK0(nTop20, total),
     top20DeTier1: nTier1 > 0 ? pctK0(nTop20, nTier1) : 0,
     numeroUnoAlgunaVez: pctK0(cuentaK0(resultados, (r) => r.career.registro.picos.rankMundial === 1), total),
@@ -12506,7 +12543,7 @@ checkLento('K0 bloques de simulate: todas las hojas de todos los bloques son fin
   // de `embudo` que salen de los estados finales tienen que dar lo mismo que el lote.
   const N = 60;
   const lote = correrLote(N, 60, 'equilibrado');
-  const cuentas = { noPro: 0, titulo: 0, top20: 0, numeroUno: 0, buenPapel: 0, numeroUno3: 0, faker: 0, forzoso: 0, cortas: 0 };
+  const cuentas = { noPro: 0, titulo: 0, tituloT2: 0, top20: 0, numeroUno: 0, buenPapel: 0, numeroUno3: 0, faker: 0, forzoso: 0, cortas: 0 };
   const buenPapelPorCarrera = [];
   const aniosPro = [];
   for (let seed = 1; seed <= N; seed += 1) {
@@ -12521,7 +12558,9 @@ checkLento('K0 bloques de simulate: todas las hojas de todos los bloques son fin
     const temporadasNumeroUno = st.logs.filter((l) => l.type === 'top_mundial' && l.rankJugador === 1).length;
     buenPapelPorCarrera.push(buenPapel);
     cuentas.noPro += st.splitFichaje === null ? 1 : 0;
-    cuentas.titulo += registro.titulos.length >= 1 ? 1 : 0;
+    // K5c-T: el doméstico es de tier 1 (reemplaza a `titulos.length >= 1`); el de tier 2 va aparte.
+    cuentas.titulo += registro.titulos.some((titulo) => titulo.tier === 1) ? 1 : 0;
+    cuentas.tituloT2 += registro.titulos.some((titulo) => titulo.tier === 2) ? 1 : 0;
     cuentas.top20 += (registro.picos.rankMundial ?? 0) > 0 ? 1 : 0;
     cuentas.numeroUno += registro.picos.rankMundial === 1 ? 1 : 0;
     cuentas.buenPapel += buenPapel >= 1 ? 1 : 0;
@@ -12546,6 +12585,7 @@ checkLento('K0 bloques de simulate: todas las hojas de todos los bloques son fin
     'embudo.noLlegaAPro': [lote.embudo.noLlegaAPro, pct(cuentas.noPro)],
     'embudo.llegaAPro': [lote.embudo.llegaAPro, pct(N - cuentas.noPro)],
     'embudo.ganaTituloDomestico': [lote.embudo.ganaTituloDomestico, pct(cuentas.titulo)],
+    'embudo.ganaTituloTier2': [lote.embudo.ganaTituloTier2, pct(cuentas.tituloT2)],
     'embudo.top20': [lote.embudo.top20, pct(cuentas.top20)],
     'embudo.numeroUnoAlgunaVez': [lote.embudo.numeroUnoAlgunaVez, pct(cuentas.numeroUno)],
     'embudo.numeroUnoDelMundo3Temporadas': [lote.embudo.numeroUnoDelMundo3Temporadas, pct(cuentas.numeroUno3)],
