@@ -3,6 +3,7 @@ import { ROLES } from '../data/roles.js';
 import { bandaDeArraigo as idDeBandaDeArraigo } from './registro.js';
 import { etiquetaCampo } from './selectors.js';
 import { deltaCorto } from './formato.js';
+import { ORIGEN_DESGASTE, desgasteDe } from './curvas.js';
 
 // La ficha de carrera (fase 8, PLAN.md §8.3): lo que la UI pinta en la
 // tarjeta permanente (`src/ui/components/ficha.js`). Puro, sin RNG — se
@@ -205,6 +206,10 @@ export function loQueConstruiste(registro) {
   const { marcaMinimaVisible, marcasVisibles } = BALANCE.ficha;
   const filas = new Map();
   for (const marca of registro.marcas ?? []) {
+    // K5c-E: lo que se gastó con los años no es una decisión: va en su propia línea (`loQueTeSacaronLosAnios`).
+    if (marca.origen === ORIGEN_DESGASTE) {
+      continue;
+    }
     const clave = `${marca.stat}|${marca.origen}|${marca.anio}`;
     const previa = filas.get(clave);
     filas.set(clave, previa ? { ...previa, acumulado: previa.acumulado + marca.delta } : { ...marca, acumulado: marca.delta });
@@ -223,11 +228,29 @@ export function loQueConstruiste(registro) {
     }));
 }
 
+// K5c-E: una sola línea con lo que te sacaron los años (`player.desgaste`: el bonus que se gastó en los stats de curva y
+// los puntos que te faltan de cada acumulativo), con los mismos umbrales que las marcas (`marcaMinimaVisible`,
+// `marcasVisibles`). `null` mientras no haya nada que mostrar: con las perillas en 0 no aparece.
+export function loQueTeSacaronLosAnios(player) {
+  const { marcaMinimaVisible, marcasVisibles } = BALANCE.ficha;
+  const partes = Object.entries(desgasteDe(player))
+    .map(([stat, valor]) => ({ stat, delta: -Math.round(valor) }))
+    .filter(({ delta }) => Math.abs(delta) >= marcaMinimaVisible)
+    .sort((a, b) => a.delta - b.delta)
+    .slice(0, marcasVisibles);
+  if (partes.length === 0) {
+    return null;
+  }
+  const lista = partes.map(({ stat, delta }) => `${deltaCorto(delta)} ${etiquetaCampo(`player.stats.${stat}`).toLowerCase()}`);
+  return { desgaste: true, partes, texto: `▼ ${lista.join(', ')} — ${ORIGEN_DESGASTE}` };
+}
+
 // El objeto único que consume `src/ui/components/ficha.js`.
 export function fichaCompleta(state) {
   return {
     // K3-B: lo que construiste (vacío mientras `fraccionPermanente` valga 0).
-    construido: loQueConstruiste(state.career.registro),
+    // K5c-E: y, al final, lo que te sacaron los años (nada mientras el desgaste valga 0).
+    construido: [...loQueConstruiste(state.career.registro), ...[loQueTeSacaronLosAnios(state.player)].filter(Boolean)],
     nivel: Math.round(nivelDelJugador(state)),
     bandaNivel: bandaDeNivel(nivelDelJugador(state)),
     destacado: statDestacado(state),

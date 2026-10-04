@@ -736,7 +736,10 @@ const FORMAS_CONOCIDAS = {
   // K4c (revisión, textos): sin campos nuevos; el cierre de año ya no repite carta y la muestra ve otro mapa de eventos vistos.
   // Integración de las dos revisiones (supervisor).
   // K5c (motor): sin campos nuevos; la vuelta del retiro adelanta el reloj y la muestra juega otras carreras.
-  11: '1fe56a6523e4'
+  11: '1fe56a6523e4',
+  // K5c-E (el desgaste): `player.desgaste`, un número por stat de curva y por acumulativo (lo que los años te sacan hoy);
+  // `migrarDe11` lo arranca en cero. Las marcas "Los años" tienen la forma de siempre (`{ stat, delta, origen, anio }`).
+  12: '46386d1f58e0'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -19158,6 +19161,8 @@ function guardadoDeLaVersion10K4cG(state, rng) {
   const datos = JSON.parse(serializarGuardado(state, rng));
   datos.version = 10;
   delete datos.state.player.planAnual;
+  // K5c-E (VERSION 12): ni la 10 ni la 11 escribían `player.desgaste` (la migración lo arranca en cero).
+  delete datos.state.player.desgaste;
   datos.state.flags.preparacionDeSplit = PREPARACION_DE_SPLIT_VIEJA_K4cG;
   // K4c (revisión): la 10 tampoco escribía `flags.pruebasFallidas` (la migración lo arranca vacío).
   delete datos.state.flags.pruebasFallidas;
@@ -19178,15 +19183,16 @@ function conElRngDeK4cG(seed, estado) {
 }
 
 check('K4c guardado VERSION 11: la forma de la 10 sigue registrada, y un guardado de la 10 carga completo (plan del perfil, sin preparacionDeSplit) y sigue igual que el de la 11', () => {
-  if (VERSION_GUARDADO !== 11 || FORMAS_CONOCIDAS[10] !== FORMA_DE_LA_VERSION_10_K4cG || FORMAS_CONOCIDAS[11] === FORMAS_CONOCIDAS[10]) {
+  // K5c-E: con la 12 (y las que vengan) la 10 sigue cargando, pasando por `migrarDe10` y `migrarDe11`.
+  if (VERSION_GUARDADO < 11 || FORMAS_CONOCIDAS[10] !== FORMA_DE_LA_VERSION_10_K4cG || FORMAS_CONOCIDAS[11] === FORMAS_CONOCIDAS[10]) {
     throw new Error(`VERSION ${VERSION_GUARDADO}, forma de la 10 ${FORMAS_CONOCIDAS[10]} (la de main es ${FORMA_DE_LA_VERSION_10_K4cG}), forma de la 11 ${FORMAS_CONOCIDAS[11]}`);
   }
   // Una versión que no es ni la 11 ni la 10 se sigue descartando entera.
   const rngVacio = mulberry32(1);
   const base = JSON.parse(serializarGuardado(createInitialState(1, rngVacio), rngVacio));
-  for (const version of [2, 9, 12]) {
+  for (const version of [2, 9, VERSION_GUARDADO + 1]) {
     if (deserializarGuardado(JSON.stringify({ ...base, version })) !== null) {
-      throw new Error(`un guardado de VERSION ${version} cargó: solo la 11 y la 10 (migrada) se cargan`);
+      throw new Error(`un guardado de VERSION ${version} cargó: solo la ${VERSION_GUARDADO} y las anteriores migrables (10 y 11) se cargan`);
     }
   }
   let comparados = 0;
@@ -19348,6 +19354,285 @@ check('K4c guardado VERSION 11: un guardado de la 10 parado en la pausa de la pr
     throw new Error('check vacío: ninguna carrera llegó a un split pro con el plan inicial para probar la pausa vieja');
   }
 });
+
+// ============================================================================
+// K5c-E: el desgaste (PLAN.md, "K5c: decisiones de spec de la estructura")
+// ============================================================================
+//
+// Pasado `edadPico + gracia`, los acumulativos pierden un término determinista por split y el bonus permanente decae una
+// fracción (`BALANCE.atributos.desgaste`). Las perillas valen 0 en el repo (la huella del juego no se mueve: la prueba "K1
+// versión"); estos checks las prenden EN MEMORIA, como `conUmbralK5C`, y las restauran.
+// Seeds que juegan hasta pasado el pico (medido: las seeds 4 y 10 terminan a los 24 años, antes de que nada se gaste).
+const SEEDS_K5CE = [1, 2, 3, 7];
+const SPLITS_K5CE = 90;
+const DESGASTE_K5CE = {
+  graciaAnios: 2,
+  perdidaPorSplit: { macro: 0.2, shotcalling: 0.25, adaptabilidad: 0.2 },
+  aceleracionPorAnio: 0.1,
+  fraccionBonusPorSplit: 0.1
+};
+const { aplicar: aplicarAtributosK5ce } = await import('../systems/atributos.js');
+const {
+  ORIGEN_DESGASTE: ORIGEN_DESGASTE_K5CE, hayDesgaste: hayDesgasteK5ce, aniosDeDesgaste: aniosDeDesgasteK5ce,
+  perdidaDeAcumulativo: perdidaDeAcumulativoK5ce
+} = await import('../core/curvas.js');
+const { isDeepStrictEqual: sonIgualesK5ce } = await import('util');
+const ACUMULATIVOS_K5CE = Object.keys(BALANCE.atributos.acumulativos);
+const TEXTO_PRIMERA_VEZ_K5CE = /cobrar los años|Los años empiezan/;
+
+function conDesgasteK5CE(valores, fn) {
+  const d = BALANCE.atributos.desgaste;
+  const previo = { ...d, perdidaPorSplit: { ...d.perdidaPorSplit } };
+  Object.assign(d, { ...valores, perdidaPorSplit: { ...valores.perdidaPorSplit } });
+  try {
+    return fn();
+  } finally {
+    Object.assign(d, previo);
+  }
+}
+
+// Una carrera con las perillas prendidas, split a split: `visita(antes, despues, logs)` en cada paso.
+function carreraConDesgasteK5CE(seed, visita, valores = DESGASTE_K5CE) {
+  const rng = mulberry32(seed);
+  let state = createInitialState(seed, rng);
+  for (let i = 0; i < SPLITS_K5CE && !state.terminado; i += 1) {
+    const antes = state;
+    const paso = conDesgasteK5CE(valores, () => avanzarSplitAuto(state, rng));
+    state = paso.state;
+    visita(antes, state, paso.logs);
+  }
+  return state;
+}
+
+check('K5c-E neutro y gracia: misma seed con las perillas prendidas y apagadas da el mismo estado split por split hasta que el desgaste muerde la primera vez, y nunca muerde con edad <= edadPico + gracia', () => {
+  let mordieron = 0;
+  for (const seed of SEEDS_K5CE) {
+    const rngApagado = mulberry32(seed);
+    let apagado = createInitialState(seed, rngApagado);
+    let split = 0;
+    let yaMordio = false;
+    carreraConDesgasteK5CE(seed, (antes, despues) => {
+      split += 1;
+      apagado = avanzarSplitAuto(apagado, rngApagado).state;
+      const limite = despues.player.oculto.edadPico + DESGASTE_K5CE.graciaAnios;
+      if (hayDesgasteK5ce(despues.player) && despues.age <= limite) {
+        throw new Error(`seed ${seed}, split ${split}: el desgaste mordió con edad ${despues.age} <= edadPico + gracia (${limite})`);
+      }
+      if (!yaMordio && hayDesgasteK5ce(despues.player)) {
+        yaMordio = true;
+        mordieron += 1;
+      }
+      if (!yaMordio && !sonIgualesK5ce(comoJsonK4cG(despues), comoJsonK4cG(apagado))) {
+        throw new Error(`seed ${seed}, split ${split}: antes de la primera mordida el estado con las perillas prendidas ya no es el del juego apagado`);
+      }
+    });
+  }
+  if (mordieron < SEEDS_K5CE.length) {
+    throw new Error(`check vacío: el desgaste mordió en ${mordieron} de ${SEEDS_K5CE.length} carreras`);
+  }
+  // Y en seco, sobre un estado pro real: con la edad en cada tramo hasta el pico más la gracia el sistema da lo mismo que apagado,
+  // y un año después muerde (un acumulativo queda más bajo).
+  const rng = mulberry32(2);
+  let estado = createInitialState(2, rng);
+  for (let i = 0; i < 40 && !estado.terminado; i += 1) {
+    estado = avanzarSplitAuto(estado, rng).state;
+  }
+  const limite = estado.player.oculto.edadPico + DESGASTE_K5CE.graciaAnios;
+  const corrida = (edad, prendido) => {
+    const conEdad = { ...estado, age: edad };
+    const correr = () => aplicarAtributosK5ce(conEdad, conElRngDeK4cG(2, rng.estado())).state;
+    return prendido ? conDesgasteK5CE(DESGASTE_K5CE, correr) : correr();
+  };
+  for (const edad of [Math.floor(estado.player.oculto.edadPico) - 3, estado.player.oculto.edadPico, limite - 0.5, limite]) {
+    if (!sonIgualesK5ce(comoJsonK4cG(corrida(edad, true)), comoJsonK4cG(corrida(edad, false)))) {
+      throw new Error(`con edad ${edad} (edadPico ${estado.player.oculto.edadPico}, gracia ${DESGASTE_K5CE.graciaAnios}) el desgaste ya cambió el estado`);
+    }
+  }
+  const pasado = corrida(limite + 1, true);
+  if (!hayDesgasteK5ce(pasado.player) || pasado.player.stats.macro >= corrida(limite + 1, false).player.stats.macro) {
+    throw new Error(`con edad ${limite + 1} (un año pasado del límite) el desgaste no mordió: ${JSON.stringify(pasado.player.desgaste)}`);
+  }
+  const anios = conDesgasteK5CE(DESGASTE_K5CE, () => [limite, limite + 1].map((edad) => aniosDeDesgasteK5ce(edad, estado.player.oculto)));
+  if (anios[0] !== 0 || Math.abs(anios[1] - 1) > 1e-9) {
+    throw new Error(`aniosDeDesgaste debe ser 0 hasta edadPico + gracia y contar años después: ${anios}`);
+  }
+});
+
+check('K5c-E un veterano pasado del pico termina con cada acumulativo, el bonus permanente y el nivel más bajos que con las perillas apagadas, y el término crece (no baja) con la edad', () => {
+  let veteranos = 0;
+  for (const seed of SEEDS_K5CE) {
+    const rng = mulberry32(seed);
+    let estado = createInitialState(seed, rng);
+    for (let i = 0; i < 45 && !estado.terminado; i += 1) {
+      estado = avanzarSplitAuto(estado, rng).state;
+    }
+    if (estado.terminado || estado.player.bonusPermanente.mecanica <= 0) {
+      continue;
+    }
+    // El mismo estado y el mismo rng, con la edad corrida 4 años pasada del límite: lo único que cambia es el desgaste.
+    const edad = Math.ceil(estado.player.oculto.edadPico + DESGASTE_K5CE.graciaAnios) + 4;
+    const jugar = (prendido) => {
+      const correr = () => {
+        const rngLocal = conElRngDeK4cG(seed, rng.estado());
+        let st = { ...estado, age: edad };
+        for (let i = 0; i < 6; i += 1) st = aplicarAtributosK5ce(st, rngLocal).state;
+        return st;
+      };
+      return prendido ? conDesgasteK5CE(DESGASTE_K5CE, correr) : correr();
+    };
+    const con = jugar(true);
+    const sin = jugar(false);
+    for (const stat of ACUMULATIVOS_K5CE) {
+      if (!(con.player.stats[stat] < sin.player.stats[stat])) {
+        throw new Error(`seed ${seed}: ${stat} con desgaste ${con.player.stats[stat]} no quedó debajo del apagado ${sin.player.stats[stat]}`);
+      }
+      if (!(con.player.desgaste[stat] > 0)) {
+        throw new Error(`seed ${seed}: player.desgaste.${stat} no cuenta lo que se perdió (${con.player.desgaste[stat]})`);
+      }
+    }
+    const sumaBonus = (st) => Object.values(st.player.bonusPermanente).reduce((total, valor) => total + valor, 0);
+    if (!(sumaBonus(con) < sumaBonus(sin))) {
+      throw new Error(`seed ${seed}: el bonus permanente con desgaste (${sumaBonus(con)}) no quedó debajo del apagado (${sumaBonus(sin)})`);
+    }
+    if (!(nivelDelJugador(con) < nivelDelJugador(sin))) {
+      throw new Error(`seed ${seed}: el nivel con desgaste (${nivelDelJugador(con)}) no quedó debajo del apagado (${nivelDelJugador(sin)})`);
+    }
+    veteranos += 1;
+  }
+  if (veteranos < 3) {
+    throw new Error(`check vacío: ${veteranos} veteranos con bonus para comparar (hacen falta 3)`);
+  }
+  // La forma del término: 0 hasta el límite, y desde ahí no baja con la edad (con aceleración > 0 crece).
+  const oculto = { edadPico: 24 };
+  conDesgasteK5CE(DESGASTE_K5CE, () => {
+    const perdidas = [20, 24, 25, 26, 27, 30, 34].map((edad) => perdidaDeAcumulativoK5ce('macro', edad, oculto));
+    if (perdidas[0] !== 0 || perdidas[1] !== 0 || perdidas[2] !== 0 || perdidas[3] !== 0 || !(perdidas[4] > 0)) {
+      throw new Error(`la pérdida debe valer 0 hasta edadPico + gracia (26) y mayor que 0 después: ${perdidas}`);
+    }
+    for (let i = 5; i < perdidas.length; i += 1) {
+      if (!(perdidas[i] > perdidas[i - 1])) throw new Error(`la pérdida no crece con la edad: ${perdidas}`);
+    }
+  });
+});
+
+check('K5c-E con las perillas prendidas bonus = Σ marcas en cada split (el desgaste deja marcas negativas "Los años"), las marcas solo crecen y player.desgaste las cuenta', () => {
+  let marcasDeDesgaste = 0;
+  for (const seed of SEEDS_K5CE) {
+    let previas = [];
+    let split = 0;
+    carreraConDesgasteK5CE(seed, (antes, despues) => {
+      split += 1;
+      const marcas = despues.career.registro.marcas;
+      if (marcas.length < previas.length || previas.some((marca, i) => marca !== marcas[i])) {
+        throw new Error(`seed ${seed}, split ${split}: registro.marcas no solo crece`);
+      }
+      previas = marcas;
+      for (const stat of Object.keys(despues.player.bonusPermanente)) {
+        const delStat = marcas.filter((marca) => marca.stat === stat);
+        const suma = delStat.reduce((total, marca) => total + marca.delta, 0);
+        if (Math.abs(despues.player.bonusPermanente[stat] - suma) > 1e-6) {
+          throw new Error(`seed ${seed}, split ${split}: el bonus de ${stat} (${despues.player.bonusPermanente[stat]}) no es la suma de sus marcas (${suma})`);
+        }
+        const gastado = delStat.filter((marca) => marca.origen === ORIGEN_DESGASTE_K5CE).reduce((total, marca) => total - marca.delta, 0);
+        if (Math.abs(despues.player.desgaste[stat] - gastado) > 1e-6) {
+          throw new Error(`seed ${seed}, split ${split}: player.desgaste.${stat} (${despues.player.desgaste[stat]}) no es lo que dicen las marcas de los años (${gastado})`);
+        }
+      }
+      for (const [stat, valor] of Object.entries(despues.player.desgaste)) {
+        if (!Number.isFinite(valor) || valor < 0) throw new Error(`seed ${seed}, split ${split}: player.desgaste.${stat} inválido (${valor})`);
+      }
+      if (Object.keys(despues.player.desgaste).length !== Object.keys(despues.player.bonusPermanente).length + ACUMULATIVOS_K5CE.length) {
+        throw new Error(`seed ${seed}, split ${split}: player.desgaste incompleto: ${JSON.stringify(despues.player.desgaste)}`);
+      }
+    });
+    for (const marca of previas.filter((m) => m.origen === ORIGEN_DESGASTE_K5CE)) {
+      if (!(marca.delta < 0) || !Number.isInteger(marca.anio)) {
+        throw new Error(`seed ${seed}: marca de desgaste inválida: ${JSON.stringify(marca)}`);
+      }
+      marcasDeDesgaste += 1;
+    }
+  }
+  if (marcasDeDesgaste === 0) {
+    throw new Error('ninguna carrera con el desgaste prendido dejó una marca de los años: el check no probaría nada');
+  }
+});
+
+check('K5c-E se ve: la primera vez que muerde hay una línea en el split (una sola por carrera, ninguna sin desgaste) y la ficha, en "Lo que construiste", dice lo que te sacaron los años solo si es distinto de 0', () => {
+  for (const seed of SEEDS_K5CE) {
+    let lineas = 0;
+    let primerasMordidas = 0;
+    const final = carreraConDesgasteK5CE(seed, (antes, despues, logs) => {
+      const lineasDelSplit = logs.filter((log) => log.type === 'split' && !log.tecnico && TEXTO_PRIMERA_VEZ_K5CE.test(log.message)).length;
+      lineas += lineasDelSplit;
+      const primera = !hayDesgasteK5ce(antes.player) && hayDesgasteK5ce(despues.player);
+      if (primera) primerasMordidas += 1;
+      if (lineasDelSplit !== (primera ? 1 : 0)) {
+        throw new Error(`seed ${seed}, split ${despues.player.splitCount}: ${lineasDelSplit} línea(s) del desgaste (primera vez: ${primera})`);
+      }
+    });
+    if (lineas !== 1 || primerasMordidas !== 1) {
+      throw new Error(`seed ${seed}: ${lineas} líneas de primera vez y ${primerasMordidas} primeras mordidas (debe ser 1 y 1)`);
+    }
+    const ficha = fichaCompleta(final).construido;
+    const delDesgaste = ficha.filter((fila) => fila.desgaste);
+    if (delDesgaste.length !== 1 || !delDesgaste[0].texto.startsWith('▼') || !delDesgaste[0].texto.includes(ORIGEN_DESGASTE_K5CE)
+        || ficha.some((fila) => !fila.desgaste && fila.origen === ORIGEN_DESGASTE_K5CE)) {
+      throw new Error(`seed ${seed}: la ficha debe traer UNA línea de lo que te sacaron los años y no repetir las marcas: ${JSON.stringify(ficha.map((fila) => fila.texto))}`);
+    }
+    // Aunque no haya ninguna marca de decisiones, la línea (y con ella la sección) sigue ahí; y sin desgaste no hay ninguna.
+    const sinMarcas = fichaCompleta({ ...final, career: { ...final.career, registro: { ...final.career.registro, marcas: [] } } }).construido;
+    const ceros = Object.fromEntries(Object.keys(final.player.desgaste).map((stat) => [stat, 0]));
+    const sinDesgaste = fichaCompleta({ ...final, player: { ...final.player, desgaste: ceros } }).construido;
+    if (sinMarcas.length !== 1 || sinMarcas[0].desgaste !== true || sinDesgaste.some((fila) => fila.desgaste)) {
+      throw new Error(`seed ${seed}: la línea de los años debe estar sola sin marcas (${sinMarcas.length}) y no estar con el desgaste en 0`);
+    }
+  }
+  // Apagado (el repo): ni línea en el split ni línea en la ficha.
+  const rng = mulberry32(1);
+  let st = createInitialState(1, rng);
+  for (let i = 0; i < 60 && !st.terminado; i += 1) {
+    const paso = avanzarSplitAuto(st, rng);
+    st = paso.state;
+    if (paso.logs.some((log) => TEXTO_PRIMERA_VEZ_K5CE.test(log.message))) throw new Error('con las perillas apagadas salió la línea del desgaste');
+  }
+  if (fichaCompleta(st).construido.some((fila) => fila.desgaste)) throw new Error('con las perillas apagadas la ficha muestra el desgaste');
+});
+
+check('K5c-E guardado VERSION 12: la forma de la 11 sigue registrada tal cual, y un guardado de la 11 carga con player.desgaste en cero y juega el mismo próximo split', () => {
+  if (VERSION_GUARDADO < 12 || FORMAS_CONOCIDAS[11] !== '1fe56a6523e4' || FORMAS_CONOCIDAS[12] === FORMAS_CONOCIDAS[11]) {
+    throw new Error(`VERSION ${VERSION_GUARDADO}, forma de la 11 ${FORMAS_CONOCIDAS[11]} (la de main es 1fe56a6523e4), forma de la 12 ${FORMAS_CONOCIDAS[12]}`);
+  }
+  let comparados = 0;
+  for (const seed of SEEDS_GUARDADO_10_K4cG) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < SPLITS_GUARDADO_10_K4cG && !state.terminado; i += 1) {
+      const datos = JSON.parse(serializarGuardado(state, rng));
+      datos.version = 11;
+      delete datos.state.player.desgaste;
+      const cargado = deserializarGuardado(JSON.stringify(datos));
+      if (cargado === null || !sonIgualesK5ce(comoJsonK4cG(cargado.state), comoJsonK4cG(state))) {
+        throw new Error(`seed ${seed}, split ${i}: el guardado de la 11 no cargó igual que el estado de hoy (player.desgaste ${JSON.stringify(cargado?.state.player.desgaste)})`);
+      }
+      const seguido = avanzarSplitAuto(state, conElRngDeK4cG(seed, rng.estado()));
+      const recargado = avanzarSplitAuto(cargado.state, conElRngDeK4cG(cargado.seed, cargado.rngEstado));
+      if (!sonIgualesK5ce(comoJsonK4cG(seguido), comoJsonK4cG(recargado))) {
+        throw new Error(`seed ${seed}, split ${i}: el guardado de la 11 no juega el mismo split`);
+      }
+      comparados += 1;
+      state = avanzarSplitAuto(state, rng).state;
+    }
+  }
+  if (comparados < 20) throw new Error(`check vacío: ${comparados} guardados de la 11 comparados (hacen falta 20)`);
+  const rngVacio = mulberry32(1);
+  const sinCampo = JSON.parse(serializarGuardado(createInitialState(1, rngVacio), rngVacio));
+  sinCampo.version = 11;
+  delete sinCampo.state.player.desgaste;
+  if (Object.values(deserializarGuardado(JSON.stringify(sinCampo)).state.player.desgaste).some((valor) => valor !== 0)) {
+    throw new Error('migrarDe11 debe arrancar player.desgaste en cero');
+  }
+});
+
 
 // PLAN.md §K.4 — los tres custodios del registro de bandas pendientes. Van DESPUÉS del último check: el primero mira cómo
 // terminó cada check de esta corrida, y una entrada cuyo check corre más abajo le aparece como "no existe" (pasó en la

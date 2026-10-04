@@ -1,4 +1,5 @@
 import { planInicial, planPorId } from './rutinas.js';
+import { desgasteInicial } from './curvas.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 import { decisionDeCierre } from '../systems/edadCierre.js';
 import { pausaDeMercadoMigrada } from '../systems/mercado.js';
@@ -50,9 +51,11 @@ import { pausaDeMercadoMigrada } from '../systems/mercado.js';
 // lugar del motivo del retiro —K4-C2 lo había puesto en `flags.motivoRetiro`—) · 11 (K4c, el plan anual y el cierre del bloque
 // B: `player.planAnual` entra y `flags.preparacionDeSplit` se va, porque la pretemporada ya no frena para elegir la práctica;
 // además los logs ganan el campo opcional `adjunto` y la pausa de la prueba del mercado lleva `respaldo`, que un guardado de
-// antes no trae y se calcula con la misma regla). Un guardado de VERSION 10 SÍ carga: `migrarDe10` lo completa (T4).
-export const VERSION = 11;
-const VERSION_MIGRABLE = 10;
+// antes no trae y se calcula con la misma regla). Un guardado de VERSION 10 SÍ carga: `migrarDe10` lo completa (T4) · 12 (K5c-E,
+// el desgaste: `player.desgaste`, lo que los años te sacan de cada stat de curva y de cada acumulativo; un guardado de antes no lo
+// trae y `migrarDe11` lo arranca en cero). Un guardado de VERSION 11 SÍ carga (`migrarDe11`), y uno de la 10 pasa por las dos.
+export const VERSION = 12;
+const VERSIONES_MIGRABLES = [10, 11];
 
 // 10 -> 11. Le pone al estado lo que la versión nueva espera y la vieja no escribía: `player.planAnual` (el plan que le
 // cierra al perfil, el mismo del estado inicial: un guardado anterior nunca tuvo un cierre que lo fije) y fuera
@@ -99,6 +102,18 @@ export function migrarDe10(state) {
   };
 }
 
+// 11 -> 12. K5c-E: `player.desgaste` (lo que los años te sacan hoy de cada stat), en el valor neutro del estado inicial: un guardado
+// anterior nunca tuvo desgaste. Puro: no toca el RNG ni el reloj.
+export function migrarDe11(state) {
+  return { ...state, player: { ...state.player, desgaste: state.player?.desgaste ?? desgasteInicial() } };
+}
+
+// De la versión del guardado a la función que lo deja en la actual (la 10 pasa por `migrarDe10` y por `migrarDe11`).
+const MIGRACIONES = {
+  10: (state) => migrarDe11(migrarDe10(state)),
+  11: migrarDe11
+};
+
 export function serializar(state, rng, rngUi) {
   return JSON.stringify({
     version: VERSION,
@@ -119,7 +134,7 @@ export function deserializar(json) {
   } catch {
     return null;
   }
-  if (!datos || typeof datos !== 'object' || (datos.version !== VERSION && datos.version !== VERSION_MIGRABLE)) {
+  if (!datos || typeof datos !== 'object' || (datos.version !== VERSION && !VERSIONES_MIGRABLES.includes(datos.version))) {
     return null;
   }
   if (typeof datos.rngEstado !== 'number' || !datos.state) {
@@ -129,7 +144,7 @@ export function deserializar(json) {
     seed: datos.seed,
     rngEstado: datos.rngEstado,
     rngUiEstado: typeof datos.rngUiEstado === 'number' ? datos.rngUiEstado : null,
-    state: datos.version === VERSION_MIGRABLE ? migrarDe10(datos.state) : datos.state,
+    state: datos.version === VERSION ? datos.state : MIGRACIONES[datos.version](datos.state),
     guardadoEn: datos.guardadoEn ?? null
   };
 }
