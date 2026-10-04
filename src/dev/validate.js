@@ -21298,6 +21298,53 @@ check('K5c-M (revisión): la rebaja de la élite está topeada en sus márgenes 
   }
 });
 
+// --- K5c-R (revisión): el marcador de los años pro y el tier 3 -----------------------------------------------------------------
+// Regla 7. El mercado no ofrece tier 3 (ahí no hay mercado: `competitivo.js` lo resuelve), así que ninguna carrera real firma por
+// `aceptarOferta` un contrato de tier 3 y el mutante `oferta.tier <= 3` pasaba el check de los años pro. Estado construido: ofertas
+// reales de la mano de la élite con `tier` forzado, sobre un estado sin marcador. Pide que el de tier 3 NO lo abra (rama `soloTier3`:
+// sigue en null y los años pro en 0), que el de tier 2 y el de tier 1 lo abran en el split de hoy, y que una vez abierto no se mueva.
+const { aceptarOferta: aceptarOfertaK5CREV } = await import('../systems/mercado.js');
+const ESTADOS_TIER3_K5CREV = 5;
+
+check('K5c-R: los años pro (marcador): firmar un contrato de tier 3 no lo abre; el de tier 2 y el de tier 1 sí, y una vez abierto no se mueve', () => {
+  const problemas = [];
+  let casosTier3 = 0;
+  let casosAbiertos = 0;
+  for (const { seed, st } of pausasDeMercadoK5cM().slice(0, 40)) {
+    if (casosTier3 >= ESTADOS_TIER3_K5CREV) {
+      break;
+    }
+    const sinMarca = { ...st, career: { ...st.career, splitPrimerContratoTier2: null } };
+    const oferta = generarOfertas(sinMarca, mulberry32(seed)).ofertas.find((candidata) => candidata.tag !== 'renovacion' && candidata.org !== sinMarca.career.currentOrg);
+    if (!oferta) {
+      continue;
+    }
+    const marcaTras = (estado, tier) => aceptarOfertaK5CREV(estado, { ...oferta, tier }, mulberry32(seed + 1)).state.career.splitPrimerContratoTier2;
+    casosTier3 += 1;
+    if (marcaTras(sinMarca, 3) !== null) {
+      problemas.push(`seed ${seed}: firmar en tier 3 abrió el marcador (${marcaTras(sinMarca, 3)})`);
+    }
+    for (const tier of [2, 1]) {
+      if (marcaTras(sinMarca, tier) !== sinMarca.player.splitCount) {
+        problemas.push(`seed ${seed}: firmar en tier ${tier} dejó el marcador en ${marcaTras(sinMarca, tier)} (hoy es el split ${sinMarca.player.splitCount})`);
+      }
+    }
+    const yaAbierto = { ...sinMarca, career: { ...sinMarca.career, splitPrimerContratoTier2: 2 } };
+    casosAbiertos += 1;
+    for (const tier of [3, 2, 1]) {
+      if (marcaTras(yaAbierto, tier) !== 2) {
+        problemas.push(`seed ${seed}: con el marcador en 2, firmar en tier ${tier} lo movió a ${marcaTras(yaAbierto, tier)}`);
+      }
+    }
+  }
+  if (casosTier3 < ESTADOS_TIER3_K5CREV || casosAbiertos === 0) {
+    problemas.push(`el check no mide nada: ${casosTier3} estados con oferta (mínimo ${ESTADOS_TIER3_K5CREV})`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
+  }
+});
+
 if (errores.length > 0) {
   console.error(`\n${errores.length} check(s) fallaron.`);
   process.exit(1);

@@ -800,7 +800,7 @@ export function opcionAutoFinPorMercado(state, decision) {
 // `motivoFila`: el motivo con el que se cierra la fila de la org anterior en el
 // registro. Por defecto se deriva del cambio de tier (ascenso/descenso/
 // transferencia); 9Mf lo pasa explícito para el banquillo.
-function aceptarOferta(state, oferta, rng, { motivoFila } = {}) {
+export function aceptarOferta(state, oferta, rng, { motivoFila } = {}) {
   const esRenovacion = oferta.tag === 'renovacion';
   const contrato = {
     org: oferta.org, liga: oferta.liga, tier: oferta.tier,
