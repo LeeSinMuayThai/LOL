@@ -7391,6 +7391,65 @@ M `b57a9de`, `a26fe1b`).
     tier 1;
   - su umbral tiene que quedar por encima de `splitsPorEdad` (3), o la bifurcación sale todos los años.
 
+**El barrido** (supervisor, dos lotes; después un analista Opus con unas 50 corridas y 3 finalistas, cada una con
+`criterio` 1200 y `azar`/`malas` 300). La mejor finalista, F2, sale de D más: el desgaste (0,5 / 0,5 / 0,3, aceleración
+0,3, bonus 0,08), la presión de tier 2 (20 / 4), M (k = 1e5, rebaja 4), `castigoEtarioNivel` 100,
+`factorRenovacionDeclive` 0, `aniosContratoMax` 2, `pesoJugadorEnEquipo` 0,8 y `fuerzaOrgSpread` 6.
+
+| Métrica | Hoy (base) | F2 | Meta |
+|---|---|---|---|
+| No llega a pro | 24,7 | 21,6 | ~20 ✅ |
+| Estancados (`azar` / `malas`) | 0 | 12,9 (27 / 29) | ~10, `malas` ≫ `criterio` ✅ (a medias) |
+| Tier 1 | 75 | 65 | 55-65 ✅ |
+| Título de tier 1 | 71 | 61 | ~30 |
+| Top 20 | 63 | 41 | ~15 |
+| Años pro (mediana · p10 · p90) | 14,5 · 11 · 17 | 8 · 4 · 12 | ~4-6 |
+| Llega a los 34 (`malas`) | 80 | 1,6 (27) | < 5 ✅ en `criterio` |
+| r(potencial, duración) | 0,22 | 0,59 | > 0,32 ✅ |
+| Gana un Mundial (`azar`) · Corea / NA | 12 | 6,2 (3,0) · 7,1 / 4,1 | ≥ 7 · 12-15 / 3-5 |
+| Nuevo Faker · en la élite | 3 | 1,0 · 14 | ~2-3 · ≥ 30 |
+| P(2 o más \| 1) | 0,25 | 0,15 | ≥ 0,35-0,40 |
+
+**Por qué no llega cada meta** (medido por el analista):
+- **La duración.** El primer contrato llega a los 19 (no a los 17) y el debut en tier 1 a los 19-20. El castigo etario
+  también muerde en la disputa del ascenso: por eso es hoy *la* fuente de los estancados, y acortar la carrera con él
+  vacía el tier 1. Con contratos de 1 a 3 años se juega 1-2 años más después de que el mercado se cierra.
+- **El título de tier 1 en ~30% es imposible por estructura.** Hay un título por liga y por año, y el equipo del
+  protagonista gana entre 4 y 5 veces lo que un equipo promedio de 10. Aun con la tasa justa, 6 años en tier 1 dan
+  47%.
+- **El top 20** es un "alguna vez" y sigue a los años en tier 1. Solo baja si se vacía el tier 1.
+- **El Mundial** es apariciones × la tasa por aparición. La tasa es de 1,2-2,5%, contra el 6,25% justo (1 de 16),
+  porque los mejores clubes de LCK y LPL están cerca del tope de 99 y tu equipo queda entre 17 y 24 puntos abajo.
+  Acortar la carrera saca apariciones.
+  - Lo que lo mueve es `pesoJugadorEnEquipo` (0,5 → 0,8: tu nivel pesa más en tu equipo). Es una constante del
+    bloque A, que está cerrado.
+  - M no alcanza: las reglas de import bloquean 2 de cada 3 pares, y con k = 3e5 no cambia nada.
+- **P(2 o más \| 1).** El que llega al Mundial como el más fuerte por 0-10 lo gana el 23-27% de las veces, por la
+  varianza del formato (`sigmaMapa` 17,7, del bloque A). No hay dinastías.
+- **"Claramente el más fuerte gana ~50%"** pasa en el 0,1% de los Mundiales (3 de ~2.300) y ganó 3 de 3. No es un
+  problema real.
+
+**Decisiones** *(supervisor, 2026-10-04)*.
+- **Se fijan en lo medido** (eran propuestas de §K.3, que dice "cada calibración las fija"; cada una va a su check
+  duro con su línea de la regla 17):
+  - carrera pro mediana **~7 años** (del contrato a los 19 al retiro a los 26, con unos 6 en tier 1), p10 ≥ 3 y
+    p90 ≤ 13;
+  - título de tier 1 **~55-60%**, por la razón de arriba;
+  - top 20 **~40%**;
+  - P(2 o más \| 1) **~15%**, por la varianza del formato del bloque A;
+  - "claramente el más fuerte" se reporta, pero no es check.
+- **El Mundial ≥ 7% es una decisión del usuario (D-D): no se baja a lo medido.** Primero se agotan los medios:
+  1. `pesoJugadorEnEquipo` 0,8 entra **solo si las metas duras del bloque A siguen en verde** (r de la misma liga, R²
+     sin ruido, Bo5 del favorito, mentalidad y hype). Va con su línea: "el nivel manda" pesa más.
+  2. **K5c-N, el local juega en casa** (estructura, perilla neutra). En su propia liga el nativo no paga el cuantil de
+     calibre en la alternativa del asiento; el import sí. Así un coreano de élite entra a un club fuerte de LCK, y la
+     región separa el Mundial (Corea más, NA menos) sin abrir el tier 1 al resto.
+- **K5c-A, el ascenso** (estructura, perilla neutra). El castigo etario en la disputa del ascenso a tier 1 se multiplica
+  por su propia fracción, para poder acortar la carrera sin vaciar el tier 1 ni inflar los estancados.
+- **K5c-V, el veterano de tier 2** (estructura, perilla neutra). Con `malas`, entre el 20% y el 34% de las carreras
+  siguen en tier 2 hasta los 34: el mercado de tier 2 renueva para siempre. Desde una edad, el mercado de tier 2 le
+  aplica el castigo etario también a la renovación. La sesión de una carrera fallida tiene que ser corta (§K.3c).
+
 ### K6 — Jugarlo *(la prueba que importa)*
 
 Tres carreras completas en el navegador: una que se estanca en tier 2 por malas decisiones, una buena
