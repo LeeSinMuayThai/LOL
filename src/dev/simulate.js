@@ -1538,6 +1538,14 @@ function bloqueEconomia(observaciones) {
   };
 }
 
+// K5c (revisión): los splits de carrera pro desde el primer contrato de tier 2 o tier 1, sin los que pasaron retirado (la ventana de
+// vuelta: `career.splitsRetirado`, que el reloj del mundo sí cuenta en `splitCount`). 0 si nunca firmó uno. Lo usan la longevidad y
+// el r(potencial, duración) del instrumento.
+export function duracionProDe(r) {
+  const desde = r.career.splitPrimerContratoTier2;
+  return desde === null || desde === undefined ? 0 : r.player.splitCount - desde - (r.career.splitsRetirado ?? 0);
+}
+
 // §K.3b — longevidad: años de carrera pro de los que llegaron a pro (`BALANCE.edad.splitsPorEdad` splits
 // por año), % con carrera corta y % que termina en la línea forzosa.
 // K5c-R: la duración se cuenta desde el primer contrato de tier 2 o tier 1 (`career.splitPrimerContratoTier2`; 0 si nunca firmó
@@ -1546,8 +1554,7 @@ function bloqueEconomia(observaciones) {
 export function bloqueLongevidad(resultados) {
   const llegaronAPro = resultados.filter((r) => r.splitFichaje !== null);
   const aniosPro = llegaronAPro.map((r) => {
-    const desde = r.career.splitPrimerContratoTier2;
-    return desde === null || desde === undefined ? 0 : (r.player.splitCount - desde) / BALANCE.edad.splitsPorEdad;
+    return duracionProDe(r) / BALANCE.edad.splitsPorEdad;
   });
   const forzoso = llegaronAPro.filter((r) => r.age >= BALANCE.retiro.edadRetiroForzoso).length;
 
@@ -1885,9 +1892,11 @@ export function bloqueCurvaDeEdad(resultados, observaciones) {
     });
   }
   const pros = resultados.filter((r) => r.splitFichaje !== null);
+  // K5c (revisión): la duración es la de los años pro (`duracionProDe`: desde el primer contrato de tier 2 o tier 1, sin la ventana
+  // de retiro). Reemplaza a `splitCount - splitFichaje`, que contaba desde tier 3 y los años retirado.
   const r = pearson(
     pros.map((estado) => estado.player.oculto.potencial),
-    pros.map((estado) => estado.player.splitCount - estado.splitFichaje)
+    pros.map(duracionProDe)
   );
   return { porEdad, rPotencialDuracion: { r: redondear(r, 3), n: pros.length } };
 }

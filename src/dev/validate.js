@@ -746,7 +746,10 @@ const FORMAS_CONOCIDAS = {
   //  - K5c-R (la presión de tier 2): `flags.splitsTier2SinOfertaTier1` (0 con las perillas neutras) y los años pro desde tier 2:
   //    `career.splitPrimerContratoTier2`.
   // Un guardado de la 11 carga con `migrarDe11` (core/guardado.js), que completa los campos de las dos piezas.
-  12: '16c168aa54d6'
+  // K5c (revisión, regla 15): `career.splitsRetirado`, los splits que pasaron retirado en la ventana de vuelta (los años pro no los
+  // cuentan; `migrarDe11` lo pone en 0). La 12 no salió de la rama, así que se re-registra en vez de subir VERSION
+  // ('16c168aa54d6' antes de esta revisión).
+  12: '36ce05b9630c'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -6571,7 +6574,10 @@ checkLento('La duración de la carrera correlaciona con el potencial oculto (r >
       continue;
     }
     potenciales.push(state.player.oculto.potencial);
-    duraciones.push(state.player.splitCount - state.splitFichaje);
+    // K5c (revisión): la duración es la de los años pro: desde el primer contrato de tier 2 o tier 1, sin los splits que pasaron
+    // retirado (0 si nunca firmó uno). Reemplaza a `splitCount - splitFichaje`, que contaba desde tier 3 y los años retirado.
+    duraciones.push(state.career.splitPrimerContratoTier2 == null
+      ? 0 : state.player.splitCount - state.career.splitPrimerContratoTier2 - (state.career.splitsRetirado ?? 0));
   }
 
   const media = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
@@ -9368,25 +9374,39 @@ const { aniosProDe: aniosProDeK5CR } = await import('../core/puntaje.js');
 const { bloqueLongevidad: bloqueLongevidadK5CR } = await import('./simulate.js');
 const SEEDS_ANIOS_PRO_K5CR = 40;
 
-check('K5c-R: los años pro no cuentan tier 3 (el marcador es el primer contrato de tier 2 o tier 1; puntaje, tarjeta e instrumento lo usan)', () => {
+// K5c (revisión, regla 15): los años pro tampoco cuentan los splits que pasaste retirado en la ventana de vuelta (el reloj del mundo
+// sí los cuenta en `splitCount`). Reemplaza a "K5c-R: los años pro no cuentan tier 3 (el marcador es el primer contrato de tier 2 o
+// tier 1; puntaje, tarjeta e instrumento lo usan)", que contaba esos splits. Recuento independiente del campo de la carrera: lo que
+// se descuenta es cuánto saltó el reloj en cada vuelta, sin el split normal de la vuelta. Sin la resta (en `aniosProDe`
+// o en `duracionProDe` del instrumento) las carreras con vuelta dan años de más y el check da rojo; exige carreras con vuelta.
+check('K5c-R: los años pro no cuentan tier 3 ni los splits retirado (el marcador es el primer contrato de tier 2 o tier 1; puntaje, tarjeta e instrumento lo usan)', () => {
   const problemas = [];
   let desdeTier3 = 0;
   let directoTier2 = 0;
   let soloTier3 = 0;
   let tarjetas = 0;
+  let conVuelta = 0;
   for (let seed = 1; seed <= SEEDS_ANIOS_PRO_K5CR; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
+    let retirado = 0;
     for (let i = 0; i < SPLITS_K5CR && !state.terminado; i += 1) {
+      const antes = state;
       state = avanzarSplitAuto(state, rng).state;
+      if (antes.phase === 'retirado' && state.phase === 'profesional') {
+        // El split de la vuelta cuenta uno más por `atributos` (corre después de `retiro` en ese mismo split): el salto menos ese
+        // split normal son los que pasaron afuera (el del retiro y los de la ventana).
+        retirado += state.player.splitCount - antes.player.splitCount - 1;
+      }
     }
+    conVuelta += retirado > 0 ? 1 : 0;
     if (state.splitFichaje === null) {
       continue;
     }
     const marca = state.career.splitPrimerContratoTier2;
     const porOrg = state.career.registro.porOrg;
     const primeraFilaT2 = porOrg.find((fila) => fila.tier <= 2) ?? null;
-    const esperado = marca === null ? 0 : (state.player.splitCount - marca) / BALANCE.edad.splitsPorEdad;
+    const esperado = marca === null ? 0 : (state.player.splitCount - marca - retirado) / BALANCE.edad.splitsPorEdad;
     if (porOrg[0]?.tier === 3 && primeraFilaT2) {
       // Empezó en un equipo chico: el marcador es la firma en tier 2 (la fila de esa org abre el split siguiente), no `splitFichaje`.
       desdeTier3 += 1;
@@ -9419,8 +9439,8 @@ check('K5c-R: los años pro no cuentan tier 3 (el marcador es el primer contrato
     }
   }
   // El primer contrato directo en tier 2 es raro (ninguno en las seeds 1-40): se exige solo el caso que importa, desde tier 3.
-  if (desdeTier3 === 0 || tarjetas === 0) {
-    problemas.push(`el check no mide nada: ${desdeTier3} carreras desde tier 3, ${directoTier2} directo a tier 2, ${soloTier3} solo tier 3, ${tarjetas} tarjetas`);
+  if (desdeTier3 === 0 || tarjetas === 0 || conVuelta === 0) {
+    problemas.push(`el check no mide nada: ${desdeTier3} carreras desde tier 3, ${directoTier2} directo a tier 2, ${soloTier3} solo tier 3, ${tarjetas} tarjetas, ${conVuelta} con vuelta del retiro`);
   }
   if (problemas.length > 0) {
     throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 5).join(' · ')}`);
@@ -9716,7 +9736,8 @@ function recuentoEmbudoK0(resultados, carreras) {
 function recuentoLongevidadK0(resultados) {
   const pro = resultados.filter((r) => r.splitFichaje !== null);
   // K5c-R: desde el primer contrato de tier 2 o tier 1 (0 si no hubo). Reemplaza a `splitCount - splitFichaje`, que contaba desde tier 3.
-  const anios = pro.map((r) => (r.career.splitPrimerContratoTier2 == null ? 0 : (r.player.splitCount - r.career.splitPrimerContratoTier2) / BALANCE.edad.splitsPorEdad));
+  // K5c (revisión): sin los splits que pasaron retirado (`career.splitsRetirado`).
+  const anios = pro.map((r) => (r.career.splitPrimerContratoTier2 == null ? 0 : (r.player.splitCount - r.career.splitPrimerContratoTier2 - (r.career.splitsRetirado ?? 0)) / BALANCE.edad.splitsPorEdad));
   const finales = {};
   for (const r of pro) {
     const clave = r.finAnticipado ?? 'retiro_normal';
@@ -12584,7 +12605,8 @@ checkLento('K0 bloques de simulate: todas las hojas de todos los bloques son fin
     if (st.splitFichaje !== null) {
       // K5c-R: desde el primer contrato de tier 2 o tier 1 (0 si no hubo). Reemplaza a `splitCount - splitFichaje`, que contaba desde tier 3.
       const desdeTier2 = st.career.splitPrimerContratoTier2;
-      const anios = desdeTier2 == null ? 0 : (st.player.splitCount - desdeTier2) / BALANCE.edad.splitsPorEdad;
+      // K5c (revisión): sin los splits que pasaron retirado (`career.splitsRetirado`).
+      const anios = desdeTier2 == null ? 0 : (st.player.splitCount - desdeTier2 - (st.career.splitsRetirado ?? 0)) / BALANCE.edad.splitsPorEdad;
       aniosPro.push(anios);
       cuentas.cortas += anios < 4 ? 1 : 0;
       cuentas.forzoso += st.age >= BALANCE.retiro.edadRetiroForzoso ? 1 : 0;
@@ -12875,7 +12897,10 @@ checkLento('K5c mundialReal y curvaDeEdad: coinciden con un recuento independien
     }
     igual('curva (edades)', curva.porEdad.map((f) => f.edad), Array.from({ length: 19 }, (_, i) => 16 + i));
     const r = pros.length >= 30
-      ? correlacionK0(pros.map((p) => p.player.oculto.potencial), pros.map((p) => p.player.splitCount - p.splitFichaje))
+      // K5c (revisión): la duración de los años pro (desde el primer contrato de tier 2 o tier 1, sin los splits retirado; 0 si nunca
+      // firmó uno). Reemplaza a `splitCount - splitFichaje`, que contaba desde tier 3 y los años retirado.
+      ? correlacionK0(pros.map((p) => p.player.oculto.potencial), pros.map((p) => (p.career.splitPrimerContratoTier2 == null
+        ? 0 : p.player.splitCount - p.career.splitPrimerContratoTier2 - (p.career.splitsRetirado ?? 0))))
       : null;
     igual('curva.rPotencialDuracion', curva.rPotencialDuracion, { r: redondeoK0(r, 3), n: pros.length });
   }

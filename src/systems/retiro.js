@@ -346,6 +346,8 @@ export function resolver(state, decision, respuesta, rng) {
       ...reloj,
       phase: 'profesional',
       motivoRetiro: null,
+      // K5c (revisión): los splits de la ventana avanzaron el reloj pero no fueron años pro (`career.splitsRetirado`).
+      career: { ...reloj.career, splitsRetirado: (reloj.career.splitsRetirado ?? 0) + reloj.flags.splitsEnVentana },
       flags: {
         ...reloj.flags,
         splitsEnVentana: 0,

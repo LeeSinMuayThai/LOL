@@ -167,6 +167,11 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // `systems/mercado.js` al firmar). Los años pro se cuentan desde acá, no desde `splitFichaje` (que puede ser tier 3):
       // el puntaje (`aniosProDe`), la caja "Años pro" de la tarjeta y la longevidad del instrumento. `null` hasta entonces.
       splitPrimerContratoTier2: null,
+      // K5c (revisión): los splits que pasaron mientras estuviste retirado y volviste (`flags.splitsEnVentana` al volver, que
+      // `systems/retiro.js` suma a `player.splitCount` para que el mundo no te espere). No son años pro: `aniosProDe`, la caja
+      // "Años pro" de la tarjeta y la longevidad del instrumento los restan. Se acumula en cada vuelta, sin `rng`; 0 hasta la
+      // primera.
+      splitsRetirado: 0,
       // Roster, jerarquía y sinergia: se llenan al firmar.
       liga: null,
       rosterDeOrg: null,

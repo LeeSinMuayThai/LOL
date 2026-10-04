@@ -54,8 +54,9 @@ import { pausaDeMercadoMigrada } from '../systems/mercado.js';
 // antes no trae y se calcula con la misma regla). Un guardado de VERSION 10 SÍ carga: `migrarDe10` lo completa (T4) · 12 (K5c, la
 // integración de K5c-E y K5c-R en un solo número — K5c-E, el desgaste: `player.desgaste`, lo que los años te sacan de cada stat de
 // curva y de cada acumulativo — K5c-R, la presión de tier 2: `flags.splitsTier2SinOfertaTier1`; y los años pro desde tier 2:
-// `career.splitPrimerContratoTier2`; K5c-M no cambió la forma). Un guardado de la 11 carga con `migrarDe11`, que completa los
-// campos de las dos piezas, y uno de la 10 pasa por las dos migraciones.
+// `career.splitPrimerContratoTier2`; K5c-M no cambió la forma; en la revisión de K5c entró `career.splitsRetirado`, los splits que
+// pasaron retirado —la ventana de vuelta— y no son años pro). Un guardado de la 11 carga con `migrarDe11`, que completa los campos
+// de las dos piezas y de la revisión, y uno de la 10 pasa por las dos migraciones.
 export const VERSION = 12;
 const VERSIONES_MIGRABLES = [10, 11];
 
@@ -123,7 +124,8 @@ export function migrarDe10(state) {
 
 // 11 -> 12. Completa lo que la 12 escribe y la 11 no. K5c-E: `player.desgaste` (lo que los años te sacan hoy de cada stat), en el
 // valor neutro del estado inicial. K5c-R: la cuenta de la presión de tier 2 en 0 (con las perillas de `BALANCE.retiro.presionTier2`
-// en 99 nunca subía) y el marcador de los años pro desde el registro. Puro: no toca el RNG ni el reloj.
+// en 99 nunca subía) y el marcador de los años pro desde el registro. K5c (revisión): `career.splitsRetirado` en 0 (la 11 no
+// cargaba los splits que pasaron retirado: sus años pro no se corrigen hacia atrás). Puro: no toca el RNG ni el reloj.
 export function migrarDe11(state) {
   const player = { ...state.player, desgaste: state.player?.desgaste ?? desgasteInicial() };
   const flags = { ...state.flags, splitsTier2SinOfertaTier1: state.flags?.splitsTier2SinOfertaTier1 ?? 0 };
@@ -133,7 +135,7 @@ export function migrarDe11(state) {
   const splitPrimerContratoTier2 = state.career.splitPrimerContratoTier2 !== undefined
     ? state.career.splitPrimerContratoTier2
     : primerContratoTier2DelRegistro(state);
-  return { ...state, player, flags, career: { ...state.career, splitPrimerContratoTier2 } };
+  return { ...state, player, flags, career: { ...state.career, splitPrimerContratoTier2, splitsRetirado: state.career.splitsRetirado ?? 0 } };
 }
 
 // De la versión del guardado a la función que lo deja en la actual (la 10 pasa por `migrarDe10` y por `migrarDe11`).
