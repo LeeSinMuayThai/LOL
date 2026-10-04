@@ -20,6 +20,7 @@ import { TONOS_CONOCIDOS as TONOS_DE_GRAFICOS } from '../ui/graficos/comun.js';
 import { correrLote as correrLoteJugabilidad, analizarCatalogo } from './simulate.js';
 import { observar as observarCobertura, calcularHuecosPorCategoria } from './cobertura.js';
 import { BALANCE } from '../data/balance.js';
+import { planDeSemana as planDeSemanaH10 } from '../systems/amateur.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 import { CATEGORIAS_EVENTO } from '../data/categorias.js';
 import { mulberry32, sample } from '../core/rng.js';
@@ -166,6 +167,18 @@ function checkLento(nombre, fn) {
     return;
   }
   correrUnCheck(nombre, fn);
+}
+
+// K6a-A: el menú de la semana amateur en un estado que frena (el colegio a un punto de la confiscación, un perfil que va al
+// ranked, todo el catálogo amateur): la semana ya no frena siempre, y los checks que miran el menú lo arman acá.
+function menuQueFrenaH10(st) {
+  const pesos = Object.fromEntries(Object.keys(st.player.perfil.pesos).map((id) => [id, id === 'hambriento' ? 1 : 0]));
+  const alBorde = {
+    ...st,
+    player: { ...st.player, studies: BALANCE.amateur.confiscacionUmbral + 1, perfil: { actual: 'hambriento', pesos } },
+    flags: { ...st.flags, negociacionGanada: false }
+  };
+  return planDeSemanaH10(alBorde, RUTINAS.amateur).decision;
 }
 
 function correrCarrera(seed, splits) {
@@ -579,8 +592,11 @@ check('Las decisiones de mejora declaran rareza con el payoff correcto (PLAN.md 
       porRareza[opcion.rareza].push(opcion.id);
     }
     if (sorteo) {
-      if (!String(decision.descripcion).startsWith('El dado trajo')) {
-        throw new Error(`${origen}: menú de sorteo sin encabezado del dado (H10)`);
+      // K6a-A, regla 17: reemplaza a "el encabezado del dado" (H10), que exigía que el menú abriera con "El dado trajo…"
+      // ("rng clicker", ensayo de K6): el encabezado nombra los caminos y el eje, sin el dado. Protege que todo menú de
+      // caminos diga cuántos hay y qué se juega, desde K6a-A.
+      if (!String(decision.descripcion).startsWith('Tenés ')) {
+        throw new Error(`${origen}: menú de caminos sin encabezado (H10)`);
       }
       if (!String(decision.descripcion).includes('¿')) {
         throw new Error(`${origen}: no nombra el eje del dilema`);
@@ -590,9 +606,11 @@ check('Las decisiones de mejora declaran rareza con el payoff correcto (PLAN.md 
   }
 
   // 2. Pretemporada amateur (la semana) y práctica de offseason: el menú
-  //    que ve el jugador trae rareza, el dado y el eje.
-  const amateur = sistemaPorId('amateur').aplicar(estadoBase, mulberry32(2));
-  verificarDecisionDeMejora(amateur.decision, 'amateur', { sorteo: true });
+  //    que ve el jugador trae rareza, el encabezado y el eje.
+  // K6a-A, regla 17: la semana ya no frena siempre (la resuelve tu perfil y frena con un riesgo evitable), así que el
+  // menú se mira donde frena: el colegio a un punto de la confiscación, un perfil que va al ranked y todo el catálogo
+  // amateur (`menuQueFrenaH10`). Reemplaza a "aplicar del amateur sobre el estado inicial", que daba la parada siempre.
+  verificarDecisionDeMejora(menuQueFrenaH10(estadoBase), 'amateur', { sorteo: true });
 
   // K4c (plan anual), regla 17: se fue la práctica de offseason de este check (reemplaza a "verificarDecisionDeMejora de
   // practica", que exigía su menú con sorteo): la práctica ya no frena, entrena sola según el plan del año.
@@ -749,7 +767,9 @@ const FORMAS_CONOCIDAS = {
   // K5c (revisión, regla 15): `career.splitsRetirado`, los splits que pasaron retirado en la ventana de vuelta (los años pro no los
   // cuentan; `migrarDe11` lo pone en 0). La 12 no salió de la rama, así que se re-registra en vez de subir VERSION
   // ('16c168aa54d6' antes de esta revisión).
-  12: '36ce05b9630c'
+  // K6a-A: la semana amateur que resuelve el perfil va a la crónica (`cronica`, `perfil`, `opcion`, `descripcion` en esa línea del
+  // log). La 12 sigue sin salir: se re-registra ('36ce05b9630c' antes de K6a-A).
+  12: '446e670c1c40'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -18013,7 +18033,10 @@ check('K3-B 2b un solo camino para las rutinas: la semana amateur (systems/amate
   let corridas = 0;
   conBalanceK3A([['atributos', 'fraccionPermanentePractica', FRACCION]], () => {
     amateur.slice(0, 4).forEach((st, i) => {
-      const decision = sistemaAmateur.aplicar(st, mulberry32(9900 + i)).decision;
+      // K6a-A, regla 17: la semana ya no frena siempre (la resuelve el perfil y frena con un riesgo evitable): el menú se
+      // arma donde frena (`menuQueFrenaH10`). Reemplaza a "aplicar del amateur sobre el estado de la carrera", que daba la
+      // parada siempre (y con ella las rutinas a correr).
+      const decision = menuQueFrenaH10(st);
       if (decision?.datos?.motivo !== 'reparto') return;
       for (const rutina of decision.datos.rutinas) {
         const r = sistemaAmateur.resolver(st, decision, { opcionId: rutina.id }, mulberry32(9950 + i)).state;
@@ -21409,6 +21432,221 @@ check('K5c-R: el free agent con la cuenta de la presión arrastrada recibe un mo
   if (problemas.length > 0) {
     throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 3).join(' | ')}`);
   }
+});
+
+// --- K6a-A: el amateur y las decisiones (PLAN.md "K6a — el ensayo de K6", pieza K6a-A) ---
+//
+// El ensayo de K6 (dos carreras en el navegador, sobre `75e7ed5`): "Cómo vivís la semana" eran 22 de las 38 paradas de
+// una carrera; el amateur abría con "El dado trajo cuatro caminos" y el cierre de año etiquetaba todo como RULETA; el
+// perfil rechazaba solo los proyectos juveniles; "Pasarte a nocturno" y "Máster: la charla" no decían qué movía cada
+// opción; y la primera opción de "El canal ya paga más" era retirarte. Qué protege cada check lo dice su nombre.
+const { mulberry32: mulberry32K6aA } = await import('../core/rng.js');
+const { createInitialState: estadoInicialK6aA } = await import('../core/state.js');
+const { avanzarSplit: avanzarSplitK6aA, resolverDecision: resolverDecisionK6aA } = await import('../core/pipeline.js');
+const { sistemaPorId: sistemaPorIdK6aA } = await import('../systems/registro.js');
+const { presentarOResolver: presentarOResolverK6aA } = await import('../systems/events.js');
+const { aplicar: aplicarAmateurK6aA } = await import('../systems/amateur.js');
+const { previaDeOpcion: previaDeOpcionK6aA } = await import('../core/previa.js');
+const { TODOS_LOS_EVENTOS: EVENTOS_K6aA } = await import('../data/events/index.js');
+const { BALANCE: BALANCE_K6aA } = await import('../data/balance.js');
+
+const CARRERAS_K6aA = 30;
+const SPLITS_K6aA = 60;
+// La mediana de paradas de la semana por carrera (criterio). Antes de K6a-A era 8 (60 carreras, sonda del worker).
+const META_SEMANAS_K6aA = 1;
+const MOTIVOS_DE_SALIDA_K6aA = ['oferta', 'negociacion', 'nocturno', 'salida_amateur'];
+const IDS_QUE_TERMINAN_K6aA = new Set(['retirarse', 'retirarte', 'dejar', 'vivir_del_canal']);
+const EFECTOS_DE_CARRERA_K6aA = new Set(['retirarse', 'camino', 'ofertaDeImport', 'cambiarRol']);
+// El encuadre de azar puro: "el dado", "los dados", "el dado trajo", "ruleta". (`dado` solo es también el participio
+// —"te había dado"— y no se busca así.)
+const AZAR_PURO_K6aA = /\bel dado\b|\blos dados\b|\bdado trajo\b|ruleta/i;
+// Un título que suena a oferta de carrera (scout, prueba, proyecto, un lugar en un roster o un staff) tiene que estar
+// marcado `oferta: true` en el dato.
+const TITULO_DE_OFERTA_K6aA = /\bscout\b|proyecto juvenil|tryout|te quiere de import|te quiere en su cupo|lugar en el staff/i;
+
+let loteK6aA = null;
+function loteDeK6aA() {
+  if (loteK6aA !== null) {
+    return loteK6aA;
+  }
+  const lote = { semanasPorCarrera: [], decisiones: [], mudas: [], cronicasDeSemana: 0, cronicasDeEvento: [], salidas: {} };
+  for (let seed = 1; seed <= CARRERAS_K6aA; seed += 1) {
+    const rng = mulberry32K6aA(seed);
+    let st = estadoInicialK6aA(seed, rng);
+    let semanas = 0;
+    let vistos = st.logs.length;
+    for (let pasos = 0; pasos < SPLITS_K6aA * BALANCE_K6aA.partida.maxDecisionesPorSplit && !st.terminado && st.player.splitCount < SPLITS_K6aA; pasos += 1) {
+      if (!st.pendiente) {
+        st = avanzarSplitK6aA(st, rng).state;
+      } else {
+        const { sistemaId, decision } = st.pendiente;
+        lote.decisiones.push({ sistemaId, decision, seed });
+        if (decision.datos?.motivo === 'reparto') semanas += 1;
+        if (sistemaId === 'amateur' && MOTIVOS_DE_SALIDA_K6aA.includes(decision.datos?.motivo)) {
+          (lote.salidas[decision.datos.motivo] ??= []).push(decision);
+        }
+        const sistema = sistemaPorIdK6aA(sistemaId);
+        const respuesta = sistema.resolverAuto(st, decision, rng);
+        // Lo que deja el sistema que resolvió, sin lo que agregan las etapas siguientes del split: con un rng aparte
+        // (descartable), para no mover el stream de la carrera. Una decisión que encadena otra carta cuenta como resuelta.
+        const propio = sistema.resolver(st, decision, respuesta, mulberry32K6aA(seed * SPLITS_K6aA + pasos));
+        if (propio.logs.filter((log) => !log.tecnico).length === 0 && !propio.decision) {
+          lote.mudas.push(`seed ${seed}: ${sistemaId}/${decision.datos?.motivo ?? decision.tipo} "${decision.titulo}"`);
+        }
+        st = resolverDecisionK6aA(st, respuesta, rng).state;
+      }
+      for (const log of st.logs.slice(vistos)) {
+        if (log.cronica && log.titulo === 'La semana') lote.cronicasDeSemana += 1;
+        if (log.cronica && log.type === 'event') lote.cronicasDeEvento.push(log.titulo);
+      }
+      vistos = st.logs.length;
+    }
+    lote.semanasPorCarrera.push(semanas);
+  }
+  loteK6aA = lote;
+  return lote;
+}
+
+function medianaK6aA(valores) {
+  const orden = [...valores].sort((x, y) => x - y);
+  return orden[Math.floor(orden.length / 2)];
+}
+
+// Un estado amateur de arranque con el colegio y el perfil que pide el caso (el resto, el del estado inicial).
+function estadoAmateurK6aA(seed, { estudios, perfil }) {
+  const rng = mulberry32K6aA(seed);
+  const base = estadoInicialK6aA(seed, rng);
+  const pesos = Object.fromEntries(Object.keys(base.player.perfil.pesos).map((id) => [id, id === perfil ? 1 : 0]));
+  return {
+    rng,
+    state: { ...base, player: { ...base.player, studies: estudios, perfil: { actual: perfil, pesos } }, flags: { ...base.flags, robosConsecutivos: 0 } }
+  };
+}
+
+check(`K6a-A la semana amateur: la resuelve el perfil (a la crónica) y frena solo con un riesgo evitable; mediana de paradas de la semana <= ${META_SEMANAS_K6aA} (criterio, ${CARRERAS_K6aA} × ${SPLITS_K6aA})`, () => {
+  const problemas = [];
+  // Con rutinas fijas (la agresiva y la segura del catálogo), sin depender de qué ofreció el sorteo.
+  const fijas = ['todo_al_ranked', 'bancar_el_colegio'].map((id) => RUTINAS.amateur.find((rutina) => rutina.id === id));
+  const umbral = BALANCE_K6aA.amateur.confiscacionUmbral;
+  const casos = [
+    { nombre: 'colegio sobrado', estudios: 95, robos: 0, frena: false },
+    { nombre: 'colegio a un punto de la confiscación', estudios: umbral + 1, robos: 0, frena: true },
+    { nombre: 'colegio al borde con la negociación ganada', estudios: umbral + 1, robos: 0, negociacion: true, frena: false },
+    { nombre: 'la tercera semana seguida robándole al sueño', estudios: 95, robos: BALANCE_K6aA.amateur.robosParaDeuda - 1, frena: true }
+  ];
+  for (const seed of [1, 2, 3]) {
+    for (const caso of casos) {
+      const { state } = estadoAmateurK6aA(seed, { estudios: caso.estudios, perfil: 'hambriento' });
+      const st = { ...state, flags: { ...state.flags, robosConsecutivos: caso.robos, negociacionGanada: Boolean(caso.negociacion) } };
+      const plan = planDeSemanaH10(st, fijas);
+      if (plan.frena !== caso.frena) problemas.push(`seed ${seed}, ${caso.nombre}: frena=${plan.frena}, se esperaba ${caso.frena}`);
+      if (plan.frena) {
+        const d = plan.decision;
+        if (!/Tu perfil iba a ir por/.test(d.descripcion)) problemas.push(`seed ${seed}, ${caso.nombre}: la parada no dice qué está en juego`);
+        if (caso.robos === 0 && !/\d+% de que en casa/.test(d.descripcion)) problemas.push(`seed ${seed}, ${caso.nombre}: la parada no dice el riesgo con su número ("${d.descripcion}")`);
+        if (AZAR_PURO_K6aA.test(d.descripcion)) problemas.push(`seed ${seed}, ${caso.nombre}: la parada habla de azar puro`);
+        const sinNumero = d.opciones.filter((opcion) => !(opcion.previa ?? []).some((fila) => /~[+-]\d/.test(fila.texto ?? '')));
+        if (sinNumero.length > 0) problemas.push(`seed ${seed}, ${caso.nombre}: opciones sin su número (${sinNumero.map((o) => o.label).join(', ')})`);
+      }
+    }
+    // Una semana sin parada queda en la crónica, con quién la eligió.
+    const tranquilo = estadoAmateurK6aA(seed, { estudios: 95, perfil: 'leal' });
+    const r = aplicarAmateurK6aA(tranquilo.state, tranquilo.rng);
+    if (r.decision?.datos?.motivo === 'reparto') problemas.push(`seed ${seed}: con el colegio en 95 y perfil leal la semana frenó`);
+    else if (!r.logs.some((log) => log.cronica && log.titulo === 'La semana' && log.perfil)) problemas.push(`seed ${seed}: la semana del perfil no dejó su línea de crónica`);
+  }
+  const lote = loteDeK6aA();
+  const mediana = medianaK6aA(lote.semanasPorCarrera);
+  if (mediana > META_SEMANAS_K6aA) problemas.push(`la mediana de paradas de la semana por carrera es ${mediana}, la meta es <= ${META_SEMANAS_K6aA}`);
+  if (lote.cronicasDeSemana === 0) problemas.push('el lote no tiene ninguna semana en la crónica');
+  if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
+});
+
+check('K6a-A sin azar puro: ningún texto del dato ni ninguna carta del lote dice "el dado" o "ruleta"; toda opción de evento trae su riesgo dicho', () => {
+  const problemas = [];
+  for (const evento of EVENTOS_K6aA) {
+    const textos = [evento.title, evento.description, ...evento.options.flatMap((o) => [o.label, o.descripcion, ...o.outcomes.map((x) => x.texto)])];
+    for (const texto of textos.flat().filter((t) => typeof t === 'string')) {
+      if (AZAR_PURO_K6aA.test(texto)) problemas.push(`${evento.id}: "${texto.slice(0, 80)}"`);
+    }
+  }
+  for (const { sistemaId, decision } of loteDeK6aA().decisiones) {
+    const textos = [decision.titulo, decision.descripcion, ...(decision.opciones ?? []).flatMap((o) => [o.label, o.descripcion, o.riesgoTexto, ...(o.previa ?? []).map((f) => f.texto)])];
+    const malo = textos.find((t) => typeof t === 'string' && AZAR_PURO_K6aA.test(t));
+    if (malo) problemas.push(`${sistemaId} "${decision.titulo}": "${malo.slice(0, 80)}"`);
+    if (decision.datos?.evento) {
+      const sinRiesgo = decision.opciones.filter((o) => typeof o.riesgoTexto !== 'string' || o.riesgoTexto.length === 0);
+      if (sinRiesgo.length > 0) problemas.push(`${decision.titulo}: opciones sin riesgo dicho (${sinRiesgo.map((o) => o.label).join(', ')})`);
+    }
+  }
+  if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
+});
+
+check('K6a-A una oferta nunca la resuelve el perfil: todo evento `oferta` es bifurcación y frena; todo título de oferta y todo `ofertaDeImport` está marcado', () => {
+  const problemas = [];
+  const ofertas = EVENTOS_K6aA.filter((evento) => evento.oferta);
+  if (ofertas.length === 0) problemas.push('no hay ningún evento marcado `oferta`');
+  const base = estadoAmateurK6aA(1, { estudios: 80, perfil: 'showman' });
+  for (const evento of ofertas) {
+    if (!evento.bifurcacion) problemas.push(`${evento.id}: es una oferta y no es bifurcación`);
+    const r = presentarOResolverK6aA(base.state, evento, 1, base.rng);
+    if (!r.decision) problemas.push(`${evento.id}: presentarOResolver la resolvió sin parada`);
+  }
+  for (const evento of EVENTOS_K6aA) {
+    const importa = evento.options.some((o) => o.outcomes.some((x) => x.effects.some((f) => f.type === 'ofertaDeImport')));
+    if (importa && !evento.oferta) problemas.push(`${evento.id}: trae un ofertaDeImport y no está marcado oferta`);
+    if (TITULO_DE_OFERTA_K6aA.test(evento.title) && !evento.oferta) problemas.push(`${evento.id}: "${evento.title}" suena a oferta y no está marcado`);
+  }
+  const titulosDeOferta = new Set(ofertas.map((evento) => evento.title));
+  const resueltas = loteDeK6aA().cronicasDeEvento.filter((titulo) => titulosDeOferta.has(titulo));
+  if (resueltas.length > 0) problemas.push(`el perfil resolvió ${resueltas.length} oferta(s) en el lote (${[...new Set(resueltas)].join(', ')})`);
+  if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
+});
+
+check('K6a-A toda bifurcación con descripción y efectos dichos (las del dato y las salidas del amateur: oferta, la charla, el nocturno, ¿seguís?)', () => {
+  const problemas = [];
+  for (const evento of EVENTOS_K6aA.filter((e) => e.bifurcacion)) {
+    if (!evento.description?.trim()) problemas.push(`${evento.id}: sin descripción`);
+    for (const opcion of evento.options) {
+      if (!opcion.descripcion?.trim()) problemas.push(`${evento.id}/${opcion.id}: sin descripción`);
+      const previa = previaDeOpcionK6aA(opcion, opcion.outcomes.map((x) => x.weight));
+      const deCarrera = opcion.outcomes.some((x) => x.effects.some((f) => EFECTOS_DE_CARRERA_K6aA.has(f.type)));
+      if (previa.length === 0 && !deCarrera) problemas.push(`${evento.id}/${opcion.id}: ningún efecto dicho`);
+    }
+  }
+  const salidas = loteDeK6aA().salidas;
+  for (const motivo of MOTIVOS_DE_SALIDA_K6aA) {
+    const vistas = salidas[motivo] ?? [];
+    if (vistas.length === 0) problemas.push(`el lote no vio ninguna salida "${motivo}" (el check no la mide)`);
+    for (const decision of vistas) {
+      if (!decision.descripcion?.trim()) problemas.push(`${motivo} "${decision.titulo}": sin descripción`);
+      const sinTexto = decision.opciones.filter((o) => !o.descripcion?.trim());
+      if (sinTexto.length > 0) problemas.push(`${motivo} "${decision.titulo}": opciones sin descripción (${sinTexto.map((o) => o.label).join(', ')})`);
+    }
+  }
+  if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${[...new Set(problemas)].slice(0, 4).join(' | ')}`);
+});
+
+check(`K6a-A toda decisión deja al menos una línea de resultado en el log (o encadena la carta siguiente) (criterio, ${CARRERAS_K6aA} × ${SPLITS_K6aA})`, () => {
+  const { mudas, decisiones } = loteDeK6aA();
+  if (decisiones.length === 0) throw new Error('el lote no tiene decisiones');
+  if (mudas.length > 0) throw new Error(`${mudas.length} decisión(es) sin resultado en el feed: ${mudas.slice(0, 3).join(' | ')}`);
+});
+
+check('K6a-A la opción que termina la carrera nunca va primera (el dato y las cartas del lote)', () => {
+  const problemas = [];
+  for (const evento of EVENTOS_K6aA) {
+    if (evento.options[0].outcomes.some((x) => x.effects.some((f) => f.type === 'retirarse'))) {
+      problemas.push(`${evento.id}: la primera opción (${evento.options[0].id}) te retira`);
+    }
+  }
+  for (const { sistemaId, decision } of loteDeK6aA().decisiones) {
+    const primera = decision.opciones?.[0];
+    if (primera && (decision.opciones.length > 1) && IDS_QUE_TERMINAN_K6aA.has(primera.id)) {
+      problemas.push(`${sistemaId} "${decision.titulo}": la primera opción es ${primera.id}`);
+    }
+  }
+  if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${[...new Set(problemas)].slice(0, 4).join(' | ')}`);
 });
 
 if (errores.length > 0) {

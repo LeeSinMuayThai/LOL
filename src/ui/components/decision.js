@@ -79,7 +79,8 @@ export function renderDecision(elements, decision, onElegir, state, probabilidad
         const kicker = document.createElement('span');
         const signo = entrada.signo === '+' ? 'sube' : 'baja';
         kicker.className = `option-previa-kicker option-previa-kicker--${signo} option-previa-kicker--magnitud-${entrada.magnitud}`;
-        kicker.textContent = `${entrada.signo} ${entrada.etiqueta}`;
+        // K6a-A: la fila trae su número armado del motor ("Mecánica ~+4"); sin él, el signo y la etiqueta.
+        kicker.textContent = entrada.texto ?? `${entrada.signo} ${entrada.etiqueta}`;
         previa.appendChild(kicker);
       });
       opcionBtn.appendChild(previa);
@@ -96,7 +97,8 @@ export function renderDecision(elements, decision, onElegir, state, probabilidad
     if (opcion.riesgo) {
       const riesgo = document.createElement('span');
       riesgo.className = `option-riesgo option-riesgo--${opcion.riesgo}`;
-      riesgo.textContent = opcion.riesgo;
+      // K6a-A: el texto del riesgo lo arma el motor ("puede salir torcido · lo inclina tu mentalidad"), nunca "ruleta".
+      riesgo.textContent = opcion.riesgoTexto ?? opcion.riesgo;
       opcionBtn.appendChild(riesgo);
     }
 

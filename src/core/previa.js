@@ -4,6 +4,34 @@
 // probabilidad de un outcome (CONCEPTO §8), y corre igual en Node.
 import { BALANCE } from '../data/balance.js';
 import { etiquetaCampo } from './selectors.js';
+import { deltaCorto } from './formato.js';
+
+// K6a-A ("rng clicker"): la fila de previa dice el número que el motor ya conoce (la media ponderada del efecto), como
+// el plan del cierre de año ("Mecánica ~+4"). El ajuste de partido no lleva número: su escala (una fracción de la p)
+// no se lee como puntos de barra. Si la media redondea a cero, queda el signo solo.
+const UNIDAD_DE_FAMILIA = { stat: '', ladder: ' LP', pool_aprender: '', pool_maestria: '' };
+
+function textoDeFila(path, familia, promedio) {
+  const etiqueta = etiquetaCampo(path);
+  const unidad = UNIDAD_DE_FAMILIA[familia];
+  if (unidad === undefined || Math.round(promedio) === 0) {
+    return `${promedio >= 0 ? '+' : '-'} ${etiqueta}`;
+  }
+  return `${etiqueta} ~${deltaCorto(promedio)}${unidad}`;
+}
+
+// K6a-A: la píldora de riesgo dice qué es el riesgo, no "ruleta". Si la tirada la corre un stat (`modificadores` del
+// outcome, CONCEPTO §8), dice contra qué: "lo inclina tu mentalidad".
+const TEXTO_DE_RIESGO = { seguro: 'seguro', incierto: 'puede salir torcido', ruleta: 'resultado muy abierto' };
+
+export function textoDeRiesgo(opcion, riesgo) {
+  const base = TEXTO_DE_RIESGO[riesgo] ?? riesgo;
+  if (riesgo === 'seguro') {
+    return base;
+  }
+  const campos = [...new Set(opcion.outcomes.flatMap((outcome) => (outcome.modificadores ?? []).map((mod) => mod.field)))];
+  return campos.length > 0 ? `${base} · lo inclina tu ${campos.map((campo) => etiquetaCampo(campo).toLowerCase()).join(' y ')}` : base;
+}
 
 // `push`/`momento` no tienen rango numérico ni signo: no aportan previa ni
 // payoff. El pool comparte un solo `path` ("player.championPool") para
@@ -82,7 +110,8 @@ export function previaDeOpcion(opcion, pesos) {
       campo: path,
       etiqueta: etiquetaCampo(path),
       signo: promedio >= 0 ? '+' : '-',
-      magnitud: magnitudDe(Math.abs(promedio), familia)
+      magnitud: magnitudDe(Math.abs(promedio), familia),
+      texto: textoDeFila(path, familia, promedio)
     };
   });
 }

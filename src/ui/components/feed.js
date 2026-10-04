@@ -309,8 +309,24 @@ export const LIMITE_FEED = 8;
 // escribir DOM a mano: cada paso llama a esta misma función con un `hasta`
 // que crece de a uno, y es `reconciliar` — no el llamador — quien decide
 // qué nodo crear, cuál actualizar y cuál sacar.
+//
+// K6a-A: el `limite` cuenta BEATS, no líneas. Contando líneas, los renglones `adjunto` (el mundo que no te toca: cinco
+// campeones de liga al cerrar el año) empujaban afuera de la ventana el resultado de la decisión que acababas de tomar
+// —en el ensayo de K6, lo que pasó tras los tryouts abiertos y tras el receso nunca se vio—. Ahora la ventana arranca
+// en la cabeza del beat número `limite` contando desde el final: los adjuntos viajan con su beat y no le roban lugar.
+function inicioDeVentana(logs, hasta, limite) {
+  let beats = 0;
+  for (let i = hasta - 1; i >= 0; i -= 1) {
+    if (formaBeat(logs[i])) {
+      beats += 1;
+      if (beats === limite) return i;
+    }
+  }
+  return 0;
+}
+
 export function renderFeed(logList, state, { limite = LIMITE_FEED, hasta = state.logs.length } = {}) {
-  const desde = Math.max(0, hasta - limite);
+  const desde = inicioDeVentana(state.logs, hasta, limite);
   const recientes = state.logs.slice(desde, hasta);
   const beats = agruparBeats(recientes, desde).reverse();
   reconciliar(

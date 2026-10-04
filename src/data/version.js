@@ -94,4 +94,8 @@ export const VERSION_JUEGO = 'K4c';
 // desde `splitFichaje` (tier 3). Las carreras son las mismas (el marcador no toca el rng; con la definición vieja la huella da 992471283):
 // cambia el eje de años de la leyenda comparada (`aniosProDe`, `core/puntaje.js`) y con él la leyenda de la tupla. Misma versión:
 // reemplaza a 992471283.
-export const HUELLA_JUEGO = 579585404;
+// K6a-A (el amateur y las decisiones, 871362456): la semana amateur la resuelve el perfil y frena solo con un riesgo evitable
+// (cambia cuándo se consume el rng del reparto), el proyecto juvenil y el scout frenan como bifurcación (oferta), el proyecto
+// juvenil se ofrece hasta los 17 (roster sub-18) y la opción que retira de "El canal ya paga más" pasa al final. Misma versión:
+// reemplaza a 579585404; la integración de K6a la vuelve a registrar.
+export const HUELLA_JUEGO = 871362456;

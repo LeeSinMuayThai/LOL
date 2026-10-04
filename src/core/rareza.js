@@ -57,12 +57,11 @@ export function rarezaDeOpcionEvento(opcion, pesos) {
     : 'comun';
 }
 
-// Encabezado de todo menú generado por sorteo (H10). El eje del dilema
-// va en la misma frase, como ya hace mercado.js: "El dado trajo estas
-// ofertas. Elegí: ¿la guita o el proyecto?"
+// Encabezado de todo menú de caminos (H10). El eje del dilema va en la misma frase. K6a-A ("rng clicker"): sin "el
+// dado trajo": qué opciones salen no es lo que se juega; lo que se juega lo dice cada opción con su número.
 export function descripcionDeSorteo(cantidad, eje, extra = '') {
   const caminos = CAMINOS[cantidad] ?? `${cantidad} caminos`;
-  const cabeza = `El dado trajo ${caminos}. Elegí: ${eje}`;
+  const cabeza = `Tenés ${caminos} para esta semana. Elegí: ${eje}`;
   const cola = extra && String(extra).trim() ? ` ${String(extra).trim()}` : '';
   return cabeza + cola;
 }
