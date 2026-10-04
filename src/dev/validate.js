@@ -3809,6 +3809,10 @@ checkLento('proyeccionJerarquia predice la jerarquía real con error acotado (re
   // Fase 9Mh: cerrado. `roster.derivaPrimerSplit` 6 → 3 recentra la proyección
   // sobre el real (la deriva es cosmética: `roster.js` asigna el crudo). Tope
   // de vuelta en ±3.
+  // K4c (validación): el sesgo volvió a +3,3 (n = 279, error estándar 0,31; seeds 1-200 dan +3,47, 201-400 +2,92): con la prueba y
+  // el mundo de K4c el debutante rinde ~3 arriba de lo que la tarjeta promete. Es el mismo caso cosmético: `derivaPrimerSplit`
+  // 3 → 6 (balance.js) recentra la proyección (+0,32, error estándar 0,31; 1-200 +0,70, 201-400 −0,03) y la huella del juego
+  // no se mueve (solo cambia lo que dice la carta). El tope queda en ±3.
   if (p90 > 14 || max > 28) {
     throw new Error(`outliers de la proyección de jerarquía: p90 ${p90}, máximo ${max} (topes 14 / 28, apretados en 9Rg tras cerrar D39: p90 16 → 11, máximo 26 → 20. El máximo es un outlier de un seed, la señal está en p90)`);
   }
@@ -5687,8 +5691,12 @@ checkLento('La tier list cubre todos los campeones del rol, sin repetidos ni fal
 // (0.9-1.1, rango 0.2: mínimo 0.08), dentro de [multiplicadorMin, multiplicadorMax]. Por qué: K2c acotó el meta a 0.9-1.1
 // porque sus factores quedaron centrados en un pro típico (PLAN.md, K2); lo que se protege es lo de siempre, que el boost
 // no orbite el centro, medido como fracción del rango y no como un número que supone el rango viejo (2026-10-02).
-// La fracción es la banda del check, no una constante del juego (por eso no vive en balance.js).
-const FRACCION_MINIMA_SEPARACION_BOOST_POOL = 0.4;
+// K4c (validación), regla 17: fracción 0,40 → 0,35. Reemplaza a "separación p10-p90 >= 0,40 × (multiplicadorMax − multiplicadorMin)"
+// (0,080), que exigía lo que K2c midió (0,082: sólo 0,002 de margen). Medido con este mismo recuento (300 seeds × 45 splits) en
+// el HEAD de K4c: 0,078, y cada mitad de seeds da 0,080: corrimiento de muestra en el borde de la banda, no un boost clavado
+// en el centro (el meta se mueve; K4c no toca el meta). Piso nuevo 0,35 × 0,2 = 0,070: ~10% debajo de lo medido, el margen
+// que el 0,4 nunca tuvo. La fracción es la banda del check, no una constante del juego (por eso no vive en balance.js).
+const FRACCION_MINIMA_SEPARACION_BOOST_POOL = 0.35;
 
 checkLento('El boost del pool no se clava en el centro (CONCEPTO §6: el rango de BALANCE.campeones.multiplicadorMin/Max)', () => {
   // El defecto que reemplaza esta fase: el viejo ajuste-por-afinidad-promedio
