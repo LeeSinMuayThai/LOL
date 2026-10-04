@@ -98,4 +98,8 @@ export const VERSION_JUEGO = 'K4c';
 // define el título en una final entre los dos primeros, "define la clasificación" solo en el split de cierre, un tier 3 no se
 // resuelve antes de que juegues un split con él, y el torneo de mitad de año pide el equipo primero. Cambia el stream (más
 // paradas en playoffs). Misma versión (12, no salió): reemplaza a 579585404. La integración la vuelve a registrar.
-export const HUELLA_JUEGO = 319240573;
+// K6a-A (el amateur y las decisiones, 871362456): la semana amateur la resuelve el perfil y frena solo con un riesgo evitable
+// (cambia cuándo se consume el rng del reparto), el proyecto juvenil y el scout frenan como bifurcación (oferta), el proyecto
+// juvenil se ofrece hasta los 17 (roster sub-18) y la opción que retira de "El canal ya paga más" pasa al final. Misma versión:
+// reemplaza a 579585404; la integración de K6a la vuelve a registrar.
+export const HUELLA_JUEGO = 871362456;

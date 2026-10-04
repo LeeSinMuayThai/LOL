@@ -432,7 +432,8 @@ function construirDecisionOfertas(state, ofertas, carry = {}) {
     tipo: 'opciones',
     presentacion: 'mercado',
     titulo: 'Mercado de pases',
-    descripcion: 'El dado trajo estas ofertas. Elegí: ¿la guita o el proyecto?',
+    // K6a-A: sin "el dado trajo": las ofertas salen de quién tiene un hueco en tu rol y te puede pagar (`core/demanda.js`).
+    descripcion: 'Te llaman los que tienen un hueco en tu rol y te pueden pagar. Elegí: ¿la guita o el proyecto?',
     opciones: ofertas,
     datos: {
       motivo: 'oferta',

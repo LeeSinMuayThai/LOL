@@ -10,7 +10,7 @@ import { conPermanencia, conTechoDeLesion } from '../core/curvas.js';
 import { crearLog, adjuntar } from '../core/log.js';
 import { deltaCorto, lista } from '../core/formato.js';
 import { tipoDeSplit, hayPresupuesto } from '../core/presupuesto.js';
-import { previaDeOpcion, riesgoDeOpcion, gateDeOpcion } from '../core/previa.js';
+import { previaDeOpcion, riesgoDeOpcion, gateDeOpcion, textoDeRiesgo } from '../core/previa.js';
 import { rarezaDeOpcionEvento } from '../core/rareza.js';
 import { opcionDelPerfil, afinidadDeOpcion, derivarPerfil, nombreDePerfil } from '../core/perfil.js';
 import { elegirMinijuego, minijuegoPorId, textoDeMinijuego, registrarMinijuegoVisto, veredictoDeMinijuego } from '../core/minijuegos.js';
@@ -466,6 +466,8 @@ export function decisionDesdeEvento(state, evento, { franja, slot }) {
         descripcion: resolverTexto(option.descripcion, state),
         previa: previaDeOpcion(option, pesos),
         riesgo: riesgoDeOpcion(option, pesos),
+        // K6a-A: lo que la píldora muestra (la clave `riesgo` sigue igual para el perfil y el estilo).
+        riesgoTexto: textoDeRiesgo(option, riesgoDeOpcion(option, pesos)),
         ...(BALANCE.rareza.eventosDeMejora.includes(evento.id)
           ? { rareza: rarezaDeOpcionEvento(option, pesos) }
           : {})

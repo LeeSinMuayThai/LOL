@@ -1,6 +1,8 @@
 [
   {
     "id": "scout_call",
+    "bifurcacion": true,
+    "oferta": true,
     "category": "soloq_precarrera",
     "categoria": "oportunidad",
     "title": "Te escribió un scout",

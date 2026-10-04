@@ -321,6 +321,22 @@ export const BALANCE = {
     nocturnoBloquesExtra: 2,
     nocturnoFactorDecaeEstudio: 0.35,
 
+    // K6a-A: lo que mueven la charla con los viejos y el "no" a una oferta. Antes vivían como literales en
+    // `systems/amateur.js`; ahora la carta los dice antes de elegir (regla 15: la misma cifra que aplica el motor).
+    negociacionBienTrustMin: 6,
+    negociacionBienTrustMax: 14,
+    negociacionMalTrustMin: 8,
+    negociacionMalTrustMax: 16,
+    rechazoOfertaHypeMin: 2,
+    rechazoOfertaHypeMax: 6,
+    // K6a-A (D-B): "Cómo vivís la semana" la resuelve tu perfil y frena solo si lo que elegiría te mete en un riesgo
+    // que otra de las opciones evita. Bandas de magnitud de la previa de la semana (la proyección sin dado de
+    // `aplicarReparto`): en LP para el ranked, en puntos de barra para el resto.
+    semanaMagnitud: { ladder: { p33: 150, p66: 300 }, barra: { p33: 3, p66: 7 } },
+    // Cuánto más riesgo en casa (chance de confiscación o corte, 0-1) tiene que sumar lo que elegiría tu perfil, contra
+    // la opción más segura de la semana, para que la semana frene.
+    semanaRiesgoEvitable: 0.05,
+
     // Fase 10a (§10.1): deja de ser el corte duro ("cumpliste 20, se acabó").
     // La ventana real ya la cierra el sesgo etario del scouting (arriba); esto
     // ahora es la RED anti-loop — nadie se queda en soloQ para siempre — y

@@ -14,6 +14,7 @@
       }
     ],
     "id": "el_pasaje_a_occidente",
+    "oferta": true,
     "bifurcacion": true,
     "categoria": "mercado",
     "title": "Una org de occidente te quiere de import",
@@ -299,6 +300,7 @@
       }
     ],
     "id": "la_oferta_de_la_lpl",
+    "oferta": true,
     "bifurcacion": true,
     "categoria": "mercado",
     "title": "La LPL te pone un cheque arriba de la mesa",
@@ -577,6 +579,7 @@
       }
     ],
     "id": "la_puerta_de_la_lck",
+    "oferta": true,
     "bifurcacion": true,
     "categoria": "mercado",
     "title": "Un equipo coreano te quiere en su cupo de import",
@@ -878,6 +881,7 @@
       }
     ],
     "id": "el_canal_de_tiempo_completo",
+    "oferta": true,
     "bifurcacion": true,
     "categoria": "oportunidad",
     "title": "El canal ya paga más que el scrim",
@@ -895,6 +899,146 @@
       "edadMin": 20
     },
     "options": [
+      {
+        "id": "contrato_de_streamer_jugador",
+        "label": "Negociar un contrato de jugador y streamer",
+        "descripcion": "La org te deja streamear con horarios pactados y vos seguís en el equipo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La org acepta: dos bloques de stream por semana, siempre fuera del horario de scrim. El canal crece sin que el equipo lo sienta y el coach hace la vista gorda con los clips.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "hibrido"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La org lo acepta con letra chica: cada hora de stream que le sacás a la práctica se cobra en el próximo review. Funciona, pero tenés al coach encima.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "hibrido"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "seguir_en_lo_tuyo",
+        "label": "Decir que no y seguir compitiendo",
+        "descripcion": "El canal queda de costado: primero el cliente, después el chat.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te quedás con lo competitivo y lo sentís: más foco en el review, más sueño ordenado y la cabeza donde tiene que estar.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "solo_competir"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Ves cómo otros pros con la mitad de tu nivel se llevan el público que era tuyo. No es solo la plata: es que la ventana se cierra.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "solo_competir"
+              }
+            ]
+          }
+        ]
+      },
       {
         "id": "vivir_del_canal",
         "label": "Dejar de competir y vivir del canal",
@@ -1035,146 +1179,6 @@
           }
         ],
         "promete": "retiro"
-      },
-      {
-        "id": "contrato_de_streamer_jugador",
-        "label": "Negociar un contrato de jugador y streamer",
-        "descripcion": "La org te deja streamear con horarios pactados y vos seguís en el equipo.",
-        "weight": 5,
-        "outcomes": [
-          {
-            "weight": 6,
-            "texto": "La org acepta: dos bloques de stream por semana, siempre fuera del horario de scrim. El canal crece sin que el equipo lo sienta y el coach hace la vista gorda con los clips.",
-            "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 3,
-                "max": 6,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mecanica",
-                "min": -2,
-                "max": 0,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "hibrido"
-              }
-            ]
-          },
-          {
-            "weight": 4,
-            "texto": "La org lo acepta con letra chica: cada hora de stream que le sacás a la práctica se cobra en el próximo review. Funciona, pero tenés al coach encima.",
-            "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": 1,
-                "max": 3,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "career.sinergia",
-                "min": -3,
-                "max": -1,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "hibrido"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "id": "seguir_en_lo_tuyo",
-        "label": "Decir que no y seguir compitiendo",
-        "descripcion": "El canal queda de costado: primero el cliente, después el chat.",
-        "weight": 5,
-        "outcomes": [
-          {
-            "weight": 6,
-            "texto": "Te quedás con lo competitivo y lo sentís: más foco en el review, más sueño ordenado y la cabeza donde tiene que estar.",
-            "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": 2,
-                "max": 4,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.macro",
-                "min": 1,
-                "max": 2,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "solo_competir"
-              }
-            ]
-          },
-          {
-            "weight": 4,
-            "texto": "Ves cómo otros pros con la mitad de tu nivel se llevan el público que era tuyo. No es solo la plata: es que la ventana se cierra.",
-            "effects": [
-              {
-                "type": "stat",
-                "path": "player.stats.hype",
-                "min": -3,
-                "max": -1,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "stat",
-                "path": "player.stats.mentalidad",
-                "min": -2,
-                "max": 0,
-                "clamp": [
-                  0,
-                  100
-                ]
-              },
-              {
-                "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "solo_competir"
-              }
-            ]
-          }
-        ]
       }
     ]
   },
@@ -2258,6 +2262,7 @@
       }
     ],
     "id": "la_oferta_del_staff",
+    "oferta": true,
     "bifurcacion": true,
     "categoria": "oportunidad",
     "title": "Te ofrecen un lugar en el staff",

@@ -274,6 +274,11 @@ export function esDecisionDeMercado(decision) {
 }
 
 export function esDecisionConPrevia(decision) {
+  // K6a-A: la semana amateur trae previa (con su número) para la carta y para el perfil, pero los bots siguen eligiendo la
+  // rutina como antes de K6a-A (`resolverAuto` del sistema o su regla de rutinas): no es la previa de un evento.
+  if (esDecisionDeRutina(decision)) {
+    return false;
+  }
   return Array.isArray(decision.opciones)
     && decision.opciones.length > 0
     && decision.opciones.some((opcion) => opcion.previa !== undefined || opcion.riesgo !== undefined);

@@ -15,6 +15,8 @@ import { elegirMinijuego, minijuegoPorId, textoDeMinijuego, registrarMinijuegoVi
 import { conMarcasDeRutina } from '../core/curvas.js';
 import { esCierreDeEdad } from './edadCierre.js';
 import { nombreVisibleDeLiga } from '../core/ligas.js';
+import { opcionDelPerfil, nombreDePerfil } from '../core/perfil.js';
+import { etiquetaCampo } from '../core/selectors.js';
 
 export const id = 'amateur';
 
@@ -40,7 +42,9 @@ function factorDeAltura(state) {
   return clamp(a.alturaFactorBase + holgura, a.alturaFactorMin, a.alturaFactorMax);
 }
 
-function lpDeUnBloque(state, rng) {
+// K6a-A: la parte sin dado de un bloque de ranked (la misma que usa `lpDeUnBloque`): con ella la carta de la semana
+// dice cuánto LP rinde cada opción antes de elegir.
+function factorDeBloque(state) {
   const a = BALANCE.amateur;
   const { mecanica, mentalidad } = state.player.stats;
 
@@ -50,8 +54,12 @@ function lpDeUnBloque(state, rng) {
   // Si el meta pide lo que dominás, el mismo grindeo rinde el doble de LP.
   const factorMeta = multiplicadorDeMeta(state.meta.ajuste);
 
-  return gauss(a.lpPorBloque, a.lpPorBloqueSpread, rng)
-    * factorMecanica * factorMentalidad * penalDeuda * factorMeta * factorDeAltura(state);
+  return factorMecanica * factorMentalidad * penalDeuda * factorMeta * factorDeAltura(state);
+}
+
+function lpDeUnBloque(state, rng) {
+  const a = BALANCE.amateur;
+  return gauss(a.lpPorBloque, a.lpPorBloqueSpread, rng) * factorDeBloque(state);
 }
 
 // La probabilidad de cada banda crece a medida que los estudios bajan, y se
@@ -103,16 +111,173 @@ function bloquesDisponibles(state) {
   return BALANCE.amateur.bloquesBase + (state.flags.nocturno ? BALANCE.amateur.nocturnoBloquesExtra : 0);
 }
 
-function decisionDeRutina(state, rng) {
-  const rutinas = ofrecerRutinas(state, rng, { pool: 'amateur' });
+// --- K6a-A (D-B): la semana la resuelve tu perfil ---
+//
+// "Cómo vivís la semana" era la parada de cada semana (22 de las 38 de una carrera del ensayo de K6). Ahora la elige tu
+// perfil con la misma regla que un evento chico (`opcionDelPerfil`, sobre la previa de cada opción) y queda en la
+// crónica; frena solo si lo que elegiría tu perfil te mete en un riesgo que otra de las opciones evita.
 
+// Lo que una rutina mueve en una semana, sin el dado: la media de cada término de `aplicarReparto`.
+function proyeccionDeSemana(state, rutina) {
+  const a = BALANCE.amateur;
+  const { reparto, extra } = normalizarReparto(state, { reparto: rutina.reparto, extra: rutina.extra });
+  const factorColegio = state.origen.exigenciaColegio / a.exigenciaColegioReferencia;
+  const factorNocturno = state.flags.nocturno ? a.nocturnoFactorDecaeEstudio : 1;
+  const estudios = reparto.estudiar * a.estudioPorBloque - a.estudioDecae * factorColegio * factorNocturno;
+  const brecha = Math.max(0, a.confianzaEstudioUmbral - (state.player.studies + estudios));
+  const robos = extra > 0 ? (state.flags.robosConsecutivos ?? 0) + 1 : 0;
+  const penalAcumulada = 1 + Math.max(0, robos - 1) * a.penalRoboConsecutivo;
+  return {
+    extra,
+    robos,
+    lp: reparto.ranked * a.lpPorBloque * factorDeBloque(state),
+    estudios,
+    sueno: reparto.dormir * a.suenoPorBloque - a.suenoDecae - extra * a.suenoPorBloqueRobado,
+    confianza: reparto.familia * a.familiaPorBloque - a.confianzaDecae - brecha * a.confianzaEstudioPenal,
+    mentalidad: -extra * a.mentalidadPorBloqueRobado * penalAcumulada
+  };
+}
+
+function magnitudDeSemana(valorAbsoluto, banda) {
+  if (valorAbsoluto < banda.p33) return 'baja';
+  if (valorAbsoluto < banda.p66) return 'media';
+  return 'alta';
+}
+
+// La previa de una opción de la semana, con el número que el motor ya conoce ("SoloQ ~+180 LP", "Estudios ~-8"): la
+// misma forma que la de un evento (`core/previa.js`), así la lee el perfil y la pinta la carta.
+function previaDeSemana(proy) {
+  const { ladder, barra } = BALANCE.amateur.semanaMagnitud;
+  const filas = [
+    ['player.ranked', proy.lp, ladder, ' LP'],
+    ['player.studies', proy.estudios, barra, ''],
+    ['player.sleep', proy.sueno, barra, ''],
+    ['player.familyTrust', proy.confianza, barra, ''],
+    ['player.stats.mentalidad', proy.mentalidad, barra, '']
+  ];
+  return filas
+    .filter(([, valor]) => Math.round(valor) !== 0)
+    .map(([campo, valor, banda, unidad]) => ({
+      campo,
+      etiqueta: etiquetaCampo(campo),
+      signo: valor >= 0 ? '+' : '-',
+      magnitud: magnitudDeSemana(Math.abs(valor), banda),
+      valor: Math.round(valor),
+      texto: `${etiquetaCampo(campo)} ~${deltaCorto(valor)}${unidad}`
+    }));
+}
+
+// Robarle horas al sueño es la única fuente de varianza propia de la semana (deuda, mentalidad): sin robo, seguro.
+function riesgoDeSemana(proy) {
+  return proy.extra > 0 ? 'incierto' : 'seguro';
+}
+
+// Qué arriesga una opción: la chance de que en casa te saquen la PC o te corten el ranked después de esta semana (la
+// misma cuenta que `evaluarRiesgoFamiliar`, con el colegio proyectado) y si suma deuda de sueño. Con la negociación
+// ganada, el colegio deja de pesar en casa.
+function riesgoDeCasa(state, estudios) {
+  const a = BALANCE.amateur;
+  const multiplicador = multiplicadorFamiliar(state);
+  const corte = Math.min(a.riesgoTotalTecho, probBanda(estudios, a.corteUmbral, a.cortePendiente, a.corteTecho) * multiplicador);
+  const confiscacion = Math.min(
+    a.riesgoTotalTecho,
+    probBanda(estudios, a.confiscacionUmbral, a.confiscacionPendiente, a.confiscacionTecho) * multiplicador
+  );
+  return corte + (1 - corte) * confiscacion;
+}
+
+function peligrosDeSemana(state, proy) {
+  const estudiosDespues = state.player.studies + proy.estudios;
+  return {
+    casa: state.flags.negociacionGanada ? 0 : riesgoDeCasa(state, estudiosDespues),
+    deuda: proy.robos >= BALANCE.amateur.robosParaDeuda,
+    estudiosDespues
+  };
+}
+
+function opcionesDeSemana(state, rutinas) {
+  return rutinas.map((rutina) => {
+    const proy = proyeccionDeSemana(state, rutina);
+    return { rutina, proy, previa: previaDeSemana(proy), riesgo: riesgoDeSemana(proy), peligro: peligrosDeSemana(state, proy) };
+  });
+}
+
+// Lo que está en juego, dicho con los números de la regla: por qué esta semana te frena.
+function textoDeLoQueEstaEnJuego(elegida, masSegura) {
+  const partes = [];
+  if (elegida.peligro.casa > masSegura.peligro.casa) {
+    partes.push(`te deja el colegio en ~${entero(elegida.peligro.estudiosDespues)}: ${porcentaje(elegida.peligro.casa)} de que en casa te saquen la PC o te corten el ranked, contra ${porcentaje(masSegura.peligro.casa)} con "${masSegura.rutina.titulo}"`);
+  }
+  if (elegida.peligro.deuda) {
+    partes.push(`sería la semana ${elegida.proy.robos} seguida robándole horas al sueño: empezás a sumar deuda y el LP lo nota`);
+  }
+  return `Tu perfil iba a ir por "${elegida.rutina.titulo}", y eso ${partes.join('; y ')}.`;
+}
+
+function decisionDeRutina(state, rutinas, opciones, elegida, masSegura) {
   return {
     tipo: 'opciones',
     titulo: `Cómo vivís la semana — ${etiquetaDeRanked(state.player.ranked, servidorDeLaPartida(state))}`,
-    descripcion: descripcionDeSorteo(rutinas.length, EJE_AMATEUR, textoDeSituacion(state)),
-    opciones: rutinas.map((rutina) => opcionDesdeRutina(rutina, 'amateur')),
+    descripcion: descripcionDeSorteo(rutinas.length, EJE_AMATEUR, `${textoDeLoQueEstaEnJuego(elegida, masSegura)} ${textoDeSituacion(state)}`),
+    opciones: opciones.map((opcion) => ({
+      ...opcionDesdeRutina(opcion.rutina, 'amateur'),
+      previa: opcion.previa
+    })),
     datos: { motivo: 'reparto', rutinas }
   };
+}
+
+// La semana con estas rutinas: la que elige tu perfil y si frena. Frena si la elegida sube el riesgo en casa al menos
+// `semanaRiesgoEvitable` por encima de la opción más segura, o si suma deuda de sueño y otra opción no. Exportada
+// para que `validate.js` la pruebe con rutinas fijas (sin depender de qué ofreció el sorteo).
+export function planDeSemana(state, rutinas) {
+  const opciones = opcionesDeSemana(state, rutinas);
+  const { id: elegidaId } = opcionDelPerfil(state.player.perfil, opciones.map((opcion) => ({
+    id: opcion.rutina.id, previa: opcion.previa, riesgo: opcion.riesgo
+  })));
+  const elegida = opciones.find((opcion) => opcion.rutina.id === elegidaId);
+  const masSegura = opciones.reduce((mejor, opcion) => (opcion.peligro.casa < mejor.peligro.casa ? opcion : mejor));
+  const casaEvitable = elegida.peligro.casa - masSegura.peligro.casa >= BALANCE.amateur.semanaRiesgoEvitable;
+  const deudaEvitable = elegida.peligro.deuda && opciones.some((opcion) => !opcion.peligro.deuda);
+  const frena = casaEvitable || deudaEvitable;
+  return {
+    elegida: elegida.rutina,
+    frena,
+    decision: frena ? decisionDeRutina(state, rutinas, opciones, elegida, masSegura) : null
+  };
+}
+
+// La semana de la etapa amateur: la que elige tu perfil, o una parada si eso te mete en un riesgo evitable.
+function semanaAmateur(state, rng) {
+  const rutinas = ofrecerRutinas(state, rng, { pool: 'amateur' });
+  const plan = planDeSemana(state, rutinas);
+  if (plan.frena) {
+    return { state, logs: [], decision: plan.decision };
+  }
+  return vivirLaSemana(state, plan.elegida, rng, { cronica: state.player.perfil.actual });
+}
+
+// El reparto de una rutina, el riesgo familiar y la búsqueda de una salida: lo mismo si la elegiste vos (la parada) o
+// tu perfil (`cronica`: la línea de la semana pasa a la crónica, con quién la eligió).
+function vivirLaSemana(state, rutina, rng, { cronica = null } = {}) {
+  // `normalizarReparto` sigue corriendo: es la red que garantiza que una
+  // rutina mal declarada no invente ni pierda bloques, y la que adapta un
+  // reparto de 10 a los 12 bloques del nocturno.
+  const { reparto, extra } = normalizarReparto(state, { reparto: rutina.reparto, extra: rutina.extra });
+  const rRepartoCrudo = aplicarReparto(state, reparto, extra, rng, { cronica, opcion: rutina.titulo });
+  // K3-B 2b: la semana amateur también deja marca, por el mismo camino que el receso (`conMarcasDeRutina`: la
+  // fracción de la práctica, el título visible de la rutina, la ganancia real). Hoy ningún reparto mueve un stat de
+  // curva, así que no anota nada; el día que uno lo mueva, la marca sale sola.
+  const rReparto = { ...rRepartoCrudo, state: conMarcasDeRutina(rRepartoCrudo.state, state.player.stats, rutina.titulo) };
+  const rRiesgo = evaluarRiesgoFamiliar(rReparto.state, rng);
+  const logs = [...rReparto.logs, ...rRiesgo.logs];
+
+  if (rRiesgo.state.terminado) {
+    return { state: rRiesgo.state, logs };
+  }
+
+  const salida = buscarSalida(rRiesgo.state, rng);
+  return salida ? { state: rRiesgo.state, logs, decision: salida } : { state: rRiesgo.state, logs };
 }
 
 // `pesoAuto` es lo que elegiria alguien con criterio: lo usa la simulacion
@@ -182,7 +347,7 @@ function normalizarReparto(state, respuesta) {
   return { reparto: ajustado, extra };
 }
 
-function aplicarReparto(state, reparto, extra, rng) {
+function aplicarReparto(state, reparto, extra, rng, { cronica = null, opcion = null } = {}) {
   const a = BALANCE.amateur;
   const logs = [];
 
@@ -250,11 +415,20 @@ function aplicarReparto(state, reparto, extra, rng) {
     `confianza ${deltaCorto(player.familyTrust - state.player.familyTrust)}`
   ]);
 
-  logs.push(crearLog('amateur', `${costos}. ${cuerpo} (${efectos})`, {
-    titulo: 'La semana',
-    cuerpo: `${costos}. ${cuerpo}`,
-    efectos
-  }));
+  // K6a-A: la semana que eligió tu perfil va a la crónica (la misma forma que un evento chico, `systems/events.js`):
+  // quién eligió, qué rutina y lo que pasó.
+  if (cronica) {
+    const perfil = nombreDePerfil(cronica);
+    logs.push(crearLog('amateur', `La semana: Como ${perfil.toLowerCase()}: ${opcion}. ${costos}. ${cuerpo} (${efectos})`, {
+      cronica: true, titulo: 'La semana', descripcion: '', opcion, perfil, cuerpo: `${costos}. ${cuerpo}`, efectos
+    }));
+  } else {
+    logs.push(crearLog('amateur', `${costos}. ${cuerpo} (${efectos})`, {
+      titulo: 'La semana',
+      cuerpo: `${costos}. ${cuerpo}`,
+      efectos
+    }));
+  }
 
   if (deudaSueno >= a.robosParaDeuda && state.player.deudaSueno < a.robosParaDeuda) {
     logs.push(crearLog('amateur', 'Entraste en deuda de sueño: te cuesta encontrar la ventana, y el LP lo nota.'));
@@ -398,6 +572,15 @@ function orgQueTeFicha(state, rng) {
   return { org: elegirOrgTier3(state, rng), tier: 3, liga: null };
 }
 
+function porcentaje(p) {
+  return `${Math.round(p * BALANCE.stats.max)}%`;
+}
+
+// La charla con los viejos: la confianza y las notas inclinan la balanza (CONCEPTO §8: la corren, no la deciden).
+function probabilidadDeNegociacion(state) {
+  return (state.player.familyTrust + state.player.studies) / (BALANCE.stats.max * 2);
+}
+
 function buscarSalida(state, rng) {
   const a = BALANCE.amateur;
 
@@ -407,12 +590,25 @@ function buscarSalida(state, rng) {
       ? `Te vieron en la ladder: ${etiquetaDeRanked(state.player.ranked, servidorDeLaPartida(state))}. Estás tan arriba que ${nombreVisibleDeLiga(liga.id)} te ofrece saltearte el tramo de probarte en un equipo chico.`
       : `Te vieron en la ladder: ${etiquetaDeRanked(state.player.ranked, servidorDeLaPartida(state))}. Es un equipo de tier 3, chico y de paso: contrato mínimo, mudanza a la gaming house y dejar el colegio a mitad de camino.`;
 
+    // K6a-A: cada opción dice qué arriesga y qué gana (la prueba antes de firmar en tier 3, el hype del "no").
     return decisionDeOpciones(
       `${org.nombre} te quiere`,
       descripcion,
       [
-        { id: 'firmar', label: `Firmar con ${org.nombre}`, pesoAuto: 7 },
-        { id: 'esperar_mejor_oferta', label: 'Agradecer y seguir grindeando por algo más grande', pesoAuto: 3 }
+        {
+          id: 'firmar',
+          label: `Firmar con ${org.nombre}`,
+          descripcion: tier === 2
+            ? `Firmás directo en ${nombreVisibleDeLiga(liga.id)}: se termina la etapa amateur.`
+            : 'Antes de firmar hay una prueba: si te sale, firmás y se termina la etapa amateur; si no, seguís en la escalera.',
+          pesoAuto: 7
+        },
+        {
+          id: 'esperar_mejor_oferta',
+          label: 'Agradecer y seguir grindeando por algo más grande',
+          descripcion: 'Te quedás en la ladder esperando una oferta mejor, que puede no llegar: cada año te miran menos.',
+          pesoAuto: 3
+        }
       ],
       'oferta',
       { org, tier, liga: liga?.id ?? null }
@@ -424,12 +620,23 @@ function buscarSalida(state, rng) {
   // Llegar a Máster con la confianza familiar en pie abre la negociación: es la
   // única salida que no depende de que alguien te elija.
   if (!state.flags.negociacionGanada && esApice(state.player.ranked) && state.player.familyTrust >= a.negociacionTrustMinimo) {
+    const p = probabilidadDeNegociacion(state);
     return decisionDeOpciones(
       'Máster: la charla que venías pateando',
-      'Llegaste a Máster y en tu casa lo saben. Es el momento de sentarte a negociar en serio, o de dejarlo pasar una vez más.',
+      `Llegaste a Máster y en tu casa lo saben. Es el momento de sentarte a negociar en serio, o de dejarlo pasar una vez más. Sale bien con ${porcentaje(p)}: lo deciden tu confianza familiar (${entero(state.player.familyTrust)}) y tus notas (${entero(state.player.studies)}).`,
       [
-        { id: 'plantear_el_tema', label: 'Sentarte a plantearlo de una vez', pesoAuto: 7 },
-        { id: 'no_arriesgar', label: 'No arriesgar la paz de casa todavía', pesoAuto: 3 }
+        {
+          id: 'plantear_el_tema',
+          label: 'Sentarte a plantearlo de una vez',
+          descripcion: `${porcentaje(p)} de que salga bien: te bancan el intento y el colegio deja de ser motivo para sacarte la PC (confianza +${a.negociacionBienTrustMin} a +${a.negociacionBienTrustMax}). Si sale mal, confianza -${a.negociacionMalTrustMin} a -${a.negociacionMalTrustMax}.`,
+          pesoAuto: 7
+        },
+        {
+          id: 'no_arriesgar',
+          label: 'No arriesgar la paz de casa todavía',
+          descripcion: 'No cambia nada: la charla queda para más adelante y el colegio sigue pesando en casa.',
+          pesoAuto: 3
+        }
       ],
       'negociacion'
     );
@@ -438,10 +645,20 @@ function buscarSalida(state, rng) {
   if (!state.flags.nocturno && state.player.studies < a.nocturnoEstudiosUmbral) {
     return decisionDeOpciones(
       'Pasarte a nocturno',
-      'Con estas notas, el turno noche te libera las tardes enteras. En casa lo van a leer como una rendición.',
+      `Con estas notas (${entero(state.player.studies)}), el turno noche te libera las tardes enteras. En casa lo van a leer como una rendición.`,
       [
-        { id: 'pasarse', label: 'Pasarte al nocturno', pesoAuto: 4 },
-        { id: 'aguantar', label: 'Aguantar el turno de siempre', pesoAuto: 6 }
+        {
+          id: 'pasarse',
+          label: 'Pasarte al nocturno',
+          descripcion: `${a.nocturnoBloquesExtra} bloques más por semana y el colegio cae mucho más lento, pero en casa cae mal (confianza -${a.nocturnoCostoTrustMin} a -${a.nocturnoCostoTrustMax}).`,
+          pesoAuto: 4
+        },
+        {
+          id: 'aguantar',
+          label: 'Aguantar el turno de siempre',
+          descripcion: 'No cambia nada: los mismos bloques por semana y la misma paz en casa.',
+          pesoAuto: 6
+        }
       ],
       'nocturno'
     );
@@ -549,7 +766,7 @@ function resolverOferta(state, decision, opcionId, rng) {
     return firmarConEquipo(state, decision);
   }
 
-  const hypeGanado = roll(2, 6, rng);
+  const hypeGanado = roll(BALANCE.amateur.rechazoOfertaHypeMin, BALANCE.amateur.rechazoOfertaHypeMax, rng);
   return {
     state: {
       ...state,
@@ -566,27 +783,30 @@ function resolverNegociacion(state, opcionId, rng) {
 
   // Los stats corren los pesos, no los eliminan: la confianza acumulada y las
   // notas mueven la balanza, pero la charla puede salir mal igual.
+  const a = BALANCE.amateur;
   const pesoBien = state.player.familyTrust + state.player.studies;
   const pesoMal = BALANCE.stats.max * 2 - pesoBien;
   const sale = weightedPick([true, false], (bien) => (bien ? pesoBien : pesoMal), rng);
+  // K6a-A: el resultado dice con qué p se jugó y qué la decidió.
+  const motivo = `(tenías ${porcentaje(probabilidadDeNegociacion(state))}, con confianza ${entero(state.player.familyTrust)} y notas ${entero(state.player.studies)})`;
 
   if (sale) {
     return {
       state: {
         ...state,
         flags: { ...state.flags, negociacionGanada: true },
-        player: { ...state.player, familyTrust: clampStat(state.player.familyTrust + roll(6, 14, rng)) }
+        player: { ...state.player, familyTrust: clampStat(state.player.familyTrust + roll(a.negociacionBienTrustMin, a.negociacionBienTrustMax, rng)) }
       },
-      logs: [crearLog('amateur', 'Salió bien: te bancan el intento. Mientras no abandones del todo el colegio, la PC es tuya.')]
+      logs: [crearLog('amateur', `Salió bien ${motivo}: te bancan el intento. Mientras no abandones del todo el colegio, la PC es tuya.`)]
     };
   }
 
   return {
     state: {
       ...state,
-      player: { ...state.player, familyTrust: clampStat(state.player.familyTrust - roll(8, 16, rng)) }
+      player: { ...state.player, familyTrust: clampStat(state.player.familyTrust - roll(a.negociacionMalTrustMin, a.negociacionMalTrustMax, rng)) }
     },
-    logs: [crearLog('amateur', 'Salió mal. Ahora además de desconfiar, saben exactamente lo que querés hacer.')]
+    logs: [crearLog('amateur', `Salió mal ${motivo}. Ahora además de desconfiar, saben exactamente lo que querés hacer.`)]
   };
 }
 
@@ -651,7 +871,7 @@ export function aplicar(state, rng) {
     return periodoSinPC(state, rng);
   }
 
-  return { state, logs: [], decision: decisionDeRutina(state, rng) };
+  return semanaAmateur(state, rng);
 }
 
 export function resolver(state, decision, respuesta, rng) {
@@ -666,25 +886,7 @@ export function resolver(state, decision, respuesta, rng) {
   }
 
   if (decision.datos.motivo === 'reparto') {
-    const rutina = rutinaPorId(decision.datos.rutinas, respuesta.opcionId);
-    // `normalizarReparto` sigue corriendo: es la red que garantiza que una
-    // rutina mal declarada no invente ni pierda bloques, y la que adapta un
-    // reparto de 10 a los 12 bloques del nocturno.
-    const { reparto, extra } = normalizarReparto(state, { reparto: rutina.reparto, extra: rutina.extra });
-    const rRepartoCrudo = aplicarReparto(state, reparto, extra, rng);
-    // K3-B 2b: la semana amateur también deja marca, por el mismo camino que el receso (`conMarcasDeRutina`: la
-    // fracción de la práctica, el título visible de la rutina, la ganancia real). Hoy ningún reparto mueve un stat de
-    // curva, así que no anota nada; el día que uno lo mueva, la marca sale sola.
-    const rReparto = { ...rRepartoCrudo, state: conMarcasDeRutina(rRepartoCrudo.state, state.player.stats, rutina.titulo) };
-    const rRiesgo = evaluarRiesgoFamiliar(rReparto.state, rng);
-    const logs = [...rReparto.logs, ...rRiesgo.logs];
-
-    if (rRiesgo.state.terminado) {
-      return { state: rRiesgo.state, logs };
-    }
-
-    const salida = buscarSalida(rRiesgo.state, rng);
-    return salida ? { state: rRiesgo.state, logs, decision: salida } : { state: rRiesgo.state, logs };
+    return vivirLaSemana(state, rutinaPorId(decision.datos.rutinas, respuesta.opcionId), rng);
   }
 
   const { motivo } = decision.datos;
