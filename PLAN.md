@@ -7572,6 +7572,21 @@ del paso 3 de K5c (así el barrido final mide el juego que se va a jugar):
 - **Se mide de nuevo.** Si una corrida profunda legítima (cuartos, semis y final abiertos, con mapas decisivos) no
   entra en ≤ 5, se fija en lo medido con su línea de la regla 17.
 
+**K6a-R, hecho** (`k6a-ritmo` `5a0b7fd`).
+- **El valor:** `pAbiertaEliminacion` 0,3. Es el primero con margen: con 0,25, el 10,0% de los splits de playoffs pasa
+  de 5 paradas, justo en el borde.
+- **El ritmo** (`criterio` 400 × 60):
+  - mediana de interrupciones 72;
+  - p90 por split 2 / **5** / 6 (regular / playoffs / Mundial);
+  - Δp de plan **5,7 pp**;
+  - minijuegos 5;
+  - tiempo-máquina 5,6 min.
+- **El split de Mundial no entra en ≤ 5 con ningún valor razonable.** Ni con todas las series cantadas (7,9% de los
+  splits pasan de 5). Suma el cierre de año, el plan de la final doméstica y hasta 4 paradas del Mundial bajo T9.
+- **Decisión del supervisor: la meta del split internacional queda en ≤ 6**, lo medido, con su línea de la regla 17.
+  Es coherente con K5: el Mundial solo no pasa de 4, y lo que se suma son la final doméstica y el cierre de año, dos
+  paradas importantes por derecho propio. La aplica el paso 3.
+
 #### K5c-H — cada uno juega en su casa *(decisión del usuario, 2026-10-04)*
 
 **Por qué.** Con F2 sin el `pesoJugadorEnEquipo` 0,8 (que rompe el R² del bloque A desde 0,6), el Mundial queda en
