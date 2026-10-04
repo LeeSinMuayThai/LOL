@@ -693,10 +693,19 @@ function correspondePresionTier2(state) {
 // La variante `presion_tier2` de la bifurcación del final por mercado: misma pausa (`motivo: 'fin_mercado'`, la misma
 // regla de los bots y del headless), otro motivo. Seguir es quedarte en tier 2 con lo que te ofrecen (la mano de
 // siempre, la renovación incluida) y la cuenta en cero; si nadie ofrece, seguir buscando.
-function decisionPresionTier2(state, ofertas, asientosAbiertos) {
-  const liga = (state.career.liga ? nombreDeLigaEnMundo(state, state.career.liga) : null) ?? `tier ${state.career.tier}`;
-  const motivoRetiro = `Tenés ${state.age} años, llevás ${aniosEnPalabras(state.flags.splitsTier2SinOfertaTier1)} en ${liga} `
-    + 'y ninguna org de primera te llamó.';
+// K5c (revisión, regla 15): un free agent que arrastra la cuenta (el contrato terminó, `career.liga` es null) no "lleva" años en una
+// liga que ya no tiene: el motivo nombra la liga donde se acumuló (la de la última fila de tier 2 del registro) y dice que quedó
+// sin equipo. Exportada para el check.
+export function decisionPresionTier2(state, ofertas, asientosAbiertos) {
+  const libre = !state.career.currentOrg;
+  const ligaId = libre
+    ? ([...state.career.registro.porOrg].reverse().find((fila) => fila.tier === 2)?.liga ?? null)
+    : state.career.liga;
+  const liga = (ligaId ? nombreDeLigaEnMundo(state, ligaId) : null) ?? `tier ${state.career.tier}`;
+  const tiempo = aniosEnPalabras(state.flags.splitsTier2SinOfertaTier1);
+  const motivoRetiro = libre
+    ? `Tenés ${state.age} años, pasaste ${tiempo} en ${liga}, quedaste sin equipo y ninguna org de primera te llamó.`
+    : `Tenés ${state.age} años, llevás ${tiempo} en ${liga} y ninguna org de primera te llamó.`;
   const ligasQueOfrecen = [...new Set(ofertas.map((oferta) => nombreDeLigaEnMundo(state, oferta.liga) ?? `tier ${oferta.tier}`))].join(' o ');
   const seguir = ofertas.length > 0
     ? { id: 'seguir', label: `Seguís en ${ligasQueOfrecen}`, descripcion: 'Otra temporada abajo, a ganarte el llamado. Ves lo que te ofrecen y elegís; la cuenta arranca de cero.' }

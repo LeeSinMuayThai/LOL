@@ -9131,6 +9131,12 @@ check('K5-C: los bots contestan la bifurcación del mercado con una opción vál
 // memoria, igual que el barrido.
 const { aniosEnPalabras: aniosEnPalabrasK5CR } = await import('../systems/retiro.js');
 const PERILLAS_K5CR = { edadDesde: 18, splitsSinOfertaTier1: 3 };
+// Regla 7 (revisión de K5c): cómo se dice el tiempo en el motivo, escrito a mano para `splitsPorEdad` = 3 (cuenta en splits -> texto).
+// Lo usan el check del motivo de la bifurcación y el de `aniosEnPalabras`; el mutante que saca el "más de" ya no pasa.
+const TIEMPO_A_MANO_K5CR = {
+  1: 'un split', 2: 'dos splits', 3: 'un año', 4: 'más de un año', 5: 'más de un año', 6: 'dos años', 7: 'más de dos años',
+  8: 'más de dos años', 9: 'tres años', 10: 'más de tres años', 11: 'más de tres años', 12: 'cuatro años'
+};
 const SEEDS_K5CR = 20;
 const SPLITS_K5CR = 90;
 // Medido al escribir el check (seeds 1-30, perillas 18 y 3): con el techo de stats en 0,9 de lo que valían al llegar a tier 2,
@@ -9236,7 +9242,8 @@ check('K5c-R: con las perillas prendidas, el que se queda en tier 2 sin ofertas 
         if (fork.opciones.join('|') !== `${seguir}|retirarse`) {
           problemas.push(`${donde}: opciones ${fork.opciones} (se esperaba ${seguir} y retirarse)`);
         }
-        const esperado = `Tenés ${fork.edad} años, llevás ${aniosEnPalabrasK5CR(fork.cuenta)} en ${fork.ligaVisible ?? `tier ${fork.tier}`} `
+        // K5c (revisión, regla 7): el tiempo está escrito a mano (`TIEMPO_A_MANO_K5CR`), no armado con `aniosEnPalabras` del motor.
+        const esperado = `Tenés ${fork.edad} años, llevás ${TIEMPO_A_MANO_K5CR[fork.cuenta]} en ${fork.ligaVisible ?? `tier ${fork.tier}`} `
           + 'y ninguna org de primera te llamó.';
         if (fork.motivoFork !== esperado) {
           problemas.push(`${donde}: motivo "${fork.motivoFork}" (se esperaba "${esperado}")`);
@@ -21342,6 +21349,65 @@ check('K5c-R: los años pro (marcador): firmar un contrato de tier 3 no lo abre;
   }
   if (problemas.length > 0) {
     throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
+  }
+});
+
+// --- K5c-R (revisión): el tiempo en palabras y el motivo del free agent --------------------------------------------------------
+// Regla 7: textos escritos a mano, no armados con `aniosEnPalabras` del motor (el mutante que saca el "más de" pasaba). Regla 15: un
+// free agent que arrastra la cuenta de la presión no "lleva" años en una liga que ya no tiene; el motivo nombra la liga donde se
+// acumuló y dice que quedó sin equipo. Estado real (el primer split en tier 2 con club de las seeds 1-6) y el mismo estado sin
+// equipo, con la cuenta en 4 (3 splits por año: "más de un año").
+const { decisionPresionTier2: decisionPresionTier2K5CREV } = await import('../systems/mercado.js');
+
+check('K5c-R: aniosEnPalabras y el motivo de la presión dicen el tiempo como está escrito a mano (más de un año, dos años, un split)', () => {
+  if (BALANCE.edad.splitsPorEdad !== 3) {
+    throw new Error(`la tabla a mano supone 3 splits por año y hay ${BALANCE.edad.splitsPorEdad}`);
+  }
+  const problemas = Object.entries(TIEMPO_A_MANO_K5CR)
+    .filter(([splits, texto]) => aniosEnPalabrasK5CR(Number(splits)) !== texto)
+    .map(([splits, texto]) => `${splits} splits: dice "${aniosEnPalabrasK5CR(Number(splits))}" y debería decir "${texto}"`);
+  if (problemas.length > 0) {
+    throw new Error(problemas.join(' | '));
+  }
+});
+
+check('K5c-R: el free agent con la cuenta de la presión arrastrada recibe un motivo que nombra la liga donde la acumuló y dice que quedó sin equipo', () => {
+  const problemas = [];
+  let casos = 0;
+  for (let seed = 1; seed <= 6 && casos < 3; seed += 1) {
+    const rng = mulberry32(seed);
+    let st = createInitialState(seed, rng);
+    for (let i = 0; i < SPLITS_K5CR && !st.terminado; i += 1) {
+      st = avanzarSplitAuto(st, rng).state;
+      // Con la fila de tier 2 ya abierta en el registro (la abre `roster.js` el split siguiente al de la firma).
+      if (st.phase === 'profesional' && st.career.tier === 2 && st.career.currentOrg && st.career.liga
+        && st.career.registro.porOrg.some((fila) => fila.tier === 2)) {
+        break;
+      }
+    }
+    if (st.phase !== 'profesional' || st.career.tier !== 2 || !st.career.currentOrg || !st.career.registro.porOrg.some((fila) => fila.tier === 2)) {
+      continue;
+    }
+    casos += 1;
+    const nombreLiga = st.mundo.ligas.find((liga) => liga.id === st.career.liga).nombre;
+    const conCuenta = { ...st, flags: { ...st.flags, splitsTier2SinOfertaTier1: 4 } };
+    const libre = { ...conCuenta, career: { ...conCuenta.career, currentOrg: null, liga: null, rosterDeOrg: null, companeros: [] } };
+    const conClub = decisionPresionTier2K5CREV(conCuenta, [], []).datos.motivoRetiro;
+    const sinClub = decisionPresionTier2K5CREV(libre, [], []).datos.motivoRetiro;
+    const esperadoConClub = `Tenés ${st.age} años, llevás más de un año en ${nombreLiga} y ninguna org de primera te llamó.`;
+    const esperadoLibre = `Tenés ${st.age} años, pasaste más de un año en ${nombreLiga}, quedaste sin equipo y ninguna org de primera te llamó.`;
+    if (conClub !== esperadoConClub) {
+      problemas.push(`seed ${seed}: con club dice "${conClub}" (se esperaba "${esperadoConClub}")`);
+    }
+    if (sinClub !== esperadoLibre) {
+      problemas.push(`seed ${seed}: sin equipo dice "${sinClub}" (se esperaba "${esperadoLibre}")`);
+    }
+  }
+  if (casos < 3) {
+    problemas.push(`el check no mide nada: ${casos} estados en tier 2 con club en las seeds 1-6`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 3).join(' | ')}`);
   }
 });
 
