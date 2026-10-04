@@ -1206,7 +1206,7 @@ export const BALANCE = {
     brechaFranquicia: 10,
 
     // --- K5c-M, la élite se busca (PLAN.md "K5c — decisiones de spec de la estructura"): los clubes fuertes le
-    // ofrecen a la élite. Estructura con perillas NEUTRAS (con `pesoFuerzaOrden` y `rebajaAsientoPorMerito` en 0 el
+    // ofrecen a la élite. Estructura con perillas NEUTRAS (con `pesoFuerzaOrden`, `rebajaMerito` y `rebajaDisputa` en 0 el
     // motor es idéntico, huella incluida); las fija el barrido del paso 3 de K5c. Se leen en el momento de usarlas
     // (`core/demanda.js:factorElite` y `asientoAbierto`, `systems/mercado.js:generarOfertas`), así que un override en
     // memoria las pisa.
@@ -1216,16 +1216,22 @@ export const BALANCE = {
     //    `ficha.nivelBandas.elite` (78, desde donde la ficha dice "clase mundial").
     //  - `pesoFuerzaOrden` (k): USD de orden de la mano por punto de `org.fuerza` con f = 1. El orden de la mano es
     //    `presupuesto + nudge de región + k · f(nivel) · org.fuerza`: con k > 0 los clubes fuertes van primero.
-    //  - `rebajaAsientoPorMerito`: puntos que se le perdonan a la élite, con f = 1, en los dos márgenes del asiento:
-    //    el que lo abre por mérito (`demanda.forzarAsientoSobreNpc`: el club banca a su titular por una estrella
-    //    aunque no le saque 8) y el de la disputa (`demanda.margenSobreAlternativa`: el club se estira por una
-    //    estrella aunque no le gane claramente a su alternativa). Va en los dos porque abrir solo el asiento no
-    //    sumaba ningún club fuerte (medido: `core/demanda.js:rebajaAsientoElite`). Las reglas duras no se tocan.
+    //  - `rebajaMerito` y `rebajaDisputa`: puntos que se le perdonan a la élite, con f = 1, en los dos márgenes del asiento,
+    //    cada uno con su perilla y su tope (revisión de K5c, regla 15: una sola perilla sobre los dos márgenes, con un valor
+    //    mayor que `margenSobreAlternativa`, fichaba a una estrella peor que la alternativa del club y abría el asiento "por
+    //    mérito" para quien no le gana a su titular):
+    //      · `rebajaMerito` se resta de `demanda.forzarAsientoSobreNpc` (el club banca a su titular por una estrella aunque
+    //        no le saque tanto). Topeada en ese margen: tu nivel nunca queda por debajo del NPC al que reemplazás.
+    //      · `rebajaDisputa` se resta de `demanda.margenSobreAlternativa` (el club se estira por una estrella aunque no le
+    //        gane claramente a su alternativa). Topeada en ese margen: nunca sos peor que la alternativa del club.
+    //    Las dos van porque abrir solo el asiento no sumaba ningún club fuerte (medido en K5c-M: `core/demanda.js`). Las
+    //    reglas duras no se tocan.
     elite: {
       umbralNivel: 80,
       anchoNivel: 10,
       pesoFuerzaOrden: 0,
-      rebajaAsientoPorMerito: 0
+      rebajaMerito: 0,
+      rebajaDisputa: 0
     },
     // K5c-M, lo que ve la carta: el puesto del plantel por fuerza dentro de su liga (`core/demanda.js:plantelEnLiga`).
     // "Arriba" son los primeros `fraccionArriba` de la liga (redondeado para arriba; el 1.º se dice aparte), "abajo"

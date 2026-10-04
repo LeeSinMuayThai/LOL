@@ -38,15 +38,23 @@ export function factorElite(nivel) {
 }
 
 // K5c-M, la élite se busca: los puntos que un club le perdona a un jugador de tu nivel en los dos márgenes del asiento,
-// el que lo abre por mérito (`demanda.forzarAsientoSobreNpc`) y el de la disputa (`demanda.margenSobreAlternativa`).
+// el que lo abre por mérito (`demanda.forzarAsientoSobreNpc`, `rebajaMeritoElite`) y el de la disputa
+// (`demanda.margenSobreAlternativa`, `rebajaDisputaElite`).
 // Medido con la perilla en 0 (80 carreras de `criterio`, los 10 clubes más fuertes del mundo contra los jugadores con
 // f = 1): de 242 pares que las reglas duras permiten, solo 12 eran ofrecibles. Abrir solo el asiento no sumaba ninguno:
 // la disputa los frenaba (el jugador quedaba ~5,6 puntos debajo de la alternativa, que en un club fuerte tiene el piso
 // `org.fuerza − alternativaPisoFuerza`). Perdonar 8 en los dos márgenes los llevaba a ~63 (cuenta sin el presupuesto).
-// Por eso la rebaja va en los dos. Con el código, en la muestra del check "K5c-M (a2)": 14 -> 50 con la rebaja en 8.
-// Las reglas duras (cupo de imports, el listón de import) no se tocan: frenan ~2 de cada 3 pares.
-export function rebajaAsientoElite(nivel) {
-  return BALANCE.mercado.elite.rebajaAsientoPorMerito * factorElite(nivel);
+// Por eso la rebaja va en los dos. Las reglas duras (cupo de imports, el listón de import) no se tocan: frenan ~2 de cada 3 pares.
+// Revisión de K5c (regla 15): son dos perillas, cada una topeada en SU margen. Con una sola perilla sobre los dos, un valor mayor
+// que `margenSobreAlternativa` (4) fichaba a una estrella peor que la alternativa del club, y con 8 o más el asiento se abría "por
+// mérito" para quien no le gana al titular. Con el tope, el margen efectivo nunca baja de 0: nivel > NPC, y nunca peor que la
+// alternativa. Con las perillas en 0 el margen es el de siempre, exacto.
+export function rebajaMeritoElite(nivel) {
+  return clamp(BALANCE.mercado.elite.rebajaMerito * factorElite(nivel), 0, BALANCE.demanda.forzarAsientoSobreNpc);
+}
+
+export function rebajaDisputaElite(nivel) {
+  return clamp(BALANCE.mercado.elite.rebajaDisputa * factorElite(nivel), 0, BALANCE.demanda.margenSobreAlternativa);
 }
 
 // K5c-M, lo que ve la carta de oferta: el puesto del plantel de `org` por fuerza dentro de `liga` (1 = el más
@@ -111,11 +119,17 @@ export function asientoAbierto(state, orgNombre, rol) {
   // `porMerito`: el asiento se abre porque VOS sos mejor que su titular. Una org
   // que te quiere por eso también acepta pagarte por encima de su banda
   // habitual (`ofertaPosible` salta el techo de banda en ese caso).
-  // K5c-M: a la élite el club le perdona parte del margen (`rebajaAsientoElite`, con la perilla en 0 es el mismo
-  // margen de siempre, exacto).
+  // K5c-M: a la élite el club le perdona parte del margen (`rebajaMeritoElite`, topeada: nunca por debajo del NPC; con la perilla
+  // en 0 es el mismo margen de siempre, exacto). Revisión de K5c (regla 15): el motivo dice lo que es. "Claramente" solo si le
+  // sacás el margen entero; si lo abrió la rebaja, el club apuesta por vos y estás a la par.
   const nivel = nivelDelJugador(state);
-  if (nivel > npc.nivel + d.forzarAsientoSobreNpc - rebajaAsientoElite(nivel)) {
-    return { abierto: true, porMerito: true, motivo: `mejorás claramente sobre ${npc.handle}` };
+  if (nivel > npc.nivel + d.forzarAsientoSobreNpc - rebajaMeritoElite(nivel)) {
+    const claramente = nivel > npc.nivel + d.forzarAsientoSobreNpc;
+    return {
+      abierto: true,
+      porMerito: true,
+      motivo: claramente ? `mejorás claramente sobre ${npc.handle}` : `estás a la par de ${npc.handle} y el club apuesta por vos`
+    };
   }
   return { abierto: false };
 }
@@ -381,10 +395,11 @@ export function ofertaPosible(state, orgNombre, rol, { forzada = false } = {}) {
   // `margenImport`) a la mejor alternativa real de la org, y el mercado te
   // descuenta nivel por la edad en esa disputa (`castigoEtario`). El piso de
   // franquicia ya salteó esto arriba (rama `forzada`).
-  // K5c-M: la élite se busca, y en la disputa el club también le perdona `rebajaAsientoElite` (0 con la perilla neutra).
+  // K5c-M: la élite se busca, y en la disputa el club también le perdona `rebajaDisputaElite` (topeada en el margen: nunca peor
+  // que la alternativa; 0 con la perilla neutra).
   const nivelEfectivo = nivel - castigoEtario(state.age);
   const alternativa = nivelAlternativaAsiento(state, orgNombre, rol);
-  if (nivelEfectivo < alternativa + d.margenSobreAlternativa - rebajaAsientoElite(nivel)) {
+  if (nivelEfectivo < alternativa + d.margenSobreAlternativa - rebajaDisputaElite(nivel)) {
     return { posible: false, motivo: `${org.nombre} tiene mejores opciones para el puesto` };
   }
 

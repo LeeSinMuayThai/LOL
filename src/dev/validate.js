@@ -20090,7 +20090,8 @@ check('K5c-E guardado VERSION 12: la forma de la 11 sigue registrada tal cual, y
 //
 // Las orgs fuertes le ofrecen a la élite: el orden de la mano suma `k · f(nivel) · org.fuerza`
 // (`mercado.elite.pesoFuerzaOrden`) y a la élite el club le perdona parte de los márgenes del asiento
-// (`mercado.elite.rebajaAsientoPorMerito`). Las dos perillas salen en 0 (la huella de K1 prueba el no-op exacto) y
+// (`mercado.elite.rebajaMerito` y `rebajaDisputa`, cada una topeada en su margen). Las tres perillas salen en 0 (la huella de K1
+// prueba el no-op exacto) y
 // estos checks las encienden EN MEMORIA. La muestra: las pausas de mercado reales (`mercado:oferta`) de carreras de
 // `criterio`, seeds 1 a `SEEDS_K5CM`, 60 splits.
 
@@ -20103,7 +20104,10 @@ function statsParejasK5cM(valor) {
 const SEEDS_K5CM = 30;
 // Los valores de ejemplo con los que se encienden las perillas (el barrido de K5c fija los de verdad).
 const PESO_FUERZA_K5CM = 100000;
-const REBAJA_ASIENTO_K5CM = 8;
+// Revisión de K5c: la rebaja son dos perillas (mérito y disputa), cada una topeada en su margen. Los valores de ejemplo son los topes
+// (8 y 4: `forzarAsientoSobreNpc` y `margenSobreAlternativa`). Reemplaza a `REBAJA_ASIENTO_K5CM = 8` sobre los dos márgenes.
+const REBAJAS_K5CM = { merito: 8, disputa: 4 };
+const SIN_REBAJA_K5CM = { merito: 0, disputa: 0 };
 // Medido al escribir el check (30 carreras, 33 pausas de élite con f = 1 y alguna oferta de tier 1, rng de la mano fijo):
 // mediana de la fuerza de los clubes de tier 1 de la mano 73 con todo apagado, 79 con solo k, 76 con solo la rebaja y
 // 83 con las dos. Los pisos de abajo quedan a la mitad de cada suba medida.
@@ -20134,13 +20138,14 @@ function pausasDeMercadoK5cM() {
 
 function conPerillasEliteK5cM(pesoFuerza, rebaja, fn) {
   const elite = BALANCE.mercado.elite;
-  const previas = [elite.pesoFuerzaOrden, elite.rebajaAsientoPorMerito];
+  const previas = [elite.pesoFuerzaOrden, elite.rebajaMerito, elite.rebajaDisputa];
   elite.pesoFuerzaOrden = pesoFuerza;
-  elite.rebajaAsientoPorMerito = rebaja;
+  elite.rebajaMerito = rebaja.merito;
+  elite.rebajaDisputa = rebaja.disputa;
   try {
     return fn();
   } finally {
-    [elite.pesoFuerzaOrden, elite.rebajaAsientoPorMerito] = previas;
+    [elite.pesoFuerzaOrden, elite.rebajaMerito, elite.rebajaDisputa] = previas;
   }
 }
 
@@ -20168,7 +20173,7 @@ check('K5c-M (a): con las perillas de élite encendidas en memoria, la élite re
     const f = factorElite(nivelDelJugador(st));
     const grupo = f >= 1 ? 'elite' : (f === 0 ? 'medio' : null);
     const congelado = conTodoCongeladoK5cM(st);
-    if (grupo && fuerzasTier1DeLaManoK5cM(congelado, 0, 0).length > 0) {
+    if (grupo && fuerzasTier1DeLaManoK5cM(congelado, 0, SIN_REBAJA_K5CM).length > 0) {
       grupos[grupo].push(congelado);
     }
   }
@@ -20176,7 +20181,7 @@ check('K5c-M (a): con las perillas de élite encendidas en memoria, la élite re
     throw new Error(`muestra chica: ${grupos.elite.length} pausas de élite y ${grupos.medio.length} de nivel medio con ofertas de tier 1`);
   }
   const medianaDe = (estados, pesoFuerza, rebaja) => medianaSim(estados.flatMap((st) => fuerzasTier1DeLaManoK5cM(st, pesoFuerza, rebaja)));
-  const config = [['apagado', 0, 0], ['solo k', PESO_FUERZA_K5CM, 0], ['solo rebaja', 0, REBAJA_ASIENTO_K5CM], ['ambas', PESO_FUERZA_K5CM, REBAJA_ASIENTO_K5CM]];
+  const config = [['apagado', 0, SIN_REBAJA_K5CM], ['solo k', PESO_FUERZA_K5CM, SIN_REBAJA_K5CM], ['solo rebaja', 0, REBAJAS_K5CM], ['ambas', PESO_FUERZA_K5CM, REBAJAS_K5CM]];
   const elite = Object.fromEntries(config.map(([nombre, k, r]) => [nombre, medianaDe(grupos.elite, k, r)]));
   const medio = Object.fromEntries(config.map(([nombre, k, r]) => [nombre, medianaDe(grupos.medio, k, r)]));
   const resumen = `élite (${grupos.elite.length} pausas) ${JSON.stringify(elite)}; medio (${grupos.medio.length}) ${JSON.stringify(medio)}`;
@@ -20210,8 +20215,8 @@ check('K5c-M (a2): con la rebaja encendida en memoria, los clubes más fuertes d
     }
     return { pares, estados };
   });
-  const elite = [contar(0, true), contar(REBAJA_ASIENTO_K5CM, true)];
-  const medio = [contar(0, false), contar(REBAJA_ASIENTO_K5CM, false)];
+  const elite = [contar(SIN_REBAJA_K5CM, true), contar(REBAJAS_K5CM, true)];
+  const medio = [contar(SIN_REBAJA_K5CM, false), contar(REBAJAS_K5CM, false)];
   const resumen = `top ${TOP_MUNDO_K5CM} del mundo ofrecibles: élite ${elite[0].pares} -> ${elite[1].pares} (${elite[0].estados} pausas), medio ${medio[0].pares} -> ${medio[1].pares} (${medio[0].estados} pausas)`;
   if (elite[0].estados < 10) {
     throw new Error(`muestra chica: ${resumen}`);
@@ -21220,6 +21225,76 @@ check('K5c (revisión): un import de tier 1 que se te presenta vuelve a cero la 
   }
   if (problemas.length > 0) {
     throw new Error(`${problemas.length} problema(s) en ${estados} estados: ${problemas.slice(0, 4).join(' | ')}`);
+  }
+});
+
+// --- K5c-M (revisión): la rebaja de la élite no hace mentir al asiento -------------------------------------------------------
+// Regla 15. Con una sola perilla sobre los dos márgenes, un valor mayor que `margenSobreAlternativa` (4) fichaba a una estrella peor
+// que la alternativa del club, y con 8 o más el asiento se abría "por mérito" para alguien que no le gana al titular (y el motivo
+// decía "mejorás claramente"). Ahora son dos perillas, cada una topeada en su margen. Con las dos muy por encima de sus márgenes
+// (100) y la élite del lote real de pausas, se piden: (1) los topes en sí; (2) cada asiento abierto por mérito tiene un titular por
+// debajo de tu nivel, y su motivo dice "mejorás claramente" solo si le sacás el margen entero (si no, "estás a la par ... el club
+// apuesta por vos"); (3) cada club que te ficharía tiene una alternativa que tu nivel (con el castigo de la edad) no pierde.
+const {
+  asientoAbierto: asientoAbiertoK5CREV, nivelAlternativaAsiento: alternativaK5CREV,
+  rebajaMeritoElite: rebajaMeritoK5CREV, rebajaDisputaElite: rebajaDisputaK5CREV
+} = await import('../core/demanda.js');
+const { castigoEtario: castigoEtarioK5CREV } = await import('../core/valorMercado.js');
+const REBAJA_ENORME_K5CREV = { merito: 100, disputa: 100 };
+
+check('K5c-M (revisión): la rebaja de la élite está topeada en sus márgenes (nunca peor que la alternativa, nunca bajo el titular) y el motivo del asiento dice la verdad', () => {
+  const { forzarAsientoSobreNpc, margenSobreAlternativa } = BALANCE.demanda;
+  const problemas = [];
+  let porMerito = 0;
+  let sinMargenEntero = 0;
+  let fichajes = 0;
+  conPerillasEliteK5cM(0, REBAJA_ENORME_K5CREV, () => {
+    for (const nivel of [50, 80, 85, 90, 100]) {
+      if (rebajaMeritoK5CREV(nivel) > forzarAsientoSobreNpc || rebajaDisputaK5CREV(nivel) > margenSobreAlternativa) {
+        problemas.push(`nivel ${nivel}: la rebaja pasa los márgenes (mérito ${rebajaMeritoK5CREV(nivel)} de ${forzarAsientoSobreNpc}, disputa ${rebajaDisputaK5CREV(nivel)} de ${margenSobreAlternativa})`);
+      }
+    }
+    for (const { seed, st } of pausasDeMercadoK5cM()) {
+      const nivel = nivelDelJugador(st);
+      if (factorElite(nivel) === 0) {
+        continue;
+      }
+      const rol = st.player.role;
+      for (const liga of st.mundo.ligas) {
+        for (const org of liga.orgs) {
+          const npc = st.mundo.planteles?.[org.nombre]?.[rol];
+          const asiento = npc ? asientoAbiertoK5CREV(st, org.nombre, rol) : { abierto: false };
+          if (!asiento.porMerito) {
+            continue;
+          }
+          porMerito += 1;
+          const claramente = nivel - npc.nivel > forzarAsientoSobreNpc;
+          sinMargenEntero += claramente ? 0 : 1;
+          if (!(nivel > npc.nivel)) {
+            problemas.push(`seed ${seed}: ${org.nombre} abre el asiento por mérito con tu nivel ${nivel} contra su titular de ${npc.nivel}`);
+          }
+          if (asiento.motivo.startsWith('mejorás claramente') !== claramente) {
+            problemas.push(`seed ${seed}: ${org.nombre}, margen ${(nivel - npc.nivel).toFixed(1)} sobre el titular, dice "${asiento.motivo}"`);
+          }
+          if (!claramente && !asiento.motivo.startsWith('estás a la par de ')) {
+            problemas.push(`seed ${seed}: ${org.nombre}, abierto por la rebaja, dice "${asiento.motivo}"`);
+          }
+        }
+      }
+      for (const entrada of orgsQueTeFicharian(st)) {
+        fichajes += 1;
+        const alternativa = alternativaK5CREV(st, entrada.org.nombre, rol);
+        if (nivel - castigoEtarioK5CREV(st.age) < alternativa) {
+          problemas.push(`seed ${seed}: ${entrada.org.nombre} te ficharía con ${(nivel - castigoEtarioK5CREV(st.age)).toFixed(1)} efectivo contra una alternativa de ${alternativa.toFixed(1)}`);
+        }
+      }
+    }
+  });
+  if (porMerito === 0 || sinMargenEntero === 0 || fichajes === 0) {
+    problemas.push(`el check no mide nada: ${porMerito} asientos por mérito (${sinMargenEntero} abiertos por la rebaja) y ${fichajes} fichajes posibles`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
   }
 });
 
