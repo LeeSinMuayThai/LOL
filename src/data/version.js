@@ -94,4 +94,8 @@ export const VERSION_JUEGO = 'K4c';
 // desde `splitFichaje` (tier 3). Las carreras son las mismas (el marcador no toca el rng; con la definición vieja la huella da 992471283):
 // cambia el eje de años de la leyenda comparada (`aniosProDe`, `core/puntaje.js`) y con él la leyenda de la tupla. Misma versión:
 // reemplaza a 992471283.
-export const HUELLA_JUEGO = 579585404;
+// K6a-M (motor y ritmo, 319240573): toda serie de eliminación frena (el umbral de "sin nada en juego" ya no se les aplica), tier 2
+// define el título en una final entre los dos primeros, "define la clasificación" solo en el split de cierre, un tier 3 no se
+// resuelve antes de que juegues un split con él, y el torneo de mitad de año pide el equipo primero. Cambia el stream (más
+// paradas en playoffs). Misma versión (12, no salió): reemplaza a 579585404. La integración la vuelve a registrar.
+export const HUELLA_JUEGO = 319240573;

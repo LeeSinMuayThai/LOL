@@ -1,4 +1,4 @@
-import { tablaDePosiciones, posicionEnTabla } from '../../core/temporada.js';
+import { encabezadoDeResultado } from '../../core/temporada.js';
 import { etiquetaDeRonda } from '../../core/serie.js';
 import { etiquetaDeFuerza } from '../formatoUi.js';
 import { crearOrgChip } from './orgChip.js';
@@ -28,9 +28,11 @@ import { countUp } from './countUp.js';
 // `career.registro.momentos` no registra las fechas marcadas (solo lo que
 // pasa por `systems/events.js`) — no hay otra fuente estructurada posible
 // sin tocar motor.
+// K6a-M: el encabezado sale del log de la fecha (`encabezadoDeResultado`), no de `calendario[indice - 1]` del estado
+// de cuando se pinta: la temporada ya siguió en silencio y esa era otra fecha (la previa contra RED Canids terminaba en
+// "GANARON vs PAIN GAMING").
 export function crearTarjetaResultado(entry, state) {
-  const { temporada, registro, currentOrg } = state.career;
-  const fecha = temporada.calendario[temporada.indice - 1];
+  const fecha = encabezadoDeResultado(entry);
 
   const item = document.createElement('div');
   item.className = 'log-item log-item--resultado';
@@ -44,10 +46,8 @@ export function crearTarjetaResultado(entry, state) {
     return item;
   }
 
-  const gano = temporada.racha > 0;
+  const { gano, posicion, equipos, racha } = fecha;
   item.dataset.acento = gano ? 'up' : 'down';
-  const tabla = tablaDePosiciones(temporada.registrosOtros, temporada.filaPropia);
-  const posicion = posicionEnTabla(tabla, currentOrg);
 
   item.classList.add(gano ? 'log-item--resultado-victoria' : 'log-item--resultado-derrota');
 
@@ -68,7 +68,7 @@ export function crearTarjetaResultado(entry, state) {
 
   const fuerzaEl = document.createElement('span');
   fuerzaEl.className = 'resultado-fuerza';
-  fuerzaEl.textContent = etiquetaDeFuerza(fecha.fuerzaRival, temporada.fuerzaPropia);
+  fuerzaEl.textContent = etiquetaDeFuerza(fecha.fuerzaRival, fecha.fuerzaPropia);
 
   cabecera.append(marcador, rivalEl, fuerzaEl);
   item.appendChild(cabecera);
@@ -79,9 +79,9 @@ export function crearTarjetaResultado(entry, state) {
 
   const pie = document.createElement('div');
   pie.className = 'resultado-pie';
-  const rachaAbs = Math.abs(temporada.racha);
+  const rachaAbs = Math.abs(racha);
   const rachaTxt = rachaAbs > 1 ? `Racha de ${rachaAbs} ${gano ? 'triunfos' : 'derrotas'}` : null;
-  pie.textContent = [`${posicion}º de ${tabla.length}`, rachaTxt].filter(Boolean).join(' · ');
+  pie.textContent = [`${posicion}º de ${equipos}`, rachaTxt].filter(Boolean).join(' · ');
   item.appendChild(pie);
 
   return item;

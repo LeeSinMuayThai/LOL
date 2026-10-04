@@ -110,7 +110,10 @@ function consecuencias(state, rendimiento, resultado, esCierre, rng) {
   // en el registro. Acá solo queda la posición de temporada regular. Tier 2 y
   // tier 3 (sin bracket modelado) siguen resolviendo el título al instante,
   // como siempre.
-  const juegaSerieDePlayoffs = liga.tier === 1 && Boolean(liga.formatoPlayoffs);
+  // K6a-M (D-B: toda final frena, en tier 1 y en tier 2): tier 2 también define el título en una serie, la final entre
+  // los dos primeros (`formatoPlayoffs.arranca`, leagues.json); en el ensayo de K6 dos títulos de LRS llegaron por la
+  // tabla sin una sola parada. El tier 3 (una zona, sin formato) sigue con el título al instante.
+  const juegaSerieDePlayoffs = Boolean(liga.formatoPlayoffs);
 
   // El titulo se levanta cuando cierra la temporada, no en cada split: los
   // splits intermedios son regular season y dejan posicion, no trofeo.
