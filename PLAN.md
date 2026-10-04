@@ -7551,6 +7551,48 @@ del paso 3 de K5c (así el barrido final mide el juego que se va a jugar):
   - el check K5c-M (a2), "al menos el doble", es frágil a la muestra (20 → 30 con el stream nuevo): se arregla en la
     integración.
 
+#### K5c-H — cada uno juega en su casa *(decisión del usuario, 2026-10-04)*
+
+**Por qué.** Con F2 sin el `pesoJugadorEnEquipo` 0,8 (que rompe el R² del bloque A desde 0,6), el Mundial queda en
+1-3%, y ni N, ni A, ni V lo mueven. Una investigación (sonda de 400 carreras y 799 Mundiales) encontró la causa:
+- **La fórmula no es.** En un club de fuerza F, tus compañeros valen F+1 y tu equipo vale F+13,7.
+- **Es dónde jugás.** El 78% de las temporadas de tier 1 son en CBLOL o LCP, y solo el 18% en la liga de tu región. Un
+  coreano juega el 12% de sus temporadas en LCK y el 54% en CBLOL. Desde CBLOL y LCP se ganaron 0 de 672 Mundiales;
+  desde LCK, 13%; desde LPL, 23%.
+- **Encima, en un club de élite tu jerarquía es baja (~20)**, el factor queda en 0,904 y jugás 9 puntos debajo de tu
+  nivel. El rival NPC vale el promedio de sus niveles, sin jerarquía.
+- **Con la jerarquía neutra en el Mundial** (medido con un hack): el Mundial pasa de 1,9 a 3,1%; en el mejor club del
+  mundo, "el más fuerte" pasa de 17 a 41%; la élite gana de 13 a 24%. La meta del bloque A sigue en verde (R² 0,549).
+
+**Decisión del usuario (textual):** *"si sos coreano y bueno debutás en tu liga, si no sos tan bueno te vas a otra
+dependiendo de qué tan bueno seas, también eso se ve un toque en LCK Challengers"*. Es la opción "cada uno juega en su
+casa", frente a fijar la meta del Mundial en lo medido. Confirma la decisión de J.2: *"la región ES la dificultad"*.
+
+**La spec.**
+- **La escalera por nivel, desde tu región.**
+  - **Alcanza para tu liga de tier 1:** jugás en casa. Los clubes de tu liga te ofrecen antes que a un import, y un
+    jugador que alcanza su liga no termina en una más débil.
+  - **No alcanza:** la de tier 2 de tu región (LCK CL para un coreano), o un import a la liga de tier 1 que le
+    corresponde a tu nivel ("dependiendo de qué tan bueno seas"). Un coreano que no llega a LCK puede ir a LCK CL, a
+    LCS o a CBLOL.
+  - **Desde una región débil:** un jugador de élite sube como import a una liga más fuerte. Es la puerta de K4-C2.
+- **El bot `criterio`.** Toma tier 1 en casa si se la ofrecen. No deja su liga de tier 1 por una más débil. Va de
+  import a una liga más fuerte por el calibre, como hoy.
+- **En el Mundial la jerarquía no cuenta,** igual que para el rival NPC. Es una sola función de fuerza de Mundial para la
+  previa, el Swiss y el bracket, con su perilla `mundial.jerarquiaCuenta`. La previa lo dice (regla 12).
+- **Primero el diagnóstico con sondas:** ¿por qué un coreano de nivel X termina en CBLOL? ¿Falta oferta de LCK, o es
+  una elección? El arreglo va donde está la causa: el mercado, el bot o los dos.
+- **Las métricas nuevas del instrumento:** el % de temporadas de tier 1 en casa, por región y por nivel, y el Mundial
+  por región.
+- **Checks:**
+  - un coreano de nivel alto juega la mayoría de sus temporadas de tier 1 en LCK;
+  - uno de nivel medio, en LCK CL o afuera;
+  - uno de élite de una región débil puede subir como import;
+  - el Mundial con la previa, el Swiss y el bracket pasa por la misma función.
+
+  Todos con su mutante.
+- **Bloque C, con corrimiento declarado.** Lo que se mueva en el embudo lo fija el barrido final.
+
 ### K6 — Jugarlo *(la prueba que importa)*
 
 Tres carreras completas en el navegador: una que se estanca en tier 2 por malas decisiones, una buena
