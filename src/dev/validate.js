@@ -21162,6 +21162,67 @@ check('K5c (revisión): la vuelta del retiro nunca devuelve a la edad de la lín
   }
 });
 
+// --- K5c (revisión): el import de tier 1 que te ofrecen también corta la presión de tier 2 ----------------------------------
+// Regla 15: "ninguna org de primera te llamó" es falso si una org de la LEC o la LCS te ofreció la mudanza (`el_pasaje_a_occidente`) y
+// la rechazaste. Antes la cuenta (`flags.splitsTier2SinOfertaTier1`) solo volvía a cero si el import se firmaba. Ahora se corta al
+// presentarse la oferta (`conImportDeTier1Presentado`, llamada desde `presentarOResolver`), sin `rng`, y sigue en cero elijas lo que
+// elijas. Una bifurcación sin import no la toca. Estados reales: el primer split en tier 2 con club en que el import es posible.
+const { presentarOResolver: presentarOResolverK5CREV } = await import('../systems/events.js');
+const CUENTA_K5CREV = 4;
+const SEEDS_ESTADOS_K5CREV = 6;
+
+check('K5c (revisión): un import de tier 1 que se te presenta vuelve a cero la presión de tier 2, lo aceptes o no, sin gastar rng', () => {
+  const conImport = TODOS_LOS_EVENTOS.find((evento) => evento.id === 'el_pasaje_a_occidente');
+  const sinImport = TODOS_LOS_EVENTOS.find((evento) => evento.bifurcacion
+    && !evento.options.some((opcion) => opcion.outcomes.some((outcome) => outcome.effects.some((efecto) => efecto.type === 'ofertaDeImport'))));
+  if (!conImport || !sinImport) {
+    throw new Error('faltan eventos de prueba: una bifurcación con import y otra sin');
+  }
+  const problemas = [];
+  let estados = 0;
+  for (let seed = 1; seed <= SEEDS_ESTADOS_K5CREV; seed += 1) {
+    const rng = mulberry32(seed);
+    let st = createInitialState(seed, rng);
+    let candidato = null;
+    for (let i = 0; i < SPLITS_K5CR && !st.terminado && !candidato; i += 1) {
+      st = avanzarSplitAuto(st, rng).state;
+      if (st.phase === 'profesional' && st.career.tier === 2 && st.career.currentOrg && ofertaDeImportPosible(st, conImport.options[0].outcomes[0].effects[0].liga).posible) {
+        candidato = { ...st, flags: { ...st.flags, splitsTier2SinOfertaTier1: CUENTA_K5CREV } };
+      }
+    }
+    if (!candidato) {
+      continue;
+    }
+    estados += 1;
+    const rngDeLaPrueba = mulberry32(seed + 1000);
+    const estadoDelRng = rngDeLaPrueba.estado();
+    const presentado = presentarOResolverK5CREV(candidato, conImport, 1, rngDeLaPrueba);
+    if (!presentado.decision || presentado.state.flags.splitsTier2SinOfertaTier1 !== 0) {
+      problemas.push(`seed ${seed}: con el import de tier 1 presentado la cuenta quedó en ${presentado.state.flags.splitsTier2SinOfertaTier1} (decisión ${presentado.decision ? 'sí' : 'no'})`);
+      continue;
+    }
+    if (rngDeLaPrueba.estado() !== estadoDelRng) {
+      problemas.push(`seed ${seed}: presentar el import gastó rng`);
+    }
+    for (const opcion of presentado.decision.opciones) {
+      const resuelto = resolverEventos(presentado.state, presentado.decision, { opcionId: opcion.id }, mulberry32(seed + 2000));
+      if (resuelto.state.flags.splitsTier2SinOfertaTier1 !== 0) {
+        problemas.push(`seed ${seed}: tras elegir "${opcion.id}" la cuenta volvió a ${resuelto.state.flags.splitsTier2SinOfertaTier1}`);
+      }
+    }
+    const otra = presentarOResolverK5CREV(candidato, sinImport, 1, mulberry32(seed + 3000));
+    if (otra.state.flags.splitsTier2SinOfertaTier1 !== CUENTA_K5CREV) {
+      problemas.push(`seed ${seed}: la bifurcación "${sinImport.id}" (sin import) tocó la cuenta: ${otra.state.flags.splitsTier2SinOfertaTier1}`);
+    }
+  }
+  if (estados === 0) {
+    problemas.push(`el check no mide nada: ningún estado en tier 2 con un import posible en ${SEEDS_ESTADOS_K5CREV} seeds`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problema(s) en ${estados} estados: ${problemas.slice(0, 4).join(' | ')}`);
+  }
+});
+
 if (errores.length > 0) {
   console.error(`\n${errores.length} check(s) fallaron.`);
   process.exit(1);

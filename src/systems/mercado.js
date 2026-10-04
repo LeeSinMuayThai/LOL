@@ -661,6 +661,24 @@ function conOfertaDeTier1(state, ofertas) {
   return sinPresionTier2(state);
 }
 
+// K5c (revisión, regla 15): un import de tier 1 que te ofrecen es una oferta de tier 1 aunque la rechaces. La bifurcación que lo
+// presenta (`ofertaDeImport` en `data/events/caminos.json`) vuelve a cero la cuenta apenas se te muestra, la aceptes o no: si no, el
+// motivo de la presión dice después "ninguna org de primera te llamó" y es falso. Solo cuenta si la oferta se puede cumplir hoy
+// (`ofertaDeImportPosible`, la misma regla que la firma) y es de una liga de tier 1. Cero `rng`; la llama `systems/events.js`.
+export function conImportDeTier1Presentado(state, evento) {
+  if ((state.flags.splitsTier2SinOfertaTier1 ?? 0) === 0) {
+    return state;
+  }
+  const ofreceTier1 = evento.options.some((opcion) => opcion.outcomes.some((outcome) => outcome.effects.some((efecto) => {
+    if (efecto.type !== 'ofertaDeImport') {
+      return false;
+    }
+    const posible = ofertaDeImportPosible(state, efecto.liga);
+    return posible.posible && posible.liga.tier === 1;
+  })));
+  return ofreceTier1 ? sinPresionTier2(state) : state;
+}
+
 function sinPresionTier2(state) {
   return { ...state, flags: { ...state.flags, splitsTier2SinOfertaTier1: 0 } };
 }

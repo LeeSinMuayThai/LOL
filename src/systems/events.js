@@ -18,7 +18,7 @@ import { ajusteBaseDeMinijuego } from '../core/serie.js';
 import { aplicarStatsDeMinijuego } from './serie.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
-import { ofertaDeImportPosible, prometerImport } from './mercado.js';
+import { ofertaDeImportPosible, prometerImport, conImportDeTier1Presentado } from './mercado.js';
 import { cambiarDeRol } from './roster.js';
 import { retirarsePorCamino } from './retiro.js';
 
@@ -522,10 +522,11 @@ export function aplicar(state, rng) {
 // K4-C: solo frena una bifurcación de carrera (`bifurcacion: true` en el dato). El resto lo resuelve tu perfil
 // en el momento —la opción de mejor encaje, y su outcome con la tirada de siempre (regla 8)— y queda una línea de
 // crónica en el feed. Después, igual que antes, puede amontonarse un segundo evento.
-function presentarOResolver(state, evento, slot, rng) {
+export function presentarOResolver(state, evento, slot, rng) {
   if (evento.bifurcacion) {
     return {
-      state,
+      // K5c (revisión): un import de tier 1 que se te presenta vuelve a cero la presión de tier 2, lo aceptes o no.
+      state: conImportDeTier1Presentado(state, evento),
       logs: [],
       decision: decisionDesdeEvento(state, evento, { franja: 'normal', slot })
     };
