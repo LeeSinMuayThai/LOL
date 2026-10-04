@@ -34,6 +34,80 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-04 — FASE K, K4c: el ritmo calibrado y el bloque B cerrado (PLAN.md §K4c)
+
+**Qué es.** K4c calibró el ritmo (bloque B, D-B: te frena solo lo importante) sobre la estructura final, con el
+Mundial de K5 ya puesto. Rama `k4cal-instrumento`, mergeada en `fase-9r-que-el-juego-se-juegue`. Fue más que
+constantes. Medir la palanca de cada parada en su horizonte mostró paradas que no pesaban, y se hicieron pesar antes de
+fijar números (regla 2).
+
+**El instrumento** (paso 1, `a7f6eed`, `c55f381`; K4c-H `df0a8ef`..`8735166`).
+- `agencia.js` mide la palanca de cada parada en su horizonte: la serie, el partido, el split o la carrera.
+- La palanca de serie y de partido se mide por la p declarada, con la Δp entre la mejor y la peor opción y un
+  umbral de 5 pp.
+- `criterio` acepta un import por el calibre de la liga, no por la dificultad.
+
+**Lo que se hizo pesar en vez de recortar.**
+- **El feed** (K4c-F, `c632ca3`..`3cb88a4`). Las líneas de efecto, el meta y las series en las que no frenás viajan
+  adjuntas a su beat: un renglón por parche y uno por serie. Nada se borra del estado. El tiempo-máquina bajó de 7,6
+  a 6,5 min.
+- **La prueba decide el contrato** (K4c-S, `7bc2186`). P(firmar) sale del resultado del minijuego, con 0,65 / 0,8 /
+  0,95. Si la prueba falla queda el respaldo.
+- **La fecha marcada es una decisión** (K4c-M, `f172f81`). 49 eventos pasan a ser intercambios: la mejor y la peor
+  opción difieren en el partido y ninguna domina.
+- **El plan de serie ×3.** La Δp mediana del plan llega a ~6,5 pp. El Bo5 del bloque A se mide con plan neutro.
+- **El cierre de año** (`1ff2db4`). Diez eventos con tres opciones de intercambio: el juego, la cabeza y la familia,
+  o la marca.
+- **El plan anual** (decisión del usuario; `7c440a9`..`c6f098f`). La práctica se decide en el cierre de año, en una
+  sola parada por año con más peso. Cada split entrena según ese plan y la pretemporada queda para el mercado.
+
+**La medición final del supervisor** (`c6f098f`; `simulate.js 400 60 todas`, de a una corrida; 0 crashes):
+
+| | `criterio` | `azar` | `equilibrado` | `malas` |
+|---|---|---|---|---|
+| Interrupciones (mediana · p90) | **84** · 100 | 72,5 · 97 | 78 · 100 | 15 · 49 |
+| Playoffs / internacional (p90) | 5 / 5 | 5 / 5 | 5 / 5 | 4 / 5 |
+| Minijuegos (mediana) | 4 | 4 | 4 | 1 |
+| Tiempo-máquina (mediana) | 5,9 min | 4,7 | 5,2 | 0,5 |
+| Llega a pro | 75,3% | 72,5% | 72,3% | 48,0% |
+
+La palanca en su horizonte pasó de 22,4% a **48,8%** (`agencia.js` 24 × 30, sobre `6ce46a0`, antes del plan anual;
+se vuelve a medir en K5c). Contra la carrera, 10,3%.
+
+**El paso 3b** (`01bd18c`..`92eb777`).
+- Las metas de §K.3c pasan a checks duros, fijadas en lo medido: interrupciones ≤ 90, split ≤ 2 / ≤ 5, minijuegos
+  3-8, tiempo-máquina ≤ 6,5 min, Δp de plan ≥ 5 pp y bifurcaciones 5-9. Cada una lleva su línea de "reemplaza a…"
+  (PLAN §K4c) y en las corridas del worker cayó en rojo con sus mutantes.
+- El bloque B de `bandasPendientes.js` queda vacío y cerrado.
+- Guardado `VERSION` 11, con `migrarDe10` (el plan anual del perfil). `FORMAS_CONOCIDAS[10]` vuelve a `7128c450fa6c`,
+  la de main.
+- Se borran las bandas de J5 y J6.
+
+**Las revisiones** (motor y navegador, las dos "Requiere corrección"). Navegador con cero errores de consola, y los
+guardados de la 10 de main cargan.
+- **Motor** (`4732e1b`..`b248bcc`):
+  - el cierre amateur prometía un plan que no se aplicaba, y ahora no fija ni muestra plan;
+  - "probaste y no alcanzó" es su propio caso y no suma al silencio del mercado: antes llegaba a un falso "el
+    mercado te venía diciendo que no";
+  - el check del respaldo recalcula la regla a mano;
+  - los guardados de la 10 parados en la prueba o en un cierre se migran.
+- **Textos** (`6cadb0a`..`addc884`): el `{jungla}` sin resolver, "CAMPEONES DEL MUNDO" con un papel de cuartos, el
+  primer balance repetido, "~+0" con la stat topeada, el resumen del split y las colas de consuelo repetidas.
+- **Del supervisor:** el titular del año pesa el papel internacional por hasta dónde llegaste (final 90, semis 82,
+  cuartos 78, contra 80 de una liga).
+
+**La validación** (`b33ff0c`: 4 FAIL de checks que asumían algo que K4c cambió; ninguno era un bug del juego).
+- Se arreglaron en `c171155`..`a37cb56`.
+- 9Mf re-basea su piso de 0,24 a 0,16, porque hay menos carreras pro y más cortas. Lo vuelve a mirar K5c.
+- La validación de `a37cb56` dejó dos FAIL de borde por los arreglos de la revisión. `2ff21e3` los cierra:
+  - la proyección de jerarquía recentra `derivaPrimerSplit` de 3 a 6, que es cosmético: pasa de un sesgo de 3,3 a
+    +0,3, con la huella idéntica. El mutante en 10 da −3,7, FAIL;
+  - el piso del boost del pool baja de 0,40 a 0,35 × el rango (regla 17).
+
+**Final** (`2ff21e3`; validación completa del supervisor): **423 OK + 1 PENDIENTE C (r(potencial, duración), K5c), 0 FAIL**. `simulate.js 1000`: **0 crashes**.
+`dist/`: **2125 KB**, contra un techo de 2200 KB. `VERSION_JUEGO` 'K4c', `HUELLA_JUEGO` 2001539523, guardado
+`VERSION` 11 (`FORMAS_CONOCIDAS[11]` `13dd79e086e2`).
+
 ### 2026-10-03 — FASE K, K4 + K4-C2 + K5: el ritmo y el mundo, en estructura (PLAN.md §K4, §K5)
 
 **Qué entra.** La estructura de los bloques B (el ritmo) y C (el mundo). Siguiendo el orden de `98034ff`, K5 se

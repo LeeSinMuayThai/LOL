@@ -170,6 +170,8 @@ export function bandaDeNota(nota) {
 
 const PUNTAJES = {
   titulo_internacional: 100,
+  // El techo del papel internacional; el puntaje real depende de hasta dónde llegaste (`PUNTAJES_PAPEL_INTERNACIONAL`).
+  papel_internacional: 90,
   titulo_liga: 80,
   ausencia: 75,
   main_muerto: 70,
@@ -182,11 +184,31 @@ const PUNTAJES = {
   estable: 10
 };
 
+// K4c (revisión): el titular dice lo que pasó. Campeón del mundo solo si ganaste; cuartos, semis y final (y el "buen
+// papel" de los registros viejos, que no guardó hasta dónde llegaste) son su propio tipo, con su propia racha: no es un
+// título del mundo que se repite.
+// K4c (revisión, supervisor): el papel internacional pesa según hasta dónde llegaste. Una final del Mundial titula por encima
+// de un título de liga (80); unos cuartos, por debajo: ganar tu liga es más historia que caer en cuartos.
+const PUNTAJES_PAPEL_INTERNACIONAL = { final: 90, semis: 82, cuartos: 78, buen_papel: 78 };
+
+const TITULARES_DE_PAPEL_INTERNACIONAL = {
+  cuartos: 'CUARTOS DE FINAL EN WORLDS',
+  semis: 'SEMIFINALISTAS EN WORLDS',
+  final: 'SUBCAMPEONES DEL MUNDO',
+  buen_papel: 'BUEN PAPEL EN WORLDS'
+};
+
 function candidatoTituloInternacional(state, ctx) {
-  if (!esBuenPapel(ctx.internacionalEsteAnio)) {
+  if (ctx.internacionalEsteAnio?.resultado !== 'campeon') {
     return null;
   }
   return { titular: 'CAMPEONES DEL MUNDO', bajada: null };
+}
+
+function candidatoPapelInternacional(state, ctx) {
+  const resultado = ctx.internacionalEsteAnio?.resultado;
+  const titular = TITULARES_DE_PAPEL_INTERNACIONAL[resultado];
+  return titular ? { titular, bajada: null, puntaje: PUNTAJES_PAPEL_INTERNACIONAL[resultado] } : null;
 }
 
 function candidatoTituloLiga(state, ctx) {
@@ -279,6 +301,7 @@ function candidatoEliminacion(state, ctx) {
 // de la carrera, `main_muerto` puede volver a salir cualquier año.
 const CANDIDATOS = [
   ['titulo_internacional', candidatoTituloInternacional],
+  ['papel_internacional', candidatoPapelInternacional],
   ['titulo_liga', candidatoTituloLiga],
   ['ausencia', candidatoAusencia],
   ['debut', candidatoDebut],
@@ -321,10 +344,12 @@ export function titularDelAnio(state) {
       continue;
     }
     const candidato = fn(state, ctx);
-    if (candidato) {
+    // Un candidato puede declarar un puntaje propio por debajo del techo de su tipo (el papel internacional).
+    const puntajeCandidato = candidato?.puntaje ?? PUNTAJES[candidatoTipo];
+    if (candidato && puntajeCandidato > puntaje) {
       tipoBase = candidatoTipo;
-      elegido = candidato;
-      puntaje = PUNTAJES[candidatoTipo];
+      elegido = { titular: candidato.titular, bajada: candidato.bajada };
+      puntaje = puntajeCandidato;
     }
   }
 

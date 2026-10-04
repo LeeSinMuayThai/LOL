@@ -18,7 +18,7 @@
 // se marca `cerrado: true` en el commit de su calibración, que es el que vacía sus entradas.
 export const BLOQUES_DE_CORRIMIENTO = {
   A: { nombre: 'el nivel', subfases: ['K2', 'K3'], cierraCon: 'K3c', cerrado: true },
-  B: { nombre: 'el ritmo', subfases: ['K4'], cierraCon: 'K4c', cerrado: false },
+  B: { nombre: 'el ritmo', subfases: ['K4'], cierraCon: 'K4c', cerrado: true },
   C: { nombre: 'el mundo', subfases: ['K5'], cierraCon: 'K5c', cerrado: false }
 };
 
@@ -38,17 +38,15 @@ export const BANDAS_PENDIENTES = [
   // K4 (integración) había sacado de banda por arriba el Bo5 del favorito claro, los dos checks (jugador 86,6%, conjunto
   // 86,4%). Con K5 integrado volvieron a su banda (criterio 800 × 60: jugador 84%, rival 80,1%, conjunto 82,9%) y sus dos
   // entradas se borraron (custodio 1).
-  // K4 (revisión 2): el reparto del banco de mecánicas es una banda del ritmo. Con K4 los minijuegos de mapa salen solo
-  // en el clímax (el mapa decisivo) y la prensa tras una final o un escándalo, así que la mezcla se corrió entera.
-  {
-    check: 'El banco de mecánicas se reparte: ninguna se lleva la carrera (9R4c)',
-    bloque: 'B',
-    medido: '51% rueda_de_prensa con K5 integrado (300 carreras × 60 splits; con K4, 48%: 1384 de 2874); la_prueba 20% en K4; last_hit, la_vision y el_kite (solo mapa_cerrado) no salen nunca',
-    banda: '≤ 35%',
-    commit: 'K4',
-    rebasea: 'K4c',
-    porque: 'K4 dejó los minijuegos solo en el clímax y la prensa tras finales/escándalos; K4c re-balancea el banco (incluidas las tres mecánicas que solo tenían momento mapa_cerrado)'
-  },
+  // K4 (revisión 2) había sacado de banda el reparto del banco de mecánicas (9R4c): con K4 los minijuegos de mapa salen solo en el
+  // clímax y la prensa tras una final o un escándalo, así que la mezcla se corrió entera (51% rueda_de_prensa con K5 integrado). K4c
+  // (paso 3b) cerró el bloque B: con las constantes del ritmo (la prensa solo tras un escándalo, las tres mecánicas que solo tenían
+  // `mapa_cerrado` suman `mapa_decisivo`, la prueba del mercado sin `la_prueba` en el banco) el check volvió a su banda (la prensa
+  // en 23%) y su entrada se borró (custodio 1).
+  // K4c-S había sacado de banda por abajo "K4-C2 las bifurcaciones frenan entre 4,5 y 7,5" (4,15 contra [4,5, 7,5], seeds 4400-4439:
+  // la prueba que decide el contrato posterga firmas y recorta splits pro). Con las constantes de K4c (paso 3a: umbral de sin-nada-en-
+  // juego 6, plan ×3, prensa solo tras un escándalo) el check volvió a su banda con las mismas 40 carreras y la entrada se borró
+  // (custodio 1). Medido con las mismas seeds: ver la salida del check.
   // K5 (integración) había sacado de banda el check de D78 de K5-B (LCK 0 splits en 60 carreras coreanas con criterio).
   // La revisión de K5 cambió el calibre de liga a un cuantil bajo por org y congeló los asientos ofrecibles post-mercado:
   // LCK 0 -> 12 splits (1 carrera), LPL 6 -> 33 (4 carreras), 60 × 60, región elegida. La entrada se borró (custodio 1).

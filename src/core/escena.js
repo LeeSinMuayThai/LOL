@@ -30,6 +30,22 @@ export function todosLosOrgsTier1(state) {
     .flatMap((liga) => liga.orgs.map((org) => ({ ...org, ligaId: liga.id })));
 }
 
+// K4c-F (el feed): ¿esta final te toca? Sí si es tu liga, si la jugó una org por la que pasaste (o la tuya), o la
+// org de un rival: el archirrival o uno de tu generación (`rivalDeGeneracion` en su plantel). Lo que no te toca no
+// se borra: viaja adjunto al beat anterior. Tu liga hoy no llega acá (`ligasParaDigest` la saca: esa la contás vos),
+// pero el predicado la nombra igual para que no dependa de ese filtro.
+export function finalTeToca(state, liga, campeon, subcampeon) {
+  if (liga.id === state.career.liga) {
+    return true;
+  }
+  const propias = new Set([...(state.career.orgs ?? []), state.career.currentOrg].filter(Boolean));
+  const archirrival = state.mundo.archirrival;
+  const deUnRival = (org) => org.nombre === archirrival?.org
+    || Object.values(state.mundo.planteles?.[org.nombre] ?? {})
+      .some((npc) => npc?.rivalDeGeneracion === true || (archirrival && npc?.handle === archirrival.handle));
+  return [campeon, subcampeon].some((org) => propias.has(org.nombre) || deUnRival(org));
+}
+
 export function lineaDeLiga(liga, campeon, subcampeon, marcador) {
   return `${nombreVisibleDeLiga(liga.id)}: ${campeon.nombre} campeón (${marcador} a ${subcampeon.nombre}).`;
 }

@@ -1,14 +1,13 @@
 import { gauss } from '../core/rng.js';
-import { crearLog } from '../core/log.js';
-import { clamp, clampStat } from '../core/numeros.js';
-import { campeonesAprendibles, pulirCampeon, aprenderCampeones } from '../core/pool.js';
+import { crearLog, adjuntar } from '../core/log.js';
+import { clampStat } from '../core/numeros.js';
+import { pulirCampeon, aprenderCampeones } from '../core/pool.js';
 import { recuperarPorDescanso } from '../core/barras.js';
 import { conMarcasDeRutina } from '../core/curvas.js';
 import { BALANCE } from '../data/balance.js';
-import { ofrecerRutinas, rutinaPorId, elegirRutinaAutomatica } from '../core/rutinas.js';
-import { opcionDesdeRutina, descripcionDeSorteo, EJE_OFFSEASON } from '../core/rareza.js';
+import { rutinaPorId, planPorId, PLAN_POR_DEFECTO } from '../core/rutinas.js';
+import { opcionDesdeRutina } from '../core/rareza.js';
 import { statsDeCurva, conTechoDeLesion } from '../core/curvas.js';
-import { calcularContexto } from '../core/contexto.js';
 
 export const id = 'practica';
 
@@ -16,6 +15,12 @@ export const id = 'practica';
 // la atencion son bloques de tiempo; aca son puntos de preparacion entre
 // splits. Es tambien la unica forma de recuperar mentalidad una vez que ya no
 // administras tus propias horas de sueño.
+//
+// K4c (plan anual, decisión del usuario 2026-10-03): la práctica ya no frena. El cierre de año fija el plan del año
+// siguiente (`player.planAnual`, uno de `data/rutinas/planes.json`: el juego, la cabeza o la marca) y cada split pro
+// entrena solo según ese plan: los `BALANCE.practica.puntos` del año, repartidos entre los
+// `BALANCE.edad.splitsPorEdad` splits (`tramoDelPlan`). El total del año es el mismo reparto que antes elegía el
+// jugador en la pretemporada; lo que cambia es quién lo decide (el cierre) y cuándo se aplica (de a tramos).
 
 const DESTINOS = [
   { id: 'pulir', label: 'Pulir tu campeón principal' },
@@ -27,17 +32,9 @@ const DESTINOS = [
 
 const IDS_DESTINO = DESTINOS.map((destino) => destino.id);
 
-// K4-D: el receso se juega en la pretemporada, en la misma parada que el mercado (T9). Antes la práctica frenaba al
-// final del último split del año; ahora lo hace al empezar el siguiente. `splitCount` no cambia entre uno y otro
-// (lo sube `atributos`, después), así que es el mismo año de cuenta.
-export function esPreparacion(state) {
-  return state.phase === 'profesional' && calcularContexto(state).ventana === 'pretemporada';
-}
-
-// La preparación de este año ya se resolvió (en la parada del mercado o en la propia). El valor es el `splitCount`
-// de la pretemporada, así que no hay que apagarlo después: el año que viene es otro número.
-export function preparacionResuelta(state) {
-  return state.flags.preparacionDeSplit === state.player.splitCount;
+// El plan vigente. Un guardado anterior al plan anual no trae el campo: entrena con el de por defecto.
+export function planVigente(state) {
+  return planPorId(state.player.planAnual) ?? planPorId(PLAN_POR_DEFECTO);
 }
 
 function normalizar(respuesta, puntos) {
@@ -107,59 +104,91 @@ export function cartaDeRutina(state, rutina) {
   };
 }
 
-// K4-D: lo que se ofrece como preparación del año, o `null` si el catálogo no trae nada para este contexto. Consume
-// el `rng` del sorteo de rutinas (igual que antes el sistema solo). La usa la parada del mercado y la parada propia.
-export function ofrecerPreparacion(state, rng) {
-  const rutinas = ofrecerRutinas(state, rng, { pool: 'offseason' });
-  if (rutinas.length === 0) {
+// K4c (plan anual): el tramo de un split. El reparto del año del plan (normalizado a `BALANCE.practica.puntos`) se
+// despliega en una secuencia de puntos, de a uno por destino en ronda (el destino con más puntos primero; en empate, el
+// orden de `DESTINOS`), y el split en la posición `posicion` del año (0 = la pretemporada) toma su parte de esa
+// secuencia. La suma de los tramos de un año es exactamente el reparto del plan. Puro, sin rng.
+export function tramoDelPlan(plan, posicion) {
+  const puntos = BALANCE.practica.puntos;
+  const splits = BALANCE.edad.splitsPorEdad;
+  const anual = repartoDeRutina(plan);
+  const restantes = { ...anual };
+  const orden = [...IDS_DESTINO].sort((a, b) => anual[b] - anual[a]);
+  const secuencia = [];
+  while (secuencia.length < puntos) {
+    for (const destino of orden) {
+      if (restantes[destino] > 0) {
+        secuencia.push(destino);
+        restantes[destino] -= 1;
+      }
+    }
+  }
+  const tramo = Object.fromEntries(IDS_DESTINO.map((destino) => [destino, 0]));
+  for (const destino of secuencia.slice(Math.round((posicion * puntos) / splits), Math.round(((posicion + 1) * puntos) / splits))) {
+    tramo[destino] += 1;
+  }
+  return tramo;
+}
+
+// K4c (plan anual): lo que la carta del cierre dice de un plan, en una línea (regla 15: sale de `cartaDeRutina`, la
+// misma cuenta que el motor aplica). Lo pinta `components/decision.js` debajo de cada opción del cierre.
+export function lineaDePlan(state, planId) {
+  const plan = planPorId(planId);
+  if (!plan) {
     return null;
   }
-  const aprendibles = campeonesAprendibles(state).length;
-  const hayCupo = state.player.championPool.length < BALANCE.practica.poolMaximo && aprendibles > 0;
-  const extra = 'Lo que hagas en el receso es lo que llevás al año que viene.'
-    + (hayCupo ? '' : ' Tu pool ya está lleno: no entra ningún campeón nuevo.');
-
-  return {
-    descripcion: descripcionDeSorteo(rutinas.length, EJE_OFFSEASON, extra),
-    rutinas,
-    cartas: rutinas.map((rutina) => cartaDeRutina(state, rutina)),
-    elegida: null
-  };
+  const carta = cartaDeRutina(state, plan);
+  // K4c (revisión): una stat que ya está en su tope (o a menos de medio punto) no promete "~+0": dice que no hay más para sumar.
+  const partes = carta.efectos.map((efecto) => (Math.round(efecto.esperado) >= 1 ? `${efecto.etiqueta} ~+${Math.round(efecto.esperado)}` : `${efecto.etiqueta} ya en su tope`));
+  if (carta.pulir > 0) partes.push('pulir tu main');
+  if (carta.nuevo > 0) partes.push(carta.nuevo > 1 ? `${carta.nuevo} campeones nuevos` : 'un campeón nuevo');
+  return { id: plan.id, titulo: plan.titulo, texto: `Plan del año que viene: ${plan.titulo} (${partes.join(', ')}).` };
 }
 
-function decisionDePractica(preparacion) {
-  return {
-    tipo: 'opciones',
-    presentacion: 'pretemporada',
-    titulo: 'La pretemporada',
-    descripcion: preparacion.descripcion,
-    opciones: preparacion.cartas.map(({ id, label, descripcion, rareza }) => ({ id, label, descripcion, rareza })),
-    datos: { motivo: 'practica', rutinas: preparacion.rutinas, preparacion }
-  };
-}
-
-// K4-D: si el mercado ya paró este año, la preparación vino adentro de esa decisión y acá no hay nada que preguntar.
-// Si no (tier 3, contrato firme, sin ofertas, libre), la pretemporada frena una sola vez, solo con la preparación.
+// K4c (plan anual): cada split pro entrena solo, con el tramo del plan vigente. No frena nunca: la pretemporada queda
+// para el mercado. La línea es `adjunto` (legible, sin beat propio): es el resumen del split el que la dice.
 export function aplicar(state, rng) {
-  if (!esPreparacion(state) || preparacionResuelta(state)) {
+  if (state.phase !== 'profesional') {
     return { state, logs: [] };
   }
-  const preparacion = ofrecerPreparacion(state, rng);
-  if (!preparacion) {
-    return { state, logs: [] };
-  }
-  return { state, logs: [], decision: decisionDePractica(preparacion) };
+  const plan = planVigente(state);
+  const posicion = state.player.splitCount % BALANCE.edad.splitsPorEdad;
+  const hecho = entrenar(state, tramoDelPlan(plan, posicion), plan, rng);
+  const detalle = hecho.partes.length > 0 ? hecho.partes.join(', ') : 'nada que se note';
+  // K4c (revisión): el renglón dice que es un tramo del plan del año, no el plan entero ("tramo 1 de 3").
+  const tramo = `tramo ${posicion + 1} de ${BALANCE.edad.splitsPorEdad}`;
+  return {
+    state: hecho.state,
+    logs: [adjuntar(crearLog('practica', `Entrenaste según el plan del año: ${plan.titulo} (${tramo}: ${detalle}).`))]
+  };
 }
 
+// Un guardado de VERSION 10 puede estar parado en la pausa de la pretemporada que el plan anual quitó (`core/guardado.js`,
+// `migrarDe10`, la reemplaza por un solo botón). Seguir cierra esa pausa entrenando el tramo de este split, que es lo que
+// la pausa dejaba pendiente. `aplicar` ya no devuelve nunca una decisión: esto solo contesta la que traía el guardado viejo.
 export function resolver(state, decision, respuesta, rng) {
-  return resolverPreparacion(state, decision.datos.rutinas, respuesta.opcionId, rng);
+  return aplicar(state, rng);
 }
 
-// La rutina elegida, aplicada. La llaman las dos paradas (la del mercado y la propia) y deja marcado el año.
+export function resolverAuto() {
+  return { opcionId: 'seguir' };
+}
+
+// El reparto anual entero de una rutina (o de un plan), de una vez: la vara de la carta (regla 15) y de los checks de K3.
+// El motor aplica el plan de a tramos con `entrenar`; sin ruido, la suma de los tramos es esto mismo.
 export function resolverPreparacion(state, rutinas, rutinaId, rng) {
-  const p = BALANCE.practica;
   const rutina = rutinaPorId(rutinas, rutinaId);
-  const reparto = repartoDeRutina(rutina);
+  const hecho = entrenar(state, repartoDeRutina(rutina), rutina, rng);
+  return {
+    state: hecho.state,
+    logs: [crearLog('practica', `Offseason: ${hecho.partes.length > 0 ? hecho.partes.join(', ') : 'no aprovechaste el receso'}.`, { tecnico: true })]
+  };
+}
+
+// Un reparto de puntos ya entero (sin normalizar), aplicado. `rutina` es la rutina o el plan: su título es el nombre
+// visible de la marca que deja.
+export function entrenar(state, reparto, rutina, rng) {
+  const p = BALANCE.practica;
   const partes = [];
 
   const pulido = pulirCampeon(state.player.championPool, reparto.pulir, rng);
@@ -202,38 +231,8 @@ export function resolverPreparacion(state, rutinas, rutinaId, rng) {
 
   // K3-B 2b: la práctica también deja marca. Una fracción de lo que la rutina movió DE VERDAD sobre cada stat de
   // curva (ya con el clamp y el techo de lesión; `conPermanencia` ignora los que no son de curva) va al bonus
-  // permanente, con la marca a nombre de la rutina. Lo que un techo de lesión recorta no es una pérdida de la
-  // práctica: solo cuentan las ganancias.
+  // permanente, con la marca a nombre de la rutina (o del plan). Lo que un techo de lesión recorta no es una pérdida
+  // de la práctica: solo cuentan las ganancias.
   const conStats = { ...state, player: { ...state.player, championPool: aprendido.pool, stats } };
-  const marcado = conMarcasDeRutina(conStats, state.player.stats, rutina.titulo);
-
-  return {
-    state: { ...marcado, flags: { ...marcado.flags, preparacionDeSplit: marcado.player.splitCount } },
-    logs: [crearLog(
-      'practica',
-      `Offseason: ${partes.length > 0 ? partes.join(', ') : 'no aprovechaste el receso'}.`,
-      { tecnico: true }
-    )]
-  };
-}
-
-export function resolverAuto(state, decision, rng) {
-  return { opcionId: elegirRutinaAuto(state, decision.datos.rutinas, rng).id };
-}
-
-// La rutina que elige el jugador automático (el mismo criterio de siempre); la usa también la parada del mercado.
-export function elegirRutinaAuto(state, rutinas, rng) {
-  const p = BALANCE.practica;
-  const urgenciaMental = clamp((p.autoMentalidadObjetivo - state.player.stats.mentalidad) / p.autoMentalidadObjetivo, 0, 1);
-  const hayCupo = state.player.championPool.length < p.poolMaximo && campeonesAprendibles(state).length > 0;
-
-  const pesos = {
-    pulir: p.autoPesoPulir,
-    nuevo: hayCupo ? p.autoPesoNuevo : 0.0001,
-    mecanica: p.autoPesoMecanica,
-    macro: p.autoPesoMacro,
-    descansar: p.autoPesoDescanso + urgenciaMental * p.autoReaccionMentalidad
-  };
-
-  return elegirRutinaAutomatica(rutinas, pesos, rng);
+  return { state: conMarcasDeRutina(conStats, state.player.stats, rutina.titulo), partes };
 }

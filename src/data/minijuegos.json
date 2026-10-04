@@ -177,30 +177,31 @@
       "Diez minutos para mostrar algo"
     ],
     "descripciones": [
-      "Un tryout con un equipo de tier 3: unos minutos para mostrar que valés el contrato mínimo.",
+      "Un tryout con el club: unos minutos para mostrar que valés el contrato.",
       "El coach mira la pantalla en silencio. Vos jugás.",
       "Es una prueba corta y nadie te va a explicar qué están midiendo."
     ],
-    "apuesta": "Lo que hagas acá decide cuánto crédito traés el primer día en el equipo.",
+    "apuesta": "Lo que hagas acá decide si te firman y, si te firman, cuánto crédito traés el primer día en el equipo.",
     "veredictos": {
       "bien": [
-        "Impresionaste en el tryout: entrás con crédito.",
-        "Se te quedaron mirando: entrás con la vara alta."
+        "Impresionaste en el tryout: el contrato se ve cerca y vas a entrar con crédito.",
+        "Se te quedaron mirando: el contrato casi es tuyo y entrás con la vara alta."
       ],
       "parejo": [
-        "El tryout fue correcto, sin más.",
-        "Cumplís, y con eso alcanza para firmar."
+        "El tryout fue correcto, sin más: el contrato puede ser tuyo o no.",
+        "Cumplís, pero con esto el contrato todavía se puede ir."
       ],
       "mal": [
-        "El tryout no terminó de convencer.",
-        "Salió flojo: entrás debiendo algo."
+        "El tryout no terminó de convencer: el contrato se te puede escapar.",
+        "Salió flojo: si te firman, entrás debiendo algo."
       ]
     }
   },
   {
     "id": "last_hit",
     "momentos": [
-      "mapa_cerrado"
+      "mapa_cerrado",
+      "mapa_decisivo"
     ],
     "roles": [
       "top",
@@ -353,7 +354,8 @@
   {
     "id": "la_vision",
     "momentos": [
-      "mapa_cerrado"
+      "mapa_cerrado",
+      "mapa_decisivo"
     ],
     "roles": [
       "support",
@@ -405,7 +407,8 @@
   {
     "id": "el_kite",
     "momentos": [
-      "mapa_cerrado"
+      "mapa_cerrado",
+      "mapa_decisivo"
     ],
     "roles": [
       "adc"

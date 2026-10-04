@@ -24,6 +24,8 @@ import {
 import { VERSION_JUEGO } from '../data/version.js';
 import { iniciarDesafio } from '../core/desafio.js';
 import { previaDeDecision } from '../core/previaDePartido.js';
+import { probabilidadDeFirmarTrasPrueba } from '../core/serie.js';
+import { porcentaje } from '../core/formato.js';
 
 export function iniciar() {
   const setupPanel = document.getElementById('setup');
@@ -64,8 +66,6 @@ export function iniciar() {
   const mercadoMundo = document.getElementById('mercadoMundo');
   const mercadoRepresentante = document.getElementById('mercadoRepresentante');
   const mercadoEsperar = document.getElementById('mercadoEsperar');
-  const mercadoCol = document.getElementById('mercadoCol');
-  const mercadoPrep = document.getElementById('mercadoPrep');
   const tarjetaPanel = document.getElementById('tarjeta');
   const seedInput = document.getElementById('seedInput');
   const continuarBtn = document.getElementById('continuarBtn');
@@ -106,7 +106,7 @@ export function iniciar() {
   // la pantalla de ofertas).
   const carreraElements = { fichaContainer, logList };
   const decisionElements = { decisionPanel, decisionTitle, decisionDesc, decisionOptions };
-  const mercadoElements = { mercadoPanel, mercadoTitle, mercadoDesc, mercadoVos, mercadoGrid, mercadoMundo, mercadoRepresentante, mercadoEsperar, mercadoCol, mercadoPrep };
+  const mercadoElements = { mercadoPanel, mercadoTitle, mercadoDesc, mercadoVos, mercadoGrid, mercadoMundo, mercadoRepresentante, mercadoEsperar };
 
   let modulos = null;
   let ui = null;
@@ -139,7 +139,7 @@ export function iniciar() {
       const [
         { mulberry32 }, { createInitialState, regionesDeOrigen }, pipeline, { BALANCE },
         rolesModulo, ranked, { describirContexto }, formato, campeonesModulo, render,
-        reproductorModulo, sonidoModulo, almacenamientoModulo, perfilModulo
+        reproductorModulo, sonidoModulo, almacenamientoModulo, perfilModulo, { textoDePlanInicial }
       ] = await Promise.all([
         import('../core/rng.js'),
         import('../core/state.js'),
@@ -154,7 +154,8 @@ export function iniciar() {
         import('./reproductor.js'),
         import('./sonido.js'),
         import('./almacenamiento.js'),
-        import('../core/perfil.js')
+        import('../core/perfil.js'),
+        import('../core/rutinas.js')
       ]);
       modulos = {
         mulberry32, createInitialState, pipeline, BALANCE, formato,
@@ -164,6 +165,8 @@ export function iniciar() {
         CAMPEONES: campeonesModulo.default,
         IDS_PERFIL: perfilModulo.IDS_PERFIL, nombreDePerfil: perfilModulo.nombreDePerfil,
         descripcionDePerfil: perfilModulo.descripcionDePerfil,
+        // K4c (plan anual): la línea del plan de práctica del primer año (sale del perfil).
+        textoDePlanInicial,
         // K5-B: las regiones elegibles con su línea de dificultad (sale de `leagues.json`).
         REGIONES_DE_ORIGEN: regionesDeOrigen()
       };
@@ -236,6 +239,8 @@ export function iniciar() {
       // K2d: la p final del mapa, ya corrida por el minijuego: la que se tira.
       const previaFinal = pintarPrevia(decision, estadoActual, { resultadoMinijuego: resultado, charla });
       const v = veredictoDeMinijuego(decision.datos.minijuego, resultado, estadoActual);
+      // K4c-S (regla 15): la prueba decide el contrato, y la pantalla dice con qué probabilidad.
+      const pFirma = decision.datos.momento === 'tryout' ? probabilidadDeFirmarTrasPrueba(resultado) : null;
       if (resultado >= 0.67) marcarHit(minijuegoWidget);
       else if (resultado <= 0.33) marcarMiss(minijuegoWidget);
       minijuegoWidget.innerHTML =
@@ -244,6 +249,7 @@ export function iniciar() {
         + '<div class="minijuego-resultado-detalle">' + v.detalle + '</div>'
         // K2d: la misma p que muestra la tarjeta de la previa (que queda arriba del widget).
         + (previaFinal ? '<div class="minijuego-resultado-p">Con esto: ' + previaFinal.porcentaje + '% de ganar</div>' : '')
+        + (pFirma !== null ? '<div class="minijuego-resultado-p">Con esto: ' + porcentaje(pFirma) + ' de que te firmen</div>' : '')
         + '</div>';
       ui.renderLowerThird(summary, metaPill, estadoActual, { modo: 'minijuego' });
       setTimeout(() => responder(decision.datos.charla?.disponible ? { resultado, charla } : { resultado }), 1600);
@@ -275,19 +281,15 @@ export function iniciar() {
 
     minijuegoPanel.hidden = true;
 
-    // K4-D: la pretemporada es una sola parada. Con mercado ('mercado') o solo con la preparación ('pretemporada'), va a
-    // la misma pantalla; `extra` es la rutina elegida, que viaja con cada respuesta.
-    if (decision.presentacion === 'mercado' || decision.presentacion === 'pretemporada') {
+    if (decision.presentacion === 'mercado') {
       decisionPanel.hidden = true;
       ui.mostrarMercadoEnPantalla(
         mercadoElements, decision, responder,
-        (extra) => responder({ representante: true, ...extra }),
+        () => responder({ representante: true }),
         responder,
-        (extra) => responder({ negociar: 'esperar', ...extra })
+        () => responder({ negociar: 'esperar' })
       );
-      ui.renderLowerThird(summary, metaPill, estadoActual, {
-        modo: decision.presentacion === 'pretemporada' ? 'decision' : 'mercado', decision
-      });
+      ui.renderLowerThird(summary, metaPill, estadoActual, { modo: 'mercado', decision });
       return;
     }
 

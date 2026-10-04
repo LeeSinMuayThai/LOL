@@ -2,9 +2,9 @@ import { campeonesMuertos } from '../core/ajusteMeta.js';
 import { BALANCE } from '../data/balance.js';
 import { gauss, chance, pick } from '../core/rng.js';
 import { clamp } from '../core/numeros.js';
-import { tierListDeRol, saltosDeTierPropios } from '../core/regimen.js';
+import { tierListDeRol, saltosDeTierPropios, parcheMueveTuMain } from '../core/regimen.js';
 import { campeonesPorDebutar } from '../core/pool.js';
-import { crearLog } from '../core/log.js';
+import { crearLog, adjuntar } from '../core/log.js';
 import { ARQUETIPOS } from '../data/meta-tags.js';
 import METAS from '../data/metas.json' with { type: 'json' };
 
@@ -98,7 +98,10 @@ export function aplicar(state, rng) {
   const tierListNueva = tierListDeRol(conPesos);
   const saltos = saltosDeTierPropios(state.meta.tierList, tierListNueva, state.player.championPool);
 
-  const logs = [crearLog('meta', textoDelParche(patch, regimen, tipo, saltos))];
+  // K4c-S/K4c: un renglón por parche, y solo abre su propio beat si te saca o te devuelve el main (pasa de S/A a B/C o
+  // al revés). Si no, viaja adentro del beat anterior (`adjunto`): sigue en `state.logs`, no cuesta un beat.
+  const parche = crearLog('meta', textoDelParche(patch, regimen, tipo, saltos));
+  const logs = [parcheMueveTuMain(state.meta.tierList, tierListNueva, state.player.championPool ?? []) ? parche : adjuntar(parche)];
 
   // J4 (K4-C): si tu main estaba en S/A y este parche lo tira a B/C, queda estampado el split de la caída —
   // `core/contexto.js` prende `main_muerto` desde acá por `contexto.ventanaMainMuerto` splits. Mientras siga
@@ -118,7 +121,8 @@ export function aplicar(state, rng) {
 
   const { state: nextState, log } = debutarCampeon(conTierList, rng);
   if (log) {
-    logs.push(log);
+    // K4c-F: un renglón por parche — el campeón que sale va adentro del beat del parche (sigue en `state.logs`).
+    logs.push(adjuntar(log));
   }
 
   return { state: nextState, logs };

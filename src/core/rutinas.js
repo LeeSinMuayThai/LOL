@@ -3,7 +3,7 @@ import { calcularContexto, coincideContexto } from './contexto.js';
 import { cumpleCondiciones } from './selectors.js';
 import { BALANCE } from '../data/balance.js';
 import RUTINAS_AMATEUR from '../data/rutinas/amateur.json' with { type: 'json' };
-import RUTINAS_OFFSEASON from '../data/rutinas/offseason.json' with { type: 'json' };
+import PLANES from '../data/rutinas/planes.json' with { type: 'json' };
 
 // Una rutina es un reparto de recursos con texto narrativo encima.
 //
@@ -14,9 +14,35 @@ import RUTINAS_OFFSEASON from '../data/rutinas/offseason.json' with { type: 'jso
 // el reparto — antes un panel de botones +/-, ahora una decisión con voz.
 
 export const RUTINAS = {
-  amateur: RUTINAS_AMATEUR,
-  offseason: RUTINAS_OFFSEASON
+  amateur: RUTINAS_AMATEUR
 };
+
+// K4c (plan anual): los planes de práctica que fija el cierre de año (`player.planAnual`). Cada uno tiene la forma de
+// una rutina (título, texto, reparto) para que la carta y el motor de `systems/practica.js` los lean igual.
+export const PLAN_POR_DEFECTO = PLANES.porDefecto;
+
+export const IDS_PLAN = PLANES.orden;
+
+export function esPlanValido(planId) {
+  return IDS_PLAN.includes(planId);
+}
+
+export function planPorId(planId) {
+  return PLANES.planes[planId] ?? null;
+}
+
+// La línea del inicio: con qué plan entrenás el primer año, antes de cualquier cierre (regla 15: el mismo `planInicial`
+// que usa el estado inicial).
+export function textoDePlanInicial(perfilId) {
+  const plan = planPorId(planInicial(perfilId));
+  return `Tu primer plan de práctica: ${plan.titulo}. Después, cada cierre de año fija el del siguiente.`;
+}
+
+// El plan del primer año, antes de cualquier cierre: el que le cierra a tu perfil (K4-C), o el de por defecto.
+export function planInicial(perfilId) {
+  return PLANES.porPerfil[perfilId] ?? PLANES.porDefecto;
+}
+
 
 function disponibles(state, pool, contexto) {
   return pool.filter((rutina) => (

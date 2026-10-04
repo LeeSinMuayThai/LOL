@@ -122,8 +122,10 @@ export function crearPantallaInicio(elements, modulos) {
       return boton;
     }));
     if (perfilTexto) {
+      // K4c (plan anual): el plan de práctica del primer año sale del perfil; la línea lo dice (regla 15).
+      const plan = perfilElegido && modulos.textoDePlanInicial ? ` ${modulos.textoDePlanInicial(perfilElegido)}` : '';
       perfilTexto.textContent = perfilElegido
-        ? `${descripcionDePerfil(perfilElegido)} Decide por vos lo chico; lo grande lo decidís vos, y te va corriendo el perfil.`
+        ? `${descripcionDePerfil(perfilElegido)} Decide por vos lo chico; lo grande lo decidís vos, y te va corriendo el perfil.${plan}`
         : 'Si no elegís, lo decide la seed. El perfil decide por vos lo chico; lo grande lo decidís vos.';
     }
   }

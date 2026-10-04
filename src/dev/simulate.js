@@ -12,7 +12,9 @@ import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 import { BALANCE } from '../data/balance.js';
 import { conPermanencia } from '../core/curvas.js';
 import { probabilidadDePartido, ruidoEfectivo } from '../core/partido.js';
-import { ESTRATEGIAS, NOMBRES_ESTRATEGIA, esDecisionDeMinijuego } from './estrategias.js';
+import { ESTRATEGIAS, NOMBRES_ESTRATEGIA, esDecisionDeMinijuego, efectosDeCarreraDeOpcion } from './estrategias.js';
+import { verificarSplitJugadoSinFila } from './guards.js';
+import { formaBeat } from '../core/log.js';
 
 // --- Constantes de medición (PLAN.md §K.5 K0) ---
 // Nada de esto es del juego (esas van en `data/balance.js`): son parámetros de las sondas.
@@ -132,18 +134,30 @@ export const PARAMETROS_RUIDO = [
   ['partido', 'sigmaMapa']
 ];
 
+// K4c (paso 1): de dónde sale cada log no técnico, para repartir el tiempo-máquina por fuente. La fuente es el `type` del
+// log (el sistema que lo escribió) y, si el log trae una de estas claves, se le agrega como sufijo (la primera que tenga,
+// en este orden): separa el log por mapa de la serie del de cierre, la crónica de un evento de su tarjeta, etc. Es un
+// nombre de la sonda, no del juego.
+export const CLAVES_DE_FORMA_DE_LOG = ['mapa', 'postSerie', 'cronica', 'ajustePartido', 'etapa', 'mundial', 'vinetas', 'top20', 'efectos'];
+
+export function fuenteDeLog(log) {
+  const clave = CLAVES_DE_FORMA_DE_LOG.find((candidata) => log[candidata] !== undefined);
+  return clave ? `${log.type}:${clave}` : log.type;
+}
+
 // Cuántos beats cuenta el reproductor para un lote de logs nuevos (`agruparBeats`, src/ui/components/feed.js):
-// un beat por log no técnico, más uno extra si el lote ARRANCA con líneas técnicas (esas no tienen una
-// narrativa a la que pegarse y forman su propio beat). `validate.js` comprueba que esto coincide con
-// `agruparBeats(lote).length` sobre lotes reales — así no hace falta importar la UI en una sonda del motor.
+// un beat por log que `formaBeat` (core/log.js, la misma función que usa `agruparBeats`), más uno extra si el
+// lote ARRANCA con líneas que no lo forman (técnicas o `adjunto`: no tienen una narrativa a la que pegarse y
+// forman su propio beat). `validate.js` comprueba que esto coincide con `agruparBeats(lote).length` sobre lotes
+// reales — así no hace falta importar la UI en una sonda del motor.
 export function contarBeats(lote) {
   let beats = 0;
   for (const log of lote) {
-    if (!log.tecnico) {
+    if (formaBeat(log)) {
       beats += 1;
     }
   }
-  return lote.length > 0 && lote[0].tecnico ? beats + 1 : beats;
+  return lote.length > 0 && !formaBeat(lote[0]) ? beats + 1 : beats;
 }
 
 // Fase 9E: además del estado final, la carrera se observa SPLIT A SPLIT.
@@ -168,6 +182,15 @@ export function contarBeats(lote) {
 // `state` (nunca consume `rng` ni cambia una respuesta): una fila por split pro con los regresores del
 // nivel y la posición (`splitsProData`), las interrupciones de cada split pro con su tipo
 // (`splitsProRitmo`), los beats del reproductor y los minijuegos, y las temporadas como #1 del mundo.
+// K4c-S: el Δp de una parada de plan de serie (`serie:plan`, `internacional:plan`): p de la mejor opción − p de la peor,
+// leída de la `pSerie` que cada opción declara (la de la previa, la que el motor tira). `null` si no hay p por opción.
+// Lectura pura, cero `rng`: es la palanca de la parada medida sin ruido (la misma idea que `deltaPDeDecision` de
+// `agencia.js`, K4c-H, sobre las paradas que declaran `pSerie`).
+export function deltaPDePlan(opciones) {
+  const ps = (opciones ?? []).map((opcion) => opcion.pSerie);
+  return ps.length >= 2 && ps.every((p) => Number.isFinite(p)) ? Math.max(...ps) - Math.min(...ps) : null;
+}
+
 export function correrCarrera(seed, splits, responder) {
   const rng = mulberry32(seed);
   let state = createInitialState(seed, rng);
@@ -207,8 +230,25 @@ export function correrCarrera(seed, splits, responder) {
     temporadasData: [],
     seriesData: [],
     temporadasNumero1: 0,
-    beatsReproductor: 0
+    beatsReproductor: 0,
+    // K4c (paso 1), solo lectura pura del state: los minijuegos por mecánica (`datos.minijuego`), las bifurcaciones
+    // (eventos con `bifurcacion: true` que frenaron, en total y por evento), las que ELIGIÓ con un efecto de carrera
+    // (por tipo), y lo que de verdad cambió en la carrera: las veces que cambió de línea (`player.role`), de región (la de
+    // `career.liga`) y las mudanzas firmadas desde una oferta de bifurcación (`flags.ofertaDeImport` que se resuelve en
+    // una liga de la promesa). `logsConBeatPorFuente` se llena al final (ver `fuenteDeLog`).
+    minijuegosPorMecanica: {},
+    // K4c-S: una fila `{ tipo, deltaP }` por parada de plan de serie (`serie:plan`, `internacional:plan`), con su Δp.
+    planDeltaP: [],
+    bifurcaciones: 0,
+    bifurcacionesPorEvento: {},
+    carreraElegida: {},
+    cambiosDeLinea: 0,
+    cambiosDeRegion: 0,
+    mudanzasFirmadas: 0,
+    fueraDeSuRegion: false
   };
+  let rolPrevio = state.player.role;
+  let regionPrevia = null;
   // El `splitCount` al arrancar el split en curso: la clave de las filas de temporada y de serie de ese split.
   let splitEnCurso = state.player.splitCount;
 
@@ -245,14 +285,35 @@ export function correrCarrera(seed, splits, responder) {
 
     if (esDecisionDeMinijuego(decision)) {
       observacion.minijuegosCount += 1;
+      const mecanica = decision.datos?.minijuego;
+      if (mecanica) {
+        observacion.minijuegosPorMecanica[mecanica] = (observacion.minijuegosPorMecanica[mecanica] ?? 0) + 1;
+      }
+    }
+    if (decision.datos?.motivo === 'plan') {
+      const deltaP = deltaPDePlan(decision.opciones);
+      if (deltaP !== null) {
+        observacion.planDeltaP.push({ tipo, deltaP });
+      }
+    }
+    if (decision.datos?.evento?.bifurcacion) {
+      observacion.bifurcaciones += 1;
+      const idEvento = decision.datos.evento.id;
+      observacion.bifurcacionesPorEvento[idEvento] = (observacion.bifurcacionesPorEvento[idEvento] ?? 0) + 1;
     }
 
     if (sistema.id === 'eventos' && decision.datos?.evento) {
       jugabilidad.categoriasReveladas.push(decision.datos.evento.categoria);
     }
-    return responder
+    const respuesta = responder
       ? responder(sistema, st, decision, rngLocal)
       : sistema.resolverAuto(st, decision, rngLocal);
+    if (decision.datos?.evento?.bifurcacion && respuesta?.opcionId) {
+      for (const efecto of efectosDeCarreraDeOpcion(decision, respuesta.opcionId)) {
+        observacion.carreraElegida[efecto.type] = (observacion.carreraElegida[efecto.type] ?? 0) + 1;
+      }
+    }
+    return respuesta;
   };
 
   for (let i = 0; i < splits && !state.terminado; i += 1) {
@@ -287,8 +348,32 @@ export function correrCarrera(seed, splits, responder) {
     const registroAntes = state.career.registro;
     // K2c: la jerarquía con la que arrancó el split (la de la temporada que corra en él), para `jerarquiaMedia`.
     const jerarquiaAntes = state.career.jerarquia;
+    const importPendiente = state.flags.ofertaDeImport;
     state = avanzarSplitAuto(state, rng, responderInstrumentado).state;
     contarTanda(state);
+    const sinFila = verificarSplitJugadoSinFila(state);
+    if (sinFila) {
+      throw new Error(`seed ${seed}, split ${state.player.splitCount}: ${sinFila}`);
+    }
+
+    // K4c (paso 1): lo que cambió de verdad en este split (lectura pura).
+    if (state.player.role !== rolPrevio) {
+      observacion.cambiosDeLinea += 1;
+      rolPrevio = state.player.role;
+    }
+    const ligaDelSplit = state.career.liga ? state.mundo.ligas.find((liga) => liga.id === state.career.liga) : null;
+    if (ligaDelSplit) {
+      if (regionPrevia !== null && ligaDelSplit.regionId !== regionPrevia) {
+        observacion.cambiosDeRegion += 1;
+      }
+      regionPrevia = ligaDelSplit.regionId;
+      if (ligaDelSplit.region !== state.mundo.regionOrigen) {
+        observacion.fueraDeSuRegion = true;
+      }
+    }
+    if (importPendiente && !state.flags.ofertaDeImport && ligaDelSplit && [].concat(importPendiente.ligas).includes(ligaDelSplit.id)) {
+      observacion.mudanzasFirmadas += 1;
+    }
 
     const temporadaJugada = state.career.temporada !== temporadaAntes;
     if (temporadaJugada) {
@@ -364,12 +449,23 @@ export function correrCarrera(seed, splits, responder) {
     ? Math.min(...state.player.championPool.map((campeon) => campeon.mastery))
     : null;
 
-  // `tiempoMaquinaMin`, definición LITERAL de la spec de K0-A: cada log no técnico del `state.logs` final
-  // × 700 ms. Es una cota inferior barata, no lo que tarda de verdad el reproductor: ignora el beat extra
-  // de las tandas que arrancan con líneas técnicas, los 1.600 ms de espera tras cada minijuego, y cuenta
-  // los logs del arranque de la carrera, que el reproductor no reproduce.
-  const logsNoTecnicos = state.logs.filter((log) => !log.tecnico).length;
-  observacion.tiempoMaquinaMin = (logsNoTecnicos * DURACION_BEAT_MS) / MS_POR_MINUTO;
+  // `tiempoMaquinaMin`: cada log del `state.logs` final que forma un beat del reproductor (`formaBeat`, core/log.js:
+  // ni técnico ni `adjunto`) × 700 ms. Regla 17 — K4c-F: esta definición reemplaza a la LITERAL de la spec de K0-A
+  // ("cada log no técnico × 700 ms"), que dejó de medir lo que se reproduce cuando el feed empezó a meter líneas
+  // `adjunto` adentro del beat anterior (los efectos de un evento, el mundo que no te toca, el segundo renglón de un
+  // parche, los mapas de una serie que no te frenó): esas siguen en `state.logs` pero no cuestan un beat. Sigue siendo
+  // una cota inferior barata, no lo que tarda de verdad el reproductor: ignora el beat extra de las tandas que
+  // arrancan con líneas que no forman beat, los 1.600 ms de espera tras cada minijuego, y cuenta los logs del
+  // arranque de la carrera, que el reproductor no reproduce.
+  const logsConBeat = state.logs.filter(formaBeat).length;
+  observacion.logsConBeatPorFuente = {};
+  for (const log of state.logs) {
+    if (formaBeat(log)) {
+      const fuente = fuenteDeLog(log);
+      observacion.logsConBeatPorFuente[fuente] = (observacion.logsConBeatPorFuente[fuente] ?? 0) + 1;
+    }
+  }
+  observacion.tiempoMaquinaMin = (logsConBeat * DURACION_BEAT_MS) / MS_POR_MINUTO;
 
   // `tiempoReproductorMin`: lo que mide el reproductor — los beats reales de cada tanda (`contarBeats`) ×
   // 700 ms, más 1.600 ms por cada minijuego jugado. Tampoco es lo que tarda una persona: no incluye leer
@@ -1417,8 +1513,27 @@ function resumenInterrupciones(valores) {
   };
 }
 
+// K4c (paso 1): el desglose del tiempo-máquina por fuente, ordenado de más a menos logs por carrera.
+function tiempoMaquinaPorFuente(observaciones) {
+  const fuentes = new Set(observaciones.flatMap((o) => Object.keys(o.logsConBeatPorFuente ?? {})));
+  const filas = [...fuentes].map((fuente) => {
+    const porCarrera = observaciones.map((o) => o.logsConBeatPorFuente?.[fuente] ?? 0);
+    return { fuente, porCarrera, promedio: promedio(porCarrera) };
+  });
+  const totalPromedio = filas.reduce((suma, fila) => suma + fila.promedio, 0);
+  return filas
+    .sort((a, b) => b.promedio - a.promedio)
+    .map((fila) => ({
+      fuente: fila.fuente,
+      logsPorCarrera: redondear(fila.promedio, 1),
+      mediana: mediana(fila.porCarrera),
+      minutosPorCarrera: redondear((fila.promedio * DURACION_BEAT_MS) / MS_POR_MINUTO, 2),
+      pctDelTotal: pct(fila.promedio, totalPromedio) ?? 0
+    }));
+}
+
 // §K.3c — el ritmo: cuántas veces te frena el juego.
-function bloqueRitmo(observaciones) {
+export function bloqueRitmo(observaciones) {
   const total = observaciones.length;
   const sumar = (mapa) => Object.values(mapa).reduce((a, b) => a + b, 0);
   const decisionesPorCarrera = observaciones.map((o) => sumar(o.decisionesPorTipo));
@@ -1474,6 +1589,13 @@ function bloqueRitmo(observaciones) {
     // Cada log no técnico del estado final × 700 ms (`DURACION_BEAT_MS`, src/ui/reproductor.js). Es la
     // definición literal de la spec de K0-A y una cota inferior: ver `correrCarrera`.
     tiempoMaquinaMin: enMinutos(tiemposMaquinaMin),
+    // K4c (paso 1): de dónde salen esos minutos. Por fuente (`fuenteDeLog`: el sistema que escribió el log y, si hay, su
+    // forma), los logs no técnicos por carrera (promedio y mediana) y lo que pesan en minutos-máquina (promedio por carrera
+    // × 700 ms). Una fuente que una carrera no usó cuenta 0 en esa carrera (así el promedio suma al total).
+    tiempoMaquinaPorFuente: tiempoMaquinaPorFuente(observaciones),
+    // `logsPorCarrera`, `minutosPorCarrera` y `pctDelTotal` de arriba son sobre el PROMEDIO de logs por carrera; la mediana
+    // va aparte, en cada fila (`mediana`). Las columnas que suman al total son las del promedio, no esa.
+    tiempoMaquinaPorFuenteSobre: 'promedio de logs por carrera (la mediana de cada fuente va aparte, en su fila)',
     // Beats reales del reproductor × 700 ms + 1.600 ms por minijuego (`ESPERA_MINIJUEGO_MS`, src/ui/app.js).
     // NO es comparable con los 17,4 min de AUDITORIA.md (salieron de un Chromium real): ver `correrCarrera`.
     tiempoReproductorMin: enMinutos(tiemposReproductorMin)

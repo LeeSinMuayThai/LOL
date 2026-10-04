@@ -54,5 +54,38 @@
 // tier list, y el banquillo de un club extranjero puebla la academia a la que te cede (`conPlantelesDe`: una tirada
 // nueva solo en ese camino). Misma versión (la rama no se mergeó): la huella de la integración (1153610693) queda
 // reemplazada.
-export const VERSION_JUEGO = 'K5';
-export const HUELLA_JUEGO = 1197795265;
+// K4c-S (misma versión: el bloque B no se mergeó; 276794090): la prueba (tryout) decide el contrato — una tirada nueva en el
+// tryout del mercado y en el del amateur, y la firma que no se da (la oferta se cae, la firma se posterga) cambia las carreras
+// enteras desde el primer tryout. El renglón de parche adjunto no mueve la huella. Reemplaza a 1197795265 (K5).
+// K4c-M (1053992261; bloque B, sigue en el corrimiento de K4): el pase de contenido sobre la fecha marcada. Las dos opciones de
+// cada evento de data/events/partido/ dejan de dar el mismo `partido`: una pesa en el resultado (media +0,08) y la otra cede
+// partido (media -0,05) a cambio de mentalidad, hype, sinergia o un stat de habilidad; las compensaciones suman una
+// tirada de rng por opcion. Misma versión (la rama no se mergeó): la huella de K4c-F/K5 (1197795265) queda reemplazada.
+// K4c-S + K4c-M juntos (integración del supervisor): reemplaza a 276794090 (S) y 1053992261 (M).
+// K4c (integración, 2122951563): volver de un retiro hecho en el split del pase arma el roster de la org del contrato
+// antes de la temporada de la vuelta (`armarRosterAlVolver`: la fila abre con el split del pase adentro, y las tiradas del
+// roster nuevo corren en ese split). Misma versión: reemplaza a 1224074643.
+// K4c (paso 3a, 922534647): las constantes del ritmo (umbral de sin-nada-en-juego 6, prensa solo tras un escándalo, ventana de la
+// fecha que define 4, tres mecánicas con `mapa_decisivo`, el plan de serie ×3) y D76 al cerrar la carrera (el split del pase
+// sin fila se asienta: el puntaje lo cuenta). Misma versión (el paso 3b la pasa a 'K4c' y sube VERSION): reemplaza a 2122951563.
+// K4c (paso 3a, arreglos; 805410138): la prueba fallida del mercado firma el respaldo que anuncia en vez de re-abrir la
+// parada (K4-D), la prueba en 0,65 / 0,8 / 0,95 y la ventana de la fecha que define en 6. Misma versión (el paso 3b la pasa
+// a 'K4c'): reemplaza a 922534647.
+// K4c (bloque B cerrado, paso 3b): `VERSION_JUEGO` pasa a 'K4c', la versión del ritmo calibrado (la serie como plan, la prueba que decide
+// el contrato, el cierre de año como decisión, el plan anual y la pretemporada solo para el mercado). El paso 3b (la limpieza del plan
+// anual, los checks duros del ritmo, el guardado VERSION 11 y los cuantiles) no toca el rng: la huella es la del plan anual, 1616394605,
+// que reemplaza a todas las anteriores del bloque B (922534647, 805410138, 2044679379, 1157384592...) y a la de K5 (1401713881).
+export const VERSION_JUEGO = 'K4c';
+// K4c (cierre de año, 2044679379): los 10 eventos de cierre_edad.json pasan a ser decisiones con intercambio (tres opciones, efectos
+// del orden de las bifurcaciones, un pool que aprende, riesgos en los outcomes): cambian las tiradas del cierre y con ellas las carreras
+// enteras. Misma versión (el paso 3b la pasa a 'K4c'): reemplaza a 922534647.
+// Integración de los arreglos del paso 3a y el cierre de año, con la ventana en 7 (supervisor): reemplaza a 805410138 y 2044679379.
+// K4c (plan anual, 1616394605): la práctica deja de frenar; el cierre de año fija el plan y cada split pro entrena solo su tramo
+// (otra cuenta de tiradas por año, y la preparación ya no la elige el bot en la pretemporada). Misma versión: reemplaza a 1157384592.
+// K4c (revisión, 348923166): el cierre amateur no fija plan (al debutar vale el del perfil: cambian las carreras que antes debutaban
+// con el plan de un cierre amateur) y la prueba del mercado fallida sin respaldo no suma a la racha sin ofertas ni te deja libre por
+// silencio. Misma versión: reemplaza a 1616394605.
+// K4c (revisión, textos, 1625568496): el cierre de año no repite el evento del año anterior (cooldown de 4 splits, 99 el del primer balance),
+// así que cambia qué carta cae y con ella las tiradas del resto de la carrera. Misma versión: reemplaza a 1616394605.
+// Integración de las dos revisiones (supervisor): reemplaza a 348923166 y 1625568496.
+export const HUELLA_JUEGO = 2001539523;

@@ -159,7 +159,7 @@
             "weight": 7,
             "texto": [
               "Se ríen de cualquier cosa menos del partido, y eso también arma equipo.",
-              "{jungla} cuenta una anécdota vieja y la mesa se relaja. El partido queda a un costado por una hora."
+              "{companero} cuenta una anécdota vieja y la mesa se relaja. El partido queda a un costado por una hora."
             ],
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] }
@@ -659,7 +659,7 @@
           {
             "weight": 5,
             "texto": [
-              "Lo decís bien y {jungla} te sigue. La charla se pone honesta y el equipo sale más unido que antes del partido.",
+              "Lo decís bien y {companero} te sigue. La charla se pone honesta y el equipo sale más unido que antes del partido.",
               "Tu mensaje abre la conversación que hacía falta. Nadie se ofende y algo se acomoda."
             ],
             "effects": [

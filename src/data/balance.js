@@ -672,9 +672,14 @@ export const BALANCE = {
     // sube, `brecha` se hace mas negativa, y la jerarquia real termina ~3
     // POR DEBAJO de la proyeccion inflada con +6 (sesgo pasó de +6,45 a
     // ~-3,0). Con +3 el `esperada` del check vuelve a centrarse en el real.
+    //
+    // K4c (validacion): 3 → 6 otra vez. Con la prueba y el mundo de K4c el sesgo
+    // volvio a +3,3 (real arriba de lo prometido; n = 279, error estandar 0,31);
+    // con 6 queda en +0,32. Sigue siendo cosmetico: solo mueve la tarjeta y la
+    // frase de `proyeccionPicks`, no el motor (la huella no cambia).
     // El valor es puramente cosmetico: `roster.js` asigna el crudo, no toca
     // esta constante, asi que bajarla no corre el stream (D35).
-    derivaPrimerSplit: 3,
+    derivaPrimerSplit: 6,
     jerarquiaRetenidaAlCambiar: 0.35,
     jerarquiaVelocidad: 0.4,
     // Lo que se espera de vos crece con tu propia jerarquia: a la franquicia no
@@ -1505,7 +1510,17 @@ export const BALANCE = {
     // en el piso de PLAN.md K4, "≥ 1 cada 3"), con 10 uno de cada 2,7 (37%) y con 12
     // uno de cada 2,3. Elegido 10: margen sobre el piso sin dejar que cualquier
     // fecha del split diga "esto decide".
-    ventanaDefineClasificacion: 10,
+    // K4c: 10 -> 4. Solo la ventana (con `criterio`, 300 × 60, de a una perilla) baja las interrupciones de 109 a 105; con las
+    // otras perillas de cA (umbral 6, prensa [], las tres mecánicas en `mapa_decisivo`) la mediana llega a 89 (PLAN.md, "Paso 2 —
+    // lo que midieron los barridos"). Con 4 la fecha marcada "define la clasificación" una de cada ~4,1 splits: la fecha
+    // vuelve a ser una excepción, no el 37% de los splits.
+    // K4c (paso 3a): 4 -> 6. Con las constantes del 3a, 4 daba 1 cada 3,6 splits de tier 1 con playoffs, debajo del piso de
+    // K4-A (1 cada 3). Medido con el check "K4-A define_clasificacion es alcanzable" (`criterio`, 100 carreras, con la prueba
+    // en 0,65 / 0,8 / 0,95): 5 da 998 de 3126 (1 cada 3,13, no llega), 6 da 1089 de 3068 (1 cada 2,82) y 7 da 1066 de 3040
+    // (1 cada 2,85: más ventana no da más margen). Se queda la más chica que cumple el piso: es la fecha con más en juego.
+    // K4c (integración con el cierre de año): 6 -> 7. Con el contenido nuevo del cierre, 6 dio 975 de 2999 (1 cada 3,1), justo
+    // debajo del piso: con ~3000 splits el error es ±0,9 pp y 6 queda sobre la línea. 7 lo pasa con margen.
+    ventanaDefineClasificacion: 7,
     // Fase 9R0a: la fecha marcada dejaba de mentir pero se repetía sola.
     // `career.ultimoEliminadoPor` no se limpiaba nunca y `career.orgs` sólo
     // crece, así que "la revancha contra tal" o "el clásico contra tal"
@@ -1530,20 +1545,6 @@ export const BALANCE = {
     probReaccion: 0.4
   },
 
-  // El draft, de la serie y de la fecha marcada (fase 9Rc/9Rd).
-  draft: {
-    // `lecturaDePick` (core/ajusteMeta.js) cruza dos ejes en una frase sin
-    // numeros para la tarjeta de draft (9Rd).
-    lectura: {
-      // Afinidad al meta (`afinidadDeCampeon`, 1 = campeon promedio del parche):
-      afinidadAFavor: 1.06,
-      afinidadEnContra: 0.95,
-      // Maestria del campeon normalizada al rango [peor, mejor] de TU pool:
-      maestriaAlta: 0.8,
-      maestriaFloja: 0.35
-    }
-  },
-
   // La serie de playoffs (fase 4): Bo5 con Fearless draft, jugada mapa a mapa
   // reusando la fuerza de partido de `core/fuerza.js` (K2b: determinista).
   serie: {
@@ -1557,19 +1558,31 @@ export const BALANCE = {
       // |fuerzaInicial − fuerza del rival| por encima de esto: serie sin nada en juego (juega el coach, no frena).
       // 15 puntos con σ de mapa 14,2: un mapa de ~0,85 y un Bo5 de ~0,97 para el favorito (sin el Fearless). Deja
       // ~30% de las series sin nada en juego (criterio, 30 × 60).
-      umbralSinNadaEnJuego: 15,
+      // K4c: 15 -> 6. Medido (criterio, 300 × 60, de a una perilla): las interrupciones bajan de 109 a 98 y el p90 de las paradas de
+      // playoffs, de 7 (36% con más de 4) a 5 (17%); el del internacional, de 7 (49%) a 5 (22%). Con cA entera: 89 interrupciones,
+      // 5 (11%) y 5 (12%) (PLAN.md, "Paso 2 — lo que midieron los barridos").
+      umbralSinNadaEnJuego: 6,
       // Salir con todo: tus mejores picks y más intensidad en los primeros `mapasConTodo` mapas; después lo pagás.
       mapasConTodo: 2,
-      empujeConTodo: 0.05,
-      desgasteConTodo: 0.03,
+      // K4c, los cinco `empuje*`/`desgaste*` ×3 (barrido con `criterio`, 300 × 60, escalando todos juntos; PLAN.md, "El barrido del
+      // plan de serie"): el Δp de las decisiones de plan, mediana, sube de 1,9 pp (×1; 10% de las paradas con Δp ≥ 5 pp) a 5,1 pp
+      // (×3; 52%), contra 3,5 (×2) y 7,2 (×4). `criterio` contra `azar` en series ganadas mide la palanca del plan. Con `criterio` el
+      // Bo5 del bloque A da 86,9 ± 2,1 con el ×3 (banda 75-85, 83,9 con ×1): ese check se mide ahora con el plan neutro ("K3c meta
+      // de K2 (criterio con plan neutro ...)", regla 17).
+      // `empujeConTodo`: 0,05 -> 0,15; `desgasteConTodo`: 0,03 -> 0,09.
+      empujeConTodo: 0.15,
+      desgasteConTodo: 0.09,
       // Guardar tu mejor campeón para el mapa decisivo: si llega, lo jugás con lo que no te vieron en toda la serie.
-      empujeGuardado: 0.03,
+      // K4c: `empujeGuardado` 0,03 -> 0,09 (el ×3 de arriba).
+      empujeGuardado: 0.09,
       // Por mapa antes del decisivo, la chance de que el rival te lea el guardado y te lo queme (te frena una vez).
       pLeenElGuardado: 0.12,
       // La sorpresa: el mapa 1 con un pick que el rival no preparó.
-      empujeSorpresa: 0.05,
+      // K4c: `empujeSorpresa` 0,05 -> 0,15 (el ×3 de arriba).
+      empujeSorpresa: 0.15,
       // La charla del coach: un comodín por temporada que empuja el mapa decisivo.
-      empujeCharla: 0.05,
+      // K4c: `empujeCharla` 0,05 -> 0,15 (el ×3 de arriba).
+      empujeCharla: 0.15,
       // El rival también quema campeones: su campeón del mapa i (0 el primero) juega con maestría
       // `maestriaRivalTope − i·caidaMaestriaRivalPorMapa` (piso `maestriaComodin`), con la misma regla que el tuyo.
       maestriaRivalTope: 80,
@@ -1577,9 +1590,16 @@ export const BALANCE = {
     },
     // K4-C: después de qué rondas sale la rueda de prensa (`post_serie`). La otra mitad —tras un escándalo— la
     // pone `systems/events.js` (`escandalo: true` en el dato).
-    rondasConPrensa: ['final'],
+    // K4c: ['final'] -> []: la prensa sale solo tras un escándalo. Medido (criterio, 300 × 60, de a una perilla): la prensa era el
+    // 55% de los minijuegos (11 por carrera) y pasa a 5 por carrera; las interrupciones bajan de 109 a 102,5 y el p90 de playoffs
+    // y del internacional, de 7 a 6. Con cA entera la prensa es el 28% del banco que compite por un momento (banda ≤ 35%)
+    // (PLAN.md, "Paso 2 — lo que midieron los barridos" y decisiones del paso 2, punto 4).
+    rondasConPrensa: [],
     // K4-B: en qué rondas el mapa decisivo trae su minijuego (con la charla del coach en la misma pausa). En las demás
     // el mapa decisivo frena igual, pero solo con la charla (`motivo: 'decisivo'`).
+    // K4c: `last_hit`, `la_vision` y `el_kite` (`data/minijuegos.json`) solo tenían el momento `mapa_cerrado`, que K4-B apagó: no
+    // salían nunca. Suman `mapa_decisivo` a sus `momentos` (antes: solo `mapa_cerrado`) y con cA entera salen las 10 mecánicas del
+    // catálogo, 4 minijuegos por carrera en vez de 11 (criterio, 300 × 60; PLAN.md, "Paso 2 — lo que midieron los barridos").
     rondasConMinijuegoDecisivo: ['semis', 'final', 'internacional'],
     // Fase 9R4a: cuanto mueve cada minijuego (`impacto`) y con cuanta
     // dispersion lo simula el camino headless (`spread`) ya NO viven aca: cada
@@ -1600,6 +1620,21 @@ export const BALANCE = {
     // Los cortes del veredicto 0-1 que lee el jugador al terminar (9R0b): de
     // aca para arriba "Clavado", de aca para abajo "No salio".
     veredictoMinijuego: { bien: 0.72, parejo: 0.42 },
+    // K4c-S: la prueba decide el contrato (regla 15: lo que el minijuego del tryout promete es lo que el motor hace). La
+    // probabilidad de firmar sube con el `resultado` 0-1 de la prueba, interpolada entre estos tres puntos: un resultado
+    // malo (0) firma pocas veces, uno regular (0,5) a veces y uno bueno (1) casi siempre. Si no firmás, en el mercado se
+    // cae esa oferta y seguís con el respaldo que anuncia la prueba (tu club o la mejor sin prueba); en el amateur la firma
+    // se posterga y seguís en la escalera. El crédito de jerarquía (`bonusJerarquiaTryout`) no cambia.
+    // K4c (paso 3a): 0,15 / 0,55 / 0,95 -> 0,65 / 0,8 / 0,95. Con el arranque, "siempre acierta" sobre "siempre falla" daba
+    // +171% (el que falla todo casi nunca llegaba a pro) contra el tope de +35% de "El impacto de los minijuegos está
+    // acotado". Medido con la cuenta de ese check (1000 seeds), cuando la prueba fallida todavía re-abría el mercado:
+    // 0,35 / 0,65 / 0,95 da +64%, 0,5 / 0,75 / 0,95 da +31% y 0,65 / 0,8 / 0,95 da +21%; PLAN.md eligió 0,5. Pero el
+    // arreglo de K4-D (la prueba fallida sigue con el respaldo, no con otra prueba en otra oferta) le quita al que falla
+    // todo los reintentos: re-medido con la ventana de `define_clasificacion` en 4, 0,5 / 0,75 / 0,95 da +47% (falla 4640,
+    // acierta 6831) y 0,65 / 0,8 / 0,95 da +26% (falla 5411, acierta 6831); con la ventana en 6 (la de abajo), +31% (falla
+    // 5330, acierta 6984). Se queda el que cumple el tope con el mismo criterio: 30 pp de firma entre una prueba mala y una
+    // buena.
+    probFirmaTryout: { malo: 0.65, regular: 0.8, bueno: 0.95 },
     // 9R4d: los cortes con los que se le pone palabras al stat que corre el
     // minijuego ("tu mecanica, 71: te abre la ventana"). Sin esto el numero
     // se muestra sin referente, que es justo lo que prohibe la regla 13.
@@ -1816,16 +1851,21 @@ export const BALANCE = {
     // El referente del número (regla 13): "mejor que el X% de las carreras".
     // Pares [percentil, puntaje] medidos con `criterio` (seeds 1-800, 60 splits,
     // el bloque `puntaje` de `simulate.js`); entre dos pares se interpola y el
-    // último es el techo de lo que se dice. El salto entre el p20 (28) y el p25
-    // (328) es el borde entre los que no llegaron (21,6%) y los pros.
+    // último es el techo de lo que se dice. El salto entre el p20 y el p30 es el
+    // borde entre los que no llegaron (~23%) y los pros.
     // K3c re-midió con los valores del bloque A (la consistencia, la vuelta a la
     // base y los efectos que duran bajaron el número: p50 1172 → 989, p90 1800
-    // → 1622, p99 2169 → 1993). Los cortes de nivel no se tocan: son por hechos.
+    // → 1622, p99 2169 → 1993). K4c (paso 3b) re-midió con los del bloque B (el
+    // ritmo: la serie como plan, la prueba que decide el contrato, el plan anual;
+    // `criterio`, seeds 1-800, 60 splits, `node src/dev/simulate.js 800 60 criterio
+    // --bloque=puntaje`): p50 989 → 933, p90 1622 → 1663, p99 1993 → 2243. El borde
+    // entre los que no llegaron y los pros pasa a estar entre el p25 (124) y el p30
+    // (436). Los cortes de nivel no se tocan: son por hechos.
     // Provisoria: K5c la vuelve a medir.
     cuantiles: [
-      [0, 0], [5, 12], [10, 18], [15, 22], [20, 28], [25, 328], [30, 555], [35, 690], [40, 804], [45, 908],
-      [50, 989], [55, 1074], [60, 1138], [65, 1196], [70, 1273], [75, 1351], [80, 1443], [85, 1526],
-      [90, 1622], [95, 1744], [97, 1807], [99, 1993]
+      [0, 0], [5, 12], [10, 17], [15, 21], [20, 26], [25, 124], [30, 436], [35, 650], [40, 758], [45, 839],
+      [50, 933], [55, 1018], [60, 1106], [65, 1158], [70, 1237], [75, 1313], [80, 1426], [85, 1518],
+      [90, 1663], [95, 1841], [97, 1950], [99, 2243]
     ],
     // La leyenda comparada (`data/leyendas.json`): la más cercana por distancia
     // euclídea sobre el perfil normalizado (cada eje dividido por su `escala`),

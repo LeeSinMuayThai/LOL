@@ -5,6 +5,7 @@ import {
   elegirEvento, decisionDesdeEvento, resolverOpcion, opcionDelPerfilPara,
   resolver as resolverEvento, resolverAuto as resolverAutoEvento
 } from './events.js';
+import { armarRosterAlVolver } from './roster.js';
 
 export const id = 'retiro';
 
@@ -37,7 +38,7 @@ function terminar(state, finAnticipado, mensaje, { reversible = false, motivo = 
       terminado: !reversible,
       finAnticipado,
       motivoRetiro: motivo,
-      flags: { ...state.flags, splitsEnDeclive: 0, splitsEnVentana: 0, splitsSinOfertaEnTier: 0 }
+      flags: { ...state.flags, splitsEnDeclive: 0, splitsEnVentana: 0, splitsSinOfertaEnTier: 0, pruebasFallidas: [] }
     },
     logs: [crearLog('retiro', mensaje)]
   };
@@ -45,7 +46,9 @@ function terminar(state, finAnticipado, mensaje, { reversible = false, motivo = 
 
 function mensajeDeSalida(state, finAnticipado) {
   if (finAnticipado === 'sin_equipo') {
-    return `A los ${state.age} el teléfono dejó de sonar. Sin equipo y sin llamados: se termina acá.`;
+    return probasteCon(state)
+      ? `A los ${state.age} te quedás sin equipo: hubo llamados, pero las pruebas no alcanzaron. Se termina acá.`
+      : `A los ${state.age} el teléfono dejó de sonar. Sin equipo y sin llamados: se termina acá.`;
   }
   return `Te retirás a los ${state.age}. ${state.career.titulos} título(s), `
     + `${state.career.internacionales} internacional(es). Se cierra una carrera.`;
@@ -59,6 +62,18 @@ export function pretemporadasEnPalabras(n) {
     return 'la última pretemporada';
   }
   return `${NUMERO_EN_PALABRAS[n] ?? n} pretemporadas seguidas`;
+}
+
+// K4c (revisión): "probaste con Onda Collective y no alcanzó" (o "con A y con B"), si desde tu última firma hubo pruebas del
+// mercado que no alcanzaron sin un respaldo (`flags.pruebasFallidas`, `systems/mercado.js`). `null` si no hubo: entonces sí fue
+// el mercado el que no llamó. El declive las cuenta igual (sin club es sin club), pero dice lo que pasó.
+function probasteCon(state) {
+  const orgs = [...new Set(state.flags.pruebasFallidas ?? [])];
+  if (orgs.length === 0) {
+    return null;
+  }
+  const lista = orgs.length === 1 ? orgs[0] : `${orgs.slice(0, -1).join(', ')} y con ${orgs.at(-1)}`;
+  return `probaste con ${lista} y no alcanzó`;
 }
 
 function finDeSalida(state) {
@@ -79,7 +94,9 @@ function decisionDeclive(state) {
     tipo: 'opciones',
     bisagra: true,
     titulo: 'Fin de temporada: ¿la seguís?',
-    descripcion: `A los ${state.age} el mercado te está diciendo que no. ¿Seguís peleándola o colgás el mouse?`,
+    descripcion: probasteCon(state)
+      ? `A los ${state.age} ${probasteCon(state)}${state.career.currentOrg ? '' : ', y seguís sin club'}. ¿Seguís peleándola o colgás el mouse?`
+      : `A los ${state.age} el mercado te está diciendo que no. ¿Seguís peleándola o colgás el mouse?`,
     opciones: [
       { id: 'seguir', label: 'La seguís peleando', descripcion: 'Un año más contra la corriente. Esto no se resetea solo.' },
       { id: 'retirarse', label: 'Colgás el mouse', descripcion: 'Cerrás la carrera. Con la puerta entreabierta, si el cuerpo y las ganas dan.' }
@@ -250,25 +267,34 @@ export function resolver(state, decision, respuesta, rng) {
     }
     const finAnticipado = finDeSalida(state);
     const puedeVolver = state.flags.vueltasUsadas < r.vueltasMaximas;
-    const motivo = `El mercado te venía diciendo que no: ${pretemporadasEnPalabras(state.flags.splitsEnDeclive)} en baja.`;
+    const enBaja = `${pretemporadasEnPalabras(state.flags.splitsEnDeclive)} en baja`;
+    const probaste = probasteCon(state);
+    const motivo = probaste
+      ? `${probaste[0].toUpperCase()}${probaste.slice(1)}: ${enBaja}.`
+      : `El mercado te venía diciendo que no: ${enBaja}.`;
     return terminar(state, finAnticipado, mensajeDeSalida(state, finAnticipado), { reversible: puedeVolver, motivo });
   }
 
   // motivo === 'retiro_vuelta'
   if (respuesta.opcionId === 'volver') {
+    const vuelto = {
+      ...state,
+      phase: 'profesional',
+      motivoRetiro: null,
+      flags: {
+        ...state.flags,
+        splitsEnVentana: 0,
+        vueltasUsadas: state.flags.vueltasUsadas + 1,
+        splitVuelta: state.player.splitCount
+      }
+    };
+    // K4c (integración): `roster` ya corrió este split, con `phase: 'retirado'`. Si te habías retirado en el split del
+    // pase, la org del contrato no tiene fila todavía: se arma acá, antes de la temporada de la vuelta (ver
+    // `armarRosterAlVolver`).
+    const conRoster = armarRosterAlVolver(vuelto, rng);
     return {
-      state: {
-        ...state,
-        phase: 'profesional',
-        motivoRetiro: null,
-        flags: {
-          ...state.flags,
-          splitsEnVentana: 0,
-          vueltasUsadas: state.flags.vueltasUsadas + 1,
-          splitVuelta: state.player.splitCount
-        }
-      },
-      logs: [crearLog('retiro', 'Volvés a competir. De free agent, a ver quién te llama.')]
+      state: conRoster.state,
+      logs: [crearLog('retiro', 'Volvés a competir. De free agent, a ver quién te llama.'), ...conRoster.logs]
     };
   }
   return { state, logs: [crearLog('retiro', 'Por ahora, no. La puerta sigue entreabierta.')] };

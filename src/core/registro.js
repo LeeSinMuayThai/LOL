@@ -118,6 +118,23 @@ export function registrarSplitJugado(registro, { org, tier }, pendiente = null) 
   return { registro, sinFila: { org, splitsPorTier: { ...base, [tier]: base[tier] + 1 } } };
 }
 
+// K4c (paso 3a, D76): un split jugado que quedó esperando su fila (`flags.splitJugadoSinFila`) cuando la carrera termina.
+// Pasa si te retirás en el split del pase y no volvés: `roster.js` es quien abre la fila de la org nueva, y nunca corre otra
+// vez. Un split jugado cuenta siempre, en la org y el tier donde se jugó, así que se asienta al cerrar la carrera: se abre la
+// fila de esa org con ese split adentro y se cierra en el mismo acto (`motivoDeSalida: 'retiro'`). `splits` queda en 0, igual
+// que en cualquier fila que abre el split del pase (ver `abrirFila`: `splits` cuenta lo ARRANCADO con contrato, y arrancarlo
+// es de `roster.js`). Puro, sin `rng`; cierra la fila nueva y no la `filaAbierta`, que sería de otra org.
+export function asentarSplitPendiente(registro, pendiente, { liga, tier, anio, split, arraigoActual }) {
+  const conFila = abrirFila(registro, { org: pendiente.org, liga, tier, anio, split }, pendiente.splitsPorTier);
+  const nueva = conFila.porOrg[conFila.porOrg.length - 1];
+  return {
+    ...conFila,
+    porOrg: conFila.porOrg.map((fila) => (fila === nueva
+      ? { ...fila, hastaAnio: anio, hastaSplit: split, arraigoFinal: arraigoActual, motivoDeSalida: 'retiro' }
+      : fila))
+  };
+}
+
 // K1 (D75): "llegó a tier N" = jugó al menos un split con contrato en tier N
 // (`splitsPorTier[N] > 0` en alguna fila), no "ganó el salto": el estado
 // "agente libre de tier 2" que sigue a un ascenso desde tier 3 no cuenta. Es

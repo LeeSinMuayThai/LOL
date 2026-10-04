@@ -1,5 +1,5 @@
-import { afinidadDeCampeon } from './ajusteMeta.js';
-import { campeonesDisponibles } from './pool.js';
+import { afinidadDeCampeon, campeonesMuertos } from './ajusteMeta.js';
+import { campeonesDisponibles, principalDelPool } from './pool.js';
 import { clamp } from './numeros.js';
 import { BALANCE } from '../data/balance.js';
 
@@ -78,6 +78,24 @@ export function boostDelPool(pool, tierList) {
   const valor = clamp(Math.round(promedioTier * BALANCE.stats.max), BALANCE.stats.min, BALANCE.stats.max);
 
   return { valor, desglose };
+}
+
+// K4c (paso 3a): ¿el parche te saca o te devuelve el main? Es la pregunta de "¿esta noticia te toca?": el main (el
+// campeón de mayor maestría, `principalDelPool`) pasa de S/A a B/C, o de B/C a S/A (la frontera de `campeonesMuertos`).
+// Reemplaza a la regla de K4c-S ("salvo que toque tu pool": cualquier campeón del pool que cambiara de tier), que dejaba
+// el 81% de los parches como beat propio y no recortaba casi nada (PLAN.md, K4c-S: "casi no recorta"). Puro, sin `rng`.
+// Distinta de `saltosDeTierPropios`, que también cuenta los tres primeros del rol (información para el feed).
+export function parcheMueveTuMain(tierListAnterior, tierListNueva, pool) {
+  if (!tierListAnterior || tierListAnterior.length === 0 || !pool || pool.length === 0) {
+    return false;
+  }
+  const principal = principalDelPool(pool);
+  if (tierDe(tierListAnterior, principal.name) === null || tierDe(tierListNueva, principal.name) === null) {
+    return false;
+  }
+  const muertoAntes = campeonesMuertos([principal], tierListAnterior).length > 0;
+  const muertoDespues = campeonesMuertos([principal], tierListNueva).length > 0;
+  return muertoAntes !== muertoDespues;
 }
 
 // Los saltos de tier que le tocan al jugador cuando cambia el régimen: solo
