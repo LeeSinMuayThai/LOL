@@ -92,11 +92,28 @@ export function puntuarPrevia(opcion) {
 // K5c-M: con `{ elite: true }` (lo pasa `criterio` cuando su nivel llega a `NIVEL_ELITE_CRITERIO`), a igualdad de tier va
 // primero el club más fuerte (`plantelEnLiga.fuerza`, sin dato = 0) y después la jerarquía y el salario. Sin la marca la
 // regla es la de siempre (`malas` no la pasa). Una estrella elige el plantel que gana, no el puesto que manda.
-export function compararOfertasMercado(ofertaA, ofertaB, { elite = false } = {}) {
+//
+// K5c-H, cada uno juega en su casa: con `{ casa }` (el contexto de `contextoDeCasaCriterio`, lo pasa `criterio`), a igualdad
+// de tier 1 va antes la clase de la liga (`claseDeLigaCriterio`): 3) con nivel de élite (`NIVEL_ELITE_CRITERIO`), un import a
+// una liga más fuerte que la de tu región si tu nivel llega a su calibre (la regla de `aceptaImport`: "va de import a una más
+// fuerte por el calibre, como hoy"; sin la marca de élite, en 400 carreras G0 Brasil pasaba del 75% al 43% de sus splits de
+// tier 1 en casa, el 41% en la LCP, que no es "una liga más fuerte" sino una lateral), 2) tu liga de tier 1, 1) una liga que no
+// es más débil que la tuya actual, 0) una más débil. O sea: toma tier 1 en casa si se la ofrecen y no deja su liga de tier 1 por
+// una más débil. Sin `casa` la regla es la de antes (`malas` no lo pasa). El bot es
+// el instrumento: esto no tiene perilla neutra (no lee el BALANCE del motor), y mueve los checks medidos con `criterio`.
+export function compararOfertasMercado(ofertaA, ofertaB, { elite = false, casa = null } = {}) {
   const tierA = ofertaA.tier ?? TIER_SIN_DATO;
   const tierB = ofertaB.tier ?? TIER_SIN_DATO;
   if (tierA !== tierB) {
     return tierB - tierA; // tier menor (ej 1) supera a tier mayor (ej 2)
+  }
+
+  if (casa) {
+    const claseA = claseDeLigaCriterio(ofertaA, casa);
+    const claseB = claseDeLigaCriterio(ofertaB, casa);
+    if (claseA !== claseB) {
+      return claseA - claseB;
+    }
   }
 
   if (elite) {
@@ -193,6 +210,42 @@ export function efectosDeCarreraDeOpcion(decision, opcionId) {
     }
   }
   return [...porTipo.values()];
+}
+
+// K5c-H: lo que `criterio` lee del mundo para la clase de liga de una oferta: tu liga de tier 1 (la de tu región de
+// origen), el calibre de cada liga de tier 1 (`calibreDeLiga`, la vara del asiento), el de tu liga actual si jugás tier 1, y
+// tu nivel. `null` en un estado sin mundo (los fixtures sintéticos de los checks del bot): ahí la regla es la de antes. Puro.
+export function contextoDeCasaCriterio(state) {
+  if (!state.mundo?.ligas) {
+    return null;
+  }
+  const ligasTier1 = state.mundo.ligas.filter((liga) => liga.tier === 1);
+  const calibres = Object.fromEntries(ligasTier1.map((liga) => [liga.id, calibreDeLiga(liga)]));
+  const casa = ligasTier1.find((liga) => liga.regionId === state.mundo.regionIdOrigen) ?? null;
+  const actual = ligasTier1.find((liga) => liga.id === state.career.liga) ?? null;
+  return {
+    ligaCasa: casa?.id ?? null,
+    calibres,
+    calibreCasa: casa ? calibres[casa.id] : null,
+    calibreActual: actual ? calibres[actual.id] : null,
+    nivel: nivelDelJugador(state)
+  };
+}
+
+// K5c-H: la clase de la liga de una oferta de tier 1 para `criterio` (ver `compararOfertasMercado`). 0 para lo que no es
+// tier 1 o no trae liga.
+export function claseDeLigaCriterio(oferta, casa) {
+  const calibre = oferta.tier === 1 ? casa.calibres[oferta.liga] : undefined;
+  if (calibre === undefined) {
+    return 0;
+  }
+  if (casa.nivel >= NIVEL_ELITE_CRITERIO && casa.calibreCasa !== null && calibre > casa.calibreCasa && casa.nivel >= calibre) {
+    return 3;
+  }
+  if (oferta.liga === casa.ligaCasa) {
+    return 2;
+  }
+  return casa.calibreActual === null || calibre >= casa.calibreActual ? 1 : 0;
 }
 
 function maestriaMediaDelPool(pool) {
@@ -345,7 +398,7 @@ function responderCriterio(sistema, state, decision, rng) {
     if (decision.opciones.length === 0) {
       return { negociar: 'esperar' };
     }
-    const contexto = { elite: nivelDelJugador(state) >= NIVEL_ELITE_CRITERIO };
+    const contexto = { elite: nivelDelJugador(state) >= NIVEL_ELITE_CRITERIO, casa: contextoDeCasaCriterio(state) };
     const mejor = decision.opciones.reduce((acum, op) => (
       compararOfertasMercado(op, acum, contexto) > 0 ? op : acum
     ));

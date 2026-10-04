@@ -70,6 +70,8 @@ export const FAKER_TEMPORADAS_NUMERO_UNO = 3;
 // "Nivel pico de élite" (§K.3b): el top 3% de la corrida (todas las carreras del lote, las que no llegaron a pro incluidas)
 // por `registro.picos.nivel`, la "media máx" que muestra la ficha.
 export const FRACCION_NIVEL_PICO_ELITE = 0.03;
+// K5c-H: los cortes de nivel pico del bloque `casa` (el % de temporadas de tier 1 en la liga de tu región, por nivel).
+export const CORTES_NIVEL_PICO_CASA = [70, 75, 80, 85, 90];
 // La curva de nivel por edad: de los 16 (la edad mínima de una liga) a la línea forzosa de los 34.
 export const EDAD_CURVA_MIN = 16;
 export const EDAD_CURVA_MAX = 34;
@@ -210,9 +212,12 @@ export function deltaPDePlan(opciones) {
   return ps.length >= 2 && ps.every((p) => Number.isFinite(p)) ? Math.max(...ps) - Math.min(...ps) : null;
 }
 
-export function correrCarrera(seed, splits, responder) {
+// K5c-H: `eleccion` (opcional) es la del inicio de `createInitialState` (por ejemplo `{ regionOrigen: 'KR' }`): los checks de
+// K5c-H corren carreras de una región. Sin ella (`null`, el valor por defecto de `createInitialState`) todo se sortea de la
+// seed como siempre.
+export function correrCarrera(seed, splits, responder, eleccion = null) {
   const rng = mulberry32(seed);
-  let state = createInitialState(seed, rng);
+  let state = createInitialState(seed, rng, eleccion);
 
   const carrera = { splitsPro: 0, splitsConEquipo: 0, maxRachaSinEquipo: 0, tierMaximo: null };
   let rachaSinEquipo = 0;
@@ -1886,6 +1891,51 @@ export function bloqueMundialReal(resultados, observaciones) {
   };
 }
 
+// K5c-H — cada uno juega en su casa: las temporadas de tier 1 de una carrera, en splits (`registro.porOrg[].splitsPorTier[1]`),
+// y cuántas fueron en la liga de tier 1 de tu región de origen (`mundo.regionIdOrigen`). Lectura pura del estado final. La
+// usan el bloque `casa` y los checks de K5c-H de `validate.js`.
+export function temporadasTier1EnCasa(state) {
+  const casa = state.mundo.ligas.find((liga) => liga.tier === 1 && liga.regionId === state.mundo.regionIdOrigen)?.id ?? null;
+  let total = 0;
+  let enCasa = 0;
+  for (const fila of state.career.registro.porOrg) {
+    const splits = fila.splitsPorTier?.[1] ?? 0;
+    total += splits;
+    enCasa += fila.liga !== null && fila.liga === casa ? splits : 0;
+  }
+  return { total, enCasa };
+}
+
+function metricasCasa(resultados, indices) {
+  const temporadas = indices.map((i) => temporadasTier1EnCasa(resultados[i]));
+  const splitsTier1 = temporadas.reduce((suma, t) => suma + t.total, 0);
+  const enCasa = temporadas.reduce((suma, t) => suma + t.enCasa, 0);
+  return { carreras: indices.length, splitsTier1, pctEnCasa: pct(enCasa, splitsTier1) };
+}
+
+// El % de las temporadas de tier 1 que se jugaron en la liga de tu región, en total, por región de origen (la misma clave
+// que `mundialReal.porRegion`) y por nivel pico (`CORTES_NIVEL_PICO_CASA`). El Mundial por región ya está en
+// `mundialReal.porRegion`. `pctEnCasa` es null solo si la celda no tiene temporadas de tier 1 (`splitsTier1: 0`).
+export function bloqueCasa(resultados) {
+  const todos = resultados.map((_, i) => i);
+  const porRegion = {};
+  resultados.forEach((r, i) => {
+    const region = r.mundo.regionOrigen ?? 'Desconocida';
+    porRegion[region] = porRegion[region] ?? [];
+    porRegion[region].push(i);
+  });
+  const picos = resultados.map((r) => r.career.registro.picos.nivel ?? 0);
+  return {
+    definicion: 'splits de tier 1 jugados en la liga de tier 1 de tu región de origen / todos tus splits de tier 1 (registro.porOrg)',
+    total: metricasCasa(resultados, todos),
+    porRegion: Object.fromEntries(Object.entries(porRegion).map(([region, indices]) => [region, metricasCasa(resultados, indices)])),
+    porNivelPico: [-Infinity, ...CORTES_NIVEL_PICO_CASA].map((desde, k) => {
+      const hasta = CORTES_NIVEL_PICO_CASA[k] ?? Infinity;
+      return { banda: nombreDeBandaDeMargen(desde, hasta), ...metricasCasa(resultados, todos.filter((i) => picos[i] >= desde && picos[i] < hasta)) };
+    })
+  };
+}
+
 // K5c (paso 1) — la curva de nivel por edad (la que hoy es plana, §K5c) y el % de carreras activas por edad. Una fila por
 // split pro (`splitsProData`), con la edad con la que cerró el split y el nivel de ese momento: es el nivel de los que
 // SIGUEN jugando a esa edad (los que ya se retiraron no están). `pctDeLasPro` y `pctDeTodas`: las carreras con al menos un
@@ -2049,6 +2099,8 @@ export function correrLote(corridas, splits, estrategia, { corridasAblacion = MA
     // K5c (paso 1): el Mundial real (por región y por nivel pico) y la curva de nivel por edad. Bloques APARTE de `embudo`
     // y de `porRegion`: `validate.js` recuenta esas hojas una por una y no admite hojas que no cubra.
     mundialReal: bloqueMundialReal(resultados, observaciones),
+    // K5c-H: el % de temporadas de tier 1 en la liga de tu región (total, por región y por nivel pico).
+    casa: bloqueCasa(resultados),
     curvaDeEdad: bloqueCurvaDeEdad(resultados, observaciones),
     // K1: el número de la carrera (`core/puntaje.js`), su distribución y los niveles.
     puntaje: bloquePuntaje(resultados)

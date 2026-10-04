@@ -1271,6 +1271,22 @@ export const BALANCE = {
       fraccionArriba: 0.3,
       fraccionAbajo: 0.3
     },
+    // --- K5c-H, cada uno juega en su casa (PLAN.md "K5c-H"): la escalera por nivel desde tu región. Tu "nivel para tu
+    // liga" es tu nivel menos `fraccionCastigo` del castigo etario de la disputa de un fichaje (`core/demanda.js:
+    // nivelParaTuLiga`). Si llega al calibre de la liga de tier 1 de tu región (`calibreDeLiga`, la misma vara del asiento)
+    // más `margenAlcanza`, "alcanzás tu liga": sus clubes van primero en la mano y, si ninguno te ofrece, uno te hace lugar
+    // (como el piso de franquicia: salta asiento, presupuesto, banda y disputa, nunca las reglas duras). Es el más fuerte
+    // cuya fuerza no pasa ese nivel (el club que te corresponde), o el más débil si todos lo pasan. Si no alcanzás, el
+    // mercado es el de siempre: el tier 2 de tu región o un import a la liga de tier 1 que te corresponde.
+    //  - `margenAlcanza` NEUTRO = 99: ningún nivel llega al calibre + 99, así que el motor es idéntico (huella incluida).
+    //  - `fraccionCastigo`: 1 = el castigo etario entero, el de la disputa (con el castigo de la base de calibración G0, ~22
+    //    puntos a los 23 y ~60 a los 26, solo alcanza un pibe de 20-21: medido en K5c-H); 0 = tu nivel sin la edad. Con
+    //    `margenAlcanza` neutro no mueve nada.
+    // Los fija el barrido de K5c. Se leen en cada llamada (`core/demanda.js:alcanzaTuLiga`): un override en memoria las pisa.
+    casa: {
+      margenAlcanza: 99,
+      fraccionCastigo: 1
+    },
 
     // --- salarioDeOferta: mult = exp(gauss(0,sigma)) * factorRol * jerarquía * hype ---
     salarioJerarquiaBase: 0.6,
@@ -1851,7 +1867,11 @@ export const BALANCE = {
     // tope las resuelve el coach (el mismo criterio que el camino headless). Antes de la final se guardan 2 para la
     // final (su plan de Fearless y su mapa decisivo): el 2-2, los cuartos y las semis frenan solo hasta 4 - 2.
     maxInterrupciones: 4,
-    reservaParaLaFinal: 2
+    reservaParaLaFinal: 2,
+    // K5c-H: ¿cuenta tu jerarquía en el Mundial? Con `false`, tu rendimiento en el Swiss y en el bracket no lo corre el
+    // factor de jerarquía (`core/fuerza.js:fuerzaDeMundial`), igual que al rival NPC, que vale el promedio de sus niveles.
+    // `true` es NEUTRO (el motor de siempre). La previa lo dice cuando está en `false` (regla 12). Se lee en cada llamada.
+    jerarquiaCuenta: true
   },
 
   puntaje: {

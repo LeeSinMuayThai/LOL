@@ -9626,7 +9626,9 @@ const REGLAS_NULO_SIN_MUESTRA_K0 = [
   { patron: /^mundialReal\..+\.pctGana$/, sinMuestra: (padre) => padre?.mundiales === 0 },
   { patron: /^mundialReal\..+\.(pctDeLosMundiales|margenSobreElMejorRival\.p(10|50|90))$/, sinMuestra: (padre, abuelo) => mundialesDelBloqueK0(abuelo) === 0 },
   { patron: /^mundialReal\..+\.pDosOMasDadoUno\.p$/, sinMuestra: (padre) => padre?.n === 0 },
-  { patron: /^curvaDeEdad\.porEdad\[\d+\]\.nivel\.p(25|50|75)$/, sinMuestra: (padre, abuelo) => abuelo?.splits === 0 }
+  { patron: /^curvaDeEdad\.porEdad\[\d+\]\.nivel\.p(25|50|75)$/, sinMuestra: (padre, abuelo) => abuelo?.splits === 0 },
+  // K5c-H: el bloque `casa` (el % de temporadas de tier 1 en la liga de tu región): null solo en una celda sin temporadas de tier 1.
+  { patron: /^casa\..+\.pctEnCasa$/, sinMuestra: (padre) => padre?.splitsTier1 === 0 }
 ];
 function mundialesDelBloqueK0(bloque) {
   return Array.isArray(bloque?.ganaPorMargen) ? bloque.ganaPorMargen.reduce((suma, banda) => suma + banda.mundiales, 0) : null;
@@ -22614,6 +22616,195 @@ check('K6a (integración, D-B): en la ventana de retiro "¿Volvés a competir?" 
       + `(hacen falta ${VENTANAS_POR_PUNTO_K6AI} en cada uno), ${preguntas} preguntas, ${splitsDelMedio} splits del medio`);
   }
   console.log(`      seeds 1-${seeds}: ventanas por punto del año ${JSON.stringify(ventanasPorPunto)}, ${preguntas} preguntas, ${splitsDelMedio} splits del medio con su línea`);
+});
+
+// --- K5c-H, cada uno juega en su casa (PLAN.md "K5c-H") -----------------------------------------------------------------------
+// Tres perillas, todas neutras (la huella de K1 prueba el no-op exacto): `mercado.casa.margenAlcanza` (99),
+// `mercado.casa.fraccionCastigo` (1) y `mundial.jerarquiaCuenta` (true). Estos checks las encienden EN MEMORIA con valores de
+// ejemplo (el barrido fija los de verdad). Las muestras del mercado: carreras de `criterio` de UNA región (`correrCarrera` con
+// la elección del inicio, `{ regionOrigen }`), 60 splits, seeds 1 a N. Lo que cuenta es dónde se jugaron los splits
+// (`registro.porOrg`), no las decisiones: la escalera tiene que verse en la carrera.
+const { temporadasTier1EnCasa: temporadasEnCasaK5CH } = await import('./simulate.js');
+const { enElMundial: enElMundialK5CH, fuerzaDePartido: fuerzaDePartidoK5CH, TEXTO_JERARQUIA_MUNDIAL: TEXTO_JERARQUIA_K5CH } = await import('../core/fuerza.js');
+const { claseDeLigaCriterio: claseDeLigaK5CH } = await import('./estrategias.js');
+// Las perillas encendidas de ejemplo: alcanzás tu liga si tu nivel (sin la edad) llega a su calibre.
+const PERILLAS_CASA_K5CH = { margenAlcanza: 0, fraccionCastigo: 0 };
+const SPLITS_K5CH = 60;
+const SEEDS_KR_K5CH = 120;
+const SEEDS_BR_K5CH = 60;
+// "Nivel alto": el pico de la élite de la ficha para arriba. Medido al escribir el check (120 coreanos, perillas encendidas): los de
+// pico ≥ 85 juegan el 68% de sus splits de tier 1 en la LCK y 59 de 68 la mayoría; con las perillas neutras (40 coreanos), 11% y
+// 0 de 23.
+const PICO_ALTO_K5CH = 85;
+// "Nivel medio": por debajo del calibre de la LCK (~80 con el cuantil de siempre) y por encima de quien casi no llega a pro. Medido
+// (120 coreanos, perillas encendidas): 22 de pico 70-80, el 21,5% de sus splits de tier 1 en la LCK.
+const PICO_MEDIO_K5CH = { desde: 70, hasta: 80 };
+// "Élite de una región débil": un brasileño de pico ≥ 88. "Una liga más fuerte": una de tier 1 con 15+ puntos de prestigio
+// sobre la de su región (para Brasil: LCK, LPL y LEC; la LCP, con 5 más, es lateral).
+const PICO_ELITE_DEBIL_K5CH = 88;
+const BRECHA_PRESTIGIO_K5CH = 15;
+const FRACCION_SUBE_K5CH = 0.25;
+const MUESTRA_MINIMA_K5CH = 5;
+
+function conPerillasCasaK5CH(perillas, fn) {
+  const casa = BALANCE.mercado.casa;
+  const previas = { ...casa };
+  Object.assign(casa, perillas);
+  try {
+    return fn();
+  } finally {
+    Object.assign(casa, previas);
+  }
+}
+
+// Una carrera reducida a lo que miran los checks: el pico, los splits de tier 1 en casa y los splits pro (tier 1 y 2) por liga.
+function carreraDeCasaK5CH(seed, region) {
+  const { state } = correrCarreraSimulate(seed, SPLITS_K5CH, ESTRATEGIAS_K0.criterio, { regionOrigen: region });
+  const porLiga = {};
+  for (const fila of state.career.registro.porOrg) {
+    const splits = (fila.splitsPorTier?.[1] ?? 0) + (fila.splitsPorTier?.[2] ?? 0);
+    if (splits > 0 && fila.liga) {
+      porLiga[fila.liga] = (porLiga[fila.liga] ?? 0) + splits;
+    }
+  }
+  const casa = state.mundo.ligas.find((liga) => liga.tier === 1 && liga.regionId === state.mundo.regionIdOrigen);
+  const masFuertes = state.mundo.ligas
+    .filter((liga) => liga.tier === 1 && liga.prestigio >= casa.prestigio + BRECHA_PRESTIGIO_K5CH)
+    .map((liga) => liga.id);
+  const splitsMasFuertes = state.career.registro.porOrg
+    .filter((fila) => masFuertes.includes(fila.liga))
+    .reduce((suma, fila) => suma + (fila.splitsPorTier?.[1] ?? 0), 0);
+  return { seed, pico: state.career.registro.picos.nivel ?? 0, casa: casa.id, ...temporadasEnCasaK5CH(state), porLiga, splitsMasFuertes };
+}
+
+const cacheCasaK5CH = new Map();
+function carrerasDeRegionK5CH(region, seeds) {
+  if (!cacheCasaK5CH.has(region)) {
+    cacheCasaK5CH.set(region, conPerillasCasaK5CH(PERILLAS_CASA_K5CH,
+      () => Array.from({ length: seeds }, (_, i) => carreraDeCasaK5CH(i + 1, region))));
+  }
+  return cacheCasaK5CH.get(region);
+}
+
+check('K5c-H: con las perillas encendidas en memoria, un coreano de nivel alto juega la mayoría de sus temporadas de tier 1 en la LCK', () => {
+  const altos = carrerasDeRegionK5CH('KR', SEEDS_KR_K5CH).filter((c) => c.pico >= PICO_ALTO_K5CH && c.total > 0);
+  const total = altos.reduce((suma, c) => suma + c.total, 0);
+  const enCasa = altos.reduce((suma, c) => suma + c.enCasa, 0);
+  const conMayoria = altos.filter((c) => c.enCasa * 2 > c.total).length;
+  const resumen = `${altos.length} coreanos de pico ≥ ${PICO_ALTO_K5CH} con tier 1: ${enCasa} de ${total} splits de tier 1 en la LCK `
+    + `(${(100 * enCasa / Math.max(1, total)).toFixed(1)}%), ${conMayoria} con la mayoría en casa`;
+  if (altos.length < MUESTRA_MINIMA_K5CH) {
+    throw new Error(`muestra chica: ${resumen}`);
+  }
+  if (enCasa * 2 <= total || conMayoria * 2 <= altos.length) {
+    throw new Error(`el coreano de nivel alto no juega en su casa: ${resumen}`);
+  }
+  console.log(`      ${resumen}`);
+});
+
+check('K5c-H: con las perillas encendidas en memoria, un coreano de nivel medio juega en la LCK CL o afuera (no la mayoría de sus splits pro en la LCK)', () => {
+  const medios = carrerasDeRegionK5CH('KR', SEEDS_KR_K5CH)
+    .filter((c) => c.pico >= PICO_MEDIO_K5CH.desde && c.pico < PICO_MEDIO_K5CH.hasta)
+    .filter((c) => Object.keys(c.porLiga).length > 0);
+  const pro = medios.reduce((suma, c) => suma + Object.values(c.porLiga).reduce((s, n) => s + n, 0), 0);
+  const enLck = medios.reduce((suma, c) => suma + (c.porLiga[c.casa] ?? 0), 0);
+  const resumen = `${medios.length} coreanos de pico ${PICO_MEDIO_K5CH.desde}-${PICO_MEDIO_K5CH.hasta} con splits pro: ${enLck} de ${pro} `
+    + `en la LCK (${(100 * enLck / Math.max(1, pro)).toFixed(1)}%)`;
+  if (medios.length < MUESTRA_MINIMA_K5CH) {
+    throw new Error(`muestra chica: ${resumen}`);
+  }
+  if (enLck * 2 >= pro) {
+    throw new Error(`el coreano de nivel medio juega la mayoría en la LCK: ${resumen}`);
+  }
+  console.log(`      ${resumen}`);
+});
+
+check('K5c-H: con las perillas encendidas en memoria, la élite de una región débil (Brasil) puede subir como import a una liga más fuerte; y `criterio` la prefiere a la de casa solo con nivel de élite', () => {
+  const elite = carrerasDeRegionK5CH('BR', SEEDS_BR_K5CH).filter((c) => c.pico >= PICO_ELITE_DEBIL_K5CH && c.total > 0);
+  const suben = elite.filter((c) => c.splitsMasFuertes > 0).length;
+  const resumen = `${suben} de ${elite.length} brasileños de pico ≥ ${PICO_ELITE_DEBIL_K5CH} jugaron tier 1 en una liga con `
+    + `${BRECHA_PRESTIGIO_K5CH}+ de prestigio sobre la CBLOL`;
+  if (elite.length < MUESTRA_MINIMA_K5CH) {
+    throw new Error(`muestra chica: ${resumen}`);
+  }
+  if (suben < FRACCION_SUBE_K5CH * elite.length) {
+    throw new Error(`la élite de una región débil no sube (piso ${FRACCION_SUBE_K5CH * 100}%): ${resumen}`);
+  }
+  // La regla del bot, con un contexto armado: una LEC que el nivel alcanza le gana a la CBLOL de casa a la élite, no al medio.
+  const casa = { ligaCasa: 'CBLOL', calibres: { CBLOL: 60, LEC: 75, LCP: 62 }, calibreCasa: 60, calibreActual: null };
+  const lec = { tier: 1, liga: 'LEC' };
+  const cblol = { tier: 1, liga: 'CBLOL' };
+  if (!(claseDeLigaK5CH(lec, { ...casa, nivel: 90 }) > claseDeLigaK5CH(cblol, { ...casa, nivel: 90 }))) {
+    throw new Error('criterio de élite no prefiere la LEC que alcanza a la CBLOL de casa');
+  }
+  if (!(claseDeLigaK5CH(cblol, { ...casa, nivel: 78 }) > claseDeLigaK5CH(lec, { ...casa, nivel: 78 }))) {
+    throw new Error('criterio de nivel 78 deja la CBLOL de casa por la LEC');
+  }
+  console.log(`      ${resumen}`);
+});
+
+// El Mundial: con `mundial.jerarquiaCuenta` en false en memoria, en cada pausa del Mundial (el 2-2 del Swiss y las del bracket)
+// la fuerza que el motor usa es la de tu equipo con el factor de jerarquía en 1 (la jerarquía puesta en su referencia, donde el
+// factor vale 1 exacto): la de la entrada (el participante del torneo), la del Swiss (`partidoEnCurso.fuerzaPropia`), la de la
+// serie del bracket (`serie.fuerzaInicial`) y la del desglose de la previa, que además lo dice (regla 12).
+const SEEDS_MAX_MUNDIAL_K5CH = 120;
+const PAUSAS_MINIMAS_MUNDIAL_K5CH = { swiss: 5, bracket: 5 };
+const TOLERANCIA_FUERZA_K5CH = 1e-9;
+check('K5c-H: con la jerarquía apagada en memoria, la entrada, el Swiss, el bracket y la previa del Mundial usan la misma fuerza (sin jerarquía), y la previa lo dice', () => {
+  const anterior = BALANCE.mundial.jerarquiaCuenta;
+  BALANCE.mundial.jerarquiaCuenta = false;
+  const cuenta = { swiss: 0, bracket: 0, conJerarquiaDistinta: 0 };
+  const problemas = [];
+  try {
+    for (let seed = 1; seed <= SEEDS_MAX_MUNDIAL_K5CH; seed += 1) {
+      if (cuenta.swiss >= PAUSAS_MINIMAS_MUNDIAL_K5CH.swiss && cuenta.bracket >= PAUSAS_MINIMAS_MUNDIAL_K5CH.bracket) {
+        break;
+      }
+      const rng = mulberry32(seed);
+      let state = createInitialState(seed, rng);
+      for (let i = 0; i < SPLITS_K5CH && !state.terminado; i += 1) {
+        state = avanzarSplitAutoK5(state, rng, (sistema, st, decision, r) => {
+          if (sistema.id === 'internacional' && enElMundialK5CH(st)) {
+            const sinJerarquia = fuerzaDePartidoK5CH({
+              ...st, internacional: null, career: { ...st.career, jerarquia: BALANCE.rendimiento.jerarquiaReferencia }
+            });
+            const propia = st.internacional.participantes.find((p) => p.esJugador);
+            const donde = `seed ${seed}, Mundial ${st.internacional.anio}, ${decision.datos?.motivo}`;
+            cuenta.conJerarquiaDistinta += st.career.jerarquia !== BALANCE.rendimiento.jerarquiaReferencia ? 1 : 0;
+            if (decision.datos?.motivo === 'swiss') {
+              cuenta.swiss += 1;
+              if (Math.abs(propia.fuerza - sinJerarquia) > TOLERANCIA_FUERZA_K5CH) {
+                problemas.push(`${donde}: la entrada tiene fuerza ${propia.fuerza}, sin jerarquía es ${sinJerarquia}`);
+              }
+              if (Math.abs(st.internacional.partidoEnCurso.fuerzaPropia - sinJerarquia) > TOLERANCIA_FUERZA_K5CH) {
+                problemas.push(`${donde}: el Swiss juega con ${st.internacional.partidoEnCurso.fuerzaPropia}, sin jerarquía es ${sinJerarquia}`);
+              }
+            }
+            if (st.serie?.activa && st.serie.torneo === 'mundial' && st.serie.mapaActual === 0 && decision.datos?.motivo === 'plan') {
+              cuenta.bracket += 1;
+              if (Math.abs(st.serie.fuerzaInicial - sinJerarquia) > TOLERANCIA_FUERZA_K5CH) {
+                problemas.push(`${donde}: la serie del bracket arranca con ${st.serie.fuerzaInicial}, sin jerarquía es ${sinJerarquia}`);
+              }
+            }
+            const previa = previaDeDecisionK5(st, decision);
+            if (previa && (previa.desglose.factorJerarquia !== 1 || previa.porQue !== TEXTO_JERARQUIA_K5CH)) {
+              problemas.push(`${donde}: la previa trae factor de jerarquía ${previa.desglose.factorJerarquia} y dice "${previa.porQue}"`);
+            }
+          }
+          return ESTRATEGIAS_K0.criterio(sistema, st, decision, r);
+        }).state;
+      }
+    }
+  } finally {
+    BALANCE.mundial.jerarquiaCuenta = anterior;
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
+  }
+  if (cuenta.swiss < PAUSAS_MINIMAS_MUNDIAL_K5CH.swiss || cuenta.bracket < PAUSAS_MINIMAS_MUNDIAL_K5CH.bracket || cuenta.conJerarquiaDistinta === 0) {
+    throw new Error(`muestra chica: ${JSON.stringify(cuenta)} en ${SEEDS_MAX_MUNDIAL_K5CH} seeds`);
+  }
+  console.log(`      pausas del Mundial: ${cuenta.swiss} del 2-2, ${cuenta.bracket} de bracket (${cuenta.conJerarquiaDistinta} con la jerarquía lejos de la referencia)`);
 });
 
 if (errores.length > 0) {

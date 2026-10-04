@@ -3,7 +3,7 @@ import { roll } from '../core/rng.js';
 import { clampStat } from '../core/numeros.js';
 import { ligaDeCarrera } from '../core/competicion.js';
 import { esCierreDeTemporada, calificaAInternacional, charlaDisponible, ajusteDeCharla } from '../core/serie.js';
-import { fuerzaDePartido } from '../core/fuerza.js';
+import { fuerzaDeMundial, TEXTO_JERARQUIA_MUNDIAL } from '../core/fuerza.js';
 import { tirarPartido } from '../core/partido.js';
 import { registrarInternacional, registrarPico, registrarArraigoEnFila } from '../core/registro.js';
 import {
@@ -97,7 +97,7 @@ function avanzarSwiss(state, rng, logsAcum) {
     const t = st.internacional;
     const cruces = emparejarRondaSwiss(t);
     const rival = participante(t, rivalEn(cruceDe(cruces, t.jugador), t.jugador));
-    const fuerzaPropia = fuerzaDePartido(st);
+    const fuerzaPropia = fuerzaDeMundial(st);
     if (esVidaOMuerte(t.swiss.record[t.jugador])) {
       const partidoEnCurso = { cruces, rival: rival.nombre, ligaRival: rival.liga, fuerzaRival: rival.fuerza, fuerzaPropia };
       const conPartido = { ...st, internacional: { ...t, partidoEnCurso } };
@@ -265,13 +265,15 @@ export function aplicar(state, rng) {
 
   const liga = ligaDeCarrera(state);
   const jugador = {
-    nombre: state.career.currentOrg, liga: liga.id, fuerza: fuerzaDePartido(state), cupo: state.career.posicion
+    nombre: state.career.currentOrg, liga: liga.id, fuerza: fuerzaDeMundial(state), cupo: state.career.posicion
   };
   const torneo = crearMundial(state, anio, jugador);
   const log = crearLog(
     'internacional',
     `Clasificaste al Mundial ${anio} como ${jugador.cupo}º de ${nombreVisibleDeLigaOZona(liga)}: Swiss de 16, `
     + 'tres victorias y pasás, tres derrotas y te volvés.'
+    // K5c-H (regla 12): con `mundial.jerarquiaCuenta` en false, el feed dice que acá tu peso en el vestuario no cuenta.
+    + (BALANCE.mundial.jerarquiaCuenta ? '' : ` ${TEXTO_JERARQUIA_MUNDIAL}`)
   );
   return seguir(avanzarSwiss({ ...state, internacional: torneo }, rng, [log]), rng);
 }

@@ -9,7 +9,7 @@ import { salarioDeOferta } from '../core/salarios.js';
 import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
 import { cerrarFila, registrarPico, registrarSalarioEnFila, registrarArraigoEnFila, arraigoInicial } from '../core/registro.js';
 import { bandaDeJerarquia, bandaDeArraigoFicha, nivelDelJugador } from '../core/ficha.js';
-import { orgsQueTeFicharian, ofertaPosible, esResidenteDe, nivelAlternativaAsiento, factorRenovacionEtario, factorElite, plantelEnLiga, veteranoDeTier2, ganaLaDisputaDelAsiento, renovacionCortadaPorEdad } from '../core/demanda.js';
+import { orgsQueTeFicharian, ofertaPosible, esResidenteDe, nivelAlternativaAsiento, factorRenovacionEtario, factorElite, plantelEnLiga, veteranoDeTier2, ganaLaDisputaDelAsiento, renovacionCortadaPorEdad, alcanzaTuLiga, ligaDeCasa, clubDeCasaQueTeHaceLugar } from '../core/demanda.js';
 import { resolverMercadoMundial, cerrarAsientosCongelados, congelarAsientosOfrecibles } from '../core/mercadoMundial.js';
 import { jerarquiaAlFichar, sinergiaAlFichar, conPlantillaDelPlantel } from './roster.js';
 import { conPlantelesDe } from '../core/plantel.js';
@@ -370,12 +370,31 @@ export function generarOfertas(state, rng) {
     }
   }
 
+  // K5c-H, cada uno juega en su casa: si alcanzás la liga de tier 1 de tu región (`alcanzaTuLiga`, perilla
+  // `mercado.casa.margenAlcanza`), sus clubes te ofrecen antes que a cualquier import: van primero en la mano, y si ninguno
+  // te ofreció (ni tu renovación es de ahí), uno te hace lugar (`clubDeCasaQueTeHaceLugar`, con las reglas del piso de
+  // franquicia: `forzadaFranquicia`). Con la perilla neutra `alcanzaCasa` es siempre falso y la mano es la de siempre.
+  const alcanzaCasa = alcanzaTuLiga(state);
+  const casa = alcanzaCasa ? ligaDeCasa(state) : null;
+  if (casa) {
+    const deCasa = (entrada) => entrada.liga.id === casa.id;
+    if (!ofertas.some((oferta) => oferta.liga === casa.id) && !posibles.some(deCasa)) {
+      const lugar = clubDeCasaQueTeHaceLugar(state);
+      if (lugar) {
+        posibles.push({ ...lugar, forzadaFranquicia: true });
+      }
+    }
+    const ordenadas = [...posibles.filter(deCasa), ...posibles.filter((entrada) => !deCasa(entrada))];
+    posibles.splice(0, posibles.length, ...ordenadas);
+  }
+  const hayCasaEnLaMano = posibles.some((entrada) => casa && entrada.liga.id === casa.id);
+
   // El mercado prefiere jóvenes (CONCEPTO §12): `sesgoEtario` adelgaza la mano.
   // 9Md: se escala la mano YA capada a `ofertasMax` (con 6 ligas `posibles`
   // puede ser enorme y el tope tapaba el sesgo antes de que mordiera). Piso 1
-  // para la franquicia.
+  // para la franquicia (K5c-H: y para el club de tu liga, que va primero).
   const manoBase = Math.min(posibles.length, m.ofertasMax - ofertas.length);
-  const cupoEtario = Math.max(claramenteArriba ? 1 : 0, Math.round(manoBase * sesgoEtario(state.age)));
+  const cupoEtario = Math.max(claramenteArriba || hayCasaEnLaMano ? 1 : 0, Math.round(manoBase * sesgoEtario(state.age)));
   const candidatas = posibles.slice(0, cupoEtario);
 
   for (const { org, liga, motivo, forzadaFranquicia } of candidatas) {

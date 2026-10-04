@@ -398,6 +398,49 @@ export function ganaLaDisputaDelAsiento(state, orgNombre, rol) {
   return nivelEfectivo >= alternativa + BALANCE.demanda.margenSobreAlternativa - rebajaDisputaElite(nivel);
 }
 
+// --- K5c-H, cada uno juega en su casa (PLAN.md "K5c-H") ---
+
+// La liga de tier 1 de tu región de origen (`mundo.regionIdOrigen`), o `null` si tu región no tiene una (LATAM). Pura.
+export function ligaDeCasa(state) {
+  return state.mundo.ligas.find((liga) => esLigaLocalTier1(state, liga)) ?? null;
+}
+
+// Tu nivel para tu liga: el de la disputa de un fichaje ahí (el nivel menos el castigo etario, con la fracción del ascenso
+// de K5c-A), con solo `mercado.casa.fraccionCastigo` del castigo (1 = el castigo entero de la disputa; 0 = tu nivel, sin la
+// edad). Lee las perillas en cada llamada. Pura y sin rng.
+export function nivelParaTuLiga(state, casa) {
+  return nivelDelJugador(state) - castigoEtario(state.age) * fraccionCastigoDe(state, casa) * BALANCE.mercado.casa.fraccionCastigo;
+}
+
+// ¿Alcanzás tu liga? Tu nivel para tu liga (`nivelParaTuLiga`) llega a su calibre (`calibreDeLiga`, la vara del asiento)
+// más `mercado.casa.margenAlcanza`. Con la perilla neutra (99) nunca. Lee la perilla en cada llamada. Pura.
+export function alcanzaTuLiga(state) {
+  const casa = ligaDeCasa(state);
+  return Boolean(casa) && nivelParaTuLiga(state, casa) >= calibreDeLiga(casa) + BALANCE.mercado.casa.margenAlcanza;
+}
+
+// K5c-H: el club de tu liga que te hace lugar cuando la alcanzás y ninguno te ofreció: de los que pueden ficharte (las
+// reglas duras, como el piso de franquicia: `ofertaPosible` con `forzada`), el más fuerte cuya fuerza no pasa tu nivel
+// para tu liga — el que te corresponde por nivel —, o el más débil si todos lo pasan. `null` si no alcanzás o ninguno puede.
+// Devuelve `{ org, liga, motivo }`. Pura y sin rng.
+export function clubDeCasaQueTeHaceLugar(state) {
+  if (!alcanzaTuLiga(state)) {
+    return null;
+  }
+  const casa = ligaDeCasa(state);
+  const rol = state.player.role;
+  const nivel = nivelParaTuLiga(state, casa);
+  const candidatos = casa.orgs
+    .filter((org) => org.nombre !== state.career.currentOrg && state.mundo.planteles?.[org.nombre])
+    .filter((org) => ofertaPosible(state, org.nombre, rol, { forzada: true }).posible)
+    .sort((a, b) => b.fuerza - a.fuerza);
+  const club = candidatos.find((org) => org.fuerza <= nivel) ?? candidatos[candidatos.length - 1];
+  if (!club) {
+    return null;
+  }
+  return { org: club, liga: casa, motivo: `${club.nombre} te hace lugar: sos local y das el nivel de ${nombreVisibleDeLiga(casa.id)}` };
+}
+
 // K5c-A, el ascenso: ¿la oferta de `liga` es de un tier mejor que el tuyo actual (`career.tier`)? Sin tier todavía (antes
 // del primer contrato) no hay ascenso que medir.
 export function esAscenso(state, liga) {
