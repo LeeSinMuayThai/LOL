@@ -457,10 +457,14 @@ function firmarConEquipo(state, decision) {
   const { org, tier, liga } = decision.datos;
   const base = { ...state, phase: 'profesional', splitFichaje: state.player.splitCount };
 
+  // K5c-R: si el primer contrato ya es de tier 2, los años pro (`career.splitPrimerContratoTier2`) arrancan acá.
   const conCareer = tier === 2
     ? {
         ...base,
-        career: { ...base.career, tier: 2, liga, currentOrg: org.nombre, orgs: [...base.career.orgs, org.nombre] }
+        career: {
+          ...base.career, tier: 2, liga, currentOrg: org.nombre, orgs: [...base.career.orgs, org.nombre],
+          splitPrimerContratoTier2: base.career.splitPrimerContratoTier2 ?? state.player.splitCount
+        }
       }
     : asignarOrgTier3(base, org);
 

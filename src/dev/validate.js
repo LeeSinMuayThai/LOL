@@ -736,10 +736,16 @@ const FORMAS_CONOCIDAS = {
   // K4c (revisión, textos): sin campos nuevos; el cierre de año ya no repite carta y la muestra ve otro mapa de eventos vistos.
   // Integración de las dos revisiones (supervisor).
   // K5c (motor): sin campos nuevos; la vuelta del retiro adelanta el reloj y la muestra juega otras carreras.
-  11: '1fe56a6523e4',
-  // K5c-E (el desgaste): `player.desgaste`, un número por stat de curva y por acumulativo (lo que los años te sacan hoy);
-  // `migrarDe11` lo arranca en cero. Las marcas "Los años" tienen la forma de siempre (`{ stat, delta, origen, anio }`).
-  12: '46386d1f58e0'
+  11: '13dd79e086e2',
+  // K5c (motor, la 11 de main): el hash de la 11 no cambia por campos nuevos sino por las carreras de la muestra; la 11 que circula es
+  // la de main (K4c, k4cal-instrumento), así que vuelve a su valor: '13dd79e086e2' (en la rama valía '1fe56a6523e4').
+  // K5c (integración de K5c-E y K5c-R; K5c-M no cambia la forma): suma, por pieza,
+  //  - K5c-E (el desgaste): `player.desgaste`, un número por stat de curva y por acumulativo (lo que los años te sacan hoy). Las
+  //    marcas "Los años" tienen la forma de siempre (`{ stat, delta, origen, anio }`);
+  //  - K5c-R (la presión de tier 2): `flags.splitsTier2SinOfertaTier1` (0 con las perillas neutras) y los años pro desde tier 2:
+  //    `career.splitPrimerContratoTier2`.
+  // Un guardado de la 11 carga con `migrarDe11` (core/guardado.js), que completa los campos de las dos piezas.
+  12: '16c168aa54d6'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -9109,6 +9115,351 @@ check('K5-C: los bots contestan la bifurcación del mercado con una opción vál
     throw new Error(problemas.slice(0, 5).join(' · '));
   }
 });
+
+// --- K5c-R: la presión de tier 2 (PLAN.md K5c, "decisiones de spec de la estructura") ---
+//
+// Regla 17, qué protegen: que el que se queda en tier 2 sin que primera lo llame reciba la bifurcación del final por mercado con su
+// motivo (en el log, en el estado y en la tarjeta), que la cuenta corra todos los splits y que solo la vuelva a cero una oferta de
+// tier 1. Desde K5c-R. Las perillas (`BALANCE.retiro.presionTier2`) salen neutras (99, nunca dispara): los checks las prenden en
+// memoria, igual que el barrido.
+const { aniosEnPalabras: aniosEnPalabrasK5CR } = await import('../systems/retiro.js');
+const PERILLAS_K5CR = { edadDesde: 18, splitsSinOfertaTier1: 3 };
+const SEEDS_K5CR = 20;
+const SPLITS_K5CR = 90;
+// Medido al escribir el check (seeds 1-30, perillas 18 y 3): con el techo de stats en 0,9 de lo que valían al llegar a tier 2,
+// primera deja de llamar pero tier 2 te sigue queriendo (34 bifurcaciones); con 0,8 el declive (`retiro_declive`) te saca antes.
+const FACTOR_DEGRADADO_K5CR = 0.9;
+
+function conPerillasK5CR(perillas, fn) {
+  const p = BALANCE.retiro.presionTier2;
+  const previas = { ...p };
+  Object.assign(p, perillas);
+  try {
+    return fn();
+  } finally {
+    Object.assign(p, previas);
+  }
+}
+
+const tiersDeDecisionK5CR = (decision) => (decision.opciones ?? []).map((opcion) => opcion.tier).filter((tier) => tier !== undefined);
+const fotoK5CR = (st) => ({
+  phase: st.phase, tier: st.career.tier, org: st.career.currentOrg, edad: st.age, split: st.player.splitCount,
+  cuenta: st.flags.splitsTier2SinOfertaTier1, motivoRetiro: st.motivoRetiro ?? null
+});
+
+// Una carrera con lo que cada split vio: la foto antes y después, y cada decisión (con la foto del momento y la respuesta).
+// `degradar`: al llegar a tier 2, cada stat queda topeada en `FACTOR_DEGRADADO_K5CR` de lo que valía (primera deja de llamar).
+function carreraK5CR(seed, { degradar = false, responderBase = responderPorDefectoK5C } = {}) {
+  const rng = mulberry32(seed);
+  let state = createInitialState(seed, rng);
+  let techo = null;
+  const pasos = [];
+  for (let i = 0; i < SPLITS_K5CR && !state.terminado; i += 1) {
+    if (degradar && !techo && state.phase === 'profesional' && state.career.tier === 2) {
+      techo = Object.fromEntries(Object.entries(state.player.stats).map(([stat, valor]) => [stat, valor * FACTOR_DEGRADADO_K5CR]));
+    }
+    if (techo && state.phase === 'profesional') {
+      state = topearStats(state, techo);
+    }
+    const decisiones = [];
+    const responder = (sistema, st, decision, rngR) => {
+      const respuesta = responderBase(sistema, st, decision, rngR);
+      const ligaVisible = st.career.liga ? (st.mundo.ligas.find((liga) => liga.id === st.career.liga)?.nombre ?? null) : null;
+      const esFork = decision.datos?.motivo === 'fin_mercado';
+      decisiones.push({
+        ...fotoK5CR(st), ligaVisible, motivo: decision.datos?.motivo ?? null, variante: decision.datos?.variante ?? null,
+        esMano: decision.presentacion === 'mercado' && decision.datos?.motivo === 'oferta',
+        tiers: tiersDeDecisionK5CR(decision), opciones: (decision.opciones ?? []).map((op) => op.id),
+        tiersFork: esFork ? decision.datos.ofertas.map((oferta) => oferta.tier) : [],
+        motivoFork: esFork ? decision.datos.motivoRetiro : null,
+        textos: decision.datos?.variante ? [decision.titulo, decision.descripcion, ...decision.opciones.flatMap((op) => [op.label, op.descripcion])] : [],
+        ligas: decision.datos?.variante ? st.mundo.ligas : null,
+        respuesta: respuesta.opcionId ?? null
+      });
+      return respuesta;
+    };
+    const antes = fotoK5CR(state);
+    const paso = avanzarSplitAuto(state, rng, responder);
+    state = paso.state;
+    pasos.push({ antes, despues: fotoK5CR(state), decisiones, logs: paso.logs.filter((log) => log.type === 'retiro') });
+  }
+  return { seed, state, pasos };
+}
+
+const muestrasK5CR = new Map();
+function muestraK5CR(clave, perillas, opciones) {
+  if (!muestrasK5CR.has(clave)) {
+    muestrasK5CR.set(clave, conPerillasK5CR(perillas, () => {
+      const carreras = [];
+      for (let seed = 1; seed <= SEEDS_K5CR; seed += 1) {
+        carreras.push(carreraK5CR(seed, opciones));
+      }
+      return carreras;
+    }));
+  }
+  return muestrasK5CR.get(clave);
+}
+
+// Se retira en la primera bifurcación de la presión y no vuelve: la carrera cierra con su tarjeta.
+const retirarseK5CR = (sistema, st, decision, rng) => {
+  if (decision.datos?.variante === 'presion_tier2') {
+    return { opcionId: 'retirarse' };
+  }
+  if (decision.datos?.motivo === 'retiro_vuelta') {
+    return { opcionId: 'quedarse' };
+  }
+  return sistema.resolverAuto(st, decision, rng);
+};
+
+check('K5c-R: con las perillas prendidas, el que se queda en tier 2 sin ofertas de tier 1 recibe la bifurcación, y su motivo llega al log, al estado y a la tarjeta', () => {
+  const carreras = muestraK5CR('retirarse', PERILLAS_K5CR, { degradar: true, responderBase: retirarseK5CR });
+  const problemas = [];
+  let forks = 0;
+  let retiros = 0;
+  let tarjetas = 0;
+  for (const carrera of carreras) {
+    for (const paso of carrera.pasos) {
+      for (const fork of paso.decisiones.filter((d) => d.variante === 'presion_tier2')) {
+        forks += 1;
+        const donde = `seed ${carrera.seed} split ${fork.split}`;
+        if (fork.tier !== 2 || fork.cuenta < PERILLAS_K5CR.splitsSinOfertaTier1 || fork.tiersFork.includes(1)) {
+          problemas.push(`${donde}: frenó en tier ${fork.tier} con cuenta ${fork.cuenta} y ofertas de tier ${fork.tiersFork}`);
+        }
+        const seguir = fork.tiersFork.length > 0 ? 'seguir' : 'esperar';
+        if (fork.opciones.join('|') !== `${seguir}|retirarse`) {
+          problemas.push(`${donde}: opciones ${fork.opciones} (se esperaba ${seguir} y retirarse)`);
+        }
+        const esperado = `Tenés ${fork.edad} años, llevás ${aniosEnPalabrasK5CR(fork.cuenta)} en ${fork.ligaVisible ?? `tier ${fork.tier}`} `
+          + 'y ninguna org de primera te llamó.';
+        if (fork.motivoFork !== esperado) {
+          problemas.push(`${donde}: motivo "${fork.motivoFork}" (se esperaba "${esperado}")`);
+        }
+        for (const texto of fork.textos) {
+          const crudos = idsCrudosK5C(texto, fork.ligas);
+          if (crudos.length > 0) {
+            problemas.push(`${donde}: "${texto}" (${crudos.join(', ')})`);
+          }
+        }
+        if (fork.respuesta !== 'retirarse') {
+          continue;
+        }
+        retiros += 1;
+        if (paso.despues.phase !== 'retirado' || paso.despues.motivoRetiro !== fork.motivoFork) {
+          problemas.push(`${donde}: eligió retirarse y quedó phase ${paso.despues.phase}, motivo "${paso.despues.motivoRetiro}"`);
+        }
+        if (!paso.logs.some((log) => log.message.includes(fork.motivoFork))) {
+          problemas.push(`${donde}: el log del retiro no dice el motivo`);
+        }
+      }
+    }
+    const { state } = carrera;
+    if (String(state.motivoRetiro ?? '').startsWith('Tenés ')) {
+      if (!state.terminado || !state.tarjeta || state.tarjeta.motivo !== state.motivoRetiro) {
+        problemas.push(`seed ${carrera.seed}: terminado ${state.terminado}, la tarjeta dice "${state.tarjeta?.motivo}" y el estado "${state.motivoRetiro}"`);
+      } else {
+        tarjetas += 1;
+      }
+    }
+  }
+  if (forks === 0 || retiros === 0 || tarjetas === 0) {
+    problemas.push(`el check no mide nada: ${forks} bifurcaciones, ${retiros} retiros y ${tarjetas} tarjetas con el motivo de la presión`);
+  }
+  // Con las perillas neutras (las del repo), la misma muestra degradada no frena nunca por la presión: reproduce hoy.
+  const neutras = muestraK5CR('neutras', {}, { degradar: true, responderBase: retirarseK5CR })
+    .flatMap((c) => c.pasos.flatMap((p) => p.decisiones)).filter((d) => d.variante === 'presion_tier2').length;
+  if (neutras !== 0) {
+    problemas.push(`con las perillas neutras frenó ${neutras} veces por la presión de tier 2`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problema(s) en ${forks} bifurcaciones: ${problemas.slice(0, 5).join(' · ')}`);
+  }
+});
+
+check('K5c-R: la cuenta de la presión sube todos los splits jugados en tier 2 (con contrato también) y solo la vuelve a cero una oferta de tier 1', () => {
+  // Sin umbral (99): la cuenta corre y nunca frena, así se ven las manos con y sin tier 1 de carreras normales.
+  const perillas = { edadDesde: PERILLAS_K5CR.edadDesde, splitsSinOfertaTier1: 99 };
+  const carreras = muestraK5CR('cuenta', perillas, {});
+  const problemas = [];
+  let resetsPorTier1 = 0;
+  let manosTier2ConCuenta = 0;
+  let subeSinMercado = 0;
+  const conOferta = (d) => d.esMano || d.motivo === 'traspaso';
+  for (const carrera of carreras) {
+    for (const paso of carrera.pasos) {
+      const { antes, despues } = paso;
+      const donde = `seed ${carrera.seed} split ${antes.split}`;
+      // En la decisión (el mercado corre antes que la cuenta del split): con una oferta de tier 1, en 0; sin ninguna, la de antes.
+      for (const d of paso.decisiones.filter(conOferta)) {
+        if (d.tiers.includes(1)) {
+          if (d.cuenta !== 0) {
+            problemas.push(`${donde}: ${d.motivo} con oferta de tier 1 y cuenta ${d.cuenta}`);
+          }
+          resetsPorTier1 += antes.cuenta > 0 ? 1 : 0;
+        } else if (d.cuenta !== antes.cuenta) {
+          problemas.push(`${donde}: ${d.motivo} sin oferta de tier 1 (tiers ${d.tiers}) y la cuenta pasó de ${antes.cuenta} a ${d.cuenta}`);
+        } else if (antes.cuenta > 0 && d.esMano) {
+          manosTier2ConCuenta += 1;
+        }
+      }
+      // Al cerrar el split: jugado en tier 2 con club desde la edad, +1 (o 1, si una oferta de tier 1 la volvió a cero).
+      const enTier2 = (foto) => foto.phase === 'profesional' && foto.tier === 2 && foto.org !== null;
+      if (!enTier2(antes) || !enTier2(despues) || antes.edad < perillas.edadDesde) {
+        continue;
+      }
+      const vioTier1 = paso.decisiones.some((d) => conOferta(d) && d.tiers.includes(1));
+      const esperado = vioTier1 ? 1 : antes.cuenta + 1;
+      if (despues.cuenta !== esperado) {
+        problemas.push(`${donde}: jugó en tier 2 a los ${antes.edad} (tier 1 visto: ${vioTier1}) y la cuenta pasó de ${antes.cuenta} a ${despues.cuenta}`);
+      }
+      if (antes.split % BALANCE.edad.splitsPorEdad !== 0 && despues.cuenta === antes.cuenta + 1) {
+        subeSinMercado += 1;
+      }
+    }
+  }
+  if (resetsPorTier1 === 0 || manosTier2ConCuenta === 0 || subeSinMercado === 0) {
+    problemas.push(`el check no mide nada: ${resetsPorTier1} ofertas de tier 1 con la cuenta arriba, ${manosTier2ConCuenta} manos solo de tier 2 `
+      + `con la cuenta arriba, ${subeSinMercado} splits sin mercado en que subió`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 5).join(' · ')}`);
+  }
+});
+
+check('K5c-R: los bots contestan la bifurcación de la presión con la regla de edad de K5-C, y elegir seguir vuelve a cero la cuenta', () => {
+  const problemas = [];
+  const reglas = {
+    criterio: (fork) => (fork.edad >= BALANCE.retiro.edadAutoAceptaVeredicto ? 'retirarse' : fork.opciones[0]),
+    malas: (fork) => (fork.edad >= BALANCE.retiro.edadAutoAceptaVeredicto ? fork.opciones[0] : 'retirarse')
+  };
+  for (const [bot, regla] of Object.entries(reglas)) {
+    const carreras = muestraK5CR(`bot-${bot}`, PERILLAS_K5CR, { degradar: true, responderBase: ESTRATEGIAS_K0[bot] });
+    let forks = 0;
+    let siguen = 0;
+    for (const carrera of carreras) {
+      for (const paso of carrera.pasos) {
+        for (const fork of paso.decisiones.filter((d) => d.variante === 'presion_tier2')) {
+          forks += 1;
+          if (regla(fork) !== fork.respuesta) {
+            problemas.push(`${bot}, seed ${carrera.seed}: a los ${fork.edad} contestó "${fork.respuesta}", la regla dice "${regla(fork)}"`);
+          }
+          if (fork.respuesta === fork.opciones[0]) {
+            siguen += 1;
+            // Siguió: la cuenta volvió a 0 en el mercado y el split jugado en tier 2 la deja en 1 (en 0 si se fue de tier 2).
+            if (paso.despues.cuenta > 1) {
+              problemas.push(`${bot}, seed ${carrera.seed} split ${fork.split}: siguió y la cuenta cerró el split en ${paso.despues.cuenta}`);
+            }
+          }
+        }
+      }
+    }
+    if (forks === 0 || (bot === 'criterio' && siguen === 0)) {
+      problemas.push(`${bot}: ${forks} bifurcaciones de la presión y ${siguen} en que siguió, en la muestra`);
+    }
+  }
+  if (problemas.length > 0) {
+    throw new Error(problemas.slice(0, 5).join(' · '));
+  }
+});
+
+// Regla 17, qué protege: que los años pro se cuenten desde el primer contrato de tier 2 o tier 1 y no desde tier 3, igual en el
+// puntaje (`aniosProDe`), en la caja "Años pro" de la tarjeta y en la longevidad del instrumento (`bloqueLongevidad`). Desde K5c-R.
+const { aniosProDe: aniosProDeK5CR } = await import('../core/puntaje.js');
+const { bloqueLongevidad: bloqueLongevidadK5CR } = await import('./simulate.js');
+const SEEDS_ANIOS_PRO_K5CR = 40;
+
+check('K5c-R: los años pro no cuentan tier 3 (el marcador es el primer contrato de tier 2 o tier 1; puntaje, tarjeta e instrumento lo usan)', () => {
+  const problemas = [];
+  let desdeTier3 = 0;
+  let directoTier2 = 0;
+  let soloTier3 = 0;
+  let tarjetas = 0;
+  for (let seed = 1; seed <= SEEDS_ANIOS_PRO_K5CR; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < SPLITS_K5CR && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+    }
+    if (state.splitFichaje === null) {
+      continue;
+    }
+    const marca = state.career.splitPrimerContratoTier2;
+    const porOrg = state.career.registro.porOrg;
+    const primeraFilaT2 = porOrg.find((fila) => fila.tier <= 2) ?? null;
+    const esperado = marca === null ? 0 : (state.player.splitCount - marca) / BALANCE.edad.splitsPorEdad;
+    if (porOrg[0]?.tier === 3 && primeraFilaT2) {
+      // Empezó en un equipo chico: el marcador es la firma en tier 2 (la fila de esa org abre el split siguiente), no `splitFichaje`.
+      desdeTier3 += 1;
+      if (marca === null || marca <= state.splitFichaje || marca !== primeraFilaT2.desdeSplit - 1) {
+        problemas.push(`seed ${seed}: fichó en tier 3 en el split ${state.splitFichaje}, la primera fila de tier 2/1 abre en ${primeraFilaT2.desdeSplit} y el marcador es ${marca}`);
+      }
+    } else if (porOrg[0]?.tier <= 2) {
+      directoTier2 += 1;
+      if (marca !== state.splitFichaje) {
+        problemas.push(`seed ${seed}: su primer contrato ya fue de tier ${porOrg[0].tier} (split ${state.splitFichaje}) y el marcador es ${marca}`);
+      }
+    } else if (!primeraFilaT2) {
+      soloTier3 += 1;
+      if (marca !== null || aniosProDeK5CR(state) !== 0) {
+        problemas.push(`seed ${seed}: nunca firmó en tier 2 o 1 y el marcador es ${marca} (años pro ${aniosProDeK5CR(state)})`);
+      }
+    }
+    if (aniosProDeK5CR(state) !== esperado) {
+      problemas.push(`seed ${seed}: aniosProDe ${aniosProDeK5CR(state)}, desde el marcador ${esperado}`);
+    }
+    const longevidad = bloqueLongevidadK5CR([state]).aniosCarreraPro.mediana;
+    if (longevidad !== esperado) {
+      problemas.push(`seed ${seed}: la longevidad del instrumento da ${longevidad}, desde el marcador ${esperado}`);
+    }
+    if (state.tarjeta) {
+      tarjetas += 1;
+      if (state.tarjeta.totales.anios !== Math.round(esperado)) {
+        problemas.push(`seed ${seed}: la caja de años de la tarjeta dice ${state.tarjeta.totales.anios}, los años pro son ${Math.round(esperado)}`);
+      }
+    }
+  }
+  // El primer contrato directo en tier 2 es raro (ninguno en las seeds 1-40): se exige solo el caso que importa, desde tier 3.
+  if (desdeTier3 === 0 || tarjetas === 0) {
+    problemas.push(`el check no mide nada: ${desdeTier3} carreras desde tier 3, ${directoTier2} directo a tier 2, ${soloTier3} solo tier 3, ${tarjetas} tarjetas`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 5).join(' · ')}`);
+  }
+});
+
+// --- K5c-T: el título que cuenta ---
+//
+// Regla 17, qué protege: que "gana un título doméstico" del embudo (§K.3b, ~30%) cuente solo los títulos de tier 1 y que los de
+// tier 2 se reporten aparte (`ganaTituloTier2`). Desde K5c-T. Carreras sintéticas: lo único que el embudo lee de cada una.
+const { bloqueEmbudo: bloqueEmbudoK5CT } = await import('./simulate.js');
+
+check('K5c-T: un título de tier 2 no cuenta como título doméstico; se reporta aparte en ganaTituloTier2', () => {
+  const carrera = (tiers) => ({
+    splitFichaje: 0,
+    career: { registro: { titulos: tiers.map((tier, i) => ({ nombre: `Título ${i}`, anio: 2030 + i, org: 'Org', liga: 'LIGA', tier })), picos: { rankMundial: 0 }, internacionales: [] } }
+  });
+  const casos = [
+    { nombre: 'solo uno de tier 2', tiers: [2], domestico: false, tier2: true },
+    { nombre: 'solo uno de tier 1', tiers: [1], domestico: true, tier2: false },
+    { nombre: 'uno de cada', tiers: [2, 1], domestico: true, tier2: true },
+    { nombre: 'dos de tier 2', tiers: [2, 2], domestico: false, tier2: true },
+    { nombre: 'ninguno', tiers: [], domestico: false, tier2: false }
+  ];
+  const problemas = [];
+  for (const caso of casos) {
+    const embudo = bloqueEmbudoK5CT([carrera(caso.tiers)], [{ tierMaximo: 1 }], [{ temporadasNumero1: 0 }]);
+    if ((embudo.ganaTituloDomestico > 0) !== caso.domestico || (embudo.ganaTituloTier2 > 0) !== caso.tier2) {
+      problemas.push(`${caso.nombre}: doméstico ${embudo.ganaTituloDomestico}%, tier 2 ${embudo.ganaTituloTier2}%`);
+    }
+  }
+  // Juntas: 2 de 5 con un título de primera y 3 de 5 con uno de tier 2.
+  const juntas = bloqueEmbudoK5CT(casos.map((caso) => carrera(caso.tiers)), casos.map(() => ({ tierMaximo: 1 })), casos.map(() => ({ temporadasNumero1: 0 })));
+  if (juntas.ganaTituloDomestico !== 40 || juntas.ganaTituloTier2 !== 60) {
+    problemas.push(`las cinco juntas: doméstico ${juntas.ganaTituloDomestico}% (se esperaba 40), tier 2 ${juntas.ganaTituloTier2}% (se esperaba 60)`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(problemas.join(' · '));
+  }
+});
 const osK0 = await import('os');
 
 // Carreras por bot en los lotes de los checks lentos (PLAN.md §K.5 pide 200).
@@ -9344,7 +9695,9 @@ function recuentoEmbudoK0(resultados, carreras) {
     estancadoT2T3: pctK0(cuentaK0(indices, (i) => llegaAPro(i) && tier[i] !== null && tier[i] >= 2), total),
     proSinTierNunca: pctK0(cuentaK0(indices, (i) => llegaAPro(i) && tier[i] === null), total),
     llegaATier1: pctK0(nTier1, total),
-    ganaTituloDomestico: pctK0(cuentaK0(resultados, (r) => r.career.registro.titulos.length >= 1), total),
+    // K5c-T: solo los de tier 1 (reemplaza a `titulos.length >= 1`, que contaba los de tier 2); los de tier 2, aparte.
+    ganaTituloDomestico: pctK0(cuentaK0(resultados, (r) => r.career.registro.titulos.filter((t) => t.tier === 1).length > 0), total),
+    ganaTituloTier2: pctK0(cuentaK0(resultados, (r) => r.career.registro.titulos.filter((t) => t.tier === 2).length > 0), total),
     top20: pctK0(nTop20, total),
     top20DeTier1: nTier1 > 0 ? pctK0(nTop20, nTier1) : 0,
     numeroUnoAlgunaVez: pctK0(cuentaK0(resultados, (r) => r.career.registro.picos.rankMundial === 1), total),
@@ -9361,7 +9714,8 @@ function recuentoEmbudoK0(resultados, carreras) {
 // §K.3b — longevidad de los que llegaron a pro.
 function recuentoLongevidadK0(resultados) {
   const pro = resultados.filter((r) => r.splitFichaje !== null);
-  const anios = pro.map((r) => (r.player.splitCount - r.splitFichaje) / BALANCE.edad.splitsPorEdad);
+  // K5c-R: desde el primer contrato de tier 2 o tier 1 (0 si no hubo). Reemplaza a `splitCount - splitFichaje`, que contaba desde tier 3.
+  const anios = pro.map((r) => (r.career.splitPrimerContratoTier2 == null ? 0 : (r.player.splitCount - r.career.splitPrimerContratoTier2) / BALANCE.edad.splitsPorEdad));
   const finales = {};
   for (const r of pro) {
     const clave = r.finAnticipado ?? 'retiro_normal';
@@ -12202,7 +12556,7 @@ checkLento('K0 bloques de simulate: todas las hojas de todos los bloques son fin
   // de `embudo` que salen de los estados finales tienen que dar lo mismo que el lote.
   const N = 60;
   const lote = correrLote(N, 60, 'equilibrado');
-  const cuentas = { noPro: 0, titulo: 0, top20: 0, numeroUno: 0, buenPapel: 0, numeroUno3: 0, faker: 0, forzoso: 0, cortas: 0 };
+  const cuentas = { noPro: 0, titulo: 0, tituloT2: 0, top20: 0, numeroUno: 0, buenPapel: 0, numeroUno3: 0, faker: 0, forzoso: 0, cortas: 0 };
   const buenPapelPorCarrera = [];
   const aniosPro = [];
   for (let seed = 1; seed <= N; seed += 1) {
@@ -12217,14 +12571,18 @@ checkLento('K0 bloques de simulate: todas las hojas de todos los bloques son fin
     const temporadasNumeroUno = st.logs.filter((l) => l.type === 'top_mundial' && l.rankJugador === 1).length;
     buenPapelPorCarrera.push(buenPapel);
     cuentas.noPro += st.splitFichaje === null ? 1 : 0;
-    cuentas.titulo += registro.titulos.length >= 1 ? 1 : 0;
+    // K5c-T: el doméstico es de tier 1 (reemplaza a `titulos.length >= 1`); el de tier 2 va aparte.
+    cuentas.titulo += registro.titulos.some((titulo) => titulo.tier === 1) ? 1 : 0;
+    cuentas.tituloT2 += registro.titulos.some((titulo) => titulo.tier === 2) ? 1 : 0;
     cuentas.top20 += (registro.picos.rankMundial ?? 0) > 0 ? 1 : 0;
     cuentas.numeroUno += registro.picos.rankMundial === 1 ? 1 : 0;
     cuentas.buenPapel += buenPapel >= 1 ? 1 : 0;
     cuentas.numeroUno3 += temporadasNumeroUno >= 3 ? 1 : 0;
     cuentas.faker += buenPapel >= 2 || temporadasNumeroUno >= 3 ? 1 : 0;
     if (st.splitFichaje !== null) {
-      const anios = (st.player.splitCount - st.splitFichaje) / BALANCE.edad.splitsPorEdad;
+      // K5c-R: desde el primer contrato de tier 2 o tier 1 (0 si no hubo). Reemplaza a `splitCount - splitFichaje`, que contaba desde tier 3.
+      const desdeTier2 = st.career.splitPrimerContratoTier2;
+      const anios = desdeTier2 == null ? 0 : (st.player.splitCount - desdeTier2) / BALANCE.edad.splitsPorEdad;
       aniosPro.push(anios);
       cuentas.cortas += anios < 4 ? 1 : 0;
       cuentas.forzoso += st.age >= BALANCE.retiro.edadRetiroForzoso ? 1 : 0;
@@ -12240,6 +12598,7 @@ checkLento('K0 bloques de simulate: todas las hojas de todos los bloques son fin
     'embudo.noLlegaAPro': [lote.embudo.noLlegaAPro, pct(cuentas.noPro)],
     'embudo.llegaAPro': [lote.embudo.llegaAPro, pct(N - cuentas.noPro)],
     'embudo.ganaTituloDomestico': [lote.embudo.ganaTituloDomestico, pct(cuentas.titulo)],
+    'embudo.ganaTituloTier2': [lote.embudo.ganaTituloTier2, pct(cuentas.tituloT2)],
     'embudo.top20': [lote.embudo.top20, pct(cuentas.top20)],
     'embudo.numeroUnoAlgunaVez': [lote.embudo.numeroUnoAlgunaVez, pct(cuentas.numeroUno)],
     'embudo.numeroUnoDelMundo3Temporadas': [lote.embudo.numeroUnoDelMundo3Temporadas, pct(cuentas.numeroUno3)],
@@ -19169,8 +19528,11 @@ function guardadoDeLaVersion10K4cG(state, rng) {
   const datos = JSON.parse(serializarGuardado(state, rng));
   datos.version = 10;
   delete datos.state.player.planAnual;
-  // K5c-E (VERSION 12): ni la 10 ni la 11 escribían `player.desgaste` (la migración lo arranca en cero).
+  // K5c (VERSION 12): ni la 10 ni la 11 escribían los campos de la 12 (la migración los completa): `player.desgaste` de E, y la
+  // cuenta de la presión de tier 2 y el marcador de los años pro de R.
   delete datos.state.player.desgaste;
+  delete datos.state.flags.splitsTier2SinOfertaTier1;
+  delete datos.state.career.splitPrimerContratoTier2;
   datos.state.flags.preparacionDeSplit = PREPARACION_DE_SPLIT_VIEJA_K4cG;
   // K4c (revisión): la 10 tampoco escribía `flags.pruebasFallidas` (la migración lo arranca vacío).
   delete datos.state.flags.pruebasFallidas;
@@ -19191,16 +19553,17 @@ function conElRngDeK4cG(seed, estado) {
 }
 
 check('K4c guardado VERSION 11: la forma de la 10 sigue registrada, y un guardado de la 10 carga completo (plan del perfil, sin preparacionDeSplit) y sigue igual que el de la 11', () => {
-  // K5c-E: con la 12 (y las que vengan) la 10 sigue cargando, pasando por `migrarDe10` y `migrarDe11`.
+  // K5c (integración de E y R): la 12 sale después de la 11. Reemplaza a "VERSION es 11 y la 12 se descarta", que fijaba la versión
+  // actual: un guardado de la 10 se sigue cargando (pasa por `migrarDe10` y `migrarDe11`) y lo que viene después de la actual se descarta.
   if (VERSION_GUARDADO < 11 || FORMAS_CONOCIDAS[10] !== FORMA_DE_LA_VERSION_10_K4cG || FORMAS_CONOCIDAS[11] === FORMAS_CONOCIDAS[10]) {
     throw new Error(`VERSION ${VERSION_GUARDADO}, forma de la 10 ${FORMAS_CONOCIDAS[10]} (la de main es ${FORMA_DE_LA_VERSION_10_K4cG}), forma de la 11 ${FORMAS_CONOCIDAS[11]}`);
   }
-  // Una versión que no es ni la 11 ni la 10 se sigue descartando entera.
+  // Una versión que no es la actual ni una migrable (la 11, la 10) se sigue descartando entera.
   const rngVacio = mulberry32(1);
   const base = JSON.parse(serializarGuardado(createInitialState(1, rngVacio), rngVacio));
   for (const version of [2, 9, VERSION_GUARDADO + 1]) {
     if (deserializarGuardado(JSON.stringify({ ...base, version })) !== null) {
-      throw new Error(`un guardado de VERSION ${version} cargó: solo la ${VERSION_GUARDADO} y las anteriores migrables (10 y 11) se cargan`);
+      throw new Error(`un guardado de VERSION ${version} cargó: solo la ${VERSION_GUARDADO}, la 11 y la 10 (migradas) se cargan`);
     }
   }
   let comparados = 0;
@@ -19240,6 +19603,60 @@ check('K4c guardado VERSION 11: la forma de la 10 sigue registrada, y un guardad
   const sinPerfil = migrarDe10({ flags: {}, player: {} });
   if (!IDS_PLAN_K4cG.includes(sinPerfil.player.planAnual)) {
     throw new Error(`un guardado sin perfil debería caer al plan por defecto, dio ${sinPerfil.player.planAnual}`);
+  }
+});
+
+// --- K5c-R: el guardado VERSION 12 y la migración desde la 11 ---
+//
+// Regla 17, qué protege: "el guardado de la versión anterior no se pierde cuando cambia la forma del estado" (K.7 riesgo 3), para la
+// 12 de K5c-R (`flags.splitsTier2SinOfertaTier1` y `career.splitPrimerContratoTier2`, que `migrarDe11` reconstruye del registro).
+// Desde K5c-R.
+const { migrarDe11: migrarDe11K5CR } = await import('../core/guardado.js');
+const SEEDS_GUARDADO_11_K5CR = [1, 2, 3, 4];
+const SPLITS_GUARDADO_11_K5CR = 30;
+
+// Lo que escribía el código de VERSION 11: sin los campos de la 12.
+function guardadoDeLaVersion11K5CR(state, rng) {
+  const datos = JSON.parse(serializarGuardado(state, rng));
+  datos.version = 11;
+  delete datos.state.flags.splitsTier2SinOfertaTier1;
+  delete datos.state.career.splitPrimerContratoTier2;
+  return JSON.stringify(datos);
+}
+
+check('K5c-R guardado VERSION 12: la forma de la 11 sigue registrada, y un guardado de la 11 carga completo y sigue igual que el de la 12', () => {
+  if (VERSION_GUARDADO !== 12 || FORMAS_CONOCIDAS[12] === undefined || FORMAS_CONOCIDAS[12] === FORMAS_CONOCIDAS[11]) {
+    throw new Error(`VERSION ${VERSION_GUARDADO}, forma de la 11 ${FORMAS_CONOCIDAS[11]}, forma de la 12 ${FORMAS_CONOCIDAS[12]}`);
+  }
+  let comparados = 0;
+  let conMarcador = 0;
+  for (const seed of SEEDS_GUARDADO_11_K5CR) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < SPLITS_GUARDADO_11_K5CR && !state.terminado; i += 1) {
+      const datos = deserializarGuardado(guardadoDeLaVersion11K5CR(state, rng));
+      if (datos === null) {
+        throw new Error(`seed ${seed}, split ${i}: el guardado de VERSION 11 no cargó`);
+      }
+      if (!sonIgualesK4cG(datos.state, JSON.parse(JSON.stringify(state)))) {
+        throw new Error(`seed ${seed}, split ${i}: el estado migrado no es el del guardado de la 12`);
+      }
+      const seguido = avanzarSplitAuto(state, conElRngDeK4cG(seed, rng.estado()));
+      const recargado = avanzarSplitAuto(datos.state, conElRngDeK4cG(datos.seed, datos.rngEstado));
+      if (!sonIgualesK4cG(comoJsonK4cG(seguido), comoJsonK4cG(recargado))) {
+        throw new Error(`seed ${seed}, split ${i}: el guardado migrado no juega el mismo split`);
+      }
+      comparados += 1;
+      conMarcador += state.career.splitPrimerContratoTier2 === null ? 0 : 1;
+      state = avanzarSplitAuto(state, rng).state;
+    }
+  }
+  if (comparados < 40 || conMarcador < 20) {
+    throw new Error(`check vacío: ${comparados} guardados de la 11 comparados (hacen falta 40), ${conMarcador} con el marcador de los años pro (hacen falta 20)`);
+  }
+  // Un estado sin flags (un guardado roto a medias) se completa en vez de tirar.
+  if (migrarDe11K5CR({}).flags.splitsTier2SinOfertaTier1 !== 0) {
+    throw new Error('migrarDe11 sin flags no arranca la cuenta en 0');
   }
 });
 
@@ -19607,8 +20024,8 @@ check('K5c-E se ve: la primera vez que muerde hay una línea en el split (una so
 });
 
 check('K5c-E guardado VERSION 12: la forma de la 11 sigue registrada tal cual, y un guardado de la 11 carga con player.desgaste en cero y juega el mismo próximo split', () => {
-  if (VERSION_GUARDADO < 12 || FORMAS_CONOCIDAS[11] !== '1fe56a6523e4' || FORMAS_CONOCIDAS[12] === FORMAS_CONOCIDAS[11]) {
-    throw new Error(`VERSION ${VERSION_GUARDADO}, forma de la 11 ${FORMAS_CONOCIDAS[11]} (la de main es 1fe56a6523e4), forma de la 12 ${FORMAS_CONOCIDAS[12]}`);
+  if (VERSION_GUARDADO < 12 || FORMAS_CONOCIDAS[11] !== '13dd79e086e2' || FORMAS_CONOCIDAS[12] === FORMAS_CONOCIDAS[11]) {
+    throw new Error(`VERSION ${VERSION_GUARDADO}, forma de la 11 ${FORMAS_CONOCIDAS[11]} (la de main es 13dd79e086e2), forma de la 12 ${FORMAS_CONOCIDAS[12]}`);
   }
   let comparados = 0;
   for (const seed of SEEDS_GUARDADO_10_K4cG) {

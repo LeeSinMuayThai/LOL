@@ -90,4 +90,8 @@ export const VERSION_JUEGO = 'K4c';
 // Integración de las dos revisiones (supervisor): reemplaza a 348923166 y 1625568496.
 // K5c (motor, 992471283): la vuelta del retiro adelanta el reloj (calendario y edad) lo que pasó afuera, y con la edad de la vuelta
 // en la línea Faker la ventana se cierra sola. Misma versión: reemplaza a 2001539523.
-export const HUELLA_JUEGO = 992471283;
+// K5c-R (años pro, 579585404): los años pro se cuentan desde el primer contrato de tier 2 o tier 1 (`career.splitPrimerContratoTier2`), no
+// desde `splitFichaje` (tier 3). Las carreras son las mismas (el marcador no toca el rng; con la definición vieja la huella da 992471283):
+// cambia el eje de años de la leyenda comparada (`aniosProDe`, `core/puntaje.js`) y con él la leyenda de la tupla. Misma versión:
+// reemplaza a 992471283.
+export const HUELLA_JUEGO = 579585404;

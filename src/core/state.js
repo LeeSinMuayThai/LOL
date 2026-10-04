@@ -163,6 +163,10 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // contrato. `splitFichaje` sigue siendo el KPI de "cuánto tardaste en
       // hacerte notar" que reporta simulate.js — no se pisa.
       splitAscensoTier1: null,
+      // K5c-R: el split del primer contrato de tier 2 o tier 1 (`systems/amateur.js` si el primer contrato ya es de tier 2,
+      // `systems/mercado.js` al firmar). Los años pro se cuentan desde acá, no desde `splitFichaje` (que puede ser tier 3):
+      // el puntaje (`aniosProDe`), la caja "Años pro" de la tarjeta y la longevidad del instrumento. `null` hasta entonces.
+      splitPrimerContratoTier2: null,
       // Roster, jerarquía y sinergia: se llenan al firmar.
       liga: null,
       rosterDeOrg: null,
@@ -437,6 +441,11 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // Al llegar a `BALANCE.retiro.splitsSinOfertaEnTierParaBifurcar` frena la bifurcación "bajás o te retirás". Se
       // vuelve a 0 con una oferta de tu tier, al firmar y al retirarte.
       splitsSinOfertaEnTier: 0,
+      // K5c-R: splits jugados en tier 2 (con club) desde `BALANCE.retiro.presionTier2.edadDesde` sin una oferta de tier 1
+      // (`systems/retiro.js` lo sube todos los splits; `systems/mercado.js` lo vuelve a 0 con una oferta de tier 1 y cuando
+      // elegís seguir en tier 2). Al llegar a `presionTier2.splitsSinOfertaTier1` frena la bifurcación del final por
+      // mercado, variante `presion_tier2`. También vuelve a 0 al retirarte.
+      splitsTier2SinOfertaTier1: 0,
       // K4c (revisión): las orgs cuya prueba del mercado no alcanzó sin un respaldo que firmar ("probaste y no alcanzó"), en
       // orden, desde la última firma. No es silencio: no suma a `splitsSinOfertaConsecutivos`, y `systems/retiro.js` lo lee
       // para que el declive diga lo que pasó. Se vacía al firmar y al retirarte.

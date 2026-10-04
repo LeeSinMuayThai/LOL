@@ -1107,7 +1107,11 @@ export function bloqueEmbudo(resultados, carreras, observaciones, { conNotas = f
 
   // En el motor actual, registro.titulos acumula campeonatos domésticos de liga (systems/rendimiento.js, systems/serie.js).
   // Los torneos internacionales se registran por separado en registro.internacionales.
-  const ganaTituloDomestico = resultados.filter((r) => r.career.registro.titulos.length >= 1).length;
+  // K5c-T: "gana un título doméstico" es de primera (§K.3b: ~30%): solo los títulos con `tier === 1`. Reemplaza a
+  // `titulos.length >= 1`, que contaba los de tier 2 (Challengers, academias). Los de tier 2 se reportan aparte.
+  const tituloDeTier = (r, tier) => r.career.registro.titulos.some((titulo) => titulo.tier === tier);
+  const ganaTituloDomestico = resultados.filter((r) => tituloDeTier(r, 1)).length;
+  const ganaTituloTier2 = resultados.filter((r) => tituloDeTier(r, 2)).length;
   const top20 = resultados.filter((r) => (r.career.registro.picos.rankMundial ?? 0) > 0).length;
   const numeroUnoAlgunaVez = resultados.filter((r) => r.career.registro.picos.rankMundial === 1).length;
 
@@ -1128,6 +1132,7 @@ export function bloqueEmbudo(resultados, carreras, observaciones, { conNotas = f
     proSinTierNunca: pct(proSinTierNunca, total),
     llegaATier1: pct(llegaATier1, total),
     ganaTituloDomestico: pct(ganaTituloDomestico, total),
+    ganaTituloTier2: pct(ganaTituloTier2, total),
     top20: pct(top20, total),
     top20DeTier1: llegaATier1 > 0 ? pct(top20, llegaATier1) : 0,
     numeroUnoAlgunaVez: pct(numeroUnoAlgunaVez, total),
@@ -1535,9 +1540,15 @@ function bloqueEconomia(observaciones) {
 
 // §K.3b — longevidad: años de carrera pro de los que llegaron a pro (`BALANCE.edad.splitsPorEdad` splits
 // por año), % con carrera corta y % que termina en la línea forzosa.
+// K5c-R: la duración se cuenta desde el primer contrato de tier 2 o tier 1 (`career.splitPrimerContratoTier2`; 0 si nunca firmó
+// uno). Reemplaza a `(splitCount - splitFichaje) / splitsPorEdad`, que contaba desde tier 3. Quiénes "llegaron a pro" no cambia
+// (`splitFichaje`, como el embudo): solo la duración.
 export function bloqueLongevidad(resultados) {
   const llegaronAPro = resultados.filter((r) => r.splitFichaje !== null);
-  const aniosPro = llegaronAPro.map((r) => (r.player.splitCount - r.splitFichaje) / BALANCE.edad.splitsPorEdad);
+  const aniosPro = llegaronAPro.map((r) => {
+    const desde = r.career.splitPrimerContratoTier2;
+    return desde === null || desde === undefined ? 0 : (r.player.splitCount - desde) / BALANCE.edad.splitsPorEdad;
+  });
   const forzoso = llegaronAPro.filter((r) => r.age >= BALANCE.retiro.edadRetiroForzoso).length;
 
   return {
