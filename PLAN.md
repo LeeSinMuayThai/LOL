@@ -7296,6 +7296,71 @@ Después, el barrido del supervisor con la configuración D como punto de partid
 **Guardado:** K4c va a main con `VERSION` 11. Si las piezas cambian la forma, el paso 3 de K5c sube a **12**,
 con `FORMAS_CONOCIDAS[11]` igual al de main.
 
+#### K5c — decisiones de spec de la estructura *(supervisor, 2026-10-04; revisables)*
+
+**Antes, K4c a main.** La validación completa final de K4c (`a37cb56`) dio 421 OK, 1 PENDIENTE C y **2 FAIL**;
+`simulate.js 1000` dio 0 crashes y el build quedó en 2125/2200 KB. Los dos FAIL estaban en verde en `b33ff0c` y
+ninguno de los dos checks cambió: son corrimiento de muestra en el borde de la banda, causado por los arreglos de
+la revisión (`3882039`, el enfriamiento del cierre de año, cambia las tiradas del resto de la carrera; `17c11e5`, la
+prueba fallida; `4732e1b`, sin plan amateur).
+- **`proyeccionJerarquia`:** sesgo de 3,3 contra un tope de ±3 (n = 279, error estándar 0,31; las dos mitades de
+  seeds dan 3,47 y 2,92). Si la deriva que suma la proyección (`BALANCE.roster.derivaPrimerSplit`) solo mueve lo que
+  muestra la carta, se recentra (regla 15: la carta promete lo que hace el motor), con la huella idéntica. Si mueve
+  el motor, se re-basea la banda con su línea de la regla 17.
+- **El boost del pool no se clava en el centro:** separación de 0,078 contra un piso de 0,080 (K2c midió 0,082;
+  cada mitad de seeds da 0,080 y el valor salta de a ~0,002). El piso baja a 0,35 × el rango, con su línea de la
+  regla 17.
+
+**El nombre del nivel más alto es "El GOAT", definitivo** (confirmado por el usuario el 2026-10-04). Se borra la
+marca de provisorio.
+
+**Las cuatro piezas** salen de `c4db90a` (`k5c-instrumento`) en worktrees paralelas. Cada perilla nueva sale
+**neutra**, con la huella del motor idéntica a 992471283, y se lee en el momento de usarla, no al importar el
+módulo, para que `k5c/barrido.mjs` la pueda pisar en memoria. Las fija el paso 3 con el barrido.
+
+- **K5c-E, el desgaste** (`systems/atributos.js`, `core/curvas.js`, `BALANCE.atributos.desgaste`).
+  - **Los acumulativos.** Pasado `oculto.edadPico` más una gracia, macro, shotcalling y adaptabilidad pierden un
+    término determinista por split, sin `rng`. Va después del `max(0, …)` de `moverStatsAcumulativos`, para que
+    `permiteBajar: false` no se lo coma.
+  - **El bonus permanente** (mecánica, laneo y teamfight) decae una fracción por split pasado el pico. Lo que se
+    pierde se escribe como marca de desgaste, para que siga valiendo bonus = Σ marcas.
+  - **Se ve** en la ficha ("Lo que construiste": lo que te sacaron los años) y en una línea del resumen del split
+    la primera vez que muerde.
+  - **Checks:** nadie se gasta antes del pico más la gracia; un veterano baja; el invariante de las marcas se
+    mantiene; el texto aparece. Todos con la perilla encendida en memoria.
+- **K5c-R, la presión de retiro, y K5c-T, el título que cuenta** (una sola pieza: las dos tocan el mismo bloque
+  del instrumento).
+  - **El contador.** Splits jugados en tier 2 desde `retiro.presionTier2.edadDesde`, que solo resetea una oferta de
+    **tier 1**. Avanza también con contrato; la bifurcación llega en la próxima ventana de mercado abierta, con su
+    motivo ("Tenés N años, llevás X en <liga> y ninguna org de primera te llamó"). Las opciones son retirarte o
+    seguir en tier 2, y seguir resetea el contador. Reusa la bifurcación del final por mercado de K5-C. Perillas
+    neutras en 99. El contador entra al guardado con su check de forma.
+  - **Los años pro** se cuentan desde el primer contrato de tier 2 o tier 1, no desde tier 3: en el instrumento,
+    en sus recuentos independientes, en el puntaje (`aniosProDe`) y en la caja "Años" de la tarjeta, con su línea
+    de la regla 17. Es lo único que puede mover `HUELLA_JUEGO` (porque entra al puntaje), en su propio commit y
+    con la razón dicha.
+  - **El título doméstico** del embudo cuenta solo los de tier 1. Los de tier 2 se reportan aparte.
+  - **Checks:** con la perilla encendida, la bifurcación llega con el motivo en el log, el estado y la tarjeta; una
+    oferta de tier 1 resetea el contador; los años pro no cuentan tier 3; un título de tier 2 no cuenta como
+    doméstico. Los checks de K5-C siguen en verde.
+- **K5c-M, la élite se busca** (`systems/mercado.js`, `core/demanda.js`, `dev/estrategias.js`).
+  - **La fuerza ordena la mano.** El orden de la mano de ofertas suma un término `k × f(nivel) × fuerza del club`:
+    con nivel de élite, los clubes fuertes van primero. Con `k = 0`, la mano y las tiradas quedan idénticas.
+  - **Los clubes fuertes abren asiento** para la élite, si hace falta. Solo si con la perilla neutra es un no-op
+    exacto: esa ruta congela asientos y correría el stream.
+  - **No se toca la fórmula de fuerza del bloque A.**
+  - **El bot `criterio`**, entre ofertas del mismo tier, prefiere el club más fuerte cuando su nivel es de élite
+    (es instrumento).
+  - **Se ve:** la carta de oferta dice dónde está el plantel ("el más fuerte de LCK", "mitad de tabla"), con datos
+    del motor.
+  - **Checks:** con `k > 0` en memoria, la fuerza mediana de los clubes de tier 1 que le ofrecen a la élite sube y la
+    del jugador medio casi no cambia; la carta coincide con el motor.
+
+**Después:** se integran las piezas sobre `k5c-instrumento` (con K4c ya mergeado), hay una revisión de motor que
+incluye el arreglo del calendario (`ccdd2dd`, `c4db90a`, que no tuvo revisión independiente), y sigue el barrido
+del supervisor desde la configuración D. Orden de las perillas: la longevidad, la élite, el Mundial por región, y
+los títulos y el top 20.
+
 ### K6 — Jugarlo *(la prueba que importa)*
 
 Tres carreras completas en el navegador: una que se estanca en tier 2 por malas decisiones, una buena
