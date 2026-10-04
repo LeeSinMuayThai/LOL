@@ -91,6 +91,7 @@ import {
 import { esMapaDeDesempate } from '../core/serie.js';
 import { previaDePartido, previaDeDecision, textoDeProbabilidadJugada } from '../core/previaDePartido.js';
 import { esSerieDeEliminacion, esSerieSinNadaEnJuego as esSerieSinNadaEnJuegoK6aM, esCierreDeTemporada as esCierreK6aM } from '../core/serie.js';
+import { esFinalDeSerie as esFinalK6aR, ladoCantado as ladoCantadoK6aR, pSerieDelCoach as pSerieDelCoachK6aR } from '../core/serie.js';
 import { encabezadoDeResultado } from '../core/temporada.js';
 import { cumpleCondiciones as cumpleCondicionesK6aM } from '../core/selectors.js';
 import { jugasteUnSplitConLaOrg } from '../systems/competitivo.js';
@@ -777,7 +778,9 @@ const FORMAS_CONOCIDAS = {
   // log). La 12 sigue sin salir: se re-registra ('36ce05b9630c' antes de K6a-A).
   // K6a (integración): las dos piezas juntas (el log de la fecha marcada y el formato de final de K6a-M, la línea de crónica de la
   // semana de K6a-A); K6a-U no cambia la forma. Reemplaza a 'd00614b9a20a' (K6a-M) y '446e670c1c40' (K6a-A).
-  12: '516706fb5653'
+  // K6a-R: `serie.cantada` (la serie de eliminación cantada que no frena en el plan), su línea del feed (`cantada`, `pSerie`) y
+  // `cantada` en el log de post-serie. La 12 sigue sin salir: se re-registra (reemplaza a '516706fb5653').
+  12: '403b78edfe30'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -15970,8 +15973,12 @@ check('K4-B el rival también quema: con el Fearless su fuerza de mapa cae mapa 
   }
 });
 
-checkLento('K4-B pausas por serie: el plan al arrancar y después como mucho 2 (te leyeron el guardado, el mapa decisivo); ninguna serie queda «sin nada en juego» (K6a-M: todas son de eliminación); minijuegos de serie solo en el mapa decisivo de semis, final e internacional; la charla del coach como mucho una por temporada', () => {
+// K6a-R reemplaza a "el plan al arrancar" en toda serie (K6a-M), que exigía que cada serie arrancara por su plan: una serie de
+// eliminación cantada no frena en el plan (lo arma el coach) y su única pausa es el mapa decisivo. Protege, desde K4-B, que una serie
+// no sea una maratón de pausas.
+checkLento('K4-B pausas por serie: el plan al arrancar (K6a-R: salvo la cantada, que no frena en el plan) y después como mucho 2 (te leyeron el guardado, el mapa decisivo; la cantada, solo el decisivo); ninguna serie queda «sin nada en juego» (K6a-M: todas son de eliminación); minijuegos de serie solo en el mapa decisivo de semis, final e internacional; la charla del coach como mucho una por temporada', () => {
   const series = new Map();
+  const cantadas = new Set();
   const problemas = [];
   let sinNada = 0;
   let charlas = 0;
@@ -15991,6 +15998,9 @@ checkLento('K4-B pausas por serie: el plan al arrancar y después como mucho 2 (
         series.set(clave, []);
       }
       series.get(clave).push(tipo);
+      if (st.serie.cantada) {
+        cantadas.add(clave);
+      }
       if (tipo !== 'post_serie' && st.serie.sinNadaEnJuego) {
         problemas.push(`seed ${seed}: una serie sin nada en juego frenó (${tipo})`);
       }
@@ -16027,6 +16037,12 @@ checkLento('K4-B pausas por serie: el plan al arrancar y después como mucho 2 (
     if (enSerie.length === 0) {
       continue;
     }
+    if (cantadas.has(clave)) {
+      if (enSerie.length !== 1 || !['decisivo', 'mapa_decisivo'].includes(enSerie[0])) {
+        problemas.push(`${clave}: una serie cantada frenó en algo que no es su mapa decisivo (${enSerie.join(', ')})`);
+      }
+      continue;
+    }
     if (enSerie[0] !== 'plan' || enSerie.filter((tipo) => tipo === 'plan').length !== 1) {
       problemas.push(`${clave}: la serie no arrancó por un solo plan (${enSerie.join(', ')})`);
     }
@@ -16058,6 +16074,10 @@ function cosechaDeCarrerasK6aM() {
   }
   const c = {
     series: 0, mundial: 0, mundialPorTope: 0, finalesTier2: 0, sinParada: [], titulos: 0, titulosSinFinal: [],
+    // K6a-R: las finales (y las que no frenaron en el plan), las cantadas (las que frenaron en el plan, las que llegaron al
+    // mapa decisivo y las que ahí no frenaron), los planes que frenaron una serie cantada, y las líneas del feed de cada cantada.
+    finales: 0, finalesSinPlan: [], cantadas: 0, cantadasConPlan: [], cantadasAlDecisivo: 0, cantadasSinDecisivo: [],
+    cantadasPorTopeDelMundial: 0, planEnCantada: [], lineasCantadas: [], cantadasSinLinea: [],
     previas: 0, previaDistinta: [], defineFueraDeCierre: [], defineEnCierre: 0,
     pruebas: 0, firmasAmateur: 0, jugaron: 0, pruebaSinDesenlace: [], firmoYNoJugo: []
   };
@@ -16067,12 +16087,27 @@ function cosechaDeCarrerasK6aM() {
     let firmaPendiente = null;
     for (let i = 0; i < 60 && !state.terminado; i += 1) {
       const planes = new Set();
+      const decisivos = new Set();
+      let paradasDelMundialAntesDeLaFinal = 0;
       const previas = [];
       const pruebas = [];
       const responder = (sistema, st, decision, r) => {
         const datos = decision.datos ?? {};
         if (datos.motivo === 'plan' && !datos.replan && st.serie?.activa) {
           planes.add(`${st.serie.ronda}|${st.serie.etapa ?? null}|${st.serie.rival.org}`);
+          // K6a-R: un plan que frena al arrancar una serie que no es final tiene que ser de una serie abierta (la p del coach
+          // en la franja), medido acá con la misma vara y no con lo que el motor guardó.
+          if (st.serie.mapaActual === 0 && !esFinalK6aR(st.serie) && ladoCantadoK6aR(pSerieDelCoachK6aR(st)) !== null) {
+            c.planEnCantada.push(`seed ${seed} split ${i}: ${st.serie.ronda} vs ${st.serie.rival.org} frenó en el plan con p ${pSerieDelCoachK6aR(st).toFixed(3)}`);
+          }
+        }
+        if (st.serie?.activa && (datos.motivo === 'decisivo' || (datos.motivo === 'minijuego' && datos.momento === 'mapa_decisivo'))) {
+          decisivos.add(`${st.serie.ronda}|${st.serie.etapa ?? null}|${st.serie.rival.org}`);
+        }
+        // Las paradas del Mundial antes de su final (el Swiss y el bracket): con menos de las que deja el tope T9 antes de la
+        // reserva de la final, el tope no cortó ninguna.
+        if (sistema.id === 'internacional' && !(st.serie?.activa && st.serie.torneo === 'mundial' && st.serie.etapa === 'final')) {
+          paradasDelMundialAntesDeLaFinal += 1;
         }
         if (sistema.id === 'temporada' && datos.motivo === 'momento') {
           previas.push(previaDeDecision(st, decision)?.rival?.nombre ?? null);
@@ -16095,12 +16130,50 @@ function cosechaDeCarrerasK6aM() {
       state = paso.state;
 
       const posts = paso.logs.filter((log) => log.postSerie);
+      const lineas = paso.logs.filter((log) => log.type === 'serie' && log.cantada && !log.postSerie);
+      c.lineasCantadas.push(...lineas.map((log) => ({ donde: `seed ${seed} split ${i}`, message: log.message, cantada: log.cantada, pSerie: log.pSerie })));
+      const cantadasDelSplit = posts.filter((log) => log.cantada).length;
+      if (lineas.length !== cantadasDelSplit) {
+        c.cantadasSinLinea.push(`seed ${seed} split ${i}: ${cantadasDelSplit} series cantadas y ${lineas.length} líneas que lo dicen`);
+      }
+      const topeDelMundialAntesDeLaFinal = BALANCE.mundial.maxInterrupciones - BALANCE.mundial.reservaParaLaFinal;
       for (const log of posts) {
+        const clave = `${log.ronda}|${log.etapa ?? null}|${log.rival}`;
+        const donde = `seed ${seed} split ${i}: ${log.ronda}${log.etapa ? ` (${log.etapa})` : ''} vs ${log.rival} ${log.marcador.join('-')}`;
+        // K6a-R (a): toda final frena en su plan (la del Mundial tiene su reserva: el tope T9 no la corta). Se reconoce por el log,
+        // no con `esFinalDeSerie`, para que el check no dependa de la función que mide.
+        if (log.ronda === 'final' || (log.torneo === 'mundial' && log.etapa === 'final')) {
+          c.finales += 1;
+          if (!planes.has(clave)) {
+            c.finalesSinPlan.push(donde);
+          }
+        }
+        // K6a-R (b): la cantada no frena en el plan y frena en su mapa decisivo si llega (salvo que el tope T9 del Mundial ya
+        // estuviera lleno antes de la final).
+        if (log.cantada) {
+          c.cantadas += 1;
+          if (planes.has(clave)) {
+            c.cantadasConPlan.push(`${donde} (${log.cantada})`);
+          }
+          if (log.mapas.length === log.formato) {
+            if (decisivos.has(clave)) {
+              c.cantadasAlDecisivo += 1;
+            } else if (log.torneo === 'mundial' && paradasDelMundialAntesDeLaFinal >= topeDelMundialAntesDeLaFinal) {
+              c.cantadasPorTopeDelMundial += 1;
+            } else {
+              c.cantadasSinDecisivo.push(`${donde} (${log.cantada})`);
+            }
+          }
+        }
         c.series += 1;
         if (log.torneo === 'mundial') {
           c.mundial += 1;
         } else if (log.ronda === 'final' && state.career.tier === 2) {
           c.finalesTier2 += 1;
+        }
+        if (log.cantada) {
+          // K6a-R: la cantada no frena en el plan; lo que le toca lo mide el check K6a-R (b).
+          continue;
         }
         // El tope de paradas del Mundial (T9) puede poner el plan del coach en cuartos y semis del Mundial —con su aviso en el
         // feed—, nunca en la final (que tiene su reserva): esa es la única serie que puede no frenar.
@@ -16110,8 +16183,8 @@ function cosechaDeCarrerasK6aM() {
           c.mundialPorTope += 1;
           continue;
         }
-        if (!planes.has(`${log.ronda}|${log.etapa ?? null}|${log.rival}`) || log.sinNadaEnJuego) {
-          c.sinParada.push(`seed ${seed} split ${i}: ${log.ronda} vs ${log.rival} ${log.marcador.join('-')}`);
+        if (!planes.has(clave) || log.sinNadaEnJuego) {
+          c.sinParada.push(donde);
         }
       }
       for (const titulo of state.career.registro.titulos.slice(titulosAntes)) {
@@ -16170,18 +16243,102 @@ function cosechaDeCarrerasK6aM() {
   return c;
 }
 
-checkLento(`K6a-M ninguna serie de eliminación ni final se resuelve sin parada: cada serie (playoffs de tier 1, la final de tier 2, el bracket del Mundial salvo lo que corta su tope T9) frena en su plan, y cada título de tier 1 o 2 sale de una final que frenó (criterio, ${CARRERAS_K6AM} carreras)`, () => {
+// K6a-R reemplaza a "K6a-M ninguna serie de eliminación ni final se resuelve sin parada: cada serie (...) frena en su plan", que
+// exigía el plan en TODA serie de eliminación: la cantada (la p del plan del coach fuera de la franja `pAbiertaEliminacion`) ya no
+// frena en el plan sino en su mapa decisivo si llega, y eso lo miden los checks "K6a-R" de abajo. Este sigue protegiendo, desde
+// K6a-M, que una serie de eliminación abierta no se resuelva sola, que ninguna se diga "sin nada en juego" y que cada título salga de
+// una final que frenó.
+checkLento(`K6a-M ninguna serie de eliminación abierta se resuelve sin parada ni se dice "sin nada en juego": cada serie que no está cantada (playoffs de tier 1, la final de tier 2, el bracket del Mundial salvo lo que corta su tope T9) frena en su plan, y cada título de tier 1 o 2 sale de una final que frenó (criterio, ${CARRERAS_K6AM} carreras)`, () => {
   const c = cosechaDeCarrerasK6aM();
   fallarSiK2d([...c.sinParada, ...c.titulosSinFinal]);
-  if (c.series < 150 || c.mundial < 20 || c.finalesTier2 < 5 || c.titulos < 10) {
-    throw new Error(`check vacío: ${c.series} series, ${c.mundial} del Mundial (${c.mundialPorTope} por el tope T9), ${c.finalesTier2} finales de tier 2, ${c.titulos} títulos`);
+  if (c.series < 150 || c.mundial < 20 || c.finalesTier2 < 5 || c.titulos < 10 || c.series - c.cantadas < 50) {
+    throw new Error(`check vacío: ${c.series} series (${c.cantadas} cantadas), ${c.mundial} del Mundial (${c.mundialPorTope} por el tope T9), ${c.finalesTier2} finales de tier 2, ${c.titulos} títulos`);
   }
-  // La regla sobre series sintéticas: ninguna diferencia de fuerza deja sin parada a una serie de eliminación.
+  // La regla sobre series sintéticas: ninguna diferencia de fuerza vuelve "sin nada en juego" a una serie de eliminación.
   for (const ronda of ['cuartos', 'semis', 'final', 'internacional']) {
     const serie = { ronda, fuerzaInicial: 90, rival: { fuerza: 10 } };
     if (!esSerieDeEliminacion(serie) || esSerieSinNadaEnJuegoK6aM(serie)) {
-      throw new Error(`una serie de ${ronda} con 80 puntos de diferencia se resolvería sola`);
+      throw new Error(`una serie de ${ronda} con 80 puntos de diferencia se diría "sin nada en juego"`);
     }
+  }
+});
+
+// ============================================================================
+// K6a-R (PLAN.md, "Decisión del supervisor (K6a-R, el ritmo de la eliminación)"): una serie de eliminación frena en lo que
+// decide. Toda final frena en el plan; una abierta (la p de serie del plan del coach entre `pAbiertaEliminacion` y su
+// complemento) frena en el plan; una cantada no: el coach arma el plan, el feed lo dice, y frena en el mapa decisivo si llega.
+// Los tres miden la misma cosecha de K6a-M (criterio, con la prueba clavada).
+// ============================================================================
+
+// Protege, desde K6a-R, que ninguna final (la doméstica de tier 1, la de tier 2 y la del Mundial) se resuelva sin frenar en su plan,
+// por más cantada que esté (regla 7: rojo con `esFinalDeSerie` que siempre dice que no).
+checkLento(`K6a-R ninguna final se resuelve sin frenar en el plan: la doméstica de tier 1, la de tier 2 y la del Mundial, por más despareja que sea (criterio, ${CARRERAS_K6AM} carreras)`, () => {
+  const c = cosechaDeCarrerasK6aM();
+  fallarSiK2d(c.finalesSinPlan.map((donde) => `${donde}: una final que no frenó en el plan`));
+  for (const serie of [{ ronda: 'final', etapa: null }, { ronda: 'internacional', etapa: 'final' }]) {
+    if (!esFinalK6aR(serie)) {
+      throw new Error(`${serie.ronda}/${serie.etapa}: no se reconoce como final`);
+    }
+  }
+  for (const serie of [{ ronda: 'semis', etapa: null }, { ronda: 'cuartos', etapa: null }, { ronda: 'internacional', etapa: 'semis' }]) {
+    if (esFinalK6aR(serie)) {
+      throw new Error(`${serie.ronda}/${serie.etapa}: se toma por una final`);
+    }
+  }
+  if (c.finales < 30) {
+    throw new Error(`check vacío: ${c.finales} finales`);
+  }
+});
+
+// Protege, desde K6a-R, el ritmo de la eliminación: una serie cantada no frena en el plan (nadie le pregunta al jugador algo que
+// el plan casi no mueve), pero sí en el mapa decisivo cuando llega (regla 7: rojo con la cantada frenando en el plan, y con su mapa
+// decisivo resuelto solo). Un plan que frena al arrancar una serie que no es final se mide con la misma vara: tiene que estar abierta.
+checkLento(`K6a-R una serie de eliminación cantada no frena en el plan, pero sí en su mapa decisivo cuando llega; la que frena en el plan está abierta (criterio, ${CARRERAS_K6AM} carreras)`, () => {
+  const c = cosechaDeCarrerasK6aM();
+  fallarSiK2d([
+    ...c.cantadasConPlan.map((donde) => `${donde}: una serie cantada frenó en el plan`),
+    ...c.cantadasSinDecisivo.map((donde) => `${donde}: una serie cantada llegó al mapa decisivo y no frenó`),
+    ...c.planEnCantada
+  ]);
+  if (c.cantadas < 30 || c.cantadasAlDecisivo < 3) {
+    throw new Error(`check vacío: ${c.cantadas} series cantadas, ${c.cantadasAlDecisivo} llegaron al mapa decisivo y frenaron (${c.cantadasPorTopeDelMundial} cortadas por el tope T9 del Mundial)`);
+  }
+});
+
+// Protege, desde K6a-R, que el feed no mienta sobre una serie que no te preguntó: no dice "sin nada en juego" (una serie de
+// eliminación siempre tiene algo), nombra si sos favorito o no con la p del plan del coach, y cada cantada tiene su línea
+// (regla 7: rojo con las líneas de favorito y de underdog cruzadas, y con la de "sin nada en juego").
+checkLento(`K6a-R el feed de una serie cantada no dice "sin nada en juego" y nombra si sos favorito o no, coherente con la p de la serie (criterio, ${CARRERAS_K6AM} carreras)`, () => {
+  const c = cosechaDeCarrerasK6aM();
+  const pAbierta = BALANCE.serie.plan.pAbiertaEliminacion;
+  const problemas = [...c.cantadasSinLinea];
+  let favoritos = 0;
+  for (const linea of c.lineasCantadas) {
+    const dice = `${linea.donde}: "${linea.message}"`;
+    if (/sin nada en juego/i.test(linea.message)) {
+      problemas.push(`${dice} dice "sin nada en juego"`);
+    }
+    if (typeof linea.pSerie !== 'number' || !linea.message.includes(`${Math.round(linea.pSerie * 100)}%`)) {
+      problemas.push(`${dice} no dice su p (${linea.pSerie})`);
+    }
+    const diceFavorito = /sos el favorito claro/i.test(linea.message) && !/no sos el favorito/i.test(linea.message);
+    const diceUnderdog = /no sos el favorito/i.test(linea.message) && !/sos el favorito claro/i.test(linea.message);
+    if (linea.cantada === 'favorito') {
+      favoritos += 1;
+      if (!(linea.pSerie > 1 - pAbierta) || !diceFavorito) {
+        problemas.push(`${dice}: favorito con p ${linea.pSerie}`);
+      }
+    } else if (linea.cantada === 'underdog') {
+      if (!(linea.pSerie < pAbierta) || !diceUnderdog) {
+        problemas.push(`${dice}: underdog con p ${linea.pSerie}`);
+      }
+    } else {
+      problemas.push(`${dice}: cantada de un lado que no existe (${linea.cantada})`);
+    }
+  }
+  fallarSiK2d(problemas);
+  if (c.lineasCantadas.length < 30 || favoritos < 10) {
+    throw new Error(`check vacío: ${c.lineasCantadas.length} líneas de series cantadas, ${favoritos} de favorito`);
   }
 });
 
@@ -21083,9 +21240,13 @@ check('K4c-F 3: el meta es un renglón por parche (el campeón que sale va adent
   }
 });
 
-check('K4c-F 4: de las series en las que no frenaste, un renglón por serie (los mapas van adentro del beat)', () => {
+// K6a-R suma la serie cantada (no frena en el plan): sus mapas van adjuntos menos el decisivo, que frena; antes se le exigía a toda
+// serie que no fuera "sin nada en juego" que todos sus mapas fueran beat. Protege, desde K4c-F, que tu serie no se comprima donde te
+// frenó y que no cueste un beat por mapa donde no.
+check('K4c-F 4: de las series en las que no frenaste, un renglón por serie (los mapas van adentro del beat); en una cantada, también, salvo el mapa decisivo', () => {
   let seriesSinFrenar = 0;
   let seriesConPlan = 0;
+  let seriesCantadas = 0;
   for (const { seed, state } of carrerasDelFeed()) {
     state.logs.forEach((log, i) => {
       if (log.type !== 'serie' || !log.postSerie) {
@@ -21103,6 +21264,12 @@ check('K4c-F 4: de las series en las que no frenaste, un renglón por serie (los
         if (sueltos.length > 0) {
           throw new Error(`seed ${seed}, log ${i}: serie sin nada en juego con ${sueltos.length} mapa(s) como beat propio`);
         }
+      } else if (log.cantada) {
+        seriesCantadas += 1;
+        const malos = mapas.filter((mapa) => formaBeatK4cf(mapa) !== (mapa.mapa === log.formato));
+        if (malos.length > 0) {
+          throw new Error(`seed ${seed}, log ${i}: serie cantada con ${malos.length} mapa(s) mal comprimidos (solo el decisivo es beat)`);
+        }
       } else if (log.torneo !== 'mundial') {
         seriesConPlan += 1;
         if (mapas.some((mapa) => !formaBeatK4cf(mapa))) {
@@ -21114,7 +21281,7 @@ check('K4c-F 4: de las series en las que no frenaste, un renglón por serie (los
   // K6a-M reemplaza a "la sonda necesita series de los dos tipos": ninguna serie de eliminación se resuelve sin frenar (y hoy
   // todas lo son), así que la rama de arriba ya no tiene casos; la de las series que frenan es la que mide.
   if (seriesConPlan === 0) {
-    throw new Error(`la sonda necesita series que frenaron (sin frenar: ${seriesSinFrenar}, con plan: ${seriesConPlan})`);
+    throw new Error(`la sonda necesita series que frenaron (sin frenar: ${seriesSinFrenar}, con plan: ${seriesConPlan}, cantadas: ${seriesCantadas})`);
   }
 });
 

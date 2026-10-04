@@ -135,7 +135,12 @@ export function migrarDe11(state) {
   const splitPrimerContratoTier2 = state.career.splitPrimerContratoTier2 !== undefined
     ? state.career.splitPrimerContratoTier2
     : primerContratoTier2DelRegistro(state);
-  return { ...state, player, flags, career: { ...state.career, splitPrimerContratoTier2, splitsRetirado: state.career.splitsRetirado ?? 0 } };
+  // K6a-R: `serie.cantada` (sin cambiar la VERSION): un guardado de antes no la trae y su serie frena en el plan.
+  const serie = state.serie ? { ...state.serie, cantada: state.serie.cantada ?? null } : state.serie;
+  return {
+    ...state, player, flags, serie,
+    career: { ...state.career, splitPrimerContratoTier2, splitsRetirado: state.career.splitsRetirado ?? 0 }
+  };
 }
 
 // De la versión del guardado a la función que lo deja en la actual (la 10 pasa por `migrarDe10` y por `migrarDe11`).

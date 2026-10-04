@@ -107,4 +107,7 @@ export const VERSION_JUEGO = 'K4c';
 // frenan, el retiro al final de las opciones), juntas sobre lo que k5c-instrumento sumó después de 75e7ed5 (e5fdd65, b2c08f5, fddb82b).
 // K6a-U no mueve el rng (textos y pantallas) y la ventana de retiro ya preguntaba una vez por año (el check de D-B no toca el
 // motor). Misma versión (12, no salió): reemplaza a 319240573 (K6a-M) y 871362456 (K6a-A).
-export const HUELLA_JUEGO = 505125930;
+// K6a-R (el ritmo de la eliminación, 860000955): una serie de eliminación que no es final y está cantada (la p del plan del coach
+// fuera de [0,3, 0,7], `serie.plan.pAbiertaEliminacion`) no frena en el plan: la juega el plan del coach y frena solo en el mapa
+// decisivo. Cambia el stream (los planes que elegía `criterio` en esas series). Misma versión (12, no salió): reemplaza a 505125930.
+export const HUELLA_JUEGO = 860000955;

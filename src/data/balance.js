@@ -1663,6 +1663,16 @@ export const BALANCE = {
       // todas lo son: los playoffs y el bracket del Mundial frenan siempre. En el ensayo de K6 una final del CBLOL y unos
       // cuartos se habían resuelto solos por esta regla.
       umbralSinNadaEnJuego: 6,
+      // K6a-R (PLAN.md, "Decisión del supervisor (K6a-R, el ritmo de la eliminación)"): una serie de eliminación que no es
+      // final frena en el plan solo si está abierta, con la p de serie del plan del coach entre esto y 1 − esto. Afuera de esa
+      // franja está cantada: el coach arma el plan, el feed dice si sos favorito o no, y frena solo en el mapa decisivo si llega.
+      // Ninguna final se mira con esto: frena siempre.
+      // Medido (criterio, 400 × 60; con 0,2 el instrumento dio p90 6 / 6 en playoffs / internacional y Δp de plan 5,59 pp), con
+      // una sonda que le saca a cada split el plan de las series no finales que este valor dejaría cantadas: el % de splits de
+      // playoffs con más de 5 paradas es 11,6 (0,2), 10,0 (0,25: el p90 justo en el borde), 8,0 (0,3) y 6,2 (0,35). 0,3 es el
+      // primero con margen. El internacional no baja de p90 6 con ningún valor (12% de splits con más de 5 aun con 0,4): el
+      // cierre de año, la final doméstica y el tope T9 del Mundial (4) ya suman 6 sin una sola serie abierta.
+      pAbiertaEliminacion: 0.3,
       // Salir con todo: tus mejores picks y más intensidad en los primeros `mapasConTodo` mapas; después lo pagás.
       mapasConTodo: 2,
       // K4c, los cinco `empuje*`/`desgaste*` ×3 (barrido con `criterio`, 300 × 60, escalando todos juntos; PLAN.md, "El barrido del

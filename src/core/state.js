@@ -332,6 +332,8 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       rivalJuega: null,
       rivalJuegaEnMapa: -1,
       sinNadaEnJuego: false,
+      // K6a-R: 'favorito' o 'underdog' si la serie de eliminación está cantada (el plan lo arma el coach), `null` si frena.
+      cantada: null,
       // Dos cupos de minijuego (9R4b; K4 sacó el del mapa normal y el bootcamp): `decisivoUsado` es el del mapa
       // decisivo; `minijuegoUsado`, el de la rueda de prensa de después de la final.
       minijuegoUsado: false,
