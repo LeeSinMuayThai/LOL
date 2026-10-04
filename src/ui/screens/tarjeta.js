@@ -247,7 +247,8 @@ export function renderTarjeta(container, state, modulos, extras = {}) {
   const totales = t.totales;
   const franja = document.createElement('div');
   franja.className = 'tarjeta-totales';
-  franja.appendChild(celda('Años', String(totales.anios)));
+  // K5c-R: la caja cuenta los años pro (desde el primer contrato de tier 2 o tier 1), no los de vida desde los 15.
+  franja.appendChild(celda('Años pro', String(totales.anios)));
   franja.appendChild(celda('Splits', String(totales.splits)));
   franja.appendChild(celda('Títulos', String(totales.titulos)));
   if (totales.internacionales > 0) {

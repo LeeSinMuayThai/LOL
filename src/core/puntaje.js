@@ -171,11 +171,15 @@ function rankPicoDe(state) {
   return registroDe(state).picos.rankMundial;
 }
 
-function aniosProDe(state) {
-  if (state.splitFichaje === null || state.splitFichaje === undefined) {
+// K5c-R: los años pro se cuentan desde el primer contrato de tier 2 o tier 1 (`career.splitPrimerContratoTier2`). Reemplaza a
+// `(splitCount - splitFichaje) / splitsPorEdad`, que contaba desde tier 3: un año en un equipo chico no es carrera pro. Sin
+// contrato de tier 2 o 1, 0. Lo leen la leyenda comparada (acá) y la caja "Años pro" de la tarjeta (`core/legado.js`).
+export function aniosProDe(state) {
+  const desde = state.career?.splitPrimerContratoTier2;
+  if (desde === null || desde === undefined) {
     return 0;
   }
-  return Math.max(0, (state.player.splitCount - state.splitFichaje) / BALANCE.edad.splitsPorEdad);
+  return Math.max(0, (state.player.splitCount - desde) / BALANCE.edad.splitsPorEdad);
 }
 
 function titulosDePrimera(registro) {

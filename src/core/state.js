@@ -160,6 +160,10 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // contrato. `splitFichaje` sigue siendo el KPI de "cuánto tardaste en
       // hacerte notar" que reporta simulate.js — no se pisa.
       splitAscensoTier1: null,
+      // K5c-R: el split del primer contrato de tier 2 o tier 1 (`systems/amateur.js` si el primer contrato ya es de tier 2,
+      // `systems/mercado.js` al firmar). Los años pro se cuentan desde acá, no desde `splitFichaje` (que puede ser tier 3):
+      // el puntaje (`aniosProDe`), la caja "Años pro" de la tarjeta y la longevidad del instrumento. `null` hasta entonces.
+      splitPrimerContratoTier2: null,
       // Roster, jerarquía y sinergia: se llenan al firmar.
       liga: null,
       rosterDeOrg: null,

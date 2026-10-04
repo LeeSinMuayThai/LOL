@@ -51,16 +51,39 @@ import { pausaDeMercadoMigrada } from '../systems/mercado.js';
 // B: `player.planAnual` entra y `flags.preparacionDeSplit` se va, porque la pretemporada ya no frena para elegir la práctica;
 // además los logs ganan el campo opcional `adjunto` y la pausa de la prueba del mercado lleva `respaldo`, que un guardado de
 // antes no trae y se calcula con la misma regla). Un guardado de VERSION 10 SÍ carga: `migrarDe10` lo completa (T4) · 12 (K5c-R,
-// la presión de tier 2: `flags.splitsTier2SinOfertaTier1`). Un guardado de la 11 carga con `migrarDe11`, y uno de la 10 pasa
-// por las dos migraciones.
+// la presión de tier 2: `flags.splitsTier2SinOfertaTier1`; y los años pro desde tier 2: `career.splitPrimerContratoTier2`). Un
+// guardado de la 11 carga con `migrarDe11`, y uno de la 10 pasa por las dos migraciones.
 export const VERSION = 12;
 const VERSIONES_MIGRABLES = [10, 11];
 
-// 11 -> 12. Completa lo que la 12 escribe y la 11 no, con valores neutros: la cuenta de la presión de tier 2 en 0 (con las
-// perillas de `BALANCE.retiro.presionTier2` en 99 nunca subía). Puro: no toca el RNG ni el reloj.
+// El marcador de los años pro, reconstruido de lo que la 11 sí guardaba. La fila del registro de la org del primer contrato de tier
+// 2 o 1 la abre `roster.js` el split siguiente al de la firma, así que la firma fue en su `desdeSplit` - 1. Sin esa fila todavía
+// (firmaste en el split que se acaba de jugar) y con club de tier 2 o 1, fue en el split anterior al reloj de hoy. Medido al
+// escribirlo: coincide con el que escribe el motor en los 2731 cierres de split de las seeds 1-60. Hueco conocido: un guardado
+// parado a mitad del split de la firma, antes de que corra `atributos.js`, queda un split corrido.
+function primerContratoTier2DelRegistro(state) {
+  const fila = (state.career?.registro?.porOrg ?? []).find((candidata) => candidata.tier <= 2);
+  if (fila) {
+    return Math.max(state.splitFichaje ?? 0, fila.desdeSplit - 1);
+  }
+  if (state.career?.currentOrg && state.career.tier <= 2) {
+    return state.player.splitCount - 1;
+  }
+  return null;
+}
+
+// 11 -> 12. Completa lo que la 12 escribe y la 11 no: la cuenta de la presión de tier 2 en 0 (con las perillas de
+// `BALANCE.retiro.presionTier2` en 99 nunca subía) y el marcador de los años pro desde el registro. Puro: no toca el RNG ni el
+// reloj.
 export function migrarDe11(state) {
   const flags = { ...state.flags, splitsTier2SinOfertaTier1: state.flags?.splitsTier2SinOfertaTier1 ?? 0 };
-  return { ...state, flags };
+  if (!state.career) {
+    return { ...state, flags };
+  }
+  const splitPrimerContratoTier2 = state.career.splitPrimerContratoTier2 !== undefined
+    ? state.career.splitPrimerContratoTier2
+    : primerContratoTier2DelRegistro(state);
+  return { ...state, flags, career: { ...state.career, splitPrimerContratoTier2 } };
 }
 
 function migrar(version, state) {

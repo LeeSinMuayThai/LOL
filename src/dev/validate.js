@@ -737,9 +737,10 @@ const FORMAS_CONOCIDAS = {
   // Integración de las dos revisiones (supervisor).
   // K5c (motor): sin campos nuevos; la vuelta del retiro adelanta el reloj y la muestra juega otras carreras.
   11: '1fe56a6523e4',
-  // K5c-R, la presión de tier 2: `flags.splitsTier2SinOfertaTier1` (0 con las perillas neutras). Un guardado de la 11 carga
-  // con `migrarDe11` (core/guardado.js), que lo completa con el valor neutro.
-  12: '9faae8f883e4'
+  // K5c-R, la presión de tier 2: `flags.splitsTier2SinOfertaTier1` (0 con las perillas neutras); y los años pro desde tier 2:
+  // `career.splitPrimerContratoTier2`. Un guardado de la 11 carga con `migrarDe11` (core/guardado.js), que completa la cuenta
+  // con el valor neutro y el marcador desde el registro. (Antes, 9faae8f883e4: sin el marcador; la 12 no salió de la rama.)
+  12: '737633eb586a'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -9346,6 +9347,71 @@ check('K5c-R: los bots contestan la bifurcación de la presión con la regla de 
     throw new Error(problemas.slice(0, 5).join(' · '));
   }
 });
+
+// Regla 17, qué protege: que los años pro se cuenten desde el primer contrato de tier 2 o tier 1 y no desde tier 3, igual en el
+// puntaje (`aniosProDe`), en la caja "Años pro" de la tarjeta y en la longevidad del instrumento (`bloqueLongevidad`). Desde K5c-R.
+const { aniosProDe: aniosProDeK5CR } = await import('../core/puntaje.js');
+const { bloqueLongevidad: bloqueLongevidadK5CR } = await import('./simulate.js');
+const SEEDS_ANIOS_PRO_K5CR = 40;
+
+check('K5c-R: los años pro no cuentan tier 3 (el marcador es el primer contrato de tier 2 o tier 1; puntaje, tarjeta e instrumento lo usan)', () => {
+  const problemas = [];
+  let desdeTier3 = 0;
+  let directoTier2 = 0;
+  let soloTier3 = 0;
+  let tarjetas = 0;
+  for (let seed = 1; seed <= SEEDS_ANIOS_PRO_K5CR; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < SPLITS_K5CR && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+    }
+    if (state.splitFichaje === null) {
+      continue;
+    }
+    const marca = state.career.splitPrimerContratoTier2;
+    const porOrg = state.career.registro.porOrg;
+    const primeraFilaT2 = porOrg.find((fila) => fila.tier <= 2) ?? null;
+    const esperado = marca === null ? 0 : (state.player.splitCount - marca) / BALANCE.edad.splitsPorEdad;
+    if (porOrg[0]?.tier === 3 && primeraFilaT2) {
+      // Empezó en un equipo chico: el marcador es la firma en tier 2 (la fila de esa org abre el split siguiente), no `splitFichaje`.
+      desdeTier3 += 1;
+      if (marca === null || marca <= state.splitFichaje || marca !== primeraFilaT2.desdeSplit - 1) {
+        problemas.push(`seed ${seed}: fichó en tier 3 en el split ${state.splitFichaje}, la primera fila de tier 2/1 abre en ${primeraFilaT2.desdeSplit} y el marcador es ${marca}`);
+      }
+    } else if (porOrg[0]?.tier <= 2) {
+      directoTier2 += 1;
+      if (marca !== state.splitFichaje) {
+        problemas.push(`seed ${seed}: su primer contrato ya fue de tier ${porOrg[0].tier} (split ${state.splitFichaje}) y el marcador es ${marca}`);
+      }
+    } else if (!primeraFilaT2) {
+      soloTier3 += 1;
+      if (marca !== null || aniosProDeK5CR(state) !== 0) {
+        problemas.push(`seed ${seed}: nunca firmó en tier 2 o 1 y el marcador es ${marca} (años pro ${aniosProDeK5CR(state)})`);
+      }
+    }
+    if (aniosProDeK5CR(state) !== esperado) {
+      problemas.push(`seed ${seed}: aniosProDe ${aniosProDeK5CR(state)}, desde el marcador ${esperado}`);
+    }
+    const longevidad = bloqueLongevidadK5CR([state]).aniosCarreraPro.mediana;
+    if (longevidad !== esperado) {
+      problemas.push(`seed ${seed}: la longevidad del instrumento da ${longevidad}, desde el marcador ${esperado}`);
+    }
+    if (state.tarjeta) {
+      tarjetas += 1;
+      if (state.tarjeta.totales.anios !== Math.round(esperado)) {
+        problemas.push(`seed ${seed}: la caja de años de la tarjeta dice ${state.tarjeta.totales.anios}, los años pro son ${Math.round(esperado)}`);
+      }
+    }
+  }
+  // El primer contrato directo en tier 2 es raro (ninguno en las seeds 1-40): se exige solo el caso que importa, desde tier 3.
+  if (desdeTier3 === 0 || tarjetas === 0) {
+    problemas.push(`el check no mide nada: ${desdeTier3} carreras desde tier 3, ${directoTier2} directo a tier 2, ${soloTier3} solo tier 3, ${tarjetas} tarjetas`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 5).join(' · ')}`);
+  }
+});
 const osK0 = await import('os');
 
 // Carreras por bot en los lotes de los checks lentos (PLAN.md §K.5 pide 200).
@@ -9598,7 +9664,8 @@ function recuentoEmbudoK0(resultados, carreras) {
 // §K.3b — longevidad de los que llegaron a pro.
 function recuentoLongevidadK0(resultados) {
   const pro = resultados.filter((r) => r.splitFichaje !== null);
-  const anios = pro.map((r) => (r.player.splitCount - r.splitFichaje) / BALANCE.edad.splitsPorEdad);
+  // K5c-R: desde el primer contrato de tier 2 o tier 1 (0 si no hubo). Reemplaza a `splitCount - splitFichaje`, que contaba desde tier 3.
+  const anios = pro.map((r) => (r.career.splitPrimerContratoTier2 == null ? 0 : (r.player.splitCount - r.career.splitPrimerContratoTier2) / BALANCE.edad.splitsPorEdad));
   const finales = {};
   for (const r of pro) {
     const clave = r.finAnticipado ?? 'retiro_normal';
@@ -12461,7 +12528,9 @@ checkLento('K0 bloques de simulate: todas las hojas de todos los bloques son fin
     cuentas.numeroUno3 += temporadasNumeroUno >= 3 ? 1 : 0;
     cuentas.faker += buenPapel >= 2 || temporadasNumeroUno >= 3 ? 1 : 0;
     if (st.splitFichaje !== null) {
-      const anios = (st.player.splitCount - st.splitFichaje) / BALANCE.edad.splitsPorEdad;
+      // K5c-R: desde el primer contrato de tier 2 o tier 1 (0 si no hubo). Reemplaza a `splitCount - splitFichaje`, que contaba desde tier 3.
+      const desdeTier2 = st.career.splitPrimerContratoTier2;
+      const anios = desdeTier2 == null ? 0 : (st.player.splitCount - desdeTier2) / BALANCE.edad.splitsPorEdad;
       aniosPro.push(anios);
       cuentas.cortas += anios < 4 ? 1 : 0;
       cuentas.forzoso += st.age >= BALANCE.retiro.edadRetiroForzoso ? 1 : 0;
@@ -19482,7 +19551,8 @@ check('K4c guardado VERSION 11: la forma de la 10 sigue registrada, y un guardad
 // --- K5c-R: el guardado VERSION 12 y la migración desde la 11 ---
 //
 // Regla 17, qué protege: "el guardado de la versión anterior no se pierde cuando cambia la forma del estado" (K.7 riesgo 3), para la
-// 12 de K5c-R (`flags.splitsTier2SinOfertaTier1`). Desde K5c-R.
+// 12 de K5c-R (`flags.splitsTier2SinOfertaTier1` y `career.splitPrimerContratoTier2`, que `migrarDe11` reconstruye del registro).
+// Desde K5c-R.
 const { migrarDe11: migrarDe11K5CR } = await import('../core/guardado.js');
 const SEEDS_GUARDADO_11_K5CR = [1, 2, 3, 4];
 const SPLITS_GUARDADO_11_K5CR = 30;
@@ -19492,6 +19562,7 @@ function guardadoDeLaVersion11K5CR(state, rng) {
   const datos = JSON.parse(serializarGuardado(state, rng));
   datos.version = 11;
   delete datos.state.flags.splitsTier2SinOfertaTier1;
+  delete datos.state.career.splitPrimerContratoTier2;
   return JSON.stringify(datos);
 }
 
@@ -19500,6 +19571,7 @@ check('K5c-R guardado VERSION 12: la forma de la 11 sigue registrada, y un guard
     throw new Error(`VERSION ${VERSION_GUARDADO}, forma de la 11 ${FORMAS_CONOCIDAS[11]}, forma de la 12 ${FORMAS_CONOCIDAS[12]}`);
   }
   let comparados = 0;
+  let conMarcador = 0;
   for (const seed of SEEDS_GUARDADO_11_K5CR) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
@@ -19517,11 +19589,12 @@ check('K5c-R guardado VERSION 12: la forma de la 11 sigue registrada, y un guard
         throw new Error(`seed ${seed}, split ${i}: el guardado migrado no juega el mismo split`);
       }
       comparados += 1;
+      conMarcador += state.career.splitPrimerContratoTier2 === null ? 0 : 1;
       state = avanzarSplitAuto(state, rng).state;
     }
   }
-  if (comparados < 40) {
-    throw new Error(`check vacío: ${comparados} guardados de la 11 comparados (hacen falta 40)`);
+  if (comparados < 40 || conMarcador < 20) {
+    throw new Error(`check vacío: ${comparados} guardados de la 11 comparados (hacen falta 40), ${conMarcador} con el marcador de los años pro (hacen falta 20)`);
   }
   // Un estado sin flags (un guardado roto a medias) se completa en vez de tirar.
   if (migrarDe11K5CR({}).flags.splitsTier2SinOfertaTier1 !== 0) {

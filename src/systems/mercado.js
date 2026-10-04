@@ -865,6 +865,10 @@ function aceptarOferta(state, oferta, rng, { motivoFila } = {}) {
         splitAscensoTier1: oferta.tier === 1 && state.career.splitAscensoTier1 === null
           ? state.player.splitCount
           : state.career.splitAscensoTier1,
+        // K5c-R: el primer contrato de tier 2 o tier 1 marca desde cuándo se cuentan los años pro (el de tier 3 no cuenta).
+        splitPrimerContratoTier2: oferta.tier <= 2 && state.career.splitPrimerContratoTier2 == null
+          ? state.player.splitCount
+          : state.career.splitPrimerContratoTier2,
         contrato,
         registro: conFilaCerrada(state, motivoFilaFinal)
       }

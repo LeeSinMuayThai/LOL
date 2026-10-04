@@ -1535,9 +1535,15 @@ function bloqueEconomia(observaciones) {
 
 // §K.3b — longevidad: años de carrera pro de los que llegaron a pro (`BALANCE.edad.splitsPorEdad` splits
 // por año), % con carrera corta y % que termina en la línea forzosa.
+// K5c-R: la duración se cuenta desde el primer contrato de tier 2 o tier 1 (`career.splitPrimerContratoTier2`; 0 si nunca firmó
+// uno). Reemplaza a `(splitCount - splitFichaje) / splitsPorEdad`, que contaba desde tier 3. Quiénes "llegaron a pro" no cambia
+// (`splitFichaje`, como el embudo): solo la duración.
 export function bloqueLongevidad(resultados) {
   const llegaronAPro = resultados.filter((r) => r.splitFichaje !== null);
-  const aniosPro = llegaronAPro.map((r) => (r.player.splitCount - r.splitFichaje) / BALANCE.edad.splitsPorEdad);
+  const aniosPro = llegaronAPro.map((r) => {
+    const desde = r.career.splitPrimerContratoTier2;
+    return desde === null || desde === undefined ? 0 : (r.player.splitCount - desde) / BALANCE.edad.splitsPorEdad;
+  });
   const forzoso = llegaronAPro.filter((r) => r.age >= BALANCE.retiro.edadRetiroForzoso).length;
 
   return {

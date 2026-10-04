@@ -1,6 +1,7 @@
 import LIGAS from '../data/leagues.json' with { type: 'json' };
 import { BALANCE } from '../data/balance.js';
 import { splitsJugadosEnTier, esBuenPapel } from './registro.js';
+import { aniosProDe } from './puntaje.js';
 
 // El veredicto de la carrera (PLAN.md §10.2, CONCEPTO §9): NO se elige de una
 // lista, se COMPONE — una plantilla de arquetipo más un detalle real sacado del
@@ -195,7 +196,9 @@ export function componerLegado(state) {
     edadRetiro: state.age,
     veredicto: `${frase}. ${detalleDeCarrera(r, orgPrincipal)}`,
     totales: {
-      anios: Math.max(1, state.calendario.anio - state.calendario.anioBase),
+      // K5c-R: los años PRO, desde el primer contrato de tier 2 o tier 1 (`aniosProDe`, el mismo número que la leyenda
+      // comparada). Reemplaza a `max(1, anio - anioBase)`, que contaba desde los 15 (el amateur y tier 3 incluidos).
+      anios: Math.round(aniosProDe(state)),
       splits: r.splitsJugados,
       titulos: r.titulos.length,
       internacionales: r.internacionales.length,
