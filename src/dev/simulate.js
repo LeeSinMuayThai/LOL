@@ -371,7 +371,14 @@ export function correrCarrera(seed, splits, responder) {
     // K2c: la jerarquía con la que arrancó el split (la de la temporada que corra en él), para `jerarquiaMedia`.
     const jerarquiaAntes = state.career.jerarquia;
     const importPendiente = state.flags.ofertaDeImport;
+    const vueltasAntes = state.flags.vueltasUsadas;
     state = avanzarSplitAuto(state, rng, responderInstrumentado).state;
+    // K5c (validación): en el split de una vuelta del retiro, `retiro` adelanta el reloj lo que pasó afuera
+    // (`relojAlVolver`, `flags.splitVuelta`) antes de que corran `temporada` y `serie`: sus filas llevan ese reloj, no el
+    // congelado con el que arrancó el split (criterio seed 6: la temporada que corrió en el split 39 quedaba como la 36).
+    if (state.flags.vueltasUsadas > vueltasAntes) {
+      splitEnCurso = state.flags.splitVuelta;
+    }
     contarTanda(state);
     // K5c (paso 1): el Mundial que cerró en este split, si tu equipo jugó uno: el registro crece UNA entrada y `state.internacional`
     // es ese torneo. Se detecta por el registro y no por el año: antes de K5c (motor), tras un retiro y una vuelta el calendario
@@ -1786,6 +1793,14 @@ export function bloquePuntaje(resultados) {
   };
 }
 
+// El tramo de una banda de `ganaPorMargen`, escrito: los bordes abiertos sin número (sin null ni Infinity en el reporte).
+export function nombreDeBandaDeMargen(desde, hasta) {
+  if (!Number.isFinite(desde)) {
+    return `< ${hasta}`;
+  }
+  return Number.isFinite(hasta) ? `${desde} a ${hasta}` : `>= ${desde}`;
+}
+
 // K5c (paso 1) — el Mundial REAL (§K.3a / §K.3b). Reemplaza a los tres proxies de `embudo` (`ganaMundial`,
 // `nuevoFaker`, `pOtroMundialDadoUno`, marcados `proxyAntesDeK5`, que se mantienen con su nota `reemplazadaPor`): acá un
 // Mundial ganado es una entrada de `career.registro.internacionales` con `resultado === 'campeon'` (el torneo de
@@ -1818,11 +1833,14 @@ function metricasMundialReal(resultados, observaciones, indices) {
     // P(2 o más | 1): sin el piso de `MUESTRA_MINIMA` (los grupos son chicos): `n` dice cuánto pesa.
     pDosOMasDadoUno: { p: conTitulo > 0 ? redondear(conDosOMas / conTitulo, 3) : null, n: conTitulo },
     // Cuánto le sacás (o te saca) al mejor de los otros 15 clasificados, en puntos de fuerza, entre todos tus Mundiales.
-    // [desde, hasta, Mundiales, % que lo ganó] por banda de margen: lo que dice "cuánto vale ser más fuerte" en este torneo.
+    // Una banda por tramo de margen, con sus Mundiales y el % que lo ganó: lo que dice "cuánto vale ser más fuerte" en este
+    // torneo. K5c (validación): `banda` es el tramo escrito ("< -20", "-20 a -10", ..., ">= 10"); reemplaza a la tupla
+    // [desde, hasta, n, %], que ponía null en los bordes abiertos (el reporte K0 no admite null estructurales). `pctGana` es
+    // null solo con `mundiales: 0` (sin dato, como todo `pct`).
     ganaPorMargen: [-Infinity, ...CORTES_MARGEN_MUNDIAL].map((desde, k) => {
       const hasta = CORTES_MARGEN_MUNDIAL[k] ?? Infinity;
       const banda = mundiales.filter((m) => m.fuerzaPropia - m.fuerzaRivalMax >= desde && m.fuerzaPropia - m.fuerzaRivalMax < hasta);
-      return [Number.isFinite(desde) ? desde : null, Number.isFinite(hasta) ? hasta : null, banda.length, pct(ganados(banda), banda.length)];
+      return { banda: nombreDeBandaDeMargen(desde, hasta), mundiales: banda.length, pctGana: pct(ganados(banda), banda.length) };
     }),
     margenSobreElMejorRival: (() => {
       const margenes = mundiales.map((m) => m.fuerzaPropia - m.fuerzaRivalMax);

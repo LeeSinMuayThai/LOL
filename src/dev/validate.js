@@ -5920,6 +5920,7 @@ checkLento('Ningún evento reaparece antes de que expire su cooldown declarado (
 
   let violaciones = 0;
   let muestras = 0;
+  let enSplitsDeVuelta = 0;
 
   for (let seed = 1; seed <= 200; seed += 1) {
     const rng = mulberry32(seed);
@@ -5928,25 +5929,40 @@ checkLento('Ningún evento reaparece antes de que expire su cooldown declarado (
 
     for (let i = 0; i < 60 && !state.terminado; i += 1) {
       const antes = { ...(state.flags.eventosVistos ?? {}) };
+      const vueltasAntes = state.flags.vueltasUsadas;
       const splitAntes = state.player.splitCount;
       state = avanzarSplitAuto(state, rng).state;
       const despues = state.flags.eventosVistos ?? {};
+      // K5c (validación): el reloj de los eventos de ESTE split. En el split de una vuelta del retiro, `retiro` (que corre
+      // antes que `eventos`) adelanta `player.splitCount` lo que pasó afuera (`relojAlVolver`) y lo deja en
+      // `flags.splitVuelta`: los eventos de ese split corren con ese reloj, no con el congelado de antes. Reemplaza a
+      // medir siempre con el `splitCount` de antes del split, que exigía que el reloj no se moviera adentro del split;
+      // medido sobre 75e7ed5: las 3 "violaciones" de 15238 apariciones eran las 3 del split de una vuelta (seeds 54 y
+      // 119: vistas en el split 38, reaparecen en el 44 con el reloj del motor, contadas como 41 con el congelado).
+      const huboVuelta = state.flags.vueltasUsadas > vueltasAntes;
+      const splitDelEvento = huboVuelta ? state.flags.splitVuelta : splitAntes;
 
       for (const id of Object.keys(despues)) {
         if ((despues[id] ?? 0) <= (antes[id] ?? 0)) {
           continue;
         }
         muestras += 1;
-        if (ultimaAparicion[id] !== undefined && splitAntes - ultimaAparicion[id] < cooldownEnSplits(id)) {
+        if (huboVuelta) {
+          enSplitsDeVuelta += 1;
+        }
+        if (ultimaAparicion[id] !== undefined && splitDelEvento - ultimaAparicion[id] < cooldownEnSplits(id)) {
           violaciones += 1;
         }
-        ultimaAparicion[id] = splitAntes;
+        ultimaAparicion[id] = splitDelEvento;
       }
     }
   }
 
   if (muestras < 5000) {
     throw new Error(`solo ${muestras} apariciones de evento en 200 seeds: muestra insuficiente`);
+  }
+  if (enSplitsDeVuelta === 0) {
+    throw new Error('check vacío: ningún evento apareció en el split de una vuelta del retiro (el caso del reloj que salta)');
   }
   if (violaciones > 0) {
     throw new Error(`${violaciones} reapariciones antes de que venciera el cooldown declarado, sobre ${muestras} apariciones`);
@@ -5974,14 +5990,26 @@ check('career.registro, career.arraigo y calendario arrancan completos (trampa T
 });
 
 checkLento('registro.splitsJugados coincide con player.splitCount en toda carrera', () => {
+  // K5c (validación): el reloj (`player.splitCount`) cuenta además los splits que pasaron afuera en una ventana de retiro
+  // con vuelta (`relojAlVolver` los adelanta de golpe y los acumula en `career.splitsRetirado`); el registro cuenta solo
+  // los jugados. Reemplaza a `splitsJugados === splitCount`, que exigía que el reloj no saltara al volver; medido sobre
+  // 75e7ed5: seed 2, splitsJugados 21 = splitCount 24 − splitsRetirado 3.
+  let conVuelta = 0;
   for (let seed = 1; seed <= 60; seed += 1) {
     const state = correrCarrera(seed, 40);
-    if (state.career.registro.splitsJugados !== state.player.splitCount) {
+    const splitsRetirado = state.career.splitsRetirado ?? 0;
+    if (splitsRetirado > 0) {
+      conVuelta += 1;
+    }
+    if (state.career.registro.splitsJugados !== state.player.splitCount - splitsRetirado) {
       throw new Error(
         `seed ${seed}: registro.splitsJugados=${state.career.registro.splitsJugados} `
-        + `vs player.splitCount=${state.player.splitCount}`
+        + `vs player.splitCount=${state.player.splitCount} − career.splitsRetirado=${splitsRetirado}`
       );
     }
+  }
+  if (conVuelta === 0) {
+    throw new Error('check vacío: ninguna de las 60 carreras volvió del retiro (career.splitsRetirado > 0)');
   }
 });
 
@@ -6839,39 +6867,58 @@ checkLento('Ninguna carrera coreana profesional llega a la edad límite sin reso
   // región de origen sale del estado inicial (`mundo.regionIdOrigen`, fija toda la carrera): se filtra ahí, sin correr
   // las no coreanas, y se buscan seeds hasta juntar `OBJETIVO` carreras (≈ 1 cada 30 seeds hoy) o agotar `SEEDS_MAX`.
   // La propiedad y el piso no cambian.
+  //
+  // K5c (validación): la propiedad se mira en cada pretemporada, no en el estado del corte. Reemplaza a "las carreras que
+  // al split 60 seguían profesionales con la edad límite cumplida tienen el servicio resuelto", que exigía carreras vivas
+  // en el split 60: esas eran las que habían congelado el reloj en una ventana de retiro, y desde que la vuelta lo
+  // adelanta (`relojAlVolver`) la línea Faker cierra toda carrera antes (medido sobre 75e7ed5: 0 de 255 coreanas vivas
+  // en el split 60 entre las seeds 1-1200, contra 54 con 2ff21e3). Ahora: toda pretemporada que una carrera coreana
+  // juega profesional (o a la que vuelve del retiro, que es en pretemporada y antes de `servicioMilitar`) con la edad
+  // límite cumplida y el servicio sin resolver tiene que cerrar con el servicio en curso o resuelto — salvo que se haya
+  // retirado en ella (`retiro` corre antes: 5 de esas 255 carreras se retiran en la pretemporada de los 28, hoy y antes).
+  // Rojo con el mutante `state.age <= edadLimite(state)` en `servicioMilitar.aplicar` (la citación llega un año tarde).
   const PISO = 20;
   const OBJETIVO = 30;
   const SEEDS_MAX = 3000;
-  let coreanosProResueltos = 0;
-  let sinResolver = 0;
+  const limiteDe = (st) => (st.career.registro.picos.rankMundial > 0
+    ? BALANCE.servicioMilitar.edadLimiteServicioElite
+    : BALANCE.servicioMilitar.edadLimiteServicio);
+  const resuelto = (st) => st.flags.servicioCumplido || st.flags.exentoServicio || st.flags.enServicioMilitar;
+  let pretemporadasConCitacion = 0;
+  const sinResolver = [];
   let seedsMiradas = 0;
 
-  for (let seed = 1; seed <= SEEDS_MAX && coreanosProResueltos < OBJETIVO; seed += 1) {
+  for (let seed = 1; seed <= SEEDS_MAX && pretemporadasConCitacion < OBJETIVO; seed += 1) {
     seedsMiradas = seed;
     if (createInitialState(seed, mulberry32(seed)).mundo.regionIdOrigen !== 'KR') {
       continue;
     }
-    const state = correrCarrera(seed, 60);
-    if (state.mundo.regionIdOrigen !== 'KR' || state.phase !== 'profesional') {
-      continue;
-    }
-    const limite = state.career.registro.picos.rankMundial > 0
-      ? BALANCE.servicioMilitar.edadLimiteServicioElite
-      : BALANCE.servicioMilitar.edadLimiteServicio;
-    if (state.age < limite) {
-      continue;
-    }
-    coreanosProResueltos += 1;
-    if (!state.flags.servicioCumplido && !state.flags.exentoServicio) {
-      sinResolver += 1;
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      const antes = state;
+      state = avanzarSplitAuto(state, rng).state;
+      const vuelve = antes.phase === 'retirado' && state.flags.vueltasUsadas > antes.flags.vueltasUsadas;
+      if ((antes.phase !== 'profesional' && !vuelve) || calcularContexto(antes).ventana !== 'pretemporada' || resuelto(antes)) {
+        continue;
+      }
+      // La edad con la que corre `servicioMilitar` en este split: la de antes, o la que te puso la vuelta (en una
+      // pretemporada no corre `edadCierre`, así que es la de después). El límite, el de antes (`topMundial` corre después).
+      if (state.age < limiteDe(antes) || state.phase !== 'profesional') {
+        continue;
+      }
+      pretemporadasConCitacion += 1;
+      if (!resuelto(state)) {
+        sinResolver.push(`seed ${seed}, split ${antes.player.splitCount}, ${state.age} años`);
+      }
     }
   }
 
-  if (coreanosProResueltos < PISO) {
-    throw new Error(`solo ${coreanosProResueltos} carreras coreanas profesionales llegaron a la edad límite en ${seedsMiradas} seeds: muestra insuficiente`);
+  if (pretemporadasConCitacion < PISO) {
+    throw new Error(`solo ${pretemporadasConCitacion} pretemporadas coreanas profesionales con la edad límite cumplida en ${seedsMiradas} seeds: muestra insuficiente`);
   }
-  if (sinResolver > 0) {
-    throw new Error(`${sinResolver}/${coreanosProResueltos} carreras coreanas llegaron a la edad límite sin servicioCumplido ni exentoServicio`);
+  if (sinResolver.length > 0) {
+    throw new Error(`${sinResolver.length}/${pretemporadasConCitacion} pretemporadas coreanas con la edad límite cumplida cerraron sin servicio en curso ni resuelto: ${sinResolver.slice(0, 4).join('; ')}`);
   }
 });
 
@@ -9519,10 +9566,11 @@ function afirmarRuidoIntactoK0(donde) {
 }
 
 // Recorre TODAS las hojas de un reporte: cada número tiene que ser finito, y `null` solo vale donde la spec
-// lo permite (rutas que matchean `nulosPermitidos`). Devuelve la lista de problemas.
-function hojasProblematicasK0(valor, ruta, nulosPermitidos, problemas = []) {
+// lo permite (rutas que matchean `nulosPermitidos`, o una celda sin muestra de `nuloSinMuestraK0`). Devuelve la lista
+// de problemas. `ancestros`: los contenedores de `valor`, el más cercano al final.
+function hojasProblematicasK0(valor, ruta, nulosPermitidos, problemas = [], ancestros = []) {
   if (valor === null) {
-    if (!nulosPermitidos.some((patron) => patron.test(ruta))) {
+    if (!nulosPermitidos.some((patron) => patron.test(ruta)) && !nuloSinMuestraK0(ruta, ancestros)) {
       problemas.push(`${ruta} es null`);
     }
   } else if (typeof valor === 'number') {
@@ -9532,13 +9580,33 @@ function hojasProblematicasK0(valor, ruta, nulosPermitidos, problemas = []) {
   } else if (valor === undefined) {
     problemas.push(`${ruta} es undefined`);
   } else if (Array.isArray(valor)) {
-    valor.forEach((elemento, i) => hojasProblematicasK0(elemento, `${ruta}[${i}]`, nulosPermitidos, problemas));
+    valor.forEach((elemento, i) => hojasProblematicasK0(elemento, `${ruta}[${i}]`, nulosPermitidos, problemas, [...ancestros, valor]));
   } else if (typeof valor === 'object') {
     for (const [clave, sub] of Object.entries(valor)) {
-      hojasProblematicasK0(sub, ruta ? `${ruta}.${clave}` : clave, nulosPermitidos, problemas);
+      hojasProblematicasK0(sub, ruta ? `${ruta}.${clave}` : clave, nulosPermitidos, problemas, [...ancestros, valor]);
     }
   }
   return problemas;
+}
+
+// K5c (validación): `mundialReal` y `curvaDeEdad` (K5c, paso 1) parten el lote en celdas chicas (regiones, la élite del
+// 3%, bandas de margen, edades) y una celda sin muestra da null (`pct` con total 0, la mediana de nada). Ese null vale
+// SOLO si el n de su celda es 0: los Mundiales de la banda o del grupo (`mundiales`), los del bloque (la suma de sus
+// bandas, que cubren todo margen), los campeones de `pDosOMasDadoUno` (`n`) o los splits de la edad (`splits`). Un null
+// con muestra sigue siendo rojo (rojo con el mutante `pctGana: null` en las bandas de `metricasMundialReal`).
+const REGLAS_NULO_SIN_MUESTRA_K0 = [
+  { patron: /^mundialReal\..+\.pctGana$/, sinMuestra: (padre) => padre?.mundiales === 0 },
+  { patron: /^mundialReal\..+\.(pctDeLosMundiales|margenSobreElMejorRival\.p(10|50|90))$/, sinMuestra: (padre, abuelo) => mundialesDelBloqueK0(abuelo) === 0 },
+  { patron: /^mundialReal\..+\.pDosOMasDadoUno\.p$/, sinMuestra: (padre) => padre?.n === 0 },
+  { patron: /^curvaDeEdad\.porEdad\[\d+\]\.nivel\.p(25|50|75)$/, sinMuestra: (padre, abuelo) => abuelo?.splits === 0 }
+];
+function mundialesDelBloqueK0(bloque) {
+  return Array.isArray(bloque?.ganaPorMargen) ? bloque.ganaPorMargen.reduce((suma, banda) => suma + banda.mundiales, 0) : null;
+}
+function nuloSinMuestraK0(ruta, ancestros) {
+  const padre = ancestros[ancestros.length - 1];
+  const abuelo = ancestros[ancestros.length - 2];
+  return REGLAS_NULO_SIN_MUESTRA_K0.some((regla) => regla.patron.test(ruta) && regla.sinMuestra(padre, abuelo));
 }
 
 // Los únicos null que la spec admite: `pOtroMundialDadoUno` con n < 30 (en el lote y en las regiones, que son
@@ -12055,7 +12123,10 @@ checkLento('K0 azar: no consume el rng del motor, no depende de él, y su índic
     filas.push({ delegado, consumio, decision, respuesta });
     return respuesta;
   };
-  for (const seed of [1, 2, 3, 4, 5, 6]) {
+  // K5c (validación): 8 carreras. Reemplaza a las seeds 1-6, que exigían 20 minijuegos y daban 21 con 2ff21e3 (al
+  // borde); medido sobre 75e7ed5, con la vuelta del retiro que adelanta el reloj (las carreras que vuelven juegan menos
+  // splits después): 17 en las seeds 1-6, 26 en las 1-8. Los pisos no cambian.
+  for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
     correrCarreraSimulate(seed, 60, responder);
   }
 
