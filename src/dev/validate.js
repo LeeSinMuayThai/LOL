@@ -21084,6 +21084,59 @@ check('K5c (motor): tras un retiro y una vuelta el mundo no rebobina (calendario
   }
 });
 
+// --- K5c (revisión): la vuelta del retiro no te devuelve a la línea Faker ---------------------------------------------
+// Regla 7: la guarda de `aplicarVentanaDeVuelta` (`systems/retiro.js`) cierra la ventana cuando, con los años que pasaron afuera,
+// volverías con la edad de la línea forzosa o más. Sin ella (mutante `if (false)`) las seeds 5, 38 y 41 de 100 vuelven a los 34 y
+// juegan 3 splits pro, y la 7 vuelve a los 35. Recuento independiente del motor: en cada split de la ventana en que el motor
+// pregunta si volvés (el contador de la ventana es múltiplo de `splitsPorEdad`, dentro de `ventanaDeVueltaSplits`), la edad al volver
+// es la de hoy más los cierres de año que cruzó el reloj. Con esa edad en la línea el split tiene que cerrar la carrera, y ninguna
+// vuelta puede dejar a un jugador con la edad de la línea o más. Recorre seeds hasta juntar `GUARDAS_K5CREV` disparos de la guarda.
+const GUARDAS_K5CREV = 3;
+const TOPE_SEEDS_K5CREV = 100;
+const SPLITS_K5CREV = 120;
+
+check('K5c (revisión): la vuelta del retiro nunca devuelve a la edad de la línea forzosa (la ventana se cierra sola)', () => {
+  const porAnio = BALANCE.edad.splitsPorEdad;
+  const { edadRetiroForzoso, ventanaDeVueltaSplits } = BALANCE.retiro;
+  const problemas = [];
+  let guardas = 0;
+  let vueltas = 0;
+  let carreras = 0;
+  for (let seed = 1; seed <= TOPE_SEEDS_K5CREV && guardas < GUARDAS_K5CREV; seed += 1) {
+    const rng = mulberry32(seed);
+    let st = createInitialState(seed, rng);
+    carreras += 1;
+    for (let i = 0; i < SPLITS_K5CREV && !st.terminado; i += 1) {
+      const antes = st;
+      st = avanzarSplitAuto(st, rng).state;
+      if (antes.phase !== 'retirado') {
+        continue;
+      }
+      const enVentana = antes.flags.splitsEnVentana + 1;
+      const cierresDeAnio = Math.floor((antes.player.splitCount + enVentana) / porAnio) - Math.floor(antes.player.splitCount / porAnio);
+      const preguntaria = enVentana <= ventanaDeVueltaSplits && enVentana % porAnio === 0;
+      if (preguntaria && antes.age + cierresDeAnio >= edadRetiroForzoso) {
+        guardas += 1;
+        if (!(st.terminado && st.phase === 'retirado')) {
+          problemas.push(`seed ${seed} split ${i}: volvería con ${antes.age + cierresDeAnio} y la carrera no cerró (phase ${st.phase}, terminado ${st.terminado})`);
+        }
+      }
+      if (st.phase === 'profesional') {
+        vueltas += 1;
+        if (st.age >= edadRetiroForzoso) {
+          problemas.push(`seed ${seed} split ${i}: volvió con ${st.age} años (la línea es ${edadRetiroForzoso})`);
+        }
+      }
+    }
+  }
+  if (guardas < GUARDAS_K5CREV || vueltas === 0) {
+    throw new Error(`la muestra no mide nada: ${guardas} disparos de la guarda (mínimo ${GUARDAS_K5CREV}) y ${vueltas} vueltas en ${carreras} carreras`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problema(s) en ${carreras} carreras: ${problemas.slice(0, 4).join(' | ')}`);
+  }
+});
+
 if (errores.length > 0) {
   console.error(`\n${errores.length} check(s) fallaron.`);
   process.exit(1);
