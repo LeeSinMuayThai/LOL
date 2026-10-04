@@ -7521,6 +7521,36 @@ del paso 3 de K5c (así el barrido final mide el juego que se va a jugar):
   - el resultado de cada decisión aparece en el feed;
   - la primera opción no puede ser retirarte (orden).
 
+**K6a-U, hecho** (`k6a-ui` `87c7a3f`, huella intacta, 17 mutantes en rojo).
+- El minijuego espera un "¡Vamos!".
+- La fase se toma de `core/vistaDeCarrera.js`.
+- El Mundial tiene su propio panel de Swiss.
+- `?seed=` con texto pasa por `hashCadena`.
+- Hay rangos, plurales y "hace N años".
+- Las líneas de la carta de oferta salen del mismo dato del plantel, y la carta muestra el "por qué te quieren", así que
+  la pieza M se ve.
+- La revisión de navegador de la estructura dio "OK con observaciones menores", y sus textos entraron acá.
+- **Deuda (D80):** la ficha dice "ÉLITE" desde nivel 62 y el mercado trata como élite desde 80. Es vocabulario, no un
+  bug. Se revisa con los cortes definitivos de los niveles en el paso 3.
+
+**K6a-M, hecho** (`k6a-motor` `6dd29d0`).
+- **Las causas:**
+  - el umbral de "sin nada en juego" (6) se tragaba finales y cuartos;
+  - la prueba clavada sí firmaba, pero el tier 3 se disolvía antes de jugar un partido;
+  - la previa leía `calendario[i-1]` del estado del momento de dibujar;
+  - "si ganás, entrás" se prometía en splits que no siembran playoffs.
+- **Decisiones del supervisor:**
+  - **el tier 2 tiene final:** el top 2 juega un Bo5 con plan, y el título de tier 2 deja de ser el primero de la
+    tabla;
+  - **el tope de T9 del Mundial se queda:** el plan de cuartos y semis lo puede elegir el coach, y la final siempre
+    frena;
+  - **las metas de ritmo que rompe** (interrupciones 95 contra ≤ 90, playoffs p90 6 contra ≤ 5, internacional p90 7
+    contra ≤ 5, Δp de plan 4,7 contra ≥ 5) **no se re-basean todavía.** K6a-A saca la carta semanal del amateur, que
+    era la mayoría de las paradas tempranas, y se miden juntas después de integrar. Lo que siga roto se decide con lo
+    medido y con su línea de la regla 17;
+  - el check K5c-M (a2), "al menos el doble", es frágil a la muestra (20 → 30 con el stream nuevo): se arregla en la
+    integración.
+
 ### K6 — Jugarlo *(la prueba que importa)*
 
 Tres carreras completas en el navegador: una que se estanca en tier 2 por malas decisiones, una buena
