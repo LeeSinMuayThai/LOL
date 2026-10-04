@@ -1098,6 +1098,20 @@ export const BALANCE = {
     // clubes (0 = el colista, 1 = el mejor), y cada org pide `max(org.fuerza, calibre)`. Punto de partida: el cuarto
     // de abajo de la liga. K5c lo calibra contra cuántos coreanos y chinos con nivel llegan a su liga.
     cuantilCalibreDeLiga: 0.25,
+    // K5c-N, el local juega en casa (PLAN.md, "El barrido"): en un club de la liga de tier 1 de tu región de origen
+    // (`mundo.regionIdOrigen`), el término de calibre de la alternativa del asiento (`core/demanda.js:
+    // nivelAlternativaAsiento`) es `fuerza + fraccion · (max(calibre, fuerza) − fuerza)`: el nativo paga esta fracción
+    // del cuantil de su liga; el import (club de otra región) lo paga entero, como siempre. 1 = idéntico (neutra); 0 = el
+    // nativo solo pide la fuerza del club. Ojo: solo mueve los clubes con `fuerza` debajo del calibre (con el cuantil
+    // 0,25, el cuarto de abajo de la liga); por encima, `max(calibre, fuerza)` ya es la fuerza. Lo fija el barrido.
+    fraccionCalibreLocal: 1,
+    // K5c-A, el ascenso: en la disputa de una oferta de un tier mejor que el tuyo (`ofertaPosible`), el castigo etario se
+    // multiplica por esto. Las renovaciones y las ofertas de tu tier o de uno peor no lo usan. 1 = idéntico (neutra).
+    fraccionCastigoAscenso: 1,
+    // K5c-V, el veterano de tier 2: desde esta edad, el mercado de tier 2 te trata como a un fichaje. Si perdés la disputa
+    // del asiento (con el castigo etario), tu club de tier 2 no te renueva (factor 0 en vez de `factorRenovacionDeclive`)
+    // y el piso de franquicia de una liga de tier 2 (`systems/mercado.js`) tampoco te hace lugar. 99 = nunca (neutra).
+    edadCastigoRenovacionTier2: 99,
     // El enfriamiento etario, en puntos de nivel que se te descuentan en la
     // disputa (`core/valorMercado.js:castigoEtario`). 0 a los ≤22, ~10 a los 27,
     // ~16 a los 30 — un veterano en declive cae bajo la vara de su liga y el

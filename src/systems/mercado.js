@@ -9,7 +9,7 @@ import { salarioDeOferta } from '../core/salarios.js';
 import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
 import { cerrarFila, registrarPico, registrarSalarioEnFila, registrarArraigoEnFila, arraigoInicial } from '../core/registro.js';
 import { bandaDeJerarquia, bandaDeArraigoFicha, nivelDelJugador } from '../core/ficha.js';
-import { orgsQueTeFicharian, ofertaPosible, esResidenteDe, nivelAlternativaAsiento, factorRenovacionEtario, factorElite, plantelEnLiga } from '../core/demanda.js';
+import { orgsQueTeFicharian, ofertaPosible, esResidenteDe, nivelAlternativaAsiento, factorRenovacionEtario, factorElite, plantelEnLiga, veteranoDeTier2, ganaLaDisputaDelAsiento, renovacionCortadaPorEdad } from '../core/demanda.js';
 import { resolverMercadoMundial, cerrarAsientosCongelados, congelarAsientosOfrecibles } from '../core/mercadoMundial.js';
 import { jerarquiaAlFichar, sinergiaAlFichar, conPlantillaDelPlantel } from './roster.js';
 import { conPlantelesDe } from '../core/plantel.js';
@@ -338,7 +338,15 @@ export function generarOfertas(state, rng) {
     const candidatas = ligaActual.orgs
       .filter((org) => org.nombre !== state.career.currentOrg && state.mundo.planteles?.[org.nombre])
       .sort((a, b) => a.fuerza - b.fuerza);
+    // K5c-V, el veterano de tier 2: desde `demanda.edadCastigoRenovacionTier2`, en una liga de tier 2 el piso de franquicia
+    // también pasa por la disputa del asiento con el castigo etario (como un fichaje). Sin esto, el club más débil de tu
+    // liga te hacía lugar todos los años aunque tu club ya no te renovara: el tier 2 renovaba para siempre. Con la perilla
+    // neutra (99) `veterano` es siempre falso y el piso es el de siempre.
+    const veterano = veteranoDeTier2(state, ligaActual);
     for (const org of candidatas) {
+      if (veterano && !ganaLaDisputaDelAsiento(state, org.nombre, state.player.role)) {
+        continue;
+      }
       const forzada = ofertaPosible(state, org.nombre, state.player.role, { forzada: true });
       if (forzada?.posible) {
         posibles.push({ org, liga: ligaActual, motivo: forzada.motivo, forzadaFranquicia: true });
@@ -580,9 +588,15 @@ function aplicarMercadoSinImport(stConValor, logsMundo, rng) {
       }
     }
     : stConValor;
-  const logsAviso = avisoNuevo
-    ? [crearLog('mercado', `${stConValor.career.currentOrg} te avisó: no van a renovarte.`)]
-    : [];
+  // K5c-V (regla 15): si tu club de tier 2 no te renueva por la edad (`renovacionCortadaPorEdad`: perdiste la disputa con el
+  // castigo etario desde `demanda.edadCastigoRenovacionTier2`), el aviso dice por qué, y sale aunque el flag ya estuviera
+  // prendido (el corte por edad es la causa de verdad, no la tirada). Con la perilla neutra nunca entra: el aviso de siempre.
+  const cortadaPorEdad = clubNoRenueva && renovacionCortadaPorEdad(stConValor, ligaDeCarrera(stConValor));
+  const logsAviso = cortadaPorEdad
+    ? [crearLog('mercado', `${stConValor.career.currentOrg} te avisó: no van a renovarte. Buscan gente más joven para el puesto.`)]
+    : avisoNuevo
+      ? [crearLog('mercado', `${stConValor.career.currentOrg} te avisó: no van a renovarte.`)]
+      : [];
 
   // K5-C: el final lo decide el mercado. Cada pretemporada con el mercado abierto se cuenta si ninguna oferta es de
   // tu tier o mejor; al llegar al umbral, en vez de la mano de siempre frena la bifurcación "bajás o te retirás".

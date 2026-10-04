@@ -21505,6 +21505,224 @@ check('K5c (revisión 2): todo evento con un efecto ofertaDeImport es una bifurc
   }
 });
 
+// --- K5c-N, K5c-A y K5c-V (PLAN.md, "El barrido": la segunda ronda de estructura) ------------------------------------------------
+// Tres perillas de `BALANCE.demanda`, todas neutras (la huella de K1 prueba el no-op exacto): `fraccionCalibreLocal` (1),
+// `fraccionCastigoAscenso` (1) y `edadCastigoRenovacionTier2` (99). Estos checks las encienden EN MEMORIA con valores de ejemplo
+// (el barrido fija los de verdad). La muestra: las pausas de mercado reales de K5c-M (`criterio`, seeds 1 a `SEEDS_K5CM`).
+const {
+  nivelAlternativaAsiento: alternativaK5CNAV, factorRenovacionEtario: factorRenovacionK5CNAV,
+  ganaLaDisputaDelAsiento: ganaDisputaK5CNAV, calibreDeLiga: calibreK5CNAV
+} = await import('../core/demanda.js');
+
+function conPerillasDemandaK5CNAV(perillas, fn) {
+  const d = BALANCE.demanda;
+  const previas = Object.fromEntries(Object.keys(perillas).map((clave) => [clave, d[clave]]));
+  Object.assign(d, perillas);
+  try {
+    return fn();
+  } finally {
+    Object.assign(d, previas);
+  }
+}
+
+// K5c-N. Con el cuantil de siempre (0,25) la perilla solo mueve los clubes del cuarto de abajo de la liga: por encima del calibre,
+// `max(calibre, fuerza)` ya es la fuerza del club (lo dice `data/balance.js`). Para medir "los clubes fuertes" el check sube el
+// cuantil a 1 en memoria (el calibre pasa a ser el club más fuerte de la liga): así el término de calibre muerde en toda la mitad de
+// arriba menos el primero, que es donde el import paga el calibre entero y el nativo, con la perilla en 0, solo la fuerza del club.
+const NIVEL_ELITE_K5CN = 92;
+const EDAD_SIN_CASTIGO_K5CN = 21;
+const CUANTIL_FUERTES_K5CN = 1;
+const PAUSAS_K5CNAV = 30;
+
+check('K5c-N: con la perilla en 0 en memoria, un nativo de élite tiene más asientos ofrecibles en los clubes fuertes de su liga de tier 1; un import, los mismos', () => {
+  const ligasTier1 = (st) => st.mundo.ligas.filter((liga) => liga.tier === 1 && liga.orgs.every((org) => st.mundo.planteles?.[org.nombre]));
+  const contar = (fraccion) => conPerillasDemandaK5CNAV({ fraccionCalibreLocal: fraccion, cuantilCalibreDeLiga: CUANTIL_FUERTES_K5CN }, () => {
+    const cuenta = { nativo: 0, import: 0, alternativasImport: 0 };
+    for (const { st } of pausasDeMercadoK5cM().slice(0, PAUSAS_K5CNAV)) {
+      for (const liga of ligasTier1(st)) {
+        const otraRegion = ligasTier1(st).find((otra) => otra.regionId !== liga.regionId)?.regionId;
+        const fuerzas = liga.orgs.map((org) => org.fuerza).sort((a, b) => a - b);
+        const mediana = fuerzas[Math.floor(fuerzas.length / 2)];
+        const fuertes = liga.orgs.filter((org) => org.fuerza >= mediana && org.nombre !== st.career.currentOrg);
+        const base = {
+          ...st, age: EDAD_SIN_CASTIGO_K5CN,
+          player: { ...st.player, stats: statsParejasK5cM(NIVEL_ELITE_K5CN) },
+          career: { ...st.career, registro: { ...st.career.registro, porOrg: [] } }
+        };
+        const nativo = { ...base, mundo: { ...base.mundo, regionIdOrigen: liga.regionId } };
+        const importado = { ...base, mundo: { ...base.mundo, regionIdOrigen: otraRegion } };
+        for (const org of fuertes) {
+          cuenta.nativo += ofertaPosible(nativo, org.nombre, st.player.role).posible ? 1 : 0;
+          cuenta.import += ofertaPosible(importado, org.nombre, st.player.role).posible ? 1 : 0;
+          cuenta.alternativasImport += alternativaK5CNAV(importado, org.nombre, st.player.role);
+        }
+      }
+    }
+    return cuenta;
+  });
+  const neutra = contar(1);
+  const local = contar(0);
+  const resumen = `nativo ${neutra.nativo} -> ${local.nativo}, import ${neutra.import} -> ${local.import} (élite ${NIVEL_ELITE_K5CN}, ${PAUSAS_K5CNAV} pausas × 6 ligas, mitad de arriba de cada liga, cuantil ${CUANTIL_FUERTES_K5CN})`;
+  if (local.nativo <= neutra.nativo) {
+    throw new Error(`con la perilla en 0 el nativo no gana asientos en los clubes fuertes de su liga: ${resumen}`);
+  }
+  if (local.import !== neutra.import || local.alternativasImport !== neutra.alternativasImport) {
+    throw new Error(`la perilla tocó al import (asientos o alternativa del asiento): ${resumen}`);
+  }
+  // La forma: con el cuantil de siempre, un club por encima del calibre no se mueve, y la perilla en 0 nunca le sube la vara al nativo.
+  const st = pausasDeMercadoK5cM()[0].st;
+  for (const liga of ligasTier1(st)) {
+    const nativo = { ...st, mundo: { ...st.mundo, regionIdOrigen: liga.regionId } };
+    for (const org of liga.orgs) {
+      const [con1, con0] = [1, 0].map((fraccion) => conPerillasDemandaK5CNAV({ fraccionCalibreLocal: fraccion }, () => alternativaK5CNAV(nativo, org.nombre, st.player.role)));
+      if (org.fuerza >= calibreK5CNAV(liga) && con0 !== con1) {
+        throw new Error(`${org.nombre} (fuerza ${org.fuerza}, por encima del calibre ${calibreK5CNAV(liga)}) movió su alternativa: ${con1} -> ${con0}`);
+      }
+      if (con0 > con1) {
+        throw new Error(`${org.nombre}: la perilla en 0 le subió la alternativa al nativo (${con1} -> ${con0})`);
+      }
+    }
+  }
+  console.log(`      ${resumen}`);
+});
+
+// K5c-A. Un jugador de 24 en tier 2 (los estados reales de tier 2 de la muestra, con la edad puesta en 24), barriendo su nivel para
+// cruzar la vara de cada club: con la fracción en 0,5 tiene más ofertas de tier 1 posibles, y las de su tier no se mueven.
+const EDAD_ASCENSO_K5CA = 24;
+const FRACCION_EJEMPLO_K5CA = 0.5;
+const NIVELES_K5CA = { desde: 55, hasta: 95, paso: 0.5 };
+
+check('K5c-A: con la fracción en 0,5 en memoria, un jugador de 24 en tier 2 tiene más ofertas de tier 1 posibles, y las de su tier no cambian', () => {
+  const estadosTier2 = pausasDeMercadoK5cM().map(({ st }) => st).filter((st) => st.career.tier === 2 && st.career.currentOrg);
+  if (estadosTier2.length < 5) {
+    throw new Error(`muestra chica: ${estadosTier2.length} pausas de tier 2`);
+  }
+  const contar = (fraccion) => conPerillasDemandaK5CNAV({ fraccionCastigoAscenso: fraccion }, () => {
+    const cuenta = { tier1: 0, tier2: 0 };
+    for (const st of estadosTier2) {
+      for (let nivel = NIVELES_K5CA.desde; nivel <= NIVELES_K5CA.hasta; nivel += NIVELES_K5CA.paso) {
+        const jugador = { ...st, age: EDAD_ASCENSO_K5CA, player: { ...st.player, stats: statsParejasK5cM(nivel) } };
+        for (const entrada of orgsQueTeFicharian(jugador)) {
+          cuenta[`tier${entrada.liga.tier}`] += 1;
+        }
+      }
+    }
+    return cuenta;
+  });
+  const neutra = contar(1);
+  const ascenso = contar(FRACCION_EJEMPLO_K5CA);
+  const resumen = `tier 1 ${neutra.tier1} -> ${ascenso.tier1}, tier 2 ${neutra.tier2} -> ${ascenso.tier2} (${estadosTier2.length} pausas de tier 2, edad ${EDAD_ASCENSO_K5CA})`;
+  if (ascenso.tier1 <= neutra.tier1) {
+    throw new Error(`con la fracción en ${FRACCION_EJEMPLO_K5CA} no hay más ofertas de tier 1: ${resumen}`);
+  }
+  if (ascenso.tier2 !== neutra.tier2) {
+    throw new Error(`la fracción del ascenso movió las ofertas del mismo tier: ${resumen}`);
+  }
+  console.log(`      ${resumen}`);
+});
+
+// K5c-V. (1) La renovación: un veterano de tier 2 con nivel medio, puesto justo entre la vara de los 25 y la de los 26 (le gana la
+// disputa a su club sin el castigo de los 26 y la pierde con él). Con la perilla en 26: a los 25 su club lo renueva (factor 1) y
+// desde los 26 no (factor 0, y la mano no trae la renovación con ningún rng); con la perilla neutra a los 26 queda el factor de
+// declive de siempre. (2) El piso de franquicia y el aviso (regla 15), en carreras reales de `azar` con el régimen del barrido
+// (castigo 100, sin factor de declive): con la perilla en 26 ninguna oferta forzada de tier 2 a un veterano pierde la disputa, y
+// el aviso "no van a renovarte" de un corte por edad dice por qué, solo desde los 26 y solo en tier 2.
+const EDAD_VETERANO_K5CV = 26;
+const RNGS_RENOVACION_K5CV = 40;
+const SEEDS_CARRERAS_K5CV = 20;
+const SPLITS_CARRERAS_K5CV = 70;
+const REGIMEN_BARRIDO_K5CV = { castigoEtarioNivel: 100, factorRenovacionDeclive: 0 };
+const AVISO_EDAD_K5CV = 'Buscan gente más joven para el puesto.';
+
+check('K5c-V: con la perilla en 26 en memoria, a un veterano de tier 2 con nivel medio se le corta la renovación desde los 26 (antes no), y el aviso dice por qué', () => {
+  const problemas = [];
+  let fixtures = 0;
+  for (const { seed, st } of pausasDeMercadoK5cM()) {
+    const ligaActual = st.mundo.ligas.find((liga) => liga.id === st.career.liga);
+    if (st.career.tier !== 2 || ligaActual?.tier !== 2 || !ligaActual.orgs.some((org) => org.nombre === st.career.currentOrg)) {
+      continue;
+    }
+    const alternativa = alternativaK5CNAV(st, st.career.currentOrg, st.player.role);
+    const nivel = alternativa + BALANCE.demanda.margenSobreAlternativa
+      + (castigoEtarioK5CREV(EDAD_VETERANO_K5CV - 1) + castigoEtarioK5CREV(EDAD_VETERANO_K5CV)) / 2;
+    if (factorElite(nivel) > 0) {
+      continue;
+    }
+    fixtures += 1;
+    const conEdad = (edad) => ({ ...st, age: edad, player: { ...st.player, stats: statsParejasK5cM(nivel) } });
+    const factores = conPerillasDemandaK5CNAV({ edadCastigoRenovacionTier2: EDAD_VETERANO_K5CV }, () => [EDAD_VETERANO_K5CV - 1, EDAD_VETERANO_K5CV, EDAD_VETERANO_K5CV + 4].map((edad) => factorRenovacionK5CNAV(conEdad(edad), ligaActual)));
+    const neutro = factorRenovacionK5CNAV(conEdad(EDAD_VETERANO_K5CV), ligaActual);
+    const donde = `seed ${seed} (${st.career.currentOrg}, nivel ${nivel.toFixed(1)})`;
+    if (factores[0] !== 1 || factores[1] !== 0 || factores[2] !== 0) {
+      problemas.push(`${donde}: factores a los 25/26/30 ${factores.join('/')} (se esperaba 1/0/0)`);
+    }
+    if (neutro !== BALANCE.demanda.factorRenovacionDeclive) {
+      problemas.push(`${donde}: con la perilla neutra el factor a los 26 es ${neutro} (se esperaba ${BALANCE.demanda.factorRenovacionDeclive})`);
+    }
+    const renovaciones = (edad) => conPerillasDemandaK5CNAV({ edadCastigoRenovacionTier2: EDAD_VETERANO_K5CV }, () => {
+      let n = 0;
+      for (let r = 1; r <= RNGS_RENOVACION_K5CV; r += 1) {
+        n += generarOfertas(conEdad(edad), mulberry32(r)).ofertas.some((oferta) => oferta.tag === 'renovacion') ? 1 : 0;
+      }
+      return n;
+    });
+    const [antes, desde] = [renovaciones(EDAD_VETERANO_K5CV - 1), renovaciones(EDAD_VETERANO_K5CV)];
+    if (antes === 0 || desde !== 0) {
+      problemas.push(`${donde}: renovaciones en ${RNGS_RENOVACION_K5CV} tiradas a los 25 ${antes}, a los 26 ${desde} (se esperaba > 0 y 0)`);
+    }
+  }
+  if (fixtures < 3) {
+    problemas.push(`muestra chica: ${fixtures} pausas de tier 2 con un veterano de nivel medio`);
+  }
+
+  // (2) Carreras reales. La edad del mercado es la de antes del split (la pretemporada lo abre); el tier se toma de antes o de después
+  // del split, porque el mismo split te puede bajar a la academia (tier 2) antes de que corra el mercado (seed 13: LPL -> tier 2 a los 30).
+  const correr = (edadPerilla) => conPerillasDemandaK5CNAV({ ...REGIMEN_BARRIDO_K5CV, edadCastigoRenovacionTier2: edadPerilla }, () => {
+    const cuenta = { forzadas: 0, forzadasQuePierden: 0, avisosEdad: 0, avisosFuera: 0 };
+    for (let seed = 1; seed <= SEEDS_CARRERAS_K5CV; seed += 1) {
+      const rng = mulberry32(seed);
+      let st = createInitialState(seed, rng);
+      const responder = (sistema, s, decision, r) => {
+        if (sistema.id === 'mercado' && decision.datos?.motivo === 'oferta' && s.career.tier === 2 && s.age >= EDAD_VETERANO_K5CV) {
+          for (const oferta of (decision.opciones ?? []).filter((o) => o.forzadaFranquicia && o.tier === 2)) {
+            cuenta.forzadas += 1;
+            cuenta.forzadasQuePierden += ganaDisputaK5CNAV(s, oferta.org, s.player.role) ? 0 : 1;
+          }
+        }
+        return ESTRATEGIAS_K0.azar(sistema, s, decision, r);
+      };
+      for (let i = 0; i < SPLITS_CARRERAS_K5CV && !st.terminado; i += 1) {
+        const previo = { edad: st.age, tier: st.career.tier };
+        const paso = avanzarSplitAuto(st, rng, responder);
+        for (const log of paso.logs.filter((l) => l.type === 'mercado' && String(l.message ?? '').includes(AVISO_EDAD_K5CV))) {
+          cuenta.avisosEdad += 1;
+          if (previo.edad < EDAD_VETERANO_K5CV || (previo.tier !== 2 && paso.state.career.tier !== 2) || !log.message.includes('no van a renovarte')) {
+            cuenta.avisosFuera += 1;
+          }
+        }
+        st = paso.state;
+      }
+    }
+    return cuenta;
+  });
+  const neutra = correr(99);
+  const conPerilla = correr(EDAD_VETERANO_K5CV);
+  const resumen = `forzadas de tier 2 a veteranos ${neutra.forzadas} (pierden la disputa ${neutra.forzadasQuePierden}) -> ${conPerilla.forzadas} (${conPerilla.forzadasQuePierden}); avisos por edad ${neutra.avisosEdad} -> ${conPerilla.avisosEdad} (fuera de lugar ${conPerilla.avisosFuera})`;
+  if (neutra.forzadasQuePierden === 0) {
+    problemas.push(`el piso de franquicia no se mide (ninguna oferta forzada pierde la disputa con la perilla neutra): ${resumen}`);
+  }
+  if (conPerilla.forzadasQuePierden !== 0) {
+    problemas.push(`con la perilla en ${EDAD_VETERANO_K5CV} el piso de franquicia le hace lugar a un veterano que pierde la disputa: ${resumen}`);
+  }
+  if (neutra.avisosEdad !== 0 || conPerilla.avisosEdad === 0 || conPerilla.avisosFuera !== 0) {
+    problemas.push(`el aviso del corte por edad no es veraz o no sale: ${resumen}`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
+  }
+  console.log(`      ${fixtures} veteranos de nivel medio; ${resumen}`);
+});
+
 if (errores.length > 0) {
   console.error(`\n${errores.length} check(s) fallaron.`);
   process.exit(1);
