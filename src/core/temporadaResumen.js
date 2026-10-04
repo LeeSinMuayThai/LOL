@@ -8,6 +8,8 @@ import { calificaAPlayoffs, calificaAInternacional } from './serie.js';
 import { TOKENS } from './plantillas.js';
 import { esBuenPapel } from './registro.js';
 import { nombreVisibleDeLiga } from './ligas.js';
+import { etiquetaDeRanked, servidorDeLaPartida } from './ranked.js';
+import { plural } from './formato.js';
 
 // El resumen anual (fase 11, PLAN.md §11.1): nota, titular y viñetas del año
 // que cierra. Puro y sin RNG — `systems/resumenAnio.js` es el único que lo
@@ -377,7 +379,8 @@ function vinetaNumeros(state) {
 
 function vinetaEquipo(state, ctx) {
   if (state.phase === 'amateur') {
-    return { icono: '🏆', texto: `SoloQ: ${Math.round(state.player.soloqElo)} LP. Todavía sin equipo profesional.` };
+    // K6a-U: el rango ("Platino III · 33 LP"), no los puntos absolutos de la escalera ("2019 LP"), que no significan nada.
+    return { icono: '🏆', texto: `SoloQ: ${etiquetaDeRanked(state.player.ranked, servidorDeLaPartida(state))}. Todavía sin equipo profesional.` };
   }
   if (!state.career.currentOrg) {
     return { icono: '🏆', texto: 'Sin equipo esta temporada.' };
@@ -413,10 +416,15 @@ function vinetaArchirrival(state) {
     return { icono: '⚡', texto: 'Sin un rival de generación que te pise los talones todavía.' };
   }
   const { tuyos, suyos } = archirrival.duelo;
-  const ventaja = tuyos >= suyos ? 'vas ganando el duelo' : 'te lleva ventaja';
+  const quien = `${archirrival.handle} (${archirrival.org ?? 'sin equipo'})`;
+  // K6a-U (regla 15): con 0-0 "vas ganando el duelo" salía todos los años. Empate no es ir ganando: se dice lo que hay.
+  if (tuyos === 0 && suyos === 0) {
+    return { icono: '⚡', texto: `${quien}: ninguno de los dos ganó un trofeo todavía.` };
+  }
+  const ventaja = tuyos > suyos ? 'vas ganando el duelo' : (tuyos < suyos ? 'te lleva ventaja' : 'el duelo está parejo');
   return {
     icono: '⚡',
-    texto: `${archirrival.handle} (${archirrival.org ?? 'sin equipo'}): ${suyos} trofeos contra tus ${tuyos} — ${ventaja}.`
+    texto: `${quien}: ${suyos} ${plural(suyos, 'trofeo', 'trofeos')} contra tus ${tuyos} — ${ventaja}.`
   };
 }
 

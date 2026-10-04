@@ -1,4 +1,4 @@
-import { plata } from '../../core/formato.js';
+import { plata, faltan as faltanTexto } from '../../core/formato.js';
 import { crearOrgChip } from './orgChip.js';
 import { countUp } from './countUp.js';
 import { reconciliar, reemplazarEnElLugar } from '../core/reconciliar.js';
@@ -68,6 +68,21 @@ export function lineaDePlantelDeOferta(oferta) {
   }
 }
 
+// K6a-U: "Te falta 1 punto para Ídolo" (el verbo concuerda con el número). Solo la renovación trae `progresoHito`.
+export function lineaDeHitoDeOferta(oferta) {
+  if (!oferta.progresoHito) {
+    return null;
+  }
+  const { faltan, hacia } = oferta.progresoHito;
+  return `${faltanTexto(faltan, 'punto', 'puntos', 'Te')} para ${hacia}`;
+}
+
+// K6a-U (regla de proceso 12): el motor arma POR QUÉ el club te ficha (`oferta.motivoDemanda`, de
+// `core/demanda.js:asientoAbierto`) y ninguna pantalla lo mostraba. Se dice tal cual viene; sin motivo, sin línea.
+export function lineaDeMotivoDeOferta(oferta) {
+  return oferta.motivoDemanda ? `Por qué te quieren: ${oferta.motivoDemanda}.` : null;
+}
+
 function construirTarjeta(oferta, onElegir, onNegociar) {
   const card = document.createElement('div');
   card.className = `mercado-card mercado-card--${oferta.tag}`;
@@ -105,9 +120,14 @@ function construirTarjeta(oferta, onElegir, onNegociar) {
   }
   card.appendChild(fila('mercado-card-arraigo', oferta.arraigoInicial.etiqueta));
 
-  if (oferta.progresoHito) {
-    const { faltan, hacia } = oferta.progresoHito;
-    card.appendChild(fila('mercado-card-hito', `Te faltan ${faltan} para ${hacia}`));
+  const lineaHito = lineaDeHitoDeOferta(oferta);
+  if (lineaHito) {
+    card.appendChild(fila('mercado-card-hito', lineaHito));
+  }
+
+  const lineaMotivo = lineaDeMotivoDeOferta(oferta);
+  if (lineaMotivo) {
+    card.appendChild(fila('mercado-card-motivo', lineaMotivo));
   }
 
   if (oferta.riesgo) {

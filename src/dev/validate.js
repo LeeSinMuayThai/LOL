@@ -20332,6 +20332,249 @@ check('K5c-M (c): criterio, si es de élite, elige el club más fuerte entre ofe
   }
 });
 
+// --- K6a-U: UI y textos del ensayo de K6 ------------------------------------------------------------------------------------
+// Regla 7: cada check da rojo con su mutante (anotado debajo de cada uno). Regla 15: el texto dice lo que el motor hace. Nada de
+// esto mueve el stream del motor: son textos, la forma de leer `state` para la pantalla y la seed que se escribe a mano.
+const { interpretarSeed, hashCadena: hashCadenaK6AU } = await import('../core/numeros.js');
+const { plural: pluralK6AU, faltan: faltanK6AU, haceDeEso: haceDeEsoK6AU } = await import('../core/formato.js');
+const { ventanaVisibleDe, tableroDeSerie } = await import('../core/vistaDeCarrera.js');
+const { vinetasDelAnio: vinetasDelAnioK6AU } = await import('../core/temporadaResumen.js');
+const { etiquetaDeRanked: etiquetaDeRankedK6AU, servidorDeLaPartida: servidorK6AU } = await import('../core/ranked.js');
+const { lineaDeHitoDeOferta, lineaDeMotivoDeOferta } = await import('../ui/components/mercado.js');
+const { decisionPresionTier2: decisionPresionK6AU } = await import('../systems/mercado.js');
+const { bandaDeArraigoFicha: bandaDeArraigoK6AU } = await import('../core/ficha.js');
+const { resolverTexto: resolverTextoK6AU } = await import('../core/plantillas.js');
+
+function archivosJsK6AU(dir) {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entrada) => {
+    const ruta = path.join(dir, entrada.name);
+    if (entrada.isDirectory()) {
+      return archivosJsK6AU(ruta);
+    }
+    return entrada.name.endsWith('.js') ? [ruta] : [];
+  });
+}
+
+check('K6a-U (a): un texto en la seed es la misma carrera cada vez (hash del motor) y un número sigue igual', () => {
+  const pepe = interpretarSeed('pepe');
+  if (pepe.seed !== hashCadenaK6AU('pepe') || !pepe.desdeTexto || pepe.seed === null) {
+    throw new Error(`"pepe" tenía que ser hashCadena("pepe") = ${hashCadenaK6AU('pepe')}, dio ${JSON.stringify(pepe)}`);
+  }
+  if (interpretarSeed(' pepe ').seed !== pepe.seed || interpretarSeed('Pepe').seed === pepe.seed) {
+    throw new Error('el texto se recorta pero distingue mayúsculas: " pepe " = "pepe" y "Pepe" es otra seed');
+  }
+  const esperados = { '123': 123, ' 42 ': 42, '-5.9': 5, '0': 0, '1e3': 1000 };
+  for (const [crudo, seed] of Object.entries(esperados)) {
+    const r = interpretarSeed(crudo);
+    if (r.seed !== seed || r.desdeTexto) {
+      throw new Error(`el número "${crudo}" tenía que seguir dando ${seed} (no texto), dio ${JSON.stringify(r)}`);
+    }
+  }
+  for (const vacio of ['', '   ', null, undefined]) {
+    if (interpretarSeed(vacio).seed !== null) {
+      throw new Error(`vacío (${JSON.stringify(vacio)}) no es seed: la sortea el reloj`);
+    }
+  }
+  // Mutante: que un texto devuelva `seed: null` (se ignora sin avisar, como antes) o que un número pase por el hash.
+});
+
+check('K6a-U (b): "te falta 1 puesto", el tiempo según la distancia real y ningún "te faltan N" a mano', () => {
+  const esperado = [
+    [faltanK6AU(1, 'puesto', 'puestos'), 'te falta 1 puesto'],
+    [faltanK6AU(2, 'puesto', 'puestos'), 'te faltan 2 puestos'],
+    [faltanK6AU(0, 'puesto', 'puestos'), 'te faltan 0 puestos'],
+    [faltanK6AU(1, 'punto', 'puntos', 'Te'), 'Te falta 1 punto'],
+    [pluralK6AU(1, 'trofeo', 'trofeos'), 'trofeo'],
+    [pluralK6AU(0, 'trofeo', 'trofeos'), 'trofeos'],
+    [haceDeEsoK6AU(0), 'Fue este mismo año'],
+    [haceDeEsoK6AU(1), 'Fue el año pasado'],
+    [haceDeEsoK6AU(2), 'Hace 2 años de eso'],
+    [haceDeEsoK6AU(7), 'Hace 7 años de eso']
+  ];
+  const mal = esperado.filter(([dado, texto]) => dado !== texto).map(([dado, texto]) => `"${dado}" (debía decir "${texto}")`);
+  if (mal.length > 0) {
+    throw new Error(mal.join(' | '));
+  }
+  // El token de la plantilla resuelve contra el PRIMER título del registro: el del año anterior no dice "hace años".
+  const conTitulo = (anioTitulo, anioHoy) => ({ career: { registro: { titulos: [{ anio: anioTitulo }, { anio: anioHoy }] } }, calendario: { anio: anioHoy } });
+  const cita = TODOS_LOS_EVENTOS.find((evento) => evento.id === 'el_primer_titulo_que_contas');
+  if (!cita || !cita.description.includes('{haceDeEso}') || /hace años/i.test(cita.description)) {
+    throw new Error('la descripción de "el primer título que contás" tiene que usar {haceDeEso}, no un "hace años" fijo');
+  }
+  const dicho = (estado) => resolverTextoK6AU(cita.description, estado);
+  if (!dicho(conTitulo(2030, 2031)).includes('Fue el año pasado.') || dicho(conTitulo(2030, 2031)).includes('años de eso')) {
+    throw new Error(`el título del año anterior tenía que decir "Fue el año pasado": ${dicho(conTitulo(2030, 2031))}`);
+  }
+  if (!dicho(conTitulo(2026, 2031)).includes('Hace 5 años de eso.')) {
+    throw new Error(`el título de hace 5 años tenía que decir "Hace 5 años de eso": ${dicho(conTitulo(2026, 2031))}`);
+  }
+  // Ningún texto del motor ni de la UI escribe "te faltan ${n}" a pelo (el verbo no concuerda con el 1).
+  const aMano = /[Tt]e faltan \$\{/;
+  const raiz = path.join(__dirname, '..');
+  const culpables = archivosJsK6AU(raiz)
+    .filter((ruta) => !ruta.endsWith(path.join('dev', 'validate.js')) && !ruta.endsWith(path.join('core', 'formato.js')))
+    .filter((ruta) => aMano.test(fs.readFileSync(ruta, 'utf8')))
+    .map((ruta) => path.relative(raiz, ruta));
+  if (culpables.length > 0) {
+    throw new Error(`"te faltan \${n}" escrito a mano (usar faltan() de core/formato.js): ${culpables.join(', ')}`);
+  }
+  // Mutante: `faltan` que diga siempre "faltan", `haceDeEso` que devuelva "Hace años de eso", o volver al ternario del sustantivo.
+});
+
+check('K6a-U (c): el cierre de año dice el rango, y con 0-0 el archirrival no "va ganando"', () => {
+  const base = createInitialState(1, mulberry32(1));
+  if (base.phase !== 'amateur') {
+    throw new Error(`el fixture supone un arranque amateur y la fase es ${base.phase}`);
+  }
+  const conDuelo = (tuyos, suyos) => ({ ...base, mundo: { ...base.mundo, archirrival: { handle: 'Mirfin90', org: 'Shopify Rebellion', duelo: { tuyos, suyos } } } });
+  const lineaDe = (estado, icono) => vinetasDelAnioK6AU(estado).find((v) => v.icono === icono).texto;
+  const cero = lineaDe(conDuelo(0, 0), '⚡');
+  if (/ganando|ventaja/.test(cero) || !/Mirfin90/.test(cero) || !/ninguno de los dos ganó un trofeo/.test(cero)) {
+    throw new Error(`con 0-0 nadie va ganando, y dice: "${cero}"`);
+  }
+  const casos = [[3, 1, 'vas ganando el duelo'], [1, 3, 'te lleva ventaja'], [2, 2, 'parejo']];
+  for (const [tuyos, suyos, frase] of casos) {
+    if (!lineaDe(conDuelo(tuyos, suyos), '⚡').includes(frase)) {
+      throw new Error(`${tuyos}-${suyos} tenía que decir "${frase}": ${lineaDe(conDuelo(tuyos, suyos), '⚡')}`);
+    }
+  }
+  if (!lineaDe(conDuelo(0, 1), '⚡').includes('1 trofeo contra')) {
+    throw new Error(`"1 trofeos": ${lineaDe(conDuelo(0, 1), '⚡')}`);
+  }
+  const rango = etiquetaDeRankedK6AU(base.player.ranked, servidorK6AU(base));
+  const equipo = lineaDe(base, '🏆');
+  if (!equipo.includes(rango) || /SoloQ: \d+ LP/.test(equipo)) {
+    throw new Error(`el cierre del amateur tenía que decir el rango "${rango}" y no los puntos crudos: "${equipo}"`);
+  }
+  // Mutante: volver a `${Math.round(soloqElo)} LP`, o `tuyos >= suyos` para el "vas ganando".
+});
+
+check('K6a-U (d): las líneas de la carta de oferta salen del mismo dato y no se contradicen (regla 15)', () => {
+  const st = createInitialState(3, mulberry32(3));
+  const base = st.mundo.ligas.find((liga) => liga.tier === 1);
+  // Una liga de diez clubes con una fuerza por banda, y un prestigio altísimo: con la regla vieja (fuerza contra prestigio)
+  // TODA carta decía "margen para mandar vos", hasta la del plantel más fuerte.
+  const fuerzas = [90, 80, 70, 60, 55, 50, 40, 30, 20, 10];
+  const liga = { ...base, prestigio: 500, orgs: fuerzas.map((fuerza, i) => ({ nombre: `Club ${i + 1}`, fuerza })) };
+  const vistas = new Set();
+  const problemas = [];
+  for (const org of liga.orgs) {
+    const oferta = construirOferta(st, liga, org, 'lateral', mulberry32(9));
+    const esperada = lineaEsperadaK5cM(liga, org);
+    vistas.add(esperada.banda);
+    const dicho = (cual) => `${org.nombre} (${esperada.banda}): ${cual}`;
+    const fuerte = esperada.banda === 'primero' || esperada.banda === 'arriba';
+    if (oferta.plantelEnLiga.banda !== esperada.banda) {
+      problemas.push(dicho(`el motor da la banda ${oferta.plantelEnLiga.banda}`));
+    }
+    if (fuerte && (!/competir por un lugar/.test(oferta.riesgo ?? '') || /mandar|hacerte grande/.test(oferta.riesgo ?? ''))) {
+      problemas.push(dicho(`plantel fuerte y la carta dice "${oferta.riesgo}"`));
+    }
+    if (esperada.banda === 'abajo' && !/margen para hacerte grande/.test(oferta.riesgo ?? '')) {
+      problemas.push(dicho(`plantel flojo y la carta dice "${oferta.riesgo}"`));
+    }
+    if (esperada.banda === 'medio' && !/parejo/.test(oferta.riesgo ?? '')) {
+      problemas.push(dicho(`plantel parejo y la carta dice "${oferta.riesgo}"`));
+    }
+    // La jerarquía: la frase sigue al `hasta` de la misma tarjeta, y no habla de un draft que ya no existe.
+    const bajo = oferta.proyeccionJerarquia.hasta < BALANCE.serie.jerarquiaMinimaParaSeguirLlamada;
+    if (bajo !== /pesan poco/.test(oferta.proyeccionPicks) || /draft|elegir tu campeón/.test(oferta.proyeccionPicks)) {
+      problemas.push(dicho(`jerarquía ${oferta.proyeccionJerarquia.hasta} y la carta dice "${oferta.proyeccionPicks}"`));
+    }
+    // El arraigo de llegada: el número y la banda de la cuenta, sin "casi de cero" junto a "tu fama te precede".
+    const etiqueta = oferta.arraigoInicial.etiqueta;
+    if (!etiqueta.includes(`${oferta.arraigoInicial.valor}/100`) || !etiqueta.includes(bandaDeArraigoK6AU(oferta.arraigoInicial.valor).label) || /fama te precede/.test(etiqueta)) {
+      problemas.push(dicho(`el arraigo vale ${oferta.arraigoInicial.valor} y la carta dice "${etiqueta}"`));
+    }
+  }
+  if (vistas.size < 4) {
+    problemas.push(`el fixture no pasó por las cuatro bandas: ${[...vistas].join(', ')}`);
+  }
+  // La otra mitad de la frase de la jerarquía: la renovación (tu propio club) conserva la jerarquía de hoy, y ahí sí se llega
+  // por encima del umbral. Con 90 las llamadas "cuentan enteras"; con 30, "pesan poco"; ninguna habla de un draft.
+  for (const jerarquia of [30, 90]) {
+    const propio = { ...st, career: { ...st.career, currentOrg: 'Club 1', jerarquia } };
+    const renovacion = construirOferta(propio, liga, liga.orgs[0], 'renovacion', mulberry32(9));
+    const bajoRenovacion = jerarquia < BALANCE.serie.jerarquiaMinimaParaSeguirLlamada;
+    if (bajoRenovacion !== /pesan poco/.test(renovacion.proyeccionPicks) || (!bajoRenovacion && !/cuentan enteras/.test(renovacion.proyeccionPicks))
+      || /draft|elegir tu campeón/.test(renovacion.proyeccionPicks)) {
+      problemas.push(`renovación con jerarquía ${jerarquia}: la carta dice "${renovacion.proyeccionPicks}"`);
+    }
+  }
+  // La carta muestra el motivo del club tal cual viene del motor, y el hito con el verbo que concuerda.
+  if (lineaDeMotivoDeOferta({ motivoDemanda: 'mejorás claramente sobre Fulano' }) !== 'Por qué te quieren: mejorás claramente sobre Fulano.' || lineaDeMotivoDeOferta({}) !== null) {
+    problemas.push(`la línea del motivo: ${lineaDeMotivoDeOferta({ motivoDemanda: 'mejorás claramente sobre Fulano' })}`);
+  }
+  if (lineaDeHitoDeOferta({ progresoHito: { faltan: 1, hacia: 'Ídolo' } }) !== 'Te falta 1 punto para Ídolo'
+    || lineaDeHitoDeOferta({ progresoHito: { faltan: 24, hacia: 'Ídolo' } }) !== 'Te faltan 24 puntos para Ídolo') {
+    problemas.push('el hito no concuerda el verbo con el número');
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
+  }
+  // Mutante: `riesgo` contra `liga.prestigio` como antes (rojo en el plantel más fuerte), el texto del draft en `proyeccionPicks`,
+  // el "casi de cero: tu fama te precede" del arraigo, o `lineaDeMotivoDeOferta` devolviendo null.
+});
+
+check('K6a-U (e): la barra de fase y el panel de la serie dicen lo que pasa, no el estado del arranque del split', () => {
+  const base = createInitialState(1, mulberry32(1));
+  const en = (cambios) => ({ ...base, contexto: { ...base.contexto, ventana: 'pretemporada' }, ...cambios });
+  const ventanas = [
+    ['una parada del mercado en la pretemporada sigue siendo pretemporada', en({ pendiente: { sistemaId: 'mercado' } }), 'pretemporada'],
+    ['el partido decisivo de la tabla es temporada regular, aunque el split arrancó en pretemporada', en({ pendiente: { sistemaId: 'temporada' } }), 'regular'],
+    ['una serie en curso son playoffs', en({ serie: { ...base.serie, activa: true } }), 'playoffs'],
+    ['la parada de una serie son playoffs', en({ pendiente: { sistemaId: 'serie' } }), 'playoffs'],
+    ['una serie del bracket del Mundial es el internacional', en({ serie: { ...base.serie, activa: true, torneo: 'mundial' } }), 'internacional'],
+    ['el 2-2 del Swiss es el internacional', en({ pendiente: { sistemaId: 'internacional' }, internacional: { partidoEnCurso: { rival: 'X' } } }), 'internacional']
+  ];
+  const mal = ventanas.filter(([, estado, esperada]) => ventanaVisibleDe(estado) !== esperada)
+    .map(([que, estado, esperada]) => `${que}: dice ${ventanaVisibleDe(estado)} y era ${esperada}`);
+  const domestica = { ...base.serie, activa: false, postSerie: true, torneo: null, ronda: 'final' };
+  const mundial = { jugador: 'Mi club', anio: base.calendario.anio, partidoEnCurso: null };
+  const paneles = [
+    ['el Swiss no es una serie: panel del Swiss', en({ serie: domestica, internacional: { ...mundial, partidoEnCurso: { rival: 'X' } } }), 'swiss'],
+    ['la final doméstica recién cerrada se ve', en({ serie: domestica }), 'serie'],
+    ['la final doméstica ya no es el momento si tu equipo está en el Mundial de este año', en({ serie: domestica, internacional: mundial }), null],
+    ['pero el Mundial de otro año no la tapa', en({ serie: domestica, internacional: { ...mundial, anio: mundial.anio - 1 } }), 'serie'],
+    ['y un Mundial en el que no jugás tampoco', en({ serie: domestica, internacional: { ...mundial, jugador: null } }), 'serie'],
+    ['la serie del Mundial en curso se ve', en({ serie: { ...base.serie, activa: true, torneo: 'mundial' }, internacional: mundial }), 'serie'],
+    ['sin serie, sin panel', en({}), null]
+  ];
+  mal.push(...paneles.filter(([, estado, esperado]) => tableroDeSerie(estado) !== esperado)
+    .map(([que, estado, esperado]) => `${que}: dice ${tableroDeSerie(estado)} y era ${esperado}`));
+  if (mal.length > 0) {
+    throw new Error(`${mal.length} problema(s): ${mal.slice(0, 4).join(' | ')}`);
+  }
+  // Mutante: `ventanaVisibleDe` que devuelva `state.contexto.ventana` a pelo, o `tableroDeSerie` que no mire `internacional`.
+});
+
+check('K6a-U (f): la presión de tier 2 no dice "Seguís en" otra liga ni repite lo que ya dijo, y el desgaste no habla "en el comms"', () => {
+  const ligas = [{ id: 'emea', nombre: 'EMEA Masters' }, { id: 'lckcl', nombre: 'LCK CL' }, { id: 'lcsa', nombre: 'LCS Academy' }];
+  const estado = (libre) => ({
+    age: 27,
+    career: { currentOrg: libre ? null : 'Club X', liga: libre ? null : 'emea', tier: 2, registro: { porOrg: [{ tier: 2, liga: 'emea' }] } },
+    mundo: { ligas },
+    flags: { splitsTier2SinOfertaTier1: 4 }
+  });
+  const una = decisionPresionK6AU(estado(false), [{ liga: 'lckcl', tier: 2 }], []);
+  const seguirUna = una.opciones.find((o) => o.id === 'seguir').label;
+  const dos = decisionPresionK6AU(estado(false), [{ liga: 'lckcl', tier: 2 }, { liga: 'lcsa', tier: 2 }], []);
+  const seguirDos = dos.opciones.find((o) => o.id === 'seguir').label;
+  if (seguirUna !== 'Seguís abajo: LCK CL te quiere' || seguirDos !== 'Seguís abajo: LCK CL o LCS Academy te quieren') {
+    throw new Error(`la opción de seguir dice "${seguirUna}" y "${seguirDos}"`);
+  }
+  const libreSinOfertas = decisionPresionK6AU(estado(true), [], []);
+  if (/nadie te está llamando/.test(libreSinOfertas.descripcion) || !libreSinOfertas.descripcion.includes('quedaste sin equipo')
+    || (libreSinOfertas.descripcion.match(/¿/g) ?? []).length !== 1) {
+    throw new Error(`el free agent sin ofertas repite lo que ya dijo: "${libreSinOfertas.descripcion}"`);
+  }
+  const atributos = fs.readFileSync(path.join(__dirname, '..', 'systems', 'atributos.js'), 'utf8');
+  if (/en el comms/.test(atributos)) {
+    throw new Error('el texto del desgaste del shotcalling dice "en el comms" (se dice "en comms")');
+  }
+  // Mutante: volver a `Seguís en ${ligas}`, a "Y nadie te está llamando" para el free agent, o a "en el comms".
+});
+
 // PLAN.md §K.4 — los tres custodios del registro de bandas pendientes. Van DESPUÉS del último check: el primero mira cómo
 // terminó cada check de esta corrida, y una entrada cuyo check corre más abajo le aparece como "no existe" (pasó en la
 // integración de K5: los checks de K5-A y K5-B se agregaron después de los custodios). Un check nuevo va ARRIBA de esto.

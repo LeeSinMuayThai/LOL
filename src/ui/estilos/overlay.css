@@ -47,6 +47,7 @@
 }
 .serie-score-sep { color: var(--ink-mute); font-size: var(--fs-6); }
 
+.serie-swiss-resumen { display: flex; align-items: center; gap: var(--s-3); margin-bottom: var(--s-3); }
 .serie-camino { display: flex; gap: var(--s-2); flex-wrap: wrap; }
 .serie-mapa {
   min-width: 72px;

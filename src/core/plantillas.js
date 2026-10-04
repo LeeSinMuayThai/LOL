@@ -3,6 +3,7 @@ import { hashCadena } from './numeros.js';
 import { campeonesEnMeta, campeonesMuertos } from './ajusteMeta.js';
 import { campeonesDisponibles, principalDelPool, campeonNuevoPendiente } from './pool.js';
 import { nombreVisibleDeLiga } from './ligas.js';
+import { haceDeEso } from './formato.js';
 
 // Tokens para que el contenido nombre TU carrera y no una genérica.
 // "{jungla} no camina más para vos" -> "Zenvex no camina más para vos".
@@ -39,6 +40,11 @@ export const TOKENS = {
   // El campeón que domina el parche en tu línea. Deja escribir "todos pickean
   // {metaTop}" sin cablear un nombre en el JSON.
   metaTop: (state) => campeonesEnMeta(state.meta.weights, campeonesDisponibles(state), 1)[0]?.name,
+  // K6a-U: cuánto hace de tu PRIMER título, por la distancia real (core/formato.js), no un "hace años" fijo.
+  haceDeEso: (state) => {
+    const primero = state.career.registro.titulos[0];
+    return primero ? haceDeEso(state.calendario.anio - primero.anio) : null;
+  },
   // Tu main de mayor maestría.
   main: (state) => (state.player.championPool.length > 0 ? principalDelPool(state.player.championPool).name : null),
   // Tu main SOLO si el parche lo dejó a contramano. Devuelve null si no, así el

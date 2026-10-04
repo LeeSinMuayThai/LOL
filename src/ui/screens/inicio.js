@@ -38,6 +38,11 @@ export function crearPantallaInicio(elements, modulos) {
       }
       const campeon = CAMPEONES.find((c) => c.name === nombre) ?? { name: nombre, tags: [] };
       slot.appendChild(crearCampeonTile(campeon, { elegido: true, size: 'setup' }));
+      // K6a-U: el nombre a la vista, no solo en el `title` (las iniciales de "Aatrox" y "Ahri" son las mismas).
+      const etiqueta = document.createElement('span');
+      etiqueta.className = 'draft-slot-nombre';
+      etiqueta.textContent = nombre;
+      slot.appendChild(etiqueta);
       slot.title = `Quitar ${nombre}`;
       slot.addEventListener('click', () => {
         camposElegidos = camposElegidos.filter((n) => n !== nombre);

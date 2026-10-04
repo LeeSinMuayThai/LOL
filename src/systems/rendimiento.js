@@ -11,6 +11,7 @@ import { hypeHaciaSuBase } from '../core/barras.js';
 import { BALANCE } from '../data/balance.js';
 import { ROLES } from '../data/roles.js';
 import { nombreVisibleDeLigaOZona } from '../core/ligas.js';
+import { faltan as faltanTexto, plural } from '../core/formato.js';
 
 export const id = 'rendimiento';
 
@@ -44,7 +45,7 @@ const PARADA_ZONA = {
   ],
   fuera: [
     (p, n, l, k) => `Cerrás el split ${p}º de ${n}: a ${k} de la zona de playoffs de ${l}.`,
-    (p, n, l, k) => `${p}º de ${n} en ${l}: te faltan ${k} puesto${k === 1 ? '' : 's'} para los playoffs.`,
+    (p, n, l, k) => `${p}º de ${n} en ${l}: ${faltanTexto(k, 'puesto', 'puestos')} para los playoffs.`,
     (p, n, l, k) => `Terminás ${p}º de ${n}: la zona de playoffs queda a ${k} de distancia.`,
     (p, n, l, k) => `${p}º de ${n}: afuera de playoffs por ${k}, hay que apretar.`
   ]
@@ -88,7 +89,7 @@ function textoDeParadaEnLaTabla(nombreLiga, liga, posicion, equipos, esCierre, j
     }
     if (esCierre) {
       const faltan = posicion - corte;
-      return `Cerrás ${posicion}º de ${equipos} en ${nombreLiga}: afuera de los playoffs por ${faltan} puesto${faltan === 1 ? '' : 's'}.`;
+      return `Cerrás ${posicion}º de ${equipos} en ${nombreLiga}: afuera de los playoffs por ${faltan} ${plural(faltan, 'puesto', 'puestos')}.`;
     }
     if (posicion <= corte) {
       return variantePorSemilla(PARADA_ZONA.dentro, `dentro|${claveDeLiga}|${splitCount}`)(posicion, equipos, nombreLiga);
