@@ -1179,6 +1179,36 @@ export const BALANCE = {
     // siquiera con el sesgo etario en contra.
     brechaFranquicia: 10,
 
+    // --- K5c-M, la élite se busca (PLAN.md "K5c — decisiones de spec de la estructura"): los clubes fuertes le
+    // ofrecen a la élite. Estructura con perillas NEUTRAS (con `pesoFuerzaOrden` y `rebajaAsientoPorMerito` en 0 el
+    // motor es idéntico, huella incluida); las fija el barrido del paso 3 de K5c. Se leen en el momento de usarlas
+    // (`core/demanda.js:factorElite` y `asientoAbierto`, `systems/mercado.js:generarOfertas`), así que un override en
+    // memoria las pisa.
+    //  - `f(nivel) = clamp((nivel − umbralNivel) / anchoNivel, 0, 1)`: 0 por debajo del umbral de élite, sube en
+    //    línea recta y vale 1 desde `umbralNivel + anchoNivel`. Lineal a propósito: una perilla de forma menos para
+    //    el barrido, y la élite "a medias" pesa a medias. El umbral arranca dos puntos arriba del borde de
+    //    `ficha.nivelBandas.elite` (78, desde donde la ficha dice "clase mundial").
+    //  - `pesoFuerzaOrden` (k): USD de orden de la mano por punto de `org.fuerza` con f = 1. El orden de la mano es
+    //    `presupuesto + nudge de región + k · f(nivel) · org.fuerza`: con k > 0 los clubes fuertes van primero.
+    //  - `rebajaAsientoPorMerito`: puntos que se le perdonan a la élite, con f = 1, en los dos márgenes del asiento:
+    //    el que lo abre por mérito (`demanda.forzarAsientoSobreNpc`: el club banca a su titular por una estrella
+    //    aunque no le saque 8) y el de la disputa (`demanda.margenSobreAlternativa`: el club se estira por una
+    //    estrella aunque no le gane claramente a su alternativa). Va en los dos porque abrir solo el asiento no
+    //    sumaba ningún club fuerte (medido: `core/demanda.js:rebajaAsientoElite`). Las reglas duras no se tocan.
+    elite: {
+      umbralNivel: 80,
+      anchoNivel: 10,
+      pesoFuerzaOrden: 0,
+      rebajaAsientoPorMerito: 0
+    },
+    // K5c-M, lo que ve la carta: el puesto del plantel por fuerza dentro de su liga (`core/demanda.js:plantelEnLiga`).
+    // "Arriba" son los primeros `fraccionArriba` de la liga (redondeado para arriba; el 1.º se dice aparte), "abajo"
+    // los últimos `fraccionAbajo`, y lo del medio es mitad de tabla. Con 10 clubes: 1.º, 2.º-3.º, 4.º-7.º, 8.º-10.º.
+    plantelEnLiga: {
+      fraccionArriba: 0.3,
+      fraccionAbajo: 0.3
+    },
+
     // --- salarioDeOferta: mult = exp(gauss(0,sigma)) * factorRol * jerarquía * hype ---
     salarioJerarquiaBase: 0.6,
     salarioJerarquiaPeso: 1.1,

@@ -689,6 +689,8 @@ details.avanzado summary:hover { color: var(--ink-dim); }
 }
 
 .mercado-card-liga { font-size: var(--fs-1); color: var(--ink-mute); }
+/* K5c-M: dónde está el plantel por fuerza en su liga. */
+.mercado-card-plantel { font-size: var(--fs-2); line-height: var(--lh-snug); color: var(--ink-dim); }
 
 .mercado-card-salario {
   font-family: var(--font-display);
