@@ -7629,6 +7629,35 @@ casa", frente a fijar la meta del Mundial en lo medido. Confirma la decisión de
   Todos con su mutante.
 - **Bloque C, con corrimiento declarado.** Lo que se mueva en el embudo lo fija el barrido final.
 
+**K5c-H, hecho** (`2c61ed5`; las perillas son neutras y la huella no cambia, salvo por el bot, que es instrumento).
+
+*El diagnóstico (es el mercado, no el bot).* Un coreano de nivel 85-90 ve una oferta de LCK en el 18% de las ventanas.
+De 620 chequeos de club, en 273 no había asiento y en 314 perdió la disputa. Lo que decide la disputa es el castigo
+etario de la configuración D: 12 puntos a los 22 y 60 a los 26. A los 21 o menos el coreano está en 62-71, contra
+una vara de LCK de ~83. Cuando llega a 88, a los 24 o más, el castigo lo deja afuera. CBLOL (vara ~55) lo toma, y
+ahí se queda.
+
+*Lo que cambió:*
+- **El mercado:** `ligaDeCasa`, `alcanzaTuLiga` y `clubDeCasaQueTeHaceLugar`.
+- **El Mundial:** `fuerzaDeMundial` para la entrada, el Swiss, la previa y el bracket, con la perilla
+  `mundial.jerarquiaCuenta`.
+- **El bot `criterio`:** prefiere una liga más fuerte a la que llega (solo la élite), después la casa, después una no
+  más débil.
+- **Las perillas:** `mercado.casa.margenAlcanza` (neutra 99) y `mercado.casa.fraccionCastigo` (neutra 1).
+
+*Medido* (G0 + `criterio`, 600 × 60):
+
+| | G0 | casa 0 / castigo 0 / jerarquía off | casa 0 / castigo 0,25 / jerarquía off |
+|---|---|---|---|
+| % de tier 1 en casa | 16 | 77 | 59 |
+| Mundial total · KR/NA/EU/CN | 1,7 · 3/0/1/3 | **8,0** · 9/7/13/10 | 2,8 · 4/1/4/2 |
+| Años pro, mediana (p90, % a los 34) | 7 (11, 1) | 11 (15, 21) | 8 (13, 5) |
+
+Con la casa encendida, el Mundial llega al 7%, pero en parte porque la carrera se alarga. El barrido final busca la
+frontera: un castigo etario menor con la casa encendida, y la carrera acortada por el desgaste y la presión. Si el
+Mundial ≥ 7% fuera incompatible con una carrera de ≤ 9 años, el compromiso lo decide el usuario, con la frontera
+medida.
+
 ### K6 — Jugarlo *(la prueba que importa)*
 
 Tres carreras completas en el navegador: una que se estanca en tier 2 por malas decisiones, una buena
