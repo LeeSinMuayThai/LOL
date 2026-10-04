@@ -7450,6 +7450,77 @@ M `b57a9de`, `a26fe1b`).
   siguen en tier 2 hasta los 34: el mercado de tier 2 renueva para siempre. Desde una edad, el mercado de tier 2 le
   aplica el castigo etario también a la renovación. La sesión de una carrera fallida tiene que ser corta (§K.3c).
 
+#### K6a — el ensayo de K6 y lo que hay que arreglar antes *(supervisor, 2026-10-04)*
+
+**El ensayo.** Un agente jugó en el navegador dos carreras sobre `75e7ed5`, con las perillas neutras y el ritmo de K4c:
+- **A**, a mano en lo importante: 92 paradas, 7 Mundiales, 854 puntos, "Figura Mundial", retiro a los 34;
+- **B**, siempre la primera opción: 38 paradas, nunca firmó, 16 puntos.
+
+Cero errores de consola. Lo que funciona: la previa desglosa la p y la p sube con el nivel; las derrotas con p declarada se
+sienten justas; el 2-2 del Swiss (42% guardando la charla del coach contra 67% usándola) es "la mejor decisión del juego";
+A le saca 854 a 16 a B.
+
+**Lo que haría fallar a K6, por queja:**
+- **"Hacés un clic y perdiste" (peor: con cero clics).** El minijuego de la prueba arranca apenas aparece la carta
+  (blancos de 900 ms) y se pierde mientras leés. Además, una prueba clavada ("95% de que te firmen") termina en "SIN
+  EQUIPO · 0 partidos" sin ninguna explicación, y el cierre dice "ya jugaste una temporada entera como profesional". La
+  charla familiar "salió mal" sin ninguna p.
+- **"Te frena solo en lo importante", incumplido.** Dos títulos de LRS con cero paradas. La final del CBLOL perdida 0-3
+  sin frenar. Unos cuartos de playoffs presentados como "Serie sin nada en juego".
+- **"RNG clicker" (en parte).** El amateur abre con "El dado trajo cuatro caminos", el cierre de año etiqueta todo como
+  RULETA sin ninguna p, y una sola semana dio +613 LP.
+- **"Las opciones no afectan nada" (en parte).** El perfil decide solo cosas grandes: rechazó los dos proyectos juveniles
+  de B, que nunca firmó con nivel 74 y Gran Máster. Hay bifurcaciones sin descripción ni efectos ("Pasarte a
+  nocturno", "Máster: la charla"), y resultados que nunca aparecen en el feed (los tryouts abiertos, el receso de VODs).
+- **Credibilidad (regla 15).**
+  - La previa era contra RED Canids y el resultado dice "GANARON vs PAIN GAMING".
+  - "Si ganás, entrás a playoffs" y después "7º de 8".
+  - "Clasificaron al torneo de mitad de año" con el equipo 7.º.
+  - Las 6 cartas de oferta repiten líneas que se contradicen ("casi nunca vas a elegir tu campeón" junto a "margen para
+    mandar vos").
+- **Bugs:**
+  - "Mirfin90: 0 trofeos contra tus 0 — vas ganando el duelo", todos los años;
+  - el LP crudo en el cierre de año (en vez del rango);
+  - la barra de arriba dice "PRETEMPORADA" durante partidos decisivos;
+  - el panel de la serie muestra la final doméstica durante el Swiss;
+  - "te faltan 1 puesto";
+  - "hace años de eso" sobre el año anterior;
+  - las fichas de campeón solo con las iniciales;
+  - `?seed=` con texto se ignora sin avisar.
+- **El amateur es una carta.** "Cómo vivís la semana" sale en 22 de 38 paradas en B.
+
+**Decisiones.** Se arregla todo antes de K6, en tres piezas paralelas sobre `k5c-instrumento`, que se integran antes
+del paso 3 de K5c (así el barrido final mide el juego que se va a jugar):
+- **K6a-M, motor y ritmo** (Opus):
+  - **Toda serie de playoffs y toda final frena** (D-B: los playoffs son lo importante), en tier 1 y en tier 2. El
+    umbral de "sin nada en juego" no puede aplicarse a una serie de eliminación.
+  - **La prueba:** si la clavaste y no firmaste, se dice por qué; si firmaste, se juega.
+  - **La previa nombra al rival que se juega.**
+  - **"Clasificaron"/"si ganás entrás"** solo con la tabla que lo respalda.
+  - **Los checks:** ninguna final ni serie de eliminación sin parada; la previa con el rival del resultado; la
+    prueba clavada con su desenlace dicho.
+  - **Las metas de ritmo de §K.3c** se vuelven a medir con su línea de la regla 17, si cambian.
+- **K6a-U, UI y textos** (Sonnet):
+  - **El minijuego espera un "¡Vamos!"**: no arranca solo;
+  - la barra de fase dice la fase real;
+  - el panel de la serie se limpia en el Mundial;
+  - las fichas de campeón muestran el nombre;
+  - `?seed=` con texto se convierte en un número por hash y lo dice;
+  - el rango en lugar del LP crudo;
+  - plurales;
+  - "hace años" según la distancia real;
+  - el archirrival en 0-0 no "va ganando";
+  - las líneas de la carta de oferta son coherentes entre sí.
+- **K6a-A, el amateur y las decisiones** (Opus):
+  - "Cómo vivís la semana" deja de ser la parada de cada semana: se resuelve por perfil, y frena solo cuando hay
+    una decisión con algo en juego (D-B);
+  - fuera los textos de "el dado" y "RULETA": la opción muestra qué arriesga y qué gana, igual que el cierre de
+    año;
+  - una oferta (proyecto juvenil, scout, tryout) nunca la resuelve el perfil: frena como bifurcación;
+  - toda bifurcación con descripción y con efectos dichos;
+  - el resultado de cada decisión aparece en el feed;
+  - la primera opción no puede ser retirarte (orden).
+
 ### K6 — Jugarlo *(la prueba que importa)*
 
 Tres carreras completas en el navegador: una que se estanca en tier 2 por malas decisiones, una buena
