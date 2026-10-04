@@ -50,9 +50,25 @@ import { pausaDeMercadoMigrada } from '../systems/mercado.js';
 // lugar del motivo del retiro —K4-C2 lo había puesto en `flags.motivoRetiro`—) · 11 (K4c, el plan anual y el cierre del bloque
 // B: `player.planAnual` entra y `flags.preparacionDeSplit` se va, porque la pretemporada ya no frena para elegir la práctica;
 // además los logs ganan el campo opcional `adjunto` y la pausa de la prueba del mercado lleva `respaldo`, que un guardado de
-// antes no trae y se calcula con la misma regla). Un guardado de VERSION 10 SÍ carga: `migrarDe10` lo completa (T4).
-export const VERSION = 11;
-const VERSION_MIGRABLE = 10;
+// antes no trae y se calcula con la misma regla). Un guardado de VERSION 10 SÍ carga: `migrarDe10` lo completa (T4) · 12 (K5c-R,
+// la presión de tier 2: `flags.splitsTier2SinOfertaTier1`). Un guardado de la 11 carga con `migrarDe11`, y uno de la 10 pasa
+// por las dos migraciones.
+export const VERSION = 12;
+const VERSIONES_MIGRABLES = [10, 11];
+
+// 11 -> 12. Completa lo que la 12 escribe y la 11 no, con valores neutros: la cuenta de la presión de tier 2 en 0 (con las
+// perillas de `BALANCE.retiro.presionTier2` en 99 nunca subía). Puro: no toca el RNG ni el reloj.
+export function migrarDe11(state) {
+  const flags = { ...state.flags, splitsTier2SinOfertaTier1: state.flags?.splitsTier2SinOfertaTier1 ?? 0 };
+  return { ...state, flags };
+}
+
+function migrar(version, state) {
+  if (version === 10) {
+    return migrarDe11(migrarDe10(state));
+  }
+  return version === 11 ? migrarDe11(state) : state;
+}
 
 // 10 -> 11. Le pone al estado lo que la versión nueva espera y la vieja no escribía: `player.planAnual` (el plan que le
 // cierra al perfil, el mismo del estado inicial: un guardado anterior nunca tuvo un cierre que lo fije) y fuera
@@ -119,7 +135,7 @@ export function deserializar(json) {
   } catch {
     return null;
   }
-  if (!datos || typeof datos !== 'object' || (datos.version !== VERSION && datos.version !== VERSION_MIGRABLE)) {
+  if (!datos || typeof datos !== 'object' || (datos.version !== VERSION && !VERSIONES_MIGRABLES.includes(datos.version))) {
     return null;
   }
   if (typeof datos.rngEstado !== 'number' || !datos.state) {
@@ -129,7 +145,7 @@ export function deserializar(json) {
     seed: datos.seed,
     rngEstado: datos.rngEstado,
     rngUiEstado: typeof datos.rngUiEstado === 'number' ? datos.rngUiEstado : null,
-    state: datos.version === VERSION_MIGRABLE ? migrarDe10(datos.state) : datos.state,
+    state: migrar(datos.version, datos.state),
     guardadoEn: datos.guardadoEn ?? null
   };
 }

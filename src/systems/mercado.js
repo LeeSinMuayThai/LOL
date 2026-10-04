@@ -16,7 +16,7 @@ import { conPlantelesDe } from '../core/plantel.js';
 import { companerosDelPlantel } from '../core/fuerza.js';
 import { BALANCE } from '../data/balance.js';
 import { ajusteBaseDeMinijuego, probabilidadDeFirmarTrasPrueba } from '../core/serie.js';
-import { retirarsePorMercado, pretemporadasEnPalabras } from './retiro.js';
+import { retirarsePorMercado, pretemporadasEnPalabras, aniosEnPalabras } from './retiro.js';
 import { nombreVisibleDeLiga } from '../core/ligas.js';
 
 export const id = 'mercado';
@@ -258,7 +258,8 @@ function firmarImportPendiente(state, rng) {
   return {
     state: { ...cerrado.state, flags: { ...cerrado.state.flags, banquilloPendiente: false } },
     logs: [crearLog('mercado', `${salida}la mudanza se hace. ${oferta.org} te espera en la ${nombreVisibleDeLiga(oferta.liga)}.`), ...firmado.logs, ...cerrado.logs],
-    firmado: true
+    firmado: true,
+    oferta
   };
 }
 
@@ -513,7 +514,8 @@ function aplicarMercado(state, rng) {
   // K4-C2: la oferta de import que aceptaste en una bifurcación se firma antes que nada (banquillo incluido: te fuiste).
   const importPendiente = firmarImportPendiente(stConValor, rng);
   if (importPendiente?.firmado) {
-    return { state: importPendiente.state, logs: [...logsMundo, ...importPendiente.logs] };
+    // K5c-R: el import firmado es una oferta como cualquier otra: si es de tier 1, la presión de tier 2 vuelve a cero.
+    return { state: conOfertaDeTier1(importPendiente.state, [importPendiente.oferta]), logs: [...logsMundo, ...importPendiente.logs] };
   }
   if (importPendiente) {
     return aplicarMercadoSinImport(importPendiente.state, [...logsMundo, ...importPendiente.logs], rng);
@@ -540,7 +542,8 @@ function aplicarMercadoSinImport(stConValor, logsMundo, rng) {
       };
       const traspaso = ofertaDeTraspaso(stConAnio, rng);
       if (traspaso) {
-        return { state: stConAnio, logs: logsMundo, decision: traspaso };
+        // K5c-R: un club de tier 1 que viene a buscarte a mitad de contrato es una oferta de tier 1, la firmes o no.
+        return { state: conOfertaDeTier1(stConAnio, traspaso.opciones), logs: logsMundo, decision: traspaso };
       }
       return {
         state: stConAnio,
@@ -573,13 +576,24 @@ function aplicarMercadoSinImport(stConValor, logsMundo, rng) {
 
   // K5-C: el final lo decide el mercado. Cada pretemporada con el mercado abierto se cuenta si ninguna oferta es de
   // tu tier o mejor; al llegar al umbral, en vez de la mano de siempre frena la bifurcación "bajás o te retirás".
-  const stTier = conCuentaSinOfertaEnTier(stMercado, ofertas);
+  // K5c-R: una oferta de tier 1 en la mano (la firmes o no) vuelve a cero la presión de tier 2.
+  const stTier = conOfertaDeTier1(conCuentaSinOfertaEnTier(stMercado, ofertas), ofertas);
   if (correspondeBifurcar(stTier)) {
     const stFork = { ...stTier, flags: { ...stTier.flags, forkMercadoSplit: stTier.player.splitCount } };
     const asientosFork = ofertas.length > 0 ? asientosAbiertosParaPantalla(stFork, ofertas, fichadores) : [];
     return {
       state: stFork, logs: [...logsMundo, ...logsAviso],
       decision: decisionFinPorMercado(stFork, ofertas, asientosFork)
+    };
+  }
+  // K5c-R: la presión de tier 2. Misma bifurcación (y mismo orden de tiradas que la mano de siempre), con su motivo. La de
+  // K5-C va primero: si ni tu tier te ofrece, esa es la que corresponde.
+  if (correspondePresionTier2(stTier)) {
+    const stFork = { ...stTier, flags: { ...stTier.flags, forkMercadoSplit: stTier.player.splitCount } };
+    const asientosFork = ofertas.length > 0 ? asientosAbiertosParaPantalla(stFork, ofertas, fichadores) : [];
+    return {
+      state: stFork, logs: [...logsMundo, ...logsAviso],
+      decision: decisionPresionTier2(stFork, ofertas, asientosFork)
     };
   }
 
@@ -624,6 +638,55 @@ function conCuentaSinOfertaEnTier(state, ofertas) {
 function correspondeBifurcar(state) {
   return state.flags.splitsSinOfertaEnTier >= BALANCE.retiro.splitsSinOfertaEnTierParaBifurcar
     && state.age < BALANCE.retiro.edadRetiroForzoso;
+}
+
+// --- K5c-R: la presión de tier 2 ---
+
+// Solo una oferta de tier 1 (de una mano, un traspaso o un import firmado) vuelve a cero la cuenta que sube
+// `conPresionTier2` (`systems/retiro.js`); una de tier 2, la renovación incluida, no. Cero `rng`.
+function conOfertaDeTier1(state, ofertas) {
+  if (!ofertas.some((oferta) => oferta?.tier === 1) || state.flags.splitsTier2SinOfertaTier1 === 0) {
+    return state;
+  }
+  return sinPresionTier2(state);
+}
+
+function sinPresionTier2(state) {
+  return { ...state, flags: { ...state.flags, splitsTier2SinOfertaTier1: 0 } };
+}
+
+// Las perillas se leen acá, en el momento (un override en memoria las pisa). Pasada la línea de los 34, nada que bifurcar.
+function correspondePresionTier2(state) {
+  return state.career.tier === 2
+    && (state.flags.splitsTier2SinOfertaTier1 ?? 0) >= BALANCE.retiro.presionTier2.splitsSinOfertaTier1
+    && state.age < BALANCE.retiro.edadRetiroForzoso;
+}
+
+// La variante `presion_tier2` de la bifurcación del final por mercado: misma pausa (`motivo: 'fin_mercado'`, la misma
+// regla de los bots y del headless), otro motivo. Seguir es quedarte en tier 2 con lo que te ofrecen (la mano de
+// siempre, la renovación incluida) y la cuenta en cero; si nadie ofrece, seguir buscando.
+function decisionPresionTier2(state, ofertas, asientosAbiertos) {
+  const liga = (state.career.liga ? nombreDeLigaEnMundo(state, state.career.liga) : null) ?? `tier ${state.career.tier}`;
+  const motivoRetiro = `Tenés ${state.age} años, llevás ${aniosEnPalabras(state.flags.splitsTier2SinOfertaTier1)} en ${liga} `
+    + 'y ninguna org de primera te llamó.';
+  const ligasQueOfrecen = [...new Set(ofertas.map((oferta) => nombreDeLigaEnMundo(state, oferta.liga) ?? `tier ${oferta.tier}`))].join(' o ');
+  const seguir = ofertas.length > 0
+    ? { id: 'seguir', label: `Seguís en ${ligasQueOfrecen}`, descripcion: 'Otra temporada abajo, a ganarte el llamado. Ves lo que te ofrecen y elegís; la cuenta arranca de cero.' }
+    : { id: 'esperar', label: 'Seguís buscando', descripcion: 'De free agent, a esperar que suene el teléfono. La cuenta de primera arranca de cero.' };
+  const cierre = ofertas.length > 0
+    ? `En ${ligasQueOfrecen} todavía te quieren. ¿Seguís o colgás el mouse?`
+    : 'Y nadie te está llamando. ¿Seguís o colgás el mouse?';
+  return {
+    tipo: 'opciones',
+    bisagra: true,
+    titulo: 'Primera no llama',
+    descripcion: `${motivoRetiro} ${cierre}`,
+    opciones: [
+      seguir,
+      { id: 'retirarse', label: 'Colgás el mouse', descripcion: 'Cerrás la carrera acá. Con la puerta entreabierta, si el cuerpo y las ganas dan.' }
+    ],
+    datos: { motivo: 'fin_mercado', variante: 'presion_tier2', motivoRetiro, ofertas, asientosAbiertos }
+  };
 }
 
 function nombreDeLigaEnMundo(state, ligaId) {
@@ -680,12 +743,23 @@ function resolverFinPorMercado(state, decision, respuesta, rng) {
       decision: construirDecisionOfertas(state, decision.datos.ofertas, { asientosAbiertos: decision.datos.asientosAbiertos })
     };
   }
-  const silencio = elTelefonoNoSuena(state, rng);
+  // K5c-R: seguir en tier 2 (con ofertas, la mano de siempre; sin ninguna, seguir buscando) vuelve a cero la presión.
+  if (respuesta.opcionId === 'seguir') {
+    const sigue = sinPresionTier2(state);
+    return {
+      state: sigue,
+      logs: [crearLog('mercado', 'Seguís abajo. La cuenta de primera arranca de cero: a ganarte el llamado.')],
+      decision: construirDecisionOfertas(sigue, decision.datos.ofertas, { asientosAbiertos: decision.datos.asientosAbiertos })
+    };
+  }
+  const base = decision.datos.variante === 'presion_tier2' ? sinPresionTier2(state) : state;
+  const silencio = elTelefonoNoSuena(base, rng);
   return { state: silencio.state, logs: [crearLog('mercado', 'Seguís buscando. El mercado no va a esperar para siempre.'), ...silencio.logs] };
 }
 
 // La regla del headless (y del bot `criterio`): joven, seguís (bajás o esperás); desde
-// `edadAutoAceptaVeredicto`, aceptás el veredicto del mercado.
+// `edadAutoAceptaVeredicto`, aceptás el veredicto del mercado. K5c-R: la variante `presion_tier2` va por la misma regla
+// (su primera opción es seguir en tier 2, o seguir buscando).
 export function opcionAutoFinPorMercado(state, decision) {
   if (state.age >= BALANCE.retiro.edadAutoAceptaVeredicto) {
     return 'retirarse';

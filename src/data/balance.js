@@ -1335,6 +1335,16 @@ export const BALANCE = {
     // (un split de mercado = una pretemporada). 99 = nunca dispara: la estructura sale con el valor que reproduce
     // hoy; el valor de verdad (y con él la longevidad, §K.3b) lo fija K5c.
     splitsSinOfertaEnTierParaBifurcar: 99,
+    // K5c-R (PLAN.md K5c, "la presión de retiro"): el que se queda en tier 2. `systems/retiro.js` cuenta cada split
+    // jugado en tier 2 (con club, con contrato corriendo también) desde `edadDesde` años; solo lo vuelve a cero una
+    // oferta de TIER 1 (`systems/mercado.js`: una mano, un traspaso o un import firmado), aunque no la firmes. Al llegar
+    // a `splitsSinOfertaTier1`, la próxima ventana de mercado abierta frena con la bifurcación del final por mercado
+    // (variante `presion_tier2`: seguís en tier 2 o colgás el mouse). Se leen en el momento de usarlas (un override en
+    // memoria las pisa). 99 y 99 = nunca dispara: la estructura sale neutra; los valores los fija el barrido de K5c.
+    presionTier2: {
+      edadDesde: 99,
+      splitsSinOfertaTier1: 99
+    },
     // `resolverAuto` de esa bifurcación (el headless y el bot `criterio`): antes de esta edad bajás de tier (o
     // seguís buscando, si nadie ofrece); desde esta edad aceptás el veredicto y te retirás — mismo criterio que
     // `retiro_declive` ("no te renuevan" es la causa modal de retiro real, `CONCEPTO` §12.4).

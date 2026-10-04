@@ -313,7 +313,8 @@ function responderCriterio(sistema, state, decision, rng) {
     return respuestaDeSwiss(state, decision, false);
   }
   if (esDecisionDeFinPorMercado(decision)) {
-    // La regla del headless: joven, baja (o espera); desde `edadAutoAceptaVeredicto`, acepta el veredicto.
+    // La regla del headless: joven, baja (o espera); desde `edadAutoAceptaVeredicto`, acepta el veredicto. K5c-R: la
+    // variante de la presión de tier 2 (`datos.variante`) va por la misma regla: joven sigue en tier 2, veterano se retira.
     return sistema.resolverAuto(state, decision, rng);
   }
   if (esDecisionDeMercado(decision)) {

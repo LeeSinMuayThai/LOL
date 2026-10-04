@@ -39,10 +39,28 @@ function terminar(state, finAnticipado, mensaje, { reversible = false, motivo = 
       terminado: !reversible,
       finAnticipado,
       motivoRetiro: motivo,
-      flags: { ...state.flags, splitsEnDeclive: 0, splitsEnVentana: 0, splitsSinOfertaEnTier: 0, pruebasFallidas: [] }
+      flags: {
+        ...state.flags, splitsEnDeclive: 0, splitsEnVentana: 0, splitsSinOfertaEnTier: 0, pruebasFallidas: [],
+        // K5c-R: si volvés, volvés de free agent; la presión de tier 2 arranca de cero (como la de K5-C).
+        splitsTier2SinOfertaTier1: 0
+      }
     },
     logs: [crearLog('retiro', mensaje)]
   };
+}
+
+// K5c-R, la presión de tier 2: cada split jugado en tier 2 (con club, también con contrato corriendo) desde
+// `BALANCE.retiro.presionTier2.edadDesde` suma uno a `flags.splitsTier2SinOfertaTier1`. Lo vuelve a cero solo una oferta de
+// tier 1 (`systems/mercado.js`, que también frena con la bifurcación al llegar al umbral). Corre todos los splits de la
+// fase profesional, después del mercado (el tier y el club ya son los del split que se juega). Cero `rng`; las perillas
+// se leen acá, no al importar el módulo.
+export function conPresionTier2(state) {
+  const { edadDesde } = BALANCE.retiro.presionTier2;
+  if (state.career.tier !== 2 || !state.career.currentOrg || state.age < edadDesde) {
+    return state;
+  }
+  const splitsTier2SinOfertaTier1 = (state.flags.splitsTier2SinOfertaTier1 ?? 0) + 1;
+  return { ...state, flags: { ...state.flags, splitsTier2SinOfertaTier1 } };
 }
 
 function mensajeDeSalida(state, finAnticipado) {
@@ -63,6 +81,19 @@ export function pretemporadasEnPalabras(n) {
     return 'la última pretemporada';
   }
   return `${NUMERO_EN_PALABRAS[n] ?? n} pretemporadas seguidas`;
+}
+
+const ANIOS_EN_PALABRAS = ['cero', 'un', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez'];
+
+// K5c-R: "dos años" (o "más de un año", o "dos splits"): cuánto llevás, dicho a partir de los splits contados.
+export function aniosEnPalabras(splits) {
+  const porAnio = BALANCE.edad.splitsPorEdad;
+  const anios = Math.floor(splits / porAnio);
+  if (anios === 0) {
+    return splits === 1 ? 'un split' : `${ANIOS_EN_PALABRAS[splits] ?? splits} splits`;
+  }
+  const texto = `${ANIOS_EN_PALABRAS[anios] ?? anios} ${anios === 1 ? 'año' : 'años'}`;
+  return splits % porAnio === 0 ? texto : `más de ${texto}`;
 }
 
 // K4c (revisión): "probaste con Onda Collective y no alcanzó" (o "con A y con B"), si desde tu última firma hubo pruebas del
@@ -205,6 +236,11 @@ export function aplicar(state, rng) {
   if (state.phase !== 'profesional') {
     return { state, logs: [] };
   }
+  // K5c-R: la presión de tier 2 se cuenta todos los splits, antes de mirar si es pretemporada.
+  return aplicarProfesional(conPresionTier2(state));
+}
+
+function aplicarProfesional(state) {
   // El retiro es un momento de fin de año, no una deriva a mitad de temporada
   // (T2: el contexto se calcula en vivo, nunca se confía en el cache).
   const contexto = calcularContexto(state);
