@@ -121,15 +121,17 @@ export function asientoAbierto(state, orgNombre, rol) {
   // habitual (`ofertaPosible` salta el techo de banda en ese caso).
   // K5c-M: a la élite el club le perdona parte del margen (`rebajaMeritoElite`, topeada: nunca por debajo del NPC; con la perilla
   // en 0 es el mismo margen de siempre, exacto). Revisión de K5c (regla 15): el motivo dice lo que es. "Claramente" solo si le
-  // sacás el margen entero; si lo abrió la rebaja, el club apuesta por vos y estás a la par.
+  // sacás el margen entero; si lo abrió la rebaja pero le ganás, "mejorás a X y el club apuesta por vos"; solo si no le ganás, "estás a la par".
   const nivel = nivelDelJugador(state);
   if (nivel > npc.nivel + d.forzarAsientoSobreNpc - rebajaMeritoElite(nivel)) {
-    const claramente = nivel > npc.nivel + d.forzarAsientoSobreNpc;
-    return {
-      abierto: true,
-      porMerito: true,
-      motivo: claramente ? `mejorás claramente sobre ${npc.handle}` : `estás a la par de ${npc.handle} y el club apuesta por vos`
-    };
+    // Tres franjas, con las mismas comparaciones que el margen de arriba (sin restar: la resta redondea distinto en coma flotante).
+    let motivo = `estás a la par de ${npc.handle} y el club apuesta por vos`;
+    if (nivel > npc.nivel + d.forzarAsientoSobreNpc) {
+      motivo = `mejorás claramente sobre ${npc.handle}`;
+    } else if (nivel > npc.nivel) {
+      motivo = `mejorás a ${npc.handle} y el club apuesta por vos`;
+    }
+    return { abierto: true, porMerito: true, motivo };
   }
   return { abierto: false };
 }
@@ -337,7 +339,9 @@ export function factorRenovacionEtario(state, ligaActual) {
   }
   const nivelEfectivo = nivelDelJugador(state) - castigoEtario(state.age);
   const alternativa = nivelAlternativaAsiento(state, org.nombre, state.player.role);
-  const claramenteMejor = nivelEfectivo >= alternativa + BALANCE.demanda.margenSobreAlternativa;
+  // K5c-M (revisión 2): la MISMA disputa que un fichaje incluye la rebaja de la élite (`rebajaDisputaElite`, topeada; 0 con la perilla
+  // neutra), así tu club no te trata como en declive mientras otro te ficha "a la par".
+  const claramenteMejor = nivelEfectivo >= alternativa + BALANCE.demanda.margenSobreAlternativa - rebajaDisputaElite(nivelDelJugador(state));
   return claramenteMejor ? 1 : BALANCE.demanda.factorRenovacionDeclive;
 }
 

@@ -19655,6 +19655,7 @@ function guardadoDeLaVersion11K5CR(state, rng) {
   datos.version = 11;
   delete datos.state.flags.splitsTier2SinOfertaTier1;
   delete datos.state.career.splitPrimerContratoTier2;
+  delete datos.state.career.splitsRetirado;
   return JSON.stringify(datos);
 }
 
@@ -19672,10 +19673,16 @@ check('K5c-R guardado VERSION 12: la forma de la 11 sigue registrada, y un guard
       if (datos === null) {
         throw new Error(`seed ${seed}, split ${i}: el guardado de VERSION 11 no cargó`);
       }
-      if (!sonIgualesK4cG(datos.state, JSON.parse(JSON.stringify(state)))) {
+      // La única diferencia permitida: `career.splitsRetirado`. La 11 no lo cargaba, así que el migrado lo trae en 0 aunque el real tenga
+      // k (los años de las ventanas viejas no se corrigen hacia atrás). El check exige ese 0 y compara todo lo demás con el real en 0.
+      if (datos.state.career.splitsRetirado !== 0) {
+        throw new Error(`seed ${seed}, split ${i}: el migrado trae splitsRetirado ${datos.state.career.splitsRetirado} y debería traer 0`);
+      }
+      const realSinRetirado = { ...state, career: { ...state.career, splitsRetirado: 0 } };
+      if (!sonIgualesK4cG(datos.state, JSON.parse(JSON.stringify(realSinRetirado)))) {
         throw new Error(`seed ${seed}, split ${i}: el estado migrado no es el del guardado de la 12`);
       }
-      const seguido = avanzarSplitAuto(state, conElRngDeK4cG(seed, rng.estado()));
+      const seguido = avanzarSplitAuto(realSinRetirado, conElRngDeK4cG(seed, rng.estado()));
       const recargado = avanzarSplitAuto(datos.state, conElRngDeK4cG(datos.seed, datos.rngEstado));
       if (!sonIgualesK4cG(comoJsonK4cG(seguido), comoJsonK4cG(recargado))) {
         throw new Error(`seed ${seed}, split ${i}: el guardado migrado no juega el mismo split`);
@@ -21249,11 +21256,12 @@ const {
 const { castigoEtario: castigoEtarioK5CREV } = await import('../core/valorMercado.js');
 const REBAJA_ENORME_K5CREV = { merito: 100, disputa: 100 };
 
-check('K5c-M (revisión): la rebaja de la élite está topeada en sus márgenes (nunca peor que la alternativa, nunca bajo el titular) y el motivo del asiento dice la verdad', () => {
+check('K5c-M (revisión): la rebaja de la élite está topeada en sus márgenes (nunca peor que la alternativa, nunca bajo el titular) y el motivo del asiento dice la verdad (tres franjas)', () => {
   const { forzarAsientoSobreNpc, margenSobreAlternativa } = BALANCE.demanda;
   const problemas = [];
   let porMerito = 0;
   let sinMargenEntero = 0;
+  let soloMejora = 0;
   let fichajes = 0;
   conPerillasEliteK5cM(0, REBAJA_ENORME_K5CREV, () => {
     for (const nivel of [50, 80, 85, 90, 100]) {
@@ -21275,16 +21283,19 @@ check('K5c-M (revisión): la rebaja de la élite está topeada en sus márgenes 
             continue;
           }
           porMerito += 1;
-          const claramente = nivel - npc.nivel > forzarAsientoSobreNpc;
+          // Las franjas con las MISMAS comparaciones que el motor (no la resta `nivel - npc.nivel`: en coma flotante redondea distinto).
+          const claramente = nivel > npc.nivel + forzarAsientoSobreNpc;
+          const mejora = nivel > npc.nivel;
           sinMargenEntero += claramente ? 0 : 1;
-          if (!(nivel > npc.nivel)) {
+          soloMejora += !claramente && mejora ? 1 : 0;
+          if (!mejora) {
             problemas.push(`seed ${seed}: ${org.nombre} abre el asiento por mérito con tu nivel ${nivel} contra su titular de ${npc.nivel}`);
           }
-          if (asiento.motivo.startsWith('mejorás claramente') !== claramente) {
-            problemas.push(`seed ${seed}: ${org.nombre}, margen ${(nivel - npc.nivel).toFixed(1)} sobre el titular, dice "${asiento.motivo}"`);
-          }
-          if (!claramente && !asiento.motivo.startsWith('estás a la par de ')) {
-            problemas.push(`seed ${seed}: ${org.nombre}, abierto por la rebaja, dice "${asiento.motivo}"`);
+          const esperado = claramente
+            ? `mejorás claramente sobre ${npc.handle}`
+            : (mejora ? `mejorás a ${npc.handle} y el club apuesta por vos` : `estás a la par de ${npc.handle} y el club apuesta por vos`);
+          if (asiento.motivo !== esperado) {
+            problemas.push(`seed ${seed}: ${org.nombre}, margen ${(nivel - npc.nivel).toFixed(1)} sobre el titular, dice "${asiento.motivo}" y debería decir "${esperado}"`);
           }
         }
       }
@@ -21297,8 +21308,8 @@ check('K5c-M (revisión): la rebaja de la élite está topeada en sus márgenes 
       }
     }
   });
-  if (porMerito === 0 || sinMargenEntero === 0 || fichajes === 0) {
-    problemas.push(`el check no mide nada: ${porMerito} asientos por mérito (${sinMargenEntero} abiertos por la rebaja) y ${fichajes} fichajes posibles`);
+  if (porMerito === 0 || sinMargenEntero === 0 || soloMejora === 0 || fichajes === 0) {
+    problemas.push(`el check no mide nada: ${porMerito} asientos por mérito (${sinMargenEntero} abiertos por la rebaja, ${soloMejora} de ellos con el titular por debajo) y ${fichajes} fichajes posibles`);
   }
   if (problemas.length > 0) {
     throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
@@ -21408,6 +21419,89 @@ check('K5c-R: el free agent con la cuenta de la presión arrastrada recibe un mo
   }
   if (problemas.length > 0) {
     throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 3).join(' | ')}`);
+  }
+});
+
+// --- K5c (revisión 2) ---------------------------------------------------------------------------------------------------------
+// Regla 7: el motivo del free agent nombra la liga de la ÚLTIMA fila de tier 2 del registro, no la primera. Los estados reales tienen una
+// sola fila de tier 2 (el mutante `[...porOrg].find(` pasaba); este es construido: tier 2 en la liga A, después tier 1, después tier 2
+// en la liga B, con la cuenta acumulada en B. El texto tiene que decir B (y no A).
+check('K5c-R (revisión 2): el free agent con filas de tier 2 en dos ligas (A, tier 1, B) recibe un motivo que nombra la liga B, la última', () => {
+  const rng = mulberry32(1);
+  let st = createInitialState(1, rng);
+  for (let i = 0; i < SPLITS_K5CR && !st.terminado; i += 1) {
+    st = avanzarSplitAuto(st, rng).state;
+    if (st.phase === 'profesional' && st.career.tier === 2 && st.career.currentOrg && st.career.registro.porOrg.some((fila) => fila.tier === 2)) {
+      break;
+    }
+  }
+  const filaBase = st.career.registro.porOrg.find((fila) => fila.tier === 2);
+  if (!filaBase) {
+    throw new Error('el check no mide nada: ningún estado con una fila de tier 2 en el registro');
+  }
+  const [ligaA, ligaB] = st.mundo.ligas.filter((liga, i, todas) => todas.findIndex((otra) => otra.nombre === liga.nombre) === i);
+  const porOrg = [{ ...filaBase, tier: 2, liga: ligaA.id }, { ...filaBase, tier: 1, liga: ligaB.id }, { ...filaBase, tier: 2, liga: ligaB.id }];
+  const libre = {
+    ...st,
+    flags: { ...st.flags, splitsTier2SinOfertaTier1: 4 },
+    career: { ...st.career, currentOrg: null, liga: null, rosterDeOrg: null, companeros: [], registro: { ...st.career.registro, porOrg } }
+  };
+  const motivo = decisionPresionTier2K5CREV(libre, [], []).datos.motivoRetiro;
+  const esperado = `Tenés ${st.age} años, pasaste más de un año en ${ligaB.nombre}, quedaste sin equipo y ninguna org de primera te llamó.`;
+  if (motivo !== esperado) {
+    throw new Error(`dice "${motivo}" y debería decir "${esperado}" (A es ${ligaA.nombre})`);
+  }
+});
+
+// Regla 15 (coherencia): la renovación es "la MISMA disputa que un fichaje", y el fichaje le perdona a la élite `rebajaDisputaElite`. Sin
+// esa rebaja en `factorRenovacionEtario`, tu club te trata como en declive (`factorRenovacionDeclive`) mientras otro te ficha "a la par".
+// Con las perillas en 0 (neutras) la renovación es la de siempre. Estados reales de la pausa de mercado con club, y el jugador con las
+// seis stats iguales y un nivel que se barre de 70 a 100 de a 0,25: tiene que haber niveles donde la rebaja salva la renovación, y la
+// rebaja nunca la empeora ni toca a quien no es de élite.
+const { factorRenovacionEtario: factorRenovacionK5CREV2 } = await import('../core/demanda.js');
+
+check('K5c-M (revisión 2): la renovación con tu club pasa por la misma rebaja de la élite que un fichaje (perilla en 0: igual que siempre)', () => {
+  const problemas = [];
+  let salvados = 0;
+  let estados = 0;
+  for (const { seed, st } of pausasDeMercadoK5cM().slice(0, 40)) {
+    const ligaActual = st.mundo.ligas.find((liga) => liga.id === st.career.liga);
+    if (!st.career.currentOrg || !ligaActual?.orgs.some((org) => org.nombre === st.career.currentOrg)) {
+      continue;
+    }
+    estados += 1;
+    for (let nivel = 70; nivel <= 100; nivel += 0.25) {
+      const jugador = { ...st, player: { ...st.player, stats: statsParejasK5cM(nivel) } };
+      const sin = conPerillasEliteK5cM(0, SIN_REBAJA_K5CM, () => factorRenovacionK5CREV2(jugador, ligaActual));
+      const con = conPerillasEliteK5cM(0, REBAJAS_K5CM, () => factorRenovacionK5CREV2(jugador, ligaActual));
+      if (con < sin) {
+        problemas.push(`seed ${seed}, nivel ${nivel}: la rebaja empeora la renovación (${sin} -> ${con})`);
+      }
+      if (factorElite(nivel) === 0 && con !== sin) {
+        problemas.push(`seed ${seed}, nivel ${nivel}: sin ser de élite la rebaja movió la renovación (${sin} -> ${con})`);
+      }
+      salvados += con > sin ? 1 : 0;
+    }
+  }
+  if (estados === 0 || salvados === 0) {
+    problemas.push(`el check no mide nada: ${estados} estados con club y ${salvados} niveles donde la rebaja salve la renovación`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
+  }
+});
+
+// Regla 15 (invariante de datos): el reset de la presión de tier 2 por un import presentado vive solo en la rama `bifurcacion` de
+// `presentarOResolver` (`systems/events.js`). Un evento con un efecto `ofertaDeImport` que no sea bifurcación presentaría el import sin
+// cortar la cuenta. Todo evento con ese efecto en alguna opción tiene que ser `bifurcacion: true`.
+check('K5c (revisión 2): todo evento con un efecto ofertaDeImport es una bifurcación (el reset de la presión vive en esa rama)', () => {
+  const conImport = TODOS_LOS_EVENTOS.filter((evento) => evento.options.some((opcion) => opcion.outcomes.some((outcome) => outcome.effects.some((efecto) => efecto.type === 'ofertaDeImport'))));
+  if (conImport.length < 2) {
+    throw new Error(`el check no mide nada: ${conImport.length} eventos con ofertaDeImport (hacen falta al menos 2)`);
+  }
+  const sinBifurcacion = conImport.filter((evento) => evento.bifurcacion !== true).map((evento) => evento.id);
+  if (sinBifurcacion.length > 0) {
+    throw new Error(`eventos con ofertaDeImport que no son bifurcación: ${sinBifurcacion.join(', ')}`);
   }
 });
 
