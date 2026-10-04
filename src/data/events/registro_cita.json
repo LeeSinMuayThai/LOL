@@ -248,7 +248,7 @@
     "category": "identidad",
     "categoria": "prensa",
     "title": "Te preguntan por aquel primer título",
-    "description": "Un pibe que no lo vio en vivo te pregunta cómo fue ganar por primera vez. Hace años de eso. Te sorprende cuánto de esa noche te acordás y cuánto se te borró.",
+    "description": "Un pibe que no lo vio en vivo te pregunta cómo fue ganar por primera vez. {haceDeEso}. Te sorprende cuánto de esa noche te acordás y cuánto se te borró.",
     "weight": 4,
     "cooldown": 10,
     "contexto": {

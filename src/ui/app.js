@@ -23,6 +23,7 @@ import {
 } from './resultado.js';
 import { VERSION_JUEGO } from '../data/version.js';
 import { iniciarDesafio } from '../core/desafio.js';
+import { interpretarSeed } from '../core/numeros.js';
 import { previaDeDecision } from '../core/previaDePartido.js';
 import { probabilidadDeFirmarTrasPrueba } from '../core/serie.js';
 import { porcentaje } from '../core/formato.js';
@@ -68,6 +69,14 @@ export function iniciar() {
   const mercadoEsperar = document.getElementById('mercadoEsperar');
   const tarjetaPanel = document.getElementById('tarjeta');
   const seedInput = document.getElementById('seedInput');
+  const seedAviso = document.getElementById('seedAviso');
+  // K6a-U: el aviso de "se está jugando el split" que ocupa el lugar de la decisión mientras el feed reproduce.
+  const esperaEl = document.createElement('div');
+  esperaEl.className = 'reproduciendo-aviso';
+  esperaEl.setAttribute('role', 'status');
+  esperaEl.textContent = 'Se está jugando el split… (Espacio para pasar las líneas más rápido)';
+  esperaEl.hidden = true;
+  decisionPanel.after(esperaEl);
   const continuarBtn = document.getElementById('continuarBtn');
   const desafioDia = document.getElementById('desafioDia');
   const historialEl = document.getElementById('historial');
@@ -228,7 +237,32 @@ export function iniciar() {
     montarMinijuego(decision, estadoActual, false);
   }
 
+  // K6a-U ("hacés un clic y perdiste", y peor, con cero clics): el minijuego NO arranca solo. Mostraba la carta y los
+  // blancos de 900 ms ya corrían mientras el jugador leía la consigna. Ahora la consigna queda a la vista y el reloj
+  // espera un botón; el minijuego se monta recién con el clic.
   function montarMinijuego(decision, estadoActual, charla) {
+    minijuegoWidget.innerHTML = '';
+    const espera = document.createElement('div');
+    espera.className = 'minijuego-espera';
+    const nota = document.createElement('p');
+    nota.className = 'minijuego-espera-nota';
+    nota.textContent = 'Leé la consigna. El reloj no arranca hasta que toques el botón.';
+    const boton = document.createElement('button');
+    boton.type = 'button';
+    boton.className = 'option-btn minijuego-espera-boton';
+    boton.textContent = '¡Vamos!';
+    boton.addEventListener('click', () => {
+      // El arranque va en el turno siguiente: con Enter, el mismo `keydown` que apretó el botón llegaría al
+      // listener de teclado que el minijuego instala al montarse y contaría como una jugada.
+      setTimeout(() => arrancarMinijuego(decision, estadoActual, charla), 0);
+    }, { once: true });
+    espera.append(nota, boton);
+    minijuegoWidget.appendChild(espera);
+    ui.renderLowerThird(summary, metaPill, estadoActual, { modo: 'minijuego' });
+  }
+
+  function arrancarMinijuego(decision, estadoActual, charla) {
+    minijuegoWidget.innerHTML = '';
     const montar = MONTAR_MINIJUEGO[decision.datos.minijuego];
     let resuelto = false;
     montar(minijuegoWidget, estadoActual, (resultado) => {
@@ -377,9 +411,17 @@ export function iniciar() {
     const ficha = ui.renderFicha(fichaContainer, estadoActual, modulos);
     pintarChrome(ficha, estadoActual);
     const bisagra = estadoActual.pendiente?.decision?.datos?.evento?.bisagra ?? false;
-    await reproductor.reproducirBeats(logList, estadoActual.logs.slice(logsAntes), {
-      registroAntes, registroDespues: estadoActual.career.registro, bisagra, state: estadoActual, offset: logsAntes
-    });
+    // K6a-U: mientras el feed reproduce el panel de decisión no está (por diseño: el split se cuenta antes de la próxima
+    // parada), y en la ventana de retiro, que vuelve a preguntar cada split, parecía que el clic se había ignorado. Ahora
+    // se ve que está esperando, y cómo saltarlo.
+    esperaEl.hidden = false;
+    try {
+      await reproductor.reproducirBeats(logList, estadoActual.logs.slice(logsAntes), {
+        registroAntes, registroDespues: estadoActual.career.registro, bisagra, state: estadoActual, offset: logsAntes
+      });
+    } finally {
+      esperaEl.hidden = true;
+    }
 
     // Fase T8 (P.2): se guarda al cerrar cada split, siga de largo o
     // pare en una decisión — las dos son "una pausa" desde el punto de
@@ -472,22 +514,25 @@ export function iniciar() {
   // "copiar link de esta carrera" (T7) de verdad reproduzca la misma
   // carrera al abrirlo — antes de esta fase `leerSeed()` solo miraba
   // el input y el link no hacía nada al visitarlo.
+  // K6a-U: un texto en `?seed=` (o en el input) ya no se ignora: `interpretarSeed` (core/numeros.js) lo pasa por el hash
+  // del motor y `pintarAvisoDeSeed` dice qué número quedó. Un número sigue siendo la seed de siempre.
   function leerSeedDeUrl() {
     const crudo = new URLSearchParams(location.search).get('seed');
-    if (crudo === null) {
-      return null;
-    }
-    const numero = Number(crudo);
-    return Number.isFinite(numero) ? Math.abs(Math.trunc(numero)) : null;
+    return crudo === null ? null : crudo;
   }
 
   function leerSeed() {
-    const crudo = seedInput.value.trim();
-    const elegida = Number(crudo);
-    if (crudo !== '' && Number.isFinite(elegida)) {
-      return Math.abs(Math.trunc(elegida));
+    return interpretarSeed(seedInput.value).seed ?? (Date.now() >>> 0);
+  }
+
+  function pintarAvisoDeSeed() {
+    if (!seedAviso) {
+      return;
     }
-    return Date.now() >>> 0;
+    const { seed, desdeTexto } = interpretarSeed(seedInput.value);
+    seedAviso.textContent = desdeTexto
+      ? `"${seedInput.value.trim()}" no es un número: la seed que queda es ${seed}. Con el mismo texto sale siempre la misma carrera.`
+      : '';
   }
 
   function revelarEscenario() {
@@ -567,7 +612,9 @@ export function iniciar() {
         ({ seed, eleccion, desafio } = iniciarDesafio(fechaDesafio));
       } else {
         seed = leerSeed();
+        // El input queda con el número que se usó (un texto ya es su hash): es el que va en el link y en la tarjeta.
         seedInput.value = String(seed);
+        pintarAvisoDeSeed();
         // La elección de la pantalla de inicio entra como tercer argumento.
         // Si el jugador no eligió nada (camino headless), `createInitialState`
         // sortea todo de la seed exactamente como antes.
@@ -748,7 +795,12 @@ export function iniciar() {
       // con qué seed.
       const seedDeUrl = leerSeedDeUrl();
       if (seedDeUrl !== null) {
-        seedInput.value = String(seedDeUrl);
+        seedInput.value = seedDeUrl;
+        // Con una seed en la URL el desplegable se abre: el jugador ve qué seed quedó antes de empezar.
+        if (seedAviso) {
+          seedAviso.closest('details')?.setAttribute('open', '');
+        }
+        pintarAvisoDeSeed();
       }
       renderInicioK1();
     } catch (error) {
@@ -761,6 +813,7 @@ export function iniciar() {
   }
 
   runButton.addEventListener('click', () => comenzarCarrera());
+  seedInput.addEventListener('input', pintarAvisoDeSeed);
   continuarBtn.addEventListener('click', continuarCarrera);
   nuevaCarreraBtn.addEventListener('click', volverAlInicio);
   toggleVelocidad.addEventListener('click', () => {

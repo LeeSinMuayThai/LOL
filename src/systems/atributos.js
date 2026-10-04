@@ -125,7 +125,7 @@ const TEXTO_DE_DESGASTE = {
   laneo: 'La fase de líneas ya no sale sola: el laneo empieza a cobrar los años.',
   teamfight: 'En las peleas llegás un segundo tarde a lo que antes leías de memoria: el teamfight empieza a cobrar los años.',
   macro: 'Se te escapan rotaciones que antes veías de memoria: el macro empieza a cobrar los años.',
-  shotcalling: 'Cuesta más sostener las llamadas en el comms: el shotcalling empieza a cobrar los años.',
+  shotcalling: 'Cuesta más sostener las llamadas en comms: el shotcalling empieza a cobrar los años.',
   adaptabilidad: 'Cada cambio de meta cuesta un poco más: la adaptabilidad empieza a cobrar los años.'
 };
 const TEXTO_DE_DESGASTE_GENERICO = 'Los años empiezan a cobrarse: ya no rendís como antes.';

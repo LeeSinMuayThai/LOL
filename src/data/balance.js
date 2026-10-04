@@ -1194,9 +1194,10 @@ export const BALANCE = {
 
     // Una oferta lateral se etiqueta 'bombazo' cuando paga bastante más que
     // el contrato vigente — la tarjeta que hace sentir la decisión real
-    // (CONCEPTO §7). `margenBombazoFuerza` decide el texto de `riesgo`: si la
-    // org destino es bastante más fuerte que el promedio de su liga, avisa
-    // que vas a competir por lugar en vez de mandar.
+    // (CONCEPTO §7). `margenBombazoFuerza` es el piso de la heurística de
+    // negociación (`systems/mercado.js`). K6a-U: ya NO decide el texto de `riesgo`
+    // de la carta: ese sale de la banda del plantel (`plantelEnLiga`), el mismo
+    // dato que la línea "Plantel: ..." de la misma carta.
     bombazoMultiplo: 1.4,
     margenBombazoFuerza: 10,
 

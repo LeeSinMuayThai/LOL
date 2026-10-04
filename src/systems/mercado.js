@@ -125,9 +125,12 @@ export function construirOferta(state, liga, org, tagForzado, rng) {
   const jerarquiaFutura = esOrgActual
     ? jerarquiaActual
     : (jerarquiaProyectadaCruda === null ? jerarquiaActual : jerarquiaProyectadaCruda + BALANCE.roster.derivaPrimerSplit);
+  // K6a-U (regla 15): esto decía "elegir tu campeón" y "pesar en el draft", y el draft ya no existe (K4-A). Lo que la
+  // jerarquía mueve de verdad es cuánto pesa tu llamada en el mapa decisivo (`factorJerarquiaEnLlamada`, core/serie.js):
+  // por debajo de `jerarquiaMinimaParaSeguirLlamada` se amortigua; desde ahí cuenta entera.
   const proyeccionPicks = jerarquiaFutura < BALANCE.serie.jerarquiaMinimaParaSeguirLlamada
-    ? 'Con esa jerarquía casi nunca vas a elegir tu campeón.'
-    : 'Tu palabra todavía va a pesar en el draft.';
+    ? 'Con esa jerarquía tus llamadas en el mapa decisivo pesan poco.'
+    : 'Con esa jerarquía tus llamadas en el mapa decisivo cuentan enteras.';
 
   const bandaArraigoActual = bandaDeArraigoFicha(state.career.arraigo);
   const costeArraigo = esOrgActual
@@ -138,7 +141,12 @@ export function construirOferta(state, liga, org, tagForzado, rng) {
     };
   const arraigoAlLlegar = esOrgActual
     ? { valor: Math.round(state.career.arraigo), etiqueta: 'Seguís donde estabas.' }
-    : { valor: Math.round(arraigoInicial(state.player.stats.hype)), etiqueta: 'Allá arrancás casi de cero: tu fama te precede.' };
+    : (() => {
+      // K6a-U: "casi de cero: tu fama te precede" se contradecía en la misma línea. El arraigo de llegada es una cuenta
+      // (`arraigoInicial`: una fracción de tu hype) y la carta dice esa cuenta, con la banda que le toca.
+      const valor = Math.round(arraigoInicial(state.player.stats.hype));
+      return { valor, etiqueta: `Allá arrancás en ${bandaDeArraigoFicha(valor).label} (${valor}/100): el arraigo se arma de a poco.` };
+    })();
 
   const progresoHito = esOrgActual && !bandaArraigoActual.esMaxima
     ? {
@@ -148,11 +156,18 @@ export function construirOferta(state, liga, org, tagForzado, rng) {
     }
     : null;
 
+  // K6a-U (regla 15): la línea de riesgo comparaba la fuerza del club contra el PRESTIGIO de la liga y decía lo contrario
+  // de la línea del plantel de la misma carta ("El plantel más fuerte de LCP" junto a "margen para mandar vos"). Ahora sale
+  // del mismo dato que esa línea (`plantelEnLiga.banda`): la banda dice el plantel y esta dice qué implica.
+  const plantel = plantelEnLiga(liga, org);
   const riesgo = esOrgActual
     ? null
-    : (org.fuerza >= liga.prestigio + m.margenBombazoFuerza
-      ? 'Vas a competir por un lugar en un roster cargado de estrellas.'
-      : 'Acá vas a tener margen para mandar vos.');
+    : {
+      primero: 'Vas a competir por un lugar en el plantel más fuerte de la liga.',
+      arriba: 'Vas a competir por un lugar en un roster cargado de estrellas.',
+      medio: 'Plantel parejo: el lugar se gana partido a partido.',
+      abajo: 'Plantel flojo: tenés margen para hacerte grande.'
+    }[plantel.banda];
 
   // Fase 9Me: cuánto te quieren, para el texto de riesgo de "pedir más". La
   // brecha entre tu nivel y su mejor alternativa gobierna si el club aguanta el
@@ -176,7 +191,7 @@ export function construirOferta(state, liga, org, tagForzado, rng) {
     riesgo,
     // K5c-M: dónde está el plantel por fuerza dentro de su liga (puesto, de cuántos, la banda que dice la carta).
     // Lectura pura del mundo, sin rng: no mueve ninguna tirada.
-    plantelEnLiga: plantelEnLiga(liga, org),
+    plantelEnLiga: plantel,
     // Fase 9Me: estado de la negociación (arranca en cero) e info para el
     // texto de riesgo. `salarioBase` es el ancla para calcular los escalones.
     negociacion: { escalones: 0, clausula: false, salarioBase: salarioAnualUSD },
@@ -721,13 +736,18 @@ export function decisionPresionTier2(state, ofertas, asientosAbiertos) {
   const motivoRetiro = libre
     ? `Tenés ${state.age} años, pasaste ${tiempo} en ${liga}, quedaste sin equipo y ninguna org de primera te llamó.`
     : `Tenés ${state.age} años, llevás ${tiempo} en ${liga} y ninguna org de primera te llamó.`;
-  const ligasQueOfrecen = [...new Set(ofertas.map((oferta) => nombreDeLigaEnMundo(state, oferta.liga) ?? `tier ${oferta.tier}`))].join(' o ');
+  const ligasDistintas = [...new Set(ofertas.map((oferta) => nombreDeLigaEnMundo(state, oferta.liga) ?? `tier ${oferta.tier}`))];
+  const ligasQueOfrecen = ligasDistintas.join(' o ');
+  const cuantasLigasOfrecen = ligasDistintas.length;
+  // K6a-U (regla 15): la opción decía "Seguís en LCK CL" aunque el jugador estuviera en otra liga (EMEA Masters): "seguís"
+  // es seguir abajo, y la liga que se nombra es la que te quiere, no la tuya.
   const seguir = ofertas.length > 0
-    ? { id: 'seguir', label: `Seguís en ${ligasQueOfrecen}`, descripcion: 'Otra temporada abajo, a ganarte el llamado. Ves lo que te ofrecen y elegís; la cuenta arranca de cero.' }
+    ? { id: 'seguir', label: `Seguís abajo: ${ligasQueOfrecen} ${cuantasLigasOfrecen > 1 ? 'te quieren' : 'te quiere'}`, descripcion: 'Otra temporada abajo, a ganarte el llamado. Ves lo que te ofrecen y elegís; la cuenta arranca de cero.' }
     : { id: 'esperar', label: 'Seguís buscando', descripcion: 'De free agent, a esperar que suene el teléfono. La cuenta de primera arranca de cero.' };
   const cierre = ofertas.length > 0
     ? `En ${ligasQueOfrecen} todavía te quieren. ¿Seguís o colgás el mouse?`
-    : 'Y nadie te está llamando. ¿Seguís o colgás el mouse?';
+    // K6a-U: el free agent ya leyó "ninguna org de primera te llamó": "Y nadie te está llamando" repetía lo mismo.
+    : (libre ? '¿Seguís buscando o colgás el mouse?' : 'Y nadie te está llamando. ¿Seguís o colgás el mouse?');
   return {
     tipo: 'opciones',
     bisagra: true,

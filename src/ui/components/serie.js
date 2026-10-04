@@ -1,5 +1,6 @@
 import { encabezadoDeResultado } from '../../core/temporada.js';
 import { etiquetaDeRonda } from '../../core/serie.js';
+import { tableroDeSerie } from '../../core/vistaDeCarrera.js';
 import { etiquetaDeFuerza } from '../formatoUi.js';
 import { crearOrgChip } from './orgChip.js';
 import { crearCampeonTile } from './campeonTile.js';
@@ -227,12 +228,78 @@ export function crearTarjetaResultadoSerie(entry, state) {
   return item;
 }
 
+// K6a-U: el Swiss del Mundial no es una serie (no hay mapas ni Fearless): es una tabla de 16 donde jugás hasta tres
+// victorias o tres derrotas. El panel dice eso, con tu récord y las rondas que llevás, en vez de dejar la final doméstica.
+function renderSwissDelMundial(container, state) {
+  const t = state.internacional;
+  container.hidden = false;
+  container.replaceChildren();
+  seriePrevia = { a: 0, b: 0 };
+
+  const bracket = document.createElement('div');
+  bracket.className = 'serie-bracket';
+  [['MUNDIAL · SWISS', ' serie-bracket-paso--actual'], ['CUARTOS', ''], ['SEMI', ''], ['FINAL', '']].forEach(([rotulo, mod]) => {
+    const paso = document.createElement('span');
+    paso.className = `serie-bracket-paso${mod}`;
+    paso.textContent = rotulo;
+    bracket.appendChild(paso);
+  });
+  container.appendChild(bracket);
+
+  const record = t.swiss.record[t.jugador] ?? { v: 0, d: 0 };
+  const resumen = document.createElement('div');
+  resumen.className = 'serie-swiss-resumen';
+  const propia = state.career.currentOrg ?? state.player.name;
+  resumen.append(crearOrgChip(propia, { size: 36 }));
+  const texto = document.createElement('span');
+  texto.className = 'serie-lado-nombre';
+  texto.textContent = `${propia} · récord ${record.v}-${record.d} en el Swiss`;
+  resumen.appendChild(texto);
+  container.appendChild(resumen);
+
+  // Tus rondas hasta acá, con el rival de cada una, y la que se está por jugar.
+  const camino = document.createElement('div');
+  camino.className = 'serie-camino';
+  const propias = t.swiss.rondas.map((ronda) => ronda.find((p) => p.propio)).filter(Boolean);
+  propias.forEach((partido, i) => {
+    const gano = partido.ganador === t.jugador;
+    const rival = partido.a === t.jugador ? partido.b : partido.a;
+    const paso = document.createElement('div');
+    paso.className = `serie-mapa serie-mapa--${gano ? 'ganado' : 'perdido'}`;
+    const n = document.createElement('span');
+    n.className = 'serie-mapa-n';
+    n.textContent = `R${i + 1}`;
+    const c = document.createElement('span');
+    c.className = 'serie-mapa-c';
+    c.textContent = `${gano ? 'G' : 'P'} · ${rival}`;
+    paso.append(n, c);
+    camino.appendChild(paso);
+  });
+  const pendiente = document.createElement('div');
+  pendiente.className = 'serie-mapa';
+  const nPend = document.createElement('span');
+  nPend.className = 'serie-mapa-n';
+  nPend.textContent = `R${propias.length + 1}`;
+  const cPend = document.createElement('span');
+  cPend.className = 'serie-mapa-c';
+  cPend.textContent = t.partidoEnCurso ? `vs ${t.partidoEnCurso.rival}` : '—';
+  pendiente.append(nPend, cPend);
+  camino.appendChild(pendiente);
+  container.appendChild(camino);
+}
+
 export function renderSerieContexto(container, state) {
   const { serie } = state;
   const ultimoLog = state?.logs?.[state.logs.length - 1];
   const esPostSerie = Boolean(serie?.postSerie) || Boolean(ultimoLog?.postSerie);
 
-  if (!serie || (!serie.activa && !esPostSerie)) {
+  // K6a-U: qué muestra el panel lo decide `tableroDeSerie` (core/vistaDeCarrera.js): la serie, el Swiss del Mundial o nada.
+  const tablero = tableroDeSerie(state);
+  if (tablero === 'swiss') {
+    renderSwissDelMundial(container, state);
+    return;
+  }
+  if (tablero === null) {
     container.hidden = true;
     seriePrevia = { a: 0, b: 0 };
     return;
