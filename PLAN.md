@@ -7551,6 +7551,27 @@ del paso 3 de K5c (así el barrido final mide el juego que se va a jugar):
   - el check K5c-M (a2), "al menos el doble", es frágil a la muestra (20 → 30 con el stream nuevo): se arregla en la
     integración.
 
+**La integración de K6a** (`k5c-instrumento` @ `dd0758a`).
+- **Lo que trae:** los tres merges, la huella y la forma juntas, los checks de muestra en ronda y la ventana de retiro
+  una vez por año.
+- **Lo que verificó el supervisor:**
+  - `--rapido` 311 OK y 0 FAIL, con la huella OK;
+  - el ritmo junto (`criterio` 400 × 60): mediana de interrupciones ≤ 90 OK, minijuegos, tiempo y bifurcaciones OK.
+- **Lo que rompe:** splits de playoffs p90 **7** e internacionales **8** (meta ≤ 5), y Δp de plan **4,71 pp** (meta
+  ≥ 5).
+- **La causa:** ahora frena toda serie de eliminación, también la cantada, donde el plan casi no mueve la p. Eso es la
+  queja "las opciones no afectan nada".
+
+**Decisión del supervisor (K6a-R, el ritmo de la eliminación)** — una serie de eliminación frena en lo que decide:
+- **Toda final** (doméstica, de tier 2 o del Mundial) frena en el plan.
+- **Una serie de eliminación abierta** (p de serie entre `pAbierta` y 1 − `pAbierta`) frena en el plan.
+- **Una serie de eliminación cantada no frena en el plan.** El coach lo arma y el feed lo dice sin mentir: "sos amplio
+  favorito: el coach arma el plan; si se aprieta, te llamamos". Sí frena en el mapa decisivo si la serie llega a él.
+  Ninguna serie de eliminación se dice "sin nada en juego".
+- **El tope de un split con Mundial** (T9) sigue.
+- **Se mide de nuevo.** Si una corrida profunda legítima (cuartos, semis y final abiertos, con mapas decisivos) no
+  entra en ≤ 5, se fija en lo medido con su línea de la regla 17.
+
 #### K5c-H — cada uno juega en su casa *(decisión del usuario, 2026-10-04)*
 
 **Por qué.** Con F2 sin el `pesoJugadorEnEquipo` 0,8 (que rompe el R² del bloque A desde 0,6), el Mundial queda en
