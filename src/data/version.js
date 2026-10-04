@@ -102,4 +102,9 @@ export const VERSION_JUEGO = 'K4c';
 // (cambia cuándo se consume el rng del reparto), el proyecto juvenil y el scout frenan como bifurcación (oferta), el proyecto
 // juvenil se ofrece hasta los 17 (roster sub-18) y la opción que retira de "El canal ya paga más" pasa al final. Misma versión:
 // reemplaza a 579585404; la integración de K6a la vuelve a registrar.
-export const HUELLA_JUEGO = 871362456;
+// K6a (integración, 505125930): K6a-M (las series de eliminación y la final de tier 2 frenan, la fecha que define solo en el split
+// de cierre, el tier 3 que se juega antes de resolverse) más K6a-A (la semana amateur que resuelve el perfil, las ofertas que
+// frenan, el retiro al final de las opciones), juntas sobre lo que k5c-instrumento sumó después de 75e7ed5 (e5fdd65, b2c08f5, fddb82b).
+// K6a-U no mueve el rng (textos y pantallas) y la ventana de retiro ya preguntaba una vez por año (el check de D-B no toca el
+// motor). Misma versión (12, no salió): reemplaza a 319240573 (K6a-M) y 871362456 (K6a-A).
+export const HUELLA_JUEGO = 505125930;
