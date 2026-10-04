@@ -17402,6 +17402,8 @@ check('K4c (revisión) el respaldo de la prueba del mercado es el de la regla, r
 // "El mercado te venía diciendo que no").
 const PRUEBA_FALLIDA_K4cR = 'Probaste y no alcanzó: esta ventana no firmás con nadie.';
 const SILENCIO_K4cR = /Nadie te ofrece nada|El teléfono no suena|No queda nada que firmar/;
+const DECLIVES_K4cR = 2;
+const TOPE_SEEDS_DECLIVE_K4cR = 120;
 check('K4c (revisión) probaste y no alcanzó: la prueba del mercado fallida sin respaldo no suma a la racha sin ofertas, no te deja libre por silencio y lo dice', () => {
   let reales = 0;
   let armadas = 0;
@@ -17431,7 +17433,12 @@ check('K4c (revisión) probaste y no alcanzó: la prueba del mercado fallida sin
   // pregunta del declive (y el motivo, si te retirás) dicen que probaste y no alcanzó.
   let declives = 0;
   // K6a-M: [11, 16] -> [7, 8] (el stream cambió; buscadas igual que antes: `azar` con un declive después de una prueba fallida).
-  for (const seed of [7, 8]) {
+  // K6a (integración, regla 17): con el stream integrado [7, 8] quedaron sin declive. Ya no se fijan: se recorren seeds de `azar` en
+  // ronda hasta ver `DECLIVES_K4cR` declives después de una prueba fallida, con tope `TOPE_SEEDS_DECLIVE_K4cR` (check vacío si no
+  // llegan). Cada seed recorrida suma también a la otra mitad (ningún split dice silencio después de una prueba fallida).
+  let seedsDeclive = 0;
+  for (let seed = 1; seed <= TOPE_SEEDS_DECLIVE_K4cR && declives < DECLIVES_K4cR; seed += 1) {
+    seedsDeclive = seed;
     const rng = mulberry32(seed);
     let st = createInitialState(seed, rng);
     for (let i = 0; i < 45 && !st.terminado; i += 1) {
@@ -17457,9 +17464,11 @@ check('K4c (revisión) probaste y no alcanzó: la prueba del mercado fallida sin
       }
     }
   }
-  if (reales + armadas < 5 || declives === 0) {
-    throw new Error(`check vacío: ${reales} pruebas fallidas sin respaldo reales, ${armadas} armadas sin otras ofertas, ${declives} declives con pruebas fallidas`);
+  if (reales + armadas < 5 || declives < DECLIVES_K4cR) {
+    throw new Error(`check vacío: ${reales} pruebas fallidas sin respaldo reales, ${armadas} armadas sin otras ofertas, ${declives} declives con pruebas fallidas `
+      + `(azar, seeds 1-${seedsDeclive}, tope ${TOPE_SEEDS_DECLIVE_K4cR}; hacen falta ${DECLIVES_K4cR})`);
   }
+  console.log(`      ${reales} reales y ${armadas} armadas; ${declives} declives con pruebas fallidas en las seeds 1-${seedsDeclive} de azar`);
 });
 
 check('K4c-S un tryout fallido del amateur posterga la firma: seguís en la escalera, sin crédito, y después puede llegar otra oferta', () => {
