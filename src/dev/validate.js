@@ -73,8 +73,8 @@ import { bandaDeArraigo, filaAbierta as filaAbiertaK5 } from '../core/registro.j
 import { rankearMundo, rankearPoblacion, puntajeRanking } from '../core/topMundial.js';
 import { salarioDeOferta } from '../core/salarios.js';
 import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
-import { orgsQueTeFicharian, ofertaPosible, residenciaEn } from '../core/demanda.js';
-import { aplicar as aplicarMercado, construirOferta, ofertaDeImportPosible, academiaDelBanquillo } from '../systems/mercado.js';
+import { orgsQueTeFicharian, ofertaPosible, residenciaEn, factorElite } from '../core/demanda.js';
+import { aplicar as aplicarMercado, construirOferta, ofertaDeImportPosible, academiaDelBanquillo, generarOfertas } from '../systems/mercado.js';
 import { aplicar as aplicarRetiroK4c2, MOTIVOS_DE_RETIRO } from '../systems/retiro.js';
 import { cartaDeRutina, resolverPreparacion } from '../systems/practica.js';
 import { FRASES_MOTIVO, ETIQUETAS_MOTIVO } from '../systems/temporada.js';
@@ -93,6 +93,7 @@ import { MONTAR_MINIJUEGO } from '../ui/components/minijuegos/index.js';
 import { LABEL_MARCA as LABEL_MARCA_FICHA, lineaDeContextoFicha } from '../ui/components/ficha.js';
 import { nombreVisibleDeLiga } from '../ui/formatoUi.js';
 import { crearCampeonTile } from '../ui/components/campeonTile.js';
+import { lineaDePlantelDeOferta } from '../ui/components/mercado.js';
 import METAS from '../data/metas.json' with { type: 'json' };
 
 const __filename = fileURLToPath(import.meta.url);
@@ -8787,7 +8788,7 @@ const {
 } = await import('./simulate.js');
 const {
   ESTRATEGIAS: ESTRATEGIAS_K0, criterioConPlanNeutro, puntuarPrevia, compararOfertasMercado,
-  esDecisionDeMercado, esDecisionDeRutina, esDecisionDeMinijuego
+  esDecisionDeMercado, esDecisionDeRutina, esDecisionDeMinijuego, NIVEL_ELITE_CRITERIO
 } = await import('./estrategias.js');
 const { spawnSync } = await import('child_process');
 
@@ -10152,7 +10153,8 @@ check('K0 mercado: criterio elige el tier más bajo (y adentro del tier la jerar
   const oferta = (id, tier, hasta, salario) => ({ id, org: id, tier, proyeccionJerarquia: { desde: 50, hasta }, salarioAnualUSD: salario });
   const decisionDe = (opciones) => ({ tipo: 'opciones', presentacion: 'mercado', opciones, datos: { motivo: 'oferta' } });
   const sistemaSinAuto = { id: 'mercado', resolverAuto() { throw new Error('no debería delegar'); } };
-  const estado = { seed: 1, player: { splitCount: 1 }, logs: [] };
+  // K5c-M: `criterio` lee el nivel del jugador (élite o no) para el mercado; este fixture es un jugador de nivel 50.
+  const estado = { seed: 1, player: { splitCount: 1, role: 'mid', stats: statsParejasK5cM(50) }, logs: [] };
   const elegir = (bot, opciones) => ESTRATEGIAS_K0[bot](sistemaSinAuto, estado, decisionDe(opciones), rngProhibidoK0);
 
   // "El cuarto nombre de un gigante" (tier 1, jerarquía baja) le gana a la renovación en tier 2 con jerarquía alta.
@@ -20058,6 +20060,240 @@ check('K5c-E guardado VERSION 12: la forma de la 11 sigue registrada tal cual, y
   }
 });
 
+
+// --- K5c-M, la élite se busca (PLAN.md "K5c — decisiones de spec de la estructura") ---
+//
+// Las orgs fuertes le ofrecen a la élite: el orden de la mano suma `k · f(nivel) · org.fuerza`
+// (`mercado.elite.pesoFuerzaOrden`) y a la élite el club le perdona parte de los márgenes del asiento
+// (`mercado.elite.rebajaAsientoPorMerito`). Las dos perillas salen en 0 (la huella de K1 prueba el no-op exacto) y
+// estos checks las encienden EN MEMORIA. La muestra: las pausas de mercado reales (`mercado:oferta`) de carreras de
+// `criterio`, seeds 1 a `SEEDS_K5CM`, 60 splits.
+
+// Un jugador con las seis stats de rol en `valor`: los pesos de cada rol suman 1, así que su nivel es `valor`. Es una
+// declaración (no una `const`) porque el fixture del check de K0 del mercado, más arriba, la usa al cargar el módulo.
+function statsParejasK5cM(valor) {
+  return { mecanica: valor, macro: valor, teamfight: valor, laneo: valor, shotcalling: valor, adaptabilidad: valor };
+}
+
+const SEEDS_K5CM = 30;
+// Los valores de ejemplo con los que se encienden las perillas (el barrido de K5c fija los de verdad).
+const PESO_FUERZA_K5CM = 100000;
+const REBAJA_ASIENTO_K5CM = 8;
+// Medido al escribir el check (30 carreras, 33 pausas de élite con f = 1 y alguna oferta de tier 1, rng de la mano fijo):
+// mediana de la fuerza de los clubes de tier 1 de la mano 73 con todo apagado, 79 con solo k, 76 con solo la rebaja y
+// 83 con las dos. Los pisos de abajo quedan a la mitad de cada suba medida.
+const SUBA_MINIMA_SOLO_K_K5CM = 3;
+const SUBA_MINIMA_AMBAS_K5CM = 5;
+// El jugador medio (f = 0) no se mueve por construcción: los dos términos valen 0. La tolerancia es un punto de fuerza,
+// un escalón de la escala entera de `org.fuerza`: cualquier corrimiento de la mano de un jugador que la regla no toca
+// lo saca de ahí (un mutante sin la compuerta de `f` lo corre ~3 puntos).
+const TOLERANCIA_MEDIO_K5CM = 1;
+// Cuántos clubes del mundo cuentan como "los más fuertes" para medir si la rebaja les abre asiento.
+const TOP_MUNDO_K5CM = 10;
+
+let cosechaK5cM = null;
+function pausasDeMercadoK5cM() {
+  if (!cosechaK5cM) {
+    cosechaK5cM = [];
+    for (let seed = 1; seed <= SEEDS_K5CM; seed += 1) {
+      correrCarreraSimulate(seed, 60, (sistema, st, decision, rng) => {
+        if (sistema.id === 'mercado' && decision.datos?.motivo === 'oferta') {
+          cosechaK5cM.push({ seed, st, decision });
+        }
+        return ESTRATEGIAS_K0.criterio(sistema, st, decision, rng);
+      });
+    }
+  }
+  return cosechaK5cM;
+}
+
+function conPerillasEliteK5cM(pesoFuerza, rebaja, fn) {
+  const elite = BALANCE.mercado.elite;
+  const previas = [elite.pesoFuerzaOrden, elite.rebajaAsientoPorMerito];
+  elite.pesoFuerzaOrden = pesoFuerza;
+  elite.rebajaAsientoPorMerito = rebaja;
+  try {
+    return fn();
+  } finally {
+    [elite.pesoFuerzaOrden, elite.rebajaAsientoPorMerito] = previas;
+  }
+}
+
+// El estado de la pausa con TODOS los asientos de tu rol congelados para vos: así la mano la deciden solo
+// `ofertaPosible` (con la rebaja) y el orden (con k), y no los asientos que el mundo congeló con las perillas apagadas.
+function conTodoCongeladoK5cM(st) {
+  const pre = st.mundo.mercadoPretemporada;
+  if (!pre) {
+    return st;
+  }
+  const congelados = st.mundo.ligas.flatMap((liga) => liga.orgs.map((org) => ({ org: org.nombre, liga: liga.id, rol: st.player.role })));
+  return { ...st, mundo: { ...st.mundo, mercadoPretemporada: { ...pre, congelados } } };
+}
+
+// La fuerza de los clubes de tier 1 que te ofrecen (sin la renovación: tu club no entra por el orden), con un rng fijo.
+function fuerzasTier1DeLaManoK5cM(st, pesoFuerza, rebaja) {
+  return conPerillasEliteK5cM(pesoFuerza, rebaja, () => generarOfertas(st, mulberry32(SEEDS_K5CM)).ofertas
+    .filter((oferta) => oferta.tier === 1 && oferta.tag !== 'renovacion')
+    .map((oferta) => oferta.plantelEnLiga.fuerza));
+}
+
+check('K5c-M (a): con las perillas de élite encendidas en memoria, la élite recibe clubes de tier 1 más fuertes y el jugador medio la misma mano', () => {
+  const grupos = { elite: [], medio: [] };
+  for (const { st } of pausasDeMercadoK5cM()) {
+    const f = factorElite(nivelDelJugador(st));
+    const grupo = f >= 1 ? 'elite' : (f === 0 ? 'medio' : null);
+    const congelado = conTodoCongeladoK5cM(st);
+    if (grupo && fuerzasTier1DeLaManoK5cM(congelado, 0, 0).length > 0) {
+      grupos[grupo].push(congelado);
+    }
+  }
+  if (grupos.elite.length < 10 || grupos.medio.length < 10) {
+    throw new Error(`muestra chica: ${grupos.elite.length} pausas de élite y ${grupos.medio.length} de nivel medio con ofertas de tier 1`);
+  }
+  const medianaDe = (estados, pesoFuerza, rebaja) => medianaSim(estados.flatMap((st) => fuerzasTier1DeLaManoK5cM(st, pesoFuerza, rebaja)));
+  const config = [['apagado', 0, 0], ['solo k', PESO_FUERZA_K5CM, 0], ['solo rebaja', 0, REBAJA_ASIENTO_K5CM], ['ambas', PESO_FUERZA_K5CM, REBAJA_ASIENTO_K5CM]];
+  const elite = Object.fromEntries(config.map(([nombre, k, r]) => [nombre, medianaDe(grupos.elite, k, r)]));
+  const medio = Object.fromEntries(config.map(([nombre, k, r]) => [nombre, medianaDe(grupos.medio, k, r)]));
+  const resumen = `élite (${grupos.elite.length} pausas) ${JSON.stringify(elite)}; medio (${grupos.medio.length}) ${JSON.stringify(medio)}`;
+  if (elite['solo k'] - elite.apagado < SUBA_MINIMA_SOLO_K_K5CM) {
+    throw new Error(`con solo k = ${PESO_FUERZA_K5CM} la fuerza mediana de la élite sube menos de ${SUBA_MINIMA_SOLO_K_K5CM}: ${resumen}`);
+  }
+  if (elite.ambas - elite.apagado < SUBA_MINIMA_AMBAS_K5CM) {
+    throw new Error(`con k y la rebaja la fuerza mediana de la élite sube menos de ${SUBA_MINIMA_AMBAS_K5CM}: ${resumen}`);
+  }
+  for (const [nombre] of config) {
+    if (Math.abs(medio[nombre] - medio.apagado) > TOLERANCIA_MEDIO_K5CM) {
+      throw new Error(`la mano del jugador medio se movió con "${nombre}": ${resumen}`);
+    }
+  }
+  console.log(`      ${resumen}`);
+});
+
+check('K5c-M (a2): con la rebaja encendida en memoria, los clubes más fuertes del mundo abren asiento para la élite (y para el medio, ninguno nuevo)', () => {
+  const contar = (rebaja, quiereElite) => conPerillasEliteK5cM(0, rebaja, () => {
+    let pares = 0;
+    let estados = 0;
+    for (const { st } of pausasDeMercadoK5cM()) {
+      const f = factorElite(nivelDelJugador(st));
+      if (quiereElite ? f < 1 : f > 0) {
+        continue;
+      }
+      estados += 1;
+      const fuerzas = st.mundo.ligas.filter((liga) => liga.tier === 1).flatMap((liga) => liga.orgs.map((org) => org.fuerza)).sort((a, b) => b - a);
+      const corte = fuerzas[TOP_MUNDO_K5CM - 1];
+      pares += orgsQueTeFicharian(st).filter((entrada) => entrada.liga.tier === 1 && entrada.org.fuerza >= corte).length;
+    }
+    return { pares, estados };
+  });
+  const elite = [contar(0, true), contar(REBAJA_ASIENTO_K5CM, true)];
+  const medio = [contar(0, false), contar(REBAJA_ASIENTO_K5CM, false)];
+  const resumen = `top ${TOP_MUNDO_K5CM} del mundo ofrecibles: élite ${elite[0].pares} -> ${elite[1].pares} (${elite[0].estados} pausas), medio ${medio[0].pares} -> ${medio[1].pares} (${medio[0].estados} pausas)`;
+  if (elite[0].estados < 10) {
+    throw new Error(`muestra chica: ${resumen}`);
+  }
+  if (elite[1].pares < 2 * Math.max(1, elite[0].pares)) {
+    throw new Error(`la rebaja no abre asientos en los clubes fuertes (tenía que al menos duplicarlos): ${resumen}`);
+  }
+  if (medio[1].pares !== medio[0].pares) {
+    throw new Error(`la rebaja tocó al jugador medio (f = 0): ${resumen}`);
+  }
+  console.log(`      ${resumen}`);
+});
+
+// Lo que la carta tiene que decir, armado acá de nuevo (no con `core/demanda.js:plantelEnLiga`): el puesto contando los
+// clubes de la liga con más fuerza, y las palabras con los cortes de `mercado.plantelEnLiga`.
+function lineaEsperadaK5cM(liga, org) {
+  const puesto = 1 + liga.orgs.filter((otra) => otra.fuerza > org.fuerza).length;
+  const de = liga.orgs.length;
+  const nombre = nombreVisibleDeLiga(liga.id);
+  const { fraccionArriba, fraccionAbajo } = BALANCE.mercado.plantelEnLiga;
+  if (puesto === 1) {
+    return { puesto, de, banda: 'primero', texto: `El plantel más fuerte de ${nombre}` };
+  }
+  if (puesto <= Math.ceil(de * fraccionArriba)) {
+    return { puesto, de, banda: 'arriba', texto: `Plantel: ${puesto}.º de ${de} en ${nombre}` };
+  }
+  if (puesto > de - Math.ceil(de * fraccionAbajo)) {
+    return { puesto, de, banda: 'abajo', texto: `Plantel: de los de abajo en ${nombre}` };
+  }
+  return { puesto, de, banda: 'medio', texto: `Plantel: mitad de tabla en ${nombre}` };
+}
+
+check('K5c-M (b): la carta de oferta dice el puesto real del plantel por fuerza en su liga (regla 15)', () => {
+  const vistas = { primero: 0, arriba: 0, medio: 0, abajo: 0 };
+  let ofertas = 0;
+  const problemas = [];
+  for (const { seed, st, decision } of pausasDeMercadoK5cM()) {
+    for (const oferta of decision.opciones) {
+      const liga = st.mundo.ligas.find((candidata) => candidata.id === oferta.liga);
+      const org = liga?.orgs.find((candidata) => candidata.nombre === oferta.org);
+      if (!org) {
+        problemas.push(`seed ${seed}: ${oferta.org} no está en ${oferta.liga}`);
+        continue;
+      }
+      const esperada = lineaEsperadaK5cM(liga, org);
+      const dato = oferta.plantelEnLiga;
+      const carta = lineaDePlantelDeOferta(oferta);
+      if (dato?.puesto !== esperada.puesto || dato?.de !== esperada.de || dato?.fuerza !== org.fuerza || carta !== esperada.texto) {
+        problemas.push(`seed ${seed}, ${oferta.org}: el motor dice ${JSON.stringify(dato)} y la carta "${carta}"; el plantel es ${esperada.puesto}.º de ${esperada.de} ("${esperada.texto}")`);
+      }
+      vistas[esperada.banda] += 1;
+      ofertas += 1;
+    }
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} de ${ofertas} ofertas: ${problemas.slice(0, 4).join(' | ')}`);
+  }
+  if (Object.values(vistas).some((n) => n === 0)) {
+    throw new Error(`la muestra no pasó por las cuatro bandas de la carta: ${JSON.stringify(vistas)}`);
+  }
+  if (lineaDePlantelDeOferta({ id: 'vieja' }) !== null) {
+    throw new Error('una oferta sin `plantelEnLiga` (un guardado de antes) tiene que dejar la carta sin la línea');
+  }
+  console.log(`      ${ofertas} ofertas, bandas ${JSON.stringify(vistas)}`);
+});
+
+check('K5c-M (c): criterio, si es de élite, elige el club más fuerte entre ofertas del mismo tier (y si no, la jerarquía de siempre)', () => {
+  const oferta = (id, tier, hasta, fuerza) => ({
+    id, org: id, tier, proyeccionJerarquia: { desde: 50, hasta }, salarioAnualUSD: 100, plantelEnLiga: { fuerza }
+  });
+  const decisionDe = (opciones) => ({ tipo: 'opciones', presentacion: 'mercado', opciones, datos: { motivo: 'oferta' } });
+  const sistemaSinAuto = { id: 'mercado', resolverAuto() { throw new Error('no debería delegar'); } };
+  const conNivel = (nivel) => ({ seed: 1, player: { splitCount: 1, role: 'mid', stats: statsParejasK5cM(nivel) }, logs: [] });
+  const elegir = (nivel, opciones) => ESTRATEGIAS_K0.criterio(sistemaSinAuto, conNivel(nivel), decisionDe(opciones), rngProhibidoK0).opcionId;
+  // La renovación en un club flojo (jerarquía alta) contra el cuarto nombre de un gigante, y uno de tier 2 más fuerte.
+  const mano = [oferta('renovacion', 1, 70, 60), oferta('gigante', 1, 30, 92), oferta('medio', 1, 45, 75), oferta('tier2', 2, 80, 99)];
+  // Medio punto a cada lado del umbral: la suma de los pesos en coma flotante no da el umbral exacto.
+  const elite = NIVEL_ELITE_CRITERIO + 0.5;
+  const noElite = NIVEL_ELITE_CRITERIO - 0.5;
+  if (Math.abs(nivelDelJugador(conNivel(elite)) - elite) > 1e-9) {
+    throw new Error('el fixture no da el nivel pedido');
+  }
+  if (elegir(elite, mano) !== 'gigante') {
+    throw new Error(`con nivel ${elite} (élite) tenía que elegir el club más fuerte del tier 1, eligió ${elegir(elite, mano)}`);
+  }
+  if (elegir(noElite, mano) !== 'renovacion') {
+    throw new Error(`con nivel ${noElite} tenía que elegir la mayor jerarquía del tier 1, eligió ${elegir(noElite, mano)}`);
+  }
+  // El tier sigue primero, y a igualdad de fuerza vuelve la jerarquía.
+  if (elegir(elite, [oferta('t2', 2, 80, 99), oferta('t1', 1, 20, 50)]) !== 't1') {
+    throw new Error('la élite tiene que seguir prefiriendo el tier 1 a un tier 2 más fuerte');
+  }
+  if (elegir(elite, [oferta('a', 1, 30, 80), oferta('b', 1, 60, 80)]) !== 'b') {
+    throw new Error('a igualdad de fuerza la élite tiene que desempatar por la jerarquía');
+  }
+  // Con la marca de élite el comparador sigue antisimétrico y reflexivo en 0.
+  for (const x of mano) {
+    if (compararOfertasMercado(x, x, { elite: true }) !== 0) {
+      throw new Error(`compararOfertasMercado(${x.id}, ${x.id}, élite) tenía que ser 0`);
+    }
+    for (const y of mano) {
+      if (Math.sign(compararOfertasMercado(x, y, { elite: true })) !== -Math.sign(compararOfertasMercado(y, x, { elite: true }))) {
+        throw new Error(`compararOfertasMercado con élite no es antisimétrico entre ${x.id} y ${y.id}`);
+      }
+    }
+  }
+});
 
 // PLAN.md §K.4 — los tres custodios del registro de bandas pendientes. Van DESPUÉS del último check: el primero mira cómo
 // terminó cada check de esta corrida, y una entrada cuyo check corre más abajo le aparece como "no existe" (pasó en la

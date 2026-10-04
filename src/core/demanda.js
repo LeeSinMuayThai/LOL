@@ -5,6 +5,7 @@ import { etiquetaRol } from '../data/roles.js';
 import { plata } from './formato.js';
 import { seVaDelMundo, nivelAnclaReemplazo } from './plantel.js';
 import { nombreVisibleDeLiga } from './ligas.js';
+import { clamp } from './numeros.js';
 
 // LA DEMANDA EXISTE (fase 9M, PLAN.md §9M.3): se acabó el `roll(0, techo)`.
 //
@@ -23,6 +24,50 @@ function ligaDeOrg(state, orgNombre) {
 function orgDe(state, orgNombre) {
   const liga = ligaDeOrg(state, orgNombre);
   return liga?.orgs.find((org) => org.nombre === orgNombre) ?? null;
+}
+
+// K5c-M, la élite se busca: cuánto pesa la fuerza del club en tu mercado según tu nivel. 0 por debajo de
+// `mercado.elite.umbralNivel`, sube en línea recta y vale 1 desde `umbralNivel + anchoNivel` (la forma está explicada
+// en `data/balance.js`). Lee el BALANCE vivo en cada llamada (un override en memoria la pisa). Pura.
+export function factorElite(nivel) {
+  const { umbralNivel, anchoNivel } = BALANCE.mercado.elite;
+  if (anchoNivel <= 0) {
+    return nivel >= umbralNivel ? 1 : 0;
+  }
+  return clamp((nivel - umbralNivel) / anchoNivel, 0, 1);
+}
+
+// K5c-M, la élite se busca: los puntos que un club le perdona a un jugador de tu nivel en los dos márgenes del asiento,
+// el que lo abre por mérito (`demanda.forzarAsientoSobreNpc`) y el de la disputa (`demanda.margenSobreAlternativa`).
+// Medido con la perilla en 0 (80 carreras de `criterio`, los 10 clubes más fuertes del mundo contra los jugadores con
+// f = 1): de 242 pares que las reglas duras permiten, solo 12 eran ofrecibles. Abrir solo el asiento no sumaba ninguno:
+// la disputa los frenaba (el jugador quedaba ~5,6 puntos debajo de la alternativa, que en un club fuerte tiene el piso
+// `org.fuerza − alternativaPisoFuerza`). Perdonar 8 en los dos márgenes los llevaba a ~63 (cuenta sin el presupuesto).
+// Por eso la rebaja va en los dos. Con el código, en la muestra del check "K5c-M (a2)": 14 -> 50 con la rebaja en 8.
+// Las reglas duras (cupo de imports, el listón de import) no se tocan: frenan ~2 de cada 3 pares.
+export function rebajaAsientoElite(nivel) {
+  return BALANCE.mercado.elite.rebajaAsientoPorMerito * factorElite(nivel);
+}
+
+// K5c-M, lo que ve la carta de oferta: el puesto del plantel de `org` por fuerza dentro de `liga` (1 = el más
+// fuerte; los empates comparten puesto), de cuántos, y la banda en palabras que usa la carta (`'primero'`,
+// `'arriba'`, `'medio'`, `'abajo'`, con los cortes de `mercado.plantelEnLiga`). `fuerza` viaja para el bot del
+// instrumento (`dev/estrategias.js`), que compara clubes de ligas distintas. Puro y sin rng: una lectura del mundo.
+export function plantelEnLiga(liga, org) {
+  const orgs = liga?.orgs ?? [];
+  const fuerza = org?.fuerza ?? 0;
+  const de = Math.max(1, orgs.length);
+  const puesto = 1 + orgs.filter((otra) => otra.nombre !== org?.nombre && (otra.fuerza ?? 0) > fuerza).length;
+  const { fraccionArriba, fraccionAbajo } = BALANCE.mercado.plantelEnLiga;
+  let banda = 'medio';
+  if (puesto === 1) {
+    banda = 'primero';
+  } else if (puesto <= Math.ceil(de * fraccionArriba)) {
+    banda = 'arriba';
+  } else if (puesto > de - Math.ceil(de * fraccionAbajo)) {
+    banda = 'abajo';
+  }
+  return { puesto, de, banda, liga: liga?.id ?? null, fuerza };
 }
 
 // ¿Es residente de esta región? Reusa `splitsDeResidencia` (core/valorMercado.js,
@@ -66,7 +111,10 @@ export function asientoAbierto(state, orgNombre, rol) {
   // `porMerito`: el asiento se abre porque VOS sos mejor que su titular. Una org
   // que te quiere por eso también acepta pagarte por encima de su banda
   // habitual (`ofertaPosible` salta el techo de banda en ese caso).
-  if (nivelDelJugador(state) > npc.nivel + d.forzarAsientoSobreNpc) {
+  // K5c-M: a la élite el club le perdona parte del margen (`rebajaAsientoElite`, con la perilla en 0 es el mismo
+  // margen de siempre, exacto).
+  const nivel = nivelDelJugador(state);
+  if (nivel > npc.nivel + d.forzarAsientoSobreNpc - rebajaAsientoElite(nivel)) {
     return { abierto: true, porMerito: true, motivo: `mejorás claramente sobre ${npc.handle}` };
   }
   return { abierto: false };
@@ -333,9 +381,10 @@ export function ofertaPosible(state, orgNombre, rol, { forzada = false } = {}) {
   // `margenImport`) a la mejor alternativa real de la org, y el mercado te
   // descuenta nivel por la edad en esa disputa (`castigoEtario`). El piso de
   // franquicia ya salteó esto arriba (rama `forzada`).
+  // K5c-M: la élite se busca, y en la disputa el club también le perdona `rebajaAsientoElite` (0 con la perilla neutra).
   const nivelEfectivo = nivel - castigoEtario(state.age);
   const alternativa = nivelAlternativaAsiento(state, orgNombre, rol);
-  if (nivelEfectivo < alternativa + d.margenSobreAlternativa) {
+  if (nivelEfectivo < alternativa + d.margenSobreAlternativa - rebajaAsientoElite(nivel)) {
     return { posible: false, motivo: `${org.nombre} tiene mejores opciones para el puesto` };
   }
 

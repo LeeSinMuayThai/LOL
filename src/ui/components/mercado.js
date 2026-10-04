@@ -48,6 +48,26 @@ function boton(clase, texto, onClick) {
   return b;
 }
 
+// K5c-M: dónde está el plantel por fuerza dentro de su liga, en palabras. Lee `oferta.plantelEnLiga` tal cual llega del
+// motor (`core/demanda.js:plantelEnLiga`: puesto, de cuántos y la banda); no calcula nada. `null` si la oferta no lo trae.
+export function lineaDePlantelDeOferta(oferta) {
+  const plantel = oferta.plantelEnLiga;
+  if (!plantel) {
+    return null;
+  }
+  const liga = nombreVisibleDeLiga(plantel.liga);
+  switch (plantel.banda) {
+    case 'primero':
+      return `El plantel más fuerte de ${liga}`;
+    case 'arriba':
+      return `Plantel: ${plantel.puesto}.º de ${plantel.de} en ${liga}`;
+    case 'abajo':
+      return `Plantel: de los de abajo en ${liga}`;
+    default:
+      return `Plantel: mitad de tabla en ${liga}`;
+  }
+}
+
 function construirTarjeta(oferta, onElegir, onNegociar) {
   const card = document.createElement('div');
   card.className = `mercado-card mercado-card--${oferta.tag}`;
@@ -64,6 +84,10 @@ function construirTarjeta(oferta, onElegir, onNegociar) {
   card.appendChild(header);
 
   card.appendChild(fila('mercado-card-liga', `${nombreVisibleDeLiga(oferta.liga)} · ${oferta.anios} año${oferta.anios === 1 ? '' : 's'}`));
+  const lineaPlantel = lineaDePlantelDeOferta(oferta);
+  if (lineaPlantel) {
+    card.appendChild(fila('mercado-card-plantel', lineaPlantel));
+  }
   const salarioEl = document.createElement('div');
   salarioEl.className = 'mercado-card-salario';
   countUp(salarioEl, 0, oferta.salarioAnualUSD, { format: (n) => `${plata(n)}/año` });

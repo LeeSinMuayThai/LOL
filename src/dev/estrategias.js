@@ -29,6 +29,13 @@ const PASOS_RESULTADO_AZAR = 10000;
 // Una oferta (o una opción como "quedarte" en un traspaso) sin `tier`: peor que cualquier liga real.
 const TIER_SIN_DATO = 99;
 
+// K5c-M: desde este nivel (`nivelDelJugador`) `criterio` se sabe élite y, entre ofertas del mismo tier, va al club más
+// fuerte (`oferta.plantelEnLiga.fuerza`) antes que a la jerarquía proyectada. Es el medio de la rampa de élite del motor
+// con sus valores de partida (`BALANCE.mercado.elite`: f = 0 en 80, f = 1 en 90), fijo a propósito: es la vara del
+// instrumento y no se mueve cuando el barrido mueve las perillas del motor. En 100 carreras de `criterio`, el nivel de
+// las decisiones de mercado de tier 1 tenía p50 ~82 y p75 ~88: élite es el tercio de arriba.
+export const NIVEL_ELITE_CRITERIO = 85;
+
 // Valora el impacto neto proyectado por la previa de una opción.
 // Suma items con '+' y resta con '-', ponderando por magnitud ('baja'=1, 'media'=2, 'alta'=3),
 // y penaliza el riesgo 'ruleta'. Es puro y determinista.
@@ -81,11 +88,23 @@ export function puntuarPrevia(opcion) {
 //    14,0%: usa la que elige el sistema) y algunos tipos sin previa del amateur, del retiro, de la salud y del servicio
 //    militar (el 3,4%). La lista cerrada de lo que delega está en el check "K0 criterio y malas: solo delegan en
 //    resolverAuto..." de validate.js.
-export function compararOfertasMercado(ofertaA, ofertaB) {
+//
+// K5c-M: con `{ elite: true }` (lo pasa `criterio` cuando su nivel llega a `NIVEL_ELITE_CRITERIO`), a igualdad de tier va
+// primero el club más fuerte (`plantelEnLiga.fuerza`, sin dato = 0) y después la jerarquía y el salario. Sin la marca la
+// regla es la de siempre (`malas` no la pasa). Una estrella elige el plantel que gana, no el puesto que manda.
+export function compararOfertasMercado(ofertaA, ofertaB, { elite = false } = {}) {
   const tierA = ofertaA.tier ?? TIER_SIN_DATO;
   const tierB = ofertaB.tier ?? TIER_SIN_DATO;
   if (tierA !== tierB) {
     return tierB - tierA; // tier menor (ej 1) supera a tier mayor (ej 2)
+  }
+
+  if (elite) {
+    const fuerzaA = ofertaA.plantelEnLiga?.fuerza ?? 0;
+    const fuerzaB = ofertaB.plantelEnLiga?.fuerza ?? 0;
+    if (fuerzaA !== fuerzaB) {
+      return fuerzaA - fuerzaB;
+    }
   }
 
   const jerA = ofertaA.proyeccionJerarquia?.hasta ?? 0;
@@ -321,8 +340,9 @@ function responderCriterio(sistema, state, decision, rng) {
     if (decision.opciones.length === 0) {
       return { negociar: 'esperar' };
     }
+    const contexto = { elite: nivelDelJugador(state) >= NIVEL_ELITE_CRITERIO };
     const mejor = decision.opciones.reduce((acum, op) => (
-      compararOfertasMercado(op, acum) > 0 ? op : acum
+      compararOfertasMercado(op, acum, contexto) > 0 ? op : acum
     ));
     return { opcionId: mejor.id };
   }

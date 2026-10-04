@@ -9,7 +9,7 @@ import { salarioDeOferta } from '../core/salarios.js';
 import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
 import { cerrarFila, registrarPico, registrarSalarioEnFila, registrarArraigoEnFila, arraigoInicial } from '../core/registro.js';
 import { bandaDeJerarquia, bandaDeArraigoFicha, nivelDelJugador } from '../core/ficha.js';
-import { orgsQueTeFicharian, ofertaPosible, esResidenteDe, nivelAlternativaAsiento, factorRenovacionEtario } from '../core/demanda.js';
+import { orgsQueTeFicharian, ofertaPosible, esResidenteDe, nivelAlternativaAsiento, factorRenovacionEtario, factorElite, plantelEnLiga } from '../core/demanda.js';
 import { resolverMercadoMundial, cerrarAsientosCongelados, congelarAsientosOfrecibles } from '../core/mercadoMundial.js';
 import { jerarquiaAlFichar, sinergiaAlFichar, conPlantillaDelPlantel } from './roster.js';
 import { conPlantelesDe } from '../core/plantel.js';
@@ -174,6 +174,9 @@ export function construirOferta(state, liga, org, tagForzado, rng) {
     costeArraigo, arraigoInicial: arraigoAlLlegar,
     progresoHito,
     riesgo,
+    // K5c-M: dónde está el plantel por fuerza dentro de su liga (puesto, de cuántos, la banda que dice la carta).
+    // Lectura pura del mundo, sin rng: no mueve ninguna tirada.
+    plantelEnLiga: plantelEnLiga(liga, org),
     // Fase 9Me: estado de la negociación (arranca en cero) e info para el
     // texto de riesgo. `salarioBase` es el ancla para calcular los escalones.
     negociacion: { escalones: 0, clausula: false, salarioBase: salarioAnualUSD },
@@ -271,7 +274,11 @@ function firmarImportPendiente(state, rng) {
 // Devuelve `{ ofertas, fichadores }`: `fichadores` es el escaneo crudo de la
 // demanda (antes del filtro de congelados) para que 9Mg arme los "asientos
 // abiertos" sin volver a escanear el mundo.
-function generarOfertas(state, rng) {
+//
+// K5c-M, la élite se busca: el orden de la mano suma `k · f(nivel) · org.fuerza` (`mercado.elite.pesoFuerzaOrden`,
+// `core/demanda.js:factorElite`): con nivel de élite los clubes fuertes van primero. Con k = 0 el término es 0 exacto
+// y la mano (y el orden de las tiradas de `construirOferta`) queda idéntica. Exportada para los checks de K5c-M.
+export function generarOfertas(state, rng) {
   const m = BALANCE.mercado;
   const ofertas = [];
 
@@ -298,12 +305,15 @@ function generarOfertas(state, rng) {
     : null;
   const dominante = state.mundo.regionDominante;
   const fichadores = orgsQueTeFicharian(state);
+  const pesoFuerza = m.elite.pesoFuerzaOrden * factorElite(nivelDelJugador(state));
   const posibles = fichadores
     .filter((entrada) => !congeladosOrgs || congeladosOrgs.has(entrada.org.nombre))
-    // `regionDominante` (9Md): las orgs de esa región suben en el orden de la mano.
+    // `regionDominante` (9Md): las orgs de esa región suben en el orden de la mano. K5c-M: y con nivel de élite,
+    // las fuertes.
     .map((entrada) => ({
       ...entrada,
       orden: entrada.presupuesto + (entrada.liga.region === dominante ? m.nudgeRegionDominante : 0)
+        + pesoFuerza * (entrada.org.fuerza ?? 0)
     }))
     .sort((a, b) => b.orden - a.orden);
 
