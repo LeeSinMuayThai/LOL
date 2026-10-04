@@ -412,6 +412,27 @@ export const BALANCE = {
     },
     techoAcumulativoBonus: 12,
 
+    // --- K5c-E: el desgaste (PLAN.md, "K5c: decisiones de spec de la estructura") ---
+    // Pasado el pico (`oculto.edadPico`) más una gracia, los años se cobran lo que construiste: los stats
+    // acumulativos pierden un término determinista por split (sin `rng`) y el bonus permanente de la práctica
+    // decae una fracción por split. TODAS las perillas salen en 0 (neutro: el juego queda idéntico, la huella no
+    // se mueve); las fija el barrido del paso 3. Se leen en el momento de usarlas (un override en memoria las pisa).
+    desgaste: {
+      // Años después de `edadPico` antes de que el desgaste empiece a morder: muerde con `edad > edadPico + gracia`.
+      graciaAnios: 0,
+      // Puntos que pierde cada acumulativo POR SPLIT apenas empieza a morder. Ojo: el acumulativo se recupera solo
+      // (`ganancia` × margen contra el techo), así que no se va hasta cero: se asienta cuando lo que recupera iguala lo
+      // que pierde, a `perdida / ganancia × 100` puntos por debajo del techo (con macro: 0,1 de pérdida ~ 9 puntos).
+      perdidaPorSplit: { macro: 0, shotcalling: 0, adaptabilidad: 0 },
+      // La pérdida por split crece con los años pasados de `edadPico + gracia`: perdida × (1 + aceleracion × años).
+      // 0 = constante (lineal); más de 0 = cae cada vez más rápido, como los reflejos de verdad.
+      aceleracionPorAnio: 0,
+      // Fracción del bonus permanente (mecánica, laneo y teamfight) que se gasta por split pasado el pico más la
+      // gracia. Solo decae el bonus positivo (una cicatriz de lesión no se cura con la edad). Lo perdido se anota
+      // como marca negativa del registro ("Los años"), así que bonus = Σ marcas sigue valiendo.
+      fraccionBonusPorSplit: 0
+    },
+
     // --- La mentalidad es la moneda: siempre cuesta, nunca se repone sola ---
     desgasteBase: 1.2,
     desgasteSpread: 0.9,

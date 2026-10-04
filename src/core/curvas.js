@@ -96,3 +96,65 @@ export function conMarcasDeRutina(state, statsAntes, origen) {
     BALANCE.atributos.fraccionPermanentePractica
   ), state);
 }
+
+// --- K5c-E: el desgaste ---
+//
+// Pasado el pico (`oculto.edadPico`) más la gracia (`BALANCE.atributos.desgaste.graciaAnios`), los años se cobran lo que
+// construiste: los acumulativos pierden un término determinista por split y el bonus permanente decae una fracción.
+// Nada de acá consume `rng`, y con las perillas en 0 (el valor del repo) nada se escribe: el juego queda como estaba.
+// Las perillas se leen acá adentro, en el momento de usarlas, para que un override en memoria las pise.
+
+// El `origen` de las marcas negativas que deja el desgaste del bonus (es el nombre visible: la ficha lo muestra
+// aparte y no lo cuenta entre las decisiones).
+export const ORIGEN_DESGASTE = 'Los años';
+
+// Años enteros o fraccionarios pasados de `edadPico + gracia`; 0 hasta que la edad los cruza (nunca negativo).
+export function aniosDeDesgaste(edad, oculto) {
+  return Math.max(0, edad - (oculto.edadPico + BALANCE.atributos.desgaste.graciaAnios));
+}
+
+// Lo que pierde un acumulativo este split. 0 antes de cruzar `edadPico + gracia`; después, la pérdida base del stat
+// por el factor `1 + aceleracionPorAnio × años`, que no baja nunca con la edad (con aceleración 0 es constante).
+export function perdidaDeAcumulativo(stat, edad, oculto) {
+  const d = BALANCE.atributos.desgaste;
+  const anios = aniosDeDesgaste(edad, oculto);
+  if (anios <= 0) {
+    return 0;
+  }
+  return (d.perdidaPorSplit[stat] ?? 0) * (1 + d.aceleracionPorAnio * anios);
+}
+
+// `player.desgaste[stat]`: lo que los años te sacan hoy, un número por stat de curva y por acumulativo, completo con
+// ceros desde el estado inicial (T4). Stat de curva: el bonus permanente que se gastó (la suma de las marcas "Los años",
+// en positivo). Acumulativo: los puntos que hoy te faltan contra donde estarías sin desgaste (ver `moverStatsAcumulativos`
+// en `systems/atributos.js`: es una diferencia neta, no la suma de las pérdidas, porque el stat se recupera solo).
+export function desgasteInicial() {
+  return Object.fromEntries([...statsDeCurva(), ...Object.keys(BALANCE.atributos.acumulativos)].map((stat) => [stat, 0]));
+}
+
+export function desgasteDe(player) {
+  return player.desgaste ?? desgasteInicial();
+}
+
+export function hayDesgaste(player) {
+  return Object.values(desgasteDe(player)).some((valor) => valor > 0);
+}
+
+// El bonus permanente decae `fraccionBonusPorSplit` por split pasado el pico más la gracia. Solo el bonus positivo (una
+// cicatriz no se cura con la edad). Pasa por `conPermanencia`, el único punto de escritura del bonus, así que lo perdido
+// queda como una marca negativa por stat y bonus = Σ marcas sigue valiendo. No consume `rng`.
+export function conDesgasteDelBonus(state) {
+  const fraccion = BALANCE.atributos.desgaste.fraccionBonusPorSplit;
+  if (fraccion === 0 || aniosDeDesgaste(state.age, state.player.oculto) <= 0) {
+    return state;
+  }
+  return statsDeCurva().reduce((st, stat) => {
+    const bonus = Math.max(0, bonusDeCurva(st.player, stat));
+    const conMarca = conPermanencia(st, stat, -bonus, ORIGEN_DESGASTE, fraccion);
+    if (conMarca === st) {
+      return st;
+    }
+    const desgaste = desgasteDe(conMarca.player);
+    return { ...conMarca, player: { ...conMarca.player, desgaste: { ...desgaste, [stat]: desgaste[stat] + bonus * fraccion } } };
+  }, state);
+}

@@ -5,7 +5,7 @@ import { generarMundo } from './mundo.js';
 
 // K5-B: la pantalla de inicio lista las regiones elegibles con su dificultad.
 export { regionesDeOrigen } from './mundo.js';
-import { bonusPermanenteInicial } from './curvas.js';
+import { bonusPermanenteInicial, desgasteInicial } from './curvas.js';
 import { puntosAbsolutos } from './ranked.js';
 import { rankearMundo } from './topMundial.js';
 import { esFechaDeDesafio, seedDelDia } from './desafio.js';
@@ -132,6 +132,9 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // K3-B: lo que las decisiones le suman al objetivo de cada curva de edad (`core/curvas.js`). Un campo por
       // stat de curva, completo con ceros desde el arranque (trampa T4); con `fraccionPermanente` en 0 no se mueve.
       bonusPermanente: bonusPermanenteInicial(),
+      // K5c-E: lo que los años te sacan hoy (`core/curvas.js#desgasteInicial`): un número por stat de curva y por
+      // acumulativo, ceros desde el arranque (T4); con las perillas de `BALANCE.atributos.desgaste` en 0 no se mueve.
+      desgaste: desgasteInicial(),
       splitCount: 0,
       titles: 0,
       worlds: 0,

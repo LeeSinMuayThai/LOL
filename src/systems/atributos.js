@@ -2,7 +2,9 @@ import { gauss, chance } from '../core/rng.js';
 import { crearLog } from '../core/log.js';
 import { deltaCorto, entero } from '../core/formato.js';
 import { clamp, clampStat } from '../core/numeros.js';
-import { nivelDeCurva, techoDeCarrera, bonusDeCurva } from '../core/curvas.js';
+import {
+  nivelDeCurva, techoDeCarrera, bonusDeCurva, perdidaDeAcumulativo, desgasteDe, hayDesgaste, conDesgasteDelBonus
+} from '../core/curvas.js';
 import { nivelDelJugador } from '../core/ficha.js';
 import { registrarPicoNivel } from '../core/registro.js';
 import { mentalidadHaciaSuBase, recuperarPorDescanso } from '../core/barras.js';
@@ -47,20 +49,37 @@ function moverStatsDeCurva(stats, state, forma, rng) {
   return movidos;
 }
 
+// K5c-E: devuelve los stats movidos y `desgaste`, lo que los años te sacan hoy de cada acumulativo.
 function moverStatsAcumulativos(stats, state, rng) {
   const a = BALANCE.atributos;
   const techo = clampStat(techoDeCarrera(state.player.oculto, state.player.splitCount) + a.techoAcumulativoBonus);
   const movidos = { ...stats };
+  const desgaste = { ...desgasteDe(state.player) };
 
   for (const [stat, config] of Object.entries(a.acumulativos)) {
     // Rendimientos decrecientes: cuanto mas cerca del techo, menos rinde.
     const margen = Math.max(0, techo - movidos[stat]) / BALANCE.stats.max;
-    const bruto = gauss(config.ganancia, config.spread, rng) * margen;
+    const sorteo = gauss(config.ganancia, config.spread, rng);
+    const bruto = sorteo * margen;
     const delta = config.permiteBajar ? bruto : Math.max(0, bruto);
     movidos[stat] = clampStat(movidos[stat] + delta);
+
+    // K5c-E: el desgaste va DESPUES del `max(0, ...)`, para que `permiteBajar: false` (macro) no se lo coma, y no
+    // consume `rng`: la pérdida es una función de la edad. Como el acumulativo se recupera solo (`margen`), lo que
+    // los años te sacan es una diferencia neta: se lleva en `desgaste[stat]` el stat "sin desgaste" (`stats[stat] +
+    // desgaste[stat]`, con el MISMO sorteo de este split), y lo que te falta contra él es lo que te sacaron.
+    const perdida = perdidaDeAcumulativo(stat, state.age, state.player.oculto);
+    if (perdida > 0 || desgaste[stat] > 0) {
+      const sinDesgaste = clampStat(stats[stat] + desgaste[stat]);
+      const margenSinDesgaste = Math.max(0, techo - sinDesgaste) / BALANCE.stats.max;
+      const brutoSinDesgaste = sorteo * margenSinDesgaste;
+      const sinDesgasteDespues = clampStat(sinDesgaste + (config.permiteBajar ? brutoSinDesgaste : Math.max(0, brutoSinDesgaste)));
+      movidos[stat] = clampStat(movidos[stat] - perdida);
+      desgaste[stat] = Math.max(0, sinDesgasteDespues - movidos[stat]);
+    }
   }
 
-  return movidos;
+  return { stats: movidos, desgaste };
 }
 
 // En la etapa amateur el sueño se administra a mano, bloque por bloque. Una vez
@@ -100,12 +119,28 @@ function probabilidadDeBurnout(mentalidad) {
   return Math.min(a.burnoutTecho, (a.burnoutUmbral - mentalidad) / a.burnoutPendiente);
 }
 
+// K5c-E: la línea de la primera vez que los años te cobran, por stat (el que más perdió).
+const TEXTO_DE_DESGASTE = {
+  mecanica: 'Los reflejos ya no son los de antes: la mecánica empieza a cobrar los años.',
+  laneo: 'La fase de líneas ya no sale sola: el laneo empieza a cobrar los años.',
+  teamfight: 'En las peleas llegás un segundo tarde a lo que antes leías de memoria: el teamfight empieza a cobrar los años.',
+  macro: 'Se te escapan rotaciones que antes veías de memoria: el macro empieza a cobrar los años.',
+  shotcalling: 'Cuesta más sostener las llamadas en el comms: el shotcalling empieza a cobrar los años.',
+  adaptabilidad: 'Cada cambio de meta cuesta un poco más: la adaptabilidad empieza a cobrar los años.'
+};
+const TEXTO_DE_DESGASTE_GENERICO = 'Los años empiezan a cobrarse: ya no rendís como antes.';
+
+function textoDeDesgaste(player) {
+  const [stat] = Object.entries(desgasteDe(player)).sort((a, b) => b[1] - a[1])[0];
+  return TEXTO_DE_DESGASTE[stat] ?? TEXTO_DE_DESGASTE_GENERICO;
+}
+
 export function aplicar(state, rng) {
   const forma = derivarForma(state, rng);
   const sleep = normalizarSueno(state, rng);
 
   const conCurva = moverStatsDeCurva(state.player.stats, state, forma, rng);
-  const conAcumulados = moverStatsAcumulativos(conCurva, state, rng);
+  const { stats: conAcumulados, desgaste: desgasteDeAnios } = moverStatsAcumulativos(conCurva, state, rng);
   // Fase 9R.2: la caída NETA de mentalidad de un split (lo que ya movieron los
   // eventos, en `conAcumulados`, + el desgaste de acá) se topea, para que la
   // barra roja siempre se vea venir. La subida no se topea.
@@ -143,18 +178,21 @@ export function aplicar(state, rng) {
     ? (state.flags.splitsMentalBajo ?? 0) + 1
     : 0;
 
-  const nextState = {
+  // K5c-E: el bonus permanente se gasta después de mover los stats de este split (el objetivo de la curva todavía usó
+  // el de antes). Con las perillas en 0 `conDesgasteDelBonus` devuelve el mismo estado y `desgasteDeAnios` no cambia.
+  const nextState = conDesgasteDelBonus({
     ...state,
     player: {
       ...state.player,
       stats,
       sleep,
       oculto: { ...state.player.oculto, forma },
+      desgaste: desgasteDeAnios,
       splitCount: state.player.splitCount + 1
     },
     flags: { ...state.flags, splitsMentalBajo },
     career: { ...state.career, currentSplit: state.career.currentSplit + 1, registro }
-  };
+  });
 
   // Fase 7: `tecnico: true` marca los logs puramente numéricos — nadie los
   // borra (siguen siendo útiles para depurar y para simulate.js), pero le
@@ -166,6 +204,12 @@ export function aplicar(state, rng) {
     + `macro ${entero(stats.macro)}, consistencia ${entero(mentalidad)}.`,
     { tecnico: true }
   )];
+
+  // K5c-E: la primera vez que el desgaste muerde (antes no había nada que los años te hubieran sacado) lo dice una vez,
+  // con el stat que más perdió.
+  if (!hayDesgaste(state.player) && hayDesgaste(nextState.player)) {
+    logs.push(crearLog('split', textoDeDesgaste(nextState.player)));
+  }
 
   // La mentalidad en cero es el fin de la carrera, pero el borde no es un
   // acantilado: abajo del umbral la probabilidad crece hasta volverse segura.
