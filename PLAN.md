@@ -7658,6 +7658,48 @@ frontera: un castigo etario menor con la casa encendida, y la carrera acortada p
 Mundial ≥ 7% fuera incompatible con una carrera de ≤ 9 años, el compromiso lo decide el usuario, con la frontera
 medida.
 
+**La integración final de la estructura** (`k5c-instrumento` @ `2d8eec2`: K5c-H + K6a-R, sin conflictos). `--rapido` 315
+OK y 0 FAIL, `HUELLA_JUEGO` 860000955, `FORMAS_CONOCIDAS[12]` '403b78edfe30'.
+
+**El barrido final** (analista, `criterio` 1500 × 60; las seeds 1-600 salen "con suerte": 7,2% en 600 dio 5,4% en
+1500). Las dos finalistas son G0 + casa (margen −4 / castigo 0 / jerarquía off) + desgaste (pérdida 1,5 / 1,5 / 0,9,
+aceleración 1,0) + `anchoBajada` 3 + prestigio LCK 97, y difieren en el oeste: Final1 lleva LEC 75 / LCS 65 y Final2,
+LEC 73 / LCS 62. Los JSON completos están en `scratchpad/sw4/k5c/cfgFinal1.json` y `cfgFinal2.json`.
+
+| | Final1 | Final2 | Meta |
+|---|---|---|---|
+| Mundial total | 7,7 | 7,0 | ≥ 7 ✅ |
+| KR / NA / EU / CN / BR / APAC | 10,5 / 7,1 / 8,9 / 10,3 / 2,2 / 3,3 | 10,0 / 3,1 / 10,6 / 8,6 / 1,1 / 4,2 | KR 12-15, NA 3-5 |
+| Nuevo Faker | 1,5 | 1,1 | ~2-3, posible ✅ |
+| No llega a pro | 32,3 | 32,3 | **~20 ❌** |
+| Estancados (`malas`) | 3,9 (15,3) | 3,3 (15,5) | ~10, `malas` ≫ `criterio` |
+| Tier 1 | 63,7 | 64,4 | 55-65 ✅ |
+| Título de tier 1 / top 20 | 47,7 / 31 | 48,3 / 32,3 | (se fijan en lo medido) |
+| Años pro, mediana (p90) / llega a los 34 | 9 (13) / 4,7 | 9 (13) / 5,5 | ≤ 9 / < 5 |
+| r(potencial, duración) | 0,39 | 0,40 | > 0,32 ✅ |
+| Sensibilidad Mundial (`criterio` / `azar`) | 3,3× | 3,0× | ≥ 2× ✅ |
+
+Cada número por región tiene ±2 puntos de ruido (200-340 carreras por región).
+
+*Lo que encontró el analista:*
+- **La frontera.** Las carreras más cortas bajan el Mundial. Con la casa sola, una mediana de 11 años da 7,7%; con
+  desgaste y castigo, 8 años dan 4,4%; con `anchoBajada` 3 y LCK 97, 9 años dan 7,7%. La mediana de 8 años con
+  `anchoBajada` y prestigio no se midió.
+- **El Mundial lo ganan jugadores de 25-29 años que juegan en casa,** así que cualquier castigo etario en casa le
+  saca 2-3 puntos.
+- **El prestigio ordena las regiones.** Un coreano en LCK gana el ~26% de los Mundiales que juega.
+  `edadCastigoRenovacionTier2` y `rebajaMerito`/`rebajaDisputa` en 8 no cambian nada.
+- **"No llega a pro" da ~32%** en todas las variantes, G0 incluida. Ninguna perilla del bloque C lo mueve: se decide en
+  el amateur. La sonda del propio K6a-A ya marcaba 40 de 60 firmas (~33%), pero el analista anterior medía 21,6 con
+  1200. **Hay que averiguar qué lo subió** (¿K6a-A? ¿el reloj de la vuelta? ¿la región?). Es una meta del usuario (D-D).
+- **`k5c/barrido.mjs` de la copia sw4 está desactualizado** (sin `splitPrimerContratoTier2` ni `splitsRetirado`). El
+  analista usó `barrido_sw2.mjs`. El paso 3 tiene que medir con el instrumento del repo.
+
+**Pendiente de decisión del usuario** *(el usuario pidió frenar acá; no se sigue sin su OK)*:
+- Final1 o Final2. Final2 cumple NA 3-5, y Europa empata con Corea.
+- Corea ~10% en vez de 12-15%: con estas perillas el máximo medido es ~11%.
+- La investigación de "no llega a pro" en ~32%, antes del paso 3.
+
 ### K6 — Jugarlo *(la prueba que importa)*
 
 Tres carreras completas en el navegador: una que se estanca en tier 2 por malas decisiones, una buena
