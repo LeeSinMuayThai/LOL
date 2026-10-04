@@ -7235,6 +7235,67 @@ va primero, después el resto, con el criterio de K3c: cumplir con el valor más
 
 **Después, K6.** Tres carreras jugadas en el navegador.
 
+**Paso 1, hecho** (`k5c-instrumento`: `1f0f7eb`).
+- **Lo que mide nuevo.** El Mundial real (total, por región y por nivel pico), la curva de nivel por edad y el
+  barrido `k5c/barrido.mjs`.
+- **Hallazgos:**
+  - `retiro.splitsSinOfertaEnTierParaBifurcar` vale **99**, o sea que el final por mercado de K5-C está apagado;
+  - la `dificultad` no mueve la simulación (la mueve el `prestigio`);
+  - tu equipo nunca es "claramente el más fuerte" del Mundial: el margen contra el mejor rival tiene mediana
+    −16;
+  - un bug del motor: al volver del retiro el calendario se rebobinaba y se jugaban dos Mundiales con el mismo
+    año. Se arregló en `ccdd2dd` y `c4db90a`: volvés con la edad y el año reales, y si volverías con 34 o más, la
+    ventana se cierra sola.
+
+**Paso 2a, el análisis** (un Opus con el barrido; `criterio` 300 × 60). **Con constantes solas la carrera pro
+mediana no baja de ~10 años.** Por qué hoy dura 17:
+- **Cómo terminan las carreras:**
+  - el 59% llega a la línea de los 34;
+  - el 15% se retira por el aviso de declive, a los 32;
+  - el veredicto del mercado no se dispara nunca.
+- **El nivel no cae.**
+  - Los stats acumulativos (macro, shotcalling, adaptabilidad) pesan entre el 34% y el 60% del nivel según el
+    rol, no tienen declive y llegan a 100.
+  - El bonus permanente de la práctica (15,6 puntos de mecánica a los 34) compensa el declive del resto.
+- **El mercado nunca te deja sin ofertas.** Los veteranos se van de import a ligas de calibre ~50, y la red de
+  franquicia los rescata.
+- **Nadie se estanca.** Con 17 años de carrera todos llegan a tier 1.
+- **El título doméstico cuenta también los de tier 2.**
+
+La mejor configuración de constantes ("D") deja:
+
+| Métrica | Valor |
+|---|---|
+| Carrera pro (mediana) | 10,3 años |
+| Llega a los 34 | 9,3% |
+| r(potencial, duración) | 0,38 |
+| Estancados (`malas` 25%, `criterio` 9%) | 9,3% |
+| Llega a tier 1 | 66% |
+| Título | 74% |
+| Top 20 | 46% |
+| Gana el Mundial | 3,7% |
+
+**Decisión del usuario (2026-10-03): estructura y después calibrar.** Una ronda de estructura del bloque C antes de
+las constantes (regla 2), en cuatro piezas:
+- **K5c-E, el desgaste.** Pasado el pico, los stats acumulativos y el bonus permanente se gastan con la edad: el
+  techo de cada stat acumulativo sigue la curva de edad, o el bonus decae una fracción por año. Sale con
+  constantes neutras (comportamiento idéntico) y las fija el paso 3.
+- **K5c-R, la presión de retiro.** Un jugador que se queda en tier 2 recibe la bifurcación de retiro cuando pasa N
+  años sin ofertas de tier 1 desde cierta edad, con el motivo dicho. El veredicto del mercado deja de estar
+  apagado. Los años pro se cuentan desde el primer contrato de tier 2 o tier 1, no desde tier 3: en el
+  instrumento y en la tarjeta, con su línea de la regla 17.
+- **K5c-M, la élite se busca.** Las orgs fuertes le ofrecen a los jugadores de élite: la fuerza del club que te
+  ofrece crece con tu nivel. Hoy te ofrecen clubes de tier 1 débiles de cualquier región. Así tu equipo puede ser
+  el más fuerte del Mundial cuando sos el mejor, que es la meta de §K.3a (~50%). Va **por el mercado**, no
+  cambiando la fórmula de fuerza del bloque A.
+- **K5c-T, el título que cuenta.** "Gana un título doméstico" cuenta solo los de tier 1 (§K.3b: "~30%").
+  Los de tier 2 se reportan aparte. Es solo instrumento, con su línea de la regla 17.
+
+Después, el barrido del supervisor con la configuración D como punto de partida, y el paso 3.
+
+**Guardado:** K4c va a main con `VERSION` 11. Si las piezas cambian la forma, el paso 3 de K5c sube a **12**,
+con `FORMAS_CONOCIDAS[11]` igual al de main.
+
 ### K6 — Jugarlo *(la prueba que importa)*
 
 Tres carreras completas en el navegador: una que se estanca en tier 2 por malas decisiones, una buena
