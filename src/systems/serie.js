@@ -529,10 +529,13 @@ export function aplicar(state, rng) {
 
   const ronda = rondaInicial(base.career.posicion, liga.formatoPlayoffs);
   const st = iniciarRonda(base, ronda, rng);
+  // K6a-M: la final de tier 2 (`formatoPlayoffs.arranca`) no tiene bracket: se anuncia como lo que es.
   const logs = [crearLog(
     'serie',
-    `Clasificaste a playoffs de ${nombreLigaDe(liga)} como ${state.career.posicion}º sembrado: arrancás en `
-    + `${etiquetaDeRonda(ronda).toLowerCase()} vs ${st.serie.rival.org}.`
+    ronda === 'final' && liga.formatoPlayoffs.arranca
+      ? `Terminaste ${state.career.posicion}º: jugás la final de ${nombreLigaDe(liga)} vs ${st.serie.rival.org}.`
+      : `Clasificaste a playoffs de ${nombreLigaDe(liga)} como ${state.career.posicion}º sembrado: arrancás en `
+        + `${etiquetaDeRonda(ronda).toLowerCase()} vs ${st.serie.rival.org}.`
   )];
 
   return arrancarSerie(st, rng, logs);

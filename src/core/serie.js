@@ -30,8 +30,12 @@ export function calificaAInternacional(liga, posicion) {
 }
 
 // El bracket es de eliminación simple: los dos mejores sembrados saltan
-// directo a semifinal, el resto arranca en cuartos.
+// directo a semifinal, el resto arranca en cuartos. K6a-M: un formato con `arranca` (la final de tier 2, que juegan los
+// `clasifican` de arriba) entra directo en esa ronda.
 export function rondaInicial(posicion, formatoPlayoffs) {
+  if (formatoPlayoffs.arranca) {
+    return posicion <= formatoPlayoffs.clasifican ? formatoPlayoffs.arranca : null;
+  }
   if (posicion <= formatoPlayoffs.byes) {
     return 'semis';
   }
@@ -142,10 +146,18 @@ function ordenarPorFactor(campeones, weights) {
 
 export const PLANES_DE_SERIE = ['guardar', 'conTodo', 'sorpresa', 'coach'];
 
+// K6a-M (D-B: los playoffs son lo importante): una serie de eliminación —cuartos, semis y la final domésticas, y el
+// bracket del Mundial— nunca se resuelve sola, por más despareja que sea: se juega con el plan de Fearless de siempre.
+// Hoy todas las series del motor son de eliminación (los playoffs son de eliminación simple, PLAN.md fase 4).
+export function esSerieDeEliminacion(serie) {
+  return ORDEN_RONDAS.includes(serie.ronda) || serie.ronda === 'internacional';
+}
+
 // Una serie sin nada en juego: la diferencia de fuerza al arrancar supera el umbral. No pregunta: juega el plan del
-// coach y no frena en el mapa decisivo.
+// coach y no frena en el mapa decisivo. K6a-M: nunca una de eliminación (`esSerieDeEliminacion`).
 export function esSerieSinNadaEnJuego(serie) {
-  return Math.abs(serie.fuerzaInicial - serie.rival.fuerza) > BALANCE.serie.plan.umbralSinNadaEnJuego;
+  return !esSerieDeEliminacion(serie)
+    && Math.abs(serie.fuerzaInicial - serie.rival.fuerza) > BALANCE.serie.plan.umbralSinNadaEnJuego;
 }
 
 // La charla del coach: un comodín por temporada (el año del calendario), que se ofrece en el mapa decisivo.

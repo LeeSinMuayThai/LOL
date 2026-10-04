@@ -1642,6 +1642,9 @@ export const BALANCE = {
       // K4c: 15 -> 6. Medido (criterio, 300 × 60, de a una perilla): las interrupciones bajan de 109 a 98 y el p90 de las paradas de
       // playoffs, de 7 (36% con más de 4) a 5 (17%); el del internacional, de 7 (49%) a 5 (22%). Con cA entera: 89 interrupciones,
       // 5 (11%) y 5 (12%) (PLAN.md, "Paso 2 — lo que midieron los barridos").
+      // K6a-M (D-B): el umbral ya no se aplica a una serie de eliminación (`esSerieDeEliminacion`, core/serie.js), y hoy
+      // todas lo son: los playoffs y el bracket del Mundial frenan siempre. En el ensayo de K6 una final del CBLOL y unos
+      // cuartos se habían resuelto solos por esta regla.
       umbralSinNadaEnJuego: 6,
       // Salir con todo: tus mejores picks y más intensidad en los primeros `mapasConTodo` mapas; después lo pagás.
       mapasConTodo: 2,

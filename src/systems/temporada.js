@@ -329,7 +329,14 @@ function resolverFechaMarcada(state, rng, logsAcum, pAntesDeDecidir = null) {
     `${fraseDeMotivo(motivo, fecha.rival, state.player.splitCount)} ${gano ? 'Ganan.' : 'Pierden.'} `
     + `Quedan ${posicion}º de ${tablaTrasFecha.length}`
     + `${fecha.campeonElegido ? ` jugando ${fecha.campeonElegido.name}` : ''}.`,
-    { p: partido.p, pSinMomento, ajustePartido }
+    // K6a-M: la fecha jugada viaja en su log (`encabezadoDeResultado`, core/temporada.js): la tarjeta de resultado la
+    // pinta de acá y no del estado de cuando se pinta, que ya siguió el calendario en silencio (en el ensayo de K6 la
+    // previa fue contra RED Canids y la tarjeta dijo "GANARON vs PAIN GAMING", la última fecha del split).
+    {
+      p: partido.p, pSinMomento, ajustePartido,
+      rival: fecha.rival, local: fecha.local, fuerzaRival: fecha.fuerzaRival, fuerzaPropia: t.fuerzaPropia,
+      gano, posicion, equipos: tablaTrasFecha.length, racha: tt.racha
+    }
   )];
 
   // Fase 9Re: la reacción postpartido dejó de ser una decisión. Es flavor —

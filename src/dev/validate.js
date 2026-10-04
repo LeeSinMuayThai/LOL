@@ -89,6 +89,10 @@ import {
 } from '../core/minijuegos.js';
 import { esMapaDeDesempate } from '../core/serie.js';
 import { previaDePartido, previaDeDecision, textoDeProbabilidadJugada } from '../core/previaDePartido.js';
+import { esSerieDeEliminacion, esSerieSinNadaEnJuego as esSerieSinNadaEnJuegoK6aM, esCierreDeTemporada as esCierreK6aM } from '../core/serie.js';
+import { encabezadoDeResultado } from '../core/temporada.js';
+import { cumpleCondiciones as cumpleCondicionesK6aM } from '../core/selectors.js';
+import { jugasteUnSplitConLaOrg } from '../systems/competitivo.js';
 import { MONTAR_MINIJUEGO } from '../ui/components/minijuegos/index.js';
 import { LABEL_MARCA as LABEL_MARCA_FICHA, lineaDeContextoFicha } from '../ui/components/ficha.js';
 import { nombreVisibleDeLiga } from '../ui/formatoUi.js';
@@ -749,7 +753,9 @@ const FORMAS_CONOCIDAS = {
   // K5c (revisión, regla 15): `career.splitsRetirado`, los splits que pasaron retirado en la ventana de vuelta (los años pro no los
   // cuentan; `migrarDe11` lo pone en 0). La 12 no salió de la rama, así que se re-registra en vez de subir VERSION
   // ('16c168aa54d6' antes de esta revisión).
-  12: '36ce05b9630c'
+  // K6a-M: el log de la fecha marcada lleva la fecha jugada (rival, resultado, posición) y las ligas de tier 2 su formato de
+  // final. VERSION 12 no salió: se re-registra (reemplaza a '36ce05b9630c').
+  12: 'd00614b9a20a'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -15942,7 +15948,7 @@ check('K4-B el rival también quema: con el Fearless su fuerza de mapa cae mapa 
   }
 });
 
-checkLento('K4-B pausas por serie: el plan al arrancar y después como mucho 2 (te leyeron el guardado, el mapa decisivo); una serie sin nada en juego no frena; minijuegos de serie solo en el mapa decisivo de semis, final e internacional; la charla del coach como mucho una por temporada', () => {
+checkLento('K4-B pausas por serie: el plan al arrancar y después como mucho 2 (te leyeron el guardado, el mapa decisivo); ninguna serie queda «sin nada en juego» (K6a-M: todas son de eliminación); minijuegos de serie solo en el mapa decisivo de semis, final e internacional; la charla del coach como mucho una por temporada', () => {
   const series = new Map();
   const problemas = [];
   let sinNada = 0;
@@ -16006,9 +16012,195 @@ checkLento('K4-B pausas por serie: el plan al arrancar y después como mucho 2 (
       problemas.push(`${clave}: ${enSerie.length - 1} pausas además del plan (${enSerie.join(', ')})`);
     }
   }
+  // K6a-M reemplaza a `sinNada < 20` del check vacío (cuando el umbral dejaba series sin frenar): ahora tienen que ser 0.
+  if (sinNada > 0) {
+    problemas.push(`${sinNada} series quedaron sin nada en juego: una serie de eliminación no se resuelve sola (K6a-M)`);
+  }
   fallarSiK2d(problemas);
-  if (series.size < 100 || sinNada < 20 || charlas < 20 || decisivas < 40) {
+  if (series.size < 100 || charlas < 20 || decisivas < 40) {
     throw new Error(`check vacío: ${series.size} series que frenaron, ${sinNada} sin nada en juego, ${charlas} charlas, ${decisivas} mapas decisivos`);
+  }
+});
+
+// ============================================================================
+// K6a-M (PLAN.md "K6a — el ensayo de K6", K6a-M): lo que el ensayo encontró en el motor. Una cosecha de carreras de
+// `criterio` (con la prueba de ingreso siempre clavada) alimenta cuatro checks: las series que frenan, la previa con el
+// rival del resultado, la prueba clavada con su desenlace, y "si ganás, entrás a playoffs" solo cuando siembra.
+// ============================================================================
+const CARRERAS_K6AM = 40;
+const RE_PRUEBA_K6AM = /prueba/i;
+let cosechaK6aM = null;
+function cosechaDeCarrerasK6aM() {
+  if (cosechaK6aM) {
+    return cosechaK6aM;
+  }
+  const c = {
+    series: 0, mundial: 0, mundialPorTope: 0, finalesTier2: 0, sinParada: [], titulos: 0, titulosSinFinal: [],
+    previas: 0, previaDistinta: [], defineFueraDeCierre: [], defineEnCierre: 0,
+    pruebas: 0, firmasAmateur: 0, jugaron: 0, pruebaSinDesenlace: [], firmoYNoJugo: []
+  };
+  for (let seed = 1; seed <= CARRERAS_K6AM; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    let firmaPendiente = null;
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      const planes = new Set();
+      const previas = [];
+      const pruebas = [];
+      const responder = (sistema, st, decision, r) => {
+        const datos = decision.datos ?? {};
+        if (datos.motivo === 'plan' && !datos.replan && st.serie?.activa) {
+          planes.add(`${st.serie.ronda}|${st.serie.etapa ?? null}|${st.serie.rival.org}`);
+        }
+        if (sistema.id === 'temporada' && datos.motivo === 'momento') {
+          previas.push(previaDeDecision(st, decision)?.rival?.nombre ?? null);
+          if (motivoPrincipal(st.career.temporada.fechaEnCurso?.motivos ?? []) === 'define_clasificacion') {
+            if (esCierreK6aM(st.player.splitCount)) {
+              c.defineEnCierre += 1;
+            } else {
+              c.defineFueraDeCierre.push(`seed ${seed} split ${i} (splitCount ${st.player.splitCount})`);
+            }
+          }
+        }
+        if (datos.momento === 'tryout') {
+          pruebas.push({ sistema: sistema.id, org: datos.oferta?.org?.nombre ?? null });
+          return { resultado: 1 };
+        }
+        return ESTRATEGIAS_K0.criterio(sistema, st, decision, r);
+      };
+      const titulosAntes = state.career.registro.titulos.length;
+      const paso = avanzarSplitAuto(state, rng, responder);
+      state = paso.state;
+
+      const posts = paso.logs.filter((log) => log.postSerie);
+      for (const log of posts) {
+        c.series += 1;
+        if (log.torneo === 'mundial') {
+          c.mundial += 1;
+        } else if (log.ronda === 'final' && state.career.tier === 2) {
+          c.finalesTier2 += 1;
+        }
+        // El tope de paradas del Mundial (T9) puede poner el plan del coach en cuartos y semis del Mundial —con su aviso en el
+        // feed—, nunca en la final (que tiene su reserva): esa es la única serie que puede no frenar.
+        const porElTopeDelMundial = log.torneo === 'mundial' && log.etapa !== 'final'
+          && paso.logs.some((l) => l.type === 'internacional' && l.message.startsWith('Este Mundial ya no frena más'));
+        if (porElTopeDelMundial && !planes.has(`${log.ronda}|${log.etapa ?? null}|${log.rival}`)) {
+          c.mundialPorTope += 1;
+          continue;
+        }
+        if (!planes.has(`${log.ronda}|${log.etapa ?? null}|${log.rival}`) || log.sinNadaEnJuego) {
+          c.sinParada.push(`seed ${seed} split ${i}: ${log.ronda} vs ${log.rival} ${log.marcador.join('-')}`);
+        }
+      }
+      for (const titulo of state.career.registro.titulos.slice(titulosAntes)) {
+        if (titulo.tier === 1 || titulo.tier === 2) {
+          c.titulos += 1;
+          if (!posts.some((log) => log.ronda === 'final' && log.gano && log.torneo !== 'mundial')) {
+            c.titulosSinFinal.push(`seed ${seed} split ${i}: ${titulo.nombre} (tier ${titulo.tier}) sin una final que frenó`);
+          }
+        }
+      }
+
+      const resultados = paso.logs.filter((log) => log.type === 'temporada' && typeof log.p === 'number');
+      previas.forEach((rival, k) => {
+        c.previas += 1;
+        const encabezado = encabezadoDeResultado(resultados[k]);
+        if (!rival || encabezado?.rival !== rival || !resultados[k].message.includes(rival)) {
+          c.previaDistinta.push(`seed ${seed} split ${i}: la previa dijo ${rival}, el resultado ${encabezado?.rival ?? 'sin rival'}`);
+        }
+      });
+
+      for (const prueba of pruebas) {
+        c.pruebas += 1;
+        const desenlace = paso.logs.filter((log) => (log.type === 'amateur' || log.type === 'mercado') && RE_PRUEBA_K6AM.test(log.message));
+        if (desenlace.length === 0) {
+          c.pruebaSinDesenlace.push(`seed ${seed} split ${i}: prueba con ${prueba.org ?? '?'} (${prueba.sistema}) sin una línea de cómo terminó`);
+        }
+        if (prueba.sistema === 'amateur' && prueba.org) {
+          const firmo = desenlace.some((log) => /te firman/.test(log.message));
+          if (firmo !== state.career.orgs.includes(prueba.org)) {
+            c.pruebaSinDesenlace.push(`seed ${seed} split ${i}: el feed dice que ${firmo ? '' : 'no '}firmó con ${prueba.org} y el estado no`);
+          }
+          if (firmo) {
+            c.firmasAmateur += 1;
+            firmaPendiente = { org: prueba.org, desde: i };
+          }
+        }
+      }
+      if (firmaPendiente && i > firmaPendiente.desde) {
+        if (state.career.currentOrg === firmaPendiente.org && jugasteUnSplitConLaOrg(state)) {
+          c.jugaron += 1;
+          firmaPendiente = null;
+        } else if (state.career.currentOrg !== firmaPendiente.org) {
+          const jugo = state.career.registro.porOrg.some((fila) => fila.org === firmaPendiente.org
+            && Object.values(fila.splitsPorTier).some((n) => n > 0));
+          if (jugo) {
+            c.jugaron += 1;
+          } else {
+            c.firmoYNoJugo.push(`seed ${seed}: firmó con ${firmaPendiente.org} en el split ${firmaPendiente.desde} y se fue sin jugar un split`);
+          }
+          firmaPendiente = null;
+        }
+      }
+    }
+  }
+  cosechaK6aM = c;
+  return c;
+}
+
+checkLento(`K6a-M ninguna serie de eliminación ni final se resuelve sin parada: cada serie (playoffs de tier 1, la final de tier 2, el bracket del Mundial salvo lo que corta su tope T9) frena en su plan, y cada título de tier 1 o 2 sale de una final que frenó (criterio, ${CARRERAS_K6AM} carreras)`, () => {
+  const c = cosechaDeCarrerasK6aM();
+  fallarSiK2d([...c.sinParada, ...c.titulosSinFinal]);
+  if (c.series < 150 || c.mundial < 20 || c.finalesTier2 < 5 || c.titulos < 10) {
+    throw new Error(`check vacío: ${c.series} series, ${c.mundial} del Mundial (${c.mundialPorTope} por el tope T9), ${c.finalesTier2} finales de tier 2, ${c.titulos} títulos`);
+  }
+  // La regla sobre series sintéticas: ninguna diferencia de fuerza deja sin parada a una serie de eliminación.
+  for (const ronda of ['cuartos', 'semis', 'final', 'internacional']) {
+    const serie = { ronda, fuerzaInicial: 90, rival: { fuerza: 10 } };
+    if (!esSerieDeEliminacion(serie) || esSerieSinNadaEnJuegoK6aM(serie)) {
+      throw new Error(`una serie de ${ronda} con 80 puntos de diferencia se resolvería sola`);
+    }
+  }
+});
+
+checkLento(`K6a-M la previa y el resultado nombran al mismo rival: la tarjeta lee la fecha de su log, no del estado de cuando se pinta (criterio, ${CARRERAS_K6AM} carreras)`, () => {
+  const c = cosechaDeCarrerasK6aM();
+  fallarSiK2d(c.previaDistinta);
+  if (c.previas < 100) {
+    throw new Error(`check vacío: ${c.previas} previas de fecha marcada`);
+  }
+  if (encabezadoDeResultado({ type: 'temporada', message: 'Cerrás el split 7º de 8.' }) !== null) {
+    throw new Error('la línea de cierre del split no es una fecha: no puede llevar un "GANARON vs" prestado');
+  }
+});
+
+checkLento(`K6a-M toda prueba clavada termina con su desenlace dicho en el feed y coherente con el estado, y si firmaste, jugás un split con ese equipo (criterio con la prueba clavada, ${CARRERAS_K6AM} carreras)`, () => {
+  const c = cosechaDeCarrerasK6aM();
+  fallarSiK2d([...c.pruebaSinDesenlace, ...c.firmoYNoJugo]);
+  if (c.pruebas < 30 || c.firmasAmateur < 10 || c.jugaron < 10) {
+    throw new Error(`check vacío: ${c.pruebas} pruebas, ${c.firmasAmateur} firmas de tier 3, ${c.jugaron} que jugaron`);
+  }
+});
+
+checkLento(`K6a-M regla 15: "si ganás, entrás a playoffs" solo en el split que siembra los playoffs, y "Clasificaron al torneo de mitad de año" solo con el equipo primero (criterio, ${CARRERAS_K6AM} carreras)`, () => {
+  const c = cosechaDeCarrerasK6aM();
+  fallarSiK2d(c.defineFueraDeCierre);
+  if (c.defineEnCierre < 20) {
+    throw new Error(`check vacío: ${c.defineEnCierre} fechas que definen la clasificación en el split de cierre`);
+  }
+  // La tabla que define de K4-A (Propio pelea el sexto puesto), escrita acá: este check corre antes de que existan sus constantes.
+  const t = temporadaSinteticaK4A([8, 12, 12, 12, 12, 12, 8, 5, 5, 7]);
+  const liga = { tier: 1, formatoPlayoffs: { clasifican: 6, byes: 2, bo: 5 } };
+  if (defineClasificacion({ player: { splitCount: BALANCE.edad.splitsPorEdad - 1 } }, liga, t) === null) {
+    throw new Error('en el split de cierre la tabla de K4-A define la clasificación');
+  }
+  if (defineClasificacion({ player: { splitCount: BALANCE.edad.splitsPorEdad } }, liga, t) !== null) {
+    throw new Error('en un split que no cierra la temporada no hay playoffs que definir');
+  }
+  const evento = TODOS_LOS_EVENTOS.find((e) => e.id === 'el_internacional_de_mitad_de_ano');
+  const conPosicion = (posicion) => ({ player: { splitCount: 30 }, career: { posicion } });
+  if (cumpleCondicionesK6aM(conPosicion(7), evento.conditions) || !cumpleCondicionesK6aM(conPosicion(1), evento.conditions)) {
+    throw new Error('"Clasificaron al torneo de mitad de año" tiene que pedir el equipo primero del split');
   }
 });
 
@@ -17216,7 +17408,8 @@ check('K4c (revisión) probaste y no alcanzó: la prueba del mercado fallida sin
   // Los dos casos de la revisión, con `azar`: después de una prueba fallida sin respaldo ese split no dice "nadie te ofrece nada", y la
   // pregunta del declive (y el motivo, si te retirás) dicen que probaste y no alcanzó.
   let declives = 0;
-  for (const seed of [11, 16]) {
+  // K6a-M: [11, 16] -> [7, 8] (el stream cambió; buscadas igual que antes: `azar` con un declive después de una prueba fallida).
+  for (const seed of [7, 8]) {
     const rng = mulberry32(seed);
     let st = createInitialState(seed, rng);
     for (let i = 0; i < 45 && !st.terminado; i += 1) {
@@ -18243,7 +18436,8 @@ const TABLA_QUE_NO_DEFINE_ABAJO_K4A = [0, 12, 12, 12, 12, 12, 8, 5, 5, 7];
 const TABLA_DEL_BYE_K4A = [12, 12, 12, 10, 10, 10, 9, 5, 5, 6];
 
 check('K4-A define_clasificacion: sale de la tabla y del fixture que falta (sin rng), tanto la entrada a playoffs como el bye', () => {
-  const estado = {};
+  // K6a-M: en el split que cierra la temporada, el único que siembra los playoffs.
+  const estado = { player: { splitCount: BALANCE.edad.splitsPorEdad - 1 } };
   const t = temporadaSinteticaK4A(TABLA_QUE_DEFINE_K4A);
   const definicion = defineClasificacion(estado, LIGA_K4A, t);
   if (definicion?.siGana !== 'cuartos' || definicion?.siPierde !== null) {
@@ -18276,7 +18470,9 @@ check('K4-A define_clasificacion: sale de la tabla y del fixture que falta (sin 
 });
 
 check('K4-A prioridad: define_clasificacion > archirrival > clásico > revancha, y puntero, presión y rival de generación no marcan', () => {
+  // K6a-M: en el split de cierre, el único donde una fecha puede definir la clasificación.
   const estado = (extra = {}) => ({
+    player: { splitCount: BALANCE.edad.splitsPorEdad - 1 },
     career: { orgs: ['Propio'], currentOrg: 'Propio', ultimoEliminadoPor: null, ...extra.career },
     mundo: { rivales: [], archirrival: extra.archirrival ?? null }
   });
@@ -18312,6 +18508,7 @@ function cosechaDeCarrerasK4A() {
     let state = createInitialState(seed, rng);
     for (let i = 0; i < 60 && !state.terminado; i += 1) {
       const antes = state.career.temporada;
+      const splitAntes = state.player.splitCount;
       const principalesDelSplit = [];
       const responder = (sistema, st, decision, r) => {
         if (sistema.id === 'temporada') {
@@ -18336,7 +18533,8 @@ function cosechaDeCarrerasK4A() {
       c.marcadasPorSplit[t.marcadasHechas] = (c.marcadasPorSplit[t.marcadasHechas] ?? 0) + 1;
       principalesDelSplit.forEach((m) => { c.principales[m] = (c.principales[m] ?? 0) + 1; });
       const liga = ligaDeCarreraK3A(state);
-      if (liga?.tier === 1 && liga.formatoPlayoffs) {
+      // K6a-M: solo el split de cierre, el único donde una fecha puede definir la clasificación.
+      if (liga?.tier === 1 && liga.formatoPlayoffs && esCierreK6aM(splitAntes)) {
         c.splitsTier1 += 1;
         if (principalesDelSplit.includes('define_clasificacion')) {
           c.splitsConDefine += 1;
@@ -18348,9 +18546,11 @@ function cosechaDeCarrerasK4A() {
   return c;
 }
 
-check(`K4-A define_clasificacion es alcanzable: al menos 1 de cada 3 splits de tier 1 con playoffs (criterio, ${CARRERAS_K4A} carreras)`, () => {
+// K6a-M reemplaza a "al menos 1 de cada 3 splits de tier 1 con playoffs" (con 300 splits de muestra): esa vara contaba los dos
+// splits que no siembran, donde "si ganás, entrás a playoffs" era mentira. Ahora la misma meta, sobre los splits de cierre.
+check(`K4-A define_clasificacion es alcanzable: al menos 1 de cada 3 splits de cierre de tier 1 (criterio, ${CARRERAS_K4A} carreras)`, () => {
   const { splitsTier1, splitsConDefine } = cosechaDeCarrerasK4A();
-  if (splitsTier1 < 300) {
+  if (splitsTier1 < 100) {
     throw new Error(`solo ${splitsTier1} splits de tier 1 con playoffs medidos: muestra insuficiente`);
   }
   if (splitsConDefine * 3 < splitsTier1) {
@@ -19717,7 +19917,8 @@ check('K4c guardado VERSION 11: la forma de la 10 sigue registrada, y un guardad
 // 12 de K5c-R (`flags.splitsTier2SinOfertaTier1` y `career.splitPrimerContratoTier2`, que `migrarDe11` reconstruye del registro).
 // Desde K5c-R.
 const { migrarDe11: migrarDe11K5CR } = await import('../core/guardado.js');
-const SEEDS_GUARDADO_11_K5CR = [1, 2, 3, 4];
+// K6a-M: [1, 2, 3, 4] -> [1..6] (el stream cambió: con cuatro seeds quedaban 18 guardados con el marcador, hacen falta 20).
+const SEEDS_GUARDADO_11_K5CR = [1, 2, 3, 4, 5, 6];
 const SPLITS_GUARDADO_11_K5CR = 30;
 
 // Lo que escribía el código de VERSION 11: sin los campos de la 12.
@@ -20592,8 +20793,10 @@ check('K4c-F 4: de las series en las que no frenaste, un renglón por serie (los
       }
     });
   }
-  if (seriesSinFrenar === 0 || seriesConPlan === 0) {
-    throw new Error(`la sonda necesita series de los dos tipos (sin frenar: ${seriesSinFrenar}, con plan: ${seriesConPlan})`);
+  // K6a-M reemplaza a "la sonda necesita series de los dos tipos": ninguna serie de eliminación se resuelve sin frenar (y hoy
+  // todas lo son), así que la rama de arriba ya no tiene casos; la de las series que frenan es la que mide.
+  if (seriesConPlan === 0) {
+    throw new Error(`la sonda necesita series que frenaron (sin frenar: ${seriesSinFrenar}, con plan: ${seriesConPlan})`);
   }
 });
 
@@ -21456,7 +21659,8 @@ check('K5c-R: aniosEnPalabras y el motivo de la presión dicen el tiempo como es
 check('K5c-R: el free agent con la cuenta de la presión arrastrada recibe un motivo que nombra la liga donde la acumuló y dice que quedó sin equipo', () => {
   const problemas = [];
   let casos = 0;
-  for (let seed = 1; seed <= 6 && casos < 3; seed += 1) {
+  // K6a-M: seeds 1-6 -> 1-12 (el stream cambió y en las primeras seis quedó 1 estado).
+  for (let seed = 1; seed <= 12 && casos < 3; seed += 1) {
     const rng = mulberry32(seed);
     let st = createInitialState(seed, rng);
     for (let i = 0; i < SPLITS_K5CR && !st.terminado; i += 1) {
@@ -21486,7 +21690,7 @@ check('K5c-R: el free agent con la cuenta de la presión arrastrada recibe un mo
     }
   }
   if (casos < 3) {
-    problemas.push(`el check no mide nada: ${casos} estados en tier 2 con club en las seeds 1-6`);
+    problemas.push(`el check no mide nada: ${casos} estados en tier 2 con club en las seeds 1-12`);
   }
   if (problemas.length > 0) {
     throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 3).join(' | ')}`);
