@@ -672,9 +672,14 @@ export const BALANCE = {
     // sube, `brecha` se hace mas negativa, y la jerarquia real termina ~3
     // POR DEBAJO de la proyeccion inflada con +6 (sesgo pasó de +6,45 a
     // ~-3,0). Con +3 el `esperada` del check vuelve a centrarse en el real.
+    //
+    // K4c (validacion): 3 → 6 otra vez. Con la prueba y el mundo de K4c el sesgo
+    // volvio a +3,3 (real arriba de lo prometido; n = 279, error estandar 0,31);
+    // con 6 queda en +0,32. Sigue siendo cosmetico: solo mueve la tarjeta y la
+    // frase de `proyeccionPicks`, no el motor (la huella no cambia).
     // El valor es puramente cosmetico: `roster.js` asigna el crudo, no toca
     // esta constante, asi que bajarla no corre el stream (D35).
-    derivaPrimerSplit: 3,
+    derivaPrimerSplit: 6,
     jerarquiaRetenidaAlCambiar: 0.35,
     jerarquiaVelocidad: 0.4,
     // Lo que se espera de vos crece con tu propia jerarquia: a la franquicia no
