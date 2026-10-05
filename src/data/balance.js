@@ -1290,11 +1290,20 @@ export const BALANCE = {
     //    dev/estrategias.js). Sin esto, con 6+ clubes de casa ningún import llegaba a la mano (en Final2, 5 de 18 carreras de
     //    élite de Brasil jugaron alguna vez en una liga más fuerte). Solo actúan con la casa encendida: con `margenAlcanza`
     //    neutro no mueven nada (`systems/mercado.js:generarOfertas`).
+    //  - `margenImportElite` (arreglo del revisor): "más fuerte" es CLARAMENTE más fuerte, no un punto de calibre. Sin esto, con
+    //    la casa encendida a un coreano de élite le saltaban los cupos de clubes de la LPL (el calibre de la LPL le gana al de la
+    //    LCK por poco en una parte de los mundos) y `criterio` los tomaba: su % de splits de tier 1 en la LCK bajó del 72% (sin
+    //    cupos) al 64% (G0, 200 carreras, pico >= 85). Una liga cuenta como "más fuerte" si su calibre (`calibreDeLiga`) pasa el
+    //    de tu casa MÁS este margen; el mismo lo usa `criterio` (dev/estrategias.js:claseDeLigaCriterio). Calibres medios de
+    //    G0 / Final2 (40 mundos): LCK 88,7 / 95,1, LPL 86,8 / 92,9, LEC 73,8 / 73,1, LCS 63,1 / 62,3, LCP 54,0 / 59,7,
+    //    CBLOL 49,4 / 55,6 (desvío entre mundos 4-5 / 1-3). LCK contra LPL (2) y la LCP contra la CBLOL (4-5) quedan por debajo
+    //    del margen; la LEC contra la LCP o la CBLOL (14-24), la LCK/LPL contra la LEC (15-20) y la LEC contra la LCS (11) arriba.
     casa: {
       margenAlcanza: 99,
       fraccionCastigo: 1,
       cuposImportElite: 2,
-      nivelImportElite: 85
+      nivelImportElite: 85,
+      margenImportElite: 8
     },
 
     // --- salarioDeOferta: mult = exp(gauss(0,sigma)) * factorRol * jerarquía * hype ---

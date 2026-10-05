@@ -493,8 +493,8 @@ function detalleDePotencial(potencial, factor, nivelId, hechos, nivelMax) {
   const efecto = Math.round((factor - 1) * 100);
   // El potencial es una vara de talento (de `mundo.potencialMin` a `potencialMax`), no un tope del nivel de juego: el nivel
   // se arma con lo que entrenás y jugás, y puede pasarlo. Sin esta aclaración, "tu techo era 73" junto a "nivel máx 82" se lee
-  // como un error.
-  const aclaracion = nivelMax > 0 ? ` (no es un tope del nivel de juego: el tuyo llegó a ${nivelMax})` : '';
+  // como un error. Solo aparece cuando el pico lo supera: con un pico por debajo del potencial no hay nada que aclarar.
+  const aclaracion = nivelMax > potencial ? ` (no es un tope del nivel de juego: el tuyo llegó a ${nivelMax})` : '';
   const base = `Tu potencial era ${potencial}, oculto hasta hoy${aclaracion}`;
   if (efecto > 0) {
     // Sin un solo split con contrato no hay logros a los que sumarles ese peso.

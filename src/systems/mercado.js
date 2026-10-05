@@ -418,13 +418,13 @@ export function generarOfertas(state, rng) {
 
 // K5c-H: ¿`liga` es una liga de tier 1 más fuerte que la de tu casa (`casa`) a la que tu nivel llega, con nivel de élite?
 // Es la condición del bot `criterio` para ir de import (`claseDeLigaCriterio`, dev/estrategias.js): el calibre de la liga
-// (`calibreDeLiga`, la vara del asiento) pasa el de tu casa, tu nivel llega a ese calibre y tu nivel es de élite
+// (`calibreDeLiga`, la vara del asiento) pasa el de tu casa MÁS `mercado.casa.margenImportElite`, tu nivel llega a ese calibre y tu nivel es de élite
 // (`mercado.casa.nivelImportElite`). Pura y sin rng.
 export function importDeEliteQueAlcanzas(state, liga, casa) {
   const nivel = nivelDelJugador(state);
   const calibre = calibreDeLiga(liga);
   return liga.tier === 1 && nivel >= BALANCE.mercado.casa.nivelImportElite
-    && calibre > calibreDeLiga(casa) && nivel >= calibre;
+    && calibre > calibreDeLiga(casa) + BALANCE.mercado.casa.margenImportElite && nivel >= calibre;
 }
 
 // K5c-H: ¿`liga` no es más débil que tu casa? Es tu casa, o una de tier 1 con calibre (`calibreDeLiga`) que llega al de tu
