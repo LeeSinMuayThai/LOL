@@ -34,6 +34,46 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-05 — K6b integrado: tarjeta, mérito, contrato y cola en una rama (`k6b-integracion`; PLAN.md §K6b)
+
+**Qué.** Merge, en orden, de `k6b-tarjeta` (`fe21489`), `k6b-mercado` (`912a560`), `k6b-contrato` (`42e450f`) y `k6b-cola2`
+(`a496686`, incluye `k6b-cola`). Los cuatro chocaron solo en `src/dev/validate.js` (checks agregados al final): se conservaron
+todos. `mercado.js` y `retiro.js` se auto-mergearon; las interacciones se revisaron a mano y dos estaban mal:
+
+- **C × F, "El mercado ya habló" frenaba dos veces.** La foto de "seguir buscando" se tomaba antes de elegir; con K6b-F esperar te
+  deja sin club, así que la pretemporada siguiente ("libre") parecía otra. Medido con una sonda (`criterio` y `malas`, 100 seeds):
+  29 de 29 esperas con club frenaban otra vez sin nada nuevo. Arreglo: la foto es la de después de elegir (`resolverFinPorMercado`).
+  El check de K6b-C lo cubre (`fotoTras` en el detector); rojo con la foto de antes: 30 paradas repetidas.
+- **F × C, el "¿Volvés?" mentía.** La opción decía "De free agent otra vez" aunque volvieras con tu club (el log de K6b-F ya lo
+  decía bien): 95 de 230 "¿Volvés?". Arreglo en `decisionVuelta`; check en K6b-F contrato; rojo con el texto viejo: 51 problemas.
+- **C × M:** la carta única narrada se arma con la mano que ya pasó por el mérito (K6b-M corre antes en `aplicarMercadoSinImport`)
+  y K6b-M (a) y (b) pasan en el head integrado. `teVasDelClub` se aplica también en la repetición narrada (va por
+  `resolverFinPorMercado`): K6b-F contrato pasa (308 pretemporadas vencidas: 48 renovás, 187 otro club, 20 sin club, 53 retiro).
+
+**Los FAIL conocidos.** K5c-M (a) pasa en el head integrado (no hizo falta tocarlo). K5c-M (a2 armado): ninguna de las 20 pausas de
+élite armaba al medio de la disputa como medio (la más joven daba nivel 82, f = 0,2); la base es ahora la primera pausa donde los cuatro
+escenarios son lo que dicen, y la liga débil del fixture baja de 70 a 60. Rojo con la rebaja aplicada también al medio. K5c-V: el piso
+de franquicia del veterano es casi siempre una sola carta, que con K6b-C se firma sin pausa; la carta narrada lleva `unaSolaCarta` en su
+log (club, tier, piso de franquicia y la disputa medida por el motor) y el check la cuenta: 1 forzada que pierde la disputa con la
+perilla neutra, 0 con la perilla en 26. Rojo con el piso sin la disputa del veterano.
+
+**El guardado.** `VERSION` 13 (`FORMAS_CONOCIDAS[12]` = '859f8c5ba041', la de main; `[13]` = '8d9b9b8a0ff2'), con `migrarDe12`: las
+fotos de la cola en "no hay foto". Check nuevo: 179 guardados de la 12 (seeds 1-4 × 60, 70 con alguna foto) cargan y juegan el mismo
+split; sin `migrarDe12` fallan los 179.
+
+**La huella.** `VERSION_JUEGO` 'K6b', `HUELLA_JUEGO` 1772717528 (reemplaza a 1462997803, K5c).
+
+**Las metas (regla 17).** "K5c meta" sobre el head integrado (1500 × 60): las seis en banda, ninguna re-basada (Mundial 9,2%, P(2+ | 1)
+35,5%, carrera mediana 8, a los 34 5,8%). La cola: mediana 12 desde los 28 (`criterio` 400 × 60, promedio 13,45, σ 8,77, n = 205);
+re-basada por decisión del usuario a <= 13,54 (12 + 2 σ de la mediana), la leyenda sigue en <= 80 (medida 80). El mutante sugerido (el
+"¿la seguís?" que frena siempre) no se distingue: `criterio` no repite esa parada en el lote (12 / 13,45, igual). Tampoco la cola de
+K6b-C2 que frena siempre (12 / 13,9). **Con todas las reglas de K6b-C y C2 apagadas la mediana sigue en 12** (promedio 14,76): el
+check se pone en rojo solo por la leyenda (81,5 > 80). La mediana de `criterio` no ve estas reglas; si se quiere un check de la cola
+que muerda, el candidato es el promedio (σ/√n = 0,61; 13,45 + 2 × 0,61 = 14,67 deja en rojo al 14,76). Lo decide el supervisor.
+
+**Verificación.** `node src/dev/validate.js --rapido`, `--solo` de cada check tocado con su mutante, `simulate.js 1 60 criterio` dos
+veces con diff vacío.
+
 ### 2026-10-05 — K6b-C2, la cola de verdad: en la cola, el cierre de año y el momento frenan solo con un hito, un cambio o palanca (`k6b-cola2`; PLAN.md §K6b)
 
 **Qué son.** Las dos paradas que más pesaban en la cola después de la primera pasada:

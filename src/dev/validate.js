@@ -787,7 +787,12 @@ const FORMAS_CONOCIDAS = {
   // diff de los sistemas tocados no encuentra ninguna asignación nueva a `state`); la forma cambia solo porque las carreras de muestra
   // (`formaDeLasCarreras`) recorren otras rutas (otras ligas, otro cierre de carrera). La 12 nunca salió de la rama: no sube VERSION,
   // se re-registra (reemplaza a '4aecafabc826').
-  12: '859f8c5ba041'
+  12: '859f8c5ba041',
+  // K6b (la integración de K6b-U, K6b-M, K6b-F y K6b-C): las fotos de la cola en `flags` (`seguisFirma`, `finMercadoFirma`,
+  // `vueltaFirma` y `colaFirmas`), y las rutas nuevas de las carreras de muestra (el contrato vencido te deja sin club, la liga
+  // franquiciada no desciende) y la carta firmada sin pausa en su log (`unaSolaCarta`, para el instrumento). La 12 es la de main:
+  // un guardado de la 12 carga con `migrarDe12` (core/guardado.js).
+  13: '8d9b9b8a0ff2'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -20514,7 +20519,8 @@ function guardadoDeLaVersion11K5CR(state, rng) {
 }
 
 check('K5c-R guardado VERSION 12: la forma de la 11 sigue registrada, y un guardado de la 11 carga completo y sigue igual que el de la 12', () => {
-  if (VERSION_GUARDADO !== 12 || FORMAS_CONOCIDAS[12] === undefined || FORMAS_CONOCIDAS[12] === FORMAS_CONOCIDAS[11]) {
+  // K6b: la 13 migra la 11 por `migrarDe11` y `migrarDe12`; este check sigue valiendo para toda versión >= 12.
+  if (VERSION_GUARDADO < 12 || FORMAS_CONOCIDAS[12] === undefined || FORMAS_CONOCIDAS[12] === FORMAS_CONOCIDAS[11]) {
     throw new Error(`VERSION ${VERSION_GUARDADO}, forma de la 11 ${FORMAS_CONOCIDAS[11]}, forma de la 12 ${FORMAS_CONOCIDAS[12]}`);
   }
   let comparados = 0;
@@ -20560,6 +20566,69 @@ check('K5c-R guardado VERSION 12: la forma de la 11 sigue registrada, y un guard
   if (migrarDe11K5CR({}).flags.splitsTier2SinOfertaTier1 !== 0) {
     throw new Error('migrarDe11 sin flags no arranca la cuenta en 0');
   }
+});
+
+// K6b (integración): VERSION 13. Las fotos de la cola (`flags.seguisFirma`, `flags.finMercadoFirma`, `flags.vueltaFirma` y
+// `flags.colaFirmas`) no existían en la 12; `migrarDe12` las arranca en "no hay foto". Los guardados de la 12 se hacen desde
+// carreras reales (a 60 splits, para llegar a la cola y tener fotos de verdad) quitándoles lo que la 12 no escribía.
+const { migrarDe12: migrarDe12K6B } = await import('../core/guardado.js');
+const SEEDS_GUARDADO_12_K6B = [1, 2, 3, 4];
+const SPLITS_GUARDADO_12_K6B = 60;
+const FOTOS_VACIAS_K6B = { seguisFirma: null, finMercadoFirma: null, vueltaFirma: null, colaFirmas: { cierre: null, momento: null } };
+const MINIMO_CON_FOTO_K6B = 5;
+function guardadoDeLaVersion12K6B(state, rng) {
+  const datos = JSON.parse(serializarGuardado(state, rng));
+  datos.version = 12;
+  for (const clave of Object.keys(FOTOS_VACIAS_K6B)) delete datos.state.flags[clave];
+  return JSON.stringify(datos);
+}
+const tieneFotoK6B = (st) => st.flags.seguisFirma != null || st.flags.finMercadoFirma != null || st.flags.vueltaFirma != null
+  || st.flags.colaFirmas?.cierre != null || st.flags.colaFirmas?.momento != null;
+
+check('K6b guardado VERSION 13: la forma de la 12 (la de main) sigue registrada, y un guardado de la 12 carga completo (las fotos de la cola en "no hay foto") y sigue igual que el de la 13', () => {
+  if (VERSION_GUARDADO !== 13 || FORMAS_CONOCIDAS[12] !== '859f8c5ba041' || FORMAS_CONOCIDAS[13] === undefined || FORMAS_CONOCIDAS[13] === FORMAS_CONOCIDAS[12]) {
+    throw new Error(`VERSION ${VERSION_GUARDADO}, forma de la 12 ${FORMAS_CONOCIDAS[12]}, forma de la 13 ${FORMAS_CONOCIDAS[13]}`);
+  }
+  let comparados = 0;
+  let conFoto = 0;
+  let mutanteMuerde = 0;
+  for (const seed of SEEDS_GUARDADO_12_K6B) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < SPLITS_GUARDADO_12_K6B && !state.terminado; i += 1) {
+      const json = guardadoDeLaVersion12K6B(state, rng);
+      const datos = deserializarGuardado(json);
+      if (datos === null) {
+        throw new Error(`seed ${seed}, split ${i}: el guardado de VERSION 12 no cargó`);
+      }
+      const realSinFotos = { ...state, flags: { ...state.flags, ...FOTOS_VACIAS_K6B } };
+      if (!sonIgualesK4cG(datos.state, JSON.parse(JSON.stringify(realSinFotos)))) {
+        throw new Error(`seed ${seed}, split ${i}: el estado migrado no es el de la 13 con las fotos en null`);
+      }
+      // Mutante (regla 7): el mismo guardado sin `migrarDe12` no tiene la forma de la 13.
+      mutanteMuerde += sonIgualesK4cG(JSON.parse(json).state, JSON.parse(JSON.stringify(realSinFotos))) ? 0 : 1;
+      const seguido = avanzarSplitAuto(realSinFotos, conElRngDeK4cG(seed, rng.estado()));
+      const recargado = avanzarSplitAuto(datos.state, conElRngDeK4cG(datos.seed, datos.rngEstado));
+      if (!sonIgualesK4cG(comoJsonK4cG(seguido), comoJsonK4cG(recargado))) {
+        throw new Error(`seed ${seed}, split ${i}: el guardado migrado no juega el mismo split`);
+      }
+      comparados += 1;
+      conFoto += tieneFotoK6B(state) ? 1 : 0;
+      state = avanzarSplitAuto(state, rng).state;
+    }
+  }
+  if (comparados < 40 || conFoto < MINIMO_CON_FOTO_K6B) {
+    throw new Error(`check vacío: ${comparados} guardados de la 12 comparados (hacen falta 40), ${conFoto} con alguna foto de la cola (hacen falta ${MINIMO_CON_FOTO_K6B})`);
+  }
+  if (mutanteMuerde !== comparados) {
+    throw new Error(`el mutante (sin migrarDe12) pasa en ${comparados - mutanteMuerde} de ${comparados} guardados: el check no muerde`);
+  }
+  // Un estado sin flags (un guardado roto a medias) se completa en vez de tirar.
+  const sinFlags = migrarDe12K6B({}).flags;
+  if (sinFlags.seguisFirma !== null || sinFlags.colaFirmas.cierre !== null || sinFlags.colaFirmas.momento !== null) {
+    throw new Error(`migrarDe12 sin flags no arranca las fotos en null: ${JSON.stringify(sinFlags)}`);
+  }
+  console.log(`      ${comparados} guardados de la 12 cargados y seguidos (${conFoto} con alguna foto de la cola); sin migrarDe12 fallan ${mutanteMuerde}`);
 });
 
 // K4c (revisión): un guardado de la 10 parado en la prueba del mercado traía la apuesta vieja (sin "si no alcanza": la prueba de la 10
@@ -22914,7 +22983,10 @@ check('K5c-M (revisión): la rebaja de la élite está topeada en sus márgenes 
 // aplicada también al medio (`rebajaMeritoElite` y `rebajaDisputaElite` sin `* factorElite(nivel)`).
 const { ganaLaDisputaDelAsiento: ganaDisputaK5CMA2, calibreDeLiga: calibreK5CMA2 } = await import('../core/demanda.js');
 const FUERZA_CLUB_K5CMA2 = 80;
-const FUERZA_LIGA_DEBIL_K5CMA2 = 70;
+// K6b (integración): 70 -> 60. Con el mundo de K6b (la liga franquiciada no desciende, el contrato vencido te deja sin club) ninguna de
+// las 20 pausas de élite armaba al jugador medio de la disputa como medio con la liga débil en 70 (la más joven, 22 años: nivel 82,
+// f = 0,2). Es el fixture del control (el medio no recibe la rebaja), no lo que se protege: con 60 el medio vuelve a ser medio.
+const FUERZA_LIGA_DEBIL_K5CMA2 = 60;
 const GAP_MERITO_K5CMA2 = 4;
 const GAP_DISPUTA_K5CMA2 = 2;
 const NIVEL_ELITE_K5CMA2 = 95;
@@ -22945,11 +23017,11 @@ function escenarioK5cMA2(st, { nivelJugador, nivelTitular, aniosTitular, debil =
 
 check('K5c-M (a2 armado): en una pausa construida la rebaja abre el asiento por mérito y gana la disputa para la élite, en los dos márgenes, y no toca al medio', () => {
   const { forzarAsientoSobreNpc, margenSobreAlternativa } = BALANCE.demanda;
-  const base = pausasDeEliteDeK5cM('neutra')[0].st;
+  const pausasBase = pausasDeEliteDeK5cM('neutra');
   const problemas = [];
   const umbral = BALANCE.mercado.elite.umbralNivel;
   // La alternativa del club no depende del jugador: se mide con un jugador cualquiera y se arma el jugador a la altura que se quiere.
-  const nivelParaDisputa = (nivelTitular, brecha, debil) => {
+  const nivelParaDisputa = (base, nivelTitular, brecha, debil) => {
     const { st: previo, org } = escenarioK5cMA2(base, { nivelJugador: umbral, nivelTitular, aniosTitular: 0, debil });
     return alternativaK5CREV(previo, org, previo.player.role) + margenSobreAlternativa - brecha + castigoEtarioK5CREV(previo.age);
   };
@@ -22957,13 +23029,26 @@ check('K5c-M (a2 armado): en una pausa construida la rebaja abre el asiento por 
     { nombre: 'élite', esElite: true, debil: false, nivelMerito: NIVEL_ELITE_K5CMA2, nivelTitularDisputa: 90 },
     { nombre: 'medio', esElite: false, debil: true, nivelMerito: umbral - 1, nivelTitularDisputa: 60 }
   ];
-  const resumen = [];
+  const escenariosDe = (base, caso) => [
+    ['mérito', caso.nivelMerito, { nivelTitular: caso.nivelMerito - GAP_MERITO_K5CMA2, aniosTitular: 3 }, GAP_MERITO_K5CMA2],
+    ['disputa', nivelParaDisputa(base, caso.nivelTitularDisputa, GAP_DISPUTA_K5CMA2, caso.debil), { nivelTitular: caso.nivelTitularDisputa, aniosTitular: 0 }, GAP_DISPUTA_K5CMA2]
+  ];
+  // K6b (integración): la base es la PRIMERA pausa de élite real donde los cuatro escenarios son lo que dicen (la élite con f = 1 y el
+  // medio con f = 0). Antes era la primera pausa a secas; con la liga franquiciada y el contrato de K6b-F el mundo de esa pausa cambió
+  // y el medio de la disputa (la liga más débil) quedaba en nivel 82, f = 0,2: ya no era medio. El mecanismo que se prueba no cambia.
+  const sonLoQueDicen = (base) => casos.every((caso) => escenariosDe(base, caso).every(([, nivelJugador, escenario]) => {
+    const f = factorElite(nivelDelJugador(escenarioK5cMA2(base, { nivelJugador, ...escenario, debil: caso.debil }).st));
+    return caso.esElite ? f === 1 : f === 0;
+  }));
+  const indiceBase = pausasBase.findIndex((pausa) => sonLoQueDicen(pausa.st));
+  if (indiceBase < 0) {
+    const diag = pausasBase.slice(0, 6).map((pausa) => casos.map((caso) => escenariosDe(pausa.st, caso).map(([m, n, e]) => `${caso.nombre}/${m} ${n.toFixed(1)} f=${factorElite(nivelDelJugador(escenarioK5cMA2(pausa.st, { nivelJugador: n, ...e, debil: caso.debil }).st))}`).join(', ')).join(', ') + ` edad ${pausa.st.age}`);
+    throw new Error(`ninguna de las ${pausasBase.length} pausas de élite arma los cuatro escenarios con la élite en f = 1 y el medio en f = 0: ${diag.join(' || ')}`);
+  }
+  const base = pausasBase[indiceBase].st;
+  const resumen = [`base: la pausa ${indiceBase + 1} de ${pausasBase.length}`];
   for (const caso of casos) {
-    const nivelDisputa = nivelParaDisputa(caso.nivelTitularDisputa, GAP_DISPUTA_K5CMA2, caso.debil);
-    for (const [margen, nivelJugador, escenario, gap] of [
-      ['mérito', caso.nivelMerito, { nivelTitular: caso.nivelMerito - GAP_MERITO_K5CMA2, aniosTitular: 3 }, GAP_MERITO_K5CMA2],
-      ['disputa', nivelDisputa, { nivelTitular: caso.nivelTitularDisputa, aniosTitular: 0 }, GAP_DISPUTA_K5CMA2]
-    ]) {
+    for (const [margen, nivelJugador, escenario, gap] of escenariosDe(base, caso)) {
       const { st, org } = escenarioK5cMA2(base, { nivelJugador, ...escenario, debil: caso.debil });
       const f = factorElite(nivelDelJugador(st));
       if (caso.esElite ? f !== 1 : f !== 0) {
@@ -23387,7 +23472,7 @@ check('K5c-V: con la perilla en 26 en memoria, a un veterano de tier 2 con nivel
   // (2) Carreras reales. La edad del mercado es la de antes del split (la pretemporada lo abre); el tier se toma de antes o de después
   // del split, porque el mismo split te puede bajar a la academia (tier 2) antes de que corra el mercado (seed 13: LPL -> tier 2 a los 30).
   const correr = (edadPerilla) => conBrechaFranquiciaK5CV(() => conPerillasDemandaK5CNAV({ ...REGIMEN_BARRIDO_K5CV, edadCastigoRenovacionTier2: edadPerilla }, () => {
-    const cuenta = { forzadas: 0, forzadasQuePierden: 0, avisosEdad: 0, avisosFuera: 0 };
+    const cuenta = { forzadas: 0, narradas: 0, forzadasQuePierden: 0, avisosEdad: 0, avisosFuera: 0 };
     for (let seed = 1; seed <= SEEDS_CARRERAS_K5CV; seed += 1) {
       const rng = mulberry32(seed);
       let st = createInitialState(seed, rng);
@@ -23403,6 +23488,16 @@ check('K5c-V: con la perilla en 26 en memoria, a un veterano de tier 2 con nivel
       for (let i = 0; i < SPLITS_CARRERAS_K5CV && !st.terminado; i += 1) {
         const previo = { edad: st.age, tier: st.career.tier };
         const paso = avanzarSplitAuto(st, rng, responder);
+        // K6b (integración): la mano de una sola carta sin nada en juego ya no frena (K6b-C): se firma y se narra, y la carta viaja en
+        // el log (`unaSolaCarta`, con la disputa medida por el motor en ese momento). El piso de franquicia del veterano casi siempre
+        // es una sola carta: sin esto el check no veía ninguna (0 forzadas con la perilla neutra). La edad y el tier, los de antes del split.
+        for (const carta of paso.logs.filter((l) => l.type === 'mercado' && l.unaSolaCarta?.forzadaFranquicia).map((l) => l.unaSolaCarta)) {
+          if (carta.tier === 2 && previo.tier === 2 && previo.edad >= EDAD_VETERANO_K5CV) {
+            cuenta.forzadas += 1;
+            cuenta.narradas += 1;
+            cuenta.forzadasQuePierden += carta.ganaLaDisputa ? 0 : 1;
+          }
+        }
         for (const log of paso.logs.filter((l) => l.type === 'mercado' && String(l.message ?? '').includes(AVISO_EDAD_K5CV))) {
           cuenta.avisosEdad += 1;
           // K6b-M: o el club del aviso está en una liga de tier 2 al cerrar el split. Con las carreras de K6b-M, en la seed 3 Dignitas
@@ -23420,7 +23515,7 @@ check('K5c-V: con la perilla en 26 en memoria, a un veterano de tier 2 con nivel
   }));
   const neutra = correr(99);
   const conPerilla = correr(EDAD_VETERANO_K5CV);
-  const resumen = `forzadas de tier 2 a veteranos ${neutra.forzadas} (pierden la disputa ${neutra.forzadasQuePierden}) -> ${conPerilla.forzadas} (${conPerilla.forzadasQuePierden}); avisos por edad ${neutra.avisosEdad} -> ${conPerilla.avisosEdad} (fuera de lugar ${conPerilla.avisosFuera})`;
+  const resumen = `forzadas de tier 2 a veteranos ${neutra.forzadas} (${neutra.narradas} firmadas sin pausa; pierden la disputa ${neutra.forzadasQuePierden}) -> ${conPerilla.forzadas} (${conPerilla.narradas}; ${conPerilla.forzadasQuePierden}); avisos por edad ${neutra.avisosEdad} -> ${conPerilla.avisosEdad} (fuera de lugar ${conPerilla.avisosFuera})`;
   if (neutra.forzadasQuePierden === 0) {
     problemas.push(`el piso de franquicia no se mide (ninguna oferta forzada pierde la disputa con la perilla neutra): ${resumen}`);
   }
@@ -24548,7 +24643,7 @@ const LOG_TE_VAS_K6BF = /no van a renovarte|te vas del club/;
 const SISTEMAS_DEL_CONTRATO_K6BF = new Set(['mercado', 'retiro', 'competitivo']);
 
 check('K6b-F contrato: "No te renovaron" y "free agent" nunca mientras jugás con el club, y "el contrato viaja" solo con el contrato vigente', () => {
-  const cuenta = { vencidos: 0, renovados: 0, teFuiste: 0, otroClub: 0, retirados: 0, descensosQueViajan: 0 };
+  const cuenta = { vencidos: 0, renovados: 0, teFuiste: 0, otroClub: 0, retirados: 0, descensosQueViajan: 0, vueltasConClub: 0, vueltasSinClub: 0 };
   const problemas = [];
   for (const bot of BOTS_K6BF) for (let seed = 1; seed <= SEEDS_K6BF; seed += 1) {
     const rng = mulberry32(seed);
@@ -24560,7 +24655,19 @@ check('K6b-F contrato: "No te renovaron" y "free agent" nunca mientras jugás co
         && calcularContexto(antes).ventana === 'pretemporada'
         && Math.max(0, antes.career.contrato.aniosRestantes - 1) <= 0
         && antes.age < BALANCE.retiro.edadRetiroForzoso;
-      const res = avanzarSplitAuto(antes, rng, (sistema, st, decision, r) => ESTRATEGIAS_K0[bot](sistema, st, decision, r));
+      const res = avanzarSplitAuto(antes, rng, (sistema, st, decision, r) => {
+        // K6b (integración, regla 15): la opción "Volvés" del "¿Volvés a competir?" dice free agent solo si volvés sin club, igual
+        // que el log de la vuelta. Rojo con el texto de antes ("De free agent otra vez" siempre): 95 de 230 en 100 seeds × 2 bots.
+        if (decision.datos?.motivo === 'retiro_vuelta') {
+          const conClub = Boolean(st.career.currentOrg);
+          cuenta[conClub ? 'vueltasConClub' : 'vueltasSinClub'] += 1;
+          const texto = decision.opciones.find((opcion) => opcion.id === 'volver')?.descripcion ?? '';
+          if (LOG_FREE_AGENT_K6BF.test(texto) === conClub) {
+            problemas.push(`${bot} seed ${seed} split ${i}: el "Volvés" dice "${texto}" y ${conClub ? `tenés club (${st.career.currentOrg})` : 'no tenés club'}`);
+          }
+        }
+        return ESTRATEGIAS_K0[bot](sistema, st, decision, r);
+      });
       state = res.state;
       const del = res.logs.filter((log) => SISTEMAS_DEL_CONTRATO_K6BF.has(log.type)).map((log) => log.message);
       const club = state.phase === 'profesional' ? state.career.currentOrg : null;
@@ -24597,6 +24704,9 @@ check('K6b-F contrato: "No te renovaron" y "free agent" nunca mientras jugás co
   }
   if (problemas.length > 0) {
     throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')} (${JSON.stringify(cuenta)})`);
+  }
+  if (cuenta.vueltasConClub === 0 || cuenta.vueltasSinClub === 0) {
+    throw new Error(`check vacío: "¿Volvés?" con club ${cuenta.vueltasConClub} y sin club ${cuenta.vueltasSinClub}`);
   }
   if (cuenta.teFuiste < MINIMO_SALIDAS_K6BF || cuenta.renovados < MINIMO_SALIDAS_K6BF) {
     throw new Error(`muestra chica: ${JSON.stringify(cuenta)} en ${SEEDS_K6BF} seeds de ${BOTS_K6BF.join(" y ")}`);
@@ -24683,7 +24793,9 @@ function repeticionesSinCambioK6BC(secuencia) {
   const repetidas = [];
   for (const parada of secuencia) {
     const previa = ultima[parada.motivo];
-    if (previa && previa.respuesta === SIGUE_K6BC[parada.motivo] && previa.firma === parada.firma) {
+    // K6b (integración con K6b-F): la foto que cuenta es la de después de elegir. Esperar sin firmar te deja sin club, así que
+    // "El mercado ya habló" con la misma foto salvo el club que se fue (`fotoTras`) también es una repetición.
+    if (previa && previa.respuesta === SIGUE_K6BC[parada.motivo] && (previa.fotoTras ?? previa.firma) === parada.firma) {
       repetidas.push(parada);
     }
     ultima[parada.motivo] = parada;
@@ -24691,15 +24803,26 @@ function repeticionesSinCambioK6BC(secuencia) {
   return repetidas;
 }
 
+// La foto con la que queda la parada después de elegir seguir: en "El mercado ya habló" (sin ofertas), esperar sin firmar te deja
+// sin club (K6b-F, `teVasDelClub`): el segundo campo de `firmaDelFinPorMercado` pasa a 'libre'. Las otras dos, la misma foto.
+function fotoTrasElegirK6BC(motivo, firma) {
+  if (motivo !== 'fin_mercado' || typeof firma !== 'string') return firma;
+  const campos = firma.split('|');
+  campos[1] = 'libre';
+  return campos.join('|');
+}
+
 // El jugador terco de K6: en las tres paradas elige seguir (y "esperar" solo si nadie ofrece); el resto, como `criterio`.
 function cosechaK6BC() {
-  const cosecha = { repetidas: [], paradas: 0, narradas: 0, unaSolaCartaFrenada: [], unaSolaCartaNarradas: 0 };
+  const cosecha = {
+    repetidas: [], paradas: 0, narradas: 0, unaSolaCartaFrenada: [], unaSolaCartaNarradas: 0
+  };
   for (let seed = 1; seed <= SEEDS_K6BC; seed += 1) {
     const secuencia = [];
     const terco = (sistema, st, decision, rng) => {
       const motivo = decision.datos?.motivo;
       if (motivo in SIGUE_K6BC && (motivo !== 'fin_mercado' || decision.opciones[0].id === 'esperar')) {
-        secuencia.push({ motivo, firma: decision.datos.firma, respuesta: SIGUE_K6BC[motivo] });
+        secuencia.push({ motivo, firma: decision.datos.firma, fotoTras: fotoTrasElegirK6BC(motivo, decision.datos.firma), respuesta: SIGUE_K6BC[motivo] });
         return { opcionId: SIGUE_K6BC[motivo] };
       }
       if (decision.presentacion === 'mercado' && motivo === 'oferta' && decision.opciones.length === 1) {
@@ -24723,11 +24846,14 @@ check(`K6b-C la cola: el "¿la seguís?", "El mercado ya habló" sin ofertas y e
   const sembrada = [
     { motivo: 'retiro_declive', firma: 'a', respuesta: 'seguir' }, { motivo: 'retiro_declive', firma: 'a', respuesta: 'seguir' },
     { motivo: 'fin_mercado', firma: 'x', respuesta: 'esperar' }, { motivo: 'fin_mercado', firma: 'y', respuesta: 'esperar' },
-    { motivo: 'retiro_vuelta', firma: 'v', respuesta: 'volver' }, { motivo: 'retiro_vuelta', firma: 'v', respuesta: 'quedarse' }
+    { motivo: 'retiro_vuelta', firma: 'v', respuesta: 'volver' }, { motivo: 'retiro_vuelta', firma: 'v', respuesta: 'quedarse' },
+    // K6b (integración): esperar con club y la pretemporada siguiente sin él (te fuiste al esperar) es la misma foto.
+    { motivo: 'fin_mercado', firma: 'tier|G2|1|sin lesion|0', fotoTras: fotoTrasElegirK6BC('fin_mercado', 'tier|G2|1|sin lesion|0'), respuesta: 'esperar' },
+    { motivo: 'fin_mercado', firma: 'tier|libre|1|sin lesion|0', respuesta: 'esperar' }
   ];
   const marcadas = repeticionesSinCambioK6BC(sembrada);
-  if (marcadas.length !== 1 || marcadas[0].motivo !== 'retiro_declive') {
-    throw new Error(`el detector marcó ${JSON.stringify(marcadas)}; tenía que marcar solo la segunda del "¿la seguís?"`);
+  if (marcadas.length !== 2 || marcadas[0].motivo !== 'retiro_declive' || marcadas[1].firma !== 'tier|libre|1|sin lesion|0') {
+    throw new Error(`el detector marcó ${JSON.stringify(marcadas)}; tenía que marcar la segunda del "¿la seguís?" y la del mercado sin el club que se fue`);
   }
   const { repetidas, paradas, narradas } = cosechaDeLaColaK6BC();
   if (repetidas.length > 0) {
@@ -24865,7 +24991,17 @@ check(`K6b-C2 la cola de verdad: en la cola, el cierre de año y el momento fren
 // La meta del instrumento (PLAN.md §K6b, K6b-C, y §K.3c para la leyenda): con `criterio`, la mediana de frenadas desde los 28
 // (sobre las carreras con cola) <= 8 y la mediana de frenadas totales de las carreras que cierran en "Leyenda" o "El GOAT"
 // <= 80. Se lee del lote de las metas del bloque B (`criterio`, 400 × 60): no hace falta otro lote.
-const META_K6BC_COLA_MEDIANA = 8;
+// K6b (integración) — regla 17, corrimiento declarado de K6b: meta <= 8; medido ~12 (criterio 400 × 60 sobre el head integrado: mediana
+// 12, promedio 13,45, σ 8,77, n = 205 carreras con cola); re-basado por decisión del usuario 2026-10-05 (el relleno repetido ya no frena;
+// lo que queda tiene algo en juego); K6 juzga. La banda pide <= lo medido + 2 σ de la mediana (σ_mediana ≈ √(π/2) σ / √n = 0,77):
+// 13,54. La leyenda (<= 80, §K.3c) no se toca: medida 80 (51 carreras). Rojo con el "¿la seguís?" que frena siempre y con la cola de
+// K6b-C2 que frena siempre (`frenaEnLaCola`).
+const COLA_MEDIDA_K6BC = 12;
+const COLA_DESVIO_K6BC = 8.77;
+const COLA_N_K6BC = 205;
+const Z_RUIDO_COLA_K6BC = 2;
+const RAIZ_PI_MEDIOS_K6BC = Math.sqrt(Math.PI / 2);
+const META_K6BC_COLA_MEDIANA = Number((COLA_MEDIDA_K6BC + Z_RUIDO_COLA_K6BC * RAIZ_PI_MEDIOS_K6BC * COLA_DESVIO_K6BC / Math.sqrt(COLA_N_K6BC)).toFixed(2));
 const META_K6BC_LEYENDA_MEDIANA = 80;
 function juezDeLaColaK6BC(v) {
   const hay = (x) => typeof x === 'number' && Number.isFinite(x);
@@ -24882,7 +25018,8 @@ check('K6b-C metas de la cola: el juez acepta valores que cumplen y rechaza, uno
   const sano = Object.values(juezDeLaColaK6BC(VALORES_K6BC_OK)).filter((motivo) => motivo !== null);
   if (sano.length > 0) throw new Error(`el juez rechaza valores que cumplen: ${sano.join('; ')}`);
   // Uno justo afuera, el de K6 (o el de la línea de base) y uno inexistente; los bordes cumplen.
-  const malos = { colaMediana: [['cola', 9], ['cola', 14], ['cola', null]], leyendaMediana: [['leyenda', 81], ['leyenda', 88], ['leyenda', null]] };
+  // K6b (integración): la cola re-basada (13,54): uno justo afuera, el de K6 (15 en la cola de antes de K6b-C) y uno inexistente.
+  const malos = { colaMediana: [['cola', META_K6BC_COLA_MEDIANA + 0.5], ['cola', 15], ['cola', null]], leyendaMediana: [['leyenda', 81], ['leyenda', 88], ['leyenda', null]] };
   for (const [campo, casos] of Object.entries(malos)) {
     for (const [clave, valor] of casos) {
       const rechazados = Object.entries(juezDeLaColaK6BC({ ...VALORES_K6BC_OK, [campo]: valor })).filter(([, m]) => m !== null).map(([k]) => k);
@@ -24897,7 +25034,7 @@ check('K6b-C metas de la cola: el juez acepta valores que cumplen y rechaza, uno
 
 checkLento(`K6b-C meta de la cola (criterio, ${CARRERAS_METAS_B} × ${SPLITS_LOTE_K0}): la mediana de frenadas desde los 28 es <= ${META_K6BC_COLA_MEDIANA} y la de las leyendas <= ${META_K6BC_LEYENDA_MEDIANA}`, () => {
   const { colaDeCarrera, leyenda } = loteDeLasMetasB().ritmo;
-  console.log(`     (muestra: criterio, ${CARRERAS_METAS_B} × ${SPLITS_LOTE_K0}) desde los 28: mediana ${colaDeCarrera.mediana}, p90 ${colaDeCarrera.p90} (${colaDeCarrera.carreras} carreras con cola); leyendas: mediana ${leyenda.mediana}, p90 ${leyenda.p90} (${leyenda.carreras} carreras)`);
+  console.log(`     (muestra: criterio, ${CARRERAS_METAS_B} × ${SPLITS_LOTE_K0}) desde los 28: mediana ${colaDeCarrera.mediana}, p90 ${colaDeCarrera.p90}, promedio ${colaDeCarrera.promedio}, σ ${colaDeCarrera.desvio} (n = ${colaDeCarrera.carreras} carreras con cola); leyendas: mediana ${leyenda.mediana}, p90 ${leyenda.p90} (${leyenda.carreras} carreras)`);
   const problemas = Object.values(juezDeLaColaK6BC({ colaMediana: colaDeCarrera.mediana, leyendaMediana: leyenda.mediana })).filter((m) => m !== null);
   if (problemas.length > 0) throw new Error(problemas.join('; '));
 });

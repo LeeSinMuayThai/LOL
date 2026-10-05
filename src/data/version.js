@@ -79,7 +79,7 @@
 // casa, Final2 con la LPL en 91, el no-pro con piso de soloQ, El GOAT = nuevo Faker). Sin esto, después del merge dos juegos
 // distintos compartirían "v K4c" en el desafío, el historial y el texto compartido. La etiqueta no entra en la huella (la tupla de
 // `calcularHuellaJuego` no la lee): la huella del bloque C es la de abajo. Misma `VERSION` del guardado (12, no salió de la rama).
-export const VERSION_JUEGO = 'K5c';
+export const VERSION_JUEGO = 'K6b';
 // K4c (cierre de año, 2044679379): los 10 eventos de cierre_edad.json pasan a ser decisiones con intercambio (tres opciones, efectos
 // del orden de las bifurcaciones, un pool que aprende, riesgos en los outcomes): cambian las tiradas del cierre y con ellas las carreras
 // enteras. Misma versión (el paso 3b la pasa a 'K4c'): reemplaza a 922534647.
@@ -121,4 +121,10 @@ export const VERSION_JUEGO = 'K5c';
 // K5c (el bloque C calibrado, 1462997803): Final2 (las claves de balance fijadas) y la LPL en 91, el no-pro con piso de soloQ por perfil,
 // las cartas de cierre del declive y El GOAT = nuevo Faker. Cambia el stream (otras carreras en todas las ligas). Misma versión
 // (12, no salió; `VERSION_JUEGO` pasa a 'K5c' al cerrar el bloque, arriba): reemplaza a 2039436444.
-export const HUELLA_JUEGO = 1462997803;
+// K6b (la integración de K6b-U, K6b-M, K6b-F y K6b-C, 1772717528; corrimiento declarado — los bugs de K6 y la cola de la carrera):
+// `VERSION_JUEGO` pasa a 'K6b'. K6b-M, el mercado premia el mérito (la renovación de quien viene de una temporada de élite y el piso
+// de franquicia por nivel); K6b-F, "no te renovaron" quiere decir que te vas (`teVasDelClub`) y las ligas franquiciadas no
+// descienden; K6b-C/C2, la cola: el "¿la seguís?", "El mercado ya habló", el "¿Volvés?", la carta única, el cierre de año y el momento
+// frenan solo si algo cambió o se juega algo (si no, los resuelve el perfil y se narran); K6b-U, la tarjeta y los textos (no mueve la
+// huella). Ninguna seed de K5c reproduce su carrera. Reemplaza a 1462997803 (K5c).
+export const HUELLA_JUEGO = 1772717528;

@@ -248,7 +248,11 @@ function decisionVuelta(state) {
     titulo: '¿Volvés a competir?',
     descripcion: 'La ventana sigue abierta. ¿Le das una vuelta más o lo dejás cerrado?',
     opciones: [
-      { id: 'volver', label: 'Volvés', descripcion: 'De free agent otra vez: a esperar que suene el teléfono.' },
+      // K6b (integración, regla 15): la opción dice lo mismo que el log de la vuelta (K6b-F): free agent solo sin club. Si te
+      // retiraste con el contrato corriendo, volvés con ese club (en `criterio` y `malas`, 95 de 230 "¿Volvés?" lo decían mal).
+      { id: 'volver', label: 'Volvés', descripcion: state.career.currentOrg
+        ? `Con ${state.career.currentOrg}: te guardan el lugar, el contrato sigue en pie.`
+        : 'De free agent otra vez: a esperar que suene el teléfono.' },
       { id: 'quedarse', label: 'Lo dejás cerrado', descripcion: 'Todavía podés volver más adelante, si la ventana no se cerró.' }
     ],
     datos: { motivo: 'retiro_vuelta', firma: firmaDeLaVuelta(state) }

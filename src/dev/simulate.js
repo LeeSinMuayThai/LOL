@@ -1746,6 +1746,8 @@ export function bloqueRitmo(observaciones) {
       mediana: mediana(frenadasCola),
       p90: percentil(frenadasCola, 0.9),
       promedio: redondear(promedio(frenadasCola), 2),
+      // K6b (integración): el σ muestral, para la banda de ruido del check re-basado (regla 17).
+      desvio: frenadasCola.length > 1 ? redondear(desvioMuestral(frenadasCola), 2) : null,
       medianaTodas: mediana(frenadasColaTodas),
       desglosePorTipo: Object.entries(colaPorTipoAcum)
         .sort((a, b) => b[1] - a[1])

@@ -755,7 +755,18 @@ function manoOUnaSolaCarta(state, ofertas, carry, logs, rng) {
   const firmada = resolverMercado(state, decision, { opcionId: ofertas[0].id }, rng);
   return {
     state: firmada.state,
-    logs: [...logs, crearLog('mercado', narracionDeUnaSolaCarta(state, ofertas[0])), ...firmada.logs]
+    logs: [...logs, crearLog('mercado', narracionDeUnaSolaCarta(state, ofertas[0]), { unaSolaCarta: cartaParaElInstrumento(state, ofertas[0]) }), ...firmada.logs]
+  };
+}
+
+// K6b (integración): la carta que se firmó sin pausa, para el instrumento (como `formato` o `fuerzaInicial` en el log de cada serie). La
+// parada de una sola carta ya no ocurre y un check que la leía de la pausa (K5c-V: el piso de franquicia del veterano de tier 2) la lee
+// de acá: el club, su tier, si es el piso de franquicia y, si lo es, si ganabas la disputa del asiento en ese momento. Puro: cero `rng`.
+function cartaParaElInstrumento(state, oferta) {
+  const forzada = oferta.forzadaFranquicia === true;
+  return {
+    org: oferta.org, tier: oferta.tier, forzadaFranquicia: forzada,
+    ganaLaDisputa: forzada ? ganaLaDisputaDelAsiento(state, oferta.org, state.player.role) : null
   };
 }
 
@@ -1008,7 +1019,14 @@ function resolverFinPorMercado(stateAntes, decision, respuesta, rng) {
   }
   const base = decision.datos.variante === 'presion_tier2' ? sinPresionTier2(state) : state;
   const silencio = elTelefonoNoSuena(base, rng);
-  return { state: silencio.state, logs: [crearLog('mercado', 'Seguís buscando. El mercado no va a esperar para siempre.'), ...silencio.logs] };
+  // K6b (integración de K6b-C con K6b-F): la foto es la de DESPUÉS de elegir seguir buscando. Con el contrato vencido, esperar
+  // te deja sin club (`teVasDelClub`): con la foto de antes (tu club), la pretemporada siguiente ("libre") parecía otra y "El
+  // mercado ya habló" volvía a frenar sin nada nuevo (en `criterio` y `malas`, 29 de 29 esperas con club). Cero `rng`.
+  const fotoTrasElegir = finMercadoFirma === null ? null : firmaDelFinPorMercado(silencio.state, decision);
+  return {
+    state: { ...silencio.state, flags: { ...silencio.state.flags, finMercadoFirma: fotoTrasElegir } },
+    logs: [crearLog('mercado', 'Seguís buscando. El mercado no va a esperar para siempre.'), ...silencio.logs]
+  };
 }
 
 // La regla del headless (y del bot `criterio`): joven, seguís (bajás o esperás); desde
