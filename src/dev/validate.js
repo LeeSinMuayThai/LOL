@@ -1326,6 +1326,12 @@ checkLento('El mercado lee tu nivel: el silencio es para los que están por deba
     }
     const brecha = nivelDelJugador(entrada) - liga.prestigio;
     const sinCupoImport = residenciaEn(entrada, liga.regionId) === 'import' && (liga.cupoImports ?? 99) <= 0;
+    // Arreglos de K6b (la validación completa de `58db231`): K6b-C narra la repetición de "El mercado ya habló" (elegiste seguir
+    // buscando y nada cambió) DENTRO de `aplicar`, así que su "Nadie te llama" ahora le llega al espía; antes salía de `resolver`
+    // (después de la pausa) y el espía no lo veía. Medido (sonda sobre las mismas 1500 carreras): antes de K6b (`25f7b0d`) el espía
+    // veía 0 silencios; en `58db231`, 7, los 7 de esas repeticiones (3 a nivel de su liga o por debajo). El tope 0 los sigue
+    // contando (un jugador claramente por encima no puede quedarse esperando sin oferta); el 60% vuelve a medir lo de antes.
+    const repeticionNarrada = resultado.logs.some((log) => /Nada cambió desde que elegiste seguir buscando/.test(log.message));
     for (const log of resultado.logs) {
       if (log.type !== 'mercado') {
         continue;
@@ -1334,7 +1340,7 @@ checkLento('El mercado lee tu nivel: el silencio es para los que están por deba
       if (!esSilencio) {
         continue;
       }
-      silencioTotal += 1;
+      if (!repeticionNarrada) silencioTotal += 1;
       if (brecha >= brechaFranquicia) {
         if (sinCupoImport) {
           silencioSinCupoImport += 1;
@@ -1342,12 +1348,19 @@ checkLento('El mercado lee tu nivel: el silencio es para los que están por deba
           silencioArriba += 1;
         }
       }
-      if (brecha <= 5) {
+      if (brecha <= 5 && !repeticionNarrada) {
         silencioMerecido += 1;
       }
     }
   }, () => {
-    for (let seed = 1; seed <= 1500; seed += 1) {
+    // Arreglos de K6b (la validación completa de `58db231`): con K6b-M (el mérito sube a quien está por encima de su liga) y
+    // K6b-F (no renovarte te saca del club y de la liga), las 1500 carreras dieron 404 splits por encima de la liga (el piso de
+    // la muestra es 500). La búsqueda sigue, en orden, después de las 1500 mientras falte muestra, hasta `SEEDS_TOPE_9R0E`: lo que
+    // se mide no cambia (cada pretemporada de cada carrera corrida entra al tope 0 y al 60%).
+    const SEEDS_PISO_9R0E = 1500;
+    const SEEDS_TOPE_9R0E = 3000;
+    const MUESTRA_9R0E = 500;
+    for (let seed = 1; seed <= SEEDS_TOPE_9R0E && (seed <= SEEDS_PISO_9R0E || arriba < MUESTRA_9R0E); seed += 1) {
       const rng = mulberry32(seed);
       let state = createInitialState(seed, rng);
       for (let i = 0; i < 80 && !state.terminado; i += 1) {
@@ -1366,7 +1379,7 @@ checkLento('El mercado lee tu nivel: el silencio es para los que están por deba
   });
 
   if (arriba < 500) {
-    throw new Error(`sólo ${arriba} splits de un jugador por encima de su liga: muestra insuficiente`);
+    throw new Error(`sólo ${arriba} splits de un jugador por encima de su liga en hasta 3000 carreras: muestra insuficiente`);
   }
   if (silencioSinCupoImport > 5) {
     throw new Error(`${silencioSinCupoImport} silencios de franquicia por cupo de import agotado — más de lo esperado para un evento así de específico, revisar`);
@@ -1386,21 +1399,39 @@ checkLento('El mercado lee tu nivel: el silencio es para los que están por deba
   }
 });
 
+// Arreglos de K6b (la validación completa de `58db231`): desde K6b-F ("no te renovaron" quiere decir que te vas), el aviso del
+// club y la salida pasan en la MISMA pretemporada: el club te avisa en el mercado de la pretemporada en que se te vence el
+// contrato, y esa parada termina con una firma o con `teVasDelClub`. "sin_renovacion" (te avisaron y todavía estás en el club)
+// ya no dura una temporada entera: es el estado de esa parada, mientras elegís adónde ir. Entre splits no se ve nunca (0 en
+// 1200 carreras), así que los checks lo miran donde vive: en la pausa del mercado (`observarPausaDelMercado`, que contesta
+// igual que `avanzarSplitAuto` por defecto: misma carrera, mismo stream).
+function observarPausaDelMercado(alVer) {
+  return (sistema, st, decision, rngDeLaPausa) => {
+    if (sistema.id === 'mercado') {
+      alVer(calcularContexto(st), st);
+    }
+    return sistema.resolverAuto(st, decision, rngDeLaPausa);
+  };
+}
+
 checkLento('calcularMercado() devuelve los 4 valores del eje mercado en carreras reales, no solo 2', () => {
   const esperados = EJES.mercado;
   const vistos = new Set();
   const conteo = Object.fromEntries(esperados.map((valor) => [valor, 0]));
+  const contar = (mercado) => {
+    vistos.add(mercado);
+    if (conteo[mercado] !== undefined) {
+      conteo[mercado] += 1;
+    }
+  };
+  const enLaPausa = observarPausaDelMercado((contexto) => contar(contexto.mercado));
 
   for (let seed = 1; seed <= 400; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
     for (let i = 0; i < 60 && !state.terminado; i += 1) {
-      const mercado = calcularContexto(state).mercado;
-      vistos.add(mercado);
-      if (conteo[mercado] !== undefined) {
-        conteo[mercado] += 1;
-      }
-      state = avanzarSplitAuto(state, rng).state;
+      contar(calcularContexto(state).mercado);
+      state = avanzarSplitAuto(state, rng, enLaPausa).state;
     }
   }
 
@@ -1675,10 +1706,16 @@ checkLento('El mundo NPC envejece: en carreras largas, la edad media de los plan
   // las orgs modeladas, ~340-400 NPC) en 8 seeds, solo con las carreras largas (>= 20 splits), y la MEDIA del
   // movimiento tiene que ser una SUBA. Medido: +0,57 años de media (de +0,23 a +0,88 por seed) y 3,2-6,5 años de
   // envejecimiento en los NPC que siguen en su plantel.
-  const SEEDS = 8;
+  // Arreglos de K6b (la validación completa de `58db231`), regla 17: la suba media dio 0,22 en las 8 seeds (mínimo 0,3). No es
+  // K6b: con 40 seeds (38 carreras largas) el head da +0,15 (σ 0,28 por carrera, error estándar 0,045) y el commit de antes de K6b
+  // (`25f7b0d`) +0,21 (σ 0,26, ee 0,042), una diferencia de 0,9 σ. El 0,3 era de K3c (+0,57): el mundo llegó a su edad de
+  // régimen y las 8 seeds de antes de K6b lo pasaban con 0,31, de casualidad. Lo que protege no cambia (un mundo congelado o que
+  // rejuvenece es un bug): ahora con 40 seeds, la media del movimiento tiene que ser una SUBA por más de Z errores estándar de su
+  // propia muestra (un mundo congelado da 0 con ee 0 y no pasa), y los NPC que siguen en su plantel suman años como siempre.
+  const SEEDS = 40;
   const SPLITS_LARGA = 20;
-  const MIN_CARRERAS_LARGAS = 5;
-  const SUBA_MEDIA_MINIMA = 0.3;
+  const MIN_CARRERAS_LARGAS = 25;
+  const Z_SUBA = 2;
   const ANIOS_MINIMOS_DE_LOS_QUE_QUEDAN = 2;
   const npcsDe = (st) => Object.values(st.mundo.planteles).flatMap((p) => Object.values(p));
   const media = (valores) => valores.reduce((s, x) => s + x, 0) / valores.length;
@@ -1704,8 +1741,9 @@ checkLento('El mundo NPC envejece: en carreras largas, la edad media de los plan
   const subaMedia = media(subas);
   const aniosDeLosQueQuedan = media(envejecimientos);
   // Un mundo que no envejece es un bug del motor, no de la calibración.
-  if (!(subaMedia >= SUBA_MEDIA_MINIMA)) {
-    throw new Error(`la edad media de los planteles del mundo subió ${subaMedia.toFixed(2)} años de media en ${subas.length} carreras largas (mínimo ${SUBA_MEDIA_MINIMA}; por seed: ${subas.map((x) => x.toFixed(2)).join(', ')})`);
+  const errorEstandar = Math.sqrt(subas.reduce((s, x) => s + (x - subaMedia) ** 2, 0) / (subas.length - 1)) / Math.sqrt(subas.length);
+  if (!(subaMedia > 0 && subaMedia >= Z_SUBA * errorEstandar)) {
+    throw new Error(`la edad media de los planteles del mundo subió ${subaMedia.toFixed(2)} años de media en ${subas.length} carreras largas (tiene que ser una suba de más de ${Z_SUBA} errores estándar: ee ${errorEstandar.toFixed(3)}; por seed: ${subas.map((x) => x.toFixed(2)).join(', ')})`);
   }
   if (!(aniosDeLosQueQuedan >= ANIOS_MINIMOS_DE_LOS_QUE_QUEDAN)) {
     throw new Error(`los NPC que siguen en su plantel sumaron ${aniosDeLosQueQuedan.toFixed(2)} años de media (mínimo ${ANIOS_MINIMOS_DE_LOS_QUE_QUEDAN}): el mundo no envejece a sus jugadores`);
@@ -1884,13 +1922,16 @@ checkLento('Oferta lateral rechazada: el asiento se cierra con un NPC y el log l
           // El piso de franquicia (9R0e) no es un asiento congelado: si lo
           // rechazás, esa org se queda con su titular, no firma a nadie.
           laterales = decision.opciones.filter((o) => o.tag !== 'renovacion' && !o.forzadaFranquicia);
-          const respuesta = sistema.resolverAuto(state, decision, rng);
-          elegidaOrg = (decision.opciones.find((o) => o.id === respuesta.opcionId) ?? {}).org;
-          state = resolverDecision(state, respuesta, rng).state;
+          state = resolverDecision(state, sistema.resolverAuto(state, decision, rng), rng).state;
         } else {
           state = resolverDecision(state, sistema.resolverAuto(state, decision, rng), rng).state;
         }
       }
+      // Arreglos de K6b (la validación completa de `58db231`, seed 63 split 42): la carta elegida no es siempre la que se firma.
+      // Elegiste la prueba de Movistar KOI, no alcanzó y "seguís con GAM Esports": la firma fue GAM, y el check la contaba como
+      // rechazada. Lo rechazado es todo lateral que no es el club con el que terminás la pretemporada (la prueba que no alcanzó
+      // incluida: ese asiento también se cierra con nombre). Sin club al final, todos.
+      elegidaOrg = state.career.currentOrg;
 
       if (!laterales || laterales.length === 0) continue;
       const rechazadas = laterales.map((o) => o.org).filter((org) => org !== elegidaOrg);
@@ -3168,6 +3209,14 @@ checkLento('El contexto de carrera nombra siempre dónde estás parado', () => {
   // el momento existe y se observa con la duración real de carrera — es
   // el mismo patrón que D24: el check medía con una vara más corta que la
   // carrera que dice cubrir. Subido 45 → 90, sin tocar ninguna constante.
+  // Arreglos de K6b: "sin_renovacion" vive en la pausa del mercado de la pretemporada (ver `observarPausaDelMercado`); el
+  // contexto de esa pausa también tiene que nombrar dónde estás parado.
+  const enLaPausa = observarPausaDelMercado((contexto, st) => {
+    if (contexto.momento === 'desconocido') {
+      throw new Error(`split ${st.player.splitCount}: la pausa del mercado no tiene momento declarado`);
+    }
+    vistos.add(contexto.momento);
+  });
   for (let seed = 1; seed <= SEEDS_TOPE && (seed <= SEEDS_PISO || faltantes().length > 0); seed += 1) {
     corridas = seed;
     const rng = mulberry32(seed);
@@ -3183,7 +3232,7 @@ checkLento('El contexto de carrera nombra siempre dónde estás parado', () => {
       }
       vistos.add(contexto.momento);
 
-      state = avanzarSplitAuto(state, rng).state;
+      state = avanzarSplitAuto(state, rng, enLaPausa).state;
 
       // El caché es una foto del arranque del split, a propósito: lo que gatea
       // contenido calcula el contexto en vivo (la fase puede cambiar a mitad de
@@ -10166,7 +10215,45 @@ function recuentoRitmoK0(observaciones) {
     // K4c (validación): la etiqueta que `c55f381` puso junto a la tabla es una hoja más, no una métrica: dice sobre qué
     // están `logsPorCarrera`, `minutosPorCarrera` y `pctDelTotal`. Arriba salen del promedio (`mediaK0`) y la mediana va
     // en su fila, así que la etiqueta tiene que decir eso, tal cual (si la tabla cambia de base, cambian las dos).
-    tiempoMaquinaPorFuenteSobre: 'promedio de logs por carrera (la mediana de cada fuente va aparte, en su fila)'
+    tiempoMaquinaPorFuenteSobre: 'promedio de logs por carrera (la mediana de cada fuente va aparte, en su fila)',
+    // Arreglos de K6b (la validación completa de `58db231`): las dos hojas de K6b-C, recontadas acá. La cola sale de la suma del
+    // desglose por tipo de cada carrera (`frenadasColaPorTipo`), no del contador `frenadasCola` que lee el reporte; la leyenda, de
+    // las frenadas totales (`decisionesPorTipo`) de las carreras que cierran en "Leyenda" o "El GOAT" (§K.3c, la lista escrita acá).
+    ...recuentoColaYLeyendaK0(observaciones)
+  };
+}
+
+// La edad desde la que se cuenta la cola (§K6b-C), escrita acá: el recuento no lee la constante del instrumento.
+const EDAD_COLA_K0 = 28;
+const NIVELES_DE_LEYENDA_K0 = ['leyenda', 'goat'];
+function recuentoColaYLeyendaK0(observaciones) {
+  const suma = (mapa) => Object.values(mapa ?? {}).reduce((a, b) => a + b, 0);
+  const conCola = observaciones.filter((o) => o.llegaALaCola === true);
+  const cola = conCola.map((o) => suma(o.frenadasColaPorTipo));
+  const media = mediaK0(cola);
+  const desvio = cola.length > 1 ? Math.sqrt(cola.reduce((s, x) => s + (x - media) ** 2, 0) / (cola.length - 1)) : null;
+  const porTipo = {};
+  for (const o of conCola) {
+    for (const [tipo, cantidad] of Object.entries(o.frenadasColaPorTipo ?? {})) porTipo[tipo] = (porTipo[tipo] ?? 0) + cantidad;
+  }
+  const leyendas = observaciones.filter((o) => NIVELES_DE_LEYENDA_K0.includes(o.nivelCarrera)).map((o) => suma(o.decisionesPorTipo));
+  return {
+    colaDeCarrera: {
+      desdeEdad: EDAD_COLA_K0,
+      carreras: conCola.length,
+      mediana: medianaK0(cola),
+      p90: percentilK0(cola, 0.9),
+      promedio: redondeoK0(media, 2),
+      desvio: desvio === null ? null : redondeoK0(desvio, 2),
+      medianaTodas: medianaK0(observaciones.map((o) => (o.llegaALaCola === true ? suma(o.frenadasColaPorTipo) : 0))),
+      desglosePorTipo: Object.fromEntries(Object.entries(porTipo).map(([tipo, cantidad]) => [tipo, { cantidadPorCarrera: redondeoK0(cantidad / Math.max(1, conCola.length), 2) }]))
+    },
+    leyenda: {
+      carreras: leyendas.length,
+      mediana: medianaK0(leyendas),
+      p90: percentilK0(leyendas, 0.9),
+      max: leyendas.length > 0 ? Math.max(...leyendas) : null
+    }
   };
 }
 
@@ -13022,7 +13109,11 @@ checkLento('K0 KPIs anclados: embudo, longevidad, economía, ritmo, nivel y porR
       {
         ...lote.ritmo,
         desglosePorTipo: Object.fromEntries(lote.ritmo.desglosePorTipo.map(({ tipo, ...hojas }) => [tipo, hojas])),
-        tiempoMaquinaPorFuente: Object.fromEntries(lote.ritmo.tiempoMaquinaPorFuente.map(({ fuente, ...hojas }) => [fuente, hojas]))
+        tiempoMaquinaPorFuente: Object.fromEntries(lote.ritmo.tiempoMaquinaPorFuente.map(({ fuente, ...hojas }) => [fuente, hojas])),
+        colaDeCarrera: {
+          ...lote.ritmo.colaDeCarrera,
+          desglosePorTipo: Object.fromEntries(lote.ritmo.colaDeCarrera.desglosePorTipo.map(({ tipo, ...hojas }) => [tipo, hojas]))
+        }
       },
       esperado.ritmo,
       'ritmo'
@@ -13330,9 +13421,15 @@ checkLento('K0 reporte completo: todas las hojas de criterio, azar y malas (juga
 checkLento('K0 los bots separan: criterio no queda estancado y malas es muy peor que azar', () => {
   // Trinquete (K0-A, revisión H1): con la regla de mercado vieja `criterio` quedaba estancado en tier 2/3 el 14,8% de las
   // carreras (800 carreras) y llegaba a tier 1 ~12 pp por debajo de `azar`; el instrumento no medía a un jugador con criterio.
+  // Arreglos de K6b (la validación completa de `58db231`), regla 17, corrimiento declarado de K6b: tope 5%; medido 5,5% en estas
+  // 200 carreras (11), 4,5% (9) antes de K6b (`25f7b0d`) y 4,9% en las 1500 del lote de las metas C (σ 0,56). Con 200 carreras una
+  // proporción del 5% tiene σ 1,5 pp: el tope 5 era una moneda. Re-basado al valor de la muestra grande más 2 σ de una de 200
+  // (4,9 + 2 × 1,53 = 8,0). Sigue atrapando lo que atrapaba (la regla de mercado vieja: 14,8%).
   const { criterio, azar, malas } = lotesDeLosBotsK0();
-  if (!(criterio.embudo.estancadoT2T3 <= 5)) {
-    throw new Error(`criterio quedó estancado en tier 2/3 el ${criterio.embudo.estancadoT2T3}% (tope 5%)`);
+  const ESTANCADO_CRITERIO_MEDIDO_K6B = 4.9;
+  const topeEstancado = Number((ESTANCADO_CRITERIO_MEDIDO_K6B + 2 * 100 * Math.sqrt((ESTANCADO_CRITERIO_MEDIDO_K6B / 100) * (1 - ESTANCADO_CRITERIO_MEDIDO_K6B / 100) / CARRERAS_LOTE_K0)).toFixed(1));
+  if (!(criterio.embudo.estancadoT2T3 <= topeEstancado)) {
+    throw new Error(`criterio quedó estancado en tier 2/3 el ${criterio.embudo.estancadoT2T3}% (tope ${topeEstancado}%: 4,9 medido en 1500 más 2 σ de ${CARRERAS_LOTE_K0} carreras)`);
   }
   if (!(criterio.embudo.llegaATier1 >= azar.embudo.llegaATier1 - 5)) {
     throw new Error(`criterio llega a tier 1 el ${criterio.embudo.llegaATier1}%, azar el ${azar.embudo.llegaATier1}%: criterio no puede quedar 5 pp abajo`);
@@ -17001,6 +17098,7 @@ function juezDeLasMetasA(v) {
   const [bo5Min, bo5Max] = META_K2_BO5_FAVORITO_CLARO_PCT;
   // K5c (paso 3b-3): el lado del jugador se juzga contra el techo re-basado (ver `BO5_JUGADOR_TECHO_K5C`); el conjunto, contra la meta.
   const bo5MaxJugador = Math.max(bo5Max, BO5_JUGADOR_TECHO_K5C);
+  const bo5MaxJuntos = Math.max(bo5Max, BO5_CONJUNTO_TECHO_K6B);
   const juzgar = (ok, motivo) => (ok ? null : motivo);
   return {
     rMismaLiga: juzgar(hay(v.rMismaLiga) && v.rMismaLiga >= META_K2_R_MISMA_LIGA,
@@ -17009,8 +17107,8 @@ function juezDeLasMetasA(v) {
       `el R² sin ruido (corregido) es ${v.r2SinRuido}, la meta pide >= ${META_K2_R2_SIN_RUIDO}`),
     bo5Jugador: juzgar(hay(v.bo5Jugador) && v.bo5Jugador >= bo5Min && v.bo5Jugador <= bo5MaxJugador,
       `el favorito claro (Δ0 ≈ 10, el jugador favorito) gana el Bo5 el ${v.bo5Jugador}%, la banda es ${bo5Min}-${bo5MaxJugador}% (meta ${bo5Min}-${bo5Max}%, re-basada en K5c; del lado del rival ${v.bo5Rival}%, juntos ${v.bo5Juntos}%: el conjunto lo juzga su propio check)`),
-    bo5Juntos: juzgar(hay(v.bo5Juntos) && v.bo5Juntos >= bo5Min && v.bo5Juntos <= bo5Max,
-      `el favorito claro (Δ0 ≈ 10, conjunto: los dos lados) gana el Bo5 el ${v.bo5Juntos}%, la meta es ${bo5Min}-${bo5Max}% (jugador ${v.bo5Jugador}%, rival ${v.bo5Rival}%)`),
+    bo5Juntos: juzgar(hay(v.bo5Juntos) && v.bo5Juntos >= bo5Min && v.bo5Juntos <= bo5MaxJuntos,
+      `el favorito claro (Δ0 ≈ 10, conjunto: los dos lados) gana el Bo5 el ${v.bo5Juntos}%, la banda es ${bo5Min}-${bo5MaxJuntos}% (meta ${bo5Min}-${bo5Max}%, re-basada en K6b; jugador ${v.bo5Jugador}%, rival ${v.bo5Rival}%)`),
     mentalidadMediana: juzgar(hay(v.mentalidadMediana) && v.mentalidadMediana >= medMin && v.mentalidadMediana <= medMax,
       `la mentalidad mediana de los splits pro es ${v.mentalidadMediana}, la meta es ${medMin}-${medMax}`),
     mentalidadSaturada: juzgar(hay(v.mentalidadSaturada) && v.mentalidadSaturada < META_K3_MENTALIDAD_SATURADA_PCT,
@@ -17029,6 +17127,11 @@ function juezDeLasMetasA(v) {
 // lo medido más 2 σ (86,3 + 3,2 = 89,5). Lo sacó de banda el bloque C (Final2: planteles más parejos dentro de cada liga y la
 // jerarquía del Mundial). El conjunto (84,4) sigue con la meta.
 const BO5_JUGADOR_TECHO_K5C = 89.5;
+// Arreglos de K6b (la validación completa de `58db231`), regla 17, corrimiento declarado de K6b: el conjunto, meta 75-85; medido
+// 84,4 en K5c y 86,0 ± 1,4 (n = 620, la misma muestra: criterio con plan neutro, 800 × 60) sobre `58db231`, una suba de 1,1 σ
+// (jugador 87,8, rival 82,6). Re-basado como el lado del jugador: el techo pasa a lo medido más 2 σ (86,0 + 2,8 = 88,8). Ojo: el
+// rojo de antes (la asimetría del Fearless de K4, ≈ 87%) queda adentro de esta banda.
+const BO5_CONJUNTO_TECHO_K6B = 88.8;
 // `bo5Juntos` va dentro de banda (84): son valores que CUMPLEN. El Bo5 conjunto real da ≈ 87% y por eso está pendiente.
 const VALORES_DE_LAS_METAS_A_OK = {
   rMismaLiga: 0.6, r2SinRuido: 0.52, bo5Jugador: 83, bo5Rival: 93, bo5Juntos: 84, mentalidadMediana: 72, mentalidadSaturada: 2.7,
@@ -17044,7 +17147,7 @@ check('K3c metas del bloque A: el juez acepta los valores del bloque A y rechaza
   const sano = Object.values(juezDeLasMetasA(VALORES_DE_LAS_METAS_A_OK)).filter((motivo) => motivo !== null);
   if (sano.length > 0) throw new Error(`el juez rechaza valores que cumplen: ${sano.join('; ')}`);
   const malos = {
-    rMismaLiga: [0.3, null], r2SinRuido: [0.3, null], bo5Jugador: [90, 70, null], bo5Juntos: [87.3, 70, null], mentalidadMediana: [97.8, 30, null],
+    rMismaLiga: [0.3, null], r2SinRuido: [0.3, null], bo5Jugador: [90, 70, null], bo5Juntos: [BO5_CONJUNTO_TECHO_K6B + 0.1, 70, null], mentalidadMediana: [97.8, 30, null],
     mentalidadSaturada: [77.7, 20, null], hypeSaturado: [40, 25, null], retencion: [0.28, null], batacazo: [0, 1.9, null]
   };
   for (const [clave, valores] of Object.entries(malos)) {
@@ -17146,7 +17249,7 @@ check('K4c el plan neutro del bloque A: criterioConPlanNeutro contesta cada plan
 checkLento('K3c meta Bo5 favorito claro (conjunto) ∈ [75, 85]', () => {
   const claro = bo5ConPlanNeutroDeLasMetasA();
   const v = { bo5Jugador: claro.jugadorFavorito.ganaFavoritoPct, bo5Rival: claro.rivalFavorito.ganaFavoritoPct, bo5Juntos: claro.ambos.ganaFavoritoPct };
-  console.log(`     (muestra: criterio con plan neutro, ${SEEDS_METAS_A} × ${SPLITS_LOTE_K0}) Bo5 conjunto ${v.bo5Juntos}% (jugador ${v.bo5Jugador}%, rival ${v.bo5Rival}%)`);
+  console.log(`     (muestra: criterio con plan neutro, ${SEEDS_METAS_A} × ${SPLITS_LOTE_K0}) Bo5 conjunto ${v.bo5Juntos}% ± ${claro.ambos.eePct} (n = ${claro.ambos.n}; jugador ${v.bo5Jugador}%, rival ${v.bo5Rival}%)`);
   const motivo = juezDeLasMetasA(v).bo5Juntos;
   if (motivo !== null) throw new Error(motivo);
 });
@@ -25315,9 +25418,16 @@ check(`K6b-C2 la cola de verdad: en la cola, el cierre de año y el momento fren
 // leen las metas de K5c): con 400 carreras el mutante (14,76) quedaba a 0,14 σ de la banda (14,67). Medido sobre el head integrado:
 // promedio 12,36, σ 8,72, n = 774 carreras con cola (mediana 10, dato); banda <= 12,36 + 2 × 0,31 = 12,99. Rojo con las reglas de K6b-C
 // y C2 apagadas: 13,8 (n = 765), 0,81 por encima de la banda (2,6 σ). La leyenda (<= 80, §K.3c) no se toca: 76 en esta muestra.
-const COLA_PROMEDIO_MEDIDO_K6BC = 12.36;
-const COLA_DESVIO_K6BC = 8.72;
-const COLA_N_K6BC = 774;
+// Arreglos de K6b (la validación completa de `58db231`): el 12,36 era de `923800d`; la revisión de K6b (`ecddd27`: la carta única
+// solo se firma sola en continuidad, la vuelta del retiro va al mercado de su pretemporada) movió el motor después, y la validación
+// dio 13,33. Re-medido sobre el head (`58db231`), con la muestra exacta del check (`correrLote(1500, 60, 'criterio')`): promedio
+// 13,33, σ 9,00, n = 602 carreras con cola (mediana 11, dato); banda <= 13,33 + 2 × 9,00/√602 = 14,06. Rojo con todas las reglas
+// de K6b-C y C2 apagadas (`frenaEnLaCola` frena siempre; las fotos de "¿la seguís?", "¿Volvés?" y "El mercado ya habló" nunca se
+// repiten; la carta única frena siempre), con la misma muestra: 14,89 (n = 587), 0,83 por encima de la banda (2,3 σ).
+const COLA_PROMEDIO_MEDIDO_K6BC = 13.33;
+const COLA_DESVIO_K6BC = 9;
+const COLA_N_K6BC = 602;
+const COLA_MUTANTE_K6BC = 14.89;
 const Z_RUIDO_COLA_K6BC = 2;
 const META_K6BC_COLA_PROMEDIO = Number((COLA_PROMEDIO_MEDIDO_K6BC + Z_RUIDO_COLA_K6BC * COLA_DESVIO_K6BC / Math.sqrt(COLA_N_K6BC)).toFixed(2));
 const META_K6BC_LEYENDA_MEDIANA = 80;
@@ -25337,7 +25447,7 @@ check('K6b-C metas de la cola: el juez acepta valores que cumplen y rechaza, uno
   if (sano.length > 0) throw new Error(`el juez rechaza valores que cumplen: ${sano.join('; ')}`);
   // Uno justo afuera, el de K6 (o el de la línea de base) y uno inexistente; los bordes cumplen.
   // K6b (integración): el promedio re-basado: uno justo afuera, el del mutante (las reglas de K6b-C y C2 apagadas) y uno inexistente.
-  const malos = { colaPromedio: [['cola', META_K6BC_COLA_PROMEDIO + 0.05], ['cola', 13.8], ['cola', null]], leyendaMediana: [['leyenda', 81], ['leyenda', 88], ['leyenda', null]] };
+  const malos = { colaPromedio: [['cola', META_K6BC_COLA_PROMEDIO + 0.05], ['cola', COLA_MUTANTE_K6BC], ['cola', null]], leyendaMediana: [['leyenda', 81], ['leyenda', 88], ['leyenda', null]] };
   for (const [campo, casos] of Object.entries(malos)) {
     for (const [clave, valor] of casos) {
       const rechazados = Object.entries(juezDeLaColaK6BC({ ...VALORES_K6BC_OK, [campo]: valor })).filter(([, m]) => m !== null).map(([k]) => k);
