@@ -24213,6 +24213,161 @@ check('K5c-H arreglo: el split de un retiro con la temporada ya jugada cuenta co
   console.log(`      retiros con la temporada jugada: ${cuenta.jugadoConVuelta} con vuelta, ${cuenta.jugadoSinVuelta} sin vuelta; ${cuenta.noJugado} antes de la temporada`);
 });
 
+// --- K6b-U: la tarjeta y los textos ---
+
+const { titulosDeFila: titulosDeFilaK6BU, trofeosDelDuelo: trofeosDelDueloK6BU } = await import('../core/registro.js');
+
+// Una carrera armada a mano: el Mundial 2035 y el título de la LEC con Fnatic (2034-2036), y la caída con Prisma Circuit
+// (9 splits, la org con más splits). El headline de la tarjeta tiene que nombrar el pico, no la caída.
+function carreraDelPicoK6BU() {
+  const base = createInitialState(7, mulberry32(7));
+  const fila = (org, desde, hasta, splits, titulos) => ({
+    org, liga: 'LEC', tier: 1, desdeAnio: desde, hastaAnio: hasta, desdeSplit: 0, hastaSplit: 0, splits,
+    splitsPorTier: { 1: splits, 2: 0, 3: 0 }, fechasG: 10, fechasP: 10, jerarquiaMaxima: 0, arraigoFinal: 0, arraigoMaximo: 0,
+    titulos, salarioAnualUSD: 0, motivoDeSalida: null
+  });
+  const registro = {
+    ...base.career.registro,
+    porOrg: [fila('Fnatic', 2034, 2036, 6, [{ nombre: 'LEC', anio: 2035 }]), fila('Prisma Circuit', 2039, 2042, 9, [])],
+    titulos: [{ nombre: 'LEC', anio: 2035, org: 'Fnatic', liga: 'LEC', tier: 1 }],
+    internacionales: [{ torneo: 'Mundial 2035', anio: 2035, org: 'Fnatic', liga: 'LEC', resultado: 'campeon', record: '4-0', campeon: 'Fnatic', camino: [] }],
+    splitsJugados: 15
+  };
+  return { ...base, age: 34, career: { ...base.career, registro } };
+}
+
+check('K6b-U (a): el titular de la tarjeta nombra el pico (el Mundial y su club), no el club con más splits', () => {
+  const state = carreraDelPicoK6BU();
+  const { veredicto, historia } = componerLegado(state);
+  if (!/Campeón del mundo: el Mundial 2035 con Fnatic/.test(veredicto)) {
+    throw new Error(`el veredicto tenía que nombrar "el Mundial 2035 con Fnatic": "${veredicto}"`);
+  }
+  if (/Prisma Circuit/.test(veredicto)) {
+    throw new Error(`el veredicto nombra el club de la caída: "${veredicto}"`);
+  }
+  const filaFnatic = historia.find((f) => f.org === 'Fnatic');
+  if (!filaFnatic.titulos.some((t) => t.nombre === 'Mundial' && t.anio === 2035)) {
+    throw new Error(`la fila de Fnatic tenía que decir "Mundial 2035": ${JSON.stringify(filaFnatic.titulos)}`);
+  }
+  if (historia.find((f) => f.org === 'Prisma Circuit').titulos.length !== 0) {
+    throw new Error('el Mundial de Fnatic no es de la fila de Prisma Circuit');
+  }
+  // Un solo título de primera y ningún internacional: el club del título, no el de más splits.
+  const sinMundial = { ...state, career: { ...state.career, registro: { ...state.career.registro, internacionales: [] } } };
+  const v2 = componerLegado(sinMundial).veredicto;
+  if (!/Campeón de LEC 2035 con Fnatic/.test(v2) || /Prisma Circuit/.test(v2)) {
+    throw new Error(`sin Mundial tenía que nombrar el título con Fnatic: "${v2}"`);
+  }
+  // Sin pico (nada ganado ni jugado en un internacional), el detalle sigue siendo la org con más splits.
+  const sinNada = { ...state, career: { ...state.career, registro: { ...state.career.registro, internacionales: [], titulos: [] } } };
+  if (!/9 splits en Prisma Circuit/.test(componerLegado(sinNada).veredicto)) {
+    throw new Error(`sin pico, el detalle sigue siendo la org con más splits: "${componerLegado(sinNada).veredicto}"`);
+  }
+  // Mutante: volver a `orgMasImportante` como único detalle ("9 splits en Prisma Circuit" con el Mundial ganado), o no
+  // sumar los Mundiales ganados a `titulos` de la fila.
+});
+
+check('K6b-U (b): "Figura mundial" exige haber cerrado en el Top 20, y el Top 20 solo existe en primera', () => {
+  // `figura` pide `cierresEnTop20` y `topMundial.js` solo suma ese contador con `esRankeable` (tier 1 al cierre): una carrera
+  // de tier 2 no puede ser "Figura mundial" sin haber jugado en primera. Se verifica que ambas cosas sigan así.
+  const figura = BALANCE.puntaje.niveles.find((nivel) => nivel.id === 'figura');
+  if (!figura || !('cierresEnTop20' in figura.requisito)) {
+    throw new Error('"figura" tenía que pedir cierresEnTop20');
+  }
+  const fuente = fs.readFileSync(path.join(srcDir, 'systems', 'topMundial.js'), 'utf8');
+  if (!/function esRankeable\(state\)\s*\{\s*return state\.career\.tier === 1/.test(fuente)) {
+    throw new Error('esRankeable de topMundial.js tenía que pedir career.tier === 1');
+  }
+  if (!/if \(rankMundialActual !== null\) \{[\s\S]*?splitsEnTopMundial \+= 1/.test(fuente)) {
+    throw new Error('splitsEnTopMundial tenía que sumar solo con rankMundialActual !== null');
+  }
+  // Mutante: sacar `tier === 1` de esRankeable (la lista le abre la puerta a tier 2).
+});
+
+check('K6b-U (c): el tag "PC confiscada" es del amateur: al pasar a pro no queda', () => {
+  const base = createInitialState(3, mulberry32(3));
+  const amateur = { ...base, phase: 'amateur', flags: { ...base.flags, pcConfiscada: 1 } };
+  if (!calcularContexto(amateur).marcas.includes('pc_confiscada')) {
+    throw new Error('en el amateur con el contador en 1, el tag tenía que estar');
+  }
+  const pro = { ...amateur, phase: 'profesional' };
+  if (calcularContexto(pro).marcas.includes('pc_confiscada')) {
+    throw new Error('en la fase profesional el tag "PC confiscada" tenía que haber vencido');
+  }
+  // Mutante: sacar `state.phase === 'amateur'` de calcularMarcas.
+});
+
+check('K6b-U (d): sin equipo, el resumen no habla de playoffs ni de contrato', () => {
+  const base = createInitialState(5, mulberry32(5));
+  const liga = base.mundo.ligas.find((l) => l.tier === 1);
+  const sinEquipo = {
+    ...base, phase: 'profesional',
+    career: { ...base.career, currentOrg: null, tier: 1, liga: liga.id, posicion: 1, contrato: { ...base.career.contrato, org: 'Fnatic', aniosRestantes: 1 } }
+  };
+  const vinetas = vinetasDelAnioK6AU(sinEquipo);
+  const equipo = vinetas.find((v) => v.icono === '🏆').texto;
+  const proximo = vinetas.find((v) => v.icono === '🎀').texto;
+  if (!/Sin equipo/.test(equipo)) {
+    throw new Error(`el fixture tenía que dar "Sin equipo": "${equipo}"`);
+  }
+  if (/playoffs|contrato|cupo|Quedaron/.test(proximo) || !/Sin equipo/.test(proximo)) {
+    throw new Error(`"${equipo}" junto a "${proximo}": se contradicen`);
+  }
+  const conEquipo = vinetasDelAnioK6AU({ ...sinEquipo, career: { ...sinEquipo.career, currentOrg: 'Fnatic' } });
+  if (/Sin equipo/.test(conEquipo.find((v) => v.icono === '🎀').texto)) {
+    throw new Error('con equipo no hay "Sin equipo" en el próximo año');
+  }
+  // Mutante: sacar el corte `!state.career.currentOrg` de vinetaProximoAnio.
+});
+
+check('K6b-U (e): el duelo cuenta lo mismo que la tarjeta (títulos + Mundiales ganados), no cualquier buen papel', () => {
+  const state = carreraDelPicoK6BU();
+  const registro = {
+    ...state.career.registro,
+    titulos: [{ nombre: 'LEC', anio: 2035, org: 'Fnatic', liga: 'LEC', tier: 1 }, { nombre: 'LEC', anio: 2036, org: 'Fnatic', liga: 'LEC', tier: 1 }],
+    internacionales: [
+      { torneo: 'Mundial 2035', anio: 2035, org: 'Fnatic', liga: 'LEC', resultado: 'campeon' },
+      { torneo: 'Mundial 2036', anio: 2036, org: 'Fnatic', liga: 'LEC', resultado: 'cuartos' },
+      { torneo: 'Mundial 2037', anio: 2037, org: 'Fnatic', liga: 'LEC', resultado: 'semis' },
+      { torneo: 'Mundial 2038', anio: 2038, org: 'Fnatic', liga: 'LEC', resultado: 'eliminado' }
+    ]
+  };
+  if (trofeosDelDueloK6BU(registro) !== 3) {
+    throw new Error(`2 títulos + 1 Mundial ganado son 3 trofeos (cuartos, semis y eliminado no cuentan), dio ${trofeosDelDueloK6BU(registro)}`);
+  }
+  // `systems/rivales.js` es quien escribe `duelo.tuyos`: tiene que usar la misma cuenta.
+  const fuente = fs.readFileSync(path.join(srcDir, 'systems', 'rivales.js'), 'utf8');
+  if (!/return trofeosDelDuelo\(registro\)/.test(fuente) || /esBuenPapel/.test(fuente)) {
+    throw new Error('rivales.js tenía que contar `trofeosDelDuelo(registro)` y no los internacionales con buen papel');
+  }
+  const texto = vinetasDelAnioK6AU({
+    ...state, mundo: { ...state.mundo, archirrival: { handle: 'Mirfin90', org: 'Shopify Rebellion', duelo: { tuyos: 3, suyos: 1 } } }
+  }).find((v) => v.icono === '⚡').texto;
+  if (!/títulos y Mundiales ganados/.test(texto)) {
+    throw new Error(`el duelo tenía que decir qué cuenta: "${texto}"`);
+  }
+  const fila = titulosDeFilaK6BU({ org: 'Fnatic', desdeAnio: 2034, hastaAnio: 2037, titulos: [] }, registro);
+  if (fila.map((t) => `${t.nombre} ${t.anio}`).join(',') !== 'Mundial 2035') {
+    throw new Error(`los Mundiales ganados de la fila: ${JSON.stringify(fila)}`);
+  }
+  // Mutante: volver a `registro.internacionales.filter(esBuenPapel)` en rivales.js.
+});
+
+check('K6b-U (f): "Copa del Invocador", no "Copa de la Invocación"', () => {
+  const culpables = archivosJsK6AU(srcDir)
+    .filter((ruta) => !ruta.endsWith(path.join('dev', 'validate.js')))
+    .filter((ruta) => /Copa de la Invocaci/.test(fs.readFileSync(ruta, 'utf8')))
+    .map((ruta) => path.relative(srcDir, ruta));
+  if (culpables.length > 0) {
+    throw new Error(`"Copa de la Invocación" en ${culpables.join(', ')}: es "Copa del Invocador"`);
+  }
+  const fuente = fs.readFileSync(path.join(srcDir, 'systems', 'internacional.js'), 'utf8');
+  if (!fuente.includes('Copa del Invocador')) {
+    throw new Error('el Mundial ganado tenía que decir "Copa del Invocador"');
+  }
+  // Mutante: volver al texto viejo.
+});
+
 if (errores.length > 0) {
   console.error(`\n${errores.length} check(s) fallaron.`);
   process.exit(1);

@@ -16,12 +16,14 @@
 
 import { rankearPoblacion } from '../core/topMundial.js';
 import { esCierreDeEdad } from './edadCierre.js';
-import { esBuenPapel } from '../core/registro.js';
+import { trofeosDelDuelo } from '../core/registro.js';
 
 export const id = 'rivales';
 
+// K6b-U: títulos de liga + Mundiales ganados, lo mismo que suma el rival (`suyos`). Antes sumaba cualquier internacional con
+// buen papel (un cuartos de final): "1 trofeo contra tus 6" cuando la tarjeta decía 2 títulos.
 function tuyos(registro) {
-  return registro.titulos.length + registro.internacionales.filter(esBuenPapel).length;
+  return trofeosDelDuelo(registro);
 }
 
 export function aplicar(state, rng) { // eslint-disable-line no-unused-vars
