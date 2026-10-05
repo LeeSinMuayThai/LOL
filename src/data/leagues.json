@@ -5,7 +5,7 @@
     "region": "Corea",
     "regionId": "KR",
     "tier": 1,
-    "prestigio": 95,
+    "prestigio": 97,
     "dificultad": 1.0,
     "cupoImports": 2,
     "minimoResidentes": 3,
@@ -45,7 +45,7 @@
     "region": "China",
     "regionId": "CN",
     "tier": 1,
-    "prestigio": 93,
+    "prestigio": 91,
     "dificultad": 1.1,
     "cupoImports": 2,
     "minimoResidentes": 3,
@@ -89,7 +89,7 @@
     "region": "Europa",
     "regionId": "EMEA",
     "tier": 1,
-    "prestigio": 80,
+    "prestigio": 73,
     "dificultad": 1.4,
     "cupoImports": 2,
     "minimoResidentes": 3,
@@ -129,7 +129,7 @@
     "region": "Norteamérica",
     "regionId": "NA",
     "tier": 1,
-    "prestigio": 70,
+    "prestigio": 62,
     "dificultad": 1.7,
     "cupoImports": 2,
     "minimoResidentes": 3,
@@ -243,6 +243,12 @@
     "region": "Corea",
     "regionId": "KR",
     "tier": 2,
+    "formatoPlayoffs": {
+      "clasifican": 2,
+      "byes": 0,
+      "bo": 5,
+      "arranca": "final"
+    },
     "prestigio": 48,
     "dificultad": 1.0,
     "cupoImports": 0,
@@ -266,6 +272,12 @@
     "region": "China",
     "regionId": "CN",
     "tier": 2,
+    "formatoPlayoffs": {
+      "clasifican": 2,
+      "byes": 0,
+      "bo": 5,
+      "arranca": "final"
+    },
     "prestigio": 45,
     "dificultad": 1.1,
     "cupoImports": 0,
@@ -289,6 +301,12 @@
     "region": "Europa",
     "regionId": "EMEA",
     "tier": 2,
+    "formatoPlayoffs": {
+      "clasifican": 2,
+      "byes": 0,
+      "bo": 5,
+      "arranca": "final"
+    },
     "prestigio": 42,
     "dificultad": 1.4,
     "cupoImports": 0,
@@ -312,6 +330,12 @@
     "region": "Norteamérica",
     "regionId": "NA",
     "tier": 2,
+    "formatoPlayoffs": {
+      "clasifican": 2,
+      "byes": 0,
+      "bo": 5,
+      "arranca": "final"
+    },
     "prestigio": 40,
     "dificultad": 1.7,
     "cupoImports": 0,
@@ -335,6 +359,12 @@
     "region": "Brasil",
     "regionId": "BR",
     "tier": 2,
+    "formatoPlayoffs": {
+      "clasifican": 2,
+      "byes": 0,
+      "bo": 5,
+      "arranca": "final"
+    },
     "prestigio": 35,
     "dificultad": 1.9,
     "cupoImports": 0,
@@ -358,6 +388,12 @@
     "region": "Asia-Pacífico",
     "regionId": "APAC",
     "tier": 2,
+    "formatoPlayoffs": {
+      "clasifican": 2,
+      "byes": 0,
+      "bo": 5,
+      "arranca": "final"
+    },
     "prestigio": 38,
     "dificultad": 1.6,
     "cupoImports": 0,
@@ -381,6 +417,12 @@
     "region": "LATAM Norte",
     "regionId": "LAN",
     "tier": 2,
+    "formatoPlayoffs": {
+      "clasifican": 2,
+      "byes": 0,
+      "bo": 5,
+      "arranca": "final"
+    },
     "prestigio": 34,
     "dificultad": 1.7,
     "cupoImports": 0,
@@ -406,6 +448,12 @@
     "region": "LATAM Sur",
     "regionId": "LAS",
     "tier": 2,
+    "formatoPlayoffs": {
+      "clasifican": 2,
+      "byes": 0,
+      "bo": 5,
+      "arranca": "final"
+    },
     "prestigio": 32,
     "dificultad": 1.9,
     "cupoImports": 0,

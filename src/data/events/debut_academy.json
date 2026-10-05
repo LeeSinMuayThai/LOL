@@ -1,6 +1,8 @@
 [
   {
     "id": "academy_offer",
+    "bifurcacion": true,
+    "oferta": true,
     "category": "debut_academy",
     "categoria": "oportunidad",
     "title": "Te tantea un proyecto juvenil",
@@ -9,7 +11,8 @@
     "cooldown": 3,
     "contexto": {
       "etapa": ["amateur"],
-      "ladder": ["alto", "apice", "elite"]
+      "ladder": ["alto", "apice", "elite"],
+      "edadMax": 17
     },
     "conditions": [
       { "field": "player.splitCount", "op": "gt", "value": 2 }

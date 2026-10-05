@@ -539,7 +539,7 @@
     "category": "competicion",
     "categoria": "oportunidad",
     "title": "Clasificaron al torneo de mitad de año",
-    "description": "Ganar el primer split del año tiene premio: dos semanas afuera midiéndose con los campeones de las otras regiones, antes de que la mayoría de la gente entienda cómo quedó el meta nuevo.",
+    "description": "Terminar el split arriba de todo tiene premio: dos semanas afuera midiéndose con los campeones de las otras regiones, antes de que la mayoría de la gente entienda cómo quedó el meta nuevo.",
     "weight": 5,
     "cooldown": 8,
     "contexto": {
@@ -549,7 +549,8 @@
       "marcas": ["con_vestuario"]
     },
     "conditions": [
-      { "field": "player.splitCount", "op": "gt", "value": 5 }
+      { "field": "player.splitCount", "op": "gt", "value": 5 },
+      { "field": "career.posicion", "op": "eq", "value": 1 }
     ],
     "options": [
       {

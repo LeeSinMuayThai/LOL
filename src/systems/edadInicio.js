@@ -36,7 +36,10 @@ export function tomarSnapshotEdad(state) {
 // `splitCount`, así que se recalcula cada split (no solo al cerrar la edad) —
 // es barato y determinista, no consume rng. Desbloquea trofeos fechados y la
 // tarjeta final ("2026-2035").
-function calcularCalendario(state) {
+//
+// K5c (motor): exportada para `systems/retiro.js`, que al volver del retiro adelanta `splitCount` lo que pasó el mundo
+// mientras estabas afuera y recalcula el calendario en el mismo split (esta etapa ya corrió con el reloj viejo).
+export function calcularCalendario(state) {
   const c = BALANCE.calendario;
   const edadesTranscurridas = Math.floor(state.player.splitCount / BALANCE.edad.splitsPorEdad);
   const anio = c.anioBase + edadesTranscurridas;

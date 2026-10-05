@@ -1,4 +1,4 @@
-import { desgloseDeFuerza } from './fuerza.js';
+import { desgloseDeFuerza, jerarquiaNoCuentaEn, TEXTO_JERARQUIA_MUNDIAL } from './fuerza.js';
 import {
   estadoDelMapa, probabilidadDeMapa, fuerzaFinalDeMapa, ajusteDeMinijuegoDeMapa, etiquetaDeRonda,
   fuerzaRivalDeMapa, ajusteDeCharla, proyeccionDelPlan, conPlan, estadoDelProximoMapa
@@ -61,6 +61,7 @@ function previaDeSwiss(state, opciones) {
     tipo: 'swiss',
     titulo: `La previa · 2-2 vs ${e.rival}`,
     subtitulo: 'Swiss del Mundial · el de vida o muerte',
+    porQue: porQueDelMundial(state),
     propio: state.career.currentOrg,
     desglose,
     extras: { charla: base * ajusteCharla },
@@ -71,6 +72,12 @@ function previaDeSwiss(state, opciones) {
     campeon: desglose.campeon,
     nota: null
   });
+}
+
+// K5c-H (regla 12): en el Mundial, con `mundial.jerarquiaCuenta` en false, la previa dice que tu jerarquía no cuenta (el
+// desglose ya la trae en 1: `desgloseDeFuerza` pasa por la misma rama que la fuerza que se tira). `null` fuera de eso.
+function porQueDelMundial(state) {
+  return jerarquiaNoCuentaEn(state) ? TEXTO_JERARQUIA_MUNDIAL : null;
 }
 
 function previaDeFecha(state, opciones) {
@@ -131,6 +138,7 @@ function previaDeMapa(state, opciones) {
     tipo: 'mapa',
     titulo: `La previa · Mapa ${serie.mapaActual + 1} vs ${serie.rival.org}`,
     subtitulo: etiquetaDeRonda(serie.ronda, serie.etapa),
+    porQue: porQueDelMundial(state),
     propio: state.career.currentOrg,
     desglose,
     extras: { minijuego: base * ajusteMini, plan: base * ajustePlan, charla: base * ajusteCharla },

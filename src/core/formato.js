@@ -64,3 +64,36 @@ export function lista(partes, vacio = 'sin cambios') {
   const limpias = partes.filter((parte) => parte !== null && parte !== undefined && parte !== '');
   return limpias.length > 0 ? limpias.join(', ') : vacio;
 }
+
+// K6a-U: "te faltan 1 puesto" salía así porque el sustantivo concordaba pero el verbo no. Una sola función para el
+// "falta/faltan N cosa(s)" y para el plural suelto, en vez de un ternario por texto.
+export function plural(cantidad, singular, pluralTexto) {
+  return Number(cantidad) === 1 ? singular : pluralTexto;
+}
+
+// "de la LCK" / "del Circuito Desafiante" / "de un torneo chico de la región": el artículo depende del nombre de la liga
+// (los nombres de liga son siglas femeninas por "la liga", salvo estos que arrancan con un sustantivo masculino).
+const PRIMERAS_PALABRAS_MASCULINAS = ['circuito', 'torneo', 'campeonato'];
+export function deLaLiga(nombre) {
+  const primera = String(nombre).split(' ')[0].toLowerCase();
+  if (primera === 'un' || primera === 'una') {
+    return `de ${nombre}`;
+  }
+  return PRIMERAS_PALABRAS_MASCULINAS.includes(primera) ? `del ${nombre}` : `de la ${nombre}`;
+}
+
+// "te falta 1 puesto" / "te faltan 2 puestos". `prefijo` es lo que va antes del verbo ("te", "Te", "").
+export function faltan(cantidad, singular, pluralTexto, prefijo = 'te') {
+  const verbo = Number(cantidad) === 1 ? 'falta' : 'faltan';
+  return `${prefijo ? `${prefijo} ` : ''}${verbo} ${cantidad} ${plural(cantidad, singular, pluralTexto)}`;
+}
+
+// K6a-U: "Hace años de eso" sobre el título del año ANTERIOR. La frase sigue la distancia real: `anios` es el año actual
+// menos el año del recuerdo (0 es este mismo año, 1 el año pasado). Va sin punto final: la pone la plantilla.
+export function haceDeEso(anios) {
+  const n = Math.round(Number(anios));
+  if (!Number.isFinite(n) || n <= 0) {
+    return 'Fue este mismo año';
+  }
+  return n === 1 ? 'Fue el año pasado' : `Hace ${n} años de eso`;
+}

@@ -10,7 +10,7 @@ import { conPermanencia, conTechoDeLesion } from '../core/curvas.js';
 import { crearLog, adjuntar } from '../core/log.js';
 import { deltaCorto, lista } from '../core/formato.js';
 import { tipoDeSplit, hayPresupuesto } from '../core/presupuesto.js';
-import { previaDeOpcion, riesgoDeOpcion, gateDeOpcion } from '../core/previa.js';
+import { previaDeOpcion, riesgoDeOpcion, gateDeOpcion, textoDeRiesgo } from '../core/previa.js';
 import { rarezaDeOpcionEvento } from '../core/rareza.js';
 import { opcionDelPerfil, afinidadDeOpcion, derivarPerfil, nombreDePerfil } from '../core/perfil.js';
 import { elegirMinijuego, minijuegoPorId, textoDeMinijuego, registrarMinijuegoVisto, veredictoDeMinijuego } from '../core/minijuegos.js';
@@ -18,7 +18,7 @@ import { ajusteBaseDeMinijuego } from '../core/serie.js';
 import { aplicarStatsDeMinijuego } from './serie.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
-import { ofertaDeImportPosible, prometerImport } from './mercado.js';
+import { ofertaDeImportPosible, prometerImport, conImportDeTier1Presentado } from './mercado.js';
 import { cambiarDeRol } from './roster.js';
 import { retirarsePorCamino } from './retiro.js';
 
@@ -466,6 +466,8 @@ export function decisionDesdeEvento(state, evento, { franja, slot }) {
         descripcion: resolverTexto(option.descripcion, state),
         previa: previaDeOpcion(option, pesos),
         riesgo: riesgoDeOpcion(option, pesos),
+        // K6a-A: lo que la píldora muestra (la clave `riesgo` sigue igual para el perfil y el estilo).
+        riesgoTexto: textoDeRiesgo(option, riesgoDeOpcion(option, pesos)),
         ...(BALANCE.rareza.eventosDeMejora.includes(evento.id)
           ? { rareza: rarezaDeOpcionEvento(option, pesos) }
           : {})
@@ -522,10 +524,11 @@ export function aplicar(state, rng) {
 // K4-C: solo frena una bifurcación de carrera (`bifurcacion: true` en el dato). El resto lo resuelve tu perfil
 // en el momento —la opción de mejor encaje, y su outcome con la tirada de siempre (regla 8)— y queda una línea de
 // crónica en el feed. Después, igual que antes, puede amontonarse un segundo evento.
-function presentarOResolver(state, evento, slot, rng) {
+export function presentarOResolver(state, evento, slot, rng) {
   if (evento.bifurcacion) {
     return {
-      state,
+      // K5c (revisión): un import de tier 1 que se te presenta vuelve a cero la presión de tier 2, lo aceptes o no.
+      state: conImportDeTier1Presentado(state, evento),
       logs: [],
       decision: decisionDesdeEvento(state, evento, { franja: 'normal', slot })
     };

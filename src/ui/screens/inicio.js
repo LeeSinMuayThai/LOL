@@ -38,6 +38,11 @@ export function crearPantallaInicio(elements, modulos) {
       }
       const campeon = CAMPEONES.find((c) => c.name === nombre) ?? { name: nombre, tags: [] };
       slot.appendChild(crearCampeonTile(campeon, { elegido: true, size: 'setup' }));
+      // K6a-U: el nombre a la vista, no solo en el `title` (las iniciales de "Aatrox" y "Ahri" son las mismas).
+      const etiqueta = document.createElement('span');
+      etiqueta.className = 'draft-slot-nombre';
+      etiqueta.textContent = nombre;
+      slot.appendChild(etiqueta);
       slot.title = `Quitar ${nombre}`;
       slot.addEventListener('click', () => {
         camposElegidos = camposElegidos.filter((n) => n !== nombre);
@@ -124,8 +129,10 @@ export function crearPantallaInicio(elements, modulos) {
     if (perfilTexto) {
       // K4c (plan anual): el plan de práctica del primer año sale del perfil; la línea lo dice (regla 15).
       const plan = perfilElegido && modulos.textoDePlanInicial ? ` ${modulos.textoDePlanInicial(perfilElegido)}` : '';
+      // K5c (no-pro, regla 12): cuánto grindea soloQ el perfil en la etapa amateur (lo que decide su semana).
+      const soloQ = perfilElegido && modulos.soloQDePerfil ? ` ${modulos.soloQDePerfil(perfilElegido)}` : '';
       perfilTexto.textContent = perfilElegido
-        ? `${descripcionDePerfil(perfilElegido)} Decide por vos lo chico; lo grande lo decidís vos, y te va corriendo el perfil.${plan}`
+        ? `${descripcionDePerfil(perfilElegido)} Decide por vos lo chico; lo grande lo decidís vos, y te va corriendo el perfil.${plan}${soloQ}`
         : 'Si no elegís, lo decide la seed. El perfil decide por vos lo chico; lo grande lo decidís vos.';
     }
   }

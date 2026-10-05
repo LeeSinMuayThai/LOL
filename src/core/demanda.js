@@ -1,10 +1,11 @@
 import { BALANCE } from '../data/balance.js';
-import { splitsDeResidencia, valorDeMercado, castigoEtario } from './valorMercado.js';
+import { splitsDeResidencia, presupuestoDeDemanda, castigoEtario } from './valorMercado.js';
 import { nivelDelJugador } from './ficha.js';
 import { etiquetaRol } from '../data/roles.js';
 import { plata } from './formato.js';
 import { seVaDelMundo, nivelAnclaReemplazo } from './plantel.js';
 import { nombreVisibleDeLiga } from './ligas.js';
+import { clamp } from './numeros.js';
 
 // LA DEMANDA EXISTE (fase 9M, PLAN.md §9M.3): se acabó el `roll(0, techo)`.
 //
@@ -23,6 +24,58 @@ function ligaDeOrg(state, orgNombre) {
 function orgDe(state, orgNombre) {
   const liga = ligaDeOrg(state, orgNombre);
   return liga?.orgs.find((org) => org.nombre === orgNombre) ?? null;
+}
+
+// K5c-M, la élite se busca: cuánto pesa la fuerza del club en tu mercado según tu nivel. 0 por debajo de
+// `mercado.elite.umbralNivel`, sube en línea recta y vale 1 desde `umbralNivel + anchoNivel` (la forma está explicada
+// en `data/balance.js`). Lee el BALANCE vivo en cada llamada (un override en memoria la pisa). Pura.
+export function factorElite(nivel) {
+  const { umbralNivel, anchoNivel } = BALANCE.mercado.elite;
+  if (anchoNivel <= 0) {
+    return nivel >= umbralNivel ? 1 : 0;
+  }
+  return clamp((nivel - umbralNivel) / anchoNivel, 0, 1);
+}
+
+// K5c-M, la élite se busca: los puntos que un club le perdona a un jugador de tu nivel en los dos márgenes del asiento,
+// el que lo abre por mérito (`demanda.forzarAsientoSobreNpc`, `rebajaMeritoElite`) y el de la disputa
+// (`demanda.margenSobreAlternativa`, `rebajaDisputaElite`).
+// Medido con la perilla en 0 (80 carreras de `criterio`, los 10 clubes más fuertes del mundo contra los jugadores con
+// f = 1): de 242 pares que las reglas duras permiten, solo 12 eran ofrecibles. Abrir solo el asiento no sumaba ninguno:
+// la disputa los frenaba (el jugador quedaba ~5,6 puntos debajo de la alternativa, que en un club fuerte tiene el piso
+// `org.fuerza − alternativaPisoFuerza`). Perdonar 8 en los dos márgenes los llevaba a ~63 (cuenta sin el presupuesto).
+// Por eso la rebaja va en los dos. Las reglas duras (cupo de imports, el listón de import) no se tocan: frenan ~2 de cada 3 pares.
+// Revisión de K5c (regla 15): son dos perillas, cada una topeada en SU margen. Con una sola perilla sobre los dos, un valor mayor
+// que `margenSobreAlternativa` (4) fichaba a una estrella peor que la alternativa del club, y con 8 o más el asiento se abría "por
+// mérito" para quien no le gana al titular. Con el tope, el margen efectivo nunca baja de 0: nivel > NPC, y nunca peor que la
+// alternativa. Con las perillas en 0 el margen es el de siempre, exacto.
+export function rebajaMeritoElite(nivel) {
+  return clamp(BALANCE.mercado.elite.rebajaMerito * factorElite(nivel), 0, BALANCE.demanda.forzarAsientoSobreNpc);
+}
+
+export function rebajaDisputaElite(nivel) {
+  return clamp(BALANCE.mercado.elite.rebajaDisputa * factorElite(nivel), 0, BALANCE.demanda.margenSobreAlternativa);
+}
+
+// K5c-M, lo que ve la carta de oferta: el puesto del plantel de `org` por fuerza dentro de `liga` (1 = el más
+// fuerte; los empates comparten puesto), de cuántos, y la banda en palabras que usa la carta (`'primero'`,
+// `'arriba'`, `'medio'`, `'abajo'`, con los cortes de `mercado.plantelEnLiga`). `fuerza` viaja para el bot del
+// instrumento (`dev/estrategias.js`), que compara clubes de ligas distintas. Puro y sin rng: una lectura del mundo.
+export function plantelEnLiga(liga, org) {
+  const orgs = liga?.orgs ?? [];
+  const fuerza = org?.fuerza ?? 0;
+  const de = Math.max(1, orgs.length);
+  const puesto = 1 + orgs.filter((otra) => otra.nombre !== org?.nombre && (otra.fuerza ?? 0) > fuerza).length;
+  const { fraccionArriba, fraccionAbajo } = BALANCE.mercado.plantelEnLiga;
+  let banda = 'medio';
+  if (puesto === 1) {
+    banda = 'primero';
+  } else if (puesto <= Math.ceil(de * fraccionArriba)) {
+    banda = 'arriba';
+  } else if (puesto > de - Math.ceil(de * fraccionAbajo)) {
+    banda = 'abajo';
+  }
+  return { puesto, de, banda, liga: liga?.id ?? null, fuerza };
 }
 
 // ¿Es residente de esta región? Reusa `splitsDeResidencia` (core/valorMercado.js,
@@ -66,8 +119,19 @@ export function asientoAbierto(state, orgNombre, rol) {
   // `porMerito`: el asiento se abre porque VOS sos mejor que su titular. Una org
   // que te quiere por eso también acepta pagarte por encima de su banda
   // habitual (`ofertaPosible` salta el techo de banda en ese caso).
-  if (nivelDelJugador(state) > npc.nivel + d.forzarAsientoSobreNpc) {
-    return { abierto: true, porMerito: true, motivo: `mejorás claramente sobre ${npc.handle}` };
+  // K5c-M: a la élite el club le perdona parte del margen (`rebajaMeritoElite`, topeada: nunca por debajo del NPC; con la perilla
+  // en 0 es el mismo margen de siempre, exacto). Revisión de K5c (regla 15): el motivo dice lo que es. "Claramente" solo si le
+  // sacás el margen entero; si lo abrió la rebaja pero le ganás, "mejorás a X y el club apuesta por vos"; solo si no le ganás, "estás a la par".
+  const nivel = nivelDelJugador(state);
+  if (nivel > npc.nivel + d.forzarAsientoSobreNpc - rebajaMeritoElite(nivel)) {
+    // Tres franjas, con las mismas comparaciones que el margen de arriba (sin restar: la resta redondea distinto en coma flotante).
+    let motivo = `estás a la par de ${npc.handle} y el club apuesta por vos`;
+    if (nivel > npc.nivel + d.forzarAsientoSobreNpc) {
+      motivo = `mejorás claramente sobre ${npc.handle}`;
+    } else if (nivel > npc.nivel) {
+      motivo = `mejorás a ${npc.handle} y el club apuesta por vos`;
+    }
+    return { abierto: true, porMerito: true, motivo };
   }
   return { abierto: false };
 }
@@ -234,11 +298,24 @@ export function calibreDeLiga(liga) {
   return fuerzas[abajo] + (fuerzas[arriba] - fuerzas[abajo]) * (posicion - abajo);
 }
 
+// K5c-N, el local juega en casa: ¿es `liga` la liga de tier 1 de tu región de origen (la que elegiste al empezar,
+// `mundo.regionIdOrigen`)? Solo tier 1: en tier 2 casi no hay imports, y sacarle el cuantil al nativo ahí le bajaría la
+// vara a todo el tier 2 (no es lo que busca la perilla: separar el Mundial por región sin abrir el tier 1 al resto).
+export function esLigaLocalTier1(state, liga) {
+  return Boolean(liga) && liga.tier === 1 && liga.regionId === state.mundo.regionIdOrigen;
+}
+
 export function nivelAlternativaAsiento(state, orgNombre, rol) {
   const org = orgDe(state, orgNombre);
   const liga = ligaDeOrg(state, orgNombre);
   const fuerzaOrg = org?.fuerza ?? 0;
-  const calibre = Math.max(calibreDeLiga(liga), fuerzaOrg);
+  // K5c-N: en tu liga de tier 1 el término de calibre es `fuerza + fraccion · (max(calibre, fuerza) − fuerza)`; un import
+  // lo paga entero. Escrito como `techo − (1 − fraccion) · exceso` para que con la perilla neutra (1) sea `techo − 0`, el
+  // mismo número exacto de siempre (la suma `fuerza + 1 · exceso` redondea distinto en coma flotante). La perilla se lee
+  // en cada llamada (un override en memoria la pisa).
+  const techo = Math.max(calibreDeLiga(liga), fuerzaOrg);
+  const fraccionCalibre = esLigaLocalTier1(state, liga) ? BALANCE.demanda.fraccionCalibreLocal : 1;
+  const calibre = techo - (1 - fraccionCalibre) * (techo - fuerzaOrg);
 
   const titular = state.mundo.planteles?.[orgNombre]?.[rol];
   const nivelTitular = titular && !titular.esJugador && !seVaDelMundo(titular, fuerzaOrg)
@@ -269,14 +346,112 @@ export function nivelAlternativaAsiento(state, orgNombre, rol) {
 // Un jugador que sigue siendo *claramente* mejor que la camada joven se renueva
 // normal. Lo consume `systems/mercado.js:generarOfertas`.
 export function factorRenovacionEtario(state, ligaActual) {
+  const disputa = disputaDeLaRenovacion(state, ligaActual);
+  if (!disputa) {
+    return 1;
+  }
+  if (disputa.claramenteMejor) {
+    return 1;
+  }
+  // K5c-V: desde `edadCastigoRenovacionTier2`, perder la disputa en tu club de tier 2 es lo mismo que en un fichaje: no hay
+  // asiento (factor 0). Con la perilla neutra (99) nunca entra y queda `factorRenovacionDeclive`, como siempre.
+  return veteranoDeTier2(state, ligaActual) ? 0 : BALANCE.demanda.factorRenovacionDeclive;
+}
+
+// La disputa de la renovación (la de `factorRenovacionEtario`): `null` si no tenés club en `ligaActual`. Pura y sin rng.
+function disputaDeLaRenovacion(state, ligaActual) {
   const org = ligaActual?.orgs.find((o) => o.nombre === state.career.currentOrg);
   if (!org) {
-    return 1;
+    return null;
   }
   const nivelEfectivo = nivelDelJugador(state) - castigoEtario(state.age);
   const alternativa = nivelAlternativaAsiento(state, org.nombre, state.player.role);
-  const claramenteMejor = nivelEfectivo >= alternativa + BALANCE.demanda.margenSobreAlternativa;
-  return claramenteMejor ? 1 : BALANCE.demanda.factorRenovacionDeclive;
+  // K5c-M (revisión 2): la MISMA disputa que un fichaje incluye la rebaja de la élite (`rebajaDisputaElite`, topeada; 0 con la perilla
+  // neutra), así tu club no te trata como en declive mientras otro te ficha "a la par".
+  const claramenteMejor = nivelEfectivo >= alternativa + BALANCE.demanda.margenSobreAlternativa - rebajaDisputaElite(nivelDelJugador(state));
+  return { org, claramenteMejor };
+}
+
+// K5c-V, el veterano de tier 2: ¿te trata el mercado de esta liga (de tier 2) como a un fichaje por la edad? Lee la perilla
+// en cada llamada. Pura.
+export function veteranoDeTier2(state, liga) {
+  return Boolean(liga) && liga.tier === 2 && state.age >= BALANCE.demanda.edadCastigoRenovacionTier2;
+}
+
+// K5c-V: ¿tu club de tier 2 no te renueva por la edad (perdiste la disputa con el castigo etario, desde
+// `edadCastigoRenovacionTier2`)? Es lo que hace veraz el aviso de `systems/mercado.js` (regla 15). Pura y sin rng.
+export function renovacionCortadaPorEdad(state, ligaActual) {
+  if (!veteranoDeTier2(state, ligaActual)) {
+    return false;
+  }
+  const disputa = disputaDeLaRenovacion(state, ligaActual);
+  return Boolean(disputa) && !disputa.claramenteMejor;
+}
+
+// K5c-V: la disputa de un fichaje en `orgNombre` (la de `ofertaPosible`, castigo etario incluido), sin el resto de las
+// condiciones. La usa el piso de franquicia de una liga de tier 2 para el veterano. Pura y sin rng.
+export function ganaLaDisputaDelAsiento(state, orgNombre, rol) {
+  const nivel = nivelDelJugador(state);
+  const liga = ligaDeOrg(state, orgNombre);
+  const nivelEfectivo = nivel - castigoEtario(state.age) * fraccionCastigoDe(state, liga);
+  const alternativa = nivelAlternativaAsiento(state, orgNombre, rol);
+  return nivelEfectivo >= alternativa + BALANCE.demanda.margenSobreAlternativa - rebajaDisputaElite(nivel);
+}
+
+// --- K5c-H, cada uno juega en su casa (PLAN.md "K5c-H") ---
+
+// La liga de tier 1 de tu región de origen (`mundo.regionIdOrigen`), o `null` si tu región no tiene una (LATAM). Pura.
+export function ligaDeCasa(state) {
+  return state.mundo.ligas.find((liga) => esLigaLocalTier1(state, liga)) ?? null;
+}
+
+// Tu nivel para tu liga: el de la disputa de un fichaje ahí (el nivel menos el castigo etario, con la fracción del ascenso
+// de K5c-A), con solo `mercado.casa.fraccionCastigo` del castigo (1 = el castigo entero de la disputa; 0 = tu nivel, sin la
+// edad). Lee las perillas en cada llamada. Pura y sin rng.
+export function nivelParaTuLiga(state, casa) {
+  return nivelDelJugador(state) - castigoEtario(state.age) * fraccionCastigoDe(state, casa) * BALANCE.mercado.casa.fraccionCastigo;
+}
+
+// ¿Alcanzás tu liga? Tu nivel para tu liga (`nivelParaTuLiga`) llega a su calibre (`calibreDeLiga`, la vara del asiento)
+// más `mercado.casa.margenAlcanza`. Con la perilla neutra (99) nunca. Lee la perilla en cada llamada. Pura.
+export function alcanzaTuLiga(state) {
+  const casa = ligaDeCasa(state);
+  return Boolean(casa) && nivelParaTuLiga(state, casa) >= calibreDeLiga(casa) + BALANCE.mercado.casa.margenAlcanza;
+}
+
+// K5c-H: el club de tu liga que te hace lugar cuando la alcanzás y ninguno te ofreció: de los que pueden ficharte (las
+// reglas duras, como el piso de franquicia: `ofertaPosible` con `forzada`), el más fuerte cuya fuerza no pasa tu nivel
+// para tu liga — el que te corresponde por nivel —, o el más débil si todos lo pasan. `null` si no alcanzás o ninguno puede.
+// Devuelve `{ org, liga, motivo }`. Pura y sin rng.
+export function clubDeCasaQueTeHaceLugar(state) {
+  if (!alcanzaTuLiga(state)) {
+    return null;
+  }
+  const casa = ligaDeCasa(state);
+  const rol = state.player.role;
+  const nivel = nivelParaTuLiga(state, casa);
+  const candidatos = casa.orgs
+    .filter((org) => org.nombre !== state.career.currentOrg && state.mundo.planteles?.[org.nombre])
+    .filter((org) => ofertaPosible(state, org.nombre, rol, { forzada: true }).posible)
+    .sort((a, b) => b.fuerza - a.fuerza);
+  const club = candidatos.find((org) => org.fuerza <= nivel) ?? candidatos[candidatos.length - 1];
+  if (!club) {
+    return null;
+  }
+  return { org: club, liga: casa, motivo: `${club.nombre} te hace lugar: sos local y das el nivel de ${nombreVisibleDeLiga(casa.id)}` };
+}
+
+// K5c-A, el ascenso: ¿la oferta de `liga` es de un tier mejor que el tuyo actual (`career.tier`)? Sin tier todavía (antes
+// del primer contrato) no hay ascenso que medir.
+export function esAscenso(state, liga) {
+  const tierActual = state.career.tier;
+  return Boolean(liga) && typeof tierActual === 'number' && liga.tier < tierActual;
+}
+
+// K5c-A: la fracción del castigo etario en la disputa de un fichaje en `liga`: `fraccionCastigoAscenso` si es un ascenso, 1
+// si no. `castigo · 1` es el mismo número exacto (neutra). Lee la perilla en cada llamada.
+function fraccionCastigoDe(state, liga) {
+  return esAscenso(state, liga) ? BALANCE.demanda.fraccionCastigoAscenso : 1;
 }
 
 // ¿Puede esta org fichar al jugador para ese asiento? bool + motivo legible.
@@ -309,7 +484,7 @@ export function ofertaPosible(state, orgNombre, rol, { forzada = false } = {}) {
 
   const d = BALANCE.demanda;
   const nivel = nivelDelJugador(state);
-  const valor = valorDeMercado(state);
+  const valor = presupuestoDeDemanda(state);
 
   // Banda de nivel: una org no ficha muy por debajo de su fuerza. El techo de
   // banda (no pagar muy por encima de lo que sostiene) NO aplica cuando te
@@ -333,9 +508,12 @@ export function ofertaPosible(state, orgNombre, rol, { forzada = false } = {}) {
   // `margenImport`) a la mejor alternativa real de la org, y el mercado te
   // descuenta nivel por la edad en esa disputa (`castigoEtario`). El piso de
   // franquicia ya salteó esto arriba (rama `forzada`).
-  const nivelEfectivo = nivel - castigoEtario(state.age);
-  const alternativa = nivelAlternativaAsiento(state, orgNombre, rol);
-  if (nivelEfectivo < alternativa + d.margenSobreAlternativa) {
+  // K5c-M: la élite se busca, y en la disputa el club también le perdona `rebajaDisputaElite` (topeada en el margen: nunca peor
+  // que la alternativa; 0 con la perilla neutra).
+  // K5c-A: si la oferta es un ascenso (un tier mejor que el tuyo), el castigo etario pesa `fraccionCastigoAscenso` (1 =
+  // neutra). Las renovaciones no pasan por acá (`factorRenovacionEtario`). La cuenta vive en `ganaLaDisputaDelAsiento`
+  // (la misma que usa el piso de franquicia del veterano de tier 2, K5c-V).
+  if (!ganaLaDisputaDelAsiento(state, orgNombre, rol)) {
     return { posible: false, motivo: `${org.nombre} tiene mejores opciones para el puesto` };
   }
 

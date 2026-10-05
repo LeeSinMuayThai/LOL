@@ -7,7 +7,7 @@ import {
   esCierreDeTemporada, calificaAPlayoffs,
   rondaInicial, siguienteRonda, etiquetaDeRonda, generarRival,
   objetivoDelRival, conQuemaDelRival, esMapaDecisivoDeLaSerie, serieTerminada,
-  PLANES_DE_SERIE, esSerieSinNadaEnJuego, charlaDisponible, conPlan, mapaDelPlan, proyeccionDelPlan,
+  PLANES_DE_SERIE, esSerieSinNadaEnJuego, cantadaDeLaSerie, pSerieDelCoach, charlaDisponible, conPlan, mapaDelPlan, proyeccionDelPlan,
   probabilidadDeMapa, ajusteDeMinijuegoDeMapa, ajusteBaseDeMinijuego, ajusteDeCharla
 } from '../core/serie.js';
 import { fuerzaDePartido } from '../core/fuerza.js';
@@ -33,6 +33,8 @@ export const id = 'serie';
 // el plan de Fearless (cada camino con su p por mapa, la que el motor tira); el motor lo juega y te frena solo si el
 // rival te quema el campeón que guardabas o cuando llega el mapa decisivo (con su minijuego en semis, final e
 // internacional, y la charla del coach si te queda). Una serie sin nada en juego no pregunta.
+// K6a-R: una serie de eliminación frena en el plan si es una final o si está abierta; si está cantada, el plan lo arma
+// el coach y frena solo en el mapa decisivo (`cantadaDeLaSerie`, core/serie.js).
 
 function nombreLigaDe(liga) {
   return nombreVisibleDeLigaOZona(liga);
@@ -236,11 +238,26 @@ function iniciarRonda(state, ronda, rng, mundial = null) {
     rivalJuega: null,
     rivalJuegaEnMapa: -1,
     sinNadaEnJuego: false,
+    // K6a-R: 'favorito' o 'underdog' si la serie de eliminación está cantada (no frena en el plan), `null` si frena.
+    cantada: null,
     minijuegoUsado: false,
     decisivoUsado: false,
     postSerie: false
   };
-  return { ...state, serie: { ...serie, sinNadaEnJuego: esSerieSinNadaEnJuego(serie) } };
+  const st = { ...state, serie: { ...serie, sinNadaEnJuego: esSerieSinNadaEnJuego(serie) } };
+  return { ...st, serie: { ...st.serie, cantada: cantadaDeLaSerie(st) } };
+}
+
+// K6a-R: lo que dice el feed de una serie cantada, sin mentir: de qué lado está y con cuánto, y que el coach arma el plan.
+const LINEA_CANTADA = {
+  favorito: (pct) => `Sos el favorito claro (${pct}% de ganar la serie con el plan del coach): el coach arma el plan. `
+    + 'Si se aprieta, te llamamos.',
+  underdog: (pct) => `No sos el favorito (${pct}% de ganar la serie con el plan del coach): el coach arma el plan. `
+    + 'Si se aprieta, te llamamos.'
+};
+
+export function lineaDeSerieCantada(lado, pSerie) {
+  return LINEA_CANTADA[lado](Math.round(pSerie * 100));
 }
 
 // K4-B: la serie arranca por el plan. Sin nada en juego, juega el del coach y lo cuenta en una línea.
@@ -254,6 +271,15 @@ function arrancarSerie(state, rng, logsAcum) {
       'serie',
       `Serie sin nada en juego (${Math.round(fuerzaInicial)} contra ${Math.round(rival.fuerza)} de ${rival.org}): `
       + 'juega lo que diga el coach, sin frenar.'
+    ))]);
+  }
+  if (state.serie.cantada) {
+    // K6a-R: una serie de eliminación cantada no frena en el plan. Lo arma el coach (el plan neutro, el mismo con el que se
+    // midió la p) y el feed lo dice; los mapas van adjuntos hasta el decisivo, que frena si la serie llega (`jugarMapa`).
+    const pSerie = pSerieDelCoach(state);
+    const st = conPlan(state, 'coach');
+    return jugarMapaSiguiente(st, rng, [...logsAcum, adjuntar(crearLog(
+      'serie', lineaDeSerieCantada(st.serie.cantada, pSerie), { cantada: st.serie.cantada, pSerie }
     ))]);
   }
   return { state, logs: logsAcum, decision: construirDecisionPlan(state) };
@@ -355,7 +381,9 @@ function finalizarMapa(state, jugada, { ajusteExtra, charla }, rng, logsAcum) {
 
   const comodin = jugada.motivo === 'comodin' ? ` (de comodín: se te quemó todo el pool)` : '';
   // K4c-F: en una serie sin nada en juego (no te frena), el mapa va adjunto: un renglón por serie, no uno por mapa.
-  const deMapa = state.serie.sinNadaEnJuego ? adjuntar : (log) => log;
+  // K6a-R: en una cantada, también los mapas que no frenaron (todos menos el decisivo).
+  const sinFrenar = state.serie.sinNadaEnJuego || (state.serie.cantada && !esMapaDecisivoDeLaSerie(state.serie));
+  const deMapa = sinFrenar ? adjuntar : (log) => log;
   const logs = [...logsAcum, deMapa(crearLog(
     'serie',
     `Mapa ${numeroMapa} — ${state.serie.rival.org} sale con ${rivalJuega ?? 'lo que le queda'}; vos, ${campeon}${comodin}: `
@@ -450,7 +478,9 @@ function concluirRonda(state, rng, logsAcum) {
     fuerzaInicial: state.serie.fuerzaInicial,
     fuerzaRival: state.serie.rival.fuerza,
     plan: state.serie.plan,
-    sinNadaEnJuego: state.serie.sinNadaEnJuego
+    sinNadaEnJuego: state.serie.sinNadaEnJuego,
+    // K6a-R: si la serie estaba cantada ('favorito' / 'underdog') y no frenó en el plan.
+    cantada: state.serie.cantada ?? null
   };
 
   if (state.serie.torneo === 'mundial') {
@@ -529,10 +559,13 @@ export function aplicar(state, rng) {
 
   const ronda = rondaInicial(base.career.posicion, liga.formatoPlayoffs);
   const st = iniciarRonda(base, ronda, rng);
+  // K6a-M: la final de tier 2 (`formatoPlayoffs.arranca`) no tiene bracket: se anuncia como lo que es.
   const logs = [crearLog(
     'serie',
-    `Clasificaste a playoffs de ${nombreLigaDe(liga)} como ${state.career.posicion}º sembrado: arrancás en `
-    + `${etiquetaDeRonda(ronda).toLowerCase()} vs ${st.serie.rival.org}.`
+    ronda === 'final' && liga.formatoPlayoffs.arranca
+      ? `Terminaste ${state.career.posicion}º: jugás la final de ${nombreLigaDe(liga)} vs ${st.serie.rival.org}.`
+      : `Clasificaste a playoffs de ${nombreLigaDe(liga)} como ${state.career.posicion}º sembrado: arrancás en `
+        + `${etiquetaDeRonda(ronda).toLowerCase()} vs ${st.serie.rival.org}.`
   )];
 
   return arrancarSerie(st, rng, logs);

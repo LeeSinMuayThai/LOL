@@ -2,21 +2,21 @@ import { chance, weightedPick, roll, gauss } from '../core/rng.js';
 import { elegirMinijuego, textoDeMinijuego, registrarMinijuegoVisto, minijuegoPorId, saltosDeFichaje } from '../core/minijuegos.js';
 import { clamp, clampStat } from '../core/numeros.js';
 import { crearLog } from '../core/log.js';
-import { plata } from '../core/formato.js';
+import { plata, plural } from '../core/formato.js';
 import { calcularContexto } from '../core/contexto.js';
 import { ligaDeCarrera } from '../core/competicion.js';
 import { salarioDeOferta } from '../core/salarios.js';
-import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
+import { valorDeMercado, presupuestoDeDemanda, sesgoEtario } from '../core/valorMercado.js';
 import { cerrarFila, registrarPico, registrarSalarioEnFila, registrarArraigoEnFila, arraigoInicial } from '../core/registro.js';
 import { bandaDeJerarquia, bandaDeArraigoFicha, nivelDelJugador } from '../core/ficha.js';
-import { orgsQueTeFicharian, ofertaPosible, esResidenteDe, nivelAlternativaAsiento, factorRenovacionEtario } from '../core/demanda.js';
+import { orgsQueTeFicharian, ofertaPosible, esResidenteDe, nivelAlternativaAsiento, factorRenovacionEtario, factorElite, plantelEnLiga, veteranoDeTier2, ganaLaDisputaDelAsiento, renovacionCortadaPorEdad, alcanzaTuLiga, ligaDeCasa, clubDeCasaQueTeHaceLugar, calibreDeLiga } from '../core/demanda.js';
 import { resolverMercadoMundial, cerrarAsientosCongelados, congelarAsientosOfrecibles } from '../core/mercadoMundial.js';
 import { jerarquiaAlFichar, sinergiaAlFichar, conPlantillaDelPlantel } from './roster.js';
 import { conPlantelesDe } from '../core/plantel.js';
 import { companerosDelPlantel } from '../core/fuerza.js';
 import { BALANCE } from '../data/balance.js';
 import { ajusteBaseDeMinijuego, probabilidadDeFirmarTrasPrueba } from '../core/serie.js';
-import { retirarsePorMercado, pretemporadasEnPalabras } from './retiro.js';
+import { retirarsePorMercado, pretemporadasEnPalabras, aniosEnPalabras } from './retiro.js';
 import { nombreVisibleDeLiga } from '../core/ligas.js';
 
 export const id = 'mercado';
@@ -125,9 +125,12 @@ export function construirOferta(state, liga, org, tagForzado, rng) {
   const jerarquiaFutura = esOrgActual
     ? jerarquiaActual
     : (jerarquiaProyectadaCruda === null ? jerarquiaActual : jerarquiaProyectadaCruda + BALANCE.roster.derivaPrimerSplit);
+  // K6a-U (regla 15): esto decía "elegir tu campeón" y "pesar en el draft", y el draft ya no existe (K4-A). Lo que la
+  // jerarquía mueve de verdad es cuánto pesa tu llamada en el mapa decisivo (`factorJerarquiaEnLlamada`, core/serie.js):
+  // por debajo de `jerarquiaMinimaParaSeguirLlamada` se amortigua; desde ahí cuenta entera.
   const proyeccionPicks = jerarquiaFutura < BALANCE.serie.jerarquiaMinimaParaSeguirLlamada
-    ? 'Con esa jerarquía casi nunca vas a elegir tu campeón.'
-    : 'Tu palabra todavía va a pesar en el draft.';
+    ? 'Con esa jerarquía tus llamadas en el mapa decisivo pesan poco.'
+    : 'Con esa jerarquía tus llamadas en el mapa decisivo cuentan enteras.';
 
   const bandaArraigoActual = bandaDeArraigoFicha(state.career.arraigo);
   const costeArraigo = esOrgActual
@@ -138,7 +141,12 @@ export function construirOferta(state, liga, org, tagForzado, rng) {
     };
   const arraigoAlLlegar = esOrgActual
     ? { valor: Math.round(state.career.arraigo), etiqueta: 'Seguís donde estabas.' }
-    : { valor: Math.round(arraigoInicial(state.player.stats.hype)), etiqueta: 'Allá arrancás casi de cero: tu fama te precede.' };
+    : (() => {
+      // K6a-U: "casi de cero: tu fama te precede" se contradecía en la misma línea. El arraigo de llegada es una cuenta
+      // (`arraigoInicial`: una fracción de tu hype) y la carta dice esa cuenta, con la banda que le toca.
+      const valor = Math.round(arraigoInicial(state.player.stats.hype));
+      return { valor, etiqueta: `Allá arrancás en ${bandaDeArraigoFicha(valor).label} (${valor}/100): el arraigo se arma de a poco.` };
+    })();
 
   const progresoHito = esOrgActual && !bandaArraigoActual.esMaxima
     ? {
@@ -148,11 +156,18 @@ export function construirOferta(state, liga, org, tagForzado, rng) {
     }
     : null;
 
+  // K6a-U (regla 15): la línea de riesgo comparaba la fuerza del club contra el PRESTIGIO de la liga y decía lo contrario
+  // de la línea del plantel de la misma carta ("El plantel más fuerte de LCP" junto a "margen para mandar vos"). Ahora sale
+  // del mismo dato que esa línea (`plantelEnLiga.banda`): la banda dice el plantel y esta dice qué implica.
+  const plantel = plantelEnLiga(liga, org);
   const riesgo = esOrgActual
     ? null
-    : (org.fuerza >= liga.prestigio + m.margenBombazoFuerza
-      ? 'Vas a competir por un lugar en un roster cargado de estrellas.'
-      : 'Acá vas a tener margen para mandar vos.');
+    : {
+      primero: 'Vas a competir por un lugar en el plantel más fuerte de la liga.',
+      arriba: 'Vas a competir por un lugar en un roster cargado de estrellas.',
+      medio: 'Plantel parejo: el lugar se gana partido a partido.',
+      abajo: 'Plantel flojo: tenés margen para hacerte grande.'
+    }[plantel.banda];
 
   // Fase 9Me: cuánto te quieren, para el texto de riesgo de "pedir más". La
   // brecha entre tu nivel y su mejor alternativa gobierna si el club aguanta el
@@ -174,6 +189,9 @@ export function construirOferta(state, liga, org, tagForzado, rng) {
     costeArraigo, arraigoInicial: arraigoAlLlegar,
     progresoHito,
     riesgo,
+    // K5c-M: dónde está el plantel por fuerza dentro de su liga (puesto, de cuántos, la banda que dice la carta).
+    // Lectura pura del mundo, sin rng: no mueve ninguna tirada.
+    plantelEnLiga: plantel,
     // Fase 9Me: estado de la negociación (arranca en cero) e info para el
     // texto de riesgo. `salarioBase` es el ancla para calcular los escalones.
     negociacion: { escalones: 0, clausula: false, salarioBase: salarioAnualUSD },
@@ -258,7 +276,8 @@ function firmarImportPendiente(state, rng) {
   return {
     state: { ...cerrado.state, flags: { ...cerrado.state.flags, banquilloPendiente: false } },
     logs: [crearLog('mercado', `${salida}la mudanza se hace. ${oferta.org} te espera en la ${nombreVisibleDeLiga(oferta.liga)}.`), ...firmado.logs, ...cerrado.logs],
-    firmado: true
+    firmado: true,
+    oferta
   };
 }
 
@@ -270,7 +289,11 @@ function firmarImportPendiente(state, rng) {
 // Devuelve `{ ofertas, fichadores }`: `fichadores` es el escaneo crudo de la
 // demanda (antes del filtro de congelados) para que 9Mg arme los "asientos
 // abiertos" sin volver a escanear el mundo.
-function generarOfertas(state, rng) {
+//
+// K5c-M, la élite se busca: el orden de la mano suma `k · f(nivel) · org.fuerza` (`mercado.elite.pesoFuerzaOrden`,
+// `core/demanda.js:factorElite`): con nivel de élite los clubes fuertes van primero. Con k = 0 el término es 0 exacto
+// y la mano (y el orden de las tiradas de `construirOferta`) queda idéntica. Exportada para los checks de K5c-M.
+export function generarOfertas(state, rng) {
   const m = BALANCE.mercado;
   const ofertas = [];
 
@@ -297,12 +320,15 @@ function generarOfertas(state, rng) {
     : null;
   const dominante = state.mundo.regionDominante;
   const fichadores = orgsQueTeFicharian(state);
+  const pesoFuerza = m.elite.pesoFuerzaOrden * factorElite(nivelDelJugador(state));
   const posibles = fichadores
     .filter((entrada) => !congeladosOrgs || congeladosOrgs.has(entrada.org.nombre))
-    // `regionDominante` (9Md): las orgs de esa región suben en el orden de la mano.
+    // `regionDominante` (9Md): las orgs de esa región suben en el orden de la mano. K5c-M: y con nivel de élite,
+    // las fuertes.
     .map((entrada) => ({
       ...entrada,
       orden: entrada.presupuesto + (entrada.liga.region === dominante ? m.nudgeRegionDominante : 0)
+        + pesoFuerza * (entrada.org.fuerza ?? 0)
     }))
     .sort((a, b) => b.orden - a.orden);
 
@@ -327,7 +353,15 @@ function generarOfertas(state, rng) {
     const candidatas = ligaActual.orgs
       .filter((org) => org.nombre !== state.career.currentOrg && state.mundo.planteles?.[org.nombre])
       .sort((a, b) => a.fuerza - b.fuerza);
+    // K5c-V, el veterano de tier 2: desde `demanda.edadCastigoRenovacionTier2`, en una liga de tier 2 el piso de franquicia
+    // también pasa por la disputa del asiento con el castigo etario (como un fichaje). Sin esto, el club más débil de tu
+    // liga te hacía lugar todos los años aunque tu club ya no te renovara: el tier 2 renovaba para siempre. Con la perilla
+    // neutra (99) `veterano` es siempre falso y el piso es el de siempre.
+    const veterano = veteranoDeTier2(state, ligaActual);
     for (const org of candidatas) {
+      if (veterano && !ganaLaDisputaDelAsiento(state, org.nombre, state.player.role)) {
+        continue;
+      }
       const forzada = ofertaPosible(state, org.nombre, state.player.role, { forzada: true });
       if (forzada?.posible) {
         posibles.push({ org, liga: ligaActual, motivo: forzada.motivo, forzadaFranquicia: true });
@@ -336,12 +370,42 @@ function generarOfertas(state, rng) {
     }
   }
 
+  // K5c-H, cada uno juega en su casa: si alcanzás la liga de tier 1 de tu región (`alcanzaTuLiga`, perilla
+  // `mercado.casa.margenAlcanza`), sus clubes te ofrecen antes que a cualquier import: van primero en la mano, y si ninguno
+  // te ofreció (ni tu renovación es de ahí), uno te hace lugar (`clubDeCasaQueTeHaceLugar`, con las reglas del piso de
+  // franquicia: `forzadaFranquicia`). Con la perilla neutra `alcanzaCasa` es siempre falso y la mano es la de siempre.
+  const alcanzaCasa = alcanzaTuLiga(state);
+  const casa = alcanzaCasa ? ligaDeCasa(state) : null;
+  if (casa) {
+    const deCasa = (entrada) => entrada.liga.id === casa.id;
+    if (!ofertas.some((oferta) => oferta.liga === casa.id) && !posibles.some(deCasa)) {
+      const lugar = clubDeCasaQueTeHaceLugar(state);
+      if (lugar) {
+        posibles.push({ ...lugar, forzadaFranquicia: true });
+      }
+    }
+    // Arreglo de K5c-H: "desde una región débil, un jugador de élite sube como import a una liga más fuerte". Con 6+ clubes
+    // de casa la casa primero llenaba la mano y ningún import llegaba (seed 6 de Brasil, nivel 88: 6 de CBLOL con 21 de
+    // LCK/LPL/LEC/LCS/LCP que lo podían fichar). Después del primer club de casa van hasta `cuposImportElite` clubes de las
+    // ligas más fuertes que alcanzás (`importDeEliteQueAlcanzas`), y después el resto de la casa y lo demás.
+    const delanteros = posibles.filter(deCasa);
+    const imports = posibles
+      .filter((entrada) => !deCasa(entrada) && importDeEliteQueAlcanzas(state, entrada.liga, casa))
+      .slice(0, m.casa.cuposImportElite);
+    const ordenadas = [
+      ...delanteros.slice(0, 1), ...imports, ...delanteros.slice(1),
+      ...posibles.filter((entrada) => !deCasa(entrada) && !imports.includes(entrada))
+    ];
+    posibles.splice(0, posibles.length, ...ordenadas);
+  }
+  const hayCasaEnLaMano = posibles.some((entrada) => casa && entrada.liga.id === casa.id);
+
   // El mercado prefiere jóvenes (CONCEPTO §12): `sesgoEtario` adelgaza la mano.
   // 9Md: se escala la mano YA capada a `ofertasMax` (con 6 ligas `posibles`
   // puede ser enorme y el tope tapaba el sesgo antes de que mordiera). Piso 1
-  // para la franquicia.
+  // para la franquicia (K5c-H: y para el club de tu liga, que va primero).
   const manoBase = Math.min(posibles.length, m.ofertasMax - ofertas.length);
-  const cupoEtario = Math.max(claramenteArriba ? 1 : 0, Math.round(manoBase * sesgoEtario(state.age)));
+  const cupoEtario = Math.max(claramenteArriba || hayCasaEnLaMano ? 1 : 0, Math.round(manoBase * sesgoEtario(state.age)));
   const candidatas = posibles.slice(0, cupoEtario);
 
   for (const { org, liga, motivo, forzadaFranquicia } of candidatas) {
@@ -350,6 +414,23 @@ function generarOfertas(state, rng) {
   }
 
   return { ofertas: ofertas.slice(0, m.ofertasMax), fichadores };
+}
+
+// K5c-H: ¿`liga` es una liga de tier 1 más fuerte que la de tu casa (`casa`) a la que tu nivel llega, con nivel de élite?
+// Es la condición del bot `criterio` para ir de import (`claseDeLigaCriterio`, dev/estrategias.js): el calibre de la liga
+// (`calibreDeLiga`, la vara del asiento) pasa el de tu casa MÁS `mercado.casa.margenImportElite`, tu nivel llega a ese calibre y tu nivel es de élite
+// (`mercado.casa.nivelImportElite`). Pura y sin rng.
+export function importDeEliteQueAlcanzas(state, liga, casa) {
+  const nivel = nivelDelJugador(state);
+  const calibre = calibreDeLiga(liga);
+  return liga.tier === 1 && nivel >= BALANCE.mercado.casa.nivelImportElite
+    && calibre > calibreDeLiga(casa) + BALANCE.mercado.casa.margenImportElite && nivel >= calibre;
+}
+
+// K5c-H: ¿`liga` no es más débil que tu casa? Es tu casa, o una de tier 1 con calibre (`calibreDeLiga`) que llega al de tu
+// casa. Pura y sin rng.
+export function noEsMasDebilQueTuCasa(liga, casa) {
+  return liga.id === casa.id || (liga.tier === 1 && calibreDeLiga(liga) >= calibreDeLiga(casa));
 }
 
 // Los traspasos del mundo que se le muestran al jugador (regla 16: "el dado
@@ -413,7 +494,8 @@ function construirDecisionOfertas(state, ofertas, carry = {}) {
     tipo: 'opciones',
     presentacion: 'mercado',
     titulo: 'Mercado de pases',
-    descripcion: 'El dado trajo estas ofertas. Elegí: ¿la guita o el proyecto?',
+    // K6a-A: sin "el dado trajo": las ofertas salen de quién tiene un hueco en tu rol y te puede pagar (`core/demanda.js`).
+    descripcion: 'Te llaman los que tienen un hueco en tu rol y te pueden pagar. Elegí: ¿la guita o el proyecto?',
     opciones: ofertas,
     datos: {
       motivo: 'oferta',
@@ -513,7 +595,8 @@ function aplicarMercado(state, rng) {
   // K4-C2: la oferta de import que aceptaste en una bifurcación se firma antes que nada (banquillo incluido: te fuiste).
   const importPendiente = firmarImportPendiente(stConValor, rng);
   if (importPendiente?.firmado) {
-    return { state: importPendiente.state, logs: [...logsMundo, ...importPendiente.logs] };
+    // K5c-R: el import firmado es una oferta como cualquier otra: si es de tier 1, la presión de tier 2 vuelve a cero.
+    return { state: conOfertaDeTier1(importPendiente.state, [importPendiente.oferta]), logs: [...logsMundo, ...importPendiente.logs] };
   }
   if (importPendiente) {
     return aplicarMercadoSinImport(importPendiente.state, [...logsMundo, ...importPendiente.logs], rng);
@@ -540,7 +623,8 @@ function aplicarMercadoSinImport(stConValor, logsMundo, rng) {
       };
       const traspaso = ofertaDeTraspaso(stConAnio, rng);
       if (traspaso) {
-        return { state: stConAnio, logs: logsMundo, decision: traspaso };
+        // K5c-R: un club de tier 1 que viene a buscarte a mitad de contrato es una oferta de tier 1, la firmes o no.
+        return { state: conOfertaDeTier1(stConAnio, traspaso.opciones), logs: logsMundo, decision: traspaso };
       }
       return {
         state: stConAnio,
@@ -567,19 +651,36 @@ function aplicarMercadoSinImport(stConValor, logsMundo, rng) {
       }
     }
     : stConValor;
-  const logsAviso = avisoNuevo
-    ? [crearLog('mercado', `${stConValor.career.currentOrg} te avisó: no van a renovarte.`)]
-    : [];
+  // K5c-V (regla 15): si tu club de tier 2 no te renueva por la edad (`renovacionCortadaPorEdad`: perdiste la disputa con el
+  // castigo etario desde `demanda.edadCastigoRenovacionTier2`), el aviso dice por qué, y sale aunque el flag ya estuviera
+  // prendido (el corte por edad es la causa de verdad, no la tirada). Con la perilla neutra nunca entra: el aviso de siempre.
+  const cortadaPorEdad = clubNoRenueva && renovacionCortadaPorEdad(stConValor, ligaDeCarrera(stConValor));
+  const logsAviso = cortadaPorEdad
+    ? [crearLog('mercado', `${stConValor.career.currentOrg} te avisó: no van a renovarte. Buscan gente más joven para el puesto.`)]
+    : avisoNuevo
+      ? [crearLog('mercado', `${stConValor.career.currentOrg} te avisó: no van a renovarte.`)]
+      : [];
 
   // K5-C: el final lo decide el mercado. Cada pretemporada con el mercado abierto se cuenta si ninguna oferta es de
   // tu tier o mejor; al llegar al umbral, en vez de la mano de siempre frena la bifurcación "bajás o te retirás".
-  const stTier = conCuentaSinOfertaEnTier(stMercado, ofertas);
+  // K5c-R: una oferta de tier 1 en la mano (la firmes o no) vuelve a cero la presión de tier 2.
+  const stTier = conOfertaDeTier1(conCuentaSinOfertaEnTier(stMercado, ofertas), ofertas);
   if (correspondeBifurcar(stTier)) {
     const stFork = { ...stTier, flags: { ...stTier.flags, forkMercadoSplit: stTier.player.splitCount } };
     const asientosFork = ofertas.length > 0 ? asientosAbiertosParaPantalla(stFork, ofertas, fichadores) : [];
     return {
       state: stFork, logs: [...logsMundo, ...logsAviso],
       decision: decisionFinPorMercado(stFork, ofertas, asientosFork)
+    };
+  }
+  // K5c-R: la presión de tier 2. Misma bifurcación (y mismo orden de tiradas que la mano de siempre), con su motivo. La de
+  // K5-C va primero: si ni tu tier te ofrece, esa es la que corresponde.
+  if (correspondePresionTier2(stTier)) {
+    const stFork = { ...stTier, flags: { ...stTier.flags, forkMercadoSplit: stTier.player.splitCount } };
+    const asientosFork = ofertas.length > 0 ? asientosAbiertosParaPantalla(stFork, ofertas, fichadores) : [];
+    return {
+      state: stFork, logs: [...logsMundo, ...logsAviso],
+      decision: decisionPresionTier2(stFork, ofertas, asientosFork)
     };
   }
 
@@ -624,6 +725,87 @@ function conCuentaSinOfertaEnTier(state, ofertas) {
 function correspondeBifurcar(state) {
   return state.flags.splitsSinOfertaEnTier >= BALANCE.retiro.splitsSinOfertaEnTierParaBifurcar
     && state.age < BALANCE.retiro.edadRetiroForzoso;
+}
+
+// --- K5c-R: la presión de tier 2 ---
+
+// Solo una oferta de tier 1 (de una mano, un traspaso o un import firmado) vuelve a cero la cuenta que sube
+// `conPresionTier2` (`systems/retiro.js`); una de tier 2, la renovación incluida, no. Cero `rng`.
+function conOfertaDeTier1(state, ofertas) {
+  if (!ofertas.some((oferta) => oferta?.tier === 1) || state.flags.splitsTier2SinOfertaTier1 === 0) {
+    return state;
+  }
+  return sinPresionTier2(state);
+}
+
+// K5c (revisión, regla 15): un import de tier 1 que te ofrecen es una oferta de tier 1 aunque la rechaces. La bifurcación que lo
+// presenta (`ofertaDeImport` en `data/events/caminos.json`) vuelve a cero la cuenta apenas se te muestra, la aceptes o no: si no, el
+// motivo de la presión dice después "ninguna org de primera te llamó" y es falso. Solo cuenta si la oferta se puede cumplir hoy
+// (`ofertaDeImportPosible`, la misma regla que la firma) y es de una liga de tier 1. Cero `rng`; la llama `systems/events.js`.
+export function conImportDeTier1Presentado(state, evento) {
+  if ((state.flags.splitsTier2SinOfertaTier1 ?? 0) === 0) {
+    return state;
+  }
+  const ofreceTier1 = evento.options.some((opcion) => opcion.outcomes.some((outcome) => outcome.effects.some((efecto) => {
+    if (efecto.type !== 'ofertaDeImport') {
+      return false;
+    }
+    const posible = ofertaDeImportPosible(state, efecto.liga);
+    return posible.posible && posible.liga.tier === 1;
+  })));
+  return ofreceTier1 ? sinPresionTier2(state) : state;
+}
+
+function sinPresionTier2(state) {
+  return { ...state, flags: { ...state.flags, splitsTier2SinOfertaTier1: 0 } };
+}
+
+// Las perillas se leen acá, en el momento (un override en memoria las pisa). Pasada la línea de los 34, nada que bifurcar.
+function correspondePresionTier2(state) {
+  return state.career.tier === 2
+    && (state.flags.splitsTier2SinOfertaTier1 ?? 0) >= BALANCE.retiro.presionTier2.splitsSinOfertaTier1
+    && state.age < BALANCE.retiro.edadRetiroForzoso;
+}
+
+// La variante `presion_tier2` de la bifurcación del final por mercado: misma pausa (`motivo: 'fin_mercado'`, la misma
+// regla de los bots y del headless), otro motivo. Seguir es quedarte en tier 2 con lo que te ofrecen (la mano de
+// siempre, la renovación incluida) y la cuenta en cero; si nadie ofrece, seguir buscando.
+// K5c (revisión, regla 15): un free agent que arrastra la cuenta (el contrato terminó, `career.liga` es null) no "lleva" años en una
+// liga que ya no tiene: el motivo nombra la liga donde se acumuló (la de la última fila de tier 2 del registro) y dice que quedó
+// sin equipo. Exportada para el check.
+export function decisionPresionTier2(state, ofertas, asientosAbiertos) {
+  const libre = !state.career.currentOrg;
+  const ligaId = libre
+    ? ([...state.career.registro.porOrg].reverse().find((fila) => fila.tier === 2)?.liga ?? null)
+    : state.career.liga;
+  const liga = (ligaId ? nombreDeLigaEnMundo(state, ligaId) : null) ?? `tier ${state.career.tier}`;
+  const tiempo = aniosEnPalabras(state.flags.splitsTier2SinOfertaTier1);
+  const motivoRetiro = libre
+    ? `Tenés ${state.age} años, pasaste ${tiempo} en ${liga}, quedaste sin equipo y ninguna org de primera te llamó.`
+    : `Tenés ${state.age} años, llevás ${tiempo} en ${liga} y ninguna org de primera te llamó.`;
+  const ligasDistintas = [...new Set(ofertas.map((oferta) => nombreDeLigaEnMundo(state, oferta.liga) ?? `tier ${oferta.tier}`))];
+  const ligasQueOfrecen = ligasDistintas.join(' o ');
+  const cuantasLigasOfrecen = ligasDistintas.length;
+  // K6a-U (regla 15): la opción decía "Seguís en LCK CL" aunque el jugador estuviera en otra liga (EMEA Masters): "seguís"
+  // es seguir abajo, y la liga que se nombra es la que te quiere, no la tuya.
+  const seguir = ofertas.length > 0
+    ? { id: 'seguir', label: `Seguís abajo: ${ligasQueOfrecen} ${cuantasLigasOfrecen > 1 ? 'te quieren' : 'te quiere'}`, descripcion: 'Otra temporada abajo, a ganarte el llamado. Ves lo que te ofrecen y elegís; la cuenta arranca de cero.' }
+    : { id: 'esperar', label: 'Seguís buscando', descripcion: 'De free agent, a esperar que suene el teléfono. La cuenta de primera arranca de cero.' };
+  const cierre = ofertas.length > 0
+    ? `En ${ligasQueOfrecen} todavía te quieren. ¿Seguís o colgás el mouse?`
+    // K6a-U: el free agent ya leyó "ninguna org de primera te llamó": "Y nadie te está llamando" repetía lo mismo.
+    : (libre ? '¿Seguís buscando o colgás el mouse?' : 'Y nadie te está llamando. ¿Seguís o colgás el mouse?');
+  return {
+    tipo: 'opciones',
+    bisagra: true,
+    titulo: 'Primera no llama',
+    descripcion: `${motivoRetiro} ${cierre}`,
+    opciones: [
+      seguir,
+      { id: 'retirarse', label: 'Colgás el mouse', descripcion: 'Cerrás la carrera acá. Con la puerta entreabierta, si el cuerpo y las ganas dan.' }
+    ],
+    datos: { motivo: 'fin_mercado', variante: 'presion_tier2', motivoRetiro, ofertas, asientosAbiertos }
+  };
 }
 
 function nombreDeLigaEnMundo(state, ligaId) {
@@ -680,12 +862,23 @@ function resolverFinPorMercado(state, decision, respuesta, rng) {
       decision: construirDecisionOfertas(state, decision.datos.ofertas, { asientosAbiertos: decision.datos.asientosAbiertos })
     };
   }
-  const silencio = elTelefonoNoSuena(state, rng);
+  // K5c-R: seguir en tier 2 (con ofertas, la mano de siempre; sin ninguna, seguir buscando) vuelve a cero la presión.
+  if (respuesta.opcionId === 'seguir') {
+    const sigue = sinPresionTier2(state);
+    return {
+      state: sigue,
+      logs: [crearLog('mercado', 'Seguís abajo. La cuenta de primera arranca de cero: a ganarte el llamado.')],
+      decision: construirDecisionOfertas(sigue, decision.datos.ofertas, { asientosAbiertos: decision.datos.asientosAbiertos })
+    };
+  }
+  const base = decision.datos.variante === 'presion_tier2' ? sinPresionTier2(state) : state;
+  const silencio = elTelefonoNoSuena(base, rng);
   return { state: silencio.state, logs: [crearLog('mercado', 'Seguís buscando. El mercado no va a esperar para siempre.'), ...silencio.logs] };
 }
 
 // La regla del headless (y del bot `criterio`): joven, seguís (bajás o esperás); desde
-// `edadAutoAceptaVeredicto`, aceptás el veredicto del mercado.
+// `edadAutoAceptaVeredicto`, aceptás el veredicto del mercado. K5c-R: la variante `presion_tier2` va por la misma regla
+// (su primera opción es seguir en tier 2, o seguir buscando).
 export function opcionAutoFinPorMercado(state, decision) {
   if (state.age >= BALANCE.retiro.edadAutoAceptaVeredicto) {
     return 'retirarse';
@@ -698,7 +891,7 @@ export function opcionAutoFinPorMercado(state, decision) {
 // `motivoFila`: el motivo con el que se cierra la fila de la org anterior en el
 // registro. Por defecto se deriva del cambio de tier (ascenso/descenso/
 // transferencia); 9Mf lo pasa explícito para el banquillo.
-function aceptarOferta(state, oferta, rng, { motivoFila } = {}) {
+export function aceptarOferta(state, oferta, rng, { motivoFila } = {}) {
   const esRenovacion = oferta.tag === 'renovacion';
   const contrato = {
     org: oferta.org, liga: oferta.liga, tier: oferta.tier,
@@ -724,7 +917,7 @@ function aceptarOferta(state, oferta, rng, { motivoFila } = {}) {
           registro: registrarSalarioEnFila(state.career.registro, contrato.salarioAnualUSD)
         }
       },
-      logs: [crearLog('mercado', `Renovás con ${oferta.org}: ${plata(contrato.salarioAnualUSD)}/año, ${contrato.anios} año(s).${conClausula}`)]
+      logs: [crearLog('mercado', `Renovás con ${oferta.org}: ${plata(contrato.salarioAnualUSD)}/año, ${contrato.anios} ${plural(contrato.anios, 'año', 'años')}.${conClausula}`)]
     };
   }
 
@@ -791,11 +984,15 @@ function aceptarOferta(state, oferta, rng, { motivoFila } = {}) {
         splitAscensoTier1: oferta.tier === 1 && state.career.splitAscensoTier1 === null
           ? state.player.splitCount
           : state.career.splitAscensoTier1,
+        // K5c-R: el primer contrato de tier 2 o tier 1 marca desde cuándo se cuentan los años pro (el de tier 3 no cuenta).
+        splitPrimerContratoTier2: oferta.tier <= 2 && state.career.splitPrimerContratoTier2 == null
+          ? state.player.splitCount
+          : state.career.splitPrimerContratoTier2,
         contrato,
         registro: conFilaCerrada(state, motivoFilaFinal)
       }
     },
-    logs: [crearLog('mercado', `Firmás con ${oferta.org} (${nombreVisibleDeLiga(oferta.liga)}): ${plata(contrato.salarioAnualUSD)}/año, ${contrato.anios} año(s).${conClausula}`)]
+    logs: [crearLog('mercado', `Firmás con ${oferta.org} (${nombreVisibleDeLiga(oferta.liga)}): ${plata(contrato.salarioAnualUSD)}/año, ${contrato.anios} ${plural(contrato.anios, 'año', 'años')}.${conClausula}`)]
   };
 }
 
@@ -819,7 +1016,13 @@ function ofertaDeTraspaso(state, rng) {
     return null;
   }
 
-  const fichadores = orgsQueTeFicharian(state);
+  // Arreglo de K5c-H: "un jugador que alcanza su liga no termina en una más débil" vale también a mitad de contrato. Si
+  // alcanzás tu liga (`alcanzaTuLiga`), el pretendiente es de tu casa o de una liga de tier 1 que no es más débil
+  // (`noEsMasDebilQueTuCasa`): antes le llegaba a un titular de RED Canids una de Umbra Academy (Circuito Desafiante,
+  // seed 54 de `criterio` con Final2). Con la perilla neutra `casa` es null y el filtro no saca a nadie.
+  const casa = alcanzaTuLiga(state) ? ligaDeCasa(state) : null;
+  const fichadores = orgsQueTeFicharian(state)
+    .filter((entrada) => !casa || noEsMasDebilQueTuCasa(entrada.liga, casa));
   const pretendiente = fichadores
     .filter((entrada) => entrada.org.fuerza >= orgActual.fuerza + m.traspasoBrechaFuerzaMin)
     .sort((a, b) => b.org.fuerza - a.org.fuerza)[0];
@@ -843,7 +1046,7 @@ function ofertaDeTraspaso(state, rng) {
   };
   const conClausula = state.career.contrato.clausula === 'salida';
   const traspasoUSD = Math.round(
-    valorDeMercado(state) * m.traspasoBaseFactor
+    presupuestoDeDemanda(state) * m.traspasoBaseFactor
     * (1 + Math.max(0, state.career.contrato.aniosRestantes) * m.traspasoPorAnioRestante)
   );
 
@@ -871,7 +1074,7 @@ function ofertaDeTraspaso(state, rng) {
     tipo: 'opciones',
     presentacion: 'mercado',
     titulo: 'Te quieren a mitad de contrato',
-    descripcion: `${org.nombre} preguntó por vos. Te quedan ${state.career.contrato.aniosRestantes} año(s) de contrato con ${state.career.currentOrg}.`,
+    descripcion: `${org.nombre} preguntó por vos. Te ${plural(state.career.contrato.aniosRestantes, 'queda', 'quedan')} ${state.career.contrato.aniosRestantes} ${plural(state.career.contrato.aniosRestantes, 'año', 'años')} de contrato con ${state.career.currentOrg}.`,
     opciones,
     datos: {
       motivo: 'traspaso',

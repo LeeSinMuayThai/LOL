@@ -133,7 +133,7 @@ export async function dibujarTarjeta(state, modulos) {
   // --- Totales como celdas ---
   const totales = t.totales;
   const celdas = [
-    { k: 'AÑOS', v: String(totales.anios) },
+    { k: 'AÑOS PRO', v: String(totales.anios) },
     { k: 'SPLITS', v: String(totales.splits) },
     { k: 'TÍTULOS', v: String(totales.titulos) },
     totales.internacionales > 0 ? { k: 'INTL', v: String(totales.internacionales) } : null,

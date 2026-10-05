@@ -22,6 +22,21 @@ export function hashCadena(texto) {
   return Math.abs(h);
 }
 
+// K6a-U: la seed que escribe el jugador (el input de la pantalla de inicio o `?seed=` de la URL). Un número es la seed
+// de siempre (valor absoluto, entero); un texto ("pepe") ya no se ignora sin avisar: es la misma carrera cada vez que
+// se escribe lo mismo, con el hash del motor. Vacío no es seed (`null`: la sortea el reloj). Pura, sin DOM ni RNG.
+export function interpretarSeed(crudo) {
+  const texto = String(crudo ?? '').trim();
+  if (texto === '') {
+    return { seed: null, desdeTexto: false };
+  }
+  const numero = Number(texto);
+  if (Number.isFinite(numero)) {
+    return { seed: Math.abs(Math.trunc(numero)), desdeTexto: false };
+  }
+  return { seed: hashCadena(texto), desdeTexto: true };
+}
+
 // La probabilidad de ganar con una diferencia de fuerza y un σ COMBINADO:
 // Φ((fp−fr)/σ), con la aproximación logística de la normal
 // (`factorLogisticoNormal`). Con σ = 0 colapsa a un escalón (0, 0,5 o 1). Pura,

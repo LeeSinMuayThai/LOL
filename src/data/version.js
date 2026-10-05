@@ -75,7 +75,11 @@
 // el contrato, el cierre de año como decisión, el plan anual y la pretemporada solo para el mercado). El paso 3b (la limpieza del plan
 // anual, los checks duros del ritmo, el guardado VERSION 11 y los cuantiles) no toca el rng: la huella es la del plan anual, 1616394605,
 // que reemplaza a todas las anteriores del bloque B (922534647, 805410138, 2044679379, 1157384592...) y a la de K5 (1401713881).
-export const VERSION_JUEGO = 'K4c';
+// K5c (bloque C cerrado, el cierre): `VERSION_JUEGO` pasa a 'K5c', la versión del mundo calibrado (el Mundial real, cada uno en su
+// casa, Final2 con la LPL en 91, el no-pro con piso de soloQ, El GOAT = nuevo Faker). Sin esto, después del merge dos juegos
+// distintos compartirían "v K4c" en el desafío, el historial y el texto compartido. La etiqueta no entra en la huella (la tupla de
+// `calcularHuellaJuego` no la lee): la huella del bloque C es la de abajo. Misma `VERSION` del guardado (12, no salió de la rama).
+export const VERSION_JUEGO = 'K5c';
 // K4c (cierre de año, 2044679379): los 10 eventos de cierre_edad.json pasan a ser decisiones con intercambio (tres opciones, efectos
 // del orden de las bifurcaciones, un pool que aprende, riesgos en los outcomes): cambian las tiradas del cierre y con ellas las carreras
 // enteras. Misma versión (el paso 3b la pasa a 'K4c'): reemplaza a 922534647.
@@ -88,4 +92,33 @@ export const VERSION_JUEGO = 'K4c';
 // K4c (revisión, textos, 1625568496): el cierre de año no repite el evento del año anterior (cooldown de 4 splits, 99 el del primer balance),
 // así que cambia qué carta cae y con ella las tiradas del resto de la carrera. Misma versión: reemplaza a 1616394605.
 // Integración de las dos revisiones (supervisor): reemplaza a 348923166 y 1625568496.
-export const HUELLA_JUEGO = 2001539523;
+// K5c (motor, 992471283): la vuelta del retiro adelanta el reloj (calendario y edad) lo que pasó afuera, y con la edad de la vuelta
+// en la línea Faker la ventana se cierra sola. Misma versión: reemplaza a 2001539523.
+// K5c-R (años pro, 579585404): los años pro se cuentan desde el primer contrato de tier 2 o tier 1 (`career.splitPrimerContratoTier2`), no
+// desde `splitFichaje` (tier 3). Las carreras son las mismas (el marcador no toca el rng; con la definición vieja la huella da 992471283):
+// cambia el eje de años de la leyenda comparada (`aniosProDe`, `core/puntaje.js`) y con él la leyenda de la tupla. Misma versión:
+// reemplaza a 992471283.
+// K6a-M (motor y ritmo, 319240573): toda serie de eliminación frena (el umbral de "sin nada en juego" ya no se les aplica), tier 2
+// define el título en una final entre los dos primeros, "define la clasificación" solo en el split de cierre, un tier 3 no se
+// resuelve antes de que juegues un split con él, y el torneo de mitad de año pide el equipo primero. Cambia el stream (más
+// paradas en playoffs). Misma versión (12, no salió): reemplaza a 579585404. La integración la vuelve a registrar.
+// K6a-A (el amateur y las decisiones, 871362456): la semana amateur la resuelve el perfil y frena solo con un riesgo evitable
+// (cambia cuándo se consume el rng del reparto), el proyecto juvenil y el scout frenan como bifurcación (oferta), el proyecto
+// juvenil se ofrece hasta los 17 (roster sub-18) y la opción que retira de "El canal ya paga más" pasa al final. Misma versión:
+// reemplaza a 579585404; la integración de K6a la vuelve a registrar.
+// K6a (integración, 505125930): K6a-M (las series de eliminación y la final de tier 2 frenan, la fecha que define solo en el split
+// de cierre, el tier 3 que se juega antes de resolverse) más K6a-A (la semana amateur que resuelve el perfil, las ofertas que
+// frenan, el retiro al final de las opciones), juntas sobre lo que k5c-instrumento sumó después de 75e7ed5 (e5fdd65, b2c08f5, fddb82b).
+// K6a-U no mueve el rng (textos y pantallas) y la ventana de retiro ya preguntaba una vez por año (el check de D-B no toca el
+// motor). Misma versión (12, no salió): reemplaza a 319240573 (K6a-M) y 871362456 (K6a-A).
+// K6a-R (el ritmo de la eliminación, 860000955): una serie de eliminación que no es final y está cantada (la p del plan del coach
+// fuera de [0,3, 0,7], `serie.plan.pAbiertaEliminacion`) no frena en el plan: la juega el plan del coach y frena solo en el mapa
+// decisivo. Cambia el stream (los planes que elegía `criterio` en esas series). Misma versión (12, no salió): reemplaza a 505125930.
+// K5c (no-pro, 2039436444): la semana amateur la elige el perfil solo entre las rutinas que rinden al menos su `pisoSoloQ` del LP
+// de la mejor (data/perfiles.json: leal y profesional 0,6), la previa evalúa la casa con la confianza proyectada (la que lee el
+// motor después del reparto: cambia cuándo frena la semana) y `scoutingSesgoEtario` se ablanda a los 18-20. Cambia qué rutina
+// sale y cuándo se consume el rng del reparto. Misma versión (12, no salió): reemplaza a 860000955.
+// K5c (el bloque C calibrado, 1462997803): Final2 (las claves de balance fijadas) y la LPL en 91, el no-pro con piso de soloQ por perfil,
+// las cartas de cierre del declive y El GOAT = nuevo Faker. Cambia el stream (otras carreras en todas las ligas). Misma versión
+// (12, no salió; `VERSION_JUEGO` pasa a 'K5c' al cerrar el bloque, arriba): reemplaza a 2039436444.
+export const HUELLA_JUEGO = 1462997803;

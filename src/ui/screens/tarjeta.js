@@ -114,12 +114,12 @@ function bloqueDesglose(puntaje, BALANCE) {
     el.appendChild(filaDeDesglose(c.etiqueta, conSigno(c.puntos), c.detalle, c.puntos === 0 ? 'cero' : null));
   }
   el.appendChild(filaDeDesglose('Subtotal', miles(puntaje.subtotal), null, 'subtotal'));
-  // El techo con su escala (regla 13): un "64" suelto no dice nada.
+  // El potencial con su escala (regla 13): un "64" suelto no dice nada.
   const { factor, puntos, detalle } = puntaje.potencial;
   const { potencialMin, potencialMax } = BALANCE.mundo;
   const factorTexto = `×${factor.toFixed(2).replace('.', ',')}`;
-  el.appendChild(filaDeDesglose('Tu techo, revelado', `${conSigno(puntos)} (${factorTexto})`,
-    `${detalle} Los techos van de ${potencialMin} a ${potencialMax}.`, 'techo'));
+  el.appendChild(filaDeDesglose('Tu potencial, revelado', `${conSigno(puntos)} (${factorTexto})`,
+    `${detalle} El potencial va de ${potencialMin} a ${potencialMax}.`, 'techo'));
   el.appendChild(filaDeDesglose('Total', miles(puntaje.total), null, 'total'));
   return el;
 }
@@ -247,7 +247,8 @@ export function renderTarjeta(container, state, modulos, extras = {}) {
   const totales = t.totales;
   const franja = document.createElement('div');
   franja.className = 'tarjeta-totales';
-  franja.appendChild(celda('Años', String(totales.anios)));
+  // K5c-R: la caja cuenta los años pro (desde el primer contrato de tier 2 o tier 1), no los de vida desde los 15.
+  franja.appendChild(celda('Años pro', String(totales.anios)));
   franja.appendChild(celda('Splits', String(totales.splits)));
   franja.appendChild(celda('Títulos', String(totales.titulos)));
   if (totales.internacionales > 0) {

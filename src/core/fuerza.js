@@ -35,14 +35,19 @@ export function rendimientoBase(state) {
 // K2d: los factores de `rendimientoBase`, uno por uno, para que la previa los
 // muestre sin una segunda copia de la fórmula: `rendimientoBase` ES el
 // producto de acá (mismo orden de las multiplicaciones, bit a bit).
-export function factoresDeRendimiento(state) {
+//
+// K5c-H: con `mundial` (por defecto, si estás jugando el Mundial: `enElMundial`) y la perilla `mundial.jerarquiaCuenta` en
+// `false`, el factor de jerarquía vale 1, como el del rival NPC. Con la perilla en `true` (neutra) es la cuenta de siempre.
+export function factoresDeRendimiento(state, { mundial = enElMundial(state) } = {}) {
   const r = BALANCE.rendimiento;
   const nivel = nivelDelJugador(state);
 
   const campeon = state.player.championPool.find((c) => c.name === state.player.campeonDelSplit);
   const factorMeta = multiplicadorDeMeta(state.meta.ajuste);
   const factorCampeon = factorDeCampeon(campeon, state.meta.weights);
-  const factorJerarquia = factorCentrado(state.career.jerarquia, r.jerarquiaReferencia, r.jerarquiaPesoEnRendimiento * 2);
+  const factorJerarquia = mundial && !BALANCE.mundial.jerarquiaCuenta
+    ? 1
+    : factorCentrado(state.career.jerarquia, r.jerarquiaReferencia, r.jerarquiaPesoEnRendimiento * 2);
 
   return {
     nivel,
@@ -124,9 +129,34 @@ export function fuerzaDePartido(state) {
 // K2d: la fuerza de partido con todas sus piezas — tu rendimiento (nivel ×
 // meta × campeón × jerarquía, acotado a 0-100) y el equipo (compañeros, tu
 // peso, la química) — y el total. Pura y sin RNG.
-export function desgloseDeFuerza(state) {
-  const rendimiento = factoresDeRendimiento(state);
+export function desgloseDeFuerza(state, opciones) {
+  const rendimiento = factoresDeRendimiento(state, opciones);
   const rendimientoAcotado = clampStat(rendimiento.rendimientoBase);
   const equipo = factoresDelEquipo(state, rendimientoAcotado);
   return { ...rendimiento, rendimiento: rendimientoAcotado, ...equipo };
+}
+
+// --- K5c-H: en el Mundial la jerarquía no cuenta (PLAN.md "K5c-H") ---
+//
+// ¿Estás jugando el Mundial? Tu equipo está en el torneo del año (`state.internacional.jugador`) y el torneo no terminó:
+// el Swiss con su 2-2 y las series del bracket (`systems/serie.js` las juega con el torneo en `bracket`). Pura.
+export function enElMundial(state) {
+  const torneo = state.internacional;
+  return Boolean(torneo?.jugador) && torneo.fase !== 'terminado';
+}
+
+// Lo que dicen la previa y el feed del Mundial cuando la jerarquía no cuenta (regla 12).
+export const TEXTO_JERARQUIA_MUNDIAL = 'En el Mundial tu jerarquía en el vestuario no pesa: jugás a tu nivel, como cualquiera de los cinco.';
+
+// ¿La previa tiene que decir que tu jerarquía no cuenta? En el Mundial, con la perilla en `false` (regla 12). Pura.
+export function jerarquiaNoCuentaEn(state) {
+  return enElMundial(state) && !BALANCE.mundial.jerarquiaCuenta;
+}
+
+// LA fuerza de tu equipo en el Mundial: la de `fuerzaDePartido` con el factor de jerarquía del Mundial
+// (`mundial.jerarquiaCuenta`). La usan la entrada al torneo (`systems/internacional.js`, cuando el torneo todavía no
+// existe) y el Swiss; la previa (`desgloseDeFuerza`) y los mapas del bracket (`fuerzaDePartido`) caen en la misma rama de
+// `factoresDeRendimiento` porque corren con el torneo en curso (`enElMundial`). Pura y sin RNG.
+export function fuerzaDeMundial(state) {
+  return desgloseDeFuerza(state, { mundial: true }).total;
 }

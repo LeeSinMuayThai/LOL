@@ -36,11 +36,16 @@ const LIGA_POR_ID = Object.fromEntries(LIGAS.map((liga) => [liga.id, liga]));
 // El "sin bonus" del internacional: la `dificultad` más baja de primera.
 const DIFICULTAD_DE_REFERENCIA = Math.min(...LIGAS.filter((liga) => liga.tier === 1).map((liga) => liga.dificultad));
 
+// Un Mundial ganado: la entrada de `registro.internacionales` con este resultado (K5-A; la misma lectura que el
+// bloque `mundialReal` de `simulate.js`).
+const MUNDIAL_GANADO = 'campeon';
+
 const LUGAR_DE_TIER = { 1: 'en primera', 2: 'en la liga de desarrollo', 3: 'en el circuito chico' };
 
 // Los niveles, de abajo hacia arriba, en el orden de `BALANCE.puntaje.niveles`
-// (que tiene el requisito de cada uno). "El GOAT" es el nombre provisorio del
-// nivel "el nuevo Faker" (PLAN.md §K.1).
+// (que tiene el requisito de cada uno). "El GOAT" es el nombre definitivo del
+// nivel "el nuevo Faker" (PLAN.md §K.1; K5c lo fija): 2 o más Mundiales, o #1 del
+// mundo al cierre de 3 o más temporadas, la misma definición que mide §K.3b.
 export const NIVELES = [
   { id: 'no_llego', nombre: 'El que no llegó' },
   { id: 'circuito', nombre: 'Pasó por el circuito' },
@@ -171,11 +176,18 @@ function rankPicoDe(state) {
   return registroDe(state).picos.rankMundial;
 }
 
-function aniosProDe(state) {
-  if (state.splitFichaje === null || state.splitFichaje === undefined) {
+// K5c-R: los años pro se cuentan desde el primer contrato de tier 2 o tier 1 (`career.splitPrimerContratoTier2`). Reemplaza a
+// `(splitCount - splitFichaje) / splitsPorEdad`, que contaba desde tier 3: un año en un equipo chico no es carrera pro. Sin
+// contrato de tier 2 o 1, 0. Lo leen la leyenda comparada (acá) y la caja "Años pro" de la tarjeta (`core/legado.js`).
+// K5c (revisión, regla 15): los splits que pasaste retirado (`career.splitsRetirado`, la ventana de vuelta) no son años pro: el
+// reloj del mundo los cuenta en `splitCount`, la carrera no. Y al revés: el split de un retiro por bifurcación se jugó y el
+// reloj no lo contó (`atributos` no corre), así que ese retiro le resta uno (`systems/retiro.js:retirarsePorCamino`).
+export function aniosProDe(state) {
+  const desde = state.career?.splitPrimerContratoTier2;
+  if (desde === null || desde === undefined) {
     return 0;
   }
-  return Math.max(0, (state.player.splitCount - state.splitFichaje) / BALANCE.edad.splitsPorEdad);
+  return Math.max(0, (state.player.splitCount - desde - (state.career.splitsRetirado ?? 0)) / BALANCE.edad.splitsPorEdad);
 }
 
 function titulosDePrimera(registro) {
@@ -235,13 +247,24 @@ function componenteTitulos(state) {
 
 // --- 3. Internacional ---
 
-// La liga que más veces representaste (empate: la primera).
-function ligaPrincipalInternacional(internacionales) {
-  const conteo = new Map();
-  for (const entrada of internacionales) {
-    conteo.set(entrada.liga, (conteo.get(entrada.liga) ?? 0) + 1);
+// Cuánto más vale un internacional jugado con esa liga que con la de referencia (la región favorita), en %.
+function extraDeDificultad(ligaId) {
+  return Math.round((LIGA_POR_ID[ligaId].dificultad / DIFICULTAD_DE_REFERENCIA - 1) * 100);
+}
+
+// Por qué vale lo que vale: con UNA sola liga, "saliendo de X"; con varias (cambiaste de región entre un internacional y
+// otro), cada una con su bonus, porque la tarjeta no puede decir que todos salieron de la que más veces fuiste.
+function porqueDelInternacional(internacionales) {
+  const ligas = [...new Set(internacionales.map((entrada) => entrada.liga))];
+  if (ligas.length > 1) {
+    const partes = ligas.map((liga) => `${nombreDeLiga(liga)} (${extraDeDificultad(liga) > 0 ? `un ${extraDeDificultad(liga)}% más` : 'sin bonus'})`);
+    return `Cada uno vale según la liga con la que lo jugaste: ${enumerar(partes)}.`;
   }
-  return [...conteo.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  const nombre = nombreDeLiga(ligas[0]);
+  const extra = extraDeDificultad(ligas[0]);
+  return extra > 0
+    ? `Saliendo de ${nombre} cuesta más llegar lejos: cada uno vale un ${extra}% más que saliendo de la región favorita.`
+    : `Saliendo de ${nombre}, la región favorita, cada uno vale lo justo: sin bonus por dificultad.`;
 }
 
 function componenteInternacional(state) {
@@ -260,12 +283,7 @@ function componenteInternacional(state) {
     const cuantos = internacionales.length === 1
       ? `Un internacional, ${buenos === 1 ? 'con buen papel' : 'y volviste temprano'}.`
       : `${internacionales.length} internacionales, ${buenos === 0 ? 'ninguno con buen papel' : `${buenos} con buen papel`}.`;
-    const liga = ligaPrincipalInternacional(internacionales);
-    const nombre = nombreDeLiga(liga);
-    const extra = Math.round((LIGA_POR_ID[liga].dificultad / DIFICULTAD_DE_REFERENCIA - 1) * 100);
-    const porque = extra > 0
-      ? `Saliendo de ${nombre} cuesta más llegar lejos: cada uno vale un ${extra}% más que saliendo de la región favorita.`
-      : `Saliendo de ${nombre}, la región favorita, cada uno vale lo justo: sin bonus por dificultad.`;
+    const porque = porqueDelInternacional(internacionales);
     detalle = `${cuantos} ${porque}`;
   }
 
@@ -386,7 +404,8 @@ export function hechosDeCarrera(state) {
     titulosTier1: titulosDePrimera(r),
     cierresEnTop20: r.splitsEnTopMundial,
     rankPico: r.picos.rankMundial,
-    cierresNumeroUno: r.cierresComoNumeroUno
+    cierresNumeroUno: r.cierresComoNumeroUno,
+    mundialesGanados: r.internacionales.filter((entrada) => entrada.resultado === MUNDIAL_GANADO).length
   };
 }
 
@@ -433,6 +452,10 @@ const REQUISITOS = {
       texto: `cerrar ${faltanDe(h.cierresNumeroUno, n, 'temporada', 'temporadas', ' como #1 del mundo', 'cerraste', 'una')}`,
       plural: false
     })
+  },
+  mundialesGanados: {
+    cumple: (h, n) => h.mundialesGanados >= n,
+    falta: (h, n) => ({ texto: `ganar ${faltanDe(h.mundialesGanados, n, 'Mundial', 'Mundiales', '', 'ganaste')}`, plural: false })
   }
 };
 
@@ -444,21 +467,28 @@ function requisitoDe(clave) {
 }
 
 // Gana el nivel más alto cuyo requisito se cumple entero (no son escalones
-// anidados: un #3 del mundo sin títulos es "Figura mundial"). `siguiente` es el
-// de arriba con lo que faltó, como hecho: "Te faltó un título de liga de primera."
+// anidados: un #3 del mundo sin títulos es "Figura mundial"). Un nivel con
+// `alternativa` también se gana si esa otra lista se cumple entera ("El GOAT":
+// 3 cierres como #1 del mundo, o 2 Mundiales). `siguiente` es el de arriba con lo
+// que faltó, como hecho: "Te faltó un título de liga de primera."
 export function nivelDeCarrera(hechos) {
   const niveles = P().niveles;
-  const pendientes = (nivel) => Object.entries(nivel.requisito).filter(([clave, n]) => !requisitoDe(clave).cumple(hechos, n));
-  const indice = niveles.map((nivel) => pendientes(nivel).length === 0).lastIndexOf(true);
+  const pendientesDe = (requisito) => Object.entries(requisito).filter(([clave, n]) => !requisitoDe(clave).cumple(hechos, n));
+  const caminos = (nivel) => (nivel.alternativa ? [nivel.requisito, nivel.alternativa] : [nivel.requisito]);
+  const cumple = (nivel) => caminos(nivel).some((requisito) => pendientesDe(requisito).length === 0);
+  const indice = niveles.map(cumple).lastIndexOf(true);
   if (indice < 0) {
     fallar('ningún nivel se cumple: el primero de BALANCE.puntaje.niveles no puede pedir nada');
   }
   const proximo = niveles[indice + 1];
   let siguiente = null;
   if (proximo) {
-    const partes = pendientes(proximo).map(([clave, n]) => requisitoDe(clave).falta(hechos, n));
-    const verbo = partes.length > 1 || partes[0].plural ? 'faltaron' : 'faltó';
-    siguiente = { id: proximo.id, nombre: NOMBRE_DE_NIVEL[proximo.id], requisito: `Te ${verbo} ${enumerar(partes.map((p) => p.texto))}.` };
+    // Cada camino dice lo suyo; dos caminos se unen con ", o ".
+    const textos = caminos(proximo).map((requisito) => pendientesDe(requisito).map(([clave, n]) => requisitoDe(clave).falta(hechos, n)));
+    // El verbo concuerda con lo primero que se nombra: "Te faltó un título más y llegar al top 5", no "Te faltaron un título".
+    const verbo = textos[0][0].plural ? 'faltaron' : 'faltó';
+    const frase = textos.map((partes) => enumerar(partes.map((p) => p.texto))).join(', o ');
+    siguiente = { id: proximo.id, nombre: NOMBRE_DE_NIVEL[proximo.id], requisito: `Te ${verbo} ${frase}.` };
   }
   return { id: niveles[indice].id, nombre: NOMBRE_DE_NIVEL[niveles[indice].id], siguiente };
 }
@@ -474,21 +504,25 @@ export function factorDePotencial(potencial) {
 
 // Habla según hasta dónde llegaste: a un techo alto que llegó lejos no se le
 // dice "se esperaba más" (`BALANCE.puntaje.potencial.nivelAprovechado`/`nivelAMedias`).
-function detalleDePotencial(potencial, factor, nivelId, hechos) {
+function detalleDePotencial(potencial, factor, nivelId, hechos, nivelMax) {
   const { nivelAprovechado, nivelAMedias } = P().potencial;
   const efecto = Math.round((factor - 1) * 100);
-  const base = `Tu techo era ${potencial}, oculto hasta hoy`;
+  // El potencial es una vara de talento (de `mundo.potencialMin` a `potencialMax`), no un tope del nivel de juego: el nivel
+  // se arma con lo que entrenás y jugás, y puede pasarlo. Sin esta aclaración, "tu techo era 73" junto a "nivel máx 82" se lee
+  // como un error. Solo aparece cuando el pico lo supera: con un pico por debajo del potencial no hay nada que aclarar.
+  const aclaracion = nivelMax > potencial ? ` (no es un tope del nivel de juego: el tuyo llegó a ${nivelMax})` : '';
+  const base = `Tu potencial era ${potencial}, oculto hasta hoy${aclaracion}`;
   if (efecto > 0) {
     // Sin un solo split con contrato no hay logros a los que sumarles ese peso.
     return hechos.splitsJugados === 0
-      ? `${base}: con ese techo cada logro habría pesado un ${efecto}% más, pero nunca llegaste a jugar un split con contrato.`
-      : `${base}: con ese techo, cada cosa que lograste pesa un ${efecto}% más.`;
+      ? `${base}: con ese potencial cada logro habría pesado un ${efecto}% más, pero nunca llegaste a jugar un split con contrato.`
+      : `${base}: con ese potencial, cada cosa que lograste pesa un ${efecto}% más.`;
   }
   if (efecto === 0) {
     return `${base}: ni suma ni resta.`;
   }
   if (INDICE_DE_NIVEL[nivelId] >= INDICE_DE_NIVEL[nivelAprovechado]) {
-    return `${base}: el talento estaba y lo hiciste rendir. Con un techo así la vara es más alta: el número se ajusta un ${-efecto}% para abajo.`;
+    return `${base}: el talento estaba y lo hiciste rendir. Con un potencial así la vara es más alta: el número se ajusta un ${-efecto}% para abajo.`;
   }
   if (INDICE_DE_NIVEL[nivelId] >= INDICE_DE_NIVEL[nivelAMedias]) {
     return `${base}: daba para más que esto, y el número se ajusta un ${-efecto}% para abajo.`;
@@ -584,7 +618,7 @@ export function puntajeDeCarrera(state) {
     nivel,
     percentil: percentilDePuntaje(total),
     leyenda: leyendaMasCercana(perfil, state.player.role),
-    potencial: { valor, factor, puntos: total - subtotal, detalle: detalleDePotencial(valor, factor, nivel.id, hechos) },
+    potencial: { valor, factor, puntos: total - subtotal, detalle: detalleDePotencial(valor, factor, nivel.id, hechos, Math.round(registroDe(state).picos.nivel)) },
     perfil,
     hechos
   };

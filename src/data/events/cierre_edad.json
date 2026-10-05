@@ -510,7 +510,8 @@
     "contexto": {
       "etapa": [
         "debut",
-        "profesional"
+        "profesional",
+        "declive"
       ],
       "nivel": [
         "tier2",
@@ -806,7 +807,8 @@
     "contexto": {
       "etapa": [
         "debut",
-        "profesional"
+        "profesional",
+        "declive"
       ],
       "nivel": [
         "tier3",
@@ -1085,7 +1087,8 @@
     "contexto": {
       "etapa": [
         "debut",
-        "profesional"
+        "profesional",
+        "declive"
       ],
       "nivel": [
         "tier3"
@@ -1334,7 +1337,7 @@
     "category": "cierre_edad",
     "categoria": "rutina",
     "title": "El primer balance en serio",
-    "description": "Todavía sos de los más jóvenes de la casa, pero ya jugaste una temporada entera como profesional. Es tu primer cierre de año que no es de colegio.",
+    "description": "Todavía sos de los más jóvenes de la casa, pero ya tenés contrato de profesional: es tu primer cierre de año que no es de colegio.",
     "weight": 5,
     "cooldown": 99,
     "contexto": {
@@ -1345,8 +1348,7 @@
       "nivel": [
         "tier3",
         "tier2",
-        "tier1",
-        "libre"
+        "tier1"
       ],
       "edadBanda": [
         "temprana",
@@ -1598,7 +1600,8 @@
     "contexto": {
       "etapa": [
         "debut",
-        "profesional"
+        "profesional",
+        "declive"
       ],
       "nivel": [
         "tier1"
@@ -1843,7 +1846,8 @@
     "contexto": {
       "etapa": [
         "debut",
-        "profesional"
+        "profesional",
+        "declive"
       ],
       "marcas": [
         "con_vestuario"

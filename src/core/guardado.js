@@ -1,4 +1,5 @@
 import { planInicial, planPorId } from './rutinas.js';
+import { desgasteInicial } from './curvas.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 import { decisionDeCierre } from '../systems/edadCierre.js';
 import { pausaDeMercadoMigrada } from '../systems/mercado.js';
@@ -50,9 +51,31 @@ import { pausaDeMercadoMigrada } from '../systems/mercado.js';
 // lugar del motivo del retiro —K4-C2 lo había puesto en `flags.motivoRetiro`—) · 11 (K4c, el plan anual y el cierre del bloque
 // B: `player.planAnual` entra y `flags.preparacionDeSplit` se va, porque la pretemporada ya no frena para elegir la práctica;
 // además los logs ganan el campo opcional `adjunto` y la pausa de la prueba del mercado lleva `respaldo`, que un guardado de
-// antes no trae y se calcula con la misma regla). Un guardado de VERSION 10 SÍ carga: `migrarDe10` lo completa (T4).
-export const VERSION = 11;
-const VERSION_MIGRABLE = 10;
+// antes no trae y se calcula con la misma regla). Un guardado de VERSION 10 SÍ carga: `migrarDe10` lo completa (T4) · 12 (K5c, la
+// integración de K5c-E y K5c-R en un solo número — K5c-E, el desgaste: `player.desgaste`, lo que los años te sacan de cada stat de
+// curva y de cada acumulativo — K5c-R, la presión de tier 2: `flags.splitsTier2SinOfertaTier1`; y los años pro desde tier 2:
+// `career.splitPrimerContratoTier2`; K5c-M no cambió la forma; en la revisión de K5c entró `career.splitsRetirado`, los splits que
+// pasaron retirado —la ventana de vuelta— y no son años pro). Un guardado de la 11 carga con `migrarDe11`, que completa los campos
+// de las dos piezas y de la revisión, y uno de la 10 pasa por las dos migraciones.
+export const VERSION = 12;
+const VERSIONES_MIGRABLES = [10, 11];
+
+// El marcador de los años pro, reconstruido de lo que la 11 sí guardaba. La fila del registro de la org del primer contrato de tier
+// 2 o 1 la abre `roster.js` el split siguiente al de la firma, así que la firma fue en su `desdeSplit` - 1. Sin esa fila todavía
+// (firmaste en el split que se acaba de jugar) y con club de tier 2 o 1, fue en el split anterior al reloj de hoy. Medido al
+// escribirlo: coincide con el que escribe el motor en los 2731 cierres de split de las seeds 1-60. Hueco conocido: un guardado
+// parado a mitad del split de la firma, antes de que corra `atributos.js`, queda un split corrido.
+function primerContratoTier2DelRegistro(state) {
+  const fila = (state.career?.registro?.porOrg ?? []).find((candidata) => candidata.tier <= 2);
+  if (fila) {
+    return Math.max(state.splitFichaje ?? 0, fila.desdeSplit - 1);
+  }
+  if (state.career?.currentOrg && state.career.tier <= 2) {
+    return state.player.splitCount - 1;
+  }
+  return null;
+}
+
 
 // 10 -> 11. Le pone al estado lo que la versión nueva espera y la vieja no escribía: `player.planAnual` (el plan que le
 // cierra al perfil, el mismo del estado inicial: un guardado anterior nunca tuvo un cierre que lo fije) y fuera
@@ -99,6 +122,35 @@ export function migrarDe10(state) {
   };
 }
 
+// 11 -> 12. Completa lo que la 12 escribe y la 11 no. K5c-E: `player.desgaste` (lo que los años te sacan hoy de cada stat), en el
+// valor neutro del estado inicial. K5c-R: la cuenta de la presión de tier 2 en 0 (con las perillas de `BALANCE.retiro.presionTier2`
+// en 99 nunca subía) y el marcador de los años pro desde el registro. K5c (revisión): `career.splitsRetirado` en 0 (la 11 no
+// cargaba los splits que pasaron retirado: sus años pro no se corrigen hacia atrás). Puro: no toca el RNG ni el reloj.
+export function migrarDe11(state) {
+  const player = { ...state.player, desgaste: state.player?.desgaste ?? desgasteInicial() };
+  const flags = { ...state.flags, splitsTier2SinOfertaTier1: state.flags?.splitsTier2SinOfertaTier1 ?? 0 };
+  if (!state.career) {
+    return { ...state, player, flags };
+  }
+  const splitPrimerContratoTier2 = state.career.splitPrimerContratoTier2 !== undefined
+    ? state.career.splitPrimerContratoTier2
+    : primerContratoTier2DelRegistro(state);
+  // K6a-R: `serie.cantada` (sin cambiar la VERSION): un guardado de antes no la trae y su serie frena en el plan.
+  const serie = state.serie ? { ...state.serie, cantada: state.serie.cantada ?? null } : state.serie;
+  return {
+    ...state, player, flags, serie,
+    career: { ...state.career, splitPrimerContratoTier2, splitsRetirado: state.career.splitsRetirado ?? 0 }
+  };
+}
+
+// De la versión del guardado a la función que lo deja en la actual (la 10 pasa por `migrarDe10` y por `migrarDe11`).
+function migrar(version, state) {
+  if (version === 10) {
+    return migrarDe11(migrarDe10(state));
+  }
+  return version === 11 ? migrarDe11(state) : state;
+}
+
 export function serializar(state, rng, rngUi) {
   return JSON.stringify({
     version: VERSION,
@@ -119,7 +171,7 @@ export function deserializar(json) {
   } catch {
     return null;
   }
-  if (!datos || typeof datos !== 'object' || (datos.version !== VERSION && datos.version !== VERSION_MIGRABLE)) {
+  if (!datos || typeof datos !== 'object' || (datos.version !== VERSION && !VERSIONES_MIGRABLES.includes(datos.version))) {
     return null;
   }
   if (typeof datos.rngEstado !== 'number' || !datos.state) {
@@ -129,7 +181,7 @@ export function deserializar(json) {
     seed: datos.seed,
     rngEstado: datos.rngEstado,
     rngUiEstado: typeof datos.rngUiEstado === 'number' ? datos.rngUiEstado : null,
-    state: datos.version === VERSION_MIGRABLE ? migrarDe10(datos.state) : datos.state,
+    state: migrar(datos.version, datos.state),
     guardadoEn: datos.guardadoEn ?? null
   };
 }

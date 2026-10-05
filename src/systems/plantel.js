@@ -7,6 +7,7 @@ import {
   fuerzaDePlantel, ligasConPlantel
 } from '../core/plantel.js';
 import { IDS_ROL } from '../data/roles.js';
+import { plural } from '../core/formato.js';
 
 // EL MUNDO ENVEJECE — el offseason de la etapa amateur (fase 9M / 9Mc).
 //
@@ -76,7 +77,7 @@ function envejecerEnSitio(state, rng) {
 
   const totalBajas = [...cambiosPorOrg.values()].reduce((suma, n) => suma + n, 0);
   const logs = totalBajas > 0
-    ? [crearLog('mercado', `Movimiento de pretemporada en el mundo: ${totalBajas} relevo(s) de la academia en ${cambiosPorOrg.size} organización(es).`, { tecnico: true })]
+    ? [crearLog('mercado', `Movimiento de pretemporada en el mundo: ${totalBajas} ${plural(totalBajas, 'relevo', 'relevos')} de la academia en ${cambiosPorOrg.size} ${plural(cambiosPorOrg.size, 'organización', 'organizaciones')}.`, { tecnico: true })]
     : [];
 
   return { state: { ...state, mundo: { ...state.mundo, planteles, ligas } }, logs };

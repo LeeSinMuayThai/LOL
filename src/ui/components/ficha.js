@@ -1,5 +1,6 @@
 import { fichaCompleta } from '../../core/ficha.js';
 import { valorDeMercado } from '../../core/valorMercado.js';
+import { plural } from '../../core/formato.js';
 import { crearBarra, crearInstrumento } from './barra.js';
 import { crearStatRow } from './statRow.js';
 import { crearOrgChip } from './orgChip.js';
@@ -275,6 +276,7 @@ function crearContratoFranja(state, modulos) {
 }
 
 function crearBadgeInternacional(ficha) {
+  if (!ficha.estadoInternacional) return null;
   const internacional = document.createElement('div');
   internacional.className = `ficha-badge ficha-badge--${ficha.estadoInternacional}`;
   internacional.textContent = LABEL_INTERNACIONAL[ficha.estadoInternacional];
@@ -425,7 +427,7 @@ export function renderFicha(container, state, modulos) {
   const totales = document.createElement('div');
   totales.className = 'ficha-totales';
   const partidos = registro.fechasGanadas + registro.fechasPerdidas + registro.mapasGanados + registro.mapasPerdidos;
-  totales.textContent = `${registro.splitsJugados} splits · ${partidos} partidos · ${registro.titulos.length} título(s)`;
+  totales.textContent = `${registro.splitsJugados} splits · ${partidos} partidos · ${registro.titulos.length} ${plural(registro.titulos.length, 'título', 'títulos')}`;
 
   const mentalidad = crearBarra({
     // K3: la barra se lee como consistencia (con la cabeza bien jugás a tu nivel); el id interno sigue siendo mentalidad.

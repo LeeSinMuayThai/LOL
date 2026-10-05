@@ -302,7 +302,10 @@ export const BALANCE = {
     // Fase 10a (§10.1): se extiende 20/21 en vez de cortar seco en
     // `edadLimite` — la ventana sigue cerrandose, pero nunca a cero (el caso
     // Calix es raro, no imposible). `scoutingSesgoEtarioMinimo` cubre 22+.
-    scoutingSesgoEtario: { 15: 1, 16: 1, 17: 0.85, 18: 0.55, 19: 0.28, 20: 0.06, 21: 0.03 },
+    // K5c (no-pro, decisión del usuario "total ~20% y brecha acotada"): 18-20 se ablandan (0,55/0,28/0,06 ->
+    // 0,6/0,33/0,08) junto con el piso de soloQ de los perfiles (`pisoSoloQ`, data/perfiles.json). Medido en
+    // `criterio` 300 x 60: solo el piso, 23,0%; el piso con esta tabla, ~20% (ver PROGRESO.md).
+    scoutingSesgoEtario: { 15: 1, 16: 1, 17: 0.85, 18: 0.6, 19: 0.33, 20: 0.08, 21: 0.03 },
     scoutingSesgoEtarioMinimo: 0.015,
     scoutingPesoHype: 0.35,
     hypeReferenciaScouting: 60,
@@ -320,6 +323,22 @@ export const BALANCE = {
     nocturnoCostoTrustMax: 16,
     nocturnoBloquesExtra: 2,
     nocturnoFactorDecaeEstudio: 0.35,
+
+    // K6a-A: lo que mueven la charla con los viejos y el "no" a una oferta. Antes vivían como literales en
+    // `systems/amateur.js`; ahora la carta los dice antes de elegir (regla 15: la misma cifra que aplica el motor).
+    negociacionBienTrustMin: 6,
+    negociacionBienTrustMax: 14,
+    negociacionMalTrustMin: 8,
+    negociacionMalTrustMax: 16,
+    rechazoOfertaHypeMin: 2,
+    rechazoOfertaHypeMax: 6,
+    // K6a-A (D-B): "Cómo vivís la semana" la resuelve tu perfil y frena solo si lo que elegiría te mete en un riesgo
+    // que otra de las opciones evita. Bandas de magnitud de la previa de la semana (la proyección sin dado de
+    // `aplicarReparto`): en LP para el ranked, en puntos de barra para el resto.
+    semanaMagnitud: { ladder: { p33: 150, p66: 300 }, barra: { p33: 3, p66: 7 } },
+    // Cuánto más riesgo en casa (chance de confiscación o corte, 0-1) tiene que sumar lo que elegiría tu perfil, contra
+    // la opción más segura de la semana, para que la semana frene.
+    semanaRiesgoEvitable: 0.05,
 
     // Fase 10a (§10.1): deja de ser el corte duro ("cumpliste 20, se acabó").
     // La ventana real ya la cierra el sesgo etario del scouting (arriba); esto
@@ -364,7 +383,9 @@ export const BALANCE = {
     // pico fija ni declive anunciado: cada jugador tiene la suya.
     pisoJuvenil: 0.55,
     anchoSubida: 8,
-    anchoBajada: 8,
+    // K5c paso 3 (Final2): 8 → 3, la caída después del pico es más corta. Buscaba las carreras de ~4-6 años de §K.3b; medido al
+    // cerrar K5c (`criterio` 1500 × 60): carrera pro mediana 8,83 años (p10 4, p90 12). La meta se re-basó a lo medido (D80).
+    anchoBajada: 3,
     factorMinimo: -0.4,
 
     // El techo real sube un poco con los splits jugados: la experiencia corre
@@ -389,9 +410,10 @@ export const BALANCE = {
     // la necesita: es la razón mecánica para invertir en macro, y la fase 8
     // recién la hizo visible con las ▲▼) pero deja de ser lo que retira.
     curvas: {
-      mecanica: { declive: 0.6, velocidad: 0.3, ruido: 1.7 },
-      laneo: { declive: 0.36, velocidad: 0.22, ruido: 1.5 },
-      teamfight: { declive: 0.27, velocidad: 0.2, ruido: 1.5 }
+      // K5c paso 3 (Final2): los tres declives × 2 (0,6/0,36/0,27 → 1,2/0,72/0,54): la edad vuelve a pesar en las manos.
+      mecanica: { declive: 1.2, velocidad: 0.3, ruido: 1.7 },
+      laneo: { declive: 0.72, velocidad: 0.22, ruido: 1.5 },
+      teamfight: { declive: 0.54, velocidad: 0.2, ruido: 1.5 }
     },
     // K3-B (PLAN.md, "K3 — decisiones de spec"): la fracción de cada efecto de evento o decisión sobre un stat de
     // curva que se vuelve permanente (`player.bonusPermanente`: la curva de edad converge a `objetivo + bonus`).
@@ -411,6 +433,30 @@ export const BALANCE = {
       adaptabilidad: { ganancia: 0.55, spread: 0.9, permiteBajar: true }
     },
     techoAcumulativoBonus: 12,
+
+    // --- K5c-E: el desgaste (PLAN.md, "K5c: decisiones de spec de la estructura") ---
+    // Pasado el pico (`oculto.edadPico`) más una gracia, los años se cobran lo que construiste: los stats
+    // acumulativos pierden un término determinista por split (sin `rng`) y el bonus permanente de la práctica
+    // decae una fracción por split. TODAS las perillas salen en 0 (neutro: el juego queda idéntico, la huella no
+    // se mueve); las fija el barrido del paso 3. Se leen en el momento de usarlas (un override en memoria las pisa).
+    desgaste: {
+      // Años después de `edadPico` antes de que el desgaste empiece a morder: muerde con `edad > edadPico + gracia`.
+      graciaAnios: 0,
+      // Puntos que pierde cada acumulativo POR SPLIT apenas empieza a morder. Ojo: el acumulativo se recupera solo
+      // (`ganancia` × margen contra el techo), así que no se va hasta cero: se asienta cuando lo que recupera iguala lo
+      // que pierde, a `perdida / ganancia × 100` puntos por debajo del techo (con macro: 0,1 de pérdida ~ 9 puntos).
+      // K5c paso 3 (Final2): 0 → 1,5 / 1,5 / 0,9 (encendido).
+      perdidaPorSplit: { macro: 1.5, shotcalling: 1.5, adaptabilidad: 0.9 },
+      // La pérdida por split crece con los años pasados de `edadPico + gracia`: perdida × (1 + aceleracion × años).
+      // 0 = constante (lineal); más de 0 = cae cada vez más rápido, como los reflejos de verdad.
+      // K5c paso 3 (Final2): 0 → 1 (la pérdida crece con los años pasados del pico).
+      aceleracionPorAnio: 1,
+      // Fracción del bonus permanente (mecánica, laneo y teamfight) que se gasta por split pasado el pico más la
+      // gracia. Solo decae el bonus positivo (una cicatriz de lesión no se cura con la edad). Lo perdido se anota
+      // como marca negativa del registro ("Los años"), así que bonus = Σ marcas sigue valiendo.
+      // K5c paso 3 (Final2): 0 → 0,08 por split.
+      fraccionBonusPorSplit: 0.08
+    },
 
     // --- La mentalidad es la moneda: siempre cuesta, nunca se repone sola ---
     desgasteBase: 1.2,
@@ -903,7 +949,10 @@ export const BALANCE = {
     potencialMax: 100,
     pesoMetaInicialMin: 0.6,
     pesoMetaInicialMax: 1.6,
-    fuerzaOrgSpread: 11,
+    // K5c paso 3 (Final2): 11 → 6, los clubes de una liga se parecen más a su prestigio. Con él, en leagues.json
+    // (el JSON no lleva comentarios), `prestigio` LCK 95 → 97, LEC 80 → 73 y LCS 70 → 62; y LPL 93 → 91, fuera de Final2:
+    // la LCK primera en el reparto del Mundial del mundo con margen, por la fuerza de los planteles y no por cupos.
+    fuerzaOrgSpread: 6,
     fuerzaOrgMin: 20,
     fuerzaOrgMax: 99,
     campeonesIniciales: 3,
@@ -1076,21 +1125,38 @@ export const BALANCE = {
     // Revisión de K5 (D78): el calibre de una liga en la disputa del asiento es este cuantil de la fuerza de sus
     // clubes (0 = el colista, 1 = el mejor), y cada org pide `max(org.fuerza, calibre)`. Punto de partida: el cuarto
     // de abajo de la liga. K5c lo calibra contra cuántos coreanos y chinos con nivel llegan a su liga.
-    cuantilCalibreDeLiga: 0.25,
+    // K5c paso 3 (Final2): 0,25 → 0,5, el calibre es la mediana de la liga.
+    cuantilCalibreDeLiga: 0.5,
+    // K5c-N, el local juega en casa (PLAN.md, "El barrido"): en un club de la liga de tier 1 de tu región de origen
+    // (`mundo.regionIdOrigen`), el término de calibre de la alternativa del asiento (`core/demanda.js:
+    // nivelAlternativaAsiento`) es `fuerza + fraccion · (max(calibre, fuerza) − fuerza)`: el nativo paga esta fracción
+    // del cuantil de su liga; el import (club de otra región) lo paga entero, como siempre. 1 = idéntico (neutra); 0 = el
+    // nativo solo pide la fuerza del club. Ojo: solo mueve los clubes con `fuerza` debajo del calibre (con el cuantil
+    // 0,25, el cuarto de abajo de la liga); por encima, `max(calibre, fuerza)` ya es la fuerza. Lo fija el barrido.
+    fraccionCalibreLocal: 1,
+    // K5c-A, el ascenso: en la disputa de una oferta de un tier mejor que el tuyo (`ofertaPosible`), el castigo etario se
+    // multiplica por esto. Las renovaciones y las ofertas de tu tier o de uno peor no lo usan. 1 = idéntico (neutra).
+    fraccionCastigoAscenso: 1,
+    // K5c-V, el veterano de tier 2: desde esta edad, el mercado de tier 2 te trata como a un fichaje. Si perdés la disputa
+    // del asiento (con el castigo etario), tu club de tier 2 no te renueva (factor 0 en vez de `factorRenovacionDeclive`)
+    // y el piso de franquicia de una liga de tier 2 (`systems/mercado.js`) tampoco te hace lugar. 99 = nunca (neutra).
+    edadCastigoRenovacionTier2: 99,
     // El enfriamiento etario, en puntos de nivel que se te descuentan en la
     // disputa (`core/valorMercado.js:castigoEtario`). 0 a los ≤22, ~10 a los 27,
     // ~16 a los 30 — un veterano en declive cae bajo la vara de su liga y el
     // mercado de primera deja de llamarlo (gancho del retiro de la fase 10).
     // 9Mj: 18 → 20 (junto con `factorRenovacionDeclive`) empuja las caídas
     // tier 1 → tier 2 hacia banda (check 8, quedó en ~14% — ver §9M.12.4).
-    castigoEtarioNivel: 20,
+    // K5c paso 3 (Final2): 20 → 100 (el castigo etario de la disputa, con el `sesgoEtario` de abajo).
+    castigoEtarioNivel: 100,
     // Tu propio club también se enfría: un veterano pasado el declive Y bajo la
     // banda de su liga tiene la renovación castigada por este factor (el club
     // prefiere rejuvenecer). Un 30 que sigue claramente mejor que la camada
     // joven se renueva normal. Es lo que convierte "renovado para siempre en
     // CBLOL" en "quedó libre a los 31, sólo ofertas de tier 2, se retiró ahí".
     // 9Mj: 0,35 → 0,30 (junto con `castigoEtarioNivel` 18→20) para el check 8.
-    factorRenovacionDeclive: 0.30,
+    // K5c paso 3 (Final2): 0,30 → 0: el veterano bajo la banda de su liga no se renueva.
+    factorRenovacionDeclive: 0,
 
     // --- Fase 9Mc: la resolución del mercado del mundo (core/mercadoMundial.js).
     // Cada offseason, ANTES de la pantalla del jugador, las orgs con un asiento
@@ -1126,7 +1192,8 @@ export const BALANCE = {
     // retiro (fase 10) justamente por esto.
     splitsSinOfertaParaLibre: 3,
     aniosContratoMin: 1,
-    aniosContratoMax: 3,
+    // K5c paso 3 (Final2): 3 → 2 (más ventanas de mercado por carrera).
+    aniosContratoMax: 2,
     // Cuánto mejor tenés que ser que el mejor local para entrar como import
     // (CONCEPTO §6: "claramente mejor, no apenas mejor"). Lo evalúa
     // `mercado.js` al filtrar ofertas, no `salarioDeOferta`.
@@ -1143,9 +1210,10 @@ export const BALANCE = {
 
     // Una oferta lateral se etiqueta 'bombazo' cuando paga bastante más que
     // el contrato vigente — la tarjeta que hace sentir la decisión real
-    // (CONCEPTO §7). `margenBombazoFuerza` decide el texto de `riesgo`: si la
-    // org destino es bastante más fuerte que el promedio de su liga, avisa
-    // que vas a competir por lugar en vez de mandar.
+    // (CONCEPTO §7). `margenBombazoFuerza` es el piso de la heurística de
+    // negociación (`systems/mercado.js`). K6a-U: ya NO decide el texto de `riesgo`
+    // de la carta: ese sale de la banda del plantel (`plantelEnLiga`), el mismo
+    // dato que la línea "Plantel: ..." de la misma carta.
     bombazoMultiplo: 1.4,
     margenBombazoFuerza: 10,
 
@@ -1182,7 +1250,80 @@ export const BALANCE = {
     // Brecha nivel−prestigio a partir de la cual sos "una franquicia" para tu
     // liga: el mercado nunca te deja sin al menos una oferta (9R0e/9Mi), ni
     // siquiera con el sesgo etario en contra.
-    brechaFranquicia: 10,
+    // K5c paso 3 (Final2): 10 → 40, casi nadie es "franquicia" con el castigo etario nuevo.
+    brechaFranquicia: 40,
+
+    // --- K5c-M, la élite se busca (PLAN.md "K5c — decisiones de spec de la estructura"): los clubes fuertes le
+    // ofrecen a la élite. Estructura con perillas NEUTRAS (con `pesoFuerzaOrden`, `rebajaMerito` y `rebajaDisputa` en 0 el
+    // motor es idéntico, huella incluida); las fija el barrido del paso 3 de K5c. Se leen en el momento de usarlas
+    // (`core/demanda.js:factorElite` y `asientoAbierto`, `systems/mercado.js:generarOfertas`), así que un override en
+    // memoria las pisa.
+    //  - `f(nivel) = clamp((nivel − umbralNivel) / anchoNivel, 0, 1)`: 0 por debajo del umbral de élite, sube en
+    //    línea recta y vale 1 desde `umbralNivel + anchoNivel`. Lineal a propósito: una perilla de forma menos para
+    //    el barrido, y la élite "a medias" pesa a medias. El umbral arranca dos puntos arriba del borde de
+    //    `ficha.nivelBandas.elite` (78, desde donde la ficha dice "clase mundial").
+    //  - `pesoFuerzaOrden` (k): USD de orden de la mano por punto de `org.fuerza` con f = 1. El orden de la mano es
+    //    `presupuesto + nudge de región + k · f(nivel) · org.fuerza`: con k > 0 los clubes fuertes van primero.
+    //  - `rebajaMerito` y `rebajaDisputa`: puntos que se le perdonan a la élite, con f = 1, en los dos márgenes del asiento,
+    //    cada uno con su perilla y su tope (revisión de K5c, regla 15: una sola perilla sobre los dos márgenes, con un valor
+    //    mayor que `margenSobreAlternativa`, fichaba a una estrella peor que la alternativa del club y abría el asiento "por
+    //    mérito" para quien no le gana a su titular):
+    //      · `rebajaMerito` se resta de `demanda.forzarAsientoSobreNpc` (el club banca a su titular por una estrella aunque
+    //        no le saque tanto). Topeada en ese margen: tu nivel nunca queda por debajo del NPC al que reemplazás.
+    //      · `rebajaDisputa` se resta de `demanda.margenSobreAlternativa` (el club se estira por una estrella aunque no le
+    //        gane claramente a su alternativa). Topeada en ese margen: nunca sos peor que la alternativa del club.
+    //    Las dos van porque abrir solo el asiento no sumaba ningún club fuerte (medido en K5c-M: `core/demanda.js`). Las
+    //    reglas duras no se tocan.
+    elite: {
+      umbralNivel: 80,
+      anchoNivel: 10,
+      // K5c paso 3 (Final2): encendido: 0 → 100000 / 4 / 4.
+      pesoFuerzaOrden: 100000,
+      rebajaMerito: 4,
+      rebajaDisputa: 4
+    },
+    // K5c-M, lo que ve la carta: el puesto del plantel por fuerza dentro de su liga (`core/demanda.js:plantelEnLiga`).
+    // "Arriba" son los primeros `fraccionArriba` de la liga (redondeado para arriba; el 1.º se dice aparte), "abajo"
+    // los últimos `fraccionAbajo`, y lo del medio es mitad de tabla. Con 10 clubes: 1.º, 2.º-3.º, 4.º-7.º, 8.º-10.º.
+    plantelEnLiga: {
+      fraccionArriba: 0.3,
+      fraccionAbajo: 0.3
+    },
+    // --- K5c-H, cada uno juega en su casa (PLAN.md "K5c-H"): la escalera por nivel desde tu región. Tu "nivel para tu
+    // liga" es tu nivel menos `fraccionCastigo` del castigo etario de la disputa de un fichaje (`core/demanda.js:
+    // nivelParaTuLiga`). Si llega al calibre de la liga de tier 1 de tu región (`calibreDeLiga`, la misma vara del asiento)
+    // más `margenAlcanza`, "alcanzás tu liga": sus clubes van primero en la mano y, si ninguno te ofrece, uno te hace lugar
+    // (como el piso de franquicia: salta asiento, presupuesto, banda y disputa, nunca las reglas duras). Es el más fuerte
+    // cuya fuerza no pasa ese nivel (el club que te corresponde), o el más débil si todos lo pasan. Si no alcanzás, el
+    // mercado es el de siempre: el tier 2 de tu región o un import a la liga de tier 1 que te corresponde.
+    //  - `margenAlcanza` NEUTRO = 99: ningún nivel llega al calibre + 99, así que el motor es idéntico (huella incluida).
+    //  - `fraccionCastigo`: 1 = el castigo etario entero, el de la disputa (con el castigo de la base de calibración G0, ~22
+    //    puntos a los 23 y ~60 a los 26, solo alcanza un pibe de 20-21: medido en K5c-H); 0 = tu nivel sin la edad. Con
+    //    `margenAlcanza` neutro no mueve nada.
+    // Los fija el barrido de K5c. Se leen en cada llamada (`core/demanda.js:alcanzaTuLiga`): un override en memoria las pisa.
+    //  - `cuposImportElite` y `nivelImportElite` (arreglo de K5c-H, "desde una región débil, un jugador de élite sube como
+    //    import a una liga más fuerte"): cuando alcanzás tu liga, después del primer club de casa la mano reserva hasta
+    //    `cuposImportElite` lugares para clubes de ligas de tier 1 más fuertes que la tuya (calibre mayor) a las que tu nivel
+    //    llega, si tu nivel es de élite (`nivelImportElite`, el mismo umbral que `NIVEL_ELITE_CRITERIO` del bot `criterio`,
+    //    dev/estrategias.js). Sin esto, con 6+ clubes de casa ningún import llegaba a la mano (en Final2, 5 de 18 carreras de
+    //    élite de Brasil jugaron alguna vez en una liga más fuerte). Solo actúan con la casa encendida: con `margenAlcanza`
+    //    neutro no mueven nada (`systems/mercado.js:generarOfertas`).
+    //  - `margenImportElite` (arreglo del revisor): "más fuerte" es CLARAMENTE más fuerte, no un punto de calibre. Sin esto, con
+    //    la casa encendida a un coreano de élite le saltaban los cupos de clubes de la LPL (el calibre de la LPL le gana al de la
+    //    LCK por poco en una parte de los mundos) y `criterio` los tomaba: su % de splits de tier 1 en la LCK bajó del 72% (sin
+    //    cupos) al 64% (G0, 200 carreras, pico >= 85). Una liga cuenta como "más fuerte" si su calibre (`calibreDeLiga`) pasa el
+    //    de tu casa MÁS este margen; el mismo lo usa `criterio` (dev/estrategias.js:claseDeLigaCriterio). Calibres medios de
+    //    G0 / Final2 (40 mundos): LCK 88,7 / 95,1, LPL 86,8 / 92,9, LEC 73,8 / 73,1, LCS 63,1 / 62,3, LCP 54,0 / 59,7,
+    //    CBLOL 49,4 / 55,6 (desvío entre mundos 4-5 / 1-3). LCK contra LPL (2) y la LCP contra la CBLOL (4-5) quedan por debajo
+    //    del margen; la LEC contra la LCP o la CBLOL (14-24), la LCK/LPL contra la LEC (15-20) y la LEC contra la LCS (11) arriba.
+    casa: {
+      // K5c paso 3 (Final2): la casa encendida: margen 99 → -4 y castigo etario 1 → 0.
+      margenAlcanza: -4,
+      fraccionCastigo: 0,
+      cuposImportElite: 2,
+      nivelImportElite: 85,
+      margenImportElite: 8
+    },
 
     // --- salarioDeOferta: mult = exp(gauss(0,sigma)) * factorRol * jerarquía * hype ---
     salarioJerarquiaBase: 0.6,
@@ -1195,13 +1336,14 @@ export const BALANCE = {
     // ventana de fichaje amateur — un jugador de 28 recibe ~40% de las
     // ofertas que uno de 21 con la hoja idéntica. Un solo concepto ("el
     // mercado prefiere jóvenes"), dos tablas porque cubren edades distintas.
+    // K5c paso 3 (Final2): la tabla corrida dos años antes (el mercado mira la edad desde los 21); de los 29 en adelante, el mínimo.
     sesgoEtario: {
-      15: 1, 16: 1, 17: 1, 18: 1, 19: 1, 20: 1, 21: 1, 22: 1,
-      23: 0.95, 24: 0.88, 25: 0.78, 26: 0.66, 27: 0.52, 28: 0.40, 29: 0.30, 30: 0.22
+      15: 1, 16: 1, 17: 1, 18: 1, 19: 1, 20: 1,
+      21: 0.95, 22: 0.88, 23: 0.78, 24: 0.66, 25: 0.52, 26: 0.40, 27: 0.30, 28: 0.22
     },
     sesgoEtarioMinimo: 0.15, // 31+
 
-    // --- valorDeMercado: cuánto pesa cada insumo antes del sesgo etario ---
+    // --- presupuestoDeDemanda (antes valorDeMercado): cuánto pesa cada insumo antes del sesgo etario ---
     valorRendimientoPeso: 0.5,
     valorJerarquiaPeso: 0.3,
     valorHypePeso: 0.25,
@@ -1339,11 +1481,24 @@ export const BALANCE = {
     // con la bifurcación "bajás de tier o colgás el mouse". Se cuenta igual que `mercado.splitsSinOfertaParaLibre`
     // (un split de mercado = una pretemporada). 99 = nunca dispara: la estructura sale con el valor que reproduce
     // hoy; el valor de verdad (y con él la longevidad, §K.3b) lo fija K5c.
-    splitsSinOfertaEnTierParaBifurcar: 99,
+    // K5c paso 3 (Final2): 99 → 1 (una pretemporada sin oferta de tu tier y frena).
+    splitsSinOfertaEnTierParaBifurcar: 1,
+    // K5c-R (PLAN.md K5c, "la presión de retiro"): el que se queda en tier 2. `systems/retiro.js` cuenta cada split
+    // jugado en tier 2 (con club, con contrato corriendo también) desde `edadDesde` años; solo lo vuelve a cero una
+    // oferta de TIER 1 (`systems/mercado.js`: una mano, un traspaso o un import firmado), aunque no la firmes. Al llegar
+    // a `splitsSinOfertaTier1`, la próxima ventana de mercado abierta frena con la bifurcación del final por mercado
+    // (variante `presion_tier2`: seguís en tier 2 o colgás el mouse). Se leen en el momento de usarlas (un override en
+    // memoria las pisa). 99 y 99 = nunca dispara: la estructura sale neutra; los valores los fija el barrido de K5c.
+    presionTier2: {
+      // K5c paso 3 (Final2): encendida: desde los 20, a los 4 splits sin oferta de tier 1.
+      edadDesde: 20,
+      splitsSinOfertaTier1: 4
+    },
     // `resolverAuto` de esa bifurcación (el headless y el bot `criterio`): antes de esta edad bajás de tier (o
     // seguís buscando, si nadie ofrece); desde esta edad aceptás el veredicto y te retirás — mismo criterio que
     // `retiro_declive` ("no te renuevan" es la causa modal de retiro real, `CONCEPTO` §12.4).
-    edadAutoAceptaVeredicto: 27
+    // K5c paso 3 (Final2): 27 → 22.
+    edadAutoAceptaVeredicto: 22
   },
 
   // Fase 10c (PLAN.md §10.4.2): la cadena causal de D9. `player.deudaSueno`
@@ -1561,7 +1716,20 @@ export const BALANCE = {
       // K4c: 15 -> 6. Medido (criterio, 300 × 60, de a una perilla): las interrupciones bajan de 109 a 98 y el p90 de las paradas de
       // playoffs, de 7 (36% con más de 4) a 5 (17%); el del internacional, de 7 (49%) a 5 (22%). Con cA entera: 89 interrupciones,
       // 5 (11%) y 5 (12%) (PLAN.md, "Paso 2 — lo que midieron los barridos").
+      // K6a-M (D-B): el umbral ya no se aplica a una serie de eliminación (`esSerieDeEliminacion`, core/serie.js), y hoy
+      // todas lo son: los playoffs y el bracket del Mundial frenan siempre. En el ensayo de K6 una final del CBLOL y unos
+      // cuartos se habían resuelto solos por esta regla.
       umbralSinNadaEnJuego: 6,
+      // K6a-R (PLAN.md, "Decisión del supervisor (K6a-R, el ritmo de la eliminación)"): una serie de eliminación que no es
+      // final frena en el plan solo si está abierta, con la p de serie del plan del coach entre esto y 1 − esto. Afuera de esa
+      // franja está cantada: el coach arma el plan, el feed dice si sos favorito o no, y frena solo en el mapa decisivo si llega.
+      // Ninguna final se mira con esto: frena siempre.
+      // Medido (criterio, 400 × 60; con 0,2 el instrumento dio p90 6 / 6 en playoffs / internacional y Δp de plan 5,59 pp), con
+      // una sonda que le saca a cada split el plan de las series no finales que este valor dejaría cantadas: el % de splits de
+      // playoffs con más de 5 paradas es 11,6 (0,2), 10,0 (0,25: el p90 justo en el borde), 8,0 (0,3) y 6,2 (0,35). 0,3 es el
+      // primero con margen. El internacional no baja de p90 6 con ningún valor (12% de splits con más de 5 aun con 0,4): el
+      // cierre de año, la final doméstica y el tope T9 del Mundial (4) ya suman 6 sin una sola serie abierta.
+      pAbiertaEliminacion: 0.3,
       // Salir con todo: tus mejores picks y más intensidad en los primeros `mapasConTodo` mapas; después lo pagás.
       mapasConTodo: 2,
       // K4c, los cinco `empuje*`/`desgaste*` ×3 (barrido con `criterio`, 300 × 60, escalando todos juntos; PLAN.md, "El barrido del
@@ -1750,7 +1918,12 @@ export const BALANCE = {
     // tope las resuelve el coach (el mismo criterio que el camino headless). Antes de la final se guardan 2 para la
     // final (su plan de Fearless y su mapa decisivo): el 2-2, los cuartos y las semis frenan solo hasta 4 - 2.
     maxInterrupciones: 4,
-    reservaParaLaFinal: 2
+    reservaParaLaFinal: 2,
+    // K5c-H: ¿cuenta tu jerarquía en el Mundial? Con `false`, tu rendimiento en el Swiss y en el bracket no lo corre el
+    // factor de jerarquía (`core/fuerza.js:fuerzaDeMundial`), igual que al rival NPC, que vale el promedio de sus niveles.
+    // `true` es NEUTRO (el motor de siempre). La previa lo dice cuando está en `false` (regla 12). Se lee en cada llamada.
+    // K5c paso 3 (Final2): true → false, tu jerarquía no corre en el Mundial (igual que al NPC).
+    jerarquiaCuenta: false
   },
 
   puntaje: {
@@ -1838,6 +2011,14 @@ export const BALANCE = {
     // el mejor rank de la vida, este o mejor). "El que no llegó" es el piso;
     // "Fijo en primera" son tres años en primera (3 × `edad.splitsPorEdad`);
     // desde K5, "El GOAT" pide también 2 o más Mundiales.
+    // K5c fija estos cortes como definitivos y "El GOAT" como nombre definitivo del nuevo Faker de §K.3b: #1 del mundo al
+    // cierre de 3 o más temporadas, o (`alternativa`, otra lista que también gana el nivel) 2 o más Mundiales. Medido con los
+    // valores de K5c (seeds 1-1500, 60 splits, `node --max-old-space-size=12288 src/dev/simulate.js 1500 60 <bot>
+    // --bloque=puntaje`), el % de carreras que llega a cada nivel o más alto, criterio / azar / malas:
+    // pasó por el circuito 78,6 / 75,9 / 62,7 · un profesional más 74,5 / 65,4 / 47,1 · fijo en primera 70,6 / 55,4 / 35,2 ·
+    // campeón 57,0 / 42,7 / 23,6 · figura mundial 36,5 / 23,4 / 11,1 · leyenda 8,8 / 3,2 / 0,7 · El GOAT 1,3 / 0,2 / 0.
+    // Cada nivel separa a los tres bots en el orden de sus decisiones. Los cortes por hechos no se mueven con el balance:
+    // lo que se movió con K5 es cuántos llegan (§K.3b re-basado, PLAN.md §K5c).
     niveles: [
       { id: 'no_llego', requisito: {} },
       { id: 'circuito', requisito: { splitsJugados: 1 } },
@@ -1846,7 +2027,7 @@ export const BALANCE = {
       { id: 'campeon', requisito: { titulosTier1: 1 } },
       { id: 'figura', requisito: { cierresEnTop20: 1 } },
       { id: 'leyenda', requisito: { titulosTier1: 3, rankPicoHasta: 5 } },
-      { id: 'goat', requisito: { cierresNumeroUno: 3 } }
+      { id: 'goat', requisito: { cierresNumeroUno: 3 }, alternativa: { mundialesGanados: 2 } }
     ],
     // El referente del número (regla 13): "mejor que el X% de las carreras".
     // Pares [percentil, puntaje] medidos con `criterio` (seeds 1-800, 60 splits,
@@ -1861,11 +2042,20 @@ export const BALANCE = {
     // --bloque=puntaje`): p50 989 → 933, p90 1622 → 1663, p99 1993 → 2243. El borde
     // entre los que no llegaron y los pros pasa a estar entre el p25 (124) y el p30
     // (436). Los cortes de nivel no se tocan: son por hechos.
-    // Provisoria: K5c la vuelve a medir.
+    // K5c (paso 3b-3) la re-midió con los valores del bloque C (el mundo: el Mundial
+    // real, cada uno en su casa, el desgaste; `criterio`, seeds 1-1500, 60 splits,
+    // `node --max-old-space-size=12288 src/dev/simulate.js 1500 60 criterio
+    // --bloque=puntaje`): p50 933 → 259, p90 1663 → 876, p99 2243 → 1290. El número
+    // bajó porque el mundo es más duro (menos títulos, Top 20 y años pro por
+    // carrera). Al cerrar K5c se re-midió sobre el head final (después de las
+    // cartas de cierre del declive, que corrieron el stream; mismo comando): p50
+    // 259 → 260, p90 876 → 876, p99 1290 → 1315; el borde entre los que no
+    // llegaron (21,5%) y los pros cae entre el p20 (26) y el p25 (39). Definitiva
+    // para el cierre de K5c.
     cuantiles: [
-      [0, 0], [5, 12], [10, 17], [15, 21], [20, 26], [25, 124], [30, 436], [35, 650], [40, 758], [45, 839],
-      [50, 933], [55, 1018], [60, 1106], [65, 1158], [70, 1237], [75, 1313], [80, 1426], [85, 1518],
-      [90, 1663], [95, 1841], [97, 1950], [99, 2243]
+      [0, 0], [5, 11], [10, 16], [15, 21], [20, 26], [25, 39], [30, 80], [35, 110], [40, 153], [45, 208],
+      [50, 260], [55, 316], [60, 378], [65, 450], [70, 517], [75, 592], [80, 659], [85, 763],
+      [90, 876], [95, 1025], [97, 1150], [99, 1315]
     ],
     // La leyenda comparada (`data/leyendas.json`): la más cercana por distancia
     // euclídea sobre el perfil normalizado (cada eje dividido por su `escala`),

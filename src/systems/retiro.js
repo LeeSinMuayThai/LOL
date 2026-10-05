@@ -1,3 +1,4 @@
+import { plural } from '../core/formato.js';
 import { crearLog } from '../core/log.js';
 import { calcularContexto } from '../core/contexto.js';
 import { BALANCE } from '../data/balance.js';
@@ -6,6 +7,7 @@ import {
   resolver as resolverEvento, resolverAuto as resolverAutoEvento
 } from './events.js';
 import { armarRosterAlVolver } from './roster.js';
+import { calcularCalendario } from './edadInicio.js';
 
 export const id = 'retiro';
 
@@ -38,10 +40,34 @@ function terminar(state, finAnticipado, mensaje, { reversible = false, motivo = 
       terminado: !reversible,
       finAnticipado,
       motivoRetiro: motivo,
-      flags: { ...state.flags, splitsEnDeclive: 0, splitsEnVentana: 0, splitsSinOfertaEnTier: 0, pruebasFallidas: [] }
+      flags: {
+        ...state.flags, splitsEnDeclive: 0, splitsEnVentana: 0, splitsSinOfertaEnTier: 0, pruebasFallidas: [],
+        // K5c-R: si volvés, volvés de free agent; la presión de tier 2 arranca de cero (como la de K5-C).
+        splitsTier2SinOfertaTier1: 0
+      }
     },
     logs: [crearLog('retiro', mensaje)]
   };
+}
+
+// K5c-R, la presión de tier 2: cada split jugado en tier 2 (con club, también con contrato corriendo) desde
+// `BALANCE.retiro.presionTier2.edadDesde` suma uno a `flags.splitsTier2SinOfertaTier1`. Lo vuelve a cero solo una oferta de
+// tier 1 (`systems/mercado.js`, que también frena con la bifurcación al llegar al umbral). Corre todos los splits de la
+// fase profesional, después del mercado (el tier y el club ya son los del split que se juega). Cero `rng`; las perillas
+// se leen acá, no al importar el módulo.
+export function conPresionTier2(state) {
+  const { edadDesde } = BALANCE.retiro.presionTier2;
+  if (state.career.tier !== 2 || !state.career.currentOrg || state.age < edadDesde) {
+    return state;
+  }
+  const splitsTier2SinOfertaTier1 = (state.flags.splitsTier2SinOfertaTier1 ?? 0) + 1;
+  return { ...state, flags: { ...state.flags, splitsTier2SinOfertaTier1 } };
+}
+
+// "14 títulos, 0 internacionales." / "1 título, 1 internacional.": el plural es real, sin "(s)".
+function totalesEnPalabras(state) {
+  const { titulos, internacionales } = state.career;
+  return `${titulos} ${plural(titulos, 'título', 'títulos')}, ${internacionales} ${plural(internacionales, 'internacional', 'internacionales')}.`;
 }
 
 function mensajeDeSalida(state, finAnticipado) {
@@ -50,8 +76,7 @@ function mensajeDeSalida(state, finAnticipado) {
       ? `A los ${state.age} te quedás sin equipo: hubo llamados, pero las pruebas no alcanzaron. Se termina acá.`
       : `A los ${state.age} el teléfono dejó de sonar. Sin equipo y sin llamados: se termina acá.`;
   }
-  return `Te retirás a los ${state.age}. ${state.career.titulos} título(s), `
-    + `${state.career.internacionales} internacional(es). Se cierra una carrera.`;
+  return `Te retirás a los ${state.age}. ${totalesEnPalabras(state)} Se cierra una carrera.`;
 }
 
 const NUMERO_EN_PALABRAS = ['cero', 'una', 'dos', 'tres', 'cuatro', 'cinco', 'seis'];
@@ -62,6 +87,19 @@ export function pretemporadasEnPalabras(n) {
     return 'la última pretemporada';
   }
   return `${NUMERO_EN_PALABRAS[n] ?? n} pretemporadas seguidas`;
+}
+
+const ANIOS_EN_PALABRAS = ['cero', 'un', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez'];
+
+// K5c-R: "dos años" (o "más de un año", o "dos splits"): cuánto llevás, dicho a partir de los splits contados.
+export function aniosEnPalabras(splits) {
+  const porAnio = BALANCE.edad.splitsPorEdad;
+  const anios = Math.floor(splits / porAnio);
+  if (anios === 0) {
+    return splits === 1 ? 'un split' : `${ANIOS_EN_PALABRAS[splits] ?? splits} splits`;
+  }
+  const texto = `${ANIOS_EN_PALABRAS[anios] ?? anios} ${anios === 1 ? 'año' : 'años'}`;
+  return splits % porAnio === 0 ? texto : `más de ${texto}`;
 }
 
 // K4c (revisión): "probaste con Onda Collective y no alcanzó" (o "con A y con B"), si desde tu última firma hubo pruebas del
@@ -115,13 +153,32 @@ export const MOTIVOS_DE_RETIRO = {
   staff: 'para pasar al staff'
 };
 
+// El split en el que te retirás por una bifurcación: uno (no es una perilla, es la cuenta de "este split").
+const SPLIT_DEL_RETIRO = 1;
+
 export function retirarsePorCamino(state, motivo) {
   const puedeVolver = state.flags.vueltasUsadas < BALANCE.retiro.vueltasMaximas;
   const { state: retirado, logs } = terminar(state, 'retiro_elegido',
-    `Dejás de competir a los ${state.age} ${MOTIVOS_DE_RETIRO[motivo]}. ${state.career.titulos} título(s), `
-    + `${state.career.internacionales} internacional(es).${puedeVolver ? ' La puerta queda entreabierta.' : ''}`,
+    `Dejás de competir a los ${state.age} ${MOTIVOS_DE_RETIRO[motivo]}. ${totalesEnPalabras(state)}${puedeVolver ? ' La puerta queda entreabierta.' : ''}`,
     { reversible: puedeVolver, motivo: `Dejaste de competir ${MOTIVOS_DE_RETIRO[motivo]}.` });
-  return { state: retirado, descripcion: `te retirás ${MOTIVOS_DE_RETIRO[motivo]}`, logs };
+  // Arreglo de K5c (años pro): la bifurcación llega en `eventos`, con la temporada de este split ya jugada, pero `atributos`
+  // no corre: ni el reloj (`player.splitCount`) ni `registro.splitsJugados` la cuentan. Ese split fue pro y se jugó: el
+  // registro lo suma y `career.splitsRetirado` (lo que `aniosProDe` le descuenta al reloj) baja uno, así que
+  // `splitsJugados = splitCount − splitsRetirado` se sigue cumpliendo. Sin vuelta, la tarjeta lo cuenta; con vuelta, se
+  // compensa con el split del retiro que `relojAlVolver` suma dentro de `flags.splitsEnVentana`, que antes se descontaba
+  // entero (la vuelta perdía un split pro: 15 de 87 vueltas de `azar` con Final2).
+  const temporadaJugada = state.phase === 'profesional' && state.career.splitPrimerContratoTier2 != null;
+  const conSplitPro = temporadaJugada
+    ? {
+      ...retirado,
+      career: {
+        ...retirado.career,
+        splitsRetirado: (retirado.career.splitsRetirado ?? 0) - SPLIT_DEL_RETIRO,
+        registro: { ...retirado.career.registro, splitsJugados: retirado.career.registro.splitsJugados + SPLIT_DEL_RETIRO }
+      }
+    }
+    : retirado;
+  return { state: conSplitPro, descripcion: `te retirás ${MOTIVOS_DE_RETIRO[motivo]}`, logs };
 }
 
 // K4-C2: la ventana de vuelta tiene su contenido (`data/events/retiro_y_vuelta.json`, etapa `retirado`), que el
@@ -181,6 +238,15 @@ function aplicarVentanaDeVuelta(state, rng) {
     return { state: conCuenta, logs: [crearLog('retiro', 'Seguís retirado. Nada nuevo este split.', { tecnico: true })] };
   }
 
+  // K5c (motor): la vuelta te devuelve con la edad que el mundo te puso (`relojAlVolver`). Si con esos años ya llegaste a
+  // la línea Faker, no hay vuelta que ofrecer: la misma línea que `aplicar` hace cumplir en la pretemporada, sin pregunta.
+  if (relojAlVolver(conCuenta).age >= r.edadRetiroForzoso) {
+    return {
+      state: { ...conCuenta, terminado: true },
+      logs: [crearLog('retiro', 'La ventana se cerró sola: con los años que pasaron afuera, ya no hay vuelta.')]
+    };
+  }
+
   return eventoDeVentana(conCuenta, rng);
 }
 
@@ -195,6 +261,11 @@ export function aplicar(state, rng) {
   if (state.phase !== 'profesional') {
     return { state, logs: [] };
   }
+  // K5c-R: la presión de tier 2 se cuenta todos los splits, antes de mirar si es pretemporada.
+  return aplicarProfesional(conPresionTier2(state));
+}
+
+function aplicarProfesional(state) {
   // El retiro es un momento de fin de año, no una deriva a mitad de temporada
   // (T2: el contexto se calcula en vivo, nunca se confía en el cache).
   const contexto = calcularContexto(state);
@@ -248,6 +319,24 @@ export function aplicar(state, rng) {
   return { state: conCuenta, logs: [], decision: decisionDeclive(conCuenta) };
 }
 
+// K5c (motor): el mundo no te espera. Mientras dura la ventana `player.splitCount` queda congelado (lo mueve
+// `atributos.js`, que no corre), y con él el calendario (`edadInicio.js`) y la edad (`edadCierre.js`): sin esto, la
+// vuelta retomaba el reloj donde lo habías dejado y el mundo repetía el año (dos Mundiales 2034 en la seed 4 de `azar`:
+// el retiro de una bifurcación llega en `events`, DESPUÉS del Mundial y antes de `atributos`, así que la vuelta volvía
+// a jugar ese mismo split). Al volver, el reloj adelanta los splits que pasaron afuera: el del retiro (jugado o no,
+// `atributos` no lo contó) más los de la ventana hasta este, que son `flags.splitsEnVentana` en total (la vuelta solo
+// se ofrece cuando ese contador es múltiplo de `splitsPorEdad`, así que volvés en el mismo punto del año). La edad
+// suma los cierres de año que cruzaste y el calendario se recalcula ya, en este split (`edadInicio` corrió antes con el
+// reloj viejo). Si la ventana se cierra sin vuelta no se toca nada: la tarjeta queda en el año y la edad del retiro.
+function relojAlVolver(state) {
+  const porAnio = BALANCE.edad.splitsPorEdad;
+  const antes = state.player.splitCount;
+  const splitCount = antes + state.flags.splitsEnVentana;
+  const aniosAfuera = Math.floor(splitCount / porAnio) - Math.floor(antes / porAnio);
+  const conReloj = { ...state, age: state.age + aniosAfuera, player: { ...state.player, splitCount } };
+  return { ...conReloj, calendario: calcularCalendario(conReloj) };
+}
+
 export function resolver(state, decision, respuesta, rng) {
   const { motivo } = decision.datos;
 
@@ -277,15 +366,18 @@ export function resolver(state, decision, respuesta, rng) {
 
   // motivo === 'retiro_vuelta'
   if (respuesta.opcionId === 'volver') {
+    const reloj = relojAlVolver(state);
     const vuelto = {
-      ...state,
+      ...reloj,
       phase: 'profesional',
       motivoRetiro: null,
+      // K5c (revisión): los splits de la ventana avanzaron el reloj pero no fueron años pro (`career.splitsRetirado`).
+      career: { ...reloj.career, splitsRetirado: (reloj.career.splitsRetirado ?? 0) + reloj.flags.splitsEnVentana },
       flags: {
-        ...state.flags,
+        ...reloj.flags,
         splitsEnVentana: 0,
-        vueltasUsadas: state.flags.vueltasUsadas + 1,
-        splitVuelta: state.player.splitCount
+        vueltasUsadas: reloj.flags.vueltasUsadas + 1,
+        splitVuelta: reloj.player.splitCount
       }
     };
     // K4c (integración): `roster` ya corrió este split, con `phase: 'retirado'`. Si te habías retirado en el split del

@@ -1,7 +1,7 @@
 import { clamp, clampStat } from './numeros.js';
 import { ligaOZonaDeCarrera } from './competicion.js';
 import { jugarPartido, probabilidadDePartido } from './partido.js';
-import { rondaInicial } from './serie.js';
+import { rondaInicial, esCierreDeTemporada } from './serie.js';
 import { BALANCE } from '../data/balance.js';
 
 // La temporada regular (fase 5): antes se resolvía con UNA tirada
@@ -171,7 +171,7 @@ function victoriasEsperadasPorJornada(state, t) {
 function rondaConVictorias(victorias, orgPropia, formato) {
   const propias = victorias[orgPropia];
   const delante = Object.entries(victorias).filter(([org, v]) => org !== orgPropia && v > propias).length;
-  return rondaInicial(delante + 1, { byes: formato.byes ?? 0, clasifican: formato.clasifican });
+  return rondaInicial(delante + 1, { ...formato, byes: formato.byes ?? 0 });
 }
 
 // ¿Esta fecha decide algo? Con la tabla de hoy y el fixture que falta, se
@@ -182,9 +182,12 @@ function rondaConVictorias(victorias, orgPropia, formato) {
 // tiene playoffs o si falta más de `ventanaDefineClasificacion` fechas: antes de
 // eso la proyección es una sola cuenta de esperanzas y decir "de este partido
 // depende" sería mentirle al jugador.
+// K6a-M (regla 15): solo en el split que cierra la temporada, que es el único que siembra los playoffs
+// (`systems/serie.js` lee la posición de ese split): en los otros dos "si ganás, entrás a playoffs" era mentira.
 export function defineClasificacion(state, liga, t, indice = t.indice) {
   const formato = liga?.formatoPlayoffs;
-  if (!formato || indice < t.calendario.length - BALANCE.temporada.ventanaDefineClasificacion) {
+  if (!formato || !esCierreDeTemporada(state.player.splitCount)
+    || indice < t.calendario.length - BALANCE.temporada.ventanaDefineClasificacion) {
     return null;
   }
   return evaluarFecha(proyeccionDelSplit(state, t), indice - t.indice, t, formato);
@@ -196,7 +199,7 @@ export function defineClasificacion(state, liga, t, indice = t.indice) {
 // resultados cambiaron la tabla), el cupo queda libre para las que sigan.
 export function defineClasificacionMasAdelante(state, liga, t) {
   const formato = liga?.formatoPlayoffs;
-  if (!formato) {
+  if (!formato || !esCierreDeTemporada(state.player.splitCount)) {
     return false;
   }
   const proyeccion = proyeccionDelSplit(state, t);
@@ -278,6 +281,9 @@ export function motivoPrincipal(motivos) {
 // Dos frases por rama: ganar y perder no dicen lo mismo con la misma ronda
 // (ganar y entrar sin más / perder y quedar afuera).
 function consecuenciaDeGanar(ronda, siPierde) {
+  if (ronda === 'final') {
+    return 'jugás la final';
+  }
   if (ronda === 'semis') {
     return 'pasás directo a semis';
   }
@@ -285,6 +291,9 @@ function consecuenciaDeGanar(ronda, siPierde) {
 }
 
 function consecuenciaDePerder(ronda) {
+  if (ronda === 'final') {
+    return 'jugás la final igual';
+  }
   if (ronda === 'semis') {
     return 'pasás directo a semis';
   }
@@ -295,6 +304,17 @@ function consecuenciaDePerder(ronda) {
 // mostrar: sin ids, con los nombres de la fecha. `null` si no hay fecha marcada
 // en curso. Lee el estado de la pausa (nada avanza mientras dura), así que no
 // hace falta guardarlo.
+// K6a-M: el encabezado de la tarjeta de resultado de una fecha marcada (rival, local, fuerzas, resultado, posición
+// y racha), leído del log de ESA fecha. `null` si el log no es de una fecha jugada (la línea de cierre del split
+// también es `type: 'temporada'`): esa se pinta como una línea, sin un "GANARON vs" prestado.
+export function encabezadoDeResultado(log) {
+  if (!log?.rival) {
+    return null;
+  }
+  const { rival, local, fuerzaRival, fuerzaPropia, gano, posicion, equipos, racha } = log;
+  return { rival, local, fuerzaRival, fuerzaPropia, gano, posicion, equipos, racha };
+}
+
 export function textoPorQueImporta(state) {
   const t = state.career?.temporada;
   const fecha = t?.fechaEnCurso;

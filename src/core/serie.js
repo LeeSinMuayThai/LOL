@@ -1,7 +1,7 @@
 import { weightedPick } from './rng.js';
 import { campeonesEnMeta, factorDeCampeon } from './ajusteMeta.js';
 import { campeonesDisponibles, entradaDePool } from './pool.js';
-import { fuerzaDePartido } from './fuerza.js';
+import { fuerzaDePartido, jerarquiaNoCuentaEn } from './fuerza.js';
 import { probabilidadDePartido } from './partido.js';
 import { BALANCE } from '../data/balance.js';
 
@@ -30,8 +30,12 @@ export function calificaAInternacional(liga, posicion) {
 }
 
 // El bracket es de eliminación simple: los dos mejores sembrados saltan
-// directo a semifinal, el resto arranca en cuartos.
+// directo a semifinal, el resto arranca en cuartos. K6a-M: un formato con `arranca` (la final de tier 2, que juegan los
+// `clasifican` de arriba) entra directo en esa ronda.
 export function rondaInicial(posicion, formatoPlayoffs) {
+  if (formatoPlayoffs.arranca) {
+    return posicion <= formatoPlayoffs.clasifican ? formatoPlayoffs.arranca : null;
+  }
   if (posicion <= formatoPlayoffs.byes) {
     return 'semis';
   }
@@ -142,10 +146,52 @@ function ordenarPorFactor(campeones, weights) {
 
 export const PLANES_DE_SERIE = ['guardar', 'conTodo', 'sorpresa', 'coach'];
 
+// K6a-M (D-B: los playoffs son lo importante): una serie de eliminación —cuartos, semis y la final domésticas, y el
+// bracket del Mundial— nunca se resuelve sola, por más despareja que sea: se juega con el plan de Fearless de siempre.
+// Hoy todas las series del motor son de eliminación (los playoffs son de eliminación simple, PLAN.md fase 4).
+// K6a-R: "no se resuelve sola" quiere decir que frena en lo que decide: la final y la abierta en el plan, la cantada en
+// su mapa decisivo (`cantadaDeLaSerie`).
+export function esSerieDeEliminacion(serie) {
+  return ORDEN_RONDAS.includes(serie.ronda) || serie.ronda === 'internacional';
+}
+
 // Una serie sin nada en juego: la diferencia de fuerza al arrancar supera el umbral. No pregunta: juega el plan del
-// coach y no frena en el mapa decisivo.
+// coach y no frena en el mapa decisivo. K6a-M: nunca una de eliminación (`esSerieDeEliminacion`).
 export function esSerieSinNadaEnJuego(serie) {
-  return Math.abs(serie.fuerzaInicial - serie.rival.fuerza) > BALANCE.serie.plan.umbralSinNadaEnJuego;
+  return !esSerieDeEliminacion(serie)
+    && Math.abs(serie.fuerzaInicial - serie.rival.fuerza) > BALANCE.serie.plan.umbralSinNadaEnJuego;
+}
+
+// K6a-R (PLAN.md, "Decisión del supervisor (K6a-R, el ritmo de la eliminación)"): una serie de eliminación frena en lo
+// que decide. Toda final —la doméstica de tier 1, la de tier 2 y la del Mundial— frena siempre en su plan.
+export function esFinalDeSerie(serie) {
+  return serie.ronda === 'final' || (serie.ronda === 'internacional' && serie.etapa === 'final');
+}
+
+// La p de ganar la serie al arrancar con el plan del coach (el neutro): la vara de "abierta" o "cantada".
+export function pSerieDelCoach(state) {
+  return proyeccionDelPlan(state, 'coach').pSerie;
+}
+
+// De qué lado está cantada una p de serie: 'favorito' arriba de 1 − `pAbiertaEliminacion`, 'underdog' abajo de
+// `pAbiertaEliminacion`, `null` si está abierta (los bordes cuentan como abierta).
+export function ladoCantado(pSerie) {
+  const pAbierta = BALANCE.serie.plan.pAbiertaEliminacion;
+  if (pSerie > 1 - pAbierta) {
+    return 'favorito';
+  }
+  return pSerie < pAbierta ? 'underdog' : null;
+}
+
+// Una serie de eliminación cantada (no una final, con la p del plan del coach fuera de la franja abierta) no frena en
+// el plan: lo arma el coach, el feed lo dice, y frena solo en el mapa decisivo si la serie llega. `null` si frena en el
+// plan (una final, una abierta) o si no es de eliminación. Se lee al arrancar la serie (marcador 0-0).
+export function cantadaDeLaSerie(state) {
+  const { serie } = state;
+  if (!esSerieDeEliminacion(serie) || esFinalDeSerie(serie)) {
+    return null;
+  }
+  return ladoCantado(pSerieDelCoach(state));
 }
 
 // La charla del coach: un comodín por temporada (el año del calendario), que se ofrece en el mapa decisivo.
@@ -337,9 +383,11 @@ export function ajusteDeCharla(usada) {
 
 // K2d: cuánto mueve el minijuego de un mapa la fuerza de ese mapa, según cómo te salió (`resultado` 0-1; 0,5 no la
 // mueve). La comparten `systems/serie.js` (que la aplica antes de tirar) y la previa (que muestra la p final).
+// K5c-H: en el Mundial con `mundial.jerarquiaCuenta` en false (`jerarquiaNoCuentaEn`), la llamada no se amortigua por
+// jerarquía: es lo que dicen la previa y el feed (regla 12), y la fuerza del mapa ya juega sin ella.
 export function ajusteDeMinijuegoDeMapa(state, entrada, resultado) {
   const ajusteBase = ajusteBaseDeMinijuego(resultado);
-  const amortiguado = entrada.efecto.amortiguador === 'jerarquia'
+  const amortiguado = entrada.efecto.amortiguador === 'jerarquia' && !jerarquiaNoCuentaEn(state)
     ? factorJerarquiaEnLlamada(state.career.jerarquia)
     : 1;
   return ajusteBase * entrada.impacto * amortiguado;

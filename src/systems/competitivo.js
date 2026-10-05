@@ -2,7 +2,7 @@ import { chance } from '../core/rng.js';
 import { clamp } from '../core/numeros.js';
 import { crearLog } from '../core/log.js';
 import { elegirOrgTier3, asignarOrgTier3 } from '../core/tier3.js';
-import { cerrarFila } from '../core/registro.js';
+import { cerrarFila, filaAbierta } from '../core/registro.js';
 import { calcularContexto } from '../core/contexto.js';
 import { conPlantelesDe, fuerzaDePlantel } from '../core/plantel.js';
 import { BALANCE } from '../data/balance.js';
@@ -75,6 +75,17 @@ function saltarATier2(state, logsPrevios) {
     },
     logs: [...logsPrevios, crearLog('competitivo', `Te ganás el salto a ${nombreVisibleDeLiga(liga.id)}. Sos agente libre de tier 2: en la pretemporada elegís club.`)]
   };
+}
+
+// K6a-M: tu paso por un tier 3 no se resuelve (ni el salto ni la disolución) antes de que hayas jugado un split con ese
+// equipo. Sin esto, el split después de firmar —con el plantel todavía sin armar— el equipo podía saltar o disolverse:
+// en el ensayo de K6 una prueba clavada ("95% de que te firmen") firmó y la ficha quedó "SIN EQUIPO · 0 partidos". El
+// split jugado es el que asienta `systems/temporada.js` (la fila abierta de esta org, o el pendiente sin fila).
+export function jugasteUnSplitConLaOrg(state) {
+  const org = state.career.currentOrg;
+  const abierta = filaAbierta(state.career.registro);
+  return (abierta?.org === org && (abierta.splitsPorTier?.[3] ?? 0) > 0)
+    || state.flags.splitJugadoSinFila?.org === org;
 }
 
 function resolverTier3(state, rng) {
@@ -185,7 +196,7 @@ export function aplicar(state, rng) {
   }
 
   if (state.career.tier === 3) {
-    return resolverTier3(state, rng);
+    return jugasteUnSplitConLaOrg(state) ? resolverTier3(state, rng) : { state, logs: [] };
   }
   // Tier 1 y tier 2 con equipo: no se sortea nada. El mercado (más abajo en el
   // split) decide si te vas, te quedás o subís.

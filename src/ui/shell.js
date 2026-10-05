@@ -14,6 +14,7 @@
 
 import * as sonido from './sonido.js';
 import { BALANCE } from '../data/balance.js';
+import { ventanaVisibleDe } from '../core/vistaDeCarrera.js';
 import { saltarBeat, velocidadActual } from './reproductor.js';
 
 const logList = document.getElementById('logList');
@@ -67,7 +68,8 @@ export function actualizarTopbar(state) {
     }
     return;
   }
-  const ventana = LABEL_VENTANA[state.contexto.ventana] ?? '';
+  // K6a-U: la ventana REAL de la pausa, no la del arranque del split (`state.contexto`): ver `core/vistaDeCarrera.js`.
+  const ventana = LABEL_VENTANA[ventanaVisibleDe(state)] ?? '';
   topbarEstado.textContent = [state.calendario.etiqueta, ventana].filter(Boolean).join(' · ');
 
   if (topbarPips && Number.isFinite(state.player?.splitCount)) {
@@ -90,8 +92,9 @@ export function actualizarTopbar(state) {
 export function aplicarEstudio(state, ficha) {
   const body = document.body;
   body.dataset.fase = state.phase ?? '';
-  if (state.contexto?.ventana) {
-    body.dataset.ventana = state.contexto.ventana;
+  const ventanaDePantalla = ventanaVisibleDe(state);
+  if (ventanaDePantalla) {
+    body.dataset.ventana = ventanaDePantalla;
   } else {
     delete body.dataset.ventana;
   }
