@@ -5517,6 +5517,7 @@ seeds daría tasas distintas dentro de los márgenes de arriba.
 | r(tu nivel relativo a la liga, posición final) en la misma liga | 0,05 | **≥ 0,5** |
 | El favorito claro de un Bo5 (Δ fuerza ≈ 10) gana la serie | a medir (K0) | **~80%** (75-85) |
 | Tu equipo es claramente el más fuerte del Mundial y lo gana | — | **~50%** |
+| El Mundial del mundo (uno por año, lo juegues o no) lo gana la LCK *(usuario, 2026-10-05)* | — | **≥ 25% y la liga que más gana**. Sale de la fuerza de los planteles, no de cupos: cualquier liga con el equipo más fuerte puede ganar |
 | Ganaste un Mundial y ganás otro: P(2 o más \| 1) | — | **≥ 35-40%** |
 | Varianza del resultado de temporada explicada por tu nivel + el de tu equipo (por ablación) | a medir (K0) | **mayoría (≥ 50%)**; ruido puro ≤ 25% |
 
@@ -7695,10 +7696,31 @@ Cada número por región tiene ±2 puntos de ruido (200-340 carreras por región
 - **`k5c/barrido.mjs` de la copia sw4 está desactualizado** (sin `splitPrimerContratoTier2` ni `splitsRetirado`). El
   analista usó `barrido_sw2.mjs`. El paso 3 tiene que medir con el instrumento del repo.
 
-**Pendiente de decisión del usuario** *(el usuario pidió frenar acá; no se sigue sin su OK)*:
-- Final1 o Final2. Final2 cumple NA 3-5, y Europa empata con Corea.
-- Corea ~10% en vez de 12-15%: con estas perillas el máximo medido es ~11%.
-- La investigación de "no llega a pro" en ~32%, antes del paso 3.
+**Decisiones del usuario (2026-10-05)** *(el usuario había pedido frenar acá; estas son sus respuestas)*:
+- **Final2, por ahora.** Se confirma re-midiendo con el instrumento del repo, después de los arreglos.
+- **Corea: la meta nueva es el reparto de los Mundiales del mundo, no la chance por carrera.** Textual: *"estas cosas
+  no tienen que ser fijas, sino que gana el que mejor players tenga, usualmente es Corea, pero si el rng hace que haya
+  un muy buen team de LEC entonces LEC, solo que 10% me parece poquísimo […] tendría que ser al menos 25%
+  naturalmente"*.
+  - El ~10% de la tabla es otra cosa: la chance de que un jugador coreano gane un Mundial en su carrera. Queda como
+    medida.
+  - La meta nueva: en el mundo simulado (un Mundial por año, lo juegues o no: `systems/escena.js`, `torneo.campeon`),
+    **la LCK gana ≥ 25% de los Mundiales y es la liga que más gana**. Cualquier liga con el equipo más fuerte puede
+    ganar.
+  - Sale de la fuerza de los planteles (prestigio, calidad de los rosters), **nunca de cupos por región**. Pasa a
+    check duro en el paso 3, junto con "el más fuerte gana" de §K.3a.
+- **"No llega a pro" en ~32%: se investiga y se arregla antes del paso 3** (meta D-D: ~20%). Primero se compara
+  commit por commit, con las mismas seeds, desde `c6f098f` hasta `2d8eec2`, y se revisa si cambió la definición
+  (K5c-R).
+
+**Antes del paso 3, en paralelo** *(supervisor, 2026-10-05)*:
+- Dos cazabugs (motor y navegador) sobre `2d8eec2`.
+- La investigación de no-pro (`k5c-nopro`).
+- El medidor del reparto del Mundial por liga (`k5c-mundo`, solo instrumento).
+
+Los arreglos que salgan se mergean en `k5c-instrumento` antes de medir. Recién entonces el paso 3 re-mide Final2 a
+1500 carreras con el instrumento del repo, fija los valores y cierra el bloque C. Si una meta choca con otra, lo
+decide el usuario con la frontera medida.
 
 ### K6 — Jugarlo *(la prueba que importa)*
 
