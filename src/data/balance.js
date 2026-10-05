@@ -383,7 +383,8 @@ export const BALANCE = {
     // pico fija ni declive anunciado: cada jugador tiene la suya.
     pisoJuvenil: 0.55,
     anchoSubida: 8,
-    // K5c paso 3 (Final2): 8 → 3, la caída después del pico es más corta (carreras de ~4-6 años, §K.3b).
+    // K5c paso 3 (Final2): 8 → 3, la caída después del pico es más corta. Buscaba las carreras de ~4-6 años de §K.3b; medido al
+    // cerrar K5c (`criterio` 1500 × 60): carrera pro mediana 8,83 años (p10 4, p90 12). La meta se re-basó a lo medido (D80).
     anchoBajada: 3,
     factorMinimo: -0.4,
 
@@ -2046,12 +2047,15 @@ export const BALANCE = {
     // `node --max-old-space-size=12288 src/dev/simulate.js 1500 60 criterio
     // --bloque=puntaje`): p50 933 → 259, p90 1663 → 876, p99 2243 → 1290. El número
     // bajó porque el mundo es más duro (menos títulos, Top 20 y años pro por
-    // carrera); el borde entre los que no llegaron (21,5%) y los pros cae entre el
-    // p20 (26) y el p25 (36). Definitiva para el cierre de K5c.
+    // carrera). Al cerrar K5c se re-midió sobre el head final (después de las
+    // cartas de cierre del declive, que corrieron el stream; mismo comando): p50
+    // 259 → 260, p90 876 → 876, p99 1290 → 1315; el borde entre los que no
+    // llegaron (21,5%) y los pros cae entre el p20 (26) y el p25 (39). Definitiva
+    // para el cierre de K5c.
     cuantiles: [
-      [0, 0], [5, 11], [10, 16], [15, 21], [20, 26], [25, 36], [30, 80], [35, 108], [40, 150], [45, 208],
-      [50, 259], [55, 319], [60, 373], [65, 446], [70, 509], [75, 585], [80, 663], [85, 755],
-      [90, 876], [95, 1027], [97, 1129], [99, 1290]
+      [0, 0], [5, 11], [10, 16], [15, 21], [20, 26], [25, 39], [30, 80], [35, 110], [40, 153], [45, 208],
+      [50, 260], [55, 316], [60, 378], [65, 450], [70, 517], [75, 592], [80, 659], [85, 763],
+      [90, 876], [95, 1025], [97, 1150], [99, 1315]
     ],
     // La leyenda comparada (`data/leyendas.json`): la más cercana por distancia
     // euclídea sobre el perfil normalizado (cada eje dividido por su `escala`),

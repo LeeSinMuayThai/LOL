@@ -2,9 +2,67 @@
 
 Documento vivo. Se actualiza al cierre de cada tarea, según la Definición de terminado de CLAUDE.md.
 
+## 2026-10-05 — K5c paso 3 (cierre): los hallazgos de la revisión y los valores re-medidos sobre el head final (`k5c-paso3`)
+
+Los números de 3b-3 venían de `873fc80`, y `48ba628` (las cartas de cierre del declive) corrió el stream después. Todo se
+re-midió sobre el head final; **estos son los números de cierre de K5c** (reemplazan a los de 3b-3 y 3a).
+
+- **Medido** (`correrLote(N, 60, bot)` de `simulate.js`, lo mismo que `node --max-old-space-size=12288 src/dev/simulate.js
+  1500 60 <bot>`; seeds 1-1500; 0 crashes en los tres bots):
+  - `criterio`: no-pro 21,5 · estancados 3,9 · tier 1 74,6 · título 55,7 · Top 20 36,4 · Mundial 7,1 (Corea 9,9 n 332, China
+    10,2, Europa 8,1, NA 3,6 n 194, Brasil 3,9, Asia-Pacífico 2,8) · nuevo Faker 1,2 (élite 12,0, n 100: ver abajo) · P(2+ | 1)
+    16,8 (n 107) · el más fuerte gana 57,5% (n 87) · carrera mediana 8,83 años (p10 4, p90 12) · **a los 34: 5,6%** (n 1178) ·
+    Mundiales del mundo (17867): LCK 51,6 / LPL 43,8 / LEC 3,9 / LCS 0,4 / LCP 0,2 / CBLOL 0,1, margen 7,74 con σ 0,84.
+  - `azar` / `malas`: no-pro 24,1 / 36,8 · estancados 10,1 / 15,3 · tier 1 65,7 / 47,5 · Mundial 3,1 / 0,8.
+- **Las metas sobre este head** (`node --max-old-space-size=12288 src/dev/validate.js --solo="K5c meta"`, 10 min 49 s): los 6
+  checks OK. Bandas: no-pro [17,9, 22,1] · tier 1 [52,8, 76,9] · título [27,4, 58,3] · Top 20 [12,5, 38,9] · Mundial >= 5,67 ·
+  Corea [6,6, 18,3] · NA [0,3, 7,7] · nuevo Faker [0,6, 3,6] · élite >= 5,5 · P(2+ | 1) >= 9,6 · el más fuerte [39,4, 60,6] ·
+  carrera mediana [3,75, 9,08] · a los 34 <= 6,34 · margen >= 3,32. Los re-bases de la regla 17 pasan a lo medido acá (tier 1
+  74,6, título 55,7, nuevo Faker 1,2, élite 12, P(2+ | 1) 16,8; carrera mediana y Corea quedan igual).
+- **La línea de los 34 quedó en 5,6%** (en `873fc80` medía 4,8): arriba del 5 nominal y adentro de la banda (techo 6,34 con σ
+  0,67), con 0,74 puntos de margen (~1,1 σ). Es la meta con menos aire del bloque.
+- **Hallazgos de la revisión:**
+  - `VERSION_JUEGO` pasa a **'K5c'** (`version.js`): sin esto, `fase-9r` y esta rama compartirían "v K4c" con huellas distintas.
+    La etiqueta no entra en la huella; el desafío, el historial y el texto compartido la leen de la constante.
+  - El tope de una org del mundo vivo (`RECAMBIO_K5.topeDeUnaOrg`) mide ahora, en cada mundo con más de 8 Mundiales, la
+    proporción de la org que más gana **dentro de ese mundo**, con el tope sobre la media. Medido (criterio 60 × 60): 25,8%.
+    Fuerzas congeladas en las dos rutas (`systems/plantel.js` y `core/mercadoMundial.js`): 32,9%, **FAIL** en las dos ramas
+    (el recambio 32 de 51 y el tope); solo en el mercado del mundo: 36,0%, **FAIL**; solo en `plantel.js`: 25,6%, sin efecto
+    (el mercado vuelve a calcular la fuerza de cada plantel). Tope 0,29, en el medio. Las dos ramas se juntan en un mensaje.
+  - `lckMargen` con banda: el 25% queda sin banda; el margen pasa a >= 5 − 2σ, con σ calculado en cada corrida contando cada
+    carrera como un conglomerado (0,84; el ≈ 2,5 del comentario estaba sobreestimado: 0,73 contando cada Mundial). El log
+    imprime el margen medido, el nominal 5, el σ y el piso.
+  - `nuevoFakerElite`: la élite (el top 3%) se agranda en rondas con el mismo corte de nivel pico, siguiendo las seeds de
+    `criterio` (1501...), hasta 100 carreras: 45 de las 1500 + 55 de 1446 extra (~3,5 min más en la validación completa). La
+    banda sube de ~1,7 a 5,5.
+  - `ganaMundial`: el piso 7 − 2σ queda como tolerancia; el check imprime lo medido (7,1, piso 5,67) y un AVISO si queda
+    debajo de 7, sin fallar.
+  - `balance.js`: el comentario de `anchoBajada` dice la mediana medida (8,83 años), no "~4-6".
+- **Cuantiles del percentil** (`criterio` 1500 × 60, el bloque `puntaje`): p25 36 → 39, p50 259 → 260, p75 585 → 592, p90 876,
+  p97 1129 → 1150, p99 1290 → 1315. El borde no-pro / pro cae entre el p20 (26) y el p25 (39).
+- **Niveles, "llega a ese nivel o más alto"** (1500 × 60 por bot; entre paréntesis, las primeras 600 seeds):
+
+  | nivel | `criterio` | `azar` | `malas` |
+  |---|---|---|---|
+  | circuito | 78,5 (77,2) | 75,9 (73,2) | 62,8 (61,3) |
+  | profesional | 74,6 (73,3) | 65,7 (62,8) | 47,5 (46,0) |
+  | fijo | 70,7 (69,0) | 54,3 (52,8) | 36,7 (34,7) |
+  | campeón | 57,2 (54,7) | 43,1 (41,2) | 24,8 (22,2) |
+  | figura | 36,4 (36,2) | 23,3 (24,2) | 11,5 (11,2) |
+  | leyenda | 8,7 (10,5) | 3,3 (2,8) | 0,7 (1,2) |
+  | **El GOAT** | **1,2** (2,2) | 0,3 (0) | 0 (0) |
+
+- **En rojo con su mutante (regla 7):** las fuerzas congeladas → el mundo vivo (arriba); `META_C_LCK_MARGEN_PP` 5 → 12 →
+  "K5c meta del usuario" (margen 7,8 contra el piso 10,32; también el juez, que rechaza los valores medidos); la élite agrandada que no cuenta los nuevos Faker de las carreras extra → "K5c meta
+  del Mundial" (élite 5,0 contra la banda >= 7,64); las dos en una corrida de `--solo="K5c meta"`. El juez (rápido) rechaza el margen justo debajo del piso y sin σ.
+- **Huella y forma:** no se movieron: `HUELLA_JUEGO` sigue en 1462997803 y `FORMAS_CONOCIDAS[12]` igual (los checks pasan en `--rapido`); `VERSION` del
+  guardado sigue en 12.
+- **`--rapido`:** **326 OK, 0 FAIL**. **Determinismo:** `node src/dev/simulate.js 1 60 criterio` dos veces, diff vacío (89762 bytes).
+
 ## 2026-10-05 — K5c paso 3b-3: las metas de §K.3a/§K.3b como checks duros, el bloque C cerrado, El GOAT y los cuantiles (`k5c-paso3`)
 
-- **Medido acá** (`node --max-old-space-size=12288 src/dev/simulate.js 1500 60 <bot>`, seeds 1-1500, sobre `873fc80`):
+- **Medido acá** (`node --max-old-space-size=12288 src/dev/simulate.js 1500 60 <bot>`, seeds 1-1500, sobre `873fc80`; los números de
+  cierre, re-medidos sobre el head final, están en la entrada de arriba):
   - `criterio`: no-pro 21,5 · estancados 4,1 · tier 1 74,5 · título 55,4 · Top 20 36,4 · Mundial 7,0 (Corea 9,9 n 332, China 10,5,
     Europa 7,7, NA 3,1 n 194, Brasil 3,9, Asia-Pacífico 2,3) · nuevo Faker 1,3 (élite 13,3, n 45) · P(2+ | 1) 0,181 (n 105) · el más
     fuerte del Mundial lo gana 57,5% (n 87; "claramente", margen >= 10: 4 de 2963 Mundiales) · carrera mediana 8,83 años, p90 12 ·

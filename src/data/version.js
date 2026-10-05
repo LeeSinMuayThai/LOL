@@ -75,7 +75,11 @@
 // el contrato, el cierre de año como decisión, el plan anual y la pretemporada solo para el mercado). El paso 3b (la limpieza del plan
 // anual, los checks duros del ritmo, el guardado VERSION 11 y los cuantiles) no toca el rng: la huella es la del plan anual, 1616394605,
 // que reemplaza a todas las anteriores del bloque B (922534647, 805410138, 2044679379, 1157384592...) y a la de K5 (1401713881).
-export const VERSION_JUEGO = 'K4c';
+// K5c (bloque C cerrado, el cierre): `VERSION_JUEGO` pasa a 'K5c', la versión del mundo calibrado (el Mundial real, cada uno en su
+// casa, Final2 con la LPL en 91, el no-pro con piso de soloQ, El GOAT = nuevo Faker). Sin esto, después del merge dos juegos
+// distintos compartirían "v K4c" en el desafío, el historial y el texto compartido. La etiqueta no entra en la huella (la tupla de
+// `calcularHuellaJuego` no la lee): la huella del bloque C es la de abajo. Misma `VERSION` del guardado (12, no salió de la rama).
+export const VERSION_JUEGO = 'K5c';
 // K4c (cierre de año, 2044679379): los 10 eventos de cierre_edad.json pasan a ser decisiones con intercambio (tres opciones, efectos
 // del orden de las bifurcaciones, un pool que aprende, riesgos en los outcomes): cambian las tiradas del cierre y con ellas las carreras
 // enteras. Misma versión (el paso 3b la pasa a 'K4c'): reemplaza a 922534647.
@@ -116,5 +120,5 @@ export const VERSION_JUEGO = 'K4c';
 // sale y cuándo se consume el rng del reparto. Misma versión (12, no salió): reemplaza a 860000955.
 // K5c (el bloque C calibrado, 1462997803): Final2 (las claves de balance fijadas) y la LPL en 91, el no-pro con piso de soloQ por perfil,
 // las cartas de cierre del declive y El GOAT = nuevo Faker. Cambia el stream (otras carreras en todas las ligas). Misma versión
-// (12, no salió; `VERSION_JUEGO` sigue en 'K4c'): reemplaza a 2039436444.
+// (12, no salió; `VERSION_JUEGO` pasa a 'K5c' al cerrar el bloque, arriba): reemplaza a 2039436444.
 export const HUELLA_JUEGO = 1462997803;

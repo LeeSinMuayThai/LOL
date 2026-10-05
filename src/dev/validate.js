@@ -19697,7 +19697,14 @@ const TOPE_TITULOS_DE_UNA_ORG_K5 = 0.45;
 // Medido al escribirlo (criterio, 60 × 60, Final2): sigue arriba en 5 de 55 carreras (9%) y la org que más gana se lleva 48 de 720
 // Mundiales (6,7%). Con el mundo congelado (mutante: las fuerzas de las orgs no siguen a sus planteles) sigue arriba en 21 de 55
 // (38%: no 100%, porque quién clasifica y la tabla de cada año igual cambian); el tope va en el medio.
-const RECAMBIO_K5 = { carreras: 60, splits: 60, anios: 8, maxSigueArriba: 0.25, topeDeUnaOrg: 0.2 };
+// K5c (cierre, hallazgo de la revisión, regla 7): `topeDeUnaOrg` era la proporción de la org que más gana sobre los Mundiales de
+// las 60 carreras JUNTAS (60 mundos distintos): una dinastía dentro de un mundo se diluía entre los otros 59 y la rama no podía
+// fallar. Ahora mide, en cada mundo con más de `anios` Mundiales (los mismos que compara el recambio), la proporción de la org que
+// más gana DENTRO de ese mundo, y el tope va sobre la media de esas proporciones. Medido al cerrar K5c (criterio, 60 × 60): 25,8% (55
+// mundos); con las fuerzas de las orgs congeladas (mutante en `systems/plantel.js` y en `core/mercadoMundial.js`, las dos rutas que
+// recalculan `org.fuerza` del plantel): 32,9%, y con el congelado solo en el mercado del mundo, 36,0%. Congelar solo `plantel.js` no
+// lo mueve (25,6%): el mercado de la pretemporada vuelve a calcular la fuerza de cada plantel. El tope va en el medio de 25,8 y 32,9.
+const RECAMBIO_K5 = { carreras: 60, splits: 60, anios: 8, maxSigueArriba: 0.25, topeDeUnaOrg: 0.29 };
 const MUESTRA_MINIMA_RECAMBIO_K5 = 10;
 check('K5-A el hash de los cruces ajenos es un uniforme en [0, 1): media ≈ 0,5, el mismo cruce no se repite año a año y el título sigue a la fuerza sin que una org se lleve el mundo', () => {
   let suma = 0;
@@ -19745,30 +19752,37 @@ check('K5-A el hash de los cruces ajenos es un uniforme en [0, 1): media ≈ 0,5
   const masFuerte = (fila) => [...fila.participantes].sort((x, y) => y.fuerza - x.fuerza || x.nombre.localeCompare(y.nombre))[0].nombre;
   let comparadas = 0;
   let sigueArriba = 0;
-  const titulos = new Map();
-  let mundiales = 0;
+  // Por mundo: la proporción de los Mundiales de ESE mundo que se lleva su org más ganadora (y cuál fue la más alta, para el log).
+  let sumaProporcionTop = 0;
+  let peor = { org: 'nadie', n: 0, de: 0 };
   for (const o of observaciones) {
     const filas = o.mundialesDelMundo;
-    for (const fila of filas) {
-      titulos.set(fila.campeon, (titulos.get(fila.campeon) ?? 0) + 1);
-      mundiales += 1;
-    }
     if (filas.length > RECAMBIO_K5.anios) {
       comparadas += 1;
       sigueArriba += masFuerte(filas[0]) === masFuerte(filas[RECAMBIO_K5.anios]) ? 1 : 0;
+      const titulos = new Map();
+      for (const fila of filas) {
+        titulos.set(fila.campeon, (titulos.get(fila.campeon) ?? 0) + 1);
+      }
+      const [org, n] = [...titulos.entries()].sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0]))[0];
+      sumaProporcionTop += n / filas.length;
+      if (n / filas.length > peor.n / Math.max(1, peor.de)) peor = { org, n, de: filas.length };
     }
   }
-  const [orgTop, nTop] = [...titulos.entries()].sort((x, y) => y[1] - x[1])[0] ?? ['nadie', 0];
-  console.log(`      mundo vivo (criterio, ${RECAMBIO_K5.carreras} × ${RECAMBIO_K5.splits}): el más fuerte del primer Mundial sigue arriba ${RECAMBIO_K5.anios} años después en ${sigueArriba} de ${comparadas} carreras; ${orgTop} ganó ${nTop} de ${mundiales} Mundiales`);
+  const proporcionTopMedia = comparadas > 0 ? sumaProporcionTop / comparadas : 0;
+  console.log(`      mundo vivo (criterio, ${RECAMBIO_K5.carreras} × ${RECAMBIO_K5.splits}): el más fuerte del primer Mundial sigue arriba ${RECAMBIO_K5.anios} años después en ${sigueArriba} de ${comparadas} carreras; la org que más gana dentro de su mundo se lleva en promedio el ${(100 * proporcionTopMedia).toFixed(1)}% de sus Mundiales (la que más: ${peor.org}, ${peor.n} de ${peor.de})`);
   if (comparadas < MUESTRA_MINIMA_RECAMBIO_K5) {
     throw new Error(`el recambio no se mide: ${comparadas} carreras con más de ${RECAMBIO_K5.anios} Mundiales (mínimo ${MUESTRA_MINIMA_RECAMBIO_K5})`);
   }
+  // Las dos ramas se juntan: con el mundo congelado fallan las dos, y una no tapa a la otra.
+  const problemasRecambio = [];
   if (sigueArriba / comparadas > RECAMBIO_K5.maxSigueArriba) {
-    throw new Error(`el mundo no rota: el más fuerte del primer Mundial sigue arriba ${RECAMBIO_K5.anios} años después en ${sigueArriba} de ${comparadas} carreras (máximo ${RECAMBIO_K5.maxSigueArriba * 100}%)`);
+    problemasRecambio.push(`el mundo no rota: el más fuerte del primer Mundial sigue arriba ${RECAMBIO_K5.anios} años después en ${sigueArriba} de ${comparadas} carreras (máximo ${RECAMBIO_K5.maxSigueArriba * 100}%)`);
   }
-  if (nTop / mundiales > RECAMBIO_K5.topeDeUnaOrg) {
-    throw new Error(`en el mundo vivo ${orgTop} ganó ${nTop} de ${mundiales} Mundiales (tope ${RECAMBIO_K5.topeDeUnaOrg * 100}%)`);
+  if (proporcionTopMedia > RECAMBIO_K5.topeDeUnaOrg) {
+    problemasRecambio.push(`en el mundo vivo la org que más gana dentro de su mundo se lleva en promedio el ${(100 * proporcionTopMedia).toFixed(1)}% de sus Mundiales (tope ${RECAMBIO_K5.topeDeUnaOrg * 100}%; la que más: ${peor.org}, ${peor.n} de ${peor.de})`);
   }
+  if (problemasRecambio.length > 0) throw new Error(problemasRecambio.join('; '));
 });
 
 check('K5-A un split de Mundial no pasa de 4 interrupciones del Mundial (T9)', () => {
@@ -21463,7 +21477,8 @@ check('K6a-U (f): la presión de tier 2 no dice "Seguís en" otra liga ni repite
 // - una meta que NO llega se re-basa a lo medido (`rebase`): la banda va de la meta a lo medido, más el ruido. Lo que se
 //   acerca a la meta pasa; lo que se aleja más que lo medido, o pasa de largo la meta, falla. Cada re-base lleva su línea de
 //   la regla 17 ("meta X; medido Y; re-basado por decisión del usuario 2026-10-05, K6 juzga") y está en la tabla de deuda.
-// Medido en `k5c-paso3` (`873fc80`), `node --max-old-space-size=12288 src/dev/simulate.js 1500 60 <bot>`.
+// Medido en `k5c-paso3` (`873fc80`), `node --max-old-space-size=12288 src/dev/simulate.js 1500 60 <bot>`. Re-medido al cerrar K5c
+// sobre el head final (después de `48ba628`, las cartas de cierre del declive, que corrieron el stream): los números de abajo.
 const CARRERAS_METAS_C = 1500;
 const Z_RUIDO_METAS_C = 2;
 // El desvío de la mediana de una muestra grande: √(π/2)·s/√n (eficiencia asintótica de la mediana bajo normalidad).
@@ -21471,55 +21486,103 @@ const FACTOR_DESVIO_MEDIANA = Math.sqrt(Math.PI / 2);
 const METAS_C = {
   // §K.3b "No llega a pro ~20% (como hoy)". Medido 21,5 (n 1500, σ 1,06). Cumple.
   noLlegaAPro: { meta: [20, 20], texto: 'no llega a pro (%)' },
-  // §K.3b "Llega a tier 1 ~55-65%". Regla 17: meta 55-65; medido 74,5 (n 1500, σ 1,13); re-basado por decisión del usuario
+  // §K.3b "Llega a tier 1 ~55-65%". Regla 17: meta 55-65; medido 74,6 (n 1500, σ 1,12); re-basado por decisión del usuario
   // 2026-10-05, K6 juzga (endurecer el acceso a tier 1 baja el Mundial, que está justo en 7%: es la frontera medida).
-  llegaATier1: { meta: [55, 65], rebase: 74.5, texto: 'llega a tier 1 (%)' },
-  // §K.3b "Gana al menos un título doméstico ~30%". Regla 17: meta 30; medido 55,4 (n 1500, σ 1,28); re-basado por decisión
+  llegaATier1: { meta: [55, 65], rebase: 74.6, texto: 'llega a tier 1 (%)' },
+  // §K.3b "Gana al menos un título doméstico ~30%". Regla 17: meta 30; medido 55,7 (n 1500, σ 1,28); re-basado por decisión
   // del usuario 2026-10-05, K6 juzga.
-  ganaTitulo: { meta: [30, 30], rebase: 55.4, texto: 'gana un título de primera (%)' },
+  ganaTitulo: { meta: [30, 30], rebase: 55.7, texto: 'gana un título de primera (%)' },
   // §K.3b "Top 20 del mundo alguna vez ~15%". Regla 17: meta 15; medido 36,4 (n 1500, σ 1,24); re-basado por decisión del
   // usuario 2026-10-05, K6 juzga.
   top20: { meta: [15, 15], rebase: 36.4, texto: 'entra al Top 20 del mundo (%)' },
-  // §K.3b "Gana al menos un Mundial >= 7% en promedio" (meta del usuario). Medido 7,0 (n 1500, σ 0,66). Cumple, justo.
+  // §K.3b "Gana al menos un Mundial >= 7% en promedio" (meta del usuario). Medido 7,1 (n 1500, σ 0,66). Cumple, justo:
+  // el piso de 7 − 2σ es tolerancia de ruido documentada, y si lo medido queda debajo de 7 el check lo avisa a la vista (no falla).
   ganaMundial: { meta: [7, Infinity], texto: 'gana un Mundial (%)' },
   // §K.3b "desde Corea, más fácil (~12-15%)". Regla 17: meta 12-15; medido 9,9 (n 332, σ 1,64); re-basado por decisión del
   // usuario 2026-10-05, K6 juzga (desde K5c-H cada uno juega en su casa, y la LCK es la primera más dura de entrar).
   ganaMundialCorea: { meta: [12, 15], rebase: 9.9, texto: 'gana un Mundial desde Corea (%)' },
-  // §K.3b "desde NA, más difícil (~3-5%)". Medido 3,1 (n 194, σ 1,24). Cumple.
+  // §K.3b "desde NA, más difícil (~3-5%)". Medido 3,6 (n 194, σ 1,34). Cumple.
   ganaMundialNA: { meta: [3, 5], texto: 'gana un Mundial desde Norteamérica (%)' },
-  // §K.3b "El nuevo Faker ~2-3% en promedio". Regla 17: meta 2-3; medido 1,3 (n 1500, σ 0,29); re-basado por decisión del
+  // §K.3b "El nuevo Faker ~2-3% en promedio". Regla 17: meta 2-3; medido 1,2 (n 1500, σ 0,28); re-basado por decisión del
   // usuario 2026-10-05, K6 juzga.
-  nuevoFaker: { meta: [2, 3], rebase: 1.3, texto: 'el nuevo Faker (%)' },
-  // §K.3b "el nuevo Faker >= 30% entre los de nivel pico de élite (top 3%)". Regla 17: meta >= 30; medido 13,3 (n 45, σ 5,06);
-  // re-basado por decisión del usuario 2026-10-05, K6 juzga. La muestra es chica por definición (el 3% de la corrida).
-  nuevoFakerElite: { meta: [30, Infinity], rebase: 13.3, texto: 'el nuevo Faker entre la élite de nivel pico (%)' },
-  // §K.3a "Ganaste un Mundial y ganás otro: P(2 o más | 1) >= 35-40%". Regla 17: meta >= 35; medido 18,1 (n 105, σ 3,76);
+  nuevoFaker: { meta: [2, 3], rebase: 1.2, texto: 'el nuevo Faker (%)' },
+  // §K.3b "el nuevo Faker >= 30% entre los de nivel pico de élite (top 3%)". Regla 17: meta >= 30; medido 12,0 (n 100, σ 3,25: 45 de las 1500 y 55 de 1446 carreras extra);
+  // re-basado por decisión del usuario 2026-10-05, K6 juzga. La élite es el 3% de la corrida (45 de 1500, donde medía 11,1, σ 4,68:
+  // la banda bajaba a ~1,7 y casi no podía fallar): se agranda en rondas con el mismo corte hasta 100 (`MUESTRA_ELITE_METAS_C`; cuesta ~3,5
+  // minutos en la validación completa: 1446 carreras a ~0,15 s). Banda [5,5, ∞).
+  nuevoFakerElite: { meta: [30, Infinity], rebase: 12, texto: 'el nuevo Faker entre la élite de nivel pico (%)' },
+  // §K.3a "Ganaste un Mundial y ganás otro: P(2 o más | 1) >= 35-40%". Regla 17: meta >= 35; medido 16,8 (n 107, σ 3,61);
   // re-basado por decisión del usuario 2026-10-05, K6 juzga.
-  pDosOMasDadoUno: { meta: [35, Infinity], rebase: 18.1, texto: 'P(2 o más Mundiales | 1) (%)' },
+  pDosOMasDadoUno: { meta: [35, Infinity], rebase: 16.8, texto: 'P(2 o más Mundiales | 1) (%)' },
   // §K.3a "Tu equipo es claramente el más fuerte del Mundial y lo gana ~50%". Regla 17: "claramente" (margen >= 10 sobre el
-  // mejor de los otros 15) se dio en 4 de 2963 Mundiales jugados (criterio 1500 × 60): sin muestra. Se mide sobre "el más
+  // mejor de los otros 15) se dio en 4 de 2963 Mundiales jugados (criterio 1500 × 60, en `873fc80`): sin muestra. Se mide sobre "el más
   // fuerte" (tu fuerza > la del mejor rival): medido 57,5 (n 87, σ 5,3). Cumple ~50 con su ruido.
   elMasFuerteGana: { meta: [50, 50], texto: 'el más fuerte del Mundial lo gana (%)' },
-  // §K.3b "Carrera pro mediana ~4-6 años". Regla 17: meta 4-6; medido 8,83 (n 1178 pros, σ 0,12); re-basado por decisión del
+  // §K.3b "Carrera pro mediana ~4-6 años". Regla 17: meta 4-6; medido 8,83 (n 1178 pros, σ 0,13; p10 4, p90 12); re-basado por decisión del
   // usuario 2026-10-05, K6 juzga.
   carreraMediana: { meta: [4, 6], rebase: 8.83, texto: 'carrera pro mediana (años)' },
-  // §K.3b "Llega a la línea forzosa de los 34 < 5%". Medido 4,8 (n 1178 pros, σ 0,62). Cumple, justo.
+  // §K.3b "Llega a la línea forzosa de los 34 < 5%". Medido 5,6 (n 1178 pros, σ 0,67): arriba del 5 nominal, adentro de la banda
+  // (techo 5 + 2σ = 6,34; en `873fc80` medía 4,8). Cumple con su ruido, con 0,74 puntos de margen (~1,1 σ).
   lineaForzosa: { meta: [-Infinity, 5], texto: 'llega a la línea forzosa de los 34 (% de los pros)' }
 };
 // §K.3b "Se estanca en tier 2/3: ~10% más, y lo producen las malas decisiones (con `criterio` bastante menos, con `malas`
-// bastante más)". El ~10% es el del jugador "normal" (`azar`). Medido azar 10,5 (n 1500, σ 0,79); criterio 4,1; malas 15,6.
+// bastante más)". El ~10% es el del jugador "normal" (`azar`). Medido azar 10,1 (n 1500, σ 0,78); criterio 3,9; malas 15,3.
 const META_C_ESTANCADO_AZAR_PCT = 10;
 // La meta del usuario (2026-10-05, PLAN.md §K5c "El paso 3, concreto"): la LCK gana >= 25% de los Mundiales del mundo y es la
-// primera con un margen >= 5 puntos sobre la segunda. Sin banda: son los números del usuario. Medido LCK 51,8 / LPL 43,7 / LEC
-// 3,8 (17789 Mundiales del mundo en 1500 carreras; σ de la diferencia LCK − LPL ≈ 0,7 contando cada Mundial, ≈ 2,5 contando
-// cada carrera como una sola observación).
+// primera con un margen >= 5 puntos sobre la segunda. El 25% va sin banda (el número del usuario). El margen va con su banda de
+// ruido, >= 5 − 2σ (hallazgo de la revisión al cerrar K5c: sin banda, un corrimiento del stream lo ponía rojo sin que nada
+// cambiara), con σ calculado en cada corrida contando cada carrera como un conglomerado (`sigmaDelMargenMetasC`). Medido al cerrar
+// K5c: LCK 51,6 / LPL 43,8 / LEC 3,9 (17867 Mundiales del mundo en 1500 carreras), margen 7,74 con σ 0,84 por carrera (0,73
+// contando cada Mundial como independiente; el ≈ 2,5 que decía este comentario estaba sobreestimado): piso 5 − 1,68 = 3,32.
 const META_C_LCK_REPARTO_PCT = 25;
 const META_C_LCK_MARGEN_PP = 5;
 const LIGA_CANDIDATA_DEL_MUNDIAL = 'LCK';
 // Las regiones de origen de las dos metas por región (`mundo.regionOrigen`, la clave de `mundialReal.porRegion`).
 const REGION_FACIL_METAS_C = 'Corea';
 const REGION_DIFICIL_METAS_C = 'Norteamérica';
-const { desvioMuestral: desvioMuestralMetasC, duracionProDe: duracionProDeMetasC } = await import('./simulate.js');
+const {
+  desvioMuestral: desvioMuestralMetasC, duracionProDe: duracionProDeMetasC, correrCarrera: correrCarreraMetasC, esNuevoFaker: esNuevoFakerMetasC,
+  nivelPicoDe: nivelPicoDeMetasC, corteDeElite: corteDeEliteMetasC, ligaDelCampeonMundial: ligaDelCampeonMetasC
+} = await import('./simulate.js');
+const { ESTRATEGIAS: ESTRATEGIAS_METAS_C } = await import('./estrategias.js');
+
+// K5c (cierre, hallazgo de la revisión): la élite de nivel pico (el top 3% de la corrida) en 1500 carreras son ~45, y con esa
+// muestra la banda de la meta re-basada bajaba a ~3: casi no podía fallar. Se agranda en rondas: las seeds que siguen a la corrida
+// (1501, 1502, ...) con `criterio` y el MISMO corte de nivel pico (el de las 1500), hasta juntar `minima` carreras de élite o
+// `maxExtra` carreras extra. De cada carrera extra queda solo si entra a la élite y si es el nuevo Faker (nada en memoria).
+const MUESTRA_ELITE_METAS_C = { minima: 100, maxExtra: 6000 };
+function eliteAgrandadaMetasC(resultados, observaciones, estrategia) {
+  const corte = corteDeEliteMetasC(resultados);
+  let elite = 0;
+  let fakers = 0;
+  resultados.forEach((estado, i) => {
+    if (nivelPicoDeMetasC(estado) < corte) return;
+    elite += 1;
+    fakers += esNuevoFakerMetasC(estado, observaciones[i]) ? 1 : 0;
+  });
+  let extra = 0;
+  while (elite < MUESTRA_ELITE_METAS_C.minima && extra < MUESTRA_ELITE_METAS_C.maxExtra) {
+    extra += 1;
+    const { state, observacion } = correrCarreraMetasC(CARRERAS_METAS_C + extra, SPLITS_LOTE_K0, ESTRATEGIAS_METAS_C[estrategia]);
+    if (nivelPicoDeMetasC(state) < corte) continue;
+    elite += 1;
+    fakers += esNuevoFakerMetasC(state, observacion) ? 1 : 0;
+  }
+  return { valor: elite > 0 ? Number((100 * fakers / elite).toFixed(1)) : null, n: elite, extra, corte };
+}
+
+// El σ del margen LCK − segunda, contando cada carrera (cada mundo) como un conglomerado: los Mundiales de un mismo mundo no son
+// independientes. Estimador de razón: margen = Σ(a_i − b_i) / ΣW_i, σ = 100·√Σ(a_i − b_i − margen·W_i)² / ΣW_i.
+function sigmaDelMargenMetasC(observaciones, segundaLiga) {
+  const filas = observaciones.map((o) => {
+    const ligas = (o?.mundialesDelMundo ?? []).map(ligaDelCampeonMetasC);
+    return { d: ligas.filter((l) => l === LIGA_CANDIDATA_DEL_MUNDIAL).length - ligas.filter((l) => l === segundaLiga).length, w: ligas.length };
+  });
+  const W = filas.reduce((suma, f) => suma + f.w, 0);
+  if (W === 0) return null;
+  const margen = filas.reduce((suma, f) => suma + f.d, 0) / W;
+  return 100 * Math.sqrt(filas.reduce((suma, f) => suma + (f.d - margen * f.w) ** 2, 0)) / W;
+}
 
 const sigmaDeProporcion = (pctValor, n) => (n > 0 && Number.isFinite(pctValor) ? 100 * Math.sqrt((pctValor / 100) * (1 - pctValor / 100) / n) : null);
 
@@ -21566,8 +21629,10 @@ function juezDeLasMetasC(v) {
   const m = v.mundoMundial ?? {};
   juicio.lckReparto = hay(m.lck) && m.lck >= META_C_LCK_REPARTO_PCT ? null
     : `la ${LIGA_CANDIDATA_DEL_MUNDIAL} gana el ${m.lck}% de los Mundiales del mundo, la meta del usuario es >= ${META_C_LCK_REPARTO_PCT}%`;
-  juicio.lckMargen = hay(m.lck) && hay(m.segunda) && m.lck - m.segunda >= META_C_LCK_MARGEN_PP ? null
-    : `la ${LIGA_CANDIDATA_DEL_MUNDIAL} gana el ${m.lck}% y la segunda (${m.segundaLiga}) el ${m.segunda}%: la meta del usuario es primera por >= ${META_C_LCK_MARGEN_PP} puntos`;
+  // El margen: los 5 puntos nominales del usuario con su banda de ruido (>= 5 − Z σ, σ del margen por carrera). Sin σ, no cumple.
+  const pisoMargen = hay(m.sigmaMargen) ? META_C_LCK_MARGEN_PP - Z_RUIDO_METAS_C * m.sigmaMargen : NaN;
+  juicio.lckMargen = hay(m.lck) && hay(m.segunda) && hay(pisoMargen) && m.lck - m.segunda >= pisoMargen ? null
+    : `la ${LIGA_CANDIDATA_DEL_MUNDIAL} gana el ${m.lck}% y la segunda (${m.segundaLiga}) el ${m.segunda}%: la meta del usuario es primera por >= ${META_C_LCK_MARGEN_PP} puntos (piso con ruido ${redondeoMetasC(pisoMargen)}, σ ${m.sigmaMargen})`;
   return juicio;
 }
 
@@ -21601,7 +21666,10 @@ function valoresDeLasMetasC() {
       ganaMundialCorea: prop(region(REGION_FACIL_METAS_C).ganaMundialPct, region(REGION_FACIL_METAS_C).carreras),
       ganaMundialNA: prop(region(REGION_DIFICIL_METAS_C).ganaMundialPct, region(REGION_DIFICIL_METAS_C).carreras),
       nuevoFaker: prop(mr.total.nuevoFakerPct, n),
-      nuevoFakerElite: prop(mr.porNivelPico.elite.nuevoFakerPct, mr.porNivelPico.elite.carreras),
+      nuevoFakerElite: (() => {
+        const e = eliteAgrandadaMetasC(lote.crudos.resultados, lote.crudos.observaciones, bot);
+        return { ...prop(e.valor, e.n), extra: e.extra };
+      })(),
       pDosOMasDadoUno: prop(p21.p === null ? null : redondeoMetasC(100 * p21.p), p21.n),
       elMasFuerteGana: prop(mr.total.elMasFuerte.pctGana, mr.total.elMasFuerte.mundiales),
       carreraMediana: {
@@ -21619,11 +21687,13 @@ function valoresDeLasMetasC() {
         lck: lote.mundoMundial.titulosPorLiga[LIGA_CANDIDATA_DEL_MUNDIAL]?.pct,
         segunda: otras[0]?.[1].pct,
         segundaLiga: otras[0]?.[0],
+        sigmaMargen: redondeoMetasC(sigmaDelMargenMetasC(lote.crudos.observaciones, otras[0]?.[0])),
         // La mejor del oeste puede ganar (> 0): se reporta, no se exige (PLAN.md §K5c, "El paso 3, concreto").
         reparto: ligas.map(([liga, { pct }]) => `${liga} ${pct}`).join(' / ')
       }
     };
   }
+  afirmarRuidoIntactoK0('después de la élite agrandada de las metas C');
   valoresMetasC = { ...v, estancados: { ...estancado, n: CARRERAS_METAS_C } };
   const lineas = Object.keys(METAS_C).map((clave) => {
     const { valor, sigma, n } = valoresMetasC[clave];
@@ -21631,7 +21701,10 @@ function valoresDeLasMetasC() {
     return `${clave} ${valor} (n ${n}, σ ${redondeoMetasC(sigma)}, banda [${redondeoMetasC(desde)}, ${redondeoMetasC(hasta)}])`;
   });
   console.log(`     (muestra: ${CARRERAS_METAS_C} × ${SPLITS_LOTE_K0} por bot) ${lineas.join(' · ')} · estancados criterio/azar/malas `
-    + `${estancado.criterio}/${estancado.azar}/${estancado.malas} · Mundiales del mundo ${valoresMetasC.mundoMundial.mundiales}: ${valoresMetasC.mundoMundial.reparto}`);
+    + `${estancado.criterio}/${estancado.azar}/${estancado.malas} · élite ${valoresMetasC.nuevoFakerElite.n} carreras (${valoresMetasC.nuevoFakerElite.extra} extra) `
+    + `· Mundiales del mundo ${valoresMetasC.mundoMundial.mundiales}: ${valoresMetasC.mundoMundial.reparto} · margen ${LIGA_CANDIDATA_DEL_MUNDIAL} − `
+    + `${valoresMetasC.mundoMundial.segundaLiga} ${redondeoMetasC(valoresMetasC.mundoMundial.lck - valoresMetasC.mundoMundial.segunda)} (nominal `
+    + `${META_C_LCK_MARGEN_PP}, σ ${valoresMetasC.mundoMundial.sigmaMargen}, piso ${redondeoMetasC(META_C_LCK_MARGEN_PP - Z_RUIDO_METAS_C * valoresMetasC.mundoMundial.sigmaMargen)})`);
   return valoresMetasC;
 }
 
@@ -21640,16 +21713,16 @@ function problemasDeLasMetasC(claves) {
   return claves.map((clave) => juicio[clave]).filter((motivo) => motivo !== null);
 }
 
-// Los valores medidos (k5c-paso3, criterio/azar/malas 1500 × 60): cumplen.
+// Los valores medidos (k5c-paso3 al cerrar K5c, criterio/azar/malas 1500 × 60): cumplen.
 const VALORES_DE_LAS_METAS_C_OK = {
-  noLlegaAPro: { valor: 21.5, sigma: 1.06 }, llegaATier1: { valor: 74.5, sigma: 1.13 }, ganaTitulo: { valor: 55.4, sigma: 1.28 },
-  top20: { valor: 36.4, sigma: 1.24 }, ganaMundial: { valor: 7, sigma: 0.66 }, ganaMundialCorea: { valor: 9.9, sigma: 1.64 },
-  ganaMundialNA: { valor: 3.1, sigma: 1.24 }, nuevoFaker: { valor: 1.3, sigma: 0.29 }, nuevoFakerElite: { valor: 13.3, sigma: 5.06 },
-  pDosOMasDadoUno: { valor: 18.1, sigma: 3.76 }, elMasFuerteGana: { valor: 57.5, sigma: 5.3 }, carreraMediana: { valor: 8.83, sigma: 0.12 },
-  lineaForzosa: { valor: 4.8, sigma: 0.62 },
-  estancados: { criterio: 4.1, azar: 10.5, malas: 15.6, n: 1500 },
-  porRegion: { facil: 9.9, nFacil: 332, dificil: 3.1, nDificil: 194 },
-  mundoMundial: { lck: 51.8, segunda: 43.7, segundaLiga: 'LPL' }
+  noLlegaAPro: { valor: 21.5, sigma: 1.06 }, llegaATier1: { valor: 74.6, sigma: 1.12 }, ganaTitulo: { valor: 55.7, sigma: 1.28 },
+  top20: { valor: 36.4, sigma: 1.24 }, ganaMundial: { valor: 7.1, sigma: 0.66 }, ganaMundialCorea: { valor: 9.9, sigma: 1.64 },
+  ganaMundialNA: { valor: 3.6, sigma: 1.34 }, nuevoFaker: { valor: 1.2, sigma: 0.28 }, nuevoFakerElite: { valor: 12, sigma: 3.25 },
+  pDosOMasDadoUno: { valor: 16.8, sigma: 3.61 }, elMasFuerteGana: { valor: 57.5, sigma: 5.3 }, carreraMediana: { valor: 8.83, sigma: 0.13 },
+  lineaForzosa: { valor: 5.6, sigma: 0.67 },
+  estancados: { criterio: 3.9, azar: 10.1, malas: 15.3, n: 1500 },
+  porRegion: { facil: 9.9, nFacil: 332, dificil: 3.6, nDificil: 194 },
+  mundoMundial: { lck: 51.6, segunda: 43.8, segundaLiga: 'LPL', sigmaMargen: 0.84 }
 };
 
 check('K5c metas del bloque C: el juez acepta los valores medidos y rechaza, uno por uno, cada valor fuera de su banda o inexistente (regla 7)', () => {
@@ -21684,10 +21757,16 @@ check('K5c metas del bloque C: el juez acepta los valores medidos y rechaza, uno
   rechazaSolo('estancadoCriterio', { ...ok, estancados: { ...ok.estancados, criterio: 9 } }, 'criterio 9');
   rechazaSolo('estancadoMalas', { ...ok, estancados: { ...ok.estancados, malas: 11 } }, 'malas 11');
   rechazaSolo('regionOrdenada', { ...ok, porRegion: { ...ok.porRegion, facil: 5 } }, 'Corea 5 contra NA 3,1');
-  rechazaSolo('lckReparto', { ...ok, mundoMundial: { lck: 24, segunda: 18, segundaLiga: 'LPL' } }, 'LCK 24');
-  rechazaSolo('lckMargen', { ...ok, mundoMundial: { lck: 48, segunda: 43.7, segundaLiga: 'LPL' } }, 'LCK 48 contra 43,7');
-  if (juezDeLasMetasC({ ...ok, mundoMundial: { lck: 25, segunda: 20, segundaLiga: 'LPL' } }).lckMargen !== null) {
-    throw new Error('LCK 25 contra 20 (los bordes del usuario) no cumple');
+  const mm = ok.mundoMundial;
+  rechazaSolo('lckReparto', { ...ok, mundoMundial: { ...mm, lck: 24, segunda: 18 } }, 'LCK 24');
+  // El margen: el piso es 5 − 2σ (con σ 0,84, 3,32). Justo debajo del piso no cumple; justo arriba y los 5 nominales sí; sin σ, no.
+  const pisoMargen = META_C_LCK_MARGEN_PP - Z_RUIDO_METAS_C * mm.sigmaMargen;
+  rechazaSolo('lckMargen', { ...ok, mundoMundial: { ...mm, lck: 25, segunda: 25 - pisoMargen + PASO_AFUERA } }, `margen ${pisoMargen - PASO_AFUERA}`);
+  rechazaSolo('lckMargen', { ...ok, mundoMundial: { ...mm, sigmaMargen: null } }, 'margen sin σ');
+  for (const margen of [pisoMargen + PASO_AFUERA, META_C_LCK_MARGEN_PP]) {
+    if (juezDeLasMetasC({ ...ok, mundoMundial: { ...mm, lck: 25, segunda: 25 - margen } }).lckMargen !== null) {
+      throw new Error(`LCK 25 contra ${25 - margen} (margen ${margen}, justo arriba del piso o el nominal) no cumple`);
+    }
   }
 });
 
@@ -21703,6 +21782,13 @@ checkLento(`K5c meta de los estancados (criterio, azar y malas, ${CARRERAS_METAS
 
 checkLento(`K5c meta del Mundial (criterio, ${CARRERAS_METAS_C} × ${SPLITS_LOTE_K0}): gana un Mundial >= 7%, más fácil desde Corea que desde NA, el nuevo Faker, P(2+ | 1) y el más fuerte lo gana ~50%`, () => {
   const problemas = problemasDeLasMetasC(['ganaMundial', 'ganaMundialCorea', 'ganaMundialNA', 'regionOrdenada', 'nuevoFaker', 'nuevoFakerElite', 'pDosOMasDadoUno', 'elMasFuerteGana']);
+  // El piso de 7 − 2σ es tolerancia de ruido documentada: debajo de 7 no falla, pero se avisa a la vista.
+  const { valor: mundial, sigma: sigmaMundial } = valoresDeLasMetasC().ganaMundial;
+  const [pisoMundial] = bandaDeMetaC('ganaMundial', sigmaMundial);
+  console.log(`     gana un Mundial: medido ${mundial}% (meta del usuario >= ${METAS_C.ganaMundial.meta[0]}%, piso con ruido ${redondeoMetasC(pisoMundial)})`);
+  if (mundial < METAS_C.ganaMundial.meta[0]) {
+    console.log(`     AVISO: gana un Mundial ${mundial}% queda debajo del ${METAS_C.ganaMundial.meta[0]}% del usuario (dentro del ruido: no es FAIL)`);
+  }
   if (problemas.length > 0) throw new Error(problemas.join('; '));
 });
 

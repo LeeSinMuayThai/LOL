@@ -1842,6 +1842,25 @@ export function nombreDeBandaDeMargen(desde, hasta) {
   return Number.isFinite(hasta) ? `${desde} a ${hasta}` : `>= ${desde}`;
 }
 
+// La liga del campeón de un Mundial del mundo (una fila de `observacion.mundialesDelMundo`). Exportada para el σ del margen de la
+// meta del usuario en `validate.js` (K5c, cierre).
+export const ligaDelCampeonMundial = (m) => m.participantes.find((p) => p.nombre === m.campeon)?.liga ?? 'desconocida';
+
+// El nuevo Faker de una carrera (la definición de `mundialReal.definiciones.nuevoFaker`). Exportada para que `validate.js` agrande
+// la muestra de la élite con carreras sueltas (K5c, cierre) sin copiar la definición.
+export function esNuevoFaker(estado, observacion) {
+  const titulos = estado.career.registro.internacionales.filter((entrada) => entrada.resultado === RESULTADO_CAMPEON).length;
+  return titulos >= FAKER_MUNDIALES_GANADOS || observacion.temporadasNumero1 >= FAKER_TEMPORADAS_NUMERO_UNO;
+}
+
+// El nivel pico con el que una carrera entra a la élite, y el corte de la élite de una corrida: el top `FRACCION_NIVEL_PICO_ELITE`
+// por nivel pico (con empates en el corte entran todas las del corte).
+export const nivelPicoDe = (estado) => estado.career.registro.picos.nivel ?? 0;
+export function corteDeElite(resultados) {
+  const cantidadElite = Math.max(1, Math.ceil(FRACCION_NIVEL_PICO_ELITE * resultados.length));
+  return resultados.map(nivelPicoDe).sort((a, b) => b - a)[cantidadElite - 1];
+}
+
 // K5c (paso 1) — el Mundial REAL (§K.3a / §K.3b). Reemplaza a los tres proxies de `embudo` (`ganaMundial`,
 // `nuevoFaker`, `pOtroMundialDadoUno`, marcados `proxyAntesDeK5`, que se mantienen con su nota `reemplazadaPor`): acá un
 // Mundial ganado es una entrada de `career.registro.internacionales` con `resultado === 'campeon'` (el torneo de
@@ -1853,9 +1872,7 @@ function metricasMundialReal(resultados, observaciones, indices) {
   const total = indices.length;
   const conTitulo = titulos.filter((n) => n >= 1).length;
   const conDosOMas = titulos.filter((n) => n >= FAKER_MUNDIALES_GANADOS).length;
-  const nuevoFaker = indices.filter((i, k) => (
-    titulos[k] >= FAKER_MUNDIALES_GANADOS || observaciones[i].temporadasNumero1 >= FAKER_TEMPORADAS_NUMERO_UNO
-  )).length;
+  const nuevoFaker = indices.filter((i) => esNuevoFaker(resultados[i], observaciones[i])).length;
   const clasifican = indices.filter((i) => registrosDe(i).length > 0).length;
 
   const mundiales = indices.flatMap((i) => observaciones[i].mundiales);
@@ -1904,9 +1921,8 @@ export function bloqueMundialReal(resultados, observaciones) {
 
   // La élite: el top `FRACCION_NIVEL_PICO_ELITE` de la corrida por nivel pico (las que no llegaron a pro cuentan con el suyo,
   // que nunca está arriba). Con empates en el corte entran todas las del corte.
-  const picos = resultados.map((r) => r.career.registro.picos.nivel ?? 0);
-  const cantidadElite = Math.max(1, Math.ceil(FRACCION_NIVEL_PICO_ELITE * resultados.length));
-  const corte = [...picos].sort((a, b) => b - a)[cantidadElite - 1];
+  const picos = resultados.map(nivelPicoDe);
+  const corte = corteDeElite(resultados);
   const elite = todos.filter((i) => picos[i] >= corte);
   const resto = todos.filter((i) => picos[i] < corte);
 
@@ -1945,7 +1961,7 @@ export function bloqueMundoMundial(observaciones) {
   const cuenta = (lista, clave) => lista.reduce((acc, x) => { acc[clave(x)] = (acc[clave(x)] ?? 0) + 1; return acc; }, {});
   const reparto = (conteos) => Object.fromEntries(Object.entries(conteos)
     .sort((a, b) => b[1] - a[1]).map(([k, n]) => [k, { n, pct: pct(n, todos.length) ?? 0 }]));
-  const ligaDe = (m) => m.participantes.find((p) => p.nombre === m.campeon)?.liga ?? 'desconocida';
+  const ligaDe = ligaDelCampeonMundial;
   const regionDe = (m) => m.participantes.find((p) => p.nombre === m.campeon)?.region ?? 'desconocida';
   const ligas = [...new Set(todos.flatMap((m) => m.participantes.map((p) => p.liga)))].sort();
   const fuerzaPorLiga = Object.fromEntries(ligas.map((liga) => {
