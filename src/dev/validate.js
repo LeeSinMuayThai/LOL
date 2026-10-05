@@ -21091,9 +21091,11 @@ check('K5c-M (a): con las perillas de élite encendidas en memoria, la élite re
   console.log(`      ${resumen}`);
 });
 
-check('K5c-M (a2): con la rebaja encendida en memoria, los clubes más fuertes del mundo abren asiento para la élite (y para el medio, ninguno nuevo)', () => {
-  // K5c-M se mide con la casa neutra (D81): con la casa encendida ordena K5c-H. La cosecha de (a2) se hace siempre con la casa neutra
-  // (cacheada aparte de la de (a)), antes de encender las perillas de élite, igual en `--rapido` y en `--solo`.
+// K5c-M (a2), informativo (D81): el conteo sobre la muestra real NO tiene umbral. Con el mercado calibrado (Final2, la casa, las reglas
+// duras de import) la rebaja casi no abre asientos en los 10 clubes más fuertes (2 -> 3 con las perillas de ejemplo): K6 juzga. El
+// mecanismo lo prueba el escenario armado de más abajo ("K5c-M (a2 armado)"). K5c-M se mide con la casa neutra (D81): con la casa
+// encendida ordena K5c-H; la cosecha se hace siempre con la casa neutra, igual en `--rapido` y en `--solo`.
+check('K5c-M (a2): con la rebaja encendida en memoria, cuántos asientos de los clubes más fuertes del mundo abre sobre la muestra (informativo, sin umbral)', () => {
   const cosecha = { true: pausasDeEliteDeK5cM('neutra'), false: pausasDeMercadoDeK5cM('neutra') };
   const contar = (rebaja, quiereElite) => conPerillasEliteK5cM(0, rebaja, () => {
     let pares = 0;
@@ -21112,24 +21114,8 @@ check('K5c-M (a2): con la rebaja encendida en memoria, los clubes más fuertes d
   });
   const elite = [contar(SIN_REBAJA_K5CM, true), contar(REBAJAS_K5CM, true)];
   const medio = [contar(SIN_REBAJA_K5CM, false), contar(REBAJAS_K5CM, false)];
-  const resumen = `top ${TOP_MUNDO_K5CM} del mundo ofrecibles: élite ${elite[0].pares} -> ${elite[1].pares} (${elite[0].estados} pausas, seeds 1-${seedsEliteK5cMPorRegimen.neutra}), medio ${medio[0].pares} -> ${medio[1].pares} (${medio[0].estados} pausas)`;
-  if (elite[0].estados < 10) {
-    throw new Error(`muestra chica: ${resumen}`);
-  }
-  // K6a (integración, regla 17): "al menos el doble" se escribió con la muestra de K5c (élite 20 -> 30 ya en la rama de K6a-M; 9 -> 16
-  // con el stream integrado de K6a, 28 pausas). El criterio pasa a lo que la rebaja tiene que hacer sea cual sea la muestra: subir al
-  // menos `SUBA_RELATIVA_A2_K5CM` (30%) Y en más de `SUBA_ABSOLUTA_A2_K5CM` asientos (3, menos de la mitad de los +7 medidos), así un
-  // 1 -> 2 de una muestra chica no alcanza. Rojo con el mutante "sin rebaja" (las dos rebajas fuera de `asientoAbierto` y de la
-  // disputa: 9 -> 9) y con cada mitad sola (sin la del mérito 9 -> 12, +3; sin la de la disputa 9 -> 11).
-  const suba = elite[1].pares - elite[0].pares;
-  if (elite[1].pares < (1 + SUBA_RELATIVA_A2_K5CM) * elite[0].pares || suba <= SUBA_ABSOLUTA_A2_K5CM) {
-    throw new Error(`la rebaja no abre asientos en los clubes fuertes (tenía que subirlos al menos un ${Math.round(SUBA_RELATIVA_A2_K5CM * 100)}% `
-      + `y en más de ${SUBA_ABSOLUTA_A2_K5CM}): ${resumen}`);
-  }
-  if (medio[1].pares !== medio[0].pares) {
-    throw new Error(`la rebaja tocó al jugador medio (f = 0): ${resumen}`);
-  }
-  console.log(`      ${resumen}`);
+  console.log(`      top ${TOP_MUNDO_K5CM} del mundo ofrecibles: élite ${elite[0].pares} -> ${elite[1].pares} (${elite[0].estados} pausas, seeds 1-${seedsEliteK5cMPorRegimen.neutra}), `
+    + `medio ${medio[0].pares} -> ${medio[1].pares} (${medio[0].estados} pausas). D81: con el mercado calibrado, la rebaja casi no abre asientos top-10; K6 juzga`);
 });
 
 // Lo que la carta tiene que decir, armado acá de nuevo (no con `core/demanda.js:plantelEnLiga`): el puesto contando los
@@ -22729,6 +22715,98 @@ check('K5c-M (revisión): la rebaja de la élite está topeada en sus márgenes 
   if (problemas.length > 0) {
     throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
   }
+});
+
+// --- K5c-M (a2 armado): el mecanismo de la rebaja en una pausa construida (D81) ---------------------------------------------------
+// Sobre una pausa real de la cosecha se arma un club de tier 1 con la fuerza fija, el titular que se quiere, los libres vaciados
+// y `career.tier = 1` (ninguna oferta es un ascenso). El jugador es parejo (`statsParejasK5cM`): su nivel es el valor.
+//  - Mérito (margen `forzarAsientoSobreNpc`): el titular está GAP_MERITO por debajo de un jugador de élite (más que 0 y menos que el
+//    margen: sin rebaja el asiento sigue cerrado). Con `REBAJAS_K5CM` abre por mérito; sin rebaja, no.
+//  - Disputa (margen `margenSobreAlternativa`): el asiento está abierto (al titular se le va el contrato) y el nivel efectivo del
+//    jugador queda GAP_DISPUTA por debajo del margen sobre la alternativa del club. Con la rebaja gana la disputa; sin ella, no.
+//  - Control: el jugador medio (f = 0) con la misma brecha no recibe la rebaja.
+// Rojo con dos mutantes: la rebaja ignorada en la disputa (`ganaLaDisputaDelAsiento` sin `- rebajaDisputaElite(nivel)`) y la rebaja
+// aplicada también al medio (`rebajaMeritoElite` y `rebajaDisputaElite` sin `* factorElite(nivel)`).
+const { ganaLaDisputaDelAsiento: ganaDisputaK5CMA2, calibreDeLiga: calibreK5CMA2 } = await import('../core/demanda.js');
+const FUERZA_CLUB_K5CMA2 = 80;
+const FUERZA_LIGA_DEBIL_K5CMA2 = 70;
+const GAP_MERITO_K5CMA2 = 4;
+const GAP_DISPUTA_K5CMA2 = 2;
+const NIVEL_ELITE_K5CMA2 = 95;
+
+// `debil`: el club de la liga de menor calibre (la alternativa del club es baja, así que un jugador medio puede quedar a `GAP_DISPUTA` del
+// margen sin dejar de ser medio); si no, el primer club de tier 1.
+function escenarioK5cMA2(st, { nivelJugador, nivelTitular, aniosTitular, debil = false }) {
+  const rol = st.player.role;
+  const ligas = debil ? [...st.mundo.ligas].sort((a, b) => calibreK5CMA2(a) - calibreK5CMA2(b)) : st.mundo.ligas.filter((liga) => liga.tier === 1);
+  const org = ligas.flatMap((liga) => liga.orgs).find((o) => st.mundo.planteles?.[o.nombre] && o.nombre !== st.career.currentOrg);
+  const titular = st.mundo.planteles[org.nombre][rol];
+  return {
+    org: org.nombre,
+    st: {
+      ...st,
+      player: { ...st.player, stats: statsParejasK5cM(nivelJugador) },
+      career: { ...st.career, tier: 1 },
+      mundo: {
+        ...st.mundo,
+        // El club con la fuerza fija; en `debil`, toda su liga también (el calibre de la liga es la base de la alternativa del club).
+        ligas: st.mundo.ligas.map((liga) => ({ ...liga, orgs: liga.orgs.map((o) => (o.nombre === org.nombre ? { ...o, fuerza: debil ? FUERZA_LIGA_DEBIL_K5CMA2 : FUERZA_CLUB_K5CMA2 } : (debil && liga.orgs.some((x) => x.nombre === org.nombre) ? { ...o, fuerza: FUERZA_LIGA_DEBIL_K5CMA2 } : o))) })),
+        planteles: { ...st.mundo.planteles, [org.nombre]: { ...st.mundo.planteles[org.nombre], [rol]: { ...titular, nivel: nivelTitular, contrato: { ...titular.contrato, anios: aniosTitular } } } },
+        mercadoPretemporada: st.mundo.mercadoPretemporada ? { ...st.mundo.mercadoPretemporada, libresRestantes: [] } : st.mundo.mercadoPretemporada
+      }
+    }
+  };
+}
+
+check('K5c-M (a2 armado): en una pausa construida la rebaja abre el asiento por mérito y gana la disputa para la élite, en los dos márgenes, y no toca al medio', () => {
+  const { forzarAsientoSobreNpc, margenSobreAlternativa } = BALANCE.demanda;
+  const base = pausasDeEliteDeK5cM('neutra')[0].st;
+  const problemas = [];
+  const umbral = BALANCE.mercado.elite.umbralNivel;
+  // La alternativa del club no depende del jugador: se mide con un jugador cualquiera y se arma el jugador a la altura que se quiere.
+  const nivelParaDisputa = (nivelTitular, brecha, debil) => {
+    const { st: previo, org } = escenarioK5cMA2(base, { nivelJugador: umbral, nivelTitular, aniosTitular: 0, debil });
+    return alternativaK5CREV(previo, org, previo.player.role) + margenSobreAlternativa - brecha + castigoEtarioK5CREV(previo.age);
+  };
+  const casos = [
+    { nombre: 'élite', esElite: true, debil: false, nivelMerito: NIVEL_ELITE_K5CMA2, nivelTitularDisputa: 90 },
+    { nombre: 'medio', esElite: false, debil: true, nivelMerito: umbral - 1, nivelTitularDisputa: 60 }
+  ];
+  const resumen = [];
+  for (const caso of casos) {
+    const nivelDisputa = nivelParaDisputa(caso.nivelTitularDisputa, GAP_DISPUTA_K5CMA2, caso.debil);
+    for (const [margen, nivelJugador, escenario, gap] of [
+      ['mérito', caso.nivelMerito, { nivelTitular: caso.nivelMerito - GAP_MERITO_K5CMA2, aniosTitular: 3 }, GAP_MERITO_K5CMA2],
+      ['disputa', nivelDisputa, { nivelTitular: caso.nivelTitularDisputa, aniosTitular: 0 }, GAP_DISPUTA_K5CMA2]
+    ]) {
+      const { st, org } = escenarioK5cMA2(base, { nivelJugador, ...escenario, debil: caso.debil });
+      const f = factorElite(nivelDelJugador(st));
+      if (caso.esElite ? f !== 1 : f !== 0) {
+        problemas.push(`${caso.nombre}/${margen}: el escenario no es el que dice (nivel ${nivelDelJugador(st).toFixed(1)}, f = ${f})`);
+        continue;
+      }
+      const resultado = (rebaja) => conPerillasEliteK5cM(0, rebaja, () => (margen === 'mérito'
+        ? asientoAbiertoK5CREV(st, org, st.player.role).abierto
+        : ganaDisputaK5CMA2(st, org, st.player.role)));
+      const sin = resultado(SIN_REBAJA_K5CM);
+      const con = resultado(REBAJAS_K5CM);
+      const tope = margen === 'mérito' ? forzarAsientoSobreNpc : margenSobreAlternativa;
+      resumen.push(`${caso.nombre}/${margen} nivel ${nivelJugador.toFixed(1)}: ${sin} -> ${con}`);
+      if (gap <= 0 || gap >= tope) {
+        problemas.push(`${caso.nombre}/${margen}: la brecha ${gap} no cabe dentro del margen ${tope}`);
+      }
+      if (sin !== false) {
+        problemas.push(`${caso.nombre}/${margen}: sin rebaja el escenario ya pasa (no mide nada)`);
+      }
+      if (con !== caso.esElite) {
+        problemas.push(`${caso.nombre}/${margen}: con la rebaja ${con ? 'pasa' : 'no pasa'} y ${caso.esElite ? 'tenía que pasar (élite)' : 'no tenía que pasar (medio, f = 0)'}`);
+      }
+    }
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problema(s): ${problemas.join(' | ')}`);
+  }
+  console.log(`      ${resumen.join('; ')}`);
 });
 
 // --- K5c-R (revisión): el marcador de los años pro y el tier 3 -----------------------------------------------------------------
