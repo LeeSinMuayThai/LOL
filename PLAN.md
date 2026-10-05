@@ -7722,6 +7722,48 @@ Los arreglos que salgan se mergean en `k5c-instrumento` antes de medir. Recién 
 1500 carreras con el instrumento del repo, fija los valores y cierra el bloque C. Si una meta choca con otra, lo
 decide el usuario con la frontera medida.
 
+**Lo que encontraron** *(2026-10-05; los números los re-mide el paso 3 con el instrumento del repo, regla T6)*:
+- **El medidor** (`k5c-mundo`, solo `simulate.js`: bloque `mundoMundial`).
+  - La LCK pasa el 25% de los Mundiales del mundo con holgura, en G0 y con Final2.
+  - Pero no es "la que más gana": la LPL la empata, porque los planteles de las dos valen lo mismo.
+  - Con Final2, la LEC casi nunca tiene al más fuerte del campo, así que "un muy buen team de LEC" casi no aparece.
+- **El cazabugs de motor:** determinismo, guardado (ida y vuelta en cada pausa), NaN, reloj y fuerza del Mundial
+  limpios. Encontró, con las perillas de Final2 encendidas:
+  - **alto:** en el Mundial, la jerarquía todavía amortigua "la llamada" del mapa decisivo (`core/serie.js`, regla 15);
+  - **medio:** "la casa primero" llena la mano de 6 ofertas, y la élite de una región débil no ve los imports;
+  - **bajo:** el traspaso a mitad de contrato no respeta K5c-H;
+  - **bajo, sospecha:** los años pro pierden un split después de una vuelta;
+  - **bajo, sospecha:** la previa de la semana del amateur promete otro riesgo de casa que el que tira el motor.
+- **El cazabugs de navegador:** 0 errores de consola, nada trabado, y recargar retoma bien. Bugs de texto y números:
+  - el "valor" de mercado no cuadra con los contratos;
+  - "tu techo era 73" con nivel máximo 82;
+  - concordancia: "DE LA CIRCUITO", "título(s)";
+  - la tarjeta usa la liga equivocada en el segundo internacional;
+  - el chip del archirrival 0-0 desde el amateur;
+  - "Internacional: sin chance" que no cambia;
+  - el cierre de quien no llegó a pro.
+
+  Y un caso para mirar: 11 años trabado en tier 2 con "no te suelta".
+- **Los arreglos:** el motor va en `k5c-arreglos`, la UI y los textos en `k5c-ui2`, y el riesgo del amateur con la
+  investigación de no-pro (`k5c-nopro`).
+
+**El paso 3, concreto** *(supervisor, 2026-10-05)*. Base: `k5c-instrumento` con `k5c-mundo`, `k5c-arreglos`,
+`k5c-nopro` y `k5c-ui2` mergeadas.
+1. **Re-medir Final2 con el instrumento del repo**, no con la copia de sw4: `criterio` 1500 × 60, más `azar` y
+   `malas`.
+2. **El reparto del Mundial:** la LCK ≥ 25% y la primera con un margen claro sobre la segunda (≥ 5 puntos). La mejor
+   del oeste puede ganar (> 0, reportado). Se mueve con la fuerza de los planteles (el prestigio de LPL/LEC), nunca
+   con cupos. Si eso rompe la meta por región de la carrera, se reporta la frontera y decide el usuario.
+3. **Lo que ya estaba en el paso 3:**
+   - fijar los valores;
+   - pasar las metas a checks duros, con bandas de ruido. Incluye la del reparto del Mundial y la del split
+     internacional ≤ 6;
+   - vaciar la PENDIENTE C y cerrar `BLOQUES_DE_CORRIMIENTO.C`;
+   - los cortes de K1 con "El GOAT";
+   - los cuantiles del percentil;
+   - `HUELLA_JUEGO` 'K5c';
+   - subir el guardado si cambia la forma.
+
 ### K6 — Jugarlo *(la prueba que importa)*
 
 Tres carreras completas en el navegador: una que se estanca en tier 2 por malas decisiones, una buena
