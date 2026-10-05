@@ -21694,8 +21694,14 @@ const METAS_C = {
   lineaForzosa: { meta: [-Infinity, 5], texto: 'llega a la línea forzosa de los 34 (% de los pros)' }
 };
 // §K.3b "Se estanca en tier 2/3: ~10% más, y lo producen las malas decisiones (con `criterio` bastante menos, con `malas`
-// bastante más)". El ~10% es el del jugador "normal" (`azar`). Medido azar 10,1 (n 1500, σ 0,78); criterio 3,9; malas 15,3.
+// bastante más)". El ~10% es el del jugador "normal" (`azar`). Medido al cerrar K5c azar 10,1 (n 1500, σ 0,78); criterio 3,9; malas 15,3.
+// Regla 17: meta ~10; medido al cerrar K6b azar 12,5 (n 1500, σ 0,85); criterio 4,9; malas 16,9. Corrimiento declarado de K6b: la
+// carta única que cambia de liga, de región o de tier ahora frena (revisión de K6b, caso `cambio`) y `azar` puede rechazarla y quedarse
+// sin club, y la vuelta del retiro sin club cambió (va al mercado de su pretemporada y el automático no vuelve debajo del 20% de chance).
+// La banda va de la meta a lo medido, con su ruido: [10 − Zσ, 12,5 + Zσ] (≈ [8,29, 14,21] con σ 0,85). `criterio` y `malas` siguen
+// separados de `azar` por más de Z σ de la diferencia (4,9 y 16,9 contra 12,5).
 const META_C_ESTANCADO_AZAR_PCT = 10;
+const META_C_ESTANCADO_AZAR_REBASE_PCT = 12.5;
 // La meta del usuario (2026-10-05, PLAN.md §K5c "El paso 3, concreto"): la LCK gana >= 25% de los Mundiales del mundo y es la
 // primera con un margen >= 5 puntos sobre la segunda. El 25% va sin banda (el número del usuario). El margen va con su banda de
 // ruido, >= 5 − 2σ (hallazgo de la revisión al cerrar K5c: sin banda, un corrimiento del stream lo ponía rojo sin que nada
@@ -21782,8 +21788,12 @@ function juezDeLasMetasC(v) {
   const e = v.estancados ?? {};
   const sigmaE = (a, b) => Math.sqrt(sigmaDeProporcion(a, e.n) ** 2 + sigmaDeProporcion(b, e.n) ** 2);
   const sigmaAzar = sigmaDeProporcion(e.azar, e.n);
-  juicio.estancadoAzar = hay(e.azar) && hay(sigmaAzar) && Math.abs(e.azar - META_C_ESTANCADO_AZAR_PCT) <= Z_RUIDO_METAS_C * sigmaAzar ? null
-    : `azar se estanca en tier 2/3 el ${e.azar}%, la meta es ~${META_C_ESTANCADO_AZAR_PCT}% ± ${redondeoMetasC(Z_RUIDO_METAS_C * sigmaAzar)} (n ${e.n})`;
+  const bandaAzar = [
+    Math.min(META_C_ESTANCADO_AZAR_PCT, META_C_ESTANCADO_AZAR_REBASE_PCT) - Z_RUIDO_METAS_C * sigmaAzar,
+    Math.max(META_C_ESTANCADO_AZAR_PCT, META_C_ESTANCADO_AZAR_REBASE_PCT) + Z_RUIDO_METAS_C * sigmaAzar
+  ];
+  juicio.estancadoAzar = hay(e.azar) && hay(sigmaAzar) && e.azar >= bandaAzar[0] && e.azar <= bandaAzar[1] ? null
+    : `azar se estanca en tier 2/3 el ${e.azar}%, la banda es [${redondeoMetasC(bandaAzar[0])}, ${redondeoMetasC(bandaAzar[1])}] (meta ~${META_C_ESTANCADO_AZAR_PCT}%, re-basada a ${META_C_ESTANCADO_AZAR_REBASE_PCT}, σ ${redondeoMetasC(sigmaAzar)}, n ${e.n})`;
   juicio.estancadoCriterio = hay(e.criterio) && hay(e.azar) && e.criterio <= e.azar - Z_RUIDO_METAS_C * sigmaE(e.criterio, e.azar) ? null
     : `criterio se estanca el ${e.criterio}% y azar el ${e.azar}%: criterio tiene que quedar más de ${Z_RUIDO_METAS_C} σ abajo (σ ${redondeoMetasC(sigmaE(e.criterio, e.azar))})`;
   juicio.estancadoMalas = hay(e.malas) && hay(e.azar) && e.malas >= e.azar + Z_RUIDO_METAS_C * sigmaE(e.malas, e.azar) ? null
@@ -21891,7 +21901,8 @@ const VALORES_DE_LAS_METAS_C_OK = {
   ganaMundialNA: { valor: 3.6, sigma: 1.34 }, nuevoFaker: { valor: 1.2, sigma: 0.28 }, nuevoFakerElite: { valor: 12, sigma: 3.25 },
   pDosOMasDadoUno: { valor: 16.8, sigma: 3.61 }, elMasFuerteGana: { valor: 57.5, sigma: 5.3 }, carreraMediana: { valor: 8.83, sigma: 0.13 },
   lineaForzosa: { valor: 5.6, sigma: 0.67 },
-  estancados: { criterio: 3.9, azar: 10.1, malas: 15.3, n: 1500 },
+  // Cierre de K6b: los estancados, re-medidos (corrimiento declarado de K6b, ver META_C_ESTANCADO_AZAR_REBASE_PCT).
+  estancados: { criterio: 4.9, azar: 12.5, malas: 16.9, n: 1500 },
   porRegion: { facil: 9.9, nFacil: 332, dificil: 3.6, nDificil: 194 },
   mundoMundial: { lck: 51.6, segunda: 43.8, segundaLiga: 'LPL', sigmaMargen: 0.84 }
 };
@@ -21924,8 +21935,11 @@ check('K5c metas del bloque C: el juez acepta los valores medidos y rechaza, uno
   // Una meta re-basada: el valor de la meta misma cumple (acercarse a la meta nunca falla) y uno que la pasa de largo, no.
   rechazaSolo('llegaATier1', { ...ok, llegaATier1: { valor: 50, sigma: 1.13 } }, 'llegaATier1 = 50 (pasó de largo la meta 55-65)');
   if (juezDeLasMetasC({ ...ok, llegaATier1: { valor: 60, sigma: 1.13 } }).llegaATier1 !== null) throw new Error('llegaATier1 = 60 (en la meta) no cumple');
-  rechazaSolo('estancadoAzar', { ...ok, estancados: { ...ok.estancados, azar: 13, malas: 18 } }, 'azar 13');
-  rechazaSolo('estancadoCriterio', { ...ok, estancados: { ...ok.estancados, criterio: 9 } }, 'criterio 9');
+  // Cierre de K6b: la banda de azar va de la meta (10) a lo medido (12,5): 15 se pasa por arriba y 8 por abajo; la meta misma cumple.
+  rechazaSolo('estancadoAzar', { ...ok, estancados: { ...ok.estancados, azar: 15, malas: 20 } }, 'azar 15');
+  rechazaSolo('estancadoAzar', { ...ok, estancados: { ...ok.estancados, azar: 8 } }, 'azar 8');
+  if (juezDeLasMetasC({ ...ok, estancados: { ...ok.estancados, azar: META_C_ESTANCADO_AZAR_PCT } }).estancadoAzar !== null) throw new Error('azar en la meta (' + META_C_ESTANCADO_AZAR_PCT + ') no cumple');
+  rechazaSolo('estancadoCriterio', { ...ok, estancados: { ...ok.estancados, criterio: 11 } }, 'criterio 11');
   rechazaSolo('estancadoMalas', { ...ok, estancados: { ...ok.estancados, malas: 11 } }, 'malas 11');
   rechazaSolo('regionOrdenada', { ...ok, porRegion: { ...ok.porRegion, facil: 5 } }, 'Corea 5 contra NA 3,1');
   const mm = ok.mundoMundial;
@@ -21946,7 +21960,7 @@ checkLento(`K5c meta del embudo (criterio, ${CARRERAS_METAS_C} × ${SPLITS_LOTE_
   if (problemas.length > 0) throw new Error(problemas.join('; '));
 });
 
-checkLento(`K5c meta de los estancados (criterio, azar y malas, ${CARRERAS_METAS_C} × ${SPLITS_LOTE_K0}): azar ~${META_C_ESTANCADO_AZAR_PCT}%, criterio bastante menos y malas bastante más`, () => {
+checkLento(`K5c meta de los estancados (criterio, azar y malas, ${CARRERAS_METAS_C} × ${SPLITS_LOTE_K0}): azar entre ~${META_C_ESTANCADO_AZAR_PCT}% y ${META_C_ESTANCADO_AZAR_REBASE_PCT}% (re-basado), criterio bastante menos y malas bastante más`, () => {
   const problemas = problemasDeLasMetasC(['estancadoAzar', 'estancadoCriterio', 'estancadoMalas']);
   if (problemas.length > 0) throw new Error(problemas.join('; '));
 });
@@ -23405,13 +23419,29 @@ check('K5c-A: con la fracción en 0,5 en memoria, un jugador de 24 en tier 2 tie
 // K5c-V. (1) La renovación: un veterano de tier 2 con nivel medio, puesto justo entre la vara de los 25 y la de los 26 (le gana la
 // disputa a su club sin el castigo de los 26 y la pierde con él). Con la perilla en 26: a los 25 su club lo renueva (factor 1) y
 // desde los 26 no (factor 0, y la mano no trae la renovación con ningún rng); con la perilla neutra a los 26 queda el factor de
-// declive de siempre. (2) El piso de franquicia y el aviso (regla 15), en carreras reales de `azar` con el régimen del barrido
-// (castigo 100, sin factor de declive): con la perilla en 26 ninguna oferta forzada de tier 2 a un veterano pierde la disputa, y
-// el aviso "no van a renovarte" de un corte por edad dice por qué, solo desde los 26 y solo en tier 2.
+// declive de siempre. (2) El piso de franquicia, con el régimen del barrido (castigo 100, sin factor de declive):
+//  (2a) armado (cierre de K6b): sobre las pausas reales de tier 2 de la cosecha, el veterano es "claramente una franquicia" para su
+//       liga (nivel = prestigio + `brechaFranquicia` + `MARGEN_FRANQUICIA_K5CV`) y nadie lo ficharía por la vía normal (con el castigo
+//       de los 30 pierde toda disputa). Con la perilla neutra el piso le hace lugar aunque pierda la disputa (el piso de siempre);
+//       con la perilla en 26, ninguna oferta forzada de tier 2 pierde la disputa; y a los 25, por debajo de la perilla, el piso es
+//       el de siempre: la que decide es la edad de la perilla, no el tier.
+//  (2b) en carreras reales de `azar`: con la perilla en 26 ninguna oferta forzada de tier 2 a un veterano pierde la disputa, y el
+//       aviso "no van a renovarte" de un corte por edad dice por qué, solo desde los 26 y solo en tier 2.
+// Por qué el armado (cierre de K6b, medido): el piso de un veterano de tier 2 en las carreras reales de `azar` era UNA carrera de 40
+// (seed 3 en 923800d: Fénix Legion, EMEA Masters, a los 31). La carta única que frena si cambia de liga (revisión de K6b, caso
+// `cambio`) le cambió el camino a esa carrera en el split 33 (la carta de GIANTX, LCS -> LEC, ahora frena y `azar` espera): ya no
+// vuelve al tier 2. No es el motor: en 40 × 70 hay 9 comienzos de split de un veterano de tier 2 (en 923800d, 16), 4 "claramente
+// arriba" con la brecha de 10, los 4 con club, y ninguno llega al piso. El piso no cambió; el escenario dejó de pasar en la muestra.
+// Rojo con tres mutantes de `systems/mercado.js:generarOfertas`: el piso sin la disputa del veterano (2a con la perilla), el piso
+// apagado (2a neutra) y la disputa para todo el tier 2 sin mirar la edad (2a a los 25).
 const EDAD_VETERANO_K5CV = 26;
 const RNGS_RENOVACION_K5CV = 40;
+const EDAD_ARMADO_K5CV = EDAD_VETERANO_K5CV + 4;
+const MARGEN_FRANQUICIA_K5CV = 2;
+const RNG_ARMADO_K5CV = 1;
 // Revisión de K6b: 20 -> 40. Con la carta única que frena al cambiar de liga y la vuelta al mercado, las 20 carreras de `azar` ya no
-// traían ningún piso de franquicia de un veterano de tier 2 (el check quedaba vacío).
+// traían ningún piso de franquicia de un veterano de tier 2 (el check quedaba vacío). Cierre de K6b: con 40 tampoco (ver arriba); el
+// piso se mide en el armado (2a) y las 40 carreras quedan para (2b): los avisos por edad y la regla dura con la perilla.
 const SEEDS_CARRERAS_K5CV = 40;
 const SPLITS_CARRERAS_K5CV = 70;
 const REGIMEN_BARRIDO_K5CV = { castigoEtarioNivel: 100, factorRenovacionDeclive: 0 };
@@ -23476,7 +23506,43 @@ check('K5c-V: con la perilla en 26 en memoria, a un veterano de tier 2 con nivel
     problemas.push(`muestra chica: ${fixtures} pausas de tier 2 con un veterano de nivel medio`);
   }
 
-  // (2) Carreras reales. La edad del mercado es la de antes del split (la pretemporada lo abre); el tier se toma de antes o de después
+  // (2a) El piso armado. `rankMundialActual` en null: el veterano es franquicia por la brecha, no por el Top 20 (y sin mérito de K6b-M).
+  const pisoArmado = (edadPerilla, edad) => conBrechaFranquiciaK5CV(() => conPerillasDemandaK5CNAV({ ...REGIMEN_BARRIDO_K5CV, edadCastigoRenovacionTier2: edadPerilla }, () => {
+    const cuenta = { fixtures: 0, forzadas: 0, forzadasQuePierden: 0 };
+    for (const { st } of pausasDeMercadoK5cM()) {
+      const ligaActual = st.mundo.ligas.find((liga) => liga.id === st.career.liga);
+      if (st.career.tier !== 2 || ligaActual?.tier !== 2 || !ligaActual.orgs.some((org) => org.nombre === st.career.currentOrg)) {
+        continue;
+      }
+      const nivel = (ligaActual.prestigio ?? BALANCE.mercado.nivelLigaPorDefecto) + BALANCE.mercado.brechaFranquicia + MARGEN_FRANQUICIA_K5CV;
+      const veterano = { ...st, age: edad, player: { ...st.player, stats: statsParejasK5cM(nivel) }, flags: { ...st.flags, rankMundialActual: null } };
+      cuenta.fixtures += 1;
+      for (const oferta of generarOfertas(veterano, mulberry32(RNG_ARMADO_K5CV)).ofertas.filter((o) => o.forzadaFranquicia && o.tier === 2)) {
+        cuenta.forzadas += 1;
+        cuenta.forzadasQuePierden += ganaDisputaK5CNAV(veterano, oferta.org, veterano.player.role) ? 0 : 1;
+      }
+    }
+    return cuenta;
+  }));
+  const [armadoNeutra, armadoPerilla, armadoJoven] = [
+    pisoArmado(99, EDAD_ARMADO_K5CV), pisoArmado(EDAD_VETERANO_K5CV, EDAD_ARMADO_K5CV), pisoArmado(EDAD_VETERANO_K5CV, EDAD_VETERANO_K5CV - 1)
+  ];
+  const resumenArmado = `armado (${armadoNeutra.fixtures} pausas de tier 2): a los ${EDAD_ARMADO_K5CV}, forzadas ${armadoNeutra.forzadas} (pierden ${armadoNeutra.forzadasQuePierden}) `
+    + `-> ${armadoPerilla.forzadas} (${armadoPerilla.forzadasQuePierden}) con la perilla; a los ${EDAD_VETERANO_K5CV - 1} con la perilla ${armadoJoven.forzadas} (${armadoJoven.forzadasQuePierden})`;
+  if (armadoNeutra.fixtures < 3) {
+    problemas.push(`muestra chica del armado: ${resumenArmado}`);
+  }
+  if (armadoNeutra.forzadasQuePierden === 0) {
+    problemas.push(`con la perilla neutra el piso no le hace lugar al veterano que pierde la disputa (el piso de siempre): ${resumenArmado}`);
+  }
+  if (armadoPerilla.forzadasQuePierden !== 0) {
+    problemas.push(`con la perilla en ${EDAD_VETERANO_K5CV} el piso le hace lugar a un veterano de tier 2 que pierde la disputa: ${resumenArmado}`);
+  }
+  if (armadoJoven.forzadasQuePierden === 0) {
+    problemas.push(`a los ${EDAD_VETERANO_K5CV - 1}, debajo de la perilla, el piso no es el de siempre (la disputa muerde antes de la edad): ${resumenArmado}`);
+  }
+
+  // (2b) Carreras reales. La edad del mercado es la de antes del split (la pretemporada lo abre); el tier se toma de antes o de después
   // del split, porque el mismo split te puede bajar a la academia (tier 2) antes de que corra el mercado (seed 13: LPL -> tier 2 a los 30).
   const correr = (edadPerilla) => conBrechaFranquiciaK5CV(() => conPerillasDemandaK5CNAV({ ...REGIMEN_BARRIDO_K5CV, edadCastigoRenovacionTier2: edadPerilla }, () => {
     const cuenta = { forzadas: 0, narradas: 0, forzadasQuePierden: 0, avisosEdad: 0, avisosFuera: 0 };
@@ -23527,10 +23593,8 @@ check('K5c-V: con la perilla en 26 en memoria, a un veterano de tier 2 con nivel
   }));
   const neutra = correr(99);
   const conPerilla = correr(EDAD_VETERANO_K5CV);
-  const resumen = `forzadas de tier 2 a veteranos ${neutra.forzadas} (${neutra.narradas} firmadas sin pausa; pierden la disputa ${neutra.forzadasQuePierden}) -> ${conPerilla.forzadas} (${conPerilla.narradas}; ${conPerilla.forzadasQuePierden}); avisos por edad ${neutra.avisosEdad} -> ${conPerilla.avisosEdad} (fuera de lugar ${conPerilla.avisosFuera})`;
-  if (neutra.forzadasQuePierden === 0) {
-    problemas.push(`el piso de franquicia no se mide (ninguna oferta forzada pierde la disputa con la perilla neutra): ${resumen}`);
-  }
+  // Cierre de K6b: en la muestra real el conteo con la perilla neutra es informativo (ver arriba); el piso lo mide (2a).
+  const resumen = `${resumenArmado}; en ${SEEDS_CARRERAS_K5CV} carreras de azar, forzadas de tier 2 a veteranos ${neutra.forzadas} (${neutra.narradas} firmadas sin pausa; pierden la disputa ${neutra.forzadasQuePierden}) -> ${conPerilla.forzadas} (${conPerilla.narradas}; ${conPerilla.forzadasQuePierden}); avisos por edad ${neutra.avisosEdad} -> ${conPerilla.avisosEdad} (fuera de lugar ${conPerilla.avisosFuera})`;
   if (conPerilla.forzadasQuePierden !== 0) {
     problemas.push(`con la perilla en ${EDAD_VETERANO_K5CV} el piso de franquicia le hace lugar a un veterano que pierde la disputa: ${resumen}`);
   }
