@@ -7746,6 +7746,30 @@ decide el usuario con la frontera medida.
   Y un caso para mirar: 11 años trabado en tier 2 con "no te suelta".
 - **Los arreglos:** el motor va en `k5c-arreglos`, la UI y los textos en `k5c-ui2`, y el riesgo del amateur con la
   investigación de no-pro (`k5c-nopro`).
+- **La causa de "no llega a pro" en ~32%** (`k5c-nopro`, bisect con las mismas seeds): es K6a-A. Desde que el perfil
+  elige la semana del amateur, `leal` y `profesional` casi no juegan soloQ, y llegan tarde a la escalera alta, cuando
+  el sesgo etario del scouting ya dejó de mirarlos. No es un bug ni un cambio de definición.
+  - **Decisión del usuario:** el total en ~20% con una brecha acotada entre perfiles, con un piso de soloQ en
+    `perfiles.json` y `scoutingSesgoEtario`. La pantalla de perfil dice cuánto grindea cada uno.
+- **La validación completa de `2d8eec2` dio 8 FAIL:**
+  - **dos eran de medición, arreglados en `k5c-valbugs`:** la fila de una serie después de una vuelta a mitad de
+    split, y la final de tier 2 que el check no reconocía;
+  - **cuatro son del paso 3:** el tier 3 dura 3 splits; el favorito gana el 86%; la monotonía por región, que cambió
+    con K5c-H y se re-basa con su línea; el split internacional ≤ 6;
+  - **dos dependen de no-pro:** "El que no llegó" es el 30,5%, y `malas` no queda 10 puntos peor que `azar`.
+- **Corrimiento declarado (regla 17).** El split de un retiro con la temporada jugada ahora cuenta (`k5c-arreglos`,
+  `retiro.js`).
+  - Con las perillas neutras no cambia `criterio` ni el jugador automático, así que la huella es idéntica.
+  - Sí cambia las trayectorias de `azar` y `malas` que toman la bifurcación de retiro. Una explicación probable: llegan
+    un split antes a la marca de "curtido".
+  - Los números de `azar` y `malas` anteriores a este arreglo (por ejemplo, la fila de estancados del barrido final)
+    no son comparables. El paso 3 los re-mide.
+- **La revisión de los arreglos encontró un caso:** los cupos de import de élite también saltaban para Corea, porque
+  la LPL tiene a veces más calibre que la LCK. Se arregla con un margen de "claramente más fuerte", el mismo para el
+  bot (`k5c-fix2`). Anotado, sin arreglar:
+  - el precio de traspaso sale de `presupuestoDeDemanda`, que descuenta la edad, y el valor que se muestra no la
+    descuenta;
+  - el bloque `mundoMundial` cuenta los Mundiales solo mientras la carrera vive, así que pesan más los primeros años.
 
 **El paso 3, concreto** *(supervisor, 2026-10-05)*. Base: `k5c-instrumento` con `k5c-mundo`, `k5c-arreglos`,
 `k5c-nopro` y `k5c-ui2` mergeadas.
