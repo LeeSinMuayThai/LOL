@@ -8046,6 +8046,34 @@ que arriesgar un año más y ya había pasado los tryouts dos veces"*.
 **Junto con esto:** los FAIL lentos de K6b que salieron de la validación completa de `58db231` se arreglan en una rama
 aparte, antes del merge.
 
+**K6c, primera pasada** (`k6c-amateur`: `bc86165`).
+- **La prueba sin dado:** una prueba perfecta no firmaba en 5 de 75; ahora en 0 de 63, y nadie repite la oferta.
+- **El plan anual:** frena con el resumen.
+
+Hay dos problemas, y el supervisor decide (sin cambiar las decisiones del usuario):
+- **La vara fija de 60% ignora el nivel.** `malas` juega la prueba al 15%, nunca firma y no llega a pro el 94,5%.
+  Eso vacía 7 checks que necesitan carreras de `malas`, y un crack con una prueba floja no firmaría ni en tier 3.
+  **Regla:** la vara depende de tu nivel contra el calibre del club:
+  `vara = clamp(base − pendiente × (nivel − calibre), mínimo, máximo)`, con las constantes en `balance.js`.
+  - Si sos mejor que el club, la vara baja ("el nivel manda").
+  - Se sigue mostrando antes de la prueba, y sigue sin haber dado.
+- **Más frenadas semanales,** no menos: la mediana es 3 contra la meta de ≤ 1. **Regla:** con un plan del año elegido
+  (que ya mostró su riesgo), la semana frena solo si su riesgo supera el que mostró el plan, es decir si apareció
+  algo nuevo.
+
+**Los FAIL de la validación completa de K6b** (`58db231`: 505 OK, 10 FAIL; `simulate.js 1000` 0 crashes; determinismo
+idéntico; build 2285/2300 KB). Se arreglan en `k6b-fix`:
+- "sin_renovacion" ya no aparece, en `calcularMercado` y en el contexto;
+- la oferta lateral rechazada no nombra al NPC (seed 63);
+- el mundo NPC no envejece lo suficiente;
+- 9R0e: muestra insuficiente;
+- una carrera varada 18 splits (seed 101);
+- K0 KPIs anclados: `ritmo.colaDeCarrera` no tiene recuento independiente;
+- `criterio` estancado en 5,5% (tope 5);
+- el favorito del Bo5 en conjunto, 86% (meta 75-85);
+- la meta de la cola, 13,33 contra 12,99: la banda salió de una muestra con suerte, y se re-mide con la muestra del
+  check.
+
 ## K.6 — Qué pasa con FASE J y FASE V
 
 | Pieza | Destino |
