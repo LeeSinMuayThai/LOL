@@ -2,6 +2,40 @@
 
 Documento vivo. Se actualiza al cierre de cada tarea, según la Definición de terminado de CLAUDE.md.
 
+## 2026-10-05 — K5c paso 3a: Final2 fijado en los datos, más la LPL en 91 (`k5c-paso3`)
+
+- **Fijado** (solo constantes, un comentario "K5c paso 3" por constante): las 27 perillas de `cfgFinal2.json` en `balance.js` y
+  `leagues.json` (LCK 97, LEC 73, LCS 62), más **`prestigio` de la LPL 93 → 91**, fuera de Final2. Sin lógica.
+- **El reparto del Mundial del mundo** (`criterio` 1500 × 60, `mundoMundial`). Con Final2: LCK 48,3 / LPL 48,0 / LEC 3,1, un
+  margen de 0,3. Barrido de 6 variantes (600 × 60, en memoria), con el margen LCK − LPL:
+  - Final2 (LPL 93): 1,3;
+  - LPL 92: 2,5;
+  - **LPL 91: 8,4**;
+  - LPL 90: 9,2;
+  - LPL 89: 13,0;
+  - LPL 87: 20,9;
+  - LPL 91 + LEC 76: 6,6.
+
+  La LPL 91 es la más cercana que cumple. A 1500: **LCK 51,8 / LPL 43,7 / LEC 3,8**, el más fuerte gana el 48,8%.
+- **Por carrera** (1500, LPL 91):
+  - Mundial 7,0%: Corea 9,9, China 10,5 (33/332 contra 35/333, dentro del ruido), Europa 7,7, NA 3,1, Brasil 3,9, Asia-Pacífico
+    2,3;
+  - no-pro 21,5, estancados 4,1, tier 1 74,5, título 55,4, top 20 36,4;
+  - nuevo Faker 1,3 (élite 13,3), P(2+ | 1) 0,18;
+  - carrera mediana 8,8 años, p90 12, a los 34 4,8%; r(potencial, duración) 0,38;
+  - favorito Bo5 88,6 / 86,6 (jugador / ambos);
+  - p90 de interrupciones por split: regular 2, playoffs 5, internacional 6.
+- **`azar` / `malas`** (600 × 60, LPL 91):
+  - no-pro 26,8 / 38,0;
+  - estancados 10,7 / 15,8;
+  - tier 1 62,5 / 45,5.
+
+  Con Final2 (LPL 93): no-pro 26,2 / 36,0, estancados 12,2 / 15,3.
+- **Por `--solo`:**
+  - "El tier 3 es breve" FAIL: mediana 3;
+  - no-pro por perfil OK: profesional 26,7, hambriento 21,3, showman 24,0, leal 21,3.
+- **`--rapido`: 306 OK, 18 FAIL.** No se arreglan acá: los checks duros, la huella y el guardado son del paso 3b.
+
 ## 2026-10-05 — K5c (no-pro): el piso de soloQ de los perfiles, la previa de la casa y el sesgo etario (`k5c-nopro`)
 
 - **La causa** (bisect, `criterio` 300 × 60, mismas seeds): `c6f098f` 25,7 · `9d33340`..`b2c08f5` 24,7 · **`661c494` (K6a-A) 37,3**
