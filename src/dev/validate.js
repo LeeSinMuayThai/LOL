@@ -22820,6 +22820,8 @@ const {
   rebajaMeritoElite: rebajaMeritoK5CREV, rebajaDisputaElite: rebajaDisputaK5CREV
 } = await import('../core/demanda.js');
 const { castigoEtario: castigoEtarioK5CREV } = await import('../core/valorMercado.js');
+// K6b-M: la disputa de un fichaje cobra el castigo etario con la fracción del mérito (`core/demanda.js:castigoEtarioDe`).
+const { castigoEtarioDe: castigoEtarioDeK5CREV } = await import('../core/demanda.js');
 const REBAJA_ENORME_K5CREV = { merito: 100, disputa: 100 };
 
 check('K5c-M (revisión): la rebaja de la élite está topeada en sus márgenes (nunca peor que la alternativa, nunca bajo el titular) y el motivo del asiento dice la verdad (tres franjas)', () => {
@@ -22868,8 +22870,8 @@ check('K5c-M (revisión): la rebaja de la élite está topeada en sus márgenes 
       for (const entrada of orgsQueTeFicharian(st)) {
         fichajes += 1;
         const alternativa = alternativaK5CREV(st, entrada.org.nombre, rol);
-        if (nivel - castigoEtarioK5CREV(st.age) < alternativa) {
-          problemas.push(`seed ${seed}: ${entrada.org.nombre} te ficharía con ${(nivel - castigoEtarioK5CREV(st.age)).toFixed(1)} efectivo contra una alternativa de ${alternativa.toFixed(1)}`);
+        if (nivel - castigoEtarioDeK5CREV(st) < alternativa) {
+          problemas.push(`seed ${seed}: ${entrada.org.nombre} te ficharía con ${(nivel - castigoEtarioDeK5CREV(st)).toFixed(1)} efectivo contra una alternativa de ${alternativa.toFixed(1)}`);
         }
       }
     }
@@ -23385,7 +23387,11 @@ check('K5c-V: con la perilla en 26 en memoria, a un veterano de tier 2 con nivel
         const paso = avanzarSplitAuto(st, rng, responder);
         for (const log of paso.logs.filter((l) => l.type === 'mercado' && String(l.message ?? '').includes(AVISO_EDAD_K5CV))) {
           cuenta.avisosEdad += 1;
-          if (previo.edad < EDAD_VETERANO_K5CV || (previo.tier !== 2 && paso.state.career.tier !== 2) || !log.message.includes('no van a renovarte')) {
+          // K6b-M: o el club del aviso está en una liga de tier 2 al cerrar el split. Con las carreras de K6b-M, en la seed 3 Dignitas
+          // pasa a la liga de tier 2 en el mismo split, el aviso sale (veraz) y el jugador firma en la LEC: tier 1 antes y después.
+          const clubDelAviso = log.message.split(' te avisó')[0];
+          const tierDelClub = paso.state.mundo.ligas.find((liga) => liga.orgs.some((org) => org.nombre === clubDelAviso))?.tier;
+          if (previo.edad < EDAD_VETERANO_K5CV || (previo.tier !== 2 && paso.state.career.tier !== 2 && tierDelClub !== 2) || !log.message.includes('no van a renovarte')) {
             cuenta.avisosFuera += 1;
           }
         }
@@ -24211,6 +24217,137 @@ check('K5c-H arreglo: el split de un retiro con la temporada ya jugada cuenta co
     throw new Error(`muestra chica: ${JSON.stringify(cuenta)} en ${SEEDS_VUELTA_K5CHA} seeds`);
   }
   console.log(`      retiros con la temporada jugada: ${cuenta.jugadoConVuelta} con vuelta, ${cuenta.jugadoSinVuelta} sin vuelta; ${cuenta.noJugado} antes de la temporada`);
+});
+
+// --- K6b-M, el mercado premia el mérito (PLAN.md "K6b") ---------------------------------------------------------------------
+// El bug de K6 (seed 39): Fnatic, campeón del Mundial con el #3 del mundo a los 27, no le renovaba y la única carta era el club
+// más débil de la LEC. Los fixtures salen de las pausas de mercado reales de `criterio` (`pausasDeMercadoK5cM`) con club de tier 1,
+// una por seed: se les pone `EDAD_K6BM` años y nivel `NIVEL_K6BM` (élite) y, en (a), el Mundial del año que cerró; en (b), ningún
+// mérito (sin títulos de ese año y el cierre #`RANK_SIN_MERITO_K6BM`: top 20 pero no top 10). Cada mano se tira con `RNGS_K6BM`
+// rngs. (a) pide además que el club que no tiene una alternativa mejor para el puesto SIN contar la edad renueve en todas las
+// manos (el "salvo un motivo que se dice": el único motivo es esa alternativa). Rojo con mutantes en memoria: (a)
+// `merito.fraccionCastigo` = 1 (el castigo etario entero: el bug); (b)
+// `merito.rankMundialMaximo` = 20 (el mérito se le escapa al veterano del top 20).
+const { meritoDeTemporada: meritoK6BM, castigoEtarioDe: castigoEtarioDeK6BM, factorRenovacionEtario: factorRenovacionK6BM, nivelAlternativaAsiento: alternativaK6BM, rebajaDisputaElite: rebajaDisputaK6BM } = await import('../core/demanda.js');
+const { castigoEtario: castigoEtarioK6BM } = await import('../core/valorMercado.js');
+const EDAD_K6BM = 27;
+const NIVEL_K6BM = 90;
+const RNGS_K6BM = 6;
+const RANK_SIN_MERITO_K6BM = 15;
+// El campeón cierra el año #3 del mundo, como el de la seed 39: con eso el piso de franquicia (top 20) también está en juego.
+const RANK_CAMPEON_K6BM = 3;
+const RANK_MUTANTE_K6BM = 20;
+const FIXTURES_MINIMOS_K6BM = 5;
+function conPerillasMeritoK6BM(perillas, fn) {
+  const m = BALANCE.mercado.merito;
+  const previas = Object.fromEntries(Object.keys(perillas).map((clave) => [clave, m[clave]]));
+  Object.assign(m, perillas);
+  try {
+    return fn();
+  } finally {
+    Object.assign(m, previas);
+  }
+}
+let fixturesK6BMCache = null;
+function fixturesK6BM() {
+  if (fixturesK6BMCache) return fixturesK6BMCache;
+  const vistas = new Set();
+  const fixtures = [];
+  for (const { seed, st } of pausasDeMercadoK5cM()) {
+    const liga = st.mundo.ligas.find((l) => l.id === st.career.liga);
+    if (vistas.has(seed) || liga?.tier !== 1 || !liga.orgs.some((org) => org.nombre === st.career.currentOrg)) {
+      continue;
+    }
+    vistas.add(seed);
+    const anio = st.calendario.anio - 1;
+    const registro = {
+      ...st.career.registro,
+      titulos: st.career.registro.titulos.filter((t) => t.anio !== anio),
+      internacionales: st.career.registro.internacionales.filter((i) => i.anio !== anio)
+    };
+    const base = { ...st, age: EDAD_K6BM, player: { ...st.player, stats: statsParejasK5cM(NIVEL_K6BM) }, career: { ...st.career, registro } };
+    const mundial = { torneo: `Mundial ${anio}`, anio, org: st.career.currentOrg, liga: liga.id, resultado: 'campeon' };
+    const campeon = {
+      ...base, flags: { ...base.flags, rankMundialActual: RANK_CAMPEON_K6BM },
+      career: { ...base.career, registro: { ...registro, internacionales: [...registro.internacionales, mundial] } }
+    };
+    const veterano = { ...base, flags: { ...base.flags, rankMundialActual: RANK_SIN_MERITO_K6BM } };
+    fixtures.push({ seed, liga, campeon, veterano });
+  }
+  fixturesK6BMCache = fixtures;
+  return fixtures;
+}
+function problemasDelCampeonK6BM(fixtures) {
+  const problemas = [];
+  let manos = 0;
+  for (const { seed, campeon } of fixtures) {
+    const alternativa = alternativaK6BM(campeon, campeon.career.currentOrg, campeon.player.role);
+    const ganaSinEdad = NIVEL_K6BM >= alternativa + BALANCE.demanda.margenSobreAlternativa - rebajaDisputaK6BM(NIVEL_K6BM);
+    for (let r = 1; r <= RNGS_K6BM; r += 1) {
+      manos += 1;
+      const ofertas = generarOfertas(campeon, mulberry32(r)).ofertas;
+      const renueva = ofertas.some((o) => o.tag === 'renovacion');
+      const deSuCalibre = ofertas.some((o) => o.tag !== 'renovacion' && o.tier === 1 && o.plantelEnLiga?.banda !== 'abajo');
+      const unaDeAbajo = ofertas.length === 1 && ofertas[0].tag !== 'renovacion' && ofertas[0].plantelEnLiga?.banda === 'abajo';
+      if (ganaSinEdad && !renueva) {
+        problemas.push(`seed ${seed} rng ${r}: su club no tiene una alternativa mejor (${alternativa.toFixed(1)}) y no le renueva`);
+      } else if ((!renueva && !deSuCalibre) || unaDeAbajo) {
+        problemas.push(`seed ${seed} rng ${r}: ${ofertas.length ? ofertas.map((o) => `${o.tag}|${o.org}|${o.plantelEnLiga?.banda}`).join(', ') : 'sin ofertas'}`);
+      }
+    }
+  }
+  return { problemas, manos };
+}
+function problemasDelVeteranoK6BM(fixtures) {
+  const problemas = [];
+  for (const { seed, liga, veterano } of fixtures) {
+    const castigo = castigoEtarioDeK6BM(veterano);
+    if (meritoK6BM(veterano) !== null || castigo !== castigoEtarioK6BM(EDAD_K6BM)) {
+      problemas.push(`seed ${seed}: sin mérito el castigo es ${castigo} (se esperaba ${castigoEtarioK6BM(EDAD_K6BM)})`);
+      continue;
+    }
+    const factor = factorRenovacionK6BM(veterano, liga);
+    let renovaciones = 0;
+    for (let r = 1; r <= RNGS_K6BM; r += 1) {
+      renovaciones += generarOfertas(veterano, mulberry32(r)).ofertas.some((o) => o.tag === 'renovacion') ? 1 : 0;
+    }
+    if (factor !== BALANCE.demanda.factorRenovacionDeclive || (factor === 0 && renovaciones > 0)) {
+      problemas.push(`seed ${seed}: factor de renovación ${factor}, ${renovaciones}/${RNGS_K6BM} renovaciones (se esperaba el de declive, ${BALANCE.demanda.factorRenovacionDeclive})`);
+    }
+  }
+  return problemas;
+}
+
+check(`K6b-M (a): el campeón del Mundial de ${EDAD_K6BM} con nivel ${NIVEL_K6BM} recibe la renovación o una oferta de tier 1 de su calibre, y nunca una sola carta de un club de abajo (rojo con el castigo etario entero)`, () => {
+  const fixtures = fixturesK6BM();
+  if (fixtures.length < FIXTURES_MINIMOS_K6BM) {
+    throw new Error(`muestra chica: ${fixtures.length} pausas con club de tier 1`);
+  }
+  const real = problemasDelCampeonK6BM(fixtures);
+  const mutante = conPerillasMeritoK6BM({ fraccionCastigo: 1 }, () => problemasDelCampeonK6BM(fixtures));
+  if (real.problemas.length > 0) {
+    throw new Error(`${real.problemas.length}/${real.manos} manos sin la renovación ni una oferta de su calibre: ${real.problemas.slice(0, 4).join(' | ')}`);
+  }
+  if (mutante.problemas.length === 0) {
+    throw new Error(`el mutante (merito.fraccionCastigo = 1) no se distingue: ninguna de ${mutante.manos} manos falla`);
+  }
+  console.log(`      ${fixtures.length} campeones, ${real.manos} manos: 0 problemas; con el castigo entero ${mutante.problemas.length}/${mutante.manos}`);
+});
+
+check(`K6b-M (b): el veterano de ${EDAD_K6BM} sin mérito (#${RANK_SIN_MERITO_K6BM} del mundo, sin título) sigue con el castigo etario entero y su club no le renueva (rojo si el mérito se le escapa)`, () => {
+  const fixtures = fixturesK6BM();
+  if (fixtures.length < FIXTURES_MINIMOS_K6BM) {
+    throw new Error(`muestra chica: ${fixtures.length} pausas con club de tier 1`);
+  }
+  const real = problemasDelVeteranoK6BM(fixtures);
+  const mutante = conPerillasMeritoK6BM({ rankMundialMaximo: RANK_MUTANTE_K6BM }, () => problemasDelVeteranoK6BM(fixtures));
+  if (real.length > 0) {
+    throw new Error(`${real.length} problema(s): ${real.slice(0, 4).join(' | ')}`);
+  }
+  if (mutante.length === 0) {
+    throw new Error(`el mutante (merito.rankMundialMaximo = ${RANK_MUTANTE_K6BM}) no se distingue`);
+  }
+  console.log(`      ${fixtures.length} veteranos sin mérito: castigo ${castigoEtarioK6BM(EDAD_K6BM).toFixed(1)} y sin renovación; con el mérito escapado fallan ${mutante.length}`);
 });
 
 if (errores.length > 0) {
