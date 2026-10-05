@@ -6,7 +6,7 @@ import { plata, plural } from '../core/formato.js';
 import { calcularContexto } from '../core/contexto.js';
 import { ligaDeCarrera } from '../core/competicion.js';
 import { salarioDeOferta } from '../core/salarios.js';
-import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
+import { valorDeMercado, presupuestoDeDemanda, sesgoEtario } from '../core/valorMercado.js';
 import { cerrarFila, registrarPico, registrarSalarioEnFila, registrarArraigoEnFila, arraigoInicial } from '../core/registro.js';
 import { bandaDeJerarquia, bandaDeArraigoFicha, nivelDelJugador } from '../core/ficha.js';
 import { orgsQueTeFicharian, ofertaPosible, esResidenteDe, nivelAlternativaAsiento, factorRenovacionEtario, factorElite, plantelEnLiga, veteranoDeTier2, ganaLaDisputaDelAsiento, renovacionCortadaPorEdad, alcanzaTuLiga, ligaDeCasa, clubDeCasaQueTeHaceLugar } from '../core/demanda.js';
@@ -1012,7 +1012,7 @@ function ofertaDeTraspaso(state, rng) {
   };
   const conClausula = state.career.contrato.clausula === 'salida';
   const traspasoUSD = Math.round(
-    valorDeMercado(state) * m.traspasoBaseFactor
+    presupuestoDeDemanda(state) * m.traspasoBaseFactor
     * (1 + Math.max(0, state.career.contrato.aniosRestantes) * m.traspasoPorAnioRestante)
   );
 

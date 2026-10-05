@@ -1,4 +1,5 @@
 import { BALANCE } from '../data/balance.js';
+import { ROLES } from '../data/roles.js';
 import { ligaDeCarrera } from './competicion.js';
 
 // CONCEPTO.md §12.2: el mismo sesgo etario que gobierna el scouting amateur
@@ -51,14 +52,12 @@ export function splitsDeResidencia(state, regionId) {
   }, 0);
 }
 
-// Cuánto valés hoy, en dólares (CONCEPTO §12: "VALOR MÁS ALTO").
-// No es tu sueldo actual — podés estar atado a un contrato viejo que te
-// subpaga — es lo que el mejor postor de tu propia liga pagaría si te
-// ofertara ahora. Pura, sin rng: una valuación es una lectura del estado, no
-// una negociación (el ruido de la negociación vive en `salarioDeOferta`).
-// `0` fuera de una liga real (tier 3 o sin equipo): ahí no hay mercado que
-// te tase todavía.
-export function valorDeMercado(state) {
+// El presupuesto que una org te pone enfrente en la DISPUTA por un asiento (`demanda.js`: presupuesto >= esto) y la base
+// del precio de un traspaso a mitad de contrato. NO es un precio de mercado: lleva el `sesgoEtario` (0,15 a 0,22 desde los
+// 30), que es un factor de demanda —a esa edad casi nadie te ficha—, no de cuánto paga el que sí te ficha. Por eso la
+// pantalla no lo muestra (`valorDeMercado`); esto es lo que antes se llamaba "valor de mercado" y decidía lo mismo.
+// Pura, sin rng. `0` fuera de una liga real (tier 3 o sin equipo).
+export function presupuestoDeDemanda(state) {
   const liga = ligaDeCarrera(state);
   if (!liga) {
     return 0;
@@ -81,4 +80,20 @@ export function valorDeMercado(state) {
     + bonoTopMundial(state);
 
   return Math.round(liga.salario.medianaUSD * factor * sesgoEtario(state.age));
+}
+
+// Cuánto valés hoy, en dólares por año (CONCEPTO §12: "VALOR MÁS ALTO"): lo que paga una oferta a tu rol, jerarquía y hype
+// en tu liga, la MISMA fórmula que `salarioDeOferta` (core/salarios.js) en su mediana (sin tirar la lognormal: no
+// hay negociación en una valuación; el contrato que firmás sale del extremo alto de varias ofertas, por eso suele estar por
+// encima) y, como esa fórmula, sin descuento por edad. Es lo que ve el jugador (chip, mercado, pico de la tarjeta); no decide nada. Pura, sin rng. `0` fuera de una liga real (tier 3 o sin equipo): ahí no hay mercado que te tase todavía.
+export function valorDeMercado(state) {
+  const liga = ligaDeCarrera(state);
+  if (!liga) {
+    return 0;
+  }
+  const { mercado } = BALANCE;
+  const mult = ROLES[state.player.role].factorSalario
+    * (mercado.salarioJerarquiaBase + (state.career.jerarquia / 100) * mercado.salarioJerarquiaPeso)
+    * (mercado.salarioHypeBase + (state.player.stats.hype / 100) * mercado.salarioHypePeso);
+  return Math.max(liga.salario.minimoUSD, Math.round(liga.salario.medianaUSD * mult));
 }

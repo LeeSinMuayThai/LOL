@@ -1305,7 +1305,7 @@ export const BALANCE = {
     },
     sesgoEtarioMinimo: 0.15, // 31+
 
-    // --- valorDeMercado: cuánto pesa cada insumo antes del sesgo etario ---
+    // --- presupuestoDeDemanda (antes valorDeMercado): cuánto pesa cada insumo antes del sesgo etario ---
     valorRendimientoPeso: 0.5,
     valorJerarquiaPeso: 0.3,
     valorHypePeso: 0.25,

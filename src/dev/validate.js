@@ -73,7 +73,7 @@ import { titularDelAnio } from '../core/temporadaResumen.js';
 import { bandaDeArraigo, filaAbierta as filaAbiertaK5 } from '../core/registro.js';
 import { rankearMundo, rankearPoblacion, puntajeRanking } from '../core/topMundial.js';
 import { salarioDeOferta } from '../core/salarios.js';
-import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
+import { valorDeMercado, presupuestoDeDemanda, sesgoEtario } from '../core/valorMercado.js';
 import { orgsQueTeFicharian, ofertaPosible, residenciaEn, factorElite } from '../core/demanda.js';
 import { aplicar as aplicarMercado, construirOferta, ofertaDeImportPosible, academiaDelBanquillo, generarOfertas } from '../systems/mercado.js';
 import { aplicar as aplicarRetiroK4c2, MOTIVOS_DE_RETIRO } from '../systems/retiro.js';
@@ -1429,6 +1429,43 @@ checkLento('career.liga es null en todo split con career.currentOrg null (regla 
       `currentOrg null con liga persistida (regla 15): ${violaciones.slice(0, 5).join('; ')}`
       + (violaciones.length > 5 ? `, … (${violaciones.length}+)` : '')
     );
+  }
+});
+
+// K5c-U2: el valor que ve el jugador cuadra con los contratos que le ofrecen. Antes era el presupuesto de demanda (lleva el
+// `sesgoEtario`: 0,15-0,22 desde los 30) y una ficha con $431k/año mostraba "valor $59k". Se compara contra la distribución
+// REAL de `salarioDeOferta` (la mediana de 301 ofertas con el mismo rol, jerarquía y hype), a los 31 años, que es donde el
+// bug original se veía.
+check('valorDeMercado cuadra con los contratos: a los 31 años queda entre 0,5x y 2x la mediana de las ofertas reales, en cada liga y rol', () => {
+  const base = createInitialState(1, mulberry32(1));
+  const problemas = [];
+  for (const ligaId of ['LCK', 'LEC', 'CBLOL', 'LDL']) {
+    for (const rol of IDS_ROL) {
+      const hype = 55;
+      const jerarquia = 60;
+      const st = {
+        ...base, age: 31,
+        career: { ...base.career, liga: ligaId, jerarquia, historial: [70, 75, 68] },
+        player: { ...base.player, role: rol, stats: { ...base.player.stats, hype } }
+      };
+      const liga = st.mundo.ligas.find((l) => l.id === ligaId);
+      const rng = mulberry32(7);
+      const ofertas = Array.from({ length: 301 }, () => salarioDeOferta(liga, { rol, jerarquia, hype }, rng)).sort((a, b) => a - b);
+      const mediana = ofertas[150];
+      const razon = valorDeMercado(st) / mediana;
+      if (!(razon >= 0.5 && razon <= 2)) {
+        problemas.push(`${ligaId}/${rol}: valor ${valorDeMercado(st)} vs mediana de ofertas ${mediana} (${razon.toFixed(2)}x)`);
+      }
+    }
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} casos fuera de 0,5x-2x: ${problemas.slice(0, 4).join(' | ')}`);
+  }
+  // El presupuesto de demanda sigue llevando el sesgo etario (decide la disputa por el asiento): a los 31 es una fracción del valor.
+  const viejo = { ...base, age: 31, career: { ...base.career, liga: 'LEC', jerarquia: 60, historial: [70, 75, 68] } };
+  const joven = { ...viejo, age: 21 };
+  if (!(presupuestoDeDemanda(viejo) < presupuestoDeDemanda(joven) * 0.5)) {
+    throw new Error('el presupuesto de demanda dejó de llevar el sesgo etario');
   }
 });
 
