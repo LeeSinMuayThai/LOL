@@ -7788,6 +7788,46 @@ decide el usuario con la frontera medida.
    - `HUELLA_JUEGO` 'K5c';
    - subir el guardado si cambia la forma.
 
+**Paso 3a, hecho** (`k5c-paso3`: `44d4ab4`).
+- Final2 queda fijado en `balance.js` y `leagues.json`. Además, la **LPL baja a prestigio 91**: con 93, la LCK y la
+  LPL empataban el reparto del Mundial. Las variantes LPL 92-87 se barrieron, y 91 es la más cercana a Final2 que
+  pone a la LCK primera con margen sin romper las metas por carrera.
+- Se cumplen:
+  - las metas del usuario: Mundial ≥ 7% (justo) y no-pro ~20%;
+  - la LCK primera, con más del 25% de los Mundiales del mundo;
+  - NA 3-5; llegar a los 34 < 5%; r(potencial, duración); los estancados de `malas` ≫ `criterio`.
+- No se cumplen las de §K.3b: llegar a tier 1, el título, el top 20, P(2+ | 1), el nuevo Faker de élite, el favorito
+  de un Bo5 (por arriba) y la carrera mediana (~9 años).
+- Los números exactos los fija la corrida del supervisor al cerrar (regla T6).
+
+**Decisión del usuario (2026-10-05): "cerrar y que K6 juzgue".**
+- K5c cierra con estos valores. Las metas de §K.3b que no llegan se re-basan a lo medido, con su línea de la regla 17,
+  y pasan a la tabla de deuda.
+- Las 3 carreras jugadas de K6 dicen cuáles importan de verdad.
+- Endurecer el acceso a tier 1 bajaría el Mundial, que ya está justo en 7%: es la frontera que se mide.
+
+**Paso 3b, en tres partes:**
+- **3b-1, hecho** (`873fc80`): los checks escritos con las perillas neutras como base.
+  - Los de neutralidad fijan la neutra en memoria; los de efecto usan los valores reales. Cada uno tiene su mutante en
+    rojo.
+  - **Hallazgo:** con Final2, K5c-M (la élite se busca) no tiene efecto medible, porque "la casa primero" de K5c-H
+    (la decisión del usuario) ordena antes. Su check pasa a probar el mecanismo con la casa neutra en memoria.
+  - **La forma del guardado:** cambió por la muestra, no por campos nuevos. La `VERSION` 12 nunca salió de la rama,
+    así que se re-registra `FORMAS_CONOCIDAS[12]` sin subir la versión.
+- **3b-2:** los FAIL de comportamiento.
+  - la dinastía de K5-A;
+  - los años sin carta de cierre de K4c;
+  - "probaste y no alcanzó";
+  - las marcas de la ficha de K3-B;
+  - la semana amateur que no frena con riesgo (K6a-A);
+  - la muestra del check de la presión.
+
+  Cada uno se arregla, o se re-basa con su razón.
+- **3b-3:** las metas de §K.3a y §K.3b pasan a checks duros, re-basadas según la decisión. Además: la PENDIENTE C,
+  `BLOQUES_DE_CORRIMIENTO.C`, los cortes de K1 con "El GOAT" y los cuantiles del percentil.
+- **Al final:** `HUELLA_JUEGO` 'K5c' y la forma, la validación completa del supervisor, la revisión, el merge a
+  `fase-9r`, el push y K6.
+
 ### K6 — Jugarlo *(la prueba que importa)*
 
 Tres carreras completas en el navegador: una que se estanca en tier 2 por malas decisiones, una buena
