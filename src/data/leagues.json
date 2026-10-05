@@ -18,6 +18,7 @@
       "bo": 5
     },
     "desciendeA": "LCK_CL",
+    "franquicia": true,
     "servidor": "KR",
     "orgs": [
       "T1",
@@ -58,6 +59,7 @@
       "bo": 5
     },
     "desciendeA": "LDL",
+    "franquicia": true,
     "servidor": "CN",
     "orgs": [
       "Anyone's Legend",
@@ -102,6 +104,7 @@
       "bo": 5
     },
     "desciendeA": "EMEA_MASTERS",
+    "franquicia": true,
     "servidor": "EUW",
     "orgs": [
       "Fnatic",
@@ -142,6 +145,7 @@
       "bo": 5
     },
     "desciendeA": "NACL",
+    "franquicia": true,
     "servidor": "NA",
     "orgs": [
       "Cloud9 KIA",

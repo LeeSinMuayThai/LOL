@@ -17755,6 +17755,14 @@ check('K4c-S la prueba decide el contrato: P(firmar | resultado 1) > P(firmar | 
 // K4c (paso 3a), regla 17: este check decía "la parada sigue con las demás" (re-presentaba mercado:oferta tras la prueba
 // fallida). Eso era una segunda parada de mercado en la misma pretemporada, contra K4-D (seed 5, split 18 de "K4-D la
 // pretemporada frena una sola vez"). Ahora la parada cierra en la misma pantalla con el respaldo que anunció la prueba.
+// K6b-F: la prueba del mercado fallida sin respaldo no firma nada. Este mercado solo se abre con el contrato vencido (o sin club), así
+// que terminás sin club (antes seguías en él con el contrato vencido: el limbo de K6). El contrato no cambia, salvo el aviso de no
+// renovación, que se apaga al irte.
+function sinFirmarNadaK6bf(antes, estado) {
+  const sinAviso = (contrato) => JSON.stringify({ ...contrato, avisoNoRenovacion: false });
+  return estado.career.currentOrg === null && sinAviso(estado.career.contrato) === sinAviso(antes.contrato);
+}
+
 check('K4c-S un tryout fallido del mercado se cae solo esa oferta: sin crédito, y la parada cierra ahí mismo con el respaldo que anunció la prueba (o por el camino de "sin ofertas"), sin re-abrir el mercado', () => {
   // K4c (revisión): con y sin club (antes solo con club; con el plan del amateur arreglado quedaban 3 en la muestra): lo que se
   // mira vale igual para un free agent, y el lado "sin otras ofertas" armado sigue siendo solo con club.
@@ -17770,9 +17778,10 @@ check('K4c-S un tryout fallido del mercado se cae solo esa oferta: sin crédito,
       throw new Error(`${donde}: el tryout fallido dejó crédito de jerarquía (${estado.flags.bonusJerarquiaTryout})`);
     }
   };
-  // Sin respaldo, el contrato no se toca (K4c, revisión: tampoco por la racha sin ofertas, que la prueba fallida ya no mueve).
+  // Sin respaldo no se firma nada (K4c, revisión: tampoco por la racha sin ofertas, que la prueba fallida ya no mueve). K6b-F: con
+  // el contrato vencido te vas del club (`sinFirmarNadaK6bf`).
   const sinRomperNada = (f, estado, donde) => {
-    if (estado.career.currentOrg !== f.antes.currentOrg || JSON.stringify(estado.career.contrato) !== JSON.stringify(f.antes.contrato)) {
+    if (!sinFirmarNadaK6bf(f.antes, estado)) {
       throw new Error(`${donde}: el tryout fallido sin respaldo dejó el club o el contrato distinto (${f.antes.currentOrg} → ${estado.career.currentOrg})`);
     }
   };
@@ -17864,7 +17873,7 @@ check('K4c (revisión) probaste y no alcanzó: la prueba del mercado fallida sin
       if (estado.flags.splitsSinOfertaConsecutivos !== f.antes.racha) {
         throw new Error(`${donde}: la prueba fallida movió la racha sin ofertas (${f.antes.racha} → ${estado.flags.splitsSinOfertaConsecutivos})`);
       }
-      if (estado.career.currentOrg !== f.antes.currentOrg || JSON.stringify(estado.career.contrato) !== JSON.stringify(f.antes.contrato)) {
+      if (!sinFirmarNadaK6bf(f.antes, estado)) {
         throw new Error(`${donde}: la prueba fallida sin respaldo tocó el club o el contrato (${f.antes.currentOrg} → ${estado.career.currentOrg})`);
       }
       if (!nuevos.some((m) => m.includes(`La prueba en ${f.oferta} no alcanza`) && m.includes(PRUEBA_FALLIDA_K4cR)) || nuevos.some((m) => SILENCIO_K4cR.test(m))) {
@@ -24211,6 +24220,144 @@ check('K5c-H arreglo: el split de un retiro con la temporada ya jugada cuenta co
     throw new Error(`muestra chica: ${JSON.stringify(cuenta)} en ${SEEDS_VUELTA_K5CHA} seeds`);
   }
   console.log(`      retiros con la temporada jugada: ${cuenta.jugadoConVuelta} con vuelta, ${cuenta.jugadoSinVuelta} sin vuelta; ${cuenta.noJugado} antes de la temporada`);
+});
+
+// --- K6b-F: el contrato y la liga (PLAN.md "K6b") ---
+//
+// El bug de K6 (seed 25, 2043-44): la ficha decía "NO TE RENOVARON", el mercado "De free agent", y seguías jugando con
+// Fnatic y descendías con ellos ("el contrato viaja"). La causa: una pretemporada con el contrato vencido que se cerraba
+// sin firmar nada (`elTelefonoNoSuena`, `resolverEspera`, la prueba que no alcanzó) te dejaba en el club, con el contrato
+// vencido, hasta `splitsSinOfertaParaLibre` pretemporadas; y colgar el mouse en la bifurcación del mercado te dejaba el club
+// para la vuelta (que además decía "De free agent"). Medido antes del arreglo: 75 de 100 carreras de `criterio` jugaban
+// splits así (679 splits con la ficha en "No te renovaron").
+//
+// Carreras reales de `criterio` y de `malas` (el bug salió eligiendo siempre lo peor). En cada split: (1) jugando con club, la ficha nunca está en `sin_renovacion`; (2) un log
+// del mercado o del retiro que dice "free agent" nunca termina con vos jugando con un club; (3) toda pretemporada que
+// abre el mercado con tu contrato vencido termina con la renovación (un contrato nuevo, firmado después), otro club, sin club o
+// retirado, nunca con el mismo club y el contrato viejo; (4) "el contrato viaja" nunca convive con "no te renovaron" ni
+// con irte del club. Nunca pasa vacío: pide `MINIMO_SALIDAS_K6BF` salidas del club y renovaciones.
+// Rojo con el mutante `teVasDelClub` que no hace nada (`if (!org)` → `if (true)`): vuelve el limbo.
+const SEEDS_K6BF = 50;
+const BOTS_K6BF = ['criterio', 'malas'];
+const SPLITS_K6BF = 60;
+const MINIMO_SALIDAS_K6BF = 5;
+const LOG_FREE_AGENT_K6BF = /free agent/i;
+const LOG_CONTRATO_VIAJA_K6BF = /el contrato viaja/;
+const LOG_TE_VAS_K6BF = /no van a renovarte|te vas del club/;
+const SISTEMAS_DEL_CONTRATO_K6BF = new Set(['mercado', 'retiro', 'competitivo']);
+
+check('K6b-F contrato: "No te renovaron" y "free agent" nunca mientras jugás con el club, y "el contrato viaja" solo con el contrato vigente', () => {
+  const cuenta = { vencidos: 0, renovados: 0, teFuiste: 0, otroClub: 0, retirados: 0, descensosQueViajan: 0 };
+  const problemas = [];
+  for (const bot of BOTS_K6BF) for (let seed = 1; seed <= SEEDS_K6BF; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < SPLITS_K6BF && !state.terminado; i += 1) {
+      const antes = state;
+      const org = antes.career.currentOrg;
+      const vencido = antes.phase === 'profesional' && org && antes.career.tier <= 2 && !antes.pendiente
+        && calcularContexto(antes).ventana === 'pretemporada'
+        && Math.max(0, antes.career.contrato.aniosRestantes - 1) <= 0
+        && antes.age < BALANCE.retiro.edadRetiroForzoso;
+      const res = avanzarSplitAuto(antes, rng, (sistema, st, decision, r) => ESTRATEGIAS_K0[bot](sistema, st, decision, r));
+      state = res.state;
+      const del = res.logs.filter((log) => SISTEMAS_DEL_CONTRATO_K6BF.has(log.type)).map((log) => log.message);
+      const club = state.phase === 'profesional' ? state.career.currentOrg : null;
+      const donde = `${bot} seed ${seed} split ${i} (${antes.calendario.anio})`;
+      if (club && calcularContexto(state).mercado === 'sin_renovacion') {
+        problemas.push(`${donde}: jugás con ${club} y la ficha dice "No te renovaron"`);
+      }
+      if (club && del.some((m) => LOG_FREE_AGENT_K6BF.test(m))) {
+        problemas.push(`${donde}: el log dice "free agent" y jugás con ${club}`);
+      }
+      if (del.some((m) => LOG_CONTRATO_VIAJA_K6BF.test(m))) {
+        cuenta.descensosQueViajan += 1;
+        if ((state.phase === 'profesional' && club !== org) || del.some((m) => LOG_TE_VAS_K6BF.test(m))) {
+          problemas.push(`${donde}: "el contrato viaja" y no te renuevan o te vas (${org} -> ${club})`);
+        }
+      }
+      if (!vencido) {
+        continue;
+      }
+      cuenta.vencidos += 1;
+      const k = state.career.contrato;
+      if (state.phase !== 'profesional') {
+        cuenta.retirados += 1;
+      } else if (!club) {
+        cuenta.teFuiste += 1;
+      } else if (club !== org) {
+        cuenta.otroClub += 1;
+      } else if (k.firmadoEnAnio > antes.career.contrato.firmadoEnAnio && k.aniosRestantes === k.anios) {
+        cuenta.renovados += 1;
+      } else {
+        problemas.push(`${donde}: contrato vencido con ${org}, no firmaste nada y seguís jugando con el club (firmado en ${k.firmadoEnAnio}, ${k.aniosRestantes}/${k.anios})`);
+      }
+    }
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')} (${JSON.stringify(cuenta)})`);
+  }
+  if (cuenta.teFuiste < MINIMO_SALIDAS_K6BF || cuenta.renovados < MINIMO_SALIDAS_K6BF) {
+    throw new Error(`muestra chica: ${JSON.stringify(cuenta)} en ${SEEDS_K6BF} seeds de ${BOTS_K6BF.join(" y ")}`);
+  }
+  console.log(`      ${cuenta.vencidos} pretemporadas con el contrato vencido: ${cuenta.renovados} renovás, ${cuenta.otroClub} otro club, `
+    + `${cuenta.teFuiste} te vas sin club, ${cuenta.retirados} te retirás; ${cuenta.descensosQueViajan} descensos con el contrato que viaja`);
+});
+
+// Las ligas franquiciadas no tienen descenso (CONCEPTO §12.3: LCK, LPL, LEC y LCS son de franquicia; en K6 Fnatic bajaba de la
+// LEC). Estado construido sobre una pretemporada real: tu org termina última de cada liga tier 1 con `desciendeA`. La
+// franquiciada no te baja; la que no lo es (CBLOL, LCP) te baja, con "el contrato viaja" si el contrato sigue y sin él si se
+// vence en esta pretemporada (regla 15). Rojo con el mutante sin `esLigaFranquiciada` en `resolverDescenso` (las cuatro
+// bajan) y con el que dice siempre "el contrato viaja".
+const FRANQUICIADAS_K6BF = ['LCK', 'LPL', 'LEC', 'LCS'];
+const { aplicar: aplicarCompetitivoK6bf } = await import('../systems/competitivo.js');
+
+check('K6b-F liga: las franquiciadas (LCK, LPL, LEC, LCS) no descienden, las demás sí, y "el contrato viaja" solo si el contrato sigue', () => {
+  const marcadas = LIGAS.filter((liga) => liga.franquicia === true).map((liga) => liga.id).sort();
+  if (JSON.stringify(marcadas) !== JSON.stringify([...FRANQUICIADAS_K6BF].sort())) {
+    throw new Error(`leagues.json marca como franquicia ${JSON.stringify(marcadas)}; CONCEPTO §12.3: ${FRANQUICIADAS_K6BF.join(', ')}`);
+  }
+  const base = pretemporadasProK4c2(1)[0]?.state;
+  if (!base || calcularContexto(base).ventana !== 'pretemporada') {
+    throw new Error('no hay una pretemporada real de base');
+  }
+  const conTuOrgUltima = (liga, aniosRestantes) => {
+    const org = liga.orgs[0].nombre;
+    return {
+      ...base,
+      flags: { ...base.flags, banquilloPendiente: false },
+      career: {
+        ...base.career, tier: 1, liga: liga.id, currentOrg: org, posicion: liga.orgs.length,
+        contrato: { ...base.career.contrato, org, liga: liga.id, tier: 1, aniosRestantes }
+      }
+    };
+  };
+  let bajan = 0;
+  for (const liga of base.mundo.ligas.filter((candidata) => candidata.tier === 1 && candidata.desciendeA)) {
+    const franquicia = FRANQUICIADAS_K6BF.includes(liga.id);
+    for (const aniosRestantes of [2, 1]) {
+      const { state, logs } = aplicarCompetitivoK6bf(conTuOrgUltima(liga, aniosRestantes), mulberry32(1));
+      const texto = logs.map((log) => log.message).join(' ');
+      const bajo = state.career.liga !== liga.id;
+      if (franquicia && (bajo || /desciende/.test(texto))) {
+        throw new Error(`${liga.id} es de franquicia y tu org desciende (${state.career.liga}): "${texto}"`);
+      }
+      if (franquicia) {
+        continue;
+      }
+      if (!bajo || state.career.liga !== liga.desciendeA || state.career.tier !== 2) {
+        throw new Error(`${liga.id} no es de franquicia y tu org, última, no desciende a ${liga.desciendeA} (${state.career.liga})`);
+      }
+      bajan += 1;
+      const viaja = LOG_CONTRATO_VIAJA_K6BF.test(texto);
+      if (viaja !== (aniosRestantes > 1)) {
+        throw new Error(`${liga.id} con ${aniosRestantes} año(s) de contrato: el log ${viaja ? 'dice' : 'no dice'} "el contrato viaja": "${texto}"`);
+      }
+    }
+  }
+  if (bajan === 0) {
+    throw new Error('ninguna liga sin franquicia descendió: el check no discrimina');
+  }
 });
 
 if (errores.length > 0) {
