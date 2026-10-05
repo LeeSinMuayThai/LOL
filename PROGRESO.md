@@ -64,12 +64,11 @@ split; sin `migrarDe12` fallan los 179.
 **La huella.** `VERSION_JUEGO` 'K6b', `HUELLA_JUEGO` 1772717528 (reemplaza a 1462997803, K5c).
 
 **Las metas (regla 17).** "K5c meta" sobre el head integrado (1500 × 60): las seis en banda, ninguna re-basada (Mundial 9,2%, P(2+ | 1)
-35,5%, carrera mediana 8, a los 34 5,8%). La cola: mediana 12 desde los 28 (`criterio` 400 × 60, promedio 13,45, σ 8,77, n = 205);
-re-basada por decisión del usuario a <= 13,54 (12 + 2 σ de la mediana), la leyenda sigue en <= 80 (medida 80). El mutante sugerido (el
-"¿la seguís?" que frena siempre) no se distingue: `criterio` no repite esa parada en el lote (12 / 13,45, igual). Tampoco la cola de
-K6b-C2 que frena siempre (12 / 13,9). **Con todas las reglas de K6b-C y C2 apagadas la mediana sigue en 12** (promedio 14,76): el
-check se pone en rojo solo por la leyenda (81,5 > 80). La mediana de `criterio` no ve estas reglas; si se quiere un check de la cola
-que muerda, el candidato es el promedio (σ/√n = 0,61; 13,45 + 2 × 0,61 = 14,67 deja en rojo al 14,76). Lo decide el supervisor.
+35,5%, carrera mediana 8, a los 34 5,8%). La cola (decisión del usuario: aceptar ~12, K6 juzga; decisión del supervisor: el check duro es el **promedio**).
+Con 400 carreras la mediana no se movía con ningún mutante (12 con las reglas de K6b-C y C2 apagadas) y el promedio dejaba al
+mutante a 0,14 σ de la banda. Ahora el check lee el lote de `criterio` de las metas del bloque C (1500 × 60, el mismo de K5c): promedio
+12,36, σ 8,72, n = 774 carreras con cola (mediana 10, como dato); banda <= 12,36 + 2 σ/√n = 12,99. Rojo con las reglas de K6b-C y C2
+apagadas: 13,8 (n = 765), 0,81 por encima (2,6 σ). La leyenda (<= 80) no se tocó: 76 en esta muestra (158 carreras; con el mutante 78,5).
 
 **Verificación.** `node src/dev/validate.js --rapido`, `--solo` de cada check tocado con su mutante, `simulate.js 1 60 criterio` dos
 veces con diff vacío.

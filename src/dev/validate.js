@@ -21824,6 +21824,9 @@ function valoresDeLasMetasC() {
     const otras = ligas.filter(([liga]) => liga !== LIGA_CANDIDATA_DEL_MUNDIAL);
     const p21 = mr.total.pDosOMasDadoUno;
     v = {
+      // K6b (integración): la cola de la carrera y las leyendas se miden sobre este mismo lote de `criterio` (el check "K6b-C meta de
+      // la cola"): con 400 carreras el promedio no separaba al mutante de la banda por 1 σ.
+      colaK6BC: lote.ritmo.colaDeCarrera, leyendaK6BC: lote.ritmo.leyenda,
       noLlegaAPro: prop(lote.embudo.noLlegaAPro, n),
       llegaATier1: prop(lote.embudo.llegaATier1, n),
       ganaTitulo: prop(lote.embudo.ganaTituloDomestico, n),
@@ -24988,38 +24991,39 @@ check(`K6b-C2 la cola de verdad: en la cola, el cierre de año y el momento fren
   console.log(`      ${enCola} paradas en la cola frenaron con motivo; narradas: ${narradas.cierre} cierres y ${narradas.momento} momentos; el mutante: ${mutante.malas.length} sin motivo, ${mutante.narradas.cierre} cierres narrados`);
 });
 
-// La meta del instrumento (PLAN.md §K6b, K6b-C, y §K.3c para la leyenda): con `criterio`, la mediana de frenadas desde los 28
-// (sobre las carreras con cola) <= 8 y la mediana de frenadas totales de las carreras que cierran en "Leyenda" o "El GOAT"
-// <= 80. Se lee del lote de las metas del bloque B (`criterio`, 400 × 60): no hace falta otro lote.
-// K6b (integración) — regla 17, corrimiento declarado de K6b: meta <= 8; medido ~12 (criterio 400 × 60 sobre el head integrado: mediana
-// 12, promedio 13,45, σ 8,77, n = 205 carreras con cola); re-basado por decisión del usuario 2026-10-05 (el relleno repetido ya no frena;
-// lo que queda tiene algo en juego); K6 juzga. La banda pide <= lo medido + 2 σ de la mediana (σ_mediana ≈ √(π/2) σ / √n = 0,77):
-// 13,54. La leyenda (<= 80, §K.3c) no se toca: medida 80 (51 carreras). Rojo con el "¿la seguís?" que frena siempre y con la cola de
-// K6b-C2 que frena siempre (`frenaEnLaCola`).
-const COLA_MEDIDA_K6BC = 12;
-const COLA_DESVIO_K6BC = 8.77;
-const COLA_N_K6BC = 205;
+// La meta del instrumento (PLAN.md §K6b, K6b-C, y §K.3c para la leyenda): con `criterio`, las frenadas desde los 28 (sobre las carreras
+// con cola) y la mediana de frenadas totales de las carreras que cierran en "Leyenda" o "El GOAT" (<= 80).
+// K6b (integración) — regla 17, corrimiento declarado de K6b: meta <= 8 (la mediana); medido ~12; re-basado por decisión del usuario
+// 2026-10-05 (el relleno repetido ya no frena; lo que queda tiene algo en juego); K6 juzga. Decisión del supervisor (2026-10-05): el
+// check duro es el PROMEDIO, con banda <= lo medido + 2 σ/√n; la mediana se imprime como dato. La mediana no se mueve con los
+// mutantes (12 con las reglas de K6b-C y C2 apagadas, igual que con ellas); los mecanismos los cuidan los checks de motor K6b-C y
+// K6b-C2; este mide el agregado. Muestra: el lote de `criterio` de las metas del bloque C (`CARRERAS_METAS_C` × 60, el mismo que
+// leen las metas de K5c): con 400 carreras el mutante (14,76) quedaba a 0,14 σ de la banda (14,67). Medido sobre el head integrado:
+// promedio 12,36, σ 8,72, n = 774 carreras con cola (mediana 10, dato); banda <= 12,36 + 2 × 0,31 = 12,99. Rojo con las reglas de K6b-C
+// y C2 apagadas: 13,8 (n = 765), 0,81 por encima de la banda (2,6 σ). La leyenda (<= 80, §K.3c) no se toca: 76 en esta muestra.
+const COLA_PROMEDIO_MEDIDO_K6BC = 12.36;
+const COLA_DESVIO_K6BC = 8.72;
+const COLA_N_K6BC = 774;
 const Z_RUIDO_COLA_K6BC = 2;
-const RAIZ_PI_MEDIOS_K6BC = Math.sqrt(Math.PI / 2);
-const META_K6BC_COLA_MEDIANA = Number((COLA_MEDIDA_K6BC + Z_RUIDO_COLA_K6BC * RAIZ_PI_MEDIOS_K6BC * COLA_DESVIO_K6BC / Math.sqrt(COLA_N_K6BC)).toFixed(2));
+const META_K6BC_COLA_PROMEDIO = Number((COLA_PROMEDIO_MEDIDO_K6BC + Z_RUIDO_COLA_K6BC * COLA_DESVIO_K6BC / Math.sqrt(COLA_N_K6BC)).toFixed(2));
 const META_K6BC_LEYENDA_MEDIANA = 80;
 function juezDeLaColaK6BC(v) {
   const hay = (x) => typeof x === 'number' && Number.isFinite(x);
   return {
-    cola: hay(v.colaMediana) && v.colaMediana <= META_K6BC_COLA_MEDIANA
-      ? null : `la mediana de frenadas desde los 28 es ${v.colaMediana}, la meta es <= ${META_K6BC_COLA_MEDIANA}`,
+    cola: hay(v.colaPromedio) && v.colaPromedio <= META_K6BC_COLA_PROMEDIO
+      ? null : `el promedio de frenadas desde los 28 es ${v.colaPromedio}, la banda es <= ${META_K6BC_COLA_PROMEDIO}`,
     leyenda: hay(v.leyendaMediana) && v.leyendaMediana <= META_K6BC_LEYENDA_MEDIANA
       ? null : `la mediana de frenadas de las leyendas es ${v.leyendaMediana}, la meta es <= ${META_K6BC_LEYENDA_MEDIANA}`
   };
 }
-const VALORES_K6BC_OK = { colaMediana: 8, leyendaMediana: 79 };
+const VALORES_K6BC_OK = { colaPromedio: 12, leyendaMediana: 79 };
 
 check('K6b-C metas de la cola: el juez acepta valores que cumplen y rechaza, uno por uno, cada valor fuera de meta o inexistente (regla 7)', () => {
   const sano = Object.values(juezDeLaColaK6BC(VALORES_K6BC_OK)).filter((motivo) => motivo !== null);
   if (sano.length > 0) throw new Error(`el juez rechaza valores que cumplen: ${sano.join('; ')}`);
   // Uno justo afuera, el de K6 (o el de la línea de base) y uno inexistente; los bordes cumplen.
-  // K6b (integración): la cola re-basada (13,54): uno justo afuera, el de K6 (15 en la cola de antes de K6b-C) y uno inexistente.
-  const malos = { colaMediana: [['cola', META_K6BC_COLA_MEDIANA + 0.5], ['cola', 15], ['cola', null]], leyendaMediana: [['leyenda', 81], ['leyenda', 88], ['leyenda', null]] };
+  // K6b (integración): el promedio re-basado: uno justo afuera, el del mutante (las reglas de K6b-C y C2 apagadas) y uno inexistente.
+  const malos = { colaPromedio: [['cola', META_K6BC_COLA_PROMEDIO + 0.05], ['cola', 13.8], ['cola', null]], leyendaMediana: [['leyenda', 81], ['leyenda', 88], ['leyenda', null]] };
   for (const [campo, casos] of Object.entries(malos)) {
     for (const [clave, valor] of casos) {
       const rechazados = Object.entries(juezDeLaColaK6BC({ ...VALORES_K6BC_OK, [campo]: valor })).filter(([, m]) => m !== null).map(([k]) => k);
@@ -25028,14 +25032,14 @@ check('K6b-C metas de la cola: el juez acepta valores que cumplen y rechaza, uno
       }
     }
   }
-  const bordes = juezDeLaColaK6BC({ colaMediana: META_K6BC_COLA_MEDIANA, leyendaMediana: META_K6BC_LEYENDA_MEDIANA });
+  const bordes = juezDeLaColaK6BC({ colaPromedio: META_K6BC_COLA_PROMEDIO, leyendaMediana: META_K6BC_LEYENDA_MEDIANA });
   if (bordes.cola !== null || bordes.leyenda !== null) throw new Error(`los bordes no cumplen: ${JSON.stringify(bordes)}`);
 });
 
-checkLento(`K6b-C meta de la cola (criterio, ${CARRERAS_METAS_B} × ${SPLITS_LOTE_K0}): la mediana de frenadas desde los 28 es <= ${META_K6BC_COLA_MEDIANA} y la de las leyendas <= ${META_K6BC_LEYENDA_MEDIANA}`, () => {
-  const { colaDeCarrera, leyenda } = loteDeLasMetasB().ritmo;
-  console.log(`     (muestra: criterio, ${CARRERAS_METAS_B} × ${SPLITS_LOTE_K0}) desde los 28: mediana ${colaDeCarrera.mediana}, p90 ${colaDeCarrera.p90}, promedio ${colaDeCarrera.promedio}, σ ${colaDeCarrera.desvio} (n = ${colaDeCarrera.carreras} carreras con cola); leyendas: mediana ${leyenda.mediana}, p90 ${leyenda.p90} (${leyenda.carreras} carreras)`);
-  const problemas = Object.values(juezDeLaColaK6BC({ colaMediana: colaDeCarrera.mediana, leyendaMediana: leyenda.mediana })).filter((m) => m !== null);
+checkLento(`K6b-C meta de la cola (criterio, ${CARRERAS_METAS_C} × ${SPLITS_LOTE_K0}): el promedio de frenadas desde los 28 es <= ${META_K6BC_COLA_PROMEDIO} (re-basado) y la mediana de las leyendas <= ${META_K6BC_LEYENDA_MEDIANA}`, () => {
+  const { colaK6BC: cola, leyendaK6BC: leyenda } = valoresDeLasMetasC();
+  console.log(`     (muestra: criterio, ${CARRERAS_METAS_C} × ${SPLITS_LOTE_K0}) desde los 28: promedio ${cola.promedio}, σ ${cola.desvio}, n = ${cola.carreras} carreras con cola (banda <= ${META_K6BC_COLA_PROMEDIO}); mediana ${cola.mediana}, p90 ${cola.p90} (dato); leyendas: mediana ${leyenda.mediana}, p90 ${leyenda.p90} (${leyenda.carreras} carreras)`);
+  const problemas = Object.values(juezDeLaColaK6BC({ colaPromedio: cola.promedio, leyendaMediana: leyenda.mediana })).filter((m) => m !== null);
   if (problemas.length > 0) throw new Error(problemas.join('; '));
 });
 
