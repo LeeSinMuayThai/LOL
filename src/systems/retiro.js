@@ -127,6 +127,34 @@ export function retirarsePorMercado(state, motivo) {
   return terminar(state, finAnticipado, `${motivo} ${mensajeDeSalida(state, finAnticipado)}`, { reversible: puedeVolver, motivo });
 }
 
+// K6b-C (D-B en la cola): lo que tiene que cambiar para que el "¿la seguís?" vuelva a frenar. Si elegiste seguir y en la
+// pretemporada siguiente la foto es la misma, no se pregunta otra vez: se sigue (lo que elegiste) y se narra en una línea.
+// Cambia si cambia la presión de retiro (entrás o salís del declive, la presión de tier 2), si hubo una oferta nueva (una de
+// tu tier esta pretemporada, o un club distinto), una lesión grave, un aviso de no renovación, el tier, o si volviste de un
+// retiro. Puro: cero `rng`. Exportada para el check.
+export function firmaDelSeguis(state) {
+  const r = BALANCE.retiro;
+  const enDeclive = calcularContexto(state).etapa === 'declive';
+  const presionTier2 = (state.flags.splitsTier2SinOfertaTier1 ?? 0) >= r.presionTier2.splitsSinOfertaTier1;
+  return [
+    state.career.currentOrg ?? 'libre',
+    state.career.tier ?? '-',
+    enDeclive ? 'declive' : 'sin club',
+    presionTier2 ? 'presion tier 2' : '-',
+    state.flags.splitsSinOfertaEnTier === 0 ? 'oferta de tu tier' : 'sin oferta de tu tier',
+    state.flags.lesionGraveSplit ?? 'sin lesion',
+    state.career.contrato?.avisoNoRenovacion ? 'aviso' : 'sin aviso',
+    state.flags.vueltasUsadas
+  ].join('|');
+}
+
+// K6b-C: elegir seguir, sin pregunta (la foto no cambió desde la última vez que elegiste seguir) o con ella. La misma cuenta
+// en los dos caminos, sin `rng`.
+function seguirPeleandola(state) {
+  const splitsEnDeclive = Math.floor(state.flags.splitsEnDeclive * BALANCE.retiro.factorSeguirPeleandola);
+  return { ...state, flags: { ...state.flags, splitsEnDeclive } };
+}
+
 function decisionDeclive(state) {
   return {
     tipo: 'opciones',
@@ -139,7 +167,7 @@ function decisionDeclive(state) {
       { id: 'seguir', label: 'La seguís peleando', descripcion: 'Un año más contra la corriente. Esto no se resetea solo.' },
       { id: 'retirarse', label: 'Colgás el mouse', descripcion: 'Cerrás la carrera. Con la puerta entreabierta, si el cuerpo y las ganas dan.' }
     ],
-    datos: { motivo: 'retiro_declive' }
+    datos: { motivo: 'retiro_declive', firma: firmaDelSeguis(state) }
   };
 }
 
@@ -188,14 +216,29 @@ export function retirarsePorCamino(state, motivo) {
 function eventoDeVentana(state, rng) {
   const evento = elegirEvento(state, rng, { filtro: (candidato) => candidato.contexto?.etapa?.includes('retirado') });
   if (!evento) {
-    return { state, logs: [], decision: decisionVuelta(state) };
+    return vueltaOSuRepeticion(state, []);
   }
   if (evento.bifurcacion) {
     const decision = decisionDesdeEvento(state, evento, { franja: 'normal', slot: 1 });
     return { state, logs: [], decision: { ...decision, datos: { ...decision.datos, motivo: 'evento_ventana' } } };
   }
   const resuelto = resolverOpcion(state, evento, opcionDelPerfilPara(state, evento), rng, { cronica: state.player.perfil.actual });
-  return { state: resuelto.state, logs: resuelto.logs, decision: decisionVuelta(resuelto.state) };
+  return vueltaOSuRepeticion(resuelto.state, resuelto.logs);
+}
+
+// K6b-C (D-B en la cola): el "¿Volvés a competir?" de cada pretemporada de la ventana es el "¿la seguís?" del retirado. Frena
+// la primera vez de cada ventana y después de una bifurcación de la ventana (algo cambió: esa sí frena, `evento_ventana`). Si
+// elegiste no volver y nada cambió, no se pregunta de nuevo: seguís retirado, que es lo que elegiste, y se narra en una línea.
+// La foto es la ventana (`vueltasUsadas`: cada vuelta abre una ventana nueva). Pura: cero `rng`. Exportada para el check.
+export function firmaDeLaVuelta(state) {
+  return `ventana ${state.flags.vueltasUsadas}`;
+}
+
+function vueltaOSuRepeticion(state, logs) {
+  if (state.flags.vueltaFirma != null && state.flags.vueltaFirma === firmaDeLaVuelta(state)) {
+    return { state, logs: [...logs, crearLog('retiro', 'Seguís retirado: nada cambió desde que elegiste no volver. La puerta sigue entreabierta.')] };
+  }
+  return { state, logs, decision: decisionVuelta(state) };
 }
 
 function decisionVuelta(state) {
@@ -208,7 +251,7 @@ function decisionVuelta(state) {
       { id: 'volver', label: 'Volvés', descripcion: 'De free agent otra vez: a esperar que suene el teléfono.' },
       { id: 'quedarse', label: 'Lo dejás cerrado', descripcion: 'Todavía podés volver más adelante, si la ventana no se cerró.' }
     ],
-    datos: { motivo: 'retiro_vuelta' }
+    datos: { motivo: 'retiro_vuelta', firma: firmaDeLaVuelta(state) }
   };
 }
 
@@ -316,6 +359,14 @@ function aplicarProfesional(state) {
     return { state: conCuenta, logs: [] };
   }
 
+  // K6b-C: nada cambió desde que elegiste seguir: no se pregunta de nuevo. Seguís, y se dice en una línea.
+  if (state.flags.seguisFirma != null && state.flags.seguisFirma === firmaDelSeguis(conCuenta)) {
+    return {
+      state: seguirPeleandola(conCuenta),
+      logs: [crearLog('retiro', `A los ${state.age} el mercado te sigue diciendo que no, y nada cambió desde que elegiste seguir: la seguís peleando un año más.`)]
+    };
+  }
+
   return { state: conCuenta, logs: [], decision: decisionDeclive(conCuenta) };
 }
 
@@ -342,15 +393,17 @@ export function resolver(state, decision, respuesta, rng) {
 
   if (motivo === 'evento_ventana') {
     const resuelto = resolverEvento(state, decision, respuesta, rng);
+    // K6b-C: después de una bifurcación de la ventana, algo cambió: la vuelta se pregunta siempre.
     return { state: resuelto.state, logs: resuelto.logs, decision: decisionVuelta(resuelto.state) };
   }
 
   if (motivo === 'retiro_declive') {
     const r = BALANCE.retiro;
     if (respuesta.opcionId === 'seguir') {
-      const splitsEnDeclive = Math.floor(state.flags.splitsEnDeclive * r.factorSeguirPeleandola);
+      // K6b-C: la foto con la que elegiste seguir. Mientras no cambie, el año que viene no se pregunta de nuevo.
+      const seguido = seguirPeleandola(state);
       return {
-        state: { ...state, flags: { ...state.flags, splitsEnDeclive } },
+        state: { ...seguido, flags: { ...seguido.flags, seguisFirma: decision.datos.firma ?? null } },
         logs: [crearLog('retiro', 'Decidís seguir. El mercado no va a esperar para siempre.')]
       };
     }
@@ -389,7 +442,11 @@ export function resolver(state, decision, respuesta, rng) {
       logs: [crearLog('retiro', 'Volvés a competir. De free agent, a ver quién te llama.'), ...conRoster.logs]
     };
   }
-  return { state, logs: [crearLog('retiro', 'Por ahora, no. La puerta sigue entreabierta.')] };
+  // K6b-C: la foto con la que elegiste no volver. Mientras sea la misma ventana, no se pregunta otra vez.
+  return {
+    state: { ...state, flags: { ...state.flags, vueltaFirma: decision.datos.firma ?? null } },
+    logs: [crearLog('retiro', 'Por ahora, no. La puerta sigue entreabierta.')]
+  };
 }
 
 export function resolverAuto(state, decision, rng) {

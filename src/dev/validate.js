@@ -24213,6 +24213,148 @@ check('K5c-H arreglo: el split de un retiro con la temporada ya jugada cuenta co
   console.log(`      retiros con la temporada jugada: ${cuenta.jugadoConVuelta} con vuelta, ${cuenta.jugadoSinVuelta} sin vuelta; ${cuenta.noJugado} antes de la temporada`);
 });
 
+// --- K6b-C: la cola de la carrera (D-B: te frena solo lo importante) — PLAN.md §K6b ---------------------------------------
+// Tres paradas de la cola que se repetían sin nada nuevo en juego: el "¿la seguís?" (`retiro:retiro_declive`), "El mercado ya
+// habló" sin ofertas (`mercado:fin_mercado`) y el "¿Volvés?" de la ventana (`retiro:retiro_vuelta`) frenan la primera vez y
+// cuando la foto cambia (`datos.firma`); si no, se sigue con lo que elegiste y se narra. Un mercado de una sola carta frena
+// solo si se juega algo (`enJuegoDeUnaSolaCarta`), y la previa lo dice. Y la meta del instrumento: las frenadas desde los 28
+// (`ritmo.colaDeCarrera`) y las de las leyendas (`ritmo.leyenda`).
+const { ESTRATEGIAS: ESTRATEGIAS_K6BC } = await import('./estrategias.js');
+const { enJuegoDeUnaSolaCarta: enJuegoK6BC } = await import('../systems/mercado.js');
+const SEEDS_K6BC = 40;
+const SPLITS_K6BC = 60;
+// La respuesta que no termina la carrera, en cada una de las tres paradas: la que, repetida, se vuelve relleno.
+const SIGUE_K6BC = { retiro_declive: 'seguir', fin_mercado: 'esperar', retiro_vuelta: 'quedarse' };
+const NARRA_REPETICION_K6BC = /nada cambió desde que elegiste/;
+const NARRA_UNA_SOLA_CARTA_K6BC = /^Una sola carta/;
+
+// Las paradas que se repitieron con la misma foto después de elegir seguir: tienen que ser cero. `secuencia` es la lista de
+// paradas de una carrera, en orden, `{ motivo, firma, respuesta }` (solo las tres de `SIGUE_K6BC`).
+function repeticionesSinCambioK6BC(secuencia) {
+  const ultima = {};
+  const repetidas = [];
+  for (const parada of secuencia) {
+    const previa = ultima[parada.motivo];
+    if (previa && previa.respuesta === SIGUE_K6BC[parada.motivo] && previa.firma === parada.firma) {
+      repetidas.push(parada);
+    }
+    ultima[parada.motivo] = parada;
+  }
+  return repetidas;
+}
+
+// El jugador terco de K6: en las tres paradas elige seguir (y "esperar" solo si nadie ofrece); el resto, como `criterio`.
+function cosechaK6BC() {
+  const cosecha = { repetidas: [], paradas: 0, narradas: 0, unaSolaCartaFrenada: [], unaSolaCartaNarradas: 0 };
+  for (let seed = 1; seed <= SEEDS_K6BC; seed += 1) {
+    const secuencia = [];
+    const terco = (sistema, st, decision, rng) => {
+      const motivo = decision.datos?.motivo;
+      if (motivo in SIGUE_K6BC && (motivo !== 'fin_mercado' || decision.opciones[0].id === 'esperar')) {
+        secuencia.push({ motivo, firma: decision.datos.firma, respuesta: SIGUE_K6BC[motivo] });
+        return { opcionId: SIGUE_K6BC[motivo] };
+      }
+      if (decision.presentacion === 'mercado' && motivo === 'oferta' && decision.opciones.length === 1) {
+        cosecha.unaSolaCartaFrenada.push({ seed, enJuego: decision.datos.enJuego ?? null, descripcion: decision.descripcion });
+      }
+      return ESTRATEGIAS_K6BC.criterio(sistema, st, decision, rng);
+    };
+    const { state } = correrCarreraSimulate(seed, SPLITS_K6BC, terco);
+    cosecha.repetidas.push(...repeticionesSinCambioK6BC(secuencia).map((parada) => ({ seed, ...parada })));
+    cosecha.paradas += secuencia.length;
+    cosecha.narradas += state.logs.filter((log) => NARRA_REPETICION_K6BC.test(log.message ?? '')).length;
+    cosecha.unaSolaCartaNarradas += state.logs.filter((log) => log.type === 'mercado' && NARRA_UNA_SOLA_CARTA_K6BC.test(log.message ?? '')).length;
+  }
+  return cosecha;
+}
+let cosechaK6BCMemo = null;
+const cosechaDeLaColaK6BC = () => (cosechaK6BCMemo ??= cosechaK6BC());
+
+check(`K6b-C la cola: el "¿la seguís?", "El mercado ya habló" sin ofertas y el "¿Volvés?" no frenan dos veces con la misma foto después de elegir seguir, y la repetición se narra (${SEEDS_K6BC} seeds, regla 7)`, () => {
+  // Regla 7: el detector marca una repetición sembrada y no marca la que cambió de foto ni la que vino después de otra respuesta.
+  const sembrada = [
+    { motivo: 'retiro_declive', firma: 'a', respuesta: 'seguir' }, { motivo: 'retiro_declive', firma: 'a', respuesta: 'seguir' },
+    { motivo: 'fin_mercado', firma: 'x', respuesta: 'esperar' }, { motivo: 'fin_mercado', firma: 'y', respuesta: 'esperar' },
+    { motivo: 'retiro_vuelta', firma: 'v', respuesta: 'volver' }, { motivo: 'retiro_vuelta', firma: 'v', respuesta: 'quedarse' }
+  ];
+  const marcadas = repeticionesSinCambioK6BC(sembrada);
+  if (marcadas.length !== 1 || marcadas[0].motivo !== 'retiro_declive') {
+    throw new Error(`el detector marcó ${JSON.stringify(marcadas)}; tenía que marcar solo la segunda del "¿la seguís?"`);
+  }
+  const { repetidas, paradas, narradas } = cosechaDeLaColaK6BC();
+  if (repetidas.length > 0) {
+    throw new Error(`${repetidas.length} parada(s) repetida(s) con la misma foto: ${JSON.stringify(repetidas.slice(0, 3))}`);
+  }
+  if (paradas === 0 || narradas === 0) {
+    throw new Error(`check vacío: ${paradas} paradas de la cola y ${narradas} repeticiones narradas en ${SEEDS_K6BC} seeds`);
+  }
+  console.log(`      ${paradas} paradas de la cola frenaron, ${narradas} repeticiones se narraron sin frenar`);
+});
+
+check(`K6b-C la cola: un mercado de una sola carta frena solo si se juega algo, la previa lo dice, y si no se firma y se narra (${SEEDS_K6BC} seeds, regla 7)`, () => {
+  const { unaSolaCartaFrenada, unaSolaCartaNarradas } = cosechaDeLaColaK6BC();
+  const sinPrevia = unaSolaCartaFrenada.filter((parada) => !parada.enJuego || !['prueba', 'bajar'].includes(parada.enJuego.caso)
+    || !parada.descripcion.includes(parada.enJuego.texto));
+  if (sinPrevia.length > 0) {
+    throw new Error(`${sinPrevia.length} mercado(s) de una sola carta frenaron sin decir qué se juega: ${JSON.stringify(sinPrevia.slice(0, 2))}`);
+  }
+  if (unaSolaCartaNarradas === 0) {
+    throw new Error(`check vacío: ningún mercado de una sola carta se resolvió solo en ${SEEDS_K6BC} seeds`);
+  }
+  // Regla 7, sobre un estado real de tier 1 con club: la renovación de tu club, de tu tier y sin prueba, no se juega nada; la
+  // misma carta un tier abajo sí (bajar o prueba), y lo dice.
+  const st = createInitialState(1, mulberry32(1));
+  const enTier1 = { ...st, phase: 'profesional', career: { ...st.career, tier: 1, currentOrg: 'Org K6bC', liga: 'LCK' } };
+  const renovacion = { id: 'r', org: 'Org K6bC', liga: 'LCK', tier: 1, tag: 'renovacion', salarioAnualUSD: 1 };
+  const deTuTier = enJuegoK6BC(enTier1, renovacion);
+  if (deTuTier !== null) throw new Error(`la renovación de tu tier no se juega nada y dio ${JSON.stringify(deTuTier)}`);
+  const abajo = enJuegoK6BC(enTier1, { ...renovacion, id: 'b', org: 'Otra K6bC', liga: 'LCK_CL', tier: 2, tag: null });
+  if (!abajo || !['prueba', 'bajar'].includes(abajo.caso) || !abajo.texto) {
+    throw new Error(`una carta un tier abajo se juega algo y dio ${JSON.stringify(abajo)}`);
+  }
+  console.log(`      ${unaSolaCartaFrenada.length} mercado(s) de una sola carta frenaron (con su previa), ${unaSolaCartaNarradas} se firmaron solos`);
+});
+
+// La meta del instrumento (PLAN.md §K6b, K6b-C, y §K.3c para la leyenda): con `criterio`, la mediana de frenadas desde los 28
+// (sobre las carreras con cola) <= 8 y la mediana de frenadas totales de las carreras que cierran en "Leyenda" o "El GOAT"
+// <= 80. Se lee del lote de las metas del bloque B (`criterio`, 400 × 60): no hace falta otro lote.
+const META_K6BC_COLA_MEDIANA = 8;
+const META_K6BC_LEYENDA_MEDIANA = 80;
+function juezDeLaColaK6BC(v) {
+  const hay = (x) => typeof x === 'number' && Number.isFinite(x);
+  return {
+    cola: hay(v.colaMediana) && v.colaMediana <= META_K6BC_COLA_MEDIANA
+      ? null : `la mediana de frenadas desde los 28 es ${v.colaMediana}, la meta es <= ${META_K6BC_COLA_MEDIANA}`,
+    leyenda: hay(v.leyendaMediana) && v.leyendaMediana <= META_K6BC_LEYENDA_MEDIANA
+      ? null : `la mediana de frenadas de las leyendas es ${v.leyendaMediana}, la meta es <= ${META_K6BC_LEYENDA_MEDIANA}`
+  };
+}
+const VALORES_K6BC_OK = { colaMediana: 8, leyendaMediana: 79 };
+
+check('K6b-C metas de la cola: el juez acepta valores que cumplen y rechaza, uno por uno, cada valor fuera de meta o inexistente (regla 7)', () => {
+  const sano = Object.values(juezDeLaColaK6BC(VALORES_K6BC_OK)).filter((motivo) => motivo !== null);
+  if (sano.length > 0) throw new Error(`el juez rechaza valores que cumplen: ${sano.join('; ')}`);
+  // Uno justo afuera, el de K6 (o el de la línea de base) y uno inexistente; los bordes cumplen.
+  const malos = { colaMediana: [['cola', 9], ['cola', 14], ['cola', null]], leyendaMediana: [['leyenda', 81], ['leyenda', 88], ['leyenda', null]] };
+  for (const [campo, casos] of Object.entries(malos)) {
+    for (const [clave, valor] of casos) {
+      const rechazados = Object.entries(juezDeLaColaK6BC({ ...VALORES_K6BC_OK, [campo]: valor })).filter(([, m]) => m !== null).map(([k]) => k);
+      if (rechazados.length !== 1 || rechazados[0] !== clave) {
+        throw new Error(`${campo} = ${valor}: el juez rechazó [${rechazados.join(', ')}], tenía que rechazar solo ${clave}`);
+      }
+    }
+  }
+  const bordes = juezDeLaColaK6BC({ colaMediana: META_K6BC_COLA_MEDIANA, leyendaMediana: META_K6BC_LEYENDA_MEDIANA });
+  if (bordes.cola !== null || bordes.leyenda !== null) throw new Error(`los bordes no cumplen: ${JSON.stringify(bordes)}`);
+});
+
+checkLento(`K6b-C meta de la cola (criterio, ${CARRERAS_METAS_B} × ${SPLITS_LOTE_K0}): la mediana de frenadas desde los 28 es <= ${META_K6BC_COLA_MEDIANA} y la de las leyendas <= ${META_K6BC_LEYENDA_MEDIANA}`, () => {
+  const { colaDeCarrera, leyenda } = loteDeLasMetasB().ritmo;
+  console.log(`     (muestra: criterio, ${CARRERAS_METAS_B} × ${SPLITS_LOTE_K0}) desde los 28: mediana ${colaDeCarrera.mediana}, p90 ${colaDeCarrera.p90} (${colaDeCarrera.carreras} carreras con cola); leyendas: mediana ${leyenda.mediana}, p90 ${leyenda.p90} (${leyenda.carreras} carreras)`);
+  const problemas = Object.values(juezDeLaColaK6BC({ colaMediana: colaDeCarrera.mediana, leyendaMediana: leyenda.mediana })).filter((m) => m !== null);
+  if (problemas.length > 0) throw new Error(problemas.join('; '));
+});
+
 if (errores.length > 0) {
   console.error(`\n${errores.length} check(s) fallaron.`);
   process.exit(1);
