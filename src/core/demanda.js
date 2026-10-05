@@ -1,5 +1,5 @@
 import { BALANCE } from '../data/balance.js';
-import { splitsDeResidencia, presupuestoDeDemanda, castigoEtario } from './valorMercado.js';
+import { splitsDeResidencia, presupuestoDeDemanda, castigoEtario, sesgoEtario } from './valorMercado.js';
 import { nivelDelJugador } from './ficha.js';
 import { etiquetaRol } from '../data/roles.js';
 import { plata } from './formato.js';
@@ -338,6 +338,49 @@ export function nivelAlternativaAsiento(state, orgNombre, rol) {
   );
 }
 
+// K6b-M, el mercado premia el mérito (PLAN.md "K6b"; la forma está explicada en `data/balance.js`, `mercado.merito`): ¿venís
+// de una temporada de élite? La que acaba de cerrar (`calendario.anio − 1`: el mercado corre en la pretemporada del año nuevo)
+// con el Mundial ganado, un título de liga de tier ≤ `tierMaximoTitulo`, o el cierre en el top `rankMundialMaximo` del mundo.
+// Devuelve `null` o `{ motivo }`, el motivo en palabras para el aviso (regla 15). Pura y sin rng: una lectura del registro.
+export function meritoDeTemporada(state) {
+  const { tierMaximoTitulo, rankMundialMaximo } = BALANCE.mercado.merito;
+  const anio = (state.calendario?.anio ?? 0) - 1;
+  const registro = state.career.registro;
+  const mundial = registro.internacionales.find((entrada) => entrada.anio === anio && entrada.resultado === 'campeon');
+  if (mundial) {
+    return { motivo: `ganar el ${mundial.torneo ?? `Mundial ${anio}`}` };
+  }
+  const titulo = registro.titulos.find((t) => t.anio === anio && typeof t.tier === 'number' && t.tier <= tierMaximoTitulo);
+  if (titulo) {
+    return { motivo: `salir campeón de ${titulo.liga ? nombreVisibleDeLiga(titulo.liga) : titulo.nombre}` };
+  }
+  const rank = state.flags?.rankMundialActual;
+  if (rank != null && rank <= rankMundialMaximo) {
+    return { motivo: `cerrar el año #${rank} del mundo` };
+  }
+  return null;
+}
+
+// K6b-M: la fracción de la edad que el mercado te cobra: `mercado.merito.fraccionCastigo` si venís de una temporada de élite,
+// 1 si no. Lee la perilla en cada llamada.
+function fraccionEtariaDe(state) {
+  return meritoDeTemporada(state) ? BALANCE.mercado.merito.fraccionCastigo : 1;
+}
+
+// K6b-M: el castigo etario de la disputa (`castigoEtario`, en puntos de nivel) con la fracción del mérito. `castigo · 1` es el
+// mismo número exacto (sin mérito, o con la perilla neutra). Pura.
+export function castigoEtarioDe(state) {
+  return castigoEtario(state.age) * fraccionEtariaDe(state);
+}
+
+// K6b-M: el `sesgoEtario` que adelgaza la mano (`systems/mercado.js:generarOfertas`) con la fracción del mérito: con mérito,
+// la parte que la edad le saca a la mano (`1 − sesgo`) pesa `fraccionCastigo`. Sin mérito es `sesgoEtario(edad)` exacto. Pura.
+export function sesgoEtarioDe(state) {
+  const sesgo = sesgoEtario(state.age);
+  const fraccion = fraccionEtariaDe(state);
+  return fraccion === 1 ? sesgo : 1 - (1 - sesgo) * fraccion;
+}
+
 // Fase 9Mi (PLAN.md §9M.12.2 punto 2): tu propio club también se enfría. La
 // renovación pasa por la MISMA disputa que un fichaje —tu nivel efectivo (con
 // el castigo etario) contra la mejor alternativa de la org— porque el declive
@@ -364,7 +407,8 @@ function disputaDeLaRenovacion(state, ligaActual) {
   if (!org) {
     return null;
   }
-  const nivelEfectivo = nivelDelJugador(state) - castigoEtario(state.age);
+  // K6b-M: con el castigo etario del mérito (`castigoEtarioDe`): el campeón no pierde la renovación por la edad.
+  const nivelEfectivo = nivelDelJugador(state) - castigoEtarioDe(state);
   const alternativa = nivelAlternativaAsiento(state, org.nombre, state.player.role);
   // K5c-M (revisión 2): la MISMA disputa que un fichaje incluye la rebaja de la élite (`rebajaDisputaElite`, topeada; 0 con la perilla
   // neutra), así tu club no te trata como en declive mientras otro te ficha "a la par".
@@ -388,12 +432,24 @@ export function renovacionCortadaPorEdad(state, ligaActual) {
   return Boolean(disputa) && !disputa.claramenteMejor;
 }
 
+// K6b-M: ¿tu club, aun viniendo vos de una temporada de élite (`meritoDeTemporada`), tiene una alternativa mejor para el puesto?
+// Es la disputa de la renovación con el castigo del mérito: si la perdés, el club no te renueva y el aviso de
+// `systems/mercado.js` dice por qué (regla 15). `false` sin mérito o sin club. Pura y sin rng.
+export function renovacionNegadaConMerito(state, ligaActual) {
+  if (!meritoDeTemporada(state)) {
+    return false;
+  }
+  const disputa = disputaDeLaRenovacion(state, ligaActual);
+  return Boolean(disputa) && !disputa.claramenteMejor;
+}
+
 // K5c-V: la disputa de un fichaje en `orgNombre` (la de `ofertaPosible`, castigo etario incluido), sin el resto de las
 // condiciones. La usa el piso de franquicia de una liga de tier 2 para el veterano. Pura y sin rng.
 export function ganaLaDisputaDelAsiento(state, orgNombre, rol) {
   const nivel = nivelDelJugador(state);
   const liga = ligaDeOrg(state, orgNombre);
-  const nivelEfectivo = nivel - castigoEtario(state.age) * fraccionCastigoDe(state, liga);
+  // K6b-M: el castigo etario con la fracción del mérito (`castigoEtarioDe`).
+  const nivelEfectivo = nivel - castigoEtarioDe(state) * fraccionCastigoDe(state, liga);
   const alternativa = nivelAlternativaAsiento(state, orgNombre, rol);
   return nivelEfectivo >= alternativa + BALANCE.demanda.margenSobreAlternativa - rebajaDisputaElite(nivel);
 }
@@ -409,7 +465,7 @@ export function ligaDeCasa(state) {
 // de K5c-A), con solo `mercado.casa.fraccionCastigo` del castigo (1 = el castigo entero de la disputa; 0 = tu nivel, sin la
 // edad). Lee las perillas en cada llamada. Pura y sin rng.
 export function nivelParaTuLiga(state, casa) {
-  return nivelDelJugador(state) - castigoEtario(state.age) * fraccionCastigoDe(state, casa) * BALANCE.mercado.casa.fraccionCastigo;
+  return nivelDelJugador(state) - castigoEtarioDe(state) * fraccionCastigoDe(state, casa) * BALANCE.mercado.casa.fraccionCastigo;
 }
 
 // ¿Alcanzás tu liga? Tu nivel para tu liga (`nivelParaTuLiga`) llega a su calibre (`calibreDeLiga`, la vara del asiento)

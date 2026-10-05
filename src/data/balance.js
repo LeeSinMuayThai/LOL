@@ -1282,6 +1282,28 @@ export const BALANCE = {
       rebajaMerito: 4,
       rebajaDisputa: 4
     },
+    // --- K6b-M, el mercado premia el mérito (PLAN.md "K6b"). El bug de K6 (seed 39): Fnatic, campeón de la LEC y del
+    // Mundial con el #3 del mundo a los 27, no le renovaba, y la única carta era el club más débil de la LEC. Con Final2 el
+    // castigo etario de la disputa (`demanda.castigoEtarioNivel` 100 · (1 − `sesgoEtario`)) vale ~70 puntos a los 27: perdía
+    // la disputa de la renovación y la de todos los fichajes, y solo quedaba el piso de franquicia, que prueba primero el
+    // club más débil de tu liga. Medido sobre 150 carreras de `criterio` (25f7b0d): de 135 mercados que venían de una
+    // temporada de élite, 108 sin renovación, 71 de una sola carta y 39 de una sola carta de un club de abajo.
+    // "Una temporada de élite" es la que acaba de cerrar (`calendario.anio − 1`) con un título de liga de tier ≤
+    // `tierMaximoTitulo`, el Mundial ganado, o el cierre dentro del top `rankMundialMaximo` del mundo
+    // (`flags.rankMundialActual`). Se gana año por año: el veterano que no la repite vuelve al mercado de su edad.
+    //  - `fraccionCastigo`: con mérito, el castigo etario de la disputa (la de la renovación y la de cada fichaje) y el
+    //    adelgazamiento de la mano por la edad (`sesgoEtario`) pesan esta fracción. 1 = idéntico (neutra); 0 = el mercado
+    //    mira tu temporada y no tu edad. Con 0,5 un campeón de 27 todavía pierde ~35 puntos y con ellos toda disputa.
+    //  - `probRenovacion`: con mérito, si tu club no tiene una alternativa mejor para el puesto (la disputa de la renovación,
+    //    con el castigo de arriba), te renueva con esta probabilidad. Si la tiene, no renueva y el aviso dice por qué.
+    //  - Si igual no hay asiento y te toca el piso de franquicia, el club que te hace lugar es el que te corresponde por nivel
+    //    (el más fuerte con fuerza ≤ tu nivel), no el más débil de la liga (`systems/mercado.js:generarOfertas`).
+    merito: {
+      tierMaximoTitulo: 1,
+      rankMundialMaximo: 10,
+      fraccionCastigo: 0,
+      probRenovacion: 1
+    },
     // K5c-M, lo que ve la carta: el puesto del plantel por fuerza dentro de su liga (`core/demanda.js:plantelEnLiga`).
     // "Arriba" son los primeros `fraccionArriba` de la liga (redondeado para arriba; el 1.º se dice aparte), "abajo"
     // los últimos `fraccionAbajo`, y lo del medio es mitad de tabla. Con 10 clubes: 1.º, 2.º-3.º, 4.º-7.º, 8.º-10.º.

@@ -6,10 +6,10 @@ import { plata, plural } from '../core/formato.js';
 import { calcularContexto } from '../core/contexto.js';
 import { ligaDeCarrera } from '../core/competicion.js';
 import { salarioDeOferta } from '../core/salarios.js';
-import { valorDeMercado, presupuestoDeDemanda, sesgoEtario } from '../core/valorMercado.js';
+import { valorDeMercado, presupuestoDeDemanda } from '../core/valorMercado.js';
 import { cerrarFila, registrarPico, registrarSalarioEnFila, registrarArraigoEnFila, arraigoInicial } from '../core/registro.js';
 import { bandaDeJerarquia, bandaDeArraigoFicha, nivelDelJugador } from '../core/ficha.js';
-import { orgsQueTeFicharian, ofertaPosible, esResidenteDe, nivelAlternativaAsiento, factorRenovacionEtario, factorElite, plantelEnLiga, veteranoDeTier2, ganaLaDisputaDelAsiento, renovacionCortadaPorEdad, alcanzaTuLiga, ligaDeCasa, clubDeCasaQueTeHaceLugar, calibreDeLiga } from '../core/demanda.js';
+import { orgsQueTeFicharian, ofertaPosible, esResidenteDe, nivelAlternativaAsiento, factorRenovacionEtario, factorElite, plantelEnLiga, veteranoDeTier2, ganaLaDisputaDelAsiento, renovacionCortadaPorEdad, alcanzaTuLiga, ligaDeCasa, clubDeCasaQueTeHaceLugar, calibreDeLiga, meritoDeTemporada, sesgoEtarioDe, renovacionNegadaConMerito } from '../core/demanda.js';
 import { resolverMercadoMundial, cerrarAsientosCongelados, congelarAsientosOfrecibles } from '../core/mercadoMundial.js';
 import { jerarquiaAlFichar, sinergiaAlFichar, conPlantillaDelPlantel } from './roster.js';
 import { conPlantelesDe } from '../core/plantel.js';
@@ -301,11 +301,18 @@ export function generarOfertas(state, rng) {
   const orgActual = ligaActual?.orgs.find((org) => org.nombre === state.career.currentOrg);
   // Fase 9Mi: la renovación también se enfría con la edad — un veterano en
   // declive que ya no le gana a la camada joven no se renueva "para siempre".
-  const probRenovacion = clamp(
-    (m.probRenovacionBase + (state.career.jerarquia / BALANCE.stats.max) * m.probRenovacionPorJerarquia)
-      * factorRenovacionEtario(state, ligaActual),
-    0, 1
-  );
+  // K6b-M, el mercado premia el mérito: si venís de una temporada de élite (`meritoDeTemporada`) y tu club no tiene una
+  // alternativa mejor para el puesto (la disputa de la renovación, con el castigo etario del mérito: `factorRenovacionEtario`
+  // vale 1), te renueva con `merito.probRenovacion`. Si la tiene, el factor es el de siempre y el aviso dice por qué. La tirada
+  // es la misma `chance` de siempre (trampa T1): solo cambia la probabilidad.
+  const merito = meritoDeTemporada(state);
+  const factorEtario = factorRenovacionEtario(state, ligaActual);
+  const probRenovacion = merito && factorEtario === 1
+    ? m.merito.probRenovacion
+    : clamp(
+      (m.probRenovacionBase + (state.career.jerarquia / BALANCE.stats.max) * m.probRenovacionPorJerarquia) * factorEtario,
+      0, 1
+    );
   if (orgActual && chance(probRenovacion, rng)) {
     ofertas.push(construirOferta(state, ligaActual, orgActual, 'renovacion', rng));
   }
@@ -350,9 +357,15 @@ export function generarOfertas(state, rng) {
     // reventaba en `noResidentesTrasFichar` (medido en HEAD c8a220d: seed 23 con el nivel roto, bot `malas`).
     // Revisión de K5: desde que `resolverBanquillo` puebla esa liga (`conPlantelesDe`) el filtro ya no deja la
     // liga vacía en una carrera nueva; queda por los guardados que cayeron ahí antes.
-    const candidatas = ligaActual.orgs
+    const porFuerza = ligaActual.orgs
       .filter((org) => org.nombre !== state.career.currentOrg && state.mundo.planteles?.[org.nombre])
       .sort((a, b) => a.fuerza - b.fuerza);
+    // K6b-M: con mérito, el club que te hace lugar es el que te corresponde por nivel: primero los de fuerza ≤ tu nivel, del
+    // más fuerte al más débil, y después el resto, del más débil para arriba. Sin mérito, del más débil hacia arriba, como siempre.
+    const nivelFranquicia = nivelDelJugador(state);
+    const candidatas = merito
+      ? [...porFuerza.filter((org) => org.fuerza <= nivelFranquicia).reverse(), ...porFuerza.filter((org) => org.fuerza > nivelFranquicia)]
+      : porFuerza;
     // K5c-V, el veterano de tier 2: desde `demanda.edadCastigoRenovacionTier2`, en una liga de tier 2 el piso de franquicia
     // también pasa por la disputa del asiento con el castigo etario (como un fichaje). Sin esto, el club más débil de tu
     // liga te hacía lugar todos los años aunque tu club ya no te renovara: el tier 2 renovaba para siempre. Con la perilla
@@ -405,7 +418,8 @@ export function generarOfertas(state, rng) {
   // puede ser enorme y el tope tapaba el sesgo antes de que mordiera). Piso 1
   // para la franquicia (K5c-H: y para el club de tu liga, que va primero).
   const manoBase = Math.min(posibles.length, m.ofertasMax - ofertas.length);
-  const cupoEtario = Math.max(claramenteArriba || hayCasaEnLaMano ? 1 : 0, Math.round(manoBase * sesgoEtario(state.age)));
+  // K6b-M: con mérito, la edad adelgaza la mano solo en `merito.fraccionCastigo` (`sesgoEtarioDe`; sin mérito, `sesgoEtario` exacto).
+  const cupoEtario = Math.max(claramenteArriba || hayCasaEnLaMano ? 1 : 0, Math.round(manoBase * sesgoEtarioDe(state)));
   const candidatas = posibles.slice(0, cupoEtario);
 
   for (const { org, liga, motivo, forzadaFranquicia } of candidatas) {
@@ -655,11 +669,18 @@ function aplicarMercadoSinImport(stConValor, logsMundo, rng) {
   // castigo etario desde `demanda.edadCastigoRenovacionTier2`), el aviso dice por qué, y sale aunque el flag ya estuviera
   // prendido (el corte por edad es la causa de verdad, no la tirada). Con la perilla neutra nunca entra: el aviso de siempre.
   const cortadaPorEdad = clubNoRenueva && renovacionCortadaPorEdad(stConValor, ligaDeCarrera(stConValor));
+  // K6b-M (regla 15): si venías de una temporada de élite y tu club igual no te renueva, es porque tiene una alternativa mejor
+  // para el puesto (`renovacionNegadaConMerito`), y el aviso lo dice aunque el flag ya estuviera prendido.
+  const meritoNegado = clubNoRenueva && renovacionNegadaConMerito(stConValor, ligaDeCarrera(stConValor))
+    ? meritoDeTemporada(stConValor)
+    : null;
   const logsAviso = cortadaPorEdad
     ? [crearLog('mercado', `${stConValor.career.currentOrg} te avisó: no van a renovarte. Buscan gente más joven para el puesto.`)]
-    : avisoNuevo
-      ? [crearLog('mercado', `${stConValor.career.currentOrg} te avisó: no van a renovarte.`)]
-      : [];
+    : meritoNegado
+      ? [crearLog('mercado', `${stConValor.career.currentOrg} te avisó: no van a renovarte. Pese a ${meritoNegado.motivo}, tienen una opción mejor para el puesto.`)]
+      : avisoNuevo
+        ? [crearLog('mercado', `${stConValor.career.currentOrg} te avisó: no van a renovarte.`)]
+        : [];
 
   // K5-C: el final lo decide el mercado. Cada pretemporada con el mercado abierto se cuenta si ninguna oferta es de
   // tu tier o mejor; al llegar al umbral, en vez de la mano de siempre frena la bifurcación "bajás o te retirás".
