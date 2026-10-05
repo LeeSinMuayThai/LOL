@@ -7964,6 +7964,27 @@ partido no se tocan (D-B: lo que está en juego).
   palanca.
 - Si ≤ 8 no se alcanza sin romper la agencia, se reporta la frontera y decide el usuario.
 
+**K6b-C2, hecho** (`k6b-cola2`: `a496686`).
+- **Qué son las dos frenadas.** Los "momentos" (`temporada:momento`) son el evento previo de un partido marcado:
+  clásico, archirrival, revancha o define la clasificación. Su palanca es del 95%, la más alta del juego. El cierre de
+  año (`edadCierre`) tiene una palanca de carrera del 3,3%.
+- **La regla** está en `core/cola.js`. Con ella la cola pasa de 13 a **12** frenadas. La frontera es 11, y llegar
+  ahí rompe la agencia: sin momentos, la ponderada cae del 47 al ~41%, debajo del piso de K4c. Casi todos los cierres
+  de la cola tienen un motivo para frenar: un año con título o Mundial, o un cambio de club.
+- La agencia ponderada sube del 47,4 al 48,6%.
+
+**Decisión del usuario (2026-10-05): "aceptar 12 y que K6 lo juzgue".**
+- El relleno repetido que vio K6 ya no frena: el "¿seguís?" de cada pretemporada, "el mercado ya habló" ×7 y la carta
+  única.
+- La meta ≤ 8 se re-basa a lo medido, con su línea.
+- K6 vuelve a jugar y dice si la cola todavía se siente relleno.
+
+**La integración de K6b:** rama `k6b-integracion` (worktree `wt-k6bi`). Junta las cuatro ramas con `VERSION` 13 y la
+migración 12 → 13, por las flags nuevas, y `HUELLA_JUEGO` 'K6b'.
+
+**Efecto declarado de K6b-F:** las carreras que terminan "sin equipo" pasan del 2 al ~45%. El bot vuelve del retiro
+como free agent sin su club viejo, que es la regla coherente. Lo mira la revisión.
+
 ## K.6 — Qué pasa con FASE J y FASE V
 
 | Pieza | Destino |
