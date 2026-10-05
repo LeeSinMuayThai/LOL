@@ -2010,6 +2010,14 @@ export const BALANCE = {
     // el mejor rank de la vida, este o mejor). "El que no llegó" es el piso;
     // "Fijo en primera" son tres años en primera (3 × `edad.splitsPorEdad`);
     // desde K5, "El GOAT" pide también 2 o más Mundiales.
+    // K5c fija estos cortes como definitivos y "El GOAT" como nombre definitivo del nuevo Faker de §K.3b: #1 del mundo al
+    // cierre de 3 o más temporadas, o (`alternativa`, otra lista que también gana el nivel) 2 o más Mundiales. Medido con los
+    // valores de K5c (seeds 1-1500, 60 splits, `node --max-old-space-size=12288 src/dev/simulate.js 1500 60 <bot>
+    // --bloque=puntaje`), el % de carreras que llega a cada nivel o más alto, criterio / azar / malas:
+    // pasó por el circuito 78,6 / 75,9 / 62,7 · un profesional más 74,5 / 65,4 / 47,1 · fijo en primera 70,6 / 55,4 / 35,2 ·
+    // campeón 57,0 / 42,7 / 23,6 · figura mundial 36,5 / 23,4 / 11,1 · leyenda 8,8 / 3,2 / 0,7 · El GOAT 1,3 / 0,2 / 0.
+    // Cada nivel separa a los tres bots en el orden de sus decisiones. Los cortes por hechos no se mueven con el balance:
+    // lo que se movió con K5 es cuántos llegan (§K.3b re-basado, PLAN.md §K5c).
     niveles: [
       { id: 'no_llego', requisito: {} },
       { id: 'circuito', requisito: { splitsJugados: 1 } },
@@ -2018,7 +2026,7 @@ export const BALANCE = {
       { id: 'campeon', requisito: { titulosTier1: 1 } },
       { id: 'figura', requisito: { cierresEnTop20: 1 } },
       { id: 'leyenda', requisito: { titulosTier1: 3, rankPicoHasta: 5 } },
-      { id: 'goat', requisito: { cierresNumeroUno: 3 } }
+      { id: 'goat', requisito: { cierresNumeroUno: 3 }, alternativa: { mundialesGanados: 2 } }
     ],
     // El referente del número (regla 13): "mejor que el X% de las carreras".
     // Pares [percentil, puntaje] medidos con `criterio` (seeds 1-800, 60 splits,
@@ -2033,11 +2041,17 @@ export const BALANCE = {
     // --bloque=puntaje`): p50 989 → 933, p90 1622 → 1663, p99 1993 → 2243. El borde
     // entre los que no llegaron y los pros pasa a estar entre el p25 (124) y el p30
     // (436). Los cortes de nivel no se tocan: son por hechos.
-    // Provisoria: K5c la vuelve a medir.
+    // K5c (paso 3b-3) la re-midió con los valores del bloque C (el mundo: el Mundial
+    // real, cada uno en su casa, el desgaste; `criterio`, seeds 1-1500, 60 splits,
+    // `node --max-old-space-size=12288 src/dev/simulate.js 1500 60 criterio
+    // --bloque=puntaje`): p50 933 → 259, p90 1663 → 876, p99 2243 → 1290. El número
+    // bajó porque el mundo es más duro (menos títulos, Top 20 y años pro por
+    // carrera); el borde entre los que no llegaron (21,5%) y los pros cae entre el
+    // p20 (26) y el p25 (36). Definitiva para el cierre de K5c.
     cuantiles: [
-      [0, 0], [5, 12], [10, 17], [15, 21], [20, 26], [25, 124], [30, 436], [35, 650], [40, 758], [45, 839],
-      [50, 933], [55, 1018], [60, 1106], [65, 1158], [70, 1237], [75, 1313], [80, 1426], [85, 1518],
-      [90, 1663], [95, 1841], [97, 1950], [99, 2243]
+      [0, 0], [5, 11], [10, 16], [15, 21], [20, 26], [25, 36], [30, 80], [35, 108], [40, 150], [45, 208],
+      [50, 259], [55, 319], [60, 373], [65, 446], [70, 509], [75, 585], [80, 663], [85, 755],
+      [90, 876], [95, 1027], [97, 1129], [99, 1290]
     ],
     // La leyenda comparada (`data/leyendas.json`): la más cercana por distancia
     // euclídea sobre el perfil normalizado (cada eje dividido por su `escala`),

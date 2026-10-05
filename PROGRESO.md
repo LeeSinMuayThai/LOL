@@ -2,6 +2,43 @@
 
 Documento vivo. Se actualiza al cierre de cada tarea, según la Definición de terminado de CLAUDE.md.
 
+## 2026-10-05 — K5c paso 3b-3: las metas de §K.3a/§K.3b como checks duros, el bloque C cerrado, El GOAT y los cuantiles (`k5c-paso3`)
+
+- **Medido acá** (`node --max-old-space-size=12288 src/dev/simulate.js 1500 60 <bot>`, seeds 1-1500, sobre `873fc80`):
+  - `criterio`: no-pro 21,5 · estancados 4,1 · tier 1 74,5 · título 55,4 · Top 20 36,4 · Mundial 7,0 (Corea 9,9 n 332, China 10,5,
+    Europa 7,7, NA 3,1 n 194, Brasil 3,9, Asia-Pacífico 2,3) · nuevo Faker 1,3 (élite 13,3, n 45) · P(2+ | 1) 0,181 (n 105) · el más
+    fuerte del Mundial lo gana 57,5% (n 87; "claramente", margen >= 10: 4 de 2963 Mundiales) · carrera mediana 8,83 años, p90 12 ·
+    a los 34 4,8% · r(potencial, duración) 0,384 (n 1178) · Mundiales del mundo (17789): LCK 51,8 / LPL 43,7 / LEC 3,8 / LCS 0,4.
+  - `azar` / `malas`: no-pro 24,1 / 36,8 · estancados 10,5 / 15,6 · tier 1 65,4 / 47,2 · Mundial 3,1 / 0,7.
+- **Checks duros nuevos** (`validate.js`, "K5c meta ..."; un lote de 1500 × 60 por bot, corrido una vez y soltado). Banda = la meta
+  ± 2 σ de la muestra (proporción 100·√(p(1-p)/n); mediana √(π/2)·s/√n), y si la meta no llega, de la meta a lo medido ± 2 σ:
+  - cumplen: no-pro ~20 [17,9, 22,1] · Mundial >= 7 (>= 5,7) · NA 3-5 [0,5, 7,5] · el más fuerte gana ~50 [39,4, 60,6] · a los 34
+    < 5 (<= 6,25) · estancados: azar ~10 ± 1,6, criterio más de 2 σ abajo, malas más de 2 σ arriba · Corea > NA por más de 2 σ;
+  - re-basadas (regla 17: "meta X; medido Y; re-basado por decisión del usuario 2026-10-05, K6 juzga"): tier 1 [52,8, 76,8] ·
+    título [27,4, 58,0] · Top 20 [12,5, 38,9] · Corea [6,6, 18,3] · nuevo Faker [0,7, 3,6] · élite >= 3,2 · P(2+ | 1) >= 10,6 ·
+    carrera mediana [3,75, 9,08];
+  - la meta del usuario, sin banda: LCK >= 25% y primera por >= 5 puntos (51,8 contra 43,7);
+  - el juez (rápido) rechaza cada clave fuera de banda, una por una.
+- **Re-basados con su línea** (los checks que fallaban): "El tier 3 es breve" mediana <= 2 → <= 3 (medido 3, p90 5, 7577 stints) ·
+  "K3c meta de K2" Bo5 del favorito (lado del jugador, plan neutro 800 × 60) techo 85 → 89,5 (medido 86,3 ± 1,6; el conjunto 84,4
+  sigue con 75-85) · "K4c meta del ritmo" p90 del split internacional <= 5 → <= 6 (la meta del usuario; medido 6) y el Δp mediano
+  del plan >= 5 → >= 4,87 − 2 σ (medido 4,87 pp, 400 × 60; σ ≈ 0,05, n ≈ 2600).
+- **Ya pasaban, sin cambio:** "K0 los bots separan", "K5-B región: ... monótona" (KR 63 · CN 63 · EMEA 73 · NA 80 · APAC 83 · BR 93,
+  llegada a la primera propia) y "Ningún arquetipo de veredicto" (el no-pro volvió a ~21%).
+- **Bloque C cerrado:** la PENDIENTE C (la longevidad) pasa y se borró; `BLOQUES_DE_CORRIMIENTO.C.cerrado = true`.
+- **Los niveles de K1:** "El GOAT" es definitivo y es el nuevo Faker de §K.3b: 3 cierres como #1 del mundo **o** (`alternativa`,
+  nueva en `nivelDeCarrera`) 2 Mundiales; el hecho `mundialesGanados` y su texto ("Te faltó ..., o ganar 2 Mundiales."). Los demás
+  cortes quedan. Llega a cada nivel o más alto, `criterio` / `azar` / `malas`: circuito 78,6 / 75,9 / 62,7 · profesional 74,5 /
+  65,4 / 47,1 · fijo 70,6 / 55,4 / 35,2 · campeón 57,0 / 42,7 / 23,6 · figura 36,5 / 23,4 / 11,1 · leyenda 8,8 / 3,2 / 0,7 · GOAT
+  1,3 / 0,2 / 0.
+- **Cuantiles** (`criterio` 1500 × 60, `--bloque=puntaje`): p50 933 → 259, p90 1663 → 876, p99 2243 → 1290.
+- **En rojo con su mutante (regla 7):** LPL prestigio 99 → la meta del usuario (LCK 41,6 contra 55,5); `scoutingSesgoEtario` ÷ ~2,5
+  → embudo (no-pro 50,3), estancados y Mundial (4,1); `edadRetiroForzoso` 30 → longevidad (a los 34: 33,4); `sigmaMapa` 9 → Bo5
+  97,4; `sigmaMapa` 30 → Δp 3,44; banda sin re-base o margen sin los 5 puntos → el juez; sin la alternativa → "K1 niveles por
+  hechos". El tier 3 y el split internacional se re-basan al valor medido: su rojo es el de antes (mediana 3 > 2, p90 6 > 5).
+- **`--rapido`: 315 OK, 10 FAIL.** Ninguno de este paso: la huella y la forma del guardado (al final), seis del paso 3b-2
+  (K5c-R presión, K4c probaste, K4c textos, K3-B, K5-A, K6a-A) y K5c-M (a)/(a2), que ya fallan en `873fc80`.
+
 ## 2026-10-05 — K5c paso 3a: Final2 fijado en los datos, más la LPL en 91 (`k5c-paso3`)
 
 - **Fijado** (solo constantes, un comentario "K5c paso 3" por constante): las 30 claves de `cfgFinal2.json` (29 cambian, `graciaAnios` ya era 0) en `balance.js` y

@@ -19,7 +19,7 @@
 export const BLOQUES_DE_CORRIMIENTO = {
   A: { nombre: 'el nivel', subfases: ['K2', 'K3'], cierraCon: 'K3c', cerrado: true },
   B: { nombre: 'el ritmo', subfases: ['K4'], cierraCon: 'K4c', cerrado: true },
-  C: { nombre: 'el mundo', subfases: ['K5'], cierraCon: 'K5c', cerrado: false }
+  C: { nombre: 'el mundo', subfases: ['K5'], cierraCon: 'K5c', cerrado: true }
 };
 
 // Una entrada por check de banda fuera de banda:
@@ -54,15 +54,9 @@ export const BANDAS_PENDIENTES = [
   // revisión, el calibre de liga por cuantil (D78) la llevó a 0,27 y el mundo amateur que renueva contratos NPC a 0,21
   // (medido commit a commit, 1200 carreras). K5c (revisión): la duración pasó a contarse como los años pro (desde el primer contrato
   // de tier 2 o tier 1, sin los splits retirado: reemplaza a `splitCount - splitFichaje`) y la misma muestra dio r = 0,24.
-  {
-    check: 'La duración de la carrera correlaciona con el potencial oculto (r > 0.32)',
-    bloque: 'C',
-    medido: 'r = 0,24 (1200 carreras, seeds 1-1200 × 90 splits; con la duración desde el primer contrato de tier 2 y sin los splits retirado, K5c revisión; con `splitCount - splitFichaje` fue 0,21 tras la renovación NPC en el mundo amateur, 0,27 tras el calibre por cuantil de D78, 0,32 en la integración de K5)',
-    banda: 'r > 0,32',
-    commit: 'K5',
-    rebasea: 'K5c',
-    porque: 'K5 movió el mundo (mercado por cuantil de liga, asientos congelados post-mercado, contratos NPC renovados en la etapa amateur): más carreras de potencial medio encuentran asiento; K5c calibra la longevidad del mundo nuevo'
-  }
+  // K5c (paso 3b-3) cerró el bloque C: con los valores fijados (Final2 + LPL 91) el check, con su misma muestra (1200 carreras,
+  // seeds 1-1200 × 90 splits), pasa (r > 0,32); con `criterio` 1500 × 60 r = 0,384 (n 1178 pros, `curvaDeEdad`). La entrada se
+  // borró (custodio 1).
 ];
 
 // Custodio 1: las entradas cuyo check pasó en esta corrida. `resultados` es un Map nombre → 'ok' | 'fail' |

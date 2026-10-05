@@ -36,11 +36,16 @@ const LIGA_POR_ID = Object.fromEntries(LIGAS.map((liga) => [liga.id, liga]));
 // El "sin bonus" del internacional: la `dificultad` más baja de primera.
 const DIFICULTAD_DE_REFERENCIA = Math.min(...LIGAS.filter((liga) => liga.tier === 1).map((liga) => liga.dificultad));
 
+// Un Mundial ganado: la entrada de `registro.internacionales` con este resultado (K5-A; la misma lectura que el
+// bloque `mundialReal` de `simulate.js`).
+const MUNDIAL_GANADO = 'campeon';
+
 const LUGAR_DE_TIER = { 1: 'en primera', 2: 'en la liga de desarrollo', 3: 'en el circuito chico' };
 
 // Los niveles, de abajo hacia arriba, en el orden de `BALANCE.puntaje.niveles`
-// (que tiene el requisito de cada uno). "El GOAT" es el nombre provisorio del
-// nivel "el nuevo Faker" (PLAN.md §K.1).
+// (que tiene el requisito de cada uno). "El GOAT" es el nombre definitivo del
+// nivel "el nuevo Faker" (PLAN.md §K.1; K5c lo fija): 2 o más Mundiales, o #1 del
+// mundo al cierre de 3 o más temporadas, la misma definición que mide §K.3b.
 export const NIVELES = [
   { id: 'no_llego', nombre: 'El que no llegó' },
   { id: 'circuito', nombre: 'Pasó por el circuito' },
@@ -399,7 +404,8 @@ export function hechosDeCarrera(state) {
     titulosTier1: titulosDePrimera(r),
     cierresEnTop20: r.splitsEnTopMundial,
     rankPico: r.picos.rankMundial,
-    cierresNumeroUno: r.cierresComoNumeroUno
+    cierresNumeroUno: r.cierresComoNumeroUno,
+    mundialesGanados: r.internacionales.filter((entrada) => entrada.resultado === MUNDIAL_GANADO).length
   };
 }
 
@@ -446,6 +452,10 @@ const REQUISITOS = {
       texto: `cerrar ${faltanDe(h.cierresNumeroUno, n, 'temporada', 'temporadas', ' como #1 del mundo', 'cerraste', 'una')}`,
       plural: false
     })
+  },
+  mundialesGanados: {
+    cumple: (h, n) => h.mundialesGanados >= n,
+    falta: (h, n) => ({ texto: `ganar ${faltanDe(h.mundialesGanados, n, 'Mundial', 'Mundiales', '', 'ganaste')}`, plural: false })
   }
 };
 
@@ -457,22 +467,28 @@ function requisitoDe(clave) {
 }
 
 // Gana el nivel más alto cuyo requisito se cumple entero (no son escalones
-// anidados: un #3 del mundo sin títulos es "Figura mundial"). `siguiente` es el
-// de arriba con lo que faltó, como hecho: "Te faltó un título de liga de primera."
+// anidados: un #3 del mundo sin títulos es "Figura mundial"). Un nivel con
+// `alternativa` también se gana si esa otra lista se cumple entera ("El GOAT":
+// 3 cierres como #1 del mundo, o 2 Mundiales). `siguiente` es el de arriba con lo
+// que faltó, como hecho: "Te faltó un título de liga de primera."
 export function nivelDeCarrera(hechos) {
   const niveles = P().niveles;
-  const pendientes = (nivel) => Object.entries(nivel.requisito).filter(([clave, n]) => !requisitoDe(clave).cumple(hechos, n));
-  const indice = niveles.map((nivel) => pendientes(nivel).length === 0).lastIndexOf(true);
+  const pendientesDe = (requisito) => Object.entries(requisito).filter(([clave, n]) => !requisitoDe(clave).cumple(hechos, n));
+  const caminos = (nivel) => (nivel.alternativa ? [nivel.requisito, nivel.alternativa] : [nivel.requisito]);
+  const cumple = (nivel) => caminos(nivel).some((requisito) => pendientesDe(requisito).length === 0);
+  const indice = niveles.map(cumple).lastIndexOf(true);
   if (indice < 0) {
     fallar('ningún nivel se cumple: el primero de BALANCE.puntaje.niveles no puede pedir nada');
   }
   const proximo = niveles[indice + 1];
   let siguiente = null;
   if (proximo) {
-    const partes = pendientes(proximo).map(([clave, n]) => requisitoDe(clave).falta(hechos, n));
+    // Cada camino dice lo suyo; dos caminos se unen con ", o ".
+    const textos = caminos(proximo).map((requisito) => pendientesDe(requisito).map(([clave, n]) => requisitoDe(clave).falta(hechos, n)));
     // El verbo concuerda con lo primero que se nombra: "Te faltó un título más y llegar al top 5", no "Te faltaron un título".
-    const verbo = partes[0].plural ? 'faltaron' : 'faltó';
-    siguiente = { id: proximo.id, nombre: NOMBRE_DE_NIVEL[proximo.id], requisito: `Te ${verbo} ${enumerar(partes.map((p) => p.texto))}.` };
+    const verbo = textos[0][0].plural ? 'faltaron' : 'faltó';
+    const frase = textos.map((partes) => enumerar(partes.map((p) => p.texto))).join(', o ');
+    siguiente = { id: proximo.id, nombre: NOMBRE_DE_NIVEL[proximo.id], requisito: `Te ${verbo} ${frase}.` };
   }
   return { id: niveles[indice].id, nombre: NOMBRE_DE_NIVEL[niveles[indice].id], siguiente };
 }

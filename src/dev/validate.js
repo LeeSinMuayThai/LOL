@@ -3694,7 +3694,14 @@ checkLento('La densidad de decisiones es emergente, no pareja ni descontrolada',
 
 // --- Fase 3: la escalera competitiva (tier 3 -> tier 2 -> tier 1) ---
 
-checkLento('El tier 3 es breve: mediana de permanencia ≤ 2 splits, p90 ≤ 5', () => {
+// K5c (paso 3b-3) — regla 17: la mediana pasa de <= 2 a <= 3. Meta 2 (el pedido: "nadie se queda mucho en un equipo
+// inventado"); medido 3 (6000 carreras × 90 splits, por org); re-basado por decisión del usuario 2026-10-05, K6 juzga. Lo
+// sacó de banda el bloque C (K5: el mundo amateur que renueva contratos NPC y los asientos congelados post-mercado: subir de
+// tier 3 espera a que se abra un asiento real). La mediana es un entero sobre miles de stints: su ruido de muestra es menor
+// que un split, así que la banda es el valor medido. El p90 sigue en <= 5.
+const MEDIANA_MAXIMA_TIER3 = 3;
+const P90_MAXIMO_TIER3 = 5;
+checkLento(`El tier 3 es breve: mediana de permanencia ≤ ${MEDIANA_MAXIMA_TIER3} splits, p90 ≤ ${P90_MAXIMO_TIER3}`, () => {
   // Pedido explícito: nadie debuta en primera y nadie se queda mucho en un
   // equipo inventado. Se mide en splits CONSECUTIVOS en tier 3 por stint (una
   // carrera puede pasar por tier 3 más de una vez si el equipo se disuelve).
@@ -3773,11 +3780,12 @@ checkLento('El tier 3 es breve: mediana de permanencia ≤ 2 splits, p90 ≤ 5',
   const medianaPermanencia = ordenados[Math.floor(ordenados.length / 2)];
   const p90 = ordenados[Math.floor(ordenados.length * 0.9)];
 
-  if (medianaPermanencia > 2) {
-    throw new Error(`mediana de permanencia en una org de tier 3: ${medianaPermanencia} splits (máximo 2)`);
+  console.log(`     (informe) permanencia en una org de tier 3: mediana ${medianaPermanencia}, p90 ${p90} (${permanencias.length} stints)`);
+  if (medianaPermanencia > MEDIANA_MAXIMA_TIER3) {
+    throw new Error(`mediana de permanencia en una org de tier 3: ${medianaPermanencia} splits (máximo ${MEDIANA_MAXIMA_TIER3})`);
   }
-  if (p90 > 5) {
-    throw new Error(`p90 de permanencia en una org de tier 3: ${p90} splits (máximo 5)`);
+  if (p90 > P90_MAXIMO_TIER3) {
+    throw new Error(`p90 de permanencia en una org de tier 3: ${p90} splits (máximo ${P90_MAXIMO_TIER3})`);
   }
 });
 
@@ -13855,7 +13863,8 @@ function nivelAManoK1(registro) {
   const jugados = sumaTier(1) + sumaTier(2) + sumaTier(3);
   const titulosT1 = registro.titulos.filter((titulo) => titulo.tier === 1).length;
   const rank = registro.picos.rankMundial;
-  if (registro.cierresComoNumeroUno >= req.goat.cierresNumeroUno) return 'goat';
+  const mundiales = registro.internacionales.filter((entrada) => entrada.resultado === 'campeon').length;
+  if (registro.cierresComoNumeroUno >= req.goat.cierresNumeroUno || mundiales >= BALANCE.puntaje.niveles.find((n) => n.id === 'goat').alternativa.mundialesGanados) return 'goat';
   if (titulosT1 >= req.leyenda.titulosTier1 && rank > 0 && rank <= req.leyenda.rankPicoHasta) return 'leyenda';
   if (registro.splitsEnTopMundial >= req.figura.cierresEnTop20) return 'figura';
   if (titulosT1 >= req.campeon.titulosTier1) return 'campeon';
@@ -14575,7 +14584,7 @@ check('K1 dificultad: toda liga la tiene (número > 0) y cada tier 2 hereda la d
 
 // Los hechos de una carrera vacía, y los mínimos que cumplen un requisito (cada clave de requisito es un hecho,
 // salvo `rankPicoHasta`, que se cumple con un pico de rank igual o mejor).
-const HECHOS_VACIOS_K1 = { splitsJugados: 0, splitsTier1: 0, titulosTier1: 0, cierresEnTop20: 0, rankPico: 0, cierresNumeroUno: 0 };
+const HECHOS_VACIOS_K1 = { splitsJugados: 0, splitsTier1: 0, titulosTier1: 0, cierresEnTop20: 0, rankPico: 0, cierresNumeroUno: 0, mundialesGanados: 0 };
 function hechosQueCumplenK1(requisito) {
   const hechos = { ...HECHOS_VACIOS_K1 };
   for (const [clave, n] of Object.entries(requisito)) {
@@ -14624,11 +14633,18 @@ check('K1 niveles por hechos: en orden y con requisitos válidos, cada nivel se 
   if (Object.keys(niveles[0].requisito).length !== 0) {
     throw new Error(`"${niveles[0].id}" es el piso: no puede pedir nada (pide ${JSON.stringify(niveles[0].requisito)})`);
   }
+  // K5c: un nivel puede tener una `alternativa` (otra lista de hechos que también lo gana): "El GOAT".
+  const caminosK1 = (nivel) => (nivel.alternativa ? [nivel.requisito, nivel.alternativa] : [nivel.requisito]);
   for (const nivel of niveles.slice(1)) {
-    const claves = Object.keys(nivel.requisito);
-    if (claves.length === 0 || claves.some((clave) => !HECHOS_DE_REQUISITO.includes(clave) || !Number.isInteger(nivel.requisito[clave]) || nivel.requisito[clave] < 1)) {
-      throw new Error(`${nivel.id}: requisito ${JSON.stringify(nivel.requisito)} (hechos válidos: ${HECHOS_DE_REQUISITO.join(', ')}, mínimos enteros >= 1)`);
+    for (const requisito of caminosK1(nivel)) {
+      const claves = Object.keys(requisito);
+      if (claves.length === 0 || claves.some((clave) => !HECHOS_DE_REQUISITO.includes(clave) || !Number.isInteger(requisito[clave]) || requisito[clave] < 1)) {
+        throw new Error(`${nivel.id}: requisito ${JSON.stringify(requisito)} (hechos válidos: ${HECHOS_DE_REQUISITO.join(', ')}, mínimos enteros >= 1)`);
+      }
     }
+  }
+  if (niveles[0].alternativa !== undefined) {
+    throw new Error(`"${niveles[0].id}" es el piso: no tiene alternativa`);
   }
   // Los requisitos son los de la tabla de PLAN.md ("K1 — lo que cambió la revisión de K1-A"): el nombre de un nivel
   // promete ese hecho. Lo único de balance es la N de "Fijo en primera" ("del orden de 3 años": entre 2 y 4 años).
@@ -14642,28 +14658,36 @@ check('K1 niveles por hechos: en orden y con requisitos válidos, cada nivel se 
     campeon: { titulosTier1: 1 }, figura: { cierresEnTop20: 1 }, leyenda: { titulosTier1: 3, rankPicoHasta: 5 },
     goat: { cierresNumeroUno: 3 }
   };
-  const ordenado = (objeto) => JSON.stringify(Object.keys(objeto).sort().map((clave) => [clave, objeto[clave]]));
+  // K5c: "El GOAT" es el nuevo Faker de §K.3b: también lo gana quien gana 2 o más Mundiales. Ningún otro nivel tiene alternativa.
+  const ALTERNATIVAS_DEL_PLAN_K1 = { goat: { mundialesGanados: 2 } };
+  const ordenado = (objeto) => JSON.stringify(Object.keys(objeto ?? {}).sort().map((clave) => [clave, objeto[clave]]));
   for (const nivel of niveles) {
     if (ordenado(nivel.requisito) !== ordenado(TABLA_DEL_PLAN_K1[nivel.id])) {
       throw new Error(`${nivel.id} pide ${JSON.stringify(nivel.requisito)} y la tabla de PLAN.md dice ${JSON.stringify(TABLA_DEL_PLAN_K1[nivel.id])}`);
+    }
+    if (ordenado(nivel.alternativa) !== ordenado(ALTERNATIVAS_DEL_PLAN_K1[nivel.id])) {
+      throw new Error(`${nivel.id} tiene la alternativa ${JSON.stringify(nivel.alternativa ?? null)} y la tabla de PLAN.md dice ${JSON.stringify(ALTERNATIVAS_DEL_PLAN_K1[nivel.id] ?? null)}`);
     }
   }
   // Bordes: los hechos mínimos de cada nivel dan ese nivel; un escalón menos en cualquiera de sus requisitos, uno
   // más bajo. El siguiente nombra lo que faltó, en palabras y sin puntos.
   niveles.forEach((nivel, i) => {
-    const justo = hechosQueCumplenK1(nivel.requisito);
-    const dado = nivelDeCarrera(justo);
-    if (dado.id !== nivel.id) {
-      throw new Error(`con los hechos justos de ${nivel.id} (${JSON.stringify(justo)}) el nivel es ${dado.id}`);
-    }
-    for (const [clave, n] of Object.entries(nivel.requisito)) {
-      const peores = clave === 'rankPicoHasta' ? [{ ...justo, rankPico: n + 1 }, { ...justo, rankPico: 0 }] : [{ ...justo, [clave]: n - 1 }];
-      for (const peor of peores) {
-        if (INDICE_NIVEL_K1[nivelDeCarrera(peor).id] >= i) {
-          throw new Error(`a ${nivel.id} le falta ${clave} (${JSON.stringify(peor)}) y el nivel sigue siendo ${nivelDeCarrera(peor).id}`);
+    for (const requisito of caminosK1(nivel)) {
+      const justoDelCamino = hechosQueCumplenK1(requisito);
+      if (nivelDeCarrera(justoDelCamino).id !== nivel.id) {
+        throw new Error(`con los hechos justos de ${nivel.id} (${JSON.stringify(justoDelCamino)}) el nivel es ${nivelDeCarrera(justoDelCamino).id}`);
+      }
+      for (const [clave, n] of Object.entries(requisito)) {
+        const peores = clave === 'rankPicoHasta' ? [{ ...justoDelCamino, rankPico: n + 1 }, { ...justoDelCamino, rankPico: 0 }] : [{ ...justoDelCamino, [clave]: n - 1 }];
+        for (const peor of peores) {
+          if (INDICE_NIVEL_K1[nivelDeCarrera(peor).id] >= i) {
+            throw new Error(`a ${nivel.id} le falta ${clave} (${JSON.stringify(peor)}) y el nivel sigue siendo ${nivelDeCarrera(peor).id}`);
+          }
         }
       }
     }
+    const justo = hechosQueCumplenK1(nivel.requisito);
+    const dado = nivelDeCarrera(justo);
     const siguiente = niveles[i + 1];
     if (!siguiente) {
       if (dado.siguiente !== null) {
@@ -16870,14 +16894,16 @@ function juezDeLasMetasA(v) {
   const hay = (x) => typeof x === 'number' && Number.isFinite(x);
   const [medMin, medMax] = META_K3_MENTALIDAD_MEDIANA;
   const [bo5Min, bo5Max] = META_K2_BO5_FAVORITO_CLARO_PCT;
+  // K5c (paso 3b-3): el lado del jugador se juzga contra el techo re-basado (ver `BO5_JUGADOR_TECHO_K5C`); el conjunto, contra la meta.
+  const bo5MaxJugador = Math.max(bo5Max, BO5_JUGADOR_TECHO_K5C);
   const juzgar = (ok, motivo) => (ok ? null : motivo);
   return {
     rMismaLiga: juzgar(hay(v.rMismaLiga) && v.rMismaLiga >= META_K2_R_MISMA_LIGA,
       `la r nivel–posición en la misma liga (corregida) es ${v.rMismaLiga}, la meta pide >= ${META_K2_R_MISMA_LIGA}`),
     r2SinRuido: juzgar(hay(v.r2SinRuido) && v.r2SinRuido >= META_K2_R2_SIN_RUIDO,
       `el R² sin ruido (corregido) es ${v.r2SinRuido}, la meta pide >= ${META_K2_R2_SIN_RUIDO}`),
-    bo5Jugador: juzgar(hay(v.bo5Jugador) && v.bo5Jugador >= bo5Min && v.bo5Jugador <= bo5Max,
-      `el favorito claro (Δ0 ≈ 10, el jugador favorito) gana el Bo5 el ${v.bo5Jugador}%, la meta es ${bo5Min}-${bo5Max}% (del lado del rival ${v.bo5Rival}%, juntos ${v.bo5Juntos}%: el conjunto lo juzga su propio check)`),
+    bo5Jugador: juzgar(hay(v.bo5Jugador) && v.bo5Jugador >= bo5Min && v.bo5Jugador <= bo5MaxJugador,
+      `el favorito claro (Δ0 ≈ 10, el jugador favorito) gana el Bo5 el ${v.bo5Jugador}%, la banda es ${bo5Min}-${bo5MaxJugador}% (meta ${bo5Min}-${bo5Max}%, re-basada en K5c; del lado del rival ${v.bo5Rival}%, juntos ${v.bo5Juntos}%: el conjunto lo juzga su propio check)`),
     bo5Juntos: juzgar(hay(v.bo5Juntos) && v.bo5Juntos >= bo5Min && v.bo5Juntos <= bo5Max,
       `el favorito claro (Δ0 ≈ 10, conjunto: los dos lados) gana el Bo5 el ${v.bo5Juntos}%, la meta es ${bo5Min}-${bo5Max}% (jugador ${v.bo5Jugador}%, rival ${v.bo5Rival}%)`),
     mentalidadMediana: juzgar(hay(v.mentalidadMediana) && v.mentalidadMediana >= medMin && v.mentalidadMediana <= medMax,
@@ -16893,6 +16919,11 @@ function juezDeLasMetasA(v) {
   };
 }
 
+// K5c (paso 3b-3) — regla 17: el techo del Bo5 del favorito claro, lado del jugador (criterio con plan neutro, 800 × 60). Meta 75-85;
+// medido 86,3 ± 1,6 (el error estándar que imprime el check); re-basado por decisión del usuario 2026-10-05, K6 juzga: el techo pasa a
+// lo medido más 2 σ (86,3 + 3,2 = 89,5). Lo sacó de banda el bloque C (Final2: planteles más parejos dentro de cada liga y la
+// jerarquía del Mundial). El conjunto (84,4) sigue con la meta.
+const BO5_JUGADOR_TECHO_K5C = 89.5;
 // `bo5Juntos` va dentro de banda (84): son valores que CUMPLEN. El Bo5 conjunto real da ≈ 87% y por eso está pendiente.
 const VALORES_DE_LAS_METAS_A_OK = {
   rMismaLiga: 0.6, r2SinRuido: 0.52, bo5Jugador: 83, bo5Rival: 93, bo5Juntos: 84, mentalidadMediana: 72, mentalidadSaturada: 2.7,
@@ -16946,7 +16977,7 @@ function bo5ConPlanNeutroDeLasMetasA() {
   return bo5PlanNeutroA;
 }
 
-checkLento(`K3c meta de K2 (criterio con plan neutro, ${SEEDS_METAS_A} × ${SPLITS_LOTE_K0}): el favorito claro (Δ0 ≈ 10) gana el Bo5 entre 75% y 85% (lado del jugador; el rival solo se reporta, el conjunto tiene su check)`, () => {
+checkLento(`K3c meta de K2 (criterio con plan neutro, ${SEEDS_METAS_A} × ${SPLITS_LOTE_K0}): el favorito claro (Δ0 ≈ 10) gana el Bo5 entre 75% y ${BO5_JUGADOR_TECHO_K5C}% (meta 75-85, re-basada en K5c; lado del jugador; el rival solo se reporta, el conjunto tiene su check)`, () => {
   const claro = bo5ConPlanNeutroDeLasMetasA();
   const v = {
     ...valoresDeLasMetasA(loteDeLasMetasA()),
@@ -20007,14 +20038,22 @@ const CARRERAS_METAS_B = 400;
 const META_K4_INTERRUPCIONES_CARRERA_MEDIANA = 90;
 const META_K4_INTERRUPCIONES_SPLIT_REGULAR_P90 = 2;
 const META_K4_INTERRUPCIONES_SPLIT_PLAYOFFS_P90 = 5;
-const META_K4_INTERRUPCIONES_SPLIT_INTERNACIONAL_P90 = 5;
+// K5c (paso 3b-3) — regla 17: el p90 del split internacional pasa de <= 5 a <= 6, la meta del usuario (PLAN.md §K5c, "El paso 3,
+// concreto"). Meta 5; medido 6 (criterio 1500 × 60, 2963 splits internacionales: p50 4, p90 6); re-basado por decisión del usuario
+// 2026-10-05, K6 juzga. Lo subió el Mundial real de K5 (Swiss y bracket: más series por split internacional).
+const META_K4_INTERRUPCIONES_SPLIT_INTERNACIONAL_P90 = 6;
 const META_K4_MINIJUEGOS_MEDIANA = [3, 8];
 const META_K4_TIEMPO_MAQUINA_MIN_MEDIANA = 6.5;
 const META_K4_DELTA_P_PLAN_PP_MEDIANA = 5;
+// K5c (paso 3b-3) — regla 17: el Δp mediano de las paradas de plan. Meta >= 5 pp; medido 4,87 pp (criterio 400 × 60, el σ y el n
+// los imprime el check); re-basado por decisión del usuario 2026-10-05, K6 juzga: la banda pide >= 4,87 − 2 σ. Lo bajó Final2
+// (planteles más parejos: la serie cambia menos con el plan).
+const DELTA_P_PLAN_MEDIDO_K5C = 4.87;
+const Z_RUIDO_DELTA_P_K5C = 2;
 const META_K4_BIFURCACIONES_PROMEDIO = [5, 9];
 // `deltaP` del instrumento es una diferencia de probabilidades (0-1); la meta se dice en puntos porcentuales.
 const PUNTOS_PORCENTUALES_K4 = 100;
-const { mediana: medianaMetasB, promedio: promedioMetasB } = await import('./simulate.js');
+const { mediana: medianaMetasB, promedio: promedioMetasB, desvioMuestral: desvioMuestralMetasB } = await import('./simulate.js');
 
 let loteMetasB = null;
 function loteDeLasMetasB() {
@@ -20042,6 +20081,9 @@ function valoresDeLasMetasB(lote) {
     minijuegosMediana: lote.ritmo.minijuegosPorCarrera.mediana,
     tiempoMaquinaMin: lote.ritmo.tiempoMaquinaMin.mediana,
     deltaPPlanPp: redondeoMetasB(medianaMetasB(deltas)),
+    // K5c: el desvío de esa mediana, √(π/2)·s/√n sobre las n paradas de plan (la banda de ruido del re-base del Δp).
+    deltaPPlanSigma: deltas.length > 1 ? redondeoMetasB(Math.sqrt(Math.PI / 2) * desvioMuestralMetasB(deltas) / Math.sqrt(deltas.length)) : null,
+    deltaPPlanN: deltas.length,
     bifurcacionesPromedio: redondeoMetasB(promedioMetasB(observaciones.map((o) => o.bifurcaciones)))
   };
 }
@@ -20065,8 +20107,9 @@ function juezDeLasMetasB(v) {
       `la mediana de minijuegos por carrera es ${v.minijuegosMediana}, la meta es ${miniMin}-${miniMax}`),
     tiempoMaquina: juzgar(hay(v.tiempoMaquinaMin) && v.tiempoMaquinaMin <= META_K4_TIEMPO_MAQUINA_MIN_MEDIANA,
       `la mediana del tiempo-máquina es ${v.tiempoMaquinaMin} min, la meta es <= ${META_K4_TIEMPO_MAQUINA_MIN_MEDIANA} min`),
-    deltaPPlan: juzgar(hay(v.deltaPPlanPp) && v.deltaPPlanPp >= META_K4_DELTA_P_PLAN_PP_MEDIANA,
-      `el Δp mediano de las paradas de plan es ${v.deltaPPlanPp} pp, la meta pide >= ${META_K4_DELTA_P_PLAN_PP_MEDIANA} pp`),
+    deltaPPlan: juzgar(hay(v.deltaPPlanPp) && hay(v.deltaPPlanSigma)
+      && v.deltaPPlanPp >= Math.min(META_K4_DELTA_P_PLAN_PP_MEDIANA, DELTA_P_PLAN_MEDIDO_K5C) - Z_RUIDO_DELTA_P_K5C * v.deltaPPlanSigma,
+      `el Δp mediano de las paradas de plan es ${v.deltaPPlanPp} pp (σ ${v.deltaPPlanSigma}, n ${v.deltaPPlanN}), la banda pide >= ${META_K4_DELTA_P_PLAN_PP_MEDIANA} pp, re-basada a ${DELTA_P_PLAN_MEDIDO_K5C} − ${Z_RUIDO_DELTA_P_K5C} σ`),
     bifurcaciones: juzgar(hay(v.bifurcacionesPromedio) && v.bifurcacionesPromedio >= bifMin && v.bifurcacionesPromedio <= bifMax,
       `las bifurcaciones por carrera son ${v.bifurcacionesPromedio} en promedio, la meta es ${bifMin}-${bifMax}`)
   };
@@ -20074,8 +20117,8 @@ function juezDeLasMetasB(v) {
 
 // Son valores que CUMPLEN (los medidos en K4c, `c6f098f`).
 const VALORES_DE_LAS_METAS_B_OK = {
-  interrupcionesCarrera: 84, splitRegularP90: 2, splitPlayoffsP90: 5, splitInternacionalP90: 5, minijuegosMediana: 4,
-  tiempoMaquinaMin: 5.9, deltaPPlanPp: 6.5, bifurcacionesPromedio: 7.8
+  interrupcionesCarrera: 84, splitRegularP90: 2, splitPlayoffsP90: 5, splitInternacionalP90: 6, minijuegosMediana: 4,
+  tiempoMaquinaMin: 5.9, deltaPPlanPp: 6.5, deltaPPlanSigma: 0.15, deltaPPlanN: 3000, bifurcacionesPromedio: 7.8
 };
 const CLAVE_DEL_JUEZ_B = {
   interrupcionesCarrera: 'interrupcionesCarrera', splitRegularP90: 'splitRegular', splitPlayoffsP90: 'splitPlayoffs',
@@ -20093,8 +20136,8 @@ check('K4c metas del bloque B: el juez acepta los valores medidos y rechaza, uno
   if (sano.length > 0) throw new Error(`el juez rechaza valores que cumplen: ${sano.join('; ')}`);
   // Cada valor malo mueve SOLO su meta: un valor justo afuera de la banda, uno de antes de K4c y uno inexistente.
   const malos = {
-    interrupcionesCarrera: [91, 111, null], splitRegularP90: [3, 4, null], splitPlayoffsP90: [6, 7, null], splitInternacionalP90: [6, 7, null],
-    minijuegosMediana: [2, 9, 11, null], tiempoMaquinaMin: [6.6, 8.1, null], deltaPPlanPp: [4.9, 1.9, null], bifurcacionesPromedio: [4.9, 9.1, 4.15, null]
+    interrupcionesCarrera: [91, 111, null], splitRegularP90: [3, 4, null], splitPlayoffsP90: [6, 7, null], splitInternacionalP90: [7, 8, null],
+    minijuegosMediana: [2, 9, 11, null], tiempoMaquinaMin: [6.6, 8.1, null], deltaPPlanPp: [4.4, 1.9, null], bifurcacionesPromedio: [4.9, 9.1, 4.15, null]
   };
   for (const [campo, valores] of Object.entries(malos)) {
     for (const valor of valores) {
@@ -21307,6 +21350,266 @@ check('K6a-U (f): la presión de tier 2 no dice "Seguís en" otra liga ni repite
     throw new Error('el texto del desgaste del shotcalling dice "en el comms" (se dice "en comms")');
   }
   // Mutante: volver a `Seguís en ${ligas}`, a "Y nadie te está llamando" para el free agent, o a "en el comms".
+});
+
+// K5c (paso 3b-3) — las metas de §K.3a y §K.3b como checks duros (PLAN.md §K5c, "Decisión del usuario (2026-10-05): cerrar y
+// que K6 juzgue"). K5c cierra con los valores fijados (Final2 + LPL 91, `44d4ab4`). Una regla para todas:
+// - la banda de una meta [lo, hi] es la meta con su banda de ruido: [lo - Z·σ, hi + Z·σ] (Z = 2, ~95%; σ el desvío de la
+//   muestra: el de una proporción, 100·√(p(1-p)/n), o el de una mediana, √(π/2)·s/√n), con el n que dice cada check;
+// - una meta que NO llega se re-basa a lo medido (`rebase`): la banda va de la meta a lo medido, más el ruido. Lo que se
+//   acerca a la meta pasa; lo que se aleja más que lo medido, o pasa de largo la meta, falla. Cada re-base lleva su línea de
+//   la regla 17 ("meta X; medido Y; re-basado por decisión del usuario 2026-10-05, K6 juzga") y está en la tabla de deuda.
+// Medido en `k5c-paso3` (`873fc80`), `node --max-old-space-size=12288 src/dev/simulate.js 1500 60 <bot>`.
+const CARRERAS_METAS_C = 1500;
+const Z_RUIDO_METAS_C = 2;
+// El desvío de la mediana de una muestra grande: √(π/2)·s/√n (eficiencia asintótica de la mediana bajo normalidad).
+const FACTOR_DESVIO_MEDIANA = Math.sqrt(Math.PI / 2);
+const METAS_C = {
+  // §K.3b "No llega a pro ~20% (como hoy)". Medido 21,5 (n 1500, σ 1,06). Cumple.
+  noLlegaAPro: { meta: [20, 20], texto: 'no llega a pro (%)' },
+  // §K.3b "Llega a tier 1 ~55-65%". Regla 17: meta 55-65; medido 74,5 (n 1500, σ 1,13); re-basado por decisión del usuario
+  // 2026-10-05, K6 juzga (endurecer el acceso a tier 1 baja el Mundial, que está justo en 7%: es la frontera medida).
+  llegaATier1: { meta: [55, 65], rebase: 74.5, texto: 'llega a tier 1 (%)' },
+  // §K.3b "Gana al menos un título doméstico ~30%". Regla 17: meta 30; medido 55,4 (n 1500, σ 1,28); re-basado por decisión
+  // del usuario 2026-10-05, K6 juzga.
+  ganaTitulo: { meta: [30, 30], rebase: 55.4, texto: 'gana un título de primera (%)' },
+  // §K.3b "Top 20 del mundo alguna vez ~15%". Regla 17: meta 15; medido 36,4 (n 1500, σ 1,24); re-basado por decisión del
+  // usuario 2026-10-05, K6 juzga.
+  top20: { meta: [15, 15], rebase: 36.4, texto: 'entra al Top 20 del mundo (%)' },
+  // §K.3b "Gana al menos un Mundial >= 7% en promedio" (meta del usuario). Medido 7,0 (n 1500, σ 0,66). Cumple, justo.
+  ganaMundial: { meta: [7, Infinity], texto: 'gana un Mundial (%)' },
+  // §K.3b "desde Corea, más fácil (~12-15%)". Regla 17: meta 12-15; medido 9,9 (n 332, σ 1,64); re-basado por decisión del
+  // usuario 2026-10-05, K6 juzga (desde K5c-H cada uno juega en su casa, y la LCK es la primera más dura de entrar).
+  ganaMundialCorea: { meta: [12, 15], rebase: 9.9, texto: 'gana un Mundial desde Corea (%)' },
+  // §K.3b "desde NA, más difícil (~3-5%)". Medido 3,1 (n 194, σ 1,24). Cumple.
+  ganaMundialNA: { meta: [3, 5], texto: 'gana un Mundial desde Norteamérica (%)' },
+  // §K.3b "El nuevo Faker ~2-3% en promedio". Regla 17: meta 2-3; medido 1,3 (n 1500, σ 0,29); re-basado por decisión del
+  // usuario 2026-10-05, K6 juzga.
+  nuevoFaker: { meta: [2, 3], rebase: 1.3, texto: 'el nuevo Faker (%)' },
+  // §K.3b "el nuevo Faker >= 30% entre los de nivel pico de élite (top 3%)". Regla 17: meta >= 30; medido 13,3 (n 45, σ 5,06);
+  // re-basado por decisión del usuario 2026-10-05, K6 juzga. La muestra es chica por definición (el 3% de la corrida).
+  nuevoFakerElite: { meta: [30, Infinity], rebase: 13.3, texto: 'el nuevo Faker entre la élite de nivel pico (%)' },
+  // §K.3a "Ganaste un Mundial y ganás otro: P(2 o más | 1) >= 35-40%". Regla 17: meta >= 35; medido 18,1 (n 105, σ 3,76);
+  // re-basado por decisión del usuario 2026-10-05, K6 juzga.
+  pDosOMasDadoUno: { meta: [35, Infinity], rebase: 18.1, texto: 'P(2 o más Mundiales | 1) (%)' },
+  // §K.3a "Tu equipo es claramente el más fuerte del Mundial y lo gana ~50%". Regla 17: "claramente" (margen >= 10 sobre el
+  // mejor de los otros 15) se dio en 4 de 2963 Mundiales jugados (criterio 1500 × 60): sin muestra. Se mide sobre "el más
+  // fuerte" (tu fuerza > la del mejor rival): medido 57,5 (n 87, σ 5,3). Cumple ~50 con su ruido.
+  elMasFuerteGana: { meta: [50, 50], texto: 'el más fuerte del Mundial lo gana (%)' },
+  // §K.3b "Carrera pro mediana ~4-6 años". Regla 17: meta 4-6; medido 8,83 (n 1178 pros, σ 0,12); re-basado por decisión del
+  // usuario 2026-10-05, K6 juzga.
+  carreraMediana: { meta: [4, 6], rebase: 8.83, texto: 'carrera pro mediana (años)' },
+  // §K.3b "Llega a la línea forzosa de los 34 < 5%". Medido 4,8 (n 1178 pros, σ 0,62). Cumple, justo.
+  lineaForzosa: { meta: [-Infinity, 5], texto: 'llega a la línea forzosa de los 34 (% de los pros)' }
+};
+// §K.3b "Se estanca en tier 2/3: ~10% más, y lo producen las malas decisiones (con `criterio` bastante menos, con `malas`
+// bastante más)". El ~10% es el del jugador "normal" (`azar`). Medido azar 10,5 (n 1500, σ 0,79); criterio 4,1; malas 15,6.
+const META_C_ESTANCADO_AZAR_PCT = 10;
+// La meta del usuario (2026-10-05, PLAN.md §K5c "El paso 3, concreto"): la LCK gana >= 25% de los Mundiales del mundo y es la
+// primera con un margen >= 5 puntos sobre la segunda. Sin banda: son los números del usuario. Medido LCK 51,8 / LPL 43,7 / LEC
+// 3,8 (17789 Mundiales del mundo en 1500 carreras; σ de la diferencia LCK − LPL ≈ 0,7 contando cada Mundial, ≈ 2,5 contando
+// cada carrera como una sola observación).
+const META_C_LCK_REPARTO_PCT = 25;
+const META_C_LCK_MARGEN_PP = 5;
+const LIGA_CANDIDATA_DEL_MUNDIAL = 'LCK';
+// Las regiones de origen de las dos metas por región (`mundo.regionOrigen`, la clave de `mundialReal.porRegion`).
+const REGION_FACIL_METAS_C = 'Corea';
+const REGION_DIFICIL_METAS_C = 'Norteamérica';
+const { desvioMuestral: desvioMuestralMetasC, duracionProDe: duracionProDeMetasC } = await import('./simulate.js');
+
+const sigmaDeProporcion = (pctValor, n) => (n > 0 && Number.isFinite(pctValor) ? 100 * Math.sqrt((pctValor / 100) * (1 - pctValor / 100) / n) : null);
+
+function bandaDeMetaC(clave, sigma) {
+  const { meta: [lo, hi], rebase } = METAS_C[clave];
+  return [Math.min(lo, rebase ?? lo) - Z_RUIDO_METAS_C * sigma, Math.max(hi, rebase ?? hi) + Z_RUIDO_METAS_C * sigma];
+}
+
+const redondeoMetasC = (x) => (Number.isFinite(x) ? Number(x.toFixed(2)) : x);
+
+// El juez: null si cumple, el motivo si no. `v[clave]` = { valor, sigma } (las metas de `METAS_C`); las relaciones traen lo
+// suyo. Un valor o un σ que no existe (muestra vacía) no cumple.
+function juezDeLasMetasC(v) {
+  const hay = (x) => typeof x === 'number' && Number.isFinite(x);
+  const juicio = {};
+  for (const clave of Object.keys(METAS_C)) {
+    const { valor, sigma } = v[clave] ?? {};
+    if (!hay(valor) || !hay(sigma)) {
+      juicio[clave] = `${METAS_C[clave].texto}: sin valor o sin muestra (${valor}, σ ${sigma})`;
+      continue;
+    }
+    const [desde, hasta] = bandaDeMetaC(clave, sigma);
+    const { meta: [lo, hi], rebase } = METAS_C[clave];
+    juicio[clave] = valor >= desde && valor <= hasta ? null
+      : `${METAS_C[clave].texto} = ${valor}, la banda es [${redondeoMetasC(desde)}, ${redondeoMetasC(hasta)}] (meta [${lo}, ${hi}]${rebase === undefined ? '' : `, re-basada a ${rebase}`}, σ ${redondeoMetasC(sigma)})`;
+  }
+  // Los estancados: `azar` ~10% con su ruido, `criterio` bastante menos y `malas` bastante más ("bastante" = más que Z σ de la
+  // diferencia).
+  const e = v.estancados ?? {};
+  const sigmaE = (a, b) => Math.sqrt(sigmaDeProporcion(a, e.n) ** 2 + sigmaDeProporcion(b, e.n) ** 2);
+  const sigmaAzar = sigmaDeProporcion(e.azar, e.n);
+  juicio.estancadoAzar = hay(e.azar) && hay(sigmaAzar) && Math.abs(e.azar - META_C_ESTANCADO_AZAR_PCT) <= Z_RUIDO_METAS_C * sigmaAzar ? null
+    : `azar se estanca en tier 2/3 el ${e.azar}%, la meta es ~${META_C_ESTANCADO_AZAR_PCT}% ± ${redondeoMetasC(Z_RUIDO_METAS_C * sigmaAzar)} (n ${e.n})`;
+  juicio.estancadoCriterio = hay(e.criterio) && hay(e.azar) && e.criterio <= e.azar - Z_RUIDO_METAS_C * sigmaE(e.criterio, e.azar) ? null
+    : `criterio se estanca el ${e.criterio}% y azar el ${e.azar}%: criterio tiene que quedar más de ${Z_RUIDO_METAS_C} σ abajo (σ ${redondeoMetasC(sigmaE(e.criterio, e.azar))})`;
+  juicio.estancadoMalas = hay(e.malas) && hay(e.azar) && e.malas >= e.azar + Z_RUIDO_METAS_C * sigmaE(e.malas, e.azar) ? null
+    : `malas se estanca el ${e.malas}% y azar el ${e.azar}%: malas tiene que quedar más de ${Z_RUIDO_METAS_C} σ arriba (σ ${redondeoMetasC(sigmaE(e.malas, e.azar))})`;
+  // "Depende de la región": desde Corea se gana más que desde NA, por más que el ruido de la diferencia.
+  const r = v.porRegion ?? {};
+  const sigmaR = Math.sqrt((sigmaDeProporcion(r.facil, r.nFacil) ?? NaN) ** 2 + (sigmaDeProporcion(r.dificil, r.nDificil) ?? NaN) ** 2);
+  juicio.regionOrdenada = hay(r.facil) && hay(r.dificil) && hay(sigmaR) && r.facil - r.dificil >= Z_RUIDO_METAS_C * sigmaR ? null
+    : `desde ${REGION_FACIL_METAS_C} se gana el Mundial el ${r.facil}% y desde ${REGION_DIFICIL_METAS_C} el ${r.dificil}%: tiene que ser más fácil por más de ${Z_RUIDO_METAS_C} σ (σ ${redondeoMetasC(sigmaR)})`;
+  // La meta del usuario, sin banda.
+  const m = v.mundoMundial ?? {};
+  juicio.lckReparto = hay(m.lck) && m.lck >= META_C_LCK_REPARTO_PCT ? null
+    : `la ${LIGA_CANDIDATA_DEL_MUNDIAL} gana el ${m.lck}% de los Mundiales del mundo, la meta del usuario es >= ${META_C_LCK_REPARTO_PCT}%`;
+  juicio.lckMargen = hay(m.lck) && hay(m.segunda) && m.lck - m.segunda >= META_C_LCK_MARGEN_PP ? null
+    : `la ${LIGA_CANDIDATA_DEL_MUNDIAL} gana el ${m.lck}% y la segunda (${m.segundaLiga}) el ${m.segunda}%: la meta del usuario es primera por >= ${META_C_LCK_MARGEN_PP} puntos`;
+  return juicio;
+}
+
+// Los valores de las metas sobre los lotes (criterio, y azar y malas para los estancados), cada uno corrido una vez y soltado:
+// quedan solo los números (tres lotes de 1500 con sus crudos no tienen por qué vivir juntos en memoria).
+let valoresMetasC = null;
+function valoresDeLasMetasC() {
+  if (valoresMetasC !== null) return valoresMetasC;
+  const estancado = {};
+  let v = null;
+  for (const bot of ['criterio', 'azar', 'malas']) {
+    const lote = correrLote(CARRERAS_METAS_C, SPLITS_LOTE_K0, bot);
+    afirmarRuidoIntactoK0(`después de correrLote(${CARRERAS_METAS_C}, ${bot})`);
+    estancado[bot] = lote.embudo.estancadoT2T3;
+    if (bot !== 'criterio') continue;
+    const n = lote.crudos.resultados.length;
+    const pros = lote.crudos.resultados.filter((st) => st.splitFichaje !== null);
+    const aniosPro = pros.map((st) => duracionProDeMetasC(st) / BALANCE.edad.splitsPorEdad);
+    const mr = lote.mundialReal;
+    const region = (nombre) => mr.porRegion[nombre] ?? { ganaMundialPct: null, carreras: 0 };
+    const prop = (valor, nMuestra) => ({ valor, sigma: sigmaDeProporcion(valor, nMuestra), n: nMuestra });
+    const ligas = Object.entries(lote.mundoMundial.titulosPorLiga).sort((a, b) => b[1].pct - a[1].pct);
+    const otras = ligas.filter(([liga]) => liga !== LIGA_CANDIDATA_DEL_MUNDIAL);
+    const p21 = mr.total.pDosOMasDadoUno;
+    v = {
+      noLlegaAPro: prop(lote.embudo.noLlegaAPro, n),
+      llegaATier1: prop(lote.embudo.llegaATier1, n),
+      ganaTitulo: prop(lote.embudo.ganaTituloDomestico, n),
+      top20: prop(lote.embudo.top20, n),
+      ganaMundial: prop(mr.total.ganaMundialPct, n),
+      ganaMundialCorea: prop(region(REGION_FACIL_METAS_C).ganaMundialPct, region(REGION_FACIL_METAS_C).carreras),
+      ganaMundialNA: prop(region(REGION_DIFICIL_METAS_C).ganaMundialPct, region(REGION_DIFICIL_METAS_C).carreras),
+      nuevoFaker: prop(mr.total.nuevoFakerPct, n),
+      nuevoFakerElite: prop(mr.porNivelPico.elite.nuevoFakerPct, mr.porNivelPico.elite.carreras),
+      pDosOMasDadoUno: prop(p21.p === null ? null : redondeoMetasC(100 * p21.p), p21.n),
+      elMasFuerteGana: prop(mr.total.elMasFuerte.pctGana, mr.total.elMasFuerte.mundiales),
+      carreraMediana: {
+        valor: redondeoMetasC(lote.longevidad.aniosCarreraPro.mediana),
+        sigma: aniosPro.length > 1 ? FACTOR_DESVIO_MEDIANA * desvioMuestralMetasC(aniosPro) / Math.sqrt(aniosPro.length) : null,
+        n: aniosPro.length
+      },
+      lineaForzosa: prop(lote.longevidad.pctTerminaEnLineaForzosa34, pros.length),
+      porRegion: {
+        facil: region(REGION_FACIL_METAS_C).ganaMundialPct, nFacil: region(REGION_FACIL_METAS_C).carreras,
+        dificil: region(REGION_DIFICIL_METAS_C).ganaMundialPct, nDificil: region(REGION_DIFICIL_METAS_C).carreras
+      },
+      mundoMundial: {
+        mundiales: lote.mundoMundial.mundiales,
+        lck: lote.mundoMundial.titulosPorLiga[LIGA_CANDIDATA_DEL_MUNDIAL]?.pct,
+        segunda: otras[0]?.[1].pct,
+        segundaLiga: otras[0]?.[0],
+        // La mejor del oeste puede ganar (> 0): se reporta, no se exige (PLAN.md §K5c, "El paso 3, concreto").
+        reparto: ligas.map(([liga, { pct }]) => `${liga} ${pct}`).join(' / ')
+      }
+    };
+  }
+  valoresMetasC = { ...v, estancados: { ...estancado, n: CARRERAS_METAS_C } };
+  const lineas = Object.keys(METAS_C).map((clave) => {
+    const { valor, sigma, n } = valoresMetasC[clave];
+    const [desde, hasta] = bandaDeMetaC(clave, sigma ?? NaN);
+    return `${clave} ${valor} (n ${n}, σ ${redondeoMetasC(sigma)}, banda [${redondeoMetasC(desde)}, ${redondeoMetasC(hasta)}])`;
+  });
+  console.log(`     (muestra: ${CARRERAS_METAS_C} × ${SPLITS_LOTE_K0} por bot) ${lineas.join(' · ')} · estancados criterio/azar/malas `
+    + `${estancado.criterio}/${estancado.azar}/${estancado.malas} · Mundiales del mundo ${valoresMetasC.mundoMundial.mundiales}: ${valoresMetasC.mundoMundial.reparto}`);
+  return valoresMetasC;
+}
+
+function problemasDeLasMetasC(claves) {
+  const juicio = juezDeLasMetasC(valoresDeLasMetasC());
+  return claves.map((clave) => juicio[clave]).filter((motivo) => motivo !== null);
+}
+
+// Los valores medidos (k5c-paso3, criterio/azar/malas 1500 × 60): cumplen.
+const VALORES_DE_LAS_METAS_C_OK = {
+  noLlegaAPro: { valor: 21.5, sigma: 1.06 }, llegaATier1: { valor: 74.5, sigma: 1.13 }, ganaTitulo: { valor: 55.4, sigma: 1.28 },
+  top20: { valor: 36.4, sigma: 1.24 }, ganaMundial: { valor: 7, sigma: 0.66 }, ganaMundialCorea: { valor: 9.9, sigma: 1.64 },
+  ganaMundialNA: { valor: 3.1, sigma: 1.24 }, nuevoFaker: { valor: 1.3, sigma: 0.29 }, nuevoFakerElite: { valor: 13.3, sigma: 5.06 },
+  pDosOMasDadoUno: { valor: 18.1, sigma: 3.76 }, elMasFuerteGana: { valor: 57.5, sigma: 5.3 }, carreraMediana: { valor: 8.83, sigma: 0.12 },
+  lineaForzosa: { valor: 4.8, sigma: 0.62 },
+  estancados: { criterio: 4.1, azar: 10.5, malas: 15.6, n: 1500 },
+  porRegion: { facil: 9.9, nFacil: 332, dificil: 3.1, nDificil: 194 },
+  mundoMundial: { lck: 51.8, segunda: 43.7, segundaLiga: 'LPL' }
+};
+
+check('K5c metas del bloque C: el juez acepta los valores medidos y rechaza, uno por uno, cada valor fuera de su banda o inexistente (regla 7)', () => {
+  const ok = VALORES_DE_LAS_METAS_C_OK;
+  const sano = Object.values(juezDeLasMetasC(ok)).filter((motivo) => motivo !== null);
+  if (sano.length > 0) throw new Error(`el juez rechaza valores que cumplen: ${sano.join('; ')}`);
+  const rechazaSolo = (clave, valores, que) => {
+    const rechazados = Object.entries(juezDeLasMetasC(valores)).filter(([, motivo]) => motivo !== null).map(([k]) => k);
+    if (rechazados.length !== 1 || rechazados[0] !== clave) {
+      throw new Error(`${que}: el juez rechazó [${rechazados.join(', ')}], tenía que rechazar solo ${clave}`);
+    }
+  };
+  const PASO_AFUERA = 0.01;
+  // Cada meta: un valor justo afuera de cada borde finito de su banda (con el σ medido) y uno inexistente no cumplen; los
+  // bordes sí (inclusivos).
+  for (const clave of Object.keys(METAS_C)) {
+    const { sigma } = ok[clave];
+    const [desde, hasta] = bandaDeMetaC(clave, sigma);
+    const afuera = [...(Number.isFinite(desde) ? [desde - PASO_AFUERA] : []), ...(Number.isFinite(hasta) ? [hasta + PASO_AFUERA] : []), null];
+    for (const valor of afuera) {
+      rechazaSolo(clave, { ...ok, [clave]: { valor, sigma } }, `${clave} = ${valor}`);
+    }
+    rechazaSolo(clave, { ...ok, [clave]: { valor: ok[clave].valor, sigma: null } }, `${clave} sin σ`);
+    for (const borde of [desde, hasta].filter(Number.isFinite)) {
+      if (juezDeLasMetasC({ ...ok, [clave]: { valor: borde, sigma } })[clave] !== null) throw new Error(`${clave} = ${borde} (el borde) no cumple`);
+    }
+  }
+  // Una meta re-basada: el valor de la meta misma cumple (acercarse a la meta nunca falla) y uno que la pasa de largo, no.
+  rechazaSolo('llegaATier1', { ...ok, llegaATier1: { valor: 50, sigma: 1.13 } }, 'llegaATier1 = 50 (pasó de largo la meta 55-65)');
+  if (juezDeLasMetasC({ ...ok, llegaATier1: { valor: 60, sigma: 1.13 } }).llegaATier1 !== null) throw new Error('llegaATier1 = 60 (en la meta) no cumple');
+  rechazaSolo('estancadoAzar', { ...ok, estancados: { ...ok.estancados, azar: 13, malas: 18 } }, 'azar 13');
+  rechazaSolo('estancadoCriterio', { ...ok, estancados: { ...ok.estancados, criterio: 9 } }, 'criterio 9');
+  rechazaSolo('estancadoMalas', { ...ok, estancados: { ...ok.estancados, malas: 11 } }, 'malas 11');
+  rechazaSolo('regionOrdenada', { ...ok, porRegion: { ...ok.porRegion, facil: 5 } }, 'Corea 5 contra NA 3,1');
+  rechazaSolo('lckReparto', { ...ok, mundoMundial: { lck: 24, segunda: 18, segundaLiga: 'LPL' } }, 'LCK 24');
+  rechazaSolo('lckMargen', { ...ok, mundoMundial: { lck: 48, segunda: 43.7, segundaLiga: 'LPL' } }, 'LCK 48 contra 43,7');
+  if (juezDeLasMetasC({ ...ok, mundoMundial: { lck: 25, segunda: 20, segundaLiga: 'LPL' } }).lckMargen !== null) {
+    throw new Error('LCK 25 contra 20 (los bordes del usuario) no cumple');
+  }
+});
+
+checkLento(`K5c meta del embudo (criterio, ${CARRERAS_METAS_C} × ${SPLITS_LOTE_K0}): no llega a pro ~20%, y tier 1, título y Top 20 entre la meta de §K.3b y lo medido (re-basados)`, () => {
+  const problemas = problemasDeLasMetasC(['noLlegaAPro', 'llegaATier1', 'ganaTitulo', 'top20']);
+  if (problemas.length > 0) throw new Error(problemas.join('; '));
+});
+
+checkLento(`K5c meta de los estancados (criterio, azar y malas, ${CARRERAS_METAS_C} × ${SPLITS_LOTE_K0}): azar ~${META_C_ESTANCADO_AZAR_PCT}%, criterio bastante menos y malas bastante más`, () => {
+  const problemas = problemasDeLasMetasC(['estancadoAzar', 'estancadoCriterio', 'estancadoMalas']);
+  if (problemas.length > 0) throw new Error(problemas.join('; '));
+});
+
+checkLento(`K5c meta del Mundial (criterio, ${CARRERAS_METAS_C} × ${SPLITS_LOTE_K0}): gana un Mundial >= 7%, más fácil desde Corea que desde NA, el nuevo Faker, P(2+ | 1) y el más fuerte lo gana ~50%`, () => {
+  const problemas = problemasDeLasMetasC(['ganaMundial', 'ganaMundialCorea', 'ganaMundialNA', 'regionOrdenada', 'nuevoFaker', 'nuevoFakerElite', 'pDosOMasDadoUno', 'elMasFuerteGana']);
+  if (problemas.length > 0) throw new Error(problemas.join('; '));
+});
+
+checkLento(`K5c meta de la longevidad (criterio, ${CARRERAS_METAS_C} × ${SPLITS_LOTE_K0}): la carrera pro mediana (re-basada) y menos del 5% llega a los 34`, () => {
+  const problemas = problemasDeLasMetasC(['carreraMediana', 'lineaForzosa']);
+  if (problemas.length > 0) throw new Error(problemas.join('; '));
+});
+
+checkLento(`K5c meta del usuario (criterio, ${CARRERAS_METAS_C} × ${SPLITS_LOTE_K0}): la ${LIGA_CANDIDATA_DEL_MUNDIAL} gana >= ${META_C_LCK_REPARTO_PCT}% de los Mundiales del mundo y es la primera por >= ${META_C_LCK_MARGEN_PP} puntos`, () => {
+  const problemas = problemasDeLasMetasC(['lckReparto', 'lckMargen']);
+  if (problemas.length > 0) throw new Error(problemas.join('; '));
 });
 
 // PLAN.md §K.4 — los tres custodios del registro de bandas pendientes. Van DESPUÉS del último check: el primero mira cómo
