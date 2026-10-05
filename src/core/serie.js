@@ -409,6 +409,20 @@ export function probabilidadDeFirmarTrasPrueba(resultado) {
   return ajuste < 0 ? regular + (regular - malo) * ajuste : regular + (bueno - regular) * ajuste;
 }
 
+// K6c ("pasaste = firmás"): la prueba del amateur no tira dado. `resultado` 0-1 contra `amateur.varaPrueba`, en puntos
+// de porcentaje enteros (los mismos que lee el jugador: "necesitás 60%", "te faltó 20%"), así lo que dice la pantalla y lo
+// que decide el motor no se separan por un redondeo. La usan `systems/amateur.js` (la previa, el contrato y el log) y
+// `ui/app.js` (el veredicto): una sola cuenta (regla 15). Puro, sin `rng`.
+export function varaDeLaPrueba() {
+  return Math.round(BALANCE.amateur.varaPrueba * BALANCE.stats.max);
+}
+
+export function veredictoDeLaPrueba(resultado) {
+  const vara = varaDeLaPrueba();
+  const sacaste = Math.round(Math.min(1, Math.max(0, resultado ?? 0)) * BALANCE.stats.max);
+  return { pasa: sacaste >= vara, vara, sacaste, falta: Math.max(0, vara - sacaste) };
+}
+
 // El minijuego "la_llamada" depende de shotcalling, pero una buena llamada con jerarquía baja no se ejecuta igual
 // (regla textual de 4.6): el impacto sobre el rendimiento se amortigua fuerte por debajo del umbral.
 export function factorJerarquiaEnLlamada(jerarquia) {

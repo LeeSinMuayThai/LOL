@@ -385,6 +385,10 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // J4 (K4-C): el `splitCount` del parche en el que tu main cayó de S/A a B/C (`systems/meta.js`); `main_muerto`
       // dura `contexto.ventanaMainMuerto` splits desde ahí. `null` = nunca cayó (T4).
       splitMainMuerto: null,
+      // K6c: el año del amateur (`systems/amateur.js`): el plan que elegiste, la foto del arranque y lo que pasó (semanas, semanas en
+      // el radar de los scouts, ofertas, que son también la ventana: un club que ya ofreció no vuelve este año). `null` hasta el
+      // primer plan (T4: la forma es fija una vez que existe).
+      anioAmateur: null,
       // K4-C: los saltos grandes que ya tuvieron su prueba ('tier2', 'tier1', 'import'): la prueba sale una vez
       // por salto (`systems/mercado.js`). Array vacío al arrancar (T4).
       saltosConPrueba: [],

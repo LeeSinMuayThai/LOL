@@ -79,7 +79,7 @@
 // casa, Final2 con la LPL en 91, el no-pro con piso de soloQ, El GOAT = nuevo Faker). Sin esto, después del merge dos juegos
 // distintos compartirían "v K4c" en el desafío, el historial y el texto compartido. La etiqueta no entra en la huella (la tupla de
 // `calcularHuellaJuego` no la lee): la huella del bloque C es la de abajo. Misma `VERSION` del guardado (12, no salió de la rama).
-export const VERSION_JUEGO = 'K6b';
+export const VERSION_JUEGO = 'K6c';
 // K4c (cierre de año, 2044679379): los 10 eventos de cierre_edad.json pasan a ser decisiones con intercambio (tres opciones, efectos
 // del orden de las bifurcaciones, un pool que aprende, riesgos en los outcomes): cambian las tiradas del cierre y con ellas las carreras
 // enteras. Misma versión (el paso 3b la pasa a 'K4c'): reemplaza a 922534647.
@@ -131,4 +131,8 @@ export const VERSION_JUEGO = 'K6b';
 // continuidad (la misma liga y el mismo tier); el "¿Volvés?" se pregunta en la pretemporada y la vuelta de free agent va al mercado
 // de esa misma pretemporada; el automático no vuelve de free agent si nadie te ficharía hoy; la LCS sale de las franquiciadas (la NACL
 // tiene promoción). Reemplaza a 1772717528.
-export const HUELLA_JUEGO = 1920057344;
+// K6c (11046700; corrimiento declarado — lo que el usuario encontró jugando): `VERSION_JUEGO` pasa a 'K6c'. "Pasaste = firmás":
+// la prueba del amateur no tira dado (una vara, `amateur.varaPrueba`; se saca la tirada: T1) y el club que ya ofreció no vuelve en el
+// año; "vos elegís el plan de cada año": cada año del amateur frena con el resumen y el plan (una tirada de `ofrecerRutinas` por
+// año) y las semanas siguen el plan. Ninguna seed de K6b reproduce su carrera. Reemplaza a 1920057344.
+export const HUELLA_JUEGO = 11046700;

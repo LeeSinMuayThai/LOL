@@ -794,7 +794,8 @@ const FORMAS_CONOCIDAS = {
   // un guardado de la 12 carga con `migrarDe12` (core/guardado.js).
   // Revisión de K6b: la carta firmada sin pausa lleva de dónde a dónde (`unaSolaCarta.liga/ligaAntes/tierAntes`) y el "¿Volvés?" la
   // chance de que te llamen (`datos.chanceDeQueTeLlamenPct`, `clubesQueTeFicharian`): re-registrada sin subir de 13 (era '8d9b9b8a0ff2').
-  13: 'fcc08dda0b89'
+  // K6c (sin subir: la 13 no salió): `flags.anioAmateur`, el año del amateur (plan, foto del arranque, semanas, radar, ofertas).
+  13: 'c40afa3ff7a1'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -13273,6 +13274,8 @@ const DELEGACION_COMUN_K0 = {
   'servicioMilitar:servicio_adentro': 'el servicio militar: sin previa',
   'servicioMilitar:servicio_volver': 'el servicio militar: sin previa'
 };
+// K6c: el plan del año del amateur (`amateur:plan_amateur`) NO está en estas listas: los tres bots lo contestan con su regla
+// (`respuestaDePlanAmateur` en dev/estrategias.js). Si alguno lo delegara en `resolverAuto`, este check lo dice.
 // Las rutinas (`amateur:reparto`; la práctica ya no frena desde K4c): `criterio` usa la que elige el propio sistema (`responderCriterio` delega
 // de entrada); `malas` sí elige una (la más agresiva), así que a ella no se le permite.
 const DELEGACION_RUTINAS_K0 = {
@@ -17195,6 +17198,8 @@ const ENTRADA_SINTETICA_K2B = {
 // aparece queda cubierto igual (se lo nombra en el mensaje de cobertura si falta otro).
 const TIPOS_DE_PAUSA_GUARDADO_K4 = [
   'amateur:reparto', 'amateur:negociacion', 'amateur:oferta', 'amateur:minijuego:tryout', 'amateur:salida_amateur',
+  // K6c: el plan del año del amateur.
+  'amateur:plan_amateur',
   'amateur:nocturno', 'edadCierre:?', 'eventos:?', 'eventos:minijuego:post_escandalo', 'mercado:oferta',
   'mercado:minijuego:tryout', 'mercado:traspaso', 'temporada:momento', 'serie:plan',
   'serie:plan:replan', 'serie:decisivo', 'serie:minijuego:mapa_decisivo',
@@ -23669,7 +23674,8 @@ function loteDeK6aA() {
         st = resolverDecisionK6aA(st, respuesta, rng).state;
       }
       for (const log of st.logs.slice(vistos)) {
-        if (log.cronica && log.titulo === 'La semana') lote.cronicasDeSemana += 1;
+        // K6c: la semana del plan del año no es crónica del perfil (la eligió el jugador): su línea trae `plan`.
+        if ((log.cronica || log.plan) && log.titulo === 'La semana') lote.cronicasDeSemana += 1;
         if (log.cronica && log.type === 'event') lote.cronicasDeEvento.push(log.titulo);
       }
       vistos = st.logs.length;
@@ -23726,11 +23732,19 @@ check(`K6a-A la semana amateur: la resuelve el perfil (a la crónica) y frena so
         if (sinNumero.length > 0) problemas.push(`seed ${seed}, ${caso.nombre}: opciones sin su número (${sinNumero.map((o) => o.label).join(', ')})`);
       }
     }
-    // Una semana sin parada queda en la crónica, con quién la eligió.
+    // Una semana sin parada queda en el feed con quién la eligió. K6c (regla 17): desde el plan del año la semana la elige tu
+    // plan, no tu perfil: el estado trae un plan tranquilo del año y la línea de la semana tiene que nombrarlo.
     const tranquilo = estadoAmateurK6aA(seed, { estudios: 95, perfil: 'leal' });
-    const r = aplicarAmateurK6aA(tranquilo.state, tranquilo.rng);
-    if (r.decision?.datos?.motivo === 'reparto') problemas.push(`seed ${seed}: con el colegio en 95 y perfil leal la semana frenó`);
-    else if (!r.logs.some((log) => log.cronica && log.titulo === 'La semana' && log.perfil)) problemas.push(`seed ${seed}: la semana del perfil no dejó su línea de crónica`);
+    const conPlan = {
+      ...tranquilo.state,
+      flags: {
+        ...tranquilo.state.flags,
+        anioAmateur: { edad: tranquilo.state.age, rutinaId: 'bancar_el_colegio', rankedInicio: { ...tranquilo.state.player.ranked }, semanas: 0, semanasEnRadar: 0, ofertas: [] }
+      }
+    };
+    const r = aplicarAmateurK6aA(conPlan, tranquilo.rng);
+    if (r.decision?.datos?.motivo === 'reparto') problemas.push(`seed ${seed}: con el colegio en 95 y un plan tranquilo la semana frenó`);
+    else if (!r.logs.some((log) => log.titulo === 'La semana' && log.plan === 'Bancar el colegio esta semana')) problemas.push(`seed ${seed}: la semana del plan no dejó su línea con el plan`);
   }
   const lote = loteDeK6aA();
   const mediana = medianaK6aA(lote.semanasPorCarrera);
@@ -25414,6 +25428,224 @@ checkLento(`Revisión de K6b, la meta de la cola del terco (no se retira antes d
   console.log(`     (muestra: el terco, ${SEEDS_TERCO_K6BC} × ${SPLITS_K6BC}) desde los 28: promedio ${promedio.toFixed(2)}, σ ${desvio.toFixed(2)}, n = ${colas.length} carreras con cola (banda <= ${META_COLA_TERCO_K6BC}); mediana ${mediana} (dato)`);
   const problema = juezDeLaColaDelTercoK6BC(Number(promedio.toFixed(2)));
   if (problema) throw new Error(problema);
+});
+
+// --- K6c: lo que el usuario encontró jugando (PLAN.md §K6c, decisiones del usuario 2026-10-05) ----------------------------------
+// "Pasaste = firmás": la prueba del amateur no tira dado después del minijuego; hay una vara (`amateur.varaPrueba`) que la previa
+// dice antes de jugar y que la pantalla y el log repiten después, con la misma cuenta (`veredictoDeLaPrueba`). Y el mismo club no
+// vuelve a ofrecer en la misma ventana (el año del plan). "Vos elegís el plan de cada año": al arrancar cada año del amateur el
+// juego frena con el resumen del año y el plan del siguiente; las semanas siguen el plan sin frenar, salvo el riesgo evitable.
+const { mulberry32: mulberry32K6C } = await import('../core/rng.js');
+const { createInitialState: estadoInicialK6C } = await import('../core/state.js');
+const { avanzarSplitAuto: avanzarSplitAutoK6C } = await import('../core/pipeline.js');
+const { resolver: resolverAmateurK6C, planDeSemana: planDeSemanaK6C } = await import('../systems/amateur.js');
+const { veredictoDeLaPrueba: veredictoDeLaPruebaK6C, varaDeLaPrueba: varaDeLaPruebaK6C } = await import('../core/serie.js');
+const { elegirOrgTier3: elegirOrgTier3K6C } = await import('../core/tier3.js');
+const { RUTINAS: RUTINAS_K6C } = await import('../core/rutinas.js');
+const { BALANCE: BALANCE_K6C } = await import('../data/balance.js');
+
+const SEEDS_K6C = 40;
+const SPLITS_K6C = 40;
+// Lo mínimo para que los checks del lote no pasen vacíos.
+const ANIOS_CON_DOS_OFERTAS_MINIMO_K6C = 5;
+const SEMANAS_CON_PLAN_MINIMO_K6C = 200;
+
+function anioAmateurK6C(st, rutinaId) {
+  return { edad: st.age, rutinaId, rankedInicio: { ...st.player.ranked }, semanas: 0, semanasEnRadar: 0, ofertas: [] };
+}
+
+// Un estado amateur con plan, una oferta de tier 3 real (la org de `elegirOrgTier3`) y la pausa de la prueba que arma el motor
+// al firmar.
+function pausaDeLaPruebaK6C(seed) {
+  const rng = mulberry32K6C(seed);
+  const st = estadoInicialK6C(seed, rng);
+  const org = elegirOrgTier3K6C(st, rng);
+  const conPlan = { ...st, flags: { ...st.flags, anioAmateur: anioAmateurK6C(st, 'bancar_el_colegio') } };
+  const oferta = { tipo: 'opciones', titulo: '', descripcion: '', opciones: [], datos: { motivo: 'oferta', org, tier: 3, liga: null } };
+  const r = resolverAmateurK6C(conPlan, oferta, { opcionId: 'firmar' }, rng);
+  return { state: r.state, decision: r.decision, org };
+}
+
+// El lote: carreras que aceptan toda oferta y fallan toda prueba (así hay ofertas de sobra en el mismo año), y que eligen el
+// plan del año por índice (`seed % opciones`), no la propuesta del perfil: así "las semanas siguen el plan elegido" no se
+// confunde con "siguen la propuesta". Todo lo demás, `resolverAuto`.
+let loteK6C = null;
+function loteDeK6C() {
+  if (loteK6C !== null) return loteK6C;
+  const lote = { planes: [], ofertas: [], pruebas: [], semanas: [], cronicasConPlan: 0 };
+  for (let seed = 1; seed <= SEEDS_K6C; seed += 1) {
+    const rng = mulberry32K6C(seed);
+    let st = estadoInicialK6C(seed, rng);
+    const responder = (sistema, s, decision, r) => {
+      const motivo = decision.datos?.motivo;
+      if (sistema.id === 'amateur' && motivo === 'plan_amateur') {
+        const elegida = decision.opciones[seed % decision.opciones.length];
+        lote.planes.push({ seed, edad: s.age, splitCount: s.player.splitCount, decision, elegida: elegida.id, anioPrevio: s.flags.anioAmateur });
+        return { opcionId: elegida.id };
+      }
+      if (sistema.id === 'amateur' && motivo === 'oferta') {
+        lote.ofertas.push({ seed, anio: s.flags.anioAmateur?.edad ?? null, org: decision.datos.org.nombre, decision });
+        return { opcionId: 'firmar' };
+      }
+      if (sistema.id === 'amateur' && motivo === 'minijuego') {
+        lote.pruebas.push({ seed, decision });
+        return { resultado: 0 };
+      }
+      return sistema.resolverAuto(s, decision, r);
+    };
+    for (let i = 0; i < SPLITS_K6C && !st.terminado && st.phase === 'amateur'; i += 1) {
+      const antes = st.logs.length;
+      const anio = st.flags.anioAmateur;
+      // La semana se vive en `amateur`, antes de que `edadCierre` sume el año: su edad es la de antes del split.
+      const edad = st.age;
+      st = avanzarSplitAutoK6C(st, rng, responder).state;
+      for (const log of st.logs.slice(antes)) {
+        if (log.titulo === 'La semana') {
+          lote.semanas.push({ seed, edad, plan: log.plan ?? null, cronica: Boolean(log.cronica), rutinaDelAnio: st.flags.anioAmateur?.rutinaId ?? anio?.rutinaId ?? null });
+        }
+      }
+    }
+  }
+  loteK6C = lote;
+  return lote;
+}
+
+check('K6c pasaste = firmás: en la prueba del amateur un resultado en la vara o arriba firma siempre y uno abajo nunca, sin dado (el rng no se mueve), y el log dice la vara y por cuánto no llegaste', () => {
+  const problemas = [];
+  const vara = varaDeLaPruebaK6C();
+  for (const seed of [1, 2, 3, 4, 5]) {
+    const { state, decision, org } = pausaDeLaPruebaK6C(seed);
+    if (decision?.datos?.momento !== 'tryout') {
+      problemas.push(`seed ${seed}: firmar con un tier 3 no armó la prueba`);
+      continue;
+    }
+    for (let paso = 0; paso <= BALANCE_K6C.stats.max; paso += 1) {
+      const resultado = paso / BALANCE_K6C.stats.max;
+      const rng = mulberry32K6C(seed * 1000 + paso);
+      const antes = rng.estado();
+      const r = resolverAmateurK6C(state, decision, { resultado }, rng);
+      const firmo = r.state.phase === 'profesional';
+      const debe = paso >= vara;
+      if (firmo !== debe) problemas.push(`seed ${seed}, resultado ${resultado}: firmó=${firmo} con la vara en ${vara}%`);
+      if (rng.estado() !== antes) problemas.push(`seed ${seed}, resultado ${resultado}: la prueba movió el rng (hay un dado)`);
+      const texto = r.logs.map((log) => log.message).join(' ');
+      const v = veredictoDeLaPruebaK6C(resultado);
+      if (v.pasa !== debe) problemas.push(`seed ${seed}, resultado ${resultado}: veredictoDeLaPrueba dice pasa=${v.pasa}`);
+      if (!texto.includes(`la vara era ${vara}%`)) problemas.push(`seed ${seed}, resultado ${resultado}: el log no dice la vara ("${texto.slice(0, 120)}")`);
+      if (!debe && !(texto.includes(`te faltó ${v.falta}%`) && texto.includes(`${org.nombre} no te firma`))) {
+        problemas.push(`seed ${seed}, resultado ${resultado}: el log de la prueba fallida no dice por cuánto ni quién ("${texto.slice(0, 160)}")`);
+      }
+    }
+  }
+  if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
+});
+
+check('K6c la vara: la oferta, la previa de la prueba y la pantalla muestran la misma vara que usa el motor (regla 15)', () => {
+  const problemas = [];
+  const vara = varaDeLaPruebaK6C();
+  const { pruebas, ofertas } = loteDeK6C();
+  if (pruebas.length < 10) throw new Error(`check vacío: ${pruebas.length} pruebas en el lote`);
+  for (const { seed, decision } of pruebas) {
+    const { datos } = decision;
+    if (datos.vara !== vara) problemas.push(`seed ${seed}: la prueba trae vara ${datos.vara}, el motor usa ${vara}`);
+    if (!String(datos.regla).includes(`La vara: ${vara}%`)) problemas.push(`seed ${seed}: la previa no dice la vara ("${datos.regla}")`);
+    if (!String(datos.apuesta).includes(`Necesitás ${vara}%`)) problemas.push(`seed ${seed}: la apuesta no dice la vara ("${datos.apuesta}")`);
+  }
+  for (const { seed, decision } of ofertas.filter((o) => o.decision.datos.tier === 3)) {
+    const firmar = decision.opciones.find((opcion) => opcion.id === 'firmar');
+    if (!firmar.descripcion.includes(`necesitás ${vara}%`)) problemas.push(`seed ${seed}: la oferta no anuncia la vara ("${firmar.descripcion}")`);
+  }
+  // La pantalla (src/ui/app.js) no corre en Node: se exige que el veredicto salga de la misma cuenta del motor y no de la
+  // probabilidad del mercado.
+  const app = fs.readFileSync(new URL('../ui/app.js', import.meta.url), 'utf8');
+  if (!/import \{[^}]*veredictoDeLaPrueba[^}]*\} from '\.\.\/core\/serie\.js'/.test(app) || !/veredictoDeLaPrueba\(resultado\)/.test(app)) {
+    problemas.push('la pantalla de la prueba no usa veredictoDeLaPrueba del motor');
+  }
+  if (!/laPrueba\.falta/.test(app) || !/laPrueba\.vara/.test(app)) problemas.push('la pantalla no dice la vara y por cuánto no llegaste');
+  if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
+});
+
+check(`K6c el mismo club no vuelve a ofrecer en la misma ventana (el año del plan): ninguna oferta repetida en ${SEEDS_K6C} carreras que aceptan todo y fallan toda prueba`, () => {
+  const { ofertas } = loteDeK6C();
+  const porAnio = new Map();
+  for (const oferta of ofertas) {
+    const clave = `${oferta.seed}|${oferta.anio}`;
+    porAnio.set(clave, [...(porAnio.get(clave) ?? []), oferta.org]);
+  }
+  const repetidas = [...porAnio.entries()].filter(([, orgs]) => new Set(orgs).size !== orgs.length);
+  const conDos = [...porAnio.values()].filter((orgs) => orgs.length >= 2).length;
+  if (repetidas.length > 0) {
+    throw new Error(`${repetidas.length} año(s) con un club que ofreció dos veces: ${repetidas.slice(0, 3).map(([clave, orgs]) => `${clave}: ${orgs.join(', ')}`).join(' | ')}`);
+  }
+  if (conDos < ANIOS_CON_DOS_OFERTAS_MINIMO_K6C) throw new Error(`check vacío: ${conDos} años con dos ofertas o más (hacen falta ${ANIOS_CON_DOS_OFERTAS_MINIMO_K6C})`);
+});
+
+check('K6c vos elegís el plan de cada año: cada año del amateur arranca frenando con el resumen y el plan; las semanas siguen el plan elegido; el riesgo evitable sigue frenando', () => {
+  const problemas = [];
+  const { planes, semanas } = loteDeK6C();
+  // (a) Un plan por año, con el resumen del año anterior y los números de cada opción.
+  const vistos = new Set();
+  for (const { seed, edad, decision, anioPrevio } of planes) {
+    const clave = `${seed}|${edad}`;
+    if (vistos.has(clave)) problemas.push(`seed ${seed}: dos planes a los ${edad}`);
+    vistos.add(clave);
+    if (anioPrevio) {
+      const resumen = new RegExp(`Tu año de los ${anioPrevio.edad}: arrancaste en .+ y lo cerraste en .+\\. Scouts: .+\\. Ofertas: .+\\.`);
+      if (!resumen.test(decision.descripcion)) problemas.push(`seed ${seed}, ${edad}: el plan no trae el resumen del año ("${decision.descripcion.slice(0, 140)}")`);
+    }
+    const marcadas = decision.opciones.filter((opcion) => opcion.propuesta);
+    if (marcadas.length !== 1 || marcadas[0].id !== decision.datos.propuesta || !/iría por/.test(marcadas[0].propuesta)) {
+      problemas.push(`seed ${seed}, ${edad}: la propuesta del perfil no va marcada en una sola opción`);
+    }
+    const sinNumeros = decision.opciones.filter((opcion) => !(opcion.previa ?? []).some((fila) => /~[+-]\d/.test(fila.texto ?? '')) || !/\d+%/.test(opcion.riesgoTexto ?? ''));
+    if (sinNumeros.length > 0) problemas.push(`seed ${seed}, ${edad}: opciones sin lo que dan o lo que arriesgan en números (${sinNumeros.map((o) => o.label).join(', ')})`);
+  }
+  // Cada año del amateur que vivió alguna semana tuvo su plan.
+  const anios = new Set(planes.map((p) => `${p.seed}|${p.edad}`));
+  const edadesPorSeed = new Map();
+  for (const p of planes) edadesPorSeed.set(p.seed, [...(edadesPorSeed.get(p.seed) ?? []), p.edad]);
+  for (const [seed, edades] of edadesPorSeed) {
+    const ordenadas = [...edades].sort((a, b) => a - b);
+    for (let i = 1; i < ordenadas.length; i += 1) {
+      if (ordenadas[i] !== ordenadas[i - 1] + 1) problemas.push(`seed ${seed}: un año del amateur sin plan entre los ${ordenadas[i - 1]} y los ${ordenadas[i]}`);
+    }
+  }
+  const sinPlan = semanas.filter((semana) => !anios.has(`${semana.seed}|${semana.edad}`));
+  if (sinPlan.length > 0) problemas.push(`${sinPlan.length} semana(s) de un año que arrancó sin frenar por el plan (seed ${sinPlan[0].seed}, ${sinPlan[0].edad} años)`);
+  if (anios.size < SEEDS_K6C) problemas.push(`check vacío: ${anios.size} años con plan en ${SEEDS_K6C} carreras`);
+  // (b) Las semanas sin parada siguen el plan elegido: su línea nombra la rutina del plan del año, nunca la del perfil.
+  const conPlan = semanas.filter((semana) => semana.plan !== null);
+  const titulo = (id) => RUTINAS_K6C.amateur.find((rutina) => rutina.id === id)?.titulo;
+  const otras = conPlan.filter((semana) => semana.plan !== titulo(semana.rutinaDelAnio));
+  if (otras.length > 0) problemas.push(`${otras.length} semana(s) con otro plan que el del año (seed ${otras[0].seed}: "${otras[0].plan}")`);
+  const delPerfil = semanas.filter((semana) => semana.cronica);
+  if (delPerfil.length > 0) problemas.push(`${delPerfil.length} semana(s) que eligió el perfil con un plan del año vigente`);
+  if (conPlan.length < SEMANAS_CON_PLAN_MINIMO_K6C) problemas.push(`check vacío: ${conPlan.length} semanas con plan (hacen falta ${SEMANAS_CON_PLAN_MINIMO_K6C})`);
+  // (c) El riesgo evitable sigue frenando con plan (la regla de K6a-A): rutinas fijas, el plan agresivo o el seguro.
+  const porId = (id) => RUTINAS_K6C.amateur.find((rutina) => rutina.id === id);
+  const fijas = ['todo_al_ranked', 'bancar_el_colegio'].map(porId);
+  const umbral = BALANCE_K6C.amateur.confiscacionUmbral;
+  const casos = [
+    { nombre: 'plan agresivo, colegio sobrado', plan: 'todo_al_ranked', estudios: 95, robos: 0, frena: false },
+    { nombre: 'plan agresivo, colegio en la raya', plan: 'todo_al_ranked', estudios: umbral, robos: 0, frena: true },
+    { nombre: 'plan seguro, colegio en la raya', plan: 'bancar_el_colegio', estudios: umbral, robos: 0, frena: false },
+    { nombre: 'plan agresivo, la tercera semana robándole al sueño', plan: 'todo_al_ranked', estudios: 95, robos: BALANCE_K6C.amateur.robosParaDeuda - 1, frena: true }
+  ];
+  for (const seed of [1, 2, 3]) {
+    const base = estadoInicialK6C(seed, mulberry32K6C(seed));
+    for (const caso of casos) {
+      const st = {
+        ...base,
+        player: { ...base.player, studies: caso.estudios },
+        flags: { ...base.flags, robosConsecutivos: caso.robos, negociacionGanada: false, anioAmateur: anioAmateurK6C(base, caso.plan) }
+      };
+      const semana = planDeSemanaK6C(st, fijas, porId(caso.plan));
+      if (semana.frena !== caso.frena) problemas.push(`seed ${seed}, ${caso.nombre}: frena=${semana.frena}, se esperaba ${caso.frena}`);
+      if (semana.elegida.id !== caso.plan) problemas.push(`seed ${seed}, ${caso.nombre}: se vive "${semana.elegida.id}", no el plan`);
+      if (semana.frena && !/Tu plan del año es/.test(semana.decision.descripcion)) problemas.push(`seed ${seed}, ${caso.nombre}: la parada no dice que es tu plan`);
+    }
+  }
+  if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
 });
 
 if (errores.length > 0) {

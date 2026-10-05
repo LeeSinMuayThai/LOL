@@ -160,7 +160,10 @@ export function migrarDe12(state) {
     seguisFirma: viejas.seguisFirma ?? null,
     finMercadoFirma: viejas.finMercadoFirma ?? null,
     vueltaFirma: viejas.vueltaFirma ?? null,
-    colaFirmas: { ...colaFirmas, cierre: colaFirmas.cierre ?? null, momento: colaFirmas.momento ?? null }
+    colaFirmas: { ...colaFirmas, cierre: colaFirmas.cierre ?? null, momento: colaFirmas.momento ?? null },
+    // K6c (sin subir la VERSION: la 13 todavía no salió): el año del amateur arranca en "sin plan" (`null`, el valor del
+    // estado inicial). Si el guardado está en el amateur, el próximo split frena con el plan del año, como al arrancar.
+    anioAmateur: viejas.anioAmateur ?? null
   };
   return { ...state, flags };
 }

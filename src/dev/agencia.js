@@ -189,6 +189,8 @@ export const HORIZONTE_POR_TIPO = {
   'eventos:x': 'split',
   'eventos:minijuego': 'split',
   'amateur:reparto': 'split',
+  // K6c: el plan del año del amateur fija las semanas de un año entero: su palanca es llegar (o no) a pro.
+  'amateur:plan_amateur': 'carrera',
   'amateur:nocturno': 'split',
   'amateur:oferta': 'carrera',
   'amateur:negociacion': 'carrera',

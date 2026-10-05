@@ -339,6 +339,12 @@ export const BALANCE = {
     // Cuánto más riesgo en casa (chance de confiscación o corte, 0-1) tiene que sumar lo que elegiría tu perfil, contra
     // la opción más segura de la semana, para que la semana frene.
     semanaRiesgoEvitable: 0.05,
+    // K6c ("pasaste = firmás", decisión del usuario 2026-10-05): la vara de la prueba del amateur, sobre el `resultado`
+    // 0-1 del minijuego. Sin dado: con el resultado en la vara o arriba firmás seguro; abajo, no firmás. Antes era la
+    // probabilidad de `serie.probFirmaTryout` (una prueba perfecta no firmaba 1 de cada 20). 0,6 es 3 de los 5 blancos de
+    // "la prueba": así "te faltó" cae siempre en blancos enteros. La previa la dice antes de jugar, con este mismo número.
+    // La prueba del mercado (`systems/mercado.js`) sigue con `serie.probFirmaTryout`: K6c no la toca.
+    varaPrueba: 0.6,
 
     // Fase 10a (§10.1): deja de ser el corte duro ("cumpliste 20, se acabó").
     // La ventana real ya la cierra el sesgo etario del scouting (arriba); esto

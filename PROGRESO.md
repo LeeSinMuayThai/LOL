@@ -34,6 +34,24 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-05 — K6c: "pasaste = firmás" y "vos elegís el plan de cada año" (`k6c-amateur`; PLAN.md §K6c)
+
+- **La prueba del amateur sin dado** (`amateur.varaPrueba` 0,6 = 3 de 5 blancos; `veredictoDeLaPrueba` en `core/serie.js`, la
+  misma cuenta para el motor, el log y la pantalla). La previa dice "La vara: 60%", la oferta "necesitás 60%", el resultado "Te
+  firman" o "No llegaste: te faltó X%". Se sacó el `chance` (T1 declarado). El club que ya ofreció no vuelve en el año
+  (`flags.anioAmateur.ofertas`, `elegirOrgTier3(state, rng, excluidas)`, una tirada igual). La prueba del mercado no se tocó.
+  Sonda `tryout.mjs 80` (prueba perfecta): antes 5 de 75 no firmaban y 1 oferta repetida; después 0 de 63 y 0.
+- **El plan del año**: cada año del amateur arranca frenando con el resumen (rango al empezar y al cerrar, semanas en el radar de
+  los scouts, ofertas) y el plan entre las rutinas del sorteo, cada una con su LP por semana y su riesgo del año
+  (`riesgoDelPlan`); la propuesta del perfil (con `pisoSoloQ`) va marcada. Las semanas siguen el plan; el riesgo evitable sigue
+  frenando. Bots: `criterio` el de más LP sin deuda y a <= 0,15 del riesgo mínimo; `malas` el más riesgoso; `azar` por hash.
+- **Medido** (600 x 60, antes 58db231 -> después): no-pro criterio 22,8 -> 24,7; azar 26,8 -> 48,2; malas 38,0 -> 94,5 (juega
+  la prueba con 0,15: no pasa nunca). Frenadas del amateur por carrera: criterio 10,65 -> 13,94; azar 11,46 -> 21,67; malas
+  10,63 -> 17,51. Huella 11046700 (K6c), forma 13 `c40afa3ff7a1`.
+- **Abierto**: `--rapido` queda con 7 FAIL nuevos (forma y huella ya registradas): "check vacío" porque `malas` ya no llega a pro
+  (K5c-R, K4c observación, K1 D75) o porque las seeds fijas ya no llegan (K4c-H, K3c seed 3, K5c motor), y la meta de K6a-A
+  (mediana de paradas de la semana 3 contra <= 1 con el automático, que vive el plan del perfil todo el año).
+
 ### 2026-10-05 — Cierre de K6b: K5c-V con el piso armado y los estancados re-basados (`k6b-integracion`; PLAN.md §K6b, "La revisión de K6b")
 
 **K5c-V, por qué quedó vacío (medido, no es el motor).** El piso de franquicia de un veterano de tier 2 en las carreras de `azar` (régimen del barrido, brecha 10) era **una sola carrera de 40**: en `923800d`, la seed 3 a los 31 en EMEA Masters (Fénix Legion), 1 forzada que perdía la disputa. La revisión de K6b (la carta única que cambia de liga frena, caso `cambio`) le cambió el camino a esa carrera en el split 33: la única carta era GIANTX (LCS → LEC), ahora frena, `azar` espera, queda sin club, se retira y vuelve en la LEC; nunca más pisa el tier 2. En 40 × 70: 9 comienzos de split de un veterano de tier 2 (16 en `923800d`), 4 "claramente arriba", los 4 con club, ninguno llega al piso. El mérito de K6b-M (solo con temporada de élite) y la marca de franquicia (el piso no la mira) no tocan este caso. El piso no cambió.

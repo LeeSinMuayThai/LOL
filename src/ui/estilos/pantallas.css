@@ -586,6 +586,17 @@ details.avanzado summary:hover { color: var(--ink-dim); }
 .option-previa-kicker--magnitud-media { opacity: 0.8; }
 .option-previa-kicker--magnitud-alta { opacity: 1; }
 
+/* K6c: en el plan del año del amateur, la opción que propone tu perfil (decide el jugador). */
+.option-btn--propuesta { border-color: var(--ice-dim); }
+.option-propuesta {
+  margin-top: 6px;
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ice-dim);
+}
+
 /* K4c (plan anual): la línea del plan de práctica en cada opción del cierre de año. */
 .option-plan {
   margin-top: 6px;
