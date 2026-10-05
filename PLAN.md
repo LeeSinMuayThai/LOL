@@ -7985,6 +7985,26 @@ migración 12 → 13, por las flags nuevas, y `HUELLA_JUEGO` 'K6b'.
 **Efecto declarado de K6b-F:** las carreras que terminan "sin equipo" pasan del 2 al ~45%. El bot vuelve del retiro
 como free agent sin su club viejo, que es la regla coherente. Lo mira la revisión.
 
+**La revisión de K6b (2026-10-05, sobre `977b06a`): requiere corrección.** Se arregla en `k6b-integracion`:
+- **Alto, regla 15.** La carta única se firma sola aunque cambie de liga o de región: CBLOL → LCK, o LCK → LPL a $62k
+  a los 29, narrado como "No había nada que pensar". **Regla:** se firma sola solo si es la misma liga y el mismo
+  tier, es decir, una continuidad. Cualquier cambio de liga, región o tier frena, con su previa.
+- **Medio, regla 7.** Los checks de la cola solo atrapan que frene de más. Tienen que atrapar también que frene de
+  menos: un hito que ya no frena, o una firma que cambió y no se vuelve a preguntar.
+- **Medio, la meta de la cola.** Con `criterio`, que se retira temprano, la cola casi no se mueve y el check queda a
+  0,09 de la línea. La meta se mide con **el jugador terco de K6**, el que no se retira antes de los 33 y es el que
+  sufría el relleno. Va con su banda y con el rojo cuando las reglas de la cola se apagan. Lo de `criterio` se reporta.
+- **Medio, el "sin equipo" al ~45% es un artefacto.** El bot siempre vuelve una vez, vuelve como free agent a mitad de
+  temporada, se pasa el año sentado y 47 de 56 no firman nunca más. **Regla:**
+  - la vuelta se hace efectiva en la próxima ventana de mercado;
+  - la previa de "¿Volvés?" dice la chance de que te llamen (regla 15);
+  - el perfil o el automático no vuelve si esa chance es baja.
+
+  Se mide la proporción de finales "sin equipo" y cuántos de los que vuelven nunca firman.
+- **Bajo:** "Finalista de el Mundial" pasa a "del".
+- **Dominio (`CONCEPTO.md` §12):** la NACL tiene promoción a la LCS y el Circuito Desafiante a la CBLOL. Las ligas
+  cerradas son **LCK, LPL y LEC**. La LCS sale de la marca de franquicia.
+
 ## K.6 — Qué pasa con FASE J y FASE V
 
 | Pieza | Destino |
