@@ -175,7 +175,8 @@ function rankPicoDe(state) {
 // `(splitCount - splitFichaje) / splitsPorEdad`, que contaba desde tier 3: un año en un equipo chico no es carrera pro. Sin
 // contrato de tier 2 o 1, 0. Lo leen la leyenda comparada (acá) y la caja "Años pro" de la tarjeta (`core/legado.js`).
 // K5c (revisión, regla 15): los splits que pasaste retirado (`career.splitsRetirado`, la ventana de vuelta) no son años pro: el
-// reloj del mundo los cuenta en `splitCount`, la carrera no.
+// reloj del mundo los cuenta en `splitCount`, la carrera no. Y al revés: el split de un retiro por bifurcación se jugó y el
+// reloj no lo contó (`atributos` no corre), así que ese retiro le resta uno (`systems/retiro.js:retirarsePorCamino`).
 export function aniosProDe(state) {
   const desde = state.career?.splitPrimerContratoTier2;
   if (desde === null || desde === undefined) {

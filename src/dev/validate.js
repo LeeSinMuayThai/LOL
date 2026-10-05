@@ -6024,7 +6024,9 @@ checkLento('registro.splitsJugados coincide con player.splitCount en toda carrer
   // K5c (validación): el reloj (`player.splitCount`) cuenta además los splits que pasaron afuera en una ventana de retiro
   // con vuelta (`relojAlVolver` los adelanta de golpe y los acumula en `career.splitsRetirado`); el registro cuenta solo
   // los jugados. Reemplaza a `splitsJugados === splitCount`, que exigía que el reloj no saltara al volver; medido sobre
-  // 75e7ed5: seed 2, splitsJugados 21 = splitCount 24 − splitsRetirado 3.
+  // 75e7ed5: seed 2, splitsJugados 21 = splitCount 24 − splitsRetirado 3. Arreglo de K5c (años pro): el split de un retiro por
+  // bifurcación, con la temporada jugada, suma uno al registro y resta uno a `splitsRetirado` (`retirarsePorCamino`): la
+  // igualdad sigue valiendo.
   let conVuelta = 0;
   for (let seed = 1; seed <= 60; seed += 1) {
     const state = correrCarrera(seed, 40);
@@ -9477,7 +9479,15 @@ check('K5c-R: los años pro no cuentan tier 3 ni los splits retirado (el marcado
     let retirado = 0;
     for (let i = 0; i < SPLITS_K5CR && !state.terminado; i += 1) {
       const antes = state;
-      state = avanzarSplitAuto(state, rng).state;
+      const paso = avanzarSplitAuto(state, rng);
+      state = paso.state;
+      // Arreglo de K5c (años pro): un retiro que llega con la temporada del split ya jugada (el testigo es el log de
+      // `temporada`) y antes de que el reloj la cuente (`splitCount` no se movió: la bifurcación, en `eventos`) deja ese split
+      // como pro: uno menos de retirado. Un retiro al cierre del split (el reloj ya lo contó) no cambia nada.
+      if (antes.phase === 'profesional' && state.phase === 'retirado' && state.career.splitPrimerContratoTier2 !== null
+        && state.player.splitCount === antes.player.splitCount && paso.logs.some((log) => log.type === 'temporada')) {
+        retirado -= 1;
+      }
       if (antes.phase === 'retirado' && state.phase === 'profesional') {
         // El split de la vuelta cuenta uno más por `atributos` (corre después de `retiro` en ese mismo split): el salto menos ese
         // split normal son los que pasaron afuera (el del retiro y los de la ventana).
@@ -22972,6 +22982,176 @@ check('K5c-H: con la jerarquía apagada en memoria, la entrada, el Swiss, el bra
     throw new Error(`muestra chica: ${JSON.stringify(cuenta)} en ${SEEDS_MAX_MUNDIAL_K5CH} seeds`);
   }
   console.log(`      pausas del Mundial: ${cuenta.swiss} del 2-2, ${cuenta.bracket} de bracket (${cuenta.conJerarquiaDistinta} con la jerarquía lejos de la referencia)`);
+});
+
+// --- K5c-H, arreglos del cazabugs (integración K5c + K6a) ---------------------------------------------------------------------
+// Cuatro bugs medidos con las perillas de la candidata Final2 encendidas: la llamada del Mundial amortiguada por jerarquía con
+// `mundial.jerarquiaCuenta` en false, la casa que le tapa la mano a la élite de una región débil, el traspaso a mitad de contrato
+// que manda a una liga más débil, y el split jugado del retiro por bifurcación que los años pro no contaban.
+const { ajusteDeMinijuegoDeMapa: ajusteDeMinijuegoK5CHA } = await import('../core/serie.js');
+const { importDeEliteQueAlcanzas: importDeEliteK5CHA, noEsMasDebilQueTuCasa: noEsMasDebilK5CHA } = await import('../systems/mercado.js');
+const { alcanzaTuLiga: alcanzaTuLigaK5CHA, ligaDeCasa: ligaDeCasaK5CHA } = await import('../core/demanda.js');
+const { aniosProDe: aniosProDeK5CHA } = await import('../core/puntaje.js');
+const JERARQUIA_BAJA_K5CHA = 10;
+const SEEDS_IMPORT_K5CHA = 60;
+const SEEDS_TRASPASO_K5CHA = 60;
+const SEEDS_VUELTA_K5CHA = 120;
+const MUESTRA_MINIMA_K5CHA = 3;
+
+check('K5c-H arreglo: en el Mundial, con la jerarquía apagada en memoria, una llamada perfecta no se amortigua por jerarquía (fuera del Mundial, o con la perilla neutra, sí)', () => {
+  const llamada = MINIJUEGOS.find((entrada) => entrada.id === 'la_llamada');
+  const base = createInitialState(1, mulberry32(1));
+  const bajo = { ...base, career: { ...base.career, jerarquia: JERARQUIA_BAJA_K5CHA } };
+  const enMundial = { ...bajo, internacional: { jugador: base.career.currentOrg ?? 'tu equipo', fase: 'bracket' } };
+  const amortiguado = llamada.impacto * BALANCE.serie.factorLlamadaSinJerarquia;
+  const anterior = BALANCE.mundial.jerarquiaCuenta;
+  const medido = {};
+  try {
+    BALANCE.mundial.jerarquiaCuenta = false;
+    medido.mundialApagada = ajusteDeMinijuegoK5CHA(enMundial, llamada, 1);
+    medido.ligaApagada = ajusteDeMinijuegoK5CHA(bajo, llamada, 1);
+    BALANCE.mundial.jerarquiaCuenta = true;
+    medido.mundialNeutra = ajusteDeMinijuegoK5CHA(enMundial, llamada, 1);
+  } finally {
+    BALANCE.mundial.jerarquiaCuenta = anterior;
+  }
+  const esperado = { mundialApagada: llamada.impacto, ligaApagada: amortiguado, mundialNeutra: amortiguado };
+  const mal = Object.keys(esperado).filter((k) => Math.abs(medido[k] - esperado[k]) > TOLERANCIA_FUERZA_K5CH);
+  if (mal.length > 0) {
+    throw new Error(`llamada perfecta con jerarquía ${JERARQUIA_BAJA_K5CHA}: medido ${JSON.stringify(medido)}, esperado ${JSON.stringify(esperado)}`);
+  }
+  console.log(`      jerarquía ${JERARQUIA_BAJA_K5CHA}: Mundial sin jerarquía ${medido.mundialApagada.toFixed(3)}, liga ${medido.ligaApagada.toFixed(3)}, Mundial con la perilla neutra ${medido.mundialNeutra.toFixed(3)}`);
+});
+
+// Las manos de la élite de Brasil con las perillas de casa encendidas: si un club de una liga más fuerte que su nivel alcanza
+// puede ficharla (`orgsQueTeFicharian` con los asientos congelados para su rol, `importDeEliteQueAlcanzas`), una mano con dos
+// o más clubes de casa nuevos trae al menos uno de esos imports.
+check('K5c-H arreglo: con las perillas encendidas en memoria, la casa no le tapa la mano a la élite de una región débil (Brasil): si un club de una liga más fuerte que alcanza puede ficharla, la mano trae uno', () => {
+  const cuenta = { manos: 0, conImport: 0 };
+  const problemas = [];
+  conPerillasCasaK5CH(PERILLAS_CASA_K5CH, () => {
+    for (let seed = 1; seed <= SEEDS_IMPORT_K5CHA; seed += 1) {
+      const rng = mulberry32(seed);
+      let state = createInitialState(seed, rng, { regionOrigen: 'BR' });
+      for (let i = 0; i < SPLITS_K5CH && !state.terminado; i += 1) {
+        state = avanzarSplitAutoK5(state, rng, (sistema, st, decision, r) => {
+          if (decision.presentacion === 'mercado' && decision.datos?.motivo === 'oferta' && alcanzaTuLigaK5CHA(st)) {
+            const casa = ligaDeCasaK5CHA(st);
+            const pre = st.mundo.mercadoPretemporada;
+            const congelados = pre ? new Set(pre.congelados.filter((c) => c.rol === st.player.role).map((c) => c.org)) : null;
+            const fuertes = new Set(orgsQueTeFicharian(st)
+              .filter((e) => e.liga.id !== casa.id && (!congelados || congelados.has(e.org.nombre)) && importDeEliteK5CHA(st, e.liga, casa))
+              .map((e) => e.liga.id));
+            const nuevas = decision.opciones.filter((o) => o.liga && o.tag !== 'renovacion');
+            if (fuertes.size > 0 && nuevas.filter((o) => o.liga === casa.id).length >= 2) {
+              cuenta.manos += 1;
+              if (nuevas.some((o) => fuertes.has(o.liga))) {
+                cuenta.conImport += 1;
+              } else {
+                problemas.push(`seed ${seed}, ${st.age} años: mano ${nuevas.map((o) => o.liga).join(',')} con ${[...fuertes].join('/')} posibles`);
+              }
+            }
+          }
+          return ESTRATEGIAS_K0.criterio(sistema, st, decision, r);
+        }).state;
+      }
+    }
+  });
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} de ${cuenta.manos} manos de élite sin import: ${problemas.slice(0, 4).join(' | ')}`);
+  }
+  if (cuenta.manos < MUESTRA_MINIMA_K5CHA) {
+    throw new Error(`muestra chica: ${JSON.stringify(cuenta)} en ${SEEDS_IMPORT_K5CHA} seeds`);
+  }
+  console.log(`      ${cuenta.conImport} de ${cuenta.manos} manos de élite brasileña con clubes de casa traen un import a una liga más fuerte`);
+});
+
+check('K5c-H arreglo: con las perillas encendidas en memoria, a quien alcanza su liga el traspaso a mitad de contrato no lo manda a una liga más débil que la de su casa', () => {
+  const cuenta = { traspasos: 0 };
+  const problemas = [];
+  conPerillasCasaK5CH(PERILLAS_CASA_K5CH, () => {
+    for (const region of ['BR', 'KR']) {
+      for (let seed = 1; seed <= SEEDS_TRASPASO_K5CHA; seed += 1) {
+        const rng = mulberry32(seed);
+        let state = createInitialState(seed, rng, { regionOrigen: region });
+        for (let i = 0; i < SPLITS_K5CH && !state.terminado; i += 1) {
+          state = avanzarSplitAutoK5(state, rng, (sistema, st, decision, r) => {
+            if (decision.datos?.motivo === 'traspaso' && alcanzaTuLigaK5CHA(st)) {
+              const casa = ligaDeCasaK5CHA(st);
+              const aceptar = decision.opciones.find((o) => o.id === 'aceptar');
+              const liga = st.mundo.ligas.find((l) => l.id === aceptar.liga);
+              cuenta.traspasos += 1;
+              if (!noEsMasDebilK5CHA(liga, casa)) {
+                problemas.push(`${region} seed ${seed}, ${st.career.currentOrg} (${st.career.liga}): ${aceptar.org} (${liga.id}, tier ${liga.tier})`);
+              }
+            }
+            return ESTRATEGIAS_K0.criterio(sistema, st, decision, r);
+          }).state;
+        }
+      }
+    }
+  });
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} de ${cuenta.traspasos} traspasos a una liga más débil que la casa: ${problemas.slice(0, 4).join(' | ')}`);
+  }
+  if (cuenta.traspasos < MUESTRA_MINIMA_K5CHA) {
+    throw new Error(`muestra chica: ${cuenta.traspasos} traspasos de quien alcanza su liga`);
+  }
+  console.log(`      ${cuenta.traspasos} traspasos a mitad de contrato de quien alcanza su liga, ninguno a una liga más débil`);
+});
+
+// Los años pro alrededor de un retiro: el split del retiro suma un split pro si su temporada se jugó con club (el registro lo
+// asentó), y la vuelta suma el suyo. Carreras de `azar` con el motor por defecto; los retiros sin club se saltean (sin
+// registro no hay testigo de la temporada).
+check('K5c-H arreglo: el split de un retiro con la temporada ya jugada cuenta como año pro, con vuelta y sin vuelta', () => {
+  const porAnio = BALANCE.edad.splitsPorEdad;
+  const sumaTiers = (porTier) => Object.values(porTier ?? {}).reduce((a, b) => a + b, 0);
+  const jugados = (st) => st.career.registro.porOrg.reduce((suma, fila) => suma + sumaTiers(fila.splitsPorTier), 0)
+    + sumaTiers(st.flags.splitJugadoSinFila?.splitsPorTier);
+  const cuenta = { jugadoConVuelta: 0, jugadoSinVuelta: 0, noJugado: 0, ambiguos: 0 };
+  const problemas = [];
+  for (let seed = 1; seed <= SEEDS_VUELTA_K5CHA; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    let abierto = null;
+    for (let i = 0; i < SPLITS_K5CH && !state.terminado; i += 1) {
+      const antes = {
+        phase: state.phase, jugados: jugados(state), anios: aniosProDeK5CHA(state) * porAnio, org: state.career.currentOrg,
+        vueltas: state.flags.vueltasUsadas
+      };
+      state = avanzarSplitAutoK5(state, rng, (sistema, st, decision, r) => ESTRATEGIAS_K0.azar(sistema, st, decision, r)).state;
+      if (antes.phase === 'profesional' && state.phase === 'retirado' && antes.org && state.career.splitPrimerContratoTier2 != null) {
+        abierto = { jugo: jugados(state) > antes.jugados ? 1 : 0, anios: antes.anios };
+      }
+      // Volver y retirarse otra vez en el mismo split (el split de la vuelta, jugado o no) no es ninguno de los dos casos.
+      if (abierto && state.flags.vueltasUsadas > antes.vueltas && state.phase !== 'profesional') {
+        cuenta.ambiguos += 1;
+        abierto = null;
+      }
+      if (abierto && antes.phase === 'retirado' && state.phase === 'profesional') {
+        const delta = Math.round(aniosProDeK5CHA(state) * porAnio - abierto.anios);
+        cuenta[abierto.jugo ? 'jugadoConVuelta' : 'noJugado'] += 1;
+        if (delta !== abierto.jugo + 1) {
+          problemas.push(`seed ${seed}: retiro ${abierto.jugo ? 'con' : 'sin'} temporada y vuelta suman ${delta} splits pro (esperado ${abierto.jugo + 1})`);
+        }
+        abierto = null;
+      }
+    }
+    if (abierto && state.terminado) {
+      const delta = Math.round(aniosProDeK5CHA(state) * porAnio - abierto.anios);
+      cuenta[abierto.jugo ? 'jugadoSinVuelta' : 'noJugado'] += 1;
+      if (delta !== abierto.jugo) {
+        problemas.push(`seed ${seed}: retiro ${abierto.jugo ? 'con' : 'sin'} temporada y sin vuelta suma ${delta} splits pro (esperado ${abierto.jugo})`);
+      }
+    }
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')} (${JSON.stringify(cuenta)})`);
+  }
+  if (cuenta.jugadoConVuelta < MUESTRA_MINIMA_K5CHA || cuenta.noJugado < MUESTRA_MINIMA_K5CHA) {
+    throw new Error(`muestra chica: ${JSON.stringify(cuenta)} en ${SEEDS_VUELTA_K5CHA} seeds`);
+  }
+  console.log(`      retiros con la temporada jugada: ${cuenta.jugadoConVuelta} con vuelta, ${cuenta.jugadoSinVuelta} sin vuelta; ${cuenta.noJugado} antes de la temporada`);
 });
 
 if (errores.length > 0) {

@@ -1,7 +1,7 @@
 import { weightedPick } from './rng.js';
 import { campeonesEnMeta, factorDeCampeon } from './ajusteMeta.js';
 import { campeonesDisponibles, entradaDePool } from './pool.js';
-import { fuerzaDePartido } from './fuerza.js';
+import { fuerzaDePartido, jerarquiaNoCuentaEn } from './fuerza.js';
 import { probabilidadDePartido } from './partido.js';
 import { BALANCE } from '../data/balance.js';
 
@@ -383,9 +383,11 @@ export function ajusteDeCharla(usada) {
 
 // K2d: cuánto mueve el minijuego de un mapa la fuerza de ese mapa, según cómo te salió (`resultado` 0-1; 0,5 no la
 // mueve). La comparten `systems/serie.js` (que la aplica antes de tirar) y la previa (que muestra la p final).
+// K5c-H: en el Mundial con `mundial.jerarquiaCuenta` en false (`jerarquiaNoCuentaEn`), la llamada no se amortigua por
+// jerarquía: es lo que dicen la previa y el feed (regla 12), y la fuerza del mapa ya juega sin ella.
 export function ajusteDeMinijuegoDeMapa(state, entrada, resultado) {
   const ajusteBase = ajusteBaseDeMinijuego(resultado);
-  const amortiguado = entrada.efecto.amortiguador === 'jerarquia'
+  const amortiguado = entrada.efecto.amortiguador === 'jerarquia' && !jerarquiaNoCuentaEn(state)
     ? factorJerarquiaEnLlamada(state.career.jerarquia)
     : 1;
   return ajusteBase * entrada.impacto * amortiguado;

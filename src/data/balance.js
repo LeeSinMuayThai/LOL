@@ -1283,9 +1283,18 @@ export const BALANCE = {
     //    puntos a los 23 y ~60 a los 26, solo alcanza un pibe de 20-21: medido en K5c-H); 0 = tu nivel sin la edad. Con
     //    `margenAlcanza` neutro no mueve nada.
     // Los fija el barrido de K5c. Se leen en cada llamada (`core/demanda.js:alcanzaTuLiga`): un override en memoria las pisa.
+    //  - `cuposImportElite` y `nivelImportElite` (arreglo de K5c-H, "desde una región débil, un jugador de élite sube como
+    //    import a una liga más fuerte"): cuando alcanzás tu liga, después del primer club de casa la mano reserva hasta
+    //    `cuposImportElite` lugares para clubes de ligas de tier 1 más fuertes que la tuya (calibre mayor) a las que tu nivel
+    //    llega, si tu nivel es de élite (`nivelImportElite`, el mismo umbral que `NIVEL_ELITE_CRITERIO` del bot `criterio`,
+    //    dev/estrategias.js). Sin esto, con 6+ clubes de casa ningún import llegaba a la mano (en Final2, 5 de 18 carreras de
+    //    élite de Brasil jugaron alguna vez en una liga más fuerte). Solo actúan con la casa encendida: con `margenAlcanza`
+    //    neutro no mueven nada (`systems/mercado.js:generarOfertas`).
     casa: {
       margenAlcanza: 99,
-      fraccionCastigo: 1
+      fraccionCastigo: 1,
+      cuposImportElite: 2,
+      nivelImportElite: 85
     },
 
     // --- salarioDeOferta: mult = exp(gauss(0,sigma)) * factorRol * jerarquía * hype ---

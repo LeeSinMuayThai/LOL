@@ -9,7 +9,7 @@ import { salarioDeOferta } from '../core/salarios.js';
 import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
 import { cerrarFila, registrarPico, registrarSalarioEnFila, registrarArraigoEnFila, arraigoInicial } from '../core/registro.js';
 import { bandaDeJerarquia, bandaDeArraigoFicha, nivelDelJugador } from '../core/ficha.js';
-import { orgsQueTeFicharian, ofertaPosible, esResidenteDe, nivelAlternativaAsiento, factorRenovacionEtario, factorElite, plantelEnLiga, veteranoDeTier2, ganaLaDisputaDelAsiento, renovacionCortadaPorEdad, alcanzaTuLiga, ligaDeCasa, clubDeCasaQueTeHaceLugar } from '../core/demanda.js';
+import { orgsQueTeFicharian, ofertaPosible, esResidenteDe, nivelAlternativaAsiento, factorRenovacionEtario, factorElite, plantelEnLiga, veteranoDeTier2, ganaLaDisputaDelAsiento, renovacionCortadaPorEdad, alcanzaTuLiga, ligaDeCasa, clubDeCasaQueTeHaceLugar, calibreDeLiga } from '../core/demanda.js';
 import { resolverMercadoMundial, cerrarAsientosCongelados, congelarAsientosOfrecibles } from '../core/mercadoMundial.js';
 import { jerarquiaAlFichar, sinergiaAlFichar, conPlantillaDelPlantel } from './roster.js';
 import { conPlantelesDe } from '../core/plantel.js';
@@ -384,7 +384,18 @@ export function generarOfertas(state, rng) {
         posibles.push({ ...lugar, forzadaFranquicia: true });
       }
     }
-    const ordenadas = [...posibles.filter(deCasa), ...posibles.filter((entrada) => !deCasa(entrada))];
+    // Arreglo de K5c-H: "desde una región débil, un jugador de élite sube como import a una liga más fuerte". Con 6+ clubes
+    // de casa la casa primero llenaba la mano y ningún import llegaba (seed 6 de Brasil, nivel 88: 6 de CBLOL con 21 de
+    // LCK/LPL/LEC/LCS/LCP que lo podían fichar). Después del primer club de casa van hasta `cuposImportElite` clubes de las
+    // ligas más fuertes que alcanzás (`importDeEliteQueAlcanzas`), y después el resto de la casa y lo demás.
+    const delanteros = posibles.filter(deCasa);
+    const imports = posibles
+      .filter((entrada) => !deCasa(entrada) && importDeEliteQueAlcanzas(state, entrada.liga, casa))
+      .slice(0, m.casa.cuposImportElite);
+    const ordenadas = [
+      ...delanteros.slice(0, 1), ...imports, ...delanteros.slice(1),
+      ...posibles.filter((entrada) => !deCasa(entrada) && !imports.includes(entrada))
+    ];
     posibles.splice(0, posibles.length, ...ordenadas);
   }
   const hayCasaEnLaMano = posibles.some((entrada) => casa && entrada.liga.id === casa.id);
@@ -403,6 +414,23 @@ export function generarOfertas(state, rng) {
   }
 
   return { ofertas: ofertas.slice(0, m.ofertasMax), fichadores };
+}
+
+// K5c-H: ¿`liga` es una liga de tier 1 más fuerte que la de tu casa (`casa`) a la que tu nivel llega, con nivel de élite?
+// Es la condición del bot `criterio` para ir de import (`claseDeLigaCriterio`, dev/estrategias.js): el calibre de la liga
+// (`calibreDeLiga`, la vara del asiento) pasa el de tu casa, tu nivel llega a ese calibre y tu nivel es de élite
+// (`mercado.casa.nivelImportElite`). Pura y sin rng.
+export function importDeEliteQueAlcanzas(state, liga, casa) {
+  const nivel = nivelDelJugador(state);
+  const calibre = calibreDeLiga(liga);
+  return liga.tier === 1 && nivel >= BALANCE.mercado.casa.nivelImportElite
+    && calibre > calibreDeLiga(casa) && nivel >= calibre;
+}
+
+// K5c-H: ¿`liga` no es más débil que tu casa? Es tu casa, o una de tier 1 con calibre (`calibreDeLiga`) que llega al de tu
+// casa. Pura y sin rng.
+export function noEsMasDebilQueTuCasa(liga, casa) {
+  return liga.id === casa.id || (liga.tier === 1 && calibreDeLiga(liga) >= calibreDeLiga(casa));
 }
 
 // Los traspasos del mundo que se le muestran al jugador (regla 16: "el dado
@@ -988,7 +1016,13 @@ function ofertaDeTraspaso(state, rng) {
     return null;
   }
 
-  const fichadores = orgsQueTeFicharian(state);
+  // Arreglo de K5c-H: "un jugador que alcanza su liga no termina en una más débil" vale también a mitad de contrato. Si
+  // alcanzás tu liga (`alcanzaTuLiga`), el pretendiente es de tu casa o de una liga de tier 1 que no es más débil
+  // (`noEsMasDebilQueTuCasa`): antes le llegaba a un titular de RED Canids una de Umbra Academy (Circuito Desafiante,
+  // seed 54 de `criterio` con Final2). Con la perilla neutra `casa` es null y el filtro no saca a nadie.
+  const casa = alcanzaTuLiga(state) ? ligaDeCasa(state) : null;
+  const fichadores = orgsQueTeFicharian(state)
+    .filter((entrada) => !casa || noEsMasDebilQueTuCasa(entrada.liga, casa));
   const pretendiente = fichadores
     .filter((entrada) => entrada.org.fuerza >= orgActual.fuerza + m.traspasoBrechaFuerzaMin)
     .sort((a, b) => b.org.fuerza - a.org.fuerza)[0];
