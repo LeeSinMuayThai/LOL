@@ -715,20 +715,14 @@ function aplicarMercadoSinImport(stConValor, logsMundo, rng) {
   if (correspondeBifurcar(stTier)) {
     const stFork = { ...stTier, flags: { ...stTier.flags, forkMercadoSplit: stTier.player.splitCount } };
     const asientosFork = ofertas.length > 0 ? asientosAbiertosParaPantalla(stFork, ofertas, fichadores) : [];
-    return {
-      state: stFork, logs: [...logsMundo, ...logsAviso],
-      decision: decisionFinPorMercado(stFork, ofertas, asientosFork)
-    };
+    return finPorMercadoOSuRepeticion(stFork, [...logsMundo, ...logsAviso], decisionFinPorMercado(stFork, ofertas, asientosFork), rng);
   }
   // K5c-R: la presión de tier 2. Misma bifurcación (y mismo orden de tiradas que la mano de siempre), con su motivo. La de
   // K5-C va primero: si ni tu tier te ofrece, esa es la que corresponde.
   if (correspondePresionTier2(stTier)) {
     const stFork = { ...stTier, flags: { ...stTier.flags, forkMercadoSplit: stTier.player.splitCount } };
     const asientosFork = ofertas.length > 0 ? asientosAbiertosParaPantalla(stFork, ofertas, fichadores) : [];
-    return {
-      state: stFork, logs: [...logsMundo, ...logsAviso],
-      decision: decisionPresionTier2(stFork, ofertas, asientosFork)
-    };
+    return finPorMercadoOSuRepeticion(stFork, [...logsMundo, ...logsAviso], decisionPresionTier2(stFork, ofertas, asientosFork), rng);
   }
 
   if (ofertas.length === 0) {
@@ -737,10 +731,101 @@ function aplicarMercadoSinImport(stConValor, logsMundo, rng) {
   }
 
   const asientosAbiertos = asientosAbiertosParaPantalla(stTier, ofertas, fichadores);
+  return manoOUnaSolaCarta(stTier, ofertas, { asientosAbiertos }, [...logsMundo, ...logsAviso], rng);
+}
+
+// --- K6b-C: la cola de la carrera (D-B: te frena solo lo importante) ---
+
+// La mano del mercado, o su firma sin pausa. Una sola carta frena solo si aceptar o rechazar se juega algo
+// (`enJuegoDeUnaSolaCarta`), y la previa lo dice (la descripción y `datos.enJuego`). Si no, la firma tu perfil (con una sola
+// carta y nada en juego, ningún perfil se queda afuera: jugar es jugar) y se narra en una línea. Es el mismo camino que la
+// firma después de la pausa (`resolverMercado`): las mismas tiradas, cero `rng` nuevo.
+function manoOUnaSolaCarta(state, ofertas, carry, logs, rng) {
+  const decision = construirDecisionOfertas(state, ofertas, carry);
+  if (ofertas.length !== 1) {
+    return { state, logs, decision };
+  }
+  const enJuego = enJuegoDeUnaSolaCarta(state, ofertas[0]);
+  if (enJuego) {
+    return {
+      state, logs,
+      decision: { ...decision, descripcion: `Una sola carta. ${enJuego.texto}`, datos: { ...decision.datos, enJuego } }
+    };
+  }
+  const firmada = resolverMercado(state, decision, { opcionId: ofertas[0].id }, rng);
   return {
-    state: stTier, logs: [...logsMundo, ...logsAviso],
-    decision: construirDecisionOfertas(stTier, ofertas, { asientosAbiertos })
+    state: firmada.state,
+    logs: [...logs, crearLog('mercado', narracionDeUnaSolaCarta(state, ofertas[0])), ...firmada.logs]
   };
+}
+
+// Una sola carta: ¿aceptar o rechazar se juega algo? `null` si no: es tu tier o mejor y sin prueba, así que rechazarla es
+// quedarte sin club por nada. Si sí, lo que está en juego, en palabras y en número:
+//  - `prueba`: firmar es ir a una prueba (un salto de tier, liga o región, `saltosDeFichaje`). `pFirmaPct` es la chance de
+//    firmar con la prueba que se espera de tu stat (la media que usa `resolverAuto`, `probabilidadDeFirmarTrasPrueba`).
+//  - `bajar`: firmar es bajar de tier; rechazarla es quedarte free agent, con las pretemporadas que llevás sin una oferta de
+//    tu tier y las que faltan para que el mercado te pregunte si colgás (`retiro.splitsSinOfertaEnTierParaBifurcar`).
+// Puro: cero `rng`. Exportada para el check.
+export function enJuegoDeUnaSolaCarta(state, oferta) {
+  if (saltosDeFichaje(state, oferta).length > 0) {
+    const entrada = elegirMinijuego(state, 'tryout');
+    const stat = entrada ? state.player.stats[entrada.statRelevante] : undefined;
+    const pFirmaPct = Number.isFinite(stat) ? Math.round(probabilidadDeFirmarTrasPrueba(stat / PCT) * PCT) : null;
+    const chance = pFirmaPct === null ? '' : `: ~${pFirmaPct}% de que alcance`;
+    return {
+      caso: 'prueba', pFirmaPct,
+      texto: `Firmar con ${oferta.org} es ir a una prueba${chance}. Si no alcanza, esta ventana no firmás con nadie; rechazarla es quedarte free agent.`
+    };
+  }
+  if (state.career.tier != null && oferta.tier > state.career.tier) {
+    const sinOferta = state.flags.splitsSinOfertaEnTier;
+    const faltan = Math.max(0, BALANCE.retiro.splitsSinOfertaEnTierParaBifurcar - sinOferta);
+    return {
+      caso: 'bajar', pretemporadasSinOfertaDeTuTier: sinOferta, faltanParaLaPregunta: faltan,
+      texto: `Firmar con ${oferta.org} es bajar a tier ${oferta.tier}. Rechazarla es quedarte free agent: llevás `
+        + `${sinOferta} ${plural(sinOferta, 'pretemporada', 'pretemporadas')} sin una oferta de tu tier`
+        + (faltan > 0 ? `, y a ${faltan} más el mercado te pregunta si colgás el mouse.` : ', y el mercado ya te pregunta si colgás el mouse.')
+    };
+  }
+  return null;
+}
+
+// Un porcentaje: la p de `probabilidadDeFirmarTrasPrueba` va de 0 a 1 y la stat de 0 a 100.
+const PCT = 100;
+
+function narracionDeUnaSolaCarta(state, oferta) {
+  if (oferta.tag === 'renovacion') {
+    return `Una sola carta, la de tu club: ${oferta.org} te renueva por ${plata(oferta.salarioAnualUSD)} al año. Firmás sin vueltas.`;
+  }
+  const liga = nombreDeLigaEnMundo(state, oferta.liga) ?? `tier ${oferta.tier}`;
+  return `Una sola carta: ${oferta.org} (${liga}), ${plata(oferta.salarioAnualUSD)} al año. No había nada que pensar: firmás.`;
+}
+
+// "El mercado ya habló": frena la primera vez y cuando hay una elección real (alguien te ofrece algo, aunque sea abajo). Si
+// la última vez elegiste seguir buscando y la foto no cambió (la misma variante, el mismo club o ninguno, el mismo tier, sin
+// una lesión nueva, sin una vuelta del retiro en el medio), se sigue buscando, que es lo que elegiste, y se narra en una
+// línea. Puro: cero `rng`. Exportada para el check.
+export function firmaDelFinPorMercado(state, decision) {
+  return [
+    decision.datos.variante ?? 'tier',
+    state.career.currentOrg ?? 'libre',
+    state.career.tier ?? '-',
+    state.flags.lesionGraveSplit ?? 'sin lesion',
+    state.flags.vueltasUsadas
+  ].join('|');
+}
+
+function finPorMercadoOSuRepeticion(stFork, logs, decision, rng) {
+  const firma = firmaDelFinPorMercado(stFork, decision);
+  const conFirma = { ...decision, datos: { ...decision.datos, firma } };
+  const sinEleccion = decision.datos.ofertas.length === 0;
+  if (sinEleccion && stFork.flags.finMercadoFirma === firma) {
+    const sigue = resolverFinPorMercado(stFork, conFirma, { opcionId: 'esperar' }, rng);
+    const linea = crearLog('mercado', `${decision.datos.motivoRetiro} Nada cambió desde que elegiste seguir buscando: seguís esperando que suene el teléfono.`);
+    // El primer log de `resolverFinPorMercado` ("Seguís buscando...") es el de la elección: acá lo reemplaza la línea de arriba.
+    return { state: sigue.state, logs: [...logs, linea, ...sigue.logs.slice(1)] };
+  }
+  return { state: stFork, logs, decision: conFirma };
 }
 
 // Pretemporada sin una sola oferta: la racha sube y, al llegar a `splitsSinOfertaParaLibre`, te quedás sin equipo.
@@ -895,7 +980,10 @@ function decisionFinPorMercado(state, ofertas, asientosAbiertos) {
   };
 }
 
-function resolverFinPorMercado(state, decision, respuesta, rng) {
+function resolverFinPorMercado(stateAntes, decision, respuesta, rng) {
+  // K6b-C: la foto con la que elegiste seguir buscando (sin ofertas). Cualquier otra respuesta la borra.
+  const finMercadoFirma = respuesta.opcionId === 'esperar' ? (decision.datos.firma ?? null) : null;
+  const state = { ...stateAntes, flags: { ...stateAntes.flags, finMercadoFirma } };
   if (respuesta.opcionId === 'retirarse') {
     // El mundo sigue sin vos: los asientos que te habían congelado se llenan con un NPC (mismo cierre que el
     // silencio), y recién después te retirás.
@@ -908,20 +996,15 @@ function resolverFinPorMercado(state, decision, respuesta, rng) {
     return { state: sinClub.state, logs: [...cerrado.logs, ...retiro.logs] };
   }
   if (respuesta.opcionId === 'bajar') {
-    return {
-      state,
-      logs: [crearLog('mercado', 'Bajás un escalón. Jugar es jugar: a ver qué hay.')],
-      decision: construirDecisionOfertas(state, decision.datos.ofertas, { asientosAbiertos: decision.datos.asientosAbiertos })
-    };
+    // K6b-C: con una sola carta abajo, "bajás" ya fue la elección: se firma sin otra pausa, salvo que se juegue algo.
+    return manoOUnaSolaCarta(state, decision.datos.ofertas, { asientosAbiertos: decision.datos.asientosAbiertos },
+      [crearLog('mercado', 'Bajás un escalón. Jugar es jugar: a ver qué hay.')], rng);
   }
   // K5c-R: seguir en tier 2 (con ofertas, la mano de siempre; sin ninguna, seguir buscando) vuelve a cero la presión.
   if (respuesta.opcionId === 'seguir') {
     const sigue = sinPresionTier2(state);
-    return {
-      state: sigue,
-      logs: [crearLog('mercado', 'Seguís abajo. La cuenta de primera arranca de cero: a ganarte el llamado.')],
-      decision: construirDecisionOfertas(sigue, decision.datos.ofertas, { asientosAbiertos: decision.datos.asientosAbiertos })
-    };
+    return manoOUnaSolaCarta(sigue, decision.datos.ofertas, { asientosAbiertos: decision.datos.asientosAbiertos },
+      [crearLog('mercado', 'Seguís abajo. La cuenta de primera arranca de cero: a ganarte el llamado.')], rng);
   }
   const base = decision.datos.variante === 'presion_tier2' ? sinPresionTier2(state) : state;
   const silencio = elTelefonoNoSuena(base, rng);

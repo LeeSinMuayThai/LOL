@@ -460,6 +460,17 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // K5-C: el `splitCount` de la última vez que frenó esa bifurcación (-1 = nunca). `systems/retiro.js` lo lee para
       // no preguntar `retiro_declive` en la misma pretemporada: el mercado ya preguntó.
       forkMercadoSplit: -1,
+      // K6b-C (D-B en la cola): la foto (`firmaDelSeguis`, `systems/retiro.js`) con la que elegiste seguir en el último
+      // "¿la seguís?", y la de la última vez que elegiste seguir buscando en "El mercado ya habló" (`firmaDelFinPorMercado`,
+      // `systems/mercado.js`). Mientras la foto no cambie, la pregunta no se repite: se sigue y se narra. `null` = no hay.
+      seguisFirma: null,
+      finMercadoFirma: null,
+      // K6b-C: la ventana (`firmaDeLaVuelta`, `systems/retiro.js`) en la que elegiste no volver: el "¿Volvés?" no se repite.
+      vueltaFirma: null,
+      // K6b-C2 (la cola de verdad): por tipo de parada de la cola (`cierre`, el cierre de año; `momento`, el momento de
+      // una fecha marcada), la foto (`firmaDeLaCola`, `core/cola.js`) de la última vez que frenó en la cola. Mientras la
+      // foto no cambie y no haya un hito ni palanca, esa parada la resuelve tu perfil y se narra. `null` = no frenó todavía.
+      colaFirmas: { cierre: null, momento: null },
       // Fase 9: "llamar al representante" (PLAN.md §9.6) rebaraja la mano de
       // ofertas una única vez en toda la carrera.
       llamadaRepresentante: false,

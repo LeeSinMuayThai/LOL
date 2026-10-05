@@ -34,6 +34,139 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-05 — K6b-C2, la cola de verdad: en la cola, el cierre de año y el momento frenan solo con un hito, un cambio o palanca (`k6b-cola2`; PLAN.md §K6b)
+
+**Qué son.** Las dos paradas que más pesaban en la cola después de la primera pasada:
+- **El momento** (`temporada:momento`, `systems/temporada.js` `arrancarMomento`): la previa de una fecha marcada de la
+  temporada regular (clásico, archirrival, revancha, define la clasificación). Es un evento del pool `stakes` con efectos de
+  `type: 'partido'`: la opción mueve la p de ESE partido. Horizonte `partido` en `agencia.js`.
+- **El cierre de año** (`edadCierre:x`, `systems/edadCierre.js` `aplicar`): uno de los diez eventos `cierreDeEdad` (tres
+  opciones: el juego, la cabeza y la familia, la marca). Fija el plan anual del año siguiente (K4c). Horizonte `carrera`.
+
+**La regla** (`core/cola.js`, nuevo; la llaman `edadCierre.js` y `temporada.js`). Desde los 28 (`BALANCE.cola.edadDesde`) o
+desde el aviso de declive (`etapa === 'declive'`), lo que llegue primero, las dos paradas frenan solo si:
+- **es un hito:** un año con título (el primero incluido) o con Mundial, tu mejor nivel de la carrera llegó ese año (el
+  récord), o es el último año antes del retiro forzoso (`edadRetiroForzoso`);
+- **algo cambió** desde la última vez que ese tipo frenó en la cola: el club, el tier, la última lesión grave o el declive
+  (`firmaDeLaCola` contra `flags.colaFirmas`, flag nueva; `null` = frena, así que un guardado viejo no se rompe);
+- **su tipo tiene palanca:** `BALANCE.cola.palancaMedidaPct` (la medida con `agencia.js` sobre `8368570`: cierre 3,3%, momento
+  95%) llega a `umbralPalancaPct` (47,4: la fracción ponderada de ese mismo reporte; un tipo por debajo baja el promedio).
+
+Si no, lo resuelve tu perfil (`opcionDelPerfil`, como cualquier evento que no frena) por el mismo `resolver` (las mismas
+tiradas que después de la pausa; el cierre fija el plan de esa opción) y queda una línea de crónica marcada `cola`. Fuera de
+la cola no cambia nada; la serie y los eventos no se tocan. **El momento tiene 95% de palanca: sigue frenando siempre.**
+
+**Medido** (`simulate.js 600 60 criterio`, mismas seeds; antes `8368570` / después / la frontera: el momento tampoco frena en la
+cola, `palancaMedidaPct.momento = 0` en memoria). 0 crashes en los tres.
+
+| Métrica | Antes | Después | Frontera |
+|---|---|---|---|
+| Desde los 28: mediana · p90 · promedio | 13 · 26 · 14,15 | **12 · 25 · 13,51** | 11 · 23 · 12,17 |
+| Cierre de año · momento en la cola (por carrera) | 3,05 · 3,27 | 2,38 · 3,31 | 2,34 · 1,51 |
+| Leyenda (frenadas totales): n · mediana · p90 | 57 · 77 · 93 | 57 · 76 · 93 | 60 · 74 · 90 |
+| Interrupciones por carrera: mediana · p90 | 53 · 78 | 52 · 77 | 50 · 75 |
+| p90 por split pro (K4c): todos / regular / playoffs / internacional | 3 / 2 / 5 / 6 | 3 / 2 / 5 / 6 | 3 / 2 / 5 / 6 |
+
+**La agencia** (`agencia.js --carreras=12 --reps=30 --cuota=2 --splits=70`, antes / después):
+- ponderada en su horizonte 47,4% → **48,6%**; contra la carrera 21,1% → 21,9% (piso 8,6%);
+- `edadCierre:x` 3,3% → 5,2% (9 → 8,25 paradas por carrera); `temporada:momento` 95% → 95% (6,25 → 6,33);
+- la frontera: sin ninguna parada de momento (`--analizar … --sin=temporada:momento`, cota de lo que se pierde), la ponderada
+  cae a **40,6%**. Resolver el momento rompe "la agencia no baja".
+
+**La meta (≤ 8) no llega: 12, y la frontera es 11.** La regla hace lo que dice, pero en la cola casi todo cierre tiene un motivo
+para frenar: un año con Mundial o título, o un cambio de club (`criterio` cambia de club seguido). Y el momento es la parada con
+más palanca del juego (95%): sacarlo de la cola baja la cola a 11 y la agencia a ~41%. Lo que queda en la cola de la frontera,
+fuera de la regla: eventos 2,2, vuelta 1,5, plan de serie 1,2, el mercado ya habló 0,85. Decide el usuario.
+
+**Checks.** Nuevo: `K6b-C2 la cola de verdad` (`--solo=k6b-c2`, 24 seeds): en la cola, ningún cierre ni momento frena sin hito,
+sin cambio y sin palanca (el juez lo recalcula sin importar `core/cola.js`), y el cierre se narra; regla 7 sobre el juez
+(sembrado) y sobre el motor (mutante: el cierre "con palanca" frena siempre → 17 sin motivo y 0 narrados, rojo).
+`K4c-P (c)` se ajustó: el plan puede cambiar fuera de una pausa solo con la línea `cola: 'cierre'` y el plan de su opción.
+`K6b-C meta de la cola` (lento) sigue en rojo: 12 contra ≤ 8.
+
+**Verificación.** `validate.js --rapido`: 326 OK, 4 FAIL, todos conocidos: `K0-B guardado` (hash **c07d8f835c46**, por
+`flags.colaFirmas`), `K1 versión` (huella **177970640**), `K5c-M (a)` y `K5c-V`. No se re-declaran: van a la integración con
+VERSION 13. La misma seed dos veces da salidas idénticas (md5 `4cee3544…`).
+
+### 2026-10-05 — K6b-C, la cola de la carrera: lo que se repite sin nada nuevo en juego ya no frena (`k6b-cola`; PLAN.md §K6b)
+
+**Qué cambió (D-B en la cola).** Tres paradas que K6 vio repetirse sin nada nuevo en juego, más una cuarta de la misma
+familia, ahora frenan la primera vez y cuando la foto cambia. Si no, se sigue con lo que elegiste y se narra en una línea:
+- **"¿La seguís?"** (`retiro:retiro_declive`, `systems/retiro.js`). Frena si cambia la foto (`firmaDelSeguis`). La foto
+  incluye el club, el tier, el declive o la falta de club, la presión de tier 2, una oferta de tu tier esta pretemporada,
+  una lesión grave nueva, el aviso de no renovación y las vueltas del retiro. Si no cambió y la última vez elegiste seguir,
+  seguís, con la misma cuenta y cero `rng`, y se narra.
+- **"El mercado ya habló"** (`mercado:fin_mercado`, las dos variantes). Frena la primera vez y siempre que haya ofertas
+  (bajar o seguir abajo es una elección real). Sin ofertas, con la misma foto (`firmaDelFinPorMercado`) y "seguís
+  buscando" como última respuesta, se sigue buscando por el mismo camino (`resolverFinPorMercado`, las mismas tiradas) y se
+  narra.
+- **Un mercado de una sola carta** frena solo si se juega algo (`enJuegoDeUnaSolaCarta`), y la previa lo dice en la
+  descripción y en `datos.enJuego`. Se juega algo en dos casos: una prueba (con el % de firmar de la prueba esperada) o
+  bajar de tier (rechazar es quedarte free agent, con las pretemporadas sin oferta de tu tier). Si no, se firma por el mismo
+  camino que después de la pausa (`resolverMercado`) y se narra. Vale también para la mano que sigue a "bajás" o "seguís
+  abajo".
+- **"¿Volvés a competir?"** (`retiro:retiro_vuelta`), el "¿la seguís?" del retirado. Frena la primera vez de cada ventana
+  y después de una bifurcación de la ventana. Si elegiste no volver y nada cambió, se narra.
+- Flags nuevas (`core/state.js`): `seguisFirma`, `finMercadoFirma` y `vueltaFirma`. Un guardado de antes no las trae, y
+  `null` es "frena", así que no cambia la `VERSION`.
+
+**El instrumento** (`simulate.js`, bloque `ritmo`). Dos métricas nuevas:
+- `colaDeCarrera`: las frenadas desde los 28 (`EDAD_COLA_DE_CARRERA`), sobre las carreras con un split pro a esa edad, con
+  mediana, p90, promedio y desglose por tipo.
+- `leyenda`: las frenadas totales de las carreras que cierran en "Leyenda" o "El GOAT", con n, mediana, p90 y máximo.
+
+Los checks nuevos de `validate.js` (`--solo=k6b-c`):
+- dos de motor, con el jugador terco de K6 en 40 seeds y regla 7;
+- el juez de las metas, con mutantes;
+- la meta medida, lento, sobre el lote de las metas B.
+
+**Medido** (`simulate.js 600 60 criterio`, mismas seeds, antes `25f7b0d` / después):
+
+| Métrica | Antes | Después |
+|---|---|---|
+| Interrupciones por carrera (mediana · p90) | 54 · 81 | 53 · 78 |
+| Desde los 28 (318 carreras con cola): mediana · p90 · promedio | 14 · 29 · 15,45 | **13 · 26 · 14,15** |
+| Leyenda (frenadas totales): n · mediana · p90 | 63 · 79 · 95 | 57 · **77** · 93 |
+| p90 por split pro: todos / regular / playoffs / internacional | 3 / 2 / 5 / 6 | 3 / 2 / 5 / 6 |
+| Minijuegos (mediana) · tiempo-máquina | 4 · 3,52 min | 4 · 3,56 min |
+
+**La meta de la cola (≤ 8) no llega: queda en 13. Es la frontera.** Lo que queda desde los 28, por carrera con cola:
+- momentos 3,27, cierre de año 3,05, eventos 1,89, plan de serie 1,17: suman 9,4 y están fuera del alcance de K6b-C;
+- la primera vuelta de cada ventana, 1,47;
+- la primera vez de "El mercado ya habló", 0,85: `criterio` se retira en la primera desde los 22;
+- la primera vez del "¿la seguís?", 0,59, y las bifurcaciones de la ventana, 0,58.
+
+Con `criterio`, la repetición casi no existía: se retira en la primera pregunta. Lo que K6 vio (hasta 7 veces "El mercado ya
+habló") es de un jugador que elige seguir, y eso lo cubre el check del jugador terco. La leyenda cumple (≤ 80).
+
+**La agencia** (`agencia.js --carreras=12 --reps=30 --cuota=2 --splits=70`, antes / después):
+- la fracción ponderada con palanca en su horizonte pasa de 45,0% a 47,4%, y contra la carrera de 20,7% a 21,1%;
+- por tipo, en % con efecto significativo y paradas por carrera:
+
+  | Tipo | % significativo | Paradas por carrera |
+  |---|---|---|
+  | `mercado:oferta` | 60% → 60% | 3,25 → 2,75 |
+  | `mercado:fin_mercado` | 100% → 100% | 1,42 → 1,42 |
+  | `retiro:retiro_vuelta` | 60% → 100% | 2,5 → 1,83 |
+  | `retiro:retiro_declive` | 50% → 50% | 0,17 → 0,17 |
+
+La palanca de los tipos que siguen frenando no cae. Los bots (`criterio`, `azar`, `malas`) no se quedan sin camino:
+- lo que ya no frena se resuelve con la respuesta que el jugador dio la última vez que frenó (seguir, seguir buscando, no
+  volver), o con la firma de la única carta, que es lo que `criterio` y `malas` elegían;
+- `azar` pierde su tirada en esas repeticiones;
+- `azar` y `malas`, 60 × 60, 0 crashes.
+
+**Verificación.** `validate.js --rapido` da 5 FAIL. El de `K4c-H` ya está corregido (`--solo=k4c-h`: 6 OK).
+- **`K1 versión`:** la huella pasa de 1462997803 a **618858351**. Es esperado y no se re-declara.
+- **`K0-B guardado`:** la forma del estado cambió por las tres flags (hash `e9e018a7b659`, registrado `859f8c5ba041` para
+  VERSION 12). Hace falta VERSION 13 con su migración. Lo dejo para la integración, porque K6b-M/F pueden mover la forma
+  también.
+- **`K5c-M (a)` y `K5c-V`:** observan el mercado por sus pausas, y los mercados de una sola carta ya no frenan. Dan "muestra
+  chica: 8 pausas de élite" y "forzadas de tier 2 a veteranos 0". Hay que reapuntarlos a la firma narrada.
+- **`K6b-C meta de la cola`** (lento, `--solo`): FAIL, con la mediana 13 contra la meta ≤ 8. Leyendas: 77,5.
+
+Además: `simulate.js 1000` da 0 crashes, y la misma seed dos veces da salidas idénticas (md5 `4cee3544…`).
+
 ### 2026-10-05 — FASE K, K5c cerrado: el bloque C calibrado y mergeado en `fase-9r` (supervisor; PLAN.md §K5c)
 
 **Qué entra.**
