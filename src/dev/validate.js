@@ -812,7 +812,10 @@ const MAPAS_DE_CLAVES_DINAMICAS = [
   'mundo.planteles.*.*.splitsEnRegion',  // id de región -> splits que pasó ahí
   'career.temporada.registrosOtros',     // nombre de org -> { org, ganados, perdidos }
   'flags.cooldownHasta',                 // id de evento -> split hasta el que descansa
-  'flags.eventosVistos'                  // id de evento -> veces que salió
+  'flags.eventosVistos',                 // id de evento -> veces que salió
+  // K5c paso 3b: el récord del Swiss del último Mundial va por nombre de org (`{ v, d }`). Sin normalizar, el hash cambiaba con
+  // qué orgs del mundo de la muestra jugaron el Swiss (con Final2: 'Fragua Collective' salía y entraba 'Cuadro Rebels').
+  'internacional.swiss.record'           // nombre de org -> { v, d }
 ];
 
 function tipoDeValorEnForma(valor) {
@@ -990,7 +993,11 @@ check('K0-B guardado: la forma del estado coincide con la registrada para VERSIO
 // el hash solo miraba el estado inicial: una mutación en el último plantel, en
 // la última org de la última liga o en una fila de `registro.*` pasaba de largo
 // (revisión de K0-B, H3).
-const SEEDS_DE_LAS_FOTOS_DE_FORMA = [1, 2];
+// K5c paso 3b (regla 17): eran fijas ([1, 2]) y con Final2 ninguna de las dos juega un Mundial, así que la mutación de
+// `registro.internacionales` no tenía dónde aplicarse. Ahora: las primeras `SEEDS_MINIMAS_DE_LAS_FOTOS_DE_FORMA` seeds siempre, y
+// después se buscan en ronda (hasta `TOPE_SEEDS_DE_LAS_FOTOS_DE_FORMA`) carreras que le den lugar a una mutación que todavía no lo tiene.
+const SEEDS_MINIMAS_DE_LAS_FOTOS_DE_FORMA = 2;
+const TOPE_SEEDS_DE_LAS_FOTOS_DE_FORMA = 60;
 // Múltiplo de SPLITS_ENTRE_FOTOS_DE_FORMA, para que `recorrerCarreraParaForma` pase por ahí.
 const SPLIT_DE_LA_FOTO_INTERMEDIA = 21;
 
@@ -1035,14 +1042,25 @@ const MUTACIONES_DE_FORMA = [
 
 check('K0-B guardado: la forma detecta cambios en elementos que no son el primero y en rutas que solo existen tras jugar', () => {
   const fotos = [];
-  for (const seed of SEEDS_DE_LAS_FOTOS_DE_FORMA) {
+  const aplicaEn = (aplicar, fotosDeLaCarrera) => fotosDeLaCarrera.some((foto) => aplicar(structuredClone(foto.estado)));
+  let sinLugar = MUTACIONES_DE_FORMA;
+  const seedsUsadas = [];
+  for (let seed = 1; seed <= TOPE_SEEDS_DE_LAS_FOTOS_DE_FORMA && (seed <= SEEDS_MINIMAS_DE_LAS_FOTOS_DE_FORMA || sinLugar.length > 0); seed += 1) {
+    const deLaCarrera = [];
     recorrerCarreraParaForma(seed, (estado, esInicial, splits) => {
       // Solo se guardan 3 fotos por carrera: la inicial, una a mitad y la final.
       if (esInicial || splits === SPLIT_DE_LA_FOTO_INTERMEDIA || estado.terminado) {
-        fotos.push({ estado: structuredClone(estado), esInicial });
+        deLaCarrera.push({ estado: structuredClone(estado), esInicial });
       }
     });
+    const quedan = sinLugar.filter(([, aplicar]) => !aplicaEn(aplicar, deLaCarrera));
+    if (seed <= SEEDS_MINIMAS_DE_LAS_FOTOS_DE_FORMA || quedan.length < sinLugar.length) {
+      fotos.push(...deLaCarrera);
+      seedsUsadas.push(seed);
+      sinLugar = quedan;
+    }
   }
+  console.log(`      fotos de las seeds ${seedsUsadas.join(', ')}`);
   const hashBase = hashForma(formaDeFotos(fotos));
   const hashRepetido = hashForma(formaDeFotos(fotos.map((foto) => ({ ...foto, estado: structuredClone(foto.estado) }))));
   if (hashRepetido !== hashBase) {
@@ -8935,6 +8953,8 @@ const UMBRAL_K5C = 2;
 // sin nadie que ofrezca más abajo ("seguís buscando"). El lado "bajás" es raro (2 de 240 carreras): lo busca su propio
 // check, seed por seed, en vez de exigirlo de esta muestra.
 const FACTORES_DEGRADADO_K5C = [0.6, 0.66, 0.72];
+// Las carreras sin degradar del check de la línea de los 34.
+const SEEDS_LINEA_K5C = 12;
 
 function conUmbralK5C(valor, fn) {
   const previo = BALANCE.retiro.splitsSinOfertaEnTierParaBifurcar;
@@ -8965,7 +8985,10 @@ function carreraDegradadaK5C(seed, responderBase = responderPorDefectoK5C, facto
   const pasos = [];
   const responder = (sistema, st, decision, rngR) => {
     const respuesta = responderBase(sistema, st, decision, rngR);
-    if (decision.datos?.motivo === 'fin_mercado') {
+    // K5c paso 3b: solo la bifurcación del umbral. La de la presión de tier 2 (K5c-R, misma pausa `fin_mercado` con
+    // `variante: 'presion_tier2'`) tiene sus propios checks; con Final2 está prendida en el repo y frenaba en esta muestra
+    // (seed 19, split 24: "seguir/retirarse" con la cuenta del umbral en 0, y 11 veces con el umbral neutro).
+    if (decision.datos?.motivo === 'fin_mercado' && decision.datos.variante !== 'presion_tier2') {
       forks.push({
         seed, split: st.player.splitCount, edad: st.age, tier: st.career.tier, cuenta: st.flags.splitsSinOfertaEnTier,
         tiersOfertas: decision.datos.ofertas.map((oferta) => oferta.tier), opciones: decision.opciones.map((op) => op.id),
@@ -9141,22 +9164,33 @@ check('K5-C: la línea de los 34 sigue existiendo (con el umbral prendido y con 
       }
     }
   }
-  // Sin degradar (el responder por defecto, el umbral neutro): alguien llega a la línea y se va con su motivo.
-  for (let seed = 1; seed <= 12; seed += 1) {
+  // Sin degradar (el responder por defecto): alguien llega a la línea y se va con su motivo. K5c paso 3b: con Final2 nadie llega
+  // jugando (medido: 0 de las seeds 1-60, edad máxima 32, y lo mismo con el umbral y la presión de tier 2 neutros en memoria: el
+  // castigo etario y el desgaste terminan antes). Así que la línea se prueba en seco: el primer estado de pro en tier 1 de cada
+  // carrera real, con la edad corrida a la de la línea, se va en la próxima pretemporada con su motivo, y no por otro final
+  // (la línea corre antes que el declive y que la bifurcación del mercado, `systems/retiro.js:aplicarProfesional`).
+  const { edadRetiroForzoso } = BALANCE.retiro;
+  for (let seed = 1; seed <= SEEDS_LINEA_K5C; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
-    for (let i = 0; i < SPLITS_K5C && !state.terminado; i += 1) {
+    const esProDeTier1 = (st) => st.phase === 'profesional' && st.career.splitAscensoTier1 !== null;
+    for (let i = 0; i < SPLITS_K5C && !state.terminado && !esProDeTier1(state); i += 1) {
       state = avanzarSplitAuto(state, rng).state;
     }
-    if (state.terminado && state.age >= BALANCE.retiro.edadRetiroForzoso && state.career.splitAscensoTier1 !== null) {
-      enLaLinea += 1;
-      if (!String(state.motivoRetiro).startsWith(`Llegaste a los ${state.age}`)) {
-        problemas.push(`seed ${seed}: se retiró en la línea con motivo "${state.motivoRetiro}"`);
-      }
+    if (state.terminado || !esProDeTier1(state)) {
+      continue;
+    }
+    let corrido = { ...state, age: edadRetiroForzoso };
+    for (let i = 0; i < BALANCE.edad.splitsPorEdad && !corrido.terminado; i += 1) {
+      corrido = avanzarSplitAuto(corrido, rng).state;
+    }
+    enLaLinea += 1;
+    if (!corrido.terminado || !String(corrido.motivoRetiro).startsWith(`Llegaste a los ${corrido.age}`)) {
+      problemas.push(`seed ${seed}: corrido a los ${edadRetiroForzoso}, terminado ${corrido.terminado} con motivo "${corrido.motivoRetiro}"`);
     }
   }
   if (enLaLinea === 0) {
-    problemas.push('nadie llegó a la línea de los 34 en 12 carreras sin degradar');
+    problemas.push(`ningún pro de tier 1 para correr a la línea en ${SEEDS_LINEA_K5C} carreras sin degradar`);
   }
   if (problemas.length > 0) {
     throw new Error(problemas.slice(0, 5).join(' · '));
@@ -20268,7 +20302,14 @@ check('K5c-R guardado VERSION 12: la forma de la 11 sigue registrada, y un guard
       if (datos.state.career.splitsRetirado !== 0) {
         throw new Error(`seed ${seed}, split ${i}: el migrado trae splitsRetirado ${datos.state.career.splitsRetirado} y debería traer 0`);
       }
-      const realSinRetirado = { ...state, career: { ...state.career, splitsRetirado: 0 } };
+      // K5c paso 3b: lo mismo con la cuenta de la presión de tier 2. Con las perillas neutras (99) nunca subía y el real la tenía en 0;
+      // con las de Final2 sube desde los 20, y la 11 no la contaba: `migrarDe11` la arranca en 0 (su doc) y el check exige ese 0.
+      if (datos.state.flags.splitsTier2SinOfertaTier1 !== 0) {
+        throw new Error(`seed ${seed}, split ${i}: el migrado trae la cuenta de la presión en ${datos.state.flags.splitsTier2SinOfertaTier1} y debería traer 0`);
+      }
+      const realSinRetirado = {
+        ...state, career: { ...state.career, splitsRetirado: 0 }, flags: { ...state.flags, splitsTier2SinOfertaTier1: 0 }
+      };
       if (!sonIgualesK4cG(datos.state, JSON.parse(JSON.stringify(realSinRetirado)))) {
         throw new Error(`seed ${seed}, split ${i}: el estado migrado no es el del guardado de la 12`);
       }
@@ -20440,6 +20481,17 @@ const {
 const { isDeepStrictEqual: sonIgualesK5ce } = await import('util');
 const ACUMULATIVOS_K5CE = Object.keys(BALANCE.atributos.acumulativos);
 const TEXTO_PRIMERA_VEZ_K5CE = /cobrar los años|Los años empiezan/;
+// K5c paso 3b: el paso 3a prendió las perillas en el repo (Final2), así que "apagado" ya no es el repo: es este neutro, fijado EN
+// MEMORIA (con pérdida, aceleración y fracción en 0 el sistema no toca nada). "Prendido" es el ejemplo de arriba (`DESGASTE_K5CE`,
+// con gracia 2 para probar la gracia) en los checks del mecanismo, y los valores del repo (`DESGASTE_REAL_K5CE`, una copia tomada al
+// cargar) en los de efecto: el veterano y lo que se ve.
+const DESGASTE_NEUTRO_K5CE = {
+  graciaAnios: 0,
+  perdidaPorSplit: Object.fromEntries(Object.keys(BALANCE.atributos.desgaste.perdidaPorSplit).map((stat) => [stat, 0])),
+  aceleracionPorAnio: 0,
+  fraccionBonusPorSplit: 0
+};
+const DESGASTE_REAL_K5CE = structuredClone(BALANCE.atributos.desgaste);
 
 function conDesgasteK5CE(valores, fn) {
   const d = BALANCE.atributos.desgaste;
@@ -20465,25 +20517,28 @@ function carreraConDesgasteK5CE(seed, visita, valores = DESGASTE_K5CE) {
   return state;
 }
 
-// Las seeds de la ronda donde el desgaste muerde (una vez por corrida: la búsqueda juega las carreras con las perillas prendidas).
-let seedsQueMuerdenK5CE = null;
-function seedsDelDesgasteK5CE() {
-  if (!seedsQueMuerdenK5CE) {
-    seedsQueMuerdenK5CE = [];
-    for (let seed = 1; seed <= TOPE_SEEDS_K5CE && seedsQueMuerdenK5CE.length < CUANTAS_SEEDS_K5CE; seed += 1) {
+// Las seeds de la ronda donde el desgaste muerde con esos valores (una vez por corrida y por valores: la búsqueda juega las carreras
+// con las perillas prendidas).
+const seedsQueMuerdenK5CE = new Map();
+function seedsDelDesgasteK5CE(valores = DESGASTE_K5CE) {
+  if (!seedsQueMuerdenK5CE.has(valores)) {
+    const seeds = [];
+    for (let seed = 1; seed <= TOPE_SEEDS_K5CE && seeds.length < CUANTAS_SEEDS_K5CE; seed += 1) {
       let mordio = false;
       carreraConDesgasteK5CE(seed, (antes, despues) => {
         mordio = mordio || hayDesgasteK5ce(despues.player);
-      });
+      }, valores);
       if (mordio) {
-        seedsQueMuerdenK5CE.push(seed);
+        seeds.push(seed);
       }
     }
+    seedsQueMuerdenK5CE.set(valores, seeds);
   }
-  if (seedsQueMuerdenK5CE.length < CUANTAS_SEEDS_K5CE) {
-    throw new Error(`check vacío: el desgaste mordió en ${seedsQueMuerdenK5CE.length} carreras de las seeds 1-${TOPE_SEEDS_K5CE} (hacen falta ${CUANTAS_SEEDS_K5CE})`);
+  const seeds = seedsQueMuerdenK5CE.get(valores);
+  if (seeds.length < CUANTAS_SEEDS_K5CE) {
+    throw new Error(`check vacío: el desgaste mordió en ${seeds.length} carreras de las seeds 1-${TOPE_SEEDS_K5CE} (hacen falta ${CUANTAS_SEEDS_K5CE})`);
   }
-  return seedsQueMuerdenK5CE;
+  return seeds;
 }
 
 check('K5c-E neutro y gracia: misma seed con las perillas prendidas y apagadas da el mismo estado split por split hasta que el desgaste muerde la primera vez, y nunca muerde con edad <= edadPico + gracia', () => {
@@ -20496,7 +20551,7 @@ check('K5c-E neutro y gracia: misma seed con las perillas prendidas y apagadas d
     let yaMordio = false;
     carreraConDesgasteK5CE(seed, (antes, despues) => {
       split += 1;
-      apagado = avanzarSplitAuto(apagado, rngApagado).state;
+      apagado = conDesgasteK5CE(DESGASTE_NEUTRO_K5CE, () => avanzarSplitAuto(apagado, rngApagado)).state;
       const limite = despues.player.oculto.edadPico + DESGASTE_K5CE.graciaAnios;
       if (hayDesgasteK5ce(despues.player) && despues.age <= limite) {
         throw new Error(`seed ${seed}, split ${split}: el desgaste mordió con edad ${despues.age} <= edadPico + gracia (${limite})`);
@@ -20525,7 +20580,7 @@ check('K5c-E neutro y gracia: misma seed con las perillas prendidas y apagadas d
   const corrida = (edad, prendido) => {
     const conEdad = { ...estado, age: edad };
     const correr = () => aplicarAtributosK5ce(conEdad, conElRngDeK4cG(2, rng.estado())).state;
-    return prendido ? conDesgasteK5CE(DESGASTE_K5CE, correr) : correr();
+    return conDesgasteK5CE(prendido ? DESGASTE_K5CE : DESGASTE_NEUTRO_K5CE, correr);
   };
   for (const edad of [Math.floor(estado.player.oculto.edadPico) - 3, estado.player.oculto.edadPico, limite - 0.5, limite]) {
     if (!sonIgualesK5ce(comoJsonK4cG(corrida(edad, true)), comoJsonK4cG(corrida(edad, false)))) {
@@ -20549,22 +20604,36 @@ check('K5c-E un veterano pasado del pico termina con cada acumulativo, el bonus 
     seedsRecorridas = seed;
     const rng = mulberry32(seed);
     let estado = createInitialState(seed, rng);
+    // K5c paso 3b: con Final2 las carreras terminan antes de los 45 splits (mediana de 26 años), así que el veterano es el último
+    // estado profesional en juego de esos 45 splits (antes era el del split 45, y una carrera terminada se salteaba).
+    let rngVeterano = null;
+    let veterano = null;
     for (let i = 0; i < 45 && !estado.terminado; i += 1) {
+      if (estado.phase === 'profesional') {
+        veterano = estado;
+        rngVeterano = rng.estado();
+      }
       estado = avanzarSplitAuto(estado, rng).state;
     }
-    if (estado.terminado || estado.player.bonusPermanente.mecanica <= 0) {
+    if (!estado.terminado && estado.phase === 'profesional') {
+      veterano = estado;
+      rngVeterano = rng.estado();
+    }
+    if (!veterano || veterano.player.bonusPermanente.mecanica <= 0) {
       continue;
     }
-    // El mismo estado y el mismo rng, con la edad corrida 4 años pasada del límite: lo único que cambia es el desgaste.
-    const edad = Math.ceil(estado.player.oculto.edadPico + DESGASTE_K5CE.graciaAnios) + 4;
+    estado = veterano;
+    // El mismo estado y el mismo rng, con la edad corrida 4 años pasada del límite: lo único que cambia es el desgaste (el del
+    // repo, Final2, contra el neutro en memoria).
+    const edad = Math.ceil(estado.player.oculto.edadPico + DESGASTE_REAL_K5CE.graciaAnios) + 4;
     const jugar = (prendido) => {
       const correr = () => {
-        const rngLocal = conElRngDeK4cG(seed, rng.estado());
+        const rngLocal = conElRngDeK4cG(seed, rngVeterano);
         let st = { ...estado, age: edad };
         for (let i = 0; i < 6; i += 1) st = aplicarAtributosK5ce(st, rngLocal).state;
         return st;
       };
-      return prendido ? conDesgasteK5CE(DESGASTE_K5CE, correr) : correr();
+      return conDesgasteK5CE(prendido ? DESGASTE_REAL_K5CE : DESGASTE_NEUTRO_K5CE, correr);
     };
     const con = jugar(true);
     const sin = jugar(false);
@@ -20645,7 +20714,7 @@ check('K5c-E con las perillas prendidas bonus = Σ marcas en cada split (el desg
 });
 
 check('K5c-E se ve: la primera vez que muerde hay una línea en el split (una sola por carrera, ninguna sin desgaste) y la ficha, en "Lo que construiste", dice lo que te sacaron los años solo si es distinto de 0', () => {
-  for (const seed of seedsDelDesgasteK5CE()) {
+  for (const seed of seedsDelDesgasteK5CE(DESGASTE_REAL_K5CE)) {
     let lineas = 0;
     let primerasMordidas = 0;
     const final = carreraConDesgasteK5CE(seed, (antes, despues, logs) => {
@@ -20656,7 +20725,7 @@ check('K5c-E se ve: la primera vez que muerde hay una línea en el split (una so
       if (lineasDelSplit !== (primera ? 1 : 0)) {
         throw new Error(`seed ${seed}, split ${despues.player.splitCount}: ${lineasDelSplit} línea(s) del desgaste (primera vez: ${primera})`);
       }
-    });
+    }, DESGASTE_REAL_K5CE);
     if (lineas !== 1 || primerasMordidas !== 1) {
       throw new Error(`seed ${seed}: ${lineas} líneas de primera vez y ${primerasMordidas} primeras mordidas (debe ser 1 y 1)`);
     }
@@ -20674,11 +20743,11 @@ check('K5c-E se ve: la primera vez que muerde hay una línea en el split (una so
       throw new Error(`seed ${seed}: la línea de los años debe estar sola sin marcas (${sinMarcas.length}) y no estar con el desgaste en 0`);
     }
   }
-  // Apagado (el repo): ni línea en el split ni línea en la ficha.
+  // Apagado (el neutro, en memoria; el repo ya lo tiene prendido): ni línea en el split ni línea en la ficha.
   const rng = mulberry32(1);
   let st = createInitialState(1, rng);
   for (let i = 0; i < 60 && !st.terminado; i += 1) {
-    const paso = avanzarSplitAuto(st, rng);
+    const paso = conDesgasteK5CE(DESGASTE_NEUTRO_K5CE, () => avanzarSplitAuto(st, rng));
     st = paso.state;
     if (paso.logs.some((log) => TEXTO_PRIMERA_VEZ_K5CE.test(log.message))) throw new Error('con las perillas apagadas salió la línea del desgaste');
   }
@@ -20774,6 +20843,31 @@ function pausasDeMercadoK5cM() {
   return cosechaK5cM;
 }
 
+// K5c paso 3b (regla 17): con Final2 (carreras más cortas, la LCK arriba) las 30 carreras de la cosecha dejan 9 pausas de élite y
+// (a) y (a2) pedían 10. La élite se junta en ronda: a las pausas de élite de las seeds 1-`SEEDS_K5CM` se suman las de las seeds
+// siguientes (mismas carreras de `criterio`, 60 splits) hasta `ELITE_MINIMA_K5CM` o hasta `TOPE_SEEDS_ELITE_K5CM`. El jugador medio
+// sigue saliendo de la cosecha de siempre.
+const ELITE_MINIMA_K5CM = 20;
+const TOPE_SEEDS_ELITE_K5CM = 150;
+let eliteK5cM = null;
+let seedsEliteK5cM = SEEDS_K5CM;
+function pausasDeEliteK5cM() {
+  if (!eliteK5cM) {
+    const esElite = (st) => factorElite(nivelDelJugador(st)) >= 1;
+    eliteK5cM = pausasDeMercadoK5cM().filter(({ st }) => esElite(st));
+    for (let seed = SEEDS_K5CM + 1; seed <= TOPE_SEEDS_ELITE_K5CM && eliteK5cM.length < ELITE_MINIMA_K5CM; seed += 1) {
+      seedsEliteK5cM = seed;
+      correrCarreraSimulate(seed, 60, (sistema, st, decision, rng) => {
+        if (sistema.id === 'mercado' && decision.datos?.motivo === 'oferta' && esElite(st)) {
+          eliteK5cM.push({ seed, st, decision });
+        }
+        return ESTRATEGIAS_K0.criterio(sistema, st, decision, rng);
+      });
+    }
+  }
+  return eliteK5cM;
+}
+
 function conPerillasEliteK5cM(pesoFuerza, rebaja, fn) {
   const elite = BALANCE.mercado.elite;
   const previas = [elite.pesoFuerzaOrden, elite.rebajaMerito, elite.rebajaDisputa];
@@ -20807,9 +20901,11 @@ function fuerzasTier1DeLaManoK5cM(st, pesoFuerza, rebaja) {
 
 check('K5c-M (a): con las perillas de élite encendidas en memoria, la élite recibe clubes de tier 1 más fuertes y el jugador medio la misma mano', () => {
   const grupos = { elite: [], medio: [] };
-  for (const { st } of pausasDeMercadoK5cM()) {
+  const elite = new Set(pausasDeEliteK5cM());
+  for (const pausa of new Set([...pausasDeMercadoK5cM(), ...pausasDeEliteK5cM()])) {
+    const { st } = pausa;
     const f = factorElite(nivelDelJugador(st));
-    const grupo = f >= 1 ? 'elite' : (f === 0 ? 'medio' : null);
+    const grupo = elite.has(pausa) ? 'elite' : (f === 0 && pausa.seed <= SEEDS_K5CM ? 'medio' : null);
     const congelado = conTodoCongeladoK5cM(st);
     if (grupo && fuerzasTier1DeLaManoK5cM(congelado, 0, SIN_REBAJA_K5CM).length > 0) {
       grupos[grupo].push(congelado);
@@ -20820,13 +20916,13 @@ check('K5c-M (a): con las perillas de élite encendidas en memoria, la élite re
   }
   const medianaDe = (estados, pesoFuerza, rebaja) => medianaSim(estados.flatMap((st) => fuerzasTier1DeLaManoK5cM(st, pesoFuerza, rebaja)));
   const config = [['apagado', 0, SIN_REBAJA_K5CM], ['solo k', PESO_FUERZA_K5CM, SIN_REBAJA_K5CM], ['solo rebaja', 0, REBAJAS_K5CM], ['ambas', PESO_FUERZA_K5CM, REBAJAS_K5CM]];
-  const elite = Object.fromEntries(config.map(([nombre, k, r]) => [nombre, medianaDe(grupos.elite, k, r)]));
+  const deElite = Object.fromEntries(config.map(([nombre, k, r]) => [nombre, medianaDe(grupos.elite, k, r)]));
   const medio = Object.fromEntries(config.map(([nombre, k, r]) => [nombre, medianaDe(grupos.medio, k, r)]));
-  const resumen = `élite (${grupos.elite.length} pausas) ${JSON.stringify(elite)}; medio (${grupos.medio.length}) ${JSON.stringify(medio)}`;
-  if (elite['solo k'] - elite.apagado < SUBA_MINIMA_SOLO_K_K5CM) {
+  const resumen = `élite (${grupos.elite.length} pausas, seeds 1-${seedsEliteK5cM}) ${JSON.stringify(deElite)}; medio (${grupos.medio.length}) ${JSON.stringify(medio)}`;
+  if (deElite['solo k'] - deElite.apagado < SUBA_MINIMA_SOLO_K_K5CM) {
     throw new Error(`con solo k = ${PESO_FUERZA_K5CM} la fuerza mediana de la élite sube menos de ${SUBA_MINIMA_SOLO_K_K5CM}: ${resumen}`);
   }
-  if (elite.ambas - elite.apagado < SUBA_MINIMA_AMBAS_K5CM) {
+  if (deElite.ambas - deElite.apagado < SUBA_MINIMA_AMBAS_K5CM) {
     throw new Error(`con k y la rebaja la fuerza mediana de la élite sube menos de ${SUBA_MINIMA_AMBAS_K5CM}: ${resumen}`);
   }
   for (const [nombre] of config) {
@@ -20841,7 +20937,7 @@ check('K5c-M (a2): con la rebaja encendida en memoria, los clubes más fuertes d
   const contar = (rebaja, quiereElite) => conPerillasEliteK5cM(0, rebaja, () => {
     let pares = 0;
     let estados = 0;
-    for (const { st } of pausasDeMercadoK5cM()) {
+    for (const { st } of (quiereElite ? pausasDeEliteK5cM() : pausasDeMercadoK5cM())) {
       const f = factorElite(nivelDelJugador(st));
       if (quiereElite ? f < 1 : f > 0) {
         continue;
@@ -20855,7 +20951,7 @@ check('K5c-M (a2): con la rebaja encendida en memoria, los clubes más fuertes d
   });
   const elite = [contar(SIN_REBAJA_K5CM, true), contar(REBAJAS_K5CM, true)];
   const medio = [contar(SIN_REBAJA_K5CM, false), contar(REBAJAS_K5CM, false)];
-  const resumen = `top ${TOP_MUNDO_K5CM} del mundo ofrecibles: élite ${elite[0].pares} -> ${elite[1].pares} (${elite[0].estados} pausas), medio ${medio[0].pares} -> ${medio[1].pares} (${medio[0].estados} pausas)`;
+  const resumen = `top ${TOP_MUNDO_K5CM} del mundo ofrecibles: élite ${elite[0].pares} -> ${elite[1].pares} (${elite[0].estados} pausas, seeds 1-${seedsEliteK5cM}), medio ${medio[0].pares} -> ${medio[1].pares} (${medio[0].estados} pausas)`;
   if (elite[0].estados < 10) {
     throw new Error(`muestra chica: ${resumen}`);
   }
@@ -22030,14 +22126,17 @@ check('K5c (revisión): la vuelta del retiro nunca devuelve a la edad de la lín
   const { edadRetiroForzoso, ventanaDeVueltaSplits } = BALANCE.retiro;
   const problemas = [];
   let guardas = 0;
+  let guardasEnSeco = 0;
   let vueltas = 0;
   let carreras = 0;
-  for (let seed = 1; seed <= TOPE_SEEDS_K5CREV && guardas < GUARDAS_K5CREV; seed += 1) {
+  const alcanza = () => guardas + guardasEnSeco >= GUARDAS_K5CREV && vueltas > 0;
+  for (let seed = 1; seed <= TOPE_SEEDS_K5CREV && !alcanza(); seed += 1) {
     const rng = mulberry32(seed);
     let st = createInitialState(seed, rng);
     carreras += 1;
     for (let i = 0; i < SPLITS_K5CREV && !st.terminado; i += 1) {
       const antes = st;
+      const rngAntes = rng.estado();
       st = avanzarSplitAuto(st, rng).state;
       if (antes.phase !== 'retirado') {
         continue;
@@ -22050,6 +22149,14 @@ check('K5c (revisión): la vuelta del retiro nunca devuelve a la edad de la lín
         if (!(st.terminado && st.phase === 'retirado')) {
           problemas.push(`seed ${seed} split ${i}: volvería con ${antes.age + cierresDeAnio} y la carrera no cerró (phase ${st.phase}, terminado ${st.terminado})`);
         }
+      } else if (preguntaria) {
+        // K5c paso 3b: con Final2 casi nadie se retira cerca de la línea (1 disparo natural en 100 carreras), así que cada pregunta
+        // de la ventana se repite en seco: el mismo estado y el mismo rng, con la edad corrida para volver justo en la línea.
+        const corrido = avanzarSplitAuto({ ...antes, age: edadRetiroForzoso - cierresDeAnio }, conElRngDeK4cG(seed, rngAntes)).state;
+        guardasEnSeco += 1;
+        if (!(corrido.terminado && corrido.phase === 'retirado')) {
+          problemas.push(`seed ${seed} split ${i} (en seco): volvería con ${edadRetiroForzoso} y la carrera no cerró (phase ${corrido.phase}, terminado ${corrido.terminado})`);
+        }
       }
       if (st.phase === 'profesional') {
         vueltas += 1;
@@ -22059,9 +22166,10 @@ check('K5c (revisión): la vuelta del retiro nunca devuelve a la edad de la lín
       }
     }
   }
-  if (guardas < GUARDAS_K5CREV || vueltas === 0) {
-    throw new Error(`la muestra no mide nada: ${guardas} disparos de la guarda (mínimo ${GUARDAS_K5CREV}) y ${vueltas} vueltas en ${carreras} carreras`);
+  if (!alcanza()) {
+    throw new Error(`la muestra no mide nada: ${guardas} disparos de la guarda y ${guardasEnSeco} en seco (mínimo ${GUARDAS_K5CREV} entre los dos) y ${vueltas} vueltas en ${carreras} carreras`);
   }
+  console.log(`      ${guardas} disparos de la guarda y ${guardasEnSeco} en seco, ${vueltas} vueltas en ${carreras} carreras`);
   if (problemas.length > 0) {
     throw new Error(`${problemas.length} problema(s) en ${carreras} carreras: ${problemas.slice(0, 4).join(' | ')}`);
   }
@@ -22531,12 +22639,30 @@ const RNGS_RENOVACION_K5CV = 40;
 const SEEDS_CARRERAS_K5CV = 20;
 const SPLITS_CARRERAS_K5CV = 70;
 const REGIMEN_BARRIDO_K5CV = { castigoEtarioNivel: 100, factorRenovacionDeclive: 0 };
+// K5c paso 3b: el paso 3a fijó en el repo el régimen del barrido (castigo 100, factor 0) y con él las dos partes quedaron sin muestra.
+// (1) Con castigo 100 la vara de los 25 y la de los 26 quedan 50-60 puntos arriba de la alternativa: el veterano "justo entre las dos"
+// es de élite y se saltea (0 fixtures), y con el factor de declive en 0 la perilla neutra ya da 0 a los 26 (el mutante que ignora
+// la perilla no se distinguiría). La parte (1) es del mecanismo y corre con el castigo y el factor de antes del paso 3, en memoria.
+// (2) Con `brechaFranquicia` en 40 casi nadie es franquicia y no hay ofertas forzadas que medir: la parte (2) corre con la brecha
+// de antes del paso 3, en memoria (el resto, Final2 del repo).
+const REGIMEN_FIXTURE_K5CV = { castigoEtarioNivel: 20, factorRenovacionDeclive: 0.3 };
+const BRECHA_FRANQUICIA_K5CV = 10;
+function conBrechaFranquiciaK5CV(fn) {
+  const mercado = BALANCE.mercado;
+  const previa = mercado.brechaFranquicia;
+  mercado.brechaFranquicia = BRECHA_FRANQUICIA_K5CV;
+  try {
+    return fn();
+  } finally {
+    mercado.brechaFranquicia = previa;
+  }
+}
 const AVISO_EDAD_K5CV = 'Buscan gente más joven para el puesto.';
 
 check('K5c-V: con la perilla en 26 en memoria, a un veterano de tier 2 con nivel medio se le corta la renovación desde los 26 (antes no), y el aviso dice por qué', () => {
   const problemas = [];
   let fixtures = 0;
-  for (const { seed, st } of pausasDeMercadoK5cM()) {
+  conPerillasDemandaK5CNAV(REGIMEN_FIXTURE_K5CV, () => { for (const { seed, st } of pausasDeMercadoK5cM()) {
     const ligaActual = st.mundo.ligas.find((liga) => liga.id === st.career.liga);
     if (st.career.tier !== 2 || ligaActual?.tier !== 2 || !ligaActual.orgs.some((org) => org.nombre === st.career.currentOrg)) {
       continue;
@@ -22569,14 +22695,14 @@ check('K5c-V: con la perilla en 26 en memoria, a un veterano de tier 2 con nivel
     if (antes === 0 || desde !== 0) {
       problemas.push(`${donde}: renovaciones en ${RNGS_RENOVACION_K5CV} tiradas a los 25 ${antes}, a los 26 ${desde} (se esperaba > 0 y 0)`);
     }
-  }
+  } });
   if (fixtures < 3) {
     problemas.push(`muestra chica: ${fixtures} pausas de tier 2 con un veterano de nivel medio`);
   }
 
   // (2) Carreras reales. La edad del mercado es la de antes del split (la pretemporada lo abre); el tier se toma de antes o de después
   // del split, porque el mismo split te puede bajar a la academia (tier 2) antes de que corra el mercado (seed 13: LPL -> tier 2 a los 30).
-  const correr = (edadPerilla) => conPerillasDemandaK5CNAV({ ...REGIMEN_BARRIDO_K5CV, edadCastigoRenovacionTier2: edadPerilla }, () => {
+  const correr = (edadPerilla) => conBrechaFranquiciaK5CV(() => conPerillasDemandaK5CNAV({ ...REGIMEN_BARRIDO_K5CV, edadCastigoRenovacionTier2: edadPerilla }, () => {
     const cuenta = { forzadas: 0, forzadasQuePierden: 0, avisosEdad: 0, avisosFuera: 0 };
     for (let seed = 1; seed <= SEEDS_CARRERAS_K5CV; seed += 1) {
       const rng = mulberry32(seed);
@@ -22603,7 +22729,7 @@ check('K5c-V: con la perilla en 26 en memoria, a un veterano de tier 2 con nivel
       }
     }
     return cuenta;
-  });
+  }));
   const neutra = correr(99);
   const conPerilla = correr(EDAD_VETERANO_K5CV);
   const resumen = `forzadas de tier 2 a veteranos ${neutra.forzadas} (pierden la disputa ${neutra.forzadasQuePierden}) -> ${conPerilla.forzadas} (${conPerilla.forzadasQuePierden}); avisos por edad ${neutra.avisosEdad} -> ${conPerilla.avisosEdad} (fuera de lugar ${conPerilla.avisosFuera})`;
