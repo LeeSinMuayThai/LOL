@@ -783,7 +783,11 @@ const FORMAS_CONOCIDAS = {
   // K5c (no-pro): no agrega ni cambia campos del estado (el piso de soloQ vive en data/perfiles.json, que no se guarda); la forma
   // sale de las carreras de muestra (`formaDeLasCarreras`) y sus trayectorias amateur cambian. Se re-registra (reemplaza a
   // '403b78edfe30').
-  12: '4aecafabc826'
+  // K5c (bloque C calibrado: Final2 + LPL 91, cartas de cierre del declive, El GOAT): tampoco agrega campos al estado (la medición del
+  // diff de los sistemas tocados no encuentra ninguna asignación nueva a `state`); la forma cambia solo porque las carreras de muestra
+  // (`formaDeLasCarreras`) recorren otras rutas (otras ligas, otro cierre de carrera). La 12 nunca salió de la rama: no sube VERSION,
+  // se re-registra (reemplaza a '4aecafabc826').
+  12: '859f8c5ba041'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -20983,16 +20987,26 @@ function pausasDeEliteK5cM() {
   return eliteK5cM;
 }
 
+// K5c paso 3b-1 (regla 17): el check prueba el MECANISMO de la élite con la casa neutra en memoria (`mercado.casa`: margenAlcanza 99 y
+// fraccionCastigo 1, los valores neutros de K5c-H). Con los definitivos ("la casa primero", decisión del usuario) la mano de élite
+// ya viene ordenada por la casa (~2,2 ofertas) y la perilla `k` no mueve la fuerza mediana (66,5 / 66,5 / 67): el efecto no se mide.
+// La comparación sigue siendo apagado contra prendido de `mercado.elite` con la misma muestra, con los mismos umbrales.
+const CASA_NEUTRA_K5CM = { margenAlcanza: 99, fraccionCastigo: 1 };
 function conPerillasEliteK5cM(pesoFuerza, rebaja, fn) {
   const elite = BALANCE.mercado.elite;
+  const casa = BALANCE.mercado.casa;
   const previas = [elite.pesoFuerzaOrden, elite.rebajaMerito, elite.rebajaDisputa];
+  const previasCasa = [casa.margenAlcanza, casa.fraccionCastigo];
   elite.pesoFuerzaOrden = pesoFuerza;
   elite.rebajaMerito = rebaja.merito;
   elite.rebajaDisputa = rebaja.disputa;
+  casa.margenAlcanza = CASA_NEUTRA_K5CM.margenAlcanza;
+  casa.fraccionCastigo = CASA_NEUTRA_K5CM.fraccionCastigo;
   try {
     return fn();
   } finally {
     [elite.pesoFuerzaOrden, elite.rebajaMerito, elite.rebajaDisputa] = previas;
+    [casa.margenAlcanza, casa.fraccionCastigo] = previasCasa;
   }
 }
 
@@ -21049,10 +21063,12 @@ check('K5c-M (a): con las perillas de élite encendidas en memoria, la élite re
 });
 
 check('K5c-M (a2): con la rebaja encendida en memoria, los clubes más fuertes del mundo abren asiento para la élite (y para el medio, ninguno nuevo)', () => {
+  // La cosecha se corre ANTES de encender nada en memoria (con los valores de verdad): si no, la muestra dependería de si (a) corrió antes.
+  const cosecha = { true: pausasDeEliteK5cM(), false: pausasDeMercadoK5cM() };
   const contar = (rebaja, quiereElite) => conPerillasEliteK5cM(0, rebaja, () => {
     let pares = 0;
     let estados = 0;
-    for (const { st } of (quiereElite ? pausasDeEliteK5cM() : pausasDeMercadoK5cM())) {
+    for (const { st } of cosecha[quiereElite]) {
       const f = factorElite(nivelDelJugador(st));
       if (quiereElite ? f < 1 : f > 0) {
         continue;

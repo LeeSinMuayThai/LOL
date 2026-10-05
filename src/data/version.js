@@ -114,4 +114,7 @@ export const VERSION_JUEGO = 'K4c';
 // de la mejor (data/perfiles.json: leal y profesional 0,6), la previa evalúa la casa con la confianza proyectada (la que lee el
 // motor después del reparto: cambia cuándo frena la semana) y `scoutingSesgoEtario` se ablanda a los 18-20. Cambia qué rutina
 // sale y cuándo se consume el rng del reparto. Misma versión (12, no salió): reemplaza a 860000955.
-export const HUELLA_JUEGO = 2039436444;
+// K5c (el bloque C calibrado, 1462997803): Final2 (las claves de balance fijadas) y la LPL en 91, el no-pro con piso de soloQ por perfil,
+// las cartas de cierre del declive y El GOAT = nuevo Faker. Cambia el stream (otras carreras en todas las ligas). Misma versión
+// (12, no salió; `VERSION_JUEGO` sigue en 'K4c'): reemplaza a 2039436444.
+export const HUELLA_JUEGO = 1462997803;
