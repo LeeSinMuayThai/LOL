@@ -780,7 +780,10 @@ const FORMAS_CONOCIDAS = {
   // semana de K6a-A); K6a-U no cambia la forma. Reemplaza a 'd00614b9a20a' (K6a-M) y '446e670c1c40' (K6a-A).
   // K6a-R: `serie.cantada` (la serie de eliminación cantada que no frena en el plan), su línea del feed (`cantada`, `pSerie`) y
   // `cantada` en el log de post-serie. La 12 sigue sin salir: se re-registra (reemplaza a '516706fb5653').
-  12: '403b78edfe30'
+  // K5c (no-pro): no agrega ni cambia campos del estado (el piso de soloQ vive en data/perfiles.json, que no se guarda); la forma
+  // sale de las carreras de muestra (`formaDeLasCarreras`) y sus trayectorias amateur cambian. Se re-registra (reemplaza a
+  // '403b78edfe30').
+  12: '4aecafabc826'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -22710,6 +22713,109 @@ check('K6a-A la opción que termina la carrera nunca va primera (el dato y las c
     }
   }
   if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${[...new Set(problemas)].slice(0, 4).join(' | ')}`);
+});
+
+// --- K5c (no-pro): el piso de soloQ de los perfiles y la previa de la casa (PLAN.md K5c, "No llega a pro ~32%") ---
+//
+// Medido en `k5c-nopro`: K6a-A (661c494) llevó "no llega a pro" de 24,7% a 37,3% (`criterio` 300 × 60) porque la semana
+// amateur la elige el perfil y el leal y el profesional casi no grindeaban (2,9 y 3,4 bloques de ranked por semana contra
+// 5,2 del hambriento): el leal no llegaba el 62%. El piso de soloQ (`pisoSoloQ`, data/perfiles.json) acota esa brecha.
+const { opcionesDeSemana: opcionesDeSemanaNP, probabilidadesDeCasa: probabilidadesDeCasaNP, resolver: resolverAmateurNP } = await import('../systems/amateur.js');
+const { ofrecerRutinas: ofrecerRutinasNP } = await import('../core/rutinas.js');
+const { perfilInicial: perfilInicialNP, IDS_PERFIL: IDS_PERFIL_NP } = await import('../core/perfil.js');
+const { correrCarrera: correrCarreraNP } = await import('./simulate.js');
+const { ESTRATEGIAS: ESTRATEGIAS_NP } = await import('./estrategias.js');
+
+// La semana que elige cada perfil al arrancar (seeds 1..N, el menú que ofrece el sorteo): cuántos bloques de ranked.
+const SEEDS_SEMANA_NP = 200;
+// Ningún perfil grindea menos que esta fracción del ranked semanal del que más grindea (sin piso: leal 2,9 / hambriento 5,2 = 0,56).
+const FRACCION_RANKED_MINIMA_NP = 0.7;
+// No-pro por perfil, con el perfil elegido en la pantalla de inicio (`criterio`, seeds 1..N, splits hasta pasar los 24).
+const SEEDS_BRECHA_NP = 150;
+const SPLITS_BRECHA_NP = 20;
+// La meta del usuario ("total ~20% y brecha acotada"): ningún perfil por encima de ~2× el no-pro del mejor, algo como 15-28%.
+// Con el piso: 20 / 21,3 / 26 / 28 (profesional / hambriento / showman / leal); sin el piso (mutante) el leal y el profesional
+// quedan en 41,3 y 39,3, a 20 puntos del mejor, y el doble del mejor no los separa. Por eso pide las dos cosas.
+const FACTOR_BRECHA_NP = 2;
+const DIFERENCIA_MAXIMA_NP = 12;
+
+// La previa proyecta la semana sin dado (la media de cada término del reparto); el motor tira las caídas con gauss. El check
+// pide las dos cosas: que la previa evalúe la casa con el colegio Y la confianza proyectados (antes usaba la confianza de
+// antes de la semana, y el motor tira con la de después), y que esa proyección sea la media de lo que deja el motor.
+const DRAWS_PREVIA_NP = 400;
+const TOLERANCIA_MEDIA_NP = 0.5;
+check(`K5c la previa de la semana amateur dice el riesgo de casa con el que tira el motor (colegio y confianza de después de la semana, regla 15)`, () => {
+  const problemas = [];
+  const a = BALANCE_K6aA.amateur;
+  const fijas = ['aparecer_en_casa', 'todo_al_ranked', 'bancar_el_colegio'].map((id) => RUTINAS.amateur.find((rutina) => rutina.id === id));
+  let movioLaConfianza = 0;
+  for (const seed of [1, 2, 3]) {
+    const { state: base } = estadoAmateurK6aA(seed, { estudios: a.confiscacionUmbral + 5, perfil: 'leal' });
+    const st = { ...base, player: { ...base.player, familyTrust: a.trustReferencia }, flags: { ...base.flags, negociacionGanada: false } };
+    for (const opcion of opcionesDeSemanaNP(st, fijas)) {
+      const estudios = st.player.studies + opcion.proy.estudios;
+      const confianza = Math.min(BALANCE_K6aA.stats.max, Math.max(0, st.player.familyTrust + opcion.proy.confianza));
+      if (Math.round(confianza) !== Math.round(st.player.familyTrust)) movioLaConfianza += 1;
+      const { corte, confiscacion } = probabilidadesDeCasaNP(st, estudios, confianza);
+      const esperado = corte + (1 - corte) * confiscacion;
+      if (Math.abs(esperado - opcion.peligro.casa) > 1e-9) {
+        problemas.push(`seed ${seed}, "${opcion.rutina.id}": la previa dice ${opcion.peligro.casa.toFixed(4)} y con las barras de después de la semana da ${esperado.toFixed(4)}`);
+      }
+      // La proyección es la media del motor (con la negociación ganada la casa no tira: las barras quedan como las deja el reparto).
+      const conNegociacion = { ...st, flags: { ...st.flags, negociacionGanada: true } };
+      let sumaEstudios = 0;
+      let sumaConfianza = 0;
+      for (let draw = 1; draw <= DRAWS_PREVIA_NP; draw += 1) {
+        const despues = resolverAmateurNP(conNegociacion, { datos: { motivo: 'reparto', rutinas: fijas } }, { opcionId: opcion.rutina.id }, mulberry32K6aA(seed * 100000 + draw)).state;
+        sumaEstudios += despues.player.studies;
+        sumaConfianza += despues.player.familyTrust;
+      }
+      const mediaEstudios = sumaEstudios / DRAWS_PREVIA_NP;
+      const mediaConfianza = sumaConfianza / DRAWS_PREVIA_NP;
+      if (Math.abs(mediaEstudios - estudios) > TOLERANCIA_MEDIA_NP || Math.abs(mediaConfianza - confianza) > TOLERANCIA_MEDIA_NP) {
+        problemas.push(`seed ${seed}, "${opcion.rutina.id}": la previa proyecta colegio ${estudios.toFixed(2)} y confianza ${confianza.toFixed(2)}; el motor deja en media ${mediaEstudios.toFixed(2)} y ${mediaConfianza.toFixed(2)}`);
+      }
+    }
+  }
+  if (movioLaConfianza === 0) problemas.push('ninguna rutina movió la confianza: el caso no prueba nada');
+  if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
+});
+
+check(`K5c el piso de soloQ: en la semana amateur ningún perfil grindea menos del ${FRACCION_RANKED_MINIMA_NP * 100}% del ranked del que más grindea (${SEEDS_SEMANA_NP} menús)`, () => {
+  const ranked = {};
+  for (const id of IDS_PERFIL_NP) {
+    let suma = 0;
+    for (let seed = 1; seed <= SEEDS_SEMANA_NP; seed += 1) {
+      const rng = mulberry32K6aA(seed);
+      const base = estadoInicialK6aA(seed, rng);
+      const st = { ...base, player: { ...base.player, perfil: perfilInicialNP(seed, id) } };
+      suma += planDeSemanaH10(st, ofrecerRutinasNP(st, rng, { pool: 'amateur' })).elegida.reparto.ranked;
+    }
+    ranked[id] = suma / SEEDS_SEMANA_NP;
+  }
+  const maximo = Math.max(...Object.values(ranked));
+  const flojos = Object.entries(ranked).filter(([, valor]) => valor < FRACCION_RANKED_MINIMA_NP * maximo);
+  if (flojos.length > 0) {
+    throw new Error(`bloques de ranked por semana ${JSON.stringify(Object.fromEntries(Object.entries(ranked).map(([k, v]) => [k, Number(v.toFixed(2))])))}: `
+      + `${flojos.map(([id]) => id).join(', ')} por debajo del ${FRACCION_RANKED_MINIMA_NP * 100}% de ${maximo.toFixed(2)}`);
+  }
+});
+
+checkLento(`K5c la brecha de no-pro por perfil: ningún perfil por encima de ${FACTOR_BRECHA_NP}× el no-pro del mejor ni a más de ${DIFERENCIA_MAXIMA_NP} puntos (criterio, ${SEEDS_BRECHA_NP} × ${SPLITS_BRECHA_NP} por perfil elegido)`, () => {
+  const noPro = {};
+  for (const id of IDS_PERFIL_NP) {
+    let cuenta = 0;
+    for (let seed = 1; seed <= SEEDS_BRECHA_NP; seed += 1) {
+      if (correrCarreraNP(seed, SPLITS_BRECHA_NP, ESTRATEGIAS_NP.criterio, { perfil: id }).state.splitFichaje === null) cuenta += 1;
+    }
+    noPro[id] = (100 * cuenta) / SEEDS_BRECHA_NP;
+  }
+  const mejor = Math.min(...Object.values(noPro));
+  const peores = Object.entries(noPro).filter(([, pct]) => pct > FACTOR_BRECHA_NP * mejor || pct - mejor > DIFERENCIA_MAXIMA_NP);
+  console.log(`      no-pro por perfil: ${JSON.stringify(noPro)}`);
+  if (peores.length > 0) {
+    throw new Error(`no-pro por perfil ${JSON.stringify(noPro)}: ${peores.map(([id]) => id).join(', ')} por encima de ${FACTOR_BRECHA_NP}× ${mejor} o a más de ${DIFERENCIA_MAXIMA_NP} puntos`);
+  }
 });
 
 // --- K6a (integración): la ventana de retiro pregunta como mucho una vez por año (D-B) ----------------------------------------

@@ -41,6 +41,24 @@ export function perfilDominante(pesos, actual = null) {
   return mejor;
 }
 
+// K5c (no-pro): cuánto grindea soloQ cada perfil en la etapa amateur. `pisoSoloQ`: la fracción del LP de la mejor
+// rutina de la semana por debajo de la cual tu perfil no elige (lo usa `systems/amateur.js`, `planDeSemana`), mezclada
+// por los pesos de tu perfil. `soloQ`: la línea que lo dice en la pantalla de inicio (regla 12).
+export function pisoSoloQDePerfil(pesos) {
+  let suma = 0;
+  let total = 0;
+  for (const id of IDS_PERFIL) {
+    const peso = pesos[id] ?? 0;
+    suma += peso * (PERFILES.perfiles[id].pisoSoloQ ?? 0);
+    total += peso;
+  }
+  return total > 0 ? suma / total : 0;
+}
+
+export function soloQDePerfil(id) {
+  return PERFILES.perfiles[id]?.soloQ ?? '';
+}
+
 export function familiaDeCampo(campo) {
   return PERFILES.familiaDeCampo[campo] ?? null;
 }
