@@ -34,6 +34,60 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-05 — K6b-C2, la cola de verdad: en la cola, el cierre de año y el momento frenan solo con un hito, un cambio o palanca (`k6b-cola2`; PLAN.md §K6b)
+
+**Qué son.** Las dos paradas que más pesaban en la cola después de la primera pasada:
+- **El momento** (`temporada:momento`, `systems/temporada.js` `arrancarMomento`): la previa de una fecha marcada de la
+  temporada regular (clásico, archirrival, revancha, define la clasificación). Es un evento del pool `stakes` con efectos de
+  `type: 'partido'`: la opción mueve la p de ESE partido. Horizonte `partido` en `agencia.js`.
+- **El cierre de año** (`edadCierre:x`, `systems/edadCierre.js` `aplicar`): uno de los diez eventos `cierreDeEdad` (tres
+  opciones: el juego, la cabeza y la familia, la marca). Fija el plan anual del año siguiente (K4c). Horizonte `carrera`.
+
+**La regla** (`core/cola.js`, nuevo; la llaman `edadCierre.js` y `temporada.js`). Desde los 28 (`BALANCE.cola.edadDesde`) o
+desde el aviso de declive (`etapa === 'declive'`), lo que llegue primero, las dos paradas frenan solo si:
+- **es un hito:** un año con título (el primero incluido) o con Mundial, tu mejor nivel de la carrera llegó ese año (el
+  récord), o es el último año antes del retiro forzoso (`edadRetiroForzoso`);
+- **algo cambió** desde la última vez que ese tipo frenó en la cola: el club, el tier, la última lesión grave o el declive
+  (`firmaDeLaCola` contra `flags.colaFirmas`, flag nueva; `null` = frena, así que un guardado viejo no se rompe);
+- **su tipo tiene palanca:** `BALANCE.cola.palancaMedidaPct` (la medida con `agencia.js` sobre `8368570`: cierre 3,3%, momento
+  95%) llega a `umbralPalancaPct` (47,4: la fracción ponderada de ese mismo reporte; un tipo por debajo baja el promedio).
+
+Si no, lo resuelve tu perfil (`opcionDelPerfil`, como cualquier evento que no frena) por el mismo `resolver` (las mismas
+tiradas que después de la pausa; el cierre fija el plan de esa opción) y queda una línea de crónica marcada `cola`. Fuera de
+la cola no cambia nada; la serie y los eventos no se tocan. **El momento tiene 95% de palanca: sigue frenando siempre.**
+
+**Medido** (`simulate.js 600 60 criterio`, mismas seeds; antes `8368570` / después / la frontera: el momento tampoco frena en la
+cola, `palancaMedidaPct.momento = 0` en memoria). 0 crashes en los tres.
+
+| Métrica | Antes | Después | Frontera |
+|---|---|---|---|
+| Desde los 28: mediana · p90 · promedio | 13 · 26 · 14,15 | **12 · 25 · 13,51** | 11 · 23 · 12,17 |
+| Cierre de año · momento en la cola (por carrera) | 3,05 · 3,27 | 2,38 · 3,31 | 2,34 · 1,51 |
+| Leyenda (frenadas totales): n · mediana · p90 | 57 · 77 · 93 | 57 · 76 · 93 | 60 · 74 · 90 |
+| Interrupciones por carrera: mediana · p90 | 53 · 78 | 52 · 77 | 50 · 75 |
+| p90 por split pro (K4c): todos / regular / playoffs / internacional | 3 / 2 / 5 / 6 | 3 / 2 / 5 / 6 | 3 / 2 / 5 / 6 |
+
+**La agencia** (`agencia.js --carreras=12 --reps=30 --cuota=2 --splits=70`, antes / después):
+- ponderada en su horizonte 47,4% → **48,6%**; contra la carrera 21,1% → 21,9% (piso 8,6%);
+- `edadCierre:x` 3,3% → 5,2% (9 → 8,25 paradas por carrera); `temporada:momento` 95% → 95% (6,25 → 6,33);
+- la frontera: sin ninguna parada de momento (`--analizar … --sin=temporada:momento`, cota de lo que se pierde), la ponderada
+  cae a **40,6%**. Resolver el momento rompe "la agencia no baja".
+
+**La meta (≤ 8) no llega: 12, y la frontera es 11.** La regla hace lo que dice, pero en la cola casi todo cierre tiene un motivo
+para frenar: un año con Mundial o título, o un cambio de club (`criterio` cambia de club seguido). Y el momento es la parada con
+más palanca del juego (95%): sacarlo de la cola baja la cola a 11 y la agencia a ~41%. Lo que queda en la cola de la frontera,
+fuera de la regla: eventos 2,2, vuelta 1,5, plan de serie 1,2, el mercado ya habló 0,85. Decide el usuario.
+
+**Checks.** Nuevo: `K6b-C2 la cola de verdad` (`--solo=k6b-c2`, 24 seeds): en la cola, ningún cierre ni momento frena sin hito,
+sin cambio y sin palanca (el juez lo recalcula sin importar `core/cola.js`), y el cierre se narra; regla 7 sobre el juez
+(sembrado) y sobre el motor (mutante: el cierre "con palanca" frena siempre → 17 sin motivo y 0 narrados, rojo).
+`K4c-P (c)` se ajustó: el plan puede cambiar fuera de una pausa solo con la línea `cola: 'cierre'` y el plan de su opción.
+`K6b-C meta de la cola` (lento) sigue en rojo: 12 contra ≤ 8.
+
+**Verificación.** `validate.js --rapido`: 326 OK, 4 FAIL, todos conocidos: `K0-B guardado` (hash **c07d8f835c46**, por
+`flags.colaFirmas`), `K1 versión` (huella **177970640**), `K5c-M (a)` y `K5c-V`. No se re-declaran: van a la integración con
+VERSION 13. La misma seed dos veces da salidas idénticas (md5 `4cee3544…`).
+
 ### 2026-10-05 — K6b-C, la cola de la carrera: lo que se repite sin nada nuevo en juego ya no frena (`k6b-cola`; PLAN.md §K6b)
 
 **Qué cambió (D-B en la cola).** Tres paradas que K6 vio repetirse sin nada nuevo en juego, más una cuarta de la misma

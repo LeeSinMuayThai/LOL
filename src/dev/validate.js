@@ -19257,7 +19257,16 @@ check('K4c-P (c) el plan del año cambia solo en el cierre: cada cierre fija el 
       if (despues !== plan) throw new Error(`seed ${paso.seed}, split ${paso.split}: el cierre eligió "${paso.respuesta.opcionId}" (plan ${plan}) y el plan quedó en ${despues}`);
       if (despues !== antes) cambios += 1;
     } else if (despues !== antes) {
-      throw new Error(`seed ${paso.seed}, split ${paso.split}: el plan cambió de ${antes} a ${despues} fuera del cierre (${paso.sistemaId ?? 'el avance del split'})`);
+      // K6b-C2: un cierre de la cola que no frenó lo resuelve tu perfil adentro de este paso, y deja su línea (`cola: 'cierre'`)
+      // con la opción que tomó: el plan tiene que ser el de esa opción.
+      const narrado = paso.despues.logs.slice(paso.antes.logs.length).find((log) => log.cola === 'cierre');
+      const evento = narrado && TODOS_LOS_EVENTOS.find((e) => e.cierreDeEdad && e.title === narrado.titulo);
+      const plan = evento?.options.find((opcion) => opcion.id === narrado.opcionId)?.plan;
+      if (!narrado || despues !== plan) {
+        throw new Error(`seed ${paso.seed}, split ${paso.split}: el plan cambió de ${antes} a ${despues} fuera del cierre (${paso.sistemaId ?? 'el avance del split'})`);
+      }
+      cierres += 1;
+      cambios += 1;
     }
   }
   if (cierres < 50 || cambios < 10) throw new Error(`muestra corta: ${cierres} cierres, ${cambios} cambios de plan`);
@@ -24313,6 +24322,105 @@ check(`K6b-C la cola: un mercado de una sola carta frena solo si se juega algo, 
     throw new Error(`una carta un tier abajo se juega algo y dio ${JSON.stringify(abajo)}`);
   }
   console.log(`      ${unaSolaCartaFrenada.length} mercado(s) de una sola carta frenaron (con su previa), ${unaSolaCartaNarradas} se firmaron solos`);
+});
+
+// K6b-C2, la cola de verdad (PLAN.md §K6b): desde los 28 o desde el aviso de declive, el cierre de año y el momento de una
+// fecha marcada frenan solo si es un hito, si algo cambió desde la última vez que ese tipo frenó en la cola (el club, el
+// tier, una lesión o el declive) o si su tipo tiene palanca (`BALANCE.cola`). El juez lo recalcula todo por su cuenta: la
+// edad de la cola es la del instrumento (`EDAD_COLA_DE_CARRERA`), no la de `balance.js`, para que un mutante que apaga la
+// regla desde el balance quede en rojo.
+const { EDAD_COLA_DE_CARRERA: EDAD_COLA_K6BC2 } = await import('./simulate.js');
+const SEEDS_K6BC2 = 24;
+const TIPO_K6BC2 = { 'edadCierre:x': 'cierre', 'temporada:momento': 'momento' };
+
+// La foto y el hito, escritos de nuevo (no se importan de `core/cola.js`). `st` es el estado en la pausa: en el cierre ya
+// cumpliste (`st.age` es la de después) y el año que cierra sigue en `st.calendario.anio`.
+function fotoK6BC2(st) {
+  const declive = calcularContexto(st).etapa === 'declive';
+  return { declive, firma: `${st.career.currentOrg ?? 'libre'}|${st.career.tier ?? '-'}|${st.flags.lesionGraveSplit ?? 'sin lesion'}|${declive}` };
+}
+function hitoK6BC2(st, tipo) {
+  const ultimo = (tipo === 'cierre' ? st.age : st.age + 1) >= BALANCE.retiro.edadRetiroForzoso;
+  if (tipo === 'momento') return ultimo;
+  const reg = st.career.registro;
+  const anio = st.calendario.anio;
+  return ultimo || reg.titulos.some((t) => t.anio === anio) || reg.internacionales.some((i) => i.anio === anio)
+    || (reg.picos.nivel > 0 && reg.picos.edadDelPicoDeNivel === st.age - 1);
+}
+// Las paradas de la cola que frenaron sin hito, sin cambio y sin palanca. `paradas` es `[{ tipo, enCola, firma, hito }]`
+// en orden; `palanca` dice qué tipos tienen palanca.
+function frenadasSinMotivoK6BC2(paradas, palanca) {
+  const ultima = {};
+  const malas = [];
+  for (const p of paradas) {
+    if (!p.enCola) continue;
+    if (!p.hito && ultima[p.tipo] === p.firma && !palanca[p.tipo]) malas.push(p);
+    ultima[p.tipo] = p.firma;
+  }
+  return malas;
+}
+const palancaK6BC2 = () => Object.fromEntries(Object.entries(BALANCE.cola.palancaMedidaPct)
+  .map(([tipo, pct]) => [tipo, pct >= BALANCE.cola.umbralPalancaPct]));
+// `palanca` es la del juez (la del balance real); el mutante cambia la del motor sin cambiar esta.
+function cosechaK6BC2(palanca = palancaK6BC2()) {
+  const cosecha = { malas: [], enCola: 0, palanca, narradas: { cierre: 0, momento: 0 } };
+  for (let seed = 1; seed <= SEEDS_K6BC2; seed += 1) {
+    const paradas = [];
+    const responder = (sistema, st, decision, rng) => {
+      const tipo = TIPO_K6BC2[`${sistema.id}:${decision.datos?.motivo ?? decision.presentacion ?? 'x'}`];
+      if (tipo) {
+        const { declive, firma } = fotoK6BC2(st);
+        paradas.push({ seed, tipo, enCola: st.phase === 'profesional' && (st.age >= EDAD_COLA_K6BC2 || declive), firma, hito: hitoK6BC2(st, tipo) });
+      }
+      return ESTRATEGIAS_K6BC.criterio(sistema, st, decision, rng);
+    };
+    const { state } = correrCarreraSimulate(seed, SPLITS_K6BC, responder);
+    cosecha.malas.push(...frenadasSinMotivoK6BC2(paradas, palanca));
+    cosecha.enCola += paradas.filter((p) => p.enCola).length;
+    for (const log of state.logs) {
+      if (log.cola in cosecha.narradas) cosecha.narradas[log.cola] += 1;
+    }
+  }
+  return cosecha;
+}
+
+check(`K6b-C2 la cola de verdad: en la cola, el cierre de año y el momento frenan solo con un hito, un cambio (club, tier, lesión, declive) o palanca, y si no se narran (${SEEDS_K6BC2} seeds, regla 7)`, () => {
+  // Regla 7 sobre el juez: marca la que repite la foto sin hito ni palanca, y no la que cambió, la que es hito, la de un tipo
+  // con palanca ni la de afuera de la cola.
+  const sembrada = [
+    { tipo: 'cierre', enCola: true, firma: 'a', hito: false }, { tipo: 'cierre', enCola: true, firma: 'a', hito: false },
+    { tipo: 'cierre', enCola: true, firma: 'b', hito: false }, { tipo: 'cierre', enCola: true, firma: 'b', hito: true },
+    { tipo: 'momento', enCola: true, firma: 'a', hito: false }, { tipo: 'momento', enCola: true, firma: 'a', hito: false },
+    { tipo: 'cierre', enCola: false, firma: 'b', hito: false }
+  ];
+  const marcadas = frenadasSinMotivoK6BC2(sembrada, { cierre: false, momento: true });
+  if (marcadas.length !== 1 || marcadas[0].tipo !== 'cierre' || marcadas[0].firma !== 'a') {
+    throw new Error(`el juez marcó ${JSON.stringify(marcadas)}; tenía que marcar solo el segundo cierre con la foto 'a'`);
+  }
+  const { malas, enCola, narradas, palanca } = cosechaK6BC2();
+  if (malas.length > 0) {
+    throw new Error(`${malas.length} parada(s) de la cola frenaron sin hito, sin cambio y sin palanca: ${JSON.stringify(malas.slice(0, 3))}`);
+  }
+  // Un tipo sin palanca tiene que narrarse alguna vez; uno con palanca frena siempre en la cola (y no se narra nunca).
+  const sinNarrar = Object.keys(narradas).filter((tipo) => !palanca[tipo] && narradas[tipo] === 0);
+  const narradasConPalanca = Object.keys(narradas).filter((tipo) => palanca[tipo] && narradas[tipo] > 0);
+  if (enCola === 0 || sinNarrar.length > 0 || narradasConPalanca.length > 0) {
+    throw new Error(`check vacío o al revés: ${enCola} paradas en la cola; sin palanca y nunca narrados [${sinNarrar.join(', ')}]; con palanca y narrados [${narradasConPalanca.join(', ')}]`);
+  }
+  // Regla 7 sobre el motor: con el cierre frenando siempre (el motor lo cree con palanca; el juez sigue con la del balance real),
+  // aparecen cierres sin motivo y no se narra ninguno: el check se pone en rojo.
+  const palancaReal = BALANCE.cola.palancaMedidaPct.cierre;
+  let mutante;
+  try {
+    BALANCE.cola.palancaMedidaPct.cierre = 100;
+    mutante = cosechaK6BC2(palanca);
+  } finally {
+    BALANCE.cola.palancaMedidaPct.cierre = palancaReal;
+  }
+  if (palanca.cierre || mutante.malas.length === 0 || mutante.narradas.cierre > 0) {
+    throw new Error(`el mutante (el cierre frena siempre) deja ${mutante.malas.length} sin motivo y ${mutante.narradas.cierre} narrados: el check no muerde`);
+  }
+  console.log(`      ${enCola} paradas en la cola frenaron con motivo; narradas: ${narradas.cierre} cierres y ${narradas.momento} momentos; el mutante: ${mutante.malas.length} sin motivo, ${mutante.narradas.cierre} cierres narrados`);
 });
 
 // La meta del instrumento (PLAN.md §K6b, K6b-C, y §K.3c para la leyenda): con `criterio`, la mediana de frenadas desde los 28

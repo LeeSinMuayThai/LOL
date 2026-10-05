@@ -467,6 +467,10 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       finMercadoFirma: null,
       // K6b-C: la ventana (`firmaDeLaVuelta`, `systems/retiro.js`) en la que elegiste no volver: el "¿Volvés?" no se repite.
       vueltaFirma: null,
+      // K6b-C2 (la cola de verdad): por tipo de parada de la cola (`cierre`, el cierre de año; `momento`, el momento de
+      // una fecha marcada), la foto (`firmaDeLaCola`, `core/cola.js`) de la última vez que frenó en la cola. Mientras la
+      // foto no cambie y no haya un hito ni palanca, esa parada la resuelve tu perfil y se narra. `null` = no frenó todavía.
+      colaFirmas: { cierre: null, momento: null },
       // Fase 9: "llamar al representante" (PLAN.md §9.6) rebaraja la mano de
       // ofertas una única vez en toda la carrera.
       llamadaRepresentante: false,

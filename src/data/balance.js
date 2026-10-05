@@ -1444,6 +1444,24 @@ export const BALANCE = {
     banquilloArraigoFactor: 0.6
   },
 
+  // K6b-C2 (PLAN.md §K6b, "la cola de verdad"; D-B en la cola). Desde los `edadDesde` años o desde el aviso de declive
+  // (`etapa === 'declive'`, `core/contexto.js`), lo que llegue primero, el cierre de año y el momento de una fecha marcada
+  // frenan solo si es un hito, si algo cambió (el club, el tier, una lesión o el declive) o si su tipo tiene palanca. Si no,
+  // los resuelve tu perfil y se narran en una línea (`core/cola.js`).
+  cola: {
+    // La misma edad con la que el instrumento mide la cola (`EDAD_COLA_DE_CARRERA`, `src/dev/simulate.js`).
+    edadDesde: 28,
+    // "Su tipo tiene palanca": el % de paradas de ese tipo con efecto en su horizonte (la columna "en su horizonte" de
+    // `node src/dev/agencia.js --carreras=12 --reps=30 --cuota=2 --splits=70`, el head de K6b-C, `8368570`) contra el
+    // umbral. El umbral es la fracción ponderada de ese mismo reporte: un tipo por debajo baja el promedio, así que
+    // resolverlo solo en la cola no le saca agencia al juego; uno por encima la sube, y sigue frenando.
+    umbralPalancaPct: 47.4,
+    palancaMedidaPct: {
+      cierre: 3.3,
+      momento: 95
+    }
+  },
+
   // Fase 9R5a: la carrera termina. Fase 10a la reescribe (PLAN.md §10.1):
   // antes, la edad de declive era un piso FIJO (nadie se retiraba antes de
   // los 27 sin importar cómo le fuera) — eso contradecía el pedido del
