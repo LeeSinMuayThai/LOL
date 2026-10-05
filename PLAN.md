@@ -8005,6 +8005,47 @@ como free agent sin su club viejo, que es la regla coherente. Lo mira la revisi�
 - **Dominio (`CONCEPTO.md` §12):** la NACL tiene promoción a la LCS y el Circuito Desafiante a la CBLOL. Las ligas
   cerradas son **LCK, LPL y LEC**. La LCS sale de la marca de franquicia.
 
+### K6c — Lo que el usuario encontró jugando *(2026-10-05)*
+
+El usuario jugó la versión de K6b. Textual: *"los años pasan volando"* y *"¿querés firmar con Onda Legion? Bueno,
+paso los tryouts y después me sale los dos mensajes, ¿querés firmar con Onda Legion? Y a la nada yo tenía 19 y tenía
+que arriesgar un año más y ya había pasado los tryouts dos veces"*.
+
+**El diagnóstico** (sonda del supervisor, `scratchpad/tryout.mjs`):
+- Después del minijuego de la prueba hay un dado escondido (`probFirmaTryout`: malo 0,65, regular 0,8, bueno 0,95).
+  **Una prueba perfecta no te firmó en 5 de 75.** El mismo club puede volver a ofrecer enseguida.
+- La pantalla dice "¡Bien! Con esto: 95% de que te firmen", así que no miente. Pero pasar la prueba y no firmar es
+  "hacés un clic y perdiste".
+- Desde K6a-A el perfil elige la semana del amateur, así que entre los 15 y los 19 casi no se frena y los años se van
+  sin que el jugador los viva.
+- El agente que jugó K6 no lo vio: para una heurística, un 95% que falla es correcto. **Lección:** K6 tiene que
+  incluir que juegue el usuario.
+
+**Decisiones del usuario (2026-10-05):**
+- **"Pasaste = firmás".**
+  - Antes del minijuego se ve la vara: "necesitás esto para que te firmen".
+  - Si el resultado la pasa, firmás seguro. Si no, no firmás, y el juego dice por cuánto no llegaste.
+  - Sin dado: la vara es un umbral sobre el resultado, en `balance.js`.
+  - El mismo club no vuelve a ofrecer en la misma ventana.
+- **"Vos elegís el plan de cada año".**
+  - Al cerrar cada año del amateur el juego frena con un resumen: LP y rango al empezar y al terminar, los scouts que
+    miraron y las ofertas.
+  - Ahí el jugador elige el plan del año siguiente entre las rutinas. El perfil propone y la opción del perfil va
+    marcada, pero decide el jugador.
+  - Las semanas de ese año siguen ese plan sin frenar, salvo un riesgo evitable (la regla de K6a-A).
+  - El piso de soloQ por perfil (`pisoSoloQ`) queda como la propuesta del perfil, no como una restricción, porque
+    ahora elige el jugador.
+- **Lo que se mide:**
+  - no llega a pro con los bots: `criterio` elige bien, `malas` mal;
+  - la brecha entre perfiles;
+  - las frenadas del amateur (≈ +4-5 por carrera);
+  - la palanca de la nueva decisión de plan en `agencia.js`.
+
+  Si se mueven las metas de K5c, se re-basan con la línea de K6c.
+
+**Junto con esto:** los FAIL lentos de K6b que salieron de la validación completa de `58db231` se arreglan en una rama
+aparte, antes del merge.
+
 ## K.6 — Qué pasa con FASE J y FASE V
 
 | Pieza | Destino |
