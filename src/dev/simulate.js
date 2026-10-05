@@ -5,7 +5,7 @@ import { avanzarSplitAuto } from '../core/pipeline.js';
 import { calcularContexto } from '../core/contexto.js';
 import { nivelDelJugador } from '../core/ficha.js';
 import { tierMasAltoJugado, esBuenPapel } from '../core/registro.js';
-import { resultadoDelJugador } from '../core/internacional.js';
+import { resultadoDelJugador, mundialSinJugador } from '../core/internacional.js';
 import { puntajeDeCarrera, NIVELES } from '../core/puntaje.js';
 import { candidatos } from '../systems/events.js';
 import { esCierreDeEdad } from '../systems/edadCierre.js';
@@ -257,6 +257,9 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
     // K5c (paso 1): una fila por Mundial en el que clasificó tu equipo (ver `filaDeMundial`): hasta dónde llegó y las
     // fuerzas con las que arrancó el torneo. Lectura pura de `state.internacional`, cero `rng`.
     mundiales: [],
+    // K5c-M: una fila por Mundial DEL MUNDO (lo juegues o no): el campeón y los 16 participantes con liga, región y fuerza.
+    // Lectura pura (`mundialSinJugador` es por hash, cero `rng`). Ver `filaDeMundialDelMundo`.
+    mundialesDelMundo: [],
     beatsReproductor: 0,
     // K4c (paso 1), solo lectura pura del state: los minijuegos por mecánica (`datos.minijuego`), las bifurcaciones
     // (eventos con `bifurcacion: true` que frenaron, en total y por evento), las que ELIGIÓ con un efecto de carrera
@@ -278,6 +281,8 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
   let regionPrevia = null;
   // El `splitCount` al arrancar el split en curso: la clave de las filas de temporada y de serie de ese split.
   let splitEnCurso = state.player.splitCount;
+  // K5c-M: el `escenaAnual` del último año observado (el objeto cambia una vez por cierre de año, en `systems/escena.js`).
+  let escenaObservada = null;
 
   let decisionesEnSplitActual = 0;
 
@@ -395,6 +400,11 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
         throw new Error(`seed ${seed}, split ${state.player.splitCount}: el registro tiene ${mundialesRegistrados} Mundiales y la observación ${observacion.mundiales.length}`);
       }
       observacion.mundiales.push(fila);
+    }
+    // K5c-M: el Mundial del mundo del año que cerró en este split (el `escenaAnual` es un objeto nuevo por cierre de año).
+    if (state.mundo.escenaAnual && state.mundo.escenaAnual !== escenaObservada) {
+      escenaObservada = state.mundo.escenaAnual;
+      observacion.mundialesDelMundo.push(filaDeMundialDelMundo(state, escenaObservada));
     }
     const sinFila = verificarSplitJugadoSinFila(state);
     if (sinFila) {
@@ -539,6 +549,24 @@ export function filaDeMundial(torneo) {
     resultado: resultadoDelJugador(torneo),
     fuerzaPropia: propia.fuerza,
     fuerzaRivalMax: Math.max(...fuerzasAjenas)
+  };
+}
+
+// K5c-M: la fila de un Mundial del MUNDO. El torneo es el que `systems/escena.js` usó: `state.internacional` si es de ese año y
+// terminó (lo jugaste), o `mundialSinJugador` (por hash, el mismo que usa la escena). El campeón de verdad es el de
+// `escenaAnual.campeonMundial`; `coincide` dice si el torneo reconstruido (con el state al cierre del split, por si algún sistema
+// posterior movió una fuerza) llega al mismo campeón. Lectura pura, cero `rng`.
+export function filaDeMundialDelMundo(state, escena) {
+  const torneo = state.internacional?.anio === escena.anio && state.internacional.campeon
+    ? state.internacional
+    : mundialSinJugador(state, escena.anio);
+  const regionDe = Object.fromEntries(state.mundo.ligas.map((liga) => [liga.id, liga.regionId]));
+  return {
+    anio: escena.anio,
+    campeon: escena.campeonMundial,
+    coincide: torneo.campeon === escena.campeonMundial,
+    jugado: Boolean(torneo.jugador),
+    participantes: torneo.participantes.map((p) => ({ nombre: p.nombre, liga: p.liga, region: regionDe[p.liga] ?? p.liga, fuerza: p.fuerza }))
   };
 }
 
@@ -1891,6 +1919,59 @@ export function bloqueMundialReal(resultados, observaciones) {
   };
 }
 
+// K5c-M — quién gana el Mundial del mundo, por liga y por región, y si gana el más fuerte. Sobre TODOS los años de todas las
+// carreras (`observacion.mundialesDelMundo`). Los Mundiales cuyo torneo reconstruido no llega al campeón del motor (`coincide`
+// false) cuentan en el reparto de títulos pero quedan fuera de las métricas de fuerza. El campeón que no está entre los
+// participantes (no debería pasar) también.
+const TOP_DEL_CAMPO_MUNDIAL = 3;
+
+export function bloqueMundoMundial(observaciones) {
+  const todos = observaciones.flatMap((o) => o.mundialesDelMundo);
+  const medibles = todos.filter((m) => m.coincide && m.participantes.some((p) => p.nombre === m.campeon));
+  const filas = medibles.map((m) => {
+    const orden = [...m.participantes].sort((a, b) => b.fuerza - a.fuerza);
+    const campeon = m.participantes.find((p) => p.nombre === m.campeon);
+    const rango = orden.filter((p) => p.fuerza > campeon.fuerza).length + 1;
+    return { m, orden, campeon, rango, masFuerte: orden[0] };
+  });
+  const cuenta = (lista, clave) => lista.reduce((acc, x) => { acc[clave(x)] = (acc[clave(x)] ?? 0) + 1; return acc; }, {});
+  const reparto = (conteos) => Object.fromEntries(Object.entries(conteos)
+    .sort((a, b) => b[1] - a[1]).map(([k, n]) => [k, { n, pct: pct(n, todos.length) ?? 0 }]));
+  const ligaDe = (m) => m.participantes.find((p) => p.nombre === m.campeon)?.liga ?? 'desconocida';
+  const regionDe = (m) => m.participantes.find((p) => p.nombre === m.campeon)?.region ?? 'desconocida';
+  const ligas = [...new Set(todos.flatMap((m) => m.participantes.map((p) => p.liga)))].sort();
+  const fuerzaPorLiga = Object.fromEntries(ligas.map((liga) => {
+    const deLiga = (m) => m.participantes.filter((p) => p.liga === liga);
+    const mejores = medibles.map((m) => Math.max(...deLiga(m).map((p) => p.fuerza)));
+    return [liga, {
+      clasificadosPorMundial: redondear(promedio(todos.map((m) => deLiga(m).length)) ?? 0, 2),
+      fuerzaMedia: redondear(promedio(todos.flatMap((m) => deLiga(m).map((p) => p.fuerza))) ?? 0, 1),
+      fuerzaDelMejorMedia: redondear(promedio(mejores) ?? 0, 1),
+      tieneAlMasFuertePct: pct(filas.filter((f) => f.masFuerte.liga === liga).length, filas.length) ?? 0,
+      enElTop3Pct: pct(filas.filter((f) => f.orden.slice(0, TOP_DEL_CAMPO_MUNDIAL).some((p) => p.liga === liga)).length, filas.length) ?? 0
+    }];
+  }));
+  return {
+    definiciones: {
+      alcance: 'todos los Mundiales del mundo (cada año, los juegue o no el jugador), por observacion.mundialesDelMundo',
+      fuerza: 'la fuerza de cada participante en el torneo (participantes[].fuerza: la del bracket); el jugador, si juega, con fuerzaDeMundial',
+      metricasDeFuerza: 'solo los Mundiales cuyo torneo reconstruido llega al campeón del motor (coincide)'
+    },
+    mundiales: todos.length,
+    medibles: medibles.length,
+    coincidenciaPct: pct(medibles.length, todos.length) ?? 0,
+    jugadosPorElJugadorPct: pct(todos.filter((m) => m.jugado).length, todos.length) ?? 0,
+    titulosPorLiga: reparto(cuenta(todos, ligaDe)),
+    titulosPorRegion: reparto(cuenta(todos, regionDe)),
+    elMasFuerteGanaPct: pct(filas.filter((f) => f.rango === 1).length, filas.length) ?? 0,
+    unoDelTop3GanaPct: pct(filas.filter((f) => f.rango <= TOP_DEL_CAMPO_MUNDIAL).length, filas.length) ?? 0,
+    ganaLaLigaDelMasFuertePct: pct(filas.filter((f) => f.campeon.liga === f.masFuerte.liga).length, filas.length) ?? 0,
+    rangoMedioDelCampeon: redondear(promedio(filas.map((f) => f.rango)) ?? 0, 2),
+    fuerzaCampeonMenosMaxima: redondear(promedio(filas.map((f) => f.campeon.fuerza - f.masFuerte.fuerza)) ?? 0, 2),
+    fuerzaPorLiga
+  };
+}
+
 // K5c-H — cada uno juega en su casa: las temporadas de tier 1 de una carrera, en splits (`registro.porOrg[].splitsPorTier[1]`),
 // y cuántas fueron en la liga de tier 1 de tu región de origen (`mundo.regionIdOrigen`). Lectura pura del estado final. La
 // usan el bloque `casa` y los checks de K5c-H de `validate.js`.
@@ -2101,6 +2182,8 @@ export function correrLote(corridas, splits, estrategia, { corridasAblacion = MA
     mundialReal: bloqueMundialReal(resultados, observaciones),
     // K5c-H: el % de temporadas de tier 1 en la liga de tu región (total, por región y por nivel pico).
     casa: bloqueCasa(resultados),
+    // K5c-M: quién gana el Mundial del mundo (por liga y región), si gana el más fuerte, y la fuerza de cada liga.
+    mundoMundial: bloqueMundoMundial(observaciones),
     curvaDeEdad: bloqueCurvaDeEdad(resultados, observaciones),
     // K1: el número de la carrera (`core/puntaje.js`), su distribución y los niveles.
     puntaje: bloquePuntaje(resultados)
