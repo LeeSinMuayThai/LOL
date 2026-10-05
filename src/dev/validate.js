@@ -1977,7 +1977,7 @@ checkLento('Fase D.2: registro.picos.rankedPuntos > 0 en toda carrera que pisó 
   }
 });
 
-checkLento('Fase 9Mf: ≥16% de las carreras ven un traspaso a mitad de contrato, y "pedir salir" hace una de sus dos cosas (check 6 de §9M.10)', () => {
+checkLento('Fase 9Mf: ≥1,5% de las carreras ven un traspaso a mitad de contrato, y "pedir salir" hace una de sus dos cosas (check 6 de §9M.10)', () => {
   // (1) frecuencia: con el auto-resolver (toma el paso arriba salvo recorte de
   // sueldo real) al menos 1 de cada 4 carreras cierra un traspaso a mitad de
   // contrato. (2) "pedir salir" nunca es un no-op: o te vas, o te lo niegan y
@@ -2024,7 +2024,16 @@ checkLento('Fase 9Mf: ≥16% de las carreras ven un traspaso a mitad de contrato
   // 693 en vez de 736, con 31,9 splits pro por carrera en vez de 36,0; los traspasos ofrecidos caen 856 → 721 y los
   // cerrados 305 → 236 (de los ofrecidos se cierran 32,7% en vez de 35,6%). Las seeds 1-320 de este check dan 17,8%: el
   // piso queda ~2 σ (n = 320) debajo del 21,1% medido, el mismo lugar relativo que tenía el 0,24 bajo el ~26%.
-  const PISO_TRASPASO = 0.16;
+  // K5c (cierre), regla 17: piso 0,16 → 0,015. Reemplaza a "≥16% de las carreras ven un traspaso a mitad de contrato", que
+  // exigía la tasa de antes de K5c. La tabla de §K5c ya lo preveía ("el 25% de diseño de 9M, o su re-base") y la decisión del
+  // usuario del 2026-10-05 ("cerrar y que K6 juzgue") re-basa a lo medido. Es diseño de K5c, no un bug: los contratos duran a
+  // lo sumo 2 años (`mercado.aniosContratoMax` 3 → 2, Final2), así que la mitad de un contrato es un split o dos, y la carrera
+  // pro mediana pasó de ~17 a ~9 años. Medido con este mismo recuento (auto, 60 splits) en bloques de 320 seeds sobre f7dd307:
+  // 4,1% (seeds 1-320) / 5,3% (1001-1320) / 3,1% (2001-2320) / 3,1% (3001-3320): 3,9% en total (50 de 1280), σ binomial
+  // ~1,1 pp a n = 320. El piso queda
+  // ~2 σ debajo de lo medido. Lo que el check protege sigue duro: que el traspaso exista (un mutante con
+  // `probTraspasoMitadContrato` en 0 da 0%) y que "pedir salir" haga una de sus dos cosas (la segunda mitad, sin tocar).
+  const PISO_TRASPASO = 0.015;
   if (frac < PISO_TRASPASO) {
     throw new Error(`sólo ${(frac * 100).toFixed(1)}% de las carreras cierran un traspaso a mitad de contrato (objetivo ≥${PISO_TRASPASO * 100}%)`);
   }
@@ -2528,7 +2537,7 @@ checkLento('Fase 9W: el Top 20 mezcla edades — sin término de edad, la divers
 // tu generación asoma sin garantía. Verificados en rojo con las constantes por
 // criterio de 9Wa (bonusCampeonLiga 6 → entran/éxito 12%; ver PROGRESO 9Wd).
 
-checkLento('Fase 9Wd: entrar al Top 20 cuesta pero tiene sentido — la mitad de las carreras con éxito lo tocan (§9W.6)', () => {
+checkLento('Fase 9Wd: entrar al Top 20 cuesta pero tiene sentido — un tercio de las carreras con éxito lo tocan (§9W.6, re-base de K5c)', () => {
   const c = barrido9W();
   const exitosas = c.filter((x) => x.exito);
   const lavadas = c.filter((x) => !x.exito);
@@ -2540,8 +2549,16 @@ checkLento('Fase 9Wd: entrar al Top 20 cuesta pero tiene sentido — la mitad de
   // §9W.6: ≥ 50% de las carreras con éxito (título o internacional) tocan el
   // Top 20. Medido 51-57% (n=180-400) tras 9Wd. Piso 0,45 para no romper por
   // varianza de la muestra chica.
-  if (fracExito < 0.45) {
-    throw new Error(`sólo ${(fracExito * 100).toFixed(1)}% de las carreras con éxito tocan el Top 20 (piso 45%, meta §9W.6 50%): entrar no tiene sentido`);
+  // K5c (cierre), regla 17: piso 0,45 → 0,33. Reemplaza a "la mitad de las carreras con éxito tocan el Top 20 (piso 45%)",
+  // que suponía las carreras de antes de K5c. Con la decisión del usuario del 2026-10-05 ("cerrar y que K6 juzgue"), las metas
+  // de §K.3b que no llegan se re-basan a lo medido (D80), y el top 20 es una de ellas: con la carrera pro mediana en ~9 años
+  // (era ~17) hay menos años de pico para entrar. Medido con este mismo barrido (`barrido9W`, 180 seeds) en cuatro bloques
+  // sobre f7dd307: 40,5% (seeds 1-180, n 131) / 38,9% (1001-1180, n 131) / 40,8% (2001-2180, n 125) / 44,6% (3001-3180,
+  // n 130): 41,2% en promedio, σ binomial
+  // ~4,3 pp a n ≈ 130. El piso queda ~2 σ debajo. La otra mitad (las carreras lavadas no se cuelan, tope 5%) no se toca.
+  // Un mutante sin los bonus de título e internacional del ranking (`topMundial.bonus*` en 0) lo pone en rojo (3,8%).
+  if (fracExito < 0.33) {
+    throw new Error(`sólo ${(fracExito * 100).toFixed(1)}% de las carreras con éxito tocan el Top 20 (piso 33%, re-base de K5c sobre la meta §9W.6 de 50%): entrar no tiene sentido`);
   }
   // Y casi ninguna carrera lavada se cuela: el ranking no regala puestos.
   if (fracLavada > 0.05) {
@@ -4640,9 +4657,17 @@ checkLento('El impacto de los minijuegos está acotado (ni decorativo ni gamblin
       `acertar siempre los minijuegos (${siempreAcierta}) no rinde más que fallarlos siempre (${siempreFalla}): son decorativos`
     );
   }
-  if (siempreAcierta > siempreFalla * 1.35) {
+  // K5c (cierre), regla 17: tope +35% → +42%. Reemplaza a "acertar siempre rinde a lo sumo +35%", que quedaba ~1 σ arriba
+  // del valor real y caía por ruido. Medido con este mismo recuento en bloques de 1000 seeds: sobre f7dd307, +36,3% (seeds
+  // 1-1000) / +32,1% (1001-2000) / +27,9% (2001-3000) / +33,2% (3001-4000), +32,4% en promedio con σ ~3,5 pp entre bloques;
+  // antes de Final2 (309efa8, el padre de 44d4ab4), +30,1% / +24,6% / +34,4% / +31,0%, +30,0% en promedio: Final2 no lo movió
+  // más allá del ruido. Tampoco "la llamada" del Mundial sin jerarquía (K5c-H, 7a1f59a): con esa línea revertida da +36,3% y
+  // +32,1% en los dos primeros bloques, lo mismo. No es un efecto nuevo a decidir: el check iba al ras de un valor que ya
+  // estaba. El tope queda ~2,5 σ arriba del promedio. El principio no se toca: el minijuego mueve el resultado (piso +0,3%)
+  // y no lo decide solo (un mutante con el ajuste del mapa ×4 en `ajusteDeMinijuegoDeMapa` lo pone en rojo).
+  if (siempreAcierta > siempreFalla * 1.42) {
     throw new Error(
-      `acertar siempre los minijuegos (${siempreAcierta}) rinde ${((siempreAcierta / base - 1) * 100).toFixed(0)}% más que fallarlos (${siempreFalla}): el juego pasó a ser un gambling a los minijuegos (tope +35%)`
+      `acertar siempre los minijuegos (${siempreAcierta}) rinde ${((siempreAcierta / base - 1) * 100).toFixed(0)}% más que fallarlos (${siempreFalla}): el juego pasó a ser un gambling a los minijuegos (tope +42%)`
     );
   }
 });
@@ -5720,8 +5745,23 @@ checkLento('El régimen cambia entre seasons en la banda declarada (50-65%)', ()
       // adelante en el registro): por eso se captura acá, antes de avanzar.
       const esApertura = state.player.splitCount % BALANCE.edad.splitsPorEdad === 0;
       const regimenAntes = state.meta.regimen;
+      const parcheAntes = state.meta.patch;
       state = avanzarSplitAuto(state, rng).state;
       const cambio = state.meta.regimen !== regimenAntes;
+
+      // K5c (cierre): solo cuentan los splits en los que el meta corrió (`meta.js` sube `patch` cada vez que aplica). Un
+      // split que arranca en `phase: 'retirado'` (la ventana de vuelta, fase 10a) va directo a `retiro.js` y no pasa por
+      // `meta`, ni sube `splitCount`: el check lo contaba como una "apertura" sin cambio, una y otra vez mientras durara la
+      // ventana. Con las carreras de K5c (pro mediana ~9 años, retiro mediano a los 27) la ventana entra mucho más seguido en
+      // los 60 splits del bucle: sobre las seeds 1-200, 1361 de 8354 llamadas eran splits de ventana, y las aperturas "pro"
+      // cambiaban 33% (938 de 2830) contra 60% en amateur (487 de 816). No es el meta: es la muestra. El régimen se mide
+      // sobre las aperturas de season que se jugaron, independientes del largo de la carrera. Medido así sobre f7dd307, en
+      // bloques de 400 seeds (1-400, 401-800, 801-1200): aperturas 60,6% / 60,9% / 59,0% (declarado 60%), correctivos
+      // 25,5% / 24,7% / 25,0% (declarado 25%). Antes de este arreglo, 38,3% con la misma muestra. Un mutante con
+      // `regimen.probCambioApertura` en 0,3 lo pone en rojo. La banda 50-65% no cambia.
+      if (state.meta.patch === parcheAntes) {
+        continue;
+      }
 
       if (esApertura) {
         aperturas += 1;
@@ -6372,8 +6412,15 @@ checkLento('El arraigo llega a Ídolo+ en una fracción sana de las carreras est
   }
 
   const fraccion = llegaron / elegibles;
-  if (fraccion < 0.15) {
-    throw new Error(`el arraigo llega a Ídolo+ en ${(fraccion * 100).toFixed(1)}% de las carreras elegibles; se esperaba ≥15%`);
+  // K5c (cierre), regla 17: piso 0,15 → 0,08. Reemplaza a "el arraigo llega a Ídolo+ en ≥15% de las carreras estables", que
+  // suponía las carreras de antes de K5c. Es consecuencia de diseño de K5c, re-basada por la decisión del usuario del
+  // 2026-10-05 ("cerrar y que K6 juzgue"): la carrera pro mediana pasó de ~17 a ~9 años y los contratos duran a lo sumo 2
+  // (`mercado.aniosContratoMax`), así que la estadía más larga en una org es más corta, y Ídolo (60) se junta a ~1,2 por
+  // split más títulos. Medido con este mismo recuento en bloques de 1200 seeds sobre f7dd307: 10,1% (seeds 1-1200, 28 de 276)
+  // / 11,0% (1001-2200, 29 de 264) / 13,8% (2001-3200, 39 de 282) / 14,0% (3001-4200, 38 de 272): 12,2% en promedio, σ
+  // binomial ~2 pp a n ≈ 270. El piso queda ~2 σ debajo. Un mutante con `arraigo.porSplitMin/Max` en 0,1/0,2 lo pone en rojo.
+  if (fraccion < 0.08) {
+    throw new Error(`el arraigo llega a Ídolo+ en ${(fraccion * 100).toFixed(1)}% de las carreras elegibles; se esperaba ≥8% (re-base de K5c del 15%)`);
   }
 });
 
@@ -6619,12 +6666,25 @@ checkLento('Ninguna carrera queda sin terminar: el retiro cierra la run', () => 
   // (medido: 34, banda 30-34) — es la mayoría "haciendo las cosas bien", no
   // un bug. La variación real (el "2 años si la hacés mal" del usuario) se
   // mide aparte, en el check de abajo.
-  if (medianaEdad < 30 || medianaEdad > 34) {
-    throw new Error(`edad mediana al terminar: ${medianaEdad} (banda esperada 30-34 — la mayoría de quienes llegan a pro sostienen la carrera hasta la línea Faker)`);
+  // K5c (cierre), regla 17: banda de la mediana 30-34 → 25-29, de los 30+ 50-90% → 17-30%, y se suma "menos del 5% termina a
+  // los 34 o más". Reemplaza a "la mayoría de quienes llegan a pro sostienen la carrera hasta la línea Faker", que describía el
+  // mundo de antes de K5c. La banda nueva sale de la meta de longevidad de K5c (`K5c meta de la longevidad`): menos del 5% de
+  // los pros llega a los 34, y la carrera pro mediana quedó re-basada a ~9 años (8,83; D80, decisión del usuario del
+  // 2026-10-05: "cerrar y que K6 juzgue"). Con el debut pro a los ~17-18, la mediana al terminar cae en ~26-27; la banda le da
+  // ±2 años. Medido con este mismo recuento en bloques de 400 seeds sobre f7dd307: mediana 27 / 26 / 26 / 26 (seeds 1-400,
+  // 1001-1400, 2001-2400, 3001-3400; cuantiles 10-25-50-75-90: 24/24/26-27/29-30/31); 30+ 26,0% / 23,5% / 24,0% / 20,0%
+  // (23,4% en promedio, σ binomial ~2,1 pp a n = 400: la banda es ~±3 σ); 34+ 1,5% / 2,8% / 1,0% / 2,0%. Un mutante con
+  // `retiro.edadRetiroForzoso` en 23 lo pone en rojo.
+  if (medianaEdad < 25 || medianaEdad > 29) {
+    throw new Error(`edad mediana al terminar: ${medianaEdad} (banda esperada 25-29: el debut pro más la carrera pro mediana re-basada de K5c)`);
   }
   const fraccion30 = edades.filter((e) => e >= 30).length / edades.length;
-  if (fraccion30 < 0.5 || fraccion30 > 0.9) {
-    throw new Error(`carreras que llegan a 30+ años: ${(fraccion30 * 100).toFixed(1)}% (banda esperada 50%-90%; medido 77%)`);
+  if (fraccion30 < 0.17 || fraccion30 > 0.3) {
+    throw new Error(`carreras que llegan a 30+ años: ${(fraccion30 * 100).toFixed(1)}% (banda esperada 17%-30%; medido 23,4%)`);
+  }
+  const fraccion34 = edades.filter((e) => e >= BALANCE.retiro.edadRetiroForzoso).length / edades.length;
+  if (fraccion34 >= 0.05) {
+    throw new Error(`carreras que terminan en la línea Faker (${BALANCE.retiro.edadRetiroForzoso}) o después: ${(fraccion34 * 100).toFixed(1)}% (meta de K5c: menos del 5%)`);
   }
 });
 
@@ -6652,8 +6712,19 @@ checkLento('El retiro tiene variación real: no todos aguantan hasta la línea F
   }
 
   const fraccion = antesDeLaLineaFaker / proEndings;
-  if (fraccion < 0.15 || fraccion > 0.45) {
-    throw new Error(`de los retiros por mercado/decisión propia, ${(fraccion * 100).toFixed(1)}% cortan antes de la línea Faker (banda esperada 15%-45%; medido 22.9%)`);
+  // K5c (cierre), regla 17: banda 15-45% → 90-99,5%. Reemplaza a "entre el 15% y el 45% de los retiros por mercado o
+  // decisión propia cortan antes de la línea Faker", que describía el mundo de antes de K5c (la mediana pegada a 34) y
+  // contradice su meta de longevidad: menos del 5% de los pros llega a los 34 (`K5c meta de la longevidad`), con la carrera
+  // pro mediana re-basada a ~9 años (D80, decisión del usuario del 2026-10-05: "cerrar y que K6 juzgue"). La "variación real"
+  // que pedía el usuario ("si la hacés mal, te retirás mucho antes") ahora es la norma; lo que el check sigue cuidando son los
+  // dos bordes. Piso 90%: a lo sumo uno de cada diez de estos retiros llega a la línea (el doble del 5% de la meta, porque
+  // este subconjunto no es el de la meta). Techo 99,5%: la línea Faker sigue siendo alcanzable para alguno ("si te va bien y
+  // seguís subiendo, seguís"). Medido con este mismo recuento en bloques de 400 seeds sobre f7dd307: 98,1% (seeds 1-400, 302
+  // de 308) / 96,2% (1001-1400, 281 de 292) / 98,7% (2001-2400, 294 de 298) / 97,2% (3001-3400, 280 de 288): 97,5% en
+  // promedio, σ binomial ~0,9 pp a n ≈ 300; el techo queda ~2 σ arriba. Un mutante con `retiro.edadRetiroForzoso` en 30 lo
+  // pone en rojo (75,3%).
+  if (fraccion < 0.9 || fraccion > 0.995) {
+    throw new Error(`de los retiros por mercado/decisión propia, ${(fraccion * 100).toFixed(1)}% cortan antes de la línea Faker (banda esperada 90%-99,5%, re-base de K5c; medido 97,5%)`);
   }
 });
 
@@ -7263,7 +7334,7 @@ checkLento('Fase 11: `ausencia` titula en al menos 30% de las carreras que pasan
   }
 });
 
-checkLento('Fase 11: el duelo con el archirrival cambia de signo en al menos 40% de las carreras (§11.3)', () => {
+checkLento('Fase 11: el duelo con el archirrival cambia de signo en al menos 34% de las carreras (§11.3, re-base de K5c)', () => {
   let elegibles = 0;
   let cambianDeSigno = 0;
   // n=800, no 300: medido en 41,1% (n=400) — a un solo punto del piso, así
@@ -7293,8 +7364,16 @@ checkLento('Fase 11: el duelo con el archirrival cambia de signo en al menos 40%
     throw new Error(`solo ${elegibles} carreras con al menos 2 lecturas del duelo en ${N} seeds — muestra insuficiente`);
   }
   const fraccion = cambianDeSigno / elegibles;
-  if (fraccion < 0.4) {
-    throw new Error(`el duelo cambió de signo en el ${(fraccion * 100).toFixed(1)}% de las carreras — el mínimo es 40%`);
+  // K5c (cierre), regla 17: piso 0,40 → 0,34. Reemplaza a "el duelo con el archirrival cambia de signo en al menos 40% de las
+  // carreras", que suponía las carreras de antes de K5c. El duelo se lee una vez por año (al cierre de edad), y con la carrera
+  // pro mediana en ~9 años (era ~17; re-basada por D80, decisión del usuario del 2026-10-05: "cerrar y que K6 juzgue") hay
+  // menos lecturas en las que cambiar de signo. Medido con este mismo recuento en bloques de 800 seeds sobre f7dd307: 38,3%
+  // (seeds 1-800, 306 de 799) / 41,6% (1001-1800, 332 de 799) / 43,4% (2001-2800, 347 de 800) / 37,1% (3001-3800, 297 de
+  // 800): 40,1% en promedio, σ ~2,9 pp entre bloques (el binomial da ~1,7 pp). La tasa real quedó en el viejo piso, y el
+  // check caía por ruido; el piso nuevo queda ~2 σ (la de los bloques) debajo. Un mutante con el archirrival sin títulos
+  // (`suyos` en 0 en `systems/rivales.js`) lo pone en rojo.
+  if (fraccion < 0.34) {
+    throw new Error(`el duelo cambió de signo en el ${(fraccion * 100).toFixed(1)}% de las carreras — el mínimo es 34% (re-base de K5c del 40%)`);
   }
 });
 

@@ -393,7 +393,11 @@ function responderCriterio(sistema, state, decision, rng) {
   if (esDecisionDeFinPorMercado(decision)) {
     // La regla del headless: joven, baja (o espera); desde `edadAutoAceptaVeredicto`, acepta el veredicto. K5c-R: la
     // variante de la presión de tier 2 (`datos.variante`) va por la misma regla: joven sigue en tier 2, veterano se retira.
-    return sistema.resolverAuto(state, decision, rng);
+    // K5c (cierre): escrita acá, espejo de la de `malas`, y no delegada en `resolverAuto`. Es una bifurcación con elección
+    // real (seguir/bajar/esperar o colgar el mouse), y el check "K0 criterio y malas: solo delegan..." exige que `criterio`
+    // la conteste con su propia regla. Elige lo mismo que `opcionAutoFinPorMercado` (systems/mercado.js): no cambia el stream.
+    const opcionId = state.age >= BALANCE.retiro.edadAutoAceptaVeredicto ? 'retirarse' : decision.opciones[0].id;
+    return { opcionId };
   }
   if (esDecisionDeMercado(decision)) {
     if (decision.opciones.length === 0) {

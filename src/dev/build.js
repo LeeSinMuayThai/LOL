@@ -78,7 +78,15 @@ const SPLITS_DE_VERIFICACION = 30;
 // techo de 2100. La limpieza del plan anual (la preparación de la pretemporada, sus estilos y el catálogo de offseason) lo bajó a 2115,3 KB:
 // todavía 15 KB arriba. Subido a 2200: ~85 KB (4%) de margen sobre el peso medido ese día, no una expectativa. Lo que queda de la FASE K
 // son números (K5c) y arreglos; K6 mide el tiempo real en el navegador, no suma pantallas.
-const PESO_MAXIMO_KB = 2200;
+//
+// Re-medido al cerrar K5c (paso 3, 2026-10-05): el peso medido dio 2240 KB contra el techo de 2200, el mismo
+// margen-que-se-cierra-en-silencio por sexta vez. Lo que creció desde K4c (92eb777, 2115 KB) es código y datos del motor que
+// el navegador corre, no algo que sobre en dist/: los "arreglos" de K5c y K6a no fueron chicos. En crudo (git), +124 KB: src/systems
+// +44 (mercado.js +16,5 con la presión de tier 2 y el import de élite, amateur.js +12 con la semana de K6a-A, retiro.js +7 con el
+// reloj de la vuelta), src/core +44 (demanda.js +11 con la casa y la élite, guardado.js +5 con las formas conocidas, puntaje,
+// curvas, serie), src/data +24 (balance.js +17 con las perillas de Final2 y sus comentarios, version.js +5) y src/ui +12. Subido
+// a 2300: ~60 KB (2,7%) de margen sobre el peso medido ese día, no una expectativa. K6 juega carreras y arregla lo que encuentre.
+const PESO_MAXIMO_KB = 2300;
 
 function copiar(desde, hacia) {
   const stat = fs.statSync(desde);

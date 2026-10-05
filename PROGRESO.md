@@ -2,6 +2,32 @@
 
 Documento vivo. Se actualiza al cierre de cada tarea, según la Definición de terminado de CLAUDE.md.
 
+## 2026-10-05 — K5c paso 3 (cierre): los 9 FAIL de la validación completa de `f7dd307` y el techo del build (`k5c-paso3`)
+
+La validación completa del supervisor sobre `f7dd307` dio 486 OK y 9 FAIL, y `dist/` pesaba 2240 KB contra un techo de 2200.
+Cada banda se re-midió en cuatro bloques de seeds (la de siempre más tres corridas, +1000/+2000/+3000), y cada check
+cambiado se vio en rojo con su mutante. Sin cambios de motor: `HUELLA_JUEGO` y la forma del guardado no se mueven.
+
+- **Re-bases de diseño de K5c (regla 17, decisión "cerrar y que K6 juzgue" / D80).** Carreras pro de ~9 años y contratos de
+  a lo sumo 2:
+  - 9Mf, traspasos a mitad de contrato: piso 16% → 1,5% (3,9%, σ ~1,1 pp). "Pedir salir" sigue duro.
+  - 9Wd, Top 20 de las carreras con éxito: piso 45% → 33% (41,2%, σ ~4,3 pp).
+  - Arraigo a Ídolo+: piso 15% → 8% (12,2%, σ ~2 pp).
+  - Fase 11, el duelo cambia de signo: piso 40% → 34% (40,1%, σ ~2,9 pp entre bloques).
+  - Edad al terminar: mediana 30-34 → 25-29 (26-27 medido), 30+ 50-90% → 17-30% (23,4%), y se suma "menos del 5% termina a
+    los 34" (1,0-2,8%), la meta de longevidad de K5c.
+  - Retiro antes de la línea Faker: banda 15-45% → 90-99,5% (97,5%).
+- **El régimen (38,3%) era la muestra, no el meta.** Los splits de la ventana de vuelta (`phase: 'retirado'`) no pasan por
+  `meta.js` ni suben `splitCount`, y el check los contaba como aperturas sin cambio. Las carreras de K5c entran mucho más a
+  la ventana dentro de los 60 splits. Contando solo los splits en que corrió el meta: 60,6 / 60,9 / 59,0% (declarado 60%).
+- **Los minijuegos (+36%) eran ruido sobre un valor que ya estaba.** El promedio es +32,4% (σ ~3,5 pp); antes de Final2,
+  +30,0%. Con "la llamada" de K5c-H revertida da lo mismo (+36,3% y +32,1%). El tope pasa de +35% a +42%, y el principio
+  "ni decorativo ni gambling" sigue.
+- **`fin_mercado` (K5-C) tiene elección real.** `criterio` la delegaba en `resolverAuto`. Ahora la contesta con su propia
+  regla, espejo de la de `malas`, que elige lo mismo que `opcionAutoFinPorMercado`.
+- **Build:** techo 2200 → 2300 KB. Desde K4c crecieron +124 KB en crudo, todo código y datos del motor: systems +44, core
+  +44, data +24, ui +12.
+
 ## 2026-10-05 — K5c paso 3 (cierre): los hallazgos de la revisión y los valores re-medidos sobre el head final (`k5c-paso3`)
 
 Los números de 3b-3 venían de `873fc80`, y `48ba628` (las cartas de cierre del declive) corrió el stream después. Todo se
