@@ -4,7 +4,7 @@ Documento vivo. Se actualiza al cierre de cada tarea, según la Definición de t
 
 ## 2026-10-05 — K5c paso 3a: Final2 fijado en los datos, más la LPL en 91 (`k5c-paso3`)
 
-- **Fijado** (solo constantes, un comentario "K5c paso 3" por constante): las 27 perillas de `cfgFinal2.json` en `balance.js` y
+- **Fijado** (solo constantes, un comentario "K5c paso 3" por constante): las 30 claves de `cfgFinal2.json` (29 cambian, `graciaAnios` ya era 0) en `balance.js` y
   `leagues.json` (LCK 97, LEC 73, LCS 62), más **`prestigio` de la LPL 93 → 91**, fuera de Final2. Sin lógica.
 - **El reparto del Mundial del mundo** (`criterio` 1500 × 60, `mundoMundial`). Con Final2: LCK 48,3 / LPL 48,0 / LEC 3,1, un
   margen de 0,3. Barrido de 6 variantes (600 × 60, en memoria), con el margen LCK − LPL:
