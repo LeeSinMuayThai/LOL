@@ -792,7 +792,9 @@ const FORMAS_CONOCIDAS = {
   // `vueltaFirma` y `colaFirmas`), y las rutas nuevas de las carreras de muestra (el contrato vencido te deja sin club, la liga
   // franquiciada no desciende) y la carta firmada sin pausa en su log (`unaSolaCarta`, para el instrumento). La 12 es la de main:
   // un guardado de la 12 carga con `migrarDe12` (core/guardado.js).
-  13: '8d9b9b8a0ff2'
+  // Revisión de K6b: la carta firmada sin pausa lleva de dónde a dónde (`unaSolaCarta.liga/ligaAntes/tierAntes`) y el "¿Volvés?" la
+  // chance de que te llamen (`datos.chanceDeQueTeLlamenPct`, `clubesQueTeFicharian`): re-registrada sin subir de 13 (era '8d9b9b8a0ff2').
+  13: 'fcc08dda0b89'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -23408,7 +23410,9 @@ check('K5c-A: con la fracción en 0,5 en memoria, un jugador de 24 en tier 2 tie
 // el aviso "no van a renovarte" de un corte por edad dice por qué, solo desde los 26 y solo en tier 2.
 const EDAD_VETERANO_K5CV = 26;
 const RNGS_RENOVACION_K5CV = 40;
-const SEEDS_CARRERAS_K5CV = 20;
+// Revisión de K6b: 20 -> 40. Con la carta única que frena al cambiar de liga y la vuelta al mercado, las 20 carreras de `azar` ya no
+// traían ningún piso de franquicia de un veterano de tier 2 (el check quedaba vacío).
+const SEEDS_CARRERAS_K5CV = 40;
 const SPLITS_CARRERAS_K5CV = 70;
 const REGIMEN_BARRIDO_K5CV = { castigoEtarioNivel: 100, factorRenovacionDeclive: 0 };
 // K5c paso 3b: el paso 3a fijó en el repo el régimen del barrido (castigo 100, factor 0) y con él las dos partes quedaron sin muestra.
@@ -23485,6 +23489,11 @@ check('K5c-V: con la perilla en 26 en memoria, a un veterano de tier 2 con nivel
             cuenta.forzadas += 1;
             cuenta.forzadasQuePierden += ganaDisputaK5CNAV(s, oferta.org, s.player.role) ? 0 : 1;
           }
+        }
+        // Revisión de K6b: el automático ya no vuelve de free agent si nadie te ficharía hoy, y casi todos los veteranos de tier 2
+        // con piso de franquicia de esta muestra eran vueltas. El check mide el piso, no la vuelta: acá se vuelve una vez, como antes.
+        if (decision.datos?.motivo === 'retiro_vuelta') {
+          return { opcionId: s.flags.vueltasUsadas === 0 ? 'volver' : 'quedarse' };
         }
         return ESTRATEGIAS_K0.azar(sistema, s, decision, r);
       };
@@ -24490,6 +24499,28 @@ check('K6b-U (f): "Copa del Invocador", no "Copa de la Invocación"', () => {
   // Mutante: volver al texto viejo.
 });
 
+// Revisión de K6b: "Finalista de el Mundial" salía de una plantilla (`de ${donde}` con `donde` = "el Mundial ..."), que el
+// grep de texto no ve. El check mira las dos cosas: el texto fijo ("de el " en una línea de código de `src/`, fuera de este
+// archivo) y la frase armada, la de la tarjeta de un finalista y de un semifinalista del Mundial. Mutante: volver a `de ${donde}`.
+check('K6b-U (g): "del Mundial", nunca "de el": ni en el texto fijo ni en la tarjeta del finalista y del semifinalista', () => {
+  const culpables = archivosJsK6AU(srcDir)
+    .filter((ruta) => !ruta.endsWith(path.join('dev', 'validate.js')))
+    .filter((ruta) => /\bde el /i.test(fs.readFileSync(ruta, 'utf8').split(/\r?\n/).filter((linea) => !/^\s*\/\//.test(linea)).join('\n')))
+    .map((ruta) => path.relative(srcDir, ruta));
+  if (culpables.length > 0) {
+    throw new Error(`"de el " en ${culpables.join(', ')}: es "del"`);
+  }
+  const state = carreraDelPicoK6BU();
+  for (const [resultado, frase] of [['final', 'Finalista del Mundial 2035 con Fnatic'], ['semis', 'Semifinalista del Mundial 2035 con Fnatic']]) {
+    const internacionales = state.career.registro.internacionales.map((entrada) => ({ ...entrada, resultado, campeon: 'Otra K6bU' }));
+    const conResultado = { ...state, career: { ...state.career, registro: { ...state.career.registro, titulos: [], internacionales } } };
+    const { veredicto } = componerLegado(conResultado);
+    if (/\bde el /i.test(veredicto) || !veredicto.includes(frase)) {
+      throw new Error(`${resultado}: el veredicto tenía que decir "${frase}": "${veredicto}"`);
+    }
+  }
+});
+
 // --- K6b-M, el mercado premia el mérito (PLAN.md "K6b") ---------------------------------------------------------------------
 // El bug de K6 (seed 39): Fnatic, campeón del Mundial con el #3 del mundo a los 27, no le renovaba y la única carta era el club
 // más débil de la LEC. Los fixtures salen de las pausas de mercado reales de `criterio` (`pausasDeMercadoK5cM`) con club de tier 1,
@@ -24678,7 +24709,10 @@ check('K6b-F contrato: "No te renovaron" y "free agent" nunca mientras jugás co
       if (club && calcularContexto(state).mercado === 'sin_renovacion') {
         problemas.push(`${donde}: jugás con ${club} y la ficha dice "No te renovaron"`);
       }
-      if (club && del.some((m) => LOG_FREE_AGENT_K6BF.test(m))) {
+      // Revisión de K6b: la vuelta de free agent va al mercado de esa misma pretemporada, así que "Volvés a competir. De free agent"
+      // (veraz: empezaste el split sin club) puede terminar con la firma del mercado en el mismo split.
+      const vueltaAlMercado = (m) => !antes.career.currentOrg && /^Volvés a competir. De free agent/.test(m);
+      if (club && del.some((m) => LOG_FREE_AGENT_K6BF.test(m) && !vueltaAlMercado(m))) {
         problemas.push(`${donde}: el log dice "free agent" y jugás con ${club}`);
       }
       if (del.some((m) => LOG_CONTRATO_VIAJA_K6BF.test(m))) {
@@ -24723,10 +24757,11 @@ check('K6b-F contrato: "No te renovaron" y "free agent" nunca mientras jugás co
 // franquiciada no te baja; la que no lo es (CBLOL, LCP) te baja, con "el contrato viaja" si el contrato sigue y sin él si se
 // vence en esta pretemporada (regla 15). Rojo con el mutante sin `esLigaFranquiciada` en `resolverDescenso` (las cuatro
 // bajan) y con el que dice siempre "el contrato viaja".
-const FRANQUICIADAS_K6BF = ['LCK', 'LPL', 'LEC', 'LCS'];
+// Revisión de K6b (CONCEPTO §12.3): las cerradas son LCK, LPL y LEC; la NACL tiene promoción a la LCS (y el Circuito Desafiante a la CBLOL).
+const FRANQUICIADAS_K6BF = ['LCK', 'LPL', 'LEC'];
 const { aplicar: aplicarCompetitivoK6bf } = await import('../systems/competitivo.js');
 
-check('K6b-F liga: las franquiciadas (LCK, LPL, LEC, LCS) no descienden, las demás sí, y "el contrato viaja" solo si el contrato sigue', () => {
+check('K6b-F liga: las franquiciadas (LCK, LPL, LEC) no descienden, la LCS y las demás sí, y "el contrato viaja" solo si el contrato sigue', () => {
   const marcadas = LIGAS.filter((liga) => liga.franquicia === true).map((liga) => liga.id).sort();
   if (JSON.stringify(marcadas) !== JSON.stringify([...FRANQUICIADAS_K6BF].sort())) {
     throw new Error(`leagues.json marca como franquicia ${JSON.stringify(marcadas)}; CONCEPTO §12.3: ${FRANQUICIADAS_K6BF.join(', ')}`);
@@ -24782,6 +24817,9 @@ check('K6b-F liga: las franquiciadas (LCK, LPL, LEC, LCS) no descienden, las dem
 // (`ritmo.colaDeCarrera`) y las de las leyendas (`ritmo.leyenda`).
 const { ESTRATEGIAS: ESTRATEGIAS_K6BC } = await import('./estrategias.js');
 const { enJuegoDeUnaSolaCarta: enJuegoK6BC } = await import('../systems/mercado.js');
+const { firmaDelSeguis: firmaDelSeguisK6BC, firmaDeLaVuelta: firmaDeLaVueltaK6BC } = await import('../systems/retiro.js');
+// Revisión de K6b (regla 15): los casos de una carta única que frena. `cambio`: otra liga, otra región o un tier más arriba.
+const CASOS_UNA_SOLA_CARTA_K6BC = ['prueba', 'bajar', 'cambio'];
 const SEEDS_K6BC = 40;
 const SPLITS_K6BC = 60;
 // La respuesta que no termina la carrera, en cada una de las tres paradas: la que, repetida, se vuelve relleno.
@@ -24815,17 +24853,38 @@ function fotoTrasElegirK6BC(motivo, firma) {
   return campos.join('|');
 }
 
+// Revisión de K6b (regla 7: que el check atrape también frenar de MENOS). La foto del juez, escrita de nuevo (no se importa
+// `firmaDelSeguis`): el club, el tier y las vueltas. Si cambió alguna desde el último "¿la seguís?" que frenó, el motor tenía
+// que volver a preguntar; narrarlo es frenar de menos (el mutante M3, `firmaDelSeguis` constante).
+const NARRA_SEGUIS_K6BC = /nada cambió desde que elegiste seguir: la seguís/;
+function fotoDelSeguisK6BC(st) {
+  return `${st.career.currentOrg ?? 'libre'}|${st.career.tier ?? '-'}|${st.flags.vueltasUsadas}`;
+}
+function seguisNarradosConOtraFotoK6BC(secuencia) {
+  let ultima = null;
+  const malas = [];
+  for (const parada of secuencia) {
+    if (parada.motivo !== 'retiro_declive') continue;
+    if (!parada.narrada) {
+      ultima = parada;
+    } else if (!ultima || ultima.respuesta !== 'seguir' || ultima.foto !== parada.foto) {
+      malas.push({ narrada: parada.foto, ultimaFrenada: ultima?.foto ?? null });
+    }
+  }
+  return malas;
+}
+
 // El jugador terco de K6: en las tres paradas elige seguir (y "esperar" solo si nadie ofrece); el resto, como `criterio`.
 function cosechaK6BC() {
   const cosecha = {
-    repetidas: [], paradas: 0, narradas: 0, unaSolaCartaFrenada: [], unaSolaCartaNarradas: 0
+    repetidas: [], paradas: 0, narradas: 0, unaSolaCartaFrenada: [], unaSolaCartaNarradas: 0, unaSolaCartaFirmadas: [], seguisSinFoto: []
   };
   for (let seed = 1; seed <= SEEDS_K6BC; seed += 1) {
     const secuencia = [];
     const terco = (sistema, st, decision, rng) => {
       const motivo = decision.datos?.motivo;
       if (motivo in SIGUE_K6BC && (motivo !== 'fin_mercado' || decision.opciones[0].id === 'esperar')) {
-        secuencia.push({ motivo, firma: decision.datos.firma, fotoTras: fotoTrasElegirK6BC(motivo, decision.datos.firma), respuesta: SIGUE_K6BC[motivo] });
+        secuencia.push({ motivo, firma: decision.datos.firma, fotoTras: fotoTrasElegirK6BC(motivo, decision.datos.firma), respuesta: SIGUE_K6BC[motivo], foto: fotoDelSeguisK6BC(st) });
         return { opcionId: SIGUE_K6BC[motivo] };
       }
       if (decision.presentacion === 'mercado' && motivo === 'oferta' && decision.opciones.length === 1) {
@@ -24833,11 +24892,24 @@ function cosechaK6BC() {
       }
       return ESTRATEGIAS_K6BC.criterio(sistema, st, decision, rng);
     };
-    const { state } = correrCarreraSimulate(seed, SPLITS_K6BC, terco);
-    cosecha.repetidas.push(...repeticionesSinCambioK6BC(secuencia).map((parada) => ({ seed, ...parada })));
-    cosecha.paradas += secuencia.length;
+    // Revisión de K6b (regla 7, frenar de menos): split por split, para ver con qué club, tier y vuelta se narró cada
+    // "¿la seguís?" que no frenó (la línea sale en la pretemporada, después del mercado: el club y el tier del final del split
+    // son los de ese momento). El mismo motor y las mismas respuestas que `correrCarreraSimulate`.
+    const rngTerco = mulberry32(seed);
+    let state = createInitialState(seed, rngTerco);
+    for (let split = 0; split < SPLITS_K6BC && !state.terminado; split += 1) {
+      const res = avanzarSplitAuto(state, rngTerco, terco);
+      state = res.state;
+      if (res.logs.some((log) => log.type === 'retiro' && NARRA_SEGUIS_K6BC.test(log.message ?? ''))) {
+        secuencia.push({ motivo: 'retiro_declive', narrada: true, foto: fotoDelSeguisK6BC(state) });
+      }
+    }
+    cosecha.seguisSinFoto.push(...seguisNarradosConOtraFotoK6BC(secuencia).map((parada) => ({ seed, ...parada })));
+    cosecha.repetidas.push(...repeticionesSinCambioK6BC(secuencia.filter((parada) => !parada.narrada)).map((parada) => ({ seed, ...parada })));
+    cosecha.paradas += secuencia.filter((parada) => !parada.narrada).length;
     cosecha.narradas += state.logs.filter((log) => NARRA_REPETICION_K6BC.test(log.message ?? '')).length;
     cosecha.unaSolaCartaNarradas += state.logs.filter((log) => log.type === 'mercado' && NARRA_UNA_SOLA_CARTA_K6BC.test(log.message ?? '')).length;
+    cosecha.unaSolaCartaFirmadas.push(...state.logs.filter((log) => log.unaSolaCarta).map((log) => ({ seed, ...log.unaSolaCarta, message: log.message })));
   }
   return cosecha;
 }
@@ -24858,7 +24930,33 @@ check(`K6b-C la cola: el "¿la seguís?", "El mercado ya habló" sin ofertas y e
   if (marcadas.length !== 2 || marcadas[0].motivo !== 'retiro_declive' || marcadas[1].firma !== 'tier|libre|1|sin lesion|0') {
     throw new Error(`el detector marcó ${JSON.stringify(marcadas)}; tenía que marcar la segunda del "¿la seguís?" y la del mercado sin el club que se fue`);
   }
-  const { repetidas, paradas, narradas } = cosechaDeLaColaK6BC();
+  // Regla 7 sobre el juez de frenar de menos: marca el narrado con otro club y el que no tuvo un "seguir" antes; no el de la misma foto.
+  const sembradaMenos = [
+    { motivo: 'retiro_declive', respuesta: 'seguir', foto: 'A|1|0' }, { motivo: 'retiro_declive', narrada: true, foto: 'A|1|0' },
+    { motivo: 'retiro_declive', narrada: true, foto: 'B|1|0' }
+  ];
+  const menos = seguisNarradosConOtraFotoK6BC(sembradaMenos);
+  if (menos.length !== 1 || menos[0].narrada !== 'B|1|0' || seguisNarradosConOtraFotoK6BC([{ motivo: 'retiro_declive', narrada: true, foto: 'A|1|0' }]).length !== 1) {
+    throw new Error(`el juez de frenar de menos marcó ${JSON.stringify(menos)}`);
+  }
+  // Regla 7 sobre las fotos del motor (frenar de menos): cada cosa que dice que cambió la mueve. Mutante M3: las dos constantes.
+  const stF = { ...createInitialState(3, mulberry32(3)), phase: 'profesional' };
+  const conF = (career, flags) => ({ ...stF, career: { ...stF.career, ...career }, flags: { ...stF.flags, ...flags } });
+  const fotoBase = conF({ currentOrg: 'Org K6bC', tier: 1 }, { vueltasUsadas: 0 });
+  const cambios = {
+    club: conF({ currentOrg: 'Otra K6bC', tier: 1 }, { vueltasUsadas: 0 }),
+    tier: conF({ currentOrg: 'Org K6bC', tier: 2 }, { vueltasUsadas: 0 }),
+    vuelta: conF({ currentOrg: 'Org K6bC', tier: 1 }, { vueltasUsadas: 1 }),
+    lesion: conF({ currentOrg: 'Org K6bC', tier: 1 }, { vueltasUsadas: 0, lesionGraveSplit: 7 })
+  };
+  const quietas = Object.entries(cambios).filter(([, st]) => firmaDelSeguisK6BC(st) === firmaDelSeguisK6BC(fotoBase)).map(([k]) => k);
+  if (quietas.length > 0 || firmaDeLaVueltaK6BC(cambios.vuelta) === firmaDeLaVueltaK6BC(fotoBase)) {
+    throw new Error(`la foto no se mueve con [${quietas.join(', ')}]${firmaDeLaVueltaK6BC(cambios.vuelta) === firmaDeLaVueltaK6BC(fotoBase) ? ' ni la del "¿Volvés?" con otra vuelta' : ''}: el "¿la seguís?" o el "¿Volvés?" no se re-preguntarían`);
+  }
+  const { repetidas, paradas, narradas, seguisSinFoto } = cosechaDeLaColaK6BC();
+  if (seguisSinFoto.length > 0) {
+    throw new Error(`${seguisSinFoto.length} "¿la seguís?" se narró con otro club, tier o vuelta que el último que frenó (frenar de menos): ${JSON.stringify(seguisSinFoto.slice(0, 3))}`);
+  }
   if (repetidas.length > 0) {
     throw new Error(`${repetidas.length} parada(s) repetida(s) con la misma foto: ${JSON.stringify(repetidas.slice(0, 3))}`);
   }
@@ -24869,14 +24967,20 @@ check(`K6b-C la cola: el "¿la seguís?", "El mercado ya habló" sin ofertas y e
 });
 
 check(`K6b-C la cola: un mercado de una sola carta frena solo si se juega algo, la previa lo dice, y si no se firma y se narra (${SEEDS_K6BC} seeds, regla 7)`, () => {
-  const { unaSolaCartaFrenada, unaSolaCartaNarradas } = cosechaDeLaColaK6BC();
-  const sinPrevia = unaSolaCartaFrenada.filter((parada) => !parada.enJuego || !['prueba', 'bajar'].includes(parada.enJuego.caso)
+  const { unaSolaCartaFrenada, unaSolaCartaNarradas, unaSolaCartaFirmadas } = cosechaDeLaColaK6BC();
+  const sinPrevia = unaSolaCartaFrenada.filter((parada) => !parada.enJuego || !CASOS_UNA_SOLA_CARTA_K6BC.includes(parada.enJuego.caso)
     || !parada.descripcion.includes(parada.enJuego.texto));
   if (sinPrevia.length > 0) {
     throw new Error(`${sinPrevia.length} mercado(s) de una sola carta frenaron sin decir qué se juega: ${JSON.stringify(sinPrevia.slice(0, 2))}`);
   }
   if (unaSolaCartaNarradas === 0) {
     throw new Error(`check vacío: ningún mercado de una sola carta se resolvió solo en ${SEEDS_K6BC} seeds`);
+  }
+  // Revisión de K6b (regla 15): la que se firmó sola es una continuidad: la misma liga y el mismo tier (CBLOL → LCK o
+  // LCK → LPL a los 29 se firmaban solas, "no había nada que pensar"). Mutante: volver a frenar solo con prueba o bajada.
+  const mudanzas = unaSolaCartaFirmadas.filter((carta) => carta.ligaAntes == null || carta.liga !== carta.ligaAntes || carta.tier !== carta.tierAntes);
+  if (mudanzas.length > 0) {
+    throw new Error(`${mudanzas.length} carta(s) única(s) se firmaron solas cambiando de liga, región o tier: ${JSON.stringify(mudanzas.slice(0, 2))}`);
   }
   // Regla 7, sobre un estado real de tier 1 con club: la renovación de tu club, de tu tier y sin prueba, no se juega nada; la
   // misma carta un tier abajo sí (bajar o prueba), y lo dice.
@@ -24889,7 +24993,94 @@ check(`K6b-C la cola: un mercado de una sola carta frena solo si se juega algo, 
   if (!abajo || !['prueba', 'bajar'].includes(abajo.caso) || !abajo.texto) {
     throw new Error(`una carta un tier abajo se juega algo y dio ${JSON.stringify(abajo)}`);
   }
-  console.log(`      ${unaSolaCartaFrenada.length} mercado(s) de una sola carta frenaron (con su previa), ${unaSolaCartaNarradas} se firmaron solos`);
+  // Revisión de K6b (regla 15), con los saltos ya estrenados (sin prueba): otro club de tu liga y tier es continuidad; uno de
+  // otra liga de primera (otra región) frena con la mudanza en la previa; uno de tu región un tier arriba también.
+  const sinSaltos = { ...enTier1, flags: { ...enTier1.flags, saltosConPrueba: ['tier2', 'tier1', 'import'] } };
+  const mismaLiga = enJuegoK6BC(sinSaltos, { ...renovacion, id: 'm', org: 'Otra K6bC', tag: null });
+  if (mismaLiga !== null) throw new Error(`otro club de tu liga y tu tier es continuidad y dio ${JSON.stringify(mismaLiga)}`);
+  const otraRegion = enJuegoK6BC(sinSaltos, { ...renovacion, id: 'o', org: 'Otra K6bC', liga: 'LPL', tag: null });
+  if (!otraRegion || otraRegion.caso !== 'cambio' || !otraRegion.otraRegion || !/LCK → LPL/.test(otraRegion.texto)) {
+    throw new Error(`LCK → LPL sin prueba tiene que frenar con la mudanza y dio ${JSON.stringify(otraRegion)}`);
+  }
+  const enTier2 = { ...sinSaltos, career: { ...sinSaltos.career, tier: 2, liga: 'LCK_CL' } };
+  const arriba = enJuegoK6BC(enTier2, { ...renovacion, id: 'a', org: 'Otra K6bC', tag: null });
+  if (!arriba || arriba.caso !== 'cambio' || !arriba.subeDeTier || arriba.otraRegion) {
+    throw new Error(`LCK CL → LCK sin prueba tiene que frenar (sube de tier, misma región) y dio ${JSON.stringify(arriba)}`);
+  }
+  const porCaso = Object.fromEntries(CASOS_UNA_SOLA_CARTA_K6BC.map((caso) => [caso, unaSolaCartaFrenada.filter((p) => p.enJuego?.caso === caso).length]));
+  console.log(`      ${unaSolaCartaFrenada.length} mercado(s) de una sola carta frenaron (con su previa: ${JSON.stringify(porCaso)}), ${unaSolaCartaNarradas} se firmaron solos (todos continuidad)`);
+});
+
+// --- Revisión de K6b: la vuelta del retiro de free agent (PLAN.md §K6b, "el sin equipo al ~45% es un artefacto") ----------
+// (a) la vuelta se pregunta en la pretemporada y, sin club, es al mercado de esa misma pretemporada (el split sigue desde
+// `mercado`); (b) la previa dice la chance de que te llame alguien, con la demanda de hoy y sin `rng`; (c) el automático (y
+// `criterio`, que le delega la vuelta) no vuelve de free agent con la chance debajo del umbral. Mutantes: sin `reanudarEn`
+// (el mercado no corre en la vuelta), la vuelta preguntada al punto del año del retiro, el automático que vuelve siempre.
+const { chanceDeQueTeLlamen: chanceDeQueTeLlamenK6BR, resolverAuto: resolverAutoRetiroK6BR } = await import('../systems/retiro.js');
+const { orgsQueTeFicharian: orgsQueTeFicharianK6BR } = await import('../core/demanda.js');
+const SEEDS_K6BR = 40;
+function cosechaVueltaK6BR() {
+  const cosecha = { vueltas: [], preguntas: [] };
+  for (let seed = 1; seed <= SEEDS_K6BR; seed += 1) {
+    const rngV = mulberry32(seed);
+    let state = createInitialState(seed, rngV);
+    let pregunta = null;
+    const responder = (sistema, st, decision, r) => {
+      if (decision.datos?.motivo === 'retiro_vuelta') {
+        pregunta = { seed, ventana: calcularContexto({ ...st, player: { ...st.player, splitCount: st.player.splitCount + st.flags.splitsEnVentana } }).ventana, sinClub: !st.career.currentOrg, pct: decision.datos.chanceDeQueTeLlamenPct, texto: decision.opciones.find((o) => o.id === 'volver').descripcion };
+        cosecha.preguntas.push(pregunta);
+      }
+      return sistema.resolverAuto(st, decision, r);
+    };
+    for (let split = 0; split < SPLITS_K6BC && !state.terminado; split += 1) {
+      pregunta = null;
+      const res = avanzarSplitAuto(state, rngV, responder);
+      state = res.state;
+      const i = res.logs.findIndex((log) => /^Volvés a competir. De free agent/.test(log.message ?? ''));
+      if (i >= 0) {
+        // El mercado de la pretemporada corrió después de la vuelta: una línea del mercado (la firma, la mano, "el mercado ya habló").
+        cosecha.vueltas.push({ seed, pct: pregunta?.pct ?? null, mercado: res.logs.slice(i + 1).some((log) => log.type === 'mercado'), firmo: Boolean(state.career.currentOrg) });
+      }
+    }
+  }
+  return cosecha;
+}
+
+check(`Revisión de K6b, la vuelta: se pregunta en la pretemporada, de free agent vuelve a ese mercado, la previa dice la chance de que te llamen y el automático no vuelve con la chance baja (${SEEDS_K6BR} seeds, regla 7)`, () => {
+  const v = BALANCE.retiro.vuelta;
+  // (b) la chance, recalculada por el juez sobre un retirado real sin club en la pretemporada de la vuelta.
+  const st0 = pretemporadasProK4c2(1)[0].state;
+  const retirado = { ...st0, phase: 'retirado', career: { ...st0.career, currentOrg: null, tier: 1 }, flags: { ...st0.flags, splitsEnVentana: BALANCE.edad.splitsPorEdad, vueltasUsadas: 0 } };
+  const llamada = chanceDeQueTeLlamenK6BR(retirado);
+  const alVolver = { ...retirado, phase: 'profesional', age: retirado.age + 1, player: { ...retirado.player, splitCount: retirado.player.splitCount + BALANCE.edad.splitsPorEdad } };
+  const k = orgsQueTeFicharianK6BR(alVolver).length;
+  if (!llamada || llamada.clubes !== k || llamada.pct !== (k > 0 ? v.pctLlamadoConDemanda : v.pctLlamadoSinDemanda)) {
+    throw new Error(`la chance de que te llamen no es la de la demanda de hoy: ${JSON.stringify(llamada)}, el juez cuenta ${k} clubes`);
+  }
+  if (chanceDeQueTeLlamenK6BR({ ...retirado, career: { ...retirado.career, currentOrg: 'Org K6bR' } }) !== null) {
+    throw new Error('con club no hay chance que decir: el lugar está guardado');
+  }
+  // (c) el automático: debajo del umbral se queda, en el umbral vuelve, con club vuelve, la segunda vez no.
+  const decision = (pct) => ({ datos: { motivo: 'retiro_vuelta', chanceDeQueTeLlamenPct: pct } });
+  const elige = (pct, vueltas = 0) => resolverAutoRetiroK6BR({ ...retirado, flags: { ...retirado.flags, vueltasUsadas: vueltas } }, decision(pct), mulberry32(1)).opcionId;
+  const autos = [elige(v.umbralChanceVueltaPct - 1), elige(v.umbralChanceVueltaPct), elige(null), elige(v.umbralChanceVueltaPct, 1)].join(',');
+  if (autos !== 'quedarse,volver,volver,quedarse') {
+    throw new Error(`el automático eligió ${autos}; tenía que ser quedarse (debajo del umbral), volver (en el umbral), volver (con club), quedarse (segunda vuelta)`);
+  }
+  // (a) y (b) en el motor: cada "¿Volvés?" es en la pretemporada, sin club dice la chance, y cada vuelta de free agent va al
+  // mercado de esa misma pretemporada.
+  const { vueltas, preguntas } = cosechaVueltaK6BR();
+  const fueraDeVentana = preguntas.filter((q) => q.ventana !== 'pretemporada');
+  const sinChance = preguntas.filter((q) => q.sinClub && (!Number.isFinite(q.pct) || !q.texto.includes(`~${q.pct}% de que te llame`)));
+  const sinMercado = vueltas.filter((vuelta) => !vuelta.mercado);
+  const conChanceBaja = vueltas.filter((vuelta) => vuelta.pct !== null && vuelta.pct < v.umbralChanceVueltaPct);
+  if (fueraDeVentana.length > 0 || sinChance.length > 0 || sinMercado.length > 0 || conChanceBaja.length > 0) {
+    throw new Error(`fuera de la pretemporada ${JSON.stringify(fueraDeVentana.slice(0, 2))}; sin la chance en la previa ${JSON.stringify(sinChance.slice(0, 2))}; vueltas sin mercado ${JSON.stringify(sinMercado.slice(0, 2))}; vueltas con la chance debajo del umbral ${JSON.stringify(conChanceBaja.slice(0, 2))}`);
+  }
+  if (preguntas.filter((q) => q.sinClub).length === 0 || vueltas.length === 0) {
+    throw new Error(`check vacío: ${preguntas.length} "¿Volvés?" y ${vueltas.length} vueltas de free agent en ${SEEDS_K6BR} seeds`);
+  }
+  console.log(`      ${preguntas.length} "¿Volvés?" (${preguntas.filter((q) => q.sinClub).length} sin club), ${vueltas.length} vueltas de free agent al mercado de su pretemporada, ${vueltas.filter((vuelta) => vuelta.firmo).length} firmaron ahí`);
 });
 
 // K6b-C2, la cola de verdad (PLAN.md §K6b): desde los 28 o desde el aviso de declive, el cierre de año y el momento de una
@@ -24899,6 +25090,7 @@ check(`K6b-C la cola: un mercado de una sola carta frena solo si se juega algo, 
 // regla desde el balance quede en rojo.
 const { EDAD_COLA_DE_CARRERA: EDAD_COLA_K6BC2 } = await import('./simulate.js');
 const SEEDS_K6BC2 = 24;
+const { frenaEnLaCola: frenaEnLaColaK6BC2, firmaDeLaCola: firmaDeLaColaK6BC2, tienePalanca: tienePalancaK6BC2 } = await import('../core/cola.js');
 const TIPO_K6BC2 = { 'edadCierre:x': 'cierre', 'temporada:momento': 'momento' };
 
 // La foto y el hito, escritos de nuevo (no se importan de `core/cola.js`). `st` es el estado en la pausa: en el cierre ya
@@ -24927,23 +25119,62 @@ function frenadasSinMotivoK6BC2(paradas, palanca) {
   }
   return malas;
 }
+// Revisión de K6b (regla 7: frenar de MENOS). Las paradas de la cola que se narraron teniendo motivo para frenar: un hito
+// que el juez ve sin dudas (un título o un internacional del año que cierra, o el último año) o, en el cierre, otro club u
+// otro tier que el de la última vez que ese tipo frenó en la cola. El récord no entra: el pico se escribe al cerrar el split
+// y el juez no lo puede fechar desde afuera. Mutante M2: un hito que ya no frena (`core/cola.js`).
+function hitoSeguroK6BC2(st, tipo) {
+  const ultimo = (tipo === 'cierre' ? st.age : st.age + 1) >= BALANCE.retiro.edadRetiroForzoso;
+  if (tipo === 'momento') return ultimo;
+  const reg = st.career.registro;
+  const anio = st.calendario.anio;
+  return ultimo || reg.titulos.some((t) => t.anio === anio) || reg.internacionales.some((i) => i.anio === anio);
+}
+function narradasConMotivoK6BC2(paradas) {
+  const ultimoClubTier = {};
+  const malas = [];
+  for (const p of paradas) {
+    if (!p.enCola) continue;
+    if (!p.narrada) {
+      ultimoClubTier[p.tipo] = p.clubTier;
+    } else if (p.hitoSeguro || (p.tipo === 'cierre' && ultimoClubTier.cierre != null && ultimoClubTier.cierre !== p.clubTier)) {
+      malas.push(p);
+    }
+  }
+  return malas;
+}
+const clubTierK6BC2 = (st) => `${st.career.currentOrg ?? 'libre'}|${st.career.tier ?? '-'}`;
 const palancaK6BC2 = () => Object.fromEntries(Object.entries(BALANCE.cola.palancaMedidaPct)
   .map(([tipo, pct]) => [tipo, pct >= BALANCE.cola.umbralPalancaPct]));
 // `palanca` es la del juez (la del balance real); el mutante cambia la del motor sin cambiar esta.
 function cosechaK6BC2(palanca = palancaK6BC2()) {
-  const cosecha = { malas: [], enCola: 0, palanca, narradas: { cierre: 0, momento: 0 } };
+  const cosecha = { malas: [], enCola: 0, palanca, narradas: { cierre: 0, momento: 0 }, narradasConMotivo: [] };
   for (let seed = 1; seed <= SEEDS_K6BC2; seed += 1) {
     const paradas = [];
     const responder = (sistema, st, decision, rng) => {
       const tipo = TIPO_K6BC2[`${sistema.id}:${decision.datos?.motivo ?? decision.presentacion ?? 'x'}`];
       if (tipo) {
         const { declive, firma } = fotoK6BC2(st);
-        paradas.push({ seed, tipo, enCola: st.phase === 'profesional' && (st.age >= EDAD_COLA_K6BC2 || declive), firma, hito: hitoK6BC2(st, tipo) });
+        paradas.push({ seed, tipo, enCola: st.phase === 'profesional' && (st.age >= EDAD_COLA_K6BC2 || declive), firma, hito: hitoK6BC2(st, tipo), clubTier: clubTierK6BC2(st) });
       }
       return ESTRATEGIAS_K6BC.criterio(sistema, st, decision, rng);
     };
-    const { state } = correrCarreraSimulate(seed, SPLITS_K6BC, responder);
-    cosecha.malas.push(...frenadasSinMotivoK6BC2(paradas, palanca));
+    // Split por split (el mismo motor que `correrCarreraSimulate`): cada parada narrada (`log.cola`) entra con el estado de
+    // su momento. El cierre es de las últimas etapas del split: el estado del final del split es el del cierre (el año que
+    // cierra, la edad cumplida). El momento es de la temporada regular, antes de cumplir: su edad es la del arranque del split.
+    const rngC2 = mulberry32(seed);
+    let state = createInitialState(seed, rngC2);
+    for (let split = 0; split < SPLITS_K6BC && !state.terminado; split += 1) {
+      const antes = state;
+      const res = avanzarSplitAuto(state, rngC2, responder);
+      state = res.state;
+      for (const log of res.logs.filter((l) => l.cola in cosecha.narradas)) {
+        const st = log.cola === 'cierre' ? state : antes;
+        paradas.push({ seed, tipo: log.cola, enCola: true, narrada: true, hitoSeguro: hitoSeguroK6BC2(st, log.cola), clubTier: clubTierK6BC2(st), anio: st.calendario.anio, edad: st.age });
+      }
+    }
+    cosecha.narradasConMotivo.push(...narradasConMotivoK6BC2(paradas));
+    cosecha.malas.push(...frenadasSinMotivoK6BC2(paradas.filter((p) => !p.narrada), palanca));
     cosecha.enCola += paradas.filter((p) => p.enCola).length;
     for (const log of state.logs) {
       if (log.cola in cosecha.narradas) cosecha.narradas[log.cola] += 1;
@@ -24965,7 +25196,26 @@ check(`K6b-C2 la cola de verdad: en la cola, el cierre de año y el momento fren
   if (marcadas.length !== 1 || marcadas[0].tipo !== 'cierre' || marcadas[0].firma !== 'a') {
     throw new Error(`el juez marcó ${JSON.stringify(marcadas)}; tenía que marcar solo el segundo cierre con la foto 'a'`);
   }
-  const { malas, enCola, narradas, palanca } = cosechaK6BC2();
+  // Regla 7 sobre el juez de frenar de menos: marca la narrada con hito y el cierre narrado con otro club; no la narrada sin nada.
+  const sembradaMenos = [
+    { tipo: 'cierre', enCola: true, clubTier: 'A|1' }, { tipo: 'cierre', enCola: true, narrada: true, hitoSeguro: false, clubTier: 'A|1' },
+    { tipo: 'cierre', enCola: true, narrada: true, hitoSeguro: true, clubTier: 'A|1' }, { tipo: 'cierre', enCola: true, narrada: true, hitoSeguro: false, clubTier: 'B|1' }
+  ];
+  if (narradasConMotivoK6BC2(sembradaMenos).length !== 2) {
+    throw new Error(`el juez de frenar de menos marcó ${JSON.stringify(narradasConMotivoK6BC2(sembradaMenos))}; tenía que marcar la del hito y la de otro club`);
+  }
+  // Regla 7 sobre la regla del motor (`core/cola.js`): en la cola, con la misma foto y sin palanca, un hito frena y sin hito no.
+  const stCola = { ...createInitialState(5, mulberry32(5)), phase: 'profesional', age: EDAD_COLA_K6BC2 + 2 };
+  const conFoto = { ...stCola, flags: { ...stCola.flags, colaFirmas: { cierre: firmaDeLaColaK6BC2(stCola), momento: firmaDeLaColaK6BC2(stCola) } } };
+  const conHito = frenaEnLaColaK6BC2(conFoto, 'cierre', 'titulo');
+  const sinHito = frenaEnLaColaK6BC2(conFoto, 'cierre', null);
+  if (!conHito.frena || sinHito.frena !== tienePalancaK6BC2('cierre')) {
+    throw new Error(`en la cola, con la misma foto: con hito ${JSON.stringify(conHito)}, sin hito ${JSON.stringify(sinHito)}`);
+  }
+  const { malas, enCola, narradas, palanca, narradasConMotivo } = cosechaK6BC2();
+  if (narradasConMotivo.length > 0) {
+    throw new Error(`${narradasConMotivo.length} parada(s) de la cola se narraron con un hito o con otro club o tier (frenar de menos): ${JSON.stringify(narradasConMotivo.slice(0, 3))}`);
+  }
   if (malas.length > 0) {
     throw new Error(`${malas.length} parada(s) de la cola frenaron sin hito, sin cambio y sin palanca: ${JSON.stringify(malas.slice(0, 3))}`);
   }
@@ -25041,6 +25291,65 @@ checkLento(`K6b-C meta de la cola (criterio, ${CARRERAS_METAS_C} × ${SPLITS_LOT
   console.log(`     (muestra: criterio, ${CARRERAS_METAS_C} × ${SPLITS_LOTE_K0}) desde los 28: promedio ${cola.promedio}, σ ${cola.desvio}, n = ${cola.carreras} carreras con cola (banda <= ${META_K6BC_COLA_PROMEDIO}); mediana ${cola.mediana}, p90 ${cola.p90} (dato); leyendas: mediana ${leyenda.mediana}, p90 ${leyenda.p90} (${leyenda.carreras} carreras)`);
   const problemas = Object.values(juezDeLaColaK6BC({ colaPromedio: cola.promedio, leyendaMediana: leyenda.mediana })).filter((m) => m !== null);
   if (problemas.length > 0) throw new Error(problemas.join('; '));
+});
+
+// Revisión de K6b (PLAN.md §K6b, "la meta de la cola con el jugador terco"): con `criterio`, que se retira temprano, la cola
+// casi no se mueve y su check (arriba) queda a décimas de la línea. La meta se mide también con el jugador terco de K6, el que
+// sufría el relleno: no se retira antes de los `EDAD_TERCO_K6BC` (en el "¿la seguís?" sigue, en "El mercado ya habló" baja o
+// espera, en el "¿Volvés?" vuelve, y en una bifurcación de carrera no elige la opción que lo retira); el resto, como `criterio`.
+// Las frenadas desde los 28 son las del instrumento (`observacion.frenadasCola`, sobre las carreras con cola).
+// Regla 17 — protege: que la cola del terco no se vuelva a llenar de paradas sin nada nuevo en juego (las reglas de K6b-C y
+// K6b-C2). Desde: la revisión de K6b (2026-10-05). Medido (300 × 60): antes de K6b (`25f7b0d`) promedio 19,33, σ 7,87, n = 225
+// (mediana 19); en el head 9,68, σ 9,41, n = 226 (mediana 6). Banda <= 9,68 + 2 × 9,41/√226 = 10,93. Rojo con las reglas de
+// K6b-C y C2 apagadas (la cola frena siempre, las cuatro fotos nunca se repiten, la carta única frena siempre): 15,36 (n = 228).
+const { efectosDeCarreraDeOpcion: efectosK6BCT } = await import('./estrategias.js');
+const EDAD_TERCO_K6BC = 33;
+const SEEDS_TERCO_K6BC = 300;
+const COLA_TERCO_MEDIDO_K6BC = 9.68;
+const COLA_TERCO_DESVIO_K6BC = 9.41;
+const COLA_TERCO_N_K6BC = 226;
+const META_COLA_TERCO_K6BC = Number((COLA_TERCO_MEDIDO_K6BC + Z_RUIDO_COLA_K6BC * COLA_TERCO_DESVIO_K6BC / Math.sqrt(COLA_TERCO_N_K6BC)).toFixed(2));
+const COLA_TERCO_MUTANTE_K6BC = 15.36;
+function tercoMetaK6BC(sistema, st, decision, rng) {
+  const motivo = decision.datos?.motivo;
+  if (st.age < EDAD_TERCO_K6BC) {
+    if (motivo === 'retiro_declive') return { opcionId: 'seguir' };
+    if (motivo === 'fin_mercado') return { opcionId: decision.opciones[0].id };
+    if (motivo === 'retiro_vuelta') return { opcionId: 'volver' };
+    if (Array.isArray(decision.opciones)) {
+      const sinRetiro = decision.opciones.filter((op) => !efectosK6BCT(decision, op.id).some((efecto) => efecto.type === 'retirarse'));
+      if (sinRetiro.length > 0 && sinRetiro.length < decision.opciones.length) {
+        return ESTRATEGIAS_K6BC.criterio(sistema, st, { ...decision, opciones: sinRetiro }, rng);
+      }
+    }
+  }
+  return ESTRATEGIAS_K6BC.criterio(sistema, st, decision, rng);
+}
+function juezDeLaColaDelTercoK6BC(promedio) {
+  return typeof promedio === 'number' && Number.isFinite(promedio) && promedio <= META_COLA_TERCO_K6BC
+    ? null : `el promedio de frenadas desde los 28 del terco es ${promedio}, la banda es <= ${META_COLA_TERCO_K6BC}`;
+}
+
+check('Revisión de K6b, la meta de la cola del terco: el juez acepta lo medido y el borde, y rechaza uno justo afuera, el del mutante y uno inexistente (regla 7)', () => {
+  const aceptados = [COLA_TERCO_MEDIDO_K6BC, META_COLA_TERCO_K6BC].filter((v) => juezDeLaColaDelTercoK6BC(v) !== null);
+  const rechazados = [META_COLA_TERCO_K6BC + 0.05, COLA_TERCO_MUTANTE_K6BC, null, Number.NaN].filter((v) => juezDeLaColaDelTercoK6BC(v) === null);
+  if (aceptados.length > 0 || rechazados.length > 0) {
+    throw new Error(`el juez rechaza ${JSON.stringify(aceptados)} o acepta ${JSON.stringify(rechazados)}`);
+  }
+});
+
+checkLento(`Revisión de K6b, la meta de la cola del terco (no se retira antes de los ${EDAD_TERCO_K6BC}, ${SEEDS_TERCO_K6BC} × ${SPLITS_K6BC}): el promedio de frenadas desde los 28 es <= ${META_COLA_TERCO_K6BC}`, () => {
+  const colas = [];
+  for (let seed = 1; seed <= SEEDS_TERCO_K6BC; seed += 1) {
+    const { observacion } = correrCarreraSimulate(seed, SPLITS_K6BC, tercoMetaK6BC);
+    if (observacion.llegaALaCola) colas.push(observacion.frenadasCola);
+  }
+  const promedio = colas.reduce((a, b) => a + b, 0) / colas.length;
+  const desvio = Math.sqrt(colas.reduce((a, b) => a + (b - promedio) ** 2, 0) / colas.length);
+  const mediana = [...colas].sort((a, b) => a - b)[Math.floor(colas.length / 2)];
+  console.log(`     (muestra: el terco, ${SEEDS_TERCO_K6BC} × ${SPLITS_K6BC}) desde los 28: promedio ${promedio.toFixed(2)}, σ ${desvio.toFixed(2)}, n = ${colas.length} carreras con cola (banda <= ${META_COLA_TERCO_K6BC}); mediana ${mediana} (dato)`);
+  const problema = juezDeLaColaDelTercoK6BC(Number(promedio.toFixed(2)));
+  if (problema) throw new Error(problema);
 });
 
 if (errores.length > 0) {

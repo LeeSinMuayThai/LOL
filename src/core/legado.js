@@ -186,9 +186,11 @@ function detalleDelPico(registro) {
   const mejor = mejorInternacional(registro);
   if (mejor) {
     const donde = `el Mundial ${mejor.anio} con ${mejor.org}`;
+    // Revisión de K6b: "de" + "el Mundial" es "del Mundial" (Finalista del Mundial 2031, no "de el").
+    const deDonde = `del Mundial ${mejor.anio} con ${mejor.org}`;
     const frases = {
-      final: `Finalista de ${donde}`,
-      semis: `Semifinalista de ${donde}`,
+      final: `Finalista ${deDonde}`,
+      semis: `Semifinalista ${deDonde}`,
       cuartos: `Cuartos de final en ${donde}`,
       buen_papel: `Buen papel en ${donde}`,
       eliminado: `Jugó ${donde}`

@@ -22,7 +22,7 @@ import { nombreVisibleDeLiga, esLigaFranquiciada } from '../core/ligas.js';
 //  - el DESCENSO de tier 1 (D16): si tu org termina última de una liga con
 //    `desciendeA`, baja de categoría y tu contrato viaja con ella; su org tier-2
 //    más fuerte de la región promociona a taparla. K6b-F: las ligas
-//    franquiciadas (`franquicia` en `data/leagues.json`: LCK, LPL, LEC y LCS,
+//    franquiciadas (`franquicia` en `data/leagues.json`: LCK, LPL y LEC,
 //    CONCEPTO §12.3) no descienden a nadie; su `desciendeA` queda como la liga
 //    de desarrollo de la región (de ahí hereda la dificultad, el banquillo).
 

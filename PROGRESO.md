@@ -34,6 +34,24 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-05 — Revisión de K6b: la carta única solo en continuidad, la cola que frena de menos, el terco, la vuelta al mercado, "del Mundial", la LCS sin franquicia (`k6b-integracion`; PLAN.md §K6b, "La revisión de K6b")
+
+**Carta única (regla 15).** `mercado.js`: `enJuegoDeUnaSolaCarta` suma el caso `cambio` (otra liga, otra región o subir de tier sin prueba); se firma sola solo si `esContinuidadDeUnaSolaCarta` (la misma liga y el mismo tier). La previa dice la mudanza ("cambiar de liga (LCK → LPL, otra región)"). El log `unaSolaCarta` lleva `liga/ligaAntes/tierAntes`. Check K6b-C (carta): las firmadas solas son todas continuidad (40 seeds: 9 frenaron, 8 por `cambio`; 27 solas). Rojo con la regla vieja: 8 firmas solas cambiando de liga.
+
+**Frenar de menos (regla 7).** K6b-C: el juez ve cada "¿la seguís?" narrado con su club, tier y vuelta, más una aserción de que `firmaDelSeguis`/`firmaDeLaVuelta` se mueven con club, tier, vuelta y lesión. K6b-C2: el juez ve cada parada narrada de la cola (hito seguro: título o internacional del año, último año; o el cierre con otro club o tier), más una aserción sobre `frenaEnLaCola`. Rojos: M2 (un hito que ya no frena) y M3 (las firmas constantes), con las aserciones y también sin ellas (3 y 4 narradas con motivo).
+
+**La meta del terco (regla 17).** Terco: no se retira antes de los 33. Desde los 28, 300 × 60: antes de K6b (`25f7b0d`) 19,33 (σ 7,87, n 225, mediana 19); head 9,68 (σ 9,41, n 226, mediana 6); banda <= 10,93; rojo con las reglas de C y C2 apagadas: 15,36 (n 228). El check de `criterio` queda como estaba.
+
+**La vuelta.** (a) El "¿Volvés?" se pregunta en la pretemporada del reloj de la vuelta y, sin club, el split sigue desde `mercado` (`reanudarEn`, `core/pipeline.js`): la vuelta es al mercado de esa pretemporada. (b) La previa dice la chance de que te llamen, con la demanda de hoy (`chanceDeQueTeLlamen`, sin `rng`): medida forzando todas las vueltas (criterio + defecto, 300 × 60 c/u): sin demanda 19/210 = 9%, con demanda 9/28 = 32% (no crece con el número de clubes). (c) El automático no vuelve de free agent debajo del 20%. 200 × 60, antes (`923800d`) → después: criterio, vueltas sin club 78 → 8, nunca firman 66 → 0, finales "sin equipo" 62% → 64%; defecto, 76 → 13, nunca 57 → 0, sin equipo 56,5% → 59,5%. **El "sin equipo" no baja:** casi todo es el primer retiro por el mercado sin club (K6b-F), no la vuelta. Check nuevo con mutantes (sin `reanudarEn`: rojo).
+
+**Textos y dominio.** "Finalista/Semifinalista del Mundial" (`legado.js`); K6b-U (g) mira el texto fijo y la frase armada (rojo con `de ${donde}`). La LCS sale de las franquiciadas (CONCEPTO §12.3); K6b-F liga actualizado.
+
+**Huella y guardado.** `HUELLA_JUEGO` 1920057344 (reemplaza a 1772717528, sigue 'K6b'); `FORMAS_CONOCIDAS[13]` re-registrada 'fcc08dda0b89' (sin subir de 13).
+
+**Abierto.** `--rapido`: 1 FAIL, K5c-V (el piso de franquicia de un veterano de tier 2 ya no aparece en las carreras de `azar`, 0 forzadas con 20 o 40 seeds; sin diagnosticar). "K5c meta": cinco en banda, la de los estancados afuera (azar 12,5%, banda ~10% ± 1,71), sin re-basar.
+
+**Verificación.** `--solo` de cada check tocado con su mutante; `--rapido` (341 OK, 3 FAIL → arreglados 2: la forma y K6b-F contrato); `simulate.js 1 60 criterio` dos veces con diff vacío.
+
 ### 2026-10-05 — K6b integrado: tarjeta, mérito, contrato y cola en una rama (`k6b-integracion`; PLAN.md §K6b)
 
 **Qué.** Merge, en orden, de `k6b-tarjeta` (`fe21489`), `k6b-mercado` (`912a560`), `k6b-contrato` (`42e450f`) y `k6b-cola2`

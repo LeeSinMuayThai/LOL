@@ -1516,6 +1516,19 @@ export const BALANCE = {
     // splitsPorEdad=3) antes de que se cierre sola si no la usás.
     vueltasMaximas: 2,
     ventanaDeVueltaSplits: 6,
+    // Revisión de K6b (el "sin equipo" de la vuelta): volver de free agent es volver al mercado de esa pretemporada
+    // (`systems/retiro.js`). La previa del "¿Volvés?" dice la chance de que te llame alguien, con la demanda de hoy: si
+    // algún club te ficharía hoy (`core/demanda.js:orgsQueTeFicharian`, con la edad con la que volverías), o si ninguno.
+    // Medida (revisión de K6b, PROGRESO.md): todas las vueltas de free agent de `criterio` y del bot por defecto, 300 × 60
+    // cada uno, forzando la vuelta: sin demanda, 19 de 210 recibieron al menos una oferta en ese mercado (9%); con
+    // demanda, 9 de 28 (32%), sin que crezca con el número de clubes (el mundo se mueve antes y llena asientos). El
+    // automático (y `criterio`, que le delega la vuelta) no vuelve de free agent con la chance debajo de
+    // `umbralChanceVueltaPct`: sin nadie que hoy te fiche, no vuelve.
+    vuelta: {
+      pctLlamadoSinDemanda: 9,
+      pctLlamadoConDemanda: 32,
+      umbralChanceVueltaPct: 20
+    },
     // K5-C (PLAN.md K5, "el final lo decide el mercado"): cuántas pretemporadas SEGUIDAS con el mercado abierto
     // (contrato vencido o sin equipo) sin una sola oferta de tu tier o mejor antes de que `systems/mercado.js` frene
     // con la bifurcación "bajás de tier o colgás el mouse". Se cuenta igual que `mercado.splitsSinOfertaParaLibre`

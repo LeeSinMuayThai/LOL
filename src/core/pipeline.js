@@ -177,7 +177,11 @@ export function resolverDecision(state, respuesta, rng) {
     return conTarjeta({ state: nextState, logs });
   }
 
-  const continuacion = conTarjeta(correrEtapas(nextState, etapaDe(sistemaId) + 1, rng));
+  // Revisión de K6b: un sistema puede pedir que el split siga desde otra etapa (`reanudarEn`, por id: regla 11). Lo usa la
+  // vuelta del retiro de free agent (`systems/retiro.js`): el split del retirado arranca en `retiro`, así que el mercado de
+  // esta pretemporada todavía no corrió, y volver es volver a ese mercado.
+  const desde = resultado.reanudarEn ? etapaDe(resultado.reanudarEn) : etapaDe(sistemaId) + 1;
+  const continuacion = conTarjeta(correrEtapas(nextState, desde, rng));
   return { state: continuacion.state, logs: [...logs, ...continuacion.logs] };
 }
 

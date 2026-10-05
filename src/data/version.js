@@ -127,4 +127,8 @@ export const VERSION_JUEGO = 'K6b';
 // descienden; K6b-C/C2, la cola: el "¿la seguís?", "El mercado ya habló", el "¿Volvés?", la carta única, el cierre de año y el momento
 // frenan solo si algo cambió o se juega algo (si no, los resuelve el perfil y se narran); K6b-U, la tarjeta y los textos (no mueve la
 // huella). Ninguna seed de K5c reproduce su carrera. Reemplaza a 1462997803 (K5c).
-export const HUELLA_JUEGO = 1772717528;
+// K6b (la revisión, 1920057344; corrimiento declarado, sigue siendo 'K6b'): la carta única se firma sola solo si es una
+// continuidad (la misma liga y el mismo tier); el "¿Volvés?" se pregunta en la pretemporada y la vuelta de free agent va al mercado
+// de esa misma pretemporada; el automático no vuelve de free agent si nadie te ficharía hoy; la LCS sale de las franquiciadas (la NACL
+// tiene promoción). Reemplaza a 1772717528.
+export const HUELLA_JUEGO = 1920057344;

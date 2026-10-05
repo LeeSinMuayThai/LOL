@@ -766,16 +766,21 @@ function cartaParaElInstrumento(state, oferta) {
   const forzada = oferta.forzadaFranquicia === true;
   return {
     org: oferta.org, tier: oferta.tier, forzadaFranquicia: forzada,
-    ganaLaDisputa: forzada ? ganaLaDisputaDelAsiento(state, oferta.org, state.player.role) : null
+    ganaLaDisputa: forzada ? ganaLaDisputaDelAsiento(state, oferta.org, state.player.role) : null,
+    // Revisión de K6b (regla 15): de dónde a dónde, para que el check vea que la firma sin pausa fue una continuidad.
+    liga: oferta.liga, ligaAntes: state.career.liga ?? null, tierAntes: state.career.tier ?? null
   };
 }
 
-// Una sola carta: ¿aceptar o rechazar se juega algo? `null` si no: es tu tier o mejor y sin prueba, así que rechazarla es
-// quedarte sin club por nada. Si sí, lo que está en juego, en palabras y en número:
+// Una sola carta: ¿aceptar o rechazar se juega algo? `null` si no: es una continuidad (la misma liga y el mismo tier, sin
+// prueba), así que rechazarla es quedarte sin club por nada. Si sí, lo que está en juego, en palabras y en número:
 //  - `prueba`: firmar es ir a una prueba (un salto de tier, liga o región, `saltosDeFichaje`). `pFirmaPct` es la chance de
 //    firmar con la prueba que se espera de tu stat (la media que usa `resolverAuto`, `probabilidadDeFirmarTrasPrueba`).
 //  - `bajar`: firmar es bajar de tier; rechazarla es quedarte free agent, con las pretemporadas que llevás sin una oferta de
 //    tu tier y las que faltan para que el mercado te pregunte si colgás (`retiro.splitsSinOfertaEnTierParaBifurcar`).
+//  - `cambio` (revisión de K6b, regla 15): firmar es cambiar de liga, de región o subir de tier sin prueba. `saltosDeFichaje`
+//    solo marca el primer tier 1, el primer tier 2 y el primer import: CBLOL → LCK o LCK → LPL a los 29 se firmaban solos,
+//    narrados como "no había nada que pensar". Frena con la mudanza en palabras.
 // Puro: cero `rng`. Exportada para el check.
 export function enJuegoDeUnaSolaCarta(state, oferta) {
   if (saltosDeFichaje(state, oferta).length > 0) {
@@ -798,7 +803,32 @@ export function enJuegoDeUnaSolaCarta(state, oferta) {
         + (faltan > 0 ? `, y a ${faltan} más el mercado te pregunta si colgás el mouse.` : ', y el mercado ya te pregunta si colgás el mouse.')
     };
   }
+  if (!esContinuidadDeUnaSolaCarta(state, oferta)) {
+    const desde = ligaEnMundo(state, state.career.liga);
+    const hacia = ligaEnMundo(state, oferta.liga);
+    const otraRegion = Boolean(desde && hacia && desde.regionId !== hacia.regionId);
+    const subeDeTier = state.career.tier != null && oferta.tier < state.career.tier;
+    const nombreHacia = hacia?.nombre ?? `tier ${oferta.tier}`;
+    const mudanza = desde
+      ? `cambiar de liga (${desde.nombre} → ${nombreHacia}${otraRegion ? ', otra región' : ''})`
+      : `ir a ${nombreHacia}`;
+    return {
+      caso: 'cambio', ligaAntes: state.career.liga ?? null, liga: oferta.liga ?? null, otraRegion, subeDeTier,
+      texto: `Firmar con ${oferta.org} es ${mudanza}${subeDeTier ? ` y subir a tier ${oferta.tier}` : ''}, por `
+        + `${plata(oferta.salarioAnualUSD)} al año. Rechazarla es quedarte free agent esta ventana.`
+    };
+  }
   return null;
+}
+
+// Revisión de K6b (regla 15): la carta única se firma sola solo si es una continuidad: la misma liga y el mismo tier que
+// tenías. Puro. Exportada para el check.
+export function esContinuidadDeUnaSolaCarta(state, oferta) {
+  return oferta.liga != null && oferta.liga === state.career.liga && oferta.tier === state.career.tier;
+}
+
+function ligaEnMundo(state, ligaId) {
+  return ligaId ? state.mundo.ligas.find((liga) => liga.id === ligaId) ?? null : null;
 }
 
 // Un porcentaje: la p de `probabilidadDeFirmarTrasPrueba` va de 0 a 1 y la stat de 0 a 100.
@@ -809,7 +839,7 @@ function narracionDeUnaSolaCarta(state, oferta) {
     return `Una sola carta, la de tu club: ${oferta.org} te renueva por ${plata(oferta.salarioAnualUSD)} al año. Firmás sin vueltas.`;
   }
   const liga = nombreDeLigaEnMundo(state, oferta.liga) ?? `tier ${oferta.tier}`;
-  return `Una sola carta: ${oferta.org} (${liga}), ${plata(oferta.salarioAnualUSD)} al año. No había nada que pensar: firmás.`;
+  return `Una sola carta, en tu misma liga: ${oferta.org} (${liga}), ${plata(oferta.salarioAnualUSD)} al año. No había nada que pensar: firmás.`;
 }
 
 // "El mercado ya habló": frena la primera vez y cuando hay una elección real (alguien te ofrece algo, aunque sea abajo). Si
