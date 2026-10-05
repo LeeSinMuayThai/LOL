@@ -239,7 +239,8 @@ export function claseDeLigaCriterio(oferta, casa) {
   if (calibre === undefined) {
     return 0;
   }
-  if (casa.nivel >= NIVEL_ELITE_CRITERIO && casa.calibreCasa !== null && calibre > casa.calibreCasa && casa.nivel >= calibre) {
+  if (casa.nivel >= NIVEL_ELITE_CRITERIO && casa.calibreCasa !== null && calibre > casa.calibreCasa + BALANCE.mercado.casa.margenImportElite
+    && casa.nivel >= calibre) {
     return 3;
   }
   if (oferta.liga === casa.ligaCasa) {

@@ -13570,6 +13570,20 @@ check('K1 puntaje: con el mismo registro, un potencial más bajo nunca puntúa m
       textoPorBanda[cual].add(potencial.detalle.replace(/\d+/g, '#'));
     }
   }
+  // La aclaración "(no es un tope… el tuyo llegó a X)" solo aparece cuando el nivel pico supera al potencial: con un pico por
+  // debajo, "tu techo era 90 (… llegó a 82)" se lee como una contradicción que no existe.
+  for (const base of estadosDeReferenciaK1()) {
+    const conPico = (pico) => {
+      const copia = conTechoMaximo(base);
+      copia.career.registro.picos.nivel = pico;
+      return puntajeDeCarrera(copia).potencial.detalle;
+    };
+    const debajo = conPico(potencialMax - 5);
+    const arriba = conPico(potencialMax + 5);
+    if (/no es un tope/.test(debajo) || !arriba.includes(`no es un tope del nivel de juego: el tuyo llegó a ${potencialMax + 5})`)) {
+      throw new Error(`seed ${base.seed}: con el pico ${potencialMax - 5} lee "${debajo}"; con el pico ${potencialMax + 5} lee "${arriba}"`);
+    }
+  }
   const vacias = Object.entries(textoPorBanda).filter(([, textos]) => textos.size === 0).map(([cual]) => cual);
   if (vacias.length > 0) {
     throw new Error(`check vacío: ninguna carrera de referencia en la banda ${vacias.join(', ')}`);
@@ -23030,13 +23044,19 @@ function carreraDeCasaK5CH(seed, region) {
 }
 
 const cacheCasaK5CH = new Map();
-function carrerasDeRegionK5CH(region, seeds) {
-  if (!cacheCasaK5CH.has(region)) {
-    cacheCasaK5CH.set(region, conPerillasCasaK5CH(PERILLAS_CASA_K5CH,
+function carrerasDeRegionK5CH(region, seeds, perillas = PERILLAS_CASA_K5CH) {
+  const clave = `${region}|${JSON.stringify(perillas)}`;
+  if (!cacheCasaK5CH.has(clave)) {
+    cacheCasaK5CH.set(clave, conPerillasCasaK5CH(perillas,
       () => Array.from({ length: seeds }, (_, i) => carreraDeCasaK5CH(i + 1, region))));
   }
-  return cacheCasaK5CH.get(region);
+  return cacheCasaK5CH.get(clave);
 }
+// La referencia de los cupos de import de élite: la misma casa encendida y sin cupos (los coreanos de élite no deberían jugar
+// menos en su liga con los cupos que sin ellos: "si sos coreano y bueno debutás en tu liga"). Banda de ruido en puntos de
+// porcentaje (200 carreras, pico >= 85, G0: sin cupos 72,1%, con el margen 71,7%, con el margen en 0 63,7%).
+const SIN_CUPOS_K5CH = { ...PERILLAS_CASA_K5CH, cuposImportElite: 0 };
+const BANDA_CUPOS_K5CH = 4;
 
 check('K5c-H: con las perillas encendidas en memoria, un coreano de nivel alto juega la mayoría de sus temporadas de tier 1 en la LCK', () => {
   const altos = carrerasDeRegionK5CH('KR', SEEDS_KR_K5CH).filter((c) => c.pico >= PICO_ALTO_K5CH && c.total > 0);
@@ -23051,7 +23071,16 @@ check('K5c-H: con las perillas encendidas en memoria, un coreano de nivel alto j
   if (enCasa * 2 <= total || conMayoria * 2 <= altos.length) {
     throw new Error(`el coreano de nivel alto no juega en su casa: ${resumen}`);
   }
-  console.log(`      ${resumen}`);
+  // Los cupos de import de élite (`mercado.casa.cuposImportElite`) son para una región débil: un coreano no sube de liga por
+  // cuatro puntos de calibre (`mercado.casa.margenImportElite`). Misma muestra sin cupos: el % en la LCK no puede quedar abajo.
+  const sinCupos = carrerasDeRegionK5CH('KR', SEEDS_KR_K5CH, SIN_CUPOS_K5CH).filter((c) => c.pico >= PICO_ALTO_K5CH && c.total > 0);
+  const pctSinCupos = 100 * sinCupos.reduce((suma, c) => suma + c.enCasa, 0) / Math.max(1, sinCupos.reduce((suma, c) => suma + c.total, 0));
+  const pctConCupos = 100 * enCasa / Math.max(1, total);
+  if (pctConCupos < pctSinCupos - BANDA_CUPOS_K5CH) {
+    throw new Error(`los cupos de import de élite le sacan splits de la LCK al coreano de nivel alto: ${pctConCupos.toFixed(1)}% con cupos `
+      + `contra ${pctSinCupos.toFixed(1)}% sin cupos (banda ${BANDA_CUPOS_K5CH} puntos)`);
+  }
+  console.log(`      ${resumen}; sin cupos de élite ${pctSinCupos.toFixed(1)}%`);
 });
 
 check('K5c-H: con las perillas encendidas en memoria, un coreano de nivel medio juega en la LCK CL o afuera (no la mayoría de sus splits pro en la LCK)', () => {
@@ -23239,6 +23268,38 @@ check('K5c-H arreglo: con las perillas encendidas en memoria, la casa no le tapa
     throw new Error(`muestra chica: ${JSON.stringify(cuenta)} en ${SEEDS_IMPORT_K5CHA} seeds`);
   }
   console.log(`      ${cuenta.conImport} de ${cuenta.manos} manos de élite brasileña con clubes de casa traen un import a una liga más fuerte`);
+});
+
+// El margen de los cupos de import de élite (`mercado.casa.margenImportElite`): una liga de tier 1 "más fuerte" lo es claramente,
+// en el motor (`importDeEliteQueAlcanzas`) y en `criterio` (`claseDeLigaCriterio`, que es lo que mide el check del coreano).
+check('K5c-H arreglo: un import de élite exige una liga claramente más fuerte que la de casa (margenImportElite), en el motor y en `criterio`', () => {
+  const margen = BALANCE.mercado.casa.margenImportElite;
+  const liga = (id, fuerza, tier = 1) => ({ id, tier, orgs: [{ fuerza }] });
+  const casa = liga('LCK', 90);
+  const estado = (nivel) => ({ seed: 1, player: { splitCount: 1, role: 'mid', stats: statsParejasK5cM(nivel) }, logs: [] });
+  const elite = BALANCE.mercado.casa.nivelImportElite + 10;
+  const cuentas = [];
+  // [liga, nivel, esperado]: casi igual (margen/2 arriba) no; claramente arriba (margen + 1) sí; sin el nivel para llegar no.
+  const casos = [
+    [liga('LPL', 90 + margen / 2), elite, false],
+    [liga('LEC', 90 + margen + 1), elite + 20, true],
+    [liga('LEC', 90 + margen + 1), BALANCE.mercado.casa.nivelImportElite - 1, false],
+    [liga('LEC', 90 + margen + 1), 90 + margen, false],
+    [liga('LCP', 90 + margen + 1, 2), elite + 20, false]
+  ];
+  for (const [otra, nivel, esperado] of casos) {
+    const motor = importDeEliteK5CHA(estado(nivel), otra, casa);
+    const calibres = { LCK: 90, [otra.id]: otra.orgs[0].fuerza };
+    const bot = claseDeLigaK5CH({ tier: otra.tier, liga: otra.id }, { ligaCasa: 'LCK', calibres, calibreCasa: 90, calibreActual: null, nivel }) === 3;
+    cuentas.push(`${otra.id}@${otra.orgs[0].fuerza}/nivel ${nivel}: motor ${motor}, bot ${bot}`);
+    if (otra.tier === 1 && (motor !== esperado || bot !== esperado)) {
+      throw new Error(`se esperaba ${esperado}: ${cuentas[cuentas.length - 1]}`);
+    }
+    if (otra.tier !== 1 && motor) {
+      throw new Error(`una liga de tier 2 no es un import de élite: ${cuentas[cuentas.length - 1]}`);
+    }
+  }
+  console.log(`      margen ${margen}: ${cuentas.join(' | ')}`);
 });
 
 check('K5c-H arreglo: con las perillas encendidas en memoria, a quien alcanza su liga el traspaso a mitad de contrato no lo manda a una liga más débil que la de su casa', () => {
