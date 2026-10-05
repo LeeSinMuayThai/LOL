@@ -147,13 +147,33 @@ export const MOTIVOS_DE_RETIRO = {
   staff: 'para pasar al staff'
 };
 
+// El split en el que te retirás por una bifurcación: uno (no es una perilla, es la cuenta de "este split").
+const SPLIT_DEL_RETIRO = 1;
+
 export function retirarsePorCamino(state, motivo) {
   const puedeVolver = state.flags.vueltasUsadas < BALANCE.retiro.vueltasMaximas;
   const { state: retirado, logs } = terminar(state, 'retiro_elegido',
     `Dejás de competir a los ${state.age} ${MOTIVOS_DE_RETIRO[motivo]}. ${state.career.titulos} título(s), `
     + `${state.career.internacionales} internacional(es).${puedeVolver ? ' La puerta queda entreabierta.' : ''}`,
     { reversible: puedeVolver, motivo: `Dejaste de competir ${MOTIVOS_DE_RETIRO[motivo]}.` });
-  return { state: retirado, descripcion: `te retirás ${MOTIVOS_DE_RETIRO[motivo]}`, logs };
+  // Arreglo de K5c (años pro): la bifurcación llega en `eventos`, con la temporada de este split ya jugada, pero `atributos`
+  // no corre: ni el reloj (`player.splitCount`) ni `registro.splitsJugados` la cuentan. Ese split fue pro y se jugó: el
+  // registro lo suma y `career.splitsRetirado` (lo que `aniosProDe` le descuenta al reloj) baja uno, así que
+  // `splitsJugados = splitCount − splitsRetirado` se sigue cumpliendo. Sin vuelta, la tarjeta lo cuenta; con vuelta, se
+  // compensa con el split del retiro que `relojAlVolver` suma dentro de `flags.splitsEnVentana`, que antes se descontaba
+  // entero (la vuelta perdía un split pro: 15 de 87 vueltas de `azar` con Final2).
+  const temporadaJugada = state.phase === 'profesional' && state.career.splitPrimerContratoTier2 != null;
+  const conSplitPro = temporadaJugada
+    ? {
+      ...retirado,
+      career: {
+        ...retirado.career,
+        splitsRetirado: (retirado.career.splitsRetirado ?? 0) - SPLIT_DEL_RETIRO,
+        registro: { ...retirado.career.registro, splitsJugados: retirado.career.registro.splitsJugados + SPLIT_DEL_RETIRO }
+      }
+    }
+    : retirado;
+  return { state: conSplitPro, descripcion: `te retirás ${MOTIVOS_DE_RETIRO[motivo]}`, logs };
 }
 
 // K4-C2: la ventana de vuelta tiene su contenido (`data/events/retiro_y_vuelta.json`, etapa `retirado`), que el
