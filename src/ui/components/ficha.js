@@ -1,6 +1,7 @@
 import { fichaCompleta } from '../../core/ficha.js';
 import { valorDeMercado } from '../../core/valorMercado.js';
 import { plural } from '../../core/formato.js';
+import { titulosDeFila } from '../../core/registro.js';
 import { crearBarra, crearInstrumento } from './barra.js';
 import { crearStatRow } from './statRow.js';
 import { crearOrgChip } from './orgChip.js';
@@ -302,7 +303,7 @@ function crearDetalleHistoria(registro) {
   const resumen = document.createElement('summary');
   resumen.textContent = 'Ver carrera';
   detalle.appendChild(resumen);
-  detalle.append(...registro.porOrg.map((fila) => filaHistoria(fila)));
+  detalle.append(...registro.porOrg.map((fila) => filaHistoria({ ...fila, titulos: titulosDeFila(fila, registro) })));
   return detalle;
 }
 
