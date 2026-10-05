@@ -9277,6 +9277,23 @@ function conPerillasK5CR(perillas, fn) {
   }
 }
 
+// Un import de tier 1 que se te presenta (la bifurcación `ofertaDeImport` de `data/events/caminos.json`) es una oferta de tier 1 aunque la
+// rechaces: el motor vuelve a cero la cuenta apenas se te muestra (`conImportDeTier1Presentado`, K5c revisión). Se identifica por el
+// evento del dato (mismo título, con efecto `ofertaDeImport` a una liga de tier 1 que hoy se puede cumplir), no por la cuenta.
+function esImportDeTier1K5CR(st, decision) {
+  const titulo = decision.titulo ?? '';
+  const esDeTier1 = (efecto) => {
+    if (efecto.type !== 'ofertaDeImport') {
+      return false;
+    }
+    const posible = ofertaDeImportPosible(st, efecto.liga);
+    return posible.posible && posible.liga.tier === 1;
+  };
+  return TODOS_LOS_EVENTOS.some((evento) => evento.bifurcacion
+    && [evento.title, `${evento.title} (fin de temporada)`].some((t) => resolverTexto(t, st) === titulo)
+    && evento.options.some((opcion) => opcion.outcomes.some((outcome) => outcome.effects.some(esDeTier1))));
+}
+
 const tiersDeDecisionK5CR = (decision) => (decision.opciones ?? []).map((opcion) => opcion.tier).filter((tier) => tier !== undefined);
 const fotoK5CR = (st) => ({
   phase: st.phase, tier: st.career.tier, org: st.career.currentOrg, edad: st.age, split: st.player.splitCount,
@@ -9305,6 +9322,7 @@ function carreraK5CR(seed, { degradar = false, responderBase = responderPorDefec
       decisiones.push({
         ...fotoK5CR(st), ligaVisible, motivo: decision.datos?.motivo ?? null, variante: decision.datos?.variante ?? null,
         esMano: decision.presentacion === 'mercado' && decision.datos?.motivo === 'oferta',
+        importTier1: esImportDeTier1K5CR(st, decision),
         tiers: tiersDeDecisionK5CR(decision), opciones: (decision.opciones ?? []).map((op) => op.id),
         tiersFork: esFork ? decision.datos.ofertas.map((oferta) => oferta.tier) : [],
         motivoFork: esFork ? decision.datos.motivoRetiro : null,
@@ -9421,6 +9439,7 @@ check('K5c-R: la cuenta de la presión sube todos los splits jugados en tier 2 (
   let manosTier2ConCuenta = 0;
   let subeSinMercado = 0;
   const conOferta = (d) => d.esMano || d.motivo === 'traspaso';
+  let resetsPorImport = 0;
   for (const carrera of carreras) {
     for (const paso of carrera.pasos) {
       const { antes, despues } = paso;
@@ -9438,13 +9457,23 @@ check('K5c-R: la cuenta de la presión sube todos los splits jugados en tier 2 (
           manosTier2ConCuenta += 1;
         }
       }
-      // Al cerrar el split: jugado en tier 2 con club desde la edad, +1 (o 1, si una oferta de tier 1 la volvió a cero).
+      // Un import de tier 1 presentado (aunque lo rechaces) también es una oferta de tier 1: la cuenta, en 0 al mostrarse.
+      for (const d of paso.decisiones.filter((x) => x.importTier1)) {
+        if (d.cuenta !== 0) {
+          problemas.push(`${donde}: import de tier 1 presentado y cuenta ${d.cuenta}`);
+        }
+        resetsPorImport += antes.cuenta > 0 ? 1 : 0;
+      }
+      // Al cerrar el split: jugado en tier 2 con club desde la edad, +1 (1 si una mano o un traspaso de tier 1 la volvió a cero; 0 si fue un import de tier 1, que se presenta después).
       const enTier2 = (foto) => foto.phase === 'profesional' && foto.tier === 2 && foto.org !== null;
       if (!enTier2(antes) || !enTier2(despues) || antes.edad < perillas.edadDesde) {
         continue;
       }
-      const vioTier1 = paso.decisiones.some((d) => conOferta(d) && d.tiers.includes(1));
-      const esperado = vioTier1 ? 1 : antes.cuenta + 1;
+      const vioTier1 = paso.decisiones.some((d) => (conOferta(d) && d.tiers.includes(1)) || d.importTier1);
+      // El mercado corre antes que la cuenta (la oferta de tier 1 deja 1 al cerrar), pero los eventos corren después (`ETAPAS_SPLIT`):
+      // un import de tier 1 presentado ese split la deja en 0 al cerrar.
+      const vioImport = paso.decisiones.some((d) => d.importTier1);
+      const esperado = vioImport ? 0 : (vioTier1 ? 1 : antes.cuenta + 1);
       if (despues.cuenta !== esperado) {
         problemas.push(`${donde}: jugó en tier 2 a los ${antes.edad} (tier 1 visto: ${vioTier1}) y la cuenta pasó de ${antes.cuenta} a ${despues.cuenta}`);
       }
@@ -9453,9 +9482,9 @@ check('K5c-R: la cuenta de la presión sube todos los splits jugados en tier 2 (
       }
     }
   }
-  if (resetsPorTier1 === 0 || manosTier2ConCuenta === 0 || subeSinMercado === 0) {
-    problemas.push(`el check no mide nada: ${resetsPorTier1} ofertas de tier 1 con la cuenta arriba, ${manosTier2ConCuenta} manos solo de tier 2 `
-      + `con la cuenta arriba, ${subeSinMercado} splits sin mercado en que subió`);
+  if (resetsPorTier1 === 0 || resetsPorImport === 0 || manosTier2ConCuenta === 0 || subeSinMercado === 0) {
+    problemas.push(`el check no mide nada: ${resetsPorTier1} ofertas de tier 1 con la cuenta arriba, ${resetsPorImport} imports de tier 1 presentados `
+      + `con la cuenta arriba, ${manosTier2ConCuenta} manos solo de tier 2 con la cuenta arriba, ${subeSinMercado} splits sin mercado en que subió`);
   }
   if (problemas.length > 0) {
     throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 5).join(' · ')}`);
