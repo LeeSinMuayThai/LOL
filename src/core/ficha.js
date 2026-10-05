@@ -161,11 +161,16 @@ function ligaDe(state) {
   return state.mundo.ligas.find((liga) => liga.id === state.career.liga) ?? null;
 }
 
+// `null` si no hay un cupo del que hablar (amateur, tier 2 y 3, retirado): el cupo internacional es de la liga de primera, y
+// "sin chance" ahí es un veredicto sobre una puerta que ni siquiera es la tuya. La pantalla no dibuja el chip.
 export function estadoInternacional(state) {
   if (state.serie?.activa && state.serie.ronda === 'internacional') {
     return 'jugando';
   }
   const liga = ligaDe(state);
+  if (!liga || liga.tier !== 1) {
+    return null;
+  }
   const cupos = liga?.cuposInternacionales ?? 0;
   if (cupos <= 0 || !state.career.posicion) {
     return 'sin_chance';
@@ -187,6 +192,10 @@ export function dueloDeGeneracion(state) {
     return null;
   }
   const { tuyos, suyos } = archirrival.duelo;
+  // Un 0-0 no es un duelo: hasta que alguno de los dos sume un título o un internacional, no hay nada que contar.
+  if (tuyos + suyos === 0) {
+    return null;
+  }
   return {
     handle: archirrival.handle,
     org: archirrival.org,

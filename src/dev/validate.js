@@ -14454,6 +14454,35 @@ function hechosQueCumplenK1(requisito) {
   return hechos;
 }
 
+// K5c-U2: los textos que ve el jugador no hacen plural con paréntesis ("14 título(s), 0 internacional(es)"): hay `plural()` en
+// `core/formato.js`. Barato y estático: mira el código que arma textos (core, systems, ui y los datos de eventos), sin los
+// comentarios.
+check('Textos visibles: ningún plural con paréntesis ("título(s)", "internacional(es)")', () => {
+  const PLURAL_CON_PARENTESIS = /[\p{L}]\((s|es)\)/u;
+  const hallazgos = [];
+  const recorrer = (dir) => {
+    for (const entrada of fs.readdirSync(dir, { withFileTypes: true })) {
+      const ruta = path.join(dir, entrada.name);
+      if (entrada.isDirectory()) {
+        recorrer(ruta);
+      } else if (/\.(js|json)$/.test(entrada.name)) {
+        fs.readFileSync(ruta, 'utf8').split('\n').forEach((linea, i) => {
+          const codigo = linea.trim().startsWith('//') ? '' : linea.replace(/\s\/\/.*$/, '');
+          if (PLURAL_CON_PARENTESIS.test(codigo)) {
+            hallazgos.push(`${path.relative(srcDir, ruta)}:${i + 1}: ${codigo.trim().slice(0, 90)}`);
+          }
+        });
+      }
+    }
+  };
+  for (const carpeta of ['core', 'systems', 'ui', 'data']) {
+    recorrer(path.join(srcDir, carpeta));
+  }
+  if (hallazgos.length > 0) {
+    throw new Error(`${hallazgos.length} texto(s) con plural entre paréntesis: ${hallazgos.slice(0, 5).join(' | ')}`);
+  }
+});
+
 check('K1 niveles por hechos: en orden y con requisitos válidos, cada nivel se gana justo con su requisito, gana el más alto que se cumple, el siguiente dice el hecho que faltó, y los cuantiles son crecientes', () => {
   const { niveles, cuantiles } = BALANCE.puntaje;
   if (JSON.stringify(niveles.map((n) => n.id)) !== JSON.stringify(NIVELES_K1.map((n) => n.id))) {

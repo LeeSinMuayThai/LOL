@@ -259,6 +259,12 @@ export function iniciar() {
     espera.append(nota, boton);
     minijuegoWidget.appendChild(espera);
     ui.renderLowerThird(summary, metaPill, estadoActual, { modo: 'minijuego' });
+    traerAlaVista(minijuegoWidget);
+  }
+
+  // El panel del minijuego puede montarse con la página scrolleada al feed: sin esto el reloj corría fuera de vista.
+  function traerAlaVista(elemento) {
+    elemento.scrollIntoView?.({ block: 'nearest' });
   }
 
   function arrancarMinijuego(decision, estadoActual, charla) {
@@ -290,6 +296,7 @@ export function iniciar() {
     }, rngUi);
 
     ui.renderLowerThird(summary, metaPill, estadoActual, { modo: 'minijuego' });
+    traerAlaVista(minijuegoWidget);
   }
 
   // K2d: la previa solo muestra (sin `rng`, sin tocar el estado). `null` si la

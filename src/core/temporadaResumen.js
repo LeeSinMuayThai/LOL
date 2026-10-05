@@ -9,7 +9,7 @@ import { TOKENS } from './plantillas.js';
 import { esBuenPapel } from './registro.js';
 import { nombreVisibleDeLiga } from './ligas.js';
 import { etiquetaDeRanked, servidorDeLaPartida } from './ranked.js';
-import { plural } from './formato.js';
+import { plural, deLaLiga } from './formato.js';
 
 // El resumen anual (fase 11, PLAN.md §11.1): nota, titular y viñetas del año
 // que cierra. Puro y sin RNG — `systems/resumenAnio.js` es el único que lo
@@ -217,7 +217,7 @@ function candidatoTituloLiga(state, ctx) {
   if (!ctx.tituloEsteAnio) {
     return null;
   }
-  return { titular: `CAMPEONES DE LA ${ctx.tituloEsteAnio.nombre.toUpperCase()}`, bajada: null };
+  return { titular: `CAMPEONES ${deLaLiga(ctx.tituloEsteAnio.nombre).toUpperCase()}`, bajada: null };
 }
 
 // Worlds existe todos los años (`mundo.escenaAnual`, fase 9M-lite): la

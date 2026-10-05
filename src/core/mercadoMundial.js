@@ -1,6 +1,7 @@
 import { roll, chance } from './rng.js';
 import { crearLog } from './log.js';
 import { BALANCE } from '../data/balance.js';
+import { plural } from './formato.js';
 import { etiquetaRol, IDS_ROL } from '../data/roles.js';
 import {
   usadosDePlanteles, envejecerNpc, generarCanterano, fuerzaDePlantel, ligasConPlantel
@@ -236,7 +237,7 @@ export function resolverMercadoMundial(state, rng, { vaAlMercado }) {
   };
 
   const logs = traspasos.length > 0
-    ? [crearLog('mercado', `El mercado se movió: ${traspasos.length} fichaje(s) en el mundo esta pretemporada.`, { tecnico: true })]
+    ? [crearLog('mercado', `El mercado se movió: ${traspasos.length} ${plural(traspasos.length, 'fichaje', 'fichajes')} en el mundo esta pretemporada.`, { tecnico: true })]
     : [];
 
   return {
