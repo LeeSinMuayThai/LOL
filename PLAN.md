@@ -7932,6 +7932,38 @@ más difícil y el minijuego de prensa quedan para después. Al cerrar, se vuelv
 4. `HUELLA_JUEGO` 'K6b'.
 5. Se vuelve a jugar K6 con las mismas seeds (25, 39, 152).
 
+**K6b-C, primera pasada, hecha** (`k6b-cola`: `8368570`).
+- Las tres reglas están aplicadas: el "¿seguís?" y "¿volvés a competir?" frenan solo si algo cambió; "el mercado ya
+  habló" se repite narrado; la carta única frena solo si es una prueba o una bajada de tier. La leyenda queda en ≤ 80.
+- **Pero la cola casi no se movió:** de 14 a 13 frenadas después de los 28 (`criterio`, 600 × 60). Lo que queda está
+  fuera de las tres reglas, por carrera en la cola:
+
+  | Frenada | Cuántas |
+  |---|---|
+  | Momentos | 3,3 |
+  | Cierre de año | 3,1 |
+  | Eventos | 1,9 |
+  | Plan de serie | 1,2 |
+  | La primera pregunta de la ventana de vuelta | 1,5 |
+
+  K6 ya lo había dicho: "los ~18 cierres de año por carrera repiten tres opciones parecidas".
+
+**K6b-C2, la cola de verdad** *(supervisor, 2026-10-05; dentro del alcance que eligió el usuario, "la cola de la
+carrera")*. Desde los 28 años o desde el aviso de declive, lo que llegue primero, el cierre de año y los momentos
+frenan solo en estos casos:
+- **es un hito:** el primer título, el último año antes del retiro, un récord, o el cierre de un año con un título o
+  un Mundial;
+- **algo cambió:** el club, el tier, una lesión o el declive;
+- **su carta tiene palanca:** en `agencia.js`, ese tipo de decisión mueve el resultado en su horizonte por encima de
+  un umbral, que va en `balance.js`.
+
+Si no, lo resuelve el perfil y se narra en una línea. Fuera de la cola no cambia nada. La serie y los eventos de
+partido no se tocan (D-B: lo que está en juego).
+- **Meta:** ≤ 8 frenadas después de los 28 (mediana de `criterio`).
+- **Lo que no puede caer:** la agencia ponderada no baja del check de K4c, y ningún tipo que sigue frenando pierde
+  palanca.
+- Si ≤ 8 no se alcanza sin romper la agencia, se reporta la frontera y decide el usuario.
+
 ## K.6 — Qué pasa con FASE J y FASE V
 
 | Pieza | Destino |
