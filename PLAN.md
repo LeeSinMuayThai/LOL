@@ -7887,6 +7887,51 @@ carpeta `k6/`. Los 0 errores de consola son del juego.
 
 **Lo que sigue lo decide el usuario** con este reporte: qué se arregla y qué se persigue de D80.
 
+**Decisión del usuario (2026-10-05): la ronda K6b tiene dos partes, los bugs de K6 y la cola de la carrera.** Tier 1
+más difícil y el minijuego de prensa quedan para después. Al cerrar, se vuelve a jugar K6 para comparar.
+
+#### K6b — los bugs de K6 y la cola de la carrera *(supervisor, 2026-10-05)*
+
+**K6b-M, el mercado premia el mérito** (los bugs altos de renovación y la carta única):
+- Un jugador que viene de una temporada de élite **recibe la renovación de su club**, salvo un motivo que se dice:
+  campeón de su liga o del Mundial, o top 10 del mundo al cierre. El castigo etario de la demanda no le saca la
+  renovación ni lo manda a una carta de fondo. Las ofertas de los demás reflejan su nivel y su temporada.
+- Constantes nuevas en `balance.js`. Los checks, con mutante: el campeón del Mundial que sigue en nivel de élite
+  recibe la renovación o una oferta de su calibre, y nunca una sola carta de un club del fondo.
+- Se re-miden la carrera mediana y la línea de los 34, porque premiar el mérito alarga a los buenos. Si salen de
+  banda, se reporta la frontera.
+
+**K6b-F, el contrato y la liga** (bugs alto y medio):
+- "No te renovaron / free agent" quiere decir que te vas del club: no podés seguir jugando con él ni descender con
+  él. Check de coherencia entre el contrato, el plantel y la ficha, con mutante.
+- Las ligas franquiciadas (LCK, LPL, LEC, LCS) no tienen descenso: una marca en `leagues.json`, según
+  `CONCEPTO.md` §12. Check con mutante.
+
+**K6b-U, la tarjeta y los textos** (medios y bajos):
+- El titular de la tarjeta nombra el pico (el club del Mundial o del título, y los Mundiales), no el club de la caída.
+- "Figura mundial" y "#5 del mundo" no salen para una carrera de tier 2 sin internacionales. Si es la fórmula del
+  ranking (motor), se reporta.
+- El tag "PC confiscada" vence cuando se termina el amateur.
+- Los resúmenes de temporada no se contradicen.
+- En el duelo, los trofeos coinciden con la tarjeta.
+- "Copa del Invocador".
+
+**K6b-C, la cola de la carrera** (D-B en la cola). Hoy hay 15-28 frenadas después de los 28 años, con poco en juego.
+- El "¿seguís?" de cada pretemporada frena solo si algo cambió: la presión de retiro, una oferta nueva o una lesión.
+  Si no, sigue según el perfil y se narra.
+- "EL MERCADO YA HABLÓ" frena la primera vez y cuando hay una elección real. Las repeticiones se narran.
+- Un mercado de una sola carta frena solo si aceptar o rechazar se juega algo, y la previa dice qué (por ejemplo,
+  rechazar = free agent, con su %). Si no, lo resuelve el perfil y se narra.
+- **Meta:** ≤ 8 frenadas después de los 28 en la carrera mediana de `criterio`, y la de leyenda ≤ 80 en total
+  (§K.3c). Es una métrica nueva del instrumento de ritmo, con su check.
+
+**Cierre:**
+1. La validación completa del supervisor.
+2. La revisión.
+3. Se re-miden las metas "K5c meta" sobre el head. Lo que se corra se declara (regla 17).
+4. `HUELLA_JUEGO` 'K6b'.
+5. Se vuelve a jugar K6 con las mismas seeds (25, 39, 152).
+
 ## K.6 — Qué pasa con FASE J y FASE V
 
 | Pieza | Destino |
