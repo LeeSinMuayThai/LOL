@@ -9296,6 +9296,10 @@ const TIEMPO_A_MANO_K5CR = {
 };
 const SEEDS_K5CR = 20;
 const SPLITS_K5CR = 90;
+// K5c paso 3b-2: la búsqueda en ronda del import de tier 1 con la cuenta arriba ("la cuenta de la presión"): cuántos hacen falta
+// y hasta qué seed se busca.
+const IMPORTS_K5CR = 1;
+const TOPE_SEEDS_IMPORT_K5CR = 200;
 // Medido al escribir el check (seeds 1-30, perillas 18 y 3): con el techo de stats en 0,9 de lo que valían al llegar a tier 2,
 // primera deja de llamar pero tier 2 te sigue queriendo (34 bifurcaciones); con 0,8 el declive (`retiro_declive`) te saca antes.
 const FACTOR_DEGRADADO_K5CR = 0.9;
@@ -9467,14 +9471,13 @@ check('K5c-R: con las perillas prendidas, el que se queda en tier 2 sin ofertas 
 check('K5c-R: la cuenta de la presión sube todos los splits jugados en tier 2 (con contrato también) y solo la vuelve a cero una oferta de tier 1', () => {
   // Sin umbral (99): la cuenta corre y nunca frena, así se ven las manos con y sin tier 1 de carreras normales.
   const perillas = { edadDesde: PERILLAS_K5CR.edadDesde, splitsSinOfertaTier1: 99 };
-  const carreras = muestraK5CR('cuenta', perillas, {});
   const problemas = [];
   let resetsPorTier1 = 0;
   let manosTier2ConCuenta = 0;
   let subeSinMercado = 0;
   const conOferta = (d) => d.esMano || d.motivo === 'traspaso';
   let resetsPorImport = 0;
-  for (const carrera of carreras) {
+  const medir = (carrera) => {
     for (const paso of carrera.pasos) {
       const { antes, despues } = paso;
       const donde = `seed ${carrera.seed} split ${antes.split}`;
@@ -9515,11 +9518,23 @@ check('K5c-R: la cuenta de la presión sube todos los splits jugados en tier 2 (
         subeSinMercado += 1;
       }
     }
+  };
+  for (const carrera of muestraK5CR('cuenta', perillas, {})) {
+    medir(carrera);
   }
-  if (resetsPorTier1 === 0 || resetsPorImport === 0 || manosTier2ConCuenta === 0 || subeSinMercado === 0) {
+  // K5c paso 3b-2 (regla 17): con Final2 las 20 seeds de la muestra no traen ningún import de tier 1 presentado con la cuenta
+  // arriba (0 de 20). Se sigue en ronda, seed por seed después de la muestra, hasta ver `IMPORTS_K5CR` o llegar al tope: cada
+  // carrera de más pasa por las mismas afirmaciones (no se afloja nada) y el check sigue vacío si no aparece ninguno.
+  let seedsDeLaCuenta = SEEDS_K5CR;
+  for (let seed = SEEDS_K5CR + 1; seed <= TOPE_SEEDS_IMPORT_K5CR && resetsPorImport < IMPORTS_K5CR; seed += 1) {
+    seedsDeLaCuenta = seed;
+    medir(conPerillasK5CR(perillas, () => carreraK5CR(seed, {})));
+  }
+  if (resetsPorTier1 === 0 || resetsPorImport < IMPORTS_K5CR || manosTier2ConCuenta === 0 || subeSinMercado === 0) {
     problemas.push(`el check no mide nada: ${resetsPorTier1} ofertas de tier 1 con la cuenta arriba, ${resetsPorImport} imports de tier 1 presentados `
-      + `con la cuenta arriba, ${manosTier2ConCuenta} manos solo de tier 2 con la cuenta arriba, ${subeSinMercado} splits sin mercado en que subió`);
+      + `con la cuenta arriba (seeds 1-${seedsDeLaCuenta}, tope ${TOPE_SEEDS_IMPORT_K5CR}; hacen falta ${IMPORTS_K5CR}), ${manosTier2ConCuenta} manos solo de tier 2 con la cuenta arriba, ${subeSinMercado} splits sin mercado en que subió`);
   }
+  console.log(`      ${resetsPorImport} import(s) de tier 1 presentados con la cuenta arriba en las seeds 1-${seedsDeLaCuenta}`);
   if (problemas.length > 0) {
     throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 5).join(' · ')}`);
   }
@@ -17767,7 +17782,13 @@ check('K4c (revisión) probaste y no alcanzó: la prueba del mercado fallida sin
         if (sistemaId === 'retiro' && decision.datos.motivo === 'retiro_declive' && (st.flags.pruebasFallidas ?? []).length > 0) {
           const ultima = st.flags.pruebasFallidas.at(-1);
           const retirado = resolverDecision(structuredClone(st), { opcionId: 'retirarse' }, mulberry32(seed)).state;
-          if (!decision.descripcion.includes(`probaste con ${ultima}`) || !(retirado.motivoRetiro ?? '').includes(`Probaste con ${ultima}`)
+          // K5c paso 3b-2 (regla 17): con dos pruebas fallidas el texto las nombra a las dos ("probaste con A y con B y no alcanzó",
+          // `probasteCon` en `systems/retiro.js`); el check pedía "probaste con <la última>" y daba rojo con el texto correcto. Ahora:
+          // la frase empieza en "probaste con", nombra cada org probada y cierra con la última y "no alcanzó".
+          const probadas = [...new Set(st.flags.pruebasFallidas)];
+          const diceLaPrueba = (texto, inicio) => texto.includes(`${inicio} con `) && texto.includes(`con ${ultima} y no alcanzó`)
+            && probadas.every((org) => texto.includes(org));
+          if (!diceLaPrueba(decision.descripcion, 'probaste') || !diceLaPrueba(retirado.motivoRetiro ?? '', 'Probaste')
             || /te está diciendo que no|te venía diciendo que no|teléfono dejó de sonar/.test(`${decision.descripcion} ${retirado.motivoRetiro} ${retirado.logs.at(-1).message}`)) {
             throw new Error(`azar seed ${seed}, split ${i}: el declive cuenta la prueba fallida como silencio: "${decision.descripcion}" / "${retirado.motivoRetiro}" / "${retirado.logs.at(-1).message}"`);
           }
@@ -18744,8 +18765,12 @@ check('K3-B la ficha lista solo las marcas cuyo acumulado (por stat, origen y a�
   }
   const conMarcas = correrCarrera(2, 20);
   const inyectado = { ...conMarcas, career: { ...conMarcas.career, registro: { ...conMarcas.career.registro, marcas } } };
-  if (fichaCompleta(inyectado).construido.length !== esperado.length) {
-    throw new Error('fichaCompleta no expone lo que construiste');
+  // K5c paso 3b-2 (regla 17): `construido` suma, después de las marcas, la fila de lo que te sacaron los años
+  // (`loQueTeSacaronLosAnios`, con `desgaste: true`). Con Final2 la seed 2 ya trae desgaste a los 20 splits y el largo dejó de
+  // ser el de las marcas: se comparan las filas de las marcas, una por una y en orden, sin la del desgaste.
+  const filasDeMarcas = fichaCompleta(inyectado).construido.filter((fila) => !fila.desgaste).map((fila) => fila.texto);
+  if (JSON.stringify(filasDeMarcas) !== JSON.stringify(esperado)) {
+    throw new Error(`fichaCompleta no expone lo que construiste: ${JSON.stringify(filasDeMarcas)}`);
   }
   const fuenteFicha = fs.readFileSync(path.join(srcDir, 'ui', 'components', 'ficha.js'), 'utf8');
   if (!fuenteFicha.includes("nombre: 'CONSISTENCIA'") || /nombre: 'MENTALIDAD'/.test(fuenteFicha)) {
@@ -18849,6 +18874,9 @@ check('K4-A prioridad: define_clasificacion > archirrival > clásico > revancha,
 // Carreras reales de `criterio` (seeds 1..100, 60 splits): por split, las fechas marcadas y por qué, las pausas de la
 // temporada y si fue un split de tier 1 con playoffs.
 const CARRERAS_K4A = 100;
+// La meta de "define_clasificacion es alcanzable" (1 de cada 3 splits de cierre de tier 1) y su banda de ruido de muestra.
+const META_DEFINE_K4A = 1 / 3;
+const SIGMAS_RUIDO_DEFINE_K4A = 2;
 let cosechaK4A = null;
 function cosechaDeCarrerasK4A() {
   if (cosechaK4A) {
@@ -18905,8 +18933,12 @@ check(`K4-A define_clasificacion es alcanzable: al menos 1 de cada 3 splits de c
   if (splitsTier1 < 100) {
     throw new Error(`solo ${splitsTier1} splits de tier 1 con playoffs medidos: muestra insuficiente`);
   }
-  if (splitsConDefine * 3 < splitsTier1) {
-    throw new Error(`define_clasificacion marcó ${splitsConDefine} de ${splitsTier1} splits de tier 1 con playoffs (1 cada ${(splitsTier1 / Math.max(1, splitsConDefine)).toFixed(1)}); la meta es 1 cada 3 o mejor`);
+  // K5c paso 3b-2 (regla 17): la meta se lee con el ruido de la muestra (binomial, `SIGMAS_RUIDO_DEFINE_K4A` sigmas). Sin banda, la
+  // vara caía con cualquier corrimiento: con las cartas de cierre del declive (K4c textos) pasó de 214/623 (34,3%) a 208/626 (33,2%),
+  // una diferencia de medio sigma (≈ 1,9 puntos con n ≈ 625). El piso queda en ≈ 29,6%.
+  const ruido = SIGMAS_RUIDO_DEFINE_K4A * Math.sqrt(META_DEFINE_K4A * (1 - META_DEFINE_K4A) / splitsTier1);
+  if (splitsConDefine / splitsTier1 < META_DEFINE_K4A - ruido) {
+    throw new Error(`define_clasificacion marcó ${splitsConDefine} de ${splitsTier1} splits de tier 1 con playoffs (1 cada ${(splitsTier1 / Math.max(1, splitsConDefine)).toFixed(1)}); la meta es 1 cada 3 o mejor, con ${SIGMAS_RUIDO_DEFINE_K4A} sigmas de ruido de muestra (piso ${(100 * (META_DEFINE_K4A - ruido)).toFixed(1)}%)`);
   }
 });
 
@@ -19620,7 +19652,18 @@ check('K5-A ningún cruce del Swiss se repite', () => {
 // mismo cruce coincidía el 100% de los años con p = 0,5 y una org ganaba 277 de 500 Mundiales (seed 1). Las tres
 // propiedades de abajo son las que ese bug rompía: medido antes del arreglo, media 0,002, acuerdo 1,000, 55% de títulos.
 const MUNDIALES_HASH_K5 = 300;
-const TOPE_TITULOS_DE_UNA_ORG_K5 = 0.35;
+// K5c paso 3b-2 (regla 17): 0,35 -> 0,45. Estos 300 Mundiales se juegan sobre el MISMO estado inicial (el mundo congelado): lo que
+// mide el tope es la chance de un Mundial del más fuerte de ese mundo, no una dinastía. Con Final2 y la LPL en 91, en la seed 3 LNG
+// (99, contra 97 del segundo) gana 111 de 300 (37%); en las seeds 1-10, de 17% a 37%. El bug del hash daba 55% (277 de 500). Que una
+// org no se lleve el mundo se mide donde el mundo gira: abajo, con las carreras (`RECAMBIO_K5`).
+const TOPE_TITULOS_DE_UNA_ORG_K5 = 0.45;
+// K5c paso 3b-2: el recambio del mundo vivo. En carreras de `criterio`, el más fuerte del primer Mundial del mundo, `anios` Mundiales
+// después: ¿sigue siendo el más fuerte? Con planteles que envejecen y se mueven, casi nunca.
+// Medido al escribirlo (criterio, 60 × 60, Final2): sigue arriba en 5 de 55 carreras (9%) y la org que más gana se lleva 48 de 720
+// Mundiales (6,7%). Con el mundo congelado (mutante: las fuerzas de las orgs no siguen a sus planteles) sigue arriba en 21 de 55
+// (38%: no 100%, porque quién clasifica y la tabla de cada año igual cambian); el tope va en el medio.
+const RECAMBIO_K5 = { carreras: 60, splits: 60, anios: 8, maxSigueArriba: 0.25, topeDeUnaOrg: 0.2 };
+const MUESTRA_MINIMA_RECAMBIO_K5 = 10;
 check('K5-A el hash de los cruces ajenos es un uniforme en [0, 1): media ≈ 0,5, el mismo cruce no se repite año a año y el título sigue a la fuerza sin que una org se lleve el mundo', () => {
   let suma = 0;
   const N = 20000;
@@ -19661,6 +19704,35 @@ check('K5-A el hash de los cruces ajenos es un uniforme en [0, 1): media ≈ 0,5
     if (fuerzaCampeon <= fuerzaCampo) {
       throw new Error(`seed ${seed}: la fuerza media del campeón (${(fuerzaCampeon / MUNDIALES_HASH_K5).toFixed(1)}) no supera la del campo (${(fuerzaCampo / MUNDIALES_HASH_K5).toFixed(1)})`);
     }
+  }
+  // El mundo vivo: los Mundiales del mundo que vio cada carrera (`mundialesDelMundo`, el campeón de `escenaAnual`).
+  const { observaciones } = correrLoteJugabilidad(RECAMBIO_K5.carreras, RECAMBIO_K5.splits, 'criterio').crudos;
+  const masFuerte = (fila) => [...fila.participantes].sort((x, y) => y.fuerza - x.fuerza || x.nombre.localeCompare(y.nombre))[0].nombre;
+  let comparadas = 0;
+  let sigueArriba = 0;
+  const titulos = new Map();
+  let mundiales = 0;
+  for (const o of observaciones) {
+    const filas = o.mundialesDelMundo;
+    for (const fila of filas) {
+      titulos.set(fila.campeon, (titulos.get(fila.campeon) ?? 0) + 1);
+      mundiales += 1;
+    }
+    if (filas.length > RECAMBIO_K5.anios) {
+      comparadas += 1;
+      sigueArriba += masFuerte(filas[0]) === masFuerte(filas[RECAMBIO_K5.anios]) ? 1 : 0;
+    }
+  }
+  const [orgTop, nTop] = [...titulos.entries()].sort((x, y) => y[1] - x[1])[0] ?? ['nadie', 0];
+  console.log(`      mundo vivo (criterio, ${RECAMBIO_K5.carreras} × ${RECAMBIO_K5.splits}): el más fuerte del primer Mundial sigue arriba ${RECAMBIO_K5.anios} años después en ${sigueArriba} de ${comparadas} carreras; ${orgTop} ganó ${nTop} de ${mundiales} Mundiales`);
+  if (comparadas < MUESTRA_MINIMA_RECAMBIO_K5) {
+    throw new Error(`el recambio no se mide: ${comparadas} carreras con más de ${RECAMBIO_K5.anios} Mundiales (mínimo ${MUESTRA_MINIMA_RECAMBIO_K5})`);
+  }
+  if (sigueArriba / comparadas > RECAMBIO_K5.maxSigueArriba) {
+    throw new Error(`el mundo no rota: el más fuerte del primer Mundial sigue arriba ${RECAMBIO_K5.anios} años después en ${sigueArriba} de ${comparadas} carreras (máximo ${RECAMBIO_K5.maxSigueArriba * 100}%)`);
+  }
+  if (nTop / mundiales > RECAMBIO_K5.topeDeUnaOrg) {
+    throw new Error(`en el mundo vivo ${orgTop} ganó ${nTop} de ${mundiales} Mundiales (tope ${RECAMBIO_K5.topeDeUnaOrg * 100}%)`);
   }
 });
 
@@ -22842,10 +22914,14 @@ check(`K6a-A la semana amateur: la resuelve el perfil (a la crónica) y frena so
   // Con rutinas fijas (la agresiva y la segura del catálogo), sin depender de qué ofreció el sorteo.
   const fijas = ['todo_al_ranked', 'bancar_el_colegio'].map((id) => RUTINAS.amateur.find((rutina) => rutina.id === id));
   const umbral = BALANCE_K6aA.amateur.confiscacionUmbral;
+  // K5c paso 3b-2 (regla 17): "a un punto de la confiscación" (umbral + 1) quedó en la raya en la seed 2. Desde `3ff2b77` (no-pro) la
+  // previa de la casa usa la confianza de DESPUÉS de la semana (la misma con la que tira el motor), y en esa seed —un pibe que pierde
+  // poco colegio con todo al ranked: 56 -> 50,6— el riesgo evitable da 4,997%, debajo de `semanaRiesgoEvitable` (5%). El motor cumple
+  // su regla; el escenario dejó de ser claro. Se arma en la raya misma (umbral): 6,1% en la seed 2, 21,7% y 13,3% en la 1 y la 3.
   const casos = [
     { nombre: 'colegio sobrado', estudios: 95, robos: 0, frena: false },
-    { nombre: 'colegio a un punto de la confiscación', estudios: umbral + 1, robos: 0, frena: true },
-    { nombre: 'colegio al borde con la negociación ganada', estudios: umbral + 1, robos: 0, negociacion: true, frena: false },
+    { nombre: 'colegio en la raya de la confiscación', estudios: umbral, robos: 0, frena: true },
+    { nombre: 'colegio en la raya con la negociación ganada', estudios: umbral, robos: 0, negociacion: true, frena: false },
     { nombre: 'la tercera semana seguida robándole al sueño', estudios: 95, robos: BALANCE_K6aA.amateur.robosParaDeuda - 1, frena: true }
   ];
   for (const seed of [1, 2, 3]) {
