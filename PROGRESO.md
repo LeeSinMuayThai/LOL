@@ -2,6 +2,27 @@
 
 Documento vivo. Se actualiza al cierre de cada tarea, según la Definición de terminado de CLAUDE.md.
 
+## 2026-10-05 — K5c (no-pro): el piso de soloQ de los perfiles, la previa de la casa y el sesgo etario (`k5c-nopro`)
+
+- **La causa** (bisect, `criterio` 300 × 60, mismas seeds): `c6f098f` 25,7 · `9d33340`..`b2c08f5` 24,7 · **`661c494` (K6a-A) 37,3**
+  · `00da9b9`..`2d8eec2` 37,3 (600: `b2c08f5` 24,5 → `2d8eec2` 36,5). La definición no cambió (`splitFichaje !== null`). Desde
+  K6a-A la semana amateur la elige el perfil (`planDeSemana`), y el leal y el profesional grindeaban 2,9 y 3,4 bloques de
+  ranked por semana (el `criterio` de antes, 5,9): leal 55%, profesional 45% de no-pro. Con todas las semanas frenando
+  (contrafáctico) volvía a 23,7%.
+- **Lo que se hizo** (decisión del usuario: "total ~20% y brecha acotada"): `pisoSoloQ` por perfil en `data/perfiles.json` (leal y
+  profesional 0,6: el perfil elige solo entre las rutinas que rinden al menos esa fracción del LP de la mejor de la semana),
+  `scoutingSesgoEtario` 18-20 en 0,6 / 0,33 / 0,08, la línea de soloQ de cada perfil en la pantalla de inicio (regla 12) y el
+  bug de la previa: la chance de "que en casa te saquen la PC" usaba la confianza de antes de la semana y el motor tira con la
+  de después; ahora una sola fuente (`probabilidadesDeCasa`) con el colegio y la confianza proyectados (regla 15).
+- **Medido** (600 × 60, `nopro2.mjs` del scratch): `criterio` 22,0% con G0 y 22,0% con cfgFinal2. Por perfil (G0): leal 24,5,
+  profesional 23,3, hambriento 20,1, showman 20,0; (Final2): 22,5 / 23,3 / 16,8 / 25,3. `azar` 25,8 / 26,2; `malas` 37,2 / 36,0.
+- **Checks nuevos:** la previa de la casa con las barras de después de la semana (rojo con el mutante de la confianza de antes),
+  el piso de soloQ (rojo sin piso: leal 2,9 y profesional 3,37 contra 5,2) y la brecha de no-pro por perfil (lento; rojo sin
+  piso: 41,3 / 39,3 contra 21,3). `HUELLA_JUEGO` 2039436444 y `FORMAS_CONOCIDAS[12]` '4aecafabc826' (regla 17).
+- **Quedan rojos** (`--rapido` 315 OK, 2 FAIL, por trayectorias nuevas, sin tocar): "K5c-R la cuenta de la presión…" (seed 1,
+  reset sin oferta de tier 1 visible en la mano) y "K4c textos" (16,9% de años sin carta de cierre, tope 15%). Completa por
+  `--solo`: "Ningún arquetipo de veredicto…" OK; "K0 los bots separan" FAIL (malas 34%, azar 28%: 6 puntos, pide 10).
+
 ## Estado por fase
 
 **La tabla de estado vigente vive en `PLAN.md`**, y es la única que se mantiene al día. Este

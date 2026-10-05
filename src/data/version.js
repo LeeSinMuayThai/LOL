@@ -110,4 +110,8 @@ export const VERSION_JUEGO = 'K4c';
 // K6a-R (el ritmo de la eliminación, 860000955): una serie de eliminación que no es final y está cantada (la p del plan del coach
 // fuera de [0,3, 0,7], `serie.plan.pAbiertaEliminacion`) no frena en el plan: la juega el plan del coach y frena solo en el mapa
 // decisivo. Cambia el stream (los planes que elegía `criterio` en esas series). Misma versión (12, no salió): reemplaza a 505125930.
-export const HUELLA_JUEGO = 860000955;
+// K5c (no-pro, 2039436444): la semana amateur la elige el perfil solo entre las rutinas que rinden al menos su `pisoSoloQ` del LP
+// de la mejor (data/perfiles.json: leal y profesional 0,6), la previa evalúa la casa con la confianza proyectada (la que lee el
+// motor después del reparto: cambia cuándo frena la semana) y `scoutingSesgoEtario` se ablanda a los 18-20. Cambia qué rutina
+// sale y cuándo se consume el rng del reparto. Misma versión (12, no salió): reemplaza a 860000955.
+export const HUELLA_JUEGO = 2039436444;

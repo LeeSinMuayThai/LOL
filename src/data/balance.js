@@ -302,7 +302,10 @@ export const BALANCE = {
     // Fase 10a (§10.1): se extiende 20/21 en vez de cortar seco en
     // `edadLimite` — la ventana sigue cerrandose, pero nunca a cero (el caso
     // Calix es raro, no imposible). `scoutingSesgoEtarioMinimo` cubre 22+.
-    scoutingSesgoEtario: { 15: 1, 16: 1, 17: 0.85, 18: 0.55, 19: 0.28, 20: 0.06, 21: 0.03 },
+    // K5c (no-pro, decisión del usuario "total ~20% y brecha acotada"): 18-20 se ablandan (0,55/0,28/0,06 ->
+    // 0,6/0,33/0,08) junto con el piso de soloQ de los perfiles (`pisoSoloQ`, data/perfiles.json). Medido en
+    // `criterio` 300 x 60: solo el piso, 23,0%; el piso con esta tabla, ~20% (ver PROGRESO.md).
+    scoutingSesgoEtario: { 15: 1, 16: 1, 17: 0.85, 18: 0.6, 19: 0.33, 20: 0.08, 21: 0.03 },
     scoutingSesgoEtarioMinimo: 0.015,
     scoutingPesoHype: 0.35,
     hypeReferenciaScouting: 60,

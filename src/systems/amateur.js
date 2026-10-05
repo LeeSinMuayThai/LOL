@@ -15,7 +15,7 @@ import { elegirMinijuego, minijuegoPorId, textoDeMinijuego, registrarMinijuegoVi
 import { conMarcasDeRutina } from '../core/curvas.js';
 import { esCierreDeEdad } from './edadCierre.js';
 import { nombreVisibleDeLiga } from '../core/ligas.js';
-import { opcionDelPerfil, nombreDePerfil } from '../core/perfil.js';
+import { opcionDelPerfil, nombreDePerfil, pisoSoloQDePerfil } from '../core/perfil.js';
 import { etiquetaCampo } from '../core/selectors.js';
 
 export const id = 'amateur';
@@ -73,11 +73,13 @@ function probBanda(estudios, umbral, pendiente, techo) {
   return Math.min(techo, (umbral - estudios) / pendiente);
 }
 
-function multiplicadorFamiliar(state) {
+// `confianza`: la confianza familiar con la que se evalúa (por defecto, la de hoy). La previa de la semana la pasa
+// proyectada, la misma que va a leer `evaluarRiesgoFamiliar` después del reparto (regla 15).
+function multiplicadorFamiliar(state, confianza = state.player.familyTrust) {
   const a = BALANCE.amateur;
   const estrictez = (BALANCE.stats.max - state.origen.toleranciaViejos) / a.toleranciaReferencia;
   const modTrust = clamp(
-    1 + (a.trustReferencia - state.player.familyTrust) * a.trustPesoEnRiesgo,
+    1 + (a.trustReferencia - confianza) * a.trustPesoEnRiesgo,
     a.trustModMin,
     a.trustModMax
   );
@@ -172,30 +174,41 @@ function riesgoDeSemana(proy) {
   return proy.extra > 0 ? 'incierto' : 'seguro';
 }
 
-// Qué arriesga una opción: la chance de que en casa te saquen la PC o te corten el ranked después de esta semana (la
-// misma cuenta que `evaluarRiesgoFamiliar`, con el colegio proyectado) y si suma deuda de sueño. Con la negociación
-// ganada, el colegio deja de pesar en casa.
-function riesgoDeCasa(state, estudios) {
+// Las dos chances de la casa (corte del ranked y confiscación de la PC) con un colegio y una confianza dados. Es la
+// cuenta de `evaluarRiesgoFamiliar` (que la llama con las barras de después de la semana) y de la previa de la semana
+// (que la llama con las barras proyectadas): una sola fuente, así la carta dice lo que el motor tira (regla 15).
+// Exportada para el check de `validate.js`.
+export function probabilidadesDeCasa(state, estudios, confianza) {
   const a = BALANCE.amateur;
-  const multiplicador = multiplicadorFamiliar(state);
+  const multiplicador = multiplicadorFamiliar(state, confianza);
   const corte = Math.min(a.riesgoTotalTecho, probBanda(estudios, a.corteUmbral, a.cortePendiente, a.corteTecho) * multiplicador);
   const confiscacion = Math.min(
     a.riesgoTotalTecho,
     probBanda(estudios, a.confiscacionUmbral, a.confiscacionPendiente, a.confiscacionTecho) * multiplicador
   );
+  return { corte, confiscacion };
+}
+
+// Qué arriesga una opción: la chance de que en casa te saquen la PC o te corten el ranked después de esta semana (la
+// misma cuenta que `evaluarRiesgoFamiliar`, con el colegio Y la confianza proyectados: antes usaba la confianza de
+// antes de la semana y el motor tiraba con la de después) y si suma deuda de sueño. Con la negociación ganada, el
+// colegio deja de pesar en casa.
+function riesgoDeCasa(state, estudios, confianza) {
+  const { corte, confiscacion } = probabilidadesDeCasa(state, estudios, confianza);
   return corte + (1 - corte) * confiscacion;
 }
 
 function peligrosDeSemana(state, proy) {
   const estudiosDespues = state.player.studies + proy.estudios;
+  const confianzaDespues = clampStat(state.player.familyTrust + proy.confianza);
   return {
-    casa: state.flags.negociacionGanada ? 0 : riesgoDeCasa(state, estudiosDespues),
+    casa: state.flags.negociacionGanada ? 0 : riesgoDeCasa(state, estudiosDespues, confianzaDespues),
     deuda: proy.robos >= BALANCE.amateur.robosParaDeuda,
     estudiosDespues
   };
 }
 
-function opcionesDeSemana(state, rutinas) {
+export function opcionesDeSemana(state, rutinas) {
   return rutinas.map((rutina) => {
     const proy = proyeccionDeSemana(state, rutina);
     return { rutina, proy, previa: previaDeSemana(proy), riesgo: riesgoDeSemana(proy), peligro: peligrosDeSemana(state, proy) };
@@ -230,9 +243,16 @@ function decisionDeRutina(state, rutinas, opciones, elegida, masSegura) {
 // La semana con estas rutinas: la que elige tu perfil y si frena. Frena si la elegida sube el riesgo en casa al menos
 // `semanaRiesgoEvitable` por encima de la opción más segura, o si suma deuda de sueño y otra opción no. Exportada
 // para que `validate.js` la pruebe con rutinas fijas (sin depender de qué ofreció el sorteo).
+//
+// K5c (no-pro): el piso de soloQ de tu perfil (`pisoSoloQ` en `data/perfiles.json`, mezclado por sus pesos): tu perfil
+// elige solo entre las rutinas que rinden al menos esa fracción del LP proyectado de la mejor de la semana. Sin piso,
+// el leal y el profesional casi no grindeaban (2,9 y 3,4 bloques de ranked por semana) y la mitad no llegaba a pro.
 export function planDeSemana(state, rutinas) {
   const opciones = opcionesDeSemana(state, rutinas);
-  const { id: elegidaId } = opcionDelPerfil(state.player.perfil, opciones.map((opcion) => ({
+  const lpMaximo = Math.max(...opciones.map((opcion) => opcion.proy.lp));
+  const piso = pisoSoloQDePerfil(state.player.perfil.pesos) * lpMaximo;
+  const elegibles = opciones.filter((opcion) => opcion.proy.lp >= piso);
+  const { id: elegidaId } = opcionDelPerfil(state.player.perfil, elegibles.map((opcion) => ({
     id: opcion.rutina.id, previa: opcion.previa, riesgo: opcion.riesgo
   })));
   const elegida = opciones.find((opcion) => opcion.rutina.id === elegidaId);
@@ -453,10 +473,9 @@ function evaluarRiesgoFamiliar(state, rng) {
     return { state, logs: [] };
   }
 
-  const multiplicador = multiplicadorFamiliar(state);
   const estudios = state.player.studies;
-
-  const probCorte = Math.min(a.riesgoTotalTecho, probBanda(estudios, a.corteUmbral, a.cortePendiente, a.corteTecho) * multiplicador);
+  const multiplicador = multiplicadorFamiliar(state);
+  const { corte: probCorte, confiscacion: probConfiscacion } = probabilidadesDeCasa(state, estudios, state.player.familyTrust);
   if (chance(probCorte, rng)) {
     return {
       state: { ...state, phase: 'retirado', terminado: true, finAnticipado: 'prohibicion_familiar' },
@@ -464,10 +483,6 @@ function evaluarRiesgoFamiliar(state, rng) {
     };
   }
 
-  const probConfiscacion = Math.min(
-    a.riesgoTotalTecho,
-    probBanda(estudios, a.confiscacionUmbral, a.confiscacionPendiente, a.confiscacionTecho) * multiplicador
-  );
   if (chance(probConfiscacion, rng)) {
     return {
       state: {

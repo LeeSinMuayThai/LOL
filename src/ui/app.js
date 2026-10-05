@@ -174,6 +174,7 @@ export function iniciar() {
         CAMPEONES: campeonesModulo.default,
         IDS_PERFIL: perfilModulo.IDS_PERFIL, nombreDePerfil: perfilModulo.nombreDePerfil,
         descripcionDePerfil: perfilModulo.descripcionDePerfil,
+        soloQDePerfil: perfilModulo.soloQDePerfil,
         // K4c (plan anual): la línea del plan de práctica del primer año (sale del perfil).
         textoDePlanInicial,
         // K5-B: las regiones elegibles con su línea de dificultad (sale de `leagues.json`).
