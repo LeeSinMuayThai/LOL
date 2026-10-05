@@ -20946,20 +20946,34 @@ const TOP_MUNDO_K5CM = 10;
 const SUBA_RELATIVA_A2_K5CM = 0.3;
 const SUBA_ABSOLUTA_A2_K5CM = 3;
 
-let cosechaK5cM = null;
-function pausasDeMercadoK5cM() {
-  if (!cosechaK5cM) {
-    cosechaK5cM = [];
-    for (let seed = 1; seed <= SEEDS_K5CM; seed += 1) {
-      correrCarreraSimulate(seed, 60, (sistema, st, decision, rng) => {
-        if (sistema.id === 'mercado' && decision.datos?.motivo === 'oferta') {
-          cosechaK5cM.push({ seed, st, decision });
-        }
-        return ESTRATEGIAS_K0.criterio(sistema, st, decision, rng);
-      });
+// Las cosechas se cachean por régimen de la casa: `real` (los valores definitivos) y `neutra` (K5c-M se mide con la casa neutra, D81).
+const cosechasK5cM = { real: null, neutra: null };
+const eliteK5cMPorRegimen = { real: null, neutra: null };
+const seedsEliteK5cMPorRegimen = { real: SEEDS_K5CM, neutra: SEEDS_K5CM };
+function pausasDeMercadoDeK5cM(regimen) {
+  if (!cosechasK5cM[regimen]) {
+    const cosecha = [];
+    const correr = () => {
+      for (let seed = 1; seed <= SEEDS_K5CM; seed += 1) {
+        correrCarreraSimulate(seed, 60, (sistema, st, decision, rng) => {
+          if (sistema.id === 'mercado' && decision.datos?.motivo === 'oferta') {
+            cosecha.push({ seed, st, decision });
+          }
+          return ESTRATEGIAS_K0.criterio(sistema, st, decision, rng);
+        });
+      }
+    };
+    if (regimen === 'neutra') {
+      conCasaNeutraK5cM(correr);
+    } else {
+      correr();
     }
+    cosechasK5cM[regimen] = cosecha;
   }
-  return cosechaK5cM;
+  return cosechasK5cM[regimen];
+}
+function pausasDeMercadoK5cM() {
+  return pausasDeMercadoDeK5cM('real');
 }
 
 // K5c paso 3b (regla 17): con Final2 (carreras más cortas, la LCK arriba) las 30 carreras de la cosecha dejan 9 pausas de élite y
@@ -20968,23 +20982,32 @@ function pausasDeMercadoK5cM() {
 // sigue saliendo de la cosecha de siempre.
 const ELITE_MINIMA_K5CM = 20;
 const TOPE_SEEDS_ELITE_K5CM = 150;
-let eliteK5cM = null;
-let seedsEliteK5cM = SEEDS_K5CM;
-function pausasDeEliteK5cM() {
-  if (!eliteK5cM) {
+function pausasDeEliteDeK5cM(regimen) {
+  if (!eliteK5cMPorRegimen[regimen]) {
     const esElite = (st) => factorElite(nivelDelJugador(st)) >= 1;
-    eliteK5cM = pausasDeMercadoK5cM().filter(({ st }) => esElite(st));
-    for (let seed = SEEDS_K5CM + 1; seed <= TOPE_SEEDS_ELITE_K5CM && eliteK5cM.length < ELITE_MINIMA_K5CM; seed += 1) {
-      seedsEliteK5cM = seed;
-      correrCarreraSimulate(seed, 60, (sistema, st, decision, rng) => {
-        if (sistema.id === 'mercado' && decision.datos?.motivo === 'oferta' && esElite(st)) {
-          eliteK5cM.push({ seed, st, decision });
-        }
-        return ESTRATEGIAS_K0.criterio(sistema, st, decision, rng);
-      });
+    const elite = pausasDeMercadoDeK5cM(regimen).filter(({ st }) => esElite(st));
+    const correr = () => {
+      for (let seed = SEEDS_K5CM + 1; seed <= TOPE_SEEDS_ELITE_K5CM && elite.length < ELITE_MINIMA_K5CM; seed += 1) {
+        seedsEliteK5cMPorRegimen[regimen] = seed;
+        correrCarreraSimulate(seed, 60, (sistema, st, decision, rng) => {
+          if (sistema.id === 'mercado' && decision.datos?.motivo === 'oferta' && esElite(st)) {
+            elite.push({ seed, st, decision });
+          }
+          return ESTRATEGIAS_K0.criterio(sistema, st, decision, rng);
+        });
+      }
+    };
+    if (regimen === 'neutra') {
+      conCasaNeutraK5cM(correr);
+    } else {
+      correr();
     }
+    eliteK5cMPorRegimen[regimen] = elite;
   }
-  return eliteK5cM;
+  return eliteK5cMPorRegimen[regimen];
+}
+function pausasDeEliteK5cM() {
+  return pausasDeEliteDeK5cM('real');
 }
 
 // K5c paso 3b-1 (regla 17): el check prueba el MECANISMO de la élite con la casa neutra en memoria (`mercado.casa`: margenAlcanza 99 y
@@ -20992,21 +21015,27 @@ function pausasDeEliteK5cM() {
 // ya viene ordenada por la casa (~2,2 ofertas) y la perilla `k` no mueve la fuerza mediana (66,5 / 66,5 / 67): el efecto no se mide.
 // La comparación sigue siendo apagado contra prendido de `mercado.elite` con la misma muestra, con los mismos umbrales.
 const CASA_NEUTRA_K5CM = { margenAlcanza: 99, fraccionCastigo: 1 };
-function conPerillasEliteK5cM(pesoFuerza, rebaja, fn) {
-  const elite = BALANCE.mercado.elite;
+function conCasaNeutraK5cM(fn) {
   const casa = BALANCE.mercado.casa;
-  const previas = [elite.pesoFuerzaOrden, elite.rebajaMerito, elite.rebajaDisputa];
   const previasCasa = [casa.margenAlcanza, casa.fraccionCastigo];
-  elite.pesoFuerzaOrden = pesoFuerza;
-  elite.rebajaMerito = rebaja.merito;
-  elite.rebajaDisputa = rebaja.disputa;
   casa.margenAlcanza = CASA_NEUTRA_K5CM.margenAlcanza;
   casa.fraccionCastigo = CASA_NEUTRA_K5CM.fraccionCastigo;
   try {
     return fn();
   } finally {
-    [elite.pesoFuerzaOrden, elite.rebajaMerito, elite.rebajaDisputa] = previas;
     [casa.margenAlcanza, casa.fraccionCastigo] = previasCasa;
+  }
+}
+function conPerillasEliteK5cM(pesoFuerza, rebaja, fn) {
+  const elite = BALANCE.mercado.elite;
+  const previas = [elite.pesoFuerzaOrden, elite.rebajaMerito, elite.rebajaDisputa];
+  elite.pesoFuerzaOrden = pesoFuerza;
+  elite.rebajaMerito = rebaja.merito;
+  elite.rebajaDisputa = rebaja.disputa;
+  try {
+    return conCasaNeutraK5cM(fn);
+  } finally {
+    [elite.pesoFuerzaOrden, elite.rebajaMerito, elite.rebajaDisputa] = previas;
   }
 }
 
@@ -21047,7 +21076,7 @@ check('K5c-M (a): con las perillas de élite encendidas en memoria, la élite re
   const config = [['apagado', 0, SIN_REBAJA_K5CM], ['solo k', PESO_FUERZA_K5CM, SIN_REBAJA_K5CM], ['solo rebaja', 0, REBAJAS_K5CM], ['ambas', PESO_FUERZA_K5CM, REBAJAS_K5CM]];
   const deElite = Object.fromEntries(config.map(([nombre, k, r]) => [nombre, medianaDe(grupos.elite, k, r)]));
   const medio = Object.fromEntries(config.map(([nombre, k, r]) => [nombre, medianaDe(grupos.medio, k, r)]));
-  const resumen = `élite (${grupos.elite.length} pausas, seeds 1-${seedsEliteK5cM}) ${JSON.stringify(deElite)}; medio (${grupos.medio.length}) ${JSON.stringify(medio)}`;
+  const resumen = `élite (${grupos.elite.length} pausas, seeds 1-${seedsEliteK5cMPorRegimen.real}) ${JSON.stringify(deElite)}; medio (${grupos.medio.length}) ${JSON.stringify(medio)}`;
   if (deElite['solo k'] - deElite.apagado < SUBA_MINIMA_SOLO_K_K5CM) {
     throw new Error(`con solo k = ${PESO_FUERZA_K5CM} la fuerza mediana de la élite sube menos de ${SUBA_MINIMA_SOLO_K_K5CM}: ${resumen}`);
   }
@@ -21063,8 +21092,9 @@ check('K5c-M (a): con las perillas de élite encendidas en memoria, la élite re
 });
 
 check('K5c-M (a2): con la rebaja encendida en memoria, los clubes más fuertes del mundo abren asiento para la élite (y para el medio, ninguno nuevo)', () => {
-  // La cosecha se corre ANTES de encender nada en memoria (con los valores de verdad): si no, la muestra dependería de si (a) corrió antes.
-  const cosecha = { true: pausasDeEliteK5cM(), false: pausasDeMercadoK5cM() };
+  // K5c-M se mide con la casa neutra (D81): con la casa encendida ordena K5c-H. La cosecha de (a2) se hace siempre con la casa neutra
+  // (cacheada aparte de la de (a)), antes de encender las perillas de élite, igual en `--rapido` y en `--solo`.
+  const cosecha = { true: pausasDeEliteDeK5cM('neutra'), false: pausasDeMercadoDeK5cM('neutra') };
   const contar = (rebaja, quiereElite) => conPerillasEliteK5cM(0, rebaja, () => {
     let pares = 0;
     let estados = 0;
@@ -21082,7 +21112,7 @@ check('K5c-M (a2): con la rebaja encendida en memoria, los clubes más fuertes d
   });
   const elite = [contar(SIN_REBAJA_K5CM, true), contar(REBAJAS_K5CM, true)];
   const medio = [contar(SIN_REBAJA_K5CM, false), contar(REBAJAS_K5CM, false)];
-  const resumen = `top ${TOP_MUNDO_K5CM} del mundo ofrecibles: élite ${elite[0].pares} -> ${elite[1].pares} (${elite[0].estados} pausas, seeds 1-${seedsEliteK5cM}), medio ${medio[0].pares} -> ${medio[1].pares} (${medio[0].estados} pausas)`;
+  const resumen = `top ${TOP_MUNDO_K5CM} del mundo ofrecibles: élite ${elite[0].pares} -> ${elite[1].pares} (${elite[0].estados} pausas, seeds 1-${seedsEliteK5cMPorRegimen.neutra}), medio ${medio[0].pares} -> ${medio[1].pares} (${medio[0].estados} pausas)`;
   if (elite[0].estados < 10) {
     throw new Error(`muestra chica: ${resumen}`);
   }
