@@ -6,7 +6,7 @@ import { cerrarFila, filaAbierta } from '../core/registro.js';
 import { calcularContexto } from '../core/contexto.js';
 import { conPlantelesDe, fuerzaDePlantel } from '../core/plantel.js';
 import { BALANCE } from '../data/balance.js';
-import { nombreVisibleDeLiga } from '../core/ligas.js';
+import { nombreVisibleDeLiga, esLigaFranquiciada } from '../core/ligas.js';
 
 // El tránsito entre tiers.
 //
@@ -21,7 +21,10 @@ import { nombreVisibleDeLiga } from '../core/ligas.js';
 //    mercado te ofrece club en la pretemporada).
 //  - el DESCENSO de tier 1 (D16): si tu org termina última de una liga con
 //    `desciendeA`, baja de categoría y tu contrato viaja con ella; su org tier-2
-//    más fuerte de la región promociona a taparla.
+//    más fuerte de la región promociona a taparla. K6b-F: las ligas
+//    franquiciadas (`franquicia` en `data/leagues.json`: LCK, LPL, LEC y LCS,
+//    CONCEPTO §12.3) no descienden a nadie; su `desciendeA` queda como la liga
+//    de desarrollo de la región (de ahí hereda la dificultad, el banquillo).
 
 function conFilaCerrada(state, motivo) {
   return cerrarFila(state.career.registro, {
@@ -129,7 +132,10 @@ function resolverDescenso(state, rng) {
     return null;
   }
   const ligaActual = state.mundo.ligas.find((liga) => liga.id === state.career.liga);
-  if (!ligaActual?.desciendeA) {
+  // K6b-F: una liga franquiciada no tiene descenso (en K6 Fnatic bajaba de la LEC a EMEA Masters). La marca se lee del
+  // archivo de ligas y no del mundo, que guarda una copia de cada liga desde la creación (un guardado anterior a la marca
+  // también la respeta).
+  if (!ligaActual?.desciendeA || esLigaFranquiciada(ligaActual.id)) {
     return null;
   }
   const equipos = ligaActual.orgs.length;
@@ -175,8 +181,17 @@ function resolverDescenso(state, rng) {
         contrato: { ...state.career.contrato, tier: 2, liga: ligaDestino.id }
       }
     },
-    logs: [crearLog('competitivo', `${orgQueBaja.nombre} termina último en ${nombreVisibleDeLiga(ligaActual.id)}: desciende a ${nombreVisibleDeLiga(ligaDestino.id)}. Bajás con ellos — el contrato viaja.`)]
+    logs: [crearLog('competitivo', `${orgQueBaja.nombre} termina último en ${nombreVisibleDeLiga(ligaActual.id)}: desciende a ${nombreVisibleDeLiga(ligaDestino.id)}. ${contratoQueSeVence(state)
+      ? 'Tu contrato se termina ahora: si bajás con ellos depende de que te renueven.'
+      : 'Bajás con ellos — el contrato viaja.'}`)]
   };
+}
+
+// K6b-F (regla 15): "el contrato viaja" solo si el contrato sigue vigente después de esta pretemporada. Si se vence ahora
+// (la misma cuenta que `systems/mercado.js`, que corre justo después y descuenta el año), la org baja igual, pero quedarte
+// o irte lo decide la renovación: decir "viaja" y en el mismo receso "no te renovaron" era la contradicción de K6.
+function contratoQueSeVence(state) {
+  return Math.max(0, state.career.contrato.aniosRestantes - 1) <= 0;
 }
 
 export function aplicar(state, rng) {

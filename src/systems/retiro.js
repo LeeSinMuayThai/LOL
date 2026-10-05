@@ -384,9 +384,14 @@ export function resolver(state, decision, respuesta, rng) {
     // pase, la org del contrato no tiene fila todavía: se arma acá, antes de la temporada de la vuelta (ver
     // `armarRosterAlVolver`).
     const conRoster = armarRosterAlVolver(vuelto, rng);
+    // K6b-F (regla 15): "de free agent" solo si volvés sin club. Si te retiraste con contrato corriendo, volvés con ese
+    // club (es lo que hace el motor desde K4c), y decir "free agent" mientras jugás con él era el bug de K6.
+    const club = conRoster.state.career.currentOrg;
     return {
       state: conRoster.state,
-      logs: [crearLog('retiro', 'Volvés a competir. De free agent, a ver quién te llama.'), ...conRoster.logs]
+      logs: [crearLog('retiro', club
+        ? `Volvés a competir. ${club} te guardó el lugar: el contrato sigue en pie.`
+        : 'Volvés a competir. De free agent, a ver quién te llama.'), ...conRoster.logs]
     };
   }
   return { state, logs: [crearLog('retiro', 'Por ahora, no. La puerta sigue entreabierta.')] };

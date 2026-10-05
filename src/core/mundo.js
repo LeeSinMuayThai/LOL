@@ -53,11 +53,19 @@ export function generarHandle(rng, usados) {
 // rotan temporada a temporada y no están investigados con la firmeza que pide
 // CLAUDE.md para nombrar un equipo real, así que se generan igual que el
 // tier 3 (fase 3), con un rango de fuerza más alto.
+// K6b-F: `franquicia` es dato fijo de `data/leagues.json` y se lee de ahí (`esLigaFranquiciada`, `core/ligas.js`). No entra a la
+// copia de la liga que guarda el mundo: así la forma del guardado (D71) no cambia, y un guardado de antes la respeta igual.
+function sinMarcasFijas(liga) {
+  const copia = { ...liga };
+  delete copia.franquicia;
+  return copia;
+}
+
 function generarLigas(rng, usadosOrgs) {
   const { fuerzaOrgSpread, fuerzaOrgMin, fuerzaOrgMax } = BALANCE.mundo;
   const c = BALANCE.competitivo;
 
-  return LIGAS.map((liga) => {
+  return LIGAS.map(sinMarcasFijas).map((liga) => {
     if (liga.orgsGeneradas) {
       return {
         ...liga,

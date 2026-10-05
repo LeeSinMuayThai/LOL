@@ -14,3 +14,11 @@ export function nombreVisibleDeLiga(ligaId) {
 export function nombreVisibleDeLigaOZona(liga) {
   return liga.nombreLiga ?? nombreVisibleDeLiga(liga.id);
 }
+
+// K6b-F: las ligas franquiciadas (`franquicia: true` en `data/leagues.json`: LCK, LPL, LEC y LCS, CONCEPTO §12.3) no
+// tienen descenso. Se lee del archivo, no de la copia del mundo. Puro: sin rng, sin DOM.
+const LIGAS_FRANQUICIADAS = new Set(LIGAS.filter((liga) => liga.franquicia === true).map((liga) => liga.id));
+
+export function esLigaFranquiciada(ligaId) {
+  return LIGAS_FRANQUICIADAS.has(ligaId);
+}

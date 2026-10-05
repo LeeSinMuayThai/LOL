@@ -562,6 +562,32 @@ function quedarLibre(state, racha, rng) {
   };
 }
 
+// K6b-F (regla 15): "no te renovaron" quiere decir que te vas. Este mercado solo se abre con el contrato vencido (o sin
+// club), así que una pretemporada que se cierra sin firmar nada —ni la renovación ni otra oferta: el teléfono no sonó,
+// elegiste esperar o seguir buscando, la prueba no alcanzó— te deja sin club. Antes seguías jugando con él, con el
+// contrato vencido y la ficha en "No te renovaron", hasta `splitsSinOfertaParaLibre` pretemporadas: en K6 (seed 25)
+// decía "De free agent" y descendías con un club que ya no te había renovado. Sin rng; la racha sin oferta sigue
+// contando igual (como free agent el mercado te sigue llamando o no). `motivoFila`: 'retiro' si colgás el mouse en esta
+// misma parada (la bifurcación del mercado).
+function teVasDelClub(state, motivoFila = 'libre') {
+  const org = state.career.currentOrg;
+  if (!org) {
+    return { state, logs: [] };
+  }
+  return {
+    state: {
+      ...state,
+      career: {
+        ...state.career,
+        currentOrg: null, liga: null, rosterDeOrg: null, companeros: [], sinergia: 0,
+        contrato: { ...state.career.contrato, avisoNoRenovacion: false },
+        registro: conFilaCerrada(state, motivoFila)
+      }
+    },
+    logs: [crearLog('mercado', `Se termina tu contrato con ${org} y no firmás con nadie: te vas del club. Sos free agent.`)]
+  };
+}
+
 // K4-D frenaba la pretemporada con el mercado y la preparación del receso en una sola parada. K4c (plan anual): la
 // práctica la fija el cierre de año y se entrena sola (`systems/practica.js`), así que la pretemporada queda para el
 // mercado: si frena, frena solo por el mercado.
@@ -726,9 +752,10 @@ function elTelefonoNoSuena(state, rng) {
     return quedarLibre(state, racha, rng);
   }
   const cerrado = cerrarAsientosCongelados(state, null, rng);
+  const teVas = teVasDelClub(cerrado.state);
   return {
-    state: { ...cerrado.state, flags: { ...cerrado.state.flags, splitsSinOfertaConsecutivos: racha } },
-    logs: [...cerrado.logs, crearLog('mercado', 'Nadie te llama esta pretemporada. El teléfono no suena.')]
+    state: { ...teVas.state, flags: { ...teVas.state.flags, splitsSinOfertaConsecutivos: racha } },
+    logs: [...cerrado.logs, crearLog('mercado', 'Nadie te llama esta pretemporada. El teléfono no suena.'), ...teVas.logs]
   };
 }
 
@@ -874,7 +901,11 @@ function resolverFinPorMercado(state, decision, respuesta, rng) {
     // silencio), y recién después te retirás.
     const cerrado = cerrarAsientosCongelados(state, null, rng);
     const retiro = retirarsePorMercado(cerrado.state, decision.datos.motivoRetiro);
-    return { state: retiro.state, logs: [...cerrado.logs, ...retiro.logs] };
+    // K6b-F: el contrato estaba vencido y no firmaste nada: te retirás sin club (el `finAnticipado` ya lo fijó el retiro,
+    // con el club que tenías). Si volvés, volvés de free agent: antes volvías a jugar con el club que no te había
+    // renovado, con la ficha en "No te renovaron" (seed 1 de `criterio`, FURIA 2034).
+    const sinClub = teVasDelClub(retiro.state, 'retiro');
+    return { state: sinClub.state, logs: [...cerrado.logs, ...retiro.logs] };
   }
   if (respuesta.opcionId === 'bajar') {
     return {
@@ -1269,9 +1300,10 @@ function resolverEspera(state, decision, rng, motivo) {
     return { state: libre.state, logs: [crearLog('mercado', motivo), ...libre.logs] };
   }
   const cerrado = cerrarAsientosCongelados(state, null, rng, orgsOfrecidasDe(decision));
+  const teVas = teVasDelClub(cerrado.state);
   return {
-    state: { ...cerrado.state, flags: { ...cerrado.state.flags, splitsSinOfertaConsecutivos: racha } },
-    logs: [crearLog('mercado', motivo), ...cerrado.logs]
+    state: { ...teVas.state, flags: { ...teVas.state.flags, splitsSinOfertaConsecutivos: racha } },
+    logs: [crearLog('mercado', motivo), ...cerrado.logs, ...teVas.logs]
   };
 }
 
@@ -1497,17 +1529,19 @@ function caeLaOfertaPorLaPrueba(state, decision, rng) {
 // K4c (revisión): la prueba no alcanzó y no hay respaldo (las demás ofertas, si había, también pedían prueba). Es su propio
 // caso, no el silencio del mercado: no suma a `splitsSinOfertaConsecutivos` (antes iba por `resolverEspera`, y con seis
 // ofertas en la mesa podía decir "Nadie te ofrece nada" y dejarte libre), queda anotada en `flags.pruebasFallidas` para que
-// el declive diga lo que pasó (`systems/retiro.js`), y el contrato no se toca. Los asientos congelados se cierran como al
-// esperar (con nombre los que te ofrecían).
+// el declive diga lo que pasó (`systems/retiro.js`), y no se firma nada: con el contrato vencido te vas del club (K6b-F,
+// `teVasDelClub`; sin respaldo es que tu club no te renovaba). Los asientos congelados se cierran como al esperar (con
+// nombre los que te ofrecían).
 function probasteYNoAlcanzo(state, sinNada, oferta, habiaOtras, aviso, rng) {
   const cerrado = cerrarAsientosCongelados(state, null, rng, orgsOfrecidasDe(sinNada));
   const lasDemas = habiaOtras ? ', y las demás también pedían prueba' : '';
+  const teVas = teVasDelClub(cerrado.state);
   return {
     state: {
-      ...cerrado.state,
-      flags: { ...cerrado.state.flags, pruebasFallidas: [...(cerrado.state.flags.pruebasFallidas ?? []), oferta.org] }
+      ...teVas.state,
+      flags: { ...teVas.state.flags, pruebasFallidas: [...(teVas.state.flags.pruebasFallidas ?? []), oferta.org] }
     },
-    logs: [crearLog('mercado', `${aviso}${lasDemas}. Probaste y no alcanzó: esta ventana no firmás con nadie.`), ...cerrado.logs]
+    logs: [crearLog('mercado', `${aviso}${lasDemas}. Probaste y no alcanzó: esta ventana no firmás con nadie.`), ...cerrado.logs, ...teVas.logs]
   };
 }
 
