@@ -283,6 +283,8 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
   let splitEnCurso = state.player.splitCount;
   // K5c-M: el `escenaAnual` del último año observado (el objeto cambia una vez por cierre de año, en `systems/escena.js`).
   let escenaObservada = null;
+  // Las vueltas del retiro usadas al arrancar el split en curso: si en `st` ya hay más, `retiro` adelantó el reloj.
+  let vueltasAlArrancar = state.flags.vueltasUsadas;
 
   let decisionesEnSplitActual = 0;
 
@@ -293,6 +295,11 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
   function contarTanda(st) {
     const nuevos = st.logs.slice(logsContados);
     observacion.beatsReproductor += contarBeats(nuevos);
+    // K5c (validación): también en las pausas de adentro del split (el plan de una serie, el draft): si `retiro` ya adelantó
+    // el reloj en este split, los cierres de serie que salen en esta tanda son del reloj de la vuelta, no del del arranque.
+    if (st.flags.vueltasUsadas > vueltasAlArrancar) {
+      splitEnCurso = st.flags.splitVuelta;
+    }
     // K2a: cada serie cerrada deja UN log de cierre (`postSerie`) con su formato y las dos fuerzas al empezarla.
     for (const log of nuevos) {
       const fila = filaDeSerie(log, splitEnCurso);
@@ -382,6 +389,7 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
     const jerarquiaAntes = state.career.jerarquia;
     const importPendiente = state.flags.ofertaDeImport;
     const vueltasAntes = state.flags.vueltasUsadas;
+    vueltasAlArrancar = vueltasAntes;
     state = avanzarSplitAuto(state, rng, responderInstrumentado).state;
     // K5c (validación): en el split de una vuelta del retiro, `retiro` adelanta el reloj lo que pasó afuera
     // (`relojAlVolver`, `flags.splitVuelta`) antes de que corran `temporada` y `serie`: sus filas llevan ese reloj, no el

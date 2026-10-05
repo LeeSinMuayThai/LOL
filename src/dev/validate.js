@@ -5552,7 +5552,7 @@ checkLento('Todo split competitivo cierra con lo que significa su posición, no 
   // 2 de cada 3 splits no son de playoffs y cerraban en una línea `[rendimiento]`
   // "terminó 4º de 10" — "los 3 splits no sirven para nada". Ahora cada split
   // competitivo deja una línea `temporada` de qué hay en juego. La excepción:
-  // el split de cierre que clasifica a playoffs, que lo narra `serie.js`.
+  // el split de cierre que clasifica a playoffs o juega la final de tier 2, que lo narra `serie.js`.
   let splitsMedidos = 0;
   let sinParada = 0;
 
@@ -5569,7 +5569,10 @@ checkLento('Todo split competitivo cierra con lo que significa su posición, no 
       if (!cerroTemporada) {
         continue;
       }
-      const clasificoAPlayoffs = nuevos.some((l) => l.type === 'serie' && l.message.includes('Clasificaste a playoffs'));
+      // K6a-M: la final de tier 2 (sin bracket) la narra `serie.js` con otra frase ("Terminaste 1º: jugás la final de X vs Y."),
+      // que también dice qué significa la posición; son 101 de los 2909 splits que el check contaba como sin línea.
+      const clasificoAPlayoffs = nuevos.some((l) => l.type === 'serie'
+        && (l.message.includes('Clasificaste a playoffs') || /^Terminaste \d+º: jugás la final de /.test(l.message)));
       if (clasificoAPlayoffs) {
         continue;
       }
