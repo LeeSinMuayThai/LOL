@@ -2,11 +2,11 @@ import { chance, weightedPick, roll, gauss } from '../core/rng.js';
 import { elegirMinijuego, textoDeMinijuego, registrarMinijuegoVisto, minijuegoPorId, saltosDeFichaje } from '../core/minijuegos.js';
 import { clamp, clampStat } from '../core/numeros.js';
 import { crearLog } from '../core/log.js';
-import { plata } from '../core/formato.js';
+import { plata, plural } from '../core/formato.js';
 import { calcularContexto } from '../core/contexto.js';
 import { ligaDeCarrera } from '../core/competicion.js';
 import { salarioDeOferta } from '../core/salarios.js';
-import { valorDeMercado, sesgoEtario } from '../core/valorMercado.js';
+import { valorDeMercado, presupuestoDeDemanda, sesgoEtario } from '../core/valorMercado.js';
 import { cerrarFila, registrarPico, registrarSalarioEnFila, registrarArraigoEnFila, arraigoInicial } from '../core/registro.js';
 import { bandaDeJerarquia, bandaDeArraigoFicha, nivelDelJugador } from '../core/ficha.js';
 import { orgsQueTeFicharian, ofertaPosible, esResidenteDe, nivelAlternativaAsiento, factorRenovacionEtario, factorElite, plantelEnLiga, veteranoDeTier2, ganaLaDisputaDelAsiento, renovacionCortadaPorEdad, alcanzaTuLiga, ligaDeCasa, clubDeCasaQueTeHaceLugar, calibreDeLiga } from '../core/demanda.js';
@@ -917,7 +917,7 @@ export function aceptarOferta(state, oferta, rng, { motivoFila } = {}) {
           registro: registrarSalarioEnFila(state.career.registro, contrato.salarioAnualUSD)
         }
       },
-      logs: [crearLog('mercado', `Renovás con ${oferta.org}: ${plata(contrato.salarioAnualUSD)}/año, ${contrato.anios} año(s).${conClausula}`)]
+      logs: [crearLog('mercado', `Renovás con ${oferta.org}: ${plata(contrato.salarioAnualUSD)}/año, ${contrato.anios} ${plural(contrato.anios, 'año', 'años')}.${conClausula}`)]
     };
   }
 
@@ -992,7 +992,7 @@ export function aceptarOferta(state, oferta, rng, { motivoFila } = {}) {
         registro: conFilaCerrada(state, motivoFilaFinal)
       }
     },
-    logs: [crearLog('mercado', `Firmás con ${oferta.org} (${nombreVisibleDeLiga(oferta.liga)}): ${plata(contrato.salarioAnualUSD)}/año, ${contrato.anios} año(s).${conClausula}`)]
+    logs: [crearLog('mercado', `Firmás con ${oferta.org} (${nombreVisibleDeLiga(oferta.liga)}): ${plata(contrato.salarioAnualUSD)}/año, ${contrato.anios} ${plural(contrato.anios, 'año', 'años')}.${conClausula}`)]
   };
 }
 
@@ -1046,7 +1046,7 @@ function ofertaDeTraspaso(state, rng) {
   };
   const conClausula = state.career.contrato.clausula === 'salida';
   const traspasoUSD = Math.round(
-    valorDeMercado(state) * m.traspasoBaseFactor
+    presupuestoDeDemanda(state) * m.traspasoBaseFactor
     * (1 + Math.max(0, state.career.contrato.aniosRestantes) * m.traspasoPorAnioRestante)
   );
 
@@ -1074,7 +1074,7 @@ function ofertaDeTraspaso(state, rng) {
     tipo: 'opciones',
     presentacion: 'mercado',
     titulo: 'Te quieren a mitad de contrato',
-    descripcion: `${org.nombre} preguntó por vos. Te quedan ${state.career.contrato.aniosRestantes} año(s) de contrato con ${state.career.currentOrg}.`,
+    descripcion: `${org.nombre} preguntó por vos. Te ${plural(state.career.contrato.aniosRestantes, 'queda', 'quedan')} ${state.career.contrato.aniosRestantes} ${plural(state.career.contrato.aniosRestantes, 'año', 'años')} de contrato con ${state.career.currentOrg}.`,
     opciones,
     datos: {
       motivo: 'traspaso',

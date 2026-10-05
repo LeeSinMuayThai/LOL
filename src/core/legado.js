@@ -2,6 +2,8 @@ import LIGAS from '../data/leagues.json' with { type: 'json' };
 import { BALANCE } from '../data/balance.js';
 import { splitsJugadosEnTier, esBuenPapel } from './registro.js';
 import { aniosProDe } from './puntaje.js';
+import { desdePuntos, etiquetaDeRanked, servidorDeLaPartida } from './ranked.js';
+import { plural } from './formato.js';
 
 // El veredicto de la carrera (PLAN.md §10.2, CONCEPTO §9): NO se elige de una
 // lista, se COMPONE — una plantilla de arquetipo más un detalle real sacado del
@@ -148,13 +150,19 @@ function elegirArquetipo(datos) {
 }
 
 // El detalle: SIEMPRE cita un hecho real del registro de esta carrera.
-function detalleDeCarrera(registro, orgPrincipal) {
+function detalleDeCarrera(registro, orgPrincipal, state) {
   if (orgPrincipal && orgPrincipal.splits >= 3) {
     const hasta = orgPrincipal.hastaAnio ? `–${orgPrincipal.hastaAnio}` : '';
     return `${orgPrincipal.splits} splits en ${orgPrincipal.org} (${orgPrincipal.desdeAnio}${hasta}).`;
   }
   if (registro.momentos.length > 0) {
     return `${registro.momentos[registro.momentos.length - 1].texto}.`;
+  }
+  // Sin una sola fecha de liga (nunca llegó a un contrato), el "0-0" no dice nada: lo que sí hay es la soloQ.
+  if (registro.fechasGanadas + registro.fechasPerdidas === 0) {
+    const servidor = servidorDeLaPartida(state);
+    const pico = etiquetaDeRanked(desdePuntos(registro.picos.rankedPuntos, servidor), servidor);
+    return `${registro.splitsJugados} ${plural(registro.splitsJugados, 'split', 'splits')} sin firmar contrato: tu techo en soloQ fue ${pico}.`;
   }
   return `${registro.splitsJugados} splits, ${registro.fechasGanadas}-${registro.fechasPerdidas} en fechas de liga.`;
 }
@@ -194,7 +202,7 @@ export function componerLegado(state) {
     motivo: state.motivoRetiro ?? null,
     esExito,
     edadRetiro: state.age,
-    veredicto: `${frase}. ${detalleDeCarrera(r, orgPrincipal)}`,
+    veredicto: `${frase}. ${detalleDeCarrera(r, orgPrincipal, state)}`,
     totales: {
       // K5c-R: los años PRO, desde el primer contrato de tier 2 o tier 1 (`aniosProDe`, el mismo número que la leyenda
       // comparada). Reemplaza a `max(1, anio - anioBase)`, que contaba desde los 15 (el amateur y tier 3 incluidos).

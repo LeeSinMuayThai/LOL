@@ -1,5 +1,5 @@
 import { BALANCE } from '../data/balance.js';
-import { splitsDeResidencia, valorDeMercado, castigoEtario } from './valorMercado.js';
+import { splitsDeResidencia, presupuestoDeDemanda, castigoEtario } from './valorMercado.js';
 import { nivelDelJugador } from './ficha.js';
 import { etiquetaRol } from '../data/roles.js';
 import { plata } from './formato.js';
@@ -484,7 +484,7 @@ export function ofertaPosible(state, orgNombre, rol, { forzada = false } = {}) {
 
   const d = BALANCE.demanda;
   const nivel = nivelDelJugador(state);
-  const valor = valorDeMercado(state);
+  const valor = presupuestoDeDemanda(state);
 
   // Banda de nivel: una org no ficha muy por debajo de su fuerza. El techo de
   // banda (no pagar muy por encima de lo que sostiene) NO aplica cuando te

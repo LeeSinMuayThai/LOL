@@ -1,3 +1,4 @@
+import { plural } from '../core/formato.js';
 import { crearLog } from '../core/log.js';
 import { calcularContexto } from '../core/contexto.js';
 import { BALANCE } from '../data/balance.js';
@@ -63,14 +64,19 @@ export function conPresionTier2(state) {
   return { ...state, flags: { ...state.flags, splitsTier2SinOfertaTier1 } };
 }
 
+// "14 títulos, 0 internacionales." / "1 título, 1 internacional.": el plural es real, sin "(s)".
+function totalesEnPalabras(state) {
+  const { titulos, internacionales } = state.career;
+  return `${titulos} ${plural(titulos, 'título', 'títulos')}, ${internacionales} ${plural(internacionales, 'internacional', 'internacionales')}.`;
+}
+
 function mensajeDeSalida(state, finAnticipado) {
   if (finAnticipado === 'sin_equipo') {
     return probasteCon(state)
       ? `A los ${state.age} te quedás sin equipo: hubo llamados, pero las pruebas no alcanzaron. Se termina acá.`
       : `A los ${state.age} el teléfono dejó de sonar. Sin equipo y sin llamados: se termina acá.`;
   }
-  return `Te retirás a los ${state.age}. ${state.career.titulos} título(s), `
-    + `${state.career.internacionales} internacional(es). Se cierra una carrera.`;
+  return `Te retirás a los ${state.age}. ${totalesEnPalabras(state)} Se cierra una carrera.`;
 }
 
 const NUMERO_EN_PALABRAS = ['cero', 'una', 'dos', 'tres', 'cuatro', 'cinco', 'seis'];
@@ -153,8 +159,7 @@ const SPLIT_DEL_RETIRO = 1;
 export function retirarsePorCamino(state, motivo) {
   const puedeVolver = state.flags.vueltasUsadas < BALANCE.retiro.vueltasMaximas;
   const { state: retirado, logs } = terminar(state, 'retiro_elegido',
-    `Dejás de competir a los ${state.age} ${MOTIVOS_DE_RETIRO[motivo]}. ${state.career.titulos} título(s), `
-    + `${state.career.internacionales} internacional(es).${puedeVolver ? ' La puerta queda entreabierta.' : ''}`,
+    `Dejás de competir a los ${state.age} ${MOTIVOS_DE_RETIRO[motivo]}. ${totalesEnPalabras(state)}${puedeVolver ? ' La puerta queda entreabierta.' : ''}`,
     { reversible: puedeVolver, motivo: `Dejaste de competir ${MOTIVOS_DE_RETIRO[motivo]}.` });
   // Arreglo de K5c (años pro): la bifurcación llega en `eventos`, con la temporada de este split ya jugada, pero `atributos`
   // no corre: ni el reloj (`player.splitCount`) ni `registro.splitsJugados` la cuentan. Ese split fue pro y se jugó: el

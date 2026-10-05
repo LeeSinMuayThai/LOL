@@ -71,6 +71,17 @@ export function plural(cantidad, singular, pluralTexto) {
   return Number(cantidad) === 1 ? singular : pluralTexto;
 }
 
+// "de la LCK" / "del Circuito Desafiante" / "de un torneo chico de la región": el artículo depende del nombre de la liga
+// (los nombres de liga son siglas femeninas por "la liga", salvo estos que arrancan con un sustantivo masculino).
+const PRIMERAS_PALABRAS_MASCULINAS = ['circuito', 'torneo', 'campeonato'];
+export function deLaLiga(nombre) {
+  const primera = String(nombre).split(' ')[0].toLowerCase();
+  if (primera === 'un' || primera === 'una') {
+    return `de ${nombre}`;
+  }
+  return PRIMERAS_PALABRAS_MASCULINAS.includes(primera) ? `del ${nombre}` : `de la ${nombre}`;
+}
+
 // "te falta 1 puesto" / "te faltan 2 puestos". `prefijo` es lo que va antes del verbo ("te", "Te", "").
 export function faltan(cantidad, singular, pluralTexto, prefijo = 'te') {
   const verbo = Number(cantidad) === 1 ? 'falta' : 'faltan';
