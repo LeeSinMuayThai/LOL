@@ -8074,6 +8074,15 @@ idéntico; build 2285/2300 KB). Se arreglan en `k6b-fix`:
 - la meta de la cola, 13,33 contra 12,99: la banda salió de una muestra con suerte, y se re-mide con la muestra del
   check.
 
+**K6b-fix** (`511b6d5`): 9 de los 10 resueltos. Casi todos eran del instrumento (muestras chicas o checks que no veían
+el camino nuevo), y la huella no cambia. **El que queda es un hueco de diseño de K6b-C:**
+- el "seguir buscando" narrado no vence nunca;
+- un free agent sin liga pasa 6 pretemporadas, de los 21 a los 27, sin que el juego le vuelva a preguntar (seed 101).
+
+**Regla (supervisor, dentro del alcance "la cola" que eligió el usuario):** pasar `splitsSinOfertaParaLibre`
+pretemporadas sin oferta cuenta como "algo cambió". La pregunta de "el mercado ya habló" vuelve a frenar. Mueve la
+huella y la meta de la cola: se declara.
+
 ## K.6 — Qué pasa con FASE J y FASE V
 
 | Pieza | Destino |
