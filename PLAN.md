@@ -7835,6 +7835,58 @@ y una de leyenda. Se leen como historias y se mide su duración. Ninguna de las 
 puede repetir textualmente: *"rng clicker"*, *"las opciones no afectan nada"*, *"hacés un clic y
 perdiste"*, *"Worlds es una basofia"*.
 
+**K6, jugado** (2026-10-05, sobre `76269ff`). Un agente jugó por Playwright con una heurística que solo lee la
+pantalla: previas, % y cartas. Los logs, las capturas y el script están en el scratchpad de la sesión `01d16e01`,
+carpeta `k6/`. Los 0 errores de consola son del juego.
+
+| Carrera | Frenadas (decisiones / mercados / minijuegos) | Humano estimado | Resultado |
+|---|---|---|---|
+| "Estancada" (siempre lo peor de la previa, leal) | 86 (73/7/6) | 27-49 min | 669 · Figura mundial: 3 LEC, 3 Mundiales jugados |
+| Estancada estricta (además "Esperar" ante el salto) | 67 (52/9/6) | 23-40 min | 349 · Figura mundial: 26 splits en tier 2, 0 internacionales |
+| Buena (3.er intento; los dos primeros no llegaron a pro) | 75 (66/4/5) | 25-44 min | 1081 · Figura mundial: Mundial 2035 |
+| Leyenda (KR, Mid) | 88 (72/5/11) | 28-50 min | 1031 · El GOAT: Mundiales 2036 y 2038 |
+
+**Las quejas del usuario:**
+- **"rng clicker": no.** Cada partido muestra su probabilidad y el desglose. La excepción es el minijuego
+  `rueda_de_prensa`: el objetivo es azar sin ninguna pista.
+- **"Las opciones no afectan nada": en parte.** Afectan mucho: la semana del amateur da 31 contra 1081 puntos con la
+  misma seed, y la carrera con `criterio` contra jugar mal da 1147 contra 349. Pero hay cosas que dan esa sensación:
+  - los mercados de **una sola carta** deciden por vos (5 seguidos);
+  - el campeón del mundo al que no renuevan;
+  - jugar mal igual termina en "Figura mundial";
+  - los cierres de año y los "¿seguís?" de la cola son relleno.
+- **"Hacés un clic y perdiste": en parte.** Un #5 del mundo pierde un año entero por un solo minijuego de prueba
+  (estaba avisado).
+- **"Worlds es una basofia": no.** El Swiss y el bracket se ven completos, la serie frena con el plan, el mapa 5 con su
+  minijuego, y "TE LEYERON" obliga a re-planear.
+
+**Las metas re-basadas (D80), según cómo se sienten jugando:**
+- **Importan:**
+  - llegar a tier 1 es demasiado fácil: hasta jugando siempre lo peor se llega a la LEC;
+  - la cola de la carrera: los últimos 5-7 años en clubes del fondo, con hasta 7 frenadas de "EL MERCADO YA HABLÓ";
+  - los títulos y el top 20 son demasiado comunes.
+- **D81 se ve:** la élite termina en clubes que se derrumban.
+- **No se notan:** el favorito del Bo5 y el nuevo Faker de élite.
+- **D-B ("te frena solo lo importante")** se cumple en los partidos, pero no en la cola (15-28 frenadas después de los
+  28 años, con poco en juego). La leyenda pasa la meta de frenadas: 88 contra ≤ 80, y 11 minijuegos contra 4-8.
+
+**Bugs encontrados** (cada uno con su reproducción en `k6/`):
+- **Alto, regla 15:** Fnatic, campeón del Mundial con el #3 del mundo, no le renueva. La única carta es un club del
+  fondo a $60k, con récord 1-35 (seed 39). El patrón se repite en las colas de todas las carreras.
+- **Alto:** "NO TE RENOVARON / De free agent", pero seguís jugando en el club y descendés con él (seed 25, 2043-44).
+- **Medio:**
+  - el titular de la tarjeta nombra al club de la caída ("12 SPLITS EN DPLUS KIA") y no a los Mundiales;
+  - "Figura mundial" y "#5 del mundo" para una carrera de tier 2 sin internacionales;
+  - el tag "PC confiscada" todavía a los 27, en la final del Mundial;
+  - de dominio: hay descenso en la LEC, que es franquiciada.
+- **Bajo:**
+  - resúmenes de temporada que se contradicen ("Sin equipo" con "Quedaron dentro de playoffs");
+  - en el duelo, "tus 6 trofeos" contra "TÍTULOS 2" en la tarjeta;
+  - "Copa de la Invocación" por "Copa del Invocador";
+  - un Challenger #19 con nivel 88 que nunca firma, sin que la historia lo explique.
+
+**Lo que sigue lo decide el usuario** con este reporte: qué se arregla y qué se persigue de D80.
+
 ## K.6 — Qué pasa con FASE J y FASE V
 
 | Pieza | Destino |
