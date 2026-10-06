@@ -469,6 +469,9 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // `systems/mercado.js`). Mientras la foto no cambie, la pregunta no se repite: se sigue y se narra. `null` = no hay.
       seguisFirma: null,
       finMercadoFirma: null,
+      // K6b-fix (la espera vence): cuántas pretemporadas seguidas se narró "seguís buscando" desde la última vez que respondiste
+      // "El mercado ya habló". Al llegar a `BALANCE.mercado.splitsSinOfertaParaLibre` la pregunta vuelve a frenar.
+      finMercadoEsperas: 0,
       // K6b-C: la ventana (`firmaDeLaVuelta`, `systems/retiro.js`) en la que elegiste no volver: el "¿Volvés?" no se repite.
       vueltaFirma: null,
       // K6b-C2 (la cola de verdad): por tipo de parada de la cola (`cierre`, el cierre de año; `momento`, el momento de

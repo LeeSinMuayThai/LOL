@@ -34,6 +34,23 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-06 — Integración de K6c con K6b-fix y la región medida bien (`k6c-integracion`; PLAN.md §K6c, "La región en K6c")
+
+- **Merge** de `k6c-region` (`57e68da`) con `k6b-fix` (`711fd39`). En `validate.js` se quedan los checks de los dos lados.
+  La forma 13 junta las dos y se re-registra sin subir de versión, porque la 13 no salió:
+  `'51c74dcb0416'` / `'0b9646606fa1'` → `'e96e9e539778'`.
+- **Decisión del usuario 2026-10-06: "medir bien, aceptar ~7%".**
+  - `ganaMundialCorea`, `ganaMundialNA` y el orden Corea > NA salen de "K5c meta del Mundial". Ahí se juzgaban con la
+    submuestra del lote, unas 332 y 194 carreras. Ahora los juzga "K6c región fija": 3000 × 60 por región, las mismas
+    seeds y el σ de esa muestra.
+  - `ganaMundialNA` se re-basa a 7,3. Regla 17, corrimiento declarado de K6c.
+  - El juez rápido suma dos casos de una sola banda fuera (NA 9%, Corea 8,5%) y uno de NA en la meta (4%).
+- **Medido por el supervisor:**
+  - "K6c región fija": KR 348/3000 (11,6%) contra NA 219/3000 (7,3%), OK.
+  - Rojo con el mutante "la región elegida no se respeta" (`core/mundo.js:392`, `ligaOrigen = ligaSorteada`): KR 9,23
+    contra NA 9,23. Fallan el orden y la banda de NA (techo 8,36).
+  - `--rapido`: 351 OK, 0 FAIL.
+
 ### 2026-10-05 — K6c, revisión: "más fácil desde Corea que desde NA" no lo dio vuelta la vara (`k6c-region`; PLAN.md §K6c, §K.3b)
 
 - **La hipótesis (la vara de los clubes coreanos más fuertes) se descarta con datos.** Los clubes de tier 3 salen de la misma
@@ -128,6 +145,40 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 - **Abierto**: `--rapido` queda con 7 FAIL nuevos (forma y huella ya registradas): "check vacío" porque `malas` ya no llega a pro
   (K5c-R, K4c observación, K1 D75) o porque las seeds fijas ya no llegan (K4c-H, K3c seed 3, K5c motor), y la meta de K6a-A
   (mediana de paradas de la semana 3 contra <= 1 con el automático, que vive el plan del perfil todo el año).
+
+### 2026-10-05 — K6b-fix: los 10 FAIL de la validación completa de `58db231` (`k6b-fix`; PLAN.md §K6b, "Los FAIL de la validación completa de K6b" y "K6b-fix")
+
+**Nueve eran checks.** En esos el motor no se tocó. Cada uno con su rojo (un mutante en una copia de `src`):
+- **`sin_renovacion`** (2 checks): desde K6b-F el aviso y la salida son la misma pretemporada. El estado vive en la pausa del mercado, y los dos checks lo miran ahí (`observarPausaDelMercado`, mismo stream). Rojo: `contexto.js` sin `sin_renovacion`.
+- **Oferta lateral** (seed 63): la prueba de Movistar KOI no alcanzó y firmó GAM. Lo rechazado es lo que no es el club con el que terminás. Rojo: sin el log del NPC.
+- **El mundo NPC envejece**: no es K6b. Con 40 seeds el head da +0,15 (ee 0,045) y `25f7b0d` +0,21 (ee 0,042). Ahora son 40 seeds y la suba tiene que superar 2 ee. Rojo: el mundo congelado da −1,22.
+- **9R0e**:
+  - la búsqueda sigue después de 1500 carreras hasta 500 splits, con tope en 3000;
+  - el 60% no cuenta la repetición narrada de K6b-C (antes de K6b el espía veía 0 silencios; en `58db231`, 7, todos de esas repeticiones);
+  - el tope 0 sí la cuenta.
+- **K0 KPIs**: recuento independiente de `ritmo.colaDeCarrera` y `ritmo.leyenda`. Rojo: `frenadasCola += 2`.
+- **K0 estancado**: tope 5 → 8,0, es decir 4,9 (n 1500) + 2σ de 200. Medido: 5,5 en el head, 4,5 en `25f7b0d`.
+- **Bo5 conjunto**: 86,0 ± 1,4 (n 620); techo 88,8. Corrimiento declarado de K6b. El rojo viejo (≈ 87) queda adentro de la banda.
+
+**El décimo, "Nadie se queda varado" (seed 101, 18 splits), era el motor.**
+- **La causa:** la repetición narrada de "El mercado ya habló" no vencía. Eran seis pretemporadas, de los 21 a los 27, sin que se le volviera a preguntar.
+- **El arreglo (decisión del supervisor):** pasar `splitsSinOfertaParaLibre` pretemporadas sin oferta desde la última respuesta es "algo cambió".
+  - La pregunta vuelve a frenar con su previa: cuántas pretemporadas sin oferta y la edad.
+  - El contador es `flags.finMercadoEsperas` (migrado con `migrarDe12`).
+  - Sin tiradas nuevas: si respondés "seguir buscando", corre lo mismo que la narración.
+- **El check de motor nuevo:** "K6b-fix: el seguir buscando narrado no pasa de 2 pretemporadas seguidas". 5 narradas y 2 preguntas vueltas en 300 × 60. Rojo con "nunca vence": 0 preguntas vueltas, y la seed 101 vuelve a 18 splits.
+- **Seed 101:** ahora vuelve a preguntar a los 24, y el automático se retira.
+
+**La meta de la cola**, re-medida con la muestra del check (1500 × 60):
+- **antes de K6b-fix:** 13,33, σ 9,00, n 602;
+- **con K6b-fix:** 13,37, σ 8,93, n 593, banda ≤ 14,10;
+- **el mutante (C y C2 apagados):** 14,89, 2,2σ arriba de la banda.
+
+**Verificación.**
+- `--rapido`: 344 OK, 0 FAIL.
+- `HUELLA_JUEGO` sin cambios: 1920057344 (el check de huella, 40 × 60, pasa).
+- `FORMAS_CONOCIDAS[13]`: 'fcc08dda0b89' → '0b9646606fa1', sin subir de 13.
+- `simulate.js 1 60 criterio` dos veces: diff vacío.
 
 ### 2026-10-05 — Cierre de K6b: K5c-V con el piso armado y los estancados re-basados (`k6b-integracion`; PLAN.md §K6b, "La revisión de K6b")
 

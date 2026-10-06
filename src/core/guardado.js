@@ -159,6 +159,7 @@ export function migrarDe12(state) {
     ...viejas,
     seguisFirma: viejas.seguisFirma ?? null,
     finMercadoFirma: viejas.finMercadoFirma ?? null,
+    finMercadoEsperas: viejas.finMercadoEsperas ?? 0,
     vueltaFirma: viejas.vueltaFirma ?? null,
     colaFirmas: { ...colaFirmas, cierre: colaFirmas.cierre ?? null, momento: colaFirmas.momento ?? null },
     // K6c (sin subir la VERSION: la 13 todavía no salió): el año del amateur arranca en "sin plan" (`null`, el valor del
