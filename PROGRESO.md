@@ -44,7 +44,7 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
   llega a 0: cero a 30 → +26,1%; **a 31 → +29,2%**; a 35 → +44,1%; a 40 → +77,7%; a 45 → +165,8%; vara siempre 0 → +25,1% (300
   seeds); K6c → +1149%. El precio: ~74% de las pruebas de `equilibrado` piden 0 (la mediana de nivel − calibre es ~36).
 - **No llega a pro** (`simulate.js 600 60`; K6b `58db231` → K6c → ahora): criterio 22,8 → 24,5 → **24,5**; azar 26,8 → 32,0 →
-  **28,8**; malas 38,0 → 58,2 → **48,0**; equilibrado 29,2 (600; `simulate.js 1000`: K6b 24,9, K6c 32,3, ahora EQ1000).
+  **28,8**; malas 38,0 → 58,2 → **48,0**; equilibrado 29,2 (600; `simulate.js 1000`: K6b 24,9, K6c 32,3, ahora **29,1**, 0 crashes).
 - **La frontera de `equilibrado`:** ni con la vara siempre en 0 baja de ~28 (sonda 1000 × 60: K6b 23,0, K6c 31,2, vara 0 28,0,
   ahora 29,1). Lo que queda no es la vara: con la vara en 0, contra K6b, hay menos ofertas (1282 → 1022) y más carreras sin ninguna
   (133 → 214), porque más amateurs terminan antes: burnout 7 → 60 y prohibición familiar 38 → 78 (`no_llegó` 185 → 142). Es el plan
@@ -72,7 +72,9 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 - **Checks:** "K6c la vara depende del nivel" suma el crack que firma con 0% y la prueba clavada a todo nivel (rojo con mínimo 0,1 y
   con máximo 1,2); "K6c la vara" y la oferta aceptan el texto de vara 0 (rojo con la apuesta de siempre); el lote de K6c pasa de 40
   a 80 seeds (con la vara en 0 había 3 años con dos ofertas, mínimo 5).
-- **Huella** 977079279 → 1351863340 (corrimiento declarado, sigue 'K6c'). La forma del estado no cambia. VERIF
+- **Huella** 977079279 → 1351863340 (corrimiento declarado, sigue 'K6c'). La forma del estado no cambia (`FORMAS_CONOCIDAS[13]` sigue). `--rapido`: 351 OK,
+  0 FAIL. Determinismo: `simulate.js 100 60 criterio` dos veces, diff vacío. Los `--solo` de los 12 FAIL, uno por uno: 10 OK; la edad
+  mediana y K5-B región siguen rojos (abiertos, arriba). No se corrió la validación completa (la corre el supervisor).
 
 ### 2026-10-06 — Integración de K6c con K6b-fix y la región medida bien (`k6c-integracion`; PLAN.md §K6c, "La región en K6c")
 
