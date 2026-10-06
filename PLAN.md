@@ -8172,6 +8172,20 @@ La regla decía burnout o castigo, no deuda. **Corrección (supervisor):** la de
 proyección del propio plan llega al riesgo físico (lesión o burnout) dentro del año, y la carta lo dice. Una deuda que no
 llega es un costo aceptado del plan. **Meta:** burnouts y lesiones graves del automático cerca de K6b, no en cero.
 
+**K6c-fix, tercera pasada** (`bc3ddd6`, según el worker; sin verificar por el supervisor):
+- la lesión grave y el burnout vuelven, pero quedan muy arriba de K6b;
+- lesión grave del automático: 4 → 32 por cada 1000 carreras;
+- burnout: 20 → 44.
+
+La deuda de sueño que el automático acepta en el amateur no se resetea y se cobra en el pro.
+
+**Decisión del usuario (2026-10-06): "la deuda se resetea al firmar".**
+- Al firmar el primer contrato pro, el club ordena tu rutina: la deuda de sueño del amateur (`deudaSueno`) y su racha de
+  riesgo físico (`splitsRiesgoFisico`) vuelven a 0.
+- El log lo cuenta (regla 12).
+- El plan del amateur sigue pesando en el amateur, pero no se arrastra a la carrera pro.
+- **Meta:** lesiones graves y burnouts del automático cerca de K6b.
+
 ## K.6 — Qué pasa con FASE J y FASE V
 
 | Pieza | Destino |
