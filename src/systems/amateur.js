@@ -265,16 +265,19 @@ function propuestaDelPerfil(state, opciones) {
 // K6c-fix ("la propuesta del perfil no te quema", PLAN.md §K6c, reglas del supervisor 2026-10-06): con el plan del año bajo
 // `resolverAuto` la propuesta del perfil no miraba el riesgo que la propia carta mostraba, y los amateurs del automático se
 // quemaban (burnout 7 → 60 por cada 1000 carreras contra K6b) o los castigaban en casa (38 → 78). Un plan muestra un riesgo
-// evitable si su chance en casa en el año pasa la del plan más seguro por `amateur.planRiesgoEvitable`, o si te mete en deuda
-// de sueño y otro plan no (los mismos dos números de la carta: `riesgoDelPlan`). Si la propuesta del perfil lo muestra, la
-// propuesta pasa al plan que tu perfil elegiría entre los que no (`propuestaDelPerfil` sobre esos); si ninguno está libre, al
-// menos riesgoso (primero sin deuda, después la chance en casa más baja). Vos podés elegir el arriesgado igual: la carta lo
+// evitable si su chance en casa en el año pasa la del plan más seguro por `amateur.planRiesgoEvitable`, o si arma el riesgo de
+// lesión o burnout en el año y otro plan no (los números de la carta: `riesgoDelPlan`, `semanaRiesgoFisico`). Si la propuesta del
+// perfil lo muestra, la propuesta pasa al plan que tu perfil elegiría entre los que no (`propuestaDelPerfil` sobre esos); si
+// ninguno está libre, al menos riesgoso (primero sin riesgo físico, después la chance en casa más baja). Vos podés elegir el arriesgado igual: la carta lo
 // dice. Puro, sin `rng`. Exportada para `validate.js`.
-function riesgoEvitableDelPlan(riesgo, riesgos) {
+// K6c-fix (tercera pasada): la deuda de sueño cuenta como evitable solo si el plan llega al riesgo físico en el año
+// (`semanaRiesgoFisico`) y otro plan no. Con cualquier deuda el automático no aceptaba nunca un plan con deuda y las lesiones
+// graves desaparecían de sus carreras (el momento `lesionado`: 0 de 3600, contra 46 de 1200 en K6c).
+export function riesgoEvitableDelPlan(riesgo, riesgos) {
   const minimo = Math.min(...riesgos.map((otro) => otro.casa));
   const casa = riesgo.casa - minimo >= BALANCE.amateur.planRiesgoEvitable;
-  const deuda = riesgo.semanaDeuda !== null && riesgos.some((otro) => otro.semanaDeuda === null);
-  return casa || deuda ? { casa, deuda } : null;
+  const fisico = riesgo.semanaRiesgoFisico !== null && riesgos.some((otro) => otro.semanaRiesgoFisico === null);
+  return casa || fisico ? { casa, fisico } : null;
 }
 
 export function propuestaDelPlan(state, opciones) {
@@ -288,7 +291,7 @@ export function propuestaDelPlan(state, opciones) {
   const libres = opciones.filter((opcion) => !riesgoEvitableDelPlan(riesgos.get(opcion.rutina.id), todos));
   const menosRiesgoso = (a, b) => {
     const [ra, rb] = [riesgos.get(a.rutina.id), riesgos.get(b.rutina.id)];
-    const [da, db] = [ra.semanaDeuda === null ? 0 : 1, rb.semanaDeuda === null ? 0 : 1];
+    const [da, db] = [ra.semanaRiesgoFisico === null ? 0 : 1, rb.semanaRiesgoFisico === null ? 0 : 1];
     return da !== db ? da < db : ra.casa < rb.casa;
   };
   const propuesta = libres.length > 0
@@ -387,11 +390,20 @@ function conOfertaDelAnio(state, oferta) {
 // semana a semana. `casa`: la chance de que en casa te saquen la PC o te corten el ranked en algún momento del año (la cuenta
 // de `evaluarRiesgoFamiliar`, semana por semana); `semanaDeuda`: la semana en la que entrás en deuda de sueño, o `null`. Es
 // lo que dice la carta y lo que leen los bots (regla 15). Exportada para `validate.js`.
+//
+// K6c-fix (tercera pasada): `semanaRiesgoFisico`, la semana en la que el plan arma el riesgo físico, con las mismas cuentas del
+// motor: la deuda de sueño en `salud.deudaUmbralRiesgo` o más, sostenida hasta `salud.splitsParaLesionLeve` splits
+// (`flags.splitsRiesgoFisico`, la de `systems/salud.js`), o la mentalidad en `atributos.burnoutMentalBajo` o menos durante
+// `atributos.burnoutSplitsMinimos` splits seguidos (`flags.splitsMentalBajo`, la de `systems/atributos.js`); `null` si en el año no
+// llega. La deuda que no llega ahí es un costo del plan, no un riesgo evitable (`riesgoEvitableDelPlan`).
 export function riesgoDelPlan(state, rutina) {
   const a = BALANCE.amateur;
   let st = state;
   let sinNada = 1;
   let semanaDeuda = null;
+  let semanaRiesgoFisico = null;
+  let splitsRiesgoFisico = state.flags.splitsRiesgoFisico ?? 0;
+  let splitsMentalBajo = state.flags.splitsMentalBajo ?? 0;
   const semanal = [];
   for (let semana = 1; semana <= BALANCE.edad.splitsPorEdad; semana += 1) {
     const proy = proyeccionDeSemana(st, rutina);
@@ -413,8 +425,14 @@ export function riesgoDelPlan(state, rutina) {
       },
       flags: { ...st.flags, robosConsecutivos: proy.robos }
     };
+    splitsRiesgoFisico = st.player.deudaSueno >= BALANCE.salud.deudaUmbralRiesgo ? splitsRiesgoFisico + 1 : Math.max(0, splitsRiesgoFisico - 1);
+    splitsMentalBajo = st.player.stats.mentalidad <= BALANCE.atributos.burnoutMentalBajo ? splitsMentalBajo + 1 : 0;
+    if (semanaRiesgoFisico === null
+      && (splitsRiesgoFisico >= BALANCE.salud.splitsParaLesionLeve || splitsMentalBajo >= BALANCE.atributos.burnoutSplitsMinimos)) {
+      semanaRiesgoFisico = semana;
+    }
   }
-  return { casa: 1 - sinNada, semanaDeuda, semanal };
+  return { casa: 1 - sinNada, semanaDeuda, semanaRiesgoFisico, semanal };
 }
 
 function textoDeOfertaDelAnio(oferta) {
@@ -445,6 +463,10 @@ function textoDeRiesgoDelPlan(riesgo) {
   if (riesgo.semanaDeuda !== null) {
     partes.push(`deuda de sueño desde la semana ${riesgo.semanaDeuda}`);
   }
+  // K6c-fix (tercera pasada): la semana en que el plan arma el riesgo de lesión o burnout (regla 15: lo que mira la propuesta).
+  if (riesgo.semanaRiesgoFisico !== null) {
+    partes.push(`riesgo de lesión o burnout desde la semana ${riesgo.semanaRiesgoFisico}`);
+  }
   return partes.join(' · ');
 }
 
@@ -459,7 +481,7 @@ function decisionDePlan(state, rng) {
   const perfil = nombreDePerfil(state.player.perfil.actual).toLowerCase();
   const semanas = BALANCE.edad.splitsPorEdad;
   const queArriesga = evitable
-    ? [evitable.casa ? 'un castigo en casa' : null, evitable.deuda ? 'deuda de sueño' : null].filter(Boolean).join(' y ')
+    ? [evitable.casa ? 'un castigo en casa' : null, evitable.fisico ? 'una lesión o un burnout' : null].filter(Boolean).join(' y ')
     : null;
   const textoPropuesta = evitable
     ? `Tu perfil (${perfil}) iría por "${delPerfil.rutina.titulo}", pero arriesga ${queArriesga} y otro plan lo evita: te propone "${propuesta.rutina.titulo}", lo más parecido sin ese riesgo.`
@@ -482,6 +504,7 @@ function decisionDePlan(state, rng) {
         lpSemana: Math.round(opcion.proy.lp),
         riesgoCasa: riesgo.casa,
         semanaDeuda: riesgo.semanaDeuda,
+        semanaRiesgoFisico: riesgo.semanaRiesgoFisico,
         ...(esPropuesta ? { propuesta: evitable ? `Tu perfil (${perfil}) iría por esta: lo más parecido a lo suyo sin ${queArriesga}` : `Tu perfil (${perfil}) iría por esta` } : {})
       };
     }),

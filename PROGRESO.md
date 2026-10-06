@@ -34,6 +34,30 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-06 — K6c-fix, tercera pasada: la deuda solo es evitable si arma el riesgo físico (`k6c-fix`; PLAN.md §K6c, "K6c-fix, segunda pasada")
+
+- **Por qué:** con cualquier deuda de sueño como riesgo evitable (segunda pasada) el automático no aceptaba nunca un plan con deuda y
+  las lesiones desaparecían de sus carreras (el momento `lesionado`: 0 de 3600, medido por el supervisor).
+- **Regla:** `riesgoDelPlan` devuelve `semanaRiesgoFisico`: la semana en que el plan arma el riesgo de lesión (deuda en
+  `salud.deudaUmbralRiesgo` o más, sostenida hasta `salud.splitsParaLesionLeve`, sobre `flags.splitsRiesgoFisico`) o de burnout
+  (mentalidad en `atributos.burnoutMentalBajo` o menos durante `burnoutSplitsMinimos`, sobre `flags.splitsMentalBajo`), con las cuentas
+  del motor. La carta la dice; la deuda que no llega ahí es un costo del plan. `riesgoEvitableDelPlan` (exportada) usa eso y la chance
+  en casa.
+- **Medido** (`resolverAuto`, 1000 × 60, carreras con lesión leve / grave / burnout en toda la carrera / retiro por lesión): K6b
+  `58db231` 8 / 4 / 20 / 2; primera pasada `d0794b6` 85 / 42 / 119 / 16; segunda `ddf3cb4` 0 / 0 / 5 / 0; **ahora 62 / 32 / 44 / 11**.
+  Finales del amateur por cada 1000 (sonda, mismo lote): burnout **20** (K6b 7), castigo de la familia **9** (K6b 38); no-pro
+  **24,5** (sonda 1000 × 60; no se corrió `simulate.js`). **Frontera:** con la regla tal como está (riesgo físico dentro del año), las
+  lesiones graves quedan ~8 veces arriba de K6b y los burnouts ~2 veces: la deuda que el automático acepta en el amateur no se resetea
+  y se cobra en la etapa pro. Decide el supervisor.
+- **Checks:** "la propuesta del perfil no te quema" lee `semanaRiesgoFisico` (rojo con la propuesta que ignora el riesgo: 60
+  problemas; y con "cualquier deuda es evitable": 95). Nuevo rápido: "la deuda que no llega al riesgo físico no cambia la propuesta"
+  (con el borde de `salud.js` armado en la semana 1; rojo con cualquier deuda evitable).
+- **`--solo`:** contexto de carrera OK; `lesion_cronica` alcanzables OK; 9Wd OK; **burnout con aviso FAIL: 75% (piso 80%)**. Las metas
+  K5c del embudo y de los estancados y el `--rapido` completo los cortó Claude Code por falta de memoria (la validación completa del
+  supervisor corría a la par): `--rapido` iba en 267 OK y 1 FAIL, la forma (ya re-registrada: `5915cb3adccf`, por
+  `semanaRiesgoFisico` en las opciones del plan). Sin determinismo ni `simulate.js` en esta pasada.
+- Huella 188751648 → **1360329260**.
+
 ### 2026-10-06 — K6c-fix, segunda pasada: la propuesta del perfil no te quema y K5-B medida bien (`k6c-fix`; PLAN.md §K6c, reglas del supervisor)
 
 - **La propuesta del plan del año** (`propuestaDelPlan` en `systems/amateur.js`, `amateur.planRiesgoEvitable` 0,15): si el plan que
@@ -41,8 +65,9 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
   los números de la carta), la propuesta pasa al plan que tu perfil elegiría entre los que no lo muestran. La carta lo dice ("iría por
   X, pero arriesga…: te propone Y, lo más parecido sin ese riesgo") y la opción marcada es la que acepta `resolverAuto` (regla 15).
 - **Medido** (`resolverAuto`, 1000 × 60, por cada 1000 carreras; K6b / primera pasada / ahora): burnout del amateur 7 / 60 / **0**;
-  castigo de la familia 38 / 78 / **10**; `equilibrado` no-pro (`simulate.js 1000`) 24,9 / 29,1 / **26,6**; edad mediana al terminar
-  (720 × 90) 25 / 24 / **25**. Barrido del umbral: 0,05 → no-pro 28,1 (planes tan seguros que no llegan: "no llegó" 142 → 273);
+  castigo de la familia 38 / 78 / **10**; `equilibrado` no-pro con `simulate.js 1000 60 equilibrado`: primera pasada 29,1, ahora
+  **26,6** (corrección: el 24,9 de K6b y el 32,3 de K6c son de `simulate.js 1000`, 15 splits; con esa medida ddf3cb4 da 29,8, medido
+  por el supervisor); edad mediana al terminar (sonda 720 × 90) 25 / 24 / **25**. Barrido del umbral: 0,05 → no-pro 28,1 (planes tan seguros que no llegan: "no llegó" 142 → 273);
   0,15 → 26,6; 0,3 → 26,5.
 - **K5-B** (la región, medida como "K6c región fija"): 200 seeds por región en tandas (`dev/regionFija.js`, medida `llegada`, ~50 s), el
   orden monótono y LATAM solo emigrando como antes, y la brecha de la más fácil a la más difícil contra 2 σ de la diferencia (eran 30

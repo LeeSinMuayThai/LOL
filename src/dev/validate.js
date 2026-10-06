@@ -803,7 +803,9 @@ const FORMAS_CONOCIDAS = {
   // K6c-fix, segunda pasada (sin subir: la 13 no salió): sin campos nuevos en el estado; cambian las carreras de muestra del
   // automático (la propuesta del plan del año que no te quema: otras carreras, otras rutas que solo existen tras jugar).
   // Re-registrada (era 'e96e9e539778').
-  13: 'a05ec5bebece'
+  // K6c-fix, tercera pasada (sin subir): cada opción del plan del año lleva `semanaRiesgoFisico` (la semana en que arma el riesgo
+  // de lesión o burnout). Re-registrada (era 'a05ec5bebece').
+  13: '5915cb3adccf'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -26107,8 +26109,9 @@ check('K6c-fix la propuesta del perfil no te quema: la propuesta del plan del a�
   const { planes } = loteDeK6C();
   const evitable = (opcion, opciones) => {
     const minimo = Math.min(...opciones.map((otra) => otra.riesgoCasa));
+    // Tercera pasada: la deuda cuenta solo si el plan arma el riesgo de lesión o burnout en el año (`semanaRiesgoFisico`).
     return opcion.riesgoCasa - minimo >= BALANCE_K6C.amateur.planRiesgoEvitable
-      || (opcion.semanaDeuda !== null && opciones.some((otra) => otra.semanaDeuda === null));
+      || (opcion.semanaRiesgoFisico !== null && opciones.some((otra) => otra.semanaRiesgoFisico === null));
   };
   let cambiadas = 0;
   for (const { seed, edad, decision } of planes) {
@@ -26118,7 +26121,7 @@ check('K6c-fix la propuesta del perfil no te quema: la propuesta del plan del a�
     if (!propuesta) { problemas.push(`${donde}: la propuesta no es una opción de la carta`); continue; }
     const libres = opciones.filter((opcion) => !evitable(opcion, opciones));
     if (libres.length > 0 && evitable(propuesta, opciones)) {
-      problemas.push(`${donde}: la propuesta "${propuesta.label}" muestra un riesgo evitable (en casa ${propuesta.riesgoCasa.toFixed(2)}, deuda ${propuesta.semanaDeuda}) y "${libres[0].label}" no`);
+      problemas.push(`${donde}: la propuesta "${propuesta.label}" muestra un riesgo evitable (en casa ${propuesta.riesgoCasa.toFixed(2)}, riesgo físico ${propuesta.semanaRiesgoFisico}) y "${libres[0].label}" no`);
     }
     if (resolverAutoAmateurK6C({}, decision).opcionId !== propuesta.id) problemas.push(`${donde}: el automático no acepta la propuesta`);
     const cambio = /iría por "([^"]+)", pero arriesga/.exec(decision.descripcion);
@@ -26132,6 +26135,33 @@ check('K6c-fix la propuesta del perfil no te quema: la propuesta del plan del a�
   }
   if (cambiadas < PROPUESTAS_CAMBIADAS_MINIMO_K6C) problemas.push(`check vacío: ${cambiadas} cartas con la propuesta del perfil cambiada por riesgo (hacen falta ${PROPUESTAS_CAMBIADAS_MINIMO_K6C})`);
   if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
+});
+
+// K6c-fix, tercera pasada: la deuda de sueño que no llega al riesgo físico (las cuentas de `salud.js` y `atributos.js`) es un costo
+// del plan, no un riesgo evitable: no cambia la propuesta. `riesgoDelPlan` dice la semana en que el plan lo arma, y la carta la
+// muestra. Rojo con "cualquier deuda es evitable" (la segunda pasada: el automático no se lesionaba nunca).
+const { riesgoEvitableDelPlan: riesgoEvitableK6C, riesgoDelPlan: riesgoDelPlanFisicoK6C } = await import('../systems/amateur.js');
+check('K6c-fix la deuda que no llega al riesgo físico no cambia la propuesta; la que lo arma en el año sí, y riesgoDelPlan dice la semana con las cuentas de salud.js', () => {
+  const problemas = [];
+  const sinNada = { casa: 0.1, semanaDeuda: null, semanaRiesgoFisico: null };
+  const conDeuda = { casa: 0.1, semanaDeuda: 1, semanaRiesgoFisico: null };
+  const conFisico = { casa: 0.1, semanaDeuda: 1, semanaRiesgoFisico: 2 };
+  if (riesgoEvitableK6C(conDeuda, [conDeuda, sinNada]) !== null) problemas.push('la deuda sin riesgo físico cuenta como evitable');
+  if (riesgoEvitableK6C(conFisico, [conFisico, sinNada])?.fisico !== true) problemas.push('el riesgo físico con otro plan sin él no cuenta como evitable');
+  if (riesgoEvitableK6C(conFisico, [conFisico, { ...sinNada, semanaRiesgoFisico: 1 }]) !== null) problemas.push('el riesgo físico que ningún plan evita cuenta como evitable');
+  const s = BALANCE_K6C.salud;
+  const agresivo = RUTINAS_K6C.amateur.find((rutina) => rutina.id === 'todo_al_ranked');
+  const base = estadoInicialK6C(1, mulberry32K6C(1));
+  const con = (splitsRiesgoFisico, deudaSueno) => ({ ...base, player: { ...base.player, deudaSueno }, flags: { ...base.flags, splitsRiesgoFisico, splitsMentalBajo: 0 } });
+  // Al borde (un split antes de armar la lesión leve) y con la deuda en el umbral: la primera semana lo arma.
+  const alBorde = riesgoDelPlanFisicoK6C(con(s.splitsParaLesionLeve - 1, BALANCE_K6C.amateur.deudaMaxima), agresivo);
+  if (alBorde.semanaRiesgoFisico !== 1) problemas.push(`al borde de la lesión con deuda máxima, semanaRiesgoFisico ${alBorde.semanaRiesgoFisico} (se esperaba 1)`);
+  // Desde cero, un año (3 semanas) no llega a los `splitsParaLesionLeve` que pide salud.js.
+  const desdeCero = riesgoDelPlanFisicoK6C(con(0, 0), agresivo);
+  if (BALANCE_K6C.edad.splitsPorEdad < s.splitsParaLesionLeve && desdeCero.semanaRiesgoFisico !== null && base.player.stats.mentalidad > BALANCE_K6C.atributos.burnoutMentalBajo + 10) {
+    problemas.push(`desde cero el plan arma el riesgo físico en la semana ${desdeCero.semanaRiesgoFisico}`);
+  }
+  if (problemas.length > 0) throw new Error(problemas.join('; '));
 });
 
 check('K6c la semana frena solo con riesgo nuevo: con el plan del año, el riesgo que el plan ya mostró no frena; el que aparece después (el colegio más abajo de lo proyectado, la deuda de sueño antes de lo anunciado) sí', () => {

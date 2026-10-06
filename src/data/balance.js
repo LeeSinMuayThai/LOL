@@ -341,8 +341,9 @@ export const BALANCE = {
     semanaRiesgoEvitable: 0.05,
     // K6c-fix ("la propuesta del perfil no te quema", PLAN.md §K6c, reglas del supervisor 2026-10-06): el plan del año que
     // propone tu perfil (el que acepta `resolverAuto`) no puede mostrar un riesgo evitable. Lo es si su chance en casa en el año
-    // (`riesgoDelPlan`, la que dice la carta) pasa la del plan más seguro por al menos esto, o si te mete en deuda de sueño y
-    // otro plan no. Entonces la propuesta pasa al plan que tu perfil elegiría entre los que no lo muestran. Medido con
+    // (`riesgoDelPlan`, la que dice la carta) pasa la del plan más seguro por al menos esto, o si arma el riesgo de lesión o
+    // burnout en el año (`semanaRiesgoFisico`, las cuentas de `salud.js` y `atributos.js`) y otro plan no; la deuda de sueño que no
+    // llega ahí es un costo del plan (tercera pasada: con cualquier deuda, el automático no se lesionaba nunca). Entonces la propuesta pasa al plan que tu perfil elegiría entre los que no lo muestran. Medido con
     // `resolverAuto` (1000 × 60, finales del amateur por cada 1000 carreras; K6b `58db231`: burnout 7, castigo 38, no-pro 23,0):
     // sin la regla 60 / 78 / 28,0 (con la vara en 0); con 0,05 0 / 8 / 28,1 (planes tan seguros que no llegan: "no llegó" 142 →
     // 273); con 0,15 0 / 10 / 26,6; con 0,3 0 / 15 / 26,5. 0,15 es además la tolerancia de `criterio` (`RIESGO_TOLERADO_PLAN_CRITERIO`).

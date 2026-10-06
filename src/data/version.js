@@ -145,4 +145,7 @@ export const VERSION_JUEGO = 'K6c';
 // K6c-fix, segunda pasada (188751648; corrimiento declarado, sigue 'K6c'): la propuesta del perfil en el plan del año no muestra un
 // riesgo evitable (`propuestaDelPlan`, `amateur.planRiesgoEvitable`): cambia el plan que acepta `resolverAuto`, y con él las carreras
 // del automático. Sin tiradas nuevas. Reemplaza a 1351863340.
-export const HUELLA_JUEGO = 188751648;
+// K6c-fix, tercera pasada (1360329260; corrimiento declarado, sigue 'K6c'): la deuda de sueño cuenta como riesgo evitable de la propuesta
+// solo si el plan arma el riesgo de lesión o burnout en el año (`riesgoDelPlan.semanaRiesgoFisico`, las cuentas de `salud.js` y
+// `atributos.js`). Reemplaza a 188751648.
+export const HUELLA_JUEGO = 1360329260;
