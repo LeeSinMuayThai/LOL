@@ -148,4 +148,7 @@ export const VERSION_JUEGO = 'K6c';
 // K6c-fix, tercera pasada (1360329260; corrimiento declarado, sigue 'K6c'): la deuda de sueño cuenta como riesgo evitable de la propuesta
 // solo si el plan arma el riesgo de lesión o burnout en el año (`riesgoDelPlan.semanaRiesgoFisico`, las cuentas de `salud.js` y
 // `atributos.js`). Reemplaza a 188751648.
-export const HUELLA_JUEGO = 1360329260;
+// K6c-fix, cuarta pasada (186316704; corrimiento declarado, sigue 'K6c'; decisión del usuario "la deuda se resetea al firmar"): al firmar el
+// primer contrato pro la deuda de sueño y la racha de riesgo físico vuelven a 0 (`firmarConEquipo`). Sin tiradas nuevas. Reemplaza a
+// 1360329260.
+export const HUELLA_JUEGO = 186316704;

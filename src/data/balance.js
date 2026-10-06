@@ -249,6 +249,9 @@ export const BALANCE = {
     penalRoboConsecutivo: 0.55,
     robosParaDeuda: 3,
     deudaMaxima: 4,
+    // K6c-fix, cuarta pasada (decisión del usuario 2026-10-06, "la deuda se resetea al firmar"): la deuda de sueño con la que
+    // arrancás tu primer contrato pro (`firmarConEquipo` en `systems/amateur.js`; la racha de riesgo físico también vuelve a 0).
+    deudaSuenoAlFirmar: 0,
 
     // --- Bandas de riesgo (no hay un numero exacto donde pincha) ---
     // Probabilidad = (umbral - estudios) / pendiente, con techo, multiplicada

@@ -980,9 +980,29 @@ function buscarSalida(state, rng) {
 // El org y el tier ya se decidieron cuando se armó la decisión
 // (`orgQueTeFicha`, en `buscarSalida`): acá no se vuelve a sortear nada, se
 // firma con la misma org que le mostró el título al jugador.
+// K6c-fix, cuarta pasada (decisión del usuario 2026-10-06, "la deuda se resetea al firmar"): al firmar el primer contrato pro, el
+// club te ordena el horario y la deuda de sueño del amateur queda atrás: `player.deudaSueno` vuelve a `amateur.deudaSuenoAlFirmar` y
+// la racha de riesgo físico (`flags.splitsRiesgoFisico`, la de `systems/salud.js`) arranca de cero. Antes la deuda aceptada en el
+// amateur no se reseteaba nunca y se cobraba en la etapa pro (lesiones graves del automático ~8 veces las de K6b). El jugador lo ve
+// (regla 12): una línea, si había algo que dejar atrás. Puro, sin `rng`.
+function conLaDeudaAtras(state) {
+  const habia = (state.player.deudaSueno ?? 0) > BALANCE.amateur.deudaSuenoAlFirmar || (state.flags.splitsRiesgoFisico ?? 0) > 0;
+  return {
+    state: {
+      ...state,
+      player: { ...state.player, deudaSueno: BALANCE.amateur.deudaSuenoAlFirmar },
+      flags: { ...state.flags, splitsRiesgoFisico: 0 }
+    },
+    logs: habia ? [crearLog('amateur', TEXTO_DEUDA_ATRAS)] : []
+  };
+}
+
+export const TEXTO_DEUDA_ATRAS = 'En el equipo te ordenan el horario: la deuda de sueño del amateur queda atrás.';
+
 function firmarConEquipo(state, decision) {
   const { org, tier, liga } = decision.datos;
-  const base = { ...state, phase: 'profesional', splitFichaje: state.player.splitCount };
+  const sinDeuda = conLaDeudaAtras(state);
+  const base = { ...sinDeuda.state, phase: 'profesional', splitFichaje: state.player.splitCount };
 
   // K5c-R: si el primer contrato ya es de tier 2, los años pro (`career.splitPrimerContratoTier2`) arrancan acá.
   const conCareer = tier === 2
@@ -999,7 +1019,7 @@ function firmarConEquipo(state, decision) {
     ? `Firmaste con ${org.nombre}, directo en ${nombreVisibleDeLiga(liga)}. Te salteaste el tramo de probarte en un equipo chico: se terminó el soloQ de pieza.`
     : `Firmaste con ${org.nombre}. Se terminó el soloQ de pieza: a partir de acá te pagan por jugar.`;
 
-  return { state: conCareer, logs: [crearLog('amateur', texto)] };
+  return { state: conCareer, logs: [crearLog('amateur', texto), ...sinDeuda.logs] };
 }
 
 // "la_prueba" (fase 4): el único minijuego de la etapa amateur, la bisagra del tryout con un tier 3. Decide el contrato y,

@@ -26164,6 +26164,28 @@ check('K6c-fix la deuda que no llega al riesgo físico no cambia la propuesta; l
   if (problemas.length > 0) throw new Error(problemas.join('; '));
 });
 
+// K6c-fix, cuarta pasada (decisión del usuario 2026-10-06, "la deuda se resetea al firmar"): al firmar el primer contrato (acá, el
+// tier 3 después de una prueba clavada) la deuda de sueño vuelve a `amateur.deudaSuenoAlFirmar` y la racha de riesgo físico a 0, y
+// el log lo dice (regla 12); sin deuda que dejar atrás, no hay línea. Rojo con el reset sacado.
+const { TEXTO_DEUDA_ATRAS: TEXTO_DEUDA_ATRAS_K6C } = await import('../systems/amateur.js');
+check('K6c-fix la deuda se resetea al firmar: con el primer contrato la deuda de sueño y la racha de riesgo físico vuelven a cero, y el log lo dice', () => {
+  const problemas = [];
+  for (const seed of [1, 2, 3]) {
+    const { state, decision } = pausaDeLaPruebaK6C(seed);
+    for (const [deudaSueno, racha] of [[BALANCE_K6C.amateur.deudaMaxima, BALANCE_K6C.salud.splitsParaLesionLeve - 1], [0, 0]]) {
+      const conDeuda = { ...state, player: { ...state.player, deudaSueno }, flags: { ...state.flags, splitsRiesgoFisico: racha } };
+      const r = resolverAmateurK6C(conDeuda, decision, { resultado: 1 }, mulberry32K6C(seed));
+      if (r.state.phase !== 'profesional') { problemas.push(`seed ${seed}: la prueba clavada no firmó`); continue; }
+      if (r.state.player.deudaSueno !== BALANCE_K6C.amateur.deudaSuenoAlFirmar || r.state.flags.splitsRiesgoFisico !== 0) {
+        problemas.push(`seed ${seed}: firmó con deuda ${r.state.player.deudaSueno} y racha ${r.state.flags.splitsRiesgoFisico} (venía de ${deudaSueno} y ${racha})`);
+      }
+      const dice = r.logs.some((log) => log.message === TEXTO_DEUDA_ATRAS_K6C);
+      if (dice !== (deudaSueno > 0 || racha > 0)) problemas.push(`seed ${seed}: con deuda ${deudaSueno} el log ${dice ? 'dice' : 'no dice'} que la deuda queda atrás`);
+    }
+  }
+  if (problemas.length > 0) throw new Error(problemas.join('; '));
+});
+
 check('K6c la semana frena solo con riesgo nuevo: con el plan del año, el riesgo que el plan ya mostró no frena; el que aparece después (el colegio más abajo de lo proyectado, la deuda de sueño antes de lo anunciado) sí', () => {
   const problemas = [];
   const porId = (id) => RUTINAS_K6C.amateur.find((rutina) => rutina.id === id);

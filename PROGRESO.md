@@ -34,6 +34,22 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-06 — K6c-fix, cuarta pasada: la deuda se resetea al firmar (`k6c-fix`; decisión del usuario, PLAN.md `7538543`)
+
+- **Cambio:** al firmar el primer contrato pro (`firmarConEquipo`, el único paso amateur → pro) `player.deudaSueno` vuelve a
+  `amateur.deudaSuenoAlFirmar` (0) y `flags.splitsRiesgoFisico` a 0; si había algo que dejar atrás, el log dice "En el equipo te
+  ordenan el horario: la deuda de sueño del amateur queda atrás." Puro, sin `rng`. Check nuevo "K6c-fix la deuda se resetea al
+  firmar" (rojo con el reset sacado).
+- **Medido** (sonda `resolverAuto`, 1000 × 60, carreras con lesión leve / grave / burnout en toda la carrera / retiro por lesión):
+  K6b 8 / 4 / 20 / 2; tercera pasada 62 / 32 / 44 / 11; **ahora 0 / 0 / 28 / 0**. Finales del amateur (misma sonda): burnout 20,
+  castigo 9, no-pro 24,5 (sin cambio: el reset es después de firmar).
+- **Frontera:** solo el amateur escribe `deudaSueno`, así que con el reset las lesiones pasan a ser solo del amateur, y el automático
+  ya no sostiene la deuda los 6 splits que pide `salud.js`. FAIL: "El contexto de carrera" (`lesionado` no aparece en 1200) y
+  "lesion_cronica alcanzables" (0 en 1200). Burnout con aviso: **70%** (piso 80%): los que no avisan son caídas rápidas del amateur
+  (mentalidad 54 → 38 → 20 → 3): el motor arma el burnout con 2 splits en rojo contando el último, y el check mira los 3 anteriores.
+- `--rapido` 355 OK, 0 FAIL (forma igual); determinismo `simulate.js 100 60 criterio` ×2 diff vacío; `--solo` OK: la propuesta del
+  perfil, 9Wd, K5c meta del embudo y de los estancados. Huella 1360329260 → **186316704**. Todo de a un proceso.
+
 ### 2026-10-06 — K6c-fix, tercera pasada: la deuda solo es evitable si arma el riesgo físico (`k6c-fix`; PLAN.md §K6c, "K6c-fix, segunda pasada")
 
 - **Por qué:** con cualquier deuda de sueño como riesgo evitable (segunda pasada) el automático no aceptaba nunca un plan con deuda y
