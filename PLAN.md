@@ -8158,6 +8158,20 @@ minijuegos baja a +29%. Quedan abiertos:
 - **Meta:** burnouts y castigos del amateur cerca de K6b, `equilibrado` cerca de 25-26% de no-pro, y la edad al terminar
   en su banda.
 
+**K6c-fix, segunda pasada** (`ddf3cb4`). Midió el supervisor:
+- `equilibrado` no-pro: 26,6 con 1000 × 60; en `simulate.js 1000` (15 splits), 29,8;
+- burnouts del automático: 0.
+
+**Se pasó de largo.** Contó como riesgo evitable *cualquier* deuda de sueño, así que el automático nunca acepta un plan
+con deuda. Pasaron dos cosas:
+- la lesión grave, que nace de la deuda sostenida sobre el umbral de riesgo físico (`systems/salud.js`), desaparece de
+  las carreras automáticas: 46 de 1200 en `6dc0ff8`, 0 de 3600 ahora;
+- el check de contexto falla porque "lesionado" no aparece.
+
+La regla decía burnout o castigo, no deuda. **Corrección (supervisor):** la deuda cuenta como evitable solo si la
+proyección del propio plan llega al riesgo físico (lesión o burnout) dentro del año, y la carta lo dice. Una deuda que no
+llega es un costo aceptado del plan. **Meta:** burnouts y lesiones graves del automático cerca de K6b, no en cero.
+
 ## K.6 — Qué pasa con FASE J y FASE V
 
 | Pieza | Destino |
