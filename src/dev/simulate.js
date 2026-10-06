@@ -2005,12 +2005,18 @@ export function bloqueMundialReal(resultados, observaciones) {
 // D82 (b): cada AÑO del mundo pesa lo mismo. Hasta D82 cada Mundial pesaba igual, y como el mundo solo se observa mientras la
 // carrera vive, los primeros años (que ve toda carrera) pesaban mucho más que los últimos (que ven pocas): con criterio 600 × 60,
 // el primer año lo aportaban 599 carreras y el decimoctavo, 42. Ahora un Mundial del año k pesa 1 / (H · n_k), con n_k los Mundiales
-// observados ese año (uno por carrera viva) y H los años medidos: los que tienen al menos `MUESTRA_MINIMA` Mundiales (con menos,
-// el reparto de ese año es ruido de muestra); los de menos quedan afuera y se cuentan. No se simula el mundo después del fin de
-// la carrera: el motor no tiene un paso de "solo el mundo" (el mundo se mueve en `systems/mercado.js`, en la pretemporada y solo
-// en fase profesional, y el pipeline se para en `terminado`); hacerlo acá sería copiar el pipeline en el instrumento.
-// Lectura pura, cero `rng`. `pesos[i][j]` es el peso de `observaciones[i].mundialesDelMundo[j]` (0 = fuera del horizonte). La
-// usa también el σ del margen de la meta del usuario en `validate.js`.
+// observados ese año (uno por carrera viva) y H los años del horizonte fijo `ANIOS_MUNDO_MUNDIAL` desde `calendario.anioBase`
+// (los que tienen algún Mundial); los de después quedan afuera y se cuentan. El horizonte es fijo (decisión del supervisor en la
+// revisión de D82): con "los años con al menos `MUESTRA_MINIMA` Mundiales" H dependía del tamaño de la corrida y del stream
+// (17 a 19 años) y el último año, con ~40 Mundiales, pesaba ~34 veces más por Mundial, lo que agrandaba el sesgo de supervivencia
+// de las carreras largas. No se simula el mundo después del fin de la carrera: el motor no tiene un paso de "solo el mundo" (el
+// mundo se mueve en `systems/mercado.js`, en la pretemporada y solo en fase profesional, y el pipeline se para en `terminado`);
+// hacerlo acá sería copiar el pipeline en el instrumento. Lectura pura, cero `rng`. `pesos[i][j]` es el peso de
+// `observaciones[i].mundialesDelMundo[j]` (0 = fuera del horizonte). La usa también el σ del margen de la meta del usuario en
+// `validate.js`.
+// 12 años (2026-2037): con criterio 600 × 60 el año del horizonte con menos carreras vivas tiene 266 Mundiales.
+export const ANIOS_MUNDO_MUNDIAL = 12;
+
 export function pesosDeMundialesDelMundo(observaciones) {
   const porAnio = new Map();
   for (const o of observaciones) {
@@ -2018,7 +2024,8 @@ export function pesosDeMundialesDelMundo(observaciones) {
       porAnio.set(m.anio, (porAnio.get(m.anio) ?? 0) + 1);
     }
   }
-  const anios = [...porAnio.keys()].filter((anio) => porAnio.get(anio) >= MUESTRA_MINIMA).sort((a, b) => a - b);
+  const desde = BALANCE.calendario.anioBase;
+  const anios = [...porAnio.keys()].filter((anio) => anio >= desde && anio < desde + ANIOS_MUNDO_MUNDIAL).sort((a, b) => a - b);
   const medidos = new Set(anios);
   const pesos = observaciones.map((o) => (o?.mundialesDelMundo ?? [])
     .map((m) => (medidos.has(m.anio) ? 1 / (anios.length * porAnio.get(m.anio)) : 0)));
@@ -2082,7 +2089,7 @@ export function bloqueMundoMundial(observaciones) {
     definiciones: {
       alcance: 'los Mundiales del mundo (cada año, los juegue o no el jugador), por observacion.mundialesDelMundo, con cada AÑO '
         + 'del mundo pesando igual (D82): un Mundial del año k pesa 1 / (aniosMedidos · Mundiales observados ese año); se miden '
-        + `los años con al menos ${MUESTRA_MINIMA} Mundiales`,
+        + `los primeros ${ANIOS_MUNDO_MUNDIAL} años del mundo desde calendario.anioBase (horizonte fijo)`,
       fuerza: 'la fuerza de cada participante en el torneo (participantes[].fuerza: la del bracket); el jugador, si juega, con fuerzaDeMundial',
       metricasDeFuerza: 'solo los Mundiales cuyo torneo reconstruido llega al campeón del motor (coincide)',
       titulosPorLigaPorMundial: 'el reparto de antes de D82: cada Mundial pesa igual, sobre todos los años; sobrepesa los primeros '

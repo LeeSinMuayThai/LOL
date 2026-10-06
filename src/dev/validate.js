@@ -1591,10 +1591,14 @@ checkLento(`D82 (a) el traspaso a mitad de contrato cuesta lo que dice la pantal
           problemas.push(`seed ${seed}, ${st.age} años: la pantalla dice valor $${vos.valorUSD}/año → traspaso $${esperado}, el motor cobra $${traspasoUSD}`);
         }
         const debeAvisar = descuento <= umbral;
-        // El precio va en la tarjeta de aceptar: ahí tiene que estar el porqué.
-        const avisa = /descuentan la edad/.test(decision.opciones.find((o) => o.id === 'aceptar')?.descripcion ?? '');
+        // El precio va en la tarjeta de aceptar: ahí tiene que estar el porqué, y el % que dice es el descuento que el motor
+        // aplicó (revisión de D82: con `(1 − descuento)` la tarjeta decía 85% donde era 15% y el check seguía verde).
+        const frase = /descuentan por la edad: por vos ponen el (\d+)%/.exec(decision.opciones.find((o) => o.id === 'aceptar')?.descripcion ?? '');
+        const avisa = frase !== null;
         if (avisa !== debeAvisar) {
-          problemas.push(`seed ${seed}, ${st.age} años (descuento ${descuento}): la tarjeta ${avisa ? 'dice' : 'no dice'} que los clubes descuentan la edad`);
+          problemas.push(`seed ${seed}, ${st.age} años (descuento ${descuento}): la tarjeta ${avisa ? 'dice' : 'no dice'} que te descuentan por la edad`);
+        } else if (avisa && Number(frase[1]) !== Math.round(descuento * 100)) {
+          problemas.push(`seed ${seed}, ${st.age} años: la tarjeta dice que ponen el ${frase[1]}% y el motor aplicó ${Math.round(descuento * 100)}%`);
         }
         if (debeAvisar) {
           veteranos += 1;
@@ -22264,8 +22268,10 @@ const META_C_ESTANCADO_AZAR_REBASE_PCT = 12.5;
 // primera con un margen >= 5 puntos sobre la segunda. El 25% va sin banda (el número del usuario). El margen va con su banda de
 // ruido, >= 5 − 2σ (hallazgo de la revisión al cerrar K5c: sin banda, un corrimiento del stream lo ponía rojo sin que nada
 // cambiara), con σ calculado en cada corrida contando cada carrera como un conglomerado (`sigmaDelMargenMetasC`). Medido al cerrar
-// K5c: LCK 51,6 / LPL 43,8 / LEC 3,9 (17867 Mundiales del mundo en 1500 carreras), margen 7,74 con σ 0,84 por carrera (0,73
-// contando cada Mundial como independiente; el ≈ 2,5 que decía este comentario estaba sobreestimado): piso 5 − 1,68 = 3,32.
+// K5c, con cada Mundial pesando igual: LCK 51,6 / LPL 43,8 / LEC 3,9 (17867 Mundiales del mundo en 1500 carreras), margen 7,74 con
+// σ 0,84 por carrera: piso 5 − 1,68 = 3,32. D82 (b): desde ahí, cada año del mundo pesa igual dentro de un horizonte fijo de 12
+// años (`ANIOS_MUNDO_MUNDIAL`, simulate.js). Medido a 600 (criterio 600 × 60): LCK 51,2 / LPL 44,7 / LEC 3,4, margen 6,5 con σ
+// 1,51, piso 1,98. A 1500, según la revisión de D82 (no medido acá): margen 8,66 con σ 0,97, piso 3,06.
 const META_C_LCK_REPARTO_PCT = 25;
 const META_C_LCK_MARGEN_PP = 5;
 const LIGA_CANDIDATA_DEL_MUNDIAL = 'LCK';
@@ -22307,8 +22313,9 @@ function eliteAgrandadaMetasC(resultados, observaciones, estrategia) {
 // El σ del margen LCK − segunda, contando cada carrera (cada mundo) como un conglomerado: los Mundiales de un mismo mundo no son
 // independientes. Estimador de razón: margen = Σ(a_i − b_i) / ΣW_i, σ = 100·√Σ(a_i − b_i − margen·W_i)² / ΣW_i. D82 (b): con los
 // pesos del bloque `mundoMundial` (cada año del mundo pesa igual, `pesosDeMundialesDelMundo`): a_i, b_i y W_i suman pesos en vez
-// de contar Mundiales. Con todos los pesos iguales es el estimador de antes; con los nuevos, los años que ven pocas carreras
-// pesan lo mismo que el resto y el σ crece (criterio 600 × 60: 1,40 → 1,97).
+// de contar Mundiales. Con todos los pesos iguales es el estimador de antes; con los nuevos (horizonte fijo de
+// `ANIOS_MUNDO_MUNDIAL` años), los años que ven menos carreras pesan lo mismo que el resto y el σ crece: medido a 600 (criterio
+// 600 × 60, no a las 1500 del check), 1,40 → 1,51.
 function sigmaDelMargenMetasC(observaciones, segundaLiga) {
   const { pesos } = pesosMundoMundialMetasC(observaciones);
   const filas = observaciones.map((o, i) => {

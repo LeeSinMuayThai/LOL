@@ -1248,7 +1248,7 @@ function ofertaDeTraspaso(state, rng) {
   const precio = precioDeTraspaso(state);
   const { traspasoUSD } = precio;
   const porLaEdad = precio.descuentoEtario <= m.traspasoDescuentoEtarioVisible
-    ? ` Los clubes descuentan la edad: por vos ponen el ${Math.round(precio.descuentoEtario * 100)}% de lo que pondrían por un pibe con tu valor.`
+    ? ` Te descuentan por la edad: por vos ponen el ${Math.round(precio.descuentoEtario * 100)}% de lo que pondrían por un pibe con tu valor.`
     : '';
 
   const quedarse = {
