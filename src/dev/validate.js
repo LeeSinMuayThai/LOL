@@ -1564,6 +1564,65 @@ check('valorDeMercado es 0 fuera de una liga real y positivo adentro', () => {
   }
 });
 
+// D82 (a), regla 15: el precio de un traspaso a mitad de contrato sale del MISMO valor que la pantalla muestra en "Vos en el
+// mercado" (`valorDeMercado`), con el descuento por la edad (`sesgoEtario`) dicho en la tarjeta cuando se nota. Antes salía del
+// presupuesto de demanda, otra fórmula que el jugador no ve: un veterano "valía" $326k/año y su traspaso costaba $85k sin que nada
+// lo explicara (seed 25, 29 años). Se recalcula el precio desde lo que se ve (valor, años de contrato, edad) y se exige el mismo
+// número. Protege eso desde D82; si el precio del traspaso tiene que cambiar de fórmula a propósito, se toca acá.
+const SEEDS_TRASPASO_D82 = 150;
+checkLento(`D82 (a) el traspaso a mitad de contrato cuesta lo que dice la pantalla (${SEEDS_TRASPASO_D82} × 60): sale del valor de "Vos en el mercado" con el descuento por edad, y la tarjeta dice por qué cuando el descuento se nota (regla 15)`, () => {
+  const m = BALANCE.mercado;
+  const umbral = m.traspasoDescuentoEtarioVisible;
+  let vistos = 0;
+  let veteranos = 0;
+  let edadMax = 0;
+  const problemas = [];
+  for (let seed = 1; seed <= SEEDS_TRASPASO_D82; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    const responder = (sistema, st, decision, r) => {
+      if (sistema.id === 'mercado' && decision.datos?.motivo === 'traspaso') {
+        vistos += 1;
+        const { vos, traspasoUSD } = decision.datos;
+        const descuento = sesgoEtario(st.age);
+        const anios = Math.max(0, vos.contrato.aniosRestantes);
+        const esperado = Math.round(vos.valorUSD * descuento * m.traspasoBaseFactor * (1 + anios * m.traspasoPorAnioRestante));
+        if (traspasoUSD !== esperado) {
+          problemas.push(`seed ${seed}, ${st.age} años: la pantalla dice valor $${vos.valorUSD}/año → traspaso $${esperado}, el motor cobra $${traspasoUSD}`);
+        }
+        const debeAvisar = descuento <= umbral;
+        // El precio va en la tarjeta de aceptar: ahí tiene que estar el porqué, y el % que dice es el descuento que el motor
+        // aplicó (revisión de D82: con `(1 − descuento)` la tarjeta decía 85% donde era 15% y el check seguía verde).
+        const frase = /descuentan por la edad: por vos ponen el (\d+)%/.exec(decision.opciones.find((o) => o.id === 'aceptar')?.descripcion ?? '');
+        const avisa = frase !== null;
+        if (avisa !== debeAvisar) {
+          problemas.push(`seed ${seed}, ${st.age} años (descuento ${descuento}): la tarjeta ${avisa ? 'dice' : 'no dice'} que te descuentan por la edad`);
+        } else if (avisa && Number(frase[1]) !== Math.round(descuento * 100)) {
+          problemas.push(`seed ${seed}, ${st.age} años: la tarjeta dice que ponen el ${frase[1]}% y el motor aplicó ${Math.round(descuento * 100)}%`);
+        }
+        if (debeAvisar) {
+          veteranos += 1;
+          edadMax = Math.max(edadMax, st.age);
+        }
+      }
+      return sistema.resolverAuto(st, decision, r);
+    };
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng, responder).state;
+    }
+  }
+  console.log(`     ${vistos} traspasos vistos, ${veteranos} con el descuento por edad a la vista (el más grande, a los ${edadMax})`);
+  if (typeof umbral !== 'number') {
+    problemas.push('falta BALANCE.mercado.traspasoDescuentoEtarioVisible');
+  }
+  if (veteranos < 1) {
+    problemas.push(`ningún traspaso con el descuento por edad a la vista en ${SEEDS_TRASPASO_D82} seeds: el caso del veterano quedó sin ejercitar`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problemas: ${problemas.slice(0, 4).join(' | ')}`);
+  }
+});
+
 check('El mundo se genera desde la seed y varía entre seeds', () => {
   const mundos = [];
 
@@ -22209,8 +22268,10 @@ const META_C_ESTANCADO_AZAR_REBASE_PCT = 12.5;
 // primera con un margen >= 5 puntos sobre la segunda. El 25% va sin banda (el número del usuario). El margen va con su banda de
 // ruido, >= 5 − 2σ (hallazgo de la revisión al cerrar K5c: sin banda, un corrimiento del stream lo ponía rojo sin que nada
 // cambiara), con σ calculado en cada corrida contando cada carrera como un conglomerado (`sigmaDelMargenMetasC`). Medido al cerrar
-// K5c: LCK 51,6 / LPL 43,8 / LEC 3,9 (17867 Mundiales del mundo en 1500 carreras), margen 7,74 con σ 0,84 por carrera (0,73
-// contando cada Mundial como independiente; el ≈ 2,5 que decía este comentario estaba sobreestimado): piso 5 − 1,68 = 3,32.
+// K5c, con cada Mundial pesando igual: LCK 51,6 / LPL 43,8 / LEC 3,9 (17867 Mundiales del mundo en 1500 carreras), margen 7,74 con
+// σ 0,84 por carrera: piso 5 − 1,68 = 3,32. D82 (b): desde ahí, cada año del mundo pesa igual dentro de un horizonte fijo de 12
+// años (`ANIOS_MUNDO_MUNDIAL`, simulate.js). Medido a 600 (criterio 600 × 60): LCK 51,2 / LPL 44,7 / LEC 3,4, margen 6,5 con σ
+// 1,51, piso 1,98. A 1500, según la revisión de D82 (no medido acá): margen 8,66 con σ 0,97, piso 3,06.
 const META_C_LCK_REPARTO_PCT = 25;
 const META_C_LCK_MARGEN_PP = 5;
 const LIGA_CANDIDATA_DEL_MUNDIAL = 'LCK';
@@ -22219,7 +22280,8 @@ const REGION_FACIL_METAS_C = 'Corea';
 const REGION_DIFICIL_METAS_C = 'Norteamérica';
 const {
   desvioMuestral: desvioMuestralMetasC, duracionProDe: duracionProDeMetasC, correrCarrera: correrCarreraMetasC, esNuevoFaker: esNuevoFakerMetasC,
-  nivelPicoDe: nivelPicoDeMetasC, corteDeElite: corteDeEliteMetasC, ligaDelCampeonMundial: ligaDelCampeonMetasC
+  nivelPicoDe: nivelPicoDeMetasC, corteDeElite: corteDeEliteMetasC, ligaDelCampeonMundial: ligaDelCampeonMetasC,
+  pesosDeMundialesDelMundo: pesosMundoMundialMetasC
 } = await import('./simulate.js');
 const { ESTRATEGIAS: ESTRATEGIAS_METAS_C } = await import('./estrategias.js');
 
@@ -22249,11 +22311,22 @@ function eliteAgrandadaMetasC(resultados, observaciones, estrategia) {
 }
 
 // El σ del margen LCK − segunda, contando cada carrera (cada mundo) como un conglomerado: los Mundiales de un mismo mundo no son
-// independientes. Estimador de razón: margen = Σ(a_i − b_i) / ΣW_i, σ = 100·√Σ(a_i − b_i − margen·W_i)² / ΣW_i.
+// independientes. Estimador de razón: margen = Σ(a_i − b_i) / ΣW_i, σ = 100·√Σ(a_i − b_i − margen·W_i)² / ΣW_i. D82 (b): con los
+// pesos del bloque `mundoMundial` (cada año del mundo pesa igual, `pesosDeMundialesDelMundo`): a_i, b_i y W_i suman pesos en vez
+// de contar Mundiales. Con todos los pesos iguales es el estimador de antes; con los nuevos (horizonte fijo de
+// `ANIOS_MUNDO_MUNDIAL` años), los años que ven menos carreras pesan lo mismo que el resto y el σ crece: medido a 600 (criterio
+// 600 × 60, no a las 1500 del check), 1,40 → 1,51.
 function sigmaDelMargenMetasC(observaciones, segundaLiga) {
-  const filas = observaciones.map((o) => {
-    const ligas = (o?.mundialesDelMundo ?? []).map(ligaDelCampeonMetasC);
-    return { d: ligas.filter((l) => l === LIGA_CANDIDATA_DEL_MUNDIAL).length - ligas.filter((l) => l === segundaLiga).length, w: ligas.length };
+  const { pesos } = pesosMundoMundialMetasC(observaciones);
+  const filas = observaciones.map((o, i) => {
+    let d = 0;
+    let w = 0;
+    (o?.mundialesDelMundo ?? []).forEach((m, j) => {
+      const liga = ligaDelCampeonMetasC(m);
+      w += pesos[i][j];
+      d += pesos[i][j] * ((liga === LIGA_CANDIDATA_DEL_MUNDIAL ? 1 : 0) - (liga === segundaLiga ? 1 : 0));
+    });
+    return { d, w };
   });
   const W = filas.reduce((suma, f) => suma + f.w, 0);
   if (W === 0) return null;

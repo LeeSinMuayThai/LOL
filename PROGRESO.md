@@ -34,6 +34,64 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-06 — D82: el traspaso cuesta lo que dice la pantalla, y el Mundial del mundo pesa cada año igual (rama `d82`)
+
+**(a) El valor visible es el que paga el mercado (regla 15).**
+- **Dónde estaba.** La ficha, "Vos en el mercado" (oferta y traspaso) y el pico de la tarjeta final muestran
+  `valorDeMercado`: la mediana de `salarioDeOferta`, sin edad, que K5c-U2 ya validó contra las ofertas reales. El precio
+  del traspaso a mitad de contrato salía de otra fórmula, `presupuestoDeDemanda`, que lleva el `sesgoEtario` y la pantalla
+  no muestra. Seed 25, a los 29: "valés $326.009/año" y el traspaso costaba $84.523, sin explicación.
+- **Qué cambió.** `precioDeTraspaso` (`core/valorMercado.js`) arma el precio con `valorDeMercado` · `sesgoEtario` · factor ·
+  años de contrato. Cuando el descuento es ≤ `mercado.traspasoDescuentoEtarioVisible` (0,9: desde un 10% de descuento, los
+  22), la tarjeta de aceptar dice "Te descuentan por la edad: por vos ponen el 15% de lo que pondrían por un pibe con tu
+  valor". El mismo caso queda en $72.619, con la frase.
+- **Solo pantalla y log.** Ninguna decisión del motor ni del bot lee `traspasoUSD` ni `valorDeMercado`.
+  `presupuestoDeDemanda` sigue decidiendo la disputa por el asiento (`core/demanda.js`) y no se tocó. `huella.js`
+  1408477439 antes y después; con `--splits=60`, 33718164 antes y después.
+- **Check nuevo, `D82 (a)`** (lento, 150 × 60). Recalcula el precio desde lo que se ve (valor, años de contrato, edad), exige
+  el mismo número, que la tarjeta avise cuando corresponde y que el % que dice sea el descuento que aplicó el motor.
+  - Rojo contra el código de antes: 27 problemas (25 traspasos con otro precio, y ningún veterano con aviso).
+  - Verde después: 25 traspasos, 15 con el descuento a la vista (el mayor, a los 29).
+  - Con el mutante que borra la frase (umbral 0,7): 9 problemas. Con el de la revisión, que escribe `(1 − descuento)` y dice
+    "85%" donde es 15%: 15 problemas (antes de comparar el %, ese mutante pasaba verde).
+
+**(b) El Mundial del mundo, con cada año pesando igual** (`simulate.js`, `bloqueMundoMundial`).
+- **El problema.** Cada Mundial pesaba igual y el mundo solo se observa mientras la carrera vive: el primer año lo aportan 599
+  de 600 carreras y el decimoctavo, 42.
+- **La medida nueva.** Un Mundial del año k pesa 1/(H·n_k), con n_k los Mundiales de ese año, dentro de un horizonte fijo de
+  H = 12 años del mundo (2026-2037, `ANIOS_MUNDO_MUNDIAL` en `simulate.js`). Los de después quedan afuera y se cuentan. Es
+  lectura pura, sin `rng`.
+- **Por qué 12 años fijos.** La primera versión medía los años con al menos `MUESTRA_MINIMA` (30) Mundiales, y la revisión
+  la cambió por decisión del supervisor: así H dependía de N y del stream (17 a 19 años), y el último año, con ~40 Mundiales,
+  pesaba ~34 veces más por Mundial, lo que agrandaba el sesgo de supervivencia de las carreras largas. Con 12 años, a
+  600 × 60 el año del horizonte con menos muestra tiene 266 Mundiales (por año: 599 599 598 595 590 594 591 562 533 344 306
+  266).
+- **Por qué no seguir el mundo después del fin.** Hace falta un paso de "solo el mundo" que el motor no tiene: el mundo se
+  mueve en `systems/mercado.js`, en la pretemporada y solo en fase profesional, y el pipeline se para en `terminado`.
+  Hacerlo en el instrumento sería copiar el pipeline.
+- **El σ.** El σ del margen de la meta del usuario (`sigmaDelMargenMetasC`) usa los mismos pesos; con pesos iguales da el de
+  antes. La banda (5 − 2σ) no se tocó.
+- **Lo medido** (criterio 600 × 60, seeds 1-600, la misma corrida para los dos bloques; el viejo queda en el reporte como
+  `titulosPorLigaPorMundial`):
+
+| Bloque | Mundiales | LCK | LPL | LEC | LCS | CBLOL | LCP | Margen LCK − LPL | σ | Piso |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Viejo (cada Mundial) | 6921 | 51,6 | 44,5 | 3,3 | 0,3 | 0,1 | 0,2 | 7,1 | 1,40 | 2,20 |
+| Nuevo (cada año, 12 fijos) | 6177 en 12 años (744 afuera) | 51,2 | 44,7 | 3,4 | 0,4 | 0,1 | 0,2 | 6,5 | 1,51 | 1,98 |
+| Primera versión (años con ≥ 30) | 6896 en 18 años (25 afuera) | 51,8 | 43,3 | 4,1 | 0,4 | 0,2 | 0,2 | 8,5 | 1,97 | 1,06 |
+
+- **La meta del usuario cumple con los dos bloques**: LCK ≥ 25% y la primera por encima del piso. El veredicto no cambia. A
+  1500 × 60 lo midió la revisión, no este trabajo: margen 8,66 con σ 0,97, piso 3,06.
+
+**Verificación.**
+- `validate.js --rapido`: 363 OK, 0 FAIL, 174 SKIP.
+- `--solo` de a uno: `D82 (a)`, `Fase 9Mg: toda pantalla de mercado` y `Fase 9Mf: ≥1,5%` dan OK.
+- `K5c meta del usuario` no se corrió: son criterio, azar y malas a 1500 × 60, y pasan del tope de 600 carreras por sonda.
+  Queda para la corrida completa del supervisor; a 600 × 60, su juez da "cumple" (la tabla de arriba).
+- `build.js`: OK, `dist/` pesa 2345 de 2400 KB.
+- **Después de la revisión** (el horizonte fijo, el % comparado, el umbral en 0,9 y la frase nueva): `--rapido` 363 OK,
+  0 FAIL, 174 SKIP; `--solo` de `D82 (a)` OK; `huella.js` 1408477439 antes y después.
+
 ### 2026-10-06 — Merge de K6b, K6c, K6c-fix, J9 y la etiqueta de tier 3 a `fase-9r`, y K6 re-jugado (supervisor, de noche)
 
 **Qué entra:** `99927be` mergea `k6c-fix` (`ffa6709`), que trae K6b, K6b-fix, K6c, la región y las siete pasadas de
