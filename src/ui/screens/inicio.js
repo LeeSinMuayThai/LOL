@@ -1,7 +1,8 @@
 // La pantalla de inicio: rol + mains. U2 la vuelve un draft (carriles +
 // slots), no un formulario. El estado de la elección sigue acá adentro.
 import { marcaRol } from '../components/iconos.js';
-import { crearCampeonTile, keyDdragonDeCampeon, urlSplashDeCampeon } from '../components/campeonTile.js';
+import { crearCampeonTile, keyDdragonDeCampeon } from '../components/campeonTile.js';
+import { crearSplash } from '../components/splash.js';
 import { miles, linkDeResultado } from '../resultado.js';
 
 const ETIQUETA_STAT = {
@@ -18,38 +19,14 @@ export function crearPantallaInicio(elements, modulos) {
   let regionElegida = null;
   let camposElegidos = [];
 
-  // J9: el splash del último main elegido, difuminado, detrás del contenido del setup. Es decoración: si
-  // la imagen no carga (sin red, CDN caído) no pasa nada y queda el fondo de siempre. El div se crea acá
-  // y se precarga con un `Image` aparte para no mostrar nunca un fondo roto; `token` descarta una carga
-  // vieja que llega tarde.
+  // J9: el splash del último main elegido (`components/splash.js`): decoración, sin imagen queda el fondo de siempre.
   let splash = null;
-  let splashKey = null;
-  let splashToken = 0;
   function actualizarSplash() {
     const panel = campeonGrid.closest('#setup');
     if (!panel) return;
-    if (!splash) {
-      splash = document.createElement('div');
-      splash.className = 'setup-splash';
-      splash.setAttribute('aria-hidden', 'true');
-      panel.insertBefore(splash, panel.firstChild);
-    }
+    splash ??= crearSplash(panel);
     const nombre = camposElegidos[camposElegidos.length - 1];
-    const key = nombre ? keyDdragonDeCampeon(nombre) : null;
-    if (key === splashKey) return;
-    splashKey = key;
-    splashToken += 1;
-    const token = splashToken;
-    splash.classList.remove('setup-splash--visible');
-    if (!key) return;
-    const img = new Image();
-    img.onload = () => {
-      if (token !== splashToken) return;
-      splash.style.backgroundImage = `url("${img.src}")`;
-      splash.classList.add('setup-splash--visible');
-    };
-    img.onerror = () => {};
-    img.src = urlSplashDeCampeon(key);
+    splash.mostrar(nombre ? keyDdragonDeCampeon(nombre) : null);
   }
 
   function actualizarBoton() {

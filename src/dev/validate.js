@@ -100,6 +100,7 @@ import { LABEL_MARCA as LABEL_MARCA_FICHA, lineaDeContextoFicha } from '../ui/co
 import { nombreVisibleDeLiga } from '../ui/formatoUi.js';
 import { crearCampeonTile, urlIconoDeCampeon, urlSplashDeCampeon } from '../ui/components/campeonTile.js';
 import { VERSION_DDRAGON, BASE_DDRAGON } from '../data/ddragon.js';
+import { crearSplash } from '../ui/components/splash.js';
 import { lineaDePlantelDeOferta } from '../ui/components/mercado.js';
 import METAS from '../data/metas.json' with { type: 'json' };
 
@@ -8706,6 +8707,70 @@ check('J9 fallback: el tile con `ddragon: null` o con la imagen caída (onerror)
     }
   } finally {
     globalThis.document = previo;
+  }
+});
+
+check('J9 keys: cada `ddragon` es el nombre normalizado (solo letras y números, sin mayúsculas) o una excepción conocida: dos keys cruzadas no pasan', () => {
+  // Es una verificación, no una derivación: el campo sigue explícito en champions.json. Estas son las únicas
+  // keys de Data Dragon que no salen del nombre (Wukong se llama MonkeyKing en el CDN, etc.).
+  const EXCEPCIONES = { 'Wukong': 'MonkeyKing', 'Renata Glasc': 'Renata', 'Nunu & Willump': 'Nunu' };
+  const normalizar = (texto) => texto.toLowerCase().replace(/[^a-z0-9]/g, '');
+  let verificados = 0;
+  for (const campeon of CAMPEONES) {
+    if (campeon.ddragon === null) continue;
+    const esperado = EXCEPCIONES[campeon.name];
+    const ok = esperado ? campeon.ddragon === esperado : normalizar(campeon.ddragon) === normalizar(campeon.name);
+    if (!ok) throw new Error(`${campeon.name}: la key "${campeon.ddragon}" no es la suya (se esperaba ${esperado ?? `algo que normalizado sea "${normalizar(campeon.name)}"`})`);
+    verificados += 1;
+  }
+  if (verificados < CAMPEONES.length / 2) throw new Error(`check vacío: ${verificados} keys verificadas`);
+});
+
+check('J9 splash: el fondo solo se escribe cuando la imagen cargó; sin imagen, con la imagen caída o sin key no hay fondo y no se pide nada', () => {
+  const previoDoc = globalThis.document;
+  const previoImage = globalThis.Image;
+  const imagenes = [];
+  globalThis.Image = class { constructor() { imagenes.push(this); } };
+  globalThis.document = {
+    createElement: (tag) => {
+      const el = new ElementoFalso(tag);
+      el.style = {};
+      el.setAttribute = () => {};
+      return el;
+    }
+  };
+  try {
+    const panel = new ElementoFalso('div');
+    const splash = crearSplash(panel);
+    const capas = panel.childNodes[0].childNodes;
+    const conFondo = () => capas.filter((capa) => capa.style.backgroundImage);
+    const visibles = () => capas.filter((capa) => capa.className.includes('--visible'));
+
+    splash.mostrar(null);
+    if (imagenes.length !== 0 || conFondo().length !== 0) throw new Error('sin campeón (o con ddragon null) se pidió una imagen o se escribió un fondo');
+
+    splash.mostrar('Jinx');
+    if (imagenes.length !== 1 || !imagenes[0].src.endsWith('/img/champion/splash/Jinx_0.jpg')) throw new Error('no se pidió el splash de Data Dragon');
+    if (conFondo().length !== 0 || visibles().length !== 0) throw new Error('el fondo se escribió antes de que la imagen cargara');
+    imagenes[0].onerror();
+    if (conFondo().length !== 0 || visibles().length !== 0) throw new Error('con la imagen caída (onerror) quedó un fondo: debería quedar el de siempre');
+
+    splash.mostrar('Ahri');
+    imagenes[1].onload();
+    if (conFondo().length !== 1 || visibles().length !== 1) throw new Error('con la imagen cargada hay que mostrar exactamente una capa');
+    // Una carga vieja que llega tarde no pisa a la nueva, y el cambio cruza dos capas (la vieja baja, la nueva sube).
+    splash.mostrar('Zed');
+    splash.mostrar('Lux');
+    imagenes[2].onload();
+    if (conFondo().length !== 1) throw new Error('una carga vieja (Zed) pisó el fondo');
+    imagenes[3].onload();
+    const vivas = visibles();
+    if (vivas.length !== 1 || !vivas[0].style.backgroundImage.includes('Lux_0')) throw new Error('el cambio no dejó solo la capa nueva visible');
+    splash.mostrar(null);
+    if (visibles().length !== 0) throw new Error('sin campeón el splash tiene que apagarse');
+  } finally {
+    globalThis.document = previoDoc;
+    if (previoImage === undefined) delete globalThis.Image; else globalThis.Image = previoImage;
   }
 });
 

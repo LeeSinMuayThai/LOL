@@ -95,19 +95,22 @@ export function crearCampeonTile(campeon, {
     img.alt = '';
     img.loading = 'lazy';
     img.decoding = 'async';
+    const marcarCara = () => {
+      // Con la cara cargada, las iniciales sobran; los números de abajo
+      // (maestría, óxido, tier) ganan un fondo para leerse sobre la imagen.
+      if (!tile.className.includes('campeon-tile--con-cara')) tile.className += ' campeon-tile--con-cara';
+    };
     img.onerror = () => {
       img.onerror = null;
       img.onload = null;
       img.remove();
       tile.className = tile.className.replace(' campeon-tile--con-cara', '');
     };
-    img.onload = () => {
-      // Con la cara cargada, las iniciales sobran; los números de abajo
-      // (maestría, óxido, tier) ganan un fondo para leerse sobre la imagen.
-      if (!tile.className.includes('campeon-tile--con-cara')) tile.className += ' campeon-tile--con-cara';
-    };
+    img.onload = marcarCara;
     img.src = urlIconoDeCampeon(key);
     tile.appendChild(img);
+    // Ya en el caché del navegador: `complete` está listo y `onload` llegaría una tarea tarde (un cuadro con las iniciales).
+    if (img.complete && img.naturalWidth > 0) marcarCara();
   }
 
   if (Number.isFinite(campeon.mastery)) {

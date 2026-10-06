@@ -57,6 +57,15 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
   3 mains, 0 errores de consola; con `ddragon.leagueoflegends.com` bloqueado, 0 `<img>`, tiles geométricos, sin splash, el
   setup y la carrera siguen jugables (los únicos mensajes de consola son los "Failed to load resource" del propio navegador).
 - `--rapido` 360 OK, 0 FAIL (358 + los 2 nuevos), `build.js` OK.
+- Correcciones de la revisión independiente (mismo día):
+  - Scroll horizontal en el celular (reabría D69): el splash `fixed` con `transform: scale(1.08)` medía 392 de `scrollWidth` a 390 px
+    y 417 a 414 px (reproducido en `dfbd4e8`). Ahora el `scale` va en capas hijas y el contenedor recorta (`overflow: clip`); el
+    splash es un componente (`ui/components/splash.js`) con dos capas que cruzan. `scrollWidth` == `clientWidth` en 320, 360, 375,
+    390, 414, 768, 1024 y 1440, en el estado inicial (capas a opacidad 0) y con 3 mains y el splash visible.
+  - El cambio de splash cruza dos capas aunque la imagen esté en caché; el tile marca `con-cara` en el acto si `img.complete`.
+  - Checks nuevos: "el splash escribe el fondo solo con la imagen cargada" (rojo con el mutante "fondo directo sin precarga") y
+    "cada key es el nombre normalizado o una excepción" (rojo con Aatrox y Ornn cruzados).
+  - `--rapido` 362 OK, 0 FAIL; huella 1408477439 sin cambio; dist 2342 KB.
 
 ### 2026-10-06 — K6c-fix, séptima pasada: retiro_por_lesion se verifica con un estado armado hasta D83 (`k6c-fix`; PLAN.md `ea13221`)
 
