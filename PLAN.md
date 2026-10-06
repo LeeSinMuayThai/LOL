@@ -8083,6 +8083,24 @@ el camino nuevo), y la huella no cambia. **El que queda es un hueco de diseño d
 pretemporadas sin oferta cuenta como "algo cambió". La pregunta de "el mercado ya habló" vuelve a frenar. Mueve la
 huella y la meta de la cola: se declara.
 
+**La región en K6c** (`k6c-region`: `57e68da`). La segunda pasada de K6c había re-basado "más fácil desde Corea" porque en
+el lote NA le ganaba a Corea. Ese re-base se rechazó. La investigación no encontró causa en el motor:
+- el tier 3 sale igual en todas las regiones;
+- `criterio` pasa toda prueba, así que la vara no mueve sus carreras.
+
+Con la región fija (las mismas seeds desde cada región), Corea sigue clara arriba. Lo dio vuelta la submuestra del lote:
+194 carreras de NA que salieron con suerte. Aparte, NA ya estaba arriba de su meta de ~3-5% en K6b. Dos tercios de esos
+Mundiales se ganan importado a LPL/LCK (K5c-H).
+
+**Decisión del usuario (2026-10-06): "medir bien, aceptar ~7%".**
+- Las bandas de Corea y NA y su orden se juzgan con la región fija (check "K6c región fija", 3000 × 60 por región), no
+  con la submuestra del lote.
+- `ganaMundialNA` se re-basa a lo medido con la región fija: corrimiento declarado de K6c.
+- La importación de élite no se toca.
+
+**Integración** (`k6c-integracion`): `k6c-region` + `k6b-fix`. La forma 13 se re-registra sin subir de versión, porque
+la 13 no salió. Después, la validación completa del supervisor, el merge a `fase-9r` y la prueba del usuario.
+
 ## K.6 — Qué pasa con FASE J y FASE V
 
 | Pieza | Destino |
