@@ -139,4 +139,7 @@ export const VERSION_JUEGO = 'K6c';
 // prueba del amateur depende de tu nivel contra el calibre del club (`amateur.varaPrueba`: base, pendiente, mínimo y máximo) y la
 // semana del plan del año frena solo con riesgo nuevo (`amateur.semanaRiesgoNuevo`). Sin tiradas nuevas: cambian las firmas y las
 // paradas, y con ellas las carreras. Reemplaza a 11046700.
-export const HUELLA_JUEGO = 977079279;
+// K6c-fix (1351863340; corrimiento declarado, misma etiqueta 'K6c': no salió de la rama): la vara de la prueba del amateur puede
+// llegar a 0 ("el club firma tu nivel, no tu día": `amateur.varaPrueba` { base 1,55, pendiente 0,05, mínimo 0, máximo 0,8 }).
+// Sin tiradas nuevas: cambian las firmas de tier 3, y con ellas las carreras. Reemplaza a 977079279.
+export const HUELLA_JUEGO = 1351863340;

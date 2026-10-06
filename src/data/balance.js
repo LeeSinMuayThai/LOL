@@ -352,7 +352,13 @@ export const BALANCE = {
     // `vara = clamp(base − pendiente × (nivel − calibre), minimo, maximo)`, con tu `nivelDelJugador` contra el calibre del
     // club (`org.fuerza`, 5-35 en tier 3). Medido en las ofertas de tier 3 (200 carreras por bot): la diferencia
     // nivel − calibre va de ~22 (el 5% más justo) a ~55-63 (el 5% más crack), con la mediana en ~37.
-    varaPrueba: { base: 1.35, pendiente: 0.035, minimo: 0.1, maximo: 0.8 },
+    // K6c-fix ("el club firma tu nivel, no tu día", PLAN.md §K6c): el mínimo pasa a 0. Con piso 0,1 el que fallaba toda prueba no
+    // firmaba nunca, aunque fuera un crack: acertar siempre los minijuegos rendía +1149% contra fallarlos (tope +42%). La vara llega
+    // a 0 con 31 de diferencia (`base / pendiente`) y a 0,8 con 15 o menos; en el medio, 5 puntos de vara por punto de nivel (a 20
+    // de diferencia pide 55%, a 25 pide 30%). Medido (1000 × 60, sonda con las mismas seeds del check): el impacto de los
+    // minijuegos +29,2% (vara siempre 0: +25%; cero a los 35: +44%, a los 30: +26%); `equilibrado` no-pro 29,1 (vara siempre 0:
+    // 28,0; la de K6c: 31,2); `malas` 46,5. `criterio` (0,85) pasa toda prueba con cualquier máximo <= 0,85.
+    varaPrueba: { base: 1.55, pendiente: 0.05, minimo: 0, maximo: 0.8 },
 
     // Fase 10a (§10.1): deja de ser el corte duro ("cumpliste 20, se acabó").
     // La ventana real ya la cierra el sesgo etario del scouting (arriba); esto

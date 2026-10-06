@@ -2393,13 +2393,17 @@ checkLento('Fase 9Mi: el mercado se enfría — nadie sostiene oferta de liga ma
 // distintos pasan por la lista, cuántas veces se mueve el corte #20, el rango
 // etario, si el jugador entró y si tuvo éxito, y si un rival de generación
 // asomó. Además verifica en caliente que `picos.rankMundial` es monótono.
-let _barrido9W = null;
-function barrido9W() {
-  if (_barrido9W) {
-    return _barrido9W;
+//
+// K6c-fix: el barrido se puede pedir más largo (`barrido9W(n)`): las primeras 180 seeds son las de siempre (los demás checks de 9W
+// las siguen leyendo igual) y las que se agregan se cachean. Solo "entrar al Top 20 cuesta pero tiene sentido" pide más (ver ahí).
+const SEEDS_BARRIDO_9W = 180;
+const _barrido9W = [];
+function barrido9W(seeds = SEEDS_BARRIDO_9W) {
+  if (_barrido9W.length >= seeds) {
+    return _barrido9W.slice(0, seeds);
   }
-  const carreras = [];
-  for (let seed = 1; seed <= 180; seed += 1) {
+  const carreras = _barrido9W;
+  for (let seed = carreras.length + 1; seed <= seeds; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
 
@@ -2463,8 +2467,7 @@ function barrido9W() {
       llegoATier1
     });
   }
-  _barrido9W = carreras;
-  return carreras;
+  return carreras.slice(0, seeds);
 }
 
 checkLento('Fase 9W: el Top 20 está bien formado (largo tamano, sin repetidos, ordenado por puntaje desc)', () => {
@@ -2591,8 +2594,14 @@ checkLento('Fase 9W: el Top 20 mezcla edades — sin término de edad, la divers
 // tu generación asoma sin garantía. Verificados en rojo con las constantes por
 // criterio de 9Wa (bonusCampeonLiga 6 → entran/éxito 12%; ver PROGRESO 9Wd).
 
+// K6c-fix: la fracción se mide sobre 720 seeds (`SEEDS_BARRIDO_9WD_TOP20`), no sobre las 180 del barrido. Con 180 (n ≈ 125 carreras
+// con éxito, σ ~4,3 pp) el piso de 33% quedaba a ~1,5 σ de la población y la validación completa de `6dc0ff8` lo vio en 32,8%: los
+// bloques de 180 seeds de la misma población dan, con la vara de K6c-fix, 32,0 / 35,2 / 47,3 / 44,3% (seeds 1-180 / 181-360 /
+// 361-540 / 541-720; 39,6% con n 460), y en K6b (`58db231`) 38,2 / 39,4 / 40,3 / 34,7% (38,2%, n 513). La población no se movió:
+// era la muestra. Con n ≈ 460 (σ ~2,3 pp) el piso queda ~2,9 σ debajo. El piso no se toca.
+const SEEDS_BARRIDO_9WD_TOP20 = 720;
 checkLento('Fase 9Wd: entrar al Top 20 cuesta pero tiene sentido — un tercio de las carreras con éxito lo tocan (§9W.6, re-base de K5c)', () => {
-  const c = barrido9W();
+  const c = barrido9W(SEEDS_BARRIDO_9WD_TOP20);
   const exitosas = c.filter((x) => x.exito);
   const lavadas = c.filter((x) => !x.exito);
   if (exitosas.length < 40) {
@@ -7286,7 +7295,11 @@ checkLento('Fase 11: toda carrera de 6+ splits ve al menos 2 resúmenes con titu
   const N = 250;
   for (let seed = 1; seed <= N; seed += 1) {
     const state = correrCarrera(seed, 60);
-    if (state.player.splitCount < 6) {
+    // K6c-fix: "6+ splits" quiere decir dos años cerrados. Una carrera que termina EN el split que cierra su segundo año (el 6:
+    // un burnout a los 16, seeds 23 y 180 en la validación completa de `6dc0ff8`) jugó 6 splits pero ese año no cerró: el
+    // pipeline corta las etapas al terminar (`splitTerminaAca`) y el resumen del año va en el cierre. Elegible es la que pasó de
+    // ese split (más de 2 × `splitsPorEdad`), así que cerró dos años seguro. Rojo con el resumen anual sin nota.
+    if (state.player.splitCount <= 2 * BALANCE.edad.splitsPorEdad) {
       continue;
     }
     elegibles += 1;
@@ -9914,6 +9927,10 @@ const REGLAS_NULO_SIN_MUESTRA_K0 = [
   { patron: /^mundialReal\..+\.(pctDeLosMundiales|margenSobreElMejorRival\.p(10|50|90))$/, sinMuestra: (padre, abuelo) => mundialesDelBloqueK0(abuelo) === 0 },
   { patron: /^mundialReal\..+\.pDosOMasDadoUno\.p$/, sinMuestra: (padre) => padre?.n === 0 },
   { patron: /^curvaDeEdad\.porEdad\[\d+\]\.nivel\.p(25|50|75)$/, sinMuestra: (padre, abuelo) => abuelo?.splits === 0 },
+  // K6c-fix: las frenadas de las carreras de Leyenda o GOAT (`ritmo.leyenda`, K6b-C) de un bot sin ninguna carrera así. Con la
+  // vara de la prueba `malas` (juega 0,15) llega menos a pro y en sus 200 carreras del lote no hay ninguna Leyenda: n 0, mediana
+  // de nada. Con alguna, el null sigue siendo rojo (rojo con el mutante `mediana: null` en `ritmo.leyenda` de simulate.js).
+  { patron: /^ritmo\.leyenda\.(mediana|p90|max)$/, sinMuestra: (padre) => padre?.carreras === 0 },
   // K5c-H: el bloque `casa` (el % de temporadas de tier 1 en la liga de tu región): null solo en una celda sin temporadas de tier 1.
   { patron: /^casa\..+\.pctEnCasa$/, sinMuestra: (padre) => padre?.splitsTier1 === 0 }
 ];
@@ -10003,6 +10020,7 @@ const DIFERENCIA_MINIMA_PROBABILIDAD_K0 = 0.05;
 const HOJAS_MINIMAS_K0 = 800;
 const CARRERAS_DELEGACION_K0 = 12;
 const DECISIONES_PROPIAS_MINIMAS_K0 = 200;
+const CARRERAS_DELEGACION_TOPE_K0 = 40;
 const SEMILLA_BOOTSTRAP_K0 = 7777;
 const MAX_CORRIDAS_ABLACION_K0 = 200;
 const UMBRAL_R2_ESTRUCTURAL_K0 = 0.3;
@@ -12546,6 +12564,9 @@ checkLento('K0 azar: no consume el rng del motor, no depende de él, y su índic
   }
 });
 
+const SEEDS_MERCADO_BASE_K0 = 8;
+const SEEDS_MERCADO_TOPE_K0 = 60;
+const DECISIONES_MERCADO_MINIMAS_K0 = 10;
 checkLento('K0 criterio y malas en el mercado de carreras reales: nunca "esperar" con ofertas, siempre el mejor/peor tier', () => {
   // Trinquete (K0-A, revisión H1): con `criterio` siempre en "esperar", o eligiendo un tier peor que el mejor, las carreras seguían corriendo.
   const vistas = { criterio: 0, malas: 0 };
@@ -12566,11 +12587,14 @@ checkLento('K0 criterio y malas en el mercado de carreras reales: nunca "esperar
       }
       return respuesta;
     };
-    for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
+    // K6c-fix: las 8 seeds de siempre y, si el bot no juntó `DECISIONES_MERCADO_MINIMAS_K0`, más seeds (tope
+    // `SEEDS_MERCADO_TOPE_K0`). Con la vara de la prueba del amateur `malas` (juega 0,15) llega menos a pro y en las seeds 1-8 vio
+    // 2 decisiones de mercado con ofertas: la muestra se agranda, la regla no se toca.
+    for (let seed = 1; seed <= SEEDS_MERCADO_TOPE_K0 && (seed <= SEEDS_MERCADO_BASE_K0 || vistas[bot] < DECISIONES_MERCADO_MINIMAS_K0); seed += 1) {
       correrCarreraSimulate(seed, 60, responder);
     }
   }
-  if (vistas.criterio < 10 || vistas.malas < 10) {
+  if (vistas.criterio < DECISIONES_MERCADO_MINIMAS_K0 || vistas.malas < DECISIONES_MERCADO_MINIMAS_K0) {
     throw new Error(`check vacío: decisiones de mercado con ofertas vistas ${JSON.stringify(vistas)}`);
   }
 });
@@ -13402,7 +13426,11 @@ checkLento('K0 criterio y malas: solo delegan en resolverAuto los tipos de decis
       vistos[tipo].delegadas += delegado ? 1 : 0;
       return respuesta;
     };
-    for (const seed of SEMILLAS) {
+    // K6c-fix: las `CARRERAS_DELEGACION_K0` seeds de siempre y, si el bot no juntó `DECISIONES_PROPIAS_MINIMAS_K0` decisiones
+    // propias, más seeds (tope `CARRERAS_DELEGACION_TOPE_K0`): con la vara de la prueba `malas` llega menos a pro y en 12 carreras
+    // tomó 114 decisiones propias. La muestra se agranda; la lista de lo declarado no se toca.
+    const propias = () => Object.values(vistos).reduce((suma, v) => suma + v.total - v.delegadas, 0);
+    for (let seed = 1; seed <= CARRERAS_DELEGACION_TOPE_K0 && (seed <= SEMILLAS.length || propias() < DECISIONES_PROPIAS_MINIMAS_K0); seed += 1) {
       correrCarreraSimulate(seed, 60, responder);
     }
     const noDeclarados = Object.entries(vistos).filter(([tipo, v]) => v.delegadas > 0 && !(tipo in permitidos));
@@ -13411,7 +13439,7 @@ checkLento('K0 criterio y malas: solo delegan en resolverAuto los tipos de decis
     }
     const totales = Object.values(vistos).reduce((acc, v) => ({ total: acc.total + v.total, delegadas: acc.delegadas + v.delegadas }), { total: 0, delegadas: 0 });
     if (totales.delegadas === 0 || totales.total - totales.delegadas < DECISIONES_PROPIAS_MINIMAS_K0) {
-      throw new Error(`check vacío: ${bot} delegó ${totales.delegadas} de ${totales.total} decisiones en ${SEMILLAS.length} carreras`);
+      throw new Error(`check vacío: ${bot} delegó ${totales.delegadas} de ${totales.total} decisiones (hasta ${CARRERAS_DELEGACION_TOPE_K0} carreras)`);
     }
   }
 });
@@ -16468,7 +16496,12 @@ checkLento('K4-B pausas por serie: el plan al arrancar (K6a-R: salvo la cantada,
 // rival del resultado, la prueba clavada con su desenlace, y "si ganás, entrás a playoffs" solo cuando siembra.
 // ============================================================================
 const CARRERAS_K6AM = 40;
-const RE_PRUEBA_K6AM = /prueba/i;
+// K6c-fix: la línea del desenlace de la prueba del amateur dejó de decir "la prueba" en K6c ("pasaste = firmás"): ahora dice
+// "Te firman: sacaste X% y la vara era Y%." o "No llegaste: ... la vara era Y% ...". El check había quedado viejo frente a ese texto
+// (buscaba "prueba" y "te firman" en minúscula: 58 problemas falsos en la validación completa de `6dc0ff8`). La de la prueba del
+// mercado sigue diciendo "prueba". Rojo con la línea del desenlace sacada del log de `resolverLaPrueba`.
+const RE_PRUEBA_K6AM = /prueba|la vara era/i;
+const RE_TE_FIRMAN_K6AM = /te firman/i;
 let cosechaK6aM = null;
 function cosechaDeCarrerasK6aM() {
   if (cosechaK6aM) {
@@ -16614,7 +16647,7 @@ function cosechaDeCarrerasK6aM() {
           c.pruebaSinDesenlace.push(`seed ${seed} split ${i}: prueba con ${prueba.org ?? '?'} (${prueba.sistema}) sin una línea de cómo terminó`);
         }
         if (prueba.sistema === 'amateur' && prueba.org) {
-          const firmo = desenlace.some((log) => /te firman/.test(log.message));
+          const firmo = desenlace.some((log) => RE_TE_FIRMAN_K6AM.test(log.message));
           if (firmo !== state.career.orgs.includes(prueba.org)) {
             c.pruebaSinDesenlace.push(`seed ${seed} split ${i}: el feed dice que ${firmo ? '' : 'no '}firmó con ${prueba.org} y el estado no`);
           }
@@ -17329,6 +17362,7 @@ const TIPOS_DE_PAUSA_GUARDADO_K4 = [
 ];
 const SEEDS_GUARDADO_K4 = Array.from({ length: 30 }, (_, i) => 1 + i);
 const SPLITS_GUARDADO_K4 = 60;
+const SEEDS_GUARDADO_TOPE_K4 = 200;
 // Revisión de K5: las seeds fijas [10, 14] dejaron de llegar a la bifurcación con el corrimiento de la revisión (el lote
 // no cubría `mercado:fin_mercado`). Ahora se buscan, en orden, hasta ver la pausa `FIN_MERCADO_GUARDADO_MINIMO` veces, con
 // tope `SEEDS_FIN_MERCADO_TOPE_K5` seeds.
@@ -17449,6 +17483,12 @@ checkLento('K4 (revisión) guardado: en cada tipo de pausa, guardar y recargar (
   if (noJson.size > 0 || problemas.length > 0) {
     throw new Error(`${problemas.length} pausas rotas al recargar (${problemas.slice(0, 4).join(' | ')}); `
       + `valores que JSON no conserva en el estado al pausar: ${[...noJson].slice(0, 8).join('; ') || 'ninguno'}`);
+  }
+  // K6c-fix: si a las 30 carreras les falta algún tipo, se siguen corriendo seeds (tope `SEEDS_GUARDADO_TOPE_K4`) hasta verlo. En
+  // la validación completa de `6dc0ff8` faltaron `amateur:reparto` (desde K6c la semana frena solo con riesgo nuevo: ~0,1 paradas
+  // por carrera de `criterio`) y los tres de `servicioMilitar` (las 30 carreras ya no llevaban a ningún coreano al servicio).
+  for (let seed = SEEDS_GUARDADO_K4.length + 1; seed <= SEEDS_GUARDADO_TOPE_K4 && TIPOS_DE_PAUSA_GUARDADO_K4.some((tipo) => !vistos.has(tipo)); seed += 1) {
+    recorrer([seed]);
   }
   const faltan = TIPOS_DE_PAUSA_GUARDADO_K4.filter((tipo) => !vistos.has(tipo));
   if (faltan.length > 0) {
@@ -17841,7 +17881,7 @@ function sondaDeLaPrueba() {
             ? nombreDe(decision.datos.otras.find((opcion) => opcion.id === decision.datos.respaldo)?.org)
             : null;
           filas.push({
-            seed, sistemaId, oferta, respaldo, apuesta: decision.datos.apuesta ?? '',
+            seed, sistemaId, oferta, respaldo, apuesta: decision.datos.apuesta ?? '', vara: decision.datos.vara ?? null,
             respaldoALaMano: sistemaId === 'mercado' ? respaldoALaManoK4cR(st, decision.datos.otras ?? []) : null,
             hayOtras: (decision.datos.otras ?? []).length > 0,
             antes: { currentOrg: st.career.currentOrg, contrato: structuredClone(st.career.contrato), bonus: st.flags.bonusJerarquiaTryout ?? 0, racha: st.flags.splitsSinOfertaConsecutivos, nLogs: st.logs.length },
@@ -18105,6 +18145,14 @@ check('K4c (revisión) la prueba amateur anuncia qué pasa si no alcanza y el ve
     const roto = textos.find((texto) => typeof texto === 'string' && texto.includes('[object Object]'));
     if (roto) throw new Error(`${donde}: "${roto}"`);
     if (f.sistemaId !== 'amateur') continue;
+    // K6c-fix: con la vara en 0 no hay "si no alcanza": la apuesta dice que te firman aunque la prueba salga mal, y con la prueba
+    // floja firmás (rojo con la apuesta de siempre, "decide si te firman... Necesitás 0%", en una vara 0).
+    if (f.vara === 0) {
+      if (!f.apuesta.includes('te firman aunque la prueba salga mal') || /Si no alcanza|decide si te firman/.test(f.apuesta) || !f.bajo.ficho) {
+        throw new Error(`${donde}: con la vara en 0 la apuesta tiene que decir que te firman igual (y firmar): "${f.apuesta}" (firmó con la floja: ${f.bajo.ficho})`);
+      }
+      continue;
+    }
     if (typeof f.oferta !== 'string' || !f.apuesta.includes('Si no alcanza, seguís en la escalera')) {
       throw new Error(`${donde}: la apuesta de la prueba amateur no anuncia qué pasa si no alcanza: "${f.apuesta}"`);
     }
@@ -25687,8 +25735,10 @@ const { elegirOrgTier3: elegirOrgTier3K6C } = await import('../core/tier3.js');
 const { RUTINAS: RUTINAS_K6C } = await import('../core/rutinas.js');
 const { BALANCE: BALANCE_K6C } = await import('../data/balance.js');
 
-const SEEDS_K6C = 40;
+const SEEDS_K6C = 80;
 const SPLITS_K6C = 40;
+// K6c-fix: lo que dicen la oferta, la previa y la apuesta cuando la vara es 0 (tu nivel claramente arriba del club).
+const TEXTO_VARA_CERO_K6C = 'te firman aunque la prueba salga mal';
 // Lo mínimo para que los checks del lote no pasen vacíos.
 const ANIOS_CON_DOS_OFERTAS_MINIMO_K6C = 5;
 const SEMANAS_CON_PLAN_MINIMO_K6C = 200;
@@ -25795,13 +25845,16 @@ check('K6c la vara: la oferta, la previa de la prueba y la pantalla muestran la 
     const vara = varaDeLaPruebaK6C(nivel, datos.oferta.org.fuerza);
     if (datos.vara !== vara) problemas.push(`seed ${seed}: la prueba trae vara ${datos.vara}, el motor usa ${vara}`);
     if (!String(datos.regla).includes(`La vara: ${vara}%`)) problemas.push(`seed ${seed}: la previa no dice la vara ("${datos.regla}")`);
-    if (!String(datos.apuesta).includes(`Necesitás ${vara}%`)) problemas.push(`seed ${seed}: la apuesta no dice la vara ("${datos.apuesta}")`);
+    // K6c-fix: con la vara en 0 la apuesta no dice "necesitás 0%": dice que te firman aunque la prueba salga mal.
+    const anuncio = vara === 0 ? TEXTO_VARA_CERO_K6C : `Necesitás ${vara}%`;
+    if (!String(datos.apuesta).includes(anuncio)) problemas.push(`seed ${seed}: la apuesta no dice la vara ("${datos.apuesta}")`);
   }
   for (const { seed, decision, nivel } of ofertas.filter((o) => o.decision.datos.tier === 3)) {
     const vara = varaDeLaPruebaK6C(nivel, decision.datos.org.fuerza);
     if (decision.datos.vara !== vara) problemas.push(`seed ${seed}: la oferta lleva vara ${decision.datos.vara}, la de tu nivel contra el club es ${vara}`);
     const firmar = decision.opciones.find((opcion) => opcion.id === 'firmar');
-    if (!firmar.descripcion.includes(`necesitás ${vara}%`)) problemas.push(`seed ${seed}: la oferta no anuncia la vara ("${firmar.descripcion}")`);
+    const anuncio = vara === 0 ? TEXTO_VARA_CERO_K6C : `necesitás ${vara}%`;
+    if (!firmar.descripcion.includes(anuncio)) problemas.push(`seed ${seed}: la oferta no anuncia la vara ("${firmar.descripcion}")`);
   }
   // La pantalla (src/ui/app.js) no corre en Node: se exige que el veredicto salga de la misma cuenta del motor y no de la
   // probabilidad del mercado.
@@ -25906,6 +25959,8 @@ const DIF_JUSTO_K6C = 20;
 const PRUEBA_FLOJA_K6C = 0.3;
 const PRUEBA_REGULAR_K6C = 0.45;
 const PRUEBA_BUENA_K6C = 0.75;
+// K6c-fix: de a cuánto se barre el nivel (0 a 100) para "una prueba clavada firma siempre".
+const PASO_NIVEL_CLAVADA_K6C = 10;
 // La media de paradas de la semana por carrera con el plan del año (la meta de K6a-A es la mediana <= 1; con la regla del riesgo
 // nuevo la media misma queda lejos de 1, y sin ella no).
 const META_MEDIA_PARADAS_SEMANA_K6C = 0.5;
@@ -25917,7 +25972,7 @@ function conNivelK6C(st, nivel) {
   return { ...st, player: { ...st.player, stats } };
 }
 
-check('K6c la vara depende del nivel: contra el mismo club, el que lo supera por mucho firma con una prueba floja y el justo necesita una buena; la oferta, la previa y el motor usan esa vara', () => {
+check('K6c la vara depende del nivel: contra el mismo club, el que lo supera por mucho firma con una prueba floja (y aunque salga mal: la vara llega a 0) y el justo necesita una buena; una prueba clavada firma siempre; la oferta, la previa y el motor usan esa vara', () => {
   const problemas = [];
   for (const seed of [1, 2, 3, 4, 5]) {
     const rng = mulberry32K6C(seed);
@@ -25944,6 +25999,23 @@ check('K6c la vara depende del nivel: contra el mismo club, el que lo supera por
       }
     }
     if (!(varas.crack < varas.justo)) problemas.push(`seed ${seed}: la vara del crack (${varas.crack}%) no es menor que la del justo (${varas.justo}%)`);
+    // K6c-fix ("el club firma tu nivel, no tu día", PLAN.md §K6c): el crack firma aunque la prueba salga mal (con 0%: su vara es 0),
+    // y la oferta, la previa, la apuesta y el log lo dicen así (regla 15). Rojo con el mínimo de la vara en 0,1 (el de K6c).
+    const crack = conNivelK6C(conPlan, org.fuerza + DIF_CRACK_K6C);
+    const ofertaCrack = resolverAmateurK6C(crack, oferta, { opcionId: 'firmar' }, mulberry32K6C(seed));
+    const datosCrack = ofertaCrack.decision?.datos ?? {};
+    const conCero = resolverAmateurK6C(ofertaCrack.state, ofertaCrack.decision, { resultado: 0 }, mulberry32K6C(seed));
+    if (conCero.state.phase !== 'profesional') problemas.push(`seed ${seed}, crack (nivel ${org.fuerza + DIF_CRACK_K6C} contra ${org.fuerza}): con 0% no firmó (vara ${datosCrack.vara}%): la vara no llega a 0`);
+    if (datosCrack.vara === 0) {
+      if (!String(datosCrack.apuesta).includes(TEXTO_VARA_CERO_K6C) || !String(datosCrack.regla).includes(TEXTO_VARA_CERO_K6C)) problemas.push(`seed ${seed}, crack: la previa no dice que te firman aunque la prueba salga mal ("${datosCrack.apuesta}")`);
+      if (!conCero.logs.some((log) => log.message.includes('la vara era 0%'))) problemas.push(`seed ${seed}, crack: el log no dice que la vara era 0%`);
+    }
+    // Una prueba clavada (100%) firma siempre, a cualquier nivel: rojo con un máximo de la vara arriba de 1.
+    for (let nivel = 0; nivel <= BALANCE_K6C.stats.max; nivel += PASO_NIVEL_CLAVADA_K6C) {
+      const pausa = resolverAmateurK6C(conNivelK6C(conPlan, nivel), oferta, { opcionId: 'firmar' }, mulberry32K6C(seed));
+      const r = resolverAmateurK6C(pausa.state, pausa.decision, { resultado: 1 }, mulberry32K6C(seed));
+      if (r.state.phase !== 'profesional') problemas.push(`seed ${seed}: una prueba clavada con nivel ${nivel} contra ${org.fuerza} no firmó (vara ${pausa.decision?.datos?.vara}%)`);
+    }
   }
   if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
 });

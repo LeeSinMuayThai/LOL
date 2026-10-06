@@ -34,6 +34,46 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-06 — K6c-fix: la vara llega a 0 y los FAIL de la validación completa de `6dc0ff8` (`k6c-fix`; PLAN.md §K6c, "K6c-fix: la regla")
+
+- **La vara** (`amateur.varaPrueba`): { base 1,35, pendiente 0,035, mínimo 0,1, máximo 0,8 } → **{ base 1,55, pendiente 0,05,
+  mínimo 0, máximo 0,8 }**. Llega a 0 con 31 de diferencia nivel − calibre y a 0,8 con 15 o menos (a 20 pide 55%, a 25 pide 30%).
+  Una prueba clavada firma siempre (máximo < 1). Con la vara en 0 la oferta, la previa, la apuesta, el log y la pantalla dicen
+  "con tu nivel te firman aunque la prueba salga mal" (regla 15); la apuesta del dato ("decide si te firman") no se usa en ese caso.
+- **Barrido** (sonda con las mismas seeds del check de impacto, 1000 × 60). El impacto de los minijuegos depende casi solo de dónde
+  llega a 0: cero a 30 → +26,1%; **a 31 → +29,2%**; a 35 → +44,1%; a 40 → +77,7%; a 45 → +165,8%; vara siempre 0 → +25,1% (300
+  seeds); K6c → +1149%. El precio: ~74% de las pruebas de `equilibrado` piden 0 (la mediana de nivel − calibre es ~36).
+- **No llega a pro** (`simulate.js 600 60`; K6b `58db231` → K6c → ahora): criterio 22,8 → 24,5 → **24,5**; azar 26,8 → 32,0 →
+  **28,8**; malas 38,0 → 58,2 → **48,0**; equilibrado 29,2 (600; `simulate.js 1000`: K6b 24,9, K6c 32,3, ahora EQ1000).
+- **La frontera de `equilibrado`:** ni con la vara siempre en 0 baja de ~28 (sonda 1000 × 60: K6b 23,0, K6c 31,2, vara 0 28,0,
+  ahora 29,1). Lo que queda no es la vara: con la vara en 0, contra K6b, hay menos ofertas (1282 → 1022) y más carreras sin ninguna
+  (133 → 214), porque más amateurs terminan antes: burnout 7 → 60 y prohibición familiar 38 → 78 (`no_llegó` 185 → 142). Es el plan
+  del año de K6c con `resolverAuto` (la semana ya no reacciona a las barras en rojo). Queda para el supervisor.
+- **Los FAIL:**
+  - Impacto de los minijuegos: +1149% → +29,2% (la vara).
+  - K6a-M prueba clavada: el check quedó viejo frente al texto de K6c (buscaba "prueba" y "te firman" en minúscula); acepta
+    "la vara era" y "Te firman". Rojo con la línea del desenlace sacada del log.
+  - Fase 11: las 2 carreras eran burnouts a los 16 en el split 6, el que cierra el segundo año: el pipeline corta las etapas al
+    terminar y ese año no cerró. Elegible pasa a "más de 2 × `splitsPorEdad`". Rojo con el resumen anual sin nota en años pares.
+  - Burnout con aviso: volvió solo con la vara.
+  - K4 guardado: si a las 30 carreras les falta un tipo, más seeds (tope 200) hasta verlo. Cubre `amateur:reparto` y `servicioMilitar:*`.
+  - K0 mercado y K0 delegación: muestra agrandada hasta juntar el mínimo (tope 60 y 40 seeds). K0 bloques y reporte completo:
+    `ritmo.leyenda` sin ninguna carrera de Leyenda (malas) es una celda sin muestra (`REGLAS_NULO_SIN_MUESTRA_K0`); con alguna, el
+    null sigue rojo (mutante `mediana: null`: rojo en criterio).
+  - 9Wd Top 20: era la muestra. Bloques de 180 seeds: ahora 32,0 / 35,2 / 47,3 / 44,3 (39,6%, n 460); K6b 38,2 / 39,4 / 40,3 /
+    34,7 (38,2%). Se mide sobre 720 seeds (`barrido9W(n)`; las 180 de siempre siguen para los demás). Rojo sin los bonus del ranking: 9,2%.
+  - K4c "la prueba amateur anuncia qué pasa si no alcanza" (salió en `--rapido` con la vara 0): con vara 0 exige "te firman aunque
+    la prueba salga mal" y que la floja firme. Rojo con la apuesta de siempre.
+  - **Abiertos, sin re-base:** la edad mediana al terminar (24; banda 25-29) sale de la misma causa que `equilibrado` (sonda 720 × 90:
+    K6b 25, ahora 24, vara 0 24; splits pro mediana 30 → 27) y va atada a no-pro (dominio del usuario). K5-B región: la brecha de
+    llegada local entre la región más fácil y la más difícil pide >= 30 pp y la población no la tiene, ni en K6b (200 seeds por
+    región con criterio, K6b / ahora: KR 56,0 / 55,5, CN 60,0 / 57,5, EMEA 69,0 / 69,5, NA 76 / 76, APAC 77,5 / 77,5, BR 75,5 /
+    75,5): las 40 seeds del check la pasaban por suerte. Es región (D-D): decide el supervisor.
+- **Checks:** "K6c la vara depende del nivel" suma el crack que firma con 0% y la prueba clavada a todo nivel (rojo con mínimo 0,1 y
+  con máximo 1,2); "K6c la vara" y la oferta aceptan el texto de vara 0 (rojo con la apuesta de siempre); el lote de K6c pasa de 40
+  a 80 seeds (con la vara en 0 había 3 años con dos ofertas, mínimo 5).
+- **Huella** 977079279 → 1351863340 (corrimiento declarado, sigue 'K6c'). La forma del estado no cambia. VERIF
+
 ### 2026-10-06 — Integración de K6c con K6b-fix y la región medida bien (`k6c-integracion`; PLAN.md §K6c, "La región en K6c")
 
 - **Merge** de `k6c-region` (`57e68da`) con `k6b-fix` (`711fd39`). En `validate.js` se quedan los checks de los dos lados.

@@ -845,7 +845,7 @@ function buscarSalida(state, rng) {
           label: `Firmar con ${org.nombre}`,
           descripcion: tier === 2
             ? `Firmás directo en ${nombreVisibleDeLiga(liga.id)}: se termina la etapa amateur.`
-            : `Antes de firmar hay una prueba: necesitás ${vara}% para que te firmen (${textoDeLaVara(state, org)}). Si llegás, firmás seguro y se termina la etapa amateur; si no, seguís en la escalera.`,
+            : anuncioDeLaVara(state, org, vara),
           pesoAuto: 7
         },
         {
@@ -959,6 +959,17 @@ function textoDeLaVara(state, org) {
   return `tu nivel ${nivel} contra el ${org.fuerza} del club: cuanto más los superás, menos te piden`;
 }
 
+// K6c-fix ("el club firma tu nivel, no tu día"): la vara puede ser 0 (tu nivel claramente arriba del club). Entonces firmás
+// aunque la prueba salga mal, y los textos lo dicen así en vez de "necesitás 0%" (regla 15: la tarjeta promete lo que hace
+// `resolverLaPrueba`). Lo que la prueba sigue decidiendo es el crédito de entrada (`bonusJerarquiaTryout`).
+const TEXTO_VARA_CERO = 'con tu nivel te firman aunque la prueba salga mal';
+
+function anuncioDeLaVara(state, org, vara) {
+  return vara === 0
+    ? `Antes de firmar hay una prueba, pero ${TEXTO_VARA_CERO}: la vara es 0% (${textoDeLaVara(state, org)}). Firmás seguro y se termina la etapa amateur; la prueba decide con cuánto crédito entrás.`
+    : `Antes de firmar hay una prueba: necesitás ${vara}% para que te firmen (${textoDeLaVara(state, org)}). Si llegás, firmás seguro y se termina la etapa amateur; si no, seguís en la escalera.`;
+}
+
 function pausaDeLaPrueba(state, datosOferta) {
   const entrada = elegirMinijuego(state, 'tryout');
   const textos = textoDeMinijuego(entrada, state);
@@ -978,9 +989,14 @@ function pausaDeLaPrueba(state, datosOferta) {
         momento: 'tryout',
         statRelevante: entrada.statRelevante,
         // K4c (revisión), regla 15: la apuesta dice también qué pasa si no alcanza (lo que hace `resolverLaPrueba`).
-        apuesta: `${textos.apuesta} Necesitás ${vara}% para que te firmen. ${TEXTO_SI_NO_ALCANZA}`,
+        apuesta: vara === 0
+          // Sin la apuesta del dato ("decide si te firman"), que con la vara en 0 no es cierta.
+          ? `Con tu nivel te firman aunque la prueba salga mal (la vara es 0%): lo que hagas acá decide cuánto crédito traés el primer día en el equipo.`
+          : `${textos.apuesta} Necesitás ${vara}% para que te firmen. ${TEXTO_SI_NO_ALCANZA}`,
         // K6c: la vara, a la vista antes del minijuego (la línea de la regla de la previa) y en número para la pantalla.
-        regla: `La vara: ${vara}% (${textoDeLaVara(state, datosOferta.org)}). Si llegás, firmás seguro; si no, no firmás.`,
+        regla: vara === 0
+          ? `La vara: 0% (${textoDeLaVara(state, datosOferta.org)}). Firmás seguro: ${TEXTO_VARA_CERO}, el club firma tu nivel y no tu día.`
+          : `La vara: ${vara}% (${textoDeLaVara(state, datosOferta.org)}). Si llegás, firmás seguro; si no, no firmás.`,
         vara,
         oferta: datosOferta
       }
@@ -1016,7 +1032,9 @@ function resolverLaPrueba(state, decision, respuesta) {
   return {
     state: firmado,
     logs: [
-      crearLog('amateur', `Te firman: sacaste ${veredicto.sacaste}% y la vara era ${veredicto.vara}%. Entrás ${credito}.`),
+      crearLog('amateur', veredicto.vara === 0
+        ? `Te firman: con tu nivel, la vara era 0% (sacaste ${veredicto.sacaste}%). Entrás ${credito}.`
+        : `Te firman: sacaste ${veredicto.sacaste}% y la vara era ${veredicto.vara}%. Entrás ${credito}.`),
       ...logs
     ]
   };
