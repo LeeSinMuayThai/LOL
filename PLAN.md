@@ -8328,6 +8328,20 @@ vio en rojo y la huella es idéntica.
   - la racha se resetea al firmar, como la deuda;
   - el pro frena con la mentalidad en rojo.
 
+**El merge** (`99927be`, `ed95728`, `8bea57a`): `k6c-fix`, `j9-caras` y `etiqueta-tier3` entran a `fase-9r`, con la
+verificación en `PROGRESO.md`. No se pusheó. K6c sigue esperando que el usuario juegue.
+
+**D82, que estaba anotado "después de K6"** (supervisor; la rama `d82` sale del head mergeado):
+- **(a) El valor que se muestra tiene que ser el que paga el mercado (regla 15).**
+  - Si el valor visible sale de otra fórmula que el precio de traspaso (`presupuestoDeDemanda`, que descuenta la edad),
+    la pantalla muestra el número que usa el motor, y dice por qué baja con la edad cuando la diferencia se nota.
+  - Si es solo pantalla, la huella queda idéntica. Si el número visible lo lee el motor, se reporta sin cambiarlo.
+- **(b) Medir bien el Mundial del mundo** (`simulate.js`, bloque `mundoMundial`). Cada año del mundo tiene que pesar
+  igual, no solo los años en que la carrera vive.
+  - Se reporta lo medido con el bloque viejo y con el nuevo.
+  - Si cambia el veredicto de una meta del usuario (LCK ≥ 25% y la liga más fuerte), **no se re-basa**: se reporta y
+    decide el usuario.
+
 ## K.6 — Qué pasa con FASE J y FASE V
 
 | Pieza | Destino |
