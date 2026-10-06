@@ -34,6 +34,18 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-06 — K6c-fix, séptima pasada: retiro_por_lesion se verifica con un estado armado hasta D83 (`k6c-fix`; PLAN.md `ea13221`)
+
+- Solo checks. "lesion_cronica y retiro_por_lesion son alcanzables" se parte en dos:
+  - "lesion_cronica es alcanzable" sigue duro con `responderQueGrindea`: 3 de 120 carreras.
+  - `retiro_por_lesion` queda declarado inalcanzable en carreras naturales hasta D83, con su comentario de regla 17. La recaída
+    pide 17 splits seguidos de deuda en el amateur: 0 de 1200.
+- Check nuevo "retiro_por_lesion: con la lesión grave ya pasada y la recaída armada (amateur y pro)…", con un estado armado.
+  - Verifica, en el amateur y en el pro: la recaída frena, el automático se retira, retirarte cierra la carrera, el log ("el sueño de
+    ser pro se termina acá" / "te cierra la carrera a los"), el registro y la tarjeta ("El que no pudo seguir").
+  - Rojo con el mutante "la recaída nunca retira".
+- `--rapido` 358 OK, 0 FAIL: huella (1766253198) y forma sin cambio. Determinismo `simulate.js 100 60 criterio` ×2: diff vacío.
+
 ### 2026-10-06 — K6c-fix, sexta pasada: la lesión es del que grindea sin dormir de amateur (`k6c-fix`; PLAN.md `3b8e034`)
 
 - **Cambio:** `systems/salud.js` corre también en el amateur, con los mismos umbrales y sus tiradas de siempre (T1: huella

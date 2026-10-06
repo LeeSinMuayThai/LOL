@@ -7253,14 +7253,13 @@ checkLento('La cadena de servicio militar no deja flags.enServicioMilitar prendi
   }
 });
 
-checkLento('lesion_cronica y retiro_por_lesion son alcanzables (raros, no cero)', () => {
+checkLento('lesion_cronica es alcanzable (rara, no cero) con carreras que grindean', () => {
   let lesionCronica = 0;
-  let retiroPorLesion = 0;
   let N = 0;
 
-  // K6c-fix, sexta pasada: con carreras que grindean (`responderQueGrindea`), seeds en orden hasta ver cada caso en
-  // `CASOS_DE_LESION_MINIMOS` carreras, con tope.
-  for (let seed = 1; seed <= SEEDS_TOPE_LESION && (lesionCronica < CASOS_DE_LESION_MINIMOS || retiroPorLesion < CASOS_DE_LESION_MINIMOS); seed += 1) {
+  // K6c-fix, sexta pasada: con carreras que grindean (`responderQueGrindea`), seeds en orden hasta ver la lesión grave en
+  // `CASOS_DE_LESION_MINIMOS` carreras, con tope (medido: 23 de 1200).
+  for (let seed = 1; seed <= SEEDS_TOPE_LESION && lesionCronica < CASOS_DE_LESION_MINIMOS; seed += 1) {
     N = seed;
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
@@ -7270,22 +7269,63 @@ checkLento('lesion_cronica y retiro_por_lesion son alcanzables (raros, no cero)'
     if (state.flags.lesionGraveSplit != null) {
       lesionCronica += 1;
     }
-    if (state.finAnticipado === 'retiro_por_lesion') {
-      retiroPorLesion += 1;
-    }
   }
-  console.log(`      carreras que grindean: lesion_cronica ${lesionCronica}, retiro_por_lesion ${retiroPorLesion} de ${N}`);
-
+  console.log(`      carreras que grindean: lesion_cronica en ${lesionCronica} de ${N}`);
   if (lesionCronica < CASOS_DE_LESION_MINIMOS) {
     throw new Error(`lesion_cronica en ${lesionCronica} de ${N} carreras que grindean (se esperaban ${CASOS_DE_LESION_MINIMOS} o más)`);
   }
-  if (retiroPorLesion < CASOS_DE_LESION_MINIMOS) {
-    throw new Error(`retiro_por_lesion en ${retiroPorLesion} de ${N} carreras que grindean (se esperaban ${CASOS_DE_LESION_MINIMOS} o más)`);
+});
+
+// `retiro_por_lesion` NO se busca en carreras naturales (como `servicio_militar` en "El contexto de carrera", que lo verifica otro
+// check). Regla 17 — protege: que el final por lesión exista y se narre bien (el cuerpo corta la carrera, en el amateur o en el pro).
+// Desde: K6c-fix, séptima pasada (2026-10-06; PLAN.md `ea13221`, fila D83). Por qué: con la lesión solo en el amateur (la deuda de
+// sueño se escribe solo ahí y vuelve a 0 al firmar), la recaída pide 6 + 5 + 6 = 17 splits seguidos de deuda en el amateur y el
+// burnout llega antes: 0 de 1200 carreras que grindean (`responderQueGrindea`, que además rechaza ofertas). Vuelve a ser alcanzable
+// con D83 (lesiones en el pro); hasta entonces lo verifica el check de abajo, con un estado armado.
+check('retiro_por_lesion: con la lesión grave ya pasada y la recaída armada (amateur y pro), la recaída frena, retirarte cierra la carrera y el log, el registro y la tarjeta lo cuentan', () => {
+  const problemas = [];
+  const salud = sistemaPorId('salud');
+  const s = BALANCE.salud;
+  // Un rng que siempre sale: la recaída pincha y el sorteo del nombre toma el primero. Solo para armar el caso.
+  const rngQueSale = () => 0;
+  const casos = [
+    { fase: 'amateur', org: null, log: 'el sueño de ser pro se termina acá', registro: 'antes de llegar a pro' },
+    { fase: 'profesional', org: 'Org de prueba', log: 'te cierra la carrera a los', registro: 'te termina la carrera' }
+  ];
+  for (const caso of casos) {
+    const base = createInitialState(1, mulberry32(1));
+    const armado = {
+      ...base,
+      phase: caso.fase,
+      career: { ...base.career, currentOrg: caso.org },
+      player: { ...base.player, deudaSueno: BALANCE.amateur.deudaMaxima, techoLesionMecanica: base.player.stats.mecanica },
+      flags: { ...base.flags, lesionGraveSplit: base.player.splitCount, splitsRiesgoFisico: s.splitsParaReLesion }
+    };
+    const r = salud.aplicar(armado, rngQueSale);
+    const decision = r.decision;
+    if (!decision || decision.datos?.motivo !== 'lesion_grave' || !decision.datos.recaida) {
+      problemas.push(`${caso.fase}: con la recaída armada no frena con la recaída (${JSON.stringify(decision?.datos ?? null)})`);
+      continue;
+    }
+    if (!decision.opciones.some((opcion) => opcion.id === 'retirarte')) problemas.push(`${caso.fase}: la recaída no ofrece retirarte`);
+    if (salud.resolverAuto(r.state, decision).opcionId !== 'retirarte') problemas.push(`${caso.fase}: el automático no se retira en la recaída`);
+    const fin = salud.resolver(r.state, decision, { opcionId: 'retirarte' }, rngQueSale);
+    const st = fin.state;
+    if (!st.terminado || st.phase !== 'retirado' || st.finAnticipado !== 'retiro_por_lesion') {
+      problemas.push(`${caso.fase}: retirarte no cierra la carrera (terminado ${st.terminado}, fase ${st.phase}, fin ${st.finAnticipado})`);
+      continue;
+    }
+    if (!fin.logs.some((log) => log.message.includes(caso.log))) problemas.push(`${caso.fase}: el log no dice "${caso.log}" (${fin.logs.map((log) => log.message).join(' | ')})`);
+    const momento = st.career.registro.find?.((entrada) => entrada.tipo === 'retiro_por_lesion')
+      ?? JSON.stringify(st.career.registro).includes('retiro_por_lesion');
+    if (!momento || !JSON.stringify(st.career.registro).includes(caso.registro)) problemas.push(`${caso.fase}: el registro no cuenta el retiro por lesión ("${caso.registro}")`);
+    const tarjeta = JSON.stringify(componerLegado(st));
+    if (!tarjeta.includes('El que no pudo seguir')) problemas.push(`${caso.fase}: la tarjeta no lo cuenta ("El que no pudo seguir")`);
+    // Seguir arriesgando no cierra nada (el otro lado de la decisión).
+    const sigue = salud.resolver(r.state, decision, { opcionId: 'seguir' }, rngQueSale).state;
+    if (sigue.terminado) problemas.push(`${caso.fase}: seguir arriesgando cierra la carrera`);
   }
-  const fraccion = retiroPorLesion / N;
-  if (fraccion > 0.1) {
-    throw new Error(`retiro_por_lesion en el ${(fraccion * 100).toFixed(1)}% de las carreras — demasiado frecuente para un final que debería ser raro`);
-  }
+  if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
 });
 
 checkLento('player.stats.mecanica nunca cruza player.techoLesionMecanica una vez fijado', () => {
