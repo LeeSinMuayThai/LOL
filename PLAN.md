@@ -8367,6 +8367,23 @@ medio de <liga>").
   - el calibre de tier 2 varía por región (LRS 31, LCK CL 53): desde LATAM se sube con menos nivel;
   - los 9 eventos de tier 3 se ven menos;
   - `criterio` frena ~3 veces más por carrera.
+- **La validación completa del supervisor** (`7720bcc`, copia `git archive`; `f5489f9` cambia solo el texto del log, el
+  check y un comentario): **534 OK, 3 FAIL.** Los tres son metas del usuario que la regla aleja, y no se re-basan:
+
+  | Check | Antes (re-basado en K5c) | Con la regla | Meta |
+  |---|---|---|---|
+  | Gana un título de primera | 55,7% | 59,4% (techo de banda 58,2) | ~30 |
+  | Entra al Top 20 | 36,4% | 39,9% (techo de banda 38,9) | ~15 |
+  | El más fuerte gana el Mundial | — | 59,9% (banda 42-58) | ~50 |
+  | Carreras que llegan a los 30 o más | 23,4% | 16,8% (piso 17) | 17-30 |
+
+  **Es el costo de la regla:** el bueno sale antes de tier 3 y gana más, cuando D80 ya decía que los títulos y el Top
+  20 son demasiado comunes. **Para el usuario:**
+  - (1) la regla con margen 15 y estas metas re-basadas, con su línea;
+  - (2) un margen más alto: con 20, 6 splits o más queda en 16,8%, la mediana en 3 y el Mundial en 11,5. No se validó
+    completo;
+  - (3) la regla y además el tier 1 más difícil, que el usuario dejó "para después" en K6b;
+  - (4) dejar la moneda.
 
 **D82, hecho** (rama `d82`: `2f5c00c`, `ec2695c`, `00d075e`; huella idéntica).
 - **(a)** El precio de traspaso que se muestra sale del valor de mercado visible por el descuento de la edad
