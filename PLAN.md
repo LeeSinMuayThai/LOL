@@ -8206,6 +8206,18 @@ son amateurs que se caen rápido, con la mentalidad 54 → 38 → 20 → 3, y la
   - edad al terminar;
   - 9Wd.
 
+**K6c-fix, quinta pasada** (`575db0e`, según el worker). El freno con la mentalidad en rojo está hecho: los burnouts con
+aviso suben del 70% al 95%, y las paradas de la semana van de 0,13 a 0,18 por carrera.
+
+La lesión no llega con ningún bot porque `systems/salud.js` solo corre con `phase === 'profesional'`. La premisa de la
+pregunta al usuario estaba mal ("la lesión le pasa al que grindea de amateur"): la deuda del amateur solo dañaba al
+pasar al pro, y con el reset nadie se lesiona en todo el juego.
+
+**Para que la decisión del usuario sea verdad:** `salud.js` corre también en el amateur, y la lesión pasa a ser del que
+grindea sin dormir de amateur.
+- Los textos de la lesión dicen lo que pasa en el amateur (regla 15): no hay fechas que perderse.
+- Los checks de cobertura la buscan con carreras que grindean, con una muestra que no quede al borde.
+
 ## K.6 — Qué pasa con FASE J y FASE V
 
 | Pieza | Destino |
