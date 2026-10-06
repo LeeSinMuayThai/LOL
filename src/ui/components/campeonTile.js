@@ -1,12 +1,28 @@
 import CAMPEONES from '../../data/champions.json' with { type: 'json' };
 import { arquetipoDeTags, inicialesDeCampeon } from '../formatoUi.js';
 import { BALANCE } from '../../data/balance.js';
+import { VERSION_DDRAGON, BASE_DDRAGON } from '../../data/ddragon.js';
 
 const POR_NOMBRE = new Map(CAMPEONES.map((c) => [c.name, c]));
 
-// Identidad geométrica de un campeón: sin splash (Riot IP). El color sale
-// del primer tag de arquetipo, mapeado a tokens. Misma pieza en setup, ficha,
-// meta y Fearless.
+// URLs de Data Dragon (J9). Puras, para poder probarlas en Node.
+export function urlIconoDeCampeon(key) {
+  return `${BASE_DDRAGON}/${VERSION_DDRAGON}/img/champion/${key}.png`;
+}
+export function urlSplashDeCampeon(key) {
+  return `${BASE_DDRAGON}/img/champion/splash/${key}_0.jpg`;
+}
+// La key de Data Dragon de un campeón por nombre; `null` si no la tiene.
+export function keyDdragonDeCampeon(nombre) {
+  return POR_NOMBRE.get(nombre)?.ddragon ?? null;
+}
+
+// Identidad de un campeón. La base es el tile geométrico: el color sale del
+// primer tag de arquetipo, mapeado a tokens, con las iniciales. Misma pieza en
+// setup, ficha, meta y Fearless. Encima va el ícono de Data Dragon (J9: el CDN
+// público de Riot, nada se sube al repo ni a `dist/`). El ícono es opcional:
+// sin `ddragon` en el catálogo, o si la imagen no carga (`onerror`: sin red,
+// CDN caído), se saca el <img> y queda el tile geométrico, jugable igual.
 
 // Lo que el tile `ficha` le dice al jugador sobre el óxido de un campeón del
 // pool (fase J3). Puro y sin DOM para poder probarlo en Node. El texto es corto
@@ -71,6 +87,28 @@ export function crearCampeonTile(campeon, {
   iniciales.className = 'campeon-tile-ini';
   iniciales.textContent = inicialesDeCampeon(campeon.name);
   tile.appendChild(iniciales);
+
+  const key = catalogo?.ddragon ?? null;
+  if (key) {
+    const img = document.createElement('img');
+    img.className = 'campeon-tile-cara';
+    img.alt = '';
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.onerror = () => {
+      img.onerror = null;
+      img.onload = null;
+      img.remove();
+      tile.className = tile.className.replace(' campeon-tile--con-cara', '');
+    };
+    img.onload = () => {
+      // Con la cara cargada, las iniciales sobran; los números de abajo
+      // (maestría, óxido, tier) ganan un fondo para leerse sobre la imagen.
+      if (!tile.className.includes('campeon-tile--con-cara')) tile.className += ' campeon-tile--con-cara';
+    };
+    img.src = urlIconoDeCampeon(key);
+    tile.appendChild(img);
+  }
 
   if (Number.isFinite(campeon.mastery)) {
     const mae = document.createElement('span');

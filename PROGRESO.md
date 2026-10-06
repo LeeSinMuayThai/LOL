@@ -34,6 +34,30 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-06 — J9: los campeones tienen cara (`j9-caras`; PLAN.md "J9")
+
+- Cero motor, cero corrimiento: solo datos y UI. `huella.js` (40 seeds) idéntica antes y después: 1408477439.
+- `data/champions.json`: cada una de las 91 entradas declara `ddragon` (la key de Data Dragon, explícita: Wukong -> MonkeyKing,
+  Renata Glasc -> Renata, Bel'Veth -> Belveth, Kai'Sa -> Kaisa, LeBlanc -> Leblanc, Lee Sin -> LeeSin...). Verificadas una por una
+  contra `champion.json` de Data Dragon 16.19.1: las 91 existen, 0 con `ddragon: null` (el `null` explícito queda como convención
+  para un campeón sin imagen). Poppy está en dos roles y comparte key a propósito.
+- `data/ddragon.js` (nuevo): versión del CDN y URL base, en dato, nunca en la UI.
+- `ui/components/campeonTile.js`: el tile geométrico sigue siendo la base; encima va el ícono de Data Dragon. `img.onerror` saca
+  el `<img>` y deja el tile de siempre (iniciales + borde por arquetipo); `onload` oculta las iniciales y le da fondo a los
+  números de abajo. Reemplaza el comentario "sin splash, Riot IP". Alcanza ficha, mini (meta/Fearless) y setup.
+- `ui/screens/inicio.js`: el splash del último main elegido, difuminado, detrás del setup, con transición de opacidad (se
+  precarga con un `Image` aparte: sin imagen, el fondo de siempre). Estilos en `pantallas.css` con tokens (sin color literal).
+- Handle (punto 5 del spec): ya no era cierto. `app.js` lee `handleInput` directo (`app.js:643`) y `index.html` ya lo muestra
+  como primer paso numerado del setup; no se tocó.
+- Sin CSP ni `img-src` en `index.html` ni en `server.js`: no hubo que abrir ningún origen. Las imágenes van del navegador al CDN;
+  `dist/` no crece una imagen (`build.js` OK, 2340 KB de 2400).
+- Checks nuevos (rápidos): "cada campeón declara `ddragon`" (rojo con el mutante "a Aatrox le falta el campo") y "el tile con
+  `ddragon: null` o con onerror es el geométrico" (rojo con los mutantes "onerror no saca el `<img>`" y "pide imagen aun sin key").
+- Navegador real (Playwright, `server.js` local): con red, 16 tiles de la grilla con ícono, splash de K'Sante visible tras elegir
+  3 mains, 0 errores de consola; con `ddragon.leagueoflegends.com` bloqueado, 0 `<img>`, tiles geométricos, sin splash, el
+  setup y la carrera siguen jugables (los únicos mensajes de consola son los "Failed to load resource" del propio navegador).
+- `--rapido` 360 OK, 0 FAIL (358 + los 2 nuevos), `build.js` OK.
+
 ### 2026-10-06 — K6c-fix, séptima pasada: retiro_por_lesion se verifica con un estado armado hasta D83 (`k6c-fix`; PLAN.md `ea13221`)
 
 - Solo checks. "lesion_cronica y retiro_por_lesion son alcanzables" se parte en dos:
