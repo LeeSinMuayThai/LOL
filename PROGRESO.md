@@ -34,6 +34,17 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-06 — La ficha de tier 3 ya no dice la liga de tier 1 (`etiqueta-tier3`)
+
+- Causa (solo UI): `lineaDeContextoFicha` (`ui/components/ficha.js`) resolvía la liga con `career.liga`, que en tier 3 es `null` por
+  diseño (`core/tier3.js`, `systems/amateur.js:997`; `puntaje.js` lo exige), y caía a `mundo.ligaOrigen`: "Prisma Academy · LEC · 2029"
+  sobre "RECIÉN LLEGADO A UN EQUIPO DE TIER 3". Regla 15. Mismo respaldo con el free agent de tier 3 (sin org).
+- Ahora, con `career.tier === 3` y sin liga: "Prisma Academy · Tier 3 · Europa · 2029 · 18 años". El motor no se tocó:
+  `huella.js` idéntica antes y después (1408477439).
+- Check nuevo en `validate.js` ("Ficha de tier 3: ..."), visto en rojo contra el código viejo ("... · LCK · 2030 ..." nombra la
+  liga LCK). `--rapido` 0 FAIL, `build.js` OK.
+- Sin tocar (no era el caso): el amateur (`tier` null) sigue mostrando la liga de origen en la línea; no es tier 3.
+
 ### 2026-10-06 — J9: los campeones tienen cara (`j9-caras`; PLAN.md "J9")
 
 - Cero motor, cero corrimiento: solo datos y UI. `huella.js` (40 seeds) idéntica antes y después: 1408477439.

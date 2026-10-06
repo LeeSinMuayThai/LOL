@@ -175,6 +175,11 @@ function crearRankedHero(state, modulos) {
 // "LCK_CL"). Pura: la usa el check de ids crudos de `validate.js`.
 export function lineaDeContextoFicha(state) {
   const org = state.career.currentOrg ? `${state.career.currentOrg} · ` : '';
+  // Tier 3 no es una liga (`career.liga` es null a propósito): el respaldo a `ligaOrigen` mostraba la liga de tier 1 de la
+  // región ("Prisma Academy · LEC") sobre "RECIÉN LLEGADO A UN EQUIPO DE TIER 3" (regla 15). Ahí se nombra el circuito.
+  if (state.career.tier === 3 && !state.career.liga) {
+    return `${org}Tier 3 · ${state.mundo.regionOrigen} · ${state.calendario.etiqueta} · ${state.age} años`;
+  }
   const ligaId = state.mundo.ligas?.find((l) => l.id === state.career.liga)?.id ?? state.mundo.ligaOrigen;
   const liga = NOMBRE_DE_LIGA[ligaId] ?? ligaId;
   return `${org}${liga} · ${state.calendario.etiqueta} · ${state.age} años`;
