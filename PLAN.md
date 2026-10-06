@@ -8342,6 +8342,43 @@ verificación en `PROGRESO.md`. No se pusheó. K6c sigue esperando que el usuari
   - Si cambia el veredicto de una meta del usuario (LCK ≥ 25% y la liga más fuerte), **no se re-basa**: se reporta y
     decide el usuario.
 
+**`tier3-nivel`, preparada** (`7720bcc`, `f5489f9`; **sin mergear, decide el usuario**). La regla tiene margen 15
+(`margenNivelSobreTier2`) y el log dice por qué subís ("Te sobraba nivel para el circuito chico: N contra el C de un equipo
+medio de <liga>").
+- **Las barandas, medidas por el worker:** 600 × 60, seeds 1-600, región y rol al azar, antes `c3c1721` → después.
+
+  | Bot | Mediana en tier 3 | 6+ splits | Llega a tier 1 | No-pro | Mundial | Top 20 | Edad al terminar | Frenadas |
+  |---|---|---|---|---|---|---|---|---|
+  | `criterio` | 5 → 2 | 32,3 → 7,7% | 71,3 → 73,0 | 24,5 → 24,5 | 10,5 → 9,8 | 37,2 → 40,3 | 26,9 → 27,0 | 48,4 → 51,5 |
+  | `equilibrado` | 5 → 2 | 32,7 → 8,2% | 67,7 → 70,5 | 25,7 → 25,7 | 4,8 → 6,2 | 28,2 → 30,5 | 26,1 → 26,0 | 43,7 → 45,4 |
+  | `malas` | 4 → 2 | 17,0 → 5,0% | 33,0 → 34,2 | 51,2 → 51,2 | 1,0 → 1,2 | 8,7 → 11,0 | 22,6 → 22,4 | 25,2 → 25,9 |
+
+  Con la región fija (600): Corea 11,5 → 13,2%, NA 9,0 → 8,7%.
+- **La revisión independiente:**
+  - verificó T1 en paralelo (40 seeds × 60 splits): 0 divergencias hasta el split donde la regla dispara;
+  - el tramo con moneda es idéntico, tirada por tirada;
+  - pidió sacar del log "ganar de taquito" (la regla no mira el récord: regla 15);
+  - pidió endurecer el check, que no atrapaba "el club más fuerte en vez del calibre" ni `>` en lugar de `>=`.
+
+  Arreglado en `f5489f9`.
+- **El corrimiento declarado:** huella 1408477439 → 346802722; huella del juego 1265514711 (en `version.js`); `FORMAS`
+  no cambia.
+- **Los riesgos:**
+  - el calibre de tier 2 varía por región (LRS 31, LCK CL 53): desde LATAM se sube con menos nivel;
+  - los 9 eventos de tier 3 se ven menos;
+  - `criterio` frena ~3 veces más por carrera.
+
+**D82, hecho** (rama `d82`: `2f5c00c`, `ec2695c`, `00d075e`; huella idéntica).
+- **(a)** El precio de traspaso que se muestra sale del valor de mercado visible por el descuento de la edad
+  (`precioDeTraspaso`). Desde un descuento del 10% la tarjeta dice "te descuentan por la edad: por vos ponen el N%…".
+  Antes la pantalla decía $326k/año y el traspaso costaba $84k sin explicación. El motor no lee ese número. El check
+  compara el % del texto con el del motor y está en rojo con su mutante.
+- **(b)** `mundoMundial` pesa igual cada uno de los primeros 12 años del mundo (2026-2037), con un horizonte fijo que no
+  depende de la muestra.
+  - `criterio` 600 × 60: LCK 51,6 → 51,2%, LPL 44,5 → 44,7%, margen 7,1 → 6,5.
+  - **Ninguna meta del usuario cambia de veredicto.**
+  - La revisión descartó el horizonte "años con ≥ 30 Mundiales": dependía de N y aflojaba el piso de "margen claro".
+
 ## K.6 — Qué pasa con FASE J y FASE V
 
 | Pieza | Destino |
