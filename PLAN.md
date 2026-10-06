@@ -8283,6 +8283,51 @@ en el scratchpad de la sesión `9018f53b`, carpeta `k6r/`):
 - **Se arregla la etiqueta "· LEC ·",** si es de pantalla (es un bug de regla 15, cero motor).
 - Las decisiones de motor que salgan, incluido D77 en el pro, las toma el usuario.
 
+**La etiqueta, hecha** (`etiqueta-tier3`: `c3c1721`). Era de pantalla: en tier 3 `career.liga` es null a propósito, y
+`lineaDeContextoFicha` caía a la liga de tier 1 de la región. Ahora dice "Prisma Academy · Tier 3 · Europa". El check se
+vio en rojo y la huella es idéntica.
+
+**La carrera varada en tier 3, investigada** (sondas en el scratchpad de `9018f53b`, carpeta `t3/`; medida
+`criterio`, seeds 1-600, 60 splits):
+- **La causa.** Salir de tier 3 es una moneda que no lee el nivel (`systems/competitivo.js` `resolverTier3`):
+  - cada split se tira `chance(0,45)` de salida, y después subir contra que el club se disuelva, con
+    `0,40 + 0,35 × jerarquía`;
+  - la jerarquía vuelve a 0 con cada club disuelto;
+  - cada disolución cuesta 2 splits: el split libre y el primero con el club nuevo (la compuerta de K6a-M);
+  - tier 3 no tiene mercado (`mercado.js:629`).
+- **Los números.** El diseño (`balance.js`) apuntaba a una mediana de 1-2 splits; se mide 5. El 32% de las carreras pasa
+  6 splits o más ahí, con nivel 63 contra un calibre de 18 y 80% de victorias. Un caso en Node: la seed 18 pasa 18
+  splits en tier 3 con nivel 70-79, 5 disoluciones y 0 ascensos.
+- **No es una regresión de K6.** Las cabezas de K5c a K6c-fix dan igual. K6a-M (`6dd29d0`) lo empeoró: 25,7 → 33,5%. El
+  problema viene de las fases 3 y 9Md. El 1081 contra 187 de la seed 39 es el dado.
+- **La regla propuesta: "el nivel manda" en tier 3.** Si tu nivel supera el calibre de la liga de tier 2 de tu región
+  (`calibreDeLiga`) por un margen que va en `balance.js`, subís seguro. Si no, sigue la moneda de hoy.
+  - Contrafáctico con margen 15: 6 splits o más, 32,3 → 7,7%; mediana 5 → 2; llegan a tier 1 71,3 → 73,0%; Mundial
+    10,5 → 9,8 (ruido con 600 carreras); no-pro igual.
+  - Con margen 0, tier 3 queda en 2 splits fijos.
+  - Corre el stream: la huella se mueve y es un corrimiento a declarar.
+- **D34 deja esta perilla al usuario.** **Decisión del supervisor, a confirmar:** se prepara la regla en la rama
+  `tier3-nivel` (desde `c3c1721`), **sin mergear**. Va con su check con mutante y su validación completa, y con las
+  barandas medidas antes y después:
+  - no-pro por bot;
+  - Mundial con la región fija;
+  - Top 20;
+  - edad al terminar;
+  - frenadas;
+  - llegada a tier 1.
+
+  A la mañana el usuario dice sí o no sobre números, no sobre una promesa.
+- **D77, medido.** El dado del burnout corre al final de cada split, después de `amateur.js`. `firmarConEquipo` te pasa a
+  profesional en ese mismo split, y la racha en rojo del amateur (`splitsMentalBajo`) no se resetea al firmar. Pasa así:
+  - `malas`, 400 × 60: 11 carreras firman y se queman en el mismo split, con mentalidad 3-29;
+  - en ninguna la oferta o la prueba nombra la mentalidad;
+  - el freno del amateur no vuelve a frenar en el piso.
+
+  Opciones para el usuario, sin implementar:
+  - la oferta dice el riesgo y deja esperar;
+  - la racha se resetea al firmar, como la deuda;
+  - el pro frena con la mentalidad en rojo.
+
 ## K.6 — Qué pasa con FASE J y FASE V
 
 | Pieza | Destino |
@@ -8433,6 +8478,7 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D81 | **K5c-M (la élite se busca) no tiene efecto medible con la casa encendida.** Con Final2, "la casa primero" de K5c-H ordena la mano antes que la fuerza de la org. Las manos de élite son chicas (~2 ofertas), y `mercado.elite` no cambia la fuerza mediana del club que te ofrece. Su check prueba el mecanismo con la casa neutra en memoria. Si en K6 la élite no termina en los mejores clubes de su liga, el lugar es el orden dentro de los clubes de casa | K6 |
 | D82 | **Anotados en la revisión de los arreglos de K5c (2026-10-05), sin arreglar:** (a) el precio de traspaso sale de `presupuestoDeDemanda`, que descuenta la edad, y el valor que se muestra no la descuenta, así que un veterano "vale" $430k/año y su traspaso cuesta ~$60k; (b) el bloque `mundoMundial` cuenta los Mundiales solo mientras la carrera vive, y pesan más los primeros años del mundo | después de K6 |
 | D83 | **Lesiones en el pro** (decisión del usuario 2026-10-06: "solo en el amateur por ahora"). La deuda de sueño (`deudaSueno`) solo se escribe en el amateur; en el pro queda congelada. Con el reset al firmar (K6c-fix), la lesión grave solo le pasa a quien grindea sin dormir de amateur. Pendiente: que la rutina pro genere su propia deuda (scrims + soloQ a la noche), así la lesión de muñeca es algo real de un pro. **Mientras tanto, el final por lesión (`retiro_por_lesion`) no se alcanza en carreras naturales**: la recaída pide 17 splits seguidos con deuda en el amateur, y el burnout llega antes. Su check de cobertura queda declarado inalcanzable hasta D83 (el patrón de `servicio_militar`), con un check propio que arma el estado y verifica que el final se dispara y se narra bien. Cuando se haga D83, vuelve la cobertura natural | después de que el usuario pruebe K6c |
+| D84 | **Salir de tier 3 es una moneda que no lee el nivel** (`resolverTier3`: cada disolución resetea la jerarquía; tier 3 no tiene mercado). El 32% de las carreras de `criterio` pasa 6 splits o más en tier 3, con nivel 63 contra calibre 18. El diseño era una mediana de 1-2 y se miden 5. Es la "constante abierta a criterio" de D34, medida. Se propone "el nivel manda" en tier 3, con un margen sobre el calibre de tier 2. Investigación y contrafáctico en K6c, "La noche del 2026-10-06" | decide el usuario (rama `tier3-nivel`, preparada sin mergear) |
 
 ---
 
