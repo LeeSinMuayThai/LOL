@@ -8245,6 +8245,44 @@ grindea sin dormir de amateur.
 **Decisión del supervisor, a confirmar:** J9 de noche. No toca ninguna decisión del usuario y no corre el stream. Si
 no la quiere ahora, la rama queda sin mergear.
 
+**J9, hecho** (`j9-caras`: `dfbd4e8`, `a18af54`): la huella es idéntica, con 4 checks nuevos y mutantes. La revisión
+encontró scroll horizontal a 390 y 414 px (el splash escalado reabría D69). Se arregló y se re-midió en 8 anchos.
+
+**K6, re-jugado** (2026-10-06, sobre `a18af54` = K6b + K6c + K6c-fix + J9; el mismo agente heurístico; logs y capturas
+en el scratchpad de la sesión `9018f53b`, carpeta `k6r/`):
+
+| Carrera | Antes | Ahora |
+|---|---|---|
+| Lo peor siempre (seed 25) | 86 frenadas · 669 · Figura mundial | 14 frenadas · 4 · burnout a los 18, en el primer split pro |
+| Terca estricta (seed 25; plan del perfil y se cuida en rojo) | 67 · 349 · Figura mundial | 77 · 414 · Figura mundial, 20 splits en tier 1 |
+| Buena (seed 39) | 75 · 1081 · Figura mundial | 45 · 187 · "Campeón" |
+| Leyenda (seed 152) | 88 · 1031 · El GOAT | 76 · 943 · Leyenda, Mundial 2038 |
+
+- **Las quejas:**
+  - "Worlds es una basofia": no.
+  - "Las opciones no afectan nada": no (con la misma seed, 4 contra 414).
+  - "Rng clicker": no, salvo la rueda de prensa, que sigue a ciegas (diferida por el usuario).
+  - **"Hacés un clic y perdiste" vuelve en una forma nueva:** el que ignora todos los avisos del amateur firma y se
+    quema en el primer split pro. El pro no tiene ninguna frenada para reaccionar. Es D77.
+- **Los bugs de K6:** no se repite ninguno. Lo que sigue: el mercado de una sola carta que firma solo, por
+  continuidad (la leyenda, campeona del Mundial en 2038, firma con KT a $45k en 2040 sin que se le pregunte), y el
+  tag "Riesgo familiar" en el primer año pro.
+- **La prueba:** ningún dado escondido. La vara se ve antes; 11 de 11 pruebas pasadas terminaron en firma.
+- **Hallazgos nuevos:**
+  - **la carrera buena (seed 39) queda 7 años en tier 3** (de los 17 a los 24), con récords de 49-1 y 29-1 y **cero
+    mercados**. Contradice "el nivel manda", y la terca pasa 6 splits ahí;
+  - la ficha de un club de tier 3 dice "· LEC ·", mientras la tarjeta dice "circuito chico" (regla 15);
+  - los años del amateur del jugador bueno: 6 frenadas en 3 años (3 planes, 2 cierres y 1 evento) y ninguna
+    semana. Es lo que decidió el usuario ("las semanas siguen el plan"); que lo juzgue jugando.
+- **La cola después de los 28:** la terca frena 29 veces, pero son planes de Bo5 y momentos de un jugador de LEC
+  hasta los 34, lo que D-B deja frenar. La leyenda frena 8 y la buena 3.
+
+**Lo que sigue (supervisor, de noche):**
+- **Se investiga la causa de la carrera buena varada en tier 3,** con su seed y su frecuencia en un lote. Es solo
+  diagnóstico, sin ronda de motor.
+- **Se arregla la etiqueta "· LEC ·",** si es de pantalla (es un bug de regla 15, cero motor).
+- Las decisiones de motor que salgan, incluido D77 en el pro, las toma el usuario.
+
 ## K.6 — Qué pasa con FASE J y FASE V
 
 | Pieza | Destino |
