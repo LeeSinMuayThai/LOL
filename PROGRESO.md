@@ -34,6 +34,42 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-05 — K6c, revisión: "más fácil desde Corea que desde NA" no lo dio vuelta la vara (`k6c-region`; PLAN.md §K6c, §K.3b)
+
+- **La hipótesis (la vara de los clubes coreanos más fuertes) se descarta con datos.** Los clubes de tier 3 salen de la misma
+  distribución en todas las regiones (`core/tier3.js:generarOrgsTier3`, `tier3.fuerzaMedia` sin región: media ~18 en KR, CN, EMEA
+  y NA). `criterio` juega la prueba a 0,85 y la vara tope es 0,8: **0 pruebas falladas** en 6600 carreras de K6c desde KR y NA (vara
+  media 18 desde KR, 17,6 desde NA). La vara no puede mover sus carreras.
+- **Región fija, criterio, 60 splits** (`scratchpad`: `correrCarrera(seed, 60, criterio, { regionOrigen })`):
+
+  | | KR | CN | EMEA | NA |
+  |---|---|---|---|---|
+  | K6b `58db231`, seeds 1-300: Mundial / no-pro / edad de firma / años pro | 12,3 / 25,7 / 17,1 / 6,9 | 10,7 / 20,3 / 17,3 / 6,7 | 11,7 / 22,0 / 17,3 / 7,6 | 6,3 / 21,3 / 17,2 / 8,6 |
+  | K6c `577b5b7`, seeds 1-300 | 9,3 / 22,3 / 17,5 / 6,2 | 9,7 / 22,3 / 17,6 / 6,4 | 8,7 / 27,3 / 17,3 / 7,7 | 6,7 / 23,0 / 17,3 / 8,4 |
+  | K6b, seeds 1-3300 (Mundial) | **12,12** | | | **6,18** |
+  | K6c, seeds 1-3300 (Mundial) | **11,27** | | | **7,45** |
+
+  Con n 3300 Corea sigue claramente arriba (diferencia 3,82, σ 0,71). K6c la achica ~2 puntos (KR −0,85, NA +1,27, cada una ≤ 2σ);
+  firma ~0,2 años más tarde con +1,2 de nivel (el plan del año), sin mecanismo por región a la vista.
+- **Por qué el lote lo dio vuelta:** las 194 seeds de NA del lote de las metas C (región sorteada) con la región fija reproducen el
+  lote exacto (22 de 194 = 11,34; Corea 40 de 332 = 12,05): salieron +2σ sobre la población (7,45). En K6b las mismas 194 dieron 4,64.
+  Cada corrimiento del stream las vuelve a tirar (solo 50 de 3300 seeds de NA ganan en las dos versiones). Con ese n el piso de
+  `regionOrdenada` es ~5 puntos: a los valores de la población pasa ~65% de las veces en K6b y ~32% en K6c.
+- **Por qué NA está en ~6-7 y no en 3-5 (ya en K6b):** dos tercios de los Mundiales de NA se ganan afuera (primer título, K6c: LPL 81,
+  LCK 52, LEC 30, LCS 82 de 246; K6b: 60 / 44 / 34 / 66 de 204): el import de élite de K5c-H (`systems/mercado.js:402-441`,
+  `mercado.casa.cuposImportElite/nivelImportElite/margenImportElite`). Desde Corea, 397 de 400 primeros títulos son en la LCK.
+  Es diseño de K5c-H, fuera del alcance de K6c: decide el supervisor.
+- **Cambios:** se revierten los dos re-bases de la pasada anterior (`ganaMundialNA` vuelve a [3, 5] con su banda de ruido y
+  `regionOrdenada` a "más fácil por más de 2σ", con su caso del juez de K5c). Check nuevo **"K6c región fija"** (`dev/regionFija.js`:
+  las mismas seeds 1..3000 desde KR y desde NA, en tandas paralelas; Corea tiene que ganar más por más de 2σ): KR 348 (11,6%) contra
+  NA 219 (7,3%), piso 1,5, OK. Rojo con el mutante "la región elegida no se respeta" (KR 278 contra NA 278). "Las orgs de tier 1 sin
+  el prestigio de su liga" no lo pone rojo (KR 324 contra NA 219): la ventaja de Corea vive en los planteles (K5c-M). Su juez tiene
+  un check rápido (acepta lo medido; rechaza NA arriba, empate, dentro del ruido, cero contra cero, muestra vacía).
+- **Sin cambios de motor:** HUELLA y `FORMAS[13]` no se mueven. `--rapido`: 351 OK, 0 FAIL. Determinismo: `simulate.js 100 60
+  criterio` dos veces, diff vacío; `regionFija` con 3 y 5 tandas, mismo resultado. **"K5c meta": 5 OK, 1 FAIL** — el del Mundial, por
+  `ganaMundialNA` 11,3 (banda [−1,55, 9,55]) y `regionOrdenada` (Corea 12,0 contra NA 11,3, σ 2,89): es la submuestra de arriba.
+  Lo demás: no-pro 22,6, Mundial 9,5, Corea 12,0, nuevo Faker 2,7, estancados criterio/azar/malas 4,1/12,8/16,5, LCK 52,1 / LPL 43,9.
+
 ### 2026-10-05 — K6c, segunda pasada: la vara por nivel y la semana que frena solo con riesgo nuevo (`k6c-amateur`; PLAN.md §K6c)
 
 - **La vara depende del nivel** (`amateur.varaPrueba` = { base 1,35, pendiente 0,035, mínimo 0,1, máximo 0,8 };

@@ -21695,10 +21695,7 @@ const METAS_C = {
   // usuario 2026-10-05, K6 juzga (desde K5c-H cada uno juega en su casa, y la LCK es la primera más dura de entrar).
   ganaMundialCorea: { meta: [12, 15], rebase: 9.9, texto: 'gana un Mundial desde Corea (%)' },
   // §K.3b "desde NA, más difícil (~3-5%)". Medido 3,6 (n 194, σ 1,34). Cumple.
-  // Regla 17, corrimiento declarado de K6c: medido 11,3 (n 194, σ 2,27; en la primera pasada de K6c 10,3; banda vieja [-1,55, 9,55]).
-  // La submuestra de NA del lote es chica y ruidosa: con la región fija (criterio, 300 × 60 por región, mismas seeds) NA gana el 4,0%
-  // en K6b y el 6,7% en K6c (Corea 9,7 y 9,3). Re-basado, K6 juzga: banda [-1,55, 15,84].
-  ganaMundialNA: { meta: [3, 5], rebase: 11.3, texto: 'gana un Mundial desde Norteamérica (%)' },
+  ganaMundialNA: { meta: [3, 5], texto: 'gana un Mundial desde Norteamérica (%)' },
   // §K.3b "El nuevo Faker ~2-3% en promedio". Regla 17: meta 2-3; medido 1,2 (n 1500, σ 0,28); re-basado por decisión del
   // usuario 2026-10-05, K6 juzga.
   nuevoFaker: { meta: [2, 3], rebase: 1.2, texto: 'el nuevo Faker (%)' },
@@ -21737,11 +21734,6 @@ const META_C_ESTANCADO_AZAR_REBASE_PCT = 12.5;
 // K5c: LCK 51,6 / LPL 43,8 / LEC 3,9 (17867 Mundiales del mundo en 1500 carreras), margen 7,74 con σ 0,84 por carrera (0,73
 // contando cada Mundial como independiente; el ≈ 2,5 que decía este comentario estaba sobreestimado): piso 5 − 1,68 = 3,32.
 const META_C_LCK_REPARTO_PCT = 25;
-// "Más fácil desde Corea que desde NA" (§K.3b): la diferencia Corea − NA tenía que pasar Z σ. Regla 17, corrimiento declarado de K6c:
-// medido Corea 12,0 (n 332) contra NA 11,3 (n 194), diferencia 0,7 con σ 2,89 (en K6b pasaba). Con la región fija (criterio, 300 × 60
-// por región): K6b 9,7 contra 4,0, K6c 9,3 contra 6,7: la brecha se achica y la submuestra del lote la borra. Se re-basa como las
-// bandas, de la meta a lo medido con su ruido: el piso es min(Z σ, 0,7) − Z σ. K6 juzga.
-const META_C_REGION_REBASE_PP = 0.7;
 const META_C_LCK_MARGEN_PP = 5;
 const LIGA_CANDIDATA_DEL_MUNDIAL = 'LCK';
 // Las regiones de origen de las dos metas por región (`mundo.regionOrigen`, la clave de `mundialReal.porRegion`).
@@ -21834,9 +21826,8 @@ function juezDeLasMetasC(v) {
   // "Depende de la región": desde Corea se gana más que desde NA, por más que el ruido de la diferencia.
   const r = v.porRegion ?? {};
   const sigmaR = Math.sqrt((sigmaDeProporcion(r.facil, r.nFacil) ?? NaN) ** 2 + (sigmaDeProporcion(r.dificil, r.nDificil) ?? NaN) ** 2);
-  const pisoRegion = Math.min(Z_RUIDO_METAS_C * sigmaR, META_C_REGION_REBASE_PP) - Z_RUIDO_METAS_C * sigmaR;
-  juicio.regionOrdenada = hay(r.facil) && hay(r.dificil) && hay(sigmaR) && r.facil - r.dificil >= pisoRegion ? null
-    : `desde ${REGION_FACIL_METAS_C} se gana el Mundial el ${r.facil}% y desde ${REGION_DIFICIL_METAS_C} el ${r.dificil}%: la diferencia tiene que llegar a ${redondeoMetasC(pisoRegion)} (más fácil por ${Z_RUIDO_METAS_C} σ, re-basado a ${META_C_REGION_REBASE_PP} − ${Z_RUIDO_METAS_C} σ; σ ${redondeoMetasC(sigmaR)})`;
+  juicio.regionOrdenada = hay(r.facil) && hay(r.dificil) && hay(sigmaR) && r.facil - r.dificil >= Z_RUIDO_METAS_C * sigmaR ? null
+    : `desde ${REGION_FACIL_METAS_C} se gana el Mundial el ${r.facil}% y desde ${REGION_DIFICIL_METAS_C} el ${r.dificil}%: tiene que ser más fácil por más de ${Z_RUIDO_METAS_C} σ (σ ${redondeoMetasC(sigmaR)})`;
   // La meta del usuario, sin banda.
   const m = v.mundoMundial ?? {};
   juicio.lckReparto = hay(m.lck) && m.lck >= META_C_LCK_REPARTO_PCT ? null
@@ -21975,9 +21966,7 @@ check('K5c metas del bloque C: el juez acepta los valores medidos y rechaza, uno
   if (juezDeLasMetasC({ ...ok, estancados: { ...ok.estancados, azar: META_C_ESTANCADO_AZAR_PCT } }).estancadoAzar !== null) throw new Error('azar en la meta (' + META_C_ESTANCADO_AZAR_PCT + ') no cumple');
   rechazaSolo('estancadoCriterio', { ...ok, estancados: { ...ok.estancados, criterio: 11 } }, 'criterio 11');
   rechazaSolo('estancadoMalas', { ...ok, estancados: { ...ok.estancados, malas: 11 } }, 'malas 11');
-  // K6c (re-basado): el piso es 0,7 − 2σ. Corea 1 contra NA 3,6 (σ 1,45, piso −2,19) no cumple; Corea igual a NA (σ 1,67, piso −2,64) sí.
-  rechazaSolo('regionOrdenada', { ...ok, porRegion: { ...ok.porRegion, facil: 1 } }, 'Corea 1 contra NA 3,6');
-  if (juezDeLasMetasC({ ...ok, porRegion: { ...ok.porRegion, facil: ok.porRegion.dificil } }).regionOrdenada !== null) throw new Error('Corea igual a NA no cumple');
+  rechazaSolo('regionOrdenada', { ...ok, porRegion: { ...ok.porRegion, facil: 5 } }, 'Corea 5 contra NA 3,1');
   const mm = ok.mundoMundial;
   rechazaSolo('lckReparto', { ...ok, mundoMundial: { ...mm, lck: 24, segunda: 18 } }, 'LCK 24');
   // El margen: el piso es 5 − 2σ (con σ 0,84, 3,32). Justo debajo del piso no cumple; justo arriba y los 5 nominales sí; sin σ, no.
@@ -22011,6 +22000,70 @@ checkLento(`K5c meta del Mundial (criterio, ${CARRERAS_METAS_C} × ${SPLITS_LOTE
     console.log(`     AVISO: gana un Mundial ${mundial}% queda debajo del ${METAS_C.ganaMundial.meta[0]}% del usuario (dentro del ruido: no es FAIL)`);
   }
   if (problemas.length > 0) throw new Error(problemas.join('; '));
+});
+
+// K6c (revisión) — "desde Corea, más fácil; desde NA, más difícil" (§K.3b, D-D del usuario) con la región FIJA. La relación de
+// "K5c meta del Mundial" (`regionOrdenada`) se juzga sobre la submuestra del lote que sortea la región: ~332 carreras de Corea y
+// ~194 de NA, y cada corrimiento del stream vuelve a tirar esas mismas seeds. En K6c el lote dio Corea 12,0 contra NA 11,3 (22 de
+// 194), con la población en Corea 11,27 y NA 7,45 (criterio, 3300 seeds por región con la región fija; en K6b, `58db231`, 12,12 y
+// 6,18): las 194 seeds de NA salieron +2σ. Este check mide la relación con la muestra que necesita: las MISMAS seeds (1..N) desde
+// las dos regiones, y Corea tiene que ganar más Mundiales que NA por más de Z σ de la diferencia (el ruido de K5c, Z = 2). Con
+// N = 3000 lo esperado es Corea 11,6 (348) contra NA 7,3 (219): diferencia 4,3 con σ 0,75 (piso 1,5). No hay re-base: si se da
+// vuelta o se achica por debajo del ruido, falla.
+// Rojo con el mutante "la región elegida no se respeta" (`core/mundo.js:generarMundo`, `ligaOrigen = ligaSorteada`): KR 278 contra
+// NA 278 (9,27% y 9,27%). El mutante de la vara no aplica: `criterio` (0,85) pasa toda prueba (la vara tope es 0,8; 0 de 6600 pruebas
+// falladas desde KR y NA), así que la vara no mueve sus carreras. "Las orgs de tier 1 sin el prestigio de su liga" tampoco lo pone
+// rojo (KR 324 contra NA 219): la ventaja de Corea vive en la fuerza de los planteles (K5c-M), no en `org.fuerza`.
+const CARRERAS_REGION_FIJA_K6C = 3000;
+const REGION_FACIL_K6C = 'KR';
+const REGION_DIFICIL_K6C = 'NA';
+// Las tandas en paralelo (`dev/regionFija.js`): del instrumento, no del juego. El resultado no depende de cuántas sean.
+const TANDAS_MAX_REGION_FIJA_K6C = 8;
+
+// El juez: null si cumple, el motivo si no. `facil`/`dificil` = { carreras, conMundial }.
+function juezRegionFijaK6C(facil, dificil) {
+  const pct = (r) => (r?.carreras > 0 ? (100 * r.conMundial) / r.carreras : NaN);
+  const pf = pct(facil);
+  const pd = pct(dificil);
+  const sigma = Number.isFinite(pf) && Number.isFinite(pd)
+    ? Math.sqrt(sigmaDeProporcion(pf, facil.carreras) ** 2 + sigmaDeProporcion(pd, dificil.carreras) ** 2) : NaN;
+  const diferencia = pf - pd;
+  return Number.isFinite(sigma) && diferencia > 0 && diferencia >= Z_RUIDO_METAS_C * sigma ? null
+    : `desde ${REGION_FACIL_K6C} gana un Mundial el ${redondeoMetasC(pf)}% (n ${facil?.carreras}) y desde ${REGION_DIFICIL_K6C} el `
+      + `${redondeoMetasC(pd)}% (n ${dificil?.carreras}): tiene que ser más fácil desde ${REGION_FACIL_K6C} por más de ${Z_RUIDO_METAS_C} σ `
+      + `(σ ${redondeoMetasC(sigma)}, piso ${redondeoMetasC(Z_RUIDO_METAS_C * sigma)})`;
+}
+
+check('K6c región fija: el juez acepta lo medido (Corea 348 contra NA 219 de 3000) y rechaza NA arriba, empate, una diferencia dentro del ruido, cero contra cero y una muestra vacía', () => {
+  const n = CARRERAS_REGION_FIJA_K6C;
+  const de = (conMundial, carreras = n) => ({ carreras, conMundial });
+  const problemas = [];
+  if (juezRegionFijaK6C(de(348), de(219)) !== null) problemas.push(`lo medido no cumple: ${juezRegionFijaK6C(de(348), de(219))}`);
+  const casos = [
+    ['NA arriba', de(219), de(348)],
+    ['empate', de(219), de(219)],
+    // 250 contra 219: diferencia 1,03 puntos, σ 0,7, piso 1,4.
+    ['dentro del ruido', de(250), de(219)],
+    ['cero contra cero', de(0), de(0)],
+    ['muestra vacía', de(0, 0), de(219)]
+  ];
+  for (const [nombre, facil, dificil] of casos) {
+    if (juezRegionFijaK6C(facil, dificil) === null) problemas.push(`${nombre} cumple`);
+  }
+  if (problemas.length > 0) throw new Error(problemas.join('; '));
+});
+
+checkLento(`K6c región fija (criterio, ${CARRERAS_REGION_FIJA_K6C} × ${SPLITS_LOTE_K0} por región, las mismas seeds): desde Corea se ganan más Mundiales que desde NA, por más que el ruido`, () => {
+  const tandas = Math.max(1, Math.min(TANDAS_MAX_REGION_FIJA_K6C, os.cpus().length - 1));
+  const medir = (regionId) => JSON.parse(execFileSync(process.execPath, [
+    path.join(srcDir, 'dev', 'regionFija.js'), '--paralelo', regionId, String(CARRERAS_REGION_FIJA_K6C), String(SPLITS_LOTE_K0), String(tandas)
+  ], { encoding: 'utf8' }).trim().split('\n').pop());
+  const facil = medir(REGION_FACIL_K6C);
+  const dificil = medir(REGION_DIFICIL_K6C);
+  console.log(`     ${REGION_FACIL_K6C} ${facil.conMundial}/${facil.carreras} (${redondeoMetasC((100 * facil.conMundial) / facil.carreras)}%) · `
+    + `${REGION_DIFICIL_K6C} ${dificil.conMundial}/${dificil.carreras} (${redondeoMetasC((100 * dificil.conMundial) / dificil.carreras)}%) · ${tandas} tandas`);
+  const motivo = juezRegionFijaK6C(facil, dificil);
+  if (motivo !== null) throw new Error(motivo);
 });
 
 checkLento(`K5c meta de la longevidad (criterio, ${CARRERAS_METAS_C} × ${SPLITS_LOTE_K0}): la carrera pro mediana (re-basada) y menos del 5% llega a los 34`, () => {

@@ -83,7 +83,7 @@ export const CORTES_NIVEL_PICO_CASA = [70, 75, 80, 85, 90];
 // La curva de nivel por edad: de los 16 (la edad mínima de una liga) a la línea forzosa de los 34.
 export const EDAD_CURVA_MIN = 16;
 export const EDAD_CURVA_MAX = 34;
-const RESULTADO_CAMPEON = 'campeon';
+export const RESULTADO_CAMPEON = 'campeon';
 
 // Δ de fuerza (el equipo más fuerte contra el más débil) para la tabla analítica de favorito Bo5.
 export const DELTAS_FAVORITO_BO5 = [0, 2, 4, 6, 8, 10, 12, 15];
