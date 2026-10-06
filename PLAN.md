@@ -8218,6 +8218,33 @@ grindea sin dormir de amateur.
 - Los textos de la lesión dicen lo que pasa en el amateur (regla 15): no hay fechas que perderse.
 - Los checks de cobertura la buscan con carreras que grindean, con una muestra que no quede al borde.
 
+**K6c-fix, sexta y séptima pasada** (`be17a4e`, `ffa6709`): `salud.js` corre también en el amateur, y
+`retiro_por_lesion` se declara inalcanzable en carreras naturales hasta D83, con un check que arma el estado.
+
+#### La noche del 2026-10-06 *(supervisor; el usuario pidió seguir el plan toda la noche sin preguntarle)*
+
+1. **Cerrar K6c-fix.** Validación completa de `ffa6709` sobre una copia `git archive`, y después, uno por uno,
+   `simulate.js 1000`, determinismo, `agencia.js` y `build.js`. Se miden con corridas propias, no con los números del
+   worker (T6): el no-pro por bot (nombrando la medida), los burnouts y las lesiones del automático, las paradas de la
+   semana (mediana ~0) y el impacto de los minijuegos (≤ +42%).
+   - **En verde:** merge de `k6c-fix` a `fase-9r` y cierre en `PROGRESO.md`. El cierre de la fase igual espera que el
+     usuario juegue el amateur y la prueba (memoria de playtest).
+   - **Con FAIL:** se busca la causa. Si es del instrumento (muestra, seeds), se arregla. Si pide otra pasada de motor,
+     **no se lanza sin el usuario**: el otro chat se comprometió a preguntarle ("PORQUE TANTAS REVISIONES HOY"). Se deja
+     el diagnóstico escrito acá.
+2. **J9, las caras de los campeones,** en paralelo. Su spec ya está en FASE J; es cero motor y cero corrimiento, y
+   K.6 la deja hacer en cualquier momento. Va en la rama `j9-caras`, desde `ffa6709`, y se mergea después de K6c-fix.
+   El techo de `dist/` de su spec (1800) quedó viejo: rige el de `build.js` (2400). Las imágenes son del CDN y `dist/`
+   no las suma.
+3. **Volver a jugar K6** (paso 5 del cierre de K6b) sobre el head mergeado: el mismo agente heurístico con las seeds 25,
+   39 y 152. Se compara contra "K6, jugado" y se reporta acá.
+4. **Para la mañana:** la build lista para que juegue el usuario, con qué mirar. Lo que el otro chat marcó como riesgo:
+   con la vara 1,55/0,05/0/0,8, el 74-84% de las pruebas del automático piden 0%, así que la prueba decide ~16% de los
+   contratos. El usuario todavía no lo vio.
+
+**Decisión del supervisor, a confirmar:** J9 de noche. No toca ninguna decisión del usuario y no corre el stream. Si
+no la quiere ahora, la rama queda sin mergear.
+
 ## K.6 — Qué pasa con FASE J y FASE V
 
 | Pieza | Destino |
