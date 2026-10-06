@@ -89,6 +89,8 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 - `K5c meta del usuario` no se corrió: son criterio, azar y malas a 1500 × 60, y pasan del tope de 600 carreras por sonda.
   Queda para la corrida completa del supervisor; a 600 × 60, su juez da "cumple" (la tabla de arriba).
 - `build.js`: OK, `dist/` pesa 2345 de 2400 KB.
+- **Después de la revisión** (el horizonte fijo, el % comparado, el umbral en 0,9 y la frase nueva): `--rapido` 363 OK,
+  0 FAIL, 174 SKIP; `--solo` de `D82 (a)` OK; `huella.js` 1408477439 antes y después.
 
 ### 2026-10-06 — Merge de K6b, K6c, K6c-fix, J9 y la etiqueta de tier 3 a `fase-9r`, y K6 re-jugado (supervisor, de noche)
 
