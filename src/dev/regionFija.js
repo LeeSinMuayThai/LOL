@@ -28,9 +28,27 @@ export function mundialesDesdeRegion(regionId, desde, carreras, splits) {
   return { carreras, conMundial };
 }
 
-function correrTanda(regionId, desde, carreras, splits) {
+// K6c-fix (K5-B se mide bien, PLAN.md §K6c): cuántas carreras de `criterio` desde `regionId` llegan a jugar en la primera de su
+// región (`local`, sin emigrar) y a cualquier primera (`primera`). Lo usa "K5-B región: la dificultad...". Misma lectura que tenía
+// el check (`registro.porOrg` con tier 1 y splits jugados; la región de la liga del mundo de esa carrera).
+export function llegadaDesdeRegion(regionId, desde, carreras, splits) {
+  let local = 0;
+  let primera = 0;
+  for (let seed = desde; seed < desde + carreras; seed += 1) {
+    const { state } = correrCarrera(seed, splits, ESTRATEGIAS.criterio, { regionOrigen: regionId });
+    const filas = state.career.registro.porOrg.filter((fila) => fila.tier === 1 && fila.splits > 0);
+    const regionDe = (fila) => state.mundo.ligas.find((liga) => liga.id === fila.liga)?.regionId;
+    if (filas.length > 0) primera += 1;
+    if (filas.some((fila) => regionDe(fila) === regionId)) local += 1;
+  }
+  return { carreras, local, primera };
+}
+
+const MEDIDAS = { mundial: mundialesDesdeRegion, llegada: llegadaDesdeRegion };
+
+function correrTanda(regionId, desde, carreras, splits, medida = 'mundial') {
   return new Promise((resolve, reject) => {
-    const hijo = spawn(process.execPath, [ESTE_ARCHIVO, regionId, String(desde), String(carreras), String(splits)], { stdio: ['ignore', 'pipe', 'inherit'] });
+    const hijo = spawn(process.execPath, [ESTE_ARCHIVO, regionId, String(desde), String(carreras), String(splits), medida], { stdio: ['ignore', 'pipe', 'inherit'] });
     let salida = '';
     hijo.stdout.on('data', (trozo) => { salida += trozo; });
     hijo.on('error', reject);
@@ -39,26 +57,28 @@ function correrTanda(regionId, desde, carreras, splits) {
 }
 
 // Las seeds 1..carreras desde `regionId`, repartidas en `tandas` procesos.
-export async function mundialesDesdeRegionEnParalelo(regionId, carreras, splits, tandas) {
+export async function mundialesDesdeRegionEnParalelo(regionId, carreras, splits, tandas, medida = 'mundial') {
   const porTanda = Math.ceil(carreras / tandas);
   const trabajos = [];
   for (let desde = 1; desde <= carreras; desde += porTanda) {
-    trabajos.push(correrTanda(regionId, desde, Math.min(porTanda, carreras - desde + 1), splits));
+    trabajos.push(correrTanda(regionId, desde, Math.min(porTanda, carreras - desde + 1), splits, medida));
   }
   const partes = await Promise.all(trabajos);
-  return partes.reduce((suma, parte) => ({ carreras: suma.carreras + parte.carreras, conMundial: suma.conMundial + parte.conMundial }), { carreras: 0, conMundial: 0 });
+  // La suma de cada campo numérico de las tandas (`carreras` y lo que cuente la medida).
+  return partes.reduce((suma, parte) => Object.fromEntries(Object.keys(parte).map((clave) => [clave, (suma[clave] ?? 0) + parte[clave]])), {});
 }
 
-// node src/dev/regionFija.js <regionId> <desde> <carreras> <splits>            → una tanda
-// node src/dev/regionFija.js --paralelo <regionId> <carreras> <splits> <tandas> → todas, en paralelo
-// Imprime `{ carreras, conMundial }` en JSON (la última línea).
+// node src/dev/regionFija.js <regionId> <desde> <carreras> <splits> [medida]            → una tanda
+// node src/dev/regionFija.js --paralelo <regionId> <carreras> <splits> <tandas> [medida] → todas, en paralelo
+// `medida`: `mundial` (por defecto; imprime `{ carreras, conMundial }`) o `llegada` (`{ carreras, local, primera }`), en JSON
+// (la última línea).
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const args = process.argv.slice(2);
   if (args[0] === '--paralelo') {
-    const [regionId, carreras, splits, tandas] = [args[1], Number(args[2]), Number(args[3]), Number(args[4])];
-    console.log(JSON.stringify(await mundialesDesdeRegionEnParalelo(regionId, carreras, splits, tandas)));
+    const [regionId, carreras, splits, tandas, medida] = [args[1], Number(args[2]), Number(args[3]), Number(args[4]), args[5] ?? 'mundial'];
+    console.log(JSON.stringify(await mundialesDesdeRegionEnParalelo(regionId, carreras, splits, tandas, medida)));
   } else {
-    const [regionId, desde, carreras, splits] = [args[0], Number(args[1]), Number(args[2]), Number(args[3])];
-    console.log(JSON.stringify(mundialesDesdeRegion(regionId, desde, carreras, splits)));
+    const [regionId, desde, carreras, splits, medida] = [args[0], Number(args[1]), Number(args[2]), Number(args[3]), args[4] ?? 'mundial'];
+    console.log(JSON.stringify(MEDIDAS[medida](regionId, desde, carreras, splits)));
   }
 }

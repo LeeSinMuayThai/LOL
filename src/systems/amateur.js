@@ -262,6 +262,41 @@ function propuestaDelPerfil(state, opciones) {
   return opciones.find((opcion) => opcion.rutina.id === elegidaId);
 }
 
+// K6c-fix ("la propuesta del perfil no te quema", PLAN.md §K6c, reglas del supervisor 2026-10-06): con el plan del año bajo
+// `resolverAuto` la propuesta del perfil no miraba el riesgo que la propia carta mostraba, y los amateurs del automático se
+// quemaban (burnout 7 → 60 por cada 1000 carreras contra K6b) o los castigaban en casa (38 → 78). Un plan muestra un riesgo
+// evitable si su chance en casa en el año pasa la del plan más seguro por `amateur.planRiesgoEvitable`, o si te mete en deuda
+// de sueño y otro plan no (los mismos dos números de la carta: `riesgoDelPlan`). Si la propuesta del perfil lo muestra, la
+// propuesta pasa al plan que tu perfil elegiría entre los que no (`propuestaDelPerfil` sobre esos); si ninguno está libre, al
+// menos riesgoso (primero sin deuda, después la chance en casa más baja). Vos podés elegir el arriesgado igual: la carta lo
+// dice. Puro, sin `rng`. Exportada para `validate.js`.
+function riesgoEvitableDelPlan(riesgo, riesgos) {
+  const minimo = Math.min(...riesgos.map((otro) => otro.casa));
+  const casa = riesgo.casa - minimo >= BALANCE.amateur.planRiesgoEvitable;
+  const deuda = riesgo.semanaDeuda !== null && riesgos.some((otro) => otro.semanaDeuda === null);
+  return casa || deuda ? { casa, deuda } : null;
+}
+
+export function propuestaDelPlan(state, opciones) {
+  const riesgos = new Map(opciones.map((opcion) => [opcion.rutina.id, riesgoDelPlan(state, opcion.rutina)]));
+  const todos = [...riesgos.values()];
+  const delPerfil = propuestaDelPerfil(state, opciones);
+  const evitable = riesgoEvitableDelPlan(riesgos.get(delPerfil.rutina.id), todos);
+  if (!evitable) {
+    return { propuesta: delPerfil, delPerfil, evitable: null };
+  }
+  const libres = opciones.filter((opcion) => !riesgoEvitableDelPlan(riesgos.get(opcion.rutina.id), todos));
+  const menosRiesgoso = (a, b) => {
+    const [ra, rb] = [riesgos.get(a.rutina.id), riesgos.get(b.rutina.id)];
+    const [da, db] = [ra.semanaDeuda === null ? 0 : 1, rb.semanaDeuda === null ? 0 : 1];
+    return da !== db ? da < db : ra.casa < rb.casa;
+  };
+  const propuesta = libres.length > 0
+    ? propuestaDelPerfil(state, libres)
+    : opciones.reduce((mejor, opcion) => (menosRiesgoso(opcion, mejor) ? opcion : mejor));
+  return { propuesta, delPerfil, evitable };
+}
+
 // La semana con estas rutinas: cuál se vive y si frena. Frena si la que se vive sube el riesgo en casa al menos
 // `semanaRiesgoEvitable` por encima de la opción más segura, o si suma deuda de sueño y otra opción no (K6a-A). Exportada
 // para que `validate.js` la pruebe con rutinas fijas (sin depender de qué ofreció el sorteo).
@@ -419,15 +454,22 @@ function textoDeRiesgoDelPlan(riesgo) {
 function decisionDePlan(state, rng) {
   const rutinas = ofrecerRutinas(state, rng, { pool: 'amateur' });
   const opciones = opcionesDeSemana(state, rutinas);
-  const propuesta = propuestaDelPerfil(state, opciones);
+  // K6c-fix: la propuesta es la de tu perfil, salvo que muestre un riesgo evitable (`propuestaDelPlan`); la carta lo dice.
+  const { propuesta, delPerfil, evitable } = propuestaDelPlan(state, opciones);
   const perfil = nombreDePerfil(state.player.perfil.actual).toLowerCase();
   const semanas = BALANCE.edad.splitsPorEdad;
+  const queArriesga = evitable
+    ? [evitable.casa ? 'un castigo en casa' : null, evitable.deuda ? 'deuda de sueño' : null].filter(Boolean).join(' y ')
+    : null;
+  const textoPropuesta = evitable
+    ? `Tu perfil (${perfil}) iría por "${delPerfil.rutina.titulo}", pero arriesga ${queArriesga} y otro plan lo evita: te propone "${propuesta.rutina.titulo}", lo más parecido sin ese riesgo.`
+    : `Tu perfil (${perfil}) iría por "${propuesta.rutina.titulo}".`;
   return {
     tipo: 'opciones',
     titulo: `El plan del año, ${state.age} años — ${etiquetaDeRanked(state.player.ranked, servidorDeLaPartida(state))}`,
     descripcion: `${resumenDelAnio(state)} Elegí cómo vas a vivir las ${semanas} semanas de este año: el plan corre solo y el `
       + 'juego frena únicamente si una semana te mete en un riesgo que otra opción evita. Lo que da, por semana; lo que '
-      + `arriesgás, en el año. Tu perfil (${perfil}) iría por "${propuesta.rutina.titulo}".`,
+      + `arriesgás, en el año. ${textoPropuesta}`,
     opciones: opciones.map((opcion) => {
       const riesgo = riesgoDelPlan(state, opcion.rutina);
       const esPropuesta = opcion.rutina.id === propuesta.rutina.id;
@@ -440,7 +482,7 @@ function decisionDePlan(state, rng) {
         lpSemana: Math.round(opcion.proy.lp),
         riesgoCasa: riesgo.casa,
         semanaDeuda: riesgo.semanaDeuda,
-        ...(esPropuesta ? { propuesta: `Tu perfil (${perfil}) iría por esta` } : {})
+        ...(esPropuesta ? { propuesta: evitable ? `Tu perfil (${perfil}) iría por esta: lo más parecido a lo suyo sin ${queArriesga}` : `Tu perfil (${perfil}) iría por esta` } : {})
       };
     }),
     datos: { motivo: 'plan_amateur', propuesta: propuesta.rutina.id, ofrecidas: rutinas.map((rutina) => rutina.id) }

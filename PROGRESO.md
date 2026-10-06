@@ -34,6 +34,29 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-06 — K6c-fix, segunda pasada: la propuesta del perfil no te quema y K5-B medida bien (`k6c-fix`; PLAN.md §K6c, reglas del supervisor)
+
+- **La propuesta del plan del año** (`propuestaDelPlan` en `systems/amateur.js`, `amateur.planRiesgoEvitable` 0,15): si el plan que
+  propone tu perfil muestra un riesgo evitable (en casa 0,15 o más sobre el plan más seguro, o deuda de sueño con otro plan sin ella:
+  los números de la carta), la propuesta pasa al plan que tu perfil elegiría entre los que no lo muestran. La carta lo dice ("iría por
+  X, pero arriesga…: te propone Y, lo más parecido sin ese riesgo") y la opción marcada es la que acepta `resolverAuto` (regla 15).
+- **Medido** (`resolverAuto`, 1000 × 60, por cada 1000 carreras; K6b / primera pasada / ahora): burnout del amateur 7 / 60 / **0**;
+  castigo de la familia 38 / 78 / **10**; `equilibrado` no-pro (`simulate.js 1000`) 24,9 / 29,1 / **26,6**; edad mediana al terminar
+  (720 × 90) 25 / 24 / **25**. Barrido del umbral: 0,05 → no-pro 28,1 (planes tan seguros que no llegan: "no llegó" 142 → 273);
+  0,15 → 26,6; 0,3 → 26,5.
+- **K5-B** (la región, medida como "K6c región fija"): 200 seeds por región en tandas (`dev/regionFija.js`, medida `llegada`, ~50 s), el
+  orden monótono y LATAM solo emigrando como antes, y la brecha de la más fácil a la más difícil contra 2 σ de la diferencia (eran 30
+  puntos fijos). Medido (local/primera de 200): KR 111/134, CN 115/137, EMEA 139/143, NA 152/152, APAC 155/155, BR 151/152, LAN 0/120,
+  LAS 0/126. Juez con caso rápido. Rojo con la región elegida ignorada: brecha 3,5 contra 2 σ = 8,4.
+- **Checks** que la propuesta (otras carreras del automático) dejó vacíos o mostró viejos: el burnout con aviso (12 burnouts en 3000
+  seeds: tope 3000 → 8000, la corrida tarda 6,5 min); K5c-R años pro (la vuelta de free agent sin club también salta el reloj: rojo con
+  `aniosProDe` sin restar lo retirado); la vuelta de K6b (el juez no recalculaba el calendario de la vuelta como `relojAlVolver`);
+  K5c-R la presión, la sonda de K4c-S (más seeds hasta el mínimo); K4c-S "la prueba decide": en el amateur, con 0 firma exactamente
+  quien tenía la vara en 0 (84% de las pruebas del automático) y con 1 siempre (rojo con la vara ignorada). Check nuevo "K6c-fix la
+  propuesta del perfil no te quema" (rojo con la propuesta que ignora el riesgo: 155 problemas).
+- Huella 1351863340 → **188751648**; `FORMAS_CONOCIDAS[13]` re-registrada sin subir (`a05ec5bebece`: sin campos nuevos, otras carreras
+  de muestra). `--rapido` 353 OK, 0 FAIL; determinismo `simulate.js 100 60 criterio` ×2 diff vacío.
+
 ### 2026-10-06 — K6c-fix: la vara llega a 0 y los FAIL de la validación completa de `6dc0ff8` (`k6c-fix`; PLAN.md §K6c, "K6c-fix: la regla")
 
 - **La vara** (`amateur.varaPrueba`): { base 1,35, pendiente 0,035, mínimo 0,1, máximo 0,8 } → **{ base 1,55, pendiente 0,05,

@@ -142,4 +142,7 @@ export const VERSION_JUEGO = 'K6c';
 // K6c-fix (1351863340; corrimiento declarado, misma etiqueta 'K6c': no salió de la rama): la vara de la prueba del amateur puede
 // llegar a 0 ("el club firma tu nivel, no tu día": `amateur.varaPrueba` { base 1,55, pendiente 0,05, mínimo 0, máximo 0,8 }).
 // Sin tiradas nuevas: cambian las firmas de tier 3, y con ellas las carreras. Reemplaza a 977079279.
-export const HUELLA_JUEGO = 1351863340;
+// K6c-fix, segunda pasada (188751648; corrimiento declarado, sigue 'K6c'): la propuesta del perfil en el plan del año no muestra un
+// riesgo evitable (`propuestaDelPlan`, `amateur.planRiesgoEvitable`): cambia el plan que acepta `resolverAuto`, y con él las carreras
+// del automático. Sin tiradas nuevas. Reemplaza a 1351863340.
+export const HUELLA_JUEGO = 188751648;

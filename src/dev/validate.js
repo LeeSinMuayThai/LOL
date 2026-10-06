@@ -800,7 +800,10 @@ const FORMAS_CONOCIDAS = {
   // K6b-fix: la espera narrada de "El mercado ya habló" vence (`flags.finMercadoEsperas`, migrada con `migrarDe12`) y la pregunta
   // que vuelve lleva `datos.venceLaEspera`: re-registrada sin subir de 13 (era 'fcc08dda0b89').
   // La integración de K6c con K6b-fix junta las dos (eran '51c74dcb0416' y '0b9646606fa1').
-  13: 'e96e9e539778'
+  // K6c-fix, segunda pasada (sin subir: la 13 no salió): sin campos nuevos en el estado; cambian las carreras de muestra del
+  // automático (la propuesta del plan del año que no te quema: otras carreras, otras rutas que solo existen tras jugar).
+  // Re-registrada (era 'e96e9e539778').
+  13: 'a05ec5bebece'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -6921,8 +6924,10 @@ checkLento('El burnout no llega sin aviso: la Mentalidad estuvo en zona roja var
   // piso de 20). La muestra ya no es un número fijo de seeds: se buscan seeds hasta juntar `BURNOUTS_MINIMOS`
   // burnouts, con tope `SEEDS_TOPE_BURNOUT`. La propiedad (≥80% con aviso) no cambia. Medido tras la revisión: 20
   // burnouts en 2764 seeds, 19 con aviso (95%).
+  // K6c-fix (la propuesta del perfil no te quema): el automático ya no se quema en el amateur (burnouts del amateur 60 → 0 por
+  // cada 1000 carreras) y en 3000 seeds quedaron 12 burnouts. Se agranda el tope; la propiedad y el mínimo no se tocan.
   const BURNOUTS_MINIMOS = 20;
-  const SEEDS_TOPE_BURNOUT = 3000;
+  const SEEDS_TOPE_BURNOUT = 8000;
   const umbral = BALANCE.atributos.burnoutMentalBajo;
   let burnouts = 0;
   let conAviso = 0;
@@ -9692,7 +9697,9 @@ check('K5c-R: la cuenta de la presión sube todos los splits jugados en tier 2 (
   // arriba (0 de 20). Se sigue en ronda, seed por seed después de la muestra, hasta ver `IMPORTS_K5CR` o llegar al tope: cada
   // carrera de más pasa por las mismas afirmaciones (no se afloja nada) y el check sigue vacío si no aparece ninguno.
   let seedsDeLaCuenta = SEEDS_K5CR;
-  for (let seed = SEEDS_K5CR + 1; seed <= TOPE_SEEDS_IMPORT_K5CR && resetsPorImport < IMPORTS_K5CR; seed += 1) {
+  // K6c-fix: también hasta ver una mano solo de tier 2 con la cuenta arriba (con la propuesta del perfil que no te quema, las 20
+  // seeds de la muestra no traen ninguna).
+  for (let seed = SEEDS_K5CR + 1; seed <= TOPE_SEEDS_IMPORT_K5CR && (resetsPorImport < IMPORTS_K5CR || manosTier2ConCuenta === 0); seed += 1) {
     seedsDeLaCuenta = seed;
     medir(conPerillasK5CR(perillas, () => carreraK5CR(seed, {})));
   }
@@ -9774,6 +9781,13 @@ check('K5c-R: los años pro no cuentan tier 3 ni los splits retirado (el marcado
       if (antes.phase === 'profesional' && state.phase === 'retirado' && state.career.splitPrimerContratoTier2 !== null
         && state.player.splitCount === antes.player.splitCount && paso.logs.some((log) => log.type === 'temporada')) {
         retirado -= 1;
+      }
+      // K6c-fix: la vuelta de free agent que no consigue club (el mercado de esa pretemporada no te llama y seguís retirado en el
+      // mismo split) también salta el reloj (`relojAlVolver`), y esos splits son todos de retirado (`splitsRetirado`): no se jugó
+      // ninguno. Seed 1 con la propuesta que no te quema: se retira en el split 21, vuelve en el 24 sin club y la ventana se cierra
+      // en el 31 con el reloj en 24 (años pro 1, del 18 al 21). El check solo contaba la vuelta que terminaba con contrato.
+      if (antes.phase === 'retirado' && state.phase === 'retirado' && state.player.splitCount > antes.player.splitCount) {
+        retirado += state.player.splitCount - antes.player.splitCount;
       }
       if (antes.phase === 'retirado' && state.phase === 'profesional') {
         // El split de la vuelta cuenta uno más por `atributos` (corre después de `retiro` en ese mismo split): el salto menos ese
@@ -17843,13 +17857,19 @@ function respaldoALaManoK4cR(state, otras) {
 }
 
 let sondaDeLaPruebaK4cs = null;
+const SEEDS_SONDA_K4CS = 80;
+const SEEDS_TOPE_SONDA_K4CS = 240;
+const PRUEBAS_AMATEUR_FALLIDAS_SONDA_K4CS = 12;
 function sondaDeLaPrueba() {
   if (sondaDeLaPruebaK4cs !== null) {
     return sondaDeLaPruebaK4cs;
   }
   const nombreDe = (org) => (typeof org === 'string' ? org : org?.nombre ?? null);
   const filas = [];
-  for (let seed = 1; seed <= 80; seed += 1) {
+  // K6c-fix: las 80 seeds de siempre y, si no juntaron `PRUEBAS_AMATEUR_FALLIDAS_SONDA_K4CS` pruebas amateur fallidas (con la vara
+  // en 0 para los que superan al club, y la propuesta del perfil que no te quema, quedaron 7), más seeds hasta el tope.
+  const fallidasAmateur = () => filas.filter((f) => f.sistemaId === 'amateur' && !f.bajo.ficho).length;
+  for (let seed = 1; seed <= SEEDS_TOPE_SONDA_K4CS && (seed <= SEEDS_SONDA_K4CS || fallidasAmateur() < PRUEBAS_AMATEUR_FALLIDAS_SONDA_K4CS); seed += 1) {
     const rng = mulberry32(seed);
     let st = createInitialState(seed, rng);
     for (let i = 0; i < 45 && !st.terminado; i += 1) {
@@ -17911,6 +17931,17 @@ check('K4c-S la prueba decide el contrato: P(firmar | resultado 1) > P(firmar | 
     // 0,65 / 0,95 la declarada ES 0,3, y la medida (mismo rng: la fracción de sorteos que cae entre las dos p, sobre ~70
     // tryouts) queda debajo la mitad de las veces (mercado: 0,681 contra 0,942). Se pide la mitad de la declarada: un motor
     // que no lee el resultado da 0.
+    // K6c-fix: la del amateur ya no tira `probFirmaTryout` (K6c, "pasaste = firmás"): con la vara de tu nivel contra el club,
+    // con 0 firma exactamente quien tenía la vara en 0 ("el club firma tu nivel, no tu día") y con 1 firma siempre. Se pide
+    // eso, y que la prueba decida algún contrato (P(firmar | 0) < 1); la brecha de la mitad de la declarada sigue para el mercado.
+    if (sistemaId === 'amateur') {
+      const conVaraCero = fs.filter((f) => f.vara === 0).length / fs.length;
+      if (pAlto !== 1 || Math.abs(pBajo - conVaraCero) > 1e-9 || !(pBajo < 1)) {
+        throw new Error(`amateur: P(firmar | 0) = ${pBajo.toFixed(3)} (vara en 0: ${conVaraCero.toFixed(3)}) y P(firmar | 1) = ${pAlto.toFixed(3)} en ${fs.length} tryouts: con 0 tiene que firmar solo quien tenía la vara en 0, con 1 siempre, y la prueba tiene que decidir algún contrato`);
+      }
+      console.log(`     (informe) amateur: P(firmar | 0) = ${pBajo.toFixed(3)} (= las de vara 0), P(firmar | 1) = ${pAlto.toFixed(3)} en ${fs.length} tryouts`);
+      continue;
+    }
     const brechaMinima = (BALANCE.serie.probFirmaTryout.bueno - BALANCE.serie.probFirmaTryout.malo) / 2;
     if (!(pAlto >= pBajo + brechaMinima)) {
       throw new Error(`${sistemaId}: P(firmar | 0) = ${pBajo.toFixed(3)} y P(firmar | 1) = ${pAlto.toFixed(3)} en ${fs.length} tryouts: la prueba no decide el contrato (hace falta una brecha de ${brechaMinima.toFixed(3)}, la mitad de la declarada en BALANCE.serie.probFirmaTryout)`);
@@ -19724,51 +19755,88 @@ check('K5-B región: las líneas de dificultad no muestran ids crudos y dicen lo
   }
 });
 
-// La dificultad medida: con `criterio`, % de carreras que llegan a la primera DE SU REGIÓN (sin emigrar), 40 seeds x
-// 40 splits por región elegida. Tiene que subir con la `dificultad` (Corea: la más difícil de llegar). Tolerancia: se
-// comparan los pares cuya dificultad difiere en más de 0,15 (KR-CN y APAC-NA quedan afuera; APAC-NA está invertido en
-// el dato: LCP tiene menos prestigio que LCS y también menos dificultad) y se acepta un empate de hasta 10 puntos.
-const SEEDS_K5B = 40;
+// La dificultad medida: con `criterio`, % de carreras que llegan a la primera DE SU REGIÓN (sin emigrar), 40 splits por región
+// elegida. Tiene que subir con la `dificultad` (Corea: la más difícil de llegar). Tolerancia del orden: se comparan los pares cuya
+// dificultad difiere en más de 0,15 (KR-CN y APAC-NA quedan afuera; APAC-NA está invertido en el dato: LCP tiene menos prestigio
+// que LCS y también menos dificultad) y se acepta un empate de hasta 10 puntos.
+//
+// K6c-fix (K5-B se mide bien, PLAN.md §K6c, reglas del supervisor 2026-10-06; el mismo principio que el usuario eligió para NA en
+// "K6c región fija"): 200 seeds por región (eran 40) y la brecha entre la región más fácil del Mundial y la más difícil se juzga
+// contra Z σ de la diferencia, con el σ de esta muestra (eran 30 puntos fijos). Con 40 seeds la brecha de 30 salía con suerte: con
+// 200 por región es ~22 puntos, igual en K6b (`58db231`: KR 56,0 contra APAC 77,5) que ahora, y su σ es ~4,6. Las tandas van en
+// paralelo (`dev/regionFija.js`, medida `llegada`): el resultado no depende de cuántas sean. Rojo con el mutante "la región elegida
+// no se respeta" (`core/mundo.js`, `ligaOrigen = ligaSorteada`).
+const SEEDS_K5B = 200;
 const SPLITS_K5B = 40;
 const DELTA_DIFICULTAD_K5B = 0.15;
 const TOLERANCIA_PP_K5B = 10;
-checkLento('K5-B región: la dificultad de cada región es monótona con su dificultad (y LATAM llega a primera solo emigrando)', () => {
-  const medidas = [];
-  for (const opcion of regionesDeOrigenK5B()) {
-    let llegaLocal = 0;
-    let llegaPrimera = 0;
-    for (let seed = 1; seed <= SEEDS_K5B; seed += 1) {
-      const state = carreraConRegionK5B(seed, opcion.regionId, SPLITS_K5B);
-      const filasTier1 = state.career.registro.porOrg.filter((fila) => fila.tier === 1 && fila.splits > 0);
-      const regionDe = (fila) => state.mundo.ligas.find((liga) => liga.id === fila.liga)?.regionId;
-      if (filasTier1.length > 0) {
-        llegaPrimera += 1;
-      }
-      if (filasTier1.some((fila) => regionDe(fila) === opcion.regionId)) {
-        llegaLocal += 1;
-      }
-    }
-    medidas.push({ ...opcion, local: (100 * llegaLocal) / SEEDS_K5B, primera: (100 * llegaPrimera) / SEEDS_K5B });
-  }
-  const tabla = medidas.map((m) => `${m.regionId} ${m.local.toFixed(0)}%/${m.primera.toFixed(0)}%`).join(' · ');
+// El mismo Z que `Z_RUIDO_METAS_C` (que se define más abajo, junto a las metas de K5c).
+const Z_RUIDO_K5B = 2;
+const TANDAS_MAX_K5B = 8;
+
+// El juez: null si cumple, el motivo si no. `medidas`: { regionId, dificultad, sinPrimera, carreras, local, primera } (conteos).
+function juezRegionK5B(medidas) {
+  const pct = (m, clave) => (100 * m[clave]) / m.carreras;
+  const tabla = medidas.map((m) => `${m.regionId} ${m.carreras > 0 ? `${pct(m, 'local').toFixed(0)}%/${pct(m, 'primera').toFixed(0)}%` : 'sin muestra'}`).join(' · ');
+  if (medidas.length === 0 || medidas.some((m) => !(m.carreras > 0))) return `muestra vacía: ${tabla}`;
   const tier1 = medidas.filter((m) => !m.sinPrimera);
   for (const a of tier1) {
     for (const b of tier1) {
-      if (b.dificultad - a.dificultad > DELTA_DIFICULTAD_K5B && !(a.local <= b.local + TOLERANCIA_PP_K5B)) {
-        throw new Error(`${a.regionId} (dificultad ${a.dificultad}) llega a su primera el ${a.local}%, más que ${b.regionId} (${b.dificultad}) con ${b.local}%: ${tabla}`);
+      if (b.dificultad - a.dificultad > DELTA_DIFICULTAD_K5B && !(pct(a, 'local') <= pct(b, 'local') + TOLERANCIA_PP_K5B)) {
+        return `${a.regionId} (dificultad ${a.dificultad}) llega a su primera el ${pct(a, 'local').toFixed(1)}%, más que ${b.regionId} (${b.dificultad}) con ${pct(b, 'local').toFixed(1)}%: ${tabla}`;
       }
     }
   }
   const porDificultad = [...tier1].sort((x, y) => x.dificultad - y.dificultad);
-  if (!(porDificultad.at(-1).local - porDificultad[0].local >= 3 * TOLERANCIA_PP_K5B)) {
-    throw new Error(`entre la región más fácil del Mundial y la más difícil tiene que haber una diferencia clara de llegada: ${tabla}`);
+  const [facil, dificil] = [porDificultad[0], porDificultad.at(-1)];
+  const [pf, pd] = [pct(facil, 'local'), pct(dificil, 'local')];
+  const sigma = Math.sqrt((pf * (100 - pf)) / facil.carreras + (pd * (100 - pd)) / dificil.carreras);
+  if (!(pd - pf > Z_RUIDO_K5B * sigma)) {
+    return `entre la región más fácil del Mundial (${facil.regionId}, ${pf.toFixed(1)}%) y la más difícil (${dificil.regionId}, ${pd.toFixed(1)}%) la diferencia de llegada ${(pd - pf).toFixed(1)} no pasa ${Z_RUIDO_K5B} σ (σ ${sigma.toFixed(2)}): ${tabla}`;
   }
   for (const m of medidas.filter((x) => x.sinPrimera)) {
-    if (m.local !== 0 || !(m.primera > 0)) {
-      throw new Error(`${m.regionId}: a primera se llega solo emigrando y en más del 0%: ${tabla}`);
-    }
+    if (m.local !== 0 || !(m.primera > 0)) return `${m.regionId}: a primera se llega solo emigrando y en más del 0%: ${tabla}`;
   }
-  console.log(`      K5-B llegada a la primera propia / a cualquier primera: ${tabla}`);
+  return null;
+}
+
+// Lo medido al cerrar K6c-fix (200 × 40 por región, `criterio`), para el caso rápido del juez.
+const MEDIDO_K5B = { KR: [111, 134], CN: [115, 137], EMEA: [139, 143], NA: [152, 152], APAC: [155, 155], BR: [151, 152], LAN: [0, 120], LAS: [0, 126] };
+
+check('K6c-fix K5-B región, el juez: acepta lo medido y rechaza el orden dado vuelta, una brecha dentro del ruido y una muestra vacía', () => {
+  const problemas = [];
+  const con = (cambios = {}) => regionesDeOrigenK5B().map((opcion) => {
+    const [local, primera] = cambios[opcion.regionId] ?? MEDIDO_K5B[opcion.regionId] ?? [0, 0];
+    return { ...opcion, carreras: SEEDS_K5B, local, primera };
+  });
+  const motivoMedido = juezRegionK5B(con());
+  if (motivoMedido !== null) problemas.push(`lo medido no cumple: ${motivoMedido}`);
+  const tier1 = regionesDeOrigenK5B().filter((o) => !o.sinPrimera).sort((x, y) => x.dificultad - y.dificultad);
+  const [facil, dificil] = [tier1[0].regionId, tier1.at(-1).regionId];
+  const casos = [
+    ['el orden dado vuelta', { [facil]: MEDIDO_K5B[dificil], [dificil]: MEDIDO_K5B[facil] }],
+    ['la brecha dentro del ruido', { [facil]: [140, 160], [dificil]: [146, 160] }],
+    ['LATAM llega a su primera', { LAN: [5, 120] }]
+  ];
+  for (const [nombre, cambios] of casos) {
+    if (juezRegionK5B(con(cambios)) === null) problemas.push(`acepta ${nombre}`);
+  }
+  if (juezRegionK5B(con().map((m) => (m.regionId === facil ? { ...m, carreras: 0, local: 0, primera: 0 } : m))) === null) problemas.push('acepta una muestra vacía');
+  if (juezRegionK5B([]) === null) problemas.push('acepta ninguna región');
+  if (problemas.length > 0) throw new Error(problemas.join('; '));
+});
+
+checkLento(`K5-B región: la dificultad de cada región es monótona con su dificultad (y LATAM llega a primera solo emigrando) (criterio, ${SEEDS_K5B} × ${SPLITS_K5B} por región, la brecha por encima de ${Z_RUIDO_K5B} σ)`, () => {
+  const tandas = Math.max(1, Math.min(TANDAS_MAX_K5B, os.cpus().length - 1));
+  const medidas = regionesDeOrigenK5B().map((opcion) => ({
+    ...opcion,
+    ...JSON.parse(execFileSync(process.execPath, [
+      path.join(srcDir, 'dev', 'regionFija.js'), '--paralelo', opcion.regionId, String(SEEDS_K5B), String(SPLITS_K5B), String(tandas), 'llegada'
+    ], { encoding: 'utf8' }).trim().split('\n').pop())
+  }));
+  const motivo = juezRegionK5B(medidas);
+  console.log(`      K5-B llegada a la primera propia / a cualquier primera (${SEEDS_K5B} × ${SPLITS_K5B}, ${tandas} tandas): ${medidas.map((m) => `${m.regionId} ${m.local}/${m.primera}`).join(' · ')}`);
+  if (motivo !== null) throw new Error(motivo);
 });
 
 // D78: con `criterio` hay splits de LCK y de LPL (antes de K5-B, 0 en 400 carreras, Corea incluida: el calibre de la
@@ -25404,13 +25472,19 @@ function cosechaVueltaK6BR() {
   return cosecha;
 }
 
+const { calcularCalendario: calcularCalendarioK6BR } = await import('../systems/edadInicio.js');
 check(`Revisión de K6b, la vuelta: se pregunta en la pretemporada, de free agent vuelve a ese mercado, la previa dice la chance de que te llamen y el automático no vuelve con la chance baja (${SEEDS_K6BR} seeds, regla 7)`, () => {
   const v = BALANCE.retiro.vuelta;
   // (b) la chance, recalculada por el juez sobre un retirado real sin club en la pretemporada de la vuelta.
   const st0 = pretemporadasProK4c2(1)[0].state;
   const retirado = { ...st0, phase: 'retirado', career: { ...st0.career, currentOrg: null, tier: 1 }, flags: { ...st0.flags, splitsEnVentana: BALANCE.edad.splitsPorEdad, vueltasUsadas: 0 } };
   const llamada = chanceDeQueTeLlamenK6BR(retirado);
-  const alVolver = { ...retirado, phase: 'profesional', age: retirado.age + 1, player: { ...retirado.player, splitCount: retirado.player.splitCount + BALANCE.edad.splitsPorEdad } };
+  // K6c-fix: con el reloj de la vuelta va también su calendario (`calcularCalendario`, como `relojAlVolver` del motor: "con la edad
+  // y el reloj con los que volverías"). El juez lo omitía y no se notaba mientras el estado del lote daba la misma demanda con los
+  // dos calendarios; con las carreras de la propuesta que no te quema, el de la seed 1 da 0 clubes con el calendario de la vuelta
+  // y 27 con el viejo.
+  const conReloj = { ...retirado, phase: 'profesional', age: retirado.age + 1, player: { ...retirado.player, splitCount: retirado.player.splitCount + BALANCE.edad.splitsPorEdad } };
+  const alVolver = { ...conReloj, calendario: calcularCalendarioK6BR(conReloj) };
   const k = orgsQueTeFicharianK6BR(alVolver).length;
   if (!llamada || llamada.clubes !== k || llamada.pct !== (k > 0 ? v.pctLlamadoConDemanda : v.pctLlamadoSinDemanda)) {
     throw new Error(`la chance de que te llamen no es la de la demanda de hoy: ${JSON.stringify(llamada)}, el juez cuenta ${k} clubes`);
@@ -25951,6 +26025,9 @@ check('K6c vos elegís el plan de cada año: cada año del amateur arranca frena
 
 // --- K6c, segunda pasada (PLAN.md §K6c: "la vara depende del nivel" y "la semana frena solo con riesgo nuevo") -----------------
 const { ROLES: ROLES_K6C } = await import('../data/roles.js');
+const { resolverAuto: resolverAutoAmateurK6C } = await import('../systems/amateur.js');
+// K6c-fix: lo mínimo de cartas del plan en las que la propuesta de tu perfil mostraba un riesgo evitable y pasó a otro plan.
+const PROPUESTAS_CAMBIADAS_MINIMO_K6C = 10;
 // Escenarios del check (del instrumento, no del juego), sobre las diferencias nivel − calibre medidas en las ofertas de tier 3
 // (200 carreras por bot: del ~22 del 5% más justo al ~55 del 5% más crack): "claramente mejor" es 50 arriba del club y tiene
 // que firmar con una prueba floja; "justo" es 20 arriba y con una prueba regular no firma, con una buena sí.
@@ -26017,6 +26094,43 @@ check('K6c la vara depende del nivel: contra el mismo club, el que lo supera por
       if (r.state.phase !== 'profesional') problemas.push(`seed ${seed}: una prueba clavada con nivel ${nivel} contra ${org.fuerza} no firmó (vara ${pausa.decision?.datos?.vara}%)`);
     }
   }
+  if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
+});
+
+// K6c-fix ("la propuesta del perfil no te quema", PLAN.md §K6c, reglas del supervisor 2026-10-06). Sobre las cartas del plan del
+// lote de K6c, con los números de la carta (`riesgoCasa`, `semanaDeuda`): la opción marcada como propuesta (la que acepta
+// `resolverAuto`) no muestra un riesgo evitable (en casa, `planRiesgoEvitable` o más sobre el plan más seguro; o deuda de sueño
+// con otro plan sin ella) si alguna opción está libre; si ninguna, es la menos riesgosa. Cuando la del perfil lo mostraba, la
+// carta lo dice y nombra un plan que de verdad lo muestra (regla 15). Rojo con la propuesta que ignora el riesgo.
+check('K6c-fix la propuesta del perfil no te quema: la propuesta del plan del año (la que acepta el automático) no muestra un riesgo evitable, y si la del perfil lo mostraba la carta lo dice', () => {
+  const problemas = [];
+  const { planes } = loteDeK6C();
+  const evitable = (opcion, opciones) => {
+    const minimo = Math.min(...opciones.map((otra) => otra.riesgoCasa));
+    return opcion.riesgoCasa - minimo >= BALANCE_K6C.amateur.planRiesgoEvitable
+      || (opcion.semanaDeuda !== null && opciones.some((otra) => otra.semanaDeuda === null));
+  };
+  let cambiadas = 0;
+  for (const { seed, edad, decision } of planes) {
+    const donde = `seed ${seed}, ${edad} años`;
+    const { opciones } = decision;
+    const propuesta = opciones.find((opcion) => opcion.id === decision.datos.propuesta);
+    if (!propuesta) { problemas.push(`${donde}: la propuesta no es una opción de la carta`); continue; }
+    const libres = opciones.filter((opcion) => !evitable(opcion, opciones));
+    if (libres.length > 0 && evitable(propuesta, opciones)) {
+      problemas.push(`${donde}: la propuesta "${propuesta.label}" muestra un riesgo evitable (en casa ${propuesta.riesgoCasa.toFixed(2)}, deuda ${propuesta.semanaDeuda}) y "${libres[0].label}" no`);
+    }
+    if (resolverAutoAmateurK6C({}, decision).opcionId !== propuesta.id) problemas.push(`${donde}: el automático no acepta la propuesta`);
+    const cambio = /iría por "([^"]+)", pero arriesga/.exec(decision.descripcion);
+    if (cambio) {
+      cambiadas += 1;
+      const delPerfil = opciones.find((opcion) => opcion.label === cambio[1] || opcion.titulo === cambio[1]);
+      if (!delPerfil) problemas.push(`${donde}: la carta dice que tu perfil iría por "${cambio[1]}", que no es una opción`);
+      else if (!evitable(delPerfil, opciones)) problemas.push(`${donde}: la carta dice que "${cambio[1]}" arriesga, y no muestra un riesgo evitable`);
+      if (!/lo más parecido/.test(propuesta.propuesta ?? '')) problemas.push(`${donde}: la opción propuesta no dice que es lo más parecido sin el riesgo`);
+    }
+  }
+  if (cambiadas < PROPUESTAS_CAMBIADAS_MINIMO_K6C) problemas.push(`check vacío: ${cambiadas} cartas con la propuesta del perfil cambiada por riesgo (hacen falta ${PROPUESTAS_CAMBIADAS_MINIMO_K6C})`);
   if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
 });
 
