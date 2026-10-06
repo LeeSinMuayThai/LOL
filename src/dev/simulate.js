@@ -2002,55 +2002,108 @@ export function bloqueMundialReal(resultados, observaciones) {
   };
 }
 
-// K5c-M — quién gana el Mundial del mundo, por liga y por región, y si gana el más fuerte. Sobre TODOS los años de todas las
-// carreras (`observacion.mundialesDelMundo`). Los Mundiales cuyo torneo reconstruido no llega al campeón del motor (`coincide`
-// false) cuentan en el reparto de títulos pero quedan fuera de las métricas de fuerza. El campeón que no está entre los
-// participantes (no debería pasar) también.
+// D82 (b): cada AÑO del mundo pesa lo mismo. Hasta D82 cada Mundial pesaba igual, y como el mundo solo se observa mientras la
+// carrera vive, los primeros años (que ve toda carrera) pesaban mucho más que los últimos (que ven pocas): con criterio 600 × 60,
+// el primer año lo aportaban 599 carreras y el decimoctavo, 42. Ahora un Mundial del año k pesa 1 / (H · n_k), con n_k los Mundiales
+// observados ese año (uno por carrera viva) y H los años medidos: los que tienen al menos `MUESTRA_MINIMA` Mundiales (con menos,
+// el reparto de ese año es ruido de muestra); los de menos quedan afuera y se cuentan. No se simula el mundo después del fin de
+// la carrera: el motor no tiene un paso de "solo el mundo" (el mundo se mueve en `systems/mercado.js`, en la pretemporada y solo
+// en fase profesional, y el pipeline se para en `terminado`); hacerlo acá sería copiar el pipeline en el instrumento.
+// Lectura pura, cero `rng`. `pesos[i][j]` es el peso de `observaciones[i].mundialesDelMundo[j]` (0 = fuera del horizonte). La
+// usa también el σ del margen de la meta del usuario en `validate.js`.
+export function pesosDeMundialesDelMundo(observaciones) {
+  const porAnio = new Map();
+  for (const o of observaciones) {
+    for (const m of o?.mundialesDelMundo ?? []) {
+      porAnio.set(m.anio, (porAnio.get(m.anio) ?? 0) + 1);
+    }
+  }
+  const anios = [...porAnio.keys()].filter((anio) => porAnio.get(anio) >= MUESTRA_MINIMA).sort((a, b) => a - b);
+  const medidos = new Set(anios);
+  const pesos = observaciones.map((o) => (o?.mundialesDelMundo ?? [])
+    .map((m) => (medidos.has(m.anio) ? 1 / (anios.length * porAnio.get(m.anio)) : 0)));
+  return { pesos, anios, mundialesPorAnio: anios.map((anio) => porAnio.get(anio)) };
+}
+
+// K5c-M — quién gana el Mundial del mundo, por liga y por región, y si gana el más fuerte, con cada año del mundo pesando igual
+// (D82, `pesosDeMundialesDelMundo`). Los Mundiales cuyo torneo reconstruido no llega al campeón del motor (`coincide` false)
+// cuentan en el reparto de títulos pero quedan fuera de las métricas de fuerza. El campeón que no está entre los participantes
+// (no debería pasar) también.
 const TOP_DEL_CAMPO_MUNDIAL = 3;
 
 export function bloqueMundoMundial(observaciones) {
-  const todos = observaciones.flatMap((o) => o.mundialesDelMundo);
-  const medibles = todos.filter((m) => m.coincide && m.participantes.some((p) => p.nombre === m.campeon));
+  const { pesos, anios, mundialesPorAnio } = pesosDeMundialesDelMundo(observaciones);
+  const crudos = observaciones.flatMap((o) => o.mundialesDelMundo);
+  const todos = observaciones
+    .flatMap((o, i) => o.mundialesDelMundo.map((m, j) => ({ ...m, peso: pesos[i][j] })))
+    .filter((m) => m.peso > 0);
+  const esMedible = (m) => m.coincide && m.participantes.some((p) => p.nombre === m.campeon);
+  const medibles = todos.filter(esMedible);
   const filas = medibles.map((m) => {
     const orden = [...m.participantes].sort((a, b) => b.fuerza - a.fuerza);
     const campeon = m.participantes.find((p) => p.nombre === m.campeon);
     const rango = orden.filter((p) => p.fuerza > campeon.fuerza).length + 1;
-    return { m, orden, campeon, rango, masFuerte: orden[0] };
+    return { m, orden, campeon, rango, masFuerte: orden[0], peso: m.peso };
   });
-  const cuenta = (lista, clave) => lista.reduce((acc, x) => { acc[clave(x)] = (acc[clave(x)] ?? 0) + 1; return acc; }, {});
-  const reparto = (conteos) => Object.fromEntries(Object.entries(conteos)
-    .sort((a, b) => b[1] - a[1]).map(([k, n]) => [k, { n, pct: pct(n, todos.length) ?? 0 }]));
+  const pesoDe = (lista) => lista.reduce((suma, x) => suma + x.peso, 0);
+  const pctPesado = (lista, cumple) => pct(pesoDe(lista.filter(cumple)), pesoDe(lista)) ?? 0;
+  // `pares`: [valor, peso]. La media de los valores, cada uno con su peso.
+  const promedioPesado = (pares) => {
+    const total = pares.reduce((suma, [, peso]) => suma + peso, 0);
+    return total > 0 ? pares.reduce((suma, [valor, peso]) => suma + valor * peso, 0) / total : null;
+  };
+  const repartoPesado = (clave) => {
+    const acc = {};
+    for (const m of todos) {
+      const k = clave(m);
+      acc[k] = { n: (acc[k]?.n ?? 0) + 1, peso: (acc[k]?.peso ?? 0) + m.peso };
+    }
+    const total = pesoDe(todos);
+    return Object.fromEntries(Object.entries(acc)
+      .sort((a, b) => b[1].peso - a[1].peso).map(([k, { n, peso }]) => [k, { n, pct: pct(peso, total) ?? 0 }]));
+  };
   const ligaDe = ligaDelCampeonMundial;
   const regionDe = (m) => m.participantes.find((p) => p.nombre === m.campeon)?.region ?? 'desconocida';
+  // El reparto de antes de D82 (cada Mundial pesa igual, todos los años): solo para comparar.
+  const conteoCrudo = crudos.reduce((acc, m) => { acc[ligaDe(m)] = (acc[ligaDe(m)] ?? 0) + 1; return acc; }, {});
   const ligas = [...new Set(todos.flatMap((m) => m.participantes.map((p) => p.liga)))].sort();
   const fuerzaPorLiga = Object.fromEntries(ligas.map((liga) => {
     const deLiga = (m) => m.participantes.filter((p) => p.liga === liga);
-    const mejores = medibles.map((m) => Math.max(...deLiga(m).map((p) => p.fuerza)));
+    const mejores = medibles.map((m) => [Math.max(...deLiga(m).map((p) => p.fuerza)), m.peso]);
     return [liga, {
-      clasificadosPorMundial: redondear(promedio(todos.map((m) => deLiga(m).length)) ?? 0, 2),
-      fuerzaMedia: redondear(promedio(todos.flatMap((m) => deLiga(m).map((p) => p.fuerza))) ?? 0, 1),
-      fuerzaDelMejorMedia: redondear(promedio(mejores) ?? 0, 1),
-      tieneAlMasFuertePct: pct(filas.filter((f) => f.masFuerte.liga === liga).length, filas.length) ?? 0,
-      enElTop3Pct: pct(filas.filter((f) => f.orden.slice(0, TOP_DEL_CAMPO_MUNDIAL).some((p) => p.liga === liga)).length, filas.length) ?? 0
+      clasificadosPorMundial: redondear(promedioPesado(todos.map((m) => [deLiga(m).length, m.peso])) ?? 0, 2),
+      fuerzaMedia: redondear(promedioPesado(todos.flatMap((m) => deLiga(m).map((p) => [p.fuerza, m.peso]))) ?? 0, 1),
+      fuerzaDelMejorMedia: redondear(promedioPesado(mejores) ?? 0, 1),
+      tieneAlMasFuertePct: pctPesado(filas, (f) => f.masFuerte.liga === liga),
+      enElTop3Pct: pctPesado(filas, (f) => f.orden.slice(0, TOP_DEL_CAMPO_MUNDIAL).some((p) => p.liga === liga))
     }];
   }));
   return {
     definiciones: {
-      alcance: 'todos los Mundiales del mundo (cada año, los juegue o no el jugador), por observacion.mundialesDelMundo',
+      alcance: 'los Mundiales del mundo (cada año, los juegue o no el jugador), por observacion.mundialesDelMundo, con cada AÑO '
+        + 'del mundo pesando igual (D82): un Mundial del año k pesa 1 / (aniosMedidos · Mundiales observados ese año); se miden '
+        + `los años con al menos ${MUESTRA_MINIMA} Mundiales`,
       fuerza: 'la fuerza de cada participante en el torneo (participantes[].fuerza: la del bracket); el jugador, si juega, con fuerzaDeMundial',
-      metricasDeFuerza: 'solo los Mundiales cuyo torneo reconstruido llega al campeón del motor (coincide)'
+      metricasDeFuerza: 'solo los Mundiales cuyo torneo reconstruido llega al campeón del motor (coincide)',
+      titulosPorLigaPorMundial: 'el reparto de antes de D82: cada Mundial pesa igual, sobre todos los años; sobrepesa los primeros '
+        + 'años del mundo, que ve toda carrera. Solo para comparar'
     },
     mundiales: todos.length,
+    mundialesFueraDelHorizonte: crudos.length - todos.length,
+    aniosMedidos: anios.length,
+    mundialesPorAnio,
     medibles: medibles.length,
-    coincidenciaPct: pct(medibles.length, todos.length) ?? 0,
-    jugadosPorElJugadorPct: pct(todos.filter((m) => m.jugado).length, todos.length) ?? 0,
-    titulosPorLiga: reparto(cuenta(todos, ligaDe)),
-    titulosPorRegion: reparto(cuenta(todos, regionDe)),
-    elMasFuerteGanaPct: pct(filas.filter((f) => f.rango === 1).length, filas.length) ?? 0,
-    unoDelTop3GanaPct: pct(filas.filter((f) => f.rango <= TOP_DEL_CAMPO_MUNDIAL).length, filas.length) ?? 0,
-    ganaLaLigaDelMasFuertePct: pct(filas.filter((f) => f.campeon.liga === f.masFuerte.liga).length, filas.length) ?? 0,
-    rangoMedioDelCampeon: redondear(promedio(filas.map((f) => f.rango)) ?? 0, 2),
-    fuerzaCampeonMenosMaxima: redondear(promedio(filas.map((f) => f.campeon.fuerza - f.masFuerte.fuerza)) ?? 0, 2),
+    coincidenciaPct: pctPesado(todos, esMedible),
+    jugadosPorElJugadorPct: pctPesado(todos, (m) => m.jugado),
+    titulosPorLiga: repartoPesado(ligaDe),
+    titulosPorRegion: repartoPesado(regionDe),
+    titulosPorLigaPorMundial: Object.fromEntries(Object.entries(conteoCrudo)
+      .sort((a, b) => b[1] - a[1]).map(([liga, n]) => [liga, { n, pct: pct(n, crudos.length) ?? 0 }])),
+    elMasFuerteGanaPct: pctPesado(filas, (f) => f.rango === 1),
+    unoDelTop3GanaPct: pctPesado(filas, (f) => f.rango <= TOP_DEL_CAMPO_MUNDIAL),
+    ganaLaLigaDelMasFuertePct: pctPesado(filas, (f) => f.campeon.liga === f.masFuerte.liga),
+    rangoMedioDelCampeon: redondear(promedioPesado(filas.map((f) => [f.rango, f.peso])) ?? 0, 2),
+    fuerzaCampeonMenosMaxima: redondear(promedioPesado(filas.map((f) => [f.campeon.fuerza - f.masFuerte.fuerza, f.peso])) ?? 0, 2),
     fuerzaPorLiga
   };
 }

@@ -6,7 +6,7 @@ import { plata, plural } from '../core/formato.js';
 import { calcularContexto } from '../core/contexto.js';
 import { ligaDeCarrera } from '../core/competicion.js';
 import { salarioDeOferta } from '../core/salarios.js';
-import { valorDeMercado, presupuestoDeDemanda } from '../core/valorMercado.js';
+import { valorDeMercado, precioDeTraspaso } from '../core/valorMercado.js';
 import { cerrarFila, registrarPico, registrarSalarioEnFila, registrarArraigoEnFila, arraigoInicial } from '../core/registro.js';
 import { bandaDeJerarquia, bandaDeArraigoFicha, nivelDelJugador } from '../core/ficha.js';
 import { orgsQueTeFicharian, ofertaPosible, esResidenteDe, nivelAlternativaAsiento, factorRenovacionEtario, factorElite, plantelEnLiga, veteranoDeTier2, ganaLaDisputaDelAsiento, renovacionCortadaPorEdad, alcanzaTuLiga, ligaDeCasa, clubDeCasaQueTeHaceLugar, calibreDeLiga, meritoDeTemporada, sesgoEtarioDe, renovacionNegadaConMerito } from '../core/demanda.js';
@@ -1243,10 +1243,13 @@ function ofertaDeTraspaso(state, rng) {
     negociacion: { ...ofertaCruda.negociacion, salarioBase: salarioAnualUSD }
   };
   const conClausula = state.career.contrato.clausula === 'salida';
-  const traspasoUSD = Math.round(
-    presupuestoDeDemanda(state) * m.traspasoBaseFactor
-    * (1 + Math.max(0, state.career.contrato.aniosRestantes) * m.traspasoPorAnioRestante)
-  );
+  // D82 (a), regla 15: el precio sale del valor que muestra "Vos en el mercado" (`precioDeTraspaso`), y si la edad lo baja
+  // de verdad, la tarjeta lo dice en vez de dejar un "valés $326k/año" al lado de un traspaso de $73k sin explicación.
+  const precio = precioDeTraspaso(state);
+  const { traspasoUSD } = precio;
+  const porLaEdad = precio.descuentoEtario <= m.traspasoDescuentoEtarioVisible
+    ? ` Los clubes descuentan la edad: por vos ponen el ${Math.round(precio.descuentoEtario * 100)}% de lo que pondrían por un pibe con tu valor.`
+    : '';
 
   const quedarse = {
     id: 'quedarse', tipo: 'quedarse',
@@ -1257,8 +1260,8 @@ function ofertaDeTraspaso(state, rng) {
     ...oferta, id: 'aceptar', tipo: 'aceptar',
     label: `Aceptar: irte a ${org.nombre} (${nombreVisibleDeLiga(liga.id)})`,
     descripcion: conClausula
-      ? `Tenés cláusula: te vas y ${state.career.currentOrg} cobra ${plata(traspasoUSD)}. No opina.`
-      : `${org.nombre} pone ${plata(traspasoUSD)} de traspaso. ${state.career.currentOrg} decide si te suelta.`
+      ? `Tenés cláusula: te vas y ${state.career.currentOrg} cobra ${plata(traspasoUSD)}. No opina.${porLaEdad}`
+      : `${org.nombre} pone ${plata(traspasoUSD)} de traspaso.${porLaEdad} ${state.career.currentOrg} decide si te suelta.`
   };
   const opciones = conClausula
     ? [aceptar, quedarse]

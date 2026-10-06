@@ -52,11 +52,11 @@ export function splitsDeResidencia(state, regionId) {
   }, 0);
 }
 
-// El presupuesto que una org te pone enfrente en la DISPUTA por un asiento (`demanda.js`: presupuesto >= esto) y la base
-// del precio de un traspaso a mitad de contrato. NO es un precio de mercado: lleva el `sesgoEtario` (0,15 a 0,22 desde los
-// 30), que es un factor de demanda —a esa edad casi nadie te ficha—, no de cuánto paga el que sí te ficha. Por eso la
-// pantalla no lo muestra (`valorDeMercado`); esto es lo que antes se llamaba "valor de mercado" y decidía lo mismo.
-// Pura, sin rng. `0` fuera de una liga real (tier 3 o sin equipo).
+// El presupuesto que una org te pone enfrente en la DISPUTA por un asiento (`demanda.js`: presupuesto >= esto). NO es un
+// precio de mercado: lleva el `sesgoEtario` (0,15 a 0,22 desde los 28), que es un factor de demanda —a esa edad casi nadie te
+// ficha—, no de cuánto paga el que sí te ficha. Por eso la pantalla no lo muestra (`valorDeMercado`); esto es lo que antes se
+// llamaba "valor de mercado" y decidía lo mismo. Hasta D82 era también la base del precio de un traspaso: ya no
+// (`precioDeTraspaso`, abajo). Pura, sin rng. `0` fuera de una liga real (tier 3 o sin equipo).
 export function presupuestoDeDemanda(state) {
   const liga = ligaDeCarrera(state);
   if (!liga) {
@@ -96,4 +96,20 @@ export function valorDeMercado(state) {
     * (mercado.salarioJerarquiaBase + (state.career.jerarquia / 100) * mercado.salarioJerarquiaPeso)
     * (mercado.salarioHypeBase + (state.player.stats.hype / 100) * mercado.salarioHypePeso);
   return Math.max(liga.salario.minimoUSD, Math.round(liga.salario.medianaUSD * mult));
+}
+
+// D82 (a), regla 15: lo que un club pone para sacarte a mitad de contrato, armado con lo que la pantalla muestra. La base es
+// `valorDeMercado` (el valor de "Vos en el mercado"), no el presupuesto de demanda (otra fórmula, que nadie ve): con esa base
+// un veterano "valía" $326k/año y su traspaso costaba $85k sin explicación. La edad se sigue descontando (`sesgoEtario`: por
+// uno de 30 los clubes ponen una fracción de lo que ponen por un pibe), pero ahora es un factor que la tarjeta dice
+// (`descuentoEtario`). Pura, sin rng; solo pantalla y log: ninguna decisión del motor lee el precio.
+export function precioDeTraspaso(state) {
+  const { mercado } = BALANCE;
+  const valorUSD = valorDeMercado(state);
+  const descuentoEtario = sesgoEtario(state.age);
+  const aniosRestantes = Math.max(0, state.career.contrato.aniosRestantes);
+  const traspasoUSD = Math.round(
+    valorUSD * descuentoEtario * mercado.traspasoBaseFactor * (1 + aniosRestantes * mercado.traspasoPorAnioRestante)
+  );
+  return { valorUSD, descuentoEtario, aniosRestantes, traspasoUSD };
 }

@@ -1472,10 +1472,15 @@ export const BALANCE = {
     // El club que te saca a mitad de contrato mejora el sueldo: piso sobre el
     // contrato vigente.
     traspasoSalarioMinFactor: 1.05,
-    // `traspasoUSD` = valor de mercado · factor · (1 + añosRestantes · porAnio).
-    // Lo cobra tu club, no vos: no entra a `dineroTotalUSD`.
+    // `traspasoUSD` = valor de mercado (`valorDeMercado`, el que ve el jugador) · `sesgoEtario` de tu edad · factor ·
+    // (1 + añosRestantes · porAnio): `precioDeTraspaso` (core/valorMercado.js). Lo cobra tu club, no vos: no entra a
+    // `dineroTotalUSD`. D82 (a): antes la base era el presupuesto de demanda, una fórmula que la pantalla no muestra.
     traspasoBaseFactor: 1.1,
     traspasoPorAnioRestante: 0.35,
+    // D82 (a), regla 15: la tarjeta del traspaso dice por qué el precio baja con la edad ("los clubes descuentan la edad")
+    // cuando el descuento (`sesgoEtario` de tu edad) deja el precio en esta fracción o menos del de un pibe con tu mismo
+    // valor: 0,7 = desde los 24 con la tabla de `sesgoEtario`. Por criterio; es solo pantalla.
+    traspasoDescuentoEtarioVisible: 0.7,
     // El auto-resolver (headless / simulate.js) toma el traspaso —un club más
     // fuerte— salvo que el sueldo caiga por debajo de esta fracción del actual.
     traspasoAutoRecorteMax: 0.85,
