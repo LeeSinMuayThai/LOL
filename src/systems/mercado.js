@@ -856,15 +856,30 @@ export function firmaDelFinPorMercado(state, decision) {
   ].join('|');
 }
 
+// K6b-fix (PLAN.md, "K6b-fix"; la seed 101: seis pretemporadas narradas de los 21 a los 27 sin que nadie le volviera a preguntar):
+// pasar `BALANCE.mercado.splitsSinOfertaParaLibre` pretemporadas sin oferta desde la última vez que respondiste también es "algo
+// cambió". La repetición deja de narrarse y "El mercado ya habló" vuelve a frenar, con la previa: cuántas pretemporadas llevás sin
+// oferta y tu edad. Sin tiradas nuevas (T1): la pausa no tira nada, y si respondés "seguir buscando" corre lo mismo que la
+// narración. `flags.finMercadoEsperas` cuenta las narradas; cualquier respuesta la vuelve a cero (`resolverFinPorMercado`).
 function finPorMercadoOSuRepeticion(stFork, logs, decision, rng) {
   const firma = firmaDelFinPorMercado(stFork, decision);
-  const conFirma = { ...decision, datos: { ...decision.datos, firma } };
   const sinEleccion = decision.datos.ofertas.length === 0;
-  if (sinEleccion && stFork.flags.finMercadoFirma === firma) {
+  const mismaFoto = sinEleccion && stFork.flags.finMercadoFirma === firma;
+  const esperas = (stFork.flags.finMercadoEsperas ?? 0) + 1;
+  const vencio = mismaFoto && esperas >= BALANCE.mercado.splitsSinOfertaParaLibre;
+  const conFirma = { ...decision, datos: { ...decision.datos, firma } };
+  if (mismaFoto && !vencio) {
     const sigue = resolverFinPorMercado(stFork, conFirma, { opcionId: 'esperar' }, rng);
     const linea = crearLog('mercado', `${decision.datos.motivoRetiro} Nada cambió desde que elegiste seguir buscando: seguís esperando que suene el teléfono.`);
     // El primer log de `resolverFinPorMercado` ("Seguís buscando...") es el de la elección: acá lo reemplaza la línea de arriba.
-    return { state: sigue.state, logs: [...logs, linea, ...sigue.logs.slice(1)] };
+    return {
+      state: { ...sigue.state, flags: { ...sigue.state.flags, finMercadoEsperas: esperas } },
+      logs: [...logs, linea, ...sigue.logs.slice(1)]
+    };
+  }
+  if (vencio) {
+    const espera = `Van ${pretemporadasEnPalabras(esperas)} sin una oferta desde que elegiste seguir buscando, y ya tenés ${stFork.age} años.`;
+    return { state: stFork, logs, decision: { ...conFirma, descripcion: `${espera} ${conFirma.descripcion}`, datos: { ...conFirma.datos, venceLaEspera: esperas } } };
   }
   return { state: stFork, logs, decision: conFirma };
 }
@@ -1024,7 +1039,7 @@ function decisionFinPorMercado(state, ofertas, asientosAbiertos) {
 function resolverFinPorMercado(stateAntes, decision, respuesta, rng) {
   // K6b-C: la foto con la que elegiste seguir buscando (sin ofertas). Cualquier otra respuesta la borra.
   const finMercadoFirma = respuesta.opcionId === 'esperar' ? (decision.datos.firma ?? null) : null;
-  const state = { ...stateAntes, flags: { ...stateAntes.flags, finMercadoFirma } };
+  const state = { ...stateAntes, flags: { ...stateAntes.flags, finMercadoFirma, finMercadoEsperas: 0 } };
   if (respuesta.opcionId === 'retirarse') {
     // El mundo sigue sin vos: los asientos que te habían congelado se llenan con un NPC (mismo cierre que el
     // silencio), y recién después te retirás.

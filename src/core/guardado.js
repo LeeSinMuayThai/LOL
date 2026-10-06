@@ -159,6 +159,7 @@ export function migrarDe12(state) {
     ...viejas,
     seguisFirma: viejas.seguisFirma ?? null,
     finMercadoFirma: viejas.finMercadoFirma ?? null,
+    finMercadoEsperas: viejas.finMercadoEsperas ?? 0,
     vueltaFirma: viejas.vueltaFirma ?? null,
     colaFirmas: { ...colaFirmas, cierre: colaFirmas.cierre ?? null, momento: colaFirmas.momento ?? null }
   };

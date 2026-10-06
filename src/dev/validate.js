@@ -794,7 +794,9 @@ const FORMAS_CONOCIDAS = {
   // un guardado de la 12 carga con `migrarDe12` (core/guardado.js).
   // Revisión de K6b: la carta firmada sin pausa lleva de dónde a dónde (`unaSolaCarta.liga/ligaAntes/tierAntes`) y el "¿Volvés?" la
   // chance de que te llamen (`datos.chanceDeQueTeLlamenPct`, `clubesQueTeFicharian`): re-registrada sin subir de 13 (era '8d9b9b8a0ff2').
-  13: 'fcc08dda0b89'
+  // K6b-fix: la espera narrada de "El mercado ya habló" vence (`flags.finMercadoEsperas`, migrada con `migrarDe12`) y la pregunta
+  // que vuelve lleva `datos.venceLaEspera`: re-registrada sin subir de 13 (era 'fcc08dda0b89').
+  13: '0b9646606fa1'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -25003,7 +25005,9 @@ function repeticionesSinCambioK6BC(secuencia) {
     const previa = ultima[parada.motivo];
     // K6b (integración con K6b-F): la foto que cuenta es la de después de elegir. Esperar sin firmar te deja sin club, así que
     // "El mercado ya habló" con la misma foto salvo el club que se fue (`fotoTras`) también es una repetición.
-    if (previa && previa.respuesta === SIGUE_K6BC[parada.motivo] && (previa.fotoTras ?? previa.firma) === parada.firma) {
+    // K6b-fix: la pregunta que vuelve porque la espera venció (`venceLaEspera`, `splitsSinOfertaParaLibre` pretemporadas narradas)
+    // es "algo cambió": no es una repetición. Que vuelva justo a tiempo y con su previa lo cuida el check "K6b-fix: el seguir buscando narrado".
+    if (previa && parada.vence === undefined && previa.respuesta === SIGUE_K6BC[parada.motivo] && (previa.fotoTras ?? previa.firma) === parada.firma) {
       repetidas.push(parada);
     }
     ultima[parada.motivo] = parada;
@@ -25051,7 +25055,7 @@ function cosechaK6BC() {
     const terco = (sistema, st, decision, rng) => {
       const motivo = decision.datos?.motivo;
       if (motivo in SIGUE_K6BC && (motivo !== 'fin_mercado' || decision.opciones[0].id === 'esperar')) {
-        secuencia.push({ motivo, firma: decision.datos.firma, fotoTras: fotoTrasElegirK6BC(motivo, decision.datos.firma), respuesta: SIGUE_K6BC[motivo], foto: fotoDelSeguisK6BC(st) });
+        secuencia.push({ motivo, firma: decision.datos.firma, fotoTras: fotoTrasElegirK6BC(motivo, decision.datos.firma), respuesta: SIGUE_K6BC[motivo], foto: fotoDelSeguisK6BC(st), vence: decision.datos.venceLaEspera });
         return { opcionId: SIGUE_K6BC[motivo] };
       }
       if (decision.presentacion === 'mercado' && motivo === 'oferta' && decision.opciones.length === 1) {
@@ -25424,9 +25428,12 @@ check(`K6b-C2 la cola de verdad: en la cola, el cierre de año y el momento fren
 // 13,33, σ 9,00, n = 602 carreras con cola (mediana 11, dato); banda <= 13,33 + 2 × 9,00/√602 = 14,06. Rojo con todas las reglas
 // de K6b-C y C2 apagadas (`frenaEnLaCola` frena siempre; las fotos de "¿la seguís?", "¿Volvés?" y "El mercado ya habló" nunca se
 // repiten; la carta única frena siempre), con la misma muestra: 14,89 (n = 587), 0,83 por encima de la banda (2,3 σ).
-const COLA_PROMEDIO_MEDIDO_K6BC = 13.33;
-const COLA_DESVIO_K6BC = 9;
-const COLA_N_K6BC = 602;
+// K6b-fix (la espera narrada de "El mercado ya habló" vence), corrimiento declarado de K6b: re-medido con la misma muestra sobre el
+// motor de K6b-fix: promedio 13,37, σ 8,93, n = 593 (mediana 12, dato); banda <= 13,37 + 2 × 8,93/√593 = 14,10. El mutante (C y C2
+// apagados, con K6b-fix adentro) sigue en 14,89 (n = 587): 0,79 por encima de la banda (2,2 σ).
+const COLA_PROMEDIO_MEDIDO_K6BC = 13.37;
+const COLA_DESVIO_K6BC = 8.93;
+const COLA_N_K6BC = 593;
 const COLA_MUTANTE_K6BC = 14.89;
 const Z_RUIDO_COLA_K6BC = 2;
 const META_K6BC_COLA_PROMEDIO = Number((COLA_PROMEDIO_MEDIDO_K6BC + Z_RUIDO_COLA_K6BC * COLA_DESVIO_K6BC / Math.sqrt(COLA_N_K6BC)).toFixed(2));
@@ -25524,6 +25531,55 @@ checkLento(`Revisión de K6b, la meta de la cola del terco (no se retira antes d
   console.log(`     (muestra: el terco, ${SEEDS_TERCO_K6BC} × ${SPLITS_K6BC}) desde los 28: promedio ${promedio.toFixed(2)}, σ ${desvio.toFixed(2)}, n = ${colas.length} carreras con cola (banda <= ${META_COLA_TERCO_K6BC}); mediana ${mediana} (dato)`);
   const problema = juezDeLaColaDelTercoK6BC(Number(promedio.toFixed(2)));
   if (problema) throw new Error(problema);
+});
+
+// K6b-fix (PLAN.md, "K6b-fix"), la espera vence: el "seguir buscando" narrado de "El mercado ya habló" (`finPorMercadoOSuRepeticion`)
+// no pasa de `splitsSinOfertaParaLibre` − 1 pretemporadas seguidas desde la última vez que respondiste; a la siguiente la pregunta
+// vuelve a frenar, y su previa dice cuántas pretemporadas llevás sin oferta y tu edad. Regla 17 — protege: que nadie se quede años
+// esperando sin que se le vuelva a preguntar (la seed 101: seis pretemporadas narradas, de los 21 a los 27). Desde: K6b-fix
+// (2026-10-05). Rojo con el mutante "nunca vence" (`vencio` siempre false en `systems/mercado.js`).
+const { pretemporadasEnPalabras: pretemporadasEnPalabrasK6BX } = await import('../systems/retiro.js');
+const SEEDS_ESPERA_K6BX = 300;
+checkLento(`K6b-fix: el "seguir buscando" narrado no pasa de ${BALANCE.mercado.splitsSinOfertaParaLibre - 1} pretemporadas seguidas y la pregunta vuelve con su previa (${SEEDS_ESPERA_K6BX} × 60)`, () => {
+  const tope = BALANCE.mercado.splitsSinOfertaParaLibre - 1;
+  const NARRADA = /Nada cambió desde que elegiste seguir buscando/;
+  let narradas = 0;
+  let vencidas = 0;
+  const largas = [];
+  const sinPrevia = [];
+  for (let seed = 1; seed <= SEEDS_ESPERA_K6BX; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    let seguidas = 0;
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      let pregunto = false;
+      const responder = (sistema, st, decision, rngDeLaPausa) => {
+        if (sistema.id === 'mercado' && decision.datos?.motivo === 'fin_mercado') {
+          pregunto = true;
+          const vence = decision.datos.venceLaEspera;
+          if (vence !== undefined) {
+            vencidas += 1;
+            const conPrevia = decision.descripcion.includes(`${st.age} años`) && decision.descripcion.includes(pretemporadasEnPalabrasK6BX(vence));
+            if (vence !== tope + 1 || seguidas !== tope || !conPrevia) {
+              sinPrevia.push({ seed, split: i, vence, seguidas, edad: st.age });
+            }
+          }
+        }
+        return sistema.resolverAuto(st, decision, rngDeLaPausa);
+      };
+      const paso = avanzarSplitAuto(state, rng, responder);
+      state = paso.state;
+      const enEsteSplit = paso.logs.filter((log) => log.type === 'mercado' && NARRADA.test(log.message)).length;
+      narradas += enEsteSplit;
+      seguidas = pregunto ? 0 : seguidas + enEsteSplit;
+      if (seguidas > tope) largas.push({ seed, split: i, seguidas });
+    }
+  }
+  console.log(`      ${narradas} esperas narradas, ${vencidas} preguntas que volvieron por la espera vencida (tope ${tope} seguidas)`);
+  if (largas.length > 0 || sinPrevia.length > 0) {
+    throw new Error(`esperas narradas de más: ${JSON.stringify(largas.slice(0, 5))}; preguntas vueltas sin su previa (pretemporadas y edad) o fuera de tiempo: ${JSON.stringify(sinPrevia.slice(0, 5))}`);
+  }
+  if (narradas === 0 || vencidas === 0) throw new Error(`check vacío: ${narradas} esperas narradas y ${vencidas} preguntas vueltas`);
 });
 
 if (errores.length > 0) {

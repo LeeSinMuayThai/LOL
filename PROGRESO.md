@@ -34,6 +34,40 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-05 — K6b-fix: los 10 FAIL de la validación completa de `58db231` (`k6b-fix`; PLAN.md §K6b, "Los FAIL de la validación completa de K6b" y "K6b-fix")
+
+**Nueve eran checks.** En esos el motor no se tocó. Cada uno con su rojo (un mutante en una copia de `src`):
+- **`sin_renovacion`** (2 checks): desde K6b-F el aviso y la salida son la misma pretemporada. El estado vive en la pausa del mercado, y los dos checks lo miran ahí (`observarPausaDelMercado`, mismo stream). Rojo: `contexto.js` sin `sin_renovacion`.
+- **Oferta lateral** (seed 63): la prueba de Movistar KOI no alcanzó y firmó GAM. Lo rechazado es lo que no es el club con el que terminás. Rojo: sin el log del NPC.
+- **El mundo NPC envejece**: no es K6b. Con 40 seeds el head da +0,15 (ee 0,045) y `25f7b0d` +0,21 (ee 0,042). Ahora son 40 seeds y la suba tiene que superar 2 ee. Rojo: el mundo congelado da −1,22.
+- **9R0e**:
+  - la búsqueda sigue después de 1500 carreras hasta 500 splits, con tope en 3000;
+  - el 60% no cuenta la repetición narrada de K6b-C (antes de K6b el espía veía 0 silencios; en `58db231`, 7, todos de esas repeticiones);
+  - el tope 0 sí la cuenta.
+- **K0 KPIs**: recuento independiente de `ritmo.colaDeCarrera` y `ritmo.leyenda`. Rojo: `frenadasCola += 2`.
+- **K0 estancado**: tope 5 → 8,0, es decir 4,9 (n 1500) + 2σ de 200. Medido: 5,5 en el head, 4,5 en `25f7b0d`.
+- **Bo5 conjunto**: 86,0 ± 1,4 (n 620); techo 88,8. Corrimiento declarado de K6b. El rojo viejo (≈ 87) queda adentro de la banda.
+
+**El décimo, "Nadie se queda varado" (seed 101, 18 splits), era el motor.**
+- **La causa:** la repetición narrada de "El mercado ya habló" no vencía. Eran seis pretemporadas, de los 21 a los 27, sin que se le volviera a preguntar.
+- **El arreglo (decisión del supervisor):** pasar `splitsSinOfertaParaLibre` pretemporadas sin oferta desde la última respuesta es "algo cambió".
+  - La pregunta vuelve a frenar con su previa: cuántas pretemporadas sin oferta y la edad.
+  - El contador es `flags.finMercadoEsperas` (migrado con `migrarDe12`).
+  - Sin tiradas nuevas: si respondés "seguir buscando", corre lo mismo que la narración.
+- **El check de motor nuevo:** "K6b-fix: el seguir buscando narrado no pasa de 2 pretemporadas seguidas". 5 narradas y 2 preguntas vueltas en 300 × 60. Rojo con "nunca vence": 0 preguntas vueltas, y la seed 101 vuelve a 18 splits.
+- **Seed 101:** ahora vuelve a preguntar a los 24, y el automático se retira.
+
+**La meta de la cola**, re-medida con la muestra del check (1500 × 60):
+- **antes de K6b-fix:** 13,33, σ 9,00, n 602;
+- **con K6b-fix:** 13,37, σ 8,93, n 593, banda ≤ 14,10;
+- **el mutante (C y C2 apagados):** 14,89, 2,2σ arriba de la banda.
+
+**Verificación.**
+- `--rapido`: 344 OK, 0 FAIL.
+- `HUELLA_JUEGO` sin cambios: 1920057344 (el check de huella, 40 × 60, pasa).
+- `FORMAS_CONOCIDAS[13]`: 'fcc08dda0b89' → '0b9646606fa1', sin subir de 13.
+- `simulate.js 1 60 criterio` dos veces: diff vacío.
+
 ### 2026-10-05 — Cierre de K6b: K5c-V con el piso armado y los estancados re-basados (`k6b-integracion`; PLAN.md §K6b, "La revisión de K6b")
 
 **K5c-V, por qué quedó vacío (medido, no es el motor).** El piso de franquicia de un veterano de tier 2 en las carreras de `azar` (régimen del barrido, brecha 10) era **una sola carrera de 40**: en `923800d`, la seed 3 a los 31 en EMEA Masters (Fénix Legion), 1 forzada que perdía la disputa. La revisión de K6b (la carta única que cambia de liga frena, caso `cambio`) le cambió el camino a esa carrera en el split 33: la única carta era GIANTX (LCS → LEC), ahora frena, `azar` espera, queda sin club, se retira y vuelve en la LEC; nunca más pisa el tier 2. En 40 × 70: 9 comienzos de split de un veterano de tier 2 (16 en `923800d`), 4 "claramente arriba", los 4 con club, ninguno llega al piso. El mérito de K6b-M (solo con temporada de élite) y la marca de franquicia (el piso no la mira) no tocan este caso. El piso no cambió.
