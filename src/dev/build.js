@@ -86,7 +86,13 @@ const SPLITS_DE_VERIFICACION = 30;
 // reloj de la vuelta), src/core +44 (demanda.js +11 con la casa y la élite, guardado.js +5 con las formas conocidas, puntaje,
 // curvas, serie), src/data +24 (balance.js +17 con las perillas de Final2 y sus comentarios, version.js +5) y src/ui +12. Subido
 // a 2300: ~60 KB (2,7%) de margen sobre el peso medido ese día, no una expectativa. K6 juega carreras y arregla lo que encuentre.
-const PESO_MAXIMO_KB = 2300;
+//
+// Re-medido en la integración de K6c (2026-10-06, `k6c-integracion`): 2310 KB contra 2300. Lo que creció desde K5c (ef3509b)
+// es motor que el usuario pidió en K6b y K6c, no algo que sobre: en crudo (git) +67 KB, src/systems +38 (amateur.js +383 líneas
+// con el plan del año y la vara de la prueba, mercado.js +289 con el mérito y el contrato, retiro.js con la vuelta), src/core +19
+// (cola.js nuevo, legado.js, demanda.js, guardado.js), src/data +8 (balance.js). Subido a 2400: ~90 KB (3,9%) de margen sobre el
+// peso medido ese día, no una expectativa.
+const PESO_MAXIMO_KB = 2400;
 
 function copiar(desde, hacia) {
   const stat = fs.statSync(desde);
