@@ -8101,6 +8101,42 @@ Mundiales se ganan importado a LPL/LCK (K5c-H).
 **Integración** (`k6c-integracion`): `k6c-region` + `k6b-fix`. La forma 13 se re-registra sin subir de versión, porque
 la 13 no salió. Después, la validación completa del supervisor, el merge a `fase-9r` y la prueba del usuario.
 
+**La validación completa de la integración** (`6dc0ff8`, 2026-10-06; `7a51ed7` sube el techo de `dist/` a 2400 porque
+pesa 2310). Resultado: 512 OK, 12 FAIL; `simulate.js 1000` 0 crashes; determinismo idéntico; `agencia.js` OK.
+- **Ninguno de los 12 sale de K6b-fix:** el Top 20 de 9Wd, medido en 4 bloques de 180 seeds, da igual que en K6b.
+- **Casi todos salen de la vara de K6c.** Con piso 0,1 y techo 0,8, la vara queda en 0,8 salvo que estés 16 o más
+  puntos arriba del calibre del club.
+- **Lo que mueve:**
+  - el jugador que falla toda prueba no firma nunca, aunque sea muy bueno. Acertar siempre los minijuegos rinde
+    +1149% contra fallarlos, y el tope del check "ni decorativo ni gambling" es +42%;
+  - `equilibrado` pasa de 24,9 a 32,3% de no-pro (`simulate.js 1000`);
+  - hay menos carreras con éxito (459 contra 513 de 720), y de esas tocan el Top 20 el 34% contra el 40% de K6b;
+  - la edad mediana al terminar baja a 24 (la banda es 25-29);
+  - a `malas` le faltan carreras pro, y 4 checks de K0 quedan vacíos.
+- **Los otros FAIL:**
+  - K6a-M: la prueba clavada no tiene línea de desenlace, y el feed y el estado no coinciden (seeds 1 y 2, +54 más);
+  - Fase 11: 2 de 234 carreras de 6+ splits ven menos de 2 resúmenes;
+  - el burnout tiene aviso en el 75% de los casos (el piso es 80%);
+  - la cobertura de pausas del guardado de K4: faltan `amateur:reparto` y `servicioMilitar:*`;
+  - K5-B, la región monótona.
+
+**K6c-fix: la regla (supervisor, dentro de "pasaste = firmás" y "el nivel manda").** La vara puede llegar a 0: si tu
+nivel está claramente arriba del calibre del club, firmás aunque la prueba salga mal, porque el club firma tu nivel y no
+tu día. Se sigue mostrando antes y después, y sigue sin haber dado. Una prueba clavada siempre firma.
+
+Se calibran `base`, `pendiente` y `max` en `balance.js`, con `min` en 0, para que:
+- el check de impacto de los minijuegos vuelva a su banda: ni decorativo ni más de +42%;
+- `criterio` quede en la banda de K5c de no-pro;
+- `equilibrado` vuelva cerca de K6b (≤ ~26% de no-pro);
+- `malas` llegue a pro lo suficiente para que los checks de K0 tengan muestra.
+
+**Los demás FAIL:**
+- cada uno se busca hasta su causa;
+- un bug de motor se arregla con un check que lo ponga rojo;
+- las muestras y la cobertura se arreglan cambiando seeds o agrandando la muestra, nunca sacando el caso;
+- un re-base solo va con la línea de corrimiento de K6c y con la causa mostrada, y nunca en un check de dominio del
+  usuario (D-D).
+
 ## K.6 — Qué pasa con FASE J y FASE V
 
 | Pieza | Destino |
