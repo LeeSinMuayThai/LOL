@@ -1,6 +1,6 @@
 import LIGAS from '../data/leagues.json' with { type: 'json' };
 import { BALANCE } from '../data/balance.js';
-import { splitsJugadosEnTier, esBuenPapel } from './registro.js';
+import { splitsJugadosEnTier, esBuenPapel, mundialesGanados, titulosDeFila } from './registro.js';
 import { aniosProDe } from './puntaje.js';
 import { desdePuntos, etiquetaDeRanked, servidorDeLaPartida } from './ranked.js';
 import { plural } from './formato.js';
@@ -149,8 +149,74 @@ function elegirArquetipo(datos) {
   return { frase: 'Un profesional más: estuvo, jugó, se fue', esExito: false };
 }
 
+// "a, b y c"
+function enumerar(partes) {
+  return partes.length <= 1 ? partes.join('') : `${partes.slice(0, -1).join(', ')} y ${partes[partes.length - 1]}`;
+}
+
+// K6b-U: de mejor a peor. El pico de la carrera internacional es el mejor resultado; a igual resultado, el más reciente.
+const ORDEN_DE_RESULTADO = ['campeon', 'final', 'semis', 'cuartos', 'buen_papel', 'eliminado'];
+
+function mejorInternacional(registro) {
+  return [...registro.internacionales].sort(
+    (a, b) => (ORDEN_DE_RESULTADO.indexOf(a.resultado) - ORDEN_DE_RESULTADO.indexOf(b.resultado)) || (b.anio - a.anio)
+  )[0] ?? null;
+}
+
+// Agrupa por org, en el orden en que aparecen: [['Fnatic', [2035]], ['T1', [2036, 2038]]].
+function porOrgDeAnios(entradas) {
+  const grupos = new Map();
+  for (const entrada of entradas) {
+    grupos.set(entrada.org, [...(grupos.get(entrada.org) ?? []), entrada.anio]);
+  }
+  return [...grupos.entries()];
+}
+
+// K6b-U: el pico de la carrera, con el club donde ocurrió. Antes el detalle nombraba la org con más splits, que suele
+// ser la de la caída ("12 splits en DPlus KIA" para quien ganó el Mundial con otro club). Si no hay Mundial ni título
+// de primera, no hay pico que nombrar y devuelve `null`.
+function detalleDelPico(registro) {
+  const ganados = mundialesGanados(registro);
+  if (ganados.length > 0) {
+    const partes = porOrgDeAnios(ganados).map(([org, anios]) => (
+      anios.length === 1 ? `el Mundial ${anios[0]} con ${org}` : `los Mundiales ${enumerar(anios)} con ${org}`
+    ));
+    return `${ganados.length === 1 ? 'Campeón del mundo' : `Campeón del mundo ${ganados.length} veces`}: ${enumerar(partes)}.`;
+  }
+  const mejor = mejorInternacional(registro);
+  if (mejor) {
+    const donde = `el Mundial ${mejor.anio} con ${mejor.org}`;
+    // Revisión de K6b: "de" + "el Mundial" es "del Mundial" (Finalista del Mundial 2031, no "de el").
+    const deDonde = `del Mundial ${mejor.anio} con ${mejor.org}`;
+    const frases = {
+      final: `Finalista ${deDonde}`,
+      semis: `Semifinalista ${deDonde}`,
+      cuartos: `Cuartos de final en ${donde}`,
+      buen_papel: `Buen papel en ${donde}`,
+      eliminado: `Jugó ${donde}`
+    };
+    return `${frases[mejor.resultado]}.`;
+  }
+  const titulosPrimera = registro.titulos.filter((titulo) => titulo.tier === 1);
+  if (titulosPrimera.length > 0) {
+    // La org con más títulos de primera; a igual cantidad, la del título más reciente.
+    const [org, anios] = porOrgDeAnios(titulosPrimera)
+      .sort((a, b) => (b[1].length - a[1].length) || (Math.max(...b[1]) - Math.max(...a[1])))[0];
+    const ultimo = [...titulosPrimera].filter((titulo) => titulo.org === org).sort((a, b) => b.anio - a.anio)[0];
+    const liga = NOMBRE_DE_LIGA[ultimo.liga] ?? ultimo.nombre;
+    return anios.length === 1
+      ? `Campeón de ${liga} ${ultimo.anio} con ${org}.`
+      : `${anios.length} títulos de primera con ${org}, el último ${liga} ${ultimo.anio}.`;
+  }
+  return null;
+}
+
 // El detalle: SIEMPRE cita un hecho real del registro de esta carrera.
 function detalleDeCarrera(registro, orgPrincipal, state) {
+  const pico = detalleDelPico(registro);
+  if (pico) {
+    return pico;
+  }
   if (orgPrincipal && orgPrincipal.splits >= 3) {
     const hasta = orgPrincipal.hastaAnio ? `–${orgPrincipal.hastaAnio}` : '';
     return `${orgPrincipal.splits} splits en ${orgPrincipal.org} (${orgPrincipal.desdeAnio}${hasta}).`;
@@ -161,8 +227,8 @@ function detalleDeCarrera(registro, orgPrincipal, state) {
   // Sin una sola fecha de liga (nunca llegó a un contrato), el "0-0" no dice nada: lo que sí hay es la soloQ.
   if (registro.fechasGanadas + registro.fechasPerdidas === 0) {
     const servidor = servidorDeLaPartida(state);
-    const pico = etiquetaDeRanked(desdePuntos(registro.picos.rankedPuntos, servidor), servidor);
-    return `${registro.splitsJugados} ${plural(registro.splitsJugados, 'split', 'splits')} sin firmar contrato: tu techo en soloQ fue ${pico}.`;
+    const techo = etiquetaDeRanked(desdePuntos(registro.picos.rankedPuntos, servidor), servidor);
+    return `${registro.splitsJugados} ${plural(registro.splitsJugados, 'split', 'splits')} sin firmar contrato: tu techo en soloQ fue ${techo}.`;
   }
   return `${registro.splitsJugados} splits, ${registro.fechasGanadas}-${registro.fechasPerdidas} en fechas de liga.`;
 }
@@ -219,7 +285,7 @@ export function componerLegado(state) {
       splitsEnTopMundial: r.splitsEnTopMundial ?? 0
     },
     // La UI reusa `filaHistoria` de `ui/components/ficha.js` sobre esto.
-    historia: r.porOrg,
+    historia: r.porOrg.map((fila) => ({ ...fila, titulos: titulosDeFila(fila, r) })),
     internacionales: r.internacionales
   };
 }

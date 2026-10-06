@@ -34,6 +34,514 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-06 — K6c-fix, séptima pasada: retiro_por_lesion se verifica con un estado armado hasta D83 (`k6c-fix`; PLAN.md `ea13221`)
+
+- Solo checks. "lesion_cronica y retiro_por_lesion son alcanzables" se parte en dos:
+  - "lesion_cronica es alcanzable" sigue duro con `responderQueGrindea`: 3 de 120 carreras.
+  - `retiro_por_lesion` queda declarado inalcanzable en carreras naturales hasta D83, con su comentario de regla 17. La recaída
+    pide 17 splits seguidos de deuda en el amateur: 0 de 1200.
+- Check nuevo "retiro_por_lesion: con la lesión grave ya pasada y la recaída armada (amateur y pro)…", con un estado armado.
+  - Verifica, en el amateur y en el pro: la recaída frena, el automático se retira, retirarte cierra la carrera, el log ("el sueño de
+    ser pro se termina acá" / "te cierra la carrera a los"), el registro y la tarjeta ("El que no pudo seguir").
+  - Rojo con el mutante "la recaída nunca retira".
+- `--rapido` 358 OK, 0 FAIL: huella (1766253198) y forma sin cambio. Determinismo `simulate.js 100 60 criterio` ×2: diff vacío.
+
+### 2026-10-06 — K6c-fix, sexta pasada: la lesión es del que grindea sin dormir de amateur (`k6c-fix`; PLAN.md `3b8e034`)
+
+- **Cambio:** `systems/salud.js` corre también en el amateur, con los mismos umbrales y sus tiradas de siempre (T1: huella
+  186316704 → **1766253198**, corrimiento declarado). En el amateur la lesión grave habla de soloQ, no de equipo; la baja
+  (`fechasBajaLesion`) se cumple en turnos de soloQ que pasan a dormir (`conBajaPorLesion` en `normalizarReparto`: la previa, el plan
+  y la semana dicen lo mismo, con su línea en el log); el retiro por lesión es el fin del amateur ("el sueño de ser pro se termina
+  acá"). El reset de la deuda al firmar sigue. Bot nuevo `responderQueGrindea` (`dev/estrategias.js`, fuera de `ESTRATEGIAS`).
+- **Barandas, `575db0e` → ahora:** no-pro `simulate.js 600 60 criterio` 24,5 → 24,5; `600 60 malas` 48,7 → 48,7;
+  `1000 60 equilibrado` 24,0 → 24,6. Sonda `resolverAuto` 1000 × 60: burnout del amateur 17 → 20, castigo 9 → 9, lesión leve /
+  grave / retiro 0 / 0 / 0 → 4 / 0 / 0; paradas de la semana mediana 0, p90 1, media 0,18 → igual. Sonda del que grindea (plan de
+  deuda que llega al riesgo físico, firmando; 1200 × 60): leve / grave / `lesionado` / retiro 0 / 0 / 0 / 0 → 18 / 3 / 2 / 0.
+  Con `responderQueGrindea` (además rechaza ofertas y elige el de menos riesgo en casa; 1200 × 60): 149 / 23 / 19 / 0.
+- **Cobertura:** "El contexto de carrera" OK (`lesionado` en 3 de 120 carreras que grindean; la muestra automática sigue para
+  "nunca desconocido"). "lesion_cronica y retiro_por_lesion" **FAIL**: lesion_cronica 23, retiro_por_lesion **0 de 1200**. La
+  recaída pide 6 + 5 + 6 = 17 splits seguidos de deuda en el amateur y el burnout llega antes (957 de 1200 con el bot). Con el mutante
+  "la lesión grave nunca pincha" los dos rojos (`lesionado` 0, lesion_cronica 0 de 1200).
+- `--rapido` 356 OK, 1 FAIL (la huella; actualizada). Forma sin cambio. `--solo` de salud y lesión OK (salvo el de arriba).
+  `--solo` OK: 9Wd, minijuegos, "Ninguna carrera queda sin terminar", K5c embudo y estancados, K6c (16, con la propuesta del perfil), burnout con aviso, K1 versión, la forma. Determinismo `simulate.js 100 60 criterio` ×2 diff vacío. Todo de a un proceso.
+
+### 2026-10-06 — K6c-fix, quinta pasada: la semana frena con la mentalidad en rojo (`k6c-fix`; decisiones del usuario, PLAN.md `49538db`)
+
+- **Cambio (A):** en el amateur, que la mentalidad al cerrar la semana quede en zona roja (`atributos.burnoutMentalBajo`, 30) es
+  riesgo nuevo: la semana frena (`mentalEnRojoDeLaSemana` en `planDeSemana`), dice el umbral y la cuenta del burnout, contra qué es
+  nuevo, y suma la opción que la cuida (`rutinaQueCuida`: sin robo, la de más sueño). `riesgoDelPlan` devuelve `mental` (semana por
+  semana) y `semanaMentalRoja` (la carta lo dice); `riesgoMostrado.mental` es la vara: si ya la mostraba en rojo (o ya frenó por eso
+  este año, `anioAmateur.mentalAvisada`), frena solo si baja más de `amateur.semanaMentalNueva` (5). Puro, sin `rng`.
+- **Barandas, antes (`7d0051d`) → después:** no-pro `simulate.js 600 60 criterio` 24,5 → 24,5; `600 60 malas` 48,0 → 48,7;
+  `1000 60 equilibrado` 24,5 → 24,0. Sonda `resolverAuto` 1000 × 60: burnout del amateur 22 → 17 (total 28 → 23), castigo 9 → 9,
+  lesión leve / grave / retiro por lesión 0 / 0 / 0 → igual; paradas de la semana por carrera mediana 0 → 0, p90 1 → 1, media
+  0,13 → 0,18 (51 paradas por la mentalidad en 1000 carreras). Burnout con aviso (réplica del check): 14/20 (70%) → **19/20 (95%)**.
+- `--solo` antes → después: 9Wd OK → OK; minijuegos OK → OK; "Ninguna carrera queda sin terminar" FAIL (30+ años 16,8%, banda
+  17-30) → OK; K5c embudo y estancados OK → OK; la propuesta del perfil OK → OK; K6c (14) OK; burnout con aviso FAIL → OK.
+- **(B) bloqueado:** "El contexto de carrera" (`lesionado`) y "lesion_cronica alcanzables" siguen FAIL, y ningún bot los arregla:
+  `salud.js` corre solo con `phase === 'profesional'` y la deuda vuelve a 0 al firmar, así que la lesión es inalcanzable para
+  cualquiera. Sonda con un bot que elige el plan con deuda y riesgo físico (1200 × 60): leve / grave / `lesionado` 0 / 0 / 0.
+  "La lesión solo en el amateur" pide que `salud.js` corra también en el amateur: es motor, queda para el supervisor. Dato (copia
+  de `src` con `salud.js` corriendo también en el amateur, no commiteado): `resolverAuto` 1000 × 60 leve 4, grave 0; el bot que
+  grindea 1200 × 60 leve 21, grave 2, retiro por lesión 1, `lesionado` 1 (pasaría, pero al borde).
+- Checks nuevos "K6c-fix la mentalidad entra en rojo y la semana frena" y "K6c-fix si ya estaba en rojo y el plan lo mostró, no frena
+  salvo que baje más": rojos los dos con el mutante "la mentalidad nunca frena"; el segundo, con "frena siempre en rojo".
+- `--rapido` 356 OK, 1 FAIL (la forma: re-registrada `FORMAS_CONOCIDAS[13]` '5915cb3adccf' → '995485d311c0', sin subir; después
+  OK). Huella sin cambio (K1 versión OK con 186316704: ninguna de las 40 seeds frena por la mentalidad). Determinismo
+  `simulate.js 100 60 criterio` ×2 diff vacío. Todo de a un proceso.
+
+### 2026-10-06 — K6c-fix, cuarta pasada: la deuda se resetea al firmar (`k6c-fix`; decisión del usuario, PLAN.md `7538543`)
+
+- **Cambio:** al firmar el primer contrato pro (`firmarConEquipo`, el único paso amateur → pro) `player.deudaSueno` vuelve a
+  `amateur.deudaSuenoAlFirmar` (0) y `flags.splitsRiesgoFisico` a 0; si había algo que dejar atrás, el log dice "En el equipo te
+  ordenan el horario: la deuda de sueño del amateur queda atrás." Puro, sin `rng`. Check nuevo "K6c-fix la deuda se resetea al
+  firmar" (rojo con el reset sacado).
+- **Medido** (sonda `resolverAuto`, 1000 × 60, carreras con lesión leve / grave / burnout en toda la carrera / retiro por lesión):
+  K6b 8 / 4 / 20 / 2; tercera pasada 62 / 32 / 44 / 11; **ahora 0 / 0 / 28 / 0**. Finales del amateur (misma sonda): burnout 20,
+  castigo 9, no-pro 24,5 (sin cambio: el reset es después de firmar).
+- **Frontera:** solo el amateur escribe `deudaSueno`, así que con el reset las lesiones pasan a ser solo del amateur, y el automático
+  ya no sostiene la deuda los 6 splits que pide `salud.js`. FAIL: "El contexto de carrera" (`lesionado` no aparece en 1200) y
+  "lesion_cronica alcanzables" (0 en 1200). Burnout con aviso: **70%** (piso 80%): los que no avisan son caídas rápidas del amateur
+  (mentalidad 54 → 38 → 20 → 3): el motor arma el burnout con 2 splits en rojo contando el último, y el check mira los 3 anteriores.
+- `--rapido` 355 OK, 0 FAIL (forma igual); determinismo `simulate.js 100 60 criterio` ×2 diff vacío; `--solo` OK: la propuesta del
+  perfil, 9Wd, K5c meta del embudo y de los estancados. Huella 1360329260 → **186316704**. Todo de a un proceso.
+
+### 2026-10-06 — K6c-fix, tercera pasada: la deuda solo es evitable si arma el riesgo físico (`k6c-fix`; PLAN.md §K6c, "K6c-fix, segunda pasada")
+
+- **Por qué:** con cualquier deuda de sueño como riesgo evitable (segunda pasada) el automático no aceptaba nunca un plan con deuda y
+  las lesiones desaparecían de sus carreras (el momento `lesionado`: 0 de 3600, medido por el supervisor).
+- **Regla:** `riesgoDelPlan` devuelve `semanaRiesgoFisico`: la semana en que el plan arma el riesgo de lesión (deuda en
+  `salud.deudaUmbralRiesgo` o más, sostenida hasta `salud.splitsParaLesionLeve`, sobre `flags.splitsRiesgoFisico`) o de burnout
+  (mentalidad en `atributos.burnoutMentalBajo` o menos durante `burnoutSplitsMinimos`, sobre `flags.splitsMentalBajo`), con las cuentas
+  del motor. La carta la dice; la deuda que no llega ahí es un costo del plan. `riesgoEvitableDelPlan` (exportada) usa eso y la chance
+  en casa.
+- **Medido** (`resolverAuto`, 1000 × 60, carreras con lesión leve / grave / burnout en toda la carrera / retiro por lesión): K6b
+  `58db231` 8 / 4 / 20 / 2; primera pasada `d0794b6` 85 / 42 / 119 / 16; segunda `ddf3cb4` 0 / 0 / 5 / 0; **ahora 62 / 32 / 44 / 11**.
+  Finales del amateur por cada 1000 (sonda, mismo lote): burnout **20** (K6b 7), castigo de la familia **9** (K6b 38); no-pro
+  **24,5** (sonda 1000 × 60; no se corrió `simulate.js`). **Frontera:** con la regla tal como está (riesgo físico dentro del año), las
+  lesiones graves quedan ~8 veces arriba de K6b y los burnouts ~2 veces: la deuda que el automático acepta en el amateur no se resetea
+  y se cobra en la etapa pro. Decide el supervisor.
+- **Checks:** "la propuesta del perfil no te quema" lee `semanaRiesgoFisico` (rojo con la propuesta que ignora el riesgo: 60
+  problemas; y con "cualquier deuda es evitable": 95). Nuevo rápido: "la deuda que no llega al riesgo físico no cambia la propuesta"
+  (con el borde de `salud.js` armado en la semana 1; rojo con cualquier deuda evitable).
+- **`--solo`:** contexto de carrera OK; `lesion_cronica` alcanzables OK; 9Wd OK; **burnout con aviso FAIL: 75% (piso 80%)**. Las metas
+  K5c del embudo y de los estancados y el `--rapido` completo los cortó Claude Code por falta de memoria (la validación completa del
+  supervisor corría a la par): `--rapido` iba en 267 OK y 1 FAIL, la forma (ya re-registrada: `5915cb3adccf`, por
+  `semanaRiesgoFisico` en las opciones del plan). Sin determinismo ni `simulate.js` en esta pasada.
+- Huella 188751648 → **1360329260**.
+
+### 2026-10-06 — K6c-fix, segunda pasada: la propuesta del perfil no te quema y K5-B medida bien (`k6c-fix`; PLAN.md §K6c, reglas del supervisor)
+
+- **La propuesta del plan del año** (`propuestaDelPlan` en `systems/amateur.js`, `amateur.planRiesgoEvitable` 0,15): si el plan que
+  propone tu perfil muestra un riesgo evitable (en casa 0,15 o más sobre el plan más seguro, o deuda de sueño con otro plan sin ella:
+  los números de la carta), la propuesta pasa al plan que tu perfil elegiría entre los que no lo muestran. La carta lo dice ("iría por
+  X, pero arriesga…: te propone Y, lo más parecido sin ese riesgo") y la opción marcada es la que acepta `resolverAuto` (regla 15).
+- **Medido** (`resolverAuto`, 1000 × 60, por cada 1000 carreras; K6b / primera pasada / ahora): burnout del amateur 7 / 60 / **0**;
+  castigo de la familia 38 / 78 / **10**; `equilibrado` no-pro con `simulate.js 1000 60 equilibrado`: primera pasada 29,1, ahora
+  **26,6** (corrección: el 24,9 de K6b y el 32,3 de K6c son de `simulate.js 1000`, 15 splits; con esa medida ddf3cb4 da 29,8, medido
+  por el supervisor); edad mediana al terminar (sonda 720 × 90) 25 / 24 / **25**. Barrido del umbral: 0,05 → no-pro 28,1 (planes tan seguros que no llegan: "no llegó" 142 → 273);
+  0,15 → 26,6; 0,3 → 26,5.
+- **K5-B** (la región, medida como "K6c región fija"): 200 seeds por región en tandas (`dev/regionFija.js`, medida `llegada`, ~50 s), el
+  orden monótono y LATAM solo emigrando como antes, y la brecha de la más fácil a la más difícil contra 2 σ de la diferencia (eran 30
+  puntos fijos). Medido (local/primera de 200): KR 111/134, CN 115/137, EMEA 139/143, NA 152/152, APAC 155/155, BR 151/152, LAN 0/120,
+  LAS 0/126. Juez con caso rápido. Rojo con la región elegida ignorada: brecha 3,5 contra 2 σ = 8,4.
+- **Checks** que la propuesta (otras carreras del automático) dejó vacíos o mostró viejos: el burnout con aviso (12 burnouts en 3000
+  seeds: tope 3000 → 8000, la corrida tarda 6,5 min); K5c-R años pro (la vuelta de free agent sin club también salta el reloj: rojo con
+  `aniosProDe` sin restar lo retirado); la vuelta de K6b (el juez no recalculaba el calendario de la vuelta como `relojAlVolver`);
+  K5c-R la presión, la sonda de K4c-S (más seeds hasta el mínimo); K4c-S "la prueba decide": en el amateur, con 0 firma exactamente
+  quien tenía la vara en 0 (84% de las pruebas del automático) y con 1 siempre (rojo con la vara ignorada). Check nuevo "K6c-fix la
+  propuesta del perfil no te quema" (rojo con la propuesta que ignora el riesgo: 155 problemas).
+- Huella 1351863340 → **188751648**; `FORMAS_CONOCIDAS[13]` re-registrada sin subir (`a05ec5bebece`: sin campos nuevos, otras carreras
+  de muestra). `--rapido` 353 OK, 0 FAIL; determinismo `simulate.js 100 60 criterio` ×2 diff vacío.
+
+### 2026-10-06 — K6c-fix: la vara llega a 0 y los FAIL de la validación completa de `6dc0ff8` (`k6c-fix`; PLAN.md §K6c, "K6c-fix: la regla")
+
+- **La vara** (`amateur.varaPrueba`): { base 1,35, pendiente 0,035, mínimo 0,1, máximo 0,8 } → **{ base 1,55, pendiente 0,05,
+  mínimo 0, máximo 0,8 }**. Llega a 0 con 31 de diferencia nivel − calibre y a 0,8 con 15 o menos (a 20 pide 55%, a 25 pide 30%).
+  Una prueba clavada firma siempre (máximo < 1). Con la vara en 0 la oferta, la previa, la apuesta, el log y la pantalla dicen
+  "con tu nivel te firman aunque la prueba salga mal" (regla 15); la apuesta del dato ("decide si te firman") no se usa en ese caso.
+- **Barrido** (sonda con las mismas seeds del check de impacto, 1000 × 60). El impacto de los minijuegos depende casi solo de dónde
+  llega a 0: cero a 30 → +26,1%; **a 31 → +29,2%**; a 35 → +44,1%; a 40 → +77,7%; a 45 → +165,8%; vara siempre 0 → +25,1% (300
+  seeds); K6c → +1149%. El precio: ~74% de las pruebas de `equilibrado` piden 0 (la mediana de nivel − calibre es ~36).
+- **No llega a pro** (`simulate.js 600 60`; K6b `58db231` → K6c → ahora): criterio 22,8 → 24,5 → **24,5**; azar 26,8 → 32,0 →
+  **28,8**; malas 38,0 → 58,2 → **48,0**; equilibrado 29,2 (600; `simulate.js 1000`: K6b 24,9, K6c 32,3, ahora **29,1**, 0 crashes).
+- **La frontera de `equilibrado`:** ni con la vara siempre en 0 baja de ~28 (sonda 1000 × 60: K6b 23,0, K6c 31,2, vara 0 28,0,
+  ahora 29,1). Lo que queda no es la vara: con la vara en 0, contra K6b, hay menos ofertas (1282 → 1022) y más carreras sin ninguna
+  (133 → 214), porque más amateurs terminan antes: burnout 7 → 60 y prohibición familiar 38 → 78 (`no_llegó` 185 → 142). Es el plan
+  del año de K6c con `resolverAuto` (la semana ya no reacciona a las barras en rojo). Queda para el supervisor.
+- **Los FAIL:**
+  - Impacto de los minijuegos: +1149% → +29,2% (la vara).
+  - K6a-M prueba clavada: el check quedó viejo frente al texto de K6c (buscaba "prueba" y "te firman" en minúscula); acepta
+    "la vara era" y "Te firman". Rojo con la línea del desenlace sacada del log.
+  - Fase 11: las 2 carreras eran burnouts a los 16 en el split 6, el que cierra el segundo año: el pipeline corta las etapas al
+    terminar y ese año no cerró. Elegible pasa a "más de 2 × `splitsPorEdad`". Rojo con el resumen anual sin nota en años pares.
+  - Burnout con aviso: volvió solo con la vara.
+  - K4 guardado: si a las 30 carreras les falta un tipo, más seeds (tope 200) hasta verlo. Cubre `amateur:reparto` y `servicioMilitar:*`.
+  - K0 mercado y K0 delegación: muestra agrandada hasta juntar el mínimo (tope 60 y 40 seeds). K0 bloques y reporte completo:
+    `ritmo.leyenda` sin ninguna carrera de Leyenda (malas) es una celda sin muestra (`REGLAS_NULO_SIN_MUESTRA_K0`); con alguna, el
+    null sigue rojo (mutante `mediana: null`: rojo en criterio).
+  - 9Wd Top 20: era la muestra. Bloques de 180 seeds: ahora 32,0 / 35,2 / 47,3 / 44,3 (39,6%, n 460); K6b 38,2 / 39,4 / 40,3 /
+    34,7 (38,2%). Se mide sobre 720 seeds (`barrido9W(n)`; las 180 de siempre siguen para los demás). Rojo sin los bonus del ranking: 9,2%.
+  - K4c "la prueba amateur anuncia qué pasa si no alcanza" (salió en `--rapido` con la vara 0): con vara 0 exige "te firman aunque
+    la prueba salga mal" y que la floja firme. Rojo con la apuesta de siempre.
+  - **Abiertos, sin re-base:** la edad mediana al terminar (24; banda 25-29) sale de la misma causa que `equilibrado` (sonda 720 × 90:
+    K6b 25, ahora 24, vara 0 24; splits pro mediana 30 → 27) y va atada a no-pro (dominio del usuario). K5-B región: la brecha de
+    llegada local entre la región más fácil y la más difícil pide >= 30 pp y la población no la tiene, ni en K6b (200 seeds por
+    región con criterio, K6b / ahora: KR 56,0 / 55,5, CN 60,0 / 57,5, EMEA 69,0 / 69,5, NA 76 / 76, APAC 77,5 / 77,5, BR 75,5 /
+    75,5): las 40 seeds del check la pasaban por suerte. Es región (D-D): decide el supervisor.
+- **Checks:** "K6c la vara depende del nivel" suma el crack que firma con 0% y la prueba clavada a todo nivel (rojo con mínimo 0,1 y
+  con máximo 1,2); "K6c la vara" y la oferta aceptan el texto de vara 0 (rojo con la apuesta de siempre); el lote de K6c pasa de 40
+  a 80 seeds (con la vara en 0 había 3 años con dos ofertas, mínimo 5).
+- **Huella** 977079279 → 1351863340 (corrimiento declarado, sigue 'K6c'). La forma del estado no cambia (`FORMAS_CONOCIDAS[13]` sigue). `--rapido`: 351 OK,
+  0 FAIL. Determinismo: `simulate.js 100 60 criterio` dos veces, diff vacío. Los `--solo` de los 12 FAIL, uno por uno: 10 OK; la edad
+  mediana y K5-B región siguen rojos (abiertos, arriba). No se corrió la validación completa (la corre el supervisor).
+
+### 2026-10-06 — Integración de K6c con K6b-fix y la región medida bien (`k6c-integracion`; PLAN.md §K6c, "La región en K6c")
+
+- **Merge** de `k6c-region` (`57e68da`) con `k6b-fix` (`711fd39`). En `validate.js` se quedan los checks de los dos lados.
+  La forma 13 junta las dos y se re-registra sin subir de versión, porque la 13 no salió:
+  `'51c74dcb0416'` / `'0b9646606fa1'` → `'e96e9e539778'`.
+- **Decisión del usuario 2026-10-06: "medir bien, aceptar ~7%".**
+  - `ganaMundialCorea`, `ganaMundialNA` y el orden Corea > NA salen de "K5c meta del Mundial". Ahí se juzgaban con la
+    submuestra del lote, unas 332 y 194 carreras. Ahora los juzga "K6c región fija": 3000 × 60 por región, las mismas
+    seeds y el σ de esa muestra.
+  - `ganaMundialNA` se re-basa a 7,3. Regla 17, corrimiento declarado de K6c.
+  - El juez rápido suma dos casos de una sola banda fuera (NA 9%, Corea 8,5%) y uno de NA en la meta (4%).
+- **Medido por el supervisor:**
+  - "K6c región fija": KR 348/3000 (11,6%) contra NA 219/3000 (7,3%), OK.
+  - Rojo con el mutante "la región elegida no se respeta" (`core/mundo.js:392`, `ligaOrigen = ligaSorteada`): KR 9,23
+    contra NA 9,23. Fallan el orden y la banda de NA (techo 8,36).
+  - `--rapido`: 351 OK, 0 FAIL.
+
+### 2026-10-05 — K6c, revisión: "más fácil desde Corea que desde NA" no lo dio vuelta la vara (`k6c-region`; PLAN.md §K6c, §K.3b)
+
+- **La hipótesis (la vara de los clubes coreanos más fuertes) se descarta con datos.** Los clubes de tier 3 salen de la misma
+  distribución en todas las regiones (`core/tier3.js:generarOrgsTier3`, `tier3.fuerzaMedia` sin región: media ~18 en KR, CN, EMEA
+  y NA). `criterio` juega la prueba a 0,85 y la vara tope es 0,8: **0 pruebas falladas** en 6600 carreras de K6c desde KR y NA (vara
+  media 18 desde KR, 17,6 desde NA). La vara no puede mover sus carreras.
+- **Región fija, criterio, 60 splits** (`scratchpad`: `correrCarrera(seed, 60, criterio, { regionOrigen })`):
+
+  | | KR | CN | EMEA | NA |
+  |---|---|---|---|---|
+  | K6b `58db231`, seeds 1-300: Mundial / no-pro / edad de firma / años pro | 12,3 / 25,7 / 17,1 / 6,9 | 10,7 / 20,3 / 17,3 / 6,7 | 11,7 / 22,0 / 17,3 / 7,6 | 6,3 / 21,3 / 17,2 / 8,6 |
+  | K6c `577b5b7`, seeds 1-300 | 9,3 / 22,3 / 17,5 / 6,2 | 9,7 / 22,3 / 17,6 / 6,4 | 8,7 / 27,3 / 17,3 / 7,7 | 6,7 / 23,0 / 17,3 / 8,4 |
+  | K6b, seeds 1-3300 (Mundial) | **12,12** | | | **6,18** |
+  | K6c, seeds 1-3300 (Mundial) | **11,27** | | | **7,45** |
+
+  Con n 3300 Corea sigue claramente arriba (diferencia 3,82, σ 0,71). K6c la achica ~2 puntos (KR −0,85, NA +1,27, cada una ≤ 2σ);
+  firma ~0,2 años más tarde con +1,2 de nivel (el plan del año), sin mecanismo por región a la vista.
+- **Por qué el lote lo dio vuelta:** las 194 seeds de NA del lote de las metas C (región sorteada) con la región fija reproducen el
+  lote exacto (22 de 194 = 11,34; Corea 40 de 332 = 12,05): salieron +2σ sobre la población (7,45). En K6b las mismas 194 dieron 4,64.
+  Cada corrimiento del stream las vuelve a tirar (solo 50 de 3300 seeds de NA ganan en las dos versiones). Con ese n el piso de
+  `regionOrdenada` es ~5 puntos: a los valores de la población pasa ~65% de las veces en K6b y ~32% en K6c.
+- **Por qué NA está en ~6-7 y no en 3-5 (ya en K6b):** dos tercios de los Mundiales de NA se ganan afuera (primer título, K6c: LPL 81,
+  LCK 52, LEC 30, LCS 82 de 246; K6b: 60 / 44 / 34 / 66 de 204): el import de élite de K5c-H (`systems/mercado.js:402-441`,
+  `mercado.casa.cuposImportElite/nivelImportElite/margenImportElite`). Desde Corea, 397 de 400 primeros títulos son en la LCK.
+  Es diseño de K5c-H, fuera del alcance de K6c: decide el supervisor.
+- **Cambios:** se revierten los dos re-bases de la pasada anterior (`ganaMundialNA` vuelve a [3, 5] con su banda de ruido y
+  `regionOrdenada` a "más fácil por más de 2σ", con su caso del juez de K5c). Check nuevo **"K6c región fija"** (`dev/regionFija.js`:
+  las mismas seeds 1..3000 desde KR y desde NA, en tandas paralelas; Corea tiene que ganar más por más de 2σ): KR 348 (11,6%) contra
+  NA 219 (7,3%), piso 1,5, OK. Rojo con el mutante "la región elegida no se respeta" (KR 278 contra NA 278). "Las orgs de tier 1 sin
+  el prestigio de su liga" no lo pone rojo (KR 324 contra NA 219): la ventaja de Corea vive en los planteles (K5c-M). Su juez tiene
+  un check rápido (acepta lo medido; rechaza NA arriba, empate, dentro del ruido, cero contra cero, muestra vacía).
+- **Sin cambios de motor:** HUELLA y `FORMAS[13]` no se mueven. `--rapido`: 351 OK, 0 FAIL. Determinismo: `simulate.js 100 60
+  criterio` dos veces, diff vacío; `regionFija` con 3 y 5 tandas, mismo resultado. **"K5c meta": 5 OK, 1 FAIL** — el del Mundial, por
+  `ganaMundialNA` 11,3 (banda [−1,55, 9,55]) y `regionOrdenada` (Corea 12,0 contra NA 11,3, σ 2,89): es la submuestra de arriba.
+  Lo demás: no-pro 22,6, Mundial 9,5, Corea 12,0, nuevo Faker 2,7, estancados criterio/azar/malas 4,1/12,8/16,5, LCK 52,1 / LPL 43,9.
+
+### 2026-10-05 — K6c, segunda pasada: la vara por nivel y la semana que frena solo con riesgo nuevo (`k6c-amateur`; PLAN.md §K6c)
+
+- **La vara depende del nivel** (`amateur.varaPrueba` = { base 1,35, pendiente 0,035, mínimo 0,1, máximo 0,8 };
+  `varaDeLaPrueba(nivel, calibre)` en `core/serie.js`): `clamp(base − pendiente × (nivelDelJugador − org.fuerza), mín, máx)`. Se
+  calcula una vez al armar la oferta y viaja en `datos.vara`: la oferta ("necesitás X% (tu nivel N contra el F del club…)"), la
+  previa, el motor (`veredictoDeLaPrueba(resultado, vara)`) y la pantalla leen el mismo número. Medido en las ofertas de tier 3
+  (200 carreras por bot): nivel − calibre de ~22 (5% más justo) a ~55 (5% más crack), mediana ~37 → vara 80% con diferencia <= 15,7,
+  ~58% a 22, 10% desde 35,7. Más de la mitad de las ofertas piden el mínimo (57-68% piden <= 15%): es el precio de que `malas`
+  (juega 0,15) firme a veces. Por qué así: `criterio` (0,85) pasa siempre, así que la vara no lo mueve; `malas` necesita la vara en
+  0,15 en ~la mitad de sus pruebas para no pasar del ~60%. Barrido (300 × 60, malas/azar): (1,1; 0,02) 85,7/39,7; (1,2; 0,025)
+  78,7/37,7; (1,25; 0,03) 65,3/35,7; (1,3; 0,03) 68,0/35,7; (1,35; 0,035) 60,0/34,7; (1,5; 0,04) 58,3/34,7.
+- **No llega a pro** (600 × 60; K6b `58db231` → primera pasada → segunda): criterio 22,8 → 24,7 → **24,5** (leal 29,1, profesional
+  24,0, hambriento 21,5, showman 23,3); azar 26,8 → 48,2 → **32,0** (39,7 / 28,7 / 31,5 / 28,0); malas 38,0 → 98,5 → **58,2** (58,3 /
+  55,3 / 62,4 / 56,7). Frenadas del amateur por carrera: criterio 13,64, azar 13,89, malas 10,41 (K6b: 10,65 / 11,46 / 10,63).
+- **La semana frena solo con riesgo nuevo** (`anioAmateur.riesgoMostrado`: la proyección de `riesgoDelPlan` semana a semana, guardada al
+  elegir el plan; `amateur.semanaRiesgoNuevo` 0,05): con plan, el riesgo evitable frena solo si la chance en casa de la semana pasa la
+  que el plan mostró para esa semana por más de 0,05, o si la deuda de sueño llega antes de lo anunciado; la parada dice "Es más de lo
+  que mostraba el plan para esta semana (X% en casa): algo cambió". Sin riesgo mostrado (un guardado de antes), la regla de K6a-A.
+  Paradas de la semana por carrera (`resolverAuto`, 30 × 60): primera pasada mediana 3 / media 2,70; sin la regla nueva pero con la vara
+  por nivel 1 / 1,93; con la regla **0 / 0,03**. Con los bots (600 × 60): criterio 0,09, azar 0,13, malas 0,22.
+- **Checks nuevos**: "K6c la vara depende del nivel" (rojo con la vara que ignora el nivel: 12 problemas) y "K6c la semana frena solo con
+  riesgo nuevo" (casos con rutinas fijas y la media del lote de K6a-A <= 0,5; rojo con la regla apagada: 1,93 y 9 casos). Los de la
+  primera pasada leen la vara de la decisión.
+- **Texto**: la frase de la prueba con vara sale de `veredictosConVara` (`data/minijuegos.json`, `veredictoDeMinijuego(..., { pasa })`):
+  sin "si te firman" ni "el contrato se te puede escapar"; si no llegaste, no hay frase (manda la línea de la vara).
+- **`--rapido`** (regla 17): K5c-R, K4c observación, K1 D75, K4c-H Δp, K5c motor y K6a-A volvieron solos. En ronda, sin aflojar lo que
+  miden: K4c-H horizonte (`amateur:reparto` ya no aparece en las seeds 1-3: sigue hasta la 60; está en la 10), K3c (la seed 3 termina a
+  los 4 splits sin firmar: las 3 primeras carreras que llegan a pro) y la vuelta de K6b (0 vueltas de free agent en 40 seeds: sigue
+  hasta tener una, en la 120). K5c-H, el split de un retiro: un burnout al final de un split sin temporada por no tener equipo (seed 33
+  free agent, seed 61 el split del fichaje sin plantel) no es ninguno de los dos casos y se cuenta aparte (rojo intacto: sin la resta de
+  `SPLIT_DEL_RETIRO`, 11 problemas).
+- **"K5c meta"** (1500 × 60): 4 en verde; re-basados con la línea "corrimiento declarado de K6c": no llega a pro 22,6 (n 1500, σ 1,08),
+  gana un Mundial desde NA 11,3 (n 194, σ 2,27) y "más fácil desde Corea" (12,0 contra 11,3, σ 2,89; con la región fija, 300 × 60:
+  K6b 9,7/4,0, K6c 9,3/6,7). Re-corrida con los re-basados: las 6 en verde (estancados 4,1 / 12,8 / 16,5; gana un Mundial 9,5).
+- **Agencia** (`agencia.js --carreras=12 --reps=30 --cuota=2 --splits=70`): `amateur:plan_amateur` n 22, palanca mediana 0,17 σ, 18,2%
+  con efecto significativo (primera pasada: n 23, 0,13 σ, 8,7%); `amateur:reparto` n 1 (antes 18); 30,3 paradas por carrera (29,6).
+- Sonda `tryout.mjs 80` (prueba perfecta): 0 de 63 sin firma, 0 ofertas repetidas. Navegador (`k6c2/pw2.mjs`): la oferta del crack
+  (nivel 59 contra 10) pide 10% y firma con 20%; la del justo (48 contra 33) pide 80% y con 60% "te faltó 20%"; un año entero del
+  plan sin ninguna parada de la semana. Huella 977079279 (K6c), forma 13 `51c74dcb0416`; determinismo `simulate.js 1 60 criterio` x2:
+  diff vacío.
+
+### 2026-10-05 — K6c: "pasaste = firmás" y "vos elegís el plan de cada año" (`k6c-amateur`; PLAN.md §K6c)
+
+- **La prueba del amateur sin dado** (`amateur.varaPrueba` 0,6 = 3 de 5 blancos; `veredictoDeLaPrueba` en `core/serie.js`, la
+  misma cuenta para el motor, el log y la pantalla). La previa dice "La vara: 60%", la oferta "necesitás 60%", el resultado "Te
+  firman" o "No llegaste: te faltó X%". Se sacó el `chance` (T1 declarado). El club que ya ofreció no vuelve en el año
+  (`flags.anioAmateur.ofertas`, `elegirOrgTier3(state, rng, excluidas)`, una tirada igual). La prueba del mercado no se tocó.
+  Sonda `tryout.mjs 80` (prueba perfecta): antes 5 de 75 no firmaban y 1 oferta repetida; después 0 de 63 y 0.
+- **El plan del año**: cada año del amateur arranca frenando con el resumen (rango al empezar y al cerrar, semanas en el radar de
+  los scouts, ofertas) y el plan entre las rutinas del sorteo, cada una con su LP por semana y su riesgo del año
+  (`riesgoDelPlan`); la propuesta del perfil (con `pisoSoloQ`) va marcada. Las semanas siguen el plan; el riesgo evitable sigue
+  frenando. Bots: `criterio` el de más LP sin deuda y a <= 0,15 del riesgo mínimo; `malas` el más riesgoso; `azar` por hash.
+- **Medido** (600 x 60, antes 58db231 -> después): no-pro criterio 22,8 -> 24,7; azar 26,8 -> 48,2; malas 38,0 -> 94,5 (juega
+  la prueba con 0,15: no pasa nunca). Frenadas del amateur por carrera: criterio 10,65 -> 13,94; azar 11,46 -> 21,67; malas
+  10,63 -> 17,51. Huella 11046700 (K6c), forma 13 `c40afa3ff7a1`.
+- **Abierto**: `--rapido` queda con 7 FAIL nuevos (forma y huella ya registradas): "check vacío" porque `malas` ya no llega a pro
+  (K5c-R, K4c observación, K1 D75) o porque las seeds fijas ya no llegan (K4c-H, K3c seed 3, K5c motor), y la meta de K6a-A
+  (mediana de paradas de la semana 3 contra <= 1 con el automático, que vive el plan del perfil todo el año).
+
+### 2026-10-05 — K6b-fix: los 10 FAIL de la validación completa de `58db231` (`k6b-fix`; PLAN.md §K6b, "Los FAIL de la validación completa de K6b" y "K6b-fix")
+
+**Nueve eran checks.** En esos el motor no se tocó. Cada uno con su rojo (un mutante en una copia de `src`):
+- **`sin_renovacion`** (2 checks): desde K6b-F el aviso y la salida son la misma pretemporada. El estado vive en la pausa del mercado, y los dos checks lo miran ahí (`observarPausaDelMercado`, mismo stream). Rojo: `contexto.js` sin `sin_renovacion`.
+- **Oferta lateral** (seed 63): la prueba de Movistar KOI no alcanzó y firmó GAM. Lo rechazado es lo que no es el club con el que terminás. Rojo: sin el log del NPC.
+- **El mundo NPC envejece**: no es K6b. Con 40 seeds el head da +0,15 (ee 0,045) y `25f7b0d` +0,21 (ee 0,042). Ahora son 40 seeds y la suba tiene que superar 2 ee. Rojo: el mundo congelado da −1,22.
+- **9R0e**:
+  - la búsqueda sigue después de 1500 carreras hasta 500 splits, con tope en 3000;
+  - el 60% no cuenta la repetición narrada de K6b-C (antes de K6b el espía veía 0 silencios; en `58db231`, 7, todos de esas repeticiones);
+  - el tope 0 sí la cuenta.
+- **K0 KPIs**: recuento independiente de `ritmo.colaDeCarrera` y `ritmo.leyenda`. Rojo: `frenadasCola += 2`.
+- **K0 estancado**: tope 5 → 8,0, es decir 4,9 (n 1500) + 2σ de 200. Medido: 5,5 en el head, 4,5 en `25f7b0d`.
+- **Bo5 conjunto**: 86,0 ± 1,4 (n 620); techo 88,8. Corrimiento declarado de K6b. El rojo viejo (≈ 87) queda adentro de la banda.
+
+**El décimo, "Nadie se queda varado" (seed 101, 18 splits), era el motor.**
+- **La causa:** la repetición narrada de "El mercado ya habló" no vencía. Eran seis pretemporadas, de los 21 a los 27, sin que se le volviera a preguntar.
+- **El arreglo (decisión del supervisor):** pasar `splitsSinOfertaParaLibre` pretemporadas sin oferta desde la última respuesta es "algo cambió".
+  - La pregunta vuelve a frenar con su previa: cuántas pretemporadas sin oferta y la edad.
+  - El contador es `flags.finMercadoEsperas` (migrado con `migrarDe12`).
+  - Sin tiradas nuevas: si respondés "seguir buscando", corre lo mismo que la narración.
+- **El check de motor nuevo:** "K6b-fix: el seguir buscando narrado no pasa de 2 pretemporadas seguidas". 5 narradas y 2 preguntas vueltas en 300 × 60. Rojo con "nunca vence": 0 preguntas vueltas, y la seed 101 vuelve a 18 splits.
+- **Seed 101:** ahora vuelve a preguntar a los 24, y el automático se retira.
+
+**La meta de la cola**, re-medida con la muestra del check (1500 × 60):
+- **antes de K6b-fix:** 13,33, σ 9,00, n 602;
+- **con K6b-fix:** 13,37, σ 8,93, n 593, banda ≤ 14,10;
+- **el mutante (C y C2 apagados):** 14,89, 2,2σ arriba de la banda.
+
+**Verificación.**
+- `--rapido`: 344 OK, 0 FAIL.
+- `HUELLA_JUEGO` sin cambios: 1920057344 (el check de huella, 40 × 60, pasa).
+- `FORMAS_CONOCIDAS[13]`: 'fcc08dda0b89' → '0b9646606fa1', sin subir de 13.
+- `simulate.js 1 60 criterio` dos veces: diff vacío.
+
+### 2026-10-05 — Cierre de K6b: K5c-V con el piso armado y los estancados re-basados (`k6b-integracion`; PLAN.md §K6b, "La revisión de K6b")
+
+**K5c-V, por qué quedó vacío (medido, no es el motor).** El piso de franquicia de un veterano de tier 2 en las carreras de `azar` (régimen del barrido, brecha 10) era **una sola carrera de 40**: en `923800d`, la seed 3 a los 31 en EMEA Masters (Fénix Legion), 1 forzada que perdía la disputa. La revisión de K6b (la carta única que cambia de liga frena, caso `cambio`) le cambió el camino a esa carrera en el split 33: la única carta era GIANTX (LCS → LEC), ahora frena, `azar` espera, queda sin club, se retira y vuelve en la LEC; nunca más pisa el tier 2. En 40 × 70: 9 comienzos de split de un veterano de tier 2 (16 en `923800d`), 4 "claramente arriba", los 4 con club, ninguno llega al piso. El mérito de K6b-M (solo con temporada de élite) y la marca de franquicia (el piso no la mira) no tocan este caso. El piso no cambió.
+
+**K5c-V, el arreglo (check, sin tocar el motor).** (2a) el piso armado: sobre las pausas reales de tier 2 de la cosecha de K5c-M, el veterano es franquicia por la brecha (nivel = prestigio + `brechaFranquicia` + 2, `rankMundialActual` en null) y con el castigo de los 30 nadie lo ficha por la vía normal. Medido: 9 pausas; a los 30 con la perilla neutra 8 forzadas de tier 2, las 8 pierden la disputa; con la perilla en 26, 0; a los 25 con la perilla en 26, 8 (8): la que decide es la edad. (2b) las 40 carreras reales quedan para la regla dura con la perilla (0 forzadas que pierden) y los avisos por edad (0 → 5, 0 fuera de lugar); el conteo neutro de la muestra real pasa a informativo (0). Rojos (`--solo="K5c-V"` sobre copias de `src`): el piso sin la disputa del veterano → con la perilla 8 (8); el piso apagado → neutra 0 y a los 25 0; la disputa para todo el tier 2 sin mirar la edad → neutra 0 y a los 25 0.
+
+**Los estancados (regla 17).** Meta ~10; medido al cerrar K6b (n 1500 × 60): `azar` 12,5 (σ 0,85), `criterio` 4,9, `malas` 16,9. Corrimiento declarado de K6b: la carta única que cambia de liga, región o tier frena y `azar` puede rechazarla y quedarse sin club, y la vuelta del retiro sin club cambió (al mercado de su pretemporada, y el automático no vuelve debajo del 20%). La banda va de la meta a lo medido con su ruido: [10 − 2σ, 12,5 + 2σ] ≈ [8,29, 14,21]. `criterio` y `malas` siguen separados de `azar` por más de 2σ de la diferencia (7,6 contra 2,04; 4,4 contra 2,58). El juez: los valores OK pasan a 4,9/12,5/16,9; rechaza `azar` 15 y 8, acepta `azar` 10 (la meta), rechaza `criterio` 11 (9 ya cabía) y `malas` 11.
+
+**Verificación.** `validate.js --rapido`: 344 OK, 171 SKIP, 0 FAIL ("Todos los checks pasaron.", 4 min 58 s; en `ecddd27`: 343 OK, 1 FAIL, K5c-V). `--solo="K5c meta"`: las 6 en verde (11 min 16 s): estancados 4,9/12,5/16,9 (iguales a los de `ecddd27`: no se tocó el motor). `simulate.js 1 60 criterio` dos veces: diff vacío (md5 652882c6…, el mismo que en `ecddd27`). La huella no se movió (`HUELLA_JUEGO` 1920057344, 'K6b'): no se tocó el motor.
+
+### 2026-10-05 — Revisión de K6b: la carta única solo en continuidad, la cola que frena de menos, el terco, la vuelta al mercado, "del Mundial", la LCS sin franquicia (`k6b-integracion`; PLAN.md §K6b, "La revisión de K6b")
+
+**Carta única (regla 15).** `mercado.js`: `enJuegoDeUnaSolaCarta` suma el caso `cambio` (otra liga, otra región o subir de tier sin prueba); se firma sola solo si `esContinuidadDeUnaSolaCarta` (la misma liga y el mismo tier). La previa dice la mudanza ("cambiar de liga (LCK → LPL, otra región)"). El log `unaSolaCarta` lleva `liga/ligaAntes/tierAntes`. Check K6b-C (carta): las firmadas solas son todas continuidad (40 seeds: 9 frenaron, 8 por `cambio`; 27 solas). Rojo con la regla vieja: 8 firmas solas cambiando de liga.
+
+**Frenar de menos (regla 7).** K6b-C: el juez ve cada "¿la seguís?" narrado con su club, tier y vuelta, más una aserción de que `firmaDelSeguis`/`firmaDeLaVuelta` se mueven con club, tier, vuelta y lesión. K6b-C2: el juez ve cada parada narrada de la cola (hito seguro: título o internacional del año, último año; o el cierre con otro club o tier), más una aserción sobre `frenaEnLaCola`. Rojos: M2 (un hito que ya no frena) y M3 (las firmas constantes), con las aserciones y también sin ellas (3 y 4 narradas con motivo).
+
+**La meta del terco (regla 17).** Terco: no se retira antes de los 33. Desde los 28, 300 × 60: antes de K6b (`25f7b0d`) 19,33 (σ 7,87, n 225, mediana 19); head 9,68 (σ 9,41, n 226, mediana 6); banda <= 10,93; rojo con las reglas de C y C2 apagadas: 15,36 (n 228). El check de `criterio` queda como estaba.
+
+**La vuelta.** (a) El "¿Volvés?" se pregunta en la pretemporada del reloj de la vuelta y, sin club, el split sigue desde `mercado` (`reanudarEn`, `core/pipeline.js`): la vuelta es al mercado de esa pretemporada. (b) La previa dice la chance de que te llamen, con la demanda de hoy (`chanceDeQueTeLlamen`, sin `rng`): medida forzando todas las vueltas (criterio + defecto, 300 × 60 c/u): sin demanda 19/210 = 9%, con demanda 9/28 = 32% (no crece con el número de clubes). (c) El automático no vuelve de free agent debajo del 20%. 200 × 60, antes (`923800d`) → después: criterio, vueltas sin club 78 → 8, nunca firman 66 → 0, finales "sin equipo" 62% → 64%; defecto, 76 → 13, nunca 57 → 0, sin equipo 56,5% → 59,5%. **El "sin equipo" no baja:** casi todo es el primer retiro por el mercado sin club (K6b-F), no la vuelta. Check nuevo con mutantes (sin `reanudarEn`: rojo).
+
+**Textos y dominio.** "Finalista/Semifinalista del Mundial" (`legado.js`); K6b-U (g) mira el texto fijo y la frase armada (rojo con `de ${donde}`). La LCS sale de las franquiciadas (CONCEPTO §12.3); K6b-F liga actualizado.
+
+**Huella y guardado.** `HUELLA_JUEGO` 1920057344 (reemplaza a 1772717528, sigue 'K6b'); `FORMAS_CONOCIDAS[13]` re-registrada 'fcc08dda0b89' (sin subir de 13).
+
+**Abierto.** `--rapido`: 1 FAIL, K5c-V (el piso de franquicia de un veterano de tier 2 ya no aparece en las carreras de `azar`, 0 forzadas con 20 o 40 seeds; sin diagnosticar). "K5c meta": cinco en banda, la de los estancados afuera (azar 12,5%, banda ~10% ± 1,71), sin re-basar.
+
+**Verificación.** `--solo` de cada check tocado con su mutante; `--rapido` (341 OK, 3 FAIL → arreglados 2: la forma y K6b-F contrato); `simulate.js 1 60 criterio` dos veces con diff vacío.
+
+### 2026-10-05 — K6b integrado: tarjeta, mérito, contrato y cola en una rama (`k6b-integracion`; PLAN.md §K6b)
+
+**Qué.** Merge, en orden, de `k6b-tarjeta` (`fe21489`), `k6b-mercado` (`912a560`), `k6b-contrato` (`42e450f`) y `k6b-cola2`
+(`a496686`, incluye `k6b-cola`). Los cuatro chocaron solo en `src/dev/validate.js` (checks agregados al final): se conservaron
+todos. `mercado.js` y `retiro.js` se auto-mergearon; las interacciones se revisaron a mano y dos estaban mal:
+
+- **C × F, "El mercado ya habló" frenaba dos veces.** La foto de "seguir buscando" se tomaba antes de elegir; con K6b-F esperar te
+  deja sin club, así que la pretemporada siguiente ("libre") parecía otra. Medido con una sonda (`criterio` y `malas`, 100 seeds):
+  29 de 29 esperas con club frenaban otra vez sin nada nuevo. Arreglo: la foto es la de después de elegir (`resolverFinPorMercado`).
+  El check de K6b-C lo cubre (`fotoTras` en el detector); rojo con la foto de antes: 30 paradas repetidas.
+- **F × C, el "¿Volvés?" mentía.** La opción decía "De free agent otra vez" aunque volvieras con tu club (el log de K6b-F ya lo
+  decía bien): 95 de 230 "¿Volvés?". Arreglo en `decisionVuelta`; check en K6b-F contrato; rojo con el texto viejo: 51 problemas.
+- **C × M:** la carta única narrada se arma con la mano que ya pasó por el mérito (K6b-M corre antes en `aplicarMercadoSinImport`)
+  y K6b-M (a) y (b) pasan en el head integrado. `teVasDelClub` se aplica también en la repetición narrada (va por
+  `resolverFinPorMercado`): K6b-F contrato pasa (308 pretemporadas vencidas: 48 renovás, 187 otro club, 20 sin club, 53 retiro).
+
+**Los FAIL conocidos.** K5c-M (a) pasa en el head integrado (no hizo falta tocarlo). K5c-M (a2 armado): ninguna de las 20 pausas de
+élite armaba al medio de la disputa como medio (la más joven daba nivel 82, f = 0,2); la base es ahora la primera pausa donde los cuatro
+escenarios son lo que dicen, y la liga débil del fixture baja de 70 a 60. Rojo con la rebaja aplicada también al medio. K5c-V: el piso
+de franquicia del veterano es casi siempre una sola carta, que con K6b-C se firma sin pausa; la carta narrada lleva `unaSolaCarta` en su
+log (club, tier, piso de franquicia y la disputa medida por el motor) y el check la cuenta: 1 forzada que pierde la disputa con la
+perilla neutra, 0 con la perilla en 26. Rojo con el piso sin la disputa del veterano.
+
+**El guardado.** `VERSION` 13 (`FORMAS_CONOCIDAS[12]` = '859f8c5ba041', la de main; `[13]` = '8d9b9b8a0ff2'), con `migrarDe12`: las
+fotos de la cola en "no hay foto". Check nuevo: 179 guardados de la 12 (seeds 1-4 × 60, 70 con alguna foto) cargan y juegan el mismo
+split; sin `migrarDe12` fallan los 179.
+
+**La huella.** `VERSION_JUEGO` 'K6b', `HUELLA_JUEGO` 1772717528 (reemplaza a 1462997803, K5c).
+
+**Las metas (regla 17).** "K5c meta" sobre el head integrado (1500 × 60): las seis en banda, ninguna re-basada (Mundial 9,2%, P(2+ | 1)
+35,5%, carrera mediana 8, a los 34 5,8%). La cola (decisión del usuario: aceptar ~12, K6 juzga; decisión del supervisor: el check duro es el **promedio**).
+Con 400 carreras la mediana no se movía con ningún mutante (12 con las reglas de K6b-C y C2 apagadas) y el promedio dejaba al
+mutante a 0,14 σ de la banda. Ahora el check lee el lote de `criterio` de las metas del bloque C (1500 × 60, el mismo de K5c): promedio
+12,36, σ 8,72, n = 774 carreras con cola (mediana 10, como dato); banda <= 12,36 + 2 σ/√n = 12,99. Rojo con las reglas de K6b-C y C2
+apagadas: 13,8 (n = 765), 0,81 por encima (2,6 σ). La leyenda (<= 80) no se tocó: 76 en esta muestra (158 carreras; con el mutante 78,5).
+
+**Verificación.** `node src/dev/validate.js --rapido`, `--solo` de cada check tocado con su mutante, `simulate.js 1 60 criterio` dos
+veces con diff vacío.
+
+### 2026-10-05 — K6b-C2, la cola de verdad: en la cola, el cierre de año y el momento frenan solo con un hito, un cambio o palanca (`k6b-cola2`; PLAN.md §K6b)
+
+**Qué son.** Las dos paradas que más pesaban en la cola después de la primera pasada:
+- **El momento** (`temporada:momento`, `systems/temporada.js` `arrancarMomento`): la previa de una fecha marcada de la
+  temporada regular (clásico, archirrival, revancha, define la clasificación). Es un evento del pool `stakes` con efectos de
+  `type: 'partido'`: la opción mueve la p de ESE partido. Horizonte `partido` en `agencia.js`.
+- **El cierre de año** (`edadCierre:x`, `systems/edadCierre.js` `aplicar`): uno de los diez eventos `cierreDeEdad` (tres
+  opciones: el juego, la cabeza y la familia, la marca). Fija el plan anual del año siguiente (K4c). Horizonte `carrera`.
+
+**La regla** (`core/cola.js`, nuevo; la llaman `edadCierre.js` y `temporada.js`). Desde los 28 (`BALANCE.cola.edadDesde`) o
+desde el aviso de declive (`etapa === 'declive'`), lo que llegue primero, las dos paradas frenan solo si:
+- **es un hito:** un año con título (el primero incluido) o con Mundial, tu mejor nivel de la carrera llegó ese año (el
+  récord), o es el último año antes del retiro forzoso (`edadRetiroForzoso`);
+- **algo cambió** desde la última vez que ese tipo frenó en la cola: el club, el tier, la última lesión grave o el declive
+  (`firmaDeLaCola` contra `flags.colaFirmas`, flag nueva; `null` = frena, así que un guardado viejo no se rompe);
+- **su tipo tiene palanca:** `BALANCE.cola.palancaMedidaPct` (la medida con `agencia.js` sobre `8368570`: cierre 3,3%, momento
+  95%) llega a `umbralPalancaPct` (47,4: la fracción ponderada de ese mismo reporte; un tipo por debajo baja el promedio).
+
+Si no, lo resuelve tu perfil (`opcionDelPerfil`, como cualquier evento que no frena) por el mismo `resolver` (las mismas
+tiradas que después de la pausa; el cierre fija el plan de esa opción) y queda una línea de crónica marcada `cola`. Fuera de
+la cola no cambia nada; la serie y los eventos no se tocan. **El momento tiene 95% de palanca: sigue frenando siempre.**
+
+**Medido** (`simulate.js 600 60 criterio`, mismas seeds; antes `8368570` / después / la frontera: el momento tampoco frena en la
+cola, `palancaMedidaPct.momento = 0` en memoria). 0 crashes en los tres.
+
+| Métrica | Antes | Después | Frontera |
+|---|---|---|---|
+| Desde los 28: mediana · p90 · promedio | 13 · 26 · 14,15 | **12 · 25 · 13,51** | 11 · 23 · 12,17 |
+| Cierre de año · momento en la cola (por carrera) | 3,05 · 3,27 | 2,38 · 3,31 | 2,34 · 1,51 |
+| Leyenda (frenadas totales): n · mediana · p90 | 57 · 77 · 93 | 57 · 76 · 93 | 60 · 74 · 90 |
+| Interrupciones por carrera: mediana · p90 | 53 · 78 | 52 · 77 | 50 · 75 |
+| p90 por split pro (K4c): todos / regular / playoffs / internacional | 3 / 2 / 5 / 6 | 3 / 2 / 5 / 6 | 3 / 2 / 5 / 6 |
+
+**La agencia** (`agencia.js --carreras=12 --reps=30 --cuota=2 --splits=70`, antes / después):
+- ponderada en su horizonte 47,4% → **48,6%**; contra la carrera 21,1% → 21,9% (piso 8,6%);
+- `edadCierre:x` 3,3% → 5,2% (9 → 8,25 paradas por carrera); `temporada:momento` 95% → 95% (6,25 → 6,33);
+- la frontera: sin ninguna parada de momento (`--analizar … --sin=temporada:momento`, cota de lo que se pierde), la ponderada
+  cae a **40,6%**. Resolver el momento rompe "la agencia no baja".
+
+**La meta (≤ 8) no llega: 12, y la frontera es 11.** La regla hace lo que dice, pero en la cola casi todo cierre tiene un motivo
+para frenar: un año con Mundial o título, o un cambio de club (`criterio` cambia de club seguido). Y el momento es la parada con
+más palanca del juego (95%): sacarlo de la cola baja la cola a 11 y la agencia a ~41%. Lo que queda en la cola de la frontera,
+fuera de la regla: eventos 2,2, vuelta 1,5, plan de serie 1,2, el mercado ya habló 0,85. Decide el usuario.
+
+**Checks.** Nuevo: `K6b-C2 la cola de verdad` (`--solo=k6b-c2`, 24 seeds): en la cola, ningún cierre ni momento frena sin hito,
+sin cambio y sin palanca (el juez lo recalcula sin importar `core/cola.js`), y el cierre se narra; regla 7 sobre el juez
+(sembrado) y sobre el motor (mutante: el cierre "con palanca" frena siempre → 17 sin motivo y 0 narrados, rojo).
+`K4c-P (c)` se ajustó: el plan puede cambiar fuera de una pausa solo con la línea `cola: 'cierre'` y el plan de su opción.
+`K6b-C meta de la cola` (lento) sigue en rojo: 12 contra ≤ 8.
+
+**Verificación.** `validate.js --rapido`: 326 OK, 4 FAIL, todos conocidos: `K0-B guardado` (hash **c07d8f835c46**, por
+`flags.colaFirmas`), `K1 versión` (huella **177970640**), `K5c-M (a)` y `K5c-V`. No se re-declaran: van a la integración con
+VERSION 13. La misma seed dos veces da salidas idénticas (md5 `4cee3544…`).
+
+### 2026-10-05 — K6b-C, la cola de la carrera: lo que se repite sin nada nuevo en juego ya no frena (`k6b-cola`; PLAN.md §K6b)
+
+**Qué cambió (D-B en la cola).** Tres paradas que K6 vio repetirse sin nada nuevo en juego, más una cuarta de la misma
+familia, ahora frenan la primera vez y cuando la foto cambia. Si no, se sigue con lo que elegiste y se narra en una línea:
+- **"¿La seguís?"** (`retiro:retiro_declive`, `systems/retiro.js`). Frena si cambia la foto (`firmaDelSeguis`). La foto
+  incluye el club, el tier, el declive o la falta de club, la presión de tier 2, una oferta de tu tier esta pretemporada,
+  una lesión grave nueva, el aviso de no renovación y las vueltas del retiro. Si no cambió y la última vez elegiste seguir,
+  seguís, con la misma cuenta y cero `rng`, y se narra.
+- **"El mercado ya habló"** (`mercado:fin_mercado`, las dos variantes). Frena la primera vez y siempre que haya ofertas
+  (bajar o seguir abajo es una elección real). Sin ofertas, con la misma foto (`firmaDelFinPorMercado`) y "seguís
+  buscando" como última respuesta, se sigue buscando por el mismo camino (`resolverFinPorMercado`, las mismas tiradas) y se
+  narra.
+- **Un mercado de una sola carta** frena solo si se juega algo (`enJuegoDeUnaSolaCarta`), y la previa lo dice en la
+  descripción y en `datos.enJuego`. Se juega algo en dos casos: una prueba (con el % de firmar de la prueba esperada) o
+  bajar de tier (rechazar es quedarte free agent, con las pretemporadas sin oferta de tu tier). Si no, se firma por el mismo
+  camino que después de la pausa (`resolverMercado`) y se narra. Vale también para la mano que sigue a "bajás" o "seguís
+  abajo".
+- **"¿Volvés a competir?"** (`retiro:retiro_vuelta`), el "¿la seguís?" del retirado. Frena la primera vez de cada ventana
+  y después de una bifurcación de la ventana. Si elegiste no volver y nada cambió, se narra.
+- Flags nuevas (`core/state.js`): `seguisFirma`, `finMercadoFirma` y `vueltaFirma`. Un guardado de antes no las trae, y
+  `null` es "frena", así que no cambia la `VERSION`.
+
+**El instrumento** (`simulate.js`, bloque `ritmo`). Dos métricas nuevas:
+- `colaDeCarrera`: las frenadas desde los 28 (`EDAD_COLA_DE_CARRERA`), sobre las carreras con un split pro a esa edad, con
+  mediana, p90, promedio y desglose por tipo.
+- `leyenda`: las frenadas totales de las carreras que cierran en "Leyenda" o "El GOAT", con n, mediana, p90 y máximo.
+
+Los checks nuevos de `validate.js` (`--solo=k6b-c`):
+- dos de motor, con el jugador terco de K6 en 40 seeds y regla 7;
+- el juez de las metas, con mutantes;
+- la meta medida, lento, sobre el lote de las metas B.
+
+**Medido** (`simulate.js 600 60 criterio`, mismas seeds, antes `25f7b0d` / después):
+
+| Métrica | Antes | Después |
+|---|---|---|
+| Interrupciones por carrera (mediana · p90) | 54 · 81 | 53 · 78 |
+| Desde los 28 (318 carreras con cola): mediana · p90 · promedio | 14 · 29 · 15,45 | **13 · 26 · 14,15** |
+| Leyenda (frenadas totales): n · mediana · p90 | 63 · 79 · 95 | 57 · **77** · 93 |
+| p90 por split pro: todos / regular / playoffs / internacional | 3 / 2 / 5 / 6 | 3 / 2 / 5 / 6 |
+| Minijuegos (mediana) · tiempo-máquina | 4 · 3,52 min | 4 · 3,56 min |
+
+**La meta de la cola (≤ 8) no llega: queda en 13. Es la frontera.** Lo que queda desde los 28, por carrera con cola:
+- momentos 3,27, cierre de año 3,05, eventos 1,89, plan de serie 1,17: suman 9,4 y están fuera del alcance de K6b-C;
+- la primera vuelta de cada ventana, 1,47;
+- la primera vez de "El mercado ya habló", 0,85: `criterio` se retira en la primera desde los 22;
+- la primera vez del "¿la seguís?", 0,59, y las bifurcaciones de la ventana, 0,58.
+
+Con `criterio`, la repetición casi no existía: se retira en la primera pregunta. Lo que K6 vio (hasta 7 veces "El mercado ya
+habló") es de un jugador que elige seguir, y eso lo cubre el check del jugador terco. La leyenda cumple (≤ 80).
+
+**La agencia** (`agencia.js --carreras=12 --reps=30 --cuota=2 --splits=70`, antes / después):
+- la fracción ponderada con palanca en su horizonte pasa de 45,0% a 47,4%, y contra la carrera de 20,7% a 21,1%;
+- por tipo, en % con efecto significativo y paradas por carrera:
+
+  | Tipo | % significativo | Paradas por carrera |
+  |---|---|---|
+  | `mercado:oferta` | 60% → 60% | 3,25 → 2,75 |
+  | `mercado:fin_mercado` | 100% → 100% | 1,42 → 1,42 |
+  | `retiro:retiro_vuelta` | 60% → 100% | 2,5 → 1,83 |
+  | `retiro:retiro_declive` | 50% → 50% | 0,17 → 0,17 |
+
+La palanca de los tipos que siguen frenando no cae. Los bots (`criterio`, `azar`, `malas`) no se quedan sin camino:
+- lo que ya no frena se resuelve con la respuesta que el jugador dio la última vez que frenó (seguir, seguir buscando, no
+  volver), o con la firma de la única carta, que es lo que `criterio` y `malas` elegían;
+- `azar` pierde su tirada en esas repeticiones;
+- `azar` y `malas`, 60 × 60, 0 crashes.
+
+**Verificación.** `validate.js --rapido` da 5 FAIL. El de `K4c-H` ya está corregido (`--solo=k4c-h`: 6 OK).
+- **`K1 versión`:** la huella pasa de 1462997803 a **618858351**. Es esperado y no se re-declara.
+- **`K0-B guardado`:** la forma del estado cambió por las tres flags (hash `e9e018a7b659`, registrado `859f8c5ba041` para
+  VERSION 12). Hace falta VERSION 13 con su migración. Lo dejo para la integración, porque K6b-M/F pueden mover la forma
+  también.
+- **`K5c-M (a)` y `K5c-V`:** observan el mercado por sus pausas, y los mercados de una sola carta ya no frenan. Dan "muestra
+  chica: 8 pausas de élite" y "forzadas de tier 2 a veteranos 0". Hay que reapuntarlos a la firma narrada.
+- **`K6b-C meta de la cola`** (lento, `--solo`): FAIL, con la mediana 13 contra la meta ≤ 8. Leyendas: 77,5.
+
+Además: `simulate.js 1000` da 0 crashes, y la misma seed dos veces da salidas idénticas (md5 `4cee3544…`).
+
 ### 2026-10-05 — FASE K, K5c cerrado: el bloque C calibrado y mergeado en `fase-9r` (supervisor; PLAN.md §K5c)
 
 **Qué entra.**

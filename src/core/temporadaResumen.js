@@ -424,7 +424,7 @@ function vinetaArchirrival(state) {
   const ventaja = tuyos > suyos ? 'vas ganando el duelo' : (tuyos < suyos ? 'te lleva ventaja' : 'el duelo está parejo');
   return {
     icono: '⚡',
-    texto: `${quien}: ${suyos} ${plural(suyos, 'trofeo', 'trofeos')} contra tus ${tuyos} — ${ventaja}.`
+    texto: `${quien}: ${suyos} ${plural(suyos, 'trofeo', 'trofeos')} contra tus ${tuyos} (títulos y Mundiales ganados) — ${ventaja}.`
   };
 }
 
@@ -448,6 +448,11 @@ function vinetaProximoAnio(state, ctx) {
   const contrato = state.career.contrato;
   if (state.phase === 'amateur') {
     return { icono: '🎀', texto: 'El año que viene: a seguir empujando el ranked y esperar la llamada de un equipo.' };
+  }
+  // K6b-U: sin equipo no hay tabla ni contrato que mirar: la viñeta de equipo dice "Sin equipo" y esta no puede hablar de
+  // playoffs o de un contrato (`career.posicion` y `contrato.org` quedan del club que se fue).
+  if (!state.career.currentOrg) {
+    return { icono: '🎀', texto: 'Sin equipo: el año que viene, a esperar la llamada de un club en la pretemporada.' };
   }
   if (ctx.liga && state.career.posicion && calificaAInternacional(ctx.liga, state.career.posicion)) {
     return { icono: '🎀', texto: `Quedaron ${state.career.posicion}º: el año que viene arrancan con cupo a internacional.` };

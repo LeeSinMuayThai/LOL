@@ -60,6 +60,16 @@ export function renderDecision(elements, decision, onElegir, state, probabilidad
       opcionBtn.appendChild(detalle);
     }
 
+    // K6c: en el plan del año del amateur, la opción que propone tu perfil va marcada ("Tu perfil (hambriento) iría por esta").
+    // El texto viene del motor (`systems/amateur.js`, `decisionDePlan`); decide el jugador.
+    if (opcion.propuesta) {
+      opcionBtn.classList.add('option-btn--propuesta');
+      const propuesta = document.createElement('div');
+      propuesta.className = 'option-propuesta';
+      propuesta.textContent = opcion.propuesta;
+      opcionBtn.appendChild(propuesta);
+    }
+
     // K4c (plan anual): en el cierre de año, el plan de práctica que la opción fija para el año que viene. El texto
     // viene armado del motor (`systems/edadCierre.js` -> `lineaDePlan`): la pantalla no calcula nada.
     if (opcion.plan?.texto) {

@@ -195,6 +195,20 @@
         "El tryout no terminó de convencer: el contrato se te puede escapar.",
         "Salió flojo: si te firman, entrás debiendo algo."
       ]
+    },
+    "veredictosConVara": {
+      "bien": [
+        "Impresionaste en el tryout: firmás y entrás con crédito desde el primer día.",
+        "Se te quedaron mirando: la firma es tuya y entrás con la vara alta."
+      ],
+      "parejo": [
+        "El tryout fue correcto, sin más: firmás, pero el crédito te lo vas a tener que ganar adentro.",
+        "Cumpliste: la firma es tuya; el lugar en el equipo, todavía no."
+      ],
+      "mal": [
+        "Salió flojo, pero tu nivel alcanzó: firmás y entrás debiendo algo.",
+        "No fue tu mejor tryout, pero llegaste a la vara: firmás, y adentro te van a mirar con lupa."
+      ]
     }
   },
   {

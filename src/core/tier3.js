@@ -67,8 +67,13 @@ export function orgsTier3DeLaRegion(state, region) {
 
 // El equipo chico se elige por sorteo parejo entre los de tu región: a este
 // nivel no hay "el mejor te quiere más", son todos iguales de precarios.
-export function elegirOrgTier3(state, rng) {
-  return pick(orgsTier3DeLaRegion(state, state.mundo.regionIdOrigen), rng);
+//
+// K6c: `excluidas` (nombres) saca del sorteo a los clubes que ya te ofrecieron en esta ventana (el año del amateur): el mismo
+// club no vuelve a ofrecer. Si los excluye a todos, sortea entre todos. Una sola tirada siempre: el stream no cambia.
+export function elegirOrgTier3(state, rng, excluidas = []) {
+  const todas = orgsTier3DeLaRegion(state, state.mundo.regionIdOrigen);
+  const libres = todas.filter((org) => !excluidas.includes(org.nombre));
+  return pick(libres.length > 0 ? libres : todas, rng);
 }
 
 // Firmar con un tier 3 no toca `phase` ni `splitFichaje`: eso lo decide quien

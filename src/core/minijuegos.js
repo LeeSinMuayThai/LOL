@@ -122,11 +122,15 @@ export function generarCierreMapa(campeon, gano, marcador, state) {
 
 // El veredicto 0-1 → nivel + frase. Vivía duplicado en la UI (9R0b) con su
 // propia tabla de textos; ahora sale del mismo dato que consume el motor.
-export function veredictoDeMinijuego(id, resultado, state = null) {
+//
+// K6c: la prueba del amateur no tira dado (la vara, `veredictoDeLaPrueba`): con `pasa` el resultado ya está decidido, así que
+// la frase sale de `veredictosConVara` del dato, sin las de `veredictos` que hablan de un contrato que "se puede escapar" o de
+// "si te firman" (esas son de la prueba del mercado, que sí tira). Con `pasa: false` no hay frase: lo dice la línea de la vara.
+export function veredictoDeMinijuego(id, resultado, state = null, { pasa = null } = {}) {
   const umbrales = BALANCE.serie.veredictoMinijuego;
   const nivel = resultado >= umbrales.bien ? 'bien' : resultado >= umbrales.parejo ? 'parejo' : 'mal';
   const entrada = minijuegoPorId(id);
-  const variantes = entrada?.veredictos?.[nivel];
+  const variantes = pasa === null ? entrada?.veredictos?.[nivel] : pasa ? entrada?.veredictosConVara?.[nivel] : null;
   return {
     nivel,
     titulo: TITULO_VEREDICTO[nivel],

@@ -34,7 +34,7 @@ const LINEA_FINAL = {
   cuartos: (t, r) => `Pasaste el Swiss ${r} y te quedaste en cuartos del Mundial ${t.anio}. Lo ganó ${t.campeon}.`,
   semis: (t, r) => `Semifinal del Mundial ${t.anio} (Swiss ${r}). Lo ganó ${t.campeon}.`,
   final: (t, r) => `Llegaste a la final del Mundial ${t.anio} (Swiss ${r}) y la perdiste con ${t.campeon}.`,
-  campeon: (t, r) => `¡Campeones del mundo! Mundial ${t.anio}, desde el Swiss ${r} hasta levantar la Copa de la Invocación.`
+  campeon: (t, r) => `¡Campeones del mundo! Mundial ${t.anio}, desde el Swiss ${r} hasta levantar la Copa del Invocador.`
 };
 
 const HITO = {

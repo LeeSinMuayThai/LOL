@@ -165,7 +165,9 @@ function calcularMarcas(state) {
   if (state.player.deudaSueno >= a.robosParaDeuda) {
     marcas.push('deuda_sueno');
   }
-  if ((state.flags.pcConfiscada ?? 0) > 0) {
+  // K6b-U: la PC confiscada es del amateur (el contador solo baja en los periodos del amateur): al pasar a pro el
+  // contador queda a medias y el tag seguía a los 27, en la final del Mundial.
+  if (state.phase === 'amateur' && (state.flags.pcConfiscada ?? 0) > 0) {
     marcas.push('pc_confiscada');
   }
   if (state.phase === 'amateur' && state.player.studies < a.confiscacionUmbral && !state.flags.negociacionGanada) {

@@ -8,6 +8,7 @@ import {
 } from './events.js';
 import { armarRosterAlVolver } from './roster.js';
 import { calcularCalendario } from './edadInicio.js';
+import { orgsQueTeFicharian } from '../core/demanda.js';
 
 export const id = 'retiro';
 
@@ -127,6 +128,34 @@ export function retirarsePorMercado(state, motivo) {
   return terminar(state, finAnticipado, `${motivo} ${mensajeDeSalida(state, finAnticipado)}`, { reversible: puedeVolver, motivo });
 }
 
+// K6b-C (D-B en la cola): lo que tiene que cambiar para que el "¿la seguís?" vuelva a frenar. Si elegiste seguir y en la
+// pretemporada siguiente la foto es la misma, no se pregunta otra vez: se sigue (lo que elegiste) y se narra en una línea.
+// Cambia si cambia la presión de retiro (entrás o salís del declive, la presión de tier 2), si hubo una oferta nueva (una de
+// tu tier esta pretemporada, o un club distinto), una lesión grave, un aviso de no renovación, el tier, o si volviste de un
+// retiro. Puro: cero `rng`. Exportada para el check.
+export function firmaDelSeguis(state) {
+  const r = BALANCE.retiro;
+  const enDeclive = calcularContexto(state).etapa === 'declive';
+  const presionTier2 = (state.flags.splitsTier2SinOfertaTier1 ?? 0) >= r.presionTier2.splitsSinOfertaTier1;
+  return [
+    state.career.currentOrg ?? 'libre',
+    state.career.tier ?? '-',
+    enDeclive ? 'declive' : 'sin club',
+    presionTier2 ? 'presion tier 2' : '-',
+    state.flags.splitsSinOfertaEnTier === 0 ? 'oferta de tu tier' : 'sin oferta de tu tier',
+    state.flags.lesionGraveSplit ?? 'sin lesion',
+    state.career.contrato?.avisoNoRenovacion ? 'aviso' : 'sin aviso',
+    state.flags.vueltasUsadas
+  ].join('|');
+}
+
+// K6b-C: elegir seguir, sin pregunta (la foto no cambió desde la última vez que elegiste seguir) o con ella. La misma cuenta
+// en los dos caminos, sin `rng`.
+function seguirPeleandola(state) {
+  const splitsEnDeclive = Math.floor(state.flags.splitsEnDeclive * BALANCE.retiro.factorSeguirPeleandola);
+  return { ...state, flags: { ...state.flags, splitsEnDeclive } };
+}
+
 function decisionDeclive(state) {
   return {
     tipo: 'opciones',
@@ -139,7 +168,7 @@ function decisionDeclive(state) {
       { id: 'seguir', label: 'La seguís peleando', descripcion: 'Un año más contra la corriente. Esto no se resetea solo.' },
       { id: 'retirarse', label: 'Colgás el mouse', descripcion: 'Cerrás la carrera. Con la puerta entreabierta, si el cuerpo y las ganas dan.' }
     ],
-    datos: { motivo: 'retiro_declive' }
+    datos: { motivo: 'retiro_declive', firma: firmaDelSeguis(state) }
   };
 }
 
@@ -188,27 +217,63 @@ export function retirarsePorCamino(state, motivo) {
 function eventoDeVentana(state, rng) {
   const evento = elegirEvento(state, rng, { filtro: (candidato) => candidato.contexto?.etapa?.includes('retirado') });
   if (!evento) {
-    return { state, logs: [], decision: decisionVuelta(state) };
+    return vueltaOSuRepeticion(state, []);
   }
   if (evento.bifurcacion) {
     const decision = decisionDesdeEvento(state, evento, { franja: 'normal', slot: 1 });
     return { state, logs: [], decision: { ...decision, datos: { ...decision.datos, motivo: 'evento_ventana' } } };
   }
   const resuelto = resolverOpcion(state, evento, opcionDelPerfilPara(state, evento), rng, { cronica: state.player.perfil.actual });
-  return { state: resuelto.state, logs: resuelto.logs, decision: decisionVuelta(resuelto.state) };
+  return vueltaOSuRepeticion(resuelto.state, resuelto.logs);
+}
+
+// K6b-C (D-B en la cola): el "¿Volvés a competir?" de cada pretemporada de la ventana es el "¿la seguís?" del retirado. Frena
+// la primera vez de cada ventana y después de una bifurcación de la ventana (algo cambió: esa sí frena, `evento_ventana`). Si
+// elegiste no volver y nada cambió, no se pregunta de nuevo: seguís retirado, que es lo que elegiste, y se narra en una línea.
+// La foto es la ventana (`vueltasUsadas`: cada vuelta abre una ventana nueva). Pura: cero `rng`. Exportada para el check.
+export function firmaDeLaVuelta(state) {
+  return `ventana ${state.flags.vueltasUsadas}`;
+}
+
+function vueltaOSuRepeticion(state, logs) {
+  if (state.flags.vueltaFirma != null && state.flags.vueltaFirma === firmaDeLaVuelta(state)) {
+    return { state, logs: [...logs, crearLog('retiro', 'Seguís retirado: nada cambió desde que elegiste no volver. La puerta sigue entreabierta.')] };
+  }
+  return { state, logs, decision: decisionVuelta(state) };
+}
+
+// Revisión de K6b (regla 15): la chance de que te llame alguien si volvés de free agent, con la demanda de hoy: los clubes
+// que hoy te ficharían (`orgsQueTeFicharian`, con la edad y el reloj con los que volverías): con alguno, la chance medida
+// con demanda; con ninguno, la medida sin demanda (`BALANCE.retiro.vuelta`). Con club, el lugar está guardado: `null`.
+// Pura: cero `rng`. Exportada para el check.
+export function chanceDeQueTeLlamen(state) {
+  if (state.career.currentOrg) {
+    return null;
+  }
+  const alVolver = { ...relojAlVolver(state), phase: 'profesional' };
+  const clubes = orgsQueTeFicharian(alVolver).length;
+  const v = BALANCE.retiro.vuelta;
+  return { clubes, pct: clubes > 0 ? v.pctLlamadoConDemanda : v.pctLlamadoSinDemanda };
 }
 
 function decisionVuelta(state) {
+  const llamada = chanceDeQueTeLlamen(state);
   return {
     tipo: 'opciones',
     bisagra: true,
     titulo: '¿Volvés a competir?',
     descripcion: 'La ventana sigue abierta. ¿Le das una vuelta más o lo dejás cerrado?',
     opciones: [
-      { id: 'volver', label: 'Volvés', descripcion: 'De free agent otra vez: a esperar que suene el teléfono.' },
+      // K6b (integración, regla 15): la opción dice lo mismo que el log de la vuelta (K6b-F): free agent solo sin club. Si te
+      // retiraste con el contrato corriendo, volvés con ese club (en `criterio` y `malas`, 95 de 230 "¿Volvés?" lo decían mal).
+      { id: 'volver', label: 'Volvés', descripcion: state.career.currentOrg
+        ? `Con ${state.career.currentOrg}: te guardan el lugar, el contrato sigue en pie.`
+        : `De free agent, al mercado de esta pretemporada: ${llamada.clubes > 0
+          ? `hoy te ficharían ${llamada.clubes} ${plural(llamada.clubes, 'club', 'clubes')}`
+          : 'hoy no te ficharía ningún club'}, ~${llamada.pct}% de que te llame alguien.` },
       { id: 'quedarse', label: 'Lo dejás cerrado', descripcion: 'Todavía podés volver más adelante, si la ventana no se cerró.' }
     ],
-    datos: { motivo: 'retiro_vuelta' }
+    datos: { motivo: 'retiro_vuelta', firma: firmaDeLaVuelta(state), chanceDeQueTeLlamenPct: llamada?.pct ?? null, clubesQueTeFicharian: llamada?.clubes ?? null }
   };
 }
 
@@ -229,12 +294,16 @@ function aplicarVentanaDeVuelta(state, rng) {
     };
   }
 
+  // Revisión de K6b: la pregunta va en la pretemporada del reloj de la vuelta (`relojAlVolver`: el split del retiro más los
+  // de la ventana), una por año. Es la ventana de mercado: si volvés de free agent, el mercado de esta misma pretemporada es
+  // el tuyo (`resolver`, `reanudarEn: 'mercado'`). Antes se preguntaba al mismo punto del año del retiro, que en el retiro
+  // del mercado caía después del mercado: volvías a pasarte el año sentado y llegabas un año más viejo a la pretemporada.
   // Se pregunta al ritmo de una pretemporada por año, no en cada tick. Pero
   // ningún split puede cerrar mudo (regla de proceso 13, ya cubierta para
   // 'split tranquilo' en `events.js`) — el resto del registro está apagado
   // acá (`core/pipeline.js`), así que sin esto un split de la ventana no
   // narraría nada.
-  if (splitsEnVentana % BALANCE.edad.splitsPorEdad !== 0) {
+  if ((state.player.splitCount + splitsEnVentana) % BALANCE.edad.splitsPorEdad !== 0) {
     return { state: conCuenta, logs: [crearLog('retiro', 'Seguís retirado. Nada nuevo este split.', { tecnico: true })] };
   }
 
@@ -316,6 +385,14 @@ function aplicarProfesional(state) {
     return { state: conCuenta, logs: [] };
   }
 
+  // K6b-C: nada cambió desde que elegiste seguir: no se pregunta de nuevo. Seguís, y se dice en una línea.
+  if (state.flags.seguisFirma != null && state.flags.seguisFirma === firmaDelSeguis(conCuenta)) {
+    return {
+      state: seguirPeleandola(conCuenta),
+      logs: [crearLog('retiro', `A los ${state.age} el mercado te sigue diciendo que no, y nada cambió desde que elegiste seguir: la seguís peleando un año más.`)]
+    };
+  }
+
   return { state: conCuenta, logs: [], decision: decisionDeclive(conCuenta) };
 }
 
@@ -342,15 +419,17 @@ export function resolver(state, decision, respuesta, rng) {
 
   if (motivo === 'evento_ventana') {
     const resuelto = resolverEvento(state, decision, respuesta, rng);
+    // K6b-C: después de una bifurcación de la ventana, algo cambió: la vuelta se pregunta siempre.
     return { state: resuelto.state, logs: resuelto.logs, decision: decisionVuelta(resuelto.state) };
   }
 
   if (motivo === 'retiro_declive') {
     const r = BALANCE.retiro;
     if (respuesta.opcionId === 'seguir') {
-      const splitsEnDeclive = Math.floor(state.flags.splitsEnDeclive * r.factorSeguirPeleandola);
+      // K6b-C: la foto con la que elegiste seguir. Mientras no cambie, el año que viene no se pregunta de nuevo.
+      const seguido = seguirPeleandola(state);
       return {
-        state: { ...state, flags: { ...state.flags, splitsEnDeclive } },
+        state: { ...seguido, flags: { ...seguido.flags, seguisFirma: decision.datos.firma ?? null } },
         logs: [crearLog('retiro', 'Decidís seguir. El mercado no va a esperar para siempre.')]
       };
     }
@@ -384,12 +463,24 @@ export function resolver(state, decision, respuesta, rng) {
     // pase, la org del contrato no tiene fila todavía: se arma acá, antes de la temporada de la vuelta (ver
     // `armarRosterAlVolver`).
     const conRoster = armarRosterAlVolver(vuelto, rng);
+    // K6b-F (regla 15): "de free agent" solo si volvés sin club. Si te retiraste con contrato corriendo, volvés con ese
+    // club (es lo que hace el motor desde K4c), y decir "free agent" mientras jugás con él era el bug de K6.
+    const club = conRoster.state.career.currentOrg;
+    // Revisión de K6b: sin club, la vuelta se hace efectiva en la ventana de mercado, que es esta pretemporada: el split sigue
+    // desde `mercado` (que en el split del retirado no corrió), no desde la etapa que sigue a esta.
     return {
       state: conRoster.state,
-      logs: [crearLog('retiro', 'Volvés a competir. De free agent, a ver quién te llama.'), ...conRoster.logs]
+      logs: [crearLog('retiro', club
+        ? `Volvés a competir. ${club} te guardó el lugar: el contrato sigue en pie.`
+        : 'Volvés a competir. De free agent, justo para el mercado de esta pretemporada: a ver quién te llama.'), ...conRoster.logs],
+      ...(club ? {} : { reanudarEn: 'mercado' })
     };
   }
-  return { state, logs: [crearLog('retiro', 'Por ahora, no. La puerta sigue entreabierta.')] };
+  // K6b-C: la foto con la que elegiste no volver. Mientras sea la misma ventana, no se pregunta otra vez.
+  return {
+    state: { ...state, flags: { ...state.flags, vueltaFirma: decision.datos.firma ?? null } },
+    logs: [crearLog('retiro', 'Por ahora, no. La puerta sigue entreabierta.')]
+  };
 }
 
 export function resolverAuto(state, decision, rng) {
@@ -405,5 +496,8 @@ export function resolverAuto(state, decision, rng) {
   }
   // La vuelta: se ejercita una vez por carrera (Bjergsen volvió; no todos
   // vuelven dos veces), nunca la segunda — dos vueltas es la excepción real.
-  return { opcionId: state.flags.vueltasUsadas === 0 ? 'volver' : 'quedarse' };
+  // Revisión de K6b: y de free agent, solo si la chance de que te llamen (la de la previa) llega al umbral. Con club, siempre.
+  const pct = decision.datos.chanceDeQueTeLlamenPct;
+  const teLlaman = pct === null || pct === undefined || pct >= BALANCE.retiro.vuelta.umbralChanceVueltaPct;
+  return { opcionId: state.flags.vueltasUsadas === 0 && teLlaman ? 'volver' : 'quedarse' };
 }

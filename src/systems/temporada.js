@@ -13,7 +13,9 @@ import {
 import { nivelDeCompaneros, rendimientoBase, rendimientoDePartido, fuerzaDePartido } from '../core/fuerza.js';
 import { jugarPartido, tirarPartido } from '../core/partido.js';
 import { nivelDelJugador } from '../core/ficha.js';
-import { disponibleEn, opcionesVivas, resolverOpcion, cooldownActivo, pesoConMemoria } from './events.js';
+import { disponibleEn, opcionesVivas, resolverOpcion, cooldownActivo, pesoConMemoria, opcionesConPrevia } from './events.js';
+import { opcionDelPerfil } from '../core/perfil.js';
+import { frenaEnLaCola, hitoDelMomento, conFirmaDeLaCola, narradaEnLaCola } from '../core/cola.js';
 import { registrarFecha, registrarSplitJugado } from '../core/registro.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
@@ -269,7 +271,17 @@ function arrancarMomento(state, rng, logs, campeonElegido) {
   const evento = weightedPick(candidatos, (candidato) => pesoConMemoria(state, candidato), rng);
   const contexto = calcularContexto(stConCampeon, { ventana: 'regular', stakes: motivo });
 
-  return { state: stConCampeon, logs, decision: construirDecisionMomento(stConCampeon, evento, contexto, fecha, 'momento') };
+  const decision = construirDecisionMomento(stConCampeon, evento, contexto, fecha, 'momento');
+  // K6b-C2 (la cola de verdad): en la cola, el momento frena solo si es un hito, si algo cambió o si su tipo tiene palanca
+  // (`core/cola.js`). Si no, lo resuelve tu perfil (la opción de mejor encaje entre las vivas de ESTE contexto, K4-C), con
+  // las mismas tiradas que después de la pausa (`resolver`), y queda una línea de crónica antes del partido.
+  if (!frenaEnLaCola(stConCampeon, 'momento', hitoDelMomento(stConCampeon)).frena) {
+    const perfil = stConCampeon.player.perfil;
+    const opcionId = opcionDelPerfil(perfil, opcionesConPrevia(stConCampeon, evento, contexto)).id;
+    const resuelto = resolverOpcion(stConCampeon, evento, opcionId, rng, { cronica: perfil.actual });
+    return resolverFechaMarcada(resuelto.state, rng, [...logs, ...narradaEnLaCola(resuelto.logs, 'momento', opcionId)], decision.datos.pAntesDeDecidir);
+  }
+  return { state: conFirmaDeLaCola(stConCampeon, 'momento'), logs, decision };
 }
 
 // K4-A: sin draft. La fecha marcada frena UNA vez —la previa y el momento— y se

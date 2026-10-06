@@ -6,10 +6,10 @@ import { plata, plural } from '../core/formato.js';
 import { calcularContexto } from '../core/contexto.js';
 import { ligaDeCarrera } from '../core/competicion.js';
 import { salarioDeOferta } from '../core/salarios.js';
-import { valorDeMercado, presupuestoDeDemanda, sesgoEtario } from '../core/valorMercado.js';
+import { valorDeMercado, presupuestoDeDemanda } from '../core/valorMercado.js';
 import { cerrarFila, registrarPico, registrarSalarioEnFila, registrarArraigoEnFila, arraigoInicial } from '../core/registro.js';
 import { bandaDeJerarquia, bandaDeArraigoFicha, nivelDelJugador } from '../core/ficha.js';
-import { orgsQueTeFicharian, ofertaPosible, esResidenteDe, nivelAlternativaAsiento, factorRenovacionEtario, factorElite, plantelEnLiga, veteranoDeTier2, ganaLaDisputaDelAsiento, renovacionCortadaPorEdad, alcanzaTuLiga, ligaDeCasa, clubDeCasaQueTeHaceLugar, calibreDeLiga } from '../core/demanda.js';
+import { orgsQueTeFicharian, ofertaPosible, esResidenteDe, nivelAlternativaAsiento, factorRenovacionEtario, factorElite, plantelEnLiga, veteranoDeTier2, ganaLaDisputaDelAsiento, renovacionCortadaPorEdad, alcanzaTuLiga, ligaDeCasa, clubDeCasaQueTeHaceLugar, calibreDeLiga, meritoDeTemporada, sesgoEtarioDe, renovacionNegadaConMerito } from '../core/demanda.js';
 import { resolverMercadoMundial, cerrarAsientosCongelados, congelarAsientosOfrecibles } from '../core/mercadoMundial.js';
 import { jerarquiaAlFichar, sinergiaAlFichar, conPlantillaDelPlantel } from './roster.js';
 import { conPlantelesDe } from '../core/plantel.js';
@@ -301,11 +301,18 @@ export function generarOfertas(state, rng) {
   const orgActual = ligaActual?.orgs.find((org) => org.nombre === state.career.currentOrg);
   // Fase 9Mi: la renovación también se enfría con la edad — un veterano en
   // declive que ya no le gana a la camada joven no se renueva "para siempre".
-  const probRenovacion = clamp(
-    (m.probRenovacionBase + (state.career.jerarquia / BALANCE.stats.max) * m.probRenovacionPorJerarquia)
-      * factorRenovacionEtario(state, ligaActual),
-    0, 1
-  );
+  // K6b-M, el mercado premia el mérito: si venís de una temporada de élite (`meritoDeTemporada`) y tu club no tiene una
+  // alternativa mejor para el puesto (la disputa de la renovación, con el castigo etario del mérito: `factorRenovacionEtario`
+  // vale 1), te renueva con `merito.probRenovacion`. Si la tiene, el factor es el de siempre y el aviso dice por qué. La tirada
+  // es la misma `chance` de siempre (trampa T1): solo cambia la probabilidad.
+  const merito = meritoDeTemporada(state);
+  const factorEtario = factorRenovacionEtario(state, ligaActual);
+  const probRenovacion = merito && factorEtario === 1
+    ? m.merito.probRenovacion
+    : clamp(
+      (m.probRenovacionBase + (state.career.jerarquia / BALANCE.stats.max) * m.probRenovacionPorJerarquia) * factorEtario,
+      0, 1
+    );
   if (orgActual && chance(probRenovacion, rng)) {
     ofertas.push(construirOferta(state, ligaActual, orgActual, 'renovacion', rng));
   }
@@ -350,9 +357,15 @@ export function generarOfertas(state, rng) {
     // reventaba en `noResidentesTrasFichar` (medido en HEAD c8a220d: seed 23 con el nivel roto, bot `malas`).
     // Revisión de K5: desde que `resolverBanquillo` puebla esa liga (`conPlantelesDe`) el filtro ya no deja la
     // liga vacía en una carrera nueva; queda por los guardados que cayeron ahí antes.
-    const candidatas = ligaActual.orgs
+    const porFuerza = ligaActual.orgs
       .filter((org) => org.nombre !== state.career.currentOrg && state.mundo.planteles?.[org.nombre])
       .sort((a, b) => a.fuerza - b.fuerza);
+    // K6b-M: con mérito, el club que te hace lugar es el que te corresponde por nivel: primero los de fuerza ≤ tu nivel, del
+    // más fuerte al más débil, y después el resto, del más débil para arriba. Sin mérito, del más débil hacia arriba, como siempre.
+    const nivelFranquicia = nivelDelJugador(state);
+    const candidatas = merito
+      ? [...porFuerza.filter((org) => org.fuerza <= nivelFranquicia).reverse(), ...porFuerza.filter((org) => org.fuerza > nivelFranquicia)]
+      : porFuerza;
     // K5c-V, el veterano de tier 2: desde `demanda.edadCastigoRenovacionTier2`, en una liga de tier 2 el piso de franquicia
     // también pasa por la disputa del asiento con el castigo etario (como un fichaje). Sin esto, el club más débil de tu
     // liga te hacía lugar todos los años aunque tu club ya no te renovara: el tier 2 renovaba para siempre. Con la perilla
@@ -405,7 +418,8 @@ export function generarOfertas(state, rng) {
   // puede ser enorme y el tope tapaba el sesgo antes de que mordiera). Piso 1
   // para la franquicia (K5c-H: y para el club de tu liga, que va primero).
   const manoBase = Math.min(posibles.length, m.ofertasMax - ofertas.length);
-  const cupoEtario = Math.max(claramenteArriba || hayCasaEnLaMano ? 1 : 0, Math.round(manoBase * sesgoEtario(state.age)));
+  // K6b-M: con mérito, la edad adelgaza la mano solo en `merito.fraccionCastigo` (`sesgoEtarioDe`; sin mérito, `sesgoEtario` exacto).
+  const cupoEtario = Math.max(claramenteArriba || hayCasaEnLaMano ? 1 : 0, Math.round(manoBase * sesgoEtarioDe(state)));
   const candidatas = posibles.slice(0, cupoEtario);
 
   for (const { org, liga, motivo, forzadaFranquicia } of candidatas) {
@@ -548,6 +562,32 @@ function quedarLibre(state, racha, rng) {
   };
 }
 
+// K6b-F (regla 15): "no te renovaron" quiere decir que te vas. Este mercado solo se abre con el contrato vencido (o sin
+// club), así que una pretemporada que se cierra sin firmar nada —ni la renovación ni otra oferta: el teléfono no sonó,
+// elegiste esperar o seguir buscando, la prueba no alcanzó— te deja sin club. Antes seguías jugando con él, con el
+// contrato vencido y la ficha en "No te renovaron", hasta `splitsSinOfertaParaLibre` pretemporadas: en K6 (seed 25)
+// decía "De free agent" y descendías con un club que ya no te había renovado. Sin rng; la racha sin oferta sigue
+// contando igual (como free agent el mercado te sigue llamando o no). `motivoFila`: 'retiro' si colgás el mouse en esta
+// misma parada (la bifurcación del mercado).
+function teVasDelClub(state, motivoFila = 'libre') {
+  const org = state.career.currentOrg;
+  if (!org) {
+    return { state, logs: [] };
+  }
+  return {
+    state: {
+      ...state,
+      career: {
+        ...state.career,
+        currentOrg: null, liga: null, rosterDeOrg: null, companeros: [], sinergia: 0,
+        contrato: { ...state.career.contrato, avisoNoRenovacion: false },
+        registro: conFilaCerrada(state, motivoFila)
+      }
+    },
+    logs: [crearLog('mercado', `Se termina tu contrato con ${org} y no firmás con nadie: te vas del club. Sos free agent.`)]
+  };
+}
+
 // K4-D frenaba la pretemporada con el mercado y la preparación del receso en una sola parada. K4c (plan anual): la
 // práctica la fija el cierre de año y se entrena sola (`systems/practica.js`), así que la pretemporada queda para el
 // mercado: si frena, frena solo por el mercado.
@@ -655,11 +695,18 @@ function aplicarMercadoSinImport(stConValor, logsMundo, rng) {
   // castigo etario desde `demanda.edadCastigoRenovacionTier2`), el aviso dice por qué, y sale aunque el flag ya estuviera
   // prendido (el corte por edad es la causa de verdad, no la tirada). Con la perilla neutra nunca entra: el aviso de siempre.
   const cortadaPorEdad = clubNoRenueva && renovacionCortadaPorEdad(stConValor, ligaDeCarrera(stConValor));
+  // K6b-M (regla 15): si venías de una temporada de élite y tu club igual no te renueva, es porque tiene una alternativa mejor
+  // para el puesto (`renovacionNegadaConMerito`), y el aviso lo dice aunque el flag ya estuviera prendido.
+  const meritoNegado = clubNoRenueva && renovacionNegadaConMerito(stConValor, ligaDeCarrera(stConValor))
+    ? meritoDeTemporada(stConValor)
+    : null;
   const logsAviso = cortadaPorEdad
     ? [crearLog('mercado', `${stConValor.career.currentOrg} te avisó: no van a renovarte. Buscan gente más joven para el puesto.`)]
-    : avisoNuevo
-      ? [crearLog('mercado', `${stConValor.career.currentOrg} te avisó: no van a renovarte.`)]
-      : [];
+    : meritoNegado
+      ? [crearLog('mercado', `${stConValor.career.currentOrg} te avisó: no van a renovarte. Pese a ${meritoNegado.motivo}, tienen una opción mejor para el puesto.`)]
+      : avisoNuevo
+        ? [crearLog('mercado', `${stConValor.career.currentOrg} te avisó: no van a renovarte.`)]
+        : [];
 
   // K5-C: el final lo decide el mercado. Cada pretemporada con el mercado abierto se cuenta si ninguna oferta es de
   // tu tier o mejor; al llegar al umbral, en vez de la mano de siempre frena la bifurcación "bajás o te retirás".
@@ -668,20 +715,14 @@ function aplicarMercadoSinImport(stConValor, logsMundo, rng) {
   if (correspondeBifurcar(stTier)) {
     const stFork = { ...stTier, flags: { ...stTier.flags, forkMercadoSplit: stTier.player.splitCount } };
     const asientosFork = ofertas.length > 0 ? asientosAbiertosParaPantalla(stFork, ofertas, fichadores) : [];
-    return {
-      state: stFork, logs: [...logsMundo, ...logsAviso],
-      decision: decisionFinPorMercado(stFork, ofertas, asientosFork)
-    };
+    return finPorMercadoOSuRepeticion(stFork, [...logsMundo, ...logsAviso], decisionFinPorMercado(stFork, ofertas, asientosFork), rng);
   }
   // K5c-R: la presión de tier 2. Misma bifurcación (y mismo orden de tiradas que la mano de siempre), con su motivo. La de
   // K5-C va primero: si ni tu tier te ofrece, esa es la que corresponde.
   if (correspondePresionTier2(stTier)) {
     const stFork = { ...stTier, flags: { ...stTier.flags, forkMercadoSplit: stTier.player.splitCount } };
     const asientosFork = ofertas.length > 0 ? asientosAbiertosParaPantalla(stFork, ofertas, fichadores) : [];
-    return {
-      state: stFork, logs: [...logsMundo, ...logsAviso],
-      decision: decisionPresionTier2(stFork, ofertas, asientosFork)
-    };
+    return finPorMercadoOSuRepeticion(stFork, [...logsMundo, ...logsAviso], decisionPresionTier2(stFork, ofertas, asientosFork), rng);
   }
 
   if (ofertas.length === 0) {
@@ -690,10 +731,157 @@ function aplicarMercadoSinImport(stConValor, logsMundo, rng) {
   }
 
   const asientosAbiertos = asientosAbiertosParaPantalla(stTier, ofertas, fichadores);
+  return manoOUnaSolaCarta(stTier, ofertas, { asientosAbiertos }, [...logsMundo, ...logsAviso], rng);
+}
+
+// --- K6b-C: la cola de la carrera (D-B: te frena solo lo importante) ---
+
+// La mano del mercado, o su firma sin pausa. Una sola carta frena solo si aceptar o rechazar se juega algo
+// (`enJuegoDeUnaSolaCarta`), y la previa lo dice (la descripción y `datos.enJuego`). Si no, la firma tu perfil (con una sola
+// carta y nada en juego, ningún perfil se queda afuera: jugar es jugar) y se narra en una línea. Es el mismo camino que la
+// firma después de la pausa (`resolverMercado`): las mismas tiradas, cero `rng` nuevo.
+function manoOUnaSolaCarta(state, ofertas, carry, logs, rng) {
+  const decision = construirDecisionOfertas(state, ofertas, carry);
+  if (ofertas.length !== 1) {
+    return { state, logs, decision };
+  }
+  const enJuego = enJuegoDeUnaSolaCarta(state, ofertas[0]);
+  if (enJuego) {
+    return {
+      state, logs,
+      decision: { ...decision, descripcion: `Una sola carta. ${enJuego.texto}`, datos: { ...decision.datos, enJuego } }
+    };
+  }
+  const firmada = resolverMercado(state, decision, { opcionId: ofertas[0].id }, rng);
   return {
-    state: stTier, logs: [...logsMundo, ...logsAviso],
-    decision: construirDecisionOfertas(stTier, ofertas, { asientosAbiertos })
+    state: firmada.state,
+    logs: [...logs, crearLog('mercado', narracionDeUnaSolaCarta(state, ofertas[0]), { unaSolaCarta: cartaParaElInstrumento(state, ofertas[0]) }), ...firmada.logs]
   };
+}
+
+// K6b (integración): la carta que se firmó sin pausa, para el instrumento (como `formato` o `fuerzaInicial` en el log de cada serie). La
+// parada de una sola carta ya no ocurre y un check que la leía de la pausa (K5c-V: el piso de franquicia del veterano de tier 2) la lee
+// de acá: el club, su tier, si es el piso de franquicia y, si lo es, si ganabas la disputa del asiento en ese momento. Puro: cero `rng`.
+function cartaParaElInstrumento(state, oferta) {
+  const forzada = oferta.forzadaFranquicia === true;
+  return {
+    org: oferta.org, tier: oferta.tier, forzadaFranquicia: forzada,
+    ganaLaDisputa: forzada ? ganaLaDisputaDelAsiento(state, oferta.org, state.player.role) : null,
+    // Revisión de K6b (regla 15): de dónde a dónde, para que el check vea que la firma sin pausa fue una continuidad.
+    liga: oferta.liga, ligaAntes: state.career.liga ?? null, tierAntes: state.career.tier ?? null
+  };
+}
+
+// Una sola carta: ¿aceptar o rechazar se juega algo? `null` si no: es una continuidad (la misma liga y el mismo tier, sin
+// prueba), así que rechazarla es quedarte sin club por nada. Si sí, lo que está en juego, en palabras y en número:
+//  - `prueba`: firmar es ir a una prueba (un salto de tier, liga o región, `saltosDeFichaje`). `pFirmaPct` es la chance de
+//    firmar con la prueba que se espera de tu stat (la media que usa `resolverAuto`, `probabilidadDeFirmarTrasPrueba`).
+//  - `bajar`: firmar es bajar de tier; rechazarla es quedarte free agent, con las pretemporadas que llevás sin una oferta de
+//    tu tier y las que faltan para que el mercado te pregunte si colgás (`retiro.splitsSinOfertaEnTierParaBifurcar`).
+//  - `cambio` (revisión de K6b, regla 15): firmar es cambiar de liga, de región o subir de tier sin prueba. `saltosDeFichaje`
+//    solo marca el primer tier 1, el primer tier 2 y el primer import: CBLOL → LCK o LCK → LPL a los 29 se firmaban solos,
+//    narrados como "no había nada que pensar". Frena con la mudanza en palabras.
+// Puro: cero `rng`. Exportada para el check.
+export function enJuegoDeUnaSolaCarta(state, oferta) {
+  if (saltosDeFichaje(state, oferta).length > 0) {
+    const entrada = elegirMinijuego(state, 'tryout');
+    const stat = entrada ? state.player.stats[entrada.statRelevante] : undefined;
+    const pFirmaPct = Number.isFinite(stat) ? Math.round(probabilidadDeFirmarTrasPrueba(stat / PCT) * PCT) : null;
+    const chance = pFirmaPct === null ? '' : `: ~${pFirmaPct}% de que alcance`;
+    return {
+      caso: 'prueba', pFirmaPct,
+      texto: `Firmar con ${oferta.org} es ir a una prueba${chance}. Si no alcanza, esta ventana no firmás con nadie; rechazarla es quedarte free agent.`
+    };
+  }
+  if (state.career.tier != null && oferta.tier > state.career.tier) {
+    const sinOferta = state.flags.splitsSinOfertaEnTier;
+    const faltan = Math.max(0, BALANCE.retiro.splitsSinOfertaEnTierParaBifurcar - sinOferta);
+    return {
+      caso: 'bajar', pretemporadasSinOfertaDeTuTier: sinOferta, faltanParaLaPregunta: faltan,
+      texto: `Firmar con ${oferta.org} es bajar a tier ${oferta.tier}. Rechazarla es quedarte free agent: llevás `
+        + `${sinOferta} ${plural(sinOferta, 'pretemporada', 'pretemporadas')} sin una oferta de tu tier`
+        + (faltan > 0 ? `, y a ${faltan} más el mercado te pregunta si colgás el mouse.` : ', y el mercado ya te pregunta si colgás el mouse.')
+    };
+  }
+  if (!esContinuidadDeUnaSolaCarta(state, oferta)) {
+    const desde = ligaEnMundo(state, state.career.liga);
+    const hacia = ligaEnMundo(state, oferta.liga);
+    const otraRegion = Boolean(desde && hacia && desde.regionId !== hacia.regionId);
+    const subeDeTier = state.career.tier != null && oferta.tier < state.career.tier;
+    const nombreHacia = hacia?.nombre ?? `tier ${oferta.tier}`;
+    const mudanza = desde
+      ? `cambiar de liga (${desde.nombre} → ${nombreHacia}${otraRegion ? ', otra región' : ''})`
+      : `ir a ${nombreHacia}`;
+    return {
+      caso: 'cambio', ligaAntes: state.career.liga ?? null, liga: oferta.liga ?? null, otraRegion, subeDeTier,
+      texto: `Firmar con ${oferta.org} es ${mudanza}${subeDeTier ? ` y subir a tier ${oferta.tier}` : ''}, por `
+        + `${plata(oferta.salarioAnualUSD)} al año. Rechazarla es quedarte free agent esta ventana.`
+    };
+  }
+  return null;
+}
+
+// Revisión de K6b (regla 15): la carta única se firma sola solo si es una continuidad: la misma liga y el mismo tier que
+// tenías. Puro. Exportada para el check.
+export function esContinuidadDeUnaSolaCarta(state, oferta) {
+  return oferta.liga != null && oferta.liga === state.career.liga && oferta.tier === state.career.tier;
+}
+
+function ligaEnMundo(state, ligaId) {
+  return ligaId ? state.mundo.ligas.find((liga) => liga.id === ligaId) ?? null : null;
+}
+
+// Un porcentaje: la p de `probabilidadDeFirmarTrasPrueba` va de 0 a 1 y la stat de 0 a 100.
+const PCT = 100;
+
+function narracionDeUnaSolaCarta(state, oferta) {
+  if (oferta.tag === 'renovacion') {
+    return `Una sola carta, la de tu club: ${oferta.org} te renueva por ${plata(oferta.salarioAnualUSD)} al año. Firmás sin vueltas.`;
+  }
+  const liga = nombreDeLigaEnMundo(state, oferta.liga) ?? `tier ${oferta.tier}`;
+  return `Una sola carta, en tu misma liga: ${oferta.org} (${liga}), ${plata(oferta.salarioAnualUSD)} al año. No había nada que pensar: firmás.`;
+}
+
+// "El mercado ya habló": frena la primera vez y cuando hay una elección real (alguien te ofrece algo, aunque sea abajo). Si
+// la última vez elegiste seguir buscando y la foto no cambió (la misma variante, el mismo club o ninguno, el mismo tier, sin
+// una lesión nueva, sin una vuelta del retiro en el medio), se sigue buscando, que es lo que elegiste, y se narra en una
+// línea. Puro: cero `rng`. Exportada para el check.
+export function firmaDelFinPorMercado(state, decision) {
+  return [
+    decision.datos.variante ?? 'tier',
+    state.career.currentOrg ?? 'libre',
+    state.career.tier ?? '-',
+    state.flags.lesionGraveSplit ?? 'sin lesion',
+    state.flags.vueltasUsadas
+  ].join('|');
+}
+
+// K6b-fix (PLAN.md, "K6b-fix"; la seed 101: seis pretemporadas narradas de los 21 a los 27 sin que nadie le volviera a preguntar):
+// pasar `BALANCE.mercado.splitsSinOfertaParaLibre` pretemporadas sin oferta desde la última vez que respondiste también es "algo
+// cambió". La repetición deja de narrarse y "El mercado ya habló" vuelve a frenar, con la previa: cuántas pretemporadas llevás sin
+// oferta y tu edad. Sin tiradas nuevas (T1): la pausa no tira nada, y si respondés "seguir buscando" corre lo mismo que la
+// narración. `flags.finMercadoEsperas` cuenta las narradas; cualquier respuesta la vuelve a cero (`resolverFinPorMercado`).
+function finPorMercadoOSuRepeticion(stFork, logs, decision, rng) {
+  const firma = firmaDelFinPorMercado(stFork, decision);
+  const sinEleccion = decision.datos.ofertas.length === 0;
+  const mismaFoto = sinEleccion && stFork.flags.finMercadoFirma === firma;
+  const esperas = (stFork.flags.finMercadoEsperas ?? 0) + 1;
+  const vencio = mismaFoto && esperas >= BALANCE.mercado.splitsSinOfertaParaLibre;
+  const conFirma = { ...decision, datos: { ...decision.datos, firma } };
+  if (mismaFoto && !vencio) {
+    const sigue = resolverFinPorMercado(stFork, conFirma, { opcionId: 'esperar' }, rng);
+    const linea = crearLog('mercado', `${decision.datos.motivoRetiro} Nada cambió desde que elegiste seguir buscando: seguís esperando que suene el teléfono.`);
+    // El primer log de `resolverFinPorMercado` ("Seguís buscando...") es el de la elección: acá lo reemplaza la línea de arriba.
+    return {
+      state: { ...sigue.state, flags: { ...sigue.state.flags, finMercadoEsperas: esperas } },
+      logs: [...logs, linea, ...sigue.logs.slice(1)]
+    };
+  }
+  if (vencio) {
+    const espera = `Van ${pretemporadasEnPalabras(esperas)} sin una oferta desde que elegiste seguir buscando, y ya tenés ${stFork.age} años.`;
+    return { state: stFork, logs, decision: { ...conFirma, descripcion: `${espera} ${conFirma.descripcion}`, datos: { ...conFirma.datos, venceLaEspera: esperas } } };
+  }
+  return { state: stFork, logs, decision: conFirma };
 }
 
 // Pretemporada sin una sola oferta: la racha sube y, al llegar a `splitsSinOfertaParaLibre`, te quedás sin equipo.
@@ -705,9 +893,10 @@ function elTelefonoNoSuena(state, rng) {
     return quedarLibre(state, racha, rng);
   }
   const cerrado = cerrarAsientosCongelados(state, null, rng);
+  const teVas = teVasDelClub(cerrado.state);
   return {
-    state: { ...cerrado.state, flags: { ...cerrado.state.flags, splitsSinOfertaConsecutivos: racha } },
-    logs: [...cerrado.logs, crearLog('mercado', 'Nadie te llama esta pretemporada. El teléfono no suena.')]
+    state: { ...teVas.state, flags: { ...teVas.state.flags, splitsSinOfertaConsecutivos: racha } },
+    logs: [...cerrado.logs, crearLog('mercado', 'Nadie te llama esta pretemporada. El teléfono no suena.'), ...teVas.logs]
   };
 }
 
@@ -847,33 +1036,42 @@ function decisionFinPorMercado(state, ofertas, asientosAbiertos) {
   };
 }
 
-function resolverFinPorMercado(state, decision, respuesta, rng) {
+function resolverFinPorMercado(stateAntes, decision, respuesta, rng) {
+  // K6b-C: la foto con la que elegiste seguir buscando (sin ofertas). Cualquier otra respuesta la borra.
+  const finMercadoFirma = respuesta.opcionId === 'esperar' ? (decision.datos.firma ?? null) : null;
+  const state = { ...stateAntes, flags: { ...stateAntes.flags, finMercadoFirma, finMercadoEsperas: 0 } };
   if (respuesta.opcionId === 'retirarse') {
     // El mundo sigue sin vos: los asientos que te habían congelado se llenan con un NPC (mismo cierre que el
     // silencio), y recién después te retirás.
     const cerrado = cerrarAsientosCongelados(state, null, rng);
     const retiro = retirarsePorMercado(cerrado.state, decision.datos.motivoRetiro);
-    return { state: retiro.state, logs: [...cerrado.logs, ...retiro.logs] };
+    // K6b-F: el contrato estaba vencido y no firmaste nada: te retirás sin club (el `finAnticipado` ya lo fijó el retiro,
+    // con el club que tenías). Si volvés, volvés de free agent: antes volvías a jugar con el club que no te había
+    // renovado, con la ficha en "No te renovaron" (seed 1 de `criterio`, FURIA 2034).
+    const sinClub = teVasDelClub(retiro.state, 'retiro');
+    return { state: sinClub.state, logs: [...cerrado.logs, ...retiro.logs] };
   }
   if (respuesta.opcionId === 'bajar') {
-    return {
-      state,
-      logs: [crearLog('mercado', 'Bajás un escalón. Jugar es jugar: a ver qué hay.')],
-      decision: construirDecisionOfertas(state, decision.datos.ofertas, { asientosAbiertos: decision.datos.asientosAbiertos })
-    };
+    // K6b-C: con una sola carta abajo, "bajás" ya fue la elección: se firma sin otra pausa, salvo que se juegue algo.
+    return manoOUnaSolaCarta(state, decision.datos.ofertas, { asientosAbiertos: decision.datos.asientosAbiertos },
+      [crearLog('mercado', 'Bajás un escalón. Jugar es jugar: a ver qué hay.')], rng);
   }
   // K5c-R: seguir en tier 2 (con ofertas, la mano de siempre; sin ninguna, seguir buscando) vuelve a cero la presión.
   if (respuesta.opcionId === 'seguir') {
     const sigue = sinPresionTier2(state);
-    return {
-      state: sigue,
-      logs: [crearLog('mercado', 'Seguís abajo. La cuenta de primera arranca de cero: a ganarte el llamado.')],
-      decision: construirDecisionOfertas(sigue, decision.datos.ofertas, { asientosAbiertos: decision.datos.asientosAbiertos })
-    };
+    return manoOUnaSolaCarta(sigue, decision.datos.ofertas, { asientosAbiertos: decision.datos.asientosAbiertos },
+      [crearLog('mercado', 'Seguís abajo. La cuenta de primera arranca de cero: a ganarte el llamado.')], rng);
   }
   const base = decision.datos.variante === 'presion_tier2' ? sinPresionTier2(state) : state;
   const silencio = elTelefonoNoSuena(base, rng);
-  return { state: silencio.state, logs: [crearLog('mercado', 'Seguís buscando. El mercado no va a esperar para siempre.'), ...silencio.logs] };
+  // K6b (integración de K6b-C con K6b-F): la foto es la de DESPUÉS de elegir seguir buscando. Con el contrato vencido, esperar
+  // te deja sin club (`teVasDelClub`): con la foto de antes (tu club), la pretemporada siguiente ("libre") parecía otra y "El
+  // mercado ya habló" volvía a frenar sin nada nuevo (en `criterio` y `malas`, 29 de 29 esperas con club). Cero `rng`.
+  const fotoTrasElegir = finMercadoFirma === null ? null : firmaDelFinPorMercado(silencio.state, decision);
+  return {
+    state: { ...silencio.state, flags: { ...silencio.state.flags, finMercadoFirma: fotoTrasElegir } },
+    logs: [crearLog('mercado', 'Seguís buscando. El mercado no va a esperar para siempre.'), ...silencio.logs]
+  };
 }
 
 // La regla del headless (y del bot `criterio`): joven, seguís (bajás o esperás); desde
@@ -1248,9 +1446,10 @@ function resolverEspera(state, decision, rng, motivo) {
     return { state: libre.state, logs: [crearLog('mercado', motivo), ...libre.logs] };
   }
   const cerrado = cerrarAsientosCongelados(state, null, rng, orgsOfrecidasDe(decision));
+  const teVas = teVasDelClub(cerrado.state);
   return {
-    state: { ...cerrado.state, flags: { ...cerrado.state.flags, splitsSinOfertaConsecutivos: racha } },
-    logs: [crearLog('mercado', motivo), ...cerrado.logs]
+    state: { ...teVas.state, flags: { ...teVas.state.flags, splitsSinOfertaConsecutivos: racha } },
+    logs: [crearLog('mercado', motivo), ...cerrado.logs, ...teVas.logs]
   };
 }
 
@@ -1476,17 +1675,19 @@ function caeLaOfertaPorLaPrueba(state, decision, rng) {
 // K4c (revisión): la prueba no alcanzó y no hay respaldo (las demás ofertas, si había, también pedían prueba). Es su propio
 // caso, no el silencio del mercado: no suma a `splitsSinOfertaConsecutivos` (antes iba por `resolverEspera`, y con seis
 // ofertas en la mesa podía decir "Nadie te ofrece nada" y dejarte libre), queda anotada en `flags.pruebasFallidas` para que
-// el declive diga lo que pasó (`systems/retiro.js`), y el contrato no se toca. Los asientos congelados se cierran como al
-// esperar (con nombre los que te ofrecían).
+// el declive diga lo que pasó (`systems/retiro.js`), y no se firma nada: con el contrato vencido te vas del club (K6b-F,
+// `teVasDelClub`; sin respaldo es que tu club no te renovaba). Los asientos congelados se cierran como al esperar (con
+// nombre los que te ofrecían).
 function probasteYNoAlcanzo(state, sinNada, oferta, habiaOtras, aviso, rng) {
   const cerrado = cerrarAsientosCongelados(state, null, rng, orgsOfrecidasDe(sinNada));
   const lasDemas = habiaOtras ? ', y las demás también pedían prueba' : '';
+  const teVas = teVasDelClub(cerrado.state);
   return {
     state: {
-      ...cerrado.state,
-      flags: { ...cerrado.state.flags, pruebasFallidas: [...(cerrado.state.flags.pruebasFallidas ?? []), oferta.org] }
+      ...teVas.state,
+      flags: { ...teVas.state.flags, pruebasFallidas: [...(teVas.state.flags.pruebasFallidas ?? []), oferta.org] }
     },
-    logs: [crearLog('mercado', `${aviso}${lasDemas}. Probaste y no alcanzó: esta ventana no firmás con nadie.`), ...cerrado.logs]
+    logs: [crearLog('mercado', `${aviso}${lasDemas}. Probaste y no alcanzó: esta ventana no firmás con nadie.`), ...cerrado.logs, ...teVas.logs]
   };
 }
 

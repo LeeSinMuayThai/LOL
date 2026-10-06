@@ -1,7 +1,8 @@
 import { BALANCE } from '../data/balance.js';
-import { elegirEventoCierre, resolverOpcion, elegirOpcionAutomatica, decisionDesdeEvento } from './events.js';
+import { elegirEventoCierre, resolverOpcion, elegirOpcionAutomatica, decisionDesdeEvento, opcionDelPerfilPara } from './events.js';
 import { lineaDePlan } from './practica.js';
 import { esPlanValido } from '../core/rutinas.js';
+import { frenaEnLaCola, hitoDelCierre, conFirmaDeLaCola, narradaEnLaCola } from '../core/cola.js';
 
 export const id = 'edadCierre';
 
@@ -26,7 +27,16 @@ export function aplicar(state, rng) {
     return { state: nextState, logs: [] };
   }
 
-  return { state: nextState, logs: [], decision: decisionDeCierre(nextState, evento) };
+  const decision = decisionDeCierre(nextState, evento);
+  // K6b-C2 (la cola de verdad): en la cola, el cierre frena solo si es un hito, si algo cambió o si su tipo tiene
+  // palanca (`core/cola.js`). Si no, lo resuelve tu perfil por el mismo `resolver` (fija el plan de su opción, con las
+  // mismas tiradas que después de la pausa) y queda una línea de crónica.
+  if (!frenaEnLaCola(nextState, 'cierre', hitoDelCierre(state, nextState.age)).frena) {
+    const opcionId = opcionDelPerfilPara(nextState, evento);
+    const resuelto = resolverConCronica(nextState, decision, opcionId, rng);
+    return { ...resuelto, logs: narradaEnLaCola(resuelto.logs, 'cierre', opcionId) };
+  }
+  return { state: conFirmaDeLaCola(nextState, 'cierre'), logs: [], decision };
 }
 
 // La pausa del cierre, con la línea del plan en cada opción (si el cierre fija plan). La usa también `core/guardado.js`
@@ -62,8 +72,13 @@ function conPlanEnCadaOpcion(state, evento, decision) {
 // K4c (plan anual): la opción elegida fija el plan de práctica del año que viene (`player.planAnual`). Es el único
 // lugar donde el plan cambia (y solo en un cierre pro: `fijaPlan`).
 export function resolver(state, decision, respuesta, rng) {
-  const resultado = resolverOpcion(state, decision.datos.evento, respuesta.opcionId, rng);
-  const plan = decision.datos.evento.options.find((opcion) => opcion.id === respuesta.opcionId)?.plan;
+  return resolverConCronica(state, decision, respuesta.opcionId, rng, null);
+}
+
+// `cronica` (el id del perfil que decidió, K4-C) cuenta el cierre en una línea; `null` es el cierre que decidiste vos.
+function resolverConCronica(state, decision, opcionId, rng, cronica = state.player.perfil.actual) {
+  const resultado = resolverOpcion(state, decision.datos.evento, opcionId, rng, { cronica });
+  const plan = decision.datos.evento.options.find((opcion) => opcion.id === opcionId)?.plan;
   if (!fijaPlan(state) || !esPlanValido(plan)) {
     return resultado;
   }

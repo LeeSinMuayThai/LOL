@@ -88,6 +88,8 @@ export function puntuarPrevia(opcion) {
 //    14,0%: usa la que elige el sistema) y algunos tipos sin previa del amateur, del retiro, de la salud y del servicio
 //    militar (el 3,4%). La lista cerrada de lo que delega está en el check "K0 criterio y malas: solo delegan en
 //    resolverAuto..." de validate.js.
+//  - K6c: el plan del año del amateur (`amateur:plan_amateur`) lo contesta con su regla (`respuestaDePlanAmateur`), igual
+//    que `malas` y `azar`: no está en la lista de lo que delega, así que si un bot lo delegara el check se pone en rojo.
 //
 // K5c-M: con `{ elite: true }` (lo pasa `criterio` cuando su nivel llega a `NIVEL_ELITE_CRITERIO`), a igualdad de tier va
 // primero el club más fuerte (`plantelEnLiga.fuerza`, sin dato = 0) y después la jerarquía y el salario. Sin la marca la
@@ -137,6 +139,66 @@ export function compararOfertasMercado(ofertaA, ofertaB, { elite = false, casa =
 
 export function esDecisionDeRutina(decision) {
   return decision.datos?.rutinas?.length > 0;
+}
+
+// K6c: el plan del año del amateur (`amateur:plan_amateur`). Cada opción trae los números de su carta: `lpSemana` (el LP por
+// semana de la previa) y lo que arriesga en el año (`riesgoCasa`, 0-1, y `semanaDeuda`, la semana en la que entra en deuda de
+// sueño o `null`). Los tres bots lo contestan con su regla, sin delegar en `resolverAuto` (que devuelve la propuesta del perfil):
+// - `criterio`, "el que más acerca a pro sin riesgo grande": el de más LP entre los que no suman deuda de sueño en el año y no
+//   arriesgan en casa más de `RIESGO_TOLERADO_PLAN_CRITERIO` por encima del más seguro (si ninguno, el más seguro);
+// - `malas`, el peor por la misma vara: el que más arriesga en el año (en casa; a igual riesgo, el que entra antes en deuda de
+//   sueño y después el de más LP), la misma imprudencia de su regla de la semana (la rutina más agresiva). "El de menos LP"
+//   lo dejaba sin subir nunca y, con la prueba sin dado que nunca pasa (juega con 0,15), no llegaba a pro el 98,5%;
+// - `azar`, uno parejo por el hash de la decisión (sin tocar el stream).
+// `RIESGO_TOLERADO_PLAN_CRITERIO` es del instrumento, no del juego: es la regla del bot, como `NIVEL_ELITE_CRITERIO`.
+export const RIESGO_TOLERADO_PLAN_CRITERIO = 0.15;
+
+export function esDecisionDePlanAmateur(decision) {
+  return decision.datos?.motivo === 'plan_amateur';
+}
+
+function respuestaDePlanAmateur(decision, peor) {
+  const { opciones } = decision;
+  if (peor) {
+    const deuda = (op) => (op.semanaDeuda === null ? Infinity : op.semanaDeuda);
+    const masRiesgosa = (a, b) => (a.riesgoCasa !== b.riesgoCasa ? a.riesgoCasa > b.riesgoCasa
+      : deuda(a) !== deuda(b) ? deuda(a) < deuda(b) : a.lpSemana > b.lpSemana);
+    return { opcionId: opciones.reduce((acum, op) => (masRiesgosa(op, acum) ? op : acum)).id };
+  }
+  const minimo = Math.min(...opciones.map((op) => op.riesgoCasa));
+  const tolerables = opciones.filter((op) => op.semanaDeuda === null && op.riesgoCasa <= minimo + RIESGO_TOLERADO_PLAN_CRITERIO);
+  if (tolerables.length === 0) {
+    return { opcionId: opciones.reduce((acum, op) => (op.riesgoCasa < acum.riesgoCasa ? op : acum)).id };
+  }
+  return { opcionId: tolerables.reduce((acum, op) => (op.lpSemana > acum.lpSemana ? op : acum)).id };
+}
+
+// K6c-fix, sexta pasada: el que grindea sin dormir de amateur, la carrera que se lesiona ("la lesión, solo en el amateur", decisión del
+// usuario 2026-10-06). En el plan del año elige un plan con deuda de sueño que llega al riesgo físico (`semanaRiesgoFisico`; si
+// ninguno llega, uno con deuda), el de menos riesgo en casa (a igual riesgo, el que llega antes): el castigo de la familia le cortaba
+// la carrera antes de lesionarse. Rechaza las ofertas (`esperar_mejor_oferta`): firmar resetea la deuda (`firmarConEquipo`) y la
+// carrera sale del caso. En la parada de la semana sigue con su plan, salvo la de la mentalidad en rojo, donde elige la opción que la
+// cuida. Lo demás, `resolverAuto`. Medido (1200 × 60, carreras con lesión leve / grave / `lesionado` / retiro por lesión): así,
+// 149 / 23 / 19 / 0; firmando y con el plan de más LP, 18 / 3 / 2 / 0. NO está en `ESTRATEGIAS`: es una vara de medir la
+// cobertura de la lesión, no un bot de agencia.
+export function responderQueGrindea(sistema, state, decision, rng) {
+  if (decision.datos?.motivo === 'oferta' && decision.opciones.some((op) => op.id === 'esperar_mejor_oferta')) {
+    return { opcionId: 'esperar_mejor_oferta' };
+  }
+  if (esDecisionDePlanAmateur(decision)) {
+    const conDeuda = decision.opciones.filter((op) => op.semanaDeuda != null);
+    const fisicos = conDeuda.filter((op) => op.semanaRiesgoFisico != null);
+    const candidatos = fisicos.length > 0 ? fisicos : conDeuda;
+    const semana = (op) => op.semanaRiesgoFisico ?? Infinity;
+    const mejor = (a, b) => (b.riesgoCasa < a.riesgoCasa || (b.riesgoCasa === a.riesgoCasa && semana(b) < semana(a)) ? b : a);
+    if (candidatos.length > 0) return { opcionId: candidatos.reduce(mejor).id };
+  }
+  if (decision.datos?.motivo === 'reparto' && state.phase === 'amateur') {
+    const plan = state.flags.anioAmateur?.rutinaId;
+    const id = decision.datos.porMentalidad ? decision.datos.cuida : plan;
+    if (id && decision.opciones.some((op) => op.id === id)) return { opcionId: id };
+  }
+  return sistema.resolverAuto(state, decision, rng);
 }
 
 export function esDecisionDeMinijuego(decision) {
@@ -384,6 +446,9 @@ function responderCriterio(sistema, state, decision, rng) {
   if (esDecisionDeMinijuego(decision)) {
     return { resultado: RESULTADO_MINIJUEGO_BIEN, ...charlaEnMinijuego(state, decision, false) };
   }
+  if (esDecisionDePlanAmateur(decision)) {
+    return respuestaDePlanAmateur(decision, false);
+  }
   if (esDecisionDePlanDeSerie(decision)) {
     return respuestaDePlanDeSerie(state, decision, false);
   }
@@ -430,6 +495,9 @@ function responderMalas(sistema, state, decision, rng) {
   if (esDecisionDeMinijuego(decision)) {
     return { resultado: RESULTADO_MINIJUEGO_MAL, ...charlaEnMinijuego(state, decision, true) };
   }
+  if (esDecisionDePlanAmateur(decision)) {
+    return respuestaDePlanAmateur(decision, true);
+  }
   if (esDecisionDePlanDeSerie(decision)) {
     return respuestaDePlanDeSerie(state, decision, true);
   }
@@ -475,6 +543,9 @@ function responderAzar(sistema, state, decision, rng) {
   if (esDecisionDeMinijuego(decision)) {
     const resultado = (hash % (PASOS_RESULTADO_AZAR + 1)) / PASOS_RESULTADO_AZAR;
     return { resultado };
+  }
+  if (esDecisionDePlanAmateur(decision)) {
+    return { opcionId: decision.opciones[hash % decision.opciones.length].id };
   }
   if (esDecisionDeFinPorMercado(decision)) {
     const indice = hash % decision.opciones.length;

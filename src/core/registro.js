@@ -268,6 +268,27 @@ export function registrarInternacional(registro, entrada) {
   return { ...registro, internacionales: [...registro.internacionales, entrada] };
 }
 
+// K6b-U: los Mundiales ganados (resultado `campeon`): lo que cuenta como trofeo internacional. El rival del duelo
+// suma solo los suyos (`systems/rivales.js`); el jugador, igual.
+export function mundialesGanados(registro) {
+  return registro.internacionales.filter((entrada) => entrada.resultado === 'campeon');
+}
+
+// K6b-U: los trofeos del duelo: los títulos de liga más los Mundiales ganados. Un cuartos de final jugado no es un
+// trofeo (antes contaba cualquier "buen papel": 6 contra los 2 títulos de la tarjeta).
+export function trofeosDelDuelo(registro) {
+  return registro.titulos.length + mundialesGanados(registro).length;
+}
+
+// K6b-U: los títulos de una fila de la historia, con los Mundiales ganados con esa org en esos años (el Mundial se
+// registra en `internacionales`, no en `fila.titulos`): "Mundial 2035" al lado de "LEC 2035".
+export function titulosDeFila(fila, registro) {
+  const mundiales = mundialesGanados(registro)
+    .filter((i) => i.org === fila.org && i.anio >= fila.desdeAnio && (fila.hastaAnio == null || i.anio <= fila.hastaAnio))
+    .map((i) => ({ nombre: 'Mundial', anio: i.anio }));
+  return [...fila.titulos, ...mundiales].sort((a, b) => a.anio - b.anio);
+}
+
 export function registrarMomento(registro, momento) {
   return { ...registro, momentos: [...registro.momentos, momento] };
 }

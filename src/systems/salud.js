@@ -78,8 +78,35 @@ function lesionLeve(state, rng) {
   };
 }
 
-function decisionLesionGrave(rng, { recaida }) {
+// Los textos de la lesión grave en el amateur: no hay equipo ni fechas; lo que se pierde es soloQ (regla 15).
+const TEXTOS_AMATEUR = {
+  descripcion: 'Esto ya no se va con hielo ni con un par de días de descanso. Seguís jugando la soloQ con dolor, o parás a tratarte en serio.',
+  jugar: { label: 'Seguís jugando con dolor', descripcion: 'La soloQ no espera. Perdés menos turnos de ranked, pero el techo de tu mecánica se corta más.' },
+  parar: { label: 'Parás a tratarte', descripcion: 'Kinesiología en serio. Perdés más turnos de ranked, pero la mano te dura más.' },
+  recaida: 'Volvió, y esta vez pega distinto. ¿Seguís arriesgando el cuerpo, o dejás el sueño de ser pro acá?',
+  retirarte: { label: 'Lo dejás acá', descripcion: 'No todo se juega con dolor. Te bajás antes de llegar a pro.' }
+};
+
+function decisionLesionGrave(rng, { recaida, amateur = false }) {
   const nombre = weightedPick(NOMBRES_LESION_GRAVE, (n) => n.peso, rng);
+
+  if (amateur) {
+    const t = TEXTOS_AMATEUR;
+    const opciones = recaida
+      ? [
+          { id: 'seguir', label: 'Seguís arriesgando', descripcion: 'Una vez más. El cuerpo no avisa una tercera vez de la misma forma.' },
+          { id: 'retirarte', ...t.retirarte }
+        ]
+      : [{ id: 'jugar_lesionado', ...t.jugar }, { id: 'parar_a_tratarte', ...t.parar }];
+    return {
+      tipo: 'opciones',
+      bisagra: true,
+      titulo: recaida ? `Otra vez la ${nombre.label}` : `Lesión: ${nombre.label}`,
+      descripcion: recaida ? t.recaida : t.descripcion,
+      opciones,
+      datos: { motivo: 'lesion_grave', nombreLesion: nombre.id, recaida }
+    };
+  }
 
   if (!recaida) {
     return {
@@ -108,8 +135,13 @@ function decisionLesionGrave(rng, { recaida }) {
   };
 }
 
+// K6c-fix, sexta pasada (PLAN.md `3b8e034`, "K6c-fix, quinta pasada": para que "la lesión, solo en el amateur" sea verdad):
+// la cadena corre también en el amateur, con los mismos umbrales. La deuda de sueño solo se escribe en el amateur y vuelve a 0 al
+// firmar (`firmarConEquipo`), así que hoy la lesión es del que grindea sin dormir de amateur (la del pro, D83). En el amateur no
+// hay fechas: la baja se cuenta en turnos de soloQ que se van a kinesiología y descanso (`amateur.js`, `conBajaPorLesion`), y el
+// retiro por lesión es el fin del amateur, como el burnout o el castigo de la familia.
 export function aplicar(state, rng) {
-  if (state.phase !== 'profesional') {
+  if (state.phase !== 'profesional' && state.phase !== 'amateur') {
     return { state, logs: [] };
   }
 
@@ -132,13 +164,13 @@ export function aplicar(state, rng) {
     if (splitsRiesgoFisico < umbral || !chance(probabilidad(s.probLesionGraveBase, s.probLesionGravePorDeuda, conRiesgo), rng)) {
       return { state: conRiesgo, logs: [] };
     }
-    return { state: conRiesgo, logs: [], decision: decisionLesionGrave(rng, { recaida: false }) };
+    return { state: conRiesgo, logs: [], decision: decisionLesionGrave(rng, { recaida: false, amateur: state.phase === 'amateur' }) };
   }
 
   if (splitsRiesgoFisico < s.splitsParaReLesion || !chance(probabilidad(s.probReLesionBase, s.probReLesionPorDeuda, conRiesgo), rng)) {
     return { state: conRiesgo, logs: [] };
   }
-  return { state: conRiesgo, logs: [], decision: decisionLesionGrave(rng, { recaida: true }) };
+  return { state: conRiesgo, logs: [], decision: decisionLesionGrave(rng, { recaida: true, amateur: state.phase === 'amateur' }) };
 }
 
 export function resolver(state, decision, respuesta, rng) {
@@ -146,13 +178,17 @@ export function resolver(state, decision, respuesta, rng) {
   const label = LABEL_LESION_GRAVE[nombreLesion];
   const s = BALANCE.salud;
 
+  const amateur = state.phase === 'amateur';
+
   if (recaida && respuesta.opcionId === 'retirarte') {
     const registro = registrarMomento(state.career.registro, {
       tipo: 'retiro_por_lesion',
       anio: state.calendario.anio,
       edad: state.age,
       org: state.career.currentOrg,
-      texto: `El cuerpo dijo basta: la ${label} te termina la carrera`
+      texto: amateur
+        ? `El cuerpo dijo basta: la ${label} te saca antes de llegar a pro`
+        : `El cuerpo dijo basta: la ${label} te termina la carrera`
     });
     return {
       state: {
@@ -162,7 +198,9 @@ export function resolver(state, decision, respuesta, rng) {
         finAnticipado: 'retiro_por_lesion',
         career: { ...state.career, registro }
       },
-      logs: [crearLog('salud', `No da más. La ${label} te cierra la carrera a los ${state.age}.`)]
+      logs: [crearLog('salud', amateur
+        ? `No da más. La ${label} te saca del juego a los ${state.age}: el sueño de ser pro se termina acá.`
+        : `No da más. La ${label} te cierra la carrera a los ${state.age}.`)]
     };
   }
 
@@ -182,6 +220,7 @@ export function resolver(state, decision, respuesta, rng) {
     org: state.career.currentOrg,
     texto: `${label[0].toUpperCase()}${label.slice(1)}: ${jugar ? 'seguiste jugando lesionado' : 'paraste a tratarte'}`
   });
+  const turnos = `${fechasBaja} ${fechasBaja === 1 ? 'turno' : 'turnos'} de soloQ`;
 
   return {
     state: {
@@ -198,9 +237,13 @@ export function resolver(state, decision, respuesta, rng) {
       },
       career: { ...state.career, registro }
     },
-    logs: [crearLog('salud', jugar
-      ? `Decidís jugar con ${label}. El equipo te necesita ahora; el cuerpo cobra después.`
-      : `Parás a tratarte la ${label} en serio. Perdés partidos, pero la mano te va a durar más.`)]
+    logs: [crearLog('salud', amateur
+      ? (jugar
+        ? `Seguís jugando con ${label}. La soloQ no espera, pero igual se te van ${turnos} en hielo y descanso; el techo de tu mecánica paga el resto.`
+        : `Parás a tratarte la ${label} en serio: ${turnos} de las próximas semanas se van a kinesiología y descanso. La mano te va a durar más.`)
+      : (jugar
+        ? `Decidís jugar con ${label}. El equipo te necesita ahora; el cuerpo cobra después.`
+        : `Parás a tratarte la ${label} en serio. Perdés partidos, pero la mano te va a durar más.`))]
   };
 }
 

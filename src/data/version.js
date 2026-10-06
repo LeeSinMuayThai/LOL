@@ -79,7 +79,7 @@
 // casa, Final2 con la LPL en 91, el no-pro con piso de soloQ, El GOAT = nuevo Faker). Sin esto, después del merge dos juegos
 // distintos compartirían "v K4c" en el desafío, el historial y el texto compartido. La etiqueta no entra en la huella (la tupla de
 // `calcularHuellaJuego` no la lee): la huella del bloque C es la de abajo. Misma `VERSION` del guardado (12, no salió de la rama).
-export const VERSION_JUEGO = 'K5c';
+export const VERSION_JUEGO = 'K6c';
 // K4c (cierre de año, 2044679379): los 10 eventos de cierre_edad.json pasan a ser decisiones con intercambio (tres opciones, efectos
 // del orden de las bifurcaciones, un pool que aprende, riesgos en los outcomes): cambian las tiradas del cierre y con ellas las carreras
 // enteras. Misma versión (el paso 3b la pasa a 'K4c'): reemplaza a 922534647.
@@ -121,4 +121,37 @@ export const VERSION_JUEGO = 'K5c';
 // K5c (el bloque C calibrado, 1462997803): Final2 (las claves de balance fijadas) y la LPL en 91, el no-pro con piso de soloQ por perfil,
 // las cartas de cierre del declive y El GOAT = nuevo Faker. Cambia el stream (otras carreras en todas las ligas). Misma versión
 // (12, no salió; `VERSION_JUEGO` pasa a 'K5c' al cerrar el bloque, arriba): reemplaza a 2039436444.
-export const HUELLA_JUEGO = 1462997803;
+// K6b (la integración de K6b-U, K6b-M, K6b-F y K6b-C, 1772717528; corrimiento declarado — los bugs de K6 y la cola de la carrera):
+// `VERSION_JUEGO` pasa a 'K6b'. K6b-M, el mercado premia el mérito (la renovación de quien viene de una temporada de élite y el piso
+// de franquicia por nivel); K6b-F, "no te renovaron" quiere decir que te vas (`teVasDelClub`) y las ligas franquiciadas no
+// descienden; K6b-C/C2, la cola: el "¿la seguís?", "El mercado ya habló", el "¿Volvés?", la carta única, el cierre de año y el momento
+// frenan solo si algo cambió o se juega algo (si no, los resuelve el perfil y se narran); K6b-U, la tarjeta y los textos (no mueve la
+// huella). Ninguna seed de K5c reproduce su carrera. Reemplaza a 1462997803 (K5c).
+// K6b (la revisión, 1920057344; corrimiento declarado, sigue siendo 'K6b'): la carta única se firma sola solo si es una
+// continuidad (la misma liga y el mismo tier); el "¿Volvés?" se pregunta en la pretemporada y la vuelta de free agent va al mercado
+// de esa misma pretemporada; el automático no vuelve de free agent si nadie te ficharía hoy; la LCS sale de las franquiciadas (la NACL
+// tiene promoción). Reemplaza a 1772717528.
+// K6c (11046700; corrimiento declarado — lo que el usuario encontró jugando): `VERSION_JUEGO` pasa a 'K6c'. "Pasaste = firmás":
+// la prueba del amateur no tira dado (una vara, `amateur.varaPrueba`; se saca la tirada: T1) y el club que ya ofreció no vuelve en el
+// año; "vos elegís el plan de cada año": cada año del amateur frena con el resumen y el plan (una tirada de `ofrecerRutinas` por
+// año) y las semanas siguen el plan. Ninguna seed de K6b reproduce su carrera. Reemplaza a 1920057344.
+// K6c, segunda pasada (977079279; corrimiento declarado, misma etiqueta 'K6c': la primera pasada no salió de la rama): la vara de la
+// prueba del amateur depende de tu nivel contra el calibre del club (`amateur.varaPrueba`: base, pendiente, mínimo y máximo) y la
+// semana del plan del año frena solo con riesgo nuevo (`amateur.semanaRiesgoNuevo`). Sin tiradas nuevas: cambian las firmas y las
+// paradas, y con ellas las carreras. Reemplaza a 11046700.
+// K6c-fix (1351863340; corrimiento declarado, misma etiqueta 'K6c': no salió de la rama): la vara de la prueba del amateur puede
+// llegar a 0 ("el club firma tu nivel, no tu día": `amateur.varaPrueba` { base 1,55, pendiente 0,05, mínimo 0, máximo 0,8 }).
+// Sin tiradas nuevas: cambian las firmas de tier 3, y con ellas las carreras. Reemplaza a 977079279.
+// K6c-fix, segunda pasada (188751648; corrimiento declarado, sigue 'K6c'): la propuesta del perfil en el plan del año no muestra un
+// riesgo evitable (`propuestaDelPlan`, `amateur.planRiesgoEvitable`): cambia el plan que acepta `resolverAuto`, y con él las carreras
+// del automático. Sin tiradas nuevas. Reemplaza a 1351863340.
+// K6c-fix, tercera pasada (1360329260; corrimiento declarado, sigue 'K6c'): la deuda de sueño cuenta como riesgo evitable de la propuesta
+// solo si el plan arma el riesgo de lesión o burnout en el año (`riesgoDelPlan.semanaRiesgoFisico`, las cuentas de `salud.js` y
+// `atributos.js`). Reemplaza a 188751648.
+// K6c-fix, cuarta pasada (186316704; corrimiento declarado, sigue 'K6c'; decisión del usuario "la deuda se resetea al firmar"): al firmar el
+// primer contrato pro la deuda de sueño y la racha de riesgo físico vuelven a 0 (`firmarConEquipo`). Sin tiradas nuevas. Reemplaza a
+// 1360329260.
+// K6c-fix, quinta pasada (sin cambio de huella: ninguna de las 40 seeds frena por la mentalidad en rojo). Sexta pasada (1766253198;
+// corrimiento declarado, sigue 'K6c'; T1): `systems/salud.js` corre también en el amateur (la lesión es del que grindea sin dormir de
+// amateur) con sus tiradas de siempre, y la baja de la lesión se cumple en turnos de soloQ. Reemplaza a 186316704.
+export const HUELLA_JUEGO = 1766253198;

@@ -249,6 +249,9 @@ export const BALANCE = {
     penalRoboConsecutivo: 0.55,
     robosParaDeuda: 3,
     deudaMaxima: 4,
+    // K6c-fix, cuarta pasada (decisión del usuario 2026-10-06, "la deuda se resetea al firmar"): la deuda de sueño con la que
+    // arrancás tu primer contrato pro (`firmarConEquipo` en `systems/amateur.js`; la racha de riesgo físico también vuelve a 0).
+    deudaSuenoAlFirmar: 0,
 
     // --- Bandas de riesgo (no hay un numero exacto donde pincha) ---
     // Probabilidad = (umbral - estudios) / pendiente, con techo, multiplicada
@@ -339,6 +342,39 @@ export const BALANCE = {
     // Cuánto más riesgo en casa (chance de confiscación o corte, 0-1) tiene que sumar lo que elegiría tu perfil, contra
     // la opción más segura de la semana, para que la semana frene.
     semanaRiesgoEvitable: 0.05,
+    // K6c-fix ("la propuesta del perfil no te quema", PLAN.md §K6c, reglas del supervisor 2026-10-06): el plan del año que
+    // propone tu perfil (el que acepta `resolverAuto`) no puede mostrar un riesgo evitable. Lo es si su chance en casa en el año
+    // (`riesgoDelPlan`, la que dice la carta) pasa la del plan más seguro por al menos esto, o si arma el riesgo de lesión o
+    // burnout en el año (`semanaRiesgoFisico`, las cuentas de `salud.js` y `atributos.js`) y otro plan no; la deuda de sueño que no
+    // llega ahí es un costo del plan (tercera pasada: con cualquier deuda, el automático no se lesionaba nunca). Entonces la propuesta pasa al plan que tu perfil elegiría entre los que no lo muestran. Medido con
+    // `resolverAuto` (1000 × 60, finales del amateur por cada 1000 carreras; K6b `58db231`: burnout 7, castigo 38, no-pro 23,0):
+    // sin la regla 60 / 78 / 28,0 (con la vara en 0); con 0,05 0 / 8 / 28,1 (planes tan seguros que no llegan: "no llegó" 142 →
+    // 273); con 0,15 0 / 10 / 26,6; con 0,3 0 / 15 / 26,5. 0,15 es además la tolerancia de `criterio` (`RIESGO_TOLERADO_PLAN_CRITERIO`).
+    planRiesgoEvitable: 0.15,
+    // K6c, segunda pasada ("la semana frena solo con riesgo nuevo"): con un plan del año elegido, que ya mostró su riesgo
+    // semana por semana (`riesgoDelPlan`), la semana frena solo si su chance en casa supera la que el plan mostró para esa
+    // semana por más que esto (o si la deuda de sueño llega antes de lo anunciado). Lo que ya aceptaste no vuelve a frenar.
+    semanaRiesgoNuevo: 0.05,
+    // K6c-fix (quinta pasada, "frenar con la mentalidad en rojo", decisión del usuario 2026-10-06): con la mentalidad ya en zona
+    // roja y vista (el plan del año la mostraba en rojo para esa semana, o ya frenó una semana por eso), la semana vuelve a frenar
+    // solo si la mentalidad al cerrarla queda más de esto por debajo de lo visto (puntos de la barra). Lo que ya viste no frena.
+    semanaMentalNueva: 5,
+    // K6c ("pasaste = firmás", decisión del usuario 2026-10-05): la vara de la prueba del amateur, sobre el `resultado`
+    // 0-1 del minijuego. Sin dado: con el resultado en la vara o arriba firmás seguro; abajo, no firmás. Antes era la
+    // probabilidad de `serie.probFirmaTryout` (una prueba perfecta no firmaba 1 de cada 20). La previa la dice antes de
+    // jugar, con este mismo número. La prueba del mercado (`systems/mercado.js`) sigue con `serie.probFirmaTryout`.
+    // K6c, segunda pasada ("el nivel manda"): la vara fija de 0,6 ignoraba el nivel (`malas`, que juega la prueba al 0,15,
+    // no firmaba nunca, y un crack con una prueba floja no firmaba ni en tier 3). Ahora
+    // `vara = clamp(base − pendiente × (nivel − calibre), minimo, maximo)`, con tu `nivelDelJugador` contra el calibre del
+    // club (`org.fuerza`, 5-35 en tier 3). Medido en las ofertas de tier 3 (200 carreras por bot): la diferencia
+    // nivel − calibre va de ~22 (el 5% más justo) a ~55-63 (el 5% más crack), con la mediana en ~37.
+    // K6c-fix ("el club firma tu nivel, no tu día", PLAN.md §K6c): el mínimo pasa a 0. Con piso 0,1 el que fallaba toda prueba no
+    // firmaba nunca, aunque fuera un crack: acertar siempre los minijuegos rendía +1149% contra fallarlos (tope +42%). La vara llega
+    // a 0 con 31 de diferencia (`base / pendiente`) y a 0,8 con 15 o menos; en el medio, 5 puntos de vara por punto de nivel (a 20
+    // de diferencia pide 55%, a 25 pide 30%). Medido (1000 × 60, sonda con las mismas seeds del check): el impacto de los
+    // minijuegos +29,2% (vara siempre 0: +25%; cero a los 35: +44%, a los 30: +26%); `equilibrado` no-pro 29,1 (vara siempre 0:
+    // 28,0; la de K6c: 31,2); `malas` 46,5. `criterio` (0,85) pasa toda prueba con cualquier máximo <= 0,85.
+    varaPrueba: { base: 1.55, pendiente: 0.05, minimo: 0, maximo: 0.8 },
 
     // Fase 10a (§10.1): deja de ser el corte duro ("cumpliste 20, se acabó").
     // La ventana real ya la cierra el sesgo etario del scouting (arriba); esto
@@ -1282,6 +1318,28 @@ export const BALANCE = {
       rebajaMerito: 4,
       rebajaDisputa: 4
     },
+    // --- K6b-M, el mercado premia el mérito (PLAN.md "K6b"). El bug de K6 (seed 39): Fnatic, campeón de la LEC y del
+    // Mundial con el #3 del mundo a los 27, no le renovaba, y la única carta era el club más débil de la LEC. Con Final2 el
+    // castigo etario de la disputa (`demanda.castigoEtarioNivel` 100 · (1 − `sesgoEtario`)) vale ~70 puntos a los 27: perdía
+    // la disputa de la renovación y la de todos los fichajes, y solo quedaba el piso de franquicia, que prueba primero el
+    // club más débil de tu liga. Medido sobre 150 carreras de `criterio` (25f7b0d): de 135 mercados que venían de una
+    // temporada de élite, 108 sin renovación, 71 de una sola carta y 39 de una sola carta de un club de abajo.
+    // "Una temporada de élite" es la que acaba de cerrar (`calendario.anio − 1`) con un título de liga de tier ≤
+    // `tierMaximoTitulo`, el Mundial ganado, o el cierre dentro del top `rankMundialMaximo` del mundo
+    // (`flags.rankMundialActual`). Se gana año por año: el veterano que no la repite vuelve al mercado de su edad.
+    //  - `fraccionCastigo`: con mérito, el castigo etario de la disputa (la de la renovación y la de cada fichaje) y el
+    //    adelgazamiento de la mano por la edad (`sesgoEtario`) pesan esta fracción. 1 = idéntico (neutra); 0 = el mercado
+    //    mira tu temporada y no tu edad. Con 0,5 un campeón de 27 todavía pierde ~35 puntos y con ellos toda disputa.
+    //  - `probRenovacion`: con mérito, si tu club no tiene una alternativa mejor para el puesto (la disputa de la renovación,
+    //    con el castigo de arriba), te renueva con esta probabilidad. Si la tiene, no renueva y el aviso dice por qué.
+    //  - Si igual no hay asiento y te toca el piso de franquicia, el club que te hace lugar es el que te corresponde por nivel
+    //    (el más fuerte con fuerza ≤ tu nivel), no el más débil de la liga (`systems/mercado.js:generarOfertas`).
+    merito: {
+      tierMaximoTitulo: 1,
+      rankMundialMaximo: 10,
+      fraccionCastigo: 0,
+      probRenovacion: 1
+    },
     // K5c-M, lo que ve la carta: el puesto del plantel por fuerza dentro de su liga (`core/demanda.js:plantelEnLiga`).
     // "Arriba" son los primeros `fraccionArriba` de la liga (redondeado para arriba; el 1.º se dice aparte), "abajo"
     // los últimos `fraccionAbajo`, y lo del medio es mitad de tabla. Con 10 clubes: 1.º, 2.º-3.º, 4.º-7.º, 8.º-10.º.
@@ -1444,6 +1502,24 @@ export const BALANCE = {
     banquilloArraigoFactor: 0.6
   },
 
+  // K6b-C2 (PLAN.md §K6b, "la cola de verdad"; D-B en la cola). Desde los `edadDesde` años o desde el aviso de declive
+  // (`etapa === 'declive'`, `core/contexto.js`), lo que llegue primero, el cierre de año y el momento de una fecha marcada
+  // frenan solo si es un hito, si algo cambió (el club, el tier, una lesión o el declive) o si su tipo tiene palanca. Si no,
+  // los resuelve tu perfil y se narran en una línea (`core/cola.js`).
+  cola: {
+    // La misma edad con la que el instrumento mide la cola (`EDAD_COLA_DE_CARRERA`, `src/dev/simulate.js`).
+    edadDesde: 28,
+    // "Su tipo tiene palanca": el % de paradas de ese tipo con efecto en su horizonte (la columna "en su horizonte" de
+    // `node src/dev/agencia.js --carreras=12 --reps=30 --cuota=2 --splits=70`, el head de K6b-C, `8368570`) contra el
+    // umbral. El umbral es la fracción ponderada de ese mismo reporte: un tipo por debajo baja el promedio, así que
+    // resolverlo solo en la cola no le saca agencia al juego; uno por encima la sube, y sigue frenando.
+    umbralPalancaPct: 47.4,
+    palancaMedidaPct: {
+      cierre: 3.3,
+      momento: 95
+    }
+  },
+
   // Fase 9R5a: la carrera termina. Fase 10a la reescribe (PLAN.md §10.1):
   // antes, la edad de declive era un piso FIJO (nadie se retiraba antes de
   // los 27 sin importar cómo le fuera) — eso contradecía el pedido del
@@ -1476,6 +1552,19 @@ export const BALANCE = {
     // splitsPorEdad=3) antes de que se cierre sola si no la usás.
     vueltasMaximas: 2,
     ventanaDeVueltaSplits: 6,
+    // Revisión de K6b (el "sin equipo" de la vuelta): volver de free agent es volver al mercado de esa pretemporada
+    // (`systems/retiro.js`). La previa del "¿Volvés?" dice la chance de que te llame alguien, con la demanda de hoy: si
+    // algún club te ficharía hoy (`core/demanda.js:orgsQueTeFicharian`, con la edad con la que volverías), o si ninguno.
+    // Medida (revisión de K6b, PROGRESO.md): todas las vueltas de free agent de `criterio` y del bot por defecto, 300 × 60
+    // cada uno, forzando la vuelta: sin demanda, 19 de 210 recibieron al menos una oferta en ese mercado (9%); con
+    // demanda, 9 de 28 (32%), sin que crezca con el número de clubes (el mundo se mueve antes y llena asientos). El
+    // automático (y `criterio`, que le delega la vuelta) no vuelve de free agent con la chance debajo de
+    // `umbralChanceVueltaPct`: sin nadie que hoy te fiche, no vuelve.
+    vuelta: {
+      pctLlamadoSinDemanda: 9,
+      pctLlamadoConDemanda: 32,
+      umbralChanceVueltaPct: 20
+    },
     // K5-C (PLAN.md K5, "el final lo decide el mercado"): cuántas pretemporadas SEGUIDAS con el mercado abierto
     // (contrato vencido o sin equipo) sin una sola oferta de tu tier o mejor antes de que `systems/mercado.js` frene
     // con la bifurcación "bajás de tier o colgás el mouse". Se cuenta igual que `mercado.splitsSinOfertaParaLibre`

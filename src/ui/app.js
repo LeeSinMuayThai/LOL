@@ -25,7 +25,7 @@ import { VERSION_JUEGO } from '../data/version.js';
 import { iniciarDesafio } from '../core/desafio.js';
 import { interpretarSeed } from '../core/numeros.js';
 import { previaDeDecision } from '../core/previaDePartido.js';
-import { probabilidadDeFirmarTrasPrueba } from '../core/serie.js';
+import { probabilidadDeFirmarTrasPrueba, veredictoDeLaPrueba } from '../core/serie.js';
 import { porcentaje } from '../core/formato.js';
 
 export function iniciar() {
@@ -279,9 +279,15 @@ export function iniciar() {
       resuelto = true;
       // K2d: la p final del mapa, ya corrida por el minijuego: la que se tira.
       const previaFinal = pintarPrevia(decision, estadoActual, { resultadoMinijuego: resultado, charla });
-      const v = veredictoDeMinijuego(decision.datos.minijuego, resultado, estadoActual);
-      // K4c-S (regla 15): la prueba decide el contrato, y la pantalla dice con qué probabilidad.
-      const pFirma = decision.datos.momento === 'tryout' ? probabilidadDeFirmarTrasPrueba(resultado) : null;
+      // K4c-S (regla 15): la prueba decide el contrato, y la pantalla dice con qué probabilidad. K6c: la del amateur trae su vara
+      // (`datos.vara`, de tu nivel contra el del club) y no tira dado: la pantalla dice "Te firman" o por cuánto no llegaste, con
+      // la misma cuenta y la misma vara que el motor (`veredictoDeLaPrueba`). La del mercado sigue con su probabilidad.
+      const conVara = decision.datos.momento === 'tryout' && decision.datos.vara !== undefined;
+      const laPrueba = conVara ? veredictoDeLaPrueba(resultado, decision.datos.vara) : null;
+      const pFirma = decision.datos.momento === 'tryout' && !conVara ? probabilidadDeFirmarTrasPrueba(resultado) : null;
+      // K6c: con la vara el resultado ya está decidido: la frase sale de `veredictosConVara` del dato (sin el "si te firman" de
+      // la prueba del mercado) y, si no llegaste, no hay frase: manda la línea de la vara.
+      const v = veredictoDeMinijuego(decision.datos.minijuego, resultado, estadoActual, laPrueba ? { pasa: laPrueba.pasa } : {});
       if (resultado >= 0.67) marcarHit(minijuegoWidget);
       else if (resultado <= 0.33) marcarMiss(minijuegoWidget);
       minijuegoWidget.innerHTML =
@@ -291,6 +297,12 @@ export function iniciar() {
         // K2d: la misma p que muestra la tarjeta de la previa (que queda arriba del widget).
         + (previaFinal ? '<div class="minijuego-resultado-p">Con esto: ' + previaFinal.porcentaje + '% de ganar</div>' : '')
         + (pFirma !== null ? '<div class="minijuego-resultado-p">Con esto: ' + porcentaje(pFirma) + ' de que te firmen</div>' : '')
+        + (laPrueba ? '<div class="minijuego-resultado-p minijuego-resultado-vara">' + (laPrueba.pasa
+          ? (laPrueba.vara === 0
+            // K6c-fix: con la vara en 0 tu nivel ya alcanzaba (la misma línea que el log de `resolverLaPrueba`).
+            ? 'Te firman: con tu nivel, la vara era 0% (sacaste ' + laPrueba.sacaste + '%).'
+            : 'Te firman: sacaste ' + laPrueba.sacaste + '% y la vara era ' + laPrueba.vara + '%.')
+          : 'No llegaste: te faltó ' + laPrueba.falta + '% (sacaste ' + laPrueba.sacaste + '%, la vara era ' + laPrueba.vara + '%).') + '</div>' : '')
         + '</div>';
       ui.renderLowerThird(summary, metaPill, estadoActual, { modo: 'minijuego' });
       setTimeout(() => responder(decision.datos.charla?.disponible ? { resultado, charla } : { resultado }), 1600);

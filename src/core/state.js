@@ -385,6 +385,10 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // J4 (K4-C): el `splitCount` del parche en el que tu main cayó de S/A a B/C (`systems/meta.js`); `main_muerto`
       // dura `contexto.ventanaMainMuerto` splits desde ahí. `null` = nunca cayó (T4).
       splitMainMuerto: null,
+      // K6c: el año del amateur (`systems/amateur.js`): el plan que elegiste, la foto del arranque y lo que pasó (semanas, semanas en
+      // el radar de los scouts, ofertas, que son también la ventana: un club que ya ofreció no vuelve este año). `null` hasta el
+      // primer plan (T4: la forma es fija una vez que existe).
+      anioAmateur: null,
       // K4-C: los saltos grandes que ya tuvieron su prueba ('tier2', 'tier1', 'import'): la prueba sale una vez
       // por salto (`systems/mercado.js`). Array vacío al arrancar (T4).
       saltosConPrueba: [],
@@ -460,6 +464,20 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // K5-C: el `splitCount` de la última vez que frenó esa bifurcación (-1 = nunca). `systems/retiro.js` lo lee para
       // no preguntar `retiro_declive` en la misma pretemporada: el mercado ya preguntó.
       forkMercadoSplit: -1,
+      // K6b-C (D-B en la cola): la foto (`firmaDelSeguis`, `systems/retiro.js`) con la que elegiste seguir en el último
+      // "¿la seguís?", y la de la última vez que elegiste seguir buscando en "El mercado ya habló" (`firmaDelFinPorMercado`,
+      // `systems/mercado.js`). Mientras la foto no cambie, la pregunta no se repite: se sigue y se narra. `null` = no hay.
+      seguisFirma: null,
+      finMercadoFirma: null,
+      // K6b-fix (la espera vence): cuántas pretemporadas seguidas se narró "seguís buscando" desde la última vez que respondiste
+      // "El mercado ya habló". Al llegar a `BALANCE.mercado.splitsSinOfertaParaLibre` la pregunta vuelve a frenar.
+      finMercadoEsperas: 0,
+      // K6b-C: la ventana (`firmaDeLaVuelta`, `systems/retiro.js`) en la que elegiste no volver: el "¿Volvés?" no se repite.
+      vueltaFirma: null,
+      // K6b-C2 (la cola de verdad): por tipo de parada de la cola (`cierre`, el cierre de año; `momento`, el momento de
+      // una fecha marcada), la foto (`firmaDeLaCola`, `core/cola.js`) de la última vez que frenó en la cola. Mientras la
+      // foto no cambie y no haya un hito ni palanca, esa parada la resuelve tu perfil y se narra. `null` = no frenó todavía.
+      colaFirmas: { cierre: null, momento: null },
       // Fase 9: "llamar al representante" (PLAN.md §9.6) rebaraja la mano de
       // ofertas una única vez en toda la carrera.
       llamadaRepresentante: false,

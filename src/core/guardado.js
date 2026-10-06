@@ -56,9 +56,14 @@ import { pausaDeMercadoMigrada } from '../systems/mercado.js';
 // curva y de cada acumulativo — K5c-R, la presión de tier 2: `flags.splitsTier2SinOfertaTier1`; y los años pro desde tier 2:
 // `career.splitPrimerContratoTier2`; K5c-M no cambió la forma; en la revisión de K5c entró `career.splitsRetirado`, los splits que
 // pasaron retirado —la ventana de vuelta— y no son años pro). Un guardado de la 11 carga con `migrarDe11`, que completa los campos
-// de las dos piezas y de la revisión, y uno de la 10 pasa por las dos migraciones.
-export const VERSION = 12;
-const VERSIONES_MIGRABLES = [10, 11];
+// de las dos piezas y de la revisión, y uno de la 10 pasa por las dos migraciones · 13 (K6b, la integración de K6b-U, K6b-M, K6b-F
+// y K6b-C en un solo número — K6b-C, la cola de la carrera: `flags.seguisFirma`, `flags.finMercadoFirma` y `flags.vueltaFirma`, la
+// foto de la última vez que elegiste seguir, seguir buscando o no volver; K6b-C2, `flags.colaFirmas` (`cierre` y `momento`), la foto
+// de la última parada de la cola. K6b-U, K6b-M y K6b-F no cambiaron la forma: la marca `franquicia` de las ligas se lee de
+// `data/leagues.json` y no entra a la copia del mundo). Un guardado de la 12 carga con `migrarDe12`, que arranca las cuatro en
+// "no hay foto"; uno de la 11 o de la 10 pasa además por las migraciones de antes.
+export const VERSION = 13;
+const VERSIONES_MIGRABLES = [10, 11, 12];
 
 // El marcador de los años pro, reconstruido de lo que la 11 sí guardaba. La fila del registro de la org del primer contrato de tier
 // 2 o 1 la abre `roster.js` el split siguiente al de la firma, así que la firma fue en su `desdeSplit` - 1. Sin esa fila todavía
@@ -143,12 +148,37 @@ export function migrarDe11(state) {
   };
 }
 
-// De la versión del guardado a la función que lo deja en la actual (la 10 pasa por `migrarDe10` y por `migrarDe11`).
+// 12 -> 13. K6b-C: las fotos de la cola (`flags.seguisFirma`, `flags.finMercadoFirma`, `flags.vueltaFirma` y
+// `flags.colaFirmas`) arrancan en "no hay foto" (`null`), el valor del estado inicial: la 12 no las escribía, así que la
+// próxima pregunta de la cola frena (como la primera vez) y desde ahí se repite o se narra igual que en una carrera de la 13. Las
+// que ya estén se respetan. Puro: no toca el RNG ni el reloj.
+export function migrarDe12(state) {
+  const viejas = state.flags ?? {};
+  const colaFirmas = viejas.colaFirmas ?? {};
+  const flags = {
+    ...viejas,
+    seguisFirma: viejas.seguisFirma ?? null,
+    finMercadoFirma: viejas.finMercadoFirma ?? null,
+    finMercadoEsperas: viejas.finMercadoEsperas ?? 0,
+    vueltaFirma: viejas.vueltaFirma ?? null,
+    colaFirmas: { ...colaFirmas, cierre: colaFirmas.cierre ?? null, momento: colaFirmas.momento ?? null },
+    // K6c (sin subir la VERSION: la 13 todavía no salió): el año del amateur arranca en "sin plan" (`null`, el valor del
+    // estado inicial). Si el guardado está en el amateur, el próximo split frena con el plan del año, como al arrancar.
+    anioAmateur: viejas.anioAmateur ?? null
+  };
+  return { ...state, flags };
+}
+
+// De la versión del guardado a la función que lo deja en la actual (la 10 pasa por `migrarDe10`, `migrarDe11` y `migrarDe12`; la
+// 11, por las dos últimas).
 function migrar(version, state) {
   if (version === 10) {
-    return migrarDe11(migrarDe10(state));
+    return migrarDe12(migrarDe11(migrarDe10(state)));
   }
-  return version === 11 ? migrarDe11(state) : state;
+  if (version === 11) {
+    return migrarDe12(migrarDe11(state));
+  }
+  return version === 12 ? migrarDe12(state) : state;
 }
 
 export function serializar(state, rng, rngUi) {

@@ -409,6 +409,27 @@ export function probabilidadDeFirmarTrasPrueba(resultado) {
   return ajuste < 0 ? regular + (regular - malo) * ajuste : regular + (bueno - regular) * ajuste;
 }
 
+// K6c ("pasaste = firmás"): la prueba del amateur no tira dado. `resultado` 0-1 contra la vara, en puntos de porcentaje
+// enteros (los mismos que lee el jugador: "necesitás 45%", "te faltó 20%"), así lo que dice la pantalla y lo que decide el
+// motor no se separan por un redondeo. La usan `systems/amateur.js` (la oferta, la previa, el contrato y el log) y
+// `ui/app.js` (el veredicto): una sola cuenta (regla 15). Puro, sin `rng`.
+//
+// K6c, segunda pasada ("el nivel manda"): la vara depende de tu nivel (`nivelDelJugador`) contra el calibre del club
+// (`org.fuerza`, la misma vara de `calibreDeLiga`): `clamp(base − pendiente × (nivel − calibre), mínimo, máximo)`, con las
+// constantes en `amateur.varaPrueba`. Si sos claramente mejor que el club, una prueba floja alcanza; si estás justo,
+// necesitás una buena. Se calcula una vez, al armar la oferta, y viaja en la decisión (`datos.vara`): la oferta, la previa,
+// el motor y la pantalla leen el mismo número.
+export function varaDeLaPrueba(nivel, calibre) {
+  const { base, pendiente, minimo, maximo } = BALANCE.amateur.varaPrueba;
+  const vara = Math.min(maximo, Math.max(minimo, base - pendiente * (nivel - calibre)));
+  return Math.round(vara * BALANCE.stats.max);
+}
+
+export function veredictoDeLaPrueba(resultado, vara) {
+  const sacaste = Math.round(Math.min(1, Math.max(0, resultado ?? 0)) * BALANCE.stats.max);
+  return { pasa: sacaste >= vara, vara, sacaste, falta: Math.max(0, vara - sacaste) };
+}
+
 // El minijuego "la_llamada" depende de shotcalling, pero una buena llamada con jerarquía baja no se ejecuta igual
 // (regla textual de 4.6): el impacto sobre el rendimiento se amortigua fuerte por debajo del umbral.
 export function factorJerarquiaEnLlamada(jerarquia) {

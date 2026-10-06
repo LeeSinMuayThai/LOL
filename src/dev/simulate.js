@@ -54,6 +54,14 @@ export const UMBRAL_SATURACION = 90;
 export const UMBRAL_INTERRUPCIONES_SPLIT = 2;
 export const UMBRAL_INTERRUPCIONES_SPLIT_LARGO = 4;
 
+// K6b-C (D-B en la cola): la cola de la carrera arranca a esta edad. K6 contó entre 15 y 28 frenadas desde los 28 años,
+// con poco en juego; la meta de `criterio` es <= 8 en la mediana (PLAN.md §K6b, K6b-C). Se cuenta toda parada con la edad
+// del estado en el momento de frenar (`st.age >= EDAD_COLA_DE_CARRERA`).
+export const EDAD_COLA_DE_CARRERA = 28;
+// K6b-C: los niveles de carrera (`core/puntaje.js`, `NIVELES`) que cuentan como "leyenda" para la meta de frenadas totales de
+// §K.3c (<= 80): las carreras que llegan a "Leyenda" o a "El GOAT".
+export const NIVELES_DE_LEYENDA_RITMO = ['leyenda', 'goat'];
+
 // Carrera pro "corta" para K.3b: menos de 4 años.
 export const UMBRAL_CARRERA_CORTA_ANIOS = 4;
 
@@ -75,7 +83,7 @@ export const CORTES_NIVEL_PICO_CASA = [70, 75, 80, 85, 90];
 // La curva de nivel por edad: de los 16 (la edad mínima de una liga) a la línea forzosa de los 34.
 export const EDAD_CURVA_MIN = 16;
 export const EDAD_CURVA_MAX = 34;
-const RESULTADO_CAMPEON = 'campeon';
+export const RESULTADO_CAMPEON = 'campeon';
 
 // Δ de fuerza (el equipo más fuerte contra el más débil) para la tabla analítica de favorito Bo5.
 export const DELTAS_FAVORITO_BO5 = [0, 2, 4, 6, 8, 10, 12, 15];
@@ -275,7 +283,14 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
     cambiosDeLinea: 0,
     cambiosDeRegion: 0,
     mudanzasFirmadas: 0,
-    fueraDeSuRegion: false
+    fueraDeSuRegion: false,
+    // K6b-C: las paradas desde los `EDAD_COLA_DE_CARRERA` años (la cola), en total y por tipo, y el nivel con el que cierra la
+    // carrera (`nivelCarrera`, de `puntajeDeCarrera`, se llena al final). Lectura pura: cero `rng`.
+    frenadasCola: 0,
+    frenadasColaPorTipo: {},
+    // K6b-C: true si la carrera jugó al menos un split pro con `EDAD_COLA_DE_CARRERA` años o más (tiene cola).
+    llegaALaCola: false,
+    nivelCarrera: null
   };
   let rolPrevio = state.player.role;
   let regionPrevia = null;
@@ -321,6 +336,10 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
 
     const tipo = `${sistema.id}:${decision.datos?.motivo ?? decision.presentacion ?? 'x'}`;
     observacion.decisionesPorTipo[tipo] = (observacion.decisionesPorTipo[tipo] ?? 0) + 1;
+    if (st.age >= EDAD_COLA_DE_CARRERA) {
+      observacion.frenadasCola += 1;
+      observacion.frenadasColaPorTipo[tipo] = (observacion.frenadasColaPorTipo[tipo] ?? 0) + 1;
+    }
 
     if (esDecisionDeMinijuego(decision)) {
       observacion.minijuegosCount += 1;
@@ -448,6 +467,9 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
       continue;
     }
     carrera.splitsPro += 1;
+    if (state.age >= EDAD_COLA_DE_CARRERA) {
+      observacion.llegaALaCola = true;
+    }
     observacion.splitsProRitmo.push({
       decisiones: decisionesEnSplitActual,
       tipo: clasificarSplit(registroAntes, state.career.registro)
@@ -541,6 +563,7 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
     observacion.beatsReproductor * DURACION_BEAT_MS + observacion.minijuegosCount * ESPERA_MINIJUEGO_MS
   ) / MS_POR_MINUTO;
 
+  observacion.nivelCarrera = puntajeDeCarrera(state).nivel.id;
   return { state, carrera, jugabilidad, observacion };
 }
 
@@ -1661,6 +1684,17 @@ export function bloqueRitmo(observaciones) {
   const minijuegosPorCarrera = observaciones.map((o) => o.minijuegosCount);
   const tiemposMaquinaMin = observaciones.map((o) => o.tiempoMaquinaMin);
   const tiemposReproductorMin = observaciones.map((o) => o.tiempoReproductorMin);
+  const conCola = observaciones.filter((o) => o.llegaALaCola);
+  const frenadasCola = conCola.map((o) => o.frenadasCola);
+  const frenadasColaTodas = observaciones.map((o) => o.frenadasCola ?? 0);
+  const deLeyenda = observaciones.filter((o) => NIVELES_DE_LEYENDA_RITMO.includes(o.nivelCarrera));
+  const frenadasDeLeyenda = deLeyenda.map((o) => sumar(o.decisionesPorTipo));
+  const colaPorTipoAcum = {};
+  for (const o of conCola) {
+    for (const [k, v] of Object.entries(o.frenadasColaPorTipo)) {
+      colaPorTipoAcum[k] = (colaPorTipoAcum[k] ?? 0) + v;
+    }
+  }
 
   const decisionesPorTipoAcum = {};
   for (const o of observaciones) {
@@ -1702,6 +1736,31 @@ export function bloqueRitmo(observaciones) {
         cantidadPorCarrera: redondear(cant / total, 1),
         pctDelTotal: pct(cant, totalDecisionesTodas) ?? 0
       })),
+    // K6b-C (D-B en la cola): las paradas desde los `EDAD_COLA_DE_CARRERA` años, por carrera, sobre las carreras que tienen
+    // cola (`llegaALaCola`: jugaron un split pro a esa edad; `carreras` es el n), con su desglose por tipo (por carrera con
+    // cola). `medianaTodas` es la misma mediana sobre todo el lote (la que no llega cuenta 0). Meta de `criterio`: `mediana`
+    // <= 8 (PLAN.md §K6b).
+    colaDeCarrera: {
+      desdeEdad: EDAD_COLA_DE_CARRERA,
+      carreras: conCola.length,
+      mediana: mediana(frenadasCola),
+      p90: percentil(frenadasCola, 0.9),
+      promedio: redondear(promedio(frenadasCola), 2),
+      // K6b (integración): el σ muestral, para la banda de ruido del check re-basado (regla 17).
+      desvio: frenadasCola.length > 1 ? redondear(desvioMuestral(frenadasCola), 2) : null,
+      medianaTodas: mediana(frenadasColaTodas),
+      desglosePorTipo: Object.entries(colaPorTipoAcum)
+        .sort((a, b) => b[1] - a[1])
+        .map(([tipo, cant]) => ({ tipo, cantidadPorCarrera: redondear(cant / Math.max(1, conCola.length), 2) }))
+    },
+    // K6b-C: las frenadas TOTALES de las carreras que cierran en "Leyenda" o "El GOAT" (`NIVELES_DE_LEYENDA_RITMO`). Meta de
+    // §K.3c: <= 80 (la mediana). `carreras` es el n: con 0, mediana y p90 son null.
+    leyenda: {
+      carreras: deLeyenda.length,
+      mediana: mediana(frenadasDeLeyenda),
+      p90: percentil(frenadasDeLeyenda, 0.9),
+      max: frenadasDeLeyenda.length > 0 ? Math.max(...frenadasDeLeyenda) : null
+    },
     minijuegosPorCarrera: {
       promedio: redondear(promedio(minijuegosPorCarrera), 2),
       mediana: mediana(minijuegosPorCarrera)
