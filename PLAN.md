@@ -8385,6 +8385,23 @@ medio de <liga>").
   - (3) la regla y además el tier 1 más difícil, que el usuario dejó "para después" en K6b;
   - (4) dejar la moneda.
 
+**El merge de D82** (`85dd15e`): la validación completa de `00d075e` da 537 OK y 0 FAIL; `simulate.js 1000` 0 crashes;
+determinismo idéntico; build OK; huella idéntica.
+
+**Para la mañana (lo que necesita al usuario):**
+1. **Jugar la build** (`node server.js` en la carpeta del repo, en `fase-9r-que-el-juego-se-juegue`). Mirar:
+   - el amateur: el plan de cada año, el freno con la mentalidad en rojo;
+   - la prueba: la vara antes y "pasaste = firmás". El otro chat avisó que con la vara 1,55/0,05/0/0,8 la mayoría de
+     las pruebas piden 0%;
+   - las caras de los campeones (J9);
+   - el precio de traspaso con el descuento de la edad.
+   Si se siente bien, K6c cierra.
+2. **D84 (tier 3): sí o no**, entre las cuatro opciones de arriba. La rama `tier3-nivel` está lista.
+3. **D77 (el burnout en el split de la firma):** cuál de las tres opciones.
+4. **Push:** nada se pusheó. `fase-9r` tiene K6b, K6c, K6c-fix, J9, la etiqueta de tier 3 y D82 sin subir.
+5. Lo que sigue según el plan, sin decidir: el tier 1 más difícil y la rueda de prensa (diferidos en K6b), D83 (las
+   lesiones en el pro, después de que el usuario pruebe K6c).
+
 **D82, hecho** (rama `d82`: `2f5c00c`, `ec2695c`, `00d075e`; huella idéntica).
 - **(a)** El precio de traspaso que se muestra sale del valor de mercado visible por el descuento de la edad
   (`precioDeTraspaso`). Desde un descuento del 10% la tarjeta dice "te descuentan por la edad: por vos ponen el N%…".
@@ -8544,7 +8561,7 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D79 | **No es un bug del pronóstico: es un falso positivo del check "J3 pronóstico"** (investigado el 2026-10-02 sobre `8e36105` y el candidato de K2). El pronóstico (`core/pool.js:110-118`) es la misma regla que aplica el motor (`systems/campeones.js:66`); pero el óxido aplicado es `max(0, gauss(1,5, 1))`, que da 0 el 6,68% de las veces aunque la gracia haya vencido, y el check (`validate.js:7859-7938`) mira la maestría (el efecto) y no la decisión, con a veces un solo futuro "conclusivo" por par. Resultado: falla ~25-30% de las veces que cambia el stream (en `8e36105` con otras seeds, 16 fallos de 60 juegos contra 16,9 esperados por el modelo; en ~648.000 pares de verdad ficha/motor, 0 divergencias salvo re-entradas al pool). Arreglo, solo en `validate.js`: reemplazar la observación por **propiedades sobre pools armados a mano** (ley G: en gracia nunca baja; ley P: en el piso nunca baja; ley O: "oxida" baja en al menos una de 64 seeds) más el cursor `splitCountDeLaProximaCorrida` verificado sin tiradas. Prototipo y mutantes en el scratchpad de la sesión (`d79/prop.mjs`) | ✅ se arregla en K2a, antes de que K2b corra el stream |
 | D80 | **Metas de §K.3b re-basadas a lo medido al cerrar K5c** (decisión del usuario 2026-10-05: "cerrar y que K6 juzgue"). Con Final2 + LPL 91 no llegan: llega a tier 1 (meta 55-65), título de tier 1 (~30), top 20 (~15), P(2+ \| 1) (≥ 35-40%), nuevo Faker entre los de élite (≥ 30%), favorito de un Bo5 (75-85, queda arriba) y carrera mediana (4-6, queda en ~9). Los checks `K5c meta …` llevan su banda de ruido y su línea de la regla 17. La frontera conocida: endurecer el acceso a tier 1 baja el Mundial, que está justo en 7%. "Claramente el más fuerte" (margen ≥ 10) casi no ocurre (4 de ~3000 Mundiales): la meta de ~50% se mide sobre "el más fuerte". Los números exactos están en `PROGRESO.md` (K5c paso 3) | K6 juzga cuáles importan |
 | D81 | **K5c-M (la élite se busca) no tiene efecto medible con la casa encendida.** Con Final2, "la casa primero" de K5c-H ordena la mano antes que la fuerza de la org. Las manos de élite son chicas (~2 ofertas), y `mercado.elite` no cambia la fuerza mediana del club que te ofrece. Su check prueba el mecanismo con la casa neutra en memoria. Si en K6 la élite no termina en los mejores clubes de su liga, el lugar es el orden dentro de los clubes de casa | K6 |
-| D82 | **Anotados en la revisión de los arreglos de K5c (2026-10-05), sin arreglar:** (a) el precio de traspaso sale de `presupuestoDeDemanda`, que descuenta la edad, y el valor que se muestra no la descuenta, así que un veterano "vale" $430k/año y su traspaso cuesta ~$60k; (b) el bloque `mundoMundial` cuenta los Mundiales solo mientras la carrera vive, y pesan más los primeros años del mundo | después de K6 |
+| D82 | ✅ **Cerrada (2026-10-06, merge `85dd15e`; ver §K6c "La noche del 2026-10-06").** Era — **anotados en la revisión de los arreglos de K5c (2026-10-05), sin arreglar:** (a) el precio de traspaso sale de `presupuestoDeDemanda`, que descuenta la edad, y el valor que se muestra no la descuenta, así que un veterano "vale" $430k/año y su traspaso cuesta ~$60k; (b) el bloque `mundoMundial` cuenta los Mundiales solo mientras la carrera vive, y pesan más los primeros años del mundo | ✅ K6c (noche) |
 | D83 | **Lesiones en el pro** (decisión del usuario 2026-10-06: "solo en el amateur por ahora"). La deuda de sueño (`deudaSueno`) solo se escribe en el amateur; en el pro queda congelada. Con el reset al firmar (K6c-fix), la lesión grave solo le pasa a quien grindea sin dormir de amateur. Pendiente: que la rutina pro genere su propia deuda (scrims + soloQ a la noche), así la lesión de muñeca es algo real de un pro. **Mientras tanto, el final por lesión (`retiro_por_lesion`) no se alcanza en carreras naturales**: la recaída pide 17 splits seguidos con deuda en el amateur, y el burnout llega antes. Su check de cobertura queda declarado inalcanzable hasta D83 (el patrón de `servicio_militar`), con un check propio que arma el estado y verifica que el final se dispara y se narra bien. Cuando se haga D83, vuelve la cobertura natural | después de que el usuario pruebe K6c |
 | D84 | **Salir de tier 3 es una moneda que no lee el nivel** (`resolverTier3`: cada disolución resetea la jerarquía; tier 3 no tiene mercado). El 32% de las carreras de `criterio` pasa 6 splits o más en tier 3, con nivel 63 contra calibre 18. El diseño era una mediana de 1-2 y se miden 5. Es la "constante abierta a criterio" de D34, medida. Se propone "el nivel manda" en tier 3, con un margen sobre el calibre de tier 2. Investigación y contrafáctico en K6c, "La noche del 2026-10-06" | decide el usuario (rama `tier3-nivel`, preparada sin mergear) |
 
