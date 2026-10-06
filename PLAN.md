@@ -8186,6 +8186,26 @@ La deuda de sueño que el automático acepta en el amateur no se resetea y se co
 - El plan del amateur sigue pesando en el amateur, pero no se arrastra a la carrera pro.
 - **Meta:** lesiones graves y burnouts del automático cerca de K6b.
 
+**K6c-fix, cuarta pasada** (`7d0051d`, según el worker). El reset está hecho, pero la lesión grave del automático quedó
+en 0: la deuda solo se escribe en el amateur. Además, el aviso del burnout llega en el 70% de los casos (el piso es 80%):
+son amateurs que se caen rápido, con la mentalidad 54 → 38 → 20 → 3, y la semana no frena.
+
+**Decisiones del usuario (2026-10-06):**
+- **La lesión, solo en el amateur por ahora.** Se mantiene el reset. Los checks de cobertura ("El contexto de carrera"
+  y "lesion_cronica alcanzables") miden la lesión con carreras que grindean: un bot que elige el plan con deuda, no se
+  saca el caso. La lesión en el pro va a D83.
+- **Frenar con la mentalidad en rojo.** En el amateur, que la mentalidad entre en zona roja cuenta como riesgo nuevo
+  (regla de K6c): la semana frena y lo muestra antes del burnout. Si ya estaba en rojo cuando se eligió el plan, frena
+  solo si baja más de lo que mostró el plan.
+- **Barandas de la pasada** (regla nueva del supervisor: toda pasada de motor mide antes y después, contra
+  `7d0051d`):
+  - no-pro por bot (con la medida nombrada);
+  - burnouts y castigos del amateur;
+  - paradas de la semana por carrera (no puede volver a la mediana 3 de K6c);
+  - impacto de los minijuegos;
+  - edad al terminar;
+  - 9Wd.
+
 ## K.6 — Qué pasa con FASE J y FASE V
 
 | Pieza | Destino |
@@ -8335,6 +8355,7 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D80 | **Metas de §K.3b re-basadas a lo medido al cerrar K5c** (decisión del usuario 2026-10-05: "cerrar y que K6 juzgue"). Con Final2 + LPL 91 no llegan: llega a tier 1 (meta 55-65), título de tier 1 (~30), top 20 (~15), P(2+ \| 1) (≥ 35-40%), nuevo Faker entre los de élite (≥ 30%), favorito de un Bo5 (75-85, queda arriba) y carrera mediana (4-6, queda en ~9). Los checks `K5c meta …` llevan su banda de ruido y su línea de la regla 17. La frontera conocida: endurecer el acceso a tier 1 baja el Mundial, que está justo en 7%. "Claramente el más fuerte" (margen ≥ 10) casi no ocurre (4 de ~3000 Mundiales): la meta de ~50% se mide sobre "el más fuerte". Los números exactos están en `PROGRESO.md` (K5c paso 3) | K6 juzga cuáles importan |
 | D81 | **K5c-M (la élite se busca) no tiene efecto medible con la casa encendida.** Con Final2, "la casa primero" de K5c-H ordena la mano antes que la fuerza de la org. Las manos de élite son chicas (~2 ofertas), y `mercado.elite` no cambia la fuerza mediana del club que te ofrece. Su check prueba el mecanismo con la casa neutra en memoria. Si en K6 la élite no termina en los mejores clubes de su liga, el lugar es el orden dentro de los clubes de casa | K6 |
 | D82 | **Anotados en la revisión de los arreglos de K5c (2026-10-05), sin arreglar:** (a) el precio de traspaso sale de `presupuestoDeDemanda`, que descuenta la edad, y el valor que se muestra no la descuenta, así que un veterano "vale" $430k/año y su traspaso cuesta ~$60k; (b) el bloque `mundoMundial` cuenta los Mundiales solo mientras la carrera vive, y pesan más los primeros años del mundo | después de K6 |
+| D83 | **Lesiones en el pro** (decisión del usuario 2026-10-06: "solo en el amateur por ahora"). La deuda de sueño (`deudaSueno`) solo se escribe en el amateur; en el pro queda congelada. Con el reset al firmar (K6c-fix), la lesión grave solo le pasa a quien grindea sin dormir de amateur. Pendiente: que la rutina pro genere su propia deuda (scrims + soloQ a la noche), así la lesión de muñeca es algo real de un pro | después de que el usuario pruebe K6c |
 
 ---
 
