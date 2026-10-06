@@ -91,6 +91,23 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 - `build.js`: OK, `dist/` pesa 2345 de 2400 KB.
 - **Después de la revisión** (el horizonte fijo, el % comparado, el umbral en 0,9 y la frase nueva): `--rapido` 363 OK,
   0 FAIL, 174 SKIP; `--solo` de `D82 (a)` OK; `huella.js` 1408477439 antes y después.
+- **Verificación del supervisor y merge** (`85dd15e`), sobre `00d075e` en una copia `git archive`:
+  - `validate.js` completo: **537 OK, 0 FAIL**, con `K5c meta del usuario` incluido;
+  - `simulate.js 1000`: 0 crashes;
+  - determinismo idéntico;
+  - build OK;
+  - huella 1408477439.
+
+### 2026-10-06 — `tier3-nivel` preparada, sin mergear: "el nivel manda" en tier 3 (D84; decide el usuario)
+
+- La regla y sus barandas están en `PLAN.md` §K6c, "La noche del 2026-10-06".
+- **La validación completa del supervisor** sobre `7720bcc`: **534 OK, 3 FAIL**. Los tres FAIL son metas del usuario que
+  la regla aleja:
+  - el título de primera, 55,7 → 59,4%;
+  - el Top 20, 36,4 → 39,9%;
+  - el más fuerte gana el Mundial, 59,9%;
+  - las carreras que llegan a los 30, 23,4 → 16,8%.
+- No se re-basó nada y no se mergeó.
 
 ### 2026-10-06 — Merge de K6b, K6c, K6c-fix, J9 y la etiqueta de tier 3 a `fase-9r`, y K6 re-jugado (supervisor, de noche)
 
