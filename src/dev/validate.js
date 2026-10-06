@@ -17780,6 +17780,31 @@ check('K4 (revisión) ficha sin ids crudos: toda marca de contexto tiene etiquet
   if (lineas < 100 || sinteticas < 3) throw new Error(`check vacío: ${lineas} líneas de contexto, ${sinteticas} ligas con id distinto del nombre`);
 });
 
+// Regla 15 (ficha de tier 3): en tier 3 `career.liga` es null por diseño (no hay liga), y la línea de contexto caía a
+// `mundo.ligaOrigen`: "Prisma Academy · LEC · 2029" encima de "RECIÉN LLEGADO A UN EQUIPO DE TIER 3". En tier 3 la línea
+// nombra el circuito chico y la región, y no la liga de tier 1 (ni ninguna otra) de la región de origen.
+check('Ficha de tier 3: la línea de contexto no nombra una liga (ni la de tier 1 de la región) y dice tier 3 y la región', () => {
+  const base = correrCarrera(1, 14);
+  const problemas = [];
+  let casos = 0;
+  for (const regionOrigen of ['Corea', 'Europa', 'Brasil']) {
+    for (const currentOrg of ['Prisma Academy', null]) {
+      const st = {
+        ...base,
+        mundo: { ...base.mundo, regionOrigen },
+        career: { ...base.career, tier: 3, liga: null, currentOrg }
+      };
+      const linea = lineaDeContextoFicha(st);
+      casos += 1;
+      const ligaNombrada = LIGAS.find((l) => new RegExp(`(^|[^A-Za-z0-9_])(${l.id}|${l.nombre})([^A-Za-z0-9_]|$)`).test(linea));
+      if (ligaNombrada) problemas.push(`"${linea}" nombra la liga ${ligaNombrada.id}`);
+      if (!/tier 3/i.test(linea) || !linea.includes(regionOrigen)) problemas.push(`"${linea}" no dice tier 3 y ${regionOrigen}`);
+    }
+  }
+  if (problemas.length > 0) throw new Error(problemas.slice(0, 4).join(' | '));
+  if (casos < 6) throw new Error(`check vacío: ${casos} casos`);
+});
+
 // --- K4-C: solo frenan las bifurcaciones; lo demás lo resuelve tu perfil (PLAN.md "K4 — decisiones de spec") ---
 
 // Una corrida instrumentada: cada pausa con su sistema, la respuesta del criterio por defecto y el estado al
