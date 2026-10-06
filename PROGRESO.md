@@ -34,6 +34,41 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-06 — Merge de K6b, K6c, K6c-fix, J9 y la etiqueta de tier 3 a `fase-9r`, y K6 re-jugado (supervisor, de noche)
+
+**Qué entra:** `99927be` mergea `k6c-fix` (`ffa6709`), que trae K6b, K6b-fix, K6c, la región y las siete pasadas de
+K6c-fix. `ed95728` mergea `j9-caras`, y `8bea57a` mergea `etiqueta-tier3`. Sin conflictos: desde la base, `fase-9r` solo
+había cambiado `PLAN.md`. El código del head es el de `c3c1721`.
+
+**Verificación del supervisor** (sobre `ffa6709`, en una copia `git archive`):
+- `validate.js` completo: **531 OK, 0 FAIL** (59 min, corrido solo).
+- `simulate.js 1000`: 0 crashes.
+- Determinismo: `simulate.js 100 60 criterio` dos veces, salida idéntica.
+- `agencia.js` y `build.js` OK: `dist/` pesa 2333 de 2400 KB.
+- J9 y la etiqueta no tocan el motor: `huella.js` da 1408477439 antes y después, `--rapido` da 0 FAIL, y sus checks se
+  vieron en rojo con mutantes.
+
+**KPI con la medida nombrada** (`simulate.js 1000 60 <bot>` sobre `ffa6709`):
+
+| Bot | No llega a pro | Burnout |
+|---|---|---|
+| `criterio` | 22,5% | 1,0% |
+| `equilibrado` | 24,6% | 2,6% |
+| `malas` | 47,6% | 46,8% |
+
+Las lesiones, las paradas de la semana y el impacto de los minijuegos los juzgan sus checks lentos, que pasaron todos.
+
+**K6 re-jugado** sobre `a18af54`: el mismo agente heurístico con las seeds 25, 39 y 152 (PLAN.md §K6c, "La noche del
+2026-10-06").
+- **No se repite ningún bug de K6.** La prueba no tiene dado escondido: 11 de 11 pruebas pasadas firmaron.
+- **"Worlds es una basofia" y "las opciones no afectan nada" no vuelven.**
+- **"Hacés un clic y perdiste" vuelve como D77:** el que ignora los avisos se quema en el primer split pro.
+- **Hallazgo nuevo, D84:** salir de tier 3 es una moneda que no lee el nivel. La regla que lo arregla queda en una rama
+  aparte para que decida el usuario.
+
+**Lo que no se cierra:** K6c necesita que el usuario juegue el amateur y la prueba (memoria de playtest). No se pusheó
+nada.
+
 ### 2026-10-06 — La ficha de tier 3 ya no dice la liga de tier 1 (`etiqueta-tier3`)
 
 - Causa (solo UI): `lineaDeContextoFicha` (`ui/components/ficha.js`) resolvía la liga con `career.liga`, que en tier 3 es `null` por
