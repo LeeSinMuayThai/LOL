@@ -795,7 +795,9 @@ const FORMAS_CONOCIDAS = {
   // Revisión de K6b: la carta firmada sin pausa lleva de dónde a dónde (`unaSolaCarta.liga/ligaAntes/tierAntes`) y el "¿Volvés?" la
   // chance de que te llamen (`datos.chanceDeQueTeLlamenPct`, `clubesQueTeFicharian`): re-registrada sin subir de 13 (era '8d9b9b8a0ff2').
   // K6c (sin subir: la 13 no salió): `flags.anioAmateur`, el año del amateur (plan, foto del arranque, semanas, radar, ofertas).
-  13: 'c40afa3ff7a1'
+  // K6c, segunda pasada (sin subir): `anioAmateur.riesgoMostrado` (el riesgo que mostró el plan, semana por semana) y la vara de la
+  // prueba por nivel en la oferta (`datos.vara`); las carreras de muestra firman antes. Re-registrada (era 'c40afa3ff7a1').
+  13: '51c74dcb0416'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -11646,13 +11648,20 @@ check('K4c-H horizonte sobre el motor real: replicasDeDecision trae `hz` en el h
   // Una parada de cada horizonte en carreras reales (seeds 1 a 3, hasta 45 splits): amateur:reparto (split, escalera), temporada:momento
   // (partido) y, si aparece, serie:plan (serie). Se responde con réplicas cortas (2 splits) y se compara el `hz` de la primera réplica de la
   // primera opción con una lectura que no usa `seguimientoDeHorizonte`: se repite la misma carrera (mismos números aleatorios) y se lee a mano.
+  //
+  // K6c, segunda pasada (regla 17): desde que la semana del plan del año frena solo con riesgo nuevo, `amateur:reparto` es rara (0,03
+  // paradas por carrera con `resolverAuto`, ninguna en las seeds 1-3). La búsqueda sigue en ronda (seeds 4, 5, ...) hasta encontrar las
+  // dos obligatorias, con el mismo tope de 45 splits por carrera; lo que se mide (el `hz` contra la lectura a mano) no cambia.
   const objetivos = { 'amateur:reparto': 'split', 'temporada:momento': 'partido', 'serie:plan': 'serie' };
+  const obligatorias = ['amateur:reparto', 'temporada:momento'];
+  const SEEDS_EN_RONDA_K4cH = 60;
   const vistos = {};
-  for (const seed of [1, 2, 3]) {
+  const faltan = (seed) => (seed <= 3 ? Object.keys(vistos).length < Object.keys(objetivos).length : obligatorias.some((t) => !vistos[t]));
+  for (let seed = 1; seed <= SEEDS_EN_RONDA_K4cH && faltan(seed); seed += 1) {
     const rng = mulberry32(seed);
     let st = createInitialState(seed, rng);
     let splitCount = 0;
-    while (!st.terminado && splitCount < 45 && Object.keys(vistos).length < Object.keys(objetivos).length) {
+    while (!st.terminado && splitCount < 45 && faltan(seed)) {
       st = avanzarSplit(st, rng).state;
       while (st.pendiente) {
         const { sistemaId, decision } = st.pendiente;
@@ -11666,7 +11675,7 @@ check('K4c-H horizonte sobre el motor real: replicasDeDecision trae `hz` en el h
     }
   }
   if (!vistos['amateur:reparto'] || !vistos['temporada:momento']) {
-    throw new Error(`check vacío: en las seeds 1-3 no apareció ${['amateur:reparto', 'temporada:momento'].filter((t) => !vistos[t]).join(' ni ')} en 45 splits`);
+    throw new Error(`check vacío: en las seeds 1-${SEEDS_EN_RONDA_K4cH} no apareció ${obligatorias.filter((t) => !vistos[t]).join(' ni ')} en 45 splits`);
   }
   for (const [tipo, { seed, splitCount, st, decision }] of Object.entries(vistos)) {
     const esperado = objetivos[tipo];
@@ -18632,12 +18641,20 @@ check('K3c fracciones calibradas: con fraccionPermanente y fraccionPermanentePra
     throw new Error(`la práctica: bonus ${despues.player.bonusPermanente.mecanica}, esperaba ${esperadoPractica} (${fraccionPermanentePractica} × ${ganancia}) con UNA marca a nombre de la rutina: ${JSON.stringify(despues.career.registro.marcas)}`);
   }
   // Y una carrera larga, jugada sin overrides, deja marcas: la regla está enchufada a eventos y práctica reales.
-  for (const seed of [1, 2, 3]) {
+  // K6c, segunda pasada (regla 17): la seed 3 ahora termina a los 4 splits sin firmar nunca (en casa dijeron que no), y una carrera
+  // de 4 splits no es larga. Se toman, en ronda, las 3 primeras carreras que llegan a pro; lo que se mide no cambia.
+  const CARRERAS_LARGAS_K3C = 3;
+  const SEEDS_EN_RONDA_K3C = 30;
+  let largas = 0;
+  for (let seed = 1; seed <= SEEDS_EN_RONDA_K3C && largas < CARRERAS_LARGAS_K3C; seed += 1) {
     const fin = correrCarrera(seed, 60);
+    if (fin.splitFichaje === null || fin.splitFichaje === undefined) continue;
+    largas += 1;
     if (fin.career.registro.marcas.length === 0 || !STATS_DE_CURVA_K3B.some((stat) => fin.player.bonusPermanente[stat] > 0)) {
       throw new Error(`seed ${seed}: con las fracciones calibradas la carrera terminó sin marcas ni bonus`);
     }
   }
+  if (largas < CARRERAS_LARGAS_K3C) throw new Error(`check vacío: ${largas} carreras que llegan a pro en las seeds 1-${SEEDS_EN_RONDA_K3C}`);
 });
 
 check('K3-B efecto con fracción positiva: suma fracción·delta al bonus del stat, anota UNA marca con el nombre visible del evento (no su id), y los stats que no son de curva no dejan nada', () => {
@@ -21658,7 +21675,10 @@ const Z_RUIDO_METAS_C = 2;
 const FACTOR_DESVIO_MEDIANA = Math.sqrt(Math.PI / 2);
 const METAS_C = {
   // §K.3b "No llega a pro ~20% (como hoy)". Medido 21,5 (n 1500, σ 1,06). Cumple.
-  noLlegaAPro: { meta: [20, 20], texto: 'no llega a pro (%)' },
+  // Regla 17, corrimiento declarado de K6c (el plan del año del amateur): medido 22,6 (n 1500, σ 1,08; banda vieja [17,84, 22,16]).
+  // `criterio` pasa toda prueba (juega 0,85 y la vara tope es 0,8), así que la vara por nivel no lo mueve: lo mueve el plan del año
+  // (600 × 60: 22,8 en K6b, 24,7 en la primera pasada, 24,5 en la segunda). La banda va de la meta a lo medido: [17,84, 24,76].
+  noLlegaAPro: { meta: [20, 20], rebase: 22.6, texto: 'no llega a pro (%)' },
   // §K.3b "Llega a tier 1 ~55-65%". Regla 17: meta 55-65; medido 74,6 (n 1500, σ 1,12); re-basado por decisión del usuario
   // 2026-10-05, K6 juzga (endurecer el acceso a tier 1 baja el Mundial, que está justo en 7%: es la frontera medida).
   llegaATier1: { meta: [55, 65], rebase: 74.6, texto: 'llega a tier 1 (%)' },
@@ -21675,7 +21695,10 @@ const METAS_C = {
   // usuario 2026-10-05, K6 juzga (desde K5c-H cada uno juega en su casa, y la LCK es la primera más dura de entrar).
   ganaMundialCorea: { meta: [12, 15], rebase: 9.9, texto: 'gana un Mundial desde Corea (%)' },
   // §K.3b "desde NA, más difícil (~3-5%)". Medido 3,6 (n 194, σ 1,34). Cumple.
-  ganaMundialNA: { meta: [3, 5], texto: 'gana un Mundial desde Norteamérica (%)' },
+  // Regla 17, corrimiento declarado de K6c: medido 11,3 (n 194, σ 2,27; en la primera pasada de K6c 10,3; banda vieja [-1,55, 9,55]).
+  // La submuestra de NA del lote es chica y ruidosa: con la región fija (criterio, 300 × 60 por región, mismas seeds) NA gana el 4,0%
+  // en K6b y el 6,7% en K6c (Corea 9,7 y 9,3). Re-basado, K6 juzga: banda [-1,55, 15,84].
+  ganaMundialNA: { meta: [3, 5], rebase: 11.3, texto: 'gana un Mundial desde Norteamérica (%)' },
   // §K.3b "El nuevo Faker ~2-3% en promedio". Regla 17: meta 2-3; medido 1,2 (n 1500, σ 0,28); re-basado por decisión del
   // usuario 2026-10-05, K6 juzga.
   nuevoFaker: { meta: [2, 3], rebase: 1.2, texto: 'el nuevo Faker (%)' },
@@ -21714,6 +21737,11 @@ const META_C_ESTANCADO_AZAR_REBASE_PCT = 12.5;
 // K5c: LCK 51,6 / LPL 43,8 / LEC 3,9 (17867 Mundiales del mundo en 1500 carreras), margen 7,74 con σ 0,84 por carrera (0,73
 // contando cada Mundial como independiente; el ≈ 2,5 que decía este comentario estaba sobreestimado): piso 5 − 1,68 = 3,32.
 const META_C_LCK_REPARTO_PCT = 25;
+// "Más fácil desde Corea que desde NA" (§K.3b): la diferencia Corea − NA tenía que pasar Z σ. Regla 17, corrimiento declarado de K6c:
+// medido Corea 12,0 (n 332) contra NA 11,3 (n 194), diferencia 0,7 con σ 2,89 (en K6b pasaba). Con la región fija (criterio, 300 × 60
+// por región): K6b 9,7 contra 4,0, K6c 9,3 contra 6,7: la brecha se achica y la submuestra del lote la borra. Se re-basa como las
+// bandas, de la meta a lo medido con su ruido: el piso es min(Z σ, 0,7) − Z σ. K6 juzga.
+const META_C_REGION_REBASE_PP = 0.7;
 const META_C_LCK_MARGEN_PP = 5;
 const LIGA_CANDIDATA_DEL_MUNDIAL = 'LCK';
 // Las regiones de origen de las dos metas por región (`mundo.regionOrigen`, la clave de `mundialReal.porRegion`).
@@ -21806,8 +21834,9 @@ function juezDeLasMetasC(v) {
   // "Depende de la región": desde Corea se gana más que desde NA, por más que el ruido de la diferencia.
   const r = v.porRegion ?? {};
   const sigmaR = Math.sqrt((sigmaDeProporcion(r.facil, r.nFacil) ?? NaN) ** 2 + (sigmaDeProporcion(r.dificil, r.nDificil) ?? NaN) ** 2);
-  juicio.regionOrdenada = hay(r.facil) && hay(r.dificil) && hay(sigmaR) && r.facil - r.dificil >= Z_RUIDO_METAS_C * sigmaR ? null
-    : `desde ${REGION_FACIL_METAS_C} se gana el Mundial el ${r.facil}% y desde ${REGION_DIFICIL_METAS_C} el ${r.dificil}%: tiene que ser más fácil por más de ${Z_RUIDO_METAS_C} σ (σ ${redondeoMetasC(sigmaR)})`;
+  const pisoRegion = Math.min(Z_RUIDO_METAS_C * sigmaR, META_C_REGION_REBASE_PP) - Z_RUIDO_METAS_C * sigmaR;
+  juicio.regionOrdenada = hay(r.facil) && hay(r.dificil) && hay(sigmaR) && r.facil - r.dificil >= pisoRegion ? null
+    : `desde ${REGION_FACIL_METAS_C} se gana el Mundial el ${r.facil}% y desde ${REGION_DIFICIL_METAS_C} el ${r.dificil}%: la diferencia tiene que llegar a ${redondeoMetasC(pisoRegion)} (más fácil por ${Z_RUIDO_METAS_C} σ, re-basado a ${META_C_REGION_REBASE_PP} − ${Z_RUIDO_METAS_C} σ; σ ${redondeoMetasC(sigmaR)})`;
   // La meta del usuario, sin banda.
   const m = v.mundoMundial ?? {};
   juicio.lckReparto = hay(m.lck) && m.lck >= META_C_LCK_REPARTO_PCT ? null
@@ -21946,7 +21975,9 @@ check('K5c metas del bloque C: el juez acepta los valores medidos y rechaza, uno
   if (juezDeLasMetasC({ ...ok, estancados: { ...ok.estancados, azar: META_C_ESTANCADO_AZAR_PCT } }).estancadoAzar !== null) throw new Error('azar en la meta (' + META_C_ESTANCADO_AZAR_PCT + ') no cumple');
   rechazaSolo('estancadoCriterio', { ...ok, estancados: { ...ok.estancados, criterio: 11 } }, 'criterio 11');
   rechazaSolo('estancadoMalas', { ...ok, estancados: { ...ok.estancados, malas: 11 } }, 'malas 11');
-  rechazaSolo('regionOrdenada', { ...ok, porRegion: { ...ok.porRegion, facil: 5 } }, 'Corea 5 contra NA 3,1');
+  // K6c (re-basado): el piso es 0,7 − 2σ. Corea 1 contra NA 3,6 (σ 1,45, piso −2,19) no cumple; Corea igual a NA (σ 1,67, piso −2,64) sí.
+  rechazaSolo('regionOrdenada', { ...ok, porRegion: { ...ok.porRegion, facil: 1 } }, 'Corea 1 contra NA 3,6');
+  if (juezDeLasMetasC({ ...ok, porRegion: { ...ok.porRegion, facil: ok.porRegion.dificil } }).regionOrdenada !== null) throw new Error('Corea igual a NA no cumple');
   const mm = ok.mundoMundial;
   rechazaSolo('lckReparto', { ...ok, mundoMundial: { ...mm, lck: 24, segunda: 18 } }, 'LCK 24');
   // El margen: el piso es 5 − 2σ (con σ 0,84, 3,32). Justo debajo del piso no cumple; justo arriba y los 5 nominales sí; sin σ, no.
@@ -24376,7 +24407,7 @@ check('K5c-H arreglo: el split de un retiro con la temporada ya jugada cuenta co
   const sumaTiers = (porTier) => Object.values(porTier ?? {}).reduce((a, b) => a + b, 0);
   const jugados = (st) => st.career.registro.porOrg.reduce((suma, fila) => suma + sumaTiers(fila.splitsPorTier), 0)
     + sumaTiers(st.flags.splitJugadoSinFila?.splitsPorTier);
-  const cuenta = { jugadoConVuelta: 0, jugadoSinVuelta: 0, noJugado: 0, ambiguos: 0 };
+  const cuenta = { jugadoConVuelta: 0, jugadoSinVuelta: 0, noJugado: 0, ambiguos: 0, burnoutSinEquipo: 0 };
   const problemas = [];
   for (let seed = 1; seed <= SEEDS_VUELTA_K5CHA; seed += 1) {
     const rng = mulberry32(seed);
@@ -24390,6 +24421,14 @@ check('K5c-H arreglo: el split de un retiro con la temporada ya jugada cuenta co
       state = avanzarSplitAutoK5(state, rng, (sistema, st, decision, r) => ESTRATEGIAS_K0.azar(sistema, st, decision, r)).state;
       if (antes.phase === 'profesional' && state.phase === 'retirado' && antes.org && state.career.splitPrimerContratoTier2 != null) {
         abierto = { jugo: jugados(state) > antes.jugados ? 1 : 0, anios: antes.anios };
+        // K6c, segunda pasada (regla 17): un burnout llega al final del split (`atributos`), nunca antes de la temporada. Si la
+        // temporada no se jugó fue por no tener equipo ese split (free agent desde la pretemporada, seed 33; o el split del
+        // fichaje tras un ascenso, todavía sin plantel, seed 61), no por el retiro: no es ninguno de los dos casos, como los
+        // ambiguos. Los casos que se miden (el retiro antes de la temporada y el retiro con la temporada jugada) no cambian.
+        if (state.finAnticipado === 'burnout' && abierto.jugo === 0) {
+          cuenta.burnoutSinEquipo += 1;
+          abierto = null;
+        }
       }
       // Volver y retirarse otra vez en el mismo split (el split de la vuelta, jugado o no) no es ninguno de los dos casos.
       if (abierto && state.flags.vueltasUsadas > antes.vueltas && state.phase !== 'profesional') {
@@ -25097,9 +25136,14 @@ check(`K6b-C la cola: un mercado de una sola carta frena solo si se juega algo, 
 const { chanceDeQueTeLlamen: chanceDeQueTeLlamenK6BR, resolverAuto: resolverAutoRetiroK6BR } = await import('../systems/retiro.js');
 const { orgsQueTeFicharian: orgsQueTeFicharianK6BR } = await import('../core/demanda.js');
 const SEEDS_K6BR = 40;
+// K6c (regla 17): con el plan del año y la vara por nivel las carreras de `resolverAuto` cambiaron de camino y las seeds 1-40 ya
+// no traen ninguna vuelta de free agent (47 "¿Volvés?", 0 vueltas). La cosecha sigue en ronda (seeds 41, 42, ...) hasta tener
+// una, con el mismo tope de splits por carrera; lo que se mide de cada pregunta y de cada vuelta no cambia.
+const SEEDS_EN_RONDA_K6BR = 200;
 function cosechaVueltaK6BR() {
-  const cosecha = { vueltas: [], preguntas: [] };
-  for (let seed = 1; seed <= SEEDS_K6BR; seed += 1) {
+  const cosecha = { vueltas: [], preguntas: [], seeds: 0 };
+  for (let seed = 1; seed <= SEEDS_EN_RONDA_K6BR && (seed <= SEEDS_K6BR || cosecha.vueltas.length === 0); seed += 1) {
+    cosecha.seeds = seed;
     const rngV = mulberry32(seed);
     let state = createInitialState(seed, rngV);
     let pregunta = null;
@@ -25147,7 +25191,7 @@ check(`Revisión de K6b, la vuelta: se pregunta en la pretemporada, de free agen
   }
   // (a) y (b) en el motor: cada "¿Volvés?" es en la pretemporada, sin club dice la chance, y cada vuelta de free agent va al
   // mercado de esa misma pretemporada.
-  const { vueltas, preguntas } = cosechaVueltaK6BR();
+  const { vueltas, preguntas, seeds } = cosechaVueltaK6BR();
   const fueraDeVentana = preguntas.filter((q) => q.ventana !== 'pretemporada');
   const sinChance = preguntas.filter((q) => q.sinClub && (!Number.isFinite(q.pct) || !q.texto.includes(`~${q.pct}% de que te llame`)));
   const sinMercado = vueltas.filter((vuelta) => !vuelta.mercado);
@@ -25156,9 +25200,9 @@ check(`Revisión de K6b, la vuelta: se pregunta en la pretemporada, de free agen
     throw new Error(`fuera de la pretemporada ${JSON.stringify(fueraDeVentana.slice(0, 2))}; sin la chance en la previa ${JSON.stringify(sinChance.slice(0, 2))}; vueltas sin mercado ${JSON.stringify(sinMercado.slice(0, 2))}; vueltas con la chance debajo del umbral ${JSON.stringify(conChanceBaja.slice(0, 2))}`);
   }
   if (preguntas.filter((q) => q.sinClub).length === 0 || vueltas.length === 0) {
-    throw new Error(`check vacío: ${preguntas.length} "¿Volvés?" y ${vueltas.length} vueltas de free agent en ${SEEDS_K6BR} seeds`);
+    throw new Error(`check vacío: ${preguntas.length} "¿Volvés?" y ${vueltas.length} vueltas de free agent en ${seeds} seeds`);
   }
-  console.log(`      ${preguntas.length} "¿Volvés?" (${preguntas.filter((q) => q.sinClub).length} sin club), ${vueltas.length} vueltas de free agent al mercado de su pretemporada, ${vueltas.filter((vuelta) => vuelta.firmo).length} firmaron ahí`);
+  console.log(`      ${preguntas.length} "¿Volvés?" (${preguntas.filter((q) => q.sinClub).length} sin club), ${vueltas.length} vueltas de free agent al mercado de su pretemporada, ${vueltas.filter((vuelta) => vuelta.firmo).length} firmaron ahí (${seeds} seeds)`);
 });
 
 // K6b-C2, la cola de verdad (PLAN.md §K6b): desde los 28 o desde el aviso de declive, el cierre de año y el momento de una
@@ -25438,7 +25482,8 @@ checkLento(`Revisión de K6b, la meta de la cola del terco (no se retira antes d
 const { mulberry32: mulberry32K6C } = await import('../core/rng.js');
 const { createInitialState: estadoInicialK6C } = await import('../core/state.js');
 const { avanzarSplitAuto: avanzarSplitAutoK6C } = await import('../core/pipeline.js');
-const { resolver: resolverAmateurK6C, planDeSemana: planDeSemanaK6C } = await import('../systems/amateur.js');
+const { resolver: resolverAmateurK6C, planDeSemana: planDeSemanaK6C, riesgoDelPlan: riesgoDelPlanK6C } = await import('../systems/amateur.js');
+const { nivelDelJugador: nivelDelJugadorK6C } = await import('../core/ficha.js');
 const { veredictoDeLaPrueba: veredictoDeLaPruebaK6C, varaDeLaPrueba: varaDeLaPruebaK6C } = await import('../core/serie.js');
 const { elegirOrgTier3: elegirOrgTier3K6C } = await import('../core/tier3.js');
 const { RUTINAS: RUTINAS_K6C } = await import('../core/rutinas.js');
@@ -25484,11 +25529,11 @@ function loteDeK6C() {
         return { opcionId: elegida.id };
       }
       if (sistema.id === 'amateur' && motivo === 'oferta') {
-        lote.ofertas.push({ seed, anio: s.flags.anioAmateur?.edad ?? null, org: decision.datos.org.nombre, decision });
+        lote.ofertas.push({ seed, anio: s.flags.anioAmateur?.edad ?? null, org: decision.datos.org.nombre, decision, nivel: nivelDelJugadorK6C(s) });
         return { opcionId: 'firmar' };
       }
       if (sistema.id === 'amateur' && motivo === 'minijuego') {
-        lote.pruebas.push({ seed, decision });
+        lote.pruebas.push({ seed, decision, nivel: nivelDelJugadorK6C(s) });
         return { resultado: 0 };
       }
       return sistema.resolverAuto(s, decision, r);
@@ -25512,13 +25557,15 @@ function loteDeK6C() {
 
 check('K6c pasaste = firmás: en la prueba del amateur un resultado en la vara o arriba firma siempre y uno abajo nunca, sin dado (el rng no se mueve), y el log dice la vara y por cuánto no llegaste', () => {
   const problemas = [];
-  const vara = varaDeLaPruebaK6C();
   for (const seed of [1, 2, 3, 4, 5]) {
     const { state, decision, org } = pausaDeLaPruebaK6C(seed);
     if (decision?.datos?.momento !== 'tryout') {
       problemas.push(`seed ${seed}: firmar con un tier 3 no armó la prueba`);
       continue;
     }
+    // K6c (segunda pasada): la vara es la de tu nivel contra el del club, la que viaja en la decisión.
+    const vara = varaDeLaPruebaK6C(nivelDelJugadorK6C(state), org.fuerza);
+    if (decision.datos.vara !== vara) problemas.push(`seed ${seed}: la prueba trae vara ${decision.datos.vara}, la de tu nivel contra el club es ${vara}`);
     for (let paso = 0; paso <= BALANCE_K6C.stats.max; paso += 1) {
       const resultado = paso / BALANCE_K6C.stats.max;
       const rng = mulberry32K6C(seed * 1000 + paso);
@@ -25529,7 +25576,7 @@ check('K6c pasaste = firmás: en la prueba del amateur un resultado en la vara o
       if (firmo !== debe) problemas.push(`seed ${seed}, resultado ${resultado}: firmó=${firmo} con la vara en ${vara}%`);
       if (rng.estado() !== antes) problemas.push(`seed ${seed}, resultado ${resultado}: la prueba movió el rng (hay un dado)`);
       const texto = r.logs.map((log) => log.message).join(' ');
-      const v = veredictoDeLaPruebaK6C(resultado);
+      const v = veredictoDeLaPruebaK6C(resultado, vara);
       if (v.pasa !== debe) problemas.push(`seed ${seed}, resultado ${resultado}: veredictoDeLaPrueba dice pasa=${v.pasa}`);
       if (!texto.includes(`la vara era ${vara}%`)) problemas.push(`seed ${seed}, resultado ${resultado}: el log no dice la vara ("${texto.slice(0, 120)}")`);
       if (!debe && !(texto.includes(`te faltó ${v.falta}%`) && texto.includes(`${org.nombre} no te firma`))) {
@@ -25542,23 +25589,26 @@ check('K6c pasaste = firmás: en la prueba del amateur un resultado en la vara o
 
 check('K6c la vara: la oferta, la previa de la prueba y la pantalla muestran la misma vara que usa el motor (regla 15)', () => {
   const problemas = [];
-  const vara = varaDeLaPruebaK6C();
   const { pruebas, ofertas } = loteDeK6C();
   if (pruebas.length < 10) throw new Error(`check vacío: ${pruebas.length} pruebas en el lote`);
-  for (const { seed, decision } of pruebas) {
+  for (const { seed, decision, nivel } of pruebas) {
     const { datos } = decision;
+    // K6c (segunda pasada): la vara de tu nivel de ese momento contra el calibre del club.
+    const vara = varaDeLaPruebaK6C(nivel, datos.oferta.org.fuerza);
     if (datos.vara !== vara) problemas.push(`seed ${seed}: la prueba trae vara ${datos.vara}, el motor usa ${vara}`);
     if (!String(datos.regla).includes(`La vara: ${vara}%`)) problemas.push(`seed ${seed}: la previa no dice la vara ("${datos.regla}")`);
     if (!String(datos.apuesta).includes(`Necesitás ${vara}%`)) problemas.push(`seed ${seed}: la apuesta no dice la vara ("${datos.apuesta}")`);
   }
-  for (const { seed, decision } of ofertas.filter((o) => o.decision.datos.tier === 3)) {
+  for (const { seed, decision, nivel } of ofertas.filter((o) => o.decision.datos.tier === 3)) {
+    const vara = varaDeLaPruebaK6C(nivel, decision.datos.org.fuerza);
+    if (decision.datos.vara !== vara) problemas.push(`seed ${seed}: la oferta lleva vara ${decision.datos.vara}, la de tu nivel contra el club es ${vara}`);
     const firmar = decision.opciones.find((opcion) => opcion.id === 'firmar');
     if (!firmar.descripcion.includes(`necesitás ${vara}%`)) problemas.push(`seed ${seed}: la oferta no anuncia la vara ("${firmar.descripcion}")`);
   }
   // La pantalla (src/ui/app.js) no corre en Node: se exige que el veredicto salga de la misma cuenta del motor y no de la
   // probabilidad del mercado.
   const app = fs.readFileSync(new URL('../ui/app.js', import.meta.url), 'utf8');
-  if (!/import \{[^}]*veredictoDeLaPrueba[^}]*\} from '\.\.\/core\/serie\.js'/.test(app) || !/veredictoDeLaPrueba\(resultado\)/.test(app)) {
+  if (!/import \{[^}]*veredictoDeLaPrueba[^}]*\} from '\.\.\/core\/serie\.js'/.test(app) || !/veredictoDeLaPrueba\(resultado, decision\.datos\.vara\)/.test(app)) {
     problemas.push('la pantalla de la prueba no usa veredictoDeLaPrueba del motor');
   }
   if (!/laPrueba\.falta/.test(app) || !/laPrueba\.vara/.test(app)) problemas.push('la pantalla no dice la vara y por cuánto no llegaste');
@@ -25643,6 +25693,99 @@ check('K6c vos elegís el plan de cada año: cada año del amateur arranca frena
       if (semana.frena !== caso.frena) problemas.push(`seed ${seed}, ${caso.nombre}: frena=${semana.frena}, se esperaba ${caso.frena}`);
       if (semana.elegida.id !== caso.plan) problemas.push(`seed ${seed}, ${caso.nombre}: se vive "${semana.elegida.id}", no el plan`);
       if (semana.frena && !/Tu plan del año es/.test(semana.decision.descripcion)) problemas.push(`seed ${seed}, ${caso.nombre}: la parada no dice que es tu plan`);
+    }
+  }
+  if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
+});
+
+// --- K6c, segunda pasada (PLAN.md §K6c: "la vara depende del nivel" y "la semana frena solo con riesgo nuevo") -----------------
+const { ROLES: ROLES_K6C } = await import('../data/roles.js');
+// Escenarios del check (del instrumento, no del juego), sobre las diferencias nivel − calibre medidas en las ofertas de tier 3
+// (200 carreras por bot: del ~22 del 5% más justo al ~55 del 5% más crack): "claramente mejor" es 50 arriba del club y tiene
+// que firmar con una prueba floja; "justo" es 20 arriba y con una prueba regular no firma, con una buena sí.
+const DIF_CRACK_K6C = 50;
+const DIF_JUSTO_K6C = 20;
+const PRUEBA_FLOJA_K6C = 0.3;
+const PRUEBA_REGULAR_K6C = 0.45;
+const PRUEBA_BUENA_K6C = 0.75;
+// La media de paradas de la semana por carrera con el plan del año (la meta de K6a-A es la mediana <= 1; con la regla del riesgo
+// nuevo la media misma queda lejos de 1, y sin ella no).
+const META_MEDIA_PARADAS_SEMANA_K6C = 0.5;
+
+// El mismo estado con los stats de rol en `nivel` (los pesos de cada rol suman 1: `nivelDelJugador` da `nivel`).
+function conNivelK6C(st, nivel) {
+  const stats = { ...st.player.stats };
+  for (const stat of Object.keys(ROLES_K6C[st.player.role].pesos)) stats[stat] = nivel;
+  return { ...st, player: { ...st.player, stats } };
+}
+
+check('K6c la vara depende del nivel: contra el mismo club, el que lo supera por mucho firma con una prueba floja y el justo necesita una buena; la oferta, la previa y el motor usan esa vara', () => {
+  const problemas = [];
+  for (const seed of [1, 2, 3, 4, 5]) {
+    const rng = mulberry32K6C(seed);
+    const st = estadoInicialK6C(seed, rng);
+    const org = elegirOrgTier3K6C(st, rng);
+    const conPlan = { ...st, flags: { ...st.flags, anioAmateur: anioAmateurK6C(st, 'bancar_el_colegio') } };
+    const oferta = { tipo: 'opciones', titulo: '', descripcion: '', opciones: [], datos: { motivo: 'oferta', org, tier: 3, liga: null } };
+    const varas = {};
+    for (const [quien, dif, pruebas] of [
+      ['crack', DIF_CRACK_K6C, [[PRUEBA_FLOJA_K6C, true]]],
+      ['justo', DIF_JUSTO_K6C, [[PRUEBA_REGULAR_K6C, false], [PRUEBA_BUENA_K6C, true]]]
+    ]) {
+      const conNivel = conNivelK6C(conPlan, org.fuerza + dif);
+      const pausa = resolverAmateurK6C(conNivel, oferta, { opcionId: 'firmar' }, mulberry32K6C(seed));
+      const { vara } = pausa.decision?.datos ?? {};
+      varas[quien] = vara;
+      if (vara !== varaDeLaPruebaK6C(nivelDelJugadorK6C(conNivel), org.fuerza)) problemas.push(`seed ${seed}, ${quien}: la prueba trae vara ${vara}, no la de su nivel contra el club`);
+      if (!String(pausa.decision?.datos?.regla).includes(`La vara: ${vara}%`)) problemas.push(`seed ${seed}, ${quien}: la previa no dice la vara`);
+      for (const [resultado, firma] of pruebas) {
+        const r = resolverAmateurK6C(pausa.state, pausa.decision, { resultado }, mulberry32K6C(seed));
+        if ((r.state.phase === 'profesional') !== firma) {
+          problemas.push(`seed ${seed}, ${quien} (nivel ${org.fuerza + dif} contra ${org.fuerza}): con ${Math.round(resultado * 100)}% ${firma ? 'no firmó' : 'firmó'} (vara ${vara}%)`);
+        }
+      }
+    }
+    if (!(varas.crack < varas.justo)) problemas.push(`seed ${seed}: la vara del crack (${varas.crack}%) no es menor que la del justo (${varas.justo}%)`);
+  }
+  if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
+});
+
+check('K6c la semana frena solo con riesgo nuevo: con el plan del año, el riesgo que el plan ya mostró no frena; el que aparece después (el colegio más abajo de lo proyectado, la deuda de sueño antes de lo anunciado) sí', () => {
+  const problemas = [];
+  const porId = (id) => RUTINAS_K6C.amateur.find((rutina) => rutina.id === id);
+  const fijas = ['todo_al_ranked', 'bancar_el_colegio'].map(porId);
+  const agresivo = porId('todo_al_ranked');
+  const umbral = BALANCE_K6C.amateur.confiscacionUmbral;
+  const robosAlBorde = BALANCE_K6C.amateur.robosParaDeuda - 1;
+  // En el motor real (el lote de K6a-A: 30 carreras × 60 con `resolverAuto`): medido 0,03 paradas de la semana por carrera
+  // con la regla; 1,93 sin ella (la semana frenando por el riesgo que el plan ya mostró, con la mediana en 1).
+  const { semanasPorCarrera } = loteDeK6aA();
+  const media = semanasPorCarrera.reduce((suma, n) => suma + n, 0) / semanasPorCarrera.length;
+  if (media > META_MEDIA_PARADAS_SEMANA_K6C) problemas.push(`${media.toFixed(2)} paradas de la semana por carrera con el plan del año (la meta es <= ${META_MEDIA_PARADAS_SEMANA_K6C}: frena lo que el plan ya mostró)`);
+  for (const seed of [1, 2, 3]) {
+    const base = estadoInicialK6C(seed, mulberry32K6C(seed));
+    const con = (estudios, robos) => ({
+      ...base,
+      player: { ...base.player, studies: estudios },
+      flags: { ...base.flags, robosConsecutivos: robos, negociacionGanada: false }
+    });
+    // El plan del año elegido sobre `mostradoEn` (la carta mostró ese riesgo) y vivido sobre `st`.
+    const conAnio = (st, mostradoEn) => {
+      const { semanal, semanaDeuda } = riesgoDelPlanK6C(mostradoEn, agresivo);
+      return { ...st, flags: { ...st.flags, anioAmateur: { ...anioAmateurK6C(st, 'todo_al_ranked'), riesgoMostrado: { semanal, semanaDeuda } } } };
+    };
+    const enLaRaya = con(umbral, 0);
+    const casos = [
+      { nombre: 'el colegio en la raya, y el plan ya lo mostró', st: conAnio(enLaRaya, enLaRaya), frena: false },
+      { nombre: 'el colegio en la raya, y el plan mostraba el colegio sobrado', st: conAnio(enLaRaya, con(95, 0)), frena: true, texto: /más de lo que mostraba el plan/ },
+      { nombre: 'la deuda de sueño, ya anunciada por el plan', st: conAnio(con(95, robosAlBorde), con(95, robosAlBorde)), frena: false },
+      { nombre: 'la deuda de sueño antes de lo que anunciaba el plan', st: conAnio(con(95, robosAlBorde), con(95, 0)), frena: true },
+      { nombre: 'el colegio en la raya, sin riesgo mostrado (un guardado de antes: la regla de K6a-A)', st: { ...enLaRaya, flags: { ...enLaRaya.flags, anioAmateur: anioAmateurK6C(base, 'todo_al_ranked') } }, frena: true }
+    ];
+    for (const caso of casos) {
+      const semana = planDeSemanaK6C(caso.st, fijas, agresivo);
+      if (semana.frena !== caso.frena) problemas.push(`seed ${seed}, ${caso.nombre}: frena=${semana.frena}, se esperaba ${caso.frena}`);
+      if (semana.frena && caso.texto && !caso.texto.test(semana.decision.descripcion)) problemas.push(`seed ${seed}, ${caso.nombre}: la parada no dice que el riesgo es nuevo ("${semana.decision.descripcion.slice(0, 160)}")`);
     }
   }
   if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);

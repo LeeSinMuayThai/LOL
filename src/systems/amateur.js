@@ -17,6 +17,7 @@ import { esCierreDeEdad } from './edadCierre.js';
 import { nombreVisibleDeLiga } from '../core/ligas.js';
 import { opcionDelPerfil, nombreDePerfil, pisoSoloQDePerfil } from '../core/perfil.js';
 import { etiquetaCampo } from '../core/selectors.js';
+import { nivelDelJugador } from '../core/ficha.js';
 
 export const id = 'amateur';
 
@@ -216,7 +217,7 @@ export function opcionesDeSemana(state, rutinas) {
 }
 
 // Lo que está en juego, dicho con los números de la regla: por qué esta semana te frena.
-function textoDeLoQueEstaEnJuego(elegida, masSegura, conPlan) {
+function textoDeLoQueEstaEnJuego(elegida, masSegura, conPlan, proyectada = null) {
   const partes = [];
   if (elegida.peligro.casa > masSegura.peligro.casa) {
     partes.push(`te deja el colegio en ~${entero(elegida.peligro.estudiosDespues)}: ${porcentaje(elegida.peligro.casa)} de que en casa te saquen la PC o te corten el ranked, contra ${porcentaje(masSegura.peligro.casa)} con "${masSegura.rutina.titulo}"`);
@@ -226,14 +227,18 @@ function textoDeLoQueEstaEnJuego(elegida, masSegura, conPlan) {
   }
   // K6c: con el plan del año, lo que iba a pasar es tu plan (lo elegiste vos), no tu perfil.
   const quien = conPlan ? `Tu plan del año es "${elegida.rutina.titulo}"` : `Tu perfil iba a ir por "${elegida.rutina.titulo}"`;
-  return `${quien}, y eso ${partes.join('; y ')}.`;
+  // K6c (segunda pasada): con plan, la semana frena por algo que el plan no mostró: se dice contra qué.
+  const cambio = proyectada !== null && elegida.peligro.casa > proyectada + BALANCE.amateur.semanaRiesgoNuevo
+    ? ` Es más de lo que mostraba el plan para esta semana (${porcentaje(proyectada)} en casa): algo cambió.`
+    : '';
+  return `${quien}, y eso ${partes.join('; y ')}.${cambio}`;
 }
 
-function decisionDeRutina(state, rutinas, opciones, elegida, masSegura, conPlan = false) {
+function decisionDeRutina(state, rutinas, opciones, elegida, masSegura, conPlan = false, proyectada = null) {
   return {
     tipo: 'opciones',
     titulo: `Cómo vivís la semana — ${etiquetaDeRanked(state.player.ranked, servidorDeLaPartida(state))}`,
-    descripcion: descripcionDeSorteo(rutinas.length, EJE_AMATEUR, `${textoDeLoQueEstaEnJuego(elegida, masSegura, conPlan)} ${textoDeSituacion(state)}`),
+    descripcion: descripcionDeSorteo(rutinas.length, EJE_AMATEUR, `${textoDeLoQueEstaEnJuego(elegida, masSegura, conPlan, proyectada)} ${textoDeSituacion(state)}`),
     opciones: opciones.map((opcion) => ({
       ...opcionDesdeRutina(opcion.rutina, 'amateur'),
       previa: opcion.previa
@@ -271,11 +276,32 @@ export function planDeSemana(state, rutinas, plan = null) {
   const masSegura = opciones.reduce((mejor, opcion) => (opcion.peligro.casa < mejor.peligro.casa ? opcion : mejor));
   const casaEvitable = elegida.peligro.casa - masSegura.peligro.casa >= BALANCE.amateur.semanaRiesgoEvitable;
   const deudaEvitable = elegida.peligro.deuda && opciones.some((opcion) => !opcion.peligro.deuda);
-  const frena = casaEvitable || deudaEvitable;
+  const nuevo = plan ? riesgoNuevoDeLaSemana(state, elegida) : { casa: true, deuda: true, proyectada: null };
+  const frena = (casaEvitable && nuevo.casa) || (deudaEvitable && nuevo.deuda);
   return {
     elegida: elegida.rutina,
     frena,
-    decision: frena ? decisionDeRutina(state, ofrecidas, opciones, elegida, masSegura, plan !== null) : null
+    decision: frena ? decisionDeRutina(state, ofrecidas, opciones, elegida, masSegura, plan !== null, nuevo.proyectada) : null
+  };
+}
+
+// K6c, segunda pasada ("la semana frena solo con riesgo nuevo"): el plan del año ya mostró su riesgo, semana por semana
+// (`anioAmateur.riesgoMostrado`, la proyección de `riesgoDelPlan` al elegirlo). Lo que aceptaste al elegir el plan no vuelve
+// a frenar: la semana frena solo si su riesgo en casa supera el que el plan mostró para esa semana por más de
+// `amateur.semanaRiesgoNuevo`, o si entrás en deuda de sueño antes de la semana que el plan anunciaba (o sin que la
+// anunciara). Un plan sin riesgo mostrado (un guardado de antes) frena con la regla de K6a-A. Puro, sin `rng`.
+function riesgoNuevoDeLaSemana(state, elegida) {
+  const anio = state.flags.anioAmateur;
+  const mostrado = anio?.riesgoMostrado;
+  if (!mostrado) {
+    return { casa: true, deuda: true, proyectada: null };
+  }
+  const semana = anio.semanas + 1;
+  const proyectada = mostrado.semanal[Math.min(semana, mostrado.semanal.length) - 1];
+  return {
+    casa: elegida.peligro.casa > proyectada + BALANCE.amateur.semanaRiesgoNuevo,
+    deuda: mostrado.semanaDeuda === null || semana < mostrado.semanaDeuda,
+    proyectada
   };
 }
 
@@ -331,10 +357,12 @@ export function riesgoDelPlan(state, rutina) {
   let st = state;
   let sinNada = 1;
   let semanaDeuda = null;
+  const semanal = [];
   for (let semana = 1; semana <= BALANCE.edad.splitsPorEdad; semana += 1) {
     const proy = proyeccionDeSemana(st, rutina);
     const peligro = peligrosDeSemana(st, proy);
     sinNada *= 1 - peligro.casa;
+    semanal.push(peligro.casa);
     if (peligro.deuda && semanaDeuda === null) {
       semanaDeuda = semana;
     }
@@ -351,7 +379,7 @@ export function riesgoDelPlan(state, rutina) {
       flags: { ...st.flags, robosConsecutivos: proy.robos }
     };
   }
-  return { casa: 1 - sinNada, semanaDeuda };
+  return { casa: 1 - sinNada, semanaDeuda, semanal };
 }
 
 function textoDeOfertaDelAnio(oferta) {
@@ -423,9 +451,13 @@ function resolverPlan(state, decision, opcionId, rng) {
   const { propuesta, ofrecidas } = decision.datos;
   const rutinaId = ofrecidas.includes(opcionId) ? opcionId : propuesta;
   const rutina = RUTINAS.amateur.find((candidata) => candidata.id === rutinaId);
+  // K6c (segunda pasada): el riesgo que mostró la carta del plan (la misma cuenta, sobre el mismo estado), semana por semana:
+  // la vara contra la que la semana decide si lo que aparece es nuevo (`riesgoNuevoDeLaSemana`).
+  const { semanal, semanaDeuda } = riesgoDelPlan(state, rutina);
   const anioAmateur = {
     edad: state.age,
     rutinaId,
+    riesgoMostrado: { semanal, semanaDeuda },
     rankedInicio: { ...state.player.ranked },
     semanas: 0,
     semanasEnRadar: 0,
@@ -796,6 +828,9 @@ function buscarSalida(state, rng) {
 
   if (chance(probabilidadDeScouting(state), rng)) {
     const { org, tier, liga } = orgQueTeFicha(state, rng);
+    // K6c (segunda pasada): la vara de la prueba de tier 3 sale de tu nivel de hoy contra el calibre del club, una vez, acá:
+    // la oferta la anuncia y viaja en `datos.vara` a la previa, al motor y a la pantalla. Sin `rng`.
+    const vara = tier === 3 ? varaDeLaPruebaDelClub(state, org) : null;
     const descripcion = tier === 2
       ? `Te vieron en la ladder: ${etiquetaDeRanked(state.player.ranked, servidorDeLaPartida(state))}. Estás tan arriba que ${nombreVisibleDeLiga(liga.id)} te ofrece saltearte el tramo de probarte en un equipo chico.`
       : `Te vieron en la ladder: ${etiquetaDeRanked(state.player.ranked, servidorDeLaPartida(state))}. Es un equipo de tier 3, chico y de paso: contrato mínimo, mudanza a la gaming house y dejar el colegio a mitad de camino.`;
@@ -810,7 +845,7 @@ function buscarSalida(state, rng) {
           label: `Firmar con ${org.nombre}`,
           descripcion: tier === 2
             ? `Firmás directo en ${nombreVisibleDeLiga(liga.id)}: se termina la etapa amateur.`
-            : `Antes de firmar hay una prueba: necesitás ${varaDeLaPrueba()}% para que te firmen. Si llegás, firmás seguro y se termina la etapa amateur; si no, seguís en la escalera.`,
+            : `Antes de firmar hay una prueba: necesitás ${vara}% para que te firmen (${textoDeLaVara(state, org)}). Si llegás, firmás seguro y se termina la etapa amateur; si no, seguís en la escalera.`,
           pesoAuto: 7
         },
         {
@@ -821,7 +856,7 @@ function buscarSalida(state, rng) {
         }
       ],
       'oferta',
-      { org, tier, liga: liga?.id ?? null }
+      { org, tier, liga: liga?.id ?? null, ...(vara !== null ? { vara } : {}) }
     );
   }
 
@@ -908,15 +943,27 @@ function firmarConEquipo(state, decision) {
 // Devuelve la pausa entera porque el id elegido se anota en `flags.minijuegosRecientes`.
 //
 // K6c ("pasaste = firmás", decisión del usuario 2026-10-05): la prueba ya no tira dado después del minijuego. Hay una vara
-// (`amateur.varaPrueba`, `veredictoDeLaPrueba` en `core/serie.js`): con el resultado en la vara o arriba firmás seguro;
+// (`amateur.varaPrueba`, de tu nivel contra el del club; `veredictoDeLaPrueba` en `core/serie.js`): con el resultado en la vara o arriba firmás seguro;
 // abajo, no firmás, y el juego dice por cuánto no llegaste. La previa la dice antes de jugar (`datos.regla` y la apuesta)
 // con el mismo número que usa el motor (regla 15).
 const TEXTO_SI_NO_ALCANZA = 'Si no alcanza, seguís en la escalera: puede llegar otra oferta, de otro club.';
 
+// K6c (segunda pasada): la vara de la prueba con este club, de tu nivel de hoy contra su calibre (`varaDeLaPrueba`).
+function varaDeLaPruebaDelClub(state, org) {
+  return varaDeLaPrueba(nivelDelJugador(state), org.fuerza);
+}
+
+// Por qué la vara está donde está, en palabras: tu nivel contra el del club (los dos números, regla 13).
+function textoDeLaVara(state, org) {
+  const nivel = Math.round(nivelDelJugador(state));
+  return `tu nivel ${nivel} contra el ${org.fuerza} del club: cuanto más los superás, menos te piden`;
+}
+
 function pausaDeLaPrueba(state, datosOferta) {
   const entrada = elegirMinijuego(state, 'tryout');
   const textos = textoDeMinijuego(entrada, state);
-  const vara = varaDeLaPrueba();
+  // La vara viene armada de la oferta (`buscarSalida`); un guardado con la oferta pendiente de antes la recalcula igual.
+  const vara = datosOferta.vara ?? varaDeLaPruebaDelClub(state, datosOferta.org);
   return {
     state: { ...state, flags: { ...state.flags, minijuegosRecientes: registrarMinijuegoVisto(state, entrada.id) } },
     decision: {
@@ -933,7 +980,7 @@ function pausaDeLaPrueba(state, datosOferta) {
         // K4c (revisión), regla 15: la apuesta dice también qué pasa si no alcanza (lo que hace `resolverLaPrueba`).
         apuesta: `${textos.apuesta} Necesitás ${vara}% para que te firmen. ${TEXTO_SI_NO_ALCANZA}`,
         // K6c: la vara, a la vista antes del minijuego (la línea de la regla de la previa) y en número para la pantalla.
-        regla: `La vara: ${vara}%. Si llegás, firmás seguro; si no, no firmás.`,
+        regla: `La vara: ${vara}% (${textoDeLaVara(state, datosOferta.org)}). Si llegás, firmás seguro; si no, no firmás.`,
         vara,
         oferta: datosOferta
       }
@@ -946,7 +993,7 @@ function pausaDeLaPrueba(state, datosOferta) {
 // amateur, así que conservarlo no salvaba ninguna seed, y una tirada que no decide nada sería una trampa para el próximo.
 function resolverLaPrueba(state, decision, respuesta) {
   const resultado = clamp(respuesta.resultado ?? 0.5, 0, 1);
-  const veredicto = veredictoDeLaPrueba(resultado);
+  const veredicto = veredictoDeLaPrueba(resultado, decision.datos.vara);
   const { org } = decision.datos.oferta;
   if (!veredicto.pasa) {
     // La firma se posterga: seguís en la escalera (la fase no cambia, no queda crédito) y puede llegar otra oferta, de otro

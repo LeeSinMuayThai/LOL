@@ -409,16 +409,23 @@ export function probabilidadDeFirmarTrasPrueba(resultado) {
   return ajuste < 0 ? regular + (regular - malo) * ajuste : regular + (bueno - regular) * ajuste;
 }
 
-// K6c ("pasaste = firmás"): la prueba del amateur no tira dado. `resultado` 0-1 contra `amateur.varaPrueba`, en puntos
-// de porcentaje enteros (los mismos que lee el jugador: "necesitás 60%", "te faltó 20%"), así lo que dice la pantalla y lo
-// que decide el motor no se separan por un redondeo. La usan `systems/amateur.js` (la previa, el contrato y el log) y
+// K6c ("pasaste = firmás"): la prueba del amateur no tira dado. `resultado` 0-1 contra la vara, en puntos de porcentaje
+// enteros (los mismos que lee el jugador: "necesitás 45%", "te faltó 20%"), así lo que dice la pantalla y lo que decide el
+// motor no se separan por un redondeo. La usan `systems/amateur.js` (la oferta, la previa, el contrato y el log) y
 // `ui/app.js` (el veredicto): una sola cuenta (regla 15). Puro, sin `rng`.
-export function varaDeLaPrueba() {
-  return Math.round(BALANCE.amateur.varaPrueba * BALANCE.stats.max);
+//
+// K6c, segunda pasada ("el nivel manda"): la vara depende de tu nivel (`nivelDelJugador`) contra el calibre del club
+// (`org.fuerza`, la misma vara de `calibreDeLiga`): `clamp(base − pendiente × (nivel − calibre), mínimo, máximo)`, con las
+// constantes en `amateur.varaPrueba`. Si sos claramente mejor que el club, una prueba floja alcanza; si estás justo,
+// necesitás una buena. Se calcula una vez, al armar la oferta, y viaja en la decisión (`datos.vara`): la oferta, la previa,
+// el motor y la pantalla leen el mismo número.
+export function varaDeLaPrueba(nivel, calibre) {
+  const { base, pendiente, minimo, maximo } = BALANCE.amateur.varaPrueba;
+  const vara = Math.min(maximo, Math.max(minimo, base - pendiente * (nivel - calibre)));
+  return Math.round(vara * BALANCE.stats.max);
 }
 
-export function veredictoDeLaPrueba(resultado) {
-  const vara = varaDeLaPrueba();
+export function veredictoDeLaPrueba(resultado, vara) {
   const sacaste = Math.round(Math.min(1, Math.max(0, resultado ?? 0)) * BALANCE.stats.max);
   return { pasa: sacaste >= vara, vara, sacaste, falta: Math.max(0, vara - sacaste) };
 }

@@ -339,12 +339,20 @@ export const BALANCE = {
     // Cuánto más riesgo en casa (chance de confiscación o corte, 0-1) tiene que sumar lo que elegiría tu perfil, contra
     // la opción más segura de la semana, para que la semana frene.
     semanaRiesgoEvitable: 0.05,
+    // K6c, segunda pasada ("la semana frena solo con riesgo nuevo"): con un plan del año elegido, que ya mostró su riesgo
+    // semana por semana (`riesgoDelPlan`), la semana frena solo si su chance en casa supera la que el plan mostró para esa
+    // semana por más que esto (o si la deuda de sueño llega antes de lo anunciado). Lo que ya aceptaste no vuelve a frenar.
+    semanaRiesgoNuevo: 0.05,
     // K6c ("pasaste = firmás", decisión del usuario 2026-10-05): la vara de la prueba del amateur, sobre el `resultado`
     // 0-1 del minijuego. Sin dado: con el resultado en la vara o arriba firmás seguro; abajo, no firmás. Antes era la
-    // probabilidad de `serie.probFirmaTryout` (una prueba perfecta no firmaba 1 de cada 20). 0,6 es 3 de los 5 blancos de
-    // "la prueba": así "te faltó" cae siempre en blancos enteros. La previa la dice antes de jugar, con este mismo número.
-    // La prueba del mercado (`systems/mercado.js`) sigue con `serie.probFirmaTryout`: K6c no la toca.
-    varaPrueba: 0.6,
+    // probabilidad de `serie.probFirmaTryout` (una prueba perfecta no firmaba 1 de cada 20). La previa la dice antes de
+    // jugar, con este mismo número. La prueba del mercado (`systems/mercado.js`) sigue con `serie.probFirmaTryout`.
+    // K6c, segunda pasada ("el nivel manda"): la vara fija de 0,6 ignoraba el nivel (`malas`, que juega la prueba al 0,15,
+    // no firmaba nunca, y un crack con una prueba floja no firmaba ni en tier 3). Ahora
+    // `vara = clamp(base − pendiente × (nivel − calibre), minimo, maximo)`, con tu `nivelDelJugador` contra el calibre del
+    // club (`org.fuerza`, 5-35 en tier 3). Medido en las ofertas de tier 3 (200 carreras por bot): la diferencia
+    // nivel − calibre va de ~22 (el 5% más justo) a ~55-63 (el 5% más crack), con la mediana en ~37.
+    varaPrueba: { base: 1.35, pendiente: 0.035, minimo: 0.1, maximo: 0.8 },
 
     // Fase 10a (§10.1): deja de ser el corte duro ("cumpliste 20, se acabó").
     // La ventana real ya la cierra el sesgo etario del scouting (arriba); esto

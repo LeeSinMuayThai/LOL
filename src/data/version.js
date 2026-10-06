@@ -135,4 +135,8 @@ export const VERSION_JUEGO = 'K6c';
 // la prueba del amateur no tira dado (una vara, `amateur.varaPrueba`; se saca la tirada: T1) y el club que ya ofreció no vuelve en el
 // año; "vos elegís el plan de cada año": cada año del amateur frena con el resumen y el plan (una tirada de `ofrecerRutinas` por
 // año) y las semanas siguen el plan. Ninguna seed de K6b reproduce su carrera. Reemplaza a 1920057344.
-export const HUELLA_JUEGO = 11046700;
+// K6c, segunda pasada (977079279; corrimiento declarado, misma etiqueta 'K6c': la primera pasada no salió de la rama): la vara de la
+// prueba del amateur depende de tu nivel contra el calibre del club (`amateur.varaPrueba`: base, pendiente, mínimo y máximo) y la
+// semana del plan del año frena solo con riesgo nuevo (`amateur.semanaRiesgoNuevo`). Sin tiradas nuevas: cambian las firmas y las
+// paradas, y con ellas las carreras. Reemplaza a 11046700.
+export const HUELLA_JUEGO = 977079279;

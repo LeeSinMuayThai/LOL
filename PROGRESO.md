@@ -34,6 +34,47 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-05 — K6c, segunda pasada: la vara por nivel y la semana que frena solo con riesgo nuevo (`k6c-amateur`; PLAN.md §K6c)
+
+- **La vara depende del nivel** (`amateur.varaPrueba` = { base 1,35, pendiente 0,035, mínimo 0,1, máximo 0,8 };
+  `varaDeLaPrueba(nivel, calibre)` en `core/serie.js`): `clamp(base − pendiente × (nivelDelJugador − org.fuerza), mín, máx)`. Se
+  calcula una vez al armar la oferta y viaja en `datos.vara`: la oferta ("necesitás X% (tu nivel N contra el F del club…)"), la
+  previa, el motor (`veredictoDeLaPrueba(resultado, vara)`) y la pantalla leen el mismo número. Medido en las ofertas de tier 3
+  (200 carreras por bot): nivel − calibre de ~22 (5% más justo) a ~55 (5% más crack), mediana ~37 → vara 80% con diferencia <= 15,7,
+  ~58% a 22, 10% desde 35,7. Más de la mitad de las ofertas piden el mínimo (57-68% piden <= 15%): es el precio de que `malas`
+  (juega 0,15) firme a veces. Por qué así: `criterio` (0,85) pasa siempre, así que la vara no lo mueve; `malas` necesita la vara en
+  0,15 en ~la mitad de sus pruebas para no pasar del ~60%. Barrido (300 × 60, malas/azar): (1,1; 0,02) 85,7/39,7; (1,2; 0,025)
+  78,7/37,7; (1,25; 0,03) 65,3/35,7; (1,3; 0,03) 68,0/35,7; (1,35; 0,035) 60,0/34,7; (1,5; 0,04) 58,3/34,7.
+- **No llega a pro** (600 × 60; K6b `58db231` → primera pasada → segunda): criterio 22,8 → 24,7 → **24,5** (leal 29,1, profesional
+  24,0, hambriento 21,5, showman 23,3); azar 26,8 → 48,2 → **32,0** (39,7 / 28,7 / 31,5 / 28,0); malas 38,0 → 98,5 → **58,2** (58,3 /
+  55,3 / 62,4 / 56,7). Frenadas del amateur por carrera: criterio 13,64, azar 13,89, malas 10,41 (K6b: 10,65 / 11,46 / 10,63).
+- **La semana frena solo con riesgo nuevo** (`anioAmateur.riesgoMostrado`: la proyección de `riesgoDelPlan` semana a semana, guardada al
+  elegir el plan; `amateur.semanaRiesgoNuevo` 0,05): con plan, el riesgo evitable frena solo si la chance en casa de la semana pasa la
+  que el plan mostró para esa semana por más de 0,05, o si la deuda de sueño llega antes de lo anunciado; la parada dice "Es más de lo
+  que mostraba el plan para esta semana (X% en casa): algo cambió". Sin riesgo mostrado (un guardado de antes), la regla de K6a-A.
+  Paradas de la semana por carrera (`resolverAuto`, 30 × 60): primera pasada mediana 3 / media 2,70; sin la regla nueva pero con la vara
+  por nivel 1 / 1,93; con la regla **0 / 0,03**. Con los bots (600 × 60): criterio 0,09, azar 0,13, malas 0,22.
+- **Checks nuevos**: "K6c la vara depende del nivel" (rojo con la vara que ignora el nivel: 12 problemas) y "K6c la semana frena solo con
+  riesgo nuevo" (casos con rutinas fijas y la media del lote de K6a-A <= 0,5; rojo con la regla apagada: 1,93 y 9 casos). Los de la
+  primera pasada leen la vara de la decisión.
+- **Texto**: la frase de la prueba con vara sale de `veredictosConVara` (`data/minijuegos.json`, `veredictoDeMinijuego(..., { pasa })`):
+  sin "si te firman" ni "el contrato se te puede escapar"; si no llegaste, no hay frase (manda la línea de la vara).
+- **`--rapido`** (regla 17): K5c-R, K4c observación, K1 D75, K4c-H Δp, K5c motor y K6a-A volvieron solos. En ronda, sin aflojar lo que
+  miden: K4c-H horizonte (`amateur:reparto` ya no aparece en las seeds 1-3: sigue hasta la 60; está en la 10), K3c (la seed 3 termina a
+  los 4 splits sin firmar: las 3 primeras carreras que llegan a pro) y la vuelta de K6b (0 vueltas de free agent en 40 seeds: sigue
+  hasta tener una, en la 120). K5c-H, el split de un retiro: un burnout al final de un split sin temporada por no tener equipo (seed 33
+  free agent, seed 61 el split del fichaje sin plantel) no es ninguno de los dos casos y se cuenta aparte (rojo intacto: sin la resta de
+  `SPLIT_DEL_RETIRO`, 11 problemas).
+- **"K5c meta"** (1500 × 60): 4 en verde; re-basados con la línea "corrimiento declarado de K6c": no llega a pro 22,6 (n 1500, σ 1,08),
+  gana un Mundial desde NA 11,3 (n 194, σ 2,27) y "más fácil desde Corea" (12,0 contra 11,3, σ 2,89; con la región fija, 300 × 60:
+  K6b 9,7/4,0, K6c 9,3/6,7). Re-corrida con los re-basados: las 6 en verde (estancados 4,1 / 12,8 / 16,5; gana un Mundial 9,5).
+- **Agencia** (`agencia.js --carreras=12 --reps=30 --cuota=2 --splits=70`): `amateur:plan_amateur` n 22, palanca mediana 0,17 σ, 18,2%
+  con efecto significativo (primera pasada: n 23, 0,13 σ, 8,7%); `amateur:reparto` n 1 (antes 18); 30,3 paradas por carrera (29,6).
+- Sonda `tryout.mjs 80` (prueba perfecta): 0 de 63 sin firma, 0 ofertas repetidas. Navegador (`k6c2/pw2.mjs`): la oferta del crack
+  (nivel 59 contra 10) pide 10% y firma con 20%; la del justo (48 contra 33) pide 80% y con 60% "te faltó 20%"; un año entero del
+  plan sin ninguna parada de la semana. Huella 977079279 (K6c), forma 13 `51c74dcb0416`; determinismo `simulate.js 1 60 criterio` x2:
+  diff vacío.
+
 ### 2026-10-05 — K6c: "pasaste = firmás" y "vos elegís el plan de cada año" (`k6c-amateur`; PLAN.md §K6c)
 
 - **La prueba del amateur sin dado** (`amateur.varaPrueba` 0,6 = 3 de 5 blancos; `veredictoDeLaPrueba` en `core/serie.js`, la
