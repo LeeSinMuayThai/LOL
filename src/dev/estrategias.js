@@ -173,6 +173,34 @@ function respuestaDePlanAmateur(decision, peor) {
   return { opcionId: tolerables.reduce((acum, op) => (op.lpSemana > acum.lpSemana ? op : acum)).id };
 }
 
+// K6c-fix, sexta pasada: el que grindea sin dormir de amateur, la carrera que se lesiona ("la lesión, solo en el amateur", decisión del
+// usuario 2026-10-06). En el plan del año elige un plan con deuda de sueño que llega al riesgo físico (`semanaRiesgoFisico`; si
+// ninguno llega, uno con deuda), el de menos riesgo en casa (a igual riesgo, el que llega antes): el castigo de la familia le cortaba
+// la carrera antes de lesionarse. Rechaza las ofertas (`esperar_mejor_oferta`): firmar resetea la deuda (`firmarConEquipo`) y la
+// carrera sale del caso. En la parada de la semana sigue con su plan, salvo la de la mentalidad en rojo, donde elige la opción que la
+// cuida. Lo demás, `resolverAuto`. Medido (1200 × 60, carreras con lesión leve / grave / `lesionado` / retiro por lesión): así,
+// 149 / 23 / 19 / 0; firmando y con el plan de más LP, 18 / 3 / 2 / 0. NO está en `ESTRATEGIAS`: es una vara de medir la
+// cobertura de la lesión, no un bot de agencia.
+export function responderQueGrindea(sistema, state, decision, rng) {
+  if (decision.datos?.motivo === 'oferta' && decision.opciones.some((op) => op.id === 'esperar_mejor_oferta')) {
+    return { opcionId: 'esperar_mejor_oferta' };
+  }
+  if (esDecisionDePlanAmateur(decision)) {
+    const conDeuda = decision.opciones.filter((op) => op.semanaDeuda != null);
+    const fisicos = conDeuda.filter((op) => op.semanaRiesgoFisico != null);
+    const candidatos = fisicos.length > 0 ? fisicos : conDeuda;
+    const semana = (op) => op.semanaRiesgoFisico ?? Infinity;
+    const mejor = (a, b) => (b.riesgoCasa < a.riesgoCasa || (b.riesgoCasa === a.riesgoCasa && semana(b) < semana(a)) ? b : a);
+    if (candidatos.length > 0) return { opcionId: candidatos.reduce(mejor).id };
+  }
+  if (decision.datos?.motivo === 'reparto' && state.phase === 'amateur') {
+    const plan = state.flags.anioAmateur?.rutinaId;
+    const id = decision.datos.porMentalidad ? decision.datos.cuida : plan;
+    if (id && decision.opciones.some((op) => op.id === id)) return { opcionId: id };
+  }
+  return sistema.resolverAuto(state, decision, rng);
+}
+
 export function esDecisionDeMinijuego(decision) {
   return decision.presentacion === 'minijuego' || decision.datos?.motivo === 'minijuego';
 }

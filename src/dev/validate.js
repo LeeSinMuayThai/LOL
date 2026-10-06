@@ -3201,6 +3201,12 @@ checkLento('Toda decisión de rutina ofrece una salida segura y la trampa', () =
 // `practica:practica`: que bootcamp_corea fuera solo de tier 1-2, que grindeo_de_madrugada fuera la agresiva exclusiva de tier 3 y
 // que dos_semanas_sin_tocar_el_juego fuera la salida segura de todos los tiers.
 
+// K6c-fix, sexta pasada: la lesión es solo del que grindea sin dormir de amateur (decisión del usuario 2026-10-06): los checks de
+// cobertura la buscan con carreras que grindean (`responderQueGrindea`), hasta verla con margen.
+const { responderQueGrindea } = await import('./estrategias.js');
+const CASOS_DE_LESION_MINIMOS = 3;
+const SEEDS_TOPE_LESION = 1200;
+
 checkLento('El contexto de carrera nombra siempre dónde estás parado', () => {
   const vistos = new Set();
 
@@ -3212,7 +3218,11 @@ checkLento('El contexto de carrera nombra siempre dónde estás parado', () => {
   // (`data/contextos.js`): inalcanzable a propósito por esta vía genérica,
   // verificado por un check propio en vez de forzar la cobertura acá.
   const VERIFICADOS_POR_OTRO_CHECK = new Set(['servicio_militar']);
-  const faltantes = () => MOMENTOS_ACTIVOS.filter((momento) => !VERIFICADOS_POR_OTRO_CHECK.has(momento.id) && !vistos.has(momento.id));
+  // K6c-fix, sexta pasada: `lesionado` (la lesión grave) es solo del que grindea sin dormir de amateur: sale de la muestra que
+  // grindea (abajo), no de la automática, que sigue siendo el piso del invariante "nunca 'desconocido'".
+  const DE_LA_MUESTRA_QUE_GRINDEA = new Set(['lesionado']);
+  const faltantes = () => MOMENTOS_ACTIVOS.filter((momento) => !VERIFICADOS_POR_OTRO_CHECK.has(momento.id)
+    && !DE_LA_MUESTRA_QUE_GRINDEA.has(momento.id) && !vistos.has(momento.id));
 
   // K4c (validación), regla 17: las 300 carreras son el piso del invariante ("nunca 'desconocido'"); la cobertura
   // ("todo momento activo aparece alguna vez") sigue buscando seeds, en orden, mientras falte alguno, hasta 1200 (la misma
@@ -3271,6 +3281,33 @@ checkLento('El contexto de carrera nombra siempre dónde estás parado', () => {
   const muerto = faltantes()[0];
   if (muerto) {
     throw new Error(`el momento "${muerto.id}" no está marcado como pendiente y no apareció en ${corridas} carreras`);
+  }
+
+  // La muestra que grindea: seeds en orden hasta ver cada momento suyo en `CASOS_DE_LESION_MINIMOS` carreras (con tope), con el
+  // mismo invariante.
+  const carrerasCon = new Map([...DE_LA_MUESTRA_QUE_GRINDEA].map((id) => [id, 0]));
+  const faltaGrindear = () => [...carrerasCon.values()].some((n) => n < CASOS_DE_LESION_MINIMOS);
+  let grindeadas = 0;
+  for (let seed = 1; seed <= SEEDS_TOPE_LESION && faltaGrindear(); seed += 1) {
+    grindeadas = seed;
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    const enEsta = new Set();
+    for (let i = 0; i < 90 && !state.terminado; i += 1) {
+      const contexto = calcularContexto(state);
+      if (contexto.momento === 'desconocido') {
+        throw new Error(`seed ${seed} (grindea), split ${state.player.splitCount}: contexto sin momento declarado`);
+      }
+      enEsta.add(contexto.momento);
+      state = avanzarSplitAuto(state, rng, responderQueGrindea).state;
+    }
+    for (const id of carrerasCon.keys()) {
+      if (enEsta.has(id)) carrerasCon.set(id, carrerasCon.get(id) + 1);
+    }
+  }
+  console.log(`      muestra que grindea: ${[...carrerasCon].map(([id, n]) => `${id} en ${n}`).join(', ')} de ${grindeadas} carreras`);
+  if (faltaGrindear()) {
+    throw new Error(`con carreras que grindean, ${[...carrerasCon].map(([id, n]) => `"${id}" en ${n}`).join(', ')} de ${grindeadas} (se esperaban ${CASOS_DE_LESION_MINIMOS} o más)`);
   }
 });
 
@@ -7219,10 +7256,17 @@ checkLento('La cadena de servicio militar no deja flags.enServicioMilitar prendi
 checkLento('lesion_cronica y retiro_por_lesion son alcanzables (raros, no cero)', () => {
   let lesionCronica = 0;
   let retiroPorLesion = 0;
-  const N = 1200;
+  let N = 0;
 
-  for (let seed = 1; seed <= N; seed += 1) {
-    const state = correrCarrera(seed, 60);
+  // K6c-fix, sexta pasada: con carreras que grindean (`responderQueGrindea`), seeds en orden hasta ver cada caso en
+  // `CASOS_DE_LESION_MINIMOS` carreras, con tope.
+  for (let seed = 1; seed <= SEEDS_TOPE_LESION && (lesionCronica < CASOS_DE_LESION_MINIMOS || retiroPorLesion < CASOS_DE_LESION_MINIMOS); seed += 1) {
+    N = seed;
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng, responderQueGrindea).state;
+    }
     if (state.flags.lesionGraveSplit != null) {
       lesionCronica += 1;
     }
@@ -7230,12 +7274,13 @@ checkLento('lesion_cronica y retiro_por_lesion son alcanzables (raros, no cero)'
       retiroPorLesion += 1;
     }
   }
+  console.log(`      carreras que grindean: lesion_cronica ${lesionCronica}, retiro_por_lesion ${retiroPorLesion} de ${N}`);
 
-  if (lesionCronica === 0) {
-    throw new Error('lesion_cronica nunca se alcanzó en 1200 seeds');
+  if (lesionCronica < CASOS_DE_LESION_MINIMOS) {
+    throw new Error(`lesion_cronica en ${lesionCronica} de ${N} carreras que grindean (se esperaban ${CASOS_DE_LESION_MINIMOS} o más)`);
   }
-  if (retiroPorLesion === 0) {
-    throw new Error('retiro_por_lesion nunca se alcanzó en 1200 seeds');
+  if (retiroPorLesion < CASOS_DE_LESION_MINIMOS) {
+    throw new Error(`retiro_por_lesion en ${retiroPorLesion} de ${N} carreras que grindean (se esperaban ${CASOS_DE_LESION_MINIMOS} o más)`);
   }
   const fraccion = retiroPorLesion / N;
   if (fraccion > 0.1) {

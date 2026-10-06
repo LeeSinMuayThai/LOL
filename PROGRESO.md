@@ -34,6 +34,25 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-06 — K6c-fix, sexta pasada: la lesión es del que grindea sin dormir de amateur (`k6c-fix`; PLAN.md `3b8e034`)
+
+- **Cambio:** `systems/salud.js` corre también en el amateur, con los mismos umbrales y sus tiradas de siempre (T1: huella
+  186316704 → **1766253198**, corrimiento declarado). En el amateur la lesión grave habla de soloQ, no de equipo; la baja
+  (`fechasBajaLesion`) se cumple en turnos de soloQ que pasan a dormir (`conBajaPorLesion` en `normalizarReparto`: la previa, el plan
+  y la semana dicen lo mismo, con su línea en el log); el retiro por lesión es el fin del amateur ("el sueño de ser pro se termina
+  acá"). El reset de la deuda al firmar sigue. Bot nuevo `responderQueGrindea` (`dev/estrategias.js`, fuera de `ESTRATEGIAS`).
+- **Barandas, `575db0e` → ahora:** no-pro `simulate.js 600 60 criterio` 24,5 → 24,5; `600 60 malas` 48,7 → 48,7;
+  `1000 60 equilibrado` 24,0 → 24,6. Sonda `resolverAuto` 1000 × 60: burnout del amateur 17 → 20, castigo 9 → 9, lesión leve /
+  grave / retiro 0 / 0 / 0 → 4 / 0 / 0; paradas de la semana mediana 0, p90 1, media 0,18 → igual. Sonda del que grindea (plan de
+  deuda que llega al riesgo físico, firmando; 1200 × 60): leve / grave / `lesionado` / retiro 0 / 0 / 0 / 0 → 18 / 3 / 2 / 0.
+  Con `responderQueGrindea` (además rechaza ofertas y elige el de menos riesgo en casa; 1200 × 60): 149 / 23 / 19 / 0.
+- **Cobertura:** "El contexto de carrera" OK (`lesionado` en 3 de 120 carreras que grindean; la muestra automática sigue para
+  "nunca desconocido"). "lesion_cronica y retiro_por_lesion" **FAIL**: lesion_cronica 23, retiro_por_lesion **0 de 1200**. La
+  recaída pide 6 + 5 + 6 = 17 splits seguidos de deuda en el amateur y el burnout llega antes (957 de 1200 con el bot). Con el mutante
+  "la lesión grave nunca pincha" los dos rojos (`lesionado` 0, lesion_cronica 0 de 1200).
+- `--rapido` 356 OK, 1 FAIL (la huella; actualizada). Forma sin cambio. `--solo` de salud y lesión OK (salvo el de arriba).
+  `--solo` OK: 9Wd, minijuegos, "Ninguna carrera queda sin terminar", K5c embudo y estancados, K6c (16, con la propuesta del perfil), burnout con aviso, K1 versión, la forma. Determinismo `simulate.js 100 60 criterio` ×2 diff vacío. Todo de a un proceso.
+
 ### 2026-10-06 — K6c-fix, quinta pasada: la semana frena con la mentalidad en rojo (`k6c-fix`; decisiones del usuario, PLAN.md `49538db`)
 
 - **Cambio (A):** en el amateur, que la mentalidad al cerrar la semana quede en zona roja (`atributos.burnoutMentalBajo`, 30) es

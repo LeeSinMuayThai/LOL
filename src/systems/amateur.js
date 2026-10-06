@@ -123,7 +123,7 @@ function bloquesDisponibles(state) {
 // Lo que una rutina mueve en una semana, sin el dado: la media de cada término de `aplicarReparto`.
 function proyeccionDeSemana(state, rutina) {
   const a = BALANCE.amateur;
-  const { reparto, extra } = normalizarReparto(state, { reparto: rutina.reparto, extra: rutina.extra });
+  const { reparto, extra, baja } = normalizarReparto(state, { reparto: rutina.reparto, extra: rutina.extra });
   const factorColegio = state.origen.exigenciaColegio / a.exigenciaColegioReferencia;
   const factorNocturno = state.flags.nocturno ? a.nocturnoFactorDecaeEstudio : 1;
   const estudios = reparto.estudiar * a.estudioPorBloque - a.estudioDecae * factorColegio * factorNocturno;
@@ -133,6 +133,7 @@ function proyeccionDeSemana(state, rutina) {
   return {
     extra,
     robos,
+    baja,
     lp: reparto.ranked * a.lpPorBloque * factorDeBloque(state),
     estudios,
     sueno: reparto.dormir * a.suenoPorBloque - a.suenoDecae - extra * a.suenoPorBloqueRobado,
@@ -502,7 +503,7 @@ export function riesgoDelPlan(state, rutina) {
         deudaSueno: clamp(peligro.deuda ? st.player.deudaSueno + 1 : Math.max(0, st.player.deudaSueno - 1), 0, a.deudaMaxima),
         stats: { ...st.player.stats, mentalidad: clampStat(st.player.stats.mentalidad + proy.mentalidad) }
       },
-      flags: { ...st.flags, robosConsecutivos: proy.robos }
+      flags: { ...st.flags, robosConsecutivos: proy.robos, fechasBajaLesion: Math.max(0, (st.flags.fechasBajaLesion ?? 0) - proy.baja) }
     };
     splitsRiesgoFisico = st.player.deudaSueno >= BALANCE.salud.deudaUmbralRiesgo ? splitsRiesgoFisico + 1 : Math.max(0, splitsRiesgoFisico - 1);
     splitsMentalBajo = st.player.stats.mentalidad <= BALANCE.atributos.burnoutMentalBajo ? splitsMentalBajo + 1 : 0;
@@ -638,8 +639,17 @@ function vivirLaSemana(state, rutina, rng, { cronica = null, plan = false } = {}
   // `normalizarReparto` sigue corriendo: es la red que garantiza que una
   // rutina mal declarada no invente ni pierda bloques, y la que adapta un
   // reparto de 10 a los 12 bloques del nocturno.
-  const { reparto, extra } = normalizarReparto(state, { reparto: rutina.reparto, extra: rutina.extra });
-  const rRepartoCrudo = aplicarReparto(state, reparto, extra, rng, { cronica, plan, opcion: rutina.titulo });
+  const { reparto, extra, baja } = normalizarReparto(state, { reparto: rutina.reparto, extra: rutina.extra });
+  const rAplicado = aplicarReparto(state, reparto, extra, rng, { cronica, plan, opcion: rutina.titulo });
+  // K6c-fix, sexta pasada: los turnos de baja de la lesión que se cumplieron esta semana (`conBajaPorLesion`), con su línea.
+  const restante = (rAplicado.state.flags.fechasBajaLesion ?? 0) - baja;
+  const rRepartoCrudo = baja > 0
+    ? {
+        ...rAplicado,
+        state: { ...rAplicado.state, flags: { ...rAplicado.state.flags, fechasBajaLesion: restante } },
+        logs: [...rAplicado.logs, crearLog('salud', textoDeBaja(baja, restante))]
+      }
+    : rAplicado;
   // K3-B 2b: la semana amateur también deja marca, por el mismo camino que el receso (`conMarcasDeRutina`: la
   // fracción de la práctica, el título visible de la rutina, la ganancia real). Hoy ningún reparto mueve un stat de
   // curva, así que no anota nada; el día que uno lo mueva, la marca sale sola.
@@ -721,7 +731,7 @@ function normalizarReparto(state, respuesta) {
 
   if (pedidos === 0) {
     // Nadie reparte nada: el tiempo igual pasa, y se va en dormir.
-    return { reparto: { ...crudo, dormir: disponibles }, extra };
+    return conBajaPorLesion(state, { reparto: { ...crudo, dormir: disponibles }, extra });
   }
 
   // Se respeta la proporcion pedida y se ajusta al total real de bloques, asi
@@ -735,7 +745,26 @@ function normalizarReparto(state, respuesta) {
     ajustado[porPrioridad[i]] += 1;
   }
 
-  return { reparto: ajustado, extra };
+  return conBajaPorLesion(state, { reparto: ajustado, extra });
+}
+
+// K6c-fix, sexta pasada: con una lesión grave en el amateur (`systems/salud.js`), la baja (`flags.fechasBajaLesion`) no son fechas
+// sino turnos de soloQ: cada bloque de ranked de la semana, hasta cubrirla, se va a kinesiología y descanso (a dormir). `baja` es
+// cuántos se fueron esta semana. Va adentro de `normalizarReparto`, así la previa, el plan y la semana vivida dicen lo mismo
+// (regla 15). Si firmás con la baja sin terminar, lo que queda se cumple en fechas del pro (`systems/temporada.js`). Puro.
+function conBajaPorLesion(state, { reparto, extra }) {
+  const pendiente = state.phase === 'amateur' ? (state.flags.fechasBajaLesion ?? 0) : 0;
+  const baja = Math.min(pendiente, reparto.ranked);
+  if (baja === 0) {
+    return { reparto, extra, baja: 0 };
+  }
+  return { reparto: { ...reparto, ranked: reparto.ranked - baja, dormir: reparto.dormir + baja }, extra, baja };
+}
+
+function textoDeBaja(baja, restante) {
+  const turnos = `${baja} ${baja === 1 ? 'turno' : 'turnos'} de soloQ`;
+  const cola = restante > 0 ? `; te quedan ${restante} de baja` : '; la baja terminó';
+  return `La lesión: ${turnos} de esta semana se fueron a kinesiología y descanso${cola}.`;
 }
 
 function aplicarReparto(state, reparto, extra, rng, { cronica = null, plan = false, opcion = null } = {}) {

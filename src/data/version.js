@@ -151,4 +151,7 @@ export const VERSION_JUEGO = 'K6c';
 // K6c-fix, cuarta pasada (186316704; corrimiento declarado, sigue 'K6c'; decisión del usuario "la deuda se resetea al firmar"): al firmar el
 // primer contrato pro la deuda de sueño y la racha de riesgo físico vuelven a 0 (`firmarConEquipo`). Sin tiradas nuevas. Reemplaza a
 // 1360329260.
-export const HUELLA_JUEGO = 186316704;
+// K6c-fix, quinta pasada (sin cambio de huella: ninguna de las 40 seeds frena por la mentalidad en rojo). Sexta pasada (1766253198;
+// corrimiento declarado, sigue 'K6c'; T1): `systems/salud.js` corre también en el amateur (la lesión es del que grindea sin dormir de
+// amateur) con sus tiradas de siempre, y la baja de la lesión se cumple en turnos de soloQ. Reemplaza a 186316704.
+export const HUELLA_JUEGO = 1766253198;
