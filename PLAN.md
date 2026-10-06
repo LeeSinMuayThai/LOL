@@ -8137,6 +8137,27 @@ Se calibran `base`, `pendiente` y `max` en `balance.js`, con `min` en 0, para qu
 - un re-base solo va con la línea de corrimiento de K6c y con la causa mostrada, y nunca en un check de dominio del
   usuario (D-D).
 
+**K6c-fix, primera pasada** (`k6c-fix`: `0bb0f9c`, `d0794b6`). La vara queda en base 1,55, pendiente 0,05, mínimo 0 y
+máximo 0,8: llega a 0 con 31 puntos de diferencia y pide 0,8 con 15 o menos. Resueltos 10 de 12, y el impacto de los
+minijuegos baja a +29%. Quedan abiertos:
+- **K5-B región:** el check pide una brecha de llegada de 30 puntos o más entre regiones. Salió de 40 seeds con suerte:
+  con 200 por región la brecha es ~22, igual en K6b.
+- **La edad mediana al terminar, 24:**
+  - `equilibrado` queda en ~29% de no-pro: ni con la vara siempre en 0 baja de ~28;
+  - la causa es el plan del año bajo `resolverAuto`, que propone sin mirar el riesgo que muestra;
+  - burnouts en el amateur: 7 → 60 por cada 1000 carreras;
+  - castigos de la familia: 38 → 78.
+
+**Reglas (supervisor, 2026-10-06; dentro del alcance de K6c, sin cambiar decisiones del usuario):**
+- **K5-B se mide bien**, el mismo principio que el usuario eligió para NA: 200 seeds por región, el orden monótono y la
+  brecha por encima de Z σ en lugar de 30 puntos fijos. LATAM sigue llegando a primera solo emigrando.
+- **La propuesta del perfil no te quema.** "Vos elegís el plan de cada año; el perfil propone." Si el plan que propone
+  el perfil muestra un riesgo evitable (burnout o castigo de la familia), la propuesta pasa al plan más cercano sin ese
+  riesgo. `resolverAuto` acepta la propuesta. El jugador sigue pudiendo elegir el plan arriesgado, con su riesgo a la
+  vista.
+- **Meta:** burnouts y castigos del amateur cerca de K6b, `equilibrado` cerca de 25-26% de no-pro, y la edad al terminar
+  en su banda.
+
 ## K.6 — Qué pasa con FASE J y FASE V
 
 | Pieza | Destino |
