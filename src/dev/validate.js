@@ -805,7 +805,10 @@ const FORMAS_CONOCIDAS = {
   // Re-registrada (era 'e96e9e539778').
   // K6c-fix, tercera pasada (sin subir): cada opción del plan del año lleva `semanaRiesgoFisico` (la semana en que arma el riesgo
   // de lesión o burnout). Re-registrada (era 'a05ec5bebece').
-  13: '5915cb3adccf'
+  // K6c-fix, quinta pasada (sin subir): `anioAmateur.riesgoMostrado.mental` y `anioAmateur.mentalAvisada` (la mentalidad que mostró
+  // el plan y la de la última parada por la mentalidad), `semanaMentalRoja` en cada opción del plan del año y `datos.porMentalidad` /
+  // `datos.cuida` en la parada de la semana. Re-registrada (era '5915cb3adccf').
+  13: '995485d311c0'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -26222,6 +26225,88 @@ check('K6c la semana frena solo con riesgo nuevo: con el plan del año, el riesg
       const semana = planDeSemanaK6C(caso.st, fijas, agresivo);
       if (semana.frena !== caso.frena) problemas.push(`seed ${seed}, ${caso.nombre}: frena=${semana.frena}, se esperaba ${caso.frena}`);
       if (semana.frena && caso.texto && !caso.texto.test(semana.decision.descripcion)) problemas.push(`seed ${seed}, ${caso.nombre}: la parada no dice que el riesgo es nuevo ("${semana.decision.descripcion.slice(0, 160)}")`);
+    }
+  }
+  if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
+});
+
+// K6c-fix, quinta pasada (PLAN.md, "Decisiones del usuario (2026-10-06)": "frenar con la mentalidad en rojo"). En el amateur, que
+// la mentalidad entre en zona roja (`atributos.burnoutMentalBajo` o menos) es riesgo nuevo: la semana frena y lo dice antes del
+// burnout, con una opción que la cuida; si lo que ya viste la mostraba en rojo (el plan del año, o una parada anterior), frena solo
+// si baja más de `amateur.semanaMentalNueva`. Regla 17 — protege: que el burnout del amateur llegue sin aviso (la mentalidad
+// 54 → 38 → 20 → 3 con la semana corriendo sola: el 70% de "El burnout no llega sin aviso", piso 80%). Desde: K6c-fix, quinta
+// pasada (2026-10-06). Rojos con los mutantes "la mentalidad nunca frena" (`mentalEnRojoDeLaSemana` con `frena` siempre false) y
+// "frena siempre en rojo" (sin la vara de lo ya visto), en una copia de `src`.
+function semanaConMentalK6CX(seed, mentalidad, { mostradaEn = null, avisada = null } = {}) {
+  const base = estadoInicialK6C(seed, mulberry32K6C(seed));
+  const plan = RUTINAS_K6C.amateur.find((rutina) => rutina.id === 'bancar_el_colegio');
+  const fijas = ['bancar_el_colegio', 'todo_al_ranked'].map((id) => RUTINAS_K6C.amateur.find((rutina) => rutina.id === id));
+  // El colegio sobrado, sin robos y sin negociación: el colegio y la deuda no frenan; solo queda la mentalidad.
+  const con = (m) => ({
+    ...base,
+    player: { ...base.player, studies: 95, stats: { ...base.player.stats, mentalidad: m } },
+    flags: { ...base.flags, robosConsecutivos: 0, negociacionGanada: false }
+  });
+  const { semanal, semanaDeuda, mental } = riesgoDelPlanK6C(con(mostradaEn ?? mentalidad), plan);
+  const st = con(mentalidad);
+  const anioAmateur = { ...anioAmateurK6C(st, plan.id), riesgoMostrado: { semanal, semanaDeuda, mental }, mentalAvisada: avisada };
+  return { semana: planDeSemanaK6C({ ...st, flags: { ...st.flags, anioAmateur } }, fijas, plan), mental };
+}
+
+check('K6c-fix la mentalidad entra en rojo y la semana frena: con el plan del año, la semana que deja la mentalidad en zona roja sin que el plan lo mostrara frena, lo dice con el umbral del burnout y trae una opción que la cuida', () => {
+  const problemas = [];
+  const umbral = BALANCE_K6C.atributos.burnoutMentalBajo;
+  const sana = umbral * 2;
+  for (const seed of [1, 2, 3]) {
+    const afuera = semanaConMentalK6CX(seed, umbral + 1, { mostradaEn: sana }).semana;
+    if (afuera.frena) problemas.push(`seed ${seed}: con la mentalidad en ${umbral + 1} (afuera de la zona roja) la semana frenó`);
+    const { semana, mental } = semanaConMentalK6CX(seed, umbral, { mostradaEn: sana });
+    if (mental.some((m) => m <= umbral)) problemas.push(`seed ${seed}: el plan de control ya mostraba la mentalidad en rojo (${mental.join(', ')})`);
+    if (!semana.frena) {
+      problemas.push(`seed ${seed}: la mentalidad entra en rojo (${umbral}) y la semana no frena`);
+      continue;
+    }
+    const { decision } = semana;
+    const texto = decision.descripcion;
+    if (!decision.datos.porMentalidad) problemas.push(`seed ${seed}: la parada no se marca por la mentalidad`);
+    if (!texto.includes(`zona roja (${umbral} o menos)`) || !texto.includes(`${BALANCE_K6C.atributos.burnoutSplitsMinimos} semanas seguidas en rojo`)) {
+      problemas.push(`seed ${seed}: la parada no dice el umbral y la cuenta del burnout ("${texto.slice(0, 200)}")`);
+    }
+    if (!texto.includes(`El plan mostraba ~${Math.round(sana)}`)) problemas.push(`seed ${seed}: la parada no dice contra qué es nuevo (lo que mostraba el plan)`);
+    const cuida = decision.datos.rutinas.find((rutina) => rutina.id === decision.datos.cuida);
+    if (!cuida || !decision.opciones.some((opcion) => opcion.id === decision.datos.cuida)) {
+      problemas.push(`seed ${seed}: la parada no trae la opción que cuida la mentalidad`);
+      continue;
+    }
+    // La que cuida no le roba horas al sueño y es la de más sueño del catálogo (lo que dice la parada, regla 15).
+    const suenoMaximo = Math.max(...RUTINAS_K6C.amateur.filter((rutina) => (rutina.extra ?? 0) === 0).map((rutina) => rutina.reparto.dormir));
+    if ((cuida.extra ?? 0) !== 0 || cuida.reparto.dormir !== suenoMaximo || !texto.includes(`"${cuida.titulo}" la cuida`)) {
+      problemas.push(`seed ${seed}: "${cuida.titulo}" no es la que cuida (robo ${cuida.extra}, dormir ${cuida.reparto.dormir} contra ${suenoMaximo}) o la parada no la nombra`);
+    }
+  }
+  if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
+});
+
+check('K6c-fix si ya estaba en rojo y el plan lo mostró, no frena salvo que baje más: la mentalidad en rojo que el plan del año (o una parada anterior) ya mostró no vuelve a frenar; más de semanaMentalNueva por debajo, sí', () => {
+  const problemas = [];
+  const umbral = BALANCE_K6C.atributos.burnoutMentalBajo;
+  const margen = BALANCE_K6C.amateur.semanaMentalNueva;
+  const enRojo = umbral - 5;
+  const masAbajo = enRojo - margen - 1;
+  const casos = [
+    { nombre: 'en rojo, y el plan ya lo mostró', m: enRojo, op: { mostradaEn: enRojo }, frena: false },
+    { nombre: `en rojo, ${margen} por debajo de lo que mostró el plan (en la raya)`, m: enRojo - margen, op: { mostradaEn: enRojo }, frena: false },
+    { nombre: `en rojo, más de ${margen} por debajo de lo que mostró el plan`, m: masAbajo, op: { mostradaEn: enRojo }, frena: true },
+    { nombre: 'en rojo, ya avisado por una parada anterior', m: enRojo, op: { mostradaEn: umbral * 2, avisada: enRojo }, frena: false },
+    { nombre: `en rojo, más de ${margen} por debajo de la parada anterior`, m: masAbajo, op: { mostradaEn: umbral * 2, avisada: enRojo }, frena: true }
+  ];
+  for (const seed of [1, 2, 3]) {
+    for (const caso of casos) {
+      const { semana } = semanaConMentalK6CX(seed, caso.m, caso.op);
+      if (semana.frena !== caso.frena) problemas.push(`seed ${seed}, ${caso.nombre}: frena=${semana.frena}, se esperaba ${caso.frena}`);
+      if (semana.frena && !/Ya la habías visto en rojo/.test(semana.decision.descripcion)) {
+        problemas.push(`seed ${seed}, ${caso.nombre}: la parada no dice que ya la habías visto en rojo`);
+      }
     }
   }
   if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);

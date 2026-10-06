@@ -217,7 +217,7 @@ export function opcionesDeSemana(state, rutinas) {
 }
 
 // Lo que está en juego, dicho con los números de la regla: por qué esta semana te frena.
-function textoDeLoQueEstaEnJuego(elegida, masSegura, conPlan, proyectada = null) {
+function textoDeLoQueEstaEnJuego(elegida, masSegura, conPlan, proyectada = null, mental = null) {
   const partes = [];
   if (elegida.peligro.casa > masSegura.peligro.casa) {
     partes.push(`te deja el colegio en ~${entero(elegida.peligro.estudiosDespues)}: ${porcentaje(elegida.peligro.casa)} de que en casa te saquen la PC o te corten el ranked, contra ${porcentaje(masSegura.peligro.casa)} con "${masSegura.rutina.titulo}"`);
@@ -225,25 +225,41 @@ function textoDeLoQueEstaEnJuego(elegida, masSegura, conPlan, proyectada = null)
   if (elegida.peligro.deuda) {
     partes.push(`sería la semana ${elegida.proy.robos} seguida robándole horas al sueño: empezás a sumar deuda y el LP lo nota`);
   }
+  // K6c-fix (quinta pasada): la mentalidad en zona roja, con el umbral y la cuenta del burnout de `atributos.js` (regla 15).
+  if (mental) {
+    partes.push(`te deja la mentalidad en ~${entero(mental.despues)}, en zona roja (${BALANCE.atributos.burnoutMentalBajo} o menos): con ${BALANCE.atributos.burnoutSplitsMinimos} semanas seguidas en rojo el burnout entra al sorteo`);
+  }
   // K6c: con el plan del año, lo que iba a pasar es tu plan (lo elegiste vos), no tu perfil.
   const quien = conPlan ? `Tu plan del año es "${elegida.rutina.titulo}"` : `Tu perfil iba a ir por "${elegida.rutina.titulo}"`;
   // K6c (segunda pasada): con plan, la semana frena por algo que el plan no mostró: se dice contra qué.
   const cambio = proyectada !== null && elegida.peligro.casa > proyectada + BALANCE.amateur.semanaRiesgoNuevo
     ? ` Es más de lo que mostraba el plan para esta semana (${porcentaje(proyectada)} en casa): algo cambió.`
     : '';
-  return `${quien}, y eso ${partes.join('; y ')}.${cambio}`;
+  return `${quien}, y eso ${partes.join('; y ')}.${cambio}${textoDeLaMentalidad(mental)}`;
 }
 
-function decisionDeRutina(state, rutinas, opciones, elegida, masSegura, conPlan = false, proyectada = null) {
+// Contra qué es nueva la mentalidad en rojo y qué opción la cuida (K6c-fix, quinta pasada).
+function textoDeLaMentalidad(mental) {
+  if (!mental) {
+    return '';
+  }
+  const contra = mental.vara !== null
+    ? ` Ya la habías visto en rojo (~${entero(mental.vara)}) y sigue cayendo.`
+    : mental.proyectada !== null ? ` El plan mostraba ~${entero(mental.proyectada)} para esta semana: algo cambió.` : '';
+  const sueno = mental.cuida.previa.find((fila) => fila.campo === 'player.sleep');
+  return `${contra} "${mental.cuida.rutina.titulo}" la cuida: no le roba horas al sueño y es la semana que más dormís${sueno ? ` (${sueno.texto})` : ''}.`;
+}
+
+function decisionDeRutina(state, rutinas, opciones, elegida, masSegura, conPlan = false, proyectada = null, mental = null) {
   return {
     tipo: 'opciones',
     titulo: `Cómo vivís la semana — ${etiquetaDeRanked(state.player.ranked, servidorDeLaPartida(state))}`,
-    descripcion: descripcionDeSorteo(rutinas.length, EJE_AMATEUR, `${textoDeLoQueEstaEnJuego(elegida, masSegura, conPlan, proyectada)} ${textoDeSituacion(state)}`),
+    descripcion: descripcionDeSorteo(rutinas.length, EJE_AMATEUR, `${textoDeLoQueEstaEnJuego(elegida, masSegura, conPlan, proyectada, mental)} ${textoDeSituacion(state)}`),
     opciones: opciones.map((opcion) => ({
       ...opcionDesdeRutina(opcion.rutina, 'amateur'),
       previa: opcion.previa
     })),
-    datos: { motivo: 'reparto', rutinas }
+    datos: { motivo: 'reparto', rutinas, ...(mental ? { porMentalidad: true, cuida: mental.cuida.rutina.id } : {}) }
   };
 }
 
@@ -307,6 +323,10 @@ export function propuestaDelPlan(state, opciones) {
 // K6c ("vos elegís el plan de cada año"): con `plan` (la rutina del plan del año) se vive el plan, y las rutinas del sorteo
 // de la semana son las alternativas contra las que se mide el riesgo evitable (en la parada, el plan va primero). Sin
 // `plan`, se vive la propuesta de tu perfil (la regla de K6a-A, la que usan los checks con rutinas fijas).
+//
+// K6c-fix (quinta pasada, "frenar con la mentalidad en rojo"): que la mentalidad entre en zona roja es riesgo nuevo y también
+// frena (`mentalEnRojoDeLaSemana`), con una opción que la cuida sumada a las de la semana (`rutinaQueCuida`). `mental` vuelve
+// siempre: `semanaAmateur` anota con eso lo que ya se te avisó.
 export function planDeSemana(state, rutinas, plan = null) {
   const ofrecidas = plan && !rutinas.some((rutina) => rutina.id === plan.id) ? [plan, ...rutinas] : rutinas;
   const opciones = opcionesDeSemana(state, ofrecidas);
@@ -315,12 +335,63 @@ export function planDeSemana(state, rutinas, plan = null) {
   const casaEvitable = elegida.peligro.casa - masSegura.peligro.casa >= BALANCE.amateur.semanaRiesgoEvitable;
   const deudaEvitable = elegida.peligro.deuda && opciones.some((opcion) => !opcion.peligro.deuda);
   const nuevo = plan ? riesgoNuevoDeLaSemana(state, elegida) : { casa: true, deuda: true, proyectada: null };
-  const frena = (casaEvitable && nuevo.casa) || (deudaEvitable && nuevo.deuda);
+  const mental = mentalEnRojoDeLaSemana(state, elegida);
+  const frena = (casaEvitable && nuevo.casa) || (deudaEvitable && nuevo.deuda) || mental.frena;
+  if (!frena) {
+    return { elegida: elegida.rutina, frena, decision: null, mental };
+  }
+  // La que cuida la mentalidad va entre las opciones de la parada (si el sorteo no la trajo). La regla del colegio y de la
+  // deuda se mide contra las opciones del sorteo, como siempre.
+  const cuida = mental.frena ? rutinaQueCuida(state) : null;
+  const conCuida = cuida && !ofrecidas.some((rutina) => rutina.id === cuida.rutina.id) ? [...ofrecidas, cuida.rutina] : ofrecidas;
+  const opcionesDeLaParada = conCuida === ofrecidas ? opciones : [...opciones, cuida];
   return {
     elegida: elegida.rutina,
     frena,
-    decision: frena ? decisionDeRutina(state, ofrecidas, opciones, elegida, masSegura, plan !== null, nuevo.proyectada) : null
+    mental,
+    decision: decisionDeRutina(state, conCuida, opcionesDeLaParada, elegida, masSegura, plan !== null, nuevo.proyectada, mental.frena ? { ...mental, cuida } : null)
   };
+}
+
+// K6c-fix (quinta pasada, decisión del usuario 2026-10-06, "frenar con la mentalidad en rojo"): en el amateur, que la mentalidad
+// entre en zona roja (`atributos.burnoutMentalBajo` o menos, el umbral con el que `atributos.js` cuenta los splits hacia el burnout)
+// es riesgo nuevo: la semana frena y lo dice antes del burnout. `despues` es la mentalidad al cerrar la semana con la rutina que se
+// vive (la cuenta de la previa y de `riesgoDelPlan`). Si lo que ya viste la mostraba en rojo (lo que el plan del año mostró para
+// esta semana, `riesgoMostrado.mental`, o la última parada por la mentalidad de este año, `anioAmateur.mentalAvisada`), frena solo
+// si baja más de `amateur.semanaMentalNueva` por debajo de eso. Puro, sin `rng`.
+function mentalEnRojoDeLaSemana(state, elegida) {
+  const umbral = BALANCE.atributos.burnoutMentalBajo;
+  const despues = clampStat(state.player.stats.mentalidad + elegida.proy.mentalidad);
+  const anio = state.flags.anioAmateur;
+  const mostrada = anio?.riesgoMostrado?.mental;
+  const semana = (anio?.semanas ?? 0) + 1;
+  const proyectada = mostrada ? mostrada[Math.min(semana, mostrada.length) - 1] : null;
+  if (despues > umbral) {
+    return { enRojo: false, frena: false, despues, proyectada, vara: null };
+  }
+  const vistas = [proyectada, anio?.mentalAvisada ?? null].filter((valor) => valor !== null && valor <= umbral);
+  const vara = vistas.length > 0 ? Math.min(...vistas) : null;
+  const frena = vara === null || despues < vara - BALANCE.amateur.semanaMentalNueva;
+  return { enRojo: true, frena, despues, proyectada, vara };
+}
+
+// La opción que cuida la mentalidad: entre las rutinas del amateur que no le roban horas al sueño, la de más sueño proyectado (la
+// mentalidad del split baja menos con el sueño alto: `desgasteDeMentalidad` de `atributos.js`). Puro, sin `rng`.
+function rutinaQueCuida(state) {
+  const sinRobo = opcionesDeSemana(state, RUTINAS.amateur).filter((opcion) => opcion.proy.extra === 0);
+  return sinRobo.reduce((mejor, opcion) => (opcion.proy.sueno > mejor.proy.sueno ? opcion : mejor));
+}
+
+// Lo que ya se te avisó de la mentalidad este año: la mentalidad de la última parada por la mentalidad, mientras siga en rojo
+// (si sale de rojo, la próxima entrada vuelve a ser nueva).
+function conMentalAvisada(state, mental) {
+  const anio = state.flags.anioAmateur;
+  if (!anio) {
+    return state;
+  }
+  const antes = anio.mentalAvisada ?? null;
+  const mentalAvisada = mental.frena ? mental.despues : mental.enRojo ? antes : null;
+  return mentalAvisada === antes ? state : { ...state, flags: { ...state.flags, anioAmateur: { ...anio, mentalAvisada } } };
 }
 
 // K6c, segunda pasada ("la semana frena solo con riesgo nuevo"): el plan del año ya mostró su riesgo, semana por semana
@@ -348,10 +419,11 @@ function semanaAmateur(state, rng) {
   const rutinas = ofrecerRutinas(state, rng, { pool: 'amateur' });
   const plan = rutinaDelPlan(state);
   const semana = planDeSemana(state, rutinas, plan);
+  const conAviso = conMentalAvisada(state, semana.mental);
   if (semana.frena) {
-    return { state, logs: [], decision: semana.decision };
+    return { state: conAviso, logs: [], decision: semana.decision };
   }
-  return vivirLaSemana(state, semana.elegida, rng, plan ? { plan: true } : { cronica: state.player.perfil.actual });
+  return vivirLaSemana(conAviso, semana.elegida, rng, plan ? { plan: true } : { cronica: state.player.perfil.actual });
 }
 
 // --- K6c: el plan del año ("vos elegís el plan de cada año", decisión del usuario 2026-10-05) ---
@@ -396,6 +468,11 @@ function conOfertaDelAnio(state, oferta) {
 // (`flags.splitsRiesgoFisico`, la de `systems/salud.js`), o la mentalidad en `atributos.burnoutMentalBajo` o menos durante
 // `atributos.burnoutSplitsMinimos` splits seguidos (`flags.splitsMentalBajo`, la de `systems/atributos.js`); `null` si en el año no
 // llega. La deuda que no llega ahí es un costo del plan, no un riesgo evitable (`riesgoEvitableDelPlan`).
+//
+// K6c-fix (quinta pasada, "frenar con la mentalidad en rojo", decisión del usuario 2026-10-06): `mental`, la mentalidad proyectada
+// al cerrar cada semana (la misma cuenta de arriba: lo que le roban al sueño las horas robadas), y `semanaMentalRoja`, la primera
+// semana en la que queda en zona roja (`atributos.burnoutMentalBajo` o menos), o `null`. Es lo que el plan muestra de la mentalidad
+// y la vara de `mentalEnRojoDeLaSemana`: con el plan, la semana frena si la mentalidad entra en rojo sin que el plan lo mostrara.
 export function riesgoDelPlan(state, rutina) {
   const a = BALANCE.amateur;
   let st = state;
@@ -404,7 +481,9 @@ export function riesgoDelPlan(state, rutina) {
   let semanaRiesgoFisico = null;
   let splitsRiesgoFisico = state.flags.splitsRiesgoFisico ?? 0;
   let splitsMentalBajo = state.flags.splitsMentalBajo ?? 0;
+  let semanaMentalRoja = null;
   const semanal = [];
+  const mental = [];
   for (let semana = 1; semana <= BALANCE.edad.splitsPorEdad; semana += 1) {
     const proy = proyeccionDeSemana(st, rutina);
     const peligro = peligrosDeSemana(st, proy);
@@ -427,12 +506,16 @@ export function riesgoDelPlan(state, rutina) {
     };
     splitsRiesgoFisico = st.player.deudaSueno >= BALANCE.salud.deudaUmbralRiesgo ? splitsRiesgoFisico + 1 : Math.max(0, splitsRiesgoFisico - 1);
     splitsMentalBajo = st.player.stats.mentalidad <= BALANCE.atributos.burnoutMentalBajo ? splitsMentalBajo + 1 : 0;
+    mental.push(st.player.stats.mentalidad);
+    if (semanaMentalRoja === null && st.player.stats.mentalidad <= BALANCE.atributos.burnoutMentalBajo) {
+      semanaMentalRoja = semana;
+    }
     if (semanaRiesgoFisico === null
       && (splitsRiesgoFisico >= BALANCE.salud.splitsParaLesionLeve || splitsMentalBajo >= BALANCE.atributos.burnoutSplitsMinimos)) {
       semanaRiesgoFisico = semana;
     }
   }
-  return { casa: 1 - sinNada, semanaDeuda, semanaRiesgoFisico, semanal };
+  return { casa: 1 - sinNada, semanaDeuda, semanaRiesgoFisico, semanaMentalRoja, semanal, mental };
 }
 
 function textoDeOfertaDelAnio(oferta) {
@@ -467,6 +550,10 @@ function textoDeRiesgoDelPlan(riesgo) {
   if (riesgo.semanaRiesgoFisico !== null) {
     partes.push(`riesgo de lesión o burnout desde la semana ${riesgo.semanaRiesgoFisico}`);
   }
+  // K6c-fix (quinta pasada): la semana en que la mentalidad queda en zona roja (la vara de la parada de la mentalidad, regla 15).
+  if (riesgo.semanaMentalRoja !== null) {
+    partes.push(`mentalidad en zona roja desde la semana ${riesgo.semanaMentalRoja}`);
+  }
   return partes.join(' · ');
 }
 
@@ -498,13 +585,14 @@ function decisionDePlan(state, rng) {
       return {
         ...opcionDesdeRutina(opcion.rutina, 'amateur'),
         previa: opcion.previa,
-        riesgo: riesgo.casa > 0 || riesgo.semanaDeuda !== null ? 'incierto' : 'seguro',
+        riesgo: riesgo.casa > 0 || riesgo.semanaDeuda !== null || riesgo.semanaMentalRoja !== null ? 'incierto' : 'seguro',
         riesgoTexto: textoDeRiesgoDelPlan(riesgo),
         // Lo que lee un bot, los mismos números de la carta: el LP por semana y el riesgo del año.
         lpSemana: Math.round(opcion.proy.lp),
         riesgoCasa: riesgo.casa,
         semanaDeuda: riesgo.semanaDeuda,
         semanaRiesgoFisico: riesgo.semanaRiesgoFisico,
+        semanaMentalRoja: riesgo.semanaMentalRoja,
         ...(esPropuesta ? { propuesta: evitable ? `Tu perfil (${perfil}) iría por esta: lo más parecido a lo suyo sin ${queArriesga}` : `Tu perfil (${perfil}) iría por esta` } : {})
       };
     }),
@@ -518,11 +606,12 @@ function resolverPlan(state, decision, opcionId, rng) {
   const rutina = RUTINAS.amateur.find((candidata) => candidata.id === rutinaId);
   // K6c (segunda pasada): el riesgo que mostró la carta del plan (la misma cuenta, sobre el mismo estado), semana por semana:
   // la vara contra la que la semana decide si lo que aparece es nuevo (`riesgoNuevoDeLaSemana`).
-  const { semanal, semanaDeuda } = riesgoDelPlan(state, rutina);
+  const { semanal, semanaDeuda, mental } = riesgoDelPlan(state, rutina);
   const anioAmateur = {
     edad: state.age,
     rutinaId,
-    riesgoMostrado: { semanal, semanaDeuda },
+    riesgoMostrado: { semanal, semanaDeuda, mental },
+    mentalAvisada: null,
     rankedInicio: { ...state.player.ranked },
     semanas: 0,
     semanasEnRadar: 0,

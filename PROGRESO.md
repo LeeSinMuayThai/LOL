@@ -34,6 +34,31 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-06 — K6c-fix, quinta pasada: la semana frena con la mentalidad en rojo (`k6c-fix`; decisiones del usuario, PLAN.md `49538db`)
+
+- **Cambio (A):** en el amateur, que la mentalidad al cerrar la semana quede en zona roja (`atributos.burnoutMentalBajo`, 30) es
+  riesgo nuevo: la semana frena (`mentalEnRojoDeLaSemana` en `planDeSemana`), dice el umbral y la cuenta del burnout, contra qué es
+  nuevo, y suma la opción que la cuida (`rutinaQueCuida`: sin robo, la de más sueño). `riesgoDelPlan` devuelve `mental` (semana por
+  semana) y `semanaMentalRoja` (la carta lo dice); `riesgoMostrado.mental` es la vara: si ya la mostraba en rojo (o ya frenó por eso
+  este año, `anioAmateur.mentalAvisada`), frena solo si baja más de `amateur.semanaMentalNueva` (5). Puro, sin `rng`.
+- **Barandas, antes (`7d0051d`) → después:** no-pro `simulate.js 600 60 criterio` 24,5 → 24,5; `600 60 malas` 48,0 → 48,7;
+  `1000 60 equilibrado` 24,5 → 24,0. Sonda `resolverAuto` 1000 × 60: burnout del amateur 22 → 17 (total 28 → 23), castigo 9 → 9,
+  lesión leve / grave / retiro por lesión 0 / 0 / 0 → igual; paradas de la semana por carrera mediana 0 → 0, p90 1 → 1, media
+  0,13 → 0,18 (51 paradas por la mentalidad en 1000 carreras). Burnout con aviso (réplica del check): 14/20 (70%) → **19/20 (95%)**.
+- `--solo` antes → después: 9Wd OK → OK; minijuegos OK → OK; "Ninguna carrera queda sin terminar" FAIL (30+ años 16,8%, banda
+  17-30) → OK; K5c embudo y estancados OK → OK; la propuesta del perfil OK → OK; K6c (14) OK; burnout con aviso FAIL → OK.
+- **(B) bloqueado:** "El contexto de carrera" (`lesionado`) y "lesion_cronica alcanzables" siguen FAIL, y ningún bot los arregla:
+  `salud.js` corre solo con `phase === 'profesional'` y la deuda vuelve a 0 al firmar, así que la lesión es inalcanzable para
+  cualquiera. Sonda con un bot que elige el plan con deuda y riesgo físico (1200 × 60): leve / grave / `lesionado` 0 / 0 / 0.
+  "La lesión solo en el amateur" pide que `salud.js` corra también en el amateur: es motor, queda para el supervisor. Dato (copia
+  de `src` con `salud.js` corriendo también en el amateur, no commiteado): `resolverAuto` 1000 × 60 leve 4, grave 0; el bot que
+  grindea 1200 × 60 leve 21, grave 2, retiro por lesión 1, `lesionado` 1 (pasaría, pero al borde).
+- Checks nuevos "K6c-fix la mentalidad entra en rojo y la semana frena" y "K6c-fix si ya estaba en rojo y el plan lo mostró, no frena
+  salvo que baje más": rojos los dos con el mutante "la mentalidad nunca frena"; el segundo, con "frena siempre en rojo".
+- `--rapido` 356 OK, 1 FAIL (la forma: re-registrada `FORMAS_CONOCIDAS[13]` '5915cb3adccf' → '995485d311c0', sin subir; después
+  OK). Huella sin cambio (K1 versión OK con 186316704: ninguna de las 40 seeds frena por la mentalidad). Determinismo
+  `simulate.js 100 60 criterio` ×2 diff vacío. Todo de a un proceso.
+
 ### 2026-10-06 — K6c-fix, cuarta pasada: la deuda se resetea al firmar (`k6c-fix`; decisión del usuario, PLAN.md `7538543`)
 
 - **Cambio:** al firmar el primer contrato pro (`firmarConEquipo`, el único paso amateur → pro) `player.deudaSueno` vuelve a

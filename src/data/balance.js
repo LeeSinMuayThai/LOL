@@ -355,6 +355,10 @@ export const BALANCE = {
     // semana por semana (`riesgoDelPlan`), la semana frena solo si su chance en casa supera la que el plan mostró para esa
     // semana por más que esto (o si la deuda de sueño llega antes de lo anunciado). Lo que ya aceptaste no vuelve a frenar.
     semanaRiesgoNuevo: 0.05,
+    // K6c-fix (quinta pasada, "frenar con la mentalidad en rojo", decisión del usuario 2026-10-06): con la mentalidad ya en zona
+    // roja y vista (el plan del año la mostraba en rojo para esa semana, o ya frenó una semana por eso), la semana vuelve a frenar
+    // solo si la mentalidad al cerrarla queda más de esto por debajo de lo visto (puntos de la barra). Lo que ya viste no frena.
+    semanaMentalNueva: 5,
     // K6c ("pasaste = firmás", decisión del usuario 2026-10-05): la vara de la prueba del amateur, sobre el `resultado`
     // 0-1 del minijuego. Sin dado: con el resultado en la vara o arriba firmás seguro; abajo, no firmás. Antes era la
     // probabilidad de `serie.probFirmaTryout` (una prueba perfecta no firmaba 1 de cada 20). La previa la dice antes de
