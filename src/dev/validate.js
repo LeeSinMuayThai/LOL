@@ -3928,6 +3928,103 @@ checkLento(`El tier 3 es breve: mediana de permanencia ≤ ${MEDIANA_MAXIMA_TIER
   }
 });
 
+// Rama tier3-nivel ("el nivel manda en tier 3", D34). Estado armado sobre una carrera real: un jugador de tier 3 que ya jugó
+// un split con su equipo (lo que pide K6a-M para resolver), con la liga tier 2 de su región puesta a mano para que su nivel
+// quede justo arriba o justo abajo de `calibre + competitivo.margenNivelSobreTier2`. Arriba: el salto es seguro, sin consumir
+// `rng`, el log dice por qué, y el split siguiente ya no es de tier 3. Abajo: sigue la tirada de siempre (quedarse, disolverse
+// y saltar aparecen, con la frecuencia de `probSalidaTier3` y `probAscenso*DesdeTier3`). Rojo con la regla sacada de
+// `resolverTier3` (el código de antes) y con el margen en +∞.
+const { aplicar: aplicarCompetitivoT3n } = await import('../systems/competitivo.js');
+const { calibreDeLiga: calibreDeLigaT3n } = await import('../core/demanda.js');
+const SEEDS_BASE_T3N = 60;
+const SPLITS_BASE_T3N = 30;
+const TIRADAS_T3N = 400;
+const TOLERANCIA_T3N = 0.07;
+check('Tier 3, el nivel manda: con nivel de sobra para el tier 2 de tu región el salto es seguro (sin dado y explicado); debajo del margen sigue la tirada', () => {
+  let base = null;
+  for (let seed = 1; seed <= SEEDS_BASE_T3N && !base; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < SPLITS_BASE_T3N && !state.terminado && !base; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      if (state.phase === 'profesional' && state.career.tier === 3 && state.career.currentOrg && !state.terminado
+        && jugasteUnSplitConLaOrg(state)) {
+        base = state;
+      }
+    }
+  }
+  if (!base) {
+    throw new Error(`ninguna de ${SEEDS_BASE_T3N} carreras quedó en tier 3 con un split jugado con su equipo`);
+  }
+  const liga = base.mundo.ligas.find((candidata) => candidata.tier === 2 && candidata.regionId === base.mundo.regionIdOrigen);
+  const nivel = nivelDelJugador(base);
+  const margen = BALANCE.competitivo.margenNivelSobreTier2;
+  // Todas las orgs de la liga con la misma fuerza: el calibre (un cuantil de las fuerzas) es exactamente esa fuerza.
+  const conCalibre = (fuerza) => ({
+    ...base,
+    mundo: {
+      ...base.mundo,
+      ligas: base.mundo.ligas.map((candidata) => (candidata.id === liga.id
+        ? { ...candidata, orgs: candidata.orgs.map((org) => ({ ...org, fuerza })) }
+        : candidata))
+    }
+  });
+  const arriba = conCalibre(Math.floor(nivel) - margen);
+  const abajo = conCalibre(Math.ceil(nivel) - margen + 1);
+  const ligaDe = (state) => state.mundo.ligas.find((candidata) => candidata.id === liga.id);
+  if (!(nivel >= calibreDeLigaT3n(ligaDe(arriba)) + margen) || !(nivel < calibreDeLigaT3n(ligaDe(abajo)) + margen)) {
+    throw new Error(`el armado no deja el nivel ${nivel} a los dos lados de calibre + ${margen}`);
+  }
+
+  for (let semilla = 1; semilla <= 20; semilla += 1) {
+    const rngBase = mulberry32(semilla);
+    let usos = 0;
+    const rngContado = () => {
+      usos += 1;
+      return rngBase();
+    };
+    const { state, logs } = aplicarCompetitivoT3n(arriba, rngContado);
+    const texto = logs.map((log) => log.message).join(' ');
+    if (state.career.tier !== 2 || state.career.liga !== liga.id) {
+      throw new Error(`nivel ${nivel.toFixed(1)} contra calibre ${calibreDeLigaT3n(ligaDe(arriba))} + ${margen}: seguís en tier ${state.career.tier} (rng ${semilla})`);
+    }
+    if (usos > 0) {
+      throw new Error(`el salto con nivel de sobra consumió ${usos} tirada(s) de rng: tiene que ser sin dado`);
+    }
+    if (!/Te sobraba nivel/.test(texto) || !/Te ganás el salto/.test(texto)) {
+      throw new Error(`el salto con nivel de sobra no dice por qué (regla 12): "${texto}"`);
+    }
+  }
+  const siguiente = avanzarSplitAuto(arriba, mulberry32(1)).state;
+  if (siguiente.career.tier === 3) {
+    throw new Error('con nivel de sobra, el split siguiente sigue siendo de tier 3');
+  }
+
+  const cuenta = { quedas: 0, disuelve: 0, salta: 0 };
+  for (let semilla = 1; semilla <= TIRADAS_T3N; semilla += 1) {
+    const { state, logs } = aplicarCompetitivoT3n(abajo, mulberry32(semilla));
+    if (logs.some((log) => /Te sobraba nivel/.test(log.message))) {
+      throw new Error(`debajo del margen el log dice que te sobraba nivel: "${logs.map((log) => log.message).join(' ')}"`);
+    }
+    if (state.career.tier === 2) {
+      cuenta.salta += 1;
+    } else if (state.career.currentOrg === abajo.career.currentOrg) {
+      cuenta.quedas += 1;
+    } else {
+      cuenta.disuelve += 1;
+    }
+  }
+  const c = BALANCE.competitivo;
+  const probAscenso = c.probAscensoBaseDesdeTier3 + (abajo.career.jerarquia / BALANCE.stats.max) * c.probAscensoPorJerarquiaDesdeTier3;
+  const esperado = { quedas: 1 - c.probSalidaTier3, salta: c.probSalidaTier3 * probAscenso, disuelve: c.probSalidaTier3 * (1 - probAscenso) };
+  for (const [resultado, prob] of Object.entries(esperado)) {
+    if (Math.abs(cuenta[resultado] / TIRADAS_T3N - prob) > TOLERANCIA_T3N) {
+      throw new Error(`debajo del margen, "${resultado}" sale ${cuenta[resultado]}/${TIRADAS_T3N} y la tirada da ${prob.toFixed(2)}: ${JSON.stringify(cuenta)}`);
+    }
+  }
+  console.log(`      nivel ${nivel.toFixed(1)}, margen ${margen}: arriba salta siempre sin dado; abajo ${JSON.stringify(cuenta)} en ${TIRADAS_T3N} tiradas`);
+});
+
 checkLento('El año muerto: nivel de tier 1 pero sin edad para debutar (marca espera_edad_minima)', () => {
   // Fase 9Md: ya no hay "ascenso ganado" que congelar. El año muerto ahora es:
   // sos nivel de tier 1 (`competitivo.nivelParaTier1`) pero te falta la edad
@@ -18513,6 +18610,7 @@ check('K4c el renglón de parche va adjunto salvo que mueva a tu main de S/A a B
   }
 });
 
+const SEEDS_K4CS = [1, 2, 3, 4, 5, 6];
 check('K4c-S el instrumento expone el Δp de cada parada de plan (serie:plan e internacional:plan): mejor − peor pSerie declarada, recontado a mano', () => {
   const opciones = (...ps) => ps.map((pSerie) => ({ pSerie }));
   const dp = deltaPDePlan(opciones(0.55, 0.62, 0.50));
@@ -18521,7 +18619,8 @@ check('K4c-S el instrumento expone el Δp de cada parada de plan (serie:plan e i
     throw new Error(`deltaPDePlan: [0,55 0,62 0,50] tenía que dar 0,12 (mejor − peor, no primera − última); dio ${dp}; con una sola opción, con NaN o sin pSerie tenía que dar null`);
   }
   let paradas = 0;
-  for (const seed of [1, 2, 3]) {
+  // Rama tier3-nivel (corrimiento declarado): con las seeds 1-3 quedaban 9 paradas de plan (eran 20); con 1-6, 21.
+  for (const seed of SEEDS_K4CS) {
     const aMano = [];
     const espia = (sistema, estado, decision, rngLocal) => {
       if (decision.datos?.motivo === 'plan') {
@@ -18541,7 +18640,7 @@ check('K4c-S el instrumento expone el Δp de cada parada de plan (serie:plan e i
     paradas += aMano.length;
   }
   if (paradas < 10) {
-    throw new Error(`check vacío: ${paradas} paradas de plan en 3 carreras (hacen falta 10)`);
+    throw new Error(`check vacío: ${paradas} paradas de plan en ${SEEDS_K4CS.length} carreras (hacen falta 10)`);
   }
 });
 

@@ -1049,6 +1049,11 @@ export const BALANCE = {
     // jerarquia: un titular tiene mas para mostrar que un suplente.
     probAscensoBaseDesdeTier3: 0.4,
     probAscensoPorJerarquiaDesdeTier3: 0.35,
+    // Rama tier3-nivel ("el nivel manda en tier 3", D34): si tu nivel supera el calibre de la liga tier 2 de tu región
+    // (`calibreDeLiga`, core/demanda.js) por este margen o más, el salto es seguro y sin dado; debajo sigue la tirada de
+    // arriba. Sin la regla (criterio 600 × 60) el 32,3% de las carreras pasaba 6+ splits en el nivel tier 3 (mediana 5),
+    // con nivel 63 contra calibre 18 y 80% de victorias. Los números de cada margen, en PROGRESO.md.
+    margenNivelSobreTier2: 15,
     // Si el equipo se disuelve, cuántos splits como libre antes de que otro
     // equipo de tier 3 te levante (siempre alguno te levanta: es tier 3).
     splitsLibrePromedioTier3: 1,
