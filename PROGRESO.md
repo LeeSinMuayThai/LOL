@@ -56,6 +56,12 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 - Check nuevo "Tier 3, el nivel manda…" (estado armado: arriba del margen salta siempre, sin consumir `rng`, con el log, y el split
   siguiente ya no es de tier 3; abajo, quedarse / disolverse / saltar con la frecuencia de la tirada). Rojo con la regla sacada
   (el código de antes), con el margen en +∞ y con un salto que tira dado.
+- Revisión de la rama (commit aparte): el log ya no dice "y ganar de taquito ya no prueba nada" (regla 15: la regla no mira
+  resultados; la seed 5, Corea, saltaba con 9-11); queda "Te sobraba nivel… N de nivel contra el C de un equipo medio de <liga>".
+  El check arma la liga tier 2 con fuerzas distintas y asimétricas (la mediana no es ni la máxima, ni la mínima, ni el promedio),
+  pone un caso en el borde exacto (nivel = calibre + margen, sin redondeo) y otro 0,01 abajo, y verifica que el log lleve el nivel,
+  el calibre y la liga comparados. Rojo con el calibre leído como la fuerza máxima y con `>` en vez de `>=` (y con los tres
+  mutantes de antes). Huellas sin cambio (346802722; juego 1265514711): el texto de un log no entra en ninguna.
   - Mundial con la región fija (`regionFija.js`, criterio, seeds 1-600, 60 splits; versión liviana de la de 3000): Corea 69 → 79
     (11,5 → 13,2%), NA 54 → 52 (9,0 → 8,7%); dentro del ruido (σ ≈ 1,3), la brecha a favor de Corea se abre (2,5 → 4,5 puntos).
 - Corrimiento declarado (T1): huella 1408477439 → 346802722; huella del juego 1766253198 → 1265514711 (`version.js`, sigue 'K6c').

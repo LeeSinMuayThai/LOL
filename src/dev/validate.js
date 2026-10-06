@@ -3933,13 +3933,20 @@ checkLento(`El tier 3 es breve: mediana de permanencia ≤ ${MEDIANA_MAXIMA_TIER
 // quede justo arriba o justo abajo de `calibre + competitivo.margenNivelSobreTier2`. Arriba: el salto es seguro, sin consumir
 // `rng`, el log dice por qué, y el split siguiente ya no es de tier 3. Abajo: sigue la tirada de siempre (quedarse, disolverse
 // y saltar aparecen, con la frecuencia de `probSalidaTier3` y `probAscenso*DesdeTier3`). Rojo con la regla sacada de
-// `resolverTier3` (el código de antes) y con el margen en +∞.
+// `resolverTier3` (el código de antes), con el margen en +∞, con un salto que tira dado, con el calibre leído como la fuerza máxima
+// de la liga y con `>` en vez de `>=` (revisión de la rama: las fuerzas distintas y el caso en el borde exacto).
 const { aplicar: aplicarCompetitivoT3n } = await import('../systems/competitivo.js');
 const { calibreDeLiga: calibreDeLigaT3n } = await import('../core/demanda.js');
 const SEEDS_BASE_T3N = 60;
 const SPLITS_BASE_T3N = 30;
 const TIRADAS_T3N = 400;
 const TOLERANCIA_T3N = 0.07;
+// Las fuerzas armadas alrededor del calibre: de a 1 abajo y de a 6 arriba (asimétricas: el promedio no es la mediana).
+const PASO_ABAJO_T3N = 1;
+const PASO_ARRIBA_T3N = 6;
+// "Justo abajo" del borde: el nivel queda esto por debajo de calibre + margen.
+const JUSTO_ABAJO_T3N = 0.01;
+const { nombreVisibleDeLiga: nombreVisibleDeLigaT3n } = await import('../core/ligas.js');
 check('Tier 3, el nivel manda: con nivel de sobra para el tier 2 de tu región el salto es seguro (sin dado y explicado); debajo del margen sigue la tirada', () => {
   let base = null;
   for (let seed = 1; seed <= SEEDS_BASE_T3N && !base; seed += 1) {
@@ -3959,21 +3966,44 @@ check('Tier 3, el nivel manda: con nivel de sobra para el tier 2 de tu región e
   const liga = base.mundo.ligas.find((candidata) => candidata.tier === 2 && candidata.regionId === base.mundo.regionIdOrigen);
   const nivel = nivelDelJugador(base);
   const margen = BALANCE.competitivo.margenNivelSobreTier2;
-  // Todas las orgs de la liga con la misma fuerza: el calibre (un cuantil de las fuerzas) es exactamente esa fuerza.
-  const conCalibre = (fuerza) => ({
+  // Las orgs de la liga con fuerzas DISTINTAS y asimétricas (pocas abajo, lejos arriba): las dos del medio en la fuerza pedida,
+  // así el cuantil `demanda.cuantilCalibreDeLiga` da exactamente esa fuerza y no coincide con la máxima, la mínima ni el
+  // promedio (un calibre mal leído no pasa).
+  const n = liga.orgs.length;
+  const medioAbajo = Math.floor(BALANCE.demanda.cuantilCalibreDeLiga * (n - 1));
+  const medioArriba = Math.min(n - 1, medioAbajo + 1);
+  const fuerzaEn = (calibre, i) => {
+    if (i < medioAbajo) {
+      return calibre - (medioAbajo - i) * PASO_ABAJO_T3N;
+    }
+    return i > medioArriba ? calibre + (i - medioArriba) * PASO_ARRIBA_T3N : calibre;
+  };
+  const conCalibre = (calibre) => ({
     ...base,
     mundo: {
       ...base.mundo,
       ligas: base.mundo.ligas.map((candidata) => (candidata.id === liga.id
-        ? { ...candidata, orgs: candidata.orgs.map((org) => ({ ...org, fuerza })) }
+        ? { ...candidata, orgs: candidata.orgs.map((org, i) => ({ ...org, fuerza: fuerzaEn(calibre, i) })) }
         : candidata))
     }
   });
-  const arriba = conCalibre(Math.floor(nivel) - margen);
-  const abajo = conCalibre(Math.ceil(nivel) - margen + 1);
+  // El borde exacto: el calibre con `calibre + margen === nivel` en punto flotante (la regla es `>=`: con `>` no salta).
+  const exacto = nivel - margen;
+  const paso = (Number.EPSILON * Math.abs(exacto)) / 2;
+  const enElBorde = [0, 1, -1, 2, -2, 3, -3, 4, -4].map((k) => exacto + k * paso).find((calibre) => calibre + margen === nivel);
+  if (enElBorde === undefined) {
+    throw new Error(`no hay un calibre con calibre + ${margen} === ${nivel}: el armado del borde no sirve`);
+  }
+  const arriba = conCalibre(enElBorde);
+  const abajo = conCalibre(enElBorde + JUSTO_ABAJO_T3N);
   const ligaDe = (state) => state.mundo.ligas.find((candidata) => candidata.id === liga.id);
-  if (!(nivel >= calibreDeLigaT3n(ligaDe(arriba)) + margen) || !(nivel < calibreDeLigaT3n(ligaDe(abajo)) + margen)) {
-    throw new Error(`el armado no deja el nivel ${nivel} a los dos lados de calibre + ${margen}`);
+  const fuerzas = ligaDe(arriba).orgs.map((org) => org.fuerza);
+  const promedio = fuerzas.reduce((suma, fuerza) => suma + fuerza, 0) / fuerzas.length;
+  const calibreBorde = calibreDeLigaT3n(ligaDe(arriba));
+  if (calibreBorde !== enElBorde || [Math.max(...fuerzas), Math.min(...fuerzas), promedio].includes(calibreBorde)
+    || !(nivel < calibreDeLigaT3n(ligaDe(abajo)) + margen)) {
+    throw new Error(`el armado no separa el calibre (${calibreBorde}) de la máxima, la mínima y el promedio, o no deja el nivel ${nivel} `
+      + `en el borde y justo abajo de calibre + ${margen}`);
   }
 
   for (let semilla = 1; semilla <= 20; semilla += 1) {
@@ -3986,13 +4016,14 @@ check('Tier 3, el nivel manda: con nivel de sobra para el tier 2 de tu región e
     const { state, logs } = aplicarCompetitivoT3n(arriba, rngContado);
     const texto = logs.map((log) => log.message).join(' ');
     if (state.career.tier !== 2 || state.career.liga !== liga.id) {
-      throw new Error(`nivel ${nivel.toFixed(1)} contra calibre ${calibreDeLigaT3n(ligaDe(arriba))} + ${margen}: seguís en tier ${state.career.tier} (rng ${semilla})`);
+      throw new Error(`nivel ${nivel} con calibre ${calibreBorde} + ${margen} (el borde): seguís en tier ${state.career.tier} (rng ${semilla})`);
     }
     if (usos > 0) {
       throw new Error(`el salto con nivel de sobra consumió ${usos} tirada(s) de rng: tiene que ser sin dado`);
     }
-    if (!/Te sobraba nivel/.test(texto) || !/Te ganás el salto/.test(texto)) {
-      throw new Error(`el salto con nivel de sobra no dice por qué (regla 12): "${texto}"`);
+    const comparado = `${Math.round(nivel)} de nivel contra el ${Math.round(calibreBorde)} de un equipo medio de ${nombreVisibleDeLigaT3n(liga.id)}`;
+    if (!/Te sobraba nivel/.test(texto) || !texto.includes(comparado) || !/Te ganás el salto/.test(texto)) {
+      throw new Error(`el salto con nivel de sobra no dice por qué con lo que comparó (regla 12; esperaba "${comparado}"): "${texto}"`);
     }
   }
   const siguiente = avanzarSplitAuto(arriba, mulberry32(1)).state;

@@ -113,7 +113,7 @@ function resolverTier3(state, rng) {
   const sobra = nivelSobreTier2(state);
   if (sobra?.alcanza) {
     return saltarATier2(state, [], `Te sobraba nivel para el circuito chico: ${entero(sobra.nivel)} de nivel contra el `
-      + `${entero(sobra.calibre)} de un equipo medio de ${nombreVisibleDeLiga(sobra.liga.id)}, y ganar de taquito ya no prueba nada. `);
+      + `${entero(sobra.calibre)} de un equipo medio de ${nombreVisibleDeLiga(sobra.liga.id)}. `);
   }
   if (!chance(c.probSalidaTier3, rng)) {
     return { state, logs: [] };
