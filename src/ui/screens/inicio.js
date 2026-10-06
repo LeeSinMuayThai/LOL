@@ -1,7 +1,8 @@
 // La pantalla de inicio: rol + mains. U2 la vuelve un draft (carriles +
 // slots), no un formulario. El estado de la elección sigue acá adentro.
 import { marcaRol } from '../components/iconos.js';
-import { crearCampeonTile } from '../components/campeonTile.js';
+import { crearCampeonTile, keyDdragonDeCampeon } from '../components/campeonTile.js';
+import { crearSplash } from '../components/splash.js';
 import { miles, linkDeResultado } from '../resultado.js';
 
 const ETIQUETA_STAT = {
@@ -17,6 +18,16 @@ export function crearPantallaInicio(elements, modulos) {
   // K5-B: la región de origen (`regionId`). `null` = la sortea la seed.
   let regionElegida = null;
   let camposElegidos = [];
+
+  // J9: el splash del último main elegido (`components/splash.js`): decoración, sin imagen queda el fondo de siempre.
+  let splash = null;
+  function actualizarSplash() {
+    const panel = campeonGrid.closest('#setup');
+    if (!panel) return;
+    splash ??= crearSplash(panel);
+    const nombre = camposElegidos[camposElegidos.length - 1];
+    splash.mostrar(nombre ? keyDdragonDeCampeon(nombre) : null);
+  }
 
   function actualizarBoton() {
     runButton.disabled = !(rolElegido && camposElegidos.length === modulos.BALANCE.mundo.campeonesIniciales);
@@ -55,6 +66,7 @@ export function crearPantallaInicio(elements, modulos) {
 
   function renderCampeones() {
     renderSlots();
+    actualizarSplash();
     if (!rolElegido) {
       campeonGrid.replaceChildren();
       poolContador.textContent = 'Elegí una línea primero.';

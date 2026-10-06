@@ -108,6 +108,24 @@
 .campeon-tile--engage  { border-color: var(--cat-vestuario); color: var(--cat-vestuario); }
 .campeon-tile--split   { border-color: var(--up); color: var(--up); }
 
+/* J9: el ícono de Data Dragon va encima del tile geométrico. Si no carga, JS lo
+   saca y queda el tile de siempre (iniciales + borde por arquetipo). */
+.campeon-tile-cara {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.campeon-tile--con-cara .campeon-tile-ini { visibility: hidden; }
+.campeon-tile--con-cara .campeon-tile-mae,
+.campeon-tile--con-cara .campeon-tile-oxido {
+  padding: 1px 2px;
+  background: color-mix(in srgb, var(--bg-sunken) 82%, transparent);
+}
+.campeon-tile--con-cara .campeon-tile-tier { z-index: 1; }
+
 .campeon-tile--elegido { box-shadow: inset 0 0 0 1px var(--up); border-color: var(--up); }
 .campeon-tile--quemado {
   filter: grayscale(1);

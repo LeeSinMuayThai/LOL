@@ -19,6 +19,43 @@
   to   { opacity: 1; transform: none; }
 }
 
+/* J9: el splash del último main elegido, difuminado, detrás de todo el setup (`components/splash.js`).
+   `.panel` tiene `clip-path` (crea un contexto de apilamiento y recorta el chaflán), así que con z-index -1
+   queda sobre su fondo y debajo del contenido. Es `fixed`: el setup es largo y un splash del alto del panel
+   quedaba estirado y casi invisible; así acompaña al scroll y el clip-path lo recorta al panel. El
+   contenedor recorta con `overflow: clip`: el `clip-path` del panel recorta lo que se ve pero no el
+   desborde scrolleable, y la capa agrandada (`scale`, para tapar los bordes del blur) ensanchaba la
+   página en el celular (D69). El velo (degradé al color de la superficie) mantiene el texto legible; sin
+   imagen las capas quedan transparentes y el fondo es el de siempre. */
+.setup-splash {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  overflow: clip;
+  pointer-events: none;
+}
+.setup-splash-capa {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center 20%;
+  filter: blur(14px) saturate(0.85);
+  transform: scale(1.08);
+  opacity: 0;
+  transition: opacity var(--dur-slow) var(--ease);
+}
+.setup-splash-capa--visible { opacity: 0.55; }
+.setup-splash::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--bg-surface) 30%, transparent), color-mix(in srgb, var(--bg-surface) 88%, transparent));
+}
+@media (prefers-reduced-motion: reduce) {
+  .setup-splash-capa { transition: none; }
+}
+
 #setup .subtitle {
   font-family: var(--font-display);
   font-size: var(--fs-7);
