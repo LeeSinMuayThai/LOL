@@ -7,6 +7,9 @@ import { calcularContexto } from '../core/contexto.js';
 import { conPlantelesDe, fuerzaDePlantel } from '../core/plantel.js';
 import { BALANCE } from '../data/balance.js';
 import { nombreVisibleDeLiga, esLigaFranquiciada } from '../core/ligas.js';
+import { nivelDelJugador } from '../core/ficha.js';
+import { calibreDeLiga } from '../core/demanda.js';
+import { entero } from '../core/formato.js';
 
 // El tránsito entre tiers.
 //
@@ -59,7 +62,8 @@ function disolverEquipo(state, logsPrevios) {
 
 // Fase 9Md: el salto de tier 3 te deja como AGENTE LIBRE de tier 2 — "deja el
 // asiento abierto". La próxima pretemporada el mercado te ofrece club.
-function saltarATier2(state, logsPrevios) {
+// Rama tier3-nivel: `motivo` es la frase que va antes del salto cuando lo explica algo que el jugador tiene que leer (regla 12).
+function saltarATier2(state, logsPrevios, motivo = '') {
   const liga = ligaTier2DeLaRegion(state);
   if (!liga) {
     // No debería pasar (las 6 regiones tienen tier 2 en leagues.json).
@@ -76,8 +80,20 @@ function saltarATier2(state, logsPrevios) {
         registro: conFilaCerrada(state, 'ascenso')
       }
     },
-    logs: [...logsPrevios, crearLog('competitivo', `Te ganás el salto a ${nombreVisibleDeLiga(liga.id)}. Sos agente libre de tier 2: en la pretemporada elegís club.`)]
+    logs: [...logsPrevios, crearLog('competitivo', `${motivo}Te ganás el salto a ${nombreVisibleDeLiga(liga.id)}. Sos agente libre de tier 2: en la pretemporada elegís club.`)]
   };
+}
+
+// Rama tier3-nivel ("el nivel manda en tier 3", D34): tu nivel contra el calibre de la liga tier 2 de tu región. Si lo supera
+// por `competitivo.margenNivelSobreTier2` o más, el circuito chico ya no te alcanza y el salto no se sortea. Puro, sin `rng`.
+export function nivelSobreTier2(state) {
+  const liga = ligaTier2DeLaRegion(state);
+  if (!liga) {
+    return null;
+  }
+  const nivel = nivelDelJugador(state);
+  const calibre = calibreDeLiga(liga);
+  return { liga, nivel, calibre, alcanza: nivel >= calibre + BALANCE.competitivo.margenNivelSobreTier2 };
 }
 
 // K6a-M: tu paso por un tier 3 no se resuelve (ni el salto ni la disolución) antes de que hayas jugado un split con ese
@@ -93,6 +109,12 @@ export function jugasteUnSplitConLaOrg(state) {
 
 function resolverTier3(state, rng) {
   const c = BALANCE.competitivo;
+  // Rama tier3-nivel: con nivel de sobra, el salto es seguro y no consume `rng` (la tirada de abajo queda para el resto).
+  const sobra = nivelSobreTier2(state);
+  if (sobra?.alcanza) {
+    return saltarATier2(state, [], `Te sobraba nivel para el circuito chico: ${entero(sobra.nivel)} de nivel contra el `
+      + `${entero(sobra.calibre)} de un equipo medio de ${nombreVisibleDeLiga(sobra.liga.id)}. `);
+  }
   if (!chance(c.probSalidaTier3, rng)) {
     return { state, logs: [] };
   }

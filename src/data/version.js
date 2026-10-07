@@ -79,7 +79,7 @@
 // casa, Final2 con la LPL en 91, el no-pro con piso de soloQ, El GOAT = nuevo Faker). Sin esto, después del merge dos juegos
 // distintos compartirían "v K4c" en el desafío, el historial y el texto compartido. La etiqueta no entra en la huella (la tupla de
 // `calcularHuellaJuego` no la lee): la huella del bloque C es la de abajo. Misma `VERSION` del guardado (12, no salió de la rama).
-export const VERSION_JUEGO = 'K6c';
+export const VERSION_JUEGO = 'K6d';
 // K4c (cierre de año, 2044679379): los 10 eventos de cierre_edad.json pasan a ser decisiones con intercambio (tres opciones, efectos
 // del orden de las bifurcaciones, un pool que aprende, riesgos en los outcomes): cambian las tiradas del cierre y con ellas las carreras
 // enteras. Misma versión (el paso 3b la pasa a 'K4c'): reemplaza a 922534647.
@@ -163,4 +163,22 @@ export const VERSION_JUEGO = 'K6c';
 // cambian): un aviso cubre solo los cierres que mostró (la parada vuelve en cada cierre con el dado vivo que nada cubrió), el pro frena
 // también sin club (bajar la carga o desconectarte), esperar se puede una sola vez por oferta y la espera con la PC confiscada dice que
 // ese split se vive sin PC. La forma sí cambia: `flags.mentalAvisadaPro` pasa de número a la lista de cierres avisados.
-export const HUELLA_JUEGO = 1073872165;
+// Rama tier3-nivel (1265514711; corrimiento declarado, sigue 'K6c': la rama no se mergea sin la decisión del usuario, D34):
+// "el nivel manda en tier 3": con nivel ≥ calibre de la liga tier 2 de tu región + `competitivo.margenNivelSobreTier2` el salto es
+// seguro y no tira los dos dados de `resolverTier3`; cambian las tiradas que siguen, y con ellas las carreras. Reemplaza a 1766253198.
+// K6d-N, P3 (480175732; corrimiento declarado, sigue 'K6c'): el bono del título de liga en el ranking del mundo pesa por el
+// prestigio de la liga (`topMundial.prestigioSinBonoCampeon` 55 / `prestigioPlenoCampeon` 91: la CBLOL no suma, la LEC la mitad,
+// la LPL y la LCK el bono entero). Sin tiradas nuevas: el ranking cambia el mérito del mercado (`meritoDeTemporada`, el top del
+// mundo), y con él las ofertas y las carreras. Huella del stream (`dev/huella.js`) 346802722 → 1820193282. Reemplaza a 1265514711.
+// K6d-N, P7a (62519553; corrimiento declarado, sigue 'K6c'): el nivel te lleva a la liga que te corresponde (`mercado.estrellaSube`):
+// si tu nivel llega a una liga de tier 1 claramente más fuerte, un club de ahí te hace lugar, primero en la mano y, a mitad de
+// contrato, como pretendiente sin la tirada de `probTraspasoMitadContrato` (una tirada menos cuando la regla dispara: corre el
+// stream). Huella del stream (`dev/huella.js`) 1820193282 → 1381761146. Reemplaza a 480175732.
+// K6d (la integración de K6d-N, K6d-B y K6d-P, 2117801369; corrimiento declarado — lo que decidió el usuario el 2026-10-07):
+// `VERSION_JUEGO` pasa a 'K6d'. K6d-N: el nivel manda en tier 3 (margen 15, sin los dados de `resolverTier3`), el título de una
+// liga chica no te mete en el Top 20 (P3: el bono pesa por el prestigio de la liga) y la estrella sube a la liga de tier 1 que su
+// nivel alcanza (P7a, `mercado.estrellaSube`); K6d-B (D77): la oferta del amateur con la racha en rojo dice el % del burnout y
+// deja esperar una vez, y el pro frena con la mentalidad en rojo, con o sin club; K6d-P: la rueda de prensa con pistas (no mueve
+// la huella). Las piezas juntas mueven las carreras que cada una movía sola: ninguna seed de K6c reproduce su carrera. Guardado
+// VERSION 14. Reemplaza a 62519553 (K6d-N), 1073872165 (K6d-B) y 1766253198 (K6c).
+export const HUELLA_JUEGO = 2117801369;

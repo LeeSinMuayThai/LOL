@@ -61,9 +61,12 @@ import { pausaDeMercadoMigrada } from '../systems/mercado.js';
 // foto de la última vez que elegiste seguir, seguir buscando o no volver; K6b-C2, `flags.colaFirmas` (`cierre` y `momento`), la foto
 // de la última parada de la cola. K6b-U, K6b-M y K6b-F no cambiaron la forma: la marca `franquicia` de las ligas se lee de
 // `data/leagues.json` y no entra a la copia del mundo). Un guardado de la 12 carga con `migrarDe12`, que arranca las cuatro en
-// "no hay foto"; uno de la 11 o de la 10 pasa además por las migraciones de antes.
-export const VERSION = 13;
-const VERSIONES_MIGRABLES = [10, 11, 12];
+// "no hay foto"; uno de la 11 o de la 10 pasa además por las migraciones de antes · 14 (K6d, la integración de K6d-N, K6d-B y
+// K6d-P en un solo número — K6d-B, D77: `flags.mentalAvisadaPro`, la lista de cierres que un aviso ya cubrió con su %, y
+// `flags.ofertaGuardada`, la oferta que el club te guarda un split; K6d-N y K6d-P no cambiaron la forma). Un guardado de la 13
+// carga con `migrarDe13`, que arranca las dos con sus valores iniciales; uno de la 12 o de antes pasa además por las de antes.
+export const VERSION = 14;
+const VERSIONES_MIGRABLES = [10, 11, 12, 13];
 
 // El marcador de los años pro, reconstruido de lo que la 11 sí guardaba. La fila del registro de la org del primer contrato de tier
 // 2 o 1 la abre `roster.js` el split siguiente al de la firma, así que la firma fue en su `desdeSplit` - 1. Sin esa fila todavía
@@ -169,16 +172,32 @@ export function migrarDe12(state) {
   return { ...state, flags };
 }
 
-// De la versión del guardado a la función que lo deja en la actual (la 10 pasa por `migrarDe10`, `migrarDe11` y `migrarDe12`; la
-// 11, por las dos últimas).
+// 13 -> 14. K6d-B (D77): `flags.mentalAvisadaPro` arranca en "ningún cierre avisado" (`[]`) y `flags.ofertaGuardada` en "no hay
+// oferta guardada" (`null`), los valores del estado inicial: la 13 no las escribía, así que el próximo cierre con el dado vivo
+// frena (ningún aviso lo cubrió) y no hay oferta que vuelva. Las que ya estén se respetan. Puro: no toca el RNG ni el reloj.
+export function migrarDe13(state) {
+  const viejas = state.flags ?? {};
+  const flags = {
+    ...viejas,
+    mentalAvisadaPro: Array.isArray(viejas.mentalAvisadaPro) ? viejas.mentalAvisadaPro : [],
+    ofertaGuardada: viejas.ofertaGuardada ?? null
+  };
+  return { ...state, flags };
+}
+
+// De la versión del guardado a la función que lo deja en la actual (la 10 pasa por `migrarDe10`, `migrarDe11`, `migrarDe12` y
+// `migrarDe13`; la 11, por las tres últimas; la 12, por las dos últimas).
 function migrar(version, state) {
   if (version === 10) {
-    return migrarDe12(migrarDe11(migrarDe10(state)));
+    return migrarDe13(migrarDe12(migrarDe11(migrarDe10(state))));
   }
   if (version === 11) {
-    return migrarDe12(migrarDe11(state));
+    return migrarDe13(migrarDe12(migrarDe11(state)));
   }
-  return version === 12 ? migrarDe12(state) : state;
+  if (version === 12) {
+    return migrarDe13(migrarDe12(state));
+  }
+  return version === 13 ? migrarDe13(state) : state;
 }
 
 export function serializar(state, rng, rngUi) {

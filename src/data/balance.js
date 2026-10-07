@@ -1071,6 +1071,12 @@ export const BALANCE = {
     // jerarquia: un titular tiene mas para mostrar que un suplente.
     probAscensoBaseDesdeTier3: 0.4,
     probAscensoPorJerarquiaDesdeTier3: 0.35,
+    // Rama tier3-nivel ("el nivel manda en tier 3", D34): si tu nivel supera el calibre de la liga tier 2 de tu región
+    // (`calibreDeLiga`, core/demanda.js) por este margen o más, el salto es seguro y sin dado; debajo sigue la tirada de
+    // arriba. Sin la regla (criterio 600 × 60) el 32,3% de las carreras pasaba 6+ splits en el nivel tier 3 (mediana 5),
+    // con nivel 63 contra 18 de calibre de su club de tier 3 (el calibre tier 2 va de 31 a 53 según la región) y 80% de victorias.
+    // Los números de cada margen, en PROGRESO.md.
+    margenNivelSobreTier2: 15,
     // Si el equipo se disuelve, cuántos splits como libre antes de que otro
     // equipo de tier 3 te levante (siempre alguno te levanta: es tier 3).
     splitsLibrePromedioTier3: 1,
@@ -1396,6 +1402,12 @@ export const BALANCE = {
     //    G0 / Final2 (40 mundos): LCK 88,7 / 95,1, LPL 86,8 / 92,9, LEC 73,8 / 73,1, LCS 63,1 / 62,3, LCP 54,0 / 59,7,
     //    CBLOL 49,4 / 55,6 (desvío entre mundos 4-5 / 1-3). LCK contra LPL (2) y la LCP contra la CBLOL (4-5) quedan por debajo
     //    del margen; la LEC contra la LCP o la CBLOL (14-24), la LCK/LPL contra la LEC (15-20) y la LEC contra la LCS (11) arriba.
+    // K6d-N, P7a (`core/demanda.js:clubDeLigaMasFuerteQueTeHaceLugar`): el nivel te lleva a la liga que te corresponde. Si jugás
+    // en tier 1 y tu nivel llega (`casa.margenAlcanza`) a una liga de tier 1 claramente más fuerte (`casa.margenImportElite`), un
+    // club de ahí te hace lugar: primero en la mano al fin de contrato, y como pretendiente sin el dado a mitad de contrato. No
+    // trae constantes propias: reusa esos dos márgenes de K5c-H. `false` = neutra (el mercado de siempre, huella incluida); K6d-N
+    // paso 3 la prende (decisión del supervisor, PLAN.md §K6d-N paso 2b).
+    estrellaSube: true,
     casa: {
       // K5c paso 3 (Final2): la casa encendida: margen 99 → -4 y castigo etario 1 → 0.
       margenAlcanza: -4,
@@ -2058,6 +2070,11 @@ export const BALANCE = {
     // carreras con éxito son campeón doméstico sin internacional, así que
     // `bonusCampeonLiga` es el que mueve la aguja de §9W.6.
     bonusCampeonLiga: 13,
+    // K6d-N, P3: el bono del título de liga pesa por el prestigio de la liga (`core/topMundial.js:factorPorPrestigio`): 0 con
+    // prestigio <= `prestigioSinBonoCampeon`, pleno con prestigio >= `prestigioPlenoCampeon`, lineal en el medio. Neutra:
+    // pleno 0 (toda liga cobra el bono entero, el ranking de siempre).
+    prestigioSinBonoCampeon: 55,
+    prestigioPlenoCampeon: 91,
     bonusInternacional: 16,
     bonusInternacionalFinalista: 8,
     // La perilla del churn ("que rote bastante"): amplitud del ruido

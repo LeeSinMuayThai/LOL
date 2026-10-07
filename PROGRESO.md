@@ -34,6 +34,79 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-07 — K6d-N: merge de `tier3-nivel` y P3, el título de una liga chica no te mete en el Top 20 (rama `k6d-nivel`)
+
+- **Merge** (`908ac9f`): `tier3-nivel` entra con la regla de tier 3 (margen 15). La huella del juego queda en 1265514711 y
+  `--rapido` da 364 OK / 0 FAIL / 174 SKIP.
+- **El diagnóstico** (criterio 600 × 60, con la regla de tier 3) está en `PLAN.md` §K6d-N.
+  - El 88,6% de las llegadas a tier 1 es a CBLOL/LCP/LCS, con calibres de 51,5 / 56,5 / 59 contra ~53 de LCK CL.
+  - El 69% de los títulos se gana ahí, con el jugador 15 o más arriba del calibre de su liga.
+  - El título de cualquier liga sumaba 16,9 puntos al ranking del mundo.
+- **P3, en dos commits** (regla de proceso 2):
+  - `427542e`, la estructura con la perilla neutra (`topMundial.prestigioSinBonoCampeon` / `prestigioPlenoCampeon` en
+    0/0). La huella queda idéntica y `--rapido` da 365 / 0 / 174;
+  - `a4efef1`, los valores 55 / 91. El bono del título de liga se multiplica por un factor lineal del prestigio de la liga
+    (`core/topMundial.js:factorPorPrestigio`): la CBLOL suma 0, la LEC la mitad, la LPL y la LCK entero. El Mundial no se
+    toca.
+- **El corrimiento declarado:** huella del juego 1265514711 → 480175732 (`version.js`, sigue 'K6c'); stream
+  (`dev/huella.js`) 346802722 → 1820193282. `--rapido` 365 / 0 / 174.
+- **El check nuevo** "K6d-N P3 el título de liga pesa por el prestigio…" comprueba:
+  - los bordes 55 y 91 exactos;
+  - que la liga chica sume menos que la grande;
+  - cada liga contra la cuenta;
+  - el Mundial intacto;
+  - la neutra exacta.
+
+  Está en rojo con el factor sacado, sin el tope de arriba y sin el de abajo.
+- **Regla 15:** ninguna pantalla lista los puntos del bono. El panel del Top 20 y los logs dicen solo el puesto.
+- **Las barandas** (600 × 60, antes → después): Top 20 criterio 40,3 → 23,8, equilibrado 30,5 → 16,2, malas 11,0 → 3,3.
+  - Título de tier 1, tier 1 y no-pro no se mueven.
+  - Región fija: Corea 79 → 79 y NA 52 → 45 (de 600).
+  - 30+ en la réplica del check lento: 16,8 → 16,5.
+- **P7a, "el nivel te lleva a la liga que te corresponde"** (decisión del supervisor, `PLAN.md` §K6d-N paso 2b).
+  - **Por qué no subía** (criterio 600 × 60, con P3; las ventanas de las estrellas de CBLOL/LCP/LCS que le sacan 15 o más al
+    calibre de su liga: 1019):
+    - ve la oferta y la toma: 24,7%;
+    - ningún club que alcanza tiene asiento abierto: 31%;
+    - la ve y `criterio` prefiere la casa (no es élite): 13,6%;
+    - a mitad de contrato no sale el dado de 0,35: 9,3%;
+    - a mitad de contrato no hay pretendiente con 5 de fuerza más que su club: 8,7%;
+    - la casa llena la mano y el cupo de imports es solo para la élite: 9,2%.
+  - **La regla:** si tu nivel llega (`casa.margenAlcanza`) a una liga de tier 1 claramente más fuerte (`casa.margenImportElite`:
+    reusa los dos márgenes de K5c-H), un club de ahí te hace lugar con `forzada`, que nunca salta las reglas duras. Al fin de
+    contrato va primero en la mano; a mitad de contrato es el pretendiente, sin el dado. Vive en
+    `core/demanda.js:clubDeLigaMasFuerteQueTeHaceLugar`, y la oferta dice "das el nivel de <liga>, una liga más fuerte que <la
+    tuya>: N de nivel contra el C de un equipo medio de allá".
+  - **Dos commits:**
+    - `9f3b3f8`, la perilla neutra `mercado.estrellaSube: false`. La huella queda en 480175732 y `--rapido` da 366 / 0 / 174;
+    - `9b85bc7`, la perilla prendida.
+  - **El corrimiento declarado:** huella del juego 480175732 → 62519553; stream 1820193282 → 1381761146. La forma 13 se
+    re-registra sin subir (no hay campos nuevos).
+  - **El check nuevo** "K6d-N P7a la estrella sube…" arma los estados así:
+    - fuerzas asimétricas;
+    - el borde exacto de "llega" en coma flotante y 0,01 abajo;
+    - la liga justo en "8 más";
+    - el cupo de imports en 0;
+    - la perilla neutra.
+
+    Está en rojo con seis mutantes: `>` en lugar de `>=`, `>=` en lugar de `>`, sin el filtro de `forzada`, con el dado a
+    mitad de contrato, sin el primer lugar en la mano y sin la perilla.
+  - **Queda un FAIL en `--rapido` (365 / 1 / 174): K5c-R.** En la seed 9, `aniosProDe` da 8,33 y el check espera 8. La carrera
+    ahora pasa por la LEC, se retira en LCK CL y termina en burnout estando retirada, con el reloj saltando 4 splits contra 3
+    de `splitsRetirado`. Es el camino de retiro y burnout, no el de P7a. Queda reportado y no lo toqué.
+  - **Las barandas** (600 × 60, P3 → P3 + P7a):
+
+    | Medida | P3 | P3 + P7a |
+    |---|---|---|
+    | Título de tier 1, criterio / equilibrado / malas | 57,3 / 53,0 / 16,5 | 55,0 / 46,5 / 16,2 |
+    | Mundial | 10,3 | 8,5 |
+    | Región fija Corea / NA (de 600) | 79 / 45 | 87 / 51 |
+    | Burnouts por mil, criterio / equilibrado / malas | 15 / 27 / 512 | 42 / 37 / 513 |
+    | Títulos ganados en CBLOL/LCP/LCS | 68,2% | 65,3% |
+    | Splits medianos en tier 1 | 27 | 27 |
+
+    No se mueven: tier 1 (73,0), no-pro y tier 3 (mediana 2).
+
 ### 2026-10-07 — K6d-B (D77): el burnout se ve venir en la firma y en el pro (rama `k6d-burnout`)
 
 **Lo que se encontró al implementar (cambia una parte de la spec, decide el supervisor).** La oferta del amateur llega
@@ -373,6 +446,44 @@ Las lesiones, las paradas de la semana y el impacto de los minijuegos los juzgan
 
 **Lo que no se cierra:** K6c necesita que el usuario juegue el amateur y la prueba (memoria de playtest). No se pusheó
 nada.
+
+### 2026-10-06 — Rama `tier3-nivel`: el nivel manda en tier 3 (D34; NO se mergea sin la decisión del usuario)
+
+- Causa medida: la salida de tier 3 era una lotería ciega al nivel (`resolverTier3`: 0,45 de salir × 0,40 + 0,35·jerarquía de
+  subir; la jerarquía vuelve a 0 con cada disolución, y cada disolución cuesta 2 splits sin tirada por K6a-M). Sin mercado en tier 3
+  (`mercado.js:629`). Con criterio 600 × 60 el 32,3% de las carreras pasaba 6+ splits en el nivel tier 3 (mediana 5, p90 12), con
+  nivel 63 contra calibre 18 y 80% de victorias. La carrera "buena" de K6 (seed 39) quedó 7 años así.
+- Regla: si tu nivel ≥ calibre de la liga tier 2 de tu región (`calibreDeLiga`) + `competitivo.margenNivelSobreTier2` (15), el
+  salto es seguro, sin dado, y el log dice por qué ("Te sobraba nivel para el circuito chico: N de nivel contra el C de un equipo
+  medio de <liga>…"). Debajo, la tirada de siempre (con la jerarquía). `systems/competitivo.js` (`nivelSobreTier2`, `resolverTier3`).
+- Margen: medido 10 / 15 / 20 (criterio 600 × 60, seeds 1-600, `guard.mjs` del scratchpad): mediana 2 / 2 / 3, p90 3 / 6 / 8,
+  6+ splits 2,5 / 7,7 / 16,8%, Mundial 8,7 / 9,8 / 11,5% (ruido: σ ≈ 1,2). 15 es el margen más alto que deja la mediana del diseño
+  (1-2; 2 es el piso con K6a-M): conserva la tirada para quien apenas pasa al circuito chico.
+- Barandas, antes (`c3c1721`) → después, 600 × 60, seeds 1-600, eleccion null:
+  - criterio: tier 3 mediana 5 → 2, p90 12 → 6, 6+ splits 32,3 → 7,7%; llega a tier 1 71,3 → 73,0%; no-pro 24,5 → 24,5%;
+    Mundial 10,5 → 9,8%; Top 20 37,2 → 40,3%; título de tier 1 52,2 → 57,3%; edad final 26,9 → 27,0; paradas 48,4 → 51,5.
+  - equilibrado: 5 → 2, 12 → 6, 32,7 → 8,2%; tier 1 67,7 → 70,5%; no-pro 25,7 → 25,7%; Mundial 4,8 → 6,2%; Top 20 28,2 → 30,5%;
+    título 49,3 → 52,7%; edad final 26,1 → 26,0; paradas 43,7 → 45,4.
+  - malas: 4 → 2, 12 → 6, 17,0 → 5,0%; tier 1 33,0 → 34,2%; no-pro 51,2 → 51,2%; Mundial 1,0 → 1,2%; Top 20 8,7 → 11,0%;
+    título 16,8 → 16,3%; edad final 22,6 → 22,4; paradas 25,2 → 25,9.
+- Check nuevo "Tier 3, el nivel manda…" (estado armado: arriba del margen salta siempre, sin consumir `rng`, con el log, y el split
+  siguiente ya no es de tier 3; abajo, quedarse / disolverse / saltar con la frecuencia de la tirada). Rojo con la regla sacada
+  (el código de antes), con el margen en +∞ y con un salto que tira dado.
+- Revisión de la rama (commit aparte): el log ya no dice "y ganar de taquito ya no prueba nada" (regla 15: la regla no mira
+  resultados; la seed 5, Corea, saltaba con 9-11); queda "Te sobraba nivel… N de nivel contra el C de un equipo medio de <liga>".
+  El check arma la liga tier 2 con fuerzas distintas y asimétricas (la mediana no es ni la máxima, ni la mínima, ni el promedio),
+  pone un caso en el borde exacto (nivel = calibre + margen, sin redondeo) y otro 0,01 abajo, y verifica que el log lleve el nivel,
+  el calibre y la liga comparados. Rojo con el calibre leído como la fuerza máxima y con `>` en vez de `>=` (y con los tres
+  mutantes de antes). Huellas sin cambio (346802722; juego 1265514711): el texto de un log no entra en ninguna.
+  - Mundial con la región fija (`regionFija.js`, criterio, seeds 1-600, 60 splits; versión liviana de la de 3000): Corea 69 → 79
+    (11,5 → 13,2%), NA 54 → 52 (9,0 → 8,7%); dentro del ruido (σ ≈ 1,3), la brecha a favor de Corea se abre (2,5 → 4,5 puntos).
+- Corrimiento declarado (T1): huella 1408477439 → 346802722; huella del juego 1766253198 → 1265514711 (`version.js`, sigue 'K6c').
+  "K4c-S el instrumento expone el Δp…" se quedaba con 9 paradas de plan en las seeds 1-3 (eran 20; hacen falta 10): pasa a 1-6 (21).
+- `--rapido`: 364 OK, 0 FAIL, 173 SKIP (la primera corrida dio 1 FAIL, K4c-S, el de arriba). Lentos con `--solo`, uno por vez:
+  "Nadie firma un ascenso a una liga sin cumplir su edadMinima", "Nadie se queda varado…" y "Ningún split sin equipo narra un draft
+  mecánico…" en OK. "El tier 3 es breve" (6000 carreras) no se corrió acá: queda para la validación completa.
+- Riesgos: el calibre tier 2 cambia por región (LCK CL 53 contra LRS 31): el jugador de LATAM salta con menos nivel que el coreano;
+  los 9 eventos de `tier3.json` se ven menos (quedan para el que apenas pasa al circuito chico); +3 paradas por carrera con criterio.
 
 ### 2026-10-06 — La ficha de tier 3 ya no dice la liga de tier 1 (`etiqueta-tier3`)
 
