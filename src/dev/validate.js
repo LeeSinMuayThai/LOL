@@ -12828,7 +12828,8 @@ const RUIDOS_FUERA_DE_LA_ABLACION_K0 = {
   'roster.sinergiaRuido': 'ruido de la dinámica de la sinergia del roster entre splits',
   'practica.ruidoPractica': 'ruido de la ganancia de práctica',
   'plantel.ruidoNivelAnual': 'ruido anual del nivel de los jugadores del mundo (rachas)',
-  'topMundial.ruidoSpread': 'ruido determinista del corte del Top 20 mundial'
+  'topMundial.ruidoSpread': 'ruido determinista del corte del Top 20 mundial',
+  'prensa.ruidoUi': 'ruido de `rngUi` sobre el tono de la rueda de prensa: es de la pantalla, el motor no lo ve ni lo tira (K6d-P)'
 };
 
 check('K0 ruidos de la ablación: PARAMETROS_RUIDO son exactamente los ruidos de resultados, y toda constante "ruido" o "sigma" de BALANCE está clasificada', () => {

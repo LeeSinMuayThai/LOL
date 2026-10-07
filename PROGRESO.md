@@ -34,6 +34,44 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-07 — K6d-P: la rueda de prensa con pistas (rama `k6d-prensa`)
+
+**Por qué.** `ruedaDePrensa.js` sorteaba el tono que convenía con `rngUi` y no daba ninguna pista: azar puro, lo único que K6
+todavía sintió como "rng clicker" (decisión del usuario del 2026-10-07).
+
+**Qué cambió.**
+- **`core/prensa.js` (nuevo, puro, sin `rng`).** `lecturaDePrensa(state, momento, datos)` devuelve `tono` (entero 0-100, 0
+  Humilde, 100 Desafiante) y `pistas` (2-3 frases, una por factor que pesó). Parte de `tonoBase` 50 y cada factor empuja con su
+  peso (`BALANCE.prensa`, bloque nuevo comentado): ganar la serie +14 y perderla −18 (×1,6 en una final o el internacional); el
+  escándalo −28; el hype, −0,5 por punto sobre 70 (la media de un pro en estos momentos, medida: mediana 71 en 143 pausas); la
+  sinergia, +0,5 por punto sobre 55; el rival de la serie, +16 si es el archirrival y +8 si es de tu generación
+  (`rivalDeGeneracion`). Una pista sale si el factor empuja ≥ 3 puntos (las 3 más fuertes); si no hay 2, se completa con la
+  frase suave de los que empujaron poco. Tono acotado a 5-95.
+- **El motor lo manda en `decision.datos`** de las dos pausas (`pausaDeMinijuego` en `systems/serie.js`, `pausaDePrensa` en
+  `systems/events.js`) por `datosDePrensa`, solo si el minijuego es `rueda_de_prensa`. Sin tirada nueva.
+- **La UI.** `ruedaDePrensa.js` recibe `decision.datos` (quinto argumento, `app.js` se lo pasa), muestra las pistas arriba del
+  slider ("LO QUE SE LEE EN LA SALA") y el objetivo es `tono ± ruidoUi` (8) con una sola tirada de `rngUi`. Sin `tono` (un
+  guardado viejo) cae al `rngUi() * 100` de antes y no muestra pistas.
+- **Hype y sinergia no son ejes de `calcularContexto`**: se leen en vivo del estado (`player.stats.hype`, `career.sinergia`),
+  igual que lo haría el contexto (T2). La sinergia solo cuenta con org.
+- **Hoy `post_serie` no sale** (`rondasConPrensa: []` desde K4c): la prensa que se juega es la de después de un escándalo. Los
+  factores de la serie y el rival quedan listos y testeados para el día que se vuelva a prender.
+
+**Medido.** Sobre 143 pausas reales (40 seeds × 40 splits, con `rondasConPrensa` prendido solo en la corrida): todas con 2 o 3
+pistas (75 de 2 y 54 de 3 en `post_serie`; 6 y 8 en `post_escandalo`), tono de 7 a 88 (mediana 60). Huella: idéntica
+(`K1 versión` en verde sin tocar `HUELLA_JUEGO`). El puntaje de los bots no lee el objetivo: `simulate.js` no se mueve.
+
+**Checks (`validate.js`, `K6d-P`, rápidos), cada uno visto en rojo con mutantes en una copia de `git archive`:**
+tono en la dirección de cada factor y el borde del umbral; cada pista es de un factor que pesó (980 casos); las dos pausas
+reales traen tono y pistas, y el objetivo de la UI es tono ± ruido. 23 mutantes, los 23 en rojo (signo de cada peso, la final,
+el rival, el acotado, el umbral estricto y sin umbral, pista de factor en cero, más de `maxPistas`, el escándalo y el rival
+fantasma en la prensa equivocada, cada pausa sin tono, la UI sin tono o sin ruido, `app.js` sin pasar `datos`). Aparte,
+`prensa.ruidoUi` entró a `RUIDOS_FUERA_DE_LA_ABLACION_K0`: es ruido de pantalla.
+
+**Pantalla (Chromium real, `node server.js`).** 320, 390 y 1440 px: `scrollWidth == innerWidth` en los tres, 0 errores de
+consola, 3 y 2 pistas montadas con la hoja y los tokens reales; el slider en el tono da puntaje 1 con `rngUi` en 0,5. Las
+capturas (la pista del archirrival, con un nombre de org larguísimo, parte la línea sin desbordar a 320 px) se leyeron.
+
 ### 2026-10-06 — D82: el traspaso cuesta lo que dice la pantalla, y el Mundial del mundo pesa cada año igual (rama `d82`)
 
 **(a) El valor visible es el que paga el mercado (regla 15).**
