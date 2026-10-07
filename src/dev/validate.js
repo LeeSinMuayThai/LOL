@@ -812,13 +812,13 @@ const FORMAS_CONOCIDAS = {
   // K6c-fix, quinta pasada (sin subir): `anioAmateur.riesgoMostrado.mental` y `anioAmateur.mentalAvisada` (la mentalidad que mostró
   // el plan y la de la última parada por la mentalidad), `semanaMentalRoja` en cada opción del plan del año y `datos.porMentalidad` /
   // `datos.cuida` en la parada de la semana. Re-registrada (era '5915cb3adccf').
-  // K6d (integración): la 13 vuelve a la forma que salió en `fase-9r` ('995485d311c0'), la de los guardados que circulan. En la rama
-  // `k6d-nivel` P7a la había re-registrado como 'b3882d5ebf40' sin campos nuevos (solo otras carreras de muestra): ese hash no vale.
+  // K6d (integración): la 13 es la forma que salió en `fase-9r` ('995485d311c0'), la de los guardados que circulan. (En la rama
+  // `k6d-nivel`, P7a la había re-registrado como 'b3882d5ebf40' sin campos nuevos; P7a se sacó en la integración y ese hash no vale.)
   13: '995485d311c0',
   // K6d (integración de K6d-N, K6d-B y K6d-P): K6d-B (D77) suma `flags.mentalAvisadaPro` (la lista de cierres que un aviso cubrió,
-  // [{ split, mentalidad, probabilidad }]) y `flags.ofertaGuardada` (la oferta que el club te guarda un split); K6d-N (tier 3, P3,
-  // P7a) y K6d-P no agregan campos, pero mueven las carreras de muestra. Un guardado de la 13 carga con `migrarDe13`.
-  14: '88029bf4f757'
+  // [{ split, mentalidad, probabilidad }]) y `flags.ofertaGuardada` (la oferta que el club te guarda un split); K6d-N (tier 3 y P3)
+  // y K6d-P no agregan campos, pero mueven las carreras de muestra. Un guardado de la 13 carga con `migrarDe13`.
+  14: 'PENDIENTE'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -27327,11 +27327,9 @@ check('K6d-N P7a la estrella sube: si tu nivel llega a una liga claramente más 
     if (estrellaP7(sinCupo.st) !== null) throw new Error('con el cupo de imports en 0, la regla salteó las reglas duras');
     void actual;
   });
-  conBalanceK3A([['mercado', 'estrellaSube', false]], () => {
-    const neutra = armarP7();
-    if (estrellaP7(neutra.st) !== null) throw new Error('con la perilla neutra igual hubo lugar');
-    if (ofertaDeTraspasoP7(neutra.st, rngAlto) !== null) throw new Error('con la perilla neutra y el dado en contra igual hubo traspaso');
-  });
+  const neutra = armarP7();
+  if (estrellaP7(neutra.st) !== null) throw new Error('con la perilla neutra igual hubo lugar');
+  if (ofertaDeTraspasoP7(neutra.st, rngAlto) !== null) throw new Error('con la perilla neutra y el dado en contra igual hubo traspaso');
 });
 
 // K6b-fix (PLAN.md, "K6b-fix"), la espera vence: el "seguir buscando" narrado de "El mercado ya habló" (`finPorMercadoOSuRepeticion`)

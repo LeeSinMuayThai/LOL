@@ -170,15 +170,15 @@ export const VERSION_JUEGO = 'K6d';
 // prestigio de la liga (`topMundial.prestigioSinBonoCampeon` 55 / `prestigioPlenoCampeon` 91: la CBLOL no suma, la LEC la mitad,
 // la LPL y la LCK el bono entero). Sin tiradas nuevas: el ranking cambia el mérito del mercado (`meritoDeTemporada`, el top del
 // mundo), y con él las ofertas y las carreras. Huella del stream (`dev/huella.js`) 346802722 → 1820193282. Reemplaza a 1265514711.
-// K6d-N, P7a (62519553; corrimiento declarado, sigue 'K6c'): el nivel te lleva a la liga que te corresponde (`mercado.estrellaSube`):
-// si tu nivel llega a una liga de tier 1 claramente más fuerte, un club de ahí te hace lugar, primero en la mano y, a mitad de
-// contrato, como pretendiente sin la tirada de `probTraspasoMitadContrato` (una tirada menos cuando la regla dispara: corre el
-// stream). Huella del stream (`dev/huella.js`) 1820193282 → 1381761146. Reemplaza a 480175732.
-// K6d (la integración de K6d-N, K6d-B y K6d-P, 2117801369; corrimiento declarado — lo que decidió el usuario el 2026-10-07):
-// `VERSION_JUEGO` pasa a 'K6d'. K6d-N: el nivel manda en tier 3 (margen 15, sin los dados de `resolverTier3`), el título de una
-// liga chica no te mete en el Top 20 (P3: el bono pesa por el prestigio de la liga) y la estrella sube a la liga de tier 1 que su
-// nivel alcanza (P7a, `mercado.estrellaSube`); K6d-B (D77): la oferta del amateur con la racha en rojo dice el % del burnout y
-// deja esperar una vez, y el pro frena con la mentalidad en rojo, con o sin club; K6d-P: la rueda de prensa con pistas (no mueve
-// la huella). Las piezas juntas mueven las carreras que cada una movía sola: ninguna seed de K6c reproduce su carrera. Guardado
-// VERSION 14. Reemplaza a 62519553 (K6d-N), 1073872165 (K6d-B) y 1766253198 (K6c).
-export const HUELLA_JUEGO = 2117801369;
+// K6d-N, P7a (62519553 en su rama): "el nivel te lleva a la liga que te corresponde" (`mercado.estrellaSube`). Se sacó en la
+// integración de K6d (revert de 9b85bc7 y 9f3b3f8): la estrella rebotaba entre ligas en cada contrato (el traspaso a mitad de
+// contrato sin dado chocaba con "la casa primero" de K5c-H: A-B-A-B de 0 a 31 carreras con `criterio`), la carta se contradecía
+// y casi no movía los títulos. Su huella no vale.
+// K6d (la integración de K6d-N sin P7a, K6d-B y K6d-P, HUELLA_PENDIENTE; corrimiento declarado — lo que decidió el usuario el
+// 2026-10-07): `VERSION_JUEGO` pasa a 'K6d'. K6d-N: el nivel manda en tier 3 (margen 15, sin los dados de `resolverTier3`) y el
+// título de una liga chica no te mete en el Top 20 (P3: el bono pesa por el prestigio de la liga); K6d-B (D77): la oferta del
+// amateur con la racha en rojo dice el % del burnout y deja esperar una vez, y el pro frena con la mentalidad en rojo, con o sin
+// club; K6d-P: la rueda de prensa con pistas (no mueve la huella). Las piezas juntas mueven las carreras que cada una movía sola:
+// ninguna seed de K6c reproduce su carrera. Guardado VERSION 14. Reemplaza a 480175732 (K6d-N con P3), 1073872165 (K6d-B) y
+// 1766253198 (K6c).
+export const HUELLA_JUEGO = 0;
