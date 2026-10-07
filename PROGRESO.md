@@ -34,6 +34,36 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-07 — K6d-N: merge de `tier3-nivel` y P3, el título de una liga chica no te mete en el Top 20 (rama `k6d-nivel`)
+
+- **Merge** (`908ac9f`): `tier3-nivel` entra con la regla de tier 3 (margen 15). La huella del juego queda en 1265514711 y
+  `--rapido` da 364 OK / 0 FAIL / 174 SKIP.
+- **El diagnóstico** (criterio 600 × 60, con la regla de tier 3) está en `PLAN.md` §K6d-N.
+  - El 88,6% de las llegadas a tier 1 es a CBLOL/LCP/LCS, con calibres de 51,5 / 56,5 / 59 contra ~53 de LCK CL.
+  - El 69% de los títulos se gana ahí, con el jugador 15 o más arriba del calibre de su liga.
+  - El título de cualquier liga sumaba 16,9 puntos al ranking del mundo.
+- **P3, en dos commits** (regla de proceso 2):
+  - `427542e`, la estructura con la perilla neutra (`topMundial.prestigioSinBonoCampeon` / `prestigioPlenoCampeon` en
+    0/0). La huella queda idéntica y `--rapido` da 365 / 0 / 174;
+  - `a4efef1`, los valores 55 / 91. El bono del título de liga se multiplica por un factor lineal del prestigio de la liga
+    (`core/topMundial.js:factorPorPrestigio`): la CBLOL suma 0, la LEC la mitad, la LPL y la LCK entero. El Mundial no se
+    toca.
+- **El corrimiento declarado:** huella del juego 1265514711 → 480175732 (`version.js`, sigue 'K6c'); stream
+  (`dev/huella.js`) 346802722 → 1820193282. `--rapido` 365 / 0 / 174.
+- **El check nuevo** "K6d-N P3 el título de liga pesa por el prestigio…" comprueba:
+  - los bordes 55 y 91 exactos;
+  - que la liga chica sume menos que la grande;
+  - cada liga contra la cuenta;
+  - el Mundial intacto;
+  - la neutra exacta.
+
+  Está en rojo con el factor sacado, sin el tope de arriba y sin el de abajo.
+- **Regla 15:** ninguna pantalla lista los puntos del bono. El panel del Top 20 y los logs dicen solo el puesto.
+- **Las barandas** (600 × 60, antes → después): Top 20 criterio 40,3 → 23,8, equilibrado 30,5 → 16,2, malas 11,0 → 3,3.
+  - Título de tier 1, tier 1 y no-pro no se mueven.
+  - Región fija: Corea 79 → 79 y NA 52 → 45 (de 600).
+  - 30+ en la réplica del check lento: 16,8 → 16,5.
+
 ### 2026-10-06 — D82: el traspaso cuesta lo que dice la pantalla, y el Mundial del mundo pesa cada año igual (rama `d82`)
 
 **(a) El valor visible es el que paga el mercado (regla 15).**
