@@ -2677,7 +2677,7 @@ checkLento('Fase 9W: el Top 20 mezcla edades — sin término de edad, la divers
 // 361-540 / 541-720; 39,6% con n 460), y en K6b (`58db231`) 38,2 / 39,4 / 40,3 / 34,7% (38,2%, n 513). La población no se movió:
 // era la muestra. Con n ≈ 460 (σ ~2,3 pp) el piso queda ~2,9 σ debajo. El piso no se toca.
 const SEEDS_BARRIDO_9WD_TOP20 = 720;
-checkLento('Fase 9Wd: entrar al Top 20 cuesta pero tiene sentido — un tercio de las carreras con éxito lo tocan (§9W.6, re-base de K5c)', () => {
+checkLento('Fase 9Wd: entrar al Top 20 cuesta pero tiene sentido — casi una de cada cuatro de las carreras con éxito lo tocan (§9W.6, re-base de K5c y de K6d)', () => {
   const c = barrido9W(SEEDS_BARRIDO_9WD_TOP20);
   const exitosas = c.filter((x) => x.exito);
   const lavadas = c.filter((x) => !x.exito);
@@ -2697,8 +2697,13 @@ checkLento('Fase 9Wd: entrar al Top 20 cuesta pero tiene sentido — un tercio d
   // n 130): 41,2% en promedio, σ binomial
   // ~4,3 pp a n ≈ 130. El piso queda ~2 σ debajo. La otra mitad (las carreras lavadas no se cuelan, tope 5%) no se toca.
   // Un mutante sin los bonus de título e internacional del ranking (`topMundial.bonus*` en 0) lo pone en rojo (3,8%).
-  if (fracExito < 0.33) {
-    throw new Error(`sólo ${(fracExito * 100).toFixed(1)}% de las carreras con éxito tocan el Top 20 (piso 33%, re-base de K5c sobre la meta §9W.6 de 50%): entrar no tiene sentido`);
+  // K6d (integración), regla 17: piso 0,33 → 0,1917. Protege: que entrar al Top 20 siga teniendo sentido para quien gana algo (que no
+  // se vuelva un puesto que nadie toca); desde 9Wd (piso 0,45), re-basado en K5c (0,33). Re-basado en K6d por decisión del usuario
+  // 2026-10-07 ("Re-basar y cerrar"). Causa: P3, el bono de campeón en el ranking escala con el prestigio de la liga; lo pidió el
+  // usuario para bajar el Top 20 hacia el ~15% de §K.3b. Medido en la validación completa de `f542f62` (720 seeds): 23,1%, σ
+  // binomial 1,97 pp con n ≈ 460 carreras con éxito (la n de K6c-fix; no se imprime). Piso = 23,1 − 2 × 1,97 = 19,17%.
+  if (fracExito < 0.1917) {
+    throw new Error(`sólo ${(fracExito * 100).toFixed(1)}% de las carreras con éxito tocan el Top 20 (piso 19,17%, re-base de K6d sobre el 23,1% medido; la meta de §K.3b es ~15% de todas las carreras): entrar no tiene sentido`);
   }
   // Y casi ninguna carrera lavada se cuela: el ranking no regala puestos.
   if (fracLavada > 0.05) {
@@ -22840,7 +22845,11 @@ const METAS_C = {
   llegaATier1: { meta: [55, 65], rebase: 74.6, texto: 'llega a tier 1 (%)' },
   // §K.3b "Gana al menos un título doméstico ~30%". Regla 17: meta 30; medido 55,7 (n 1500, σ 1,28); re-basado por decisión
   // del usuario 2026-10-05, K6 juzga.
-  ganaTitulo: { meta: [30, 30], rebase: 55.7, texto: 'gana un título de primera (%)' },
+  // K6d (integración), regla 17: re-base 55,7 → 59,6. Protege: que ganar un título de primera no se vuelva algo que casi todos
+  // logran ni algo imposible; desde K5c (cierre). Re-basado en K6d por decisión del usuario 2026-10-07 ("Re-basar y cerrar").
+  // Causa: la regla de tier 3 (D84, K6d-N): se sale antes de tier 3 y se pasan más años en tier 1. Medido en la validación
+  // completa de `f542f62`: 59,6 (n 1500, σ 1,27); el techo de la banda queda en 59,6 + 2 × 1,27 = 62,14.
+  ganaTitulo: { meta: [30, 30], rebase: 59.6, texto: 'gana un título de primera (%)' },
   // §K.3b "Top 20 del mundo alguna vez ~15%". Regla 17: meta 15; medido 36,4 (n 1500, σ 1,24); re-basado por decisión del
   // usuario 2026-10-05, K6 juzga.
   top20: { meta: [15, 15], rebase: 36.4, texto: 'entra al Top 20 del mundo (%)' },
@@ -22870,7 +22879,11 @@ const METAS_C = {
   // §K.3a "Tu equipo es claramente el más fuerte del Mundial y lo gana ~50%". Regla 17: "claramente" (margen >= 10 sobre el
   // mejor de los otros 15) se dio en 4 de 2963 Mundiales jugados (criterio 1500 × 60, en `873fc80`): sin muestra. Se mide sobre "el más
   // fuerte" (tu fuerza > la del mejor rival): medido 57,5 (n 87, σ 5,3). Cumple ~50 con su ruido.
-  elMasFuerteGana: { meta: [50, 50], texto: 'el más fuerte del Mundial lo gana (%)' },
+  // K6d (integración), regla 17: re-base sobre la meta 50 → 63,5. Protege: que ser el más fuerte del Mundial ayude pero no sea
+  // garantía; desde K5c (paso 3). Re-basado en K6d por decisión del usuario 2026-10-07 ("Re-basar y cerrar"). Causa: la regla de
+  // tier 3 (la rama `tier3-nivel` sola ya daba 59,9). Medido en la validación completa de `f542f62`: 63,5 (σ 3,69). La banda
+  // pasa de [42,62, 57,38] a [50 − 2 × 3,69, 63,5 + 2 × 3,69] = [42,62, 70,88].
+  elMasFuerteGana: { meta: [50, 50], rebase: 63.5, texto: 'el más fuerte del Mundial lo gana (%)' },
   // §K.3b "Carrera pro mediana ~4-6 años". Regla 17: meta 4-6; medido 8,83 (n 1178 pros, σ 0,13; p10 4, p90 12); re-basado por decisión del
   // usuario 2026-10-05, K6 juzga.
   carreraMediana: { meta: [4, 6], rebase: 8.83, texto: 'carrera pro mediana (años)' },
@@ -23095,10 +23108,10 @@ function problemasDeLasMetasC(claves) {
 
 // Los valores medidos (k5c-paso3 al cerrar K5c, criterio/azar/malas 1500 × 60): cumplen.
 const VALORES_DE_LAS_METAS_C_OK = {
-  noLlegaAPro: { valor: 21.5, sigma: 1.06 }, llegaATier1: { valor: 74.6, sigma: 1.12 }, ganaTitulo: { valor: 55.7, sigma: 1.28 },
+  noLlegaAPro: { valor: 21.5, sigma: 1.06 }, llegaATier1: { valor: 74.6, sigma: 1.12 }, ganaTitulo: { valor: 59.6, sigma: 1.27 },
   top20: { valor: 36.4, sigma: 1.24 }, ganaMundial: { valor: 7.1, sigma: 0.66 }, ganaMundialCorea: { valor: 9.9, sigma: 1.64 },
   ganaMundialNA: { valor: 3.6, sigma: 1.34 }, nuevoFaker: { valor: 1.2, sigma: 0.28 }, nuevoFakerElite: { valor: 12, sigma: 3.25 },
-  pDosOMasDadoUno: { valor: 16.8, sigma: 3.61 }, elMasFuerteGana: { valor: 57.5, sigma: 5.3 }, carreraMediana: { valor: 8.83, sigma: 0.13 },
+  pDosOMasDadoUno: { valor: 16.8, sigma: 3.61 }, elMasFuerteGana: { valor: 63.5, sigma: 3.69 }, carreraMediana: { valor: 8.83, sigma: 0.13 },
   lineaForzosa: { valor: 5.6, sigma: 0.67 },
   // Cierre de K6b: los estancados, re-medidos (corrimiento declarado de K6b, ver META_C_ESTANCADO_AZAR_REBASE_PCT).
   estancados: { criterio: 4.9, azar: 12.5, malas: 16.9, n: 1500 },
@@ -23165,7 +23178,7 @@ checkLento(`K5c meta de los estancados (criterio, azar y malas, ${CARRERAS_METAS
 });
 
 // Corea, NA y su orden no se juzgan acá: la submuestra del lote que sortea la región es chica (ver "K6c región fija").
-checkLento(`K5c meta del Mundial (criterio, ${CARRERAS_METAS_C} × ${SPLITS_LOTE_K0}): gana un Mundial >= 7%, el nuevo Faker, P(2+ | 1) y el más fuerte lo gana ~50%`, () => {
+checkLento(`K5c meta del Mundial (criterio, ${CARRERAS_METAS_C} × ${SPLITS_LOTE_K0}): gana un Mundial >= 7%, el nuevo Faker, P(2+ | 1) y el más fuerte lo gana entre la meta de 50% y lo medido (re-basado)`, () => {
   const problemas = problemasDeLasMetasC(['ganaMundial', 'nuevoFaker', 'nuevoFakerElite', 'pDosOMasDadoUno', 'elMasFuerteGana']);
   // El piso de 7 − 2σ es tolerancia de ruido documentada: debajo de 7 no falla, pero se avisa a la vista.
   const { valor: mundial, sigma: sigmaMundial } = valoresDeLasMetasC().ganaMundial;
@@ -26646,7 +26659,18 @@ const COLA_N_K6BC = 593;
 const COLA_MUTANTE_K6BC = 14.89;
 const Z_RUIDO_COLA_K6BC = 2;
 const META_K6BC_COLA_PROMEDIO = Number((COLA_PROMEDIO_MEDIDO_K6BC + Z_RUIDO_COLA_K6BC * COLA_DESVIO_K6BC / Math.sqrt(COLA_N_K6BC)).toFixed(2));
-const META_K6BC_LEYENDA_MEDIANA = 80;
+// K6d (integración), regla 17: la mediana de frenadas de las leyendas, meta <= 80 (§K.3c) → <= 83,81. Protege: que la carrera de
+// una leyenda no se llene de paradas sin nada en juego; desde K6b (integración). Re-basado en K6d por decisión del usuario
+// 2026-10-07 ("Re-basar y cerrar"). Causa: la regla de tier 3 (D84): más carrera en tier 1 son ~7 frenadas más en `criterio`.
+// Medido en la validación completa de `f542f62`: mediana 81, p90 97, n = 124 carreras. σ estimada desde el p90 con una normal:
+// (97 − 81) / 1,2816 = 12,48; error estándar de la mediana 1,2533 × 12,48 / √124 = 1,40. Banda <= 81 + 2 × 1,40 = 83,81 (83,8).
+const LEYENDA_MEDIANA_MEDIDA_K6BC = 81;
+const LEYENDA_P90_MEDIDO_K6BC = 97;
+const LEYENDA_N_K6BC = 124;
+const Z_P90_NORMAL_K6BC = 1.2816;
+const FACTOR_EE_MEDIANA_K6BC = 1.2533;
+const LEYENDA_DESVIO_K6BC = (LEYENDA_P90_MEDIDO_K6BC - LEYENDA_MEDIANA_MEDIDA_K6BC) / Z_P90_NORMAL_K6BC;
+const META_K6BC_LEYENDA_MEDIANA = Number((LEYENDA_MEDIANA_MEDIDA_K6BC + Z_RUIDO_COLA_K6BC * FACTOR_EE_MEDIANA_K6BC * LEYENDA_DESVIO_K6BC / Math.sqrt(LEYENDA_N_K6BC)).toFixed(2));
 function juezDeLaColaK6BC(v) {
   const hay = (x) => typeof x === 'number' && Number.isFinite(x);
   return {
@@ -26663,7 +26687,7 @@ check('K6b-C metas de la cola: el juez acepta valores que cumplen y rechaza, uno
   if (sano.length > 0) throw new Error(`el juez rechaza valores que cumplen: ${sano.join('; ')}`);
   // Uno justo afuera, el de K6 (o el de la línea de base) y uno inexistente; los bordes cumplen.
   // K6b (integración): el promedio re-basado: uno justo afuera, el del mutante (las reglas de K6b-C y C2 apagadas) y uno inexistente.
-  const malos = { colaPromedio: [['cola', META_K6BC_COLA_PROMEDIO + 0.05], ['cola', COLA_MUTANTE_K6BC], ['cola', null]], leyendaMediana: [['leyenda', 81], ['leyenda', 88], ['leyenda', null]] };
+  const malos = { colaPromedio: [['cola', META_K6BC_COLA_PROMEDIO + 0.05], ['cola', COLA_MUTANTE_K6BC], ['cola', null]], leyendaMediana: [['leyenda', META_K6BC_LEYENDA_MEDIANA + 0.05], ['leyenda', 88], ['leyenda', null]] };
   for (const [campo, casos] of Object.entries(malos)) {
     for (const [clave, valor] of casos) {
       const rechazados = Object.entries(juezDeLaColaK6BC({ ...VALORES_K6BC_OK, [campo]: valor })).filter(([, m]) => m !== null).map(([k]) => k);
