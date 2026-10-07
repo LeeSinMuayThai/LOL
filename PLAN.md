@@ -8781,6 +8781,22 @@ La pantalla se verifica en Chromium real, de 320 a 1440 px.
 - **El título sube por la regla de tier 3:** salís antes y pasás más años en tier 1. La frontera es del usuario.
 - **Las frenadas suben ~7 en `criterio`** por la misma razón: más carrera en tier 1.
 
+**La validación completa de `f542f62`** (copia `git archive`, 70 min): **546 OK, 4 FAIL.** `simulate.js 1000` da 0
+crashes, el determinismo es idéntico, y `agencia.js` y `build.js` dan OK. Los cuatro FAIL son metas de banda que se
+movieron por las decisiones tomadas. Ninguno es un bug:
+
+| Check | Medido | Banda | De dónde sale |
+|---|---|---|---|
+| 9Wd: el Top 20 de las carreras con éxito | 23,1% | piso 33 | P3, que el usuario pidió para bajar el Top 20 (meta de §K.3b ~15) |
+| K5c meta del embudo: título de primera | 59,6% | techo 58,2 | la regla de tier 3: más años en tier 1 |
+| K5c meta del Mundial: el más fuerte lo gana | 63,5% | 42-57 | la regla de tier 3 (con su rama sola ya daba 59,9) |
+| K6b-C la cola: mediana de frenadas de las leyendas | 81 | ≤ 80 | más carrera en tier 1 |
+
+**Decisión del usuario (2026-10-07): "juego primero y decido".** Llegar a tier 1 (~73%) y el título (~57%) quedan como
+están hasta que juegue. **No se mergea a `fase-9r` con FAIL** (Definición de terminado), y **no se re-basa nada sin el
+usuario**. La build integrada está servida desde `wt-k6di`. Cuando el usuario juegue, decide qué hacer con estas cuatro
+metas: re-basarlas a lo medido, o mover el motor. Después se mergea.
+
 #### K6d — el cierre
 
 1. La integración `k6d-integracion` (N + B + P), con la huella y la forma del guardado resueltas.
