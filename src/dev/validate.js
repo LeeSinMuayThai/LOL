@@ -3987,6 +3987,134 @@ checkLento(`El tier 3 es breve: mediana de permanencia ≤ ${MEDIANA_MAXIMA_TIER
   }
 });
 
+// Rama tier3-nivel ("el nivel manda en tier 3", D34). Estado armado sobre una carrera real: un jugador de tier 3 que ya jugó
+// un split con su equipo (lo que pide K6a-M para resolver), con la liga tier 2 de su región puesta a mano para que su nivel
+// quede justo arriba o justo abajo de `calibre + competitivo.margenNivelSobreTier2`. Arriba: el salto es seguro, sin consumir
+// `rng`, el log dice por qué, y el split siguiente ya no es de tier 3. Abajo: sigue la tirada de siempre (quedarse, disolverse
+// y saltar aparecen, con la frecuencia de `probSalidaTier3` y `probAscenso*DesdeTier3`). Rojo con la regla sacada de
+// `resolverTier3` (el código de antes), con el margen en +∞, con un salto que tira dado, con el calibre leído como la fuerza máxima
+// de la liga y con `>` en vez de `>=` (revisión de la rama: las fuerzas distintas y el caso en el borde exacto).
+const { aplicar: aplicarCompetitivoT3n } = await import('../systems/competitivo.js');
+const { calibreDeLiga: calibreDeLigaT3n } = await import('../core/demanda.js');
+const SEEDS_BASE_T3N = 60;
+const SPLITS_BASE_T3N = 30;
+const TIRADAS_T3N = 400;
+const TOLERANCIA_T3N = 0.07;
+// Las fuerzas armadas alrededor del calibre: de a 1 abajo y de a 6 arriba (asimétricas: el promedio no es la mediana).
+const PASO_ABAJO_T3N = 1;
+const PASO_ARRIBA_T3N = 6;
+// "Justo abajo" del borde: el nivel queda esto por debajo de calibre + margen.
+const JUSTO_ABAJO_T3N = 0.01;
+const { nombreVisibleDeLiga: nombreVisibleDeLigaT3n } = await import('../core/ligas.js');
+check('Tier 3, el nivel manda: con nivel de sobra para el tier 2 de tu región el salto es seguro (sin dado y explicado); debajo del margen sigue la tirada', () => {
+  let base = null;
+  for (let seed = 1; seed <= SEEDS_BASE_T3N && !base; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < SPLITS_BASE_T3N && !state.terminado && !base; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      if (state.phase === 'profesional' && state.career.tier === 3 && state.career.currentOrg && !state.terminado
+        && jugasteUnSplitConLaOrg(state)) {
+        base = state;
+      }
+    }
+  }
+  if (!base) {
+    throw new Error(`ninguna de ${SEEDS_BASE_T3N} carreras quedó en tier 3 con un split jugado con su equipo`);
+  }
+  const liga = base.mundo.ligas.find((candidata) => candidata.tier === 2 && candidata.regionId === base.mundo.regionIdOrigen);
+  const nivel = nivelDelJugador(base);
+  const margen = BALANCE.competitivo.margenNivelSobreTier2;
+  // Las orgs de la liga con fuerzas DISTINTAS y asimétricas (pocas abajo, lejos arriba): las dos del medio en la fuerza pedida,
+  // así el cuantil `demanda.cuantilCalibreDeLiga` da exactamente esa fuerza y no coincide con la máxima, la mínima ni el
+  // promedio (un calibre mal leído no pasa).
+  const n = liga.orgs.length;
+  const medioAbajo = Math.floor(BALANCE.demanda.cuantilCalibreDeLiga * (n - 1));
+  const medioArriba = Math.min(n - 1, medioAbajo + 1);
+  const fuerzaEn = (calibre, i) => {
+    if (i < medioAbajo) {
+      return calibre - (medioAbajo - i) * PASO_ABAJO_T3N;
+    }
+    return i > medioArriba ? calibre + (i - medioArriba) * PASO_ARRIBA_T3N : calibre;
+  };
+  const conCalibre = (calibre) => ({
+    ...base,
+    mundo: {
+      ...base.mundo,
+      ligas: base.mundo.ligas.map((candidata) => (candidata.id === liga.id
+        ? { ...candidata, orgs: candidata.orgs.map((org, i) => ({ ...org, fuerza: fuerzaEn(calibre, i) })) }
+        : candidata))
+    }
+  });
+  // El borde exacto: el calibre con `calibre + margen === nivel` en punto flotante (la regla es `>=`: con `>` no salta).
+  const exacto = nivel - margen;
+  const paso = (Number.EPSILON * Math.abs(exacto)) / 2;
+  const enElBorde = [0, 1, -1, 2, -2, 3, -3, 4, -4].map((k) => exacto + k * paso).find((calibre) => calibre + margen === nivel);
+  if (enElBorde === undefined) {
+    throw new Error(`no hay un calibre con calibre + ${margen} === ${nivel}: el armado del borde no sirve`);
+  }
+  const arriba = conCalibre(enElBorde);
+  const abajo = conCalibre(enElBorde + JUSTO_ABAJO_T3N);
+  const ligaDe = (state) => state.mundo.ligas.find((candidata) => candidata.id === liga.id);
+  const fuerzas = ligaDe(arriba).orgs.map((org) => org.fuerza);
+  const promedio = fuerzas.reduce((suma, fuerza) => suma + fuerza, 0) / fuerzas.length;
+  const calibreBorde = calibreDeLigaT3n(ligaDe(arriba));
+  if (calibreBorde !== enElBorde || [Math.max(...fuerzas), Math.min(...fuerzas), promedio].includes(calibreBorde)
+    || !(nivel < calibreDeLigaT3n(ligaDe(abajo)) + margen)) {
+    throw new Error(`el armado no separa el calibre (${calibreBorde}) de la máxima, la mínima y el promedio, o no deja el nivel ${nivel} `
+      + `en el borde y justo abajo de calibre + ${margen}`);
+  }
+
+  for (let semilla = 1; semilla <= 20; semilla += 1) {
+    const rngBase = mulberry32(semilla);
+    let usos = 0;
+    const rngContado = () => {
+      usos += 1;
+      return rngBase();
+    };
+    const { state, logs } = aplicarCompetitivoT3n(arriba, rngContado);
+    const texto = logs.map((log) => log.message).join(' ');
+    if (state.career.tier !== 2 || state.career.liga !== liga.id) {
+      throw new Error(`nivel ${nivel} con calibre ${calibreBorde} + ${margen} (el borde): seguís en tier ${state.career.tier} (rng ${semilla})`);
+    }
+    if (usos > 0) {
+      throw new Error(`el salto con nivel de sobra consumió ${usos} tirada(s) de rng: tiene que ser sin dado`);
+    }
+    const comparado = `${Math.round(nivel)} de nivel contra el ${Math.round(calibreBorde)} de un equipo medio de ${nombreVisibleDeLigaT3n(liga.id)}`;
+    if (!/Te sobraba nivel/.test(texto) || !texto.includes(comparado) || !/Te ganás el salto/.test(texto)) {
+      throw new Error(`el salto con nivel de sobra no dice por qué con lo que comparó (regla 12; esperaba "${comparado}"): "${texto}"`);
+    }
+  }
+  const siguiente = avanzarSplitAuto(arriba, mulberry32(1)).state;
+  if (siguiente.career.tier === 3) {
+    throw new Error('con nivel de sobra, el split siguiente sigue siendo de tier 3');
+  }
+
+  const cuenta = { quedas: 0, disuelve: 0, salta: 0 };
+  for (let semilla = 1; semilla <= TIRADAS_T3N; semilla += 1) {
+    const { state, logs } = aplicarCompetitivoT3n(abajo, mulberry32(semilla));
+    if (logs.some((log) => /Te sobraba nivel/.test(log.message))) {
+      throw new Error(`debajo del margen el log dice que te sobraba nivel: "${logs.map((log) => log.message).join(' ')}"`);
+    }
+    if (state.career.tier === 2) {
+      cuenta.salta += 1;
+    } else if (state.career.currentOrg === abajo.career.currentOrg) {
+      cuenta.quedas += 1;
+    } else {
+      cuenta.disuelve += 1;
+    }
+  }
+  const c = BALANCE.competitivo;
+  const probAscenso = c.probAscensoBaseDesdeTier3 + (abajo.career.jerarquia / BALANCE.stats.max) * c.probAscensoPorJerarquiaDesdeTier3;
+  const esperado = { quedas: 1 - c.probSalidaTier3, salta: c.probSalidaTier3 * probAscenso, disuelve: c.probSalidaTier3 * (1 - probAscenso) };
+  for (const [resultado, prob] of Object.entries(esperado)) {
+    if (Math.abs(cuenta[resultado] / TIRADAS_T3N - prob) > TOLERANCIA_T3N) {
+      throw new Error(`debajo del margen, "${resultado}" sale ${cuenta[resultado]}/${TIRADAS_T3N} y la tirada da ${prob.toFixed(2)}: ${JSON.stringify(cuenta)}`);
+    }
+  }
+  console.log(`      nivel ${nivel.toFixed(1)}, margen ${margen}: arriba salta siempre sin dado; abajo ${JSON.stringify(cuenta)} en ${TIRADAS_T3N} tiradas`);
+});
+
 checkLento('El año muerto: nivel de tier 1 pero sin edad para debutar (marca espera_edad_minima)', () => {
   // Fase 9Md: ya no hay "ascenso ganado" que congelar. El año muerto ahora es:
   // sos nivel de tier 1 (`competitivo.nivelParaTier1`) pero te falta la edad
@@ -18572,6 +18700,7 @@ check('K4c el renglón de parche va adjunto salvo que mueva a tu main de S/A a B
   }
 });
 
+const SEEDS_K4CS = [1, 2, 3, 4, 5, 6];
 check('K4c-S el instrumento expone el Δp de cada parada de plan (serie:plan e internacional:plan): mejor − peor pSerie declarada, recontado a mano', () => {
   const opciones = (...ps) => ps.map((pSerie) => ({ pSerie }));
   const dp = deltaPDePlan(opciones(0.55, 0.62, 0.50));
@@ -18580,7 +18709,8 @@ check('K4c-S el instrumento expone el Δp de cada parada de plan (serie:plan e i
     throw new Error(`deltaPDePlan: [0,55 0,62 0,50] tenía que dar 0,12 (mejor − peor, no primera − última); dio ${dp}; con una sola opción, con NaN o sin pSerie tenía que dar null`);
   }
   let paradas = 0;
-  for (const seed of [1, 2, 3]) {
+  // Rama tier3-nivel (corrimiento declarado): con las seeds 1-3 quedaban 9 paradas de plan (eran 20); con 1-6, 21.
+  for (const seed of SEEDS_K4CS) {
     const aMano = [];
     const espia = (sistema, estado, decision, rngLocal) => {
       if (decision.datos?.motivo === 'plan') {
@@ -18600,7 +18730,7 @@ check('K4c-S el instrumento expone el Δp de cada parada de plan (serie:plan e i
     paradas += aMano.length;
   }
   if (paradas < 10) {
-    throw new Error(`check vacío: ${paradas} paradas de plan en 3 carreras (hacen falta 10)`);
+    throw new Error(`check vacío: ${paradas} paradas de plan en ${SEEDS_K4CS.length} carreras (hacen falta 10)`);
   }
 });
 

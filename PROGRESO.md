@@ -144,6 +144,44 @@ Las lesiones, las paradas de la semana y el impacto de los minijuegos los juzgan
 **Lo que no se cierra:** K6c necesita que el usuario juegue el amateur y la prueba (memoria de playtest). No se pusheó
 nada.
 
+### 2026-10-06 — Rama `tier3-nivel`: el nivel manda en tier 3 (D34; NO se mergea sin la decisión del usuario)
+
+- Causa medida: la salida de tier 3 era una lotería ciega al nivel (`resolverTier3`: 0,45 de salir × 0,40 + 0,35·jerarquía de
+  subir; la jerarquía vuelve a 0 con cada disolución, y cada disolución cuesta 2 splits sin tirada por K6a-M). Sin mercado en tier 3
+  (`mercado.js:629`). Con criterio 600 × 60 el 32,3% de las carreras pasaba 6+ splits en el nivel tier 3 (mediana 5, p90 12), con
+  nivel 63 contra calibre 18 y 80% de victorias. La carrera "buena" de K6 (seed 39) quedó 7 años así.
+- Regla: si tu nivel ≥ calibre de la liga tier 2 de tu región (`calibreDeLiga`) + `competitivo.margenNivelSobreTier2` (15), el
+  salto es seguro, sin dado, y el log dice por qué ("Te sobraba nivel para el circuito chico: N de nivel contra el C de un equipo
+  medio de <liga>…"). Debajo, la tirada de siempre (con la jerarquía). `systems/competitivo.js` (`nivelSobreTier2`, `resolverTier3`).
+- Margen: medido 10 / 15 / 20 (criterio 600 × 60, seeds 1-600, `guard.mjs` del scratchpad): mediana 2 / 2 / 3, p90 3 / 6 / 8,
+  6+ splits 2,5 / 7,7 / 16,8%, Mundial 8,7 / 9,8 / 11,5% (ruido: σ ≈ 1,2). 15 es el margen más alto que deja la mediana del diseño
+  (1-2; 2 es el piso con K6a-M): conserva la tirada para quien apenas pasa al circuito chico.
+- Barandas, antes (`c3c1721`) → después, 600 × 60, seeds 1-600, eleccion null:
+  - criterio: tier 3 mediana 5 → 2, p90 12 → 6, 6+ splits 32,3 → 7,7%; llega a tier 1 71,3 → 73,0%; no-pro 24,5 → 24,5%;
+    Mundial 10,5 → 9,8%; Top 20 37,2 → 40,3%; título de tier 1 52,2 → 57,3%; edad final 26,9 → 27,0; paradas 48,4 → 51,5.
+  - equilibrado: 5 → 2, 12 → 6, 32,7 → 8,2%; tier 1 67,7 → 70,5%; no-pro 25,7 → 25,7%; Mundial 4,8 → 6,2%; Top 20 28,2 → 30,5%;
+    título 49,3 → 52,7%; edad final 26,1 → 26,0; paradas 43,7 → 45,4.
+  - malas: 4 → 2, 12 → 6, 17,0 → 5,0%; tier 1 33,0 → 34,2%; no-pro 51,2 → 51,2%; Mundial 1,0 → 1,2%; Top 20 8,7 → 11,0%;
+    título 16,8 → 16,3%; edad final 22,6 → 22,4; paradas 25,2 → 25,9.
+- Check nuevo "Tier 3, el nivel manda…" (estado armado: arriba del margen salta siempre, sin consumir `rng`, con el log, y el split
+  siguiente ya no es de tier 3; abajo, quedarse / disolverse / saltar con la frecuencia de la tirada). Rojo con la regla sacada
+  (el código de antes), con el margen en +∞ y con un salto que tira dado.
+- Revisión de la rama (commit aparte): el log ya no dice "y ganar de taquito ya no prueba nada" (regla 15: la regla no mira
+  resultados; la seed 5, Corea, saltaba con 9-11); queda "Te sobraba nivel… N de nivel contra el C de un equipo medio de <liga>".
+  El check arma la liga tier 2 con fuerzas distintas y asimétricas (la mediana no es ni la máxima, ni la mínima, ni el promedio),
+  pone un caso en el borde exacto (nivel = calibre + margen, sin redondeo) y otro 0,01 abajo, y verifica que el log lleve el nivel,
+  el calibre y la liga comparados. Rojo con el calibre leído como la fuerza máxima y con `>` en vez de `>=` (y con los tres
+  mutantes de antes). Huellas sin cambio (346802722; juego 1265514711): el texto de un log no entra en ninguna.
+  - Mundial con la región fija (`regionFija.js`, criterio, seeds 1-600, 60 splits; versión liviana de la de 3000): Corea 69 → 79
+    (11,5 → 13,2%), NA 54 → 52 (9,0 → 8,7%); dentro del ruido (σ ≈ 1,3), la brecha a favor de Corea se abre (2,5 → 4,5 puntos).
+- Corrimiento declarado (T1): huella 1408477439 → 346802722; huella del juego 1766253198 → 1265514711 (`version.js`, sigue 'K6c').
+  "K4c-S el instrumento expone el Δp…" se quedaba con 9 paradas de plan en las seeds 1-3 (eran 20; hacen falta 10): pasa a 1-6 (21).
+- `--rapido`: 364 OK, 0 FAIL, 173 SKIP (la primera corrida dio 1 FAIL, K4c-S, el de arriba). Lentos con `--solo`, uno por vez:
+  "Nadie firma un ascenso a una liga sin cumplir su edadMinima", "Nadie se queda varado…" y "Ningún split sin equipo narra un draft
+  mecánico…" en OK. "El tier 3 es breve" (6000 carreras) no se corrió acá: queda para la validación completa.
+- Riesgos: el calibre tier 2 cambia por región (LCK CL 53 contra LRS 31): el jugador de LATAM salta con menos nivel que el coreano;
+  los 9 eventos de `tier3.json` se ven menos (quedan para el que apenas pasa al circuito chico); +3 paradas por carrera con criterio.
+
 ### 2026-10-06 — La ficha de tier 3 ya no dice la liga de tier 1 (`etiqueta-tier3`)
 
 - Causa (solo UI): `lineaDeContextoFicha` (`ui/components/ficha.js`) resolvía la liga con `career.liga`, que en tier 3 es `null` por

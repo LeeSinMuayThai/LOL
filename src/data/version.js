@@ -154,4 +154,7 @@ export const VERSION_JUEGO = 'K6c';
 // K6c-fix, quinta pasada (sin cambio de huella: ninguna de las 40 seeds frena por la mentalidad en rojo). Sexta pasada (1766253198;
 // corrimiento declarado, sigue 'K6c'; T1): `systems/salud.js` corre también en el amateur (la lesión es del que grindea sin dormir de
 // amateur) con sus tiradas de siempre, y la baja de la lesión se cumple en turnos de soloQ. Reemplaza a 186316704.
-export const HUELLA_JUEGO = 1766253198;
+// Rama tier3-nivel (1265514711; corrimiento declarado, sigue 'K6c': la rama no se mergea sin la decisión del usuario, D34):
+// "el nivel manda en tier 3": con nivel ≥ calibre de la liga tier 2 de tu región + `competitivo.margenNivelSobreTier2` el salto es
+// seguro y no tira los dos dados de `resolverTier3`; cambian las tiradas que siguen, y con ellas las carreras. Reemplaza a 1766253198.
+export const HUELLA_JUEGO = 1265514711;
