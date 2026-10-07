@@ -34,6 +34,58 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-07 — Integración de K6d: N (sin P7a) + B + P, el guardado 14 y la racha en rojo que sobrevivía al retiro (`k6d-integracion`; PLAN.md "K6d — el cierre", paso 1)
+
+**Los merges**, en orden, sobre `fase-9r` `80d4b9b`:
+- `k6d-prensa` (`ad614fb`): sin conflictos.
+- `k6d-burnout` (`cb906d0`): conflicto solo en este archivo; se conservan las dos entradas. `balance.js` y `validate.js` se
+  juntaron solos, sin checks perdidos.
+- `k6d-nivel` (`5936279`): conflicto en este archivo y en `version.js` (se conservan las dos historias).
+- **P7a sale** (decisión del supervisor tras la revisión): revert de `9b85bc7` (la prende) y de `9f3b3f8` (la estructura). La
+  estrella rebotaba entre ligas en cada contrato (A-B-A-B de 0 a 31 carreras con `criterio`), la carta se contradecía y casi no
+  movía los títulos. No queda código, perilla (`mercado.estrellaSube`) ni su check. Quedan P3 y la regla de tier 3.
+
+**Versión, huella y guardado.**
+- `VERSION_JUEGO` 'K6d'. `HUELLA_JUEGO` 79304237, medida con `--solo="K1 versión"` sobre el head sin P7a. Reemplaza a 480175732
+  (K6d-N con P3), 1073872165 (K6d-B) y 1766253198 (K6c). Con P7a la integración daba 2117801369: no vale.
+- Guardado `VERSION` 13 → 14. `migrarDe13` (`core/guardado.js`) arranca `flags.mentalAvisadaPro` en `[]` y `flags.ofertaGuardada`
+  en `null`, los valores de `createInitialState`.
+- `FORMAS_CONOCIDAS[13]` vuelve a `995485d311c0`, la de `fase-9r` y de los guardados del usuario. `FORMAS_CONOCIDAS[14]` es
+  `1ef92b3fd9be`.
+- Check nuevo "K6d guardado VERSION 14": 170 guardados de la 13 cargan y siguen igual que los de la 14, y sin `migrarDe13` fallan
+  los 170. El de K6b pasa a pedir `VERSION` ≥ 13.
+
+**El bug de K5c-R** (la seed 9 con P7a prendida: `aniosProDe` 8,33 contra 8).
+- **Lo que pasaba de verdad.** La carrera no se quemó estando retirada: volvió del retiro con su club ("te guardó el lugar"),
+  jugó el split de la vuelta y se quemó al cierre. Llegó a ese split con la racha en rojo de **8 splits** de antes de irse
+  (`flags.splitsMentalBajo`) y la mentalidad en 11, congeladas un año entero afuera.
+- **El reloj cuadraba.** Del 33 al 37 son 3 splits afuera (`splitsRetirado` 3) más el de la vuelta, y en 300 carreras (con P7a, y en
+  el head sin P7a) `splitCount − splitsRetirado == registro.splitsJugados` da 300 de 300. Los 8,33 años pro eran los reales. El que
+  contaba de menos era el check: toma todo paso retirado → retirado como splits afuera. "La vuelta arranca corrida +3/+4" también
+  es por diseño: `relojAlVolver` adelanta el reloj en el split de la vuelta (K5c motor).
+- **La causa en el motor:** la racha cuenta splits seguidos jugados en rojo, pero sobrevivía al tiempo afuera. El dado podía
+  pinchar en el primer split de vuelta, y la parada del pro de K6d-B decía "cerraste los últimos N splits en rojo" contando los
+  de afuera (regla 15).
+- **El arreglo** (`systems/retiro.js`, al volver): `splitsMentalBajo` vuelve a 0.
+- **Medido.**
+  - Con P7a y el arreglo (copia de `5936279`): las vueltas que se queman en el split de la vuelta bajan de 1 a 0 en 300; la seed 9
+    da 9 años pro. El check K5c-R da OK; sin el arreglo, FAIL.
+  - Sin P7a (el head, sin el arreglo): 4 de 133 vueltas traen racha (300 seeds) y ninguna se quema, porque frena la parada de K6d-B.
+  - La huella no se mueve: ninguna de las 40 seeds vuelve con racha.
+- **El check** "K6d retiro". Toma 5 vueltas reales con la cabeza armada en rojo (la mitad del umbral, racha de 4 veces el
+  mínimo) y el que sigue sin cuidarse. Pide que el split de la vuelta no frene por el burnout ni termine en burnout. El mutante
+  sin el arreglo da rojo en las 5.
+
+**El techo de `dist/`:** 2402 KB contra 2400. Lo que creció es lo de K6d (+54 KB en crudo desde `80d4b9b`), y se subió a 2500
+siguiendo el precedente de K6c. Lo decide el supervisor.
+
+**Verificado:**
+- `--rapido`: 370 OK / 0 FAIL / 180 SKIP.
+- `--solo=`: K6d-B (los 5 lentos), K6d-P (4), K5c-R (9), "K6d-N P3", "Tier 3, el nivel manda", "guardado" (13) y "K6d retiro",
+  todos OK.
+- `build.js` OK.
+- La validación completa y `simulate.js 1000` quedan para el supervisor.
+
 ### 2026-10-07 — K6d-N: merge de `tier3-nivel` y P3, el título de una liga chica no te mete en el Top 20 (rama `k6d-nivel`)
 
 - **Merge** (`908ac9f`): `tier3-nivel` entra con la regla de tier 3 (margen 15). La huella del juego queda en 1265514711 y
