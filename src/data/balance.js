@@ -1929,6 +1929,43 @@ export const BALANCE = {
     // (`impacto` de cada entrada de minijuegos.json), igual que impactoMinijuego
   },
 
+  // K6d-P: la rueda de prensa deja de ser azar puro. El tono que conviene (0 Humilde, 100 Desafiante) sale del contexto en
+  // `core/prensa.js`: parte de `tonoBase` y cada factor lo empuja con su peso (positivo = más desafiante, negativo = más
+  // humilde). La pantalla muestra una pista por factor que pesó (|empuje| >= `umbralPista`, las `maxPistas` más fuertes)
+  // y el objetivo del minijuego es ese tono más un ruido de `rngUi` de ±`ruidoUi` (así leer importa y no es una tabla).
+  // Sin tirada del motor: la huella no se mueve. Los bots no leen el objetivo (`simulate.js` no cambia).
+  prensa: {
+    tonoBase: 50,
+    tonoMin: 5,
+    tonoMax: 95,
+    // Cuánto pesa lo que acaba de pasar: ganar la serie da crédito para ir al frente, perderla pide bajar el tono. En una final
+    // (las rondas de `rondasDeFinal`) el empuje se multiplica por `multiplicadorFinal`.
+    empujeGanaste: 14,
+    empujePerdiste: -18,
+    multiplicadorFinal: 1.6,
+    rondasDeFinal: ['final', 'internacional'],
+    // Después de un escándalo cualquier frase se cita completa: pide humildad.
+    empujeEscandalo: -28,
+    // El hype y la sinergia empujan en proporción a cuánto se alejan de su referencia: hype alto (sobre la media de un pro en estos momentos, ~70) -> humildad (que no te
+    // crean un divo), hype bajo -> hacerte notar; sinergia baja -> poner al grupo adelante (humilde), sinergia alta -> ir al
+    // frente sin miedo a que el vestuario se rompa. La sinergia de referencia es la media de un pro (~55, K2c).
+    hypeReferencia: 70,
+    empujePorPuntoDeHype: -0.5,
+    sinergiaReferencia: 55,
+    empujePorPuntoDeSinergia: 0.5,
+    // El rival de la serie: el archirrival (el que compartís rol, `mundo.archirrival`) pide ir al frente con más fuerza que
+    // uno de tu generación (`rivalDeGeneracion` en su plantel).
+    empujeArchirrival: 16,
+    empujeRivalDeGeneracion: 8,
+    umbralPista: 3,
+    // Cuántas pistas muestra la pantalla: de `minPistas` a `maxPistas` (si no hay `minPistas` factores sobre el umbral, se completa
+    // con la frase suave de los que pesaron poco).
+    minPistas: 2,
+    maxPistas: 3,
+    // Amplitud del ruido de `rngUi` sobre el tono (puntos de 0-100 de cada lado).
+    ruidoUi: 8
+  },
+
   // 9M-lite: el mundo tiene escena. El digest anual de las otras ligas
   // (systems/escena.js) — nunca simula un split ajeno, solo resuelve en
   // silencio quién ganó.
