@@ -26706,6 +26706,7 @@ const {
   aplicar: aplicarAtributosK6DB, probabilidadDeBurnout: probabilidadDeBurnoutK6DB, textoDelCierre: textoDelCierreK6DB
 } = await import('../systems/atributos.js');
 const { recuperarPorDescanso: recuperarPorDescansoK6DB } = await import('../core/barras.js');
+const { paradaDelBurnout: paradaDelBurnoutK6DB } = await import('../systems/burnout.js');
 const SEEDS_K6DB = 400;
 // Un `rng` que deja todo `gauss` en su media (u2 = 0,25: cos(π/2) = 0): el dado del cierre sin su ruido, contra lo que proyecta la carta.
 const rngMedioK6DB = () => 0.25;
@@ -26820,12 +26821,12 @@ function cosechaK6DB() {
         if (sistema.id === 'amateur' && datos.motivo === 'minijuego' && datos.oferta?.riesgoBurnout) {
           c.pruebas += 1;
           const r = datos.oferta.riesgoBurnout;
-          const varaCero = datos.oferta.vara === 0;
+          const varaCero = (datos.vara ?? datos.oferta.vara) === 0;
           c.pruebasVaraCero += varaCero ? 1 : 0;
           // Con la vara en 0% firmás seguro: la prueba no dice "si no llegás" (regla 15).
           const noLlegar = datos.apuesta.includes(textoDelCierreK6DB(r.esperar.ahora)) && datos.apuesta.includes('si no llegás');
           if (!decision.descripcion.includes(textoDelCierreK6DB(r.firmar.ahora)) || noLlegar === varaCero) {
-            c.problemasCarta.push(`seed ${seed} split ${i}: la prueba (vara ${datos.oferta.vara}) no dice el riesgo de firmar y de no llegar como es`);
+            c.problemasCarta.push(`seed ${seed} split ${i}: la prueba (vara ${datos.vara ?? datos.oferta.vara}) no dice el riesgo de firmar y de no llegar como es`);
           }
         }
         if (sistema.id === 'burnout' && datos.motivo === 'burnout_pro') {
@@ -26839,6 +26840,14 @@ function cosechaK6DB() {
           if (!(seguir.riesgoBurnout > 0)) c.problemasPro.push(`seed ${seed} split ${i}: frenó sin que el dado pueda pinchar`);
           const tercera = st.career.currentOrg ? 'pedir_descanso' : 'desconectar';
           if (!decision.opciones.some((op) => op.id === tercera)) c.problemasPro.push(`seed ${seed} split ${i}: ${st.career.currentOrg ? 'con' : 'sin'} club la parada no trae ${tercera}`);
+          // Dentro de lo cubierto, la vara: con este mismo estado y un aviso de este cierre que mostró un poco más de `mentalNueva` por
+          // encima, frena; un poco menos, no (la regla de "riesgo nuevo" con su constante).
+          for (const [margen, frena] of [[b.mentalNueva + 1, true], [b.mentalNueva - 1, false]]) {
+            const aviso = { split: S, mentalidad: datos.mostrado.seguir + margen, probabilidad: seguir.riesgoBurnout };
+            if (Boolean(paradaDelBurnoutK6DB({ ...st, flags: { ...st.flags, mentalAvisadaPro: [aviso] } })) !== frena) {
+              c.problemasPro.push(`seed ${seed} split ${i}: con lo visto ${margen} por encima ${frena ? 'no frena' : 'frena igual'}`);
+            }
+          }
           const visto = cubiertos.get(S);
           if (visto && visto.probabilidad > 0 && datos.mostrado.seguir >= visto.mentalidad - b.mentalNueva) {
             c.frenadasDeMas.push(`seed ${seed} split ${i}: ${datos.mostrado.seguir.toFixed(1)} contra lo visto ${visto.mentalidad.toFixed(1)}`);
@@ -26926,7 +26935,8 @@ checkLento(`K6d-B pedirle al club que te espere guarda la oferta entera, vuelve 
   if (c.cumplidas < 10) throw new Error(`check vacío: ${c.cumplidas} ofertas guardadas que volvieron`);
 });
 
-// Rojo con los mutantes "un aviso cubre toda la racha" (M1 de la revisión: la vara que no se relaja), "sin club no frena", "frena
+// Rojo con los mutantes "un aviso cubre toda la racha" (M1 de la revisión: la vara que no se relaja), "dentro de lo cubierto no frena
+// aunque la mentalidad caiga" (sin el `mentalNueva`), "sin club no frena", "frena
 // siempre que la chance pase 0, sin la vara" (frenadas de más) y "frena recién con 20% o más".
 const PISO_PARADA_K6DB = 0.95;
 checkLento(`K6d-B por cierre: ≥ ${PISO_PARADA_K6DB * 100}% de los burnouts de un pro (con o sin club) salen de un cierre que una carta o una parada cubrió con su %, no vuelve a frenar sin riesgo nuevo y cada opción hace lo que dice (malas, ${SEEDS_K6DB} × 60)`, () => {
