@@ -157,4 +157,8 @@ export const VERSION_JUEGO = 'K6c';
 // Rama tier3-nivel (1265514711; corrimiento declarado, sigue 'K6c': la rama no se mergea sin la decisión del usuario, D34):
 // "el nivel manda en tier 3": con nivel ≥ calibre de la liga tier 2 de tu región + `competitivo.margenNivelSobreTier2` el salto es
 // seguro y no tira los dos dados de `resolverTier3`; cambian las tiradas que siguen, y con ellas las carreras. Reemplaza a 1766253198.
-export const HUELLA_JUEGO = 1265514711;
+// K6d-N, P3 (480175732; corrimiento declarado, sigue 'K6c'): el bono del título de liga en el ranking del mundo pesa por el
+// prestigio de la liga (`topMundial.prestigioSinBonoCampeon` 55 / `prestigioPlenoCampeon` 91: la CBLOL no suma, la LEC la mitad,
+// la LPL y la LCK el bono entero). Sin tiradas nuevas: el ranking cambia el mérito del mercado (`meritoDeTemporada`, el top del
+// mundo), y con él las ofertas y las carreras. Huella del stream (`dev/huella.js`) 346802722 → 1820193282. Reemplaza a 1265514711.
+export const HUELLA_JUEGO = 480175732;
