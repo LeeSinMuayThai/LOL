@@ -8542,6 +8542,34 @@ Desafiante) y no da ninguna pista: es azar puro, lo único que K6 todavía sinti
 
 La pantalla se verifica en Chromium real, de 320 a 1440 px.
 
+**K6d-P, primera pasada** (`k6d-prensa`: `569f77c`, `5a6c31c`, `1e2b4ee`): huella idéntica, forma del guardado igual,
+23 mutantes en rojo. **La revisión: OK con observaciones, y una que importa.**
+- La prensa de después de la serie está apagada desde K4c (`serie.rondasConPrensa: []`, el combo cA, para dejar los
+  minijuegos en 4-8 por carrera). **No se prende:** sería volver a abrir una calibración de K4c que el usuario no pidió.
+- Hoy la única prensa que se juega es la del escándalo, y ahí el tono queda siempre humilde: entre 5 y 28, con mediana 19,
+  en 19 pausas reales de 60 seeds. El escándalo pesa -28 y la sinergia real empuja para el mismo lado. **Un slider fijo a
+  la izquierda gana siempre: leer las pistas no sirve.**
+- La pista "casi nadie te conoce" sale con hype 57-64 (regla 15 en el texto). En la prensa de serie, "bajá la cabeza" y
+  "no le des el gusto de bajar la cabeza" salen juntas. "El vestuario aguanta" suena a fútbol.
+- Los checks no atan el texto de cada pista a su dirección: sobreviven mutantes como "el escándalo dice subir el tono".
+  Tampoco miran que el widget use el tono.
+- El botón "RESPONDER" sale recortado. Es un defecto viejo de todos los `.minijuego-btn`: `button { padding: 0 }` de
+  `base.css` le gana al padding de `:where(button)`, y el `clip-path` con chaflanes se come las letras.
+
+**La corrección (supervisor, dentro de "la rueda de prensa con pistas"):**
+- **En la prensa del escándalo el tono tiene que variar con factores legibles del estado** (cómo viene tu temporada, el
+  hype, la sinergia, lo que ya se sabe de vos). El escándalo empuja a la humildad, pero no fija la respuesta.
+- **Meta, medida en pausas reales** con la configuración de producción (≥ 50 pausas):
+  - del p10 al p90 del tono hay 40 puntos o más;
+  - la mediana cae entre 35 y 65;
+  - con la mejor posición fija del slider, el veredicto "bien" sale en ≤ 50% de las pausas; poniendo el slider en el
+    tono, en ≥ 90%.
+- Cada texto dice lo que es (umbral propio para "nadie te conoce"), y ninguna pista contradice a otra.
+- Los checks atan cada pista a la dirección de su factor, cubren la final internacional y prueban que el widget arma el
+  objetivo con el tono.
+- El botón de los minijuegos recupera su padding, medido en el navegador.
+- La huella sigue idéntica.
+
 #### K6d — el cierre
 
 1. La integración `k6d-integracion` (N + B + P), con la huella y la forma del guardado resueltas.
