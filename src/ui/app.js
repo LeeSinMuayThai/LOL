@@ -306,7 +306,7 @@ export function iniciar() {
         + '</div>';
       ui.renderLowerThird(summary, metaPill, estadoActual, { modo: 'minijuego' });
       setTimeout(() => responder(decision.datos.charla?.disponible ? { resultado, charla } : { resultado }), 1600);
-    }, rngUi);
+    }, rngUi, decision.datos);
 
     ui.renderLowerThird(summary, metaPill, estadoActual, { modo: 'minijuego' });
     traerAlaVista(minijuegoWidget);

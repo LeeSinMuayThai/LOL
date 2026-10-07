@@ -92,7 +92,13 @@ const SPLITS_DE_VERIFICACION = 30;
 // con el plan del año y la vara de la prueba, mercado.js +289 con el mérito y el contrato, retiro.js con la vuelta), src/core +19
 // (cola.js nuevo, legado.js, demanda.js, guardado.js), src/data +8 (balance.js). Subido a 2400: ~90 KB (3,9%) de margen sobre el
 // peso medido ese día, no una expectativa.
-const PESO_MAXIMO_KB = 2400;
+//
+// Re-medido en la integración de K6d (2026-10-07, `k6d-integracion`): 2402 KB contra 2400. Lo que creció desde `fase-9r` (80d4b9b)
+// es lo que el usuario pidió para K6d, no algo que sobre: en crudo (git) +54 KB, src/systems +30 (burnout.js nuevo con la parada
+// del pro, amateur.js con la oferta que avisa y deja esperar, atributos.js con el riesgo del cierre, competitivo.js con el tier 3),
+// src/core +12 (prensa.js nuevo, topMundial.js con P3, guardado.js con la 14), src/data +10 (balance.js, version.js) y src/ui +2.
+// Subido a 2500: ~98 KB (4%) de margen sobre el peso medido ese día, no una expectativa.
+const PESO_MAXIMO_KB = 2500;
 
 function copiar(desde, hacia) {
   const stat = fs.statSync(desde);

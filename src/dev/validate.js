@@ -71,7 +71,7 @@ import { nivelDelJugador, deltasDeStats, fichaCompleta, loQueConstruiste } from 
 import { componerLegado } from '../core/legado.js';
 import { titularDelAnio } from '../core/temporadaResumen.js';
 import { bandaDeArraigo, filaAbierta as filaAbiertaK5 } from '../core/registro.js';
-import { rankearMundo, rankearPoblacion, puntajeRanking } from '../core/topMundial.js';
+import { rankearMundo, rankearPoblacion, puntajeRanking, bonusResultadoDelAnio, factorPorPrestigio } from '../core/topMundial.js';
 import { salarioDeOferta } from '../core/salarios.js';
 import { valorDeMercado, presupuestoDeDemanda, sesgoEtario } from '../core/valorMercado.js';
 import { orgsQueTeFicharian, ofertaPosible, residenciaEn, factorElite } from '../core/demanda.js';
@@ -96,6 +96,8 @@ import { encabezadoDeResultado } from '../core/temporada.js';
 import { cumpleCondiciones as cumpleCondicionesK6aM } from '../core/selectors.js';
 import { jugasteUnSplitConLaOrg } from '../systems/competitivo.js';
 import { MONTAR_MINIJUEGO } from '../ui/components/minijuegos/index.js';
+import { lecturaDePrensa, factoresDePrensa } from '../core/prensa.js';
+import { objetivoDePrensa, puntajeDePrensa } from '../ui/components/minijuegos/ruedaDePrensa.js';
 import { LABEL_MARCA as LABEL_MARCA_FICHA, lineaDeContextoFicha } from '../ui/components/ficha.js';
 import { nombreVisibleDeLiga } from '../ui/formatoUi.js';
 import { crearCampeonTile, urlIconoDeCampeon, urlSplashDeCampeon } from '../ui/components/campeonTile.js';
@@ -810,7 +812,13 @@ const FORMAS_CONOCIDAS = {
   // K6c-fix, quinta pasada (sin subir): `anioAmateur.riesgoMostrado.mental` y `anioAmateur.mentalAvisada` (la mentalidad que mostró
   // el plan y la de la última parada por la mentalidad), `semanaMentalRoja` en cada opción del plan del año y `datos.porMentalidad` /
   // `datos.cuida` en la parada de la semana. Re-registrada (era '5915cb3adccf').
-  13: '995485d311c0'
+  // K6d (integración): la 13 es la forma que salió en `fase-9r` ('995485d311c0'), la de los guardados que circulan. (En la rama
+  // `k6d-nivel`, P7a la había re-registrado como 'b3882d5ebf40' sin campos nuevos; P7a se sacó en la integración y ese hash no vale.)
+  13: '995485d311c0',
+  // K6d (integración de K6d-N, K6d-B y K6d-P): K6d-B (D77) suma `flags.mentalAvisadaPro` (la lista de cierres que un aviso cubrió,
+  // [{ split, mentalidad, probabilidad }]) y `flags.ofertaGuardada` (la oferta que el club te guarda un split); K6d-N (tier 3 y P3)
+  // y K6d-P no agregan campos, pero mueven las carreras de muestra. Un guardado de la 13 carga con `migrarDe13`.
+  14: '1ef92b3fd9be'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -2669,7 +2677,7 @@ checkLento('Fase 9W: el Top 20 mezcla edades — sin término de edad, la divers
 // 361-540 / 541-720; 39,6% con n 460), y en K6b (`58db231`) 38,2 / 39,4 / 40,3 / 34,7% (38,2%, n 513). La población no se movió:
 // era la muestra. Con n ≈ 460 (σ ~2,3 pp) el piso queda ~2,9 σ debajo. El piso no se toca.
 const SEEDS_BARRIDO_9WD_TOP20 = 720;
-checkLento('Fase 9Wd: entrar al Top 20 cuesta pero tiene sentido — un tercio de las carreras con éxito lo tocan (§9W.6, re-base de K5c)', () => {
+checkLento('Fase 9Wd: entrar al Top 20 cuesta pero tiene sentido — casi una de cada cuatro de las carreras con éxito lo tocan (§9W.6, re-base de K5c y de K6d)', () => {
   const c = barrido9W(SEEDS_BARRIDO_9WD_TOP20);
   const exitosas = c.filter((x) => x.exito);
   const lavadas = c.filter((x) => !x.exito);
@@ -2689,8 +2697,13 @@ checkLento('Fase 9Wd: entrar al Top 20 cuesta pero tiene sentido — un tercio d
   // n 130): 41,2% en promedio, σ binomial
   // ~4,3 pp a n ≈ 130. El piso queda ~2 σ debajo. La otra mitad (las carreras lavadas no se cuelan, tope 5%) no se toca.
   // Un mutante sin los bonus de título e internacional del ranking (`topMundial.bonus*` en 0) lo pone en rojo (3,8%).
-  if (fracExito < 0.33) {
-    throw new Error(`sólo ${(fracExito * 100).toFixed(1)}% de las carreras con éxito tocan el Top 20 (piso 33%, re-base de K5c sobre la meta §9W.6 de 50%): entrar no tiene sentido`);
+  // K6d (integración), regla 17: piso 0,33 → 0,1917. Protege: que entrar al Top 20 siga teniendo sentido para quien gana algo (que no
+  // se vuelva un puesto que nadie toca); desde 9Wd (piso 0,45), re-basado en K5c (0,33). Re-basado en K6d por decisión del usuario
+  // 2026-10-07 ("Re-basar y cerrar"). Causa: P3, el bono de campeón en el ranking escala con el prestigio de la liga; lo pidió el
+  // usuario para bajar el Top 20 hacia el ~15% de §K.3b. Medido en la validación completa de `f542f62` (720 seeds): 23,1%, σ
+  // binomial 1,97 pp con n ≈ 460 carreras con éxito (la n de K6c-fix; no se imprime). Piso = 23,1 − 2 × 1,97 = 19,17%.
+  if (fracExito < 0.1917) {
+    throw new Error(`sólo ${(fracExito * 100).toFixed(1)}% de las carreras con éxito tocan el Top 20 (piso 19,17%, re-base de K6d sobre el 23,1% medido; la meta de §K.3b es ~15% de todas las carreras): entrar no tiene sentido`);
   }
   // Y casi ninguna carrera lavada se cuela: el ranking no regala puestos.
   if (fracLavada > 0.05) {
@@ -3987,6 +4000,134 @@ checkLento(`El tier 3 es breve: mediana de permanencia ≤ ${MEDIANA_MAXIMA_TIER
   }
 });
 
+// Rama tier3-nivel ("el nivel manda en tier 3", D34). Estado armado sobre una carrera real: un jugador de tier 3 que ya jugó
+// un split con su equipo (lo que pide K6a-M para resolver), con la liga tier 2 de su región puesta a mano para que su nivel
+// quede justo arriba o justo abajo de `calibre + competitivo.margenNivelSobreTier2`. Arriba: el salto es seguro, sin consumir
+// `rng`, el log dice por qué, y el split siguiente ya no es de tier 3. Abajo: sigue la tirada de siempre (quedarse, disolverse
+// y saltar aparecen, con la frecuencia de `probSalidaTier3` y `probAscenso*DesdeTier3`). Rojo con la regla sacada de
+// `resolverTier3` (el código de antes), con el margen en +∞, con un salto que tira dado, con el calibre leído como la fuerza máxima
+// de la liga y con `>` en vez de `>=` (revisión de la rama: las fuerzas distintas y el caso en el borde exacto).
+const { aplicar: aplicarCompetitivoT3n } = await import('../systems/competitivo.js');
+const { calibreDeLiga: calibreDeLigaT3n } = await import('../core/demanda.js');
+const SEEDS_BASE_T3N = 60;
+const SPLITS_BASE_T3N = 30;
+const TIRADAS_T3N = 400;
+const TOLERANCIA_T3N = 0.07;
+// Las fuerzas armadas alrededor del calibre: de a 1 abajo y de a 6 arriba (asimétricas: el promedio no es la mediana).
+const PASO_ABAJO_T3N = 1;
+const PASO_ARRIBA_T3N = 6;
+// "Justo abajo" del borde: el nivel queda esto por debajo de calibre + margen.
+const JUSTO_ABAJO_T3N = 0.01;
+const { nombreVisibleDeLiga: nombreVisibleDeLigaT3n } = await import('../core/ligas.js');
+check('Tier 3, el nivel manda: con nivel de sobra para el tier 2 de tu región el salto es seguro (sin dado y explicado); debajo del margen sigue la tirada', () => {
+  let base = null;
+  for (let seed = 1; seed <= SEEDS_BASE_T3N && !base; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < SPLITS_BASE_T3N && !state.terminado && !base; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      if (state.phase === 'profesional' && state.career.tier === 3 && state.career.currentOrg && !state.terminado
+        && jugasteUnSplitConLaOrg(state)) {
+        base = state;
+      }
+    }
+  }
+  if (!base) {
+    throw new Error(`ninguna de ${SEEDS_BASE_T3N} carreras quedó en tier 3 con un split jugado con su equipo`);
+  }
+  const liga = base.mundo.ligas.find((candidata) => candidata.tier === 2 && candidata.regionId === base.mundo.regionIdOrigen);
+  const nivel = nivelDelJugador(base);
+  const margen = BALANCE.competitivo.margenNivelSobreTier2;
+  // Las orgs de la liga con fuerzas DISTINTAS y asimétricas (pocas abajo, lejos arriba): las dos del medio en la fuerza pedida,
+  // así el cuantil `demanda.cuantilCalibreDeLiga` da exactamente esa fuerza y no coincide con la máxima, la mínima ni el
+  // promedio (un calibre mal leído no pasa).
+  const n = liga.orgs.length;
+  const medioAbajo = Math.floor(BALANCE.demanda.cuantilCalibreDeLiga * (n - 1));
+  const medioArriba = Math.min(n - 1, medioAbajo + 1);
+  const fuerzaEn = (calibre, i) => {
+    if (i < medioAbajo) {
+      return calibre - (medioAbajo - i) * PASO_ABAJO_T3N;
+    }
+    return i > medioArriba ? calibre + (i - medioArriba) * PASO_ARRIBA_T3N : calibre;
+  };
+  const conCalibre = (calibre) => ({
+    ...base,
+    mundo: {
+      ...base.mundo,
+      ligas: base.mundo.ligas.map((candidata) => (candidata.id === liga.id
+        ? { ...candidata, orgs: candidata.orgs.map((org, i) => ({ ...org, fuerza: fuerzaEn(calibre, i) })) }
+        : candidata))
+    }
+  });
+  // El borde exacto: el calibre con `calibre + margen === nivel` en punto flotante (la regla es `>=`: con `>` no salta).
+  const exacto = nivel - margen;
+  const paso = (Number.EPSILON * Math.abs(exacto)) / 2;
+  const enElBorde = [0, 1, -1, 2, -2, 3, -3, 4, -4].map((k) => exacto + k * paso).find((calibre) => calibre + margen === nivel);
+  if (enElBorde === undefined) {
+    throw new Error(`no hay un calibre con calibre + ${margen} === ${nivel}: el armado del borde no sirve`);
+  }
+  const arriba = conCalibre(enElBorde);
+  const abajo = conCalibre(enElBorde + JUSTO_ABAJO_T3N);
+  const ligaDe = (state) => state.mundo.ligas.find((candidata) => candidata.id === liga.id);
+  const fuerzas = ligaDe(arriba).orgs.map((org) => org.fuerza);
+  const promedio = fuerzas.reduce((suma, fuerza) => suma + fuerza, 0) / fuerzas.length;
+  const calibreBorde = calibreDeLigaT3n(ligaDe(arriba));
+  if (calibreBorde !== enElBorde || [Math.max(...fuerzas), Math.min(...fuerzas), promedio].includes(calibreBorde)
+    || !(nivel < calibreDeLigaT3n(ligaDe(abajo)) + margen)) {
+    throw new Error(`el armado no separa el calibre (${calibreBorde}) de la máxima, la mínima y el promedio, o no deja el nivel ${nivel} `
+      + `en el borde y justo abajo de calibre + ${margen}`);
+  }
+
+  for (let semilla = 1; semilla <= 20; semilla += 1) {
+    const rngBase = mulberry32(semilla);
+    let usos = 0;
+    const rngContado = () => {
+      usos += 1;
+      return rngBase();
+    };
+    const { state, logs } = aplicarCompetitivoT3n(arriba, rngContado);
+    const texto = logs.map((log) => log.message).join(' ');
+    if (state.career.tier !== 2 || state.career.liga !== liga.id) {
+      throw new Error(`nivel ${nivel} con calibre ${calibreBorde} + ${margen} (el borde): seguís en tier ${state.career.tier} (rng ${semilla})`);
+    }
+    if (usos > 0) {
+      throw new Error(`el salto con nivel de sobra consumió ${usos} tirada(s) de rng: tiene que ser sin dado`);
+    }
+    const comparado = `${Math.round(nivel)} de nivel contra el ${Math.round(calibreBorde)} de un equipo medio de ${nombreVisibleDeLigaT3n(liga.id)}`;
+    if (!/Te sobraba nivel/.test(texto) || !texto.includes(comparado) || !/Te ganás el salto/.test(texto)) {
+      throw new Error(`el salto con nivel de sobra no dice por qué con lo que comparó (regla 12; esperaba "${comparado}"): "${texto}"`);
+    }
+  }
+  const siguiente = avanzarSplitAuto(arriba, mulberry32(1)).state;
+  if (siguiente.career.tier === 3) {
+    throw new Error('con nivel de sobra, el split siguiente sigue siendo de tier 3');
+  }
+
+  const cuenta = { quedas: 0, disuelve: 0, salta: 0 };
+  for (let semilla = 1; semilla <= TIRADAS_T3N; semilla += 1) {
+    const { state, logs } = aplicarCompetitivoT3n(abajo, mulberry32(semilla));
+    if (logs.some((log) => /Te sobraba nivel/.test(log.message))) {
+      throw new Error(`debajo del margen el log dice que te sobraba nivel: "${logs.map((log) => log.message).join(' ')}"`);
+    }
+    if (state.career.tier === 2) {
+      cuenta.salta += 1;
+    } else if (state.career.currentOrg === abajo.career.currentOrg) {
+      cuenta.quedas += 1;
+    } else {
+      cuenta.disuelve += 1;
+    }
+  }
+  const c = BALANCE.competitivo;
+  const probAscenso = c.probAscensoBaseDesdeTier3 + (abajo.career.jerarquia / BALANCE.stats.max) * c.probAscensoPorJerarquiaDesdeTier3;
+  const esperado = { quedas: 1 - c.probSalidaTier3, salta: c.probSalidaTier3 * probAscenso, disuelve: c.probSalidaTier3 * (1 - probAscenso) };
+  for (const [resultado, prob] of Object.entries(esperado)) {
+    if (Math.abs(cuenta[resultado] / TIRADAS_T3N - prob) > TOLERANCIA_T3N) {
+      throw new Error(`debajo del margen, "${resultado}" sale ${cuenta[resultado]}/${TIRADAS_T3N} y la tirada da ${prob.toFixed(2)}: ${JSON.stringify(cuenta)}`);
+    }
+  }
+  console.log(`      nivel ${nivel.toFixed(1)}, margen ${margen}: arriba salta siempre sin dado; abajo ${JSON.stringify(cuenta)} en ${TIRADAS_T3N} tiradas`);
+});
+
 checkLento('El año muerto: nivel de tier 1 pero sin edad para debutar (marca espera_edad_minima)', () => {
   // Fase 9Md: ya no hay "ascenso ganado" que congelar. El año muerto ahora es:
   // sos nivel de tier 1 (`competitivo.nivelParaTier1`) pero te falta la edad
@@ -4726,6 +4867,371 @@ check('Todo minijuego del catálogo tiene su widget, y todo widget su entrada (9
       throw new Error(`el widget "${id}" no tiene entrada en minijuegos.json`);
     }
   }
+});
+
+// --- K6d-P: la rueda de prensa con pistas (PLAN.md §K6d-P) ---
+// Hasta K6c el tono que convenía lo sorteaba `rngUi` sin ninguna pista. Ahora `core/prensa.js` lo calcula del contexto (función
+// pura, sin `rng`: la huella no se mueve, lo prueba "K1 versión") y el motor lo manda en `decision.datos`. Los checks de abajo
+// protegen: (1) que cada factor empuje el tono hacia donde dice, (2) que cada pista mostrada sea de un factor que pesó, diga su
+// dirección y no contradiga a otra (regla 15), (3) que las dos pausas de la prensa traigan `tono` y `pistas` y que el widget
+// los use, (4) que la única prensa que se juega hoy (la del escándalo) no se gane con un slider fijo.
+function estadoNeutroDePrensa() {
+  const b = BALANCE.prensa;
+  const rng = mulberry32(6001);
+  const base = createInitialState(6001, rng);
+  return {
+    ...base,
+    player: { ...base.player, stats: { ...base.player.stats, hype: b.hypeReferencia, mentalidad: b.mentalidadReferencia } },
+    career: { ...base.career, currentOrg: 'Org Neutra', sinergia: b.sinergiaReferencia, jerarquia: b.jerarquiaReferencia, historial: [60] },
+    mundo: { ...base.mundo, archirrival: { handle: 'Nadie', org: 'Otra Org' }, planteles: {} },
+    serie: null
+  };
+}
+
+function afirmarPrensa(condicion, mensaje) {
+  if (!condicion) {
+    throw new Error(mensaje);
+  }
+}
+
+// Variantes del estado neutro, una perilla cada una.
+function prensaCon(neutro, { hype, sinergia, jerarquia, mentalidad, historial, rival, archirrival, planteles } = {}) {
+  return {
+    ...neutro,
+    player: { ...neutro.player, stats: { ...neutro.player.stats, hype: hype ?? neutro.player.stats.hype, mentalidad: mentalidad ?? neutro.player.stats.mentalidad } },
+    career: {
+      ...neutro.career,
+      sinergia: sinergia ?? neutro.career.sinergia,
+      jerarquia: jerarquia ?? neutro.career.jerarquia,
+      historial: historial ?? neutro.career.historial
+    },
+    serie: rival ? { rival: { org: rival } } : null,
+    mundo: { ...neutro.mundo, archirrival: archirrival ?? neutro.mundo.archirrival, planteles: planteles ?? {} }
+  };
+}
+
+const HISTORIAL_PRENSA = { racha: [95, 95, 95], estable: [60], slump: [30], crisis: [5] };
+// Qué dice cada pista: humildad o desafío (frases de `core/prensa.js`), y de qué factor habla.
+const HUMILDE_PRENSA = /humildad|bajá el|bajar el|con respeto|no te metas|excusas|grupo adelante/;
+const DESAFIANTE_PRENSA = /al frente|hablar fuerte|hacerte notar|firmeza|carácter|no te achicás/;
+const MARCA_DE_FACTOR_PRENSA = {
+  escandalo: /escándalo/,
+  serie: /serie|final/,
+  hype: /hype/,
+  sinergia: /sinergia|aceitado/,
+  jerarquia: /referentes|nuevos|Pesás|peso en el equipo/,
+  forma: /racha|resultados/,
+  mentalidad: /cabeza/,
+  rival: /archirrival|generación/
+};
+
+check('K6d-P el tono de la rueda de prensa se mueve en la dirección de cada factor (serie, final, internacional, escándalo, hype, sinergia, jerarquía, forma, mentalidad, rival), con casos justo en el borde', () => {
+  const b = BALANCE.prensa;
+  const neutro = estadoNeutroDePrensa();
+  const tono = (st, momento, datos) => lecturaDePrensa(st, momento, datos).tono;
+  const base = b.tonoBase;
+
+  // Sin factores el tono es el base, y el escándalo empuja a la humildad sin fijar la respuesta.
+  afirmarPrensa(tono(neutro, 'post_serie', {}) === base, `sin factores el tono debía ser ${base}, dio ${tono(neutro, 'post_serie', {})}`);
+  afirmarPrensa(tono(neutro, 'post_escandalo', {}) < base, 'el escándalo debía bajar el tono (humildad)');
+
+  // Ganar sube, perder baja; una final y el internacional pesan más que unas semis, para los dos lados.
+  const sem = (gano) => tono(neutro, 'post_serie', { gano, trasRonda: 'semis' });
+  const fin = (gano) => tono(neutro, 'post_serie', { gano, trasRonda: 'final' });
+  const inter = (gano) => tono(neutro, 'post_serie', { gano, trasRonda: 'internacional' });
+  afirmarPrensa(sem(true) > base && sem(false) < base, `ganar debía subir el tono y perder bajarlo (${sem(true)} / ${sem(false)} contra ${base})`);
+  afirmarPrensa(fin(true) > sem(true) && fin(false) < sem(false), `una final debía pesar más que unas semis (${fin(true)} / ${fin(false)})`);
+  afirmarPrensa(inter(true) > sem(true) && inter(false) < sem(false), `el internacional debía pesar como una final (${inter(true)} / ${inter(false)})`);
+
+  // Cada perilla continua: valores asimétricos alrededor de la referencia, alto y bajo.
+  const par = (perilla, ref, delta, sentido) => {
+    const arriba = tono(prensaCon(neutro, { [perilla]: ref + delta }), 'post_serie', {});
+    const abajo = tono(prensaCon(neutro, { [perilla]: ref - delta }), 'post_serie', {});
+    afirmarPrensa(sentido > 0 ? arriba > base && abajo < base : arriba < base && abajo > base,
+      `${perilla}: ${ref + delta} → ${arriba}, ${ref - delta} → ${abajo} (base ${base}, sentido ${sentido > 0 ? '+' : '-'})`);
+  };
+  par('hype', b.hypeReferencia, 20, -1);
+  par('sinergia', b.sinergiaReferencia, 20, +1);
+  par('jerarquia', b.jerarquiaReferencia, 20, +1);
+  par('mentalidad', b.mentalidadReferencia, 20, +1);
+
+  // La forma: racha > estable > slump > crisis.
+  const forma = Object.fromEntries(Object.keys(HISTORIAL_PRENSA).map((f) => [f, tono(prensaCon(neutro, { historial: HISTORIAL_PRENSA[f] }), 'post_serie', {})]));
+  afirmarPrensa(forma.racha > forma.estable && forma.estable === base && forma.estable > forma.slump && forma.slump > forma.crisis,
+    `la forma debía ordenar racha > estable > slump > crisis (${JSON.stringify(forma)})`);
+
+  // El rival: el archirrival pide más tono desafiante que uno de tu generación, y los dos más que un rival común.
+  const comun = tono(prensaCon(neutro, { rival: 'Zeta' }), 'post_serie', {});
+  const deGeneracion = tono(prensaCon(neutro, { rival: 'Zeta', planteles: { Zeta: { mid: { handle: 'Pibe', rivalDeGeneracion: true } } } }), 'post_serie', {});
+  const archi = tono(prensaCon(neutro, { rival: 'Zeta', archirrival: { handle: 'Archi', org: 'Zeta' } }), 'post_serie', {});
+  afirmarPrensa(comun === base && deGeneracion > comun && archi > deGeneracion, `el rival debía subir el tono (común ${comun}, de generación ${deGeneracion}, archirrival ${archi})`);
+  // El rival de la serie no cuenta en la prensa de un escándalo (no hay serie).
+  afirmarPrensa(tono(prensaCon(neutro, { rival: 'Zeta', archirrival: { handle: 'Archi', org: 'Zeta' } }), 'post_escandalo', {}) === tono(neutro, 'post_escandalo', {}), 'el archirrival no debía pesar en la prensa de un escándalo');
+
+  // Bordes de las bandas del texto (regla 15: la frase fuerte no afirma más de lo que es).
+  const textoDe = (st, id) => factoresDePrensa(st, 'post_serie', {}).find((f) => f.id === id).pista;
+  afirmarPrensa(textoDe(prensaCon(neutro, { hype: b.hypeAlto }), 'hype') !== textoDe(prensaCon(neutro, { hype: b.hypeAlto - 1 }), 'hype'), 'la frase de hype alto debía cambiar justo en hypeAlto');
+  afirmarPrensa(textoDe(prensaCon(neutro, { hype: b.hypeBajo }), 'hype') !== textoDe(prensaCon(neutro, { hype: b.hypeBajo + 1 }), 'hype'), 'la frase de hype bajo debía cambiar justo en hypeBajo');
+  afirmarPrensa(textoDe(prensaCon(neutro, { sinergia: b.sinergiaAlta }), 'sinergia') !== textoDe(prensaCon(neutro, { sinergia: b.sinergiaAlta - 1 }), 'sinergia'), 'la frase de sinergia alta debía cambiar justo en sinergiaAlta');
+
+  // El borde del umbral: con la serie ganada (fuerte) y dos factores justo en `umbralPista` salen 3 pistas; con uno apenas debajo, 2.
+  const justo = prensaCon(neutro, { sinergia: b.sinergiaReferencia + b.umbralPista / b.empujePorPuntoDeSinergia, jerarquia: b.jerarquiaReferencia + b.umbralPista / b.empujePorPuntoDeJerarquia });
+  const apenas = prensaCon(neutro, { sinergia: b.sinergiaReferencia + b.umbralPista / b.empujePorPuntoDeSinergia, jerarquia: b.jerarquiaReferencia + (b.umbralPista - 0.5) / b.empujePorPuntoDeJerarquia });
+  afirmarPrensa(lecturaDePrensa(justo, 'post_serie', { gano: true, trasRonda: 'semis' }).pistas.length === 3, 'con dos factores justo en el umbral y la serie debían salir 3 pistas');
+  afirmarPrensa(lecturaDePrensa(apenas, 'post_serie', { gano: true, trasRonda: 'semis' }).pistas.length === 2, 'con un factor apenas debajo del umbral debían salir 2 pistas');
+
+  // Acotado y entero, aunque todo empuje para el mismo lado.
+  const arriba = prensaCon(neutro, { hype: 0, sinergia: 100, jerarquia: 100, mentalidad: 100, historial: HISTORIAL_PRENSA.racha, rival: 'Zeta', archirrival: { handle: 'Archi', org: 'Zeta' } });
+  const abajo = prensaCon(neutro, { hype: 100, sinergia: 0, jerarquia: 0, mentalidad: 0, historial: HISTORIAL_PRENSA.crisis });
+  const extremoArriba = lecturaDePrensa(arriba, 'post_serie', { gano: true, trasRonda: 'final' }).tono;
+  const extremoAbajo = lecturaDePrensa(abajo, 'post_escandalo', {}).tono;
+  afirmarPrensa(extremoArriba === b.tonoMax && extremoAbajo === b.tonoMin, `el tono debía acotarse a ${b.tonoMin}-${b.tonoMax} (${extremoAbajo} / ${extremoArriba})`);
+
+  // Pura: no toca el estado.
+  const antes = JSON.stringify(neutro);
+  lecturaDePrensa(neutro, 'post_serie', { gano: true, trasRonda: 'final' });
+  afirmarPrensa(JSON.stringify(neutro) === antes, 'lecturaDePrensa modificó el estado');
+});
+
+check('K6d-P cada pista de la rueda de prensa es de un factor que pesó, dice su dirección y no afirma de más (regla 15), y ninguna contradice a otra: entre minPistas y maxPistas, las más fuertes primero', () => {
+  const b = BALANCE.prensa;
+  const neutro = estadoNeutroDePrensa();
+  let casos = 0;
+  for (const momento of ['post_serie', 'post_escandalo']) {
+    const resultados = momento === 'post_serie'
+      ? [{ gano: true, trasRonda: 'semis' }, { gano: false, trasRonda: 'semis' }, { gano: true, trasRonda: 'final' }, { gano: false, trasRonda: 'internacional' }]
+      : [{}];
+    for (const datos of resultados) {
+      for (const hype of [0, 45, 50, 51, 65, 66, 74, 75, 100]) {
+        for (const sinergia of [0, 35, 36, 45, 46, 57, 58, 100]) {
+          for (const forma of ['racha', 'estable', 'slump', 'crisis']) {
+            for (const rival of [null, 'comun', 'generacion', 'archi']) {
+              const st = prensaCon(neutro, {
+                hype,
+                sinergia,
+                jerarquia: sinergia === 0 ? 0 : sinergia === 100 ? 100 : b.jerarquiaReferencia,
+                mentalidad: hype > 70 ? 80 : hype < 50 ? 30 : b.mentalidadReferencia,
+                historial: HISTORIAL_PRENSA[forma],
+                rival: rival ? 'Zeta' : null,
+                archirrival: rival === 'archi' ? { handle: 'Archi', org: 'Zeta' } : undefined,
+                planteles: rival === 'generacion' ? { Zeta: { mid: { handle: 'Pibe', rivalDeGeneracion: true } } } : {}
+              });
+              const lectura = lecturaDePrensa(st, momento, datos);
+              const cual = `${momento} ${JSON.stringify(datos)} hype ${hype} sinergia ${sinergia} forma ${forma} rival ${rival}`;
+              const porId = new Map(lectura.factores.map((f) => [f.id, f]));
+              afirmarPrensa(lectura.pistas.length >= b.minPistas && lectura.pistas.length <= b.maxPistas, `${cual}: ${lectura.pistas.length} pistas`);
+              afirmarPrensa(new Set(lectura.mostrados).size === lectura.mostrados.length && lectura.pistas.length === lectura.mostrados.length, `${cual}: factores mostrados repetidos o desparejos`);
+              lectura.mostrados.forEach((id, i) => {
+                const f = porId.get(id);
+                const texto = lectura.pistas[i];
+                afirmarPrensa(f && texto === f.pista, `${cual}: la pista ${i} no es la del factor "${id}"`);
+                afirmarPrensa(MARCA_DE_FACTOR_PRENSA[id].test(texto), `${cual}: la pista de "${id}" no habla de ese factor: ${texto}`);
+                // La dirección del texto es la del empuje del factor (humildad ↔ negativo, desafío ↔ positivo, neutra ↔ cero).
+                const humilde = HUMILDE_PRENSA.test(texto);
+                const desafiante = DESAFIANTE_PRENSA.test(texto);
+                afirmarPrensa(!(humilde && desafiante), `${cual}: la pista pide humildad y desafío a la vez: ${texto}`);
+                if (f.empuje < 0) {
+                  afirmarPrensa(humilde, `${cual}: "${id}" empuja a la humildad y su pista no: ${texto}`);
+                } else if (f.empuje > 0) {
+                  afirmarPrensa(desafiante, `${cual}: "${id}" empuja al desafío y su pista no: ${texto}`);
+                } else {
+                  afirmarPrensa(!humilde && !desafiante, `${cual}: "${id}" no empuja y su pista da dirección: ${texto}`);
+                }
+              });
+              // Ninguna pista contradice a otra: lo que una pide a mano alzada, otra no lo niega (nada de «bajá la cabeza» con «no le des el
+              // gusto de bajar la cabeza»): ningún texto del desafío habla de bajar, ni uno de humildad de ir al frente.
+              afirmarPrensa(!lectura.pistas.some((t) => DESAFIANTE_PRENSA.test(t) && /baj[aá]r? |bajar /.test(t)), `${cual}: una pista de desafío habla de bajar`);
+              afirmarPrensa(!lectura.pistas.some((t) => HUMILDE_PRENSA.test(t) && DESAFIANTE_PRENSA.test(t)), `${cual}: una misma pista pide las dos cosas`);
+              // El texto no afirma más de lo que es: la frase fuerte solo pasada su banda.
+              const hablaDeHype = lectura.pistas.find((t) => MARCA_DE_FACTOR_PRENSA.hype.test(t));
+              if (hablaDeHype) {
+                afirmarPrensa(!/está alto/.test(hablaDeHype) || hype >= b.hypeAlto, `${cual}: "hype alto" con hype ${hype}`);
+                afirmarPrensa(!/todavía es bajo/.test(hablaDeHype) || hype <= b.hypeBajo, `${cual}: "hype bajo" con hype ${hype}`);
+                afirmarPrensa(!/casi nadie/i.test(hablaDeHype), `${cual}: afirma "casi nadie"`);
+              }
+              const hablaDeSinergia = lectura.pistas.find((t) => MARCA_DE_FACTOR_PRENSA.sinergia.test(t));
+              if (hablaDeSinergia) {
+                afirmarPrensa(!/aceitado/.test(hablaDeSinergia) || sinergia >= b.sinergiaAlta, `${cual}: "aceitado" con sinergia ${sinergia}`);
+                afirmarPrensa(!/anda flojo/.test(hablaDeSinergia) || sinergia <= b.sinergiaBaja, `${cual}: "flojo" con sinergia ${sinergia}`);
+              }
+              // Los factores que no están en este contexto no hablan: la serie solo existe tras una serie, el rival solo con rival, etc.
+              const texto = lectura.pistas.join(' | ');
+              afirmarPrensa(momento === 'post_serie' || !/Ganaste|Perdiste|archirrival|generación/.test(texto), `${cual}: la pista de un escándalo habla de una serie`);
+              afirmarPrensa(momento === 'post_escandalo' || !/escándalo/.test(texto), `${cual}: la pista de una serie habla de un escándalo`);
+              afirmarPrensa(rival !== null || !/archirrival|generación/.test(texto), `${cual}: habla de un rival que no hay`);
+              // Las `maxPistas` más fuertes sobre el umbral están todas, en orden.
+              const esperadas = lectura.factores.filter((f) => Math.abs(f.empuje) >= b.umbralPista)
+                .sort((x, y) => Math.abs(y.empuje) - Math.abs(x.empuje)).slice(0, b.maxPistas).map((f) => f.id);
+              afirmarPrensa(esperadas.every((id, i) => lectura.mostrados[i] === id), `${cual}: faltan las pistas más fuertes (${esperadas} contra ${lectura.mostrados})`);
+              casos += 1;
+            }
+          }
+        }
+      }
+    }
+  }
+  afirmarPrensa(casos === 9 * 8 * 4 * 4 * 5, `se recorrieron ${casos} casos`);
+});
+
+// Un `montar` falso, sin jsdom: lo justo para ver qué pinta y qué puntaje entrega la rueda de prensa.
+function montarPrensaFalsa(datos, rngUi, posicionDelSlider) {
+  const pintadas = [];
+  const slider = { value: String(posicionDelSlider) };
+  let alResponder = null;
+  const boton = { addEventListener: (_evento, fn) => { alResponder = fn; } };
+  const lista = { appendChild: (item) => pintadas.push(item.textContent) };
+  const contenedor = {
+    innerHTML: '',
+    querySelector(selector) {
+      if (selector === '.minijuego-pistas-lista') {
+        return this.innerHTML.includes('minijuego-pistas-lista') ? lista : null;
+      }
+      return selector === '.minijuego-slider' ? slider : selector === '.minijuego-btn' ? boton : null;
+    }
+  };
+  const previo = globalThis.document;
+  globalThis.document = { createElement: () => ({}) };
+  let resultado = null;
+  try {
+    MONTAR_MINIJUEGO.rueda_de_prensa(contenedor, {}, (r) => { resultado = r; }, rngUi, datos);
+  } finally {
+    if (previo === undefined) {
+      delete globalThis.document;
+    } else {
+      globalThis.document = previo;
+    }
+  }
+  alResponder();
+  return { pintadas, resultado, html: contenedor.innerHTML };
+}
+
+check('K6d-P las dos pausas de la rueda de prensa (post_serie, post_escandalo) traen tono y pistas del motor, y las demás mecánicas no; el widget pinta las pistas y arma el objetivo con el tono (más un ruido chico), y sin tono cae al azar de antes', () => {
+  const previa = BALANCE.serie.rondasConPrensa;
+  const vistos = { post_serie: 0, post_escandalo: 0 };
+  const otras = [];
+  try {
+    // K4c apagó `post_serie` (`rondasConPrensa: []`): para ver sus dos pausas reales se prende un momento solo en esta corrida.
+    BALANCE.serie.rondasConPrensa = ['semis', 'final'];
+    for (let seed = 1; seed <= 30; seed += 1) {
+      const responder = (sistema, st, decision, rng) => {
+        const datos = decision.datos ?? {};
+        if (datos.motivo === 'minijuego') {
+          if (datos.minijuego === 'rueda_de_prensa') {
+            const lectura = lecturaDePrensa(st, datos.momento, datos);
+            if (!Number.isInteger(datos.tono) || datos.tono < 0 || datos.tono > 100 || !Array.isArray(datos.pistas)
+              || datos.pistas.length < BALANCE.prensa.minPistas || datos.pistas.length > BALANCE.prensa.maxPistas
+              || datos.pistas.some((pista) => typeof pista !== 'string' || pista.length === 0)) {
+              throw new Error(`seed ${seed}: la pausa ${datos.momento} de la prensa trae tono ${datos.tono} y pistas ${JSON.stringify(datos.pistas)}`);
+            }
+            if (datos.tono !== lectura.tono || JSON.stringify(datos.pistas) !== JSON.stringify(lectura.pistas)) {
+              throw new Error(`seed ${seed}: el tono de la pausa ${datos.momento} no es el de lecturaDePrensa sobre su estado`);
+            }
+            vistos[datos.momento] = (vistos[datos.momento] ?? 0) + 1;
+          } else if ('tono' in datos || 'pistas' in datos) {
+            otras.push(datos.minijuego);
+          }
+        }
+        return sistema.resolverAuto(st, decision, rng);
+      };
+      const rng = mulberry32(seed);
+      let state = createInitialState(seed, rng);
+      for (let i = 0; i < 40 && !state.terminado; i += 1) {
+        state = avanzarSplitAuto(state, rng, responder).state;
+      }
+    }
+  } finally {
+    BALANCE.serie.rondasConPrensa = previa;
+  }
+  if (vistos.post_serie === 0 || vistos.post_escandalo === 0) {
+    throw new Error(`faltó ver la prensa en algún momento: ${JSON.stringify(vistos)}`);
+  }
+  if (otras.length > 0) {
+    throw new Error(`mecánicas que no son la prensa traen tono: ${otras.join(', ')}`);
+  }
+
+  // La UI: el objetivo es el tono del motor ± `ruidoUi`, sin salirse de 0-100; sin `tono` (un guardado viejo) es el azar de antes.
+  const ruido = BALANCE.prensa.ruidoUi;
+  const casi = (a, b) => Math.abs(a - b) < 1e-9;
+  afirmarPrensa(casi(objetivoDePrensa({ tono: 80 }, () => 0.5), 80)
+    && casi(objetivoDePrensa({ tono: 80 }, () => 0), 80 - ruido)
+    && casi(objetivoDePrensa({ tono: 80 }, () => 1), 80 + ruido)
+    && objetivoDePrensa({ tono: 98 }, () => 1) === 100 && objetivoDePrensa({ tono: 2 }, () => 0) === 0,
+  'el objetivo de la rueda de prensa no es tono ± ruidoUi acotado a 0-100');
+  afirmarPrensa(ruido > 0 && ruido <= 10, `ruidoUi ${ruido} fuera de (0, 10]: o es una tabla o no se lee`);
+  afirmarPrensa(casi(objetivoDePrensa({}, () => 0.37), 37) && casi(objetivoDePrensa(undefined, () => 0.5), 50),
+    'sin tono el objetivo debía ser rngUi() * 100 (comportamiento de antes)');
+
+  // El widget de verdad (con un contenedor falso): pinta las pistas del motor y puntúa contra el tono, no contra el azar.
+  const datos = { tono: 80, pistas: ['Pista uno.', 'Pista dos.'] };
+  const clavado = montarPrensaFalsa(datos, () => 0.5, 80);
+  afirmarPrensa(JSON.stringify(clavado.pintadas) === JSON.stringify(datos.pistas), `el widget debía pintar las pistas del motor, pintó ${JSON.stringify(clavado.pintadas)}`);
+  afirmarPrensa(clavado.resultado === 1, `con el slider en el tono el puntaje debía ser 1, fue ${clavado.resultado}`);
+  const lejos = montarPrensaFalsa(datos, () => 0.5, 20);
+  afirmarPrensa(lejos.resultado === puntajeDePrensa(20, 80) && lejos.resultado < 0.1, `con el slider lejos del tono el puntaje debía ser ~0, fue ${lejos.resultado}`);
+  const sinTono = montarPrensaFalsa({ minijuego: 'rueda_de_prensa' }, () => 0.5, 50);
+  afirmarPrensa(sinTono.pintadas.length === 0 && !sinTono.html.includes('minijuego-pistas') && sinTono.resultado === 1,
+    'sin tono el widget no debía pintar pistas y apuntaba al azar de antes (rngUi 0.5 → 50)');
+
+  // El cable de la UI: el controlador le pasa `decision.datos` al widget (sin eso el tono del motor nunca llega a la pantalla).
+  afirmarPrensa(/\}, rngUi, decision\.datos\);/.test(fs.readFileSync(path.join(srcDir, 'ui', 'app.js'), 'utf8')),
+    'ui/app.js no le pasa decision.datos al widget del minijuego: el tono y las pistas no llegan a la pantalla');
+});
+
+// Protege (K6d-P, revisión): que la única prensa que se juega hoy, la del escándalo, no se resuelva con un slider fijo. Medido sobre
+// pausas reales con la configuración de producción (`rondasConPrensa: []`, no se prende nada), con un responder que lee `datos`
+// como lo lee la pantalla (el objetivo es `objetivoDePrensa`, el puntaje `puntajeDePrensa`, el corte el veredicto real).
+checkLento('K6d-P la prensa del escándalo no se gana con un slider fijo: tono repartido (p10-p90 ≥ 40, mediana 35-65), la mejor posición fija da «bien» en ≤ 50% de las pausas y el slider en el tono, en ≥ 90% (≥ 50 pausas reales)', () => {
+  const tonos = [];
+  const sinPistas = [];
+  for (let seed = 1; seed <= 200; seed += 1) {
+    const responder = (sistema, st, decision, rng) => {
+      const datos = decision.datos ?? {};
+      if (datos.motivo === 'minijuego' && datos.minijuego === 'rueda_de_prensa') {
+        afirmarPrensa(datos.momento === 'post_escandalo', `seed ${seed}: con la config de producción salió la prensa de ${datos.momento}`);
+        tonos.push(datos);
+        if (!Array.isArray(datos.pistas) || datos.pistas.length < 2) {
+          sinPistas.push(seed);
+        }
+      }
+      return sistema.resolverAuto(st, decision, rng);
+    };
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng, responder).state;
+    }
+  }
+  afirmarPrensa(tonos.length >= 50, `solo ${tonos.length} pausas de prensa reales (hacen falta 50)`);
+  afirmarPrensa(sinPistas.length === 0, `pausas sin 2 pistas en las seeds ${sinPistas.join(', ')}`);
+  const valores = tonos.map((d) => d.tono).sort((x, y) => x - y);
+  const percentil = (p) => valores[Math.floor(p * (valores.length - 1))];
+  const [p10, mediana, p90] = [percentil(0.1), percentil(0.5), percentil(0.9)];
+  // Cada pausa con el ruido de la pantalla barrido de punta a punta (17 tiradas de `rngUi`, de 0 a 1).
+  const pasos = 17;
+  const bien = (datos, slider) => {
+    let aciertos = 0;
+    for (let i = 0; i < pasos; i += 1) {
+      const resultado = puntajeDePrensa(slider, objetivoDePrensa(datos, () => i / (pasos - 1)));
+      aciertos += veredictoDeMinijuego('rueda_de_prensa', resultado).nivel === 'bien' ? 1 : 0;
+    }
+    return aciertos / pasos;
+  };
+  let mejorFija = 0;
+  let dondeFija = 0;
+  for (let slider = 0; slider <= 100; slider += 1) {
+    const tasa = tonos.reduce((suma, d) => suma + bien(d, slider), 0) / tonos.length;
+    if (tasa > mejorFija) {
+      mejorFija = tasa;
+      dondeFija = slider;
+    }
+  }
+  const enElTono = tonos.reduce((suma, d) => suma + bien(d, d.tono), 0) / tonos.length;
+  const resumen = `${tonos.length} pausas: p10 ${p10}, mediana ${mediana}, p90 ${p90}; mejor slider fijo (${dondeFija}) ${(mejorFija * 100).toFixed(1)}%; en el tono ${(enElTono * 100).toFixed(1)}%`;
+  console.log(`      K6d-P prensa del escándalo: ${resumen}`);
+  afirmarPrensa(p90 - p10 >= 40, `el tono casi no varía entre escándalos: ${resumen}`);
+  afirmarPrensa(mediana >= 35 && mediana <= 65, `la mediana del tono quedó en una punta: ${resumen}`);
+  afirmarPrensa(mejorFija <= 0.5, `un slider fijo gana demasiado: ${resumen}`);
+  afirmarPrensa(enElTono >= 0.9, `leer el tono no alcanza para acertar: ${resumen}`);
 });
 
 check('elegirMinijuego es determinista, respeta el rol y no consume RNG (9R4a)', () => {
@@ -12618,7 +13124,8 @@ const RUIDOS_FUERA_DE_LA_ABLACION_K0 = {
   'roster.sinergiaRuido': 'ruido de la dinámica de la sinergia del roster entre splits',
   'practica.ruidoPractica': 'ruido de la ganancia de práctica',
   'plantel.ruidoNivelAnual': 'ruido anual del nivel de los jugadores del mundo (rachas)',
-  'topMundial.ruidoSpread': 'ruido determinista del corte del Top 20 mundial'
+  'topMundial.ruidoSpread': 'ruido determinista del corte del Top 20 mundial',
+  'prensa.ruidoUi': 'ruido de `rngUi` sobre el tono de la rueda de prensa: es de la pantalla, el motor no lo ve ni lo tira (K6d-P)'
 };
 
 check('K0 ruidos de la ablación: PARAMETROS_RUIDO son exactamente los ruidos de resultados, y toda constante "ruido" o "sigma" de BALANCE está clasificada', () => {
@@ -17658,7 +18165,9 @@ const TIPOS_DE_PAUSA_GUARDADO_K4 = [
   'retiro:retiro_declive', 'retiro:retiro_vuelta', 'servicioMilitar:servicio_te_vas',
   'servicioMilitar:servicio_adentro', 'servicioMilitar:servicio_volver',
   // K5: el 2-2 del Swiss del Mundial, el plan de una serie del bracket y la bifurcación del final por mercado.
-  'internacional:swiss', 'internacional:plan', 'mercado:fin_mercado'
+  'internacional:swiss', 'internacional:plan', 'mercado:fin_mercado',
+  // K6d-B (revisión): la parada del pro con la mentalidad en rojo. `criterio` casi no la genera; la fuente es `malas` (abajo).
+  'burnout:burnout_pro'
 ];
 const SEEDS_GUARDADO_K4 = Array.from({ length: 30 }, (_, i) => 1 + i);
 const SPLITS_GUARDADO_K4 = 60;
@@ -17667,6 +18176,8 @@ const SEEDS_GUARDADO_TOPE_K4 = 200;
 // no cubría `mercado:fin_mercado`). Ahora se buscan, en orden, hasta ver la pausa `FIN_MERCADO_GUARDADO_MINIMO` veces, con
 // tope `SEEDS_FIN_MERCADO_TOPE_K5` seeds.
 const SEEDS_FIN_MERCADO_TOPE_K5 = 40;
+// K6d-B (revisión): las carreras de `malas` que se buscan, en orden, hasta ver la parada del pro (`burnout:burnout_pro`).
+const SEEDS_BURNOUT_TOPE_K6DB = 40;
 const FIN_MERCADO_GUARDADO_MINIMO = 2;
 
 function tipoDePausaGuardadoK4(pendiente) {
@@ -17715,7 +18226,7 @@ checkLento('K4 (revisión) guardado: en cada tipo de pausa, guardar y recargar (
   const noJson = new Set();
   // `degradado`: la carrera de los checks de K5-C (stats topeados al llegar a primera, `carreraDegradadaK5C`), la que
   // se queda sin ofertas en su tier y llega a la bifurcación del final por mercado.
-  const recorrer = (seeds, { degradado = false } = {}) => {
+  const recorrer = (seeds, { degradado = false, bot = 'criterio' } = {}) => {
     for (const seed of seeds) {
       const rng = mulberry32(seed);
       let state = createInitialState(seed, rng);
@@ -17737,7 +18248,7 @@ checkLento('K4 (revisión) guardado: en cada tipo de pausa, guardar y recargar (
           const guardado = serializarGuardado(paso.state, rng);
           // De corrido.
           const { sistemaId, decision } = paso.state.pendiente;
-          const respuesta = ESTRATEGIAS_K0.criterio(sistemaPorId(sistemaId), paso.state, decision, rng);
+          const respuesta = ESTRATEGIAS_K0[bot](sistemaPorId(sistemaId), paso.state, decision, rng);
           const seguido = resolverDecision(paso.state, respuesta, rng);
           // Recargado: el estado y el RNG salen del JSON, y el bot responde desde lo recargado, como la página.
           let recargado;
@@ -17750,7 +18261,7 @@ checkLento('K4 (revisión) guardado: en cada tipo de pausa, guardar y recargar (
             rngRecargado = mulberry32(datos.seed);
             rngRecargado.restaurar(datos.rngEstado);
             const pendiente = datos.state.pendiente;
-            const respuestaRecargada = ESTRATEGIAS_K0.criterio(sistemaPorId(pendiente.sistemaId), datos.state,
+            const respuestaRecargada = ESTRATEGIAS_K0[bot](sistemaPorId(pendiente.sistemaId), datos.state,
               pendiente.decision, rngRecargado);
             recargado = resolverDecision(datos.state, respuestaRecargada, rngRecargado);
           } catch (error) {
@@ -17780,6 +18291,10 @@ checkLento('K4 (revisión) guardado: en cada tipo de pausa, guardar y recargar (
       recorrer([seed], { degradado: true });
     }
   });
+  // K6d-B (revisión): la parada del pro sale de una racha larga en rojo, la de `malas`.
+  for (let seed = 1; seed <= SEEDS_BURNOUT_TOPE_K6DB && !vistos.has('burnout:burnout_pro'); seed += 1) {
+    recorrer([seed], { bot: 'malas' });
+  }
   if (noJson.size > 0 || problemas.length > 0) {
     throw new Error(`${problemas.length} pausas rotas al recargar (${problemas.slice(0, 4).join(' | ')}); `
       + `valores que JSON no conserva en el estado al pausar: ${[...noJson].slice(0, 8).join('; ') || 'ninguno'}`);
@@ -18572,6 +19087,7 @@ check('K4c el renglón de parche va adjunto salvo que mueva a tu main de S/A a B
   }
 });
 
+const SEEDS_K4CS = [1, 2, 3, 4, 5, 6];
 check('K4c-S el instrumento expone el Δp de cada parada de plan (serie:plan e internacional:plan): mejor − peor pSerie declarada, recontado a mano', () => {
   const opciones = (...ps) => ps.map((pSerie) => ({ pSerie }));
   const dp = deltaPDePlan(opciones(0.55, 0.62, 0.50));
@@ -18580,7 +19096,8 @@ check('K4c-S el instrumento expone el Δp de cada parada de plan (serie:plan e i
     throw new Error(`deltaPDePlan: [0,55 0,62 0,50] tenía que dar 0,12 (mejor − peor, no primera − última); dio ${dp}; con una sola opción, con NaN o sin pSerie tenía que dar null`);
   }
   let paradas = 0;
-  for (const seed of [1, 2, 3]) {
+  // Rama tier3-nivel (corrimiento declarado): con las seeds 1-3 quedaban 9 paradas de plan (eran 20); con 1-6, 21.
+  for (const seed of SEEDS_K4CS) {
     const aMano = [];
     const espia = (sistema, estado, decision, rngLocal) => {
       if (decision.datos?.motivo === 'plan') {
@@ -18600,7 +19117,7 @@ check('K4c-S el instrumento expone el Δp de cada parada de plan (serie:plan e i
     paradas += aMano.length;
   }
   if (paradas < 10) {
-    throw new Error(`check vacío: ${paradas} paradas de plan en 3 carreras (hacen falta 10)`);
+    throw new Error(`check vacío: ${paradas} paradas de plan en ${SEEDS_K4CS.length} carreras (hacen falta 10)`);
   }
 });
 
@@ -21143,7 +21660,7 @@ const tieneFotoK6B = (st) => st.flags.seguisFirma != null || st.flags.finMercado
   || st.flags.colaFirmas?.cierre != null || st.flags.colaFirmas?.momento != null;
 
 check('K6b guardado VERSION 13: la forma de la 12 (la de main) sigue registrada, y un guardado de la 12 carga completo (las fotos de la cola en "no hay foto") y sigue igual que el de la 13', () => {
-  if (VERSION_GUARDADO !== 13 || FORMAS_CONOCIDAS[12] !== '859f8c5ba041' || FORMAS_CONOCIDAS[13] === undefined || FORMAS_CONOCIDAS[13] === FORMAS_CONOCIDAS[12]) {
+  if (VERSION_GUARDADO < 13 || FORMAS_CONOCIDAS[12] !== '859f8c5ba041' || FORMAS_CONOCIDAS[13] === undefined || FORMAS_CONOCIDAS[13] === FORMAS_CONOCIDAS[12]) {
     throw new Error(`VERSION ${VERSION_GUARDADO}, forma de la 12 ${FORMAS_CONOCIDAS[12]}, forma de la 13 ${FORMAS_CONOCIDAS[13]}`);
   }
   let comparados = 0;
@@ -21186,6 +21703,117 @@ check('K6b guardado VERSION 13: la forma de la 12 (la de main) sigue registrada,
     throw new Error(`migrarDe12 sin flags no arranca las fotos en null: ${JSON.stringify(sinFlags)}`);
   }
   console.log(`      ${comparados} guardados de la 12 cargados y seguidos (${conFoto} con alguna foto de la cola); sin migrarDe12 fallan ${mutanteMuerde}`);
+});
+
+// K6d (integración): VERSION 14. `flags.mentalAvisadaPro` y `flags.ofertaGuardada` (K6d-B, D77) no existían en la 13; `migrarDe13`
+// las arranca con los valores de `createInitialState` ([] y null). Los guardados de la 13 se hacen desde carreras reales quitándoles
+// lo que la 13 no escribía, como en el check de la 12.
+const { migrarDe13: migrarDe13K6D } = await import('../core/guardado.js');
+const SEEDS_GUARDADO_13_K6D = [1, 2, 3, 4];
+const SPLITS_GUARDADO_13_K6D = 60;
+const NUEVOS_VACIOS_K6D = { mentalAvisadaPro: [], ofertaGuardada: null };
+function guardadoDeLaVersion13K6D(state, rng) {
+  const datos = JSON.parse(serializarGuardado(state, rng));
+  datos.version = 13;
+  for (const clave of Object.keys(NUEVOS_VACIOS_K6D)) delete datos.state.flags[clave];
+  return JSON.stringify(datos);
+}
+check('K6d guardado VERSION 14: la forma de la 13 (la de fase-9r) sigue registrada, y un guardado de la 13 carga completo (sin cierres avisados ni oferta guardada) y sigue igual que el de la 14', () => {
+  if (VERSION_GUARDADO !== 14 || FORMAS_CONOCIDAS[13] !== '995485d311c0' || FORMAS_CONOCIDAS[14] === undefined || FORMAS_CONOCIDAS[14] === FORMAS_CONOCIDAS[13]) {
+    throw new Error(`VERSION ${VERSION_GUARDADO}, forma de la 13 ${FORMAS_CONOCIDAS[13]}, forma de la 14 ${FORMAS_CONOCIDAS[14]}`);
+  }
+  let comparados = 0;
+  let mutanteMuerde = 0;
+  for (const seed of SEEDS_GUARDADO_13_K6D) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < SPLITS_GUARDADO_13_K6D && !state.terminado; i += 1) {
+      const json = guardadoDeLaVersion13K6D(state, rng);
+      const datos = deserializarGuardado(json);
+      if (datos === null) {
+        throw new Error(`seed ${seed}, split ${i}: el guardado de VERSION 13 no cargó`);
+      }
+      const realSinLoNuevo = { ...state, flags: { ...state.flags, ...NUEVOS_VACIOS_K6D } };
+      if (!sonIgualesK4cG(datos.state, JSON.parse(JSON.stringify(realSinLoNuevo)))) {
+        throw new Error(`seed ${seed}, split ${i}: el estado migrado no es el de la 14 sin cierres avisados ni oferta guardada`);
+      }
+      // Mutante (regla 7): el mismo guardado sin `migrarDe13` no tiene la forma de la 14.
+      mutanteMuerde += sonIgualesK4cG(JSON.parse(json).state, JSON.parse(JSON.stringify(realSinLoNuevo))) ? 0 : 1;
+      const seguido = avanzarSplitAuto(realSinLoNuevo, conElRngDeK4cG(seed, rng.estado()));
+      const recargado = avanzarSplitAuto(datos.state, conElRngDeK4cG(datos.seed, datos.rngEstado));
+      if (!sonIgualesK4cG(comoJsonK4cG(seguido), comoJsonK4cG(recargado))) {
+        throw new Error(`seed ${seed}, split ${i}: el guardado migrado no juega el mismo split`);
+      }
+      comparados += 1;
+      state = avanzarSplitAuto(state, rng).state;
+    }
+  }
+  if (comparados < 40) throw new Error(`check vacío: ${comparados} guardados de la 13 comparados (hacen falta 40)`);
+  if (mutanteMuerde !== comparados) {
+    throw new Error(`el mutante (sin migrarDe13) pasa en ${comparados - mutanteMuerde} de ${comparados} guardados: el check no muerde`);
+  }
+  // Un estado sin flags se completa en vez de tirar, y lo que ya está se respeta.
+  const sinFlags = migrarDe13K6D({}).flags;
+  const aviso = { split: 9, mentalidad: 20, probabilidad: 0.3 };
+  const conAlgo = migrarDe13K6D({ flags: { mentalAvisadaPro: [aviso], ofertaGuardada: { org: 'x' } } }).flags;
+  if (!Array.isArray(sinFlags.mentalAvisadaPro) || sinFlags.mentalAvisadaPro.length !== 0 || sinFlags.ofertaGuardada !== null
+    || conAlgo.mentalAvisadaPro[0] !== aviso || conAlgo.ofertaGuardada?.org !== 'x') {
+    throw new Error(`migrarDe13 no arranca o no respeta los campos: ${JSON.stringify({ sinFlags, conAlgo })}`);
+  }
+  console.log(`      ${comparados} guardados de la 13 cargados y seguidos; sin migrarDe13 fallan ${mutanteMuerde}`);
+});
+
+// K6d (integración; el FAIL de K5c-R en la seed 9 con P7a prendida): volver del retiro corta la racha en rojo (`flags.splitsMentalBajo`,
+// `systems/retiro.js`). Antes sobrevivía congelada al retiro: el split de la vuelta frenaba con "cerraste los últimos N splits en rojo"
+// contando los de afuera, y el dado del burnout podía pinchar en el primer split de vuelta (la seed 9 se quemó al volver con una racha
+// de 8 de un año antes; el reloj sí cuadraba). Estados armados desde vueltas reales (una por seed), con la cabeza en rojo de verdad al
+// irse: la mitad del umbral del burnout y una racha de cuatro veces el mínimo. Quien sigue sin cuidarse en la parada es el peor caso.
+check('K6d retiro: volver del retiro corta la racha en rojo de antes de irte: el split de la vuelta no frena por el burnout ni termina en burnout', () => {
+  const { burnoutUmbral, burnoutSplitsMinimos } = BALANCE.atributos;
+  const vueltasMinimas = 5;
+  const problemas = [];
+  let vueltas = 0;
+  for (let seed = 1; seed <= SEEDS_ANIOS_PRO_K5CR && vueltas < vueltasMinimas; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < SPLITS_K5CR && !state.terminado; i += 1) {
+      const antes = state;
+      state = avanzarSplitAuto(state, rng).state;
+      if (antes.phase !== 'retirado' || state.flags.vueltasUsadas <= antes.flags.vueltasUsadas) {
+        continue;
+      }
+      const armado = {
+        ...antes,
+        player: { ...antes.player, stats: { ...antes.player.stats, mentalidad: burnoutUmbral / 2 } },
+        flags: { ...antes.flags, splitsMentalBajo: burnoutSplitsMinimos * 4 }
+      };
+      const paradas = [];
+      const responder = (sistema, st, decision, r) => {
+        if (st.pendiente.sistemaId === 'burnout') {
+          paradas.push(decision.titulo);
+          return { opcionId: 'seguir' };
+        }
+        return sistema.resolverAuto(st, decision, r);
+      };
+      const vuelta = avanzarSplitAuto(armado, mulberry32(seed), responder).state;
+      // Volver de free agent sin que nadie te llame no juega el split: no hay racha que mirar.
+      if (vuelta.flags.vueltasUsadas > armado.flags.vueltasUsadas && (vuelta.phase === 'profesional' || vuelta.terminado)) {
+        vueltas += 1;
+        if (paradas.length > 0 || vuelta.finAnticipado === 'burnout' || (vuelta.flags.splitsMentalBajo ?? 0) > 1) {
+          problemas.push(`seed ${seed}, split ${i}: la vuelta frenó por el burnout ${paradas.length} vez/veces ("${paradas[0] ?? ''}"), `
+            + `fin ${vuelta.finAnticipado ?? 'ninguno'}, racha al cierre ${vuelta.flags.splitsMentalBajo}`);
+        }
+      }
+      break;
+    }
+  }
+  if (vueltas < vueltasMinimas) {
+    problemas.push(`check vacío: ${vueltas} vueltas del retiro jugadas (hacen falta ${vueltasMinimas})`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 3).join(' · ')}`);
+  }
+  console.log(`      ${vueltas} vueltas del retiro con la cabeza en rojo: ninguna frena por el burnout ni se quema en el split de la vuelta`);
 });
 
 // K4c (revisión): un guardado de la 10 parado en la prueba del mercado traía la apuesta vieja (sin "si no alcanza": la prueba de la 10
@@ -22217,7 +22845,11 @@ const METAS_C = {
   llegaATier1: { meta: [55, 65], rebase: 74.6, texto: 'llega a tier 1 (%)' },
   // §K.3b "Gana al menos un título doméstico ~30%". Regla 17: meta 30; medido 55,7 (n 1500, σ 1,28); re-basado por decisión
   // del usuario 2026-10-05, K6 juzga.
-  ganaTitulo: { meta: [30, 30], rebase: 55.7, texto: 'gana un título de primera (%)' },
+  // K6d (integración), regla 17: re-base 55,7 → 59,6. Protege: que ganar un título de primera no se vuelva algo que casi todos
+  // logran ni algo imposible; desde K5c (cierre). Re-basado en K6d por decisión del usuario 2026-10-07 ("Re-basar y cerrar").
+  // Causa: la regla de tier 3 (D84, K6d-N): se sale antes de tier 3 y se pasan más años en tier 1. Medido en la validación
+  // completa de `f542f62`: 59,6 (n 1500, σ 1,27); el techo de la banda queda en 59,6 + 2 × 1,27 = 62,14.
+  ganaTitulo: { meta: [30, 30], rebase: 59.6, texto: 'gana un título de primera (%)' },
   // §K.3b "Top 20 del mundo alguna vez ~15%". Regla 17: meta 15; medido 36,4 (n 1500, σ 1,24); re-basado por decisión del
   // usuario 2026-10-05, K6 juzga.
   top20: { meta: [15, 15], rebase: 36.4, texto: 'entra al Top 20 del mundo (%)' },
@@ -22247,7 +22879,11 @@ const METAS_C = {
   // §K.3a "Tu equipo es claramente el más fuerte del Mundial y lo gana ~50%". Regla 17: "claramente" (margen >= 10 sobre el
   // mejor de los otros 15) se dio en 4 de 2963 Mundiales jugados (criterio 1500 × 60, en `873fc80`): sin muestra. Se mide sobre "el más
   // fuerte" (tu fuerza > la del mejor rival): medido 57,5 (n 87, σ 5,3). Cumple ~50 con su ruido.
-  elMasFuerteGana: { meta: [50, 50], texto: 'el más fuerte del Mundial lo gana (%)' },
+  // K6d (integración), regla 17: re-base sobre la meta 50 → 63,5. Protege: que ser el más fuerte del Mundial ayude pero no sea
+  // garantía; desde K5c (paso 3). Re-basado en K6d por decisión del usuario 2026-10-07 ("Re-basar y cerrar"). Causa: la regla de
+  // tier 3 (la rama `tier3-nivel` sola ya daba 59,9). Medido en la validación completa de `f542f62`: 63,5 (σ 3,69). La banda
+  // pasa de [42,62, 57,38] a [50 − 2 × 3,69, 63,5 + 2 × 3,69] = [42,62, 70,88].
+  elMasFuerteGana: { meta: [50, 50], rebase: 63.5, texto: 'el más fuerte del Mundial lo gana (%)' },
   // §K.3b "Carrera pro mediana ~4-6 años". Regla 17: meta 4-6; medido 8,83 (n 1178 pros, σ 0,13; p10 4, p90 12); re-basado por decisión del
   // usuario 2026-10-05, K6 juzga.
   carreraMediana: { meta: [4, 6], rebase: 8.83, texto: 'carrera pro mediana (años)' },
@@ -22472,10 +23108,10 @@ function problemasDeLasMetasC(claves) {
 
 // Los valores medidos (k5c-paso3 al cerrar K5c, criterio/azar/malas 1500 × 60): cumplen.
 const VALORES_DE_LAS_METAS_C_OK = {
-  noLlegaAPro: { valor: 21.5, sigma: 1.06 }, llegaATier1: { valor: 74.6, sigma: 1.12 }, ganaTitulo: { valor: 55.7, sigma: 1.28 },
+  noLlegaAPro: { valor: 21.5, sigma: 1.06 }, llegaATier1: { valor: 74.6, sigma: 1.12 }, ganaTitulo: { valor: 59.6, sigma: 1.27 },
   top20: { valor: 36.4, sigma: 1.24 }, ganaMundial: { valor: 7.1, sigma: 0.66 }, ganaMundialCorea: { valor: 9.9, sigma: 1.64 },
   ganaMundialNA: { valor: 3.6, sigma: 1.34 }, nuevoFaker: { valor: 1.2, sigma: 0.28 }, nuevoFakerElite: { valor: 12, sigma: 3.25 },
-  pDosOMasDadoUno: { valor: 16.8, sigma: 3.61 }, elMasFuerteGana: { valor: 57.5, sigma: 5.3 }, carreraMediana: { valor: 8.83, sigma: 0.13 },
+  pDosOMasDadoUno: { valor: 16.8, sigma: 3.61 }, elMasFuerteGana: { valor: 63.5, sigma: 3.69 }, carreraMediana: { valor: 8.83, sigma: 0.13 },
   lineaForzosa: { valor: 5.6, sigma: 0.67 },
   // Cierre de K6b: los estancados, re-medidos (corrimiento declarado de K6b, ver META_C_ESTANCADO_AZAR_REBASE_PCT).
   estancados: { criterio: 4.9, azar: 12.5, malas: 16.9, n: 1500 },
@@ -22542,7 +23178,7 @@ checkLento(`K5c meta de los estancados (criterio, azar y malas, ${CARRERAS_METAS
 });
 
 // Corea, NA y su orden no se juzgan acá: la submuestra del lote que sortea la región es chica (ver "K6c región fija").
-checkLento(`K5c meta del Mundial (criterio, ${CARRERAS_METAS_C} × ${SPLITS_LOTE_K0}): gana un Mundial >= 7%, el nuevo Faker, P(2+ | 1) y el más fuerte lo gana ~50%`, () => {
+checkLento(`K5c meta del Mundial (criterio, ${CARRERAS_METAS_C} × ${SPLITS_LOTE_K0}): gana un Mundial >= 7%, el nuevo Faker, P(2+ | 1) y el más fuerte lo gana entre la meta de 50% y lo medido (re-basado)`, () => {
   const problemas = problemasDeLasMetasC(['ganaMundial', 'nuevoFaker', 'nuevoFakerElite', 'pDosOMasDadoUno', 'elMasFuerteGana']);
   // El piso de 7 − 2σ es tolerancia de ruido documentada: debajo de 7 no falla, pero se avisa a la vista.
   const { valor: mundial, sigma: sigmaMundial } = valoresDeLasMetasC().ganaMundial;
@@ -26023,7 +26659,18 @@ const COLA_N_K6BC = 593;
 const COLA_MUTANTE_K6BC = 14.89;
 const Z_RUIDO_COLA_K6BC = 2;
 const META_K6BC_COLA_PROMEDIO = Number((COLA_PROMEDIO_MEDIDO_K6BC + Z_RUIDO_COLA_K6BC * COLA_DESVIO_K6BC / Math.sqrt(COLA_N_K6BC)).toFixed(2));
-const META_K6BC_LEYENDA_MEDIANA = 80;
+// K6d (integración), regla 17: la mediana de frenadas de las leyendas, meta <= 80 (§K.3c) → <= 83,81. Protege: que la carrera de
+// una leyenda no se llene de paradas sin nada en juego; desde K6b (integración). Re-basado en K6d por decisión del usuario
+// 2026-10-07 ("Re-basar y cerrar"). Causa: la regla de tier 3 (D84): más carrera en tier 1 son ~7 frenadas más en `criterio`.
+// Medido en la validación completa de `f542f62`: mediana 81, p90 97, n = 124 carreras. σ estimada desde el p90 con una normal:
+// (97 − 81) / 1,2816 = 12,48; error estándar de la mediana 1,2533 × 12,48 / √124 = 1,40. Banda <= 81 + 2 × 1,40 = 83,81 (83,8).
+const LEYENDA_MEDIANA_MEDIDA_K6BC = 81;
+const LEYENDA_P90_MEDIDO_K6BC = 97;
+const LEYENDA_N_K6BC = 124;
+const Z_P90_NORMAL_K6BC = 1.2816;
+const FACTOR_EE_MEDIANA_K6BC = 1.2533;
+const LEYENDA_DESVIO_K6BC = (LEYENDA_P90_MEDIDO_K6BC - LEYENDA_MEDIANA_MEDIDA_K6BC) / Z_P90_NORMAL_K6BC;
+const META_K6BC_LEYENDA_MEDIANA = Number((LEYENDA_MEDIANA_MEDIDA_K6BC + Z_RUIDO_COLA_K6BC * FACTOR_EE_MEDIANA_K6BC * LEYENDA_DESVIO_K6BC / Math.sqrt(LEYENDA_N_K6BC)).toFixed(2));
 function juezDeLaColaK6BC(v) {
   const hay = (x) => typeof x === 'number' && Number.isFinite(x);
   return {
@@ -26040,7 +26687,7 @@ check('K6b-C metas de la cola: el juez acepta valores que cumplen y rechaza, uno
   if (sano.length > 0) throw new Error(`el juez rechaza valores que cumplen: ${sano.join('; ')}`);
   // Uno justo afuera, el de K6 (o el de la línea de base) y uno inexistente; los bordes cumplen.
   // K6b (integración): el promedio re-basado: uno justo afuera, el del mutante (las reglas de K6b-C y C2 apagadas) y uno inexistente.
-  const malos = { colaPromedio: [['cola', META_K6BC_COLA_PROMEDIO + 0.05], ['cola', COLA_MUTANTE_K6BC], ['cola', null]], leyendaMediana: [['leyenda', 81], ['leyenda', 88], ['leyenda', null]] };
+  const malos = { colaPromedio: [['cola', META_K6BC_COLA_PROMEDIO + 0.05], ['cola', COLA_MUTANTE_K6BC], ['cola', null]], leyendaMediana: [['leyenda', META_K6BC_LEYENDA_MEDIANA + 0.05], ['leyenda', 88], ['leyenda', null]] };
   for (const [campo, casos] of Object.entries(malos)) {
     for (const [clave, valor] of casos) {
       const rechazados = Object.entries(juezDeLaColaK6BC({ ...VALORES_K6BC_OK, [campo]: valor })).filter(([, m]) => m !== null).map(([k]) => k);
@@ -26632,6 +27279,41 @@ check('K6c-fix si ya estaba en rojo y el plan lo mostró, no frena salvo que baj
   if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
 });
 
+// K6d-N, P3 (PLAN.md "Decisión del supervisor (dentro de "regla + tier 1 más difícil")"): el bono del título de liga en el
+// ranking del mundo pesa por el prestigio de la liga (`core/topMundial.js:factorPorPrestigio`). Con las perillas en 55 / 91
+// (las de la decisión): el título de una liga de prestigio bajo suma menos que uno de prestigio alto; en el borde de abajo da 0
+// exacto y en el de arriba el bono entero exacto; el Mundial no se toca; y con la perilla neutra (pleno 0) toda liga cobra el
+// bono entero. Los prestigios se leen de `data/leagues.json`. Rojo con el factor sacado, sin el tope de arriba o sin el de abajo.
+check('K6d-N P3 el título de liga pesa por el prestigio de su liga en el Top 20: el de una liga chica suma menos que el de una grande, y en los bordes (sin bono, pleno) da exacto', () => {
+  const t = BALANCE.topMundial;
+  const prestigio = Object.fromEntries(LIGAS.map((liga) => [liga.id, liga.prestigio]));
+  const bono = (ligaId, extra = {}) => bonusResultadoDelAnio('Org P3', ligaId, { campeones: { [ligaId]: 'Org P3' }, ...extra });
+  const SIN = 55;
+  const PLENO = 91;
+  conBalanceK3A([['topMundial', 'prestigioSinBonoCampeon', SIN], ['topMundial', 'prestigioPlenoCampeon', PLENO]], () => {
+    const bordes = [[SIN - 5, 0], [SIN - 0.01, 0], [SIN, 0], [(SIN + PLENO) / 2, 0.5], [PLENO, 1], [PLENO + 6, 1]];
+    for (const [p, esperado] of bordes) {
+      if (factorPorPrestigio(p) !== esperado) throw new Error(`factorPorPrestigio(${p}) = ${factorPorPrestigio(p)}, tenía que dar ${esperado} exacto`);
+    }
+    if (!(factorPorPrestigio(SIN + 0.01) > 0 && factorPorPrestigio(PLENO - 0.01) < 1)) throw new Error('justo adentro de los bordes el factor no queda entre 0 y 1');
+    const ligas = LIGAS.filter((liga) => liga.tier === 1).map((liga) => liga.id).sort((a, b) => prestigio[a] - prestigio[b]);
+    const baja = ligas[0];
+    const alta = ligas[ligas.length - 1];
+    if (!(bono(baja) < bono(alta))) throw new Error(`el título de ${baja} (prestigio ${prestigio[baja]}) suma ${bono(baja)} y el de ${alta} (prestigio ${prestigio[alta]}) ${bono(alta)}: el de la liga chica tenía que sumar menos`);
+    for (const id of ligas) {
+      const f = Math.min(1, Math.max(0, (prestigio[id] - SIN) / (PLENO - SIN)));
+      if (Math.abs(bono(id) - t.bonusCampeonLiga * f) > 1e-9) throw new Error(`${id} (prestigio ${prestigio[id]}): el título suma ${bono(id)}, tenía que sumar ${t.bonusCampeonLiga * f}`);
+    }
+    const mundial = bono(baja, { campeonMundial: 'Org P3' }) - bono(baja);
+    if (mundial !== t.bonusInternacional) throw new Error(`el Mundial ganado desde ${baja} suma ${mundial}: el factor de la liga no le toca (${t.bonusInternacional})`);
+  });
+  conBalanceK3A([['topMundial', 'prestigioSinBonoCampeon', 0], ['topMundial', 'prestigioPlenoCampeon', 0]], () => {
+    for (const liga of LIGAS.filter((l) => l.tier === 1)) {
+      if (bono(liga.id) !== t.bonusCampeonLiga) throw new Error(`con la perilla neutra el título de ${liga.id} suma ${bono(liga.id)}, tenía que ser ${t.bonusCampeonLiga} exacto`);
+    }
+  });
+});
+
 // K6b-fix (PLAN.md, "K6b-fix"), la espera vence: el "seguir buscando" narrado de "El mercado ya habló" (`finPorMercadoOSuRepeticion`)
 // no pasa de `splitsSinOfertaParaLibre` − 1 pretemporadas seguidas desde la última vez que respondiste; a la siguiente la pregunta
 // vuelve a frenar, y su previa dice cuántas pretemporadas llevás sin oferta y tu edad. Regla 17 — protege: que nadie se quede años
@@ -26679,6 +27361,283 @@ checkLento(`K6b-fix: el "seguir buscando" narrado no pasa de ${BALANCE.mercado.s
     throw new Error(`esperas narradas de más: ${JSON.stringify(largas.slice(0, 5))}; preguntas vueltas sin su previa (pretemporadas y edad) o fuera de tiempo: ${JSON.stringify(sinPrevia.slice(0, 5))}`);
   }
   if (narradas === 0 || vencidas === 0) throw new Error(`check vacío: ${narradas} esperas narradas y ${vencidas} preguntas vueltas`);
+});
+
+// --- K6d-B (D77, "que el burnout se vea venir en la firma y en el pro", decisión del usuario 2026-10-07) ---
+//
+// Una sola cosecha (`malas`, con las cartas del riesgo contestadas a mano para pasar por todos los caminos: las seeds pares firman con
+// el riesgo a la vista y las impares le piden al club que espere; cuando la guardada vuelve, la mitad de esas firma y la otra mitad la
+// deja pasar; en la parada del pro, una de cada tres seeds elige la opción que no quema y el resto la que más), y seis checks sobre
+// ella. Regla 17 — protegen: (1) que la carta de la oferta y la de la prueba digan el % que tira el dado de `atributos.js` y lo real
+// de la espera (regla 15), (2) que "pedirle al club que te espere" guarde la oferta entera, la cumpla al split siguiente y se pueda
+// una sola vez, (3) que el pro frene con el % antes de que el dado pueda tirar, por cierre: todo burnout de un pro, con o sin club,
+// sale de un cierre que alguna carta o parada cubrió con su %, que no vuelva a frenar sin riesgo nuevo y que cada opción haga lo que
+// dice, (4) que nadie firme y se queme en el mismo split sin que la carta lo haya dicho, y (5) que el perfil (`resolverAuto`) y
+// `criterio` elijan la opción que menos quema. Desde: K6d-B (2026-10-07); la revisión (el aviso cubre los cierres que mostró, esperar
+// una sola vez, el pro sin club, el perfil) el mismo día.
+const { riesgoDeLaOferta: riesgoDeLaOfertaK6DB } = await import('../systems/amateur.js');
+const {
+  aplicar: aplicarAtributosK6DB, probabilidadDeBurnout: probabilidadDeBurnoutK6DB, textoDelCierre: textoDelCierreK6DB
+} = await import('../systems/atributos.js');
+const { recuperarPorDescanso: recuperarPorDescansoK6DB } = await import('../core/barras.js');
+const { paradaDelBurnout: paradaDelBurnoutK6DB } = await import('../systems/burnout.js');
+const SEEDS_K6DB = 400;
+// Un `rng` que deja todo `gauss` en su media (u2 = 0,25: cos(π/2) = 0): el dado del cierre sin su ruido, contra lo que proyecta la carta.
+const rngMedioK6DB = () => 0.25;
+const EPS_K6DB = 1e-9;
+// Lo que mueve y cuesta cada opción de la parada del pro, por id (los rangos de `BALANCE.burnout`).
+const EFECTOS_PARADA_K6DB = {
+  bajar_carga: { rango: 'bajarCarga', costo: 'mecanica' },
+  pedir_descanso: { rango: 'pedirDescanso', costo: 'jerarquia' },
+  desconectar: { rango: 'desconectar', costo: 'mecanica' }
+};
+
+// Lo que el dado de `atributos.js` tira al cierre con este estado, sin ruido: la mentalidad del cierre y su chance de burnout.
+function cierreDelMotorK6DB(st) {
+  const { state } = aplicarAtributosK6DB(st, rngMedioK6DB);
+  const m = state.player.stats.mentalidad;
+  const sostenido = state.flags.splitsMentalBajo >= BALANCE.atributos.burnoutSplitsMinimos;
+  return { mentalidad: m, probabilidad: m <= BALANCE.stats.min ? 1 : sostenido ? probabilidadDeBurnoutK6DB(m) : 0 };
+}
+
+function igualCierreK6DB(motor, carta) {
+  return Math.abs(motor.mentalidad - carta.mentalidad) < EPS_K6DB && Math.abs(motor.probabilidad - carta.probabilidad) < EPS_K6DB;
+}
+
+// La oferta en sí, sin lo que se recalcula cada vez que se muestra (el riesgo y la marca de guardada): el club entero, el tier, la
+// liga y la vara. El sueldo y los años de la oferta del amateur no viajan en ella: los pone el contrato al firmar, del club y el tier.
+function ofertaSinRiesgoK6DB(datos) {
+  const { riesgoBurnout, guardada, motivo, ...oferta } = datos;
+  return JSON.stringify(oferta);
+}
+
+let cosechaK6DBCache = null;
+function cosechaK6DB() {
+  if (cosechaK6DBCache) return cosechaK6DBCache;
+  const c = {
+    cartas: 0, pruebas: 0, pruebasVaraCero: 0, cartasSinPC: 0, problemasCarta: [],
+    guardadas: 0, cumplidas: 0, perdidasPorElFinal: 0, problemasGuardada: [],
+    paradasPro: 0, paradasSinClub: 0, problemasPro: [], frenadasDeMas: [], efectos: 0, problemasEfecto: [],
+    burnoutsPro: 0, burnoutsSinClub: 0, burnoutsCubiertos: 0, burnoutsSinClubCubiertos: 0, sinCubrir: [],
+    firmaYQuema: 0, firmaYQuemaSinAviso: [], elecciones: 0, problemasEleccion: []
+  };
+  const { burnout: b } = BALANCE;
+  const rngAparteK6DB = (seed, i) => mulberry32(seed * 1000 + i);
+  // El perfil (`resolverAuto`) y `criterio` eligen, en una carta con el riesgo a la vista, una opción de las que menos queman.
+  const revisarEleccion = (sistema, st, decision, seed, i) => {
+    const conRiesgo = decision.opciones.filter((op) => Number.isFinite(op.riesgoBurnout));
+    if (conRiesgo.length < 2) return;
+    const minimo = Math.min(...conRiesgo.map((op) => op.riesgoBurnout));
+    for (const [quien, elegir] of [['el perfil', () => sistema.resolverAuto(st, decision, rngAparteK6DB(seed, i))],
+      ['criterio', () => ESTRATEGIAS_K0.criterio(sistema, st, decision, rngAparteK6DB(seed, i))]]) {
+      c.elecciones += 1;
+      const elegida = decision.opciones.find((op) => op.id === elegir().opcionId);
+      if (!elegida || !(elegida.riesgoBurnout <= minimo + EPS_K6DB)) {
+        c.problemasEleccion.push(`seed ${seed} split ${i} ${sistema.id}: ${quien} eligió ${elegida?.id} (${elegida?.riesgoBurnout}) con ${minimo} a mano`);
+      }
+    }
+  };
+  for (let seed = 1; seed <= SEEDS_K6DB; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    // Lo que cada carta o parada mostró, por cierre (`player.splitCount` del split que cierra): { mentalidad, probabilidad }.
+    const cubiertos = new Map();
+    let esperandoA = null;
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      const antes = state;
+      let cartaConRiesgo = false;
+      let firmoConRiesgo = null;
+      let vioGuardada = false;
+      let pidioTiempo = null;
+      const responder = (sistema, st, decision, rngP) => {
+        const datos = decision.datos ?? {};
+        if (sistema.id === 'amateur' && datos.motivo === 'oferta' && datos.guardada) {
+          vioGuardada = true;
+          if (!esperandoA || ofertaSinRiesgoK6DB(datos) !== esperandoA.oferta) {
+            c.problemasGuardada.push(`seed ${seed} split ${i}: volvió ${ofertaSinRiesgoK6DB(datos)}, se esperaba ${esperandoA?.oferta}`);
+          }
+          // Esperar se puede una sola vez por oferta: la que vuelve no lo ofrece, y si igual llega esa respuesta no se vuelve a guardar.
+          if (decision.opciones.some((op) => op.id === 'pedir_tiempo')) c.problemasGuardada.push(`seed ${seed} split ${i}: la guardada vuelve a ofrecer esperar`);
+          const otraVez = sistema.resolver(st, decision, { opcionId: 'pedir_tiempo' }, rngAparteK6DB(seed, i)).state;
+          if (otraVez.flags.ofertaGuardada) c.problemasGuardada.push(`seed ${seed} split ${i}: la guardada se volvió a guardar`);
+          if (!decision.descripcion.includes('Ya te esperaron')) c.problemasGuardada.push(`seed ${seed} split ${i}: la guardada no dice que ya te esperaron`);
+          revisarEleccion(sistema, st, decision, seed, i);
+          const firma = seed % 4 === 1;
+          if (firma && datos.riesgoBurnout) firmoConRiesgo = datos.riesgoBurnout;
+          return { opcionId: firma ? 'firmar' : 'esperar_mejor_oferta' };
+        }
+        if (sistema.id === 'amateur' && datos.motivo === 'oferta' && datos.riesgoBurnout) {
+          c.cartas += 1;
+          cartaConRiesgo = true;
+          const r = datos.riesgoBurnout;
+          const recalculado = riesgoDeLaOfertaK6DB(st);
+          const firmado = { ...st, phase: 'profesional', player: { ...st.player, deudaSueno: BALANCE.amateur.deudaSuenoAlFirmar } };
+          const ids = decision.opciones.map((op) => op.id);
+          const firmar = decision.opciones.find((op) => op.id === 'firmar');
+          const esperar = decision.opciones.find((op) => op.id === 'pedir_tiempo');
+          if (!igualCierreK6DB(cierreDelMotorK6DB(firmado), r.firmar.ahora)) c.problemasCarta.push(`seed ${seed} split ${i}: firmar dice ${JSON.stringify(r.firmar.ahora)} y el dado tira ${JSON.stringify(cierreDelMotorK6DB(firmado))}`);
+          else if (!igualCierreK6DB(cierreDelMotorK6DB(st), r.esperar.ahora)) c.problemasCarta.push(`seed ${seed} split ${i}: esperar dice ${JSON.stringify(r.esperar.ahora)} y el dado tira ${JSON.stringify(cierreDelMotorK6DB(st))}`);
+          else if (!ids.includes('firmar') || (r.puedeEsperar && !esperar)) c.problemasCarta.push(`seed ${seed} split ${i}: la carta con riesgo no trae firmar y esperar (${ids})`);
+          else if (!firmar.descripcion.includes(textoDelCierreK6DB(r.firmar.ahora))) c.problemasCarta.push(`seed ${seed} split ${i}: firmar no dice su cierre`);
+          else if (!recalculado || Math.abs(recalculado.firmar.total - firmar.riesgoBurnout) > EPS_K6DB) c.problemasCarta.push(`seed ${seed} split ${i}: el riesgo de firmar que leen los bots no es el de la carta`);
+          // Regla 15: con la PC confiscada el split que esperás se vive sin PC, y la carta lo dice en vez de prometer la rutina que cuida.
+          const sinPC = (st.flags.pcConfiscada ?? 0) > 0;
+          if (esperar && sinPC) c.cartasSinPC += 1;
+          if (esperar && sinPC && (!esperar.descripcion.includes('sin PC') || esperar.descripcion.includes('lo vivís con "'))) c.problemasCarta.push(`seed ${seed} split ${i}: con la PC confiscada la espera promete otra semana`);
+          if (esperar && !sinPC && !esperar.descripcion.includes(`"${r.cuidaTitulo}"`)) c.problemasCarta.push(`seed ${seed} split ${i}: la espera no dice la rutina que cuida`);
+          revisarEleccion(sistema, st, decision, seed, i);
+          const opcionId = seed % 2 === 0 || !esperar ? 'firmar' : 'pedir_tiempo';
+          if (opcionId === 'firmar') firmoConRiesgo = r;
+          else pidioTiempo = ofertaSinRiesgoK6DB(datos);
+          return { opcionId };
+        }
+        if (sistema.id === 'amateur' && datos.motivo === 'minijuego' && datos.oferta?.riesgoBurnout) {
+          c.pruebas += 1;
+          const r = datos.oferta.riesgoBurnout;
+          const varaCero = (datos.vara ?? datos.oferta.vara) === 0;
+          c.pruebasVaraCero += varaCero ? 1 : 0;
+          // Con la vara en 0% firmás seguro: la prueba no dice "si no llegás" (regla 15).
+          const noLlegar = datos.apuesta.includes(textoDelCierreK6DB(r.esperar.ahora)) && datos.apuesta.includes('si no llegás');
+          if (!decision.descripcion.includes(textoDelCierreK6DB(r.firmar.ahora)) || noLlegar === varaCero) {
+            c.problemasCarta.push(`seed ${seed} split ${i}: la prueba (vara ${datos.vara ?? datos.oferta.vara}) no dice el riesgo de firmar y de no llegar como es`);
+          }
+        }
+        if (sistema.id === 'burnout' && datos.motivo === 'burnout_pro') {
+          c.paradasPro += 1;
+          c.paradasSinClub += st.career.currentOrg ? 0 : 1;
+          const seguir = decision.opciones.find((op) => op.id === 'seguir');
+          const motor = cierreDelMotorK6DB(st);
+          if (!igualCierreK6DB(motor, { mentalidad: datos.mostrado.seguir, probabilidad: seguir.riesgoBurnout })) {
+            c.problemasPro.push(`seed ${seed} split ${i}: la parada dice ${datos.mostrado.seguir}/${seguir.riesgoBurnout} y el dado tira ${JSON.stringify(motor)}`);
+          }
+          if (!(seguir.riesgoBurnout > 0)) c.problemasPro.push(`seed ${seed} split ${i}: frenó sin que el dado pueda pinchar`);
+          const tercera = st.career.currentOrg ? 'pedir_descanso' : 'desconectar';
+          if (!decision.opciones.some((op) => op.id === tercera)) c.problemasPro.push(`seed ${seed} split ${i}: ${st.career.currentOrg ? 'con' : 'sin'} club la parada no trae ${tercera}`);
+          // Dentro de lo cubierto, la vara: con este mismo estado y un aviso de este cierre que mostró un poco más de `mentalNueva` por
+          // encima, frena; un poco menos, no (la regla de "riesgo nuevo" con su constante).
+          for (const [margen, frena] of [[b.mentalNueva + 1, true], [b.mentalNueva - 1, false]]) {
+            const aviso = { split: st.player.splitCount, mentalidad: datos.mostrado.seguir + margen, probabilidad: seguir.riesgoBurnout };
+            if (Boolean(paradaDelBurnoutK6DB({ ...st, flags: { ...st.flags, mentalAvisadaPro: [aviso] } })) !== frena) {
+              c.problemasPro.push(`seed ${seed} split ${i}: con lo visto ${margen} por encima ${frena ? 'no frena' : 'frena igual'}`);
+            }
+          }
+          // El cierre de la parada es el de su `splitCount` (el split de la vuelta del retiro arranca con el contador corrido).
+          const visto = cubiertos.get(st.player.splitCount);
+          if (visto && visto.probabilidad > 0 && datos.mostrado.seguir >= visto.mentalidad - b.mentalNueva) {
+            c.frenadasDeMas.push(`seed ${seed} split ${i}: ${datos.mostrado.seguir.toFixed(1)} contra lo visto ${visto.mentalidad.toFixed(1)}`);
+          }
+          // El efecto de cada opción, el que dice la carta: los rangos de `BALANCE.burnout` y la proyección con su media.
+          const m = st.player.stats.mentalidad;
+          for (const opcion of decision.opciones.filter((op) => op.id !== 'seguir')) {
+            const { rango: clave, costo } = EFECTOS_PARADA_K6DB[opcion.id];
+            const rango = b[clave];
+            c.efectos += 1;
+            const res = sistema.resolver(st, decision, { opcionId: opcion.id }, rngAparteK6DB(seed, i)).state;
+            const sube = res.player.stats.mentalidad - m;
+            const pierde = costo === 'mecanica' ? st.player.stats.mecanica - res.player.stats.mecanica : st.career.jerarquia - res.career.jerarquia;
+            const [cMin, cMax] = costo === 'mecanica' ? [rango.mecanicaMin, rango.mecanicaMax] : [rango.jerarquiaMin, rango.jerarquiaMax];
+            const enRango = sube >= recuperarPorDescansoK6DB(m, rango.mentalidadMin) - m - EPS_K6DB && sube <= recuperarPorDescansoK6DB(m, rango.mentalidadMax) - m + EPS_K6DB
+              && pierde <= cMax + EPS_K6DB && (pierde >= cMin - EPS_K6DB || res.player.stats.mecanica === 0 || res.career.jerarquia === 0);
+            const proyectada = Math.abs(datos.mostrado[opcion.id] - aplicarAtributosK6DB({ ...st, player: { ...st.player, stats: { ...st.player.stats, mentalidad: recuperarPorDescansoK6DB(m, (rango.mentalidadMin + rango.mentalidadMax) / 2) } } }, rngMedioK6DB).state.player.stats.mentalidad) < EPS_K6DB;
+            if (!enRango || !proyectada) c.problemasEfecto.push(`seed ${seed} split ${i} ${opcion.id}: mentalidad +${sube}, ${costo} -${pierde}, proyección ${proyectada ? 'ok' : 'distinta'}`);
+          }
+          revisarEleccion(sistema, st, decision, seed, i);
+          const conRiesgo = decision.opciones.filter((op) => Number.isFinite(op.riesgoBurnout));
+          const elegida = conRiesgo.reduce((mejor, op) => ((seed % 3 === 0 ? op.riesgoBurnout < mejor.riesgoBurnout : op.riesgoBurnout > mejor.riesgoBurnout) ? op : mejor));
+          cubiertos.set(st.player.splitCount, { mentalidad: elegida.mentalidadAlCierre, probabilidad: elegida.riesgoBurnout });
+          return { opcionId: elegida.id };
+        }
+        return ESTRATEGIAS_K0.malas(sistema, st, decision, rngP);
+      };
+      state = avanzarSplitAuto(state, rng, responder).state;
+      if (esperandoA !== null) {
+        if (vioGuardada) c.cumplidas += 1;
+        else if (state.terminado) c.perdidasPorElFinal += 1;
+        else c.problemasGuardada.push(`seed ${seed} split ${i}: ${esperandoA.oferta} guardó la oferta y no volvió`);
+        esperandoA = null;
+      }
+      if (pidioTiempo !== null) {
+        c.guardadas += 1;
+        const guardada = state.flags.ofertaGuardada;
+        if (!guardada || JSON.stringify(guardada) !== JSON.stringify(Object.fromEntries(Object.entries(JSON.parse(pidioTiempo)).filter(([k]) => ['org', 'tier', 'liga', 'vara'].includes(k))))) {
+          c.problemasGuardada.push(`seed ${seed} split ${i}: pediste tiempo y la oferta no quedó guardada entera (${JSON.stringify(guardada)})`);
+        }
+        if (state.terminado) c.perdidasPorElFinal += 1;
+        else esperandoA = { oferta: pidioTiempo };
+      }
+      const firmo = antes.phase === 'amateur' && state.phase !== 'amateur' && state.career.tier != null;
+      if (firmoConRiesgo !== null && firmo) {
+        // La carta de la oferta que firmaste cubre su cierre y el siguiente, con lo que mostró para firmar.
+        for (const [k, cierre] of [[firmoConRiesgo.split, firmoConRiesgo.firmar.ahora], [firmoConRiesgo.split + 1, firmoConRiesgo.firmar.despues]]) {
+          if (!cubiertos.has(k)) cubiertos.set(k, { mentalidad: cierre.mentalidad, probabilidad: cierre.probabilidad });
+        }
+      }
+      if (state.finAnticipado === 'burnout' && (antes.phase === 'profesional' || firmo)) {
+        const conClub = antes.phase === 'profesional' ? Boolean(antes.career.currentOrg) : true;
+        // El cierre que pinchó: `atributos` sube el contador también en el split del burnout.
+        const cubierto = (cubiertos.get(state.player.splitCount - 1)?.probabilidad ?? 0) > 0;
+        c.burnoutsPro += 1;
+        c.burnoutsSinClub += conClub ? 0 : 1;
+        c.burnoutsCubiertos += cubierto ? 1 : 0;
+        c.burnoutsSinClubCubiertos += !conClub && cubierto ? 1 : 0;
+        if (!cubierto) c.sinCubrir.push(`seed ${seed} split ${i}${conClub ? '' : ' (sin club)'} racha ${antes.flags.splitsMentalBajo}`);
+        if (firmo) {
+          c.firmaYQuema += 1;
+          if (!cartaConRiesgo && !cubierto) c.firmaYQuemaSinAviso.push(`seed ${seed} split ${i}`);
+        }
+      }
+    }
+  }
+  cosechaK6DBCache = c;
+  return c;
+}
+
+// Rojo con el mutante "la proyección no normaliza el sueño del pro" (`riesgoDeBurnoutAlCierre` ignora `fase`) y con "la espera sin
+// PC promete la rutina que cuida" (`textoDeEsperar` sin la rama `sinPC`).
+checkLento(`K6d-B la carta de la oferta y la de la prueba dicen el % que tira el dado del burnout al cierre y lo real de la espera (regla 15; malas, ${SEEDS_K6DB} × 60)`, () => {
+  const c = cosechaK6DB();
+  console.log(`      ${c.cartas} cartas de oferta con el riesgo (${c.cartasSinPC} con la PC confiscada), ${c.pruebas} pruebas con el riesgo (${c.pruebasVaraCero} con la vara en 0%)`);
+  if (c.problemasCarta.length > 0) throw new Error(`${c.problemasCarta.length} problema(s): ${c.problemasCarta.slice(0, 4).join(' | ')}`);
+  if (c.cartas < 20 || c.pruebas === 0) throw new Error(`check vacío: ${c.cartas} cartas con riesgo y ${c.pruebas} pruebas`);
+});
+
+// Rojo con los mutantes "la oferta guardada no vuelve", "la guardada pierde su vara" (M3 de la revisión) y "esperar se vuelve a
+// ofrecer en la guardada" (la espera sin el `!guardada`).
+checkLento(`K6d-B pedirle al club que te espere guarda la oferta entera, vuelve al split siguiente y se puede una sola vez (malas, ${SEEDS_K6DB} × 60)`, () => {
+  const c = cosechaK6DB();
+  console.log(`      ${c.guardadas} ofertas guardadas: ${c.cumplidas} volvieron, ${c.perdidasPorElFinal} se perdieron porque la carrera terminó antes`);
+  if (c.problemasGuardada.length > 0) throw new Error(`${c.problemasGuardada.length} problema(s): ${c.problemasGuardada.slice(0, 4).join(' | ')}`);
+  if (c.cumplidas < 10) throw new Error(`check vacío: ${c.cumplidas} ofertas guardadas que volvieron`);
+});
+
+// Rojo con los mutantes "un aviso cubre toda la racha" (M1 de la revisión: la vara que no se relaja), "dentro de lo cubierto no frena
+// aunque la mentalidad caiga" (sin el `mentalNueva`), "sin club no frena", "frena
+// siempre que la chance pase 0, sin la vara" (frenadas de más) y "frena recién con 20% o más".
+const PISO_PARADA_K6DB = 0.95;
+checkLento(`K6d-B por cierre: ≥ ${PISO_PARADA_K6DB * 100}% de los burnouts de un pro (con o sin club) salen de un cierre que una carta o una parada cubrió con su %, no vuelve a frenar sin riesgo nuevo y cada opción hace lo que dice (malas, ${SEEDS_K6DB} × 60)`, () => {
+  const c = cosechaK6DB();
+  const fraccion = c.burnoutsPro > 0 ? c.burnoutsCubiertos / c.burnoutsPro : 0;
+  console.log(`      ${c.paradasPro} paradas del pro (${(c.paradasPro / SEEDS_K6DB).toFixed(2)} por carrera, ${c.paradasSinClub} sin club), ${c.burnoutsCubiertos} de ${c.burnoutsPro} burnouts del pro de un cierre cubierto (${(100 * fraccion).toFixed(1)}%; sin club ${c.burnoutsSinClubCubiertos} de ${c.burnoutsSinClub}), ${c.efectos} efectos probados`);
+  const problemas = [...c.problemasPro, ...c.frenadasDeMas.map((p) => `frenó sin riesgo nuevo: ${p}`), ...c.problemasEfecto];
+  if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
+  if (c.burnoutsPro < 20 || c.paradasPro === 0 || c.burnoutsSinClub === 0) throw new Error(`check vacío: ${c.burnoutsPro} burnouts del pro (${c.burnoutsSinClub} sin club), ${c.paradasPro} paradas`);
+  if (fraccion < PISO_PARADA_K6DB) throw new Error(`solo ${c.burnoutsCubiertos} de ${c.burnoutsPro} burnouts del pro salen de un cierre cubierto con su %: ${c.sinCubrir.slice(0, 5).join(', ')}`);
+});
+
+// Rojo con el mutante "la oferta no mira el riesgo" (`riesgoDeLaOferta` devuelve siempre null).
+checkLento(`K6d-B nadie firma y se quema en el mismo split sin que la carta lo haya dicho (malas, ${SEEDS_K6DB} × 60)`, () => {
+  const c = cosechaK6DB();
+  console.log(`      ${c.firmaYQuema} carreras firmaron y se quemaron en el mismo split, ${c.firmaYQuemaSinAviso.length} sin que la carta lo dijera`);
+  if (c.firmaYQuemaSinAviso.length > 0) throw new Error(`${c.firmaYQuemaSinAviso.length} sin aviso: ${c.firmaYQuemaSinAviso.slice(0, 5).join(', ')}`);
+  if (c.cartas === 0) throw new Error('check vacío: ninguna carta con el riesgo');
+});
+
+// Rojo con el mutante M8 de la revisión: el perfil (`resolverAuto` del amateur y de la parada) y `criterio` eligen la que más quema.
+checkLento(`K6d-B el perfil y criterio eligen la opción que menos quema en cada carta con el riesgo a la vista (malas, ${SEEDS_K6DB} × 60)`, () => {
+  const c = cosechaK6DB();
+  console.log(`      ${c.elecciones} elecciones revisadas`);
+  if (c.problemasEleccion.length > 0) throw new Error(`${c.problemasEleccion.length} problema(s): ${c.problemasEleccion.slice(0, 4).join(' | ')}`);
+  if (c.elecciones < 20) throw new Error(`check vacío: ${c.elecciones} elecciones`);
 });
 
 if (errores.length > 0) {

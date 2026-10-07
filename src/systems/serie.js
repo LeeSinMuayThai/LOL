@@ -21,6 +21,7 @@ import {
 } from '../core/minijuegos.js';
 import { BALANCE } from '../data/balance.js';
 import { nombreVisibleDeLiga, nombreVisibleDeLigaOZona } from '../core/ligas.js';
+import { datosDePrensa } from '../core/prensa.js';
 
 export const id = 'serie';
 
@@ -175,7 +176,9 @@ function pausaDeMinijuego(state, momento, logsAcum, datosExtra = {}) {
         statRelevante: entrada.statRelevante,
         apuesta: textos.apuesta,
         regla: textos.regla,
-        ...datosExtra
+        ...datosExtra,
+        // K6d-P: el tono de la rueda de prensa y sus pistas (puro, sin tirada).
+        ...datosDePrensa(state, entrada.id, momento, datosExtra)
       }
     }
   };

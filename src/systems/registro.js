@@ -70,6 +70,10 @@ export const ETAPAS_SPLIT = [
   // Corre todos los años: si no clasificaste, el torneo se juega entero por hash, sin tocar el rng.
   await import('./internacional.js'),
   await import('./events.js'),
+  // K6d-B (D77): la parada del pro con la mentalidad en rojo. Justo antes de `atributos`, que tira el dado del burnout al cierre:
+  // ya se movió todo lo que mueve la mentalidad en el split, así que lo que la carta proyecta es lo más cercano a lo que el dado
+  // va a tirar. Sin `rng` salvo al resolver.
+  await import('./burnout.js'),
   await import('./atributos.js'),
   await import('./edadCierre.js'),
   // 9M-lite: el mundo tiene escena. Va DESPUES de edadCierre a proposito: si

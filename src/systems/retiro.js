@@ -455,6 +455,11 @@ export function resolver(state, decision, respuesta, rng) {
       flags: {
         ...reloj.flags,
         splitsEnVentana: 0,
+        // K6d (integración): la racha en rojo es de splits SEGUIDOS jugados en rojo (`atributos.js`), y el tiempo afuera la corta.
+        // Antes sobrevivía congelada al retiro: el split de la vuelta arrancaba con la racha de antes de irte, la parada del pro
+        // decía "cerraste los últimos N splits en rojo" contando los de afuera, y el dado podía pinchar en el primer split de
+        // vuelta (seed 9 con P7a: se quemó al volver con una racha de 8 de un año antes). El reloj ya cuadraba.
+        splitsMentalBajo: 0,
         vueltasUsadas: reloj.flags.vueltasUsadas + 1,
         splitVuelta: reloj.player.splitCount
       }

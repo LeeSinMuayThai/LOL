@@ -34,6 +34,365 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-07 — Integración de K6d: N (sin P7a) + B + P, el guardado 14 y la racha en rojo que sobrevivía al retiro (`k6d-integracion`; PLAN.md "K6d — el cierre", paso 1)
+
+**Los merges**, en orden, sobre `fase-9r` `80d4b9b`:
+- `k6d-prensa` (`ad614fb`): sin conflictos.
+- `k6d-burnout` (`cb906d0`): conflicto solo en este archivo; se conservan las dos entradas. `balance.js` y `validate.js` se
+  juntaron solos, sin checks perdidos.
+- `k6d-nivel` (`5936279`): conflicto en este archivo y en `version.js` (se conservan las dos historias).
+- **P7a sale** (decisión del supervisor tras la revisión): revert de `9b85bc7` (la prende) y de `9f3b3f8` (la estructura). La
+  estrella rebotaba entre ligas en cada contrato (A-B-A-B de 0 a 31 carreras con `criterio`), la carta se contradecía y casi no
+  movía los títulos. No queda código, perilla (`mercado.estrellaSube`) ni su check. Quedan P3 y la regla de tier 3.
+
+**Versión, huella y guardado.**
+- `VERSION_JUEGO` 'K6d'. `HUELLA_JUEGO` 79304237, medida con `--solo="K1 versión"` sobre el head sin P7a. Reemplaza a 480175732
+  (K6d-N con P3), 1073872165 (K6d-B) y 1766253198 (K6c). Con P7a la integración daba 2117801369: no vale.
+- Guardado `VERSION` 13 → 14. `migrarDe13` (`core/guardado.js`) arranca `flags.mentalAvisadaPro` en `[]` y `flags.ofertaGuardada`
+  en `null`, los valores de `createInitialState`.
+- `FORMAS_CONOCIDAS[13]` vuelve a `995485d311c0`, la de `fase-9r` y de los guardados del usuario. `FORMAS_CONOCIDAS[14]` es
+  `1ef92b3fd9be`.
+- Check nuevo "K6d guardado VERSION 14": 170 guardados de la 13 cargan y siguen igual que los de la 14, y sin `migrarDe13` fallan
+  los 170. El de K6b pasa a pedir `VERSION` ≥ 13.
+
+**El bug de K5c-R** (la seed 9 con P7a prendida: `aniosProDe` 8,33 contra 8).
+- **Lo que pasaba de verdad.** La carrera no se quemó estando retirada: volvió del retiro con su club ("te guardó el lugar"),
+  jugó el split de la vuelta y se quemó al cierre. Llegó a ese split con la racha en rojo de **8 splits** de antes de irse
+  (`flags.splitsMentalBajo`) y la mentalidad en 11, congeladas un año entero afuera.
+- **El reloj cuadraba.** Del 33 al 37 son 3 splits afuera (`splitsRetirado` 3) más el de la vuelta, y en 300 carreras (con P7a, y en
+  el head sin P7a) `splitCount − splitsRetirado == registro.splitsJugados` da 300 de 300. Los 8,33 años pro eran los reales. El que
+  contaba de menos era el check: toma todo paso retirado → retirado como splits afuera. "La vuelta arranca corrida +3/+4" también
+  es por diseño: `relojAlVolver` adelanta el reloj en el split de la vuelta (K5c motor).
+- **La causa en el motor:** la racha cuenta splits seguidos jugados en rojo, pero sobrevivía al tiempo afuera. El dado podía
+  pinchar en el primer split de vuelta, y la parada del pro de K6d-B decía "cerraste los últimos N splits en rojo" contando los
+  de afuera (regla 15).
+- **El arreglo** (`systems/retiro.js`, al volver): `splitsMentalBajo` vuelve a 0.
+- **Medido.**
+  - Con P7a y el arreglo (copia de `5936279`): las vueltas que se queman en el split de la vuelta bajan de 1 a 0 en 300; la seed 9
+    da 9 años pro. El check K5c-R da OK; sin el arreglo, FAIL.
+  - Sin P7a (el head, sin el arreglo): 4 de 133 vueltas traen racha (300 seeds) y ninguna se quema, porque frena la parada de K6d-B.
+  - La huella no se mueve: ninguna de las 40 seeds vuelve con racha.
+- **El check** "K6d retiro". Toma 5 vueltas reales con la cabeza armada en rojo (la mitad del umbral, racha de 4 veces el
+  mínimo) y el que sigue sin cuidarse. Pide que el split de la vuelta no frene por el burnout ni termine en burnout. El mutante
+  sin el arreglo da rojo en las 5.
+
+**El techo de `dist/`:** 2402 KB contra 2400. Lo que creció es lo de K6d (+54 KB en crudo desde `80d4b9b`), y se subió a 2500
+siguiendo el precedente de K6c. Lo decide el supervisor.
+
+**Verificado:**
+- `--rapido`: 370 OK / 0 FAIL / 180 SKIP.
+- `--solo=`: K6d-B (los 5 lentos), K6d-P (4), K5c-R (9), "K6d-N P3", "Tier 3, el nivel manda", "guardado" (13) y "K6d retiro",
+  todos OK.
+- `build.js` OK.
+- La validación completa y `simulate.js 1000` quedan para el supervisor.
+
+### 2026-10-07 — K6d-N: merge de `tier3-nivel` y P3, el título de una liga chica no te mete en el Top 20 (rama `k6d-nivel`)
+
+- **Merge** (`908ac9f`): `tier3-nivel` entra con la regla de tier 3 (margen 15). La huella del juego queda en 1265514711 y
+  `--rapido` da 364 OK / 0 FAIL / 174 SKIP.
+- **El diagnóstico** (criterio 600 × 60, con la regla de tier 3) está en `PLAN.md` §K6d-N.
+  - El 88,6% de las llegadas a tier 1 es a CBLOL/LCP/LCS, con calibres de 51,5 / 56,5 / 59 contra ~53 de LCK CL.
+  - El 69% de los títulos se gana ahí, con el jugador 15 o más arriba del calibre de su liga.
+  - El título de cualquier liga sumaba 16,9 puntos al ranking del mundo.
+- **P3, en dos commits** (regla de proceso 2):
+  - `427542e`, la estructura con la perilla neutra (`topMundial.prestigioSinBonoCampeon` / `prestigioPlenoCampeon` en
+    0/0). La huella queda idéntica y `--rapido` da 365 / 0 / 174;
+  - `a4efef1`, los valores 55 / 91. El bono del título de liga se multiplica por un factor lineal del prestigio de la liga
+    (`core/topMundial.js:factorPorPrestigio`): la CBLOL suma 0, la LEC la mitad, la LPL y la LCK entero. El Mundial no se
+    toca.
+- **El corrimiento declarado:** huella del juego 1265514711 → 480175732 (`version.js`, sigue 'K6c'); stream
+  (`dev/huella.js`) 346802722 → 1820193282. `--rapido` 365 / 0 / 174.
+- **El check nuevo** "K6d-N P3 el título de liga pesa por el prestigio…" comprueba:
+  - los bordes 55 y 91 exactos;
+  - que la liga chica sume menos que la grande;
+  - cada liga contra la cuenta;
+  - el Mundial intacto;
+  - la neutra exacta.
+
+  Está en rojo con el factor sacado, sin el tope de arriba y sin el de abajo.
+- **Regla 15:** ninguna pantalla lista los puntos del bono. El panel del Top 20 y los logs dicen solo el puesto.
+- **Las barandas** (600 × 60, antes → después): Top 20 criterio 40,3 → 23,8, equilibrado 30,5 → 16,2, malas 11,0 → 3,3.
+  - Título de tier 1, tier 1 y no-pro no se mueven.
+  - Región fija: Corea 79 → 79 y NA 52 → 45 (de 600).
+  - 30+ en la réplica del check lento: 16,8 → 16,5.
+- **P7a, "el nivel te lleva a la liga que te corresponde"** (decisión del supervisor, `PLAN.md` §K6d-N paso 2b).
+  - **Se sacó en la integración de K6d** (revert de `9b85bc7` y `9f3b3f8`, decisión del supervisor): la estrella rebotaba entre
+    ligas en cada contrato (el traspaso a mitad de contrato sin dado chocaba con "la casa primero" de K5c-H: el patrón A-B-A-B
+    pasó de 0 a 31 carreras con `criterio`), la carta se contradecía ("das el nivel de la LEC…" junto a "Una salida lateral") y
+    casi no movía los títulos. No queda código ni perilla (`mercado.estrellaSube`) ni su check. Lo de abajo es historia.
+  - **Por qué no subía** (criterio 600 × 60, con P3; las ventanas de las estrellas de CBLOL/LCP/LCS que le sacan 15 o más al
+    calibre de su liga: 1019):
+    - ve la oferta y la toma: 24,7%;
+    - ningún club que alcanza tiene asiento abierto: 31%;
+    - la ve y `criterio` prefiere la casa (no es élite): 13,6%;
+    - a mitad de contrato no sale el dado de 0,35: 9,3%;
+    - a mitad de contrato no hay pretendiente con 5 de fuerza más que su club: 8,7%;
+    - la casa llena la mano y el cupo de imports es solo para la élite: 9,2%.
+  - **La regla:** si tu nivel llega (`casa.margenAlcanza`) a una liga de tier 1 claramente más fuerte (`casa.margenImportElite`:
+    reusa los dos márgenes de K5c-H), un club de ahí te hace lugar con `forzada`, que nunca salta las reglas duras. Al fin de
+    contrato va primero en la mano; a mitad de contrato es el pretendiente, sin el dado. Vive en
+    `core/demanda.js:clubDeLigaMasFuerteQueTeHaceLugar`, y la oferta dice "das el nivel de <liga>, una liga más fuerte que <la
+    tuya>: N de nivel contra el C de un equipo medio de allá".
+  - **Dos commits:**
+    - `9f3b3f8`, la perilla neutra `mercado.estrellaSube: false`. La huella queda en 480175732 y `--rapido` da 366 / 0 / 174;
+    - `9b85bc7`, la perilla prendida.
+  - **El corrimiento declarado:** huella del juego 480175732 → 62519553; stream 1820193282 → 1381761146. La forma 13 se
+    re-registra sin subir (no hay campos nuevos).
+  - **El check nuevo** "K6d-N P7a la estrella sube…" arma los estados así:
+    - fuerzas asimétricas;
+    - el borde exacto de "llega" en coma flotante y 0,01 abajo;
+    - la liga justo en "8 más";
+    - el cupo de imports en 0;
+    - la perilla neutra.
+
+    Está en rojo con seis mutantes: `>` en lugar de `>=`, `>=` en lugar de `>`, sin el filtro de `forzada`, con el dado a
+    mitad de contrato, sin el primer lugar en la mano y sin la perilla.
+  - **Queda un FAIL en `--rapido` (365 / 1 / 174): K5c-R.** En la seed 9, `aniosProDe` da 8,33 y el check espera 8. La carrera
+    ahora pasa por la LEC, se retira en LCK CL y termina en burnout estando retirada, con el reloj saltando 4 splits contra 3
+    de `splitsRetirado`. Es el camino de retiro y burnout, no el de P7a. Queda reportado y no lo toqué.
+  - **Las barandas** (600 × 60, P3 → P3 + P7a):
+
+    | Medida | P3 | P3 + P7a |
+    |---|---|---|
+    | Título de tier 1, criterio / equilibrado / malas | 57,3 / 53,0 / 16,5 | 55,0 / 46,5 / 16,2 |
+    | Mundial | 10,3 | 8,5 |
+    | Región fija Corea / NA (de 600) | 79 / 45 | 87 / 51 |
+    | Burnouts por mil, criterio / equilibrado / malas | 15 / 27 / 512 | 42 / 37 / 513 |
+    | Títulos ganados en CBLOL/LCP/LCS | 68,2% | 65,3% |
+    | Splits medianos en tier 1 | 27 | 27 |
+
+    No se mueven: tier 1 (73,0), no-pro y tier 3 (mediana 2).
+
+### 2026-10-07 — K6d-B (D77): el burnout se ve venir en la firma y en el pro (rama `k6d-burnout`)
+
+**Lo que se encontró al implementar (cambia una parte de la spec, decide el supervisor).** La oferta del amateur llega
+*después* de la semana (`vivirLaSemana` → `buscarSalida`), y el dado del burnout corre al cierre de todo split, firmes o no.
+En el equipo te ordenan el horario: el sueño vuelve hacia `suenoConfortable` y la deuda se resetea al firmar. Por eso firmar casi
+nunca suma riesgo en el cierre de este split. Medido en las 216 cartas con riesgo de 600 × 60 de `malas`:
+- en 211, firmar da igual o menos burnout al cierre de este split que quedarte;
+- a dos splits, esperar da menos en 107 y lo mismo en 24;
+- en `equilibrado`, 12 cartas: esperar da menos en 2 y lo mismo en 8.
+
+"Este split lo vivís con la rutina que cuida" no se puede cumplir tal cual, porque la semana de este split ya se vivió. Se
+implementó **el split que esperás** con la rutina que cuida, y la carta cuenta las dos opciones a dos splits (regla 15).
+
+**(a) La oferta avisa y deja esperar** (`systems/amateur.js`).
+- `riesgoDeBurnoutAlCierre` (`systems/atributos.js`, exportada): la mentalidad proyectada al cierre sin el dado (el sueño del
+  cierre, el desgaste medio, la misma vuelta a la base y el mismo tope) y la misma `probabilidadDeBurnout`. `aplicar` usa la
+  misma cuenta (`mentalidadDelCierre`, `desgasteDeMentalidad` con el término del dado como argumento): la huella de 40 × 60 no se
+  movió con el refactor (1766253198 antes y después).
+- Si firmar este split cierra con la racha en el mínimo (o el piso), la carta dice la racha y, por opción, la mentalidad y el %
+  de cada cierre: firmar (este split y el que viene, en el equipo), "pedirle al club que te espere" (este en soloQ; el que viene
+  con la rutina que cuida, firmando al final) y el "no" (este split en soloQ). La prueba de tier 3 repite el % de firmar y el de
+  no llegar.
+- "Pedirle que te espere": `flags.ofertaGuardada` (la misma org, tier y vara). El split siguiente se vive con `rutinaQueCuida`,
+  sin el sorteo del scouting, y la oferta vuelve al final de la semana (o del periodo sin PC). Con la oferta en la mano no hay
+  "¿seguís?" de los 19. No se ofrece si el año que viene ya es el de `edadLimite`.
+- Firmar con el riesgo a la vista deja la vara del pro (`flags.mentalAvisadaPro`).
+
+**(b) El pro frena con la mentalidad en rojo** (`systems/burnout.js`, nuevo, una línea en `ETAPAS_SPLIT`).
+- **Dónde:** justo antes de `atributos`, después de `events`. Ahí ya se movió todo lo que mueve la mentalidad en el split
+  (resultados, serie, Mundial, eventos), así que la proyección es la más cercana a lo que el dado va a tirar. Frena cuando el
+  dado del cierre puede pinchar: la racha llega al mínimo con la mentalidad proyectada y la chance no es 0. Corre también en el
+  split de la firma.
+- **Las opciones:**
+  - seguir;
+  - bajar la carga: mentalidad +3 a +6 y mecánica −1 a −3, con `conPermanencia`;
+  - pedir unos días: mentalidad +7 a +12 y jerarquía −4 a −8.
+  Lo que sube va por `recuperarPorDescanso`, el camino del "descansar" del receso. El rango se tira al resolver; la carta
+  proyecta con la media.
+- **Riesgo nuevo:** vuelve a frenar solo si la proyección queda más de `burnout.mentalNueva` (5) por debajo de lo que la carta
+  mostró para la opción elegida. Si la mentalidad sale de rojo, lo visto se olvida.
+- **Los bots:** `criterio` y `resolverAuto` eligen la de menos burnout (`opcionQueNoQuema`, a igual chance la de menos costo);
+  `malas`, la de más. Pantalla: rótulo "La cabeza" (`ui/formatoUi.js`).
+
+**Barandas** (600 × 60, seeds 1-600, `barandas.mjs` del supervisor más las medidas exactas en una copia; antes = `d9c2dfa`, el
+mismo motor que `4795489`, con los mismos números del supervisor):
+
+| Medida | criterio | equilibrado | malas |
+|---|---|---|---|
+| no llega a pro | 24,5 → 24,5 | 25,7 → 25,3 | 51,2 → 49,8 |
+| burnouts / 1000 | 10 → 2 | 25 → 18 | 490 → 485 |
+| con aviso (texto, el split o el anterior) | 83,3 → 100 | 100 → 90,9 | 85,4 → 90,7 |
+| firman y se queman en el split / sin que la carta lo diga (exacto) | 0 / 0 → 0 / 0 | 1 / 1 → 0 / 0 | 15 / 15 → 17 / 0 |
+| burnouts del pro / con parada en su racha (exacto) | 6 / 0% → 1 / 100% | 6 / 0% → 0 / — | 52 / 0% → 63 / 100% |
+| paradas por carrera (media / mediana) | 48,42 / 44 → 48,55 / 45 | 43,70 / 40 → 43,78 / 40 | 25,18 / 16 → 25,67 / 17 |
+| paradas por la mentalidad (todas / del pro; máx. del pro) | 0 / 0 → 0,09 / 0,09; 4 | 0,05 / 0 → 0,09 / 0,04; 3 | 0,47 / 0 → 0,52 / 0,05; 3 |
+| tier 1 / título tier 1 / Top 20 | 71,3 / 52,2 / 37,2 → 71,3 / 52,0 / 37,3 | 67,7 / 49,3 / 28,2 → 67,8 / 49,5 / 28,0 | 33,0 / 16,8 / 8,7 → 34,0 / 17,7 / 9,0 |
+| Mundial / P(2+ \| 1) | 10,5 / 25,4 → 10,2 / 26,2 | 4,8 / 13,8 → 5,0 / 13,3 | 1,0 / 16,7 → 1,0 / 16,7 |
+| edad al terminar (mediana) / 30 o más | 26 / 27,0 → 26 / 27,5 | 25 / 15,8 → 25 / 16,3 | 18 / 22,7 → 19 / 23,7 |
+
+- **El Mundial con la región fija** (600 × 60): KR 69 → 70 carreras con Mundial y NA 54 → 54.
+- **`agencia.js`** (12 carreras): idéntica antes y después. La ponderada en su horizonte da 23,6% y contra la carrera 5,9%;
+  el "piso 8,6%: BAJÓ" ya estaba en la base. Ninguna de esas 12 carreras llega a las cartas nuevas.
+- El 90,9 de `equilibrado` en la columna de texto es 1 burnout del amateur de 11 sin una parada que nombre la mentalidad en el
+  split o el anterior: la regla del amateur de K6c-fix, sin tocar acá.
+
+**Checks nuevos** (lentos; comparten una cosecha de `malas`, 400 × 60, ~27 s con `--solo=K6d-B`). Verdes:
+- la carta de la oferta y la de la prueba dicen el % que tira el dado: 270 cartas y 46 pruebas. Se comparan contra
+  `atributos.aplicar` con un `rng` que deja cada `gauss` en su media;
+- "pedirle que te espere" guarda la oferta y vuelve al split siguiente, la misma: 223 guardadas, 175 volvieron y 48 se perdieron
+  porque la carrera terminó antes;
+- el pro frena con el % antes del dado, no vuelve a frenar sin riesgo nuevo y cada opción hace lo que dice: 22 paradas, 22 de
+  22 burnouts del pro con parada y 44 efectos probados;
+- nadie firma y se quema sin que la carta lo dijera: 8 firman y se queman, 0 sin aviso.
+
+Cada check se vio en rojo con su mutante:
+- la proyección no normaliza el sueño del pro: 193 problemas;
+- la oferta guardada no vuelve: 37;
+- sin la vara del riesgo nuevo: 75 frenadas de más;
+- frena recién con 20% o más: 20 de 23 burnouts con parada;
+- la oferta no mira el riesgo: 11 firman y se queman sin aviso, y los checks de la carta quedan vacíos.
+
+**Huella:** `HUELLA_JUEGO` 1766253198 → 1073872165 (corrimiento declarado, sigue 'K6c'). **Forma del guardado:** cambió
+(`flags.mentalAvisadaPro`, `flags.ofertaGuardada`), hash 9689e8d31c32 contra el 995485d311c0 de VERSION 13. `VERSION` y
+`FORMAS_CONOCIDAS` no se tocaron: `K0-B guardado` queda en FAIL a propósito para la integración.
+
+**K6d-B (revisión)** (`dba6b61`, `4ed0fce`, `5a80d98`). La corrección del supervisor, hallazgo por hallazgo:
+- **La vara que no se relajaba** (`systems/burnout.js`). `flags.mentalAvisadaPro` pasa de un número a la lista de cierres
+  avisados, `[{ split, mentalidad, probabilidad }]`. La carta de la oferta que firmaste cubre dos (el de la firma y el
+  siguiente) y la parada del pro cubre el de su split. Un cierre con el dado vivo que ningún aviso cubrió con su % frena
+  siempre. Dentro de lo cubierto, frena solo si la proyección cae más de `burnout.mentalNueva` debajo de lo mostrado. Un aviso
+  que mostró 0% no cubre: si después el dado puede pinchar, frena. Los cierres pasados se olvidan.
+- **Esperar en bucle.** La guardada vuelve sin "pedirle que te espere" y dice "Ya te esperaron un split: ahora es firmar o
+  dejarla pasar". `resolverOferta` no la vuelve a guardar aunque llegue esa respuesta.
+- **El pro sin club** frena igual: seguir, bajar la carga (sin scrims) o desconectarte unos días. Desconectarte da mentalidad
+  +7 a +12 y mecánica −3 a −5 (`burnout.desconectar`, con `conPermanencia`).
+- **La espera con la PC confiscada** proyecta el periodo sin PC (la media de sus rangos) y dice "el que viene lo vivís sin
+  PC". Con la vara en 0%, la prueba ya no dice "si no llegás". "El suplente suma minutos" pasa a "el suplente las juega por vos".
+- **Checks** (cinco lentos sobre la cosecha de `malas`, 400 × 60, ~20 s con `--solo=K6d-B`):
+  - la meta se mide por cierre, sin excluir a los que no tienen club;
+  - la guardada se compara entera (club con todos sus campos, tier, liga y vara);
+  - esperar una sola vez;
+  - con el mismo estado de cada parada, un aviso de `mentalNueva + 1` por encima frena y uno de `mentalNueva − 1` no;
+  - el perfil y `criterio` eligen la opción que menos quema (624 elecciones).
+  El sueldo y los años no viajan en la oferta del amateur: los pone el contrato al firmar.
+- **La cobertura del guardado K4** suma `burnout:burnout_pro`, con una fuente de `malas`: hasta 40 seeds, hasta verla.
+
+**La meta por cierre** (sonda `probes/cierres.mjs`, `malas` pura, 400 × 60, antes `9dacdf9` → después). De los burnouts de
+un pro con el cierre cubierto con su %: 28 de 57 (49,1%) → 60 de 60 (100%). Sin club: 0 de 12 → 13 de 13. Firmar y quemarse
+sin aviso: 0 → 0. Las esperas seguidas, como máximo: 3 → 1. La cosecha del check da 43 de 43 (sin club, 9 de 9). Con
+`criterio` y `equilibrado` no hay burnouts del pro en esas 400.
+
+**Barandas** (`barandas.sh` del supervisor, 600 × 60, `9dacdf9` → `5a80d98`):
+
+| Medida | criterio | equilibrado | malas |
+|---|---|---|---|
+| no llega a pro | 24,5 → 24,5 | 25,3 → 25,3 | 49,8 → 48,8 |
+| burnouts / 1000 | 2 → 0 | 18 → 17 | 485 → 480 |
+| con aviso (texto) | 100 → — | 90,9 → 100 | 90,7 → 95,8 |
+| firman y se queman en el split | 0 → 0 | 0 → 0 | 17 → 19 (todas con la carta) |
+| paradas del pro por la mentalidad, por carrera | 0,09 → 0,12 | < 0,05 → < 0,05 (0,03 en la sonda) | 0,05 → 0,75 |
+| paradas por carrera (media) | 48,55 → 48,63 | 43,78 → 43,83 | 25,67 → 26,66 |
+| tier 1 / título tier 1 / Top 20 | 71,3 / 52,0 / 37,3 → 71,3 / 52,2 / 37,2 | 67,8 / 49,5 / 28,0 → 68,0 / 49,7 / 27,8 | 34,0 / 17,7 / 9,0 → 34,3 / 17,3 / 9,0 |
+| Mundial | 10,2 → 10,3 | 5,0 → 5,0 | 1,0 → 1,0 |
+
+Con la región fija: KR 70 → 70 y NA 54 → 54. Las paradas de `malas` suben porque elige siempre seguir. Con eso la racha
+sigue en rojo, y cada cierre con el dado vivo que nada cubrió es una parada (antes, una sola por racha). `criterio` y
+`equilibrado` eligen la que no quema y la racha se corta.
+
+**Lentos, de a uno, verdes:**
+- los cinco de K6d-B;
+- "El burnout no llega sin aviso";
+- "El contexto de carrera";
+- la brecha de no-pro por perfil: 26,7 / 23,3 / 22,7 / 27,3;
+- el impacto de los minijuegos;
+- la cobertura del guardado K4.
+
+`--rapido`: 362 OK y 1 FAIL, el de la forma (igual que en la pieza).
+
+**Mutantes en rojo** (copias `git archive HEAD`):
+- M1 de la revisión, "un aviso cubre toda la racha": la meta da 20 de 50 cubiertos;
+- "dentro de lo cubierto no frena aunque caiga": 190 problemas con la vara directa (antes de ese check seguía verde);
+- M3 de la revisión, la guardada sin vara: 127;
+- M8 de la revisión, el perfil y criterio eligen la peor: 592;
+- esperar dos veces: 120;
+- sin club no frena: 27 de 44;
+- la espera sin PC promete la rutina: 11;
+- la vara 0 dice "si no llegás": 49;
+- la oferta no mira el riesgo: los tres checks de la carta quedan vacíos;
+- la parada nunca frena: el guardado K4 dice "no cubrió burnout:burnout_pro".
+
+**Huella y forma.**
+- `HUELLA_JUEGO` sigue en 1073872165: el check K1 da OK, porque las 40 seeds del perfil no tocan las cartas que cambian. Va
+  declarada en `version.js` con su comentario.
+- La forma vuelve a cambiar: 9689e8d31c32 → 1ef92b3fd9be (`mentalAvisadaPro` ahora es una lista). `VERSION` y `FORMAS` no se
+  tocaron.
+
+### 2026-10-07 — K6d-P: la rueda de prensa con pistas (rama `k6d-prensa`)
+
+**Por qué.** `ruedaDePrensa.js` sorteaba el tono que convenía con `rngUi` y no daba ninguna pista: azar puro, lo único que K6
+todavía sintió como "rng clicker" (decisión del usuario del 2026-10-07).
+
+**Qué cambió.**
+- **`core/prensa.js` (nuevo, puro, sin `rng`).** `lecturaDePrensa(state, momento, datos)` devuelve `tono` (entero 0-100, 0
+  Humilde, 100 Desafiante) y `pistas` (2-3 frases, una por factor que pesó). Parte de `tonoBase` 50 y cada factor empuja con su
+  peso (`BALANCE.prensa`, bloque nuevo comentado): ganar la serie +14 y perderla −18 (×1,6 en una final o el internacional); el
+  escándalo −28; el hype, −0,5 por punto sobre 70 (la media de un pro en estos momentos, medida: mediana 71 en 143 pausas); la
+  sinergia, +0,5 por punto sobre 55; el rival de la serie, +16 si es el archirrival y +8 si es de tu generación
+  (`rivalDeGeneracion`). Una pista sale si el factor empuja ≥ 3 puntos (las 3 más fuertes); si no hay 2, se completa con la
+  frase suave de los que empujaron poco. Tono acotado a 5-95.
+- **El motor lo manda en `decision.datos`** de las dos pausas (`pausaDeMinijuego` en `systems/serie.js`, `pausaDePrensa` en
+  `systems/events.js`) por `datosDePrensa`, solo si el minijuego es `rueda_de_prensa`. Sin tirada nueva.
+- **La UI.** `ruedaDePrensa.js` recibe `decision.datos` (quinto argumento, `app.js` se lo pasa), muestra las pistas arriba del
+  slider ("LO QUE SE LEE EN LA SALA") y el objetivo es `tono ± ruidoUi` (8) con una sola tirada de `rngUi`. Sin `tono` (un
+  guardado viejo) cae al `rngUi() * 100` de antes y no muestra pistas.
+- **Hype y sinergia no son ejes de `calcularContexto`**: se leen en vivo del estado (`player.stats.hype`, `career.sinergia`),
+  igual que lo haría el contexto (T2). La sinergia solo cuenta con org.
+- **Hoy `post_serie` no sale** (`rondasConPrensa: []` desde K4c): la prensa que se juega es la de después de un escándalo. Los
+  factores de la serie y el rival quedan listos y testeados para el día que se vuelva a prender.
+
+**Medido.** Sobre 143 pausas reales (40 seeds × 40 splits, con `rondasConPrensa` prendido solo en la corrida): todas con 2 o 3
+pistas (75 de 2 y 54 de 3 en `post_serie`; 6 y 8 en `post_escandalo`), tono de 7 a 88 (mediana 60). Huella: idéntica
+(`K1 versión` en verde sin tocar `HUELLA_JUEGO`). El puntaje de los bots no lee el objetivo: `simulate.js` no se mueve.
+
+**Checks (`validate.js`, `K6d-P`, rápidos), cada uno visto en rojo con mutantes en una copia de `git archive`:**
+tono en la dirección de cada factor y el borde del umbral; cada pista es de un factor que pesó (980 casos); las dos pausas
+reales traen tono y pistas, y el objetivo de la UI es tono ± ruido. 23 mutantes, los 23 en rojo (signo de cada peso, la final,
+el rival, el acotado, el umbral estricto y sin umbral, pista de factor en cero, más de `maxPistas`, el escándalo y el rival
+fantasma en la prensa equivocada, cada pausa sin tono, la UI sin tono o sin ruido, `app.js` sin pasar `datos`). Aparte,
+`prensa.ruidoUi` entró a `RUIDOS_FUERA_DE_LA_ABLACION_K0`: es ruido de pantalla.
+
+**Pantalla (Chromium real, `node server.js`).** 320, 390 y 1440 px: `scrollWidth == innerWidth` en los tres, 0 errores de
+consola, 3 y 2 pistas montadas con la hoja y los tokens reales; el slider en el tono da puntaje 1 con `rngUi` en 0,5. Las
+capturas (la pista del archirrival, con un nombre de org larguísimo, parte la línea sin desbordar a 320 px) se leyeron.
+
+**Revisión, ronda 1 (los pesos de arriba son los de la primera pasada: los vigentes están en `BALANCE.prensa`).**
+- **El escándalo ya no fija la respuesta.** Con -28 y la sinergia real (mediana 45) para el mismo lado, el tono salía entre 5 y
+  28 (mediana 19, 19 pausas de 60 seeds): un slider fijo a la izquierda ganaba siempre. Ahora el escándalo empuja -8 y el tono
+  lo mueven cinco factores que cambian de un escándalo a otro, con referencias en las medianas medidas EN esas pausas (148 de
+  400 seeds: hype 65, sinergia 45, jerarquía 30, mentalidad 64): hype -1,2 por punto, sinergia +1,5, jerarquía +0,4,
+  mentalidad +0,3 y la forma (`momentum` de `calcularContexto`: racha +16, estable 0, slump -16, crisis -26). `tonoBase` 58
+  (la suma típica de un escándalo da ~-8: con 50 la mediana caía en 35). Se buscó sobre las seeds 1-400 y se confirmó en otras
+  123 pausas (seeds 401-700).
+- **La meta, medida** (config de producción, `rondasConPrensa: []`, seeds 1-200 × 60 splits = 75 pausas; el responder lee
+  `datos`, el ruido ±8 barrido en 17 pasos, el corte el veredicto real `bien` ≥ 0,72):
+
+  | | antes (569f77c) | ahora (75 pausas) | holdout (123 pausas) | meta |
+  |---|---|---|---|---|
+  | p10 / mediana / p90 del tono | 5 / 19 / 28 (19 pausas) | 9 / 43 / 76 | 5 / 40 / 72 | p90-p10 ≥ 40, mediana 35-65 |
+  | mejor slider fijo, «bien» | no medido (tono 5-28: ganaba uno a la izquierda) | 42,4% (en 38) | 40,9% (en 41) | ≤ 50% |
+  | slider en el tono, «bien» | no medido | 100% | no medido | ≥ 90% |
+
+  Sale como `checkLento` (`K6d-P la prensa del escándalo no se gana con un slider fijo`), con la línea de la tabla en la salida.
+- **Las frases no afirman de más.** Cada factor continuo elige su frase por banda: «hype alto» solo desde 75 y «todavía es bajo»
+  hasta 50 (antes "casi nadie te conoce" salía con hype 57-64, mediana 64,8); en el medio dice «algo por encima / por debajo
+  de lo normal», y si no empuja, «en lo normal». Siempre hay al menos 2 pistas (se completa con los de más empuje).
+- **Ninguna pista contradice a otra:** el rival ya no dice "no le des el gusto de bajar la cabeza" (ahora "a ese rival se le
+  contesta con carácter"); "el vestuario aguanta" pasó a "el team te respalda".
+- **Checks atados a la dirección:** cada pista lleva la marca de su factor, la dirección de su empuje (humildad ↔ negativo, desafío
+  ↔ positivo, neutra ↔ cero), y ninguna mezcla las dos. Suma el internacional, los bordes de las bandas y del umbral (3 pistas con
+  dos factores justo en el umbral, 2 con uno apenas debajo). El widget se prueba con un contenedor falso: pinta las pistas y
+  puntúa contra el tono (`puntajeDePrensa`, el 55 suelto pasó a `BALANCE.prensa.anchoDeAcierto`).
+- **Mutantes:** 39 en una copia de `git archive`, 38 en rojo (los de la lista de la revisión mueren: texto de hype con la frase de
+  sinergia, condición fuerte de hype invertida, suave de sinergia invertida, escándalo "subir el tono", `rondasDeFinal` sin
+  'internacional', `montar` sin `objetivoDePrensa`, `montar` sin pintar las pistas). El 39.º (hype casi sin peso) no es un
+  defecto: la meta se sigue cumpliendo sin ese factor.
+- **El botón de los minijuegos:** `button { padding: 0 }` de `base.css` le ganaba al padding de `:where(button)` y el `clip-path`
+  se comía las letras. `.minijuego-btn` lleva `padding: var(--s-3) var(--s-5)` (12 / 24 px medidos en Chromium); capturas de
+  "Responder" y "¡Ahora!" a 320 y 1440 px leídas: el texto entra entero. `scrollWidth == innerWidth`, 0 errores de consola.
+- Huella idéntica (`K1 versión` en verde), `--rapido` 366 OK / 0 FAIL, `build.js` en verde.
+
 ### 2026-10-06 — D82: el traspaso cuesta lo que dice la pantalla, y el Mundial del mundo pesa cada año igual (rama `d82`)
 
 **(a) El valor visible es el que paga el mercado (regla 15).**
@@ -143,6 +502,44 @@ Las lesiones, las paradas de la semana y el impacto de los minijuegos los juzgan
 
 **Lo que no se cierra:** K6c necesita que el usuario juegue el amateur y la prueba (memoria de playtest). No se pusheó
 nada.
+
+### 2026-10-06 — Rama `tier3-nivel`: el nivel manda en tier 3 (D34; NO se mergea sin la decisión del usuario)
+
+- Causa medida: la salida de tier 3 era una lotería ciega al nivel (`resolverTier3`: 0,45 de salir × 0,40 + 0,35·jerarquía de
+  subir; la jerarquía vuelve a 0 con cada disolución, y cada disolución cuesta 2 splits sin tirada por K6a-M). Sin mercado en tier 3
+  (`mercado.js:629`). Con criterio 600 × 60 el 32,3% de las carreras pasaba 6+ splits en el nivel tier 3 (mediana 5, p90 12), con
+  nivel 63 contra calibre 18 y 80% de victorias. La carrera "buena" de K6 (seed 39) quedó 7 años así.
+- Regla: si tu nivel ≥ calibre de la liga tier 2 de tu región (`calibreDeLiga`) + `competitivo.margenNivelSobreTier2` (15), el
+  salto es seguro, sin dado, y el log dice por qué ("Te sobraba nivel para el circuito chico: N de nivel contra el C de un equipo
+  medio de <liga>…"). Debajo, la tirada de siempre (con la jerarquía). `systems/competitivo.js` (`nivelSobreTier2`, `resolverTier3`).
+- Margen: medido 10 / 15 / 20 (criterio 600 × 60, seeds 1-600, `guard.mjs` del scratchpad): mediana 2 / 2 / 3, p90 3 / 6 / 8,
+  6+ splits 2,5 / 7,7 / 16,8%, Mundial 8,7 / 9,8 / 11,5% (ruido: σ ≈ 1,2). 15 es el margen más alto que deja la mediana del diseño
+  (1-2; 2 es el piso con K6a-M): conserva la tirada para quien apenas pasa al circuito chico.
+- Barandas, antes (`c3c1721`) → después, 600 × 60, seeds 1-600, eleccion null:
+  - criterio: tier 3 mediana 5 → 2, p90 12 → 6, 6+ splits 32,3 → 7,7%; llega a tier 1 71,3 → 73,0%; no-pro 24,5 → 24,5%;
+    Mundial 10,5 → 9,8%; Top 20 37,2 → 40,3%; título de tier 1 52,2 → 57,3%; edad final 26,9 → 27,0; paradas 48,4 → 51,5.
+  - equilibrado: 5 → 2, 12 → 6, 32,7 → 8,2%; tier 1 67,7 → 70,5%; no-pro 25,7 → 25,7%; Mundial 4,8 → 6,2%; Top 20 28,2 → 30,5%;
+    título 49,3 → 52,7%; edad final 26,1 → 26,0; paradas 43,7 → 45,4.
+  - malas: 4 → 2, 12 → 6, 17,0 → 5,0%; tier 1 33,0 → 34,2%; no-pro 51,2 → 51,2%; Mundial 1,0 → 1,2%; Top 20 8,7 → 11,0%;
+    título 16,8 → 16,3%; edad final 22,6 → 22,4; paradas 25,2 → 25,9.
+- Check nuevo "Tier 3, el nivel manda…" (estado armado: arriba del margen salta siempre, sin consumir `rng`, con el log, y el split
+  siguiente ya no es de tier 3; abajo, quedarse / disolverse / saltar con la frecuencia de la tirada). Rojo con la regla sacada
+  (el código de antes), con el margen en +∞ y con un salto que tira dado.
+- Revisión de la rama (commit aparte): el log ya no dice "y ganar de taquito ya no prueba nada" (regla 15: la regla no mira
+  resultados; la seed 5, Corea, saltaba con 9-11); queda "Te sobraba nivel… N de nivel contra el C de un equipo medio de <liga>".
+  El check arma la liga tier 2 con fuerzas distintas y asimétricas (la mediana no es ni la máxima, ni la mínima, ni el promedio),
+  pone un caso en el borde exacto (nivel = calibre + margen, sin redondeo) y otro 0,01 abajo, y verifica que el log lleve el nivel,
+  el calibre y la liga comparados. Rojo con el calibre leído como la fuerza máxima y con `>` en vez de `>=` (y con los tres
+  mutantes de antes). Huellas sin cambio (346802722; juego 1265514711): el texto de un log no entra en ninguna.
+  - Mundial con la región fija (`regionFija.js`, criterio, seeds 1-600, 60 splits; versión liviana de la de 3000): Corea 69 → 79
+    (11,5 → 13,2%), NA 54 → 52 (9,0 → 8,7%); dentro del ruido (σ ≈ 1,3), la brecha a favor de Corea se abre (2,5 → 4,5 puntos).
+- Corrimiento declarado (T1): huella 1408477439 → 346802722; huella del juego 1766253198 → 1265514711 (`version.js`, sigue 'K6c').
+  "K4c-S el instrumento expone el Δp…" se quedaba con 9 paradas de plan en las seeds 1-3 (eran 20; hacen falta 10): pasa a 1-6 (21).
+- `--rapido`: 364 OK, 0 FAIL, 173 SKIP (la primera corrida dio 1 FAIL, K4c-S, el de arriba). Lentos con `--solo`, uno por vez:
+  "Nadie firma un ascenso a una liga sin cumplir su edadMinima", "Nadie se queda varado…" y "Ningún split sin equipo narra un draft
+  mecánico…" en OK. "El tier 3 es breve" (6000 carreras) no se corrió acá: queda para la validación completa.
+- Riesgos: el calibre tier 2 cambia por región (LCK CL 53 contra LRS 31): el jugador de LATAM salta con menos nivel que el coreano;
+  los 9 eventos de `tier3.json` se ven menos (quedan para el que apenas pasa al circuito chico); +3 paradas por carrera con criterio.
 
 ### 2026-10-06 — La ficha de tier 3 ya no dice la liga de tier 1 (`etiqueta-tier3`)
 
