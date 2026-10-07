@@ -161,4 +161,8 @@ export const VERSION_JUEGO = 'K6c';
 // prestigio de la liga (`topMundial.prestigioSinBonoCampeon` 55 / `prestigioPlenoCampeon` 91: la CBLOL no suma, la LEC la mitad,
 // la LPL y la LCK el bono entero). Sin tiradas nuevas: el ranking cambia el mérito del mercado (`meritoDeTemporada`, el top del
 // mundo), y con él las ofertas y las carreras. Huella del stream (`dev/huella.js`) 346802722 → 1820193282. Reemplaza a 1265514711.
-export const HUELLA_JUEGO = 480175732;
+// K6d-N, P7a (62519553; corrimiento declarado, sigue 'K6c'): el nivel te lleva a la liga que te corresponde (`mercado.estrellaSube`):
+// si tu nivel llega a una liga de tier 1 claramente más fuerte, un club de ahí te hace lugar, primero en la mano y, a mitad de
+// contrato, como pretendiente sin la tirada de `probTraspasoMitadContrato` (una tirada menos cuando la regla dispara: corre el
+// stream). Huella del stream (`dev/huella.js`) 1820193282 → 1381761146. Reemplaza a 480175732.
+export const HUELLA_JUEGO = 62519553;

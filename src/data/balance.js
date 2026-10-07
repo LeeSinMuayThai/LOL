@@ -1383,8 +1383,9 @@ export const BALANCE = {
     // K6d-N, P7a (`core/demanda.js:clubDeLigaMasFuerteQueTeHaceLugar`): el nivel te lleva a la liga que te corresponde. Si jugás
     // en tier 1 y tu nivel llega (`casa.margenAlcanza`) a una liga de tier 1 claramente más fuerte (`casa.margenImportElite`), un
     // club de ahí te hace lugar: primero en la mano al fin de contrato, y como pretendiente sin el dado a mitad de contrato. No
-    // trae constantes propias: reusa esos dos márgenes de K5c-H. `false` = neutra (el mercado de siempre, huella incluida).
-    estrellaSube: false,
+    // trae constantes propias: reusa esos dos márgenes de K5c-H. `false` = neutra (el mercado de siempre, huella incluida); K6d-N
+    // paso 3 la prende (decisión del supervisor, PLAN.md §K6d-N paso 2b).
+    estrellaSube: true,
     casa: {
       // K5c paso 3 (Final2): la casa encendida: margen 99 → -4 y castigo etario 1 → 0.
       margenAlcanza: -4,

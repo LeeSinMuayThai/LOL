@@ -810,7 +810,9 @@ const FORMAS_CONOCIDAS = {
   // K6c-fix, quinta pasada (sin subir): `anioAmateur.riesgoMostrado.mental` y `anioAmateur.mentalAvisada` (la mentalidad que mostró
   // el plan y la de la última parada por la mentalidad), `semanaMentalRoja` en cada opción del plan del año y `datos.porMentalidad` /
   // `datos.cuida` en la parada de la semana. Re-registrada (era '5915cb3adccf').
-  13: '995485d311c0'
+  // K6d-N P7a (sin subir: la 13 no salió): sin campos nuevos en el estado; la estrella sube a una liga más fuerte y las carreras de
+  // muestra juegan en otras ligas (otras claves en `temporada.registrosOtros`, otros eventos vistos). Re-registrada (era '995485d311c0').
+  13: 'b3882d5ebf40'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -26887,9 +26889,11 @@ check('K6d-N P7a la estrella sube: si tu nivel llega a una liga claramente más 
     if (estrellaP7(sinCupo.st) !== null) throw new Error('con el cupo de imports en 0, la regla salteó las reglas duras');
     void actual;
   });
-  const neutra = armarP7();
-  if (estrellaP7(neutra.st) !== null) throw new Error('con la perilla neutra igual hubo lugar');
-  if (ofertaDeTraspasoP7(neutra.st, rngAlto) !== null) throw new Error('con la perilla neutra y el dado en contra igual hubo traspaso');
+  conBalanceK3A([['mercado', 'estrellaSube', false]], () => {
+    const neutra = armarP7();
+    if (estrellaP7(neutra.st) !== null) throw new Error('con la perilla neutra igual hubo lugar');
+    if (ofertaDeTraspasoP7(neutra.st, rngAlto) !== null) throw new Error('con la perilla neutra y el dado en contra igual hubo traspaso');
+  });
 });
 
 // K6b-fix (PLAN.md, "K6b-fix"), la espera vence: el "seguir buscando" narrado de "El mercado ya habló" (`finPorMercadoOSuRepeticion`)
