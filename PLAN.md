@@ -8640,7 +8640,21 @@ y no hay `Math.random`. Pero hay dos fallas de diseño que los checks no ven:
   - la pausa nueva en la cobertura del guardado.
 - **Los textos bajos se arreglan** (regla 15 y vocabulario).
 
-- **Espera la corrección.**
+**K6d-B, corrección** (`dba6b61`..`cb906d0`; el mismo revisor da OK en la ronda 2 de 2).
+- **Lo que cambió:**
+  - `flags.mentalAvisadaPro` es la lista de cierres cubiertos;
+  - la oferta que vuelve ya no ofrece esperar;
+  - el pro sin club frena, con la opción "Desconectarte unos días".
+- **La meta por cierre:** 50 de 50 burnouts del pro salen de un cierre cubierto con su %, con o sin club.
+- **Lo demás:** ninguna carta frena dos veces por el mismo cierre. El T1 en lockstep, el guardado a mitad de pausa y los
+  efectos contra la carta dan bien.
+- **Las frenadas por carrera:** `criterio` 0,14, el perfil 0,04, `malas` 0,77. Con `malas`, entre las carreras que frenan,
+  la mediana es 4 y el máximo 11.
+- **Decisión del supervisor:** el que elige "seguir" con el dado vivo split tras split frena en cada cierre, porque el dado
+  está en juego (D-B). No se abre otra ronda: lo juzga el usuario jugando.
+- **La huella:** sigue en `1073872165` (las 40 seeds de la huella no llegan a las cartas que cambiaron). La forma es
+  `1ef92b3fd9be`.
+- **Espera la integración.**
 
 #### K6d-P — la rueda de prensa con pistas *(rama `k6d-prensa`)*
 
