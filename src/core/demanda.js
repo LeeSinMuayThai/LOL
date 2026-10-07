@@ -497,6 +497,47 @@ export function clubDeCasaQueTeHaceLugar(state) {
   return { org: club, liga: casa, motivo: `${club.nombre} te hace lugar: sos local y das el nivel de ${nombreVisibleDeLiga(casa.id)}` };
 }
 
+// K6d-N, P7a: el nivel te lleva a la liga que te corresponde (PLAN.md §K6d-N, "Decisión del supervisor" del paso 2b; cierra D81
+// y cumple K5c-H, "un jugador de élite sube como import a una liga más fuerte"). Si jugás en tier 1 y tu nivel llega a una liga
+// de tier 1 CLARAMENTE más fuerte que la tuya, un club de esa liga te hace lugar: es su nivel, sin dado.
+//  - "Claramente más fuerte": su calibre (`calibreDeLiga`) pasa el de tu liga actual más `mercado.casa.margenImportElite` (el
+//    mismo margen con el que K5c-H decide qué import de élite cuenta como liga más fuerte).
+//  - "Tu nivel llega": `nivelDelJugador` >= su calibre + `mercado.casa.margenAlcanza` (el mismo margen con el que alcanzás tu
+//    casa, `alcanzaTuLiga`).
+//  - De esas ligas, la de calibre más alto con un club que te puede fichar con `forzada` (como el piso de franquicia y la casa:
+//    salta asiento, presupuesto, banda y disputa, NUNCA las reglas duras: edad mínima, cupo de imports, residentes y
+//    `margenImport`). El club es el más fuerte cuya fuerza no pasa tu nivel, o el más débil si todos la pasan.
+// Devuelve `{ org, liga, motivo }` o `null`. Con `mercado.estrellaSube` en `false` (neutra) siempre `null`. Pura y sin rng.
+export function clubDeLigaMasFuerteQueTeHaceLugar(state) {
+  if (!BALANCE.mercado.estrellaSube) {
+    return null;
+  }
+  const actual = state.mundo.ligas.find((liga) => liga.id === state.career.liga);
+  if (!actual || actual.tier !== 1) {
+    return null;
+  }
+  const casa = BALANCE.mercado.casa;
+  const nivel = nivelDelJugador(state);
+  const calibreActual = calibreDeLiga(actual);
+  const ligas = state.mundo.ligas
+    .filter((liga) => liga.tier === 1 && liga.id !== actual.id
+      && calibreDeLiga(liga) > calibreActual + casa.margenImportElite && nivel >= calibreDeLiga(liga) + casa.margenAlcanza)
+    .sort((a, b) => calibreDeLiga(b) - calibreDeLiga(a));
+  for (const liga of ligas) {
+    const candidatos = liga.orgs
+      .filter((org) => state.mundo.planteles?.[org.nombre])
+      .filter((org) => ofertaPosible(state, org.nombre, state.player.role, { forzada: true }).posible)
+      .sort((a, b) => b.fuerza - a.fuerza);
+    const club = candidatos.find((org) => org.fuerza <= nivel) ?? candidatos[candidatos.length - 1];
+    if (club) {
+      const motivo = `das el nivel de ${nombreVisibleDeLiga(liga.id)}, una liga más fuerte que ${nombreVisibleDeLiga(actual.id)}: `
+        + `${Math.round(nivel)} de nivel contra el ${Math.round(calibreDeLiga(liga))} de un equipo medio de allá`;
+      return { org: club, liga, motivo };
+    }
+  }
+  return null;
+}
+
 // K5c-A, el ascenso: ¿la oferta de `liga` es de un tier mejor que el tuyo actual (`career.tier`)? Sin tier todavía (antes
 // del primer contrato) no hay ascenso que medir.
 export function esAscenso(state, liga) {
