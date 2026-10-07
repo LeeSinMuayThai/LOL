@@ -72,6 +72,42 @@ fantasma en la prensa equivocada, cada pausa sin tono, la UI sin tono o sin ruid
 consola, 3 y 2 pistas montadas con la hoja y los tokens reales; el slider en el tono da puntaje 1 con `rngUi` en 0,5. Las
 capturas (la pista del archirrival, con un nombre de org larguísimo, parte la línea sin desbordar a 320 px) se leyeron.
 
+**Revisión, ronda 1 (los pesos de arriba son los de la primera pasada: los vigentes están en `BALANCE.prensa`).**
+- **El escándalo ya no fija la respuesta.** Con -28 y la sinergia real (mediana 45) para el mismo lado, el tono salía entre 5 y
+  28 (mediana 19, 19 pausas de 60 seeds): un slider fijo a la izquierda ganaba siempre. Ahora el escándalo empuja -8 y el tono
+  lo mueven cinco factores que cambian de un escándalo a otro, con referencias en las medianas medidas EN esas pausas (148 de
+  400 seeds: hype 65, sinergia 45, jerarquía 30, mentalidad 64): hype -1,2 por punto, sinergia +1,5, jerarquía +0,4,
+  mentalidad +0,3 y la forma (`momentum` de `calcularContexto`: racha +16, estable 0, slump -16, crisis -26). `tonoBase` 58
+  (la suma típica de un escándalo da ~-8: con 50 la mediana caía en 35). Se buscó sobre las seeds 1-400 y se confirmó en otras
+  123 pausas (seeds 401-700).
+- **La meta, medida** (config de producción, `rondasConPrensa: []`, seeds 1-200 × 60 splits = 75 pausas; el responder lee
+  `datos`, el ruido ±8 barrido en 17 pasos, el corte el veredicto real `bien` ≥ 0,72):
+
+  | | antes (569f77c) | ahora (75 pausas) | holdout (123 pausas) | meta |
+  |---|---|---|---|---|
+  | p10 / mediana / p90 del tono | 5 / 19 / 28 (19 pausas) | 9 / 43 / 76 | 5 / 40 / 72 | p90-p10 ≥ 40, mediana 35-65 |
+  | mejor slider fijo, «bien» | no medido (tono 5-28: ganaba uno a la izquierda) | 42,4% (en 38) | 40,9% (en 41) | ≤ 50% |
+  | slider en el tono, «bien» | no medido | 100% | no medido | ≥ 90% |
+
+  Sale como `checkLento` (`K6d-P la prensa del escándalo no se gana con un slider fijo`), con la línea de la tabla en la salida.
+- **Las frases no afirman de más.** Cada factor continuo elige su frase por banda: «hype alto» solo desde 75 y «todavía es bajo»
+  hasta 50 (antes "casi nadie te conoce" salía con hype 57-64, mediana 64,8); en el medio dice «algo por encima / por debajo
+  de lo normal», y si no empuja, «en lo normal». Siempre hay al menos 2 pistas (se completa con los de más empuje).
+- **Ninguna pista contradice a otra:** el rival ya no dice "no le des el gusto de bajar la cabeza" (ahora "a ese rival se le
+  contesta con carácter"); "el vestuario aguanta" pasó a "el team te respalda".
+- **Checks atados a la dirección:** cada pista lleva la marca de su factor, la dirección de su empuje (humildad ↔ negativo, desafío
+  ↔ positivo, neutra ↔ cero), y ninguna mezcla las dos. Suma el internacional, los bordes de las bandas y del umbral (3 pistas con
+  dos factores justo en el umbral, 2 con uno apenas debajo). El widget se prueba con un contenedor falso: pinta las pistas y
+  puntúa contra el tono (`puntajeDePrensa`, el 55 suelto pasó a `BALANCE.prensa.anchoDeAcierto`).
+- **Mutantes:** 39 en una copia de `git archive`, 38 en rojo (los de la lista de la revisión mueren: texto de hype con la frase de
+  sinergia, condición fuerte de hype invertida, suave de sinergia invertida, escándalo "subir el tono", `rondasDeFinal` sin
+  'internacional', `montar` sin `objetivoDePrensa`, `montar` sin pintar las pistas). El 39.º (hype casi sin peso) no es un
+  defecto: la meta se sigue cumpliendo sin ese factor.
+- **El botón de los minijuegos:** `button { padding: 0 }` de `base.css` le ganaba al padding de `:where(button)` y el `clip-path`
+  se comía las letras. `.minijuego-btn` lleva `padding: var(--s-3) var(--s-5)` (12 / 24 px medidos en Chromium); capturas de
+  "Responder" y "¡Ahora!" a 320 y 1440 px leídas: el texto entra entero. `scrollWidth == innerWidth`, 0 errores de consola.
+- Huella idéntica (`K1 versión` en verde), `--rapido` 366 OK / 0 FAIL, `build.js` en verde.
+
 ### 2026-10-06 — D82: el traspaso cuesta lo que dice la pantalla, y el Mundial del mundo pesa cada año igual (rama `d82`)
 
 **(a) El valor visible es el que paga el mercado (regla 15).**
