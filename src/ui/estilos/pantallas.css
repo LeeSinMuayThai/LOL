@@ -1076,10 +1076,12 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   font-variant-numeric: tabular-nums;
 }
 
-/* Mismo criterio "se arma, no se prende" que el botón base: reposo tenue,
+/* K6d-P: `button { padding: 0 }` de base.css le ganaba al padding de `:where(button)` y el `clip-path` de chaflanes se comía
+   las letras ("RESPONDER", "¡Ahora!"): el botón de los minijuegos lleva su padding.
+   Mismo criterio "se arma, no se prende" que el botón base: reposo tenue,
    hover sólido. Antes el reposo ya era --warn sólido — el minijuego era el
    único botón del juego que arrancaba encendido. */
-.minijuego-btn { background: var(--warn-fill); border-color: var(--warn); color: var(--warn); }
+.minijuego-btn { padding: var(--s-3) var(--s-5); background: var(--warn-fill); border-color: var(--warn); color: var(--warn); }
 .minijuego-btn:hover:not(:disabled) { background: var(--gold); border-color: var(--gold); color: var(--bg-void); box-shadow: 0 0 24px var(--gold-glow); }
 
 .minijuego-barra {

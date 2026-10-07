@@ -16,10 +16,19 @@ export function objetivoDePrensa(datos, rngUi) {
   return Math.max(0, Math.min(100, datos.tono + (rngUi() * 2 - 1) * BALANCE.prensa.ruidoUi));
 }
 
+// El puntaje 0-1: 1 en el objetivo, 0 a `anchoDeAcierto` puntos de distancia o más.
+export function puntajeDePrensa(slider, objetivo) {
+  return Math.max(0, 1 - Math.abs(slider - objetivo) / BALANCE.prensa.anchoDeAcierto);
+}
+
+// Las pistas que se pintan arriba del slider: las del motor, solo si la pausa trae `tono` (sin tono, ninguna).
+export function pistasDePrensa(datos) {
+  return typeof datos?.tono === 'number' && Array.isArray(datos.pistas) ? datos.pistas : [];
+}
+
 export function montar(container, state, onDone, rngUi, datos = {}) {
-  const tieneTono = typeof datos?.tono === 'number';
   const objetivo = objetivoDePrensa(datos, rngUi);
-  const pistas = tieneTono && Array.isArray(datos.pistas) ? datos.pistas : [];
+  const pistas = pistasDePrensa(datos);
 
   container.innerHTML =
     (pistas.length > 0
@@ -39,7 +48,6 @@ export function montar(container, state, onDone, rngUi, datos = {}) {
   const slider = container.querySelector('.minijuego-slider');
   const boton = container.querySelector('.minijuego-btn');
   boton.addEventListener('click', () => {
-    const distancia = Math.abs(Number(slider.value) - objetivo);
-    onDone(Math.max(0, 1 - distancia / 55));
+    onDone(puntajeDePrensa(Number(slider.value), objetivo));
   }, { once: true });
 }
