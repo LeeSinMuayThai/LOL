@@ -8512,6 +8512,37 @@ Las palancas (600 × 60; tier 1 / título / Top 20; región fija Corea / NA; 30+
 - **El check de estancados es una meta de §K.3b (~10%), no de D-D.** Choca de frente con "llega a tier 1 hacia 55-65":
   si tier 1 se hace más difícil, el `azar` se estanca más. Se reporta, no se re-basa sin el usuario.
 
+**K6d-N, paso 2b** (`427542e` estructura neutra, `a4efef1` valores; P3 hecho con su check y mutantes; huella del juego
+1265514711 → 480175732). **Por qué la estrella no sube** (1019 ventanas de jugadores de CBLOL, LCP o LCS que le sacan 15
+o más a su liga):
+
+| Qué pasa en la ventana | % |
+|---|---|
+| no hay asiento en ningún club que alcanza | 31,0 |
+| ve la oferta y `criterio` la toma | 24,7 |
+| `criterio` no la toma: prefiere la casa, porque debajo de 85 no es élite (K5c-H) | 13,6 |
+| la casa llena la mano y el cupo de imports es solo para la élite | 9,2 |
+| el dado del traspaso (0,35) no salió | 9,3 |
+| ningún pretendiente más fuerte que su club | 8,7 |
+
+Las palancas (con P3; tier 1 / título / Top 20 / Mundial / P(2+ | 1); en 1500 donde se midió):
+- **P7a, solo motor** (el club de la liga más fuerte que alcanzás te hace lugar): 73,0 / 55,0 / 23,2 / 8,5 / 39,2.
+  Región fija: Corea 79 → 87 y NA 45 → 51, de 600. Los burnouts de `criterio` suben de 15 a 42 por cada 1000.
+- **P7b** (P7a más `criterio` tomando la liga más fuerte debajo de 85): título 52,5, pero P(2+ | 1) 24,1 y Corea 10,2.
+- **P3 + P6 + P7b:** tier 1 68, pero 30+ 15,5, estancados de `azar` 21,1% y "el más fuerte gana" 57,9: los tres en FAIL.
+
+**Decisión del supervisor:**
+- **P7a entra.** Cumple K5c-H ("un jugador de élite sube como import a una liga más fuerte") y cierra D81: el asiento lo
+  abre tu nivel, sin dado.
+- **P7b no.** Cambia el bot con el que se miden las metas para que la meta dé (T6 al revés). Además, mudarse a una liga
+  más fuerte le cuesta a `criterio` títulos y Mundiales, así que no es "buen criterio", y debajo de la élite el usuario
+  eligió jugar en casa.
+- **El aumento de burnouts** (subir a un club grande baja la jerarquía, la "trampa del equipo grande") se mide sobre la
+  integración con K6d-B, que es la que frena al pro en rojo.
+- **Lo que queda para el usuario,** con los números de la integración: llegar a tier 1 sigue en ~73% contra la meta de
+  55-65, y el título en ~55% contra ~30. Lo que lo mueve (P6, o P4: más prestigio a las ligas chicas) rompe metas de
+  §K.3b (30+, estancados, "el más fuerte gana") que se contradicen con la de tier 1.
+
 #### K6d-B — D77: que el burnout se vea venir en la firma y en el pro *(rama `k6d-burnout`)*
 
 Hoy el dado del burnout corre al cerrar el split (`systems/atributos.js`), una vez que la mentalidad lleva
