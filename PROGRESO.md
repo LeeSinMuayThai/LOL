@@ -63,6 +63,49 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
   - Título de tier 1, tier 1 y no-pro no se mueven.
   - Región fija: Corea 79 → 79 y NA 52 → 45 (de 600).
   - 30+ en la réplica del check lento: 16,8 → 16,5.
+- **P7a, "el nivel te lleva a la liga que te corresponde"** (decisión del supervisor, `PLAN.md` §K6d-N paso 2b).
+  - **Por qué no subía** (criterio 600 × 60, con P3; las ventanas de las estrellas de CBLOL/LCP/LCS que le sacan 15 o más al
+    calibre de su liga: 1019):
+    - ve la oferta y la toma: 24,7%;
+    - ningún club que alcanza tiene asiento abierto: 31%;
+    - la ve y `criterio` prefiere la casa (no es élite): 13,6%;
+    - a mitad de contrato no sale el dado de 0,35: 9,3%;
+    - a mitad de contrato no hay pretendiente con 5 de fuerza más que su club: 8,7%;
+    - la casa llena la mano y el cupo de imports es solo para la élite: 9,2%.
+  - **La regla:** si tu nivel llega (`casa.margenAlcanza`) a una liga de tier 1 claramente más fuerte (`casa.margenImportElite`:
+    reusa los dos márgenes de K5c-H), un club de ahí te hace lugar con `forzada`, que nunca salta las reglas duras. Al fin de
+    contrato va primero en la mano; a mitad de contrato es el pretendiente, sin el dado. Vive en
+    `core/demanda.js:clubDeLigaMasFuerteQueTeHaceLugar`, y la oferta dice "das el nivel de <liga>, una liga más fuerte que <la
+    tuya>: N de nivel contra el C de un equipo medio de allá".
+  - **Dos commits:**
+    - `9f3b3f8`, la perilla neutra `mercado.estrellaSube: false`. La huella queda en 480175732 y `--rapido` da 366 / 0 / 174;
+    - `9b85bc7`, la perilla prendida.
+  - **El corrimiento declarado:** huella del juego 480175732 → 62519553; stream 1820193282 → 1381761146. La forma 13 se
+    re-registra sin subir (no hay campos nuevos).
+  - **El check nuevo** "K6d-N P7a la estrella sube…" arma los estados así:
+    - fuerzas asimétricas;
+    - el borde exacto de "llega" en coma flotante y 0,01 abajo;
+    - la liga justo en "8 más";
+    - el cupo de imports en 0;
+    - la perilla neutra.
+
+    Está en rojo con seis mutantes: `>` en lugar de `>=`, `>=` en lugar de `>`, sin el filtro de `forzada`, con el dado a
+    mitad de contrato, sin el primer lugar en la mano y sin la perilla.
+  - **Queda un FAIL en `--rapido` (365 / 1 / 174): K5c-R.** En la seed 9, `aniosProDe` da 8,33 y el check espera 8. La carrera
+    ahora pasa por la LEC, se retira en LCK CL y termina en burnout estando retirada, con el reloj saltando 4 splits contra 3
+    de `splitsRetirado`. Es el camino de retiro y burnout, no el de P7a. Queda reportado y no lo toqué.
+  - **Las barandas** (600 × 60, P3 → P3 + P7a):
+
+    | Medida | P3 | P3 + P7a |
+    |---|---|---|
+    | Título de tier 1, criterio / equilibrado / malas | 57,3 / 53,0 / 16,5 | 55,0 / 46,5 / 16,2 |
+    | Mundial | 10,3 | 8,5 |
+    | Región fija Corea / NA (de 600) | 79 / 45 | 87 / 51 |
+    | Burnouts por mil, criterio / equilibrado / malas | 15 / 27 / 512 | 42 / 37 / 513 |
+    | Títulos ganados en CBLOL/LCP/LCS | 68,2% | 65,3% |
+    | Splits medianos en tier 1 | 27 | 27 |
+
+    No se mueven: tier 1 (73,0), no-pro y tier 3 (mediana 2).
 
 ### 2026-10-06 — D82: el traspaso cuesta lo que dice la pantalla, y el Mundial del mundo pesa cada año igual (rama `d82`)
 
