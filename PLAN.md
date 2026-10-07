@@ -8572,7 +8572,44 @@ pro:
   - no-pro: 24,5 / 25,3 / 49,8;
   - tier 1, títulos, Top 20, Mundial, región fija, edad y 30+: dentro del ruido;
   - `agencia.js`: idéntico.
-- **Espera la revisión.**
+
+**La revisión de K6d-B: requiere corrección.** El T1 en lockstep está limpio, el guardado a mitad de las pausas también,
+y no hay `Math.random`. Pero hay dos fallas de diseño que los checks no ven:
+- **Alta.** La vara del "riesgo nuevo" del pro es absoluta y no se relaja mientras dura la racha. Si firmás con la carta
+  mostrando la mentalidad en el piso, la parada no vuelve nunca. Con `malas` (400 seeds), 22 pros se quemaron entre 1 y 9
+  splits después de firmar sin ninguna parada, con el dado al 10-14% por split. El check contaba la carta de la firma
+  como aviso de toda la racha.
+- **Alta.** "Esperar" se puede repetir en bucle: el perfil encadenó hasta 6 esperas y "esperar siempre" llegó a 13. Esperar
+  casi no cambia el riesgo, y el perfil elige la opción con menos riesgo. Mientras tanto no hay scouting ni "¿seguís?".
+- **Media.**
+  - El pro sin club no frena, pero el dado tira igual: 15 burnouts de `malas`, que el check excluía.
+  - Hay checks que no muerden: "la oferta guardada es la misma" solo compara el nombre, y ningún check prueba que el perfil
+    elija la opción que no quema.
+  - La pausa nueva no está en la lista de cobertura del guardado de K4.
+- **Baja.**
+  - Con la PC confiscada esa semana, la carta promete un split que se vive sin PC.
+  - Con la vara en 0%, la prueba dice "si no llegás, lo cerrás en soloQ".
+  - "El suplente suma minutos" no es vocabulario de LoL.
+
+**La corrección (supervisor):**
+- **Un aviso cubre los cierres que mostró.** La carta de la firma muestra dos y la parada del pro muestra el de su split.
+  Si el dado sigue vivo en un cierre que ningún aviso cubrió, es riesgo nuevo y frena. Dentro de lo cubierto, vuelve a
+  frenar solo si la mentalidad baja más de `burnout.mentalNueva` de lo mostrado.
+- **Esperar se puede una sola vez por oferta.** Cuando la oferta guardada vuelve, es firmar o dejarla, y la carta lo
+  dice.
+- **El pro frena con o sin club,** con las opciones que tengan sentido sin club (descansar o bajar la carga, con su costo).
+- **La meta se mide por cierre:** todo burnout de un pro sale de un cierre que alguna carta o parada cubrió con su %, en
+  ≥ 95% y sin excluir a los que no tienen club.
+- **Las frenadas por la mentalidad** de `criterio` y `equilibrado` siguen siendo pocas, y se reportan.
+- **Los checks atrapan:**
+  - la vara que no se relaja;
+  - esperar dos veces;
+  - la guardada que cambia algo (sueldo, años, vara o club);
+  - el perfil o `criterio` eligiendo la opción que más quema;
+  - la pausa nueva en la cobertura del guardado.
+- **Los textos bajos se arreglan** (regla 15 y vocabulario).
+
+- **Espera la corrección.**
 
 #### K6d-P — la rueda de prensa con pistas *(rama `k6d-prensa`)*
 
