@@ -8477,6 +8477,41 @@ dado**. El supervisor escribe acá la regla elegida con sus números, y recién 
 
 Si las metas no se alcanzan sin romper esto, se reporta la frontera y decide el usuario. Ninguna meta se re-basa sin él.
 
+**K6d-N, pasos 1 y 2, hechos** (`k6d-nivel`: merge `908ac9f`, huella `1265514711`, `--rapido` 364 OK y 0 FAIL; las
+palancas, en copias sin commitear). El diagnóstico (`criterio`, 600 × 60):
+- **Llegar a tier 1 es fácil porque el fondo de tier 1 está debajo del techo de tier 2.** Los calibres son CBLOL 51,5,
+  LCP 56,5 y LCS 59, contra ~53 de la LCK CL. El 88,6% de las llegadas es a esas tres ligas, y 87 de los 96 coreanos que
+  llegan entran ahí de import. La llegada típica es a los 19, con nivel 59 contra calibre 54,5.
+- **En tier 1 el jugador le saca mucho a su liga:** nivel menos calibre, mediana +11,4 y p90 +25.
+- **El título ya lo decide el nivel:** de 1,3% por split con brecha negativa a 22% con 20 o más. Lo que sobra es la
+  **estrella en una liga chica**: el 69% de los títulos sale de splits con brecha de 15 o más, y otro 69% se gana en
+  CBLOL, LCP o LCS. Son ~27 splits en tier 1 por carrera, y el 78,5% de los que llegan gana un título.
+- **El Top 20:** el título de cualquier liga suma lo mismo, 16,9 puntos.
+- **No son causa:** el peso del jugador en el equipo ni el techo de experiencia.
+
+Las palancas (600 × 60; tier 1 / título / Top 20; región fija Corea / NA; 30+):
+
+| Palanca | Tier 1 / título / Top 20 | Corea / NA | 30+ | Costo |
+|---|---|---|---|---|
+| hoy, con la regla de tier 3 | 73,0 / 57,3 / 40,3 | 13,2 / 8,7 | 16,8 | — |
+| **P3**: el bono de campeón en el ranking escala con el prestigio (0 en 55, pleno en 91) | 73,0 / 57,3 / 23,8 | 13,2 / 7,5 | 16,5 | ninguno medido |
+| **P6**: +8 de margen para ascender a tier 1 | 67,7 / 57,0 / 38,0 | 13,0 / 7,7 | 14,8 | estancados de `azar` FAIL |
+| **P4**: más prestigio a CBLOL, LCP y LCS | 68,7 / 50,0 / 35,8 | 9,7 / 7,7 | 11,0 | 30+ y Corea; estancados FAIL |
+| P3 + P6 (con 1500) | 68,4 / 57,3 / 21,5 | 14,5 / 7,7 | 14,0 | estancados de `azar` 21,1% (banda ≤ 14,6) |
+
+**Decisión del supervisor (dentro de "regla + tier 1 más difícil"):**
+- **P3 entra.** El Top 20 mide a los mejores del mundo, y ganar la CBLOL no es ganar la LCK. Es una regla, sin dado.
+- **Antes de llevarle al usuario la frontera de los títulos, se prueba una palanca más, P7: "el nivel te lleva a la
+  liga que te corresponde".** Es la más fiel a "el nivel manda" y a K5c-H, donde dice que "un jugador de élite sube como
+  import a una liga más fuerte". La estrella que le saca 15 o más a su liga de tier 1 recibe lugar en una liga más fuerte
+  que alcanza, y `criterio` la toma. Allá el título cuesta lo que su nivel (D81 ya avisaba que la élite no se busca).
+  Primero se diagnostica por qué hoy no sube: ¿falta asiento, pierde la disputa, lo frena el castigo etario o el bot no
+  la toma? El arreglo va donde esté la causa.
+- **Se mide con P3 puesto:** P3 + P7 y P3 + P6 + P7, con las barandas, `--solo` de las metas K5c (1500) y el de "Ninguna
+  carrera queda sin terminar" (edad y 30+).
+- **El check de estancados es una meta de §K.3b (~10%), no de D-D.** Choca de frente con "llega a tier 1 hacia 55-65":
+  si tier 1 se hace más difícil, el `azar` se estanca más. Se reporta, no se re-basa sin el usuario.
+
 #### K6d-B — D77: que el burnout se vea venir en la firma y en el pro *(rama `k6d-burnout`)*
 
 Hoy el dado del burnout corre al cerrar el split (`systems/atributos.js`), una vez que la mentalidad lleva
