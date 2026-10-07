@@ -8753,6 +8753,34 @@ La pantalla se verifica en Chromium real, de 320 a 1440 px.
 - **El botón de los minijuegos** ya no se corta, medido a 320 y 1440 px.
 - **Espera la integración.**
 
+#### K6d — la integración *(`k6d-integracion` @ `f542f62`)*
+
+- **Qué entra:** la prensa, D77 y la regla de tier 3 con P3. P7a se revirtió.
+- **El bug del retiro:** al volver del retiro la racha en rojo venía congelada del año afuera, y la carrera se quemaba en
+  el primer split de vuelta. Ahora la vuelta la resetea (`systems/retiro.js`), con un check.
+- **Versiones:** guardado `VERSION` 14 con `migrarDe13`; `FORMAS` 13 = `995485d311c0` y 14 = `1ef92b3fd9be`;
+  `HUELLA_JUEGO` 79304237, 'K6d'. El techo de `dist/` sube de 2400 a 2500 (pesa 2402: +54 KB de K6d), en su commit.
+- **`--rapido`:** 370 OK, 0 FAIL.
+
+**Las barandas sobre la integración**, medidas por el supervisor (600 × 60), de la base `4795489` a `f542f62`:
+
+| Medida | `criterio` | `equilibrado` | `malas` |
+|---|---|---|---|
+| No-pro | 24,5 → 24,5 | 25,7 → 25,3 | 51,2 → 48,8 |
+| Llega a tier 1 | 71,3 → 73,0 | 67,7 → 70,8 | 33,0 → 36,2 |
+| Título de tier 1 | 52,2 → 57,5 | 49,3 → 53,5 | 16,8 → 17,5 |
+| Top 20 | 37,2 → 24,0 | 28,2 → 16,3 | 8,7 → 3,2 |
+| Mundial | 10,5 → 10,3 | 4,8 → 6,3 | 1,0 → 1,0 |
+| P(2+ \| 1) | 25,4 → 35,5 | 13,8 → 10,5 | — |
+| Burnouts por cada 1000 | 10 → 0 | 25 → 17 | 490 → 498 |
+| Tier 3: mediana / 6+ | 5 / 32,3 → 2 / 7,7 | 5 / 32,7 → 2 / 8,2 | 4 / 17 → 2 / 5,2 |
+| Edad mediana / 30+ | 26 / 27,0 → 26 / 28,0 | 25 / 15,8 → 25 / 16,0 | 18 / 22,7 → 19 / 23,3 |
+| Frenadas: media (mediana) | 48,4 (44) → 51,9 (51) | 43,7 (40) → 45,9 (44) | 25,2 (16) → 27,5 (18) |
+
+- **El Mundial con la región fija** (de 600): Corea 69 → 79 (13,2%) y NA 54 → 46 (7,7%).
+- **El título sube por la regla de tier 3:** salís antes y pasás más años en tier 1. La frontera es del usuario.
+- **Las frenadas suben ~7 en `criterio`** por la misma razón: más carrera en tier 1.
+
 #### K6d — el cierre
 
 1. La integración `k6d-integracion` (N + B + P), con la huella y la forma del guardado resueltas.
