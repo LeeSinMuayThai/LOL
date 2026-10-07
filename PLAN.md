@@ -8570,6 +8570,19 @@ La pantalla se verifica en Chromium real, de 320 a 1440 px.
 - El botón de los minijuegos recupera su padding, medido en el navegador.
 - La huella sigue idéntica.
 
+**K6d-P, segunda pasada** (`577a322`, `ad614fb`). **La revisión da OK**, sin hallazgos. La midió también el supervisor con
+`--solo="K6d-P"`.
+- **Los pesos.** El escándalo pesa -8. La prensa también la mueven el hype, la sinergia, la jerarquía, la mentalidad y la
+  forma (`momentum`, leído en vivo con `calcularContexto`). `tonoBase` es 58.
+- **La meta, cumplida.** En 75 pausas reales del escándalo (seeds 1-200) el tono va de 9 a 76 (p10-p90), con mediana 43.
+  Con la mejor posición fija del slider, "bien" sale en el 42,4%; con el slider en el tono, en el 100%. En un holdout de
+  123 pausas (seeds 401-700): 5 / 40 / 72 y 40,9%.
+- **Verificado:** 38 de 39 mutantes en rojo (el que queda es "el hype casi sin peso", inocuo) y los mutantes propios del
+  revisor también. En pausas reales: 0 pistas falsas en 55 apariciones.
+- **Huella idéntica, forma igual,** `dist/` 2360 KB.
+- **El botón de los minijuegos** ya no se corta, medido a 320 y 1440 px.
+- **Espera la integración.**
+
 #### K6d — el cierre
 
 1. La integración `k6d-integracion` (N + B + P), con la huella y la forma del guardado resueltas.
