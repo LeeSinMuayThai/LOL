@@ -71,7 +71,7 @@ import { nivelDelJugador, deltasDeStats, fichaCompleta, loQueConstruiste } from 
 import { componerLegado } from '../core/legado.js';
 import { titularDelAnio } from '../core/temporadaResumen.js';
 import { bandaDeArraigo, filaAbierta as filaAbiertaK5 } from '../core/registro.js';
-import { rankearMundo, rankearPoblacion, puntajeRanking } from '../core/topMundial.js';
+import { rankearMundo, rankearPoblacion, puntajeRanking, bonusResultadoDelAnio, factorPorPrestigio } from '../core/topMundial.js';
 import { salarioDeOferta } from '../core/salarios.js';
 import { valorDeMercado, presupuestoDeDemanda, sesgoEtario } from '../core/valorMercado.js';
 import { orgsQueTeFicharian, ofertaPosible, residenciaEn, factorElite } from '../core/demanda.js';
@@ -26760,6 +26760,41 @@ check('K6c-fix si ya estaba en rojo y el plan lo mostró, no frena salvo que baj
     }
   }
   if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
+});
+
+// K6d-N, P3 (PLAN.md "Decisión del supervisor (dentro de "regla + tier 1 más difícil")"): el bono del título de liga en el
+// ranking del mundo pesa por el prestigio de la liga (`core/topMundial.js:factorPorPrestigio`). Con las perillas en 55 / 91
+// (las de la decisión): el título de una liga de prestigio bajo suma menos que uno de prestigio alto; en el borde de abajo da 0
+// exacto y en el de arriba el bono entero exacto; el Mundial no se toca; y con la perilla neutra (pleno 0) toda liga cobra el
+// bono entero. Los prestigios se leen de `data/leagues.json`. Rojo con el factor sacado, sin el tope de arriba o sin el de abajo.
+check('K6d-N P3 el título de liga pesa por el prestigio de su liga en el Top 20: el de una liga chica suma menos que el de una grande, y en los bordes (sin bono, pleno) da exacto', () => {
+  const t = BALANCE.topMundial;
+  const prestigio = Object.fromEntries(LIGAS.map((liga) => [liga.id, liga.prestigio]));
+  const bono = (ligaId, extra = {}) => bonusResultadoDelAnio('Org P3', ligaId, { campeones: { [ligaId]: 'Org P3' }, ...extra });
+  const SIN = 55;
+  const PLENO = 91;
+  conBalanceK3A([['topMundial', 'prestigioSinBonoCampeon', SIN], ['topMundial', 'prestigioPlenoCampeon', PLENO]], () => {
+    const bordes = [[SIN - 5, 0], [SIN - 0.01, 0], [SIN, 0], [(SIN + PLENO) / 2, 0.5], [PLENO, 1], [PLENO + 6, 1]];
+    for (const [p, esperado] of bordes) {
+      if (factorPorPrestigio(p) !== esperado) throw new Error(`factorPorPrestigio(${p}) = ${factorPorPrestigio(p)}, tenía que dar ${esperado} exacto`);
+    }
+    if (!(factorPorPrestigio(SIN + 0.01) > 0 && factorPorPrestigio(PLENO - 0.01) < 1)) throw new Error('justo adentro de los bordes el factor no queda entre 0 y 1');
+    const ligas = LIGAS.filter((liga) => liga.tier === 1).map((liga) => liga.id).sort((a, b) => prestigio[a] - prestigio[b]);
+    const baja = ligas[0];
+    const alta = ligas[ligas.length - 1];
+    if (!(bono(baja) < bono(alta))) throw new Error(`el título de ${baja} (prestigio ${prestigio[baja]}) suma ${bono(baja)} y el de ${alta} (prestigio ${prestigio[alta]}) ${bono(alta)}: el de la liga chica tenía que sumar menos`);
+    for (const id of ligas) {
+      const f = Math.min(1, Math.max(0, (prestigio[id] - SIN) / (PLENO - SIN)));
+      if (Math.abs(bono(id) - t.bonusCampeonLiga * f) > 1e-9) throw new Error(`${id} (prestigio ${prestigio[id]}): el título suma ${bono(id)}, tenía que sumar ${t.bonusCampeonLiga * f}`);
+    }
+    const mundial = bono(baja, { campeonMundial: 'Org P3' }) - bono(baja);
+    if (mundial !== t.bonusInternacional) throw new Error(`el Mundial ganado desde ${baja} suma ${mundial}: el factor de la liga no le toca (${t.bonusInternacional})`);
+  });
+  conBalanceK3A([['topMundial', 'prestigioSinBonoCampeon', 0], ['topMundial', 'prestigioPlenoCampeon', 0]], () => {
+    for (const liga of LIGAS.filter((l) => l.tier === 1)) {
+      if (bono(liga.id) !== t.bonusCampeonLiga) throw new Error(`con la perilla neutra el título de ${liga.id} suma ${bono(liga.id)}, tenía que ser ${t.bonusCampeonLiga} exacto`);
+    }
+  });
 });
 
 // K6b-fix (PLAN.md, "K6b-fix"), la espera vence: el "seguir buscando" narrado de "El mercado ya habló" (`finPorMercadoOSuRepeticion`)

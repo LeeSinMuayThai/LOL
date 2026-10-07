@@ -1975,6 +1975,11 @@ export const BALANCE = {
     // carreras con éxito son campeón doméstico sin internacional, así que
     // `bonusCampeonLiga` es el que mueve la aguja de §9W.6.
     bonusCampeonLiga: 13,
+    // K6d-N, P3: el bono del título de liga pesa por el prestigio de la liga (`core/topMundial.js:factorPorPrestigio`): 0 con
+    // prestigio <= `prestigioSinBonoCampeon`, pleno con prestigio >= `prestigioPlenoCampeon`, lineal en el medio. Neutra:
+    // pleno 0 (toda liga cobra el bono entero, el ranking de siempre).
+    prestigioSinBonoCampeon: 0,
+    prestigioPlenoCampeon: 0,
     bonusInternacional: 16,
     bonusInternacionalFinalista: 8,
     // La perilla del churn ("que rote bastante"): amplitud del ruido

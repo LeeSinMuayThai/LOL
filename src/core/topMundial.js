@@ -1,3 +1,4 @@
+import LIGAS from '../data/leagues.json' with { type: 'json' };
 import { BALANCE } from '../data/balance.js';
 import { IDS_ROL } from '../data/roles.js';
 import { hashCadena } from './numeros.js';
@@ -14,6 +15,29 @@ import { nivelDelJugador } from './ficha.js';
 //
 // Puro, sin DOM: `systems/topMundial.js` lo llama cada split y la UI lo pinta.
 
+// K6d-N, P3 (PLAN.md "Decisión del supervisor (dentro de "regla + tier 1 más difícil")"): el Top 20 mide a los mejores del
+// mundo, y ganar la CBLOL no es ganar la LCK. El bono del título de liga se multiplica por un factor del prestigio de esa liga
+// (`data/leagues.json`, se lee del archivo como `esLigaFranquiciada`): 0 con prestigio <= `prestigioSinBonoCampeon`, 1 con
+// prestigio >= `prestigioPlenoCampeon`, lineal en el medio. Sin rng. Con la perilla neutra (pleno 0) toda liga da 1 y el
+// bono es el de siempre, exacto. Un id que no es de una liga conocida da 1 (no puede ser campeón de liga de todos modos).
+const PRESTIGIO_DE_LIGA = Object.fromEntries(LIGAS.map((liga) => [liga.id, liga.prestigio]));
+
+export function factorPorPrestigio(prestigio) {
+  const { prestigioSinBonoCampeon: sin, prestigioPlenoCampeon: pleno } = BALANCE.topMundial;
+  if (prestigio >= pleno) {
+    return 1;
+  }
+  if (prestigio <= sin) {
+    return 0;
+  }
+  return (prestigio - sin) / (pleno - sin);
+}
+
+export function factorTituloPorPrestigio(ligaId) {
+  const prestigio = PRESTIGIO_DE_LIGA[ligaId];
+  return prestigio === undefined ? 1 : factorPorPrestigio(prestigio);
+}
+
 // ¿La org `orgNombre` fue campeona de su liga / del mundo / finalista del
 // mundo en el año que describe `escena`? Devuelve el bono en puntos de nivel
 // (0 si `escena` es null — todavía no cerró un año).
@@ -24,7 +48,7 @@ export function bonusResultadoDelAnio(orgNombre, ligaId, escena) {
   const t = BALANCE.topMundial;
   let bono = 0;
   if (escena.campeones?.[ligaId] === orgNombre) {
-    bono += t.bonusCampeonLiga;
+    bono += t.bonusCampeonLiga * factorTituloPorPrestigio(ligaId);
   }
   if (escena.campeonMundial === orgNombre) {
     bono += t.bonusInternacional;
