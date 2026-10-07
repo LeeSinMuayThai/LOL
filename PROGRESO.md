@@ -119,6 +119,77 @@ Cada check se vio en rojo con su mutante:
 (`flags.mentalAvisadaPro`, `flags.ofertaGuardada`), hash 9689e8d31c32 contra el 995485d311c0 de VERSION 13. `VERSION` y
 `FORMAS_CONOCIDAS` no se tocaron: `K0-B guardado` queda en FAIL a propósito para la integración.
 
+**K6d-B (revisión)** (`dba6b61`, `4ed0fce`, `5a80d98`). La corrección del supervisor, hallazgo por hallazgo:
+- **La vara que no se relajaba** (`systems/burnout.js`). `flags.mentalAvisadaPro` pasa de un número a la lista de cierres
+  avisados, `[{ split, mentalidad, probabilidad }]`. La carta de la oferta que firmaste cubre dos (el de la firma y el
+  siguiente) y la parada del pro cubre el de su split. Un cierre con el dado vivo que ningún aviso cubrió con su % frena
+  siempre. Dentro de lo cubierto, frena solo si la proyección cae más de `burnout.mentalNueva` debajo de lo mostrado. Un aviso
+  que mostró 0% no cubre: si después el dado puede pinchar, frena. Los cierres pasados se olvidan.
+- **Esperar en bucle.** La guardada vuelve sin "pedirle que te espere" y dice "Ya te esperaron un split: ahora es firmar o
+  dejarla pasar". `resolverOferta` no la vuelve a guardar aunque llegue esa respuesta.
+- **El pro sin club** frena igual: seguir, bajar la carga (sin scrims) o desconectarte unos días. Desconectarte da mentalidad
+  +7 a +12 y mecánica −3 a −5 (`burnout.desconectar`, con `conPermanencia`).
+- **La espera con la PC confiscada** proyecta el periodo sin PC (la media de sus rangos) y dice "el que viene lo vivís sin
+  PC". Con la vara en 0%, la prueba ya no dice "si no llegás". "El suplente suma minutos" pasa a "el suplente las juega por vos".
+- **Checks** (cinco lentos sobre la cosecha de `malas`, 400 × 60, ~20 s con `--solo=K6d-B`):
+  - la meta se mide por cierre, sin excluir a los que no tienen club;
+  - la guardada se compara entera (club con todos sus campos, tier, liga y vara);
+  - esperar una sola vez;
+  - con el mismo estado de cada parada, un aviso de `mentalNueva + 1` por encima frena y uno de `mentalNueva − 1` no;
+  - el perfil y `criterio` eligen la opción que menos quema (624 elecciones).
+  El sueldo y los años no viajan en la oferta del amateur: los pone el contrato al firmar.
+- **La cobertura del guardado K4** suma `burnout:burnout_pro`, con una fuente de `malas`: hasta 40 seeds, hasta verla.
+
+**La meta por cierre** (sonda `probes/cierres.mjs`, `malas` pura, 400 × 60, antes `9dacdf9` → después). De los burnouts de
+un pro con el cierre cubierto con su %: 28 de 57 (49,1%) → 60 de 60 (100%). Sin club: 0 de 12 → 13 de 13. Firmar y quemarse
+sin aviso: 0 → 0. Las esperas seguidas, como máximo: 3 → 1. La cosecha del check da 43 de 43 (sin club, 9 de 9). Con
+`criterio` y `equilibrado` no hay burnouts del pro en esas 400.
+
+**Barandas** (`barandas.sh` del supervisor, 600 × 60, `9dacdf9` → `5a80d98`):
+
+| Medida | criterio | equilibrado | malas |
+|---|---|---|---|
+| no llega a pro | 24,5 → 24,5 | 25,3 → 25,3 | 49,8 → 48,8 |
+| burnouts / 1000 | 2 → 0 | 18 → 17 | 485 → 480 |
+| con aviso (texto) | 100 → — | 90,9 → 100 | 90,7 → 95,8 |
+| firman y se queman en el split | 0 → 0 | 0 → 0 | 17 → 19 (todas con la carta) |
+| paradas del pro por la mentalidad, por carrera | 0,09 → 0,12 | < 0,05 → < 0,05 (0,03 en la sonda) | 0,05 → 0,75 |
+| paradas por carrera (media) | 48,55 → 48,63 | 43,78 → 43,83 | 25,67 → 26,66 |
+| tier 1 / título tier 1 / Top 20 | 71,3 / 52,0 / 37,3 → 71,3 / 52,2 / 37,2 | 67,8 / 49,5 / 28,0 → 68,0 / 49,7 / 27,8 | 34,0 / 17,7 / 9,0 → 34,3 / 17,3 / 9,0 |
+| Mundial | 10,2 → 10,3 | 5,0 → 5,0 | 1,0 → 1,0 |
+
+Con la región fija: KR 70 → 70 y NA 54 → 54. Las paradas de `malas` suben porque elige siempre seguir. Con eso la racha
+sigue en rojo, y cada cierre con el dado vivo que nada cubrió es una parada (antes, una sola por racha). `criterio` y
+`equilibrado` eligen la que no quema y la racha se corta.
+
+**Lentos, de a uno, verdes:**
+- los cinco de K6d-B;
+- "El burnout no llega sin aviso";
+- "El contexto de carrera";
+- la brecha de no-pro por perfil: 26,7 / 23,3 / 22,7 / 27,3;
+- el impacto de los minijuegos;
+- la cobertura del guardado K4.
+
+`--rapido`: 362 OK y 1 FAIL, el de la forma (igual que en la pieza).
+
+**Mutantes en rojo** (copias `git archive HEAD`):
+- M1 de la revisión, "un aviso cubre toda la racha": la meta da 20 de 50 cubiertos;
+- "dentro de lo cubierto no frena aunque caiga": 190 problemas con la vara directa (antes de ese check seguía verde);
+- M3 de la revisión, la guardada sin vara: 127;
+- M8 de la revisión, el perfil y criterio eligen la peor: 592;
+- esperar dos veces: 120;
+- sin club no frena: 27 de 44;
+- la espera sin PC promete la rutina: 11;
+- la vara 0 dice "si no llegás": 49;
+- la oferta no mira el riesgo: los tres checks de la carta quedan vacíos;
+- la parada nunca frena: el guardado K4 dice "no cubrió burnout:burnout_pro".
+
+**Huella y forma.**
+- `HUELLA_JUEGO` sigue en 1073872165: el check K1 da OK, porque las 40 seeds del perfil no tocan las cartas que cambian. Va
+  declarada en `version.js` con su comentario.
+- La forma vuelve a cambiar: 9689e8d31c32 → 1ef92b3fd9be (`mentalAvisadaPro` ahora es una lista). `VERSION` y `FORMAS` no se
+  tocaron.
+
 ### 2026-10-06 — D82: el traspaso cuesta lo que dice la pantalla, y el Mundial del mundo pesa cada año igual (rama `d82`)
 
 **(a) El valor visible es el que paga el mercado (regla 15).**
