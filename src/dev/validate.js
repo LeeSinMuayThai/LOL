@@ -17658,7 +17658,9 @@ const TIPOS_DE_PAUSA_GUARDADO_K4 = [
   'retiro:retiro_declive', 'retiro:retiro_vuelta', 'servicioMilitar:servicio_te_vas',
   'servicioMilitar:servicio_adentro', 'servicioMilitar:servicio_volver',
   // K5: el 2-2 del Swiss del Mundial, el plan de una serie del bracket y la bifurcación del final por mercado.
-  'internacional:swiss', 'internacional:plan', 'mercado:fin_mercado'
+  'internacional:swiss', 'internacional:plan', 'mercado:fin_mercado',
+  // K6d-B (revisión): la parada del pro con la mentalidad en rojo. `criterio` casi no la genera; la fuente es `malas` (abajo).
+  'burnout:burnout_pro'
 ];
 const SEEDS_GUARDADO_K4 = Array.from({ length: 30 }, (_, i) => 1 + i);
 const SPLITS_GUARDADO_K4 = 60;
@@ -17667,6 +17669,8 @@ const SEEDS_GUARDADO_TOPE_K4 = 200;
 // no cubría `mercado:fin_mercado`). Ahora se buscan, en orden, hasta ver la pausa `FIN_MERCADO_GUARDADO_MINIMO` veces, con
 // tope `SEEDS_FIN_MERCADO_TOPE_K5` seeds.
 const SEEDS_FIN_MERCADO_TOPE_K5 = 40;
+// K6d-B (revisión): las carreras de `malas` que se buscan, en orden, hasta ver la parada del pro (`burnout:burnout_pro`).
+const SEEDS_BURNOUT_TOPE_K6DB = 40;
 const FIN_MERCADO_GUARDADO_MINIMO = 2;
 
 function tipoDePausaGuardadoK4(pendiente) {
@@ -17715,7 +17719,7 @@ checkLento('K4 (revisión) guardado: en cada tipo de pausa, guardar y recargar (
   const noJson = new Set();
   // `degradado`: la carrera de los checks de K5-C (stats topeados al llegar a primera, `carreraDegradadaK5C`), la que
   // se queda sin ofertas en su tier y llega a la bifurcación del final por mercado.
-  const recorrer = (seeds, { degradado = false } = {}) => {
+  const recorrer = (seeds, { degradado = false, bot = 'criterio' } = {}) => {
     for (const seed of seeds) {
       const rng = mulberry32(seed);
       let state = createInitialState(seed, rng);
@@ -17737,7 +17741,7 @@ checkLento('K4 (revisión) guardado: en cada tipo de pausa, guardar y recargar (
           const guardado = serializarGuardado(paso.state, rng);
           // De corrido.
           const { sistemaId, decision } = paso.state.pendiente;
-          const respuesta = ESTRATEGIAS_K0.criterio(sistemaPorId(sistemaId), paso.state, decision, rng);
+          const respuesta = ESTRATEGIAS_K0[bot](sistemaPorId(sistemaId), paso.state, decision, rng);
           const seguido = resolverDecision(paso.state, respuesta, rng);
           // Recargado: el estado y el RNG salen del JSON, y el bot responde desde lo recargado, como la página.
           let recargado;
@@ -17750,7 +17754,7 @@ checkLento('K4 (revisión) guardado: en cada tipo de pausa, guardar y recargar (
             rngRecargado = mulberry32(datos.seed);
             rngRecargado.restaurar(datos.rngEstado);
             const pendiente = datos.state.pendiente;
-            const respuestaRecargada = ESTRATEGIAS_K0.criterio(sistemaPorId(pendiente.sistemaId), datos.state,
+            const respuestaRecargada = ESTRATEGIAS_K0[bot](sistemaPorId(pendiente.sistemaId), datos.state,
               pendiente.decision, rngRecargado);
             recargado = resolverDecision(datos.state, respuestaRecargada, rngRecargado);
           } catch (error) {
@@ -17780,6 +17784,10 @@ checkLento('K4 (revisión) guardado: en cada tipo de pausa, guardar y recargar (
       recorrer([seed], { degradado: true });
     }
   });
+  // K6d-B (revisión): la parada del pro sale de una racha larga en rojo, la de `malas`.
+  for (let seed = 1; seed <= SEEDS_BURNOUT_TOPE_K6DB && !vistos.has('burnout:burnout_pro'); seed += 1) {
+    recorrer([seed], { bot: 'malas' });
+  }
   if (noJson.size > 0 || problemas.length > 0) {
     throw new Error(`${problemas.length} pausas rotas al recargar (${problemas.slice(0, 4).join(' | ')}); `
       + `valores que JSON no conserva en el estado al pausar: ${[...noJson].slice(0, 8).join('; ') || 'ninguno'}`);
@@ -26684,21 +26692,30 @@ checkLento(`K6b-fix: el "seguir buscando" narrado no pasa de ${BALANCE.mercado.s
 // --- K6d-B (D77, "que el burnout se vea venir en la firma y en el pro", decisión del usuario 2026-10-07) ---
 //
 // Una sola cosecha (`malas`, con las cartas del riesgo contestadas a mano para pasar por todos los caminos: las seeds pares firman con
-// el riesgo a la vista y las impares le piden al club que espere; en la parada del pro, una de cada tres seeds elige la opción que no
-// quema y el resto la que más), y cuatro checks sobre ella. Regla 17 — protegen: (1) que la carta de la oferta y la de la prueba digan el
-// % que tira el dado de `atributos.js` (regla 15), (2) que "pedirle al club que te espere" guarde la oferta y la cumpla al split
-// siguiente, (3) que el pro frene con el % antes de que el dado pueda tirar, que no vuelva a frenar sin riesgo nuevo y que cada opción
-// haga lo que dice, y (4) que nadie firme y se queme en el mismo split sin que la carta lo haya dicho. Desde: K6d-B (2026-10-07).
+// el riesgo a la vista y las impares le piden al club que espere; cuando la guardada vuelve, la mitad de esas firma y la otra mitad la
+// deja pasar; en la parada del pro, una de cada tres seeds elige la opción que no quema y el resto la que más), y seis checks sobre
+// ella. Regla 17 — protegen: (1) que la carta de la oferta y la de la prueba digan el % que tira el dado de `atributos.js` y lo real
+// de la espera (regla 15), (2) que "pedirle al club que te espere" guarde la oferta entera, la cumpla al split siguiente y se pueda
+// una sola vez, (3) que el pro frene con el % antes de que el dado pueda tirar, por cierre: todo burnout de un pro, con o sin club,
+// sale de un cierre que alguna carta o parada cubrió con su %, que no vuelva a frenar sin riesgo nuevo y que cada opción haga lo que
+// dice, (4) que nadie firme y se queme en el mismo split sin que la carta lo haya dicho, y (5) que el perfil (`resolverAuto`) y
+// `criterio` elijan la opción que menos quema. Desde: K6d-B (2026-10-07); la revisión (el aviso cubre los cierres que mostró, esperar
+// una sola vez, el pro sin club, el perfil) el mismo día.
 const { riesgoDeLaOferta: riesgoDeLaOfertaK6DB } = await import('../systems/amateur.js');
 const {
-  aplicar: aplicarAtributosK6DB, probabilidadDeBurnout: probabilidadDeBurnoutK6DB, textoDelCierre: textoDelCierreK6DB,
-  opcionQueNoQuema: opcionQueNoQuemaK6DB
+  aplicar: aplicarAtributosK6DB, probabilidadDeBurnout: probabilidadDeBurnoutK6DB, textoDelCierre: textoDelCierreK6DB
 } = await import('../systems/atributos.js');
 const { recuperarPorDescanso: recuperarPorDescansoK6DB } = await import('../core/barras.js');
 const SEEDS_K6DB = 400;
 // Un `rng` que deja todo `gauss` en su media (u2 = 0,25: cos(π/2) = 0): el dado del cierre sin su ruido, contra lo que proyecta la carta.
 const rngMedioK6DB = () => 0.25;
 const EPS_K6DB = 1e-9;
+// Lo que mueve y cuesta cada opción de la parada del pro, por id (los rangos de `BALANCE.burnout`).
+const EFECTOS_PARADA_K6DB = {
+  bajar_carga: { rango: 'bajarCarga', costo: 'mecanica' },
+  pedir_descanso: { rango: 'pedirDescanso', costo: 'jerarquia' },
+  desconectar: { rango: 'desconectar', costo: 'mecanica' }
+};
 
 // Lo que el dado de `atributos.js` tira al cierre con este estado, sin ruido: la mentalidad del cierre y su chance de burnout.
 function cierreDelMotorK6DB(st) {
@@ -26712,24 +26729,48 @@ function igualCierreK6DB(motor, carta) {
   return Math.abs(motor.mentalidad - carta.mentalidad) < EPS_K6DB && Math.abs(motor.probabilidad - carta.probabilidad) < EPS_K6DB;
 }
 
+// La oferta en sí, sin lo que se recalcula cada vez que se muestra (el riesgo y la marca de guardada): el club entero, el tier, la
+// liga y la vara. El sueldo y los años de la oferta del amateur no viajan en ella: los pone el contrato al firmar, del club y el tier.
+function ofertaSinRiesgoK6DB(datos) {
+  const { riesgoBurnout, guardada, motivo, ...oferta } = datos;
+  return JSON.stringify(oferta);
+}
+
 let cosechaK6DBCache = null;
 function cosechaK6DB() {
   if (cosechaK6DBCache) return cosechaK6DBCache;
   const c = {
-    cartas: 0, pruebas: 0, problemasCarta: [],
+    cartas: 0, pruebas: 0, pruebasVaraCero: 0, cartasSinPC: 0, problemasCarta: [],
     guardadas: 0, cumplidas: 0, perdidasPorElFinal: 0, problemasGuardada: [],
-    paradasPro: 0, problemasPro: [], frenadasDeMas: [], efectos: 0, problemasEfecto: [],
-    burnoutsPro: 0, burnoutsProConParada: 0, firmaYQuema: 0, firmaYQuemaSinAviso: []
+    paradasPro: 0, paradasSinClub: 0, problemasPro: [], frenadasDeMas: [], efectos: 0, problemasEfecto: [],
+    burnoutsPro: 0, burnoutsSinClub: 0, burnoutsCubiertos: 0, burnoutsSinClubCubiertos: 0, sinCubrir: [],
+    firmaYQuema: 0, firmaYQuemaSinAviso: [], elecciones: 0, problemasEleccion: []
   };
   const { burnout: b } = BALANCE;
+  const rngAparteK6DB = (seed, i) => mulberry32(seed * 1000 + i);
+  // El perfil (`resolverAuto`) y `criterio` eligen, en una carta con el riesgo a la vista, una opción de las que menos queman.
+  const revisarEleccion = (sistema, st, decision, seed, i) => {
+    const conRiesgo = decision.opciones.filter((op) => Number.isFinite(op.riesgoBurnout));
+    if (conRiesgo.length < 2) return;
+    const minimo = Math.min(...conRiesgo.map((op) => op.riesgoBurnout));
+    for (const [quien, elegir] of [['el perfil', () => sistema.resolverAuto(st, decision, rngAparteK6DB(seed, i))],
+      ['criterio', () => ESTRATEGIAS_K0.criterio(sistema, st, decision, rngAparteK6DB(seed, i))]]) {
+      c.elecciones += 1;
+      const elegida = decision.opciones.find((op) => op.id === elegir().opcionId);
+      if (!elegida || !(elegida.riesgoBurnout <= minimo + EPS_K6DB)) {
+        c.problemasEleccion.push(`seed ${seed} split ${i} ${sistema.id}: ${quien} eligió ${elegida?.id} (${elegida?.riesgoBurnout}) con ${minimo} a mano`);
+      }
+    }
+  };
   for (let seed = 1; seed <= SEEDS_K6DB; seed += 1) {
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
-    let vara = null;
-    let rachaConParada = false;
+    // Lo que cada carta o parada mostró, por cierre (`player.splitCount` del split que cierra): { mentalidad, probabilidad }.
+    const cubiertos = new Map();
     let esperandoA = null;
     for (let i = 0; i < 60 && !state.terminado; i += 1) {
-      const faseAntes = state.phase;
+      const antes = state;
+      const S = state.player.splitCount;
       let cartaConRiesgo = false;
       let firmoConRiesgo = null;
       let vioGuardada = false;
@@ -26738,60 +26779,90 @@ function cosechaK6DB() {
         const datos = decision.datos ?? {};
         if (sistema.id === 'amateur' && datos.motivo === 'oferta' && datos.guardada) {
           vioGuardada = true;
-          if (datos.org.nombre !== esperandoA) c.problemasGuardada.push(`seed ${seed} split ${i}: volvió la oferta de ${datos.org.nombre}, se esperaba la de ${esperandoA}`);
+          if (!esperandoA || ofertaSinRiesgoK6DB(datos) !== esperandoA.oferta) {
+            c.problemasGuardada.push(`seed ${seed} split ${i}: volvió ${ofertaSinRiesgoK6DB(datos)}, se esperaba ${esperandoA?.oferta}`);
+          }
+          // Esperar se puede una sola vez por oferta: la que vuelve no lo ofrece, y si igual llega esa respuesta no se vuelve a guardar.
+          if (decision.opciones.some((op) => op.id === 'pedir_tiempo')) c.problemasGuardada.push(`seed ${seed} split ${i}: la guardada vuelve a ofrecer esperar`);
+          const otraVez = sistema.resolver(st, decision, { opcionId: 'pedir_tiempo' }, rngAparteK6DB(seed, i)).state;
+          if (otraVez.flags.ofertaGuardada) c.problemasGuardada.push(`seed ${seed} split ${i}: la guardada se volvió a guardar`);
+          if (!decision.descripcion.includes('Ya te esperaron')) c.problemasGuardada.push(`seed ${seed} split ${i}: la guardada no dice que ya te esperaron`);
+          revisarEleccion(sistema, st, decision, seed, i);
+          const firma = seed % 4 === 1;
+          if (firma && datos.riesgoBurnout) firmoConRiesgo = datos.riesgoBurnout;
+          return { opcionId: firma ? 'firmar' : 'esperar_mejor_oferta' };
         }
         if (sistema.id === 'amateur' && datos.motivo === 'oferta' && datos.riesgoBurnout) {
           c.cartas += 1;
           cartaConRiesgo = true;
-          rachaConParada = true;
           const r = datos.riesgoBurnout;
           const recalculado = riesgoDeLaOfertaK6DB(st);
           const firmado = { ...st, phase: 'profesional', player: { ...st.player, deudaSueno: BALANCE.amateur.deudaSuenoAlFirmar } };
           const ids = decision.opciones.map((op) => op.id);
           const firmar = decision.opciones.find((op) => op.id === 'firmar');
+          const esperar = decision.opciones.find((op) => op.id === 'pedir_tiempo');
           if (!igualCierreK6DB(cierreDelMotorK6DB(firmado), r.firmar.ahora)) c.problemasCarta.push(`seed ${seed} split ${i}: firmar dice ${JSON.stringify(r.firmar.ahora)} y el dado tira ${JSON.stringify(cierreDelMotorK6DB(firmado))}`);
           else if (!igualCierreK6DB(cierreDelMotorK6DB(st), r.esperar.ahora)) c.problemasCarta.push(`seed ${seed} split ${i}: esperar dice ${JSON.stringify(r.esperar.ahora)} y el dado tira ${JSON.stringify(cierreDelMotorK6DB(st))}`);
-          else if (!ids.includes('pedir_tiempo') || !ids.includes('firmar')) c.problemasCarta.push(`seed ${seed} split ${i}: la carta con riesgo no trae firmar y esperar (${ids})`);
+          else if (!ids.includes('firmar') || (r.puedeEsperar && !esperar)) c.problemasCarta.push(`seed ${seed} split ${i}: la carta con riesgo no trae firmar y esperar (${ids})`);
           else if (!firmar.descripcion.includes(textoDelCierreK6DB(r.firmar.ahora))) c.problemasCarta.push(`seed ${seed} split ${i}: firmar no dice su cierre`);
           else if (!recalculado || Math.abs(recalculado.firmar.total - firmar.riesgoBurnout) > EPS_K6DB) c.problemasCarta.push(`seed ${seed} split ${i}: el riesgo de firmar que leen los bots no es el de la carta`);
-          const opcionId = seed % 2 === 0 ? 'firmar' : 'pedir_tiempo';
-          if (opcionId === 'firmar') firmoConRiesgo = r.firmar.ahora.mentalidad;
-          else pidioTiempo = datos.org.nombre;
+          // Regla 15: con la PC confiscada el split que esperás se vive sin PC, y la carta lo dice en vez de prometer la rutina que cuida.
+          const sinPC = (st.flags.pcConfiscada ?? 0) > 0;
+          if (esperar && sinPC) c.cartasSinPC += 1;
+          if (esperar && sinPC && (!esperar.descripcion.includes('sin PC') || esperar.descripcion.includes('lo vivís con "'))) c.problemasCarta.push(`seed ${seed} split ${i}: con la PC confiscada la espera promete otra semana`);
+          if (esperar && !sinPC && !esperar.descripcion.includes(`"${r.cuidaTitulo}"`)) c.problemasCarta.push(`seed ${seed} split ${i}: la espera no dice la rutina que cuida`);
+          revisarEleccion(sistema, st, decision, seed, i);
+          const opcionId = seed % 2 === 0 || !esperar ? 'firmar' : 'pedir_tiempo';
+          if (opcionId === 'firmar') firmoConRiesgo = r;
+          else pidioTiempo = ofertaSinRiesgoK6DB(datos);
           return { opcionId };
         }
         if (sistema.id === 'amateur' && datos.motivo === 'minijuego' && datos.oferta?.riesgoBurnout) {
           c.pruebas += 1;
           const r = datos.oferta.riesgoBurnout;
-          if (!decision.descripcion.includes(textoDelCierreK6DB(r.firmar.ahora)) || !datos.apuesta.includes(textoDelCierreK6DB(r.esperar.ahora))) {
-            c.problemasCarta.push(`seed ${seed} split ${i}: la prueba no dice el riesgo de firmar y de no llegar`);
+          const varaCero = datos.oferta.vara === 0;
+          c.pruebasVaraCero += varaCero ? 1 : 0;
+          // Con la vara en 0% firmás seguro: la prueba no dice "si no llegás" (regla 15).
+          const noLlegar = datos.apuesta.includes(textoDelCierreK6DB(r.esperar.ahora)) && datos.apuesta.includes('si no llegás');
+          if (!decision.descripcion.includes(textoDelCierreK6DB(r.firmar.ahora)) || noLlegar === varaCero) {
+            c.problemasCarta.push(`seed ${seed} split ${i}: la prueba (vara ${datos.oferta.vara}) no dice el riesgo de firmar y de no llegar como es`);
           }
         }
         if (sistema.id === 'burnout' && datos.motivo === 'burnout_pro') {
           c.paradasPro += 1;
-          rachaConParada = true;
+          c.paradasSinClub += st.career.currentOrg ? 0 : 1;
           const seguir = decision.opciones.find((op) => op.id === 'seguir');
           const motor = cierreDelMotorK6DB(st);
           if (!igualCierreK6DB(motor, { mentalidad: datos.mostrado.seguir, probabilidad: seguir.riesgoBurnout })) {
             c.problemasPro.push(`seed ${seed} split ${i}: la parada dice ${datos.mostrado.seguir}/${seguir.riesgoBurnout} y el dado tira ${JSON.stringify(motor)}`);
           }
           if (!(seguir.riesgoBurnout > 0)) c.problemasPro.push(`seed ${seed} split ${i}: frenó sin que el dado pueda pinchar`);
-          if (vara !== null && datos.mostrado.seguir >= vara - b.mentalNueva) c.frenadasDeMas.push(`seed ${seed} split ${i}: ${datos.mostrado.seguir.toFixed(1)} contra lo visto ${vara.toFixed(1)}`);
+          const tercera = st.career.currentOrg ? 'pedir_descanso' : 'desconectar';
+          if (!decision.opciones.some((op) => op.id === tercera)) c.problemasPro.push(`seed ${seed} split ${i}: ${st.career.currentOrg ? 'con' : 'sin'} club la parada no trae ${tercera}`);
+          const visto = cubiertos.get(S);
+          if (visto && visto.probabilidad > 0 && datos.mostrado.seguir >= visto.mentalidad - b.mentalNueva) {
+            c.frenadasDeMas.push(`seed ${seed} split ${i}: ${datos.mostrado.seguir.toFixed(1)} contra lo visto ${visto.mentalidad.toFixed(1)}`);
+          }
           // El efecto de cada opción, el que dice la carta: los rangos de `BALANCE.burnout` y la proyección con su media.
           const m = st.player.stats.mentalidad;
-          for (const [opcionId, rango, costo] of [['bajar_carga', b.bajarCarga, 'mecanica'], ['pedir_descanso', b.pedirDescanso, 'jerarquia']]) {
+          for (const opcion of decision.opciones.filter((op) => op.id !== 'seguir')) {
+            const { rango: clave, costo } = EFECTOS_PARADA_K6DB[opcion.id];
+            const rango = b[clave];
             c.efectos += 1;
-            const res = sistema.resolver(st, decision, { opcionId }, mulberry32(seed * 1000 + i)).state;
+            const res = sistema.resolver(st, decision, { opcionId: opcion.id }, rngAparteK6DB(seed, i)).state;
             const sube = res.player.stats.mentalidad - m;
             const pierde = costo === 'mecanica' ? st.player.stats.mecanica - res.player.stats.mecanica : st.career.jerarquia - res.career.jerarquia;
             const [cMin, cMax] = costo === 'mecanica' ? [rango.mecanicaMin, rango.mecanicaMax] : [rango.jerarquiaMin, rango.jerarquiaMax];
             const enRango = sube >= recuperarPorDescansoK6DB(m, rango.mentalidadMin) - m - EPS_K6DB && sube <= recuperarPorDescansoK6DB(m, rango.mentalidadMax) - m + EPS_K6DB
               && pierde <= cMax + EPS_K6DB && (pierde >= cMin - EPS_K6DB || res.player.stats.mecanica === 0 || res.career.jerarquia === 0);
-            const proyectada = Math.abs(datos.mostrado[opcionId] - aplicarAtributosK6DB({ ...st, player: { ...st.player, stats: { ...st.player.stats, mentalidad: recuperarPorDescansoK6DB(m, (rango.mentalidadMin + rango.mentalidadMax) / 2) } } }, rngMedioK6DB).state.player.stats.mentalidad) < EPS_K6DB;
-            if (!enRango || !proyectada) c.problemasEfecto.push(`seed ${seed} split ${i} ${opcionId}: mentalidad +${sube}, ${costo} -${pierde}, proyección ${proyectada ? 'ok' : 'distinta'}`);
+            const proyectada = Math.abs(datos.mostrado[opcion.id] - aplicarAtributosK6DB({ ...st, player: { ...st.player, stats: { ...st.player.stats, mentalidad: recuperarPorDescansoK6DB(m, (rango.mentalidadMin + rango.mentalidadMax) / 2) } } }, rngMedioK6DB).state.player.stats.mentalidad) < EPS_K6DB;
+            if (!enRango || !proyectada) c.problemasEfecto.push(`seed ${seed} split ${i} ${opcion.id}: mentalidad +${sube}, ${costo} -${pierde}, proyección ${proyectada ? 'ok' : 'distinta'}`);
           }
-          const opcionId = opcionQueNoQuemaK6DB(decision, seed % 3 !== 0);
-          vara = datos.mostrado[opcionId];
-          return { opcionId };
+          revisarEleccion(sistema, st, decision, seed, i);
+          const conRiesgo = decision.opciones.filter((op) => Number.isFinite(op.riesgoBurnout));
+          const elegida = conRiesgo.reduce((mejor, op) => ((seed % 3 === 0 ? op.riesgoBurnout < mejor.riesgoBurnout : op.riesgoBurnout > mejor.riesgoBurnout) ? op : mejor));
+          cubiertos.set(S, { mentalidad: elegida.mentalidadAlCierre, probabilidad: elegida.riesgoBurnout });
+          return { opcionId: elegida.id };
         }
         return ESTRATEGIAS_K0.malas(sistema, st, decision, rngP);
       };
@@ -26799,26 +26870,36 @@ function cosechaK6DB() {
       if (esperandoA !== null) {
         if (vioGuardada) c.cumplidas += 1;
         else if (state.terminado) c.perdidasPorElFinal += 1;
-        else c.problemasGuardada.push(`seed ${seed} split ${i}: ${esperandoA} guardó la oferta y no volvió`);
+        else c.problemasGuardada.push(`seed ${seed} split ${i}: ${esperandoA.oferta} guardó la oferta y no volvió`);
         esperandoA = null;
       }
       if (pidioTiempo !== null) {
         c.guardadas += 1;
-        if (state.flags.ofertaGuardada?.org?.nombre !== pidioTiempo) c.problemasGuardada.push(`seed ${seed} split ${i}: pediste tiempo y la oferta no quedó guardada`);
+        const guardada = state.flags.ofertaGuardada;
+        if (!guardada || JSON.stringify(guardada) !== JSON.stringify(Object.fromEntries(Object.entries(JSON.parse(pidioTiempo)).filter(([k]) => ['org', 'tier', 'liga', 'vara'].includes(k))))) {
+          c.problemasGuardada.push(`seed ${seed} split ${i}: pediste tiempo y la oferta no quedó guardada entera (${JSON.stringify(guardada)})`);
+        }
         if (state.terminado) c.perdidasPorElFinal += 1;
-        else esperandoA = pidioTiempo;
+        else esperandoA = { oferta: pidioTiempo };
       }
-      if (firmoConRiesgo !== null && faseAntes === 'amateur' && state.phase !== 'amateur') vara = firmoConRiesgo;
-      if ((state.flags.splitsMentalBajo ?? 0) === 0) {
-        vara = null;
-        rachaConParada = false;
+      const firmo = antes.phase === 'amateur' && state.phase !== 'amateur' && state.career.tier != null;
+      if (firmoConRiesgo !== null && firmo) {
+        // La carta de la oferta que firmaste cubre su cierre y el siguiente, con lo que mostró para firmar.
+        for (const [k, cierre] of [[firmoConRiesgo.split, firmoConRiesgo.firmar.ahora], [firmoConRiesgo.split + 1, firmoConRiesgo.firmar.despues]]) {
+          if (!cubiertos.has(k)) cubiertos.set(k, { mentalidad: cierre.mentalidad, probabilidad: cierre.probabilidad });
+        }
       }
-      if (state.finAnticipado === 'burnout' && state.career.currentOrg) {
+      if (state.finAnticipado === 'burnout' && (antes.phase === 'profesional' || firmo)) {
+        const conClub = antes.phase === 'profesional' ? Boolean(antes.career.currentOrg) : true;
+        const cubierto = (cubiertos.get(S)?.probabilidad ?? 0) > 0;
         c.burnoutsPro += 1;
-        c.burnoutsProConParada += rachaConParada ? 1 : 0;
-        if (faseAntes === 'amateur') {
+        c.burnoutsSinClub += conClub ? 0 : 1;
+        c.burnoutsCubiertos += cubierto ? 1 : 0;
+        c.burnoutsSinClubCubiertos += !conClub && cubierto ? 1 : 0;
+        if (!cubierto) c.sinCubrir.push(`seed ${seed} split ${i}${conClub ? '' : ' (sin club)'} racha ${antes.flags.splitsMentalBajo}`);
+        if (firmo) {
           c.firmaYQuema += 1;
-          if (!cartaConRiesgo) c.firmaYQuemaSinAviso.push(`seed ${seed} split ${i}`);
+          if (!cartaConRiesgo && !cubierto) c.firmaYQuemaSinAviso.push(`seed ${seed} split ${i}`);
         }
       }
     }
@@ -26827,33 +26908,35 @@ function cosechaK6DB() {
   return c;
 }
 
-// Rojo con el mutante "la proyección no normaliza el sueño del pro" (`riesgoDeBurnoutAlCierre` ignora `fase`).
-checkLento(`K6d-B la carta de la oferta y la de la prueba dicen el % que tira el dado del burnout al cierre (regla 15; malas, ${SEEDS_K6DB} × 60)`, () => {
+// Rojo con el mutante "la proyección no normaliza el sueño del pro" (`riesgoDeBurnoutAlCierre` ignora `fase`) y con "la espera sin
+// PC promete la rutina que cuida" (`textoDeEsperar` sin la rama `sinPC`).
+checkLento(`K6d-B la carta de la oferta y la de la prueba dicen el % que tira el dado del burnout al cierre y lo real de la espera (regla 15; malas, ${SEEDS_K6DB} × 60)`, () => {
   const c = cosechaK6DB();
-  console.log(`      ${c.cartas} cartas de oferta con el riesgo, ${c.pruebas} pruebas con el riesgo`);
+  console.log(`      ${c.cartas} cartas de oferta con el riesgo (${c.cartasSinPC} con la PC confiscada), ${c.pruebas} pruebas con el riesgo (${c.pruebasVaraCero} con la vara en 0%)`);
   if (c.problemasCarta.length > 0) throw new Error(`${c.problemasCarta.length} problema(s): ${c.problemasCarta.slice(0, 4).join(' | ')}`);
   if (c.cartas < 20 || c.pruebas === 0) throw new Error(`check vacío: ${c.cartas} cartas con riesgo y ${c.pruebas} pruebas`);
 });
 
-// Rojo con el mutante "la oferta guardada no vuelve" (`conLaOfertaGuardada` devuelve el resultado sin la carta).
-checkLento(`K6d-B pedirle al club que te espere guarda la oferta y vuelve al split siguiente, la misma (malas, ${SEEDS_K6DB} × 60)`, () => {
+// Rojo con los mutantes "la oferta guardada no vuelve", "la guardada pierde su vara" (M3 de la revisión) y "esperar se vuelve a
+// ofrecer en la guardada" (la espera sin el `!guardada`).
+checkLento(`K6d-B pedirle al club que te espere guarda la oferta entera, vuelve al split siguiente y se puede una sola vez (malas, ${SEEDS_K6DB} × 60)`, () => {
   const c = cosechaK6DB();
   console.log(`      ${c.guardadas} ofertas guardadas: ${c.cumplidas} volvieron, ${c.perdidasPorElFinal} se perdieron porque la carrera terminó antes`);
   if (c.problemasGuardada.length > 0) throw new Error(`${c.problemasGuardada.length} problema(s): ${c.problemasGuardada.slice(0, 4).join(' | ')}`);
   if (c.cumplidas < 10) throw new Error(`check vacío: ${c.cumplidas} ofertas guardadas que volvieron`);
 });
 
-// Rojo con los mutantes "frena siempre que la chance pase 0, sin la vara" (`paradaDelBurnout` sin el `mentalNueva`: frenadas de más) y
-// "frena recién con 20% o más" (burnouts del pro sin parada).
+// Rojo con los mutantes "un aviso cubre toda la racha" (M1 de la revisión: la vara que no se relaja), "sin club no frena", "frena
+// siempre que la chance pase 0, sin la vara" (frenadas de más) y "frena recién con 20% o más".
 const PISO_PARADA_K6DB = 0.95;
-checkLento(`K6d-B el pro frena con el % antes de que el dado pueda tirar (≥ ${PISO_PARADA_K6DB * 100}% de sus burnouts), no vuelve a frenar sin riesgo nuevo y cada opción hace lo que dice (malas, ${SEEDS_K6DB} × 60)`, () => {
+checkLento(`K6d-B por cierre: ≥ ${PISO_PARADA_K6DB * 100}% de los burnouts de un pro (con o sin club) salen de un cierre que una carta o una parada cubrió con su %, no vuelve a frenar sin riesgo nuevo y cada opción hace lo que dice (malas, ${SEEDS_K6DB} × 60)`, () => {
   const c = cosechaK6DB();
-  const fraccion = c.burnoutsPro > 0 ? c.burnoutsProConParada / c.burnoutsPro : 0;
-  console.log(`      ${c.paradasPro} paradas del pro (${(c.paradasPro / SEEDS_K6DB).toFixed(2)} por carrera), ${c.burnoutsProConParada} de ${c.burnoutsPro} burnouts del pro con parada (${(100 * fraccion).toFixed(1)}%), ${c.efectos} efectos probados`);
+  const fraccion = c.burnoutsPro > 0 ? c.burnoutsCubiertos / c.burnoutsPro : 0;
+  console.log(`      ${c.paradasPro} paradas del pro (${(c.paradasPro / SEEDS_K6DB).toFixed(2)} por carrera, ${c.paradasSinClub} sin club), ${c.burnoutsCubiertos} de ${c.burnoutsPro} burnouts del pro de un cierre cubierto (${(100 * fraccion).toFixed(1)}%; sin club ${c.burnoutsSinClubCubiertos} de ${c.burnoutsSinClub}), ${c.efectos} efectos probados`);
   const problemas = [...c.problemasPro, ...c.frenadasDeMas.map((p) => `frenó sin riesgo nuevo: ${p}`), ...c.problemasEfecto];
   if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
-  if (c.burnoutsPro < 20 || c.paradasPro === 0) throw new Error(`check vacío: ${c.burnoutsPro} burnouts del pro, ${c.paradasPro} paradas`);
-  if (fraccion < PISO_PARADA_K6DB) throw new Error(`solo ${c.burnoutsProConParada} de ${c.burnoutsPro} burnouts del pro tuvieron una parada con el % en su racha en rojo`);
+  if (c.burnoutsPro < 20 || c.paradasPro === 0 || c.burnoutsSinClub === 0) throw new Error(`check vacío: ${c.burnoutsPro} burnouts del pro (${c.burnoutsSinClub} sin club), ${c.paradasPro} paradas`);
+  if (fraccion < PISO_PARADA_K6DB) throw new Error(`solo ${c.burnoutsCubiertos} de ${c.burnoutsPro} burnouts del pro salen de un cierre cubierto con su %: ${c.sinCubrir.slice(0, 5).join(', ')}`);
 });
 
 // Rojo con el mutante "la oferta no mira el riesgo" (`riesgoDeLaOferta` devuelve siempre null).
@@ -26862,6 +26945,14 @@ checkLento(`K6d-B nadie firma y se quema en el mismo split sin que la carta lo h
   console.log(`      ${c.firmaYQuema} carreras firmaron y se quemaron en el mismo split, ${c.firmaYQuemaSinAviso.length} sin que la carta lo dijera`);
   if (c.firmaYQuemaSinAviso.length > 0) throw new Error(`${c.firmaYQuemaSinAviso.length} sin aviso: ${c.firmaYQuemaSinAviso.slice(0, 5).join(', ')}`);
   if (c.cartas === 0) throw new Error('check vacío: ninguna carta con el riesgo');
+});
+
+// Rojo con el mutante M8 de la revisión: el perfil (`resolverAuto` del amateur y de la parada) y `criterio` eligen la que más quema.
+checkLento(`K6d-B el perfil y criterio eligen la opción que menos quema en cada carta con el riesgo a la vista (malas, ${SEEDS_K6DB} × 60)`, () => {
+  const c = cosechaK6DB();
+  console.log(`      ${c.elecciones} elecciones revisadas`);
+  if (c.problemasEleccion.length > 0) throw new Error(`${c.problemasEleccion.length} problema(s): ${c.problemasEleccion.slice(0, 4).join(' | ')}`);
+  if (c.elecciones < 20) throw new Error(`check vacío: ${c.elecciones} elecciones`);
 });
 
 if (errores.length > 0) {

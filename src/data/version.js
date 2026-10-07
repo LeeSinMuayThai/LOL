@@ -159,4 +159,8 @@ export const VERSION_JUEGO = 'K6c';
 // trae "pedirle al club que te espere" (la oferta guardada vuelve al split siguiente sin el sorteo del scouting, con la semana de la
 // rutina que cuida), y el pro frena antes de `atributos` cuando el dado del cierre puede pinchar (`systems/burnout.js`: bajar la
 // carga o pedir unos días, con sus tiradas al resolver). En las carreras sin esas cartas el stream no se mueve. Reemplaza a 1766253198.
+// K6d-B, revisión (sin cambio de huella, sigue 'K6c'; medido con el check K1: las 40 seeds del perfil no tocan ninguna de las cartas que
+// cambian): un aviso cubre solo los cierres que mostró (la parada vuelve en cada cierre con el dado vivo que nada cubrió), el pro frena
+// también sin club (bajar la carga o desconectarte), esperar se puede una sola vez por oferta y la espera con la PC confiscada dice que
+// ese split se vive sin PC. La forma sí cambia: `flags.mentalAvisadaPro` pasa de número a la lista de cierres avisados.
 export const HUELLA_JUEGO = 1073872165;

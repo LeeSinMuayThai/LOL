@@ -19,6 +19,7 @@ import { opcionDelPerfil, nombreDePerfil, pisoSoloQDePerfil } from '../core/perf
 import { etiquetaCampo } from '../core/selectors.js';
 import { nivelDelJugador } from '../core/ficha.js';
 import { riesgoDeBurnoutAlCierre, textoDelCierre, porcentajeDeBurnout, opcionQueNoQuema } from './atributos.js';
+import { conCierresAvisados } from './burnout.js';
 
 export const id = 'amateur';
 
@@ -640,8 +641,8 @@ function continuarElSplit(state, rng) {
   return semanaAmateur(state, rng);
 }
 
-// La oferta que el club te guardó vuelve como carta (con su riesgo recalculado), y el flag se limpia: si volvés a pedir tiempo, se
-// vuelve a guardar.
+// La oferta que el club te guardó vuelve como carta (con su riesgo recalculado), y el flag se limpia. Se espera una sola vez por
+// oferta (revisión de K6d-B): la que vuelve no trae "pedirle que te espere", es firmar o dejarla.
 function conLaOfertaGuardada(resultado) {
   const guardada = resultado.state.flags.ofertaGuardada;
   if (!guardada || resultado.state.terminado || resultado.decision) {
@@ -1115,16 +1116,23 @@ export function riesgoDeLaOferta(state) {
   const firmarDespues = riesgoDeBurnoutAlCierre(despuesDelCierre(state, firmarAhora, deudaAlFirmar), { fase: 'profesional' });
   const esperarAhora = riesgoDeBurnoutAlCierre(state);
   const cerradoEnSoloQ = despuesDelCierre(state, esperarAhora, state.player.deudaSueno ?? 0);
-  const cuida = rutinaQueCuida(cerradoEnSoloQ);
-  const esperarDespues = riesgoDeBurnoutAlCierre(despuesDeLaSemana(cerradoEnSoloQ, cuida.proy), { fase: 'profesional', deudaSueno: deudaAlFirmar });
+  // Revisión de K6d-B (regla 15): si en casa te sacaron la PC, el split que esperás es el periodo sin PC (`continuarElSplit`), no la
+  // semana de la rutina que cuida: la carta proyecta ese periodo, con la media de sus rangos.
+  const sinPC = (state.flags.pcConfiscada ?? 0) > 0;
+  const cuida = sinPC ? null : rutinaQueCuida(cerradoEnSoloQ);
+  const trasLaEspera = sinPC ? despuesDelPeriodoSinPC(cerradoEnSoloQ) : despuesDeLaSemana(cerradoEnSoloQ, cuida.proy);
+  const esperarDespues = riesgoDeBurnoutAlCierre(trasLaEspera, { fase: 'profesional', deudaSueno: deudaAlFirmar });
   const total = (a, b) => 1 - (1 - a.probabilidad) * (1 - b.probabilidad);
   // Este split cierra tu año si al cerrarlo el contador llega al cierre de edad (`atributos` lo sube antes de `edadCierre`).
   const cierraElAnio = (state.player.splitCount + 1) % BALANCE.edad.splitsPorEdad === 0;
   return {
+    // El split de la carta: la firma cubre su cierre y el siguiente (`systems/burnout.js`, "un aviso cubre los cierres que mostró").
+    split: state.player.splitCount,
     racha: state.flags.splitsMentalBajo ?? 0,
     firmar: { ahora: firmarAhora, despues: firmarDespues, total: total(firmarAhora, firmarDespues) },
-    esperar: { ahora: esperarAhora, despues: esperarDespues, total: total(esperarAhora, esperarDespues), cuida: cuida.rutina.id },
-    cuidaTitulo: cuida.rutina.titulo,
+    esperar: { ahora: esperarAhora, despues: esperarDespues, total: total(esperarAhora, esperarDespues), cuida: cuida?.rutina.id ?? null },
+    cuidaTitulo: cuida?.rutina.titulo ?? null,
+    sinPC,
     cierraElAnio,
     // Si el año que viene ya es el de `edadLimite`, la etapa amateur se termina antes de que la oferta guardada vuelva: no se ofrece.
     puedeEsperar: !(cierraElAnio && state.age + 1 >= BALANCE.amateur.edadLimite)
@@ -1137,6 +1145,21 @@ function despuesDelCierre(state, cierre, deudaSueno) {
     ...state,
     player: { ...state.player, sleep: cierre.sueno, deudaSueno, stats: { ...state.player.stats, mentalidad: cierre.mentalidad } },
     flags: { ...state.flags, splitsMentalBajo: cierre.splitsMentalBajo }
+  };
+}
+
+// El periodo sin PC proyectado (`periodoSinPC`, con la media de sus rangos): el sueño y la mentalidad que mueve, y la deuda en 0.
+function despuesDelPeriodoSinPC(state) {
+  const a = BALANCE.amateur;
+  const media = (min, max) => (min + max) / 2;
+  return {
+    ...state,
+    player: {
+      ...state.player,
+      sleep: clampStat(state.player.sleep + media(a.sinPCSuenoMin, a.sinPCSuenoMax)),
+      deudaSueno: 0,
+      stats: { ...state.player.stats, mentalidad: clampStat(state.player.stats.mentalidad + media(a.sinPCMentalidadMin, a.sinPCMentalidadMax)) }
+    }
   };
 }
 
@@ -1168,6 +1191,8 @@ function decisionDeOferta(state, datosOferta, { guardada = false } = {}) {
   const { org, tier, liga, vara = null } = datosOferta;
   const ranked = etiquetaDeRanked(state.player.ranked, servidorDeLaPartida(state));
   const deDonde = guardada ? `${org.nombre} te guardó la oferta, como habían quedado` : `Te vieron en la ladder: ${ranked}`;
+  // Revisión de K6d-B: se espera una sola vez por oferta. La guardada no vuelve a ofrecer la espera, y la carta lo dice.
+  const yaEsperaron = guardada ? ' Ya te esperaron un split: ahora es firmar o dejarla pasar.' : '';
   const descripcionBase = tier === 2
     ? `${deDonde}. Estás tan arriba que ${nombreVisibleDeLiga(liga)} te ofrece saltearte el tramo de probarte en un equipo chico.`
     : `${deDonde}. Es un equipo de tier 3, chico y de paso: contrato mínimo, mudanza a la gaming house y dejar el colegio a mitad de camino.`;
@@ -1184,7 +1209,7 @@ function decisionDeOferta(state, datosOferta, { guardada = false } = {}) {
       pesoAuto: 7,
       ...(riesgo ? { riesgoBurnout: riesgo.firmar.total } : {})
     },
-    ...(riesgo?.puedeEsperar ? [{
+    ...(riesgo?.puedeEsperar && !guardada ? [{
       id: 'pedir_tiempo',
       label: `Pedirle a ${org.nombre} que te espere un split`,
       descripcion: textoDeEsperar(riesgo, org),
@@ -1192,14 +1217,14 @@ function decisionDeOferta(state, datosOferta, { guardada = false } = {}) {
     }] : []),
     {
       id: 'esperar_mejor_oferta',
-      label: 'Agradecer y seguir grindeando por algo más grande',
+      label: guardada ? 'Dejarla pasar y seguir grindeando por algo más grande' : 'Agradecer y seguir grindeando por algo más grande',
       descripcion: `Te quedás en la ladder esperando una oferta mejor, que puede no llegar: cada año te miran menos.${riesgo ? ` Este split lo cerrás en soloQ con ${textoDelCierre(riesgo.esperar.ahora)}.` : ''}`,
       pesoAuto: 3
     }
   ];
   return decisionDeOpciones(
     `${org.nombre} te quiere`,
-    riesgo ? `${descripcionBase} ${textoDeLaRacha(riesgo, state)}` : descripcionBase,
+    `${riesgo ? `${descripcionBase} ${textoDeLaRacha(riesgo, state)}` : descripcionBase}${yaEsperaron}`,
     opciones,
     'oferta',
     { ...datosOferta, ...(riesgo ? { riesgoBurnout: riesgo } : {}), ...(guardada ? { guardada: true } : {}) }
@@ -1214,15 +1239,23 @@ function textoDeFirmarConRiesgo(riesgo, tier) {
 
 function textoDeEsperar(riesgo, org) {
   const edad = riesgo.cierraElAnio ? ', y ya con un año más' : '';
-  return `${org.nombre} te guarda la oferta un split, sin que te tengan que volver a ver. Este split lo cerrás en soloQ con `
-    + `${textoDelCierre(riesgo.esperar.ahora)}; el que viene lo vivís con "${riesgo.cuidaTitulo}" (no le roba horas al sueño y es la `
-    + `semana que más dormís) y firmás al final con ${textoDelCierre(riesgo.esperar.despues)}. En los dos splits, `
-    + `${porcentajeDeBurnout(riesgo.esperar.total)}. Te cuesta un split: firmás más tarde${edad}.`;
+  const elQueViene = riesgo.sinPC
+    ? 'el que viene lo vivís sin PC, como quedó en casa (colegio y descanso, nada de ranked)'
+    : `el que viene lo vivís con "${riesgo.cuidaTitulo}" (no le roba horas al sueño y es la semana que más dormís)`;
+  return `${org.nombre} te guarda la oferta un split, sin que te tengan que volver a ver, y una sola vez. Este split lo cerrás en soloQ con `
+    + `${textoDelCierre(riesgo.esperar.ahora)}; ${elQueViene} y firmás al final con ${textoDelCierre(riesgo.esperar.despues)}. `
+    + `En los dos splits, ${porcentajeDeBurnout(riesgo.esperar.total)}. Te cuesta un split: firmás más tarde${edad}.`;
 }
 
-// Lo que la carta mostró para la opción que firmaste: la vara de la parada del pro (`systems/burnout.js`, "riesgo nuevo").
+// Lo que la carta mostró para la opción que firmaste cubre los dos cierres que mostró (el de la firma y el siguiente): la vara de la
+// parada del pro (`systems/burnout.js`, "un aviso cubre los cierres que mostró").
 function conMentalAvisadaAlFirmar(state, riesgo) {
-  return riesgo ? { ...state, flags: { ...state.flags, mentalAvisadaPro: riesgo.firmar.ahora.mentalidad } } : state;
+  if (!riesgo) {
+    return state;
+  }
+  const split = riesgo.split ?? state.player.splitCount;
+  const cierre = (proyeccion, n) => ({ split: n, mentalidad: proyeccion.mentalidad, probabilidad: proyeccion.probabilidad });
+  return conCierresAvisados(state, [cierre(riesgo.firmar.ahora, split), cierre(riesgo.firmar.despues, split + 1)]);
 }
 
 // El org y el tier ya se decidieron cuando se armó la decisión
@@ -1303,10 +1336,14 @@ function anuncioDeLaVara(state, org, vara) {
     : `Antes de firmar hay una prueba: necesitás ${vara}% para que te firmen (${textoDeLaVara(state, org)}). Si llegás, firmás seguro y se termina la etapa amateur; si no, seguís en la escalera.`;
 }
 
-// K6d-B: la prueba también dice el riesgo de burnout de firmar (y el de no llegar), con los números de la carta de la oferta.
-function textoDelRiesgoDeLaPrueba(riesgo) {
+// K6d-B: la prueba también dice el riesgo de burnout de firmar (y el de no llegar), con los números de la carta de la oferta. Con la
+// vara en 0% firmás seguro: no hay "si no llegás" (revisión, regla 15).
+function textoDelRiesgoDeLaPrueba(riesgo, vara) {
   if (!riesgo) {
     return '';
+  }
+  if (vara === 0) {
+    return ` Ojo con la cabeza: firmás seguro y cerrás este split en el equipo con la mentalidad en ${textoDelCierre(riesgo.firmar.ahora)}.`;
   }
   return ` Ojo con la cabeza: si te firman, cerrás este split en el equipo con la mentalidad en ${textoDelCierre(riesgo.firmar.ahora)}; `
     + `si no llegás, lo cerrás en soloQ con ${textoDelCierre(riesgo.esperar.ahora)}.`;
@@ -1317,7 +1354,7 @@ function pausaDeLaPrueba(state, datosOferta) {
   const textos = textoDeMinijuego(entrada, state);
   // La vara viene armada de la oferta (`buscarSalida`); un guardado con la oferta pendiente de antes la recalcula igual.
   const vara = datosOferta.vara ?? varaDeLaPruebaDelClub(state, datosOferta.org);
-  const riesgo = textoDelRiesgoDeLaPrueba(datosOferta.riesgoBurnout);
+  const riesgo = textoDelRiesgoDeLaPrueba(datosOferta.riesgoBurnout, vara);
   return {
     state: { ...state, flags: { ...state.flags, minijuegosRecientes: registrarMinijuegoVisto(state, entrada.id) } },
     decision: {
@@ -1393,7 +1430,8 @@ function resolverOferta(state, decision, opcionId, rng) {
     const firmado = firmarConEquipo(state, decision);
     return { ...firmado, state: conMentalAvisadaAlFirmar(firmado.state, decision.datos.riesgoBurnout) };
   }
-  if (opcionId === 'pedir_tiempo' && decision.datos.riesgoBurnout?.puedeEsperar) {
+  // Se espera una sola vez por oferta: la guardada que vuelve no se vuelve a guardar (si llega esa respuesta, es dejarla pasar).
+  if (opcionId === 'pedir_tiempo' && decision.datos.riesgoBurnout?.puedeEsperar && !decision.datos.guardada) {
     return pedirTiempo(state, decision);
   }
 
@@ -1414,10 +1452,11 @@ function resolverOferta(state, decision, opcionId, rng) {
 function pedirTiempo(state, decision) {
   const { org, tier, liga, vara } = decision.datos;
   const ofertaGuardada = { org, tier, liga, ...(vara !== undefined ? { vara } : {}) };
-  const cuida = decision.datos.riesgoBurnout.cuidaTitulo;
+  const { cuidaTitulo, sinPC } = decision.datos.riesgoBurnout;
+  const semana = sinPC ? 'sin PC, como quedó en casa,' : `con "${cuidaTitulo}"`;
   return {
     state: { ...state, flags: { ...state.flags, ofertaGuardada } },
-    logs: [crearLog('amateur', `Le pediste a ${org.nombre} que te espere un split y te guardan la oferta. La semana que viene la vivís con "${cuida}" y la contestás al final.`)]
+    logs: [crearLog('amateur', `Le pediste a ${org.nombre} que te espere un split y te guardan la oferta, una sola vez. La semana que viene la vivís ${semana} y la contestás al final.`)]
   };
 }
 

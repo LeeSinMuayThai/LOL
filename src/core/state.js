@@ -417,12 +417,12 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // (`al_limite`). El burnout solo pincha cuando llega a
       // `burnoutSplitsMinimos`. Nunca null (trampa T4).
       splitsMentalBajo: 0,
-      // K6d-B (D77): la mentalidad proyectada al cierre que te mostró la última parada por el burnout del pro (o la carta de la
-      // oferta que firmaste con el riesgo a la vista), la vara del "riesgo nuevo" de `systems/burnout.js`. `null` si no hay nada
-      // visto en esta racha en rojo.
-      mentalAvisadaPro: null,
+      // K6d-B (D77, revisión): los cierres que ya te avisaron, [{ split, mentalidad, probabilidad }] (el `player.splitCount` del
+      // split que cierra y lo que el aviso mostró): la carta de la oferta que firmaste cubre el de la firma y el siguiente, la parada
+      // del pro el de su split. Es la vara del "riesgo nuevo" de `systems/burnout.js`. Nunca null (trampa T4): vacío si no hay nada.
+      mentalAvisadaPro: [],
       // K6d-B (D77): la oferta que el club te guarda un split ("pedirle que te espere", `systems/amateur.js`): { org, tier, liga,
-      // vara? }. `null` si no hay ninguna.
+      // vara? }. `null` si no hay ninguna. Se espera una sola vez por oferta: la que vuelve es firmar o dejarla.
       ofertaGuardada: null,
       avisos: 0,
       nocturno: false,
