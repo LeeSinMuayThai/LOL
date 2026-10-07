@@ -8797,13 +8797,26 @@ están hasta que juegue. **No se mergea a `fase-9r` con FAIL** (Definición de t
 usuario**. La build integrada está servida desde `wt-k6di`. Cuando el usuario juegue, decide qué hacer con estas cuatro
 metas: re-basarlas a lo medido, o mover el motor. Después se mergea.
 
+**Las respuestas del usuario para cerrar K** (2026-10-07, más tarde; son las opciones que eligió, no volver a preguntar):
+- **Las cuatro metas: "Re-basar y cerrar".** Se re-basan a lo medido en la validación completa de `f542f62`, cada una con
+  su línea de la regla 17. Llegar a tier 1 (~75% en 1500) y el título (~60%) quedan como los valores con los que cierra
+  K. Si jugando se siente fácil, se abre una fase nueva: K no se reabre.
+- **El playtest: "No; cerrá y la juego después".** K cierra con K6 re-jugado por el agente y la build servida. Lo que el
+  usuario encuentre jugando abre una ronda nueva, fuera de K.
+- **El push: "Sí, pusheá al cerrar".** Es un push sin force de `fase-9r`, con la validación completa en verde.
+
 #### K6d — el cierre
 
-1. La integración `k6d-integracion` (N + B + P), con la huella y la forma del guardado resueltas.
-2. Las barandas medidas por el supervisor sobre el head integrado (T6).
-3. La validación completa, `simulate.js 1000`, el determinismo, `agencia.js` y `build.js`.
-4. El merge a `fase-9r` y `HUELLA_JUEGO` 'K6d'.
-5. Se vuelve a jugar K6 (seeds 25, 39 y 152) y se sirve la build al usuario. K6c y K6d cierran cuando él las juega.
+1. La integración `k6d-integracion` (N + B + P), con la huella y la forma del guardado resueltas. ✅ `f542f62`
+2. Las barandas medidas por el supervisor sobre el head integrado (T6). ✅ (la tabla de arriba)
+3. Las cuatro metas re-basadas en `k6d-integracion`, sin tocar el motor. El supervisor corre con `--solo` los cuatro
+   checks lentos sobre el head.
+4. El merge a `fase-9r` (`HUELLA_JUEGO` ya es 'K6d'). Después, la validación completa sobre una copia `git archive` del
+   head de `fase-9r`, más `simulate.js 1500 60 todas` (§K.9), el determinismo, `agencia.js` y `build.js`.
+5. Se vuelve a jugar K6 en el navegador (seeds 25, 39 y 152, el mismo agente y la misma heurística que "K6, re-jugado") y
+   se compara acá. Un bug alto de K6d se arregla antes de cerrar; lo demás se anota para la ronda que abra el usuario.
+6. FASE K cierra: la fila de Estado, la tabla de deuda (D77, D80, D81, D84 y las filas de K que quedaron sin marcar),
+   `PROGRESO.md`, el push, y la build servida para que juegue el usuario.
 
 ## K.6 — Qué pasa con FASE J y FASE V
 
