@@ -8543,6 +8543,21 @@ Las palancas (con P3; tier 1 / título / Top 20 / Mundial / P(2+ | 1); en 1500 d
   55-65, y el título en ~55% contra ~30. Lo que lo mueve (P6, o P4: más prestigio a las ligas chicas) rompe metas de
   §K.3b (30+, estancados, "el más fuerte gana") que se contradicen con la de tier 1.
 
+**K6d-N, paso 3** (`9f3b3f8` estructura con `mercado.estrellaSube` neutra, `9b85bc7` prendida; huella del juego
+480175732 → 62519553):
+- **El mecanismo.** La estrella que alcanza una liga claramente más fuerte recibe lugar ahí. Al fin de contrato va
+  primera en la mano, y a mitad de contrato es el pretendiente, sin dado. La oferta dice por qué la quieren.
+- **Los títulos casi no se mueven:** en 1500, `criterio` queda en 57,5.
+- **Lo que sí cambia:**
+  - el Mundial con la región al azar baja de 10,3 a 8,9;
+  - el Mundial con la región fija sube: Corea de 79 a 87 y NA de 45 a 51, de 600;
+  - los burnouts de `criterio` suben de 15 a 42 por cada 1000;
+  - las metas K5c, 30+, estancados y `mundoMundial` dan OK.
+- **Decisión del supervisor: P7a se queda por el juego, no por la meta.** La estrella de una liga chica recibe el llamado
+  de una más fuerte, y decidir si va es del jugador. Los burnouts se juzgan integrados con K6d-B.
+- **Destapó un bug latente** (K5c-R, seed 9): una carrera retirada termina en burnout, el reloj salta 4 splits y los años
+  pro dan 8,33 en vez de 8. Se arregla en la integración, buscando la causa.
+
 #### K6d-B — D77: que el burnout se vea venir en la firma y en el pro *(rama `k6d-burnout`)*
 
 Hoy el dado del burnout corre al cerrar el split (`systems/atributos.js`), una vez que la mentalidad lleva
