@@ -8516,6 +8516,29 @@ pro:
 - las frenadas por la mentalidad: pocas por carrera, reportadas aparte, sin volver a la mediana 3 de K6c;
 - no-pro y burnouts por bot: se reportan, y si `criterio` empeora es un bug.
 
+**K6d-B, primera pasada** (`k6d-burnout`: `b8be1da`, `9dacdf9`).
+- **Las cartas.** La de la oferta y la de la prueba dicen la racha, la mentalidad y el % del dado de cada opción a dos
+  cierres. La opción "Pedirle a X que te espere un split" guarda la oferta en `flags.ofertaGuardada`.
+- **El pro frena** en `systems/burnout.js` (nuevo, justo antes de `atributos`). Las opciones son seguir, bajar la carga o
+  pedir unos días; reusan `recuperarPorDescanso`. Vuelve a frenar solo si la mentalidad cae más de `burnout.mentalNueva`
+  debajo de lo mostrado.
+- **La huella** pasa de 1766253198 a 1073872165. La forma cambió (`flags.mentalAvisadaPro`, `flags.ofertaGuardada`): la
+  integración sube a 14.
+- **Desvío de la spec, aceptado por el supervisor.** La oferta del amateur llega cuando la semana del split ya se jugó, y
+  el dado corre al cierre, firmes o no. Firmar no empeora ese cierre (el sueño se normaliza y la deuda vuelve a 0): en 211
+  de 216 cartas con riesgo de `malas`, firmar da igual o menos burnout que quedarse. Por eso "esperar" se vive en el split
+  siguiente, con la rutina que cuida, y la carta muestra los dos cierres. A dos splits, esperar da menos en 107 de las 216
+  y lo mismo en 24. Presentar la oferta antes de la semana obligaba a reordenar todo el amateur.
+- **Las barandas,** medidas por el supervisor con `barandas.sh` (igual que el worker), de `d9c2dfa` a `9dacdf9`:
+  - burnouts por cada 1000 carreras: `criterio` 10 → 2, `equilibrado` 25 → 18, `malas` 490 → 485;
+  - firmar y quemarse sin aviso: 0 en los tres bots (antes `malas` 15 y `equilibrado` 1);
+  - burnouts del pro con frenada previa: 100%;
+  - frenadas de la mentalidad: ~0,09 por carrera;
+  - no-pro: 24,5 / 25,3 / 49,8;
+  - tier 1, títulos, Top 20, Mundial, región fija, edad y 30+: dentro del ruido;
+  - `agencia.js`: idéntico.
+- **Espera la revisión.**
+
 #### K6d-P — la rueda de prensa con pistas *(rama `k6d-prensa`)*
 
 Hoy `ui/components/minijuegos/ruedaDePrensa.js` sortea el tono que conviene con `rngUi` (de 0 a 100, de Humilde a
