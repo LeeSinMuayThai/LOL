@@ -34,6 +34,48 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-07 — Cierre de K6d y de FASE K: las cuatro metas re-basadas, K6 re-jugado y el merge a `fase-9r` (PLAN.md "K6d — el cierre", pasos 3-6)
+
+**Lo que decidió el usuario** (textual, PLAN.md §K6d):
+- las cuatro metas que movió K6d: "Re-basar y cerrar";
+- el playtest: "No; cerrá y la juego después";
+- el push: "Sí, pusheá al cerrar".
+
+**El re-base** (`993789c`, de un worker Sonnet, solo `src/dev/validate.js`; el supervisor leyó el diff). Cada check lleva
+su línea de la regla 17 con la cuenta, y lo medido sale de la validación completa de `f542f62`:
+- 9Wd, el Top 20 de las carreras con éxito: el piso pasa de 33 a 19,17 (23,1 − 2σ).
+- K5c, el título de tier 1: el re-base pasa de 55,7 a 59,6 (techo 62,14).
+- K5c, el más fuerte gana el Mundial: la banda pasa de [42,62, 57,38] a [42,62, 70,88].
+- K6b-C, la mediana de frenadas de las leyendas: pasa de ≤ 80 a ≤ 83,81 (σ estimada desde el p90).
+- Los jueces de la regla 7 siguen rechazando un valor justo afuera de cada banda nueva.
+
+La causa de las cuatro son decisiones del usuario: P3 baja el Top 20, y la regla de tier 3 deja más años en tier 1.
+Ninguna es un bug.
+
+**K6, re-jugado sobre K6d.** Lo jugó un worker Sonnet con la heurística de `k6r`, adaptada a las cartas nuevas. Los logs
+están en el scratchpad de `e8dab69f`, carpeta `k6d_replay/`. La tabla está en PLAN.md.
+- Ningún bug alto.
+- "Lo peor siempre" se quema a los 18, igual que antes, pero ahora con tres avisos con su %.
+- La carrera buena pasa 2 splits en tier 3 (antes 7 años).
+- La terca termina Leyenda, con 991 puntos.
+- La leyenda baja de 943 a 672 y no gana el Mundial. Es n = 1, con el stream corrido.
+- Los 321 `pageerror` de la leyenda son del `setInterval` del script, no del juego: lo verificó el supervisor.
+- Quedan cuatro hallazgos bajos para la ronda que abra el usuario.
+
+**La tabla de deuda.** Un scout de solo lectura verificó D62, D63, D64, D65 y D78 con números y archivo:línea: se marcan
+✅. También se cierran D77 (K6d-B), D84 (K6d-N) y D80 (re-basada y cerrada con K). D81 sale de K, abierta: P7a se probó y
+se revirtió. Entra D85: `agencia.js` imprime "BAJÓ" debajo del piso de K4c, con 7,2% (en K6c era 5,9). Sale con 0, así
+que no era un FAIL y nadie lo miraba.
+
+**Verificado por el supervisor** sobre una copia `git archive` de `993789c`, que es el código del merge `eef56e6`:
+- `validate.js`: 550 OK, 0 FAIL;
+- `simulate.js 1000` y `simulate.js 1500 60 todas`: 0 crashes;
+- el determinismo, con 100 × 60 de `criterio` dos veces: idéntico;
+- `agencia.js` y `build.js`: OK, con `dist/` en 2402 KB contra un techo de 2500.
+
+**FASE K queda cerrada.** Lo que el usuario encuentre jugando abre una ronda nueva. Después viene FASE V, re-escrita con
+"una cosa por vez en pantalla".
+
 ### 2026-10-07 — Integración de K6d: N (sin P7a) + B + P, el guardado 14 y la racha en rojo que sobrevivía al retiro (`k6d-integracion`; PLAN.md "K6d — el cierre", paso 1)
 
 **Los merges**, en orden, sobre `fase-9r` `80d4b9b`:
