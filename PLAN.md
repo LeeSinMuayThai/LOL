@@ -8413,6 +8413,143 @@ determinismo idéntico; build OK; huella idéntica.
   - **Ninguna meta del usuario cambia de veredicto.**
   - La revisión descartó el horizonte "años con ≥ 30 Mundiales": dependía de N y aflojaba el piso de "margen claro".
 
+### K6d — Lo que decidió el usuario a la mañana *(2026-10-07)*
+
+**Las respuestas del usuario** a "Para la mañana" (textuales, son las opciones que eligió):
+- **D84: "Regla + tier 1 más difícil".** Se mergea la regla "el nivel manda en tier 3" (margen 15) y en la misma ronda se
+  hace más difícil llegar y ganar en tier 1. La regla sube los títulos al 59% y el Top 20 al 40%, que K6 ya decía que
+  eran demasiado comunes: esto los baja sin volver a la moneda.
+- **D77: "La oferta avisa y deja esperar"** y **"El pro frena con la mentalidad en rojo"** (las dos). La tercera opción,
+  resetear la racha al firmar, no.
+- **Push de `fase-9r`: sí.** Hecho: `b6d8b55..4795489`, sin force.
+- **"Rueda de prensa con pistas"** entra en esta ronda. D83 (las lesiones en el pro) no.
+- La prueba de K6c en manos del usuario sigue pendiente: la build quedó servida.
+
+**Las tres piezas van en ramas separadas desde `4795489` y se integran en `k6d-integracion`.** Cada pasada de motor mide
+las barandas antes y después, contra la misma base, y reporta la tabla. Los checks lentos que toca se corren con `--solo=`,
+de a uno. La validación completa la corre el supervisor sobre el head integrado.
+
+**Las barandas de toda pasada de motor de K6d** (600 × 60, seeds 1-600, región y rol al azar, salvo que se diga otra cosa;
+siempre la medida nombrada):
+- no-pro por bot (`criterio`, `equilibrado`, `malas`);
+- burnouts y lesiones graves por cada 1000 carreras;
+- llega a tier 1, título de tier 1, Top 20 y P(2+ | 1);
+- el Mundial con la región fija (Corea y NA) y el bloque `mundoMundial` (LCK ≥ 25% y la liga más fuerte con margen
+  claro);
+- la edad al terminar y las carreras que llegan a los 30;
+- las frenadas por carrera (con las de la semana y las de la mentalidad aparte) y el impacto de los minijuegos (≤ +42%);
+- la agencia ponderada (`agencia.js`), que no baja del piso de K4c.
+
+#### K6d-N — el nivel manda en tier 3 y en tier 1 *(rama `k6d-nivel`)*
+
+**Paso 1, el merge.** `tier3-nivel` entra a la rama. Solo choca en `PROGRESO.md`, y se conservan las dos entradas. La
+huella de la rama se re-mide sobre el head: D82 no corrió el stream, así que tiene que dar `1265514711`. Si da otra, se
+para y se reporta.
+
+**Paso 2, el diagnóstico (sin ronda de motor).** Con la regla de tier 3 puesta, se mide por qué llegar a tier 1 es fácil
+y por qué los títulos y el Top 20 son comunes:
+- el nivel del jugador contra el calibre de su liga de tier 1 al llegar y a lo largo de la carrera, y contra los NPC de
+  su rol;
+- qué fracción de los títulos gana un jugador que es el mejor de su liga, y por cuánto;
+- de dónde sale esa brecha: la curva y el techo del jugador, el nivel de los NPC y la `org.fuerza` de tier 1, el margen
+  del asiento en tier 1, el peso del jugador en la fuerza del equipo.
+
+Se prueban 2-3 palancas con su contrafáctico y la tabla de barandas. Todas tienen que respetar "el nivel manda": el
+resultado lo decide el nivel, y las metas de población salen de cuánta gente llega a cada nivel, **nunca de agregar
+dado**. El supervisor escribe acá la regla elegida con sus números, y recién ahí se implementa.
+
+**Las metas** (`criterio`, 600 × 60, con la regla de tier 3 puesta; hoy, según la rama `tier3-nivel`):
+
+| Medida | Hoy | Meta |
+|---|---|---|
+| Llega a tier 1 | 73,0% | hacia 55-65 (D80) |
+| Título de tier 1 | 59,4% | debajo de 55,7 (el re-base de K5c) y hacia ~30 |
+| Top 20 | 40,3% | debajo de 36,4 y hacia ~15 |
+| El más fuerte gana el Mundial | 59,9% | dentro de 42-58 |
+| Carreras que llegan a los 30 o más | 16,8% | ≥ 17 |
+
+**Lo que no puede caer** (D-D y decisiones del usuario):
+- el Mundial con la región fija: Corea ≥ ~10% (hoy 13,2) y NA ~7% (hoy 8,7), con el orden monótono;
+- no-pro ~20%: no sube más de 2 puntos en ningún bot;
+- LCK ≥ 25% de los Mundiales del mundo, y la liga más fuerte por margen claro;
+- P(2+ | 1) ≥ 35%, y el nuevo Faker difícil pero no imposible;
+- la regla de tier 3: mediana 2, y 6 splits o más ≤ ~10%.
+
+Si las metas no se alcanzan sin romper esto, se reporta la frontera y decide el usuario. Ninguna meta se re-basa sin él.
+
+#### K6d-B — D77: que el burnout se vea venir en la firma y en el pro *(rama `k6d-burnout`)*
+
+Hoy el dado del burnout corre al cerrar el split (`systems/atributos.js`), una vez que la mentalidad lleva
+`atributos.burnoutSplitsMinimos` splits seguidos en rojo (`atributos.burnoutMentalBajo` o menos). `firmarConEquipo` te
+pasa a pro en el mismo split, y la racha del amateur (`flags.splitsMentalBajo`) sigue. Por eso un amateur en rojo firma y
+se quema en ese split, sin que la oferta lo diga (11 de 400 de `malas`). En el pro no hay ninguna frenada para reaccionar.
+
+**(a) La oferta avisa y deja esperar.**
+- Si firmar este split puede cerrar con el dado del burnout (la racha llega al mínimo con la mentalidad proyectada al
+  cierre), la carta de la oferta y la de la prueba lo dicen **con el % del motor**. Es la misma `probabilidadDeBurnout`
+  que tira `atributos.js`, sobre la mentalidad proyectada (regla 15).
+- Esa carta **siempre frena**: no se firma sola por continuidad ni por el perfil.
+- Trae la opción **"Esperar"**:
+  - el club te guarda la oferta para la ventana siguiente, sin dado (no choca con "el mismo club no vuelve a ofrecer en
+    la misma ventana");
+  - este split lo vivís con la rutina que cuida (`rutinaQueCuida` de `amateur.js`);
+  - la carta muestra lo que cuesta (un split más tarde, con la edad) y la mentalidad y el % de burnout de cada opción.
+- Firmar igual sigue siendo posible, con el riesgo a la vista.
+
+**(b) El pro frena con la mentalidad en rojo.** Es la regla del amateur de K6c-fix (quinta pasada) llevada a la carrera
+pro:
+- cuando la mentalidad de un pro entra en zona roja, el juego frena **antes de que el dado pueda tirar**, con el % real;
+- las opciones llevan su costo a la vista: bajar la carga o pedir descanso, con lo que cuesta en forma o en jerarquía, o
+  seguir aceptando el %;
+- vuelve a frenar solo si la mentalidad baja más de lo que se mostró: la regla de "riesgo nuevo", con su constante en
+  `balance.js`;
+- dónde frena en el pipeline del pro (`ETAPAS_SPLIT`) y qué mecánica existente se reusa lo elige el worker, y lo reporta;
+- el efecto de cada opción es el que dice la carta (regla 15).
+
+**Los bots:**
+- `criterio` y el perfil (`resolverAuto`) eligen la opción que no quema, igual que "la propuesta del perfil no te quema";
+- `malas` elige la peor.
+
+**Metas:**
+- carreras que firman y se queman en el mismo split sin que la carta lo haya dicho: 0;
+- burnouts del pro que tuvieron una frenada con el % antes: ≥ 95%;
+- las frenadas por la mentalidad: pocas por carrera, reportadas aparte, sin volver a la mediana 3 de K6c;
+- no-pro y burnouts por bot: se reportan, y si `criterio` empeora es un bug.
+
+#### K6d-P — la rueda de prensa con pistas *(rama `k6d-prensa`)*
+
+Hoy `ui/components/minijuegos/ruedaDePrensa.js` sortea el tono que conviene con `rngUi` (de 0 a 100, de Humilde a
+Desafiante) y no da ninguna pista: es azar puro, lo único que K6 todavía sintió como "rng clicker".
+
+**La regla:**
+- El tono que conviene sale del contexto, en una función pura de `core/` sin `rng`, con las constantes en `balance.js`.
+  Lo mueven:
+  - lo que acaba de pasar: ganaste o perdiste la serie, una final, el escándalo;
+  - el hype (alto pide humildad);
+  - la sinergia del equipo (baja pide poner al grupo adelante);
+  - el rival o el archirrival (pide tono desafiante).
+- La pantalla muestra 2-3 pistas en texto, una por factor que pesa. Cada pista dice algo que el motor usó (regla 15).
+- El objetivo es ese tono más un ruido chico de `rngUi`, así que leer las pistas importa y no alcanza con una tabla.
+- El motor manda el tono y las pistas en `decision.datos`, sin tirada nueva. La huella queda idéntica. Si cambia la forma
+  del guardado, se re-registra según la regla de `FORMAS`.
+- El puntaje de los bots no lee el objetivo, así que `simulate.js` no se mueve.
+
+**Checks, en rojo primero con su mutante:**
+- el tono responde a cada factor en la dirección declarada;
+- cada pista que se muestra corresponde a un factor que pesó;
+- cero `Math.random`;
+- huella idéntica.
+
+La pantalla se verifica en Chromium real, de 320 a 1440 px.
+
+#### K6d — el cierre
+
+1. La integración `k6d-integracion` (N + B + P), con la huella y la forma del guardado resueltas.
+2. Las barandas medidas por el supervisor sobre el head integrado (T6).
+3. La validación completa, `simulate.js 1000`, el determinismo, `agencia.js` y `build.js`.
+4. El merge a `fase-9r` y `HUELLA_JUEGO` 'K6d'.
+5. Se vuelve a jugar K6 (seeds 25, 39 y 152) y se sirve la build al usuario. K6c y K6d cierran cuando él las juega.
+
 ## K.6 — Qué pasa con FASE J y FASE V
 
 | Pieza | Destino |
@@ -8556,14 +8693,14 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D74 | J3 estaba en la fila "sin corrimiento". Medido el 2026-09-27, 40 seeds × 30 splits, `createInitialState` + `avanzarSplitAuto`, tupla `finAnticipado:splitCount:soloqElo` redondeado: **35/40 distintas** (seed 1: `1:en_carrera:30:4139` → `1:en_carrera:30:4156`; seeds 4 y 5 idénticas). La maestría entra a `rendimientoBase` en `core/fuerza.js`, así que el piso 5→18 mueve partidos y elo. No se agregan tiradas para clavar la huella vieja. Determinismo intra-versión intacto | J (aceptado, misma familia que D52) |
 | D75 | `carrera.tierMaximo` del observador de `simulate.js` cuenta el estado "agente libre de tier 2" que sigue a un ascenso (`competitivo.js:58-78`, `saltarATier2` deja `tier = 2` y `currentOrg = null`), pero `registro.porOrg` solo tiene orgs en las que se fichó. Medido en K0 (seeds 1-400 × 60 splits): discrepa en 5 de 400 carreras de `malas` y en 1 de 200 de `ranked`; en `equilibrado`, `prudente`, `criterio` y `azar` no discrepa. Ninguna categoría del embudo cambia (las 5 pasan de tier 2 a tier 3 y las dos caen en "estancado"). Hay que decidir qué es "llegó a tier N" (jugó en N, o ganó el salto) y alinear el observador o documentar la definición | ✅ **cerrada en K1** (2026-10-02, merge `0954fb5`) |
 | D76 | `registro.porOrg[].tier` queda desfasado tras un descenso en el lugar: `resolverDescenso` (`competitivo.js:135-181`) pasa `career.tier` y `liga` a 2 sin cerrar ni abrir fila, así que la fila sigue diciendo tier 1 y `core/legado.js` (`splitsDeTier`, `titulosDeTier`) y `agencia.js` cuentan splits de Challengers como tier 1. Medido en K0: 37 de 400 carreras de `equilibrado` (168 splits) y 5 de 400 de `malas` (33 splits); ejemplo, seed 70 de `malas`: la fila de MVK Esports dice `tier: 1, liga: LCP` aunque desde el split 24 juega en `LCP_CHALLENGERS`. No se sabe si es deliberado ("el contrato viaja"). El puntaje de K1 (`core/puntaje.js`) lee de esas filas: se decide antes | ✅ **cerrada en K1** (2026-10-02, merge `0954fb5`) |
-| D77 | `proSinTierNunca` no significa "pro sin tier": son carreras que fichan y se retiran por burnout en el mismo split (1 de 400 `equilibrado`, 36 de 400 `malas`; todas con `fin = burnout`, `splitCount = splitFichaje + 1` y `porOrg` vacío): el pipeline corta con `retirado` antes de `armarRoster`, y `career.tier` final sí es 3 (o 2). No se investigó por qué el burnout cae justo en el split del fichaje | K5 (retiro emergente) |
+| D77 | `proSinTierNunca` no significa "pro sin tier": son carreras que fichan y se retiran por burnout en el mismo split (1 de 400 `equilibrado`, 36 de 400 `malas`; todas con `fin = burnout`, `splitCount = splitFichaje + 1` y `porOrg` vacío): el pipeline corta con `retirado` antes de `armarRoster`, y `career.tier` final sí es 3 (o 2). No se investigó por qué el burnout cae justo en el split del fichaje | K5 (retiro emergente) → **K6d-B** (decisión del usuario 2026-10-07: la oferta avisa y deja esperar, y el pro frena con la mentalidad en rojo) |
 | D78 | **El jugador nunca juega en LCK ni en LPL.** Medido en la investigación de K2 (2026-10-02, `8e36105`, 400 carreras de `criterio` × 60 splits): 0 splits en LCK y en LPL; el tier 1 se juega en CBLOL (5.734 splits), LCP (3.767), LCS (1.525) y LEC (345), salgas de la región que salgas, Corea incluida. Nivel contra la media de su liga: CBLOL 75 contra 55 · LCP 79 contra 61 · LCS 85 contra 70 · LEC 89 contra 76. Es el mercado (y la región de origen), no la fuerza: K5 tiene que hacer que salir de Corea sea jugar en Corea | K5 |
 | D79 | **No es un bug del pronóstico: es un falso positivo del check "J3 pronóstico"** (investigado el 2026-10-02 sobre `8e36105` y el candidato de K2). El pronóstico (`core/pool.js:110-118`) es la misma regla que aplica el motor (`systems/campeones.js:66`); pero el óxido aplicado es `max(0, gauss(1,5, 1))`, que da 0 el 6,68% de las veces aunque la gracia haya vencido, y el check (`validate.js:7859-7938`) mira la maestría (el efecto) y no la decisión, con a veces un solo futuro "conclusivo" por par. Resultado: falla ~25-30% de las veces que cambia el stream (en `8e36105` con otras seeds, 16 fallos de 60 juegos contra 16,9 esperados por el modelo; en ~648.000 pares de verdad ficha/motor, 0 divergencias salvo re-entradas al pool). Arreglo, solo en `validate.js`: reemplazar la observación por **propiedades sobre pools armados a mano** (ley G: en gracia nunca baja; ley P: en el piso nunca baja; ley O: "oxida" baja en al menos una de 64 seeds) más el cursor `splitCountDeLaProximaCorrida` verificado sin tiradas. Prototipo y mutantes en el scratchpad de la sesión (`d79/prop.mjs`) | ✅ se arregla en K2a, antes de que K2b corra el stream |
 | D80 | **Metas de §K.3b re-basadas a lo medido al cerrar K5c** (decisión del usuario 2026-10-05: "cerrar y que K6 juzgue"). Con Final2 + LPL 91 no llegan: llega a tier 1 (meta 55-65), título de tier 1 (~30), top 20 (~15), P(2+ \| 1) (≥ 35-40%), nuevo Faker entre los de élite (≥ 30%), favorito de un Bo5 (75-85, queda arriba) y carrera mediana (4-6, queda en ~9). Los checks `K5c meta …` llevan su banda de ruido y su línea de la regla 17. La frontera conocida: endurecer el acceso a tier 1 baja el Mundial, que está justo en 7%. "Claramente el más fuerte" (margen ≥ 10) casi no ocurre (4 de ~3000 Mundiales): la meta de ~50% se mide sobre "el más fuerte". Los números exactos están en `PROGRESO.md` (K5c paso 3) | K6 juzga cuáles importan |
 | D81 | **K5c-M (la élite se busca) no tiene efecto medible con la casa encendida.** Con Final2, "la casa primero" de K5c-H ordena la mano antes que la fuerza de la org. Las manos de élite son chicas (~2 ofertas), y `mercado.elite` no cambia la fuerza mediana del club que te ofrece. Su check prueba el mecanismo con la casa neutra en memoria. Si en K6 la élite no termina en los mejores clubes de su liga, el lugar es el orden dentro de los clubes de casa | K6 |
 | D82 | ✅ **Cerrada (2026-10-06, merge `85dd15e`; ver §K6c "La noche del 2026-10-06").** Era — **anotados en la revisión de los arreglos de K5c (2026-10-05), sin arreglar:** (a) el precio de traspaso sale de `presupuestoDeDemanda`, que descuenta la edad, y el valor que se muestra no la descuenta, así que un veterano "vale" $430k/año y su traspaso cuesta ~$60k; (b) el bloque `mundoMundial` cuenta los Mundiales solo mientras la carrera vive, y pesan más los primeros años del mundo | ✅ K6c (noche) |
 | D83 | **Lesiones en el pro** (decisión del usuario 2026-10-06: "solo en el amateur por ahora"). La deuda de sueño (`deudaSueno`) solo se escribe en el amateur; en el pro queda congelada. Con el reset al firmar (K6c-fix), la lesión grave solo le pasa a quien grindea sin dormir de amateur. Pendiente: que la rutina pro genere su propia deuda (scrims + soloQ a la noche), así la lesión de muñeca es algo real de un pro. **Mientras tanto, el final por lesión (`retiro_por_lesion`) no se alcanza en carreras naturales**: la recaída pide 17 splits seguidos con deuda en el amateur, y el burnout llega antes. Su check de cobertura queda declarado inalcanzable hasta D83 (el patrón de `servicio_militar`), con un check propio que arma el estado y verifica que el final se dispara y se narra bien. Cuando se haga D83, vuelve la cobertura natural | después de que el usuario pruebe K6c |
-| D84 | **Salir de tier 3 es una moneda que no lee el nivel** (`resolverTier3`: cada disolución resetea la jerarquía; tier 3 no tiene mercado). El 32% de las carreras de `criterio` pasa 6 splits o más en tier 3, con nivel 63 contra calibre 18. El diseño era una mediana de 1-2 y se miden 5. Es la "constante abierta a criterio" de D34, medida. Se propone "el nivel manda" en tier 3, con un margen sobre el calibre de tier 2. Investigación y contrafáctico en K6c, "La noche del 2026-10-06" | decide el usuario (rama `tier3-nivel`, preparada sin mergear) |
+| D84 | **Salir de tier 3 es una moneda que no lee el nivel** (`resolverTier3`: cada disolución resetea la jerarquía; tier 3 no tiene mercado). El 32% de las carreras de `criterio` pasa 6 splits o más en tier 3, con nivel 63 contra calibre 18. El diseño era una mediana de 1-2 y se miden 5. Es la "constante abierta a criterio" de D34, medida. Se propone "el nivel manda" en tier 3, con un margen sobre el calibre de tier 2. Investigación y contrafáctico en K6c, "La noche del 2026-10-06" | **K6d-N** (decisión del usuario 2026-10-07: la regla con margen 15 y, en la misma ronda, tier 1 más difícil) |
 
 ---
 
