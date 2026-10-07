@@ -556,6 +556,24 @@ export const BALANCE = {
     topeDescanso: 70
   },
 
+  // K6d-B (D77, "que el burnout se vea venir en la firma y en el pro", decisión del usuario 2026-10-07). La cuenta del riesgo es la
+  // del dado de `atributos.js` (`riesgoDeBurnoutAlCierre`: la mentalidad proyectada al cierre, sin el dado, y la misma
+  // `probabilidadDeBurnout`); acá van solo las perillas de las dos paradas.
+  // (b) La parada del pro (`systems/burnout.js`, antes de `atributos`): frena cuando el dado del cierre puede pinchar. Las dos
+  // opciones que cuidan la cabeza suben la mentalidad ya (por `recuperarPorDescanso`, el camino del "descansar" del receso, con su
+  // tope) y cuestan lo que dice la carta; el rango se tira al resolver (regla 7) y la carta proyecta con su media (regla 15).
+  burnout: {
+    // Con la parada ya vista (o la carta de la oferta que firmaste con el riesgo a la vista), vuelve a frenar solo si la mentalidad
+    // proyectada al cierre queda más de esto por debajo de lo que se mostró para la opción que elegiste (puntos de la barra), la
+    // misma regla de "riesgo nuevo" que `amateur.semanaMentalNueva`. Si la mentalidad sale de rojo, lo visto se olvida.
+    mentalNueva: 5,
+    // "Bajar la carga": menos scrims y menos soloQ hasta el cierre. La cabeza respira un poco y las manos pierden ritmo (mecánica,
+    // un efecto de decisión: una fracción queda, `conPermanencia`).
+    bajarCarga: { mentalidadMin: 3, mentalidadMax: 6, mecanicaMin: 1, mecanicaMax: 3 },
+    // "Pedir unos días": afuera del equipo un par de días. La cabeza se acomoda en serio y el suplente suma scrims (jerarquía).
+    pedirDescanso: { mentalidadMin: 7, mentalidadMax: 12, jerarquiaMin: 4, jerarquiaMax: 8 }
+  },
+
   meta: {
     pesoMinimo: 0.5,
     pesoMaximo: 2.6,

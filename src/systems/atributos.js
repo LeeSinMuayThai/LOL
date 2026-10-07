@@ -101,17 +101,73 @@ function normalizarSueno(state, rng) {
 // que existe es dormir de verdad: por encima del descanso normal, el balance se
 // da vuelta y la barra sube. Es la razon mecanica para gastar bloques en dormir
 // en vez de en LP.
-function desgasteDeMentalidad(state, rng) {
+//
+// K6d-B: `base` es el término del dado (`gauss(desgasteBase, desgasteSpread)` en `aplicar`, `desgasteBase` en la
+// proyección sin dado de `riesgoDeBurnoutAlCierre`): la misma cuenta para el motor y para la carta (regla 15).
+function desgasteDeMentalidad(sleep, deudaSueno, base) {
   const a = BALANCE.atributos;
-  const { sleep, deudaSueno } = state.player;
-
   const falta = Math.max(0, a.suenoConfortable - sleep) * a.suenoPesoEnDesgaste;
   const sobra = Math.max(0, sleep - a.suenoConfortable) * a.recuperacionPorSuenoAlto;
-
-  return gauss(a.desgasteBase, a.desgasteSpread, rng) + falta + deudaSueno * a.deudaPesoEnDesgaste - sobra;
+  return base + falta + deudaSueno * a.deudaPesoEnDesgaste - sobra;
 }
 
-function probabilidadDeBurnout(mentalidad) {
+// Fase 9R.2 + K3-A: la mentalidad con la que cierra el split, dado el desgaste. Un desgaste negativo (dormir por encima
+// del confortable) es descanso y pasa por el tope (`recuperarPorDescanso`); después, la vuelta hacia la base; y la caída
+// neta del split se topea en `maxCaidaMentalPorSplit`. K6d-B: la usan `aplicar` y la proyección (una sola fuente).
+function mentalidadDelCierre(mentalidad, desgaste) {
+  const sinTope = mentalidadHaciaSuBase(desgaste < 0
+    ? recuperarPorDescanso(mentalidad, -desgaste)
+    : clampStat(mentalidad - desgaste));
+  return Math.max(sinTope, mentalidad - BALANCE.atributos.maxCaidaMentalPorSplit);
+}
+
+// K6d-B (D77, "que el burnout se vea venir en la firma y en el pro", decisión del usuario 2026-10-07): lo que el dado del
+// burnout de `aplicar` haría con la mentalidad proyectada al cerrar este split, sin el dado: el sueño del cierre (en el pro
+// vuelve solo hacia `suenoConfortable`, sin el ruido), el desgaste medio (`desgasteBase`) y la misma `mentalidadDelCierre`.
+// La racha (`flags.splitsMentalBajo`) suma este split si la proyección queda en zona roja, y la chance es la misma
+// `probabilidadDeBurnout` que tira `aplicar` (o 1 en el piso duro). `fase`, `deudaSueno`, `sleep` y `mentalidad` pisan las
+// del estado: la oferta del amateur proyecta "si firmás" (pro, con la deuda que deja la firma) contra "si esperás", y la
+// parada del pro proyecta cada opción. Lo leen la carta, el perfil y los bots (regla 15). Puro, sin `rng`.
+export function riesgoDeBurnoutAlCierre(state, {
+  fase = state.phase, deudaSueno = state.player.deudaSueno ?? 0, sleep = state.player.sleep, mentalidad = state.player.stats.mentalidad
+} = {}) {
+  const a = BALANCE.atributos;
+  const suenoDelCierre = fase === 'amateur' ? sleep : clampStat(sleep + (a.suenoConfortable - sleep) * a.suenoRegresionPro);
+  const alCierre = mentalidadDelCierre(mentalidad, desgasteDeMentalidad(suenoDelCierre, deudaSueno, a.desgasteBase));
+  const splitsMentalBajo = alCierre <= a.burnoutMentalBajo ? (state.flags.splitsMentalBajo ?? 0) + 1 : 0;
+  const sostenido = splitsMentalBajo >= a.burnoutSplitsMinimos;
+  const probabilidad = alCierre <= BALANCE.stats.min ? 1 : sostenido ? probabilidadDeBurnout(alCierre) : 0;
+  return { mentalidad: alCierre, sueno: suenoDelCierre, splitsMentalBajo, sostenido, probabilidad };
+}
+
+// K6d-B: el % y el cierre proyectado en palabras, una sola forma para las cartas de la oferta, de la prueba y del pro.
+// El % de burnout como lo dice la carta: la chance del motor redondeada, y "menos de 1%" si redondea a 0 pero no es 0.
+export function porcentajeDeBurnout(p) {
+  return p > 0 && Math.round(p * BALANCE.stats.max) === 0 ? 'menos de 1%' : `${Math.round(p * BALANCE.stats.max)}%`;
+}
+
+// Un cierre proyectado, en palabras: la mentalidad y lo que hace el dado con ella.
+export function textoDelCierre(cierre) {
+  const m = `~${entero(cierre.mentalidad)}`;
+  if (cierre.probabilidad > 0) {
+    return `${m}: ${porcentajeDeBurnout(cierre.probabilidad)} de burnout`;
+  }
+  return cierre.sostenido
+    ? `${m}: el burnout entra al sorteo, pero con eso todavía no pincha (0%: pincha debajo de ${BALANCE.atributos.burnoutUmbral})`
+    : `${m}: sin burnout en el sorteo`;
+}
+
+// K6d-B: la opción que no quema de una carta con el riesgo de burnout a la vista (las opciones con `riesgoBurnout`, la chance que
+// dice la carta): la de menos; a igual chance, la primera (la carta las ordena de menos a más costo). La eligen `resolverAuto` (el
+// perfil) y `criterio`; `malas`, la de más (`peor`). Puro, sin `rng`.
+export function opcionQueNoQuema(decision, peor = false) {
+  const candidatas = decision.opciones.filter((opcion) => Number.isFinite(opcion.riesgoBurnout));
+  return candidatas.reduce((mejor, opcion) => (
+    (peor ? opcion.riesgoBurnout > mejor.riesgoBurnout : opcion.riesgoBurnout < mejor.riesgoBurnout) ? opcion : mejor
+  )).id;
+}
+
+export function probabilidadDeBurnout(mentalidad) {
   const a = BALANCE.atributos;
   if (mentalidad >= a.burnoutUmbral) {
     return 0;
@@ -149,11 +205,10 @@ export function aplicar(state, rng) {
   // descanso, y el descanso sube la mentalidad solo hasta `topeDescanso`
   // (`core/barras.js#recuperarPorDescanso`). Después, la vuelta del split
   // hacia la base (`mentalidadHaciaSuBase`), adentro del tope de caída neta.
-  const desgaste = desgasteDeMentalidad({ ...state, player: { ...state.player, sleep } }, rng);
-  const mentalidadSinTope = mentalidadHaciaSuBase(desgaste < 0
-    ? recuperarPorDescanso(conAcumulados.mentalidad, -desgaste)
-    : clampStat(conAcumulados.mentalidad - desgaste));
-  const mentalidad = Math.max(mentalidadSinTope, state.player.stats.mentalidad - BALANCE.atributos.maxCaidaMentalPorSplit);
+  const desgaste = desgasteDeMentalidad(sleep, state.player.deudaSueno,
+    gauss(BALANCE.atributos.desgasteBase, BALANCE.atributos.desgasteSpread, rng));
+  // `conAcumulados.mentalidad` es `state.player.stats.mentalidad`: la mentalidad no está en `curvas` ni en `acumulativos`.
+  const mentalidad = mentalidadDelCierre(conAcumulados.mentalidad, desgaste);
 
   const stats = { ...conAcumulados, mentalidad };
   const deltaMecanica = stats.mecanica - state.player.stats.mecanica;

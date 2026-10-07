@@ -5,6 +5,7 @@ import { previaDeDecision } from '../core/previaDePartido.js';
 import { calibreDeLiga } from '../core/demanda.js';
 import { nivelDelJugador } from '../core/ficha.js';
 import { ofertaDeImportPosible } from '../systems/mercado.js';
+import { opcionQueNoQuema } from '../systems/atributos.js';
 
 // Constantes de medición para la heurística de los bots (PLAN.md §K.5 K0).
 // Los pesos reflejan la magnitud declarada en la previa ('baja', 'media', 'alta').
@@ -199,6 +200,13 @@ export function responderQueGrindea(sistema, state, decision, rng) {
     if (id && decision.opciones.some((op) => op.id === id)) return { opcionId: id };
   }
   return sistema.resolverAuto(state, decision, rng);
+}
+
+// K6d-B (D77): una carta con el riesgo de burnout a la vista (la oferta del amateur con la racha en rojo, `amateur:oferta` con
+// `datos.riesgoBurnout`, y la parada del pro, `burnout:burnout_pro`): sus opciones traen `riesgoBurnout`, la chance que dice la carta.
+// `criterio` (como el perfil, `resolverAuto`) elige la que no quema; `malas`, la que más (`opcionQueNoQuema`). Sin `rng`.
+export function esDecisionConRiesgoDeBurnout(decision) {
+  return (decision.opciones ?? []).some((opcion) => Number.isFinite(opcion.riesgoBurnout));
 }
 
 export function esDecisionDeMinijuego(decision) {
@@ -443,6 +451,9 @@ function responderCriterio(sistema, state, decision, rng) {
   if (esDecisionDeRutina(decision)) {
     return sistema.resolverAuto(state, decision, rng);
   }
+  if (esDecisionConRiesgoDeBurnout(decision)) {
+    return { opcionId: opcionQueNoQuema(decision) };
+  }
   if (esDecisionDeMinijuego(decision)) {
     return { resultado: RESULTADO_MINIJUEGO_BIEN, ...charlaEnMinijuego(state, decision, false) };
   }
@@ -491,6 +502,9 @@ function responderCriterio(sistema, state, decision, rng) {
 function responderMalas(sistema, state, decision, rng) {
   if (esDecisionDeRutina(decision)) {
     return mejorRutina(decision, puntajeAgresiva);
+  }
+  if (esDecisionConRiesgoDeBurnout(decision)) {
+    return { opcionId: opcionQueNoQuema(decision, true) };
   }
   if (esDecisionDeMinijuego(decision)) {
     return { resultado: RESULTADO_MINIJUEGO_MAL, ...charlaEnMinijuego(state, decision, true) };
