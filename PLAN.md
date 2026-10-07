@@ -8477,6 +8477,41 @@ dado**. El supervisor escribe acá la regla elegida con sus números, y recién 
 
 Si las metas no se alcanzan sin romper esto, se reporta la frontera y decide el usuario. Ninguna meta se re-basa sin él.
 
+**K6d-N, pasos 1 y 2, hechos** (`k6d-nivel`: merge `908ac9f`, huella `1265514711`, `--rapido` 364 OK y 0 FAIL; las
+palancas, en copias sin commitear). El diagnóstico (`criterio`, 600 × 60):
+- **Llegar a tier 1 es fácil porque el fondo de tier 1 está debajo del techo de tier 2.** Los calibres son CBLOL 51,5,
+  LCP 56,5 y LCS 59, contra ~53 de la LCK CL. El 88,6% de las llegadas es a esas tres ligas, y 87 de los 96 coreanos que
+  llegan entran ahí de import. La llegada típica es a los 19, con nivel 59 contra calibre 54,5.
+- **En tier 1 el jugador le saca mucho a su liga:** nivel menos calibre, mediana +11,4 y p90 +25.
+- **El título ya lo decide el nivel:** de 1,3% por split con brecha negativa a 22% con 20 o más. Lo que sobra es la
+  **estrella en una liga chica**: el 69% de los títulos sale de splits con brecha de 15 o más, y otro 69% se gana en
+  CBLOL, LCP o LCS. Son ~27 splits en tier 1 por carrera, y el 78,5% de los que llegan gana un título.
+- **El Top 20:** el título de cualquier liga suma lo mismo, 16,9 puntos.
+- **No son causa:** el peso del jugador en el equipo ni el techo de experiencia.
+
+Las palancas (600 × 60; tier 1 / título / Top 20; región fija Corea / NA; 30+):
+
+| Palanca | Tier 1 / título / Top 20 | Corea / NA | 30+ | Costo |
+|---|---|---|---|---|
+| hoy, con la regla de tier 3 | 73,0 / 57,3 / 40,3 | 13,2 / 8,7 | 16,8 | — |
+| **P3**: el bono de campeón en el ranking escala con el prestigio (0 en 55, pleno en 91) | 73,0 / 57,3 / 23,8 | 13,2 / 7,5 | 16,5 | ninguno medido |
+| **P6**: +8 de margen para ascender a tier 1 | 67,7 / 57,0 / 38,0 | 13,0 / 7,7 | 14,8 | estancados de `azar` FAIL |
+| **P4**: más prestigio a CBLOL, LCP y LCS | 68,7 / 50,0 / 35,8 | 9,7 / 7,7 | 11,0 | 30+ y Corea; estancados FAIL |
+| P3 + P6 (con 1500) | 68,4 / 57,3 / 21,5 | 14,5 / 7,7 | 14,0 | estancados de `azar` 21,1% (banda ≤ 14,6) |
+
+**Decisión del supervisor (dentro de "regla + tier 1 más difícil"):**
+- **P3 entra.** El Top 20 mide a los mejores del mundo, y ganar la CBLOL no es ganar la LCK. Es una regla, sin dado.
+- **Antes de llevarle al usuario la frontera de los títulos, se prueba una palanca más, P7: "el nivel te lleva a la
+  liga que te corresponde".** Es la más fiel a "el nivel manda" y a K5c-H, donde dice que "un jugador de élite sube como
+  import a una liga más fuerte". La estrella que le saca 15 o más a su liga de tier 1 recibe lugar en una liga más fuerte
+  que alcanza, y `criterio` la toma. Allá el título cuesta lo que su nivel (D81 ya avisaba que la élite no se busca).
+  Primero se diagnostica por qué hoy no sube: ¿falta asiento, pierde la disputa, lo frena el castigo etario o el bot no
+  la toma? El arreglo va donde esté la causa.
+- **Se mide con P3 puesto:** P3 + P7 y P3 + P6 + P7, con las barandas, `--solo` de las metas K5c (1500) y el de "Ninguna
+  carrera queda sin terminar" (edad y 30+).
+- **El check de estancados es una meta de §K.3b (~10%), no de D-D.** Choca de frente con "llega a tier 1 hacia 55-65":
+  si tier 1 se hace más difícil, el `azar` se estanca más. Se reporta, no se re-basa sin el usuario.
+
 #### K6d-B — D77: que el burnout se vea venir en la firma y en el pro *(rama `k6d-burnout`)*
 
 Hoy el dado del burnout corre al cerrar el split (`systems/atributos.js`), una vez que la mentalidad lleva
@@ -8516,6 +8551,66 @@ pro:
 - las frenadas por la mentalidad: pocas por carrera, reportadas aparte, sin volver a la mediana 3 de K6c;
 - no-pro y burnouts por bot: se reportan, y si `criterio` empeora es un bug.
 
+**K6d-B, primera pasada** (`k6d-burnout`: `b8be1da`, `9dacdf9`).
+- **Las cartas.** La de la oferta y la de la prueba dicen la racha, la mentalidad y el % del dado de cada opción a dos
+  cierres. La opción "Pedirle a X que te espere un split" guarda la oferta en `flags.ofertaGuardada`.
+- **El pro frena** en `systems/burnout.js` (nuevo, justo antes de `atributos`). Las opciones son seguir, bajar la carga o
+  pedir unos días; reusan `recuperarPorDescanso`. Vuelve a frenar solo si la mentalidad cae más de `burnout.mentalNueva`
+  debajo de lo mostrado.
+- **La huella** pasa de 1766253198 a 1073872165. La forma cambió (`flags.mentalAvisadaPro`, `flags.ofertaGuardada`): la
+  integración sube a 14.
+- **Desvío de la spec, aceptado por el supervisor.** La oferta del amateur llega cuando la semana del split ya se jugó, y
+  el dado corre al cierre, firmes o no. Firmar no empeora ese cierre (el sueño se normaliza y la deuda vuelve a 0): en 211
+  de 216 cartas con riesgo de `malas`, firmar da igual o menos burnout que quedarse. Por eso "esperar" se vive en el split
+  siguiente, con la rutina que cuida, y la carta muestra los dos cierres. A dos splits, esperar da menos en 107 de las 216
+  y lo mismo en 24. Presentar la oferta antes de la semana obligaba a reordenar todo el amateur.
+- **Las barandas,** medidas por el supervisor con `barandas.sh` (igual que el worker), de `d9c2dfa` a `9dacdf9`:
+  - burnouts por cada 1000 carreras: `criterio` 10 → 2, `equilibrado` 25 → 18, `malas` 490 → 485;
+  - firmar y quemarse sin aviso: 0 en los tres bots (antes `malas` 15 y `equilibrado` 1);
+  - burnouts del pro con frenada previa: 100%;
+  - frenadas de la mentalidad: ~0,09 por carrera;
+  - no-pro: 24,5 / 25,3 / 49,8;
+  - tier 1, títulos, Top 20, Mundial, región fija, edad y 30+: dentro del ruido;
+  - `agencia.js`: idéntico.
+
+**La revisión de K6d-B: requiere corrección.** El T1 en lockstep está limpio, el guardado a mitad de las pausas también,
+y no hay `Math.random`. Pero hay dos fallas de diseño que los checks no ven:
+- **Alta.** La vara del "riesgo nuevo" del pro es absoluta y no se relaja mientras dura la racha. Si firmás con la carta
+  mostrando la mentalidad en el piso, la parada no vuelve nunca. Con `malas` (400 seeds), 22 pros se quemaron entre 1 y 9
+  splits después de firmar sin ninguna parada, con el dado al 10-14% por split. El check contaba la carta de la firma
+  como aviso de toda la racha.
+- **Alta.** "Esperar" se puede repetir en bucle: el perfil encadenó hasta 6 esperas y "esperar siempre" llegó a 13. Esperar
+  casi no cambia el riesgo, y el perfil elige la opción con menos riesgo. Mientras tanto no hay scouting ni "¿seguís?".
+- **Media.**
+  - El pro sin club no frena, pero el dado tira igual: 15 burnouts de `malas`, que el check excluía.
+  - Hay checks que no muerden: "la oferta guardada es la misma" solo compara el nombre, y ningún check prueba que el perfil
+    elija la opción que no quema.
+  - La pausa nueva no está en la lista de cobertura del guardado de K4.
+- **Baja.**
+  - Con la PC confiscada esa semana, la carta promete un split que se vive sin PC.
+  - Con la vara en 0%, la prueba dice "si no llegás, lo cerrás en soloQ".
+  - "El suplente suma minutos" no es vocabulario de LoL.
+
+**La corrección (supervisor):**
+- **Un aviso cubre los cierres que mostró.** La carta de la firma muestra dos y la parada del pro muestra el de su split.
+  Si el dado sigue vivo en un cierre que ningún aviso cubrió, es riesgo nuevo y frena. Dentro de lo cubierto, vuelve a
+  frenar solo si la mentalidad baja más de `burnout.mentalNueva` de lo mostrado.
+- **Esperar se puede una sola vez por oferta.** Cuando la oferta guardada vuelve, es firmar o dejarla, y la carta lo
+  dice.
+- **El pro frena con o sin club,** con las opciones que tengan sentido sin club (descansar o bajar la carga, con su costo).
+- **La meta se mide por cierre:** todo burnout de un pro sale de un cierre que alguna carta o parada cubrió con su %, en
+  ≥ 95% y sin excluir a los que no tienen club.
+- **Las frenadas por la mentalidad** de `criterio` y `equilibrado` siguen siendo pocas, y se reportan.
+- **Los checks atrapan:**
+  - la vara que no se relaja;
+  - esperar dos veces;
+  - la guardada que cambia algo (sueldo, años, vara o club);
+  - el perfil o `criterio` eligiendo la opción que más quema;
+  - la pausa nueva en la cobertura del guardado.
+- **Los textos bajos se arreglan** (regla 15 y vocabulario).
+
+- **Espera la corrección.**
+
 #### K6d-P — la rueda de prensa con pistas *(rama `k6d-prensa`)*
 
 Hoy `ui/components/minijuegos/ruedaDePrensa.js` sortea el tono que conviene con `rngUi` (de 0 a 100, de Humilde a
@@ -8541,6 +8636,47 @@ Desafiante) y no da ninguna pista: es azar puro, lo único que K6 todavía sinti
 - huella idéntica.
 
 La pantalla se verifica en Chromium real, de 320 a 1440 px.
+
+**K6d-P, primera pasada** (`k6d-prensa`: `569f77c`, `5a6c31c`, `1e2b4ee`): huella idéntica, forma del guardado igual,
+23 mutantes en rojo. **La revisión: OK con observaciones, y una que importa.**
+- La prensa de después de la serie está apagada desde K4c (`serie.rondasConPrensa: []`, el combo cA, para dejar los
+  minijuegos en 4-8 por carrera). **No se prende:** sería volver a abrir una calibración de K4c que el usuario no pidió.
+- Hoy la única prensa que se juega es la del escándalo, y ahí el tono queda siempre humilde: entre 5 y 28, con mediana 19,
+  en 19 pausas reales de 60 seeds. El escándalo pesa -28 y la sinergia real empuja para el mismo lado. **Un slider fijo a
+  la izquierda gana siempre: leer las pistas no sirve.**
+- La pista "casi nadie te conoce" sale con hype 57-64 (regla 15 en el texto). En la prensa de serie, "bajá la cabeza" y
+  "no le des el gusto de bajar la cabeza" salen juntas. "El vestuario aguanta" suena a fútbol.
+- Los checks no atan el texto de cada pista a su dirección: sobreviven mutantes como "el escándalo dice subir el tono".
+  Tampoco miran que el widget use el tono.
+- El botón "RESPONDER" sale recortado. Es un defecto viejo de todos los `.minijuego-btn`: `button { padding: 0 }` de
+  `base.css` le gana al padding de `:where(button)`, y el `clip-path` con chaflanes se come las letras.
+
+**La corrección (supervisor, dentro de "la rueda de prensa con pistas"):**
+- **En la prensa del escándalo el tono tiene que variar con factores legibles del estado** (cómo viene tu temporada, el
+  hype, la sinergia, lo que ya se sabe de vos). El escándalo empuja a la humildad, pero no fija la respuesta.
+- **Meta, medida en pausas reales** con la configuración de producción (≥ 50 pausas):
+  - del p10 al p90 del tono hay 40 puntos o más;
+  - la mediana cae entre 35 y 65;
+  - con la mejor posición fija del slider, el veredicto "bien" sale en ≤ 50% de las pausas; poniendo el slider en el
+    tono, en ≥ 90%.
+- Cada texto dice lo que es (umbral propio para "nadie te conoce"), y ninguna pista contradice a otra.
+- Los checks atan cada pista a la dirección de su factor, cubren la final internacional y prueban que el widget arma el
+  objetivo con el tono.
+- El botón de los minijuegos recupera su padding, medido en el navegador.
+- La huella sigue idéntica.
+
+**K6d-P, segunda pasada** (`577a322`, `ad614fb`). **La revisión da OK**, sin hallazgos. La midió también el supervisor con
+`--solo="K6d-P"`.
+- **Los pesos.** El escándalo pesa -8. La prensa también la mueven el hype, la sinergia, la jerarquía, la mentalidad y la
+  forma (`momentum`, leído en vivo con `calcularContexto`). `tonoBase` es 58.
+- **La meta, cumplida.** En 75 pausas reales del escándalo (seeds 1-200) el tono va de 9 a 76 (p10-p90), con mediana 43.
+  Con la mejor posición fija del slider, "bien" sale en el 42,4%; con el slider en el tono, en el 100%. En un holdout de
+  123 pausas (seeds 401-700): 5 / 40 / 72 y 40,9%.
+- **Verificado:** 38 de 39 mutantes en rojo (el que queda es "el hype casi sin peso", inocuo) y los mutantes propios del
+  revisor también. En pausas reales: 0 pistas falsas en 55 apariciones.
+- **Huella idéntica, forma igual,** `dist/` 2360 KB.
+- **El botón de los minijuegos** ya no se corta, medido a 320 y 1440 px.
+- **Espera la integración.**
 
 #### K6d — el cierre
 
