@@ -64,6 +64,10 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
   - Región fija: Corea 79 → 79 y NA 52 → 45 (de 600).
   - 30+ en la réplica del check lento: 16,8 → 16,5.
 - **P7a, "el nivel te lleva a la liga que te corresponde"** (decisión del supervisor, `PLAN.md` §K6d-N paso 2b).
+  - **Se sacó en la integración de K6d** (revert de `9b85bc7` y `9f3b3f8`, decisión del supervisor): la estrella rebotaba entre
+    ligas en cada contrato (el traspaso a mitad de contrato sin dado chocaba con "la casa primero" de K5c-H: el patrón A-B-A-B
+    pasó de 0 a 31 carreras con `criterio`), la carta se contradecía ("das el nivel de la LEC…" junto a "Una salida lateral") y
+    casi no movía los títulos. No queda código ni perilla (`mercado.estrellaSube`) ni su check. Lo de abajo es historia.
   - **Por qué no subía** (criterio 600 × 60, con P3; las ventanas de las estrellas de CBLOL/LCP/LCS que le sacan 15 o más al
     calibre de su liga: 1019):
     - ve la oferta y la toma: 24,7%;

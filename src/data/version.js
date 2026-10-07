@@ -174,11 +174,11 @@ export const VERSION_JUEGO = 'K6d';
 // integración de K6d (revert de 9b85bc7 y 9f3b3f8): la estrella rebotaba entre ligas en cada contrato (el traspaso a mitad de
 // contrato sin dado chocaba con "la casa primero" de K5c-H: A-B-A-B de 0 a 31 carreras con `criterio`), la carta se contradecía
 // y casi no movía los títulos. Su huella no vale.
-// K6d (la integración de K6d-N sin P7a, K6d-B y K6d-P, HUELLA_PENDIENTE; corrimiento declarado — lo que decidió el usuario el
+// K6d (la integración de K6d-N sin P7a, K6d-B y K6d-P, 79304237; corrimiento declarado — lo que decidió el usuario el
 // 2026-10-07): `VERSION_JUEGO` pasa a 'K6d'. K6d-N: el nivel manda en tier 3 (margen 15, sin los dados de `resolverTier3`) y el
 // título de una liga chica no te mete en el Top 20 (P3: el bono pesa por el prestigio de la liga); K6d-B (D77): la oferta del
 // amateur con la racha en rojo dice el % del burnout y deja esperar una vez, y el pro frena con la mentalidad en rojo, con o sin
 // club; K6d-P: la rueda de prensa con pistas (no mueve la huella). Las piezas juntas mueven las carreras que cada una movía sola:
 // ninguna seed de K6c reproduce su carrera. Guardado VERSION 14. Reemplaza a 480175732 (K6d-N con P3), 1073872165 (K6d-B) y
 // 1766253198 (K6c).
-export const HUELLA_JUEGO = 0;
+export const HUELLA_JUEGO = 79304237;

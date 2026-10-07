@@ -9,7 +9,7 @@ import { salarioDeOferta } from '../core/salarios.js';
 import { valorDeMercado, precioDeTraspaso } from '../core/valorMercado.js';
 import { cerrarFila, registrarPico, registrarSalarioEnFila, registrarArraigoEnFila, arraigoInicial } from '../core/registro.js';
 import { bandaDeJerarquia, bandaDeArraigoFicha, nivelDelJugador } from '../core/ficha.js';
-import { orgsQueTeFicharian, ofertaPosible, esResidenteDe, nivelAlternativaAsiento, factorRenovacionEtario, factorElite, plantelEnLiga, veteranoDeTier2, ganaLaDisputaDelAsiento, renovacionCortadaPorEdad, alcanzaTuLiga, ligaDeCasa, clubDeCasaQueTeHaceLugar, calibreDeLiga, meritoDeTemporada, sesgoEtarioDe, renovacionNegadaConMerito, clubDeLigaMasFuerteQueTeHaceLugar } from '../core/demanda.js';
+import { orgsQueTeFicharian, ofertaPosible, esResidenteDe, nivelAlternativaAsiento, factorRenovacionEtario, factorElite, plantelEnLiga, veteranoDeTier2, ganaLaDisputaDelAsiento, renovacionCortadaPorEdad, alcanzaTuLiga, ligaDeCasa, clubDeCasaQueTeHaceLugar, calibreDeLiga, meritoDeTemporada, sesgoEtarioDe, renovacionNegadaConMerito } from '../core/demanda.js';
 import { resolverMercadoMundial, cerrarAsientosCongelados, congelarAsientosOfrecibles } from '../core/mercadoMundial.js';
 import { jerarquiaAlFichar, sinergiaAlFichar, conPlantillaDelPlantel } from './roster.js';
 import { conPlantelesDe } from '../core/plantel.js';
@@ -411,15 +411,6 @@ export function generarOfertas(state, rng) {
     ];
     posibles.splice(0, posibles.length, ...ordenadas);
   }
-  // K6d-N, P7a (`clubDeLigaMasFuerteQueTeHaceLugar`): si tu nivel llega a una liga claramente más fuerte, su club va primero en
-  // la mano. Si un club de esa liga ya te ofrecía por su cuenta, sube ese (con su motivo, que es verdad); si no, el que te hace
-  // lugar, con el suyo. Con la perilla neutra `estrella` es null y la mano es la de siempre.
-  const estrella = clubDeLigaMasFuerteQueTeHaceLugar(state);
-  if (estrella) {
-    const yaOfrecia = posibles.findIndex((entrada) => entrada.liga.id === estrella.liga.id);
-    const entrada = yaOfrecia >= 0 ? posibles.splice(yaOfrecia, 1)[0] : { ...estrella, forzadaFranquicia: true };
-    posibles.unshift(entrada);
-  }
   const hayCasaEnLaMano = posibles.some((entrada) => casa && entrada.liga.id === casa.id);
 
   // El mercado prefiere jóvenes (CONCEPTO §12): `sesgoEtario` adelgaza la mano.
@@ -428,7 +419,7 @@ export function generarOfertas(state, rng) {
   // para la franquicia (K5c-H: y para el club de tu liga, que va primero).
   const manoBase = Math.min(posibles.length, m.ofertasMax - ofertas.length);
   // K6b-M: con mérito, la edad adelgaza la mano solo en `merito.fraccionCastigo` (`sesgoEtarioDe`; sin mérito, `sesgoEtario` exacto).
-  const cupoEtario = Math.max(claramenteArriba || hayCasaEnLaMano || estrella ? 1 : 0, Math.round(manoBase * sesgoEtarioDe(state)));
+  const cupoEtario = Math.max(claramenteArriba || hayCasaEnLaMano ? 1 : 0, Math.round(manoBase * sesgoEtarioDe(state)));
   const candidatas = posibles.slice(0, cupoEtario);
 
   for (const { org, liga, motivo, forzadaFranquicia } of candidatas) {
@@ -1215,7 +1206,7 @@ export function aceptarOferta(state, oferta, rng, { motivoFila } = {}) {
 // bastante más fuerte que tu org actual — una salida hacia arriba, no lateral.
 // Devuelve una decisión `motivo: 'traspaso'` o `null` si nadie califica o no
 // sale el dado.
-export function ofertaDeTraspaso(state, rng) {
+function ofertaDeTraspaso(state, rng) {
   const m = BALANCE.mercado;
   const ligaActual = ligaDeCarrera(state);
   const orgActual = ligaActual?.orgs.find((org) => org.nombre === state.career.currentOrg);
@@ -1230,13 +1221,10 @@ export function ofertaDeTraspaso(state, rng) {
   const casa = alcanzaTuLiga(state) ? ligaDeCasa(state) : null;
   const fichadores = orgsQueTeFicharian(state)
     .filter((entrada) => !casa || noEsMasDebilQueTuCasa(entrada.liga, casa));
-  // K6d-N, P7a: si tu nivel llega a una liga claramente más fuerte, el pretendiente es el club que te hace lugar ahí, y viene
-  // sin el dado de `probTraspasoMitadContrato` (es tu nivel). Con la perilla neutra `estrella` es null: lo de siempre.
-  const estrella = clubDeLigaMasFuerteQueTeHaceLugar(state);
-  const pretendiente = estrella ?? fichadores
+  const pretendiente = fichadores
     .filter((entrada) => entrada.org.fuerza >= orgActual.fuerza + m.traspasoBrechaFuerzaMin)
     .sort((a, b) => b.org.fuerza - a.org.fuerza)[0];
-  if (!estrella && (!pretendiente || !chance(m.probTraspasoMitadContrato, rng))) {
+  if (!pretendiente || !chance(m.probTraspasoMitadContrato, rng)) {
     return null;
   }
 
@@ -1287,7 +1275,7 @@ export function ofertaDeTraspaso(state, rng) {
     tipo: 'opciones',
     presentacion: 'mercado',
     titulo: 'Te quieren a mitad de contrato',
-    descripcion: `${org.nombre} preguntó por vos${estrella ? `: ${estrella.motivo}` : ''}. Te ${plural(state.career.contrato.aniosRestantes, 'queda', 'quedan')} ${state.career.contrato.aniosRestantes} ${plural(state.career.contrato.aniosRestantes, 'año', 'años')} de contrato con ${state.career.currentOrg}.`,
+    descripcion: `${org.nombre} preguntó por vos. Te ${plural(state.career.contrato.aniosRestantes, 'queda', 'quedan')} ${state.career.contrato.aniosRestantes} ${plural(state.career.contrato.aniosRestantes, 'año', 'años')} de contrato con ${state.career.currentOrg}.`,
     opciones,
     datos: {
       motivo: 'traspaso',

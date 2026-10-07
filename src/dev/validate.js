@@ -818,7 +818,7 @@ const FORMAS_CONOCIDAS = {
   // K6d (integración de K6d-N, K6d-B y K6d-P): K6d-B (D77) suma `flags.mentalAvisadaPro` (la lista de cierres que un aviso cubrió,
   // [{ split, mentalidad, probabilidad }]) y `flags.ofertaGuardada` (la oferta que el club te guarda un split); K6d-N (tier 3 y P3)
   // y K6d-P no agregan campos, pero mueven las carreras de muestra. Un guardado de la 13 carga con `migrarDe13`.
-  14: 'PENDIENTE'
+  14: '1ef92b3fd9be'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -27235,101 +27235,6 @@ check('K6d-N P3 el título de liga pesa por el prestigio de su liga en el Top 20
       if (bono(liga.id) !== t.bonusCampeonLiga) throw new Error(`con la perilla neutra el título de ${liga.id} suma ${bono(liga.id)}, tenía que ser ${t.bonusCampeonLiga} exacto`);
     }
   });
-});
-
-// K6d-N, P7a (PLAN.md §K6d-N, "Decisión del supervisor" del paso 2b): el nivel te lleva a la liga que te corresponde. Estados
-// armados sobre una carrera real (un brasileño de `criterio` en su primer split de tier 1): las fuerzas de las ligas se arman
-// asimétricas (la mediana, que es el calibre, no es ni la máxima, ni la mínima, ni el promedio) y la liga más fuerte se pone
-// justo en el borde de "tu nivel llega" (`casa.margenAlcanza`) y de "claramente más fuerte" (`casa.margenImportElite`).
-const { generarOfertas: generarOfertasP7, ofertaDeTraspaso: ofertaDeTraspasoP7 } = await import('../systems/mercado.js');
-const { clubDeLigaMasFuerteQueTeHaceLugar: estrellaP7, calibreDeLiga: calibreP7 } = await import('../core/demanda.js');
-let baseP7 = null;
-function estadoBaseP7() {
-  if (!baseP7) {
-    for (let seed = 1; seed <= 40 && !baseP7; seed += 1) {
-      const rng = mulberry32(seed);
-      let state = createInitialState(seed, rng, { regionOrigen: 'BR' });
-      for (let i = 0; i < 60 && !state.terminado; i += 1) {
-        state = avanzarSplitAuto(state, rng, ESTRATEGIAS_K0.criterio).state;
-        if (state.phase === 'profesional' && state.career.tier === 1 && state.career.liga === 'CBLOL') { baseP7 = state; break; }
-      }
-    }
-    if (!baseP7) throw new Error('ninguna de 40 carreras brasileñas llegó a la CBLOL: no hay estado base');
-  }
-  return structuredClone(baseP7);
-}
-// `calibre` exacto: las dos del medio valen `calibre` y el resto se reparte asimétrico alrededor (abajo lejos, arriba cerca).
-function fuerzasP7(liga, calibre) {
-  const n = liga.orgs.length;
-  const medio = Math.floor((n - 1) / 2);
-  liga.orgs.forEach((org, i) => {
-    org.fuerza = i === medio || i === n - 1 - medio ? calibre : (i < medio ? calibre - 34 + 3 * i : calibre + 2 + (i - medio));
-  });
-}
-// El calibre que deja "tu nivel llega" en el borde exacto de la regla (`nivel >= calibre + margenAlcanza`, con la suma en coma
-// flotante tal como la hace el motor): se busca, cerca de `nivel − margenAlcanza`, el valor cuya suma da `nivel` justo.
-function calibreEnElBordeP7(nivel, margen) {
-  const base = nivel - margen;
-  const paso = (Number.EPSILON * Math.abs(base)) / 2;
-  for (let i = 0; i <= 64; i += 1) {
-    for (const c of [base - i * paso, base + i * paso]) {
-      if (c + margen === nivel) return c;
-    }
-  }
-  throw new Error(`no hay calibre representable con ${nivel} = calibre + ${margen}`);
-}
-function armarP7({ margenLlega = 0, margenFuerte = 1, cupoImports } = {}) {
-  const st = estadoBaseP7();
-  const casa = BALANCE.mercado.casa;
-  st.age = Math.max(st.age, 20);
-  // Los stats bajan a un nivel cuyo borde (nivel − margenAlcanza) cae en el mismo binade de coma flotante (debajo de 64): si
-  // no, la suma `calibre + margen` no vuelve exacta al nivel y el borde no se puede armar.
-  for (const stat of Object.keys(st.player.stats)) st.player.stats[stat] = Math.round(st.player.stats[stat] * 0.9);
-  const nivel = nivelDelJugador(st);
-  const actual = st.mundo.ligas.find((l) => l.id === st.career.liga);
-  const destino = st.mundo.ligas.find((l) => l.id === 'LEC');
-  const calibreDestino = calibreEnElBordeP7(nivel, casa.margenAlcanza) + margenLlega;
-  for (const liga of st.mundo.ligas.filter((l) => l.tier === 1 && l !== actual && l !== destino)) fuerzasP7(liga, 99);
-  fuerzasP7(destino, calibreDestino);
-  const propia = actual.orgs.find((o) => o.nombre === st.career.currentOrg);
-  fuerzasP7(actual, calibreDestino - casa.margenImportElite - margenFuerte);
-  propia.fuerza = calibreDestino - casa.margenImportElite - margenFuerte;
-  if (cupoImports !== undefined) destino.cupoImports = cupoImports;
-  st.career.contrato = { ...st.career.contrato, aniosRestantes: 2 };
-  st.mundo.mercadoPretemporada = null;
-  return { st, destino, actual, nivel };
-}
-check('K6d-N P7a la estrella sube: si tu nivel llega a una liga claramente más fuerte, un club de ahí te hace lugar (primero en la mano, y a mitad de contrato sin el dado); no si no llega, ni si la liga no es más fuerte, ni saltando las reglas duras', () => {
-  const rngAlto = () => 0.99; // con este rng el dado del traspaso (0,35) nunca sale
-  conBalanceK3A([['mercado', 'estrellaSube', true]], () => {
-    const { st, destino, actual, nivel } = armarP7();
-    if (calibreP7(destino) + BALANCE.mercado.casa.margenAlcanza !== nivel) throw new Error('el estado armado no quedó en el borde');
-    const e = estrellaP7(st);
-    if (!e || e.liga.id !== destino.id) throw new Error(`en el borde exacto (nivel ${nivel.toFixed(2)}, calibre ${calibreP7(destino).toFixed(2)}) no hubo lugar en ${destino.id}`);
-    const posibles = destino.orgs.filter((o) => ofertaPosible(st, o.nombre, st.player.role, { forzada: true }).posible).sort((a, b) => b.fuerza - a.fuerza);
-    const esperado = posibles.find((o) => o.fuerza <= nivel) ?? posibles[posibles.length - 1];
-    if (e.org.nombre !== esperado.nombre) throw new Error(`el club fue ${e.org.nombre} (${e.org.fuerza}); tenía que ser ${esperado.nombre} (${esperado.fuerza}), el más fuerte que no pasa tu nivel`);
-    if (!e.motivo.includes(String(Math.round(nivel))) || !e.motivo.includes(String(Math.round(calibreP7(destino)))) || !e.motivo.includes(nombreVisibleDeLiga(destino.id))) {
-      throw new Error(`el motivo no dice lo comparado: "${e.motivo}"`);
-    }
-    const { ofertas } = generarOfertasP7(st, mulberry32(7));
-    const nueva = ofertas.find((o) => o.tag !== 'renovacion');
-    if (!nueva || nueva.liga !== destino.id) throw new Error(`al fin de contrato la primera oferta nueva es de ${nueva?.liga ?? 'nadie'}, tenía que ser de ${destino.id}`);
-    const traspaso = ofertaDeTraspasoP7(st, rngAlto);
-    if (!traspaso || traspaso.datos.comprador !== e.org.nombre || !traspaso.descripcion.includes(e.motivo)) {
-      throw new Error(`a mitad de contrato, con el dado en contra, el pretendiente fue ${traspaso?.datos?.comprador ?? 'nadie'} (tenía que ser ${e.org.nombre}, con su motivo)`);
-    }
-    const abajo = armarP7({ margenLlega: 0.01 });
-    if (estrellaP7(abajo.st) !== null) throw new Error('con el nivel 0,01 abajo de lo que pide la liga, igual le hicieron lugar');
-    const parejo = armarP7({ margenFuerte: 0 });
-    if (estrellaP7(parejo.st) !== null) throw new Error(`con ${parejo.destino.id} justo en "${BALANCE.mercado.casa.margenImportElite} más" que tu liga (no claramente más fuerte), igual le hicieron lugar`);
-    const sinCupo = armarP7({ cupoImports: 0 });
-    if (estrellaP7(sinCupo.st) !== null) throw new Error('con el cupo de imports en 0, la regla salteó las reglas duras');
-    void actual;
-  });
-  const neutra = armarP7();
-  if (estrellaP7(neutra.st) !== null) throw new Error('con la perilla neutra igual hubo lugar');
-  if (ofertaDeTraspasoP7(neutra.st, rngAlto) !== null) throw new Error('con la perilla neutra y el dado en contra igual hubo traspaso');
 });
 
 // K6b-fix (PLAN.md, "K6b-fix"), la espera vence: el "seguir buscando" narrado de "El mercado ya habló" (`finPorMercadoOSuRepeticion`)
