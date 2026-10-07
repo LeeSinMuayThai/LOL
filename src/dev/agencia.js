@@ -205,6 +205,8 @@ export const HORIZONTE_POR_TIPO = {
   'retiro:retiro_vuelta': 'carrera',
   'retiro:evento_ventana': 'carrera',
   'salud:lesion_grave': 'carrera',
+  // K6d-B: la parada del pro con la mentalidad en rojo: lo que se juega es el burnout, el final de la carrera.
+  'burnout:burnout_pro': 'carrera',
   'servicioMilitar:servicio_te_vas': 'carrera',
   'servicioMilitar:servicio_adentro': 'carrera',
   'servicioMilitar:servicio_volver': 'carrera'

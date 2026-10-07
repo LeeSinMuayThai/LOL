@@ -34,6 +34,162 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-07 — K6d-B (D77): el burnout se ve venir en la firma y en el pro (rama `k6d-burnout`)
+
+**Lo que se encontró al implementar (cambia una parte de la spec, decide el supervisor).** La oferta del amateur llega
+*después* de la semana (`vivirLaSemana` → `buscarSalida`), y el dado del burnout corre al cierre de todo split, firmes o no.
+En el equipo te ordenan el horario: el sueño vuelve hacia `suenoConfortable` y la deuda se resetea al firmar. Por eso firmar casi
+nunca suma riesgo en el cierre de este split. Medido en las 216 cartas con riesgo de 600 × 60 de `malas`:
+- en 211, firmar da igual o menos burnout al cierre de este split que quedarte;
+- a dos splits, esperar da menos en 107 y lo mismo en 24;
+- en `equilibrado`, 12 cartas: esperar da menos en 2 y lo mismo en 8.
+
+"Este split lo vivís con la rutina que cuida" no se puede cumplir tal cual, porque la semana de este split ya se vivió. Se
+implementó **el split que esperás** con la rutina que cuida, y la carta cuenta las dos opciones a dos splits (regla 15).
+
+**(a) La oferta avisa y deja esperar** (`systems/amateur.js`).
+- `riesgoDeBurnoutAlCierre` (`systems/atributos.js`, exportada): la mentalidad proyectada al cierre sin el dado (el sueño del
+  cierre, el desgaste medio, la misma vuelta a la base y el mismo tope) y la misma `probabilidadDeBurnout`. `aplicar` usa la
+  misma cuenta (`mentalidadDelCierre`, `desgasteDeMentalidad` con el término del dado como argumento): la huella de 40 × 60 no se
+  movió con el refactor (1766253198 antes y después).
+- Si firmar este split cierra con la racha en el mínimo (o el piso), la carta dice la racha y, por opción, la mentalidad y el %
+  de cada cierre: firmar (este split y el que viene, en el equipo), "pedirle al club que te espere" (este en soloQ; el que viene
+  con la rutina que cuida, firmando al final) y el "no" (este split en soloQ). La prueba de tier 3 repite el % de firmar y el de
+  no llegar.
+- "Pedirle que te espere": `flags.ofertaGuardada` (la misma org, tier y vara). El split siguiente se vive con `rutinaQueCuida`,
+  sin el sorteo del scouting, y la oferta vuelve al final de la semana (o del periodo sin PC). Con la oferta en la mano no hay
+  "¿seguís?" de los 19. No se ofrece si el año que viene ya es el de `edadLimite`.
+- Firmar con el riesgo a la vista deja la vara del pro (`flags.mentalAvisadaPro`).
+
+**(b) El pro frena con la mentalidad en rojo** (`systems/burnout.js`, nuevo, una línea en `ETAPAS_SPLIT`).
+- **Dónde:** justo antes de `atributos`, después de `events`. Ahí ya se movió todo lo que mueve la mentalidad en el split
+  (resultados, serie, Mundial, eventos), así que la proyección es la más cercana a lo que el dado va a tirar. Frena cuando el
+  dado del cierre puede pinchar: la racha llega al mínimo con la mentalidad proyectada y la chance no es 0. Corre también en el
+  split de la firma.
+- **Las opciones:**
+  - seguir;
+  - bajar la carga: mentalidad +3 a +6 y mecánica −1 a −3, con `conPermanencia`;
+  - pedir unos días: mentalidad +7 a +12 y jerarquía −4 a −8.
+  Lo que sube va por `recuperarPorDescanso`, el camino del "descansar" del receso. El rango se tira al resolver; la carta
+  proyecta con la media.
+- **Riesgo nuevo:** vuelve a frenar solo si la proyección queda más de `burnout.mentalNueva` (5) por debajo de lo que la carta
+  mostró para la opción elegida. Si la mentalidad sale de rojo, lo visto se olvida.
+- **Los bots:** `criterio` y `resolverAuto` eligen la de menos burnout (`opcionQueNoQuema`, a igual chance la de menos costo);
+  `malas`, la de más. Pantalla: rótulo "La cabeza" (`ui/formatoUi.js`).
+
+**Barandas** (600 × 60, seeds 1-600, `barandas.mjs` del supervisor más las medidas exactas en una copia; antes = `d9c2dfa`, el
+mismo motor que `4795489`, con los mismos números del supervisor):
+
+| Medida | criterio | equilibrado | malas |
+|---|---|---|---|
+| no llega a pro | 24,5 → 24,5 | 25,7 → 25,3 | 51,2 → 49,8 |
+| burnouts / 1000 | 10 → 2 | 25 → 18 | 490 → 485 |
+| con aviso (texto, el split o el anterior) | 83,3 → 100 | 100 → 90,9 | 85,4 → 90,7 |
+| firman y se queman en el split / sin que la carta lo diga (exacto) | 0 / 0 → 0 / 0 | 1 / 1 → 0 / 0 | 15 / 15 → 17 / 0 |
+| burnouts del pro / con parada en su racha (exacto) | 6 / 0% → 1 / 100% | 6 / 0% → 0 / — | 52 / 0% → 63 / 100% |
+| paradas por carrera (media / mediana) | 48,42 / 44 → 48,55 / 45 | 43,70 / 40 → 43,78 / 40 | 25,18 / 16 → 25,67 / 17 |
+| paradas por la mentalidad (todas / del pro; máx. del pro) | 0 / 0 → 0,09 / 0,09; 4 | 0,05 / 0 → 0,09 / 0,04; 3 | 0,47 / 0 → 0,52 / 0,05; 3 |
+| tier 1 / título tier 1 / Top 20 | 71,3 / 52,2 / 37,2 → 71,3 / 52,0 / 37,3 | 67,7 / 49,3 / 28,2 → 67,8 / 49,5 / 28,0 | 33,0 / 16,8 / 8,7 → 34,0 / 17,7 / 9,0 |
+| Mundial / P(2+ \| 1) | 10,5 / 25,4 → 10,2 / 26,2 | 4,8 / 13,8 → 5,0 / 13,3 | 1,0 / 16,7 → 1,0 / 16,7 |
+| edad al terminar (mediana) / 30 o más | 26 / 27,0 → 26 / 27,5 | 25 / 15,8 → 25 / 16,3 | 18 / 22,7 → 19 / 23,7 |
+
+- **El Mundial con la región fija** (600 × 60): KR 69 → 70 carreras con Mundial y NA 54 → 54.
+- **`agencia.js`** (12 carreras): idéntica antes y después. La ponderada en su horizonte da 23,6% y contra la carrera 5,9%;
+  el "piso 8,6%: BAJÓ" ya estaba en la base. Ninguna de esas 12 carreras llega a las cartas nuevas.
+- El 90,9 de `equilibrado` en la columna de texto es 1 burnout del amateur de 11 sin una parada que nombre la mentalidad en el
+  split o el anterior: la regla del amateur de K6c-fix, sin tocar acá.
+
+**Checks nuevos** (lentos; comparten una cosecha de `malas`, 400 × 60, ~27 s con `--solo=K6d-B`). Verdes:
+- la carta de la oferta y la de la prueba dicen el % que tira el dado: 270 cartas y 46 pruebas. Se comparan contra
+  `atributos.aplicar` con un `rng` que deja cada `gauss` en su media;
+- "pedirle que te espere" guarda la oferta y vuelve al split siguiente, la misma: 223 guardadas, 175 volvieron y 48 se perdieron
+  porque la carrera terminó antes;
+- el pro frena con el % antes del dado, no vuelve a frenar sin riesgo nuevo y cada opción hace lo que dice: 22 paradas, 22 de
+  22 burnouts del pro con parada y 44 efectos probados;
+- nadie firma y se quema sin que la carta lo dijera: 8 firman y se queman, 0 sin aviso.
+
+Cada check se vio en rojo con su mutante:
+- la proyección no normaliza el sueño del pro: 193 problemas;
+- la oferta guardada no vuelve: 37;
+- sin la vara del riesgo nuevo: 75 frenadas de más;
+- frena recién con 20% o más: 20 de 23 burnouts con parada;
+- la oferta no mira el riesgo: 11 firman y se queman sin aviso, y los checks de la carta quedan vacíos.
+
+**Huella:** `HUELLA_JUEGO` 1766253198 → 1073872165 (corrimiento declarado, sigue 'K6c'). **Forma del guardado:** cambió
+(`flags.mentalAvisadaPro`, `flags.ofertaGuardada`), hash 9689e8d31c32 contra el 995485d311c0 de VERSION 13. `VERSION` y
+`FORMAS_CONOCIDAS` no se tocaron: `K0-B guardado` queda en FAIL a propósito para la integración.
+
+**K6d-B (revisión)** (`dba6b61`, `4ed0fce`, `5a80d98`). La corrección del supervisor, hallazgo por hallazgo:
+- **La vara que no se relajaba** (`systems/burnout.js`). `flags.mentalAvisadaPro` pasa de un número a la lista de cierres
+  avisados, `[{ split, mentalidad, probabilidad }]`. La carta de la oferta que firmaste cubre dos (el de la firma y el
+  siguiente) y la parada del pro cubre el de su split. Un cierre con el dado vivo que ningún aviso cubrió con su % frena
+  siempre. Dentro de lo cubierto, frena solo si la proyección cae más de `burnout.mentalNueva` debajo de lo mostrado. Un aviso
+  que mostró 0% no cubre: si después el dado puede pinchar, frena. Los cierres pasados se olvidan.
+- **Esperar en bucle.** La guardada vuelve sin "pedirle que te espere" y dice "Ya te esperaron un split: ahora es firmar o
+  dejarla pasar". `resolverOferta` no la vuelve a guardar aunque llegue esa respuesta.
+- **El pro sin club** frena igual: seguir, bajar la carga (sin scrims) o desconectarte unos días. Desconectarte da mentalidad
+  +7 a +12 y mecánica −3 a −5 (`burnout.desconectar`, con `conPermanencia`).
+- **La espera con la PC confiscada** proyecta el periodo sin PC (la media de sus rangos) y dice "el que viene lo vivís sin
+  PC". Con la vara en 0%, la prueba ya no dice "si no llegás". "El suplente suma minutos" pasa a "el suplente las juega por vos".
+- **Checks** (cinco lentos sobre la cosecha de `malas`, 400 × 60, ~20 s con `--solo=K6d-B`):
+  - la meta se mide por cierre, sin excluir a los que no tienen club;
+  - la guardada se compara entera (club con todos sus campos, tier, liga y vara);
+  - esperar una sola vez;
+  - con el mismo estado de cada parada, un aviso de `mentalNueva + 1` por encima frena y uno de `mentalNueva − 1` no;
+  - el perfil y `criterio` eligen la opción que menos quema (624 elecciones).
+  El sueldo y los años no viajan en la oferta del amateur: los pone el contrato al firmar.
+- **La cobertura del guardado K4** suma `burnout:burnout_pro`, con una fuente de `malas`: hasta 40 seeds, hasta verla.
+
+**La meta por cierre** (sonda `probes/cierres.mjs`, `malas` pura, 400 × 60, antes `9dacdf9` → después). De los burnouts de
+un pro con el cierre cubierto con su %: 28 de 57 (49,1%) → 60 de 60 (100%). Sin club: 0 de 12 → 13 de 13. Firmar y quemarse
+sin aviso: 0 → 0. Las esperas seguidas, como máximo: 3 → 1. La cosecha del check da 43 de 43 (sin club, 9 de 9). Con
+`criterio` y `equilibrado` no hay burnouts del pro en esas 400.
+
+**Barandas** (`barandas.sh` del supervisor, 600 × 60, `9dacdf9` → `5a80d98`):
+
+| Medida | criterio | equilibrado | malas |
+|---|---|---|---|
+| no llega a pro | 24,5 → 24,5 | 25,3 → 25,3 | 49,8 → 48,8 |
+| burnouts / 1000 | 2 → 0 | 18 → 17 | 485 → 480 |
+| con aviso (texto) | 100 → — | 90,9 → 100 | 90,7 → 95,8 |
+| firman y se queman en el split | 0 → 0 | 0 → 0 | 17 → 19 (todas con la carta) |
+| paradas del pro por la mentalidad, por carrera | 0,09 → 0,12 | < 0,05 → < 0,05 (0,03 en la sonda) | 0,05 → 0,75 |
+| paradas por carrera (media) | 48,55 → 48,63 | 43,78 → 43,83 | 25,67 → 26,66 |
+| tier 1 / título tier 1 / Top 20 | 71,3 / 52,0 / 37,3 → 71,3 / 52,2 / 37,2 | 67,8 / 49,5 / 28,0 → 68,0 / 49,7 / 27,8 | 34,0 / 17,7 / 9,0 → 34,3 / 17,3 / 9,0 |
+| Mundial | 10,2 → 10,3 | 5,0 → 5,0 | 1,0 → 1,0 |
+
+Con la región fija: KR 70 → 70 y NA 54 → 54. Las paradas de `malas` suben porque elige siempre seguir. Con eso la racha
+sigue en rojo, y cada cierre con el dado vivo que nada cubrió es una parada (antes, una sola por racha). `criterio` y
+`equilibrado` eligen la que no quema y la racha se corta.
+
+**Lentos, de a uno, verdes:**
+- los cinco de K6d-B;
+- "El burnout no llega sin aviso";
+- "El contexto de carrera";
+- la brecha de no-pro por perfil: 26,7 / 23,3 / 22,7 / 27,3;
+- el impacto de los minijuegos;
+- la cobertura del guardado K4.
+
+`--rapido`: 362 OK y 1 FAIL, el de la forma (igual que en la pieza).
+
+**Mutantes en rojo** (copias `git archive HEAD`):
+- M1 de la revisión, "un aviso cubre toda la racha": la meta da 20 de 50 cubiertos;
+- "dentro de lo cubierto no frena aunque caiga": 190 problemas con la vara directa (antes de ese check seguía verde);
+- M3 de la revisión, la guardada sin vara: 127;
+- M8 de la revisión, el perfil y criterio eligen la peor: 592;
+- esperar dos veces: 120;
+- sin club no frena: 27 de 44;
+- la espera sin PC promete la rutina: 11;
+- la vara 0 dice "si no llegás": 49;
+- la oferta no mira el riesgo: los tres checks de la carta quedan vacíos;
+- la parada nunca frena: el guardado K4 dice "no cubrió burnout:burnout_pro".
+
+**Huella y forma.**
+- `HUELLA_JUEGO` sigue en 1073872165: el check K1 da OK, porque las 40 seeds del perfil no tocan las cartas que cambian. Va
+  declarada en `version.js` con su comentario.
+- La forma vuelve a cambiar: 9689e8d31c32 → 1ef92b3fd9be (`mentalAvisadaPro` ahora es una lista). `VERSION` y `FORMAS` no se
+  tocaron.
+
 ### 2026-10-07 — K6d-P: la rueda de prensa con pistas (rama `k6d-prensa`)
 
 **Por qué.** `ruedaDePrensa.js` sorteaba el tono que convenía con `rngUi` y no daba ninguna pista: azar puro, lo único que K6

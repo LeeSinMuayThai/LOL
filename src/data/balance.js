@@ -556,6 +556,28 @@ export const BALANCE = {
     topeDescanso: 70
   },
 
+  // K6d-B (D77, "que el burnout se vea venir en la firma y en el pro", decisión del usuario 2026-10-07). La cuenta del riesgo es la
+  // del dado de `atributos.js` (`riesgoDeBurnoutAlCierre`: la mentalidad proyectada al cierre, sin el dado, y la misma
+  // `probabilidadDeBurnout`); acá van solo las perillas de las dos paradas.
+  // (b) La parada del pro (`systems/burnout.js`, antes de `atributos`): frena cuando el dado del cierre puede pinchar. Las dos
+  // opciones que cuidan la cabeza suben la mentalidad ya (por `recuperarPorDescanso`, el camino del "descansar" del receso, con su
+  // tope) y cuestan lo que dice la carta; el rango se tira al resolver (regla 7) y la carta proyecta con su media (regla 15).
+  burnout: {
+    // Un cierre que un aviso ya cubrió con su % (la carta de la oferta que firmaste cubre el de la firma y el siguiente; la parada, el
+    // de su split) vuelve a frenar solo si la mentalidad proyectada al cierre queda más de esto por debajo de lo que se mostró para la
+    // opción que elegiste (puntos de la barra), la misma regla de "riesgo nuevo" que `amateur.semanaMentalNueva`. Un cierre con el
+    // dado vivo que ningún aviso cubrió frena siempre (revisión de K6d-B).
+    mentalNueva: 5,
+    // "Bajar la carga": menos scrims y menos soloQ hasta el cierre. La cabeza respira un poco y las manos pierden ritmo (mecánica,
+    // un efecto de decisión: una fracción queda, `conPermanencia`).
+    bajarCarga: { mentalidadMin: 3, mentalidadMax: 6, mecanicaMin: 1, mecanicaMax: 3 },
+    // "Pedir unos días": afuera del equipo un par de días. La cabeza se acomoda en serio y el suplente suma scrims (jerarquía).
+    pedirDescanso: { mentalidadMin: 7, mentalidadMax: 12, jerarquiaMin: 4, jerarquiaMax: 8 },
+    // Revisión de K6d-B: sin club no hay staff a quien pedirle días. "Desconectarte unos días": la PC apagada, la cabeza se acomoda
+    // como con los días del staff y las manos se oxidan más que bajando la carga (mecánica, con `conPermanencia`).
+    desconectar: { mentalidadMin: 7, mentalidadMax: 12, mecanicaMin: 3, mecanicaMax: 5 }
+  },
+
   meta: {
     pesoMinimo: 0.5,
     pesoMaximo: 2.6,

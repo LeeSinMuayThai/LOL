@@ -154,4 +154,13 @@ export const VERSION_JUEGO = 'K6c';
 // K6c-fix, quinta pasada (sin cambio de huella: ninguna de las 40 seeds frena por la mentalidad en rojo). Sexta pasada (1766253198;
 // corrimiento declarado, sigue 'K6c'; T1): `systems/salud.js` corre también en el amateur (la lesión es del que grindea sin dormir de
 // amateur) con sus tiradas de siempre, y la baja de la lesión se cumple en turnos de soloQ. Reemplaza a 186316704.
-export const HUELLA_JUEGO = 1766253198;
+// K6d-B (1073872165; corrimiento declarado, sigue 'K6c': la integración de K6d pone la etiqueta; D77, "que el burnout se vea venir en la
+// firma y en el pro", decisión del usuario 2026-10-07): la oferta del amateur con la racha en rojo dice el % del dado del burnout y
+// trae "pedirle al club que te espere" (la oferta guardada vuelve al split siguiente sin el sorteo del scouting, con la semana de la
+// rutina que cuida), y el pro frena antes de `atributos` cuando el dado del cierre puede pinchar (`systems/burnout.js`: bajar la
+// carga o pedir unos días, con sus tiradas al resolver). En las carreras sin esas cartas el stream no se mueve. Reemplaza a 1766253198.
+// K6d-B, revisión (sin cambio de huella, sigue 'K6c'; medido con el check K1: las 40 seeds del perfil no tocan ninguna de las cartas que
+// cambian): un aviso cubre solo los cierres que mostró (la parada vuelve en cada cierre con el dado vivo que nada cubrió), el pro frena
+// también sin club (bajar la carga o desconectarte), esperar se puede una sola vez por oferta y la espera con la PC confiscada dice que
+// ese split se vive sin PC. La forma sí cambia: `flags.mentalAvisadaPro` pasa de número a la lista de cierres avisados.
+export const HUELLA_JUEGO = 1073872165;

@@ -90,10 +90,14 @@ export function rotuloDeDecision(decision, state) {
   if (categoria) {
     return familiaDeCategoria(categoria);
   }
+  const motivo = decision?.datos?.motivo;
+  // K6d-B: la parada del pro con la mentalidad en rojo (`systems/burnout.js`) no es un partido aunque llegue con la serie viva.
+  if (motivo === 'burnout_pro') {
+    return { label: 'La cabeza', token: 'salud' };
+  }
   if (state?.serie?.activa || state?.career?.temporada?.fechaEnCurso) {
     return { label: 'Partido', token: 'partido' };
   }
-  const motivo = decision?.datos?.motivo;
   if (motivo === 'retiro_declive' || motivo === 'retiro_vuelta' || motivo === 'salida_amateur' || motivo === 'fin_mercado') {
     return { label: 'Retiro', token: 'salud' };
   }
