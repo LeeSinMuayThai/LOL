@@ -8558,6 +8558,21 @@ Las palancas (con P3; tier 1 / título / Top 20 / Mundial / P(2+ | 1); en 1500 d
 - **Destapó un bug latente** (K5c-R, seed 9): una carrera retirada termina en burnout, el reloj salta 4 splits y los años
   pro dan 8,33 en vez de 8. Se arregla en la integración, buscando la causa.
 
+**La revisión de P3 + P7a.** P3 está limpio: solo escala el bono de campeón de liga, acotado. El T1 y las reglas duras
+están bien. **P7a, en cambio, tiene dos cosas que el jugador siente:**
+- **La estrella rebota entre ligas en cada contrato.** El traspaso de mitad de contrato sale sin dado y choca con "la casa
+  primero" de K5c-H. Con `criterio`, el patrón A-B-A-B pasa de 0 a 31 carreras (de 160). Por ejemplo, CBLOL → LEC →
+  CBLOL → LEC → CBLOL entre los 20 y los 26. Encima, el que eligió su casa recibe la misma carta todos los años.
+- **La carta se contradice:** "das el nivel de la LEC…" aparece junto a "Una salida lateral".
+
+**Decisión del supervisor: P7a sale** (se revierte en la integración). Casi no movía los títulos (57,5 en 1500), bajaba el
+Mundial y subía los burnouts, y arreglar el rebote era otra ronda para una palanca que no paga. El llamado de una liga más
+fuerte ya existe en el 25% de las ventanas de la estrella. D81 sigue abierto.
+
+**Lo que queda para el usuario:** de "tier 1 más difícil", lo que entra es P3 (el Top 20 baja del 40 al ~24%). Llegar a
+tier 1 (~73%) y el título (~57%) siguen lejos de sus metas de §K.3b. Lo único que los mueve, P6 o P4, rompe otras metas
+de §K.3b: los 30+, los estancados y "el más fuerte gana".
+
 #### K6d-B — D77: que el burnout se vea venir en la firma y en el pro *(rama `k6d-burnout`)*
 
 Hoy el dado del burnout corre al cerrar el split (`systems/atributos.js`), una vez que la mentalidad lleva
