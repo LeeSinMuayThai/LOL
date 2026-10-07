@@ -21,6 +21,7 @@ import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 import { ofertaDeImportPosible, prometerImport, conImportDeTier1Presentado } from './mercado.js';
 import { cambiarDeRol } from './roster.js';
 import { retirarsePorCamino } from './retiro.js';
+import { datosDePrensa } from '../core/prensa.js';
 
 export const id = 'eventos';
 
@@ -561,7 +562,9 @@ function pausaDePrensa(state, logs) {
         momento: 'post_escandalo',
         statRelevante: entrada.statRelevante,
         apuesta: textos.apuesta,
-        regla: textos.regla
+        regla: textos.regla,
+        // K6d-P: el tono de la rueda de prensa y sus pistas (puro, sin tirada).
+        ...datosDePrensa(state, entrada.id, 'post_escandalo')
       }
     }
   };

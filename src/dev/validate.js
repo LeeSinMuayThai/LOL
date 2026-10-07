@@ -96,6 +96,8 @@ import { encabezadoDeResultado } from '../core/temporada.js';
 import { cumpleCondiciones as cumpleCondicionesK6aM } from '../core/selectors.js';
 import { jugasteUnSplitConLaOrg } from '../systems/competitivo.js';
 import { MONTAR_MINIJUEGO } from '../ui/components/minijuegos/index.js';
+import { lecturaDePrensa, factoresDePrensa } from '../core/prensa.js';
+import { objetivoDePrensa, puntajeDePrensa } from '../ui/components/minijuegos/ruedaDePrensa.js';
 import { LABEL_MARCA as LABEL_MARCA_FICHA, lineaDeContextoFicha } from '../ui/components/ficha.js';
 import { nombreVisibleDeLiga } from '../ui/formatoUi.js';
 import { crearCampeonTile, urlIconoDeCampeon, urlSplashDeCampeon } from '../ui/components/campeonTile.js';
@@ -4726,6 +4728,371 @@ check('Todo minijuego del catálogo tiene su widget, y todo widget su entrada (9
       throw new Error(`el widget "${id}" no tiene entrada en minijuegos.json`);
     }
   }
+});
+
+// --- K6d-P: la rueda de prensa con pistas (PLAN.md §K6d-P) ---
+// Hasta K6c el tono que convenía lo sorteaba `rngUi` sin ninguna pista. Ahora `core/prensa.js` lo calcula del contexto (función
+// pura, sin `rng`: la huella no se mueve, lo prueba "K1 versión") y el motor lo manda en `decision.datos`. Los checks de abajo
+// protegen: (1) que cada factor empuje el tono hacia donde dice, (2) que cada pista mostrada sea de un factor que pesó, diga su
+// dirección y no contradiga a otra (regla 15), (3) que las dos pausas de la prensa traigan `tono` y `pistas` y que el widget
+// los use, (4) que la única prensa que se juega hoy (la del escándalo) no se gane con un slider fijo.
+function estadoNeutroDePrensa() {
+  const b = BALANCE.prensa;
+  const rng = mulberry32(6001);
+  const base = createInitialState(6001, rng);
+  return {
+    ...base,
+    player: { ...base.player, stats: { ...base.player.stats, hype: b.hypeReferencia, mentalidad: b.mentalidadReferencia } },
+    career: { ...base.career, currentOrg: 'Org Neutra', sinergia: b.sinergiaReferencia, jerarquia: b.jerarquiaReferencia, historial: [60] },
+    mundo: { ...base.mundo, archirrival: { handle: 'Nadie', org: 'Otra Org' }, planteles: {} },
+    serie: null
+  };
+}
+
+function afirmarPrensa(condicion, mensaje) {
+  if (!condicion) {
+    throw new Error(mensaje);
+  }
+}
+
+// Variantes del estado neutro, una perilla cada una.
+function prensaCon(neutro, { hype, sinergia, jerarquia, mentalidad, historial, rival, archirrival, planteles } = {}) {
+  return {
+    ...neutro,
+    player: { ...neutro.player, stats: { ...neutro.player.stats, hype: hype ?? neutro.player.stats.hype, mentalidad: mentalidad ?? neutro.player.stats.mentalidad } },
+    career: {
+      ...neutro.career,
+      sinergia: sinergia ?? neutro.career.sinergia,
+      jerarquia: jerarquia ?? neutro.career.jerarquia,
+      historial: historial ?? neutro.career.historial
+    },
+    serie: rival ? { rival: { org: rival } } : null,
+    mundo: { ...neutro.mundo, archirrival: archirrival ?? neutro.mundo.archirrival, planteles: planteles ?? {} }
+  };
+}
+
+const HISTORIAL_PRENSA = { racha: [95, 95, 95], estable: [60], slump: [30], crisis: [5] };
+// Qué dice cada pista: humildad o desafío (frases de `core/prensa.js`), y de qué factor habla.
+const HUMILDE_PRENSA = /humildad|bajá el|bajar el|con respeto|no te metas|excusas|grupo adelante/;
+const DESAFIANTE_PRENSA = /al frente|hablar fuerte|hacerte notar|firmeza|carácter|no te achicás/;
+const MARCA_DE_FACTOR_PRENSA = {
+  escandalo: /escándalo/,
+  serie: /serie|final/,
+  hype: /hype/,
+  sinergia: /sinergia|aceitado/,
+  jerarquia: /referentes|nuevos|Pesás|peso en el equipo/,
+  forma: /racha|resultados/,
+  mentalidad: /cabeza/,
+  rival: /archirrival|generación/
+};
+
+check('K6d-P el tono de la rueda de prensa se mueve en la dirección de cada factor (serie, final, internacional, escándalo, hype, sinergia, jerarquía, forma, mentalidad, rival), con casos justo en el borde', () => {
+  const b = BALANCE.prensa;
+  const neutro = estadoNeutroDePrensa();
+  const tono = (st, momento, datos) => lecturaDePrensa(st, momento, datos).tono;
+  const base = b.tonoBase;
+
+  // Sin factores el tono es el base, y el escándalo empuja a la humildad sin fijar la respuesta.
+  afirmarPrensa(tono(neutro, 'post_serie', {}) === base, `sin factores el tono debía ser ${base}, dio ${tono(neutro, 'post_serie', {})}`);
+  afirmarPrensa(tono(neutro, 'post_escandalo', {}) < base, 'el escándalo debía bajar el tono (humildad)');
+
+  // Ganar sube, perder baja; una final y el internacional pesan más que unas semis, para los dos lados.
+  const sem = (gano) => tono(neutro, 'post_serie', { gano, trasRonda: 'semis' });
+  const fin = (gano) => tono(neutro, 'post_serie', { gano, trasRonda: 'final' });
+  const inter = (gano) => tono(neutro, 'post_serie', { gano, trasRonda: 'internacional' });
+  afirmarPrensa(sem(true) > base && sem(false) < base, `ganar debía subir el tono y perder bajarlo (${sem(true)} / ${sem(false)} contra ${base})`);
+  afirmarPrensa(fin(true) > sem(true) && fin(false) < sem(false), `una final debía pesar más que unas semis (${fin(true)} / ${fin(false)})`);
+  afirmarPrensa(inter(true) > sem(true) && inter(false) < sem(false), `el internacional debía pesar como una final (${inter(true)} / ${inter(false)})`);
+
+  // Cada perilla continua: valores asimétricos alrededor de la referencia, alto y bajo.
+  const par = (perilla, ref, delta, sentido) => {
+    const arriba = tono(prensaCon(neutro, { [perilla]: ref + delta }), 'post_serie', {});
+    const abajo = tono(prensaCon(neutro, { [perilla]: ref - delta }), 'post_serie', {});
+    afirmarPrensa(sentido > 0 ? arriba > base && abajo < base : arriba < base && abajo > base,
+      `${perilla}: ${ref + delta} → ${arriba}, ${ref - delta} → ${abajo} (base ${base}, sentido ${sentido > 0 ? '+' : '-'})`);
+  };
+  par('hype', b.hypeReferencia, 20, -1);
+  par('sinergia', b.sinergiaReferencia, 20, +1);
+  par('jerarquia', b.jerarquiaReferencia, 20, +1);
+  par('mentalidad', b.mentalidadReferencia, 20, +1);
+
+  // La forma: racha > estable > slump > crisis.
+  const forma = Object.fromEntries(Object.keys(HISTORIAL_PRENSA).map((f) => [f, tono(prensaCon(neutro, { historial: HISTORIAL_PRENSA[f] }), 'post_serie', {})]));
+  afirmarPrensa(forma.racha > forma.estable && forma.estable === base && forma.estable > forma.slump && forma.slump > forma.crisis,
+    `la forma debía ordenar racha > estable > slump > crisis (${JSON.stringify(forma)})`);
+
+  // El rival: el archirrival pide más tono desafiante que uno de tu generación, y los dos más que un rival común.
+  const comun = tono(prensaCon(neutro, { rival: 'Zeta' }), 'post_serie', {});
+  const deGeneracion = tono(prensaCon(neutro, { rival: 'Zeta', planteles: { Zeta: { mid: { handle: 'Pibe', rivalDeGeneracion: true } } } }), 'post_serie', {});
+  const archi = tono(prensaCon(neutro, { rival: 'Zeta', archirrival: { handle: 'Archi', org: 'Zeta' } }), 'post_serie', {});
+  afirmarPrensa(comun === base && deGeneracion > comun && archi > deGeneracion, `el rival debía subir el tono (común ${comun}, de generación ${deGeneracion}, archirrival ${archi})`);
+  // El rival de la serie no cuenta en la prensa de un escándalo (no hay serie).
+  afirmarPrensa(tono(prensaCon(neutro, { rival: 'Zeta', archirrival: { handle: 'Archi', org: 'Zeta' } }), 'post_escandalo', {}) === tono(neutro, 'post_escandalo', {}), 'el archirrival no debía pesar en la prensa de un escándalo');
+
+  // Bordes de las bandas del texto (regla 15: la frase fuerte no afirma más de lo que es).
+  const textoDe = (st, id) => factoresDePrensa(st, 'post_serie', {}).find((f) => f.id === id).pista;
+  afirmarPrensa(textoDe(prensaCon(neutro, { hype: b.hypeAlto }), 'hype') !== textoDe(prensaCon(neutro, { hype: b.hypeAlto - 1 }), 'hype'), 'la frase de hype alto debía cambiar justo en hypeAlto');
+  afirmarPrensa(textoDe(prensaCon(neutro, { hype: b.hypeBajo }), 'hype') !== textoDe(prensaCon(neutro, { hype: b.hypeBajo + 1 }), 'hype'), 'la frase de hype bajo debía cambiar justo en hypeBajo');
+  afirmarPrensa(textoDe(prensaCon(neutro, { sinergia: b.sinergiaAlta }), 'sinergia') !== textoDe(prensaCon(neutro, { sinergia: b.sinergiaAlta - 1 }), 'sinergia'), 'la frase de sinergia alta debía cambiar justo en sinergiaAlta');
+
+  // El borde del umbral: con la serie ganada (fuerte) y dos factores justo en `umbralPista` salen 3 pistas; con uno apenas debajo, 2.
+  const justo = prensaCon(neutro, { sinergia: b.sinergiaReferencia + b.umbralPista / b.empujePorPuntoDeSinergia, jerarquia: b.jerarquiaReferencia + b.umbralPista / b.empujePorPuntoDeJerarquia });
+  const apenas = prensaCon(neutro, { sinergia: b.sinergiaReferencia + b.umbralPista / b.empujePorPuntoDeSinergia, jerarquia: b.jerarquiaReferencia + (b.umbralPista - 0.5) / b.empujePorPuntoDeJerarquia });
+  afirmarPrensa(lecturaDePrensa(justo, 'post_serie', { gano: true, trasRonda: 'semis' }).pistas.length === 3, 'con dos factores justo en el umbral y la serie debían salir 3 pistas');
+  afirmarPrensa(lecturaDePrensa(apenas, 'post_serie', { gano: true, trasRonda: 'semis' }).pistas.length === 2, 'con un factor apenas debajo del umbral debían salir 2 pistas');
+
+  // Acotado y entero, aunque todo empuje para el mismo lado.
+  const arriba = prensaCon(neutro, { hype: 0, sinergia: 100, jerarquia: 100, mentalidad: 100, historial: HISTORIAL_PRENSA.racha, rival: 'Zeta', archirrival: { handle: 'Archi', org: 'Zeta' } });
+  const abajo = prensaCon(neutro, { hype: 100, sinergia: 0, jerarquia: 0, mentalidad: 0, historial: HISTORIAL_PRENSA.crisis });
+  const extremoArriba = lecturaDePrensa(arriba, 'post_serie', { gano: true, trasRonda: 'final' }).tono;
+  const extremoAbajo = lecturaDePrensa(abajo, 'post_escandalo', {}).tono;
+  afirmarPrensa(extremoArriba === b.tonoMax && extremoAbajo === b.tonoMin, `el tono debía acotarse a ${b.tonoMin}-${b.tonoMax} (${extremoAbajo} / ${extremoArriba})`);
+
+  // Pura: no toca el estado.
+  const antes = JSON.stringify(neutro);
+  lecturaDePrensa(neutro, 'post_serie', { gano: true, trasRonda: 'final' });
+  afirmarPrensa(JSON.stringify(neutro) === antes, 'lecturaDePrensa modificó el estado');
+});
+
+check('K6d-P cada pista de la rueda de prensa es de un factor que pesó, dice su dirección y no afirma de más (regla 15), y ninguna contradice a otra: entre minPistas y maxPistas, las más fuertes primero', () => {
+  const b = BALANCE.prensa;
+  const neutro = estadoNeutroDePrensa();
+  let casos = 0;
+  for (const momento of ['post_serie', 'post_escandalo']) {
+    const resultados = momento === 'post_serie'
+      ? [{ gano: true, trasRonda: 'semis' }, { gano: false, trasRonda: 'semis' }, { gano: true, trasRonda: 'final' }, { gano: false, trasRonda: 'internacional' }]
+      : [{}];
+    for (const datos of resultados) {
+      for (const hype of [0, 45, 50, 51, 65, 66, 74, 75, 100]) {
+        for (const sinergia of [0, 35, 36, 45, 46, 57, 58, 100]) {
+          for (const forma of ['racha', 'estable', 'slump', 'crisis']) {
+            for (const rival of [null, 'comun', 'generacion', 'archi']) {
+              const st = prensaCon(neutro, {
+                hype,
+                sinergia,
+                jerarquia: sinergia === 0 ? 0 : sinergia === 100 ? 100 : b.jerarquiaReferencia,
+                mentalidad: hype > 70 ? 80 : hype < 50 ? 30 : b.mentalidadReferencia,
+                historial: HISTORIAL_PRENSA[forma],
+                rival: rival ? 'Zeta' : null,
+                archirrival: rival === 'archi' ? { handle: 'Archi', org: 'Zeta' } : undefined,
+                planteles: rival === 'generacion' ? { Zeta: { mid: { handle: 'Pibe', rivalDeGeneracion: true } } } : {}
+              });
+              const lectura = lecturaDePrensa(st, momento, datos);
+              const cual = `${momento} ${JSON.stringify(datos)} hype ${hype} sinergia ${sinergia} forma ${forma} rival ${rival}`;
+              const porId = new Map(lectura.factores.map((f) => [f.id, f]));
+              afirmarPrensa(lectura.pistas.length >= b.minPistas && lectura.pistas.length <= b.maxPistas, `${cual}: ${lectura.pistas.length} pistas`);
+              afirmarPrensa(new Set(lectura.mostrados).size === lectura.mostrados.length && lectura.pistas.length === lectura.mostrados.length, `${cual}: factores mostrados repetidos o desparejos`);
+              lectura.mostrados.forEach((id, i) => {
+                const f = porId.get(id);
+                const texto = lectura.pistas[i];
+                afirmarPrensa(f && texto === f.pista, `${cual}: la pista ${i} no es la del factor "${id}"`);
+                afirmarPrensa(MARCA_DE_FACTOR_PRENSA[id].test(texto), `${cual}: la pista de "${id}" no habla de ese factor: ${texto}`);
+                // La dirección del texto es la del empuje del factor (humildad ↔ negativo, desafío ↔ positivo, neutra ↔ cero).
+                const humilde = HUMILDE_PRENSA.test(texto);
+                const desafiante = DESAFIANTE_PRENSA.test(texto);
+                afirmarPrensa(!(humilde && desafiante), `${cual}: la pista pide humildad y desafío a la vez: ${texto}`);
+                if (f.empuje < 0) {
+                  afirmarPrensa(humilde, `${cual}: "${id}" empuja a la humildad y su pista no: ${texto}`);
+                } else if (f.empuje > 0) {
+                  afirmarPrensa(desafiante, `${cual}: "${id}" empuja al desafío y su pista no: ${texto}`);
+                } else {
+                  afirmarPrensa(!humilde && !desafiante, `${cual}: "${id}" no empuja y su pista da dirección: ${texto}`);
+                }
+              });
+              // Ninguna pista contradice a otra: lo que una pide a mano alzada, otra no lo niega (nada de «bajá la cabeza» con «no le des el
+              // gusto de bajar la cabeza»): ningún texto del desafío habla de bajar, ni uno de humildad de ir al frente.
+              afirmarPrensa(!lectura.pistas.some((t) => DESAFIANTE_PRENSA.test(t) && /baj[aá]r? |bajar /.test(t)), `${cual}: una pista de desafío habla de bajar`);
+              afirmarPrensa(!lectura.pistas.some((t) => HUMILDE_PRENSA.test(t) && DESAFIANTE_PRENSA.test(t)), `${cual}: una misma pista pide las dos cosas`);
+              // El texto no afirma más de lo que es: la frase fuerte solo pasada su banda.
+              const hablaDeHype = lectura.pistas.find((t) => MARCA_DE_FACTOR_PRENSA.hype.test(t));
+              if (hablaDeHype) {
+                afirmarPrensa(!/está alto/.test(hablaDeHype) || hype >= b.hypeAlto, `${cual}: "hype alto" con hype ${hype}`);
+                afirmarPrensa(!/todavía es bajo/.test(hablaDeHype) || hype <= b.hypeBajo, `${cual}: "hype bajo" con hype ${hype}`);
+                afirmarPrensa(!/casi nadie/i.test(hablaDeHype), `${cual}: afirma "casi nadie"`);
+              }
+              const hablaDeSinergia = lectura.pistas.find((t) => MARCA_DE_FACTOR_PRENSA.sinergia.test(t));
+              if (hablaDeSinergia) {
+                afirmarPrensa(!/aceitado/.test(hablaDeSinergia) || sinergia >= b.sinergiaAlta, `${cual}: "aceitado" con sinergia ${sinergia}`);
+                afirmarPrensa(!/anda flojo/.test(hablaDeSinergia) || sinergia <= b.sinergiaBaja, `${cual}: "flojo" con sinergia ${sinergia}`);
+              }
+              // Los factores que no están en este contexto no hablan: la serie solo existe tras una serie, el rival solo con rival, etc.
+              const texto = lectura.pistas.join(' | ');
+              afirmarPrensa(momento === 'post_serie' || !/Ganaste|Perdiste|archirrival|generación/.test(texto), `${cual}: la pista de un escándalo habla de una serie`);
+              afirmarPrensa(momento === 'post_escandalo' || !/escándalo/.test(texto), `${cual}: la pista de una serie habla de un escándalo`);
+              afirmarPrensa(rival !== null || !/archirrival|generación/.test(texto), `${cual}: habla de un rival que no hay`);
+              // Las `maxPistas` más fuertes sobre el umbral están todas, en orden.
+              const esperadas = lectura.factores.filter((f) => Math.abs(f.empuje) >= b.umbralPista)
+                .sort((x, y) => Math.abs(y.empuje) - Math.abs(x.empuje)).slice(0, b.maxPistas).map((f) => f.id);
+              afirmarPrensa(esperadas.every((id, i) => lectura.mostrados[i] === id), `${cual}: faltan las pistas más fuertes (${esperadas} contra ${lectura.mostrados})`);
+              casos += 1;
+            }
+          }
+        }
+      }
+    }
+  }
+  afirmarPrensa(casos === 9 * 8 * 4 * 4 * 5, `se recorrieron ${casos} casos`);
+});
+
+// Un `montar` falso, sin jsdom: lo justo para ver qué pinta y qué puntaje entrega la rueda de prensa.
+function montarPrensaFalsa(datos, rngUi, posicionDelSlider) {
+  const pintadas = [];
+  const slider = { value: String(posicionDelSlider) };
+  let alResponder = null;
+  const boton = { addEventListener: (_evento, fn) => { alResponder = fn; } };
+  const lista = { appendChild: (item) => pintadas.push(item.textContent) };
+  const contenedor = {
+    innerHTML: '',
+    querySelector(selector) {
+      if (selector === '.minijuego-pistas-lista') {
+        return this.innerHTML.includes('minijuego-pistas-lista') ? lista : null;
+      }
+      return selector === '.minijuego-slider' ? slider : selector === '.minijuego-btn' ? boton : null;
+    }
+  };
+  const previo = globalThis.document;
+  globalThis.document = { createElement: () => ({}) };
+  let resultado = null;
+  try {
+    MONTAR_MINIJUEGO.rueda_de_prensa(contenedor, {}, (r) => { resultado = r; }, rngUi, datos);
+  } finally {
+    if (previo === undefined) {
+      delete globalThis.document;
+    } else {
+      globalThis.document = previo;
+    }
+  }
+  alResponder();
+  return { pintadas, resultado, html: contenedor.innerHTML };
+}
+
+check('K6d-P las dos pausas de la rueda de prensa (post_serie, post_escandalo) traen tono y pistas del motor, y las demás mecánicas no; el widget pinta las pistas y arma el objetivo con el tono (más un ruido chico), y sin tono cae al azar de antes', () => {
+  const previa = BALANCE.serie.rondasConPrensa;
+  const vistos = { post_serie: 0, post_escandalo: 0 };
+  const otras = [];
+  try {
+    // K4c apagó `post_serie` (`rondasConPrensa: []`): para ver sus dos pausas reales se prende un momento solo en esta corrida.
+    BALANCE.serie.rondasConPrensa = ['semis', 'final'];
+    for (let seed = 1; seed <= 30; seed += 1) {
+      const responder = (sistema, st, decision, rng) => {
+        const datos = decision.datos ?? {};
+        if (datos.motivo === 'minijuego') {
+          if (datos.minijuego === 'rueda_de_prensa') {
+            const lectura = lecturaDePrensa(st, datos.momento, datos);
+            if (!Number.isInteger(datos.tono) || datos.tono < 0 || datos.tono > 100 || !Array.isArray(datos.pistas)
+              || datos.pistas.length < BALANCE.prensa.minPistas || datos.pistas.length > BALANCE.prensa.maxPistas
+              || datos.pistas.some((pista) => typeof pista !== 'string' || pista.length === 0)) {
+              throw new Error(`seed ${seed}: la pausa ${datos.momento} de la prensa trae tono ${datos.tono} y pistas ${JSON.stringify(datos.pistas)}`);
+            }
+            if (datos.tono !== lectura.tono || JSON.stringify(datos.pistas) !== JSON.stringify(lectura.pistas)) {
+              throw new Error(`seed ${seed}: el tono de la pausa ${datos.momento} no es el de lecturaDePrensa sobre su estado`);
+            }
+            vistos[datos.momento] = (vistos[datos.momento] ?? 0) + 1;
+          } else if ('tono' in datos || 'pistas' in datos) {
+            otras.push(datos.minijuego);
+          }
+        }
+        return sistema.resolverAuto(st, decision, rng);
+      };
+      const rng = mulberry32(seed);
+      let state = createInitialState(seed, rng);
+      for (let i = 0; i < 40 && !state.terminado; i += 1) {
+        state = avanzarSplitAuto(state, rng, responder).state;
+      }
+    }
+  } finally {
+    BALANCE.serie.rondasConPrensa = previa;
+  }
+  if (vistos.post_serie === 0 || vistos.post_escandalo === 0) {
+    throw new Error(`faltó ver la prensa en algún momento: ${JSON.stringify(vistos)}`);
+  }
+  if (otras.length > 0) {
+    throw new Error(`mecánicas que no son la prensa traen tono: ${otras.join(', ')}`);
+  }
+
+  // La UI: el objetivo es el tono del motor ± `ruidoUi`, sin salirse de 0-100; sin `tono` (un guardado viejo) es el azar de antes.
+  const ruido = BALANCE.prensa.ruidoUi;
+  const casi = (a, b) => Math.abs(a - b) < 1e-9;
+  afirmarPrensa(casi(objetivoDePrensa({ tono: 80 }, () => 0.5), 80)
+    && casi(objetivoDePrensa({ tono: 80 }, () => 0), 80 - ruido)
+    && casi(objetivoDePrensa({ tono: 80 }, () => 1), 80 + ruido)
+    && objetivoDePrensa({ tono: 98 }, () => 1) === 100 && objetivoDePrensa({ tono: 2 }, () => 0) === 0,
+  'el objetivo de la rueda de prensa no es tono ± ruidoUi acotado a 0-100');
+  afirmarPrensa(ruido > 0 && ruido <= 10, `ruidoUi ${ruido} fuera de (0, 10]: o es una tabla o no se lee`);
+  afirmarPrensa(casi(objetivoDePrensa({}, () => 0.37), 37) && casi(objetivoDePrensa(undefined, () => 0.5), 50),
+    'sin tono el objetivo debía ser rngUi() * 100 (comportamiento de antes)');
+
+  // El widget de verdad (con un contenedor falso): pinta las pistas del motor y puntúa contra el tono, no contra el azar.
+  const datos = { tono: 80, pistas: ['Pista uno.', 'Pista dos.'] };
+  const clavado = montarPrensaFalsa(datos, () => 0.5, 80);
+  afirmarPrensa(JSON.stringify(clavado.pintadas) === JSON.stringify(datos.pistas), `el widget debía pintar las pistas del motor, pintó ${JSON.stringify(clavado.pintadas)}`);
+  afirmarPrensa(clavado.resultado === 1, `con el slider en el tono el puntaje debía ser 1, fue ${clavado.resultado}`);
+  const lejos = montarPrensaFalsa(datos, () => 0.5, 20);
+  afirmarPrensa(lejos.resultado === puntajeDePrensa(20, 80) && lejos.resultado < 0.1, `con el slider lejos del tono el puntaje debía ser ~0, fue ${lejos.resultado}`);
+  const sinTono = montarPrensaFalsa({ minijuego: 'rueda_de_prensa' }, () => 0.5, 50);
+  afirmarPrensa(sinTono.pintadas.length === 0 && !sinTono.html.includes('minijuego-pistas') && sinTono.resultado === 1,
+    'sin tono el widget no debía pintar pistas y apuntaba al azar de antes (rngUi 0.5 → 50)');
+
+  // El cable de la UI: el controlador le pasa `decision.datos` al widget (sin eso el tono del motor nunca llega a la pantalla).
+  afirmarPrensa(/\}, rngUi, decision\.datos\);/.test(fs.readFileSync(path.join(srcDir, 'ui', 'app.js'), 'utf8')),
+    'ui/app.js no le pasa decision.datos al widget del minijuego: el tono y las pistas no llegan a la pantalla');
+});
+
+// Protege (K6d-P, revisión): que la única prensa que se juega hoy, la del escándalo, no se resuelva con un slider fijo. Medido sobre
+// pausas reales con la configuración de producción (`rondasConPrensa: []`, no se prende nada), con un responder que lee `datos`
+// como lo lee la pantalla (el objetivo es `objetivoDePrensa`, el puntaje `puntajeDePrensa`, el corte el veredicto real).
+checkLento('K6d-P la prensa del escándalo no se gana con un slider fijo: tono repartido (p10-p90 ≥ 40, mediana 35-65), la mejor posición fija da «bien» en ≤ 50% de las pausas y el slider en el tono, en ≥ 90% (≥ 50 pausas reales)', () => {
+  const tonos = [];
+  const sinPistas = [];
+  for (let seed = 1; seed <= 200; seed += 1) {
+    const responder = (sistema, st, decision, rng) => {
+      const datos = decision.datos ?? {};
+      if (datos.motivo === 'minijuego' && datos.minijuego === 'rueda_de_prensa') {
+        afirmarPrensa(datos.momento === 'post_escandalo', `seed ${seed}: con la config de producción salió la prensa de ${datos.momento}`);
+        tonos.push(datos);
+        if (!Array.isArray(datos.pistas) || datos.pistas.length < 2) {
+          sinPistas.push(seed);
+        }
+      }
+      return sistema.resolverAuto(st, decision, rng);
+    };
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng, responder).state;
+    }
+  }
+  afirmarPrensa(tonos.length >= 50, `solo ${tonos.length} pausas de prensa reales (hacen falta 50)`);
+  afirmarPrensa(sinPistas.length === 0, `pausas sin 2 pistas en las seeds ${sinPistas.join(', ')}`);
+  const valores = tonos.map((d) => d.tono).sort((x, y) => x - y);
+  const percentil = (p) => valores[Math.floor(p * (valores.length - 1))];
+  const [p10, mediana, p90] = [percentil(0.1), percentil(0.5), percentil(0.9)];
+  // Cada pausa con el ruido de la pantalla barrido de punta a punta (17 tiradas de `rngUi`, de 0 a 1).
+  const pasos = 17;
+  const bien = (datos, slider) => {
+    let aciertos = 0;
+    for (let i = 0; i < pasos; i += 1) {
+      const resultado = puntajeDePrensa(slider, objetivoDePrensa(datos, () => i / (pasos - 1)));
+      aciertos += veredictoDeMinijuego('rueda_de_prensa', resultado).nivel === 'bien' ? 1 : 0;
+    }
+    return aciertos / pasos;
+  };
+  let mejorFija = 0;
+  let dondeFija = 0;
+  for (let slider = 0; slider <= 100; slider += 1) {
+    const tasa = tonos.reduce((suma, d) => suma + bien(d, slider), 0) / tonos.length;
+    if (tasa > mejorFija) {
+      mejorFija = tasa;
+      dondeFija = slider;
+    }
+  }
+  const enElTono = tonos.reduce((suma, d) => suma + bien(d, d.tono), 0) / tonos.length;
+  const resumen = `${tonos.length} pausas: p10 ${p10}, mediana ${mediana}, p90 ${p90}; mejor slider fijo (${dondeFija}) ${(mejorFija * 100).toFixed(1)}%; en el tono ${(enElTono * 100).toFixed(1)}%`;
+  console.log(`      K6d-P prensa del escándalo: ${resumen}`);
+  afirmarPrensa(p90 - p10 >= 40, `el tono casi no varía entre escándalos: ${resumen}`);
+  afirmarPrensa(mediana >= 35 && mediana <= 65, `la mediana del tono quedó en una punta: ${resumen}`);
+  afirmarPrensa(mejorFija <= 0.5, `un slider fijo gana demasiado: ${resumen}`);
+  afirmarPrensa(enElTono >= 0.9, `leer el tono no alcanza para acertar: ${resumen}`);
 });
 
 check('elegirMinijuego es determinista, respeta el rol y no consume RNG (9R4a)', () => {
@@ -12618,7 +12985,8 @@ const RUIDOS_FUERA_DE_LA_ABLACION_K0 = {
   'roster.sinergiaRuido': 'ruido de la dinámica de la sinergia del roster entre splits',
   'practica.ruidoPractica': 'ruido de la ganancia de práctica',
   'plantel.ruidoNivelAnual': 'ruido anual del nivel de los jugadores del mundo (rachas)',
-  'topMundial.ruidoSpread': 'ruido determinista del corte del Top 20 mundial'
+  'topMundial.ruidoSpread': 'ruido determinista del corte del Top 20 mundial',
+  'prensa.ruidoUi': 'ruido de `rngUi` sobre el tono de la rueda de prensa: es de la pantalla, el motor no lo ve ni lo tira (K6d-P)'
 };
 
 check('K0 ruidos de la ablación: PARAMETROS_RUIDO son exactamente los ruidos de resultados, y toda constante "ruido" o "sigma" de BALANCE está clasificada', () => {

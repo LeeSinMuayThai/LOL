@@ -1076,10 +1076,12 @@ details.avanzado summary:hover { color: var(--ink-dim); }
   font-variant-numeric: tabular-nums;
 }
 
-/* Mismo criterio "se arma, no se prende" que el botón base: reposo tenue,
+/* K6d-P: `button { padding: 0 }` de base.css le ganaba al padding de `:where(button)` y el `clip-path` de chaflanes se comía
+   las letras ("RESPONDER", "¡Ahora!"): el botón de los minijuegos lleva su padding.
+   Mismo criterio "se arma, no se prende" que el botón base: reposo tenue,
    hover sólido. Antes el reposo ya era --warn sólido — el minijuego era el
    único botón del juego que arrancaba encendido. */
-.minijuego-btn { background: var(--warn-fill); border-color: var(--warn); color: var(--warn); }
+.minijuego-btn { padding: var(--s-3) var(--s-5); background: var(--warn-fill); border-color: var(--warn); color: var(--warn); }
 .minijuego-btn:hover:not(:disabled) { background: var(--gold); border-color: var(--gold); color: var(--bg-void); box-shadow: 0 0 24px var(--gold-glow); }
 
 .minijuego-barra {
@@ -2002,6 +2004,31 @@ details.tarjeta-internacionales > summary { cursor: pointer; font-size: var(--fs
   color: var(--warn);
   margin-bottom: var(--s-1);
 }
+/* K6d-P: las pistas de la rueda de prensa, arriba del slider (una frase por factor que pesó) */
+.minijuego-pistas {
+  margin: 0 0 var(--s-3);
+  padding: var(--s-3);
+  border-left: 2px solid var(--live);
+  background: var(--bg-sunken);
+  color: var(--ink);
+  font-size: var(--fs-2);
+}
+.minijuego-pistas-kicker {
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 700;
+  letter-spacing: var(--track-cartel);
+  color: var(--live);
+  margin-bottom: var(--s-2);
+}
+.minijuego-pistas-lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-wrap: anywhere;
+}
+.minijuego-pistas-lista li + li { margin-top: var(--s-1); }
+
 .minijuego-apuesta-stat {
   display: block;
   margin-top: var(--s-1);

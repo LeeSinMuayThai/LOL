@@ -1929,6 +1929,73 @@ export const BALANCE = {
     // (`impacto` de cada entrada de minijuegos.json), igual que impactoMinijuego
   },
 
+  // K6d-P: la rueda de prensa deja de ser azar puro. El tono que conviene (0 Humilde, 100 Desafiante) sale del contexto en
+  // `core/prensa.js`: parte de `tonoBase` y cada factor lo empuja con su peso (positivo = más desafiante, negativo = más
+  // humilde). La pantalla muestra una pista por factor que pesó (las `maxPistas` de más empuje, al menos `minPistas`) y el
+  // objetivo del minijuego es ese tono más un ruido de `rngUi` de ±`ruidoUi` (así leer importa y no es una tabla).
+  // Sin tirada del motor: la huella no se mueve. Los bots no leen el objetivo (`simulate.js` no cambia).
+  //
+  // K6d-P, revisión: hoy la única prensa que se juega es la de después de un escándalo (`serie.rondasConPrensa: []`). Con el
+  // escándalo pesando -28 y la sinergia real (mediana 45) empujando para el mismo lado, el tono salía entre 5 y 28 (19 pausas):
+  // un slider fijo a la izquierda ganaba siempre. Ahora el escándalo empuja poco (`empujeEscandalo`) y el tono lo mueven cinco
+  // factores que cambian de un escándalo a otro (hype, sinergia, jerarquía, la forma y la mentalidad), con referencias en las
+  // medianas medidas EN las pausas del escándalo (hype 65, sinergia 45, jerarquía 30, mentalidad 64; 148 pausas de 400 seeds).
+  // Meta medida (validate, `K6d-P la prensa del escándalo no se gana con un slider fijo`): del p10 al p90 del tono, 40 puntos o
+  // más; mediana entre 35 y 65; con la mejor posición fija del slider, «bien» en no más de la mitad de las pausas; con el
+  // slider en el tono, en 9 de cada 10 o más.
+  prensa: {
+    // 58 y no 50: con las referencias en las medianas el empuje de un escándalo típico suma ~-8 (la forma en slump o crisis, el 25% de las
+    // pausas, pesa fuerte), y con 50 la mediana del tono caía en 35 (148 pausas; 37 en otras 123), al borde de la meta.
+    tonoBase: 58,
+    tonoMin: 5,
+    tonoMax: 95,
+    // Cuánto pesa lo que acaba de pasar: ganar la serie da crédito para ir al frente, perderla pide bajar el tono. En una final
+    // (las rondas de `rondasDeFinal`) el empuje se multiplica por `multiplicadorFinal`.
+    empujeGanaste: 14,
+    empujePerdiste: -18,
+    multiplicadorFinal: 1.6,
+    rondasDeFinal: ['final', 'internacional'],
+    // Después de un escándalo cualquier frase se cita completa: empuja a la humildad, pero no fija la respuesta.
+    empujeEscandalo: -8,
+    // Hype: alto pide humildad (que no te vendan como un divo), bajo pide hacerte notar. La pista "alto" solo sale desde
+    // `hypeAlto` y "casi nadie te conoce" hasta `hypeBajo` (regla 15: el texto no afirma más de lo que es); en el medio la
+    // frase dice "algo por encima / por debajo de lo normal".
+    hypeReferencia: 65,
+    empujePorPuntoDeHype: -1.2,
+    hypeAlto: 75,
+    hypeBajo: 50,
+    // Sinergia: baja pide poner al grupo adelante (humilde), alta pide ir al frente.
+    sinergiaReferencia: 45,
+    empujePorPuntoDeSinergia: 1.5,
+    sinergiaAlta: 58,
+    sinergiaBaja: 35,
+    // Jerarquía en el equipo (`career.jerarquia`): un referente tiene autoridad para hablar fuerte, uno de los nuevos no.
+    jerarquiaReferencia: 30,
+    empujePorPuntoDeJerarquia: 0.4,
+    jerarquiaAlta: 55,
+    jerarquiaBaja: 15,
+    // La forma: el eje `momentum` de `calcularContexto` (racha, estable, slump, crisis). Estable no empuja.
+    empujePorForma: { racha: 16, estable: 0, slump: -16, crisis: -26 },
+    // Mentalidad (`player.stats.mentalidad`): con la cabeza fría aguantás que te aprieten; tocado, no te metas en pelea.
+    mentalidadReferencia: 64,
+    empujePorPuntoDeMentalidad: 0.3,
+    mentalidadAlta: 75,
+    mentalidadBaja: 45,
+    // El rival de la serie: el archirrival (el que compartís rol, `mundo.archirrival`) pide ir al frente con más fuerza que
+    // uno de tu generación (`rivalDeGeneracion` en su plantel).
+    empujeArchirrival: 16,
+    empujeRivalDeGeneracion: 8,
+    // Un factor da pista si empuja al menos `umbralPista`; se muestran de `minPistas` a `maxPistas` (si no hay `minPistas`
+    // sobre el umbral, se completa con los de más empuje: su frase es la «suave» o, si no empuja, la «neutra»).
+    umbralPista: 3,
+    minPistas: 2,
+    maxPistas: 3,
+    // Amplitud del ruido de `rngUi` sobre el tono (puntos de 0-100 de cada lado).
+    ruidoUi: 8,
+    // A cuántos puntos del tono el puntaje del slider llega a 0 (era un 55 suelto en el widget).
+    anchoDeAcierto: 55
+  },
+
   // 9M-lite: el mundo tiene escena. El digest anual de las otras ligas
   // (systems/escena.js) — nunca simula un split ajeno, solo resuelve en
   // silencio quién ganó.

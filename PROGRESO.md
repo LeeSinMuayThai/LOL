@@ -34,6 +34,80 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-07 — K6d-P: la rueda de prensa con pistas (rama `k6d-prensa`)
+
+**Por qué.** `ruedaDePrensa.js` sorteaba el tono que convenía con `rngUi` y no daba ninguna pista: azar puro, lo único que K6
+todavía sintió como "rng clicker" (decisión del usuario del 2026-10-07).
+
+**Qué cambió.**
+- **`core/prensa.js` (nuevo, puro, sin `rng`).** `lecturaDePrensa(state, momento, datos)` devuelve `tono` (entero 0-100, 0
+  Humilde, 100 Desafiante) y `pistas` (2-3 frases, una por factor que pesó). Parte de `tonoBase` 50 y cada factor empuja con su
+  peso (`BALANCE.prensa`, bloque nuevo comentado): ganar la serie +14 y perderla −18 (×1,6 en una final o el internacional); el
+  escándalo −28; el hype, −0,5 por punto sobre 70 (la media de un pro en estos momentos, medida: mediana 71 en 143 pausas); la
+  sinergia, +0,5 por punto sobre 55; el rival de la serie, +16 si es el archirrival y +8 si es de tu generación
+  (`rivalDeGeneracion`). Una pista sale si el factor empuja ≥ 3 puntos (las 3 más fuertes); si no hay 2, se completa con la
+  frase suave de los que empujaron poco. Tono acotado a 5-95.
+- **El motor lo manda en `decision.datos`** de las dos pausas (`pausaDeMinijuego` en `systems/serie.js`, `pausaDePrensa` en
+  `systems/events.js`) por `datosDePrensa`, solo si el minijuego es `rueda_de_prensa`. Sin tirada nueva.
+- **La UI.** `ruedaDePrensa.js` recibe `decision.datos` (quinto argumento, `app.js` se lo pasa), muestra las pistas arriba del
+  slider ("LO QUE SE LEE EN LA SALA") y el objetivo es `tono ± ruidoUi` (8) con una sola tirada de `rngUi`. Sin `tono` (un
+  guardado viejo) cae al `rngUi() * 100` de antes y no muestra pistas.
+- **Hype y sinergia no son ejes de `calcularContexto`**: se leen en vivo del estado (`player.stats.hype`, `career.sinergia`),
+  igual que lo haría el contexto (T2). La sinergia solo cuenta con org.
+- **Hoy `post_serie` no sale** (`rondasConPrensa: []` desde K4c): la prensa que se juega es la de después de un escándalo. Los
+  factores de la serie y el rival quedan listos y testeados para el día que se vuelva a prender.
+
+**Medido.** Sobre 143 pausas reales (40 seeds × 40 splits, con `rondasConPrensa` prendido solo en la corrida): todas con 2 o 3
+pistas (75 de 2 y 54 de 3 en `post_serie`; 6 y 8 en `post_escandalo`), tono de 7 a 88 (mediana 60). Huella: idéntica
+(`K1 versión` en verde sin tocar `HUELLA_JUEGO`). El puntaje de los bots no lee el objetivo: `simulate.js` no se mueve.
+
+**Checks (`validate.js`, `K6d-P`, rápidos), cada uno visto en rojo con mutantes en una copia de `git archive`:**
+tono en la dirección de cada factor y el borde del umbral; cada pista es de un factor que pesó (980 casos); las dos pausas
+reales traen tono y pistas, y el objetivo de la UI es tono ± ruido. 23 mutantes, los 23 en rojo (signo de cada peso, la final,
+el rival, el acotado, el umbral estricto y sin umbral, pista de factor en cero, más de `maxPistas`, el escándalo y el rival
+fantasma en la prensa equivocada, cada pausa sin tono, la UI sin tono o sin ruido, `app.js` sin pasar `datos`). Aparte,
+`prensa.ruidoUi` entró a `RUIDOS_FUERA_DE_LA_ABLACION_K0`: es ruido de pantalla.
+
+**Pantalla (Chromium real, `node server.js`).** 320, 390 y 1440 px: `scrollWidth == innerWidth` en los tres, 0 errores de
+consola, 3 y 2 pistas montadas con la hoja y los tokens reales; el slider en el tono da puntaje 1 con `rngUi` en 0,5. Las
+capturas (la pista del archirrival, con un nombre de org larguísimo, parte la línea sin desbordar a 320 px) se leyeron.
+
+**Revisión, ronda 1 (los pesos de arriba son los de la primera pasada: los vigentes están en `BALANCE.prensa`).**
+- **El escándalo ya no fija la respuesta.** Con -28 y la sinergia real (mediana 45) para el mismo lado, el tono salía entre 5 y
+  28 (mediana 19, 19 pausas de 60 seeds): un slider fijo a la izquierda ganaba siempre. Ahora el escándalo empuja -8 y el tono
+  lo mueven cinco factores que cambian de un escándalo a otro, con referencias en las medianas medidas EN esas pausas (148 de
+  400 seeds: hype 65, sinergia 45, jerarquía 30, mentalidad 64): hype -1,2 por punto, sinergia +1,5, jerarquía +0,4,
+  mentalidad +0,3 y la forma (`momentum` de `calcularContexto`: racha +16, estable 0, slump -16, crisis -26). `tonoBase` 58
+  (la suma típica de un escándalo da ~-8: con 50 la mediana caía en 35). Se buscó sobre las seeds 1-400 y se confirmó en otras
+  123 pausas (seeds 401-700).
+- **La meta, medida** (config de producción, `rondasConPrensa: []`, seeds 1-200 × 60 splits = 75 pausas; el responder lee
+  `datos`, el ruido ±8 barrido en 17 pasos, el corte el veredicto real `bien` ≥ 0,72):
+
+  | | antes (569f77c) | ahora (75 pausas) | holdout (123 pausas) | meta |
+  |---|---|---|---|---|
+  | p10 / mediana / p90 del tono | 5 / 19 / 28 (19 pausas) | 9 / 43 / 76 | 5 / 40 / 72 | p90-p10 ≥ 40, mediana 35-65 |
+  | mejor slider fijo, «bien» | no medido (tono 5-28: ganaba uno a la izquierda) | 42,4% (en 38) | 40,9% (en 41) | ≤ 50% |
+  | slider en el tono, «bien» | no medido | 100% | no medido | ≥ 90% |
+
+  Sale como `checkLento` (`K6d-P la prensa del escándalo no se gana con un slider fijo`), con la línea de la tabla en la salida.
+- **Las frases no afirman de más.** Cada factor continuo elige su frase por banda: «hype alto» solo desde 75 y «todavía es bajo»
+  hasta 50 (antes "casi nadie te conoce" salía con hype 57-64, mediana 64,8); en el medio dice «algo por encima / por debajo
+  de lo normal», y si no empuja, «en lo normal». Siempre hay al menos 2 pistas (se completa con los de más empuje).
+- **Ninguna pista contradice a otra:** el rival ya no dice "no le des el gusto de bajar la cabeza" (ahora "a ese rival se le
+  contesta con carácter"); "el vestuario aguanta" pasó a "el team te respalda".
+- **Checks atados a la dirección:** cada pista lleva la marca de su factor, la dirección de su empuje (humildad ↔ negativo, desafío
+  ↔ positivo, neutra ↔ cero), y ninguna mezcla las dos. Suma el internacional, los bordes de las bandas y del umbral (3 pistas con
+  dos factores justo en el umbral, 2 con uno apenas debajo). El widget se prueba con un contenedor falso: pinta las pistas y
+  puntúa contra el tono (`puntajeDePrensa`, el 55 suelto pasó a `BALANCE.prensa.anchoDeAcierto`).
+- **Mutantes:** 39 en una copia de `git archive`, 38 en rojo (los de la lista de la revisión mueren: texto de hype con la frase de
+  sinergia, condición fuerte de hype invertida, suave de sinergia invertida, escándalo "subir el tono", `rondasDeFinal` sin
+  'internacional', `montar` sin `objetivoDePrensa`, `montar` sin pintar las pistas). El 39.º (hype casi sin peso) no es un
+  defecto: la meta se sigue cumpliendo sin ese factor.
+- **El botón de los minijuegos:** `button { padding: 0 }` de `base.css` le ganaba al padding de `:where(button)` y el `clip-path`
+  se comía las letras. `.minijuego-btn` lleva `padding: var(--s-3) var(--s-5)` (12 / 24 px medidos en Chromium); capturas de
+  "Responder" y "¡Ahora!" a 320 y 1440 px leídas: el texto entra entero. `scrollWidth == innerWidth`, 0 errores de consola.
+- Huella idéntica (`K1 versión` en verde), `--rapido` 366 OK / 0 FAIL, `build.js` en verde.
+
 ### 2026-10-06 — D82: el traspaso cuesta lo que dice la pantalla, y el Mundial del mundo pesa cada año igual (rama `d82`)
 
 **(a) El valor visible es el que paga el mercado (regla 15).**
