@@ -181,4 +181,7 @@ export const VERSION_JUEGO = 'K6d';
 // club; K6d-P: la rueda de prensa con pistas (no mueve la huella). Las piezas juntas mueven las carreras que cada una movía sola:
 // ninguna seed de K6c reproduce su carrera. Guardado VERSION 14. Reemplaza a 480175732 (K6d-N con P3), 1073872165 (K6d-B) y
 // 1766253198 (K6c).
+// K6d (el arreglo del retiro, sin cambio de huella: ninguna de las 40 seeds vuelve del retiro con la racha en rojo): volver del
+// retiro corta la racha de splits en rojo (`flags.splitsMentalBajo`, `systems/retiro.js`), que antes sobrevivía congelada al
+// tiempo afuera y podía quemarte en el primer split de vuelta.
 export const HUELLA_JUEGO = 79304237;

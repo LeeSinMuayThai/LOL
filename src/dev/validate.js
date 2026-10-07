@@ -21758,6 +21758,59 @@ check('K6d guardado VERSION 14: la forma de la 13 (la de fase-9r) sigue registra
   console.log(`      ${comparados} guardados de la 13 cargados y seguidos; sin migrarDe13 fallan ${mutanteMuerde}`);
 });
 
+// K6d (integración; el FAIL de K5c-R en la seed 9 con P7a prendida): volver del retiro corta la racha en rojo (`flags.splitsMentalBajo`,
+// `systems/retiro.js`). Antes sobrevivía congelada al retiro: el split de la vuelta frenaba con "cerraste los últimos N splits en rojo"
+// contando los de afuera, y el dado del burnout podía pinchar en el primer split de vuelta (la seed 9 se quemó al volver con una racha
+// de 8 de un año antes; el reloj sí cuadraba). Estados armados desde vueltas reales (una por seed), con la cabeza en rojo de verdad al
+// irse: la mitad del umbral del burnout y una racha de cuatro veces el mínimo. Quien sigue sin cuidarse en la parada es el peor caso.
+check('K6d retiro: volver del retiro corta la racha en rojo de antes de irte: el split de la vuelta no frena por el burnout ni termina en burnout', () => {
+  const { burnoutUmbral, burnoutSplitsMinimos } = BALANCE.atributos;
+  const vueltasMinimas = 5;
+  const problemas = [];
+  let vueltas = 0;
+  for (let seed = 1; seed <= SEEDS_ANIOS_PRO_K5CR && vueltas < vueltasMinimas; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < SPLITS_K5CR && !state.terminado; i += 1) {
+      const antes = state;
+      state = avanzarSplitAuto(state, rng).state;
+      if (antes.phase !== 'retirado' || state.flags.vueltasUsadas <= antes.flags.vueltasUsadas) {
+        continue;
+      }
+      const armado = {
+        ...antes,
+        player: { ...antes.player, stats: { ...antes.player.stats, mentalidad: burnoutUmbral / 2 } },
+        flags: { ...antes.flags, splitsMentalBajo: burnoutSplitsMinimos * 4 }
+      };
+      const paradas = [];
+      const responder = (sistema, st, decision, r) => {
+        if (st.pendiente.sistemaId === 'burnout') {
+          paradas.push(decision.titulo);
+          return { opcionId: 'seguir' };
+        }
+        return sistema.resolverAuto(st, decision, r);
+      };
+      const vuelta = avanzarSplitAuto(armado, mulberry32(seed), responder).state;
+      // Volver de free agent sin que nadie te llame no juega el split: no hay racha que mirar.
+      if (vuelta.flags.vueltasUsadas > armado.flags.vueltasUsadas && (vuelta.phase === 'profesional' || vuelta.terminado)) {
+        vueltas += 1;
+        if (paradas.length > 0 || vuelta.finAnticipado === 'burnout' || (vuelta.flags.splitsMentalBajo ?? 0) > 1) {
+          problemas.push(`seed ${seed}, split ${i}: la vuelta frenó por el burnout ${paradas.length} vez/veces ("${paradas[0] ?? ''}"), `
+            + `fin ${vuelta.finAnticipado ?? 'ninguno'}, racha al cierre ${vuelta.flags.splitsMentalBajo}`);
+        }
+      }
+      break;
+    }
+  }
+  if (vueltas < vueltasMinimas) {
+    problemas.push(`check vacío: ${vueltas} vueltas del retiro jugadas (hacen falta ${vueltasMinimas})`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 3).join(' · ')}`);
+  }
+  console.log(`      ${vueltas} vueltas del retiro con la cabeza en rojo: ninguna frena por el burnout ni se quema en el split de la vuelta`);
+});
+
 // K4c (revisión): un guardado de la 10 parado en la prueba del mercado traía la apuesta vieja (sin "si no alcanza": la prueba de la 10
 // firmaba siempre), sin `respaldo` (y antes de K4c-S sin `otras`) y con la `preparacion`; uno parado en un cierre, las opciones sin la
 // línea del plan y el evento sin el plan de cada opción (no lo mostraba ni lo fijaba). `migrarDe10` los rearma con lo de hoy (regla 15).
