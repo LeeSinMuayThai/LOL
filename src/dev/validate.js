@@ -4932,6 +4932,10 @@ check('K6d-P las dos pausas de la rueda de prensa (post_serie, post_escandalo) t
   if (!casi(objetivoDePrensa({}, () => 0.37), 37) || !casi(objetivoDePrensa(undefined, () => 0.5), 50)) {
     throw new Error('sin tono el objetivo debía ser rngUi() * 100 (comportamiento de antes)');
   }
+  // El cable de la UI: el controlador le pasa `decision.datos` al widget (sin eso el tono del motor nunca llega a la pantalla).
+  if (!/\}, rngUi, decision\.datos\);/.test(fs.readFileSync(path.join(srcDir, 'ui', 'app.js'), 'utf8'))) {
+    throw new Error('ui/app.js no le pasa decision.datos al widget del minijuego: el tono y las pistas no llegan a la pantalla');
+  }
 });
 
 check('elegirMinijuego es determinista, respeta el rol y no consume RNG (9R4a)', () => {
