@@ -26771,7 +26771,6 @@ function cosechaK6DB() {
     let esperandoA = null;
     for (let i = 0; i < 60 && !state.terminado; i += 1) {
       const antes = state;
-      const S = state.player.splitCount;
       let cartaConRiesgo = false;
       let firmoConRiesgo = null;
       let vioGuardada = false;
@@ -26843,12 +26842,13 @@ function cosechaK6DB() {
           // Dentro de lo cubierto, la vara: con este mismo estado y un aviso de este cierre que mostró un poco más de `mentalNueva` por
           // encima, frena; un poco menos, no (la regla de "riesgo nuevo" con su constante).
           for (const [margen, frena] of [[b.mentalNueva + 1, true], [b.mentalNueva - 1, false]]) {
-            const aviso = { split: S, mentalidad: datos.mostrado.seguir + margen, probabilidad: seguir.riesgoBurnout };
+            const aviso = { split: st.player.splitCount, mentalidad: datos.mostrado.seguir + margen, probabilidad: seguir.riesgoBurnout };
             if (Boolean(paradaDelBurnoutK6DB({ ...st, flags: { ...st.flags, mentalAvisadaPro: [aviso] } })) !== frena) {
               c.problemasPro.push(`seed ${seed} split ${i}: con lo visto ${margen} por encima ${frena ? 'no frena' : 'frena igual'}`);
             }
           }
-          const visto = cubiertos.get(S);
+          // El cierre de la parada es el de su `splitCount` (el split de la vuelta del retiro arranca con el contador corrido).
+          const visto = cubiertos.get(st.player.splitCount);
           if (visto && visto.probabilidad > 0 && datos.mostrado.seguir >= visto.mentalidad - b.mentalNueva) {
             c.frenadasDeMas.push(`seed ${seed} split ${i}: ${datos.mostrado.seguir.toFixed(1)} contra lo visto ${visto.mentalidad.toFixed(1)}`);
           }
@@ -26870,7 +26870,7 @@ function cosechaK6DB() {
           revisarEleccion(sistema, st, decision, seed, i);
           const conRiesgo = decision.opciones.filter((op) => Number.isFinite(op.riesgoBurnout));
           const elegida = conRiesgo.reduce((mejor, op) => ((seed % 3 === 0 ? op.riesgoBurnout < mejor.riesgoBurnout : op.riesgoBurnout > mejor.riesgoBurnout) ? op : mejor));
-          cubiertos.set(S, { mentalidad: elegida.mentalidadAlCierre, probabilidad: elegida.riesgoBurnout });
+          cubiertos.set(st.player.splitCount, { mentalidad: elegida.mentalidadAlCierre, probabilidad: elegida.riesgoBurnout });
           return { opcionId: elegida.id };
         }
         return ESTRATEGIAS_K0.malas(sistema, st, decision, rngP);
@@ -26900,7 +26900,8 @@ function cosechaK6DB() {
       }
       if (state.finAnticipado === 'burnout' && (antes.phase === 'profesional' || firmo)) {
         const conClub = antes.phase === 'profesional' ? Boolean(antes.career.currentOrg) : true;
-        const cubierto = (cubiertos.get(S)?.probabilidad ?? 0) > 0;
+        // El cierre que pinchó: `atributos` sube el contador también en el split del burnout.
+        const cubierto = (cubiertos.get(state.player.splitCount - 1)?.probabilidad ?? 0) > 0;
         c.burnoutsPro += 1;
         c.burnoutsSinClub += conClub ? 0 : 1;
         c.burnoutsCubiertos += cubierto ? 1 : 0;
