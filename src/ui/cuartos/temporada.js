@@ -15,8 +15,7 @@ function resumenDeLaUltimaPosicion(fila) {
   caja.className = 'panel-contexto cuarto-temporada-ultima';
   const titulo = document.createElement('div');
   titulo.className = 'panel-contexto-titulo';
-  const liga = fila.liga ? nombreVisibleDeLiga(fila.liga) : 'Tier 3';
-  titulo.textContent = `${liga} · final · ${fila.anio} · split ${fila.split + 1}`;
+  titulo.textContent = `${fila.liga ? nombreVisibleDeLiga(fila.liga) : 'Tier 3'} · final · ${fila.anio} · split ${fila.split + 1}`;
   const linea = document.createElement('p');
   linea.className = 'cuarto-temporada-posicion';
   linea.textContent = `Terminaste ${fila.posicion}º de ${fila.equipos} con ${fila.org}.`;
