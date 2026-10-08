@@ -9,7 +9,7 @@ import { marcarFoco, marcarAtajo } from '../escena.js';
 const OFERTAS_CON_ATAJO = 4;
 
 export function mostrar(contenedor, decision, ctx) {
-  const { estado, ui, responder, pintarPrevia, lowerThird, elementos } = ctx;
+  const { estado, ui, responder, pintarPrevia, elementos } = ctx;
   // Un mercado no tiene previa: esto la deja vacía, como antes de V2-B.
   pintarPrevia(decision, estado);
   ui.mostrarMercadoEnPantalla(
@@ -18,7 +18,6 @@ export function mostrar(contenedor, decision, ctx) {
     responder,
     () => responder({ negociar: 'esperar' })
   );
-  lowerThird('mercado', decision);
   marcarFoco(elementos.mercado.mercadoTitle);
   [...elementos.mercado.mercadoGrid.children].slice(0, OFERTAS_CON_ATAJO).forEach((oferta, i) => {
     const firmar = oferta.querySelector('button');

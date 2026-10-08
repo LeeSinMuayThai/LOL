@@ -6,8 +6,8 @@
 // `state` al chrome global, porque era el único sitio fuera de este closure
 // que lo tenía a mano). Acá `estado` pasa a vivir en un `store` (`core/store.js`)
 // que sí se puede pasar a cualquier pantalla nueva — y con eso disponible,
-// `actualizarTopbar`/`aplicarEstudio` se llaman desde acá, en el mismo punto
-// donde se pinta la ficha, no desde adentro de la ficha.
+// el chrome (desde V2-C: la franja, el acompañante y la luz de estudio) se pinta
+// desde acá, no desde adentro de la ficha.
 //
 // `index.html` sigue siendo el único lugar donde se declara el DOM del
 // juego (regla de la fase T: "si algo de acá explota, el juego de abajo
@@ -17,7 +17,11 @@ import { mostrarParada } from './paradas/index.js';
 import { crearEscena } from './escena.js';
 import { fotoDeSplit, cierreDeSplit } from './core/escena.js';
 import { iconoSonido } from './components/iconos.js';
-import { actualizarTopbar, aplicarEstudio, limpiarEstudio } from './shell.js';
+import { aplicarEstudio, limpiarEstudio } from './shell.js';
+import { crearFranja } from './franja.js';
+import { crearCuartos } from './cuartos.js';
+import { crearAcompanante } from './acompanante.js';
+import { agruparBeats } from './components/feed.js';
 import { crearStore } from './core/store.js';
 import {
   almacenamientoLocal, leerHistorial, guardarHistorial, agregarAlHistorial, entradaDeResultado,
@@ -27,6 +31,7 @@ import { VERSION_JUEGO } from '../data/version.js';
 import { iniciarDesafio } from '../core/desafio.js';
 import { interpretarSeed } from '../core/numeros.js';
 import { previaDeDecision } from '../core/previaDePartido.js';
+import { fichaCompleta } from '../core/ficha.js';
 
 export function iniciar() {
   const shellEl = document.querySelector('.shell');
@@ -46,10 +51,9 @@ export function iniciar() {
 
   const runButton = document.getElementById('run');
   const nuevaCarreraBtn = document.getElementById('nuevaCarrera');
-  const fichaContainer = document.getElementById('fichaContainer');
-  const summary = document.getElementById('summary');
-  const metaPill = document.getElementById('metaPill');
   const logList = document.getElementById('logList');
+  // V2-C: "lo último que pasó" de una parada. El relato (`#logList`) solo se ve en la pieza `relato`; la parada abre con esto.
+  const paradaAntesEl = document.getElementById('paradaAntes');
   const decisionPanel = document.getElementById('decision');
   const decisionTitle = document.getElementById('decisionTitle');
   const decisionDesc = document.getElementById('decisionDesc');
@@ -78,35 +82,20 @@ export function iniciar() {
   const continuarBtn = document.getElementById('continuarBtn');
   const desafioDia = document.getElementById('desafioDia');
   const historialEl = document.getElementById('historial');
-  // El riel derecho (T5): un objeto solo, para pasarlo entero a
-  // ui.renderRielContexto desde la `vista` — mismo patrón que
-  // `decisionElements`.
-  const rielElements = {
-    panelTabla: document.getElementById('panelTabla'),
-    panelCalendario: document.getElementById('panelCalendario'),
-    panelPlantilla: document.getElementById('panelPlantilla'),
-    panelMeta: document.getElementById('panelMeta'),
-    panelGeneracion: document.getElementById('panelGeneracion'),
-    panelTopMundial: document.getElementById('panelTopMundial')
-  };
   const serieContextoEl = document.getElementById('serieContexto');
   const toggleVelocidad = document.getElementById('toggleVelocidad');
   const toggleSonido = document.getElementById('toggleSonido');
-
-  // H7 de la revisión de K0-B: en un celular la topbar se parte en 2 filas (o 3
-  // en 320px) según el ancho y el largo del texto de estado, así que su alto no
-  // es un número que el CSS pueda saber: la ficha pegajosa (`.riel`, ≤899px) se
-  // colgaba de 56px y la topbar le tapaba de 8 a 30px del borde al scrollear.
-  // Se publica el alto REAL como `--topbar-alto-real` y el CSS lo usa (con el
-  // token fijo de respaldo si esto no corre, p. ej. sin ResizeObserver).
-  const topbarEl = document.querySelector('.topbar');
-  if (topbarEl && typeof ResizeObserver !== 'undefined') {
-    const publicarAltoDeLaTopbar = () => {
-      document.documentElement.style.setProperty('--topbar-alto-real', `${topbarEl.getBoundingClientRect().height}px`);
-    };
-    new ResizeObserver(publicarAltoDeLaTopbar).observe(topbarEl);
-    publicarAltoDeLaTopbar();
-  }
+  // La franja (V2-C): reemplaza a la topbar. Se crea cuando cargan los módulos (necesita `etiquetaRol`); publica su alto
+  // real como `--franja-alto-real` (antes, `--topbar-alto-real` desde acá: en el celular son dos o tres líneas).
+  const franjaEl = document.getElementById('franja');
+  const franjaEstadoEl = document.getElementById('franjaEstado');
+  let franja = null;
+  // Los cuartos (V2-C): el `<dialog id="cuarto">` y su barra en la franja. Se crean cuando cargan los módulos (pintan con
+  // los renderers de hoy) y leen la `vista`.
+  const ayudaTeclas = document.getElementById('ayudaTeclas');
+  let cuartos = null;
+  // El acompañante (V2-C): reemplaza al riel derecho (T5), cuyos paneles se mudaron a los cuartos.
+  let acompanante = null;
 
   // El contrato de elementos que `src/ui/render.js` necesita para pintar
   // la pantalla de decisión (fase 8, §8.5; fase 9c suma la pantalla de ofertas).
@@ -131,9 +120,10 @@ export function iniciar() {
   const store = crearStore(null);
   // FASE V (V2-B; PLAN.md §V.5 "Dos stores"): `vista` es lo que la pantalla YA contó. La escribe solo el director de
   // escena (`escena.revelar`): al terminar los beats de cada llamada al pipeline, al retomar, al arrancar una carrera y
-  // en la final. Ficha, topbar, luz de estudio, riel derecho y marcador de serie se pintan desde acá
-  // (`pintarDesdeVista`), nunca desde `store`: mientras el relato cuenta un split, la ficha sigue en el estado de antes
-  // (regla 4 de §V.3, D89: antes se pintaban con el estado final ANTES de los beats y adelantaban el resultado).
+  // en la final. La franja, el acompañante, la luz de estudio y el marcador de serie se pintan desde acá
+  // (`pintarDesdeVista`), y los cuartos la leen al abrirse; nunca desde `store`: mientras el relato cuenta un split, la
+  // pantalla sigue en el estado de antes (regla 4 de §V.3, D89: antes se pintaban con el estado final ANTES de los beats y
+  // adelantaban el resultado).
   const vista = crearStore(null);
   const escena = crearEscena({ shell: shellEl, vista });
   vista.suscribir(pintarDesdeVista);
@@ -192,6 +182,30 @@ export function iniciar() {
         REGIONES_DE_ORIGEN: regionesDeOrigen()
       };
       ui = render;
+      franja = crearFranja({
+        franja: franjaEl,
+        estadoEl: franjaEstadoEl,
+        etiquetaRol: modulos.etiquetaRol,
+        // El delta del número es el del split en curso: contra la foto de la página (la misma que usa la tarjeta de cierre).
+        fotoDeLaPagina: () => pagina.fotoInicio
+      });
+      cuartos = crearCuartos({
+        dialog: document.getElementById('cuarto'),
+        barra: document.getElementById('cuartosBarra'),
+        cuerpo: document.getElementById('cuartoCuerpo'),
+        titulo: document.getElementById('cuartoTitulo'),
+        botonAyuda: ayudaTeclas,
+        escena,
+        vista,
+        // `contadoDelRelato`: lo que el relato ya contó de la página en curso (la Crónica lo suma, ver abajo).
+        contexto: { ui, modulos, contadoDelRelato }
+      });
+      acompanante = crearAcompanante({
+        aside: document.getElementById('acompanante'),
+        chip: document.getElementById('verContexto'),
+        contexto: { ui, modulos },
+        abrirCuarto: (id) => cuartos.abrir(id)
+      });
       reproductor = reproductorModulo;
       sonido = sonidoModulo;
       almacenamiento = almacenamientoModulo;
@@ -216,16 +230,25 @@ export function iniciar() {
   // a los `hidden` que `mostrarDecision` prendía y apagaba en cada panel: qué nodo se ve lo decide `data-pieza`.
   function mostrarLaParada(estado) {
     escena.revelar(estado, {
-      pintar: () => mostrarParada(estado.pendiente, {
-        estado,
-        ui,
-        rngUi,
-        responder,
-        pintarPrevia,
-        lowerThird: (modo, decision, estadoDeLaBarra = estado) => ui.renderLowerThird(summary, metaPill, estadoDeLaBarra, { modo, decision }),
-        elementos: { decision: decisionElements, mercado: mercadoElements },
-        contenedores: { decision: decisionPanel, partido: decisionPanel, mercado: mercadoPanel, minijuego: minijuegoPanel }
-      })
+      pintar: () => {
+        // Antes de la parada: el último beat que el relato ya contó en esta página (todos los de `estado.logs` ya se
+        // contaron: la parada entra recién cuando el reproductor termina) y la página, a un toque.
+        try {
+          ui.renderParadaAntes(paradaAntesEl, estado, { desde: pagina.desde });
+        } catch (error) {
+          console.error('No se pudo armar "lo último que pasó":', error);
+          paradaAntesEl.hidden = true;
+        }
+        mostrarParada(estado.pendiente, {
+          estado,
+          ui,
+          rngUi,
+          responder,
+          pintarPrevia,
+          elementos: { decision: decisionElements, mercado: mercadoElements },
+          contenedores: { decision: decisionPanel, partido: decisionPanel, mercado: mercadoPanel, minijuego: minijuegoPanel }
+        });
+      }
     });
   }
 
@@ -256,7 +279,6 @@ export function iniciar() {
   function mostrarFinal(state) {
     escena.revelar(state, {
       pintar: () => {
-        ui.renderLowerThird(summary, metaPill, state);
         if (state.terminado && state.tarjeta) {
           ui.renderTarjeta(tarjetaPanel, state, modulos, { lineaHistorial: registrarEnHistorial(state) });
         }
@@ -275,20 +297,19 @@ export function iniciar() {
     ui.renderHistorial(historialEl, historial, { etiquetaRol: modulos.etiquetaRol, version: VERSION_JUEGO });
   }
 
-  // Lo que se pinta desde `vista` (FASE V, V2-B): la ficha y el chrome global (topbar, luz de estudio, riel derecho,
-  // marcador de la serie). Antes era `pintarChrome`, llamado con el estado del motor ANTES de los beats (D89). Con la
-  // `vista` en `null` (el inicio) se limpia.
+  // Lo que se pinta desde `vista` (FASE V, V2-B; V2-C): la franja, el acompañante, la luz de estudio y el marcador de la
+  // serie. Antes era `pintarChrome`, llamado con el estado del motor ANTES de los beats (D89). Con la `vista` en `null`
+  // (el inicio) se limpia. La ficha ya no está siempre a la vista: vive en el cuarto Vos y, en el escritorio, en el
+  // acompañante cuando le toca.
   function pintarDesdeVista(estado) {
+    franja?.pintar(estado);
+    // La pieza ya es la nueva: el director la escribe antes que la `vista`.
+    acompanante?.pintar(estado, escena.pieza());
     if (!estado) {
-      fichaContainer.replaceChildren();
       limpiarEstudio();
-      actualizarTopbar(null);
       return;
     }
-    const ficha = ui.renderFicha(fichaContainer, estado, modulos);
-    actualizarTopbar(estado);
-    aplicarEstudio(estado, ficha);
-    ui.renderRielContexto(rielElements, estado, modulos);
+    aplicarEstudio(estado, fichaCompleta(estado));
     ui.renderSerieContexto(serieContextoEl, estado);
   }
 
@@ -353,6 +374,22 @@ export function iniciar() {
     return { desde: ui.desdeDeUltimosBeats(estado.logs), fotoInicio, ultimoCierre: null, cierreVisto: false, anterior: null, coincide: false };
   }
 
+  // La llamada al pipeline que el relato está contando ahora (`reproducirLlamada`), o `null`. Con ella el cuarto Crónica
+  // suma a la `vista` los beats que la página en curso YA mostró (regla 4 de §V.3: nunca uno por contar).
+  let relatoEnCurso = null;
+
+  // `{ estado, hasta }` mientras el relato cuenta: el estado de esa llamada y el índice (exclusive) de `estado.logs` hasta
+  // donde llegó la pantalla, o `null` si no hay relato en curso. Lo que se mostró son los beats de la página que están en
+  // `#logList` (cada uno, un nodo; la línea "Split anterior" y la tarjeta de cierre no cuentan): el beat n-ésimo termina
+  // donde el reproductor lo cortó (`clave + 1`, el mismo corte de `reproducirBeats`).
+  function contadoDelRelato() {
+    if (!relatoEnCurso) return null;
+    const contados = [...logList.children].filter((nodo) => !nodo.dataset.sintetico).length;
+    const beats = agruparBeats(relatoEnCurso.logs.slice(pagina.desde), pagina.desde);
+    const n = Math.min(contados, beats.length);
+    return { estado: relatoEnCurso, hasta: n === 0 ? pagina.desde : beats[n - 1].clave + 1 };
+  }
+
   // Fase T3: el feed se revela de a un beat por `reproductor.reproducirBeats`. FASE V (V2-B): mientras tanto la pieza es
   // el relato y la `vista` no cambia (la ficha y el chrome muestran lo que ya se contó); recién al terminar los beats el
   // director revela la parada (o el relato quieto) y escribe la `vista`. Si la llamada volvió sin pausa, el split cerró:
@@ -373,14 +410,19 @@ export function iniciar() {
     }
     // La tarjeta se ve si el relato espera entre beats: la velocidad se lee ACÁ, la de la llamada que la reproduce.
     const tarjetaSeVe = Boolean(cierre) && !reproductor.sinEspera();
-    await reproductor.reproducirBeats(logList, estadoActual.logs.slice(logsAntes), {
-      registroAntes,
-      registroDespues: estadoActual.career.registro,
-      bisagra,
-      state: estadoActual,
-      offset: logsAntes,
-      pagina: { desde: pagina.desde, anterior: pagina.anterior, cierre }
-    });
+    relatoEnCurso = estadoActual;
+    try {
+      await reproductor.reproducirBeats(logList, estadoActual.logs.slice(logsAntes), {
+        registroAntes,
+        registroDespues: estadoActual.career.registro,
+        bisagra,
+        state: estadoActual,
+        offset: logsAntes,
+        pagina: { desde: pagina.desde, anterior: pagina.anterior, cierre }
+      });
+    } finally {
+      relatoEnCurso = null;
+    }
     if (cierre) {
       pagina.ultimoCierre = cierre;
       pagina.cierreVisto = tarjetaSeVe;
@@ -406,7 +448,6 @@ export function iniciar() {
     }
     if (!estadoActual.terminado) {
       escena.revelar(estadoActual);
-      ui.renderLowerThird(summary, metaPill, estadoActual);
     }
     return false;
   }
@@ -519,13 +560,21 @@ export function iniciar() {
   }
 
   function mostrarAvisoDeGuardado() {
-    if (setupPanel.querySelector('.setup-aviso')) {
+    mostrarAviso(TEXTO_AVISO_DE_GUARDADO);
+  }
+
+  // V2-C: el mismo lugar sirve para el error al arrancar una carrera, que antes se escribía en `#summary` (dentro de
+  // `#carrera`, escondido en el inicio: el jugador no lo veía).
+  function mostrarAviso(texto) {
+    const existente = setupPanel.querySelector('.setup-aviso');
+    if (existente) {
+      existente.textContent = texto;
       return;
     }
     const aviso = document.createElement('p');
     aviso.className = 'setup-aviso';
     aviso.setAttribute('role', 'status');
-    aviso.textContent = TEXTO_AVISO_DE_GUARDADO;
+    aviso.textContent = texto;
     const subtitulo = setupPanel.querySelector('.subtitle');
     if (subtitulo) {
       subtitulo.before(aviso);
@@ -544,8 +593,6 @@ export function iniciar() {
       boton.disabled = true;
     }
     tarjetaPanel.replaceChildren();
-    summary.textContent = 'Arrancando la carrera...';
-    metaPill.textContent = '';
     logList.innerHTML = '';
 
     try {
@@ -597,15 +644,11 @@ export function iniciar() {
       await avanzar();
     } catch (error) {
       const esArchivoLocal = location.protocol === 'file:';
-      summary.textContent = esArchivoLocal
-        ? 'Este juego usa módulos ES y no puede correr abriendo el HTML directo con doble clic.'
-        : 'No se pudo cargar el juego.';
-      metaPill.textContent = esArchivoLocal
-        ? 'Corré "npm start" en la terminal y abrí la URL que te muestra (http://localhost:8000).'
-        : 'Revisa la consola del navegador.';
-      logList.innerHTML = `<div class="log-item">${error.message}</div>`;
       console.error(error);
       escena.revelar(null);
+      mostrarAviso(esArchivoLocal
+        ? 'Este juego usa módulos ES y no puede correr abriendo el HTML directo con doble clic: corré "npm start" en la terminal y abrí la URL que te muestra (http://localhost:8000).'
+        : `No se pudo cargar el juego (${error.message}). Revisá la consola del navegador.`);
       runButton.disabled = false;
       for (const boton of desafioDia.querySelectorAll('button')) {
         boton.disabled = false;
@@ -614,8 +657,8 @@ export function iniciar() {
   }
 
   function volverAlInicio() {
-    // La pieza `inicio` esconde el escenario de la carrera y los dos rieles (antes, `hidden` en cada panel del riel
-    // derecho, en el marcador y en el escenario); la `vista` en `null` limpia la ficha, la topbar y la luz de estudio.
+    // La pieza `inicio` esconde el escenario de la carrera (antes, `hidden` en cada panel del riel derecho, en el marcador
+    // y en el escenario); la `vista` en `null` limpia la franja, el acompañante y la luz de estudio.
     escena.revelar(null);
     // Ya se borró en `reproducirLlamada` cuando `estado.terminado`
     // se puso en true — esto es la red de seguridad, no el borrado
@@ -630,8 +673,8 @@ export function iniciar() {
   }
 
   // Fase T3: refleja el estado de `reproductor`/`sonido` en los dos
-  // toggles del topbar. Se llama al cargar los módulos y en cada click.
-  function actualizarTogglesTopbar() {
+  // toggles de la franja. Se llama al cargar los módulos y en cada click.
+  function actualizarToggles() {
     toggleVelocidad.textContent = reproductor.labelVelocidad();
     toggleVelocidad.title = `Velocidad del reproductor: ${reproductor.labelVelocidad()} (click para cambiar)`;
     const on = sonido.estaHabilitado();
@@ -685,7 +728,6 @@ export function iniciar() {
         anterior: pagina.anterior,
         cierre: reabreElCierre ? pagina.ultimoCierre : null
       });
-      ui.renderLowerThird(summary, metaPill, estadoRetomado);
 
       if (estadoRetomado.pendiente) {
         mostrarLaParada(estadoRetomado);
@@ -704,7 +746,6 @@ export function iniciar() {
       // Ahora se vuelve al inicio, se descarta el guardado y se avisa en el setup.
       console.error(error);
       volverAlInicio();
-      actualizarTopbar(null);
       mostrarAvisoDeGuardado();
     } finally {
       continuarBtn.disabled = false;
@@ -722,7 +763,8 @@ export function iniciar() {
 
       toggleVelocidad.disabled = false;
       toggleSonido.disabled = false;
-      actualizarTogglesTopbar();
+      ayudaTeclas.disabled = false;
+      actualizarToggles();
 
       // P.2: el botón "Continuar" solo aparece si hay de verdad algo
       // que continuar. La card muestra handle · rol · edad · org.
@@ -775,7 +817,7 @@ export function iniciar() {
   nuevaCarreraBtn.addEventListener('click', volverAlInicio);
   toggleVelocidad.addEventListener('click', () => {
     reproductor.ciclarVelocidad();
-    actualizarTogglesTopbar();
+    actualizarToggles();
   });
   // El click audible de este mismo botón lo dispara la delegación
   // global de `shell.js` (dispara DESPUÉS de este handler: la fase de
@@ -783,7 +825,7 @@ export function iniciar() {
   // botón ya corrió, así que `sonido.alternar()` ya habilitó todo).
   toggleSonido.addEventListener('click', () => {
     sonido.alternar();
-    actualizarTogglesTopbar();
+    actualizarToggles();
   });
   iniciarSetup();
 }

@@ -5,10 +5,9 @@ import { marcarFoco, marcarAtajo } from '../escena.js';
 
 // `contenedor`: el panel `#decision`. `ctx`: ver el contrato.
 export function mostrar(contenedor, decision, ctx) {
-  const { estado, ui, responder, pintarPrevia, lowerThird, elementos } = ctx;
+  const { estado, ui, responder, pintarPrevia, elementos } = ctx;
   const previa = pintarPrevia(decision, estado);
   ui.mostrarDecisionEnPantalla(elementos.decision, decision, responder, estado, previa?.opciones);
-  lowerThird('decision', decision);
   marcarFoco(elementos.decision.decisionTitle);
   // El número que el renderer dibuja en el botón (`.option-atajo`, las cuatro primeras) es el atajo: el que ves es el que
   // aprieta.

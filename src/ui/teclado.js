@@ -12,11 +12,21 @@
 //   - 1-4 → clic en `[data-atajo=n]` de la pieza activa (decisión o partido; nunca en el minijuego, que es dueño de sus
 //     teclas: 1-5, Q/W/E/R, A/D, A/S — `components/minijuegos/comun.js`). Si el elemento marcado trae `data-atajo-foco`
 //     (el "Firmar" del mercado), la tecla solo le lleva el FOCO — con el scroll mínimo para verlo — y Enter hace el resto;
-//   - Esc nunca navega: cierra el desplegable "Avanzado" del inicio y nada más (en la final no hace nada: D87).
+//   - Esc nunca navega: cierra el desplegable "Avanzado" del inicio y nada más (en la final no hace nada: D87). Con un
+//     cuarto abierto, Esc es el nativo del `<dialog>`: lo cierra y el foco vuelve a la parada (V2-C);
+//   - V/T/E/M/C/R (V2-C) → abren Vos, Temporada, Equipo, Mundo, Carrera y Crónica (con uno abierto, cambian de pestaña):
+//     hacen clic en el botón de la barra de la franja (o en la pestaña del diálogo) que lleva esa letra en
+//     `aria-keyshortcuts`. Se apagan en el inicio y en el minijuego (`PIEZAS_SIN_CUARTOS`: los minijuegos son dueños de
+//     Q/W/E/R, A/D, A/S y 1-5) y con el foco en un campo de texto; `?` abre la ayuda de teclas (salvo en el minijuego).
 import { saltarBeat, velocidadActual } from './reproductor.js';
+import { PIEZAS_SIN_CUARTOS } from './core/escena.js';
 
 const shell = document.querySelector('.shell');
 const avanzadoDetails = document.querySelector('.avanzado');
+const barraDeCuartos = document.getElementById('cuartosBarra');
+const dialogoDeCuartos = document.getElementById('cuarto');
+const botonAyuda = document.getElementById('ayudaTeclas');
+const TECLA_AYUDA = '?';
 
 // Las piezas donde 1-4 eligen una opción.
 const PIEZAS_CON_ATAJOS = ['decision', 'partido', 'mercado'];
@@ -48,6 +58,15 @@ function focoEnAlgoInteractivo(activo) {
   return activo.matches(INTERACTIVO) && esVisible(activo);
 }
 
+// El botón que abre el cuarto de esta tecla: en la barra de la franja o, con el diálogo abierto, su pestaña.
+function botonDeCuarto(tecla) {
+  if (tecla === TECLA_AYUDA) return botonAyuda;
+  if (tecla.length !== 1) return null;
+  const letra = tecla.toUpperCase();
+  const lugar = dialogoDeCuartos?.open ? dialogoDeCuartos.querySelector('.cuarto-pestanas') : barraDeCuartos;
+  return lugar?.querySelector(`[aria-keyshortcuts="${CSS.escape(letra)}"]`) ?? null;
+}
+
 function atajoDeLaPieza(numero) {
   const candidatos = shell?.querySelectorAll(`.escenario [data-atajo="${numero}"]`) ?? [];
   return [...candidatos].find((boton) => esVisible(boton) && !boton.disabled) ?? null;
@@ -57,10 +76,19 @@ document.addEventListener('keydown', (evento) => {
   if (evento.defaultPrevented || evento.ctrlKey || evento.metaKey || evento.altKey) return;
   const activo = document.activeElement;
   if (escribiendoEnUnCampo(activo)) return;
-  // V2-C: con un cuarto abierto (`<dialog>` con `showModal()`), el diálogo es dueño del teclado (Esc lo cierra solo).
-  if (document.querySelector('dialog[open]')) return;
-
   const pieza = piezaActiva();
+
+  const botonCuarto = botonDeCuarto(evento.key);
+  if (botonCuarto) {
+    const apagada = evento.key === TECLA_AYUDA ? pieza === 'minijuego' : PIEZAS_SIN_CUARTOS.includes(pieza);
+    if (!apagada && !evento.repeat) {
+      evento.preventDefault();
+      botonCuarto.click();
+    }
+    return;
+  }
+  // Con un cuarto abierto (`<dialog>` con `showModal()`), el diálogo es dueño del resto del teclado (Esc lo cierra solo).
+  if (document.querySelector('dialog[open]')) return;
 
   if (evento.key === ' ' || evento.key === 'Enter') {
     if (focoEnAlgoInteractivo(activo)) return; // su acción nativa

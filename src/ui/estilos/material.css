@@ -37,7 +37,7 @@
 }
 
 /* Frames de estudio: ficha, riel, serie. Decisión/mercado/minijuego NO
-   se clippean — su pestaña lower-third vive a -15px y el clip se la come. */
+   se clippean — su pestaña de categoría vive a -15px y el clip se la come. */
 .marco,
 .ficha-card,
 .panel-contexto,

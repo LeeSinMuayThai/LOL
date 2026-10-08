@@ -49,6 +49,10 @@ export function piezaDe(estado, { reproduciendo = false } = {}) {
 
 // Los cuartos (§V.4): Vos · Temporada · Equipo · Mundo · Carrera · Crónica.
 export const CUARTOS = ['vos', 'temporada', 'equipo', 'mundo', 'carrera', 'cronica'];
+// Donde los cuartos no se abren: el inicio no tiene carrera que mostrar, y el minijuego es dueño de sus teclas y de su
+// reloj (abrir un cuarto a mitad de uno lo dejaría corriendo detrás). La ayuda sí se abre en el inicio. Vive acá, en el
+// módulo puro, para que `teclado.js` no arrastre todos los renderers de los cuartos al importarla.
+export const PIEZAS_SIN_CUARTOS = ['inicio', 'minijuego'];
 // Lo que puede mostrar el acompañante (≥ 1180 px). `null` = nada.
 export const TIPOS_DE_ACOMPANANTE = ['vos', 'mercado', 'carrera', 'serie', 'swiss', 'previa', 'tabla'];
 const SIN_ACOMPANANTE = Object.freeze({ tipo: null, cuarto: null });

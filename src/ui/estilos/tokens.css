@@ -219,3 +219,21 @@
     --tick-len: 18px;
   }
 }
+
+/* --- El shell de FASE V (V2-C; PLAN.md §V.4) -------------------------------
+   La franja (≤ 64 px), el escenario de una columna (~720 px), el acompañante
+   (≥ 1180 px), la barra de cuartos fija del celular y el ancho del cuarto. */
+:root {
+  --franja-alto: 64px;
+  --escenario-columna: 720px;
+  --escenario-inicio: 1180px;
+  --acompanante-ancho: 340px;
+  --cuartos-barra-alto: 52px;
+  --cuarto-ancho: 1040px;
+}
+@media (max-width: 1439px) {
+  :root { --acompanante-ancho: 300px; }
+}
+@media (max-width: 639px) {
+  :root { --franja-alto: 56px; }
+}

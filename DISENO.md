@@ -167,13 +167,20 @@ La carrera debe incluir contratos, sueldos, cláusulas, imports, residencia, ada
     postpartido.json: el contenido de las fechas marcadas de la temporada)
   /rutinas (amateur.json, planes.json)
 
-/src/ui — dejó de estar vacía en la fase 8 (cierra D7). `index.html` queda como shell +
-  `<style>` + los minijuegos (que la fase 8 no mueve, PLAN.md §8.5) + el control de flujo
-  que llama al pipeline (`comenzarCarrera`/`avanzar`/`responder`).
-  render.js — orquestador, único punto de entrada que importa `index.html`
+/src/ui — dejó de estar vacía en la fase 8 (cierra D7). `index.html` declara el DOM del shell (sin
+  lógica: el controlador es `app.js`); la arquitectura de la pantalla de FASE V está en §4.5.
+  app.js — el controlador: el pipeline (`avanzar`/`responder`), los dos stores y la página por split
+  escena.js — el director de escena (el único que escribe `data-pieza` y la `vista`) + el contrato de las familias
+  franja.js · cuartos.js (+ /cuartos) · acompanante.js — el chrome de V2-C (§4.5)
+  teclado.js — Enter/Espacio nativos, 1-4, las letras de los cuartos, `?`; Esc nunca navega
+  shell.js — el clic audible y la luz de estudio · reproductor.js — los beats del relato (y su pausa)
+  render.js — orquestador de los renderers de hoy
   resultado.js (K1 — copiar resultado, link del desafío e historial local; el storage puede tirar)
+  /core — lo puro de la UI: `escena.js` (`piezaDe`, `acompananteDe`, el cierre de split), `store.js`, `reconciliar.js`
+  /paradas — las familias de parada (decisión, partido, mercado, minijuego): `mostrar` + `acompanante`
+  /paneles — tabla, calendario, plantilla, meta, generación, top mundial (los pintan los cuartos y el acompañante)
   /components
-    ficha.js — LA TARJETA permanente (vive en todas las pantallas de carrera)
+    ficha.js — la ficha entera (desde V2-C, en el cuarto Vos y en el acompañante; ya no está siempre a la vista)
     barra.js — barra de progreso con hitos con nombre (arraigo, jerarquía)
     statRow.js — los 6 atributos de rol con flechas ▲▼ y el destacado en color
     decision.js — la tarjeta de decisión (opciones; los minijuegos se desvían antes)
@@ -184,7 +191,7 @@ La carrera debe incluir contratos, sueldos, cláusulas, imports, residencia, ada
     coste de arraigo y el riesgo, todo antes de firmar
   /screens
     inicio.js — rol + mains (dueño de su propio estado de selección)
-    carrera.js — orquesta ficha + feed; la decisión se pinta aparte
+    tarjeta.js — la tarjeta final (`carrera.js` se fue en V2-C con los rieles)
 
 /src/dev
   simulate.js · validate.js · guards.js · cobertura.js · estrategias.js
@@ -223,6 +230,48 @@ El proyecto debe incluir:
 > `cobertura.js` saltea los momentos marcados `pendiente`, que fue por donde se coló el bug D25.
 > Una herramienta que mira para otro lado da peor información que no tenerla: los dos huecos se
 > cierran en la fase 9E.
+
+### 4.5 La pantalla (FASE V: el shell de V2-C)
+
+> Escrito el 2026-10-08 al cerrar V2-C (`PLAN.md` §V.4 y §V.5 son la fuente; esto es el mapa de
+> archivos). La regla de fondo: **una sola cosa pide atención** — el escenario muestra una pieza por
+> vez, y lo demás está a un toque.
+
+**Las cuatro zonas** (todas declaradas en `index.html`; ninguna se monta desde JS):
+
+| Zona | Qué es | Dónde |
+|---|---|---|
+| **Franja** (`header.franja`) | ≤ 64 px (dos líneas en el celular): handle · rol, club, edad · año · ventana, el número (nivel con banda y el delta del split en curso; en amateur, rango/LP), velocidad, sonido, `?` y la barra de cuartos (en el celular, abajo y fija) | `franja.js`, su CSS en `shell.css`; la barra en `cuartos.css` |
+| **Escenario** (`#escenario`) | Una columna de ~720 px, centrada. `.shell[data-pieza]` ∈ {inicio, relato, decision, partido, mercado, minijuego, final}: cada nodo declara sus piezas en `data-piezas` y `shell.css` esconde lo que no es de la activa | `escena.js` (el director) + las familias de `paradas/` |
+| **Acompañante** (`aside#acompanante`) | UN panel, desde 1180 px: el contexto de la pieza (`acompananteDe(estado, pieza)`, pura). `data-acompanante` = su tipo; vacío = no ocupa lugar. Debajo de 1180, el chip `#verContexto` de la parada abre el cuarto equivalente | `acompanante.js` |
+| **Cuartos** (`dialog#cuarto`) | Vos · Temporada · Equipo · Mundo · Carrera · Crónica, con `showModal()` (foco atrapado, fondo inerte, Esc nativo). Se pintan solo al abrirse. Con uno abierto, el relato se pausa; al cerrar, el foco vuelve a la parada. Letras V/T/E/M/C/R (apagadas en inicio y minijuego) y `?` | `cuartos.js` + `cuartos/*.js`, `cuartos.css` |
+
+**El relato y las paradas** (`PLAN.md` §V.5: "una parada a mitad de split reemplaza al relato"). `#logList`, la
+página del split, solo se ve en la pieza `relato`. Una parada abre con `#paradaAntes` (`.parada-antes`, en
+`index.html`, de las piezas decision/partido/mercado): `renderParadaAntes` (`components/feed.js`, su CSS en
+`feed.css`) lo llena con el último beat que el relato ya contó en esta página (texto plano, una línea, cortada con
+"…") y un desplegable "ver la página (n)" que abre, dentro del mismo nodo, los beats de la página hasta ahí
+(`renderPagina`, pintada al abrir). Sin beats en la página (la parada abre el split) queda oculto. Al responder
+vuelve el relato con la misma página. Lo llama `app.js` (`mostrarLaParada`) con `pagina.desde`.
+
+**Los dos stores** (`ui/core/store.js`). `store` es el estado del motor: lo escribe `app.js` después de
+cada llamada al pipeline. `vista` es lo que la pantalla **ya contó**: lo escribe solo el director
+(`escena.revelar`) al terminar los beats, al retomar, al arrancar y en la final. Franja,
+acompañante, cuartos y luz de estudio leen `vista`, nunca `store`: mientras el relato cuenta un
+split nada de eso cambia (regla 4 de §V.3: nada adelanta el resultado). Lo mide
+`src/dev/recorrido.mjs`.
+
+**Quién es dueño de qué para V3** (el contrato de las familias está en la cabecera de `ui/escena.js`):
+
+| Archivo(s) | Dueño |
+|---|---|
+| `index.html`, `app.js`, `ui/escena.js`, `teclado.js`, `shell.css`, `primitivos.css` | compartidos: ninguna familia los edita (los cambia solo la subfase que los tiene en su alcance) |
+| `paradas/decision.js`, `components/decision.js`, `decision.css` | V3a (la parada genérica) |
+| `paradas/partido.js`, `components/{serie,previaPartido,mundial}.js`, `serie.css` | V3b (el partido; su `acompanante` reemplaza los stubs `serie`/`swiss`/`previa`) |
+| `paradas/mercado.js`, `components/mercado.js`, `mercado.css` | V3c (su `acompanante` reemplaza el stub `mercado`) |
+| `paradas/minijuego.js`, `components/minijuegos/*`, `minijuegos.css` | V3d |
+| `franja.js`, `cuartos.js`, `cuartos/*.js` (salvo Carrera), `acompanante.js` (stub `vos`/`tabla`), `components/ficha.js`, `paneles/*`, `cuartos.css`, `ficha.css`, `paneles.css` | V3e |
+| `cuartos/carrera.js` (y el stub `carrera` del acompañante), `graficos/` | V5 |
 
 ## 5. Contenido narrativo
 

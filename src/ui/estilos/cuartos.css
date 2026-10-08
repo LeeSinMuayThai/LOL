@@ -1,0 +1,232 @@
+/* ==========================================================================
+   LOS CUARTOS (FASE V, V2-C; PLAN.md §V.4) — la barra de la franja y el
+   `<dialog id="cuarto">`. Dueño: V3e (la franja y los cuartos).
+
+   En el escritorio la barra vive en la franja y el cuarto tapa escenario y
+   acompañante, dejando la franja a la vista. En el celular (≤ 899 px) la
+   barra va abajo, fija, y el cuarto es una hoja sobre el escenario.
+   ========================================================================== */
+
+/* --- La barra (y las pestañas, que son copias de sus botones) ------------- */
+
+.franja-cuartos {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+.cuarto-boton {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--s-1) var(--s-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-2);
+  font-weight: 600;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ink-dim);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 0;
+  box-shadow: none;
+  clip-path: none;
+}
+.cuarto-boton:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: var(--line);
+  background: var(--live-fill);
+  box-shadow: none;
+}
+.cuarto-letra {
+  color: var(--live);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 2px;
+}
+
+/* En el inicio no hay carrera que mostrar; en el minijuego, los cuartos no abren (son dueños del teclado y del reloj). */
+.shell[data-pieza="inicio"] .franja-cuartos { display: none; }
+.shell[data-pieza="minijuego"] .franja-cuartos {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* Entre 900 y 1279 px la barra se achica para entrar junto al resto de la franja. */
+@media (min-width: 900px) and (max-width: 1279px) {
+  .franja-cuartos .cuarto-boton { padding: var(--s-1) 6px; font-size: var(--fs-1); }
+}
+
+@media (max-width: 899px) {
+  .franja-cuartos {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 100;
+    height: var(--cuartos-barra-alto);
+    justify-content: space-between;
+    padding: 0 var(--s-2);
+    background-color: var(--bg-chrome);
+    border-top: 1px solid var(--line);
+    overflow-x: auto;
+  }
+  .franja-cuartos .cuarto-boton {
+    flex: 1 1 0;
+    justify-content: center;
+    min-width: 0;
+    padding: 0 2px;
+    font-size: var(--fs-1);
+  }
+  /* El escenario no queda debajo de la barra. */
+  .shell:not([data-pieza="inicio"]) .shell-cuerpo { padding-bottom: calc(var(--cuartos-barra-alto) + var(--s-4)); }
+}
+
+/* --- El diálogo ------------------------------------------------------------ */
+
+.cuarto {
+  position: fixed;
+  inset: var(--franja-alto-real, var(--franja-alto)) 0 0 0;
+  width: 100%;
+  max-width: none;
+  height: auto;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-top: 1px solid var(--line-strong);
+  color: var(--ink);
+  background: var(--bg-void);
+  box-shadow: var(--sombra-3);
+  overflow: hidden;
+}
+.cuarto[open] {
+  display: flex;
+  flex-direction: column;
+}
+/* La franja queda a la vista (y quieta) arriba del cuarto: el velo no la tapa. */
+.cuarto::backdrop { background: transparent; }
+
+.cuarto-cabecera {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: var(--cuarto-ancho);
+  margin: 0 auto;
+  padding: var(--s-3) var(--s-4);
+  border-bottom: 1px solid var(--line);
+}
+.cuarto-pestanas {
+  display: flex;
+  gap: var(--s-1);
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+}
+.cuarto-pestanas .cuarto-boton { border-bottom: 2px solid transparent; }
+.cuarto-pestanas .cuarto-boton[aria-selected="true"] {
+  color: var(--ink);
+  border-bottom-color: var(--live);
+}
+.cuarto-cerrar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex: 0 0 auto;
+  padding: var(--s-1) var(--s-3);
+  font-size: var(--fs-2);
+  color: var(--ink-dim);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  box-shadow: none;
+  clip-path: var(--clip-corte-sm);
+}
+.cuarto-cerrar-x { display: none; }
+.cuarto-cerrar kbd {
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  color: var(--ice);
+}
+
+.cuarto-cuerpo {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: var(--cuarto-ancho);
+  margin: 0 auto;
+  padding: var(--s-4);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: var(--s-4);
+}
+/* Mundo y Temporada: sus paneles uno al lado del otro cuando entran. */
+@media (min-width: 900px) {
+  .cuarto[data-cuarto="mundo"] .cuarto-cuerpo,
+  .cuarto[data-cuarto="temporada"] .cuarto-cuerpo {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+}
+.cuarto-vacio {
+  margin: 0;
+  padding: var(--s-4);
+  color: var(--ink-dim);
+  border: 1px dashed var(--line);
+}
+.cuarto-carrera { display: grid; gap: var(--s-2); }
+.cuarto-ayuda {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--s-3) var(--s-4);
+  margin: 0;
+}
+.cuarto-ayuda dt {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  color: var(--live);
+}
+.cuarto-ayuda dd { margin: 0; color: var(--ink-dim); }
+
+@media (max-width: 639px) {
+  .cuarto-cabecera { padding: var(--s-2) var(--s-3); }
+  .cuarto-cuerpo { padding: var(--s-3); }
+  .cuarto-ayuda { grid-template-columns: minmax(0, 1fr); gap: var(--s-1); }
+  .cuarto-ayuda dd { margin-bottom: var(--s-2); }
+}
+
+/* --- El chip "ver contexto" (debajo de 1180 px, en una parada) ------------- */
+
+.ver-contexto {
+  justify-self: end;
+  padding: var(--s-1) var(--s-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  font-weight: 600;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ice);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  box-shadow: none;
+  clip-path: var(--clip-corte-sm);
+}
+@media (min-width: 1180px) {
+  .ver-contexto { display: none; }
+}
+
+/* El celular: sin teclado a mano, la ayuda de teclas se va de la franja; las pestañas se achican (y si no entran,
+   corren de costado dentro de su fila, nunca la página). */
+@media (max-width: 639px) {
+  #ayudaTeclas { display: none; }
+  .cuarto-pestanas .cuarto-boton { padding: var(--s-1) 4px; font-size: var(--fs-1); }
+  /* Con las seis pestañas (~310 px) y "Cerrar Esc" no entra en 390 px: "Crónica" quedaba cortada ("CRÓ") bajo el botón.
+     En el celular el botón es una ✕ (el nombre accesible sigue siendo "Cerrar") y las pestañas entran enteras. */
+  .cuarto-cerrar { padding: var(--s-1) var(--s-2); }
+  .cuarto-cerrar-texto,
+  .cuarto-cerrar kbd { display: none; }
+  .cuarto-cerrar-x { display: inline; }
+}

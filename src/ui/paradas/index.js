@@ -7,18 +7,16 @@ import * as partido from './partido.js';
 import * as mercado from './mercado.js';
 import { mostrar as mostrarMinijuego } from './minijuego.js';
 
-// El minijuego (V2-A lo mudó tal cual a `paradas/minijuego.js`) se conecta acá: su previa, su barra de abajo y el foco en
-// su título. Nunca lleva `data-atajo`: los minijuegos son dueños de sus teclas (1-5, Q/W/E/R, A/D, A/S).
+// El minijuego (V2-A lo mudó tal cual a `paradas/minijuego.js`) se conecta acá: su previa y el foco en su título. Nunca lleva `data-atajo`: los minijuegos son dueños de sus teclas (1-5, Q/W/E/R, A/D, A/S).
 const minijuego = {
   mostrar(contenedor, decisionDelMinijuego, ctx) {
-    const { estado, rngUi, responder, pintarPrevia, lowerThird } = ctx;
+    const { estado, rngUi, responder, pintarPrevia } = ctx;
     pintarPrevia(decisionDelMinijuego, estado);
     mostrarMinijuego(contenedor, decisionDelMinijuego, {
       estado,
       rngUi,
       responder,
-      renderPrevia: pintarPrevia,
-      renderBarra: (estadoActual) => lowerThird('minijuego', null, estadoActual)
+      renderPrevia: pintarPrevia
     });
     marcarFoco(contenedor.querySelector('#minijuegoTitle'));
     return contenedor;

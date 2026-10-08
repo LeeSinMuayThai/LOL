@@ -1,8 +1,8 @@
 // El director de escena, la mitad del DOM (FASE V, V2-B; PLAN.md §V.5). `revelar` es el ÚNICO lugar que escribe
-// `.shell[data-pieza]`, y el único que escribe la `vista` (lo que la pantalla ya contó): ficha, topbar, luz de estudio,
-// riel derecho y marcador de serie se pintan desde `vista`, nunca desde el estado del motor (regla 4 de §V.3: nada
-// adelanta el resultado). Qué nodos se ven en cada pieza lo dice `index.html` (`data-piezas="…"`) y lo aplica
-// `estilos/shell.css`: este módulo no toca `hidden`.
+// `.shell[data-pieza]`, y el único que escribe la `vista` (lo que la pantalla ya contó): la franja, el acompañante, los
+// cuartos, la luz de estudio y el marcador de serie se pintan desde `vista`, nunca desde el estado del motor (regla 4 de
+// §V.3: nada adelanta el resultado). Qué nodos se ven en cada pieza lo dice `index.html` (`data-piezas="…"`) y lo aplica
+// `estilos/shell.css`: este módulo no toca `hidden`. El mapa de la pantalla entera está en `DISENO.md` §4.5.
 //
 // ---------------------------------------------------------------------------------------------------------------------
 // EL CONTRATO DE LAS FAMILIAS (§V.5; lo leen los workers de V3)
@@ -18,10 +18,11 @@
 //   - nunca edita `index.html`, `app.js`, `ui/escena.js`, `teclado.js`, `shell.css` ni `primitivos.css`;
 //   - mantiene los ids que lee `src/dev/recorrido.mjs` o lo actualiza en el mismo commit;
 //   - en `formatoUi.js` y `tokens.css`, solo agrega al final.
-// `ctx` trae lo que la familia necesita del controlador (`estado`, `responder`, `ui`, `pintarPrevia`, `lowerThird`,
-// `rngUi`, los elementos de su contenedor): la familia no importa `app.js`.
+// `ctx` trae lo que la familia necesita del controlador (`estado`, `responder`, `ui`, `pintarPrevia`, `rngUi`, los
+// elementos de su contenedor): la familia no importa `app.js`. (La barra de abajo, `lowerThird`, se fue con V2-C y salió
+// de `ctx`.) El `acompanante` de la familia reemplaza al stub de su tipo en `ui/acompanante.js`.
 // ---------------------------------------------------------------------------------------------------------------------
-import { piezaDe } from './core/escena.js';
+import { piezaDe, PIEZAS_DE_PARADA } from './core/escena.js';
 
 function esVisible(el) {
   if (!el) return false;
@@ -70,7 +71,21 @@ export function crearEscena({ shell, vista }) {
     return nueva;
   }
 
-  return { revelar, pieza };
+  // V2-C: al cerrar un cuarto el foco vuelve a la parada (a su encabezado, como cuando entró), no al botón que lo abrió:
+  // así Espacio no reabre el cuarto. `false` si no hay una parada a la vista.
+  function enfocar() {
+    if (!PIEZAS_DE_PARADA.includes(pieza())) {
+      return false;
+    }
+    const encabezado = encabezadoActivo();
+    if (!encabezado) {
+      return false;
+    }
+    encabezado.focus({ preventScroll: true });
+    return true;
+  }
+
+  return { revelar, pieza, enfocar };
 }
 
 // Las dos marcas del contrato, para que las familias no las escriban cada una a su manera.
