@@ -818,7 +818,11 @@ const FORMAS_CONOCIDAS = {
   // K6d (integración de K6d-N, K6d-B y K6d-P): K6d-B (D77) suma `flags.mentalAvisadaPro` (la lista de cierres que un aviso cubrió,
   // [{ split, mentalidad, probabilidad }]) y `flags.ofertaGuardada` (la oferta que el club te guarda un split); K6d-N (tier 3 y P3)
   // y K6d-P no agregan campos, pero mueven las carreras de muestra. Un guardado de la 13 carga con `migrarDe13`.
-  14: '1ef92b3fd9be'
+  14: '1ef92b3fd9be',
+  // FASE V (GR-m, el Golden Road): `registro.porSplit`, una fila por split jugado en una tabla (`anio`, `split`, `org`, `liga`, `tier`,
+  // `posicion`, `equipos`, `nivel`; la escribe `systems/rendimiento.js`). Nada más cambia la forma ni mueve las carreras de muestra
+  // (la huella del juego es la de la 14). Un guardado de la 14 carga con `migrarDe14`, que lo arranca vacío.
+  15: 'ee5493864fb3'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -21719,7 +21723,7 @@ function guardadoDeLaVersion13K6D(state, rng) {
   return JSON.stringify(datos);
 }
 check('K6d guardado VERSION 14: la forma de la 13 (la de fase-9r) sigue registrada, y un guardado de la 13 carga completo (sin cierres avisados ni oferta guardada) y sigue igual que el de la 14', () => {
-  if (VERSION_GUARDADO !== 14 || FORMAS_CONOCIDAS[13] !== '995485d311c0' || FORMAS_CONOCIDAS[14] === undefined || FORMAS_CONOCIDAS[14] === FORMAS_CONOCIDAS[13]) {
+  if (VERSION_GUARDADO < 14 || FORMAS_CONOCIDAS[13] !== '995485d311c0' || FORMAS_CONOCIDAS[14] === undefined || FORMAS_CONOCIDAS[14] === FORMAS_CONOCIDAS[13]) {
     throw new Error(`VERSION ${VERSION_GUARDADO}, forma de la 13 ${FORMAS_CONOCIDAS[13]}, forma de la 14 ${FORMAS_CONOCIDAS[14]}`);
   }
   let comparados = 0;
@@ -21761,6 +21765,316 @@ check('K6d guardado VERSION 14: la forma de la 13 (la de fase-9r) sigue registra
     throw new Error(`migrarDe13 no arranca o no respeta los campos: ${JSON.stringify({ sinFlags, conAlgo })}`);
   }
   console.log(`      ${comparados} guardados de la 13 cargados y seguidos; sin migrarDe13 fallan ${mutanteMuerde}`);
+});
+
+// FASE V (GR-m): VERSION 15. `career.registro.porSplit` (una fila por split jugado en una tabla) no existía en la 14; `migrarDe14` lo
+// arranca vacío (`[]`, el valor de `createInitialState`): lo ya jugado no trae sus filas, así que esos años no pueden dar Golden Road
+// (aceptado, PLAN.md §V.6). Los guardados de la 14 se hacen desde carreras reales quitándoles lo que la 14 no escribía, como en el
+// check de la 13.
+const { migrarDe14: migrarDe14GRM } = await import('../core/guardado.js');
+const SEEDS_GUARDADO_14_GRM = [1, 2, 3, 4];
+const SPLITS_GUARDADO_14_GRM = 60;
+function guardadoDeLaVersion14GRM(state, rng) {
+  const datos = JSON.parse(serializarGuardado(state, rng));
+  datos.version = 14;
+  delete datos.state.career.registro.porSplit;
+  return JSON.stringify(datos);
+}
+const sinFilasGRM = (state) => ({ ...state, career: { ...state.career, registro: { ...state.career.registro, porSplit: [] } } });
+check('GR-m guardado VERSION 15: la forma de la 14 (la de v-integracion) sigue registrada, y un guardado de la 14 carga completo (sin las filas de los splits ya jugados) y sigue igual que el de la 15', () => {
+  if (VERSION_GUARDADO < 15 || FORMAS_CONOCIDAS[14] !== '1ef92b3fd9be' || FORMAS_CONOCIDAS[15] === undefined || FORMAS_CONOCIDAS[15] === FORMAS_CONOCIDAS[14]) {
+    throw new Error(`VERSION ${VERSION_GUARDADO}, forma de la 14 ${FORMAS_CONOCIDAS[14]}, forma de la 15 ${FORMAS_CONOCIDAS[15]}`);
+  }
+  let comparados = 0;
+  let mutanteMuerde = 0;
+  for (const seed of SEEDS_GUARDADO_14_GRM) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < SPLITS_GUARDADO_14_GRM && !state.terminado; i += 1) {
+      const json = guardadoDeLaVersion14GRM(state, rng);
+      const datos = deserializarGuardado(json);
+      if (datos === null) {
+        throw new Error(`seed ${seed}, split ${i}: el guardado de VERSION 14 no cargó`);
+      }
+      const realSinLoNuevo = sinFilasGRM(state);
+      if (!sonIgualesK4cG(datos.state, JSON.parse(JSON.stringify(realSinLoNuevo)))) {
+        throw new Error(`seed ${seed}, split ${i}: el estado migrado no es el de la 15 con porSplit vacío`);
+      }
+      // Mutante (regla 7): el mismo guardado sin `migrarDe14` no tiene la forma de la 15.
+      mutanteMuerde += sonIgualesK4cG(JSON.parse(json).state, JSON.parse(JSON.stringify(realSinLoNuevo))) ? 0 : 1;
+      const seguido = avanzarSplitAuto(realSinLoNuevo, conElRngDeK4cG(seed, rng.estado()));
+      const recargado = avanzarSplitAuto(datos.state, conElRngDeK4cG(datos.seed, datos.rngEstado));
+      if (!sonIgualesK4cG(comoJsonK4cG(seguido), comoJsonK4cG(recargado))) {
+        throw new Error(`seed ${seed}, split ${i}: el guardado migrado no juega el mismo split`);
+      }
+      comparados += 1;
+      state = avanzarSplitAuto(state, rng).state;
+    }
+  }
+  if (comparados < 40) throw new Error(`check vacío: ${comparados} guardados de la 14 comparados (hacen falta 40)`);
+  if (mutanteMuerde !== comparados) {
+    throw new Error(`el mutante (sin migrarDe14) pasa en ${comparados - mutanteMuerde} de ${comparados} guardados: el check no muerde`);
+  }
+  // Lo que ya está se respeta, y un estado sin carrera o sin registro se deja como está en vez de tirar.
+  const fila = { anio: 2027, split: 0, org: 'x', liga: null, tier: 3, posicion: 1, equipos: 6, nivel: 40 };
+  const conFilas = migrarDe14GRM({ career: { registro: { porSplit: [fila] } } }).career.registro.porSplit;
+  const sinFilas = migrarDe14GRM({ career: { registro: {} } }).career.registro.porSplit;
+  if (conFilas.length !== 1 || conFilas[0] !== fila || !Array.isArray(sinFilas) || sinFilas.length !== 0 || migrarDe14GRM({}).career !== undefined) {
+    throw new Error(`migrarDe14 no arranca o no respeta las filas: ${JSON.stringify({ conFilas, sinFilas })}`);
+  }
+  console.log(`      ${comparados} guardados de la 14 cargados y seguidos; sin migrarDe14 fallan ${mutanteMuerde}`);
+});
+
+// FASE V (GR-m, PLAN.md §V.6): EL check del Golden Road. Regla 15: lo que la medalla promete, el motor lo cumple. Protege (desde GR-m):
+// el Golden Road —1.º en la tabla de los tres splits del año, campeón de la liga de primera y campeón del Mundial, en el mismo año
+// calendario— lo cuenta UNA regla (`esGoldenRoad`, `core/registro.js`), y lo que el jugador ve mientras el año corre
+// (`seguimientoGoldenRoad`, `core/vistaDeCarrera.js`) da lo mismo en cuanto el año cierra; y `registro.porSplit` (de donde sale)
+// tiene una fila por split jugado en una tabla, en orden. Si el logro cambia a propósito (otro requisito, otra definición del año), este
+// es el check que hay que tocar. Además cruza el escalón en vivo (`escalonDeCarrera`) contra el de la tarjeta final.
+const {
+  esGoldenRoad: esGoldenRoadGRM, goldenRoads: goldenRoadsGRM, registrarSplitEnTabla: registrarSplitEnTablaGRM,
+  conSplitPendienteAsentado: conSplitPendienteAsentadoGRM
+} = await import('../core/registro.js');
+const { seguimientoGoldenRoad: seguimientoGoldenRoadGRM } = await import('../core/vistaDeCarrera.js');
+const { escalonDeCarrera: escalonDeCarreraGRM } = await import('../core/puntaje.js');
+const SEEDS_GOLDEN_ROAD_GRM = Array.from({ length: 40 }, (_, i) => i + 1);
+const SPLITS_GOLDEN_ROAD_GRM = 60;
+
+// Un año con los tres hechos, armado a mano; `cambios` le saca o le cambia de a uno (ver `variantesSinUnHechoGRM`).
+function registroDelGoldenRoadGRM(anio, cambios = {}) {
+  const porAnio = BALANCE.edad.splitsPorEdad;
+  const fila = (split) => ({ anio, split, org: 'Org', liga: 'LEC', tier: 1, posicion: 1, equipos: 10, nivel: 70, ...cambios.fila?.[split] });
+  return {
+    porSplit: Array.from({ length: porAnio }, (_, split) => fila(split)).filter((f) => !cambios.sin?.includes(f.split)),
+    titulos: cambios.titulos ?? [{ nombre: 'LEC', anio, org: 'Org', liga: 'LEC', tier: 1 }],
+    internacionales: cambios.internacionales ?? [{ torneo: `Mundial ${anio}`, anio, org: 'Org', liga: 'LEC', resultado: 'campeon' }]
+  };
+}
+
+// Lo que falta, de a un hecho: cada variante tiene que dejar de ser Golden Road. (`etiqueta` es para el mensaje.)
+function variantesSinUnHechoGRM(anio) {
+  const porAnio = BALANCE.edad.splitsPorEdad;
+  const titulo = (extra = {}) => ({ nombre: 'LEC', anio, org: 'Org', liga: 'LEC', tier: 1, ...extra });
+  const mundial = (extra = {}) => ({ torneo: `Mundial ${anio}`, anio, org: 'Org', liga: 'LEC', resultado: 'campeon', ...extra });
+  const variantes = [];
+  for (let split = 0; split < porAnio; split += 1) {
+    variantes.push({ etiqueta: `sin la fila del split ${split}`, cambios: { sin: [split] } });
+    variantes.push({ etiqueta: `el split ${split} en la 2.ª posición`, cambios: { fila: { [split]: { posicion: 2 } } } });
+    variantes.push({ etiqueta: `el split ${split} en una liga de tier 2`, cambios: { fila: { [split]: { tier: 2, liga: 'LRS' } } } });
+    variantes.push({ etiqueta: `el split ${split} en tier 3`, cambios: { fila: { [split]: { tier: 3, liga: null } } } });
+  }
+  variantes.push({ etiqueta: 'sin título', cambios: { titulos: [] } });
+  variantes.push({ etiqueta: 'título de una liga de tier 2', cambios: { titulos: [titulo({ liga: 'LRS', tier: 2 })] } });
+  variantes.push({ etiqueta: 'título de tier 3', cambios: { titulos: [titulo({ liga: null, tier: 3 })] } });
+  variantes.push({ etiqueta: 'título de otro año', cambios: { titulos: [titulo({ anio: anio - 1 })] } });
+  variantes.push({ etiqueta: 'sin Mundial', cambios: { internacionales: [] } });
+  variantes.push({ etiqueta: 'Mundial perdido en la final', cambios: { internacionales: [mundial({ resultado: 'final' })] } });
+  variantes.push({ etiqueta: 'Mundial de otro año', cambios: { internacionales: [mundial({ anio: anio - 1 })] } });
+  return variantes;
+}
+
+// El mismo split que `avanzarSplitAuto` (el `resolverAuto` de cada sistema, el mismo stream), mirando cada pausa del motor.
+function jugarSplitObservandoGRM(state, rng, alPausar) {
+  let resultado = avanzarSplit(state, rng);
+  while (resultado.state.pendiente) {
+    alPausar(resultado.state);
+    const { sistemaId, decision } = resultado.state.pendiente;
+    resultado = resolverDecision(resultado.state, sistemaPorId(sistemaId).resolverAuto(resultado.state, decision, rng), rng);
+  }
+  return resultado.state;
+}
+
+check('GR-m Golden Road: la medalla es lo que cuenta el motor (esGoldenRoad armado a mano, el seguimiento del año contra goldenRoads en 40 carreras reales, y una fila de porSplit por split jugado en una tabla, en orden)', () => {
+  const porAnio = BALANCE.edad.splitsPorEdad;
+  const anioBase = BALANCE.calendario.anioBase;
+
+  // (a) Registros armados: el positivo, y quitando de a un hecho.
+  const ANIO = 2031;
+  const positivo = registroDelGoldenRoadGRM(ANIO);
+  if (!esGoldenRoadGRM(positivo, ANIO) || goldenRoadsGRM(positivo).join() !== String(ANIO)) {
+    throw new Error(`el registro armado con los tres hechos no es Golden Road (${esGoldenRoadGRM(positivo, ANIO)}; años ${goldenRoadsGRM(positivo)})`);
+  }
+  if (esGoldenRoadGRM(positivo, ANIO + 1) || esGoldenRoadGRM(positivo, ANIO - 1)) {
+    throw new Error('un año sin nada es Golden Road porque lo es el de al lado');
+  }
+  const variantes = variantesSinUnHechoGRM(ANIO);
+  for (const { etiqueta, cambios } of variantes) {
+    const registro = registroDelGoldenRoadGRM(ANIO, cambios);
+    if (esGoldenRoadGRM(registro, ANIO) || goldenRoadsGRM(registro).length !== 0) {
+      throw new Error(`${etiqueta}: sigue siendo Golden Road`);
+    }
+  }
+  // Una fila de más (son exactamente `splitsPorEdad`), filas de otro año que no cuentan para éste, y dos años: salen los dos, en orden.
+  const repetido = { ...positivo, porSplit: [...positivo.porSplit, positivo.porSplit[0]] };
+  const mezclado = registroDelGoldenRoadGRM(ANIO, { sin: [0] });
+  mezclado.porSplit.push(...registroDelGoldenRoadGRM(ANIO - 1).porSplit);
+  const otroAnio = registroDelGoldenRoadGRM(ANIO + 3);
+  const dosAnios = {
+    porSplit: [...otroAnio.porSplit, ...positivo.porSplit],
+    titulos: [...positivo.titulos, ...otroAnio.titulos],
+    internacionales: [...positivo.internacionales, ...otroAnio.internacionales]
+  };
+  if (esGoldenRoadGRM(repetido, ANIO) || esGoldenRoadGRM(mezclado, ANIO) || goldenRoadsGRM(dosAnios).join() !== `${ANIO},${ANIO + 3}`) {
+    throw new Error(`filas repetidas, de otro año o dos años: ${esGoldenRoadGRM(repetido, ANIO)}, ${esGoldenRoadGRM(mezclado, ANIO)}, ${goldenRoadsGRM(dosAnios)}`);
+  }
+  // Un caso raro no fabrica un 1.º: sin posición no se escribe la fila (y solo agrega, regla 14).
+  const vacio = { porSplit: [] };
+  const filaDeLaTabla = { anio: ANIO, split: 0, org: 'Org', liga: 'LEC', tier: 1, posicion: 1, equipos: 10, nivel: 70 };
+  if (registrarSplitEnTablaGRM(vacio, { ...filaDeLaTabla, posicion: null }).porSplit.length !== 0
+    || registrarSplitEnTablaGRM(vacio, { ...filaDeLaTabla, posicion: undefined }).porSplit.length !== 0
+    || registrarSplitEnTablaGRM(vacio, filaDeLaTabla).porSplit.length !== 1 || vacio.porSplit.length !== 0) {
+    throw new Error('registrarSplitEnTabla escribe una fila sin posición, no escribe la que sí la tiene o muta el registro');
+  }
+
+  // (b) Carreras reales.
+  let cierres = 0;
+  let armados = 0;
+  let intermedios = 0;
+  let filasVistas = 0;
+  let finales = 0;
+  let pausas = 0;
+  const etapaDe = (sistemaId) => ETAPAS_SPLIT.findIndex((etapa) => etapa.id === sistemaId);
+  // En una pausa del motor la liga y el Mundial están donde el orden del split los deja: la final doméstica se juega antes de
+  // `internacional` (con el Mundial por arrancar, nada decidido), con el Mundial en curso la liga ya está decidida y el Mundial no, y
+  // después de `internacional` los dos. Solo el último split del año tiene final doméstica y Mundial.
+  const alPausar = (pausado) => {
+    const seguimiento = seguimientoGoldenRoadGRM(pausado);
+    if (seguimiento === null) {
+      return;
+    }
+    pausas += 1;
+    const etapa = etapaDe(pausado.pendiente.sistemaId);
+    // `atributos` sube el reloj: una pausa de ahí en adelante (`edadCierre`) es del split que ya cerró, con `splitCount` un paso adelante.
+    const cierra = esCierreK6aM(pausado.player.splitCount - (etapa >= etapaDe('atributos') ? 1 : 0));
+    const ligaDecidida = cierra && etapa >= etapaDe('internacional');
+    const mundialDecidido = cierra && etapa > etapaDe('internacional');
+    if ((seguimiento.liga !== 'pendiente') !== ligaDecidida || (seguimiento.mundial !== 'pendiente') !== mundialDecidido) {
+      throw new Error(`seed ${pausado.seed}, split ${pausado.player.splitCount}, pausa en ${pausado.pendiente.sistemaId}: liga '${seguimiento.liga}' y Mundial '${seguimiento.mundial}' (liga decidida: ${ligaDecidida}, Mundial decidido: ${mundialDecidido})`);
+    }
+  };
+  for (const seed of SEEDS_GOLDEN_ROAD_GRM) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    const vistos = new Map(); // año -> los ítems del seguimiento la última vez que se lo vio
+    for (let i = 0; i < SPLITS_GOLDEN_ROAD_GRM; i += 1) {
+      state = jugarSplitObservandoGRM(state, rng, alPausar);
+      const cuando = `seed ${seed}, split ${state.player.splitCount}`;
+      const { registro } = conSplitPendienteAsentadoGRM(state).career;
+
+      // Una fila por split jugado en una tabla, en orden y bien formada.
+      let anterior = -1;
+      for (const fila of registro.porSplit) {
+        const lugar = (fila.anio - anioBase) * porAnio + fila.split;
+        if (!(lugar > anterior) || fila.split < 0 || fila.split >= porAnio) {
+          throw new Error(`${cuando}: las filas de porSplit no están en orden (${fila.anio} split ${fila.split} después del lugar ${anterior})`);
+        }
+        anterior = lugar;
+        if (!TIERS_DE_SPLIT.includes(fila.tier) || (fila.tier === 3) !== (fila.liga === null) || !fila.org
+          || !Number.isInteger(fila.posicion) || fila.posicion < 1 || fila.posicion > fila.equipos || !Number.isInteger(fila.nivel)) {
+          throw new Error(`${cuando}: fila mal formada ${JSON.stringify(fila)}`);
+        }
+      }
+      // (El split en que te retirás se jugó y el reloj no lo contó: `atributos` no corre, ver `core/puntaje.js:aniosProDe`.)
+      if (anterior > state.player.splitCount - (state.phase === 'profesional' ? 1 : 0)) {
+        throw new Error(`${cuando}: hay una fila de un split que todavía no se jugó (lugar ${anterior})`);
+      }
+      for (const tier of TIERS_DE_SPLIT) {
+        const enLaTabla = registro.porSplit.filter((fila) => fila.tier === tier).length;
+        if (enLaTabla !== splitsJugadosEnTier(registro, tier)) {
+          throw new Error(`${cuando}: tier ${tier}: ${enLaTabla} filas en porSplit y ${splitsJugadosEnTier(registro, tier)} splits jugados en el registro`);
+        }
+      }
+      filasVistas += registro.porSplit.length;
+
+      // El seguimiento del año, contra el veredicto.
+      const seguimiento = seguimientoGoldenRoadGRM(state);
+      if (seguimiento !== null) {
+        const items = [...seguimiento.splits, seguimiento.liga, seguimiento.mundial];
+        const antes = vistos.get(seguimiento.anio);
+        if (antes) {
+          items.forEach((item, j) => {
+            if (antes[j] !== 'pendiente' && antes[j] !== item) {
+              throw new Error(`${cuando}: el ítem ${j} del año ${seguimiento.anio} pasó de '${antes[j]}' a '${item}'`);
+            }
+          });
+        }
+        vistos.set(seguimiento.anio, items);
+        if (seguimiento.vivo !== !items.includes('no') || seguimiento.completo !== items.every((item) => item === 'si')) {
+          throw new Error(`${cuando}: vivo/completo no son lo que dicen los ítems ${items}`);
+        }
+        const dentroDelAnio = state.player.splitCount % porAnio;
+        if (dentroDelAnio === 0) {
+          // El cierre de año: `atributos` ya subió el reloj pero `calendario.anio` es el año que cierra. Ya no hay nada pendiente.
+          cierres += 1;
+          if (items.includes('pendiente')) {
+            throw new Error(`${cuando}: el año ${seguimiento.anio} cerró y quedan ítems pendientes: ${items}`);
+          }
+          if (seguimiento.completo !== goldenRoadsGRM(registro).includes(seguimiento.anio)) {
+            throw new Error(`${cuando}: el seguimiento dice completo=${seguimiento.completo} y goldenRoads(registro) ${goldenRoadsGRM(registro)}`);
+          }
+          // El mismo cierre con los tres hechos puestos a mano, y quitándole de a uno: el seguimiento y el veredicto van juntos.
+          const armar = (cambios) => {
+            const armado = registroDelGoldenRoadGRM(seguimiento.anio, cambios);
+            const ajeno = (x) => x.anio !== seguimiento.anio;
+            return {
+              ...state,
+              career: {
+                ...state.career,
+                registro: {
+                  ...registro,
+                  porSplit: [...registro.porSplit.filter(ajeno), ...armado.porSplit],
+                  titulos: [...registro.titulos.filter(ajeno), ...armado.titulos],
+                  internacionales: [...registro.internacionales.filter(ajeno), ...armado.internacionales]
+                }
+              }
+            };
+          };
+          const completo = armar({});
+          const vistoCompleto = seguimientoGoldenRoadGRM(completo);
+          if (!vistoCompleto?.completo || !vistoCompleto.vivo || !esGoldenRoadGRM(completo.career.registro, seguimiento.anio)) {
+            throw new Error(`${cuando}: con los tres hechos puestos a mano el seguimiento da ${JSON.stringify(vistoCompleto)}`);
+          }
+          for (const { etiqueta, cambios } of variantesSinUnHechoGRM(seguimiento.anio)) {
+            const roto = armar(cambios);
+            const visto = seguimientoGoldenRoadGRM(roto);
+            if (visto.completo || visto.vivo || esGoldenRoadGRM(roto.career.registro, seguimiento.anio)) {
+              throw new Error(`${cuando}: ${etiqueta}: seguimiento ${JSON.stringify(visto)} y esGoldenRoad ${esGoldenRoadGRM(roto.career.registro, seguimiento.anio)}`);
+            }
+          }
+          armados += 1;
+        } else {
+          // A mitad de año: lo que falta jugar está pendiente, y lo jugado ya se decidió.
+          intermedios += 1;
+          items.forEach((item, j) => {
+            const sinJugar = j >= dentroDelAnio;
+            if (sinJugar !== (item === 'pendiente')) {
+              throw new Error(`${cuando}: a mitad de año el ítem ${j} es '${item}' (items ${items})`);
+            }
+          });
+        }
+      }
+
+      if (state.terminado) {
+        break;
+      }
+    }
+
+    // El escalón en vivo es el de la tarjeta (la misma cuenta, dos voces): al cerrar la carrera dan lo mismo.
+    if (state.terminado) {
+      const escalon = escalonDeCarreraGRM(state);
+      const nivel = state.tarjeta.puntaje.nivel;
+      if (escalon.actual.id !== nivel.id || escalon.actual.nombre !== nivel.nombre
+        || (escalon.siguiente?.id ?? null) !== (nivel.siguiente?.id ?? null)
+        || (escalon.siguiente?.enPasado ?? null) !== (nivel.siguiente?.requisito ?? null)) {
+        throw new Error(`seed ${seed}: el escalón en vivo ${JSON.stringify(escalon)} no es el de la tarjeta ${JSON.stringify(nivel)}`);
+      }
+      finales += 1;
+    }
+  }
+  if (cierres < 20 || armados !== cierres || intermedios < 40 || pausas < 40 || filasVistas === 0 || finales < 10) {
+    throw new Error(`check vacío: ${cierres} cierres de año en primera (hacen falta 20), ${armados} armados, ${intermedios} estados a mitad de año (40), ${pausas} pausas en primera (40), ${finales} carreras terminadas (10)`);
+  }
+  console.log(`      ${variantes.length} variantes sin un hecho; ${SEEDS_GOLDEN_ROAD_GRM.length} carreras: ${cierres} cierres de año en primera contra goldenRoads, ${intermedios} estados a mitad de año, ${pausas} pausas del motor en primera, ${finales} escalones contra la tarjeta`);
 });
 
 // K6d (integración; el FAIL de K5c-R en la seed 9 con P7a prendida): volver del retiro corta la racha en rojo (`flags.splitsMentalBajo`,

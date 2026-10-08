@@ -302,7 +302,13 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
         // siguiente para comparar ("otra vez") y `validate.js` para medir la
         // correlación nota/posición y la repetición de titulares. Array vacío
         // al arrancar, nunca null (trampa T4).
-        temporadas: []
+        temporadas: [],
+        // FASE V (GR-m, PLAN.md §V.6): una fila por split jugado en una tabla,
+        // `{ anio, split, org, liga, tier, posicion, equipos, nivel }`
+        // (`registrarSplitEnTabla`, escrita por `systems/rendimiento.js`). De acá
+        // sale el Golden Road (`esGoldenRoad`) y la curva fina de nivel. Solo crece
+        // (regla 14); `[]` al arrancar, nunca null (trampa T4).
+        porSplit: []
       }
     },
     // La serie de playoffs en curso (fase 4). Objeto completo de ceros, nunca
