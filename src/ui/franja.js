@@ -7,21 +7,22 @@
 // mientras el relato cuenta un split la franja no cambia (regla 4 de §V.3: nada adelanta el resultado). Los botones de
 // velocidad, sonido y cuartos están declarados en `index.html` (el shell no se monta desde JS); acá solo se llena
 // `#franjaEstado`. Primera versión: el pulido es de V3e.
-import { cierreDeSplit, deltaDeCierre, textoDeNumero } from './core/escena.js';
+//
+// FASE V (V4): cuando la `vista` cambia, el número (el nivel, o el rango y los LP en el amateur) se mueve desde el valor que la
+// franja mostraba hasta el nuevo (`crearDelta` + `moverNumero`, ui/core/delta.js): el `vista` solo cambia cuando el relato ya
+// contó lo que lo movió (regla 4), así que el movimiento llega al final de los beats y nunca antes. Con movimiento reducido, en
+// INST o en una carrera nueva el número aparece ya en su valor final.
+import { cierreDeSplit, deltaDeCierre, numeroDe, textoDeNumeroEn, LABEL_DE_VENTANA } from './core/escena.js';
+import { crearDelta, moverNumero } from './core/delta.js';
 import { ventanaVisibleDe } from '../core/vistaDeCarrera.js';
 import { bandaDeNivel } from '../core/ficha.js';
 import { BALANCE } from '../data/balance.js';
 import { crearOrgChip } from './components/orgChip.js';
 import { marcaRol } from './components/iconos.js';
 
-// Lo que antes decía la topbar (`shell.js`, T2): la ventana REAL de la pausa (`ventanaVisibleDe`, K6a-U).
-const LABEL_VENTANA = {
-  pretemporada: 'Pretemporada',
-  regular: 'Temporada regular',
-  playoffs: 'Playoffs',
-  internacional: 'Internacional',
-  offseason: 'Offseason'
-};
+// Lo que antes decía la topbar (`shell.js`, T2): la ventana REAL de la pausa (`ventanaVisibleDe`, K6a-U). Los nombres son los de
+// los carteles de las páginas (`LABEL_DE_VENTANA`, ui/core/escena.js).
+const LABEL_VENTANA = LABEL_DE_VENTANA;
 // Los nombres de las bandas de nivel, los mismos que la ficha (`components/ficha.js`).
 // En el celular, "Temporada regular" es lo que más ancho come del renglón de abajo y es lo primero que se cortaba con "…" (un handle
 // de 16 caracteres, un club largo y el ▲ del número lo dejaban en "TEMPORADA REG…"): ahí se dice "Regular", que con
@@ -55,7 +56,7 @@ function crearPips(estado) {
 
 // El número del jugador con su delta: el mismo `cierreDeSplit` que la tarjeta de cierre, contra la foto de la página
 // (el split en curso). Sin foto (o con una foto `parcial`, al retomar sin marcador) sale sin delta.
-function crearNumero(estado, foto) {
+function crearNumero(estado, foto, movimiento) {
   let numero = null;
   try {
     numero = cierreDeSplit(foto, estado).numero;
@@ -65,10 +66,17 @@ function crearNumero(estado, foto) {
   }
   const caja = span('franja-nivel');
   caja.dataset.banda = numero.banda ?? '';
+  // `movimiento`: de dónde viene el número que la franja mostraba (`antes`) y si se mueve; `null` = aparece ya en su valor final.
+  const antes = movimiento?.antes ?? null;
+  const animar = movimiento?.animar ?? false;
   if (numero.etiqueta === 'rango') {
-    caja.append(span('franja-nivel-rango', textoDeNumero(numero)));
+    const rango = span('franja-nivel-rango');
+    moverNumero(rango, antes, numero.despues, { formato: (n) => textoDeNumeroEn(numero, n), animar });
+    caja.append(rango);
   } else {
-    caja.append(span('franja-nivel-numero', String(numero.despues)), span('franja-nivel-banda', LABEL_BANDA[numero.banda] ?? ''));
+    const nivel = span('franja-nivel-numero');
+    moverNumero(nivel, antes, numero.despues, { animar });
+    caja.append(nivel, span('franja-nivel-banda', LABEL_BANDA[numero.banda] ?? ''));
     caja.title = `Nivel ${numero.despues}: ${LABEL_BANDA[numero.banda] ?? ''}`;
   }
   const delta = deltaDeCierre(numero);
@@ -93,8 +101,9 @@ function crearPico(estado) {
 }
 
 // `franja`: el `<header class="franja">`. `estadoEl`: `#franjaEstado`. `etiquetaRol`: la de `data/roles.js` (llega con
-// los módulos). `fotoDeLaPagina()`: la foto del split en curso (`app.js`, `pagina.fotoInicio`).
-export function crearFranja({ franja, estadoEl, etiquetaRol, fotoDeLaPagina }) {
+// los módulos). `fotoDeLaPagina()`: la foto del split en curso (`app.js`, `pagina.fotoInicio`). `animar()`: si el número se mueve
+// ahora (`app.js`: no en INST ni con movimiento reducido); por defecto sí.
+export function crearFranja({ franja, estadoEl, etiquetaRol, fotoDeLaPagina, animar = () => true }) {
   // El alto real de la franja (en el celular son dos líneas, o tres a 320 px): lo usan el cuarto y el acompañante
   // pegajoso para no quedar debajo. Con el token fijo de respaldo si esto no corre.
   if (franja && typeof ResizeObserver !== 'undefined') {
@@ -105,8 +114,32 @@ export function crearFranja({ franja, estadoEl, etiquetaRol, fotoDeLaPagina }) {
     publicarAlto();
   }
 
+  // De dónde viene el número: la lectura de la `vista` anterior (`crearDelta`). Una carrera nueva, la final o el inicio vuelven a
+  // empezar sin "antes". Si el número cambió de naturaleza (rango del amateur → nivel del profesional) tampoco hay desde dónde.
+  let delta = null;
+  let semilla = null;
+  function movimientoDe(estado) {
+    if (!estado?.player || estado.terminado) {
+      delta = null;
+      return null;
+    }
+    if (!delta || semilla !== estado.seed) {
+      delta = crearDelta({ etiqueta: (s) => numeroDe(s).etiqueta, valor: (s) => numeroDe(s).valor });
+      semilla = estado.seed;
+    }
+    try {
+      const medida = delta.medir(estado);
+      return medida.etiqueta[0] === medida.etiqueta[1] ? { antes: medida.valor[0], animar: animar() } : null;
+    } catch (error) {
+      console.error('No se pudo medir el número de la franja:', error);
+      delta = null;
+      return null;
+    }
+  }
+
   function pintar(estado) {
     if (!estadoEl) return;
+    const movimiento = movimientoDe(estado);
     if (!estado?.player) {
       estadoEl.replaceChildren();
       return;
@@ -145,7 +178,7 @@ export function crearFranja({ franja, estadoEl, etiquetaRol, fotoDeLaPagina }) {
     const primera = span('franja-linea franja-linea--1');
     primera.append(quien);
     const segunda = span('franja-linea franja-linea--2');
-    segunda.append(...[club, cuando, (estado.terminado ? crearPico(estado) : crearNumero(estado, fotoDeLaPagina?.() ?? null))].filter(Boolean));
+    segunda.append(...[club, cuando, (estado.terminado ? crearPico(estado) : crearNumero(estado, fotoDeLaPagina?.() ?? null, movimiento))].filter(Boolean));
     estadoEl.replaceChildren(primera, segunda);
   }
 

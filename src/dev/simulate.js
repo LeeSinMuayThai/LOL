@@ -32,6 +32,11 @@ export const DURACION_BEAT_MS = 700;
 // src/ui/app.js (línea 174, `setTimeout(() => responder({ resultado }), 1600)`). Mismo aviso de espejo.
 export const ESPERA_MINIJUEGO_MS = 1600;
 
+// FASE V (V4): cuánto sostiene la UI la tarjeta "Cierre de 2031" de un año que cerró SIN parada del motor, además de la espera
+// de su beat: `ESPERA_CIERRE_ANIO_MS.x1` en src/ui/reproductor.js. Una por año como máximo y nunca en un año en que `edadCierre`
+// frenó (la parada ES ese momento, T9). Mismo aviso de espejo; `validate.js` ("K0 espejos de la UI") lo compara con el literal.
+export const ESPERA_CIERRE_ANIO_MS = 2400;
+
 const MS_POR_MINUTO = 1000 * 60;
 
 // Máximo de carreras para el cálculo de varianza explicada por ablación.
@@ -272,6 +277,10 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
     // Lectura pura (`mundialSinJugador` es por hash, cero `rng`). Ver `filaDeMundialDelMundo`.
     mundialesDelMundo: [],
     beatsReproductor: 0,
+    // V4: los años que cerraron sin parada de `edadCierre` (cada uno suma `ESPERA_CIERRE_ANIO_MS` al reproductor) y los que sí
+    // frenaron; el cociente es lo que se midió para decidir si el cierre de año necesitaba una pausa propia.
+    cierresSinParada: 0,
+    cierresConParada: 0,
     // K4c (paso 1), solo lectura pura del state: los minijuegos por mecánica (`datos.minijuego`), las bifurcaciones
     // (eventos con `bifurcacion: true` que frenaron, en total y por evento), las que ELIGIÓ con un efecto de carrera
     // (por tipo), y lo que de verdad cambió en la carrera: las veces que cambió de línea (`player.role`), de región (la de
@@ -305,6 +314,8 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
   let vueltasAlArrancar = state.flags.vueltasUsadas;
 
   let decisionesEnSplitActual = 0;
+  // V4: si en el split en curso frenó la parada de `edadCierre`.
+  let frenoElCierre = false;
 
   // Los logs que el reproductor muestra en una tanda: lo que el motor emite entre dos pausas (la que
   // abre `avanzarSplit` hasta la primera decisión, y cada `resolverDecision` hasta la próxima decisión o
@@ -336,6 +347,9 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
     contarTanda(st);
     jugabilidad.decisiones += 1;
     decisionesEnSplitActual += 1;
+    if (sistema.id === 'edadCierre') {
+      frenoElCierre = true;
+    }
 
     const tipo = `${sistema.id}:${decision.datos?.motivo ?? decision.presentacion ?? 'x'}`;
     observacion.decisionesPorTipo[tipo] = (observacion.decisionesPorTipo[tipo] ?? 0) + 1;
@@ -379,6 +393,8 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
 
   for (let i = 0; i < splits && !state.terminado; i += 1) {
     decisionesEnSplitActual = 0;
+    frenoElCierre = false;
+    const edadAntes = state.age;
     splitEnCurso = state.player.splitCount;
     // K2a: `systems/temporada.js` es el único que escribe `career.temporada` y la arma ENTERA de nuevo cada vez que
     // corre (`iniciarTemporada`); los demás sistemas la copian por referencia. Si al cerrar el split el objeto es
@@ -413,6 +429,15 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
     const vueltasAntes = state.flags.vueltasUsadas;
     vueltasAlArrancar = vueltasAntes;
     state = avanzarSplitAuto(state, rng, responderInstrumentado).state;
+    // V4: el split cerró un año (la edad subió una en un cierre de edad y la carrera sigue): es la misma cuenta que hace la UI
+    // (`cierreDeSplit`, ui/core/escena.js) para decidir si la tarjeta es "Cierre de …".
+    if (!state.terminado && state.age === edadAntes + 1 && esCierreDeEdad(state)) {
+      if (frenoElCierre) {
+        observacion.cierresConParada += 1;
+      } else {
+        observacion.cierresSinParada += 1;
+      }
+    }
     // K5c (validación): en el split de una vuelta del retiro, `retiro` adelanta el reloj lo que pasó afuera
     // (`relojAlVolver`, `flags.splitVuelta`) antes de que corran `temporada` y `serie`: sus filas llevan ese reloj, no el
     // congelado con el que arrancó el split (criterio seed 6: la temporada que corrió en el split 39 quedaba como la 36).
@@ -558,12 +583,13 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
   observacion.tiempoMaquinaMin = (logsConBeat * DURACION_BEAT_MS) / MS_POR_MINUTO;
 
   // `tiempoReproductorMin`: lo que mide el reproductor — los beats reales de cada tanda (`contarBeats`) ×
-  // 700 ms, más 1.600 ms por cada minijuego jugado. Tampoco es lo que tarda una persona: no incluye leer
+  // 700 ms, más 1.600 ms por cada minijuego jugado, más 2.400 ms por cada año que cerró sin parada del motor (V4). Tampoco es lo que tarda una persona: no incluye leer
   // y decidir. NO es comparable con los 17,4 min de AUDITORIA.md, que salieron de un Chromium real
   // (`play.mjs`: esperas de 120 ms por decisión, 1.800 ms por minijuego, la interacción del bot adentro del
   // minijuego y la latencia de Playwright) — esos tiempos no están acá.
   observacion.tiempoReproductorMin = (
     observacion.beatsReproductor * DURACION_BEAT_MS + observacion.minijuegosCount * ESPERA_MINIJUEGO_MS
+    + observacion.cierresSinParada * ESPERA_CIERRE_ANIO_MS
   ) / MS_POR_MINUTO;
 
   observacion.nivelCarrera = puntajeDeCarrera(state).nivel.id;
@@ -1778,7 +1804,8 @@ export function bloqueRitmo(observaciones) {
     // `logsPorCarrera`, `minutosPorCarrera` y `pctDelTotal` de arriba son sobre el PROMEDIO de logs por carrera; la mediana
     // va aparte, en cada fila (`mediana`). Las columnas que suman al total son las del promedio, no esa.
     tiempoMaquinaPorFuenteSobre: 'promedio de logs por carrera (la mediana de cada fuente va aparte, en su fila)',
-    // Beats reales del reproductor × 700 ms + 1.600 ms por minijuego (`ESPERA_MINIJUEGO_MS`, src/ui/app.js).
+    // Beats reales del reproductor × 700 ms + 1.600 ms por minijuego (`ESPERA_MINIJUEGO_MS`, src/ui/app.js) + 2.400 ms por año
+    // que cerró sin parada del motor (`ESPERA_CIERRE_ANIO_MS`, src/ui/reproductor.js).
     // NO es comparable con los 17,4 min de AUDITORIA.md (salieron de un Chromium real): ver `correrCarrera`.
     tiempoReproductorMin: enMinutos(tiemposReproductorMin)
   };

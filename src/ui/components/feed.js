@@ -18,7 +18,8 @@ import { crearTarjetaMundial } from './mundial.js';
 import { textoDeProbabilidadJugada } from '../../core/previaDePartido.js';
 import { reconciliar, reemplazarEnElLugar, olvidarContenedor } from '../core/reconciliar.js';
 import { formaBeat } from '../../core/log.js';
-import { crearTarjetaCierre, crearLineaSplitAnterior } from './cierre.js';
+import { crearTarjetaCierre, crearLineaSplitAnterior, crearCartelDePagina } from './cierre.js';
+import { moverNumero } from '../core/delta.js';
 
 // El reveal del Top 20 al cierre de temporada (fase 9Wc). El log `top_mundial`
 // que trae la lista entera (`entry.top20`) deja de ser una línea: se abre en
@@ -338,31 +339,87 @@ export function renderFeed(logList, state, { limite = LIMITE_FEED, hasta = state
   );
 }
 
+// FASE V (V4; PLAN.md §V.3 regla 3): los números de los efectos de un beat ("estudios +7, sueño +1") se cuentan desde 0 cuando el
+// beat entra. Solo el nodo recién creado: la reconciliación de los pasos siguientes reconstruye los beats ya pintados sin
+// volver a contar. El texto final es el mismo (el conteo termina en el número) y con movimiento reducido o en INST
+// (`animar: false`) el número aparece ya en su valor final. Un número con decimales o con "%" no se mueve.
+const DURACION_DE_LOS_EFECTOS_MS = 320;
+const NUMERO_CON_SIGNO = /(?<![\w.,])([+\-−])(\d+)(?![\d%]|[.,]\d)/g;
+
+// Los números con signo de una línea de efectos, en orden: `[{ indice, texto, signo, valor }]` (`texto` es el número tal cual, "+7").
+// Pura: la usa `animarEfectos` y la prueba `validate.js`.
+export function numerosDeEfectos(texto) {
+  return [...texto.matchAll(NUMERO_CON_SIGNO)].map((c) => ({ indice: c.index, texto: c[0], signo: c[1], valor: Number(c[2]) }));
+}
+
+export function animarEfectos(nodo, { animar = true } = {}) {
+  if (!animar) return nodo;
+  for (const linea of nodo.querySelectorAll('.log-efectos')) {
+    const texto = linea.textContent;
+    const numeros = numerosDeEfectos(texto);
+    if (numeros.length === 0) continue;
+    const piezas = [];
+    let desde = 0;
+    for (const numero of numeros) {
+      piezas.push(document.createTextNode(texto.slice(desde, numero.indice)));
+      const el = document.createElement('span');
+      el.className = 'efecto-numero';
+      el.textContent = numero.texto;
+      piezas.push(el);
+      numero.el = el;
+      desde = numero.indice + numero.texto.length;
+    }
+    piezas.push(document.createTextNode(texto.slice(desde)));
+    linea.replaceChildren(...piezas);
+    for (const { el, signo, valor } of numeros) {
+      moverNumero(el, 0, valor, { formato: (n) => `${signo}${n}`, duracion: DURACION_DE_LOS_EFECTOS_MS, animar });
+    }
+  }
+  return nodo;
+}
+
 // La página del relato (FASE V, V2-B; PLAN.md §V.5 "Una página por split"): los beats del split en curso, en orden
 // cronológico (el más nuevo abajo) y sin el límite de `LIMITE_FEED`. `desde` es `inicioDePagina` (índice absoluto en
 // `state.logs`, el `logs.length` de cuando se llamó a `avanzarSplit`); `hasta`, el corte exclusive (el reproductor lo
-// hace crecer de a un beat). Dos renglones que no son del motor: `anterior` (el cierre del split anterior, en una línea,
-// cuando su tarjeta no llegó a verse) arriba, y `cierre` (la tarjeta de cierre del split) abajo de todo, como un beat más.
+// hace crecer de a un beat). Tres renglones que no son del motor: `cartel` (FASE V, V4: la ventana y el año, una línea) arriba
+// de todo, `anterior` (el cierre del split anterior, en una línea, cuando su tarjeta no llegó a verse) abajo del cartel, y
+// `cierre` (la tarjeta de cierre del split) abajo de todo, como un beat más.
 // Pasa por `reconciliar` con las mismas claves que `renderFeed` (índices absolutos): un beat ya pintado se actualiza en
 // su lugar, no se duplica. `renderFeed` y sus checks no cambian.
-export function renderPagina(contenedor, state, { desde = 0, hasta = state.logs.length, anterior = null, cierre = null } = {}) {
+//
+// `animar` (V4): lo que entra por primera vez se mueve (el número de la tarjeta de cierre, los efectos de un beat). El
+// reproductor lo apaga en INST; con movimiento reducido cada número aparece ya en su valor final. Lo que ya estaba pintado se
+// reconstruye quieto, y los renglones sintéticos (cartel, línea anterior, tarjeta) solo si cambió su contenido.
+export function renderPagina(contenedor, state, { desde = 0, hasta = state.logs.length, anterior = null, cierre = null, cartel = null, animar = false } = {}) {
   const inicio = Math.max(0, Math.min(desde, hasta));
   const items = [
+    ...(cartel ? [{ sintetico: 'cartel', cartel }] : []),
     ...(anterior ? [{ sintetico: 'anterior', cierre: anterior }] : []),
     ...agruparBeats(state.logs.slice(inicio, hasta), inicio),
     ...(cierre ? [{ sintetico: 'cierre', cierre }] : [])
   ];
-  const nodoDeItem = (item) => {
+  const firmaDe = (item) => (item.sintetico === 'cartel' ? JSON.stringify(item.cartel) : JSON.stringify(item.cierre));
+  const nodoDeItem = (item, nuevo) => {
+    if (item.sintetico === 'cartel') return crearCartelDePagina(item.cartel);
     if (item.sintetico === 'anterior') return crearLineaSplitAnterior(item.cierre);
-    if (item.sintetico === 'cierre') return crearTarjetaCierre(item.cierre);
-    return nodoDeBeat(item, state);
+    if (item.sintetico === 'cierre') return crearTarjetaCierre(item.cierre, { animar: nuevo && animar });
+    const nodo = nodoDeBeat(item, state);
+    return nuevo ? animarEfectos(nodo, { animar }) : nodo;
+  };
+  const nodoConFirma = (item, nuevo) => {
+    const nodo = nodoDeItem(item, nuevo);
+    if (item.sintetico) nodo.dataset.firma = firmaDe(item);
+    return nodo;
   };
   reconciliar(
     contenedor,
     items,
     (item) => item.sintetico ?? item.clave,
-    nodoDeItem,
-    (nodo, item) => reemplazarEnElLugar(nodo, nodoDeItem(item))
+    (item) => nodoConFirma(item, true),
+    (nodo, item) => {
+      if (item.sintetico && nodo.dataset.firma === firmaDe(item)) return;
+      reemplazarEnElLugar(nodo, nodoConFirma(item, false));
+    }
   );
 }
 

@@ -4,9 +4,14 @@
 // en Node y `validate.js` les pueda poner un mutante. La mitad del DOM es `src/ui/escena.js`: es la única que escribe
 // `.shell[data-pieza]`.
 import { tableroDeSerie, seguimientoGoldenRoad } from '../../core/vistaDeCarrera.js';
-import { seguimientoParaMostrar } from './trayectoria.js';
+import { seguimientoParaMostrar, textoDeEscalon } from './trayectoria.js';
 import { nivelDelJugador, bandaDeNivel } from '../../core/ficha.js';
-import { puntosAbsolutos, etiquetaDeRanked, servidorDeLaPartida } from '../../core/ranked.js';
+import { puntosAbsolutos, desdePuntos, etiquetaDeRanked, servidorDeLaPartida } from '../../core/ranked.js';
+import { tierPorId } from '../../data/ranked.js';
+import { escalonDeCarrera } from '../../core/puntaje.js';
+import { calcularContexto } from '../../core/contexto.js';
+import { esCierreDeEdad } from '../../systems/edadCierre.js';
+import { calcularCalendario } from '../../systems/edadInicio.js';
 
 // Las siete piezas del escenario (§V.4). La tarjeta de cierre de un split no es una pieza: es un beat del relato.
 export const PIEZAS = ['inicio', 'relato', 'decision', 'partido', 'mercado', 'minijuego', 'final'];
@@ -110,7 +115,7 @@ function splitsEnTabla(estado) {
 
 // El número del jugador: el nivel (con su banda) en pro y retirado; el rango en el amateur, en puntos de la escalera
 // (Hierro IV 0 LP = 0, cada división 100 LP: `core/ranked.js`), con su etiqueta legible.
-function numeroDe(estado) {
+export function numeroDe(estado) {
   if (estado.phase === 'amateur' && estado.player?.ranked) {
     const ranked = estado.player.ranked;
     return {
@@ -133,6 +138,8 @@ export function fotoDeSplit(estado) {
     porSplit: Array.isArray(registro.porSplit) ? registro.porSplit.length : null,
     splitsEnTabla: splitsEnTabla(estado),
     temporadaActiva: Boolean(estado.career?.temporada?.activa),
+    // FASE V (V4): la edad con la que arrancó el split. Con ella `cierreDeSplit` sabe si el split cerró un año.
+    edad: estado.age ?? null,
     numero: numeroDe(estado)
   };
 }
@@ -183,7 +190,12 @@ function resultadoDelSplit(foto, estado) {
 
 // `foto` es la de `fotoDeSplit` al abrir la página. `foto.parcial` (o una foto de otra fase: amateur → pro): el número
 // sale sin "antes" (sin delta). Sin foto, tampoco hay resultado.
-export function cierreDeSplit(foto, estado) {
+//
+// FASE V (V4): si el split cerró un año y el motor NO frenó en el cierre (`cierreFrenado`: la página no tuvo la parada de
+// `edadCierre`), el cierre trae también `anio`: el momento del año, que el reproductor sostiene un rato (una sola pausa por
+// año; si el motor ya frenó en el cierre esa parada ES el momento, T9: nunca dos). `fotoAnio` es la foto del primer split del
+// año (con ella el número del año tiene su "antes").
+export function cierreDeSplit(foto, estado, { cierreFrenado = false, fotoAnio = null } = {}) {
   const ahora = numeroDe(estado);
   const conDelta = Boolean(foto) && !foto.parcial && foto.numero?.etiqueta === ahora.etiqueta;
   return {
@@ -197,7 +209,32 @@ export function cierreDeSplit(foto, estado) {
     },
     // FASE V (V5): el seguimiento del Golden Road del año, solo mientras el logro está vivo y ya hay algo cumplido; si no, `null`.
     // Es la misma cuenta del motor (`seguimientoGoldenRoad`, regla 15). JSON, como el resto: viaja en `lolcs-vista`.
-    goldenRoad: seguimientoParaMostrar(seguimientoGoldenRoad(estado))
+    goldenRoad: seguimientoParaMostrar(seguimientoGoldenRoad(estado)),
+    anio: cierreFrenado ? null : cierreDeAnio(foto, estado, fotoAnio, ahora)
+  };
+}
+
+// ¿Este split cerró un año? La edad subió exactamente una (una vuelta del retiro la sube más) en un cierre de edad y la carrera
+// sigue. `null` si no, o si la foto no sabe con qué edad arrancó el split (un marcador de antes de V4, o una foto `parcial`).
+function cierreDeAnio(foto, estado, fotoAnio, ahora) {
+  if (!foto || foto.parcial || !Number.isFinite(foto.edad) || estado.terminado) {
+    return null;
+  }
+  if (estado.age !== foto.edad + 1 || !esCierreDeEdad(estado)) {
+    return null;
+  }
+  const conDelta = Boolean(fotoAnio) && !fotoAnio.parcial && fotoAnio.numero?.etiqueta === ahora.etiqueta;
+  return {
+    anio: estado.calendario?.anio ?? null,
+    numero: {
+      etiqueta: ahora.etiqueta,
+      antes: conDelta ? fotoAnio.numero.valor : null,
+      despues: ahora.valor,
+      banda: ahora.banda,
+      texto: ahora.texto
+    },
+    // El mismo escalón que dice la pestaña Carrera (`textoDeEscalon`, regla 15): solo en el profesional.
+    escalon: estado.phase === 'profesional' ? textoDeEscalon(escalonDeCarrera(estado)) : null
   };
 }
 
@@ -221,6 +258,29 @@ export function textoDeNumero(numero) {
   return numero.etiqueta === 'rango' ? (numero.texto ?? '') : `nivel ${numero.despues}`;
 }
 
+// FASE V (V4): lo mismo cuando el número vale `valor` (un cuadro del conteo que va de `antes` a `despues`). En el valor final
+// dice exactamente `textoDeNumero` (con el puesto de la ladder, si lo trae); en el camino, el rango sale de los puntos de la
+// escalera (`desdePuntos`): cada 100 LP cambia la división, y el LP que se sube al ascender cuenta bien. Sin servidor no hay
+// cortes de Gran Maestro y Challenger: en el ápice el tramo usa el tier con el que terminó (`banda`).
+const SERVIDOR_SIN_CORTES = Object.freeze({ cutoffGM: Infinity, cutoffChallenger: Infinity });
+export function etiquetaDeRangoEn(puntos, banda) {
+  const ranked = desdePuntos(puntos, SERVIDOR_SIN_CORTES);
+  if (ranked.division === null && tierPorId(banda)?.apice) {
+    ranked.tier = banda;
+  }
+  return etiquetaDeRanked(ranked);
+}
+
+export function textoDeNumeroEn(numero, valor) {
+  if (!numero) {
+    return '';
+  }
+  if (valor === numero.despues) {
+    return textoDeNumero(numero);
+  }
+  return numero.etiqueta === 'rango' ? etiquetaDeRangoEn(valor, numero.banda) : `nivel ${valor}`;
+}
+
 // La línea con la que abre la página siguiente cuando la tarjeta no llegó a verse (INST o movimiento reducido):
 // "Split anterior: 3.º de 10 · nivel 71 ▲3".
 export function lineaDeSplitAnterior(cierre) {
@@ -229,4 +289,33 @@ export function lineaDeSplitAnterior(cierre) {
   }
   const numero = [textoDeNumero(cierre.numero), deltaDeCierre(cierre.numero)].filter(Boolean).join(' ');
   return `Split anterior: ${[cierre.resultado?.texto, numero].filter(Boolean).join(' · ')}`;
+}
+
+// --- Los carteles (FASE V, V4; PLAN.md §V.4 "Movimiento") ------------------------------------------------------------------
+//
+// El cartel de la página: UNA línea arriba de cada página del relato (de cada split) que dice en qué ventana del año arranca y
+// en qué año; el primer split del año (la pretemporada) lo anuncia. No es un beat del reproductor y no suma espera: es el
+// encabezado de la página. Sale del estado al ABRIR la página (antes de `avanzarSplit`): la ventana de ese split
+// (`calcularContexto`, la misma cuenta que usa el motor y que dice la franja) y el año de su reloj (`calcularCalendario`: el
+// `state.calendario` de un estado entre splits todavía es el del año que cerró). JSON, porque viaja en `lolcs-vista`.
+export const LABEL_DE_VENTANA = {
+  pretemporada: 'Pretemporada',
+  regular: 'Temporada regular',
+  playoffs: 'Playoffs',
+  internacional: 'Internacional',
+  offseason: 'Offseason'
+};
+
+export function cartelDePagina(estado) {
+  if (!estado?.player || estado.terminado || estado.phase === 'retirado') {
+    return null;
+  }
+  const ventana = calcularContexto(estado).ventana;
+  const etiqueta = LABEL_DE_VENTANA[ventana];
+  if (!etiqueta) {
+    return null;
+  }
+  const anio = calcularCalendario(estado).anio;
+  const nuevoAnio = ventana === 'pretemporada';
+  return { ventana, anio, nuevoAnio, texto: nuevoAnio ? `Arranca ${anio} · ${etiqueta}` : `${anio} · ${etiqueta}` };
 }

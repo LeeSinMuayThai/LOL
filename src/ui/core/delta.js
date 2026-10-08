@@ -39,3 +39,61 @@ export function crearDelta(campos) {
     }
   };
 }
+
+// --- Mover el número (FASE V, V4; PLAN.md §V.3 regla 3: "el delta se ve") ---------------------------------------------
+//
+// `crearDelta` dice DE DÓNDE a dónde cambió un campo; `moverNumero` es lo que lo hace visible: escribe en `el` el número
+// yendo de `antes` a `despues` (un conteo, en `duracion` ms) y termina SIEMPRE en `formato(despues)`. La regla 4 de §V.3 (nada
+// adelanta el resultado) es de quien lo llama: se mueve desde la `vista`, cuando el relato ya contó lo que lo movió.
+//
+// Camino quieto: con `prefers-reduced-motion`, sin `antes`, sin cambio, sin `requestAnimationFrame` (Node) o con `animar:
+// false` (INST), el número aparece ya en su valor final y no se programa nada. `reducido`, `raf` y `ahora` se pueden inyectar
+// para probarlo sin navegador (`validate.js`).
+export const DURACION_DE_UN_NUMERO_MS = 600;
+// La curva es de salida suave (arranca rápido y frena): 1 - (1 - t)^3.
+const POTENCIA_DE_LA_CURVA = 3;
+
+function movimientoReducido() {
+  return typeof globalThis.matchMedia === 'function' && globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+// Devuelve `cancelar()`: deja el número en su valor final y apaga la animación. Idempotente.
+export function moverNumero(el, antes, despues, {
+  formato = String,
+  duracion = DURACION_DE_UN_NUMERO_MS,
+  animar = true,
+  reducido = movimientoReducido(),
+  raf = globalThis.requestAnimationFrame?.bind(globalThis),
+  ahora = () => globalThis.performance.now()
+} = {}) {
+  const pintar = (n) => {
+    el.textContent = formato(n);
+  };
+  const sinCambio = !Number.isFinite(antes) || !Number.isFinite(despues) || antes === despues;
+  if (!animar || reducido || sinCambio || typeof raf !== 'function' || !(duracion > 0)) {
+    pintar(despues);
+    return () => {};
+  }
+  let vivo = true;
+  const t0 = ahora();
+  pintar(antes);
+  const paso = (t) => {
+    if (!vivo) return;
+    const avance = Math.max(0, Math.min(1, (t - t0) / duracion));
+    if (avance >= 1) {
+      vivo = false;
+      pintar(despues);
+      return;
+    }
+    const curva = 1 - (1 - avance) ** POTENCIA_DE_LA_CURVA;
+    pintar(Math.round(antes + (despues - antes) * curva));
+    raf(paso);
+  };
+  raf(paso);
+  return () => {
+    if (vivo) {
+      vivo = false;
+      pintar(despues);
+    }
+  };
+}
