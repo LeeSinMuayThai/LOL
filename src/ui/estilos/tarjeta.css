@@ -271,6 +271,11 @@ details.tarjeta-internacionales > summary { cursor: pointer; font-size: var(--fs
 }
 /* Dentro de la tarjeta de cierre la línea ocupa su propio renglón, pegada al número. */
 .cierre-split .gr-linea { margin-top: var(--s-1); }
+/* En el celular la barra de cuartos va fija abajo (cuartos.css) y el reproductor sigue el último beat con `scrollIntoView({ block:
+   'nearest' })`: sin este margen la tarjeta (el último beat, y ahora con una línea más) quedaba con su borde de abajo detrás de la barra. */
+@media (max-width: 899px) {
+  .cierre-split { scroll-margin-bottom: calc(var(--cuartos-barra-alto) + var(--s-3)); }
+}
 
 /* --- La medalla: la tarjeta final y el historial del inicio ------------------------------------------------------ */
 .tarjeta-medalla {
