@@ -15,7 +15,7 @@
 // nunca lo construye.
 import { mostrarParada } from './paradas/index.js';
 import { crearEscena } from './escena.js';
-import { fotoDeSplit, cierreDeSplit } from './core/escena.js';
+import { fotoDeSplit, cierreDeSplit, cartelDePagina } from './core/escena.js';
 import { iconoSonido } from './components/iconos.js';
 import { aplicarEstudio, limpiarEstudio } from './shell.js';
 import { crearFranja } from './franja.js';
@@ -133,7 +133,11 @@ export function iniciar() {
   // movió). `ultimoCierre`: el cierre del split anterior; `cierreVisto`: si su tarjeta se vio (se anota al reproducirla, con
   // la velocidad de ESE momento, o al reabrirla al retomar); `anterior`: ese mismo cierre si la página abre con la línea
   // "Split anterior: …" (la tarjeta no llegó a verse: INST o movimiento reducido).
-  let pagina = { desde: 0, fotoInicio: null, ultimoCierre: null, cierreVisto: false, anterior: null };
+  // FASE V (V4): `cartel` es el encabezado de la página (la ventana y el año, `cartelDePagina`); `fotoAnio`, la foto del primer
+  // split del año (el "antes" del número del año en la tarjeta "Cierre de …"); `cierreFrenado`, si el motor ya frenó en el
+  // cierre de año de esta página (la parada de `edadCierre` ES ese momento: la tarjeta no lo repite, T9).
+  const paginaVacia = () => ({ desde: 0, fotoInicio: null, fotoAnio: null, cartel: null, cierreFrenado: false, ultimoCierre: null, cierreVisto: false, anterior: null });
+  let pagina = paginaVacia();
   let rng = null;
   // Regla invariable 1: los minijuegos tampoco pueden usar el azar del
   // navegador. Stream PROPIO, sembrado desde la misma seed pero separado del
@@ -187,7 +191,9 @@ export function iniciar() {
         estadoEl: franjaEstadoEl,
         etiquetaRol: modulos.etiquetaRol,
         // El delta del número es el del split en curso: contra la foto de la página (la misma que usa la tarjeta de cierre).
-        fotoDeLaPagina: () => pagina.fotoInicio
+        fotoDeLaPagina: () => pagina.fotoInicio,
+        // V4: el número se mueve al cambiar la `vista`, salvo en INST o con movimiento reducido (donde aparece ya en su valor final).
+        animar: () => !reproductor.sinEspera()
       });
       cuartos = crearCuartos({
         dialog: document.getElementById('cuarto'),
@@ -234,7 +240,15 @@ export function iniciar() {
         // Antes de la parada: el último beat que el relato ya contó en esta página (todos los de `estado.logs` ya se
         // contaron: la parada entra recién cuando el reproductor termina) y la página, a un toque.
         try {
-          ui.renderParadaAntes(paradaAntesEl, estado, { desde: pagina.desde });
+          // V4: si la parada es la de `edadCierre`, ES el cierre del año (T9): va el cartel de una línea "Cierre de 2031". Sin
+          // número, delta ni escalón: la parada cae a mitad de la página y los beats que siguen todavía mueven el LP, así que
+          // esos números todavía no son los del cierre (los dice la tarjeta de fin de split).
+          let cierreDelAnio = null;
+          if (estado.pendiente?.sistemaId === 'edadCierre') {
+            const cierre = cierreDeSplit(pagina.fotoInicio, estado, { cierreFrenado: false, fotoAnio: pagina.fotoAnio });
+            cierreDelAnio = cierre.anio ? { anio: cierre.anio.anio } : null;
+          }
+          ui.renderParadaAntes(paradaAntesEl, estado, { desde: pagina.desde, cierreDelAnio });
         } catch (error) {
           console.error('No se pudo armar "lo último que pasó":', error);
           paradaAntesEl.hidden = true;
@@ -321,9 +335,19 @@ export function iniciar() {
     } catch (error) {
       console.error('No se pudo sacar la foto del split:', error);
     }
+    let cartel = null;
+    try {
+      cartel = cartelDePagina(antes);
+    } catch (error) {
+      console.error('No se pudo armar el cartel de la página:', error);
+    }
     pagina = {
       desde: antes.logs.length,
       fotoInicio,
+      // El primer split del año abre la foto del año; los otros dos la heredan.
+      fotoAnio: cartel?.nuevoAnio ? fotoInicio : pagina.fotoAnio,
+      cartel,
+      cierreFrenado: false,
       ultimoCierre: pagina.ultimoCierre,
       cierreVisto: pagina.cierreVisto,
       // Lo que importa es si la tarjeta del split anterior SE VIO (la velocidad de cuando se reprodujo), no la de ahora.
@@ -337,6 +361,9 @@ export function iniciar() {
       seed: estado.seed,
       inicioDePagina: pagina.desde,
       fotoInicio: pagina.fotoInicio,
+      fotoAnio: pagina.fotoAnio,
+      cartel: pagina.cartel,
+      cierreFrenado: pagina.cierreFrenado,
       ultimoCierre: pagina.ultimoCierre,
       cierreVisto: pagina.cierreVisto,
       logs: estado.logs.length
@@ -359,6 +386,10 @@ export function iniciar() {
       return {
         desde: marcador.inicioDePagina,
         fotoInicio: marcador.fotoInicio ?? null,
+        fotoAnio: marcador.fotoAnio ?? null,
+        cartel: marcador.cartel ?? null,
+        // Parado ahora en el cierre de año, o ya lo había estado antes en esta página.
+        cierreFrenado: Boolean(marcador.cierreFrenado) || estado.pendiente?.sistemaId === 'edadCierre',
         ultimoCierre,
         cierreVisto,
         anterior: ultimoCierre && !cierreVisto ? ultimoCierre : null,
@@ -371,7 +402,13 @@ export function iniciar() {
     } catch (error) {
       console.error('No se pudo sacar la foto del split:', error);
     }
-    return { desde: ui.desdeDeUltimosBeats(estado.logs), fotoInicio, ultimoCierre: null, cierreVisto: false, anterior: null, coincide: false };
+    return {
+      ...paginaVacia(),
+      desde: ui.desdeDeUltimosBeats(estado.logs),
+      fotoInicio,
+      cierreFrenado: estado.pendiente?.sistemaId === 'edadCierre',
+      coincide: false
+    };
   }
 
   // La llamada al pipeline que el relato está contando ahora (`reproducirLlamada`), o `null`. Con ella el cuarto Crónica
@@ -396,6 +433,10 @@ export function iniciar() {
   // su tarjeta de cierre entra con el último beat de la página (usa su espera).
   async function reproducirLlamada(logsAntes, registroAntes) {
     const estadoActual = store.leer();
+    // V4: la parada del motor en el cierre de año es el momento del año (T9: la tarjeta de la página no suma otro).
+    if (estadoActual.pendiente?.sistemaId === 'edadCierre') {
+      pagina.cierreFrenado = true;
+    }
     // K6a-U: mientras el feed reproduce, la parada no está y el aviso "Se está jugando el split…" sí (es de la pieza
     // `relato`).
     escena.revelar(estadoActual, { reproduciendo: true });
@@ -403,7 +444,7 @@ export function iniciar() {
     let cierre = null;
     if (!estadoActual.pendiente && !estadoActual.terminado) {
       try {
-        cierre = cierreDeSplit(pagina.fotoInicio, estadoActual);
+        cierre = cierreDeSplit(pagina.fotoInicio, estadoActual, { cierreFrenado: pagina.cierreFrenado, fotoAnio: pagina.fotoAnio });
       } catch (error) {
         console.error('No se pudo armar el cierre del split:', error);
       }
@@ -418,7 +459,7 @@ export function iniciar() {
         bisagra,
         state: estadoActual,
         offset: logsAntes,
-        pagina: { desde: pagina.desde, anterior: pagina.anterior, cierre }
+        pagina: { desde: pagina.desde, anterior: pagina.anterior, cierre, cartel: pagina.cartel }
       });
     } finally {
       relatoEnCurso = null;
@@ -633,7 +674,7 @@ export function iniciar() {
       almacenamiento.borrarVista();
 
       // La ficha arranca con el estado inicial: el primer split se cuenta antes de moverla.
-      pagina = { desde: 0, fotoInicio: null, ultimoCierre: null, cierreVisto: false, anterior: null };
+      pagina = paginaVacia();
       escena.revelar(store.leer());
       animarEntradaDelEscenario();
 
@@ -723,18 +764,27 @@ export function iniciar() {
       if (reabreElCierre) {
         pagina = { ...pagina, anterior: null };
       }
-      ui.renderPagina(logList, estadoRetomado, {
+      const paginaAlAbrir = {
         desde: pagina.desde,
         anterior: pagina.anterior,
-        cierre: reabreElCierre ? pagina.ultimoCierre : null
-      });
+        cierre: reabreElCierre ? pagina.ultimoCierre : null,
+        cartel: pagina.cartel
+      };
 
       if (estadoRetomado.pendiente) {
+        ui.renderPagina(logList, estadoRetomado, paginaAlAbrir);
         mostrarLaParada(estadoRetomado);
         animarEntradaDelEscenario();
       } else {
         escena.revelar(estadoRetomado);
         animarEntradaDelEscenario();
+        if (reabreElCierre) {
+          // D97: la tarjeta reabierta tiene su espera (la del último beat, y la del año si era "Cierre de …"): sin ella el
+          // primer beat de la página que sigue la reemplazaba antes de que el navegador la pintara.
+          await reproductor.reproducirBeats(logList, [], { state: estadoRetomado, pagina: paginaAlAbrir });
+        } else {
+          ui.renderPagina(logList, estadoRetomado, paginaAlAbrir);
+        }
         await avanzar();
       }
     } catch (error) {

@@ -326,6 +326,8 @@
   border-left: 3px solid var(--live);
   animation: entrar-log var(--dur) var(--ease) both;
 }
+/* V4: "Cierre de 2031", el cierre de un año sin parada del motor. Va antes de título/Mundial: esos pisan el color. */
+.cierre-split--anio { border-left-color: var(--ice); }
 .cierre-split--titulo,
 .cierre-split--mundial {
   border-left-color: var(--gold);
@@ -365,12 +367,58 @@
 .cierre-split-delta--baja { color: var(--down); }
 .cierre-split-delta--igual { color: var(--ink-mute); }
 
+/* V4: lo que suma el cierre de año: cuánto se movió el número en los tres splits y el escalón que se persigue. */
+.cierre-anio {
+  display: grid;
+  gap: var(--s-1);
+  font-size: var(--fs-2);
+  line-height: var(--lh-snug);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-dim);
+}
+.cierre-anio-vas { font-weight: 700; color: var(--ink); }
+
 .cierre-split-linea {
   padding: var(--s-2) var(--s-4);
   border-left: 3px solid var(--line-strong);
   color: var(--ink-dim);
   font-size: var(--fs-2);
   font-variant-numeric: tabular-nums;
+}
+
+/* --- V4: los carteles y los números que se mueven ------------------------------------------------------------------------
+   El cartel es el encabezado de cada página del relato (`crearCartelDePagina`, components/cierre.js): una línea con la ventana y
+   el año, que no es un beat y no suma espera. El primero del año se marca en oro. Entra con un desliz corto; el camino quieto lo da
+   `base.css` (`prefers-reduced-motion`: las animaciones duran 1 ms). Los números de los efectos de un beat se cuentan desde 0
+   (`animarEfectos`, components/feed.js): con cifras tabulares el renglón no se corre mientras cuentan. */
+.cartel-pagina {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-1) var(--s-1) 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-2);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  animation: entrar-cartel var(--dur-slow) var(--ease) both;
+}
+.cartel-pagina::after { content: ''; flex: 1; height: 1px; background: var(--line-strong); }
+.cartel-pagina--anio { color: var(--gold); }
+.cartel-pagina--anio::after { background: var(--gold-deep); }
+@keyframes entrar-cartel {
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: none; }
+}
+.efecto-numero { font-variant-numeric: tabular-nums; }
+.cierre-split-valor { font-variant-numeric: tabular-nums; }
+
+/* En el celular la barra de cuartos va fija abajo (cuartos.css) y el reproductor sigue el último beat con `scrollIntoView({ block:
+   'nearest' })`: sin este margen los últimos ~52 px de CUALQUIER beat del relato (no solo la tarjeta de cierre, que ya lo tenía en
+   tarjeta.css) quedaban detrás de la barra. */
+@media (max-width: 899px) {
+  .log-list > * { scroll-margin-bottom: calc(var(--cuartos-barra-alto) + var(--s-3)); }
 }
 
 /* --- "Lo último que pasó" de una parada (V2-C; PLAN.md §V.4 `.parada-antes`) ---------------------------------------

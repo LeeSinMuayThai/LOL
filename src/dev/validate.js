@@ -12,14 +12,14 @@ import {
   verificarSinLogicaEnIndexHtml,
   verificarSinColorLiteralEnJs, luminanciaRelativa, contrasteRatio, hexDeToken
 } from './guards.js';
-import { reconciliar } from '../ui/core/reconciliar.js';
-import { crearDelta } from '../ui/core/delta.js';
-import { agruparBeats, renderFeed, LIMITE_FEED } from '../ui/components/feed.js';
+import { reconciliar, reemplazarEnElLugar } from '../ui/core/reconciliar.js';
+import { crearDelta, moverNumero } from '../ui/core/delta.js';
+import { agruparBeats, renderFeed, LIMITE_FEED, numerosDeEfectos } from '../ui/components/feed.js';
 import * as reproductorModulo from '../ui/reproductor.js';
 import {
   piezaDe as piezaDeEscenaV2, PIEZAS as PIEZAS_V2, PIEZAS_DE_PARADA as PIEZAS_DE_PARADA_V2, acompananteDe as acompananteDeV2, CUARTOS as CUARTOS_V2,
   TIPOS_DE_ACOMPANANTE as TIPOS_DE_ACOMPANANTE_V2, fotoDeSplit as fotoDeSplitV2, cierreDeSplit as cierreDeSplitV2,
-  lineaDeSplitAnterior as lineaDeSplitAnteriorV2
+  lineaDeSplitAnterior as lineaDeSplitAnteriorV2, cartelDePagina as cartelDePaginaV4, etiquetaDeRangoEn, textoDeNumeroEn
 } from '../ui/core/escena.js';
 import { TONOS_CONOCIDOS as TONOS_DE_GRAFICOS } from '../ui/graficos/comun.js';
 import { correrLote as correrLoteJugabilidad, analizarCatalogo } from './simulate.js';
@@ -37,7 +37,7 @@ import { sistemaPorId } from '../systems/registro.js';
 import { getPath, etiquetaCampo } from '../core/selectors.js';
 import { calcularContexto } from '../core/contexto.js';
 import {
-  aplicarLP, desdePuntos, puntosAbsolutos, esApice, rangoAproximado,
+  aplicarLP, desdePuntos, puntosAbsolutos, esApice, rangoAproximado, etiquetaDeRanked,
   servidorConCutoffs, servidorDeLaPartida
 } from '../core/ranked.js';
 import { TOKENS, tokensUsados, resolverTexto } from '../core/plantillas.js';
@@ -8266,6 +8266,156 @@ check('crearDelta mide [antes, despues] contra la lectura previa (fase V, V0)', 
   }
 });
 
+// FASE V (V4; PLAN.md §V.3 regla 3 "el delta se ve"): `moverNumero` lleva el número de `antes` a `despues` y termina SIEMPRE en el valor
+// final; con movimiento reducido (o sin `antes`, sin cambio, `animar: false`, sin `requestAnimationFrame`) aparece ya en él y no
+// programa ni un cuadro. El reloj y los cuadros se inyectan: corre sin navegador.
+check('crearDelta y moverNumero: el número va de antes a despues, termina en su valor final, y sin movimiento aparece ya en él (fase V, V4)', () => {
+  const problemas = [];
+  const correr = (antes, despues, opciones = {}, { cancelarEn = null } = {}) => {
+    const el = { textContent: '' };
+    const vistos = [];
+    const cuadros = [];
+    let reloj = 0;
+    const cancelar = moverNumero(el, antes, despues, {
+      duracion: 600,
+      reducido: false,
+      raf: (fn) => cuadros.push(fn),
+      ahora: () => reloj,
+      formato: (n) => {
+        vistos.push(n);
+        return `n${n}`;
+      },
+      ...opciones
+    });
+    const programados = cuadros.length;
+    let pasos = 0;
+    while (cuadros.length > 0 && pasos < 100) {
+      reloj += 100;
+      pasos += 1;
+      cuadros.shift()(reloj);
+      if (cancelarEn === pasos) {
+        cancelar();
+      }
+    }
+    return { el, vistos, programados, pasos };
+  };
+  // Sube: arranca en `antes`, nunca baja, nunca pasa de `despues`, y termina en `despues`.
+  const sube = correr(60, 71);
+  if (sube.vistos[0] !== 60 || sube.vistos.at(-1) !== 71 || sube.el.textContent !== 'n71' || sube.pasos < 3) {
+    problemas.push(`sube 60→71: vio ${sube.vistos}, texto final ${sube.el.textContent}`);
+  }
+  if (sube.vistos.some((n, i) => (i > 0 && n < sube.vistos[i - 1]) || n > 71 || n < 60)) {
+    problemas.push(`sube 60→71: el conteo no es monótono o se pasa del rango: ${sube.vistos}`);
+  }
+  // Baja: lo mismo al revés.
+  const baja = correr(80, 70);
+  if (baja.vistos[0] !== 80 || baja.vistos.at(-1) !== 70 || baja.vistos.some((n, i) => (i > 0 && n > baja.vistos[i - 1]) || n > 80 || n < 70)) {
+    problemas.push(`baja 80→70: vio ${baja.vistos}`);
+  }
+  // El camino quieto: el valor final de entrada y ni un cuadro programado.
+  const quietos = {
+    'movimiento reducido': correr(60, 71, { reducido: true }),
+    'animar: false (INST)': correr(60, 71, { animar: false }),
+    'sin "antes" (carrera nueva, otro tipo de número)': correr(null, 71),
+    'sin cambio': correr(71, 71),
+    'sin requestAnimationFrame (Node)': correr(60, 71, { raf: null })
+  };
+  for (const [caso, r] of Object.entries(quietos)) {
+    if (r.el.textContent !== 'n71' || r.programados !== 0 || r.vistos.length !== 1) {
+      problemas.push(`${caso}: tenía que aparecer ya en n71 sin programar nada (texto ${r.el.textContent}, ${r.programados} cuadros, vio ${r.vistos})`);
+    }
+  }
+  // Cancelar deja el número en su valor final y el conteo no vuelve a escribir.
+  const cancelado = correr(60, 71, {}, { cancelarEn: 2 });
+  if (cancelado.el.textContent !== 'n71' || cancelado.vistos.at(-1) !== 71 || cancelado.vistos.filter((n) => n === 71).length !== 1) {
+    problemas.push(`cancelar: texto ${cancelado.el.textContent}, vio ${cancelado.vistos}`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(problemas.join(' | '));
+  }
+
+  // El rango del amateur cuenta en puntos de la escalera: cada etiqueta intermedia es la del rango de esos puntos (`desdePuntos`), y
+  // el valor final dice exactamente lo que dice la tarjeta (con el puesto de la ladder, si lo trae).
+  const rangos = [
+    { tier: 'gold', division: 3, lp: 22 }, { tier: 'platinum', division: 1, lp: 0 }, { tier: 'diamond', division: 2, lp: 99 },
+    { tier: 'master', division: null, lp: 140 }
+  ];
+  for (const ranked of rangos) {
+    const puntos = puntosAbsolutos(ranked);
+    const esperado = etiquetaDeRanked(ranked);
+    const dicho = etiquetaDeRangoEn(puntos, ranked.tier);
+    if (dicho !== esperado) {
+      problemas.push(`${JSON.stringify(ranked)}: el conteo dice "${dicho}" y la etiqueta del motor "${esperado}"`);
+    }
+  }
+  const numeroRango = { etiqueta: 'rango', antes: puntosAbsolutos({ tier: 'platinum', division: 2, lp: 85 }), despues: puntosAbsolutos({ tier: 'platinum', division: 1, lp: 12 }), banda: 'platinum', texto: 'Platino I · 12 LP (#1 de LAS)' };
+  if (textoDeNumeroEn(numeroRango, numeroRango.despues) !== numeroRango.texto) {
+    problemas.push('el último cuadro del conteo del rango no dice la etiqueta de la tarjeta');
+  }
+  const etiquetas = [];
+  for (let n = numeroRango.antes; n <= numeroRango.despues; n += 1) {
+    etiquetas.push(textoDeNumeroEn(numeroRango, n));
+  }
+  if (!etiquetas[0].startsWith('Platino II · 85 LP') || !etiquetas.includes('Platino II · 99 LP') || !etiquetas.includes('Platino I · 0 LP')) {
+    problemas.push(`el ascenso de Platino II 85 LP a Platino I 12 LP no pasa por 99 LP y 0 LP: ${etiquetas.slice(0, 3)} … ${etiquetas.slice(-3)}`);
+  }
+  if (textoDeNumeroEn({ etiqueta: 'nivel', antes: 60, despues: 71, banda: 'elite', texto: null }, 65) !== 'nivel 65') {
+    problemas.push('el conteo del nivel tiene que decir "nivel n"');
+  }
+
+  // Los números de los efectos de un beat: solo los enteros con signo, en orden; los decimales, los porcentajes y los que son parte de una cifra no se mueven.
+  const hallados = numerosDeEfectos('estudios +7, sueño -2, hype +10%, ratio +1,5, split 1-2 y (+3)').map((n) => n.texto);
+  if (hallados.join('|') !== '+7|-2|+3') {
+    problemas.push(`numerosDeEfectos: se esperaba +7|-2|+3 y salió ${hallados.join('|')}`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(problemas.join(' | '));
+  }
+});
+
+// D61 (FASE V, V4): `reemplazarEnElLugar` injerta el nodo fresco sobre el cacheado; hasta V4 solo copiaba `className` y `dataset`, así que un
+// `title`, un `aria-*` o un `style` nuevos (o que el fresco ya no trae) se quedaban con el valor viejo.
+check('reconciliar: reemplazarEnElLugar copia title, aria-* y style además de class y dataset, y saca los que el nodo fresco ya no trae (D61, fase V, V4)', () => {
+  class ElementoFalso {
+    constructor(atributos = {}, hijos = []) {
+      this.atributos = new Map(Object.entries(atributos));
+      this.className = '';
+      this.dataset = {};
+      this.childNodes = hijos;
+    }
+    getAttributeNames() { return [...this.atributos.keys()]; }
+    getAttribute(nombre) { return this.atributos.get(nombre) ?? null; }
+    hasAttribute(nombre) { return this.atributos.has(nombre); }
+    setAttribute(nombre, valor) { this.atributos.set(nombre, String(valor)); }
+    removeAttribute(nombre) { this.atributos.delete(nombre); }
+    replaceChildren(...hijos) { this.childNodes = hijos; }
+  }
+  const nodo = new ElementoFalso({ title: 'viejo', 'aria-label': 'viejo', 'aria-hidden': 'true', style: 'width: 10%', role: 'row', 'data-x': 'no se toca acá' }, ['hijo viejo']);
+  nodo.className = 'a';
+  nodo.dataset = { x: '1', y: '2' };
+  const fresco = new ElementoFalso({ title: 'nuevo', 'aria-label': 'nuevo', 'aria-expanded': 'true', style: 'width: 40%', role: 'cell' }, ['hijo nuevo']);
+  fresco.className = 'b';
+  fresco.dataset = { x: '9' };
+  const devuelto = reemplazarEnElLugar(nodo, fresco);
+  const dicho = Object.fromEntries(nodo.atributos);
+  const problemas = [];
+  if (devuelto !== nodo) problemas.push('tiene que devolver el nodo cacheado (la identidad se preserva)');
+  if (dicho.title !== 'nuevo') problemas.push(`title quedó "${dicho.title}"`);
+  if (dicho['aria-label'] !== 'nuevo' || dicho['aria-expanded'] !== 'true') problemas.push(`aria-label / aria-expanded quedaron "${dicho['aria-label']}" / "${dicho['aria-expanded']}"`);
+  if ('aria-hidden' in dicho) problemas.push('un aria-* que el fresco ya no trae se tiene que sacar');
+  if (dicho.style !== 'width: 40%') problemas.push(`style quedó "${dicho.style}"`);
+  if (dicho.role !== 'row') problemas.push('lo que no es title, aria-* ni style no se copia (role)');
+  if (nodo.className !== 'b' || JSON.stringify(nodo.dataset) !== JSON.stringify({ x: '9' })) problemas.push(`class / dataset: ${nodo.className} ${JSON.stringify(nodo.dataset)}`);
+  if (nodo.childNodes[0] !== 'hijo nuevo') problemas.push('los hijos se reemplazan');
+  // Sin atributos que copiar el nodo cacheado pierde su title y su style.
+  const limpio = new ElementoFalso({ title: 't', style: 's' });
+  reemplazarEnElLugar(limpio, new ElementoFalso({}));
+  if (limpio.atributos.size !== 0) problemas.push('un title / style que el fresco ya no trae se tiene que sacar');
+  if (problemas.length > 0) {
+    throw new Error(problemas.join(' | '));
+  }
+});
+
 // ============================================================================
 // H8 (saneamiento post-V1) — reproductor.js dejó de escribir DOM a mano.
 // Antes insertaba/borraba nodos directo en `#logList`, invisibles al
@@ -8327,7 +8477,16 @@ class ElementoFalso {
     this.parentNode = null;
     this._texto = '';
     this.classList = { add() {}, remove() {} };
+    // V4 (D61): `reemplazarEnElLugar` espeja title, style y aria-* con la API de atributos.
+    this._atributos = new Map();
   }
+  getAttributeNames() { return [...this._atributos.keys()]; }
+  getAttribute(nombre) { return this._atributos.get(nombre) ?? null; }
+  hasAttribute(nombre) { return this._atributos.has(nombre); }
+  setAttribute(nombre, valor) { this._atributos.set(nombre, String(valor)); }
+  removeAttribute(nombre) { this._atributos.delete(nombre); }
+  append(...nodos) { for (const nodo of nodos) this.appendChild(nodo); }
+  querySelectorAll() { return []; }
   set textContent(valor) { this._texto = valor; this.childNodes = []; }
   get textContent() { return this._texto; }
   appendChild(nodo) { this.childNodes.push(nodo); nodo.parentNode = this; return nodo; }
@@ -8412,6 +8571,91 @@ if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_REPRODUCIR_BEATS.toLo
 
 check(NOMBRE_CHECK_REPRODUCIR_BEATS, () => {
   if (errorReproducirBeatsReal) throw errorReproducirBeatsReal;
+});
+
+// FASE V (V4): lo que `reproducirBeats` espera de verdad. Hasta acá el espejo de simulate.js (K0 espejos) solo comparaba el literal; esto prueba que el
+// reproductor real lo usa donde debe: la tarjeta "Cierre de …" (`pagina.cierre.anio`) sostiene `ESPERA_CIERRE_ANIO_MS` más que un beat, una sola vez y
+// en el último beat; una página reabierta sin beats (D97: retomar entre splits) espera lo de un beat para que la tarjeta se vea; y en INST o con
+// movimiento reducido no espera nada. Corre a nivel de módulo (`reproducirBeats` es async), con el `setTimeout` reemplazado por uno que registra
+// los milisegundos y sigue en el turno siguiente.
+const NOMBRE_CHECK_PAUSA_DEL_ANIO = 'V4: reproducirBeats sostiene la tarjeta "Cierre de …" ESPERA_CIERRE_ANIO_MS más que un beat y una página reabierta sin beats espera uno (D97), nunca en INST ni con movimiento reducido';
+let errorPausaDelAnio = null;
+if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_PAUSA_DEL_ANIO.toLowerCase().includes(texto))) {
+  const previos = {
+    document: globalThis.document, window: globalThis.window, setTimeout: globalThis.setTimeout, clearTimeout: globalThis.clearTimeout,
+    velocidad: reproductorModulo.velocidadActual()
+  };
+  const esperas = [];
+  // El espejo de simulate.js: se importa acá (más abajo el archivo lo desestructura con el resto del instrumento).
+  const { ESPERA_CIERRE_ANIO_MS: ESPERA_ANIO } = await import('./simulate.js');
+  try {
+    globalThis.document = {
+      createElement: (tag) => new ElementoFalso(tag),
+      createTextNode: (texto) => {
+        const nodo = new ElementoFalso('#text');
+        nodo.textContent = texto;
+        return nodo;
+      }
+    };
+    globalThis.setTimeout = (fn, ms) => {
+      esperas.push(ms);
+      queueMicrotask(fn);
+      return 0;
+    };
+    globalThis.clearTimeout = () => {};
+    const poner = (velocidad, reducido) => {
+      globalThis.window = { matchMedia: () => ({ matches: reducido }) };
+      while (reproductorModulo.velocidadActual() !== velocidad) {
+        reproductorModulo.ciclarVelocidad();
+      }
+    };
+    const beats = [0, 1, 2].map((i) => ({ type: 'x', message: `beat ${i}`, tecnico: false }));
+    const numero = { etiqueta: 'nivel', antes: 60, despues: 63, banda: 'titular', texto: null };
+    const cierre = (anio) => ({ resultado: null, numero, goldenRoad: null, anio });
+    const anio = { anio: 2031, numero: { ...numero, antes: 58 }, escalon: { vas: 'Tu escalón: «X»', falta: 'Para llegar a «Y»: te falta Z' } };
+    const correr = async (velocidad, reducido, nuevas, cierreDeLaPagina) => {
+      poner(velocidad, reducido);
+      esperas.length = 0;
+      const logList = new ElementoFalso('div');
+      await reproductorModulo.reproducirBeats(logList, nuevas, { state: { logs: nuevas }, pagina: { desde: 0, anterior: null, cierre: cierreDeLaPagina, cartel: null } });
+      return [...esperas];
+    };
+    const casos = [
+      ['1× con un cierre común', await correr('x1', false, beats, cierre(null)), [700, 700, 700]],
+      ['1× con "Cierre de …": la espera del año en el último beat', await correr('x1', false, beats, cierre(anio)), [700, 700, 700 + ESPERA_ANIO]],
+      ['1× sin cierre (el split no cerró)', await correr('x1', false, beats, null), [700, 700, 700]],
+      ['1× página reabierta sin beats (D97)', await correr('x1', false, [], cierre(null)), [700]],
+      ['1× página reabierta sin beats con "Cierre de …"', await correr('x1', false, [], cierre(anio)), [700 + ESPERA_ANIO]],
+      ['1× página sin beats ni cierre', await correr('x1', false, [], null), []],
+      ['INST con "Cierre de …"', await correr('instantaneo', false, beats, cierre(anio)), []],
+      ['INST página reabierta con "Cierre de …"', await correr('instantaneo', false, [], cierre(anio)), []],
+      ['1× con movimiento reducido y "Cierre de …"', await correr('x1', true, beats, cierre(anio)), []],
+      ['1× con movimiento reducido, página reabierta', await correr('x1', true, [], cierre(anio)), []]
+    ];
+    const mal = casos.filter(([, vistas, esperadas]) => JSON.stringify(vistas) !== JSON.stringify(esperadas))
+      .map(([nombre, vistas, esperadas]) => `${nombre}: esperó ${JSON.stringify(vistas)} y tenía que esperar ${JSON.stringify(esperadas)}`);
+    if (mal.length > 0) {
+      throw new Error(mal.join(' | '));
+    }
+  } catch (error) {
+    errorPausaDelAnio = error;
+  } finally {
+    globalThis.document = previos.document;
+    if (previos.window === undefined) {
+      delete globalThis.window;
+    } else {
+      globalThis.window = previos.window;
+    }
+    globalThis.setTimeout = previos.setTimeout;
+    globalThis.clearTimeout = previos.clearTimeout;
+    while (reproductorModulo.velocidadActual() !== previos.velocidad) {
+      reproductorModulo.ciclarVelocidad();
+    }
+  }
+}
+
+check(NOMBRE_CHECK_PAUSA_DEL_ANIO, () => {
+  if (errorPausaDelAnio) throw errorPausaDelAnio;
 });
 
 // ============================================================================
@@ -9915,7 +10159,7 @@ const {
 const { puntajeDeCarrera: puntajeDeCarreraAgencia } = await import('../core/puntaje.js');
 const {
   correrLote, correrCarrera: correrCarreraSimulate, correrSinRuido, calcularFavoritoBo5, bloqueBo5Motor, contarBeats,
-  clasificarSplit, PARAMETROS_RUIDO, DURACION_BEAT_MS, ESPERA_MINIJUEGO_MS, DELTAS_FAVORITO_BO5,
+  clasificarSplit, PARAMETROS_RUIDO, DURACION_BEAT_MS, ESPERA_MINIJUEGO_MS, ESPERA_CIERRE_ANIO_MS, DELTAS_FAVORITO_BO5,
   UMBRAL_R2_ESTRUCTURAL, decidirRuidoPuro,
   promedio, mediana: medianaSim, medianaInferior, percentil, desvioMuestral, pearson, varianza, regresionLineal2Regresores,
   META_K2_R_MISMA_LIGA, META_K2_R2_SIN_RUIDO, META_K2_BO5_FAVORITO_CLARO_PCT, META_K3_MENTALIDAD_MEDIANA,
@@ -13220,7 +13464,7 @@ check('K0 ruidoPuro: UMBRAL_R2_ESTRUCTURAL vale 0,3 y la decisión de si ruidoPu
   }
 });
 
-check('K0 espejos de la UI: DURACION_BEAT_MS y ESPERA_MINIJUEGO_MS son los literales de reproductor.js y de app.js', () => {
+check('K0 espejos de la UI: DURACION_BEAT_MS, ESPERA_MINIJUEGO_MS y ESPERA_CIERRE_ANIO_MS son los literales de reproductor.js y de paradas/minijuego.js', () => {
   // Trinquete (K0-A, 2ª revisión): el check de "observación" recalculaba con las mismas constantes importadas, y con 700 → 350
   // o 1600 → 0 pasaba. El instrumento espeja dos números de la UI (el comentario de simulate.js admite que "se desactualiza
   // en silencio"): acá se leen del código fuente que los define. Es válido que este check falle el día que alguien cambie el
@@ -13242,6 +13486,11 @@ check('K0 espejos de la UI: DURACION_BEAT_MS y ESPERA_MINIJUEGO_MS son los liter
   }
   if (minijuego !== ESPERA_MINIJUEGO_MS) {
     throw new Error(`ESPERA_MINIJUEGO_MS = ${ESPERA_MINIJUEGO_MS} en simulate.js, paradas/minijuego.js espera ${minijuego} ms tras el minijuego`);
+  }
+  // FASE V (V4): la pausa del cierre de año. reproductor.js: `const ESPERA_CIERRE_ANIO_MS = { x1: 2400, x2: 1200, instantaneo: 0 }`.
+  const cierreDeAnio = extraer(leer('ui/reproductor.js'), /const\s+ESPERA_CIERRE_ANIO_MS\s*=\s*\{[^}]*\bx1\s*:\s*(\d+)/g, 'ESPERA_CIERRE_ANIO_MS.x1 de reproductor.js');
+  if (cierreDeAnio !== ESPERA_CIERRE_ANIO_MS) {
+    throw new Error(`ESPERA_CIERRE_ANIO_MS = ${ESPERA_CIERRE_ANIO_MS} en simulate.js, reproductor.js sostiene ${cierreDeAnio} ms la tarjeta de cierre de año`);
   }
 });
 
@@ -13269,6 +13518,105 @@ check('K0 contarBeats y clasificarSplit: contarBeats coincide con agruparBeats d
       throw new Error(`clasificarSplit dio ${clasificarSplit(antes, despues)}, se esperaba ${esperado}`);
     }
   }
+});
+
+// FASE V (V4; PLAN.md §V.7 V4): el cierre de año tiene su momento. `edadCierre` frena en ~92% de los años de `criterio` y en ~73% de los de `malas`;
+// en el resto la página del relato cierra el año sin pausa, y ahí la tarjeta de cierre pasa a ser "Cierre de 2031" y la UI la sostiene
+// `ESPERA_CIERRE_ANIO_MS` (reproductor.js). La promesa: esa tarjeta sale en los años que cerraron SIN parada de `edadCierre`, una por año,
+// nunca junto a la parada (T9); el cartel de cada página dice la ventana y el año que el motor va a jugar; y `simulate.js` (el espejo del tiempo)
+// cuenta exactamente esos años. Todo se recalcula acá a mano, sin las funciones de `ui/core/escena.js`, salvo la que se prueba.
+checkLento('K0 cierre de año: la tarjeta "Cierre de …" y su pausa salen en los años sin parada de edadCierre (una por año, nunca junto a la parada), el cartel dice la ventana y el año que juega el motor, y simulate.js cuenta esos mismos años (criterio y malas, 15 carreras × 60)', () => {
+  const problemas = [];
+  const total = { tarjetas: 0, conParada: 0, carteles: 0, cartelesDeAnioNuevo: 0 };
+  for (const bot of ['criterio', 'malas']) {
+    for (let seed = 1; seed <= 15; seed += 1) {
+      const rng = mulberry32(seed);
+      let state = createInitialState(seed, rng);
+      let fotoAnio = null;
+      let tarjetas = 0;
+      let conParada = 0;
+      const aniosConTarjeta = new Set();
+      for (let i = 0; i < 60 && !state.terminado; i += 1) {
+        const antes = state;
+        const cuando = `${bot} seed ${seed} split ${i}`;
+        const cartel = cartelDePaginaV4(antes);
+        const foto = JSON.parse(JSON.stringify(fotoDeSplitV2(antes)));
+        if (cartel?.nuevoAnio) {
+          fotoAnio = foto;
+        }
+        let paso = avanzarSplit(antes, rng);
+        const alArrancar = paso.state;
+        let freno = false;
+        let vueltas = 0;
+        while (paso.state.pendiente) {
+          const { sistemaId, decision } = paso.state.pendiente;
+          freno = freno || sistemaId === 'edadCierre';
+          paso = resolverDecision(paso.state, ESTRATEGIAS_K0[bot](sistemaPorId(sistemaId), paso.state, decision, rng), rng);
+          vueltas += 1;
+          if (vueltas > 200) {
+            throw new Error(`${cuando}: más de 200 pausas seguidas en un split`);
+          }
+        }
+        state = paso.state;
+        // El cartel: la ventana y el año del split que el motor va a jugar (salvo una vuelta del retiro, que mueve el reloj adentro del split).
+        const huboVuelta = state.flags.vueltasUsadas > antes.flags.vueltasUsadas;
+        if (cartel && !huboVuelta) {
+          total.carteles += 1;
+          total.cartelesDeAnioNuevo += cartel.nuevoAnio ? 1 : 0;
+          if (cartel.ventana !== alArrancar.contexto?.ventana || cartel.anio !== alArrancar.calendario?.anio) {
+            problemas.push(`${cuando}: el cartel dice ${cartel.ventana} ${cartel.anio} y el motor juega ${alArrancar.contexto?.ventana} ${alArrancar.calendario?.anio}`);
+          }
+          if (cartel.nuevoAnio !== (antes.player.splitCount % BALANCE.edad.splitsPorEdad === 0) || !cartel.texto.includes(String(cartel.anio))) {
+            problemas.push(`${cuando}: el cartel ${JSON.stringify(cartel)} no anuncia el año nuevo donde corresponde`);
+          }
+        }
+        if (state.terminado) {
+          break;
+        }
+        const cerroUnAnio = state.age === antes.age + 1 && state.player.splitCount % BALANCE.edad.splitsPorEdad === 0;
+        const cierre = cierreDeSplitV2(foto, state, { cierreFrenado: freno, fotoAnio });
+        if ((cierre.anio !== null) !== (cerroUnAnio && !freno)) {
+          problemas.push(`${cuando}: cerró un año=${cerroUnAnio}, frenó edadCierre=${freno} y la tarjeta de año ${cierre.anio === null ? 'no sale' : 'sale'}`);
+        }
+        if (cierre.anio !== null) {
+          tarjetas += 1;
+          const dicho = cierre.anio;
+          if (dicho.anio !== state.calendario.anio || aniosConTarjeta.has(dicho.anio)) {
+            problemas.push(`${cuando}: "Cierre de ${dicho.anio}" (el motor cerró ${state.calendario.anio}${aniosConTarjeta.has(dicho.anio) ? ', y ya había una de ese año' : ''})`);
+          }
+          aniosConTarjeta.add(dicho.anio);
+          const antesEsperado = fotoAnio && fotoAnio.numero.etiqueta === cierre.numero.etiqueta ? fotoAnio.numero.valor : null;
+          if (dicho.numero.despues !== cierre.numero.despues || dicho.numero.antes !== antesEsperado) {
+            problemas.push(`${cuando}: el número del año ${JSON.stringify(dicho.numero)} no es ${antesEsperado} → ${cierre.numero.despues}`);
+          }
+          if ((dicho.escalon !== null) !== (state.phase === 'profesional') || (dicho.escalon && !dicho.escalon.vas.startsWith('Tu escalón: '))) {
+            problemas.push(`${cuando}: el escalón del cierre de año (${JSON.stringify(dicho.escalon)}) en fase ${state.phase}`);
+          }
+        }
+        if (cerroUnAnio && freno) {
+          conParada += 1;
+          // La bandera es lo que sostiene T9: sin ella la tarjeta saldría también donde el motor ya frenó.
+          if (cierreDeSplitV2(foto, state, { cierreFrenado: false, fotoAnio }).anio === null) {
+            problemas.push(`${cuando}: sin cierreFrenado la tarjeta del año tenía que salir (el check no mide nada)`);
+          }
+        }
+      }
+      // El espejo del tiempo cuenta los mismos años.
+      const { observacion } = correrCarreraSimulate(seed, 60, ESTRATEGIAS_K0[bot]);
+      if (observacion.cierresSinParada !== tarjetas || observacion.cierresConParada !== conParada) {
+        problemas.push(`${bot} seed ${seed}: simulate.js cuenta ${observacion.cierresSinParada} años sin parada y ${observacion.cierresConParada} con; la UI sacaría ${tarjetas} tarjetas de año y ${conParada} paradas`);
+      }
+      total.tarjetas += tarjetas;
+      total.conParada += conParada;
+    }
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problemas: ${problemas.slice(0, 5).join(' | ')}`);
+  }
+  if (total.tarjetas < 20 || total.conParada < 100 || total.carteles < 500 || total.cartelesDeAnioNuevo < 150) {
+    throw new Error(`check vacío: ${total.tarjetas} tarjetas de año (20), ${total.conParada} años con parada (100), ${total.carteles} carteles (500), ${total.cartelesDeAnioNuevo} de año nuevo (150)`);
+  }
+  console.log(`      ${total.tarjetas} años cerraron sin parada (tarjeta "Cierre de …" y pausa) y ${total.conParada} con la parada de edadCierre: ${Math.round((100 * total.tarjetas) / (total.tarjetas + total.conParada))}% de los cierres necesitan la pausa propia; ${total.carteles} carteles contra el motor`);
 });
 
 checkLento('K0 ablación: apaga los ruidos de resultados adentro de su ventana, cambia el resultado y los restaura', () => {
@@ -13473,6 +13821,8 @@ checkLento('K0 observación: beats del reproductor, minijuegos y tipo de split c
     let st = createInitialState(seed, rng);
     let beats = 0;
     let minijuegos = 0;
+    // FASE V (V4): los años que cerraron sin parada de `edadCierre` (cada uno suma `ESPERA_CIERRE_ANIO_MS` al reproductor).
+    let cierresSinParada = 0;
     const splitsPro = [];
     const filasIndependientes = [];
     const tanda = (desde) => {
@@ -13483,6 +13833,8 @@ checkLento('K0 observación: beats del reproductor, minijuegos y tipo de split c
     };
     for (let i = 0; i < 60 && !st.terminado; i += 1) {
       const r0 = st.career.registro;
+      const edadAntes = st.age;
+      let frenoElCierre = false;
       let decisiones = 0;
       let desde = st.logs.length;
       st = avanzarSplit(st, rng).state;
@@ -13490,12 +13842,17 @@ checkLento('K0 observación: beats del reproductor, minijuegos y tipo de split c
       while (st.pendiente) {
         const { sistemaId, decision } = st.pendiente;
         decisiones += 1;
+        frenoElCierre = frenoElCierre || sistemaId === 'edadCierre';
         if (decision.presentacion === 'minijuego' || decision.datos?.motivo === 'minijuego') {
           minijuegos += 1;
         }
         desde = st.logs.length;
         st = resolverDecision(st, sistemaPorId(sistemaId).resolverAuto(st, decision, rng), rng).state;
         tanda(desde);
+      }
+      // A mano: la edad subió una en un cierre de edad (`splitCount` múltiplo de `splitsPorEdad`) y el motor no frenó en él.
+      if (!st.terminado && st.age === edadAntes + 1 && st.player.splitCount % BALANCE.edad.splitsPorEdad === 0 && !frenoElCierre) {
+        cierresSinParada += 1;
       }
       if (st.phase === 'profesional') {
         // La liga "modelada" y la posición normalizada, a mano: lo que `correrCarrera` guarda por split pro.
@@ -13559,7 +13916,10 @@ checkLento('K0 observación: beats del reproductor, minijuegos y tipo de split c
     if (JSON.stringify(observacion.splitsProRitmo) !== JSON.stringify(splitsPro)) {
       throw new Error(`seed ${seed}: splitsProRitmo no coincide con la emulación (${observacion.splitsProRitmo.length} vs ${splitsPro.length} splits pro)`);
     }
-    const tiempoReproductor = (beats * DURACION_BEAT_MS + minijuegos * ESPERA_MINIJUEGO_MS) / 60000;
+    if (observacion.cierresSinParada !== cierresSinParada) {
+      throw new Error(`seed ${seed}: cierresSinParada ${observacion.cierresSinParada}, la emulación cuenta ${cierresSinParada}`);
+    }
+    const tiempoReproductor = (beats * DURACION_BEAT_MS + minijuegos * ESPERA_MINIJUEGO_MS + cierresSinParada * ESPERA_CIERRE_ANIO_MS) / 60000;
     if (Math.abs(observacion.tiempoReproductorMin - tiempoReproductor) > 1e-9) {
       throw new Error(`seed ${seed}: tiempoReproductorMin ${observacion.tiempoReproductorMin} != ${tiempoReproductor}`);
     }
@@ -22273,7 +22633,8 @@ check('GR-m Golden Road: la medalla es lo que cuenta el motor (esGoldenRoad arma
 // ============================================================================
 const {
   trayectoriaDeCarrera: trayectoriaDeCarreraV5, trayectoriaDeRegistro: trayectoriaDeRegistroV5, itemsDeGoldenRoad: itemsDeGoldenRoadV5,
-  lineaDeGoldenRoad: lineaDeGoldenRoadV5, medallaDeGoldenRoad: medallaDeGoldenRoadV5, goldenRoadsDeEstado: goldenRoadsDeEstadoV5
+  lineaDeGoldenRoad: lineaDeGoldenRoadV5, medallaDeGoldenRoad: medallaDeGoldenRoadV5, goldenRoadsDeEstado: goldenRoadsDeEstadoV5,
+  textoDeEscalon: textoDeEscalonV5
 } = await import('../ui/core/trayectoria.js');
 const { mundialesGanados: mundialesGanadosV5 } = await import('../core/registro.js');
 // Las tres primeras tienen un Golden Road con el bot `criterio` (la 133, dos años seguidos): sin ellas, 20 carreras pueden no
@@ -22281,6 +22642,27 @@ const { mundialesGanados: mundialesGanadosV5 } = await import('../core/registro.
 const SEEDS_DIBUJO_V5 = [114, 133, 152, 61, 85, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 const SPLITS_DIBUJO_V5 = 60;
 const EPSILON_X_V5 = 1e-9;
+
+// FASE V (V4, pedido por la revisión de la ola 4): la frase del escalón ("Tu escalón: «X» · Para llegar a «Y»: te falta …") es una promesa que el jugador lee en la
+// pestaña Carrera, en el resumen del acompañante y en la tarjeta "Cierre de …". Se compara con la cuenta del motor (`escalonDeCarrera`, la misma
+// de la tarjeta final) armando lo que tiene que decir a mano, sin pasar por `textoDeEscalon`: un "Tu escalón: «<el escalón que sigue>»" no pasa.
+function diferenciasDelEscalonV5(escalonDelMotor, frase) {
+  if (escalonDelMotor === null) {
+    return frase === null ? [] : [`la frase ${JSON.stringify(frase)} existe y el motor no tiene escalón`];
+  }
+  if (frase === null) {
+    return ['el motor tiene escalón y la frase es null'];
+  }
+  const { actual, siguiente } = escalonDelMotor;
+  const vas = `Tu escalón: «${actual.nombre}»`;
+  const falta = siguiente === null
+    ? 'Es el techo de la escala.'
+    : `Para llegar a «${siguiente.nombre}»: ${siguiente.enPresente.charAt(0).toLowerCase()}${siguiente.enPresente.slice(1)}`;
+  const dif = [];
+  if (frase.vas !== vas) dif.push(`dice "${frase.vas}" y el escalón actual es "${actual.nombre}"`);
+  if (frase.falta !== falta) dif.push(`dice "${frase.falta}" y lo que falta para ${siguiente?.nombre ?? 'nada (es el techo)'} es "${falta}"`);
+  return dif;
+}
 
 // Lo que el dibujo dice y el registro no (o al revés). Vacío = el dibujo es el registro. No usa las funciones que prueba para
 // decidir qué es un título o una fila: lee el registro como viene.
@@ -22344,7 +22726,7 @@ function diferenciasDelDibujoV5(tr, registro, anioBase) {
   return dif;
 }
 
-checkLento('V5 carrera dibujada: lo que dibuja la pestaña Carrera es el registro (un punto por fila de porSplit, un tramo por fila de porOrg, los títulos, los Mundiales ganados y los Golden Roads del motor), la línea del Golden Road de la tarjeta de cierre es el seguimiento del motor y la medalla sale de goldenRoads (criterio, 20 carreras × 60)', () => {
+checkLento('V5 carrera dibujada: lo que dibuja la pestaña Carrera es el registro (un punto por fila de porSplit, un tramo por fila de porOrg, los títulos, los Mundiales ganados y los Golden Roads del motor), la línea del Golden Road de la tarjeta de cierre es el seguimiento del motor y la medalla sale de goldenRoads, y la frase del escalón ("Tu escalón: «X» · Para llegar a «Y»: te falta …") es la cuenta del motor (criterio, 20 carreras × 60)', () => {
   const anioBase = BALANCE.calendario.anioBase;
   const problemas = [];
   const anotar = (cuando, dif) => dif.forEach((texto) => problemas.push(`${cuando}: ${texto}`));
@@ -22356,6 +22738,9 @@ checkLento('V5 carrera dibujada: lo que dibuja la pestaña Carrera es el registr
   let conGoldenRoad = 0;
   let finales = 0;
   let medallas = 0;
+  let escalonesDichos = 0;
+  let escalonesConSiguiente = 0;
+  let muestraEscalon = null; // un escalón con siguiente: de ahí salen los mutantes de la frase
   let muestra = null; // una carrera con curva, títulos de tier 2 o 3, un Mundial y un Golden Road: los dibujos corrompidos salen de ella
 
   // (a) Registros armados: el Golden Road del registro de GR-m y quitándole de a un hecho (ninguna variante lo dibuja).
@@ -22396,6 +22781,19 @@ checkLento('V5 carrera dibujada: lo que dibuja la pestaña Carrera es el registr
       const tr = trayectoriaDeCarreraV5(state);
       evaluaciones += 1;
       anotar(cuando, diferenciasDelDibujoV5(tr, registro, anioBase));
+      // El escalón: el que dibuja la pestaña (`tr.escalon`) y la frase que lee el jugador son los del motor, solo en el profesional con la carrera en marcha.
+      const escalonDelMotor = state.phase === 'profesional' && !state.terminado ? escalonDeCarreraGRM(state) : null;
+      if (JSON.stringify(tr.escalon) !== JSON.stringify(escalonDelMotor)) {
+        problemas.push(`${cuando}: la pestaña tiene el escalón ${JSON.stringify(tr.escalon)} y el motor ${JSON.stringify(escalonDelMotor)}`);
+      }
+      anotar(cuando, diferenciasDelEscalonV5(escalonDelMotor, textoDeEscalonV5(tr.escalon)));
+      if (escalonDelMotor !== null) {
+        escalonesDichos += 1;
+        escalonesConSiguiente += escalonDelMotor.siguiente === null ? 0 : 1;
+        if (escalonDelMotor.siguiente !== null && muestraEscalon === null) {
+          muestraEscalon = escalonDelMotor;
+        }
+      }
       if (state.terminado) {
         // La medalla de la tarjeta final, el texto para compartir y la entrada del historial salen del registro.
         finales += 1;
@@ -22486,13 +22884,45 @@ checkLento('V5 carrera dibujada: lo que dibuja la pestaña Carrera es el registr
     }
   }
 
+  // (c2) Lo mismo para la frase del escalón: un mutante por cada cosa que podría decir mal.
+  let mutantesDeEscalon = 0;
+  if (muestraEscalon === null) {
+    problemas.push('ninguna carrera del lote tuvo un escalón con otro más arriba: el comparador de la frase no se pudo probar');
+  } else {
+    const { actual, siguiente } = muestraEscalon;
+    const buena = textoDeEscalonV5(muestraEscalon);
+    const casos = {
+      'Tu escalón: «<el escalón que sigue>»': { ...buena, vas: `Tu escalón: «${siguiente.nombre}»` },
+      'Tu escalón: «<otro nombre>»': { ...buena, vas: `Tu escalón: «${actual.nombre}»!` },
+      'Para llegar a <el escalón actual>: te falta …': { ...buena, falta: buena.falta.replace(siguiente.nombre, actual.nombre) },
+      'lo que falta es lo de otro escalón': { ...buena, falta: `Para llegar a «${siguiente.nombre}»: te falta cualquier cosa` },
+      'decir que es el techo con un escalón más arriba': { ...buena, falta: 'Es el techo de la escala.' },
+      'sin frase aunque hay escalón': null
+    };
+    for (const [nombre, frase] of Object.entries(casos)) {
+      mutantesDeEscalon += 1;
+      if (diferenciasDelEscalonV5(muestraEscalon, frase).length === 0) {
+        problemas.push(`el mutante de la frase "${nombre}" no da diferencias: el comparador no muerde`);
+      }
+    }
+    if (diferenciasDelEscalonV5(muestraEscalon, buena).length > 0) {
+      problemas.push('la frase sin mutar da diferencias contra su propio escalón');
+    }
+    if (diferenciasDelEscalonV5(muestraEscalon, null).length === 0 || diferenciasDelEscalonV5(null, buena).length === 0) {
+      problemas.push('una frase sin escalón (o un escalón sin frase) no da diferencias');
+    }
+  }
+
   if (problemas.length > 0) {
     throw new Error(`${problemas.length} problemas: ${problemas.slice(0, 5).join(' | ')}`);
+  }
+  if (escalonesDichos < 300 || escalonesConSiguiente < 100) {
+    throw new Error(`check vacío: ${escalonesDichos} frases de escalón contra el motor (300), ${escalonesConSiguiente} con un escalón más arriba (100)`);
   }
   if (evaluaciones < 600 || conMundial < 3 || conTituloMenor < 5 || conGoldenRoad < 3 || medallas < 3 || cierresConLinea < 10 || cierresSinLinea < 100 || finales < 10) {
     throw new Error(`check vacío: ${evaluaciones} dibujos evaluados (600), ${conMundial} carreras con Mundial (3), ${conTituloMenor} con un título de tier 2 o 3 (5), ${conGoldenRoad} con Golden Road (3), ${medallas} medallas (3), ${cierresConLinea} cierres con la línea del Golden Road (10), ${cierresSinLinea} sin (100), ${finales} carreras terminadas (10)`);
   }
-  console.log(`      ${evaluaciones} dibujos contra el registro (${SEEDS_DIBUJO_V5.length} carreras × hasta ${SPLITS_DIBUJO_V5} splits); ${conMundial} con Mundial, ${conTituloMenor} con título de tier 2 o 3, ${conGoldenRoad} con Golden Road; ${cierresConLinea} cierres con la línea del Golden Road y ${cierresSinLinea} sin; ${comparadorMuerde} de ${mutantes} dibujos corrompidos dan diferencias`);
+  console.log(`      ${evaluaciones} dibujos contra el registro (${SEEDS_DIBUJO_V5.length} carreras × hasta ${SPLITS_DIBUJO_V5} splits); ${conMundial} con Mundial, ${conTituloMenor} con título de tier 2 o 3, ${conGoldenRoad} con Golden Road; ${cierresConLinea} cierres con la línea del Golden Road y ${cierresSinLinea} sin; ${comparadorMuerde} de ${mutantes} dibujos corrompidos dan diferencias; ${escalonesDichos} frases de escalón contra el motor (${escalonesConSiguiente} con otro más arriba), ${mutantesDeEscalon} frases corrompidas dan diferencias`);
 });
 
 // K6d (integración; el FAIL de K5c-R en la seed 9 con P7a prendida): volver del retiro corta la racha en rojo (`flags.splitsMentalBajo`,
