@@ -51,6 +51,8 @@ export function iniciar() {
   const runButton = document.getElementById('run');
   const nuevaCarreraBtn = document.getElementById('nuevaCarrera');
   const logList = document.getElementById('logList');
+  // V2-C: "lo último que pasó" de una parada. El relato (`#logList`) solo se ve en la pieza `relato`; la parada abre con esto.
+  const paradaAntesEl = document.getElementById('paradaAntes');
   const decisionPanel = document.getElementById('decision');
   const decisionTitle = document.getElementById('decisionTitle');
   const decisionDesc = document.getElementById('decisionDesc');
@@ -226,15 +228,25 @@ export function iniciar() {
   // a los `hidden` que `mostrarDecision` prendía y apagaba en cada panel: qué nodo se ve lo decide `data-pieza`.
   function mostrarLaParada(estado) {
     escena.revelar(estado, {
-      pintar: () => mostrarParada(estado.pendiente, {
-        estado,
-        ui,
-        rngUi,
-        responder,
-        pintarPrevia,
-        elementos: { decision: decisionElements, mercado: mercadoElements },
-        contenedores: { decision: decisionPanel, partido: decisionPanel, mercado: mercadoPanel, minijuego: minijuegoPanel }
-      })
+      pintar: () => {
+        // Antes de la parada: el último beat que el relato ya contó en esta página (todos los de `estado.logs` ya se
+        // contaron: la parada entra recién cuando el reproductor termina) y la página, a un toque.
+        try {
+          ui.renderParadaAntes(paradaAntesEl, estado, { desde: pagina.desde });
+        } catch (error) {
+          console.error('No se pudo armar "lo último que pasó":', error);
+          paradaAntesEl.hidden = true;
+        }
+        mostrarParada(estado.pendiente, {
+          estado,
+          ui,
+          rngUi,
+          responder,
+          pintarPrevia,
+          elementos: { decision: decisionElements, mercado: mercadoElements },
+          contenedores: { decision: decisionPanel, partido: decisionPanel, mercado: mercadoPanel, minijuego: minijuegoPanel }
+        });
+      }
     });
   }
 

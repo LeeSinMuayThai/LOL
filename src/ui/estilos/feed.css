@@ -372,3 +372,49 @@
   font-size: var(--fs-2);
   font-variant-numeric: tabular-nums;
 }
+
+/* --- "Lo último que pasó" de una parada (V2-C; PLAN.md §V.4 `.parada-antes`) ---------------------------------------
+   El relato (`#logList`) solo se ve en la pieza `relato`; una parada a mitad de split abre con esta franja: el último beat
+   que el relato ya contó, en UNA línea (si es largo, se corta con "…"), y "ver la página (n)" para abrir, acá mismo, los
+   beats de la página. Lo llena `renderParadaAntes` (components/feed.js). Oculta si la página no tiene beats todavía. */
+.parada-antes {
+  display: grid;
+  gap: var(--s-1);
+  padding: var(--s-2) var(--s-4);
+  background: var(--bg-sunken);
+  border-left: 3px solid var(--line-strong);
+  color: var(--ink-dim);
+  font-size: var(--fs-1);
+  line-height: var(--lh);
+}
+.parada-antes-rotulo {
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 600;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.parada-antes-ultimo {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.parada-antes-pagina > summary {
+  display: inline-block;
+  cursor: pointer;
+  color: var(--ice);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.parada-antes-beats {
+  display: grid;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+  max-height: 60vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}

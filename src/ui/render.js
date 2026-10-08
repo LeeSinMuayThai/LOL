@@ -10,7 +10,7 @@ export { renderDecision as mostrarDecisionEnPantalla } from './components/decisi
 export { renderMercado as mostrarMercadoEnPantalla } from './components/mercado.js';
 export { renderTarjeta } from './screens/tarjeta.js';
 export { renderFicha } from './components/ficha.js';
-export { renderFeed, renderPagina, desdeDeUltimosBeats } from './components/feed.js';
+export { renderFeed, renderPagina, renderParadaAntes, desdeDeUltimosBeats } from './components/feed.js';
 export { olvidarContenedor } from './core/reconciliar.js';
 export { renderDecision } from './components/decision.js';
 export { renderMercado } from './components/mercado.js';

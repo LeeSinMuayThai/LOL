@@ -16,7 +16,7 @@ import { etiquetaRol } from '../../data/roles.js';
 import { crearTarjetaResultado, crearTarjetaResultadoSerie } from './serie.js';
 import { crearTarjetaMundial } from './mundial.js';
 import { textoDeProbabilidadJugada } from '../../core/previaDePartido.js';
-import { reconciliar, reemplazarEnElLugar } from '../core/reconciliar.js';
+import { reconciliar, reemplazarEnElLugar, olvidarContenedor } from '../core/reconciliar.js';
 import { formaBeat } from '../../core/log.js';
 import { crearTarjetaCierre, crearLineaSplitAnterior } from './cierre.js';
 
@@ -370,4 +370,49 @@ export function renderPagina(contenedor, state, { desde = 0, hasta = state.logs.
 // últimos `limite` beats, la misma ventana que `renderFeed`.
 export function desdeDeUltimosBeats(logs, limite = LIMITE_FEED) {
   return inicioDeVentana(logs, logs.length, limite);
+}
+
+// "Lo último que pasó" de una parada (FASE V, V2-C; PLAN.md §V.4 `.parada-antes`, §V.5 "Una parada a mitad de split
+// reemplaza al relato"): el relato (`#logList`) se ve solo en la pieza `relato`; una parada abre con este nodo, que dice
+// en una línea el último beat que el relato YA contó en esta página y deja abrir la página entera ("ver la página (n)").
+// `contenedor` es `#paradaAntes`; `state` es el estado de la parada (todos sus logs ya se contaron: el reproductor los
+// revela antes de que entre una parada) y `desde` es `inicioDePagina`. Nunca muestra un beat por contar. Sin beats en la
+// página (la parada abre el split) el nodo queda oculto. El texto es plano (la `message` ya compuesta del beat): si es
+// largo lo corta el CSS con "…".
+export function renderParadaAntes(contenedor, state, { desde = 0 } = {}) {
+  const inicio = Math.max(0, Math.min(desde, state.logs.length));
+  const narrativos = agruparBeats(state.logs.slice(inicio), inicio).filter((beat) => beat.narrativa);
+  contenedor.replaceChildren();
+  if (narrativos.length === 0) {
+    contenedor.hidden = true;
+    return;
+  }
+  const ultimo = narrativos[narrativos.length - 1].narrativa;
+
+  const rotulo = document.createElement('span');
+  rotulo.className = 'parada-antes-rotulo';
+  rotulo.textContent = 'Lo último que pasó';
+  const linea = document.createElement('p');
+  linea.className = 'parada-antes-ultimo';
+  linea.textContent = String(ultimo.message ?? '').replace(/\s+/g, ' ').trim();
+
+  const pagina = document.createElement('details');
+  pagina.className = 'parada-antes-pagina';
+  const resumen = document.createElement('summary');
+  resumen.textContent = `ver la página (${narrativos.length})`;
+  const beats = document.createElement('div');
+  beats.className = 'parada-antes-beats';
+  pagina.append(resumen, beats);
+  // El desplegable se pinta al abrirlo: una parada no paga los nodos de una página que casi nunca se abre. Es la misma
+  // `renderPagina` del relato, hasta el final de lo contado.
+  pagina.addEventListener('toggle', () => {
+    if (pagina.open) {
+      olvidarContenedor(beats);
+      beats.replaceChildren();
+      renderPagina(beats, state, { desde: inicio });
+    }
+  });
+
+  contenedor.append(rotulo, linea, pagina);
+  contenedor.hidden = false;
 }

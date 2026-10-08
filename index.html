@@ -117,6 +117,11 @@
           <!-- FASE V (V2-B): qué nodo se ve lo decide `.shell[data-pieza]` (lo escribe solo src/ui/escena.js) contra el
                `data-piezas` de cada nodo (estilos/shell.css). Una pieza puede ser varios nodos. -->
           <div id="carrera" class="panel" data-piezas="relato decision partido mercado minijuego final">
+            <!-- V2-C (§V.4 `.parada-antes`; §V.5 "una parada a mitad de split reemplaza al relato"): lo llena src/ui/app.js al mostrar
+                 una parada (`renderParadaAntes`, components/feed.js): el último beat que el relato ya contó y un desplegable con la
+                 página. Oculto si la página no tiene beats todavía. El relato de abajo (`#logList`) solo se ve en la pieza `relato`. -->
+            <div id="paradaAntes" class="parada-antes" data-piezas="decision partido mercado" hidden></div>
+
             <!-- El bracket + el camino de la serie (fase T6): en la pieza `partido`,
                  mientras `state.serie.activa` (el `hidden` es de su renderer). -->
             <div id="serieContexto" class="serie-contexto" data-piezas="partido" hidden></div>
@@ -149,7 +154,7 @@
                  de 1180 px (sin acompañante) abre el cuarto con el contexto de la parada (src/ui/acompanante.js). -->
             <button id="verContexto" type="button" class="ver-contexto" data-piezas="decision partido mercado" hidden></button>
 
-            <div id="logList" class="log-list" aria-live="polite" data-piezas="relato decision partido mercado minijuego"></div>
+            <div id="logList" class="log-list" aria-live="polite" data-piezas="relato"></div>
 
             <!-- Fase 9R5b: la tarjeta de legado. Se muestra cuando la carrera termina. -->
             <div id="tarjeta" class="tarjeta" data-piezas="final" hidden></div>

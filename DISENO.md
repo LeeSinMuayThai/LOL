@@ -246,6 +246,14 @@ El proyecto debe incluir:
 | **Acompañante** (`aside#acompanante`) | UN panel, desde 1180 px: el contexto de la pieza (`acompananteDe(estado, pieza)`, pura). `data-acompanante` = su tipo; vacío = no ocupa lugar. Debajo de 1180, el chip `#verContexto` de la parada abre el cuarto equivalente | `acompanante.js` |
 | **Cuartos** (`dialog#cuarto`) | Vos · Temporada · Equipo · Mundo · Carrera · Crónica, con `showModal()` (foco atrapado, fondo inerte, Esc nativo). Se pintan solo al abrirse. Con uno abierto, el relato se pausa; al cerrar, el foco vuelve a la parada. Letras V/T/E/M/C/R (apagadas en inicio y minijuego) y `?` | `cuartos.js` + `cuartos/*.js`, `cuartos.css` |
 
+**El relato y las paradas** (`PLAN.md` §V.5: "una parada a mitad de split reemplaza al relato"). `#logList`, la
+página del split, solo se ve en la pieza `relato`. Una parada abre con `#paradaAntes` (`.parada-antes`, en
+`index.html`, de las piezas decision/partido/mercado): `renderParadaAntes` (`components/feed.js`, su CSS en
+`feed.css`) lo llena con el último beat que el relato ya contó en esta página (texto plano, una línea, cortada con
+"…") y un desplegable "ver la página (n)" que abre, dentro del mismo nodo, los beats de la página hasta ahí
+(`renderPagina`, pintada al abrir). Sin beats en la página (la parada abre el split) queda oculto. Al responder
+vuelve el relato con la misma página. Lo llama `app.js` (`mostrarLaParada`) con `pagina.desde`.
+
 **Los dos stores** (`ui/core/store.js`). `store` es el estado del motor: lo escribe `app.js` después de
 cada llamada al pipeline. `vista` es lo que la pantalla **ya contó**: lo escribe solo el director
 (`escena.revelar`) al terminar los beats, al retomar, al arrancar y en la final. Franja,
