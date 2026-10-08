@@ -140,9 +140,10 @@ export function iniciar() {
   // La página del relato (§V.5 "Una página por split"): `desde` es `inicioDePagina` (el `logs.length` de cuando se
   // llamó a `avanzarSplit`; NUNCA se mueve al resolver una decisión: al responder vuelve la misma página con los beats
   // nuevos abajo). `fotoInicio` es `fotoDeSplit` del estado de ese momento (con ella `cierreDeSplit` cuenta qué se
-  // movió). `ultimoCierre`: el cierre del split anterior; `anterior`: ese mismo cierre si la página abre con la línea
+  // movió). `ultimoCierre`: el cierre del split anterior; `cierreVisto`: si su tarjeta se vio (se anota al reproducirla, con
+  // la velocidad de ESE momento, o al reabrirla al retomar); `anterior`: ese mismo cierre si la página abre con la línea
   // "Split anterior: …" (la tarjeta no llegó a verse: INST o movimiento reducido).
-  let pagina = { desde: 0, fotoInicio: null, ultimoCierre: null, anterior: null };
+  let pagina = { desde: 0, fotoInicio: null, ultimoCierre: null, cierreVisto: false, anterior: null };
   let rng = null;
   // Regla invariable 1: los minijuegos tampoco pueden usar el azar del
   // navegador. Stream PROPIO, sembrado desde la misma seed pero separado del
@@ -303,7 +304,9 @@ export function iniciar() {
       desde: antes.logs.length,
       fotoInicio,
       ultimoCierre: pagina.ultimoCierre,
-      anterior: reproductor.sinEspera() ? pagina.ultimoCierre : null
+      cierreVisto: pagina.cierreVisto,
+      // Lo que importa es si la tarjeta del split anterior SE VIO (la velocidad de cuando se reprodujo), no la de ahora.
+      anterior: pagina.ultimoCierre && !pagina.cierreVisto ? pagina.ultimoCierre : null
     };
   }
 
@@ -314,6 +317,7 @@ export function iniciar() {
       inicioDePagina: pagina.desde,
       fotoInicio: pagina.fotoInicio,
       ultimoCierre: pagina.ultimoCierre,
+      cierreVisto: pagina.cierreVisto,
       logs: estado.logs.length
     };
   }
@@ -329,11 +333,14 @@ export function iniciar() {
       && (marcador.logs == null || marcador.logs === estado.logs.length);
     if (valido) {
       const ultimoCierre = marcador.ultimoCierre ?? null;
+      // Un marcador sin la marca (de antes de anotarla) cuenta como la velocidad de ahora, como se decidía antes.
+      const cierreVisto = typeof marcador.cierreVisto === 'boolean' ? marcador.cierreVisto : !reproductor.sinEspera();
       return {
         desde: marcador.inicioDePagina,
         fotoInicio: marcador.fotoInicio ?? null,
         ultimoCierre,
-        anterior: reproductor.sinEspera() ? ultimoCierre : null
+        cierreVisto,
+        anterior: ultimoCierre && !cierreVisto ? ultimoCierre : null
       };
     }
     let fotoInicio = null;
@@ -342,7 +349,7 @@ export function iniciar() {
     } catch (error) {
       console.error('No se pudo sacar la foto del split:', error);
     }
-    return { desde: ui.desdeDeUltimosBeats(estado.logs), fotoInicio, ultimoCierre: null, anterior: null };
+    return { desde: ui.desdeDeUltimosBeats(estado.logs), fotoInicio, ultimoCierre: null, cierreVisto: false, anterior: null };
   }
 
   // Fase T3: el feed se revela de a un beat por `reproductor.reproducirBeats`. FASE V (V2-B): mientras tanto la pieza es
@@ -363,6 +370,8 @@ export function iniciar() {
         console.error('No se pudo armar el cierre del split:', error);
       }
     }
+    // La tarjeta se ve si el relato espera entre beats: la velocidad se lee ACÁ, la de la llamada que la reproduce.
+    const tarjetaSeVe = Boolean(cierre) && !reproductor.sinEspera();
     await reproductor.reproducirBeats(logList, estadoActual.logs.slice(logsAntes), {
       registroAntes,
       registroDespues: estadoActual.career.registro,
@@ -373,6 +382,7 @@ export function iniciar() {
     });
     if (cierre) {
       pagina.ultimoCierre = cierre;
+      pagina.cierreVisto = tarjetaSeVe;
     }
 
     // Fase T8 (P.2): se guarda al cerrar cada split, siga de largo o
@@ -575,7 +585,7 @@ export function iniciar() {
       almacenamiento.borrarVista();
 
       // La ficha arranca con el estado inicial: el primer split se cuenta antes de moverla.
-      pagina = { desde: 0, fotoInicio: null, ultimoCierre: null, anterior: null };
+      pagina = { desde: 0, fotoInicio: null, ultimoCierre: null, cierreVisto: false, anterior: null };
       escena.revelar(store.leer());
       animarEntradaDelEscenario();
 

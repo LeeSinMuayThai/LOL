@@ -42,7 +42,8 @@ export function borrarCarreraGuardada() {
 }
 
 // El marcador de la página del relato (FASE V, V2-B; PLAN.md §V.5 "Retomar"): `{ seed, inicioDePagina, fotoInicio,
-// ultimoCierre, logs }`, en una clave APARTE de la carrera guardada — la UI no toca `core/guardado.js` ni la forma del
+// ultimoCierre, cierreVisto, logs }` (`cierreVisto`: si la tarjeta de `ultimoCierre` se llegó a ver),
+// en una clave APARTE de la carrera guardada — la UI no toca `core/guardado.js` ni la forma del
 // guardado. Se escribe junto con `guardarCarrera` y se borra junto con `borrarCarreraGuardada`. Al retomar se usa solo si
 // es de esta carrera (misma seed, `inicioDePagina <= logs.length` y, si lo trae, el mismo largo de `logs`); si no, la
 // página son los últimos beats y la tarjeta de cierre sale sin delta. Mismo trato "mejor esfuerzo" que la carrera.
