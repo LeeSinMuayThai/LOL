@@ -15,7 +15,7 @@ import { getPath } from '../../core/selectors.js';
 //
 // FASE V (V2-B): además de paths (`"player.stats.mecanica"`, `"career.jerarquia"`,
 // ...), un campo puede ser una FUNCIÓN del estado (el nivel es una cuenta, no
-// un campo: `function nivel(s) { ... }`). Dos formas:
+// un campo: `function nivel(estado) { ... }`). Dos formas:
 //   - un array de paths y/o funciones: la clave del resultado es el path o el
 //     `name` de la función;
 //   - un objeto `{ clave: path | función }`: la clave es la que se declara.

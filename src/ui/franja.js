@@ -124,7 +124,7 @@ export function crearFranja({ franja, estadoEl, etiquetaRol, fotoDeLaPagina, ani
       return null;
     }
     if (!delta || semilla !== estado.seed) {
-      delta = crearDelta({ etiqueta: (s) => numeroDe(s).etiqueta, valor: (s) => numeroDe(s).valor });
+      delta = crearDelta({ etiqueta: (vista) => numeroDe(vista).etiqueta, valor: (vista) => numeroDe(vista).valor });
       semilla = estado.seed;
     }
     try {
