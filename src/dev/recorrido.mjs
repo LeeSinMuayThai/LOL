@@ -902,7 +902,9 @@ for (let it = 0; it < 3000; it++) {
     const t = await page.innerText('#decisionTitle').catch(() => '');
     if (!opts.length) { L('!! decision sin opciones'); await captura('decision-sin-opciones'); stuck += 3; continue; }
     const serieViva = await page.evaluate(() => { const e = document.querySelector('#serieContexto'); return !!e && e.checkVisibility({ checkVisibilityCSS: true }); });
-    const tipoP = tipoDeParada('decision', t, opts, { topbar });
+    // V3b: la fecha marcada (pieza `partido` con una decision que no es plan de serie ni Swiss) es su propio tipo; antes caia en 'decision'.
+    let tipoP = tipoDeParada('decision', t, opts, { topbar });
+    if (tipoP === 'decision' && pieza === 'partido') tipoP = 'fecha-marcada';
     const primera = !visitadas[tipoP];
     visitadas[tipoP] = (visitadas[tipoP] || 0) + 1;
     if (MODO === 'recorrido') {

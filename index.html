@@ -122,16 +122,17 @@
                  página. Oculto si la página no tiene beats todavía. El relato de abajo (`#logList`) solo se ve en la pieza `relato`. -->
             <div id="paradaAntes" class="parada-antes" data-piezas="decision partido mercado" hidden></div>
 
-            <!-- El bracket + el camino de la serie (fase T6): en la pieza `partido`,
-                 mientras `state.serie.activa` (el `hidden` es de su renderer). -->
-            <div id="serieContexto" class="serie-contexto" data-piezas="partido" hidden></div>
-            <div id="previa" class="previa" data-piezas="partido minijuego" hidden></div>
-
             <div id="decision" class="decision" data-piezas="decision partido" hidden>
               <div id="decisionTitle" class="decision-title"></div>
               <div id="decisionDesc" class="decision-desc"></div>
               <div id="decisionOptions" class="decision-options"></div>
             </div>
+
+            <!-- FASE V (V3b, regla 2 de §V.3): lo que se decide va ARRIBA (`#decision`), y el contexto del partido viene después, cada uno en
+                 UNA línea con el resto a un toque: el marcador de la serie (fase T6; solo en la pieza `partido` y mientras `state.serie.activa`
+                 o el Swiss; el `hidden` es de su renderer) y la previa (K2d; la ve también el minijuego, donde queda ANTES del widget). -->
+            <div id="serieContexto" class="serie-contexto" data-piezas="partido" hidden></div>
+            <div id="previa" class="previa" data-piezas="partido minijuego" hidden></div>
 
             <div id="minijuego" class="minijuego" data-piezas="minijuego" hidden>
               <div id="minijuegoTitle" class="decision-title"></div>

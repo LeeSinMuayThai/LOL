@@ -4,11 +4,32 @@
 /* K2d — la previa del partido: tu fuerza contra la del rival y la p que el motor tira. */
 .previa {
   margin: var(--s-2) 0;
-  padding: var(--s-3);
+  padding: var(--s-2) var(--s-3);
   background: var(--bg-raised);
   border: 1px solid var(--line);
   clip-path: var(--clip-corte-sm);
 }
+/* V3b: la previa del acompañante (la completa, abierta) conserva el aire de siempre. */
+.previa--completa { margin-top: 0; padding: var(--s-3); }
+/* V3b: en el escenario, UNA línea (la p, contra quién y lo que define el partido) y el desglose detrás de un desplegable. */
+.previa-resumen > summary,
+.serie-resumen > summary { list-style: none; cursor: pointer; }
+.previa-resumen > summary::-webkit-details-marker,
+.serie-resumen > summary::-webkit-details-marker { display: none; }
+.previa-linea { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-3); min-width: 0; }
+.previa-linea-p { display: inline-flex; align-items: baseline; gap: var(--s-1); }
+.previa-linea-pct { font-family: var(--font-display); font-size: var(--fs-5); color: var(--live); line-height: 1; font-variant-numeric: tabular-nums; }
+.previa-linea-etq { font-size: var(--fs-0); color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.06em; }
+.previa-linea-rival { font-size: var(--fs-2); color: var(--ink); min-width: 0; overflow-wrap: anywhere; }
+.previa-linea-sub { font-size: var(--fs-1); color: var(--ink-dim); min-width: 0; overflow-wrap: anywhere; }
+.previa-linea-mas,
+.serie-linea-mas { margin-left: auto; font-size: var(--fs-0); color: var(--ice-dim); text-transform: uppercase; letter-spacing: var(--track-label); white-space: nowrap; }
+.previa-linea-mas::after,
+.serie-linea-mas::after { content: ' ▾'; }
+.previa-resumen[open] > summary .previa-linea-mas::after,
+.serie-resumen[open] > summary .serie-linea-mas::after { content: ' ▴'; }
+.previa-detalle { margin-top: var(--s-2); padding-top: var(--s-2); border-top: 1px solid var(--line); }
+
 .previa-cabecera { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s-1) var(--s-2); }
 .previa-titulo { font-family: var(--font-display); font-size: var(--fs-3); color: var(--ink); text-transform: uppercase; letter-spacing: 0.04em; }
 .previa-sub { font-size: var(--fs-1); color: var(--ink-dim); }
@@ -90,10 +111,29 @@
    ========================================================================== */
 
 .serie-contexto {
-  margin-top: var(--s-4);
-  padding: var(--s-3) var(--s-4);
+  margin-top: var(--s-2);
+  padding: var(--s-2) var(--s-3);
   background: var(--bg-raised);
   border-left: 3px solid var(--gold);
+}
+/* V3b: el tablero completo (el del acompañante, abierto) conserva el aire de siempre. */
+.serie-contexto--completo { margin-top: 0; padding: var(--s-3) var(--s-4); }
+
+/* V3b: en el escenario, el marcador en UNA línea (rival, marcador, mapa n de N, Fearless) y el camino detrás de un desplegable. */
+.serie-linea { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-3); min-width: 0; }
+.serie-linea-duelo { display: inline-flex; align-items: center; gap: var(--s-2); min-width: 0; }
+.serie-linea-score { display: inline-flex; align-items: baseline; gap: var(--s-1); font-family: var(--font-display); font-size: var(--fs-5); font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+.serie-linea-rival { font-size: var(--fs-2); color: var(--ink); min-width: 0; overflow-wrap: anywhere; }
+.serie-linea-dato { font-size: var(--fs-1); color: var(--ink-dim); }
+.serie-detalle { margin-top: var(--s-2); padding-top: var(--s-2); border-top: 1px solid var(--line); }
+
+/* Desde 1180 px el tablero (o la previa) entero está en el acompañante y el escenario NO lo repite: ni la línea ni su desplegable
+   (menos números a la vista, y lo que se decide queda solo). Qué trae el acompañante lo dice el atributo
+   data-acompanante de #acompanante (ui/acompanante.js). En un plan de serie o en el Swiss el acompañante es el tablero, no la previa:
+   ahí la previa SÍ queda en el escenario, con su desplegable. Debajo de 1180 px no hay acompañante y las dos líneas son todo el contexto. */
+@media (min-width: 1180px) {
+  .shell:has(#acompanante[data-acompanante="serie"], #acompanante[data-acompanante="swiss"]) .serie-contexto:not(.serie-contexto--completo),
+  .shell:has(#acompanante[data-acompanante="previa"]) .previa:not(.previa--completa) { display: none; }
 }
 
 .serie-bracket { display: flex; gap: var(--s-1); margin-bottom: var(--s-2); }
@@ -187,3 +227,8 @@
 .serie-cierre-texto {
   color: var(--ink-dim);
 }
+
+/* V3b: el separador del marcador en la línea no es el de 28 px del tablero grande; y el resumen del Swiss del acompañante
+   cuenta el récord entero en vez de cortarlo con "…". */
+.serie-linea-score .serie-score-sep { font-size: inherit; }
+.serie-contexto--completo .serie-swiss-resumen .serie-lado-nombre { white-space: normal; overflow: visible; text-overflow: clip; }
