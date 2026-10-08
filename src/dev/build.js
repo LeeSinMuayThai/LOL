@@ -106,7 +106,13 @@ const SPLITS_DE_VERIFICACION = 30;
 // components +24, paradas +16, core +11) y src/core +11 (el registro por split, el escalón y el seguimiento del Golden
 // Road). Subido a 2600: ~83 KB (3,3%) de margen sobre el peso medido ese día, no una expectativa. V7 re-mide con el CSS
 // muerto de los rieles ya borrado.
-const PESO_MAXIMO_KB = 2600;
+//
+// Re-medido en la integración de V4 (2026-10-08, `v-integracion` cad8449): 2621 KB contra 2600. Lo que creció desde la
+// ola V3 (2517) es la ola 4 y V4, lo que pidió el plan de la FASE V: los minijuegos con sus fases (V3d), la franja y los
+// cuartos con la ficha única (V3e), el cuarto Carrera con `ui/core/trayectoria.js` y la medalla del Golden Road (V5), y
+// el movimiento (V4: los deltas animados, los carteles de página, la pausa del cierre de año). Subido a 2700: ~79 KB
+// (3%) de margen sobre el peso medido ese día, no una expectativa. V7 re-mide con el CSS muerto borrado.
+const PESO_MAXIMO_KB = 2700;
 
 function copiar(desde, hacia) {
   const stat = fs.statSync(desde);
