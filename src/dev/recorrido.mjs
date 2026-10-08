@@ -265,7 +265,7 @@ function puntuarCarta(txt, tierActual) {
   if (/más fuerte/i.test(txt)) s += 30; else if (/(\d+)\.º de (\d+)/.test(txt)) { const [, a, b] = txt.match(/(\d+)\.º de (\d+)/); s += 30 * (1 - (a - 1) / Math.max(1, b - 1)); } else if (/mitad de tabla/i.test(txt)) s += 15; else if (/de los de abajo/i.test(txt)) s += 3;
   const BONO = { 'LCK CL': 0, LCK: 40, LPL: 40, LEC: 25, LCS: 12, 'LCP Challengers': 0, LCP: 10, CBLOL: 5 };
   for (const [n] of LIGAS) if (txt.includes(n)) { s += BONO[n] ?? 0; break; }
-  const jer = txt.match(/Jerarquía: \d+ \S+ (\d+)/); if (jer) s += +jer[1] * 0.2;
+  const jer = txt.match(/Jerarquía en el equipo: (\d+)(?: \S+ (\d+))?/); if (jer) s += +(jer[2] ?? jer[1]) * 0.2; // la proyectada (`hasta`); sin flecha, la de hoy
   const sal = txt.match(/\$(\d+)k\/año/); if (sal) s += +sal[1] / 100;
   return { s, tier, renov: /RENOVACI/i.test(txt) };
 }
