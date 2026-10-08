@@ -64,9 +64,12 @@ import { pausaDeMercadoMigrada } from '../systems/mercado.js';
 // "no hay foto"; uno de la 11 o de la 10 pasa además por las migraciones de antes · 14 (K6d, la integración de K6d-N, K6d-B y
 // K6d-P en un solo número — K6d-B, D77: `flags.mentalAvisadaPro`, la lista de cierres que un aviso ya cubrió con su %, y
 // `flags.ofertaGuardada`, la oferta que el club te guarda un split; K6d-N y K6d-P no cambiaron la forma). Un guardado de la 13
-// carga con `migrarDe13`, que arranca las dos con sus valores iniciales; uno de la 12 o de antes pasa además por las de antes.
-export const VERSION = 14;
-const VERSIONES_MIGRABLES = [10, 11, 12, 13];
+// carga con `migrarDe13`, que arranca las dos con sus valores iniciales; uno de la 12 o de antes pasa además por las de antes · 15 (FASE V,
+// GR-m, el Golden Road: `career.registro.porSplit`, una fila por split jugado en una tabla, `{ anio, split, org, liga, tier,
+// posicion, equipos, nivel }`). Un guardado de la 14 carga con `migrarDe14`, que lo arranca vacío: lo ya jugado no trae sus filas,
+// así que esos años no pueden dar Golden Road (aceptado, PLAN.md §V.6); uno de la 13 o de antes pasa además por las de antes.
+export const VERSION = 15;
+const VERSIONES_MIGRABLES = [10, 11, 12, 13, 14];
 
 // El marcador de los años pro, reconstruido de lo que la 11 sí guardaba. La fila del registro de la org del primer contrato de tier
 // 2 o 1 la abre `roster.js` el split siguiente al de la firma, así que la firma fue en su `desdeSplit` - 1. Sin esa fila todavía
@@ -185,19 +188,37 @@ export function migrarDe13(state) {
   return { ...state, flags };
 }
 
-// De la versión del guardado a la función que lo deja en la actual (la 10 pasa por `migrarDe10`, `migrarDe11`, `migrarDe12` y
-// `migrarDe13`; la 11, por las tres últimas; la 12, por las dos últimas).
+// 14 -> 15. FASE V (GR-m): `career.registro.porSplit` arranca vacío (`[]`, el valor del estado inicial): la 14 no escribía las filas de
+// los splits ya jugados, así que esos años no pueden dar Golden Road; desde acá, cada split jugado deja la suya. Si ya hay filas se
+// respetan. Un estado sin carrera o sin registro (un guardado roto a medias) queda como está: no hay dónde ponerlo. Puro: no toca el
+// RNG ni el reloj.
+export function migrarDe14(state) {
+  const registro = state.career?.registro;
+  if (!registro) {
+    return state;
+  }
+  return {
+    ...state,
+    career: { ...state.career, registro: { ...registro, porSplit: Array.isArray(registro.porSplit) ? registro.porSplit : [] } }
+  };
+}
+
+// De la versión del guardado a la función que lo deja en la actual (la 10 pasa por `migrarDe10`, `migrarDe11`, `migrarDe12`,
+// `migrarDe13` y `migrarDe14`; la 11, por las cuatro últimas; la 12, por las tres últimas; la 13, por las dos últimas).
 function migrar(version, state) {
   if (version === 10) {
-    return migrarDe13(migrarDe12(migrarDe11(migrarDe10(state))));
+    return migrarDe14(migrarDe13(migrarDe12(migrarDe11(migrarDe10(state)))));
   }
   if (version === 11) {
-    return migrarDe13(migrarDe12(migrarDe11(state)));
+    return migrarDe14(migrarDe13(migrarDe12(migrarDe11(state))));
   }
   if (version === 12) {
-    return migrarDe13(migrarDe12(state));
+    return migrarDe14(migrarDe13(migrarDe12(state)));
   }
-  return version === 13 ? migrarDe13(state) : state;
+  if (version === 13) {
+    return migrarDe14(migrarDe13(state));
+  }
+  return version === 14 ? migrarDe14(state) : state;
 }
 
 export function serializar(state, rng, rngUi) {

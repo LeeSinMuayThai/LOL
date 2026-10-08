@@ -167,16 +167,27 @@ La carrera debe incluir contratos, sueldos, cláusulas, imports, residencia, ada
     postpartido.json: el contenido de las fechas marcadas de la temporada)
   /rutinas (amateur.json, planes.json)
 
-/src/ui — dejó de estar vacía en la fase 8 (cierra D7). `index.html` queda como shell +
-  `<style>` + los minijuegos (que la fase 8 no mueve, PLAN.md §8.5) + el control de flujo
-  que llama al pipeline (`comenzarCarrera`/`avanzar`/`responder`).
-  render.js — orquestador, único punto de entrada que importa `index.html`
+/src/ui — dejó de estar vacía en la fase 8 (cierra D7). `index.html` declara el DOM del shell (sin
+  lógica: el controlador es `app.js`); la arquitectura de la pantalla de FASE V está en §4.5.
+  app.js — el controlador: el pipeline (`avanzar`/`responder`), los dos stores y la página por split
+  escena.js — el director de escena (el único que escribe `data-pieza` y la `vista`) + el contrato de las familias
+  franja.js · cuartos.js (+ /cuartos) · acompanante.js — el chrome de V2-C (§4.5)
+  teclado.js — Enter/Espacio nativos, 1-4, las letras de los cuartos, `?`; Esc nunca navega
+  shell.js — el clic audible y la luz de estudio · reproductor.js — los beats del relato (y su pausa)
+  render.js — orquestador de los renderers de hoy
   resultado.js (K1 — copiar resultado, link del desafío e historial local; el storage puede tirar)
+  /core — lo puro de la UI: `escena.js` (`piezaDe`, `acompananteDe`, el cierre de split), `store.js`, `reconciliar.js`,
+    `delta.js` (V4: `crearDelta` y `moverNumero`, los números que se mueven), `trayectoria.js` (V5: lo que dibuja Carrera, el
+    escalón y la medalla del Golden Road; puro)
+  /graficos — la capa de dibujo (V1/V5): cinta, línea, barras, escalera, hexa, bala; todo color sale de `tokens.css`
+  /paradas — las familias de parada (decisión, partido, mercado, minijuego): `mostrar` + `acompanante`
+  /paneles — tabla, calendario, plantilla, meta, generación, top mundial (los pintan los cuartos y el acompañante)
   /components
-    ficha.js — LA TARJETA permanente (vive en todas las pantallas de carrera)
+    ficha.js — la ficha entera (desde V2-C, en el cuarto Vos y en el acompañante; ya no está siempre a la vista)
     barra.js — barra de progreso con hitos con nombre (arraigo, jerarquía)
     statRow.js — los 6 atributos de rol con flechas ▲▼ y el destacado en color
     decision.js — la tarjeta de decisión (opciones; los minijuegos se desvían antes)
+    cierre.js (V2-B/V4/V5) — la tarjeta de cierre de un split y del año, con el escalón y el Golden Road
     previaPartido.js (K2d) — la tarjeta de la previa: tu fuerza desglosada contra el rival y la p
     mundial.js (K5-A) — el Swiss resumido (tu récord y tus cruces) y el bracket con tu camino
     feed.js — el log, con los logs `tecnico: true` atenuados
@@ -184,12 +195,13 @@ La carrera debe incluir contratos, sueldos, cláusulas, imports, residencia, ada
     coste de arraigo y el riesgo, todo antes de firmar
   /screens
     inicio.js — rol + mains (dueño de su propio estado de selección)
-    carrera.js — orquesta ficha + feed; la decisión se pinta aparte
+    tarjeta.js — la tarjeta final, con la medalla del Golden Road (`carrera.js` se fue en V2-C con los rieles)
 
 /src/dev
   simulate.js · validate.js · guards.js · cobertura.js · estrategias.js
   huella.js (K0 — la huella T1 de 40 × 30 y, desde K1, la del juego entero) · agencia.js (K0)
   build.js (P.6 — `dist/` con techo de peso duro)
+  recorrido.mjs (V2-A — la carrera en Chromium que mide la pantalla) · contraste.mjs (V7 — la regla de contraste, §4.6)
 
 ### 4.2 Pipeline
 
@@ -223,6 +235,102 @@ El proyecto debe incluir:
 > `cobertura.js` saltea los momentos marcados `pendiente`, que fue por donde se coló el bug D25.
 > Una herramienta que mira para otro lado da peor información que no tenerla: los dos huecos se
 > cierran en la fase 9E.
+
+### 4.5 La pantalla (FASE V)
+
+> Mapa de archivos al cierre de V7 (`PLAN.md` §V.3 a §V.6 son la fuente; el contrato de las familias de
+> parada está en la cabecera de `src/ui/escena.js`). Es un mapa, no un changelog. La regla de fondo:
+> **una sola cosa pide atención** — el escenario muestra una pieza por vez y lo demás está a un toque.
+
+**Las cuatro zonas** (todas declaradas en `index.html`; ninguna se monta desde JS):
+
+| Zona | Qué es | Dónde |
+|---|---|---|
+| **Franja** (`header.franja`) | ≤ 64 px (dos líneas en el celular): handle · rol, club, edad · año · ventana, el número (nivel con banda y el delta del split en curso, que se mueve al final del relato; en amateur, rango/LP), velocidad, sonido, `?` y la barra de cuartos (en el celular, abajo y fija) | `franja.js`; CSS en `shell.css` y `cuartos.css` |
+| **Escenario** (`#escenario`) | Una columna de ~720 px, centrada. `.shell[data-pieza]` ∈ {inicio, relato, decision, partido, mercado, minijuego, final}: cada nodo declara sus piezas en `data-piezas` y `shell.css` esconde lo que no es de la activa | `escena.js` (el director) + las familias de `paradas/` |
+| **Acompañante** (`aside#acompanante`) | UN panel, desde 1180 px. `data-acompanante` = su tipo; vacío = no ocupa lugar y el escenario se centra. Debajo de 1180 px, el chip `#verContexto` de la parada abre el cuarto equivalente | `acompanante.js` |
+| **Cuartos** (`dialog#cuarto`) | Vos · Temporada · Equipo · Mundo · Carrera · Crónica con `showModal()` (foco atrapado, fondo inerte, Esc nativo). Se pintan solo al abrirse, leyendo la `vista`; con uno abierto el relato se pausa y al cerrar el foco vuelve a la parada | `cuartos.js` + `cuartos/*.js`, `cuartos.css` |
+
+**Las piezas del escenario.** `relato` (la página del split en curso, `#logList`), `decision` (la parada genérica: eventos,
+cierre de año con su plan, plan amateur, retiro y vuelta, salud, servicio, cabeza), `partido` (fecha marcada, plan de
+Fearless, mapa decisivo, Swiss y bracket), `mercado`, `minijuego` (con su fase previa: la charla del coach y "¡Vamos!"),
+`inicio` y `final` (la tarjeta). Cada parada abre con `#paradaAntes` (`.parada-antes`, de las piezas decision/partido/mercado):
+una línea con el último beat que el relato ya contó y un desplegable "ver la página (n)" con el resto de la página; oculto
+si la parada abre el split (`renderParadaAntes`, `components/feed.js`).
+
+**El acompañante, por tipo** (`acompananteDe(estado, pieza)`, pura, en `ui/core/escena.js`; también devuelve el cuarto
+equivalente). En este orden: inicio, final o minijuego → nada · amateur → `vos` (rango y barras) · mercado → `mercado` (el
+mercado del mundo; tu contrato y tu valor ya están en la parada) · cierre de año, retiro o vuelta → `carrera` (el escalón, el
+Golden Road vivo y una mini trayectoria) · serie → `serie` (bracket, marcador y Fearless) · Swiss → `swiss` · fecha marcada →
+`previa` (la previa completa) · temporada activa → `tabla` · con club → `vos`.
+
+**Los seis cuartos.** Vos (la ficha entera; en la final, los picos de la carrera) · Temporada (la tabla en vivo y el calendario;
+entre splits, la tabla cerrada del último) · Equipo (la plantilla) · Mundo (el meta, tu generación, el top mundial) · Carrera
+(`cuartos/carrera.js`: la cinta de clubes, la curva fina de nivel, la nota de cada año, los hitos, el archirrival, el escalón y el
+Golden Road) · Crónica (lo que pasó, por año y por split). `cuartos/ayuda.js` es la ayuda de `?`.
+
+**La página por split y el cierre de año.** El relato cuenta solo el split en curso (`pagina.desde` en `app.js`); al terminar
+entra una **tarjeta de cierre** como último beat (`components/cierre.js`; sus datos salen de `cierreDeSplit` y `deltaDeCierre` de
+`ui/core/escena.js`): el resultado y el número que se movió. No frena: usa la espera de ese beat. Si el split cerró un año y el
+motor no frenó en el cierre (`edadCierre`), la tarjeta es "Cierre de 2031": suma la nota del año, el escalón y el Golden Road, y
+el reproductor la sostiene `ESPERA_CIERRE_ANIO_MS` (x1 2400 ms, x2 1200, INST 0; una por año como máximo, nunca junto a la
+parada del motor; Espacio la salta). Al responder una parada vuelve el relato con la misma página. La línea
+`crearLineaSplitAnterior` abre la página siguiente cuando la tarjeta no llegó a verse (INST o movimiento reducido).
+
+**Los dos stores** (`ui/core/store.js`). `store` es el estado del motor: lo escribe `app.js` después de cada llamada al
+pipeline. `vista` es lo que la pantalla **ya contó**: lo escribe solo el director (`escena.revelar`) al terminar los beats, al
+retomar, al arrancar y en la final. Franja, acompañante, cuartos y luz de estudio leen `vista`, nunca `store`: mientras el
+relato cuenta un split nada de eso cambia (regla 4 de §V.3: nada adelanta el resultado). Lo mide `src/dev/recorrido.mjs`.
+
+**El teclado** (`teclado.js`; no ve `estado`, solo el DOM). Enter y Espacio activan lo nativo del foco (Espacio con el foco en el
+body saltea un beat del relato). **1-4** hacen clic en `[data-atajo=n]` de la pieza activa (en el mercado llevan el foco al
+"Firmar" de esa oferta y Enter firma). **V/T/E/M/C/R** abren los cuartos (con uno abierto, cambian de pestaña); `?` abre la
+ayuda. Esc nunca navega: cierra el cuarto abierto o el "Avanzado" del inicio. En el minijuego los cuartos y `?` están apagados
+(son dueños de Q/W/E/R, A/D, A/S y 1-5); solo en su fase **previa** valen **V** ("¡Vamos!") y **1-n** (la charla del coach).
+
+**Quién es dueño de qué** (los archivos de abajo no se editan desde otra familia):
+
+| Archivo(s) | Dueño |
+|---|---|
+| `index.html`, `app.js`, `ui/escena.js`, `teclado.js`, `shell.css`, `primitivos.css`, `ui/core/escena.js`, `ui/core/store.js`, `ui/core/reconciliar.js`, `ui/core/delta.js` | compartidos: ninguna familia los edita |
+| `paradas/decision.js`, `components/decision.js`, `decision.css` | la parada genérica |
+| `paradas/partido.js`, `components/{serie,previaPartido,mundial}.js`, `serie.css` | el partido (su `acompanante` pinta `serie`, `swiss` y `previa`) |
+| `paradas/mercado.js`, `components/mercado.js`, `mercado.css` | el mercado (su `acompanante` pinta `mercado`) |
+| `paradas/minijuego.js`, `components/minijuegos/*`, `minijuegos.css` | los minijuegos, la prueba y la prensa |
+| `franja.js`, `cuartos.js`, `cuartos/*.js` (salvo `carrera.js`), `acompanante.js`, `components/ficha.js`, `paneles/*`, `cuartos.css`, `ficha.css`, `paneles.css` | la franja y los cuartos |
+| `ui/core/trayectoria.js`, `cuartos/carrera.js`, `components/cierre.js`, `graficos/*` | la carrera: lo puro de lo que dibuja Carrera, la medalla y el escalón (`trayectoriaDeCarrera`, `seguimientoParaMostrar`, `goldenRoadsDeEstado`, `medallaDeGoldenRoad`); regla 15: lo dibujado es el registro |
+
+### 4.6 El contraste (D48)
+
+> Escrito en V7. "Se lee a un metro" dejó de ser una opinión: es una regla con un script.
+
+**La regla.** (1) Todo texto visible tiene un contraste WCAG de **al menos 4,5:1** contra su fondo real; **3:1** si es texto
+grande (≥ 24 px, o ≥ 18,66 px en negrita). (2) Los adornos que transmiten estado (el borde de una opción elegida, el anillo
+o el cambio de borde del foco) llevan **al menos 3:1** contra lo que tienen alrededor.
+
+**La medida** (a mano; **no** es un check de `validate.js`, para no sumar un check que se pelee con el diseño):
+
+```
+node server.js                      # en otro terminal (PORT=8xxx si el 8000 está ocupado)
+node src/dev/contraste.mjs --puerto 8000 --seed 25 [--anchos 1440x900,390x844] [--salida <dir>]
+```
+
+Juega una carrera corta en Chromium (elige la primera opción de cada parada) y audita cada pieza distinta, cada acompañante, el
+relato a 1× y los seis cuartos, a 1440 y a 390. Por cada nodo de texto visible calcula, con `getComputedStyle`, el color del
+texto (con su alfa y el `opacity` de los ancestros) y el fondo efectivo (las capas de `background-color` de los ancestros,
+componiendo alfas), y reporta los que no llegan, agrupados por selector y colores. Sale con código 1 si hay fallos. No mide
+texto sobre una imagen ni sobre un degradado (usa solo el color de fondo), ni `::before/::after`, ni el `::backdrop` del
+`<dialog>`; los controles deshabilitados o con `pointer-events: none` están exentos (WCAG). Los colores se arreglan **en
+`tokens.css`**: se corre el script cada vez que se toca uno.
+
+**Lo medido** (seed 25): antes, 286 nodos (41 patrones) en 1440 y 239 (32) en 390 no llegaban; casi todos eran `--ink-mute`
+(#5e6a78, 3,25:1 sobre `--bg-raised`), que el juego usa para etiquetas, atajos y notas que sí se leen. Ahora `--ink-mute` es
+#7a8a9c (misma tonalidad; 5,07:1 sobre `--bg-raised`) y quedan **76 nodos en 8-9 patrones**, todos de dos causas que un token
+no arregla: (a) la magnitud de los chips de la previa (`.option-previa-kicker--magnitud-baja/media`, decision.css) se codifica
+con `opacity` 0,55 y 0,8, y (b) el rojo `--danger` como texto (`--baja`, `.option-riesgo--ruleta`) sobre el relleno cian de la opción
+en hover o elegida da 3,28:1 incluso a opacidad plena (más `.campeon-tile-ini` oxidado, `opacity` 0,45). Arreglarlo es una
+decisión de diseño (otra codificación de la magnitud y un rojo de texto más claro), no un retoque de token. Los adornos de estado
+(36 medidos a 1440) llegan todos.
 
 ## 5. Contenido narrativo
 

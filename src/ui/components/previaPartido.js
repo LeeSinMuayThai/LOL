@@ -4,13 +4,88 @@ import { crearOrgChip } from './orgChip.js';
 // la fecha marcada y antes de un mapa. Solo pinta lo que arma el selector puro
 // `previaDeDecision` (`core/previaDePartido.js`): la p que muestra es la que el
 // motor tira, y todos los textos ya vienen con nombres para mostrar.
-export function renderPrevia(container, previa) {
+//
+// FASE V (V3b, regla 2 de §V.3: "primero lo que se decide"): en el escenario la previa es UNA línea —la p, el rival y lo que
+// define el partido— y el desglose entero va detrás de un desplegable (nada se saca: queda a un toque). `completo` pinta la
+// tarjeta entera y abierta: es la del acompañante (≥ 1180 px, `acompanante.js`), donde el escenario no repite la línea
+// (`estilos/serie.css`) para que no aparezca dos veces.
+//
+// El desplegable recuerda si lo abriste: la previa se repinta en cada parada del mismo partido y sin esto se cerraba solo. Pero
+// vale solo dentro de ese partido: la clave es el partido (la serie entera con un rival y una ronda; la fecha o el cruce del
+// Swiss contra su rival), y en uno nuevo arranca cerrado (el contenedor `#previa` es único y permanente). Es estado por
+// contenedor (`WeakMap`), no de módulo: el escenario y el acompañante no se pisan.
+const memoria = new WeakMap();
+
+function clavePartido(previa) {
+  return `${previa.tipo === 'mapa' ? 'serie' : previa.tipo}|${previa.rival?.nombre ?? ''}|${previa.subtitulo ?? ''}`;
+}
+
+export function renderPrevia(container, previa, { completo = false } = {}) {
   if (!previa) {
+    // Sin previa no hay partido: el siguiente arranca con el desplegable cerrado.
+    const recordada = memoria.get(container);
+    if (recordada) {
+      recordada.clave = null;
+    }
     container.hidden = true;
     container.replaceChildren();
     return;
   }
 
+  const partes = partesDeLaPrevia(previa);
+  if (completo) {
+    container.replaceChildren(...partes);
+    container.hidden = false;
+    return;
+  }
+
+  let m = memoria.get(container);
+  if (!m) {
+    m = { abierto: false, clave: null };
+    memoria.set(container, m);
+  }
+  const clave = clavePartido(previa);
+  if (m.clave !== clave) {
+    m.clave = clave;
+    m.abierto = false;
+  }
+  const detalles = document.createElement('details');
+  detalles.className = 'previa-resumen';
+  detalles.open = m.abierto;
+  detalles.addEventListener('toggle', () => { m.abierto = detalles.open; });
+  const resumen = document.createElement('summary');
+  resumen.className = 'previa-linea';
+  resumen.append(...lineaDeLaPrevia(previa));
+  const detalle = document.createElement('div');
+  detalle.className = 'previa-detalle';
+  detalle.append(...partes);
+  detalles.append(resumen, detalle);
+  container.replaceChildren(detalles);
+  container.hidden = false;
+}
+
+function texto(clase, contenido) {
+  const el = document.createElement('span');
+  el.className = clase;
+  el.textContent = contenido;
+  return el;
+}
+
+// La línea: la p (lo que más pesa al decidir), contra quién y lo que define este partido (el subtítulo: "Se define la
+// clasificación", la ronda, "el de vida o muerte"). El porqué largo y las fuerzas van adentro.
+function lineaDeLaPrevia(previa) {
+  const p = document.createElement('span');
+  p.className = 'previa-linea-p';
+  p.append(texto('previa-linea-pct', `${previa.porcentaje}%`), texto('previa-linea-etq', 'de ganar'));
+  const partes = [p, texto('previa-linea-rival', `vs ${previa.rival.nombre}`)];
+  if (previa.subtitulo) {
+    partes.push(texto('previa-linea-sub', previa.subtitulo));
+  }
+  partes.push(texto('previa-linea-mas', 'Previa'));
+  return partes;
+}
+
+function partesDeLaPrevia(previa) {
   const cabecera = document.createElement('div');
   cabecera.className = 'previa-cabecera';
   const titulo = document.createElement('span');
@@ -49,14 +124,14 @@ export function renderPrevia(container, previa) {
   const porQue = document.createElement('div');
   porQue.className = 'previa-porque';
   porQue.textContent = previa.porQue ?? '';
-  container.replaceChildren(cabecera, ...(previa.porQue ? [porQue] : []), duelo, desglose);
+  const partes = [cabecera, ...(previa.porQue ? [porQue] : []), duelo, desglose];
   if (previa.nota) {
     const nota = document.createElement('div');
     nota.className = 'previa-nota';
     nota.textContent = previa.nota;
-    container.appendChild(nota);
+    partes.push(nota);
   }
-  container.hidden = false;
+  return partes;
 }
 
 function lado({ nombre, texto }, extra) {

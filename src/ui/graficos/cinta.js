@@ -19,6 +19,7 @@ const PAD_IZQ = 8;
 const PAD_DER = 8;
 const PAD_ARR = 14;
 const PAD_ABJ = 16;
+const PAD_ABJ_SIN_ETIQUETAS = 4;
 const FRACCION_FADE_ACTIVA = 0.1;
 const FRACCION_DOMINIO_ABIERTA = 0.2;
 const SATURACION_ORG = 60;
@@ -62,32 +63,46 @@ function abierta(banda) {
   return Boolean(banda.activa) && banda.hasta == null;
 }
 
+// V5 (la pestaña Carrera): cuatro perillas opcionales, todas con el comportamiento de siempre por defecto.
+//  - `dominio: [desde, hasta]`: el eje se fija afuera (para que la cinta y la curva de nivel compartan el mismo eje de años).
+//    Con él una banda abierta llega hasta el borde derecho; sin él, el dominio sale de las bandas y se estira un 20%.
+//  - `padIzq` / `padDer`: los márgenes laterales (la curva de nivel reserva 36 a la izquierda para su eje: con el mismo margen
+//    los años de una y otra quedan uno debajo del otro).
+//  - `etiquetas: false`: sin los dos años de los extremos (el acompañante, que no puede gastar números).
 export function crearCinta({
   bandas,
   ancho = 480,
   alto = 64,
-  onHoverBanda = null
+  onHoverBanda = null,
+  dominio = null,
+  padIzq = PAD_IZQ,
+  padDer = PAD_DER,
+  etiquetas = true
 } = {}) {
   if (!Array.isArray(bandas)) {
     throw new Error('crearCinta: bandas tiene que ser un array');
   }
 
-  const innerW = Math.max(0, ancho - PAD_IZQ - PAD_DER);
-  const innerH = Math.max(0, alto - PAD_ARR - PAD_ABJ);
-  const x0 = PAD_IZQ;
+  const innerW = Math.max(0, ancho - padIzq - padDer);
+  const padAbj = etiquetas ? PAD_ABJ : PAD_ABJ_SIN_ETIQUETAS;
+  const innerH = Math.max(0, alto - PAD_ARR - padAbj);
+  const x0 = padIzq;
   const x1 = x0 + innerW;
 
+  const dominioFijo = Array.isArray(dominio) && dominio.length === 2 && Number(dominio[1]) > Number(dominio[0]);
   const desdes = bandas.map((b) => Number(b.desde)).filter(Number.isFinite);
   const hastas = bandas.map((b) => Number(b.hasta)).filter(Number.isFinite);
-  const xMin = desdes.length ? Math.min(...desdes) : 0;
-  let xMax = hastas.length ? Math.max(...hastas) : xMin;
-  xMax = Math.max(xMax, ...desdes, xMin);
-  if (xMax === xMin) xMax = xMin + 1;
-  // Banda activa sin cierre: el caller no inventa `hasta`. Reservamos cola
-  // a la derecha para que el fade no colapse a ancho 0 cuando `desde`
-  // coincide con el máximo del resto.
-  if (bandas.some(abierta)) {
-    xMax += (xMax - xMin) * FRACCION_DOMINIO_ABIERTA;
+  const xMin = dominioFijo ? Number(dominio[0]) : (desdes.length ? Math.min(...desdes) : 0);
+  let xMax = dominioFijo ? Number(dominio[1]) : (hastas.length ? Math.max(...hastas) : xMin);
+  if (!dominioFijo) {
+    xMax = Math.max(xMax, ...desdes, xMin);
+    if (xMax === xMin) xMax = xMin + 1;
+    // Banda activa sin cierre: el caller no inventa `hasta`. Reservamos cola
+    // a la derecha para que el fade no colapse a ancho 0 cuando `desde`
+    // coincide con el máximo del resto.
+    if (bandas.some(abierta)) {
+      xMax += (xMax - xMin) * FRACCION_DOMINIO_ABIERTA;
+    }
   }
 
   const xDe = (valor) => x0 + ((valor - xMin) / (xMax - xMin)) * innerW;
@@ -112,8 +127,10 @@ export function crearCinta({
   pintar(eje, 'stroke-linejoin', JOIN_TRAZO);
   pintar(eje, 'stroke-linecap', CAP_TRAZO);
   nodo.appendChild(eje);
-  nodo.appendChild(textoSvg(formatear(xMin), x0, alto - 6, TOKEN_TINTA_EJE, 'start'));
-  nodo.appendChild(textoSvg(formatear(xMax), x1, alto - 6, TOKEN_TINTA_EJE, 'end'));
+  if (etiquetas) {
+    nodo.appendChild(textoSvg(formatear(xMin), x0, alto - 6, TOKEN_TINTA_EJE, 'start'));
+    nodo.appendChild(textoSvg(formatear(xMax), x1, alto - 6, TOKEN_TINTA_EJE, 'end'));
+  }
 
   const defs = svg('defs');
   nodo.appendChild(defs);

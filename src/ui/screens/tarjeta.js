@@ -2,6 +2,7 @@ import { filaHistoria } from '../components/ficha.js';
 import { descargarTarjeta, copiarTarjeta, copiarTexto } from '../exportar.js';
 import { miles, textoParaCompartir, linkDeEstado } from '../resultado.js';
 import { esBuenPapel } from '../../core/registro.js';
+import { goldenRoadsDeEstado, medallaDeGoldenRoad } from '../core/trayectoria.js';
 
 // La tarjeta de legado (fase 9R5b, PLAN.md §10.2/§10.3): la pantalla final.
 // TODA salida termina acá — la del mundialista con confeti y la del pibe al que
@@ -83,6 +84,24 @@ function bloqueNumero(state, puntaje, lineaHistorial) {
   if (lineaHistorial) {
     el.appendChild(linea('tarjeta-numero-historial', lineaHistorial));
   }
+  return el;
+}
+
+// --- La medalla (FASE V, V5; PLAN.md §V.6) ---
+
+// El Golden Road: en un mismo año calendario, primero en la tabla de los tres splits, campeón de la liga de primera y campeón
+// del Mundial. Un logro aparte: no suma puntos ni mueve el escalón (el puntaje no lee `porSplit`), por eso va separado del número.
+// Lleva el año; sin ninguno no aparece nada (nunca "0 Golden Roads"). Sale del registro (`goldenRoads`), no de la tarjeta.
+function bloqueMedalla(anios) {
+  const el = document.createElement('section');
+  el.className = 'tarjeta-medalla';
+  el.setAttribute('aria-label', 'Golden Road');
+  el.append(
+    linea('tarjeta-medalla-k', 'Logro aparte'),
+    linea('tarjeta-medalla-v', medallaDeGoldenRoad(anios)),
+    linea('tarjeta-medalla-detalle',
+      'Primero en la tabla de los tres splits, campeón de la liga y campeón del Mundial, todo en el mismo año. Hasta ahora, en la vida real, nadie lo consiguió. No suma puntos: es una medalla.')
+  );
   return el;
 }
 
@@ -238,6 +257,10 @@ export function renderTarjeta(container, state, modulos, extras = {}) {
 
   if (t.puntaje) {
     container.appendChild(bloqueNumero(state, t.puntaje, extras.lineaHistorial ?? null));
+    const goldenRoads = goldenRoadsDeEstado(state);
+    if (goldenRoads.length > 0) {
+      container.appendChild(bloqueMedalla(goldenRoads));
+    }
     container.appendChild(bloqueDesglose(t.puntaje, modulos.BALANCE));
     container.appendChild(bloqueLeyenda(state, t.puntaje, modulos));
   }

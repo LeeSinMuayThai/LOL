@@ -1,15 +1,16 @@
 /* ==========================================================================
-   SHELL — la grilla de dos zonas, el topbar, el ticker (fase T1)
+   SHELL — la franja, el escenario de una columna y el acompañante
+   (fase T1; reescrito en FASE V, V2-C — PLAN.md §V.4)
 
-   `PLAN.md` "T1 — El shell de transmisión": dos columnas, no tres — el riel
-   derecho es la fila de paneles de T5, y hoy no hay con qué llenarlo. El
-   topbar es chrome estático en esta fase (el punto vivo del split llega en
-   T2); acá solo va su forma.
+   La franja arriba (≤ 64 px), el escenario con UNA pieza a la vista (~720 px,
+   centrado) y, desde 1180 px, un solo panel al costado: el acompañante. Lo
+   demás vive en los cuartos (estilos/cuartos.css). Salieron los dos rieles,
+   la topbar y el ticker.
    ========================================================================== */
 
 /* T0 dejaba el padding en `body` para centrar el `.panel` único de antes.
-   El shell ahora es full-bleed (el topbar va a sangre) y cada zona pone su
-   propio padding — si `body` sigue sumando el suyo, todo queda corrido. */
+   El shell es full-bleed (la franja va a sangre) y cada zona pone su propio
+   padding — si `body` sigue sumando el suyo, todo queda corrido. */
 body { padding: 0; }
 
 .shell {
@@ -18,17 +19,20 @@ body { padding: 0; }
   min-height: 100vh;
 }
 
-/* --- El topbar --------------------------------------------------------- */
+/* --- La franja (FASE V, V2-C; PLAN.md §V.4) ------------------------------
+   Reemplaza a la topbar. ≤ 64 px en el escritorio; en el celular, dos líneas
+   y la barra de cuartos abajo, fija. La llena `src/ui/franja.js` desde la
+   `vista`: mientras el relato cuenta un split, no cambia. */
 
-.topbar {
+.franja {
   position: sticky;
   top: 0;
   z-index: 100;
   display: flex;
   align-items: center;
-  gap: var(--s-5);
-  height: var(--topbar-alto);
-  padding: 0 var(--s-5) 0 0;
+  gap: var(--s-4);
+  height: var(--franja-alto);
+  padding: 0 var(--s-4);
   background-color: var(--bg-chrome);
   background-image: repeating-linear-gradient(
     0deg,
@@ -39,104 +43,125 @@ body { padding: 0; }
   box-shadow: inset 0 1px 0 var(--ice-dim);
 }
 
-.topbar-live {
-  display: flex;
-  align-items: center;
-  align-self: stretch;
-  gap: var(--s-2);
-  flex: 0 0 auto;
-  padding: 0 var(--s-6) 0 var(--s-5);
-  font-family: var(--font-display);
-  font-size: var(--fs-3);
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  color: var(--bg-void);
-  background: var(--live);
-  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 100%, 0 100%);
-  box-shadow: 12px 0 40px -8px var(--live-glow);
-}
-.topbar-live-punto {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--bg-void);
-  animation: latir-vivo 2s var(--ease-in-out) infinite;
-}
-@keyframes latir-vivo {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.4; }
-}
-
-/* El lockup: monograma + nombre. Diseñado para cualquier nombre corto — el
-   nombre del juego se decide después (decisión del usuario, PLAN.md T.2). */
-.topbar-lockup {
+.franja-lockup {
   display: flex;
   align-items: center;
   gap: var(--s-3);
   flex: 0 0 auto;
-  min-width: 0;
 }
-.topbar-monograma {
+.franja-monograma {
   display: grid;
   place-items: center;
   width: 28px;
   height: 28px;
-  flex: 0 0 auto;
   background: var(--bg-sunken);
   border: 1px solid var(--ice-dim);
-  border-radius: 0;
   clip-path: var(--clip-corte-sm);
   font-family: var(--font-display);
   font-size: var(--fs-1);
   font-weight: 700;
   color: var(--ice);
 }
-.topbar-nombre {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* El nombre del juego solo en el inicio: en la carrera, el lugar es de quién sos. */
+.franja-nombre {
+  display: none;
   font-family: var(--font-display);
   font-size: var(--fs-4);
   font-weight: 700;
   letter-spacing: var(--track-cartel);
   text-transform: uppercase;
+  white-space: nowrap;
   color: var(--ink);
 }
+.shell[data-pieza="inicio"] .franja-nombre { display: inline; }
 
-/* El punto vivo (T2): "2026 · SPLIT 1 · REGULAR". Vacío hasta que arranca
-   una carrera (`ficha.js` lo llena en cada render) — `:empty` lo colapsa
-   para no dejar un hueco fantasma en el topbar durante el setup. */
-.topbar-estado {
-  position: relative;
+.franja-estado {
   flex: 1 1 auto;
-  text-align: center;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  font-family: var(--font-display);
+  font-size: var(--fs-2);
+  font-weight: 600;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ink-dim);
+}
+/* Las dos líneas de la franja (franja.js): en el escritorio y la tableta no existen (`display: contents`); en el celular
+   son las dos filas de la franja (más abajo). */
+.franja-linea { display: contents; }
+.franja-quien,
+.franja-org,
+.franja-cuando {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 0;
+  flex: 0 1 auto;
+}
+.franja-quien { color: var(--ink); flex-shrink: 0; max-width: 16em; }
+.franja-org { flex-shrink: 2; }
+.franja-quien .rol-marca { font-size: 16px; }
+.franja-cuando { color: var(--ice); font-variant-numeric: tabular-nums; gap: 0; }
+.franja-cuando .franja-texto { flex: 0 1 auto; }
+.franja-cuando .franja-ventana { white-space: pre; }
+.franja-pips { margin-left: var(--s-2); }
+.franja-texto {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding-left: 28px;
-  font-family: var(--font-display);
-  font-size: var(--fs-1);
-  font-weight: 600;
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
-  color: var(--ice);
-  font-variant-numeric: tabular-nums;
 }
-.topbar-estado::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 50%;
-  width: 18px;
-  height: 12px;
-  transform: translateY(-50%);
-  background: repeating-linear-gradient(90deg, var(--line-strong) 0 1px, transparent 1px 3px);
-}
-.topbar-estado:empty { display: none; }
 
-.topbar-controles { display: flex; gap: var(--s-2); flex: 0 0 auto; padding-right: var(--s-5); }
-.topbar-toggle {
+.franja-pips { display: flex; gap: 4px; flex: 0 0 auto; }
+.franja-pip {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+.franja-pip--hecho { background: var(--ink-dim); }
+.franja-pip--actual {
+  background: var(--live);
+  box-shadow: 0 0 6px var(--live-glow);
+}
+
+/* El número: el nivel con su banda (en el amateur, el rango) y cuánto se movió en este split. */
+.franja-nivel {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: var(--s-1) var(--s-3);
+  border: 1px solid var(--line);
+  clip-path: var(--clip-corte-sm);
+  background: var(--bg-sunken);
+}
+.franja-nivel-numero {
+  font-size: var(--fs-5);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.franja-nivel[data-banda="prospecto"] .franja-nivel-numero { color: var(--nivel-prospecto); }
+.franja-nivel[data-banda="titular"] .franja-nivel-numero { color: var(--nivel-titular); }
+.franja-nivel[data-banda="elite"] .franja-nivel-numero { color: var(--nivel-elite); }
+.franja-nivel[data-banda="clase_mundial"] .franja-nivel-numero { color: var(--nivel-clase_mundial); }
+.franja-nivel-banda { font-size: var(--fs-1); color: var(--ink-dim); }
+.franja-ventana-corta { display: none; }
+.franja-nivel-pico { font-size: var(--fs-0); letter-spacing: var(--track-label); color: var(--ink-mute); }
+.franja-nivel-rango { color: var(--ink); font-variant-numeric: tabular-nums; }
+.franja-delta { font-size: var(--fs-1); font-weight: 700; font-variant-numeric: tabular-nums; }
+.franja-delta--sube { color: var(--up); }
+.franja-delta--baja { color: var(--down); }
+
+.franja-controles { display: flex; gap: var(--s-2); flex: 0 0 auto; margin-left: auto; }
+.franja-estado:not(:empty) ~ .franja-controles { margin-left: 0; }
+.franja-toggle {
   display: grid;
   place-items: center;
   min-width: 40px;
@@ -149,116 +174,169 @@ body { padding: 0; }
   clip-path: var(--clip-corte-sm);
   border-radius: 0;
 }
-.topbar-toggle:hover:not(:disabled) {
+.franja-toggle:hover:not(:disabled) {
   background: var(--live-fill);
   border-color: var(--live);
   color: var(--live);
   box-shadow: none;
 }
-.topbar-toggle[aria-pressed="true"] {
+.franja-toggle[aria-pressed="true"] {
   border-color: var(--live);
   color: var(--live);
 }
-/* Inertes hasta T3 (el audio): que se vean apagados, no rotos. */
-.topbar-toggle:disabled { opacity: 0.3; cursor: default; }
+/* Inertes hasta que cargan los módulos: que se vean apagados, no rotos. */
+.franja-toggle:disabled { opacity: 0.3; cursor: default; }
 
-/* --- El cuerpo: riel + escenario ----------------------------------------- */
+/* Entre 900 y 1279 px la barra de cuartos come lugar: el club queda en su chip (el nombre, en su `title`), sin pips ni
+   nombre de la banda (el color la dice), y la ayuda se abre con `?`. */
+@media (min-width: 900px) and (max-width: 1279px) {
+  .franja { gap: var(--s-3); }
+  .franja-estado { gap: var(--s-3); }
+  .franja-org .org-chip + .franja-texto,
+  .franja-pips,
+  .franja-nivel-banda,
+  #ayudaTeclas { display: none; }
+}
+
+/* El celular y la tableta: dos líneas. Arriba quién sos y tu número; abajo tu club y cuándo. */
+@media (max-width: 899px) {
+  .franja {
+    height: auto;
+    min-height: var(--franja-alto);
+    gap: var(--s-3);
+    padding: var(--s-1) var(--s-3);
+  }
+  .franja-estado {
+    display: grid;
+    grid-template-columns: minmax(0, max-content) minmax(0, 1fr) auto;
+    grid-template-areas:
+      "quien quien nivel"
+      "org cuando cuando";
+    align-items: center;
+    column-gap: var(--s-3);
+    row-gap: 2px;
+  }
+  .franja-quien { grid-area: quien; }
+  .franja-org { grid-area: org; font-size: var(--fs-1); }
+  .franja-cuando { grid-area: cuando; font-size: var(--fs-1); }
+  .franja-nivel { grid-area: nivel; margin-left: 0; justify-self: end; padding: 2px var(--s-2); }
+  .franja-nivel-numero { font-size: var(--fs-4); }
+}
+@media (max-width: 639px) {
+  /* En la carrera, el lugar del monograma es de quién sos (en el inicio sigue el lockup entero). */
+  .shell:not([data-pieza="inicio"]) .franja-lockup { display: none; }
+  .franja-nivel-banda,
+  .franja-pips { display: none; }
+  .franja-ventana-larga { display: none; }
+  .franja-ventana-corta { display: inline; }
+  .franja-toggle { min-width: 36px; padding: var(--s-1) var(--s-2); }
+
+  /* Dos filas. Arriba, quién sos (handle de hasta 16 caracteres · rol) y los controles; abajo, el club, el momento y tu
+     número, que ocupa todo el ancho: ahí el club y la edad no se cortan, y lo único que se acorta es la ventana ("Temporada
+     regular") y, si el club es larguísimo, su nombre. Antes los controles y la caja del nivel con el ▲ le dejaban al
+     handle ~120 px y salía "WWW…". */
+  .franja {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "arriba controles"
+      "abajo abajo";
+    align-items: center;
+    column-gap: var(--s-2);
+    row-gap: 2px;
+  }
+  .franja-lockup { grid-area: arriba; }
+  .franja-estado { display: contents; }
+  .franja-controles { grid-area: controles; margin-left: 0; }
+  .franja-linea {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+  }
+  .franja-linea--1 { grid-area: arriba; }
+  .franja-linea--2 { grid-area: abajo; }
+  .franja-linea--1 .franja-quien { max-width: none; flex: 0 1 auto; }
+  /* El renglón de abajo reparte el lugar así: la edad y el año y tu número no se achican; si falta lugar se achica primero
+     la ventana (shrink 100, hasta "…"). El club no se achica salvo que sea larguísimo (tope: 62% del ancho). `.franja-cuando` se deshace para que la edad y
+     la ventana sean ítems del mismo renglón. */
+  .franja-linea--2 .franja-cuando { display: contents; font-size: var(--fs-1); }
+  .franja-linea--2 .franja-org { flex: 0 0 auto; max-width: 62%; margin-right: var(--s-3); font-size: var(--fs-1); }
+  .franja-linea--2 .franja-cuando .franja-texto { flex: 0 0 auto; font-size: var(--fs-1); color: var(--ice); }
+  .franja-linea--2 .franja-cuando .franja-ventana { flex: 0 100 auto; margin-right: var(--s-3); }
+  .franja-linea--2 .franja-nivel { margin-left: auto; padding: 2px var(--s-2); }
+  .franja-linea--2 .franja-nivel { gap: var(--s-1); }
+  .franja-linea--2 .franja-nivel-numero { font-size: var(--fs-4); }
+  .franja-linea--2 .franja-nivel-rango { font-size: var(--fs-1); }
+  .franja-linea--2 .franja-nivel-rango + .franja-delta { font-size: var(--fs-0); }
+}
+
+/* --- El cuerpo: el escenario y el acompañante (V2-C) -----------------------
+   Una columna de ~720 px, centrada, con UNA pieza a la vista. Desde 1180 px
+   se le suma un solo panel al costado (el acompañante) cuando la pieza tiene
+   contexto; sin él (`[hidden]`), el escenario queda centrado solo. Flex y no
+   grilla: sin `:has()` ni columnas fantasma (antes, tres columnas de 260 |
+   1fr | 280 dejaban el escenario en ~264 px entre 900 y 1179 px: D88). */
 
 .shell-cuerpo {
   flex: 1 1 auto;
-  display: grid;
-  grid-template-columns: var(--riel-izq) 1fr;
-  align-items: start;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
   gap: var(--s-5);
   padding: var(--s-5);
 }
-/* T1 dejó la grilla en dos columnas a propósito: "un panel vacío es peor
-   que un panel ausente", y el riel derecho no tenía con qué llenarse
-   todavía. T5 le suma la tercera columna, pero solo cuando de verdad hay
-   algo — `:has()` lo resuelve sin que el controlador tenga que togglear
-   una clase en cada render. */
-.shell-cuerpo:has(.riel-der > .panel-contexto:not([hidden])) {
-  grid-template-columns: var(--riel-izq) 1fr var(--riel-der);
-}
-
-/* Setup: la ficha está vacía. Un riel fantasma de 320px hace que el draft
-   se lea como un formulario al costado. Sin ficha, el escenario va a sangre. */
-.shell-cuerpo:has(#fichaContainer:empty),
-.shell-cuerpo:has(#fichaContainer:empty):has(.riel-der > .panel-contexto:not([hidden])) {
-  grid-template-columns: minmax(0, 1fr);
-}
-.shell-cuerpo:has(#fichaContainer:empty) .riel,
-.shell-cuerpo:has(#fichaContainer:empty) .riel-der { display: none; }
-.shell-cuerpo:has(#fichaContainer:empty) .escenario {
-  grid-column: 1;
-  max-width: 1180px;
-  margin-inline: auto;
-}
-
-.riel { grid-column: 1; min-width: 0; }
-
-.riel-der {
-  grid-column: 3;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-4);
-}
 
 .escenario {
-  grid-column: 2;
+  flex: 0 1 var(--escenario-columna);
   min-width: 0;
-  max-width: var(--escenario-max);
-  width: 100%;
+  max-width: var(--escenario-columna);
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--s-5);
+}
+/* El inicio (el draft) es un formulario ancho: no es una parada, no se rediseña acá. */
+.shell[data-pieza="inicio"] .escenario {
+  flex-basis: var(--escenario-inicio);
+  max-width: var(--escenario-inicio);
 }
 /* `#setup`/`#carrera` traen su propio `.panel` (chaflán, sombra); acá solo
    se les saca el centrado de 1080px que tenía sentido cuando `.panel` era
    el único contenedor de la página entera — ahora el ancho lo da la
-   columna del grid. Especificidad natural por anidamiento, sin !important. */
+   columna. Especificidad natural por anidamiento, sin !important. */
 .escenario .panel { max-width: none; margin: 0; }
 
-/* --- El ticker ------------------------------------------------------------ */
+/* El acompañante: solo existe a la vista desde 1180 px (el corte de siempre),
+   pegado bajo la franja mientras el escenario corre. */
+.acompanante { display: none; }
+@media (min-width: 1180px) {
+  .acompanante {
+    flex: 0 0 var(--acompanante-ancho);
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-4);
+    position: sticky;
+    top: calc(var(--franja-alto-real, var(--franja-alto)) + var(--s-5));
+    max-height: calc(100vh - var(--franja-alto-real, var(--franja-alto)) - 2 * var(--s-5));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
 
-.ticker {
-  height: 36px;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  background-color: var(--bg-chrome);
-  background-image: repeating-linear-gradient(
-    0deg,
-    var(--scanline) 0 1px,
-    transparent 1px 3px
-  );
-  border-top: 1px solid var(--line);
-  color: var(--ice);
-  font-family: var(--font-display);
-  font-size: var(--fs-1);
-  font-weight: 600;
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
-  white-space: nowrap;
-  overflow: hidden;
-}
-.ticker-pista {
-  display: flex;
-  gap: var(--s-8);
-  width: max-content;
-  padding-left: var(--s-5);
-  animation: ticker-marquee 18s linear infinite;
-}
-.ticker:hover .ticker-pista { animation-play-state: paused; }
-@keyframes ticker-marquee {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ticker-pista { animation-name: none !important; }
-  .topbar, .ticker { background-image: none; }
-}
+/* --- Las piezas del escenario (FASE V, V2-B; PLAN.md §V.4) ---------------
+   `.shell[data-pieza]` lo escribe solo el director (src/ui/escena.js); cada
+   nodo del escenario dice en qué piezas se ve (`data-piezas` en index.html).
+   Una regla por pieza esconde lo que no es suyo, sin pisar el `display` de lo
+   que sí: el `hidden` propio de cada renderer sigue mandando por
+   `[hidden] { display: none !important }` (base.css). Reemplaza a los `hidden`
+   que app.js prendía y apagaba panel por panel. */
+.shell[data-pieza="inicio"] .escenario [data-piezas]:not([data-piezas~="inicio"]),
+.shell[data-pieza="relato"] .escenario [data-piezas]:not([data-piezas~="relato"]),
+.shell[data-pieza="decision"] .escenario [data-piezas]:not([data-piezas~="decision"]),
+.shell[data-pieza="partido"] .escenario [data-piezas]:not([data-piezas~="partido"]),
+.shell[data-pieza="mercado"] .escenario [data-piezas]:not([data-piezas~="mercado"]),
+.shell[data-pieza="minijuego"] .escenario [data-piezas]:not([data-piezas~="minijuego"]),
+.shell[data-pieza="final"] .escenario [data-piezas]:not([data-piezas~="final"]) { display: none; }
 
 /* Luz de estudio: pisa `--horizon` del body (base.css lo consume). */
 body[data-fase="amateur"] { --horizon: var(--horizon-amateur); }
@@ -267,164 +345,21 @@ body[data-ventana="internacional"],
 body[data-serie="on"] { --horizon: var(--gold-horizon); }
 body[data-peligro="on"] { --horizon: var(--danger-horizon); }
 
-body[data-legado="on"] .shell-cuerpo,
-body[data-legado="on"] .shell-cuerpo:has(.riel-der > .panel-contexto:not([hidden])) {
-  grid-template-columns: var(--riel-izq) 1fr;
-}
-body[data-legado="on"] .riel-der { display: none; }
-body[data-legado="on"] .log-list,
-body[data-legado="on"] .summary,
-body[data-legado="on"] .meta-pill,
-body[data-legado="on"] .serie-contexto { display: none; }
-body[data-legado="on"] .tarjeta { margin-top: 0; }
-@media (max-width: 899px) {
-  body[data-legado="on"] .riel { display: none; }
-}
-
-.topbar-pips {
-  display: flex;
-  gap: 4px;
-  flex: 0 0 auto;
-}
-.topbar-pip {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--line-strong);
-}
-.topbar-pip--actual {
-  background: var(--live);
-  box-shadow: 0 0 6px var(--live-glow);
-}
-.topbar-pip--hecho { background: var(--ink-dim); }
+/* La final (antes `body[data-legado="on"]`): la tarjeta sola, centrada. El
+   feed y el marcador no son parte de la pieza (`data-piezas`). */
+.shell[data-pieza="final"] .tarjeta { margin-top: 0; }
 
 /* ==========================================================================
-   Breakpoints (PLAN.md T1). `tokens.css` ya reajusta --riel-izq y la escala
-   tipográfica en estos mismos cortes — acá solo cambia la estructura.
+   Breakpoints. `tokens.css` reajusta las medidas que son token en estos
+   mismos cortes; acá solo cambia la estructura (la de la franja y la barra
+   de cuartos está en su sección y en cuartos.css).
    ========================================================================== */
 
-/* 900–1179: una sola columna angosta todavía alcanza para el riel fijo. */
-
-/* 640–899: una columna. La ficha se vuelve una barra HUD compacta y
-   pegajosa arriba — CSS puro, sin JS: el shell no necesita saber en qué
-   ancho está. */
 @media (max-width: 899px) {
-  /* La versión `:has()` de la regla de arriba tiene más especificidad que
-     un `.shell-cuerpo` a secas (dos "clases" contra una) — sin repetir el
-     mismo `:has()` acá, esa regla le gana a ÉSTA aunque esté adentro de un
-     media query más específico en ancho. Es la misma trampa de
-     especificidad que ya apareció en T0b con los botones. */
-  .shell-cuerpo,
-  .shell-cuerpo:has(.riel-der > .panel-contexto:not([hidden])) {
-    grid-template-columns: 1fr;
-    padding: var(--s-4);
-    gap: var(--s-4);
-  }
-  /* La tarjeta final (`data-legado="on"`) tiene su propia regla de columnas
-     más arriba (`var(--riel-izq) 1fr`, pensada para escritorio con la ficha al
-     costado) y por especificidad le ganaba a la de una columna de acá: en un
-     celular el escenario quedaba clavado en la primera columna — 260px, el
-     ancho de `--riel-izq` — con el resto de la pantalla vacío. Medido en
-     Chromium a 360px: la tarjeta medía 226px de ancho contra 294px con este
-     override (unos 90px de pantalla sin usar); a 320px, 226px contra 254px.
-     Esto arregla SOLO eso. El desborde horizontal de la tarjeta (384px a
-     360px, H4 de la revisión de K0-B) no depende de este override: a 360px
-     `scrollWidth` queda igual al ancho de la pantalla con y sin él. Lo
-     evitan el `overflow-wrap` y el cartel más chico de `.tarjeta-veredicto`
-     en pantallas.css. Mismos selectores que la regla de arriba, para empatar
-     la especificidad; gana por orden. */
-  body[data-legado="on"] .shell-cuerpo,
-  body[data-legado="on"] .shell-cuerpo:has(.riel-der > .panel-contexto:not([hidden])) {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .riel {
-    grid-column: 1;
-    position: sticky;
-    /* `--topbar-alto-real` la publica app.js (ResizeObserver sobre .topbar): en
-       ≤639px la topbar mide 56 (1 fila), 64 (2) u 86px (3, a 320px). */
-    top: var(--topbar-alto-real, var(--topbar-alto));
-    z-index: 90;
-    background: var(--bg-void);
-    padding-bottom: var(--s-2);
-  }
-  .escenario { grid-column: 1; max-width: none; }
-  .riel-der { grid-column: 1; }
+  .shell-cuerpo { padding: var(--s-4); gap: var(--s-4); }
 }
 
 @media (max-width: 639px) {
-  .topbar {
-    gap: var(--s-2);
-    padding: var(--s-1) var(--s-3) var(--s-1) 0;
-    flex-wrap: wrap;
-    height: auto;
-    min-height: var(--topbar-alto);
-  }
-  .topbar-live {
-    padding: 0 var(--s-4) 0 var(--s-3);
-  }
-  .topbar-controles {
-    margin-left: auto;
-    padding-right: 0;
-  }
-  .topbar-nombre { font-size: var(--fs-2); }
-  .topbar-estado {
-    order: 10;
-    flex: 1 1 auto;
-    margin-left: var(--s-3);
-    font-size: var(--fs-1);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .topbar-pips {
-    order: 11;
-    margin-right: var(--s-3);
-  }
   .shell-cuerpo { padding: var(--s-3); }
   .escenario .panel { padding: var(--s-5) var(--s-4); }
-  .ticker { padding: 0 var(--s-3); }
-}
-
-/* K4 (revisión del navegador): a 375px la ficha pegada arriba (`.riel`, sticky desde 899px) ocupaba ~300 de 812px
-   mientras había una decisión o un minijuego en pantalla, y la pausa quedaba abajo del pliegue. Con una pausa
-   visible y pantalla angosta, la ficha se achica a UNA línea: el nivel chico y nombre · contexto con elipsis; el
-   resto (marcas, ranked, pool, contrato, historia) vuelve al cerrar la pausa. Solo CSS: escritorio no cambia. */
-@media (max-width: 639px) {
-  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-card {
-    padding: var(--s-1) var(--s-3);
-  }
-  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-card > :not(.ficha-encabezado),
-  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-encabezado > :not(.ficha-nivel):not(.ficha-identidad),
-  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-nivel-label,
-  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-estado-linea,
-  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-perfil {
-    display: none;
-  }
-  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-encabezado { gap: var(--s-2); }
-  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-nivel {
-    min-width: 0;
-    padding: var(--s-1) var(--s-2);
-  }
-  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-nivel-numero { font-size: var(--fs-3); }
-  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-identidad {
-    display: flex;
-    align-items: baseline;
-    gap: var(--s-2);
-    white-space: nowrap;
-  }
-  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-nombre-linea {
-    flex: 0 1 auto;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: var(--fs-2);
-  }
-  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-contexto-linea {
-    flex: 1 1 0;
-    min-width: 0;
-    margin-top: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: var(--fs-1);
-  }
 }

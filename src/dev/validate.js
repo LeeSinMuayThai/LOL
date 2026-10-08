@@ -12,10 +12,15 @@ import {
   verificarSinLogicaEnIndexHtml,
   verificarSinColorLiteralEnJs, luminanciaRelativa, contrasteRatio, hexDeToken
 } from './guards.js';
-import { reconciliar } from '../ui/core/reconciliar.js';
-import { crearDelta } from '../ui/core/delta.js';
-import { agruparBeats, renderFeed, LIMITE_FEED } from '../ui/components/feed.js';
+import { reconciliar, reemplazarEnElLugar } from '../ui/core/reconciliar.js';
+import { crearDelta, moverNumero } from '../ui/core/delta.js';
+import { agruparBeats, renderFeed, LIMITE_FEED, numerosDeEfectos } from '../ui/components/feed.js';
 import * as reproductorModulo from '../ui/reproductor.js';
+import {
+  piezaDe as piezaDeEscenaV2, PIEZAS as PIEZAS_V2, PIEZAS_DE_PARADA as PIEZAS_DE_PARADA_V2, acompananteDe as acompananteDeV2, CUARTOS as CUARTOS_V2,
+  TIPOS_DE_ACOMPANANTE as TIPOS_DE_ACOMPANANTE_V2, fotoDeSplit as fotoDeSplitV2, cierreDeSplit as cierreDeSplitV2,
+  lineaDeSplitAnterior as lineaDeSplitAnteriorV2, cartelDePagina as cartelDePaginaV4, etiquetaDeRangoEn, textoDeNumeroEn
+} from '../ui/core/escena.js';
 import { TONOS_CONOCIDOS as TONOS_DE_GRAFICOS } from '../ui/graficos/comun.js';
 import { correrLote as correrLoteJugabilidad, analizarCatalogo } from './simulate.js';
 import { observar as observarCobertura, calcularHuecosPorCategoria } from './cobertura.js';
@@ -32,7 +37,7 @@ import { sistemaPorId } from '../systems/registro.js';
 import { getPath, etiquetaCampo } from '../core/selectors.js';
 import { calcularContexto } from '../core/contexto.js';
 import {
-  aplicarLP, desdePuntos, puntosAbsolutos, esApice, rangoAproximado,
+  aplicarLP, desdePuntos, puntosAbsolutos, esApice, rangoAproximado, etiquetaDeRanked,
   servidorConCutoffs, servidorDeLaPartida
 } from '../core/ranked.js';
 import { TOKENS, tokensUsados, resolverTexto } from '../core/plantillas.js';
@@ -98,7 +103,9 @@ import { jugasteUnSplitConLaOrg } from '../systems/competitivo.js';
 import { MONTAR_MINIJUEGO } from '../ui/components/minijuegos/index.js';
 import { lecturaDePrensa, factoresDePrensa } from '../core/prensa.js';
 import { objetivoDePrensa, puntajeDePrensa } from '../ui/components/minijuegos/ruedaDePrensa.js';
-import { LABEL_MARCA as LABEL_MARCA_FICHA, lineaDeContextoFicha } from '../ui/components/ficha.js';
+import { LABEL_MARCA as LABEL_MARCA_FICHA, lineaDeContextoFicha, contextoDeLaFicha, picosDeLaCarrera } from '../ui/components/ficha.js';
+import { dividirEnAnios } from '../ui/cuartos/cronica.js';
+import { plata } from '../core/formato.js';
 import { nombreVisibleDeLiga } from '../ui/formatoUi.js';
 import { crearCampeonTile, urlIconoDeCampeon, urlSplashDeCampeon } from '../ui/components/campeonTile.js';
 import { VERSION_DDRAGON, BASE_DDRAGON } from '../data/ddragon.js';
@@ -818,7 +825,11 @@ const FORMAS_CONOCIDAS = {
   // K6d (integración de K6d-N, K6d-B y K6d-P): K6d-B (D77) suma `flags.mentalAvisadaPro` (la lista de cierres que un aviso cubrió,
   // [{ split, mentalidad, probabilidad }]) y `flags.ofertaGuardada` (la oferta que el club te guarda un split); K6d-N (tier 3 y P3)
   // y K6d-P no agregan campos, pero mueven las carreras de muestra. Un guardado de la 13 carga con `migrarDe13`.
-  14: '1ef92b3fd9be'
+  14: '1ef92b3fd9be',
+  // FASE V (GR-m, el Golden Road): `registro.porSplit`, una fila por split jugado en una tabla (`anio`, `split`, `org`, `liga`, `tier`,
+  // `posicion`, `equipos`, `nivel`; la escribe `systems/rendimiento.js`). Nada más cambia la forma ni mueve las carreras de muestra
+  // (la huella del juego es la de la 14). Un guardado de la 14 carga con `migrarDe14`, que lo arranca vacío.
+  15: 'ee5493864fb3'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -5173,8 +5184,8 @@ check('K6d-P las dos pausas de la rueda de prensa (post_serie, post_escandalo) t
     'sin tono el widget no debía pintar pistas y apuntaba al azar de antes (rngUi 0.5 → 50)');
 
   // El cable de la UI: el controlador le pasa `decision.datos` al widget (sin eso el tono del motor nunca llega a la pantalla).
-  afirmarPrensa(/\}, rngUi, decision\.datos\);/.test(fs.readFileSync(path.join(srcDir, 'ui', 'app.js'), 'utf8')),
-    'ui/app.js no le pasa decision.datos al widget del minijuego: el tono y las pistas no llegan a la pantalla');
+  afirmarPrensa(/\}, rngUi, decision\.datos\);/.test(fs.readFileSync(path.join(srcDir, 'ui', 'paradas', 'minijuego.js'), 'utf8')),
+    'ui/paradas/minijuego.js no le pasa decision.datos al widget del minijuego: el tono y las pistas no llegan a la pantalla');
 });
 
 // Protege (K6d-P, revisión): que la única prensa que se juega hoy, la del escándalo, no se resuelva con un slider fijo. Medido sobre
@@ -8238,6 +8249,171 @@ check('crearDelta mide [antes, despues] contra la lectura previa (fase V, V0)', 
   if (m2['career.jerarquia'][0] !== 50 || m2['career.jerarquia'][1] !== 50) {
     throw new Error('un path sin cambios entre mediciones debería dar [x, x]');
   }
+
+  // FASE V (V2-B): un campo también puede ser una función del estado. En un array, la clave es su `name`; en un objeto,
+  // la clave declarada.
+  const conFunciones = crearDelta([function nivelDoble(s) { return s.player.nivel * 2; }, 'career.jerarquia']);
+  conFunciones.medir({ player: { nivel: 10 }, career: { jerarquia: 50 } });
+  const m3 = conFunciones.medir({ player: { nivel: 12 }, career: { jerarquia: 51 } });
+  if (m3.nivelDoble?.[0] !== 20 || m3.nivelDoble?.[1] !== 24 || m3['career.jerarquia']?.[1] !== 51) {
+    throw new Error(`una función en el array debería medirse con su name: dio ${JSON.stringify(m3)}`);
+  }
+  const conObjeto = crearDelta({ nivel: (s) => s.player.nivel, jerarquia: 'career.jerarquia' });
+  conObjeto.medir({ player: { nivel: 10 }, career: { jerarquia: 50 } });
+  const m4 = conObjeto.medir({ player: { nivel: 13 }, career: { jerarquia: 50 } });
+  if (m4.nivel?.[0] !== 10 || m4.nivel?.[1] !== 13 || m4.jerarquia?.[1] !== 50) {
+    throw new Error(`un objeto { clave: path | función } debería medirse con su clave: dio ${JSON.stringify(m4)}`);
+  }
+});
+
+// FASE V (V4; PLAN.md §V.3 regla 3 "el delta se ve"): `moverNumero` lleva el número de `antes` a `despues` y termina SIEMPRE en el valor
+// final; con movimiento reducido (o sin `antes`, sin cambio, `animar: false`, sin `requestAnimationFrame`) aparece ya en él y no
+// programa ni un cuadro. El reloj y los cuadros se inyectan: corre sin navegador.
+check('crearDelta y moverNumero: el número va de antes a despues, termina en su valor final, y sin movimiento aparece ya en él (fase V, V4)', () => {
+  const problemas = [];
+  const correr = (antes, despues, opciones = {}, { cancelarEn = null } = {}) => {
+    const el = { textContent: '' };
+    const vistos = [];
+    const cuadros = [];
+    let reloj = 0;
+    const cancelar = moverNumero(el, antes, despues, {
+      duracion: 600,
+      reducido: false,
+      raf: (fn) => cuadros.push(fn),
+      ahora: () => reloj,
+      formato: (n) => {
+        vistos.push(n);
+        return `n${n}`;
+      },
+      ...opciones
+    });
+    const programados = cuadros.length;
+    let pasos = 0;
+    while (cuadros.length > 0 && pasos < 100) {
+      reloj += 100;
+      pasos += 1;
+      cuadros.shift()(reloj);
+      if (cancelarEn === pasos) {
+        cancelar();
+      }
+    }
+    return { el, vistos, programados, pasos };
+  };
+  // Sube: arranca en `antes`, nunca baja, nunca pasa de `despues`, y termina en `despues`.
+  const sube = correr(60, 71);
+  if (sube.vistos[0] !== 60 || sube.vistos.at(-1) !== 71 || sube.el.textContent !== 'n71' || sube.pasos < 3) {
+    problemas.push(`sube 60→71: vio ${sube.vistos}, texto final ${sube.el.textContent}`);
+  }
+  if (sube.vistos.some((n, i) => (i > 0 && n < sube.vistos[i - 1]) || n > 71 || n < 60)) {
+    problemas.push(`sube 60→71: el conteo no es monótono o se pasa del rango: ${sube.vistos}`);
+  }
+  // Baja: lo mismo al revés.
+  const baja = correr(80, 70);
+  if (baja.vistos[0] !== 80 || baja.vistos.at(-1) !== 70 || baja.vistos.some((n, i) => (i > 0 && n > baja.vistos[i - 1]) || n > 80 || n < 70)) {
+    problemas.push(`baja 80→70: vio ${baja.vistos}`);
+  }
+  // El camino quieto: el valor final de entrada y ni un cuadro programado.
+  const quietos = {
+    'movimiento reducido': correr(60, 71, { reducido: true }),
+    'animar: false (INST)': correr(60, 71, { animar: false }),
+    'sin "antes" (carrera nueva, otro tipo de número)': correr(null, 71),
+    'sin cambio': correr(71, 71),
+    'sin requestAnimationFrame (Node)': correr(60, 71, { raf: null })
+  };
+  for (const [caso, r] of Object.entries(quietos)) {
+    if (r.el.textContent !== 'n71' || r.programados !== 0 || r.vistos.length !== 1) {
+      problemas.push(`${caso}: tenía que aparecer ya en n71 sin programar nada (texto ${r.el.textContent}, ${r.programados} cuadros, vio ${r.vistos})`);
+    }
+  }
+  // Cancelar deja el número en su valor final y el conteo no vuelve a escribir.
+  const cancelado = correr(60, 71, {}, { cancelarEn: 2 });
+  if (cancelado.el.textContent !== 'n71' || cancelado.vistos.at(-1) !== 71 || cancelado.vistos.filter((n) => n === 71).length !== 1) {
+    problemas.push(`cancelar: texto ${cancelado.el.textContent}, vio ${cancelado.vistos}`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(problemas.join(' | '));
+  }
+
+  // El rango del amateur cuenta en puntos de la escalera: cada etiqueta intermedia es la del rango de esos puntos (`desdePuntos`), y
+  // el valor final dice exactamente lo que dice la tarjeta (con el puesto de la ladder, si lo trae).
+  const rangos = [
+    { tier: 'gold', division: 3, lp: 22 }, { tier: 'platinum', division: 1, lp: 0 }, { tier: 'diamond', division: 2, lp: 99 },
+    { tier: 'master', division: null, lp: 140 }
+  ];
+  for (const ranked of rangos) {
+    const puntos = puntosAbsolutos(ranked);
+    const esperado = etiquetaDeRanked(ranked);
+    const dicho = etiquetaDeRangoEn(puntos, ranked.tier);
+    if (dicho !== esperado) {
+      problemas.push(`${JSON.stringify(ranked)}: el conteo dice "${dicho}" y la etiqueta del motor "${esperado}"`);
+    }
+  }
+  const numeroRango = { etiqueta: 'rango', antes: puntosAbsolutos({ tier: 'platinum', division: 2, lp: 85 }), despues: puntosAbsolutos({ tier: 'platinum', division: 1, lp: 12 }), banda: 'platinum', texto: 'Platino I · 12 LP (#1 de LAS)' };
+  if (textoDeNumeroEn(numeroRango, numeroRango.despues) !== numeroRango.texto) {
+    problemas.push('el último cuadro del conteo del rango no dice la etiqueta de la tarjeta');
+  }
+  const etiquetas = [];
+  for (let n = numeroRango.antes; n <= numeroRango.despues; n += 1) {
+    etiquetas.push(textoDeNumeroEn(numeroRango, n));
+  }
+  if (!etiquetas[0].startsWith('Platino II · 85 LP') || !etiquetas.includes('Platino II · 99 LP') || !etiquetas.includes('Platino I · 0 LP')) {
+    problemas.push(`el ascenso de Platino II 85 LP a Platino I 12 LP no pasa por 99 LP y 0 LP: ${etiquetas.slice(0, 3)} … ${etiquetas.slice(-3)}`);
+  }
+  if (textoDeNumeroEn({ etiqueta: 'nivel', antes: 60, despues: 71, banda: 'elite', texto: null }, 65) !== 'nivel 65') {
+    problemas.push('el conteo del nivel tiene que decir "nivel n"');
+  }
+
+  // Los números de los efectos de un beat: solo los enteros con signo, en orden; los decimales, los porcentajes y los que son parte de una cifra no se mueven.
+  const hallados = numerosDeEfectos('estudios +7, sueño -2, hype +10%, ratio +1,5, split 1-2 y (+3)').map((n) => n.texto);
+  if (hallados.join('|') !== '+7|-2|+3') {
+    problemas.push(`numerosDeEfectos: se esperaba +7|-2|+3 y salió ${hallados.join('|')}`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(problemas.join(' | '));
+  }
+});
+
+// D61 (FASE V, V4): `reemplazarEnElLugar` injerta el nodo fresco sobre el cacheado; hasta V4 solo copiaba `className` y `dataset`, así que un
+// `title`, un `aria-*` o un `style` nuevos (o que el fresco ya no trae) se quedaban con el valor viejo.
+check('reconciliar: reemplazarEnElLugar copia title, aria-* y style además de class y dataset, y saca los que el nodo fresco ya no trae (D61, fase V, V4)', () => {
+  class ElementoFalso {
+    constructor(atributos = {}, hijos = []) {
+      this.atributos = new Map(Object.entries(atributos));
+      this.className = '';
+      this.dataset = {};
+      this.childNodes = hijos;
+    }
+    getAttributeNames() { return [...this.atributos.keys()]; }
+    getAttribute(nombre) { return this.atributos.get(nombre) ?? null; }
+    hasAttribute(nombre) { return this.atributos.has(nombre); }
+    setAttribute(nombre, valor) { this.atributos.set(nombre, String(valor)); }
+    removeAttribute(nombre) { this.atributos.delete(nombre); }
+    replaceChildren(...hijos) { this.childNodes = hijos; }
+  }
+  const nodo = new ElementoFalso({ title: 'viejo', 'aria-label': 'viejo', 'aria-hidden': 'true', style: 'width: 10%', role: 'row', 'data-x': 'no se toca acá' }, ['hijo viejo']);
+  nodo.className = 'a';
+  nodo.dataset = { x: '1', y: '2' };
+  const fresco = new ElementoFalso({ title: 'nuevo', 'aria-label': 'nuevo', 'aria-expanded': 'true', style: 'width: 40%', role: 'cell' }, ['hijo nuevo']);
+  fresco.className = 'b';
+  fresco.dataset = { x: '9' };
+  const devuelto = reemplazarEnElLugar(nodo, fresco);
+  const dicho = Object.fromEntries(nodo.atributos);
+  const problemas = [];
+  if (devuelto !== nodo) problemas.push('tiene que devolver el nodo cacheado (la identidad se preserva)');
+  if (dicho.title !== 'nuevo') problemas.push(`title quedó "${dicho.title}"`);
+  if (dicho['aria-label'] !== 'nuevo' || dicho['aria-expanded'] !== 'true') problemas.push(`aria-label / aria-expanded quedaron "${dicho['aria-label']}" / "${dicho['aria-expanded']}"`);
+  if ('aria-hidden' in dicho) problemas.push('un aria-* que el fresco ya no trae se tiene que sacar');
+  if (dicho.style !== 'width: 40%') problemas.push(`style quedó "${dicho.style}"`);
+  if (dicho.role !== 'row') problemas.push('lo que no es title, aria-* ni style no se copia (role)');
+  if (nodo.className !== 'b' || JSON.stringify(nodo.dataset) !== JSON.stringify({ x: '9' })) problemas.push(`class / dataset: ${nodo.className} ${JSON.stringify(nodo.dataset)}`);
+  if (nodo.childNodes[0] !== 'hijo nuevo') problemas.push('los hijos se reemplazan');
+  // Sin atributos que copiar el nodo cacheado pierde su title y su style.
+  const limpio = new ElementoFalso({ title: 't', style: 's' });
+  reemplazarEnElLugar(limpio, new ElementoFalso({}));
+  if (limpio.atributos.size !== 0) problemas.push('un title / style que el fresco ya no trae se tiene que sacar');
+  if (problemas.length > 0) {
+    throw new Error(problemas.join(' | '));
+  }
 });
 
 // ============================================================================
@@ -8301,7 +8477,16 @@ class ElementoFalso {
     this.parentNode = null;
     this._texto = '';
     this.classList = { add() {}, remove() {} };
+    // V4 (D61): `reemplazarEnElLugar` espeja title, style y aria-* con la API de atributos.
+    this._atributos = new Map();
   }
+  getAttributeNames() { return [...this._atributos.keys()]; }
+  getAttribute(nombre) { return this._atributos.get(nombre) ?? null; }
+  hasAttribute(nombre) { return this._atributos.has(nombre); }
+  setAttribute(nombre, valor) { this._atributos.set(nombre, String(valor)); }
+  removeAttribute(nombre) { this._atributos.delete(nombre); }
+  append(...nodos) { for (const nodo of nodos) this.appendChild(nodo); }
+  querySelectorAll() { return []; }
   set textContent(valor) { this._texto = valor; this.childNodes = []; }
   get textContent() { return this._texto; }
   appendChild(nodo) { this.childNodes.push(nodo); nodo.parentNode = this; return nodo; }
@@ -8386,6 +8571,91 @@ if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_REPRODUCIR_BEATS.toLo
 
 check(NOMBRE_CHECK_REPRODUCIR_BEATS, () => {
   if (errorReproducirBeatsReal) throw errorReproducirBeatsReal;
+});
+
+// FASE V (V4): lo que `reproducirBeats` espera de verdad. Hasta acá el espejo de simulate.js (K0 espejos) solo comparaba el literal; esto prueba que el
+// reproductor real lo usa donde debe: la tarjeta "Cierre de …" (`pagina.cierre.anio`) sostiene `ESPERA_CIERRE_ANIO_MS` más que un beat, una sola vez y
+// en el último beat; una página reabierta sin beats (D97: retomar entre splits) espera lo de un beat para que la tarjeta se vea; y en INST o con
+// movimiento reducido no espera nada. Corre a nivel de módulo (`reproducirBeats` es async), con el `setTimeout` reemplazado por uno que registra
+// los milisegundos y sigue en el turno siguiente.
+const NOMBRE_CHECK_PAUSA_DEL_ANIO = 'V4: reproducirBeats sostiene la tarjeta "Cierre de …" ESPERA_CIERRE_ANIO_MS más que un beat y una página reabierta sin beats espera uno (D97), nunca en INST ni con movimiento reducido';
+let errorPausaDelAnio = null;
+if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_PAUSA_DEL_ANIO.toLowerCase().includes(texto))) {
+  const previos = {
+    document: globalThis.document, window: globalThis.window, setTimeout: globalThis.setTimeout, clearTimeout: globalThis.clearTimeout,
+    velocidad: reproductorModulo.velocidadActual()
+  };
+  const esperas = [];
+  // El espejo de simulate.js: se importa acá (más abajo el archivo lo desestructura con el resto del instrumento).
+  const { ESPERA_CIERRE_ANIO_MS: ESPERA_ANIO } = await import('./simulate.js');
+  try {
+    globalThis.document = {
+      createElement: (tag) => new ElementoFalso(tag),
+      createTextNode: (texto) => {
+        const nodo = new ElementoFalso('#text');
+        nodo.textContent = texto;
+        return nodo;
+      }
+    };
+    globalThis.setTimeout = (fn, ms) => {
+      esperas.push(ms);
+      queueMicrotask(fn);
+      return 0;
+    };
+    globalThis.clearTimeout = () => {};
+    const poner = (velocidad, reducido) => {
+      globalThis.window = { matchMedia: () => ({ matches: reducido }) };
+      while (reproductorModulo.velocidadActual() !== velocidad) {
+        reproductorModulo.ciclarVelocidad();
+      }
+    };
+    const beats = [0, 1, 2].map((i) => ({ type: 'x', message: `beat ${i}`, tecnico: false }));
+    const numero = { etiqueta: 'nivel', antes: 60, despues: 63, banda: 'titular', texto: null };
+    const cierre = (anio) => ({ resultado: null, numero, goldenRoad: null, anio });
+    const anio = { anio: 2031, numero: { ...numero, antes: 58 }, escalon: { vas: 'Tu escalón: «X»', falta: 'Para llegar a «Y»: te falta Z' } };
+    const correr = async (velocidad, reducido, nuevas, cierreDeLaPagina) => {
+      poner(velocidad, reducido);
+      esperas.length = 0;
+      const logList = new ElementoFalso('div');
+      await reproductorModulo.reproducirBeats(logList, nuevas, { state: { logs: nuevas }, pagina: { desde: 0, anterior: null, cierre: cierreDeLaPagina, cartel: null } });
+      return [...esperas];
+    };
+    const casos = [
+      ['1× con un cierre común', await correr('x1', false, beats, cierre(null)), [700, 700, 700]],
+      ['1× con "Cierre de …": la espera del año en el último beat', await correr('x1', false, beats, cierre(anio)), [700, 700, 700 + ESPERA_ANIO]],
+      ['1× sin cierre (el split no cerró)', await correr('x1', false, beats, null), [700, 700, 700]],
+      ['1× página reabierta sin beats (D97)', await correr('x1', false, [], cierre(null)), [700]],
+      ['1× página reabierta sin beats con "Cierre de …"', await correr('x1', false, [], cierre(anio)), [700 + ESPERA_ANIO]],
+      ['1× página sin beats ni cierre', await correr('x1', false, [], null), []],
+      ['INST con "Cierre de …"', await correr('instantaneo', false, beats, cierre(anio)), []],
+      ['INST página reabierta con "Cierre de …"', await correr('instantaneo', false, [], cierre(anio)), []],
+      ['1× con movimiento reducido y "Cierre de …"', await correr('x1', true, beats, cierre(anio)), []],
+      ['1× con movimiento reducido, página reabierta', await correr('x1', true, [], cierre(anio)), []]
+    ];
+    const mal = casos.filter(([, vistas, esperadas]) => JSON.stringify(vistas) !== JSON.stringify(esperadas))
+      .map(([nombre, vistas, esperadas]) => `${nombre}: esperó ${JSON.stringify(vistas)} y tenía que esperar ${JSON.stringify(esperadas)}`);
+    if (mal.length > 0) {
+      throw new Error(mal.join(' | '));
+    }
+  } catch (error) {
+    errorPausaDelAnio = error;
+  } finally {
+    globalThis.document = previos.document;
+    if (previos.window === undefined) {
+      delete globalThis.window;
+    } else {
+      globalThis.window = previos.window;
+    }
+    globalThis.setTimeout = previos.setTimeout;
+    globalThis.clearTimeout = previos.clearTimeout;
+    while (reproductorModulo.velocidadActual() !== previos.velocidad) {
+      reproductorModulo.ciclarVelocidad();
+    }
+  }
+}
+
+check(NOMBRE_CHECK_PAUSA_DEL_ANIO, () => {
+  if (errorPausaDelAnio) throw errorPausaDelAnio;
 });
 
 // ============================================================================
@@ -9889,7 +10159,7 @@ const {
 const { puntajeDeCarrera: puntajeDeCarreraAgencia } = await import('../core/puntaje.js');
 const {
   correrLote, correrCarrera: correrCarreraSimulate, correrSinRuido, calcularFavoritoBo5, bloqueBo5Motor, contarBeats,
-  clasificarSplit, PARAMETROS_RUIDO, DURACION_BEAT_MS, ESPERA_MINIJUEGO_MS, DELTAS_FAVORITO_BO5,
+  clasificarSplit, PARAMETROS_RUIDO, DURACION_BEAT_MS, ESPERA_MINIJUEGO_MS, ESPERA_CIERRE_ANIO_MS, DELTAS_FAVORITO_BO5,
   UMBRAL_R2_ESTRUCTURAL, decidirRuidoPuro,
   promedio, mediana: medianaSim, medianaInferior, percentil, desvioMuestral, pearson, varianza, regresionLineal2Regresores,
   META_K2_R_MISMA_LIGA, META_K2_R2_SIN_RUIDO, META_K2_BO5_FAVORITO_CLARO_PCT, META_K3_MENTALIDAD_MEDIANA,
@@ -13194,7 +13464,7 @@ check('K0 ruidoPuro: UMBRAL_R2_ESTRUCTURAL vale 0,3 y la decisión de si ruidoPu
   }
 });
 
-check('K0 espejos de la UI: DURACION_BEAT_MS y ESPERA_MINIJUEGO_MS son los literales de reproductor.js y de app.js', () => {
+check('K0 espejos de la UI: DURACION_BEAT_MS, ESPERA_MINIJUEGO_MS y ESPERA_CIERRE_ANIO_MS son los literales de reproductor.js y de paradas/minijuego.js', () => {
   // Trinquete (K0-A, 2ª revisión): el check de "observación" recalculaba con las mismas constantes importadas, y con 700 → 350
   // o 1600 → 0 pasaba. El instrumento espeja dos números de la UI (el comentario de simulate.js admite que "se desactualiza
   // en silencio"): acá se leen del código fuente que los define. Es válido que este check falle el día que alguien cambie el
@@ -13209,13 +13479,18 @@ check('K0 espejos de la UI: DURACION_BEAT_MS y ESPERA_MINIJUEGO_MS son los liter
   };
   // reproductor.js: `const ESPERA_MS = { x1: 700, x2: 350, instantaneo: 0 }`
   const beat = extraer(leer('ui/reproductor.js'), /const\s+ESPERA_MS\s*=\s*\{[^}]*\bx1\s*:\s*(\d+)/g, 'ESPERA_MS.x1 de reproductor.js');
-  // app.js: `setTimeout(() => responder(... { resultado }), 1600)` (K4-B: con la charla del coach, si se ofreció)
-  const minijuego = extraer(leer('ui/app.js'), /setTimeout\(\s*\(\)\s*=>\s*responder\([^;]*\{\s*resultado\s*\}\s*\)\s*,\s*(\d+)\s*\)/g, 'la espera tras el minijuego de app.js');
+  // paradas/minijuego.js (salió de app.js en V2-A): `setTimeout(() => responder(... { resultado }), 1600)` (K4-B: con la charla del coach, si se ofreció)
+  const minijuego = extraer(leer('ui/paradas/minijuego.js'), /setTimeout\(\s*\(\)\s*=>\s*responder\([^;]*\{\s*resultado\s*\}\s*\)\s*,\s*(\d+)\s*\)/g, 'la espera tras el minijuego de paradas/minijuego.js');
   if (beat !== DURACION_BEAT_MS) {
     throw new Error(`DURACION_BEAT_MS = ${DURACION_BEAT_MS} en simulate.js, reproductor.js espera ${beat} ms por beat`);
   }
   if (minijuego !== ESPERA_MINIJUEGO_MS) {
-    throw new Error(`ESPERA_MINIJUEGO_MS = ${ESPERA_MINIJUEGO_MS} en simulate.js, app.js espera ${minijuego} ms tras el minijuego`);
+    throw new Error(`ESPERA_MINIJUEGO_MS = ${ESPERA_MINIJUEGO_MS} en simulate.js, paradas/minijuego.js espera ${minijuego} ms tras el minijuego`);
+  }
+  // FASE V (V4): la pausa del cierre de año. reproductor.js: `const ESPERA_CIERRE_ANIO_MS = { x1: 2400, x2: 1200, instantaneo: 0 }`.
+  const cierreDeAnio = extraer(leer('ui/reproductor.js'), /const\s+ESPERA_CIERRE_ANIO_MS\s*=\s*\{[^}]*\bx1\s*:\s*(\d+)/g, 'ESPERA_CIERRE_ANIO_MS.x1 de reproductor.js');
+  if (cierreDeAnio !== ESPERA_CIERRE_ANIO_MS) {
+    throw new Error(`ESPERA_CIERRE_ANIO_MS = ${ESPERA_CIERRE_ANIO_MS} en simulate.js, reproductor.js sostiene ${cierreDeAnio} ms la tarjeta de cierre de año`);
   }
 });
 
@@ -13243,6 +13518,105 @@ check('K0 contarBeats y clasificarSplit: contarBeats coincide con agruparBeats d
       throw new Error(`clasificarSplit dio ${clasificarSplit(antes, despues)}, se esperaba ${esperado}`);
     }
   }
+});
+
+// FASE V (V4; PLAN.md §V.7 V4): el cierre de año tiene su momento. `edadCierre` frena en ~92% de los años de `criterio` y en ~73% de los de `malas`;
+// en el resto la página del relato cierra el año sin pausa, y ahí la tarjeta de cierre pasa a ser "Cierre de 2031" y la UI la sostiene
+// `ESPERA_CIERRE_ANIO_MS` (reproductor.js). La promesa: esa tarjeta sale en los años que cerraron SIN parada de `edadCierre`, una por año,
+// nunca junto a la parada (T9); el cartel de cada página dice la ventana y el año que el motor va a jugar; y `simulate.js` (el espejo del tiempo)
+// cuenta exactamente esos años. Todo se recalcula acá a mano, sin las funciones de `ui/core/escena.js`, salvo la que se prueba.
+checkLento('K0 cierre de año: la tarjeta "Cierre de …" y su pausa salen en los años sin parada de edadCierre (una por año, nunca junto a la parada), el cartel dice la ventana y el año que juega el motor, y simulate.js cuenta esos mismos años (criterio y malas, 15 carreras × 60)', () => {
+  const problemas = [];
+  const total = { tarjetas: 0, conParada: 0, carteles: 0, cartelesDeAnioNuevo: 0 };
+  for (const bot of ['criterio', 'malas']) {
+    for (let seed = 1; seed <= 15; seed += 1) {
+      const rng = mulberry32(seed);
+      let state = createInitialState(seed, rng);
+      let fotoAnio = null;
+      let tarjetas = 0;
+      let conParada = 0;
+      const aniosConTarjeta = new Set();
+      for (let i = 0; i < 60 && !state.terminado; i += 1) {
+        const antes = state;
+        const cuando = `${bot} seed ${seed} split ${i}`;
+        const cartel = cartelDePaginaV4(antes);
+        const foto = JSON.parse(JSON.stringify(fotoDeSplitV2(antes)));
+        if (cartel?.nuevoAnio) {
+          fotoAnio = foto;
+        }
+        let paso = avanzarSplit(antes, rng);
+        const alArrancar = paso.state;
+        let freno = false;
+        let vueltas = 0;
+        while (paso.state.pendiente) {
+          const { sistemaId, decision } = paso.state.pendiente;
+          freno = freno || sistemaId === 'edadCierre';
+          paso = resolverDecision(paso.state, ESTRATEGIAS_K0[bot](sistemaPorId(sistemaId), paso.state, decision, rng), rng);
+          vueltas += 1;
+          if (vueltas > 200) {
+            throw new Error(`${cuando}: más de 200 pausas seguidas en un split`);
+          }
+        }
+        state = paso.state;
+        // El cartel: la ventana y el año del split que el motor va a jugar (salvo una vuelta del retiro, que mueve el reloj adentro del split).
+        const huboVuelta = state.flags.vueltasUsadas > antes.flags.vueltasUsadas;
+        if (cartel && !huboVuelta) {
+          total.carteles += 1;
+          total.cartelesDeAnioNuevo += cartel.nuevoAnio ? 1 : 0;
+          if (cartel.ventana !== alArrancar.contexto?.ventana || cartel.anio !== alArrancar.calendario?.anio) {
+            problemas.push(`${cuando}: el cartel dice ${cartel.ventana} ${cartel.anio} y el motor juega ${alArrancar.contexto?.ventana} ${alArrancar.calendario?.anio}`);
+          }
+          if (cartel.nuevoAnio !== (antes.player.splitCount % BALANCE.edad.splitsPorEdad === 0) || !cartel.texto.includes(String(cartel.anio))) {
+            problemas.push(`${cuando}: el cartel ${JSON.stringify(cartel)} no anuncia el año nuevo donde corresponde`);
+          }
+        }
+        if (state.terminado) {
+          break;
+        }
+        const cerroUnAnio = state.age === antes.age + 1 && state.player.splitCount % BALANCE.edad.splitsPorEdad === 0;
+        const cierre = cierreDeSplitV2(foto, state, { cierreFrenado: freno, fotoAnio });
+        if ((cierre.anio !== null) !== (cerroUnAnio && !freno)) {
+          problemas.push(`${cuando}: cerró un año=${cerroUnAnio}, frenó edadCierre=${freno} y la tarjeta de año ${cierre.anio === null ? 'no sale' : 'sale'}`);
+        }
+        if (cierre.anio !== null) {
+          tarjetas += 1;
+          const dicho = cierre.anio;
+          if (dicho.anio !== state.calendario.anio || aniosConTarjeta.has(dicho.anio)) {
+            problemas.push(`${cuando}: "Cierre de ${dicho.anio}" (el motor cerró ${state.calendario.anio}${aniosConTarjeta.has(dicho.anio) ? ', y ya había una de ese año' : ''})`);
+          }
+          aniosConTarjeta.add(dicho.anio);
+          const antesEsperado = fotoAnio && fotoAnio.numero.etiqueta === cierre.numero.etiqueta ? fotoAnio.numero.valor : null;
+          if (dicho.numero.despues !== cierre.numero.despues || dicho.numero.antes !== antesEsperado) {
+            problemas.push(`${cuando}: el número del año ${JSON.stringify(dicho.numero)} no es ${antesEsperado} → ${cierre.numero.despues}`);
+          }
+          if ((dicho.escalon !== null) !== (state.phase === 'profesional') || (dicho.escalon && !dicho.escalon.vas.startsWith('Tu escalón: '))) {
+            problemas.push(`${cuando}: el escalón del cierre de año (${JSON.stringify(dicho.escalon)}) en fase ${state.phase}`);
+          }
+        }
+        if (cerroUnAnio && freno) {
+          conParada += 1;
+          // La bandera es lo que sostiene T9: sin ella la tarjeta saldría también donde el motor ya frenó.
+          if (cierreDeSplitV2(foto, state, { cierreFrenado: false, fotoAnio }).anio === null) {
+            problemas.push(`${cuando}: sin cierreFrenado la tarjeta del año tenía que salir (el check no mide nada)`);
+          }
+        }
+      }
+      // El espejo del tiempo cuenta los mismos años.
+      const { observacion } = correrCarreraSimulate(seed, 60, ESTRATEGIAS_K0[bot]);
+      if (observacion.cierresSinParada !== tarjetas || observacion.cierresConParada !== conParada) {
+        problemas.push(`${bot} seed ${seed}: simulate.js cuenta ${observacion.cierresSinParada} años sin parada y ${observacion.cierresConParada} con; la UI sacaría ${tarjetas} tarjetas de año y ${conParada} paradas`);
+      }
+      total.tarjetas += tarjetas;
+      total.conParada += conParada;
+    }
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problemas: ${problemas.slice(0, 5).join(' | ')}`);
+  }
+  if (total.tarjetas < 20 || total.conParada < 100 || total.carteles < 500 || total.cartelesDeAnioNuevo < 150) {
+    throw new Error(`check vacío: ${total.tarjetas} tarjetas de año (20), ${total.conParada} años con parada (100), ${total.carteles} carteles (500), ${total.cartelesDeAnioNuevo} de año nuevo (150)`);
+  }
+  console.log(`      ${total.tarjetas} años cerraron sin parada (tarjeta "Cierre de …" y pausa) y ${total.conParada} con la parada de edadCierre: ${Math.round((100 * total.tarjetas) / (total.tarjetas + total.conParada))}% de los cierres necesitan la pausa propia; ${total.carteles} carteles contra el motor`);
 });
 
 checkLento('K0 ablación: apaga los ruidos de resultados adentro de su ventana, cambia el resultado y los restaura', () => {
@@ -13447,6 +13821,8 @@ checkLento('K0 observación: beats del reproductor, minijuegos y tipo de split c
     let st = createInitialState(seed, rng);
     let beats = 0;
     let minijuegos = 0;
+    // FASE V (V4): los años que cerraron sin parada de `edadCierre` (cada uno suma `ESPERA_CIERRE_ANIO_MS` al reproductor).
+    let cierresSinParada = 0;
     const splitsPro = [];
     const filasIndependientes = [];
     const tanda = (desde) => {
@@ -13457,6 +13833,8 @@ checkLento('K0 observación: beats del reproductor, minijuegos y tipo de split c
     };
     for (let i = 0; i < 60 && !st.terminado; i += 1) {
       const r0 = st.career.registro;
+      const edadAntes = st.age;
+      let frenoElCierre = false;
       let decisiones = 0;
       let desde = st.logs.length;
       st = avanzarSplit(st, rng).state;
@@ -13464,12 +13842,17 @@ checkLento('K0 observación: beats del reproductor, minijuegos y tipo de split c
       while (st.pendiente) {
         const { sistemaId, decision } = st.pendiente;
         decisiones += 1;
+        frenoElCierre = frenoElCierre || sistemaId === 'edadCierre';
         if (decision.presentacion === 'minijuego' || decision.datos?.motivo === 'minijuego') {
           minijuegos += 1;
         }
         desde = st.logs.length;
         st = resolverDecision(st, sistemaPorId(sistemaId).resolverAuto(st, decision, rng), rng).state;
         tanda(desde);
+      }
+      // A mano: la edad subió una en un cierre de edad (`splitCount` múltiplo de `splitsPorEdad`) y el motor no frenó en él.
+      if (!st.terminado && st.age === edadAntes + 1 && st.player.splitCount % BALANCE.edad.splitsPorEdad === 0 && !frenoElCierre) {
+        cierresSinParada += 1;
       }
       if (st.phase === 'profesional') {
         // La liga "modelada" y la posición normalizada, a mano: lo que `correrCarrera` guarda por split pro.
@@ -13533,7 +13916,10 @@ checkLento('K0 observación: beats del reproductor, minijuegos y tipo de split c
     if (JSON.stringify(observacion.splitsProRitmo) !== JSON.stringify(splitsPro)) {
       throw new Error(`seed ${seed}: splitsProRitmo no coincide con la emulación (${observacion.splitsProRitmo.length} vs ${splitsPro.length} splits pro)`);
     }
-    const tiempoReproductor = (beats * DURACION_BEAT_MS + minijuegos * ESPERA_MINIJUEGO_MS) / 60000;
+    if (observacion.cierresSinParada !== cierresSinParada) {
+      throw new Error(`seed ${seed}: cierresSinParada ${observacion.cierresSinParada}, la emulación cuenta ${cierresSinParada}`);
+    }
+    const tiempoReproductor = (beats * DURACION_BEAT_MS + minijuegos * ESPERA_MINIJUEGO_MS + cierresSinParada * ESPERA_CIERRE_ANIO_MS) / 60000;
     if (Math.abs(observacion.tiempoReproductorMin - tiempoReproductor) > 1e-9) {
       throw new Error(`seed ${seed}: tiempoReproductorMin ${observacion.tiempoReproductorMin} != ${tiempoReproductor}`);
     }
@@ -18312,6 +18698,144 @@ checkLento('K4 (revisión) guardado: en cada tipo de pausa, guardar y recargar (
   }
 });
 
+// ============================================================================
+// FASE V (V2-B) — el director de escena (PLAN.md §V.5 y §V.7, "el check de V2"). La pantalla ya no es una combinación
+// de `hidden`: la decide `piezaDe(estado)` (src/ui/core/escena.js) y la escribe el director en `.shell[data-pieza]`.
+// La promesa: mientras el motor está en pausa, el escenario muestra una PARADA (decision, partido, mercado o minijuego)
+// —nunca el relato, nunca nada—, la misma después de guardar y recargar (retomar a mitad de parada), y el relato
+// mientras se reproduce. De paso, sobre las mismas carreras: el acompañante de cada parada es uno de los de §V.4 y el
+// cierre de cada split (`fotoDeSplit` → JSON → `cierreDeSplit`, como viaja en `lolcs-vista`) sale bien formado.
+// En rojo con un mutante: `familiaDeParada` que devuelve 'relato' para `presentacion: 'mercado'`.
+// ============================================================================
+const SEEDS_ESCENA_V2 = Array.from({ length: 20 }, (_, i) => 1 + i);
+const SPLITS_ESCENA_V2 = 60;
+const POSICION_ESCENA_V2 = /^\d+\.º de \d+$/;
+// La pieza que ESPERA cada pausa, escrita acá a mano (no llamando a `familiaDeParada`: un check que usa la función que
+// prueba no ve un ruteo torcido). La presentación manda ('minijuego' y 'mercado' traen su propia pieza, gane el sistema que
+// gane: el mapa decisivo de una serie es un minijuego); si no, los sistemas de partido van a `partido`; el resto a `decision`.
+const PIEZA_POR_PRESENTACION_V2 = { minijuego: 'minijuego', mercado: 'mercado' };
+const SISTEMAS_DE_PARTIDO_V2 = ['temporada', 'serie', 'internacional'];
+function piezaEsperadaV2(pendiente) {
+  const porPresentacion = PIEZA_POR_PRESENTACION_V2[pendiente.decision?.presentacion];
+  if (porPresentacion) {
+    return porPresentacion;
+  }
+  return SISTEMAS_DE_PARTIDO_V2.includes(pendiente.sistemaId) ? 'partido' : 'decision';
+}
+
+checkLento('V2 escena: en cada pausa del motor piezaDe da una pieza de parada (decision, partido, mercado o minijuego; nunca relato ni null), la misma tras deserializar(serializar()), y el cierre de cada split sale bien formado (criterio, 20 carreras × 60)', () => {
+  const problemas = [];
+  const porPieza = {};
+  const piezaDeTipo = new Map();
+  let cierres = 0;
+  let conResultado = 0;
+  if (piezaDeEscenaV2(null) !== 'inicio') {
+    problemas.push(`sin estado la pieza es ${piezaDeEscenaV2(null)}, no 'inicio'`);
+  }
+  for (const seed of SEEDS_ESCENA_V2) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < SPLITS_ESCENA_V2 && !state.terminado; i += 1) {
+      // La foto viaja en `localStorage` (`lolcs-vista`): se compara contra su copia JSON, como al retomar.
+      const foto = JSON.parse(JSON.stringify(fotoDeSplitV2(state)));
+      let paso = avanzarSplit(state, rng);
+      let vueltas = 0;
+      while (paso.state.pendiente) {
+        const tipo = tipoDePausaGuardadoK4(paso.state.pendiente);
+        const pieza = piezaDeEscenaV2(paso.state);
+        porPieza[pieza] = (porPieza[pieza] ?? 0) + 1;
+        if (!PIEZAS_DE_PARADA_V2.includes(pieza)) {
+          problemas.push(`seed ${seed}, pausa ${tipo}: la pieza es ${pieza}`);
+        }
+        const esperada = piezaEsperadaV2(paso.state.pendiente);
+        if (pieza !== esperada) {
+          problemas.push(`seed ${seed}, pausa ${tipo} (presentación ${paso.state.pendiente.decision?.presentacion ?? 'ninguna'}, sistema `
+            + `${paso.state.pendiente.sistemaId}): la pieza es ${pieza}, la parada que toca es ${esperada}`);
+        }
+        if (piezaDeEscenaV2(paso.state, { reproduciendo: true }) !== 'relato') {
+          problemas.push(`seed ${seed}, pausa ${tipo}: reproduciendo no da 'relato'`);
+        }
+        const datos = deserializarGuardado(serializarGuardado(paso.state, rng));
+        const piezaRecargada = datos ? piezaDeEscenaV2(datos.state) : null;
+        if (piezaRecargada !== pieza) {
+          problemas.push(`seed ${seed}, pausa ${tipo}: ${pieza} de corrido, ${piezaRecargada} al recargar`);
+        }
+        if (piezaDeTipo.has(tipo) && piezaDeTipo.get(tipo) !== pieza) {
+          problemas.push(`la pausa ${tipo} cae en dos piezas (${piezaDeTipo.get(tipo)} y ${pieza})`);
+        }
+        piezaDeTipo.set(tipo, pieza);
+        const acompanante = acompananteDeV2(paso.state, pieza);
+        const tipoValido = acompanante.tipo === null || TIPOS_DE_ACOMPANANTE_V2.includes(acompanante.tipo);
+        const cuartoValido = acompanante.cuarto === null || CUARTOS_V2.includes(acompanante.cuarto);
+        if (!tipoValido || !cuartoValido || (acompanante.tipo === null) !== (acompanante.cuarto === null)
+          || (pieza === 'minijuego' && acompanante.tipo !== null)) {
+          problemas.push(`seed ${seed}, pausa ${tipo} (${pieza}): acompañante ${JSON.stringify(acompanante)}`);
+        }
+        const { sistemaId, decision } = paso.state.pendiente;
+        paso = resolverDecision(paso.state, ESTRATEGIAS_K0.criterio(sistemaPorId(sistemaId), paso.state, decision, rng), rng);
+        vueltas += 1;
+        if (vueltas > 200) {
+          throw new Error(`seed ${seed}: más de 200 pausas seguidas en un split`);
+        }
+      }
+      state = paso.state;
+      if (state.terminado) {
+        break;
+      }
+      // El split cerró sin pausa: la tarjeta de cierre.
+      cierres += 1;
+      const cierre = cierreDeSplitV2(foto, state);
+      const { numero, resultado } = cierre;
+      if (!Number.isFinite(numero.despues) || !['nivel', 'rango'].includes(numero.etiqueta)
+        || (numero.antes !== null && !Number.isFinite(numero.antes))) {
+        problemas.push(`seed ${seed}, split ${i}: número de cierre mal formado ${JSON.stringify(numero)}`);
+      }
+      if (numero.antes === null && foto.numero.etiqueta === numero.etiqueta) {
+        problemas.push(`seed ${seed}, split ${i}: con la foto del split el cierre sale sin delta`);
+      }
+      if (resultado !== null) {
+        conResultado += 1;
+        if (!['titulo', 'mundial', 'posicion'].includes(resultado.tipo) || !resultado.texto
+          || (resultado.tipo === 'posicion' && !POSICION_ESCENA_V2.test(resultado.texto))) {
+          problemas.push(`seed ${seed}, split ${i}: resultado mal formado ${JSON.stringify(resultado)}`);
+        }
+      }
+      if (typeof lineaDeSplitAnteriorV2(cierre) !== 'string') {
+        problemas.push(`seed ${seed}, split ${i}: sin la línea "Split anterior"`);
+      }
+    }
+    if (state.terminado && state.tarjeta && piezaDeEscenaV2(state) !== 'final') {
+      problemas.push(`seed ${seed}: la carrera terminada da ${piezaDeEscenaV2(state)}, no 'final'`);
+    }
+    // La llamada que termina la carrera también se cuenta: mientras se reproduce, el relato (la final entra después).
+    if (state.terminado && piezaDeEscenaV2(state, { reproduciendo: true }) !== 'relato') {
+      problemas.push(`seed ${seed}: el relato del último split da ${piezaDeEscenaV2(state, { reproduciendo: true })}, no 'relato'`);
+    }
+  }
+  const sinVer = PIEZAS_DE_PARADA_V2.filter((pieza) => !porPieza[pieza]);
+  if (sinVer.length > 0) {
+    problemas.push(`el lote no pasó por ${sinVer.join(', ')} (vistas: ${JSON.stringify(porPieza)}): cambiá las seeds`);
+  }
+  if (cierres === 0 || conResultado === 0) {
+    problemas.push(`${cierres} cierres de split, ${conResultado} con resultado: el lote no mide el cierre`);
+  }
+  // Texto: cada pieza del director sale en algún `data-piezas` de index.html y tiene su regla de ocultar en shell.css.
+  const htmlV2 = fs.readFileSync(indexHtmlPath, 'utf8');
+  const shellCssV2 = fs.readFileSync(path.join(estilosDir, 'shell.css'), 'utf8');
+  const piezasEnHtml = new Set([...htmlV2.matchAll(/data-piezas="([^"]*)"/g)].flatMap((m) => m[1].split(/\s+/)));
+  for (const pieza of PIEZAS_V2) {
+    if (!piezasEnHtml.has(pieza)) {
+      problemas.push(`la pieza ${pieza} no aparece en ningún data-piezas de index.html`);
+    }
+    if (!shellCssV2.includes(`.shell[data-pieza="${pieza}"] .escenario [data-piezas]:not([data-piezas~="${pieza}"])`)) {
+      problemas.push(`shell.css no tiene la regla que oculta lo que no es de la pieza ${pieza}`);
+    }
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problemas: ${problemas.slice(0, 5).join(' | ')}`);
+  }
+});
+
 // K4 (revisión, la del navegador): la ficha mostraba `top_mundial` como chip y `LCK_CL` en su línea de contexto. Toda
 // marca que `core/contexto.js` puede producir (leída del fuente, para cubrir las raras como `mejor_del_mundo`, y además
 // las vistas en carreras reales) tiene etiqueta en `LABEL_MARCA` de la ficha, y la línea de contexto nunca muestra el
@@ -21484,6 +22008,11 @@ checkLento(`K4c meta del ritmo (criterio, ${CARRERAS_METAS_B} × ${SPLITS_LOTE_K
 const { migrarDe10 } = await import('../core/guardado.js');
 const { isDeepStrictEqual: sonIgualesK4cG } = await import('util');
 const { planInicial: planInicialK4cG, IDS_PLAN: IDS_PLAN_K4cG } = await import('../core/rutinas.js');
+// FASE V (GR-m): `career.registro.porSplit` no existe en ninguna versión anterior a la 15, así que los guardados viejos que arman estos
+// checks no la traen y `migrarDe14` la arranca vacía (`[]`): el estado de comparación es el real con la tabla vacía.
+function sinFilasGRM(state) {
+  return { ...state, career: { ...state.career, registro: { ...state.career.registro, porSplit: [] } } };
+}
 const FORMA_DE_LA_VERSION_10_K4cG = '7128c450fa6c';
 const PREPARACION_DE_SPLIT_VIEJA_K4cG = 4;
 const SEEDS_GUARDADO_10_K4cG = [1, 2, 3, 4];
@@ -21499,6 +22028,7 @@ function guardadoDeLaVersion10K4cG(state, rng) {
   delete datos.state.player.desgaste;
   delete datos.state.flags.splitsTier2SinOfertaTier1;
   delete datos.state.career.splitPrimerContratoTier2;
+  delete datos.state.career.registro.porSplit; // GR-m (15)
   datos.state.flags.preparacionDeSplit = PREPARACION_DE_SPLIT_VIEJA_K4cG;
   // K4c (revisión): la 10 tampoco escribía `flags.pruebasFallidas` (la migración lo arranca vacío).
   delete datos.state.flags.pruebasFallidas;
@@ -21547,11 +22077,11 @@ check('K4c guardado VERSION 11: la forma de la 10 sigue registrada, y un guardad
         if ('preparacionDeSplit' in datos.state.flags || !IDS_PLAN_K4cG.includes(datos.state.player.planAnual)) {
           throw new Error(`seed ${seed}, split ${i}: sin migrar (preparacionDeSplit ${'preparacionDeSplit' in datos.state.flags}, planAnual ${datos.state.player.planAnual})`);
         }
-        if (!sonIgualesK4cG(datos.state, comoJsonK4cG(state))) {
+        if (!sonIgualesK4cG(datos.state, comoJsonK4cG(sinFilasGRM(state)))) {
           throw new Error(`seed ${seed}, split ${i}: el estado migrado no es el del guardado de la 11`);
         }
         // Y sigue igual: el mismo próximo split (estado, logs y RNG) que el de la versión nueva.
-        const seguido = avanzarSplitAuto(state, conElRngDeK4cG(seed, rng.estado()));
+        const seguido = avanzarSplitAuto(sinFilasGRM(state), conElRngDeK4cG(seed, rng.estado()));
         const rngMigrado = conElRngDeK4cG(datos.seed, datos.rngEstado);
         const recargado = avanzarSplitAuto(datos.state, rngMigrado);
         if (!sonIgualesK4cG(comoJsonK4cG(seguido), comoJsonK4cG(recargado))) {
@@ -21589,6 +22119,7 @@ function guardadoDeLaVersion11K5CR(state, rng) {
   delete datos.state.flags.splitsTier2SinOfertaTier1;
   delete datos.state.career.splitPrimerContratoTier2;
   delete datos.state.career.splitsRetirado;
+  delete datos.state.career.registro.porSplit; // GR-m (15)
   return JSON.stringify(datos);
 }
 
@@ -21618,7 +22149,7 @@ check('K5c-R guardado VERSION 12: la forma de la 11 sigue registrada, y un guard
         throw new Error(`seed ${seed}, split ${i}: el migrado trae la cuenta de la presión en ${datos.state.flags.splitsTier2SinOfertaTier1} y debería traer 0`);
       }
       const realSinRetirado = {
-        ...state, career: { ...state.career, splitsRetirado: 0 }, flags: { ...state.flags, splitsTier2SinOfertaTier1: 0 }
+        ...sinFilasGRM(state), career: { ...sinFilasGRM(state).career, splitsRetirado: 0 }, flags: { ...state.flags, splitsTier2SinOfertaTier1: 0 }
       };
       if (!sonIgualesK4cG(datos.state, JSON.parse(JSON.stringify(realSinRetirado)))) {
         throw new Error(`seed ${seed}, split ${i}: el estado migrado no es el del guardado de la 12`);
@@ -21654,6 +22185,7 @@ function guardadoDeLaVersion12K6B(state, rng) {
   const datos = JSON.parse(serializarGuardado(state, rng));
   datos.version = 12;
   for (const clave of Object.keys(FOTOS_VACIAS_K6B)) delete datos.state.flags[clave];
+  delete datos.state.career.registro.porSplit; // GR-m (15)
   return JSON.stringify(datos);
 }
 const tieneFotoK6B = (st) => st.flags.seguisFirma != null || st.flags.finMercadoFirma != null || st.flags.vueltaFirma != null
@@ -21675,7 +22207,7 @@ check('K6b guardado VERSION 13: la forma de la 12 (la de main) sigue registrada,
       if (datos === null) {
         throw new Error(`seed ${seed}, split ${i}: el guardado de VERSION 12 no cargó`);
       }
-      const realSinFotos = { ...state, flags: { ...state.flags, ...FOTOS_VACIAS_K6B } };
+      const realSinFotos = { ...sinFilasGRM(state), flags: { ...state.flags, ...FOTOS_VACIAS_K6B } };
       if (!sonIgualesK4cG(datos.state, JSON.parse(JSON.stringify(realSinFotos)))) {
         throw new Error(`seed ${seed}, split ${i}: el estado migrado no es el de la 13 con las fotos en null`);
       }
@@ -21716,10 +22248,11 @@ function guardadoDeLaVersion13K6D(state, rng) {
   const datos = JSON.parse(serializarGuardado(state, rng));
   datos.version = 13;
   for (const clave of Object.keys(NUEVOS_VACIOS_K6D)) delete datos.state.flags[clave];
+  delete datos.state.career.registro.porSplit; // tampoco existía en la 13: `migrarDe14` la arranca vacía en la cadena
   return JSON.stringify(datos);
 }
 check('K6d guardado VERSION 14: la forma de la 13 (la de fase-9r) sigue registrada, y un guardado de la 13 carga completo (sin cierres avisados ni oferta guardada) y sigue igual que el de la 14', () => {
-  if (VERSION_GUARDADO !== 14 || FORMAS_CONOCIDAS[13] !== '995485d311c0' || FORMAS_CONOCIDAS[14] === undefined || FORMAS_CONOCIDAS[14] === FORMAS_CONOCIDAS[13]) {
+  if (VERSION_GUARDADO < 14 || FORMAS_CONOCIDAS[13] !== '995485d311c0' || FORMAS_CONOCIDAS[14] === undefined || FORMAS_CONOCIDAS[14] === FORMAS_CONOCIDAS[13]) {
     throw new Error(`VERSION ${VERSION_GUARDADO}, forma de la 13 ${FORMAS_CONOCIDAS[13]}, forma de la 14 ${FORMAS_CONOCIDAS[14]}`);
   }
   let comparados = 0;
@@ -21733,7 +22266,7 @@ check('K6d guardado VERSION 14: la forma de la 13 (la de fase-9r) sigue registra
       if (datos === null) {
         throw new Error(`seed ${seed}, split ${i}: el guardado de VERSION 13 no cargó`);
       }
-      const realSinLoNuevo = { ...state, flags: { ...state.flags, ...NUEVOS_VACIOS_K6D } };
+      const realSinLoNuevo = { ...sinFilasGRM(state), flags: { ...state.flags, ...NUEVOS_VACIOS_K6D } };
       if (!sonIgualesK4cG(datos.state, JSON.parse(JSON.stringify(realSinLoNuevo)))) {
         throw new Error(`seed ${seed}, split ${i}: el estado migrado no es el de la 14 sin cierres avisados ni oferta guardada`);
       }
@@ -21761,6 +22294,635 @@ check('K6d guardado VERSION 14: la forma de la 13 (la de fase-9r) sigue registra
     throw new Error(`migrarDe13 no arranca o no respeta los campos: ${JSON.stringify({ sinFlags, conAlgo })}`);
   }
   console.log(`      ${comparados} guardados de la 13 cargados y seguidos; sin migrarDe13 fallan ${mutanteMuerde}`);
+});
+
+// FASE V (GR-m): VERSION 15. `career.registro.porSplit` (una fila por split jugado en una tabla) no existía en la 14; `migrarDe14` lo
+// arranca vacío (`[]`, el valor de `createInitialState`): lo ya jugado no trae sus filas, así que esos años no pueden dar Golden Road
+// (aceptado, PLAN.md §V.6). Los guardados de la 14 se hacen desde carreras reales quitándoles lo que la 14 no escribía, como en el
+// check de la 13.
+const { migrarDe14: migrarDe14GRM } = await import('../core/guardado.js');
+const SEEDS_GUARDADO_14_GRM = [1, 2, 3, 4];
+const SPLITS_GUARDADO_14_GRM = 60;
+function guardadoDeLaVersion14GRM(state, rng) {
+  const datos = JSON.parse(serializarGuardado(state, rng));
+  datos.version = 14;
+  delete datos.state.career.registro.porSplit;
+  return JSON.stringify(datos);
+}
+check('GR-m guardado VERSION 15: la forma de la 14 (la de v-integracion) sigue registrada, y un guardado de la 14 carga completo (sin las filas de los splits ya jugados) y sigue igual que el de la 15', () => {
+  if (VERSION_GUARDADO < 15 || FORMAS_CONOCIDAS[14] !== '1ef92b3fd9be' || FORMAS_CONOCIDAS[15] === undefined || FORMAS_CONOCIDAS[15] === FORMAS_CONOCIDAS[14]) {
+    throw new Error(`VERSION ${VERSION_GUARDADO}, forma de la 14 ${FORMAS_CONOCIDAS[14]}, forma de la 15 ${FORMAS_CONOCIDAS[15]}`);
+  }
+  let comparados = 0;
+  let mutanteMuerde = 0;
+  for (const seed of SEEDS_GUARDADO_14_GRM) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < SPLITS_GUARDADO_14_GRM && !state.terminado; i += 1) {
+      const json = guardadoDeLaVersion14GRM(state, rng);
+      const datos = deserializarGuardado(json);
+      if (datos === null) {
+        throw new Error(`seed ${seed}, split ${i}: el guardado de VERSION 14 no cargó`);
+      }
+      const realSinLoNuevo = sinFilasGRM(state);
+      if (!sonIgualesK4cG(datos.state, JSON.parse(JSON.stringify(realSinLoNuevo)))) {
+        throw new Error(`seed ${seed}, split ${i}: el estado migrado no es el de la 15 con porSplit vacío`);
+      }
+      // Mutante (regla 7): el mismo guardado sin `migrarDe14` no tiene la forma de la 15.
+      mutanteMuerde += sonIgualesK4cG(JSON.parse(json).state, JSON.parse(JSON.stringify(realSinLoNuevo))) ? 0 : 1;
+      const seguido = avanzarSplitAuto(realSinLoNuevo, conElRngDeK4cG(seed, rng.estado()));
+      const recargado = avanzarSplitAuto(datos.state, conElRngDeK4cG(datos.seed, datos.rngEstado));
+      if (!sonIgualesK4cG(comoJsonK4cG(seguido), comoJsonK4cG(recargado))) {
+        throw new Error(`seed ${seed}, split ${i}: el guardado migrado no juega el mismo split`);
+      }
+      comparados += 1;
+      state = avanzarSplitAuto(state, rng).state;
+    }
+  }
+  if (comparados < 40) throw new Error(`check vacío: ${comparados} guardados de la 14 comparados (hacen falta 40)`);
+  if (mutanteMuerde !== comparados) {
+    throw new Error(`el mutante (sin migrarDe14) pasa en ${comparados - mutanteMuerde} de ${comparados} guardados: el check no muerde`);
+  }
+  // Lo que ya está se respeta, y un estado sin carrera o sin registro se deja como está en vez de tirar.
+  const fila = { anio: 2027, split: 0, org: 'x', liga: null, tier: 3, posicion: 1, equipos: 6, nivel: 40 };
+  const conFilas = migrarDe14GRM({ career: { registro: { porSplit: [fila] } } }).career.registro.porSplit;
+  const sinFilas = migrarDe14GRM({ career: { registro: {} } }).career.registro.porSplit;
+  if (conFilas.length !== 1 || conFilas[0] !== fila || !Array.isArray(sinFilas) || sinFilas.length !== 0 || migrarDe14GRM({}).career !== undefined) {
+    throw new Error(`migrarDe14 no arranca o no respeta las filas: ${JSON.stringify({ conFilas, sinFilas })}`);
+  }
+  console.log(`      ${comparados} guardados de la 14 cargados y seguidos; sin migrarDe14 fallan ${mutanteMuerde}`);
+});
+
+// FASE V (GR-m, PLAN.md §V.6): EL check del Golden Road. Regla 15: lo que la medalla promete, el motor lo cumple. Protege (desde GR-m):
+// el Golden Road —1.º en la tabla de los tres splits del año, campeón de la liga de primera y campeón del Mundial, en el mismo año
+// calendario— lo cuenta UNA regla (`esGoldenRoad`, `core/registro.js`), y lo que el jugador ve mientras el año corre
+// (`seguimientoGoldenRoad`, `core/vistaDeCarrera.js`) da lo mismo en cuanto el año cierra; y `registro.porSplit` (de donde sale)
+// tiene una fila por split jugado en una tabla, en orden. Si el logro cambia a propósito (otro requisito, otra definición del año), este
+// es el check que hay que tocar. Además cruza el escalón en vivo (`escalonDeCarrera`) contra el de la tarjeta final.
+const {
+  esGoldenRoad: esGoldenRoadGRM, goldenRoads: goldenRoadsGRM, registrarSplitEnTabla: registrarSplitEnTablaGRM,
+  conSplitPendienteAsentado: conSplitPendienteAsentadoGRM
+} = await import('../core/registro.js');
+const { seguimientoGoldenRoad: seguimientoGoldenRoadGRM } = await import('../core/vistaDeCarrera.js');
+const { escalonDeCarrera: escalonDeCarreraGRM } = await import('../core/puntaje.js');
+const SEEDS_GOLDEN_ROAD_GRM = Array.from({ length: 40 }, (_, i) => i + 1);
+const SPLITS_GOLDEN_ROAD_GRM = 60;
+
+// Un año con los tres hechos, armado a mano; `cambios` le saca o le cambia de a uno (ver `variantesSinUnHechoGRM`).
+function registroDelGoldenRoadGRM(anio, cambios = {}) {
+  const porAnio = BALANCE.edad.splitsPorEdad;
+  const fila = (split) => ({ anio, split, org: 'Org', liga: 'LEC', tier: 1, posicion: 1, equipos: 10, nivel: 70, ...cambios.fila?.[split] });
+  return {
+    porSplit: Array.from({ length: porAnio }, (_, split) => fila(split)).filter((f) => !cambios.sin?.includes(f.split)),
+    titulos: cambios.titulos ?? [{ nombre: 'LEC', anio, org: 'Org', liga: 'LEC', tier: 1 }],
+    internacionales: cambios.internacionales ?? [{ torneo: `Mundial ${anio}`, anio, org: 'Org', liga: 'LEC', resultado: 'campeon' }]
+  };
+}
+
+// Lo que falta, de a un hecho: cada variante tiene que dejar de ser Golden Road. (`etiqueta` es para el mensaje.)
+function variantesSinUnHechoGRM(anio) {
+  const porAnio = BALANCE.edad.splitsPorEdad;
+  const titulo = (extra = {}) => ({ nombre: 'LEC', anio, org: 'Org', liga: 'LEC', tier: 1, ...extra });
+  const mundial = (extra = {}) => ({ torneo: `Mundial ${anio}`, anio, org: 'Org', liga: 'LEC', resultado: 'campeon', ...extra });
+  const variantes = [];
+  for (let split = 0; split < porAnio; split += 1) {
+    variantes.push({ etiqueta: `sin la fila del split ${split}`, cambios: { sin: [split] } });
+    variantes.push({ etiqueta: `el split ${split} en la 2.ª posición`, cambios: { fila: { [split]: { posicion: 2 } } } });
+    variantes.push({ etiqueta: `el split ${split} en una liga de tier 2`, cambios: { fila: { [split]: { tier: 2, liga: 'LRS' } } } });
+    variantes.push({ etiqueta: `el split ${split} en tier 3`, cambios: { fila: { [split]: { tier: 3, liga: null } } } });
+  }
+  variantes.push({ etiqueta: 'sin título', cambios: { titulos: [] } });
+  variantes.push({ etiqueta: 'título de una liga de tier 2', cambios: { titulos: [titulo({ liga: 'LRS', tier: 2 })] } });
+  variantes.push({ etiqueta: 'título de tier 3', cambios: { titulos: [titulo({ liga: null, tier: 3 })] } });
+  variantes.push({ etiqueta: 'título de otro año', cambios: { titulos: [titulo({ anio: anio - 1 })] } });
+  variantes.push({ etiqueta: 'sin Mundial', cambios: { internacionales: [] } });
+  variantes.push({ etiqueta: 'Mundial perdido en la final', cambios: { internacionales: [mundial({ resultado: 'final' })] } });
+  variantes.push({ etiqueta: 'Mundial de otro año', cambios: { internacionales: [mundial({ anio: anio - 1 })] } });
+  return variantes;
+}
+
+// El mismo split que `avanzarSplitAuto` (el `resolverAuto` de cada sistema, el mismo stream), mirando cada pausa del motor.
+function jugarSplitObservandoGRM(state, rng, alPausar) {
+  let resultado = avanzarSplit(state, rng);
+  while (resultado.state.pendiente) {
+    alPausar(resultado.state);
+    const { sistemaId, decision } = resultado.state.pendiente;
+    resultado = resolverDecision(resultado.state, sistemaPorId(sistemaId).resolverAuto(resultado.state, decision, rng), rng);
+  }
+  return resultado.state;
+}
+
+check('GR-m Golden Road: la medalla es lo que cuenta el motor (esGoldenRoad armado a mano, el seguimiento del año contra goldenRoads en 40 carreras reales, y una fila de porSplit por split jugado en una tabla, en orden)', () => {
+  const porAnio = BALANCE.edad.splitsPorEdad;
+  const anioBase = BALANCE.calendario.anioBase;
+
+  // (a) Registros armados: el positivo, y quitando de a un hecho.
+  const ANIO = 2031;
+  const positivo = registroDelGoldenRoadGRM(ANIO);
+  if (!esGoldenRoadGRM(positivo, ANIO) || goldenRoadsGRM(positivo).join() !== String(ANIO)) {
+    throw new Error(`el registro armado con los tres hechos no es Golden Road (${esGoldenRoadGRM(positivo, ANIO)}; años ${goldenRoadsGRM(positivo)})`);
+  }
+  if (esGoldenRoadGRM(positivo, ANIO + 1) || esGoldenRoadGRM(positivo, ANIO - 1)) {
+    throw new Error('un año sin nada es Golden Road porque lo es el de al lado');
+  }
+  const variantes = variantesSinUnHechoGRM(ANIO);
+  for (const { etiqueta, cambios } of variantes) {
+    const registro = registroDelGoldenRoadGRM(ANIO, cambios);
+    if (esGoldenRoadGRM(registro, ANIO) || goldenRoadsGRM(registro).length !== 0) {
+      throw new Error(`${etiqueta}: sigue siendo Golden Road`);
+    }
+  }
+  // Una fila de más (son exactamente `splitsPorEdad`), filas de otro año que no cuentan para éste, y dos años: salen los dos, en orden.
+  const repetido = { ...positivo, porSplit: [...positivo.porSplit, positivo.porSplit[0]] };
+  const mezclado = registroDelGoldenRoadGRM(ANIO, { sin: [0] });
+  mezclado.porSplit.push(...registroDelGoldenRoadGRM(ANIO - 1).porSplit);
+  const otroAnio = registroDelGoldenRoadGRM(ANIO + 3);
+  const dosAnios = {
+    porSplit: [...otroAnio.porSplit, ...positivo.porSplit],
+    titulos: [...positivo.titulos, ...otroAnio.titulos],
+    internacionales: [...positivo.internacionales, ...otroAnio.internacionales]
+  };
+  if (esGoldenRoadGRM(repetido, ANIO) || esGoldenRoadGRM(mezclado, ANIO) || goldenRoadsGRM(dosAnios).join() !== `${ANIO},${ANIO + 3}`) {
+    throw new Error(`filas repetidas, de otro año o dos años: ${esGoldenRoadGRM(repetido, ANIO)}, ${esGoldenRoadGRM(mezclado, ANIO)}, ${goldenRoadsGRM(dosAnios)}`);
+  }
+  // Un caso raro no fabrica un 1.º: sin posición no se escribe la fila (y solo agrega, regla 14).
+  const vacio = { porSplit: [] };
+  const filaDeLaTabla = { anio: ANIO, split: 0, org: 'Org', liga: 'LEC', tier: 1, posicion: 1, equipos: 10, nivel: 70 };
+  if (registrarSplitEnTablaGRM(vacio, { ...filaDeLaTabla, posicion: null }).porSplit.length !== 0
+    || registrarSplitEnTablaGRM(vacio, { ...filaDeLaTabla, posicion: undefined }).porSplit.length !== 0
+    || registrarSplitEnTablaGRM(vacio, filaDeLaTabla).porSplit.length !== 1 || vacio.porSplit.length !== 0) {
+    throw new Error('registrarSplitEnTabla escribe una fila sin posición, no escribe la que sí la tiene o muta el registro');
+  }
+
+  // (b) Carreras reales.
+  let cierres = 0;
+  let armados = 0;
+  let intermedios = 0;
+  let filasVistas = 0;
+  let filasContraElMotor = 0;
+  let finales = 0;
+  let pausas = 0;
+  const etapaDe = (sistemaId) => ETAPAS_SPLIT.findIndex((etapa) => etapa.id === sistemaId);
+  // En una pausa del motor la liga y el Mundial están donde el orden del split los deja: la final doméstica se juega antes de
+  // `internacional` (con el Mundial por arrancar, nada decidido), con el Mundial en curso la liga ya está decidida y el Mundial no, y
+  // después de `internacional` los dos. Solo el último split del año tiene final doméstica y Mundial.
+  const alPausar = (pausado) => {
+    const seguimiento = seguimientoGoldenRoadGRM(pausado);
+    if (seguimiento === null) {
+      return;
+    }
+    pausas += 1;
+    const etapa = etapaDe(pausado.pendiente.sistemaId);
+    // `atributos` sube el reloj: una pausa de ahí en adelante (`edadCierre`) es del split que ya cerró, con `splitCount` un paso adelante.
+    const cierra = esCierreK6aM(pausado.player.splitCount - (etapa >= etapaDe('atributos') ? 1 : 0));
+    const ligaDecidida = cierra && etapa >= etapaDe('internacional');
+    const mundialDecidido = cierra && etapa > etapaDe('internacional');
+    if ((seguimiento.liga !== 'pendiente') !== ligaDecidida || (seguimiento.mundial !== 'pendiente') !== mundialDecidido) {
+      throw new Error(`seed ${pausado.seed}, split ${pausado.player.splitCount}, pausa en ${pausado.pendiente.sistemaId}: liga '${seguimiento.liga}' y Mundial '${seguimiento.mundial}' (liga decidida: ${ligaDecidida}, Mundial decidido: ${mundialDecidido})`);
+    }
+  };
+  for (const seed of SEEDS_GOLDEN_ROAD_GRM) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    const vistos = new Map(); // año -> los ítems del seguimiento la última vez que se lo vio
+    let escritas = 0; // filas de porSplit que ya se compararon contra lo que jugó el motor
+    for (let i = 0; i < SPLITS_GOLDEN_ROAD_GRM; i += 1) {
+      state = jugarSplitObservandoGRM(state, rng, alPausar);
+      const cuando = `seed ${seed}, split ${state.player.splitCount}`;
+
+      // La fila nueva dice lo que el motor jugó: la posición de `career.temporada` (que `systems/temporada.js` dejó y `rendimiento`
+      // leyó) y los equipos de su tabla. Seguimiento y veredicto leen las mismas filas: sin esto, una fila que miente pasaría.
+      const escritasAhora = state.career.registro.porSplit;
+      for (const fila of escritasAhora.slice(escritas)) {
+        const jugada = state.career.temporada;
+        if (fila.posicion !== jugada.posicion || (jugada.tabla.length > 0 && fila.equipos !== jugada.tabla.length)) {
+          throw new Error(`${cuando}: la fila ${JSON.stringify(fila)} no es lo que jugó el motor (posición ${jugada.posicion}, ${jugada.tabla.length} equipos en la tabla)`);
+        }
+        filasContraElMotor += 1;
+      }
+      escritas = escritasAhora.length;
+      const { registro } = conSplitPendienteAsentadoGRM(state).career;
+
+      // Una fila por split jugado en una tabla, en orden y bien formada.
+      let anterior = -1;
+      for (const fila of registro.porSplit) {
+        const lugar = (fila.anio - anioBase) * porAnio + fila.split;
+        if (!(lugar > anterior) || fila.split < 0 || fila.split >= porAnio) {
+          throw new Error(`${cuando}: las filas de porSplit no están en orden (${fila.anio} split ${fila.split} después del lugar ${anterior})`);
+        }
+        anterior = lugar;
+        if (!TIERS_DE_SPLIT.includes(fila.tier) || (fila.tier === 3) !== (fila.liga === null) || !fila.org
+          || !Number.isInteger(fila.posicion) || fila.posicion < 1 || fila.posicion > fila.equipos || !Number.isInteger(fila.nivel)) {
+          throw new Error(`${cuando}: fila mal formada ${JSON.stringify(fila)}`);
+        }
+      }
+      // (El split en que te retirás se jugó y el reloj no lo contó: `atributos` no corre, ver `core/puntaje.js:aniosProDe`.)
+      if (anterior > state.player.splitCount - (state.phase === 'profesional' ? 1 : 0)) {
+        throw new Error(`${cuando}: hay una fila de un split que todavía no se jugó (lugar ${anterior})`);
+      }
+      for (const tier of TIERS_DE_SPLIT) {
+        const enLaTabla = registro.porSplit.filter((fila) => fila.tier === tier).length;
+        if (enLaTabla !== splitsJugadosEnTier(registro, tier)) {
+          throw new Error(`${cuando}: tier ${tier}: ${enLaTabla} filas en porSplit y ${splitsJugadosEnTier(registro, tier)} splits jugados en el registro`);
+        }
+      }
+      filasVistas += registro.porSplit.length;
+
+      // El seguimiento del año, contra el veredicto.
+      const seguimiento = seguimientoGoldenRoadGRM(state);
+      if (seguimiento !== null) {
+        const items = [...seguimiento.splits, seguimiento.liga, seguimiento.mundial];
+        const antes = vistos.get(seguimiento.anio);
+        if (antes) {
+          items.forEach((item, j) => {
+            if (antes[j] !== 'pendiente' && antes[j] !== item) {
+              throw new Error(`${cuando}: el ítem ${j} del año ${seguimiento.anio} pasó de '${antes[j]}' a '${item}'`);
+            }
+          });
+        }
+        vistos.set(seguimiento.anio, items);
+        if (seguimiento.vivo !== !items.includes('no') || seguimiento.completo !== items.every((item) => item === 'si')) {
+          throw new Error(`${cuando}: vivo/completo no son lo que dicen los ítems ${items}`);
+        }
+        const dentroDelAnio = state.player.splitCount % porAnio;
+        if (dentroDelAnio === 0) {
+          // El cierre de año: `atributos` ya subió el reloj pero `calendario.anio` es el año que cierra. Ya no hay nada pendiente.
+          cierres += 1;
+          if (items.includes('pendiente')) {
+            throw new Error(`${cuando}: el año ${seguimiento.anio} cerró y quedan ítems pendientes: ${items}`);
+          }
+          if (seguimiento.completo !== goldenRoadsGRM(registro).includes(seguimiento.anio)) {
+            throw new Error(`${cuando}: el seguimiento dice completo=${seguimiento.completo} y goldenRoads(registro) ${goldenRoadsGRM(registro)}`);
+          }
+          // El mismo cierre con los tres hechos puestos a mano, y quitándole de a uno: el seguimiento y el veredicto van juntos.
+          const armar = (cambios) => {
+            const armado = registroDelGoldenRoadGRM(seguimiento.anio, cambios);
+            const ajeno = (x) => x.anio !== seguimiento.anio;
+            return {
+              ...state,
+              career: {
+                ...state.career,
+                registro: {
+                  ...registro,
+                  porSplit: [...registro.porSplit.filter(ajeno), ...armado.porSplit],
+                  titulos: [...registro.titulos.filter(ajeno), ...armado.titulos],
+                  internacionales: [...registro.internacionales.filter(ajeno), ...armado.internacionales]
+                }
+              }
+            };
+          };
+          const completo = armar({});
+          const vistoCompleto = seguimientoGoldenRoadGRM(completo);
+          if (!vistoCompleto?.completo || !vistoCompleto.vivo || !esGoldenRoadGRM(completo.career.registro, seguimiento.anio)) {
+            throw new Error(`${cuando}: con los tres hechos puestos a mano el seguimiento da ${JSON.stringify(vistoCompleto)}`);
+          }
+          for (const { etiqueta, cambios } of variantesSinUnHechoGRM(seguimiento.anio)) {
+            const roto = armar(cambios);
+            const visto = seguimientoGoldenRoadGRM(roto);
+            if (visto.completo || visto.vivo || esGoldenRoadGRM(roto.career.registro, seguimiento.anio)) {
+              throw new Error(`${cuando}: ${etiqueta}: seguimiento ${JSON.stringify(visto)} y esGoldenRoad ${esGoldenRoadGRM(roto.career.registro, seguimiento.anio)}`);
+            }
+          }
+          armados += 1;
+        } else {
+          // A mitad de año: lo que falta jugar está pendiente, y lo jugado ya se decidió.
+          intermedios += 1;
+          items.forEach((item, j) => {
+            const sinJugar = j >= dentroDelAnio;
+            if (sinJugar !== (item === 'pendiente')) {
+              throw new Error(`${cuando}: a mitad de año el ítem ${j} es '${item}' (items ${items})`);
+            }
+          });
+        }
+      }
+
+      if (state.terminado) {
+        break;
+      }
+    }
+
+    // El escalón en vivo es el de la tarjeta (la misma cuenta, dos voces): al cerrar la carrera dan lo mismo.
+    if (state.terminado) {
+      const escalon = escalonDeCarreraGRM(state);
+      const nivel = state.tarjeta.puntaje.nivel;
+      if (escalon.actual.id !== nivel.id || escalon.actual.nombre !== nivel.nombre
+        || (escalon.siguiente?.id ?? null) !== (nivel.siguiente?.id ?? null)
+        || (escalon.siguiente?.enPasado ?? null) !== (nivel.siguiente?.requisito ?? null)) {
+        throw new Error(`seed ${seed}: el escalón en vivo ${JSON.stringify(escalon)} no es el de la tarjeta ${JSON.stringify(nivel)}`);
+      }
+      finales += 1;
+    }
+  }
+  if (cierres < 20 || armados !== cierres || intermedios < 40 || pausas < 40 || filasVistas === 0 || filasContraElMotor < 100 || finales < 10) {
+    throw new Error(`check vacío: ${cierres} cierres de año en primera (hacen falta 20), ${armados} armados, ${intermedios} estados a mitad de año (40), ${pausas} pausas en primera (40), ${finales} carreras terminadas (10), ${filasContraElMotor} filas contra el motor (100)`);
+  }
+  console.log(`      ${variantes.length} variantes sin un hecho; ${SEEDS_GOLDEN_ROAD_GRM.length} carreras: ${cierres} cierres de año en primera contra goldenRoads, ${intermedios} estados a mitad de año, ${pausas} pausas del motor en primera, ${filasContraElMotor} filas de porSplit contra lo que jugó el motor, ${finales} escalones contra la tarjeta`);
+});
+
+// ============================================================================
+// FASE V (V5) — la carrera dibujada (PLAN.md §V.7, "el check de la regla 15 del dibujo"). La promesa: lo que la pestaña Carrera
+// dibuja ES el registro. `trayectoriaDeCarrera` (`ui/core/trayectoria.js`, pura) dice qué se dibuja y el cuarto no calcula nada
+// aparte, así que acá se compara esa función contra el registro de 20 carreras reales × 60 splits, en CADA split: un punto de la
+// curva por fila de `porSplit`, un tramo de la cinta por fila de `porOrg`, los títulos iguales a `registro.titulos` (todos: también
+// los de tier 2 y 3, con su tier), los Mundiales iguales a `mundialesGanados`, los Golden Roads iguales a `goldenRoads`, la nota de
+// cada año igual a `registro.temporadas`. De paso lo que sale de la misma cuenta y el jugador lee en otras pantallas: la línea
+// del Golden Road de la tarjeta de cierre (`cierreDeSplit(...).goldenRoad`) es el seguimiento del motor cuando está vivo, y la
+// medalla de la tarjeta final / el texto para compartir / el historial salen de `goldenRoads(registro)`.
+// En rojo con un mutante (se probó a mano: saltear una fila de `porSplit`, contar un título de tier 2 como Golden Road, dibujar
+// todos los Mundiales y no solo los ganados), y en cada corrida el comparador se prueba contra dibujos corrompidos a propósito.
+// ============================================================================
+const {
+  trayectoriaDeCarrera: trayectoriaDeCarreraV5, trayectoriaDeRegistro: trayectoriaDeRegistroV5, itemsDeGoldenRoad: itemsDeGoldenRoadV5,
+  lineaDeGoldenRoad: lineaDeGoldenRoadV5, medallaDeGoldenRoad: medallaDeGoldenRoadV5, goldenRoadsDeEstado: goldenRoadsDeEstadoV5,
+  textoDeEscalon: textoDeEscalonV5
+} = await import('../ui/core/trayectoria.js');
+const { mundialesGanados: mundialesGanadosV5 } = await import('../core/registro.js');
+// Las tres primeras tienen un Golden Road con el bot `criterio` (la 133, dos años seguidos): sin ellas, 20 carreras pueden no
+// traer ninguno (sale en ~3% de las carreras) y el check no vería ni un solo hito de Golden Road en carreras reales.
+const SEEDS_DIBUJO_V5 = [114, 133, 152, 61, 85, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+const SPLITS_DIBUJO_V5 = 60;
+const EPSILON_X_V5 = 1e-9;
+
+// FASE V (V4, pedido por la revisión de la ola 4): la frase del escalón ("Tu escalón: «X» · Para llegar a «Y»: te falta …") es una promesa que el jugador lee en la
+// pestaña Carrera, en el resumen del acompañante y en la tarjeta "Cierre de …". Se compara con la cuenta del motor (`escalonDeCarrera`, la misma
+// de la tarjeta final) armando lo que tiene que decir a mano, sin pasar por `textoDeEscalon`: un "Tu escalón: «<el escalón que sigue>»" no pasa.
+function diferenciasDelEscalonV5(escalonDelMotor, frase) {
+  if (escalonDelMotor === null) {
+    return frase === null ? [] : [`la frase ${JSON.stringify(frase)} existe y el motor no tiene escalón`];
+  }
+  if (frase === null) {
+    return ['el motor tiene escalón y la frase es null'];
+  }
+  const { actual, siguiente } = escalonDelMotor;
+  const vas = `Tu escalón: «${actual.nombre}»`;
+  const falta = siguiente === null
+    ? 'Es el techo de la escala.'
+    : `Para llegar a «${siguiente.nombre}»: ${siguiente.enPresente.charAt(0).toLowerCase()}${siguiente.enPresente.slice(1)}`;
+  const dif = [];
+  if (frase.vas !== vas) dif.push(`dice "${frase.vas}" y el escalón actual es "${actual.nombre}"`);
+  if (frase.falta !== falta) dif.push(`dice "${frase.falta}" y lo que falta para ${siguiente?.nombre ?? 'nada (es el techo)'} es "${falta}"`);
+  return dif;
+}
+
+// Lo que el dibujo dice y el registro no (o al revés). Vacío = el dibujo es el registro. No usa las funciones que prueba para
+// decidir qué es un título o una fila: lee el registro como viene.
+function diferenciasDelDibujoV5(tr, registro, anioBase) {
+  const porAnio = BALANCE.edad.splitsPorEdad;
+  const dif = [];
+  if (tr.puntos.length !== registro.porSplit.length) {
+    dif.push(`${tr.puntos.length} puntos de la curva y ${registro.porSplit.length} filas de porSplit`);
+  }
+  registro.porSplit.forEach((fila, i) => {
+    const punto = tr.puntos[i];
+    if (!punto || punto.anio !== fila.anio || punto.split !== fila.split || punto.nivel !== fila.nivel || punto.tier !== fila.tier
+      || punto.posicion !== fila.posicion || punto.org !== fila.org) {
+      dif.push(`el punto ${i} (${JSON.stringify(punto)}) no es la fila ${JSON.stringify(fila)}`);
+    }
+  });
+  if (tr.tramos.length !== registro.porOrg.length) {
+    dif.push(`${tr.tramos.length} tramos de la cinta y ${registro.porOrg.length} filas de porOrg`);
+  }
+  registro.porOrg.forEach((fila, i) => {
+    const tramo = tr.tramos[i];
+    if (!tramo || tramo.org !== fila.org || tramo.tier !== fila.tier || tramo.desdeAnio !== fila.desdeAnio
+      || Math.abs(tramo.desde - (anioBase + fila.desdeSplit / porAnio)) > EPSILON_X_V5
+      || JSON.stringify(tramo.titulos) !== JSON.stringify(fila.titulos.map((t) => ({ nombre: t.nombre, anio: t.anio })))) {
+      dif.push(`el tramo ${i} (${JSON.stringify(tramo)}) no es la fila ${JSON.stringify(fila)}`);
+    }
+  });
+  const clave = (t) => `${t.nombre}|${t.anio}|${t.tier}|${t.org}`;
+  if (JSON.stringify(tr.titulos.map(clave)) !== JSON.stringify(registro.titulos.map(clave))) {
+    dif.push(`títulos dibujados ${tr.titulos.map(clave)} y del registro ${registro.titulos.map(clave)}`);
+  }
+  const ganados = mundialesGanadosV5(registro).map((entrada) => entrada.anio);
+  if (JSON.stringify(tr.mundiales.map((m) => m.anio)) !== JSON.stringify(ganados)) {
+    dif.push(`Mundiales dibujados ${tr.mundiales.map((m) => m.anio)} y ganados ${ganados}`);
+  }
+  const golden = goldenRoadsGRM(registro);
+  if (JSON.stringify(tr.goldenRoads) !== JSON.stringify(golden)) {
+    dif.push(`Golden Roads dibujados ${tr.goldenRoads} y del registro ${golden}`);
+  }
+  // Los hitos son exactamente esas tres listas, de más viejo a más nuevo.
+  const deTipo = (tipo) => tr.hitos.filter((h) => h.tipo === tipo).length;
+  if (deTipo('titulo') !== registro.titulos.length || deTipo('mundial') !== ganados.length || deTipo('goldenRoad') !== golden.length
+    || tr.hitos.length !== registro.titulos.length + ganados.length + golden.length) {
+    dif.push(`hitos ${deTipo('titulo')} títulos, ${deTipo('mundial')} Mundiales, ${deTipo('goldenRoad')} Golden Roads (de ${tr.hitos.length}) contra ${registro.titulos.length}, ${ganados.length}, ${golden.length}`);
+  }
+  if (tr.hitos.some((h, i) => i > 0 && h.anio < tr.hitos[i - 1].anio)) {
+    dif.push('los hitos no están ordenados por año');
+  }
+  if (JSON.stringify(tr.notas.map((n) => [n.anio, n.nota])) !== JSON.stringify(registro.temporadas.map((n) => [n.anio, n.nota]))) {
+    dif.push('las notas dibujadas no son las de registro.temporadas');
+  }
+  // Todo lo dibujado cae adentro del eje compartido.
+  if (tr.puntos.length + tr.tramos.length > 0) {
+    const [desde, hasta] = tr.dominio ?? [Infinity, -Infinity];
+    const afuera = [...tr.puntos.map((p) => p.x), ...tr.tramos.map((t) => t.desde), ...tr.tramos.map((t) => t.hasta).filter((x) => x !== null)]
+      .filter((x) => x < desde || x > hasta);
+    if (afuera.length > 0) {
+      dif.push(`${afuera.length} marcas fuera del eje [${desde}, ${hasta}]`);
+    }
+  }
+  return dif;
+}
+
+checkLento('V5 carrera dibujada: lo que dibuja la pestaña Carrera es el registro (un punto por fila de porSplit, un tramo por fila de porOrg, los títulos, los Mundiales ganados y los Golden Roads del motor), la línea del Golden Road de la tarjeta de cierre es el seguimiento del motor y la medalla sale de goldenRoads, y la frase del escalón ("Tu escalón: «X» · Para llegar a «Y»: te falta …") es la cuenta del motor (criterio, 20 carreras × 60)', () => {
+  const anioBase = BALANCE.calendario.anioBase;
+  const problemas = [];
+  const anotar = (cuando, dif) => dif.forEach((texto) => problemas.push(`${cuando}: ${texto}`));
+  let evaluaciones = 0;
+  let cierresConLinea = 0;
+  let cierresSinLinea = 0;
+  let conMundial = 0;
+  let conTituloMenor = 0;
+  let conGoldenRoad = 0;
+  let finales = 0;
+  let medallas = 0;
+  let escalonesDichos = 0;
+  let escalonesConSiguiente = 0;
+  let muestraEscalon = null; // un escalón con siguiente: de ahí salen los mutantes de la frase
+  let muestra = null; // una carrera con curva, títulos de tier 2 o 3, un Mundial y un Golden Road: los dibujos corrompidos salen de ella
+
+  // (a) Registros armados: el Golden Road del registro de GR-m y quitándole de a un hecho (ninguna variante lo dibuja).
+  const ANIO = 2031;
+  const armado = (cambios) => ({ ...registroDelGoldenRoadGRM(ANIO, cambios), porOrg: [], temporadas: [] });
+  const positivo = trayectoriaDeRegistroV5(armado({}));
+  if (positivo.goldenRoads.join() !== String(ANIO) || positivo.hitos.filter((h) => h.tipo === 'goldenRoad').length !== 1
+    || positivo.puntos.length !== BALANCE.edad.splitsPorEdad || positivo.mundiales.length !== 1 || positivo.titulos.length !== 1) {
+    problemas.push(`registro armado con los tres hechos: ${JSON.stringify({ gr: positivo.goldenRoads, puntos: positivo.puntos.length, mundiales: positivo.mundiales.length })}`);
+  }
+  for (const { etiqueta, cambios } of variantesSinUnHechoGRM(ANIO)) {
+    const dibujo = trayectoriaDeRegistroV5(armado(cambios));
+    if (dibujo.goldenRoads.length > 0 || dibujo.hitos.some((h) => h.tipo === 'goldenRoad')) {
+      problemas.push(`${etiqueta}: el dibujo muestra un Golden Road`);
+    }
+    anotar(`armado (${etiqueta})`, diferenciasDelDibujoV5(dibujo, armado(cambios), anioBase));
+  }
+
+  // (b) Carreras reales, en cada split.
+  for (const seed of SEEDS_DIBUJO_V5) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < SPLITS_DIBUJO_V5 && !state.terminado; i += 1) {
+      const foto = JSON.parse(JSON.stringify(fotoDeSplitV2(state)));
+      let paso = avanzarSplit(state, rng);
+      let vueltas = 0;
+      while (paso.state.pendiente) {
+        const { sistemaId, decision } = paso.state.pendiente;
+        paso = resolverDecision(paso.state, ESTRATEGIAS_K0.criterio(sistemaPorId(sistemaId), paso.state, decision, rng), rng);
+        vueltas += 1;
+        if (vueltas > 200) {
+          throw new Error(`seed ${seed}: más de 200 pausas seguidas en un split`);
+        }
+      }
+      state = paso.state;
+      const cuando = `seed ${seed}, split ${i}`;
+      const registro = state.career.registro;
+      const tr = trayectoriaDeCarreraV5(state);
+      evaluaciones += 1;
+      anotar(cuando, diferenciasDelDibujoV5(tr, registro, anioBase));
+      // El escalón: el que dibuja la pestaña (`tr.escalon`) y la frase que lee el jugador son los del motor, solo en el profesional con la carrera en marcha.
+      const escalonDelMotor = state.phase === 'profesional' && !state.terminado ? escalonDeCarreraGRM(state) : null;
+      if (JSON.stringify(tr.escalon) !== JSON.stringify(escalonDelMotor)) {
+        problemas.push(`${cuando}: la pestaña tiene el escalón ${JSON.stringify(tr.escalon)} y el motor ${JSON.stringify(escalonDelMotor)}`);
+      }
+      anotar(cuando, diferenciasDelEscalonV5(escalonDelMotor, textoDeEscalonV5(tr.escalon)));
+      if (escalonDelMotor !== null) {
+        escalonesDichos += 1;
+        escalonesConSiguiente += escalonDelMotor.siguiente === null ? 0 : 1;
+        if (escalonDelMotor.siguiente !== null && muestraEscalon === null) {
+          muestraEscalon = escalonDelMotor;
+        }
+      }
+      if (state.terminado) {
+        // La medalla de la tarjeta final, el texto para compartir y la entrada del historial salen del registro.
+        finales += 1;
+        const golden = goldenRoadsGRM(registro);
+        const medalla = medallaDeGoldenRoadV5(goldenRoadsDeEstadoV5(state));
+        const compartido = resultadoK1B.textoParaCompartir(state, 'http://localhost:8000/');
+        const entrada = resultadoK1B.entradaDeResultado(state, '2026-10-02');
+        const sinMedalla = golden.length === 0;
+        const medallaMal = sinMedalla
+          ? (medalla !== null || /Golden Road/.test(compartido) || entrada.goldenRoads.length !== 0)
+          : (medalla === null || !golden.every((anio) => medalla.includes(String(anio))) || !compartido.includes(medalla)
+            || JSON.stringify(entrada.goldenRoads) !== JSON.stringify(golden));
+        if (medallaMal) {
+          problemas.push(`${cuando}: la medalla ${JSON.stringify(medalla)}, el texto "${compartido}" y el historial ${JSON.stringify(entrada.goldenRoads)} no son los Golden Roads del registro ${golden}`);
+        }
+        medallas += sinMedalla ? 0 : 1;
+        break;
+      }
+      // El cierre de este split: la línea del Golden Road de la tarjeta es el seguimiento del motor, y solo mientras está vivo.
+      const seguimiento = seguimientoGoldenRoadGRM(state);
+      const cierre = cierreDeSplitV2(foto, state);
+      const hayAlgoHecho = seguimiento !== null && itemsDeGoldenRoadV5(seguimiento).some((item) => item.estado === 'si');
+      const esperada = seguimiento !== null && seguimiento.vivo && hayAlgoHecho ? seguimiento : null;
+      if (JSON.stringify(cierre.goldenRoad) !== JSON.stringify(esperada)) {
+        problemas.push(`${cuando}: la tarjeta de cierre trae ${JSON.stringify(cierre.goldenRoad)} y el seguimiento del motor da ${JSON.stringify(seguimiento)}`);
+      }
+      if (esperada) {
+        cierresConLinea += 1;
+        const linea = lineaDeGoldenRoadV5(esperada);
+        const marcas = (texto) => (linea.match(new RegExp(texto, 'g')) ?? []).length;
+        const cuenta = (estado) => itemsDeGoldenRoadV5(esperada).filter((item) => item.estado === estado).length;
+        if (!linea.startsWith(`Golden Road ${esperada.anio}:`) || marcas('✓') !== cuenta('si') || marcas('◻') !== cuenta('pendiente') || marcas('✕') !== 0
+          || esperada.completo !== (cuenta('si') === itemsDeGoldenRoadV5(esperada).length)) {
+          problemas.push(`${cuando}: la línea "${linea}" no dice lo que dice el seguimiento ${JSON.stringify(esperada)}`);
+        }
+        // Lo que esa línea promete al cierre del año, el veredicto del motor lo cumple.
+        if (esperada.completo && !goldenRoadsGRM(registro).includes(esperada.anio)) {
+          problemas.push(`${cuando}: la línea dice Golden Road ${esperada.anio} completo y goldenRoads(registro) da ${goldenRoadsGRM(registro)}`);
+        }
+      } else {
+        cierresSinLinea += 1;
+        if (seguimiento !== null && !seguimiento.vivo && lineaDeGoldenRoadV5(seguimiento) !== null) {
+          problemas.push(`${cuando}: hay línea de un Golden Road que ya no está vivo`);
+        }
+      }
+      if (tr.puntos.length >= 12 && tr.titulos.some((t) => t.tier > 1) && tr.mundiales.length > 0 && tr.goldenRoads.length > 0) {
+        muestra = { tr, registro };
+      }
+    }
+    const final = trayectoriaDeCarreraV5(state);
+    conMundial += final.mundiales.length > 0 ? 1 : 0;
+    conTituloMenor += final.titulos.some((t) => t.tier > 1) ? 1 : 0;
+    conGoldenRoad += final.goldenRoads.length > 0 ? 1 : 0;
+  }
+
+  // (c) El comparador muerde: dibujos corrompidos a propósito (un mutante por cada hecho) tienen que dar diferencias.
+  let comparadorMuerde = 0;
+  let mutantes = 0;
+  if (muestra === null) {
+    problemas.push('ninguna carrera del lote tuvo curva, títulos de tier 2 o 3, un Mundial y un Golden Road a la vez: el comparador no se pudo probar');
+  } else {
+    const { tr, registro } = muestra;
+    const mutar = (cambio) => ({ ...tr, ...cambio });
+    const primerTituloMenor = tr.titulos.findIndex((t) => t.tier > 1);
+    const casos = {
+      'saltear una fila de la curva': mutar({ puntos: tr.puntos.filter((_, i) => i !== 3) }),
+      'una fila de la curva con otro nivel': mutar({ puntos: tr.puntos.map((p, i) => (i === 2 ? { ...p, nivel: p.nivel + 1 } : p)) }),
+      'dibujar un título de más (uno de tier 2)': mutar({ titulos: [...tr.titulos, { nombre: 'LCK_CL', anio: 2040, org: 'X', liga: 'LCK_CL', tier: 2 }] }),
+      'no dibujar un título de tier 2 o 3': mutar({ titulos: tr.titulos.filter((_, i) => i !== primerTituloMenor) }),
+      'contar solo los títulos de primera': mutar({ titulos: tr.titulos.filter((t) => t.tier === 1) }),
+      'no dibujar un Mundial ganado': mutar({ mundiales: tr.mundiales.slice(1) }),
+      'dibujar un Mundial que no se ganó': mutar({ mundiales: [...tr.mundiales, { anio: 2099, org: 'X', liga: null, torneo: 'Mundial 2099' }] }),
+      'no dibujar el Golden Road': mutar({ goldenRoads: [] }),
+      'un Golden Road de más': mutar({ goldenRoads: [...tr.goldenRoads, tr.goldenRoads[0] + 1] }),
+      'saltear un tramo de la cinta': mutar({ tramos: tr.tramos.slice(1) }),
+      'una marca fuera del eje': mutar({ puntos: tr.puntos.map((p, i) => (i === 0 ? { ...p, x: tr.dominio[1] + 5 } : p)) })
+    };
+    for (const [nombre, dibujo] of Object.entries(casos)) {
+      mutantes += 1;
+      if (diferenciasDelDibujoV5(dibujo, registro, anioBase).length > 0) {
+        comparadorMuerde += 1;
+      } else {
+        problemas.push(`el mutante "${nombre}" no da diferencias: el comparador no muerde`);
+      }
+    }
+    if (diferenciasDelDibujoV5(tr, registro, anioBase).length > 0) {
+      problemas.push('el dibujo sin mutar da diferencias contra su propio registro');
+    }
+  }
+
+  // (c2) Lo mismo para la frase del escalón: un mutante por cada cosa que podría decir mal.
+  let mutantesDeEscalon = 0;
+  if (muestraEscalon === null) {
+    problemas.push('ninguna carrera del lote tuvo un escalón con otro más arriba: el comparador de la frase no se pudo probar');
+  } else {
+    const { actual, siguiente } = muestraEscalon;
+    const buena = textoDeEscalonV5(muestraEscalon);
+    const casos = {
+      'Tu escalón: «<el escalón que sigue>»': { ...buena, vas: `Tu escalón: «${siguiente.nombre}»` },
+      'Tu escalón: «<otro nombre>»': { ...buena, vas: `Tu escalón: «${actual.nombre}»!` },
+      'Para llegar a <el escalón actual>: te falta …': { ...buena, falta: buena.falta.replace(siguiente.nombre, actual.nombre) },
+      'lo que falta es lo de otro escalón': { ...buena, falta: `Para llegar a «${siguiente.nombre}»: te falta cualquier cosa` },
+      'decir que es el techo con un escalón más arriba': { ...buena, falta: 'Es el techo de la escala.' },
+      'sin frase aunque hay escalón': null
+    };
+    for (const [nombre, frase] of Object.entries(casos)) {
+      mutantesDeEscalon += 1;
+      if (diferenciasDelEscalonV5(muestraEscalon, frase).length === 0) {
+        problemas.push(`el mutante de la frase "${nombre}" no da diferencias: el comparador no muerde`);
+      }
+    }
+    if (diferenciasDelEscalonV5(muestraEscalon, buena).length > 0) {
+      problemas.push('la frase sin mutar da diferencias contra su propio escalón');
+    }
+    if (diferenciasDelEscalonV5(muestraEscalon, null).length === 0 || diferenciasDelEscalonV5(null, buena).length === 0) {
+      problemas.push('una frase sin escalón (o un escalón sin frase) no da diferencias');
+    }
+  }
+
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problemas: ${problemas.slice(0, 5).join(' | ')}`);
+  }
+  if (escalonesDichos < 300 || escalonesConSiguiente < 100) {
+    throw new Error(`check vacío: ${escalonesDichos} frases de escalón contra el motor (300), ${escalonesConSiguiente} con un escalón más arriba (100)`);
+  }
+  if (evaluaciones < 600 || conMundial < 3 || conTituloMenor < 5 || conGoldenRoad < 3 || medallas < 3 || cierresConLinea < 10 || cierresSinLinea < 100 || finales < 10) {
+    throw new Error(`check vacío: ${evaluaciones} dibujos evaluados (600), ${conMundial} carreras con Mundial (3), ${conTituloMenor} con un título de tier 2 o 3 (5), ${conGoldenRoad} con Golden Road (3), ${medallas} medallas (3), ${cierresConLinea} cierres con la línea del Golden Road (10), ${cierresSinLinea} sin (100), ${finales} carreras terminadas (10)`);
+  }
+  console.log(`      ${evaluaciones} dibujos contra el registro (${SEEDS_DIBUJO_V5.length} carreras × hasta ${SPLITS_DIBUJO_V5} splits); ${conMundial} con Mundial, ${conTituloMenor} con título de tier 2 o 3, ${conGoldenRoad} con Golden Road; ${cierresConLinea} cierres con la línea del Golden Road y ${cierresSinLinea} sin; ${comparadorMuerde} de ${mutantes} dibujos corrompidos dan diferencias; ${escalonesDichos} frases de escalón contra el motor (${escalonesConSiguiente} con otro más arriba), ${mutantesDeEscalon} frases corrompidas dan diferencias`);
 });
 
 // K6d (integración; el FAIL de K5c-R en la seed 9 con P7a prendida): volver del retiro corta la racha en rojo (`flags.splitsMentalBajo`,
@@ -21920,7 +23082,7 @@ check('K4c guardado VERSION 11: un guardado de la 10 parado en la pausa de la pr
           const respuesta = sistemaId === 'practica' ? { opcionId: 'seguir' } : sistemaPorId(sistemaId).resolverAuto(legado.state, decision, rngLegado);
           legado = resolverDecision(legado.state, respuesta, rngLegado);
         }
-        const sinPausa = avanzarSplitAuto(state, conElRngDeK4cG(seed, estadoAntes));
+        const sinPausa = avanzarSplitAuto(sinFilasGRM(state), conElRngDeK4cG(seed, estadoAntes));
         // La pausa vieja gastó una interrupción del cupo del split (`presupuesto.gastadas`); lo demás es idéntico.
         const sinCupo = (estado) => ({ ...estado, presupuesto: undefined });
         if (!sonIgualesK4cG(comoJsonK4cG(sinCupo(legado.state)), comoJsonK4cG(sinCupo(sinPausa.state))) || !JSON.stringify(legado.state.logs).includes('Entrenaste según el plan del año')) {
@@ -26902,10 +28064,10 @@ check('K6c la vara: la oferta, la previa de la prueba y la pantalla muestran la 
     const anuncio = vara === 0 ? TEXTO_VARA_CERO_K6C : `necesitás ${vara}%`;
     if (!firmar.descripcion.includes(anuncio)) problemas.push(`seed ${seed}: la oferta no anuncia la vara ("${firmar.descripcion}")`);
   }
-  // La pantalla (src/ui/app.js) no corre en Node: se exige que el veredicto salga de la misma cuenta del motor y no de la
+  // La pantalla (src/ui/paradas/minijuego.js, desde V2-A) no corre en Node: se exige que el veredicto salga de la misma cuenta del motor y no de la
   // probabilidad del mercado.
-  const app = fs.readFileSync(new URL('../ui/app.js', import.meta.url), 'utf8');
-  if (!/import \{[^}]*veredictoDeLaPrueba[^}]*\} from '\.\.\/core\/serie\.js'/.test(app) || !/veredictoDeLaPrueba\(resultado, decision\.datos\.vara\)/.test(app)) {
+  const app = fs.readFileSync(new URL('../ui/paradas/minijuego.js', import.meta.url), 'utf8');
+  if (!/import \{[^}]*veredictoDeLaPrueba[^}]*\} from '\.\.\/\.\.\/core\/serie\.js'/.test(app) || !/veredictoDeLaPrueba\(resultado, decision\.datos\.vara\)/.test(app)) {
     problemas.push('la pantalla de la prueba no usa veredictoDeLaPrueba del motor');
   }
   if (!/laPrueba\.falta/.test(app) || !/laPrueba\.vara/.test(app)) problemas.push('la pantalla no dice la vara y por cuánto no llegaste');
@@ -27638,6 +28800,88 @@ checkLento(`K6d-B el perfil y criterio eligen la opción que menos quema en cada
   console.log(`      ${c.elecciones} elecciones revisadas`);
   if (c.problemasEleccion.length > 0) throw new Error(`${c.problemasEleccion.length} problema(s): ${c.problemasEleccion.slice(0, 4).join(' | ')}`);
   if (c.elecciones < 20) throw new Error(`check vacío: ${c.elecciones} elecciones`);
+});
+
+// FASE V (V3e, regla 15): lo que la ficha, la franja y la crónica dicen es lo que pasó.
+//  - D91: la etiqueta de situación de la ficha sale del estado de HOY (`contextoDeLaFicha`), no del `state.contexto` que el motor
+//    calcula una vez al abrir el split: ya en tier 2 decía "Probándote en tier 3" hasta el split siguiente. El check cuenta
+//    cuántas veces el guardado estaba viejo (que no sea vacío) y exige que la ficha nunca lo esté; el mutante pone el `contexto`
+//    guardado en tier 3 con el jugador en tier 2.
+//  - D90: los picos de la carrera (el cuarto Vos y la franja en la pieza final) son los máximos que dejó el registro; sin
+//    pico registrado no hay fila (nada en 0), y salen del registro, no del estado de hoy.
+//  - La crónica reparte cada línea de `state.logs` en un año y en un split, sin huecos ni solapes.
+check('V3e (regla 15): la ficha dice el nivel de hoy (nunca "tier 3" ya en tier 2), los picos salen del registro y la crónica reparte cada línea en un año y un split (10 carreras × 60)', () => {
+  const modulos = { formato: { plata }, ranked: { servidorDeLaPartida } };
+  const problemas = [];
+  let viejos = 0;
+  let conClub = 0;
+  let finales = 0;
+  let aniosCerrados = 0;
+  for (let seed = 1; seed <= 10; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      if (!state.contexto || state.phase !== 'profesional' || !state.career.currentOrg) continue;
+      conClub += 1;
+      const esperado = `tier${state.career.tier}`;
+      if (state.contexto.nivel !== esperado) viejos += 1;
+      const hoy = contextoDeLaFicha(state);
+      if (hoy.nivel !== esperado) {
+        problemas.push(`seed ${seed}, split ${i}: la ficha dice ${hoy.nivel} con el jugador en tier ${state.career.tier}`);
+      }
+      // Mutante: el contexto guardado quedó en tier 3 (lo que el motor dejaba entre el ascenso y el split siguiente).
+      const viejo = { ...state, contexto: { ...state.contexto, nivel: 'tier3', momento: 'tier3_probandose' } };
+      if (state.career.tier !== 3 && contextoDeLaFicha(viejo).nivel !== esperado) {
+        problemas.push(`seed ${seed}, split ${i}: con el contexto guardado en tier 3 la ficha dice ${contextoDeLaFicha(viejo).nivel}`);
+      }
+    }
+    // Los picos y la crónica, sobre la carrera hasta donde llegó.
+    const picos = state.career.registro.picos;
+    const filas = picosDeLaCarrera(state, modulos);
+    if ((picos.nivel > 0) !== filas.some(([rotulo]) => rotulo === 'Nivel máximo')) {
+      problemas.push(`seed ${seed}: el pico de nivel es ${picos.nivel} y las filas son ${filas.map(([r]) => r).join(', ')}`);
+    }
+    const nivelMaximo = filas.find(([rotulo]) => rotulo === 'Nivel máximo');
+    if (nivelMaximo && nivelMaximo[1] !== String(Math.round(picos.nivel))) {
+      problemas.push(`seed ${seed}: el nivel máximo dice ${nivelMaximo[1]} y el registro ${picos.nivel}`);
+    }
+    if (filas.some(([, valor]) => /^(0|#0|\$0)(\/100|k\/año)?$/.test(valor))) {
+      problemas.push(`seed ${seed}: una fila de picos en 0 (${filas.map(([, v]) => v).join(', ')})`);
+    }
+    const sinRegistro = { ...state, career: { ...state.career, registro: { ...state.career.registro, picos: { ...picos, nivel: 0, rankMundial: 0, jerarquia: 0, arraigo: 0, hype: 0, valorMercadoUSD: 0, salarioAnualUSD: 0, rankedPuntos: 0 } } } };
+    if (picosDeLaCarrera(sinRegistro, modulos).length !== 0) {
+      problemas.push(`seed ${seed}: con el registro sin picos igual salen filas`);
+    }
+    if (state.terminado) finales += 1;
+
+    const logs = state.logs;
+    const tramos = dividirEnAnios(logs, state.calendario.anio);
+    let cursor = 0;
+    let anioAnterior = -Infinity;
+    for (const tramo of tramos) {
+      if (tramo.desde !== cursor || tramo.hasta <= tramo.desde) problemas.push(`seed ${seed}: el año ${tramo.anio} arranca en ${tramo.desde} y la cuenta iba en ${cursor}`);
+      cursor = tramo.hasta;
+      if (tramo.cerrado) {
+        aniosCerrados += 1;
+        if (tramo.anio <= anioAnterior) problemas.push(`seed ${seed}: el año ${tramo.anio} no es posterior a ${anioAnterior}`);
+        anioAnterior = tramo.anio;
+      }
+      let desde = tramo.desde;
+      for (const split of tramo.splits) {
+        if (split.desde !== desde || split.hasta <= split.desde) problemas.push(`seed ${seed}, año ${tramo.anio}: un split arranca en ${split.desde} y la cuenta iba en ${desde}`);
+        if (split.numero !== null && split.numero < 1) problemas.push(`seed ${seed}, año ${tramo.anio}: split ${split.numero}`);
+        desde = split.hasta;
+      }
+      if (desde !== tramo.hasta) problemas.push(`seed ${seed}, año ${tramo.anio}: los splits llegan hasta ${desde} y el año hasta ${tramo.hasta}`);
+    }
+    if (cursor !== logs.length) problemas.push(`seed ${seed}: la crónica cubre ${cursor} de ${logs.length} líneas`);
+  }
+  console.log(`      ${conClub} estados con club, ${viejos} con el contexto guardado viejo, ${finales} carreras terminadas, ${aniosCerrados} años cerrados en la crónica`);
+  if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
+  if (viejos === 0 || finales === 0 || aniosCerrados < 20) {
+    throw new Error(`check vacío: ${viejos} contextos viejos, ${finales} finales, ${aniosCerrados} años cerrados`);
+  }
 });
 
 if (errores.length > 0) {

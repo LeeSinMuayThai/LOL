@@ -10,15 +10,16 @@
 // inline en el `.map()` de `renderFeed` — `reproductor.js` necesita crear el
 // MISMO nodo uno por uno, a su propio ritmo, en vez de todos juntos en un
 // `replaceChildren`.
-import METAS from '../../data/metas.json' with { type: 'json' };
-import { acentoDeLog, nombreVisibleDeLiga, rotuloDeDecision } from '../formatoUi.js';
+import { acentoDeLog, nombreVisibleDeLiga } from '../formatoUi.js';
 import { crearOrgChip } from './orgChip.js';
 import { etiquetaRol } from '../../data/roles.js';
 import { crearTarjetaResultado, crearTarjetaResultadoSerie } from './serie.js';
 import { crearTarjetaMundial } from './mundial.js';
 import { textoDeProbabilidadJugada } from '../../core/previaDePartido.js';
-import { reconciliar, reemplazarEnElLugar } from '../core/reconciliar.js';
+import { reconciliar, reemplazarEnElLugar, olvidarContenedor } from '../core/reconciliar.js';
 import { formaBeat } from '../../core/log.js';
+import { crearTarjetaCierre, crearLineaSplitAnterior, crearCartelDePagina } from './cierre.js';
+import { moverNumero, leerSoloElFinal } from '../core/delta.js';
 
 // El reveal del Top 20 al cierre de temporada (fase 9Wc). El log `top_mundial`
 // que trae la lista entera (`entry.top20`) deja de ser una línea: se abre en
@@ -338,42 +339,145 @@ export function renderFeed(logList, state, { limite = LIMITE_FEED, hasta = state
   );
 }
 
-export function renderLowerThird(summary, metaPill, state, { modo, decision } = {}) {
-  if (!summary || !metaPill) return;
+// FASE V (V4; PLAN.md §V.3 regla 3): los números de los efectos de un beat ("estudios +7, sueño +1") se cuentan desde 0 cuando el
+// beat entra. Solo el nodo recién creado: la reconciliación de los pasos siguientes reconstruye los beats ya pintados sin
+// volver a contar. El texto final es el mismo (el conteo termina en el número) y con movimiento reducido o en INST
+// (`animar: false`) el número aparece ya en su valor final. Un número con decimales o con "%" no se mueve.
+const DURACION_DE_LOS_EFECTOS_MS = 320;
+const NUMERO_CON_SIGNO = /(?<![\w.,])([+\-−])(\d+)(?![\d%]|[.,]\d)/g;
 
-  if (state?.terminado && state.tarjeta) {
-    summary.hidden = true;
-    metaPill.hidden = true;
-    metaPill.textContent = '';
+// Los números con signo de una línea de efectos, en orden: `[{ indice, texto, signo, valor }]` (`texto` es el número tal cual, "+7").
+// Pura: la usa `animarEfectos` y la prueba `validate.js`.
+export function numerosDeEfectos(texto) {
+  return [...texto.matchAll(NUMERO_CON_SIGNO)].map((c) => ({ indice: c.index, texto: c[0], signo: c[1], valor: Number(c[2]) }));
+}
+
+export function animarEfectos(nodo, { animar = true } = {}) {
+  if (!animar) return nodo;
+  for (const linea of nodo.querySelectorAll('.log-efectos')) {
+    const texto = linea.textContent;
+    const numeros = numerosDeEfectos(texto);
+    if (numeros.length === 0) continue;
+    const piezas = [];
+    let desde = 0;
+    for (const numero of numeros) {
+      piezas.push(document.createTextNode(texto.slice(desde, numero.indice)));
+      const el = document.createElement('span');
+      el.className = 'efecto-numero';
+      el.textContent = numero.texto;
+      piezas.push(el, leerSoloElFinal(el, numero.texto));
+      numero.el = el;
+      desde = numero.indice + numero.texto.length;
+    }
+    piezas.push(document.createTextNode(texto.slice(desde)));
+    linea.replaceChildren(...piezas);
+    for (const { el, signo, valor } of numeros) {
+      moverNumero(el, 0, valor, { formato: (n) => `${signo}${n}`, duracion: DURACION_DE_LOS_EFECTOS_MS, animar });
+    }
+  }
+  return nodo;
+}
+
+// La página del relato (FASE V, V2-B; PLAN.md §V.5 "Una página por split"): los beats del split en curso, en orden
+// cronológico (el más nuevo abajo) y sin el límite de `LIMITE_FEED`. `desde` es `inicioDePagina` (índice absoluto en
+// `state.logs`, el `logs.length` de cuando se llamó a `avanzarSplit`); `hasta`, el corte exclusive (el reproductor lo
+// hace crecer de a un beat). Tres renglones que no son del motor: `cartel` (FASE V, V4: la ventana y el año, una línea) arriba
+// de todo, `anterior` (el cierre del split anterior, en una línea, cuando su tarjeta no llegó a verse) abajo del cartel, y
+// `cierre` (la tarjeta de cierre del split) abajo de todo, como un beat más.
+// Pasa por `reconciliar` con las mismas claves que `renderFeed` (índices absolutos): un beat ya pintado se actualiza en
+// su lugar, no se duplica. `renderFeed` y sus checks no cambian.
+//
+// `animar` (V4): lo que entra por primera vez se mueve (el número de la tarjeta de cierre, los efectos de un beat). El
+// reproductor lo apaga en INST; con movimiento reducido cada número aparece ya en su valor final. Lo que ya estaba pintado se
+// reconstruye quieto, y los renglones sintéticos (cartel, línea anterior, tarjeta) solo si cambió su contenido.
+export function renderPagina(contenedor, state, { desde = 0, hasta = state.logs.length, anterior = null, cierre = null, cartel = null, animar = false } = {}) {
+  const inicio = Math.max(0, Math.min(desde, hasta));
+  const items = [
+    ...(cartel ? [{ sintetico: 'cartel', cartel }] : []),
+    ...(anterior ? [{ sintetico: 'anterior', cierre: anterior }] : []),
+    ...agruparBeats(state.logs.slice(inicio, hasta), inicio),
+    ...(cierre ? [{ sintetico: 'cierre', cierre }] : [])
+  ];
+  const firmaDe = (item) => (item.sintetico === 'cartel' ? JSON.stringify(item.cartel) : JSON.stringify(item.cierre));
+  const nodoDeItem = (item, nuevo) => {
+    if (item.sintetico === 'cartel') return crearCartelDePagina(item.cartel);
+    if (item.sintetico === 'anterior') return crearLineaSplitAnterior(item.cierre);
+    if (item.sintetico === 'cierre') return crearTarjetaCierre(item.cierre, { animar: nuevo && animar });
+    const nodo = nodoDeBeat(item, state);
+    return nuevo ? animarEfectos(nodo, { animar }) : nodo;
+  };
+  const nodoConFirma = (item, nuevo) => {
+    const nodo = nodoDeItem(item, nuevo);
+    if (item.sintetico) nodo.dataset.firma = firmaDe(item);
+    return nodo;
+  };
+  reconciliar(
+    contenedor,
+    items,
+    (item) => item.sintetico ?? item.clave,
+    (item) => nodoConFirma(item, true),
+    (nodo, item) => {
+      if (item.sintetico && nodo.dataset.firma === firmaDe(item)) return;
+      reemplazarEnElLugar(nodo, nodoConFirma(item, false));
+    }
+  );
+}
+
+// Dónde arranca la página cuando no se sabe dónde arrancó el split (retomar sin el marcador de `lolcs-vista`): en los
+// últimos `limite` beats, la misma ventana que `renderFeed`.
+export function desdeDeUltimosBeats(logs, limite = LIMITE_FEED) {
+  return inicioDeVentana(logs, logs.length, limite);
+}
+
+// "Lo último que pasó" de una parada (FASE V, V2-C; PLAN.md §V.4 `.parada-antes`, §V.5 "Una parada a mitad de split
+// reemplaza al relato"): el relato (`#logList`) se ve solo en la pieza `relato`; una parada abre con este nodo, que dice
+// en una línea el último beat que el relato YA contó en esta página y deja abrir la página entera ("ver la página (n)").
+// `contenedor` es `#paradaAntes`; `state` es el estado de la parada (todos sus logs ya se contaron: el reproductor los
+// revela antes de que entre una parada) y `desde` es `inicioDePagina`. Nunca muestra un beat por contar. Sin beats en la
+// página (la parada abre el split) el nodo queda oculto. El texto es plano (la `message` ya compuesta del beat): si es
+// largo lo corta el CSS con "…".
+//
+// FASE V (V4): `cierreDelAnio` (`{ anio }`) es el de una parada que ES el cierre de año (la de `edadCierre`, que frena el motor): se
+// pinta como el cartel de una línea "Cierre de 2031" (el de las páginas, `crearCartelDePagina`), arriba de todo, aunque la página no
+// tenga beats. Sin números: a mitad de la página todavía no son los del cierre.
+export function renderParadaAntes(contenedor, state, { desde = 0, cierreDelAnio = null } = {}) {
+  const inicio = Math.max(0, Math.min(desde, state.logs.length));
+  const narrativos = agruparBeats(state.logs.slice(inicio), inicio).filter((beat) => beat.narrativa);
+  contenedor.replaceChildren();
+  const cartelDelAnio = cierreDelAnio?.anio ? crearCartelDePagina({ ventana: 'cierre', nuevoAnio: false, texto: `Cierre de ${cierreDelAnio.anio}` }) : null;
+  if (narrativos.length === 0) {
+    if (cartelDelAnio) {
+      contenedor.append(cartelDelAnio);
+    }
+    contenedor.hidden = !cartelDelAnio;
     return;
   }
+  const ultimo = narrativos[narrativos.length - 1].narrativa;
 
-  summary.hidden = false;
-  metaPill.hidden = false;
+  const rotulo = document.createElement('span');
+  rotulo.className = 'parada-antes-rotulo';
+  rotulo.textContent = 'Lo último que pasó';
+  const linea = document.createElement('p');
+  linea.className = 'parada-antes-ultimo';
+  linea.textContent = String(ultimo.message ?? '').replace(/\s+/g, ' ').trim();
 
-  const regimenObj = METAS.find((m) => m.id === state?.meta?.regimen);
-  const seed = state?.seed;
-  if (regimenObj && seed != null) {
-    metaPill.textContent = `${regimenObj.nombre} · seed ${seed}`;
-  } else if (seed != null) {
-    metaPill.textContent = `seed ${seed}`;
-  } else {
-    metaPill.textContent = '';
-  }
+  const pagina = document.createElement('details');
+  pagina.className = 'parada-antes-pagina';
+  const resumen = document.createElement('summary');
+  resumen.textContent = `ver la página (${narrativos.length})`;
+  const beats = document.createElement('div');
+  beats.className = 'parada-antes-beats';
+  pagina.append(resumen, beats);
+  // El desplegable se pinta al abrirlo: una parada no paga los nodos de una página que casi nunca se abre. Es la misma
+  // `renderPagina` del relato, hasta el final de lo contado.
+  pagina.addEventListener('toggle', () => {
+    if (pagina.open) {
+      olvidarContenedor(beats);
+      beats.replaceChildren();
+      renderPagina(beats, state, { desde: inicio });
+    }
+  });
 
-  if (modo === 'minijuego') {
-    summary.textContent = 'EN EL MAPA';
-    return;
-  }
-  if (modo === 'mercado') {
-    summary.textContent = decision?.titulo ?? 'Ventana de pases';
-    return;
-  }
-  if (modo === 'decision' && decision) {
-    summary.textContent = rotuloDeDecision(decision, state).label;
-    return;
-  }
-
-  const ultimo = [...(state?.logs ?? [])].reverse().find(formaBeat);
-  summary.textContent = ultimo?.cuerpo ?? ultimo?.message ?? 'Split en curso';
+  contenedor.append(...(cartelDelAnio ? [cartelDelAnio] : []), rotulo, linea, pagina);
+  contenedor.hidden = false;
 }

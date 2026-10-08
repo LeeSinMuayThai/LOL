@@ -44,8 +44,12 @@ export { marcarHit, marcarMiss } from './comun.js';
 
 // La apuesta, antes de jugar (fase 9R4d). Hasta acá entrabas al minijuego sin
 // saber qué te estabas jugando y lo descubrías al terminar, en el beat de
-// 9R0b. Son dos líneas: qué mueve esta jugada (del catálogo) y qué te da tu
-// hoja para jugarla, con el número y su referente (regla de proceso 13).
+// 9R0b. Qué mueve esta jugada (del catálogo) y qué te da tu hoja para jugarla,
+// con el número y su referente (regla de proceso 13).
+//
+// V3d (PLAN.md §V.4, regla 2 de §V.3): la caja es COMPACTA. A la vista queda lo que se juega: el kicker con la ronda, la
+// primera oración de la apuesta y tu hoja. Lo demás (el resto de la apuesta, la vara o la regla y lo que sobra de la
+// descripción de la parada) va detrás de un solo "más": ninguna información se saca, solo se pliega.
 const NOMBRE_STAT = {
   mecanica: 'mecánica',
   macro: 'macro',
@@ -55,46 +59,68 @@ const NOMBRE_STAT = {
   adaptabilidad: 'adaptabilidad'
 };
 
-export function crearApuesta(decision, state) {
-  const caja = document.createElement('div');
-  caja.className = 'minijuego-apuesta';
+// [primera oración, resto]: la línea de "qué se juega" y lo que va detrás del "más". La oración termina en un punto, ! o ? seguido
+// de un espacio y una mayúscula; si la primera es más corta que MIN_ORACION se le suma la siguiente (dos palabras no dicen qué se juega).
+const FIN_DE_ORACION = /[.!?…]["”»)]?\s+(?=[A-ZÁÉÍÓÚÜÑ¿¡"“«(])/g;
+const MIN_ORACION = 30;
+export function primeraOracion(texto) {
+  const limpio = String(texto ?? '').trim();
+  for (const m of limpio.matchAll(FIN_DE_ORACION)) {
+    if (m.index + 1 >= MIN_ORACION) {
+      return [limpio.slice(0, m.index + 1).trim(), limpio.slice(m.index + m[0].length).trim()];
+    }
+  }
+  return [limpio, ''];
+}
+
+function el(etiqueta, clase, texto) {
+  const nodo = document.createElement(etiqueta);
+  if (clase) nodo.className = clase;
+  if (texto !== undefined) nodo.textContent = texto;
+  return nodo;
+}
+
+// `opciones.resto`: lo que la parada no mostró de su descripción (el resto de la primera oración), que se pliega acá.
+export function crearApuesta(decision, state, { resto = '' } = {}) {
+  const caja = el('div', 'minijuego-apuesta');
 
   const entrada = minijuegoPorId(decision.datos.minijuego);
   const lectura = entrada ? lecturaDeVentana(entrada, state) : null;
+
+  const cabecera = el('div', 'minijuego-apuesta-cabecera');
   if (lectura) {
-    const kicker = document.createElement('div');
-    kicker.className = 'minijuego-apuesta-kicker';
-    kicker.textContent = `SE JUEGA ${(NOMBRE_STAT[lectura.stat] ?? lectura.stat).toUpperCase()}`;
-    caja.appendChild(kicker);
+    cabecera.appendChild(el('span', 'minijuego-apuesta-kicker', `SE JUEGA ${(NOMBRE_STAT[lectura.stat] ?? lectura.stat).toUpperCase()}`));
   }
-
-  if (decision.datos.apuesta) {
-    const texto = document.createElement('div');
-    texto.textContent = decision.datos.apuesta;
-    caja.appendChild(texto);
-  }
-
-  if (decision.datos.regla) {
-    const reglaEl = document.createElement('div');
-    reglaEl.className = 'minijuego-apuesta-regla';
-    reglaEl.textContent = decision.datos.regla;
-    caja.appendChild(reglaEl);
-  }
-
   if (decision.datos.ronda) {
-    const rondaTag = document.createElement('div');
-    rondaTag.className = 'minijuego-apuesta-ronda';
     const rondaLabel = decision.datos.ronda === 'internacional' ? 'INTERNACIONAL' : (decision.datos.ronda === 'final' ? 'FINAL' : 'SEMIS');
     const difLabel = decision.datos.ronda === 'internacional' ? 'DIFICULTAD MÁXIMA' : (decision.datos.ronda === 'final' ? 'DIFICULTAD ELEVADA' : 'DIFICULTAD ESTÁNDAR');
-    rondaTag.textContent = `${rondaLabel} · ${difLabel}`;
-    caja.appendChild(rondaTag);
+    cabecera.appendChild(el('span', 'minijuego-apuesta-ronda', `${rondaLabel} · ${difLabel}`));
   }
+  if (cabecera.children.length > 0) caja.appendChild(cabecera);
+
+  // La primera oración de la apuesta a la vista; el resto, la regla y el resto de la descripción, detrás del "más".
+  const [lineaApuesta, restoApuesta] = primeraOracion(decision.datos.apuesta ?? '');
+  if (lineaApuesta) caja.appendChild(el('div', 'minijuego-apuesta-texto', lineaApuesta));
 
   if (lectura) {
-    const linea = document.createElement('span');
-    linea.className = 'minijuego-apuesta-stat';
-    linea.textContent = `Tu ${NOMBRE_STAT[lectura.stat] ?? lectura.stat} ${lectura.valor} · ${lectura.frase}`;
-    caja.appendChild(linea);
+    caja.appendChild(el('span', 'minijuego-apuesta-stat', `Tu ${NOMBRE_STAT[lectura.stat] ?? lectura.stat} ${lectura.valor} · ${lectura.frase}`));
+  }
+
+  const plegado = el('div', 'minijuego-apuesta-plegado');
+  plegado.hidden = true;
+  [resto, restoApuesta].filter(Boolean).forEach((texto) => plegado.appendChild(el('p', 'minijuego-apuesta-resto', texto)));
+  if (decision.datos.regla) plegado.appendChild(el('p', 'minijuego-apuesta-regla', decision.datos.regla));
+  if (plegado.children.length > 0) {
+    const mas = el('button', 'minijuego-mas', 'más');
+    mas.type = 'button';
+    mas.setAttribute('aria-expanded', 'false');
+    mas.addEventListener('click', () => {
+      const abrir = mas.getAttribute('aria-expanded') !== 'true';
+      mas.setAttribute('aria-expanded', String(abrir));
+      mas.textContent = abrir ? 'menos' : 'más';
+      plegado.hidden = !abrir;
+    });
+    caja.append(mas, plegado);
   }
   return caja;
 }

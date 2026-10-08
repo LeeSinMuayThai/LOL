@@ -21,6 +21,7 @@ const PAD_IZQ = 36;
 const PAD_DER = 18;
 const PAD_ARR = 14;
 const PAD_ABJ = 22;
+const PAD_ABJ_SIN_ETIQUETAS = 6;
 const TOKEN_EJE = 'line-faint';
 const TOKEN_TINTA = 'ink';
 const TOKEN_TINTA_EJE = 'ink-mute';
@@ -115,13 +116,22 @@ function hitPunto(cx, cy, dato, onHover) {
   return nodo;
 }
 
+// V5 (la pestaña Carrera): tres perillas opcionales, todas con el comportamiento de siempre por defecto.
+//  - `dominioX: [desde, hasta]`: el eje de abajo se fija afuera (la cinta de clubes de arriba usa el mismo).
+//  - `padIzq` / `padDer`: los márgenes laterales.
+//  - `etiquetas: false`: sin los números de los ejes ni el del último punto (el acompañante, que no puede gastar números); el
+//    marcador del último punto queda.
 export function crearLinea({
   series,
   modo = 'linea',
   ancho = 320,
   alto = 96,
   dominioY = null,
-  onHoverPunto = null
+  onHoverPunto = null,
+  dominioX = null,
+  padIzq = PAD_IZQ,
+  padDer = PAD_DER,
+  etiquetas = true
 } = {}) {
   if (!MODOS.has(modo)) {
     throw new Error(`crearLinea: modo desconocido "${modo}"`);
@@ -141,14 +151,17 @@ export function crearLinea({
 
   const xs = seriesNorm.flatMap((s) => s.puntos.map((p) => p.x));
   const ys = seriesNorm.flatMap((s) => s.puntos.map((p) => p.y));
-  const [xMin, xMax] = dominio(xs);
+  const [xMin, xMax] = Array.isArray(dominioX) && dominioX.length === 2 && Number(dominioX[1]) > Number(dominioX[0])
+    ? [Number(dominioX[0]), Number(dominioX[1])]
+    : dominio(xs);
   const [yMin, yMax] = Array.isArray(dominioY) && dominioY.length === 2
     ? [Number(dominioY[0]), Number(dominioY[1])]
     : dominio(ys);
 
-  const innerW = Math.max(0, ancho - PAD_IZQ - PAD_DER);
-  const innerH = Math.max(0, alto - PAD_ARR - PAD_ABJ);
-  const x0 = PAD_IZQ;
+  const innerW = Math.max(0, ancho - padIzq - padDer);
+  const padAbj = etiquetas ? PAD_ABJ : PAD_ABJ_SIN_ETIQUETAS;
+  const innerH = Math.max(0, alto - PAD_ARR - padAbj);
+  const x0 = padIzq;
   const y0 = PAD_ARR;
   const yBase = y0 + innerH;
 
@@ -174,10 +187,12 @@ export function crearLinea({
     nodo.appendChild(linea);
   }
 
-  nodo.appendChild(textoSvg(formatear(yMax), x0 - OFFSET_ETIQUETA_EJE, y0, TOKEN_TINTA_EJE, 'end'));
-  nodo.appendChild(textoSvg(formatear(yMin), x0 - OFFSET_ETIQUETA_EJE, yBase, TOKEN_TINTA_EJE, 'end'));
-  nodo.appendChild(textoSvg(formatear(xMin), x0, yBase + 12, TOKEN_TINTA_EJE, 'start'));
-  nodo.appendChild(textoSvg(formatear(xMax), x0 + innerW, yBase + 12, TOKEN_TINTA_EJE, 'end'));
+  if (etiquetas) {
+    nodo.appendChild(textoSvg(formatear(yMax), x0 - OFFSET_ETIQUETA_EJE, y0, TOKEN_TINTA_EJE, 'end'));
+    nodo.appendChild(textoSvg(formatear(yMin), x0 - OFFSET_ETIQUETA_EJE, yBase, TOKEN_TINTA_EJE, 'end'));
+    nodo.appendChild(textoSvg(formatear(xMin), x0, yBase + 12, TOKEN_TINTA_EJE, 'start'));
+    nodo.appendChild(textoSvg(formatear(xMax), x0 + innerW, yBase + 12, TOKEN_TINTA_EJE, 'end'));
+  }
 
   const proyectadas = seriesNorm.map((s) => ({
     ...s,
@@ -217,6 +232,7 @@ export function crearLinea({
     pintar(marcador, 'stroke', 'none');
     nodo.appendChild(marcador);
 
+    if (!etiquetas) continue;
     const etiquetaDe = pico.dato.y >= extremo.dato.y ? pico : extremo;
     const aLaIzquierda = etiquetaDe.px > x0 + innerW * 0.7;
     const swatchX = aLaIzquierda ? etiquetaDe.px - 14 : etiquetaDe.px + 10;

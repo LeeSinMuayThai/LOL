@@ -1,0 +1,373 @@
+/* La decisión: opciones, peso visual, consecuencia previa. Dueño: V3a (PLAN.md §V.7).
+   Salió de componentes.css / pantallas.css en V2-A: solo mudanza de bloques, ninguna regla cambió. */
+
+/* ==========================================================================
+   2. LA DECISIÓN
+   Barra de acento a la izquierda, título en condensada, opciones como
+   tarjetas. El banner por categoría y el peso bisagra/cierre/normal son de
+   T4 — ver `formatoUi.js` para de dónde sale cada uno.
+   ========================================================================== */
+
+.decision {
+  position: relative;
+  margin-top: var(--s-6);
+  padding: var(--s-5);
+  padding-left: calc(var(--s-5) - 3px);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--tab-color, var(--live));
+  animation: entrar-decision var(--dur-slow) var(--ease) both;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+
+/* --- Peso visual (T4) -------------------------------------------------
+   `bisagra`: el escenario entero se nota — borde más grueso en el color de
+   la categoría, con glow, y una marca de agua enorme del label detrás del
+   texto (no un velo de pantalla completa: eso exige un overlay aparte, y
+   esto ya cambia la lectura sin sumar una capa nueva). `cierre`: un
+   milestone, no una alarma — reusa el oro que ya significa "hito" en toda
+   la ficha desde T0b, no el color de la categoría. */
+.decision[data-peso="bisagra"] {
+  padding: var(--s-6);
+  border-left-width: 6px;
+  border-color: var(--tab-color, var(--live));
+  box-shadow: 0 0 50px -14px var(--tab-color, var(--live-glow)), var(--sombra-3);
+  animation:
+    entrar-decision-bisagra var(--dur-slow) var(--ease) both,
+    flash-bisagra 180ms var(--ease);
+  overflow: hidden;
+}
+@keyframes flash-bisagra {
+  from { box-shadow: 0 0 80px -6px var(--tab-color, var(--live)); }
+  to   { box-shadow: 0 0 50px -14px var(--tab-color, var(--live-glow)), var(--sombra-3); }
+}
+.decision[data-peso="bisagra"]::after {
+  content: attr(data-tab-label);
+  position: absolute;
+  right: var(--s-4);
+  bottom: -0.15em;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 96px;
+  line-height: 1;
+  letter-spacing: var(--track-cartel);
+  text-transform: uppercase;
+  color: var(--tab-color, var(--live));
+  opacity: 0.06;
+  pointer-events: none;
+  white-space: nowrap;
+}
+@keyframes entrar-decision-bisagra {
+  from { opacity: 0; transform: scale(0.98) translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.decision[data-peso="cierre"] {
+  border-left-color: var(--gold);
+  box-shadow: inset 0 0 0 1px var(--gold-glow);
+}
+.decision[data-peso="cierre"]::before { background: var(--gold); }
+
+.decision[data-peso="ambiente"] {
+  padding: var(--s-3);
+  border-left-color: var(--line);
+}
+.decision[data-peso="ambiente"]::before { display: none; }
+
+/* La pestaña de categoría (T0b): dice qué es el panel antes de que el
+   jugador lea una sola palabra del contenido. `.decision` la arma en JS
+   (`decision.js`, T4) con `data-tab-label`/`--tab-color`; `.mercado`/
+   `.minijuego` se quedan con el texto fijo — no vienen de un evento
+   categorizado. */
+.decision::before,
+.mercado::before,
+.minijuego::before {
+  position: absolute;
+  top: -15px;
+  left: var(--s-4);
+  padding: 5px var(--s-4) 5px var(--s-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 700;
+  letter-spacing: var(--track-cartel);
+  text-transform: uppercase;
+  color: var(--bg-void);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 100%, 0 100%);
+}
+.decision::before  { content: attr(data-tab-label); background: var(--tab-color, var(--live)); }
+.mercado::before   { content: "Mercado";   background: var(--cat-mercado); }
+.minijuego::before { content: "Minijuego"; background: var(--warn); }
+
+@keyframes entrar-decision {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* K6a-U: la pestaña de la decisión bisagra se cortaba arriba (`overflow: hidden` de la marca de agua). Adentro del borde. */
+.decision[data-peso="bisagra"]::before { top: 0; }
+
+.reproduciendo-aviso {
+  margin-top: var(--s-4);
+  padding: var(--s-3) var(--s-4);
+  border-left: 3px solid var(--live);
+  background: var(--bg-surface);
+  color: var(--ink-dim);
+  font-size: var(--fs-2);
+}
+.reproduciendo-aviso[hidden] { display: none; }
+
+.decision-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-6);
+  font-weight: 700;
+  line-height: var(--lh-tight);
+  text-transform: uppercase;
+  margin-bottom: var(--s-2);
+}
+
+/* V3a (PLAN.md §V.4): "qué está en juego" es UNA línea (la primera oración de la descripción, a lo sumo dos renglones);
+   el resto del texto va detrás de "más". `#decisionDesc` es un flex: la oración, el "más" al lado y el resto a todo ancho. */
+.decision-desc {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--s-2);
+  color: var(--ink-dim);
+  font-size: var(--fs-2);
+  line-height: var(--lh-snug);
+  margin-bottom: var(--s-3);
+}
+.decision-desc-linea {
+  flex: 1 1 0;
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.decision-desc[data-abierta="si"] .decision-desc-linea { display: block; -webkit-line-clamp: unset; }
+.decision-desc-resto {
+  flex: 1 0 100%;
+  margin-top: var(--s-2);
+}
+.decision-desc-resto[hidden] { display: none; }
+
+/* El "más" (del encabezado y de cada fila): un botón chico, pegado a lo que despliega. Reposo discreto. */
+.decision-mas {
+  flex: none;
+  min-height: 24px;
+  padding: 2px var(--s-2);
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  clip-path: none;
+  color: var(--live);
+  font-size: var(--fs-0);
+  letter-spacing: var(--track-label);
+}
+.decision-mas[hidden] { display: none; }
+
+/* --- Las opciones: una FILA por opción -----------------------------------
+   Grilla de una columna (el escenario mide ~720 px: dos columnas dejarían ~340 px de texto por opción). Cada `.option-btn`
+   es hijo directo de `#decisionOptions` y ocupa el renglón que le puso el renderer (`style.gridRow`); su "más" es un
+   botón hermano en ESE renglón, pegado arriba a la derecha. */
+.decision-options { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-2); }
+
+.option-btn {
+  position: relative;
+  flex: 1 1 240px;
+  padding: var(--s-4);
+  padding-right: var(--s-7);
+  text-align: left;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: 0;
+  clip-path: var(--clip-corte);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-2);
+  text-transform: none;
+  letter-spacing: normal;
+  transition: border-color var(--dur-fast) var(--ease),
+              background var(--dur-fast) var(--ease);
+}
+.option-btn:hover {
+  border-color: var(--live);
+  background: var(--live-fill);
+  box-shadow: none;
+}
+
+.decision-options > .option-btn {
+  grid-column: 1;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  column-gap: var(--s-3);
+  align-content: start;
+  padding: var(--s-3);
+}
+.decision-options > .option-btn > * { grid-column: 2; }
+.decision-options > .decision-mas {
+  grid-column: 1;
+  justify-self: end;
+  align-self: start;
+  margin: var(--s-3) var(--s-3) 0 0;
+  z-index: 1;
+}
+
+/* El atajo de teclado (T4): shell.js escucha 1-4 desde T1, pero hasta acá nada en pantalla lo decía. V3a: en la fila, la
+   tecla va a la izquierda, en su propia columna. */
+.option-atajo {
+  position: absolute;
+  top: var(--s-3);
+  right: var(--s-3);
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sharp);
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 700;
+  color: var(--ink-mute);
+  transition: border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.decision-options > .option-btn > .option-atajo { position: static; grid-column: 1; grid-row: 1; }
+.option-btn:hover .option-atajo { border-color: var(--live); color: var(--live); }
+
+.option-title {
+  margin-bottom: var(--s-1);
+  font-family: var(--font-display);
+  font-size: var(--fs-4);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+/* El renglón del título deja lugar al "más" (que se superpone arriba a la derecha); el resto de la fila usa todo el ancho. */
+.decision-options > .option-btn > .option-title { grid-row: 1; margin-bottom: 0; line-height: 20px; padding-right: 56px; }
+.option-btn:hover .option-title { color: var(--live); }
+
+.option-desc {
+  font-weight: 400;
+  font-size: var(--fs-2);
+  line-height: var(--lh-snug);
+  color: var(--ink-dim);
+}
+/* La descripción a dos líneas; entera con el "más" de la fila. */
+.decision-options .option-desc {
+  margin-top: var(--s-1);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.decision-options .option-btn[data-abierta="si"] .option-desc { display: block; -webkit-line-clamp: unset; }
+
+/* --- La consecuencia, antes de elegir (fase 12d, PLAN.md §12.3) -----------
+   Reusa el idioma visual que ya existía: el kicker de `.minijuego-apuesta-
+   kicker` para "+ MECÁNICA" y el pill de `.ficha-badge` para el riesgo — no
+   se inventan componentes nuevos. `--up`/`--danger` ya significan
+   "sube"/"riesgo" en el resto de la UI (ver tokens.css).
+   V3a: una sola línea de chips (hasta tres de la previa, el riesgo y la rareza); los demás chips de la previa
+   (`--extra`) se ven con el "más" de la fila. */
+.option-previa {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-1) var(--s-2);
+  margin-top: var(--s-2);
+}
+.option-previa-kicker {
+  padding: 1px 6px;
+  border: 1px solid color-mix(in srgb, currentColor 45%, transparent);
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 700;
+  letter-spacing: var(--track-cartel);
+  text-transform: uppercase;
+}
+.option-previa-kicker--sube { color: var(--up); }
+.option-previa-kicker--baja { color: var(--danger); }
+/* La magnitud pesa en opacidad, no en un color nuevo: "alta" se lee firme,
+   "baja" apenas se insinúa — el signo ya dice para qué lado se mueve. */
+.option-previa-kicker--magnitud-baja { opacity: 0.55; }
+.option-previa-kicker--magnitud-media { opacity: 0.8; }
+.option-previa-kicker--magnitud-alta { opacity: 1; }
+.option-previa-kicker--extra { display: none; }
+.option-btn[data-abierta="si"] .option-previa-kicker--extra { display: inline-block; }
+
+/* K6c: en el plan del año del amateur, la opción que propone tu perfil (decide el jugador). */
+.option-btn--propuesta { border-color: var(--ice-dim); }
+.option-propuesta {
+  margin-top: 6px;
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ice-dim);
+}
+
+/* K4c (plan anual): la línea del plan de práctica en cada opción del cierre de año. */
+.option-plan {
+  margin-top: 6px;
+  font-size: var(--fs-2);
+  line-height: var(--lh-snug);
+  color: var(--ice-dim);
+}
+
+.option-riesgo {
+  display: inline-block;
+  padding: 1px var(--s-2);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  color: var(--ink-dim);
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 600;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
+.option-riesgo--seguro { border-color: var(--up); color: var(--up); }
+.option-riesgo--incierto { border-color: var(--warn); color: var(--warn); }
+.option-riesgo--ruleta { border-color: var(--danger); color: var(--danger); }
+
+/* Fase 12e (PLAN.md §12.4): rareza de las decisiones de mejora. Calca
+   `.option-riesgo` — misma píldora, tokens que ya existen. El oro se
+   reserva para `rara` (tokens.css: el oro se usa poco a propósito). */
+.option-rareza {
+  display: inline-block;
+  padding: 1px var(--s-2);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  color: var(--ink-dim);
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 600;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
+.option-rareza--comun { border-color: var(--line); color: var(--ink-dim); }
+.option-rareza--rara { border-color: var(--gold); color: var(--gold); }
+
+/* Una opción bloqueada se ve, no desaparece (decisión de estructura de la
+   fase 12: `opcionesBloqueadas` no la ve `elegirOpcionAutomatica`, cero
+   consumo de rng). Inerte de verdad: `disabled`, no solo gris. */
+.option-btn--bloqueada {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.option-btn--bloqueada:hover {
+  border-color: var(--line);
+  background: var(--bg-raised);
+}
+.option-gate {
+  margin-top: var(--s-1);
+  color: var(--ink-mute);
+  font-size: var(--fs-1);
+  font-style: italic;
+}
+
+@media (max-width: 520px) {
+  .decision-options > .option-btn { column-gap: var(--s-2); }
+  .decision-desc-linea { -webkit-line-clamp: 3; }
+  .option-previa-kicker { letter-spacing: 0.04em; }
+}

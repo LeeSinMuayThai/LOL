@@ -3,7 +3,7 @@ import { ETAPAS_SPLIT, sistemaPorId } from '../systems/registro.js';
 import { componerLegado } from './legado.js';
 import { puntajeDeCarrera } from './puntaje.js';
 import { pronosticoDeOxido } from './pool.js';
-import { asentarSplitPendiente } from './registro.js';
+import { conSplitPendienteAsentado } from './registro.js';
 
 export { ETAPAS_SPLIT };
 
@@ -41,22 +41,6 @@ function conTarjeta(resultado) {
     return { ...resultado, state: { ...cerrado, tarjeta } };
   }
   return resultado;
-}
-
-function conSplitPendienteAsentado(state) {
-  const pendiente = state.flags.splitJugadoSinFila;
-  if (!pendiente) {
-    return state;
-  }
-  const registro = asentarSplitPendiente(state.career.registro, pendiente, {
-    liga: state.career.liga, tier: state.career.tier, anio: state.calendario.anio,
-    split: state.player.splitCount, arraigoActual: state.career.arraigo
-  });
-  return {
-    ...state,
-    flags: { ...state.flags, splitJugadoSinFila: null },
-    career: { ...state.career, registro }
-  };
 }
 
 // Fase 9Rf: toda pausa —venga del sistema que venga— descuenta una

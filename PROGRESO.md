@@ -34,6 +34,305 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-08 — FASE V, V7 (candado y limpieza) y el cierre de la fase, en `v-integracion` (PLAN.md §V.7)
+
+**V7** (`9c64746`; worker Sonnet high, sin revisor aparte: las capturas idénticas son la prueba, y el supervisor
+comprobó que ningún JS arma los selectores borrados):
+- **CSS muerto:** sale el del layout viejo (`.summary`, `.meta-pill`, los tokens de los rieles y sus media queries) y el
+  que ningún JS pinta (`.ficha-pool`, `.ficha-contrato`, `.ficha-animo`, `.meta-tierlist*`, `.serie-marcador`,
+  `.serie-quemados`, `.minijuego-card-count`, `.cuarto-carrera`).
+  - Las hojas pasan de 5356 a 5206 líneas.
+  - Las capturas de `recorrido.mjs --modo capturas` (seed 25, 1440 y 390) quedan idénticas byte a byte.
+- **D47:** se borra `.ticks`, que nunca se usó (la lista agrupada de 11 selectores queda como única fuente). Se borran
+  también `.corte-sm` y `.bisel`, sin uso.
+- **D48, con una regla medible** (`DISENO.md` §4.6):
+  - **La regla:** contraste WCAG ≥ 4,5:1 para el texto, ≥ 3:1 para el texto grande y para los adornos de estado.
+  - **El comando:** `node src/dev/contraste.mjs --puerto P --seed 25`, a mano; no es un check.
+  - **El arreglo:** `--ink-mute` pasa de #5e6a78 a #7a8a9c, con la misma tonalidad.
+  - **Lo medido:** los nodos que no llegaban bajan de 286 a 76 a 1440, y de 239 a 76 a 390.
+  - **Los 76 que quedan son decisiones de diseño que un token no arregla:** la magnitud de los chips de la previa
+    codificada con `opacity`, el rojo `--danger` como texto sobre el cian de una opción en hover (3,28:1) y
+    `.campeon-tile-ini`. Pasan a D99.
+- **Documentación:** `DISENO.md` §4.5 (la pantalla de hoy, como mapa) y §4.6; `CONCEPTO.md` "La pantalla: una cosa por
+  vez" (§3) y "El Golden Road" (§9).
+- **`dist/`:** 2617 KB, con techo de 2700 (D49).
+
+**El cierre, verificado por el supervisor** sobre una copia `git archive` de `9c64746`:
+- `validate.js --rapido`: 376 OK, 0 FAIL. Los 183 SKIP son los lentos.
+- `--solo` de los lentos de la fase, todos OK:
+  - "V2 escena": ninguna pausa del motor queda sin pieza;
+  - "V5 carrera": el dibujo coincide con el registro;
+  - "V3e";
+  - "V4" (3 casos);
+  - "K0": el espejo de los tiempos en `simulate.js`;
+  - "GR-m": el Golden Road coincide con el motor;
+  - "K1 versión": `HUELLA_JUEGO` 79304237 'K6d', sin cambio.
+- **`simulate.js 1000`:** 0 crashes, en 80 s. La línea del Golden Road da 0 de 1000, como se espera: por defecto son
+  15 splits con el bot `equilibrado`, una carrera que casi no llega a tier 1. Con 1500 × 60, GR-m midió 2,6% con
+  `criterio`.
+- **Determinismo:** `simulate.js 100 60 criterio` dos veces da una salida idéntica (2684 líneas, diff vacío).
+- `build.js` OK.
+- **`recorrido.mjs`** (seeds 25, 39 y 152, a 1440×900 y 390×844; la 39 y la 152 con `--max-paradas 80`): las 6
+  corridas dan 0 errores y retomar funciona en todas las paradas; en la regla 4, 0 de 940 muestras con la franja o el
+  acompañante cambiando durante el relato. El acompañante, los cuartos y la posición dan 0 fallas, y el teclado da
+  todo `true` donde se pudo probar. Los números a la vista llegan como mucho a 46 a 1440 (el retiro de la seed 152,
+  con el tablero de la serie) y a 30 a 390 (el plan de serie de la seed 25).
+- **Las capturas las miró el supervisor.** Salió una cosa menor que va a V8 (D100): en la ficha del amateur (el
+  acompañante Vos y el cuarto Vos), los LP cuentan desde el valor anterior aunque hayas cambiado de división. Al subir
+  de Oro II 27 LP a Oro I 15 LP, el número baja de 27 a 15.
+- **La validación completa no se corrió, a propósito.** El 2026-10-08 el usuario pidió no frenar en "los checks de 3
+  horas": la completa se corre cuando una fase toca el motor o el balance.
+  - La FASE V es pantalla, más un registro aditivo sin `rng` (GR-m), y `HUELLA_JUEGO` quedó idéntica.
+  - Los checks de banda del motor darían lo mismo que en el cierre de K (550 OK / 0 FAIL).
+  - La corre la próxima fase que toque el motor.
+
+**El juego del cierre se sirve al usuario (C2)** en http://localhost:8090, desde esa misma copia.
+
+**Lo que queda de la FASE V:**
+- **El merge a `fase-9r`.** El push espera un OK nuevo del usuario.
+- **V8:** calibrar con lo que diga el usuario en C2 (D98, la pausa del cierre de año; D99, el contraste residual; D100).
+- **Dos metas de pantalla que no se forzaron**, y por qué:
+  - el plan de serie a 390 muestra 26-30 números (meta ≤ 25), porque el % por mapa es el plan;
+  - el retiro de la seed 152 a 1440 muestra 46 (meta ≤ 45), por el tablero de la serie en el acompañante.
+
+### 2026-10-08 — FASE V, V4: el movimiento y el ritmo, en `v-integracion` (PLAN.md §V.7)
+
+**Lo que midió el worker antes de decidir** (100 carreras × 60 splits): la parada del motor de `edadCierre` no frena
+todos los años.
+- Con el bot criterio frena en el 91,6% de los cierres: todos los amateur y el 88,2% de los pro.
+- Con el bot malas frena en el 72,5%: todos los amateur y el 61,3% de los pro.
+
+Por eso, en los años sin esa parada, la tarjeta de cierre del último split pasa a ser **"Cierre de 2031"** (el número
+del año, el escalón y el Golden Road) y se sostiene 2,4 s.
+- **No suma clics:** Espacio la salta, y en INST y con movimiento reducido pasa sola.
+- **Hay una por año como máximo,** nunca junto a la parada del motor (T9).
+- `simulate.js` espeja `ESPERA_CIERRE_ANIO_MS`, con su check. Cuesta +2,4 s por carrera con el bot criterio y +4,2 s
+  con malas.
+
+**Qué se mueve** (`cad8449`; worker Sonnet xhigh, revisor Sonnet con navegador y dos rondas cortas de un Sonnet):
+- **La tarjeta de cierre** cuenta el nivel, o el rango y los LP en amateur.
+- **La franja** cuenta desde lo que ya mostraba, solo cuando el relato termina.
+- **Los efectos de un beat** cuentan desde 0.
+- **Cada página** abre con un cartel de una línea ("2031 · Temporada regular", "Arranca 2032 · Pretemporada"), que no
+  suma espera. En los años con parada del motor, la parada abre con "Cierre de 2031".
+- **Con movimiento reducido** todo aparece ya en su valor final.
+- **El número que cuenta** no se anuncia en la región viva: un lector de pantalla oye solo el valor final.
+- **D61:** `reemplazarEnElLugar` copia también `title`, `aria-*` y `style`.
+- **D97:** al retomar entre splits se ve la tarjeta del split anterior.
+- **En el celular,** el último beat ya no queda detrás de la barra de cuartos.
+
+**Lo que encontraron las revisiones:**
+- La frase del escalón no era gramatical con los nombres de los escalones ("Vas por Pasó por el circuito"). Ahora dice
+  "Tu escalón: «Pasó por el circuito» · Para llegar a «Un profesional más»: te falta…".
+- La tarjeta completa en la parada del motor mostraba un LP que los beats siguientes todavía movían. Ahora es el cartel
+  de una línea, sin número.
+- Un parámetro `numeroDe(s)` disparaba el check de plurales entre paréntesis. El worker había reportado `--rapido` en
+  verde y no lo estaba: lo encontró el supervisor corriéndolo.
+- El revisor cree que 2,4 s no alcanzan para leer la tarjeta del año y propone 3-3,5 s o sostenerla hasta Espacio. Va a
+  V8, con lo que diga el usuario (D98).
+
+**El techo de `dist/`** sube de 2600 a 2700 KB en su propio commit (`6a3ddb6`). La integración pesa 2621 KB.
+
+**Verificado por el supervisor sobre `6a3ddb6`:** `validate.js --rapido` 376 OK / 0 FAIL / 183 SKIP, y `--solo` de "V2 escena", "V5 carrera", "V3e", "V4", "K0" y "K1 versión" sin FAIL; `build.js` OK.
+
+### 2026-10-08 — FASE V, ola 4: los minijuegos, la franja y los cuartos, y la carrera dibujada con el Golden Road, en `v-integracion` (PLAN.md §V.7)
+
+**Las correcciones de la ola V3** (`e1faa47`, un Sonnet):
+- La jerarquía del mercado se lee: "Jerarquía en el equipo: 0 ▲ 21 al cerrar el primer split (Rookie)".
+- El pliegue de cada oferta dice lo que guarda ("más · arraigo y negociar").
+- La línea de "qué está en juego" no corta una comilla de cierre.
+- El nombre del equipo entra en el tablero de la serie.
+- La previa y el "Camino" solo recuerdan que los abriste dentro del mismo partido.
+- La regex del bot de `recorrido.mjs` sigue el texto nuevo, con las mismas elecciones en 4 mercados.
+
+**Tres workers en paralelo**, cada uno dueño de sus archivos y sin conflictos al mergear:
+- **V3d, los minijuegos, la prueba y la prensa** (`39b420f`).
+  - La parada tiene fases (`data-fase`: previa, juego, resultado).
+  - En la previa van la apuesta compacta con un solo "más" y la charla del coach en filas con tecla. 1-n eligen y **V**
+    lanza "¡Vamos!" (D94); durante el juego todas las teclas son del minijuego.
+  - El rótulo dice qué es cada minijuego (D93).
+  - Con el reloj corriendo se pliegan la consigna y la apuesta.
+  - En el mapa decisivo, el título, la primera opción y "¡Vamos!" ahora entran sin scrollear a 1440 y a 390.
+- **V3e, la franja y los cuartos** (`75ff6ff`).
+  - Una sola ficha.
+  - El acompañante Vos es compacto: en amateur, el rango y las barras; el plan amateur a 1440 bajó de 46 a 35-37
+    números.
+  - La final muestra los picos de la carrera (D90).
+  - La etiqueta de tier sale del contexto vivo (D91).
+  - `fichaPrevia` va por contenedor y los desplegables se recuerdan (D95).
+  - La Temporada muestra la tabla cerrada entre splits, y la Crónica está agrupada por año y split.
+  - Un check nuevo, "V3e (regla 15)".
+- **V5, la carrera dibujada y el Golden Road** (`69a8c62`).
+  - `src/ui/core/trayectoria.js` (puro) dice qué se dibuja, y el cuarto Carrera lo dibuja con `graficos/`: la cinta de
+    clubes, la curva de nivel, la nota de cada año, la vitrina, el archirrival y el escalón.
+  - El acompañante del cierre de año, el retiro y la vuelta pasó de 37 a 3 números.
+  - El Golden Road se sigue en la tarjeta de cierre ("Golden Road 2031: ✓ split 1 · ✓ split 2 · ◻ split 3 · ◻ liga ·
+    ◻ Mundial"), solo mientras está vivo.
+  - La medalla está en la tarjeta final ("Logro aparte · No suma puntos"), en el texto para compartir, en el PNG y en el
+    historial.
+  - Un check nuevo, "V5 carrera dibujada": el dibujo es el registro, y siete mutantes dan FAIL.
+
+**La revisión** (Sonnet con navegador, sobre `75ff6ff`) dio "OK con observaciones menores":
+- **El Golden Road respeta la regla 4.** El ✓ del split 2 aparece después del beat "terminó 1.º de 10", y "¡Lo
+  lograste!" aparece después del relato del Mundial.
+- **La medalla no toca el puntaje.**
+- **Las metas de §V.8 se cumplen en todos los tipos de parada, salvo dos que no se fuerzan:**
+  - El retiro de una seed llega a 46 números por el tablero de la serie.
+  - El plan de Fearless a 390 queda en 26-30 números por los % por mapa de cada opción, que hacen falta para decidir.
+- **Lo que encontró va a V4:**
+  - A 390 el último beat queda detrás de la barra de cuartos.
+  - El texto del escalón no tiene check (un mutante quedó verde).
+  - Queda código muerto: `renderFicha` en `render.js`.
+
+**Verificado por el supervisor sobre `75ff6ff`:**
+- `validate.js --rapido`: 373 OK / 0 FAIL.
+- `--solo` de "V2 escena", "V5 carrera", "V3e" y "K1 versión": OK (`HUELLA_JUEGO` sin cambio).
+- `build.js`: OK, con `dist/` en **2597 de 2600 KB**.
+
+**El juego servido al usuario** en el puerto 8090 pasó a `75ff6ff`.
+
+### 2026-10-08 — FASE V, ola V3: la parada genérica, el partido y el mercado, en `v-integracion` (PLAN.md §V.7)
+
+**Tres workers Sonnet en paralelo**, cada uno dueño de sus archivos (`c02a8c9`, merge de `v3a-decision`, `v3b-partido` y
+`v3c-mercado`; un conflicto en `acompanante.js`, resuelto por el supervisor):
+- **V3a, la parada genérica y la fila de opción.**
+  - El encabezado es la pestaña, el título y una línea de "qué está en juego"; el resto de la descripción va detrás de
+    "más". El plan amateur pasó de 6 líneas a 2 antes de la primera opción.
+  - Cada opción es una fila con su tecla, el label, la descripción en 2 líneas y los 3 efectos más grandes, más el riesgo
+    y la rareza.
+  - Un "más" por fila despliega lo plegado sin elegir la opción.
+- **V3b, el partido.**
+  - La decisión va primero. El marcador y la previa ocupan una línea cada uno, con su desplegable.
+  - A ≥ 1180 px, el tablero de la serie, el Swiss o la previa completa van al acompañante sin repetirse en el escenario.
+  - La pestaña del 2-2 del Swiss dice "Partido" (D92).
+  - `seriePrevia` pasó a un `WeakMap` (la parte de D95 que le tocaba).
+- **V3c, el mercado.**
+  - Las ofertas van en filas comparables, con los mismos campos en el mismo orden.
+  - "Firmar" es el botón primario. "Más" guarda el arraigo, el porqué y la negociación.
+  - Tu valor ocupa dos líneas.
+  - El mercado del mundo va al acompañante, o a un desplegable debajo de 1180 px.
+  - El sueldo ya no se anima desde 0, así que retomar dejó de comparar mal.
+
+**Medido por el revisor** (Sonnet con navegador, sobre `4bbc286`, seeds 25 y 39 a 1440×900 y 390×844):
+- **Sin errores:** 0 errores de consola, 0 scroll horizontal, 0 fallas de la regla 4, de retomar, del acompañante, de la
+  posición y de los cuartos. El teclado, todo en verde.
+- **Mercado a 1440:** pasó de 59 a 33 números visibles. La última oferta ahora entra (antes no entraba en ninguna seed).
+- **Plan de Fearless a 1440:** pasó de 71 a 37,5 números.
+- **Metas que no se cumplen**, y no se fuerzan:
+  - El plan amateur a 1440 queda en 46 números contra 45. Lo sube el acompañante Vos, que es de V3e.
+  - El plan de Fearless a 390 queda en 28 contra 25. Son los % por mapa de cada opción, que hacen falta para decidir.
+
+**Lo que encontró la revisión** (en curso, en `v3-fix`):
+- "Jerarquía: 0 ▲ 21 — Rookie" en el mercado no se entiende.
+- El pliegue de las ofertas se rotula solo "negociar".
+- La línea de "qué está en juego" puede cortar una comilla de cierre.
+- El nombre del equipo se trunca en el tablero de la serie.
+- La previa queda desplegada en los partidos siguientes.
+
+**El techo de `dist/`** subió de 2500 a 2600 KB en su propio commit (`4bbc286`, regla de proceso 2). La integración
+pesa 2517 KB; desde `fase-9r`, src/ui creció +90 KB en crudo con la pantalla nueva y src/core +11 con el Golden Road.
+
+**Verificado por el supervisor sobre `4bbc286`:**
+- `validate.js --rapido`: 372 OK / 0 FAIL / 181 SKIP.
+- `--solo="V2 escena"` y `--solo="K1 versión"`: OK.
+- `build.js`: OK, 2517 de 2600 KB.
+
+### 2026-10-08 — FASE V, V2-C: el layout nuevo, en `v-integracion` (PLAN.md §V.4, §V.7)
+
+**Qué cambió en pantalla** (`e5be735`; worker Opus xhigh, revisor Sonnet con navegador y una ronda de correcciones de
+un Sonnet):
+- La **franja** (`src/ui/franja.js`) reemplaza a la topbar: handle · rol, club, edad · año · ventana, el nivel con su
+  banda y su delta (en amateur, rango/LP), velocidad y sonido. En el celular son dos líneas.
+- El **escenario** es una columna de 720 px centrada que muestra una sola pieza. A 900-1179 px medía ~264 px y ahora
+  mide 720 (D88).
+- El **acompañante** (`src/ui/acompanante.js`) aparece desde 1180 px y lo decide `acompananteDe`. Debajo de 1180, el
+  chip "ver contexto" abre el cuarto equivalente.
+- Los **cuartos** (`<dialog id="cuarto">`): Vos, Temporada, Equipo, Mundo, Carrera (stub hasta V5) y Crónica, con
+  clic o con su letra. Con uno abierto, el relato se pausa; Esc lo cierra y devuelve el foco a la parada.
+- **La parada reemplaza al relato** (§V.5): durante una parada no se ve la página del split. Arriba queda
+  `#paradaAntes`, con el último beat contado y "ver la página (n)".
+- La Crónica abierta a mitad de relato suma los beats que la página ya contó, nunca uno por contar.
+- Se fueron los dos rieles, el ticker, `#summary`/`#metaPill`/`renderLowerThird` (con el "EN EL MAPA" de D93) y
+  `screens/carrera.js`.
+
+**Lo que encontró la revisión:**
+- La franja cortaba el handle y el club a 390 px.
+- El botón Cerrar tapaba la pestaña Crónica en el celular.
+- "Ver contexto" quedaba arriba del título.
+- Quedaba código muerto de la barra de abajo.
+- La regla 4 la confirmó el revisor con navegador: los cuartos, la franja y el acompañante no muestran nada que el
+  relato todavía no contó.
+
+**Una regresión que el recorrido no veía.** La ronda de correcciones dejó dos `}` sueltas en `shell.css`; el parser
+descartaba la regla de `.shell-cuerpo`, así que a 1440 el escenario quedaba pegado a la izquierda y el acompañante
+caía debajo. Ningún número lo marcaba, porque el recorrido medía qué mostraba el acompañante y no dónde. La vio el
+supervisor mirando una captura. Se arregló en `4cf6a78`, y `recorrido.mjs` ahora mide la posición del escenario y
+del acompañante: sobre el commit roto da rojo.
+
+**Verificado por el supervisor sobre `e5be735`:** `validate.js --rapido` 372 OK / 0 FAIL / 181 SKIP;
+`--solo="V2 escena"` y `--solo="K1 versión"` OK (`HUELLA_JUEGO` sin cambio); `build.js` OK, con `dist/` en
+2486 de 2500 KB. Queda poco margen: se re-mide después de V3 (D49).
+
+### 2026-10-08 — FASE V, olas 1 y 2: el andamio (V2-A), el Golden Road en el motor (GR-m) y el director de escena (V2-B), en `v-integracion` (PLAN.md §V.7)
+
+**Lo que decidió el usuario** (2026-10-07, textual en PLAN.md §V.1): *"Escenario + un panel"*, *"Una página por split"*,
+el escalón en el cierre de año y *"un logro difícil (porque hasta ahora en la vida real nadie lo consiguió) que sea el
+golden road"*, que es *"Todo el año"* y un *"Logro aparte"*. Con eso se re-escribió la FASE V (`2cd2192`).
+
+**V2-A, el andamio sin cambio visual** (`43265ab`, `f8258b8`, `bc4e6b4`; worker Sonnet, sin revisor):
+- `src/dev/recorrido.mjs`: el re-juego de K6 versionado, que mide por parada lo que pide §V.8.
+- El CSS partido en una hoja por familia (cierra D50). Las capturas antes y después salen idénticas byte a byte y quedan las mismas reglas
+  (sin cambio visual).
+- El flujo del minijuego sale de `app.js` a `src/ui/paradas/minijuego.js`, con los tres checks que leían `app.js`
+  como texto re-apuntados en el mismo commit. El supervisor leyó ese diff.
+- La línea de base (`1c1a6e0`) la midió el supervisor con `recorrido.mjs`: seeds 25/39/152 a 1440×900 y 390×844 sobre
+  la UI de hoy. Las metas de §V.8 se fijaron con ella.
+
+**GR-m, el Golden Road en el motor** (`b4c2add`; worker Sonnet xhigh + revisor Opus + correcciones):
+- `registro.porSplit[]`, escrito en `systems/rendimiento.js` sin `rng`.
+- `esGoldenRoad`/`goldenRoads` en `core/registro.js`, `seguimientoGoldenRoad` en `core/vistaDeCarrera.js` y
+  `escalonDeCarrera` en `core/puntaje.js` (con `nivelDeCarrera` usándola y la misma salida).
+- Guardado `VERSION` 15 con `migrarDe14`. `HUELLA_JUEGO` 79304237 'K6d' sin cambio.
+- El revisor encontró que el check comparaba la fila consigo misma y lo cambió para que lea `temporada.posicion`; un
+  mutante ahora lo pone en rojo.
+- **La frecuencia, medida por el supervisor** (`simulate.js 1500 60 <bot> --bloque=goldenRoad` sobre la rama de GR-m, `899efe7`):
+
+| Bot | Carreras con al menos un Golden Road | Años con Golden Road |
+|---|---|---|
+| criterio | 39 de 1500 (2,6%) | 44 |
+| equilibrado | 15 de 1500 (1,0%) | 15 |
+| malas | 4 de 1500 (0,3%) | 6 |
+
+  Raro pero posible, que es lo que se buscaba: el motor no se toca para moverlo (§V.6).
+
+**V2-B, el director de escena** (`7300f0d`; worker Opus xhigh + revisor Opus + correcciones de un Sonnet):
+- `.shell[data-pieza]` lo escribe solo `revelar` (`src/ui/escena.js`); las piezas salen de `src/ui/core/escena.js`,
+  que es puro. Reemplaza los toggles de `hidden` de `app.js`, `body[data-legado]` y dos `:has()`.
+- El store `vista` lo escribe solo el director al terminar los beats. Ficha, topbar, luz de estudio, riel y marcador de
+  serie se pintan desde ahí, y el resultado ya no se adelanta (D89).
+- La página por split, con su tarjeta de cierre (`components/cierre.js`), y el marcador de retomar `lolcs-vista`.
+- `src/ui/teclado.js`: Enter y Espacio en el inicio ya no borran la guardada (D86); en la final, Enter sobre "Copiar" y
+  Esc ya no disparan "Nueva carrera" (D87); en el mercado, 1-4 llevan el foco al "Firmar" de la oferta y Enter firma
+  (D46).
+- El check `V2 escena` (`checkLento`, 20 seeds × 60 splits): en cada pausa del motor, la pieza es la esperada para su
+  tipo, también después de `deserializar(serializar())`.
+
+**Lo que corrigió la revisión de V2-B:**
+- El check aceptaba cualquier pieza de parada. Con el mutante del revisor (el sistema antes que la presentación), el mapa
+  decisivo de la serie salía como "partido" y el minijuego no aparecía, y el check quedaba en verde. Ahora compara con
+  una tabla propia y ese mutante da FAIL.
+- 1-4 en el mercado **firmaban** la oferta con una tecla que no se veía y sin confirmar (el revisor lo reprodujo en el
+  navegador). Ahora la tecla enfoca, el número se ve y Enter firma.
+- "Split anterior" se decidía con la velocidad del momento de abrir la página siguiente. Ahora se decide con si la
+  tarjeta de cierre se llegó a ver.
+- Al retomar entre splits se perdía la tarjeta de cierre. Ahora se reabre, aunque todavía no se llega a ver (D97, para V4).
+
+**D96 no era del juego**: lo tiraba el bot de `recorrido.mjs`. El revisor lo verificó sin bot y quedó cerrada.
+
+**Verificado por el supervisor sobre `7300f0d`**: `validate.js --rapido` 372 OK / 0 FAIL / 181 SKIP (los lentos salteados), más `--solo="V2 escena"` OK, y
+`build.js` OK. La validación completa, `simulate.js 1000` y el determinismo se corren al cierre de la fase, sobre la
+rama entera.
+
 ### 2026-10-07 — Cierre de K6d y de FASE K: las cuatro metas re-basadas, K6 re-jugado y el merge a `fase-9r` (PLAN.md "K6d — el cierre", pasos 3-6)
 
 **Lo que decidió el usuario** (textual, PLAN.md §K6d):

@@ -2,7 +2,7 @@ import LIGAS from '../data/leagues.json' with { type: 'json' };
 import LEYENDAS from '../data/leyendas.json' with { type: 'json' };
 import { BALANCE } from '../data/balance.js';
 import { clamp } from './numeros.js';
-import { splitsJugadosEnTier, TIERS_DE_SPLIT, esBuenPapel } from './registro.js';
+import { splitsJugadosEnTier, TIERS_DE_SPLIT, esBuenPapel, conSplitPendienteAsentado } from './registro.js';
 import { desdePuntos, etiquetaDeRanked, servidorDeLaPartida } from './ranked.js';
 
 // El número de la carrera (FASE K, K1 — PLAN.md §K1, "K1 — decisiones de spec"
@@ -470,8 +470,13 @@ function requisitoDe(clave) {
 // anidados: un #3 del mundo sin títulos es "Figura mundial"). Un nivel con
 // `alternativa` también se gana si esa otra lista se cumple entera ("El GOAT":
 // 3 cierres como #1 del mundo, o 2 Mundiales). `siguiente` es el de arriba con lo
-// que faltó, como hecho: "Te faltó un título de liga de primera."
-export function nivelDeCarrera(hechos) {
+// que falta, como hecho.
+//
+// FASE V (GR-m): es UNA sola cuenta con dos voces. `enPasado` es el "Te faltó un título de liga de primera." de la tarjeta final
+// (`nivelDeCarrera`, que lo guarda como `requisito`) y `enPresente` el "Te falta un título de liga de primera." del cierre de año
+// (`escalonDeCarrera`): salen de las mismas piezas `REQUISITOS[x].falta`, así que la pantalla no puede prometer un escalón con otros
+// números que los de la tarjeta (regla 15). `siguiente` es `null` en el último nivel.
+function escalonDeHechos(hechos) {
   const niveles = P().niveles;
   const pendientesDe = (requisito) => Object.entries(requisito).filter(([clave, n]) => !requisitoDe(clave).cumple(hechos, n));
   const caminos = (nivel) => (nivel.alternativa ? [nivel.requisito, nivel.alternativa] : [nivel.requisito]);
@@ -486,11 +491,34 @@ export function nivelDeCarrera(hechos) {
     // Cada camino dice lo suyo; dos caminos se unen con ", o ".
     const textos = caminos(proximo).map((requisito) => pendientesDe(requisito).map(([clave, n]) => requisitoDe(clave).falta(hechos, n)));
     // El verbo concuerda con lo primero que se nombra: "Te faltó un título más y llegar al top 5", no "Te faltaron un título".
-    const verbo = textos[0][0].plural ? 'faltaron' : 'faltó';
+    const plural = textos[0][0].plural;
     const frase = textos.map((partes) => enumerar(partes.map((p) => p.texto))).join(', o ');
-    siguiente = { id: proximo.id, nombre: NOMBRE_DE_NIVEL[proximo.id], requisito: `Te ${verbo} ${frase}.` };
+    siguiente = {
+      id: proximo.id,
+      nombre: NOMBRE_DE_NIVEL[proximo.id],
+      enPresente: `Te ${plural ? 'faltan' : 'falta'} ${frase}.`,
+      enPasado: `Te ${plural ? 'faltaron' : 'faltó'} ${frase}.`
+    };
   }
-  return { id: niveles[indice].id, nombre: NOMBRE_DE_NIVEL[niveles[indice].id], siguiente };
+  return { actual: { id: niveles[indice].id, nombre: NOMBRE_DE_NIVEL[niveles[indice].id] }, siguiente };
+}
+
+// El nivel de la tarjeta final: `{ id, nombre, siguiente: { id, nombre, requisito } | null }`, con el requisito en pasado.
+export function nivelDeCarrera(hechos) {
+  const { actual, siguiente } = escalonDeHechos(hechos);
+  return {
+    id: actual.id,
+    nombre: actual.nombre,
+    siguiente: siguiente ? { id: siguiente.id, nombre: siguiente.nombre, requisito: siguiente.enPasado } : null
+  };
+}
+
+// FASE V (GR-m, PLAN.md §V.6): el escalón de la carrera EN VIVO, para el cierre de año y la pestaña Carrera:
+// `{ actual: { id, nombre }, siguiente: { id, nombre, enPresente, enPasado } | null }`. Los hechos se cuentan sobre el registro
+// asentado, igual que cuando `core/pipeline.js` compone la tarjeta (`conSplitPendienteAsentado`: el split jugado que espera su
+// fila cuenta). Puro, sin `rng`; no valida la carrera (eso es de `puntajeDeCarrera`, que sí tira).
+export function escalonDeCarrera(state) {
+  return escalonDeHechos(hechosDeCarrera(conSplitPendienteAsentado(state)));
 }
 
 // --- Potencial contra logro ---

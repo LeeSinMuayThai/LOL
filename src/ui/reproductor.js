@@ -4,7 +4,7 @@
 // un salto con ocho líneas de log ya escritas, en un juego cuyo compás es
 // "cada split trae 1 o 2 decisiones, nunca más" (`CONCEPTO` §2). Esto no
 // cambia qué calcula el motor — solo cuándo y cómo entra cada línea al DOM.
-import { agruparBeats, renderFeed } from './components/feed.js';
+import { agruparBeats, renderFeed, renderPagina } from './components/feed.js';
 import * as sonido from './sonido.js';
 
 const CLAVE_VELOCIDAD = 'lolcs-velocidad-reproductor';
@@ -12,6 +12,12 @@ const VELOCIDADES = ['x1', 'x2', 'instantaneo'];
 // `--dur-beat` en tokens.css es 700ms — "el pulso del reproductor de T3",
 // literal desde que se escribió T0. x2 es la mitad; instantáneo no espera.
 const ESPERA_MS = { x1: 700, x2: 350, instantaneo: 0 };
+// FASE V (V4): el momento del cierre de año. Si el split cerró un año y el motor NO frenó en el cierre (`edadCierre` frena en
+// ~92% de los años de `criterio` y en ~73% de los de `malas`: medido en 100 carreras × 60 splits), la tarjeta "Cierre de 2031"
+// se sostiene este tiempo ADEMÁS de la espera de su beat. Una por año como máximo, nunca junto a la parada del motor (T9). No
+// suma clics: Espacio la salta como a un beat, y en INST o con movimiento reducido pasa sola. Es un espejo para `simulate.js`
+// (`ESPERA_CIERRE_ANIO_MS`) y lo guarda el check "K0 espejos de la UI".
+const ESPERA_CIERRE_ANIO_MS = { x1: 2400, x2: 1200, instantaneo: 0 };
 // Compacto a propósito: comparte espacio en el topbar con el toggle de
 // sonido, que es un solo emoji. `title` (en index.html) lleva la palabra
 // completa para quien lo lea con lupa.
@@ -71,11 +77,46 @@ function dormir(ms) {
   });
 }
 
+// FASE V (V2-C; PLAN.md §V.4): con un cuarto abierto el relato se pausa y al cerrarlo sigue. La espera de cada beat
+// termina, pero el beat siguiente (y lo que venga después del último: la parada, la `vista`) no entra hasta `reanudar`.
+// Sin espera entre beats (INST o movimiento reducido) la tanda entera es sincrónica: no hay nada que pausar.
+let pausado = false;
+let alReanudar = [];
+
+export function pausar() {
+  pausado = true;
+}
+
+export function reanudar() {
+  pausado = false;
+  const pendientes = alReanudar;
+  alReanudar = [];
+  for (const seguir of pendientes) seguir();
+}
+
+function esperarLaPausa() {
+  return new Promise((resolve) => {
+    alReanudar.push(resolve);
+  });
+}
+
 // La misma preferencia que ya apaga las animaciones en CSS (base.css):
 // acá se respeta también para el TIMING de JS — sin esto, el CSS no
 // animaría nada pero el reproductor igual pausaría 700ms entre líneas.
 function motionReducido() {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+}
+
+// FASE V (V2-B): sin espera entre beats (INST o movimiento reducido), la tarjeta de cierre de un split no llega a verse:
+// el controlador lo pregunta al abrir la página siguiente, que entonces arranca con la línea "Split anterior: …".
+export function sinEspera() {
+  return velocidad === 'instantaneo' || motionReducido();
+}
+
+// En la página (cronológica, el beat nuevo abajo), el último renglón se trae a la vista: sin esto, un split largo se
+// contaba por debajo del pliegue.
+function seguirAlUltimo(contenedor) {
+  contenedor.lastElementChild?.scrollIntoView?.({ block: 'nearest' });
 }
 
 // Revela `nuevasEntradas` en `logList`, una por una — por `renderFeed`
@@ -99,22 +140,58 @@ function motionReducido() {
 // — el resultado vive en la prosa del `message` — así que se lee la
 // diferencia en los contadores que el registro ya lleva, en vez de
 // adivinar por texto.
-export async function reproducirBeats(logList, nuevasEntradas, { registroAntes, registroDespues, bisagra, state, offset = 0 } = {}) {
-  if (!logList || nuevasEntradas.length === 0) {
+//
+// `pagina` (FASE V, V2-B; opcional): `{ desde, anterior, cierre, cartel }`. Con ella, cada paso pinta la página del split
+// (`renderPagina`: cronológica, desde `inicioDePagina`) en vez de la ventana de `renderFeed`, y la tarjeta de `cierre`
+// (si el split cerró) entra JUNTO con el último beat: usa su espera, no suma una propia. Sin `pagina`, el camino de
+// siempre (`renderFeed`), el que miden los checks de H8.
+export async function reproducirBeats(logList, nuevasEntradas, { registroAntes, registroDespues, bisagra, state, offset = 0, pagina = null } = {}) {
+  if (!logList) {
+    return;
+  }
+  if (nuevasEntradas.length === 0) {
+    if (pagina?.cierre) {
+      // D97: una página con tarjeta de cierre y sin beats (al retomar entre splits se reabre la del split anterior) tiene su
+      // espera, la del último beat: si no, el primer beat de la página siguiente la reemplaza antes de que se pinte.
+      const quieto = sinEspera();
+      renderPagina(logList, state, { ...pagina, animar: !quieto });
+      seguirAlUltimo(logList);
+      const pausa = quieto ? 0 : ESPERA_MS[velocidad] + (pagina.cierre.anio ? ESPERA_CIERRE_ANIO_MS[velocidad] : 0);
+      if (pausa > 0) {
+        await dormir(pausa);
+        if (pausado) {
+          await esperarLaPausa();
+        }
+        skipActual = null;
+      }
+    }
     return;
   }
 
-  const instantaneo = velocidad === 'instantaneo' || motionReducido();
+  const instantaneo = sinEspera();
   const espera = instantaneo ? 0 : ESPERA_MS[velocidad];
+  const esperaDelAnio = instantaneo ? 0 : ESPERA_CIERRE_ANIO_MS[velocidad];
 
   const beats = agruparBeats(nuevasEntradas, offset);
-  for (const beat of beats) {
-    renderFeed(logList, state, { hasta: beat.clave + 1 });
+  for (const [i, beat] of beats.entries()) {
+    const ultimo = i === beats.length - 1;
+    if (pagina) {
+      renderPagina(logList, state, { ...pagina, hasta: beat.clave + 1, cierre: ultimo ? pagina.cierre : null, animar: !instantaneo });
+      if (espera > 0 || ultimo) {
+        seguirAlUltimo(logList);
+      }
+    } else {
+      renderFeed(logList, state, { hasta: beat.clave + 1 });
+    }
     if (beat.narrativa && !beat.narrativa.tecnico) {
       sonido.tick();
     }
     if (espera > 0) {
-      await dormir(espera);
+      // El último beat de un split que cerró un año sin parada del motor sostiene también el momento del año.
+      await dormir(espera + (ultimo && pagina?.cierre?.anio ? esperaDelAnio : 0));
+      if (pausado) {
+        await esperarLaPausa();
+      }
     }
   }
 

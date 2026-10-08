@@ -5,7 +5,7 @@ import { registrarEnHistorial } from '../core/contexto.js';
 import { ligaOZonaDeCarrera } from '../core/competicion.js';
 import { esCierreDeTemporada } from '../core/serie.js';
 import { fuerzaDelEquipo, nivelDeCompaneros } from '../core/fuerza.js';
-import { registrarTitulo, registrarPico, registrarArraigoEnFila } from '../core/registro.js';
+import { registrarTitulo, registrarPico, registrarArraigoEnFila, registrarSplitEnTabla } from '../core/registro.js';
 import { nivelDelJugador } from '../core/ficha.js';
 import { hypeHaciaSuBase } from '../core/barras.js';
 import { BALANCE } from '../data/balance.js';
@@ -253,5 +253,21 @@ export function aplicar(state, rng) {
   const liga = ligaOZonaDeCarrera(state);
   const resultado = { posicion: t.posicion ?? 1, equipos: t.tabla.length || (liga?.orgs.length ?? 1), liga };
 
-  return consecuencias(state, t.rendimiento, resultado, esCierreDeTemporada(state.player.splitCount), rng);
+  // FASE V (GR-m, PLAN.md §V.6): el split queda en `registro.porSplit` antes de las consecuencias (sin `rng`: ninguna tirada de
+  // acá se agrega ni se mueve). Con el mismo guard de arriba —el de `systems/temporada.js`—, un split sin club no deja fila. La
+  // posición va CRUDA (`t.posicion`, sin el `?? 1` del resultado): con `null` no se escribe, un caso raro no fabrica un 1.º. El
+  // tier es el de la liga donde se jugó (D76), no el de la fila de `porOrg`; el nivel, el con que se jugó la temporada.
+  const registro = registrarSplitEnTabla(state.career.registro, {
+    anio: state.calendario.anio,
+    split: state.player.splitCount % BALANCE.edad.splitsPorEdad,
+    org: state.career.currentOrg,
+    liga: liga.tier === 3 ? null : liga.id,
+    tier: liga.tier,
+    posicion: t.posicion,
+    equipos: resultado.equipos,
+    nivel: Math.round(t.nivelJugador)
+  });
+  const conFila = { ...state, career: { ...state.career, registro } };
+
+  return consecuencias(conFila, t.rendimiento, resultado, esCierreDeTemporada(state.player.splitCount), rng);
 }
