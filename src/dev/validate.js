@@ -12,7 +12,7 @@ import {
   verificarSinLogicaEnIndexHtml,
   verificarSinColorLiteralEnJs, luminanciaRelativa, contrasteRatio, hexDeToken
 } from './guards.js';
-import { reconciliar } from '../ui/core/reconciliar.js';
+import { reconciliar, reemplazarEnElLugar } from '../ui/core/reconciliar.js';
 import { crearDelta } from '../ui/core/delta.js';
 import { agruparBeats, renderFeed, LIMITE_FEED } from '../ui/components/feed.js';
 import * as reproductorModulo from '../ui/reproductor.js';
@@ -8263,6 +8263,49 @@ check('crearDelta mide [antes, despues] contra la lectura previa (fase V, V0)', 
   const m4 = conObjeto.medir({ player: { nivel: 13 }, career: { jerarquia: 50 } });
   if (m4.nivel?.[0] !== 10 || m4.nivel?.[1] !== 13 || m4.jerarquia?.[1] !== 50) {
     throw new Error(`un objeto { clave: path | función } debería medirse con su clave: dio ${JSON.stringify(m4)}`);
+  }
+});
+
+// D61 (FASE V, V4): `reemplazarEnElLugar` injerta el nodo fresco sobre el cacheado; hasta V4 solo copiaba `className` y `dataset`, así que un
+// `title`, un `aria-*` o un `style` nuevos (o que el fresco ya no trae) se quedaban con el valor viejo.
+check('reconciliar: reemplazarEnElLugar copia title, aria-* y style además de class y dataset, y saca los que el nodo fresco ya no trae (D61, fase V, V4)', () => {
+  class ElementoFalso {
+    constructor(atributos = {}, hijos = []) {
+      this.atributos = new Map(Object.entries(atributos));
+      this.className = '';
+      this.dataset = {};
+      this.childNodes = hijos;
+    }
+    getAttributeNames() { return [...this.atributos.keys()]; }
+    getAttribute(nombre) { return this.atributos.get(nombre) ?? null; }
+    hasAttribute(nombre) { return this.atributos.has(nombre); }
+    setAttribute(nombre, valor) { this.atributos.set(nombre, String(valor)); }
+    removeAttribute(nombre) { this.atributos.delete(nombre); }
+    replaceChildren(...hijos) { this.childNodes = hijos; }
+  }
+  const nodo = new ElementoFalso({ title: 'viejo', 'aria-label': 'viejo', 'aria-hidden': 'true', style: 'width: 10%', role: 'row', 'data-x': 'no se toca acá' }, ['hijo viejo']);
+  nodo.className = 'a';
+  nodo.dataset = { x: '1', y: '2' };
+  const fresco = new ElementoFalso({ title: 'nuevo', 'aria-label': 'nuevo', 'aria-expanded': 'true', style: 'width: 40%', role: 'cell' }, ['hijo nuevo']);
+  fresco.className = 'b';
+  fresco.dataset = { x: '9' };
+  const devuelto = reemplazarEnElLugar(nodo, fresco);
+  const dicho = Object.fromEntries(nodo.atributos);
+  const problemas = [];
+  if (devuelto !== nodo) problemas.push('tiene que devolver el nodo cacheado (la identidad se preserva)');
+  if (dicho.title !== 'nuevo') problemas.push(`title quedó "${dicho.title}"`);
+  if (dicho['aria-label'] !== 'nuevo' || dicho['aria-expanded'] !== 'true') problemas.push(`aria-label / aria-expanded quedaron "${dicho['aria-label']}" / "${dicho['aria-expanded']}"`);
+  if ('aria-hidden' in dicho) problemas.push('un aria-* que el fresco ya no trae se tiene que sacar');
+  if (dicho.style !== 'width: 40%') problemas.push(`style quedó "${dicho.style}"`);
+  if (dicho.role !== 'row') problemas.push('lo que no es title, aria-* ni style no se copia (role)');
+  if (nodo.className !== 'b' || JSON.stringify(nodo.dataset) !== JSON.stringify({ x: '9' })) problemas.push(`class / dataset: ${nodo.className} ${JSON.stringify(nodo.dataset)}`);
+  if (nodo.childNodes[0] !== 'hijo nuevo') problemas.push('los hijos se reemplazan');
+  // Sin atributos que copiar el nodo cacheado pierde su title y su style.
+  const limpio = new ElementoFalso({ title: 't', style: 's' });
+  reemplazarEnElLugar(limpio, new ElementoFalso({}));
+  if (limpio.atributos.size !== 0) problemas.push('un title / style que el fresco ya no trae se tiene que sacar');
+  if (problemas.length > 0) {
+    throw new Error(problemas.join(' | '));
   }
 });
 
@@ -22273,7 +22316,8 @@ check('GR-m Golden Road: la medalla es lo que cuenta el motor (esGoldenRoad arma
 // ============================================================================
 const {
   trayectoriaDeCarrera: trayectoriaDeCarreraV5, trayectoriaDeRegistro: trayectoriaDeRegistroV5, itemsDeGoldenRoad: itemsDeGoldenRoadV5,
-  lineaDeGoldenRoad: lineaDeGoldenRoadV5, medallaDeGoldenRoad: medallaDeGoldenRoadV5, goldenRoadsDeEstado: goldenRoadsDeEstadoV5
+  lineaDeGoldenRoad: lineaDeGoldenRoadV5, medallaDeGoldenRoad: medallaDeGoldenRoadV5, goldenRoadsDeEstado: goldenRoadsDeEstadoV5,
+  textoDeEscalon: textoDeEscalonV5
 } = await import('../ui/core/trayectoria.js');
 const { mundialesGanados: mundialesGanadosV5 } = await import('../core/registro.js');
 // Las tres primeras tienen un Golden Road con el bot `criterio` (la 133, dos años seguidos): sin ellas, 20 carreras pueden no
@@ -22281,6 +22325,27 @@ const { mundialesGanados: mundialesGanadosV5 } = await import('../core/registro.
 const SEEDS_DIBUJO_V5 = [114, 133, 152, 61, 85, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 const SPLITS_DIBUJO_V5 = 60;
 const EPSILON_X_V5 = 1e-9;
+
+// FASE V (V4, pedido por la revisión de la ola 4): la frase del escalón ("Vas por X · para Y te falta …") es una promesa que el jugador lee en la
+// pestaña Carrera, en el resumen del acompañante y en la tarjeta "Cierre de …". Se compara con la cuenta del motor (`escalonDeCarrera`, la misma
+// de la tarjeta final) armando lo que tiene que decir a mano, sin pasar por `textoDeEscalon`: un "Vas por <el escalón que sigue>" no pasa.
+function diferenciasDelEscalonV5(escalonDelMotor, frase) {
+  if (escalonDelMotor === null) {
+    return frase === null ? [] : [`la frase ${JSON.stringify(frase)} existe y el motor no tiene escalón`];
+  }
+  if (frase === null) {
+    return ['el motor tiene escalón y la frase es null'];
+  }
+  const { actual, siguiente } = escalonDelMotor;
+  const vas = `Vas por ${actual.nombre}`;
+  const falta = siguiente === null
+    ? 'Es el techo de la escala: no hay escalón más arriba.'
+    : `para ${siguiente.nombre} ${siguiente.enPresente.charAt(0).toLowerCase()}${siguiente.enPresente.slice(1)}`;
+  const dif = [];
+  if (frase.vas !== vas) dif.push(`dice "${frase.vas}" y el escalón actual es "${actual.nombre}"`);
+  if (frase.falta !== falta) dif.push(`dice "${frase.falta}" y lo que falta para ${siguiente?.nombre ?? 'nada (es el techo)'} es "${falta}"`);
+  return dif;
+}
 
 // Lo que el dibujo dice y el registro no (o al revés). Vacío = el dibujo es el registro. No usa las funciones que prueba para
 // decidir qué es un título o una fila: lee el registro como viene.
@@ -22344,7 +22409,7 @@ function diferenciasDelDibujoV5(tr, registro, anioBase) {
   return dif;
 }
 
-checkLento('V5 carrera dibujada: lo que dibuja la pestaña Carrera es el registro (un punto por fila de porSplit, un tramo por fila de porOrg, los títulos, los Mundiales ganados y los Golden Roads del motor), la línea del Golden Road de la tarjeta de cierre es el seguimiento del motor y la medalla sale de goldenRoads (criterio, 20 carreras × 60)', () => {
+checkLento('V5 carrera dibujada: lo que dibuja la pestaña Carrera es el registro (un punto por fila de porSplit, un tramo por fila de porOrg, los títulos, los Mundiales ganados y los Golden Roads del motor), la línea del Golden Road de la tarjeta de cierre es el seguimiento del motor y la medalla sale de goldenRoads, y la frase del escalón ("Vas por X · para Y te falta …") es la cuenta del motor (criterio, 20 carreras × 60)', () => {
   const anioBase = BALANCE.calendario.anioBase;
   const problemas = [];
   const anotar = (cuando, dif) => dif.forEach((texto) => problemas.push(`${cuando}: ${texto}`));
@@ -22356,6 +22421,9 @@ checkLento('V5 carrera dibujada: lo que dibuja la pestaña Carrera es el registr
   let conGoldenRoad = 0;
   let finales = 0;
   let medallas = 0;
+  let escalonesDichos = 0;
+  let escalonesConSiguiente = 0;
+  let muestraEscalon = null; // un escalón con siguiente: de ahí salen los mutantes de la frase
   let muestra = null; // una carrera con curva, títulos de tier 2 o 3, un Mundial y un Golden Road: los dibujos corrompidos salen de ella
 
   // (a) Registros armados: el Golden Road del registro de GR-m y quitándole de a un hecho (ninguna variante lo dibuja).
@@ -22396,6 +22464,19 @@ checkLento('V5 carrera dibujada: lo que dibuja la pestaña Carrera es el registr
       const tr = trayectoriaDeCarreraV5(state);
       evaluaciones += 1;
       anotar(cuando, diferenciasDelDibujoV5(tr, registro, anioBase));
+      // El escalón: el que dibuja la pestaña (`tr.escalon`) y la frase que lee el jugador son los del motor, solo en el profesional con la carrera en marcha.
+      const escalonDelMotor = state.phase === 'profesional' && !state.terminado ? escalonDeCarreraGRM(state) : null;
+      if (JSON.stringify(tr.escalon) !== JSON.stringify(escalonDelMotor)) {
+        problemas.push(`${cuando}: la pestaña tiene el escalón ${JSON.stringify(tr.escalon)} y el motor ${JSON.stringify(escalonDelMotor)}`);
+      }
+      anotar(cuando, diferenciasDelEscalonV5(escalonDelMotor, textoDeEscalonV5(tr.escalon)));
+      if (escalonDelMotor !== null) {
+        escalonesDichos += 1;
+        escalonesConSiguiente += escalonDelMotor.siguiente === null ? 0 : 1;
+        if (escalonDelMotor.siguiente !== null && muestraEscalon === null) {
+          muestraEscalon = escalonDelMotor;
+        }
+      }
       if (state.terminado) {
         // La medalla de la tarjeta final, el texto para compartir y la entrada del historial salen del registro.
         finales += 1;
@@ -22486,13 +22567,45 @@ checkLento('V5 carrera dibujada: lo que dibuja la pestaña Carrera es el registr
     }
   }
 
+  // (c2) Lo mismo para la frase del escalón: un mutante por cada cosa que podría decir mal.
+  let mutantesDeEscalon = 0;
+  if (muestraEscalon === null) {
+    problemas.push('ninguna carrera del lote tuvo un escalón con otro más arriba: el comparador de la frase no se pudo probar');
+  } else {
+    const { actual, siguiente } = muestraEscalon;
+    const buena = textoDeEscalonV5(muestraEscalon);
+    const casos = {
+      'Vas por <el escalón que sigue>': { ...buena, vas: `Vas por ${siguiente.nombre}` },
+      'Vas por <otro nombre>': { ...buena, vas: `Vas por ${actual.nombre}!` },
+      'para <el escalón actual> te falta …': { ...buena, falta: buena.falta.replace(siguiente.nombre, actual.nombre) },
+      'lo que falta es lo de otro escalón': { ...buena, falta: `para ${siguiente.nombre} te falta cualquier cosa` },
+      'decir que es el techo con un escalón más arriba': { ...buena, falta: 'Es el techo de la escala: no hay escalón más arriba.' },
+      'sin frase aunque hay escalón': null
+    };
+    for (const [nombre, frase] of Object.entries(casos)) {
+      mutantesDeEscalon += 1;
+      if (diferenciasDelEscalonV5(muestraEscalon, frase).length === 0) {
+        problemas.push(`el mutante de la frase "${nombre}" no da diferencias: el comparador no muerde`);
+      }
+    }
+    if (diferenciasDelEscalonV5(muestraEscalon, buena).length > 0) {
+      problemas.push('la frase sin mutar da diferencias contra su propio escalón');
+    }
+    if (diferenciasDelEscalonV5(muestraEscalon, null).length === 0 || diferenciasDelEscalonV5(null, buena).length === 0) {
+      problemas.push('una frase sin escalón (o un escalón sin frase) no da diferencias');
+    }
+  }
+
   if (problemas.length > 0) {
     throw new Error(`${problemas.length} problemas: ${problemas.slice(0, 5).join(' | ')}`);
+  }
+  if (escalonesDichos < 300 || escalonesConSiguiente < 100) {
+    throw new Error(`check vacío: ${escalonesDichos} frases de escalón contra el motor (300), ${escalonesConSiguiente} con un escalón más arriba (100)`);
   }
   if (evaluaciones < 600 || conMundial < 3 || conTituloMenor < 5 || conGoldenRoad < 3 || medallas < 3 || cierresConLinea < 10 || cierresSinLinea < 100 || finales < 10) {
     throw new Error(`check vacío: ${evaluaciones} dibujos evaluados (600), ${conMundial} carreras con Mundial (3), ${conTituloMenor} con un título de tier 2 o 3 (5), ${conGoldenRoad} con Golden Road (3), ${medallas} medallas (3), ${cierresConLinea} cierres con la línea del Golden Road (10), ${cierresSinLinea} sin (100), ${finales} carreras terminadas (10)`);
   }
-  console.log(`      ${evaluaciones} dibujos contra el registro (${SEEDS_DIBUJO_V5.length} carreras × hasta ${SPLITS_DIBUJO_V5} splits); ${conMundial} con Mundial, ${conTituloMenor} con título de tier 2 o 3, ${conGoldenRoad} con Golden Road; ${cierresConLinea} cierres con la línea del Golden Road y ${cierresSinLinea} sin; ${comparadorMuerde} de ${mutantes} dibujos corrompidos dan diferencias`);
+  console.log(`      ${evaluaciones} dibujos contra el registro (${SEEDS_DIBUJO_V5.length} carreras × hasta ${SPLITS_DIBUJO_V5} splits); ${conMundial} con Mundial, ${conTituloMenor} con título de tier 2 o 3, ${conGoldenRoad} con Golden Road; ${cierresConLinea} cierres con la línea del Golden Road y ${cierresSinLinea} sin; ${comparadorMuerde} de ${mutantes} dibujos corrompidos dan diferencias; ${escalonesDichos} frases de escalón contra el motor (${escalonesConSiguiente} con otro más arriba), ${mutantesDeEscalon} frases corrompidas dan diferencias`);
 });
 
 // K6d (integración; el FAIL de K5c-R en la seed 9 con P7a prendida): volver del retiro corta la racha en rojo (`flags.splitsMentalBajo`,

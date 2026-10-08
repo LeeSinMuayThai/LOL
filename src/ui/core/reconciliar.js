@@ -113,6 +113,9 @@ export function reconciliar(contenedor, items, claveDe, crear, actualizar, { fli
 // lo injertan sobre el nodo cacheado: clase, dataset e hijos se reemplazan,
 // la identidad del nodo (y con ella cualquier listener de un hijo, que viaja
 // con el propio nodo movido) se preserva.
+//
+// FASE V (V4, D61): además de la clase y el dataset se copian `title`, `style` y los `aria-*` (lo que el nodo fresco no trae,
+// se saca del cacheado): un renglón que cambia de tooltip, de ancho inline o de estado accesible ya no queda con el viejo.
 // olvidarContenedor(contenedor): borra el mapa de claves de un contenedor
 // (fase J-higiene, H8). `reconciliar` nunca mira `contenedor.children` — su
 // única fuente de verdad es `mapaPorContenedor`, así que un `innerHTML = ''`
@@ -124,8 +127,19 @@ export function olvidarContenedor(contenedor) {
   mapaPorContenedor.delete(contenedor);
 }
 
+// Los atributos que `reemplazarEnElLugar` espeja además de `class` y `data-*` (que van por `className` y `dataset`).
+export function esAtributoEspejado(nombre) {
+  return nombre === 'title' || nombre === 'style' || nombre.startsWith('aria-');
+}
+
 export function reemplazarEnElLugar(nodo, nodoFresco) {
   nodo.className = nodoFresco.className;
+  for (const nombre of nodo.getAttributeNames()) {
+    if (esAtributoEspejado(nombre) && !nodoFresco.hasAttribute(nombre)) nodo.removeAttribute(nombre);
+  }
+  for (const nombre of nodoFresco.getAttributeNames()) {
+    if (esAtributoEspejado(nombre)) nodo.setAttribute(nombre, nodoFresco.getAttribute(nombre));
+  }
   for (const clave of Object.keys(nodo.dataset)) delete nodo.dataset[clave];
   for (const [clave, valor] of Object.entries(nodoFresco.dataset)) nodo.dataset[clave] = valor;
   nodo.replaceChildren(...nodoFresco.childNodes);
