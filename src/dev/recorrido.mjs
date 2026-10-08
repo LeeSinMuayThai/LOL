@@ -15,6 +15,13 @@
 //   separado, si el titulo y la opcion 1 se ven enteros, (c) el scroll horizontal, (d) los errores de consola y pageerror.
 //   En esa misma parada prueba "retomar": recarga, toca Continuar y verifica que vuelve la misma parada. Escribe
 //   `recorrido.json` en --salida: una fila por parada medida y un resumen por tipo.
+//   Desde V2-C, ademas (si la UI tiene franja, acompañante y cuartos): (e) la franja y el acompañante no cambian durante el
+//   relato (la regla 4, que en V2-B medía topbar y ficha); (f) en CADA parada, el tipo del acompañante (`data-acompanante`,
+//   y si se ve: desde 1180 px el aside, debajo el chip "ver contexto") coincide con `acompananteDe` sobre la carrera
+//   guardada; (g) en la primera parada de cada tipo, los 6 cuartos abren con clic y con su letra, Esc los cierra, el foco
+//   vuelve a la parada y la parada es la misma; (h) las letras no abren nada en el inicio ni en el minijuego; (i) con un
+//   cuarto abierto el relato se pausa (no entra ningun beat) y al cerrarlo sigue.
+//   §V.8 lo corre con las seeds 25, 39 y 152 a 1440x900, 1024x768 (desde V2-C) y 390x844.
 // --modo capturas: velocidad INST + reduced-motion + fuentes cargadas, y capturas fijas (inicio con el draft completo, la
 //   primera decision generica, el primer mercado, la primera serie, el primer minijuego antes de "¡Vamos!" y con el
 //   widget, y la tarjeta final si llega). Misma seed y mismo ancho => mismas capturas, para comparar byte a byte.
@@ -464,7 +471,7 @@ async function retomar(pieza) {
 }
 
 // ---------- V2-B: el teclado y la regla 4 ----------
-const teclado = { continuarEnter: null, mercado1: null, copiarEnterFinal: null, escFinal: null };
+const teclado = { continuarEnter: null, mercado1: null, copiarEnterFinal: null, escFinal: null, letrasInicio: null, letrasMinijuego: null };
 // "1" en el mercado (V2-B): lleva el FOCO al "Firmar" de la oferta 1 y NO firma; Enter sobre ese boton si. Un listener de
 // captura en `window` se queda con el primer clic (y lo frena antes de que llegue al boton), para ver si la tecla hizo clic
 // y a QUE: el de "1" tiene que ser ninguno, y el de Enter el "Firmar" de la oferta 1, sin cambiar la carrera.
@@ -547,12 +554,144 @@ async function clicConRegla4(clic) {
     window.__regla4 = r;
   });
   await clic();
+  // V2-C (i): en la primera, un cuarto abierto a mitad del relato lo pausa.
+  if (regla4.length === 0 && (await hayShellV2C())) await probarPausa();
   await page.waitForFunction(() => { const p = document.querySelector('.shell')?.dataset.pieza; return (p && p !== 'relato') || window.__regla4.cerrada; }, null, { timeout: 120000, polling: 100 }).catch(() => {});
   const r = await page.evaluate(() => { clearInterval(window.__regla4.iv); const { antes, muestras } = window.__regla4; return { antes, muestras }; });
   const distintas = r.muestras.filter((m) => m !== r.antes);
   regla4.push({ muestras: r.muestras.length, distintas: distintas.length, ejemplo: distintas[0]?.slice(0, 240) ?? null });
   L(`## REGLA4: ${r.muestras.length} muestras durante el relato, ${distintas.length} distintas de antes del clic`);
   await velocidadInstantanea();
+}
+
+// ---------- V2-C: la franja, el acompañante y los cuartos ----------
+// ¿La UI es de V2-C en adelante? (sobre una UI anterior estas pruebas no aplican: la linea de base no las tiene).
+const hayShellV2C = () => page.evaluate(() => !!document.querySelector('#cuarto') && !!document.querySelector('#acompanante'));
+const LETRAS_DE_CUARTOS = { vos: 'v', temporada: 't', equipo: 'e', mundo: 'm', carrera: 'c', cronica: 'r' };
+// Las letras que se prueban en el minijuego: las de los cuartos que NO son teclas de algun minijuego (Q/W/E/R, A/D, A/S).
+const LETRAS_EN_EL_MINIJUEGO = ['v', 't', 'm', 'c'];
+const cuartoAbierto = () => page.evaluate(() => document.querySelector('#cuarto')?.open ?? false);
+
+// (f) En cada parada: el acompañante es el de `acompananteDe` sobre la carrera guardada (en una parada, el estado de la
+// parada: es lo mismo que la `vista`), y se ve donde tiene que verse.
+const acompanantes = { paradas: 0, fallas: [], porTipo: {} };
+async function probarAcompanante() {
+  const r = await page.evaluate(async () => {
+    const aside = document.querySelector('#acompanante');
+    if (!aside) return null;
+    const [{ acompananteDe }, { cargarCarreraGuardada }] = await Promise.all([
+      import('/src/ui/core/escena.js'), import('/src/ui/almacenamiento.js')
+    ]);
+    const pieza = document.querySelector('.shell').dataset.pieza;
+    const esperado = acompananteDe(cargarCarreraGuardada()?.state ?? null, pieza);
+    const vis = (e) => !!e && e.checkVisibility({ checkVisibilityCSS: true });
+    const ancho = window.matchMedia('(min-width: 1180px)').matches;
+    const chip = document.querySelector('#verContexto');
+    const tipo = aside.dataset.acompanante || null;
+    const asideVisible = vis(aside);
+    const chipVisible = vis(chip);
+    const chipEsperado = !ancho && Boolean(esperado.cuarto) && ['decision', 'partido', 'mercado'].includes(pieza);
+    const ok = tipo === esperado.tipo
+      && asideVisible === (ancho && Boolean(esperado.tipo))
+      && (!asideVisible || aside.children.length > 0)
+      && chipVisible === chipEsperado
+      && (!chipVisible || chip.dataset.cuarto === esperado.cuarto);
+    return { ok, pieza, tipo, esperado, asideVisible, chipVisible };
+  });
+  if (!r) return;
+  acompanantes.paradas++;
+  const clave = r.tipo ?? 'ninguno';
+  acompanantes.porTipo[clave] = (acompanantes.porTipo[clave] ?? 0) + 1;
+  if (!r.ok) { acompanantes.fallas.push(r); L(`!! ACOMPANANTE: ${JSON.stringify(r)}`); }
+}
+
+// (g) Los 6 cuartos con clic y con su letra; Esc cierra, el foco vuelve a la parada y la parada es la misma.
+const cuartos = [];
+async function probarCuartos(tipo, pieza) {
+  if (!(await hayShellV2C())) return;
+  await page.waitForTimeout(ESPERA_COUNTUP_MS);
+  const antes = await firmaDeParada(pieza);
+  const fallas = [];
+  const leer = () => page.evaluate(() => {
+    const d = document.querySelector('#cuarto');
+    const a = document.activeElement;
+    return {
+      abierto: d.open,
+      cuarto: d.dataset.cuarto ?? null,
+      pestana: d.querySelector('[role="tab"][aria-selected="true"]')?.dataset.cuarto ?? null,
+      contenido: document.querySelector('#cuartoCuerpo').children.length,
+      focoEnLaParada: !!a?.closest?.('#escenario') && a.checkVisibility({ checkVisibilityCSS: true }),
+      pieza: document.querySelector('.shell').dataset.pieza
+    };
+  });
+  for (const [id, letra] of Object.entries(LETRAS_DE_CUARTOS)) {
+    for (const modo of ['clic', 'letra']) {
+      if (modo === 'clic') await page.click(`#cuartosBarra [data-cuarto="${id}"]`);
+      else await page.keyboard.press(letra);
+      await page.waitForTimeout(60);
+      const abierto = await leer();
+      if (!abierto.abierto || abierto.cuarto !== id || abierto.pestana !== id || abierto.contenido === 0) fallas.push(`${modo} ${id}: ${JSON.stringify(abierto)}`);
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(60);
+      const cerrado = await leer();
+      if (cerrado.abierto || !cerrado.focoEnLaParada || cerrado.pieza !== pieza) fallas.push(`Esc tras ${modo} ${id}: ${JSON.stringify(cerrado)}`);
+    }
+  }
+  // Con un cuarto abierto, otra letra cambia de pestaña (no abre otro ni lo cierra).
+  await page.keyboard.press('v');
+  await page.keyboard.press('m');
+  await page.waitForTimeout(60);
+  const cambio = await leer();
+  if (!cambio.abierto || cambio.cuarto !== 'mundo') fallas.push(`v y despues m: ${JSON.stringify(cambio)}`);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(60);
+  const despues = await firmaDeParada(pieza);
+  const misma = antes.titulo === despues.titulo && JSON.stringify(antes.opciones) === JSON.stringify(despues.opciones);
+  const fila = { tipo, pieza, ok: fallas.length === 0 && misma && !(await cuartoAbierto()), misma, fallas: fallas.slice(0, 6) };
+  cuartos.push(fila);
+  L(`## CUARTOS en ${tipo}: ${fila.ok ? 'ok' : `FALLA ${JSON.stringify(fila.fallas)} misma=${misma}`}`);
+}
+
+// (h) Las letras de los cuartos no abren nada en el inicio ni en el minijuego (que es dueño de sus teclas).
+async function probarLetrasInertes(donde, letras) {
+  if (!(await hayShellV2C())) return;
+  const abiertos = [];
+  for (const letra of letras) {
+    await page.keyboard.press(letra);
+    await page.waitForTimeout(40);
+    if (await cuartoAbierto()) { abiertos.push(letra); await page.keyboard.press('Escape'); }
+  }
+  // Y el clic en la barra tampoco (en el minijuego queda a la vista pero apagada).
+  await page.evaluate(() => document.querySelector('#cuartosBarra [data-cuarto="vos"]')?.click());
+  await page.waitForTimeout(40);
+  if (await cuartoAbierto()) { abiertos.push('clic'); await page.keyboard.press('Escape'); }
+  teclado[`letras${donde}`] = { ok: abiertos.length === 0, abiertos };
+}
+
+// (i) Con un cuarto abierto el relato se pausa: se abre Temporada con su letra apenas arranca el relato (a 1x) y, durante
+// dos beats y medio, no entra ninguna linea; al cerrarlo, el relato sigue hasta la parada.
+const ESPERA_PAUSA_MS = 1800;
+let pausa = null;
+async function probarPausa() {
+  const enRelato = await page.evaluate(() => document.querySelector('.shell').dataset.pieza === 'relato');
+  if (!enRelato) { pausa = { ok: null, motivo: 'el relato termino antes de abrir el cuarto' }; return; }
+  await page.keyboard.press('t');
+  await page.waitForTimeout(100);
+  const contar = () => page.evaluate(() => ({
+    abierto: document.querySelector('#cuarto').open,
+    lineas: document.querySelector('#logList').children.length,
+    ultima: document.querySelector('#logList').lastElementChild?.textContent.slice(0, 80) ?? '',
+    pieza: document.querySelector('.shell').dataset.pieza
+  }));
+  const a = await contar();
+  await page.waitForTimeout(ESPERA_PAUSA_MS);
+  const b = await contar();
+  await page.keyboard.press('Escape');
+  // Y al cerrarlo sigue: entra otra linea o llega la parada.
+  const reanudo = await page.waitForFunction((n) => document.querySelector('#logList').children.length > n
+    || document.querySelector('.shell').dataset.pieza !== 'relato', b.lineas, { timeout: 5000, polling: 50 }).then(() => true, () => false);
+  pausa = { ok: a.abierto && b.abierto && b.pieza === 'relato' && a.lineas === b.lineas && a.ultima === b.ultima && reanudo, reanudo, a, b };
+  L(`## PAUSA: ${JSON.stringify(pausa)}`);
 }
 
 // ---------- el tipo de parada ----------
@@ -601,6 +740,8 @@ await armarElInicio();
 L(`modo=${MODO} politica=${POL} seed=${SEED} ${ANCHO}x${ALTO} rol=${ROL} perfil=${PERFIL} region=${REGION}`);
 if (MODO === 'capturas') await captura('inicio-draft-completo', { completa: true, arriba: true });
 else await captura('inicio', { completa: true });
+// V2-C (h): en el inicio, con el draft completo, las letras de los cuartos no abren nada.
+if (MODO === 'recorrido') await probarLetrasInertes('Inicio', Object.values(LETRAS_DE_CUARTOS));
 await page.click('#run');
 
 const filas = [];
@@ -622,6 +763,8 @@ async function medirPrimera(tipo, pieza, extra = {}) {
     ? fila.panelesVisibles.length === 1 && fila.panelesVisibles[0] === PANEL_DE_PIEZA[fila.piezaCruda]
     : null;
   fila.retomar = await retomar(pieza);
+  // V2-C (g): los cuartos, en la parada que volvió (decision, partido o mercado; el minijuego no los abre).
+  if (['decision', 'partido', 'mercado'].includes(pieza)) await probarCuartos(tipo, pieza);
   fila.erroresEnLaParada = errs.slice(erroresAntes);
   fila.msMedicion = Date.now() - tMed;
   filas.push(fila);
@@ -667,7 +810,10 @@ for (let it = 0; it < 3000; it++) {
     const primera = !visitadas[tipoP];
     visitadas[tipoP] = (visitadas[tipoP] || 0) + 1;
     if (MODO === 'recorrido') {
+      await probarAcompanante();
       if (primera) await medirPrimera(tipoP, 'minijuego', { topbar, titulo: tit });
+      // V2-C (h): antes de "¡Vamos!", las letras de los cuartos no abren nada.
+      if (!teclado.letrasMinijuego) await probarLetrasInertes('Minijuego', LETRAS_EN_EL_MINIJUEGO);
     } else if (!capturadas.has('minijuego')) {
       await captura('minijuego-antes-de-vamos', { completa: true });
     }
@@ -693,6 +839,7 @@ for (let it = 0; it < 3000; it++) {
   if (pieza === 'mercado') {
     paradas++; step++;
     visitadas.mercado = (visitadas.mercado || 0) + 1;
+    if (MODO === 'recorrido') await probarAcompanante();
     if (visitadas.mercado === 1) {
       if (MODO === 'recorrido') {
         await medirPrimera('mercado', 'mercado', { topbar, titulo: await page.innerText('#mercadoTitle').catch(() => '') });
@@ -732,6 +879,7 @@ for (let it = 0; it < 3000; it++) {
     const primera = !visitadas[tipoP];
     visitadas[tipoP] = (visitadas[tipoP] || 0) + 1;
     if (MODO === 'recorrido') {
+      await probarAcompanante();
       if (primera) await medirPrimera(tipoP, pieza, { topbar, titulo: t });
     } else {
       if (tipoP === 'decision' && !capturadas.has('decision')) { await captura('decision-generica', { completa: true }); capturadas.add('decision'); }
@@ -797,6 +945,11 @@ const informe = {
     regla4: { paradas: regla4.length, muestras: regla4.reduce((a, r) => a + r.muestras, 0), distintas: regla4.reduce((a, r) => a + r.distintas, 0), detalle: regla4 },
     scrollHorizontal: filas.filter((f) => f.scrollHorizontal).map((f) => f.tipo),
     ultimoBotonFueraDelViewport: filas.filter((f) => f.ultimoBotonEntra === false).map((f) => f.tipo),
+    ultimoAtajoFueraDelViewport: filas.filter((f) => f.ultimoAtajoEntra === false).map((f) => f.tipo),
+    // V2-C
+    acompanante: { paradas: acompanantes.paradas, porTipo: acompanantes.porTipo, fallas: acompanantes.fallas.length, detalle: acompanantes.fallas.slice(0, 10) },
+    cuartos: { paradas: cuartos.length, fallas: cuartos.filter((c) => !c.ok).length, detalle: cuartos },
+    pausa,
     errores: erroresReales.length,
     advertencias: advertencias.length
   },
@@ -811,7 +964,8 @@ console.log(`RECORRIDO ${MODO} seed=${SEED} ${ANCHO}x${ALTO}: paradas=${paradas}
 if (MODO === 'recorrido') {
   const t = informe.totales;
   console.log(`  piezas=${JSON.stringify(t.piezasVistas)} piezaNoCoincide=${JSON.stringify(t.piezaNoCoincide)} retomarFallidos=${JSON.stringify(t.retomarFallidos)}`);
-  console.log(`  regla4: ${t.regla4.paradas} paradas, ${t.regla4.muestras} muestras durante el relato, ${t.regla4.distintas} con la ficha/topbar distinta`);
+  console.log(`  regla4: ${t.regla4.paradas} paradas, ${t.regla4.muestras} muestras durante el relato, ${t.regla4.distintas} con la franja/acompañante distinta`);
+  console.log(`  acompanante: ${t.acompanante.paradas} paradas, ${t.acompanante.fallas} fallas ${JSON.stringify(t.acompanante.porTipo)} | cuartos: ${t.cuartos.paradas} paradas, ${t.cuartos.fallas} fallas | pausa=${pausa ? pausa.ok : 'sin probar'}`);
   console.log(`  teclado: ${Object.entries(teclado).map(([k, v]) => `${k}=${v ? v.ok : 'sin probar'}`).join(' ')}`);
   console.log(`  numerosVisibles: ${filas.map((f) => `${f.tipo}=${f.numerosVisibles}`).join(' ')}`);
 }
