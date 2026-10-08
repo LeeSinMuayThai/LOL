@@ -210,9 +210,14 @@ export function lineaDeContextoFicha(state) {
   if (state.career.tier === 3 && !state.career.liga) {
     return `${org}Tier 3 · ${state.mundo.regionOrigen} · ${state.calendario.etiqueta} · ${state.age} años`;
   }
-  const ligaId = state.mundo.ligas?.find((l) => l.id === state.career.liga)?.id ?? state.mundo.ligaOrigen;
-  const liga = NOMBRE_DE_LIGA[ligaId] ?? ligaId;
+  const liga = nombreDeLaLiga(state);
   return `${org}${liga} · ${state.calendario.etiqueta} · ${state.age} años`;
+}
+
+// La liga de la ficha con su nombre visible ("LCK CL", no "LCK_CL"): la del contrato, o la de origen si no hay.
+function nombreDeLaLiga(state) {
+  const ligaId = state.mundo.ligas?.find((l) => l.id === state.career.liga)?.id ?? state.mundo.ligaOrigen;
+  return NOMBRE_DE_LIGA[ligaId] ?? ligaId;
 }
 
 function crearMarcas(marcas) {
@@ -519,8 +524,8 @@ function lineaDeClub(state) {
   if (state.career.tier === 3 && !state.career.liga) {
     return [org, `Tier 3 · ${state.mundo.regionOrigen}`].filter(Boolean).join(' · ');
   }
-  const ligaId = state.mundo.ligas?.find((l) => l.id === state.career.liga)?.id ?? state.mundo.ligaOrigen;
-  return [org, NOMBRE_DE_LIGA[ligaId] ?? ligaId].filter(Boolean).join(' · ');
+  const liga = nombreDeLaLiga(state);
+  return [org, liga].filter(Boolean).join(' · ');
 }
 
 // La ficha del acompañante (§V.4 "amateur → Vos (rango + barras)"; "con club → Vos"): solo lo que sirve para decidir.
