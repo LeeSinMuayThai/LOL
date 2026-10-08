@@ -16,8 +16,11 @@ import { nombreVisibleDeLiga } from '../../core/ligas.js';
 import { plural } from '../../core/formato.js';
 
 // Los lienzos de los gráficos (el `viewBox`; el CSS los estira al ancho de su caja). En el celular se dibujan más angostos y no
-// más chicos: así los números de los ejes no se achican hasta no poder leerse.
-const CONSULTA_ANCHA = '(min-width: 720px)';
+// más chicos: así los números de los ejes no se achican hasta no poder leerse. A partir de 640 px la columna es una sola y
+// ancha; desde 900 px el cuarto parte en dos columnas (`tarjeta.css`) y la de los gráficos vuelve a ser más angosta.
+const CONSULTA_MEDIA = '(min-width: 640px)';
+const CONSULTA_DOS_COLUMNAS = '(min-width: 900px)';
+const ANCHO_UNA_COLUMNA = 600;
 const ANCHO_PRINCIPAL = 560;
 const ANCHO_ESTRECHO = 330;
 const ANCHO_RESUMEN = 300;
@@ -49,7 +52,9 @@ function el(etiqueta, clase, texto) {
 }
 
 function anchoDelGrafico() {
-  return (window.matchMedia?.(CONSULTA_ANCHA)?.matches ?? true) ? ANCHO_PRINCIPAL : ANCHO_ESTRECHO;
+  const coincide = (consulta) => window.matchMedia?.(consulta)?.matches ?? true;
+  if (coincide(CONSULTA_DOS_COLUMNAS)) return ANCHO_PRINCIPAL;
+  return coincide(CONSULTA_MEDIA) ? ANCHO_UNA_COLUMNA : ANCHO_ESTRECHO;
 }
 
 // Un bloque con título (la misma cabecera que los paneles de contexto).
