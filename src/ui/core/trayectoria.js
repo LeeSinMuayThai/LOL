@@ -68,7 +68,7 @@ function notasDe(registro) {
 
 // "LCK 2033". El torneo de tier 3 no es una liga (`liga: null`): `nombre` trae la frase del motor ("un torneo chico de la región").
 function textoDeTitulo(titulo) {
-  return titulo.liga ? `${nombreVisibleDeLiga(titulo.nombre)} ${titulo.anio}` : `Torneo chico ${titulo.anio}`;
+  return `${titulo.liga ? nombreVisibleDeLiga(titulo.liga) : 'Torneo chico'} ${titulo.anio}`;
 }
 
 // Los hitos, ordenados por año; en un mismo año el mayor primero (Golden Road, Mundial, título). Un Mundial y un Golden Road
