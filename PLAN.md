@@ -4714,6 +4714,27 @@ Olas (como mucho tres workers con navegador a la vez; la validación completa nu
   cero errores de consola; la franja no cambia durante el relato; retomar en cada tipo de parada (decisión,
   plan, decisivo, Swiss, mercado, minijuego antes de "¡Vamos!", cierre de año) devuelve la misma pieza; los
   seis cuartos abren con clic y con su letra, y Esc vuelve a la parada; los cuatro bugs de teclado no vuelven.
+- **La línea de base** (medida por el supervisor el 2026-10-07 sobre `v-integracion` @ `bc4e6b4` = la UI de hoy, con
+  `recorrido.mjs`, seeds 25/39/152, una carrera completa cada una; mediana/máximo de números visibles en el viewport; "entra" =
+  el último botón de opción dentro del viewport; "op. 1" = el título y la opción 1 enteros a la vista; en 3 carreras):
+
+  | Parada | 1440×900: números · entra · op. 1 | 390×844: números · entra · op. 1 |
+  |---|---|---|
+  | Decisión genérica | 46/55 · 3/3 · 3/3 | 15/15 · 0/3 · 3/3 |
+  | Cierre de año | 45/46 · 3/3 · 3/3 | 11/11 · 0/3 · 3/3 |
+  | Plan amateur | 52/60 · 0/3 · 3/3 | 12/15 · 0/3 · 0/3 |
+  | Mercado | 59/61 · 0/3 · 0/3 | 9/11 · 0/3 · 0/3 |
+  | Plan de Fearless | 71/76 · 0/3 · 0/3 | 26/31 · 0/3 · 0/3 |
+  | Mapa decisivo | 75/80 · 0/2 · 0/2 | 27/28 · 0/2 · 0/2 |
+  | Minijuego | 74/75 · 0/3 · 0/3 | 25/27 · 0/3 · 0/3 |
+  | Prueba / prensa | 41-52 · 3/3 · 3/3 | 6-10 · 0/3 · 0/3 |
+  | Retiro y vuelta | 72/77 · 2/3 · 2/3 | 27/34 · 1/3 · 1/3 |
+  | Tarjeta final | 49/51 · 0/3 · 0/3 | 18/20 · 0/3 · 0/3 |
+
+  **Las metas quedan fijadas así**: a 1440×900, el último botón entra y como mucho 45 números visibles en toda parada; a
+  390×844, el título y la opción 1 enteros en toda parada (el último botón puede quedar abajo si hay 4 opciones) y como
+  mucho 25 números. Hoy fallan las dos en partido, mercado y minijuego. Sin scroll horizontal en ninguna (ya hoy: 0).
+  Retomar falla en el mercado (falso: el sueldo anima desde 0, lo arregla V2-B en el recorrido) y en la tarjeta final.
 - **Checks nuevos de `validate.js`**, solo los que protegen una promesa: el Golden Road = el motor (regla 15);
   la forma del guardado 15; ninguna pausa queda sin pieza (V2); el dibujo = el registro (V5).
 - **El cierre**: la Definición de terminado de `CLAUDE.md` entera, y el usuario juega antes del merge.
@@ -8825,6 +8846,7 @@ Cosas encontradas midiendo el código, con la fase donde se resuelven.
 | D93 | **El rótulo de abajo dice "EN EL MAPA" en cualquier minijuego**, también en la rueda de prensa y en la prueba (`feed.js:364-366`) | V2-C (el rótulo se va con `#summary`) y V3d (el rótulo propio de la parada) |
 | D94 | **Sin atajo para la charla del coach ni para "¡Vamos!"** (`app.js:219-233`, `:251-259`), y ninguna parada recibe el foco | V2-B (el foco al encabezado) y V3d (los atajos) |
 | D95 | **La ficha se rehace entera en cada render** (`ficha.js:354`): "Más datos", "Ver carrera" y "Momentos" se cierran solos cada split; y `fichaPrevia` (`ficha.js:72`) y `seriePrevia` (`components/serie.js:104`) son estado de módulo, así que, pintadas en dos contenedores, el `countUp` arranca del valor equivocado | V3e (la ficha) y V3b (la serie) |
+| D96 | **Retomar en medio de un minijuego tira `pageerror` en cadena**: recargar y tocar Continuar en una parada de minijuego deja 107 errores "Cannot read properties of null (reading textContent / style)" (seed 39, 1440×900, "LA LLAMADA DE LA LCK"; 214 en la seed 152). Reproducido sobre la UI de antes de V (`2cd2192`): no lo trajo V2-A. Lo encontró la línea de base del recorrido | V2-B (el camino de retomar) o V3d si la causa está en `components/minijuegos/*` |
 
 ---
 
