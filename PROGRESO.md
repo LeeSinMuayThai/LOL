@@ -34,10 +34,10 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
-### 2026-10-08 — FASE V mergeada en  y V8 partida en dos (PLAN.md §V.7)
+### 2026-10-08 — FASE V mergeada en `fase-9r` y V8 partida en dos (PLAN.md §V.7)
 
-- ** se mergea en ** (, sin push: el push espera un OK nuevo del usuario). El árbol es
-  el mismo que se verificó en el cierre ( más la documentación).
+- **`v-integracion` se mergea en `fase-9r`** (`4a6657a`, sin push: el push espera un OK nuevo del usuario). El árbol es
+  el mismo que se verificó en el cierre (`9c64746` más la documentación).
 - **El juego que se sirve al usuario en el 8090 es esa misma copia** (C2).
 - **V8 se parte en dos:**
   - **V8a, sin esperar al usuario:** D100 y D101, una fila nueva. La historia org por org dice "2029–2029" cuando un
