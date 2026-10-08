@@ -18,17 +18,20 @@ body { padding: 0; }
   min-height: 100vh;
 }
 
-/* --- El topbar --------------------------------------------------------- */
+/* --- La franja (FASE V, V2-C; PLAN.md §V.4) ------------------------------
+   Reemplaza a la topbar. ≤ 64 px en el escritorio; en el celular, dos líneas
+   y la barra de cuartos abajo, fija. La llena `src/ui/franja.js` desde la
+   `vista`: mientras el relato cuenta un split, no cambia. */
 
-.topbar {
+.franja {
   position: sticky;
   top: 0;
   z-index: 100;
   display: flex;
   align-items: center;
-  gap: var(--s-5);
-  height: var(--topbar-alto);
-  padding: 0 var(--s-5) 0 0;
+  gap: var(--s-4);
+  height: var(--franja-alto);
+  padding: 0 var(--s-4);
   background-color: var(--bg-chrome);
   background-image: repeating-linear-gradient(
     0deg,
@@ -39,104 +42,116 @@ body { padding: 0; }
   box-shadow: inset 0 1px 0 var(--ice-dim);
 }
 
-.topbar-live {
-  display: flex;
-  align-items: center;
-  align-self: stretch;
-  gap: var(--s-2);
-  flex: 0 0 auto;
-  padding: 0 var(--s-6) 0 var(--s-5);
-  font-family: var(--font-display);
-  font-size: var(--fs-3);
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  color: var(--bg-void);
-  background: var(--live);
-  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 100%, 0 100%);
-  box-shadow: 12px 0 40px -8px var(--live-glow);
-}
-.topbar-live-punto {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--bg-void);
-  animation: latir-vivo 2s var(--ease-in-out) infinite;
-}
-@keyframes latir-vivo {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.4; }
-}
-
-/* El lockup: monograma + nombre. Diseñado para cualquier nombre corto — el
-   nombre del juego se decide después (decisión del usuario, PLAN.md T.2). */
-.topbar-lockup {
+.franja-lockup {
   display: flex;
   align-items: center;
   gap: var(--s-3);
   flex: 0 0 auto;
-  min-width: 0;
 }
-.topbar-monograma {
+.franja-monograma {
   display: grid;
   place-items: center;
   width: 28px;
   height: 28px;
-  flex: 0 0 auto;
   background: var(--bg-sunken);
   border: 1px solid var(--ice-dim);
-  border-radius: 0;
   clip-path: var(--clip-corte-sm);
   font-family: var(--font-display);
   font-size: var(--fs-1);
   font-weight: 700;
   color: var(--ice);
 }
-.topbar-nombre {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* El nombre del juego solo en el inicio: en la carrera, el lugar es de quién sos. */
+.franja-nombre {
+  display: none;
   font-family: var(--font-display);
   font-size: var(--fs-4);
   font-weight: 700;
   letter-spacing: var(--track-cartel);
   text-transform: uppercase;
+  white-space: nowrap;
   color: var(--ink);
 }
+.shell[data-pieza="inicio"] .franja-nombre { display: inline; }
 
-/* El punto vivo (T2): "2026 · SPLIT 1 · REGULAR". Vacío hasta que arranca
-   una carrera (`ficha.js` lo llena en cada render) — `:empty` lo colapsa
-   para no dejar un hueco fantasma en el topbar durante el setup. */
-.topbar-estado {
-  position: relative;
+.franja-estado {
   flex: 1 1 auto;
-  text-align: center;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  font-family: var(--font-display);
+  font-size: var(--fs-2);
+  font-weight: 600;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ink-dim);
+}
+.franja-quien,
+.franja-org,
+.franja-cuando {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 0;
+  flex: 0 1 auto;
+}
+.franja-quien { color: var(--ink); }
+.franja-quien .rol-marca { font-size: 16px; }
+.franja-cuando { color: var(--ice); font-variant-numeric: tabular-nums; }
+.franja-texto {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding-left: 28px;
-  font-family: var(--font-display);
-  font-size: var(--fs-1);
-  font-weight: 600;
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
-  color: var(--ice);
-  font-variant-numeric: tabular-nums;
 }
-.topbar-estado::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 50%;
-  width: 18px;
-  height: 12px;
-  transform: translateY(-50%);
-  background: repeating-linear-gradient(90deg, var(--line-strong) 0 1px, transparent 1px 3px);
-}
-.topbar-estado:empty { display: none; }
 
-.topbar-controles { display: flex; gap: var(--s-2); flex: 0 0 auto; padding-right: var(--s-5); }
-.topbar-toggle {
+.franja-pips { display: flex; gap: 4px; flex: 0 0 auto; }
+.franja-pip {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+.franja-pip--hecho { background: var(--ink-dim); }
+.franja-pip--actual {
+  background: var(--live);
+  box-shadow: 0 0 6px var(--live-glow);
+}
+
+/* El número: el nivel con su banda (en el amateur, el rango) y cuánto se movió en este split. */
+.franja-nivel {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: var(--s-1) var(--s-3);
+  border: 1px solid var(--line);
+  clip-path: var(--clip-corte-sm);
+  background: var(--bg-sunken);
+}
+.franja-nivel-numero {
+  font-size: var(--fs-5);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.franja-nivel[data-banda="prospecto"] .franja-nivel-numero { color: var(--nivel-prospecto); }
+.franja-nivel[data-banda="titular"] .franja-nivel-numero { color: var(--nivel-titular); }
+.franja-nivel[data-banda="elite"] .franja-nivel-numero { color: var(--nivel-elite); }
+.franja-nivel[data-banda="clase_mundial"] .franja-nivel-numero { color: var(--nivel-clase_mundial); }
+.franja-nivel-banda { font-size: var(--fs-1); color: var(--ink-dim); }
+.franja-nivel-rango { color: var(--ink); font-variant-numeric: tabular-nums; }
+.franja-delta { font-size: var(--fs-1); font-weight: 700; font-variant-numeric: tabular-nums; }
+.franja-delta--sube { color: var(--up); }
+.franja-delta--baja { color: var(--down); }
+
+.franja-controles { display: flex; gap: var(--s-2); flex: 0 0 auto; margin-left: auto; }
+.franja-estado:not(:empty) ~ .franja-controles { margin-left: 0; }
+.franja-toggle {
   display: grid;
   place-items: center;
   min-width: 40px;
@@ -149,18 +164,50 @@ body { padding: 0; }
   clip-path: var(--clip-corte-sm);
   border-radius: 0;
 }
-.topbar-toggle:hover:not(:disabled) {
+.franja-toggle:hover:not(:disabled) {
   background: var(--live-fill);
   border-color: var(--live);
   color: var(--live);
   box-shadow: none;
 }
-.topbar-toggle[aria-pressed="true"] {
+.franja-toggle[aria-pressed="true"] {
   border-color: var(--live);
   color: var(--live);
 }
-/* Inertes hasta T3 (el audio): que se vean apagados, no rotos. */
-.topbar-toggle:disabled { opacity: 0.3; cursor: default; }
+/* Inertes hasta que cargan los módulos: que se vean apagados, no rotos. */
+.franja-toggle:disabled { opacity: 0.3; cursor: default; }
+
+/* El celular y la tableta: dos líneas. Arriba quién sos y tu número; abajo tu club y cuándo. */
+@media (max-width: 899px) {
+  .franja {
+    height: auto;
+    min-height: var(--franja-alto);
+    gap: var(--s-3);
+    padding: var(--s-1) var(--s-3);
+  }
+  .franja-estado {
+    display: grid;
+    grid-template-columns: minmax(0, max-content) minmax(0, 1fr) auto;
+    grid-template-areas:
+      "quien quien nivel"
+      "org cuando cuando";
+    align-items: center;
+    column-gap: var(--s-3);
+    row-gap: 2px;
+  }
+  .franja-quien { grid-area: quien; }
+  .franja-org { grid-area: org; font-size: var(--fs-1); }
+  .franja-cuando { grid-area: cuando; font-size: var(--fs-1); }
+  .franja-nivel { grid-area: nivel; margin-left: 0; justify-self: end; padding: 2px var(--s-2); }
+  .franja-nivel-numero { font-size: var(--fs-4); }
+}
+@media (max-width: 639px) {
+  /* En la carrera, el lugar del monograma es de quién sos (en el inicio sigue el lockup entero). */
+  .shell:not([data-pieza="inicio"]) .franja-lockup { display: none; }
+  .franja-nivel-banda,
+  .franja-pips { display: none; }
+  .franja-toggle { min-width: 36px; padding: var(--s-1) var(--s-2); }
+}
 
 /* --- El cuerpo: riel + escenario ----------------------------------------- */
 
@@ -274,7 +321,7 @@ body { padding: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .ticker-pista { animation-name: none !important; }
-  .topbar, .ticker { background-image: none; }
+  .ticker { background-image: none; }
 }
 
 /* Luz de estudio: pisa `--horizon` del body (base.css lo consume). */
@@ -296,23 +343,6 @@ body[data-peligro="on"] { --horizon: var(--danger-horizon); }
 @media (max-width: 899px) {
   .shell[data-pieza="final"] .riel { display: none; }
 }
-
-.topbar-pips {
-  display: flex;
-  gap: 4px;
-  flex: 0 0 auto;
-}
-.topbar-pip {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--line-strong);
-}
-.topbar-pip--actual {
-  background: var(--live);
-  box-shadow: 0 0 6px var(--live-glow);
-}
-.topbar-pip--hecho { background: var(--ink-dim); }
 
 /* ==========================================================================
    Breakpoints (PLAN.md T1). `tokens.css` ya reajusta --riel-izq y la escala
@@ -358,7 +388,7 @@ body[data-peligro="on"] { --horizon: var(--danger-horizon); }
     position: sticky;
     /* `--topbar-alto-real` la publica app.js (ResizeObserver sobre .topbar): en
        ≤639px la topbar mide 56 (1 fila), 64 (2) u 86px (3, a 320px). */
-    top: var(--topbar-alto-real, var(--topbar-alto));
+    top: var(--franja-alto-real, var(--franja-alto));
     z-index: 90;
     background: var(--bg-void);
     padding-bottom: var(--s-2);
@@ -368,34 +398,6 @@ body[data-peligro="on"] { --horizon: var(--danger-horizon); }
 }
 
 @media (max-width: 639px) {
-  .topbar {
-    gap: var(--s-2);
-    padding: var(--s-1) var(--s-3) var(--s-1) 0;
-    flex-wrap: wrap;
-    height: auto;
-    min-height: var(--topbar-alto);
-  }
-  .topbar-live {
-    padding: 0 var(--s-4) 0 var(--s-3);
-  }
-  .topbar-controles {
-    margin-left: auto;
-    padding-right: 0;
-  }
-  .topbar-nombre { font-size: var(--fs-2); }
-  .topbar-estado {
-    order: 10;
-    flex: 1 1 auto;
-    margin-left: var(--s-3);
-    font-size: var(--fs-1);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .topbar-pips {
-    order: 11;
-    margin-right: var(--s-3);
-  }
   .shell-cuerpo { padding: var(--s-3); }
   .escenario .panel { padding: var(--s-5) var(--s-4); }
   .ticker { padding: 0 var(--s-3); }

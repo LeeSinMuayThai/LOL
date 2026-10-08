@@ -17,7 +17,8 @@ import { mostrarParada } from './paradas/index.js';
 import { crearEscena } from './escena.js';
 import { fotoDeSplit, cierreDeSplit } from './core/escena.js';
 import { iconoSonido } from './components/iconos.js';
-import { actualizarTopbar, aplicarEstudio, limpiarEstudio } from './shell.js';
+import { aplicarEstudio, limpiarEstudio } from './shell.js';
+import { crearFranja } from './franja.js';
 import { crearStore } from './core/store.js';
 import {
   almacenamientoLocal, leerHistorial, guardarHistorial, agregarAlHistorial, entradaDeResultado,
@@ -92,21 +93,11 @@ export function iniciar() {
   const serieContextoEl = document.getElementById('serieContexto');
   const toggleVelocidad = document.getElementById('toggleVelocidad');
   const toggleSonido = document.getElementById('toggleSonido');
-
-  // H7 de la revisión de K0-B: en un celular la topbar se parte en 2 filas (o 3
-  // en 320px) según el ancho y el largo del texto de estado, así que su alto no
-  // es un número que el CSS pueda saber: la ficha pegajosa (`.riel`, ≤899px) se
-  // colgaba de 56px y la topbar le tapaba de 8 a 30px del borde al scrollear.
-  // Se publica el alto REAL como `--topbar-alto-real` y el CSS lo usa (con el
-  // token fijo de respaldo si esto no corre, p. ej. sin ResizeObserver).
-  const topbarEl = document.querySelector('.topbar');
-  if (topbarEl && typeof ResizeObserver !== 'undefined') {
-    const publicarAltoDeLaTopbar = () => {
-      document.documentElement.style.setProperty('--topbar-alto-real', `${topbarEl.getBoundingClientRect().height}px`);
-    };
-    new ResizeObserver(publicarAltoDeLaTopbar).observe(topbarEl);
-    publicarAltoDeLaTopbar();
-  }
+  // La franja (V2-C): reemplaza a la topbar. Se crea cuando cargan los módulos (necesita `etiquetaRol`); publica su alto
+  // real como `--franja-alto-real` (antes, `--topbar-alto-real` desde acá: en el celular son dos o tres líneas).
+  const franjaEl = document.getElementById('franja');
+  const franjaEstadoEl = document.getElementById('franjaEstado');
+  let franja = null;
 
   // El contrato de elementos que `src/ui/render.js` necesita para pintar
   // la pantalla de decisión (fase 8, §8.5; fase 9c suma la pantalla de ofertas).
@@ -192,6 +183,13 @@ export function iniciar() {
         REGIONES_DE_ORIGEN: regionesDeOrigen()
       };
       ui = render;
+      franja = crearFranja({
+        franja: franjaEl,
+        estadoEl: franjaEstadoEl,
+        etiquetaRol: modulos.etiquetaRol,
+        // El delta del número es el del split en curso: contra la foto de la página (la misma que usa la tarjeta de cierre).
+        fotoDeLaPagina: () => pagina.fotoInicio
+      });
       reproductor = reproductorModulo;
       sonido = sonidoModulo;
       almacenamiento = almacenamientoModulo;
@@ -279,14 +277,13 @@ export function iniciar() {
   // marcador de la serie). Antes era `pintarChrome`, llamado con el estado del motor ANTES de los beats (D89). Con la
   // `vista` en `null` (el inicio) se limpia.
   function pintarDesdeVista(estado) {
+    franja?.pintar(estado);
     if (!estado) {
       fichaContainer.replaceChildren();
       limpiarEstudio();
-      actualizarTopbar(null);
       return;
     }
     const ficha = ui.renderFicha(fichaContainer, estado, modulos);
-    actualizarTopbar(estado);
     aplicarEstudio(estado, ficha);
     ui.renderRielContexto(rielElements, estado, modulos);
     ui.renderSerieContexto(serieContextoEl, estado);
@@ -630,8 +627,8 @@ export function iniciar() {
   }
 
   // Fase T3: refleja el estado de `reproductor`/`sonido` en los dos
-  // toggles del topbar. Se llama al cargar los módulos y en cada click.
-  function actualizarTogglesTopbar() {
+  // toggles de la franja. Se llama al cargar los módulos y en cada click.
+  function actualizarToggles() {
     toggleVelocidad.textContent = reproductor.labelVelocidad();
     toggleVelocidad.title = `Velocidad del reproductor: ${reproductor.labelVelocidad()} (click para cambiar)`;
     const on = sonido.estaHabilitado();
@@ -704,7 +701,6 @@ export function iniciar() {
       // Ahora se vuelve al inicio, se descarta el guardado y se avisa en el setup.
       console.error(error);
       volverAlInicio();
-      actualizarTopbar(null);
       mostrarAvisoDeGuardado();
     } finally {
       continuarBtn.disabled = false;
@@ -722,7 +718,7 @@ export function iniciar() {
 
       toggleVelocidad.disabled = false;
       toggleSonido.disabled = false;
-      actualizarTogglesTopbar();
+      actualizarToggles();
 
       // P.2: el botón "Continuar" solo aparece si hay de verdad algo
       // que continuar. La card muestra handle · rol · edad · org.
@@ -775,7 +771,7 @@ export function iniciar() {
   nuevaCarreraBtn.addEventListener('click', volverAlInicio);
   toggleVelocidad.addEventListener('click', () => {
     reproductor.ciclarVelocidad();
-    actualizarTogglesTopbar();
+    actualizarToggles();
   });
   // El click audible de este mismo botón lo dispara la delegación
   // global de `shell.js` (dispara DESPUÉS de este handler: la fase de
@@ -783,7 +779,7 @@ export function iniciar() {
   // botón ya corrió, así que `sonido.alternar()` ya habilitó todo).
   toggleSonido.addEventListener('click', () => {
     sonido.alternar();
-    actualizarTogglesTopbar();
+    actualizarToggles();
   });
   iniciarSetup();
 }

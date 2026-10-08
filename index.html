@@ -45,23 +45,14 @@
     <a class="saltar-al-contenido" href="#escenario">Saltar al contenido</a>
 
     <div class="shell" data-pieza="inicio">
-      <!-- El punto vivo (fase T2): `actualizarTopbar` en shell.js lo llena
-           desde `ficha.js` en cada render — no desde acá, `estado` vive en
-           el closure del <script> de abajo. Ver PLAN.md "T1/T2". -->
-      <header class="topbar">
-        <div class="topbar-live"><span class="topbar-live-punto"></span>LIVE</div>
-        <div class="topbar-lockup">
-          <span class="topbar-monograma">S+</span>
-          <span class="topbar-nombre">Un Split Más</span>
-        </div>
-        <div class="topbar-estado" id="topbarEstado"></div>
-        <div class="topbar-pips" id="topbarPips" hidden></div>
-        <div class="topbar-controles">
-          <!-- T3: velocidad del reproductor (x1/x2/instantáneo, cíclico) y
-               sonido (apagado por defecto). Vivos recién cuando cargarModulos()
-               resuelve — ver comenzarSetup()/iniciarSetup() más abajo. -->
-          <button type="button" id="toggleVelocidad" class="topbar-toggle" disabled title="Velocidad del reproductor">1×</button>
-          <button type="button" id="toggleSonido" class="topbar-toggle" disabled title="Sonido" aria-pressed="false"></button>
+      <!-- La franja (FASE V, V2-C; PLAN.md §V.4): `#franjaEstado` lo llena src/ui/franja.js desde la `vista` (lo que la
+           pantalla ya contó). Velocidad y sonido se encienden cuando cargan los módulos (app.js, iniciarSetup). -->
+      <header class="franja" id="franja">
+        <div class="franja-lockup"><span class="franja-monograma">S+</span><span class="franja-nombre">Un Split Más</span></div>
+        <div class="franja-estado" id="franjaEstado"></div>
+        <div class="franja-controles">
+          <button type="button" id="toggleVelocidad" class="franja-toggle" disabled title="Velocidad del reproductor">1×</button>
+          <button type="button" id="toggleSonido" class="franja-toggle" disabled title="Sonido" aria-pressed="false"></button>
         </div>
       </header>
 

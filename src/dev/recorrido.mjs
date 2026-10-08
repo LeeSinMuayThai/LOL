@@ -354,7 +354,9 @@ async function medir(pieza) {
     const vh = window.innerHeight;
     const visible = (e) => !!e && e.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true });
     // (a) numeros visibles: cada token /\d+/ de cada nodo de texto visible cuyo rect cae dentro del viewport
-    const zonas = { topbar: '.topbar', ficha: '.riel', escenario: '#escenario', rielDer: '.riel-der', ticker: '.ticker' };
+    // V2-C: la franja reemplaza a la topbar y el acompañante al riel derecho (los selectores viejos quedan para medir la
+    // linea de base sobre una UI anterior).
+    const zonas = { franja: '.franja, .topbar', ficha: '.riel', escenario: '#escenario', acompanante: '#acompanante, .riel-der', ticker: '.ticker' };
     const porZona = {};
     let total = 0;
     const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
@@ -372,16 +374,23 @@ async function medir(pieza) {
         porZona[z] = (porZona[z] ?? 0) + 1;
       }
     }
-    // (b) el titulo, la opcion 1 y el ultimo boton
+    // (b) el titulo, la opcion 1 y el ultimo boton. V2-C: en el celular la barra de cuartos va fija abajo y tapa ese
+    // borde: lo que queda debajo de ella no "entra".
+    const barra = document.querySelector('#cuartosBarra');
+    const rb = barra && visible(barra) && getComputedStyle(barra).position === 'fixed' ? barra.getBoundingClientRect() : null;
+    const piso = rb && rb.top < vh && rb.top > vh / 2 ? rb.top : vh;
     const caja = (e) => {
       if (!e || !visible(e)) return null;
       const r = e.getBoundingClientRect();
-      return { top: Math.round(r.top), bottom: Math.round(r.bottom), entero: r.top >= 0 && r.bottom <= vh };
+      return { top: Math.round(r.top), bottom: Math.round(r.bottom), entero: r.top >= 0 && r.bottom <= piso };
     };
     const titulo = caja(document.querySelector(cfg.titulo));
     const opcion1 = caja([...document.querySelectorAll(cfg.opciones)].find(visible));
     const botones = [...document.querySelectorAll(cfg.botones)].filter(visible);
     const ultimo = botones.length ? botones[botones.length - 1].getBoundingClientRect() : null;
+    // V2-C: el ultimo atajo de la parada (`[data-atajo]` visible del escenario, V2-B): la medida de §V.8 a 1440.
+    const atajos = [...document.querySelectorAll('#escenario [data-atajo]')].filter(visible);
+    const ultimoAtajo = atajos.length ? atajos[atajos.length - 1].getBoundingClientRect() : null;
     return {
       viewport: { ancho: vw, alto: vh },
       numerosVisibles: total,
@@ -390,7 +399,11 @@ async function medir(pieza) {
       opcion1Caja: opcion1,
       nBotones: botones.length,
       ultimoBotonBordeInferior: ultimo ? Math.round(ultimo.bottom) : null,
-      ultimoBotonEntra: ultimo ? ultimo.bottom <= vh : null,
+      ultimoBotonEntra: ultimo ? ultimo.bottom <= piso : null,
+      piso: Math.round(piso),
+      nAtajos: atajos.length,
+      ultimoAtajoBordeInferior: ultimoAtajo ? Math.round(ultimoAtajo.bottom) : null,
+      ultimoAtajoEntra: ultimoAtajo ? ultimoAtajo.bottom <= piso : null,
       scrollHorizontal: document.documentElement.scrollWidth > document.documentElement.clientWidth
         || document.body.scrollWidth > document.body.clientWidth,
       scrollWidth: document.documentElement.scrollWidth,
@@ -746,6 +759,7 @@ for (const f of filas) {
     medida: true,
     numerosVisibles: f.numerosVisibles,
     ultimoBotonEntra: f.ultimoBotonEntra,
+    ultimoAtajoEntra: f.ultimoAtajoEntra,
     tituloEntero: f.tituloCaja?.entero ?? null,
     opcion1Entera: f.opcion1Caja?.entero ?? null,
     scrollHorizontal: f.scrollHorizontal,
