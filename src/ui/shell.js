@@ -110,9 +110,7 @@ export function aplicarEstudio(state, ficha) {
   const peligro = Boolean(ficha?.mentalidad?.peligro) || peligroAmateur;
   if (peligro) body.dataset.peligro = 'on';
   else delete body.dataset.peligro;
-
-  if (state.terminado && state.tarjeta) body.dataset.legado = 'on';
-  else delete body.dataset.legado;
+  // V2-B: la final ya no es `body[data-legado]`: es la pieza `final` (`.shell[data-pieza]`, src/ui/escena.js).
 }
 
 export function limpiarEstudio() {
@@ -121,7 +119,6 @@ export function limpiarEstudio() {
   delete body.dataset.ventana;
   delete body.dataset.serie;
   delete body.dataset.peligro;
-  delete body.dataset.legado;
   if (topbarPips) {
     topbarPips.hidden = true;
     topbarPips.replaceChildren();
@@ -129,9 +126,14 @@ export function limpiarEstudio() {
 }
 
 // --- El ticker: la última línea de #logList, en marquesina -----------------
-// `feed.js` hace `logList.replaceChildren(...)` con lo más reciente PRIMERO
-// (`.slice(-limite).reverse()`) — el ticker lee `firstElementChild`, no el
-// último, o mostraría la línea más vieja de las ocho que quedan en pantalla.
+// V2-B: `#logList` es la página del split (`renderPagina`), en orden
+// cronológico: lo más reciente es el ÚLTIMO renglón que viene del motor (los
+// sintéticos —la tarjeta de cierre, la línea "Split anterior"— no cuentan).
+function ultimoRenglon(lista) {
+  let item = lista.lastElementChild;
+  while (item && item.dataset.sintetico !== undefined) item = item.previousElementSibling;
+  return item;
+}
 function textoDeTicker(item) {
   if (!item) return '';
   const titulo = item.querySelector('.log-titulo');
@@ -142,7 +144,7 @@ function textoDeTicker(item) {
 
 if (logList && ticker) {
   const actualizarTicker = () => {
-    const texto = textoDeTicker(logList.firstElementChild) || 'En vivo.';
+    const texto = textoDeTicker(ultimoRenglon(logList)) || 'En vivo.';
     const pista = document.createElement('div');
     pista.className = 'ticker-pista';
     const a = document.createElement('span');

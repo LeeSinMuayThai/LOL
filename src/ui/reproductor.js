@@ -4,7 +4,7 @@
 // un salto con ocho líneas de log ya escritas, en un juego cuyo compás es
 // "cada split trae 1 o 2 decisiones, nunca más" (`CONCEPTO` §2). Esto no
 // cambia qué calcula el motor — solo cuándo y cómo entra cada línea al DOM.
-import { agruparBeats, renderFeed } from './components/feed.js';
+import { agruparBeats, renderFeed, renderPagina } from './components/feed.js';
 import * as sonido from './sonido.js';
 
 const CLAVE_VELOCIDAD = 'lolcs-velocidad-reproductor';
@@ -78,6 +78,18 @@ function motionReducido() {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 }
 
+// FASE V (V2-B): sin espera entre beats (INST o movimiento reducido), la tarjeta de cierre de un split no llega a verse:
+// el controlador lo pregunta al abrir la página siguiente, que entonces arranca con la línea "Split anterior: …".
+export function sinEspera() {
+  return velocidad === 'instantaneo' || motionReducido();
+}
+
+// En la página (cronológica, el beat nuevo abajo), el último renglón se trae a la vista: sin esto, un split largo se
+// contaba por debajo del pliegue.
+function seguirAlUltimo(contenedor) {
+  contenedor.lastElementChild?.scrollIntoView?.({ block: 'nearest' });
+}
+
 // Revela `nuevasEntradas` en `logList`, una por una — por `renderFeed`
 // (fase J-higiene, H8), no a mano. Antes esto insertaba/borraba nodos
 // directo con `insertBefore`/`removeChild`, invisibles al `WeakMap` que
@@ -99,17 +111,37 @@ function motionReducido() {
 // — el resultado vive en la prosa del `message` — así que se lee la
 // diferencia en los contadores que el registro ya lleva, en vez de
 // adivinar por texto.
-export async function reproducirBeats(logList, nuevasEntradas, { registroAntes, registroDespues, bisagra, state, offset = 0 } = {}) {
-  if (!logList || nuevasEntradas.length === 0) {
+//
+// `pagina` (FASE V, V2-B; opcional): `{ desde, anterior, cierre }`. Con ella, cada paso pinta la página del split
+// (`renderPagina`: cronológica, desde `inicioDePagina`) en vez de la ventana de `renderFeed`, y la tarjeta de `cierre`
+// (si el split cerró) entra JUNTO con el último beat: usa su espera, no suma una propia. Sin `pagina`, el camino de
+// siempre (`renderFeed`), el que miden los checks de H8.
+export async function reproducirBeats(logList, nuevasEntradas, { registroAntes, registroDespues, bisagra, state, offset = 0, pagina = null } = {}) {
+  if (!logList) {
+    return;
+  }
+  if (nuevasEntradas.length === 0) {
+    if (pagina?.cierre) {
+      renderPagina(logList, state, pagina);
+      seguirAlUltimo(logList);
+    }
     return;
   }
 
-  const instantaneo = velocidad === 'instantaneo' || motionReducido();
+  const instantaneo = sinEspera();
   const espera = instantaneo ? 0 : ESPERA_MS[velocidad];
 
   const beats = agruparBeats(nuevasEntradas, offset);
-  for (const beat of beats) {
-    renderFeed(logList, state, { hasta: beat.clave + 1 });
+  for (const [i, beat] of beats.entries()) {
+    const ultimo = i === beats.length - 1;
+    if (pagina) {
+      renderPagina(logList, state, { ...pagina, hasta: beat.clave + 1, cierre: ultimo ? pagina.cierre : null });
+      if (espera > 0 || ultimo) {
+        seguirAlUltimo(logList);
+      }
+    } else {
+      renderFeed(logList, state, { hasta: beat.clave + 1 });
+    }
     if (beat.narrativa && !beat.narrativa.tecnico) {
       sonido.tick();
     }

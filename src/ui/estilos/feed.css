@@ -307,3 +307,68 @@
   color: var(--ink-mute);
   font-size: var(--fs-0);
 }
+
+/* ==========================================================================
+   La tarjeta de cierre del split y la línea "Split anterior" (FASE V, V2-B).
+   Beats sintéticos de la página del relato (`renderPagina`, components/cierre.js):
+   la tarjeta entra con el último beat del split y usa su espera; la línea abre
+   la página siguiente cuando la tarjeta no llegó a verse (INST o movimiento
+   reducido). La animación de entrada es la de `.log-item`: el camino quieto lo
+   da `base.css` (`prefers-reduced-motion`).
+   ========================================================================== */
+
+.cierre-split {
+  display: grid;
+  gap: var(--s-1);
+  padding: var(--s-3) var(--s-4);
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--live);
+  animation: entrar-log var(--dur) var(--ease) both;
+}
+.cierre-split--titulo,
+.cierre-split--mundial {
+  border-left-color: var(--gold);
+  background:
+    linear-gradient(90deg, var(--gold-fill), transparent 50%),
+    var(--bg-raised);
+}
+.cierre-split-kicker {
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.cierre-split-resultado {
+  font-family: var(--font-display);
+  font-size: var(--fs-5);
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.cierre-split--titulo .cierre-split-resultado,
+.cierre-split--mundial .cierre-split-resultado { color: var(--gold); }
+.cierre-split-numero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-2);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.cierre-split-valor { font-weight: 700; }
+.cierre-split-banda { color: var(--ink-dim); font-size: var(--fs-1); }
+.cierre-split-delta { font-weight: 700; }
+.cierre-split-delta--sube { color: var(--up); }
+.cierre-split-delta--baja { color: var(--down); }
+.cierre-split-delta--igual { color: var(--ink-mute); }
+
+.cierre-split-linea {
+  padding: var(--s-2) var(--s-4);
+  border-left: 3px solid var(--line-strong);
+  color: var(--ink-dim);
+  font-size: var(--fs-2);
+  font-variant-numeric: tabular-nums;
+}

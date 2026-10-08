@@ -9,20 +9,30 @@
 // reimplementar el acceso a campos anidados.
 import { getPath } from '../../core/selectors.js';
 
-// crearDelta(paths): `paths` es el set declarado de paths (`"player.stats.mecanica"`,
-// `"career.jerarquia"`, ...) que este delta va a rastrear. La primera
-// llamada a `medir` no tiene "antes": devuelve el mismo valor dos veces (sin
-// delta que animar en el primer render).
-export function crearDelta(paths) {
+// crearDelta(campos): el set declarado de lo que este delta va a rastrear. La
+// primera llamada a `medir` no tiene "antes": devuelve el mismo valor dos veces
+// (sin delta que animar en el primer render).
+//
+// FASE V (V2-B): además de paths (`"player.stats.mecanica"`, `"career.jerarquia"`,
+// ...), un campo puede ser una FUNCIÓN del estado (el nivel es una cuenta, no
+// un campo: `function nivel(s) { ... }`). Dos formas:
+//   - un array de paths y/o funciones: la clave del resultado es el path o el
+//     `name` de la función;
+//   - un objeto `{ clave: path | función }`: la clave es la que se declara.
+export function crearDelta(campos) {
+  const entradas = Array.isArray(campos)
+    ? campos.map((campo, i) => [typeof campo === 'function' ? (campo.name || `campo${i}`) : campo, campo])
+    : Object.entries(campos);
+  const leer = (state, campo) => (typeof campo === 'function' ? campo(state) : getPath(state, campo));
   let anterior = null;
 
   return {
     medir(state) {
       const resultado = {};
-      for (const path of paths) {
-        const despues = getPath(state, path);
-        const antes = anterior ? getPath(anterior, path) : despues;
-        resultado[path] = [antes, despues];
+      for (const [clave, campo] of entradas) {
+        const despues = leer(state, campo);
+        const antes = anterior ? leer(anterior, campo) : despues;
+        resultado[clave] = [antes, despues];
       }
       anterior = state;
       return resultado;

@@ -13,7 +13,9 @@
 // juego (regla de la fase T: "si algo de acá explota, el juego de abajo
 // sigue jugable") — este módulo solo lo lee con `document.getElementById`,
 // nunca lo construye.
-import { mostrar as mostrarMinijuego } from './paradas/minijuego.js';
+import { mostrarParada } from './paradas/index.js';
+import { crearEscena } from './escena.js';
+import { fotoDeSplit, cierreDeSplit } from './core/escena.js';
 import { iconoSonido } from './components/iconos.js';
 import { actualizarTopbar, aplicarEstudio, limpiarEstudio } from './shell.js';
 import { crearStore } from './core/store.js';
@@ -27,6 +29,7 @@ import { interpretarSeed } from '../core/numeros.js';
 import { previaDeDecision } from '../core/previaDePartido.js';
 
 export function iniciar() {
+  const shellEl = document.querySelector('.shell');
   const setupPanel = document.getElementById('setup');
   const carreraPanel = document.getElementById('carrera');
   const handleInput = document.getElementById('handleInput');
@@ -64,19 +67,20 @@ export function iniciar() {
   const tarjetaPanel = document.getElementById('tarjeta');
   const seedInput = document.getElementById('seedInput');
   const seedAviso = document.getElementById('seedAviso');
-  // K6a-U: el aviso de "se está jugando el split" que ocupa el lugar de la decisión mientras el feed reproduce.
+  // K6a-U: el aviso de "se está jugando el split" que ocupa el lugar de la decisión mientras el feed reproduce. V2-B: es
+  // parte de la pieza `relato` (se ve con el relato, sin togglear `hidden`).
   const esperaEl = document.createElement('div');
   esperaEl.className = 'reproduciendo-aviso';
   esperaEl.setAttribute('role', 'status');
   esperaEl.textContent = 'Se está jugando el split… (Espacio para pasar las líneas más rápido)';
-  esperaEl.hidden = true;
+  esperaEl.dataset.piezas = 'relato';
   decisionPanel.after(esperaEl);
   const continuarBtn = document.getElementById('continuarBtn');
   const desafioDia = document.getElementById('desafioDia');
   const historialEl = document.getElementById('historial');
   // El riel derecho (T5): un objeto solo, para pasarlo entero a
-  // ui.renderRielContexto en cada tick — mismo patrón que
-  // `carreraElements`.
+  // ui.renderRielContexto desde la `vista` — mismo patrón que
+  // `decisionElements`.
   const rielElements = {
     panelTabla: document.getElementById('panelTabla'),
     panelCalendario: document.getElementById('panelCalendario'),
@@ -105,9 +109,7 @@ export function iniciar() {
   }
 
   // El contrato de elementos que `src/ui/render.js` necesita para pintar
-  // la pantalla de carrera y la de decisión (fase 8, §8.5; fase 9c suma
-  // la pantalla de ofertas).
-  const carreraElements = { fichaContainer, logList };
+  // la pantalla de decisión (fase 8, §8.5; fase 9c suma la pantalla de ofertas).
   const decisionElements = { decisionPanel, decisionTitle, decisionDesc, decisionOptions };
   const mercadoElements = { mercadoPanel, mercadoTitle, mercadoDesc, mercadoVos, mercadoGrid, mercadoMundo, mercadoRepresentante, mercadoEsperar };
 
@@ -127,6 +129,20 @@ export function iniciar() {
   // `comenzarCarrera`/`continuarCarrera` escriben el primer estado real,
   // igual que el `estado = null` que reemplaza.
   const store = crearStore(null);
+  // FASE V (V2-B; PLAN.md §V.5 "Dos stores"): `vista` es lo que la pantalla YA contó. La escribe solo el director de
+  // escena (`escena.revelar`): al terminar los beats de cada llamada al pipeline, al retomar, al arrancar una carrera y
+  // en la final. Ficha, topbar, luz de estudio, riel derecho y marcador de serie se pintan desde acá
+  // (`pintarDesdeVista`), nunca desde `store`: mientras el relato cuenta un split, la ficha sigue en el estado de antes
+  // (regla 4 de §V.3, D89: antes se pintaban con el estado final ANTES de los beats y adelantaban el resultado).
+  const vista = crearStore(null);
+  const escena = crearEscena({ shell: shellEl, vista });
+  vista.suscribir(pintarDesdeVista);
+  // La página del relato (§V.5 "Una página por split"): `desde` es `inicioDePagina` (el `logs.length` de cuando se
+  // llamó a `avanzarSplit`; NUNCA se mueve al resolver una decisión: al responder vuelve la misma página con los beats
+  // nuevos abajo). `fotoInicio` es `fotoDeSplit` del estado de ese momento (con ella `cierreDeSplit` cuenta qué se
+  // movió). `ultimoCierre`: el cierre del split anterior; `anterior`: ese mismo cierre si la página abre con la línea
+  // "Split anterior: …" (la tarjeta no llegó a verse: INST o movimiento reducido).
+  let pagina = { desde: 0, fotoInicio: null, ultimoCierre: null, anterior: null };
   let rng = null;
   // Regla invariable 1: los minijuegos tampoco pueden usar el azar del
   // navegador. Stream PROPIO, sembrado desde la misma seed pero separado del
@@ -195,39 +211,21 @@ export function iniciar() {
     return previa;
   }
 
-  function mostrarDecision(decision) {
-    const estadoActual = store.leer();
-    const previa = pintarPrevia(decision, estadoActual);
-    if (decision.presentacion === 'minijuego') {
-      decisionPanel.hidden = true;
-      mercadoPanel.hidden = true;
-      mostrarMinijuego(minijuegoPanel, decision, {
-        estado: store.leer(),
+  // Una parada: el director pone la pieza de su familia (`familiaDeParada`) y la familia la pinta (`paradas/`). Reemplaza
+  // a los `hidden` que `mostrarDecision` prendía y apagaba en cada panel: qué nodo se ve lo decide `data-pieza`.
+  function mostrarLaParada(estado) {
+    escena.revelar(estado, {
+      pintar: () => mostrarParada(estado.pendiente, {
+        estado,
+        ui,
         rngUi,
         responder,
-        renderPrevia: pintarPrevia,
-        renderBarra: (estadoActual) => ui.renderLowerThird(summary, metaPill, estadoActual, { modo: 'minijuego' })
-      });
-      return;
-    }
-
-    minijuegoPanel.hidden = true;
-
-    if (decision.presentacion === 'mercado') {
-      decisionPanel.hidden = true;
-      ui.mostrarMercadoEnPantalla(
-        mercadoElements, decision, responder,
-        () => responder({ representante: true }),
-        responder,
-        () => responder({ negociar: 'esperar' })
-      );
-      ui.renderLowerThird(summary, metaPill, estadoActual, { modo: 'mercado', decision });
-      return;
-    }
-
-    mercadoPanel.hidden = true;
-    ui.mostrarDecisionEnPantalla(decisionElements, decision, responder, estadoActual, previa?.opciones);
-    ui.renderLowerThird(summary, metaPill, estadoActual, { modo: 'decision', decision });
+        pintarPrevia,
+        lowerThird: (modo, decision, estadoDeLaBarra = estado) => ui.renderLowerThird(summary, metaPill, estadoDeLaBarra, { modo, decision }),
+        elementos: { decision: decisionElements, mercado: mercadoElements },
+        contenedores: { decision: decisionPanel, partido: decisionPanel, mercado: mercadoPanel, minijuego: minijuegoPanel }
+      })
+    });
   }
 
   // K1-B: la carrera terminada entra al historial local UNA vez (el resumen se
@@ -253,18 +251,16 @@ export function iniciar() {
     return lineaDelHistorial;
   }
 
-  function renderResumenFinal(state) {
-    ui.renderLowerThird(summary, metaPill, state);
-
-    if (state.terminado && state.tarjeta) {
-      decisionPanel.hidden = true;
-      minijuegoPanel.hidden = true;
-      mercadoPanel.hidden = true;
-      previaEl.hidden = true;
-      logList.hidden = true;
-      serieContextoEl.hidden = true;
-      ui.renderTarjeta(tarjetaPanel, state, modulos, { lineaHistorial: registrarEnHistorial(state) });
-    }
+  // La final: la pieza `final` muestra la tarjeta y "Nueva carrera" (y nada del relato ni de las paradas).
+  function mostrarFinal(state) {
+    escena.revelar(state, {
+      pintar: () => {
+        ui.renderLowerThird(summary, metaPill, state);
+        if (state.terminado && state.tarjeta) {
+          ui.renderTarjeta(tarjetaPanel, state, modulos, { lineaHistorial: registrarEnHistorial(state) });
+        }
+      }
+    });
   }
 
   // K1-B: el desafío del día y tus últimos resultados. La fecha la lee la UI
@@ -278,65 +274,129 @@ export function iniciar() {
     ui.renderHistorial(historialEl, historial, { etiquetaRol: modulos.etiquetaRol, version: VERSION_JUEGO });
   }
 
-  // Saneamiento post-V1: el chrome global (topbar, luz de estudio, riel,
-  // contexto de serie) se pintaba con el mismo bloque de 5 líneas copiado en
-  // `revelarYVerDecision`, al final de `correrSplits` y en `continuarCarrera`
-  // — exactamente la clase de copia que dejó pasar D45. No se resuelve
-  // cableando `store.suscribir` (V0 lo declaró para V2/V3, mismo criterio
-  // que `crearDelta`, todavía sin consumidor): un suscriptor único no puede
-  // servir a la vez el camino de acá (`renderFicha` solo, el feed lo revela
-  // `reproductor.reproducirBeats` línea a línea) y el de cierre/resume
-  // (`renderCarrera`, ficha+feed de una) sin duplicar pintado o adelantarse
-  // a la animación del feed. `ficha` es el valor que devuelve `renderFicha`
-  // (directo o vía `renderCarrera`, que lo reexporta) — ninguna de las dos
-  // llamadas necesita recalcularlo.
-  function pintarChrome(ficha, estado) {
+  // Lo que se pinta desde `vista` (FASE V, V2-B): la ficha y el chrome global (topbar, luz de estudio, riel derecho,
+  // marcador de la serie). Antes era `pintarChrome`, llamado con el estado del motor ANTES de los beats (D89). Con la
+  // `vista` en `null` (el inicio) se limpia.
+  function pintarDesdeVista(estado) {
+    if (!estado) {
+      fichaContainer.replaceChildren();
+      limpiarEstudio();
+      actualizarTopbar(null);
+      return;
+    }
+    const ficha = ui.renderFicha(fichaContainer, estado, modulos);
     actualizarTopbar(estado);
     aplicarEstudio(estado, ficha);
     ui.renderRielContexto(rielElements, estado, modulos);
     ui.renderSerieContexto(serieContextoEl, estado);
   }
 
-  // Fase T3: antes, `pintar()` volcaba `state.logs` entero de un saque
-  // (`renderCarrera` → `renderFeed` → `replaceChildren`). Ahora la ficha
-  // sigue siendo instantánea (es un HUD, no un beat) pero el feed se
-  // revela de a una línea por `reproductor.reproducirBeats` — mismo
-  // `estado`, mismo motor, solo cambia CUÁNDO entra cada línea al DOM.
-  async function revelarYVerDecision(logsAntes, registroAntes) {
-    const estadoActual = store.leer();
-    // V0: el chrome global se actualiza desde acá, no desde adentro de
-    // `renderFicha` — es la inversión que arregla esa subfase.
-    const ficha = ui.renderFicha(fichaContainer, estadoActual, modulos);
-    pintarChrome(ficha, estadoActual);
-    const bisagra = estadoActual.pendiente?.decision?.datos?.evento?.bisagra ?? false;
-    // K6a-U: mientras el feed reproduce el panel de decisión no está (por diseño: el split se cuenta antes de la próxima
-    // parada), y en la ventana de retiro, que vuelve a preguntar cada split, parecía que el clic se había ignorado. Ahora
-    // se ve que está esperando, y cómo saltarlo.
-    esperaEl.hidden = false;
+  // Una página nueva: la abre `avanzarSplit`, nunca `resolverDecision`.
+  function abrirPagina(antes) {
+    let fotoInicio = null;
     try {
-      await reproductor.reproducirBeats(logList, estadoActual.logs.slice(logsAntes), {
-        registroAntes, registroDespues: estadoActual.career.registro, bisagra, state: estadoActual, offset: logsAntes
-      });
-    } finally {
-      esperaEl.hidden = true;
+      fotoInicio = fotoDeSplit(antes);
+    } catch (error) {
+      console.error('No se pudo sacar la foto del split:', error);
+    }
+    pagina = {
+      desde: antes.logs.length,
+      fotoInicio,
+      ultimoCierre: pagina.ultimoCierre,
+      anterior: reproductor.sinEspera() ? pagina.ultimoCierre : null
+    };
+  }
+
+  // Lo que se guarda en `lolcs-vista` junto con la carrera (`almacenamiento.guardarVista`).
+  function marcadorDeVista(estado) {
+    return {
+      seed: estado.seed,
+      inicioDePagina: pagina.desde,
+      fotoInicio: pagina.fotoInicio,
+      ultimoCierre: pagina.ultimoCierre,
+      logs: estado.logs.length
+    };
+  }
+
+  // La página al retomar: la del marcador si es de esta carrera; si no, los últimos beats y un cierre sin delta (la foto
+  // se saca ahora, a mitad del split, y va marcada `parcial`).
+  function paginaAlRetomar(marcador, estado) {
+    const valido = Boolean(marcador)
+      && marcador.seed === estado.seed
+      && Number.isInteger(marcador.inicioDePagina)
+      && marcador.inicioDePagina >= 0
+      && marcador.inicioDePagina <= estado.logs.length
+      && (marcador.logs == null || marcador.logs === estado.logs.length);
+    if (valido) {
+      const ultimoCierre = marcador.ultimoCierre ?? null;
+      return {
+        desde: marcador.inicioDePagina,
+        fotoInicio: marcador.fotoInicio ?? null,
+        ultimoCierre,
+        anterior: reproductor.sinEspera() ? ultimoCierre : null
+      };
+    }
+    let fotoInicio = null;
+    try {
+      fotoInicio = { ...fotoDeSplit(estado), parcial: true };
+    } catch (error) {
+      console.error('No se pudo sacar la foto del split:', error);
+    }
+    return { desde: ui.desdeDeUltimosBeats(estado.logs), fotoInicio, ultimoCierre: null, anterior: null };
+  }
+
+  // Fase T3: el feed se revela de a un beat por `reproductor.reproducirBeats`. FASE V (V2-B): mientras tanto la pieza es
+  // el relato y la `vista` no cambia (la ficha y el chrome muestran lo que ya se contó); recién al terminar los beats el
+  // director revela la parada (o el relato quieto) y escribe la `vista`. Si la llamada volvió sin pausa, el split cerró:
+  // su tarjeta de cierre entra con el último beat de la página (usa su espera).
+  async function reproducirLlamada(logsAntes, registroAntes) {
+    const estadoActual = store.leer();
+    // K6a-U: mientras el feed reproduce, la parada no está y el aviso "Se está jugando el split…" sí (es de la pieza
+    // `relato`).
+    escena.revelar(estadoActual, { reproduciendo: true });
+    const bisagra = estadoActual.pendiente?.decision?.datos?.evento?.bisagra ?? false;
+    let cierre = null;
+    if (!estadoActual.pendiente && !estadoActual.terminado) {
+      try {
+        cierre = cierreDeSplit(pagina.fotoInicio, estadoActual);
+      } catch (error) {
+        console.error('No se pudo armar el cierre del split:', error);
+      }
+    }
+    await reproductor.reproducirBeats(logList, estadoActual.logs.slice(logsAntes), {
+      registroAntes,
+      registroDespues: estadoActual.career.registro,
+      bisagra,
+      state: estadoActual,
+      offset: logsAntes,
+      pagina: { desde: pagina.desde, anterior: pagina.anterior, cierre }
+    });
+    if (cierre) {
+      pagina.ultimoCierre = cierre;
     }
 
     // Fase T8 (P.2): se guarda al cerrar cada split, siga de largo o
     // pare en una decisión — las dos son "una pausa" desde el punto de
     // vista de "¿qué pasa si recargás acá?". Si ya terminó no hay nada
     // que continuar: se borra en vez de dejar un guardado que
-    // apuntaría a un `estado.terminado`.
+    // apuntaría a un `estado.terminado`. V2-B: el marcador de la página
+    // va junto, en su propia clave (`lolcs-vista`).
     if (estadoActual.terminado) {
       almacenamiento.borrarCarreraGuardada();
+      almacenamiento.borrarVista();
     } else {
       almacenamiento.guardarCarrera(estadoActual, rng, rngUi);
+      almacenamiento.guardarVista(marcadorDeVista(estadoActual));
     }
 
     if (estadoActual.pendiente) {
-      mostrarDecision(estadoActual.pendiente.decision);
+      mostrarLaParada(estadoActual);
       return true;
     }
-    ui.renderLowerThird(summary, metaPill, estadoActual);
+    if (!estadoActual.terminado) {
+      escena.revelar(estadoActual);
+      ui.renderLowerThird(summary, metaPill, estadoActual);
+    }
     return false;
   }
 
@@ -350,9 +410,10 @@ export function iniciar() {
       const antes = store.leer();
       const logsAntes = antes.logs.length;
       const registroAntes = antes.career.registro;
+      abrirPagina(antes);
       store.escribir(pipeline.avanzarSplit(antes, rng).state);
 
-      if (await revelarYVerDecision(logsAntes, registroAntes)) {
+      if (await reproducirLlamada(logsAntes, registroAntes)) {
         return;
       }
       if (store.leer().terminado) {
@@ -360,11 +421,7 @@ export function iniciar() {
       }
     }
 
-    const estadoFinal = store.leer();
-    const ficha = ui.renderCarrera(carreraElements, estadoFinal, modulos);
-    pintarChrome(ficha, estadoFinal);
-    renderResumenFinal(estadoFinal);
-    nuevaCarreraBtn.hidden = false;
+    mostrarFinal(store.leer());
   }
 
   async function avanzar() {
@@ -382,23 +439,19 @@ export function iniciar() {
     reproduciendo = true;
     try {
       const { pipeline } = modulos;
-      decisionPanel.hidden = true;
-      minijuegoPanel.hidden = true;
-      mercadoPanel.hidden = true;
-      pintarPrevia(null);
-
       const antes = store.leer();
       const logsAntes = antes.logs.length;
       const registroAntes = antes.career.registro;
       store.escribir(pipeline.resolverDecision(antes, respuesta, rng).state);
 
-      if (await revelarYVerDecision(logsAntes, registroAntes)) {
+      // La parada se va sola: `reproducirLlamada` pone el relato (antes, cuatro `hidden = true` acá). La página es la
+      // misma: los beats de la respuesta entran abajo.
+      if (await reproducirLlamada(logsAntes, registroAntes)) {
         return;
       }
       const despues = store.leer();
       if (despues.terminado) {
-        renderResumenFinal(despues);
-        nuevaCarreraBtn.hidden = false;
+        mostrarFinal(despues);
         return;
       }
 
@@ -433,9 +486,9 @@ export function iniciar() {
       : '';
   }
 
-  function revelarEscenario() {
-    setupPanel.hidden = true;
-    carreraPanel.hidden = false;
+  // La entrada del escenario al arrancar o retomar una carrera. Qué se ve ya lo puso el director (`escena.revelar`):
+  // acá solo la animación.
+  function animarEntradaDelEscenario() {
     carreraPanel.classList.remove('escenario-entrar');
     void carreraPanel.offsetWidth;
     carreraPanel.classList.add('escenario-entrar');
@@ -479,16 +532,7 @@ export function iniciar() {
     for (const boton of desafioDia.querySelectorAll('button')) {
       boton.disabled = true;
     }
-    decisionPanel.hidden = true;
-    minijuegoPanel.hidden = true;
-    mercadoPanel.hidden = true;
-    previaEl.hidden = true;
-    tarjetaPanel.hidden = true;
     tarjetaPanel.replaceChildren();
-    nuevaCarreraBtn.hidden = true;
-    summary.hidden = false;
-    metaPill.hidden = false;
-    logList.hidden = false;
     summary.textContent = 'Arrancando la carrera...';
     metaPill.textContent = '';
     logList.innerHTML = '';
@@ -528,8 +572,12 @@ export function iniciar() {
       // guardado anterior a propósito, mismo criterio que un jugador
       // que dice "no, esta la abandono" en vez de tocar Continuar.
       almacenamiento.borrarCarreraGuardada();
+      almacenamiento.borrarVista();
 
-      revelarEscenario();
+      // La ficha arranca con el estado inicial: el primer split se cuenta antes de moverla.
+      pagina = { desde: 0, fotoInicio: null, ultimoCierre: null, anterior: null };
+      escena.revelar(store.leer());
+      animarEntradaDelEscenario();
 
       // `avanzar()` es async desde la fase T3 (el reproductor pausa
       // entre beats): si no se espera acá, un error en el primer split
@@ -546,8 +594,7 @@ export function iniciar() {
         : 'Revisa la consola del navegador.';
       logList.innerHTML = `<div class="log-item">${error.message}</div>`;
       console.error(error);
-      setupPanel.hidden = false;
-      carreraPanel.hidden = true;
+      escena.revelar(null);
       runButton.disabled = false;
       for (const boton of desafioDia.querySelectorAll('button')) {
         boton.disabled = false;
@@ -556,23 +603,15 @@ export function iniciar() {
   }
 
   function volverAlInicio() {
-    carreraPanel.hidden = true;
-    setupPanel.hidden = false;
-    nuevaCarreraBtn.hidden = true;
-    // Los paneles del riel derecho (T5) quedan con el `hidden` de la
-    // última carrera terminada — sin esto, la columna entera se queda
-    // desplegada con datos viejos mientras el setup está arriba.
-    for (const panel of Object.values(rielElements)) {
-      panel.hidden = true;
-    }
-    serieContextoEl.hidden = true;
-    fichaContainer.replaceChildren();
-    limpiarEstudio();
-    // Ya se borró en `revelarYVerDecision` cuando `estado.terminado`
+    // La pieza `inicio` esconde el escenario de la carrera y los dos rieles (antes, `hidden` en cada panel del riel
+    // derecho, en el marcador y en el escenario); la `vista` en `null` limpia la ficha, la topbar y la luz de estudio.
+    escena.revelar(null);
+    // Ya se borró en `reproducirLlamada` cuando `estado.terminado`
     // se puso en true — esto es la red de seguridad, no el borrado
     // principal. Refresca el botón por si el estado cambió mientras
     // tanto (debería estar oculto: no queda nada que continuar).
     almacenamiento.borrarCarreraGuardada();
+    almacenamiento.borrarVista();
     continuarBtn.hidden = true;
     quitarAvisoDeGuardado();
     pantallaInicio.reset();
@@ -619,21 +658,18 @@ export function iniciar() {
       const estadoRetomado = store.leer();
       seedInput.value = String(datos.seed);
 
-      revelarEscenario();
-      nuevaCarreraBtn.hidden = true;
-
-      // D45: esto llamaba solo a `ui.renderFicha`, así que `#logList`
-      // arrancaba vacío al retomar (nunca se llamaba a `renderFeed`) — y se
-      // quedaba vacío indefinidamente si además había una decisión
-      // pendiente, porque nada más lo iba a pintar. `renderCarrera` pinta
-      // ficha + feed juntas, el mismo camino que ya usa `correrSplits`.
-      const ficha = ui.renderCarrera(carreraElements, estadoRetomado, modulos);
-      pintarChrome(ficha, estadoRetomado);
+      // D45: el feed se pinta al retomar (antes `#logList` arrancaba vacío). V2-B: es la página del split en curso, con
+      // el marcador de `lolcs-vista`; la ficha y el chrome los pinta la `vista`, que escribe el director.
+      pagina = paginaAlRetomar(almacenamiento.cargarVista(), estadoRetomado);
+      ui.renderPagina(logList, estadoRetomado, { desde: pagina.desde, anterior: pagina.anterior });
       ui.renderLowerThird(summary, metaPill, estadoRetomado);
 
       if (estadoRetomado.pendiente) {
-        mostrarDecision(estadoRetomado.pendiente.decision);
+        mostrarLaParada(estadoRetomado);
+        animarEntradaDelEscenario();
       } else {
+        escena.revelar(estadoRetomado);
+        animarEntradaDelEscenario();
         await avanzar();
       }
     } catch (error) {

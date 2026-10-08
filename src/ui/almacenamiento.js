@@ -40,3 +40,35 @@ export function borrarCarreraGuardada() {
     localStorage.removeItem(CLAVE);
   } catch { /* nada que borrar si localStorage no está disponible */ }
 }
+
+// El marcador de la página del relato (FASE V, V2-B; PLAN.md §V.5 "Retomar"): `{ seed, inicioDePagina, fotoInicio,
+// ultimoCierre, logs }`, en una clave APARTE de la carrera guardada — la UI no toca `core/guardado.js` ni la forma del
+// guardado. Se escribe junto con `guardarCarrera` y se borra junto con `borrarCarreraGuardada`. Al retomar se usa solo si
+// es de esta carrera (misma seed, `inicioDePagina <= logs.length` y, si lo trae, el mismo largo de `logs`); si no, la
+// página son los últimos beats y la tarjeta de cierre sale sin delta. Mismo trato "mejor esfuerzo" que la carrera.
+const CLAVE_VISTA = 'lolcs-vista';
+
+export function guardarVista(marcador) {
+  try {
+    localStorage.setItem(CLAVE_VISTA, JSON.stringify(marcador));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function cargarVista() {
+  try {
+    const json = localStorage.getItem(CLAVE_VISTA);
+    const marcador = json ? JSON.parse(json) : null;
+    return marcador && typeof marcador === 'object' ? marcador : null;
+  } catch {
+    return null;
+  }
+}
+
+export function borrarVista() {
+  try {
+    localStorage.removeItem(CLAVE_VISTA);
+  } catch { /* nada que borrar si localStorage no está disponible */ }
+}
