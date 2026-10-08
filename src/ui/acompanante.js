@@ -12,7 +12,7 @@ import { acompananteDe } from './core/escena.js';
 import { acompanante as acompanantePartido } from './paradas/partido.js';
 import { pintar as pintarCarrera } from './cuartos/carrera.js';
 import { TITULOS_DE_CUARTOS } from './cuartos.js';
-import { crearTexto } from './cuartos/comun.js';
+import { acompanante as acompananteMercado } from './paradas/mercado.js';
 
 // El corte desde el que el acompañante existe (el mismo de `shell.css`).
 const CONSULTA_ANCHA = '(min-width: 1180px)';
@@ -22,8 +22,6 @@ function contenedor(clase) {
   el.className = clase;
   return el;
 }
-
-function nada() {}
 
 // Un stub por tipo (`TIPOS_DE_ACOMPANANTE`). Cada uno llama al renderer de hoy con la `vista`.
 const STUBS = {
@@ -37,27 +35,8 @@ const STUBS = {
     caja.appendChild(panel);
     ui.renderTabla(panel, estado);
   },
-  // El mercado del mundo. El renderer de hoy (`components/mercado.js`, de V3c) pinta la parada entera: se le dan
-  // contenedores sueltos y se queda solo el bloque del mundo (V3c lo reemplaza por el `acompanante` de su familia).
-  mercado(caja, estado, { ui }) {
-    const decision = estado.pendiente?.decision;
-    const mundo = contenedor('mercado-mundo');
-    if (decision?.datos) {
-      ui.mostrarMercadoEnPantalla({
-        mercadoPanel: contenedor(''),
-        mercadoTitle: contenedor(''),
-        mercadoDesc: contenedor(''),
-        mercadoVos: null,
-        mercadoGrid: contenedor(''),
-        mercadoMundo: mundo,
-        mercadoRepresentante: document.createElement('button'),
-        mercadoEsperar: null
-      }, decision, nada, nada, nada, nada);
-    } else {
-      mundo.hidden = true;
-    }
-    caja.appendChild(mundo.hidden ? crearTexto('cuarto-vacio', 'Todavía no se cerró ningún fichaje este offseason.') : mundo);
-  },
+  // El mercado del mundo (V3c): lo pinta la familia (`paradas/mercado.js`).
+  mercado: acompananteMercado,
   // V3b: el tablero de la serie, el Swiss y la previa completa son de la familia del partido (paradas/partido.js).
   serie: acompanantePartido,
   previa: acompanantePartido,
