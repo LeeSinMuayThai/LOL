@@ -117,9 +117,6 @@
           <!-- FASE V (V2-B): qué nodo se ve lo decide `.shell[data-pieza]` (lo escribe solo src/ui/escena.js) contra el
                `data-piezas` de cada nodo (estilos/shell.css). Una pieza puede ser varios nodos. -->
           <div id="carrera" class="panel" data-piezas="relato decision partido mercado minijuego final">
-            <!-- V2-C: debajo de 1180 px (sin acompañante), abre el cuarto con el contexto de la parada (src/ui/acompanante.js). -->
-            <button id="verContexto" type="button" class="ver-contexto" data-piezas="decision partido mercado" hidden></button>
-
             <!-- El bracket + el camino de la serie (fase T6): en la pieza `partido`,
                  mientras `state.serie.activa` (el `hidden` es de su renderer). -->
             <div id="serieContexto" class="serie-contexto" data-piezas="partido" hidden></div>
@@ -147,6 +144,10 @@
               <button id="mercadoRepresentante" type="button" class="mercado-representante-btn" hidden>Llamar a tu representante y ver quién te sigue · 1 vez por carrera</button>
               <button id="mercadoEsperar" type="button" class="mercado-representante-btn" hidden>Esperar · no firmás nada esta ventana</button>
             </div>
+
+            <!-- V2-C (regla 2 de §V.3, "primero lo que se decide"): el chip va DETRÁS de las paradas, no antes del título. Debajo
+                 de 1180 px (sin acompañante) abre el cuarto con el contexto de la parada (src/ui/acompanante.js). -->
+            <button id="verContexto" type="button" class="ver-contexto" data-piezas="decision partido mercado" hidden></button>
 
             <div id="logList" class="log-list" aria-live="polite" data-piezas="relato decision partido mercado minijuego"></div>
 
