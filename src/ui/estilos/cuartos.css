@@ -142,6 +142,7 @@
   box-shadow: none;
   clip-path: var(--clip-corte-sm);
 }
+.cuarto-cerrar-x { display: none; }
 .cuarto-cerrar kbd {
   font-family: var(--font-display);
   font-size: var(--fs-0);
@@ -222,6 +223,10 @@
 @media (max-width: 639px) {
   #ayudaTeclas { display: none; }
   .cuarto-pestanas .cuarto-boton { padding: var(--s-1) 4px; font-size: var(--fs-1); }
+  /* Con las seis pestañas (~310 px) y "Cerrar Esc" no entra en 390 px: "Crónica" quedaba cortada ("CRÓ") bajo el botón.
+     En el celular el botón es una ✕ (el nombre accesible sigue siendo "Cerrar") y las pestañas entran enteras. */
   .cuarto-cerrar { padding: var(--s-1) var(--s-2); }
+  .cuarto-cerrar-texto,
   .cuarto-cerrar kbd { display: none; }
+  .cuarto-cerrar-x { display: inline; }
 }
