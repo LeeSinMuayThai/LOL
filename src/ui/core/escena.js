@@ -29,16 +29,17 @@ export function familiaDeParada(pendiente) {
 }
 
 // La pieza del escenario para un estado. `reproduciendo`: el relato está contando una llamada al pipeline (aunque esa
-// llamada haya dejado una pausa: la parada entra recién cuando el relato termina).
+// llamada haya dejado una pausa: la parada entra recién cuando el relato termina). Va ANTES que la final: la llamada que
+// termina la carrera también tiene su relato (el último split, el retiro), y la tarjeta final entra cuando se contó.
 export function piezaDe(estado, { reproduciendo = false } = {}) {
   if (!estado) {
     return 'inicio';
   }
-  if (estado.terminado && estado.tarjeta) {
-    return 'final';
-  }
   if (reproduciendo) {
     return 'relato';
+  }
+  if (estado.terminado && estado.tarjeta) {
+    return 'final';
   }
   if (estado.pendiente) {
     return familiaDeParada(estado.pendiente);

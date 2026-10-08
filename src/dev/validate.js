@@ -18424,6 +18424,10 @@ checkLento('V2 escena: en cada pausa del motor piezaDe da una pieza de parada (d
     if (state.terminado && state.tarjeta && piezaDeEscenaV2(state) !== 'final') {
       problemas.push(`seed ${seed}: la carrera terminada da ${piezaDeEscenaV2(state)}, no 'final'`);
     }
+    // La llamada que termina la carrera también se cuenta: mientras se reproduce, el relato (la final entra después).
+    if (state.terminado && piezaDeEscenaV2(state, { reproduciendo: true }) !== 'relato') {
+      problemas.push(`seed ${seed}: el relato del último split da ${piezaDeEscenaV2(state, { reproduciendo: true })}, no 'relato'`);
+    }
   }
   const sinVer = PIEZAS_DE_PARADA_V2.filter((pieza) => !porPieza[pieza]);
   if (sinVer.length > 0) {
