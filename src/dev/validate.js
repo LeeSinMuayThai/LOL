@@ -17,7 +17,7 @@ import { crearDelta } from '../ui/core/delta.js';
 import { agruparBeats, renderFeed, LIMITE_FEED } from '../ui/components/feed.js';
 import * as reproductorModulo from '../ui/reproductor.js';
 import {
-  piezaDe as piezaDeEscenaV2, PIEZAS_DE_PARADA as PIEZAS_DE_PARADA_V2, acompananteDe as acompananteDeV2, CUARTOS as CUARTOS_V2,
+  piezaDe as piezaDeEscenaV2, PIEZAS as PIEZAS_V2, PIEZAS_DE_PARADA as PIEZAS_DE_PARADA_V2, acompananteDe as acompananteDeV2, CUARTOS as CUARTOS_V2,
   TIPOS_DE_ACOMPANANTE as TIPOS_DE_ACOMPANANTE_V2, fotoDeSplit as fotoDeSplitV2, cierreDeSplit as cierreDeSplitV2,
   lineaDeSplitAnterior as lineaDeSplitAnteriorV2
 } from '../ui/core/escena.js';
@@ -18344,6 +18344,18 @@ checkLento('K4 (revisión) guardado: en cada tipo de pausa, guardar y recargar (
 const SEEDS_ESCENA_V2 = Array.from({ length: 20 }, (_, i) => 1 + i);
 const SPLITS_ESCENA_V2 = 60;
 const POSICION_ESCENA_V2 = /^\d+\.º de \d+$/;
+// La pieza que ESPERA cada pausa, escrita acá a mano (no llamando a `familiaDeParada`: un check que usa la función que
+// prueba no ve un ruteo torcido). La presentación manda ('minijuego' y 'mercado' traen su propia pieza, gane el sistema que
+// gane: el mapa decisivo de una serie es un minijuego); si no, los sistemas de partido van a `partido`; el resto a `decision`.
+const PIEZA_POR_PRESENTACION_V2 = { minijuego: 'minijuego', mercado: 'mercado' };
+const SISTEMAS_DE_PARTIDO_V2 = ['temporada', 'serie', 'internacional'];
+function piezaEsperadaV2(pendiente) {
+  const porPresentacion = PIEZA_POR_PRESENTACION_V2[pendiente.decision?.presentacion];
+  if (porPresentacion) {
+    return porPresentacion;
+  }
+  return SISTEMAS_DE_PARTIDO_V2.includes(pendiente.sistemaId) ? 'partido' : 'decision';
+}
 
 checkLento('V2 escena: en cada pausa del motor piezaDe da una pieza de parada (decision, partido, mercado o minijuego; nunca relato ni null), la misma tras deserializar(serializar()), y el cierre de cada split sale bien formado (criterio, 20 carreras × 60)', () => {
   const problemas = [];
@@ -18368,6 +18380,11 @@ checkLento('V2 escena: en cada pausa del motor piezaDe da una pieza de parada (d
         porPieza[pieza] = (porPieza[pieza] ?? 0) + 1;
         if (!PIEZAS_DE_PARADA_V2.includes(pieza)) {
           problemas.push(`seed ${seed}, pausa ${tipo}: la pieza es ${pieza}`);
+        }
+        const esperada = piezaEsperadaV2(paso.state.pendiente);
+        if (pieza !== esperada) {
+          problemas.push(`seed ${seed}, pausa ${tipo} (presentación ${paso.state.pendiente.decision?.presentacion ?? 'ninguna'}, sistema `
+            + `${paso.state.pendiente.sistemaId}): la pieza es ${pieza}, la parada que toca es ${esperada}`);
         }
         if (piezaDeEscenaV2(paso.state, { reproduciendo: true }) !== 'relato') {
           problemas.push(`seed ${seed}, pausa ${tipo}: reproduciendo no da 'relato'`);
@@ -18435,6 +18452,18 @@ checkLento('V2 escena: en cada pausa del motor piezaDe da una pieza de parada (d
   }
   if (cierres === 0 || conResultado === 0) {
     problemas.push(`${cierres} cierres de split, ${conResultado} con resultado: el lote no mide el cierre`);
+  }
+  // Texto: cada pieza del director sale en algún `data-piezas` de index.html y tiene su regla de ocultar en shell.css.
+  const htmlV2 = fs.readFileSync(indexHtmlPath, 'utf8');
+  const shellCssV2 = fs.readFileSync(path.join(estilosDir, 'shell.css'), 'utf8');
+  const piezasEnHtml = new Set([...htmlV2.matchAll(/data-piezas="([^"]*)"/g)].flatMap((m) => m[1].split(/\s+/)));
+  for (const pieza of PIEZAS_V2) {
+    if (!piezasEnHtml.has(pieza)) {
+      problemas.push(`la pieza ${pieza} no aparece en ningún data-piezas de index.html`);
+    }
+    if (!shellCssV2.includes(`.shell[data-pieza="${pieza}"] .escenario [data-piezas]:not([data-piezas~="${pieza}"])`)) {
+      problemas.push(`shell.css no tiene la regla que oculta lo que no es de la pieza ${pieza}`);
+    }
   }
   if (problemas.length > 0) {
     throw new Error(`${problemas.length} problemas: ${problemas.slice(0, 5).join(' | ')}`);
