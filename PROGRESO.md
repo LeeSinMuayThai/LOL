@@ -34,6 +34,42 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-08 — FASE V, V2-C: el layout nuevo, en `v-integracion` (PLAN.md §V.4, §V.7)
+
+**Qué cambió en pantalla** (`e5be735`; worker Opus xhigh, revisor Sonnet con navegador y una ronda de correcciones de
+un Sonnet):
+- La **franja** (`src/ui/franja.js`) reemplaza a la topbar: handle · rol, club, edad · año · ventana, el nivel con su
+  banda y su delta (en amateur, rango/LP), velocidad y sonido. En el celular son dos líneas.
+- El **escenario** es una columna de 720 px centrada que muestra una sola pieza. A 900-1179 px medía ~264 px y ahora
+  mide 720 (D88).
+- El **acompañante** (`src/ui/acompanante.js`) aparece desde 1180 px y lo decide `acompananteDe`. Debajo de 1180, el
+  chip "ver contexto" abre el cuarto equivalente.
+- Los **cuartos** (`<dialog id="cuarto">`): Vos, Temporada, Equipo, Mundo, Carrera (stub hasta V5) y Crónica, con
+  clic o con su letra. Con uno abierto, el relato se pausa; Esc lo cierra y devuelve el foco a la parada.
+- **La parada reemplaza al relato** (§V.5): durante una parada no se ve la página del split. Arriba queda
+  `#paradaAntes`, con el último beat contado y "ver la página (n)".
+- La Crónica abierta a mitad de relato suma los beats que la página ya contó, nunca uno por contar.
+- Se fueron los dos rieles, el ticker, `#summary`/`#metaPill`/`renderLowerThird` (con el "EN EL MAPA" de D93) y
+  `screens/carrera.js`.
+
+**Lo que encontró la revisión:**
+- La franja cortaba el handle y el club a 390 px.
+- El botón Cerrar tapaba la pestaña Crónica en el celular.
+- "Ver contexto" quedaba arriba del título.
+- Quedaba código muerto de la barra de abajo.
+- La regla 4 la confirmó el revisor con navegador: los cuartos, la franja y el acompañante no muestran nada que el
+  relato todavía no contó.
+
+**Una regresión que el recorrido no veía.** La ronda de correcciones dejó dos `}` sueltas en `shell.css`; el parser
+descartaba la regla de `.shell-cuerpo`, así que a 1440 el escenario quedaba pegado a la izquierda y el acompañante
+caía debajo. Ningún número lo marcaba, porque el recorrido medía qué mostraba el acompañante y no dónde. La vio el
+supervisor mirando una captura. Se arregló en `4cf6a78`, y `recorrido.mjs` ahora mide la posición del escenario y
+del acompañante: sobre el commit roto da rojo.
+
+**Verificado por el supervisor sobre `e5be735`:** `validate.js --rapido` 372 OK / 0 FAIL / 181 SKIP;
+`--solo="V2 escena"` y `--solo="K1 versión"` OK (`HUELLA_JUEGO` sin cambio); `build.js` OK, con `dist/` en
+2486 de 2500 KB. Queda poco margen: se re-mide después de V3 (D49).
+
 ### 2026-10-08 — FASE V, olas 1 y 2: el andamio (V2-A), el Golden Road en el motor (GR-m) y el director de escena (V2-B), en `v-integracion` (PLAN.md §V.7)
 
 **Lo que decidió el usuario** (2026-10-07, textual en PLAN.md §V.1): *"Escenario + un panel"*, *"Una página por split"*,
@@ -90,7 +126,7 @@ golden road"*, que es *"Todo el año"* y un *"Logro aparte"*. Con eso se re-escr
 
 **D96 no era del juego**: lo tiraba el bot de `recorrido.mjs`. El revisor lo verificó sin bot y quedó cerrada.
 
-**Verificado por el supervisor sobre `7300f0d`**: `validate.js --rapido` 372 OK / 0 FAIL / 181 SKIP, más `--solo="V2 escena"` OK, (los lentos salteados) y
+**Verificado por el supervisor sobre `7300f0d`**: `validate.js --rapido` 372 OK / 0 FAIL / 181 SKIP (los lentos salteados), más `--solo="V2 escena"` OK, y
 `build.js` OK. La validación completa, `simulate.js 1000` y el determinismo se corren al cierre de la fase, sobre la
 rama entera.
 
