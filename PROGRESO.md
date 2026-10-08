@@ -34,6 +34,52 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-08 — FASE V, ola V3: la parada genérica, el partido y el mercado, en `v-integracion` (PLAN.md §V.7)
+
+**Tres workers Sonnet en paralelo**, cada uno dueño de sus archivos (`c02a8c9`, merge de `v3a-decision`, `v3b-partido` y
+`v3c-mercado`; un conflicto en `acompanante.js`, resuelto por el supervisor):
+- **V3a, la parada genérica y la fila de opción.**
+  - El encabezado es la pestaña, el título y una línea de "qué está en juego"; el resto de la descripción va detrás de
+    "más". El plan amateur pasó de 6 líneas a 2 antes de la primera opción.
+  - Cada opción es una fila con su tecla, el label, la descripción en 2 líneas y los 3 efectos más grandes, más el riesgo
+    y la rareza.
+  - Un "más" por fila despliega lo plegado sin elegir la opción.
+- **V3b, el partido.**
+  - La decisión va primero. El marcador y la previa ocupan una línea cada uno, con su desplegable.
+  - A ≥ 1180 px, el tablero de la serie, el Swiss o la previa completa van al acompañante sin repetirse en el escenario.
+  - La pestaña del 2-2 del Swiss dice "Partido" (D92).
+  - `seriePrevia` pasó a un `WeakMap` (la parte de D95 que le tocaba).
+- **V3c, el mercado.**
+  - Las ofertas van en filas comparables, con los mismos campos en el mismo orden.
+  - "Firmar" es el botón primario. "Más" guarda el arraigo, el porqué y la negociación.
+  - Tu valor ocupa dos líneas.
+  - El mercado del mundo va al acompañante, o a un desplegable debajo de 1180 px.
+  - El sueldo ya no se anima desde 0, así que retomar dejó de comparar mal.
+
+**Medido por el revisor** (Sonnet con navegador, sobre `4bbc286`, seeds 25 y 39 a 1440×900 y 390×844):
+- **Sin errores:** 0 errores de consola, 0 scroll horizontal, 0 fallas de la regla 4, de retomar, del acompañante, de la
+  posición y de los cuartos. El teclado, todo en verde.
+- **Mercado a 1440:** pasó de 59 a 33 números visibles. La última oferta ahora entra (antes no entraba en ninguna seed).
+- **Plan de Fearless a 1440:** pasó de 71 a 37,5 números.
+- **Metas que no se cumplen**, y no se fuerzan:
+  - El plan amateur a 1440 queda en 46 números contra 45. Lo sube el acompañante Vos, que es de V3e.
+  - El plan de Fearless a 390 queda en 28 contra 25. Son los % por mapa de cada opción, que hacen falta para decidir.
+
+**Lo que encontró la revisión** (en curso, en `v3-fix`):
+- "Jerarquía: 0 ▲ 21 — Rookie" en el mercado no se entiende.
+- El pliegue de las ofertas se rotula solo "negociar".
+- La línea de "qué está en juego" puede cortar una comilla de cierre.
+- El nombre del equipo se trunca en el tablero de la serie.
+- La previa queda desplegada en los partidos siguientes.
+
+**El techo de `dist/`** subió de 2500 a 2600 KB en su propio commit (`4bbc286`, regla de proceso 2). La integración
+pesa 2517 KB; desde `fase-9r`, src/ui creció +90 KB en crudo con la pantalla nueva y src/core +11 con el Golden Road.
+
+**Verificado por el supervisor sobre `4bbc286`:**
+- `validate.js --rapido`: 372 OK / 0 FAIL / 181 SKIP.
+- `--solo="V2 escena"` y `--solo="K1 versión"`: OK.
+- `build.js`: OK, 2517 de 2600 KB.
+
 ### 2026-10-08 — FASE V, V2-C: el layout nuevo, en `v-integracion` (PLAN.md §V.4, §V.7)
 
 **Qué cambió en pantalla** (`e5be735`; worker Opus xhigh, revisor Sonnet con navegador y una ronda de correcciones de
