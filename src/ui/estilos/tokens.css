@@ -196,20 +196,9 @@
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
   /* --- Layout (T1) ------------------------------------------------------- */
-  --riel-izq:  320px;
-  --riel-der:  320px;
-  --escenario-max: 960px;
   --topbar-alto: 64px;
 }
 
-/* El shell se estrecha antes de romperse. Los breakpoints completos viven
-   en shell.css; acá solo se reajustan las medidas que son token. */
-@media (max-width: 1439px) {
-  :root { --riel-izq: 280px; --riel-der: 280px; }
-}
-@media (max-width: 1179px) {
-  :root { --riel-izq: 260px; }
-}
 @media (max-width: 639px) {
   :root {
     --fs-6: 24px; --fs-7: 32px; --fs-8: 48px; --fs-9: 64px;

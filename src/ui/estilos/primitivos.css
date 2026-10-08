@@ -146,36 +146,3 @@ h1::before {
   color: var(--bg-void);
   box-shadow: 0 0 64px -4px var(--live-glow);
 }
-
-/* --- La línea de estado y la píldora de meta ------------------------------ */
-
-/* Lower-third (T0b): radio 0, banda izquierda de 3px. Rectangular a
-   propósito — es la silueta de una banda de gráfico de TV, no una tarjeta. */
-.summary {
-  margin-top: var(--s-4);
-  margin-bottom: 0;
-  padding: var(--s-3) var(--s-4);
-  background: var(--bg-raised);
-  border-left: 3px solid var(--live);
-  border-top: 1px solid var(--line-strong);
-  color: var(--ink);
-  font-size: var(--fs-3);
-  font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
-}
-
-.meta-pill {
-  display: block;
-  margin-top: 0;
-  padding: 0 var(--s-4) var(--s-2);
-  border-radius: 0;
-  border: none;
-  border-left: 3px solid var(--live);
-  background: var(--bg-raised);
-  color: var(--ink-mute);
-  font-size: var(--fs-1);
-  font-variant-numeric: tabular-nums;
-}
-.meta-pill:empty { display: none; }
