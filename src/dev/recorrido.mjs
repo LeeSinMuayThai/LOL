@@ -5,6 +5,7 @@
 //   node src/dev/recorrido.mjs --puerto 8000 --seed 25 --ancho 1440 --alto 900 --salida <dir>
 //        [--politica buena|mala] [--max-paradas N] [--modo recorrido|capturas]
 //        [--rol N] [--perfil N] [--region N]      (indices en la pantalla de inicio; por defecto 0)
+//        [--sin-teclado]                          (sin las pruebas de teclado de V2-B: linea de base sobre una UI vieja)
 //
 // Necesita `node server.js` corriendo (usa el puerto que ese comando imprime). playwright-core y Chromium salen de las
 // variables PLAYWRIGHT_CORE y CHROMIUM_EXE (con las rutas de esta maquina por defecto); no descarga nada.
@@ -44,6 +45,9 @@ const MAX_PARADAS = Number(args['max-paradas'] ?? 0);
 const ROL = Number(args.rol ?? 0);
 const PERFIL = Number(args.perfil ?? 0);
 const REGION = Number(args.region ?? 0);
+// --sin-teclado: sin las pruebas de teclado de V2-B (para medir la linea de base sobre una UI vieja, donde Enter en
+// Continuar arranca otra carrera y Enter en Copiar vuelve al inicio: la carrera se desviaria).
+const SIN_TECLADO = Boolean(args['sin-teclado']);
 const SALIDA = path.resolve(String(args.salida ?? `recorrido-${MODO}-s${SEED}-${ANCHO}x${ALTO}`));
 if (!['recorrido', 'capturas'].includes(MODO)) { console.error(`--modo ${MODO}: tiene que ser recorrido o capturas`); process.exit(2); }
 if (!['buena', 'mala'].includes(POL)) { console.error(`--politica ${POL}: tiene que ser buena o mala`); process.exit(2); }
@@ -412,7 +416,7 @@ async function firmaDeParada(pieza) {
 const ESPERA_COUNTUP_MS = 600;
 // D86 (V2-B): el PRIMER retomar se hace con el draft completo y Enter sobre "Continuar" (antes eso arrancaba una carrera
 // nueva y borraba la guardada); los demas, con clic.
-let continuarConEnterProbado = false;
+let continuarConEnterProbado = SIN_TECLADO;
 async function retomar(pieza) {
   if (pieza === 'tarjeta') return { ok: null, motivo: 'no-aplica: la carrera terminada no se guarda' };
   await page.waitForTimeout(ESPERA_COUNTUP_MS);
@@ -427,6 +431,9 @@ async function retomar(pieza) {
   if (conEnter) {
     continuarConEnterProbado = true;
     await completarElDraft();
+    // Otra seed en el input: si Enter arrancara una carrera nueva (el bug), no seria esta misma con la misma seed y la firma
+    // lo delataria. Al retomar de verdad, la seed del input no se usa.
+    await page.evaluate(() => { const i = document.querySelector('#seedInput'); if (i) i.value = '1'; });
     await page.focus('#continuarBtn');
     await page.keyboard.press('Enter');
   } else {
@@ -448,6 +455,7 @@ const teclado = { continuarEnter: null, mercado1: null, copiarEnterFinal: null, 
 // "1" en el mercado: un listener de captura en `window` se queda con el primer clic (y lo frena antes de que llegue al
 // boton), para ver a QUE le hizo clic la tecla sin cambiar la carrera.
 async function probarUnoEnElMercado() {
+  if (SIN_TECLADO) return;
   await page.evaluate(() => {
     window.__clicDeLaTecla = null;
     window.addEventListener('click', (e) => {
@@ -471,6 +479,7 @@ async function probarUnoEnElMercado() {
 }
 // En la final: Enter sobre "Copiar..." no se va de la final (D87), y Esc no hace nada.
 async function probarTecladoEnLaFinal() {
+  if (SIN_TECLADO) return;
   const copiar = page.locator('#tarjeta button', { hasText: /Copiar/ }).first();
   if (await copiar.count()) {
     await copiar.focus();
@@ -494,7 +503,9 @@ async function clicConRegla4(clic) {
   await velocidadUno();
   await page.waitForTimeout(ESPERA_COUNTUP_MS);
   await page.evaluate(() => {
-    const leer = () => `${document.querySelector('.topbar')?.innerText ?? ''}\n${document.querySelector('#fichaContainer')?.innerText ?? ''}`;
+    // textContent, no innerText: el contenido, no lo que el CSS deja ver (a <= 639 px la ficha se compacta durante la
+    // parada y vuelve entera en el relato: eso no es un cambio de lo que dice).
+    const leer = () => `${document.querySelector('.topbar')?.textContent ?? ''}\n${document.querySelector('#fichaContainer')?.textContent ?? ''}`;
     const lista = document.querySelector('#logList');
     const r = { antes: leer(), muestras: [], primero: lista.firstElementChild?.textContent.slice(0, 120) ?? '', n: lista.children.length, cerrada: false };
     r.iv = setInterval(() => {
