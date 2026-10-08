@@ -151,6 +151,30 @@ Sobre ese bucle se apoyan los eventos: interrupciones con 2 a 4 opciones que
 aparecen entre medio y que pueden mover cualquier barra. Los eventos no
 reemplazan las decisiones de reparto, las contaminan.
 
+### La pantalla: una cosa por vez
+
+El recurso escaso (tu atención) también es la regla de la pantalla. En cada momento hay
+**una sola cosa** en el medio: el relato del split que se está contando, o la decisión, o la
+serie, o el mercado, o el minijuego, o la tarjeta final. Arriba, una franja angosta con lo
+tuyo: quién sos, en qué club, cuándo y tu número (el nivel, o el rango y los LP en el
+amateur). Al costado, **un** panel con el contexto de lo que estás decidiendo: la previa antes
+de una fecha, el bracket en una serie, el mercado del mundo cuando firmás, tu carrera
+entera cuando cierra un año. En el celular, lo mismo sin el panel: un toque abre el cuarto
+equivalente. Todo lo demás (tu ficha, la temporada, el equipo, el mundo, tu carrera, la
+crónica) está en seis cuartos a un toque, con una letra cada uno.
+
+La razón es la de siempre: si seis cosas piden la mirada a la vez, ninguna se siente como
+una decisión. Antes de esta pantalla el juego tenía los sistemas conectados y el jugador los
+veía hundidos en un feed de líneas; ahora el relato es **una página por split**, solo los
+renglones del split en curso, y al terminar entra una tarjeta con el resultado y el número
+que se movió, sin frenar. La crónica entera queda en su cuarto. Y nada adelanta el
+resultado: la franja, el panel y los cuartos muestran lo que ya se contó, no lo que el
+motor ya sabe.
+
+El cierre de año es el único momento que se sostiene un rato: la tarjeta suma la nota del
+año, en qué escalón de carrera vas y cuánto te falta para el siguiente, y el Golden Road si
+sigue vivo.
+
 ---
 
 ## 4. Etapa amateur: de dónde arranca todo
@@ -450,6 +474,26 @@ secundario, y tu puesto dentro de tu generación.
 El puntaje se pondera **por rol**. Si fuera solo KDA nadie jugaría support ni
 jungla: un support que ganó tres títulos y capitaneó cinco años tiene que
 puntuar como lo que es.
+
+### El Golden Road
+
+Es el logro difícil que el usuario pidió sobre el escalón en vivo: *"eso y añadí un logro
+difícil (porque hasta ahora en la vida real nadie lo consiguió) que sea el golden road"*.
+La definición es **"todo el año"**: en el mismo año calendario, **primero en la tabla de los
+tres splits**, **campeón de la liga de primera** (tier 1) y **campeón del Mundial**. Las
+tres cosas en un solo año. No importa el club: puede ser el mismo todo el año o no, pero la
+tabla de cada split tiene que ser de una liga de primera y el puesto tiene que ser el 1.º.
+
+Es **una medalla aparte y no suma puntos**: no toca el puntaje ni los escalones de carrera
+(Campeón, Figura mundial, Leyenda…): el número de una carrera es el mismo con Golden Road que
+sin él, y por eso la huella del juego no cambia. Sale del registro de la carrera, no se guarda en la tarjeta.
+Casi nadie lo va a ver, y está bien: que sea raro es el punto.
+
+Se ve en tres lugares. **Mientras el año está vivo** y ya hay algo cumplido, una línea
+de seguimiento en la tarjeta de cierre de cada split y en el panel del cierre de año
+("Golden Road 2031: ✓ split 1 · ✓ split 2 · ◻ split 3 · ◻ liga · ◻ Mundial"). En el cuarto
+**Carrera**, como hito en la trayectoria. Y si se logró, como **medalla en la tarjeta final**,
+en el texto para compartir, en el PNG y en el historial del inicio.
 
 Y como el mundo entero sale de la seed, dos personas con la misma seed juegan
 la misma historia y pueden comparar quién la jugó mejor. Eso, más la tarjeta,

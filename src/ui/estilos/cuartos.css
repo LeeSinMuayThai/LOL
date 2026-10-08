@@ -175,7 +175,6 @@
   color: var(--ink-dim);
   border: 1px dashed var(--line);
 }
-.cuarto-carrera { display: grid; gap: var(--s-2); }
 .cuarto-ayuda {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);

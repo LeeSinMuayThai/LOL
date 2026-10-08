@@ -37,11 +37,14 @@
 
   /* --- Tinta ------------------------------------------------------------
      Hielo. Contraste se re-verifica en validate.js sobre las superficies
-     nuevas. `ink-mute` NO se usa para texto que haya que leer: solo para
-     etiquetas de eje y marcas de escala. */
+     nuevas. D48 (V7): `ink-mute` era #5e6a78 (3,25:1 sobre --bg-raised) y el
+     juego lo usa para etiquetas, atajos y notas que SÍ se leen: sube a #7a8a9c
+     (misma tonalidad; 5,07:1 sobre --bg-raised y 4,60:1 sobre el relleno oro
+     del stat destacado). Sigue siendo la tinta más tenue: --ink-dim da 7,40:1.
+     La regla (todo texto >= 4,5:1, grande >= 3:1) la mide src/dev/contraste.mjs. */
   --ink:      #eef3f8;
   --ink-dim:  #9aa8b8;
-  --ink-mute: #5e6a78;
+  --ink-mute: #7a8a9c;
 
   /* --- Hielo (arista, no significado) -----------------------------------
      `--ice` es el metal del HUD: ticks, labels de eje, monograma. NUNCA
@@ -196,20 +199,9 @@
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
   /* --- Layout (T1) ------------------------------------------------------- */
-  --riel-izq:  320px;
-  --riel-der:  320px;
-  --escenario-max: 960px;
   --topbar-alto: 64px;
 }
 
-/* El shell se estrecha antes de romperse. Los breakpoints completos viven
-   en shell.css; acá solo se reajustan las medidas que son token. */
-@media (max-width: 1439px) {
-  :root { --riel-izq: 280px; --riel-der: 280px; }
-}
-@media (max-width: 1179px) {
-  :root { --riel-izq: 260px; }
-}
 @media (max-width: 639px) {
   :root {
     --fs-6: 24px; --fs-7: 32px; --fs-8: 48px; --fs-9: 64px;
