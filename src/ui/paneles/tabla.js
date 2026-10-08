@@ -112,12 +112,10 @@ function pintarTabla(container, state, { tabla, orgPropia, ligaId, cerrada = fal
   if (cerrada) {
     // "Final · 2032 · split 2": el año y el split salen de la fila del registro; sin ella, solo "Final".
     const donde = typeof cerrada === 'object' ? ` · ${cerrada.anio} · split ${cerrada.split + 1}` : '';
-    const circuito = ligaObj ? nombreVisibleDeLiga(ligaObj.id) : (cerrada.tier === 3 ? 'Tier 3' : 'Tabla');
-    refs.titulo.textContent = `${circuito} · final${donde}`;
+    refs.titulo.textContent = `${ligaObj ? nombreVisibleDeLiga(ligaObj.id) : (cerrada.tier === 3 ? 'Tier 3' : 'Tabla')} · final${donde}`;
   } else {
     const jornada = temporada.calendario?.[temporada.indice]?.jornada;
-    const nombreLiga = ligaObj?.id ?? ligaId;
-    refs.titulo.textContent = Number.isFinite(jornada) ? `${nombreVisibleDeLiga(nombreLiga)} · J${jornada}` : (nombreLiga ? nombreVisibleDeLiga(nombreLiga) : 'Tabla');
+    refs.titulo.textContent = Number.isFinite(jornada) ? `${nombreVisibleDeLiga(ligaId)} · J${jornada}` : (ligaId ? nombreVisibleDeLiga(ligaId) : 'Tabla');
   }
 
   const items = tabla.map((fila, indice) => {
