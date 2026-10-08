@@ -127,11 +127,11 @@ export function filaHistoria(fila, anioDeCierre = null) {
   item.appendChild(crearOrgChip(fila.org, { size: 16 }));
   const texto = document.createElement('span');
   const hasta = fila.hastaAnio ?? anioDeCierre;
-  const rango = hasta ? `${fila.desdeAnio}–${hasta}` : `${fila.desdeAnio}`;
+  const rango = hasta && hasta !== fila.desdeAnio ? `${fila.desdeAnio}–${hasta}` : `${fila.desdeAnio}`;
   const titulos = fila.titulos.length > 0
     ? ` · ${fila.titulos.map((t) => `${NOMBRE_DE_LIGA[t.nombre] ?? t.nombre} ${t.anio}`).join(', ')}`
     : '';
-  texto.textContent = `${fila.org} — ${fila.splits} splits · ${fila.fechasG}-${fila.fechasP} · ${rango}${titulos}`;
+  texto.textContent = `${fila.org} — ${fila.splits} ${plural(fila.splits, 'split', 'splits')} · ${fila.fechasG}-${fila.fechasP} · ${rango}${titulos}`;
   item.appendChild(texto);
   return item;
 }
@@ -411,7 +411,7 @@ function crearTotales(registro) {
   const totales = document.createElement('div');
   totales.className = 'ficha-totales';
   const partidos = registro.fechasGanadas + registro.fechasPerdidas + registro.mapasGanados + registro.mapasPerdidos;
-  totales.textContent = `${registro.splitsJugados} splits · ${partidos} partidos · ${registro.titulos.length} ${plural(registro.titulos.length, 'título', 'títulos')}`;
+  totales.textContent = `${registro.splitsJugados} ${plural(registro.splitsJugados, 'split', 'splits')} · ${partidos} ${plural(partidos, 'partido', 'partidos')} · ${registro.titulos.length} ${plural(registro.titulos.length, 'título', 'títulos')}`;
   return totales;
 }
 
