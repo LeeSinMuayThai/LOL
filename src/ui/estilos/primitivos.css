@@ -1,0 +1,181 @@
+/* Primitivos: botones, línea de estado, píldora de meta. Familia compartida, sin dueño de V3 (PLAN.md §V.7).
+   Salió de componentes.css / pantallas.css en V2-A: solo mudanza de bloques, ninguna regla cambió. */
+
+/* ==========================================================================
+   1. PRIMITIVOS
+   ========================================================================== */
+
+/* El contenedor de la página. En T1 se convierte en el shell de tres zonas;
+   por ahora sigue siendo la columna centrada de siempre. */
+.panel {
+  position: relative;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: var(--s-7) var(--s-6);
+  background: var(--bg-surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 0;
+  box-shadow: var(--sombra-3), inset 0 1px 0 var(--ice-dim);
+  /* El chaflán: la firma visual del ESCENARIO (T1 lo renombra `.escenario`).
+     Va acá, en el contenedor, y no en la ficha: `.ficha-barra-hito`
+     sobresale de su pista a propósito (`top: -4px`) y un `clip-path` más
+     adentro le comería las marcas. */
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--chamfer)) 0,
+    100% var(--chamfer),
+    100% 100%,
+    var(--chamfer) 100%,
+    0 calc(100% - var(--chamfer))
+  );
+}
+
+/* Esquinas de encuadre: dos ángulos en L, hielo en reposo. Cyan solo
+   cuando el estudio está en vivo (serie o bisagra). */
+.panel::before,
+.panel::after {
+  content: "";
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  pointer-events: none;
+  border-color: var(--ice);
+  opacity: 1;
+}
+.panel::before { top: 0; left: 0; border-top: 3px solid; border-left: 3px solid; }
+.panel::after  { bottom: 0; right: 0; border-bottom: 3px solid; border-right: 3px solid; }
+body[data-serie="on"] .escenario .panel::before,
+body[data-serie="on"] .escenario .panel::after,
+.escenario .panel:has(.decision[data-peso="bisagra"])::before,
+.escenario .panel:has(.decision[data-peso="bisagra"])::after {
+  border-color: var(--live);
+  opacity: 1;
+}
+
+/* El título es un cartel de transmisión, no un h1 de blog. */
+h1 {
+  font-family: var(--font-display);
+  font-size: var(--fs-6);
+  font-weight: 700;
+  line-height: var(--lh-tight);
+  letter-spacing: var(--track-cartel);
+  text-transform: uppercase;
+  margin-bottom: var(--s-1);
+}
+
+/* La banda LIVE: el ancla de toda la metáfora. Tres pixeles. */
+h1::before {
+  content: "";
+  display: block;
+  width: 56px;
+  height: 2px;
+  margin-bottom: var(--s-3);
+  background: var(--ice);
+}
+
+.subtitle {
+  color: var(--ink-dim);
+  font-size: var(--fs-2);
+  margin-bottom: var(--s-5);
+}
+
+/* --- Botones --------------------------------------------------------------
+   El primario es sólido y cuadrado, no una píldora con degradé: en broadcast
+   el llamado a la acción es un bloque.
+
+   "Se arma, no se prende" (T0b): reposo en relleno tenue de --live con
+   borde y texto en --live; hover rellena a --live sólido. Antes el reposo
+   YA era sólido y el hover saltaba a --ink (casi blanco): dos golpes de luz
+   en vez de uno, y el segundo cegaba. Ahora el único bloque brillante de la
+   pantalla es el botón bajo el cursor.
+
+   `:where(...)`, no `button` a secas — a propósito, y es otro bug que
+   destapó esta misma corrida: `.option-btn`/`.rol-card`/`.campeon-card`/
+   `.mercado-card`/`.minijuego-card`/`.mercado-representante-btn` son todos
+   `<button>` (ver `decision.js`, `inicio.js`, `mercado.js`), y
+   `button:hover:not(:disabled)` — un elemento + dos pseudo-clases — le
+   ganaba en especificidad a `.option-btn:hover` — una clase + una
+   pseudo-clase. El fondo cyan sólido de acá tapaba el hover propio de CADA
+   tarjeta del juego, con el texto gris quedando ilegible encima. Ya pasaba
+   en T0 (con --ink en vez de --live) pero quedaba disimulado. `:where()`
+   pone la especificidad de esta regla en cero: cualquier clase, incluida
+   una escrita antes en el archivo, le gana. Los botones sin clase propia
+   (`#run`, `#nuevaCarrera`) siguen cayendo acá igual. */
+:where(button) {
+  font-family: var(--font-display);
+  font-size: var(--fs-3);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  padding: var(--s-3) var(--s-5);
+  border-radius: 0;
+  clip-path: var(--clip-corte);
+  background: var(--bg-raised);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  transition: background var(--dur-fast) var(--ease),
+              border-color var(--dur-fast) var(--ease),
+              color var(--dur-fast) var(--ease),
+              transform var(--dur-fast) var(--ease),
+              box-shadow var(--dur-fast) var(--ease);
+}
+:where(button:hover:not(:disabled)) {
+  background: var(--live-fill);
+  border-color: var(--live);
+  color: var(--live);
+  box-shadow: none;
+}
+:where(button:active:not(:disabled)) { transform: translateY(1px); }
+:where(button:disabled) { opacity: 0.35; cursor: not-allowed; }
+
+#run,
+#nuevaCarrera {
+  background: var(--live);
+  border-color: var(--live);
+  color: var(--bg-void);
+  font-size: var(--fs-6);
+  letter-spacing: 0.14em;
+  min-height: 56px;
+  padding: var(--s-4) var(--s-7);
+  box-shadow: 0 0 48px -8px var(--live-glow);
+}
+#run:hover:not(:disabled),
+#nuevaCarrera:hover:not(:disabled) {
+  background: var(--live);
+  border-color: var(--live);
+  color: var(--bg-void);
+  box-shadow: 0 0 64px -4px var(--live-glow);
+}
+
+/* --- La línea de estado y la píldora de meta ------------------------------ */
+
+/* Lower-third (T0b): radio 0, banda izquierda de 3px. Rectangular a
+   propósito — es la silueta de una banda de gráfico de TV, no una tarjeta. */
+.summary {
+  margin-top: var(--s-4);
+  margin-bottom: 0;
+  padding: var(--s-3) var(--s-4);
+  background: var(--bg-raised);
+  border-left: 3px solid var(--live);
+  border-top: 1px solid var(--line-strong);
+  color: var(--ink);
+  font-size: var(--fs-3);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
+
+.meta-pill {
+  display: block;
+  margin-top: 0;
+  padding: 0 var(--s-4) var(--s-2);
+  border-radius: 0;
+  border: none;
+  border-left: 3px solid var(--live);
+  background: var(--bg-raised);
+  color: var(--ink-mute);
+  font-size: var(--fs-1);
+  font-variant-numeric: tabular-nums;
+}
+.meta-pill:empty { display: none; }

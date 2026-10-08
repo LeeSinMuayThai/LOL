@@ -1,0 +1,464 @@
+/* Los minijuegos: la carta, la charla, la espera, las diez mecánicas. Dueño: V3d (PLAN.md §V.7).
+   Salió de componentes.css / pantallas.css en V2-A: solo mudanza de bloques, ninguna regla cambió. */
+
+/* ==========================================================================
+   4. LOS MINIJUEGOS (fase 4)
+   Se migran a `src/ui/components/minijuegos/` y se tematizan en T6; acá solo
+   se les da el vocabulario visual nuevo.
+   ========================================================================== */
+
+.minijuego {
+  position: relative;
+  margin-top: var(--s-6);
+  padding: var(--s-5);
+  padding-left: calc(var(--s-5) - 3px);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--warn);
+  animation: entrar-decision var(--dur-slow) var(--ease) both;
+}
+
+.minijuego-widget {
+  position: relative;
+  margin-top: var(--s-4);
+  padding: var(--s-5);
+  background: var(--bg-void);
+  border: 1px solid var(--line);
+}
+.minijuego-widget::before,
+.minijuego-widget::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+.minijuego-widget::before {
+  top: 0;
+  left: 0;
+  border-top: 2px solid var(--warn);
+  border-left: 2px solid var(--warn);
+}
+.minijuego-widget::after {
+  right: 0;
+  bottom: 0;
+  border-right: 2px solid var(--warn);
+  border-bottom: 2px solid var(--warn);
+}
+.minijuego-widget--hit {
+  box-shadow: inset 0 0 0 2px var(--up);
+  animation: minijuego-hit 80ms var(--ease);
+}
+.minijuego-widget--miss {
+  box-shadow: inset 0 0 0 2px var(--down);
+  animation: minijuego-miss 120ms var(--ease);
+}
+@keyframes minijuego-hit {
+  from { background: var(--up-fill); }
+  to   { background: var(--bg-void); }
+}
+@keyframes minijuego-miss {
+  0%, 100% { transform: none; }
+  25%      { transform: translateX(-4px); }
+  75%      { transform: translateX(4px); }
+}
+
+/* El beat de resultado (fase 9R0b): sin esto el jugador nunca sabía si había
+   clavado la jugada. */
+.minijuego-resultado {
+  padding: var(--s-5) var(--s-4);
+  text-align: center;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--bg-raised);
+  animation: entrar-resultado var(--dur) var(--ease);
+}
+@keyframes entrar-resultado {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+.minijuego-resultado--bien   { border-color: var(--up); }
+.minijuego-resultado--parejo { border-color: var(--gold); }
+.minijuego-resultado--mal    { border-color: var(--down); }
+
+.minijuego-resultado-titulo {
+  margin-bottom: var(--s-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-6);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+}
+.minijuego-resultado--bien   .minijuego-resultado-titulo { color: var(--up); }
+.minijuego-resultado--parejo .minijuego-resultado-titulo { color: var(--gold); }
+.minijuego-resultado--mal    .minijuego-resultado-titulo { color: var(--down); }
+
+.minijuego-resultado-detalle { font-size: var(--fs-3); color: var(--ink-dim); }
+/* K2d: la p final del mapa a la vista en el mismo recuadro: la tarjeta de la
+   previa queda arriba del widget y su cambio pasaba fuera de pantalla. */
+/* K4-B: la charla del coach se elige antes del minijuego del mapa decisivo. */
+.minijuego-charla { display: flex; flex-direction: column; gap: var(--s-2); }
+.minijuego-charla-pregunta { margin: 0; font-size: var(--fs-3); color: var(--ink-dim); }
+
+/* K6a-U: la espera antes de arrancar el reloj del minijuego. */
+.minijuego-espera { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-3); }
+.minijuego-espera-nota { margin: 0; font-size: var(--fs-3); color: var(--ink-dim); }
+.minijuego-espera-boton { flex: 0 0 auto; min-width: 200px; padding-right: var(--s-4); text-align: center; font-weight: 700; }
+
+.minijuego-resultado-p {
+  margin-top: var(--s-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-4);
+  color: var(--live);
+  font-variant-numeric: tabular-nums;
+}
+
+/* K6d-P: `button { padding: 0 }` de base.css le ganaba al padding de `:where(button)` y el `clip-path` de chaflanes se comía
+   las letras ("RESPONDER", "¡Ahora!"): el botón de los minijuegos lleva su padding.
+   Mismo criterio "se arma, no se prende" que el botón base: reposo tenue,
+   hover sólido. Antes el reposo ya era --warn sólido — el minijuego era el
+   único botón del juego que arrancaba encendido. */
+.minijuego-btn { padding: var(--s-3) var(--s-5); background: var(--warn-fill); border-color: var(--warn); color: var(--warn); }
+.minijuego-btn:hover:not(:disabled) { background: var(--gold); border-color: var(--gold); color: var(--bg-void); box-shadow: 0 0 24px var(--gold-glow); }
+
+.minijuego-barra {
+  position: relative;
+  height: 26px;
+  margin-bottom: var(--s-4);
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+.minijuego-zona { position: absolute; top: 0; bottom: 0; background: var(--up); opacity: 0.35; }
+.minijuego-marcador {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  left: 0;
+  width: 3px;
+  background: var(--ink);
+  box-shadow: 0 0 10px var(--live-glow);
+  transform: translateX(-50%);
+}
+
+.minijuego-aviso {
+  padding: var(--s-5) 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: var(--fs-6);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--warn);
+}
+
+.minijuego-barra-tiempo {
+  height: 8px;
+  margin-bottom: var(--s-4);
+  background: var(--bg-sunken);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+.minijuego-barra-tiempo-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, var(--down), var(--warn));
+}
+
+.minijuego-cards { display: flex; gap: var(--s-3); flex-wrap: wrap; }
+.minijuego-card {
+  flex: 1 1 140px;
+  padding: var(--s-4);
+  text-align: center;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-2);
+  text-transform: none;
+  letter-spacing: normal;
+}
+.minijuego-card:hover { border-color: var(--warn); background: var(--bg-raised); box-shadow: none; }
+.minijuego-card-count {
+  display: block;
+  margin-top: var(--s-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-6);
+  font-weight: 700;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+
+.minijuego-slider { width: 100%; margin: var(--s-3) 0; accent-color: var(--live); }
+.minijuego-slider-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--s-3);
+  font-size: var(--fs-1);
+  color: var(--ink-mute);
+}
+
+.minijuego-campo {
+  position: relative;
+  height: 170px;
+  margin-bottom: var(--s-3);
+  background: var(--bg-sunken);
+  border: 1px solid var(--line-faint);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.minijuego-aim-info {
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--ink-dim);
+}
+.minijuego-blanco {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  clip-path: none;
+  background: radial-gradient(circle, var(--gold), var(--down));
+  box-shadow: 0 0 18px -4px var(--gold-glow);
+}
+.minijuego-blanco:hover { background: radial-gradient(circle, var(--gold), var(--down)); box-shadow: 0 0 24px -2px var(--gold-glow); }
+
+/* --- El banco de mecánicas (fase 9R4c) -------------------------------------
+   Seis mecánicas nuevas sobre los mismos tokens y las mismas clases base que
+   las cinco de la fase 4. Nada de color literal acá (guards.js): todo sale de
+   tokens.css. Ninguna depende de una animación para poder jugarse — con
+   `prefers-reduced-motion` el JS cambia el timing y estos estilos siguen
+   diciendo lo mismo. */
+
+/* last_hit — la ola de minions */
+.minijuego-ola {
+  display: flex;
+  gap: var(--s-3);
+  align-items: flex-end;
+  margin: var(--s-4) 0 var(--s-3);
+}
+
+.minijuego-minion {
+  position: relative;
+  width: 56px;
+  height: 88px;
+  padding: 0 0 var(--s-2);
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sharp);
+  color: var(--ink-dim);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.minijuego-minion:disabled { opacity: 0.4; }
+.minijuego-minion[data-resultado="bien"] { border-color: var(--up); }
+.minijuego-minion[data-resultado="mal"] { border-color: var(--down); }
+
+.minijuego-minion-hp {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100%;
+  background: var(--live-deep);
+  border-top: 2px solid var(--live);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  font-size: var(--fs-1);
+  color: var(--ink-dim);
+}
+
+.minijuego-minion[data-zona="ejecucion"] .minijuego-minion-hp {
+  background: var(--warn);
+  border-top-color: var(--gold);
+  color: var(--bg-void);
+}
+
+.minijuego-minion-num {
+  position: relative;
+  font-family: var(--font-display);
+  font-size: var(--fs-3);
+  color: var(--ink);
+}
+
+/* el_combo — la secuencia de teclas */
+.minijuego-teclas {
+  display: flex;
+  gap: var(--s-2);
+  margin: var(--s-4) 0 var(--s-3);
+}
+
+.minijuego-tecla {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: var(--fs-4);
+  color: var(--ink);
+  background: var(--bg-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sharp);
+}
+
+.minijuego-tecla[data-resultado="bien"] { border-color: var(--up); color: var(--up); }
+.minijuego-tecla[data-resultado="mal"] { border-color: var(--down); color: var(--down); }
+.minijuego-tecla-btn { min-width: 52px; }
+
+/* dodge — los carriles */
+.minijuego-carriles {
+  display: flex;
+  gap: var(--s-2);
+  height: 96px;
+  margin: var(--s-4) 0 var(--s-3);
+}
+
+.minijuego-carril {
+  flex: 1;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sharp);
+  background: var(--bg-sunken);
+  position: relative;
+}
+
+.minijuego-carril[data-peligro="si"] {
+  background: var(--down-fill);
+  border-color: var(--down);
+}
+
+.minijuego-carril[data-yo="si"]::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: var(--s-2);
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  border-radius: var(--r-pill);
+  background: var(--live);
+}
+
+.minijuego-carril[data-impacto="acierto"] { background: var(--down); }
+.minijuego-carril[data-impacto="fallo"] { background: var(--up-fill); border-color: var(--up); }
+
+/* la_vision — las zonas del mapa */
+.minijuego-zonas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-2);
+  margin: var(--s-4) 0 var(--s-3);
+}
+
+.minijuego-zona-btn {
+  padding: var(--s-3) var(--s-2);
+  font-size: var(--fs-1);
+  color: var(--ink-dim);
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sharp);
+}
+
+.minijuego-zona-btn[data-estado="oscura"] { background: var(--bg-void); color: var(--ink-mute); }
+.minijuego-zona-btn[data-estado="tapada"] { background: var(--bg-surface); color: var(--ink); }
+.minijuego-zona-btn[data-resultado="bien"] { border-color: var(--up); color: var(--up); }
+.minijuego-zona-btn[data-resultado="mal"] { border-color: var(--down); color: var(--down); }
+
+/* el_kite — el metrónomo */
+.minijuego-metronomo {
+  display: flex;
+  gap: var(--s-2);
+  margin: var(--s-4) 0 var(--s-3);
+}
+
+.minijuego-paso {
+  flex: 1;
+  height: 12px;
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+}
+
+.minijuego-paso[data-activo="si"] { border-color: var(--live); background: var(--live-fill); }
+.minijuego-paso[data-resultado="bien"] { background: var(--up); border-color: var(--up); }
+.minijuego-paso[data-resultado="mal"] { background: var(--down-fill); border-color: var(--down); }
+
+/* La apuesta: qué se juega ANTES de jugarlo (9R4d) */
+.minijuego-apuesta {
+  margin: var(--s-3) 0 0;
+  padding: var(--s-3);
+  border-left: 2px solid var(--warn);
+  background: var(--warn-fill);
+  color: var(--ink);
+  font-size: var(--fs-2);
+}
+
+.minijuego-apuesta-kicker {
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 700;
+  letter-spacing: var(--track-cartel);
+  text-transform: uppercase;
+  color: var(--warn);
+  margin-bottom: var(--s-1);
+}
+/* K6d-P: las pistas de la rueda de prensa, arriba del slider (una frase por factor que pesó) */
+.minijuego-pistas {
+  margin: 0 0 var(--s-3);
+  padding: var(--s-3);
+  border-left: 2px solid var(--live);
+  background: var(--bg-sunken);
+  color: var(--ink);
+  font-size: var(--fs-2);
+}
+.minijuego-pistas-kicker {
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 700;
+  letter-spacing: var(--track-cartel);
+  color: var(--live);
+  margin-bottom: var(--s-2);
+}
+.minijuego-pistas-lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-wrap: anywhere;
+}
+.minijuego-pistas-lista li + li { margin-top: var(--s-1); }
+
+.minijuego-apuesta-stat {
+  display: block;
+  margin-top: var(--s-1);
+  color: var(--ink-dim);
+  font-size: var(--fs-1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
+
+.minijuego-apuesta-regla {
+  margin-top: var(--s-2);
+  padding-top: var(--s-2);
+  border-top: 1px dashed var(--line);
+  font-size: var(--fs-1);
+  color: var(--ink-dim);
+  font-style: italic;
+}
+
+.minijuego-apuesta-ronda {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.minijuego-mover .minijuego-btn,
+.minijuego-kite .minijuego-btn { min-width: 72px; }

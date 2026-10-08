@@ -1,0 +1,309 @@
+/* El feed: la crónica, el reveal del Top 20, el resumen anual, la tarjeta de fecha. Dueño: V3e (PLAN.md §V.7).
+   Salió de componentes.css / pantallas.css en V2-A: solo mudanza de bloques, ninguna regla cambió. */
+
+/* ==========================================================================
+   2. EL FEED
+   Tres niveles tipográficos: título en versalitas, cuerpo narrativo, efectos
+   en gris. Los `tecnico: true` se atenúan en vez de esconderse (fase 7).
+   ========================================================================== */
+
+.log-list { margin-top: var(--s-4); display: grid; gap: var(--s-2); }
+
+.log-item {
+  padding: var(--s-3) var(--s-4);
+  background: var(--bg-raised);
+  border-left: 3px solid var(--line-strong);
+  line-height: var(--lh);
+  animation: entrar-log var(--dur) var(--ease) both;
+}
+.log-item[data-acento="up"]      { border-left-color: var(--up); }
+.log-item[data-acento="parche"]  { border-left-color: var(--cat-parche); }
+.log-item[data-acento="gold"]    { border-left-color: var(--gold); }
+.log-item[data-acento="mercado"] { border-left-color: var(--cat-mercado); }
+.log-item[data-acento="familia"] { border-left-color: var(--cat-familia); }
+.log-item[data-acento="live"]    { border-left-color: var(--live); }
+.log-item[data-acento="danger"]  { border-left-color: var(--danger); }
+.log-item[data-acento="mute"]    { border-left-color: var(--line-strong); }
+.log-item--breaking {
+  border-left-width: 4px;
+  background:
+    linear-gradient(90deg, var(--gold-fill), transparent 40%),
+    var(--bg-raised);
+  animation: entrar-breaking var(--dur-slow) var(--ease) both;
+}
+.log-item--breaking .log-titulo { color: var(--cat-parche); }
+.log-item--escena { border-left-color: var(--gold); }
+.log-item--escena .log-titulo { color: var(--gold); }
+
+/* --- El reveal del Top 20 al cierre de temporada (fase 9Wc) ---------------
+   Un log `top_mundial` con la lista entera (`entry.top20`) se abre en tabla;
+   el resto de los `top_mundial` (entrás / te caés / #1) quedan como línea,
+   con el mismo acento oro que la escena. */
+.log-item--top-mundial { border-left-color: var(--gold); }
+.log-item--top-mundial .log-titulo { color: var(--gold); }
+.reveal-top20-sub { margin-bottom: var(--s-3); color: var(--ink-dim); }
+.reveal-top20-lista {
+  display: grid;
+  gap: 1px;
+  font-size: var(--fs-1);
+  font-variant-numeric: tabular-nums;
+}
+.reveal-top20-fila {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  gap: var(--s-2);
+  align-items: center;
+  padding: 2px var(--s-1);
+  color: var(--ink-dim);
+}
+.reveal-top20-fila--propia {
+  background: var(--gold-fill);
+  color: var(--ink);
+  font-weight: 700;
+  border-radius: var(--r-sharp);
+}
+.reveal-top20-fila--rival { color: var(--ink); }
+.reveal-top20-puesto { color: var(--ink-mute); }
+.reveal-top20-handle {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reveal-top20-detalle {
+  color: var(--ink-mute);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- El resumen anual (fase 11, §11.1): nota, titular, viñetas ----------- */
+.log-item--resumen-anio { border-left-color: var(--gold); }
+.resumen-anio-marco {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--s-2);
+}
+.resumen-anio-marca {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.resumen-anio-etiqueta {
+  font-size: var(--fs-1);
+  color: var(--ink-mute);
+  font-variant-numeric: tabular-nums;
+}
+.resumen-anio-titular {
+  font-family: var(--font-display);
+  font-size: var(--fs-5);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
+.resumen-anio-bajada {
+  margin-top: var(--s-1);
+  color: var(--ink-dim);
+  font-style: italic;
+}
+.resumen-anio-nota {
+  display: inline-block;
+  margin-top: var(--s-3);
+  padding: var(--s-1) var(--s-3);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  font-size: var(--fs-1);
+  font-weight: 600;
+}
+.resumen-anio-nota--rojo   { border-color: var(--danger); color: var(--danger); background: var(--down-fill); }
+.resumen-anio-nota--gris   { color: var(--ink-dim); }
+.resumen-anio-nota--ambar  { border-color: var(--warn); color: var(--warn); background: var(--warn-fill); }
+.resumen-anio-nota--verde  { border-color: var(--up); color: var(--up); background: var(--up-fill); }
+.resumen-anio-vinetas {
+  display: grid;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--line-faint);
+  font-size: var(--fs-2);
+}
+.resumen-anio-vineta {
+  display: grid;
+  grid-template-columns: 1.4em 1fr;
+  gap: var(--s-2);
+  color: var(--ink-dim);
+}
+.resumen-anio-icono { text-align: center; }
+.log-pestana {
+  display: inline-block;
+  margin-bottom: var(--s-1);
+  padding: 1px var(--s-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 700;
+  letter-spacing: var(--track-cartel);
+  text-transform: uppercase;
+  color: var(--bg-void);
+  background: var(--cat-parche);
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 100%, 0 100%);
+}
+.log-tira-tecnica {
+  margin-top: var(--s-2);
+  padding-top: var(--s-2);
+  border-top: 1px solid var(--line-faint);
+  font-size: var(--fs-0);
+  color: var(--ink-mute);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--lh-snug);
+}
+/* K4c-F: las líneas `adjunto` viajan adentro del beat anterior (no cuestan un beat del reproductor), legibles —
+   un renglón cada una, más chicas que lo narrativo y sin atenuar como la tira técnica. */
+.log-adjuntos {
+  margin-top: var(--s-2);
+  padding-top: var(--s-2);
+  border-top: 1px solid var(--line-faint);
+  display: grid;
+  gap: var(--s-1);
+  font-size: var(--fs-1);
+  color: var(--ink-dim);
+  line-height: var(--lh-snug);
+  overflow-wrap: anywhere;
+}
+/* Una tanda que arranca con líneas adjuntas no tiene narrativa arriba: sin el separador, que ahí sería un hueco. */
+.log-adjuntos:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+@keyframes entrar-breaking {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes entrar-log {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.log-item--tecnico {
+  border-left-color: var(--line-strong);
+  background: var(--bg-sunken);
+  color: var(--ink-dim);
+  font-size: var(--fs-2);
+  font-variant-numeric: tabular-nums;
+  padding: var(--s-2) var(--s-4);
+}
+
+.log-titulo {
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--track-cartel);
+  color: var(--ice);
+  margin-bottom: var(--s-1);
+}
+
+.log-efectos {
+  margin-top: var(--s-2);
+  font-size: var(--fs-1);
+  color: var(--ink-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- La tarjeta de resultado de fecha (fase T6) ----------------------------
+   Un log `type: 'temporada'` deja de ser una línea más: gana su propia
+   cabecera de scoreboard. Verde/rojo por resultado, como el resto del
+   sistema semántico (--up/--down), no por categoría. */
+.log-item--resultado { padding: var(--s-3) var(--s-4); }
+.log-item--resultado-victoria { border-left-color: var(--up); }
+.log-item--resultado-derrota { border-left-color: var(--down); }
+
+.resultado-cabecera {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  margin-bottom: var(--s-1);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+}
+.resultado-marcador { font-size: var(--fs-3); font-weight: 700; }
+.log-item--resultado-victoria .resultado-marcador { color: var(--up); }
+.log-item--resultado-derrota .resultado-marcador { color: var(--down); }
+.resultado-rival {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  font-size: var(--fs-1);
+  color: var(--ink-dim);
+}
+.resultado-fuerza { font-size: var(--fs-0); color: var(--ink-mute); margin-left: auto; }
+
+.resultado-pie {
+  margin-top: var(--s-2);
+  font-size: var(--fs-0);
+  color: var(--ink-mute);
+  font-variant-numeric: tabular-nums;
+}
+
+.resultado-cuerpo {
+  margin: var(--s-1) 0 var(--s-2);
+  color: var(--ink);
+  font-size: var(--fs-1);
+}
+
+.resultado-score {
+  font-size: var(--fs-2);
+  font-weight: 700;
+  color: var(--ink-dim);
+}
+
+.resultado-camino {
+  margin-top: var(--s-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+.resultado-mapa-fila {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  font-size: var(--fs-1);
+  color: var(--ink-dim);
+}
+
+.resultado-mapa-tag {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 1px var(--s-1);
+  border-radius: var(--r-sharp);
+}
+
+.resultado-mapa-tag--ganado {
+  background: var(--up-fill);
+  color: var(--up);
+}
+
+.resultado-mapa-tag--perdido {
+  background: var(--down-fill);
+  color: var(--down);
+}
+
+.resultado-mapa-campeon {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.resultado-mapa-cierre {
+  color: var(--ink-mute);
+  font-size: var(--fs-0);
+}

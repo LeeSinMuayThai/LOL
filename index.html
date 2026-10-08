@@ -6,15 +6,6 @@
     <title>Un Split Más</title>
     <meta name="description" content="Un Split Más: simulá la carrera de un jugador profesional de League of Legends, de los 15 años al retiro. Elegís tu línea y tus mains, y cada decisión — soloQ, el mercado, el draft Fearless — deja una marca real en cómo termina la historia." />
 
-    <!-- Fase 13e (P.4): el nombre del juego, decidido (venía diferido desde
-         T.2). "Un Split Más" sale del vocabulario del juego mismo — el
-         split es la unidad de tiempo de toda la partida (PLAN.md, "El
-         compás") — y de la sensación central que persigue todo el diseño
-         (CLAUDE.md: "breve, profunda y rejugable"). Open Graph + Twitter
-         Card con imagen propia: `assets/og-image.svg` (fuente, autoría a
-         mano) rasterizado a `assets/og-image.png` (1200×630, la misma
-         medida que el canvas de `exportar.js`) con ImageMagick/librsvg —
-         no un headless en el build, como pedía el plan. -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Un Split Más — simulador de carrera de League of Legends" />
     <meta property="og:description" content="De los 15 años al retiro. Cada decisión deja una marca real en cómo termina tu historia." />
@@ -27,19 +18,22 @@
     <meta name="twitter:description" content="De los 15 años al retiro. Cada decisión deja una marca real en cómo termina tu historia." />
     <meta name="twitter:image" content="./assets/og-image.png" />
 
-    <!-- El favicon: el mismo monograma cyan-sobre-negro del topbar, como
-         SVG inline — cero archivo binario nuevo, coherente con "cero
-         dependencias" del proyecto. -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='2' fill='%23030407'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='14' font-weight='700' fill='%232ee8ff' text-anchor='middle'%3ES%2B%3C/text%3E%3C/svg%3E" />
 
-    <!-- El sistema de diseño (fase T / T0). Hasta acá las 773 líneas de CSS
-         vivían en un <style> acá adentro, sin una sola custom property. -->
     <link rel="preload" href="./src/ui/estilos/fuentes/inter-var-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="./src/ui/estilos/fuentes/barlow-condensed-700-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="./src/ui/estilos/tokens.css" />
     <link rel="stylesheet" href="./src/ui/estilos/base.css" />
-    <link rel="stylesheet" href="./src/ui/estilos/componentes.css" />
-    <link rel="stylesheet" href="./src/ui/estilos/pantallas.css" />
+    <link rel="stylesheet" href="./src/ui/estilos/primitivos.css" />
+    <link rel="stylesheet" href="./src/ui/estilos/feed.css" />
+    <link rel="stylesheet" href="./src/ui/estilos/ficha.css" />
+    <link rel="stylesheet" href="./src/ui/estilos/inicio.css" />
+    <link rel="stylesheet" href="./src/ui/estilos/decision.css" />
+    <link rel="stylesheet" href="./src/ui/estilos/mercado.css" />
+    <link rel="stylesheet" href="./src/ui/estilos/minijuegos.css" />
+    <link rel="stylesheet" href="./src/ui/estilos/tarjeta.css" />
+    <link rel="stylesheet" href="./src/ui/estilos/paneles.css" />
+    <link rel="stylesheet" href="./src/ui/estilos/serie.css" />
     <!-- El shell de transmisión (fase T1): grilla de dos zonas, topbar, ticker. -->
     <link rel="stylesheet" href="./src/ui/estilos/shell.css" />
     <link rel="stylesheet" href="./src/ui/estilos/iconos.css" />

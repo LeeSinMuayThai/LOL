@@ -1,0 +1,189 @@
+/* La serie: bracket, camino, previa del partido y mundial. Dueño: V3b (PLAN.md §V.7).
+   Salió de componentes.css / pantallas.css en V2-A: solo mudanza de bloques, ninguna regla cambió. */
+
+/* K2d — la previa del partido: tu fuerza contra la del rival y la p que el motor tira. */
+.previa {
+  margin: var(--s-2) 0;
+  padding: var(--s-3);
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  clip-path: var(--clip-corte-sm);
+}
+.previa-cabecera { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s-1) var(--s-2); }
+.previa-titulo { font-family: var(--font-display); font-size: var(--fs-3); color: var(--ink); text-transform: uppercase; letter-spacing: 0.04em; }
+.previa-sub { font-size: var(--fs-1); color: var(--ink-dim); }
+.previa-porque { margin-top: var(--s-2); font-size: var(--fs-2); color: var(--ink); overflow-wrap: anywhere; }
+.previa-duelo { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: var(--s-2); margin: var(--s-2) 0; }
+.previa-lado { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: var(--s-1); min-width: 0; }
+.previa-lado > :first-child { grid-row: span 2; align-self: center; }
+.previa-lado--rival { text-align: right; grid-template-columns: 1fr auto; }
+.previa-lado--rival > :first-child { grid-column: 2; grid-row: 1 / span 2; }
+.previa-nombre { font-size: var(--fs-1); color: var(--ink-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* A 375 px los nombres de org largos no se cortan ("Team Secre…"): bajan de renglón. */
+@media (max-width: 479px) {
+  .previa-nombre { white-space: normal; overflow-wrap: anywhere; }
+}
+.previa-fuerza { font-family: var(--font-display); font-size: var(--fs-5); color: var(--ink); font-variant-numeric: tabular-nums; }
+.previa-p { display: flex; flex-direction: column; align-items: center; }
+.previa-pct { font-family: var(--font-display); font-size: var(--fs-6); color: var(--live); line-height: 1; font-variant-numeric: tabular-nums; }
+.previa-pct-label { font-size: var(--fs-0); color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.06em; }
+.previa-desglose { display: grid; grid-template-columns: 1fr auto; gap: 2px var(--s-3); margin: 0; font-size: var(--fs-1); }
+.previa-desglose dt { color: var(--ink-dim); }
+.previa-desglose dd { margin: 0; color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
+.previa-desglose dd[data-signo="up"] { color: var(--up); }
+.previa-desglose dd[data-signo="down"] { color: var(--down); }
+.previa-nota { margin-top: var(--s-2); font-size: var(--fs-1); color: var(--ink-mute); }
+.option-prob { margin-top: var(--s-1); font-size: var(--fs-1); color: var(--live); font-variant-numeric: tabular-nums; }
+.resultado-prob { margin-top: var(--s-1); font-size: var(--fs-0); color: var(--ink-mute); }
+
+/* --- K4-C: la línea de crónica (un evento que resolvió tu perfil) y el perfil en la ficha --- */
+.log-cronica-planteo {
+  font-size: var(--fs-1);
+  color: var(--ink-dim);
+  margin-bottom: var(--s-1);
+}
+.log-cronica-perfil {
+  color: var(--ice-dim);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  font-size: var(--fs-1);
+}
+.ficha-perfil {
+  margin-left: var(--s-2);
+  padding: 0 var(--s-2);
+  border: 1px solid var(--line);
+  font-size: var(--fs-1);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--ice-dim);
+}
+
+/* K5-A: el Mundial en una tarjeta del feed (components/mundial.js). Compacta: entra en 375 px. */
+.mundial { display: flex; flex-direction: column; gap: 6px; border-left: 3px solid var(--gold-deep); }
+.mundial--campeon { border-left-color: var(--gold); }
+.mundial-cabeza { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.mundial-titulo { font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.mundial-resultado { font-size: 0.85em; opacity: 0.85; }
+.mundial-texto { font-size: 0.9em; }
+.mundial-swiss { display: flex; flex-direction: column; gap: 4px; }
+.mundial-rotulo { font-size: 0.72em; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.7; }
+.mundial-cruces { display: flex; flex-wrap: wrap; gap: 4px; }
+.mundial-cruce { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 1px 6px; border-radius: 4px; font-size: 0.78em; background: var(--line-faint); }
+.mundial-cruce-res { font-weight: 700; }
+.mundial-cruce--w .mundial-cruce-res { color: var(--up); }
+.mundial-cruce--l .mundial-cruce-res { color: var(--down); }
+.mundial-cruce-rival { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 9em; }
+.mundial-bracket { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; align-items: center; }
+.mundial-etapa { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.mundial-serie { display: flex; flex-direction: column; padding: 2px 4px; border-radius: 4px; font-size: 0.72em; background: var(--bg-raised); min-width: 0; }
+.mundial-serie--tuya { outline: 1px solid var(--gold); background: var(--gold-fill); }
+.mundial-equipo { display: flex; justify-content: space-between; gap: 4px; opacity: 0.6; min-width: 0; }
+.mundial-equipo--gano { opacity: 1; font-weight: 600; }
+.mundial-equipo-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.mundial-campeon { font-size: 0.8em; opacity: 0.85; }
+
+/* ==========================================================================
+   7. EL BRACKET Y EL CAMINO DE LA SERIE (fase T6)
+   Visible mientras `state.serie.activa`. `serie.mapas` + `serie.quemados`
+   son la mecánica más distintiva del juego (Fearless draft) y hasta esta
+   fase eran una línea de texto plana.
+   ========================================================================== */
+
+.serie-contexto {
+  margin-top: var(--s-4);
+  padding: var(--s-3) var(--s-4);
+  background: var(--bg-raised);
+  border-left: 3px solid var(--gold);
+}
+
+.serie-bracket { display: flex; gap: var(--s-1); margin-bottom: var(--s-2); }
+.serie-bracket-paso {
+  flex: 1 1 0;
+  padding: var(--s-1) var(--s-2);
+  text-align: center;
+  background: var(--bg-sunken);
+  border-radius: var(--r-sharp);
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.serie-bracket-paso--superada { background: var(--up); color: var(--bg-void); }
+.serie-bracket-paso--actual {
+  background: var(--live);
+  color: var(--bg-void);
+  animation: latir-vivo-suave 2s var(--ease-in-out) infinite;
+}
+@keyframes latir-vivo-suave {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.7; }
+}
+.serie-bracket-titulo-solo {
+  margin-bottom: var(--s-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-2);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--gold);
+}
+
+.serie-marcador {
+  margin-bottom: var(--s-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-5);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.serie-camino { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.serie-mapa {
+  padding: 2px var(--s-2);
+  border-radius: var(--r-sharp);
+  font-size: var(--fs-1);
+  font-variant-numeric: tabular-nums;
+}
+.serie-mapa--ganado  { background: var(--up-fill); color: var(--up); }
+.serie-mapa--perdido { background: var(--down-fill); color: var(--down); }
+
+.serie-quemados {
+  margin-top: var(--s-2);
+  font-size: var(--fs-0);
+  color: var(--ink-mute);
+  text-decoration: line-through;
+  text-decoration-color: var(--line-strong);
+}
+
+.serie-cierres-lista {
+  margin-top: var(--s-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+.serie-cierre-item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  font-size: var(--fs-0);
+}
+
+.serie-cierre-tag {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.serie-cierre-item--ganado .serie-cierre-tag {
+  color: var(--up);
+}
+
+.serie-cierre-item--perdido .serie-cierre-tag {
+  color: var(--down);
+}
+
+.serie-cierre-texto {
+  color: var(--ink-dim);
+}

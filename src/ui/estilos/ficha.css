@@ -1,0 +1,344 @@
+/* La ficha: atributos, barras con hitos, contrato, chips. Dueño: V3e (PLAN.md §V.7).
+   Salió de componentes.css / pantallas.css en V2-A: solo mudanza de bloques, ninguna regla cambió. */
+
+/* ==========================================================================
+   3. LA FICHA (PLAN.md §8.6)
+   ========================================================================== */
+
+/* Lower-third, como `.summary`/`.log-item`: la ficha es el HUD permanente
+   (T2 la vuelve el riel izquierdo), no una tarjeta más entre las demás. */
+.ficha-card {
+  position: relative;
+  margin-top: var(--s-1);
+  padding: var(--s-5);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--line);
+}
+
+/* Dorada al llegar al último hito de arraigo o jerarquía. */
+.ficha-card--dorada {
+  border-color: var(--gold);
+  box-shadow: inset 0 0 0 1px var(--gold-glow), 0 0 40px -12px var(--gold-glow);
+}
+
+.ficha-encabezado { display: flex; gap: var(--s-4); align-items: center; }
+
+/* El NIVEL grande a la izquierda, con color por banda (§8.6, punto 4). */
+.ficha-nivel {
+  flex: 0 0 auto;
+  min-width: 78px;
+  padding: var(--s-2) var(--s-3);
+  text-align: center;
+  background-color: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: 0;
+  clip-path: var(--clip-corte-sm);
+}
+.ficha-nivel-numero {
+  font-family: var(--font-display);
+  font-size: var(--fs-7);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.ficha-nivel--prospecto     .ficha-nivel-numero { color: var(--nivel-prospecto); }
+.ficha-nivel--titular       .ficha-nivel-numero { color: var(--nivel-titular); }
+.ficha-nivel--elite         .ficha-nivel-numero { color: var(--nivel-elite); }
+.ficha-nivel--clase_mundial .ficha-nivel-numero { color: var(--nivel-clase_mundial); }
+
+.ficha-nivel-label {
+  margin-top: var(--s-1);
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--ink-dim);
+}
+
+.ficha-identidad { flex: 1 1 auto; min-width: 0; }
+
+.ficha-nombre-linea {
+  font-family: var(--font-display);
+  font-size: var(--fs-5);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.ficha-contexto-linea {
+  color: var(--ink-dim);
+  font-size: var(--fs-2);
+  margin-top: var(--s-1);
+}
+.ficha-estado-linea {
+  margin-top: var(--s-1);
+  font-size: var(--fs-1);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--live);
+}
+
+.ficha-totales {
+  margin-top: var(--s-3);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--line-faint);
+  color: var(--ink-dim);
+  font-size: var(--fs-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Los 6 atributos ------------------------------------------------------ */
+
+/* Telemetría (T0b), no seis cajas centradas: fila densa, alineada a la
+   izquierda, dividida por líneas — la ficha lee como un panel de datos, no
+   como un dashboard genérico. `ink-mute` para el label es el uso que
+   `tokens.css` reserva para "etiquetas de eje": exactamente lo que es. */
+.ficha-stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
+  margin-top: var(--s-3);
+  border-top: 1px solid var(--line-faint);
+}
+
+.ficha-stat {
+  padding: var(--s-2) var(--s-3) 0;
+  text-align: left;
+  border-left: 1px solid var(--line-faint);
+  transition: background var(--dur) var(--ease);
+}
+.ficha-stat:first-child { border-left: none; }
+.ficha-stat--destacado {
+  background: var(--gold-fill);
+  box-shadow: inset 2px 0 0 var(--gold);
+}
+
+.ficha-stat-label {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 600;
+  letter-spacing: var(--track-label);
+  color: var(--ink-mute);
+}
+.ficha-stat-valor {
+  display: block;
+  margin-top: var(--s-1);
+  padding-bottom: var(--s-2);
+  border-bottom: 2px solid var(--line-strong);
+  font-family: var(--font-display);
+  font-size: var(--fs-5);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.ficha-stat--destacado .ficha-stat-valor { color: var(--gold); border-bottom-color: var(--gold); }
+
+/* Las flechas son el único indicador de envejecimiento que ve el jugador
+   (H7 de PLAN.md): sin ellas, todo `curvas.js` es invisible. */
+.ficha-stat-flecha { font-size: var(--fs-0); margin-left: 3px; vertical-align: middle; }
+.ficha-stat-flecha--sube { color: var(--up); }
+.ficha-stat-flecha--baja { color: var(--down); }
+
+/* --- Las barras con hitos (arraigo, jerarquía) ---------------------------- */
+
+.ficha-barra-wrap { margin-top: var(--s-4); }
+
+.ficha-barra-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--s-2);
+  margin-bottom: var(--s-2);
+  font-size: var(--fs-1);
+}
+.ficha-barra-nombre {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: var(--track-cartel);
+  color: var(--ink-dim);
+}
+.ficha-barra-valor {
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.ficha-barra-valor--maxima { color: var(--gold); }
+
+.ficha-barra-pista {
+  position: relative;
+  height: 10px;
+  background: var(--bg-sunken);
+  border: 1px solid var(--line-faint);
+  border-radius: var(--r-pill);
+  overflow: visible;
+}
+.ficha-barra-relleno {
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--live-deep), var(--live));
+  box-shadow: 0 0 12px -2px var(--live-glow);
+  /* La barra se llena, no aparece llena. */
+  transition: width var(--dur-slow) var(--ease);
+}
+.ficha-barra-relleno--maxima {
+  background: linear-gradient(90deg, var(--gold-deep), var(--gold));
+  box-shadow: 0 0 14px -2px var(--gold-glow);
+}
+
+.ficha-barra-hito {
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 18px;
+  background: var(--line-strong);
+  transform: translateX(-50%);
+  transition: background var(--dur) var(--ease);
+}
+.ficha-barra-hito--alcanzado { background: var(--ink); }
+
+.ficha-barra-hitos-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--s-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.ficha-hito-alcanzado { color: var(--ink); font-weight: 600; }
+
+/* --- Badge internacional, pool, ánimo ------------------------------------- */
+
+.ficha-badge {
+  display: inline-block;
+  margin-top: var(--s-3);
+  padding: var(--s-1) var(--s-3);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  background: var(--bg-sunken);
+  color: var(--ink-dim);
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  font-weight: 600;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
+.ficha-badge--clasificado,
+.ficha-badge--jugando { border-color: var(--up); color: var(--up); }
+.ficha-badge--en_carpeta { border-color: var(--gold); color: var(--gold); }
+.ficha-badge--duelo-ganando { border-color: var(--up); color: var(--up); }
+.ficha-badge--duelo-perdiendo { border-color: var(--danger); color: var(--danger); }
+
+.ficha-pool {
+  margin-top: var(--s-3);
+  font-size: var(--fs-2);
+  color: var(--ink-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Contrato y valor de mercado (fase T2) ---------------------------------
+   Existían en `career.contrato` y `valorDeMercado(state)` desde la fase 9 y
+   nunca se dibujaban en ningún lado. Telemetría, no una caja más: mismo
+   patrón que `.ficha-stat` (T0b) — label chico arriba, dato abajo. */
+.ficha-contrato,
+.ficha-valor-mercado {
+  margin-top: var(--s-3);
+  padding-top: var(--s-2);
+  border-top: 1px solid var(--line-faint);
+}
+.ficha-contrato-label,
+.ficha-valor-mercado-label {
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 600;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.ficha-contrato-linea {
+  margin-top: 2px;
+  font-size: var(--fs-2);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.ficha-contrato-salario,
+.ficha-valor-mercado-cifra {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--gold);
+}
+.ficha-valor-mercado-cifra {
+  margin-top: 2px;
+  font-size: var(--fs-5);
+  line-height: 1;
+  display: block;
+}
+/* El valor de mercado por debajo del sueldo actual es una señal real (te
+   subpaga tu propio contrato) — se marca en --warn, no en --gold. */
+.ficha-valor-mercado--bajo-sueldo .ficha-valor-mercado-cifra { color: var(--warn); }
+
+/* --- Marcas de contexto: chips (fase T2) -----------------------------------
+   `contexto.marcas` (hasta 26 posibles) se calcula cada split y no se veía
+   en ningún lado. `--peligro` marca las 4 que son una señal de riesgo real
+   (deuda de sueño, PC confiscada, tensión familiar, mentalidad al límite);
+   el resto son contexto neutro. */
+.ficha-marcas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1);
+  margin-top: var(--s-3);
+}
+.ficha-marca {
+  padding: 2px var(--s-2);
+  border-radius: var(--r-sharp);
+  border: 1px solid var(--line);
+  background: var(--bg-sunken);
+  color: var(--ink-dim);
+  font-family: var(--font-ui);
+  font-size: var(--fs-0);
+}
+.ficha-marca--peligro { border-color: var(--warn); color: var(--warn); }
+
+/* Mentalidad y Hype (fase 9R.2): la barra que te mata tiene que verse venir. */
+.ficha-animo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4);
+  margin-top: var(--s-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-2);
+  font-weight: 600;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.ficha-animo--peligro .ficha-animo-celda:first-child {
+  color: var(--danger);
+  animation: latir-peligro 2s var(--ease-in-out) infinite;
+}
+@keyframes latir-peligro {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+
+/* --- Ver carrera / Momentos ----------------------------------------------- */
+
+.ficha-historia { margin-top: var(--s-3); font-size: var(--fs-2); color: var(--ink-dim); }
+.ficha-historia summary {
+  cursor: pointer;
+  padding: var(--s-1) 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ice);
+}
+.ficha-historia summary:hover { color: var(--ink); }
+.ficha-historia-fila {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) 0;
+  border-top: 1px solid var(--line-faint);
+  font-variant-numeric: tabular-nums;
+}

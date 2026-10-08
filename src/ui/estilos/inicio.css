@@ -1,0 +1,445 @@
+/* El inicio: rol, mains, perfil, región, desafío del día. Familia sin dueño de V3 (PLAN.md §V.7).
+   Salió de componentes.css / pantallas.css en V2-A: solo mudanza de bloques, ninguna regla cambió. */
+
+/* ==========================================================================
+   1. INICIO — rol y mains
+   ========================================================================== */
+
+.paso { margin-top: var(--s-7); }
+
+.panel.escenario-entrar {
+  animation: wipe-escenario var(--dur-slow) var(--ease) both;
+}
+@keyframes wipe-escenario {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* J9: el splash del último main elegido, difuminado, detrás de todo el setup (`components/splash.js`).
+   `.panel` tiene `clip-path` (crea un contexto de apilamiento y recorta el chaflán), así que con z-index -1
+   queda sobre su fondo y debajo del contenido. Es `fixed`: el setup es largo y un splash del alto del panel
+   quedaba estirado y casi invisible; así acompaña al scroll y el clip-path lo recorta al panel. El
+   contenedor recorta con `overflow: clip`: el `clip-path` del panel recorta lo que se ve pero no el
+   desborde scrolleable, y la capa agrandada (`scale`, para tapar los bordes del blur) ensanchaba la
+   página en el celular (D69). El velo (degradé al color de la superficie) mantiene el texto legible; sin
+   imagen las capas quedan transparentes y el fondo es el de siempre. */
+.setup-splash {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  overflow: clip;
+  pointer-events: none;
+}
+.setup-splash-capa {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center 20%;
+  filter: blur(14px) saturate(0.85);
+  transform: scale(1.08);
+  opacity: 0;
+  transition: opacity var(--dur-slow) var(--ease);
+}
+.setup-splash-capa--visible { opacity: 0.55; }
+.setup-splash::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--bg-surface) 30%, transparent), color-mix(in srgb, var(--bg-surface) 88%, transparent));
+}
+@media (prefers-reduced-motion: reduce) {
+  .setup-splash-capa { transition: none; }
+}
+
+#setup .subtitle {
+  font-family: var(--font-display);
+  font-size: var(--fs-7);
+  font-weight: 700;
+  line-height: var(--lh-tight);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  max-width: 16em;
+  margin-bottom: var(--s-2);
+}
+#setup .subtitle::after {
+  content: "";
+  display: block;
+  width: 80px;
+  height: 3px;
+  margin-top: var(--s-4);
+  background: var(--live);
+  box-shadow: 0 0 18px var(--live-glow);
+}
+
+.paso-label {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-bottom: var(--s-4);
+  padding-bottom: var(--s-3);
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-display);
+  font-size: var(--fs-3);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--track-cartel);
+  color: var(--ink);
+}
+.paso-label::before {
+  font-size: var(--fs-6);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--live);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-shadow: 0 0 18px var(--live-glow);
+}
+.paso:nth-of-type(1) .paso-label::before { content: "01"; }
+.paso:nth-of-type(2) .paso-label::before { content: "02"; }
+.paso:nth-of-type(3) .paso-label::before { content: "03"; }
+
+.handle-input,
+.seed-input {
+  width: 100%;
+  max-width: 520px;
+  padding: var(--s-3) 0;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid var(--ice-dim);
+  border-radius: 0;
+  color: var(--ink);
+  font-size: var(--fs-7);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+.handle-input:hover,
+.seed-input:hover { border-color: var(--ice); }
+.handle-input:focus,
+.seed-input:focus { border-color: var(--live); outline: none; }
+.handle-input::placeholder,
+.seed-input::placeholder { color: var(--ink-mute); font-weight: 600; font-size: var(--fs-4); }
+
+.seed-input { max-width: 220px; font-size: var(--fs-5); font-variant-numeric: tabular-nums; }
+
+.seed-aviso { margin-top: var(--s-2); font-size: var(--fs-1); color: var(--warn); line-height: 1.4; }
+.seed-aviso:empty { display: none; }
+.seed-row { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
+.seed-label {
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--ink-dim);
+}
+
+/* Un <button> centra su contenido en vertical por defecto. Como el grid las
+   estira todas a la misma altura, los títulos quedaban a alturas distintas
+   entre una tarjeta y la de al lado. Todas las tarjetas-botón alinean arriba. */
+.rol-card,
+.campeon-card,
+.option-btn,
+.minijuego-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+/* --- Las cinco líneas ------------------------------------------------------ */
+
+.rol-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--s-4);
+}
+@media (max-width: 899px) {
+  .rol-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 479px) {
+  .rol-grid { grid-template-columns: 1fr; }
+}
+
+.rol-card {
+  min-height: 200px;
+  padding: var(--s-5) var(--s-4);
+  text-align: left;
+  background: var(--bg-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: 0;
+  clip-path: var(--clip-corte);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-2);
+  text-transform: none;
+  letter-spacing: normal;
+  transition: border-color var(--dur-fast) var(--ease),
+              background var(--dur-fast) var(--ease),
+              box-shadow var(--dur) var(--ease);
+}
+.rol-card .rol-marca {
+  font-size: var(--fs-8);
+  color: var(--ink-mute);
+  margin-bottom: var(--s-3);
+}
+.rol-card.elegido .rol-marca { color: var(--live); filter: drop-shadow(0 0 12px var(--live-glow)); }
+.rol-card:hover { border-color: var(--ice); background: var(--bg-raised); box-shadow: none; }
+.rol-card.elegido {
+  border-color: var(--live);
+  background-color: var(--live-fill);
+  box-shadow: inset 0 0 0 2px var(--live), 0 0 48px -8px var(--live-glow);
+}
+.rol-card.elegido:hover { border-color: var(--live); background-color: var(--live-fill); }
+
+.rol-nombre {
+  margin-bottom: var(--s-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-7);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: var(--lh-tight);
+}
+.rol-card.elegido .rol-nombre { color: var(--live); }
+
+.rol-tono { color: var(--ink-dim); line-height: var(--lh-snug); margin-bottom: var(--s-2); }
+.rol-costo { color: var(--warn); line-height: var(--lh-snug); font-size: var(--fs-1); }
+.rol-card:not(.elegido) .rol-tono,
+.rol-card:not(.elegido) .rol-costo { display: none; }
+
+/* --- Los campeones --------------------------------------------------------- */
+
+.draft-slots {
+  display: flex;
+  gap: var(--s-4);
+  margin-bottom: var(--s-5);
+}
+.draft-slot {
+  width: 104px;
+  height: 124px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background-color: var(--bg-sunken);
+  border: 2px dashed var(--ice-dim);
+  border-radius: 0;
+  clip-path: var(--clip-corte);
+  color: var(--ink-mute);
+  font-family: var(--font-display);
+  font-size: var(--fs-7);
+  font-weight: 700;
+}
+.draft-slot--lleno {
+  border-style: solid;
+  border-color: var(--up);
+  padding: 4px;
+  /* K6a-U: la ficha con su nombre debajo (antes solo las iniciales: "AA", "OR", "KS"). */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+.draft-slot-nombre {
+  font-family: var(--font-ui);
+  font-size: var(--fs-1);
+  font-weight: 700;
+  line-height: 1.1;
+  text-transform: none;
+  letter-spacing: normal;
+  text-align: center;
+  color: var(--up);
+  overflow-wrap: anywhere;
+}
+.draft-slot:hover:not(:disabled) {
+  background: var(--bg-sunken);
+  border-color: var(--live);
+  color: var(--live);
+  box-shadow: none;
+}
+.draft-slot .campeon-tile { width: 100%; height: 100%; }
+.draft-slot--lleno .campeon-tile { flex: 1 1 auto; min-height: 0; }
+
+.campeon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--s-3);
+}
+
+.campeon-card {
+  padding: var(--s-2) var(--s-3);
+  text-align: left;
+  background: var(--bg-raised);
+  border: 1px solid var(--line-faint);
+  border-radius: 0;
+  clip-path: var(--clip-corte-sm);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-2);
+  text-transform: none;
+  letter-spacing: normal;
+  gap: var(--s-2);
+  transition: border-color var(--dur-fast) var(--ease),
+              background var(--dur-fast) var(--ease);
+}
+.campeon-card .campeon-tile { align-self: flex-start; }
+.campeon-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.campeon-tag-chip {
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sharp);
+  font-size: 10px;
+  color: var(--ink-mute);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
+.campeon-card:hover:not(:disabled) { border-color: var(--live); box-shadow: none; background: var(--bg-raised); }
+.campeon-card.elegido {
+  border-color: var(--up);
+  background: var(--bg-surface);
+  box-shadow: inset 0 0 0 1px var(--up);
+}
+.campeon-card:disabled { opacity: 0.34; cursor: not-allowed; }
+
+.campeon-nombre { font-weight: 700; }
+.campeon-card.elegido .campeon-nombre { color: var(--up); }
+.campeon-tags { margin-top: 2px; color: var(--ink-mute); font-size: var(--fs-0); }
+
+.pool-contador { margin-top: var(--s-2); font-size: var(--fs-2); color: var(--ink-dim); }
+
+.setup-aviso {
+  margin-bottom: var(--s-5);
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--warn);
+  background: var(--warn-fill);
+  color: var(--ink);
+  font-size: var(--fs-1);
+  border-radius: var(--r);
+  line-height: 1.4;
+}
+
+.setup-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--s-4);
+  margin-top: var(--s-8);
+}
+.setup-footer #run { width: 100%; }
+
+/* "Continuar" (T8, P.2): un ghost dorado, no el cyan sólido de "Empezar
+   carrera" — son la misma jerarquía de decisión (arrancar algo), pero
+   "seguir lo que ya tenías" no debería competir visualmente con la opción
+   de arrancar de cero. */
+.continuar-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  background: var(--gold-fill);
+  border: 1px solid var(--gold-deep);
+  color: var(--gold);
+}
+.continuar-btn:hover:not(:disabled) {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--bg-void);
+}
+.continuar-kicker {
+  font-family: var(--font-display);
+  font-size: var(--fs-3);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
+.continuar-detalle {
+  font-family: var(--font-ui);
+  font-size: var(--fs-1);
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: inherit;
+  opacity: 0.8;
+}
+
+details.avanzado { margin-top: var(--s-5); font-size: var(--fs-2); color: var(--ink-dim); }
+details.avanzado summary {
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--ink-mute);
+}
+details.avanzado summary:hover { color: var(--ink-dim); }
+
+/* --- K1-B: el desafío del día y tus últimos resultados ---------------------
+   `button` de base.css (padding 0, sin borde ni fondo, `font: inherit`) le
+   gana a `:where(button)`: un botón con clase propia se viste entero acá. */
+.desafio-dia { display: grid; gap: var(--s-2); justify-items: start; margin-top: var(--s-5); padding: var(--s-4); background: var(--bg-raised); border-left: 3px solid var(--live); }
+.desafio-kicker, .historial-titulo, .desafio-btn {
+  font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: var(--track-cartel);
+}
+.desafio-kicker, .historial-titulo { font-size: var(--fs-2); color: var(--live); }
+.desafio-texto { margin: 0; font-size: var(--fs-2); color: var(--ink-dim); line-height: var(--lh-snug); }
+.desafio-btn { padding: var(--s-3) var(--s-5); font-size: var(--fs-4); letter-spacing: var(--track-label); background: var(--live-fill); border: 1px solid var(--live); color: var(--live); }
+.desafio-btn:hover:not(:disabled) { background: var(--live); color: var(--bg-void); }
+.desafio-mejor { font-size: var(--fs-1); color: var(--gold); }
+.desafio-hoy { clip-path: none; font-size: var(--fs-1); text-transform: none; letter-spacing: normal; color: var(--ink-dim); text-decoration: underline; }
+.desafio-hoy:hover { color: var(--live); }
+.historial { margin-top: var(--s-6); }
+.historial-titulo { color: var(--ice); margin-bottom: var(--s-2); }
+.historial-lista { list-style: none; margin: 0; padding: 0; }
+.historial-fila { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--s-3); padding: var(--s-2) 0; border-bottom: 1px solid var(--line-faint); }
+.historial-que { color: var(--ice); font-weight: 600; font-size: var(--fs-2); }
+.historial-pts { font-family: var(--font-display); font-weight: 700; font-size: var(--fs-4); font-variant-numeric: tabular-nums; color: var(--ink); }
+.historial-detalle { grid-column: 1 / -1; font-size: var(--fs-0); color: var(--ink-dim); overflow-wrap: anywhere; }
+
+/* --- K4-C: el perfil en el inicio — cuatro chips, dos por fila en 375 px --- */
+.perfil-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s-2);
+}
+@media (max-width: 480px) {
+  .perfil-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+/* K5-B: la región en el inicio — los chips del perfil, cuatro por fila (tres en 375 px) */
+.region-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s-2);
+}
+@media (max-width: 480px) {
+  .region-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  /* "NORTEAMÉRICA" mide 87 px a 11 px sin tracking y el chip de tres por fila tiene 90 px útiles desde los 381 px de
+     ancho; si aun así no entra, parte en vez de salirse del chip. */
+  .region-grid .perfil-chip { padding: var(--s-2) var(--s-1); font-size: var(--fs-0); letter-spacing: 0; overflow-wrap: anywhere; }
+}
+/* Por debajo de 380 px el chip de tres por fila ya no alcanza: dos por fila y el chip vuelve a su letra y su tracking. */
+@media (max-width: 380px) {
+  .region-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .region-grid .perfil-chip { padding: var(--s-2) var(--s-3); font-size: var(--fs-1); letter-spacing: 0.06em; }
+}
+.perfil-chip {
+  min-height: 44px;
+  padding: var(--s-2) var(--s-3);
+  background: var(--bg-raised);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-1);
+}
+.perfil-chip.elegido {
+  border-color: var(--live);
+  color: var(--live);
+}
+.perfil-texto {
+  margin-top: var(--s-2);
+  font-size: var(--fs-1);
+  color: var(--ink-dim);
+}

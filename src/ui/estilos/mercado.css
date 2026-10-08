@@ -1,0 +1,269 @@
+/* El mercado de pases: tarjetas, mundo, representante. Dueño: V3c (PLAN.md §V.7).
+   Salió de componentes.css / pantallas.css en V2-A: solo mudanza de bloques, ninguna regla cambió. */
+
+/* ==========================================================================
+   3. EL MERCADO (fase 9c)
+   ========================================================================== */
+
+.mercado {
+  position: relative;
+  margin-top: var(--s-6);
+  padding: var(--s-5);
+  padding-left: calc(var(--s-5) - 3px);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--cat-mercado);
+  animation: entrar-decision var(--dur-slow) var(--ease) both;
+}
+
+.mercado-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--s-3);
+}
+
+.mercado-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-4);
+  text-align: left;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: 0;
+  clip-path: var(--clip-corte);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-2);
+  text-transform: none;
+  letter-spacing: normal;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+.mercado-card:hover {
+  border-color: var(--cat-mercado);
+  background: var(--bg-raised);
+  box-shadow: none;
+}
+.mercado-card--bombazo { border-color: var(--gold-deep); }
+
+.mercado-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--s-2);
+}
+.mercado-card-org {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-5);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.mercado-card-tag {
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--cat-mercado);
+}
+
+.mercado-card-liga { font-size: var(--fs-1); color: var(--ink-mute); }
+/* K5c-M: dónde está el plantel por fuerza en su liga. */
+.mercado-card-plantel { font-size: var(--fs-2); line-height: var(--lh-snug); color: var(--ink-dim); }
+
+.mercado-card-salario {
+  font-family: var(--font-display);
+  font-size: var(--fs-6);
+  font-weight: 700;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+
+.mercado-card-jerarquia,
+.mercado-card-picks,
+.mercado-card-arraigo,
+.mercado-card-motivo,
+.mercado-card-hito {
+  font-size: var(--fs-2);
+  line-height: var(--lh-snug);
+  color: var(--ink-dim);
+}
+.mercado-card-riesgo {
+  font-size: var(--fs-1);
+  line-height: var(--lh-snug);
+  color: var(--warn);
+}
+
+/* Fase 9Mc: "el mundo siguió sin vos". El bloque completo de tres columnas es
+   9Mg; esto es la línea que hace que la elección no se sienta en el vacío. */
+.mercado-mundo {
+  margin-top: var(--s-5);
+  padding: var(--s-4);
+  border-left: 3px solid var(--line-strong);
+  background: var(--bg-sunken);
+  border-radius: 0;
+}
+.mercado-mundo-titulo {
+  font-size: var(--fs-1);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--ink-mute);
+  margin-bottom: var(--s-2);
+}
+.mercado-mundo-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--fs-2);
+  line-height: var(--lh-snug);
+  color: var(--ink-dim);
+}
+
+.mercado-representante-btn {
+  width: 100%;
+  margin-top: var(--s-4);
+  padding: var(--s-3) var(--s-4);
+  background: transparent;
+  border: 1px dashed var(--line-strong);
+  border-radius: 0;
+  clip-path: var(--clip-corte);
+  color: var(--ink-dim);
+  font-family: var(--font-ui);
+  font-size: var(--fs-2);
+  text-transform: none;
+  letter-spacing: normal;
+}
+.mercado-representante-btn:hover:not(:disabled) {
+  border-color: var(--live);
+  color: var(--ink);
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Fase 9Me: negociar, no aceptar. Las acciones por tarjeta y el bloque de
+   clubes que te siguen. El rediseño de tres columnas es 9Mg. */
+.mercado-card-neg {
+  font-size: var(--fs-0);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--cat-mercado);
+}
+.mercado-card-riesgo-neg {
+  font-size: var(--fs-1);
+  line-height: var(--lh-snug);
+  color: var(--ink-mute);
+}
+.mercado-card-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+}
+.mercado-card-btn {
+  flex: 1 1 auto;
+  padding: var(--s-2) var(--s-3);
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: 0;
+  clip-path: var(--clip-corte-sm);
+  color: var(--ink-dim);
+  font-family: var(--font-ui);
+  font-size: var(--fs-1);
+  text-transform: none;
+  letter-spacing: normal;
+  transition: border-color var(--dur-fast) var(--ease),
+              color var(--dur-fast) var(--ease);
+}
+.mercado-card-btn:hover {
+  border-color: var(--cat-mercado);
+  color: var(--ink);
+}
+.mercado-card-btn--firmar {
+  border-color: var(--cat-mercado);
+  background: var(--cat-mercado);
+  color: var(--bg-void);
+  font-weight: 700;
+}
+.mercado-card-btn--firmar:hover {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--bg-void);
+}
+
+/* Fase 9Mg (§9M.8): la pantalla de mercado de tres bloques.
+   Bloque 1 — "Vos en el mercado": tu valor con su referente, el contrato y los
+   años que quedan, y quién te mira. Va arriba de las ofertas. */
+.mercado-vos {
+  margin-bottom: var(--s-4);
+  padding: var(--s-4);
+  border-left: 3px solid var(--cat-mercado);
+  background: var(--bg-sunken);
+  border-radius: 0;
+}
+.mercado-vos-titulo {
+  font-size: var(--fs-1);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--ink-mute);
+  margin-bottom: var(--s-2);
+}
+.mercado-vos-valor {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+.mercado-vos-cifra {
+  font-family: var(--font-display);
+  font-size: var(--fs-6);
+  font-weight: 700;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+.mercado-vos-ref {
+  font-size: var(--fs-1);
+  color: var(--ink-mute);
+}
+.mercado-vos-contrato {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+  font-size: var(--fs-2);
+  line-height: var(--lh-snug);
+  color: var(--ink-dim);
+}
+.mercado-vos-miran {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+  font-size: var(--fs-1);
+  line-height: var(--lh-snug);
+  color: var(--ink-mute);
+}
+.mercado-chip-org {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  color: var(--ink-dim);
+}
+
+/* Bloque 3: sub-encabezados dentro de "El mercado del mundo" (traspasos
+   cerrados / asientos abiertos). */
+.mercado-mundo-sub {
+  margin-top: var(--s-3);
+  margin-bottom: var(--s-1);
+  font-size: var(--fs-0);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--ink-mute);
+}

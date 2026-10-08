@@ -1,0 +1,233 @@
+/* La tarjeta de legado: marcos por final, número y desglose. Dueño: V5 (PLAN.md §V.7).
+   Salió de componentes.css / pantallas.css en V2-A: solo mudanza de bloques, ninguna regla cambió. */
+
+/* ==========================================================================
+   5. LA TARJETA DE LEGADO (fase 9R5b / PLAN.md §10.2)
+   Toda salida termina acá: la del mundialista y la del pibe al que no lo
+   dejaron jugar, con marcos distintos.
+   ========================================================================== */
+
+.tarjeta {
+  margin-top: var(--s-5);
+  padding: var(--s-6) var(--s-5);
+  text-align: center;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--line);
+  border-radius: 0;
+  animation: entrar-decision var(--dur-slow) var(--ease) both;
+}
+/* El marco por cada uno de los 5 finales (T7, §10.3): "el mundialista y
+   el pibe al que no lo dejaron jugar no comparten marco" — antes de esta
+   fase compartían el mismo `.tarjeta--sobria` gris. `.tarjeta.tarjeta--exito`
+   (dos clases juntas, no una) sigue ganando cuando aplica — necesita esa
+   especificidad extra para no perder contra `.tarjeta[data-marco]`, que
+   por tener clase+atributo pesa más que una sola clase suelta. */
+.tarjeta.tarjeta--exito {
+  border-color: var(--gold);
+  background:
+    radial-gradient(120% 80% at 50% 0%, var(--gold-glow), transparent 60%),
+    var(--bg-surface);
+  box-shadow: inset 0 0 0 1px var(--gold-glow), 0 0 60px -20px var(--gold-glow);
+}
+.tarjeta--sobria { border-color: var(--line-strong); }
+
+.tarjeta[data-marco="retiro_elegido"]        { border-color: var(--live); }
+.tarjeta[data-marco="sin_equipo"]            { border-color: var(--warn); }
+.tarjeta[data-marco="burnout"]               { border-color: var(--danger); }
+.tarjeta[data-marco="no_llego"]              { border-color: var(--line-strong); }
+.tarjeta[data-marco="prohibicion_familiar"]  { border-color: var(--cat-familia); }
+.tarjeta[data-marco="retiro_por_lesion"]     { border-color: var(--cat-salud); }
+
+.tarjeta-marco {
+  font-family: var(--font-display);
+  font-size: var(--fs-2);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-cartel);
+  color: var(--ink-dim);
+}
+.tarjeta--exito .tarjeta-marco { color: var(--gold); }
+
+.tarjeta-motivo { margin-top: var(--s-2); font-size: var(--fs-2); color: var(--ink); overflow-wrap: anywhere; }
+
+.tarjeta-identidad { margin-top: var(--s-2); font-size: var(--fs-2); color: var(--ink-dim); }
+
+.tarjeta-veredicto {
+  margin: var(--s-4) 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-7);
+  font-weight: 700;
+  line-height: var(--lh-tight);
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.tarjeta--exito .tarjeta-veredicto { font-size: var(--fs-8); color: var(--gold); }
+/* El veredicto es una frase larga en mayúsculas condensadas ("…3 INTERNACIONALES…"):
+   una sola palabra a 48px mide 326px y no entra en un celular de 320-360px.
+   Dos cosas lo atajan. Medido en Chromium a 320 y 360px con 4 tarjetas de éxito:
+   sin ninguna de las dos la página desborda (hasta 384px), y con cualquiera de
+   las dos sola no desborda.
+   - `overflow-wrap: anywhere` es la defensa general: una palabra más larga que
+     la columna se corta en vez de desbordar, en cualquier ancho.
+   - el bloque de ≤639px achica el cartel del éxito (`--fs-7`, para que esa
+     palabra entre entera) y el padding de la tarjeta. Es ajuste de tamaño: lo
+     que garantiza que no desborde es la línea de arriba, no este bloque.
+   La tarjeta que quedaba angosta en un celular es otro arreglo (el override de
+   columnas de `data-legado="on"` en shell.css), no este. */
+.tarjeta-veredicto { overflow-wrap: anywhere; }
+@media (max-width: 639px) {
+  .tarjeta { padding: var(--s-6) var(--s-4); }
+  .tarjeta--exito .tarjeta-veredicto { font-size: var(--fs-7); }
+}
+
+.tarjeta-totales {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+  gap: var(--s-3);
+  padding-bottom: var(--s-4);
+  border-bottom: 1px solid var(--line-faint);
+}
+.tarjeta-celda {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+.tarjeta-celda-k {
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.tarjeta-celda-v {
+  font-family: var(--font-display);
+  font-size: var(--fs-5);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.tarjeta-historia { margin-top: var(--s-4); text-align: left; font-size: var(--fs-2); color: var(--ink-dim); }
+.tarjeta-historia-titulo {
+  margin-bottom: var(--s-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--track-cartel);
+  color: var(--ice);
+}
+
+.tarjeta-internacionales {
+  margin-top: var(--s-4);
+  text-align: left;
+}
+
+.tarjeta-intl-bloque {
+  margin-top: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  background: var(--bg-sunken);
+  border: 1px solid var(--line-faint);
+  border-radius: var(--r-sharp);
+}
+
+.tarjeta-intl-encabezado {
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: var(--s-1);
+}
+
+.tarjeta-intl-camino {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+.tarjeta-intl-mapa {
+  font-size: var(--fs-0);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-dim);
+}
+
+.tarjeta-intl-mapa--ganado {
+  color: var(--up);
+}
+
+.tarjeta-intl-mapa--perdido {
+  color: var(--ink-dim);
+}
+
+/* --- Las tres acciones de cierre (T7): PNG + link ------------------------- */
+.tarjeta-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--s-3);
+  margin-top: var(--s-5);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--line-faint);
+}
+.tarjeta-accion-btn {
+  flex: 0 1 auto;
+  font-size: var(--fs-1);
+  padding: var(--s-2) var(--s-4);
+}
+.tarjeta-accion-btn--principal,
+.tarjeta-accion-btn--principal:hover:not(:disabled) { background: var(--live); border-color: var(--live); color: var(--bg-void); }
+.tarjeta-compartir-texto { display: block; margin-top: var(--s-3); padding: var(--s-2) var(--s-3); background: var(--bg-sunken); border: 1px solid var(--line); font-size: var(--fs-1); color: var(--ink); text-align: left; overflow-wrap: anywhere; user-select: all; }
+
+/* --- K1-B: el número, su desglose y la leyenda comparada ------------------ */
+.tarjeta-numero { margin: var(--s-5) 0 var(--s-2); padding: var(--s-4) 0 var(--s-5); border-top: 1px solid var(--line-faint); border-bottom: 1px solid var(--line-faint); }
+.tarjeta-numero[data-nivel="no_llego"],
+.tarjeta-numero[data-nivel="circuito"] { --nivel-color: var(--ink-dim); }
+.tarjeta-numero[data-nivel="profesional"] { --nivel-color: var(--ice); }
+.tarjeta-numero[data-nivel="fijo"] { --nivel-color: var(--up); }
+.tarjeta-numero[data-nivel="campeon"] { --nivel-color: var(--live); }
+.tarjeta-numero[data-nivel="figura"],
+.tarjeta-numero[data-nivel="leyenda"],
+.tarjeta-numero[data-nivel="goat"] { --nivel-color: var(--gold); }
+.tarjeta-numero-k, .tarjeta-numero-nivel, .tarjeta-comp-nombre, .tarjeta-leyenda-handle, .tarjeta-leyenda-k,
+details.tarjeta-internacionales > summary {
+  font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: var(--track-label);
+}
+.tarjeta-numero-v, .tarjeta-comp-puntos, .tarjeta-leyenda-v {
+  font-family: var(--font-display); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink);
+}
+.tarjeta-numero-k { font-size: var(--fs-1); letter-spacing: var(--track-cartel); color: var(--ink-dim); }
+.tarjeta-numero-v { font-size: var(--fs-9); line-height: 1; color: var(--nivel-color, var(--ink)); }
+.tarjeta-numero-nivel { font-size: var(--fs-5); color: var(--nivel-color, var(--ink)); }
+.tarjeta-numero-ref { margin-top: var(--s-1); font-size: var(--fs-2); color: var(--ink-dim); }
+.tarjeta-numero-historial { margin-top: var(--s-2); font-size: var(--fs-1); color: var(--gold); }
+.tarjeta-siguiente { max-width: 460px; margin: var(--s-3) auto 0; padding: var(--s-2) var(--s-3); border: 1px solid var(--line-faint); font-size: var(--fs-1); line-height: var(--lh-snug); color: var(--ink-dim); }
+.tarjeta-siguiente-k { display: block; margin-bottom: var(--s-1); font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: var(--track-label); color: var(--ink-mute); }
+
+.tarjeta-desglose,
+.tarjeta-leyenda { margin-top: var(--s-5); text-align: left; }
+.tarjeta-comp { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--s-3); align-items: baseline; padding: var(--s-2) 0; border-bottom: 1px solid var(--line-faint); }
+.tarjeta-comp-nombre { font-size: var(--fs-3); color: var(--ink); }
+.tarjeta-comp-puntos { font-size: var(--fs-4); white-space: nowrap; }
+.tarjeta-comp-detalle { grid-column: 1 / -1; font-size: var(--fs-1); line-height: var(--lh-snug); color: var(--ink-dim); }
+.tarjeta-comp--cero > * { color: var(--ink-mute); }
+.tarjeta-comp--subtotal .tarjeta-comp-puntos { color: var(--ink-dim); }
+.tarjeta-comp--techo .tarjeta-comp-nombre { color: var(--gold); }
+.tarjeta-comp--total { border-top: 2px solid var(--line-strong); border-bottom: none; }
+.tarjeta-comp--total > * { font-size: var(--fs-5); }
+/* Con el número arriba, el veredicto deja de ser el cartel principal: baja un
+   escalón para no competirle (también en el éxito y en el celular). */
+.tarjeta-numero ~ .tarjeta-veredicto,
+.tarjeta--exito .tarjeta-numero ~ .tarjeta-veredicto { font-size: var(--fs-6); }
+
+.tarjeta-leyenda-handle { font-size: var(--fs-6); line-height: var(--lh-tight); color: var(--gold); }
+.tarjeta-leyenda-meta { font-size: var(--fs-1); color: var(--ink-dim); text-transform: uppercase; letter-spacing: var(--track-label); }
+.tarjeta-leyenda-historia { margin: var(--s-2) 0 var(--s-3); font-size: var(--fs-2); font-style: italic; color: var(--ink); line-height: var(--lh-snug); }
+.tarjeta-leyenda-tabla { display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(4, minmax(0, 1fr)); gap: var(--s-1) var(--s-2); align-items: baseline; }
+.tarjeta-leyenda-k { font-size: var(--fs-0); color: var(--ink-mute); }
+.tarjeta-leyenda-quien { font-size: var(--fs-1); color: var(--ink-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tarjeta-leyenda-v { font-size: var(--fs-4); }
+details.tarjeta-internacionales > summary { cursor: pointer; font-size: var(--fs-1); letter-spacing: var(--track-cartel); color: var(--ice); }

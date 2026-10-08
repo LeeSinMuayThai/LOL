@@ -1,0 +1,294 @@
+/* El riel de contexto: tabla, calendario, plantilla, meta, generación, top mundial. Dueño: V3e (PLAN.md §V.7).
+   Salió de componentes.css / pantallas.css en V2-A: solo mudanza de bloques, ninguna regla cambió. */
+
+/* ==========================================================================
+   6. EL RIEL DE CONTEXTO (fase T5)
+   Cinco paneles chicos y densos — telemetría, como los 6 atributos de la
+   ficha (T0b), no tarjetas grandes: viven al costado, no compiten con el
+   escenario. Cada uno se arma en `src/ui/paneles/*.js`.
+   ========================================================================== */
+
+.panel-contexto {
+  padding: var(--s-4);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--line);
+}
+
+.panel-contexto-titulo {
+  margin-bottom: var(--s-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  font-weight: 700;
+  letter-spacing: var(--track-cartel);
+  text-transform: uppercase;
+  color: var(--ice);
+}
+
+.panel-contexto-leyenda {
+  margin-top: var(--s-3);
+  padding-top: var(--s-2);
+  border-top: 1px solid var(--line-faint);
+  font-size: var(--fs-0);
+  color: var(--ink-mute);
+}
+
+/* Barra genérica (la sinergia de Plantilla) — mismo lenguaje que las
+   barras de arraigo/jerarquía de la ficha, sin los hitos. */
+.panel-contexto-barra-cabecera {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--s-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 600;
+  letter-spacing: var(--track-label);
+  color: var(--ink-dim);
+}
+.panel-contexto-barra-pista {
+  height: 6px;
+  background: var(--bg-sunken);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+.panel-contexto-barra-relleno {
+  height: 100%;
+  background: linear-gradient(90deg, var(--ice-dim), var(--live));
+  transition: width var(--dur-slow) var(--ease);
+}
+
+/* --- Tabla --------------------------------------------------------------- */
+
+.tabla-lista { display: grid; gap: 2px; font-size: var(--fs-1); font-variant-numeric: tabular-nums; }
+.tabla-fila {
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  gap: var(--s-2);
+  padding: 3px var(--s-1);
+  color: var(--ink-dim);
+}
+.tabla-fila--propia {
+  background: var(--live-fill);
+  color: var(--ink);
+  font-weight: 700;
+  border-radius: var(--r-sharp);
+}
+.tabla-puesto { color: var(--ink-mute); }
+.tabla-org {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.tabla-fila--corte-playoffs { border-top: 1px dashed var(--up); padding-top: 4px; }
+.tabla-fila--corte-internacional { border-top: 1px dashed var(--gold); padding-top: 4px; }
+
+/* --- Calendario ------------------------------------------------------------ */
+
+.calendario-lista { display: grid; gap: 2px; font-size: var(--fs-1); }
+.calendario-fila {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--s-2);
+  padding: 3px var(--s-1);
+  color: var(--ink-mute);
+}
+.calendario-fila--jugada { color: var(--ink-dim); }
+.calendario-fila--hoy {
+  background: var(--live-fill);
+  color: var(--ink);
+  font-weight: 700;
+  border-radius: var(--r-sharp);
+}
+.calendario-jornada {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  font-variant-numeric: tabular-nums;
+}
+.punto-vivo {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--live);
+  box-shadow: 0 0 6px var(--live-glow);
+  animation: latir-vivo 2s var(--ease-in-out) infinite;
+}
+.calendario-rival {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.calendario-lado { color: var(--ink-mute); flex: 0 0 auto; }
+.calendario-rival-nom {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.calendario-estado { font-size: var(--fs-0); text-transform: uppercase; letter-spacing: var(--track-label); }
+.calendario-estado--favorito { color: var(--up); }
+.calendario-estado--debil { color: var(--down); }
+.calendario-estado--parejo { color: var(--ink-mute); }
+
+/* --- Plantilla ------------------------------------------------------------- */
+
+.plantilla-lista { display: grid; gap: 2px; margin-bottom: var(--s-3); font-size: var(--fs-1); }
+.plantilla-fila {
+  display: grid;
+  grid-template-columns: 8px 16px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 4px var(--s-1);
+}
+.plantilla-fila--propia {
+  background: var(--live-fill);
+  border-radius: var(--r-sharp);
+}
+.plantilla-pip {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: transparent;
+}
+.plantilla-fila--propia .plantilla-pip {
+  background: var(--live);
+  box-shadow: 0 0 6px var(--live-glow);
+}
+.plantilla-fila .rol-marca { font-size: 14px; color: var(--ink-dim); }
+.plantilla-fila--propia .rol-marca { color: var(--live); }
+.plantilla-handle { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plantilla-rol { color: var(--ink-mute); font-size: var(--fs-0); text-transform: uppercase; }
+.plantilla-nivel { color: var(--ink-dim); font-variant-numeric: tabular-nums; font-weight: 700; }
+
+/* --- Meta -------------------------------------------------------------- */
+
+.meta-regimen-nombre {
+  font-family: var(--font-display);
+  font-size: var(--fs-3);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.meta-regimen-desc {
+  margin-top: 2px;
+  margin-bottom: var(--s-3);
+  font-size: var(--fs-1);
+  color: var(--ink-dim);
+  line-height: var(--lh-snug);
+}
+.meta-columnas {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+}
+.meta-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.meta-col-nombre {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-0);
+  color: var(--ink-mute);
+  text-align: center;
+}
+.meta-col-mas {
+  font-size: var(--fs-0);
+  color: var(--ink-mute);
+}
+.meta-tierlist { display: grid; gap: 2px; font-size: var(--fs-1); }
+.meta-tierlist-fila { display: flex; align-items: center; gap: var(--s-2); padding: 2px var(--s-1); color: var(--ink-mute); }
+.meta-tierlist-fila--pool { color: var(--ink); background: var(--gold-fill); border-radius: var(--r-sharp); }
+.meta-tier {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: var(--r-sharp);
+  color: var(--bg-void);
+}
+.meta-tier--S { background: var(--gold); }
+.meta-tier--A { background: var(--up); }
+.meta-tier--B { background: var(--ink-mute); }
+.meta-tier--C { background: var(--line-strong); color: var(--ink-mute); }
+.meta-tierlist-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* --- Generación (deuda D8) --------------------------------------------- */
+
+.generacion-lista { display: grid; gap: 2px; font-size: var(--fs-1); }
+.generacion-fila {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-2);
+  padding: 3px var(--s-1);
+}
+.generacion-handle { color: var(--ink); flex: 0 0 auto; }
+.generacion-detalle {
+  color: var(--ink-mute);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+}
+
+/* --- Top 5 mundial (fase 9Wc) ---------------------------------------- */
+
+.topmundial-lista {
+  display: grid;
+  gap: 2px;
+  font-size: var(--fs-1);
+  font-variant-numeric: tabular-nums;
+}
+.topmundial-fila {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: var(--s-2);
+  align-items: center;
+  padding: 3px var(--s-1);
+  color: var(--ink-dim);
+}
+.topmundial-fila--propia {
+  background: var(--gold-fill);
+  color: var(--ink);
+  font-weight: 700;
+  border-radius: var(--r-sharp);
+}
+.topmundial-fila--rival { color: var(--ink); }
+.topmundial-fila--pie {
+  margin-top: var(--s-2);
+  padding-top: var(--s-2);
+  border-top: 1px dashed var(--line);
+}
+.topmundial-puesto { color: var(--ink-mute); }
+.topmundial-handle {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.topmundial-detalle {
+  color: var(--ink-mute);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
