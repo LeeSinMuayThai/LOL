@@ -437,13 +437,14 @@ export function desdeDeUltimosBeats(logs, limite = LIMITE_FEED) {
 // página (la parada abre el split) el nodo queda oculto. El texto es plano (la `message` ya compuesta del beat): si es
 // largo lo corta el CSS con "…".
 //
-// FASE V (V4): `cierreDelAnio` es el cierre (`cierreDeSplit`, con `anio`) de una parada que ES el cierre de año (la de `edadCierre`,
-// que frena el motor): se pinta como el cartel "Cierre de 2031" de un año sin parada, arriba de todo, aunque la página no tenga beats.
+// FASE V (V4): `cierreDelAnio` (`{ anio }`) es el de una parada que ES el cierre de año (la de `edadCierre`, que frena el motor): se
+// pinta como el cartel de una línea "Cierre de 2031" (el de las páginas, `crearCartelDePagina`), arriba de todo, aunque la página no
+// tenga beats. Sin números: a mitad de la página todavía no son los del cierre.
 export function renderParadaAntes(contenedor, state, { desde = 0, cierreDelAnio = null } = {}) {
   const inicio = Math.max(0, Math.min(desde, state.logs.length));
   const narrativos = agruparBeats(state.logs.slice(inicio), inicio).filter((beat) => beat.narrativa);
   contenedor.replaceChildren();
-  const cartelDelAnio = cierreDelAnio?.anio ? crearTarjetaCierre(cierreDelAnio) : null;
+  const cartelDelAnio = cierreDelAnio?.anio ? crearCartelDePagina({ ventana: 'cierre', nuevoAnio: false, texto: `Cierre de ${cierreDelAnio.anio}` }) : null;
   if (narrativos.length === 0) {
     if (cartelDelAnio) {
       contenedor.append(cartelDelAnio);

@@ -240,13 +240,13 @@ export function iniciar() {
         // Antes de la parada: el último beat que el relato ya contó en esta página (todos los de `estado.logs` ya se
         // contaron: la parada entra recién cuando el reproductor termina) y la página, a un toque.
         try {
-          // V4: si la parada es la de `edadCierre`, ES el cierre del año (T9): el cartel "Cierre de 2031" va acá, con la misma
-          // cuenta que la tarjeta de un año sin parada (`cierreDeSplit` con `cierreFrenado: false`). Sin resultado ni Golden Road:
-          // eso lo dice la tarjeta de fin de split que viene después.
+          // V4: si la parada es la de `edadCierre`, ES el cierre del año (T9): va el cartel de una línea "Cierre de 2031". Sin
+          // número, delta ni escalón: la parada cae a mitad de la página y los beats que siguen todavía mueven el LP, así que
+          // esos números todavía no son los del cierre (los dice la tarjeta de fin de split).
           let cierreDelAnio = null;
           if (estado.pendiente?.sistemaId === 'edadCierre') {
             const cierre = cierreDeSplit(pagina.fotoInicio, estado, { cierreFrenado: false, fotoAnio: pagina.fotoAnio });
-            cierreDelAnio = cierre.anio ? { ...cierre, resultado: null, goldenRoad: null } : null;
+            cierreDelAnio = cierre.anio ? { anio: cierre.anio.anio } : null;
           }
           ui.renderParadaAntes(paradaAntesEl, estado, { desde: pagina.desde, cierreDelAnio });
         } catch (error) {
