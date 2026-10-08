@@ -5,6 +5,7 @@
 // historial es una conveniencia y nunca puede romper la tarjeta.
 import { esFechaDeDesafio } from '../core/desafio.js';
 import { VERSION_JUEGO } from '../data/version.js';
+import { goldenRoadsDeEstado, medallaDeGoldenRoad } from './core/trayectoria.js';
 
 export const NOMBRE_DEL_JUEGO = 'Un Split Más';
 export const CLAVE_HISTORIAL = 'lolcs-historial';
@@ -53,7 +54,8 @@ export function linkDeEstado(state, href) {
 }
 
 // "Un Split Más · Desafío 2026-10-02 · 1.512 pts · Campeón · v K1 · <link>".
-// Fuera del desafío no hay fecha y el link es el de la seed.
+// Fuera del desafío no hay fecha y el link es el de la seed. FASE V (V5): con un Golden Road, la medalla va entre el nivel y la
+// versión ("… · Campeón · Golden Road 2031 · v K6d · <link>"); sin ninguno no aparece nada.
 export function textoParaCompartir(state, href) {
   const { total, nivel } = state.tarjeta.puntaje;
   const desafio = state.desafio?.fecha ?? null;
@@ -62,6 +64,7 @@ export function textoParaCompartir(state, href) {
     desafio ? `Desafío ${desafio}` : null,
     `${miles(total)} pts`,
     nivel.nombre,
+    medallaDeGoldenRoad(goldenRoadsDeEstado(state)),
     `v ${VERSION_JUEGO}`,
     linkDeEstado(state, href)
   ].filter(Boolean).join(' · ');
@@ -74,7 +77,8 @@ export function historialVacio() {
 }
 
 // Lo que se guarda de una carrera terminada. `jugadoEn` es la fecha UTC del día
-// en que terminó (la pone la UI).
+// en que terminó (la pone la UI). FASE V (V5): `goldenRoads` son los años con Golden Road (`[]` si no hubo ninguno): un logro
+// aparte, que no entra al puntaje.
 export function entradaDeResultado(state, jugadoEn) {
   const { total, nivel } = state.tarjeta.puntaje;
   return {
@@ -86,8 +90,15 @@ export function entradaDeResultado(state, jugadoEn) {
     seed: state.seed,
     rol: state.player.role,
     handle: state.player.name,
-    intentos: 1
+    intentos: 1,
+    goldenRoads: goldenRoadsDeEstado(state)
   };
+}
+
+// Las entradas guardadas antes de V5 no traen `goldenRoads`: al leerlas valen `[]` (y lo que no es una lista de años se descarta).
+function conGoldenRoads(entrada) {
+  const anios = Array.isArray(entrada.goldenRoads) ? entrada.goldenRoads.filter(Number.isInteger) : [];
+  return { ...entrada, goldenRoads: anios };
 }
 
 function esEntrada(entrada) {
@@ -121,8 +132,8 @@ export function leerHistorial(almacenamiento) {
     }
     return {
       forma: FORMA_HISTORIAL,
-      entradas: datos.entradas.filter(esEntrada).slice(0, MAX_HISTORIAL),
-      record: esEntrada(datos.record) ? datos.record : null
+      entradas: datos.entradas.filter(esEntrada).slice(0, MAX_HISTORIAL).map(conGoldenRoads),
+      record: esEntrada(datos.record) ? conGoldenRoads(datos.record) : null
     };
   } catch {
     return historialVacio();

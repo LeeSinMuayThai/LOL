@@ -5,6 +5,7 @@
 // `crearLineaSplitAnterior` es la misma información en una línea, para cuando la tarjeta no llegó a verse (INST o
 // movimiento reducido): abre la página siguiente.
 import { textoDeNumero, deltaDeCierre, lineaDeSplitAnterior } from '../core/escena.js';
+import { itemsDeGoldenRoad } from '../core/trayectoria.js';
 
 // Las bandas del nivel con el mismo nombre que la ficha (`LABEL_NIVEL` de components/ficha.js, que no lo exporta).
 const LABEL_BANDA_NIVEL = { prospecto: 'Prospecto', titular: 'Competitivo', elite: 'Élite', clase_mundial: 'Clase mundial' };
@@ -19,6 +20,33 @@ function bloque(clase, texto) {
 function sentidoDelDelta(delta) {
   if (!delta || delta === '=') return 'igual';
   return delta.startsWith('▲') ? 'sube' : 'baja';
+}
+
+// FASE V (V5, PLAN.md §V.6): el seguimiento del Golden Road, en una línea: "Golden Road 2031: ✓ split 1 · ✓ split 2 · ◻ split 3 ·
+// ◻ liga · ◻ Mundial". Lo pintan la tarjeta de cierre, el acompañante y la pestaña Carrera con este mismo nodo. El texto
+// completo se lee de corrido; cada hecho es un `<span>` con su estado para el color. Solo se llama con un seguimiento vivo.
+// Si ya está completo (en el cierre del año del Mundial) lo dice.
+export function crearLineaGoldenRoad(seguimiento) {
+  const linea = bloque(`gr-linea${seguimiento.completo ? ' gr-linea--completo' : ''}`);
+  linea.dataset.goldenRoad = seguimiento.completo ? 'completo' : 'vivo';
+  const titulo = document.createElement('span');
+  titulo.className = 'gr-linea-titulo';
+  titulo.textContent = `Golden Road ${seguimiento.anio}:`;
+  linea.append(titulo, document.createTextNode(' '));
+  itemsDeGoldenRoad(seguimiento).forEach((item, i) => {
+    if (i > 0) linea.appendChild(document.createTextNode(' · '));
+    const hecho = document.createElement('span');
+    hecho.className = `gr-linea-item gr-linea-item--${item.estado}`;
+    hecho.textContent = `${item.marca} ${item.etiqueta}`;
+    linea.appendChild(hecho);
+  });
+  if (seguimiento.completo) {
+    const logro = document.createElement('span');
+    logro.className = 'gr-linea-logro';
+    logro.textContent = '¡Lo lograste!';
+    linea.append(document.createTextNode(' '), logro);
+  }
+  return linea;
 }
 
 export function crearTarjetaCierre(cierre) {
@@ -52,6 +80,11 @@ export function crearTarjetaCierre(cierre) {
     numero.appendChild(deltaEl);
   }
   tarjeta.appendChild(numero);
+  // V5: el Golden Road del año, mientras está vivo (`cierreDeSplit` solo lo trae entonces; una tarjeta guardada de antes de V5
+  // no lo trae y sale sin la línea).
+  if (cierre.goldenRoad) {
+    tarjeta.appendChild(crearLineaGoldenRoad(cierre.goldenRoad));
+  }
   return tarjeta;
 }
 

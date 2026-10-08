@@ -7,6 +7,7 @@
 // sola fuente de verdad entre el CSS y el canvas.
 import { hueDeOrg, inicialesDeOrg } from './formatoUi.js';
 import { miles } from './resultado.js';
+import { goldenRoadsDeEstado, medallaDeGoldenRoad } from './core/trayectoria.js';
 import { VERSION_JUEGO } from '../data/version.js';
 
 const ANCHO = 1200;
@@ -157,6 +158,12 @@ export async function dibujarTarjeta(state, modulos) {
     dibujarOrgChip(ctx, fila.org, 60 + i * 44, 530, 32);
   });
 
+  // --- La medalla (FASE V, V5): el Golden Road, abajo a la derecha, en dorado. Un logro aparte; sin ninguno no se dibuja nada. ---
+  const medalla = medallaDeGoldenRoad(goldenRoadsDeEstado(state));
+  if (medalla) {
+    dibujarMedalla(ctx, medalla.toUpperCase(), ANCHO - 60, 560);
+  }
+
   // --- Pie: la seed (o la fecha del desafío) y la versión, para que el link
   // y la imagen cuenten la misma historia ---
   ctx.fillStyle = leerToken('--ink-mute');
@@ -164,6 +171,32 @@ export async function dibujarTarjeta(state, modulos) {
   ctx.fillText(`${desafio ? `desafío ${desafio}` : `seed ${state.seed}`} · v ${VERSION_JUEGO}`, 60, ALTO - 40);
 
   return canvas;
+}
+
+// Una chapa dorada con el texto, alineada a la derecha en `xDerecha` y apoyada en `yBase`.
+function dibujarMedalla(ctx, texto, xDerecha, yBase) {
+  const relleno = 16;
+  const alto = 44;
+  ctx.font = '700 28px "Barlow Condensed", sans-serif';
+  const ancho = ctx.measureText(texto).width + relleno * 2;
+  const x = xDerecha - ancho;
+  const y = yBase - alto;
+  ctx.fillStyle = leerToken('--gold-fill');
+  ctx.strokeStyle = leerToken('--gold');
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  if (typeof ctx.roundRect === 'function') {
+    ctx.roundRect(x, y, ancho, alto, 6);
+  } else {
+    ctx.rect(x, y, ancho, alto);
+  }
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = leerToken('--gold');
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(texto, x + relleno, y + alto / 2 + 1);
+  ctx.textBaseline = 'alphabetic';
 }
 
 function dibujarOrgChip(ctx, nombre, x, y, size) {
