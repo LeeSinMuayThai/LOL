@@ -34,6 +34,46 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-08 — FASE V, V4: el movimiento y el ritmo, en `v-integracion` (PLAN.md §V.7)
+
+**Lo que midió el worker antes de decidir** (100 carreras × 60 splits): la parada del motor de `edadCierre` no frena
+todos los años.
+- Con el bot criterio frena en el 91,6% de los cierres: todos los amateur y el 88,2% de los pro.
+- Con el bot malas frena en el 72,5%: todos los amateur y el 61,3% de los pro.
+
+Por eso, en los años sin esa parada, la tarjeta de cierre del último split pasa a ser **"Cierre de 2031"** (el número
+del año, el escalón y el Golden Road) y se sostiene 2,4 s.
+- **No suma clics:** Espacio la salta, y en INST y con movimiento reducido pasa sola.
+- **Hay una por año como máximo,** nunca junto a la parada del motor (T9).
+- `simulate.js` espeja `ESPERA_CIERRE_ANIO_MS`, con su check. Cuesta +2,4 s por carrera con el bot criterio y +4,2 s
+  con malas.
+
+**Qué se mueve** (`cad8449`; worker Sonnet xhigh, revisor Sonnet con navegador y dos rondas cortas de un Sonnet):
+- **La tarjeta de cierre** cuenta el nivel, o el rango y los LP en amateur.
+- **La franja** cuenta desde lo que ya mostraba, solo cuando el relato termina.
+- **Los efectos de un beat** cuentan desde 0.
+- **Cada página** abre con un cartel de una línea ("2031 · Temporada regular", "Arranca 2032 · Pretemporada"), que no
+  suma espera. En los años con parada del motor, la parada abre con "Cierre de 2031".
+- **Con movimiento reducido** todo aparece ya en su valor final.
+- **El número que cuenta** no se anuncia en la región viva: un lector de pantalla oye solo el valor final.
+- **D61:** `reemplazarEnElLugar` copia también `title`, `aria-*` y `style`.
+- **D97:** al retomar entre splits se ve la tarjeta del split anterior.
+- **En el celular,** el último beat ya no queda detrás de la barra de cuartos.
+
+**Lo que encontraron las revisiones:**
+- La frase del escalón no era gramatical con los nombres de los escalones ("Vas por Pasó por el circuito"). Ahora dice
+  "Tu escalón: «Pasó por el circuito» · Para llegar a «Un profesional más»: te falta…".
+- La tarjeta completa en la parada del motor mostraba un LP que los beats siguientes todavía movían. Ahora es el cartel
+  de una línea, sin número.
+- Un parámetro `numeroDe(s)` disparaba el check de plurales entre paréntesis. El worker había reportado `--rapido` en
+  verde y no lo estaba: lo encontró el supervisor corriéndolo.
+- El revisor cree que 2,4 s no alcanzan para leer la tarjeta del año y propone 3-3,5 s o sostenerla hasta Espacio. Va a
+  V8, con lo que diga el usuario (D98).
+
+**El techo de `dist/`** sube de 2600 a 2700 KB en su propio commit (`6a3ddb6`). La integración pesa 2621 KB.
+
+**Verificado por el supervisor sobre `6a3ddb6`:** `validate.js --rapido` 376 OK / 0 FAIL / 183 SKIP, y `--solo` de "V2 escena", "V5 carrera", "V3e", "V4", "K0" y "K1 versión" sin FAIL; `build.js` OK.
+
 ### 2026-10-08 — FASE V, ola 4: los minijuegos, la franja y los cuartos, y la carrera dibujada con el Golden Road, en `v-integracion` (PLAN.md §V.7)
 
 **Las correcciones de la ola V3** (`e1faa47`, un Sonnet):
