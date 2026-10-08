@@ -231,4 +231,10 @@
 /* V3b: el separador del marcador en la línea no es el de 28 px del tablero grande; y el resumen del Swiss del acompañante
    cuenta el récord entero en vez de cortarlo con "…". */
 .serie-linea-score .serie-score-sep { font-size: inherit; }
-.serie-contexto--completo .serie-swiss-resumen .serie-lado-nombre { white-space: normal; overflow: visible; text-overflow: clip; }
+/* El tablero de la serie del acompañante (~340 px) no entra con el chip al lado del nombre y el marcador de 64 px: el escudo
+   va arriba del nombre, el nombre baja de renglón entre palabras (nunca "KI…") y el marcador es más chico. */
+.serie-contexto--completo .serie-scoreboard { gap: var(--s-2); }
+.serie-contexto--completo .serie-score { font-size: var(--fs-7); }
+.serie-contexto--completo .serie-lado { flex-direction: column; gap: var(--s-1); text-align: center; justify-content: flex-start; }
+.serie-contexto--completo .serie-lado--rival { flex-direction: column-reverse; justify-content: flex-end; }
+.serie-contexto--completo .serie-lado-nombre { font-size: var(--fs-2); white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; max-width: 100%; }

@@ -127,7 +127,7 @@
   column-gap: var(--s-3);
 }
 .mercado-card-liga { color: var(--ink); }
-.mercado-card-jerarquia { white-space: nowrap; }
+.mercado-card-jerarquia { min-width: 0; }
 .mercado-card-hito { color: var(--cat-mercado); }
 
 .mercado-card-neg {

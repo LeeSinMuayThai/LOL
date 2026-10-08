@@ -110,10 +110,19 @@ const memoria = new WeakMap();
 function memoriaDe(container) {
   let m = memoria.get(container);
   if (!m) {
-    m = { previo: { a: 0, b: 0 }, abierto: false };
+    m = { previo: { a: 0, b: 0 }, abierto: false, clave: null };
     memoria.set(container, m);
   }
   return m;
+}
+
+// El "Camino" recuerda si lo abriste solo dentro del mismo partido (la serie con ese rival en esa ronda; el cruce del Swiss
+// con ese rival): en uno nuevo arranca cerrado. Sin esto, lo abierto una vez quedaba abierto para siempre.
+function cerrarSiCambioElPartido(m, clave) {
+  if (m.clave !== clave) {
+    m.clave = clave;
+    m.abierto = false;
+  }
 }
 
 // K5-A: una serie del Mundial (`ronda: 'internacional'` con su `etapa`) muestra el bracket del Mundial, no el doméstico.
@@ -449,6 +458,7 @@ function renderSwissDelMundial(container, state, { completo }) {
   const m = memoriaDe(container);
   container.hidden = false;
   m.previo = { a: 0, b: 0 };
+  cerrarSiCambioElPartido(m, `swiss|${state.internacional?.partidoEnCurso?.rival ?? ''}`);
   if (completo) {
     container.replaceChildren(...partesDelSwiss(state, { conResumen: true }).partes);
     return;
@@ -482,10 +492,12 @@ export function renderSerieContexto(container, state, { completo = false } = {})
   if (tablero === null) {
     container.hidden = true;
     m.previo = { a: 0, b: 0 };
+    m.clave = null;
     return;
   }
 
   container.hidden = false;
+  cerrarSiCambioElPartido(m, `serie|${serie.rival?.org ?? ''}|${serie.ronda ?? ''}|${serie.etapa ?? ''}`);
   const ganoSerie = (serie.marcador?.[0] ?? 0) > (serie.marcador?.[1] ?? 0);
 
   // El marcador anima desde lo que ESTE contenedor ya mostró; el tablero completo (el del acompañante, que se rehace entero en
