@@ -34,6 +34,17 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-08 — FASE V mergeada en  y V8 partida en dos (PLAN.md §V.7)
+
+- ** se mergea en ** (, sin push: el push espera un OK nuevo del usuario). El árbol es
+  el mismo que se verificó en el cierre ( más la documentación).
+- **El juego que se sirve al usuario en el 8090 es esa misma copia** (C2).
+- **V8 se parte en dos:**
+  - **V8a, sin esperar al usuario:** D100 y D101, una fila nueva. La historia org por org dice "2029–2029" cuando un
+    club duró un año, y "1 splits". Viene de la fase 8b, no lo trajo V: lo vio el supervisor en las capturas del
+    cierre.
+  - **V8b, con lo que diga el usuario en C2:** D98 y D99.
+
 ### 2026-10-08 — FASE V, V7 (candado y limpieza) y el cierre de la fase, en `v-integracion` (PLAN.md §V.7)
 
 **V7** (`9c64746`; worker Sonnet high, sin revisor aparte: las capturas idénticas son la prueba, y el supervisor
