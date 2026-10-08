@@ -265,8 +265,6 @@ body { padding: 0; }
   .franja-linea--2 .franja-nivel-rango { font-size: var(--fs-1); }
   .franja-linea--2 .franja-nivel-rango + .franja-delta { font-size: var(--fs-0); }
 }
-}
-}
 
 /* --- El cuerpo: el escenario y el acompañante (V2-C) -----------------------
    Una columna de ~720 px, centrada, con UNA pieza a la vista. Desde 1180 px
