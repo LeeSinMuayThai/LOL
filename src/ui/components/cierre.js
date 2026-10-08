@@ -11,7 +11,7 @@
 // `crearCartelDePagina` es el encabezado de una línea de cada página (ventana y año), sin beat ni espera.
 import { textoDeNumero, textoDeNumeroEn, deltaDeCierre, lineaDeSplitAnterior } from '../core/escena.js';
 import { itemsDeGoldenRoad } from '../core/trayectoria.js';
-import { moverNumero } from '../core/delta.js';
+import { moverNumero, leerSoloElFinal } from '../core/delta.js';
 
 // Las bandas del nivel con el mismo nombre que la ficha (`LABEL_NIVEL` de components/ficha.js, que no lo exporta).
 const LABEL_BANDA_NIVEL = { prospecto: 'Prospecto', titular: 'Competitivo', elite: 'Élite', clase_mundial: 'Clase mundial' };
@@ -112,6 +112,10 @@ export function crearTarjetaCierre(cierre, { animar = false } = {}) {
     valor.textContent = conMayuscula(textoDeNumero(cierre.numero));
   }
   numero.appendChild(valor);
+  if (animar) {
+    // Lo que cuenta no se anuncia en la región viva: el lector lee solo el valor final.
+    numero.appendChild(leerSoloElFinal(valor, conMayuscula(textoDeNumeroEn(cierre.numero, cierre.numero?.despues))));
+  }
   const banda = cierre.numero?.etiqueta === 'nivel' ? LABEL_BANDA_NIVEL[cierre.numero.banda] : null;
   if (banda) {
     const bandaEl = document.createElement('span');

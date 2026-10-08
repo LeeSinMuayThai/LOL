@@ -19,7 +19,7 @@ import { textoDeProbabilidadJugada } from '../../core/previaDePartido.js';
 import { reconciliar, reemplazarEnElLugar, olvidarContenedor } from '../core/reconciliar.js';
 import { formaBeat } from '../../core/log.js';
 import { crearTarjetaCierre, crearLineaSplitAnterior, crearCartelDePagina } from './cierre.js';
-import { moverNumero } from '../core/delta.js';
+import { moverNumero, leerSoloElFinal } from '../core/delta.js';
 
 // El reveal del Top 20 al cierre de temporada (fase 9Wc). El log `top_mundial`
 // que trae la lista entera (`entry.top20`) deja de ser una línea: se abre en
@@ -365,7 +365,7 @@ export function animarEfectos(nodo, { animar = true } = {}) {
       const el = document.createElement('span');
       el.className = 'efecto-numero';
       el.textContent = numero.texto;
-      piezas.push(el);
+      piezas.push(el, leerSoloElFinal(el, numero.texto));
       numero.el = el;
       desde = numero.indice + numero.texto.length;
     }

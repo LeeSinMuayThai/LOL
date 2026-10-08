@@ -57,6 +57,17 @@ function movimientoReducido() {
   return typeof globalThis.matchMedia === 'function' && globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
+// Un lector de pantalla no tiene que leer "71, 72, 73…" mientras el número cuenta: `#logList` es una región `aria-live`, y cada
+// `textContent` que cambia adentro se anuncia. `leerSoloElFinal` esconde el nodo que cuenta (`aria-hidden`) y devuelve el nodo que
+// lo reemplaza para el lector (`.solo-lectores`, con el valor final ya puesto): quien llama lo agrega justo después del que cuenta.
+export function leerSoloElFinal(el, textoFinal) {
+  el.setAttribute('aria-hidden', 'true');
+  const lector = document.createElement('span');
+  lector.className = 'solo-lectores';
+  lector.textContent = textoFinal;
+  return lector;
+}
+
 // Devuelve `cancelar()`: deja el número en su valor final y apaga la animación. Idempotente.
 export function moverNumero(el, antes, despues, {
   formato = String,
