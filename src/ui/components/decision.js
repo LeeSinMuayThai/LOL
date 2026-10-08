@@ -32,7 +32,14 @@ const MAX_CHIPS = 3;
 const MIN_LINEA_EN_JUEGO = 60;
 const RANGO_MAGNITUD = { alta: 3, media: 2, baja: 1 };
 // Primer corte de oración: un punto/!/?/cierre de comillas seguido de espacio y una mayúscula, signo o comilla de apertura.
-const FIN_DE_ORACION = /[.!?…]["”»)]?\s+(?=[A-ZÁÉÍÓÚÜÑ¿¡"“«(])/g;
+// El cierre (comilla, paréntesis) que sigue al punto se queda en la línea: `m[0]` lo trae, y el corte se hace después de él.
+const FIN_DE_ORACION = /[.!?…]["”»)]*(?=\s+[A-ZÁÉÍÓÚÜÑ¿¡"“«(])/g;
+
+// Un punto adentro de una cita o de un paréntesis no es el fin de la línea: cortar ahí deja la comilla o el paréntesis sin cerrar.
+function quedaAbierto(corte) {
+  const cuenta = (re) => (corte.match(re) ?? []).length;
+  return cuenta(/"/g) % 2 === 1 || cuenta(/“/g) > cuenta(/”/g) || cuenta(/«/g) > cuenta(/»/g) || cuenta(/\(/g) > cuenta(/\)/g);
+}
 
 // [linea, resto]: la línea de "qué está en juego" y el resto de la descripción.
 export function partirDescripcion(texto) {
@@ -40,8 +47,9 @@ export function partirDescripcion(texto) {
   // La línea termina en la primera oración que alcanza MIN_LINEA_EN_JUEGO (si la primera es corta, se le suma la siguiente).
   // Si ninguna llega, todo el texto es la línea: es corto, y el tope de renglones del CSS lo cuida si no lo es.
   for (const m of limpio.matchAll(FIN_DE_ORACION)) {
-    if (m.index + 1 >= MIN_LINEA_EN_JUEGO) {
-      return [limpio.slice(0, m.index + 1).trim(), limpio.slice(m.index + m[0].length).trim()];
+    const fin = m.index + m[0].length;
+    if (m.index + 1 >= MIN_LINEA_EN_JUEGO && !quedaAbierto(limpio.slice(0, fin))) {
+      return [limpio.slice(0, fin).trim(), limpio.slice(fin).trim()];
     }
   }
   return [limpio, ''];
