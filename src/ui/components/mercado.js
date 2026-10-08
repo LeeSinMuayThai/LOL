@@ -116,8 +116,14 @@ function ligaYAnios(liga, anios) {
   return `${nombreVisibleDeLiga(liga)} · ${anios} año${anios === 1 ? '' : 's'}`;
 }
 
+// Tu jerarquía en el vestuario de ese equipo (la barra de la ficha), con la banda que le corresponde entre paréntesis (Rookie,
+// Titular, Referente, Franquicia). `desde` es la de hoy; `hasta`, donde la proyecta el motor al cerrar el primer split allá
+// (D39), y la banda es la de `hasta`. Si no cambia, es solo la de hoy.
 function jerarquiaTexto(pj) {
-  return `Jerarquía: ${pj.desde} ${FLECHAS[pj.flecha] ?? '→'} ${pj.hasta} — ${pj.etiqueta}`;
+  if (pj.desde === pj.hasta) {
+    return `Jerarquía en el equipo: ${pj.hasta} (${pj.etiqueta})`;
+  }
+  return `Jerarquía en el equipo: ${pj.desde} ${FLECHAS[pj.flecha] ?? '→'} ${pj.hasta} al cerrar el primer split (${pj.etiqueta})`;
 }
 
 // El "más" de una oferta (V3c): lo que ayuda a entender la oferta pero no a elegir entre ofertas de un vistazo —qué pesan
