@@ -135,6 +135,38 @@ export function asentarSplitPendiente(registro, pendiente, { liga, tier, anio, s
   };
 }
 
+// K4c / FASE V (GR-m): el mismo asentado de `asentarSplitPendiente`, sobre el estado entero. Si hay un split jugado esperando
+// su fila (`flags.splitJugadoSinFila`), devuelve el estado con la fila de esa org abierta y cerrada y el split adentro; si no, el
+// mismo estado. Vive acá (y no en `core/pipeline.js`, de donde salió) para que `core/puntaje.js` cuente los hechos de la carrera
+// sobre el registro asentado sin importar el pipeline, que importa al puntaje. Puro, sin `rng`.
+export function conSplitPendienteAsentado(state) {
+  const pendiente = state.flags.splitJugadoSinFila;
+  if (!pendiente) {
+    return state;
+  }
+  const registro = asentarSplitPendiente(state.career.registro, pendiente, {
+    liga: state.career.liga, tier: state.career.tier, anio: state.calendario.anio,
+    split: state.player.splitCount, arraigoActual: state.career.arraigo
+  });
+  return {
+    ...state,
+    flags: { ...state.flags, splitJugadoSinFila: null },
+    career: { ...state.career, registro }
+  };
+}
+
+// FASE V (GR-m, PLAN.md §V.6): un split jugado en una tabla, la fila que lee el Golden Road y la curva fina de nivel de la
+// pestaña Carrera. `fila` es `{ anio, split, org, liga, tier, posicion, equipos, nivel }`; la arma `systems/rendimiento.js`
+// con lo que la temporada dejó (`liga` es el id real, `null` en tier 3; `tier` el de la liga donde se jugó, D76; `split` el
+// lugar dentro del año). Solo agrega (regla 14), sin `rng`. Una `posicion` que no es un puesto entero NO deja fila: un caso raro
+// no puede fabricar un 1.º (el `?? 1` que usa `rendimiento.js` para sus consecuencias no entra acá).
+export function registrarSplitEnTabla(registro, fila) {
+  if (!Number.isInteger(fila.posicion)) {
+    return registro;
+  }
+  return { ...registro, porSplit: [...registro.porSplit, fila] };
+}
+
 // K1 (D75): "llegó a tier N" = jugó al menos un split con contrato en tier N
 // (`splitsPorTier[N] > 0` en alguna fila), no "ganó el salto": el estado
 // "agente libre de tier 2" que sigue a un ascenso desde tier 3 no cuenta. Es
@@ -272,6 +304,57 @@ export function registrarInternacional(registro, entrada) {
 // suma solo los suyos (`systems/rivales.js`); el jugador, igual.
 export function mundialesGanados(registro) {
   return registro.internacionales.filter((entrada) => entrada.resultado === 'campeon');
+}
+
+// --- El Golden Road (FASE V, GR-m, PLAN.md §V.1 y §V.6) ---
+//
+// En un mismo año calendario: 1.º en la tabla de los TRES splits del año, campeón de la liga de primera (tier 1) y campeón del
+// Mundial. Un logro aparte: no suma al puntaje. Cada hecho es UN predicado de acá abajo, y los usan los dos lados —el veredicto
+// (`esGoldenRoad`) y el seguimiento mientras el año corre (`seguimientoGoldenRoad`, `core/vistaDeCarrera.js`)—, para que la pantalla
+// no pueda prometer un Golden Road que el motor no cuenta (regla 15). Puros, sin `rng`.
+export const TIER_DE_PRIMERA = TIERS_DE_SPLIT[0];
+const PRIMER_PUESTO = 1;
+
+// Las filas de `porSplit` de un año calendario.
+export function filasDeSplitsDelAnio(registro, anio) {
+  return registro.porSplit.filter((fila) => fila.anio === anio);
+}
+
+// La fila del split `split` (0 a `splitsPorEdad` - 1) del año, o `null` si ese split no se jugó en una tabla.
+export function filaDeSplitDelAnio(registro, anio, split) {
+  return filasDeSplitsDelAnio(registro, anio).find((fila) => fila.split === split) ?? null;
+}
+
+// Un split que cuenta para el Golden Road: terminar 1.º en la tabla de una liga de primera.
+export function splitEsPrimeroEnPrimera(fila) {
+  return Boolean(fila) && fila.tier === TIER_DE_PRIMERA && fila.posicion === PRIMER_PUESTO;
+}
+
+// El título de liga del año, de la liga de primera (el de una de desarrollo no es el del Golden Road).
+export function tituloDePrimeraDelAnio(registro, anio) {
+  return registro.titulos.some((titulo) => titulo.anio === anio && titulo.tier === TIER_DE_PRIMERA);
+}
+
+// El Mundial del año, ganado.
+export function mundialGanadoEnElAnio(registro, anio) {
+  return mundialesGanados(registro).some((entrada) => entrada.anio === anio);
+}
+
+// Los tres splits del año: exactamente `splitsPorEdad` filas, una por split, todas de primera y en el primer puesto.
+export function splitsDelAnioSonDePrimero(registro, anio) {
+  const total = BALANCE.edad.splitsPorEdad;
+  return filasDeSplitsDelAnio(registro, anio).length === total
+    && Array.from({ length: total }, (_, split) => split).every((split) => splitEsPrimeroEnPrimera(filaDeSplitDelAnio(registro, anio, split)));
+}
+
+export function esGoldenRoad(registro, anio) {
+  return splitsDelAnioSonDePrimero(registro, anio) && tituloDePrimeraDelAnio(registro, anio) && mundialGanadoEnElAnio(registro, anio);
+}
+
+// Los años calendario con Golden Road, de menor a mayor.
+export function goldenRoads(registro) {
+  const anios = [...new Set(registro.porSplit.map((fila) => fila.anio))].sort((a, b) => a - b);
+  return anios.filter((anio) => esGoldenRoad(registro, anio));
 }
 
 // K6b-U: los trofeos del duelo: los títulos de liga más los Mundiales ganados. Un cuartos de final jugado no es un

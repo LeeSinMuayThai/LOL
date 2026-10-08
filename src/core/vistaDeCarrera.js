@@ -6,6 +6,11 @@
 // los leyó a pelo y la pantalla mintió: la barra decía "Pretemporada" en un partido decisivo y el panel de la serie
 // seguía mostrando la final doméstica en pleno Swiss del Mundial (regla 15).
 
+import { BALANCE } from '../data/balance.js';
+import {
+  filaDeSplitDelAnio, splitEsPrimeroEnPrimera, splitsDelAnioSonDePrimero, tituloDePrimeraDelAnio, mundialGanadoEnElAnio, TIER_DE_PRIMERA
+} from './registro.js';
+
 // En qué ventana del año está el jugador MIENTRAS decide, no cuando abrió el split. `contexto.ventana` es la del
 // arranque del split: el primer split del año es "pretemporada" aunque el partido que frena sea de temporada regular.
 export function ventanaVisibleDe(state) {
@@ -43,4 +48,54 @@ export function tableroDeSerie(state) {
     return null;
   }
   return 'serie';
+}
+
+// FASE V (GR-m, PLAN.md §V.6): cómo va el Golden Road del año calendario en curso —1.º en la tabla de los tres splits, campeón de
+// la liga de primera y campeón del Mundial, todo en el mismo año—, mientras el año corre. Es la misma regla que `esGoldenRoad`
+// (`core/registro.js`): cada ítem usa el predicado del veredicto, así que `completo` coincide con `goldenRoads(registro)` en cuanto
+// el año cierra (lo mide el check del Golden Road, regla 15). Puro, sin `rng`, sin escribir nada.
+//
+// Devuelve `null` en el amateur, fuera de la primera división y retirado (el seguimiento solo existe donde el logro es posible
+// de arrancar). Si no, `{ anio, splits: [3 ítems], liga, mundial, vivo, completo }`, y cada ítem es:
+//  - `'si'`: ya se cumplió. `'no'`: ya no se puede (el año no es un Golden Road). `'pendiente'`: todavía se decide.
+//  - un split se decide con su fila de `porSplit`; sin fila es `'no'` cuando el reloj ya lo pasó (se jugó sin club, o en otro
+//    lugar) y `'pendiente'` si es el que viene o el que se está jugando;
+//  - la liga se decide si hay título de primera de ese año, o si ya arrancó el Mundial de ese año (`systems/internacional.js` corre
+//    después de la final doméstica: ya no hay título que esperar) o si el año cerró;
+//  - el Mundial se decide si hay entrada de ese año en `registro.internacionales`, si el torneo de ese año ya tiene campeón, o si
+//    el año cerró.
+// El año cerró cuando el reloj (`anioBase + floor(splitCount / splitsPorEdad)`) pasó del año: en la pausa del cierre de año
+// `atributos` ya subió el `splitCount` pero `calendario.anio` sigue siendo el año que se cierra.
+export function seguimientoGoldenRoad(state) {
+  if (state.phase !== 'profesional' || state.terminado || state.career.tier !== TIER_DE_PRIMERA) {
+    return null;
+  }
+  const { registro } = state.career;
+  const { anio, anioBase } = state.calendario;
+  const porAnio = BALANCE.edad.splitsPorEdad;
+  const { splitCount } = state.player;
+  const cerro = anioBase + Math.floor(splitCount / porAnio) > anio;
+
+  const porFila = Array.from({ length: porAnio }, (_, split) => {
+    const fila = filaDeSplitDelAnio(registro, anio, split);
+    if (fila) {
+      return splitEsPrimeroEnPrimera(fila) ? 'si' : 'no';
+    }
+    return (anio - anioBase) * porAnio + split < splitCount ? 'no' : 'pendiente';
+  });
+  // Los tres en 'si' son los tres splits del veredicto (`splitsDelAnioSonDePrimero`, la misma regla): con una fila de más en el
+  // año (un registro roto) el año no es un Golden Road, y el seguimiento no puede decir lo contrario.
+  const splits = porFila.every((item) => item === 'si') && !splitsDelAnioSonDePrimero(registro, anio) ? porFila.map(() => 'no') : porFila;
+
+  const mundialDelAnio = state.internacional && state.internacional.anio >= anio ? state.internacional : null;
+  const liga = tituloDePrimeraDelAnio(registro, anio) ? 'si' : (cerro || mundialDelAnio ? 'no' : 'pendiente');
+  const mundialDecidido = cerro || registro.internacionales.some((entrada) => entrada.anio === anio) || Boolean(mundialDelAnio?.campeon);
+  const mundial = mundialGanadoEnElAnio(registro, anio) ? 'si' : (mundialDecidido ? 'no' : 'pendiente');
+
+  const items = [...splits, liga, mundial];
+  return {
+    anio, splits, liga, mundial,
+    vivo: !items.includes('no'),
+    completo: items.every((item) => item === 'si')
+  };
 }

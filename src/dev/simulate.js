@@ -4,7 +4,10 @@ import { createInitialState } from '../core/state.js';
 import { avanzarSplitAuto } from '../core/pipeline.js';
 import { calcularContexto } from '../core/contexto.js';
 import { nivelDelJugador } from '../core/ficha.js';
-import { tierMasAltoJugado, esBuenPapel } from '../core/registro.js';
+import {
+  tierMasAltoJugado, esBuenPapel, goldenRoads, filasDeSplitsDelAnio, splitsDelAnioSonDePrimero, tituloDePrimeraDelAnio,
+  mundialGanadoEnElAnio, TIER_DE_PRIMERA
+} from '../core/registro.js';
 import { resultadoDelJugador, mundialSinJugador } from '../core/internacional.js';
 import { puntajeDeCarrera, NIVELES } from '../core/puntaje.js';
 import { candidatos } from '../systems/events.js';
@@ -1893,6 +1896,52 @@ export function bloquePuntaje(resultados) {
   };
 }
 
+// FASE V (GR-m, PLAN.md §V.6): el Golden Road, medido (KPI, sin check: se le reporta al usuario con el número; si sale 0% o demasiado
+// seguido, el motor no se toca para moverlo). % de carreras del lote con al menos un año Golden Road (1.º en la tabla de los tres splits
+// + campeón de la liga de primera + campeón del Mundial, el mismo año calendario), y el embudo por AÑO que lo explica: años con los
+// tres splits en primera -> y los tres 1.º -> y el título de liga -> y el Mundial (= Golden Road). Lee el registro con los mismos
+// predicados que `esGoldenRoad` (`core/registro.js`).
+export function bloqueGoldenRoad(resultados) {
+  const total = resultados.length;
+  const embudo = { aniosConLosTresSplitsEnPrimera: 0, conLosTresPrimeros: 0, masTituloDeLiga: 0, masMundial: 0 };
+  let conAlMenosUno = 0;
+  let aniosGoldenRoad = 0;
+  for (const estado of resultados) {
+    const { registro } = estado.career;
+    const anios = [...new Set(registro.porSplit.map((fila) => fila.anio))];
+    for (const anio of anios) {
+      const filas = filasDeSplitsDelAnio(registro, anio);
+      if (filas.length !== BALANCE.edad.splitsPorEdad || !filas.every((fila) => fila.tier === TIER_DE_PRIMERA)) {
+        continue;
+      }
+      embudo.aniosConLosTresSplitsEnPrimera += 1;
+      if (!splitsDelAnioSonDePrimero(registro, anio)) {
+        continue;
+      }
+      embudo.conLosTresPrimeros += 1;
+      if (!tituloDePrimeraDelAnio(registro, anio)) {
+        continue;
+      }
+      embudo.masTituloDeLiga += 1;
+      if (mundialGanadoEnElAnio(registro, anio)) {
+        embudo.masMundial += 1;
+      }
+    }
+    const golden = goldenRoads(registro);
+    conAlMenosUno += golden.length > 0 ? 1 : 0;
+    aniosGoldenRoad += golden.length;
+  }
+  // El embudo cuenta años; el Golden Road del bloque (`aniosGoldenRoad`) tiene que coincidir con su último escalón.
+  return {
+    linea: `Golden Road: ${conAlMenosUno} de ${total} carreras con al menos uno (${pct(conAlMenosUno, total)}%), ${aniosGoldenRoad} años en total`,
+    carreras: total,
+    conAlMenosUno,
+    pctConAlMenosUno: pct(conAlMenosUno, total),
+    aniosGoldenRoad,
+    embudoPorAnio: embudo
+  };
+}
+
 // El tramo de una banda de `ganaPorMargen`, escrito: los bordes abiertos sin número (sin null ni Infinity en el reporte).
 export function nombreDeBandaDeMargen(desde, hasta) {
   if (!Number.isFinite(desde)) {
@@ -2329,7 +2378,9 @@ export function correrLote(corridas, splits, estrategia, { corridasAblacion = MA
     mundoMundial: bloqueMundoMundial(observaciones),
     curvaDeEdad: bloqueCurvaDeEdad(resultados, observaciones),
     // K1: el número de la carrera (`core/puntaje.js`), su distribución y los niveles.
-    puntaje: bloquePuntaje(resultados)
+    puntaje: bloquePuntaje(resultados),
+    // FASE V (GR-m): el Golden Road, el % de carreras con al menos uno y el embudo por año (reporte, sin check).
+    goldenRoad: bloqueGoldenRoad(resultados)
   };
   // Los datos crudos de las carreras del lote (estados finales y observaciones, en el orden de las seeds 1..n),
   // para que `validate.js` recuente los KPIs desde ellos sin simular de nuevo. NO enumerable: no sale en el
