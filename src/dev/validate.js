@@ -8612,7 +8612,7 @@ if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_PAUSA_DEL_ANIO.toLowe
     const beats = [0, 1, 2].map((i) => ({ type: 'x', message: `beat ${i}`, tecnico: false }));
     const numero = { etiqueta: 'nivel', antes: 60, despues: 63, banda: 'titular', texto: null };
     const cierre = (anio) => ({ resultado: null, numero, goldenRoad: null, anio });
-    const anio = { anio: 2031, numero: { ...numero, antes: 58 }, escalon: { vas: 'Vas por X', falta: 'para Y te falta Z' } };
+    const anio = { anio: 2031, numero: { ...numero, antes: 58 }, escalon: { vas: 'Tu escalón: X', falta: 'Para Y: te falta Z' } };
     const correr = async (velocidad, reducido, nuevas, cierreDeLaPagina) => {
       poner(velocidad, reducido);
       esperas.length = 0;
@@ -13589,7 +13589,7 @@ checkLento('K0 cierre de año: la tarjeta "Cierre de …" y su pausa salen en lo
           if (dicho.numero.despues !== cierre.numero.despues || dicho.numero.antes !== antesEsperado) {
             problemas.push(`${cuando}: el número del año ${JSON.stringify(dicho.numero)} no es ${antesEsperado} → ${cierre.numero.despues}`);
           }
-          if ((dicho.escalon !== null) !== (state.phase === 'profesional') || (dicho.escalon && !dicho.escalon.vas.startsWith('Vas por '))) {
+          if ((dicho.escalon !== null) !== (state.phase === 'profesional') || (dicho.escalon && !dicho.escalon.vas.startsWith('Tu escalón: '))) {
             problemas.push(`${cuando}: el escalón del cierre de año (${JSON.stringify(dicho.escalon)}) en fase ${state.phase}`);
           }
         }
@@ -22643,9 +22643,9 @@ const SEEDS_DIBUJO_V5 = [114, 133, 152, 61, 85, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1
 const SPLITS_DIBUJO_V5 = 60;
 const EPSILON_X_V5 = 1e-9;
 
-// FASE V (V4, pedido por la revisión de la ola 4): la frase del escalón ("Vas por X · para Y te falta …") es una promesa que el jugador lee en la
+// FASE V (V4, pedido por la revisión de la ola 4): la frase del escalón ("Tu escalón: X · Para Y: te falta …") es una promesa que el jugador lee en la
 // pestaña Carrera, en el resumen del acompañante y en la tarjeta "Cierre de …". Se compara con la cuenta del motor (`escalonDeCarrera`, la misma
-// de la tarjeta final) armando lo que tiene que decir a mano, sin pasar por `textoDeEscalon`: un "Vas por <el escalón que sigue>" no pasa.
+// de la tarjeta final) armando lo que tiene que decir a mano, sin pasar por `textoDeEscalon`: un "Tu escalón: <el escalón que sigue>" no pasa.
 function diferenciasDelEscalonV5(escalonDelMotor, frase) {
   if (escalonDelMotor === null) {
     return frase === null ? [] : [`la frase ${JSON.stringify(frase)} existe y el motor no tiene escalón`];
@@ -22654,10 +22654,10 @@ function diferenciasDelEscalonV5(escalonDelMotor, frase) {
     return ['el motor tiene escalón y la frase es null'];
   }
   const { actual, siguiente } = escalonDelMotor;
-  const vas = `Vas por ${actual.nombre}`;
+  const vas = `Tu escalón: ${actual.nombre}`;
   const falta = siguiente === null
-    ? 'Es el techo de la escala: no hay escalón más arriba.'
-    : `para ${siguiente.nombre} ${siguiente.enPresente.charAt(0).toLowerCase()}${siguiente.enPresente.slice(1)}`;
+    ? 'Es el techo de la escala.'
+    : `Para ${siguiente.nombre}: ${siguiente.enPresente.charAt(0).toLowerCase()}${siguiente.enPresente.slice(1)}`;
   const dif = [];
   if (frase.vas !== vas) dif.push(`dice "${frase.vas}" y el escalón actual es "${actual.nombre}"`);
   if (frase.falta !== falta) dif.push(`dice "${frase.falta}" y lo que falta para ${siguiente?.nombre ?? 'nada (es el techo)'} es "${falta}"`);
@@ -22726,7 +22726,7 @@ function diferenciasDelDibujoV5(tr, registro, anioBase) {
   return dif;
 }
 
-checkLento('V5 carrera dibujada: lo que dibuja la pestaña Carrera es el registro (un punto por fila de porSplit, un tramo por fila de porOrg, los títulos, los Mundiales ganados y los Golden Roads del motor), la línea del Golden Road de la tarjeta de cierre es el seguimiento del motor y la medalla sale de goldenRoads, y la frase del escalón ("Vas por X · para Y te falta …") es la cuenta del motor (criterio, 20 carreras × 60)', () => {
+checkLento('V5 carrera dibujada: lo que dibuja la pestaña Carrera es el registro (un punto por fila de porSplit, un tramo por fila de porOrg, los títulos, los Mundiales ganados y los Golden Roads del motor), la línea del Golden Road de la tarjeta de cierre es el seguimiento del motor y la medalla sale de goldenRoads, y la frase del escalón ("Tu escalón: X · Para Y: te falta …") es la cuenta del motor (criterio, 20 carreras × 60)', () => {
   const anioBase = BALANCE.calendario.anioBase;
   const problemas = [];
   const anotar = (cuando, dif) => dif.forEach((texto) => problemas.push(`${cuando}: ${texto}`));
@@ -22892,11 +22892,11 @@ checkLento('V5 carrera dibujada: lo que dibuja la pestaña Carrera es el registr
     const { actual, siguiente } = muestraEscalon;
     const buena = textoDeEscalonV5(muestraEscalon);
     const casos = {
-      'Vas por <el escalón que sigue>': { ...buena, vas: `Vas por ${siguiente.nombre}` },
-      'Vas por <otro nombre>': { ...buena, vas: `Vas por ${actual.nombre}!` },
-      'para <el escalón actual> te falta …': { ...buena, falta: buena.falta.replace(siguiente.nombre, actual.nombre) },
-      'lo que falta es lo de otro escalón': { ...buena, falta: `para ${siguiente.nombre} te falta cualquier cosa` },
-      'decir que es el techo con un escalón más arriba': { ...buena, falta: 'Es el techo de la escala: no hay escalón más arriba.' },
+      'Tu escalón: <el escalón que sigue>': { ...buena, vas: `Tu escalón: ${siguiente.nombre}` },
+      'Tu escalón: <otro nombre>': { ...buena, vas: `Tu escalón: ${actual.nombre}!` },
+      'Para <el escalón actual>: te falta …': { ...buena, falta: buena.falta.replace(siguiente.nombre, actual.nombre) },
+      'lo que falta es lo de otro escalón': { ...buena, falta: `Para ${siguiente.nombre}: te falta cualquier cosa` },
+      'decir que es el techo con un escalón más arriba': { ...buena, falta: 'Es el techo de la escala.' },
       'sin frase aunque hay escalón': null
     };
     for (const [nombre, frase] of Object.entries(casos)) {
