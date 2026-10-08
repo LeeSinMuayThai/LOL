@@ -10,12 +10,23 @@ import { crearOrgChip } from './orgChip.js';
 // tarjeta entera y abierta: es la del acompañante (≥ 1180 px, `acompanante.js`), donde el escenario no repite la línea
 // (`estilos/serie.css`) para que no aparezca dos veces.
 //
-// El desplegable recuerda si lo abriste: la previa se repinta en cada parada y sin esto se cerraba solo. Es estado por
+// El desplegable recuerda si lo abriste: la previa se repinta en cada parada del mismo partido y sin esto se cerraba solo. Pero
+// vale solo dentro de ese partido: la clave es el partido (la serie entera con un rival y una ronda; la fecha o el cruce del
+// Swiss contra su rival), y en uno nuevo arranca cerrado (el contenedor `#previa` es único y permanente). Es estado por
 // contenedor (`WeakMap`), no de módulo: el escenario y el acompañante no se pisan.
 const memoria = new WeakMap();
 
+function clavePartido(previa) {
+  return `${previa.tipo === 'mapa' ? 'serie' : previa.tipo}|${previa.rival?.nombre ?? ''}|${previa.subtitulo ?? ''}`;
+}
+
 export function renderPrevia(container, previa, { completo = false } = {}) {
   if (!previa) {
+    // Sin previa no hay partido: el siguiente arranca con el desplegable cerrado.
+    const recordada = memoria.get(container);
+    if (recordada) {
+      recordada.clave = null;
+    }
     container.hidden = true;
     container.replaceChildren();
     return;
@@ -30,8 +41,13 @@ export function renderPrevia(container, previa, { completo = false } = {}) {
 
   let m = memoria.get(container);
   if (!m) {
-    m = { abierto: false };
+    m = { abierto: false, clave: null };
     memoria.set(container, m);
+  }
+  const clave = clavePartido(previa);
+  if (m.clave !== clave) {
+    m.clave = clave;
+    m.abierto = false;
   }
   const detalles = document.createElement('details');
   detalles.className = 'previa-resumen';
