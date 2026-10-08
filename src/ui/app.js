@@ -20,6 +20,7 @@ import { iconoSonido } from './components/iconos.js';
 import { aplicarEstudio, limpiarEstudio } from './shell.js';
 import { crearFranja } from './franja.js';
 import { crearCuartos } from './cuartos.js';
+import { crearAcompanante } from './acompanante.js';
 import { crearStore } from './core/store.js';
 import {
   almacenamientoLocal, leerHistorial, guardarHistorial, agregarAlHistorial, entradaDeResultado,
@@ -80,17 +81,6 @@ export function iniciar() {
   const continuarBtn = document.getElementById('continuarBtn');
   const desafioDia = document.getElementById('desafioDia');
   const historialEl = document.getElementById('historial');
-  // El riel derecho (T5): un objeto solo, para pasarlo entero a
-  // ui.renderRielContexto desde la `vista` — mismo patrón que
-  // `decisionElements`.
-  const rielElements = {
-    panelTabla: document.getElementById('panelTabla'),
-    panelCalendario: document.getElementById('panelCalendario'),
-    panelPlantilla: document.getElementById('panelPlantilla'),
-    panelMeta: document.getElementById('panelMeta'),
-    panelGeneracion: document.getElementById('panelGeneracion'),
-    panelTopMundial: document.getElementById('panelTopMundial')
-  };
   const serieContextoEl = document.getElementById('serieContexto');
   const toggleVelocidad = document.getElementById('toggleVelocidad');
   const toggleSonido = document.getElementById('toggleSonido');
@@ -103,6 +93,8 @@ export function iniciar() {
   // los renderers de hoy) y leen la `vista`.
   const ayudaTeclas = document.getElementById('ayudaTeclas');
   let cuartos = null;
+  // El acompañante (V2-C): reemplaza al riel derecho (T5), cuyos paneles se mudaron a los cuartos.
+  let acompanante = null;
 
   // El contrato de elementos que `src/ui/render.js` necesita para pintar
   // la pantalla de decisión (fase 8, §8.5; fase 9c suma la pantalla de ofertas).
@@ -205,6 +197,12 @@ export function iniciar() {
         vista,
         contexto: { ui, modulos }
       });
+      acompanante = crearAcompanante({
+        aside: document.getElementById('acompanante'),
+        chip: document.getElementById('verContexto'),
+        contexto: { ui, modulos },
+        abrirCuarto: (id) => cuartos.abrir(id)
+      });
       reproductor = reproductorModulo;
       sonido = sonidoModulo;
       almacenamiento = almacenamientoModulo;
@@ -293,6 +291,8 @@ export function iniciar() {
   // `vista` en `null` (el inicio) se limpia.
   function pintarDesdeVista(estado) {
     franja?.pintar(estado);
+    // La pieza ya es la nueva: el director la escribe antes que la `vista`.
+    acompanante?.pintar(estado, escena.pieza());
     if (!estado) {
       fichaContainer.replaceChildren();
       limpiarEstudio();
@@ -300,7 +300,6 @@ export function iniciar() {
     }
     const ficha = ui.renderFicha(fichaContainer, estado, modulos);
     aplicarEstudio(estado, ficha);
-    ui.renderRielContexto(rielElements, estado, modulos);
     ui.renderSerieContexto(serieContextoEl, estado);
   }
 

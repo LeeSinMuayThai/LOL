@@ -18,7 +18,7 @@ import * as cronica from './cuartos/cronica.js';
 import * as ayuda from './cuartos/ayuda.js';
 
 const PINTORES = { vos, temporada, equipo, mundo, carrera, cronica, ayuda };
-const TITULOS = {
+export const TITULOS_DE_CUARTOS = {
   vos: 'Vos', temporada: 'Temporada', equipo: 'Equipo', mundo: 'Mundo', carrera: 'Carrera', cronica: 'Crónica',
   ayuda: 'Teclas'
 };
@@ -51,7 +51,7 @@ export function crearCuartos({ dialog, barra, cuerpo, titulo, botonAyuda, escena
   function pintar(id) {
     abierto = id;
     dialog.dataset.cuarto = id;
-    titulo.textContent = TITULOS[id] ?? '';
+    titulo.textContent = TITULOS_DE_CUARTOS[id] ?? '';
     for (const pestana of pestanas.querySelectorAll('[data-cuarto]')) {
       pestana.setAttribute('aria-selected', String(pestana.dataset.cuarto === id));
     }

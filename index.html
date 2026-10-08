@@ -122,6 +122,8 @@
           <div id="carrera" class="panel" data-piezas="relato decision partido mercado minijuego final">
             <div id="summary" class="summary" data-piezas="relato decision partido mercado minijuego">Aún no empezaste tu carrera.</div>
             <div id="metaPill" class="meta-pill" data-piezas="relato decision partido mercado minijuego"></div>
+            <!-- V2-C: debajo de 1180 px (sin acompañante), abre el cuarto con el contexto de la parada (src/ui/acompanante.js). -->
+            <button id="verContexto" type="button" class="ver-contexto" data-piezas="decision partido mercado" hidden></button>
 
             <!-- El bracket + el camino de la serie (fase T6): en la pieza `partido`,
                  mientras `state.serie.activa` (el `hidden` es de su renderer). -->
@@ -160,15 +162,9 @@
           </div>
         </div>
 
-        <!-- El riel derecho (fase T5): sus paneles se mudan a los cuartos (V2-C). -->
-        <aside class="riel-der" aria-label="Contexto de la carrera">
-          <div id="panelTabla" class="panel-contexto" hidden></div>
-          <div id="panelCalendario" class="panel-contexto" hidden></div>
-          <div id="panelPlantilla" class="panel-contexto" hidden></div>
-          <div id="panelMeta" class="panel-contexto" hidden></div>
-          <div id="panelGeneracion" class="panel-contexto" hidden></div>
-          <div id="panelTopMundial" class="panel-contexto" hidden></div>
-        </aside>
+        <!-- El acompañante (V2-C; PLAN.md §V.4): UN panel con el contexto de la pieza, desde 1180 px. Lo pinta
+             src/ui/acompanante.js desde la `vista`; `data-acompanante` dice qué muestra (vacío: nada, y no ocupa lugar). -->
+        <aside id="acompanante" class="acompanante" aria-label="Contexto de la parada" data-acompanante="" hidden></aside>
       </div>
 
       <footer class="ticker" id="ticker" aria-hidden="true"></footer>

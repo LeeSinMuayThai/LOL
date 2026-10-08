@@ -224,7 +224,7 @@ body { padding: 0; }
    todavía. T5 le suma la tercera columna, pero solo cuando de verdad hay
    algo — `:has()` lo resuelve sin que el controlador tenga que togglear
    una clase en cada render. */
-.shell-cuerpo:has(.riel-der > .panel-contexto:not([hidden])) {
+.shell-cuerpo:has(.acompanante:not([hidden])) {
   grid-template-columns: var(--riel-izq) 1fr var(--riel-der);
 }
 
@@ -248,11 +248,11 @@ body { padding: 0; }
    `:has(#fichaContainer:empty)`). La variante con `:has()` empata la
    especificidad de la regla de tres columnas de arriba. */
 .shell[data-pieza="inicio"] .shell-cuerpo,
-.shell[data-pieza="inicio"] .shell-cuerpo:has(.riel-der > .panel-contexto:not([hidden])) {
+.shell[data-pieza="inicio"] .shell-cuerpo:has(.acompanante:not([hidden])) {
   grid-template-columns: minmax(0, 1fr);
 }
 .shell[data-pieza="inicio"] .riel,
-.shell[data-pieza="inicio"] .riel-der { display: none; }
+.shell[data-pieza="inicio"] .acompanante { display: none; }
 .shell[data-pieza="inicio"] .escenario {
   grid-column: 1;
   max-width: 1180px;
@@ -261,7 +261,7 @@ body { padding: 0; }
 
 .riel { grid-column: 1; min-width: 0; }
 
-.riel-der {
+.acompanante {
   grid-column: 3;
   min-width: 0;
   display: flex;
@@ -335,10 +335,10 @@ body[data-peligro="on"] { --horizon: var(--danger-horizon); }
    tarjeta, sin riel derecho. El feed, la barra de abajo y el marcador no son
    parte de la pieza (`data-piezas`). */
 .shell[data-pieza="final"] .shell-cuerpo,
-.shell[data-pieza="final"] .shell-cuerpo:has(.riel-der > .panel-contexto:not([hidden])) {
+.shell[data-pieza="final"] .shell-cuerpo:has(.acompanante:not([hidden])) {
   grid-template-columns: var(--riel-izq) 1fr;
 }
-.shell[data-pieza="final"] .riel-der { display: none; }
+.shell[data-pieza="final"] .acompanante { display: none; }
 .shell[data-pieza="final"] .tarjeta { margin-top: 0; }
 @media (max-width: 899px) {
   .shell[data-pieza="final"] .riel { display: none; }
@@ -361,7 +361,7 @@ body[data-peligro="on"] { --horizon: var(--danger-horizon); }
      media query más específico en ancho. Es la misma trampa de
      especificidad que ya apareció en T0b con los botones. */
   .shell-cuerpo,
-  .shell-cuerpo:has(.riel-der > .panel-contexto:not([hidden])) {
+  .shell-cuerpo:has(.acompanante:not([hidden])) {
     grid-template-columns: 1fr;
     padding: var(--s-4);
     gap: var(--s-4);
@@ -380,7 +380,7 @@ body[data-peligro="on"] { --horizon: var(--danger-horizon); }
      en pantallas.css. Mismos selectores que la regla de arriba, para empatar
      la especificidad; gana por orden. */
   .shell[data-pieza="final"] .shell-cuerpo,
-  .shell[data-pieza="final"] .shell-cuerpo:has(.riel-der > .panel-contexto:not([hidden])) {
+  .shell[data-pieza="final"] .shell-cuerpo:has(.acompanante:not([hidden])) {
     grid-template-columns: minmax(0, 1fr);
   }
   .riel {
@@ -394,7 +394,7 @@ body[data-peligro="on"] { --horizon: var(--danger-horizon); }
     padding-bottom: var(--s-2);
   }
   .escenario { grid-column: 1; max-width: none; }
-  .riel-der { grid-column: 1; }
+  .acompanante { grid-column: 1; }
 }
 
 @media (max-width: 639px) {
@@ -446,4 +446,12 @@ body[data-peligro="on"] { --horizon: var(--danger-horizon); }
     text-overflow: ellipsis;
     font-size: var(--fs-1);
   }
+}
+
+/* V2-C (paso 3, provisorio hasta el layout de una columna): el acompañante solo existe desde 1180 px. */
+@media (min-width: 900px) and (max-width: 1179px) {
+  .shell-cuerpo:has(.acompanante:not([hidden])) { grid-template-columns: var(--riel-izq) 1fr; }
+}
+@media (max-width: 1179px) {
+  .acompanante { display: none; }
 }
