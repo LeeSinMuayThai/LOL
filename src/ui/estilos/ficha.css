@@ -361,6 +361,8 @@
   gap: var(--s-3);
 }
 .ficha-contrato-datos { display: grid; gap: 2px; min-width: 0; }
+/* hud.css le da un margen a la cifra del valor (cuando iba pegada a otra línea): acá va debajo del contrato, alineada. */
+.ficha-contrato-datos .ficha-valor-mercado-cifra { margin-left: 0; }
 .ficha-card--compacta .ficha-contrato-franja { margin-top: 0; }
 
 /* Los picos de la carrera (D90): el cuarto Vos en la pieza final. Cada fila: el rótulo, el valor y su referente. */

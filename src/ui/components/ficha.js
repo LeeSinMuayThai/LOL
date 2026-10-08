@@ -367,7 +367,7 @@ function crearDetalleMomentos(registro, memoria) {
 // la ficha seguía diciendo "tier 3" hasta el split siguiente (regla 15). Se recalcula acá, sobre el estado de hoy, con la
 // misma función pura del motor (`calcularContexto`): no escribe nada y no toca el `rng`. Sin `state.contexto` (todavía no
 // corrió ningún split) no hay situación que decir.
-function contextoDeLaFicha(state) {
+export function contextoDeLaFicha(state) {
   if (!state.contexto) return null;
   try {
     return calcularContexto(state);
